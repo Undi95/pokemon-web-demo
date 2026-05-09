@@ -15,37 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocZeroed,
-  AllocateMonSpritesGfx, ApplyImageProcessingEffects, ApplyImageProcessingQuantization, BGCNT_16COLOR,
-  BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE, BGCNT_TXT256x256,
-  BG_PLTT_ID, BG_SCREEN_ADDR, BG_SCREEN_SIZE, BeginFastPaletteFade,
-  BeginNormalPaletteFade, BufferContestName, ChangeBgX, ChangeBgY,
-  ConvertImageProcessingToGBA, ConvertInternationalContestantName, CopyBgTilemapBufferToVram, CopyWindowToVram,
-  DISPCNT_BG0_ON, DISPCNT_BG1_ON, DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DmaClear32, DmaFillLarge32,
-  FALSE, FREE_AND_SET_NULL, FillWindowPixelBuffer, Free,
-  FreeMonSpritesGfx, GetBgTilemapBuffer, GetMonSpritePalFromSpeciesAndPersonality, GetStringCenterAlignXOffset,
-  HandleLoadSpecialPokePic_DontHandleDeoxys, InitBgsFromTemplates, InitKeys, JOY_NEW,
-  LZDecompressVram, LoadOam, LoadPalette, NULL,
-  OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE,
-  PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0CNT,
-  REG_OFFSET_BG1CNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
-  REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, RLUnCompVram, RLUnCompWram,
-  RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  RunTextPrinters, ScanlineEffect_Stop, SeedRng, SetBackdropFromPalette,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  ShowBg, StringAppend, StringCopy, StringExpandPlaceholders,
-  TRUE, TransferPlttBuffer, UpdatePaletteFade, VRAM_PICTURE_DATA,
-  VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SetContestWinnerForPainting(int contestWinnerId) */
 export function SetContestWinnerForPainting(contestWinnerId: any): any {
   let saveIdx: any =gCurContestWinnerSaveIdx;
@@ -92,7 +61,7 @@ export function ShowContestPainting(): any {
           break;
       case 1:
           ResetPaletteFade();
-          DmaFillLarge32(3, 0, VRAM, VRAM_SIZE, _0x1000);
+          DmaFillLarge32(3, 0, VRAM, VRAM_SIZE, 0x1000);
           ResetSpriteData();
           gMain.state++;
           break;
@@ -288,7 +257,7 @@ export function _InitContestMonPixels(spriteGfx: any, palette: any): any {
                           colorIndex &= 0xF;
 
                       if (colorIndex == 0)  
-                         let destPixels: any = _0x8000;
+                         let destPixels: any = 0x8000;
                       let destPixels: any = palette[colorIndex];
                   }
               }
@@ -332,7 +301,7 @@ export function LoadContestPaintingFrame(contestWinnerId: any, isForArtist: any)
           for (y = 0; y < 20; y++)
           {
               for (x = 0; x < 32; x++)
-                  VRAM_PICTURE_DATA(x, y) = _0x1015;
+                  VRAM_PICTURE_DATA(x, y) = 0x1015;
           }
 
            
@@ -427,7 +396,7 @@ export function GetImageEffectForContestWinner(contestWinnerId: any): any {
 /** static void AllocPaintingResources(void) */
 export function AllocPaintingResources(): any {
   gContestPaintingMonPalette = AllocZeroed(OBJ_PLTT_SIZE);
-      gContestMonPixels = AllocZeroed(_0x2000);
+      gContestMonPixels = AllocZeroed(0x2000);
 }
 
 /** static void DoContestPaintingImageProcessing(u8 imageEffect) */

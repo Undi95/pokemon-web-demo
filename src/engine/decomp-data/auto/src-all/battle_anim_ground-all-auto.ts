@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BATTLE_PARTNER, CreateTask, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-  DestroyAnimSprite, DestroyAnimVisualTask, DestroyTask, FALSE,
-  GetAnimBattlerSpriteId, GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord,
-  GetBattlerSpriteCoord2, GetBattlerYCoordWithElevation, InitAnimArcTranslation, InitSpritePosToAnimAttacker,
-  InitSpritePosToAnimTarget, IsBattlerSpriteVisible, Random2, ScanlineEffect_SetParams,
-  StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimBonemerangProjectile(struct Sprite *sprite) */
 export function AnimBonemerangProjectile(sprite: any): any {
   sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
@@ -440,15 +425,15 @@ export function AnimTask_HorizontalShake(taskId: any): any {
           {
               if (IsBattlerSpriteVisible(i))
               {
-                  task.tbattlerSpriteIds(task.tNumBattlers) = gBattlerSpriteIds[i];
+                  task.data[9 + ((task.tNumBattlers))] = gBattlerSpriteIds[i];
                   task.tNumBattlers++;
               }
           }
           task.func = AnimTask_ShakeBattlers;
           break;
       default:  
-          task.tbattlerSpriteIds(0) = GetAnimBattlerSpriteId(gBattleAnimArgs[0]);
-          if (task.tbattlerSpriteIds(0) == SPRITE_NONE)
+          task.data[9 + ((0))] = GetAnimBattlerSpriteId(gBattleAnimArgs[0]);
+          if (task.data[9 + ((0))] == SPRITE_NONE)
           {
               DestroyAnimVisualTask(taskId);
           }
@@ -543,7 +528,7 @@ export function AnimTask_ShakeBattlers(taskId: any): any {
           break;
       case 2:
           for (i = 0; i < task.tNumBattlers; i++)
-              gSprites[task.tbattlerSpriteIds(i)].x2 = 0;
+              gSprites[task.data[9 + ((i))]].x2 = 0;
 
           DestroyAnimVisualTask(taskId);
           break;
@@ -562,7 +547,7 @@ export function SetBattlersXOffsetForShake(task: any): any {
 
       for (i = 0; i < task.tNumBattlers; i++)
       {
-          gSprites[task.tbattlerSpriteIds(i)].x2 = xOffset;
+          gSprites[task.data[9 + ((i))]].x2 = xOffset;
       }
 }
 

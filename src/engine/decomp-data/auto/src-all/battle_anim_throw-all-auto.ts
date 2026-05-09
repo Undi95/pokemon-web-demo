@@ -15,39 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ANIM_SPRITES_START, ARRAY_COUNT, AllocSpritePalette, AnimLoadCompressedBgGfx,
-  AnimLoadCompressedBgTilemap, AnimateSprite, BG_PLTT_ID, BLDALPHA_BLEND,
-  BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2, BOUNCES,
-  BeginNormalPaletteFade, BlendPalette, BlendPalettes, ChangeSpriteAffineAnim,
-  ClearBehindSubstituteBit, Cos, CreateInvisibleSpriteWithCallback, CreateSprite,
-  CreateTask, DIRECTION, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, DestroySpriteAndFreeResources,
-  DestroyTask, FALL, FALSE, FreeBallGfx,
-  FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FuncIsActiveTask, GET_SHINY_VALUE, GetBattleAnimBg1Data, GetBattlePalettesMask,
-  GetBattlerAtPosition, GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord,
-  GetBattlerSpriteSubpriority, GetGpuReg, GetMonData, GetSpriteTileStartByTag,
-  IndexOfSpritePaletteTag, InitAnimArcTranslation, InitSpritePosToAnimAttacker, IsBattlerSpriteVisible,
-  IsContest, LoadBallGfx, LoadBattleMonGfxAndAnimate, LoadCompressedPalette,
-  LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheetUsingHeap, LoadPalette, OBJ_PLTT_ID,
-  PHASE_DELTA, PLTT_SIZE_4BPP, PlaySE, PlaySE12WithPanning,
-  PrepareBattlerSpriteForRotScale, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, RESET_STATE, RISE_FASTER,
-  RequestDma3Fill, ResetBattleAnimBg, ResetSpriteRotScale, SHAKES,
-  SHAKE_INC, STATE, ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL,
-  ST_OAM_OBJ_WINDOW, SetAnimBgAttribute, SetBattlerSpriteYOffsetFromYScale, SetGpuReg,
-  SetGpuRegBits, SetSpriteRotScale, Sin, SpriteCallbackDummy,
-  StartSpriteAffineAnim, StartSpriteAnim, TILE_SIZE_4BPP, TRUE,
-  TranslateAnimHorizontalArc, UpdateOamPriorityInAllHealthboxes, m4aMPlayAllStop, sDirection,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void AnimTask_UnusedLevelUpHealthBox(u8 taskId) */
 export function AnimTask_UnusedLevelUpHealthBox(taskId: any): any {
   let animBgData: any = null;
@@ -263,11 +230,11 @@ export function AnimTask_SwitchOutShrinkMon(taskId: any): any {
       {
       case 0:
           PrepareBattlerSpriteForRotScale(spriteId, ST_OAM_OBJ_NORMAL);
-          gTasks[taskId].data[10] = _0x100;
+          gTasks[taskId].data[10] = 0x100;
           gTasks[taskId].data[0]++;
           break;
       case 1:
-          gTasks[taskId].data[10] += _0x30;
+          gTasks[taskId].data[10] += 0x30;
           SetSpriteRotScale(spriteId, gTasks[taskId].data[10], gTasks[taskId].data[10], 0);
           SetBattlerSpriteYOffsetFromYScale(spriteId);
           if (gTasks[taskId].data[10] >= 0x2D0)
@@ -577,18 +544,18 @@ export function SpriteCB_Ball_Bounce_Step(sprite: any): any {
 
       lastBounce = FALSE;
 
-      switch (DIRECTION(sprite.sState))
+      switch (((sprite.sState) & 0xFF))
       {
       case BALL_FALLING:
           sprite.y2 = -Cos(sprite.sPhase, sprite.sAmplitude);
-          sprite.sPhase += PHASE_DELTA(sprite.sState) + 4;
+          sprite.sPhase += ((sprite.sState) >> 8) + 4;
            
           if (sprite.sPhase >= 64)
           {
               sprite.sAmplitude -= 10;
-              RISE_FASTER(sprite.sState);
+              ((sprite.sState) += 257);
 
-              bounceCount = BOUNCES(sprite.sState);
+              bounceCount = ((sprite.sState) >> 8);
               if (bounceCount == 4)
                   lastBounce = TRUE;
 
@@ -611,13 +578,13 @@ export function SpriteCB_Ball_Bounce_Step(sprite: any): any {
           break;
       case BALL_RISING:
           sprite.y2 = -Cos(sprite.sPhase, sprite.sAmplitude);
-          sprite.sPhase -= PHASE_DELTA(sprite.sState) + 4;
+          sprite.sPhase -= ((sprite.sState) >> 8) + 4;
            
           if (sprite.sPhase <= 0)
           {
                
               sprite.sPhase = 0;
-              FALL(sprite.sState);
+              ((sprite.sState) &= -0x100);
           }
           break;
       }
@@ -659,7 +626,7 @@ export function SpriteCB_Ball_Wobble_Step(sprite: any): any {
   let shakes: any = null;
       let frame: any = null;
 
-      switch (STATE(sprite.sState))
+      switch (((sprite.sState) & 0xFF))
       {
       case BALL_ROLL_1:
            
@@ -760,8 +727,8 @@ export function SpriteCB_Ball_Wobble_Step(sprite: any): any {
           }
           break;
       case BALL_NEXT_MOVE:
-          SHAKE_INC(sprite.sState);
-          shakes = SHAKES(sprite.sState);
+          ((sprite.sState) += 0x100);
+          shakes = ((sprite.sState) >> 8);
           if (shakes == gBattleSpritesDataPtr.animationData.ballThrowCaseId)
           {
               sprite.affineAnimPaused = TRUE;
@@ -786,7 +753,7 @@ export function SpriteCB_Ball_Wobble_Step(sprite: any): any {
           if (++sprite.sTimer == 31)
           {
               sprite.sTimer = 0;
-              RESET_STATE(sprite.sState);
+              ((sprite.sState) &= -0x100);
               StartSpriteAffineAnim(sprite, 3);
               if (sprite.sDirection < 0)
                   StartSpriteAffineAnim(sprite, BALL_ROTATE_LEFT);
@@ -825,12 +792,12 @@ export function SpriteCB_Ball_Capture_Step(sprite: any): any {
       if (sprite.sTimer == 40)
       {
           PlaySE(SE_RG_BALL_CLICK);
-          BlendPalettes(_0x10000 << sprite.oam.paletteNum, 6, RGB_BLACK);
+          BlendPalettes(0x10000 << sprite.oam.paletteNum, 6, RGB_BLACK);
           MakeCaptureStars(sprite);
       }
       else if (sprite.sTimer == 60)
       {
-          BeginNormalPaletteFade(_0x10000 << sprite.oam.paletteNum, 2, 6, 0, RGB_BLACK);
+          BeginNormalPaletteFade(0x10000 << sprite.oam.paletteNum, 2, 6, 0, RGB_BLACK);
       }
       else if (sprite.sTimer == 95)
       {
@@ -862,7 +829,7 @@ export function SpriteCB_Ball_FadeOut(sprite: any): any {
           SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL);
           SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16, 0));
           paletteIndex = IndexOfSpritePaletteTag(sprite.template.paletteTag);
-          BeginNormalPaletteFade(1 << (paletteIndex + _0x10), 0, 0, 16, RGB_WHITE);
+          BeginNormalPaletteFade(1 << (paletteIndex + 0x10), 0, 0, 16, RGB_WHITE);
           sprite.sState++;
           break;
       case 1:
@@ -1013,12 +980,12 @@ export function SpriteCB_Ball_Block(sprite: any): any {
 
 /** static void SpriteCB_Ball_Block_Step(struct Sprite *sprite) */
 export function SpriteCB_Ball_Block_Step(sprite: any): any {
-  let dy: any = sprite.sDy + _0x800;
-      let dx: any = sprite.sDx + _0x680;
+  let dy: any = sprite.sDy + 0x800;
+      let dx: any = sprite.sDx + 0x680;
       sprite.x2 -= dx >> 8;
       sprite.y2 += dy >> 8;
-      sprite.sDy = (sprite.sDy + _0x800) & 0xFF;
-      sprite.sDx = (sprite.sDx + _0x680) & 0xFF;
+      sprite.sDy = (sprite.sDy + 0x800) & 0xFF;
+      sprite.sDx = (sprite.sDx + 0x680) & 0xFF;
 
       if (sprite.y + sprite.y2 > DISPLAY_HEIGHT
        || sprite.x + sprite.x2 < -8)
@@ -1566,7 +1533,7 @@ export function AnimTask_SwapMonSpriteToFromSubstitute(taskId: any): any {
       {
       case 0:
           gTasks[taskId].data[11] = gBattleAnimArgs[0];
-          gTasks[taskId].data[0] += _0x500;
+          gTasks[taskId].data[0] += 0x500;
           if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
               gSprites[spriteId].x2 += gTasks[taskId].data[0] >> 8;
           else
@@ -1582,7 +1549,7 @@ export function AnimTask_SwapMonSpriteToFromSubstitute(taskId: any): any {
           gTasks[taskId].data[10]++;
           break;
       case 2:
-          gTasks[taskId].data[0] += _0x500;
+          gTasks[taskId].data[0] += 0x500;
           if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
               gSprites[spriteId].x2 -= gTasks[taskId].data[0] >> 8;
           else

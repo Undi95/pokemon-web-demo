@@ -15,26 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddTextPrinterParameterized4, AddWindow, Alloc, ClearStdWindowAndFrame,
-  ClearWindowTilemap, CopyWindowToVram, CreateSprite, CreateTask,
-  DISPLAY_HEIGHT, DestroySprite, DestroyTask, DrawTextBorderOuter,
-  FALSE, FillWindowPixelBuffer, FillWindowPixelRect, Free,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetFontAttribute, GetMenuCursorDimensionByFont,
-  GetWindowAttribute, JOY_NEW, JOY_REPEAT, LoadCompressedSpriteSheet,
-  LoadPalette, LoadSpritePalette, LoadUserWindowBorderGfx, NULL,
-  OBJ_PLTT_ID, PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE,
-  PutWindowRectTilemapOverridePalette, PutWindowTilemap, RemoveWindow, ScrollWindow,
-  SetSubspriteTables, SetWindowAttribute, StartSpriteAnim, TASK_NONE,
-  TRUE, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** s32 DoMysteryGiftListMenu(const struct WindowTemplate *windowTemplate, const struct ListMenuTemplate *listMenuTemplate, u8 drawMode, u16 tileNum, u16 palOffset) */
 export function DoMysteryGiftListMenu(windowTemplate: any, listMenuTemplate: any, drawMode: any, tileNum: any, palOffset: any): any {
   switch (sMysteryGiftLinkMenu.state)
@@ -401,7 +381,7 @@ export function ListMenuAddCursorObject(list: any, cursorObjId: any): any {
       cursor.top = DISPLAY_HEIGHT;
       cursor.rowWidth = GetWindowAttribute(list.template.windowId, WINDOW_WIDTH) * 8 + 2;
       cursor.rowHeight = GetFontAttribute(list.template.fontId, FONTATTR_MAX_LETTER_HEIGHT) + 2;
-      cursor.tileTag = _0x4000;
+      cursor.tileTag = 0x4000;
       cursor.palTag = TAG_NONE;
       cursor.palNum = 15;
 
@@ -775,7 +755,7 @@ export function AddScrollIndicatorArrowPair(arrowInfo: any, scrollOffset: any): 
       let taskId: any = null;
 
       spriteSheet.data = sScrollIndicator_Gfx;
-      spriteSheet.size = _0x100;
+      spriteSheet.size = 0x100;
       spriteSheet.tag = arrowInfo.tileTag;
       LoadCompressedSpriteSheet(spriteSheet);
 
@@ -1012,7 +992,7 @@ export function ListMenuAddRedOutlineCursorObject(cursor: any): any {
       let taskId: any = null;
 
       spriteSheet.data = sOutlineCursor_Gfx;
-      spriteSheet.size = _0x100;
+      spriteSheet.size = 0x100;
       spriteSheet.tag = cursor.tileTag;
       LoadCompressedSpriteSheet(spriteSheet);
 
@@ -1092,7 +1072,7 @@ export function ListMenuAddRedArrowCursorObject(cursor: any): any {
       let taskId: any = null;
 
       spriteSheet.data = sArrowCursor_Gfx;
-      spriteSheet.size = _0x80;
+      spriteSheet.size = 0x80;
       spriteSheet.tag = cursor.tileTag;
       LoadCompressedSpriteSheet(spriteSheet);
 

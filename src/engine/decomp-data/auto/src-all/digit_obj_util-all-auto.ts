@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  Alloc, CpuFill16, FALSE, FREE_AND_SET_NULL,
-  Free, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetDecompressedDataSize,
-  GetSpriteTileStartByTag, IndexOfSpritePaletteTag, LoadCompressedSpriteSheet, LoadSpritePalette,
-  LoadSpriteSheet, NULL, ST_OAM_AFFINE_ERASE, ST_OAM_AFFINE_OFF,
-  TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 DigitObjUtil_Init(u32 count) */
 export function DigitObjUtil_Init(count: any): any {
   let i: any = null;

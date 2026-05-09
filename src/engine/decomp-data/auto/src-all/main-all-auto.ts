@@ -15,26 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CheckForFlashMemory, ClearDma3Requests, ClearSpriteCopyRequests, CopyBufferedValuesToGpuRegs,
-  CpuFill16, DmaCopy32, DmaStop, EnableInterrupts,
-  FALSE, GetGpuReg, HandleLinkConnection, InitGpuRegManager,
-  InitHeap, InitMapMusic, InitRFU, JOY_HELD,
-  JOY_HELD_RAW, JOY_NEW, LinkVSync, MapMusicMain,
-  NULL, Overworld_RecvKeysFromLinkIsRunning, Overworld_SendKeysToLinkIsRunning, PlayTimeCounter_Update,
-  ProcessDma3Requests, Random, RegisterRamReset, ResetBgs,
-  RfuVSync, RtcGetMinuteCount, RtcInit, ScanlineEffect_Stop,
-  SeedRng, SetDefaultFontsPointer, SetFlashTimerIntr, SetGpuReg,
-  SiiRtcProtect, SoftReset, TRUE, TryReceiveLinkBattleData,
-  UpdateWirelessStatusIndicatorSprite,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void AgbMain(void) */
 export function AgbMain(): any {
       RegisterRamReset(RESET_ALL);
@@ -138,7 +118,7 @@ export function SetMainCallback2(callback: any): any {
 
 /** void StartTimer1(void) */
 export function StartTimer1(): any {
-  REG_TM1CNT_H = _0x80;
+  REG_TM1CNT_H = 0x80;
 }
 
 /** void SeedRngAndSetTrainerId(void) */
@@ -306,7 +286,7 @@ export function VBlankIntr(): any {
 
 /** void InitFlashTimer(void) */
 export function InitFlashTimer(): any {
-  SetFlashTimerIntr(2, gIntrTable + _0x7);
+  SetFlashTimerIntr(2, gIntrTable + 0x7);
 }
 
 /** static void HBlankIntr(void) */

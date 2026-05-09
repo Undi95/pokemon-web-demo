@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  Alloc, BlitBitmapRectToWindow, CpuCopy32, CreateSprite,
-  DecompressPicFromTable, DestroySprite, FALSE, Free,
-  FreeSpritePaletteByTag, GetMonSpritePalFromSpeciesAndPersonality, GetMonSpritePalStructFromOtIdPersonality, GetSpritePaletteTagByPaletteNum,
-  GetWindowAttribute, LoadCompressedPalette, LoadCompressedSpritePalette, LoadSpecialPokePic,
-  LoadSpecialPokePic_DontHandleDeoxys, OBJ_PLTT_ID, PLTT_ID, PLTT_SIZE_4BPP,
-  TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool16 ResetAllPicSprites(void) */
 export function ResetAllPicSprites(): any {
   let i: any = null;

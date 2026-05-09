@@ -15,54 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddWindow,
-  AlertTVThatPlayerPlayedSlotMachine, Alloc, AllocZeroed, AnimateSprites,
-  BG_PLTT_ID, BG_VRAM, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
-  BLDCNT_TGT1_BG3, BLDCNT_TGT2_OBJ, BeginNormalPaletteFade, BuildOamBuffer,
-  ClearDialogWindowAndFrame, ClearWindowTilemap, CopyWindowToVram, Cos,
-  CpuFill32, CreateInvisibleSprite, CreateSprite, CreateTask,
-  CreateYesNoMenuParameterized, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DeactivateAllTextPrinters, DestroySprite,
-  DestroyTask, DmaClear16, DmaClearLarge16, DrawDialogueFrame,
-  EnableInterrupts, FALSE, FREE_AND_SET_NULL, FillWindowPixelBuffer,
-  FindTaskIdByFunc, FreeAllSpritePalettes, FreeOamMatrix, GetCoins,
-  GetCurrentMapMusic, GetSpriteTileStartByTag, HideBg, IncrementDailySlotsUses,
-  IncrementGameStat, IndexOfSpritePaletteTag, InitBgsFromTemplates, InitSpriteAffineAnim,
-  InitWindows, IsFanfareTaskInactive, JOY_HELD, JOY_NEW,
-  LZDecompressWram, LoadBgTilemap, LoadBgTiles, LoadMessageBoxGfx,
-  LoadOam, LoadPalette, LoadSpritePalettes, LoadSpriteSheet,
-  LoadSpriteSheets, LoadUserWindowBorderGfx, LoadWordFromTwoHalfwords, Menu_ProcessInputNoWrapClearOnChoose,
-  MultiplyInvertedPaletteRGBComponents, MultiplyPaletteRGBComponents, NULL, OBJ_PLTT_ID,
-  PALETTES_ALL, PIXEL_FILL, PLTT_SIZEOF, PLTT_SIZE_4BPP,
-  PlayFanfare, PlayNewMapMusic, PlaySE, ProcessSpriteCopyRequests,
-  PutWindowTilemap, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
-  REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT,
-  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS,
-  REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
-  REG_OFFSET_MOSAIC, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ,
-  REG_OFFSET_WINOUT, Random, RemoveWindow, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
-  ST_OAM_AFFINE_DOUBLE, SetCoins, SetGpuReg, SetHBlankCallback,
-  SetMainCallback2, SetSpriteSheetFrameTileNum, SetSubspriteTables, SetVBlankCallback,
-  ShowBg, Sin, SpriteCallbackDummy, StartSpriteAnim,
-  StartSpriteAnimIfDifferent, StopMapMusic, StoreWordInTwoHalfwords, TASK_NONE,
-  TRUE, TRY_FREE_AND_SET_NULL, TransferPlttBuffer, TryPutFindThatGamerOnAir,
-  UpdatePaletteFade, VRAM_SIZE, WIN_RANGE, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void Task_FadeToSlotMachine(u8 taskId) */
 export function Task_FadeToSlotMachine(taskId: any): any {
   switch (gTasks[taskId].tState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
           gTasks[taskId].tState++;
           break;
       case 1:
@@ -120,7 +78,7 @@ export function CB2_SlotMachineSetup(): any {
               gMain.state++;
               break;
           case 7:
-              BeginNormalPaletteFade(-1, 0, _0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade(-1, 0, 0x10, 0, RGB_BLACK);
               ShowBg(0);
               ShowBg(1);
               ShowBg(2);
@@ -199,7 +157,7 @@ export function SlotMachineSetup_InitVBlank(): any {
 
 /** static void SlotMachineSetup_InitVRAM(void) */
 export function SlotMachineSetup_InitVRAM(): any {
-  DmaClearLarge16(3, (BG_VRAM), BG_VRAM_SIZE, _0x1000);
+  DmaClearLarge16(3, (BG_VRAM), BG_VRAM_SIZE, 0x1000);
 }
 
 /** static void SlotMachineSetup_InitOAM(void) */
@@ -265,7 +223,7 @@ export function InitSlotMachine(): any {
 export function SlotMachineSetup_InitPalsSpritesTasks(): any {
   ResetPaletteFade();
       ResetSpriteData();
-      gOamLimit = _0x80;
+      gOamLimit = 0x80;
       FreeAllSpritePalettes();
       ResetTasks();
 }
@@ -277,10 +235,10 @@ export function SlotMachineSetup_InitTilemaps(): any {
       sReelButtonPress_Tilemap = AllocZeroed(8);
 
        
-      sReelOverlay_Tilemap[0] = _0x2051;
-      sReelOverlay_Tilemap[1] = _0x2851;
-      sReelOverlay_Tilemap[2] = _0x2061;
-      sReelOverlay_Tilemap[3] = _0x2861;
+      sReelOverlay_Tilemap[0] = 0x2051;
+      sReelOverlay_Tilemap[1] = 0x2851;
+      sReelOverlay_Tilemap[2] = 0x2061;
+      sReelOverlay_Tilemap[3] = 0x2861;
       sReelOverlay_Tilemap[4] = 0x20BE;
       sReelOverlay_Tilemap[5] = 0x28BE;
       sReelOverlay_Tilemap[6] = 0x20BF;
@@ -291,8 +249,8 @@ export function SlotMachineSetup_LoadGfxAndTilemaps(): any {
   LoadMenuGfx();
       LoadMenuAndReelOverlayTilemaps();
       LoadSlotMachineGfx();
-      LoadMessageBoxGfx(0, _0x200, BG_PLTT_ID(15));
-      LoadUserWindowBorderGfx(0, _0x214, BG_PLTT_ID(14));
+      LoadMessageBoxGfx(0, 0x200, BG_PLTT_ID(15));
+      LoadUserWindowBorderGfx(0, 0x214, BG_PLTT_ID(14));
       PutWindowTilemap(WIN_MSG);
 }
 
@@ -677,7 +635,7 @@ export function SlotTask_AskQuit(task: any): any {
   DrawDialogueFrame(WIN_MSG, FALSE);
       AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, gText_QuitTheGame, 0, 1, 0, 0);
       CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
-      CreateYesNoMenuParameterized(_0x15, 7, _0x214, _0x180, 0xE, 0xF);
+      CreateYesNoMenuParameterized(0x15, 7, 0x214, 0x180, 0xE, 0xF);
       sSlotMachine.state = SLOTTASK_HANDLE_QUIT_INPUT;
       return FALSE;
 }
@@ -868,8 +826,8 @@ export function TrySelectBias_Regular(): any {
           if (whichBias == 0 && sSlotMachine.luckyGame == TRUE)
           {
               value += 10;
-              if (value > _0x100)
-                  value = _0x100;
+              if (value > 0x100)
+                  value = 0x100;
           }
            
           else if (whichBias == 4 && sSlotMachine.luckyGame == TRUE)
@@ -1277,7 +1235,7 @@ export function ReelTask_ShakingStop(task: any): any {
   sSlotMachine.reelShockOffsets[task.tReelId] = task.tShockMagnitude;
       task.tShockMagnitude = -task.tShockMagnitude;
       task.tTimer++;
-      if ((task.tTimer & _0x3) == 0)
+      if ((task.tTimer & 0x3) == 0)
           task.tShockMagnitude >>= 1;
       if (task.tShockMagnitude == 0)
       {
@@ -1893,7 +1851,7 @@ export function Task_PressStopReelButton(taskId: any): any {
 
 /** static void StopReelButton_Press(struct Task *task, u8 taskId) */
 export function StopReelButton_Press(task: any, taskId: any): any {
-  SetReelButtonTilemap(sReelButtonOffsets[task.data[15]], _0x62, _0x63, _0x72, _0x73);
+  SetReelButtonTilemap(sReelButtonOffsets[task.data[15]], 0x62, 0x63, 0x72, 0x73);
       task.data[0]++;
 }
 
@@ -1905,7 +1863,7 @@ export function StopReelButton_Wait(task: any, taskId: any): any {
 
 /** static void StopReelButton_Unpress(struct Task *task, u8 taskId) */
 export function StopReelButton_Unpress(task: any, taskId: any): any {
-  SetReelButtonTilemap(sReelButtonOffsets[task.data[15]], _0x42, _0x43, _0x52, _0x53);
+  SetReelButtonTilemap(sReelButtonOffsets[task.data[15]], 0x42, 0x43, 0x52, 0x53);
       DestroyTask(taskId);
 }
 
@@ -2104,7 +2062,7 @@ export function PikaPowerBolt_WaitAnim(task: any): any {
           else if (task.tNumBolts == 16)
               r3 = 2, r2 = 2;
           sSelectedPikaPowerTile[r2] = sPikaPowerTileTable[r3][0];
-          LoadBgTilemap(2,sSelectedPikaPowerTile[r2], 2, r5 + _0x40);
+          LoadBgTilemap(2,sSelectedPikaPowerTile[r2], 2, r5 + 0x40);
           DestroyPikaPowerBoltSprite(task.tSpriteId);
           task.tState = PIKABOLT_TASK_IDLE;
           task.tAnimating = 0;
@@ -2123,7 +2081,7 @@ export function PikaPowerBolt_ClearAll(task: any): any {
       if (task.tTimer == 0)
       {
           sSelectedPikaPowerTile[r2] = sPikaPowerTileTable[r3][1];
-          LoadBgTilemap(2,sSelectedPikaPowerTile[r2], 2, r5 + _0x40);
+          LoadBgTilemap(2,sSelectedPikaPowerTile[r2], 2, r5 + 0x40);
           task.tNumBolts--;
       }
       if (++task.tTimer >= 20)
@@ -2156,7 +2114,7 @@ export function LoadPikaPowerMeter(bolts: any): any {
           else if (i == 15)  
               r3 = 2, r1 = 2;
           sSelectedPikaPowerTile[r1] = sPikaPowerTileTable[r3][0];
-          LoadBgTilemap(2,sSelectedPikaPowerTile[r1], 2, r4 + _0x40);
+          LoadBgTilemap(2,sSelectedPikaPowerTile[r1], 2, r4 + 0x40);
       }
       for (; i < 16; i++, r4++)
       {
@@ -2166,7 +2124,7 @@ export function LoadPikaPowerMeter(bolts: any): any {
           else if (i == 15)
               r3 = 2, r1 = 2;
           sSelectedPikaPowerTile[r1] = sPikaPowerTileTable[r3][1];
-          LoadBgTilemap(2,sSelectedPikaPowerTile[r1], 2, r4 + _0x40);
+          LoadBgTilemap(2,sSelectedPikaPowerTile[r1], 2, r4 + 0x40);
       }
       gTasks[sSlotMachine.pikaPowerBoltTaskId].data[1] = bolts;
 }
@@ -2264,10 +2222,10 @@ export function ReelTime_PikachuSpeedUp1(task: any): any {
       SetReelTimePikachuAuraFlashDelay(pikachuAuraFlashDelays[i]);
       StartSpriteAnimIfDifferent(gSprites[sSlotMachine.reelTimePikachuSpriteId], pikachuAnimIds[i]);
        
-      if (task.tRtReelSpeed <= _0x100)
+      if (task.tRtReelSpeed <= 0x100)
       {
           task.tState++;  
-          task.tRtReelSpeed = _0x100;
+          task.tRtReelSpeed = 0x100;
           task.tTimer1 = 0;
       }
 }
@@ -2287,7 +2245,7 @@ export function ReelTime_PikachuSpeedUp2(task: any): any {
 /** static void ReelTime_WaitReel(struct Task *task) */
 export function ReelTime_WaitReel(task: any): any {
   AdvanceReeltimeReel(task.tRtReelSpeed >> 8);
-      task.tRtReelSpeed = task.tRtReelSpeed + _0x80;
+      task.tRtReelSpeed = task.tRtReelSpeed + 0x80;
       if (++task.tTimer1 >= 80)
       {
           task.tState++;  
@@ -2298,7 +2256,7 @@ export function ReelTime_WaitReel(task: any): any {
 /** static void ReelTime_CheckExplode(struct Task *task) */
 export function ReelTime_CheckExplode(task: any): any {
   AdvanceReeltimeReel(task.tRtReelSpeed >> 8);
-      task.tRtReelSpeed = task.tRtReelSpeed + _0x40;
+      task.tRtReelSpeed = task.tRtReelSpeed + 0x40;
       if (++task.tTimer1 >= 40)
       {
           task.tTimer1 = 0;
@@ -2325,13 +2283,13 @@ export function ReelTime_LandOnOutcome(task: any): any {
       if (reeltimePixelOffset)
       {
           reeltimePixelOffset = AdvanceReeltimeReelToNextSymbol(task.tRtReelSpeed >> 8);
-          task.tRtReelSpeed = task.tRtReelSpeed + _0x40;
+          task.tRtReelSpeed = task.tRtReelSpeed + 0x40;
       }
       else if (GetReelTimeSymbol(1) != sSlotMachine.reelTimeDraw)
       {
           AdvanceReeltimeReel(task.tRtReelSpeed >> 8);
           reeltimePixelOffset = sSlotMachine.reeltimePixelOffset % 20;
-          task.tRtReelSpeed = task.tRtReelSpeed + _0x40;
+          task.tRtReelSpeed = task.tRtReelSpeed + 0x40;
       }
       if (reeltimePixelOffset == 0 && GetReelTimeSymbol(1) == sSlotMachine.reelTimeDraw)
       {
@@ -2418,7 +2376,7 @@ export function ReelTime_DestroySprites(task: any): any {
 export function ReelTime_SetReelSpeed(task: any): any {
   if (sSlotMachine.reelSpeed == task.tReelSpeed)
           task.tState++;  
-      else if (sSlotMachine.reelPixelOffsets[0] % REEL_SYMBOL_HEIGHT == 0 && (++task.tTimer3 & _0x07) == 0)
+      else if (sSlotMachine.reelPixelOffsets[0] % REEL_SYMBOL_HEIGHT == 0 && (++task.tTimer3 & 0x07) == 0)
           sSlotMachine.reelSpeed >>= 1;
 }
 
@@ -2448,7 +2406,7 @@ export function ReelTime_ExplodeMachine(task: any): any {
 export function ReelTime_WaitExplode(task: any): any {
   gSpriteCoordOffsetY = task.data[4];
       SetGpuReg(REG_OFFSET_BG1VOFS, task.data[4]);
-      if (task.tTimer1 & _0x01)
+      if (task.tTimer1 & 0x01)
           task.data[4] = -task.data[4];
       if ((++task.tTimer1 & 0x1f) == 0)
           task.data[4] >>= 1;
@@ -2680,7 +2638,7 @@ export function CreateReelSymbolSprites(): any {
   let i: any = null;
       let j: any = null;
       let x: any = null;
-      for (i = 0, x = _0x30; i < 3; i++, x += _0x28)
+      for (i = 0, x = 0x30; i < 3; i++, x += 0x28)
       {
           for (j = 0; j < 120; j += 24)
           {
@@ -2758,16 +2716,16 @@ export function CreateReelTimePikachuSprite(): any {
       if (sImageTable_ReelTimePikachu == NULL)
           sImageTable_ReelTimePikachu = AllocZeroed(0 * 5);
 
-      sImageTable_ReelTimePikachu[0].data = sReelTimeGfxPtr + (0 * _0x800);
-      sImageTable_ReelTimePikachu[0].size = _0x800;
-      sImageTable_ReelTimePikachu[1].data = sReelTimeGfxPtr + (1 * _0x800);
-      sImageTable_ReelTimePikachu[1].size = _0x800;
-      sImageTable_ReelTimePikachu[2].data = sReelTimeGfxPtr + (2 * _0x800);
-      sImageTable_ReelTimePikachu[2].size = _0x800;
-      sImageTable_ReelTimePikachu[3].data = sReelTimeGfxPtr + (3 * _0x800);
-      sImageTable_ReelTimePikachu[3].size = _0x800;
-      sImageTable_ReelTimePikachu[4].data = sReelTimeGfxPtr + (4 * _0x800);
-      sImageTable_ReelTimePikachu[4].size = _0x800;
+      sImageTable_ReelTimePikachu[0].data = sReelTimeGfxPtr + (0 * 0x800);
+      sImageTable_ReelTimePikachu[0].size = 0x800;
+      sImageTable_ReelTimePikachu[1].data = sReelTimeGfxPtr + (1 * 0x800);
+      sImageTable_ReelTimePikachu[1].size = 0x800;
+      sImageTable_ReelTimePikachu[2].data = sReelTimeGfxPtr + (2 * 0x800);
+      sImageTable_ReelTimePikachu[2].size = 0x800;
+      sImageTable_ReelTimePikachu[3].data = sReelTimeGfxPtr + (3 * 0x800);
+      sImageTable_ReelTimePikachu[3].size = 0x800;
+      sImageTable_ReelTimePikachu[4].data = sReelTimeGfxPtr + (4 * 0x800);
+      sImageTable_ReelTimePikachu[4].size = 0x800;
 
       spriteTemplate = sSpriteTemplate_ReelTimePikachu;
       spriteTemplate.images = sImageTable_ReelTimePikachu;
@@ -2803,8 +2761,8 @@ export function CreateReelTimeMachineSprites(): any {
       if (sImageTable_ReelTimeMachineAntennae == NULL)
           sImageTable_ReelTimeMachineAntennae = AllocZeroed(0 * 1);
 
-      sImageTable_ReelTimeMachineAntennae[0].data = sReelTimeGfxPtr + _0x2800;
-      sImageTable_ReelTimeMachineAntennae[0].size = _0x300;
+      sImageTable_ReelTimeMachineAntennae[0].data = sReelTimeGfxPtr + 0x2800;
+      sImageTable_ReelTimeMachineAntennae[0].size = 0x300;
       spriteTemplate = sSpriteTemplate_ReelTimeMachineAntennae;
       spriteTemplate.images = sImageTable_ReelTimeMachineAntennae;
       spriteId = CreateSprite(spriteTemplate, 368, 52, 7);
@@ -2817,8 +2775,8 @@ export function CreateReelTimeMachineSprites(): any {
       if (sImageTable_ReelTimeMachine == NULL)
           sImageTable_ReelTimeMachine = AllocZeroed(0 * 1);
 
-      sImageTable_ReelTimeMachine[0].data = sReelTimeGfxPtr + _0x2800 + _0x300;
-      sImageTable_ReelTimeMachine[0].size = _0x500;
+      sImageTable_ReelTimeMachine[0].data = sReelTimeGfxPtr + 0x2800 + 0x300;
+      sImageTable_ReelTimeMachine[0].size = 0x500;
       spriteTemplate = sSpriteTemplate_ReelTimeMachine;
       spriteTemplate.images = sImageTable_ReelTimeMachine;
       spriteId = CreateSprite(spriteTemplate, 368, 84, 7);
@@ -2838,8 +2796,8 @@ export function CreateBrokenReelTimeMachineSprite(): any {
       if (sImageTable_BrokenReelTimeMachine == NULL)
           sImageTable_BrokenReelTimeMachine = AllocZeroed(0 * 1);
 
-      sImageTable_BrokenReelTimeMachine[0].data = sReelTimeGfxPtr + _0x3000;
-      sImageTable_BrokenReelTimeMachine[0].size = _0x600;
+      sImageTable_BrokenReelTimeMachine[0].data = sReelTimeGfxPtr + 0x3000;
+      sImageTable_BrokenReelTimeMachine[0].size = 0x600;
       spriteTemplate = sSpriteTemplate_BrokenReelTimeMachine;
       spriteTemplate.images = sImageTable_BrokenReelTimeMachine;
       spriteId = CreateSprite(spriteTemplate, 168 - gSpriteCoordOffsetX, 80, 7);
@@ -3048,7 +3006,7 @@ export function DestroyReelTimeExplosionSprite(): any {
 /** static void CreateReelTimeDuckSprites(void) */
 export function CreateReelTimeDuckSprites(): any {
   let i: any = null;
-      const sp: any = [_0x0, _0x40, _0x80, 0xC0];
+      const sp: any = [0x0, 0x40, 0x80, 0xC0];
       for (i = 0; i < ARRAY_COUNT(sSlotMachine.reelTimeDuckSpriteIds); i++)
       {
           let spriteId: any = CreateSprite(sSpriteTemplate_ReelTimeDuck, 80 - gSpriteCoordOffsetX, 68, 0);
@@ -3067,7 +3025,7 @@ export function SpriteCB_ReelTimeDuck(sprite: any): any {
       sprite.x2 = Cos(sprite.data[0], 20);
       sprite.y2 = Sin(sprite.data[0], 6);
       sprite.subpriority = 0;
-      if (sprite.data[0] >= _0x80)
+      if (sprite.data[0] >= 0x80)
       {
           sprite.subpriority = 2;
       }
@@ -3328,9 +3286,9 @@ export function SpriteCB_DigitalDisplay_PokeballRocking(sprite: any): any {
            
       case 1:
           sprite.y += 8;
-          if (sprite.y >= _0x70)
+          if (sprite.y >= 0x70)
           {
-              sprite.y = _0x70;
+              sprite.y = 0x70;
               sprite.sCounter = 16;
               sprite.sState++;
           }
@@ -3353,7 +3311,7 @@ export function SpriteCB_DigitalDisplay_PokeballRocking(sprite: any): any {
               }
           }
           sprite.data[2]++;
-          sprite.data[2] &= _0x07;
+          sprite.data[2] &= 0x07;
           break;
       }
 }
@@ -3368,9 +3326,9 @@ export function SpriteCB_DigitalDisplay_Stop(sprite: any): any {
           break;
       case 1:
           sprite.y += 2;
-          if (sprite.y >= _0x30)
+          if (sprite.y >= 0x30)
           {
-              sprite.y = _0x30;
+              sprite.y = 0x30;
               sprite.sState++;
               sprite.sWaitForAnim = FALSE;
           }
@@ -3384,7 +3342,7 @@ export function SpriteCB_DigitalDisplay_AButtonStop(sprite: any): any {
       {
       case 0:
           sprite.invisible = TRUE;
-          if (++sprite.sCounter > _0x20)
+          if (++sprite.sCounter > 0x20)
           {
               sprite.sState++;
               sprite.sCounter = 5;
@@ -3400,7 +3358,7 @@ export function SpriteCB_DigitalDisplay_AButtonStop(sprite: any): any {
               sprite.sCounter = 0;
           SetGpuReg(REG_OFFSET_MOSAIC, ((sprite.sCounter << 4) | sprite.sCounter) << 8);
           sprite.data[2] &= 0xff;
-          sprite.data[2] += _0x80;
+          sprite.data[2] += 0x80;
           if (sprite.sCounter == 0)
           {
               sprite.sState++;
@@ -3563,9 +3521,9 @@ export function LoadSlotMachineGfx(): any {
   let i: any = null;
 
       LoadReelBackground();
-      sDigitalDisplayGfxPtr = Alloc(_0x3200);
+      sDigitalDisplayGfxPtr = Alloc(0x3200);
       LZDecompressWram(gSlotMachineDigitalDisplay_Gfx, sDigitalDisplayGfxPtr);
-      sReelTimeGfxPtr = Alloc(_0x3600);
+      sReelTimeGfxPtr = Alloc(0x3600);
       LZDecompressWram(sReelTimeGfx, sReelTimeGfxPtr);
       sSlotMachineSpritesheetsPtr = AllocZeroed(0 * ARRAY_COUNT(sSlotMachineSpriteSheets));
       for (i = 0; i < ARRAY_COUNT(sSlotMachineSpriteSheets); i++)
@@ -3575,9 +3533,9 @@ export function LoadSlotMachineGfx(): any {
           sSlotMachineSpritesheetsPtr[i].tag = sSlotMachineSpriteSheets[i].tag;
       }
       sSlotMachineSpritesheetsPtr[GFXTAG_STOP - 1].data = sDigitalDisplayGfxPtr + 0xA00;
-      sSlotMachineSpritesheetsPtr[GFXTAG_BONUS - 1].data = sDigitalDisplayGfxPtr + _0x1400;
-      sSlotMachineSpritesheetsPtr[GFXTAG_BIG - 1].data = sDigitalDisplayGfxPtr + _0x1600;
-      sSlotMachineSpritesheetsPtr[GFXTAG_REG - 1].data = sDigitalDisplayGfxPtr + _0x1900;
+      sSlotMachineSpritesheetsPtr[GFXTAG_BONUS - 1].data = sDigitalDisplayGfxPtr + 0x1400;
+      sSlotMachineSpritesheetsPtr[GFXTAG_BIG - 1].data = sDigitalDisplayGfxPtr + 0x1600;
+      sSlotMachineSpritesheetsPtr[GFXTAG_REG - 1].data = sDigitalDisplayGfxPtr + 0x1900;
       LoadSpriteSheets(sSlotMachineSpritesheetsPtr);
       LoadSpritePalettes(sSlotMachineSpritePalettes);
 }
@@ -3588,24 +3546,24 @@ export function LoadReelBackground(): any {
       let i, j;
 
       sReelBackgroundSpriteSheet = AllocZeroed(0);
-      sReelBackground_Gfx = AllocZeroed(_0x2000);  
+      sReelBackground_Gfx = AllocZeroed(0x2000);  
       dest = sReelBackground_Gfx;
-      for (i = 0; i < _0x40; i++)
+      for (i = 0; i < 0x40; i++)
       {
-          for (j = 0; j < _0x20; j++, dest++)
+          for (j = 0; j < 0x20; j++, dest++)
               dest = sReelBackground_Tilemap[j];
       }
       sReelBackgroundSpriteSheet.data = sReelBackground_Gfx;
-      sReelBackgroundSpriteSheet.size = _0x800;
+      sReelBackgroundSpriteSheet.size = 0x800;
       sReelBackgroundSpriteSheet.tag  = GFXTAG_REEL_BG;
       LoadSpriteSheet(sReelBackgroundSpriteSheet);
 }
 
 /** static void LoadMenuGfx(void) */
 export function LoadMenuGfx(): any {
-  sMenuGfx = Alloc(_0x2200);
+  sMenuGfx = Alloc(0x2200);
       LZDecompressWram(gSlotMachineMenu_Gfx, sMenuGfx);
-      LoadBgTiles(2, sMenuGfx, _0x2200, 0);
+      LoadBgTiles(2, sMenuGfx, 0x2200, 0);
       LoadPalette(gSlotMachineMenu_Pal, BG_PLTT_ID(0), 5 * PLTT_SIZE_4BPP);
       LoadPalette(sUnkPalette, BG_PLTT_ID(13), PLTT_SIZE_4BPP);
 }
@@ -3618,7 +3576,7 @@ export function LoadMenuAndReelOverlayTilemaps(): any {
 
 /** static void LoadSlotMachineMenuTilemap(void) */
 export function LoadSlotMachineMenuTilemap(): any {
-  LoadBgTilemap(2, gSlotMachineMenu_Tilemap, _0x500, 0);
+  LoadBgTilemap(2, gSlotMachineMenu_Tilemap, 0x500, 0);
 }
 
 /** static void LoadSlotMachineReelOverlay(void) */
@@ -3658,7 +3616,7 @@ export function SetReelButtonTilemap(offset: any, topLeft: any, topRight: any, b
 
 /** static void LoadInfoBoxTilemap(void) */
 export function LoadInfoBoxTilemap(): any {
-  LoadBgTilemap(2, gSlotMachineInfoBox_Tilemap, _0x500, 0);
+  LoadBgTilemap(2, gSlotMachineInfoBox_Tilemap, 0x500, 0);
       HideBg(3);
 }
 
@@ -3696,73 +3654,73 @@ export function SetDigitalDisplayImagePtrs(): any {
 export function AllocDigitalDisplayGfx(): any {
   sImageTable_DigitalDisplay_Reel = AllocZeroed(0 * 1);
       sImageTable_DigitalDisplay_Reel[0].data = sDigitalDisplayGfxPtr;
-      sImageTable_DigitalDisplay_Reel[0].size = _0x600;
+      sImageTable_DigitalDisplay_Reel[0].size = 0x600;
 
       sImageTable_DigitalDisplay_Time = AllocZeroed(0 * 1);
-      sImageTable_DigitalDisplay_Time[0].data = sDigitalDisplayGfxPtr + _0x600;
-      sImageTable_DigitalDisplay_Time[0].size = _0x200;
+      sImageTable_DigitalDisplay_Time[0].data = sDigitalDisplayGfxPtr + 0x600;
+      sImageTable_DigitalDisplay_Time[0].size = 0x200;
 
       sImageTable_DigitalDisplay_Insert = AllocZeroed(0 * 1);
-      sImageTable_DigitalDisplay_Insert[0].data = sDigitalDisplayGfxPtr + _0x800;
-      sImageTable_DigitalDisplay_Insert[0].size = _0x200;
+      sImageTable_DigitalDisplay_Insert[0].data = sDigitalDisplayGfxPtr + 0x800;
+      sImageTable_DigitalDisplay_Insert[0].size = 0x200;
 
       sImageTable_DigitalDisplay_Stop = AllocZeroed(0 * 1);
       sImageTable_DigitalDisplay_Stop[0].data = sDigitalDisplayGfxPtr + 0xA00;
-      sImageTable_DigitalDisplay_Stop[0].size = _0x200;
+      sImageTable_DigitalDisplay_Stop[0].size = 0x200;
 
       sImageTable_DigitalDisplay_Win = AllocZeroed(0 * 1);
       sImageTable_DigitalDisplay_Win[0].data = sDigitalDisplayGfxPtr + 0xC00;
-      sImageTable_DigitalDisplay_Win[0].size = _0x300;
+      sImageTable_DigitalDisplay_Win[0].size = 0x300;
 
       sImageTable_DigitalDisplay_Lose = AllocZeroed(0 * 1);
-      sImageTable_DigitalDisplay_Lose[0].data = sDigitalDisplayGfxPtr + _0x1000;
-      sImageTable_DigitalDisplay_Lose[0].size = _0x400;
+      sImageTable_DigitalDisplay_Lose[0].data = sDigitalDisplayGfxPtr + 0x1000;
+      sImageTable_DigitalDisplay_Lose[0].size = 0x400;
 
       sImageTable_DigitalDisplay_Bonus = AllocZeroed(0 * 1);
-      sImageTable_DigitalDisplay_Bonus[0].data = sDigitalDisplayGfxPtr + _0x1400;
-      sImageTable_DigitalDisplay_Bonus[0].size = _0x200;
+      sImageTable_DigitalDisplay_Bonus[0].data = sDigitalDisplayGfxPtr + 0x1400;
+      sImageTable_DigitalDisplay_Bonus[0].size = 0x200;
 
       sImageTable_DigitalDisplay_Big = AllocZeroed(0 * 1);
-      sImageTable_DigitalDisplay_Big[0].data = sDigitalDisplayGfxPtr + _0x1600;
-      sImageTable_DigitalDisplay_Big[0].size = _0x300;
+      sImageTable_DigitalDisplay_Big[0].data = sDigitalDisplayGfxPtr + 0x1600;
+      sImageTable_DigitalDisplay_Big[0].size = 0x300;
 
       sImageTable_DigitalDisplay_Reg = AllocZeroed(0 * 1);
-      sImageTable_DigitalDisplay_Reg[0].data = sDigitalDisplayGfxPtr + _0x1900;
-      sImageTable_DigitalDisplay_Reg[0].size = _0x300;
+      sImageTable_DigitalDisplay_Reg[0].data = sDigitalDisplayGfxPtr + 0x1900;
+      sImageTable_DigitalDisplay_Reg[0].size = 0x300;
 
       sImageTable_DigitalDisplay_AButton = AllocZeroed(0 * 2);
       sImageTable_DigitalDisplay_AButton[0].data = sDigitalDisplayGfxPtr + 0x1C00;
-      sImageTable_DigitalDisplay_AButton[0].size = _0x200;
+      sImageTable_DigitalDisplay_AButton[0].size = 0x200;
       sImageTable_DigitalDisplay_AButton[1].data = sDigitalDisplayGfxPtr + 0x1E00;
-      sImageTable_DigitalDisplay_AButton[1].size = _0x200;
+      sImageTable_DigitalDisplay_AButton[1].size = 0x200;
 
       sImageTable_DigitalDisplay_Smoke = AllocZeroed(0 * 1);
-      sImageTable_DigitalDisplay_Smoke[0].data = sDigitalDisplayGfxPtr + _0x2000;
+      sImageTable_DigitalDisplay_Smoke[0].data = sDigitalDisplayGfxPtr + 0x2000;
       sImageTable_DigitalDisplay_Smoke[0].size = 640;
 
       sImageTable_DigitalDisplay_Number = AllocZeroed(0 * 5);
-      sImageTable_DigitalDisplay_Number[0].data = sDigitalDisplayGfxPtr + _0x2280;
-      sImageTable_DigitalDisplay_Number[0].size = _0x80;
-      sImageTable_DigitalDisplay_Number[1].data = sDigitalDisplayGfxPtr + _0x2300;
-      sImageTable_DigitalDisplay_Number[1].size = _0x80;
-      sImageTable_DigitalDisplay_Number[2].data = sDigitalDisplayGfxPtr + _0x2380;
-      sImageTable_DigitalDisplay_Number[2].size = _0x80;
-      sImageTable_DigitalDisplay_Number[3].data = sDigitalDisplayGfxPtr + _0x2400;
-      sImageTable_DigitalDisplay_Number[3].size = _0x80;
-      sImageTable_DigitalDisplay_Number[4].data = sDigitalDisplayGfxPtr + _0x2480;
-      sImageTable_DigitalDisplay_Number[4].size = _0x80;
+      sImageTable_DigitalDisplay_Number[0].data = sDigitalDisplayGfxPtr + 0x2280;
+      sImageTable_DigitalDisplay_Number[0].size = 0x80;
+      sImageTable_DigitalDisplay_Number[1].data = sDigitalDisplayGfxPtr + 0x2300;
+      sImageTable_DigitalDisplay_Number[1].size = 0x80;
+      sImageTable_DigitalDisplay_Number[2].data = sDigitalDisplayGfxPtr + 0x2380;
+      sImageTable_DigitalDisplay_Number[2].size = 0x80;
+      sImageTable_DigitalDisplay_Number[3].data = sDigitalDisplayGfxPtr + 0x2400;
+      sImageTable_DigitalDisplay_Number[3].size = 0x80;
+      sImageTable_DigitalDisplay_Number[4].data = sDigitalDisplayGfxPtr + 0x2480;
+      sImageTable_DigitalDisplay_Number[4].size = 0x80;
 
       sImageTable_DigitalDisplay_Pokeball = AllocZeroed(0 * 2);
-      sImageTable_DigitalDisplay_Pokeball[0].data = sDigitalDisplayGfxPtr + _0x2600;
-      sImageTable_DigitalDisplay_Pokeball[0].size = _0x480;
+      sImageTable_DigitalDisplay_Pokeball[0].data = sDigitalDisplayGfxPtr + 0x2600;
+      sImageTable_DigitalDisplay_Pokeball[0].size = 0x480;
       sImageTable_DigitalDisplay_Pokeball[1].data = sDigitalDisplayGfxPtr + 10880;
-      sImageTable_DigitalDisplay_Pokeball[1].size = _0x480;
+      sImageTable_DigitalDisplay_Pokeball[1].size = 0x480;
 
       sImageTable_DigitalDisplay_DPad = AllocZeroed(0 * 2);
       sImageTable_DigitalDisplay_DPad[0].data = sDigitalDisplayGfxPtr + 0x2F00;
-      sImageTable_DigitalDisplay_DPad[0].size = _0x180;
-      sImageTable_DigitalDisplay_DPad[1].data = sDigitalDisplayGfxPtr + _0x3080;
-      sImageTable_DigitalDisplay_DPad[1].size = _0x180;
+      sImageTable_DigitalDisplay_DPad[0].size = 0x180;
+      sImageTable_DigitalDisplay_DPad[1].data = sDigitalDisplayGfxPtr + 0x3080;
+      sImageTable_DigitalDisplay_DPad[1].size = 0x180;
 }
 
 // ─── callsTo manifest (= 224 unique callees) ───────────────────────

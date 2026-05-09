@@ -15,60 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinter, AddTextPrinterForMessage_2, AddTextPrinterWithCustomSpeedForMessage,
-  AddWindow, AllocZeroed, AnimateSprites, AreBattleTowerLinkSpeciesSame,
-  ArePlayerFieldControlsLocked, BG_PLTT_ID, BeginNormalPaletteFade, BlitMenuInfoIcon,
-  BuildOamBuffer, CB2_StartCreateTradeMenu, ChooseMonForTradingBoard, CleanupOverworldWindowsAndTilemaps,
-  ClearStdWindowAndFrame, ClearWindowTilemap, ConvertIntToDecimalStringN, ConvertInternationalString,
-  CopyBgTilemapBufferToVram, CopyEasyChatWord, CopyHostRfuGameDataAndUsername, CopyTrainerCardData,
-  CopyWindowToVram, CreateTask, CreateTask_RfuReconnectWithParent, CreateUnionRoomPlayerSprites,
-  CreateWirelessStatusIndicatorSprite, DestroyListMenuTask, DestroyTask, DestroyUnionRoomPlayerObjects,
-  DestroyUnionRoomPlayerSprites, DestroyWirelessStatusIndicatorSprite, DisplayYesNoMenuDefaultYes, DoMysteryGiftYesNo,
-  DrawDialogueFrame, DrawStdWindowFrame, DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset,
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr, EnterUnionRoomChat, EraseYesNoWindow, FALSE,
-  FadeScreen, FillBgTilemapBufferRect, FillWindowPixelBuffer, Free,
-  FreezeObjects_WaitForPlayer, FuncIsActiveTask, GROUP_MAX, GROUP_MIN,
-  GROUP_MIN2, GetBlockReceivedStatus, GetCursorSelectionMonId, GetHostRfuGameData,
-  GetLinkPlayerCount, GetLinkPlayerCountAsBitFlags, GetLinkPlayerInfoFlags, GetMonData,
-  GetMultiplayerId, GetMysteryGiftBaseBlock, GetOtherPlayersInfoFlags, GetPartyMenuType,
-  GetStringRightAlignXOffset, GetUnionRoomTrainerClass, GetWonderCardFlagID, GetXYCoordsOneStepInFrontOfPlayer,
-  HandleUnionRoomPlayerRefresh, HasTrainerLeftPartnersList, HealPlayerParty, IncrementGameStat,
-  InitChooseHalfPartyForBattle, InitUnionRoomPlayerObjects, InitializeRfuLinkManager_EnterUnionRoom, InitializeRfuLinkManager_JoinGroup,
-  InitializeRfuLinkManager_LinkLeader, Intl_GetListMenuWidth, IsLinkTaskFinished, IsRfuCommunicatingWithAllChildren,
-  IsUnionRoomListenTaskActive, JOY_NEW, LINK_GROUP_CAPACITY, LinkRfu_CreateConnectionAsParent,
-  LinkRfu_Shutdown, LinkRfu_StopManagerAndFinalizeSlots, LinkRfu_StopManagerBeforeEnteringChat, ListMenuInit,
-  ListMenuLoadStdPalAt, ListMenu_ProcessInput, LmanAcceptSlotFlagIsNotZero, LoadMessageBoxAndBorderGfx,
-  LoadPlayerBag, LoadWirelessStatusIndicatorSpriteGfx, LockPlayerFieldControls, MAP_GROUP,
-  MAP_NUM, MAX_RFU_PLAYERS, MG_AddMessageTextPrinter, MG_DrawTextBorder,
-  Menu_ProcessInputNoWrapClearOnChoose, MysteryGift_DisableStats, MysteryGift_TryEnableStatsByFlagId, NULL,
-  OpenLink, PALETTES_ALL, PIXEL_FILL, PlayBattleBGM,
-  PlaySE, PlayerHasMetTrainerBefore, PrintMysteryGiftMenuMessage, PutWindowTilemap,
-  Random, RedrawListMenu, RemoveWindow, RequestDisconnectSlotByTrainerNameAndId,
-  ResetBlockReceivedFlags, ResetHostRfuGameData, RfuGetStatus, RfuHasErrored,
-  RfuSetIgnoreError, RfuSetStatus, RfuTryDisconnectLeavingChildren, Rfu_DisconnectPlayerById,
-  Rfu_GetCompatiblePlayerData, Rfu_GetWonderDistributorPlayerData, Rfu_SendPacket, RunTasks,
-  RunTextPrinters, RunTextPrintersAndIsPrinter0Active, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN,
-  STR_CONV_MODE_RIGHT_ALIGN, SaveLinkTrainerNames, SavePlayerParty, ScheduleUnionRoomPlayerRefresh,
-  ScriptContext_Enable, ScriptContext_IsEnabled, SendBlock, SendBlockRequest,
-  SendLeaveGroupNotice, SendRfuStatusToPartner, SetCableClubWarp, SetCloseLinkCallback,
-  SetDynamicWarpWithCoords, SetHostRfuGameData, SetHostRfuWonderFlags, SetLinkStandbyCallback,
-  SetMainCallback2, SetTilesAroundUnionRoomPlayersPassable, SetTradeBoardRegisteredMonInfo, SetWarpDestination,
-  SetWirelessCommType1, ShowTrainerCardInLink, StartBerryCrush, StartDodrioBerryPicking,
-  StartPokemonJump, StopUnionRoomLinkManager, StringAppend, StringCopy,
-  StringCopy_PlayerName, StringExpandPlaceholders, TRUE, TrainerCard_GenerateCardForLinkPlayer,
-  TryConnectToUnionRoomParent, TryInteractWithUnionRoomMember, UnionRoom_UnlockPlayerAndChatPartner, UnlockPlayerFieldControls,
-  UpdateGameData_GroupLockedIn, UpdateGameData_SetActivity, UpdatePaletteFade, UpdateUnionRoomMemberFacing,
-  VarSet, WaitRfuState, WaitSendRfuStatusToPartner, WarpIntoMap,
-  memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void PrintNumPlayersWaitingForMsg(u8 windowId, u8 capacityCode, u8 stringId) */
 export function PrintNumPlayersWaitingForMsg(windowId: any, capacityCode: any, stringId: any): any {
   FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
@@ -3733,7 +3679,7 @@ export function PrintGroupMemberOnWindow(windowId: any, x: any, y: any, player: 
           ConvertIntToDecimalStringN(trainerId, player.rfu.data.compatibility.playerTrainerId[0] | (player.rfu.data.compatibility.playerTrainerId[1] << 8), STR_CONV_MODE_LEADING_ZEROS, 5);
           StringCopy(gStringVar4, sText_ID);
           StringAppend(gStringVar4, trainerId);
-          PrintUnionRoomText(windowId, FONT_NORMAL, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, _0x88), y, colorIdx);
+          PrintUnionRoomText(windowId, FONT_NORMAL, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x88), y, colorIdx);
       }
 }
 
@@ -3748,7 +3694,7 @@ export function PrintGroupCandidateOnWindow(windowId: any, x: any, y: any, playe
           ConvertIntToDecimalStringN(trainerId, player.rfu.data.compatibility.playerTrainerId[0] | (player.rfu.data.compatibility.playerTrainerId[1] << 8), STR_CONV_MODE_LEADING_ZEROS, 5);
           StringCopy(gStringVar4, sText_ID);
           StringAppend(gStringVar4, trainerId);
-          PrintUnionRoomText(windowId, FONT_NORMAL, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, _0x68), y, colorIdx);
+          PrintUnionRoomText(windowId, FONT_NORMAL, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x68), y, colorIdx);
       }
 }
 

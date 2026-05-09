@@ -15,16 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  Callback_Dummy_M, NULL, REG_TMCNT_H, REG_TMCNT_L,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void IntrSIO32(void) */
 export function IntrSIO32(): any {
   if (gSTWIStatus.state == 10)
@@ -51,7 +41,7 @@ export function sio32intr_clock_master(): any {
 
       if (gSTWIStatus.state == 0)  
       {
-          if (regSIODATA32 == _0x80000000)
+          if (regSIODATA32 == 0x80000000)
           {
               if (gSTWIStatus.reqNext <= gSTWIStatus.reqLength)
               {
@@ -61,7 +51,7 @@ export function sio32intr_clock_master(): any {
               else
               {
                   gSTWIStatus.state = 1;  
-                  REG_SIODATA32 = _0x80000000;
+                  REG_SIODATA32 = 0x80000000;
               }
           }
           else
@@ -73,7 +63,7 @@ export function sio32intr_clock_master(): any {
       }
       else if (gSTWIStatus.state == 1)  
       {
-          if ((regSIODATA32 & 0xFFFF0000) == _0x99660000)
+          if ((regSIODATA32 & 0xFFFF0000) == 0x99660000)
           {
               gSTWIStatus.ackNext = 0;
               (gSTWIStatus.rxPacket)[gSTWIStatus.ackNext] = regSIODATA32;
@@ -83,7 +73,7 @@ export function sio32intr_clock_master(): any {
               if ((ackLen = gSTWIStatus.ackLength) >= gSTWIStatus.ackNext)
               {
                   gSTWIStatus.state = 2;  
-                  REG_SIODATA32 = _0x80000000;
+                  REG_SIODATA32 = 0x80000000;
               }
               else
               {
@@ -104,7 +94,7 @@ export function sio32intr_clock_master(): any {
           if (gSTWIStatus.ackLength < gSTWIStatus.ackNext)
               gSTWIStatus.state = 3;  
           else
-              REG_SIODATA32 = _0x80000000;
+              REG_SIODATA32 = 0x80000000;
       }
 
       if (handshake_wait(1) == 1)
@@ -120,15 +110,15 @@ export function sio32intr_clock_master(): any {
       if (gSTWIStatus.state == 3)  
       {
           if (
-              gSTWIStatus.ackActiveCommand == (_0x80 | ID_MS_CHANGE_REQ)
-           || gSTWIStatus.ackActiveCommand == (_0x80 | ID_DATA_TX_AND_CHANGE_REQ)
-           || gSTWIStatus.ackActiveCommand == (_0x80 | ID_UNK35_REQ)
-           || gSTWIStatus.ackActiveCommand == (_0x80 | ID_RESUME_RETRANSMIT_AND_CHANGE_REQ)
+              gSTWIStatus.ackActiveCommand == (0x80 | ID_MS_CHANGE_REQ)
+           || gSTWIStatus.ackActiveCommand == (0x80 | ID_DATA_TX_AND_CHANGE_REQ)
+           || gSTWIStatus.ackActiveCommand == (0x80 | ID_UNK35_REQ)
+           || gSTWIStatus.ackActiveCommand == (0x80 | ID_RESUME_RETRANSMIT_AND_CHANGE_REQ)
           )
           {
 
               gSTWIStatus.msMode = AGB_CLK_SLAVE;
-              REG_SIODATA32 = _0x80000000;
+              REG_SIODATA32 = 0x80000000;
               REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_57600_BPS;
               REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_57600_BPS | SIO_ENABLE;
               gSTWIStatus.state = 5;  
@@ -174,7 +164,7 @@ export function sio32intr_clock_slave(): any {
       {
           (gSTWIStatus.rxPacket)[0] = regSIODATA32;
           gSTWIStatus.reqNext = 1;
-          r0 = _0x99660000;
+          r0 = 0x99660000;
            
           reqLen = (regSIODATA32 >> 16);
           if (reqLen == (r0 >> 16))
@@ -192,14 +182,14 @@ export function sio32intr_clock_slave(): any {
                    || gSTWIStatus.reqActiveCommand == ID_UNK36_REQ
                   )
                   {
-                      gSTWIStatus.ackActiveCommand = gSTWIStatus.reqActiveCommand + _0x80;
-                      (gSTWIStatus.txPacket)[0] = _0x99660000 + gSTWIStatus.ackActiveCommand;
+                      gSTWIStatus.ackActiveCommand = gSTWIStatus.reqActiveCommand + 0x80;
+                      (gSTWIStatus.txPacket)[0] = 0x99660000 + gSTWIStatus.ackActiveCommand;
                       gSTWIStatus.ackLength = 0;
                   }
                   else
                   {
                       (gSTWIStatus.txPacket)[0] = 0x996601EE;
-                      if (gSTWIStatus.reqActiveCommand >= _0x10 && gSTWIStatus.reqActiveCommand <= 0x3D)
+                      if (gSTWIStatus.reqActiveCommand >= 0x10 && gSTWIStatus.reqActiveCommand <= 0x3D)
                       {
                           (gSTWIStatus.txPacket)[1] = 1;
                       }
@@ -216,7 +206,7 @@ export function sio32intr_clock_slave(): any {
               }
               else
               {
-                  REG_SIODATA32 = _0x80000000;
+                  REG_SIODATA32 = 0x80000000;
                   gSTWIStatus.reqNext = 1;
                   gSTWIStatus.state = 6;  
               }
@@ -240,14 +230,14 @@ export function sio32intr_clock_slave(): any {
                || gSTWIStatus.reqActiveCommand == ID_UNK36_REQ
               )
               {
-                  gSTWIStatus.ackActiveCommand = gSTWIStatus.reqActiveCommand + _0x80;
-                  (gSTWIStatus.txPacket)[0] = _0x99660000 | gSTWIStatus.ackActiveCommand;
+                  gSTWIStatus.ackActiveCommand = gSTWIStatus.reqActiveCommand + 0x80;
+                  (gSTWIStatus.txPacket)[0] = 0x99660000 | gSTWIStatus.ackActiveCommand;
                   gSTWIStatus.ackLength = 0;
               }
               else
               {
                   (gSTWIStatus.txPacket)[0] = 0x996601EE;
-                  if (gSTWIStatus.reqActiveCommand >= _0x10 && gSTWIStatus.reqActiveCommand <= 0x3D)
+                  if (gSTWIStatus.reqActiveCommand >= 0x10 && gSTWIStatus.reqActiveCommand <= 0x3D)
                   {
                       (gSTWIStatus.txPacket)[1] = 1;
                   }
@@ -264,12 +254,12 @@ export function sio32intr_clock_slave(): any {
           }
           else
           {
-              REG_SIODATA32 = _0x80000000;
+              REG_SIODATA32 = 0x80000000;
           }
       }
       else if (gSTWIStatus.state == 7)  
       {
-          if (regSIODATA32 == _0x80000000)
+          if (regSIODATA32 == 0x80000000)
           {
               if (gSTWIStatus.ackLength < gSTWIStatus.ackNext)
               {
@@ -320,7 +310,7 @@ export function sio32intr_clock_slave(): any {
           REG_IME = 0;
           if (REG_TM0CNT_H & TIMER_ENABLE)
           {
-              if ((REG_TM0CNT_H & _0x03) == TIMER_1CLK)
+              if ((REG_TM0CNT_H & 0x03) == TIMER_1CLK)
               {
                   while (REG_TM0CNT_L > 0xFF9B);
               }

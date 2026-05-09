@@ -15,33 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocSubstruct,
-  AreLeftHeaderSpritesMoving, BG_PLTT_ID, ChangeBgX, ChangeBgY,
-  CheckBoxMonSanityAt, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded,
-  CopyToBgTilemapBuffer, CopyWindowToVram, CreateLoopedTask, CreatePokenavList,
-  DecompressAndCopyTileDataToVram, DestroyPokenavList, DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset,
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr, FALSE, FreePokenavSubstruct, FreeTempTileDataBuffersIfPossible,
-  GetBoxMonData, GetBoxMonDataAt, GetBoxMonGender, GetBoxedMonPtr,
-  GetLevelFromBoxMonExp, GetLevelFromMonExp, GetMonData, GetMonGender,
-  GetSelectedConditionSearch, GetStringClearToWidth, GetSubstructPtr, HideBg,
-  InitBgTemplates, IsCreatePokenavListTaskActive, IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive,
-  IsPaletteFadeActive, JOY_NEW, JOY_REPEAT, LT_SET_STATE,
-  LoadLeftHeaderGfxForIndex, MainMenuLoopedTaskIsBusy, NULL, PLTT_SIZE_4BPP,
-  PlaySE, PokenavFadeScreen, PokenavList_GetSelectedIndex, PokenavList_IsMoveWindowTaskActive,
-  PokenavList_MoveCursorDown, PokenavList_MoveCursorUp, PokenavList_PageDown, PokenavList_PageUp,
-  PrintHelpBarText, PutWindowTilemap, RemoveWindow, STR_CONV_MODE_LEFT_ALIGN,
-  STR_CONV_MODE_RIGHT_ALIGN, SetBgTilemapBuffer, SetLeftHeaderSpritesInvisibility, ShowBg,
-  ShowLeftHeaderGfx, SlideMenuHeaderDown, StringCopy, StringGet_Nickname,
-  TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_ConditionSearch(void) */
 export function PokenavCallback_Init_ConditionSearch(): any {
   let menu: any = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS, 0);

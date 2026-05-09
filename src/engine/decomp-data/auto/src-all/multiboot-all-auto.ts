@@ -15,16 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  MultiBoot, REG_SIOMULTI,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void MultiBootInit(struct MultiBootParam *mp) */
 export function MultiBootInit(mp: any): any {
   mp.client_bit = 0;
@@ -219,7 +209,7 @@ export function MultiBootMain(mp: any): any {
 
           mp.probe_count = 0xd1;
 
-          k = _0x11;
+          k = 0x11;
           for (i = MULTIBOOT_NCHILD; i != 0; i--)
           {
               k += mp.client_data[i - 1];
@@ -364,7 +354,7 @@ export function MultiBootStartMaster(mp: any, srcp: any, length: any, palette_co
           i = (palette_color << 3) | (3 - palette_speed);
           break;
       case 0:
-          i = _0x38 | palette_color;
+          i = 0x38 | palette_color;
           break;
       case 1:
       case 2:
@@ -374,7 +364,7 @@ export function MultiBootStartMaster(mp: any, srcp: any, length: any, palette_co
           break;
       }
 
-      mp.palette_data = ((i & 0x3f) << 1) | _0x81;
+      mp.palette_data = ((i & 0x3f) << 1) | 0x81;
       mp.probe_count = 0xd0;
 }
 
@@ -397,9 +387,9 @@ export function MultiBootHandShake(mp: any): any {
       // LABEL: case_0xe0:
       case 0xe0:
           mp.probe_count = 0xe1;
-          must_data = _0x0000;
-          send_data = _0x100000;
-          return MultiBootSend(mp, _0x0000);
+          must_data = 0x0000;
+          send_data = 0x100000;
+          return MultiBootSend(mp, 0x0000);
 
       default:
           for (i = MULTIBOOT_NCHILD; i != 0; i--)
@@ -413,7 +403,7 @@ export function MultiBootHandShake(mp: any): any {
           }
           mp.probe_count++;
           must_data = send_data & 0xffff;
-          if (send_data == _0x0000)
+          if (send_data == 0x0000)
           {
               must_data = mp.masterp[0xac] | (mp.masterp[0xad] << 8);
               send_data = must_data << 5;

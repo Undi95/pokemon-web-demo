@@ -15,23 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  DELAY, FLASH_WRITE, PollFlashStatus, ProgramFlashSector,
-  REG_TMCNT_L,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SwitchFlashBank(u8 bankNum) */
 export function SwitchFlashBank(bankNum: any): any {
-  FLASH_WRITE(_0x5555, 0xAA);
-      FLASH_WRITE(0x2AAA, _0x55);
-      FLASH_WRITE(_0x5555, 0xB0);
-      FLASH_WRITE(_0x0000, bankNum);
+  FLASH_WRITE(0x5555, 0xAA);
+      FLASH_WRITE(0x2AAA, 0x55);
+      FLASH_WRITE(0x5555, 0xB0);
+      FLASH_WRITE(0x0000, bankNum);
 }
 
 /** u16 ReadFlashId(void) */
@@ -44,19 +33,19 @@ export function ReadFlashId(): any {
       readFlash1 = (readFlash1Buffer + 1);
 
        
-      FLASH_WRITE(_0x5555, 0xAA);
-      FLASH_WRITE(0x2AAA, _0x55);
-      FLASH_WRITE(_0x5555, _0x90);
+      FLASH_WRITE(0x5555, 0xAA);
+      FLASH_WRITE(0x2AAA, 0x55);
+      FLASH_WRITE(0x5555, 0x90);
       DELAY();
 
       flashId = readFlash1(FLASH_BASE + 1) << 8;
       flashId |= readFlash1(FLASH_BASE);
 
        
-      FLASH_WRITE(_0x5555, 0xAA);
-      FLASH_WRITE(0x2AAA, _0x55);
-      FLASH_WRITE(_0x5555, 0xF0);
-      FLASH_WRITE(_0x5555, 0xF0);
+      FLASH_WRITE(0x5555, 0xAA);
+      FLASH_WRITE(0x2AAA, 0x55);
+      FLASH_WRITE(0x5555, 0xF0);
+      FLASH_WRITE(0x5555, 0xF0);
       DELAY();
 
       return flashId;

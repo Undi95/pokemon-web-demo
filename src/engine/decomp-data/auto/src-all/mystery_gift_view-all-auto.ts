@@ -15,31 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddScrollIndicatorArrowPair, AddTextPrinterParameterized3, AddWindow,
-  AllocZeroed, BG_PLTT_ID, BeginNormalPaletteFade, ChangeBgY,
-  ClearGpuRegBits, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyRectToBgTilemapBufferRect,
-  CopyWindowToVram, CreateMonIconNoPersonality, CreateSprite, DISPCNT_WIN0_ON,
-  DISPLAY_WIDTH, DecompressAndCopyTileDataToVram, DestroySprite, FALSE,
-  FREE_AND_SET_NULL, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAndDestroyMonIconSprite,
-  FreeMonIconPalettes, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
-  GetFontAttribute, GetIconSpeciesNoPersonality, GetStringWidth, GetTextWindowPalette,
-  HideBg, LZ77UnCompWram, LoadCompressedSpriteSheetUsingHeap, LoadMonIconPalettes,
-  LoadPalette, LoadSpritePalette, MG_DrawCheckerboardPattern, NULL,
-  PALETTES_ALL, PLTT_SIZE_4BPP, PrintMysteryGiftOrEReaderHeader, PutWindowTilemap,
-  REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ,
-  REG_OFFSET_WINOUT, RemoveScrollIndicatorArrowPair, RemoveWindow, STR_CONV_MODE_LEADING_ZEROS,
-  STR_CONV_MODE_LEFT_ALIGN, SetGpuReg, SetGpuRegBits, ShowBg,
-  SpriteCallbackDummy, TASK_NONE, TRUE, UpdatePaletteFade,
-  WIN_RANGE, memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 WonderCard_Init(struct WonderCard *card, struct WonderCardMetadata *metadata) */
 export function WonderCard_Init(card: any, metadata: any): any {
   if (card == NULL || metadata == NULL)
@@ -82,13 +57,13 @@ export function WonderCard_Enter(): any {
               return 0;
           break;
       case 2:
-          FillBgTilemapBufferRect_Palette0(0, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-          FillBgTilemapBufferRect_Palette0(1, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-          FillBgTilemapBufferRect_Palette0(2, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(0, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(1, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(2, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
           CopyBgTilemapBufferToVram(0);
           CopyBgTilemapBufferToVram(1);
           CopyBgTilemapBufferToVram(2);
-          DecompressAndCopyTileDataToVram(2, sWonderCardData.gfx.tiles, 0, _0x008, 0);
+          DecompressAndCopyTileDataToVram(2, sWonderCardData.gfx.tiles, 0, 0x008, 0);
           sWonderCardData.windowIds[CARD_WIN_HEADER] = AddWindow(sCard_WindowTemplates[CARD_WIN_HEADER]);
           sWonderCardData.windowIds[CARD_WIN_BODY] = AddWindow(sCard_WindowTemplates[CARD_WIN_BODY]);
           sWonderCardData.windowIds[CARD_WIN_FOOTER] = AddWindow(sCard_WindowTemplates[CARD_WIN_FOOTER]);
@@ -100,7 +75,7 @@ export function WonderCard_Enter(): any {
           gPaletteFade.bufferTransferDisabled = TRUE;
           LoadPalette(sWonderCardData.gfx.pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
           LZ77UnCompWram(sWonderCardData.gfx.map, sWonderCardData.bgTilemapBuffer);
-          CopyRectToBgTilemapBufferRect(2, sWonderCardData.bgTilemapBuffer, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT, 1, _0x008, 0);
+          CopyRectToBgTilemapBufferRect(2, sWonderCardData.bgTilemapBuffer, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT, 1, 0x008, 0);
           CopyBgTilemapBufferToVram(2);
           break;
       case 4:
@@ -147,9 +122,9 @@ export function WonderCard_Exit(useCancel: any): any {
               return 0;
           break;
       case 2:
-          FillBgTilemapBufferRect_Palette0(0, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-          FillBgTilemapBufferRect_Palette0(1, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-          FillBgTilemapBufferRect_Palette0(2, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(0, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(1, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(2, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
           CopyBgTilemapBufferToVram(0);
           CopyBgTilemapBufferToVram(1);
           CopyBgTilemapBufferToVram(2);
@@ -440,10 +415,10 @@ export function WonderNews_Enter(): any {
           SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);
           break;
       case 2:
-          FillBgTilemapBufferRect_Palette0(0, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-          FillBgTilemapBufferRect_Palette0(1, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-          FillBgTilemapBufferRect_Palette0(2, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-          FillBgTilemapBufferRect_Palette0(3, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(0, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(1, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(2, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(3, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
           CopyBgTilemapBufferToVram(0);
           CopyBgTilemapBufferToVram(1);
           CopyBgTilemapBufferToVram(2);
@@ -512,10 +487,10 @@ export function WonderNews_Exit(useCancel: any): any {
           ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_WIN0_ON);
           break;
       case 2:
-          FillBgTilemapBufferRect_Palette0(0, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-          FillBgTilemapBufferRect_Palette0(1, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
-          FillBgTilemapBufferRect_Palette0(2, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT + 4);
-          FillBgTilemapBufferRect_Palette0(3, _0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT + 4);
+          FillBgTilemapBufferRect_Palette0(0, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(1, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT);
+          FillBgTilemapBufferRect_Palette0(2, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT + 4);
+          FillBgTilemapBufferRect_Palette0(3, 0x000, 0, 0, DISPLAY_TILE_WIDTH, DISPLAY_TILE_HEIGHT + 4);
           CopyBgTilemapBufferToVram(0);
           CopyBgTilemapBufferToVram(1);
           CopyBgTilemapBufferToVram(2);

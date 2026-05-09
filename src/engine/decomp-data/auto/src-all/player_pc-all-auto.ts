@@ -15,41 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AddItemIconSprite, AddPCItem,
-  AddScrollIndicatorArrowPairParameterized, AddTextPrinterParameterized, AddTextPrinterParameterized4, AddWindow,
-  AdjustQuantityAccordingToDPadInput, AllocZeroed, CB2_GoToItemDepositMenu, CalculatePlayerPartyCount,
-  ChooseMonToGiveMailFromMailbox, CleanupOverworldWindowsAndTilemaps, ClearDialogWindowAndFrame, ClearItemSlots,
-  ClearMail, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap, CompactPCItems,
-  ConvertIntToDecimalStringN, ConvertInternationalPlayerNameStripChar, CopyItemName, CopyWindowToVram,
-  CountUsedPCItemSlots, CreateSwapLineSprites, CreateTask, CreateYesNoMenuWithCallbacks,
-  DestroyListMenuTask, DestroySprite, DestroySwapLineSprites, DestroyTask,
-  DisplayItemMessageOnField, DisplayYesNoMenuDefaultYes, DoPlayerRoomDecorationMenu, DrawDialogueFrame,
-  DrawStdFrameWithCustomTileAndPalette, FALSE, FadeInFromBlack, FadeScreen,
-  FillWindowPixelBuffer, FillWindowPixelRect, Free, FreeAndReserveObjectSpritePalettes,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetItemDescription, GetItemImportance,
-  GetMaxWidthInMenuTable, GetMaxWidthInSubsetOfMenuTable, GetMenuCursorDimensionByFont, GetStringCenterAlignXOffset,
-  GetStringRightAlignXOffset, InitMenuInUpperLeftCornerNormal, IsDma3ManagerBusyWithBgCopy, IsWeatherNotFadingIn,
-  ItemStorage_GetMessage, JOY_NEW, ListMenuGetScrollAndRow, ListMenuGetYCoordForPrintingArrowCursor,
-  ListMenuInit, ListMenuSetTemplateField, ListMenu_ProcessInput, LoadListMenuSwapLineGfx,
-  LoadMessageBoxAndBorderGfx, MailboxMenu_AddScrollArrows, MailboxMenu_AddWindow, MailboxMenu_Alloc,
-  MailboxMenu_CreateList, MailboxMenu_Free, MailboxMenu_RemoveWindow, Menu_GetCursorPos,
-  Menu_ProcessInput, Menu_ProcessInputNoWrap, Menu_ProcessInputNoWrapClearOnChoose, MoveItemSlotInList,
-  NULL, PIXEL_FILL, PlaySE, PrintMenuActionTextsInUpperLeftCorner,
-  PrintMenuTable, ProcessMenuInput_other, ReadMail, RemovePCItem,
-  RemoveScrollIndicatorArrowPair, RemoveWindow, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN,
-  STR_CONV_MODE_RIGHT_ALIGN, SWAP, ScheduleBgCopyTilemapToVram, ScriptContext_Enable,
-  ScriptContext_SetupScript, SetCursorWithinListBounds, SetItemListPerPageCount, SetMainCallback2,
-  SetStandardWindowBorderStyle, SetSwapLineSpritesInvisibility, StringCopy, StringExpandPlaceholders,
-  TASK_NONE, TRUE, UpdateSwapLineSpritesPos, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void NewGameInitPCItems(void) */
 export function NewGameInitPCItems(): any {
   let i: any = 0;
@@ -651,7 +616,7 @@ export function ItemStorage_AddWindow(i: any): any {
       if (windowIdLoc == WINDOW_NONE)
       {
           windowIdLoc = AddWindow(sWindowTemplates_ItemStorage[i]);
-          DrawStdFrameWithCustomTileAndPalette(windowIdLoc, FALSE, _0x214, 0xE);
+          DrawStdFrameWithCustomTileAndPalette(windowIdLoc, FALSE, 0x214, 0xE);
           ScheduleBgCopyTilemapToVram(0);
       }
       return windowIdLoc;
@@ -1098,7 +1063,7 @@ export function ItemStorage_DoItemToss(taskId: any): any {
           CopyItemName(gSaveBlock1Ptr.pcItems[pos].itemId, gStringVar1);
           ConvertIntToDecimalStringN(gStringVar2, tQuantity, STR_CONV_MODE_LEFT_ALIGN, 3);
           ItemStorage_PrintMessage(ItemStorage_GetMessage(MSG_OKAY_TO_THROW_AWAY));
-          CreateYesNoMenuWithCallbacks(taskId,sWindowTemplates_ItemStorage[ITEMPC_WIN_YESNO], 1, 0, 1, _0x214, 0xE,ItemTossYesNoFuncs);
+          CreateYesNoMenuWithCallbacks(taskId,sWindowTemplates_ItemStorage[ITEMPC_WIN_YESNO], 1, 0, 1, 0x214, 0xE,ItemTossYesNoFuncs);
       }
       else
       {

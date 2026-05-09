@@ -15,58 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AddBagItemIconSprite, AddBagVisualSprite,
-  AddMoney, AddMoneyLabelObject, AddPCItem, AddScrollIndicatorArrowPair,
-  AddScrollIndicatorArrowPairParameterized, AddSwitchPocketRotatingBallSprite, AddTextPrinterParameterized, AddTextPrinterParameterized4,
-  AddWindow, AdjustQuantityAccordingToDPadInput, Alloc, AllocZeroed,
-  AnimateSprites, BG_PLTT_ID, BagGetItemIdByPocketPosition, BagGetQuantityByPocketPosition,
-  BeginNormalPaletteFade, BlendPalettes, BlitBitmapToWindow, BlitMenuInfoIcon,
-  BuildOamBuffer, CalculatePlayerPartyCount, ChangeBgY_ScreenOff, ChangeMenuGridCursorPosition,
-  CheckBagHasItem, ClearDialogWindowAndFrameToTransparent, ClearItemSlots, ClearScheduledBgCopiesToVram,
-  ClearStdWindowAndFrameToTransparent, ClearWindowTilemap, CompactItemsInBagPocket, ConvertIntToDecimalStringN,
-  CopyItemName, CopyWindowToVram, CpuCopy32, CreateItemMenuSwapLine,
-  CreateTask, CreateYesNoMenuWithCallbacks, CurrentBattlePyramidLocation, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroyListMenuTask,
-  DestroyTask, DisplayMessageAndContinueTask, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette,
-  FALSE, FIRST_BERRY_INDEX, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
-  FillWindowPixelRect, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeTempTileDataBuffersIfPossible, FreezeObjectEvents, GetItemBattleFunc, GetItemBattleUsage,
-  GetItemDescription, GetItemFieldFunc, GetItemImportance, GetItemPrice,
-  GetItemType, GetLRKeysPressed, GetMenuCursorDimensionByFont, GetMoney,
-  GetPlayerTextSpeedDelay, GetStringCenterAlignXOffset, GetStringRightAlignXOffset, GetWindowAttribute,
-  GoToBattlePyramidBagMenu, HideMapNamePopUpWindow, InBattlePike, InMultiPartnerRoom,
-  InUnionRoom, InitBgsFromTemplates, InitMenuActionGrid, InitMenuInUpperLeftCornerNormal,
-  InitWindows, IsHoldingItemAllowed, IsWritingMailAllowed, ItemIdToBattleMoveId,
-  ItemIsMail, ItemUseOutOfBattle_Berry, JOY_NEW, LZDecompressWram,
-  ListMenuGetScrollAndRow, ListMenuGetYCoordForPrintingArrowCursor, ListMenuInit, ListMenuLoadStdPalAt,
-  ListMenuSetTemplateField, ListMenu_ProcessInput, LoadCompressedPalette, LoadCompressedSpritePalette,
-  LoadCompressedSpriteSheet, LoadListMenuSwapLineGfx, LoadMessageBoxGfx, LoadOam,
-  LoadPalette, LoadUserWindowBorderGfx, LockPlayerFieldControls, MenuHelpers_IsLinkActive,
-  MenuHelpers_ShouldWaitForLinkRecv, Menu_GetCursorPos, Menu_ProcessInputNoWrap, MoveItemSlotInList,
-  NULL, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP,
-  PlaySE, PlayerFreeze, PrintMenuActionGrid, PrintMenuActionTexts,
-  PrintMoneyAmount, PrintMoneyAmountInMoneyBox, PrintMoneyAmountInMoneyBoxWithBorder, ProcessSpriteCopyRequests,
-  PutWindowTilemap, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, RemoveBagItem,
-  RemoveBagItemIconSprite, RemoveBagSprite, RemoveMoneyLabelObject, RemoveScrollIndicatorArrowPair,
-  RemoveWindow, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs,
-  RunTasks, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN,
-  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, ScriptContext_SetupScript, SetBagVisualPocketId,
-  SetBgTilemapBuffer, SetCursorScrollWithinListBounds, SetCursorWithinListBounds, SetGpuReg,
-  SetItemMenuSwapLineInvisibility, SetMainCallback2, SetTaskFuncWithFollowupFunc, SetVBlankCallback,
-  SetVBlankHBlankCallbacksToNull, ShakeBagSprite, ShowBg, SortBerriesOrTMHMs,
-  StopPlayerAvatar, StringCopy, StringExpandPlaceholders, SwitchTaskToFollowupFunc,
-  TASK_NONE, TRUE, TestPlayerAvatarFlags, TransferPlttBuffer,
-  UpdateItemMenuSwapLinePos, UpdatePaletteFade, memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ResetBagScrollPositions(void) */
 export function ResetBagScrollPositions(): any {
   gBagPosition.pocket = ITEMS_POCKET;
@@ -699,7 +647,7 @@ export function PrintItemQuantity(windowId: any, quantity: any, speed: any): any
   let numDigits: any = (gBagPosition.pocket == BERRIES_POCKET) ? BERRY_CAPACITY_DIGITS : BAG_ITEM_CAPACITY_DIGITS;
       ConvertIntToDecimalStringN(gStringVar1, quantity, STR_CONV_MODE_LEADING_ZEROS, numDigits);
       StringExpandPlaceholders(gStringVar4, gText_xVar1);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, _0x28), 2, speed, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0x28), 2, speed, NULL);
 }
 
 /** static void PrintItemSoldAmount(int windowId, int numSold, int moneyEarned) */
@@ -909,7 +857,7 @@ export function DrawItemListBgRow(y: any): any {
 /** static void DrawPocketIndicatorSquare(u8 x, bool8 isCurrentPocket) */
 export function DrawPocketIndicatorSquare(x: any, isCurrentPocket: any): any {
   if (!isCurrentPocket)
-          FillBgTilemapBufferRect_Palette0(2, _0x1017, x + 5, 3, 1, 1);
+          FillBgTilemapBufferRect_Palette0(2, 0x1017, x + 5, 3, 1, 1);
       else
           FillBgTilemapBufferRect_Palette0(2, 0x102B, x + 5, 3, 1, 1);
       ScheduleBgCopyTilemapToVram(2);
@@ -1902,12 +1850,12 @@ export function PrintPocketNames(pocketName1: any, pocketName2: any): any {
       window.height = 2;
       windowId = AddWindow(window);
       FillWindowPixelBuffer(windowId, PIXEL_FILL(0));
-      offset = GetStringCenterAlignXOffset(FONT_NORMAL, pocketName1, _0x40);
+      offset = GetStringCenterAlignXOffset(FONT_NORMAL, pocketName1, 0x40);
       BagMenu_Print(windowId, FONT_NORMAL, pocketName1, offset, 1, 0, 0, TEXT_SKIP_DRAW, COLORID_POCKET_NAME);
       if (pocketName2)
       {
-          offset = GetStringCenterAlignXOffset(FONT_NORMAL, pocketName2, _0x40);
-          BagMenu_Print(windowId, FONT_NORMAL, pocketName2, offset + _0x40, 1, 0, 0, TEXT_SKIP_DRAW, COLORID_POCKET_NAME);
+          offset = GetStringCenterAlignXOffset(FONT_NORMAL, pocketName2, 0x40);
+          BagMenu_Print(windowId, FONT_NORMAL, pocketName2, offset + 0x40, 1, 0, 0, TEXT_SKIP_DRAW, COLORID_POCKET_NAME);
       }
       CpuCopy32(GetWindowAttribute(windowId, WINDOW_TILE_DATA), gBagMenu.pocketNameBuffer, sizeof(gBagMenu.pocketNameBuffer));
       RemoveWindow(windowId);
@@ -1922,9 +1870,9 @@ export function CopyPocketNameToWindow(a: any): any {
           a = 8;
       tileDataBuffer =gBagMenu.pocketNameBuffer;
       windowTileData = GetWindowAttribute(2, WINDOW_TILE_DATA);
-      CpuCopy32(tileDataBuffer[0][a], windowTileData, _0x100);  
+      CpuCopy32(tileDataBuffer[0][a], windowTileData, 0x100);  
       b = a + 16;
-      CpuCopy32(tileDataBuffer[0][b], windowTileData + _0x100, _0x100);  
+      CpuCopy32(tileDataBuffer[0][b], windowTileData + 0x100, 0x100);  
       CopyWindowToVram(WIN_POCKET_NAME, COPYWIN_GFX);
 }
 

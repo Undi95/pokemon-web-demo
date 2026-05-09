@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CreateTask, DestroyTask, FALSE, FreezeObjectEvent,
-  FreezeObjectEvents, FreezeObjectEventsExceptOne, FreezeObjectEventsExceptTwo, FuncIsActiveTask,
-  GetChosenApproachingTrainerObjectEventId, GetObjectEventIdByLocalIdAndMap, LOCALID_PLAYER, ObjectEventClearHeldMovementIfActive,
-  ObjectEventClearHeldMovementIfFinished, ObjectEventFaceOppositeDirection, PlayerFreeze, ScriptMovement_UnfreezeObjectEvents,
-  StopPlayerAvatar, TRUE, UnfreezeObjectEvents,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 IsPlayerStandingStill(void) */
 export function IsPlayerStandingStill(): any {
   if (gPlayerAvatar.tileTransitionState == T_TILE_TRANSITION)

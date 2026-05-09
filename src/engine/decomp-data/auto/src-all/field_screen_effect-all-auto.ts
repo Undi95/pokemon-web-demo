@@ -15,39 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BGMusicStopped, BG_PLTT_ID, BLDALPHA_BLEND, BgDmaFill,
-  ClearGpuRegBits, ClearLinkCallback_2, ClearMirageTowerPulseBlendEffect, CpuFastFill16,
-  CpuFastSet, CreateTask, CreateTask_ReestablishCableClubLink, DISPCNT_WIN1_ON,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroyTask, DoPlayerSpinEntrance,
-  DoPlayerSpinExit, FALSE, FadeScreen, FieldAnimateDoorClose,
-  FieldAnimateDoorOpen, FieldSetDoorOpened, FindTaskIdByFunc, FreezeObjectEvents,
-  FuncIsActiveTask, GetCurrentMapType, GetDestinationWarpMapHeader, GetDoorSoundEffect,
-  GetFlashLevel, GetLastUsedWarpMapType, GetMapPairFadeFromType, GetMapPairFadeToType,
-  GetObjectEventIdByLocalIdAndMap, GetPlayerFacingDirection, GetWalkNormalMovementAction, InstallCameraPanAheadCallback,
-  IsLinkTaskFinished, IsPlayerSpinEntranceActive, IsPlayerSpinExitActive, IsPlayerStandingStill,
-  IsWeatherNotFadingIn, LOCALID_PLAYER, LoadPalette, LockPlayerFieldControls,
-  MapGridGetMetatileBehaviorAt, MetatileBehavior_IsDoor, MetatileBehavior_IsNonAnimDoor, NULL,
-  ObjectEventClearHeldMovementIfActive, ObjectEventClearHeldMovementIfFinished, ObjectEventSetHeldMovement, OnTrainerHillEReaderChallengeFloor,
-  Overworld_FadeOutMapMusic, Overworld_PlaySpecialMapMusic, PIXEL_FILL, PLTT_SIZE,
-  PLTT_SIZEOF, PlayRainStoppingSoundEffect, PlaySE, PlayerGetDestCoords,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetAllMultiplayerState, RfuSetErrorParams,
-  SaveObjectEvents, ScanlineEffect_Clear, ScanlineEffect_SetParams, ScanlineEffect_Stop,
-  ScheduleBgCopyTilemapToVram, ScriptContext_Enable, ScriptUnfreezeObjectEvents, SetBgTilemapPalette,
-  SetCameraPanning, SetCameraPanningCallback, SetCloseLinkCallback, SetGpuReg,
-  SetGpuRegBits, SetLinkStandbyCallback, SetMainCallback2, SetObjectEventLoadFlag,
-  SetPlayerInvisibility, ShowReturnToFieldStartMenu, StartEscalatorWarp, StartLavaridgeGym1FWarp,
-  StartLavaridgeGymB1FWarp, StartSendingKeysToLink, TRUE, TryFadeOutOldMapMusic,
-  UnfreezeObjectEvents, UnlockPlayerFieldControls, WarpIntoMap,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void FillPalBufferWhite(void) */
 export function FillPalBufferWhite(): any {
   CpuFastFill16(RGB_WHITE, gPlttBufferFaded, PLTT_SIZE);
@@ -420,7 +387,7 @@ export function Task_WaitForFadeShowStartMenu(taskId: any): any {
 /** void ReturnToFieldOpenStartMenu(void) */
 export function ReturnToFieldOpenStartMenu(): any {
   FadeInFromBlack();
-      CreateTask(Task_WaitForFadeShowStartMenu, _0x50);
+      CreateTask(Task_WaitForFadeShowStartMenu, 0x50);
       LockPlayerFieldControls();
 }
 

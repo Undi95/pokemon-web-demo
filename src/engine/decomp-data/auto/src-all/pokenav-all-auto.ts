@@ -15,26 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  Alloc, AnimateSprites, BuildOamBuffer, CheckBoxMonSanityAt,
-  CreateTask, DestroyTask, FALSE, FREE_AND_SET_NULL,
-  FadeScreen, FreeAllSpritePalettes, FreeMenuHandlerSubstruct1, GetBoxMonDataAt,
-  GetMonData, GetWordTaskArg, InitKeys, InitPokenavMainMenu,
-  IsActiveMenuLoopTaskActive, IsOverworldLinkActive, LOOPED_TASK_DECODE_STATE, LOOPED_TASK_ID,
-  LOOPED_TASK_PRIMARY_ID, LOOPED_TASK_SECONDARY_ID, LoadOam, NULL,
-  Overworld_IsRecvQueueAtMax, PokenavMainMenuLoopedTaskIsActive, ProcessSpriteCopyRequests, ResetSpriteData,
-  ResetTasks, RunMainMenuLoopedTask, RunTasks, SetActiveMenuLoopTasks,
-  SetMainCallback2, SetVBlankCallback, SetWordTaskArg, ShutdownPokenav,
-  TRUE, TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UpdatePaletteFade,
-  WaitForPokenavShutdownFade,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u32 CreateLoopedTask(LoopedTask loopedTask, u32 priority) */
 export function CreateLoopedTask(loopedTask: any, priority: any): any {
   let taskId: any = null;
@@ -52,8 +32,8 @@ export function CreateLoopedTask(loopedTask: any, priority: any): any {
 
 /** bool32 IsLoopedTaskActive(u32 taskId) */
 export function IsLoopedTaskActive(taskId: any): any {
-  let primaryId: any = LOOPED_TASK_PRIMARY_ID(taskId);
-      let secondaryId: any = LOOPED_TASK_SECONDARY_ID(taskId);
+  let primaryId: any = ((taskId) & 0xFFFF);
+      let secondaryId: any = ((taskId) >> 16);
 
       if (gTasks[primaryId].isActive
           && (gTasks[primaryId].func == Task_RunLoopedTask || gTasks[primaryId].func == Task_RunLoopedTask_LinkMode)
@@ -98,7 +78,7 @@ export function Task_RunLoopedTask(taskId: any): any {
               return;
            
           default:
-              state = LOOPED_TASK_DECODE_STATE(action);
+              state = ((action) - 5);
               break;
           case LT_CONTINUE:
               break;
@@ -131,7 +111,7 @@ export function Task_RunLoopedTask_LinkMode(taskId: any): any {
           break;
        
       default:
-          state = LOOPED_TASK_DECODE_STATE(action);
+          state = ((action) - 5);
           break;
       case LT_PAUSE:
       case LT_CONTINUE:

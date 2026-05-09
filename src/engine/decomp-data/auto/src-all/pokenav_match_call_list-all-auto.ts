@@ -15,22 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocSubstruct, CreateLoopedTask, FALSE,
-  FlagGet, FreePokenavSubstruct, GetMatchCallMapSec, GetMatchTableMapSectionId,
-  GetPokenavMode, GetStringClearToWidth, GetSubstructPtr, GetTrainerClassNameGenderSpecific,
-  GetTrainerIdxByRematchIdx, JOY_NEW, JOY_REPEAT, MatchCall_GetEnabled,
-  MatchCall_GetMapSec, MatchCall_GetNameAndDesc, MatchCall_GetOverrideFacilityClass, MatchCall_GetRematchTableIdx,
-  MatchCall_HasCheckPage, MatchCall_HasRematchId, NULL, PlaySE,
-  PokenavList_GetSelectedIndex, SetPokenavMode, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_MatchCall(void) */
 export function PokenavCallback_Init_MatchCall(): any {
   let state: any = AllocSubstruct(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN, 0);

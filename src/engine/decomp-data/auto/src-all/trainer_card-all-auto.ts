@@ -15,45 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AllocZeroed,
-  AnimateSprites, BG_PLTT_ID, BLDCNT_EFFECT_DARKEN, BLDCNT_TGT1_BG0,
-  BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer, ChangeBgX,
-  ChangeBgY, ConvertIntToDecimalStringN, ConvertInternationalString, CopyBgTilemapBufferToVram,
-  CopyEasyChatWord, CopyWindowToVram, CountPlayerMuseumPaintings, CpuSet,
-  CreateTask, CreateTrainerCardTrainerPicSprite, CreateWirelessStatusIndicatorSprite, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-  DeactivateAllTextPrinters, DestroyTask, DmaClear16, DmaClear32,
-  DmaCopy16, DrawDialogueFrame, EnableInterrupts, FALSE,
-  FREE_AND_SET_NULL, FacilityClassToPicIndex, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0,
-  FillWindowPixelBuffer, FillWindowPixelRect, FindTaskIdByFunc, FlagGet,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, GetGameStat, GetHoennPokedexCount,
-  GetMonIconPaletteIndexFromSpecies, GetMonIconTiles, GetMoney, GetNationalPokedexCount,
-  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, GetStringWidth, HasAllHoennMons,
-  HideBg, InUnionRoom, InitBgsFromTemplates, InitWindows,
-  IsDma3ManagerBusyWithBgCopy, IsNationalPokedexEnabled, IsSEPlaying, JOY_NEW,
-  LZ77UnCompWram, LoadBgTiles, LoadMessageBoxAndBorderGfx, LoadOam,
-  LoadPalette, LoadWirelessStatusIndicatorSpriteGfx, NULL, Overworld_IsRecvQueueAtMax,
-  PALETTES_ALL, PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP,
-  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0CNT,
-  REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, RunTasks, STR_CONV_MODE_LEADING_ZEROS,
-  STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Clear, ScanlineEffect_Stop,
-  SetBgTilemapBuffer, SetCloseLinkCallback, SetGpuReg, SetHBlankCallback,
-  SetMainCallback2, SetVBlankCallback, ShowBg, StringCopy,
-  StringExpandPlaceholders, TASK_NONE, TRUE, TintPalette_CustomTone,
-  TintPalette_SepiaTone, TransferPlttBuffer, UpdatePaletteFade, WIN_RANGE,
-  WriteSequenceToBgTilemapBuffer, memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void VblankCb_TrainerCard(void) */
 export function VblankCb_TrainerCard(): any {
   LoadOam();
@@ -61,7 +22,7 @@ export function VblankCb_TrainerCard(): any {
       TransferPlttBuffer();
       BlinkTimeColon();
       if (sData.allowDMACopy)
-          DmaCopy16(3,gScanlineEffectRegBuffers[0],gScanlineEffectRegBuffers[1], _0x140);
+          DmaCopy16(3,gScanlineEffectRegBuffers[0],gScanlineEffectRegBuffers[1], 0x140);
 }
 
 /** static void HblankCb_TrainerCard(void) */
@@ -493,7 +454,7 @@ export function TrainerCard_GenerateCardForPlayer(trainerCard: any): any {
 
 /** void TrainerCard_GenerateCardForLinkPlayer(struct TrainerCard *trainerCard) */
 export function TrainerCard_GenerateCardForLinkPlayer(trainerCard: any): any {
-  memset(trainerCard, 0, _0x60);
+  memset(trainerCard, 0, 0x60);
       trainerCard.version = GAME_VERSION;
       SetPlayerCardData(trainerCard, CARD_TYPE_EMERALD);
       trainerCard.linkHasAllFrontierSymbols = HasAllFrontierSymbols();
@@ -515,13 +476,13 @@ export function CopyTrainerCardData(dst: any, src: any, gameVersion: any): any {
       switch (VersionToCardType(gameVersion))
       {
       case CARD_TYPE_FRLG:
-          memcpy(dst, src, _0x60);
+          memcpy(dst, src, 0x60);
           break;
       case CARD_TYPE_RS:
-          memcpy(dst, src, _0x38);
+          memcpy(dst, src, 0x38);
           break;
       case CARD_TYPE_EMERALD:
-          memcpy(dst, src, _0x60);
+          memcpy(dst, src, 0x60);
           dst.linkPoints.frontier = 0;
           dst.hasAllFrontierSymbols = src.linkHasAllFrontierSymbols;
           dst.frontierBP = (src.linkPoints.frontier);
@@ -1070,7 +1031,7 @@ export function PrintPokemonIconsOnCard(): any {
 export function LoadMonIconGfx(): any {
   let i: any = null;
 
-      CpuSet(gMonIconPalettes, sData.monIconPal, _0x60);
+      CpuSet(gMonIconPalettes, sData.monIconPal, 0x60);
       switch (sData.trainerCard.monIconTint)
       {
       case MON_ICON_TINT_NORMAL:
@@ -1133,7 +1094,7 @@ export function SetCardBgsAndPals(): any {
           LoadBgTiles(3, sData.badgeTiles, ARRAY_COUNT(sData.badgeTiles), 0);
           break;
       case 1:
-          LoadBgTiles(0, sData.cardTiles, _0x1800, 0);
+          LoadBgTiles(0, sData.cardTiles, 0x1800, 0);
           break;
       case 2:
           if (sData.cardType != CARD_TYPE_FRLG)
@@ -1342,7 +1303,7 @@ export function Task_DrawFlippedCardSide(task: any): any {
           {
           case 0:
               FillWindowPixelBuffer(WIN_CARD_TEXT, PIXEL_FILL(0));
-              FillBgTilemapBufferRect_Palette0(3, 0, 0, 0, _0x20, _0x20);
+              FillBgTilemapBufferRect_Palette0(3, 0, 0, 0, 0x20, 0x20);
               break;
           case 1:
               if (!sData.onBack)

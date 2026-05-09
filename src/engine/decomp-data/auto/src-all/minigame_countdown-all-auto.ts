@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CreateSprite, CreateTask, DestroySprite, DestroyTask,
-  FALSE, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FuncIsActiveTask, GetMultiplayerId, LoadCompressedSpriteSheet, LoadSpritePalette,
-  PlaySE, Rfu_SendPacket, SetSpriteMatrixAnchor, SpriteCallbackDummy,
-  StartSpriteAffineAnim, StartSpriteAnim, TRUE, gSineTable,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void Task_StaticCountdown(u8 taskId) */
 export function Task_StaticCountdown(taskId: any): any {
   let data: any = gTasks[taskId].data;
@@ -59,16 +44,16 @@ export function StaticCountdown_CreateSprites(taskId: any, data: any): any {
       LoadCompressedSpriteSheet(sSpriteSheet_321Start_Static[tSpriteSheetId]);
       LoadSpritePalette(sSpritePalette_321Start_Static[tSpritePalId]);
       for (i = 0; i < tNumSprites; i++)
-          tSpriteIds(i) = CreateSprite(sSpriteTemplate_StaticCountdown[tSpriteTemplateId], tX, tY, tSubpriority);
+          data[13 + (i)] = CreateSprite(sSpriteTemplate_StaticCountdown[tSpriteTemplateId], tX, tY, tSubpriority);
       for (i = 0; i < tNumSprites; i++)
       {
-          sprite =gSprites[tSpriteIds(i)];
+          sprite =gSprites[data[13 + (i)]];
           sprite.oam.priority = tPriority;
           sprite.invisible = TRUE;
           sprite.sInterval = tInterval;
           sprite.sTaskId = taskId;
           sprite.sId = i;
-          sprite.sNumberSpriteId = tSpriteIds(0);
+          sprite.sNumberSpriteId = data[13 + (0)];
       }
 }
 
@@ -86,11 +71,11 @@ export function Task_StaticCountdown_Init(taskId: any): any {
       tY = 88;
       StaticCountdown_CreateSprites(taskId, data);
 
-      StartSpriteAnim(gSprites[tSpriteIds(1)], ANIM_START_MID);
-      gSprites[tSpriteIds(1)].x2 = -32;
+      StartSpriteAnim(gSprites[data[13 + (1)]], ANIM_START_MID);
+      gSprites[data[13 + (1)]].x2 = -32;
 
-      StartSpriteAnim(gSprites[tSpriteIds(2)], ANIM_START_RIGHT);
-      gSprites[tSpriteIds(2)].x2 = 32;
+      StartSpriteAnim(gSprites[data[13 + (2)]], ANIM_START_RIGHT);
+      gSprites[data[13 + (2)]].x2 = 32;
 }
 
 /** static void Task_StaticCountdown_Free(u8 taskId) */
@@ -99,7 +84,7 @@ export function Task_StaticCountdown_Free(taskId: any): any {
       let data: any = gTasks[taskId].data;
 
       for (i = 0; i < tNumSprites; i++)
-          DestroySprite(gSprites[tSpriteIds(i)]);
+          DestroySprite(gSprites[data[13 + (i)]]);
       FreeSpriteTilesByTag(sSpriteSheet_321Start_Static[tSpriteSheetId].tag);
       FreeSpritePaletteByTag(sSpritePalette_321Start_Static[tSpritePalId].tag);
 }
@@ -128,14 +113,14 @@ export function SpriteCB_StaticCountdown(sprite: any): any {
            
           PlaySE(SE_PIN);
           StartSpriteAnim(sprite, sprite.sAnimNum);
-          gSprites[tSpriteIds(1)].invisible = FALSE;
-          gSprites[tSpriteIds(2)].invisible = FALSE;
+          gSprites[data[13 + (1)]].invisible = FALSE;
+          gSprites[data[13 + (2)]].invisible = FALSE;
           break;
       case ANIM_START_LEFT + 1:  
            
           sprite.invisible = TRUE;
-          gSprites[tSpriteIds(1)].invisible = TRUE;
-          gSprites[tSpriteIds(2)].invisible = TRUE;
+          gSprites[data[13 + (1)]].invisible = TRUE;
+          gSprites[data[13 + (2)]].invisible = TRUE;
           tState = STATE_END;
           return;
       }
@@ -146,8 +131,8 @@ export function SpriteCB_StaticCountdown(sprite: any): any {
 export function Task_StaticCountdown_Start(taskId: any): any {
   let data: any = gTasks[taskId].data;
       PlaySE(SE_BALL_BOUNCE_1);
-      gSprites[tSpriteIds(0)].callback = SpriteCB_StaticCountdown;
-      gSprites[tSpriteIds(0)].invisible = FALSE;
+      gSprites[data[13 + (0)]].callback = SpriteCB_StaticCountdown;
+      gSprites[data[13 + (0)]].invisible = FALSE;
       gTasks[taskId].tState = STATE_RUN;
 }
 

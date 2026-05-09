@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ConvertIntToDecimalStringN, FALSE, FlagClear, FlagGet,
-  FlagSet, GetXYCoordsOneStepInFrontOfPlayer, IncrementGameStat, PlayerGetDestCoords,
-  RunScriptImmediately, STR_CONV_MODE_LEADING_ZEROS, ScriptContext_SetupScript, ScriptContext_Stop,
-  SetMainCallback2, StringCopy, TRUE, TryPutSafariFanClubOnAir,
-  WarpIntoMap, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 GetSafariZoneFlag(void) */
 export function GetSafariZoneFlag(): any {
   return FlagGet(FLAG_SYS_SAFARI_MODE);

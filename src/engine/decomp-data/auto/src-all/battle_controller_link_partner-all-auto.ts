@@ -15,37 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocSpritePalette, BATTLE_PARTNER, BattleGfxSfxDummy2,
-  BattleGfxSfxDummy3, BattleLoadPlayerMonSpriteGfx, BattlePutTextOnWindow, BattleStopLowHpSound,
-  BattleTv_SetDataBasedOnAnimation, BattleTv_SetDataBasedOnMove, BattleTv_SetDataBasedOnString, BeginFastPaletteFade,
-  BtlController_EmitDataTransfer, BufferStringBattle, ClearTemporarySpeciesSpriteData, CopyAllBattleSpritesInvisibilities,
-  CopyBattleSpriteInvisibility, CreateInvisibleSpriteWithCallback, CreatePartyStatusSummarySprites, CreateSprite,
-  CreateTask, DISPLAY_HEIGHT, DISPLAY_WIDTH, DecompressTrainerBackPic,
-  DestroySprite, DestroyTask, DoHitAnimHealthboxEffect, DoMoveAnim,
-  DoPokeballSendOutAnimation, FALSE, FadeOutMapMusic, FreeOamMatrix,
-  FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetBattlerMultiplayerId,
-  GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y,
-  GetBattlerSpriteSubpriority, GetMonData, GetMultiplayerId, HandleIntroSlide,
-  HandleLowHpMusicChange, InitAndLaunchChosenStatusAnimation, InitAndLaunchSpecialAnimation, IsBattleSEPlaying,
-  IsBattlerSpritePresent, IsCryPlayingOrClearCrySongs, IsDoubleBattle, IsMoveWithoutAnimation,
-  IsTextPrinterActive, LoadBattleBarGfx, LoadCompressedPalette, MoveBattleBar,
-  OBJ_PLTT_ID, PLTT_SIZE_4BPP, PlayBGM, PlayCry_ByMode,
-  PlayFanfare, PlaySE12WithPanning, PrepareBufferDataTransferLink, RecordedBattle_RecordAllBattlerData,
-  ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF, SetBattleBarStruct, SetBattlerSpriteAffineMode,
-  SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible, SetMonData, SetMultiuseSpriteTemplateToPokemon,
-  SetMultiuseSpriteTemplateToTrainerBack, SetSpritePrimaryCoordsFromSecondaryCoords, SpriteCallbackDummy, StartHealthboxSlideIn,
-  StartSpriteAnim, StoreSpriteCallbackInData6, StringCopy_Nickname, TRUE,
-  TryHandleLaunchBattleTableAnimation, TrySetBehindSubstituteSpriteBit, TryShinyAnimation, UpdateHealthboxAttribute,
-  UpdateHpTextInHealthbox,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SetControllerToLinkPartner(void) */
 export function SetControllerToLinkPartner(): any {
   gBattlerControllerFuncs[gActiveBattler] = LinkPartnerBufferRunCommand;

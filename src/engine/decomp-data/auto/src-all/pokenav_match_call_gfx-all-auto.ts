@@ -15,44 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocSpritePalette,
-  AllocSubstruct, AreLeftHeaderSpritesMoving, BG_PLTT_ID, BgDmaFill,
-  ChangeBgX, ChangeBgY, CheckForSpaceForDma3Request, ConvertIntToDecimalStringN,
-  CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded, CopyToBgTilemapBuffer, CopyWindowToVram,
-  CpuCopy32, CreateLoopedTask, CreatePokenavList, CreateSprite,
-  CreateTask, CreateTrainerPicSprite, DecompressAndCopyTileDataToVram, DecompressPicFromTable,
-  DestroyPokenavList, DestroySprite, DestroyTask, DrawMatchCallTextBoxBorder,
-  DrawTextBorderOuter, FALSE, FadeToBlackExceptPrimary, FillBgTilemapBufferRect_Palette0,
-  FillWindowPixelBuffer, FindTaskIdByFunc, FreePokenavSubstruct, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetBgTilemapBuffer, GetGameStat,
-  GetIndexDeltaOfNextCheckPageDown, GetIndexDeltaOfNextCheckPageUp, GetMapName, GetMatchCallList,
-  GetMatchCallMapSec, GetMatchCallMessageText, GetMatchCallOptionCursorPos, GetMatchCallOptionId,
-  GetMatchCallTrainerPic, GetNumberRegistered, GetPlayerTextSpeedDelay, GetSpinningPokenavSprite,
-  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, GetSubstructPtr, GetWindowAttribute,
-  HideSpinningPokenavSprite, InitBgTemplates, IsCreatePokenavListTaskActive, IsDma3ManagerBusyWithBgCopy,
-  IsLoopedTaskActive, IsMatchCallListInitFinished, IsPaletteFadeActive, IsTextPrinterActive,
-  JOY_HELD, LT_SET_STATE, LZ77UnCompWram, LoadCompressedSpriteSheet,
-  LoadLeftHeaderGfxForIndex, LoadMatchCallWindowGfx, LoadPalette, LoadSpriteSheet,
-  LoadUserWindowBorderGfx, MainMenuLoopedTaskIsBusy, NULL, OBJ_PLTT_ID,
-  PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE, PokenavCopyPalette,
-  PokenavFadeScreen, PokenavList_DrawCurrentItemIcon, PokenavList_EraseListForCheckPage, PokenavList_GetSelectedIndex,
-  PokenavList_GetTopIndex, PokenavList_IsMoveWindowTaskActive, PokenavList_IsTaskActive, PokenavList_MoveCursorDown,
-  PokenavList_MoveCursorUp, PokenavList_PageDown, PokenavList_PageUp, PokenavList_ReshowListFromCheckPage,
-  PokenavList_ToggleVerticalArrows, Pokenav_AllocAndLoadPalettes, PrintCheckPageInfo, PrintHelpBarText,
-  PutWindowTilemap, RemoveWindow, RequestDma3Copy, RunTextPrinters,
-  STR_CONV_MODE_LEFT_ALIGN, SetBgTilemapBuffer, SetLeftHeaderSpritesInvisibility, ShouldDrawRematchPokeballIcon,
-  ShowBg, ShowLeftHeaderGfx, SlideMenuHeaderDown, SpriteCallbackDummy,
-  StringCopy, TASK_NONE, TRUE, WaitForHelpBar,
-  gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 OpenMatchCall(void) */
 export function OpenMatchCall(): any {
   let gfx: any = AllocSubstruct(POKENAV_SUBSTRUCT_MATCH_CALL_OPEN, 0);
@@ -118,7 +80,7 @@ export function LoopedTask_OpenMatchCall(state: any): any {
 
           BgDmaFill(1, 0, 0, 1);
           SetBgTilemapBuffer(1, gfx.bgTilemapBuffer1);
-          FillBgTilemapBufferRect_Palette0(1, _0x1000, 0, 0, 32, 20);
+          FillBgTilemapBufferRect_Palette0(1, 0x1000, 0, 0, 32, 20);
           CopyPaletteIntoBufferUnfaded(sCallWindow_Pal, BG_PLTT_ID(1), 0);
           CopyBgTilemapBufferToVram(1);
           return LT_INC_AND_PAUSE;
@@ -685,7 +647,7 @@ export function Task_FlashPokeballIcons(taskId: any): any {
           tSinIdx += 4;
           tSinIdx &= 0x7F;
           tSinVal = gSineTable[tSinIdx] >> 4;
-          PokenavCopyPalette(sPokeball_Pal,sPokeball_Pal[_0x10], _0x10, _0x10, tSinVal,gPlttBufferUnfaded[BG_PLTT_ID(5)]);
+          PokenavCopyPalette(sPokeball_Pal,sPokeball_Pal[0x10], 0x10, 0x10, tSinVal,gPlttBufferUnfaded[BG_PLTT_ID(5)]);
           if (!gPaletteFade.active)
               CpuCopy32(gPlttBufferUnfaded[BG_PLTT_ID(5)],gPlttBufferFaded[BG_PLTT_ID(5)], PLTT_SIZE_4BPP);
       }
@@ -699,12 +661,12 @@ export function TryDrawRematchPokeballIcon(windowId: any, rematchId: any, tileOf
       if (ShouldDrawRematchPokeballIcon(rematchId))
       {
           tilemap[0] = POKEBALL_ICON_TOP;
-          tilemap[_0x20] = POKEBALL_ICON_BOTTOM;
+          tilemap[0x20] = POKEBALL_ICON_BOTTOM;
       }
       else
       {
           tilemap[0] = POKEBALL_ICON_EMPTY;
-          tilemap[_0x20] = POKEBALL_ICON_EMPTY;
+          tilemap[0x20] = POKEBALL_ICON_EMPTY;
       }
 }
 
@@ -714,7 +676,7 @@ export function ClearRematchPokeballIcon(windowId: any, tileOffset: any): any {
       let tilemap: any = GetBgTilemapBuffer(bg);
       tilemap += tileOffset * 64 + 0x1D;
       tilemap[0] = POKEBALL_ICON_EMPTY;
-      tilemap[_0x20] = POKEBALL_ICON_EMPTY;
+      tilemap[0x20] = POKEBALL_ICON_EMPTY;
 }
 
 /** static void DrawMatchCallLeftColumnWindows(struct Pokenav_MatchCallGfx *gfx) */
@@ -946,7 +908,7 @@ export function AllocMatchCallSprites(): any {
       spriteSheet.data = gfx.trainerPicGfx;
       spriteSheet.size = sizeof(gfx.trainerPicGfx);
       spriteSheet.tag = GFXTAG_TRAINER_PIC;
-      gfx.trainerPicGfxPtr = OBJ_VRAM0 + LoadSpriteSheet(spriteSheet) * _0x20;
+      gfx.trainerPicGfxPtr = OBJ_VRAM0 + LoadSpriteSheet(spriteSheet) * 0x20;
       paletteNum = AllocSpritePalette(PALTAG_TRAINER_PIC);
       gfx.trainerPicPalOffset = OBJ_PLTT_ID(paletteNum);
       gfx.trainerPicSprite = CreateTrainerPicSprite();

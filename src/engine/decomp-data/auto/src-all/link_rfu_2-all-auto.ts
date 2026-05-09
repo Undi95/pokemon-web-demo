@@ -15,28 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AnimateSprites, BuildOamBuffer, ClearSavedLinkPlayers,
-  CloseLink, ConvertLinkPlayerName, CpuFill16, CpuFill32,
-  CreateTask, Debug_PrintString, DestroyTask, FALSE,
-  FindTaskIdByFunc, FuncIsActiveTask, GetBlenderArrowPosition, GetBlockReceivedStatus,
-  GetHostRfuGameData, GetLinkPlayerCount, GetMultiplayerId, InitHostRfuGameData,
-  IsLinkTaskFinished, LinkPlayerFromBlock, LoadOam, LocalLinkPlayerToBlock,
-  MAX_RFU_PLAYERS, NULL, ProcessSpriteCopyRequests, Random2,
-  ResetBlockReceivedFlag, ResetBlockReceivedFlags, RfuBackupQueue_Dequeue, RfuBackupQueue_Enqueue,
-  RfuRecvQueue_Dequeue, RfuRecvQueue_Enqueue, RfuRecvQueue_Reset, RfuSendQueue_Dequeue,
-  RfuSendQueue_Enqueue, RfuSendQueue_Reset, RunTasks, SendBlock,
-  SetLinkErrorBuffer, SetMainCallback2, StringCompare, StringCopy,
-  TASK_NONE, TRUE, TransferPlttBuffer, UpdatePaletteFade,
-  memcpy, memset, strcmp,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ResetLinkRfuGFLayer(void) */
 export function ResetLinkRfuGFLayer(): any {
   let i: any = null;
@@ -959,7 +937,7 @@ export function RfuPrepareSendBuffer(command: any): any {
       {
       case RFUCMD_SEND_BLOCK_INIT:
           gSendCmd[1] = gRfu.sendBlock.count;
-          gSendCmd[2] = gRfu.sendBlock.owner + _0x80;
+          gSendCmd[2] = gRfu.sendBlock.owner + 0x80;
           break;
       case RFUCMD_SEND_BLOCK_REQ:
           if (AreAllPlayersReadyToReceive())
@@ -1948,7 +1926,7 @@ export function LinkManagerCB_Parent(msg: any, paramCount: any): any {
           }
           RfuSetStatus(RFU_STATUS_CONNECTION_ERROR, msg);
           break;
-      case _0x34:  
+      case 0x34:  
       case LMAN_MSG_RFU_POWER_DOWN:
       case LMAN_MSG_MANAGER_STOPPED:
       case LMAN_MSG_MANAGER_FORCED_STOPPED_AND_RFU_RESET:
@@ -2018,7 +1996,7 @@ export function LinkManagerCB_Child(msg: any, unused1: any): any {
           gRfu.linkLossRecoveryState = 3;
           gRfu.linkRecovered = TRUE;
           break;
-      case _0x34:  
+      case 0x34:  
           break;
       case LMAN_MSG_RFU_POWER_DOWN:
       case LMAN_MSG_MANAGER_STOPPED:

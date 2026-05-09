@@ -15,22 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddMapNamePopUpWindow, AddTextPrinterParameterized, BG_PLTT_ID, BlitBitmapToWindow,
-  CallWindowFunction, ClearStdWindowAndFrame, CopyWindowToVram, CreateTask,
-  CurrentBattlePyramidLocation, DestroyTask, FALSE, FillBgTilemapBufferRect,
-  FlagGet, FuncIsActiveTask, GetMapName, GetMapNamePopUpWindowId,
-  GetStringCenterAlignXOffset, GetWindowAttribute, LoadBgTiles, LoadPalette,
-  NULL, PutWindowTilemap, REG_OFFSET_BG0VOFS, RemoveMapNamePopUpWindow,
-  SetGpuReg, SetGpuReg_ForcedBlank, StringCopy, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ShowMapNamePopup(void) */
 export function ShowMapNamePopup(): any {
   if (FlagGet(FLAG_HIDE_MAP_NAME_POPUP) != TRUE)
@@ -205,7 +189,7 @@ export function LoadMapNamePopUpWindowBg(): any {
       }
       popUpThemeId = sMapSectionToThemeId[regionMapSectionId];
 
-      LoadBgTiles(GetWindowAttribute(popupWindowId, WINDOW_BG), sMapPopUp_OutlineTable[popUpThemeId], _0x400, 0x21D);
+      LoadBgTiles(GetWindowAttribute(popupWindowId, WINDOW_BG), sMapPopUp_OutlineTable[popUpThemeId], 0x400, 0x21D);
       CallWindowFunction(popupWindowId, DrawMapNamePopUpFrame);
       PutWindowTilemap(popupWindowId);
       if (gMapHeader.weather == WEATHER_UNDERWATER_BUBBLES)

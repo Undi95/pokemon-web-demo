@@ -15,32 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BATTLE_PARTNER, BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR,
-  BLDCNT_EFFECT_BLEND, BeginHardwarePaletteFade, ClearBattleAnimBg, CpuCopy32,
-  CpuFill16, CreateSpriteAndAnimate, CreateTask, DestroySprite,
-  DestroyTask, DmaCopy32, DrawBattlerOnBg, DrawMainBattleBackground,
-  FALSE, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  GET_TRUE_SPRITE_INDEX, GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattleAnimBgData,
-  GetBattleBgPaletteNum, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteBGPriorityRank,
-  GetBattlerSpriteCoord, GetBattlerSpriteSubpriority, GetMonData, InitPrioritiesForVisibleBattlers,
-  IsBattlerSpritePresent, IsDoubleBattle, IsSEPlaying, IsSpeciesNotUnown,
-  LZDecompressVram, LZDecompressWram, LoadCompressedPalette, LoadCompressedSpritePaletteUsingHeap,
-  LoadCompressedSpriteSheetUsingHeap, LoadContestBgAfterMoveAnim, LoadPalette, NULL,
-  OBJ_PLTT_ID, PLTT_OFFSET_4BPP, PLTT_SIZE_4BPP, PlaySE,
-  PlaySE12WithPanning, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS,
-  REG_OFFSET_BG2VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, RequestDma3Fill,
-  SE12PanpotControl, SWAP, SetAnimBgAttribute, SetGpuReg,
-  T1_READ_16, T2_READ_32, T2_READ_PTR, TASK_NONE,
-  TRUE, UpdateOamPriorityInAllHealthboxes,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ClearBattleAnimationVars(void) */
 export function ClearBattleAnimationVars(): any {
   let i: any = null;
@@ -523,18 +497,18 @@ export function MoveBattlerSpriteToBG(battler: any, toBG_2: any, setSpriteInvisi
 
           if (IsContest() == TRUE)
           {
-              RequestDma3Fill(0, (BG_SCREEN_ADDR(16)), _0x2000, 1);
-              RequestDma3Fill(0xFF, (BG_SCREEN_ADDR(30)), _0x1000, 0);
+              RequestDma3Fill(0, (BG_SCREEN_ADDR(16)), 0x2000, 1);
+              RequestDma3Fill(0xFF, (BG_SCREEN_ADDR(30)), 0x1000, 0);
           }
           else
           {
-              RequestDma3Fill(0, (BG_SCREEN_ADDR(8)), _0x2000, 1);
-              RequestDma3Fill(0xFF, (BG_SCREEN_ADDR(28)), _0x1000, 0);
+              RequestDma3Fill(0, (BG_SCREEN_ADDR(8)), 0x2000, 1);
+              RequestDma3Fill(0xFF, (BG_SCREEN_ADDR(28)), 0x1000, 0);
           }
 
           GetBattleAnimBg1Data(animBg);
-          CpuFill16(0, animBg.bgTiles, _0x1000);
-          CpuFill16(0xFF, animBg.bgTilemap, _0x800);
+          CpuFill16(0, animBg.bgTiles, 0x1000);
+          CpuFill16(0xFF, animBg.bgTilemap, 0x800);
 
           SetAnimBgAttribute(1, BG_ANIM_PRIORITY, 2);
           SetAnimBgAttribute(1, BG_ANIM_SCREEN_SIZE, 1);
@@ -542,11 +516,11 @@ export function MoveBattlerSpriteToBG(battler: any, toBG_2: any, setSpriteInvisi
 
           battlerSpriteId = gBattlerSpriteIds[battler];
 
-          gBattle_BG1_X =  -(gSprites[battlerSpriteId].x + gSprites[battlerSpriteId].x2) + _0x20;
+          gBattle_BG1_X =  -(gSprites[battlerSpriteId].x + gSprites[battlerSpriteId].x2) + 0x20;
           if (IsContest() && IsSpeciesNotUnown(gContestResources.moveAnim.species))
               gBattle_BG1_X--;
 
-          gBattle_BG1_Y =  -(gSprites[battlerSpriteId].y + gSprites[battlerSpriteId].y2) + _0x20;
+          gBattle_BG1_Y =  -(gSprites[battlerSpriteId].y + gSprites[battlerSpriteId].y2) + 0x20;
           if (setSpriteInvisible)
               gSprites[gBattlerSpriteIds[battler]].invisible = TRUE;
 
@@ -568,19 +542,19 @@ export function MoveBattlerSpriteToBG(battler: any, toBG_2: any, setSpriteInvisi
       }
       else
       {
-          RequestDma3Fill(0, (BG_SCREEN_ADDR(12)), _0x2000, 1);
-          RequestDma3Fill(0, (BG_SCREEN_ADDR(30)), _0x1000, 1);
+          RequestDma3Fill(0, (BG_SCREEN_ADDR(12)), 0x2000, 1);
+          RequestDma3Fill(0, (BG_SCREEN_ADDR(30)), 0x1000, 1);
           GetBattleAnimBgData(animBg, 2);
-          CpuFill16(0, animBg.bgTiles + _0x1000, _0x1000);
-          CpuFill16(0, animBg.bgTilemap + _0x400, _0x800);
+          CpuFill16(0, animBg.bgTiles + 0x1000, 0x1000);
+          CpuFill16(0, animBg.bgTilemap + 0x400, 0x800);
           SetAnimBgAttribute(2, BG_ANIM_PRIORITY, 2);
           SetAnimBgAttribute(2, BG_ANIM_SCREEN_SIZE, 1);
           SetAnimBgAttribute(2, BG_ANIM_AREA_OVERFLOW_MODE, 0);
 
           battlerSpriteId = gBattlerSpriteIds[battler];
 
-          gBattle_BG2_X =  -(gSprites[battlerSpriteId].x + gSprites[battlerSpriteId].x2) + _0x20;
-          gBattle_BG2_Y =  -(gSprites[battlerSpriteId].y + gSprites[battlerSpriteId].y2) + _0x20;
+          gBattle_BG2_X =  -(gSprites[battlerSpriteId].x + gSprites[battlerSpriteId].x2) + 0x20;
+          gBattle_BG2_Y =  -(gSprites[battlerSpriteId].y + gSprites[battlerSpriteId].y2) + 0x20;
 
           if (setSpriteInvisible)
               gSprites[gBattlerSpriteIds[battler]].invisible = TRUE;
@@ -591,7 +565,7 @@ export function MoveBattlerSpriteToBG(battler: any, toBG_2: any, setSpriteInvisi
           LoadPalette(gPlttBufferUnfaded[OBJ_PLTT_ID(battler)], BG_PLTT_ID(9), PLTT_SIZE_4BPP);
           CpuCopy32(gPlttBufferUnfaded[OBJ_PLTT_ID(battler)], (BG_PLTT + PLTT_OFFSET_4BPP(9)), PLTT_SIZE_4BPP);
 
-          DrawBattlerOnBg(2, 0, 0, GetBattlerPosition(battler), animBg.paletteId, animBg.bgTiles + _0x1000, animBg.bgTilemap + _0x400, animBg.tilesOffset);
+          DrawBattlerOnBg(2, 0, 0, GetBattlerPosition(battler), animBg.paletteId, animBg.bgTiles + 0x1000, animBg.bgTilemap + 0x400, animBg.tilesOffset);
       }
 }
 
@@ -616,7 +590,7 @@ export function FlipBattlerBgTiles(): any {
           for (i = 0; i < 8; i++)
           {
               for (j = 0; j < 8; j++)
-                  ptr[j + i * 32] ^= _0x400;
+                  ptr[j + i * 32] ^= 0x400;
           }
       }
 }
@@ -1015,10 +989,10 @@ export function LoadMoveBg(bgId: any): any {
           let dmaDest: any = null;
 
           LZDecompressWram(tilemap, gDecompressionBuffer);
-          RelocateBattleBgPal(GetBattleBgPaletteNum(), gDecompressionBuffer, _0x100, FALSE);
+          RelocateBattleBgPal(GetBattleBgPaletteNum(), gDecompressionBuffer, 0x100, FALSE);
           dmaSrc = gDecompressionBuffer;
           dmaDest = BG_SCREEN_ADDR(26);
-          DmaCopy32(3, dmaSrc, dmaDest, _0x800);
+          DmaCopy32(3, dmaSrc, dmaDest, 0x800);
           LZDecompressVram(gBattleAnimBackgroundTable[bgId].image, BG_SCREEN_ADDR(4));
           LoadCompressedPalette(gBattleAnimBackgroundTable[bgId].palette, BG_PLTT_ID(GetBattleBgPaletteNum()), PLTT_SIZE_4BPP);
       }

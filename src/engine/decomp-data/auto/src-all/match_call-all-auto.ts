@@ -15,34 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinter, AddWindow, Alloc,
-  BG_PLTT_ID, ChangeBgY, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram,
-  CopyWindowToVram, CreateTask, DecompressAndCopyTileDataToVram, DestroyTask,
-  FALSE, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FlagGet,
-  Free, FreeTempTileDataBuffersIfPossible, FreezeObjectEvents, FuncIsActiveTask,
-  GetBattleMatchCallText, GetBgAttribute, GetDifferentRouteMatchCallText, GetGameStat,
-  GetGeneralMatchCallText, GetHoennPokedexCount, GetLastBeatenRematchTrainerId, GetMapName,
-  GetMonAbility, GetMonData, GetNationalPokedexCount, GetObjectEventIdByLocalIdAndMap,
-  GetPlayerTextSpeedDelay, GetRematchTrainerLocation, GetSameRouteMatchCallText, GetSetPokedexFlag,
-  GetTrainerId, GetWindowAttribute, HasTrainerBeenFought, IsDma3ManagerBusyWithBgCopy,
-  IsNationalPokedexEnabled, IsSEPlaying, IsTextPrinterActive, JOY_HELD,
-  JOY_NEW, LOCALID_PLAYER, LoadBgTiles, LoadMessageBoxAndBorderGfx,
-  LoadPalette, LockPlayerFieldControls, MAP_GROUP, MAP_UNDEFINED,
-  NULL, ObjectEventClearHeldMovementIfFinished, Overworld_MapTypeAllowsTeleportAndFly, PIXEL_FILL,
-  PlaySE, PlayerFreeze, PutWindowTilemap, Random,
-  RemoveWindow, RtcCalcLocalTime, RtcGetLocalDayCount, RunTextPrinters,
-  STR_CONV_MODE_LEFT_ALIGN, ScriptMovement_UnfreezeObjectEvents, SpeciesToNationalPokedexNum, StopPlayerAvatar,
-  StringCopy, StringExpandPlaceholders, TRUE, UnfreezeObjectEvents,
-  UnlockPlayerFieldControls, UpdateRematchIfDefeated, WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void InitMatchCallCounters(void) */
 export function InitMatchCallCounters(): any {
   RtcCalcLocalTime();
@@ -240,7 +212,7 @@ export function MatchCall_LoadGfx(taskId: any): any {
       FillWindowPixelBuffer(tWindowId, PIXEL_FILL(8));
       LoadPalette(sMatchCallWindow_Pal, BG_PLTT_ID(14), 0);
       LoadPalette(sPokenavIcon_Pal, BG_PLTT_ID(15), 0);
-      ChangeBgY(0, -_0x2000, BG_COORD_SET);
+      ChangeBgY(0, -0x2000, BG_COORD_SET);
       return TRUE;
 }
 
@@ -274,7 +246,7 @@ export function MatchCall_ReadyIntro(taskId: any): any {
 
 /** static bool32 MatchCall_SlideWindowIn(u8 taskId) */
 export function MatchCall_SlideWindowIn(taskId: any): any {
-  if (ChangeBgY(0, _0x600, BG_COORD_ADD) >= 0)
+  if (ChangeBgY(0, 0x600, BG_COORD_ADD) >= 0)
       {
           ChangeBgY(0, 0, BG_COORD_SET);
           return TRUE;
@@ -317,7 +289,7 @@ export function MatchCall_PrintMessage(taskId: any): any {
 /** static bool32 MatchCall_SlideWindowOut(u8 taskId) */
 export function MatchCall_SlideWindowOut(taskId: any): any {
   let data: any = gTasks[taskId].data;
-      if (ChangeBgY(0, _0x600, BG_COORD_SUB) <= -_0x2000)
+      if (ChangeBgY(0, 0x600, BG_COORD_SUB) <= -0x2000)
       {
           FillBgTilemapBufferRect_Palette0(0, 0, 0, 14, 30, 6);
           DestroyTask(tIconTaskId);
@@ -905,7 +877,7 @@ export function BufferPokedexRatingForMatchCall(destStr: any): any {
 /** void LoadMatchCallWindowGfx(u32 windowId, u32 destOffset, u32 paletteId) */
 export function LoadMatchCallWindowGfx(windowId: any, destOffset: any, paletteId: any): any {
   let bg: any = GetWindowAttribute(windowId, WINDOW_BG);
-      LoadBgTiles(bg, sMatchCallWindow_Gfx, _0x100, destOffset);
+      LoadBgTiles(bg, sMatchCallWindow_Gfx, 0x100, destOffset);
       LoadPalette(sMatchCallWindow_Pal, BG_PLTT_ID(paletteId), 0);
 }
 

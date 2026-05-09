@@ -15,54 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddCustomItemIconSprite, AddTextPrinterParameterized2, AddTextPrinterParameterized3,
-  AddTextPrinterParameterized4, AddWindow, AllocZeroed, AnimateSprites,
-  BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer,
-  ChangeBgX, ChangeBgY, ChooseBerryForMachine, ClearDialogWindowAndFrame,
-  ClearGpuRegBits, ClearRecvCommands, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
-  ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect,
-  CopyWindowToVram, CpuFill16, CreateSprite, CreateTask,
-  CreateWirelessStatusIndicatorSprite, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DecompressAndCopyTileDataToVram,
-  DestroySprite, DestroyTask, DestroyWirelessStatusIndicatorSprite, DigitObjUtil_CreatePrinter,
-  DigitObjUtil_DeletePrinter, DigitObjUtil_Free, DigitObjUtil_HideOrShow, DigitObjUtil_Init,
-  DigitObjUtil_PrintNumOn, DisplayYesNoMenuDefaultYes, DrawDialogueFrame, DrawStdFrameWithCustomTileAndPalette,
-  DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr, ERROR_EXIT,
-  FALSE, FIRST_BERRY_INDEX, FREE_AND_SET_NULL, FillBgTilemapBufferRect_Palette0,
-  FillWindowPixelBuffer, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeSpriteOamMatrix,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, FuncIsActiveTask,
-  GetBerryPowder, GetBlockReceivedStatus, GetLinkPlayerCount, GetMultiplayerId,
-  GetStringRightAlignXOffset, GetStringWidth, GetWindowAttribute, GiveBerryPowder,
-  HasAtLeastOneBerry, HideBg, IncrementGameStat, InitBgsFromTemplates,
-  InitStandardTextBoxWindows, InitTextBoxGfxAndPrinters, IsLinkTaskFinished, IsMinigameCountdownRunning,
-  IsTextPrinterActive, JOY_HELD, JOY_NEW, LZ77UnCompWram,
-  LoadCompressedSpriteSheet, LoadOam, LoadPalette, LoadSpritePalettes,
-  LoadUserWindowBorderGfx_, LoadWirelessStatusIndicatorSpriteGfx, LockPlayerFieldControls, MAX_RFU_PLAYERS,
-  MathUtil_Div16Shift, MathUtil_Div32, MathUtil_Mul16, MathUtil_Mul16Shift,
-  MathUtil_Mul32, Menu_ProcessInputNoWrapClearOnChoose, NULL, PALETTES_ALL,
-  PIXEL_FILL, PLTT_SIZE_4BPP, PlayNewMapMusic, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, Q_24_8, Q_24_8_TO_INT,
-  Q_8_8, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
-  Random, RemoveBagItem, RemoveWindow, ResetBgsAndClearDma3BusyFlags,
-  ResetBlockReceivedFlags, ResetPaletteFade, ResetSpriteData, ResetTempTileDataBuffers,
-  Rfu_SendPacket, Rfu_SetLinkStandbyCallback, RunTasks, RunTextPrinters,
-  STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, SWAP,
-  ScanlineEffect_Stop, ScriptContext_Enable, SendBlock, SetBgTilemapBuffer,
-  SetCloseLinkCallback, SetGpuReg, SetGpuRegBits, SetHBlankCallback,
-  SetMainCallback1, SetMainCallback2, SetVBlankCallback, ShowBg,
-  Sin, SpriteCallbackDummy, StartMinigameCountdown, StartSpriteAffineAnim,
-  StartSpriteAnim, StringAppend, StringCopy, StringExpandPlaceholders,
-  TRUE, TransferPlttBuffer, UnlockPlayerFieldControls, UnsetBgTilemapBuffer,
-  UpdatePaletteFade, memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static struct BerryCrushGame * GetBerryCrushGame(void) */
 export function GetBerryCrushGame(): any {
   return sGame;
@@ -97,7 +49,7 @@ export function StartBerryCrush(exitCallback: any): any {
       if (!gReceivedRemoteLinkPlayers || gWirelessCommType == 0)
       {
            
-          ERROR_EXIT(exitCallback);
+          \;
           return;
       }
 
@@ -106,7 +58,7 @@ export function StartBerryCrush(exitCallback: any): any {
       if (playerCount < 2 || multiplayerId >= playerCount)
       {
            
-          ERROR_EXIT(exitCallback);
+          \;
           return;
       }
 
@@ -114,7 +66,7 @@ export function StartBerryCrush(exitCallback: any): any {
       if (!sGame)
       {
            
-          ERROR_EXIT(exitCallback);
+          \;
           return;
       }
 
@@ -874,10 +826,10 @@ export function Task_ShowRankings(taskId: any): any {
               AddTextPrinterParameterized3(tWindowId, FONT_NORMAL, xPos, yPos, sTextColorTable[COLORID_GRAY], 0, gText_TimesPerSec);
               for (j = 0; j < 8; j++)
               {
-                  if (((tPressingSpeeds(i) & 0xFF) >> (7 - j)) & 1)
+                  if (((data[2 + ((i))] & 0xFF) >> (7 - j)) & 1)
                       score += sPressingSpeedConversionTable[j];
               }
-              ConvertIntToDecimalStringN(gStringVar1, tPressingSpeeds(i) >> 8, STR_CONV_MODE_RIGHT_ALIGN, 3);
+              ConvertIntToDecimalStringN(gStringVar1, data[2 + ((i))] >> 8, STR_CONV_MODE_RIGHT_ALIGN, 3);
               ConvertIntToDecimalStringN(gStringVar2, score / 1000000, STR_CONV_MODE_LEADING_ZEROS, 2);
               StringExpandPlaceholders(gStringVar4, gText_XDotY3);
               xPos -= GetStringWidth(FONT_NORMAL, gStringVar4, -1);
@@ -911,10 +863,10 @@ export function ShowBerryCrushRankings(): any {
 
       LockPlayerFieldControls();
       taskId = CreateTask(Task_ShowRankings, 0);
-      gTasks[taskId].tPressingSpeeds(0) = gSaveBlock2Ptr.berryCrush.pressingSpeeds[0];
-      gTasks[taskId].tPressingSpeeds(1) = gSaveBlock2Ptr.berryCrush.pressingSpeeds[1];
-      gTasks[taskId].tPressingSpeeds(2) = gSaveBlock2Ptr.berryCrush.pressingSpeeds[2];
-      gTasks[taskId].tPressingSpeeds(3) = gSaveBlock2Ptr.berryCrush.pressingSpeeds[3];
+      gTasks[taskId].data[2 + ((0))] = gSaveBlock2Ptr.berryCrush.pressingSpeeds[0];
+      gTasks[taskId].data[2 + ((1))] = gSaveBlock2Ptr.berryCrush.pressingSpeeds[1];
+      gTasks[taskId].data[2 + ((2))] = gSaveBlock2Ptr.berryCrush.pressingSpeeds[2];
+      gTasks[taskId].data[2 + ((3))] = gSaveBlock2Ptr.berryCrush.pressingSpeeds[3];
 }
 
 /** static void PrintTimer(struct BerryCrushGame_Gfx *gfx, u16 timer) */

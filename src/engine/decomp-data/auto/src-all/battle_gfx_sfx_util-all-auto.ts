@@ -15,32 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AllocZeroed, BATTLE_OPPOSITE, BATTLE_PARTNER, BG_PLTT_ID,
-  BattleAI_ChooseMoveOrAction, BattleAI_SetupAIData, BlendPalette, BufferBattlePartyCurrentOrder,
-  CheckMoveLimitations, CpuCopy32, CreateBattlerHealthboxSprites, CreateSafariPlayerHealthboxSprites,
-  CreateSprite, CreateTask, DecompressPicFromTable_2, DestroyTask,
-  Dma3CopyLarge32_, DmaCopy32, DummyBattleInterfaceFunc, FALSE,
-  FREE_AND_SET_NULL, FreeSpritePaletteByTag, GET_BATTLER_SIDE, GetBattlerAtPosition,
-  GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y,
-  GetHPBarLevel, GetMonData, GetMonFrontSpritePal, GetMonSpritePalFromSpeciesAndPersonality,
-  GetNatureFromPersonality, GetPartyIdFromBattlePartyId, GetSubstituteSpriteDefault_Y, HandleLoadSpecialPokePic,
-  HandleLoadSpecialPokePic_DontHandleDeoxys, InitBattlerHealthboxCoords, IsBattlerSpritePresent, IsContest,
-  IsDoubleBattle, IsSEPlaying, LZDecompressVram, LZDecompressWram,
-  LaunchBattleAnimation, LaunchStatusAnimation, LoadCompressedPalette, LoadCompressedSpritePalette,
-  LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, NULL,
-  OBJ_PLTT_ID, PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE,
-  Random, ST_OAM_AFFINE_OFF, SetHealthboxSpriteInvisible, ShouldIgnoreDeoxysForm,
-  SpriteCallbackDummy, StartSpriteAnim, TRUE, TRY_FREE_AND_SET_NULL,
-  UpdateHealthboxAttribute, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void AllocateBattleSpritesData(void) */
 export function AllocateBattleSpritesData(): any {
   gBattleSpritesDataPtr = AllocZeroed(0);
@@ -1129,7 +1103,7 @@ export function HideBattlerShadowSprite(battler: any): any {
 
 /** void FillAroundBattleWindows(void) */
 export function FillAroundBattleWindows(): any {
-  let vramPtr: any = (VRAM + _0x240);
+  let vramPtr: any = (VRAM + 0x240);
       let i: any = null;
       let j: any = null;
 
@@ -1180,7 +1154,7 @@ export function AllocateMonSpritesGfx(): any {
           gMonSpritesGfxPtr.templates[i].images = gMonSpritesGfxPtr.frameImages[i];
       }
 
-      gMonSpritesGfxPtr.barFontGfx = AllocZeroed(_0x1000);
+      gMonSpritesGfxPtr.barFontGfx = AllocZeroed(0x1000);
 }
 
 /** void FreeMonSpritesGfx(void) */

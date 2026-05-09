@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ABILITY_ON_FIELD2, ABILITY_ON_OPPOSING_FIELD, AI_CalcDmg, AI_TypeCalc,
-  BATTLE_OPPOSITE, BATTLE_PARTNER, BtlController_EmitTwoReturnValues, FALSE,
-  GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetItemEffectParamOffset,
-  GetMonData, IS_BATTLER_OF_TYPE, NULL, Random,
-  TRUE, TYPE_EFFECT_ATK_TYPE, TYPE_EFFECT_DEF_TYPE, TYPE_EFFECT_MULTIPLIER,
-  TypeCalc,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static bool8 ShouldSwitchIfPerishSong(void) */
 export function ShouldSwitchIfPerishSong(): any {
   if (gStatuses3[gActiveBattler] & STATUS3_PERISH_SONG

@@ -15,23 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocZeroed, BlendPalettes, CalculateMonStats,
-  CalculatePPWithBonus, CreateTask, DestroyTask, FALSE,
-  FindTaskIdByFunc, Free, FrontierSpeechToString, GetAilmentFromStatus,
-  GetHighestLevelInPlayerParty, GetMonAbility, GetMonData, GetPlayerSymbolCountForFacility,
-  GetRandomScaledFrontierTrainerId, NULL, PALETTES_ALL, Random,
-  SWAP, SaveMapView, ScriptContext_Enable, SetBattleFacilityTrainerGfxId,
-  SetFrontierBrainObjEventGfx, SetMonData, SetMonMoveSlot, TASK_NONE,
-  TRUE, TrySavingData, VarSet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CallBattlePikeFunction(void) */
 export function CallBattlePikeFunction(): any {
   sBattlePikeFunctions[gSpecialVar_0x8004]();

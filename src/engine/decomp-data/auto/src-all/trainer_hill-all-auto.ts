@@ -15,28 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AddTextPrinterParameterized3, AllocZeroed,
-  BG_PLTT_ID, CalculateMonStats, ClearTrainerHillVBlankCounter, ConvertIntToDecimalStringN,
-  CopyItemName, CopyWindowToVram, CpuCopy32, CpuFill32,
-  CreateBattleTowerMon, FALSE, FacilityClassToGraphicsId, FillWindowPixelBuffer,
-  FlagGet, FrontierSpeechToString, GetHighestLevelInPlayerParty, GetMonData,
-  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, InitMapFromSavedGame, LoadPalette,
-  MAP_GROUP, MAP_NUM, NULL, Overworld_GetMapHeaderByGroupAndId,
-  PACK_COLLISION, PACK_ELEVATION, PACK_METATILE, PIXEL_FILL,
-  PLTT_SIZE_4BPP, PutWindowTilemap, ReadTrainerHillAndValidate, RunOnLoadMapScript,
-  STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, SetMonData,
-  SetTrainerHillVBlankCounter, ShowFieldMessageFromBuffer, StringCopy, StringExpandPlaceholders,
-  TRUE, TRY_FREE_AND_SET_NULL, TrainerHillDummy, VarGet,
-  ZeroEnemyPartyMons,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CallTrainerHillFunction(void) */
 export function CallTrainerHillFunction(): any {
   SetUpDataStruct();

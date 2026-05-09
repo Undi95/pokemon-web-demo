@@ -15,51 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddDecorationIconObject, AddItemIconSprite, AddScrollIndicatorArrowPair,
-  AddTextPrinterParameterized, AddTextPrinterParameterized2, AddTextPrinterParameterized5, AddWindow,
-  AllocZeroed, BitmaskAllOtherLinkPlayers, BlendPalettes, CalculatePlayerPartyCount,
-  CameraObjectSetFollowedSpriteId, CheckFreePokemonStorageSpace, CheckPartyPokerus, ClearStdWindowAndFrameToTransparent,
-  ClearWindowTilemap, ConvertIntToDecimalString, ConvertIntToDecimalStringN, ConvertInternationalString,
-  ConvertPixelWidthToTileWidth, CopyMonFavoritePokeblockName, CopyWindowToVram, CountDigits,
-  CreateMon, CreateTask, CreateWindowTemplate, DIR_EAST,
-  DIR_NORTH, DIR_SOUTH, DIR_WEST, DestroyListMenuTask,
-  DestroySpriteAndFreeResources, DestroyTask, DisplayTextAndGetWidth, DoRayquazaScene,
-  DrawWholeMapView, FALSE, FLIP_TRAINER_FAN_CLUB_FLAG, FRONTIER_CHALLENGE,
-  FieldEffectActiveListContains, FieldEffectStart, FieldInitRegionMap, FillWindowPixelBuffer,
-  FillWindowPixelRect, FindTaskIdByFunc, FlagClear, FlagGet,
-  FlagSet, Free, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FuncIsActiveTask, GET_TRAINER_FAN_CLUB_FLAG, GetBlockReceivedStatus, GetBoxMonData,
-  GetBoxedMonPtr, GetEreaderTrainerName, GetGameStat, GetLastUsedWarpMapType,
-  GetLinkPlayerCount, GetMapName, GetMonData, GetMonEVCount,
-  GetMultiplayerId, GetNature, GetObjectEventIdByLocalIdAndMap, GetPlayerAvatarSpriteId,
-  GetPlayerFacingDirection, GetRematchIdxByTrainerIdx, GetRibbonCount, GetStarterPokemon,
-  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, GetVarPointer, INCR_TRAINER_FAN_CLUB_COUNTER,
-  IncrementGameStat, InstallCameraPanAheadCallback, IsLinkTaskFinished, IsMapTypeOutdoors,
-  IsPokeNewsActive, IsTextPrinterActive, ItemIdToBattleMoveId, ListMenuGetCurrentItemArrayId,
-  ListMenuGetScrollAndRow, ListMenuInit, ListMenu_ProcessInput, LoadPalette,
-  LockPlayerFieldControls, MAP_GROUP, MAP_NUM, MAP_UNDEFINED,
-  MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MysteryGift_GetCardStat, NULL,
-  OBJECT_EVENTS_COUNT, OBJ_PLTT_ID, Overworld_SetSavedMusic, PIXEL_FILL,
-  PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE, PutWindowTilemap,
-  Random, RemoveObjectEventByLocalIdAndMap, RemoveScrollIndicatorArrowPair, RemoveWindow,
-  ResetBlockReceivedFlag, SET_TRAINER_FAN_CLUB_COUNTER, SET_TRAINER_FAN_CLUB_FLAG, STR_CONV_MODE_LEADING_ZEROS,
-  STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ScheduleBgCopyTilemapToVram, ScriptContext_Enable,
-  SendBlock, SetCameraPanning, SetCameraPanningCallback, SetCloseLinkCallback,
-  SetCurrentAndNextWeather, SetLastHealLocationWarp, SetLinkStandbyCallback, SetMainCallback2,
-  SetMonData, SetObjEventTemplateCoords, SetSavedWeather, SetStandardWindowBorderStyle,
-  SetWarpDestination, ShowFieldAutoScrollMessage, ShowFieldMessage, SpawnSpecialObjectEventParameterized,
-  StorageGetCurrentBox, StringAppend, StringCompare, StringCopy,
-  StringCopyN, TASK_NONE, TRUE, TestPlayerAvatarFlags,
-  TryGetObjectEventIdByLocalIdAndMap, TryPutSpotTheCutiesOnAir, VarGet, VarSet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void Special_ShowDiploma(void) */
 export function Special_ShowDiploma(): any {
   SetMainCallback2(CB2_ShowDiploma);
@@ -2147,7 +2102,7 @@ export function Task_ShowScrollableMultichoice(taskId: any): any {
               task.tLeft = adjustedLeft;
       }
 
-      template = CreateWindowTemplate(0, task.tLeft, task.tTop, task.tWidth, task.tHeight, 0xF, _0x64);
+      template = CreateWindowTemplate(0, task.tLeft, task.tTop, task.tWidth, task.tHeight, 0xF, 0x64);
       windowId = AddWindow(template);
       task.tWindowId = windowId;
       SetStandardWindowBorderStyle(windowId, FALSE);
@@ -3331,7 +3286,7 @@ export function TryLoseFansFromPlayTimeAfterLinkBattle(): any {
 
 /** void UpdateTrainerFanClubGameClear(void) */
 export function UpdateTrainerFanClubGameClear(): any {
-  if (!GET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS))
+  if (!(FANCLUB_BITFIELD >> ((FANCLUB_GOT_FIRST_FANS)) & 1))
       {
           SetPlayerGotFirstFans();
           SetInitialFansOfPlayer();
@@ -3362,12 +3317,12 @@ export function TryGainNewFanFromCounter(incrementId: any): any {
               }
               else
               {
-                  SET_TRAINER_FAN_CLUB_COUNTER(20);
+                  (FANCLUB_BITFIELD = (FANCLUB_BITFIELD & ~FANCLUB_COUNTER) | ((20)));
               }
           }
           else
           {
-              INCR_TRAINER_FAN_CLUB_COUNTER(sCounterIncrements[incrementId]);
+              (FANCLUB_BITFIELD += ((sCounterIncrements[incrementId])));
           }
       }
 
@@ -3393,17 +3348,17 @@ export function PlayerGainRandomTrainerFan(): any {
 
       for (i = 0; i < ARRAY_COUNT(sFanClubMemberIds); i++)
       {
-          if (!GET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[i]))
+          if (!(FANCLUB_BITFIELD >> ((sFanClubMemberIds[i])) & 1))
           {
               idx = i;
               if (Random() & 1)
               {
-                  SET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]);
+                  (FANCLUB_BITFIELD |= 1 << ((sFanClubMemberIds[idx])));
                   return idx;
               }
           }
       }
-      SET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]);
+      (FANCLUB_BITFIELD |= 1 << ((sFanClubMemberIds[idx])));
       return idx;
 }
 
@@ -3429,19 +3384,19 @@ export function PlayerLoseRandomTrainerFan(): any {
 
       for (i = 0; i < ARRAY_COUNT(sFanClubMemberIds); i++)
       {
-          if (GET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[i]))
+          if ((FANCLUB_BITFIELD >> ((sFanClubMemberIds[i])) & 1))
           {
               idx = i;
               if (Random() & 1)
               {
-                  FLIP_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]);
+                  (FANCLUB_BITFIELD ^= 1 << ((sFanClubMemberIds[idx])));
                   return idx;
               }
           }
       }
 
-      if (GET_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]))
-          FLIP_TRAINER_FAN_CLUB_FLAG(sFanClubMemberIds[idx]);
+      if ((FANCLUB_BITFIELD >> ((sFanClubMemberIds[idx])) & 1))
+          (FANCLUB_BITFIELD ^= 1 << ((sFanClubMemberIds[idx])));
 
       return idx;
 }
@@ -3453,7 +3408,7 @@ export function GetNumFansOfPlayerInTrainerFanClub(): any {
 
       for (i = 0; i < NUM_TRAINER_FAN_CLUB_MEMBERS; i++)
       {
-          if (GET_TRAINER_FAN_CLUB_FLAG(i + FANCLUB_MEMBER1))
+          if ((FANCLUB_BITFIELD >> ((i + FANCLUB_MEMBER1)) & 1))
               numFans++;
       }
 
@@ -3489,14 +3444,14 @@ export function TryLoseFansFromPlayTime(): any {
 
 /** bool8 IsFanClubMemberFanOfPlayer(void) */
 export function IsFanClubMemberFanOfPlayer(): any {
-  return GET_TRAINER_FAN_CLUB_FLAG(gSpecialVar_0x8004);
+  return (FANCLUB_BITFIELD >> ((gSpecialVar_0x8004)) & 1);
 }
 
 /** static void SetInitialFansOfPlayer(void) */
 export function SetInitialFansOfPlayer(): any {
-  SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_MEMBER6);
-      SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_MEMBER1);
-      SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_MEMBER3);
+  (FANCLUB_BITFIELD |= 1 << ((FANCLUB_MEMBER6)));
+      (FANCLUB_BITFIELD |= 1 << ((FANCLUB_MEMBER1)));
+      (FANCLUB_BITFIELD |= 1 << ((FANCLUB_MEMBER3)));
 }
 
 /** void BufferFanClubTrainerName(void) */
@@ -3587,12 +3542,12 @@ export function UpdateTrainerFansAfterLinkBattle(): any {
 
 /** static bool8 DidPlayerGetFirstFans(void) */
 export function DidPlayerGetFirstFans(): any {
-  return GET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS);
+  return (FANCLUB_BITFIELD >> ((FANCLUB_GOT_FIRST_FANS)) & 1);
 }
 
 /** void SetPlayerGotFirstFans(void) */
 export function SetPlayerGotFirstFans(): any {
-  SET_TRAINER_FAN_CLUB_FLAG(FANCLUB_GOT_FIRST_FANS);
+  (FANCLUB_BITFIELD |= 1 << ((FANCLUB_GOT_FIRST_FANS)));
 }
 
 /** u8 Script_TryGainNewFanFromCounter(void) */

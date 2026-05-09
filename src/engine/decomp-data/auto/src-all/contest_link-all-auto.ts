@@ -15,19 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BitmaskAllOtherLinkPlayers, FALSE, GetBlockReceivedStatus, GetLinkPlayerCount,
-  GetLinkPlayerCountAsBitFlags, GetMultiplayerId, IsLinkTaskFinished, ResetBlockReceivedFlag,
-  ResetBlockReceivedFlags, SendBlock, SendBlockRequest, SetLinkStandbyCallback,
-  StripPlayerAndMonNamesForLinkContest, SwitchTaskToFollowupFunc, TRUE, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 LinkContest_SendBlock(void *src, u16 size) */
 export function LinkContest_SendBlock(src: any, size: any): any {
   memcpy(gDecompressionBuffer, src, size);
@@ -238,7 +225,7 @@ export function Task_LinkContest_CommunicateCategoryRS(taskId: any): any {
           if (LinkContest_GetBlockReceivedFromAllPlayers())
           {
               for (i = 0; i < gNumLinkContestPlayers; i++)
-                  gTasks[taskId].tCategories(i) = gBlockRecvBuffer[i][0];
+                  gTasks[taskId].data[((i)) + 1] = gBlockRecvBuffer[i][0];
 
               gTasks[taskId].tState++;
           }
@@ -491,7 +478,7 @@ export function Task_LinkContest_CommunicateLeaderIdsRS(taskId: any): any {
           if (LinkContest_GetBlockReceivedFromAllPlayers())
           {
               for (i = 0; i < CONTESTANT_COUNT; i++)
-                  gTasks[taskId].tLeaderIds(i) = gBlockRecvBuffer[i][0];
+                  gTasks[taskId].data[((i)) + 5] = gBlockRecvBuffer[i][0];
 
               gTasks[taskId].tState++;
           }

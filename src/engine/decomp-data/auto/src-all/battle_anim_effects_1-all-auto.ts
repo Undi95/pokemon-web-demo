@@ -15,36 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocSpritePalette, AnimFastTranslateLinear, AnimTranslateLinear,
-  ArcTan2Neg, BATTLE_PARTNER, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
-  BattleAnimAdjustPanning, BeginNormalPaletteFade, BlendPalette, BlendPalettes,
-  CMD_ARGS, ChangeSpriteAffineAnim, ClearGpuRegBits, CloneBattlerSpriteWithBlend,
-  Cos, CreateSprite, CreateSpriteAndAnimate, DISPCNT_BG1_ON,
-  DISPCNT_BG2_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroyAnimSprite,
-  DestroyAnimVisualTask, DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet,
-  FALSE, FreeSpritePaletteByTag, GetAnimBattlerSpriteId, GetBattleMonSpritePalettesMask,
-  GetBattlePalettesMask, GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteBGPriorityRank,
-  GetBattlerSpriteCoord, GetBattlerSpriteCoord2, GetBattlerSpriteCoordAttr, GetBattlerSpriteSubpriority,
-  IndexOfSpritePaletteTag, InitAnimArcTranslation, InitAnimFastLinearTranslationWithSpeed, InitAnimLinearTranslation,
-  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest,
-  IsDoubleBattle, LoadPalette, LoadPointerFromVars, OBJ_PLTT_ID,
-  OBJ_PLTT_ID2, PLTT_SIZEOF, PlaySE12WithPanning, PrepareBattlerSpriteForRotScale,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, Random2,
-  ResetSpriteRotScale, SPRITE_SHAPE, SPRITE_SIZE, ST_OAM_OBJ_BLEND,
-  ST_OAM_OBJ_NORMAL, SetAnimBgAttribute, SetAnimSpriteInitialXOffset, SetAverageBattlerPositions,
-  SetBattlerSpriteYOffsetFromRotation, SetBattlerSpriteYOffsetFromYScale, SetGpuReg, SetGpuRegBits,
-  SetSpriteCoordsToAnimAttackerCoords, SetSpriteRotScale, Sin, StartSpriteAffineAnim,
-  StartSpriteAnim, StorePointerInVars, StoreSpriteCallbackInData6, TRUE,
-  TranslateAnimHorizontalArc, TrySetSpriteRotScale, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimMovePowderParticle(struct Sprite *sprite) */
 export function AnimMovePowderParticle(sprite: any): any {
   CMD_ARGS(x, y, duration, yVelocity, waveAmplitude, waveSpeed);
@@ -276,7 +246,7 @@ export function AnimSporeParticle(sprite: any): any {
 export function AnimSporeParticle_Step(sprite: any): any {
   sprite.x2 = Sin(sprite.data[1], 32);
       sprite.y2 = Cos(sprite.data[1], -3) + ((sprite.data[2] += 24) >> 8);
-      if ((sprite.data[1] - _0x40) < _0x80)
+      if ((sprite.data[1] - 0x40) < 0x80)
       {
           sprite.oam.priority = GetBattlerSpriteBGPriority(gBattleAnimTarget);
       }
@@ -323,7 +293,7 @@ export function AnimPetalDanceBigFlower(sprite: any): any {
       sprite.data[3] = sprite.y;
       sprite.data[4] = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET) + cmd.targetY;
       InitAnimLinearTranslation(sprite);
-      sprite.data[5] = _0x40;
+      sprite.data[5] = 0x40;
       sprite.callback = AnimPetalDanceBigFlower_Step;
       sprite.callback(sprite);
 }
@@ -334,7 +304,7 @@ export function AnimPetalDanceBigFlower_Step(sprite: any): any {
       {
           sprite.x2 += Sin(sprite.data[5], 32);
           sprite.y2 += Cos(sprite.data[5], -5);
-          if ((sprite.data[5] - _0x40) < _0x80)
+          if ((sprite.data[5] - 0x40) < 0x80)
               sprite.subpriority = GetBattlerSpriteSubpriority(gBattleAnimAttacker) - 1;
           else
               sprite.subpriority = GetBattlerSpriteSubpriority(gBattleAnimAttacker) + 1;
@@ -358,7 +328,7 @@ export function AnimPetalDanceSmallFlower(sprite: any): any {
       sprite.data[3] = sprite.y;
       sprite.data[4] = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET) + cmd.targetY;
       InitAnimLinearTranslation(sprite);
-      sprite.data[5] = _0x40;
+      sprite.data[5] = 0x40;
       sprite.callback = AnimPetalDanceSmallFlower_Step;
       sprite.callback(sprite);
 }
@@ -398,7 +368,7 @@ export function AnimRazorLeafParticle_Step1(sprite: any): any {
       {
           if (sprite.data[1] & 1)
           {
-              sprite.data[0] = _0x80;
+              sprite.data[0] = 0x80;
               sprite.data[1] = 0;
               sprite.data[2] = 0;
           }
@@ -533,7 +503,7 @@ export function AnimMoveTwisterParticle_Step(sprite: any): any {
       sprite.data[5] &= 0xFF;
       sprite.x2 = Cos(sprite.data[5], sprite.data[3]);
       sprite.y2 = Sin(sprite.data[5], 5);
-      if (sprite.data[5] < _0x80)
+      if (sprite.data[5] < 0x80)
           sprite.oam.priority = GetBattlerSpriteBGPriority(gBattleAnimTarget) - 1;
       else
           sprite.oam.priority = GetBattlerSpriteBGPriority(gBattleAnimTarget) + 1;
@@ -562,7 +532,7 @@ export function AnimConstrictBinding_Step1(sprite: any): any {
       {
           sprite.affineAnimPaused = 0;
           spriteId = GetAnimBattlerSpriteId(ANIM_TARGET);
-          sprite.data[0] = _0x100;
+          sprite.data[0] = 0x100;
           sprite.callback = AnimConstrictBinding_Step2;
       }
 }
@@ -609,7 +579,7 @@ export function AnimTask_ShrinkTargetCopy(taskId: any): any {
           gSprites[spriteId].oam.priority = GetBattlerSpriteBGPriority(BATTLE_PARTNER(gBattleAnimTarget));
           gTasks[taskId].data[0] = cmd.unk0;
           gTasks[taskId].data[1] = cmd.unk1;
-          gTasks[taskId].data[11] = _0x100;
+          gTasks[taskId].data[11] = 0x100;
           gTasks[taskId].func = AnimTask_DuplicateAndShrinkToPos_Step1;
       }
 }
@@ -870,7 +840,7 @@ export function AnimKnockOffOpponentsItem(sprite: any): any {
           sprite.data[0] = 0;
       }
 
-      sprite.y2 = Sin(sprite.data[0] + _0x80, 30 - sprite.data[1] * 8);
+      sprite.y2 = Sin(sprite.data[0] + 0x80, 30 - sprite.data[1] * 8);
       if (moveAlongLinearPath(sprite))
       {
           sprite.y2 = 0;
@@ -958,7 +928,7 @@ export function AnimItemSteal_Step3(sprite: any): any {
           sprite.data[0] = 0;
       }
 
-      sprite.y2 = Sin(sprite.data[0] + _0x80, 30 - sprite.data[1] * 8);
+      sprite.y2 = Sin(sprite.data[0] + 0x80, 30 - sprite.data[1] * 8);
       if (sprite.y2 == 0)
           PlaySE12WithPanning(SE_M_BUBBLE2, BattleAnimAdjustPanning(SOUND_PAN_TARGET));
 
@@ -1485,9 +1455,9 @@ export function AnimNeedleArmSpike(sprite: any): any {
           sprite.data[4] = (sprite.data[6] - sprite.y) * 16 / cmd.unk4;
           c = ArcTan2Neg(sprite.data[5] - x, sprite.data[6] - y);
           if (IsContest())
-              c -= _0x8000;
+              c -= 0x8000;
 
-          TrySetSpriteRotScale(sprite, FALSE, _0x100, _0x100, c);
+          TrySetSpriteRotScale(sprite, FALSE, 0x100, 0x100, c);
           sprite.callback = AnimNeedleArmSpike_Step;
       }
 }
@@ -1581,8 +1551,8 @@ export function AnimCuttingSlice(sprite: any): any {
       }
 
       sprite.y += cmd.unk1;
-      sprite.data[1] -= _0x400;
-      sprite.data[2] += _0x400;
+      sprite.data[1] -= 0x400;
+      sprite.data[2] += 0x400;
       sprite.data[5] = cmd.unk2;
       if (sprite.data[5] == 1)
           sprite.data[1] = -sprite.data[1];
@@ -1632,8 +1602,8 @@ export function AnimAirCutterSlice(sprite: any): any {
       }
 
       sprite.y += cmd.unk1;
-      sprite.data[1] -= _0x400;
-      sprite.data[2] += _0x400;
+      sprite.data[1] -= 0x400;
+      sprite.data[2] += 0x400;
       sprite.data[5] = cmd.unk2;
       if (sprite.data[5] == 1)
           sprite.data[1] = -sprite.data[1];
@@ -1644,11 +1614,11 @@ export function AnimSlice_Step(sprite: any): any {
   sprite.data[3] += sprite.data[1];
       sprite.data[4] += sprite.data[2];
       if (sprite.data[5] == 0)
-          sprite.data[1] += _0x18;
+          sprite.data[1] += 0x18;
       else
-          sprite.data[1] -= _0x18;
+          sprite.data[1] -= 0x18;
 
-      sprite.data[2] -= _0x18;
+      sprite.data[2] -= 0x18;
       sprite.x2 = sprite.data[3] >> 8;
       sprite.y2 = sprite.data[4] >> 8;
       sprite.data[0]++;
@@ -1856,7 +1826,7 @@ export function AnimMilkBottle_Step2(sprite: any, unk1: any, unk2: any): any {
   if (sprite.data[3] <= 11)
           sprite.data[4] += 2;
 
-      if ((sprite.data[3] - _0x12) <= _0x17)
+      if ((sprite.data[3] - 0x12) <= 0x17)
           sprite.data[4] -= 2;
 
       if ((sprite.data[3]) > 0x2F)
@@ -1984,7 +1954,7 @@ export function AnimSleepLetterZ(sprite: any): any {
 
 /** static void AnimSleepLetterZ_Step(struct Sprite *sprite) */
 export function AnimSleepLetterZ_Step(sprite: any): any {
-  sprite.y2 = -(sprite.data[0] / _0x28);
+  sprite.y2 = -(sprite.data[0] / 0x28);
       sprite.x2 = sprite.data[4] / 10;
       sprite.data[4] += sprite.data[3] * 2;
       sprite.data[0] += sprite.data[1];
@@ -2020,7 +1990,7 @@ export function AnimLockOnTarget_Step1(sprite: any): any {
           sprite.data[4] = sprite.y + gInclineMonCoordTable[sprite.data[5] >> 8][1];
           sprite.callback = StartAnimLinearTranslation;
           StoreSpriteCallbackInData6(sprite, AnimLockOnTarget_Step2);
-          sprite.data[5] += _0x100;
+          sprite.data[5] += 0x100;
           PlaySE12WithPanning(SE_M_LOCK_ON, BattleAnimAdjustPanning(SOUND_PAN_TARGET));
           break;
       }
@@ -2145,25 +2115,25 @@ export function AnimLockOnMoveTarget(sprite: any): any {
       sprite.oam.affineParam = cmd.unk0;
       if (cmd.unk0 == 1)
       {
-          sprite.x -= _0x18;
-          sprite.y -= _0x18;
+          sprite.x -= 0x18;
+          sprite.y -= 0x18;
       }
       else if (cmd.unk0 == 2)
       {
-          sprite.x -= _0x18;
-          sprite.y += _0x18;
+          sprite.x -= 0x18;
+          sprite.y += 0x18;
           sprite.oam.matrixNum = ST_OAM_VFLIP;
       }
       else if (cmd.unk0 == 3)
       {
-          sprite.x += _0x18;
-          sprite.y -= _0x18;
+          sprite.x += 0x18;
+          sprite.y -= 0x18;
           sprite.oam.matrixNum = ST_OAM_HFLIP;
       }
       else
       {
-          sprite.x += _0x18;
-          sprite.y += _0x18;
+          sprite.x += 0x18;
+          sprite.y += 0x18;
           sprite.oam.matrixNum = ST_OAM_HFLIP | ST_OAM_VFLIP;
       }
 
@@ -2211,12 +2181,12 @@ export function AnimBowMon_Step1_Callback(sprite: any): any {
       {
           sprite.data[3] = gBattlerSpriteIds[gBattleAnimAttacker];
           PrepareBattlerSpriteForRotScale(sprite.data[3], ST_OAM_OBJ_NORMAL);
-          sprite.data[4] = (sprite.data[6] = GetBattlerSide(gBattleAnimAttacker)) ? _0x300 : -_0x300;
+          sprite.data[4] = (sprite.data[6] = GetBattlerSide(gBattleAnimAttacker)) ? 0x300 : -0x300;
           sprite.data[5] = 0;
       }
 
       sprite.data[5] += sprite.data[4];
-      SetSpriteRotScale(sprite.data[3], _0x100, _0x100, sprite.data[5]);
+      SetSpriteRotScale(sprite.data[3], 0x100, 0x100, sprite.data[5]);
       SetBattlerSpriteYOffsetFromRotation(sprite.data[3]);
       if (++sprite.data[0] > 3)
       {
@@ -2257,13 +2227,13 @@ export function AnimBowMon_Step3_Callback(sprite: any): any {
           }
           else
           {
-              sprite.data[4] = _0x400;
+              sprite.data[4] = 0x400;
               sprite.data[5] = 0xF400;
           }
       }
 
       sprite.data[5] += sprite.data[4];
-      SetSpriteRotScale(sprite.data[3], _0x100, _0x100, sprite.data[5]);
+      SetSpriteRotScale(sprite.data[3], 0x100, 0x100, sprite.data[5]);
       SetBattlerSpriteYOffsetFromRotation(sprite.data[3]);
       if (++sprite.data[0] > 2)
       {
@@ -2291,14 +2261,14 @@ export function AnimTipMon_Step(sprite: any): any {
           sprite.data[1] = 0;
           sprite.data[2] = gBattlerSpriteIds[gBattleAnimAttacker];
           sprite.data[3] = GetBattlerSide(gBattleAnimAttacker);
-          sprite.data[4] = (sprite.data[3] != B_SIDE_PLAYER) ? _0x200 : -_0x200;
+          sprite.data[4] = (sprite.data[3] != B_SIDE_PLAYER) ? 0x200 : -0x200;
           sprite.data[5] = 0;
           PrepareBattlerSpriteForRotScale(sprite.data[2], ST_OAM_OBJ_NORMAL);
           sprite.data[0]++;
            
       case 1:
           sprite.data[5] += sprite.data[4];
-          SetSpriteRotScale(sprite.data[2], _0x100, _0x100, sprite.data[5]);
+          SetSpriteRotScale(sprite.data[2], 0x100, 0x100, sprite.data[5]);
           SetBattlerSpriteYOffsetFromRotation(sprite.data[2]);
           if (++sprite.data[1] > 3)
           {
@@ -2309,7 +2279,7 @@ export function AnimTipMon_Step(sprite: any): any {
           break;
       case 2:
           sprite.data[5] += sprite.data[4];
-          SetSpriteRotScale(sprite.data[2], _0x100, _0x100, sprite.data[5]);
+          SetSpriteRotScale(sprite.data[2], 0x100, 0x100, sprite.data[5]);
           SetBattlerSpriteYOffsetFromRotation(sprite.data[2]);
           if (++sprite.data[1] > 3)
           {
@@ -2347,7 +2317,7 @@ export function AnimTask_SkullBashPosition(taskId: any): any {
           break;
       case 1:
           gTasks[taskId].data[3] = 8;
-          gTasks[taskId].data[4] = _0x600;
+          gTasks[taskId].data[4] = 0x600;
           gTasks[taskId].data[5] = 0xC0;
           if (side == B_SIDE_PLAYER)
           {
@@ -2385,7 +2355,7 @@ export function AnimTask_SkullBashPositionSet(taskId: any): any {
           if (task.data[3])
           {
               task.data[4] += task.data[5];
-              SetSpriteRotScale(task.data[0], _0x100, _0x100, task.data[4]);
+              SetSpriteRotScale(task.data[0], 0x100, 0x100, task.data[4]);
               SetBattlerSpriteYOffsetFromRotation(task.data[0]);
               task.data[3]--;
           }
@@ -2393,7 +2363,7 @@ export function AnimTask_SkullBashPositionSet(taskId: any): any {
           {
               task.data[3] = 8;
               task.data[4] = gSprites[task.data[0]].x2;
-              task.data[5] = (task.data[1] == 0) ? _0x2 : -_0x2;
+              task.data[5] = (task.data[1] == 0) ? 0x2 : -0x2;
               task.data[6] = 1;
               task.data[2]++;
           }
@@ -2457,7 +2427,7 @@ export function AnimTask_SkullBashPositionReset(taskId: any): any {
       if (task.data[3])
       {
           task.data[4] -= task.data[5];
-          SetSpriteRotScale(task.data[0], _0x100, _0x100, task.data[4]);
+          SetSpriteRotScale(task.data[0], 0x100, 0x100, task.data[4]);
           SetBattlerSpriteYOffsetFromRotation(task.data[0]);
           task.data[3]--;
       }
@@ -2769,9 +2739,9 @@ export function AnimTask_MoonlightEndFade(taskId: any): any {
       b = GetBattleMonSpritePalettesMask(1, 1, 1, 1);
       c = a | b;
       StorePointerInVars(gTasks[taskId].data[14],gTasks[taskId].data[15], c);
-      b = b | (_0x10000 << IndexOfSpritePaletteTag(ANIM_TAG_MOON));
+      b = b | (0x10000 << IndexOfSpritePaletteTag(ANIM_TAG_MOON));
       d = IndexOfSpritePaletteTag(ANIM_TAG_GREEN_SPARKLE);
-      BeginNormalPaletteFade((_0x10000 << d) | b, 0, 0, 16, RGB(27, 29, 31));
+      BeginNormalPaletteFade((0x10000 << d) | b, 0, 0, 16, RGB(27, 29, 31));
       gTasks[taskId].func = AnimTask_MoonlightEndFade_Step;
       gTasks[taskId].func(taskId);
 }
@@ -2876,7 +2846,7 @@ export function AnimHornHit(sprite: any): any {
           sprite.x += 40;
           sprite.y += 20;
           sprite.data[2] = sprite.x << 7;
-          sprite.data[3] = -_0x1400 / sprite.data[1];
+          sprite.data[3] = -0x1400 / sprite.data[1];
           sprite.data[4] = sprite.y << 7;
           sprite.data[5] = -0xA00 / sprite.data[1];
       }
@@ -2885,7 +2855,7 @@ export function AnimHornHit(sprite: any): any {
           sprite.x -= 40;
           sprite.y += 20;
           sprite.data[2] = sprite.x << 7;
-          sprite.data[3] = _0x1400 / sprite.data[1];
+          sprite.data[3] = 0x1400 / sprite.data[1];
           sprite.data[4] = sprite.y << 7;
           sprite.data[5] = -0xA00 / sprite.data[1];
       }
@@ -2894,7 +2864,7 @@ export function AnimHornHit(sprite: any): any {
           sprite.x += 40;
           sprite.y -= 20;
           sprite.data[2] = sprite.x << 7;
-          sprite.data[3] = -_0x1400 / sprite.data[1];
+          sprite.data[3] = -0x1400 / sprite.data[1];
           sprite.data[4] = sprite.y << 7;
           sprite.data[5] = 0xA00 / sprite.data[1];
           sprite.oam.matrixNum = (ST_OAM_HFLIP | ST_OAM_VFLIP);

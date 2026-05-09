@@ -15,51 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddPokeblock, AddTextPrinterParameterized, AddTextPrinterParameterized4,
-  AddWindow, AllocZeroed, AnimateSprites, BGCNT_PRIORITY,
-  BG_PLTT_ID, BG_SCREEN_ADDR, BeginFastPaletteFade, BeginNormalPaletteFade,
-  Blender_DummiedOutFunc, BuildOamBuffer, ChangeBgX, ChangeBgY,
-  ChooseBerryForMachine, ClearDialogWindowAndFrameToTransparent, ClearLinkCallback, ClearStdWindowAndFrameToTransparent,
-  ConvertIntToDecimalStringN, ConvertInternationalString, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer,
-  CopyWindowToVram, CreateSpinningBerrySprite, CreateSprite, CreateTask,
-  CreateWirelessStatusIndicatorSprite, CreateYesNoMenu, DISPCNT_BG2_ON, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH, DeactivateAllTextPrinters,
-  DestroySprite, DestroyTask, DrawDialogFrameWithCustomTileAndPalette, DrawStdFrameWithCustomTileAndPalette,
-  DrawStdWindowFrame, FALSE, FIRST_BERRY_INDEX, FREE_AND_SET_NULL,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FlagGet, Free,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, GetBerryInfo, GetBlockReceivedStatus,
-  GetCurrentMapMusic, GetDecompressedDataSize, GetFirstFreePokeblockSlot, GetHighestPokeblocksFlavorLevel,
-  GetLinkPlayerCount, GetLinkPlayerCountAsBitFlags, GetMultiplayerId, GetPlayerTextSpeedDelay,
-  GetPokeblocksFeel, GetPokeblocksFlavor, GetStringCenterAlignXOffset, GetStringRightAlignXOffset,
-  ITEM_TO_BERRY, IncrementDailyBerryBlender, IncrementGameStat, InitBgsFromTemplates,
-  InitWindows, IsBagPocketNonEmpty, IsFanfareTaskInactive, IsLinkTaskFinished,
-  IsTextPrinterActive, JOY_HELD_RAW, JOY_NEW, LZDecompressWram,
-  LoadBgTiles, LoadMessageBoxGfx, LoadOam, LoadPalette,
-  LoadSpritePalette, LoadSpriteSheet, LoadUserWindowBorderGfx, LoadWirelessStatusIndicatorSpriteGfx,
-  Menu_LoadStdPalAt, Menu_ProcessInputNoWrapClearOnChoose, NULL, PALETTES_ALL,
-  PIXEL_FILL, PLTT_SIZE_4BPP, PlayBGM, PlayFanfare,
-  PlaySE, ProcessSpriteCopyRequests, Put3CheersForPokeblocksOnTheAir, PutWindowTilemap,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2CNT, REG_OFFSET_DISPCNT, Random, RemoveBagItem,
-  ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetSpriteData, ResetTasks,
-  RunTasks, RunTextPrinters, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN,
-  STR_CONV_MODE_RIGHT_ALIGN, SWAP, SendBlock, SendBlockRequest,
-  SetBerryBlenderLinkCallback, SetBgAffine, SetBgTilemapBuffer, SetCloseLinkCallback,
-  SetGpuReg, SetGpuRegBits, SetLinkDebugValues, SetLinkStandbyCallback,
-  SetMainCallback2, SetVBlankCallback, SetWirelessCommType0, ShowBg,
-  SpriteCallbackDummy, StartSpriteAnim, StringAppend, StringAppendWithPlaceholder,
-  StringCompare, StringCopy, TRUE, TransferPlttBuffer,
-  UnsetBgTilemapBuffer, UpdatePaletteFade, WriteSaveBlock1Sector, WriteSaveBlock2,
-  gSineTable, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void UpdateHitPitch(void) */
 export function UpdateHitPitch(): any {
   m4aMPlayPitchControl(gMPlayInfo_SE2, TRACKS_ALL, 2 * (sBerryBlender.speed - MIN_ARROW_SPEED));
@@ -87,7 +42,7 @@ export function LoadBerryBlenderGfx(): any {
           sBerryBlender.loadGfxState++;
           break;
       case 1:
-          CopyToBgTilemapBuffer(2, sBlenderCenter_Tilemap, _0x400, 0);
+          CopyToBgTilemapBuffer(2, sBlenderCenter_Tilemap, 0x400, 0);
           CopyBgTilemapBufferToVram(2);
           LoadPalette(gBlenderCenter_Pal, BG_PLTT_ID(0), 8 * PLTT_SIZE_4BPP);
           sBerryBlender.loadGfxState++;
@@ -194,7 +149,7 @@ export function CB2_LoadBerryBlender(): any {
           SetBgTilemapBuffer(1, sBerryBlender.tilemapBuffers[0]);
           SetBgTilemapBuffer(2, sBerryBlender.tilemapBuffers[1]);
           LoadUserWindowBorderGfx(0, 1, BG_PLTT_ID(13));
-          LoadMessageBoxGfx(0, _0x14, BG_PLTT_ID(15));
+          LoadMessageBoxGfx(0, 0x14, BG_PLTT_ID(15));
           InitBerryBlenderWindows();
 
           sBerryBlender.mainState++;
@@ -225,7 +180,7 @@ export function CB2_LoadBerryBlender(): any {
           }
           break;
       case 2:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           UpdateBlenderCenter();
           sBerryBlender.mainState++;
           break;
@@ -239,7 +194,7 @@ export function CB2_LoadBerryBlender(): any {
               sBerryBlender.mainState++;
           break;
       case 5:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
           sBerryBlender.mainState++;
           break;
       case 6:
@@ -435,7 +390,7 @@ export function CB2_StartBlenderLink(): any {
           sBerryBlender.mainState++;
           break;
       case 3:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           sBerryBlender.mainState++;
           break;
       case 4:
@@ -531,7 +486,7 @@ export function CB2_StartBlenderLink(): any {
           break;
       case 14:
           SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);
-          sBerryBlender.arrowPos += _0x200;
+          sBerryBlender.arrowPos += 0x200;
           sBerryBlender.centerScale += 4;
           if (sBerryBlender.centerScale > 255)
           {
@@ -612,7 +567,7 @@ export function InitBlenderBgs(): any {
       SetBgTilemapBuffer(1, sBerryBlender.tilemapBuffers[0]);
       SetBgTilemapBuffer(2, sBerryBlender.tilemapBuffers[1]);
       LoadUserWindowBorderGfx(0, 1, BG_PLTT_ID(13));
-      LoadMessageBoxGfx(0, _0x14, BG_PLTT_ID(15));
+      LoadMessageBoxGfx(0, 0x14, BG_PLTT_ID(15));
       InitBerryBlenderWindows();
 
       sBerryBlender.unk0 = 0;
@@ -717,7 +672,7 @@ export function PrintPlayerNames(): any {
 
               text[0] = EOS;
               StringCopy(text, gLinkPlayers[sBerryBlender.arrowIdToPlayerId[i]].name);
-              xPos = GetStringCenterAlignXOffset(FONT_NORMAL, text, _0x38);
+              xPos = GetStringCenterAlignXOffset(FONT_NORMAL, text, 0x38);
 
               if (playerId == sBerryBlender.arrowIdToPlayerId[i])
                   Blender_AddTextPrinter(i, text, xPos, 1, 0, 2);  
@@ -773,7 +728,7 @@ export function CB2_StartBlenderLocal(): any {
           sBerryBlender.mainState++;
           break;
       case 3:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           sBerryBlender.mainState++;
           sBerryBlender.framesToWait = 0;
           break;
@@ -828,7 +783,7 @@ export function CB2_StartBlenderLocal(): any {
           break;
       case 14:
           SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);
-          sBerryBlender.arrowPos += _0x200;
+          sBerryBlender.arrowPos += 0x200;
           sBerryBlender.centerScale += 4;
           if (sBerryBlender.centerScale > 255)
           {
@@ -994,7 +949,7 @@ export function Task_HandleOpponent1(taskId: any): any {
 
 /** static void Task_HandleOpponent2(u8 taskId) */
 export function Task_HandleOpponent2(taskId: any): any {
-  let var1: any = (sBerryBlender.arrowPos + _0x1800) & 0xFFFF;
+  let var1: any = (sBerryBlender.arrowPos + 0x1800) & 0xFFFF;
       let arrowId: any = sBerryBlender.playerIdToArrowId[2] & 0xFF;
       if ((var1 >> 8) > sArrowHitRangeStart[arrowId] + 20 && (var1 >> 8) < sArrowHitRangeStart[arrowId] + 40)
       {
@@ -1039,7 +994,7 @@ export function Task_HandleOpponent2(taskId: any): any {
 
 /** static void Task_HandleOpponent3(u8 taskId) */
 export function Task_HandleOpponent3(taskId: any): any {
-  let var1: any = (sBerryBlender.arrowPos + _0x1800) & 0xFFFF;
+  let var1: any = (sBerryBlender.arrowPos + 0x1800) & 0xFFFF;
       let arrowId: any = sBerryBlender.playerIdToArrowId[3] & 0xFF;
       if ((var1 >> 8) > sArrowHitRangeStart[arrowId] + 20 && (var1 >> 8) < sArrowHitRangeStart[arrowId] + 40)
       {
@@ -1954,7 +1909,7 @@ export function CB2_CheckPlayAgainLink(): any {
       case 9:
           if (IsLinkTaskFinished())
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               sBerryBlender.gameEndState++;
           }
           break;
@@ -2416,11 +2371,11 @@ export function UpdateRPM(speed: any): any {
           digits[i] = currentRPM % 10;
           currentRPM /= 10;
       }
-      MEM_WRITE(((BG_SCREEN_ADDR(12) + _0x458)), digits[4] + RPM_DIGIT);
+      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x458)), digits[4] + RPM_DIGIT);
       MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x45A)), digits[3] + RPM_DIGIT);
       MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x45C)), digits[2] + RPM_DIGIT);
-      MEM_WRITE(((BG_SCREEN_ADDR(12) + _0x460)), digits[1] + RPM_DIGIT);
-      MEM_WRITE(((BG_SCREEN_ADDR(12) + _0x462)), digits[0] + RPM_DIGIT);
+      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x460)), digits[1] + RPM_DIGIT);
+      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x462)), digits[0] + RPM_DIGIT);
 }
 
 /** static void ShakeBgCoordForHit(s16 *coord, u16 speed) */
@@ -2560,10 +2515,10 @@ export function PrintBlendingResults(): any {
                   ConvertInternationalString(sBerryBlender.stringVar, gLinkPlayers[place].language);
                    
                   StringAppendWithPlaceholder(sBerryBlender.stringVar, sText_SpaceBerry, sBerryBlender.stringVar);
-                  Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, _0x54, yPos, TEXT_SKIP_DRAW, 3);
+                  Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 0x54, yPos, TEXT_SKIP_DRAW, 3);
               }
 
-              Blender_AddTextPrinter(WIN_RESULTS, sText_MaximumSpeed, 0, _0x51, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sText_MaximumSpeed, 0, 0x51, TEXT_SKIP_DRAW, 3);
               ConvertIntToDecimalStringN(sBerryBlender.stringVar, sBerryBlender.maxRPM / 100, STR_CONV_MODE_RIGHT_ALIGN, 3);
                
               {
@@ -2577,8 +2532,8 @@ export function PrintBlendingResults(): any {
               StringAppend(sBerryBlender.stringVar, sText_RPM);
 
               xPos = GetStringRightAlignXOffset(FONT_NORMAL, sBerryBlender.stringVar, 0xA8);
-              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, xPos, _0x51, TEXT_SKIP_DRAW, 3);
-              Blender_AddTextPrinter(WIN_RESULTS, sText_Time, 0, _0x61, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, xPos, 0x51, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sText_Time, 0, 0x61, TEXT_SKIP_DRAW, 3);
 
               seconds = (sBerryBlender.gameFrameTime / 60) % 60;
               minutes = (sBerryBlender.gameFrameTime / (60 * 60));
@@ -2590,7 +2545,7 @@ export function PrintBlendingResults(): any {
               StringAppend(sBerryBlender.stringVar, sText_Sec);
 
               xPos = GetStringRightAlignXOffset(FONT_NORMAL, sBerryBlender.stringVar, 0xA8);
-              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, xPos, _0x61, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, xPos, 0x61, TEXT_SKIP_DRAW, 3);
 
               sBerryBlender.framesToWait = 0;
               sBerryBlender.mainState++;
@@ -2940,7 +2895,7 @@ export function PrintMessage(textState: any, string: any, textSpeed: any): any {
   switch (textState)
       {
       case 0:
-          DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, _0x14, 0xF);
+          DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 0x14, 0xF);
           Blender_AddTextPrinter(WIN_MSG, string, 0, 1, textSpeed, 0);
           PutWindowTilemap(WIN_MSG);
           CopyWindowToVram(WIN_MSG, COPYWIN_FULL);

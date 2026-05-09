@@ -15,27 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocSpritePalette, BG_CHAR_ADDR, BG_PLTT_ID,
-  BG_SCREEN_ADDR, BattlePutTextOnWindow, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer,
-  CopyToBgTilemapBufferRect_ChangePalette, Cos2, CpuCopy16, CreateSprite,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DeactivateAllTextPrinters,
-  DestroyTask, DisableInterrupts, EnableInterrupts, FALSE,
-  GetCurrentMapBattleScene, InitBgsFromTemplates, InitWindows, LZDecompressVram,
-  LoadCompressedPalette, LoadCompressedSpriteSheetUsingHeap, LoadMessageBoxGfx, LoadUserWindowBorderGfx,
-  Menu_LoadStdPalAt, OBJ_PLTT_ID, PLTT_SIZEOF, PLTT_SIZE_4BPP,
-  PlaySE, REG_OFFSET_BG1CNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  ResetBgsAndClearDma3BusyFlags, SetBgAttribute, SetBgTilemapBuffer, SetGpuReg,
-  Sin2, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void BattleInitBgsAndWindows(void) */
 export function BattleInitBgsAndWindows(): any {
   ResetBgsAndClearDma3BusyFlags(0);
@@ -69,15 +48,15 @@ export function InitBattleBgsVideo(): any {
 
 /** void LoadBattleMenuWindowGfx(void) */
 export function LoadBattleMenuWindowGfx(): any {
-  LoadUserWindowBorderGfx(2, _0x12, BG_PLTT_ID(1));
-      LoadUserWindowBorderGfx(2, _0x22, BG_PLTT_ID(1));
+  LoadUserWindowBorderGfx(2, 0x12, BG_PLTT_ID(1));
+      LoadUserWindowBorderGfx(2, 0x22, BG_PLTT_ID(1));
       LoadCompressedPalette(gBattleWindowTextPalette, BG_PLTT_ID(5), PLTT_SIZE_4BPP);
 
       if (gBattleTypeFlags & BATTLE_TYPE_ARENA)
       {
            
           Menu_LoadStdPalAt(BG_PLTT_ID(7));
-          LoadMessageBoxGfx(0, _0x30, BG_PLTT_ID(7));
+          LoadMessageBoxGfx(0, 0x30, BG_PLTT_ID(7));
           gPlttBufferUnfaded[BG_PLTT_ID(7) + 6] = 0;
           CpuCopy16(gPlttBufferUnfaded[BG_PLTT_ID(7) + 6],gPlttBufferFaded[BG_PLTT_ID(7) + 6], PLTT_SIZEOF(1));
       }
@@ -238,9 +217,9 @@ export function DrawLinkBattleParticipantPokeballs(taskId: any, multiplayerId: a
           }
 
           for (i = 0; i < 3; i++)
-              tiles[i] = ((pokeballStatuses & (3 << (i * 2))) >> (i * 2)) + _0x6001;
+              tiles[i] = ((pokeballStatuses & (3 << (i * 2))) >> (i * 2)) + 0x6001;
 
-          CopyToBgTilemapBufferRect_ChangePalette(bgId, tiles, destX, destY, 3, 1, _0x11);
+          CopyToBgTilemapBufferRect_ChangePalette(bgId, tiles, destX, destY, 3, 1, 0x11);
           CopyBgTilemapBufferToVram(bgId);
       }
       else
@@ -251,9 +230,9 @@ export function DrawLinkBattleParticipantPokeballs(taskId: any, multiplayerId: a
               pokeballStatuses = gTasks[taskId].data[4];
 
           for (i = 0; i < 6; i++)
-              tiles[i] = ((pokeballStatuses & (3 << (i * 2))) >> (i * 2)) + _0x6001;
+              tiles[i] = ((pokeballStatuses & (3 << (i * 2))) >> (i * 2)) + 0x6001;
 
-          CopyToBgTilemapBufferRect_ChangePalette(bgId, tiles, destX, destY, 6, 1, _0x11);
+          CopyToBgTilemapBufferRect_ChangePalette(bgId, tiles, destX, destY, 6, 1, 0x11);
           CopyBgTilemapBufferToVram(bgId);
       }
 }
@@ -435,7 +414,7 @@ export function InitLinkBattleVsScreen(taskId: any): any {
               DestroyTask(taskId);
               gSprites[gBattleStruct.linkBattleVsSpriteId_V].invisible = FALSE;
               gSprites[gBattleStruct.linkBattleVsSpriteId_S].invisible = FALSE;
-              gSprites[gBattleStruct.linkBattleVsSpriteId_S].oam.tileNum += _0x40;
+              gSprites[gBattleStruct.linkBattleVsSpriteId_S].oam.tileNum += 0x40;
               gSprites[gBattleStruct.linkBattleVsSpriteId_V].data[0] = 0;
               gSprites[gBattleStruct.linkBattleVsSpriteId_S].data[0] = 1;
               gSprites[gBattleStruct.linkBattleVsSpriteId_V].data[1] = gSprites[gBattleStruct.linkBattleVsSpriteId_V].x;

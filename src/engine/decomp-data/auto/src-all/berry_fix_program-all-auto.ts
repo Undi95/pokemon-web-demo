@@ -15,29 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized3, AllocZeroed, BG_CHAR_ADDR,
-  BG_SCREEN_ADDR, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram,
-  CopyWindowToVram, CpuCopy32, DISPCNT_OBJ_1D_MAP, DeactivateAllTextPrinters,
-  DisableInterrupts, DmaCopy32, DmaFill32, DoSoftReset,
-  EnableInterrupts, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, GetStringWidth,
-  HideBg, InitBgsFromTemplates, InitWindows, JOY_NEW,
-  LZ77UnCompVram, MultiBootCheckComplete, MultiBootInit, MultiBootMain,
-  MultiBootStartMaster, NULL, PIXEL_FILL, PLTT_OFFSET_4BPP,
-  PLTT_SIZE, PLTT_SIZEOF, PutWindowTilemap, REG_OFFSET_BG0CNT,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags,
-  ResetSpriteData, ResetTasks, ScanlineEffect_Stop, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, ShowBg, TryScene,
-  VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CB2_InitBerryFixProgram(void) */
 export function CB2_InitBerryFixProgram(): any {
   DisableInterrupts(0xFFFF);  
@@ -63,15 +40,15 @@ export function BerryFix_Main(): any {
               sBerryFix.state = MAINSTATE_BEGIN;
               break;
           case MAINSTATE_BEGIN:
-              if (TryScene(SCENE_BEGIN) && (JOY_NEW(A_BUTTON)))
+              if (BerryFix_TrySetScene((SCENE_BEGIN)) == ((SCENE_BEGIN)) && (JOY_NEW(A_BUTTON)))
                   sBerryFix.state = MAINSTATE_CONNECT;
               break;
           case MAINSTATE_CONNECT:
-              if (TryScene(SCENE_ENSURE_CONNECT) && (JOY_NEW(A_BUTTON)))
+              if (BerryFix_TrySetScene((SCENE_ENSURE_CONNECT)) == ((SCENE_ENSURE_CONNECT)) && (JOY_NEW(A_BUTTON)))
                   sBerryFix.state = MAINSTATE_INIT_MULTIBOOT;
               break;
           case MAINSTATE_INIT_MULTIBOOT:
-              if (TryScene(SCENE_TURN_OFF_POWER))
+              if (BerryFix_TrySetScene((SCENE_TURN_OFF_POWER)) == ((SCENE_TURN_OFF_POWER)))
               {
                   sBerryFix.mb.masterp = gMultiBootProgram_BerryGlitchFix_Start;
                   sBerryFix.mb.server_type = 0;
@@ -97,7 +74,7 @@ export function BerryFix_Main(): any {
               }
               break;
           case MAINSTATE_TRANSMIT:
-              if (TryScene(SCENE_TRANSMITTING))
+              if (BerryFix_TrySetScene((SCENE_TRANSMITTING)) == ((SCENE_TRANSMITTING)))
               {
                   MultiBootMain(sBerryFix.mb);
 
@@ -108,11 +85,11 @@ export function BerryFix_Main(): any {
               }
               break;
           case MAINSTATE_EXIT:
-              if (TryScene(SCENE_FOLLOW_INSTRUCT) && JOY_NEW(A_BUTTON))
+              if (BerryFix_TrySetScene((SCENE_FOLLOW_INSTRUCT)) == ((SCENE_FOLLOW_INSTRUCT)) && JOY_NEW(A_BUTTON))
                   DoSoftReset();
               break;
           case MAINSTATE_FAILED:
-              if (TryScene(SCENE_TRANSMIT_FAILED) && JOY_NEW(A_BUTTON))
+              if (BerryFix_TrySetScene((SCENE_TRANSMIT_FAILED)) == ((SCENE_TRANSMIT_FAILED)) && JOY_NEW(A_BUTTON))
                   sBerryFix.state = MAINSTATE_BEGIN;
               break;
       }

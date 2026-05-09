@@ -15,22 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddTextPrinterParameterized, AddWindow, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
-  ConvertInternationalString, ConvertPixelWidthToTileWidth, CopyDecorationCategoryName, CreateTask,
-  DecorationAdd, DecorationRemove, DestroyTask, DrawStdFrameWithCustomTileAndPalette,
-  FALSE, GetFirstEmptyDecorSlot, GetNumOwnedDecorationsInCategory, GetStringWidth,
-  InitMenuInUpperLeftCornerNormal, IsSelectedDecorInThePC, Menu_ProcessInput, NULL,
-  PlaySE, RemoveWindow, ScheduleBgCopyTilemapToVram, ScriptContext_Enable,
-  StringCopy, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void TraderSetup(void) */
 export function TraderSetup(): any {
   let i: any = null;
@@ -74,7 +58,7 @@ export function CreateAvailableDecorationsMenu(taskId: any): any {
       }
       windowTemplate.width = ConvertPixelWidthToTileWidth(windowWidth);
       tWindowId = AddWindow(windowTemplate);
-      DrawStdFrameWithCustomTileAndPalette(tWindowId, FALSE, _0x214, 14);
+      DrawStdFrameWithCustomTileAndPalette(tWindowId, FALSE, 0x214, 14);
       for (i = 0; i < NUM_TRADER_ITEMS; i++)
       {
           if (trader.decorations[i] > NUM_DECORATIONS)

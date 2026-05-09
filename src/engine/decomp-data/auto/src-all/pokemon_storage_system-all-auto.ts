@@ -15,76 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ANIMCMD_FRAME, ANIMCMD_JUMP, ARRAY_COUNT, AddBagItem,
-  AddTextPrinterParameterized, AddTextPrinterParameterized2, AddTextPrinterParameterized3, AddTextPrinterParameterized4,
-  AddTextPrinterParameterized5, AddWindow, AddWindow8Bit, Alloc,
-  AllocSpritePalette, AnimateSprites, BGCNT_16COLOR, BGCNT_256COLOR,
-  BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE, BGCNT_TXT512x256,
-  BG_PLTT_ID, BG_SCREEN_ADDR, BLDALPHA_BLEND, BeginNormalPaletteFade,
-  BlendPalettes, BlitBitmapRectToWindow4BitTo8Bit, BoxMonRestorePP, BoxMonToMon,
-  BufferMonMarkingsMenuTiles, BuildOamBuffer, CalculatePlayerPartyCount, ChangeBgX,
-  ChangeBgY, CheckForSpaceForDma3Request, CleanupOverworldWindowsAndTilemaps, ClearDma3Requests,
-  ClearGpuRegBits, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrame, ClearStdWindowAndFrameToTransparent,
-  ClearWindowTilemap, ComputerScreenCloseEffect, ComputerScreenOpenEffect, ConvertIntToDecimalStringN,
-  CopyBgTilemapBufferToVram, CopyRectToBgTilemapBufferRect, CopyToBgTilemapBufferRect, CopyWindowToVram,
-  CopyWindowToVram8Bit, CpuCopy16, CpuCopy32, CpuFastCopy,
-  CpuFastFill, CpuFill16, CpuFill32, CreateBoxMon,
-  CreateChooseBoxArrows, CreateMonIconSprite, CreateMonMarkingComboSprite, CreateSprite,
-  CreateTask, CreateYesNoMenu, DISPCNT_BG_ALL_ON, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH, DeactivateAllTextPrinters,
-  DecompressAndLoadBgGfxUsingHeap, DestroySprite, DestroyTask, Dma3FillLarge16_,
-  DoNamingScreen, DoScheduledBgTilemapCopiesToVram, DrawDialogueFrame, DrawStdFrameWithCustomTileAndPalette,
-  DrawStdWindowFrame, DrawTextBorderOuter, DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset,
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr, FALSE, FREE_AND_SET_NULL, FadeInFromBlack,
-  FadeScreen, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
-  FillWindowPixelBuffer8Bit, FillWindowPixelRect8Bit, FlagClear, Free,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeMonMarkingsMenu, FreeOamMatrix,
-  FreeSpritePaletteByTag, FreeSpriteTileRanges, FreeSpriteTilesByTag, FuncIsActiveTask,
-  GetBgAttribute, GetBoxMonData, GetBoxNamePtr, GetBoxedMonPtr,
-  GetGenderFromSpeciesAndPersonality, GetItemDescription, GetItemIconPalette, GetItemIconPic,
-  GetItemName, GetLevelFromBoxMonExp, GetMaxWidthInMenuTable, GetMonData,
-  GetMonFrontSpritePal, GetMonGender, GetMonIconPtr, GetMonIconTiles,
-  GetMonSpritePalFromSpeciesAndPersonality, GetMovingItemName, GetSpriteTileStartByTag, GetStringCenterAlignXOffset,
-  GetStringWidth, GetTextWindowPalette, GetValidMonIconPalIndex, GetWaldaWallpaperColorsPtr,
-  GetWindowAttribute, GoToBagMenu, HandleMonMarkingsMenuInput, HideBg,
-  IndexOfSpritePaletteTag, InitBgsFromTemplates, InitMenuInUpperLeftCornerNormal, InitMonMarkingsMenu,
-  InitSpriteAffineAnim, InitWindows, IsComputerScreenCloseEffectActive, IsComputerScreenOpenEffectActive,
-  IsDma3ManagerBusyWithBgCopy, IsWeatherNotFadingIn, ItemIsMail, JOY_HELD,
-  JOY_NEW, JOY_REPEAT, LZ77UnCompVram, LZ77UnCompWram,
-  LoadBgTiles, LoadCompressedSpriteSheet, LoadMessageBoxAndBorderGfx, LoadMonIconPalettes,
-  LoadOam, LoadPalette, LoadSpecialPokePic, LoadSpritePalette,
-  LoadSpritePalettes, LoadSpriteSheet, LoadSpriteSheets, LoadUserWindowBorderGfx,
-  LockPlayerFieldControls, Menu_GetCursorPos, Menu_MoveCursor, Menu_MoveCursorNoWrapAround,
-  Menu_ProcessInput, Menu_ProcessInputNoWrapClearOnChoose, NULL, OBJ_PLTT_ID,
-  OpenMonMarkingsMenu, PALETTES_ALL, PIXEL_FILL, PLTT_SIZEOF,
-  PLTT_SIZE_4BPP, PlaySE, PrintMenuTable, ProcessSpriteCopyRequests,
-  PutWindowTilemap, Q_8_8, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS,
-  REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, RemoveBagItem, RemoveWindow,
-  RequestDma3Fill, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  RunTasks, SPRITE_SHAPE, SPRITE_SIZE, STR_CONV_MODE_LEFT_ALIGN,
-  STR_CONV_MODE_RIGHT_ALIGN, ST_OAM_AFFINE_NORMAL, ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL,
-  SWAP, ScheduleBgCopyTilemapToVram, ScriptContext_Enable, SetBgAttribute,
-  SetBgTilemapBuffer, SetBoxMonData, SetGpuReg, SetGpuRegBits,
-  SetMainCallback2, SetMonData, SetVBlankCallback, ShowBg,
-  ShowPokemonSummaryScreen, ShowPokemonSummaryScreenHandleDeoxys, SpriteCallbackDummy, StartSpriteAffineAnim,
-  StartSpriteAnim, StartSpriteAnimIfDifferent, StringAppend, StringCopy,
-  StringCopyPadded, StringFill, StringGet_Nickname, StringLength,
-  TILE_SIZE_4BPP, TRUE, TRY_FREE_AND_SET_NULL, TransferPlttBuffer,
-  TryLoadAllMonIconPalettesAtOffset, UnlockPlayerFieldControls, UpdateMonMarkingTiles, UpdatePaletteFade,
-  VarSet, WriteSequenceToBgTilemapBuffer, ZeroBoxMonData, ZeroMonData,
-  gSineTable, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void DrawTextWindowAndBufferTiles(const u8 *string, void *dst, u8 zero1, u8 zero2, s32 bytesToBuffer) */
 export function DrawTextWindowAndBufferTiles(string: any, dst: any, zero1: any, zero2: any, bytesToBuffer: any): any {
   let i, tileBytesToBuffer, remainingBytes;
@@ -116,17 +46,17 @@ export function DrawTextWindowAndBufferTiles(string: any, dst: any, zero1: any, 
       {
           for (i = tileBytesToBuffer; i != 0; i--)
           {
-              CpuCopy16(tileData1, dst, _0x80);
-              CpuCopy16(tileData2, dst + _0x80, _0x80);
-              tileData1 += _0x80;
-              tileData2 += _0x80;
-              dst += _0x100;
+              CpuCopy16(tileData1, dst, 0x80);
+              CpuCopy16(tileData2, dst + 0x80, 0x80);
+              tileData1 += 0x80;
+              tileData2 += 0x80;
+              dst += 0x100;
           }
       }
 
        
       if (remainingBytes > 0)
-          CpuFill16((zero2 << 4) | zero2, dst, (remainingBytes) * _0x100);
+          CpuFill16((zero2 << 4) | zero2, dst, (remainingBytes) * 0x100);
 
       RemoveWindow(windowId);
 }
@@ -395,8 +325,8 @@ export function LoadChooseBoxMenuGfx(menu: any, tileTag: any, palTag: any, subpr
       ];
       let sheets: any =
       [
-          [sChooseBoxMenuCenter_Gfx, _0x800, tileTag],
-          [sChooseBoxMenuSides_Gfx,  _0x180, tileTag + 1],
+          [sChooseBoxMenuCenter_Gfx, 0x800, tileTag],
+          [sChooseBoxMenuSides_Gfx,  0x180, tileTag + 1],
           []
       ];
 
@@ -572,7 +502,7 @@ export function ChooseBoxMenu_PrintInfo(): any {
       AddTextPrinterParameterized3(windowId, FONT_NORMAL, center, 17, sChooseBoxMenu_TextColors, TEXT_SKIP_DRAW, numBoxMonsText);
 
       winTileData = GetWindowAttribute(windowId, WINDOW_TILE_DATA);
-      CpuCopy32(winTileData, OBJ_VRAM0 + _0x100 + (GetSpriteTileStartByTag(sChooseBoxMenu.tileTag) * 32), _0x400);
+      CpuCopy32(winTileData, OBJ_VRAM0 + 0x100 + (GetSpriteTileStartByTag(sChooseBoxMenu.tileTag) * 32), 0x400);
 
       RemoveWindow(windowId);
 }
@@ -668,7 +598,7 @@ export function ResetForPokeStorage(): any {
       FreeSpriteTileRanges();
       FreeAllSpritePalettes();
       ClearDma3Requests();
-      gReservedSpriteTileCount = _0x280;
+      gReservedSpriteTileCount = 0x280;
       UnkUtil_Init(sStorage.unkUtil, sStorage.unkUtilData, ARRAY_COUNT(sStorage.unkUtilData));
       gKeyRepeatStartDelay = 20;
       ClearScheduledBgCopiesToVram();
@@ -740,7 +670,7 @@ export function Task_InitPokeStorage(taskId: any): any {
       case 2:
           PutWindowTilemap(WIN_DISPLAY_INFO);
           ClearWindowTilemap(WIN_MESSAGE);
-          CpuFill32(0, VRAM, _0x200);
+          CpuFill32(0, VRAM, 0x200);
           LoadUserWindowBorderGfx(WIN_MESSAGE, 0xB, BG_PLTT_ID(14));
           break;
       case 3:
@@ -835,7 +765,7 @@ export function Task_ReshowPokeStorage(taskId: any): any {
   switch (sStorage.state)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, -1, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, -1, 0x10, 0, RGB_BLACK);
           sStorage.state++;
           break;
       case 1:
@@ -1646,7 +1576,7 @@ export function Task_ShowMarkMenu(taskId: any): any {
       case 0:
           PrintMessage(MSG_MARK_POKE);
           sStorage.markMenu.markings = sStorage.displayMonMarkings;
-          OpenMonMarkingsMenu(sStorage.displayMonMarkings, 0xb0, _0x10);
+          OpenMonMarkingsMenu(sStorage.displayMonMarkings, 0xb0, 0x10);
           sStorage.state++;
           break;
       case 1:
@@ -2702,7 +2632,7 @@ export function HidePartyMenu(): any {
           sStorage.partyMenuY--;
           TilemapUtil_Move(TILEMAPID_PARTY_MENU, 3, -1);
           TilemapUtil_Update(TILEMAPID_PARTY_MENU);
-          FillBgTilemapBufferRect_Palette0(1, _0x100, 10, sStorage.partyMenuY, 12, 1);
+          FillBgTilemapBufferRect_Palette0(1, 0x100, 10, sStorage.partyMenuY, 12, 1);
           MovePartySprites(-8);
           if (++sStorage.partyMenuMoveTimer != 20)
           {
@@ -3665,7 +3595,7 @@ export function TryLoadMonIconTiles(species: any): any {
       sStorage.iconSpeciesList[i] = species;
       sStorage.numIconsPerSpecies[i]++;
       offset = 16 * i;
-      CpuCopy32(GetMonIconTiles(species, TRUE), (OBJ_VRAM0) + offset * TILE_SIZE_4BPP, _0x200);
+      CpuCopy32(GetMonIconTiles(species, TRUE), (OBJ_VRAM0) + offset * TILE_SIZE_4BPP, 0x200);
 
       return offset;
 }
@@ -3892,7 +3822,7 @@ export function LoadWallpaperGfx(boxId: any, direction: any): any {
           LZ77UnCompWram(wallpaper.tilemap, sStorage.wallpaperTilemap);
           DrawWallpaper(sStorage.wallpaperTilemap, sStorage.wallpaperLoadDir, sStorage.wallpaperOffset);
 
-          CpuCopy16(wallpaper.palettes, sStorage.wallpaperTilemap, _0x40);
+          CpuCopy16(wallpaper.palettes, sStorage.wallpaperTilemap, 0x40);
           CpuCopy16(GetWaldaWallpaperColorsPtr(),sStorage.wallpaperTilemap[1], 4);
           CpuCopy16(GetWaldaWallpaperColorsPtr(),sStorage.wallpaperTilemap[17], 4);
 
@@ -3903,7 +3833,7 @@ export function LoadWallpaperGfx(boxId: any, direction: any): any {
 
           sStorage.wallpaperTiles = malloc_and_decompress(wallpaper.tiles,tilesSize);
           iconGfx = malloc_and_decompress(sWaldaWallpaperIcons[GetWaldaWallpaperIconId()],iconSize);
-          CpuCopy32(iconGfx, sStorage.wallpaperTiles + _0x800, iconSize);
+          CpuCopy32(iconGfx, sStorage.wallpaperTiles + 0x800, iconSize);
           Free(iconGfx);
           LoadBgTiles(2, sStorage.wallpaperTiles, tilesSize, sStorage.wallpaperOffset << 8);
       }
@@ -3936,7 +3866,7 @@ export function DrawWallpaper(tilemap: any, direction: any, offset: any): any {
       else
           x -= 4;
 
-      FillBgTilemapBufferRect(2, 0, x, 2, 4, _0x12, 17);
+      FillBgTilemapBufferRect(2, 0, x, 2, 4, 0x12, 17);
 }
 
 /** static void TrimOldWallpaper(void *tilemap) */
@@ -3946,17 +3876,17 @@ export function TrimOldWallpaper(tilemap: any): any {
       let r3: any = ((sStorage.bg2_X / 8) + 30) & 0x3F;
 
       if (r3 <= 31)
-          dest += r3 + _0x260;
+          dest += r3 + 0x260;
       else
-          dest += r3 + _0x640;
+          dest += r3 + 0x640;
 
       for (i = 0; i < 0x2C; i++)
       {
           dest =  0;
           r3 = (r3 + 1) & 0x3F;
           if (r3 == 0)
-              dest -= _0x420;
-          if (r3 == _0x20)
+              dest -= 0x420;
+          if (r3 == 0x20)
               dest += 0x3e0;
       }
 }
@@ -3967,7 +3897,7 @@ export function InitBoxTitle(boxId: any): any {
       let x: any = null;
       let i: any = null;
 
-      let spriteSheet: any = [sStorage.boxTitleTiles, _0x200, GFXTAG_BOX_TITLE];
+      let spriteSheet: any = [sStorage.boxTitleTiles, 0x200, GFXTAG_BOX_TITLE];
       let palettes: any = [
           [sStorage.boxTitlePal, PALTAG_BOX_TITLE],
           []
@@ -4012,7 +3942,7 @@ export function CreateIncomingBoxTitle(boxId: any, direction: any): any {
   let palOffset: any = null;
       let x, adjustedX;
       let i: any = null;
-      let spriteSheet: any = [sStorage.boxTitleTiles, _0x200, GFXTAG_BOX_TITLE];
+      let spriteSheet: any = [sStorage.boxTitleTiles, 0x200, GFXTAG_BOX_TITLE];
       let template: any = sSpriteTemplate_BoxTitle;
 
       sStorage.boxTitleCycleId = (sStorage.boxTitleCycleId == 0);
@@ -6121,8 +6051,8 @@ export function CreateCursorSprites(): any {
       let priority, subpriority;
       let spriteSheets: any =
       [
-          [sHandCursor_Gfx, _0x800, GFXTAG_CURSOR],
-          [sHandCursorShadow_Gfx, _0x80, GFXTAG_CURSOR_SHADOW],
+          [sHandCursor_Gfx, 0x800, GFXTAG_CURSOR],
+          [sHandCursorShadow_Gfx, 0x80, GFXTAG_CURSOR_SHADOW],
           []
       ];
 
@@ -6426,7 +6356,7 @@ export function MultiMove_Start(): any {
           sMultiMove.toRow = sMultiMove.fromRow;
           ChangeBgX(0, -1024, BG_COORD_SET);
           ChangeBgY(0, -1024, BG_COORD_SET);
-          FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, _0x20, _0x20);
+          FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 0x20, 0x20);
           FillWindowPixelBuffer8Bit(sStorage.multiMoveWindowId, PIXEL_FILL(0));
           MultiMove_SetIconToBg(sMultiMove.fromColumn, sMultiMove.fromRow);
           SetBgAttribute(0, BG_ATTR_PALETTEMODE, 1);
@@ -6884,7 +6814,7 @@ export function CreateItemIconSprites(): any {
       if (sStorage.boxOption == OPTION_MOVE_ITEMS)
       {
           spriteSheet.data = sItemIconGfxBuffer;
-          spriteSheet.size = _0x200;
+          spriteSheet.size = 0x200;
           spriteTemplate = sSpriteTemplate_ItemIcon;
 
           for (i = 0; i < MAX_ITEM_ICONS; i++)
@@ -7235,12 +7165,12 @@ export function LoadItemIconGfx(id: any, itemTiles: any, itemPal: any): any {
       if (id >= MAX_ITEM_ICONS)
           return;
 
-      CpuFastFill(0, sStorage.itemIconBuffer, _0x200);
+      CpuFastFill(0, sStorage.itemIconBuffer, 0x200);
       LZ77UnCompWram(itemTiles, sStorage.tileBuffer);
       for (i = 0; i < 3; i++)
-          CpuFastCopy(sStorage.tileBuffer[i * _0x60],sStorage.itemIconBuffer[i * _0x80], _0x60);
+          CpuFastCopy(sStorage.tileBuffer[i * 0x60],sStorage.itemIconBuffer[i * 0x80], 0x60);
 
-      CpuFastCopy(sStorage.itemIconBuffer, sStorage.itemIcons[id].tiles, _0x200);
+      CpuFastCopy(sStorage.itemIconBuffer, sStorage.itemIcons[id].tiles, 0x200);
       LZ77UnCompWram(itemPal, sStorage.itemIconBuffer);
       LoadPalette(sStorage.itemIconBuffer, sStorage.itemIcons[id].palIndex, PLTT_SIZE_4BPP);
 }
@@ -7320,7 +7250,7 @@ export function PrintItemDescription(): any {
 /** static void InitItemInfoWindow(void) */
 export function InitItemInfoWindow(): any {
   sStorage.itemInfoWindowOffset = 21;
-      LoadBgTiles(0, sItemInfoFrame_Gfx, _0x80, 0x13A);
+      LoadBgTiles(0, sItemInfoFrame_Gfx, 0x80, 0x13A);
       DrawItemInfoWindow(0);
 }
 
@@ -7334,7 +7264,7 @@ export function UpdateItemInfoWindowSlideIn(): any {
       sStorage.itemInfoWindowOffset--;
       pos = 21 - sStorage.itemInfoWindowOffset;
       for (i = 0; i < pos; i++)
-          WriteSequenceToBgTilemapBuffer(0, GetBgAttribute(0, BG_ATTR_BASETILE) + _0x14 + sStorage.itemInfoWindowOffset + i, i, 13, 1, 7, 15, 21);
+          WriteSequenceToBgTilemapBuffer(0, GetBgAttribute(0, BG_ATTR_BASETILE) + 0x14 + sStorage.itemInfoWindowOffset + i, i, 13, 1, 7, 15, 21);
 
       DrawItemInfoWindow(pos);
       return (sStorage.itemInfoWindowOffset != 0);
@@ -7354,7 +7284,7 @@ export function UpdateItemInfoWindowSlideOut(): any {
       pos = 21 - sStorage.itemInfoWindowOffset;
       for (i = 0; i < pos; i++)
       {
-          WriteSequenceToBgTilemapBuffer(0, GetBgAttribute(0, BG_ATTR_BASETILE) + _0x14 + sStorage.itemInfoWindowOffset + i, i, 13, 1, 7, 15, 21);
+          WriteSequenceToBgTilemapBuffer(0, GetBgAttribute(0, BG_ATTR_BASETILE) + 0x14 + sStorage.itemInfoWindowOffset + i, i, 13, 1, 7, 15, 21);
       }
 
       if (pos >= 0)
@@ -7370,11 +7300,11 @@ export function DrawItemInfoWindow(x: any): any {
   if (x != 0)
       {
           FillBgTilemapBufferRect(0, 0x13A, 0, 0xC, x, 1, 15);
-          FillBgTilemapBufferRect(0, 0x93A, 0, _0x14, x, 1, 15);
+          FillBgTilemapBufferRect(0, 0x93A, 0, 0x14, x, 1, 15);
       }
       FillBgTilemapBufferRect(0, 0x13B, x, 0xD, 1, 7, 15);
       FillBgTilemapBufferRect(0, 0x13C, x, 0xC, 1, 1, 15);
-      FillBgTilemapBufferRect(0, 0x13D, x, _0x14, 1, 1, 15);
+      FillBgTilemapBufferRect(0, 0x13D, x, 0x14, 1, 1, 15);
       ScheduleBgCopyTilemapToVram(0);
 }
 

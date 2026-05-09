@@ -15,38 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AddTextPrinterParameterized, Alloc,
-  AllocZeroed, CalcEmeraldBattleTowerChecksum, CheckBagHasItem, CheckPCHasItem,
-  CheckShouldAdvanceLinkState, ClearContinueGameWarpStatus2, ClearDialogWindowAndFrame, ClearJapaneseSecretBases,
-  ClearLinkCallback_2, ConvertIntToDecimalStringN, ConvertInternationalString, CopyTrainerId,
-  CopyWindowToVram, CreateRecordMixingLights, CreateTask, CreateTask_EnterCableClubSeat,
-  CreateTask_ReestablishCableClubLink, DeactivateAllNormalTVShows, DestroyRecordMixingLights, DestroyTask,
-  DrawDialogueFrame, EmeraldBattleTowerRecordToRuby, FALSE, FlagSet,
-  Free, FuncIsActiveTask, GetBlockReceivedStatus, GetLilycoveLadyId,
-  GetLinkPlayerCount, GetLinkPlayerCountAsBitFlags, GetLinkPlayerCount_2, GetLinkPlayerTrainerId,
-  GetMultiplayerId, GetPlayerRecvBuffer, GetPocketByItemId, GetRecordMixingGift,
-  GetSavedPlayerCount, GetTrainerId, InitDaycareMailRecordMixing, IsLinkMaster,
-  IsLinkTaskFinished, IsStringJapanese, LinkDummy_Return2, Link_AnyPartnersPlayingRubyOrSapphire,
-  LoadPtrFromTaskData, NULL, PadNameString, PlaySE,
-  PutNewBattleTowerRecord, QuizLadyClearQuestionForRecordMix, Random2, ReceiveDewfordTrendData,
-  ReceivePokeNewsData, ReceiveSecretBasesData, ReceiveTvShowsData, ResetBlockReceivedFlag,
-  ResetLilycoveLadyForRecordMix, ResetMauvilleOldManFlag, Rfu_SetLinkRecovery, RubyBattleTowerRecordToEmerald,
-  STR_CONV_MODE_LEADING_ZEROS, SanitizeMauvilleOldManForRuby, SanitizeReceivedEmeraldOldMan, SanitizeReceivedRubyOldMan,
-  SanitizeRubyBattleTowerRecord, SanitizeTVShowLocationsForRuby, SanitizeTVShowsForRuby, ScriptContext_Enable,
-  SeedRng, SeedRng2, SendBlockRequest, SetCloseLinkCallback,
-  SetContinueGameWarpStatusToDynamicWarp, SetLinkStandbyCallback, SetLinkWaitingForScript, SetLocalLinkPlayerId,
-  SetPlayerSecretBaseParty, StringCopy, StringLength, StripExtCtrlCodes,
-  TRUE, VarSet, WriteSaveBlock1Sector, WriteSaveBlock2,
-  memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void RecordMixingPlayerSpotTriggered(void) */
 export function RecordMixingPlayerSpotTriggered(): any {
   CreateTask_EnterCableClubSeat(Task_RecordMixing_Main);
@@ -253,7 +221,7 @@ export function Task_MixingRecordsRecv(taskId: any): any {
       {
       case 0:
           PrintTextOnRecordMixing(gText_MixingRecords);
-          task.data[8] = _0x708;
+          task.data[8] = 0x708;
           task.tState = 400;
           ClearLinkCallback_2();
           break;
@@ -396,15 +364,15 @@ export function Task_CopyReceiveBuffer(taskId: any): any {
           {
               if ((status >> i) & 1)
               {
-                  let dest: any = LoadPtrFromTaskData(task.tRecvRecords) + task.tNumChunksRecv(i) * BUFFER_CHUNK_SIZE + sRecordStructSize * i;
+                  let dest: any = LoadPtrFromTaskData(task.tRecvRecords) + task.data[1 + ((i))] * BUFFER_CHUNK_SIZE + sRecordStructSize * i;
                   let src: any = GetPlayerRecvBuffer(i);
-                  if ((task.tNumChunksRecv(i) + 1) * BUFFER_CHUNK_SIZE > sRecordStructSize)
-                      memcpy(dest, src, sRecordStructSize - task.tNumChunksRecv(i) * BUFFER_CHUNK_SIZE);
+                  if ((task.data[1 + ((i))] + 1) * BUFFER_CHUNK_SIZE > sRecordStructSize)
+                      memcpy(dest, src, sRecordStructSize - task.data[1 + ((i))] * BUFFER_CHUNK_SIZE);
                   else
                       memcpy(dest, src, BUFFER_CHUNK_SIZE);
                   ResetBlockReceivedFlag(i);
-                  task.tNumChunksRecv(i)++;
-                  if (task.tNumChunksRecv(i) == sRecordStructSize / BUFFER_CHUNK_SIZE + 1)
+                  task.data[1 + ((i))]++;
+                  if (task.data[1 + ((i))] == sRecordStructSize / BUFFER_CHUNK_SIZE + 1)
                       handledPlayers++;
               }
           }
@@ -944,7 +912,7 @@ export function GetSavedApprentices(dst: any, src: any): any {
           dst[1] = src[apprenticeSaveId];
           break;
       case 2:
-          if (Random2() > _0x3333)
+          if (Random2() > 0x3333)
               dst[1] = src[gSaveBlock2Ptr.playerApprentice.saveId + 1];
           else
               dst[1] = src[((gSaveBlock2Ptr.playerApprentice.saveId + 1) % (APPRENTICE_COUNT - 1) + 1)];

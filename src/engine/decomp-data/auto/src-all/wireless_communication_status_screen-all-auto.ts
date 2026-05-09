@@ -15,31 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized4, Alloc, AllocZeroed,
-  AnimateSprites, BG_PLTT_ID, BG_SCREEN_SIZE, BeginNormalPaletteFade,
-  BuildOamBuffer, ChangeBgX, ChangeBgY, ConvertIntToDecimalStringN,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, CreateTask,
-  CreateTask_ListenToWireless, DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap, DestroyTask,
-  DynamicPlaceholderTextUtil_Reset, FALSE, FillBgTilemapBufferRect, FillWindowPixelBuffer,
-  Free, FreeAllWindowBuffers, GetBgTilemapBuffer, GetStringCenterAlignXOffset,
-  InitBgsFromTemplates, InitWindows, IsDma3ManagerBusyWithBgCopy, JOY_NEW,
-  LoadOam, LoadPalette, Menu_LoadStdPalAt, NULL,
-  PALETTES_ALL, PIXEL_FILL, PLTT_SIZEOF, PLTT_SIZE_4BPP,
-  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_DISPCNT,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  RunTasks, RunTextPrinters, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  ShowBg, TRUE, TransferPlttBuffer, UpdatePaletteFade,
-  memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void CB2_RunWirelessCommunicationScreen(void) */
 export function CB2_RunWirelessCommunicationScreen(): any {
   if (!IsDma3ManagerBusyWithBgCopy())
@@ -255,21 +230,21 @@ export function CountPlayersInGroupAndGetActivity(player: any, groupCounts: any)
            
            
            
-          if (group_type(i) == GROUPTYPE_NONE)
+          if ((sActivityGroupInfo[((i))][1]) == GROUPTYPE_NONE)
               continue;
-          if (activity == group_activity(i) && player.groupScheduledAnim == UNION_ROOM_SPAWN_IN)
+          if (activity == (sActivityGroupInfo[((i))][0]) && player.groupScheduledAnim == UNION_ROOM_SPAWN_IN)
           {
-              if (group_players(i) == 0)
+              if ((sActivityGroupInfo[((i))][2]) == 0)
               {
                   k = 0;
                   for (j = 0; j < RFU_CHILD_MAX; j++)
                       if (player.rfu.data.partnerInfo[j] != 0) k++;
                   k++;
-                  groupCounts[group_type(i)] += k;
+                  groupCounts[(sActivityGroupInfo[((i))][1])] += k;
               }
               else
               {
-                  groupCounts[group_type(i)] += group_players(i);
+                  groupCounts[(sActivityGroupInfo[((i))][1])] += (sActivityGroupInfo[((i))][2]);
               }
           }
       }

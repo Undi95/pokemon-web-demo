@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CpuFastCopy, CreateTask, CurrentMapDrawMetatileAt, DestroyTask,
-  DrawDoorMetatileAt, FALSE, FlagGet, FuncIsActiveTask,
-  GetDoorGraphics, GetLastDoorFrame, MAP_GROUP, MAP_NUM,
-  MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MetatileBehavior_IsDoor, NULL,
-  TILE_OFFSET_4BPP, TILE_SIZE_4BPP, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void CopyDoorTilesToVram(const struct DoorGraphics *gfx, const struct DoorAnimFrame *frame) */
 export function CopyDoorTilesToVram(gfx: any, frame: any): any {
   if (gfx.size == 2)
@@ -156,7 +142,7 @@ export function StartDoorAnimationTask(gfx: any, frames: any, x: any, y: any): a
       }
       else
       {
-          let taskId: any = CreateTask(Task_AnimateDoor, _0x50);
+          let taskId: any = CreateTask(Task_AnimateDoor, 0x50);
           let data: any = gTasks[taskId].data;
 
           tX = x;

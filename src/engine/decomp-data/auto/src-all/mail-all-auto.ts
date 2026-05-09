@@ -15,35 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized3, AllocZeroed, AnimateSprites,
-  BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer, ConvertEasyChatWordsToString,
-  ConvertInternationalPlayerName, CopyBgTilemapBufferToVram, CopyEasyChatWord, CopyToBgTilemapBuffer,
-  CopyWindowToVram, CpuFill16, CreateMonIconNoPersonality, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, FALSE,
-  FREE_AND_SET_NULL, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeAndDestroyMonIconSprite, FreeMonIconPalette, FreeTempTileDataBuffersIfPossible,
-  GetIconSpeciesNoPersonality, GetOverworldTextboxPalettePtr, GetStringCenterAlignXOffset, IS_ITEM_MAIL,
-  ITEM_TO_MAIL, InitBgsFromTemplates, InitWindows, JOY_NEW,
-  LoadMonIconPalette, LoadOam, LoadPalette, MailSpeciesToSpecies,
-  MenuHelpers_IsLinkActive, NULL, Overworld_IsRecvQueueAtMax, PALETTES_ALL,
-  PIXEL_FILL, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
-  RunTextPrinters, ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, ShowBg, SpriteCallbackDummy,
-  StringCopy, StringLength, TRUE, TransferPlttBuffer,
-  UnsetBgTilemapBuffer, UpdatePaletteFade, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ReadMail(struct Mail *mail, MainCallback exitCallback, bool8 hasText) */
 export function ReadMail(mail: any, exitCallback: any, hasText: any): any {
   const buffer: any[] = [];

@@ -15,44 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized3, Alloc, AnimateSprites,
-  BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE, BG_CHAR_ADDR,
-  BG_PLTT_ID, BG_SCREEN_ADDR, BG_SCREEN_SIZE, BeginNormalPaletteFade,
-  BuildOamBuffer, ClearGpuRegBits, ClearLinkRfuCallback, ConvertInternationalString,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, CpuFill32,
-  CpuSet, CreateTask, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON,
-  DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap, DestroyTask, DisableInterrupts,
-  DmaCopy16, DoSoftReset, EXTRACT_CONN_ESTABLISHED, EXTRACT_LINK_ERRORS,
-  EXTRACT_MASTER, EXTRACT_PLAYER_COUNT, EnableInterrupts, FALSE,
-  FillWindowPixelBuffer, FlagGet, FreeAllSpritePalettes, GetGameProgressForLinkTrade,
-  GetRfuRecvQueueLength, InitBgsFromTemplates, InitHeap, InitRFUAPI,
-  InitWindows, IsLinkRfuTaskFinished, IsNationalPokedexEnabled, IsRfuRecvQueueEmpty,
-  IsSendingKeysOverCable, IsSendingKeysToRfu, JOY_HELD, JOY_NEW,
-  LinkRfu_Shutdown, LoadBgTiles, LoadOam, LoadPalette,
-  MAX_RFU_PLAYERS, NULL, PALETTES_ALL, PIXEL_FILL,
-  PLTT_SIZE_4BPP, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, REG_TMCNT_H, ReloadSave,
-  ResetBgsAndClearDma3BusyFlags, ResetLinkRfuGFLayer, ResetPaletteFadeControl, ResetSpriteData,
-  ResetTasks, ResetTempTileDataBuffers, RestoreSerialTimer3IntrHandlers, RfuMain1,
-  RfuMain2, Rfu_GetBlockReceivedStatus, Rfu_GetLinkPlayerCount, Rfu_GetMultiplayerId,
-  Rfu_InitBlockSend, Rfu_IsMaster, Rfu_ResetBlockReceivedFlag, Rfu_SendBlockRequest,
-  Rfu_SetBerryBlenderLinkCallback, Rfu_SetBlockReceivedFlag, Rfu_SetCloseLinkCallback, Rfu_SetLinkStandbyCallback,
-  RunTasks, ScanlineEffect_Stop, SetBackdropFromColor, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  StartSendingKeysToRfu, StopMapMusic, StringCompare, StringCopy,
-  TRUE, TransferPlttBuffer, TrySavingData, UpdatePaletteFade,
-  memcpy, memset, strcmp,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 IsWirelessAdapterConnected(void) */
 export function IsWirelessAdapterConnected(): any {
   SetWirelessCommType1();
@@ -109,12 +71,12 @@ export function InitLocalLinkPlayer(): any {
       gLocalLinkPlayer.gender = gSaveBlock2Ptr.playerGender;
       gLocalLinkPlayer.linkType = gLinkType;
       gLocalLinkPlayer.language = gGameLanguage;
-      gLocalLinkPlayer.version = gGameVersion + _0x4000;
-      gLocalLinkPlayer.lp_field_2 = _0x8000;
+      gLocalLinkPlayer.version = gGameVersion + 0x4000;
+      gLocalLinkPlayer.lp_field_2 = 0x8000;
       gLocalLinkPlayer.progressFlags = IsNationalPokedexEnabled();
       if (FlagGet(FLAG_IS_CHAMPION))
       {
-          gLocalLinkPlayer.progressFlags |= _0x10;
+          gLocalLinkPlayer.progressFlags |= 0x10;
       }
 }
 
@@ -214,7 +176,7 @@ export function TestBlockTransfer(nothing: any, is: any, used: any): any {
               {
                   gLinkTestBlockChecksums[i] = LinkTestCalcBlockChecksum(gBlockRecvBuffer[i], sBlockRecv[i].size);
                   ResetBlockReceivedFlag(i);
-                  if (gLinkTestBlockChecksums[i] != _0x0342)
+                  if (gLinkTestBlockChecksums[i] != 0x0342)
                   {
                       sLinkTestDebugValuesEnabled = FALSE;
                       sDummyFlag = FALSE;
@@ -232,7 +194,7 @@ export function LinkTestProcessKeyInput(): any {
       }
       if (JOY_HELD(B_BUTTON))
       {
-          InitBlockSend(gHeap + _0x4000, _0x00002004);
+          InitBlockSend(gHeap + 0x4000, 0x00002004);
       }
       if (JOY_NEW(L_BUTTON))
       {
@@ -252,7 +214,7 @@ export function LinkTestProcessKeyInput(): any {
       }
       if (sLinkTestDebugValuesEnabled)
       {
-          SetLinkDebugValues(gMain.vblankCounter2, gLinkCallback ? gLinkVSyncDisabled : gLinkVSyncDisabled | _0x10);
+          SetLinkDebugValues(gMain.vblankCounter2, gLinkCallback ? gLinkVSyncDisabled : gLinkVSyncDisabled | 0x10);
       }
 }
 
@@ -459,7 +421,7 @@ export function BuildSendCmd(command: any): any {
           case LINKCMD_INIT_BLOCK:
               gSendCmd[0] = LINKCMD_INIT_BLOCK;
               gSendCmd[1] = sBlockSend.size;
-              gSendCmd[2] = sBlockSend.multiplayerId + _0x80;
+              gSendCmd[2] = sBlockSend.multiplayerId + 0x80;
               break;
           case LINKCMD_BLENDER_NO_PBLOCK_SPACE:
               gSendCmd[0] = LINKCMD_BLENDER_NO_PBLOCK_SPACE;
@@ -1352,7 +1314,7 @@ export function CB2_LinkError(): any {
 
 /** static void ErrorMsg_MoveCloserToPartner(void) */
 export function ErrorMsg_MoveCloserToPartner(): any {
-  LoadBgTiles(0, sCommErrorBg_Gfx, _0x20, 0);
+  LoadBgTiles(0, sCommErrorBg_Gfx, 0x20, 0);
       DecompressAndLoadBgGfxUsingHeap(1, sWirelessLinkDisplayGfx, FALSE, 0, 0);
       CopyToBgTilemapBuffer(1, sWirelessLinkDisplayTilemap, 0, 0);
       CopyBgTilemapBufferToVram(1);
@@ -1369,7 +1331,7 @@ export function ErrorMsg_MoveCloserToPartner(): any {
 
 /** static void ErrorMsg_CheckConnections(void) */
 export function ErrorMsg_CheckConnections(): any {
-  LoadBgTiles(0, sCommErrorBg_Gfx, _0x20, 0);
+  LoadBgTiles(0, sCommErrorBg_Gfx, 0x20, 0);
       FillWindowPixelBuffer(WIN_LINK_ERROR_MID, PIXEL_FILL(0));
       FillWindowPixelBuffer(WIN_LINK_ERROR_BOTTOM, PIXEL_FILL(0));
       AddTextPrinterParameterized3(WIN_LINK_ERROR_MID, FONT_SHORT_COPY_1, 2, 0, sTextColors, 0, gText_CommErrorCheckConnections);
@@ -1903,7 +1865,7 @@ export function DoHandshake(): any {
       gLink.handshakeAsMaster = FALSE;
       for (i = 0; i < MAX_LINK_PLAYERS; i++)
       {
-          if ((gLink.handshakeBuffer[i] & ~_0x3) == SLAVE_HANDSHAKE || gLink.handshakeBuffer[i] == MASTER_HANDSHAKE)
+          if ((gLink.handshakeBuffer[i] & ~0x3) == SLAVE_HANDSHAKE || gLink.handshakeBuffer[i] == MASTER_HANDSHAKE)
           {
               playerCount++;
               if (minRecv > gLink.handshakeBuffer[i] && gLink.handshakeBuffer[i] != 0)

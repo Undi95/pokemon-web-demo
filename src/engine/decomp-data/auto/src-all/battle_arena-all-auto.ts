@@ -15,23 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, BATTLE_OPPOSITE, BattlePutTextOnWindow,
-  BattleStringExpandPlaceholdersToDisplayedString, BeginNormalPaletteFade, CopyBgTilemapBufferToVram, CopyItemName,
-  CreateSprite, DestroySprite, FALSE, FillBgTilemapBufferRect,
-  FreeSpriteTilesByTag, GetFrontierTrainerName, HandleBattleWindow, IsDma3ManagerBusyWithBgCopy,
-  LoadCompressedPalette, LoadCompressedSpriteSheet, OBJ_PLTT_ID, PLTT_SIZE_4BPP,
-  PlaySE, REG_OFFSET_WININ, Random, SaveGameFrontier,
-  SetDynamicWarp, SetGpuReg, StartSpriteAnim, TRUE,
-  VarSet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CallBattleArenaFunction(void) */
 export function CallBattleArenaFunction(): any {
   sArenaFunctions[gSpecialVar_0x8004]();
@@ -49,7 +32,7 @@ export function BattleArena_ShowJudgmentWindow(state: any): any {
           LoadCompressedSpriteSheet(sBattleArenaJudgmentSymbolsSpriteSheet);
           LoadCompressedPalette(gBattleArenaJudgmentSymbolsPalette, OBJ_PLTT_ID(15), PLTT_SIZE_4BPP);
           gBattle_WIN0H = 0xFF;
-          gBattle_WIN0V = _0x70;
+          gBattle_WIN0V = 0x70;
           state++;
           break;
       case 1:
@@ -426,20 +409,20 @@ export function DrawArenaRefereeTextBox(): any {
 
       FillBgTilemapBufferRect(0, 0,    254, 14, 1,  6, palNum);
       FillBgTilemapBufferRect(0, 0,    32,  14, 1,  6, palNum);
-      FillBgTilemapBufferRect(0, _0x31, 0,   14, 1,  1, palNum);
-      FillBgTilemapBufferRect(0, _0x33, 1,   14, 1,  1, palNum);
-      FillBgTilemapBufferRect(0, _0x34, 2,   14, width, 1, palNum);
+      FillBgTilemapBufferRect(0, 0x31, 0,   14, 1,  1, palNum);
+      FillBgTilemapBufferRect(0, 0x33, 1,   14, 1,  1, palNum);
+      FillBgTilemapBufferRect(0, 0x34, 2,   14, width, 1, palNum);
       width++;
-      FillBgTilemapBufferRect(0, _0x35, 28,  14, 1,  1, palNum);
-      FillBgTilemapBufferRect(0, _0x36, 29,  14, 1,  1, palNum);
-      FillBgTilemapBufferRect(0, _0x37, 0,   15, 1,  5, palNum);
-      FillBgTilemapBufferRect(0, _0x39, 1,   15, width, 5, palNum);
+      FillBgTilemapBufferRect(0, 0x35, 28,  14, 1,  1, palNum);
+      FillBgTilemapBufferRect(0, 0x36, 29,  14, 1,  1, palNum);
+      FillBgTilemapBufferRect(0, 0x37, 0,   15, 1,  5, palNum);
+      FillBgTilemapBufferRect(0, 0x39, 1,   15, width, 5, palNum);
       FillBgTilemapBufferRect(0, 0x3A, 29,  15, 1,  5, palNum);
-      FillBgTilemapBufferRect(0, _0x831, 0,  19, 1,  1, palNum);
-      FillBgTilemapBufferRect(0, _0x833, 1,  19, 1,  1, palNum);
-      FillBgTilemapBufferRect(0, _0x834, 2,  19, width - 2, 1, palNum);
-      FillBgTilemapBufferRect(0, _0x835, 28, 19, 1,  1, palNum);
-      FillBgTilemapBufferRect(0, _0x836, 29, 19, 1,  1, palNum);
+      FillBgTilemapBufferRect(0, 0x831, 0,  19, 1,  1, palNum);
+      FillBgTilemapBufferRect(0, 0x833, 1,  19, 1,  1, palNum);
+      FillBgTilemapBufferRect(0, 0x834, 2,  19, width - 2, 1, palNum);
+      FillBgTilemapBufferRect(0, 0x835, 28, 19, 1,  1, palNum);
+      FillBgTilemapBufferRect(0, 0x836, 29, 19, 1,  1, palNum);
 }
 
 /** void EraseArenaRefereeTextBox(void) */
@@ -463,8 +446,8 @@ export function EraseArenaRefereeTextBox(): any {
       FillBgTilemapBufferRect(0, 0xD, 0, 19, 1, 1, palNum);
       FillBgTilemapBufferRect(0, 0xE, 1, 19, 1, 1, palNum);
       FillBgTilemapBufferRect(0, 0xF, 2, 19, width, 1, palNum);
-      FillBgTilemapBufferRect(0, _0x10, 28, 19, 1, 1, palNum);
-      FillBgTilemapBufferRect(0, _0x11, 29, 19, 1, 1, palNum);
+      FillBgTilemapBufferRect(0, 0x10, 28, 19, 1, 1, palNum);
+      FillBgTilemapBufferRect(0, 0x11, 29, 19, 1, 1, palNum);
 }
 
 // ─── callsTo manifest (= 26 unique callees) ───────────────────────

@@ -15,26 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, ActionSelectionCreateCursorAt, ActionSelectionDestroyCursorAt, BattlePutTextOnWindow,
-  BattleStopLowHpSound, BattleStringExpandPlaceholdersToDisplayedString, BeginFastPaletteFade, BeginNormalPaletteFade,
-  BtlController_EmitOneReturnValue, BtlController_EmitTwoReturnValues, BufferStringBattle, CreateSprite,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DecompressTrainerBackPic, FALSE,
-  FadeOutMapMusic, FreeAllWindowBuffers, GetBattlerAtPosition, GetBattlerPosition,
-  GetBattlerSide, GetMonData, GetMultiplayerId, HandleIntroSlide,
-  InitAndLaunchSpecialAnimation, IsDma3ManagerBusyWithBgCopy, IsTextPrinterActive, JOY_NEW,
-  OpenPokeblockCaseInBattle, PALETTES_ALL, PlayBGM, PlayCry_Normal,
-  PlayFanfare, PlaySE, PlaySE12WithPanning, PrepareBufferDataTransferLink,
-  SetHealthboxSpriteVisible, SetMainCallback2, SetMultiuseSpriteTemplateToTrainerBack, SpriteCallbackDummy,
-  StartHealthboxSlideIn, TRUE, TryHandleLaunchBattleTableAnimation, UpdateHealthboxAttribute,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SetControllerToSafari(void) */
 export function SetControllerToSafari(): any {
   gBattlerControllerFuncs[gActiveBattler] = SafariBufferRunCommand;
@@ -346,7 +326,7 @@ export function SafariHandleChooseMove(): any {
 
 /** static void SafariHandleChooseItem(void) */
 export function SafariHandleChooseItem(): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
       gBattlerControllerFuncs[gActiveBattler] = SafariOpenPokeblockCase;
       gBattlerInMenuId = gActiveBattler;
 }

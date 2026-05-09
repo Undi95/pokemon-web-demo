@@ -15,53 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocZeroed, AllocateMonSpritesGfx, AnimateSprites,
-  BGCNT_PRIORITY, BGCNT_SCREENBASE, BG_PLTT_ID, BLDALPHA_BLEND,
-  BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1, BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3,
-  BattleCreateYesNoCursorAt, BattleDestroyYesNoCursorAt, BattlePutTextOnWindow, BattleStringExpandPlaceholdersToDisplayedString,
-  BeginNormalPaletteFade, BlendPalettes, BufferMoveToLearnIntoBattleTextBuff2, BuildOamBuffer,
-  CalculateMonStats, CalculatePlayerPartyCount, CopyBgTilemapBufferToVram, CopyMon,
-  CopyToBgTilemapBuffer, Cos, CpuFill32, CreateSprite,
-  CreateTask, CreateWirelessStatusIndicatorSprite, CreateYesNoMenu, CycleEvolutionMonSprite,
-  DELAY, DISPCNT_BG0_ON, DISPCNT_BG1_ON, DISPCNT_BG2_ON,
-  DISPCNT_BG3_ON, DISPCNT_BG_ALL_ON, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
-  DecompressAndLoadBgGfxUsingHeap, DecompressPicFromTable_2, DestroyTask, DestroyWirelessStatusIndicatorSprite,
-  DoMonFrontSpriteAnimation, DrawTextOnTradeWindow, EvolutionRenameMon, EvolutionSparkles_ArcDown,
-  EvolutionSparkles_CircleInward, EvolutionSparkles_SpiralUpward, EvolutionSparkles_SprayAndFlash, EvolutionSparkles_SprayAndFlash_Trade,
-  FALSE, FREE_AND_SET_NULL, FillBgTilemapBufferRect, FillPalette,
-  FindTaskIdByFunc, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeMonSpritesGfx, FuncIsActiveTask, GetBattleBgTemplateData, GetBgTilemapBuffer,
-  GetMonData, GetMonSpritePalStructFromOtIdPersonality, GetMoveSlotToReplace, GetSetPokedexFlag,
-  HandleBattleWindow, IncrementGameStat, InitBattleBgsVideo, InitTradeSequenceBgGpuRegs,
-  IsCryFinished, IsFanfareTaskInactive, IsHMMove2, IsSEPlaying,
-  IsTextPrinterActive, JOY_NEW, LinkTradeDrawWindow, LoadBattleTextboxAndBackground,
-  LoadCompressedPalette, LoadEvoSparkleSpriteAndPal, LoadOam, LoadPalette,
-  LoadTradeAnimGfx, LoadUserWindowBorderGfx, LoadWirelessStatusIndicatorSpriteGfx, Menu_ProcessInputNoWrapClearOnChoose,
-  MonTryLearningNewMove, NULL, OBJ_PLTT_ID, Overworld_PlaySpecialMapMusic,
-  PALETTES_ALL, PLTT_SIZE_4BPP, PREPARE_MOVE_BUFFER, PlayBGM,
-  PlayCry_Normal, PlayFanfare, PlayNewMapMusic, PlaySE,
-  ProcessSpriteCopyRequests, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  RemoveMonPPBonus, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  RunTasks, RunTextPrinters, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_Stop,
-  SetBgAttribute, SetGpuReg, SetHBlankCallback, SetMainCallback2,
-  SetMonData, SetMonMoveSlot, SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback,
-  ShowBg, ShowSelectMovePokemonSummaryScreen, Sin, SpeciesToNationalPokedexNum,
-  SpriteCallbackDummy, StopMapMusic, StringCopy, StringCopy_Nickname,
-  StringExpandPlaceholders, TASK_NONE, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, VRAM_SIZE, m4aMPlayAllStop, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void CB2_BeginEvolutionScene(void) */
 export function CB2_BeginEvolutionScene(): any {
   UpdatePaletteFade();
@@ -74,7 +27,7 @@ export function Task_BeginEvolutionScene(taskId: any): any {
       switch (gTasks[taskId].tState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
           gTasks[taskId].tState++;
           break;
       case 1:
@@ -271,7 +224,7 @@ export function CB2_EvolutionSceneLoadGraphics(): any {
       SetVBlankCallback(VBlankCB_EvolutionScene);
       SetMainCallback2(CB2_EvolutionSceneUpdate);
 
-      BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
 
       ShowBg(0);
       ShowBg(1);
@@ -314,7 +267,7 @@ export function CB2_TradeEvolutionSceneLoadGraphics(): any {
           gMain.state++;
           break;
       case 3:
-          FillBgTilemapBufferRect(1, 0, 0, 0, _0x20, _0x20, _0x11);
+          FillBgTilemapBufferRect(1, 0, 0, 0, 0x20, 0x20, 0x11);
           CopyBgTilemapBufferToVram(1);
           gMain.state++;
           break;
@@ -351,11 +304,11 @@ export function CB2_TradeEvolutionSceneLoadGraphics(): any {
               LoadWirelessStatusIndicatorSpriteGfx();
               CreateWirelessStatusIndicatorSprite(0, 0);
           }
-          BlendPalettes(PALETTES_ALL, _0x10, RGB_BLACK);
+          BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
           gMain.state++;
           break;
       case 7:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           InitTradeSequenceBgGpuRegs();
           ShowBg(0);
           ShowBg(1);
@@ -502,7 +455,7 @@ export function Task_EvolutionScene(taskId: any): any {
       switch (gTasks[taskId].tState)
       {
       case EVOSTATE_FADE_IN:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           gSprites[sEvoStructPtr.preEvoSpriteId].invisible = FALSE;
           gTasks[taskId].tState++;
           ShowBg(0);
@@ -538,7 +491,7 @@ export function Task_EvolutionScene(taskId: any): any {
                
               PlayNewMapMusic(MUS_EVOLUTION);
               gTasks[taskId].tState++;
-              BeginNormalPaletteFade(0x1C, 4, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(0x1C, 4, 0, 0x10, RGB_BLACK);
           }
           break;
       case EVOSTATE_START_BG_AND_SPARKLE_SPIRAL:
@@ -596,7 +549,7 @@ export function Task_EvolutionScene(taskId: any): any {
               m4aMPlayAllStop();
               memcpy(gPlttBufferUnfaded[BG_PLTT_ID(2)], sEvoStructPtr.savedPalette, sizeof(sEvoStructPtr.savedPalette));
               RestoreBgAfterAnim();
-              BeginNormalPaletteFade(0x1C, 0, _0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade(0x1C, 0, 0x10, 0, RGB_BLACK);
               gTasks[taskId].tState++;
           }
           break;
@@ -650,7 +603,7 @@ export function Task_EvolutionScene(taskId: any): any {
               }
               else  
               {
-                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
                   gTasks[taskId].tState++;
               }
           }
@@ -677,7 +630,7 @@ export function Task_EvolutionScene(taskId: any): any {
           if (!gTasks[sEvoGraphicsTaskId].isActive)
           {
               m4aMPlayAllStop();
-              BeginNormalPaletteFade(0x6001C, 0, _0x10, 0, RGB_WHITE);
+              BeginNormalPaletteFade(0x6001C, 0, 0x10, 0, RGB_WHITE);
               gTasks[taskId].tState++;
           }
           break;
@@ -708,7 +661,7 @@ export function Task_EvolutionScene(taskId: any): any {
               PlayFanfare(MUS_LEVEL_UP);
               BattleStringExpandPlaceholdersToDisplayedString(gBattleStringsTable[STRINGID_PKMNLEARNEDMOVE - BATTLESTRINGS_TABLE_START]);
               BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MSG);
-              gTasks[taskId].tLearnsFirstMove = _0x40;  
+              gTasks[taskId].tLearnsFirstMove = 0x40;  
               gTasks[taskId].tState++;
           }
           break;
@@ -793,7 +746,7 @@ export function Task_EvolutionScene(taskId: any): any {
                        
                       gTasks[taskId].tLearnMoveState = gTasks[taskId].tLearnMoveYesState;
                       if (gTasks[taskId].tLearnMoveState == MVSTATE_SHOW_MOVE_SELECT)
-                          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+                          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
                   }
               }
               if (JOY_NEW(B_BUTTON))
@@ -920,7 +873,7 @@ export function Task_TradeEvolutionScene(taskId: any): any {
           {
               PlayBGM(MUS_EVOLUTION);
               gTasks[taskId].tState++;
-              BeginNormalPaletteFade(0x1C, 4, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(0x1C, 4, 0, 0x10, RGB_BLACK);
           }
           break;
       case T_EVOSTATE_START_BG_AND_SPARKLE_SPIRAL:
@@ -1040,7 +993,7 @@ export function Task_TradeEvolutionScene(taskId: any): any {
           if (!gTasks[sEvoGraphicsTaskId].isActive)
           {
               m4aMPlayAllStop();
-              BeginNormalPaletteFade((1 << (gSprites[sEvoStructPtr.preEvoSpriteId].oam.paletteNum + 16)) | (0x4001C), 0, _0x10, 0, RGB_WHITE);
+              BeginNormalPaletteFade((1 << (gSprites[sEvoStructPtr.preEvoSpriteId].oam.paletteNum + 16)) | (0x4001C), 0, 0x10, 0, RGB_WHITE);
               gTasks[taskId].tState++;
           }
           break;
@@ -1067,7 +1020,7 @@ export function Task_TradeEvolutionScene(taskId: any): any {
               PlayFanfare(MUS_LEVEL_UP);
               BattleStringExpandPlaceholdersToDisplayedString(gBattleStringsTable[STRINGID_PKMNLEARNEDMOVE - BATTLESTRINGS_TABLE_START]);
               DrawTextOnTradeWindow(0, gDisplayedStringBattle, 1);
-              gTasks[taskId].tLearnsFirstMove = _0x40;  
+              gTasks[taskId].tLearnsFirstMove = 0x40;  
               gTasks[taskId].tState++;
           }
           break;
@@ -1126,7 +1079,7 @@ export function Task_TradeEvolutionScene(taskId: any): any {
                   DrawTextOnTradeWindow(0, gDisplayedStringBattle, 1);
                   gTasks[taskId].tLearnMoveState = gTasks[taskId].tLearnMoveYesState;
                   if (gTasks[taskId].tLearnMoveState == T_MVSTATE_SHOW_MOVE_SELECT)
-                      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+                      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
                   break;
               case 1:  
               case MENU_B_PRESSED:
@@ -1324,7 +1277,7 @@ export function Task_AnimateBg(taskId: any): any {
       }
 
       gTasks[taskId].data[0] = (gTasks[taskId].data[0] + 5) & 0xFF;
-      gTasks[taskId].data[1] = (gTasks[taskId].data[0] + _0x80) & 0xFF;
+      gTasks[taskId].data[1] = (gTasks[taskId].data[0] + 0x80) & 0xFF;
 
       inner_X = Cos(gTasks[taskId].data[0], 4) + 8;
       inner_Y = Sin(gTasks[taskId].data[0], 4) + 16;
@@ -1361,7 +1314,7 @@ export function InitMovingBgPalette(palette: any): any {
 export function StartBgAnimation(isLink: any): any {
   let innerBgId, outerBgId;
 
-      sBgAnimPal = AllocZeroed(_0x640);
+      sBgAnimPal = AllocZeroed(0x640);
       InitMovingBgPalette(sBgAnimPal);
 
       if (!isLink)

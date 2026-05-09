@@ -15,44 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AddTextPrinterParameterized, AddTextPrinterParameterized3,
-  AddWindow, Alloc, AnimateSprites, BG_PLTT_ID,
-  BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer, ChangeBgX,
-  ChangeBgY, CheckBagHasSpace, ClearWindowTilemap, ConvertIntToDecimalStringN,
-  CopyBgTilemapBufferToVram, CopyItemName, CopyItemNameHandlePlural, CopyWindowToVram,
-  CreateSprite, CreateTask, CreateWirelessStatusIndicatorSprite, CreateYesNoMenu,
-  DecompressAndCopyTileDataToVram, DestroyTask, DigitObjUtil_CreatePrinter, DigitObjUtil_Free,
-  DigitObjUtil_Init, DigitObjUtil_PrintNumOn, DrawTextBorderOuter, DynamicPlaceholderTextUtil_ExpandPlaceholders,
-  DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr, EraseYesNoWindow, FALSE,
-  FadeOutAndPlayNewMapMusic, FadeOutMapMusic, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
-  Free, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeTempTileDataBuffersIfPossible,
-  FuncIsActiveTask, GetLinkPlayerCount, GetMonData, GetMonInfoByMultiplayerId,
-  GetMonSpritePalFromSpeciesAndPersonality, GetMultiplayerId, GetPokeJumpPlayerName, GetPokeJumpRecords,
-  GetStringCenterAlignXOffset, GetStringWidth, GetWordTaskArg, HandleLoadSpecialPokePic,
-  HideBg, ISO_RANDOMIZE1, IndexOfSpritePaletteTag, InitBgsFromTemplates,
-  InitWindows, IsDma3ManagerBusyWithBgCopy, IsFanfareTaskInactive, IsLinkTaskFinished,
-  IsMinigameCountdownRunning, IsNotWaitingForBGMStop, JOY_NEW, LoadCompressedSpritePalette,
-  LoadCompressedSpriteSheet, LoadOam, LoadPalette, LoadSpritePalette,
-  LoadSpriteSheet, LoadUserWindowBorderGfxOnBg, LoadUserWindowBorderGfx_, LoadWirelessStatusIndicatorSpriteGfx,
-  MAX_RFU_PLAYERS, Menu_ProcessInputNoWrapClearOnChoose, NULL, PALETTES_ALL,
-  PIXEL_FILL, PLTT_SIZE_4BPP, PlayFanfare, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, Random, RemoveWindow,
-  ResetBgPositions, ResetBgsAndClearDma3BusyFlags, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, Rfu_SendPacket, RunTasks, SPRITE_SHAPE,
-  SPRITE_SIZE, STR_CONV_MODE_LEFT_ALIGN, ScriptContext_Enable, SetBgTilemapBuffer,
-  SetCloseLinkCallback, SetMainCallback2, SetVBlankCallback, SetWordTaskArg,
-  ShowBg, SpriteCallbackDummy, StartMinigameCountdown, StartSpriteAnim,
-  StringCopy, TRUE, TransferPlttBuffer, UpdatePaletteFade,
-  VINE_STATE_TIMER, gSineTable, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void StartPokemonJump(u16 partyId, MainCallback exitCallback) */
 export function StartPokemonJump(partyId: any, exitCallback: any): any {
   let taskId: any = null;
@@ -1142,7 +1104,7 @@ export function Task_CommunicateMonInfo(taskId: any): any {
       {
       case 0:
           for (i = 0; i < MAX_RFU_PLAYERS; i++)
-              tReceivedPacket(i) = FALSE;
+              data[((i)) + 2] = FALSE;
 
           tState++;
            
@@ -1150,10 +1112,10 @@ export function Task_CommunicateMonInfo(taskId: any): any {
           SendPacket_MonInfo(jump.monInfo[jump.multiplayerId]);
           for (i = 0; i < MAX_RFU_PLAYERS; i++)
           {
-              if (!tReceivedPacket(i) && RecvPacket_MonInfo(i,jump.monInfo[i]))
+              if (!data[((i)) + 2] && RecvPacket_MonInfo(i,jump.monInfo[i]))
               {
                   StringCopy(jump.players[i].name, gLinkPlayers[i].name);
-                  tReceivedPacket(i) = TRUE;
+                  data[((i)) + 2] = TRUE;
                   tNumReceived++;
                   if (tNumReceived == jump.numPlayers)
                   {
@@ -1186,7 +1148,7 @@ export function InitVineState(): any {
 /** static void ResetVineState(void) */
 export function ResetVineState(): any {
   sPokemonJump.vineTimer = 0;
-      sPokemonJump.vineStateTimer = VINE_STATE_TIMER(VINE_UPSWING_LOWER);
+      sPokemonJump.vineStateTimer = ((((VINE_UPSWING_LOWER)) << 8) | 0xFF);
       sPokemonJump.vineState = VINE_UPSWING_LOW;
       sPokemonJump.ignoreJumpInput = FALSE;
       sPokemonJump.gameOver = FALSE;
@@ -1204,8 +1166,8 @@ export function UpdateVineState(): any {
       {
           sPokemonJump.vineTimer++;
           sPokemonJump.vineStateTimer += GetVineSpeed();
-          if (sPokemonJump.vineStateTimer >= VINE_STATE_TIMER(NUM_VINESTATES - 1))
-              sPokemonJump.vineStateTimer -= VINE_STATE_TIMER(NUM_VINESTATES - 1);
+          if (sPokemonJump.vineStateTimer >= ((((NUM_VINESTATES - 1)) << 8) | 0xFF))
+              sPokemonJump.vineStateTimer -= ((((NUM_VINESTATES - 1)) << 8) | 0xFF);
 
           sPokemonJump.prevVineState = sPokemonJump.vineState;
           sPokemonJump.vineState = sPokemonJump.vineStateTimer >> 8;
@@ -1227,7 +1189,7 @@ export function GetVineSpeed(): any {
           return 0;
 
       speed = sPokemonJump.vineSpeed;
-      if (sPokemonJump.vineStateTimer <= VINE_STATE_TIMER(VINE_LOWEST))
+      if (sPokemonJump.vineStateTimer <= ((((VINE_LOWEST)) << 8) | 0xFF))
       {
            
            
@@ -1304,7 +1266,7 @@ export function PokeJumpRandom(): any {
 export function ResetVineAfterHit(): any {
   sPokemonJump.gameOver = TRUE;
       sPokemonJump.vineState = VINE_UPSWING_LOWER;
-      sPokemonJump.vineStateTimer = VINE_STATE_TIMER(VINE_LOWEST);
+      sPokemonJump.vineStateTimer = ((((VINE_LOWEST)) << 8) | 0xFF);
       AllowVineUpdates();
 }
 
@@ -2174,7 +2136,7 @@ export function LoadPokeJumpGfx(): any {
           DecompressAndCopyTileDataToVram(BG_BONUSES, gPokeJumpBonuses_Tilemap, 0, 0, 1);
           LoadPalette(sInterface_Pal, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
           SetBgTilemapBuffer(BG_INTERFACE, sPokemonJumpGfx.tilemapBuffer);
-          FillBgTilemapBufferRect_Palette0(BG_INTERFACE, 0, 0, 0, _0x20, _0x20);
+          FillBgTilemapBufferRect_Palette0(BG_INTERFACE, 0, 0, 0, 0x20, 0x20);
           PrintScoreSuffixes();
           PrintScore(0);
           LoadUserWindowBorderGfxOnBg(0, 1, BG_PLTT_ID(14));
@@ -2582,10 +2544,10 @@ export function AddMessageWindow(left: any, top: any, width: any, height: any): 
       window.width = width;
       window.height = height;
       window.paletteNum = 15;
-      window.baseBlock = _0x43;
+      window.baseBlock = 0x43;
 
       windowId = AddWindow(window);
-      FillWindowPixelBuffer(windowId, _0x11);
+      FillWindowPixelBuffer(windowId, 0x11);
       return windowId;
 }
 
@@ -2740,7 +2702,7 @@ export function AddPlayerNameWindows(): any {
           window.tilemapTop = winCoords[1];
           sPokemonJumpGfx.nameWindowIds[i] = AddWindow(window);
           ClearWindowTilemap(sPokemonJumpGfx.nameWindowIds[i]);
-          window.baseBlock += _0x10;
+          window.baseBlock += 0x10;
           winCoords += 2;
       }
 

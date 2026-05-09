@@ -15,45 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, Alloc,
-  AllocZeroed, AnimateSprites, BG_PLTT_ID, BLDALPHA_BLEND,
-  BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG2, BLDCNT_TGT2_BG1, BeginNormalPaletteFade,
-  BlendPalettes, BuildOamBuffer, CalculatePlayerPartyCount, ChangeBgX,
-  ChangeBgY, ClearWindowTilemap, ConditionGraph_CalcPositions, ConditionGraph_Draw,
-  ConditionGraph_Init, ConditionGraph_InitResetScanline, ConditionGraph_InitWindow, ConditionGraph_ResetScanline,
-  ConditionGraph_SetNewPositions, ConditionGraph_TryUpdate, ConditionGraph_Update, ConditionMenu_UpdateMonEnter,
-  ConditionMenu_UpdateMonExit, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect, CopyWindowToVram,
-  CpuFill32, CreateConditionSparkleSprites, CreateSprite, CreateYesNoMenu,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON,
-  DeactivateAllTextPrinters, DestroyConditionSparkleSprites, DestroySprite, Dma3CopyLarge16_,
-  DrawTextBorderOuter, FALSE, FREE_AND_SET_NULL, FillWindowPixelBuffer,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeConditionSparkles, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, GET_NUM_CONDITION_SPARKLES, GetBoxOrPartyMonData, GetConditionMenuMonConditions,
-  GetConditionMenuMonGfx, GetConditionMenuMonNameAndLocString, GetMonData, GetMonFlavorRelation,
-  GetNature, IndexOfSpritePaletteTag, InitBgsFromTemplates, InitWindows,
-  JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadBgTilemap,
-  LoadBgTiles, LoadCompressedSpriteSheet, LoadConditionMonPicTemplate, LoadConditionSelectionIcons,
-  LoadConditionSparkle, LoadOam, LoadPalette, LoadSpritePalette,
-  LoadSpritePalettes, LoadSpriteSheet, LoadSpriteSheets, LoadUserWindowBorderGfx,
-  Menu_ProcessInputNoWrapClearOnChoose, MoveConditionMonOffscreen, MoveConditionMonOnscreen, NULL,
-  OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP,
-  PlaySE, PreparePokeblockFeedScene, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags,
-  ResetConditionSparkleSprites, ResetSpriteData, RunTextPrinters, SPRITE_SHAPE,
-  SPRITE_SIZE, ScanlineEffect_InitHBlankDmaTransfer, SetBgTilemapBuffer, SetGpuReg,
-  SetMainCallback2, SetMonData, SetVBlankCallback, ShowBg,
-  SpriteCallbackDummy, StartSpriteAnim, StringAppend, StringCopy,
-  StringGet_Nickname, TRUE, TransferPlttBuffer, TryClearPokeblock,
-  UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ChooseMonToGivePokeblock(struct Pokeblock *pokeblock, void (*callback)(void)) */
 export function ChooseMonToGivePokeblock(pokeblock: any, callback: any): any {
   sMenu = AllocZeroed(0);
@@ -145,7 +106,7 @@ export function LoadUsePokeblockMenu(): any {
           InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));
           InitWindows(sWindowTemplates);
           DeactivateAllTextPrinters();
-          LoadUserWindowBorderGfx(0, _0x97, BG_PLTT_ID(14));
+          LoadUserWindowBorderGfx(0, 0x97, BG_PLTT_ID(14));
           sInfo.mainState++;
           break;
       case 4:
@@ -1225,7 +1186,7 @@ export function LoadConditionGfx(): any {
 
       spritePalette = sSpritePalette_Condition;
       spriteSheet.data = gUsePokeblockCondition_Gfx;
-      spriteSheet.size = _0x800;
+      spriteSheet.size = 0x800;
       spriteSheet.tag = TAG_CONDITION;
       LoadCompressedSpriteSheet(spriteSheet);
       LoadSpritePalette(spritePalette);
@@ -1246,7 +1207,7 @@ export function CreateConditionSprite(): any {
           if (spriteId != MAX_SPRITES)
           {
               gSprites[spriteId].sSpeed = speed;
-              gSprites[spriteId].sTargetX = (i * xDiff) | _0x20;
+              gSprites[spriteId].sTargetX = (i * xDiff) | 0x20;
               gSprites[spriteId].data[2] = i;  
               StartSpriteAnim(gSprites[spriteId], i);
               sprites[i] =gSprites[spriteId];

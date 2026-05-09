@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BeginNormalPaletteFade, BlendPalettes, ClearMirageTowerPulseBlendEffect, CpuFastCopy,
-  CreateFieldMoveTask, CreateTask, DestroyTask, FALSE,
-  FieldEffectActiveListRemove, FieldEffectStart, GetCursorSelectionMonId, GetPlayerAvatarSpriteId,
-  PLTT_SIZE, PlaySE, ScriptContext_SetupScript, SetWeatherPalStateIdle,
-  SetWeatherScreenFadeOut, SweetScentWildEncounter, TRUE, TryStartMirageTowerPulseBlendEffect,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 SetUpFieldMove_SweetScent(void) */
 export function SetUpFieldMove_SweetScent(): any {
   gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
@@ -71,7 +57,7 @@ export function TrySweetScentEncounter(taskId: any): any {
   if (!gPaletteFade.active)
       {
           ClearMirageTowerPulseBlendEffect();
-          BlendPalettes(_0x00000040, 8, RGB_RED);
+          BlendPalettes(0x00000040, 8, RGB_RED);
           if (gTasks[taskId].data[0] == 64)
           {
               gTasks[taskId].data[0] = 0;

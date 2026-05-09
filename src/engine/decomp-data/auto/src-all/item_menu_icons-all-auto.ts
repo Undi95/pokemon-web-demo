@@ -15,22 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddItemIconSprite, CreateSprite, CreateSwapLineSprites, DestroySprite,
-  DestroySpriteAndFreeResources, FALSE, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, ITEM_TO_BERRY, InitSpriteAffineAnim, IsEnigmaBerryValid,
-  LZDecompressWram, LoadCompressedSpritePalette, LoadSpritePalette, LoadSpriteSheet,
-  ST_OAM_AFFINE_NORMAL, SetSwapLineSpritesInvisibility, SpriteCallbackDummy, StartSpriteAffineAnim,
-  StartSpriteAnim, TRUE, UpdateSwapLineSpritesPos, memcpy,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void RemoveBagSprite(u8 id) */
 export function RemoveBagSprite(id: any): any {
   let spriteId: any =gBagMenu.spriteIds[id];
@@ -191,27 +175,27 @@ export function UpdateItemMenuSwapLinePos(y: any): any {
 export function ArrangeBerryGfx(src: any, dest: any): any {
   let i, j;
 
-      memset(dest, 0, _0x800);
+      memset(dest, 0, 0x800);
 
        
-      dest += _0x100;
+      dest += 0x100;
 
       for (i = 0; i < 6; i++)
       {
            
-          dest += _0x20;
+          dest += 0x20;
 
            
           for (j = 0; j < 6; j++)
           {
-              memcpy(dest, src, _0x20);
-              dest += _0x20;
-              src += _0x20;
+              memcpy(dest, src, 0x20);
+              dest += 0x20;
+              src += 0x20;
           }
 
            
           if (i != 5)
-              dest += _0x20;
+              dest += 0x20;
       }
 }
 
@@ -227,8 +211,8 @@ export function LoadBerryGfx(berryId: any): any {
       pal.data = sBerryPicTable[berryId].pal;
       pal.tag = TAG_BERRY_PIC_PAL;
       LoadCompressedSpritePalette(pal);
-      LZDecompressWram(sBerryPicTable[berryId].tiles,gDecompressionBuffer[_0x1000]);
-      ArrangeBerryGfx(gDecompressionBuffer[_0x1000],gDecompressionBuffer[0]);
+      LZDecompressWram(sBerryPicTable[berryId].tiles,gDecompressionBuffer[0x1000]);
+      ArrangeBerryGfx(gDecompressionBuffer[0x1000],gDecompressionBuffer[0]);
 }
 
 /** u8 CreateBerryTagSprite(u8 id, s16 x, s16 y) */

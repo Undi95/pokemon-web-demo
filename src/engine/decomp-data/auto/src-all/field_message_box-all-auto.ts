@@ -15,19 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddTextPrinterForMessage, ClearDialogWindowAndFrame, CreateTask, DestroyTask,
-  DrawDialogueFrame, FALSE, FindTaskIdByFunc, IsMatchCallTaskActive,
-  LoadMessageBoxAndBorderGfx, RunTextPrintersAndIsPrinter0Active, StartMatchCallFromScript, StringExpandPlaceholders,
-  TASK_NONE, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void InitFieldMessageBox(void) */
 export function InitFieldMessageBox(): any {
   sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
@@ -62,7 +49,7 @@ export function Task_DrawFieldMessage(taskId: any): any {
 
 /** static void CreateTask_DrawFieldMessage(void) */
 export function CreateTask_DrawFieldMessage(): any {
-  CreateTask(Task_DrawFieldMessage, _0x50);
+  CreateTask(Task_DrawFieldMessage, 0x50);
 }
 
 /** static void DestroyTask_DrawFieldMessage(void) */

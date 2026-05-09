@@ -15,46 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ALIGNED, ARRAY_COUNT, AddScrollIndicatorArrowPairParameterized, AddTextPrinterParameterized,
-  AddTextPrinterParameterized2, AddWindow, Alloc, AllocItemIconTemporaryBuffers,
-  AllocZeroed, BG_PLTT_ID, BG_TILE_H_FLIP, BG_TILE_V_FLIP,
-  BlitMenuInfoIcon, ClearDialogWindowAndFrame, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
-  CondenseDecorationsInCategory, ConvertIntToDecimalStringN, CopyItemIconPicTo4x4Buffer, CpuFastCopy,
-  CpuFill16, CreateObjectGraphicsSprite, CreateSprite, CreateTask,
-  DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST,
-  DestroyListMenuTask, DestroySprite, DestroyTask, DisplayItemMessageOnField,
-  DisplayYesNoMenuDefaultYes, DoYesNoFuncWithChoice, DrawDialogueFrame, DrawStdFrameWithCustomTileAndPalette,
-  DrawWholeMapView, ExitTraderMenu, FALSE, FadeInFromBlack,
-  FadeScreen, FillWindowPixelBuffer, FlagClear, FlagGet,
-  Free, FreeItemIconTemporaryBuffers, FreeSpritePaletteByTag, GetDecorationIconPicOrPalette,
-  GetLayerType, GetMaxWidthInMenuTable, GetMetatileAttributesById, GetNumOwnedDecorations,
-  GetNumOwnedDecorationsInCategory, GetObjectEventIdByPosition, GetPlayerFacingDirection, GetStringRightAlignXOffset,
-  HideSecretBaseDecorationSprites, InitMenuInUpperLeftCornerNormal, IsWeatherNotFadingIn, JOY_HELD,
-  JOY_NEW, LZDecompressWram, ListMenuGetScrollAndRow, ListMenuInit,
-  ListMenu_ProcessInput, LoadCompressedSpritePalette, LoadPalette, LoadSpritePalette,
-  LoadSpriteSheet, LockPlayerFieldControls, MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt,
-  MapGridSetMetatileEntryAt, MapGridSetMetatileIdAt, Menu_GetCursorPos, Menu_ProcessInput,
-  MetatileBehavior_HoldsLargeDecoration, MetatileBehavior_HoldsSmallDecoration, MetatileBehavior_IsNormal, MetatileBehavior_IsPlayerRoomPCOn,
-  MetatileBehavior_IsSecretBaseHole, MetatileBehavior_IsSecretBaseImpassable, MetatileBehavior_IsSecretBaseNorthWall, MetatileBehavior_IsSecretBasePC,
-  MetatileBehavior_IsSecretBaseTrainerSpot, NULL, OBJECT_EVENTS_COUNT, PIXEL_FILL,
-  PLTT_SIZE_4BPP, PlaySE, PlayerGetDestCoords, PrintMenuTable,
-  RemoveScrollIndicatorArrowPair, RemoveWindow, ReshowPlayerPC, STR_CONV_MODE_RIGHT_ALIGN,
-  ST_OAM_4BPP, ST_OAM_AFFINE_OFF, ST_OAM_OBJ_NORMAL, ScheduleBgCopyTilemapToVram,
-  ScriptContext_SetupScript, SetCursorScrollWithinListBounds, SetCursorWithinListBounds, SetMainCallback2,
-  SetWarpDestination, SpriteCallbackDummy, StringAppend, StringCopy,
-  StringExpandPlaceholders, StringLength, TASK_NONE, TILE_SIZE_4BPP,
-  TRUE, TryMoveObjectEventToMapCoords, TryOverrideObjectEventTemplateCoords, TryPutSecretBaseVisitOnAir,
-  TrySpawnObjectEvent, UNPACK_BEHAVIOR, VarSet, WarpIntoMap,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void InitDecorationContextItems(void) */
 export function InitDecorationContextItems(): any {
   if (sCurDecorationCategory < DECORCAT_COUNT)
@@ -93,7 +53,7 @@ export function AddDecorationWindow(windowIndex: any): any {
           windowId = AddWindow(sDecorationWindowTemplates[windowIndex]);
       }
 
-      DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, _0x214, 14);
+      DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, 0x214, 14);
       ScheduleBgCopyTilemapToVram(0);
       return windowId;
 }
@@ -484,7 +444,7 @@ export function AddDecorationItemsScrollIndicators(): any {
               SCROLL_ARROW_UP,
               0x3c,
               0x0c,
-              _0x94,
+              0x94,
               sDecorationItemsMenu.numMenuItems - sDecorationItemsMenu.maxShownItems,
               0x6e,
               0x6e,sDecorationsScrollOffset);
@@ -1079,7 +1039,7 @@ export function CanPlaceDecoration(taskId: any, decoration: any): any {
               {
                   curX = gTasks[taskId].tCursorX + j;
                   behaviorAt = MapGridGetMetatileBehaviorAt(curX, curY);
-                  layerType = GetLayerType(NUM_TILES_IN_PRIMARY + decoration.tiles[(mapY - 1 - i) * mapX + j]);
+                  layerType = GetMetatileAttributesById((NUM_TILES_IN_PRIMARY + decoration.tiles[(mapY - 1 - i) * mapX + j])) & METATILE_ATTR_LAYER_MASK;
                   if (!IsFloorOrBoardAndHole(behaviorAt, decoration))
                       return FALSE;
 
@@ -1100,7 +1060,7 @@ export function CanPlaceDecoration(taskId: any, decoration: any): any {
               {
                   curX = gTasks[taskId].tCursorX + j;
                   behaviorAt = MapGridGetMetatileBehaviorAt(curX, curY);
-                  layerType = GetLayerType(NUM_TILES_IN_PRIMARY + decoration.tiles[(mapY - 1 - i) * mapX + j]);
+                  layerType = GetMetatileAttributesById((NUM_TILES_IN_PRIMARY + decoration.tiles[(mapY - 1 - i) * mapX + j])) & METATILE_ATTR_LAYER_MASK;
                   if (!MetatileBehavior_IsNormal(behaviorAt) && !IsSecretBaseTrainerSpot(behaviorAt, layerType))
                       return FALSE;
 
@@ -1117,7 +1077,7 @@ export function CanPlaceDecoration(taskId: any, decoration: any): any {
           {
               curX = gTasks[taskId].tCursorX + j;
               behaviorAt = MapGridGetMetatileBehaviorAt(curX, curY);
-              layerType = GetLayerType(NUM_TILES_IN_PRIMARY + decoration.tiles[j]);
+              layerType = GetMetatileAttributesById((NUM_TILES_IN_PRIMARY + decoration.tiles[j])) & METATILE_ATTR_LAYER_MASK;
               if (!MetatileBehavior_IsNormal(behaviorAt) && !MetatileBehavior_IsSecretBaseNorthWall(behaviorAt))
                   return FALSE;
 
@@ -1606,7 +1566,7 @@ export function AddDecorationIconObjectFromIconTable(tilesTag: any, paletteTag: 
       LZDecompressWram(GetDecorationIconPicOrPalette(decor, 0), gItemIconDecompressionBuffer);
       CopyItemIconPicTo4x4Buffer(gItemIconDecompressionBuffer, gItemIcon4x4Buffer);
       sheet.data = gItemIcon4x4Buffer;
-      sheet.size = _0x200;
+      sheet.size = 0x200;
       sheet.tag = tilesTag;
       LoadSpriteSheet(sheet);
       palette.data = GetDecorationIconPicOrPalette(decor, 1);
@@ -1762,7 +1722,7 @@ export function ClearRearrangementNonSprites(): any {
               {
                   for (x = 0; x < sDecorRearrangementDataBuffer[i].width; x++)
                   {
-                      MapGridSetMetatileEntryAt(posX + MAP_OFFSET + x, posY + MAP_OFFSET - y, gMapHeader.mapLayout.map[posX + x + gMapHeader.mapLayout.width * (posY - y)] | _0x3000);
+                      MapGridSetMetatileEntryAt(posX + MAP_OFFSET + x, posY + MAP_OFFSET - y, gMapHeader.mapLayout.map[posX + x + gMapHeader.mapLayout.width * (posY - y)] | 0x3000);
                   }
               }
 

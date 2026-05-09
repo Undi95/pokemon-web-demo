@@ -15,32 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AnimateSprites, BGCNT_16COLOR, BGCNT_CHARBASE, BGCNT_PRIORITY,
-  BGCNT_SCREENBASE, BGCNT_TXT256x256, BG_PLTT_ID, BLDALPHA_BLEND,
-  BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG0, BLDCNT_TGT2_BD, BLDCNT_TGT2_BG1,
-  BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3, BLDCNT_TGT2_OBJ, BuildOamBuffer,
-  CreateFieldMoveTask, CreateTask, DISPCNT_BG0_ON, DISPCNT_MODE_0,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DmaFill16, DmaFill32,
-  FALSE, FlagGet, FlagSet, GetCurrentMapType,
-  GetCursorSelectionMonId, GetLastUsedWarpMapType, LZ77UnCompVram, LoadOam,
-  LoadPalette, NULL, PLTT_SIZE, PLTT_SIZEOF,
-  PLTT_SIZE_4BPP, PlaySE, ProcessSpriteCopyRequests, REG_OFFSET_BG0CNT,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
-  ScriptContext_SetupScript, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  ShouldDoBrailleRegisteelEffect, TRUE, TransferPlttBuffer, UpdatePaletteFade,
-  VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 SetUpFieldMove_Flash(void) */
 export function SetUpFieldMove_Flash(): any {
   if (ShouldDoBrailleRegisteelEffect())
@@ -217,7 +191,7 @@ export function Task_ExitCaveTransition2(taskId: any): any {
 /** static void Task_ExitCaveTransition3(u8 taskId) */
 export function Task_ExitCaveTransition3(taskId: any): any {
   let count: any = gTasks[taskId].data[1];
-      let blend: any = count + _0x1000;
+      let blend: any = count + 0x1000;
 
       SetGpuReg(REG_OFFSET_BLDALPHA, blend);
       if (count <= 16)
@@ -322,7 +296,7 @@ export function Task_EnterCaveTransition3(taskId: any): any {
 /** static void Task_EnterCaveTransition4(u8 taskId) */
 export function Task_EnterCaveTransition4(taskId: any): any {
   let count: any = 16 - gTasks[taskId].data[1];
-      let blend: any = count + _0x1000;
+      let blend: any = count + 0x1000;
 
       SetGpuReg(REG_OFFSET_BLDALPHA, blend);
       if (count)

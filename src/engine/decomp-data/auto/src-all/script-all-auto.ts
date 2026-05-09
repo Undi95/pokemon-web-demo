@@ -15,19 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, CalcCRC16WithTable, CpuFill32, FALSE,
-  MAP_GROUP, MAP_NUM, MAP_UNDEFINED, MapHeaderCheckScriptTable,
-  MapHeaderGetScriptTable, NULL, ScriptPop, TRUE,
-  memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTableEnd) */
 export function InitScriptContext(ctx: any, cmdTable: any, cmdTableEnd: any): any {
   let i: any = null;

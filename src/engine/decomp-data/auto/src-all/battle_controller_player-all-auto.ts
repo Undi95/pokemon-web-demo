@@ -15,49 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AllocSpritePalette, BATTLE_OPPOSITE,
-  BATTLE_PARTNER, BattleArena_DeductSkillPoints, BattleCreateYesNoCursorAt, BattleDestroyYesNoCursorAt,
-  BattleGfxSfxDummy2, BattleGfxSfxDummy3, BattleLoadPlayerMonSpriteGfx, BattlePutTextOnWindow,
-  BattleStopLowHpSound, BattleStringExpandPlaceholdersToDisplayedString, BattleTv_ClearExplosionFaintCause, BattleTv_SetDataBasedOnAnimation,
-  BattleTv_SetDataBasedOnMove, BattleTv_SetDataBasedOnString, BeginFastPaletteFade, BeginNormalPaletteFade,
-  BtlController_EmitChosenMonReturnValue, BtlController_EmitDataTransfer, BtlController_EmitOneReturnValue, BtlController_EmitOneReturnValue_Duplicate,
-  BtlController_EmitTwoReturnValues, BufferStringBattle, CB2_BagMenuFromBattle, CalculateMonStats,
-  ChooseMoveAndTargetInBattlePalace, ClearTemporarySpeciesSpriteData, ConvertIntToDecimalStringN, CopyAllBattleSpritesInvisibilities,
-  CopyBattleSpriteInvisibility, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect_ChangePalette, CountAliveMonsInBattle,
-  CreateInvisibleSpriteWithCallback, CreatePartyStatusSummarySprites, CreateSprite, CreateTask,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DecompressTrainerBackPic, DecompressTrainerFrontPic,
-  DestroySprite, DestroyTask, DmaCopy16, DoBounceEffect,
-  DoHitAnimHealthboxEffect, DoMoveAnim, DoPokeballSendOutAnimation, EndBounceEffect,
-  FALSE, FadeOutMapMusic, FreeAllWindowBuffers, FreeOamMatrix,
-  FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GET_BATTLER_SIDE,
-  GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord,
-  GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority, GetDefaultMoveTarget, GetMonData,
-  GetMultiplayerId, GetSpritePaletteTagByPaletteNum, HandleBattleWindow, HandleIntroSlide,
-  HandleLowHpMusicChange, IndexOfSpritePaletteTag, InitAndLaunchChosenStatusAnimation, InitAndLaunchSpecialAnimation,
-  IsBattleSEPlaying, IsBattlerSpritePresent, IsCryPlayingOrClearCrySongs, IsDma3ManagerBusyWithBgCopy,
-  IsDoubleBattle, IsLinkTaskFinished, IsMoveWithoutAnimation, IsTextPrinterActive,
-  JOY_HELD, JOY_NEW, JOY_REPEAT, LoadBattleBarGfx,
-  LoadCompressedPalette, MoveBattleBar, NULL, OBJ_PLTT_ID,
-  OpenPartyMenuInBattle, PALETTES_ALL, PLTT_SIZE_4BPP, PlayBGM,
-  PlayCry_ByMode, PlayFanfare, PlaySE, PlaySE12WithPanning,
-  PlayerGenderToFrontTrainerPicId, PrepareBufferDataTransferLink, RecordedBattle_RecordAllBattlerData, ReshowBattleScreenDummy,
-  STR_CONV_MODE_RIGHT_ALIGN, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF, SetBattleBarStruct,
-  SetBattlerSpriteAffineMode, SetCloseLinkCallback, SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible,
-  SetLinkStandbyCallback, SetMainCallback2, SetMonData, SetMultiuseSpriteTemplateToPokemon,
-  SetMultiuseSpriteTemplateToTrainerBack, SetMultiuseSpriteTemplateToTrainerFront, SetPpNumbersPaletteInMoveSelection, SetSpritePrimaryCoordsFromSecondaryCoords,
-  SpriteCallbackDummy, StartHealthboxSlideIn, StartSpriteAnim, StoreSpriteCallbackInData6,
-  StringCopy, StringCopy_Nickname, SwapHpBarsWithHpText, T1_READ_16,
-  TRUE, TryHandleLaunchBattleTableAnimation, TryPutLinkBattleTvShowOnAir, TrySetBehindSubstituteSpriteBit,
-  TryShinyAnimation, UpdateHealthboxAttribute, UpdateHpTextInHealthbox, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SetControllerToPlayer(void) */
 export function SetControllerToPlayer(): any {
   gBattlerControllerFuncs[gActiveBattler] = PlayerBufferRunCommand;
@@ -827,7 +784,7 @@ export function Intro_TryShinyAnimShowHealthbox(): any {
               if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_LINK)
                   m4aMPlayContinue(gMPlayInfo_BGM);
               else
-                  m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+                  m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
           }
           gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].bgmRestored = TRUE;
           bgmRestored = TRUE;
@@ -895,7 +852,7 @@ export function SwitchIn_HandleSoundAndEnd(): any {
   if (!gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].specialAnimActive
           && !IsCryPlayingOrClearCrySongs())
       {
-          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
           HandleLowHpMusicChange(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], gActiveBattler);
           PlayerBufferExecCompleted();
       }
@@ -923,7 +880,7 @@ export function SwitchIn_TryShinyAnimShowHealthbox(): any {
 export function Task_PlayerController_RestoreBgmAfterCry(taskId: any): any {
   if (!IsCryPlayingOrClearCrySongs())
       {
-          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
           DestroyTask(taskId);
       }
 }
@@ -1313,17 +1270,17 @@ export function MoveSelectionCreateCursorAt(cursorPosition: any, baseTileNum: an
       src[0] = baseTileNum + 1;
       src[1] = baseTileNum + 2;
 
-      CopyToBgTilemapBufferRect_ChangePalette(0, src, 9 * (cursorPosition & 1) + 1, 55 + (cursorPosition & 2), 1, 2, _0x11);
+      CopyToBgTilemapBufferRect_ChangePalette(0, src, 9 * (cursorPosition & 1) + 1, 55 + (cursorPosition & 2), 1, 2, 0x11);
       CopyBgTilemapBufferToVram(0);
 }
 
 /** static void MoveSelectionDestroyCursorAt(u8 cursorPosition) */
 export function MoveSelectionDestroyCursorAt(cursorPosition: any): any {
   const src: any[] = [];
-      src[0] = _0x1016;
-      src[1] = _0x1016;
+      src[0] = 0x1016;
+      src[1] = 0x1016;
 
-      CopyToBgTilemapBufferRect_ChangePalette(0, src, 9 * (cursorPosition & 1) + 1, 55 + (cursorPosition & 2), 1, 2, _0x11);
+      CopyToBgTilemapBufferRect_ChangePalette(0, src, 9 * (cursorPosition & 1) + 1, 55 + (cursorPosition & 2), 1, 2, 0x11);
       CopyBgTilemapBufferToVram(0);
 }
 
@@ -1333,17 +1290,17 @@ export function ActionSelectionCreateCursorAt(cursorPosition: any, baseTileNum: 
       src[0] = 1;
       src[1] = 2;
 
-      CopyToBgTilemapBufferRect_ChangePalette(0, src, 7 * (cursorPosition & 1) + 16, 35 + (cursorPosition & 2), 1, 2, _0x11);
+      CopyToBgTilemapBufferRect_ChangePalette(0, src, 7 * (cursorPosition & 1) + 16, 35 + (cursorPosition & 2), 1, 2, 0x11);
       CopyBgTilemapBufferToVram(0);
 }
 
 /** void ActionSelectionDestroyCursorAt(u8 cursorPosition) */
 export function ActionSelectionDestroyCursorAt(cursorPosition: any): any {
   const src: any[] = [];
-      src[0] = _0x1016;
-      src[1] = _0x1016;
+      src[0] = 0x1016;
+      src[1] = 0x1016;
 
-      CopyToBgTilemapBufferRect_ChangePalette(0, src, 7 * (cursorPosition & 1) + 16, 35 + (cursorPosition & 2), 1, 2, _0x11);
+      CopyToBgTilemapBufferRect_ChangePalette(0, src, 7 * (cursorPosition & 1) + 16, 35 + (cursorPosition & 2), 1, 2, 0x11);
       CopyBgTilemapBufferToVram(0);
 }
 
@@ -2438,7 +2395,7 @@ export function InitMoveSelectionsVarsAndStrings(): any {
 export function PlayerHandleChooseItem(): any {
   let i: any = null;
 
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
       gBattlerControllerFuncs[gActiveBattler] = OpenBagAndChooseItem;
       gBattlerInMenuId = gActiveBattler;
 
@@ -2465,7 +2422,7 @@ export function PlayerHandleChoosePokemon(): any {
           MEM_WRITE((gBattleStruct.battlerPreventingSwitchout), gBattleBufferA[gActiveBattler][1] >> 4);
           MEM_WRITE((gBattleStruct.prevSelectedPartySlot), gBattleBufferA[gActiveBattler][2]);
           MEM_WRITE((gBattleStruct.abilityPreventingSwitchout), gBattleBufferA[gActiveBattler][3]);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
           gBattlerControllerFuncs[gActiveBattler] = OpenPartyMenuToChooseMon;
           gBattlerInMenuId = gActiveBattler;
       }
@@ -2581,15 +2538,15 @@ export function PlayerHandleDMA3Transfer(): any {
 
       while (1)
       {
-          if (size <= _0x1000)
+          if (size <= 0x1000)
           {
               DmaCopy16(3, src, dst, size);
               break;
           }
-          DmaCopy16(3, src, dst, _0x1000);
-          src += _0x1000;
-          dst += _0x1000;
-          size -= _0x1000;
+          DmaCopy16(3, src, dst, 0x1000);
+          src += 0x1000;
+          dst += 0x1000;
+          size -= 0x1000;
       }
       PlayerBufferExecCompleted();
 }

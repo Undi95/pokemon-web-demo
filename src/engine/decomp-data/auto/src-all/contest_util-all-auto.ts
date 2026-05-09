@@ -15,58 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinter, AddTextPrinterParameterized3, AddWindow,
-  AllocZeroed, AllocateMonSpritesGfx, AnimateSprites, BG_CHAR_ADDR,
-  BG_PLTT_ID, BG_SCREEN_SIZE, BeginHardwarePaletteFade, BeginNormalPaletteFade,
-  BlendPalette, BlendPalettes, BravoTrainerPokemonProfile_BeforeInterview2, BuildOamBuffer,
-  CalculateRound1Points, ClearContinueGameWarpStatus2, ClearToTransparentAndRemoveWindow, ConvertInternationalContestantName,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect, CopyToBgTilemapBufferRect_ChangePalette,
-  CpuCopy32, CpuFill32, CreateContestMonFromParty, CreateSprite,
-  CreateTask, CreateWindowFromRect, CreateWirelessStatusIndicatorSprite, DISPCNT_BG_ALL_ON,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DeactivateAllTextPrinters, DestroySprite,
-  DestroyTask, DestroyWirelessStatusIndicatorSprite, DoMonFrontSpriteAnimation, FALSE,
-  FREE_AND_SET_NULL, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FindTaskIdByFunc,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeMonSpritesGfx, FreeOamMatrix,
-  FreeSpritePaletteByTag, GET_CONTEST_WINNER_ID, GetContestEntryEligibility, GetContestWinnerSaveIdx,
-  GetIconSpecies, GetMonData, GetMonIconPtr, GetMonSpritePalStructFromOtIdPersonality,
-  GetMultiplayerId, GetObjectEventIdByLocalIdAndMap, GetRibbonCount, GetSetPokedexFlag,
-  GetSpritePaletteTagByPaletteNum, GetStringWidth, GetWindowAttribute, HandleLoadSpecialPokePic_2,
-  HandleLoadSpecialPokePic_DontHandleDeoxys, ISO_RANDOMIZE1, IncrementGameStat, InitBgsFromTemplates,
-  InitWindows, InterviewAfter, InterviewBefore, IsLinkTaskFinished,
-  JOY_NEW, LZDecompressVram, LoadCompressedPalette, LoadCompressedSpritePalette,
-  LoadCompressedSpriteSheet, LoadOam, LoadPalette, LoadSpritePalette,
-  LoadSpriteSheet, LoadWirelessStatusIndicatorSpriteGfx, LockPlayerFieldControls, NULL,
-  OBJ_PLTT_ID, PALETTES_ALL, PALETTES_BG, PIXEL_FILL,
-  PLTT_SIZE_4BPP, PlayBGM, PlayCry_Normal, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, REG_OFFSET_WIN0H,
-  REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ,
-  REG_OFFSET_WINOUT, Random, RemoveWindow, RequestDma3Copy,
-  RequestDma3Fill, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RunTasks, ST_OAM_OBJ_WINDOW, SWAP,
-  SaveContestWinner, SaveLinkContestResults, ScanlineEffect_Clear, ScanlineEffect_InitHBlankDmaTransfer,
-  ScriptContext_Enable, SetBgTilemapBuffer, SetCloseLinkCallback, SetContestants,
-  SetContinueGameWarpStatusToDynamicWarp, SetDynamicWarp, SetGpuReg, SetGpuRegBits,
-  SetLinkStandbyCallback, SetMainCallback2, SetMonData, SetMultiuseSpriteTemplateToPokemon,
-  SetStandardWindowBorderStyle, SetTaskFuncWithFollowupFunc, SetVBlankCallback, ShowBg,
-  Sin, SortContestants, SpeciesToNationalPokedexNum, SpriteCallbackDummy,
-  StringAppend, StringCopy, StringExpandPlaceholders, StringGet_Nickname,
-  TASK_NONE, TRUE, TransferPlttBuffer, TryGainNewFanFromCounter,
-  TryPutSpotTheCutiesOnAir, TrySavingData, UnlockPlayerFieldControls, UpdatePaletteFade,
-  VarGet, VarSet, WIN_RANGE, WriteSequenceToBgTilemapBuffer,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void InitContestResultsDisplay(void) */
 export function InitContestResultsDisplay(): any {
   let i: any = null;
@@ -505,7 +453,7 @@ export function Task_AnnounceWinner(taskId: any): any {
                   gTasks[taskId].tTimer = 0;
                   CreateTask(Task_StartHighlightWinnersBox, 10);
                   gTasks[taskId].tState++;
-                  GET_CONTEST_WINNER_ID(i);
+                  { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
                   BounceMonIconInBox(i, 14);
               }
           }
@@ -516,7 +464,7 @@ export function Task_AnnounceWinner(taskId: any): any {
               const winnerTextBuffer: any[] = [];
               let x: any = null;
               gTasks[taskId].tTimer = 0;
-              GET_CONTEST_WINNER_ID(i);
+              { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
               StringCopy(gStringVar1, gContestMons[i].trainerName);
               ConvertInternationalContestantName(gStringVar1);
               StringCopy(gStringVar2, gContestMons[i].nickname);
@@ -548,7 +496,7 @@ export function Task_ShowWinnerMonBanner(taskId: any): any {
           gBattle_WIN0H = WIN_RANGE(0, DISPLAY_WIDTH);
           gBattle_WIN0V = WIN_RANGE(DISPLAY_HEIGHT / 2, DISPLAY_HEIGHT / 2);
 
-          GET_CONTEST_WINNER_ID(i);
+          { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
           species = gContestMons[i].species;
           personality = gContestMons[i].personality;
           otId = gContestMons[i].otId;
@@ -764,17 +712,17 @@ export function LoadContestMonIcon(species: any, monIndex: any, srcOffset: any, 
           frameNum = 0;
 
       iconPtr = GetMonIconPtr(species, personality, frameNum);
-      iconPtr += srcOffset * _0x200 + _0x80;
+      iconPtr += srcOffset * 0x200 + 0x80;
       if (useDmaNow)
       {
-          RequestDma3Copy(iconPtr, BG_CHAR_ADDR(1) + monIndex * _0x200, _0x180, 1);
+          RequestDma3Copy(iconPtr, BG_CHAR_ADDR(1) + monIndex * 0x200, 0x180, 1);
           var0 = ((monIndex + 10) << 12);
-          var1 = (monIndex * _0x10 + _0x200);
+          var1 = (monIndex * 0x10 + 0x200);
           WriteSequenceToBgTilemapBuffer(1, var1 | var0, 3, monIndex * 3 + 4, 4, 3, 17, 1);
       }
       else
       {
-          RequestDma3Copy(iconPtr, BG_CHAR_ADDR(1) + monIndex * _0x200, _0x180, 1);
+          RequestDma3Copy(iconPtr, BG_CHAR_ADDR(1) + monIndex * 0x200, 0x180, 1);
       }
 }
 
@@ -808,7 +756,7 @@ export function TryCreateWirelessSprites(): any {
           CreateWirelessStatusIndicatorSprite(8, 8);
           gSprites[gWirelessStatusIndicatorSpriteId].subpriority = 1;
           sheet = LoadSpriteSheet(sSpriteSheet_WirelessIndicatorWindow);
-          RequestDma3Fill(0xFFFFFFFF, BG_CHAR_ADDR(4) + sheet * _0x20, _0x80, 1);
+          RequestDma3Fill(0xFFFFFFFF, BG_CHAR_ADDR(4) + sheet * 0x20, 0x80, 1);
           spriteId = CreateSprite(sSpriteTemplate_WirelessIndicatorWindow, 8, 8, 0);
           gSprites[spriteId].oam.objMode = ST_OAM_OBJ_WINDOW;
       }
@@ -849,29 +797,29 @@ export function DrawResultsTextWindow(text: any, spriteId: any): any {
               spriteTilePtrs[i] = (gSprites[sprite.data[i - 1]].oam.tileNum * 32 + OBJ_VRAM0);
 
           for (i = 0; i < ARRAY_COUNT(spriteTilePtrs); i++)
-              CpuFill32(0, spriteTilePtrs[i], _0x400);
+              CpuFill32(0, spriteTilePtrs[i], 0x400);
 
           dst = spriteTilePtrs[0];
-          CpuCopy32(src, dst, _0x20);
-          CpuCopy32(src + 128, dst + _0x100, _0x20);
-          CpuCopy32(src + 128, dst + _0x200, _0x20);
-          CpuCopy32(src + 64,  dst + _0x300, _0x20);
+          CpuCopy32(src, dst, 0x20);
+          CpuCopy32(src + 128, dst + 0x100, 0x20);
+          CpuCopy32(src + 128, dst + 0x200, 0x20);
+          CpuCopy32(src + 64,  dst + 0x300, 0x20);
 
           for (i = 0; i < strWidth; i++)
           {
               dst =spriteTilePtrs[(i + 1) / 8][((i + 1) % 8) * 32];
-              CpuCopy32(src + 192, dst, _0x20);
-              CpuCopy32(windowTilesPtr, dst + _0x100, _0x20);
-              CpuCopy32(windowTilesPtr + 960, dst + _0x200, _0x20);
-              CpuCopy32(src + 224, dst + _0x300, _0x20);
-              windowTilesPtr += _0x20;
+              CpuCopy32(src + 192, dst, 0x20);
+              CpuCopy32(windowTilesPtr, dst + 0x100, 0x20);
+              CpuCopy32(windowTilesPtr + 960, dst + 0x200, 0x20);
+              CpuCopy32(src + 224, dst + 0x300, 0x20);
+              windowTilesPtr += 0x20;
           }
 
           dst =spriteTilePtrs[(i + 1) / 8][((i + 1) % 8) * 32];
-          CpuCopy32(src + 32,  dst, _0x20);
-          CpuCopy32(src + 160, dst + _0x100, _0x20);
-          CpuCopy32(src + 160, dst + _0x200, _0x20);
-          CpuCopy32(src + 96,  dst + _0x300, _0x20);
+          CpuCopy32(src + 32,  dst, 0x20);
+          CpuCopy32(src + 160, dst + 0x100, 0x20);
+          CpuCopy32(src + 160, dst + 0x200, 0x20);
+          CpuCopy32(src + 96,  dst + 0x300, 0x20);
       }
       RemoveWindow(windowId);
 
@@ -1106,7 +1054,7 @@ export function GetNumPreliminaryPoints(monIndex: any, capPoints: any): any {
       let numStars: any = condition / 0x3F;
 
       if (numStars & 0xFFFF)
-          numStars += _0x10000;
+          numStars += 0x10000;
 
       numStars >>= 16;
       if (numStars == 0 && condition)
@@ -1132,7 +1080,7 @@ export function GetNumRound2Points(monIndex: any, capPoints: any): any {
 
       numHearts = r4 / 80;
       if (numHearts & 0xFFFF)
-          numHearts += _0x10000;
+          numHearts += 0x10000;
 
       numHearts >>= 16;
       if (numHearts == 0 && r4 != 0)
@@ -1162,9 +1110,9 @@ export function Task_DrawFinalStandingNumber(taskId: any): any {
       {
           if (--gTasks[taskId].data[11] == -1)
           {
-              firstTileNum = gTasks[taskId].tFinalStanding * 2 + _0x5043;
+              firstTileNum = gTasks[taskId].tFinalStanding * 2 + 0x5043;
               WriteSequenceToBgTilemapBuffer(2, firstTileNum, 1, gTasks[taskId].tMonIndex * 3 + 5, 2, 1, 17, 1);
-              WriteSequenceToBgTilemapBuffer(2, firstTileNum + _0x10, 1, gTasks[taskId].tMonIndex * 3 + 6, 2, 1, 17, 1);
+              WriteSequenceToBgTilemapBuffer(2, firstTileNum + 0x10, 1, gTasks[taskId].tMonIndex * 3 + 6, 2, 1, 17, 1);
               sContestResults.data.numStandingsPrinted++;
               DestroyTask(taskId);
               PlaySE(SE_CONTEST_PLACE);
@@ -1175,8 +1123,8 @@ export function Task_DrawFinalStandingNumber(taskId: any): any {
 /** static void Task_StartHighlightWinnersBox(u8 taskId) */
 export function Task_StartHighlightWinnersBox(taskId: any): any {
   let i: any = null;
-      GET_CONTEST_WINNER_ID(i);
-      CopyToBgTilemapBufferRect_ChangePalette(2, i * 0xC0 + _0x100 + sContestResults.tilemapBuffers[2], 0, i * 3 + 4, 32, 3, 9);
+      { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
+      CopyToBgTilemapBufferRect_ChangePalette(2, i * 0xC0 + 0x100 + sContestResults.tilemapBuffers[2], 0, i * 3 + 4, 32, 3, 9);
       gTasks[taskId].data[10] = i;
       gTasks[taskId].data[12] = 1;
       gTasks[taskId].func = Task_HighlightWinnersBox;
@@ -1214,9 +1162,9 @@ export function SpriteCB_WinnerMonSlideIn(sprite: any): any {
       }
       else
       {
-          let delta: any = sprite.data[1] + _0x600;
+          let delta: any = sprite.data[1] + 0x600;
           sprite.x -= delta >> 8;
-          sprite.data[1] += _0x600;
+          sprite.data[1] += 0x600;
           sprite.data[1] &= 0xFF;
           if (sprite.x < DISPLAY_WIDTH / 2)
               sprite.x = DISPLAY_WIDTH / 2;
@@ -1232,9 +1180,9 @@ export function SpriteCB_WinnerMonSlideIn(sprite: any): any {
 
 /** static void SpriteCB_WinnerMonSlideOut(struct Sprite *sprite) */
 export function SpriteCB_WinnerMonSlideOut(sprite: any): any {
-  let delta: any = sprite.data[1] + _0x600;
+  let delta: any = sprite.data[1] + 0x600;
       sprite.x -= delta >> 8;
-      sprite.data[1] += + _0x600;
+      sprite.data[1] += + 0x600;
       sprite.data[1] &= 0xFF;
       if (sprite.x < -32)
       {
@@ -1344,14 +1292,14 @@ export function CalculateContestantsResultData(): any {
           if (gContestMonRound2Points[i] < 0)
               sContestResults.monResults[i].lostPoints = TRUE;
 
-          barLength = (sContestResults.monResults[i].relativePreliminaryPoints * _0x5800) / 100;
+          barLength = (sContestResults.monResults[i].relativePreliminaryPoints * 0x5800) / 100;
           if ((barLength & 0xFF) > 0x7F)
-              barLength += _0x100;
+              barLength += 0x100;
           sContestResults.monResults[i].barLengthPreliminary = barLength >> 8;
 
-          barLength = (sContestResults.monResults[i].relativeRound2Points * _0x5800) / 100;
+          barLength = (sContestResults.monResults[i].relativeRound2Points * 0x5800) / 100;
           if ((barLength & 0xFF) > 0x7F)
-              barLength += _0x100;
+              barLength += 0x100;
           sContestResults.monResults[i].barLengthRound2 = barLength >> 8;
 
           sContestResults.monResults[i].numStars = GetNumPreliminaryPoints(i, TRUE);
@@ -1395,7 +1343,7 @@ export function UpdateContestResultBars(isRound2: any, numUpdates: any): any {
 
                   target = ((sContestResults.monResults[i].barLengthPreliminary << 16) / sContestResults.monResults[i].numStars) * (numUpdates + 1);
                   if ((target & 0xFFFF) > 0x7FFF)
-                      target += _0x10000;
+                      target += 0x10000;
 
                   gTasks[taskId].tMonId = i;
                   gTasks[taskId].tTarget = target >> 16;
@@ -1417,7 +1365,7 @@ export function UpdateContestResultBars(isRound2: any, numUpdates: any): any {
 
                   target = ((sContestResults.monResults[i].barLengthRound2 << 16) / sContestResults.monResults[i].numHearts) * (numUpdates + 1);
                   if ((target & 0xFFFF) > 0x7FFF)
-                      target += _0x10000;
+                      target += 0x10000;
 
                   gTasks[taskId].tMonId = i;
                   if (sContestResults.monResults[i].lostPoints)
@@ -1500,7 +1448,7 @@ export function Task_UpdateContestResultBar(taskId: any): any {
               if (tileOffset < 4)
                   tileNum = 0x504C + tileOffset;
               else
-                  tileNum = _0x5057 + tileOffset;
+                  tileNum = 0x5057 + tileOffset;
 
               FillBgTilemapBufferRect_Palette0(2, tileNum, i + 7, monId * 3 + 6, 1, 1);
           }
@@ -1523,7 +1471,7 @@ export function AllocContestResults(): any {
       sContestResults.tilemapBuffers[1] = AllocZeroed(BG_SCREEN_SIZE);
       sContestResults.tilemapBuffers[2] = AllocZeroed(BG_SCREEN_SIZE);
       sContestResults.tilemapBuffers[3] = AllocZeroed(BG_SCREEN_SIZE);
-      sContestResults.unused = AllocZeroed(_0x1000);
+      sContestResults.unused = AllocZeroed(0x1000);
       AllocateMonSpritesGfx();
 }
 
@@ -1700,14 +1648,14 @@ export function GetContestMonCondition(): any {
 /** void GetContestWinnerId(void) */
 export function GetContestWinnerId(): any {
   let i: any = null;
-      GET_CONTEST_WINNER_ID(i);
+      { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
       gSpecialVar_0x8005 = i;
 }
 
 /** void BufferContestWinnerTrainerName(void) */
 export function BufferContestWinnerTrainerName(): any {
   let i: any = null;
-      GET_CONTEST_WINNER_ID(i);
+      { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
       StringCopy(gStringVar3, gContestMons[i].trainerName);
       ConvertInternationalContestantName(gStringVar3);
 }
@@ -1715,7 +1663,7 @@ export function BufferContestWinnerTrainerName(): any {
 /** void BufferContestWinnerMonName(void) */
 export function BufferContestWinnerMonName(): any {
   let i: any = null;
-      GET_CONTEST_WINNER_ID(i);
+      { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
       StringCopy(gStringVar1, gContestMons[i].nickname);
 }
 
@@ -2189,7 +2137,7 @@ export function ShowContestEntryMonPic(): any {
           species = gContestMons[gSpecialVar_0x8006].species;
           personality = gContestMons[gSpecialVar_0x8006].personality;
           otId = gContestMons[gSpecialVar_0x8006].otId;
-          taskId = CreateTask(Task_ShowContestEntryMonPic, _0x50);
+          taskId = CreateTask(Task_ShowContestEntryMonPic, 0x50);
           gTasks[taskId].data[0] = 0;
           gTasks[taskId].data[1] = species;
           if (gSpecialVar_0x8006 == gContestPlayerMonIndex)

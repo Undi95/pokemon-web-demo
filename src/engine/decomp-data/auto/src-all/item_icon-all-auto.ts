@@ -15,25 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  Alloc, AllocZeroed, CpuCopy16, CreateSprite,
-  FALSE, Free, GetItemIconPicOrPalette, LZDecompressWram,
-  LoadCompressedSpritePalette, LoadSpriteSheet, NULL, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 AllocItemIconTemporaryBuffers(void) */
 export function AllocItemIconTemporaryBuffers(): any {
-  gItemIconDecompressionBuffer = Alloc(_0x120);
+  gItemIconDecompressionBuffer = Alloc(0x120);
       if (gItemIconDecompressionBuffer == NULL)
           return FALSE;
 
-      gItemIcon4x4Buffer = AllocZeroed(_0x200);
+      gItemIcon4x4Buffer = AllocZeroed(0x200);
       if (gItemIcon4x4Buffer == NULL)
       {
           Free(gItemIconDecompressionBuffer);
@@ -54,7 +42,7 @@ export function CopyItemIconPicTo4x4Buffer(src: any, dest: any): any {
   let i: any = null;
 
       for (i = 0; i < 3; i++)
-          CpuCopy16(src + i * 96, dest + i * 128, _0x60);
+          CpuCopy16(src + i * 96, dest + i * 128, 0x60);
 }
 
 /** u8 AddItemIconSprite(u16 tilesTag, u16 paletteTag, u16 itemId) */
@@ -73,7 +61,7 @@ export function AddItemIconSprite(tilesTag: any, paletteTag: any, itemId: any): 
           LZDecompressWram(GetItemIconPicOrPalette(itemId, 0), gItemIconDecompressionBuffer);
           CopyItemIconPicTo4x4Buffer(gItemIconDecompressionBuffer, gItemIcon4x4Buffer);
           spriteSheet.data = gItemIcon4x4Buffer;
-          spriteSheet.size = _0x200;
+          spriteSheet.size = 0x200;
           spriteSheet.tag = tilesTag;
           LoadSpriteSheet(spriteSheet);
 
@@ -110,7 +98,7 @@ export function AddCustomItemIconSprite(customSpriteTemplate: any, tilesTag: any
           LZDecompressWram(GetItemIconPicOrPalette(itemId, 0), gItemIconDecompressionBuffer);
           CopyItemIconPicTo4x4Buffer(gItemIconDecompressionBuffer, gItemIcon4x4Buffer);
           spriteSheet.data = gItemIcon4x4Buffer;
-          spriteSheet.size = _0x200;
+          spriteSheet.size = 0x200;
           spriteSheet.tag = tilesTag;
           LoadSpriteSheet(spriteSheet);
 

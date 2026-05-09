@@ -15,29 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, CheckForObjectEventCollision, DIR_EAST, DIR_NONE,
-  DIR_NORTH, DIR_SOUTH, DIR_WEST, FALSE,
-  GetJumpMovementAction, GetOppositeDirection, GetPlayerFacingDirection, GetPlayerMovementDirection,
-  IsPlayerCollidingWithFarawayIslandMew, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsBumpySlope, MetatileBehavior_IsFortreeBridge,
-  MetatileBehavior_IsHorizontalRail, MetatileBehavior_IsIsolatedHorizontalRail, MetatileBehavior_IsIsolatedVerticalRail, MetatileBehavior_IsRunningDisallowed,
-  MetatileBehavior_IsVerticalRail, MoveCoords, Overworld_ChangeMusicTo, Overworld_ClearSavedMusic,
-  Overworld_PlaySpecialMapMusic, Overworld_SetSavedMusic, PlaySE, PlayerAcroTurnJump,
-  PlayerEndWheelie, PlayerEndWheelieWhileMoving, PlayerFaceDirection, PlayerGetDestCoords,
-  PlayerGetElevation, PlayerIdleWheelie, PlayerJumpLedge, PlayerLedgeHoppingWheelie,
-  PlayerMovingHoppingWheelie, PlayerOnBikeCollide, PlayerOnBikeCollideWithFarawayIslandMew, PlayerPopWheelieWhileMoving,
-  PlayerRideWaterCurrent, PlayerSetAnimId, PlayerStandingHoppingWheelie, PlayerStartWheelie,
-  PlayerTurnInPlace, PlayerUseAcroBikeOnBumpySlope, PlayerWheelieInPlace, PlayerWheelieMove,
-  SetObjectEventDirection, SetPlayerAvatarTransitionFlags, TRUE, TestPlayerAvatarFlags,
-  memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void MovePlayerOnBike(u8 direction, u16 newKeys, u16 heldKeys) */
 export function MovePlayerOnBike(direction: any, newKeys: any, heldKeys: any): any {
   if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_MACH_BIKE)

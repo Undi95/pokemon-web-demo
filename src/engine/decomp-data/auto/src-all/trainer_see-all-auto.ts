@@ -15,29 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, CancelPlayerForcedMovement, ConfigureAndSetUpOneTrainerBattle, ConfigureTwoTrainersBattle,
-  CreateSpriteAtEnd, CreateTask, CurrentBattlePyramidLocation, DestroyTask,
-  FALSE, FieldEffectActiveListContains, FieldEffectStart, FieldEffectStop,
-  FreezeObjectEventsExceptOne, GetBattlePyramidTrainerFlag, GetCollisionAtCoords, GetCollisionFlagsAtCoords,
-  GetFaceDirectionMovementAction, GetHillTrainerFlag, GetJumpInPlaceMovementAction, GetMonsStateToDoubles_2,
-  GetObjectEventScriptPointerByObjectEventId, GetOppositeDirection, GetTrainerFacingDirectionMovementType, GetTrainerFlagFromScriptPointer,
-  GetTrainerHillTrainerScript, GetWalkNormalMovementAction, InTrainerHill, LOCALID_PLAYER,
-  LoadWordFromTwoHalfwords, MoveCoords, OBJECT_EVENTS_COUNT, ObjectEventCheckHeldMovementStatus,
-  ObjectEventClearHeldMovement, ObjectEventClearHeldMovementIfFinished, ObjectEventGetLocalIdAndMap, ObjectEventIsMovementOverridden,
-  ObjectEventSetHeldMovement, OverrideTemplateCoordsForObjectEvent, PlayerGetDestCoords, ResetTrainerOpponentIds,
-  ScriptContext_Enable, ScriptMovement_StartObjectMovementScript, SetMovingNpcId, SetTaskFuncWithFollowupFunc,
-  SetTrainerMovementType, SetUpTwoTrainersBattle, StartSpriteAnim, StoreWordInTwoHalfwords,
-  SwitchTaskToFollowupFunc, TRUE, TryGetObjectEventIdByLocalIdAndMap, TryOverrideTemplateCoordsForObjectEvent,
-  UnfreezeObjectEvents,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 CheckForTrainersWantingBattle(void) */
 export function CheckForTrainersWantingBattle(): any {
   let i: any = null;
@@ -254,7 +231,7 @@ export function CheckPathBetweenTrainerAndPlayer(trainerObj: any, approachDistan
 export function InitTrainerApproachTask(trainerObj: any, range: any): any {
   let task: any = null;
 
-      gApproachingTrainers[gNoOfApproachingTrainers].taskId = CreateTask(Task_RunTrainerSeeFuncList, _0x50);
+      gApproachingTrainers[gNoOfApproachingTrainers].taskId = CreateTask(Task_RunTrainerSeeFuncList, 0x50);
       task =gTasks[gApproachingTrainers[gNoOfApproachingTrainers].taskId];
       task.tTrainerRange = range;
       task.tTrainerObjectEventId = gApproachingTrainers[gNoOfApproachingTrainers].objectEventId;
@@ -511,7 +488,7 @@ export function TryPrepareSecondApproachingTrainer(): any {
 
 /** u8 FldEff_ExclamationMarkIcon(void) */
 export function FldEff_ExclamationMarkIcon(): any {
-  let spriteId: any = CreateSpriteAtEnd(sSpriteTemplate_ExclamationQuestionMark, 0, 0, _0x53);
+  let spriteId: any = CreateSpriteAtEnd(sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x53);
 
       if (spriteId != MAX_SPRITES)
           SetIconSpriteData(gSprites[spriteId], FLDEFF_EXCLAMATION_MARK_ICON, 0);
@@ -521,7 +498,7 @@ export function FldEff_ExclamationMarkIcon(): any {
 
 /** u8 FldEff_QuestionMarkIcon(void) */
 export function FldEff_QuestionMarkIcon(): any {
-  let spriteId: any = CreateSpriteAtEnd(sSpriteTemplate_ExclamationQuestionMark, 0, 0, _0x52);
+  let spriteId: any = CreateSpriteAtEnd(sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x52);
 
       if (spriteId != MAX_SPRITES)
           SetIconSpriteData(gSprites[spriteId], FLDEFF_QUESTION_MARK_ICON, 1);
@@ -531,7 +508,7 @@ export function FldEff_QuestionMarkIcon(): any {
 
 /** u8 FldEff_HeartIcon(void) */
 export function FldEff_HeartIcon(): any {
-  let spriteId: any = CreateSpriteAtEnd(sSpriteTemplate_HeartIcon, 0, 0, _0x52);
+  let spriteId: any = CreateSpriteAtEnd(sSpriteTemplate_HeartIcon, 0, 0, 0x52);
 
       if (spriteId != MAX_SPRITES)
       {

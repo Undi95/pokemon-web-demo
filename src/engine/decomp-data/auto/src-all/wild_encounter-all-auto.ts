@@ -15,26 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BattleSetup_StartBattlePikeWildBattle, BattleSetup_StartRoamerBattle, BattleSetup_StartWildBattle, CreateMonWithGenderNatureLetter,
-  CreateMonWithNature, CurrentBattlePyramidLocation, FALSE, FlagGet,
-  GenerateBattlePyramidWildMon, GetBattlePikeWildMonHeaderId, GetGenderFromSpeciesAndPersonality, GetMonAbility,
-  GetMonData, GetSafariZoneFlag, GetXYCoordsOneStepInFrontOfPlayer, ISO_RANDOMIZE2,
-  InBattlePike, InUnionRoom, IncrementGameStat, MAP_GROUP,
-  MAP_NUM, MAP_UNDEFINED, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsBridgeOverWater,
-  MetatileBehavior_IsLandWildEncounter, MetatileBehavior_IsSurfableAndNotWaterfall, MetatileBehavior_IsWaterWildEncounter, NULL,
-  PlayerGetDestCoords, PokeblockGetGain, Random, SWAP,
-  SafariZoneGetActivePokeblock, ScriptContext_SetupScript, SetMonMoveSlot, SetPokemonAnglerSpecies,
-  TRUE, TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX, TestPlayerAvatarFlags, TryGenerateBattlePikeWildMon,
-  TryStartRoamerEncounter, VarGet, VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void DisableWildEncounters(bool8 disabled) */
 export function DisableWildEncounters(disabled: any): any {
   sWildEncountersDisabled = disabled;

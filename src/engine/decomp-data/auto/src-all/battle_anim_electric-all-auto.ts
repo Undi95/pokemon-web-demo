@@ -15,23 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AnimTranslateLinear, BATTLE_PARTNER, BattleAnimAdjustPanning, Cos,
-  CreateSprite, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
-  DestroySpriteAndMatrix, FALSE, FreeOamMatrix, GetAnimBattlerSpriteId,
-  GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, GetBattlerSpriteSubpriority,
-  InitAnimLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsBattlerSpriteVisible,
-  IsContest, PlaySE12WithPanning, SPRITE_SHAPE, SPRITE_SIZE,
-  Sin, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
-  TRUE, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimLightning(struct Sprite *sprite) */
 export function AnimLightning(sprite: any): any {
   if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
@@ -207,7 +190,7 @@ export function AnimSparkElectricityFlashing(sprite: any): any {
   let battler: any = null;
 
       sprite.data[0] = gBattleAnimArgs[3];
-      if (gBattleAnimArgs[7] & _0x8000)
+      if (gBattleAnimArgs[7] & 0x8000)
           battler = gBattleAnimTarget;
       else
           battler = gBattleAnimAttacker;

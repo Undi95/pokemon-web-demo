@@ -15,31 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized4, AddWindowWithoutTileMap, BG_PLTT_ID,
-  BG_SCREEN_ADDR, BeginNormalPaletteFade, CopyWindowToVram, CpuFastCopy,
-  CpuFill32, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters,
-  DmaFill16, DmaFill32, DoSoftReset, DrawStdFrameWithCustomTileAndPalette,
-  EnableInterrupts, FALSE, FillWindowPixelBuffer, HandleSavingData,
-  InitBgsFromTemplates, InitWindows, JOY_NEW, LZ77UnCompVram,
-  LoadBgTiles, LoadOam, LoadPalette, NULL,
-  OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE,
-  PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, ProgramFlashByte, REG_OFFSET_BG0CNT,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_DISPCNT,
-  ReadFlash, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, SetWindowAttribute, ShowBg, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void SaveFailedScreenTextPrint(const u8 *text, u8 x, u8 y) */
 export function SaveFailedScreenTextPrint(text: any, x: any, y: any): any {
   const color: any[] = [];
@@ -93,15 +68,15 @@ export function CB2_SaveFailedScreen(): any {
           LZ77UnCompVram(gBirchBagGrass_Gfx, VRAM);
           LZ77UnCompVram(gBirchBagTilemap, (BG_SCREEN_ADDR(14)));
           LZ77UnCompVram(gBirchGrassTilemap, (BG_SCREEN_ADDR(15)));
-          LZ77UnCompVram(sSaveFailedClockGfx, (OBJ_VRAM0 + _0x20));
+          LZ77UnCompVram(sSaveFailedClockGfx, (OBJ_VRAM0 + 0x20));
           ResetBgsAndClearDma3BusyFlags(0);
           InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));
-          SetBgTilemapBuffer(0,gDecompressionBuffer[_0x2000]);
-          CpuFill32(0,gDecompressionBuffer[_0x2000], _0x800);
-          LoadBgTiles(0, gTextWindowFrame1_Gfx, _0x120, _0x214);
+          SetBgTilemapBuffer(0,gDecompressionBuffer[0x2000]);
+          CpuFill32(0,gDecompressionBuffer[0x2000], 0x800);
+          LoadBgTiles(0, gTextWindowFrame1_Gfx, 0x120, 0x214);
           InitWindows(sDummyWindowTemplate);
           sWindowIds[TEXT_WIN_ID] = AddWindowWithoutTileMap(sWindowTemplate_Text);
-          SetWindowAttribute(sWindowIds[TEXT_WIN_ID], 7, (u32)&gDecompressionBuffer[_0x2800]);
+          SetWindowAttribute(sWindowIds[TEXT_WIN_ID], 7, (u32)&gDecompressionBuffer[0x2800]);
           sWindowIds[CLOCK_WIN_ID] = AddWindowWithoutTileMap(sWindowTemplate_Clock);
           SetWindowAttribute(sWindowIds[CLOCK_WIN_ID], 7, (u32)&gDecompressionBuffer[0x3D00]);
           DeactivateAllTextPrinters();
@@ -112,8 +87,8 @@ export function CB2_SaveFailedScreen(): any {
           LoadPalette(sSaveFailedClockPal, OBJ_PLTT_ID(0), PLTT_SIZE_4BPP);
           LoadPalette(gTextWindowFrame1_Pal, BG_PLTT_ID(14), PLTT_SIZE_4BPP);
           LoadPalette(gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
-          DrawStdFrameWithCustomTileAndPalette(sWindowIds[TEXT_WIN_ID], FALSE, _0x214, 0xE);
-          DrawStdFrameWithCustomTileAndPalette(sWindowIds[CLOCK_WIN_ID], FALSE, _0x214, 0xE);
+          DrawStdFrameWithCustomTileAndPalette(sWindowIds[TEXT_WIN_ID], FALSE, 0x214, 0xE);
+          DrawStdFrameWithCustomTileAndPalette(sWindowIds[CLOCK_WIN_ID], FALSE, 0x214, 0xE);
           FillWindowPixelBuffer(sWindowIds[CLOCK_WIN_ID], PIXEL_FILL(1));  
           FillWindowPixelBuffer(sWindowIds[TEXT_WIN_ID], PIXEL_FILL(1));
           CopyWindowToVram(sWindowIds[CLOCK_WIN_ID], COPYWIN_GFX);  

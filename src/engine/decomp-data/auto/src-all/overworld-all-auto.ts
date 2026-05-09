@@ -15,78 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocZeroed, AnimateSprites, ApplyNewEncryptionKeyToWord,
-  ApplyWeatherColorMapToPal, ArePlayerFieldControlsLocked, BG_SCREEN_SIZE, BLDALPHA_BLEND,
-  BLDCNT_EFFECT_BLEND, BLDCNT_TGT2_OBJ, BuildOamBuffer, CalculatePlayerPartyCount,
-  CameraUpdate, ChangeBgX, ChangeBgY, CheckLeftFriendsSecretBase,
-  ClearContinueGameWarpStatus, ClearMirageTowerPulseBlend, ClearMirageTowerPulseBlendEffect, ClearScheduledBgCopiesToVram,
-  ClearTempFieldEventData, CloseLink, CopyMapTilesetsToVram, CopyPrimaryTilesetToVram,
-  CopySecondaryTilesetToVram, CopySecondaryTilesetToVramUsingHeap, CpuCopy32, CpuFill32,
-  CreateObjectGraphicsSprite, CreateWirelessStatusIndicatorSprite, DIR_EAST, DIR_NORTH,
-  DIR_SOUTH, DIR_WEST, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
-  DISPCNT_WIN0_ON, DISPCNT_WIN1_ON, DisableInterrupts, DmaClear16,
-  DmaFillLarge16, DoCurrentWeather, DoScheduledBgTilemapCopiesToVram, DoTimeBasedEvents,
-  DrawWholeMapView, ElevationToPriority, EnableInterrupts, FALSE,
-  FadeOutAndFadeInNewMapMusic, FadeOutAndPlayNewMapMusic, FadeOutMapMusic, FieldCB_DefaultWarpExit,
-  FieldCB_WarpExitFadeFromBlack, FieldClearPlayerInput, FieldEffectActiveListClear, FieldGetPlayerInput,
-  FieldUpdateBgTilemapScroll, FlagClear, FlagGet, FreeAllOverworldWindowBuffers,
-  FreeTempTileDataBuffersIfPossible, GetCameraFocusCoords, GetCurrentMapMusic, GetCurrentTrainerHillMapId,
-  GetDestinationWarpMapHeader, GetFRLGAvatarGraphicsIdByGender, GetFaceDirectionAnimNum, GetFirstInactiveObjectEventId,
-  GetHealLocation, GetInitialPlayerAvatarState, GetLinkRecvQueueLength, GetLocalWaterMon,
-  GetLocalWildMon, GetMapConnection, GetMapLayout, GetMonAbility,
-  GetMonData, GetMoney, GetMoveDirectionAnimNum, GetPlayerFacingDirection,
-  GetRSAvatarGraphicsIdByGender, GetRivalAvatarGraphicsIdByStateIdAndGender, GetSavedWeather, HealPlayerParty,
-  HideMapNamePopUpWindow, InBattlePyramid_, InTrainerHill, InitBattlePyramidMap,
-  InitBgsFromTemplates, InitCameraUpdateCallback, InitFieldMessageBox, InitMap,
-  InitMapFromSavedGame, InitMatchCallCounters, InitObjectEventPalettes, InitPlayerAvatar,
-  InitSecondaryTilesetAnimation, InitSecretBaseAppearance, InitStandardTextBoxWindows, InitTextBoxGfxAndPrinters,
-  InitTilesetAnimations, InitTrainerHillMap, InstallCameraPanAheadCallback, IsMirageIslandPresent,
-  IsNotWaitingForBGMStop, IsRfuRecvQueueEmpty, IsSendingKeysToLink, JOY_HELD,
-  JOY_NEW, LinkRfu_FatalError, LoadBattlePyramidFloorObjectEventScripts, LoadBattlePyramidObjectEventTemplates,
-  LoadMapTilesetPalettes, LoadOam, LoadSecondaryTilesetPalette, LoadTrainerHillFloorObjectEventScripts,
-  LoadTrainerHillObjectEventTemplates, LoadWirelessStatusIndicatorSpriteGfx, LockPlayerFieldControls, MAP_GROUP,
-  MAP_NUM, MAP_UNDEFINED, MapGridGetCollisionAt, MapGridGetMetatileBehaviorAt,
-  MetatileBehavior_IsDeepSouthWarp, MetatileBehavior_IsDoor, MetatileBehavior_IsEastArrowWarp, MetatileBehavior_IsLadder,
-  MetatileBehavior_IsNonAnimDoor, MetatileBehavior_IsNorthArrowWarp, MetatileBehavior_IsSouthArrowWarp, MetatileBehavior_IsSurfableWaterOrUnderwater,
-  MetatileBehavior_IsWestArrowWarp, MoveCoords, MoveSaveBlocks_ResetHeap, NULL,
-  NewGameInitData, OBJECT_EVENTS_COUNT, ObjectEventMoveDestCoords, ObjectEventUpdateElevation,
-  Overworld_GetMapHeaderByGroupAndId, PLTT_SIZE, PlayCry_NormalNoDucking, PlayNewMapMusic,
-  PlaySE, PlayTimeCounter_Start, PlayerGetDestCoords, PlayerStep,
-  ProcessPlayerFieldInput, ProcessSpriteCopyRequests, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  Random, ResetAllPicSprites, ResetCameraUpdateInfo, ResetCyclingRoadChallengeData,
-  ResetFieldCamera, ResetFieldTasksArgs, ResetMapMusic, ResetOamRange,
-  ResetObjectEvents, ResetPaletteFade, ResetSafariZoneFlag, ResetSpriteData,
-  ResetTasks, ResetTempTileDataBuffers, ResetWinStreaks, RestartWildEncounterImmunitySteps,
-  ResumePausedWeather, RoamerMove, RoamerMoveToOtherLocationSet, RotatingGate_InitPuzzleAndGraphics,
-  RunOnDiveWarpMapScript, RunOnResumeMapScript, RunOnReturnToFieldMapScript, RunOnTransitionMapScript,
-  RunScriptImmediately, RunTasks, ScanlineEffect_Clear, ScanlineEffect_InitHBlankDmaTransfer,
-  ScanlineEffect_SetParams, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, ScriptContext_Init,
-  ScriptContext_RunScript, ScriptContext_SetupScript, SecretBaseMapPopupEnabled, SetBgAttribute,
-  SetBgTilemapBuffer, SetCameraFocusCoords, SetGpuReg, SetHBlankCallback,
-  SetMainCallback2, SetMoney, SetObjectSubpriorityByElevation, SetPlayerAvatarTransitionFlags,
-  SetSavedWeatherFromCurrMapHeader, SetSpritePosToMapCoords, SetUpFieldTasks, SetVBlankCallback,
-  ShiftObjectEventCoords, ShiftStillObjectEventCoords, ShowBg, ShowMapNamePopup,
-  ShowStartMenu, SpawnObjectEventsOnReturnToField, StartSpriteAnim, StartSpriteAnimIfDifferent,
-  StartWeather, StopMapMusic, TRUE, TRY_FREE_AND_SET_NULL,
-  TestPlayerAvatarFlags, TransferPlttBuffer, TransferTilesetAnimsBuffer, TryGetTileEventScript,
-  TryInteractWithPlayer, TryLoadTrainerHillEReaderPalette, TryPutTodaysRivalTrainerOnAir, TryRunOnWarpIntoMapScript,
-  TrySetMapSaveWarpStatus, TrySpawnObjectEvents, TryStartMirageTowerPulseBlendEffect, TryUpdateRandomTrainerRematches,
-  UnfreezeObjectEvents, UnlockPlayerFieldControls, UpdateCameraPanning, UpdateLocationHistoryForRoamer,
-  UpdateObjectEventSpriteInvisibility, UpdatePaletteFade, UpdatePlayerAvatarTransitionState, UpdateTVScreensOnMap,
-  UpdateTilesetAnimations, UseContinueGameWarp, UsedPokemonCenterWarp, VRAM_SIZE,
-  VarGet, VarSet, WriteBattlePyramidViewScanlineEffectBuffer, WriteFlashScanlineEffectBuffer,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void DoWhiteOut(void) */
 export function DoWhiteOut(): any {
   RunScriptImmediately(EventScript_WhiteOut);
@@ -1734,7 +1662,7 @@ export function ResetScreenForMapLoad(): any {
       ScanlineEffect_Stop();
 
       DmaClear16(3, PLTT + 2, PLTT_SIZE - 2);
-      DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, _0x1000);
+      DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, 0x1000);
       ResetOamRange(0, 128);
       LoadOam();
 }
@@ -2533,12 +2461,8 @@ export function SpawnLinkPlayerObjectEvent(linkPlayerId: any, x: any, y: any, ge
       linkPlayerObjEvent.movementMode = MOVEMENT_MODE_FREE;
 
       objEvent.active = TRUE;
-      // MANUAL PATCH — `linkGender(obj) = ...` était transpilé tel quel mais
-      // c'est un macro C `#define linkGender(obj) obj->range.rangeX`. Fix
-      // transpiler pour expand le macro. TODO: scripts/extract-decomp-all.mjs
-      // doit substituer les macros 1-arg `name(arg)` style.
-      objEvent.range.rangeX = gender;        // = linkGender(objEvent)
-      objEvent.range.rangeY = DIR_NORTH;     // = linkDirection(objEvent)
+      (objEvent).singleMovementActive = gender;
+      ((objEvent))[offsetof(typeof((objEvent)), range)] = DIR_NORTH;
       objEvent.spriteId = MAX_SPRITES;
 
       InitLinkPlayerObjectEventPos(objEvent, x, y);
@@ -2574,7 +2498,7 @@ export function GetLinkPlayerCoords(linkPlayerId: any, x: any, y: any): any {
 export function GetLinkPlayerFacingDirection(linkPlayerId: any): any {
   let objEventId: any = gLinkPlayerObjectEvents[linkPlayerId].objEventId;
       let objEvent: any =gObjectEvents[objEventId];
-      return linkDirection(objEvent);
+      return ((objEvent))[offsetof(typeof((objEvent)), range)];
 }
 
 /** static u8 GetLinkPlayerElevation(u8 linkPlayerId) */
@@ -2644,11 +2568,10 @@ export function FacingHandler_DoNothing(linkPlayerObjEvent: any, objEvent: any, 
 export function FacingHandler_DpadMovement(linkPlayerObjEvent: any, objEvent: any, dir: any): any {
   let x, y;
 
-      // MANUAL PATCH — linkDirection(obj) macro = obj->range.rangeY.
-      objEvent.range.rangeY = FlipVerticalAndClearForced(dir, objEvent.range.rangeY);
-      ObjectEventMoveDestCoords(objEvent, objEvent.range.rangeY, x, y);
+      ((objEvent))[offsetof(typeof((objEvent)), range)] = FlipVerticalAndClearForced(dir, ((objEvent))[offsetof(typeof((objEvent)), range)]);
+      ObjectEventMoveDestCoords(objEvent, ((objEvent))[offsetof(typeof((objEvent)), range)],x,y);
 
-      if (LinkPlayerGetCollision(linkPlayerObjEvent.objEventId, linkDirection(objEvent), x, y))
+      if (LinkPlayerGetCollision(linkPlayerObjEvent.objEventId, ((objEvent))[offsetof(typeof((objEvent)), range)], x, y))
       {
           return FALSE;
       }
@@ -2663,8 +2586,7 @@ export function FacingHandler_DpadMovement(linkPlayerObjEvent: any, objEvent: an
 
 /** static bool8 FacingHandler_ForcedFacingChange(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir) */
 export function FacingHandler_ForcedFacingChange(linkPlayerObjEvent: any, objEvent: any, dir: any): any {
-  // MANUAL PATCH — linkDirection(obj) macro = obj->range.rangeY.
-  objEvent.range.rangeY = FlipVerticalAndClearForced(dir, objEvent.range.rangeY);
+  ((objEvent))[offsetof(typeof((objEvent)), range)] = FlipVerticalAndClearForced(dir, ((objEvent))[offsetof(typeof((objEvent)), range)]);
       return FALSE;
 }
 
@@ -2677,7 +2599,7 @@ export function MovementStatusHandler_EnterFreeMode(linkPlayerObjEvent: any, obj
 export function MovementStatusHandler_TryAdvanceScript(linkPlayerObjEvent: any, objEvent: any): any {
   objEvent.directionSequenceIndex--;
       linkPlayerObjEvent.movementMode = MOVEMENT_MODE_FROZEN;
-      MoveCoords(linkDirection(objEvent),objEvent.initialCoords.x,objEvent.initialCoords.y);
+      MoveCoords(((objEvent))[offsetof(typeof((objEvent)), range)],objEvent.initialCoords.x,objEvent.initialCoords.y);
       if (!objEvent.directionSequenceIndex)
       {
           ShiftStillObjectEventCoords(objEvent);
@@ -2735,14 +2657,14 @@ export function CreateLinkPlayerSprite(linkPlayerId: any, gameVersion: any): any
           {
           case VERSION_FIRE_RED:
           case VERSION_LEAF_GREEN:
-              objEvent.spriteId = CreateObjectGraphicsSprite(GetFRLGAvatarGraphicsIdByGender(linkGender(objEvent)), SpriteCB_LinkPlayer, 0, 0, 0);
+              objEvent.spriteId = CreateObjectGraphicsSprite(GetFRLGAvatarGraphicsIdByGender((objEvent).singleMovementActive), SpriteCB_LinkPlayer, 0, 0, 0);
               break;
           case VERSION_RUBY:
           case VERSION_SAPPHIRE:
-              objEvent.spriteId = CreateObjectGraphicsSprite(GetRSAvatarGraphicsIdByGender(linkGender(objEvent)), SpriteCB_LinkPlayer, 0, 0, 0);
+              objEvent.spriteId = CreateObjectGraphicsSprite(GetRSAvatarGraphicsIdByGender((objEvent).singleMovementActive), SpriteCB_LinkPlayer, 0, 0, 0);
               break;
           case VERSION_EMERALD:
-              objEvent.spriteId = CreateObjectGraphicsSprite(GetRivalAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, linkGender(objEvent)), SpriteCB_LinkPlayer, 0, 0, 0);
+              objEvent.spriteId = CreateObjectGraphicsSprite(GetRivalAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, (objEvent).singleMovementActive), SpriteCB_LinkPlayer, 0, 0, 0);
               break;
           }
 
@@ -2763,9 +2685,9 @@ export function SpriteCB_LinkPlayer(sprite: any): any {
       sprite.oam.priority = ElevationToPriority(objEvent.previousElevation);
 
       if (linkPlayerObjEvent.movementMode == MOVEMENT_MODE_FREE)
-          StartSpriteAnim(sprite, GetFaceDirectionAnimNum(linkDirection(objEvent)));
+          StartSpriteAnim(sprite, GetFaceDirectionAnimNum(((objEvent))[offsetof(typeof((objEvent)), range)]));
       else
-          StartSpriteAnimIfDifferent(sprite, GetMoveDirectionAnimNum(linkDirection(objEvent)));
+          StartSpriteAnimIfDifferent(sprite, GetMoveDirectionAnimNum(((objEvent))[offsetof(typeof((objEvent)), range)]));
 
       UpdateObjectEventSpriteInvisibility(sprite, FALSE);
       if (objEvent.triggerGroundEffectsOnMove)

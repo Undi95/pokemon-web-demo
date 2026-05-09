@@ -15,31 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinter, AddTextPrinterParameterized, AddWindow,
-  BG_PLTT_ID, BG_TILE_V_FLIP, BlitBitmapRectToWindow, CallWindowFunction,
-  ChangeBgX, ChangeBgY, CheckForSpaceForDma3Request, ClearWindowTilemap,
-  ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyWindowToVram, CreateTask,
-  DeactivateAllTextPrinters, DestroyTask, DisplayMessageAndContinueTask, FALSE,
-  FREE_AND_SET_NULL, FillBgTilemapBufferRect, FillWindowPixelBuffer, FillWindowPixelRect,
-  FlagGet, Free, FreeAllWindowBuffers, GetBgAttribute,
-  GetBgTilemapBuffer, GetFontAttribute, GetHoennPokedexCount, GetLRKeysPressed,
-  GetMapNameGeneric, GetMenuCursorDimensionByFont, GetNationalPokedexCount, GetStringWidth,
-  GetWindowAttribute, GetWordTaskArg, InitWindows, IsDma3ManagerBusyWithBgCopy,
-  IsNationalPokedexEnabled, IsTextPrinterActive, JOY_NEW, JOY_REPEAT,
-  LoadBgTilemap, LoadBgTiles, LoadMessageBoxGfx, LoadPalette,
-  LoadUserWindowBorderGfx, NULL, PIXEL_FILL, PLTT_SIZE_4BPP,
-  PlaySE, PutWindowTilemap, RemoveWindow, RequestDma3Fill,
-  RunTextPrinters, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, SetWordTaskArg,
-  StringCopy, StringExpandPlaceholders, TRUE, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void InitStandardTextBoxWindows(void) */
 export function InitStandardTextBoxWindows(): any {
   InitWindows(sStandardTextBox_WindowTemplates);
@@ -383,7 +358,7 @@ export function GetPlayerTextSpeedDelay(): any {
 /** u8 AddStartMenuWindow(u8 numActions) */
 export function AddStartMenuWindow(numActions: any): any {
   if (sStartMenuWindowId == WINDOW_NONE)
-          sStartMenuWindowId = AddWindowParameterized(0, 22, 1, 7, (numActions * 2) + 2, 15, _0x139);
+          sStartMenuWindowId = AddWindowParameterized(0, 22, 1, 7, (numActions * 2) + 2, 15, 0x139);
       return sStartMenuWindowId;
 }
 
@@ -404,7 +379,7 @@ export function RemoveStartMenuWindow(): any {
 /** u8 AddMapNamePopUpWindow(void) */
 export function AddMapNamePopUpWindow(): any {
   if (sMapNamePopupWindowId == WINDOW_NONE)
-          sMapNamePopupWindowId = AddWindowParameterized(0, 1, 1, 10, 3, 14, _0x107);
+          sMapNamePopupWindowId = AddWindowParameterized(0, 1, 1, 10, 3, 14, 0x107);
       return sMapNamePopupWindowId;
 }
 
@@ -1526,7 +1501,7 @@ export function ResetBgPositions(): any {
 /** void BgDmaFill(u32 bg, u8 value, int offset, int size) */
 export function BgDmaFill(bg: any, value: any, offset: any, size: any): any {
   let temp: any = (!GetBgAttribute(bg, BG_ATTR_PALETTEMODE)) ? 32 : 64;
-      let addr: any = ((GetBgAttribute(bg, BG_ATTR_CHARBASEINDEX) * _0x4000) + (GetBgAttribute(bg, BG_ATTR_BASETILE) + offset) * temp);
+      let addr: any = ((GetBgAttribute(bg, BG_ATTR_CHARBASEINDEX) * 0x4000) + (GetBgAttribute(bg, BG_ATTR_BASETILE) + offset) * temp);
       RequestDma3Fill(value << 24 | value << 16 | value << 8 | value, VRAM + addr, size * temp, 1);
 }
 

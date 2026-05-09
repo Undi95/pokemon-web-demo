@@ -15,23 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocZeroed, BG_PLTT_ID, ChangeBgX,
-  CopyToWindowPixelBuffer, CopyWindowToVram, CreateSprite, DestroySprite,
-  FALSE, FREE_AND_SET_NULL, FreeSpritePaletteByTag, GetSpritePaletteTagByPaletteNum,
-  GetWindowAttribute, IsCryPlaying, LoadPalette, LoadSpritePalettes,
-  LoadSpriteSheets, ObjAffineSet, PLAYHEAD_POS, PLAY_START_POS,
-  PLTT_SIZE_4BPP, PlayCry_NormalNoDucking, ST_OAM_AFFINE_NORMAL, SetOamMatrix,
-  StopCry, TILE_SIZE_4BPP, TRUE, VERT_SLICE,
-  gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 LoadCryWaveformWindow(struct CryScreenWindow *window, u8 windowId) */
 export function LoadCryWaveformWindow(window: any, windowId: any): any {
   let i: any = null;

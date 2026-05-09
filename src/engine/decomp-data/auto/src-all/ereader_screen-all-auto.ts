@@ -15,24 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AllocZeroed, CheckShouldAdvanceLinkState, CloseLink, CreateTask,
-  DestroyTask, EReaderHandleTransfer, EReaderHelper_ClearSendRecvMgr, EReaderHelper_RestoreRegsState,
-  EReaderHelper_SaveRegsState, FALSE, Free, GetBlockReceivedStatus,
-  GetLinkPlayerCount_2, HasLinkErrorOccurred, IsFanfareTaskInactive, IsLinkConnectionEstablished,
-  IsLinkMaster, IsLinkPlayerDataExchangeComplete, JOY_NEW, MG_AddMessageTextPrinter,
-  NULL, OpenLink, PlayFanfare, PlaySE,
-  PrintMysteryGiftMenuMessage, ResetBlockReceivedFlags, RestoreSerialTimer3IntrHandlers, SetCloseLinkCallbackAndType,
-  SetMainCallback2, SetSuppressLinkErrorMessage, TRUE, TryWriteTrainerHill,
-  ValidateTrainerHillData, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void EReader_Load(struct EReaderData *eReader, int size, u32 *data) */
 export function EReader_Load(eReader: any, size: any, data: any): any {
    let backupIME: any = REG_IME;
@@ -78,7 +60,7 @@ export function EReader_Transfer(eReader: any): any {
 
 /** static void OpenEReaderLink(void) */
 export function OpenEReaderLink(): any {
-  memset(gDecompressionBuffer, 0, _0x2000);
+  memset(gDecompressionBuffer, 0, 0x2000);
       gLinkType = LINKTYPE_EREADER_EM;
       OpenLink();
       SetSuppressLinkErrorMessage(TRUE);

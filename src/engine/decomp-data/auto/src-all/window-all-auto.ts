@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  Alloc, AllocZeroed, BgTileAllocOp, BlitBitmapRect4Bit,
-  BlitBitmapRect4BitTo8Bit, CopyBgTilemapBufferToVram, CpuCopy16, CpuFastFill8,
-  FALSE, FillBgTilemapBufferRect, FillBitmapRect4Bit, FillBitmapRect8Bit,
-  Free, GetBgAttribute, GetBgTilemapBuffer, LZ77UnCompWram,
-  LoadBgTiles, MOVE_TILES_DOWN, MOVE_TILES_UP, NULL,
-  SetBgTilemapBuffer, TRUE, WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool16 InitWindows(const struct WindowTemplate *templates) */
 export function InitWindows(templates: any): any {
   let i: any = null;
@@ -459,14 +444,14 @@ export function ScrollWindow(windowId: any, direction: any, distance: any, fillV
           for (i = 0; i < size; i += 32)
           {
               distanceLoop = distance;
-              MOVE_TILES_DOWN(0)
-              MOVE_TILES_DOWN(4)
-              MOVE_TILES_DOWN(8)
-              MOVE_TILES_DOWN(12)
-              MOVE_TILES_DOWN(16)
-              MOVE_TILES_DOWN(20)
-              MOVE_TILES_DOWN(24)
-              MOVE_TILES_DOWN(28)
+              \
+              \
+              \
+              \
+              \
+              \
+              \
+              \
           }
           break;
       case 1:
@@ -474,14 +459,14 @@ export function ScrollWindow(windowId: any, direction: any, distance: any, fillV
           for (i = 0; i < size; i += 32)
           {
               distanceLoop = distance;
-              MOVE_TILES_UP(0)
-              MOVE_TILES_UP(4)
-              MOVE_TILES_UP(8)
-              MOVE_TILES_UP(12)
-              MOVE_TILES_UP(16)
-              MOVE_TILES_UP(20)
-              MOVE_TILES_UP(24)
-              MOVE_TILES_UP(28)
+              \
+              \
+              \
+              \
+              \
+              \
+              \
+              \
           }
           break;
       case 2:

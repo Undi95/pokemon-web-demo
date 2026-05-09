@@ -15,29 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AnimFastTranslateLinear, AnimLoadCompressedBgTilemapHandleContest, AnimTranslateLinear,
-  BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1,
-  ClearBattleAnimBg, ConvertPosDataToTranslateLinearData, Cos, CreateSprite,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroyAnimSprite, DestroyAnimVisualTask,
-  DestroySprite, DestroySpriteAndMatrix, FALSE, FreeOamMatrix,
-  GET_BATTLER_SIDE2, GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattlerAtPosition,
-  GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr,
-  InitAnimArcTranslation, InitAnimFastLinearTranslationWithSpeed, InitAnimLinearTranslation, InitAnimLinearTranslationWithSpeed,
-  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest,
-  IsDoubleBattle, LoadBgTiles, LoadPalette, PLTT_SIZE_4BPP,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  Random2, ST_OAM_AFFINE_OFF, SetAnimBgAttribute, SetAverageBattlerPositions,
-  SetGpuReg, Sin, StartSpriteAffineAnim, StartSpriteAnim,
-  StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimUnusedIceCrystalThrow(struct Sprite *sprite) */
 export function AnimUnusedIceCrystalThrow(sprite: any): any {
   let targetX, targetY, attackerX, attackerY;
@@ -414,9 +391,9 @@ export function InitSwirlingFogAnim(sprite: any): any {
 
       sprite.data[7] = battler;
       if (gBattleAnimArgs[5] == 0 || !IsDoubleBattle())
-          tempVar = _0x20;
+          tempVar = 0x20;
       else
-          tempVar = _0x40;
+          tempVar = 0x40;
 
       sprite.data[6] = tempVar;
       if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
@@ -473,7 +450,7 @@ export function AnimTask_HazeScrollingFog(taskId: any): any {
       SetGpuReg(REG_OFFSET_BG1VOFS, gBattle_BG1_Y);
 
       GetBattleAnimBg1Data(animBg);
-      LoadBgTiles(animBg.bgId, gWeatherFogHorizontalTiles, _0x800, animBg.tilesOffset);
+      LoadBgTiles(animBg.bgId, gWeatherFogHorizontalTiles, 0x800, animBg.tilesOffset);
       AnimLoadCompressedBgTilemapHandleContest(animBg, gBattleAnimFogTilemap, FALSE);
       LoadPalette(gFogPalette, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
 
@@ -505,7 +482,7 @@ export function AnimTask_HazeScrollingFog_Step(taskId: any): any {
           }
           break;
       case 1:
-          if (++gTasks[taskId].data[11] == _0x51)
+          if (++gTasks[taskId].data[11] == 0x51)
           {
               gTasks[taskId].data[11] = 9;
               gTasks[taskId].data[12]++;
@@ -570,7 +547,7 @@ export function AnimTask_MistBallFog(taskId: any): any {
       SetGpuReg(REG_OFFSET_BG1VOFS, gBattle_BG1_Y);
 
       GetBattleAnimBg1Data(animBg);
-      LoadBgTiles(animBg.bgId, gWeatherFogHorizontalTiles, _0x800, animBg.tilesOffset);
+      LoadBgTiles(animBg.bgId, gWeatherFogHorizontalTiles, 0x800, animBg.tilesOffset);
       AnimLoadCompressedBgTilemapHandleContest(animBg, gBattleAnimFogTilemap, FALSE);
       LoadPalette(gFogPalette, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
 
@@ -598,7 +575,7 @@ export function AnimTask_MistBallFog_Step(taskId: any): any {
           }
           break;
       case 1:
-          if (++gTasks[taskId].data[11] == _0x51)
+          if (++gTasks[taskId].data[11] == 0x51)
           {
               gTasks[taskId].data[11] = 5;
               gTasks[taskId].data[12]++;
@@ -644,14 +621,14 @@ export function InitPoisonGasCloudAnim(sprite: any): any {
   sprite.data[0] = gBattleAnimArgs[0];
 
       if (GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2) < GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2))
-          sprite.data[7] = _0x8000;
+          sprite.data[7] = 0x8000;
 
       if (GET_BATTLER_SIDE2(gBattleAnimTarget) == B_SIDE_PLAYER)
       {
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
           gBattleAnimArgs[3] = -gBattleAnimArgs[3];
 
-          if ((sprite.data[7] & _0x8000) && GET_BATTLER_SIDE2(gBattleAnimAttacker) == B_SIDE_PLAYER)
+          if ((sprite.data[7] & 0x8000) && GET_BATTLER_SIDE2(gBattleAnimAttacker) == B_SIDE_PLAYER)
               sprite.subpriority = gSprites[GetAnimBattlerSpriteId(ANIM_TARGET)].subpriority + 1;
 
           sprite.data[6] = 1;
@@ -679,7 +656,7 @@ export function InitPoisonGasCloudAnim(sprite: any): any {
       if (IsContest())
       {
           sprite.data[6] = 1;
-          sprite.subpriority = _0x80;
+          sprite.subpriority = 0x80;
       }
 
       InitAnimLinearTranslation(sprite);
@@ -729,10 +706,10 @@ export function MovePoisonGasCloud(sprite: any): any {
           AnimTranslateLinear(sprite);
           value = gSineTable[sprite.data[5]];
           sprite.x2 += value >> 3;
-          sprite.y2 += (gSineTable[sprite.data[5] + _0x40] * -3) >> 8;
+          sprite.y2 += (gSineTable[sprite.data[5] + 0x40] * -3) >> 8;
           if (!IsContest())
           {
-              let var0: any = sprite.data[5] - _0x40;
+              let var0: any = sprite.data[5] - 0x40;
               if (var0 <= 0x7F)
                   sprite.oam.priority = sprite.data[7] >> 8;
               else
@@ -742,7 +719,7 @@ export function MovePoisonGasCloud(sprite: any): any {
           }
           else
           {
-              let var0: any = sprite.data[5] - _0x40;
+              let var0: any = sprite.data[5] - 0x40;
               if (var0 <= 0x7F)
                   sprite.subpriority = 128;
               else
@@ -753,7 +730,7 @@ export function MovePoisonGasCloud(sprite: any): any {
 
           if (sprite.data[0] <= 0)
           {
-              sprite.data[0] = _0x300;
+              sprite.data[0] = 0x300;
               sprite.data[1] = sprite.x += sprite.x2;
               sprite.data[3] = sprite.y += sprite.y2;
               sprite.data[4] = sprite.y + 4;

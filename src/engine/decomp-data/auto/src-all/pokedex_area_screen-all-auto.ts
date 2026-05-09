@@ -15,30 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocZeroed, BG_PLTT_ID, BG_SCREEN_SIZE,
-  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG0, BLDCNT_TGT1_BG2,
-  BLDCNT_TGT2_BG0, BeginNormalPaletteFade, ChangeBgY, CorrectSpecialMapSecId,
-  CpuCopy32, CreateRegionMapPlayerIcon, CreateSprite, CreateTask,
-  DISPCNT_OBJ_ON, DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask,
-  FALSE, FREE_AND_SET_NULL, FlagGet, FreeAllSpritePalettes,
-  FreePokedexAreaMapBgNum, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
-  GetRegionMapSecIdAt, GetRegionMapSectionId, GetRoamerLocation, HideBg,
-  JOY_NEW, LZ77UnCompWram, LoadBgTilemap, LoadPokedexAreaMapGfx,
-  LoadSpritePalette, LoadSpriteSheet, MAP_GROUP, MAP_UNDEFINED,
-  NULL, Overworld_GetMapHeaderByGroupAndId, PALETTES_ALL, PlaySE,
-  PokedexAreaMapChangeBgY, PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_DISPCNT, ResetSpriteData, SetBgAttribute, SetGpuReg,
-  SetGpuRegBits, ShowBg, ShowRegionMapForPokedexAreaScreen, StringFill,
-  TRUE, TryShowPokedexAreaMap, VarGet, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void ResetDrawAreaGlowState(void) */
 export function ResetDrawAreaGlowState(): any {
   sPokedexAreaScreen.drawAreaGlowState = 0;
@@ -458,7 +434,7 @@ export function Task_ShowPokedexAreaScreen(taskId: any): any {
           CreateAreaUnknownSprites();
           break;
       case 9:
-          BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 16, 0, RGB_BLACK);
           break;
       case 10:
           SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG0 | BLDCNT_TGT2_ALL);
@@ -503,7 +479,7 @@ export function Task_HandlePokedexAreaScreenInput(taskId: any): any {
               return;
           break;
       case 2:
-          BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 16, RGB_BLACK);
           break;
       case 3:
           if (gPaletteFade.active)

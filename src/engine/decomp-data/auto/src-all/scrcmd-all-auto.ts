@@ -15,65 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ActivatePerStepCallback, AddBagItem, AddCoins, AddMoney,
-  AddPCItem, AddTextPrinterParameterized, AddWindow, AnimateFlash,
-  BG_PLTT_ID, BattleSetup_ConfigureTrainerBattle, BattleSetup_GetScriptAddrAfterBattle, BattleSetup_GetTrainerPostBattleScript,
-  BattleSetup_StartScriptedWildBattle, BattleSetup_StartTrainerBattle, BufferContestName, CalculatePlayerPartyCount,
-  ChangeAmountInMoneyBox, CheckBagHasItem, CheckBagHasSpace, CheckHasDecoration,
-  CheckPCHasItem, ChooseContestMon, ClearRamScript, ClearStdWindowAndFrame,
-  ClearTrainerFlag, ContestLinkTransfer, ConvertIntToDecimalStringN, CopyItemName,
-  CopyItemNameHandlePlural, CopyWindowToVram, CountDigits, CpuCopy32,
-  CreateDecorationShop1Menu, CreateDecorationShop2Menu, CreatePokemartMenu, CreateScriptedWildMon,
-  CreateVirtualObject, CreateWindowTemplate, DecorationAdd, DecorationCheckSpace,
-  DecorationRemove, DoCurrentWeather, DoDiveWarp, DoDoorWarp,
-  DoFallWarp, DoMossdeepGymWarp, DoSpinEnterWarp, DoTeleportTileWarp,
-  DoTimeBasedEvents, DoWarp, DoWhiteFadeWarp, DrawDialogueFrame,
-  DrawMoneyBox, DrawStdWindowFrame, FALSE, FadeInBGM,
-  FadeOutBGMTemporarily, FadeScreen, FieldAnimateDoorClose, FieldAnimateDoorOpen,
-  FieldEffectActiveListContains, FieldEffectStart, FieldIsDoorAnimationRunning, FieldSetDoorClosed,
-  FieldSetDoorOpened, FillWindowPixelBuffer, FlagClear, FlagGet,
-  FlagSet, FreeRotatingTilePuzzle, FreezeForApproachingTrainers, FreezeObjects_WaitForPlayer,
-  FreezeObjects_WaitForPlayerAndSelected, GetBoxNamePtr, GetCoins, GetCurrentApproachingTrainerObjectEventId,
-  GetDoorSoundEffect, GetLeadMonIndex, GetMonData, GetMoney,
-  GetObjectEventIdByLocalIdAndMap, GetPlayerFacingDirection, GetPocketByItemId, GetSavedRamScriptIfValid,
-  GetStringWidth, GetTrainerClassNameFromId, GetTrainerNameFromId, GetVarPointer,
-  HasTrainerBeenFought, HideCoinsWindow, HideFieldMessageBox, HideMoneyBox,
-  IncrementGameStat, InitRotatingTilePuzzle, IsEnoughMoney, IsFanfareTaskInactive,
-  IsOverworldLinkActive, IsPokeNewsActive, IsSEPlaying, JOY_NEW,
-  LOCALID_NONE, LOCALID_PLAYER, LoadMessageBoxAndBorderGfx, LoadUserWindowBorderGfx,
-  MAP_GROUP, MAP_NUM, MAP_UNDEFINED, MapGridSetMetatileIdAt,
-  MonKnowsMove, MoveRotatingTileObjects, NULL, ObjectEventClearHeldMovementIfFinished,
-  ObjectEventFaceOppositeDirection, ObjectEventTurnByLocalIdAndMap, Overworld_ChangeMusicTo, Overworld_ChangeMusicToDefault,
-  Overworld_SetSavedMusic, PIXEL_FILL, PLTT_SIZE, PlantBerryTree,
-  PlayCry_Script, PlayFanfare, PlayNewMapMusic, PlaySE,
-  PlaySlotMachine, PlayerGetDestCoords, PrintCoinsString, PutWindowTilemap,
-  Random, RemoveBagItem, RemoveCoins, RemoveMoney,
-  RemoveObjectEventByLocalIdAndMap, RemoveWindow, ResetInitialPlayerAvatarState, ResetObjectSubpriority,
-  RtcCalcLocalTime, RtcInitLocalTimeOffset, STR_CONV_MODE_LEFT_ALIGN, ScriptCall,
-  ScriptContext_Stop, ScriptGiveEgg, ScriptGiveMon, ScriptJump,
-  ScriptMenu_HidePokemonPic, ScriptMenu_Multichoice, ScriptMenu_MultichoiceGrid, ScriptMenu_MultichoiceWithDefault,
-  ScriptMenu_ShowPokemonPic, ScriptMenu_YesNo, ScriptMovement_IsObjectMovementFinished, ScriptMovement_StartObjectMovementScript,
-  ScriptMovement_UnfreezeObjectEvents, ScriptReadByte, ScriptReadHalfword, ScriptReadWord,
-  ScriptReturn, ScriptSetMonMoveSlot, SetContestWinnerForPainting, SetCurrentMapLayout,
-  SetDynamicWarpWithCoords, SetEscapeWarp, SetFixedDiveWarp, SetFixedHoleWarp,
-  SetFlashLevel, SetLastHealLocationWarp, SetMonData, SetMysteryEventScriptStatus,
-  SetObjEventTemplateCoords, SetObjEventTemplateMovementType, SetObjectInvisibility, SetObjectSubpriority,
-  SetSavedWeather, SetSavedWeatherFromCurrMapHeader, SetSpinStartFacingDir, SetTrainerFlag,
-  SetWarpDestination, SetWarpDestinationToFixedHoleWarp, SetupNativeScript, ShowCoinsWindow,
-  ShowContestPainting, ShowContestResults, ShowFieldAutoScrollMessage, ShowFieldMessage,
-  ShowPokenavFieldMessage, StartContest, StopScript, StringCopy,
-  StringExpandPlaceholders, StringGet_Nickname, TRUE, TryMoveObjectEventToMapCoords,
-  TryOverrideObjectEventTemplateCoords, TrySpawnObjectEvent, TurnRotatingTileObjects, TurnVirtualObject,
-  UnfreezeObjectEvents, VarGet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 ScrCmd_nop(struct ScriptContext *ctx) */
 export function ScrCmd_nop(ctx: any): any {
   return FALSE;
@@ -1483,9 +1424,9 @@ export function ScrCmd_braillemessage(ctx: any): any {
       xText = (xWindow - xText - 1) * 8 + 3;
       yText = (yText - yWindow - 1) * 8;
 
-      winTemplate = CreateWindowTemplate(0, xWindow, yWindow + 1, width, height, 0xF, _0x1);
+      winTemplate = CreateWindowTemplate(0, xWindow, yWindow + 1, width, height, 0xF, 0x1);
       sBrailleWindowId = AddWindow(winTemplate);
-      LoadUserWindowBorderGfx(sBrailleWindowId, _0x214, BG_PLTT_ID(14));
+      LoadUserWindowBorderGfx(sBrailleWindowId, 0x214, BG_PLTT_ID(14));
       DrawStdWindowFrame(sBrailleWindowId, FALSE);
       PutWindowTilemap(sBrailleWindowId);
       FillWindowPixelBuffer(sBrailleWindowId, PIXEL_FILL(1));

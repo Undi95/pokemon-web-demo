@@ -15,30 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ClearAllMail, ClearBag, ClearBerryTrees, ClearContestWinnerPicsInContestHall,
-  ClearDecorationInventories, ClearMysteryGift, ClearPlayerLinkBattleRecords, ClearPokeblocks,
-  ClearRankingHallRecords, ClearRoamerData, ClearRoamerLocationData, ClearSav1,
-  ClearSav2, ClearSecretBases, ClearTVShowData, CpuFill16,
-  CpuFill32, FALSE, GetGeneratedTrainerIdLower, InitDewfordTrend,
-  InitEasyChatPhrases, InitEventData, InitLilycoveLady, InitLotadSizeRecord,
-  InitMatchCallCounters, InitSeedotSizeRecord, InitUnionRoomChatRegisteredTexts, MAP_GROUP,
-  MAP_NUM, NewGameInitPCItems, PlayTimeCounter_Reset, Random,
-  ResetAllApprenticeData, ResetBagScrollPositions, ResetContestLinkResults, ResetFanClub,
-  ResetGabbyAndTy, ResetGameStats, ResetLinkContestBoolean, ResetLotteryCorner,
-  ResetPokeblockScrollPositions, ResetPokedex, ResetPokedexScrollPositions, ResetPokemonJumpRecords,
-  ResetPokemonStorageSystem, ResetTrainerHillResults, RtcReset, RunScriptImmediately,
-  SetBerryPowder, SetCoins, SetMauvilleOldMan, SetMoney,
-  SetWarpDestination, TRUE, WarpIntoMap, WipeTrainerNameRecords,
-  ZeroEnemyPartyMons, ZeroPlayerPartyMons, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SetTrainerId(u32 trainerId, u8 *dst) */
 export function SetTrainerId(trainerId: any, dst: any): any {
   dst[0] = trainerId;

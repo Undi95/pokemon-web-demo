@@ -15,42 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized3, AllocZeroed, AnimateSprites,
-  BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer,
-  CanCopyRecordedBattleSaveData, ChangeBgX, ChangeBgY, ConvertIntToDecimalStringN,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect_ChangePalette, CopyWindowToVram,
-  CountPlayerTrainerStars, CpuFill16, CpuFill32, CreateSprite,
-  CreateTask, CurrentBattlePyramidLocation, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
-  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask,
-  DisableInterrupts, FALSE, FREE_AND_SET_NULL, FillBgTilemapBufferRect,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FlagGet, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetCurrentRegionMapSectionId,
-  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, GetTextWindowPalette, HideBg,
-  InitBgsFromTemplates, InitWindows, JOY_HELD, JOY_NEW,
-  LoadCompressedSpriteSheet, LoadOam, LoadPalette, LoadSpritePalettes,
-  MAP_NUM, MathUtil_Inv16, NON_HIGHLIGHT_AREA, NULL,
-  Overworld_PlaySpecialMapMusic, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP,
-  PlayBGM, PlayRecordedBattle, PlaySE, ProcessSpriteCopyRequests,
-  PutWindowTilemap, Q_8_8, REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT,
-  REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  ResetAffineAnimData, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, ResetTempTileDataBuffers, RunTasks, STR_CONV_MODE_LEFT_ALIGN,
-  ScanlineEffect_Stop, SetBgAffine, SetBgAttribute, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
-  ShowBg, ShowPlayerTrainerCard, StartSpriteAnim, TRUE,
-  TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade,
-  VRAM_SIZE, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void ResetGpuRegsAndBgs(void) */
 export function ResetGpuRegsAndBgs(): any {
   SetGpuReg(REG_OFFSET_DISPCNT, 0);
@@ -553,8 +517,8 @@ export function Task_PassAreaZoom(taskId: any): any {
               ShowHideZoomingArea(TRUE, FALSE);
               tScaleX = Q_8_8(1);
               tScaleY = Q_8_8(1);
-              tScaleSpeedX = _0x15;
-              tScaleSpeedY = _0x15;
+              tScaleSpeedX = 0x15;
+              tScaleSpeedY = 0x15;
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITE);
           }
           else
@@ -562,8 +526,8 @@ export function Task_PassAreaZoom(taskId: any): any {
                
               tScaleX = Q_8_8(1.984375);  
               tScaleY = Q_8_8(1.984375);
-              tScaleSpeedX = -_0x15;
-              tScaleSpeedY = -_0x15;
+              tScaleSpeedX = -0x15;
+              tScaleSpeedY = -0x15;
               SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
               ShowBg(0);
               ShowBg(1);
@@ -729,14 +693,14 @@ export function UpdateAreaHighlight(cursorArea: any, previousCursorArea: any): a
       case CURSOR_AREA_RECORD:
           if (sPassData.hasBattleRecord)
               CopyToBgTilemapBufferRect_ChangePalette(1, sPassGfx.battleRecordTilemap, 2, 10, 12, 3, 17);
-          else if (NON_HIGHLIGHT_AREA(cursorArea))
+          else if ((((cursorArea)) == CURSOR_AREA_NOTHING || ((cursorArea)) > CURSOR_AREA_CANCEL))
               return;
           break;
       case CURSOR_AREA_CANCEL:
           CopyToBgTilemapBufferRect_ChangePalette(1, gFrontierPassCancelButton_Tilemap, 21, 0, 9, 2, 17);
           break;
       default:
-          if (NON_HIGHLIGHT_AREA(cursorArea))
+          if ((((cursorArea)) == CURSOR_AREA_NOTHING || ((cursorArea)) > CURSOR_AREA_CANCEL))
               return;
           break;
       }
@@ -760,7 +724,7 @@ export function UpdateAreaHighlight(cursorArea: any, previousCursorArea: any): a
           CopyToBgTilemapBufferRect_ChangePalette(1, gFrontierPassCancelButtonHighlighted_Tilemap, 21, 0, 9, 2, 17);
           break;
       default:
-          if (NON_HIGHLIGHT_AREA(previousCursorArea))
+          if ((((previousCursorArea)) == CURSOR_AREA_NOTHING || ((previousCursorArea)) > CURSOR_AREA_CANCEL))
               return;
       }
 

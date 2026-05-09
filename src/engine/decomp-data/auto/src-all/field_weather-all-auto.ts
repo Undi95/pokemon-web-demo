@@ -15,22 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AllocSpritePalette, BG_PLTT_ID, BLDALPHA_BLEND, BeginNormalPaletteFade,
-  BlendPalette, CpuCopy16, CpuCopy32, CpuFastCopy,
-  CreateTask, DROUGHT_COLOR_INDEX, FALSE, FuncIsActiveTask,
-  IsSpecialSEPlaying, LoadPalette, OBJ_PLTT_ID, PALETTES_ALL,
-  PLTT_ID, PLTT_SIZE, PLTT_SIZE_4BPP, PlaySE,
-  REG_OFFSET_BLDALPHA, RGB2, SetGpuReg, TRUE,
-  gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void StartWeather(void) */
 export function StartWeather(): any {
   if (!FuncIsActiveTask(Task_WeatherMain))
@@ -385,7 +369,7 @@ export function ApplyColorMap(startPalIndex: any, numPalettes: any, colorMapInde
               {
                   for (i = 0; i < 16; i++)
                   {
-                      gPlttBufferFaded[palOffset] = sDroughtWeatherColors[colorMapIndex][DROUGHT_COLOR_INDEX(gPlttBufferUnfaded[palOffset])];
+                      gPlttBufferFaded[palOffset] = sDroughtWeatherColors[colorMapIndex][(((((gPlttBufferUnfaded[palOffset])) >> 1) & 0xF) | ((((gPlttBufferUnfaded[palOffset])) >> 2) & 0xF0) | ((((gPlttBufferUnfaded[palOffset])) >> 3) & 0xF00))];
                       palOffset++;
                   }
               }
@@ -721,8 +705,8 @@ export function LoadCustomWeatherSpritePalette(palette: any): any {
 
 /** static void LoadDroughtWeatherPalette(u8 *palsIndex, u8 *palsOffset) */
 export function LoadDroughtWeatherPalette(palsIndex: any, palsOffset: any): any {
-  palsIndex = _0x20;
-      palsOffset = _0x20;
+  palsIndex = 0x20;
+      palsOffset = 0x20;
 }
 
 /** void ResetDroughtWeatherPaletteLoading(void) */

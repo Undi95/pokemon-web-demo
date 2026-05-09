@@ -15,19 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CreateTask, DestroyTask, FALSE, FindTaskIdByFunc,
-  FreezeObjectEvent, FuncIsActiveTask, GetMovementScript, LOCALID_PLAYER,
-  OBJECT_EVENTS_COUNT, ObjectEventClearHeldMovementIfFinished, ObjectEventIsHeldMovementActive, ObjectEventSetHeldMovement,
-  TASK_NONE, TRUE, TryGetObjectEventIdByLocalIdAndMap, UnfreezeObjectEvent,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 ScriptMovement_StartObjectMovementScript(u8 localId, u8 mapNum, u8 mapGroup, const u8 *movementScript) */
 export function ScriptMovement_StartObjectMovementScript(localId: any, mapNum: any, mapGroup: any, movementScript: any): any {
   let objEventId: any = null;

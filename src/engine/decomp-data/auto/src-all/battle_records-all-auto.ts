@@ -15,40 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocZeroed,
-  AnimateSprites, BATTLE_OPPOSITE, BG_PLTT_ID, BG_SCREEN_SIZE,
-  BeginNormalPaletteFade, BuildOamBuffer, ChangeBgX, ChangeBgY,
-  ClearStdWindowAndFrame, ClearWindowTilemap, ConvertIntToDecimalStringN, ConvertInternationalString,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect, CopyWindowToVram, CpuFill16,
-  CreateTask, DISPCNT_BG0_ON, DISPCNT_BG3_ON, DISPCNT_OBJ_1D_MAP,
-  DeactivateAllTextPrinters, DestroyTask, DmaClear16, DmaClear32,
-  DmaClearLarge16, DrawStdWindowFrame, FALSE, FillWindowPixelBuffer,
-  Free, FreeAllSpritePalettes, FreeAllWindowBuffers, GetGameStat,
-  GetStringCenterAlignXOffset, GetTextWindowPalette, InUnionRoom, IncrementGameStat,
-  InitBgsFromTemplates, InitWindows, IsDma3ManagerBusyWithBgCopy, JOY_NEW,
-  LoadBgTiles, LoadOam, LoadPalette, NULL,
-  PALETTES_ALL, PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP,
-  PlaySE, PrintOnTrainerHillRecordsWindow, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS,
-  REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RunTasks, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN,
-  ScanlineEffect_Stop, SetBgTilemapBuffer, SetGameStat, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, ShowBg, StringCompareN,
-  StringCopyN, StringExpandPlaceholders, StringFillWithTerminator, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void ClearLinkBattleRecord(struct LinkBattleRecord *record) */
 export function ClearLinkBattleRecord(record: any): any {
   CpuFill16(0, record, 0);
@@ -240,7 +206,7 @@ export function PrintLinkBattleWinsLossesDraws(records: any): any {
       StringExpandPlaceholders(gStringVar4, gText_TotalRecordWLD);
 
       x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0xD0);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x, _0x11, 0, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x, 0x11, 0, NULL);
 }
 
 /** static void PrintLinkBattleRecord(struct LinkBattleRecord *record, u8 y, s32 language) */
@@ -322,7 +288,7 @@ export function Task_CloseTrainerHillRecordsOnButton(taskId: any): any {
 
 /** static void Task_BeginPaletteFade(u8 taskId) */
 export function Task_BeginPaletteFade(taskId: any): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
       gTasks[taskId].func = Task_ExitTrainerHillRecords;
 }
 
@@ -348,7 +314,7 @@ export function RemoveTrainerHillRecordsWindow(windowId: any): any {
 
 /** static void ClearVramOamPlttRegs(void) */
 export function ClearVramOamPlttRegs(): any {
-  DmaClearLarge16(3, (VRAM), VRAM_SIZE, _0x1000);
+  DmaClearLarge16(3, (VRAM), VRAM_SIZE, 0x1000);
       DmaClear32(3, OAM, OAM_SIZE);
       DmaClear16(3, PLTT, PLTT_SIZE);
 
@@ -403,7 +369,7 @@ export function SetDispcntReg(): any {
 /** static void LoadTrainerHillRecordsWindowGfx(u8 bgId) */
 export function LoadTrainerHillRecordsWindowGfx(bgId: any): any {
   LoadBgTiles(bgId, sTrainerHillWindowTileset, 0, 0);
-      CopyToBgTilemapBufferRect(bgId, sTrainerHillWindowTilemap, 0, 0, _0x20, _0x20);
+      CopyToBgTilemapBufferRect(bgId, sTrainerHillWindowTilemap, 0, 0, 0x20, 0x20);
       LoadPalette(sTrainerHillWindowPalette, BG_PLTT_ID(0), 0);
 }
 
@@ -469,7 +435,7 @@ export function CB2_ShowTrainerHillRecords(): any {
           gMain.state++;
           break;
       case 6:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           gMain.state++;
           break;
       case 7:

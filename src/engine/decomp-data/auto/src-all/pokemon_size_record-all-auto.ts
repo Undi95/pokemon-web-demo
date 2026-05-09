@@ -15,18 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ConvertIntToDecimalStringN, GetMonData, GetPokedexHeightWeight, GetVarPointer,
-  STR_CONV_MODE_LEFT_ALIGN, SpeciesToNationalPokedexNum, StringAppend, StringCopy,
-  TRUE, VarSet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static u32 GetMonSizeHash(struct Pokemon *pkmn) */
 export function GetMonSizeHash(pkmn: any): any {
   let personality: any = GetMonData(pkmn, MON_DATA_PERSONALITY);

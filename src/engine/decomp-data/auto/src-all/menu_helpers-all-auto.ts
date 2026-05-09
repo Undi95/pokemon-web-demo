@@ -15,25 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddTextPrinterParameterized2, ChangeBgX, ChangeBgY, CpuFill16,
-  CpuFill32, CreateSprite, CreateYesNoMenu, DestroySprite,
-  DestroySpriteAndFreeResources, DrawDialogFrameWithCustomTileAndPalette, FALSE, InUnionRoom,
-  IsLinkRecvQueueAtOverworldMax, IsOverworldLinkActive, IsTextPrinterActive, ItemIsMail,
-  JOY_NEW, JOY_REPEAT, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
-  MAP_GROUP, MAP_NUM, Menu_ProcessInputNoWrapClearOnChoose, NULL,
-  Overworld_IsRecvQueueAtMax, PLTT_SIZE, PlaySE, REG_OFFSET_BG0CNT,
-  REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT, REG_OFFSET_DISPCNT,
-  RunTextPrinters, SetGpuReg, SetHBlankCallback, SetVBlankCallback,
-  StartSpriteAnim, StringExpandPlaceholders, TRUE, VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ResetVramOamAndBgCntRegs(void) */
 export function ResetVramOamAndBgCntRegs(): any {
   SetGpuReg(REG_OFFSET_DISPCNT, 0);

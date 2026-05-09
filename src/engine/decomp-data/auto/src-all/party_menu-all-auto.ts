@@ -15,70 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AddPCItem, AddTextPrinterParameterized,
-  AddTextPrinterParameterized2, AddTextPrinterParameterized3, AddTextPrinterParameterized4, AddWindow,
-  AdjustFriendship, Alloc, AllocZeroed, AnimateSprites,
-  AnyStorageMonWithMove, AppendToList, BG_PLTT_ID, BeginEvolutionScene,
-  BeginNormalPaletteFade, BlendPalettes, BlitBitmapToWindow, BuildOamBuffer,
-  CalculatePlayerPartyCount, CanMonLearnTMHM, CanRegisterMonForTradingBoard, CanSpinTradeMon,
-  ChangeBgX, CheckIfItemIsTMHMOrEvolutionStone, CheckPartyPokerus, ChooseMonForSoftboiled,
-  CleanupOverworldWindowsAndTilemaps, ClearMail, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent,
-  ClearWindowTilemap, ConvertIntToDecimalStringN, ConvertInternationalPlayerName, CopyItemName,
-  CopyRectToBgTilemapBufferRect, CopyToBgTilemapBufferRect_ChangePalette, CopyToBufferFromBgTilemap, CopyWindowToVram,
-  CpuCopy16, CreateMonIcon, CreateSprite, CreateTask,
-  CreateYesNoMenu, CurrentBattlePyramidLocation, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
-  DeactivateAllTextPrinters, DestroyTask, DoEasyChatScreen, DoScheduledBgTilemapCopiesToVram,
-  DrawLevelUpWindowPg1, DrawLevelUpWindowPg2, DrawStdFrameWithCustomTileAndPalette, ExecuteTableBasedItemEffect,
-  FALSE, FadeInFromBlack, FadeScreen, FieldEffectStart,
-  FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect,
-  FlagGet, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FuncIsActiveTask, GetBattlerAtPosition, GetBattlerSide, GetContestEntryEligibility,
-  GetCurrentPartySlotPtr, GetEvolutionTargetSpecies, GetFacilityCancelString, GetFontAttribute,
-  GetHPBarLevel, GetHostRfuGameData, GetLRKeysPressedAndHeld, GetMapNameGeneric,
-  GetMenuCursorDimensionByFont, GetMonData, GetMonGender, GetMonNickname,
-  GetMoveSlotToReplace, GetNumberOfRelearnableMoves, GetOverworldTextboxPalettePtr, GetPartyMenuBgTile,
-  GetPartyMenuPalBufferPtr, GetPlayerFlankId, GetPlayerTextSpeedDelay, GetPocketByItemId,
-  GetScaledHPFraction, GetStringCenterAlignXOffset, GetTrainerPartnerName, GetUnionRoomTradeMessageId,
-  GetWindowAttribute, GetXYCoordsOneStepInFrontOfPlayer, GiveMailToMon, GiveMailToMonByItemId,
-  GiveMoveToMon, GoToBagMenu, GoToBattlePyramidBagMenu, HandleBattleLowHpMusicChange,
-  ITEM_HAS_EFFECT, InBattlePike, InMultiPartnerRoom, InUnionRoom,
-  InitBgsFromTemplates, InitMenuInUpperLeftCorner, InitMenuInUpperLeftCornerNormal, InitWindows,
-  IsDma3ManagerBusyWithBgCopy, IsDoubleBattle, IsFanfareTaskInactive, IsPlayerFacingSurfableFishableWater,
-  IsPlayerSurfingNorth, IsSpeciesAllowedInPokemonJump, IsWeatherNotFadingIn, ItemIsMail,
-  JOY_NEW, LOAD_PARTY_BOX_PAL, LZDecompressWram, LoadBgTiles,
-  LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadMonIconPalettes,
-  LoadOam, LoadPalette, LoadSpritePalette, LoadSpriteSheet,
-  LoadUserWindowBorderGfx, LockPlayerFieldControls, MAP_GROUP, MAP_NUM,
-  MapGridGetMetatileBehaviorAt, MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv, Menu_GetCursorPos,
-  Menu_ProcessInput, Menu_ProcessInputNoWrapAround_other, Menu_ProcessInputNoWrapClearOnChoose, MetatileBehavior_IsWaterfall,
-  MonTryLearningNewMove, NULL, Overworld_GetMapHeaderByGroupAndId, Overworld_MapTypeAllowsTeleportAndFly,
-  PALETTES_ALL, PIXEL_FILL, PLTT_ID, PLTT_SIZEOF,
-  PLTT_SIZE_4BPP, PartyHasMonWithSurf, PlayFanfare, PlayFanfareByFanfareNum,
-  PlaySE, ProcessMenuInput_other, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, ReadMail, RemoveBagItem,
-  RemoveMonPPBonus, RemovePCItem, RemoveWindow, ResetAllBgsCoordinates,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetVramOamAndBgCntRegs, ReshowBattleScreenDummy, RunTasks, RunTextPrintersRetIsActive,
-  STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
-  ScriptContext_Enable, SetBgTilemapBuffer, SetBgTilemapPalette, SetGpuReg,
-  SetMainCallback2, SetMonData, SetMonMoveSlot, SetMonPreventsSwitchingString,
-  SetPartyHPBarSprite, SetTaskFuncWithFollowupFunc, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
-  SetWindowTemplateFields, ShowBg, ShowPokemonSummaryScreen, ShowSelectMovePokemonSummaryScreen,
-  StartSpriteAnim, StringAppend, StringCompare, StringCopy,
-  StringExpandPlaceholders, StringGet_Nickname, SwitchTaskToFollowupFunc, TRUE,
-  TakeMailFromMon, TakeMailFromMonAndSave, Task_TryUseSoftboiledOnPartyMon, TestPlayerAvatarFlags,
-  TransferPlttBuffer, TrySetDiveWarp, UnlockPlayerFieldControls, UpdateMonIconFrame,
-  UpdatePaletteFade, VarGet, WaitFanfare, memcpy,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void InitPartyMenu(u8 menuType, u8 layout, u8 partyAction, bool8 keepCursorPos, u8 messageId, TaskFunc task, MainCallback callback) */
 export function InitPartyMenu(menuType: any, layout: any, partyAction: any, keepCursorPos: any, messageId: any, task: any, callback: any): any {
   let i: any = null;
@@ -302,11 +238,11 @@ export function ResetPartyMenu(): any {
 
 /** static bool8 AllocPartyMenuBg(void) */
 export function AllocPartyMenuBg(): any {
-  sPartyBgTilemapBuffer = Alloc(_0x800);
+  sPartyBgTilemapBuffer = Alloc(0x800);
       if (sPartyBgTilemapBuffer == NULL)
           return FALSE;
 
-      memset(sPartyBgTilemapBuffer, 0, _0x800);
+      memset(sPartyBgTilemapBuffer, 0, 0x800);
       ResetBgsAndClearDma3BusyFlags(0);
       InitBgsFromTemplates(0, sPartyMenuBgTemplates, ARRAY_COUNT(sPartyMenuBgTemplates));
       SetBgTilemapBuffer(1, sPartyBgTilemapBuffer);
@@ -692,9 +628,9 @@ export function CreateCancelConfirmPokeballSprites(): any {
       {
           if (sPartyMenuInternal.chooseHalf)
           {
-              sPartyMenuInternal.spriteIdConfirmPokeball = CreateSmallPokeballButtonSprite(0xBF, _0x88);
+              sPartyMenuInternal.spriteIdConfirmPokeball = CreateSmallPokeballButtonSprite(0xBF, 0x88);
               DrawCancelConfirmButtons();
-              sPartyMenuInternal.spriteIdCancelPokeball = CreateSmallPokeballButtonSprite(0xBF, _0x98);
+              sPartyMenuInternal.spriteIdCancelPokeball = CreateSmallPokeballButtonSprite(0xBF, 0x98);
           }
           else
           {
@@ -1965,7 +1901,7 @@ export function DisplayPartyPokemonHPBar(hp: any, maxhp: any, menuBox: any): any
       {
            
           FillWindowPixelRect(menuBox.windowId, 0x0D, menuBox.infoRects.dimensions[20] + hpFraction, menuBox.infoRects.dimensions[21], menuBox.infoRects.dimensions[22] - hpFraction, 1);
-          FillWindowPixelRect(menuBox.windowId, _0x02, menuBox.infoRects.dimensions[20] + hpFraction, menuBox.infoRects.dimensions[21] + 1, menuBox.infoRects.dimensions[22] - hpFraction, 2);
+          FillWindowPixelRect(menuBox.windowId, 0x02, menuBox.infoRects.dimensions[20] + hpFraction, menuBox.infoRects.dimensions[21] + 1, menuBox.infoRects.dimensions[22] - hpFraction, 2);
       }
       CopyWindowToVram(menuBox.windowId, COPYWIN_GFX);
 }
@@ -5566,7 +5502,7 @@ export function ShowPartyMenuToShowcaseMultiBattleParty(): any {
 export function Task_InitMultiPartnerPartySlideIn(taskId: any): any {
   gTasks[taskId].tXPos = 256;
       SlideMultiPartyMenuBoxSpritesOneStep(taskId);
-      ChangeBgX(2, _0x10000, BG_COORD_SET);
+      ChangeBgX(2, 0x10000, BG_COORD_SET);
       gTasks[taskId].func = Task_MultiPartnerPartySlideIn;
 }
 
@@ -5622,7 +5558,7 @@ export function SlideMultiPartyMenuBoxSpritesOneStep(taskId: any): any {
               MoveMultiPartyMenuBoxSprite(sPartyMenuBoxes[i].statusSpriteId, tXPos - 8);
           }
       }
-      ChangeBgX(2, _0x800, BG_COORD_ADD);
+      ChangeBgX(2, 0x800, BG_COORD_ADD);
 }
 
 /** void ChooseMonForDaycare(void) */

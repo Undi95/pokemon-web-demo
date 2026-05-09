@@ -15,34 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddWindow,
-  AllocSubstruct, BG_PLTT_ID, BgDmaFill, ChangeBgX,
-  ChangeBgY, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded,
-  CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect, CopyWindowToVram, CreateLoopedTask,
-  CreateMonPicSprite_HandleDeoxys, CreateSprite, DecompressAndCopyTileDataToVram, DestroySprite,
-  DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr, FALSE,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAndDestroyMonPicSprite, FreePokenavSubstruct,
-  FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
-  GetBoxMonData, GetBoxMonDataAt, GetBoxMonGender, GetBoxedMonPtr,
-  GetGiftRibbonIds, GetLevelFromBoxMonExp, GetLevelFromMonExp, GetMonData,
-  GetMonGender, GetNormalRibbonIds, GetSpriteTileStartByTag, GetStringCenterAlignXOffset,
-  GetSubstructPtr, HideBg, IndexOfSpritePaletteTag, InitBgTemplates,
-  IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive, IsPaletteFadeActive, JOY_NEW,
-  JOY_REPEAT, LoadCompressedSpriteSheet, NULL, PIXEL_FILL,
-  PLTT_SIZE_4BPP, PlaySE, PokenavFadeScreen, PokenavFillPalette,
-  Pokenav_AllocAndLoadPalettes, PrintHelpBarText, PutWindowTilemap, RemoveWindow,
-  ResetAllPicSprites, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, SetBgTilemapBuffer,
-  ShowBg, SpriteCallbackDummy, StartSpriteAffineAnim, StringCopy,
-  StringGet_Nickname, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_RibbonsSummaryMenu(void) */
 export function PokenavCallback_Init_RibbonsSummaryMenu(): any {
   let list: any = AllocSubstruct(POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_LIST, 0);
@@ -852,9 +824,9 @@ export function BufferSmallRibbonGfxData(dst: any, ribbonId: any): any {
       let tileNum: any = (sRibbonGfxData[ribbonId].tileNumOffset * 2) + 1;
 
       dst[0] = tileNum | (palNum << 12);
-      dst[1] = tileNum | (palNum << 12) | _0x400;
+      dst[1] = tileNum | (palNum << 12) | 0x400;
       dst[2] = (tileNum + 1) | (palNum << 12);
-      dst[3] = (tileNum + 1) | (palNum << 12) | _0x400;
+      dst[3] = (tileNum + 1) | (palNum << 12) | 0x400;
 }
 
 /** static void CreateBigRibbonSprite(struct Pokenav_RibbonsSummaryMenu *menu) */

@@ -15,25 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, CountSSTidalStep, CpuFastFill, CreateObjectGraphicsSprite,
-  CreateTask, DIR_EAST, DIR_WEST, DestroyTask,
-  DoDiveWarp, DoPortholeWarp, DrawWholeMapView, FALSE,
-  FadeInFromBlack, FlagClear, FlagSet, FuncIsActiveTask,
-  GetFaceDirectionAnimNum, GetSSTidalLocation, GetVarPointer, InstallCameraPanAheadCallback,
-  JOY_NEW, LOCALID_PLAYER, LockPlayerFieldControls, MapGridSetMetatileIdAt,
-  NULL, PLTT_SIZE, PlaySE, ScriptMovement_IsObjectMovementFinished,
-  ScriptMovement_StartObjectMovementScript, SetCameraPanning, SetCameraPanningCallback, SetDynamicWarp,
-  SetObjectEventSpritePosByLocalIdAndMap, SetWarpDestination, SetWarpDestinationToDynamicWarp, SpriteCallbackDummy,
-  StartSpriteAnim, TRUE, UnlockPlayerFieldControls, VarGet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static s16 GetTruckCameraBobbingY(int time) */
 export function GetTruckCameraBobbingY(time: any): any {
   if (!(time % 120))

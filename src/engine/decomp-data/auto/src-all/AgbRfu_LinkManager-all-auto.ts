@@ -15,17 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CpuFill16, FALSE, LMAN_callback, MSC_callback,
-  NULL, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u32 rfu_LMAN_REQBN_softReset_and_checkID(void) */
 export function rfu_LMAN_REQBN_softReset_and_checkID(): any {
   let id: any = rfu_REQBN_softReset_and_checkID();
@@ -700,13 +689,13 @@ export function rfu_LMAN_REQ_callback(reqCommandId: any, reqResult: any): any {
                   {
                       lman.state = LMAN_STATE_MS_CHANGE;
                       lman.next_state = LMAN_STATE_SEND_CHILD_NAME;
-                      lman.work = _0x22;
+                      lman.work = 0x22;
                       lman.param[0] = lman.child_slot;
                   }
                   else
                   {
                       lman.state = lman.next_state = LMAN_STATE_READY;
-                      lman.work = _0x23;
+                      lman.work = 0x23;
                       lman.param[0] = status;
                       if (lman.pcswitch_flag)
                       {
@@ -714,7 +703,7 @@ export function rfu_LMAN_REQ_callback(reqCommandId: any, reqResult: any): any {
                           lman.state = LMAN_STATE_START_SEARCH_PARENT;
                       }
                   }
-                  rfu_LMAN_occureCallback(lman.work, _0x01);
+                  rfu_LMAN_occureCallback(lman.work, 0x01);
                   lman.work = 0;
               }
               break;
@@ -749,18 +738,18 @@ export function rfu_LMAN_REQ_callback(reqCommandId: any, reqResult: any): any {
                   {
                       lman.state = LMAN_STATE_MS_CHANGE;
                       lman.next_state = LMAN_STATE_BACK_STATE;
-                      lman.work = _0x32;
+                      lman.work = 0x32;
                   }
                   else
                   {
                       lman.state = lman.next_state = LMAN_STATE_READY;
                       rfu_LMAN_disconnect(gRfuLinkStatus.linkLossSlotFlag);
-                      lman.work = _0x33;
+                      lman.work = 0x33;
                   }
                   lman.linkRecoveryTimer.count[lman.child_slot] = 0;
                   lman.linkRecoveryTimer.active = 0;
                   lman.linkRecovery_start_flag = 0;
-                  rfu_LMAN_occureCallback(lman.work, _0x01);
+                  rfu_LMAN_occureCallback(lman.work, 0x01);
                   lman.work = 0;
               }
               break;
@@ -988,11 +977,11 @@ export function rfu_LMAN_PARENT_checkRecvChildName(): any {
               lman.param[0] = newSlot;
               rfu_LMAN_occureCallback(LMAN_MSG_NEW_CHILD_CONNECT_DETECTED, 1);
           }
-          newAcceptSlot = _0x00;
+          newAcceptSlot = 0x00;
           for (i = 0; i < RFU_CHILD_MAX; i++)
           {
               tgtSlot = 1 << i;
-              flags = _0x00;
+              flags = 0x00;
               if (newSlot & tgtSlot)
               {
                   lman.nameAcceptTimer.count[i] = lman.nameAcceptTimer.count_max;
@@ -1151,7 +1140,7 @@ export function rfu_LMAN_CHILD_linkRecoveryProcess(): any {
 export function rfu_LMAN_CHILD_checkEnableParentCandidate(): any {
   let i: any = null;
       let serialNo: any = null;
-      let flags: any = _0x00;
+      let flags: any = 0x00;
 
       for (i = 0; i < gRfuLinkStatus.findParentCount; i++)
       {

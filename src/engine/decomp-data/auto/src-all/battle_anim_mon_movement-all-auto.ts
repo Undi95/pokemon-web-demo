@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BATTLE_PARTNER, Cos, DISPLAY_WIDTH, DestroyAnimSprite,
-  DestroyAnimVisualTask, FALSE, GetAnimBattlerSpriteId, GetBattlerAtPosition,
-  GetBattlerSide, InitSpriteDataForLinearTranslation, IsBattlerSpriteVisible, IsContest,
-  PrepareBattlerSpriteForRotScale, ResetSpriteRotScale, ST_OAM_OBJ_NORMAL, SetBattlerSpriteYOffsetFromRotation,
-  SetSpriteRotScale, Sin, StoreSpriteCallbackInData6, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void AnimTask_ShakeMon(u8 taskId) */
 export function AnimTask_ShakeMon(taskId: any): any {
   let spriteId: any = null;
@@ -511,7 +497,7 @@ export function SlideMonToOffsetAndBack_End(sprite: any): any {
 
 /** void AnimTask_WindUpLunge(u8 taskId) */
 export function AnimTask_WindUpLunge(taskId: any): any {
-  let wavePeriod: any = _0x8000 / gBattleAnimArgs[3];
+  let wavePeriod: any = 0x8000 / gBattleAnimArgs[3];
       if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
       {
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
@@ -665,7 +651,7 @@ export function AnimTask_SwayMonStep(taskId: any): any {
           }
       }
 
-      if (((waveIndex >= _0x80) && (gTasks[taskId].data[11] == 0) && (gTasks[taskId].data[12] == 1))
+      if (((waveIndex >= 0x80) && (gTasks[taskId].data[11] == 0) && (gTasks[taskId].data[12] == 1))
           || ((waveIndex < 0x7f) && (gTasks[taskId].data[11] == 1) && (gTasks[taskId].data[12] == 0)))
       {
           gTasks[taskId].data[11] ^= 1;
@@ -689,8 +675,8 @@ export function AnimTask_ScaleMonAndRestore(taskId: any): any {
       gTasks[taskId].data[2] = gBattleAnimArgs[2];
       gTasks[taskId].data[3] = gBattleAnimArgs[2];
       gTasks[taskId].data[4] = spriteId;
-      gTasks[taskId].data[10] = _0x100;
-      gTasks[taskId].data[11] = _0x100;
+      gTasks[taskId].data[10] = 0x100;
+      gTasks[taskId].data[11] = 0x100;
       gTasks[taskId].func = AnimTask_ScaleMonAndRestore_Step;
 }
 
@@ -803,7 +789,7 @@ export function AnimTask_RotateMonToSideAndRestore(taskId: any): any {
 /** static void AnimTask_RotateMonSpriteToSide_Step(u8 taskId) */
 export function AnimTask_RotateMonSpriteToSide_Step(taskId: any): any {
   gTasks[taskId].data[3] += gTasks[taskId].data[4];
-      SetSpriteRotScale(gTasks[taskId].data[5], _0x100, _0x100, gTasks[taskId].data[3]);
+      SetSpriteRotScale(gTasks[taskId].data[5], 0x100, 0x100, gTasks[taskId].data[3]);
       if (gTasks[taskId].data[7])
       {
           SetBattlerSpriteYOffsetFromRotation(gTasks[taskId].data[5]);

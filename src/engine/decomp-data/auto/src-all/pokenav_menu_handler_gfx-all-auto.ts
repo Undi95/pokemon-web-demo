@@ -15,40 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized3, AddWindow, AllocSubstruct,
-  AreLeftHeaderSpritesMoving, BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_LIGHTEN,
-  BLDCNT_EFFECT_NONE, BLDCNT_TGT1_OBJ, CalcCenterToCornerVec, ChangeBgX,
-  ChangeBgY, ClearGpuRegBits, CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded,
-  CopyToBgTilemapBuffer, CopyWindowToVram, CpuFill16, CreateLoopedTask,
-  CreateSprite, CreateTask, DISPCNT_WIN0_ON, DISPLAY_HEIGHT,
-  DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask, FALSE,
-  FillWindowPixelBuffer, FindTaskIdByFunc, FreeOamMatrix, FreePokenavSubstruct,
-  FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
-  FuncIsActiveTask, GetCurrentMenuItemId, GetHelpBarTextId, GetMatchTableMapSectionId,
-  GetPokenavCursorPos, GetPokenavMenuType, GetSpriteTileStartByTag, GetStringWidth,
-  GetSubstructPtr, GetWordTaskArg, HideMainOrSubMenuLeftHeader, IndexOfSpritePaletteTag,
-  InitBgTemplates, InitSpriteAffineAnim, IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive,
-  IsPaletteFadeActive, IsRematchEntryRegistered, LoadCompressedSpriteSheet, LoadLeftHeaderGfxForIndex,
-  LoadOam, LoadPalette, NULL, PIXEL_FILL,
-  PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE, PokenavCopyPalette,
-  PokenavFadeScreen, Pokenav_AllocAndLoadPalettes, PrintHelpBarText, ProcessSpriteCopyRequests,
-  PutWindowTilemap, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
-  REG_OFFSET_DISPCNT, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  RemoveWindow, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_OFF, ST_OAM_OBJ_BLEND,
-  ST_OAM_OBJ_NORMAL, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams, ScanlineEffect_Stop,
-  SetBgTilemapBuffer, SetGpuReg, SetGpuRegBits, SetPokenavVBlankCallback,
-  SetVBlankCallback_, SetWordTaskArg, ShowBg, ShowLeftHeaderGfx,
-  SlideMenuHeaderUp, SpriteCallbackDummy, StartSpriteAffineAnim, TRUE,
-  TransferPlttBuffer, WaitForHelpBar, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static bool32 AreAnyTrainerRematchesNearby(void) */
 export function AreAnyTrainerRematchesNearby(): any {
   let i: any = null;
@@ -743,7 +709,7 @@ export function SpriteCB_OptionZoom(sprite: any): any {
           {
               StartSpriteAffineAnim(sprite, 1);
               sprite.sZoomSetAffine++;
-              sprite.sZoomSpeed = _0x100;
+              sprite.sZoomSpeed = 0x100;
               sprite.x += sprite.x2;
               sprite.x2 = 0;
           }
@@ -835,7 +801,7 @@ export function Task_OptionBlend(taskId: any): any {
 /** static void CreateMatchCallBlueLightSprite(void) */
 export function CreateMatchCallBlueLightSprite(): any {
   let gfx: any = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
-      let spriteId: any = CreateSprite(sMatchCallBlueLightSpriteTemplate, _0x10, _0x60, 4);
+      let spriteId: any = CreateSprite(sMatchCallBlueLightSpriteTemplate, 0x10, 0x60, 4);
       gfx.blueLightSprite =gSprites[spriteId];
       if (AreAnyTrainerRematchesNearby())
           gfx.blueLightSprite.callback = SpriteCB_BlinkingBlueLight;
@@ -907,7 +873,7 @@ export function DestroyMovingDotsBgTask(): any {
 
 /** static void Task_MoveBgDots(u8 taskId) */
 export function Task_MoveBgDots(taskId: any): any {
-  ChangeBgX(3, _0x80, BG_COORD_ADD);
+  ChangeBgX(3, 0x80, BG_COORD_ADD);
 }
 
 /** static void CreateBgDotPurplePalTask(void) */
@@ -1013,8 +979,8 @@ export function SetMenuOptionGlow(): any {
       let r4: any = sPokenavMenuOptionLabelGfx[menuType].deltaY * cursorPos + sPokenavMenuOptionLabelGfx[menuType].yStart - 8;
       CpuFill16(0, gScanlineEffectRegBuffers[0], DISPLAY_HEIGHT * 2);
       CpuFill16(0, gScanlineEffectRegBuffers[1], DISPLAY_HEIGHT * 2);
-      CpuFill16(RGB(16, 23, 28),gScanlineEffectRegBuffers[0][r4], _0x20);
-      CpuFill16(RGB(16, 23, 28),gScanlineEffectRegBuffers[1][r4], _0x20);
+      CpuFill16(RGB(16, 23, 28),gScanlineEffectRegBuffers[0][r4], 0x20);
+      CpuFill16(RGB(16, 23, 28),gScanlineEffectRegBuffers[1][r4], 0x20);
 }
 
 /** void ResetBldCnt_(void) */

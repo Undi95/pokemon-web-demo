@@ -15,42 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized4, Alloc, AllocateMonSpritesGfx,
-  AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer,
-  CalculateMonStats, CalculatePlayerPartyCount, ChangeBgX, ChangeBgY,
-  CleanupOverworldWindowsAndTilemaps, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram,
-  CountPartyAliveNonEggMonsExcept, CountStorageNonEggMons, CreateMon, CreateSprite,
-  CreateTask, CreateYesNoMenu, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
-  DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap, DestroySprite, DestroyTask,
-  DoMonFrontSpriteAnimation, DoNamingScreen, FALSE, FadeScreen,
-  FillWindowPixelBuffer, Free, FreeAllSpritePalettes, FreeMonSpritesGfx,
-  GetBoxMonNickname, GetCurrentMapMusic, GetCurrentRegionMapSectionId, GetMonAbility,
-  GetMonData, GetMonGender, GetMonNickname2, GetMonSpritePalStruct,
-  GetSetPokedexFlag, GetSpeciesName, HandleLoadSpecialPokePic_DontHandleDeoxys, InitBgsFromTemplates,
-  InitWindows, IsFanfareTaskInactive, IsTextPrinterActive, LoadBgTiles,
-  LoadCompressedPalette, LoadCompressedSpritePalette, LoadOam, LoadPalette,
-  LoadSpritePalette, LoadSpriteSheet, LoadUserWindowBorderGfx, LockPlayerFieldControls,
-  Menu_ProcessInputNoWrapClearOnChoose, MonRestorePP, NULL, PALETTES_ALL,
-  PIXEL_FILL, PLTT_SIZE_4BPP, PlayBGM, PlayFanfare,
-  PlayRainStoppingSoundEffect, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_DISPCNT, Random, RemoveWindow, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
-  RunTasks, RunTextPrinters, ScanlineEffect_Stop, SetBgAttribute,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetMonData,
-  SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback, ShowBg, Sin,
-  SpeciesToNationalPokedexNum, SpriteCallbackDummy, StartSpriteAffineAnim, StartSpriteAnim,
-  StopMapMusic, StringCompareWithoutExtCtrlCodes, StringCopy, StringExpandPlaceholders,
-  TRUE, TVShowConvertInternationalString, TransferPlttBuffer, UnsetBgTilemapBuffer,
-  UpdatePaletteFade,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void CreateHatchedMon(struct Pokemon *egg, struct Pokemon *temp) */
 export function CreateHatchedMon(egg: any, temp: any): any {
   let species: any = null;
@@ -99,7 +63,7 @@ export function CreateHatchedMon(egg: any, temp: any): any {
 
 /** static void AddHatchedMonToParty(u8 id) */
 export function AddHatchedMonToParty(id: any): any {
-  let isEgg: any = _0x46;  
+  let isEgg: any = 0x46;  
       let species: any = null;
       const name: any[] = [];
       let ball: any = null;
@@ -254,8 +218,8 @@ export function CB2_LoadEggHatch(): any {
           ChangeBgY(0, 0, BG_COORD_SET);
 
           SetBgAttribute(1, BG_ATTR_PRIORITY, 2);
-          SetBgTilemapBuffer(1, Alloc(_0x1000));
-          SetBgTilemapBuffer(0, Alloc(_0x2000));
+          SetBgTilemapBuffer(1, Alloc(0x1000));
+          SetBgTilemapBuffer(0, Alloc(0x2000));
 
           DeactivateAllTextPrinters();
           ResetPaletteFade();
@@ -299,8 +263,8 @@ export function CB2_LoadEggHatch(): any {
       case 7:
           SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
           LoadPalette(gTradeGba2_Pal, BG_PLTT_ID(1), 5 * PLTT_SIZE_4BPP);
-          LoadBgTiles(1, gTradeGba_Gfx, _0x1420, 0);
-          CopyToBgTilemapBuffer(1, gTradePlatform_Tilemap, _0x1000, 0);
+          LoadBgTiles(1, gTradeGba_Gfx, 0x1420, 0);
+          CopyToBgTilemapBuffer(1, gTradePlatform_Tilemap, 0x1000, 0);
           CopyBgTilemapBufferToVram(1);
           gMain.state++;
           break;
@@ -418,8 +382,8 @@ export function CB2_EggHatch(): any {
            
           if (!IsTextPrinterActive(sEggHatchData.windowId))
           {
-              LoadUserWindowBorderGfx(sEggHatchData.windowId, _0x140, BG_PLTT_ID(14));
-              CreateYesNoMenu(sYesNoWinTemplate, _0x140, 0xE, 0);
+              LoadUserWindowBorderGfx(sEggHatchData.windowId, 0x140, BG_PLTT_ID(14));
+              CreateYesNoMenu(sYesNoWinTemplate, 0x140, 0xE, 0);
               sEggHatchData.state++;
           }
           break;

@@ -15,49 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AddItemIconSprite, AddScrollIndicatorArrowPairParameterized,
-  AddTextPrinterParameterized, AddTextPrinterParameterized4, AddWindow, AdjustQuantityAccordingToDPadInput,
-  Alloc, AllocZeroed, AnimateSprites, BG_PLTT_ID,
-  BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer, ChangeMenuGridCursorPosition,
-  CleanupOverworldWindowsAndTilemaps, ClearDialogWindowAndFrameToTransparent, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent,
-  ClearWindowTilemap, ConvertIntToDecimalStringN, CopyItemName, CreateSprite,
-  CreateSwapLineSprites, CreateTask, CreateYesNoMenuWithCallbacks, DISPCNT_MODE_0,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram,
-  DestroyListMenuTask, DestroySprite, DestroyTask, DisplayMessageAndContinueTask,
-  DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette, FALSE, FadeScreen,
-  FillWindowPixelBuffer, FillWindowPixelRect, Free, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FreeTempTileDataBuffersIfPossible, GetItemBattleFunc, GetItemBattleUsage, GetItemDescription,
-  GetItemFieldFunc, GetItemImportance, GetItemPocket, GetLRKeysPressed,
-  GetMenuCursorDimensionByFont, GetMonData, GetPlayerTextSpeedDelay, GetStringCenterAlignXOffset,
-  GetStringRightAlignXOffset, ITEM_TO_BERRY, InitBgsFromTemplates, InitMenuActionGrid,
-  InitMenuInUpperLeftCornerNormal, InitWindows, IsWritingMailAllowed, ItemIsMail,
-  JOY_NEW, LZDecompressWram, ListMenuGetScrollAndRow, ListMenuGetYCoordForPrintingArrowCursor,
-  ListMenuInit, ListMenuSetTemplateField, ListMenu_ProcessInput, LoadCompressedPalette,
-  LoadCompressedSpriteSheet, LoadListMenuSwapLineGfx, LoadMessageBoxGfx, LoadOam,
-  LoadPalette, LoadSpritePalette, LoadUserWindowBorderGfx, LockPlayerFieldControls,
-  MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv, Menu_GetCursorPos, Menu_ProcessInputNoWrap,
-  NULL, PALETTES_ALL, PIXEL_FILL, PLTT_ID,
-  PLTT_SIZE_4BPP, PlaySE, PrintMenuActionGrid, PrintMenuActionTexts,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
-  RemovePyramidBagItem, RemoveScrollIndicatorArrowPair, RemoveWindow, ResetAllBgsCoordinates,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks, STR_CONV_MODE_LEADING_ZEROS,
-  STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, SWAP, ScanlineEffect_Stop,
-  ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
-  SetMonData, SetSwapLineSpritesInvisibility, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
-  ShowBg, SpriteCallbackDummy, StartSpriteAffineAnim, StringCopy,
-  StringExpandPlaceholders, TASK_NONE, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, UpdateSwapLineSpritesPos, memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void InitBattlePyramidBagCursorPosition(void) */
 export function InitBattlePyramidBagCursorPosition(): any {
   gPyramidBagMenuState.cursorPosition = 0;
@@ -650,7 +607,7 @@ export function OpenContextMenu(taskId: any): any {
 
 /** static void PrintMenuActionText_SingleRow(u8 windowId) */
 export function PrintMenuActionText_SingleRow(windowId: any): any {
-  PrintMenuActionTexts(windowId, FONT_NARROW, 8, 1, 0, _0x10, gPyramidBagMenu.menuActionsCount, sMenuActions, gPyramidBagMenu.menuActionIds);
+  PrintMenuActionTexts(windowId, FONT_NARROW, 8, 1, 0, 0x10, gPyramidBagMenu.menuActionsCount, sMenuActions, gPyramidBagMenu.menuActionIds);
       InitMenuInUpperLeftCornerNormal(windowId, gPyramidBagMenu.menuActionsCount, 0);
 }
 
@@ -842,7 +799,7 @@ export function ShowNumToToss(): any {
       ConvertIntToDecimalStringN(gStringVar1, 1, STR_CONV_MODE_LEADING_ZEROS, 2);
       StringExpandPlaceholders(gStringVar4, gText_xVar1);
       DrawTossNumberWindow(WIN_TOSS_NUM);
-      x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, _0x28);
+      x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0x28);
       AddTextPrinterParameterized(WIN_TOSS_NUM, FONT_NORMAL, gStringVar4, x, 2, 0, NULL);
 }
 
@@ -851,7 +808,7 @@ export function UpdateNumToToss(num: any): any {
   let x: any = null;
       ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_LEADING_ZEROS, 2);
       StringExpandPlaceholders(gStringVar4, gText_xVar1);
-      x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, _0x28);
+      x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0x28);
       AddTextPrinterParameterized(WIN_TOSS_NUM, FONT_NORMAL, gStringVar4, x, 2, 0, NULL);
 }
 
@@ -1111,7 +1068,7 @@ export function InitPyramidBagWindows(): any {
 
       InitWindows(sWindowTemplates);
       DeactivateAllTextPrinters();
-      LoadUserWindowBorderGfx(0, _0x1, BG_PLTT_ID(14));
+      LoadUserWindowBorderGfx(0, 0x1, BG_PLTT_ID(14));
       LoadMessageBoxGfx(0, 0xA, BG_PLTT_ID(13));
       LoadPalette(gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
 

@@ -15,24 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, BYTE_TO_RECEIVE, BYTE_TO_SEND, BattleAI_HandleItemUseBeforeAISetup,
-  BitmaskAllOtherLinkPlayers, BufferBattlePartyCurrentOrderBySide, CheckShouldAdvanceLinkState, ClearBattleAnimationVars,
-  ClearBattleMonForms, CreateMon, CreateTask, DestroyTask_RfuIdle,
-  GET_BATTLER_SIDE2, GetBlockReceivedStatus, GetLinkPlayerCount, GetLinkPlayerCount_2,
-  GetMonData, GetMultiplayerId, IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL, IsLinkMaster,
-  IsLinkTaskFinished, MARK_BATTLE_CONTROLLER_IDLE_FOR_PLAYER, MarkBattlerReceivedLinkData, OpenLink,
-  RecordedBattle_BufferNewBattlerData, RecordedBattle_Init, RecordedBattle_SaveParties, ResetBlockReceivedFlag,
-  SendBlock, SetMonData, SetWirelessCommType1, ZeroEnemyPartyMons,
-  memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void HandleLinkBattleSetup(void) */
 export function HandleLinkBattleSetup(): any {
   if (gBattleTypeFlags & BATTLE_TYPE_LINK)
@@ -710,17 +692,17 @@ export function PrepareBufferDataTransferLink(bufferId: any, size: any, data: an
       }
           gLinkBattleSendBuffer[gTasks[sLinkSendTaskId].tCurrentBlock_End + offset]
 
-      BYTE_TO_SEND(LINK_BUFF_BUFFER_ID)            = bufferId;
-      BYTE_TO_SEND(LINK_BUFF_ACTIVE_BATTLER)       = gActiveBattler;
-      BYTE_TO_SEND(LINK_BUFF_ATTACKER)             = gBattlerAttacker;
-      BYTE_TO_SEND(LINK_BUFF_TARGET)               = gBattlerTarget;
-      BYTE_TO_SEND(LINK_BUFF_SIZE_LO)              = alignedSize;
-      BYTE_TO_SEND(LINK_BUFF_SIZE_HI)              = (alignedSize & 0x0000FF00) >> 8;
-      BYTE_TO_SEND(LINK_BUFF_ABSENT_BATTLER_FLAGS) = gAbsentBattlerFlags;
-      BYTE_TO_SEND(LINK_BUFF_EFFECT_BATTLER)       = gEffectBattler;
+      \            = bufferId;
+      \       = gActiveBattler;
+      \             = gBattlerAttacker;
+      \               = gBattlerTarget;
+      \              = alignedSize;
+      \              = (alignedSize & 0x0000FF00) >> 8;
+      \ = gAbsentBattlerFlags;
+      \       = gEffectBattler;
 
       for (i = 0; i < size; i++)
-          BYTE_TO_SEND(LINK_BUFF_DATA + i) = data[i];
+          \ = data[i];
 
       gTasks[sLinkSendTaskId].tCurrentBlock_End = gTasks[sLinkSendTaskId].tCurrentBlock_End + alignedSize + LINK_BUFF_DATA;
 }
@@ -779,8 +761,8 @@ export function Task_HandleSendLinkBuffersData(taskId: any): any {
                       gTasks[taskId].tCurrentBlock_WrapFrom = 0;
                       gTasks[taskId].tCurrentBlock_Start    = 0;
                   }
-                  blockSize = (BYTE_TO_SEND(LINK_BUFF_SIZE_LO) | (BYTE_TO_SEND(LINK_BUFF_SIZE_HI) << 8)) + LINK_BUFF_DATA;
-                  SendBlock(BitmaskAllOtherLinkPlayers(),BYTE_TO_SEND(0), blockSize);
+                  blockSize = (\ | (\ << 8)) + LINK_BUFF_DATA;
+                  SendBlock(BitmaskAllOtherLinkPlayers(), &\, blockSize);
                   gTasks[taskId].tState++;
               }
               else
@@ -793,7 +775,7 @@ export function Task_HandleSendLinkBuffersData(taskId: any): any {
       case SENDTASK_STATE_FINISH_SEND_BLOCK:
           if (IsLinkTaskFinished())
           {
-              blockSize = BYTE_TO_SEND(LINK_BUFF_SIZE_LO) | (BYTE_TO_SEND(LINK_BUFF_SIZE_HI) << 8);
+              blockSize = \ | (\ << 8);
               gTasks[taskId].tBlockSendDelayTimer = 1;
               gTasks[taskId].tCurrentBlock_Start  = gTasks[taskId].tCurrentBlock_Start + blockSize + LINK_BUFF_DATA;
               gTasks[taskId].tState = SENDTASK_STATE_BEGIN_SEND_BLOCK;
@@ -829,7 +811,7 @@ export function TryReceiveLinkBattleData(): any {
                       let dest, src;
                       let dataSize: any = gBlockRecvBuffer[i][2];
 
-                      if (gTasks[sLinkReceiveTaskId].tCurrentBlock_End + 9 + dataSize > _0x1000)
+                      if (gTasks[sLinkReceiveTaskId].tCurrentBlock_End + 9 + dataSize > 0x1000)
                       {
                           gTasks[sLinkReceiveTaskId].tCurrentBlock_WrapFrom = gTasks[sLinkReceiveTaskId].tCurrentBlock_End;
                           gTasks[sLinkReceiveTaskId].tCurrentBlock_End = 0;
@@ -863,31 +845,31 @@ export function Task_HandleCopyReceivedLinkBuffersData(taskId: any): any {
               gTasks[taskId].tCurrentBlock_WrapFrom = 0;
               gTasks[taskId].tCurrentBlock_Start    = 0;
           }
-          battler = BYTE_TO_RECEIVE(LINK_BUFF_ACTIVE_BATTLER);
-          blockSize = BYTE_TO_RECEIVE(LINK_BUFF_SIZE_LO) | (BYTE_TO_RECEIVE(LINK_BUFF_SIZE_HI) << 8);
+          battler = \;
+          blockSize = \ | (\ << 8);
 
-          switch (BYTE_TO_RECEIVE(0))
+          switch (\)
           {
           case B_COMM_TO_CONTROLLER:
               if (IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL(battler))
                   return;
 
-              memcpy(gBattleBufferA[battler],BYTE_TO_RECEIVE(LINK_BUFF_DATA), blockSize);
+              memcpy(gBattleBufferA[battler], &\, blockSize);
               MarkBattlerReceivedLinkData(battler);
 
               if (!(gBattleTypeFlags & BATTLE_TYPE_IS_MASTER))
               {
-                  gBattlerAttacker    = BYTE_TO_RECEIVE(LINK_BUFF_ATTACKER);
-                  gBattlerTarget      = BYTE_TO_RECEIVE(LINK_BUFF_TARGET);
-                  gAbsentBattlerFlags = BYTE_TO_RECEIVE(LINK_BUFF_ABSENT_BATTLER_FLAGS);
-                  gEffectBattler      = BYTE_TO_RECEIVE(LINK_BUFF_EFFECT_BATTLER);
+                  gBattlerAttacker    = \;
+                  gBattlerTarget      = \;
+                  gAbsentBattlerFlags = \;
+                  gEffectBattler      = \;
               }
               break;
           case B_COMM_TO_ENGINE:
               memcpy(gBattleBufferB[battler],gLinkBattleRecvBuffer[gTasks[taskId].tCurrentBlock_Start + LINK_BUFF_DATA], blockSize);
               break;
           case B_COMM_CONTROLLER_IS_DONE:
-              playerId = BYTE_TO_RECEIVE(LINK_BUFF_DATA);
+              playerId = \;
               MARK_BATTLE_CONTROLLER_IDLE_FOR_PLAYER(battler, playerId);
               break;
           }

@@ -15,46 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AddTextPrinterParameterized, AddTextPrinterParameterized2,
-  AddTextPrinterParameterized3, AddWindow, AllocZeroed, AnimateSprites,
-  BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer,
-  ChangeBgX, ChangeBgY, CheckBagHasSpace, ClearRecvCommands,
-  ClearWindowTilemap, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyItemName,
-  CopyToBgTilemapBuffer, CopyWindowToVram, CreateSprite, CreateTask,
-  CreateWirelessStatusIndicatorSprite, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DecompressAndCopyTileDataToVram,
-  DestroySprite, DestroySpriteAndFreeResources, DestroyTask, DmaClear16,
-  DmaClear32, DmaClearLarge16, DrawDialogueFrame, DrawTextBorderOuter,
-  DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr, FALSE,
-  FIRST_BERRY_INDEX, FREE_AND_SET_NULL, FadeOutAndFadeInNewMapMusic, FadeOutAndPlayNewMapMusic,
-  FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, Free,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeTempTileDataBuffersIfPossible, FuncIsActiveTask,
-  GetBlockReceivedStatus, GetGfxFunc, GetLinkPlayerCount, GetLinkPlayerCountAsBitFlags,
-  GetMonData, GetMultiplayerId, GetPlayerName, GetStringCenterAlignXOffset,
-  GetStringWidth, GetTextWindowPalette, GetWindowFrameTilesPal, InitBgsFromTemplates,
-  InitStandardTextBoxWindows, InitTextBoxGfxAndPrinters, IsDma3ManagerBusyWithBgCopy, IsLinkTaskFinished,
-  IsMinigameCountdownRunning, IsMonShiny, IsSEPlaying, JOY_NEW,
-  LZ77UnCompWram, LoadBgTiles, LoadOam, LoadPalette,
-  LoadSpritePalette, LoadSpriteSheet, LoadUserWindowBorderGfx_, LoadWirelessStatusIndicatorSpriteGfx,
-  MAX_RFU_PLAYERS, NULL, PALETTES_ALL, PIXEL_FILL,
-  PLTT_SIZE, PLTT_SIZE_4BPP, PlayFanfareByFanfareNum, PlayNewMapMusic,
-  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG2HOFS, REG_OFFSET_DISPCNT, Random, RemoveWindow,
-  ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, Rfu_SendPacket, Rfu_SetLinkStandbyCallback, RunTasks,
-  STR_CONV_MODE_LEFT_ALIGN, SWAP, ScriptContext_Enable, SendBlock,
-  SetBgTilemapBuffer, SetCloseLinkCallback, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, SpriteCallbackDummy, StartMinigameCountdown,
-  StartSpriteAnim, StopMapMusic, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, VRAM_SIZE, WaitFanfare, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void StartDodrioBerryPicking(u16 partyId, MainCallback exitCallback) */
 export function StartDodrioBerryPicking(partyId: any, exitCallback: any): any {
   sExitingGame = FALSE;
@@ -194,7 +154,7 @@ export function Task_StartDodrioGame(taskId: any): any {
           sGame.startState++;
           break;
       case 6:
-          BlendPalettes(PALETTES_ALL, _0x10, _0x00);
+          BlendPalettes(PALETTES_ALL, 0x10, 0x00);
           BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, 0);
           SetVBlankCallback(VBlankCB_DodrioGame);
           sGame.startState++;
@@ -2484,14 +2444,14 @@ export function RecvPacket_ReadyToEnd(playerId: any): any {
 
 /** static void LoadDodrioGfx(void) */
 export function LoadDodrioGfx(): any {
-  let ptr: any = AllocZeroed(_0x3000);
+  let ptr: any = AllocZeroed(0x3000);
       let normal: any = [sDodrioNormal_Pal, PALTAG_DODRIO_NORMAL];
       let shiny: any = [sDodrioShiny_Pal, PALTAG_DODRIO_SHINY];
 
       LZ77UnCompWram(sDodrio_Gfx, ptr);
       if (ptr)
       {
-          let sheet: any = [ptr, _0x3000, GFXTAG_DODRIO];
+          let sheet: any = [ptr, 0x3000, GFXTAG_DODRIO];
           LoadSpriteSheet(sheet);
           Free(ptr);
       }
@@ -2636,14 +2596,14 @@ export function InitStatusBarPos(): any {
 /** static void CreateStatusBarSprites(void) */
 export function CreateStatusBarSprites(): any {
   let i: any = null;
-      let ptr: any = AllocZeroed(_0x180);
+      let ptr: any = AllocZeroed(0x180);
       let pal: any = [sStatus_Pal, PALTAG_STATUS];
 
       LZ77UnCompWram(sStatus_Gfx, ptr);
        
       if (ptr)
       {
-          let sheet: any = [ptr, _0x180, GFXTAG_STATUS];
+          let sheet: any = [ptr, 0x180, GFXTAG_STATUS];
           let template: any =
           [ GFXTAG_STATUS, PALTAG_STATUS, sOamData_16x16_Priority0, sAnims_StatusBar, NULL, gDummySpriteAffineAnimTable, SpriteCB_Status,
           ];
@@ -2751,13 +2711,13 @@ export function SetStatusBarInvisibility(invisible: any): any {
 
 /** static void LoadBerryGfx(void) */
 export function LoadBerryGfx(): any {
-  let ptr: any = AllocZeroed(_0x480);
+  let ptr: any = AllocZeroed(0x480);
       let pal: any = [sBerries_Pal, PALTAG_BERRIES];
 
       LZ77UnCompWram(sBerries_Gfx, ptr);
       if (ptr)
       {
-          let sheet: any = [ptr, _0x480, GFXTAG_BERRIES];
+          let sheet: any = [ptr, 0x480, GFXTAG_BERRIES];
           LoadSpriteSheet(sheet);
       }
 
@@ -2863,13 +2823,13 @@ export function SpriteCB_Cloud(sprite: any): any {
 /** static void CreateCloudSprites(void) */
 export function CreateCloudSprites(): any {
   let i: any = null;
-      let ptr: any = AllocZeroed(_0x400);
+      let ptr: any = AllocZeroed(0x400);
       let pal: any = [sCloud_Pal, PALTAG_CLOUD];
 
       LZ77UnCompWram(sCloud_Gfx, ptr);
       if (ptr)
       {
-          let sheet: any = [ptr, _0x400, GFXTAG_CLOUD];
+          let sheet: any = [ptr, 0x400, GFXTAG_CLOUD];
           let template: any =
           [ GFXTAG_CLOUD, PALTAG_CLOUD, sOamData_Cloud, sAnims_Cloud, NULL, gDummySpriteAffineAnimTable, SpriteCB_Cloud,
           ];
@@ -2987,7 +2947,7 @@ export function ResetBerryAndStatusBarSprites(): any {
 
 /** static void LoadWindowFrameGfx(u8 frameId) */
 export function LoadWindowFrameGfx(frameId: any): any {
-  LoadBgTiles(BG_INTERFACE, GetWindowFrameTilesPal(frameId).tiles, _0x120, 1);
+  LoadBgTiles(BG_INTERFACE, GetWindowFrameTilesPal(frameId).tiles, 0x120, 1);
       LoadPalette(GetWindowFrameTilesPal(frameId).pal, BG_PLTT_ID(10), PLTT_SIZE_4BPP);
 }
 
@@ -3116,7 +3076,7 @@ export function ShowNames(): any {
           window.width = 7;
           window.height = 2;
           window.paletteNum = 13;
-          window.baseBlock = _0x13;
+          window.baseBlock = 0x13;
           for (i = 0; i < numPlayers; coords++, i++)
           {
               colorsId = COLORID_GRAY;
@@ -3637,7 +3597,7 @@ export function GetPlayAgainState(): any {
 
 /** static void InitBgs(void) */
 export function InitBgs(): any {
-  DmaClearLarge16(3, VRAM, VRAM_SIZE, _0x1000);
+  DmaClearLarge16(3, VRAM, VRAM_SIZE, 0x1000);
       DmaClear32(3,OAM, OAM_SIZE);
       DmaClear16(3, PLTT, PLTT_SIZE);
       SetGpuReg(REG_OFFSET_DISPCNT, 0);

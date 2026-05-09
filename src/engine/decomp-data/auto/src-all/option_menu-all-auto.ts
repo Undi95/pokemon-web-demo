@@ -15,32 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AnimateSprites, BG_PLTT_ID,
-  BLDCNT_EFFECT_DARKEN, BLDCNT_TGT1_BG0, BeginNormalPaletteFade, BuildOamBuffer,
-  ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram,
-  CreateTask, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
-  DISPLAY_WIDTH, DeactivateAllTextPrinters, DestroyTask, DmaClear16,
-  DmaClear32, DmaClearLarge16, FALSE, FillBgTilemapBufferRect,
-  FillWindowPixelBuffer, FreeAllWindowBuffers, GetStringRightAlignXOffset, GetStringWidth,
-  GetWindowFrameTilesPal, InitBgsFromTemplates, InitWindows, JOY_NEW,
-  LoadBgTiles, LoadOam, LoadPalette, NULL,
-  PALETTES_ALL, PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, RunTasks, ScanlineEffect_Stop,
-  SetGpuReg, SetMainCallback2, SetPokemonCryStereo, SetVBlankCallback,
-  ShowBg, TRUE, TransferPlttBuffer, UpdatePaletteFade,
-  VRAM_SIZE, WIN_RANGE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void MainCB2(void) */
 export function MainCB2(): any {
   RunTasks();

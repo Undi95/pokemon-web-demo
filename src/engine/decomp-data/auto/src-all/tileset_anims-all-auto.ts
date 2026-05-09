@@ -15,19 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, BG_PLTT_ID, BG_VRAM, BlendPalette,
-  CpuCopy16, CpuFill32, DmaCopy16, FindTaskIdByFunc,
-  NULL, PLTT_SIZE_4BPP, TASK_NONE, TILE_OFFSET_4BPP,
-  TILE_SIZE_4BPP,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void ResetTilesetAnimBuffer(void) */
 export function ResetTilesetAnimBuffer(): any {
   sTilesetDMA3TransferBufferSize = 0;

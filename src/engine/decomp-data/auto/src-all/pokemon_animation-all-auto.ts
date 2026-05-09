@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ANIM_SPRITE, ARRAY_COUNT, BlendPalette, CalcCenterToCornerVec,
-  Cos, CreateTask, DestroyTask, FALSE,
-  FreeOamMatrix, GetNature, GlowColor, InitSpriteAffineAnim,
-  OBJ_PLTT_ID, ObjAffineSet, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL,
-  ST_OAM_AFFINE_OFF, Sin, SpriteCallbackDummy, StartSpriteAffineAnim,
-  TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void SetPosForRotation(struct Sprite *sprite, u16 index, s16 amplitudeX, s16 amplitudeY) */
 export function SetPosForRotation(sprite: any, index: any, amplitudeX: any, amplitudeY: any): any {
   let xAdder, yAdder;
@@ -58,7 +43,7 @@ export function GetSpeciesBackAnimSet(species: any): any {
 /** static void Task_HandleMonAnimation(u8 taskId) */
 export function Task_HandleMonAnimation(taskId: any): any {
   let i: any = null;
-      let sprite: any = ANIM_SPRITE(taskId);
+      let sprite: any = (((gTasks[(taskId)].tPtrHi << 16) | (gTasks[(taskId)].tPtrLo)));
 
       if (gTasks[taskId].tState == 0)
       {

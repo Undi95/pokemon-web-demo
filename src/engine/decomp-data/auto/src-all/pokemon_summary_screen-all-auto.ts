@@ -15,52 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized4, AddWindow, AdvanceStorageMonIndex,
-  Alloc, AllocZeroed, AnimateSprites, BG_PLTT_ID,
-  BeginNormalPaletteFade, BlendPalettes, BlitBitmapToWindow, BoxMonToMon,
-  BuildOamBuffer, CalculatePPWithBonus, ChangeBgX, CheckPartyHasHadPokerus,
-  CheckPartyPokerus, ClearScheduledBgCopiesToVram, ClearWindowTilemap, ConvertIntToDecimalStringN,
-  ConvertInternationalString, CopyItemName, CopyToBgTilemapBufferRect_ChangePalette, CopyWindowToVram,
-  CpuCopy16, CpuFill16, CreateMonMarkingAllCombosSprite, CreateMonSpritesGfxManager,
-  CreateSprite, CreateTask, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
-  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroyMonSpritesGfxManager, DestroySprite,
-  DestroySpriteAndFreeResources, DestroyTask, DoScheduledBgTilemapCopiesToVram, DynamicPlaceholderTextUtil_ExpandPlaceholders,
-  DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr, FALSE, FillWindowPixelBuffer,
-  FillWindowPixelRect, FindTaskIdByFunc, Free, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeSpriteOamMatrix, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
-  FuncIsActiveTask, GetAbilityBySpecies, GetBgTilemapBuffer, GetCurrentPpToMaxPpState,
-  GetItemName, GetLRKeysPressed, GetMapNameHandleAquaHideout, GetMonAilment,
-  GetMonData, GetMonGender, GetMonNickname, GetMonSpritePalStructFromOtIdPersonality,
-  GetMultiplayerId, GetNature, GetPlayerIDAsU32, GetStringCenterAlignXOffset,
-  GetStringRightAlignXOffset, GetStringWidth, HandleLoadSpecialPokePic_2, HandleLoadSpecialPokePic_DontHandleDeoxys,
-  InBattleFactory, InSlateportBattleTent, InitBgsFromTemplates, InitWindows,
-  IsMonShiny, IsMonSpriteNotFlipped, IsMoveHm, IsMultiBattle,
-  ItemIdToBallId, JOY_NEW, LZDecompressWram, LoadBallGfx,
-  LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadOam,
-  LoadPalette, MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv, MonSpritesGfxManager_GetSpritePtr,
-  NULL, OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL,
-  PLTT_SIZEOF, PLTT_SIZE_4BPP, PlayCry_ByMode, PlaySE,
-  PokemonSummaryDoMonAnimation, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT,
-  REG_OFFSET_DISPCNT, RemoveWindow, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs,
-  RunTasks, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN,
-  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetBgAttribute, SetBgTilemapBuffer,
-  SetBgTilemapPalette, SetBoxMonData, SetGpuReg, SetMainCallback2,
-  SetMonData, SetMultiuseSpriteTemplateToPokemon, SetTaskFuncWithFollowupFunc, SetVBlankCallback,
-  SetVBlankHBlankCallbacksToNull, ShouldIgnoreDeoxysForm, ShouldPlayNormalMonCry, ShowBg,
-  SpeciesToPokedexNum, SpriteCallbackDummy, StartSpriteAnim, StopCryAndClearCrySongs,
-  StopPokemonAnimationDelayTask, StringAppend, StringCompareWithoutExtCtrlCodes, StringCopy,
-  StringExpandPlaceholders, SwitchTaskToFollowupFunc, TASK_NONE, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ShowPokemonSummaryScreen(u8 mode, void *mons, u8 monIndex, u8 maxMonIndex, void (*callback)(void)) */
 export function ShowPokemonSummaryScreen(mode: any, mons: any, monIndex: any, maxMonIndex: any, callback: any): any {
   sMonSummaryScreen = AllocZeroed(0);
@@ -449,7 +403,7 @@ export function SetDefaultTilemaps(): any {
           TilemapFiveMovesDisplay(sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES][0], 1, FALSE);
           SetBgTilemapBuffer(1, sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES][0]);
           SetBgTilemapBuffer(2, sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES][0]);
-          ChangeBgX(2, _0x10000, BG_COORD_ADD);
+          ChangeBgX(2, 0x10000, BG_COORD_ADD);
           ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
           ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
       }
@@ -485,7 +439,7 @@ export function CloseSummaryScreen(taskId: any): any {
           ResetSpriteData();
           FreeAllSpritePalettes();
           StopCryAndClearCrySongs();
-          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
           if (gMonSpritesGfxPtr == NULL)
               DestroyMonSpritesGfxManager(MON_SPR_GFX_MANAGER_A);
           FreeSummaryScreen();
@@ -770,7 +724,7 @@ export function PssScrollRight(taskId: any): any {
           ShowBg(1);
           ShowBg(2);
       }
-      ChangeBgX(data[1], _0x2000, BG_COORD_ADD);
+      ChangeBgX(data[1], 0x2000, BG_COORD_ADD);
       data[0] += 32;
       if (data[0] > 0xFF)
           gTasks[taskId].func = PssScrollRightEnd;
@@ -798,9 +752,9 @@ export function PssScrollLeft(taskId: any): any {
               data[1] = 2;
           else
               data[1] = 1;
-          ChangeBgX(data[1], _0x10000, BG_COORD_SET);
+          ChangeBgX(data[1], 0x10000, BG_COORD_SET);
       }
-      ChangeBgX(data[1], _0x2000, BG_COORD_SUB);
+      ChangeBgX(data[1], 0x2000, BG_COORD_SUB);
       data[0] += 32;
       if (data[0] > 0xFF)
           gTasks[taskId].func = PssScrollLeftEnd;
@@ -824,7 +778,7 @@ export function PssScrollLeftEnd(taskId: any): any {
       if (sMonSummaryScreen.currPageIndex > 1)
       {
           SetBgTilemapBuffer(data[1], sMonSummaryScreen.bgTilemapBuffers[sMonSummaryScreen.currPageIndex - 1][0]);
-          ChangeBgX(data[1], _0x10000, BG_COORD_SET);
+          ChangeBgX(data[1], 0x10000, BG_COORD_SET);
       }
       ShowBg(1);
       ShowBg(2);
@@ -1309,10 +1263,10 @@ export function DrawPagination(): any {
 
           if (i < sMonSummaryScreen.minPageIndex)
           {
-              tilemap[j + 0] = _0x40;
-              tilemap[j + 1] = _0x40;
-              tilemap[j + 2 * PSS_PAGE_COUNT] = _0x50;
-              tilemap[j + 2 * PSS_PAGE_COUNT + 1] = _0x50;
+              tilemap[j + 0] = 0x40;
+              tilemap[j + 1] = 0x40;
+              tilemap[j + 2 * PSS_PAGE_COUNT] = 0x50;
+              tilemap[j + 2 * PSS_PAGE_COUNT + 1] = 0x50;
           }
           else if (i > sMonSummaryScreen.maxPageIndex)
           {
@@ -1323,19 +1277,19 @@ export function DrawPagination(): any {
           }
           else if (i < sMonSummaryScreen.currPageIndex)
           {
-              tilemap[j + 0] = _0x46;
-              tilemap[j + 1] = _0x47;
-              tilemap[j + 2 * PSS_PAGE_COUNT] = _0x56;
-              tilemap[j + 2 * PSS_PAGE_COUNT + 1] = _0x57;
+              tilemap[j + 0] = 0x46;
+              tilemap[j + 1] = 0x47;
+              tilemap[j + 2 * PSS_PAGE_COUNT] = 0x56;
+              tilemap[j + 2 * PSS_PAGE_COUNT + 1] = 0x57;
           }
           else if (i == sMonSummaryScreen.currPageIndex)
           {
               if (i != sMonSummaryScreen.maxPageIndex)
               {
-                  tilemap[j + 0] = _0x41;
-                  tilemap[j + 1] = _0x42;
-                  tilemap[j + 2 * PSS_PAGE_COUNT] = _0x51;
-                  tilemap[j + 2 * PSS_PAGE_COUNT + 1] = _0x52;
+                  tilemap[j + 0] = 0x41;
+                  tilemap[j + 1] = 0x42;
+                  tilemap[j + 2 * PSS_PAGE_COUNT] = 0x51;
+                  tilemap[j + 2 * PSS_PAGE_COUNT + 1] = 0x52;
               }
               else
               {
@@ -1347,17 +1301,17 @@ export function DrawPagination(): any {
           }
           else if (i != sMonSummaryScreen.maxPageIndex)
           {
-              tilemap[j + 0] = _0x43;
-              tilemap[j + 1] = _0x44;
-              tilemap[j + 2 * PSS_PAGE_COUNT] = _0x53;
-              tilemap[j + 2 * PSS_PAGE_COUNT + 1] = _0x54;
+              tilemap[j + 0] = 0x43;
+              tilemap[j + 1] = 0x44;
+              tilemap[j + 2 * PSS_PAGE_COUNT] = 0x53;
+              tilemap[j + 2 * PSS_PAGE_COUNT + 1] = 0x54;
           }
           else
           {
-              tilemap[j + 0] = _0x48;
-              tilemap[j + 1] = _0x49;
-              tilemap[j + 2 * PSS_PAGE_COUNT] = _0x58;
-              tilemap[j + 2 * PSS_PAGE_COUNT + 1] = _0x59;
+              tilemap[j + 0] = 0x48;
+              tilemap[j + 1] = 0x49;
+              tilemap[j + 2 * PSS_PAGE_COUNT] = 0x58;
+              tilemap[j + 2 * PSS_PAGE_COUNT + 1] = 0x59;
           }
       }
       CopyToBgTilemapBufferRect_ChangePalette(3, tilemap, 11, 0, PSS_PAGE_COUNT * 2, 2, 16);
@@ -1541,15 +1495,15 @@ export function Task_SlideStatusWindow(taskId: any): any {
 export function TilemapFiveMovesDisplay(dst: any, palette: any, remove: any): any {
   let i, id;
 
-      palette *= _0x1000;
+      palette *= 0x1000;
       id = 0x56A;
       if (!remove)
       {
           for (i = 0; i < 20; i++)
           {
               dst[id + i] = gSummaryScreen_MoveEffect_Cancel_Tilemap[i] + palette;
-              dst[id + i + _0x20] = gSummaryScreen_MoveEffect_Cancel_Tilemap[i] + palette;
-              dst[id + i + _0x40] = gSummaryScreen_MoveEffect_Cancel_Tilemap[i + 20] + palette;
+              dst[id + i + 0x20] = gSummaryScreen_MoveEffect_Cancel_Tilemap[i] + palette;
+              dst[id + i + 0x40] = gSummaryScreen_MoveEffect_Cancel_Tilemap[i + 20] + palette;
           }
       }
       else  
@@ -1557,8 +1511,8 @@ export function TilemapFiveMovesDisplay(dst: any, palette: any, remove: any): an
           for (i = 0; i < 20; i++)
           {
               dst[id + i] = gSummaryScreen_MoveEffect_Cancel_Tilemap[i + 20] + palette;
-              dst[id + i + _0x20] = gSummaryScreen_MoveEffect_Cancel_Tilemap[i + 40] + palette;
-              dst[id + i + _0x40] = gSummaryScreen_MoveEffect_Cancel_Tilemap[i + 40] + palette;
+              dst[id + i + 0x20] = gSummaryScreen_MoveEffect_Cancel_Tilemap[i + 40] + palette;
+              dst[id + i + 0x40] = gSummaryScreen_MoveEffect_Cancel_Tilemap[i + 40] + palette;
           }
       }
 }
@@ -1567,13 +1521,13 @@ export function TilemapFiveMovesDisplay(dst: any, palette: any, remove: any): an
 export function DrawPokerusCuredSymbol(mon: any): any {
   if (!CheckPartyPokerus(mon, 0) && CheckPartyHasHadPokerus(mon, 0))  
       {
-          sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_INFO][0][_0x223] = 0x2C;
-          sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_INFO][1][_0x223] = 0x2C;
+          sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_INFO][0][0x223] = 0x2C;
+          sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_INFO][1][0x223] = 0x2C;
       }
       else
       {
-          sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_INFO][0][_0x223] = 0x81A;
-          sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_INFO][1][_0x223] = 0x81A;
+          sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_INFO][0][0x223] = 0x81A;
+          sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_INFO][1][0x223] = 0x81A;
       }
       ScheduleBgCopyTilemapToVram(3);
 }
@@ -1611,13 +1565,13 @@ export function DrawExperienceProgressBar(unused: any): any {
           numExpProgressBarTicks = 0;
       }
 
-      dst =sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_SKILLS][1][_0x255];
+      dst =sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_SKILLS][1][0x255];
       for (i = 0; i < 8; i++)
       {
           if (numExpProgressBarTicks > 7)
               dst[i] = 0x206A;
           else
-              dst[i] = _0x2062 + (numExpProgressBarTicks % 8);
+              dst[i] = 0x2062 + (numExpProgressBarTicks % 8);
           numExpProgressBarTicks -= 8;
           if (numExpProgressBarTicks < 0)
               numExpProgressBarTicks = 0;
@@ -1657,9 +1611,9 @@ export function DrawContestMoveHearts(move: any): any {
           for (i = 0; i < MAX_CONTEST_MOVE_HEARTS; i++)
           {
               if (effectValue != 0xFF && i < effectValue)
-                  tilemap[(i / 4 * 32) + (i & 3) + _0x226] = TILE_FILLED_JAM_HEART;
+                  tilemap[(i / 4 * 32) + (i & 3) + 0x226] = TILE_FILLED_JAM_HEART;
               else
-                  tilemap[(i / 4 * 32) + (i & 3) + _0x226] = TILE_EMPTY_JAM_HEART;
+                  tilemap[(i / 4 * 32) + (i & 3) + 0x226] = TILE_EMPTY_JAM_HEART;
           }
       }
 }
@@ -1667,7 +1621,7 @@ export function DrawContestMoveHearts(move: any): any {
 /** static void LimitEggSummaryPageDisplay(void) */
 export function LimitEggSummaryPageDisplay(): any {
   if (sMonSummaryScreen.summary.isEgg)
-          ChangeBgX(3, _0x10000, BG_COORD_SET);
+          ChangeBgX(3, 0x10000, BG_COORD_SET);
       else
           ChangeBgX(3, 0, BG_COORD_SET);
 }

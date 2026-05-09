@@ -15,19 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CopyGlyphToWindow, CopyWindowToVram, DecompressGlyphTile, FillWindowPixelBuffer,
-  GenerateFontHalfRowLookupTable, IsSEPlaying, JOY_HELD, JOY_NEW,
-  PIXEL_FILL, ScrollWindow, TRUE, TextPrinterClearDownArrow,
-  TextPrinterInitDownArrowCounters, TextPrinterWait, TextPrinterWaitWithDownArrow,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u16 FontFunc_Braille(struct TextPrinter *textPrinter) */
 export function FontFunc_Braille(textPrinter: any): any {
   let char_: any = null;
@@ -140,7 +127,7 @@ export function FontFunc_Braille(textPrinter: any): any {
               TextPrinterInitDownArrowCounters(textPrinter);
               return RENDER_UPDATE;
           case CHAR_EXTRA_SYMBOL:
-              char_ = textPrinter.printerTemplate.currentChar++| _0x100;
+              char_ = textPrinter.printerTemplate.currentChar++| 0x100;
               break;
           case CHAR_KEYPAD_ICON:
               textPrinter.printerTemplate.currentChar++;
@@ -208,11 +195,11 @@ export function FontFunc_Braille(textPrinter: any): any {
 
 /** static void DecompressGlyph_Braille(u16 glyph) */
 export function DecompressGlyph_Braille(glyph: any): any {
-  let glyphs: any = sFont_Braille + _0x100 * (glyph / 8) + _0x10 * (glyph % 8);
+  let glyphs: any = sFont_Braille + 0x100 * (glyph / 8) + 0x10 * (glyph % 8);
       DecompressGlyphTile(glyphs, gCurGlyph.gfxBufferTop);
-      DecompressGlyphTile(glyphs + _0x8, gCurGlyph.gfxBufferTop + 8);
-      DecompressGlyphTile(glyphs + _0x80, gCurGlyph.gfxBufferBottom);
-      DecompressGlyphTile(glyphs + _0x88, gCurGlyph.gfxBufferBottom + 8);
+      DecompressGlyphTile(glyphs + 0x8, gCurGlyph.gfxBufferTop + 8);
+      DecompressGlyphTile(glyphs + 0x80, gCurGlyph.gfxBufferBottom);
+      DecompressGlyphTile(glyphs + 0x88, gCurGlyph.gfxBufferBottom + 8);
       gCurGlyph.width = 16;
       gCurGlyph.height = 16;
 }

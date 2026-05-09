@@ -15,23 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AnimTranslateLinear, AnimTravelDiagonally, BATTLE_PARTNER, CreateSprite,
-  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, FALSE,
-  FreeOamMatrix, GET_BATTLER_SIDE2, GetBattlerPosition, GetBattlerSide,
-  GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, InitAnimLinearTranslation,
-  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsContest, LoadPointerFromVars,
-  REG_OFFSET_BLDCNT, Random2, SetAnimSpriteInitialXOffset, SetGpuReg,
-  Sin, SpriteCallbackDummy, StartSpriteAffineAnim, StartSpriteAnim,
-  StorePointerInVars, StoreSpriteCallbackInData6, TRUE, UpdateAnimBg3ScreenSize,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimUnusedHumanoidFoot(struct Sprite *sprite) */
 export function AnimUnusedHumanoidFoot(sprite: any): any {
   SetAnimSpriteInitialXOffset(sprite, gBattleAnimArgs[0]);

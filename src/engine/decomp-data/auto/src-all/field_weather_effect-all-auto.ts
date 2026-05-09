@@ -15,28 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, ApplyWeatherColorMapIfIdle, ApplyWeatherColorMapIfIdle_Gradual, BLDALPHA_BLEND,
-  BLDCNT_EFFECT_LIGHTEN, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2, BLDCNT_TGT1_BG3,
-  BLDCNT_TGT1_OBJ, CalcCenterToCornerVec, CreateSprite, CreateSpriteAtEnd,
-  CreateTask, DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroySprite,
-  DestroyTask, DroughtStateInit, DroughtStateRun, FALSE,
-  FindTaskIdByFunc, FreeSpriteTilesByTag, FuncIsActiveTask, ISO_RANDOMIZE2,
-  IncrementGameStat, IsSEPlaying, LoadCustomWeatherSpritePalette, LoadDroughtWeatherPalettes,
-  LoadSpriteSheet, NULL, PlaySE, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_WININ, Random,
-  ResetDroughtWeatherPaletteLoading, SPRITE_SHAPE, SPRITE_SIZE, ST_OAM_AFFINE_OFF,
-  ScriptContext_Enable, SetCurrentAndNextWeather, SetGpuReg, SetNextWeather,
-  SetRainStrengthFromSoundEffect, SetSpritePosToMapCoords, StartSpriteAnim, TRUE,
-  Weather_SetBlendCoeffs, Weather_SetTargetBlendCoeffs, Weather_UpdateBlend, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void Clouds_InitVars(void) */
 export function Clouds_InitVars(): any {
   gWeatherPtr.targetColorMapIndex = 0;
@@ -681,8 +659,8 @@ export function UpdateSnowflakeSprite(sprite: any): any {
       sprite.x2 = gSineTable[sprite.tWaveIndex] / 64;
 
       x = (sprite.x + sprite.centerToCornerVecX + gSpriteCoordOffsetX) & 0x1FF;
-      if (x & _0x100)
-          x |= -_0x100;
+      if (x & 0x100)
+          x |= -0x100;
 
       if (x < -3)
           sprite.x = 242 - (gSpriteCoordOffsetX + sprite.centerToCornerVecX);
@@ -1388,8 +1366,8 @@ export function Sandstorm_InitVars(): any {
           gWeatherPtr.sandstormWaveIndex = 8;
           gWeatherPtr.sandstormWaveCounter = 0;
            
-          if (gWeatherPtr.sandstormWaveIndex >= _0x80 - MIN_SANDSTORM_WAVE_INDEX)
-              gWeatherPtr.sandstormWaveIndex = _0x80 - gWeatherPtr.sandstormWaveIndex;
+          if (gWeatherPtr.sandstormWaveIndex >= 0x80 - MIN_SANDSTORM_WAVE_INDEX)
+              gWeatherPtr.sandstormWaveIndex = 0x80 - gWeatherPtr.sandstormWaveIndex;
 
           Weather_SetBlendCoeffs(0, 16);
       }
@@ -1406,7 +1384,7 @@ export function Sandstorm_InitAll(): any {
 export function Sandstorm_Main(): any {
   UpdateSandstormMovement();
       UpdateSandstormWaveIndex();
-      if (gWeatherPtr.sandstormWaveIndex >= _0x80 - MIN_SANDSTORM_WAVE_INDEX)
+      if (gWeatherPtr.sandstormWaveIndex >= 0x80 - MIN_SANDSTORM_WAVE_INDEX)
           gWeatherPtr.sandstormWaveIndex = MIN_SANDSTORM_WAVE_INDEX;
 
       switch (gWeatherPtr.initStep)
@@ -1545,7 +1523,7 @@ export function CreateSwirlSandstormSprites(): any {
                   gWeatherPtr.sprites.s2.sandstormSprites2[i].tSpriteRow = i * 51;
                   gWeatherPtr.sprites.s2.sandstormSprites2[i].tRadius = 8;
                   gWeatherPtr.sprites.s2.sandstormSprites2[i].tRadiusCounter = 0;
-                  gWeatherPtr.sprites.s2.sandstormSprites2[i].data[4] = _0x6730;  
+                  gWeatherPtr.sprites.s2.sandstormSprites2[i].data[4] = 0x6730;  
                   gWeatherPtr.sprites.s2.sandstormSprites2[i].tEntranceDelay = sSwirlEntranceDelays[i];
                   StartSpriteAnim(gWeatherPtr.sprites.s2.sandstormSprites2[i], 1);
                   CalcCenterToCornerVec(gWeatherPtr.sprites.s2.sandstormSprites2[i], SPRITE_SHAPE(_32x32), SPRITE_SIZE(_32x32), ST_OAM_AFFINE_OFF);
@@ -1589,7 +1567,7 @@ export function UpdateSandstormSwirlSprite(sprite: any): any {
       }
 
       x = sprite.tRadius * gSineTable[sprite.tWaveIndex];
-      y = sprite.tRadius * gSineTable[sprite.tWaveIndex + _0x40];
+      y = sprite.tRadius * gSineTable[sprite.tWaveIndex + 0x40];
       sprite.x2 = x >> 8;
       sprite.y2 = y >> 8;
       sprite.tWaveIndex = (sprite.tWaveIndex + 10) & 0xFF;

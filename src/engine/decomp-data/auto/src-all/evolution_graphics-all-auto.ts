@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, BG_PLTT_ID, BeginNormalPaletteFade, Cos,
-  CpuCopy16, CpuSet, CreateSprite, CreateTask,
-  DISPLAY_WIDTH, DestroySprite, DestroyTask, FALSE,
-  LoadCompressedSpriteSheetUsingHeap, LoadSpritePalettes, OBJ_PLTT_ID, PLTT_SIZE_4BPP,
-  PlaySE, Random, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF,
-  SetOamMatrix, Sin, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void SetEvoSparklesMatrices(void) */
 export function SetEvoSparklesMatrices(): any {
   let i: any = null;
@@ -207,7 +192,7 @@ export function EvolutionSparkles_SpiralUpward(palNum: any): any {
 export function Task_Sparkles_SpiralUpward_Init(taskId: any): any {
   SetEvoSparklesMatrices();
       gTasks[taskId].tTimer = 0;
-      BeginNormalPaletteFade(3 << gTasks[taskId].tPalNum, 0xA, 0, _0x10, RGB_WHITE);
+      BeginNormalPaletteFade(3 << gTasks[taskId].tPalNum, 0xA, 0, 0x10, RGB_WHITE);
       gTasks[taskId].func = Task_Sparkles_SpiralUpward;
       PlaySE(SE_M_MEGA_KICK);
 }
@@ -329,7 +314,7 @@ export function Task_Sparkles_SprayAndFlash_Init(taskId: any): any {
   SetEvoSparklesMatrices();
       gTasks[taskId].tTimer = 0;
       CpuCopy16(gPlttBufferFaded[BG_PLTT_ID(2)],gPlttBufferUnfaded[BG_PLTT_ID(2)], 3 * PLTT_SIZE_4BPP);
-      BeginNormalPaletteFade(0xFFF9041C, 0, 0, _0x10, RGB_WHITE);  
+      BeginNormalPaletteFade(0xFFF9041C, 0, 0, 0x10, RGB_WHITE);  
       gTasks[taskId].func = Task_Sparkles_SprayAndFlash;
       PlaySE(SE_M_PETAL_DANCE);
 }
@@ -350,7 +335,7 @@ export function Task_Sparkles_SprayAndFlash(taskId: any): any {
                   CreateSparkle_Spray(i);
               break;
           case 32:
-              BeginNormalPaletteFade(0xFFFF041C, _0x10, _0x10, 0, RGB_WHITE);  
+              BeginNormalPaletteFade(0xFFFF041C, 0x10, 0x10, 0, RGB_WHITE);  
               break;
           }
           gTasks[taskId].tTimer++;
@@ -379,7 +364,7 @@ export function Task_Sparkles_SprayAndFlashTrade_Init(taskId: any): any {
   SetEvoSparklesMatrices();
       gTasks[taskId].tTimer = 0;
       CpuCopy16(gPlttBufferFaded[BG_PLTT_ID(2)],gPlttBufferUnfaded[BG_PLTT_ID(2)], 3 * PLTT_SIZE_4BPP);
-      BeginNormalPaletteFade(0xFFF90400, 0, 0, _0x10, RGB_WHITE);  
+      BeginNormalPaletteFade(0xFFF90400, 0, 0, 0x10, RGB_WHITE);  
       gTasks[taskId].func = Task_Sparkles_SprayAndFlashTrade;
       PlaySE(SE_M_PETAL_DANCE);
 }
@@ -400,7 +385,7 @@ export function Task_Sparkles_SprayAndFlashTrade(taskId: any): any {
                   CreateSparkle_Spray(i);
               break;
           case 32:
-              BeginNormalPaletteFade(0xFFFF0400, _0x10, _0x10, 0, RGB_WHITE);  
+              BeginNormalPaletteFade(0xFFFF0400, 0x10, 0x10, 0, RGB_WHITE);  
               break;
           }
           gTasks[taskId].tTimer++;

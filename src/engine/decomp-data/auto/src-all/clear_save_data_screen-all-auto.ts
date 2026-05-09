@@ -15,30 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, BG_PLTT_ID, BG_SCREEN_ADDR,
-  BeginNormalPaletteFade, ClearSaveData, CreateTask, CreateYesNoMenu,
-  DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters,
-  DestroyTask, DmaFill16, DmaFill32, DoSoftReset,
-  DrawStdFrameWithCustomTileAndPalette, EnableInterrupts, FALSE, FillWindowPixelBuffer,
-  FreeAllWindowBuffers, InitBgsFromTemplates, InitWindows, LoadPalette,
-  LoadWindowGfx, Menu_ProcessInputNoWrapClearOnChoose, NULL, PALETTES_BG,
-  PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP, PlaySE,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  RunTasks, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  ShowBg, TRUE, TransferPlttBuffer, UpdatePaletteFade,
-  VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CB2_InitClearSaveDataScreen(void) */
 export function CB2_InitClearSaveDataScreen(): any {
   if (SetupClearSaveDataScreen())
@@ -117,11 +93,11 @@ export function SetupClearSaveDataScreen(): any {
           gPlttBufferFaded[0] = RGB_WHITE;
           gPlttBufferUnfaded[1] = RGB(5, 10, 14);
           gPlttBufferFaded[1] = RGB(5, 10, 14);
-          for (i = 0; i < _0x10; i++)
-              ((VRAM + _0x20))[i] = _0x1111;
+          for (i = 0; i < 0x10; i++)
+              ((VRAM + 0x20))[i] = 0x1111;
 
-          for (i = 0; i < _0x400; i++)
-              ((BG_SCREEN_ADDR(30)))[i] = _0x0001;
+          for (i = 0; i < 0x400; i++)
+              ((BG_SCREEN_ADDR(30)))[i] = 0x0001;
           ResetTasks();
           ResetSpriteData();
           ResetBgsAndClearDma3BusyFlags(0);
@@ -131,7 +107,7 @@ export function SetupClearSaveDataScreen(): any {
           ShowBg(3);
           SetGpuReg(REG_OFFSET_BLDCNT, 0);
           InitClearSaveDataScreenWindows();
-          BeginNormalPaletteFade(PALETTES_BG, 0, _0x10, 0, RGB_WHITEALPHA);
+          BeginNormalPaletteFade(PALETTES_BG, 0, 0x10, 0, RGB_WHITEALPHA);
           EnableInterrupts(INTR_FLAG_VBLANK);
           SetVBlankCallback(VBlankCB);
           gMain.state = 1;
@@ -153,7 +129,7 @@ export function CB2_FadeAndDoReset(): any {
       {
       case 0:
       default:
-          BeginNormalPaletteFade(PALETTES_BG, 0, 0, _0x10, RGB_WHITEALPHA);
+          BeginNormalPaletteFade(PALETTES_BG, 0, 0, 0x10, RGB_WHITEALPHA);
           gMain.state = 1;
           break;
       case 1:

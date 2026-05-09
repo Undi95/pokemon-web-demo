@@ -15,32 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AnimateSprites,
-  BeginNormalPaletteFade, BuildOamBuffer, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent,
-  ConvertIntToDecimalStringN, CopyWindowToVram, CreateSpriteAtEnd, CreateTask,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DestroySprite,
-  DestroyTask, DisableResetRTC, DmaClear16, DmaFillLarge16,
-  DoScheduledBgTilemapCopiesToVram, DoSoftReset, DrawDialogFrameWithCustomTileAndPalette, DrawStdFrameWithCustomTileAndPalette,
-  FALSE, FreeAllWindowBuffers, FreeSpritePaletteByTag, InitBgsFromTemplates,
-  InitWindows, JOY_NEW, JOY_REPEAT, LoadMessageBoxAndBorderGfx,
-  LoadOam, LoadSpritePalette, NULL, PALETTES_ALL,
-  PLTT_SIZE, PlaySE, ProcessSpriteCopyRequests, REG_OFFSET_DISPCNT,
-  RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetOamRange, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, RtcCalcLocalTime, RtcCalcLocalTimeOffset,
-  RtcReset, RunTasks, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN,
-  ScanlineEffect_Clear, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, ShowBg, StringCopy,
-  TRUE, TransferPlttBuffer, TrySavingData, UpdatePaletteFade,
-  VRAM_SIZE, VarSet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void SpriteCB_Cursor_UpOrRight(struct Sprite *sprite) */
 export function SpriteCB_Cursor_UpOrRight(sprite: any): any {
   let state: any = gTasks[sprite.sTaskId].tSelection;
@@ -196,7 +170,7 @@ export function PrintTime(windowId: any, x: any, y: any, days: any, hours: any, 
 
 /** static void ShowChooseTimeWindow(u8 windowId, u16 days, u8 hours, u8 minutes, u8 seconds) */
 export function ShowChooseTimeWindow(windowId: any, days: any, hours: any, minutes: any, seconds: any): any {
-  DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, _0x214, 0xE);
+  DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, 0x214, 0xE);
       PrintTime(windowId, 0, 1, days, hours, minutes, seconds);
       AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_Confirm2, 126, 1, 0, NULL);
       ScheduleBgCopyTilemapToVram(0);
@@ -327,7 +301,7 @@ export function CB2_InitResetRtcScreen(): any {
   SetGpuReg(REG_OFFSET_DISPCNT, 0);
       SetVBlankCallback(NULL);
       DmaClear16(3, PLTT, PLTT_SIZE);
-      DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, _0x1000);
+      DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, 0x1000);
       ResetOamRange(0, 128);
       LoadOam();
       ScanlineEffect_Stop();
@@ -372,7 +346,7 @@ export function VBlankCB(): any {
 
 /** static void ShowMessage(const u8 *str) */
 export function ShowMessage(str: any): any {
-  DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, _0x200, 0xF);
+  DrawDialogFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 0x200, 0xF);
       AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, str, 0, 1, 0, NULL);
       ScheduleBgCopyTilemapToVram(0);
 }
@@ -384,7 +358,7 @@ export function Task_ShowResetRtcPrompt(taskId: any): any {
       switch (tState)
       {
       case 0:
-          DrawStdFrameWithCustomTileAndPalette(WIN_TIME, FALSE, _0x214, 0xE);
+          DrawStdFrameWithCustomTileAndPalette(WIN_TIME, FALSE, 0x214, 0xE);
 
           AddTextPrinterParameterized(WIN_TIME, FONT_NORMAL, gText_PresentTime, 0, 1, TEXT_SKIP_DRAW, 0);
           PrintTime(
@@ -434,7 +408,7 @@ export function Task_ResetRtcScreen(taskId: any): any {
       switch (tState)
       {
       case MAINSTATE_FADE_IN:
-          BeginNormalPaletteFade(PALETTES_ALL, 1, _0x10, 0, RGB_WHITEALPHA);
+          BeginNormalPaletteFade(PALETTES_ALL, 1, 0x10, 0, RGB_WHITEALPHA);
           tState = MAINSTATE_CHECK_SAVE;
           break;
       case MAINSTATE_CHECK_SAVE:
@@ -508,7 +482,7 @@ export function Task_ResetRtcScreen(taskId: any): any {
       case MAINSTATE_WAIT_EXIT:
           if (JOY_NEW(A_BUTTON))
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 1, 0, _0x10, RGB_WHITEALPHA);
+              BeginNormalPaletteFade(PALETTES_ALL, 1, 0, 0x10, RGB_WHITEALPHA);
               tState = MAINSTATE_EXIT;
                
           }

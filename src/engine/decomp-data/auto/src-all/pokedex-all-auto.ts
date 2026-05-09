@@ -15,52 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized4, AllocZeroed, AnimateSprites,
-  BGCNT_16COLOR, BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE,
-  BGCNT_TXT256x256, BG_PLTT_ID, BG_SCREEN_SIZE, BeginNormalPaletteFade,
-  BlitBitmapToWindow, BuildOamBuffer, ClearGpuRegBits, ConvertIntToDecimalStringN,
-  CopyBgTilemapBufferToVram, CopyMonCategoryText, CopyToBgTilemapBuffer, CopyToWindowPixelBuffer,
-  CopyWindowToVram, CreateMonPicSprite_HandleDeoxys, CreateSprite, CreateTask,
-  CreateTrainerPicSprite, CryScreenPlayButton, DISPCNT_BG0_ON, DISPCNT_BG1_ON,
-  DISPCNT_BG2_ON, DISPCNT_BG3_ON, DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH, DeactivateAllTextPrinters,
-  DecompressAndLoadBgGfxUsingHeap, DestroySprite, DestroyTask, DisableNationalPokedex,
-  DmaClear16, DmaClear32, DmaFillLarge16, EnableInterrupts,
-  FALSE, FillWindowPixelBuffer, FillWindowPixelRect, Free,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeAndDestroyMonPicSprite, FreeAndDestroyTrainerPicSprite,
-  FreeCryScreen, GetBgTilemapBuffer, GetMonSpritePalFromSpeciesAndPersonality, GetOverworldTextboxPalettePtr,
-  GetStringCenterAlignXOffset, HideBg, HoennToNationalOrder, InitBgsFromTemplates,
-  InitWindows, IsCryPlaying, IsCryPlayingOrClearCrySongs, IsNationalPokedexEnabled,
-  IsSEPlaying, JOY_HELD, JOY_NEW, JOY_REPEAT,
-  LETTER_IN_RANGE_LOWER, LETTER_IN_RANGE_UPPER, LoadCompressedPalette, LoadCompressedSpriteSheet,
-  LoadCryMeter, LoadCryWaveformWindow, LoadOam, LoadPalette,
-  LoadSpritePalettes, NULL, NationalPokedexNumToSpecies, NationalToHoennOrder,
-  OBJ_PLTT_ID, OBJ_PLTT_ID2, PALETTES_ALL, PALETTES_BG,
-  PIXEL_FILL, PLTT_SIZE, PLTT_SIZEOF, PLTT_SIZE_4BPP,
-  PlayCry_Normal, PlayCry_NormalNoDucking, PlaySE, PlayerGenderToFrontTrainerPicId,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS,
-  REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RunTasks, SAFE_DIV, STR_CONV_MODE_LEADING_ZEROS,
-  ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF, ScanlineEffect_Stop, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetOamMatrix, SetVBlankCallback,
-  ShowBg, ShowPokedexAreaScreen, StartSpriteAnim, StopCryAndClearCrySongs,
-  StringAppend, StringCopy, StringLength, TRUE,
-  TransferPlttBuffer, UpdateCryWaveformWindow, UpdatePaletteFade, VRAM_SIZE,
-  gSineTable, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ResetPokedex(void) */
 export function ResetPokedex(): any {
   let i: any = null;
@@ -157,7 +111,7 @@ export function CB2_OpenPokedex(): any {
       default:
           SetVBlankCallback(NULL);
           ResetOtherVideoRegisters(0);
-          DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, _0x1000);
+          DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, 0x1000);
           DmaClear32(3, OAM, OAM_SIZE);
           DmaClear16(3, PLTT, PLTT_SIZE);
           gMain.state = 1;
@@ -201,7 +155,7 @@ export function CB2_OpenPokedex(): any {
           SetVBlankCallback(VBlankCB_Pokedex);
           SetMainCallback2(CB2_Pokedex);
           CreatePokedexList(sPokedexView.dexMode, sPokedexView.dexOrder);
-          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x80);
+          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x80);
           break;
       }
 }
@@ -234,7 +188,7 @@ export function Task_HandlePokedexInput(taskId: any): any {
           if (JOY_NEW(A_BUTTON) && sPokedexView.pokedexList[sPokedexView.selectedPokemon].seen)
           {
               UpdateSelectedMonSpriteId();
-              BeginNormalPaletteFade(~(1 << (gSprites[sPokedexView.selectedMonSpriteId].oam.paletteNum + 16)), 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(~(1 << (gSprites[sPokedexView.selectedMonSpriteId].oam.paletteNum + 16)), 0, 0, 0x10, RGB_BLACK);
               gSprites[sPokedexView.selectedMonSpriteId].callback = SpriteCB_MoveMonForInfoScreen;
               gTasks[taskId].func = Task_OpenInfoScreenAfterMonMovement;
               PlaySE(SE_PIN);
@@ -251,7 +205,7 @@ export function Task_HandlePokedexInput(taskId: any): any {
           else if (JOY_NEW(SELECT_BUTTON))
           {
               PlaySE(SE_SELECT);
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].tLoadScreenTaskId = LoadSearchMenu();
               sPokedexView.screenSwitchState = 0;
               sPokedexView.pokeBallRotationBackup = sPokedexView.pokeBallRotation;
@@ -264,7 +218,7 @@ export function Task_HandlePokedexInput(taskId: any): any {
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].func = Task_ClosePokedex;
               PlaySE(SE_PC_OFF);
           }
@@ -318,7 +272,7 @@ export function Task_HandlePokedexStartMenuInput(taskId: any): any {
                   gMain.newKeys |= START_BUTTON;   
                   break;
               case 3:  
-                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
                   gTasks[taskId].func = Task_ClosePokedex;
                   PlaySE(SE_PC_OFF);
                   break;
@@ -411,7 +365,7 @@ export function Task_ClosePokedex(taskId: any): any {
           FreeWindowAndBgBuffers();
           DestroyTask(taskId);
           SetMainCallback2(CB2_ReturnToFieldWithOpenMenu);
-          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
           Free(sPokedexView);
       }
 }
@@ -440,7 +394,7 @@ export function Task_HandleSearchResultsInput(taskId: any): any {
               UpdateSelectedMonSpriteId();
               a = (1 << (gSprites[sPokedexView.selectedMonSpriteId].oam.paletteNum + 16));
               gSprites[sPokedexView.selectedMonSpriteId].callback = SpriteCB_MoveMonForInfoScreen;
-              BeginNormalPaletteFade(~a, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(~a, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].func = Task_OpenSearchResultsInfoScreenAfterMonMovement;
               PlaySE(SE_PIN);
               FreeWindowAndBgBuffers();
@@ -455,7 +409,7 @@ export function Task_HandleSearchResultsInput(taskId: any): any {
           }
           else if (JOY_NEW(SELECT_BUTTON))
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].tLoadScreenTaskId = LoadSearchMenu();
               sPokedexView.screenSwitchState = 0;
               gTasks[taskId].func = Task_WaitForExitSearch;
@@ -464,7 +418,7 @@ export function Task_HandleSearchResultsInput(taskId: any): any {
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].func = Task_ReturnToPokedexFromSearchResults;
               PlaySE(SE_PC_OFF);
           }
@@ -517,12 +471,12 @@ export function Task_HandleSearchResultsStartMenuInput(taskId: any): any {
                   gMain.newKeys |= START_BUTTON;
                   break;
               case 3:  
-                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
                   gTasks[taskId].func = Task_ReturnToPokedexFromSearchResults;
                   PlaySE(SE_TRUCK_DOOR);
                   break;
               case 4:  
-                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
                   gTasks[taskId].func = Task_ClosePokedexFromSearchResultsStartMenu;
                   PlaySE(SE_PC_OFF);
                   break;
@@ -623,13 +577,13 @@ export function LoadPokedexListPage(page: any): any {
           SetBgTilemapBuffer(2, AllocZeroed(BG_SCREEN_SIZE));
           SetBgTilemapBuffer(1, AllocZeroed(BG_SCREEN_SIZE));
           SetBgTilemapBuffer(0, AllocZeroed(BG_SCREEN_SIZE));
-          DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx, _0x2000, 0, 0);
+          DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx, 0x2000, 0, 0);
           CopyToBgTilemapBuffer(1, gPokedexList_Tilemap, 0, 0);
           CopyToBgTilemapBuffer(3, gPokedexListUnderlay_Tilemap, 0, 0);
           if (page == PAGE_MAIN)
-              CopyToBgTilemapBuffer(0, gPokedexStartMenuMain_Tilemap, 0, _0x280);
+              CopyToBgTilemapBuffer(0, gPokedexStartMenuMain_Tilemap, 0, 0x280);
           else
-              CopyToBgTilemapBuffer(0, gPokedexStartMenuSearchResults_Tilemap, 0, _0x280);
+              CopyToBgTilemapBuffer(0, gPokedexStartMenuSearchResults_Tilemap, 0, 0x280);
           ResetPaletteFade();
           if (page == PAGE_MAIN)
               sPokedexView.isSearchResults = FALSE;
@@ -667,7 +621,7 @@ export function LoadPokedexListPage(page: any): any {
           gMain.state++;
           break;
       case 4:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           SetVBlankCallback(VBlankCB_Pokedex);
           gMain.state++;
           break;
@@ -904,15 +858,15 @@ export function CreateMonListEntry(position: any, b: any, ignored: any): any {
                   ClearMonListEntry(17, i * 2, ignored);
                   if (sPokedexView.pokedexList[entryNum].seen)
                   {
-                      CreateMonDexNum(entryNum, _0x12, i * 2, ignored);
-                      CreateCaughtBall(sPokedexView.pokedexList[entryNum].owned, _0x11, i * 2, ignored);
-                      CreateMonName(sPokedexView.pokedexList[entryNum].dexNum, _0x16, i * 2);
+                      CreateMonDexNum(entryNum, 0x12, i * 2, ignored);
+                      CreateCaughtBall(sPokedexView.pokedexList[entryNum].owned, 0x11, i * 2, ignored);
+                      CreateMonName(sPokedexView.pokedexList[entryNum].dexNum, 0x16, i * 2);
                   }
                   else
                   {
-                      CreateMonDexNum(entryNum, _0x12, i * 2, ignored);
-                      CreateCaughtBall(FALSE, _0x11, i * 2, ignored);
-                      CreateMonName(0, _0x16, i * 2);
+                      CreateMonDexNum(entryNum, 0x12, i * 2, ignored);
+                      CreateCaughtBall(FALSE, 0x11, i * 2, ignored);
+                      CreateMonName(0, 0x16, i * 2);
                   }
               }
               entryNum++;
@@ -930,14 +884,14 @@ export function CreateMonListEntry(position: any, b: any, ignored: any): any {
               if (sPokedexView.pokedexList[entryNum].seen)
               {
                   CreateMonDexNum(entryNum, 18, sPokedexView.listVOffset * 2, ignored);
-                  CreateCaughtBall(sPokedexView.pokedexList[entryNum].owned, _0x11, sPokedexView.listVOffset * 2, ignored);
-                  CreateMonName(sPokedexView.pokedexList[entryNum].dexNum, _0x16, sPokedexView.listVOffset * 2);
+                  CreateCaughtBall(sPokedexView.pokedexList[entryNum].owned, 0x11, sPokedexView.listVOffset * 2, ignored);
+                  CreateMonName(sPokedexView.pokedexList[entryNum].dexNum, 0x16, sPokedexView.listVOffset * 2);
               }
               else
               {
                   CreateMonDexNum(entryNum, 18, sPokedexView.listVOffset * 2, ignored);
                   CreateCaughtBall(FALSE, 17, sPokedexView.listVOffset * 2, ignored);
-                  CreateMonName(0, _0x16, sPokedexView.listVOffset * 2);
+                  CreateMonName(0, 0x16, sPokedexView.listVOffset * 2);
               }
           }
           break;
@@ -956,14 +910,14 @@ export function CreateMonListEntry(position: any, b: any, ignored: any): any {
               if (sPokedexView.pokedexList[entryNum].seen)
               {
                   CreateMonDexNum(entryNum, 18, vOffset * 2, ignored);
-                  CreateCaughtBall(sPokedexView.pokedexList[entryNum].owned, _0x11, vOffset * 2, ignored);
-                  CreateMonName(sPokedexView.pokedexList[entryNum].dexNum, _0x16, vOffset * 2);
+                  CreateCaughtBall(sPokedexView.pokedexList[entryNum].owned, 0x11, vOffset * 2, ignored);
+                  CreateMonName(sPokedexView.pokedexList[entryNum].dexNum, 0x16, vOffset * 2);
               }
               else
               {
                   CreateMonDexNum(entryNum, 18, vOffset * 2, ignored);
-                  CreateCaughtBall(FALSE, _0x11, vOffset * 2, ignored);
-                  CreateMonName(0, _0x16, vOffset * 2);
+                  CreateCaughtBall(FALSE, 0x11, vOffset * 2, ignored);
+                  CreateMonName(0, 0x16, vOffset * 2);
               }
           }
           break;
@@ -1009,7 +963,7 @@ export function CreateMonName(num: any, left: any, top: any): any {
 
 /** static void ClearMonListEntry(u8 x, u8 y, u16 unused) */
 export function ClearMonListEntry(x: any, y: any, unused: any): any {
-  FillWindowPixelRect(0, PIXEL_FILL(0), x * 8, y * 8, _0x60, 16);
+  FillWindowPixelRect(0, PIXEL_FILL(0), x * 8, y * 8, 0x60, 16);
 }
 
 /** static void CreateMonSpritesAtPos(u16 selectedMon, u16 ignored) */
@@ -1028,7 +982,7 @@ export function CreateMonSpritesAtPos(selectedMon: any, ignored: any): any {
       dexNum = GetPokemonSpriteToDisplay(selectedMon - 1);
       if (dexNum != 0xFFFF)
       {
-          spriteId = CreatePokedexMonSprite(dexNum, _0x60, _0x50);
+          spriteId = CreatePokedexMonSprite(dexNum, 0x60, 0x50);
           gSprites[spriteId].callback = SpriteCB_PokedexListMonSprite;
           gSprites[spriteId].data[5] = -32;
       }
@@ -1037,7 +991,7 @@ export function CreateMonSpritesAtPos(selectedMon: any, ignored: any): any {
       dexNum = GetPokemonSpriteToDisplay(selectedMon);
       if (dexNum != 0xFFFF)
       {
-          spriteId = CreatePokedexMonSprite(dexNum, _0x60, _0x50);
+          spriteId = CreatePokedexMonSprite(dexNum, 0x60, 0x50);
           gSprites[spriteId].callback = SpriteCB_PokedexListMonSprite;
           gSprites[spriteId].data[5] = 0;
       }
@@ -1046,7 +1000,7 @@ export function CreateMonSpritesAtPos(selectedMon: any, ignored: any): any {
       dexNum = GetPokemonSpriteToDisplay(selectedMon + 1);
       if (dexNum != 0xFFFF)
       {
-          spriteId = CreatePokedexMonSprite(dexNum, _0x60, _0x50);
+          spriteId = CreatePokedexMonSprite(dexNum, 0x60, 0x50);
           gSprites[spriteId].callback = SpriteCB_PokedexListMonSprite;
           gSprites[spriteId].data[5] = 32;
       }
@@ -1112,7 +1066,7 @@ export function CreateScrollingPokemonSprite(direction: any, selectedMon: any): 
           dexNum = GetPokemonSpriteToDisplay(selectedMon - 1);
           if (dexNum != 0xFFFF)
           {
-              spriteId = CreatePokedexMonSprite(dexNum, _0x60, _0x50);
+              spriteId = CreatePokedexMonSprite(dexNum, 0x60, 0x50);
               gSprites[spriteId].callback = SpriteCB_PokedexListMonSprite;
               gSprites[spriteId].data[5] = -64;
           }
@@ -1125,7 +1079,7 @@ export function CreateScrollingPokemonSprite(direction: any, selectedMon: any): 
           dexNum = GetPokemonSpriteToDisplay(selectedMon + 1);
           if (dexNum != 0xFFFF)
           {
-              spriteId = CreatePokedexMonSprite(dexNum, _0x60, _0x50);
+              spriteId = CreatePokedexMonSprite(dexNum, 0x60, 0x50);
               gSprites[spriteId].callback = SpriteCB_PokedexListMonSprite;
               gSprites[spriteId].data[5] = 64;
           }
@@ -1342,7 +1296,7 @@ export function CreateInterfaceSprites(page: any): any {
        
       spriteId = CreateSprite(sInterfaceTextSpriteTemplate, 16, DISPLAY_HEIGHT - 16, 0);
       StartSpriteAnim(gSprites[spriteId], 2);
-      gSprites[spriteId].data[2] = _0x80;
+      gSprites[spriteId].data[2] = 0x80;
        
       spriteId = CreateSprite(sInterfaceTextSpriteTemplate, 48, DISPLAY_HEIGHT - 16, 0);
       StartSpriteAnim(gSprites[spriteId], 1);
@@ -1593,10 +1547,10 @@ export function SpriteCB_PokedexListMonSprite(sprite: any): any {
       {
           let _var: any = null;
           sprite.y2 = gSineTable[sprite.data[5]] * 76 / 256;
-          _var = SAFE_DIV(_0x10000, gSineTable[sprite.data[5] + 64]);
+          _var = SAFE_DIV(0x10000, gSineTable[sprite.data[5] + 64]);
           if (_var > 0xFFFF)
               _var = 0xFFFF;
-          SetOamMatrix(sprite.data[1] + 1, _0x100, 0, 0, _var);
+          SetOamMatrix(sprite.data[1] + 1, 0x100, 0, 0, _var);
           sprite.oam.matrixNum = monId + 1;
 
           if (sprite.data[5] > -64 && sprite.data[5] < 64)
@@ -1790,7 +1744,7 @@ export function Task_LoadInfoScreen(taskId: any): any {
           }
           break;
       case 1:
-          DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx, _0x2000, 0, 0);
+          DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx, 0x2000, 0, 0);
           CopyToBgTilemapBuffer(3, gPokedexInfoScreen_Tilemap, 0, 0);
           FillWindowPixelBuffer(WIN_INFO, PIXEL_FILL(0));
           PutWindowTilemap(WIN_INFO);
@@ -1831,7 +1785,7 @@ export function Task_LoadInfoScreen(taskId: any): any {
               let preservedPalettes: any = 0;
 
               if (gTasks[taskId].tBgLoaded)
-                  preservedPalettes = _0x14;  
+                  preservedPalettes = 0x14;  
               if (gTasks[taskId].tMonSpriteDone)
                   preservedPalettes |= (1 << (gSprites[gTasks[taskId].tMonSpriteId].oam.paletteNum + 16));
               BeginNormalPaletteFade(~preservedPalettes, 0, 16, 0, RGB_BLACK);
@@ -1921,13 +1875,13 @@ export function Task_HandleInfoScreenInput(taskId: any): any {
           switch (sPokedexView.selectedScreen)
           {
           case AREA_SCREEN:
-              BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 16, RGB_BLACK);
               sPokedexView.screenSwitchState = 1;
               gTasks[taskId].func = Task_SwitchScreensFromInfoScreen;
               PlaySE(SE_PIN);
               break;
           case CRY_SCREEN:
-              BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 0x10, RGB_BLACK);
               sPokedexView.screenSwitchState = 2;
               gTasks[taskId].func = Task_SwitchScreensFromInfoScreen;
               PlaySE(SE_PIN);
@@ -1939,14 +1893,14 @@ export function Task_HandleInfoScreenInput(taskId: any): any {
               }
               else
               {
-                  BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, 0, _0x10, RGB_BLACK);
+                  BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 0x10, RGB_BLACK);
                   sPokedexView.screenSwitchState = 3;
                   gTasks[taskId].func = Task_SwitchScreensFromInfoScreen;
                   PlaySE(SE_PIN);
               }
               break;
           case CANCEL_SCREEN:
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].func = Task_ExitInfoScreen;
               PlaySE(SE_PC_OFF);
               break;
@@ -2087,7 +2041,7 @@ export function Task_LoadCryScreen(taskId: any): any {
           }
           break;
       case 1:
-          DecompressAndLoadBgGfxUsingHeap(3,gPokedexMenu_Gfx, _0x2000, 0, 0);
+          DecompressAndLoadBgGfxUsingHeap(3,gPokedexMenu_Gfx, 0x2000, 0, 0);
           CopyToBgTilemapBuffer(3,gPokedexCryScreen_Tilemap, 0, 0);
           FillWindowPixelBuffer(WIN_INFO, PIXEL_FILL(0));
           PutWindowTilemap(WIN_INFO);
@@ -2120,7 +2074,7 @@ export function Task_LoadCryScreen(taskId: any): any {
           {
               let waveformWindow: any = null;
 
-              waveformWindow.unk0 = _0x4020;
+              waveformWindow.unk0 = 0x4020;
               waveformWindow.unk2 = 31;
               waveformWindow.paletteNo = 8;
               waveformWindow.yPos = 30;
@@ -2150,7 +2104,7 @@ export function Task_LoadCryScreen(taskId: any): any {
           }
           break;
       case 8:
-          BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0x10, 0, RGB_BLACK);
           SetVBlankCallback(gPokedexVBlankCB);
           gMain.state++;
           break;
@@ -2192,7 +2146,7 @@ export function Task_HandleCryScreenInput(taskId: any): any {
       {
           if (JOY_NEW(B_BUTTON))
           {
-              BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 0x10, RGB_BLACK);
               m4aMPlayContinue(gMPlayInfo_BGM);
               sPokedexView.screenSwitchState = 1;
               gTasks[taskId].func = Task_SwitchScreensFromCryScreen;
@@ -2202,7 +2156,7 @@ export function Task_HandleCryScreenInput(taskId: any): any {
           if (JOY_NEW(DPAD_LEFT)
            || (JOY_NEW(L_BUTTON) && gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_LR))
           {
-              BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 0x10, RGB_BLACK);
               m4aMPlayContinue(gMPlayInfo_BGM);
               sPokedexView.screenSwitchState = 2;
               gTasks[taskId].func = Task_SwitchScreensFromCryScreen;
@@ -2218,7 +2172,7 @@ export function Task_HandleCryScreenInput(taskId: any): any {
               }
               else
               {
-                  BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, 0, _0x10, RGB_BLACK);
+                  BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 0x10, RGB_BLACK);
                   m4aMPlayContinue(gMPlayInfo_BGM);
                   sPokedexView.screenSwitchState = 3;
                   gTasks[taskId].func = Task_SwitchScreensFromCryScreen;
@@ -2281,7 +2235,7 @@ export function Task_LoadSizeScreen(taskId: any): any {
           }
           break;
       case 1:
-          DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx, _0x2000, 0, 0);
+          DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx, 0x2000, 0, 0);
           CopyToBgTilemapBuffer(3, gPokedexSizeScreen_Tilemap, 0, 0);
           FillWindowPixelBuffer(WIN_INFO, PIXEL_FILL(0));
           PutWindowTilemap(WIN_INFO);
@@ -2334,7 +2288,7 @@ export function Task_LoadSizeScreen(taskId: any): any {
           gMain.state++;
           break;
       case 7:
-          BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0x10, 0, RGB_BLACK);
           SetVBlankCallback(gPokedexVBlankCB);
           gMain.state++;
           break;
@@ -2364,7 +2318,7 @@ export function Task_LoadSizeScreen(taskId: any): any {
 export function Task_HandleSizeScreenInput(taskId: any): any {
   if (JOY_NEW(B_BUTTON))
       {
-          BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 0x10, RGB_BLACK);
           sPokedexView.screenSwitchState = 1;
           gTasks[taskId].func = Task_SwitchScreensFromSizeScreen;
           PlaySE(SE_PC_OFF);
@@ -2372,7 +2326,7 @@ export function Task_HandleSizeScreenInput(taskId: any): any {
       else if (JOY_NEW(DPAD_LEFT)
        || (JOY_NEW(L_BUTTON) && gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_LR))
       {
-          BeginNormalPaletteFade(PALETTES_ALL & ~(_0x14), 0, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 0x10, RGB_BLACK);
           sPokedexView.screenSwitchState = 2;
           gTasks[taskId].func = Task_SwitchScreensFromSizeScreen;
           PlaySE(SE_DEX_PAGE);
@@ -2421,15 +2375,15 @@ export function HighlightScreenSelectBarItem(selectedScreen: any, unused: any): 
 
           do
           {
-              newPalette = _0x4000;
+              newPalette = 0x4000;
               if (i == selectedScreen)
-                  newPalette = _0x2000;
+                  newPalette = 0x2000;
           } while (0);
 
           for (j = 0; j < 7; j++)
           {
-              ptr[row + j] = (ptr[row + j] % _0x1000) | newPalette;
-              ptr[row + j + _0x20] = (ptr[row + j + _0x20] % _0x1000) | newPalette;
+              ptr[row + j] = (ptr[row + j] % 0x1000) | newPalette;
+              ptr[row + j + 0x20] = (ptr[row + j + 0x20] % 0x1000) | newPalette;
           }
       }
       CopyBgTilemapBufferToVram(1);
@@ -2449,15 +2403,15 @@ export function HighlightSubmenuScreenSelectBarItem(a: any, b: any): any {
           do
           {
               if (i == a || i == 3)
-                  newPalette = _0x2000;
+                  newPalette = 0x2000;
               else
-                  newPalette = _0x4000;
+                  newPalette = 0x4000;
           } while (0);
 
           for (j = 0; j < 7; j++)
           {
-              ptr[row + j] = (ptr[row + j] % _0x1000) | newPalette;
-              ptr[row + j + _0x20] = (ptr[row + j + _0x20] % _0x1000) | newPalette;
+              ptr[row + j] = (ptr[row + j] % 0x1000) | newPalette;
+              ptr[row + j + 0x20] = (ptr[row + j + 0x20] % 0x1000) | newPalette;
           }
       }
       CopyBgTilemapBufferToVram(1);
@@ -2500,7 +2454,7 @@ export function Task_DisplayCaughtMonDexPage(taskId: any): any {
           }
           break;
       case 1:
-          DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx, _0x2000, 0, 0);
+          DecompressAndLoadBgGfxUsingHeap(3, gPokedexMenu_Gfx, 0x2000, 0, 0);
           CopyToBgTilemapBuffer(3, gPokedexInfoScreen_Tilemap, 0, 0);
           FillWindowPixelBuffer(WIN_INFO, PIXEL_FILL(0));
           PutWindowTilemap(WIN_INFO);
@@ -2524,7 +2478,7 @@ export function Task_DisplayCaughtMonDexPage(taskId: any): any {
       case 4:
           spriteId = CreateMonSpriteFromNationalDexNumber(dexNum, MON_PAGE_X, MON_PAGE_Y, 0);
           gSprites[spriteId].oam.priority = 0;
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           SetVBlankCallback(gPokedexVBlankCB);
           gTasks[taskId].tMonSpriteId = spriteId;
           gTasks[taskId].tState++;
@@ -2627,13 +2581,13 @@ export function PrintMonInfo(num: any, value: any, owned: any, newEntry: any): a
       else
           value = num;
       ConvertIntToDecimalStringN(StringCopy(str, gText_NumberClear01), value, STR_CONV_MODE_LEADING_ZEROS, 3);
-      PrintInfoScreenText(str, _0x60, _0x19);
+      PrintInfoScreenText(str, 0x60, 0x19);
       natNum = NationalPokedexNumToSpecies(num);
       if (natNum)
           name = gSpeciesNames[natNum];
       else
           name = sText_TenDashes2;
-      PrintInfoScreenText(name, _0x84, _0x19);
+      PrintInfoScreenText(name, 0x84, 0x19);
       if (owned)
       {
           CopyMonCategoryText(num, str2);
@@ -2643,18 +2597,18 @@ export function PrintMonInfo(num: any, value: any, owned: any, newEntry: any): a
       {
           category = gText_5MarksPokemon;
       }
-      PrintInfoScreenText(category, _0x64, _0x29);
-      PrintInfoScreenText(gText_HTHeight, _0x60, _0x39);
-      PrintInfoScreenText(gText_WTWeight, _0x60, _0x49);
+      PrintInfoScreenText(category, 0x64, 0x29);
+      PrintInfoScreenText(gText_HTHeight, 0x60, 0x39);
+      PrintInfoScreenText(gText_WTWeight, 0x60, 0x49);
       if (owned)
       {
-          PrintMonHeight(gPokedexEntries[num].height, _0x90, _0x39);  
-          PrintMonWeight(gPokedexEntries[num].weight, _0x90, _0x49);  
+          PrintMonHeight(gPokedexEntries[num].height, 0x90, 0x39);  
+          PrintMonWeight(gPokedexEntries[num].weight, 0x90, 0x49);  
       }
       else
       {
-          PrintInfoScreenText(gText_UnkHeight, _0x90, _0x39);  
-          PrintInfoScreenText(gText_UnkWeight, _0x90, _0x49);  
+          PrintInfoScreenText(gText_UnkHeight, 0x90, 0x39);  
+          PrintInfoScreenText(gText_UnkWeight, 0x90, 0x49);  
       }
       if (owned)
           description = gPokedexEntries[num].description;
@@ -3211,7 +3165,7 @@ export function Task_LoadSearchMenu(taskId: any): any {
               InitWindows(sSearchMenu_WindowTemplate);
               DeactivateAllTextPrinters();
               PutWindowTilemap(0);
-              DecompressAndLoadBgGfxUsingHeap(3, gPokedexSearchMenu_Gfx, _0x2000, 0, 0);
+              DecompressAndLoadBgGfxUsingHeap(3, gPokedexSearchMenu_Gfx, 0x2000, 0, 0);
 
               if (!IsNationalPokedexEnabled())
                   CopyToBgTilemapBuffer(3, gPokedexSearchMenuHoenn_Tilemap, 0, 0);
@@ -3762,24 +3716,24 @@ export function PrintSelectedSearchParameters(taskId: any): any {
       ClearSearchMenuRect(40, 16, 96, 80);
 
       searchParamId = gTasks[taskId].tCursorPos_Name + gTasks[taskId].tScrollOffset_Name;
-      PrintSearchText(sDexSearchNameOptions[searchParamId].title, 0x2D, _0x11);
+      PrintSearchText(sDexSearchNameOptions[searchParamId].title, 0x2D, 0x11);
 
       searchParamId = gTasks[taskId].tCursorPos_Color + gTasks[taskId].tScrollOffset_Color;
-      PrintSearchText(sDexSearchColorOptions[searchParamId].title, 0x2D, _0x21);
+      PrintSearchText(sDexSearchColorOptions[searchParamId].title, 0x2D, 0x21);
 
       searchParamId = gTasks[taskId].tCursorPos_TypeLeft + gTasks[taskId].tScrollOffset_TypeLeft;
-      PrintSearchText(sDexSearchTypeOptions[searchParamId].title, 0x2D, _0x31);
+      PrintSearchText(sDexSearchTypeOptions[searchParamId].title, 0x2D, 0x31);
 
       searchParamId = gTasks[taskId].tCursorPos_TypeRight + gTasks[taskId].tScrollOffset_TypeRight;
-      PrintSearchText(sDexSearchTypeOptions[searchParamId].title, 0x5D, _0x31);
+      PrintSearchText(sDexSearchTypeOptions[searchParamId].title, 0x5D, 0x31);
 
       searchParamId = gTasks[taskId].tCursorPos_Order + gTasks[taskId].tScrollOffset_Order;
-      PrintSearchText(sDexOrderOptions[searchParamId].title, 0x2D, _0x41);
+      PrintSearchText(sDexOrderOptions[searchParamId].title, 0x2D, 0x41);
 
       if (IsNationalPokedexEnabled())
       {
           searchParamId = gTasks[taskId].tCursorPos_Mode + gTasks[taskId].tScrollOffset_Mode;
-          PrintSearchText(sDexModeOptions[searchParamId].title, 0x2D, _0x51);
+          PrintSearchText(sDexModeOptions[searchParamId].title, 0x2D, 0x51);
       }
 }
 
@@ -3791,24 +3745,24 @@ export function DrawOrEraseSearchParameterBox(erase: any): any {
 
       if (!erase)
       {
-          MEM_WRITE((ptr + _0x11), 0xC0B);
-          for (i = _0x12; i < 0x1F; i++)
+          MEM_WRITE((ptr + 0x11), 0xC0B);
+          for (i = 0x12; i < 0x1F; i++)
               MEM_WRITE((ptr + i), 0x80D);
           for (j = 1; j < 13; j++)
           {
-              MEM_WRITE((ptr + _0x11 + j * 32), 0x40A);
-              for (i = _0x12; i < 0x1F; i++)
+              MEM_WRITE((ptr + 0x11 + j * 32), 0x40A);
+              for (i = 0x12; i < 0x1F; i++)
                   MEM_WRITE((ptr + j * 32 + i), 2);
           }
           MEM_WRITE((ptr + 0x1B1), 0x40B);
-          for (i = _0x12; i < 0x1F; i++)
+          for (i = 0x12; i < 0x1F; i++)
               MEM_WRITE((ptr + 0x1A0 + i), 0xD);
       }
       else
       {
           for (j = 0; j < 14; j++)
           {
-              for (i = _0x11; i < 0x1E; i++)
+              for (i = 0x11; i < 0x1E; i++)
               {
                   MEM_WRITE((ptr + j * 32 + i), 0x4F);
               }

@@ -15,18 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  EraseFlashSector, FLASH_WRITE, PollFlashStatus, ProgramFlashByte,
-  ProgramFlashSector, ReadFlashId, StartFlashTimer, StopFlashTimer,
-  WaitForFlashWrite,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u16 IdentifyFlash(void) */
 export function IdentifyFlash(): any {
   let result: any = null;
@@ -74,14 +62,14 @@ export function WaitForFlashWrite_Common(phase: any, addr: any, lastData: any): 
 
       while ((status = PollFlashStatus(addr)) != lastData)
       {
-          if (status & _0x20)
+          if (status & 0x20)
           {
                
 
               if (PollFlashStatus(addr) == lastData)
                   break;
 
-              FLASH_WRITE(_0x5555, 0xF0);
+              FLASH_WRITE(0x5555, 0xF0);
               result = phase | 0xA000;
               break;
           }
@@ -91,7 +79,7 @@ export function WaitForFlashWrite_Common(phase: any, addr: any, lastData: any): 
               if (PollFlashStatus(addr) == lastData)
                   break;
 
-              FLASH_WRITE(_0x5555, 0xF0);
+              FLASH_WRITE(0x5555, 0xF0);
               result = phase | 0xC000;
               break;
           }

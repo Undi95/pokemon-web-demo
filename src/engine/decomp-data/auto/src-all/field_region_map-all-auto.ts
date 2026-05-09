@@ -15,28 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, Alloc, AnimateSprites,
-  BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer, ClearScheduledBgCopiesToVram,
-  CopyWindowToVram, CreateRegionMapCursor, CreateRegionMapPlayerIcon, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DoRegionMapInputCallback, DoScheduledBgTilemapCopiesToVram,
-  DrawStdFrameWithCustomTileAndPalette, FALSE, FillWindowPixelBuffer, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeRegionMapIconResources, GetStringCenterAlignXOffset, InitBgsFromTemplates,
-  InitRegionMap, InitWindows, LoadOam, LoadUserWindowBorderGfx,
-  NULL, PALETTES_ALL, PIXEL_FILL, ProcessSpriteCopyRequests,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-  REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags, ResetSpriteData, ScheduleBgCopyTilemapToVram,
-  SetGpuReg, SetGpuRegBits, SetMainCallback2, SetVBlankCallback,
-  ShowBg, TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void FieldInitRegionMap(MainCallback callback) */
 export function FieldInitRegionMap(callback: any): any {
   SetVBlankCallback(NULL);
@@ -63,7 +41,7 @@ export function MCB2_InitRegionMapRegisters(): any {
       InitBgsFromTemplates(1, sFieldRegionMapBgTemplates, ARRAY_COUNT(sFieldRegionMapBgTemplates));
       InitWindows(sFieldRegionMapWindowTemplates);
       DeactivateAllTextPrinters();
-      LoadUserWindowBorderGfx(0, _0x27, BG_PLTT_ID(13));
+      LoadUserWindowBorderGfx(0, 0x27, BG_PLTT_ID(13));
       ClearScheduledBgCopiesToVram();
       SetMainCallback2(MCB2_FieldUpdateRegionMap);
       SetVBlankCallback(VBCB_FieldUpdateRegionMap);
@@ -98,11 +76,11 @@ export function FieldUpdateRegionMap(): any {
               sFieldRegionMapHandler.state++;
               break;
           case 1:
-              DrawStdFrameWithCustomTileAndPalette(WIN_TITLE, FALSE, _0x27, 0xd);
-              offset = GetStringCenterAlignXOffset(FONT_NORMAL, gText_Hoenn, _0x38);
+              DrawStdFrameWithCustomTileAndPalette(WIN_TITLE, FALSE, 0x27, 0xd);
+              offset = GetStringCenterAlignXOffset(FONT_NORMAL, gText_Hoenn, 0x38);
               AddTextPrinterParameterized(WIN_TITLE, FONT_NORMAL, gText_Hoenn, offset, 1, 0, NULL);
               ScheduleBgCopyTilemapToVram(0);
-              DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME, FALSE, _0x27, 0xd);
+              DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME, FALSE, 0x27, 0xd);
               PrintRegionMapSecName();
               BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
               sFieldRegionMapHandler.state++;

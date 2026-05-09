@@ -15,34 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AnimateSprites, BG_PLTT_ID,
-  BG_SCREEN_ADDR, BeginNormalPaletteFade, BuildOamBuffer, ChangeBgX,
-  ChangeBgY, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
-  Cos2, CreateSprite, CreateTask, CreateYesNoMenu,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DmaClear16,
-  DmaClear32, DmaFillLarge16, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette,
-  EnableInterrupts, FALSE, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  GetOverworldTextboxPalettePtr, InitBgsFromTemplates, InitWindows, JOY_HELD,
-  JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadOam,
-  LoadPalette, LoadSpritePalettes, LoadUserWindowBorderGfx, Menu_ProcessInputNoWrapClearOnChoose,
-  NULL, PALETTES_ALL, PLTT_SIZE, PLTT_SIZEOF,
-  PLTT_SIZE_4BPP, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  RtcCalcLocalTime, RtcInitLocalTimeOffset, RunTasks, ST_OAM_AFFINE_NORMAL,
-  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetGpuReg, SetMainCallback2,
-  SetOamMatrix, SetVBlankCallback, ShowBg, Sin2,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_WallClock(void) */
 export function VBlankCB_WallClock(): any {
   LoadOam();
@@ -66,7 +38,7 @@ export function LoadWallClockGraphics(): any {
       ChangeBgY(2, 0, BG_COORD_SET);
       ChangeBgX(3, 0, BG_COORD_SET);
       ChangeBgY(3, 0, BG_COORD_SET);
-      DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, _0x1000);
+      DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, 0x1000);
       DmaClear32(3, OAM, OAM_SIZE);
       DmaClear16(3, PLTT, PLTT_SIZE);
       LZ77UnCompVram(gWallClock_Gfx, VRAM);
@@ -82,7 +54,7 @@ export function LoadWallClockGraphics(): any {
       InitBgsFromTemplates(0, sBgTemplates, ARRAY_COUNT(sBgTemplates));
       InitWindows(sWindowTemplates);
       DeactivateAllTextPrinters();
-      LoadUserWindowBorderGfx(0, _0x250, BG_PLTT_ID(13));
+      LoadUserWindowBorderGfx(0, 0x250, BG_PLTT_ID(13));
       ClearScheduledBgCopiesToVram();
       ScanlineEffect_Stop();
       ResetTasks();
@@ -257,11 +229,11 @@ export function Task_SetClock_HandleInput(taskId: any): any {
 
 /** static void Task_SetClock_AskConfirm(u8 taskId) */
 export function Task_SetClock_AskConfirm(taskId: any): any {
-  DrawStdFrameWithCustomTileAndPalette(WIN_MSG, FALSE, _0x250, 0x0d);
+  DrawStdFrameWithCustomTileAndPalette(WIN_MSG, FALSE, 0x250, 0x0d);
       AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, gText_IsThisTheCorrectTime, 0, 1, 0, NULL);
       PutWindowTilemap(WIN_MSG);
       ScheduleBgCopyTilemapToVram(0);
-      CreateYesNoMenu(sWindowTemplate_ConfirmYesNo, _0x250, 0x0d, 1);
+      CreateYesNoMenu(sWindowTemplate_ConfirmYesNo, 0x250, 0x0d, 1);
       gTasks[taskId].func = Task_SetClock_HandleConfirmInput;
 }
 
@@ -499,8 +471,8 @@ export function SpriteCB_PMIndicator(sprite: any): any {
           if (sprite.sAngle > 75)
               sprite.sAngle--;
       }
-      sprite.x2 = Cos2(sprite.sAngle) * 30 / _0x1000;
-      sprite.y2 = Sin2(sprite.sAngle) * 30 / _0x1000;
+      sprite.x2 = Cos2(sprite.sAngle) * 30 / 0x1000;
+      sprite.y2 = Sin2(sprite.sAngle) * 30 / 0x1000;
 }
 
 /** static void SpriteCB_AMIndicator(struct Sprite *sprite) */
@@ -519,8 +491,8 @@ export function SpriteCB_AMIndicator(sprite: any): any {
           if (sprite.sAngle > 120)
               sprite.sAngle--;
       }
-      sprite.x2 = Cos2(sprite.sAngle) * 30 / _0x1000;
-      sprite.y2 = Sin2(sprite.sAngle) * 30 / _0x1000;
+      sprite.x2 = Cos2(sprite.sAngle) * 30 / 0x1000;
+      sprite.y2 = Sin2(sprite.sAngle) * 30 / 0x1000;
 }
 
 // ─── callsTo manifest (= 65 unique callees) ───────────────────────

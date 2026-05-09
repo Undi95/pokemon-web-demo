@@ -15,19 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddTextPrinterParameterized, AddWindow, ClearStdWindowAndFrame, ConvertIntToDecimalStringN,
-  DrawStdFrameWithCustomTileAndPalette, FALSE, FillWindowPixelBuffer, GetStringRightAlignXOffset,
-  NULL, PIXEL_FILL, PutWindowTilemap, RemoveWindow,
-  STR_CONV_MODE_RIGHT_ALIGN, SetWindowTemplateFields, StringExpandPlaceholders, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void PrintCoinsString(u32 coinAmount) */
 export function PrintCoinsString(coinAmount: any): any {
   let xAlign: any = null;
@@ -42,11 +29,11 @@ export function PrintCoinsString(coinAmount: any): any {
 /** void ShowCoinsWindow(u32 coinAmount, u8 x, u8 y) */
 export function ShowCoinsWindow(coinAmount: any, x: any, y: any): any {
   let template: any = null;
-      SetWindowTemplateFields(template, 0, x, y, 7, 2, 0xF, _0x141);  
+      SetWindowTemplateFields(template, 0, x, y, 7, 2, 0xF, 0x141);  
       sCoinsWindowId = AddWindow(template);
       FillWindowPixelBuffer(sCoinsWindowId, PIXEL_FILL(0));
       PutWindowTilemap(sCoinsWindowId);
-      DrawStdFrameWithCustomTileAndPalette(sCoinsWindowId, FALSE, _0x214, 0xE);
+      DrawStdFrameWithCustomTileAndPalette(sCoinsWindowId, FALSE, 0x214, 0xE);
       PrintCoinsString(coinAmount);
 }
 

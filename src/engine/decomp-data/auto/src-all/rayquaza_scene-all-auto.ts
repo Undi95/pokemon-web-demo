@@ -15,40 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocZeroed, AnimateSprites, BG_PLTT_ID,
-  BG_SCREEN_SIZE, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG0,
-  BLDCNT_TGT1_BG2, BLDCNT_TGT1_OBJ, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2,
-  BLDCNT_TGT2_BG3, BLDCNT_TGT2_OBJ, BeginNormalPaletteFade, BlendPalettes,
-  BlendPalettesGradually, BuildOamBuffer, ChangeBgX, ChangeBgY,
-  ClearGpuRegBits, ClearScheduledBgCopiesToVram, CpuFastCopy, CpuFastFill16,
-  CreateSprite, CreateTask, DISPCNT_BG2_ON, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-  DecompressAndCopyTileDataToVram, DestroyTask, DoScheduledBgTilemapCopiesToVram, EnableInterrupts,
-  FALSE, FillPalette, FindTaskIdByFunc, Free,
-  FreeAllSpritePalettes, FreeTempTileDataBuffersIfPossible, GetBgY, GetGpuReg,
-  InitBgsFromTemplates, InitSpriteAffineAnim, LZDecompressWram, LoadCompressedPalette,
-  LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadOam, NULL,
-  PALETTES_ALL, PALETTES_BG, PLTT_SIZE_4BPP, PlayCry_Normal,
-  PlayNewMapMusic, PlaySE, ProcessSpriteCopyRequests, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, Random, ResetAllBgsCoordinates,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks, ST_OAM_AFFINE_DOUBLE,
-  ST_OAM_OBJ_BLEND, ScanlineEffect_Clear, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams,
-  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetBgAffine, SetBgTilemapBuffer,
-  SetGpuReg, SetGpuRegBits, SetHBlankCallback, SetMainCallback2,
-  SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg, SpriteCallbackDummy,
-  StartSpriteAnim, StopMapMusic, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void DoRayquazaScene(u8 animId, bool8 endEarly, MainCallback exitCallback) */
 export function DoRayquazaScene(animId: any, endEarly: any, exitCallback: any): any {
   sRayScene = AllocZeroed(0);
@@ -379,8 +345,8 @@ export function Task_DuoFightAnim(taskId: any): any {
           StopMapMusic();
       }
 
-      BlendPalettes(PALETTES_ALL, _0x10, RGB_BLACK);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+      BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
       SetVBlankCallback(VBlankCB_DuoFight);
       PlaySE(SE_DOWNPOUR);
 }
@@ -488,27 +454,27 @@ export function Task_HandleDuoFight(taskId: any): any {
 /** static void DuoFight_Lightning1(void) */
 export function DuoFight_Lightning1(): any {
   PlaySE(SE_THUNDER);
-      BlendPalettesGradually(PALETTES_BG & ~(_0x8000), 0, 16, 0, RGB_WHITEALPHA, 0, 0);
+      BlendPalettesGradually(PALETTES_BG & ~(0x8000), 0, 16, 0, RGB_WHITEALPHA, 0, 0);
       BlendPalettesGradually(PALETTES_OBJECTS, 0, 16, 0, RGB_BLACK,      0, 1);
 }
 
 /** static void DuoFight_Lightning2(void) */
 export function DuoFight_Lightning2(): any {
   PlaySE(SE_THUNDER);
-      BlendPalettesGradually(PALETTES_BG & ~(_0x8000), 0, 16, 16, RGB_WHITEALPHA, 0, 0);
+      BlendPalettesGradually(PALETTES_BG & ~(0x8000), 0, 16, 16, RGB_WHITEALPHA, 0, 0);
       BlendPalettesGradually(PALETTES_OBJECTS, 0, 16, 16, RGB_BLACK,      0, 1);
 }
 
 /** static void DuoFight_LightningLong(void) */
 export function DuoFight_LightningLong(): any {
-  BlendPalettesGradually(PALETTES_BG & ~(_0x8000), 4, 16, 0, RGB_WHITEALPHA, 0, 0);
+  BlendPalettesGradually(PALETTES_BG & ~(0x8000), 4, 16, 0, RGB_WHITEALPHA, 0, 0);
       BlendPalettesGradually(PALETTES_OBJECTS, 4, 16, 0, RGB_BLACK,      0, 1);
 }
 
 /** static void DuoFight_AnimateRain(void) */
 export function DuoFight_AnimateRain(): any {
-  ChangeBgX(2, _0x400, BG_COORD_ADD);
-      ChangeBgY(2, _0x800, BG_COORD_SUB);
+  ChangeBgX(2, 0x400, BG_COORD_ADD);
+      ChangeBgY(2, 0x800, BG_COORD_SUB);
 }
 
 /** static void DuoFight_PanOffScene(u8 taskId) */
@@ -519,8 +485,8 @@ export function DuoFight_PanOffScene(taskId: any): any {
       DuoFight_SlideKyogreDown(gSprites[tKyogreSpriteId]);
 
       bgY = GetBgY(1);
-      if (GetBgY(1) == 0 || bgY > _0x8000)
-          ChangeBgY(1, _0x400, BG_COORD_SUB);
+      if (GetBgY(1) == 0 || bgY > 0x8000)
+          ChangeBgY(1, 0x400, BG_COORD_SUB);
 
       if (tTimer != 16)
       {
@@ -532,7 +498,7 @@ export function DuoFight_PanOffScene(taskId: any): any {
 /** static void DuoFightEnd(u8 taskId, s8 palDelay) */
 export function DuoFightEnd(taskId: any, palDelay: any): any {
   PlaySE(SE_DOWNPOUR_STOP);
-      BeginNormalPaletteFade(PALETTES_ALL, palDelay, 0, _0x10, RGB_BLACK);
+      BeginNormalPaletteFade(PALETTES_ALL, palDelay, 0, 0x10, RGB_BLACK);
       gTasks[taskId].func = Task_DuoFightEnd;
 }
 
@@ -789,7 +755,7 @@ export function Task_HandleRayTakesFlight(taskId: any): any {
            
           if (tTimer == 8)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
               tScale = 0;
               tScaleSpeed = 30;
               tYCoord = 0;
@@ -822,12 +788,12 @@ export function Task_HandleRayTakesFlight(taskId: any): any {
               tTimer = 0;
               tState++;
           }
-          SetBgAffine(2, _0x7800, _0x1800, 120, tYCoord + 32, tScale, tScale, 0);
+          SetBgAffine(2, 0x7800, 0x1800, 120, tYCoord + 32, tScale, tScale, 0);
           break;
       case 2:
            
           tTimer++;
-          SetBgAffine(2, _0x7800, _0x1800, 120, tYCoord + 32 + (tYOffset >> 2), tScale, tScale, 0);
+          SetBgAffine(2, 0x7800, 0x1800, 120, tYCoord + 32 + (tYOffset >> 2), tScale, tScale, 0);
           tYOffset += tYOffsetDir;
           if (tYOffset == 12 || tYOffset == -12)
           {
@@ -835,14 +801,14 @@ export function Task_HandleRayTakesFlight(taskId: any): any {
               if (tTimer > 295)
               {
                   tState++;
-                  BeginNormalPaletteFade(PALETTES_ALL, 6, 0, _0x10, RGB_BLACK);
+                  BeginNormalPaletteFade(PALETTES_ALL, 6, 0, 0x10, RGB_BLACK);
               }
           }
           break;
       case 3:
            
           tScale += 16;
-          SetBgAffine(2, _0x7800, _0x1800, 120, tYCoord + 32, tScale, tScale, 0);
+          SetBgAffine(2, 0x7800, 0x1800, 120, tYCoord + 32, tScale, tScale, 0);
           Task_RayTakesFlightEnd(taskId);
           break;
       }
@@ -937,7 +903,7 @@ export function LoadDescendsSceneGfx(): any {
       LZDecompressWram(gRaySceneDescends_Bg_Tilemap, sRayScene.tilemapBuffers[3]);
       CpuFastFill16(0, sRayScene.tilemapBuffers[2], BG_SCREEN_SIZE);
       CpuFastCopy(sRayScene.tilemapBuffers[3], sRayScene.tilemapBuffers[1], BG_SCREEN_SIZE);
-      CpuFastFill16(0,sRayScene.tilemapBuffers[1][_0x100], _0x340);
+      CpuFastFill16(0,sRayScene.tilemapBuffers[1][0x100], 0x340);
 
       LoadCompressedPalette(gRaySceneDescends_Bg_Pal, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);
       gPlttBufferUnfaded[0] = RGB_WHITE;
@@ -953,7 +919,7 @@ export function HBlankCB_RayDescends(): any {
       if (vcount >= 24 && vcount <= 135 && vcount - 24 <= sRayScene.revealedLightLine)
           REG_BLDALPHA = 0xD08;  
       else
-          REG_BLDALPHA = _0x1000;  
+          REG_BLDALPHA = 0x1000;  
 
       if (vcount == 0)
       {
@@ -981,7 +947,7 @@ export function Task_RayDescendsAnim(taskId: any): any {
       LoadDescendsSceneGfx();
       SetGpuRegBits(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_BG2 | BLDCNT_TGT2_BG3 | BLDCNT_TGT2_OBJ | BLDCNT_EFFECT_BLEND);
       SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));
-      BlendPalettes(PALETTES_ALL, _0x10, RGB_BLACK);
+      BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
       SetVBlankCallback(VBlankCB_RayquazaScene);
       sRayScene.revealedLightLine = 0;
       sRayScene.revealedLightTimer = 0;
@@ -989,7 +955,7 @@ export function Task_RayDescendsAnim(taskId: any): any {
       tTimer = 0;
       data[2] = 0;  
       data[3] = 0;
-      data[4] = _0x1000;
+      data[4] = 0x1000;
       gTasks[taskId].func = Task_HandleRayDescends;
 }
 
@@ -1002,7 +968,7 @@ export function Task_HandleRayDescends(taskId: any): any {
            
           if (tTimer == 8)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
               tTimer = 0;
               tState++;
           }
@@ -1051,7 +1017,7 @@ export function Task_HandleRayDescends(taskId: any): any {
           break;
       case 4:
            
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
           gTasks[taskId].func = Task_RayDescendsEnd;
           break;
       }
@@ -1180,7 +1146,7 @@ export function Task_RayChargesAnim(taskId: any): any {
       InitChargesSceneBgs();
       LoadChargesSceneGfx();
       SetWindowsHideVertBorders();
-      BlendPalettes(PALETTES_ALL, _0x10, RGB_BLACK);
+      BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
       SetVBlankCallback(VBlankCB_RayquazaScene);
       tState = 0;
       tTimer = 0;
@@ -1202,7 +1168,7 @@ export function Task_HandleRayCharges(taskId: any): any {
            
           if (tTimer == 8)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
               tTimer = 0;
               tState++;
           }
@@ -1238,7 +1204,7 @@ export function Task_HandleRayCharges(taskId: any): any {
           break;
       case 3:
            
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
           gTasks[taskId].func = Task_RayChargesEnd;
           break;
       }
@@ -1279,12 +1245,12 @@ export function Task_RayCharges_FlyOffscreen(taskId: any): any {
 
 /** static void RayCharges_AnimateBg(void) */
 export function RayCharges_AnimateBg(): any {
-  ChangeBgX(2, _0x400, BG_COORD_SUB);
-      ChangeBgY(2, _0x400, BG_COORD_ADD);
+  ChangeBgX(2, 0x400, BG_COORD_SUB);
+      ChangeBgY(2, 0x400, BG_COORD_ADD);
 
        
-      ChangeBgX(0, _0x800, BG_COORD_SUB);
-      ChangeBgY(0, _0x800, BG_COORD_ADD);
+      ChangeBgX(0, 0x800, BG_COORD_SUB);
+      ChangeBgY(0, 0x800, BG_COORD_ADD);
 }
 
 /** static void Task_RayChargesEnd(u8 taskId) */
@@ -1351,7 +1317,7 @@ export function Task_RayChasesAwayAnim(taskId: any): any {
       ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);
       SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND);
       SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(9, 14));
-      BlendPalettes(PALETTES_ALL, _0x10, RGB_BLACK);
+      BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
       SetVBlankCallback(VBlankCB_RayquazaScene);
       tState = 0;
       tTimer = 0;
@@ -1374,7 +1340,7 @@ export function Task_HandleRayChasesAway(taskId: any): any {
           if (tTimer == 8)
           {
               ChasesAway_CreateTrioSprites(taskId);
-              BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
               tTimer = 0;
               tState++;
           }
@@ -1421,7 +1387,7 @@ export function Task_HandleRayChasesAway(taskId: any): any {
           break;
       case 3:
            
-          BeginNormalPaletteFade(PALETTES_ALL, 4, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 4, 0, 0x10, RGB_BLACK);
           gTasks[taskId].func = Task_RayChasesAwayEnd;
           break;
       }
@@ -1740,7 +1706,7 @@ export function Task_ChasesAway_AnimateRing(taskId: any): any {
       switch (tState)
       {
       case 0:
-          SetBgAffine(2, _0x4000, _0x4000, 120, 64, 256, 256, 0);
+          SetBgAffine(2, 0x4000, 0x4000, 120, 64, 256, 256, 0);
           SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);
           tScaleSpeed = 16;
           tState++;
@@ -1760,7 +1726,7 @@ export function Task_ChasesAway_AnimateRing(taskId: any): any {
                   tScaleSpeed -= 2;
 
               tScaleTimer++;
-              SetBgAffine(2, _0x4000, _0x4000, 120, 64, 256 - tScale, 256 - tScale, 0);
+              SetBgAffine(2, 0x4000, 0x4000, 120, 64, 256 - tScale, 256 - tScale, 0);
               if (tScale > 255)
               {
                   tScale = 0;

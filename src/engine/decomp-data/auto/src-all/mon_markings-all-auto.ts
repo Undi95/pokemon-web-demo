@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, CalcCenterToCornerVec, CpuFastCopy, CpuFill16,
-  CreateSprite, DestroySprite, FALSE, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, GetWindowFrameTilesPal, JOY_NEW, LoadSpritePalettes,
-  LoadSpriteSheets, NULL, PlaySE, RequestDma3Copy,
-  SPRITE_SHAPE, SPRITE_SIZE, ST_OAM_AFFINE_OFF, SpriteCallbackDummy,
-  StartSpriteAnim, TILE_SIZE_4BPP, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void InitMonMarkingsMenu(struct MonMarkingsMenu *ptr) */
 export function InitMonMarkingsMenu(ptr: any): any {
   sMenu = ptr;
@@ -47,7 +32,7 @@ export function BufferMenuWindowTiles(): any {
 /** static bool8 BufferMenuFrameTiles(void) */
 export function BufferMenuFrameTiles(): any {
   let i: any = null;
-      let dest: any = sMenu.windowSpriteTiles + sMenu.tileLoadState * _0x100;
+      let dest: any = sMenu.windowSpriteTiles + sMenu.tileLoadState * 0x100;
 
       switch (sMenu.tileLoadState)
       {
@@ -188,8 +173,8 @@ export function CreateMonMarkingsMenuSprites(x: any, y: any, baseTileTag: any, b
 
       let sheets: any =
       [
-          [ sMenu.windowSpriteTiles, _0x1000, baseTileTag ],
-          [ gMonMarkingsMenu_Gfx, _0x320, baseTileTag + 1 ],
+          [ sMenu.windowSpriteTiles, 0x1000, baseTileTag ],
+          [ gMonMarkingsMenu_Gfx, 0x320, baseTileTag + 1 ],
           []
       ];
 
@@ -293,7 +278,7 @@ export function SpriteCB_Cursor(sprite: any): any {
 
 /** void UpdateMonMarkingTiles(u8 markings, void *dest) */
 export function UpdateMonMarkingTiles(markings: any, dest: any): any {
-  RequestDma3Copy(sMonMarkings_Gfx[markings * _0x80], dest, _0x80, _0x10);
+  RequestDma3Copy(sMonMarkings_Gfx[markings * 0x80], dest, 0x80, 0x10);
 }
 
 // ─── callsTo manifest (= 20 unique callees) ───────────────────────

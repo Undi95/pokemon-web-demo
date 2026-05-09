@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AGB_ASSERT, ARRAY_COUNT, CALC_CRC, ClearEReaderTrainer,
-  ClearMysteryGiftFlags, ClearMysteryGiftVars, ClearRamScript, CopyTrainerId,
-  CpuFill32, FALSE, FlagGet, GetSavedWonderCard,
-  GetSavedWonderCardMetadata, GetSavedWonderNews, GetSavedWonderNewsMetadata, InitQuestionnaireWords,
-  NULL, StringCopy, TRUE, ValidateSavedRamScript,
-  WonderNews_Reset, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ClearMysteryGift(void) */
 export function ClearMysteryGift(): any {
   CpuFill32(0,gSaveBlock1Ptr.mysteryGift, sizeof(gSaveBlock1Ptr.mysteryGift));
@@ -49,13 +34,13 @@ export function SaveWonderNews(news: any): any {
 
       ClearSavedWonderNews();
       gSaveBlock1Ptr.mysteryGift.news = news;
-      gSaveBlock1Ptr.mysteryGift.newsCrc = CALC_CRC(gSaveBlock1Ptr.mysteryGift.news);
+      gSaveBlock1Ptr.mysteryGift.newsCrc = CalcCRC16WithTable(((gSaveBlock1Ptr.mysteryGift.news)), sizeof((gSaveBlock1Ptr.mysteryGift.news)));
       return TRUE;
 }
 
 /** bool32 ValidateSavedWonderNews(void) */
 export function ValidateSavedWonderNews(): any {
-  if (CALC_CRC(gSaveBlock1Ptr.mysteryGift.news) != gSaveBlock1Ptr.mysteryGift.newsCrc)
+  if (CalcCRC16WithTable(((gSaveBlock1Ptr.mysteryGift.news)), sizeof((gSaveBlock1Ptr.mysteryGift.news))) != gSaveBlock1Ptr.mysteryGift.newsCrc)
           return FALSE;
       if (!ValidateWonderNews(gSaveBlock1Ptr.mysteryGift.news))
           return FALSE;
@@ -127,7 +112,7 @@ export function SaveWonderCard(card: any): any {
 
       ClearSavedWonderCardAndRelated();
       memcpy(gSaveBlock1Ptr.mysteryGift.card, card, 0);
-      gSaveBlock1Ptr.mysteryGift.cardCrc = CALC_CRC(gSaveBlock1Ptr.mysteryGift.card);
+      gSaveBlock1Ptr.mysteryGift.cardCrc = CalcCRC16WithTable(((gSaveBlock1Ptr.mysteryGift.card)), sizeof((gSaveBlock1Ptr.mysteryGift.card)));
       metadata =gSaveBlock1Ptr.mysteryGift.cardMetadata;
       metadata.iconSpecies = (gSaveBlock1Ptr.mysteryGift.card).iconSpecies;
       return TRUE;
@@ -135,7 +120,7 @@ export function SaveWonderCard(card: any): any {
 
 /** bool32 ValidateSavedWonderCard(void) */
 export function ValidateSavedWonderCard(): any {
-  if (gSaveBlock1Ptr.mysteryGift.cardCrc != CALC_CRC(gSaveBlock1Ptr.mysteryGift.card))
+  if (gSaveBlock1Ptr.mysteryGift.cardCrc != CalcCRC16WithTable(((gSaveBlock1Ptr.mysteryGift.card)), sizeof((gSaveBlock1Ptr.mysteryGift.card))))
           return FALSE;
       if (!ValidateWonderCard(gSaveBlock1Ptr.mysteryGift.card))
           return FALSE;
@@ -355,7 +340,7 @@ export function MysteryGift_ValidateLinkGameData(data: any, isWonderNews: any): 
           if (!(data.validationGiftType1 & GAME_DATA_VALID_GIFT_TYPE_1))
               return FALSE;
 
-          if (!(data.validationGiftType2 & (GAME_DATA_VALID_GIFT_TYPE_2 | _0x180)))
+          if (!(data.validationGiftType2 & (GAME_DATA_VALID_GIFT_TYPE_2 | 0x180)))
               return FALSE;
       }
 

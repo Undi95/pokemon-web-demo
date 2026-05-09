@@ -15,30 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized4, AnimateSprites, BG_PLTT_ID,
-  BeginNormalPaletteFade, BuildOamBuffer, CheckShouldAdvanceLinkState, CloseLink,
-  CopyWindowToVram, CpuFill32, CreateTask, DISPCNT_BG0_ON,
-  DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP, DeactivateAllTextPrinters, DoSoftReset,
-  DrawStdFrameWithCustomTileAndPalette, FALSE, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
-  FreeAllSpritePalettes, GetBlockReceivedStatus, GetLinkPlayerCount_2, GetLinkPlayerDataExchangeStatusTimed,
-  InitBgsFromTemplates, InitWindows, IsLinkConnectionEstablished, IsLinkMaster,
-  IsTextPrinterActive, JOY_NEW, LoadOam, LoadUserWindowBorderGfx,
-  Menu_LoadStdPalAt, OpenLink, PALETTES_ALL, PIXEL_FILL,
-  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT,
-  REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetSpriteData,
-  ResetTasks, RunMysteryEventScript, RunTasks, RunTextPrinters,
-  SetBackdropFromColor, SetCloseLinkCallback, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, StopMapMusic, StringCopy,
-  TRUE, TransferPlttBuffer, TrySavingData, UpdatePaletteFade,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void VBlankCB(void) */
 export function VBlankCB(): any {
   LoadOam();
@@ -112,7 +88,7 @@ export function CB2_MysteryEventMenu(): any {
           PutWindowTilemap(WIN_MSG);
           CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
           ShowBg(0);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           gMain.state++;
           break;
       case 1:
@@ -255,7 +231,7 @@ export function CB2_MysteryEventMenu(): any {
           }
           break;
       case 15:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
           gMain.state++;
           break;
       case 16:

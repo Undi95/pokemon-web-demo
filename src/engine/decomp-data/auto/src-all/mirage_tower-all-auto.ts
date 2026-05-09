@@ -15,30 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, Alloc, AllocZeroed, BGCNT_PRIORITY,
-  BG_SCREEN_SIZE, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram,
-  CopyToBgTilemapBufferRect_ChangePalette, CpuSet, CreateSprite, CreateTask,
-  DestroySprite, DestroyTask, DrawWholeMapView, FALSE,
-  FREE_AND_SET_NULL, FindTaskIdByFunc, FlagClear, FlagGet,
-  FlagSet, FreeAllWindowBuffers, FreeSpriteTilesByTag, FuncIsActiveTask,
-  InitPulseBlend, InitPulseBlendPaletteSettings, InitStandardTextBoxWindows, InstallCameraPanAheadCallback,
-  LoadBgTiles, LoadSpriteSheets, MAP_GROUP, MAP_NUM,
-  MapGridSetMetatileIdAt, MarkUsedPulseBlendPalettes, NULL, PlaySE,
-  REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG2CNT,
-  Random, SWAP, ScriptContext_Enable, SetBgAttribute,
-  SetBgTilemapBuffer, SetCameraPanning, SetCameraPanningCallback, SetGpuReg,
-  SetGpuRegBits, ShowBg, SpriteCallbackDummy, StartSpriteAnim,
-  TASK_NONE, TRUE, TryGetObjectEventIdByLocalIdAndMap, UnloadUsedPulseBlendPalettes,
-  UnmarkUsedPulseBlendPalettes, UnsetBgTilemapBuffer, UpdatePulseBlend, VarGet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 IsMirageTowerVisible(void) */
 export function IsMirageTowerVisible(): any {
   if (!(gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_ROUTE111) && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_ROUTE111)))
@@ -72,7 +48,7 @@ export function TryStartMirageTowerPulseBlendEffect(): any {
       sMirageTowerPulseBlend = AllocZeroed(0);
       InitPulseBlend(sMirageTowerPulseBlend.pulseBlend);
       InitPulseBlendPaletteSettings(sMirageTowerPulseBlend.pulseBlend,gMirageTowerPulseBlendSettings);
-      MarkUsedPulseBlendPalettes(sMirageTowerPulseBlend.pulseBlend, _0x1, TRUE);
+      MarkUsedPulseBlendPalettes(sMirageTowerPulseBlend.pulseBlend, 0x1, TRUE);
       sMirageTowerPulseBlend.taskId = CreateTask(UpdateMirageTowerPulseBlend, 0xFF);
 }
 
@@ -87,8 +63,8 @@ export function ClearMirageTowerPulseBlendEffect(): any {
       if (FuncIsActiveTask(UpdateMirageTowerPulseBlend))
           DestroyTask(sMirageTowerPulseBlend.taskId);
 
-      UnmarkUsedPulseBlendPalettes(sMirageTowerPulseBlend.pulseBlend, _0x1, TRUE);
-      UnloadUsedPulseBlendPalettes(sMirageTowerPulseBlend.pulseBlend, _0x1, TRUE);
+      UnmarkUsedPulseBlendPalettes(sMirageTowerPulseBlend.pulseBlend, 0x1, TRUE);
+      UnloadUsedPulseBlendPalettes(sMirageTowerPulseBlend.pulseBlend, 0x1, TRUE);
       FREE_AND_SET_NULL(sMirageTowerPulseBlend);
 }
 

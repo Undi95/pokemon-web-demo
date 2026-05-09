@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddTextPrinterParameterized, AddWindow, ClearStdWindowAndFrameToTransparent, ConvertIntToDecimalStringN,
-  CopyWindowToVram, CreateSprite, DestroySpriteAndFreeResources, DrawStdFrameWithCustomTileAndPalette,
-  FALSE, FillWindowPixelBuffer, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
-  NULL, PIXEL_FILL, PutWindowTilemap, RemoveWindow,
-  STR_CONV_MODE_LEFT_ALIGN, SetWindowTemplateFields, StringExpandPlaceholders, StringLength,
-  TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u32 GetMoney(u32 *moneyPtr) */
 export function GetMoney(moneyPtr: any): any {
   return moneyPtr ^ gSaveBlock2Ptr.encryptionKey;
@@ -133,7 +118,7 @@ export function DrawMoneyBox(amount: any, x: any, y: any): any {
       FillWindowPixelBuffer(sMoneyBoxWindowId, PIXEL_FILL(0));
       PutWindowTilemap(sMoneyBoxWindowId);
       CopyWindowToVram(sMoneyBoxWindowId, COPYWIN_MAP);
-      PrintMoneyAmountInMoneyBoxWithBorder(sMoneyBoxWindowId, _0x214, 14, amount);
+      PrintMoneyAmountInMoneyBoxWithBorder(sMoneyBoxWindowId, 0x214, 14, amount);
       AddMoneyLabelObject((8 * x) + 24, (8 * y) + 11);
 }
 

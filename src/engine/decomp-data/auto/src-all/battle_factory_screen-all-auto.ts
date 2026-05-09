@@ -15,45 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, Alloc,
-  AllocZeroed, AnimateSprites, BG_PLTT_ID, BG_SCREEN_SIZE,
-  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG3, BLDCNT_TGT2_BG1,
-  BLDCNT_TGT2_OBJ, BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer,
-  CalculatePlayerPartyCount, ChangeBgX, ChangeBgY, ClearGpuRegBits,
-  ClearWindowTilemap, CopyBgTilemapBufferToVram, CopyMonCategoryText, CopyToBgTilemapBufferRect,
-  CopyWindowToVram, CpuCopy16, CpuFill32, CreateMonPicSprite_HandleDeoxys,
-  CreateMonWithEVSpreadNatureOTID, CreateSprite, CreateTask, DISPCNT_BG0_ON,
-  DISPCNT_BG1_ON, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
-  DISPLAY_WIDTH, DeactivateAllTextPrinters, DestroySprite, DestroyTask,
-  FALSE, FREE_AND_SET_NULL, FillWindowPixelBuffer, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeAndDestroyMonPicSprite, FreeOamMatrix, FuncIsActiveTask,
-  GetBoxMonData, GetFactoryMonFixedIV, GetMonData, GetNumPastRentalsRank,
-  GetStringRightAlignXOffset, HideBg, IndexOfSpritePaletteTag, InitBgsFromTemplates,
-  InitWindows, JOY_NEW, JOY_REPEAT, LoadBgTilemap,
-  LoadBgTiles, LoadCompressedSpriteSheet, LoadOam, LoadPalette,
-  LoadSpritePalettes, LoadSpriteSheets, NULL, PALETTES_ALL,
-  PIXEL_FILL, PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, REG_OFFSET_WIN0H,
-  REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ,
-  REG_OFFSET_WINOUT, Random, ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
-  RunTextPrinters, SetBgTilemapBuffer, SetGpuReg, SetGpuRegBits,
-  SetHBlankCallback, SetMainCallback2, SetMonData, SetMonMoveAvoidReturn,
-  SetVBlankCallback, ShowBg, ShowPokemonSummaryScreen, SpeciesToNationalPokedexNum,
-  SpriteCallbackDummy, StartSpriteAffineAnim, StartSpriteAnim, StartSpriteAnimIfDifferent,
-  StringCopy, T1_READ_32, TRUE, TRY_FREE_AND_SET_NULL,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE, VarGet,
-  WIN_RANGE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void SpriteCB_Pokeball(struct Sprite *sprite) */
 export function SpriteCB_Pokeball(sprite: any): any {
   if (sprite.oam.paletteNum == IndexOfSpritePaletteTag(PALTAG_BALL_SELECTED))
@@ -1695,9 +1656,9 @@ export function Swap_Task_SlideCycleBalls(taskId: any): any {
       switch (gTasks[taskId].tState)
       {
       case 0:
-          gTasks[taskId].tBallCycled(0) = FALSE;
-          gTasks[taskId].tBallCycled(1) = FALSE;
-          gTasks[taskId].tBallCycled(2) = FALSE;
+          gTasks[taskId].data[((0)) + 1] = FALSE;
+          gTasks[taskId].data[((1)) + 1] = FALSE;
+          gTasks[taskId].data[((2)) + 1] = FALSE;
           gTasks[taskId].tState = 1;
           break;
       case 1:
@@ -1707,7 +1668,7 @@ export function Swap_Task_SlideCycleBalls(taskId: any): any {
               if (i != FRONTIER_PARTY_SIZE - 1)
               {
                   let posX: any = lastX - gSprites[sFactorySwapScreen.ballSpriteIds[i]].x;
-                  if (posX == 16 || gTasks[taskId].tBallCycled(i + 1) == TRUE)
+                  if (posX == 16 || gTasks[taskId].data[((i + 1)) + 1] == TRUE)
                   {
                       lastX = gSprites[sFactorySwapScreen.ballSpriteIds[i]].x;
                       gSprites[sFactorySwapScreen.ballSpriteIds[i]].x += 10;
@@ -1723,7 +1684,7 @@ export function Swap_Task_SlideCycleBalls(taskId: any): any {
                   gSprites[sFactorySwapScreen.ballSpriteIds[i]].x += 10;
               }
 
-              if (gTasks[taskId].tBallCycled(i) == TRUE)
+              if (gTasks[taskId].data[((i)) + 1] == TRUE)
               {
                    
                   if (gSprites[sFactorySwapScreen.ballSpriteIds[i]].x > (i * 48) + 72)
@@ -1756,7 +1717,7 @@ export function Swap_Task_SlideCycleBalls(taskId: any): any {
                   else
                       gSprites[sFactorySwapScreen.ballSpriteIds[i]].oam.paletteNum = IndexOfSpritePaletteTag(PALTAG_BALL_GRAY);
 
-                  gTasks[taskId].tBallCycled(i) = TRUE;
+                  gTasks[taskId].data[((i)) + 1] = TRUE;
               }
           }
           if (finished == TRUE)

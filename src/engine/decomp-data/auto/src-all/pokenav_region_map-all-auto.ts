@@ -15,36 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocSubstruct,
-  AreLeftHeaderSpritesMoving, BG_PLTT_ID, BgDmaFill, BlendRegionMap,
-  ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded,
-  CopyToBgTilemapBufferRect, CopyWindowToVram, CpuFill16, CreateLoopedTask,
-  CreateRegionMapCursor, CreateRegionMapPlayerIcon, CreateSprite, CreateTask,
-  DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask, DoRegionMapInputCallback,
-  DrawTextBorderOuter, FALSE, FadeToBlackExceptPrimary, FillBgTilemapBufferRect,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreePokenavSubstruct, FreeRegionMapIconResources,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, FuncIsActiveLoopedTask,
-  FuncIsActiveTask, GetBgY, GetLandmarkName, GetSubstructPtr,
-  HideBg, InitBgTemplates, InitRegionMapData, IsDma3ManagerBusyWithBgCopy,
-  IsEventIslandMapSecId, IsLoopedTaskActive, IsPaletteFadeActive, IsRegionMapZoomed,
-  JOY_NEW, LZ77UnCompWram, LoadCompressedSpriteSheet, LoadLeftHeaderGfxForIndex,
-  LoadOam, LoadRegionMapGfx, LoadUserWindowBorderGfx_, MainMenuLoopedTaskIsBusy,
-  NULL, PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE,
-  PokenavFadeScreen, Pokenav_AllocAndLoadPalettes, PrintHelpBarText, ProcessSpriteCopyRequests,
-  PutWindowRectTilemap, PutWindowTilemap, RemoveWindow, SetBgMode,
-  SetBgTilemapBuffer, SetLeftHeaderSpritesInvisibility, SetPokenavVBlankCallback, SetRegionMapDataForZoom,
-  SetVBlankCallback_, ShowBg, ShowLeftHeaderGfx, SlideMenuHeaderDown,
-  StringCopyPadded, TRUE, TransferPlttBuffer, TrySetPlayerIconBlink,
-  UpdateRegionMapRightHeaderTiles, UpdateRegionMapVideoRegs, UpdateRegionMapZoom, WaitForHelpBar,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u32 PokenavCallback_Init_RegionMap(void) */
 export function PokenavCallback_Init_RegionMap(): any {
   let state: any = AllocSubstruct(POKENAV_SUBSTRUCT_REGION_MAP_STATE, 0);
@@ -378,13 +348,13 @@ export function FreeCityZoomViewGfx(): any {
 
 /** static void LoadPokenavRegionMapGfx(struct Pokenav_RegionMapGfx *state) */
 export function LoadPokenavRegionMapGfx(state: any): any {
-  BgDmaFill(1, PIXEL_FILL(0), _0x40, 1);
-      BgDmaFill(1, PIXEL_FILL(1), _0x41, 1);
-      CpuFill16(_0x1040, state.tilemapBuffer, _0x800);
+  BgDmaFill(1, PIXEL_FILL(0), 0x40, 1);
+      BgDmaFill(1, PIXEL_FILL(1), 0x41, 1);
+      CpuFill16(0x1040, state.tilemapBuffer, 0x800);
       SetBgTilemapBuffer(1, state.tilemapBuffer);
       state.infoWindowId = AddWindow(sMapSecInfoWindowTemplate);
-      LoadUserWindowBorderGfx_(state.infoWindowId, _0x42, BG_PLTT_ID(4));
-      DrawTextBorderOuter(state.infoWindowId, _0x42, 4);
+      LoadUserWindowBorderGfx_(state.infoWindowId, 0x42, BG_PLTT_ID(4));
+      DrawTextBorderOuter(state.infoWindowId, 0x42, 4);
       DecompressAndCopyTileDataToVram(1, sRegionMapCityZoomTiles_Gfx, 0, 0, 0);
       FillWindowPixelBuffer(state.infoWindowId, PIXEL_FILL(1));
       PutWindowTilemap(state.infoWindowId);
@@ -392,7 +362,7 @@ export function LoadPokenavRegionMapGfx(state: any): any {
       CopyPaletteIntoBufferUnfaded(sMapSecInfoWindow_Pal, BG_PLTT_ID(1), 0);
       CopyPaletteIntoBufferUnfaded(gRegionMapCityZoomTiles_Pal, BG_PLTT_ID(3), PLTT_SIZE_4BPP);
       if (!IsRegionMapZoomed())
-          ChangeBgY(1, -_0x6000, BG_COORD_SET);
+          ChangeBgY(1, -0x6000, BG_COORD_SET);
       else
           ChangeBgY(1, 0, BG_COORD_SET);
 
@@ -421,7 +391,7 @@ export function UpdateMapSecInfoWindow(state: any): any {
           FillWindowPixelBuffer(state.infoWindowId, PIXEL_FILL(1));
           PutWindowRectTilemap(state.infoWindowId, 0, 0, 13, 2);  
           AddTextPrinterParameterized(state.infoWindowId, FONT_NARROW, regionMap.mapSecName, 0, 1, TEXT_SKIP_DRAW, NULL);
-          FillBgTilemapBufferRect(1, _0x1041, 17, 6, 13, 11, 17);  
+          FillBgTilemapBufferRect(1, 0x1041, 17, 6, 13, 11, 17);  
           CopyWindowToVram(state.infoWindowId, COPYWIN_FULL);
           SetCityZoomTextInvisibility(TRUE);
           break;
@@ -435,7 +405,7 @@ export function UpdateMapSecInfoWindow(state: any): any {
           SetCityZoomTextInvisibility(TRUE);
           break;
       case MAPSECTYPE_NONE:
-          FillBgTilemapBufferRect(1, _0x1041, 17, 4, 13, 13, 17);  
+          FillBgTilemapBufferRect(1, 0x1041, 17, 4, 13, 13, 17);  
           CopyBgTilemapBufferToVram(1);
           SetCityZoomTextInvisibility(TRUE);
           break;
@@ -462,7 +432,7 @@ export function IsChangeBgYForZoomActive(): any {
 export function Task_ChangeBgYForZoom(taskId: any): any {
   if (gTasks[taskId].tZoomIn)
       {
-          if (ChangeBgY(1, _0x480, BG_COORD_ADD) >= 0)
+          if (ChangeBgY(1, 0x480, BG_COORD_ADD) >= 0)
           {
               ChangeBgY(1, 0, BG_COORD_SET);
               DestroyTask(taskId);
@@ -472,9 +442,9 @@ export function Task_ChangeBgYForZoom(taskId: any): any {
       }
       else
       {
-          if (ChangeBgY(1, _0x480, BG_COORD_SUB) <= -_0x6000)
+          if (ChangeBgY(1, 0x480, BG_COORD_SUB) <= -0x6000)
           {
-              ChangeBgY(1, -_0x6000, BG_COORD_SET);
+              ChangeBgY(1, -0x6000, BG_COORD_SET);
               DestroyTask(taskId);
           }
 
@@ -513,7 +483,7 @@ export function DrawCityMap(state: any, mapSecId: any, pos: any): any {
       if (i == NUM_CITY_MAPS)
           return;
 
-      FillBgTilemapBufferRect_Palette0(1, _0x1041, 17, 6, 13, 11);  
+      FillBgTilemapBufferRect_Palette0(1, 0x1041, 17, 6, 13, 11);  
       CopyToBgTilemapBufferRect(1, state.cityZoomPics[i], 18, 6, 10, 10);
 }
 

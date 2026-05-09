@@ -15,40 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ANIM_SPRITES_START, AllocOamMatrix, AllocSpritePalette, AllocZeroed,
-  AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemapHandleContest, AnimTranslateLinear, ArcTan2Neg,
-  BATTLE_PARTNER, BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
-  BLDCNT_EFFECT_DARKEN, BLDCNT_EFFECT_LIGHTEN, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG3,
-  BattleAnimAdjustPanning, BlendPalette, BlendPalettes, CalcCenterToCornerVec,
-  ClearBattleAnimBg, CloneBattlerSpriteWithBlend, Cos, CreateSprite,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroyAnimSprite, DestroyAnimVisualTask,
-  DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet, FALSE,
-  FREE_AND_SET_NULL, FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
-  GET_BATTLER_SIDE2, GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattlePalettesMask,
-  GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr,
-  GetBattlerSpriteSubpriority, GetBattlerYCoordWithElevation, IndexOfSpritePaletteTag, InitAnimLinearTranslation,
-  InitSpritePosToAnimAttacker, IsBattlerSpriteVisible, IsContest, IsDoubleBattle,
-  LZDecompressWram, LoadCompressedPalette, LoadPalette, MathUtil_Inv16,
-  MathUtil_Mul16, OBJ_PLTT_ID, PLTT_SIZE_4BPP, PlaySE12WithPanning,
-  PrepareAffineAnimInTaskData, PrepareBattlerSpriteForRotScale, Q_8_8, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  Random2, ResetSpriteRotScale, RunAffineAnimFromTaskData, ST_OAM_AFFINE_DOUBLE,
-  ST_OAM_AFFINE_NORMAL, ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL, ScanlineEffect_SetParams,
-  SeekSpriteAnim, SetAnimBgAttribute, SetAnimSpriteInitialXOffset, SetAverageBattlerPositions,
-  SetBattlerSpriteYOffsetFromRotation, SetBattlerSpriteYOffsetFromYScale, SetGpuReg, SetGrayscaleOrOriginalPalette,
-  SetSpriteCoordsToAnimAttackerCoords, SetSpriteNextToMonHead, SetSpritePrimaryCoordsFromSecondaryCoords, SetSpriteRotScale,
-  Sin, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
-  TRUE, TrySetSpriteRotScale, WIN_RANGE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimCirclingFinger(struct Sprite *sprite) */
 export function AnimCirclingFinger(sprite: any): any {
   SetSpriteCoordsToAnimAttackerCoords(sprite);
@@ -174,7 +140,7 @@ export function AnimTask_Withdraw_Step(taskId: any): any {
       else
           rotation = gTasks[taskId].data[0];
 
-      SetSpriteRotScale(spriteId, _0x100, _0x100, rotation);
+      SetSpriteRotScale(spriteId, 0x100, 0x100, rotation);
       if (gTasks[taskId].data[1] == 0)
       {
           gTasks[taskId].data[0] += 0xB0;
@@ -274,9 +240,9 @@ export function AnimSonicBoomProjectile(sprite: any): any {
       rotation = ArcTan2Neg(targetXPos - sprite.x, targetYPos - sprite.y);
       rotation += 0xF000;
       if (IsContest())
-          rotation -= _0x6000;
+          rotation -= 0x6000;
 
-      TrySetSpriteRotScale(sprite, FALSE, _0x100, _0x100, rotation);
+      TrySetSpriteRotScale(sprite, FALSE, 0x100, 0x100, rotation);
       sprite.data[0] = gBattleAnimArgs[4];
       sprite.data[2] = targetXPos;
       sprite.data[4] = targetYPos;
@@ -475,9 +441,9 @@ export function AnimTask_AirCutterProjectile(taskId: any): any {
       }
 
       gTasks[taskId].data[3] = gBattleAnimArgs[3];
-      if (gBattleAnimArgs[4] & _0x80)
+      if (gBattleAnimArgs[4] & 0x80)
       {
-          gBattleAnimArgs[4] ^= _0x80;
+          gBattleAnimArgs[4] ^= 0x80;
           if (gBattleAnimArgs[4] >= 64)
           {
               let _var: any = GetBattlerSpriteSubpriority(gBattleAnimTarget) + (gBattleAnimArgs[4] - 64);
@@ -551,7 +517,7 @@ export function AnimCoinThrow(sprite: any): any {
       r6 += gBattleAnimArgs[2];
       _var = ArcTan2Neg(r6 - sprite.x, r7 - sprite.y);
       _var += 0xC000;
-      TrySetSpriteRotScale(sprite, FALSE, _0x100, _0x100, _var);
+      TrySetSpriteRotScale(sprite, FALSE, 0x100, 0x100, _var);
       sprite.data[0] = gBattleAnimArgs[4];
       sprite.data[2] = r6;
       sprite.data[4] = r7;
@@ -568,7 +534,7 @@ export function AnimFallingCoin(sprite: any): any {
 
 /** static void AnimFallingCoin_Step(struct Sprite *sprite) */
 export function AnimFallingCoin_Step(sprite: any): any {
-  sprite.data[0] += _0x80;
+  sprite.data[0] += 0x80;
       sprite.x2 = sprite.data[0] >> 8;
       if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
           sprite.x2 = -sprite.x2;
@@ -785,7 +751,7 @@ export function AnimTask_Minimize(taskId: any): any {
       task.data[1] = 0;
       task.data[2] = 0;
       task.data[3] = 0;
-      task.data[4] = _0x100;
+      task.data[4] = 0x100;
       task.data[5] = 0;
       task.data[6] = 0;
       task.data[7] = GetBattlerSpriteSubpriority(gBattleAnimAttacker);
@@ -801,7 +767,7 @@ export function AnimTask_Minimize_Step(taskId: any): any {
           if (task.data[2] == 0 || task.data[2] == 3 || task.data[2] == 6)
               CreateMinimizeSprite(task, taskId);
           task.data[2]++;
-          task.data[4] += _0x28;
+          task.data[4] += 0x28;
           SetSpriteRotScale(task.data[0], task.data[4], task.data[4], 0);
           SetBattlerSpriteYOffsetFromYScale(task.data[0]);
           if (task.data[2] == 32)
@@ -822,7 +788,7 @@ export function AnimTask_Minimize_Step(taskId: any): any {
               {
                   task.data[2] = 0;
                   task.data[3] = 0;
-                  task.data[4] = _0x100;
+                  task.data[4] = 0x100;
                   SetSpriteRotScale(task.data[0], task.data[4], task.data[4], 0);
                   SetBattlerSpriteYOffsetFromYScale(task.data[0]);
                   task.data[1] = 2;
@@ -841,7 +807,7 @@ export function AnimTask_Minimize_Step(taskId: any): any {
           break;
       case 4:
           task.data[2] += 2;
-          task.data[4] -= _0x50;
+          task.data[4] -= 0x50;
           SetSpriteRotScale(task.data[0], task.data[4], task.data[4], 0);
           SetBattlerSpriteYOffsetFromYScale(task.data[0]);
           if (task.data[2] == 32)
@@ -1142,7 +1108,7 @@ export function AnimTask_SketchDrawMon(taskId: any): any {
           params.dmaDest =REG_BG2HOFS;
       }
 
-      for (i = task.data[0] - _0x40; i <= task.data[0]; i++)
+      for (i = task.data[0] - 0x40; i <= task.data[0]; i++)
       {
           if (i >= 0)
           {
@@ -1247,12 +1213,12 @@ export function AnimPencil_Step(sprite: any): any {
           sprite.data[4] += sprite.data[3];
           if (sprite.data[4] > 31)
           {
-              sprite.data[4] = _0x40 - sprite.data[4];
+              sprite.data[4] = 0x40 - sprite.data[4];
               sprite.data[3] *= -1;
           }
           else if (sprite.data[4] <= -32)
           {
-              sprite.data[4] = -_0x40 - sprite.data[4];
+              sprite.data[4] = -0x40 - sprite.data[4];
               sprite.data[3] *= -1;
           }
           sprite.x2 = sprite.data[4];
@@ -1421,7 +1387,7 @@ export function AnimSoftBoiledEgg(sprite: any): any {
   let r1: any = null;
       InitSpritePosToAnimAttacker(sprite, FALSE);
       r1 = GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER ? -160 : 160;
-      sprite.data[0] = _0x380;
+      sprite.data[0] = 0x380;
       sprite.data[1] = r1;
       sprite.data[7] = gBattleAnimArgs[2];
       sprite.callback = AnimSoftBoiledEgg_Step1;
@@ -1801,7 +1767,7 @@ export function AnimMagentaHeart(sprite: any): any {
       sprite.x2 = Sin(sprite.data[1], 8);
       sprite.y2 = sprite.data[2] >> 8;
       sprite.data[1] = (sprite.data[1] + 7) & 0xFF;
-      sprite.data[2] -= _0x80;
+      sprite.data[2] -= 0x80;
       if (sprite.data[0] == 60)
           DestroyAnimSprite(sprite);
 }
@@ -1843,7 +1809,7 @@ export function AnimTask_FakeOut_Step1(taskId: any): any {
 export function AnimTask_FakeOut_Step2(taskId: any): any {
   if (++gTasks[taskId].data[10] == 5)
       {
-          gTasks[taskId].data[11] = _0x88;
+          gTasks[taskId].data[11] = 0x88;
           SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_LIGHTEN);
           BlendPalettes(GetBattlePalettesMask(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE), 16, RGB_WHITE);
       }
@@ -2160,8 +2126,8 @@ export function AnimOrbitFast_Step(sprite: any): any {
       switch (sprite.data[5])
       {
       case 1:
-          sprite.data[2] -= _0x400;
-          sprite.data[3] -= _0x100;
+          sprite.data[2] -= 0x400;
+          sprite.data[3] -= 0x100;
           if (++sprite.data[4] == sprite.data[0])
           {
               sprite.data[5] = 2;
@@ -2169,8 +2135,8 @@ export function AnimOrbitFast_Step(sprite: any): any {
           }
           break;
       case 0:
-          sprite.data[2] += _0x400;
-          sprite.data[3] += _0x100;
+          sprite.data[2] += 0x400;
+          sprite.data[3] += 0x100;
           if (++sprite.data[4] == sprite.data[0])
           {
               sprite.data[4] = 0;

@@ -15,38 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddWindow,
-  AnimateSprites, BG_PLTT_ID, BG_SCREEN_ADDR, BLDCNT_EFFECT_DARKEN,
-  BLDCNT_TGT1_BD, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2, BLDCNT_TGT1_BG3,
-  BLDCNT_TGT1_OBJ, BeginNormalPaletteFade, BuildOamBuffer, ChangeBgX,
-  ChangeBgY, ClearScheduledBgCopiesToVram, ClearWindowTilemap, CopyMonCategoryText,
-  CreateMonPicSprite_Affine, CreateSprite, CreateTask, CreateYesNoMenu,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DeactivateAllTextPrinters,
-  DestroySprite, DmaFill16, DmaFill32, DoScheduledBgTilemapCopiesToVram,
-  DrawStdFrameWithCustomTileAndPalette, EnableInterrupts, FALSE, FillWindowPixelBuffer,
-  FreeAllSpritePalettes, FreeAndDestroyMonPicSprite, FreeOamMatrix, GetOverworldTextboxPalettePtr,
-  GetStringCenterAlignXOffset, InitBgsFromTemplates, InitWindows, JOY_NEW,
-  LZ77UnCompVram, LoadCompressedSpriteSheet, LoadOam, LoadPalette,
-  LoadSpritePalettes, LoadUserWindowBorderGfx, Menu_ProcessInputNoWrapClearOnChoose, NULL,
-  PALETTES_ALL, PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP,
-  PlayCry_Normal, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  RemoveWindow, ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, RunTasks, ScanlineEffect_Stop,
-  ScheduleBgCopyTilemapToVram, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  ShowBg, Sin, SpeciesToNationalPokedexNum, StartSpriteAnimIfDifferent,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE, WIN_RANGE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u16 GetStarterPokemon(u16 chosenStarterId) */
 export function GetStarterPokemon(chosenStarterId: any): any {
   if (chosenStarterId > STARTER_MON_COUNT)
@@ -110,7 +78,7 @@ export function CB2_ChooseStarter(): any {
       LoadCompressedSpriteSheet(sSpriteSheet_PokeballSelect[0]);
       LoadCompressedSpriteSheet(sSpriteSheet_StarterCircle[0]);
       LoadSpritePalettes(sSpritePalettes_StarterChoose);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
 
       EnableInterrupts(DISPSTAT_VBLANK);
       SetVBlankCallback(VblankCB_StarterChoose);
@@ -278,10 +246,10 @@ export function CreateStarterPokemonLabel(selection: any): any {
 
        
 
-      width = GetStringCenterAlignXOffset(FONT_NORMAL, speciesName, _0x68);
+      width = GetStringCenterAlignXOffset(FONT_NORMAL, speciesName, 0x68);
       AddTextPrinterParameterized3(sStarterLabelWindowId, FONT_NORMAL, width, 1, sTextColors, 0, speciesName);
 
-      width = GetStringCenterAlignXOffset(FONT_NARROW, categoryText, _0x68);
+      width = GetStringCenterAlignXOffset(FONT_NARROW, categoryText, 0x68);
       AddTextPrinterParameterized3(sStarterLabelWindowId, FONT_NARROW, width, 17, sTextColors, 0, categoryText);
 
       PutWindowTilemap(sStarterLabelWindowId);

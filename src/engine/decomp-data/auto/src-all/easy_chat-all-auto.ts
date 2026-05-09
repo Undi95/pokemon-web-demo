@@ -15,45 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddWindow,
-  Alloc, AnimateSprites, BG_PLTT_ID, BG_SCREEN_SIZE,
-  BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer, ChangeBgX,
-  ChangeBgY, CleanupOverworldWindowsAndTilemaps, ConvertEasyChatWordsToString, CopyBgTilemapBufferToVram,
-  CopyEasyChatWord, CopyEasyChatWordPadded, CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect,
-  CopyWindowToVram, CpuCopy16, CpuFastFill, CreateObjectGraphicsSprite,
-  CreateSprite, CreateTask, CreateYesNoMenu, DISPCNT_MODE_0,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DeactivateAllTextPrinters,
-  DecompressAndLoadBgGfxUsingHeap, DestroySprite, DrawTextBorderOuter, DynamicPlaceholderTextUtil_ExpandPlaceholders,
-  DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr, EC_GROUP, EC_INDEX,
-  EC_WORD, FALSE, FadeScreen, FillBgTilemapBufferRect,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect, FlagGet,
-  FlagSet, FreeAllSpritePalettes, FreeAllWindowBuffers, GetBgTilemapBuffer,
-  GetBgY, GetCurrentPhrase, GetEasyChatWord, GetEasyChatWordGroupName,
-  GetNationalPokedexCount, GetQuestionnaireWordsPtr, GetSetPokedexFlag, GetStringCenterAlignXOffset,
-  GetStringWidth, GetTitleText, GetWordTaskArg, HideBg,
-  InitBgsFromTemplates, InitWindows, IsDma3ManagerBusyWithBgCopy, IsNationalPokedexEnabled,
-  IsOverworldLinkActive, JOY_NEW, JOY_REPEAT, LoadCompressedSpriteSheet,
-  LoadOam, LoadPalette, LoadSpritePalettes, LoadSpriteSheets,
-  LoadUserWindowBorderGfx, Menu_ProcessInputNoWrapClearOnChoose, NULL, PALETTES_ALL,
-  PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE, ProcessSpriteCopyRequests,
-  PutWindowTilemap, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, Random, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  SetWordTaskArg, ShowBg, ShowFieldAutoScrollMessage, SpeciesToNationalPokedexNum,
-  SpriteCallbackDummy, StartSpriteAnim, StringAppend, StringLength,
-  TRUE, TRY_FREE_AND_SET_NULL, TVShowConvertInternationalString, TransferPlttBuffer,
-  TrySetTrendyPhrase, UpdatePaletteFade, WIN_RANGE, WriteColorChangeControlCode,
-  memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void DoEasyChatScreen(u8 type, u16 *words, MainCallback exitCallback, u8 displayedPersonType) */
 export function DoEasyChatScreen(_type: any, words: any, exitCallback: any, displayedPersonType: any): any {
   let taskId: any = null;
@@ -2773,7 +2734,7 @@ export function AddPhraseWindow(): any {
       template.width = sPhraseFrameDimensions[frameId].width;
       template.height = sPhraseFrameDimensions[frameId].height;
       template.paletteNum = 11;
-      template.baseBlock = _0x84;  
+      template.baseBlock = 0x84;  
       sScreenControl.windowId = AddWindow(template);
       PutWindowTilemap(sScreenControl.windowId);
 }
@@ -2929,7 +2890,7 @@ export function AdjustBgTilemapForFooter(): any {
           CopyToBgTilemapBufferRect(3, tilemap, 0, 11, 32, 2);
           break;
       case FOOTER_QUIZ:
-          tilemap += _0x300;
+          tilemap += 0x300;
           CopyToBgTilemapBufferRect(3, tilemap, 0, 11, 32, 2);
           break;
       case NUM_FOOTER_TYPES:
@@ -3289,7 +3250,7 @@ export function BufferLowerWindowFrame(left: any, top: any, width: any, height: 
 
 /** static void ResetLowerWindowScroll(void) */
 export function ResetLowerWindowScroll(): any {
-  ChangeBgY(2, _0x800, BG_COORD_SET);
+  ChangeBgY(2, 0x800, BG_COORD_SET);
       sScreenControl.scrollOffset = 0;
 }
 

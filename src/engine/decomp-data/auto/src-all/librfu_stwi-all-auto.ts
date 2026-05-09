@@ -15,17 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CpuCopy32, DmaCopy16, FALSE, IntrEnable,
-  NULL, REG_TMCNT_H, REG_TMCNT_L, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void STWI_init_all(struct RfuIntrStruct *interruptStruct, IntrFunc *interrupt, bool8 copyInterruptToRam) */
 export function STWI_init_all(interruptStruct: any, interrupt: any, copyInterruptToRam: any): any {
   if (copyInterruptToRam == TRUE)
@@ -53,7 +42,7 @@ export function STWI_init_all(interruptStruct: any, interrupt: any, copyInterrup
       gSTWIStatus.error = 0;
       gSTWIStatus.recoveryCount = 0;
       gSTWIStatus.sending = 0;
-      REG_RCNT = _0x100;  
+      REG_RCNT = 0x100;  
       REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_115200_BPS;
       STWI_init_Callback_M();
       STWI_init_Callback_S();
@@ -72,14 +61,14 @@ export function AgbRFU_SoftReset(): any {
   let timerL: any = null;
       let timerH: any = null;
 
-      REG_RCNT = _0x8000;
+      REG_RCNT = 0x8000;
       REG_RCNT = 0x80A0;  
       timerL =REG_TMCNT_L(gSTWIStatus.timerSelect);
       timerH =REG_TMCNT_H(gSTWIStatus.timerSelect);
       timerH = 0;
       timerL = 0;
       timerH = TIMER_ENABLE | TIMER_1024CLK;
-      while (timerL <= _0x11)
+      while (timerL <= 0x11)
           REG_RCNT = 0x80A2;
       timerH = 3;
       REG_RCNT = 0x80A0;
@@ -593,7 +582,7 @@ export function STWI_init(request: any): any {
           gSTWIStatus.timerActive = 0;
           gSTWIStatus.error = 0;
           gSTWIStatus.recoveryCount = 0;
-          REG_RCNT = _0x100;
+          REG_RCNT = 0x100;
           REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_115200_BPS;
           return FALSE;
       }
@@ -605,7 +594,7 @@ export function STWI_start_Command(): any {
 
        
        
-      gSTWIStatus.txPacket.rfuPacket8.data = _0x99660000 | (gSTWIStatus.reqLength << 8) | gSTWIStatus.reqActiveCommand;
+      gSTWIStatus.txPacket.rfuPacket8.data = 0x99660000 | (gSTWIStatus.reqLength << 8) | gSTWIStatus.reqActiveCommand;
       REG_SIODATA32 = gSTWIStatus.txPacket.rfuPacket32.command;
       gSTWIStatus.state = 0;  
       gSTWIStatus.reqNext = 1;

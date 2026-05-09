@@ -15,28 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized4, AllocZeroed, AnimateSprites,
-  BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer, CalculatePlayerPartyCount,
-  ClearWindowTilemap, CopyWindowToVram, DeactivateAllTextPrinters, DrawTextBorderOuter,
-  FALSE, FillBgTilemapBufferRect, FillWindowPixelBuffer, FreeAllSpritePalettes,
-  GetBlockReceivedStatus, GetMultiplayerId, IncrementGameStat, InitBgsFromTemplates,
-  InitWindows, IsLinkTaskFinished, IsTextPrinterActive, LoadOam,
-  LoadUserWindowBorderGfx, LoadUserWindowBorderGfx_, Menu_LoadStdPal, PALETTES_ALL,
-  PIXEL_FILL, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_DISPCNT,
-  ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, RunTasks, RunTextPrinters, SendBlock,
-  SetCloseLinkCallback, SetGpuReg, SetLinkStandbyCallback, SetMainCallback2,
-  SetVBlankCallback, ShowBg, StartUnionRoomBattle, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, ZeroMonData, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void CB2_SetUpPartiesAndStartBattle(void) */
 export function CB2_SetUpPartiesAndStartBattle(): any {
   let i: any = null;
@@ -72,7 +50,7 @@ export function PrintUnionRoomBattleMessage(state: any, str: any, speed: any): a
   switch (state)
       {
       case 0:
-          DrawTextBorderOuter(0, _0x001, 0xD);
+          DrawTextBorderOuter(0, 0x001, 0xD);
           AddTextPrinterForUnionRoomBattle(0, str, 0, 1, speed);
           PutWindowTilemap(0);
           CopyWindowToVram(0, COPYWIN_FULL);
@@ -101,7 +79,7 @@ export function CB2_UnionRoomBattle(): any {
   switch (gMain.state)
       {
       case 0:
-          SetGpuReg(REG_OFFSET_DISPCNT, _0x0000);
+          SetGpuReg(REG_OFFSET_DISPCNT, 0x0000);
           sBattle = AllocZeroed(0);
           ResetSpriteData();
           FreeAllSpritePalettes();
@@ -136,7 +114,7 @@ export function CB2_UnionRoomBattle(): any {
       case 3:
           if (!UpdatePaletteFade())
           {
-              memset(gBlockSendBuffer, 0, _0x20);
+              memset(gBlockSendBuffer, 0, 0x20);
               if (gSelectedOrderFromParty[0] == -gSelectedOrderFromParty[1])
               {
                   gBlockSendBuffer[0] = ACTIVITY_DECLINE | IN_UNION_ROOM;
@@ -145,7 +123,7 @@ export function CB2_UnionRoomBattle(): any {
               {
                   gBlockSendBuffer[0] = ACTIVITY_ACCEPT | IN_UNION_ROOM;
               }
-              SendBlock(0, gBlockSendBuffer, _0x20);
+              SendBlock(0, gBlockSendBuffer, 0x20);
               gMain.state++;
           }
           break;

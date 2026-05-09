@@ -15,18 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BeginNormalPaletteFade, CreateTask, DestroyTask, LockPlayerFieldControls,
-  Overworld_PlaySpecialMapMusic, PALETTES_ALL, ScriptMenu_CreatePCMultichoice, ScriptMenu_DisplayPCStartupPrompt,
-  SetMainCallback2,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void AccessHallOfFamePC(void) */
 export function AccessHallOfFamePC(): any {
   SetMainCallback2(CB2_DoHallOfFamePC);
@@ -45,7 +33,7 @@ export function ReshowPCMenuAfterHallOfFamePC(): any {
       Overworld_PlaySpecialMapMusic();
       ScriptMenu_CreatePCMultichoice();
       ScriptMenu_DisplayPCStartupPrompt();
-      BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
       CreateTask(Task_WaitForPaletteFade, 10);
 }
 

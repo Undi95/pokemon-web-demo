@@ -15,50 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddNewGameBirchObject, AddScrollIndicatorArrowPair, AddTextPrinterForMessage,
-  AddTextPrinterParameterized, AddTextPrinterParameterized3, AddTextPrinterWithCallbackForMessage, AnimateSprites,
-  BG_PLTT_ID, BG_SCREEN_ADDR, BG_TILE_V_FLIP, BLDALPHA_BLEND,
-  BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_DARKEN, BLDCNT_TGT1_BG0, BLDCNT_TGT1_OBJ,
-  BLDCNT_TGT2_BG1, BeginNormalPaletteFade, BuildOamBuffer, CallWindowFunction,
-  ChangeBgX, ChangeBgY, ClearStdWindowAndFrame, ClearWindowTilemap,
-  ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyWindowToVram, CreateMonPicSprite_Affine,
-  CreatePokeballSpriteToReleaseMon, CreateTask, CreateTrainerSprite, CreateWindowTemplate,
-  CreateYesNoMenu, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DeactivateAllTextPrinters, DestroyTask,
-  DmaFill16, DmaFill32, DoNamingScreen, EnableInterrupts,
-  FALSE, FacilityClassToPicIndex, FadeOutBGM, FillBgTilemapBufferRect,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect, FlagGet,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeAndDestroyMonPicSprite, GetFontAttribute,
-  GetHoennPokedexCount, GetNationalPokedexCount, GetStringRightAlignXOffset, GetWindowAttribute,
-  GetWindowFrameTilesPal, HideBg, InitBgFromTemplate, InitBgsFromTemplates,
-  InitMenuInUpperLeftCornerNormal, InitSpriteAffineAnim, InitWindows, IsMysteryGiftEnabled,
-  IsNationalPokedexEnabled, IsTextPrinterActive, IsWirelessAdapterConnected, JOY_NEW,
-  LZ77UnCompVram, LoadBgTiles, LoadMessageBoxGfx, LoadOam,
-  LoadPalette, MENU_WIN_VCOORDS, Menu_GetCursorPos, Menu_ProcessInputNoWrap,
-  Menu_ProcessInputNoWrapClearOnChoose, NULL, PALETTES_ALL, PALETTES_BG,
-  PIXEL_FILL, PLTT_SIZE, PLTT_SIZEOF, PLTT_SIZE_4BPP,
-  PlayBGM, PlaySE, PrintMenuTable, ProcessSpriteCopyRequests,
-  PutWindowTilemap, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
-  REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT,
-  REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, Random, RemoveScrollIndicatorArrowPair,
-  ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RtcGetErrorStatus, RunTasks, RunTextPrinters,
-  RunTextPrintersAndIsPrinter0Active, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, ST_OAM_AFFINE_NORMAL,
-  ST_OAM_AFFINE_OFF, ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL, ScanlineEffect_Stop,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  SpriteCallbackDummy, StartSpriteAffineAnim, StringExpandPlaceholders, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE, WIN_RANGE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void CB2_MainMenu(void) */
 export function CB2_MainMenu(): any {
   RunTasks();
@@ -111,9 +67,9 @@ export function InitMainMenu(returningFromOptionsMenu: any): any {
       ResetSpriteData();
       FreeAllSpritePalettes();
       if (returningFromOptionsMenu)
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);  
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);  
       else
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_WHITEALPHA);  
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_WHITEALPHA);  
       ResetBgsAndClearDma3BusyFlags(0);
       InitBgsFromTemplates(0, sMainMenuBgTemplates, ARRAY_COUNT(sMainMenuBgTemplates));
       ChangeBgX(0, 0, BG_COORD_SET);
@@ -385,8 +341,8 @@ export function Task_DisplayMainMenu(taskId: any): any {
                   gTasks[tScrollArrowTaskId].func = Task_ScrollIndicatorArrowPairOnMainMenu;
                   if (sCurrItemAndOptionMenuCheck == 4)
                   {
-                      ChangeBgY(0, _0x2000, BG_COORD_ADD);
-                      ChangeBgY(1, _0x2000, BG_COORD_ADD);
+                      ChangeBgY(0, 0x2000, BG_COORD_ADD);
+                      ChangeBgY(1, 0x2000, BG_COORD_ADD);
                       tIsScrolled = TRUE;
                       gTasks[tScrollArrowTaskId].tArrowTaskIsScrolled = TRUE;
                   }
@@ -410,13 +366,13 @@ export function HandleMainMenuInput(taskId: any): any {
       {
           PlaySE(SE_SELECT);
           IsWirelessAdapterConnected();    
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
           gTasks[taskId].func = Task_HandleMainMenuAPressed;
       }
       else if (JOY_NEW(B_BUTTON))
       {
           PlaySE(SE_SELECT);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_WHITEALPHA);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_WHITEALPHA);
           SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(0, DISPLAY_WIDTH));
           SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(0, DISPLAY_HEIGHT));
           gTasks[taskId].func = Task_HandleMainMenuBPressed;
@@ -425,8 +381,8 @@ export function HandleMainMenuInput(taskId: any): any {
       {
           if (tMenuType == HAS_MYSTERY_EVENTS && tIsScrolled == TRUE && tCurrItem == 1)
           {
-              ChangeBgY(0, _0x2000, BG_COORD_SUB);
-              ChangeBgY(1, _0x2000, BG_COORD_SUB);
+              ChangeBgY(0, 0x2000, BG_COORD_SUB);
+              ChangeBgY(1, 0x2000, BG_COORD_SUB);
               gTasks[tScrollArrowTaskId].tArrowTaskIsScrolled = tIsScrolled = FALSE;
           }
           tCurrItem--;
@@ -437,8 +393,8 @@ export function HandleMainMenuInput(taskId: any): any {
       {
           if (tMenuType == HAS_MYSTERY_EVENTS && tCurrItem == 3 && tIsScrolled == FALSE)
           {
-              ChangeBgY(0, _0x2000, BG_COORD_ADD);
-              ChangeBgY(1, _0x2000, BG_COORD_ADD);
+              ChangeBgY(0, 0x2000, BG_COORD_ADD);
+              ChangeBgY(1, 0x2000, BG_COORD_ADD);
               gTasks[tScrollArrowTaskId].tArrowTaskIsScrolled = tIsScrolled = TRUE;
           }
           tCurrItem++;
@@ -691,10 +647,10 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(0));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(0) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(0) + MENU_HEIGHT_WIN##(0) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 1:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(1));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(1) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(1) + MENU_HEIGHT_WIN##(1) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
               }
               break;
@@ -703,13 +659,13 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(2));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(2) + MENU_HEIGHT_WIN##(2) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 1:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(3));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(3) + MENU_HEIGHT_WIN##(3) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 2:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(4));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(4) + MENU_HEIGHT_WIN##(4) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
               }
               break;
@@ -718,16 +674,16 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(2));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(2) + MENU_HEIGHT_WIN##(2) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 1:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(3));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(3) + MENU_HEIGHT_WIN##(3) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 2:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(4));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(4) + MENU_HEIGHT_WIN##(4) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 3:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(5));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(5) + MENU_HEIGHT_WIN##(5) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
               }
               break;
@@ -736,28 +692,28 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(2));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(2) + MENU_HEIGHT_WIN##(2) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 1:
                       if (isScrolled)
-                          SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(3) - MENU_SCROLL_SHIFT);
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(3) + MENU_HEIGHT_WIN##(3) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
                       else
-                          SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(3));
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(3) + MENU_HEIGHT_WIN##(3) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 2:
                       if (isScrolled)
-                          SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(4) - MENU_SCROLL_SHIFT);
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(4) + MENU_HEIGHT_WIN##(4) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
                       else
-                          SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(4));
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(4) + MENU_HEIGHT_WIN##(4) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 3:
                       if (isScrolled)
-                          SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(5) - MENU_SCROLL_SHIFT);
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(5) + MENU_HEIGHT_WIN##(5) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
                       else
-                          SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(5));
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(5) + MENU_HEIGHT_WIN##(5) + 1) * 8 - MENU_SHADOW_PADDING));
                       break;
                   case 4:
-                      SetGpuReg(REG_OFFSET_WIN0V, MENU_WIN_VCOORDS(6) - MENU_SCROLL_SHIFT);
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN##(6) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN##(6) + MENU_HEIGHT_WIN##(6) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
                       break;
               }
               break;
@@ -895,13 +851,13 @@ export function Task_NewGameBirchSpeechSub_WaitForLotad(taskId: any): any {
               if (gTasks[sBirchSpeechMainTaskId].tTimer >= 96)
               {
                   DestroyTask(taskId);
-                  if (gTasks[sBirchSpeechMainTaskId].tTimer < _0x4000)
+                  if (gTasks[sBirchSpeechMainTaskId].tTimer < 0x4000)
                       gTasks[sBirchSpeechMainTaskId].tTimer++;
               }
               return;
       }
       tState++;
-      if (gTasks[sBirchSpeechMainTaskId].tTimer < _0x4000)
+      if (gTasks[sBirchSpeechMainTaskId].tTimer < 0x4000)
           gTasks[sBirchSpeechMainTaskId].tTimer++;
 }
 
@@ -1380,7 +1336,7 @@ export function AddBirchSpeechObjects(taskId: any): any {
       let brendanSpriteId: any = null;
       let maySpriteId: any = null;
 
-      birchSpriteId = AddNewGameBirchObject(_0x88, 0x3C, 1);
+      birchSpriteId = AddNewGameBirchObject(0x88, 0x3C, 1);
       gSprites[birchSpriteId].callback = SpriteCB_Null;
       gSprites[birchSpriteId].oam.priority = 0;
       gSprites[birchSpriteId].invisible = TRUE;
@@ -1653,7 +1609,7 @@ export function MainMenu_FormatSavegameBadges(): any {
 
 /** static void LoadMainMenuWindowFrameTiles(u8 bgId, u16 tileOffset) */
 export function LoadMainMenuWindowFrameTiles(bgId: any, tileOffset: any): any {
-  LoadBgTiles(bgId, GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType).tiles, _0x120, tileOffset);
+  LoadBgTiles(bgId, GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType).tiles, 0x120, tileOffset);
       LoadPalette(GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType).pal, BG_PLTT_ID(2), PLTT_SIZE_4BPP);
 }
 

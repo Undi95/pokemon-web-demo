@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddCameraObject, CameraMove, DestroySprite, FALSE,
-  GetPlayerMovementDirection, MapGridGetMetatileIdAt, MapGridGetMetatileLayerTypeAt, NULL,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, RotatingGatePuzzleCameraUpdate, ScheduleBgCopyTilemapToVram,
-  SetBerryTreesSeen, SetGpuReg, TRUE, UpdateObjectEventsForCameraUpdate,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void ResetCameraOffset(struct FieldCameraOffset *cameraOffset) */
 export function ResetCameraOffset(cameraOffset: any): any {
   cameraOffset.xTileOffset = 0;
@@ -236,58 +222,58 @@ export function DrawMetatile(metatileLayerType: any, tiles: any, offset: any): a
            
           gOverworldTilemapBuffer_Bg3[offset] = tiles[0];
           gOverworldTilemapBuffer_Bg3[offset + 1] = tiles[1];
-          gOverworldTilemapBuffer_Bg3[offset + _0x20] = tiles[2];
-          gOverworldTilemapBuffer_Bg3[offset + _0x21] = tiles[3];
+          gOverworldTilemapBuffer_Bg3[offset + 0x20] = tiles[2];
+          gOverworldTilemapBuffer_Bg3[offset + 0x21] = tiles[3];
 
            
           gOverworldTilemapBuffer_Bg2[offset] = 0;
           gOverworldTilemapBuffer_Bg2[offset + 1] = 0;
-          gOverworldTilemapBuffer_Bg2[offset + _0x20] = 0;
-          gOverworldTilemapBuffer_Bg2[offset + _0x21] = 0;
+          gOverworldTilemapBuffer_Bg2[offset + 0x20] = 0;
+          gOverworldTilemapBuffer_Bg2[offset + 0x21] = 0;
 
            
           gOverworldTilemapBuffer_Bg1[offset] = tiles[4];
           gOverworldTilemapBuffer_Bg1[offset + 1] = tiles[5];
-          gOverworldTilemapBuffer_Bg1[offset + _0x20] = tiles[6];
-          gOverworldTilemapBuffer_Bg1[offset + _0x21] = tiles[7];
+          gOverworldTilemapBuffer_Bg1[offset + 0x20] = tiles[6];
+          gOverworldTilemapBuffer_Bg1[offset + 0x21] = tiles[7];
           break;
       case METATILE_LAYER_TYPE_COVERED:
            
           gOverworldTilemapBuffer_Bg3[offset] = tiles[0];
           gOverworldTilemapBuffer_Bg3[offset + 1] = tiles[1];
-          gOverworldTilemapBuffer_Bg3[offset + _0x20] = tiles[2];
-          gOverworldTilemapBuffer_Bg3[offset + _0x21] = tiles[3];
+          gOverworldTilemapBuffer_Bg3[offset + 0x20] = tiles[2];
+          gOverworldTilemapBuffer_Bg3[offset + 0x21] = tiles[3];
 
            
           gOverworldTilemapBuffer_Bg2[offset] = tiles[4];
           gOverworldTilemapBuffer_Bg2[offset + 1] = tiles[5];
-          gOverworldTilemapBuffer_Bg2[offset + _0x20] = tiles[6];
-          gOverworldTilemapBuffer_Bg2[offset + _0x21] = tiles[7];
+          gOverworldTilemapBuffer_Bg2[offset + 0x20] = tiles[6];
+          gOverworldTilemapBuffer_Bg2[offset + 0x21] = tiles[7];
 
            
           gOverworldTilemapBuffer_Bg1[offset] = 0;
           gOverworldTilemapBuffer_Bg1[offset + 1] = 0;
-          gOverworldTilemapBuffer_Bg1[offset + _0x20] = 0;
-          gOverworldTilemapBuffer_Bg1[offset + _0x21] = 0;
+          gOverworldTilemapBuffer_Bg1[offset + 0x20] = 0;
+          gOverworldTilemapBuffer_Bg1[offset + 0x21] = 0;
           break;
       case METATILE_LAYER_TYPE_NORMAL:
            
-          gOverworldTilemapBuffer_Bg3[offset] = _0x3014;
-          gOverworldTilemapBuffer_Bg3[offset + 1] = _0x3014;
-          gOverworldTilemapBuffer_Bg3[offset + _0x20] = _0x3014;
-          gOverworldTilemapBuffer_Bg3[offset + _0x21] = _0x3014;
+          gOverworldTilemapBuffer_Bg3[offset] = 0x3014;
+          gOverworldTilemapBuffer_Bg3[offset + 1] = 0x3014;
+          gOverworldTilemapBuffer_Bg3[offset + 0x20] = 0x3014;
+          gOverworldTilemapBuffer_Bg3[offset + 0x21] = 0x3014;
 
            
           gOverworldTilemapBuffer_Bg2[offset] = tiles[0];
           gOverworldTilemapBuffer_Bg2[offset + 1] = tiles[1];
-          gOverworldTilemapBuffer_Bg2[offset + _0x20] = tiles[2];
-          gOverworldTilemapBuffer_Bg2[offset + _0x21] = tiles[3];
+          gOverworldTilemapBuffer_Bg2[offset + 0x20] = tiles[2];
+          gOverworldTilemapBuffer_Bg2[offset + 0x21] = tiles[3];
 
            
           gOverworldTilemapBuffer_Bg1[offset] = tiles[4];
           gOverworldTilemapBuffer_Bg1[offset + 1] = tiles[5];
-          gOverworldTilemapBuffer_Bg1[offset + _0x20] = tiles[6];
-          gOverworldTilemapBuffer_Bg1[offset + _0x21] = tiles[7];
+          gOverworldTilemapBuffer_Bg1[offset + 0x20] = tiles[6];
+          gOverworldTilemapBuffer_Bg1[offset + 0x21] = tiles[7];
           break;
       }
       ScheduleBgCopyTilemapToVram(1);

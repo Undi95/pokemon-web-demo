@@ -15,38 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ABILITY_ON_FIELD2, APPLY_STAT_MOD, ARRAY_COUNT, AbilityBattleEffects,
-  BATTLE_OPPOSITE, BATTLE_PARTNER, BattleStringExpandPlaceholders, BattleStringExpandPlaceholdersToDisplayedString,
-  BeginEvolutionScene, BtlController_EmitGetMonData, CALC_STAT, ClearTemporarySpeciesSpriteData,
-  CreateTask, CurrentBattlePyramidLocation, DRAW_SPINDA_SPOTS, DestroyTask,
-  FALSE, FindTaskIdByFunc, FlagClear, FlagGet,
-  Free, GET_BATTLER_SIDE, GET_SHINY_VALUE, GET_UNOWN_LETTER,
-  GetApprenticeNameInLanguage, GetBattlerAtPosition, GetBattlerSide, GetBoxMonData,
-  GetBoxMonDataAt, GetBoxedMonPtr, GetCurrentRegionMapSectionId, GetFrontierEnemyMonLevel,
-  GetFrontierOpponentClass, GetItemHoldEffect, GetItemHoldEffectParam, GetMonData,
-  GetMultiplayerId, GetPCBoxToSendMon, GetPartyIdFromBattlePartyId, GetSetPokedexFlag,
-  GetSpeciesBackAnimSet, GetSubstruct, GetTrainerEncounterMusicIdInBattlePyramid, GetTrainerEncounterMusicIdInTrainerHill,
-  IS_TYPE_PHYSICAL, IS_TYPE_SPECIAL, ITEM_HAS_EFFECT, InBattlePike,
-  InTrainerHillChallenge, IsNationalPokedexEnabled, LaunchAnimationTaskForBackSprite, LaunchAnimationTaskForFrontSprite,
-  MOVE_IS_PERMANENT, MarkBattlerForControllerExec, NULL, PREPARE_MON_NICK_WITH_PREFIX_BUFFER,
-  PlayBGM, PlayCry_Normal, PlayNewMapMusic, READ_PTR_FROM_TASK,
-  Random, Random32, ResetMapMusic, RtcCalcLocalTime,
-  SET16, SET32, SET8, SET_BY_WIDTH,
-  STORE_PTR_IN_TASK, SetPCBoxToSendMon, SetSpriteCB_MonAnimDummy, SpriteCallbackDummy,
-  StartMonSummaryAnimation, StartSpriteAnim, StorageGetCurrentBox, StringCompare,
-  StringCopy, StringCopy_Nickname, StringLength, StripExtCtrlCodes,
-  SummaryScreen_SetAnimDelayTaskId, TASK_NONE, TRAINER_ENCOUNTER_MUSIC, TRUE,
-  TRY_FREE_AND_SET_NULL, UPDATE_FRIENDSHIP_FROM_ITEM, UpdateSentPokesToOpponentValue, VarGet,
-  VarSet, m4aMPlayAllStop, memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ZeroBoxMonData(struct BoxPokemon *boxMon) */
 export function ZeroBoxMonData(boxMon: any): any {
   let raw: any = boxMon;
@@ -1860,34 +1828,34 @@ export function SetMonData(mon: any, field: any, dataArg: any): any {
       switch (field)
       {
       case MON_DATA_STATUS:
-          SET32(mon.status);
+          ((mon.status)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
           break;
       case MON_DATA_LEVEL:
-          SET8(mon.level);
+          ((mon.level)) = data;
           break;
       case MON_DATA_HP:
-          SET16(mon.hp);
+          ((mon.hp)) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_MAX_HP:
-          SET16(mon.maxHP);
+          ((mon.maxHP)) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_ATK:
-          SET16(mon.attack);
+          ((mon.attack)) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_DEF:
-          SET16(mon.defense);
+          ((mon.defense)) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_SPEED:
-          SET16(mon.speed);
+          ((mon.speed)) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_SPATK:
-          SET16(mon.spAttack);
+          ((mon.spAttack)) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_SPDEF:
-          SET16(mon.spDefense);
+          ((mon.spDefense)) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_MAIL:
-          SET8(mon.mail);
+          ((mon.mail)) = data;
           break;
       case MON_DATA_SPECIES_OR_EGG:
           break;
@@ -1928,10 +1896,10 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
       switch (field)
       {
       case MON_DATA_PERSONALITY:
-          SET32(boxMon.personality);
+          ((boxMon.personality)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
           break;
       case MON_DATA_OT_ID:
-          SET32(boxMon.otId);
+          ((boxMon.otId)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
           break;
       case MON_DATA_NICKNAME:
       {
@@ -1941,16 +1909,16 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
           break;
       }
       case MON_DATA_LANGUAGE:
-          SET8(boxMon.language);
+          ((boxMon.language)) = data;
           break;
       case MON_DATA_SANITY_IS_BAD_EGG:
-          SET8(boxMon.isBadEgg);
+          ((boxMon.isBadEgg)) = data;
           break;
       case MON_DATA_SANITY_HAS_SPECIES:
-          SET8(boxMon.hasSpecies);
+          ((boxMon.hasSpecies)) = data;
           break;
       case MON_DATA_SANITY_IS_EGG:
-          SET8(boxMon.isEgg);
+          ((boxMon.isEgg)) = data;
           break;
       case MON_DATA_OT_NAME:
       {
@@ -1960,17 +1928,17 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
           break;
       }
       case MON_DATA_MARKINGS:
-          SET8(boxMon.markings);
+          ((boxMon.markings)) = data;
           break;
       case MON_DATA_CHECKSUM:
-          SET16(boxMon.checksum);
+          ((boxMon.checksum)) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_ENCRYPT_SEPARATOR:
-          SET16(boxMon.unknown);
+          ((boxMon.unknown)) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_SPECIES:
       {
-          SET16(substruct0.species);
+          ((substruct0.species)) = data[0] + (data[1] << 8);
           if (substruct0.species)
               boxMon.hasSpecies = TRUE;
           else
@@ -1978,70 +1946,70 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
           break;
       }
       case MON_DATA_HELD_ITEM:
-          SET16(substruct0.heldItem);
+          ((substruct0.heldItem)) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_EXP:
-          SET32(substruct0.experience);
+          ((substruct0.experience)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24);
           break;
       case MON_DATA_PP_BONUSES:
-          SET8(substruct0.ppBonuses);
+          ((substruct0.ppBonuses)) = data;
           break;
       case MON_DATA_FRIENDSHIP:
-          SET8(substruct0.friendship);
+          ((substruct0.friendship)) = data;
           break;
       case MON_DATA_MOVE1:
       case MON_DATA_MOVE2:
       case MON_DATA_MOVE3:
       case MON_DATA_MOVE4:
-          SET16(substruct1.moves[field - MON_DATA_MOVE1]);
+          ((substruct1.moves[field - MON_DATA_MOVE1])) = data[0] + (data[1] << 8);
           break;
       case MON_DATA_PP1:
       case MON_DATA_PP2:
       case MON_DATA_PP3:
       case MON_DATA_PP4:
-          SET8(substruct1.pp[field - MON_DATA_PP1]);
+          ((substruct1.pp[field - MON_DATA_PP1])) = data;
           break;
       case MON_DATA_HP_EV:
-          SET8(substruct2.hpEV);
+          ((substruct2.hpEV)) = data;
           break;
       case MON_DATA_ATK_EV:
-          SET8(substruct2.attackEV);
+          ((substruct2.attackEV)) = data;
           break;
       case MON_DATA_DEF_EV:
-          SET8(substruct2.defenseEV);
+          ((substruct2.defenseEV)) = data;
           break;
       case MON_DATA_SPEED_EV:
-          SET8(substruct2.speedEV);
+          ((substruct2.speedEV)) = data;
           break;
       case MON_DATA_SPATK_EV:
-          SET8(substruct2.spAttackEV);
+          ((substruct2.spAttackEV)) = data;
           break;
       case MON_DATA_SPDEF_EV:
-          SET8(substruct2.spDefenseEV);
+          ((substruct2.spDefenseEV)) = data;
           break;
       case MON_DATA_COOL:
-          SET8(substruct2.cool);
+          ((substruct2.cool)) = data;
           break;
       case MON_DATA_BEAUTY:
-          SET8(substruct2.beauty);
+          ((substruct2.beauty)) = data;
           break;
       case MON_DATA_CUTE:
-          SET8(substruct2.cute);
+          ((substruct2.cute)) = data;
           break;
       case MON_DATA_SMART:
-          SET8(substruct2.smart);
+          ((substruct2.smart)) = data;
           break;
       case MON_DATA_TOUGH:
-          SET8(substruct2.tough);
+          ((substruct2.tough)) = data;
           break;
       case MON_DATA_SHEEN:
-          SET8(substruct2.sheen);
+          ((substruct2.sheen)) = data;
           break;
       case MON_DATA_POKERUS:
-          SET8(substruct3.pokerus);
+          ((substruct3.pokerus)) = data;
           break;
       case MON_DATA_MET_LOCATION:
-          SET_BY_WIDTH(substruct3.metLocation);
+          \;
           break;
       case MON_DATA_MET_LEVEL:
       {
@@ -2050,7 +2018,7 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
           break;
       }
       case MON_DATA_MET_GAME:
-          SET8(substruct3.metGame);
+          ((substruct3.metGame)) = data;
           break;
       case MON_DATA_POKEBALL:
       {
@@ -2059,92 +2027,92 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
           break;
       }
       case MON_DATA_OT_GENDER:
-          SET8(substruct3.otGender);
+          ((substruct3.otGender)) = data;
           break;
       case MON_DATA_HP_IV:
-          SET8(substruct3.hpIV);
+          ((substruct3.hpIV)) = data;
           break;
       case MON_DATA_ATK_IV:
-          SET8(substruct3.attackIV);
+          ((substruct3.attackIV)) = data;
           break;
       case MON_DATA_DEF_IV:
-          SET8(substruct3.defenseIV);
+          ((substruct3.defenseIV)) = data;
           break;
       case MON_DATA_SPEED_IV:
-          SET8(substruct3.speedIV);
+          ((substruct3.speedIV)) = data;
           break;
       case MON_DATA_SPATK_IV:
-          SET8(substruct3.spAttackIV);
+          ((substruct3.spAttackIV)) = data;
           break;
       case MON_DATA_SPDEF_IV:
-          SET8(substruct3.spDefenseIV);
+          ((substruct3.spDefenseIV)) = data;
           break;
       case MON_DATA_IS_EGG:
-          SET8(substruct3.isEgg);
+          ((substruct3.isEgg)) = data;
           if (substruct3.isEgg)
               boxMon.isEgg = TRUE;
           else
               boxMon.isEgg = FALSE;
           break;
       case MON_DATA_ABILITY_NUM:
-          SET8(substruct3.abilityNum);
+          ((substruct3.abilityNum)) = data;
           break;
       case MON_DATA_COOL_RIBBON:
-          SET8(substruct3.coolRibbon);
+          ((substruct3.coolRibbon)) = data;
           break;
       case MON_DATA_BEAUTY_RIBBON:
-          SET8(substruct3.beautyRibbon);
+          ((substruct3.beautyRibbon)) = data;
           break;
       case MON_DATA_CUTE_RIBBON:
-          SET8(substruct3.cuteRibbon);
+          ((substruct3.cuteRibbon)) = data;
           break;
       case MON_DATA_SMART_RIBBON:
-          SET8(substruct3.smartRibbon);
+          ((substruct3.smartRibbon)) = data;
           break;
       case MON_DATA_TOUGH_RIBBON:
-          SET8(substruct3.toughRibbon);
+          ((substruct3.toughRibbon)) = data;
           break;
       case MON_DATA_CHAMPION_RIBBON:
-          SET8(substruct3.championRibbon);
+          ((substruct3.championRibbon)) = data;
           break;
       case MON_DATA_WINNING_RIBBON:
-          SET8(substruct3.winningRibbon);
+          ((substruct3.winningRibbon)) = data;
           break;
       case MON_DATA_VICTORY_RIBBON:
-          SET8(substruct3.victoryRibbon);
+          ((substruct3.victoryRibbon)) = data;
           break;
       case MON_DATA_ARTIST_RIBBON:
-          SET8(substruct3.artistRibbon);
+          ((substruct3.artistRibbon)) = data;
           break;
       case MON_DATA_EFFORT_RIBBON:
-          SET8(substruct3.effortRibbon);
+          ((substruct3.effortRibbon)) = data;
           break;
       case MON_DATA_MARINE_RIBBON:
-          SET8(substruct3.marineRibbon);
+          ((substruct3.marineRibbon)) = data;
           break;
       case MON_DATA_LAND_RIBBON:
-          SET8(substruct3.landRibbon);
+          ((substruct3.landRibbon)) = data;
           break;
       case MON_DATA_SKY_RIBBON:
-          SET8(substruct3.skyRibbon);
+          ((substruct3.skyRibbon)) = data;
           break;
       case MON_DATA_COUNTRY_RIBBON:
-          SET8(substruct3.countryRibbon);
+          ((substruct3.countryRibbon)) = data;
           break;
       case MON_DATA_NATIONAL_RIBBON:
-          SET8(substruct3.nationalRibbon);
+          ((substruct3.nationalRibbon)) = data;
           break;
       case MON_DATA_EARTH_RIBBON:
-          SET8(substruct3.earthRibbon);
+          ((substruct3.earthRibbon)) = data;
           break;
       case MON_DATA_WORLD_RIBBON:
-          SET8(substruct3.worldRibbon);
+          ((substruct3.worldRibbon)) = data;
           break;
       case MON_DATA_UNUSED_RIBBONS:
-          SET8(substruct3.unusedRibbons);
+          ((substruct3.unusedRibbons)) = data;
           break;
       case MON_DATA_MODERN_FATEFUL_ENCOUNTER:
-          SET8(substruct3.modernFatefulEncounter);
+          ((substruct3.modernFatefulEncounter)) = data;
           break;
       case MON_DATA_IVS:
       {
@@ -3647,7 +3615,7 @@ export function GetMonEVCount(mon: any): any {
 /** void RandomlyGivePartyPokerus(struct Pokemon *party) */
 export function RandomlyGivePartyPokerus(party: any): any {
   let rnd: any = Random();
-      if (rnd == _0x4000 || rnd == _0x8000 || rnd == 0xC000)
+      if (rnd == 0x4000 || rnd == 0x8000 || rnd == 0xC000)
       {
           let mon: any = null;
 
@@ -3666,10 +3634,10 @@ export function RandomlyGivePartyPokerus(party: any): any {
               {
                   rnd2 = Random();
               }
-              while ((rnd2 & _0x7) == 0);
+              while ((rnd2 & 0x7) == 0);
 
               if (rnd2 & 0xF0)
-                  rnd2 &= _0x7;
+                  rnd2 &= 0x7;
 
               rnd2 |= (rnd2 << 4);
               rnd2 &= 0xF3;
@@ -3752,7 +3720,7 @@ export function UpdatePartyPokerusTime(days: any): any {
                       pokerus -= days;
 
                   if (pokerus == 0)
-                      pokerus = _0x10;
+                      pokerus = 0x10;
 
                   SetMonData(gPlayerParty[i], MON_DATA_POKERUS,pokerus);
               }

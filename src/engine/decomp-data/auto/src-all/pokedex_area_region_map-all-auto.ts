@@ -15,19 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddValToTilemapBuffer, Alloc, BG_PLTT_ID, ChangeBgX,
-  ChangeBgY, CpuCopy32, DecompressAndCopyTileDataToVram, FALSE,
-  FreeTempTileDataBuffersIfPossible, SetBgAttribute, ShowBg, TRUE,
-  TRY_FREE_AND_SET_NULL,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void LoadPokedexAreaMapGfx(const struct PokedexAreaMapTemplate *template) */
 export function LoadPokedexAreaMapGfx(template: any): any {
   let mode: any = null;
@@ -79,7 +66,7 @@ export function FreePokedexAreaMapBgNum(): any {
 
 /** void PokedexAreaMapChangeBgY(u32 move) */
 export function PokedexAreaMapChangeBgY(move: any): any {
-  ChangeBgY(sPokedexAreaMapBgNum, move * _0x100, BG_COORD_SET);
+  ChangeBgY(sPokedexAreaMapBgNum, move * 0x100, BG_COORD_SET);
 }
 
 // ─── callsTo manifest (= 11 unique callees) ───────────────────────

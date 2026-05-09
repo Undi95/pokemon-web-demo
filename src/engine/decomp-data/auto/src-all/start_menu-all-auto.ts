@@ -15,43 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddStartMenuWindow, AddTextPrinterForMessage_2, AddTextPrinterParameterized,
-  AddTextPrinterParameterized2, AddWindow, BG_PLTT_ID, BeginNormalPaletteFade,
-  BlendPalettes, BufferSaveMenuText, CleanupOverworldWindowsAndTilemaps, ClearContinueGameWarpStatus2,
-  ClearDialogWindowAndFrame, ClearDialogWindowAndFrameToTransparent, ClearStdWindowAndFrame, ClearStdWindowAndFrameToTransparent,
-  ConvertIntToDecimalStringN, CopyWindowToVram, CreateTask, CurrentBattlePyramidLocation,
-  DISPCNT_MODE_0, DestroyTask, DisplayYesNoMenuDefaultYes, DisplayYesNoMenuWithDefault,
-  DmaClear16, DmaFillLarge16, DrawStdWindowFrame, DrawTextBorderOuter,
-  EnableInterrupts, FALSE, FadeScreen, FillWindowPixelBuffer,
-  FlagGet, FlagSet, FreeAllWindowBuffers, FreezeObjectEvents,
-  FuncIsActiveTask, GetNationalPokedexCount, GetSafariZoneFlag, GetStartMenuWindowId,
-  GetStringRightAlignXOffset, InBattlePike, InMultiPartnerRoom, InUnionRoom,
-  IncrementGameStat, InitBgsFromTemplates, InitMenuNormal, InitWindows,
-  IsOverworldLinkActive, IsSEPlaying, IsTextPrinterActive, JOY_HELD,
-  JOY_NEW, Link_AnyPartnersPlayingFRLG_JP, LoadMessageBoxAndBorderGfx, LoadMessageBoxAndFrameGfx,
-  LoadUserWindowBorderGfx_, LockPlayerFieldControls, Menu_LoadStdPalAt, Menu_MoveCursor,
-  Menu_ProcessInputNoWrapClearOnChoose, NULL, PALETTES_ALL, PIXEL_FILL,
-  PLTT_SIZE, PausePyramidChallenge, PlayRainStoppingSoundEffect, PlaySE,
-  PlayerFreeze, PrintPlayerNameOnWindow, PutWindowTilemap, REG_OFFSET_DISPCNT,
-  RemoveStartMenuWindow, RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, ReturnToFieldOpenStartMenu, RunTasks,
-  RunTextPrintersAndIsPrinter0Active, STR_CONV_MODE_RIGHT_ALIGN, SafariZoneRetirePrompt, SaveMapView,
-  ScanlineEffect_Clear, ScanlineEffect_Stop, ScriptContext_Enable, ScriptContext_SetupScript,
-  ScriptUnfreezeObjectEvents, SetContinueGameWarpStatusToDynamicWarp, SetGpuReg, SetMainCallback2,
-  SetTaskFuncWithFollowupFunc, SetUsingUnionRoomStartMenu, SetVBlankCallback, ShowBg,
-  ShowFrontierPass, ShowPlayerTrainerCard, ShowTrainerCardInLink, SoftResetInBattlePyramid,
-  StopPlayerAvatar, StringCopy, StringExpandPlaceholders, SwitchTaskToFollowupFunc,
-  TRUE, TransferPlttBuffer, TrySavingData, UnlockPlayerFieldControls,
-  UpdatePaletteFade, VRAM_SIZE, WriteSaveBlock1Sector, WriteSaveBlock2,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SetDexPokemonPokenavFlags(void) */
 export function SetDexPokemonPokenavFlags(): any {
   FlagSet(FLAG_SYS_POKEDEX_GET);
@@ -322,7 +285,7 @@ export function CreateStartMenuTask(followupFunc: any): any {
 
       sInitStartMenuData[0] = 0;
       sInitStartMenuData[1] = 0;
-      taskId = CreateTask(StartMenuTask, _0x50);
+      taskId = CreateTask(StartMenuTask, 0x50);
       SetTaskFuncWithFollowupFunc(taskId, StartMenuTask, followupFunc);
 }
 
@@ -680,7 +643,7 @@ export function RunSaveCallback(): any {
 /** void SaveGame(void) */
 export function SaveGame(): any {
   InitSave();
-      CreateTask(SaveGameTask, _0x50);
+      CreateTask(SaveGameTask, 0x50);
 }
 
 /** static void ShowSaveMessage(const u8 *message, u8 (*saveCallback)(void)) */
@@ -992,7 +955,7 @@ export function InitSaveWindowAfterLinkBattle(state: any): any {
           SetVBlankCallback(NULL);
           ScanlineEffect_Stop();
           DmaClear16(3, PLTT, PLTT_SIZE);
-          DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, _0x1000);
+          DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, 0x1000);
           break;
       case 1:
           ResetSpriteData();
@@ -1025,7 +988,7 @@ export function InitSaveWindowAfterLinkBattle(state: any): any {
 export function CB2_SetUpSaveAfterLinkBattle(): any {
   if (InitSaveWindowAfterLinkBattle(gMain.state))
       {
-          CreateTask(Task_SaveAfterLinkBattle, _0x50);
+          CreateTask(Task_SaveAfterLinkBattle, 0x50);
           SetMainCallback2(CB2_SaveAfterLinkBattle);
       }
 }
@@ -1145,14 +1108,14 @@ export function ShowSaveInfoWindow(): any {
       yOffset += 16;
       AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingPlayer, 0, yOffset, TEXT_SKIP_DRAW, NULL);
       BufferSaveMenuText(SAVE_MENU_NAME, gStringVar4, color);
-      xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, _0x70);
+      xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
       PrintPlayerNameOnWindow(sSaveInfoWindowId, gStringVar4, xOffset, yOffset);
 
        
       yOffset += 16;
       AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingBadges, 0, yOffset, TEXT_SKIP_DRAW, NULL);
       BufferSaveMenuText(SAVE_MENU_BADGES, gStringVar4, color);
-      xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, _0x70);
+      xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
       AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
 
       if (FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE)
@@ -1161,7 +1124,7 @@ export function ShowSaveInfoWindow(): any {
           yOffset += 16;
           AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingPokedex, 0, yOffset, TEXT_SKIP_DRAW, NULL);
           BufferSaveMenuText(SAVE_MENU_CAUGHT, gStringVar4, color);
-          xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, _0x70);
+          xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
           AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
       }
 
@@ -1169,7 +1132,7 @@ export function ShowSaveInfoWindow(): any {
       yOffset += 16;
       AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingTime, 0, yOffset, TEXT_SKIP_DRAW, NULL);
       BufferSaveMenuText(SAVE_MENU_PLAY_TIME, gStringVar4, color);
-      xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, _0x70);
+      xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
       AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
 
       CopyWindowToVram(sSaveInfoWindowId, COPYWIN_GFX);

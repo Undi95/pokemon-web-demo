@@ -80,7 +80,7 @@ export function MathUtil_Div32(x: any, y: any): any {
 export function MathUtil_Inv16(y: any): any {
   let x: any = null;
 
-      x = _0x10000;
+      x = 0x10000;
       return x / y;
 }
 
@@ -88,7 +88,7 @@ export function MathUtil_Inv16(y: any): any {
 export function MathUtil_Inv16Shift(s: any, y: any): any {
   let x: any = null;
 
-      x = _0x100 << s;
+      x = 0x100 << s;
       return x / y;
 }
 
@@ -96,7 +96,7 @@ export function MathUtil_Inv16Shift(s: any, y: any): any {
 export function MathUtil_Inv32(y: any): any {
   let x: any = null;
 
-      x = _0x10000;
+      x = 0x10000;
       return x / y;
 }
 

@@ -15,25 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AgbRFU_SoftReset, AgbRFU_checkID, COPY, CpuCopy16,
-  CpuFill16, Div, NULL, REG_TMCNT,
-  STWI_init_all, STWI_init_timer, STWI_poll_CommandEnd, STWI_read_status,
-  STWI_send_CPR_EndREQ, STWI_send_CPR_PollingREQ, STWI_send_CPR_StartREQ, STWI_send_CP_EndREQ,
-  STWI_send_CP_PollingREQ, STWI_send_CP_StartREQ, STWI_send_DataRxREQ, STWI_send_DataTxAndChangeREQ,
-  STWI_send_DataTxREQ, STWI_send_DisconnectREQ, STWI_send_GameConfigREQ, STWI_send_LinkStatusREQ,
-  STWI_send_MS_ChangeREQ, STWI_send_ResetREQ, STWI_send_ResumeRetransmitAndChangeREQ, STWI_send_SC_EndREQ,
-  STWI_send_SC_PollingREQ, STWI_send_SC_StartREQ, STWI_send_SP_EndREQ, STWI_send_SP_PollingREQ,
-  STWI_send_SP_StartREQ, STWI_send_SlotStatusREQ, STWI_send_StopModeREQ, STWI_send_SystemConfigREQ,
-  STWI_send_SystemStatusREQ, STWI_send_TestModeREQ, STWI_set_Callback_M, STWI_set_Callback_S,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u16 rfu_initializeAPI(u32 *APIBuffer, u16 buffByteSize, IntrFunc *sioIntrTable_p, bool8 copyInterruptToRam) */
 export function rfu_initializeAPI(APIBuffer: any, buffByteSize: any, sioIntrTable_p: any, copyInterruptToRam: any): any {
   let i: any = null;
@@ -203,7 +184,7 @@ export function rfu_REQ_RFUStatus(): any {
 
 /** u16 rfu_getRFUStatus(u8 *rfuState) */
 export function rfu_getRFUStatus(rfuState: any): any {
-  if (gRfuFixed.STWIBuffer.rxPacketAlloc.rfuPacket8.data[0] != _0x93)
+  if (gRfuFixed.STWIBuffer.rxPacketAlloc.rfuPacket8.data[0] != 0x93)
           return ERR_REQ_CMD_ID;
       if (STWI_poll_CommandEnd() == 0)
           rfuState = gRfuFixed.STWIBuffer.rxPacketAlloc.rfuPacket8.data[7];
@@ -233,7 +214,7 @@ export function rfu_MBOOT_CHILD_inheritanceLinkStatus(): any {
       if (checksum != (IWRAM_START + 0xFA))
           return 1;
       CpuCopy16(IWRAM_START, gRfuLinkStatus, 0);
-      gRfuStatic.flags |= _0x80;  
+      gRfuStatic.flags |= 0x80;  
       return 0;
 }
 
@@ -331,7 +312,7 @@ export function rfu_REQ_configGameData(mbootFlag: any, serialNo: any, gname: any
       packet[0] = serialNo;
       packet[1] = serialNo >> 8;
       if (mbootFlag != 0)
-          packet[1] = (serialNo >> 8) | _0x80;
+          packet[1] = (serialNo >> 8) | 0x80;
       for (i = 2; i < 15; ++i)
           packet[i] = gname++;
       check_sum = 0;
@@ -361,9 +342,9 @@ export function rfu_CB_configGameData(reqCommand: any, reqResult: any): any {
           serialNo = gRfuLinkStatus.my.serialNo = packet_p[4];
           gRfuLinkStatus.my.serialNo = (packet_p[5] << 8) | serialNo;
           gname_uname_p =packet_p[6];
-          if (gRfuLinkStatus.my.serialNo & _0x8000)
+          if (gRfuLinkStatus.my.serialNo & 0x8000)
           {
-              gRfuLinkStatus.my.serialNo = gRfuLinkStatus.my.serialNo ^ _0x8000;
+              gRfuLinkStatus.my.serialNo = gRfuLinkStatus.my.serialNo ^ 0x8000;
               gRfuLinkStatus.my.mbootFlag = 1;
           }
           else
@@ -576,7 +557,7 @@ export function rfu_STC_readParentCandidateList(): any {
               target.slot = packet_p;
               packet_p += 2;
               target.serialNo = packet_p & 0x7FFF;
-              if (packet_p & _0x8000)
+              if (packet_p & 0x8000)
                   target.mbootFlag = 1;
               else
                   target.mbootFlag = 0;
@@ -639,7 +620,7 @@ export function rfu_CB_pollConnectParent(reqCommand: any, reqResult: any): any {
                   gRfuLinkStatus.my.id = id;
                   ++gRfuLinkStatus.connCount;
                   gRfuLinkStatus.parentChild = MODE_CHILD;
-                  gRfuStatic.flags |= _0x80;
+                  gRfuStatic.flags |= 0x80;
                   for (i = 0; i < RFU_CHILD_MAX; ++i)
                   {
                       if (gRfuLinkStatus.partner[i].id == gRfuStatic.tryPid)
@@ -769,7 +750,7 @@ export function rfu_REQBN_watchLink(reqCommandId: any, bmLinkLossSlot: any, link
       }
       else
       {
-          if (reqCommandId == _0x0136)
+          if (reqCommandId == 0x0136)
           {
               newLinkLossFlag = gRfuFixed.STWIBuffer.rxPacketAlloc.rfuPacket8.data[5];
               newLinkLossFlag ^= gRfuLinkStatus.connSlotFlag;
@@ -942,7 +923,7 @@ export function rfu_REQ_disconnect(bmDisconnectSlot: any): any {
       if ((gRfuLinkStatus.connSlotFlag | gRfuLinkStatus.linkLossSlotFlag) & bmDisconnectSlot)
       {
           gRfuStatic.recoveryBmSlot = bmDisconnectSlot;
-          if (gRfuLinkStatus.parentChild == MODE_NEUTRAL && gRfuStatic.flags & _0x80)
+          if (gRfuLinkStatus.parentChild == MODE_NEUTRAL && gRfuStatic.flags & 0x80)
           {
               if (gRfuLinkStatus.linkLossSlotFlag & bmDisconnectSlot)
                   rfu_CB_disconnect(48, 0);
@@ -1121,7 +1102,7 @@ export function rfu_clearAllSlot(): any {
 
 /** static void rfu_STC_releaseFrame(u8 bm_slot_id, u8 send_recv, struct NIComm *NI_comm) */
 export function rfu_STC_releaseFrame(bm_slot_id: any, send_recv: any, NI_comm: any): any {
-  if (!(gRfuStatic.flags & _0x80))
+  if (!(gRfuStatic.flags & 0x80))
       {
           if (send_recv == 0)
               gRfuLinkStatus.remainLLFrameSizeParent += NI_comm.payloadSize;
@@ -1186,7 +1167,7 @@ export function rfu_clearSlot(connTypeFlag: any, slotStatusIndex: any): any {
 
           if (slotStatusUNI.send.state & SLOT_BUSY_FLAG)
           {
-              if (!(gRfuStatic.flags & _0x80))
+              if (!(gRfuStatic.flags & 0x80))
                   gRfuLinkStatus.remainLLFrameSizeParent += 3 + slotStatusUNI.send.payloadSize;
               else
                   gRfuLinkStatus.remainLLFrameSizeChild[slotStatusIndex] += 2 + slotStatusUNI.send.payloadSize;
@@ -1261,7 +1242,7 @@ export function rfu_STC_setSendData_org(ni_or_uni: any, bmSendSlot: any, subFram
           return ERR_SLOT_NO;
       if (((gRfuLinkStatus.connSlotFlag | gRfuLinkStatus.linkLossSlotFlag) & bmSendSlot) != bmSendSlot)
           return ERR_SLOT_NOT_CONNECTED;
-      if (ni_or_uni & _0x10)
+      if (ni_or_uni & 0x10)
           sendSlotFlag = gRfuLinkStatus.sendSlotUNIFlag;
       else
           sendSlotFlag = gRfuLinkStatus.sendSlotNIFlag;
@@ -1278,8 +1259,8 @@ export function rfu_STC_setSendData_org(ni_or_uni: any, bmSendSlot: any, subFram
           return ERR_SUBFRAME_SIZE;
       imeBak = REG_IME;
       REG_IME = 0;
-      sending = ni_or_uni & _0x20;
-      if (sending || ni_or_uni == _0x40)
+      sending = ni_or_uni & 0x20;
+      if (sending || ni_or_uni == 0x40)
       {
           slotStatus_NI = gRfuSlotStatusNI[bm_slot_id];
           slotStatus_UNI = NULL;
@@ -1316,7 +1297,7 @@ export function rfu_STC_setSendData_org(ni_or_uni: any, bmSendSlot: any, subFram
               llFrameSize_p -= subFrameSize;
           slotStatus_NI.send.state = SLOT_STATE_SEND_START;
       }
-      else if (ni_or_uni & _0x10)
+      else if (ni_or_uni & 0x10)
       {
           slotStatus_UNI = gRfuSlotStatusUNI[bm_slot_id];
           slotStatus_UNI.send.bmSlot = bmSendSlot;
@@ -1339,7 +1320,7 @@ export function rfu_changeSendTarget(connType: any, slotStatusIndex: any, bmNewT
 
       if (slotStatusIndex >= RFU_CHILD_MAX)
           return ERR_SLOT_NO;
-      if (connType == _0x20)
+      if (connType == 0x20)
       {
           slotStatusNI = gRfuSlotStatusNI[slotStatusIndex];
           if ((slotStatusNI.send.state & SLOT_BUSY_FLAG)
@@ -1785,7 +1766,7 @@ export function rfu_STC_PARENT_analyzeRecvPacket(): any {
 
                   packet_p += analyzed_frames;
                   frames_p -= analyzed_frames;
-              } while (!(frames_p & _0x80) && (frames_p));
+              } while (!(frames_p & 0x80) && (frames_p));
           }
       }
 }
@@ -1807,7 +1788,7 @@ export function rfu_STC_CHILD_analyzeRecvPacket(): any {
           analyzed_frames = rfu_STC_analyzeLLSF(0, packet_p, frames_remaining);
           packet_p += analyzed_frames;
           frames_remaining -= analyzed_frames;
-      } while (!(frames_remaining & _0x8000));
+      } while (!(frames_remaining & 0x8000));
 }
 
 /** static u16 rfu_STC_analyzeLLSF(u8 slot_id, const u8 *src, u16 last_frame) */

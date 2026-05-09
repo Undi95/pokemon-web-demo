@@ -15,31 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AllocSpritePalette, AnimTranslateLinear, BATTLE_PARTNER, BLDALPHA_BLEND,
-  BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_DARKEN, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2,
-  BLDCNT_TGT1_BG3, BeginNormalPaletteFade, BlendPalette, ClearGpuRegBits,
-  CloneBattlerSpriteWithBlend, Cos, CpuCopy32, CreateSprite,
-  DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPLAY_WIDTH, DestroyAnimSprite,
-  DestroyAnimVisualTask, DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet,
-  FALSE, FreeSpritePaletteByTag, GetAnimBattlerSpriteId, GetBattlePalettesMask,
-  GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord,
-  GetBattlerSpriteCoordAttr, GetBattlerSpriteSubpriority, GetBattlerYCoordWithElevation, InitAnimLinearTranslationWithSpeed,
-  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest,
-  OBJ_PLTT_ID2, PLTT_SIZE_4BPP, PlaySE, PlaySE12WithPanning,
-  PrepareBattlerSpriteForRotScale, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
-  REG_OFFSET_DISPCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetSpriteRotScale,
-  ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL, ScanlineEffect_InitWave, SetGpuReg,
-  SetGpuRegBits, SetSpriteRotScale, Sin, SpriteCallbackDummy,
-  StoreSpriteCallbackInData6, TRUE, WIN_RANGE, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimConfuseRayBallBounce(struct Sprite *sprite) */
 export function AnimConfuseRayBallBounce(sprite: any): any {
   InitSpritePosToAnimAttacker(sprite, TRUE);
@@ -120,16 +95,16 @@ export function UpdateConfuseRayBallBlend(sprite: any): any {
       if ((sprite.data[7]++ & 0xFF) == 0)
       {
           sprite.data[7] &= 0xff00;
-          if ((sprite.data[7] & _0x100) != 0)
+          if ((sprite.data[7] & 0x100) != 0)
               sprite.data[6]++;
           else
               sprite.data[6]--;
 
           SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(sprite.data[6], 16 - sprite.data[6]));
           if (sprite.data[6] == 0 || sprite.data[6] == 16)
-              sprite.data[7] ^= _0x100;
+              sprite.data[7] ^= 0x100;
           if (sprite.data[6] == 0)
-              sprite.data[6] = _0x100;
+              sprite.data[6] = 0x100;
       }
 }
 
@@ -162,7 +137,7 @@ export function AnimConfuseRayBallSpiral_Step(sprite: any): any {
 export function AnimTask_NightShadeClone(taskId: any): any {
   let spriteId: any = null;
       SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));
-      SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, _0x10));
+      SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0x10));
       spriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);
       PrepareBattlerSpriteForRotScale(spriteId, ST_OAM_OBJ_BLEND);
       SetSpriteRotScale(spriteId, 128, 128, 0);
@@ -484,7 +459,7 @@ export function AnimTask_SpiteTargetShadow_Step1(taskId: any): any {
           else
               SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL | BLDCNT_TGT1_BG2));
 
-          SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, _0x10));
+          SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0x10));
           task.data[15]++;
           break;
       case 4:
@@ -618,7 +593,7 @@ export function AnimTask_DestinyBondWhiteShadow(taskId: any): any {
 
       task =gTasks[taskId];
       SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));
-      SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, _0x10));
+      SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0x10));
       task.data[5] = 0;
       task.data[6] = 0;
       task.data[7] = 0;
@@ -949,7 +924,7 @@ export function AnimGhostStatusSprite(sprite: any): any {
           sprite.x2 = -sprite.x2;
 
       sprite.data[0] = (sprite.data[0] + 6) & 0xFF;
-      sprite.data[1] += _0x100;
+      sprite.data[1] += 0x100;
       sprite.y2 = -(sprite.data[1] >> 8);
 
       sprite.data[7]++;
@@ -1003,7 +978,7 @@ export function AnimTask_GrudgeFlames(taskId: any): any {
       task.data[3] = 0;
       task.data[4] = 16;
       SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));
-      SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, _0x10));
+      SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0x10));
       task.data[8] = 0;
       task.func = AnimTask_GrudgeFlames_Step;
 }

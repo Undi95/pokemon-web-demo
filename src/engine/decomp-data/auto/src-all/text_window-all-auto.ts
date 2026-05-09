@@ -15,17 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  FillBgTilemapBufferRect, GetOverworldTextboxPalettePtr, GetWindowAttribute, GetWindowFrameTilesPal,
-  LoadBgTiles, LoadPalette, PLTT_SIZE_4BPP,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void LoadMessageBoxGfx(u8 windowId, u16 destOffset, u8 palOffset) */
 export function LoadMessageBoxGfx(windowId: any, destOffset: any, palOffset: any): any {
   LoadBgTiles(GetWindowAttribute(windowId, WINDOW_BG), gMessageBox_Gfx, 0x1C0, destOffset);
@@ -39,7 +28,7 @@ export function LoadUserWindowBorderGfx_(windowId: any, destOffset: any, palOffs
 
 /** void LoadWindowGfx(u8 windowId, u8 frameId, u16 destOffset, u8 palOffset) */
 export function LoadWindowGfx(windowId: any, frameId: any, destOffset: any, palOffset: any): any {
-  LoadBgTiles(GetWindowAttribute(windowId, WINDOW_BG), sWindowFrames[frameId].tiles, _0x120, destOffset);
+  LoadBgTiles(GetWindowAttribute(windowId, WINDOW_BG), sWindowFrames[frameId].tiles, 0x120, destOffset);
       LoadPalette(sWindowFrames[frameId].pal, palOffset, PLTT_SIZE_4BPP);
 }
 
@@ -92,12 +81,12 @@ export function rbox_fill_rectangle(windowId: any): any {
       let width: any = GetWindowAttribute(windowId, WINDOW_WIDTH);
       let height: any = GetWindowAttribute(windowId, WINDOW_HEIGHT);
 
-      FillBgTilemapBufferRect(bgLayer, 0, tilemapLeft - 1, tilemapTop - 1, width + 2, height + 2, _0x11);
+      FillBgTilemapBufferRect(bgLayer, 0, tilemapLeft - 1, tilemapTop - 1, width + 2, height + 2, 0x11);
 }
 
 /** void LoadUserWindowBorderGfxOnBg(u8 bg, u16 destOffset, u8 palOffset) */
 export function LoadUserWindowBorderGfxOnBg(bg: any, destOffset: any, palOffset: any): any {
-  LoadBgTiles(bg, sWindowFrames[gSaveBlock2Ptr.optionsWindowFrameType].tiles, _0x120, destOffset);
+  LoadBgTiles(bg, sWindowFrames[gSaveBlock2Ptr.optionsWindowFrameType].tiles, 0x120, destOffset);
       LoadPalette(GetWindowFrameTilesPal(gSaveBlock2Ptr.optionsWindowFrameType).pal, palOffset, PLTT_SIZE_4BPP);
 }
 

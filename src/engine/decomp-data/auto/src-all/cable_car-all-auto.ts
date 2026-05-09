@@ -15,37 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ANIM_STD_GO_EAST, ANIM_STD_GO_WEST, ARRAY_COUNT, AllocZeroed,
-  AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect_ChangePalette, CreateObjectGraphicsSprite, CreateSprite,
-  CreateTask, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPLAY_HEIGHT,
-  DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask, DmaFill16Defvars,
-  DmaFill32Defvars, DmaFillLarge16, FALSE, FREE_AND_SET_NULL,
-  FadeInNewBGM, FadeOutBGM, FillBgTilemapBufferRect, FreeAllSpritePalettes,
-  FreeTempTileDataBuffersIfPossible, HideBg, InitBgsFromTemplates, InitMapMusic,
-  LoadCompressedSpriteSheet, LoadOam, LoadPalette, LoadSpritePalettes,
-  LockPlayerFieldControls, MapMusicMain, NULL, PALETTES_ALL,
-  PLTT_SIZE, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, REG_OFFSET_BG0CNT,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDCNT,
-  REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H,
-  REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, Random,
-  ResetBgsAndClearDma3BusyFlags, ResetMapMusic, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, ResetTempTileDataBuffers, RunTasks, S16TOPOSFLOAT,
-  ScanlineEffect_Stop, SetBgTilemapBuffer, SetCurrentAndNextWeatherNoDelay, SetGpuReg,
-  SetMainCallback2, SetNextWeather, SetVBlankCallback, ShowBg,
-  StartSpriteAnim, StartWeather, TRUE, TransferPlttBuffer,
-  UnsetBgTilemapBuffer, UpdatePaletteFade, VRAM_SIZE, WarpIntoMap,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void Task_LoadCableCar(u8 taskId) */
 export function Task_LoadCableCar(taskId: any): any {
   if (!gPaletteFade.active)
@@ -75,7 +44,7 @@ export function CB2_LoadCableCar(): any {
           SetVBlankCallback(NULL);
           SetBgRegs(FALSE);
           ScanlineEffect_Stop();
-          DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, _0x1000);
+          DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, 0x1000);
           DmaFill32Defvars(3, 0, OAM, OAM_SIZE);
           DmaFill16Defvars(3, 0, PLTT, PLTT_SIZE);
           sCableCar = AllocZeroed(0);
@@ -152,14 +121,14 @@ export function CB2_LoadCableCar(): any {
           break;
       case 7:
           InitGroundTilemapData(GOING_DOWN);
-          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  _0x48,  0, 14, 12, 3, 17);
+          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  0x48,  0, 14, 12, 3, 17);
           CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  0x6C, 12, 17, 12, 3, 17);
-          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  _0x90, 24, 20, 12, 3, 17);
-          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +   _0x0,  0, 17, 12, 3, 17);
-          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  _0x24,  0, 20, 12, 3, 17);
-          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +   _0x0, 12, 20, 12, 3, 17);
-          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  _0x24, 12, 23, 12, 3, 17);
-          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +   _0x0, 24, 23, 12, 3, 17);
+          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  0x90, 24, 20, 12, 3, 17);
+          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +   0x0,  0, 17, 12, 3, 17);
+          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  0x24,  0, 20, 12, 3, 17);
+          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +   0x0, 12, 20, 12, 3, 17);
+          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  0x24, 12, 23, 12, 3, 17);
+          CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +   0x0, 24, 23, 12, 3, 17);
           gMain.state++;
           break;
       case 8:
@@ -221,7 +190,7 @@ export function CB2_EndCableCar(): any {
       FREE_AND_SET_NULL(sCableCar.treesTilemap);
       FREE_AND_SET_NULL(sCableCar.groundTilemap);
       FREE_AND_SET_NULL(sCableCar);
-      DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, _0x1000);
+      DmaFillLarge16(3, 0, VRAM, VRAM_SIZE, 0x1000);
       DmaFill32Defvars(3, 0, OAM, OAM_SIZE);
       DmaFill16Defvars(3, 0, PLTT, PLTT_SIZE);
       WarpIntoMap();
@@ -626,12 +595,12 @@ export function CreateCableCarSprites(): any {
                   gSprites[spriteId].sYPos = 73;
               }
                
-              spriteId = CreateSprite(sSpriteTemplates_CableCar[0], 176, 43, _0x67);
+              spriteId = CreateSprite(sSpriteTemplates_CableCar[0], 176, 43, 0x67);
               gSprites[spriteId].x2 = gSprites[spriteId].y2 = 32;
               gSprites[spriteId].sXPos = 176;
               gSprites[spriteId].sYPos = 43;
                
-              spriteId = CreateSprite(sSpriteTemplates_CableCar[1], 200, 99, _0x65);
+              spriteId = CreateSprite(sSpriteTemplates_CableCar[1], 200, 99, 0x65);
               gSprites[spriteId].x2 = 8;
               gSprites[spriteId].y2 = 4;
               gSprites[spriteId].sXPos = 200;
@@ -642,7 +611,7 @@ export function CreateCableCarSprites(): any {
               SetCurrentAndNextWeatherNoDelay(WEATHER_SUNNY);
               break;
           case TRUE:
-              CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap + _0x24, 24, 26, 12, 3, 17);
+              CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap + 0x24, 24, 26, 12, 3, 17);
                
               spriteId = CreateObjectGraphicsSprite(playerGraphicsIds[gSaveBlock2Ptr.playerGender], SpriteCB_Player, 128, 39, 102);
               if (spriteId != MAX_SPRITES)
@@ -654,12 +623,12 @@ export function CreateCableCarSprites(): any {
                   gSprites[spriteId].sYPos = 39;
               }
                
-              spriteId = CreateSprite(sSpriteTemplates_CableCar[0], 104, 9, _0x67);
+              spriteId = CreateSprite(sSpriteTemplates_CableCar[0], 104, 9, 0x67);
               gSprites[spriteId].x2 = gSprites[spriteId].y2 = 32;
               gSprites[spriteId].sXPos = 104;
               gSprites[spriteId].sYPos = 9;
                
-              spriteId = CreateSprite(sSpriteTemplates_CableCar[1], 128, 65, _0x65);
+              spriteId = CreateSprite(sSpriteTemplates_CableCar[1], 128, 65, 0x65);
               gSprites[spriteId].x2 = 8;
               gSprites[spriteId].y2 = 4;
               gSprites[spriteId].sXPos = 128;
@@ -672,7 +641,7 @@ export function CreateCableCarSprites(): any {
       }
       for (i = 0; i < 9; i++)
       {
-          spriteId = CreateSprite(sSpriteTemplate_Cable, 16 * i + 96, 8 * i - 8, _0x68);
+          spriteId = CreateSprite(sSpriteTemplate_Cable, 16 * i + 96, 8 * i - 8, 0x68);
           gSprites[spriteId].x2 = 8;
           gSprites[spriteId].y2 = 8;
       }
@@ -726,13 +695,13 @@ export function BufferNextGroundSegment(): any {
   let i, j, k;
       let offset: any = null;
 
-      for (i = 0, k = 0, offset = _0x24 * (sCableCar.groundTilemapOffset + 2); i < 3; i++)
+      for (i = 0, k = 0, offset = 0x24 * (sCableCar.groundTilemapOffset + 2); i < 3; i++)
       {
           for (j = 0; j < ARRAY_COUNT(sCableCar.groundTileBuffer[0]); j++)
           {
               sCableCar.groundTileBuffer[i][j] = sCableCar.groundTilemap[offset++];
               sCableCar.groundTileBuffer[i + 3][j] = sCableCar.groundTilemap[k];
-              sCableCar.groundTileBuffer[i + 6][j] = (sCableCar.groundTilemap + _0x24)[k];
+              sCableCar.groundTileBuffer[i + 6][j] = (sCableCar.groundTilemap + 0x24)[k];
               k++;
           }
       }

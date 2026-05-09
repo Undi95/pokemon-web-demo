@@ -15,23 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AllocZeroed, AnimateSprites, BeginNormalPaletteFade, BuildOamBuffer,
-  CalcByteArraySum, ConvertInternationalString, CreateTask, DestroyTask,
-  FALSE, Free, GetBattlerSide, GetFronterBrainSymbol,
-  GetLinkPlayerCount, GetMonData, GetMultiplayerId, NULL,
-  PALETTES_ALL, PlayMapChosenOrBattleBGM, ResetPaletteFadeControl, RunTasks,
-  SetMainCallback2, SetMonData, StringCopy, StripExtCtrlCodes,
-  TRUE, TryReadSpecialSaveSector, TryWriteSpecialSaveSector, VarGet,
-  ZeroEnemyPartyMons, ZeroPlayerPartyMons, memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void RecordedBattle_Init(u8 mode) */
 export function RecordedBattle_Init(mode: any): any {
   let i, j;

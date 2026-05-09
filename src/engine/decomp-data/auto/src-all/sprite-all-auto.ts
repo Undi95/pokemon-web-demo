@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ALLOC_SPRITE_TILE, CpuCopy16, CpuCopy32, DISPLAY_HEIGHT,
-  FALSE, FREE_SPRITE_TILE, LoadPalette, NULL,
-  ObjAffineSet, PLTT_ID, PLTT_SIZE_4BPP, SAFE_DIV,
-  SET_SPRITE_TILE_RANGE, SPRITE_TILE_IS_ALLOCATED, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_DOUBLE_MASK,
-  ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_ON_MASK, SpriteCallbackDummy, TILE_SIZE_4BPP,
-  TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ResetSpriteData(void) */
 export function ResetSpriteData(): any {
   ResetOamRange(0, 128);
@@ -361,7 +346,7 @@ export function DestroySprite(sprite: any): any {
               let i: any = null;
               let tileEnd: any = (sprite.images.size / TILE_SIZE_4BPP) + sprite.oam.tileNum;
               for (i = sprite.oam.tileNum; i < tileEnd; i++)
-                  FREE_SPRITE_TILE(i);
+                  \;
           }
           ResetSprite(sprite);
       }
@@ -401,10 +386,10 @@ export function ResetOamMatrices(): any {
       for (i = 0; i < OAM_MATRIX_COUNT; i++)
       {
            
-          gOamMatrices[i].a = _0x0100;
-          gOamMatrices[i].b = _0x0000;
-          gOamMatrices[i].c = _0x0000;
-          gOamMatrices[i].d = _0x0100;
+          gOamMatrices[i].a = 0x0100;
+          gOamMatrices[i].b = 0x0000;
+          gOamMatrices[i].c = 0x0000;
+          gOamMatrices[i].d = 0x0100;
       }
 }
 
@@ -446,7 +431,7 @@ export function AllocSpriteTiles(tileCount: any): any {
       {
            
           for (i = gReservedSpriteTileCount; i < TOTAL_OBJ_TILE_COUNT; i++)
-              FREE_SPRITE_TILE(i);
+              \;
 
           return 0;
       }
@@ -455,7 +440,7 @@ export function AllocSpriteTiles(tileCount: any): any {
 
       for (;;)
       {
-          while (SPRITE_TILE_IS_ALLOCATED(i))
+          while (((sSpriteTileAllocBitmap[((i)) / 8] >> (((i)) % 8)) & 1))
           {
               i++;
 
@@ -473,7 +458,7 @@ export function AllocSpriteTiles(tileCount: any): any {
               if (i == TOTAL_OBJ_TILE_COUNT)
                   return -1;
 
-              if (!SPRITE_TILE_IS_ALLOCATED(i))
+              if (!((sSpriteTileAllocBitmap[((i)) / 8] >> (((i)) % 8)) & 1))
                   numTilesFound++;
               else
                   break;
@@ -484,7 +469,7 @@ export function AllocSpriteTiles(tileCount: any): any {
       }
 
       for (i = start; i < tileCount + start; i++)
-          ALLOC_SPRITE_TILE(i);
+          \;
 
       return start;
 }
@@ -970,7 +955,7 @@ export function UpdateSpriteMatrixAnchorPos(sprite: any, x: any, y: any): any {
 
 /** void SetSpriteOamFlipBits(struct Sprite *sprite, u8 hFlip, u8 vFlip) */
 export function SetSpriteOamFlipBits(sprite: any, hFlip: any, vFlip: any): any {
-  sprite.oam.matrixNum &= _0x7;
+  sprite.oam.matrixNum &= 0x7;
       sprite.oam.matrixNum |= (((hFlip ^ sprite.hFlip) & 1) << 3);
       sprite.oam.matrixNum |= (((vFlip ^ sprite.vFlip) & 1) << 4);
 }
@@ -988,8 +973,8 @@ export function AffineAnimStateStartAnim(matrixNum: any, animNum: any): any {
       sAffineAnimStates[matrixNum].animCmdIndex = 0;
       sAffineAnimStates[matrixNum].delayCounter = 0;
       sAffineAnimStates[matrixNum].loopCounter = 0;
-      sAffineAnimStates[matrixNum].xScale = _0x0100;
-      sAffineAnimStates[matrixNum].yScale = _0x0100;
+      sAffineAnimStates[matrixNum].xScale = 0x0100;
+      sAffineAnimStates[matrixNum].yScale = 0x0100;
       sAffineAnimStates[matrixNum].rotation = 0;
 }
 
@@ -999,8 +984,8 @@ export function AffineAnimStateReset(matrixNum: any): any {
       sAffineAnimStates[matrixNum].animCmdIndex = 0;
       sAffineAnimStates[matrixNum].delayCounter = 0;
       sAffineAnimStates[matrixNum].loopCounter = 0;
-      sAffineAnimStates[matrixNum].xScale = _0x0100;
-      sAffineAnimStates[matrixNum].yScale = _0x0100;
+      sAffineAnimStates[matrixNum].xScale = 0x0100;
+      sAffineAnimStates[matrixNum].yScale = 0x0100;
       sAffineAnimStates[matrixNum].rotation = 0;
 }
 
@@ -1040,7 +1025,7 @@ export function ApplyAffineAnimFrameRelativeAndUpdateMatrix(matrixNum: any, fram
 
 /** s16 ConvertScaleParam(s16 scale) */
 export function ConvertScaleParam(scale: any): any {
-  let val: any = _0x10000;
+  let val: any = 0x10000;
       return SAFE_DIV(val, scale);
 }
 
@@ -1182,7 +1167,7 @@ export function FreeOamMatrix(matrixNum: any): any {
       }
 
       gOamMatrixAllocBitmap &= ~bit;
-      SetOamMatrix(matrixNum, _0x100, 0, 0, _0x100);
+      SetOamMatrix(matrixNum, 0x100, 0, 0, 0x100);
 }
 
 /** void InitSpriteAffineAnim(struct Sprite *sprite) */
@@ -1247,7 +1232,7 @@ export function FreeSpriteTilesByTag(tag: any): any {
           count = rangeCounts[index * 2];
 
           for (i = start; i < start + count; i++)
-              FREE_SPRITE_TILE(i);
+              \;
 
           sSpriteTileRangeTags[index] = TAG_NONE;
       }

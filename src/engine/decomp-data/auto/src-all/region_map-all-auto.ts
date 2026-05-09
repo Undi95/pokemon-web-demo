@@ -15,40 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, Alloc, AnimateSprites,
-  BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR, BeginNormalPaletteFade,
-  BlendPalettes, BuildOamBuffer, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent,
-  CopyWindowToVram, CorrectSpecialMapSecId_Internal, CpuCopy16, CreateSprite,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroySprite, DoScheduledBgTilemapCopiesToVram,
-  DrawStdFrameWithCustomTileAndPalette, FALSE, FillWindowPixelBuffer, FlagGet,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeSpritePaletteByTag, FreeSpriteTileRanges,
-  FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetMapName, GetMapSecIdAt,
-  GetMapTypeByGroupAndId, GetSSTidalLocation, GetStringRightAlignXOffset, IndexOfSpritePaletteTag,
-  InitBgsFromTemplates, InitWindows, JOY_HELD, JOY_NEW,
-  LZ77UnCompVram, LZ77UnCompWram, LoadOam, LoadPalette,
-  LoadSpritePalette, LoadSpriteSheet, LoadUserWindowBorderGfx, MAP_GROUP,
-  MAP_NUM, NULL, OBJ_PLTT_ID, Overworld_GetMapHeaderByGroupAndId,
-  PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests,
-  PutWindowTilemap, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS,
-  REG_OFFSET_BG3VOFS, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ReturnToFieldFromFlyMapSelect, SPRITE_SHAPE,
-  SPRITE_SIZE, ScheduleBgCopyTilemapToVram, SetBgAttribute, SetGpuReg,
-  SetGpuRegBits, SetMainCallback2, SetVBlankCallback, SetWarpDestinationToHealLocation,
-  SetWarpDestinationToMapWarp, ShowBg, SpriteCallbackDummy, StartSpriteAnim,
-  StringFill, StringLength, TRUE, TRY_FREE_AND_SET_NULL,
-  TransferPlttBuffer, UpdatePaletteFade, VarGet, gSineTable,
-  m4aSongNumStart,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void InitRegionMap(struct RegionMap *regionMap, bool8 zoomed) */
 export function InitRegionMap(regionMap: any, zoomed: any): any {
   InitRegionMapData(regionMap, NULL, zoomed);
@@ -127,15 +93,15 @@ export function LoadRegionMapGfx(): any {
       case 6:
           if (sRegionMap.zoomed == FALSE)
           {
-              CalcZoomScrollParams(0, 0, 0, 0, _0x100, _0x100, 0);
+              CalcZoomScrollParams(0, 0, 0, 0, 0x100, 0x100, 0);
           }
           else
           {
-              sRegionMap.scrollX = sRegionMap.cursorPosX * 8 - _0x34;
-              sRegionMap.scrollY = sRegionMap.cursorPosY * 8 - _0x44;
+              sRegionMap.scrollX = sRegionMap.cursorPosX * 8 - 0x34;
+              sRegionMap.scrollY = sRegionMap.cursorPosY * 8 - 0x44;
               sRegionMap.zoomedCursorPosX = sRegionMap.cursorPosX;
               sRegionMap.zoomedCursorPosY = sRegionMap.cursorPosY;
-              CalcZoomScrollParams(sRegionMap.scrollX, sRegionMap.scrollY, _0x38, _0x48, _0x80, _0x80, 0);
+              CalcZoomScrollParams(sRegionMap.scrollX, sRegionMap.scrollY, 0x38, 0x48, 0x80, 0x80, 0);
           }
           break;
       case 7:
@@ -164,7 +130,7 @@ export function LoadRegionMapGfx(): any {
 
 /** void BlendRegionMap(u16 color, u32 coeff) */
 export function BlendRegionMap(color: any, coeff: any): any {
-  BlendPalettes(_0x380, coeff, color);
+  BlendPalettes(0x380, coeff, color);
       CpuCopy16(gPlttBufferFaded[BG_PLTT_ID(7)],gPlttBufferUnfaded[BG_PLTT_ID(7)], 3 * PLTT_SIZE_4BPP);
 }
 
@@ -275,7 +241,7 @@ export function ProcessRegionMapInput_Zoomed(): any {
       input = MAP_INPUT_NONE;
       sRegionMap.zoomedCursorDeltaX = 0;
       sRegionMap.zoomedCursorDeltaY = 0;
-      if (JOY_HELD(DPAD_UP) && sRegionMap.scrollY > -_0x34)
+      if (JOY_HELD(DPAD_UP) && sRegionMap.scrollY > -0x34)
       {
           sRegionMap.zoomedCursorDeltaY = -1;
           input = MAP_INPUT_MOVE_START;
@@ -324,7 +290,7 @@ export function MoveRegionMapCursor_Zoomed(): any {
       if (sRegionMap.zoomedCursorMovementFrameCounter == 8)
       {
           x = (sRegionMap.scrollX + 0x2c) / 8 + 1;
-          y = (sRegionMap.scrollY + _0x34) / 8 + 2;
+          y = (sRegionMap.scrollY + 0x34) / 8 + 2;
           if (x != sRegionMap.zoomedCursorPosX || y != sRegionMap.zoomedCursorPosY)
           {
               sRegionMap.zoomedCursorPosX = x;
@@ -353,27 +319,27 @@ export function SetRegionMapDataForZoom(): any {
           sRegionMap.scrollX = 0;
           sRegionMap.unk_040 = 0;
           sRegionMap.unk_03c = 0;
-          sRegionMap.unk_060 = sRegionMap.cursorPosX * 8 - _0x34;
-          sRegionMap.unk_062 = sRegionMap.cursorPosY * 8 - _0x44;
+          sRegionMap.unk_060 = sRegionMap.cursorPosX * 8 - 0x34;
+          sRegionMap.unk_062 = sRegionMap.cursorPosY * 8 - 0x44;
           sRegionMap.unk_044 = (sRegionMap.unk_060 << 8) / 16;
           sRegionMap.unk_048 = (sRegionMap.unk_062 << 8) / 16;
           sRegionMap.zoomedCursorPosX = sRegionMap.cursorPosX;
           sRegionMap.zoomedCursorPosY = sRegionMap.cursorPosY;
-          sRegionMap.unk_04c = _0x10000;
-          sRegionMap.unk_050 = -_0x800;
+          sRegionMap.unk_04c = 0x10000;
+          sRegionMap.unk_050 = -0x800;
       }
       else
       {
-          sRegionMap.unk_03c = sRegionMap.scrollX * _0x100;
-          sRegionMap.unk_040 = sRegionMap.scrollY * _0x100;
+          sRegionMap.unk_03c = sRegionMap.scrollX * 0x100;
+          sRegionMap.unk_040 = sRegionMap.scrollY * 0x100;
           sRegionMap.unk_060 = 0;
           sRegionMap.unk_062 = 0;
           sRegionMap.unk_044 = -(sRegionMap.unk_03c / 16);
           sRegionMap.unk_048 = -(sRegionMap.unk_040 / 16);
           sRegionMap.cursorPosX = sRegionMap.zoomedCursorPosX;
           sRegionMap.cursorPosY = sRegionMap.zoomedCursorPosY;
-          sRegionMap.unk_04c = _0x8000;
-          sRegionMap.unk_050 = _0x800;
+          sRegionMap.unk_04c = 0x8000;
+          sRegionMap.unk_050 = 0x800;
       }
       sRegionMap.unk_06e = 0;
       FreeRegionMapCursorSprite();
@@ -437,7 +403,7 @@ export function UpdateRegionMapZoom(): any {
           }
           retVal = TRUE;
       }
-      CalcZoomScrollParams(sRegionMap.scrollX, sRegionMap.scrollY, _0x38, _0x48, sRegionMap.unk_04c >> 8, sRegionMap.unk_04c >> 8, 0);
+      CalcZoomScrollParams(sRegionMap.scrollX, sRegionMap.scrollY, 0x38, 0x48, sRegionMap.unk_04c >> 8, sRegionMap.unk_04c >> 8, 0);
       return retVal;
 }
 
@@ -467,7 +433,7 @@ export function CalcZoomScrollParams(scrollX: any, scrollY: any, c: any, d: any,
 /** static void RegionMap_SetBG2XAndBG2Y(s16 x, s16 y) */
 export function RegionMap_SetBG2XAndBG2Y(x: any, y: any): any {
   sRegionMap.bg2x = (x << 8) + 0x1c00;
-      sRegionMap.bg2y = (y << 8) + _0x2400;
+      sRegionMap.bg2y = (y << 8) + 0x2400;
       sRegionMap.needUpdateVideoRegs = TRUE;
 }
 
@@ -489,7 +455,7 @@ export function UpdateRegionMapVideoRegs(): any {
 
 /** void PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs(s16 x, s16 y) */
 export function PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs(x: any, y: any): any {
-  CalcZoomScrollParams(x, y, _0x38, _0x48, _0x100, _0x100, 0);
+  CalcZoomScrollParams(x, y, 0x38, 0x48, 0x100, 0x100, 0);
       UpdateRegionMapVideoRegs();
       if (sRegionMap.playerIconSprite != NULL)
       {
@@ -920,7 +886,7 @@ export function FreeRegionMapCursorSprite(): any {
 /** void CreateRegionMapPlayerIcon(u16 tileTag, u16 paletteTag) */
 export function CreateRegionMapPlayerIcon(tileTag: any, paletteTag: any): any {
   let spriteId: any = null;
-      let sheet: any = [sRegionMapPlayerIcon_BrendanGfx, _0x80, tileTag];
+      let sheet: any = [sRegionMapPlayerIcon_BrendanGfx, 0x80, tileTag];
       let palette: any = [sRegionMapPlayerIcon_BrendanPal, paletteTag];
       let template: any = [tileTag, paletteTag,sRegionMapPlayerIconOam, sRegionMapPlayerIconAnimTable, NULL, gDummySpriteAffineAnimTable, SpriteCallbackDummy];
 
@@ -946,8 +912,8 @@ export function CreateRegionMapPlayerIcon(tileTag: any, paletteTag: any): any {
       }
       else
       {
-          sRegionMap.playerIconSprite.x = sRegionMap.playerIconSpritePosX * 16 - _0x30;
-          sRegionMap.playerIconSprite.y = sRegionMap.playerIconSpritePosY * 16 - _0x42;
+          sRegionMap.playerIconSprite.x = sRegionMap.playerIconSpritePosX * 16 - 0x30;
+          sRegionMap.playerIconSprite.y = sRegionMap.playerIconSpritePosY * 16 - 0x42;
           sRegionMap.playerIconSprite.callback = SpriteCB_PlayerIconMapZoomed;
       }
 }
@@ -967,8 +933,8 @@ export function UnhideRegionMapPlayerIcon(): any {
       {
           if (sRegionMap.zoomed == TRUE)
           {
-              sRegionMap.playerIconSprite.x = sRegionMap.playerIconSpritePosX * 16 - _0x30;
-              sRegionMap.playerIconSprite.y = sRegionMap.playerIconSpritePosY * 16 - _0x42;
+              sRegionMap.playerIconSprite.x = sRegionMap.playerIconSpritePosX * 16 - 0x30;
+              sRegionMap.playerIconSprite.y = sRegionMap.playerIconSpritePosY * 16 - 0x42;
               sRegionMap.playerIconSprite.callback = SpriteCB_PlayerIconMapZoomed;
               sRegionMap.playerIconSprite.invisible = FALSE;
           }
@@ -1093,7 +1059,7 @@ export function CB2_OpenFlyMap(): any {
           gMain.state++;
           break;
       case 3:
-          LoadUserWindowBorderGfx(0, _0x65, BG_PLTT_ID(13));
+          LoadUserWindowBorderGfx(0, 0x65, BG_PLTT_ID(13));
           ClearScheduledBgCopiesToVram();
           gMain.state++;
           break;

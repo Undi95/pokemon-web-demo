@@ -15,27 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AddPyramidBagItem, AllocZeroed,
-  BG_PLTT_ID, CalculateMonStats, CopyItemName, CpuCopy16,
-  CpuFill32, CreateTask, DestroyTask, DoSoftReset,
-  FALSE, Free, FrontierSpeechToString, GetBattleFacilityTrainerGfxId,
-  GetChosenApproachingTrainerObjectEventId, GetMonData, GetRandomScaledFrontierTrainerId, GetSpeciesName,
-  InitBattlePyramidBagCursorPosition, LOCALID_NONE, LoadPlayerParty, MAP_GROUP,
-  MAP_NUM, MOD, NULL, OBJECT_EVENTS_COUNT,
-  Overworld_GetMapHeaderByGroupAndId, PLTT_SIZE_4BPP, PlaySE, Random,
-  Random2, RunOnLoadMapScript, SaveMapView, SeedRng2,
-  SetFacilityPtrsGetLevel, SetMonData, SetMonMoveSlot, ShowBattlePyramidStartMenu,
-  ShowFieldMessage, TRUE, TrySavingData, VarSet,
-  WriteBattlePyramidViewScanlineEffectBuffer,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CallBattlePyramidFunction(void) */
 export function CallBattlePyramidFunction(): any {
   sBattlePyramidFunctions[gSpecialVar_0x8004]();

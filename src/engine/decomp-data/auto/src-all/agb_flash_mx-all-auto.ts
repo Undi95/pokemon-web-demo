@@ -15,16 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  FLASH_WRITE, SetReadFlash1, SwitchFlashBank, WaitForFlashWrite,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u16 EraseFlashChip_MX(void) */
 export function EraseFlashChip_MX(): any {
   let result: any = null;
@@ -32,12 +22,12 @@ export function EraseFlashChip_MX(): any {
 
       REG_WAITCNT = (REG_WAITCNT & ~WAITCNT_SRAM_MASK) | gFlash.wait[0];
 
-      FLASH_WRITE(_0x5555, 0xAA);
-      FLASH_WRITE(0x2AAA, _0x55);
-      FLASH_WRITE(_0x5555, _0x80);
-      FLASH_WRITE(_0x5555, 0xAA);
-      FLASH_WRITE(0x2AAA, _0x55);
-      FLASH_WRITE(_0x5555, _0x10);
+      FLASH_WRITE(0x5555, 0xAA);
+      FLASH_WRITE(0x2AAA, 0x55);
+      FLASH_WRITE(0x5555, 0x80);
+      FLASH_WRITE(0x5555, 0xAA);
+      FLASH_WRITE(0x2AAA, 0x55);
+      FLASH_WRITE(0x5555, 0x10);
 
       SetReadFlash1(readFlash1Buffer);
 
@@ -68,12 +58,12 @@ export function EraseFlashSector_MX(sectorNum: any): any {
 
       addr = FLASH_BASE + (sectorNum << gFlash.sector.shift);
 
-      FLASH_WRITE(_0x5555, 0xAA);
-      FLASH_WRITE(0x2AAA, _0x55);
-      FLASH_WRITE(_0x5555, _0x80);
-      FLASH_WRITE(_0x5555, 0xAA);
-      FLASH_WRITE(0x2AAA, _0x55);
-      addr = _0x30;
+      FLASH_WRITE(0x5555, 0xAA);
+      FLASH_WRITE(0x2AAA, 0x55);
+      FLASH_WRITE(0x5555, 0x80);
+      FLASH_WRITE(0x5555, 0xAA);
+      FLASH_WRITE(0x2AAA, 0x55);
+      addr = 0x30;
 
       SetReadFlash1(readFlash1Buffer);
 
@@ -97,7 +87,7 @@ export function ProgramFlashByte_MX(sectorNum: any, offset: any, data: any): any
       const readFlash1Buffer: any[] = [];
 
       if (offset >= gFlash.sector.size)
-          return _0x8000;
+          return 0x8000;
 
       SwitchFlashBank(sectorNum / SECTORS_PER_BANK);
       sectorNum %= SECTORS_PER_BANK;
@@ -108,9 +98,9 @@ export function ProgramFlashByte_MX(sectorNum: any, offset: any, data: any): any
 
       REG_WAITCNT = (REG_WAITCNT & ~WAITCNT_SRAM_MASK) | gFlash.wait[0];
 
-      FLASH_WRITE(_0x5555, 0xAA);
-      FLASH_WRITE(0x2AAA, _0x55);
-      FLASH_WRITE(_0x5555, 0xA0);
+      FLASH_WRITE(0x5555, 0xAA);
+      FLASH_WRITE(0x2AAA, 0x55);
+      FLASH_WRITE(0x5555, 0xA0);
       addr = data;
 
       return WaitForFlashWrite(1, addr, data);
@@ -118,9 +108,9 @@ export function ProgramFlashByte_MX(sectorNum: any, offset: any, data: any): any
 
 /** static u16 ProgramByte(u8 *src, u8 *dest) */
 export function ProgramByte(src: any, dest: any): any {
-  FLASH_WRITE(_0x5555, 0xAA);
-      FLASH_WRITE(0x2AAA, _0x55);
-      FLASH_WRITE(_0x5555, 0xA0);
+  FLASH_WRITE(0x5555, 0xAA);
+      FLASH_WRITE(0x2AAA, 0x55);
+      FLASH_WRITE(0x5555, 0xA0);
       dest = src;
 
       return WaitForFlashWrite(1, dest, src);

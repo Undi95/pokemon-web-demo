@@ -15,27 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemapHandleContest, AnimateSprite, BATTLE_PARTNER,
-  BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1,
-  BattleAnimAdjustPanning, ClearBattleAnimBg, Cos, CreateSprite,
-  DISPLAY_WIDTH, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
-  FALSE, FindTaskIdByFunc, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
-  GetBattlerSide, GetBattlerSpriteCoord, InitAnimArcTranslation, InitSpriteDataForLinearTranslation,
-  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsContest, LoadCompressedPalette,
-  PLTT_SIZE_4BPP, PlaySE12WithPanning, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, SetAnimBgAttribute, SetAverageBattlerPositions,
-  SetGpuReg, SetSubspriteTables, Sin, StartSpriteAffineAnim,
-  StartSpriteAnim, StoreSpriteCallbackInData6, TASK_NONE, TRUE,
-  TranslateAnimHorizontalArc, TranslateAnimSpriteToTargetMonLocation, UpdateAnimBg3ScreenSize,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimFallingRock(struct Sprite *sprite) */
 export function AnimFallingRock(sprite: any): any {
   if (gBattleAnimArgs[3] != 0)

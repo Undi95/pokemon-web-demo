@@ -15,26 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddWindow,
-  AllocSubstruct, BgDmaFill, ChangeBgX, ChangeBgY,
-  ClearRematchPokeballIcon, CopyBgTilemapBufferToVram, CopyWindowRectToVram, CopyWindowToVram,
-  CpuFastFill8, CreateLoopedTask, CreateSprite, DestroySprite,
-  FALSE, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect,
-  FillWindowTilesByRow, FreePokenavSubstruct, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FuncIsActiveLoopedTask, GetBgTilemapBuffer, GetBgY, GetMatchCallFlavorText,
-  GetPokenavListWindowState, GetSubstructPtr, GetWindowAttribute, IsDma3ManagerBusyWithBgCopy,
-  IsLoopedTaskActive, LT_SET_STATE, LoadCompressedSpriteSheet, NULL,
-  PIXEL_FILL, Pokenav_AllocAndLoadPalettes, PutWindowTilemap, RemoveWindow,
-  SetBgTilemapBuffer, SpriteCallbackDummy, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 CreatePokenavList(const struct BgTemplate *bgTemplate, struct PokenavListTemplate *listTemplate, s32 tileOffset) */
 export function CreatePokenavList(bgTemplate: any, listTemplate: any, tileOffset: any): any {
   let list: any = AllocSubstruct(POKENAV_SUBSTRUCT_LIST, 0);
@@ -255,7 +235,7 @@ export function LoopedTask_MoveListWindow(state: any): any {
       case 1:
           finished = FALSE;
           oldY = GetBgY(subPtr.listWindow.bg);
-          newY = ChangeBgY(subPtr.listWindow.bg, _0x1000, subPtr.bgMoveType);
+          newY = ChangeBgY(subPtr.listWindow.bg, 0x1000, subPtr.bgMoveType);
           if (subPtr.bgMoveType == BG_COORD_SUB)
           {
               if ((oldY > subPtr.endBgY || oldY <= subPtr.startBgY) && newY <= subPtr.endBgY)
@@ -634,7 +614,7 @@ export function SetListMarginTile(listWindow: any, draw: any): any {
           _var = (listWindow.fillValue << 12) | (listWindow.tileOffset);
 
       tilemapBuffer[0] = _var;
-      tilemapBuffer[_0x20] = _var;
+      tilemapBuffer[0x20] = _var;
 }
 
 /** static void PrintCheckPageTrainerName(struct PokenavListWindowState *state, struct PokenavListSub *list) */

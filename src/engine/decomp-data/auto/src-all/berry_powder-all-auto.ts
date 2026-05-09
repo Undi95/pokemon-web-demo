@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddTextPrinterParameterized, AddWindow, ApplyNewEncryptionKeyToWord, BG_PLTT_ID,
-  ClearStdWindowAndFrameToTransparent, ClearWindowTilemap, ConvertIntToDecimalStringN, DrawStdFrameWithCustomTileAndPalette,
-  FALSE, FillWindowPixelBuffer, LoadUserWindowBorderGfx_, NULL,
-  PIXEL_FILL, PutWindowTilemap, RemoveWindow, STR_CONV_MODE_RIGHT_ALIGN,
-  SetWindowTemplateFields, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static u32 DecryptBerryPowder(u32 *powder) */
 export function DecryptBerryPowder(powder: any): any {
   return powder ^ gSaveBlock2Ptr.encryptionKey;

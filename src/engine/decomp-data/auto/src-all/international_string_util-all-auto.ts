@@ -15,17 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ConvertInternationalString, ConvertPixelWidthToTileWidth, CpuFastFill8, GetStringWidth,
-  StringCopy, StringLength, StripExtCtrlCodes, TILE_SIZE_4BPP,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** int GetStringCenterAlignXOffset(int fontId, const u8 *str, int totalWidth) */
 export function GetStringCenterAlignXOffset(fontId: any, str: any, totalWidth: any): any {
   return GetStringCenterAlignXOffsetWithLetterSpacing(fontId, str, totalWidth, 0);
@@ -209,7 +198,7 @@ export function FillWindowTilesByRow(windowId: any, columnStart: any, rowStart: 
       {
           for (i = numRows; i != 0; i--)
           {
-              CpuFastFill8(_0x11, windowTileData, fillSize);
+              CpuFastFill8(0x11, windowTileData, fillSize);
               windowTileData += windowRowSize;
           }
       }

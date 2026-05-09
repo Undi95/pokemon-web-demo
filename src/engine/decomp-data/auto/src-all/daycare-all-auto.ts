@@ -15,30 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinter, AddWindow, AppendMonGenderSymbol,
-  BoxMonRestorePP, BoxMonToMon, CalculateMonStats, CalculatePlayerPartyCount,
-  CanMonLearnTMHM, ChooseMonForDaycare, ClearMail, ClearStdWindowAndFrame,
-  CompactPartySlots, ConvertIntToDecimalStringN, CopyWindowToVram, CreateMon,
-  CreateTask, DeleteFirstMoveAndGiveMoveToMon, DestroyListMenuTask, DestroyTask,
-  DrawStdWindowFrame, FALSE, FlagSet, GetBoxMonData,
-  GetBoxMonGender, GetBoxMonNickname, GetCursorSelectionMonId, GetEggCyclesToSubtract,
-  GetGenderFromSpeciesAndPersonality, GetLevelFromBoxMonExp, GetLevelUpMovesBySpecies, GetMonData,
-  GetMonNickname2, GetNatureFromPersonality, GetStringRightAlignXOffset, GiveMailToMon,
-  GiveMoveToMon, ItemIdToBattleMoveId, JOY_NEW, ListMenuInit,
-  ListMenu_ProcessInput, MonHasMail, MonTryLearningNewMove, NULL,
-  Random, Random2, RemoveWindow, STR_CONV_MODE_LEFT_ALIGN,
-  ScriptContext_Enable, SeedRng2, SetBoxMonData, SetMonData,
-  StringAppend, StringCopy, StripExtCtrlCodes, TRUE,
-  TakeMailFromMon, TryIncrementMonLevel, ZeroBoxMonData, ZeroMonData,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u8 CountPokemonInDaycare(struct DayCare *daycare) */
 export function CountPokemonInDaycare(daycare: any): any {
   let i, count;

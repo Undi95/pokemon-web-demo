@@ -15,27 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BG_SCREEN_ADDR, CreateCopySpriteAt, CreateSpriteAtEnd, CurrentMapDrawMetatileAt,
-  DIR_EAST, DIR_SOUTH, DISPLAY_WIDTH, ElevationToPriority,
-  FALSE, FieldEffectActiveListRemove, FieldEffectStart, FieldEffectStop,
-  GetFigure8XOffset, GetFigure8YOffset, GetObjectEventGraphicsInfo, GetObjectEventIdByLocalIdAndMap,
-  GetObjectPaletteTag, LoadPlayerObjectReflectionPalette, LoadSpecialObjectReflectionPalette, MapGridGetElevationAt,
-  MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MetatileBehavior_GetBridgeType, MetatileBehavior_IsLongGrass,
-  MetatileBehavior_IsPokeGrass, MetatileBehavior_IsReflective, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsTallGrass,
-  MoveCoords, OBJECT_EVENTS_COUNT, PatchObjectPalette, PlaySE,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, ST_OAM_AFFINE_NORMAL, SeekSpriteAnim,
-  SetGpuReg, SetObjectSubpriorityByElevation, SetSpritePosToMapCoords, SetSpritePosToOffsetMapCoords,
-  StartSpriteAnim, StartSpriteAnimIfDifferent, TRUE, TryGetObjectEventIdByLocalIdAndMap,
-  UpdateObjectEventSpriteInvisibility, UpdateSpritePaletteWithWeather, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SetUpReflection(struct ObjectEvent *objectEvent, struct Sprite *sprite, bool8 stillReflection) */
 export function SetUpReflection(objectEvent: any, sprite: any, stillReflection: any): any {
   let reflectionSprite: any = null;
@@ -930,7 +909,7 @@ export function SynchronizeSurfPosition(playerObj: any, sprite: any): any {
 
 /** static void UpdateBobbingEffect(struct ObjectEvent *playerObj, struct Sprite *playerSprite, struct Sprite *sprite) */
 export function UpdateBobbingEffect(playerObj: any, playerSprite: any, sprite: any): any {
-  const intervals: any = [_0x3, _0x7];
+  const intervals: any = [0x3, 0x7];
 
       let bobState: any = GetSurfBlob_BobState(sprite);
       if (bobState != BOB_NONE)

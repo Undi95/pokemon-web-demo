@@ -15,22 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AllocSubstruct, CalculatePlayerPartyCount, ConditionGraph_CalcPositions, ConditionGraph_Init,
-  ConditionGraph_SetNewPositions, CopyConditionMonNameGender, CopyStringLeftAlignedToConditionData, FALSE,
-  FreePokenavSubstruct, GET_NUM_CONDITION_SPARKLES, GetBoxNamePtr, GetBoxOrPartyMonData,
-  GetMonData, GetMonMarkingsData, GetMonSpritePalFromSpeciesAndPersonality, GetSubstructPtr,
-  HandleMonMarkingsMenuInput, JOY_HELD, JOY_NEW, LZ77UnCompWram,
-  LoadSpecialPokePic, NULL, PlaySE, SetBoxMonDataAt,
-  SetMonData, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_ConditionGraph_Party(void) */
 export function PokenavCallback_Init_ConditionGraph_Party(): any {
   let menu: any = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU, 0);

@@ -15,46 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized2, AnimateSprite,
-  BikeClearState, Bike_HandleBumpySlopeJump, Bike_TryAcroBikeHistoryUpdate, Bike_UpdateBikeCounterSpeed,
-  CameraObjectFreeze, CameraObjectReset, CheckForRotatingGatePuzzleCollision, CheckForRotatingGatePuzzleCollisionWithoutAnimation,
-  ClearDialogWindowAndFrame, CreateTask, CreateWarpArrowSprite, DIR_EAST,
-  DIR_NONE, DIR_NORTH, DIR_SOUTH, DIR_WEST,
-  DestroySprite, DestroyTask, DoesCurrentMapHaveFishingMons, FALSE,
-  FieldEffectStart, FillWindowPixelBuffer, FindTaskIdByFunc, FishingWildEncounter,
-  FlagGet, FuncIsActiveTask, GetAcroEndWheelieFaceDirectionMovementAction, GetAcroEndWheelieMoveDirectionMovementAction,
-  GetAcroPopWheelieFaceDirectionMovementAction, GetAcroPopWheelieMoveDirectionMovementAction, GetAcroWheelieDirectionAnimNum, GetAcroWheelieFaceDirectionMovementAction,
-  GetAcroWheelieHopDirectionMovementAction, GetAcroWheelieHopFaceDirectionMovementAction, GetAcroWheelieInPlaceDirectionMovementAction, GetAcroWheelieJumpDirectionMovementAction,
-  GetAcroWheelieMoveDirectionMovementAction, GetCollisionAtCoords, GetFaceDirectionAnimNum, GetFaceDirectionMovementAction,
-  GetFishingBiteDirectionAnimNum, GetFishingDirectionAnimNum, GetFishingNoCatchDirectionAnimNum, GetJump2MovementAction,
-  GetJumpInPlaceMovementAction, GetJumpInPlaceTurnAroundMovementAction, GetJumpSpecialMovementAction, GetLedgeJumpDirection,
-  GetMonAbility, GetMonData, GetObjectEventIdByLocalIdAndMap, GetObjectEventIdByPosition,
-  GetObjectEventIdByXY, GetOppositeDirection, GetPlayerRunMovementAction, GetPlayerSpeed,
-  GetRideWaterCurrentMovementAction, GetWalkFastMovementAction, GetWalkFasterMovementAction, GetWalkInPlaceFastMovementAction,
-  GetWalkInPlaceNormalMovementAction, GetWalkInPlaceSlowMovementAction, GetWalkNormalMovementAction, GetWalkSlowMovementAction,
-  IncrementGameStat, IsPlayerNotUsingAcroBikeOnBumpySlope, IsRunningDisallowed, IsTextPrinterActive,
-  JOY_NEW, LOCALID_PLAYER, LoadMessageBoxAndFrameGfx, LockPlayerFieldControls,
-  MAP_GROUP, MAP_NUM, MapGridGetElevationAt, MapGridGetMetatileBehaviorAt,
-  MetatileBehavior_IsNonAnimDoor, MetatileBehavior_IsSurfableFishableWater, MetatileBehavior_IsWarpDoor, MonKnowsMove,
-  MoveCoords, MoveObjectEventToMapCoords, MovePlayerOnBike, NULL,
-  OBJECT_EVENTS_COUNT, ObjectEventCheckHeldMovementStatus, ObjectEventClearHeldMovement, ObjectEventClearHeldMovementIfActive,
-  ObjectEventClearHeldMovementIfFinished, ObjectEventForceSetHeldMovement, ObjectEventGetHeldMovementActionId, ObjectEventIsHeldMovementActive,
-  ObjectEventIsMovementOverridden, ObjectEventSetGraphicsId, ObjectEventSetHeldMovement, ObjectEventTurn,
-  Overworld_ChangeMusicToDefault, Overworld_ClearSavedMusic, PIXEL_FILL, PlaySE,
-  Random, RecordFishingAttemptForTV, RunTextPrinters, SeekSpriteAnim,
-  SetObjectEventDirection, SetSpriteInvisible, SetSurfBlob_BobState, SetSurfBlob_PlayerOffset,
-  ShowWarpArrowSprite, SpawnSpecialObjectEvent, StartSpriteAnim, StartUnderwaterSurfBlobBobbing,
-  TRUE, UnfreezeObjectEvents, UnlockPlayerFieldControls, UpdateObjectEventCurrentMovement,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void MovementType_Player(struct Sprite *sprite) */
 export function MovementType_Player(sprite: any): any {
   UpdateObjectEventCurrentMovement(gObjectEvents[sprite.data[0]], sprite, ObjectEventCB2_NoMovement2);

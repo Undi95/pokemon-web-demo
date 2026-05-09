@@ -15,29 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AnimTranslateLinear, BATTLE_PARTNER, BG_PLTT_ID, BlendPalette,
-  Cos, CreateSprite, DISPLAY_WIDTH, DestroyAnimSprite,
-  DestroyAnimVisualTask, DestroySprite, DestroySpriteAndMatrix, FALSE,
-  GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattlerAtPosition, GetBattlerSide,
-  GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, InitAnimLinearTranslation, InitAnimLinearTranslationWithSpeed,
-  InitSpritePosToAnimAttacker, IsBattlerSpriteVisible, IsContest, PlaySE12WithPanning,
-  PrepareBattlerSpriteForRotScale, PrepareEruptAnimTaskData, ResetSpriteRotScale, ST_OAM_OBJ_NORMAL,
-  SetAnimSpriteInitialXOffset, SetBattlerSpriteYOffsetFromYScale, SetSpriteCoordsToAnimAttackerCoords, Sin,
-  StartSpriteAnim, StoreSpriteCallbackInData6, TRUE, UpdateEruptAnimTask,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimFireSpiralInward(struct Sprite *sprite) */
 export function AnimFireSpiralInward(sprite: any): any {
   sprite.data[0] = gBattleAnimArgs[0];
       sprite.data[1] = 0x3C;
-      sprite.data[2] = _0x9;
+      sprite.data[2] = 0x9;
       sprite.data[3] = 0x1E;
       sprite.data[4] = 0xFE00;
 
@@ -213,9 +195,9 @@ export function AnimFireRing(sprite: any): any {
 export function AnimFireRing_Step1(sprite: any): any {
   UpdateFireRingCircleOffset(sprite);
 
-      if (++sprite.data[0] == _0x12)
+      if (++sprite.data[0] == 0x12)
       {
-          sprite.data[0] = _0x19;
+          sprite.data[0] = 0x19;
           sprite.data[1] = sprite.x;
           sprite.data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);
           sprite.data[3] = sprite.y;
@@ -342,7 +324,7 @@ export function AnimTask_EruptionLaunchRocks_Step(taskId: any): any {
       switch (task.tState)
       {
       case 0:
-          PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, _0x100, _0x100, 0xE0, _0x200, 32);
+          PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0x100, 0x100, 0xE0, 0x200, 32);
           task.tState++;
       case 1:
           if (++task.tTimer1 > 1)
@@ -379,9 +361,9 @@ export function AnimTask_EruptionLaunchRocks_Step(taskId: any): any {
           if (++task.tTimer1 > 4)
           {
               if (task.tAttackerSide != B_SIDE_PLAYER)
-                  PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0xE0, _0x200, _0x180, 0xF0, 6);
+                  PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0xE0, 0x200, 0x180, 0xF0, 6);
               else
-                  PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0xE0, _0x200, _0x180, 0xC0, 6);
+                  PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0xE0, 0x200, 0x180, 0xC0, 6);
 
               task.tTimer1 = 0;
               task.tState++;
@@ -408,9 +390,9 @@ export function AnimTask_EruptionLaunchRocks_Step(taskId: any): any {
           if (++task.tTimer3 > 24)
           {
               if (task.tAttackerSide != B_SIDE_PLAYER)
-                  PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, _0x180, 0xF0, _0x100, _0x100, 8);
+                  PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0x180, 0xF0, 0x100, 0x100, 8);
               else
-                  PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, _0x180, 0xC0, _0x100, _0x100, 8);
+                  PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0x180, 0xC0, 0x100, 0x100, 8);
 
               if (task.tTimer2 & 1)
                   gSprites[task.tAttackerSpriteId].y2 -= 3;
@@ -467,7 +449,7 @@ export function CreateEruptionLaunchRocks(spriteId: any, taskId: any, activeSpri
 
           if (spriteId != MAX_SPRITES)
           {
-              gSprites[spriteId].oam.tileNum += j * 4 + _0x40;
+              gSprites[spriteId].oam.tileNum += j * 4 + 0x40;
 
               if (++j >= 5)
                   j = 0;
@@ -708,7 +690,7 @@ export function AnimWillOWispFire(sprite: any): any {
               sprite.subpriority = 0x1F;
       }
 
-      if (++sprite.data[2] > _0x14)
+      if (++sprite.data[2] > 0x14)
           sprite.invisible ^= 1;
 
       if (sprite.data[2] == 0x1E)

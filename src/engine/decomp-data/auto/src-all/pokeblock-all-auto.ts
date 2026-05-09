@@ -15,41 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddScrollIndicatorArrowPairParameterized, AddTextPrinterParameterized4, Alloc,
-  AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes,
-  BuildOamBuffer, ChooseMonToGivePokeblock, ClearDialogWindowAndFrameToTransparent, ClearScheduledBgCopiesToVram,
-  ClearStdWindowAndFrameToTransparent, ConvertIntToDecimalStringN, CopyToBgTilemapBufferRect, CopyWindowToVram,
-  CreateSprite, CreateSwapLineSprites, CreateTask, CreateYesNoMenuWithCallbacks,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram,
-  DestroyListMenuTask, DestroyTask, DisplayMessageAndContinueTask, DoScheduledBgTilemapCopiesToVram,
-  DrawStdFrameWithCustomTileAndPalette, FALSE, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
-  Free, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeOamMatrix,
-  FreeTempTileDataBuffersIfPossible, GetItemName, GetNature, GetPlayerTextSpeedDelay,
-  GetStringCenterAlignXOffset, GivePokeblockToContestLady, InitBgsFromTemplates, InitMenuInUpperLeftCornerNormal,
-  InitSpriteAffineAnim, InitWindows, JOY_NEW, LZDecompressWram,
-  ListMenuGetScrollAndRow, ListMenuInit, ListMenu_ProcessInput, LoadCompressedPalette,
-  LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadListMenuSwapLineGfx, LoadMessageBoxGfx,
-  LoadOam, LoadPalette, LoadUserWindowBorderGfx, MenuHelpers_IsLinkActive,
-  MenuHelpers_ShouldWaitForLinkRecv, Menu_ProcessInputNoWrap, NULL, PALETTES_ALL,
-  PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE, PrintMenuActionTextsInUpperLeftCorner,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
-  RemoveScrollIndicatorArrowPair, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs,
-  RunTasks, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ST_OAM_AFFINE_NORMAL,
-  ST_OAM_AFFINE_OFF, SafariZoneActivatePokeblockFeeder, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetSwapLineSpritesInvisibility,
-  SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg, SpriteCallbackDummy,
-  StringCopy, StringExpandPlaceholders, TASK_NONE, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, UpdateSwapLineSpritesPos,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void OpenPokeblockCase(u8 caseId, void (*callback)(void)) */
 export function OpenPokeblockCase(caseId: any, callback: any): any {
   sPokeblockMenu = Alloc(0);
@@ -303,7 +268,7 @@ export function DrawPokeblockMenuTitleText(): any {
   let i: any = null;
 
       let itemName: any = GetItemName(ITEM_POKEBLOCK_CASE);
-      PrintOnPokeblockWindow(WIN_TITLE, itemName, GetStringCenterAlignXOffset(FONT_NORMAL, itemName, _0x50));  
+      PrintOnPokeblockWindow(WIN_TITLE, itemName, GetStringCenterAlignXOffset(FONT_NORMAL, itemName, 0x50));  
 
       PrintOnPokeblockWindow(WIN_SPICY,  gText_Spicy, 0);
       PrintOnPokeblockWindow(WIN_DRY,    gText_Dry, 0);
@@ -373,15 +338,15 @@ export function DrawPokeblockInfo(pkblId: any): any {
       if (pkblId != LIST_CANCEL)
       {
           pokeblock =gSaveBlock1Ptr.pokeblocks[pkblId];
-          rectTilemapSrc[0] = _0x17;
-          rectTilemapSrc[1] = _0x18;
+          rectTilemapSrc[0] = 0x17;
+          rectTilemapSrc[1] = 0x18;
           for (i = 0; i < FLAVOR_COUNT; i++)
           {
               if (GetPokeblockData(pokeblock, PBLOCK_SPICY + i) > 0)
               {
                    
-                  rectTilemapSrc[0] = (i << 12) + _0x17;
-                  rectTilemapSrc[1] = (i << 12) + _0x18;
+                  rectTilemapSrc[0] = (i << 12) + 0x17;
+                  rectTilemapSrc[1] = (i << 12) + 0x18;
               }
               else
               {
@@ -523,7 +488,7 @@ export function SetInitialScroll(): any {
 export function CreateScrollArrows(): any {
   if (sPokeblockMenu.arrowTaskId == TASK_NONE)
       {
-          sPokeblockMenu.arrowTaskId = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 0xB0, 8, _0x98, sPokeblockMenu.itemsNo - sPokeblockMenu.maxShowed,
+          sPokeblockMenu.arrowTaskId = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 0xB0, 8, 0x98, sPokeblockMenu.itemsNo - sPokeblockMenu.maxShowed,
                                                                                  TAG_SCROLL_ARROW, TAG_SCROLL_ARROW,sSavedPokeblockData.scrollOffset);
       }
 }

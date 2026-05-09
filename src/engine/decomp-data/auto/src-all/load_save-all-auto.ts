@@ -15,19 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ApplyNewEncryptionKeyToBagItems, ApplyNewEncryptionKeyToBagItems_, ApplyNewEncryptionKeyToBerryPowder, ApplyNewEncryptionKeyToGameStats,
-  CpuFill16, FALSE, IdentifyFlash, InitFlashTimer,
-  InitHeap, NULL, OBJECT_EVENTS_COUNT, Random,
-  SetBagItemsPointers, SetContinueGameWarpToDynamicWarp, SetDecorationInventoriesPointers, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CheckForFlashMemory(void) */
 export function CheckForFlashMemory(): any {
   if (!IdentifyFlash())

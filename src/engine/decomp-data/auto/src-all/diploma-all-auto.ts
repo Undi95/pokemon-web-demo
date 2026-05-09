@@ -15,34 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized4, Alloc, AnimateSprites,
-  BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer,
-  CopyBgTilemapBufferToVram, CopyWindowToVram, CreateTask, DISPCNT_MODE_0,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPLAY_WIDTH, DeactivateAllTextPrinters,
-  DecompressAndCopyTileDataToVram, DestroyTask, DmaFill16, DmaFill32,
-  EnableInterrupts, FillWindowPixelBuffer, Free, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeTempTileDataBuffersIfPossible, HasAllMons, InitBgsFromTemplates,
-  InitWindows, JOY_NEW, LZDecompressWram, LoadOam,
-  LoadPalette, NULL, PALETTES_ALL, PIXEL_FILL,
-  PLTT_SIZE, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS,
-  REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, RunTasks, ScanlineEffect_Stop, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  StringCopy, StringExpandPlaceholders, TransferPlttBuffer, UpdatePaletteFade,
-  VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void VBlankCB(void) */
 export function VBlankCB(): any {
   LoadOam();
@@ -76,7 +48,7 @@ export function CB2_ShowDiploma(): any {
       ResetPaletteFade();
       FreeAllSpritePalettes();
       LoadPalette(sDiplomaPalettes, BG_PLTT_ID(0), 0);
-      sDiplomaTilemapPtr = Alloc(_0x1000);
+      sDiplomaTilemapPtr = Alloc(0x1000);
       InitDiplomaBg();
       InitDiplomaWindow();
       ResetTempTileDataBuffers();

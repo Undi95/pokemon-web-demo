@@ -15,17 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  DISPCNT_FORCED_BLANK, FALSE, GPU_REG, GPU_REG_BUF,
-  TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void InitGpuRegManager(void) */
 export function InitGpuRegManager(): any {
   let i: any = null;
@@ -46,11 +35,11 @@ export function CopyBufferedValueToGpuReg(regOffset: any): any {
   if (regOffset == REG_OFFSET_DISPSTAT)
       {
           REG_DISPSTAT &= ~(DISPSTAT_HBLANK_INTR | DISPSTAT_VBLANK_INTR);
-          REG_DISPSTAT |= GPU_REG_BUF(REG_OFFSET_DISPSTAT);
+          REG_DISPSTAT |= ((sGpuRegBuffer[(REG_OFFSET_DISPSTAT)]));
       }
       else
       {
-          GPU_REG(regOffset) = GPU_REG_BUF(regOffset);
+          ((REG_BASE + (regOffset))) = ((sGpuRegBuffer[(regOffset)]));
       }
 }
 
@@ -77,7 +66,7 @@ export function SetGpuReg(regOffset: any, value: any): any {
       {
           let vcount: any = null;
 
-          GPU_REG_BUF(regOffset) = value;
+          ((sGpuRegBuffer[(regOffset)])) = value;
           vcount = REG_VCOUNT & 0xFF;
 
           if ((vcount >= 161 && vcount <= 225) || (REG_DISPCNT & DISPCNT_FORCED_BLANK))
@@ -109,7 +98,7 @@ export function SetGpuReg(regOffset: any, value: any): any {
 export function SetGpuReg_ForcedBlank(regOffset: any, value: any): any {
   if (regOffset < GPU_REG_BUF_SIZE)
       {
-          GPU_REG_BUF(regOffset) = value;
+          ((sGpuRegBuffer[(regOffset)])) = value;
 
           if (REG_DISPCNT & DISPCNT_FORCED_BLANK)
           {
@@ -144,18 +133,18 @@ export function GetGpuReg(regOffset: any): any {
       if (regOffset == REG_OFFSET_VCOUNT)
           return REG_VCOUNT;
 
-      return GPU_REG_BUF(regOffset);
+      return ((sGpuRegBuffer[(regOffset)]));
 }
 
 /** void SetGpuRegBits(u8 regOffset, u16 mask) */
 export function SetGpuRegBits(regOffset: any, mask: any): any {
-  let regValue: any = GPU_REG_BUF(regOffset);
+  let regValue: any = ((sGpuRegBuffer[(regOffset)]));
       SetGpuReg(regOffset, regValue | mask);
 }
 
 /** void ClearGpuRegBits(u8 regOffset, u16 mask) */
 export function ClearGpuRegBits(regOffset: any, mask: any): any {
-  let regValue: any = GPU_REG_BUF(regOffset);
+  let regValue: any = ((sGpuRegBuffer[(regOffset)]));
       SetGpuReg(regOffset, regValue & ~mask);
 }
 

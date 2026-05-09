@@ -15,32 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocZeroed,
-  BufferApprenticeChallengeText, CalculateMonStats, ClearContinueGameWarpStatus2, ClearSelectedPartyOrder,
-  ConvertIntToDecimalStringN, CopyTrainerId, CopyWindowToVram, CreateMon,
-  DISPLAY_WIDTH, DoSoftReset, DrawStdWindowFrame, FALSE,
-  FillWindowPixelBuffer, FlagGet, FlagSet, Free,
-  FrontierGamblerSetWonOrLost, FrontierSpeechToString, GetDomeTrainerSelectedMons, GetFrontierTrainerName,
-  GetMonData, GetNatureFromPersonality, GetPlayerHallRecords, GetRecordedBattleApprenticeId,
-  GetRecordedBattleEasyChatSpeech, GetRecordedBattleFronterBrainSymbol, GetRecordedBattleFrontierFacility, GetSetPokedexFlag,
-  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, IncrementDailyBattlePoints, IsShinyOtIdPersonality,
-  IsStringJapanese, LoadPlayerParty, MoveRecordedBattleToSaveData, NULL,
-  PIXEL_FILL, PutWindowTilemap, Random32, ReducePlayerPartyToSelectedMons,
-  STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, SetContinueGameWarpStatusToDynamicWarp, SetFacilityPtrsGetLevel,
-  SetGameStat, SetMonData, SetMonMoveSlot, SetTrainerId,
-  ShouldAirFrontierTVShow, SpeciesToNationalPokedexNum, StringAppend, StringCopy,
-  StringExpandPlaceholders, StripExtCtrlCodes, TRUE, TVShowConvertInternationalString,
-  TrainerIdToDomeTournamentId, TryPutFrontierTVShowOnAir, TrySavingData, ValidateEReaderTrainer,
-  VarGet, VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CallFrontierUtilFunc(void) */
 export function CallFrontierUtilFunc(): any {
   sFrontierUtilFuncs[gSpecialVar_0x8004]();

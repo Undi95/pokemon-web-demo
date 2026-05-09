@@ -15,44 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ANIM_STD_GO_SOUTH, ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized2,
-  AddTextPrinterParameterized3, AddWindow, Alloc, AnimateSprites,
-  BGCNT_PRIORITY, BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
-  BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BeginNormalPaletteFade, BlendPalettes,
-  BuildOamBuffer, CalculatePlayerPartyCount, ChangeBgX, ChangeBgY,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, CreateMonIcon,
-  CreateObjectGraphicsSprite, CreateSprite, CreateTask, DISPCNT_MODE_0,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPLAY_WIDTH, DestroyTask,
-  DmaClear16, DmaClear32, DmaClearLarge16, DrawDialogueFrame,
-  FALSE, FREE_AND_SET_NULL, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
-  FindTaskIdByFunc, FlagGet, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  GetBoxNamePtr, GetGpuReg, GetPCBoxToSendMon, GetPlayerTextSpeedDelay,
-  GetRivalAvatarGraphicsIdByStateIdAndGender, GetSpriteTileStartByTag, GetTextWindowPalette, IndexOfSpritePaletteTag,
-  InitBgsFromTemplates, InitStandardTextBoxWindows, InitTextBoxGfxAndPrinters, IsDestinationBoxFull,
-  IsTextPrinterActive, JOY_NEW, JOY_REPEAT, LZ77UnCompWram,
-  LoadBgTiles, LoadMonIconPalettes, LoadOam, LoadPalette,
-  LoadSpritePalettes, LoadSpriteSheets, MOD, MultiplyInvertedPaletteRGBComponents,
-  NULL, NamingScreen_Dummy, OBJ_PLTT_ID, PALETTES_ALL,
-  PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG1CNT, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2CNT, REG_OFFSET_BG2VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RunTasks, RunTextPrinters, ST_OAM_OBJ_BLEND,
-  SeedRngAndSetTrainerId, SetBgTilemapBuffer, SetGpuReg, SetGpuRegBits,
-  SetHBlankCallback, SetMainCallback2, SetSubspriteTables, SetVBlankCallback,
-  ShowBg, Sin, SpriteCallbackDummy, StartSpriteAnim,
-  StartTimer1, StringCopy, StringCopyN, StringExpandPlaceholders,
-  TASK_NONE, TRUE, TransferPlttBuffer, UpdatePaletteFade,
-  VRAM_SIZE, VarGet, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void DoNamingScreen(u8 templateNum, u8 *destBuffer, u16 monSpecies, u16 monGender, u32 monPersonality, MainCallback returnCallback) */
 export function DoNamingScreen(templateNum: any, destBuffer: any, monSpecies: any, monGender: any, monPersonality: any, returnCallback: any): any {
   sNamingScreen = Alloc(0);
@@ -159,7 +121,7 @@ export function SetSpritesVisible(): any {
 export function NamingScreen_InitBGs(): any {
   let i: any = null;
 
-      DmaClearLarge16(3, VRAM, VRAM_SIZE, _0x1000);
+      DmaClearLarge16(3, VRAM, VRAM_SIZE, 0x1000);
       DmaClear32(3, OAM, OAM_SIZE);
       DmaClear16(3, PLTT, PLTT_SIZE);
 
@@ -190,9 +152,9 @@ export function NamingScreen_InitBGs(): any {
       SetBgTilemapBuffer(2, sNamingScreen.tilemapBuffer2);
       SetBgTilemapBuffer(3, sNamingScreen.tilemapBuffer3);
 
-      FillBgTilemapBufferRect_Palette0(1, 0, 0, 0, _0x20, _0x20);
-      FillBgTilemapBufferRect_Palette0(2, 0, 0, 0, _0x20, _0x20);
-      FillBgTilemapBufferRect_Palette0(3, 0, 0, 0, _0x20, _0x20);
+      FillBgTilemapBufferRect_Palette0(1, 0, 0, 0, 0x20, 0x20);
+      FillBgTilemapBufferRect_Palette0(2, 0, 0, 0, 0x20, 0x20);
+      FillBgTilemapBufferRect_Palette0(3, 0, 0, 0, 0x20, 0x20);
 }
 
 /** static void CreateNamingScreenTask(void) */
@@ -1309,7 +1271,7 @@ export function DrawTextEntry(): any {
       const temp: any[] = [];
       let extraWidth: any = null;
       let maxChars: any = sNamingScreen.template.maxChars;
-      let x: any = sNamingScreen.inputCharBaseXPos - _0x40;
+      let x: any = sNamingScreen.inputCharBaseXPos - 0x40;
 
       FillWindowPixelBuffer(sNamingScreen.windows[WIN_TEXT_ENTRY], PIXEL_FILL(1));
 

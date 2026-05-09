@@ -15,40 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddScrollIndicatorArrowPairParameterized, AddWindow, AllocZeroed,
-  ClearDialogWindowAndFrame, ClearStdWindowAndFrame, ClearWindowTilemap, ConvertInternationalString,
-  CpuFastFill16, CreateTask, CurrentMapDrawMetatileAt, DIR_NORTH,
-  DestroyListMenuTask, DestroyTask, DisplayItemMessageOnField, DisplayYesNoMenuDefaultYes,
-  DoYesNoFuncWithChoice, DrawWholeMapView, FALSE, FadeInFromBlack,
-  FadeScreen, FieldEffectActiveListContains, FlagClear, FlagGet,
-  FlagSet, Free, GET_BASE_COMPUTER_X, GET_BASE_COMPUTER_Y,
-  GET_BASE_MAP_NUM, GET_BASE_WARP_ID, GetLinkPlayerCount, GetMaxWidthInMenuTable,
-  GetMonData, GetSecretBaseName, GetXYCoordsOneStepInFrontOfPlayer, HideMapNamePopUpWindow,
-  INIT_SECRET_BASE_RECORD_MIXER, IncrementGameStat, InitMenuInUpperLeftCornerNormal, IsWeatherNotFadingIn,
-  ListMenuGetScrollAndRow, ListMenuInit, ListMenu_ProcessInput, LockPlayerFieldControls,
-  MAP_GROUP, MAP_NUM, MB_IMPASSABLE_NORTHEAST, MB_IMPASSABLE_NORTHWEST,
-  MB_IMPASSABLE_WEST_AND_EAST, MB_SLIDE_SOUTH, MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt,
-  MapGridSetMetatileIdAt, Menu_ProcessInputNoWrap, MetatileBehavior_HoldsLargeDecoration, MetatileBehavior_HoldsSmallDecoration,
-  MetatileBehavior_IsSecretBaseBalloon, MetatileBehavior_IsSecretBaseBreakableDoor, MetatileBehavior_IsSecretBaseGlitterMat, MetatileBehavior_IsSecretBaseJumpMat,
-  MetatileBehavior_IsSecretBaseSoundMat, MetatileBehavior_IsSecretBaseSpinMat, NULL, ObjectEventTurn,
-  OverrideSecretBaseDecorationSpriteScript, PlaySE, PlayerGetDestCoords, PopSecretBaseBalloon,
-  PrintMenuTable, RemoveObjectEventByLocalIdAndMap, RemoveScrollIndicatorArrowPair, RemoveWindow,
-  SECRET_BASE_ID_TO_GROUP, SWAP, ScheduleBgCopyTilemapToVram, ScriptContext_Enable,
-  ScriptContext_SetupScript, SetCursorWithinListBounds, SetDynamicWarp, SetMainCallback2,
-  SetStandardWindowBorderStyle, SetWarpDestination, SetWarpDestinationToDynamicWarp, SetWarpDestinationToMapWarp,
-  ShatterSecretBaseBreakableDoor, ShowDecorationOnMap, StringCopyN, StringExpandPlaceholders,
-  TRUE, TryGainNewFanFromCounter, TryMoveObjectEventToMapCoords, TryOverrideObjectEventTemplateCoords,
-  TryPutSecretBaseSecretsOnAir, TrySpawnObjectEvent, UnlockPlayerFieldControls, VarGet,
-  VarSet, WarpIntoMap, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void ClearSecretBase(struct SecretBase *secretBase) */
 export function ClearSecretBase(secretBase: any): any {
   let i: any = null;
@@ -239,7 +205,7 @@ export function SetOccupiedSecretBaseEntranceMetatiles(events: any): any {
 /** static void SetSecretBaseWarpDestination(void) */
 export function SetSecretBaseWarpDestination(): any {
   let secretBaseGroup: any = SECRET_BASE_ID_TO_GROUP(sCurSecretBaseId);
-      SetWarpDestinationToMapWarp(MAP_GROUP(MAP_SECRET_BASE_RED_CAVE1), GET_BASE_MAP_NUM(secretBaseGroup), GET_BASE_WARP_ID(secretBaseGroup));
+      SetWarpDestinationToMapWarp(MAP_GROUP(MAP_SECRET_BASE_RED_CAVE1), (sSecretBaseEntrancePositions[((secretBaseGroup)) + 0]), (sSecretBaseEntrancePositions[((secretBaseGroup)) + 1]));
 }
 
 /** static void Task_EnterSecretBase(u8 taskId) */
@@ -315,8 +281,8 @@ export function Task_EnterNewlyCreatedSecretBase(taskId: any): any {
               gSaveBlock1Ptr.location.mapGroup,
               gSaveBlock1Ptr.location.mapNum,
               WARP_ID_NONE,
-              GET_BASE_COMPUTER_X(secretBaseGroup),
-              GET_BASE_COMPUTER_Y(secretBaseGroup));
+              (sSecretBaseEntrancePositions[((secretBaseGroup)) + 2]),
+              (sSecretBaseEntrancePositions[((secretBaseGroup)) + 3]));
           WarpIntoMap();
           gFieldCallback = EnterNewlyCreatedSecretBase_StartFadeIn;
           SetMainCallback2(CB2_LoadMap);

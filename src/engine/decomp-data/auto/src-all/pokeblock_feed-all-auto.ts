@@ -15,37 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized2, AllocZeroed, AllocateMonSpritesGfx,
-  AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes,
-  BuildOamBuffer, CalcCenterToCornerVec, ClearScheduledBgCopiesToVram, Cos,
-  CreatePokeblockCaseSprite, CreateSprite, CreateTask, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroySprite,
-  DestroyTask, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette, FALSE,
-  FillWindowPixelBuffer, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeMonSpritesGfx, FreeOamMatrix, FreeSpriteOamMatrix, FreeTempTileDataBuffersIfPossible,
-  GetMonData, GetMonNickname, GetMonSpritePalStructFromOtIdPersonality, GetNature,
-  GetPlayerTextSpeedDelay, GetPokeblockData, HandleLoadSpecialPokePic_2, InitBgsFromTemplates,
-  InitSpriteAffineAnim, InitWindows, IsMonSpriteNotFlipped, LZDecompressWram,
-  LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadOam,
-  LoadPalette, LoadUserWindowBorderGfx, MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv,
-  NULL, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP,
-  PlayCry_Normal, PokeblockCopyName, PokeblockGetGain, ProcessSpriteCopyRequests,
-  PutWindowTilemap, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, ResetAllBgsCoordinates,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTempTileDataBuffers,
-  ResetVramOamAndBgCntRegs, RunTasks, RunTextPrintersRetIsActive, ST_OAM_AFFINE_DOUBLE,
-  ST_OAM_AFFINE_NORMAL, ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer, SetGpuReg,
-  SetMainCallback2, SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
-  ShowBg, Sin, SpriteCallbackDummy, StartSpriteAffineAnim,
-  StringExpandPlaceholders, TRUE, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void CB2_PokeblockFeed(void) */
 export function CB2_PokeblockFeed(): any {
   RunTasks();
@@ -322,7 +291,7 @@ export function Task_ExitPokeblockFeed(taskId: any): any {
       {
           ResetSpriteData();
           FreeAllSpritePalettes();
-          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
           SetMainCallback2(gMain.savedCallback);
           DestroyTask(taskId);
           FreeAllWindowBuffers();
@@ -605,16 +574,16 @@ export function CalculateMonAnimMovement(): any {
           if (!negative)
           {
               pokeblockFeed.monAnimX[time] = Sin(pokeblockFeed.animData[ANIMDATA_ROT_IDX],
-                                                  pokeblockFeed.animData[ANIMDATA_SIN_AMPLITUDE] + amplitude / _0x100) + x;
+                                                  pokeblockFeed.animData[ANIMDATA_SIN_AMPLITUDE] + amplitude / 0x100) + x;
               pokeblockFeed.monAnimY[time] = Cos(pokeblockFeed.animData[ANIMDATA_ROT_IDX],
-                                                  pokeblockFeed.animData[ANIMDATA_COS_AMPLITUDE] + amplitude / _0x100) + y;
+                                                  pokeblockFeed.animData[ANIMDATA_COS_AMPLITUDE] + amplitude / 0x100) + y;
           }
           else
           {
               pokeblockFeed.monAnimX[time] = Sin(pokeblockFeed.animData[ANIMDATA_ROT_IDX],
-                                                  pokeblockFeed.animData[ANIMDATA_SIN_AMPLITUDE] - amplitude / _0x100) + x;
+                                                  pokeblockFeed.animData[ANIMDATA_SIN_AMPLITUDE] - amplitude / 0x100) + x;
               pokeblockFeed.monAnimY[time] = Cos(pokeblockFeed.animData[ANIMDATA_ROT_IDX],
-                                                  pokeblockFeed.animData[ANIMDATA_COS_AMPLITUDE] - amplitude / _0x100) + y;
+                                                  pokeblockFeed.animData[ANIMDATA_COS_AMPLITUDE] - amplitude / 0x100) + y;
           }
 
           pokeblockFeed.animData[ANIMDATA_ROT_IDX] += pokeblockFeed.animData[ANIMDATA_ROT_SPEED];

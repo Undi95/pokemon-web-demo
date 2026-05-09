@@ -24,7 +24,90 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 const inDir = resolve(projectRoot, 'public', 'decomp', 'em', 'extracted-all');
 const outDir = resolve(projectRoot, 'src', 'engine', 'decomp-data', 'auto', 'src-all');
+const decompRoot = resolve(projectRoot, '..', 'decomps', 'pokeemeraude');
 mkdirSync(outDir, { recursive: true });
+
+// ─── Object-like macro extraction & substitution ─────────────────────────────
+//
+// Some decomp files define `#define NAME(arg) body` macros that expand to an
+// lvalue expression (= can be assigned). Examples in `overworld.c` :
+//   #define linkGender(obj)    obj->singleMovementActive
+//   #define linkDirection(obj) ((u8 *)obj)[offsetof(typeof(*obj), range)]
+//
+// The transpiler must expand these in function bodies BEFORE running the C-
+// to-TS rewrites — otherwise we get invalid TS like `linkGender(x) = y` (=
+// can't assign to a function call).
+//
+// We extract per-source-file macros (different files may define the same name
+// differently), and substitute calls with body-text where the formal arg is
+// replaced by the actual call argument.
+
+/** Extract simple 1-arg object-like macros from a source file.
+ *  Returns Map<name, { arg, body }> for `#define NAME(ARG) BODY`. */
+function extractMacros(srcText) {
+  const macros = new Map();
+  const re = /^[ \t]*#[ \t]*define[ \t]+(\w+)\(([^)]*)\)[ \t]*(.+?)[ \t]*$/gm;
+  let m;
+  while ((m = re.exec(srcText)) !== null) {
+    const name = m[1];
+    const arg = m[2].trim();
+    let body = m[3]
+      .replace(/\/\/.*$/, '')
+      .replace(/\/\*.*?\*\//g, '')
+      .trim();
+    if (!arg || arg === 'void') continue;
+    if (arg.includes(',')) continue; // multi-arg, skip
+    if (!body) continue;
+    if (TS_RESERVED.has(name)) continue;
+    if (!/^[A-Za-z_]\w*$/.test(arg)) continue;
+    // Skip if macro looks like a function-call wrapper (= same body as a
+    // common helper) to avoid infinite recursion if name == body.
+    if (body === name || body.startsWith(`${name}(`)) continue;
+    macros.set(name, { arg, body });
+  }
+  return macros;
+}
+
+/** Substitute `MACRO(<expr>)` calls with body-text where <arg> ↦ (<expr>). */
+function substituteMacros(text, macros) {
+  if (!macros.size) return text;
+  for (const [name, { arg, body }] of macros) {
+    const callRe = new RegExp(`\\b${name}\\s*\\(`, 'g');
+    let out = '';
+    let i = 0;
+    while (i < text.length) {
+      callRe.lastIndex = i;
+      const m = callRe.exec(text);
+      if (!m) {
+        out += text.slice(i);
+        break;
+      }
+      out += text.slice(i, m.index);
+      // Find matching close paren.
+      let depth = 1;
+      let j = m.index + m[0].length;
+      while (j < text.length && depth > 0) {
+        if (text[j] === '(') depth++;
+        else if (text[j] === ')') depth--;
+        if (depth > 0) j++;
+      }
+      if (depth !== 0) {
+        // Unbalanced — keep original.
+        out += text.slice(m.index);
+        break;
+      }
+      const argValue = text.slice(m.index + m[0].length, j).trim();
+      // Substitute formal arg with `(actual)` so e.g. `obj->x` becomes
+      // `(passed)->x` and not `passed->x` (precedence safe).
+      const argRe = new RegExp(`\\b${arg}\\b`, 'g');
+      const expanded = body.replace(argRe, `(${argValue})`);
+      out += expanded;
+      i = j + 1;
+    }
+    text = out;
+  }
+  return text;
+}
 
 // ─── Reserved-word renaming ──────────────────────────────────────────────────
 //
@@ -47,9 +130,21 @@ function renameIfReserved(name) {
 //
 // Most rewrites are single-pass regex. The order matters !
 
-function transpileBody(bodyC, paramNames = []) {
+function transpileBody(bodyC, paramNames = [], macros = null) {
   if (!bodyC) return { tsCode: '', warnings: [] };
   let s = bodyC;
+
+  // ─── Pre-pass A : Object-like macro substitution ─────────────────────────
+  // Expand simple `#define NAME(arg) body` macros so e.g. `linkGender(o) = x`
+  // becomes `o.singleMovementActive = x`. Iterate up to 3 times in case macros
+  // expand to other macros.
+  if (macros && macros.size) {
+    for (let pass = 0; pass < 3; pass++) {
+      const before = s;
+      s = substituteMacros(s, macros);
+      if (s === before) break;
+    }
+  }
 
   // ─── Pre-pass : strip preprocessor and attribute macros ─────────────────
   // Handle `#if ... #else ... #endif` : keep only the first branch.
@@ -820,7 +915,9 @@ function transpileBody(bodyC, paramNames = []) {
   // C macros : `SPRITE_SHAPE(64x32)`, `SPRITE_SIZE(8x16)`, etc. The `64x32`
   // token glues two literals via the preprocessor. In TS we replace by an
   // identifier-like token so it parses : `_64x32`.
-  s = s.replace(/\b(\d+)x(\d+)\b/g, '_$1x$2');
+  // Whitelist GBA OAM sizes (8/16/32/64) to avoid eating hex literals like
+  // `0x1000` (= `0` + `x` + `1000`).
+  s = s.replace(/\b(8|16|32|64)x(8|16|32|64)\b/g, '_$1x$2');
 
   return { tsCode: s, warnings: [] };
 }
@@ -849,6 +946,18 @@ function generateFile(sceneName, json) {
   lines.push(`// @ts-nocheck`);
   lines.push(``);
 
+  // Extract per-source-file 1-arg object-like macros so transpileBody can
+  // expand calls like `linkGender(o) = x` → `o.singleMovementActive = x`.
+  let macros = null;
+  if (json.srcFile) {
+    const srcAbs = resolve(decompRoot, json.srcFile);
+    if (existsSync(srcAbs)) {
+      try {
+        macros = extractMacros(readFileSync(srcAbs, 'utf8'));
+      } catch { /* swallow — proceed without macros */ }
+    }
+  }
+
   let okCount = 0, failCount = 0;
   const failedNames = [];
 
@@ -867,7 +976,7 @@ function generateFile(sceneName, json) {
         ? ''
         : paramsList.map(p => `${renameIfReserved(p.name)}: any`).join(', ');
 
-      const { tsCode } = transpileBody(info.body, paramNames);
+      const { tsCode } = transpileBody(info.body, paramNames, macros);
       lines.push(`/** ${info.signature.replace(/\*\//g, '* /')} */`);
       lines.push(`export function ${name}(${tsParams}): any {`);
       const indented = (tsCode ?? '').split('\n').map(l => l ? '  ' + l : l).join('\n');

@@ -15,39 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, BattleSetup_ConfigureTrainerBattle, BattleTransition_Start, BattleTransition_StartOnField,
-  CleanupOverworldWindowsAndTilemaps, ClearMirageTowerPulseBlendEffect, ClearPoisonStepCounter, CopyPyramidTrainerSpeechBefore,
-  CopyTrainerHillTrainerText, CpuFill16, CreateMaleMon, CreateTask,
-  CurrentBattlePyramidLocation, DestroyTask, FALSE, FillFrontierTrainerParty,
-  FillFrontierTrainersParties, FillHillTrainerParty, FillHillTrainersParties, FlagClear,
-  FlagGet, FlagSet, FldEffPoison_IsActive, FreeAllWindowBuffers,
-  FreezeObjectEvents, GetBattlePyramidTrainerFlag, GetFlashLevel, GetGameStat,
-  GetHillTrainerFlag, GetIntroSpeechOfApproachingTrainer, GetMonData, GetObjectEventIdByLocalIdAndMap,
-  GetSafariZoneFlag, GetSavedWeather, GetStarterPokemon, GetTrainerCantBattleSpeech,
-  GetTrainerEncounterMusicId, GetTrainerFacingDirectionMovementType, GetVarPointer, InBattlePike,
-  InTrainerHill, InTrainerHillChallenge, IncrementDailyWildBattles, IncrementGameStat,
-  IsBattleTransitionDone, LOCALID_NONE, LocalIdToHillTrainerId, LocalIdToPyramidTrainerId,
-  LockPlayerFieldControls, MAP_GROUP, MAP_NUM, MapGridGetMetatileBehaviorAt,
-  MarkApproachingPyramidTrainersAsBattled, MetatileBehavior_GetBridgeType, MetatileBehavior_IsBridgeOverWater, MetatileBehavior_IsDeepOrOceanWater,
-  MetatileBehavior_IsIndoorEncounter, MetatileBehavior_IsLongGrass, MetatileBehavior_IsMountain, MetatileBehavior_IsSandOrDeepSand,
-  MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsTallGrass, NULL, Overworld_ClearSavedMusic,
-  PlayBattleBGM, PlayMapChosenOrBattleBGM, PlayNewMapMusic, PlayerGetDestCoords,
-  RANDOM_TRANSITION, Random, ResetOamRange, ResetTasks,
-  RestartWildEncounterImmunitySteps, RunTasks, ScriptContext_SetupScript, ScriptContext_Stop,
-  ScriptGiveMon, SetHillTrainerFlag, SetMainCallback2, SetTrainerMovementType,
-  ShowFieldMessage, ShowFieldMessageFromBuffer, StopPlayerAvatar, T1_READ_16,
-  T1_READ_32, T1_READ_8, TRUE, TestPlayerAvatarFlags,
-  UpdateGymLeaderRematch, UpdatePaletteFade, VarGet, VarSet,
-  ZeroMonData,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void Task_BattleStart(u8 taskId) */
 export function Task_BattleStart(taskId: any): any {
   let data: any = gTasks[taskId].data;
@@ -571,13 +538,13 @@ export function GetSpecialBattleTransition(id: any): any {
           case B_TRANSITION_GROUP_E_READER:
               return B_TRANSITION_POKEBALLS_TRAIL;
           case B_TRANSITION_GROUP_B_PYRAMID:
-              return RANDOM_TRANSITION(sBattleTransitionTable_BattlePyramid);
+              return ((sBattleTransitionTable_BattlePyramid)[Random() % ARRAY_COUNT((sBattleTransitionTable_BattlePyramid))]);
           case B_TRANSITION_GROUP_B_DOME:
-              return RANDOM_TRANSITION(sBattleTransitionTable_BattleDome);
+              return ((sBattleTransitionTable_BattleDome)[Random() % ARRAY_COUNT((sBattleTransitionTable_BattleDome))]);
           }
 
           if (VarGet(VAR_FRONTIER_BATTLE_MODE) != FRONTIER_MODE_LINK_MULTIS)
-              return RANDOM_TRANSITION(sBattleTransitionTable_BattleFrontier);
+              return ((sBattleTransitionTable_BattleFrontier)[Random() % ARRAY_COUNT((sBattleTransitionTable_BattleFrontier))]);
       }
       else
       {
@@ -588,13 +555,13 @@ export function GetSpecialBattleTransition(id: any): any {
           case B_TRANSITION_GROUP_E_READER:
               return B_TRANSITION_BIG_POKEBALL;
           case B_TRANSITION_GROUP_B_PYRAMID:
-              return RANDOM_TRANSITION(sBattleTransitionTable_BattlePyramid);
+              return ((sBattleTransitionTable_BattlePyramid)[Random() % ARRAY_COUNT((sBattleTransitionTable_BattlePyramid))]);
           case B_TRANSITION_GROUP_B_DOME:
-              return RANDOM_TRANSITION(sBattleTransitionTable_BattleDome);
+              return ((sBattleTransitionTable_BattleDome)[Random() % ARRAY_COUNT((sBattleTransitionTable_BattleDome))]);
           }
 
           if (VarGet(VAR_FRONTIER_BATTLE_MODE) != FRONTIER_MODE_LINK_MULTIS)
-              return RANDOM_TRANSITION(sBattleTransitionTable_BattleFrontier);
+              return ((sBattleTransitionTable_BattleFrontier)[Random() % ARRAY_COUNT((sBattleTransitionTable_BattleFrontier))]);
       }
 
       _var = gSaveBlock2Ptr.frontier.trainerIds[gSaveBlock2Ptr.frontier.curChallengeBattleNum * 2 + 0]

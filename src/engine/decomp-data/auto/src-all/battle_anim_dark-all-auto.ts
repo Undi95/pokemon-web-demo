@@ -15,29 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemap, BATTLE_PARTNER, BG_PLTT_ID,
-  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2,
-  BlendPalette, CMD_ARGS, ClearBattleAnimBg, CreateInvisibleSpriteCopy,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroyAnimSprite, DestroyAnimVisualTask,
-  DestroySprite, DestroySpriteAndMatrix, FALSE, FillPalette,
-  GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattlerAtPosition, GetBattlerPosition,
-  GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr,
-  GetGpuReg, GetMonData, InitAnimArcTranslation, InitSpriteDataForLinearTranslation,
-  IsBattlerSpriteVisible, IsContest, IsDoubleBattle, LoadCompressedPalette,
-  MoveBattlerSpriteToBG, PLTT_SIZE_4BPP, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_DISPCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetBattleAnimBg,
-  ScanlineEffect_SetParams, SetAnimBgAttribute, SetGpuReg, SetGpuRegBits,
-  SetGrayscaleOrOriginalPalette, Sin, StartSpriteAffineAnim, StartSpriteAnim,
-  StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void AnimTask_AttackerFadeToInvisible(u8 taskId) */
 export function AnimTask_AttackerFadeToInvisible(taskId: any): any {
   CMD_ARGS(stepDelay);
@@ -506,7 +483,7 @@ export function AnimTask_MoveTargetMementoShadow_Step(taskId: any): any {
               task.data[0]++;
           break;
       case 1:
-          if (task.data[15] - task.data[14] < _0x40)
+          if (task.data[15] - task.data[14] < 0x40)
           {
               task.data[14] -= 4;
               task.data[15] += 4;

@@ -15,35 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CalcByteArraySum, CalcCRC16, CalculatePlayerPartyCount, CompactPartySlots,
-  CpuFill16, EnableNationalPokedex, EnableResetRTC, FALSE,
-  GetMonData, GetSetPokedexFlag, GiveGiftRibbonToParty, GiveMailToMon,
-  InitRamScript, InitScriptContext, IsEnigmaBerryValid, ItemIsMail,
-  RunScriptCommand, RunScriptImmediately, ScriptReadByte, ScriptReadHalfword,
-  ScriptReadWord, SetEnigmaBerry, SetupBytecodeScript, SpeciesToNationalPokedexNum,
-  StopScript, StringCompare, StringCopyN, StringExpandPlaceholders,
-  TRUE, UnlockTrendySaying, ValidateEReaderTrainer, VarSet,
-  memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static bool32 CheckCompatibility(u16 unk0, u32 unk1, u16 unk2, u32 version) */
 export function CheckCompatibility(unk0: any, unk1: any, unk2: any, version: any): any {
-  if (!(unk0 & _0x1))
+  if (!(unk0 & 0x1))
           return FALSE;
 
        
-      if (!(unk1 & _0x1))
+      if (!(unk1 & 0x1))
           return FALSE;
 
        
-      if (!(unk2 & _0x4))
+      if (!(unk2 & 0x4))
           return FALSE;
 
       if (!(version & VERSION_MASK))

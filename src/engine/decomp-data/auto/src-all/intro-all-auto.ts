@@ -15,53 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AnimateSprites, BGCNT_16COLOR, BGCNT_256COLOR,
-  BGCNT_AFF256x256, BGCNT_AFF512x512, BGCNT_CHARBASE, BGCNT_PRIORITY,
-  BGCNT_SCREENBASE, BGCNT_TXT256x256, BGCNT_TXT256x512, BGCNT_TXT512x256,
-  BGCNT_WRAP, BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR,
-  BG_SCREEN_SIZE, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_LIGHTEN,
-  BLDCNT_TGT1_BG0, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2, BLDCNT_TGT2_BD,
-  BLDCNT_TGT2_BG0, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3,
-  BLDCNT_TGT2_OBJ, BeginNormalPaletteFade, BgAffineSet, BlendPalette,
-  BuildOamBuffer, CalcCenterToCornerVec, Cos, CpuCopy16,
-  CpuFill16, CpuFill32, CreateBicycleBgAnimationTask, CreateIntroBrendanSprite,
-  CreateIntroFlygonSprite, CreateIntroMaySprite, CreateSprite, CreateTask,
-  CycleSceneryPalette, DISPCNT_BG0_ON, DISPCNT_BG1_ON, DISPCNT_BG2_ON,
-  DISPCNT_BG_ALL_ON, DISPCNT_MODE_0, DISPCNT_MODE_1, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-  DestroySprite, DestroyTask, DmaClear16, EnableInterrupts,
-  FALSE, FreeAllSpritePalettes, GET_TRUE_SPRITE_INDEX, GameCubeMultiBoot_ExecuteProgram,
-  GameCubeMultiBoot_HandleSerialInterrupt, GameCubeMultiBoot_Init, GameCubeMultiBoot_Main, GameCubeMultiBoot_Quit,
-  GetSaveBlocksPointersBaseOffset, INTRO3_RAW_PTR, InitHeap, LZ77UnCompVram,
-  LZDecompressVram, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheet, LoadCompressedSpriteSheetUsingHeap,
-  LoadGameSave, LoadIntroPart2Graphics, LoadOam, LoadPalette,
-  LoadSpritePalette, LoadSpritePalettes, MOD, NULL,
-  OBJ_PLTT_ID, PALETTES_ALL, PALETTES_BG, PLTT_SIZE,
-  PLTT_SIZEOF, PLTT_SIZE_4BPP, PlayCryInternal, PlaySE,
-  ProcessSpriteCopyRequests, Q_8_8_TO_INT, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS,
-  REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, Random, ResetMenuAndMonGlobals,
-  ResetPaletteFade, ResetSerial, ResetSpriteData, ResetTasks,
-  RunTasks, SAFE_DIV, SPRITE_SHAPE, SPRITE_SIZE,
-  ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_ERASE, ST_OAM_OBJ_BLEND, Sav2_ClearSetDefault,
-  Save_ResetSaveCounters, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_InitWave, ScanlineEffect_Stop,
-  SetGpuReg, SetIntroPart2BgCnt, SetMainCallback2, SetOamMatrix,
-  SetPokemonCryStereo, SetSaveBlocksPointers, SetSerialCallback, SetVBlankCallback,
-  Sin, StartSpriteAffineAnim, StartSpriteAnim, StartSpriteAnimIfDifferent,
-  TRUE, TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,
-  WIN_RANGE, gSineTable, m4aSongNumStart,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_Intro(void) */
 export function VBlankCB_Intro(): any {
   LoadOam();
@@ -117,7 +70,7 @@ export function SetUpCopyrightScreen(): any {
           CpuFill32(0, OAM, OAM_SIZE);
           CpuFill16(0, (PLTT + 2), PLTT_SIZE - 2);
           ResetPaletteFade();
-          LoadCopyrightGraphics(0, _0x3800, BG_PLTT_ID(0));
+          LoadCopyrightGraphics(0, 0x3800, BG_PLTT_ID(0));
           ScanlineEffect_Stop();
           ResetTasks();
           ResetSpriteData();
@@ -231,7 +184,7 @@ export function Task_Scene1_Load(taskId: any): any {
       CpuCopy16(gPlttBufferUnfaded[OBJ_PLTT_ID(0)],gPlttBufferUnfaded[OBJ_PLTT_ID(10) + 5], PLTT_SIZEOF(16 - 5));
       CpuCopy16(gPlttBufferUnfaded[OBJ_PLTT_ID(0)],gPlttBufferUnfaded[OBJ_PLTT_ID( 9) + 6], PLTT_SIZEOF(16 - 6));
       CreateGameFreakLogoSprites(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, 0);
-      gTasks[taskId].sBigDropSpriteId = CreateWaterDrop(236, -14, _0x200, 1, _0x78, FALSE);
+      gTasks[taskId].sBigDropSpriteId = CreateWaterDrop(236, -14, 0x200, 1, 0x78, FALSE);
       gTasks[taskId].func = Task_Scene1_FadeIn;
 }
 
@@ -261,10 +214,10 @@ export function Task_Scene1_WaterDrops(taskId: any): any {
           CreateTask(Task_BlendLogoOut, 0);
 
       if (gIntroFrameCounter == TIMER_SMALL_DROP_1)
-          CreateWaterDrop(48, 0, _0x400, 5, _0x70, TRUE);
+          CreateWaterDrop(48, 0, 0x400, 5, 0x70, TRUE);
 
       if (gIntroFrameCounter == TIMER_SMALL_DROP_2)
-          CreateWaterDrop(200, 60, _0x400, 9, _0x80, TRUE);
+          CreateWaterDrop(200, 60, 0x400, 9, 0x80, TRUE);
 
       if (gIntroFrameCounter == TIMER_SPARKLES)
           CreateTask(Task_CreateSparkles, 0);
@@ -320,14 +273,14 @@ export function Task_Scene1_PanUp(taskId: any): any {
 
            
           offset = (gTasks[taskId].tBg2PosHi << 16) + gTasks[taskId].tBg2PosLo;
-          offset -= _0x6000;
+          offset -= 0x6000;
           gTasks[taskId].tBg2PosHi = offset >> 16;
           gTasks[taskId].tBg2PosLo = offset;
           SetGpuReg(REG_OFFSET_BG2VOFS, gTasks[taskId].tBg2PosHi);
 
            
           offset = (gTasks[taskId].tBg1PosHi << 16) + gTasks[taskId].tBg1PosLo;
-          offset -= _0x8000;
+          offset -= 0x8000;
           gTasks[taskId].tBg1PosHi = offset >> 16;
           gTasks[taskId].tBg1PosLo = offset;
           SetGpuReg(REG_OFFSET_BG1VOFS, gTasks[taskId].tBg1PosHi);
@@ -416,7 +369,7 @@ export function Task_Scene2_CreateSprites(taskId: any): any {
        
       BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_WHITEALPHA);
       SetVBlankCallback(VBlankCB_Intro);
-      gTasks[taskId].tBgAnimTaskId = CreateBicycleBgAnimationTask(1, _0x4000, _0x400, _0x10);
+      gTasks[taskId].tBgAnimTaskId = CreateBicycleBgAnimationTask(1, 0x4000, 0x400, 0x10);
       SetIntroPart2BgCnt(1);
       gTasks[taskId].func = Task_Scene2_BikeRide;
 }
@@ -521,13 +474,13 @@ export function SpriteCB_Volbeat(sprite: any): any {
       case VOLBEAT_INIT_FIGURE_8:
           sprite.x += 60;
           sprite.sSinXIdx = 0xC0;
-          sprite.sSinYIdx = _0x80;
+          sprite.sSinYIdx = 0x80;
           sprite.sFig8Loops = 3;
           sprite.sState++;
            
       case VOLBEAT_FIGURE_8:
           sprite.x2 = Sin(sprite.sSinXIdx, 0x3C);
-          sprite.y2 = Sin(sprite.sSinYIdx, _0x14);
+          sprite.y2 = Sin(sprite.sSinYIdx, 0x14);
           sprite.sSinXIdx += 2;
           sprite.sSinYIdx += 4;
           if ((sprite.sSinXIdx & 0xFF) == 64)
@@ -543,7 +496,7 @@ export function SpriteCB_Volbeat(sprite: any): any {
           break;
       case VOLBEAT_EXIT:
           sprite.x -= 2;
-          sprite.y2 = Sin(sprite.sSinYIdx, _0x14);
+          sprite.y2 = Sin(sprite.sSinYIdx, 0x14);
           sprite.sSinYIdx += 4;
           if (sprite.x < -16)
               DestroySprite(sprite);
@@ -649,7 +602,7 @@ export function SpriteCB_Manectric(sprite: any): any {
 
            
           sprite.y -= 12;
-          sprite.sSinIdx = _0x80;
+          sprite.sSinIdx = 0x80;
           sprite.sCosIdx = 0;
           sprite.sState++;
            
@@ -703,7 +656,7 @@ export function Task_Scene3_Load(taskId: any): any {
 
 /** static void Task_Scene3_SpinPokeball(u8 taskId) */
 export function Task_Scene3_SpinPokeball(taskId: any): any {
-  gTasks[taskId].tAlpha += _0x400;
+  gTasks[taskId].tAlpha += 0x400;
 
       if (gTasks[taskId].tZoomDiv <= 0x6BF)
       {
@@ -715,7 +668,7 @@ export function Task_Scene3_SpinPokeball(taskId: any): any {
           gTasks[taskId].func = Task_Scene3_WaitGroudon;
       }
 
-      PanFadeAndZoomScreen(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, SAFE_DIV(_0x10000, gTasks[taskId].tZoomDiv), gTasks[taskId].tAlpha);
+      PanFadeAndZoomScreen(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, SAFE_DIV(0x10000, gTasks[taskId].tZoomDiv), gTasks[taskId].tAlpha);
 
       if (gIntroFrameCounter == TIMER_POKEBALL_FADE)
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITEALPHA);
@@ -773,7 +726,7 @@ export function Task_Scene3_InitGroudonBg(taskId: any): any {
       gTasks[taskId].tWinPos = 0;
       gTasks[taskId].tScreenX = 0xFFA0;
       gTasks[taskId].tScreenY = 0xFF51;
-      gTasks[taskId].tZoom = _0x100;
+      gTasks[taskId].tZoom = 0x100;
       PanFadeAndZoomScreen(gTasks[taskId].tScreenX, gTasks[taskId].tScreenY, gTasks[taskId].tZoom, 0);
       gTasks[taskId].func = Task_Scene3_NarrowWindow;
 }
@@ -828,7 +781,7 @@ export function Task_Scene3_Groudon(taskId: any): any {
           if (--tDelay == 0)
           {
               tDelay = 2;
-              CpuCopy16(INTRO3_RAW_PTR(tPalIdx),gPlttBufferFaded[BG_PLTT_ID(1) + 15], PLTT_SIZEOF(1));
+              CpuCopy16(((gIntro3Bg_Pal) + (tPalIdx)),gPlttBufferFaded[BG_PLTT_ID(1) + 15], PLTT_SIZEOF(1));
               tPalIdx += 2;
               if (tPalIdx == 0x1EC)
                   tState++;
@@ -845,7 +798,7 @@ export function Task_Scene3_Groudon(taskId: any): any {
           if (--tDelay == 0)
           {
               tDelay = 2;
-              CpuCopy16(INTRO3_RAW_PTR(tPalIdx),gPlttBufferFaded[BG_PLTT_ID(1) + 15], PLTT_SIZEOF(1));
+              CpuCopy16(((gIntro3Bg_Pal) + (tPalIdx)),gPlttBufferFaded[BG_PLTT_ID(1) + 15], PLTT_SIZEOF(1));
               tPalIdx -= 2;
               if (tPalIdx == 0x1E0)
               {
@@ -884,7 +837,7 @@ export function Task_Scene3_Groudon(taskId: any): any {
       case 7:
           tScreenX += 4;
           tScreenY += 4;
-          tTrigIdx += _0x666;
+          tTrigIdx += 0x666;
           tZoom = Sin((tTrigIdx & 0xFF00) >> 8, 64) + 256;
           if (tScreenX == 120)
           {
@@ -992,11 +945,11 @@ export function Task_Scene3_Kyogre(taskId: any): any {
           tState++;
       case 1:
           tTrigIdx += 4;
-          gTasks[taskId].tScreenX = 344 - Sin(tTrigIdx, _0x100);
-          gTasks[taskId].tScreenY = 84 - Cos(tTrigIdx, _0x40);
+          gTasks[taskId].tScreenX = 344 - Sin(tTrigIdx, 0x100);
+          gTasks[taskId].tScreenY = 84 - Cos(tTrigIdx, 0x40);
           if (tTrigIdx == 64)
           {
-              tDelay = _0x19;
+              tDelay = 0x19;
               tPalIdx = 1;
               tState++;
               CreateKyogreBubbleSprites_Body(0);
@@ -1060,7 +1013,7 @@ export function Task_Scene3_Kyogre(taskId: any): any {
           if (--tDelay == 0)
           {
               tDelay = 4;
-              CpuCopy16(INTRO3_RAW_PTR(tPalIdx),gPlttBufferFaded[BG_PLTT_ID(2) + 15], PLTT_SIZEOF(1));
+              CpuCopy16(((gIntro3Bg_Pal) + (tPalIdx)),gPlttBufferFaded[BG_PLTT_ID(2) + 15], PLTT_SIZEOF(1));
               tPalIdx -= 2;
               if (tPalIdx == 0x1E0)
                   tState++;
@@ -1078,7 +1031,7 @@ export function Task_Scene3_Kyogre(taskId: any): any {
           if (--tDelay == 0)
           {
               tDelay = 4;
-              CpuCopy16(INTRO3_RAW_PTR(tPalIdx),gPlttBufferFaded[BG_PLTT_ID(2) + 15], PLTT_SIZEOF(1));
+              CpuCopy16(((gIntro3Bg_Pal) + (tPalIdx)),gPlttBufferFaded[BG_PLTT_ID(2) + 15], PLTT_SIZEOF(1));
               tPalIdx += 2;
               if (tPalIdx == 0x1EE)
               {
@@ -1108,7 +1061,7 @@ export function Task_Scene3_Kyogre(taskId: any): any {
       case 12:
           tTrigIdx += 4;
           tZoom -= 8;
-          gTasks[taskId].tScreenX = Sin(tTrigIdx, _0x14) + 128;
+          gTasks[taskId].tScreenX = Sin(tTrigIdx, 0x14) + 128;
           if (tTrigIdx == 128)
               tState++;
           break;
@@ -1367,7 +1320,7 @@ export function SpriteCB_Lightning(sprite: any): any {
           sprite.sPalIdx = 0x1C2;
           sprite.sState++;
       case 1:
-          CpuCopy16(INTRO3_RAW_PTR(sprite.sPalIdx),gPlttBufferFaded[BG_PLTT_ID(5) + 13], PLTT_SIZEOF(1));
+          CpuCopy16(((gIntro3Bg_Pal) + (sprite.sPalIdx)),gPlttBufferFaded[BG_PLTT_ID(5) + 13], PLTT_SIZEOF(1));
           sprite.sPalIdx += 2;
           if (sprite.sPalIdx != 0x1CE)
               break;
@@ -1378,7 +1331,7 @@ export function SpriteCB_Lightning(sprite: any): any {
           if (--sprite.sDelay == 0)
           {
               sprite.sDelay = 4;
-              CpuCopy16(INTRO3_RAW_PTR(sprite.sPalIdx),gPlttBufferFaded[BG_PLTT_ID(5) + 13], PLTT_SIZEOF(1));
+              CpuCopy16(((gIntro3Bg_Pal) + (sprite.sPalIdx)),gPlttBufferFaded[BG_PLTT_ID(5) + 13], PLTT_SIZEOF(1));
               sprite.sPalIdx -= 2;
               if (sprite.sPalIdx == 0x1C0)
                   DestroySprite(sprite);
@@ -1400,12 +1353,12 @@ export function Task_Scene3_LoadRayquazaAttack(taskId: any): any {
                                   | DISPCNT_OBJ_ON
                                   | DISPCNT_WIN0_ON);
       gTasks[taskId].func = Task_Scene3_Rayquaza;
-      BeginNormalPaletteFade(PALETTES_BG & ~(_0x21), 0, 16, 0, RGB(9, 10, 10));
+      BeginNormalPaletteFade(PALETTES_BG & ~(0x21), 0, 16, 0, RGB(9, 10, 10));
       gTasks[taskId].tState = 0;
       gTasks[taskId].data[1] = 0xA8;
-      gTasks[taskId].data[2] = -_0x10;
-      gTasks[taskId].data[3] = -_0x88;
-      gTasks[taskId].data[4] = -_0x10;
+      gTasks[taskId].data[2] = -0x10;
+      gTasks[taskId].data[3] = -0x88;
+      gTasks[taskId].data[4] = -0x10;
       attackTaskId = CreateTask(Task_RayquazaAttack, 0);
       gTasks[attackTaskId].tRayquazaTaskId = taskId;
 }
@@ -1429,7 +1382,7 @@ export function Task_Scene3_Rayquaza(taskId: any): any {
               data[3] += 2;
               data[4]++;
           }
-          if (data[1] == _0x68)
+          if (data[1] == 0x68)
           {
               tState++;
               data[5] = 1;
@@ -1474,7 +1427,7 @@ export function Task_RayquazaAttack(taskId: any): any {
       case 0:
           if ((data[2] & 1) != 0)
           {
-              CpuCopy16(INTRO3_RAW_PTR(0x1A2 + data[1] * 2),gPlttBufferFaded[BG_PLTT_ID(5) + 14], PLTT_SIZEOF(1));
+              CpuCopy16(((gIntro3Bg_Pal) + (0x1A2 + data[1] * 2)),gPlttBufferFaded[BG_PLTT_ID(5) + 14], PLTT_SIZEOF(1));
               data[1]++;
           }
           if (data[1] == 6)
@@ -1489,7 +1442,7 @@ export function Task_RayquazaAttack(taskId: any): any {
           {
               if ((data[2] & 1) != 0)
               {
-                  CpuCopy16(INTRO3_RAW_PTR(0x1A2 + data[1] * 2),gPlttBufferFaded[BG_PLTT_ID(5) + 8], PLTT_SIZEOF(1));
+                  CpuCopy16(((gIntro3Bg_Pal) + (0x1A2 + data[1] * 2)),gPlttBufferFaded[BG_PLTT_ID(5) + 8], PLTT_SIZEOF(1));
                   data[1]++;
               }
               if (data[1] == 6)
@@ -1508,7 +1461,7 @@ export function Task_RayquazaAttack(taskId: any): any {
           {
               if ((data[2] & 1) != 0)
               {
-                  CpuCopy16(INTRO3_RAW_PTR(_0x182 + data[1] * 2),gPlttBufferFaded[BG_PLTT_ID(5) + 12], PLTT_SIZEOF(1));
+                  CpuCopy16(((gIntro3Bg_Pal) + (0x182 + data[1] * 2)),gPlttBufferFaded[BG_PLTT_ID(5) + 12], PLTT_SIZEOF(1));
                   data[1]++;
               }
               if (data[1] == 6)
@@ -1532,9 +1485,9 @@ export function Task_RayquazaAttack(taskId: any): any {
               if (--data[3] != 0)
               {
                   BlendPalette(BG_PLTT_ID(5), 16, data[3], RGB(9, 10, 10));
-                  CpuCopy16(INTRO3_RAW_PTR(428),gPlttBufferFaded[BG_PLTT_ID(5) + 14], PLTT_SIZEOF(1));
-                  CpuCopy16(INTRO3_RAW_PTR(428),gPlttBufferFaded[BG_PLTT_ID(5) + 8], PLTT_SIZEOF(1));
-                  CpuCopy16(INTRO3_RAW_PTR(396),gPlttBufferFaded[BG_PLTT_ID(5) + 12], PLTT_SIZEOF(1));
+                  CpuCopy16(((gIntro3Bg_Pal) + (428)),gPlttBufferFaded[BG_PLTT_ID(5) + 14], PLTT_SIZEOF(1));
+                  CpuCopy16(((gIntro3Bg_Pal) + (428)),gPlttBufferFaded[BG_PLTT_ID(5) + 8], PLTT_SIZEOF(1));
+                  CpuCopy16(((gIntro3Bg_Pal) + (396)),gPlttBufferFaded[BG_PLTT_ID(5) + 12], PLTT_SIZEOF(1));
               }
               else
               {
@@ -1671,8 +1624,8 @@ export function PanFadeAndZoomScreen(screenX: any, screenY: any, zoom: any, alph
   let src: any = null;
       let dest: any = null;
 
-      src.texX = _0x8000;
-      src.texY = _0x8000;
+      src.texX = 0x8000;
+      src.texY = 0x8000;
       src.scrX = screenX;
       src.scrY = screenY;
       src.sx = zoom;

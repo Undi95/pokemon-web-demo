@@ -15,51 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AI_TypeCalc, ARRAY_COUNT, AddTextPrinter, AllocZeroed,
-  AnimateSprites, BGCNT_16COLOR, BGCNT_CHARBASE, BGCNT_PRIORITY,
-  BGCNT_SCREENBASE, BGCNT_TXT256x256, BG_PLTT_ID, BG_SCREEN_SIZE,
-  BeginNormalPaletteFade, BuildOamBuffer, CALC_STAT, CalculatePlayerPartyCount,
-  ChangeBgX, ChangeBgY, ClearSelectedPartyOrder, CopyBgTilemapBufferToVram,
-  CopyToBgTilemapBufferRect_ChangePalette, CopyWindowToVram, CpuFill32, CreateMonIcon,
-  CreateMonWithEVSpreadNatureOTID, CreateSprite, CreateTask, CreateTrainerPicSprite,
-  DISPCNT_BG_ALL_ON, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
-  DISPCNT_WIN1_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH, DeactivateAllTextPrinters,
-  DecompressAndLoadBgGfxUsingHeap, DestroyTask, EnableInterrupts, FALSE,
-  FREE_AND_SET_NULL, FillWindowPixelBuffer, Free, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeAndDestroyMonIconSprite, FreeAndDestroyTrainerPicSprite, FreeMonIconPalettes,
-  GetCurrentFacilityWinStreak, GetFrontierBrainMonEvs, GetFrontierBrainMonMove, GetFrontierBrainMonNature,
-  GetFrontierBrainMonSpecies, GetFrontierBrainStatus, GetFrontierOpponentClass, GetFrontierTrainerFrontSpriteId,
-  GetMonData, GetNature, GetNatureFromPersonality, GetRandomFrontierMonFromSet,
-  GetRandomScaledFrontierTrainerId, GetStringCenterAlignXOffsetWithLetterSpacing, GetStringWidthDifference, GetTrainerClassNameGenderSpecific,
-  InitBgsFromTemplates, InitWindows, IsFrontierTrainerFemale, JOY_NEW,
-  LZDecompressWram, LoadCompressedPalette, LoadCompressedSpriteSheet, LoadMonIconPalettes,
-  LoadOam, NULL, PALETTES_ALL, PIXEL_FILL,
-  PLTT_SIZE, PLTT_SIZE_4BPP, PlaySE, PlayerGenderToFrontTrainerPicId,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT,
-  REG_OFFSET_MOSAIC, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H,
-  REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, Random,
-  Random32, ReducePlayerPartyToSelectedMons, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, RunTasks, RunTextPrinters, SET_WIN0H_WIN1H,
-  SWAP, SaveGameFrontier, ScanlineEffect_Clear, ScanlineEffect_InitHBlankDmaTransfer,
-  ScanlineEffect_SetParams, ScanlineEffect_Stop, SetBattleFacilityTrainerGfxId, SetBgTilemapBuffer,
-  SetDynamicWarp, SetFacilityPtrsGetLevel, SetGpuReg, SetHBlankCallback,
-  SetMainCallback2, SetMonData, SetMonMoveSlot, SetVBlankCallback,
-  ShowBg, SpriteCallbackDummy, StartSpriteAnim, StringAppend,
-  StringCopy, StringExpandPlaceholders, T1_READ_16, TRUE,
-  TYPE_EFFECT_ATK_TYPE, TYPE_EFFECT_DEF_TYPE, TYPE_EFFECT_MULTIPLIER, TransferPlttBuffer,
-  UpdateMonIconFrame, UpdatePaletteFade, VRAM_SIZE, VarGet,
-  VarSet, WIN_RANGE, ZeroEnemyPartyMons,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CallBattleDomeFunction(void) */
 export function CallBattleDomeFunction(): any {
   sBattleDomeFunctions[gSpecialVar_0x8004]();
@@ -981,9 +936,9 @@ export function Task_ShowTourneyInfoCard(taskId: any): any {
           gTasks[taskId].tState++;
           break;
       case 2:
-          DecompressAndLoadBgGfxUsingHeap(2, gDomeTourneyInfoCard_Gfx, _0x2000, 0, 0);
-          DecompressAndLoadBgGfxUsingHeap(2, gDomeTourneyInfoCard_Tilemap, _0x2000, 0, 1);
-          DecompressAndLoadBgGfxUsingHeap(3, gDomeTourneyInfoCardBg_Tilemap, _0x800, 0, 1);
+          DecompressAndLoadBgGfxUsingHeap(2, gDomeTourneyInfoCard_Gfx, 0x2000, 0, 0);
+          DecompressAndLoadBgGfxUsingHeap(2, gDomeTourneyInfoCard_Tilemap, 0x2000, 0, 1);
+          DecompressAndLoadBgGfxUsingHeap(3, gDomeTourneyInfoCardBg_Tilemap, 0x800, 0, 1);
           LoadCompressedSpriteSheet(sTourneyTreeButtonsSpriteSheet);
           LoadCompressedPalette(gDomeTourneyTree_Pal, BG_PLTT_OFFSET, BG_PLTT_SIZE);
           LoadCompressedPalette(gDomeTourneyTreeButtons_Pal, OBJ_PLTT_OFFSET, OBJ_PLTT_SIZE);
@@ -1336,7 +1291,7 @@ export function Task_HandleInfoCardInput(taskId: any): any {
       case STATE_FADE_IN:
           if (!gPaletteFade.active)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
               gTasks[taskId].tState = STATE_WAIT_FADE;
           }
           break;
@@ -1349,7 +1304,7 @@ export function Task_HandleInfoCardInput(taskId: any): any {
           switch (i)
           {
           case INFOCARD_INPUT_AB:
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].tState = STATE_CLOSE_CARD;
               break;
           case TRAINERCARD_INPUT_UP:
@@ -2798,7 +2753,7 @@ export function DisplayMatchInfoOnCard(flags: any, matchNo: any): any {
       textPrinter.letterSpacing = 2;
       textPrinter.currentChar = gStringVar1;
       textPrinter.windowId = windowId + WIN_MATCH_TRAINER_NAME_LEFT;
-      textPrinter.currentX = GetStringCenterAlignXOffsetWithLetterSpacing(textPrinter.fontId, textPrinter.currentChar, _0x40, textPrinter.letterSpacing);
+      textPrinter.currentX = GetStringCenterAlignXOffsetWithLetterSpacing(textPrinter.fontId, textPrinter.currentChar, 0x40, textPrinter.letterSpacing);
       textPrinter.currentY = textPrinter.y = 2;
       PutWindowTilemap(windowId + WIN_MATCH_TRAINER_NAME_LEFT);
       CopyWindowToVram(windowId + WIN_MATCH_TRAINER_NAME_LEFT, COPYWIN_FULL);
@@ -2814,7 +2769,7 @@ export function DisplayMatchInfoOnCard(flags: any, matchNo: any): any {
 
       textPrinter.currentChar = gStringVar1;
       textPrinter.windowId = windowId + WIN_MATCH_TRAINER_NAME_RIGHT;
-      textPrinter.currentX = GetStringCenterAlignXOffsetWithLetterSpacing(textPrinter.fontId, textPrinter.currentChar, _0x40, textPrinter.letterSpacing);
+      textPrinter.currentX = GetStringCenterAlignXOffsetWithLetterSpacing(textPrinter.fontId, textPrinter.currentChar, 0x40, textPrinter.letterSpacing);
       textPrinter.currentY = textPrinter.y = 2;
       PutWindowTilemap(windowId + WIN_MATCH_TRAINER_NAME_RIGHT);
       CopyWindowToVram(windowId + WIN_MATCH_TRAINER_NAME_RIGHT, COPYWIN_FULL);
@@ -2866,7 +2821,7 @@ export function Task_HandleTourneyTreeInput(taskId: any): any {
       case STATE_FADE_IN:
           if (!gPaletteFade.active)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
               gTasks[taskId].tState = STATE_WAIT_FADE;
               StartSpriteAnim(gSprites[spriteId], 1);
           }
@@ -2880,17 +2835,17 @@ export function Task_HandleTourneyTreeInput(taskId: any): any {
           {
           case TOURNEY_TREE_SELECTED_CLOSE:
           default:
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].tState = STATE_CLOSE_TOURNEY_TREE;
               break;
           case TOURNEY_TREE_NO_SELECTION:
               break;
           case TOURNEY_TREE_SELECTED_TRAINER:
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].tState = STATE_SHOW_INFOCARD_TRAINER;
               break;
           case TOURNEY_TREE_SELECTED_MATCH:
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].tState = STATE_SHOW_INFOCARD_MATCH;
               break;
           }
@@ -3194,10 +3149,10 @@ export function Task_ShowTourneyTree(taskId: any): any {
           LZDecompressWram(gDomeTourneyTree_Tilemap, sTilemapBuffer);
           SetBgTilemapBuffer(1, sTilemapBuffer);
           CopyBgTilemapBufferToVram(1);
-          DecompressAndLoadBgGfxUsingHeap(1, gDomeTourneyTree_Gfx, _0x2000, 0, 0);
-          DecompressAndLoadBgGfxUsingHeap(2, gDomeTourneyLine_Gfx, _0x2000, 0, 0);
-          DecompressAndLoadBgGfxUsingHeap(2, gDomeTourneyLineDown_Tilemap, _0x2000, 0, 1);
-          DecompressAndLoadBgGfxUsingHeap(3, gDomeTourneyLineUp_Tilemap, _0x2000, 0, 1);
+          DecompressAndLoadBgGfxUsingHeap(1, gDomeTourneyTree_Gfx, 0x2000, 0, 0);
+          DecompressAndLoadBgGfxUsingHeap(2, gDomeTourneyLine_Gfx, 0x2000, 0, 0);
+          DecompressAndLoadBgGfxUsingHeap(2, gDomeTourneyLineDown_Tilemap, 0x2000, 0, 1);
+          DecompressAndLoadBgGfxUsingHeap(3, gDomeTourneyLineUp_Tilemap, 0x2000, 0, 1);
           LoadCompressedPalette(gDomeTourneyTree_Pal, BG_PLTT_OFFSET, BG_PLTT_SIZE);
           LoadCompressedPalette(gDomeTourneyTreeButtons_Pal, OBJ_PLTT_OFFSET, OBJ_PLTT_SIZE);
           LoadCompressedPalette(gBattleWindowTextPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
@@ -3232,7 +3187,7 @@ export function Task_ShowTourneyTree(taskId: any): any {
           textPrinter.y = 0;
           textPrinter.letterSpacing = 2;
           textPrinter.lineSpacing = 0;
-          textPrinter.currentX = GetStringCenterAlignXOffsetWithLetterSpacing(textPrinter.fontId, textPrinter.currentChar, _0x70, textPrinter.letterSpacing);
+          textPrinter.currentX = GetStringCenterAlignXOffsetWithLetterSpacing(textPrinter.fontId, textPrinter.currentChar, 0x70, textPrinter.letterSpacing);
           textPrinter.currentY = 1;
           textPrinter.unk = 0;
           textPrinter.fgColor = TEXT_DYNAMIC_COLOR_5;
@@ -3395,7 +3350,7 @@ export function Task_HandleStaticTourneyTreeInput(taskId: any): any {
       switch (gTasks[taskId].tState)
       {
       case STATE_FADE_IN:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           gTasks[taskId].tState = STATE_SHOW_RESULTS;
           break;
       case STATE_SHOW_RESULTS:
@@ -3445,7 +3400,7 @@ export function Task_HandleStaticTourneyTreeInput(taskId: any): any {
       case STATE_WAIT_FOR_INPUT:
           if (JOY_NEW(A_BUTTON | B_BUTTON))
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
               gTasks[taskId].tState = STATE_CLOSE_TOURNEY_TREE;
           }
           break;
@@ -3470,8 +3425,8 @@ export function CB2_TourneyTree(): any {
 
 /** static void VblankCb_TourneyInfoCard(void) */
 export function VblankCb_TourneyInfoCard(): any {
-  ChangeBgX(3, _0x80, BG_COORD_ADD);
-      ChangeBgY(3, _0x80, BG_COORD_SUB);
+  ChangeBgX(3, 0x80, BG_COORD_ADD);
+      ChangeBgY(3, 0x80, BG_COORD_SUB);
       SetGpuReg(REG_OFFSET_BG0HOFS, gBattle_BG0_X);
       SetGpuReg(REG_OFFSET_BG0VOFS, gBattle_BG0_Y);
       SetGpuReg(REG_OFFSET_BG1HOFS, gBattle_BG1_X);
@@ -3561,8 +3516,8 @@ export function VblankCb_TourneyTree(): any {
       SetGpuReg(REG_OFFSET_BG0VOFS, gBattle_BG0_Y);
       SetGpuReg(REG_OFFSET_BG1HOFS, gBattle_BG1_X);
       SetGpuReg(REG_OFFSET_BG1VOFS, gBattle_BG1_Y);
-      ChangeBgY(2, _0x80, BG_COORD_SUB);
-      ChangeBgY(3, _0x80, BG_COORD_ADD);
+      ChangeBgY(2, 0x80, BG_COORD_SUB);
+      ChangeBgY(3, 0x80, BG_COORD_ADD);
       LoadOam();
       ProcessSpriteCopyRequests();
       TransferPlttBuffer();

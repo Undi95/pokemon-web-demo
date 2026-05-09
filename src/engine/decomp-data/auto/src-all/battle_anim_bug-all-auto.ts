@@ -15,22 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AnimTranslateLinear, ArcTan2Neg, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
-  CMD_ARGS, DestroyAnimSprite, FALSE, GetBattlerPosition,
-  GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteCoord2, InitAnimArcTranslation,
-  InitAnimLinearTranslationWithSpeed, InitSpritePosToAnimAttacker, IsContest, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, SetAverageBattlerPositions, SetGpuReg, Sin,
-  StartSpriteAffineAnim, StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc,
-  TrySetSpriteRotScale,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimMegahornHorn(struct Sprite *sprite) */
 export function AnimMegahornHorn(sprite: any): any {
   CMD_ARGS(x1, y1, x2, y2, duration);
@@ -229,7 +213,7 @@ export function AnimTranslateStinger(sprite: any): any {
       lVarY = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET) + cmd.targetY;
       rot = ArcTan2Neg(lVarX - sprite.x, lVarY - sprite.y);
       rot += 0xC000;
-      TrySetSpriteRotScale(sprite, FALSE, _0x100, _0x100, rot);
+      TrySetSpriteRotScale(sprite, FALSE, 0x100, 0x100, rot);
 
       sprite.data[0] = cmd.duration;
       sprite.data[2] = lVarX;
@@ -287,7 +271,7 @@ export function AnimMissileArc_Step(sprite: any): any {
               let rotation: any = ArcTan2Neg(sprite.x + sprite.x2 - x2,
                                     sprite.y + sprite.y2 - y2);
               rotation += 0xC000;
-              TrySetSpriteRotScale(sprite, FALSE, _0x100, _0x100, rotation);
+              TrySetSpriteRotScale(sprite, FALSE, 0x100, 0x100, rotation);
 
               for (i = 0; i < 8; i++)
                   data[i] = tempData[i];

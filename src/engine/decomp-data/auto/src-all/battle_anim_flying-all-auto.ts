@@ -15,24 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AnimTranslateLinear, ArcTan2Neg, Cos, CreateSpriteAndAnimate,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroyAnimSprite, DestroyAnimVisualTask,
-  DestroySprite, DestroySpriteAndMatrix, FALSE, FreeOamMatrix,
-  GetAnimBattlerSpriteId, GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteCoord,
-  IndexOfSpritePaletteTag, InitAnimLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
-  IsContest, OBJ_PLTT_ID, PLTT_ID, Random2,
-  ResetSpriteRotScale_PreserveAffine, ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_ON_MASK, SeekSpriteAnim,
-  SetAverageBattlerPositions, Sin, StartSpriteAffineAnim, StartSpriteAnim,
-  StoreSpriteCallbackInData6, TRUE, TrySetSpriteRotScale, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimEllipticalGust(struct Sprite *sprite) */
 export function AnimEllipticalGust(sprite: any): any {
   InitSpritePosToAnimTarget(sprite, FALSE);
@@ -240,7 +222,7 @@ export function AnimFallingFeather(sprite: any): any {
 
       let data: any = sprite.data;
 
-      if (gBattleAnimArgs[7] & _0x100)
+      if (gBattleAnimArgs[7] & 0x100)
           battler = gBattleAnimAttacker;
       else
           battler = gBattleAnimTarget;
@@ -270,7 +252,7 @@ export function AnimFallingFeather(sprite: any): any {
 
           data.unkE_0 = 0;
 
-          if (!(data.unk4 & _0x8000))
+          if (!(data.unk4 & 0x8000))
           {
               sprite.hFlip ^= 1;
               sprite.animNum = sprite.hFlip;
@@ -284,7 +266,7 @@ export function AnimFallingFeather(sprite: any): any {
           sprite.oam.priority = GetBattlerSpriteBGPriority(battler);
           data.unkE_0 = 1;
 
-          if (data.unk4 & _0x8000)
+          if (data.unk4 & 0x8000)
           {
               sprite.hFlip ^= 1;
               sprite.animNum = sprite.hFlip;
@@ -543,7 +525,7 @@ export function AnimFallingFeather_Step(sprite: any): any {
 
           data.unk8 += data.unk6;
           sprite.y = data.unk8 >> 8;
-          if (data.unk4 & _0x8000)
+          if (data.unk4 & 0x8000)
               data.unk2 = (data.unk2 - (data.unk4 & 0x7FFF)) & 0xFF;
           else
               data.unk2 = (data.unk2 + (data.unk4 & 0x7FFF)) & 0xFF;
@@ -729,9 +711,9 @@ export function AnimDiveWaterSplash(sprite: any): any {
               sprite.y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y);
           }
 
-          sprite.data[1] = _0x200;
+          sprite.data[1] = 0x200;
 
-          TrySetSpriteRotScale(sprite, FALSE, _0x100, sprite.data[1], 0);
+          TrySetSpriteRotScale(sprite, FALSE, 0x100, sprite.data[1], 0);
           sprite.data[0]++;
           break;
       case 1:
@@ -742,7 +724,7 @@ export function AnimDiveWaterSplash(sprite: any): any {
 
           sprite.data[2]++;
 
-          TrySetSpriteRotScale(sprite, FALSE, _0x100, sprite.data[1], 0);
+          TrySetSpriteRotScale(sprite, FALSE, 0x100, sprite.data[1], 0);
 
           matrixNum = sprite.oam.matrixNum;
 
@@ -865,7 +847,7 @@ export function AnimSkyAttackBird(sprite: any): any {
       rotation = ArcTan2Neg(posx - sprite.x, posy - sprite.y);
       rotation -= 16384;
 
-      TrySetSpriteRotScale(sprite, TRUE, _0x100, _0x100, rotation);
+      TrySetSpriteRotScale(sprite, TRUE, 0x100, 0x100, rotation);
 
       sprite.callback = AnimSkyAttackBird_Step;
 }

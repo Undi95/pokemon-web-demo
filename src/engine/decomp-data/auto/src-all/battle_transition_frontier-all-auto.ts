@@ -15,24 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG0,
-  BeginNormalPaletteFade, ChangeBgX, ChangeBgY, ClearGpuRegBits,
-  Cos2, CreateSprite, DISPCNT_BG0_ON, DISPCNT_WIN0_ON,
-  DISPCNT_WIN1_ON, DestroySprite, DestroyTask, FALSE,
-  FindTaskIdByFunc, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetBg0TilesDst,
-  LZ77UnCompVram, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette,
-  PALETTES_ALL, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
-  SetGpuReg, SetGpuRegBits, Sin2, SpriteCallbackDummy,
-  StartSpriteAnim, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void LoadLogoGfx(void) */
 export function LoadLogoGfx(): any {
   let tilemap, tileset;
@@ -194,7 +176,7 @@ export function Circles_Init(task: any): any {
           SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));
           ChangeBgX(0, 0, BG_COORD_SET);
           ChangeBgY(0, 0, BG_COORD_SET);
-          ChangeBgY(0, _0x500, BG_COORD_SUB);
+          ChangeBgY(0, 0x500, BG_COORD_SUB);
 
           task.tTimer = 0;
           task.tState++;
@@ -211,7 +193,7 @@ export function FadeInCenterLogoCircle(task: any): any {
       {
           if (task.tFadeTimer == 31)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, -1, 0, _0x10, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 0x10, RGB_BLACK);
               task.tState++;
           }
           else

@@ -15,34 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddScrollIndicatorArrowPairParameterized, AddTextPrinterParameterized, AddTextPrinterParameterized2,
-  AddTextPrinterParameterized3, AddTextPrinterParameterized4, AddWindow, Alloc,
-  BG_PLTT_ID, BufferConditionMenuSpacedStringN, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
-  ConvertIntToDecimalStringN, ConvertInternationalPlayerName, ConvertInternationalString, CopyWindowToVram,
-  CreateSprite, CreateYesNoMenu, DISPLAY_WIDTH, DeactivateAllTextPrinters,
-  DestroySprite, DrawStdFrameWithCustomTileAndPalette, FALSE, FillWindowPixelBuffer,
-  Free, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GET_NUM_CONDITION_SPARKLES,
-  GetAndCopyBoxMonDataAt, GetBoxMonDataAt, GetBoxNamePtr, GetConditionMenuMonString,
-  GetMaxWidthInMenuTable, GetMonData, GetMonSpritePalFromSpeciesAndPersonality, GetPlayerTextSpeedDelay,
-  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, GetStringWidth, InitWindows,
-  IsTextPrinterActive, LZ77UnCompWram, ListMenuInit, LoadPalette,
-  LoadSpecialPokePic, LoadUserWindowBorderGfx, MoveRelearnerDummy, MoveRelearnerShowHideHearts,
-  NULL, PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE,
-  PutWindowTilemap, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H,
-  REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, RemoveWindow,
-  RunTextPrinters, SHIFT_RIGHT_ADJUSTED, STR_CONV_MODE_LEFT_ALIGN, ScanlineEffect_Clear,
-  ScanlineEffect_SetParams, ScheduleBgCopyTilemapToVram, SeekSpriteAnim, SetGpuReg,
-  SetStandardWindowBorderStyle, SpriteCallbackDummy, StringCopy, StringLength,
-  TRUE, WIN_RANGE, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 MailboxMenu_Alloc(u8 count) */
 export function MailboxMenu_Alloc(count: any): any {
   let i: any = null;
@@ -149,7 +121,7 @@ export function MailboxMenu_MoveCursorFunc(itemIndex: any, onInit: any, list: an
 
 /** void MailboxMenu_AddScrollArrows(struct PlayerPCItemPageStruct *page) */
 export function MailboxMenu_AddScrollArrows(page: any): any {
-  page.scrollIndicatorTaskId = AddScrollIndicatorArrowPairParameterized(2, 0xC8, 12, _0x94, page.count - page.pageItems + 1, 0x6E, 0x6E,page.itemsAbove);
+  page.scrollIndicatorTaskId = AddScrollIndicatorArrowPairParameterized(2, 0xC8, 12, 0x94, page.count - page.pageItems + 1, 0x6E, 0x6E,page.itemsAbove);
 }
 
 /** void MailboxMenu_Free(void) */
@@ -547,7 +519,7 @@ export function InitMoveRelearnerWindows(useContestWindow: any): any {
       if (!useContestWindow)
       {
           PutWindowTilemap(RELEARNERWIN_DESC_BATTLE);
-          DrawStdFrameWithCustomTileAndPalette(RELEARNERWIN_DESC_BATTLE, FALSE, _0x1, 0xE);
+          DrawStdFrameWithCustomTileAndPalette(RELEARNERWIN_DESC_BATTLE, FALSE, 0x1, 0xE);
       }
       else
       {
@@ -862,9 +834,9 @@ export function LoadConditionSelectionIcons(sheets: any, template: any, pals: an
 
       let dataSheets: any =
       [
-          [sConditionPokeball_Gfx, _0x100, TAG_CONDITION_BALL],
-          [sConditionPokeballPlaceholder_Gfx, _0x20, TAG_CONDITION_BALL_PLACEHOLDER],
-          [gPokenavConditionCancel_Gfx, _0x100, TAG_CONDITION_CANCEL],
+          [sConditionPokeball_Gfx, 0x100, TAG_CONDITION_BALL],
+          [sConditionPokeballPlaceholder_Gfx, 0x20, TAG_CONDITION_BALL_PLACEHOLDER],
+          [gPokenavConditionCancel_Gfx, 0x100, TAG_CONDITION_CANCEL],
           [],
       ];
 
@@ -891,7 +863,7 @@ export function LoadConditionSelectionIcons(sheets: any, template: any, pals: an
 
 /** void LoadConditionSparkle(struct SpriteSheet *sheet, struct SpritePalette *pal) */
 export function LoadConditionSparkle(sheet: any, pal: any): any {
-  let dataSheet: any = [sConditionSparkle_Pal, _0x380, TAG_CONDITION_SPARKLE];
+  let dataSheet: any = [sConditionSparkle_Pal, 0x380, TAG_CONDITION_SPARKLE];
       let dataPal: any = [sConditionSparkle_Gfx, TAG_CONDITION_SPARKLE];
 
       sheet = dataSheet;

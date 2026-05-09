@@ -15,36 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, BATTLE_PARTNER, BattleLoadOpponentMonSpriteGfx, BattlePutTextOnWindow,
-  BattleStopLowHpSound, BeginFastPaletteFade, BtlController_EmitChosenMonReturnValue, BtlController_EmitDataTransfer,
-  BtlController_EmitTwoReturnValues, BufferStringBattle, ChooseMoveAndTargetInBattlePalace, ClearTemporarySpeciesSpriteData,
-  CopyAllBattleSpritesInvisibilities, CopyBattleSpriteInvisibility, CreateInvisibleSpriteWithCallback, CreatePartyStatusSummarySprites,
-  CreateSprite, CreateTask, DISPLAY_WIDTH, DecompressTrainerFrontPic,
-  DestroySprite, DestroyTask, DoHitAnimHealthboxEffect, DoMoveAnim,
-  DoPokeballSendOutAnimation, FALSE, FadeOutMapMusic, FreeSpriteOamMatrix,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTrainerFrontPicPalette, GetActiveBattlerLinkPlayerGender,
-  GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y,
-  GetBattlerSpriteSubpriority, GetFrontierTrainerFrontSpriteId, GetMonData, GetMultiplayerId,
-  GetUnionRoomTrainerPic, HandleIntroSlide, HideBattlerShadowSprite, IndexOfSpritePaletteTag,
-  InitAndLaunchChosenStatusAnimation, InitAndLaunchSpecialAnimation, IsBattleSEPlaying, IsBattlerSpritePresent,
-  IsCryPlayingOrClearCrySongs, IsDoubleBattle, IsMoveWithoutAnimation, IsTextPrinterActive,
-  LoadBattleBarGfx, MoveBattleBar, NULL, PlayBGM,
-  PlayCry_ByMode, PlayFanfare, PlaySE12WithPanning, PlayerGenderToFrontTrainerPicId,
-  PrepareBufferDataTransferLink, RecordedBattle_GetBattlerAction, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF,
-  SetBattleBarStruct, SetBattlerShadowSpriteCallback, SetBattlerSpriteAffineMode, SetHealthboxSpriteInvisible,
-  SetHealthboxSpriteVisible, SetMonData, SetMultiuseSpriteTemplateToPokemon, SetMultiuseSpriteTemplateToTrainerBack,
-  SetSpritePrimaryCoordsFromSecondaryCoords, SpriteCallbackDummy, StartHealthboxSlideIn, StartSpriteAnim,
-  StoreSpriteCallbackInData6, StringCopy_Nickname, TRUE, TryHandleLaunchBattleTableAnimation,
-  TrySetBehindSubstituteSpriteBit, TryShinyAnimation, UpdateHealthboxAttribute, UpdateHpTextInHealthbox,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SetControllerToRecordedOpponent(void) */
 export function SetControllerToRecordedOpponent(): any {
   gBattlerControllerFuncs[gActiveBattler] = RecordedOpponentBufferRunCommand;
@@ -173,7 +143,7 @@ export function Intro_TryShinyAnimShowHealthbox(): any {
               }
               else
               {
-                  m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+                  m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
               }
           }
           gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].bgmRestored = TRUE;
@@ -318,7 +288,7 @@ export function SwitchIn_HandleSoundAndEnd(): any {
           if (gSprites[gBattlerSpriteIds[gActiveBattler]].callback == SpriteCallbackDummy
               || gSprites[gBattlerSpriteIds[gActiveBattler]].callback == SpriteCallbackDummy_2)
           {
-              m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+              m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
               RecordedOpponentBufferExecCompleted();
           }
       }

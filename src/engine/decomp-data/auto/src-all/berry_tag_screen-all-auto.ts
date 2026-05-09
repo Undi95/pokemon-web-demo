@@ -15,35 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized4, AllocZeroed,
-  AnimateSprites, BG_PLTT_ID, BagGetItemIdByPocketPosition, BeginNormalPaletteFade,
-  BlendPalettes, BuildOamBuffer, ChangeBgY, ClearScheduledBgCopiesToVram,
-  ConvertIntToDecimalStringN, CreateBerryFlavorCircleSprite, CreateBerryTagSprite, CreateTask,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram,
-  DestroySprite, DestroyTask, DoScheduledBgTilemapCopiesToVram, FALSE,
-  FillWindowPixelBuffer, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeBerryTagSpritePalette, FreeTempTileDataBuffersIfPossible, GetBerryInfo, GetBgTilemapBuffer,
-  GetStringCenterAlignXOffset, ITEM_TO_BERRY, InitBgsFromTemplates, InitWindows,
-  ItemIdToBerryType, JOY_NEW, JOY_REPEAT, LZDecompressWram,
-  LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadOam,
-  LoadPalette, MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv, NULL,
-  PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
-  ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks,
-  STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  SetVBlankHBlankCallbacksToNull, ShowBg, StringCopy, StringExpandPlaceholders,
-  TRUE, TransferPlttBuffer, UpdatePaletteFade, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void DoBerryTagScreen(void) */
 export function DoBerryTagScreen(): any {
   sBerryTag = AllocZeroed(0);
@@ -147,11 +118,11 @@ export function InitBerryTagScreen(): any {
           gMain.state++;
           break;
       case 14:
-          BlendPalettes(PALETTES_ALL, _0x10, RGB_BLACK);
+          BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
           gMain.state++;
           break;
       case 15:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           gPaletteFade.bufferTransferDisabled = 0;
           gMain.state++;
           break;
@@ -255,7 +226,7 @@ export function PrintTextInBerryTagScreen(windowId: any, text: any, x: any, y: a
 export function AddBerryTagTextToBg0(): any {
   memcpy(GetBgTilemapBuffer(0), sBerryTag.tilemapBuffers[2], sizeof(sBerryTag.tilemapBuffers[2]));
       FillWindowPixelBuffer(WIN_BERRY_TAG, PIXEL_FILL(15));
-      PrintTextInBerryTagScreen(WIN_BERRY_TAG, gText_BerryTag, GetStringCenterAlignXOffset(FONT_NORMAL, gText_BerryTag, _0x40), 1, 0, 1);
+      PrintTextInBerryTagScreen(WIN_BERRY_TAG, gText_BerryTag, GetStringCenterAlignXOffset(FONT_NORMAL, gText_BerryTag, 0x40), 1, 0, 1);
       PutWindowTilemap(WIN_BERRY_TAG);
       ScheduleBgCopyTilemapToVram(0);
 }
@@ -289,22 +260,22 @@ export function PrintBerrySize(): any {
           ConvertIntToDecimalStringN(gStringVar1, berry.size / 10, STR_CONV_MODE_LEFT_ALIGN, 2);
           ConvertIntToDecimalStringN(gStringVar2, berry.size % 10, STR_CONV_MODE_LEFT_ALIGN, 2);
           StringExpandPlaceholders(gStringVar4, gText_Var1DotVar2);
-          AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gStringVar4, _0x28, 1, 0, NULL);
+          AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gStringVar4, 0x28, 1, 0, NULL);
       }
       else
       {
-          AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_ThreeMarks, _0x28, 1, 0, NULL);
+          AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_ThreeMarks, 0x28, 1, 0, NULL);
       }
 }
 
 /** static void PrintBerryFirmness(void) */
 export function PrintBerryFirmness(): any {
   let berry: any = GetBerryInfo(sBerryTag.berryId);
-      AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_FirmSlash, 0, _0x11, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_FirmSlash, 0, 0x11, TEXT_SKIP_DRAW, NULL);
       if (berry.firmness != 0)
-          AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, sBerryFirmnessStrings[berry.firmness - 1], _0x28, _0x11, 0, NULL);
+          AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, sBerryFirmnessStrings[berry.firmness - 1], 0x28, 0x11, 0, NULL);
       else
-          AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_ThreeMarks, _0x28, _0x11, 0, NULL);
+          AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_ThreeMarks, 0x28, 0x11, 0, NULL);
 }
 
 /** static void PrintBerryDescription1(void) */
@@ -316,7 +287,7 @@ export function PrintBerryDescription1(): any {
 /** static void PrintBerryDescription2(void) */
 export function PrintBerryDescription2(): any {
   let berry: any = GetBerryInfo(sBerryTag.berryId);
-      AddTextPrinterParameterized(WIN_DESC, FONT_NORMAL, berry.description2, 5, _0x11, 0, NULL);
+      AddTextPrinterParameterized(WIN_DESC, FONT_NORMAL, berry.description2, 5, 0x11, 0, NULL);
 }
 
 /** static void CreateBerrySprite(void) */
@@ -380,7 +351,7 @@ export function DestroyFlavorCircleSprites(): any {
 /** static void PrepareToCloseBerryTagScreen(u8 taskId) */
 export function PrepareToCloseBerryTagScreen(taskId: any): any {
   PlaySE(SE_SELECT);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
       gTasks[taskId].func = Task_CloseBerryTagScreen;
 }
 
@@ -544,8 +515,8 @@ export function Task_DisplayAnotherBerry(taskId: any): any {
       for (i = 0; i < FLAVOR_COUNT; i++)
           gSprites[sBerryTag.flavorCircleIds[i]].y2 = y;
 
-      ChangeBgY(1, _0x1000, tBgOp);
-      ChangeBgY(2, _0x1000, tBgOp);
+      ChangeBgY(1, 0x1000, tBgOp);
+      ChangeBgY(2, 0x1000, tBgOp);
 
       if (tBerryY == 0)
           gTasks[taskId].func = Task_HandleInput;

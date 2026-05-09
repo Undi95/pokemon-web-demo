@@ -15,32 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AllocSpritePalette, AllocZeroed, AnimSetCenterToCornerVecX, ArcTan2,
-  BATTLE_PARTNER, BLDALPHA_BLEND, BlendPalette, CalcCenterToCornerVec,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, Cos, CpuCopy32,
-  CpuFill32, CreateInvisibleSpriteWithCallback, CreateSprite, DISPLAY_HEIGHT,
-  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, DestroySpriteAndFreeResources,
-  FALSE, FREE_AND_SET_NULL, FillBgTilemapBufferRect, FreeSpriteOamMatrix,
-  FreeSpritePaletteByTag, GET_BATTLER_SIDE2, GET_MON_COORDS_HEIGHT, GET_MON_COORDS_WIDTH,
-  GET_UNOWN_LETTER, GetAnimBgAttribute, GetMonData, GetMonSpritePalFromSpeciesAndPersonality,
-  IS_DOUBLE_BATTLE, IndexOfSpritePaletteTag, IsBattlerSpriteVisible, IsContest,
-  LZDecompressWram, LoadBgTiles, LoadCompressedPalette, LoadPointerFromVars,
-  LoadSpecialPokePic_2, LoadSpecialPokePic_DontHandleDeoxys, LoadSpriteSheet, NULL,
-  OBJ_PLTT_ID, OBJ_PLTT_ID2, ObjAffineSet, PLTT_ID,
-  PLTT_SIZE_4BPP, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, RelocateBattleBgPal,
-  RequestDma3Copy, SAFE_DIV, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL,
-  ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL, ST_OAM_OBJ_WINDOW, SetAnimBgAttribute,
-  SetGpuReg, ShouldIgnoreDeoxysForm, Sin, SpriteCallbackDummy,
-  StartSpriteAffineAnim, StartSpriteAnim, TRUE, UpdateMonIconFrame,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u8 GetBattlerSpriteCoord(u8 battler, u8 coordType) */
 export function GetBattlerSpriteCoord(battler: any, coordType: any): any {
   let retVal: any = null;
@@ -365,10 +339,10 @@ export function TranslateSpriteInCircle(sprite: any): any {
           sprite.x2 = Sin(sprite.sCirclePos, sprite.sAmplitude);
           sprite.y2 = Cos(sprite.sCirclePos, sprite.sAmplitude);
           sprite.sCirclePos += sprite.sCircleSpeed;
-          if (sprite.sCirclePos >= _0x100)
-              sprite.sCirclePos -= _0x100;
+          if (sprite.sCirclePos >= 0x100)
+              sprite.sCirclePos -= 0x100;
           else if (sprite.sCirclePos < 0)
-              sprite.sCirclePos += _0x100;
+              sprite.sCirclePos += 0x100;
           sprite.sDuration--;
       }
       else
@@ -385,10 +359,10 @@ export function TranslateSpriteInGrowingCircle(sprite: any): any {
           sprite.y2 = Cos(sprite.sCirclePos, (sprite.sAmplitudeChange >> 8) + sprite.sAmplitude);
           sprite.sCirclePos += sprite.sCircleSpeed;
           sprite.sAmplitudeChange += sprite.sAmplitudeSpeed;
-          if (sprite.sCirclePos >= _0x100)
-              sprite.sCirclePos -= _0x100;
+          if (sprite.sCirclePos >= 0x100)
+              sprite.sCirclePos -= 0x100;
           else if (sprite.sCirclePos < 0)
-              sprite.sCirclePos += _0x100;
+              sprite.sCirclePos += 0x100;
           sprite.sDuration--;
       }
       else
@@ -404,10 +378,10 @@ export function TranslateSpriteInEllipse(sprite: any): any {
           sprite.x2 = Sin(sprite.sCirclePos, sprite.sAmplitudeX);
           sprite.y2 = Cos(sprite.sCirclePos, sprite.sAmplitudeY);
           sprite.sCirclePos += sprite.sCircleSpeed;
-          if (sprite.sCirclePos >= _0x100)
-              sprite.sCirclePos -= _0x100;
+          if (sprite.sCirclePos >= 0x100)
+              sprite.sCirclePos -= 0x100;
           else if (sprite.sCirclePos < 0)
-              sprite.sCirclePos += _0x100;
+              sprite.sCirclePos += 0x100;
           sprite.sDuration--;
       }
       else
@@ -609,7 +583,7 @@ export function InitAnimArcTranslation(sprite: any): any {
   sprite.data[1] = sprite.x;
       sprite.data[3] = sprite.y;
       InitAnimLinearTranslation(sprite);
-      sprite.data[6] = _0x8000 / sprite.data[0];
+      sprite.data[6] = 0x8000 / sprite.data[0];
       sprite.data[7] = 0;
 }
 
@@ -741,7 +715,7 @@ export function GetBattleAnimBg1Data(out: any): any {
           out.bgTilemap = gBattleAnimBgTilemapBuffer;
           out.paletteId = BG_ANIM_PAL_1;
           out.bgId = 1;
-          out.tilesOffset = _0x200;
+          out.tilesOffset = 0x200;
           out.unused = 0;
       }
 }
@@ -767,7 +741,7 @@ export function GetBattleAnimBgData(out: any, bgId: any): any {
           out.bgTilemap = gBattleAnimBgTilemapBuffer;
           out.paletteId = BG_ANIM_PAL_2;
           out.bgId = 2;
-          out.tilesOffset = _0x300;
+          out.tilesOffset = 0x300;
           out.unused = 0;
       }
 }
@@ -787,14 +761,14 @@ export function GetBgDataForTransform(out: any, battler: any): any {
       {
           out.paletteId = BG_ANIM_PAL_1;
           out.bgId = 1;
-          out.tilesOffset = _0x200;
+          out.tilesOffset = 0x200;
           out.unused = 0;
       }
       else
       {
           out.paletteId = BG_ANIM_PAL_2;
           out.bgId = 2;
-          out.tilesOffset = _0x300;
+          out.tilesOffset = 0x300;
           out.unused = 0;
       }
 }
@@ -804,17 +778,17 @@ export function ClearBattleAnimBg(bgId: any): any {
   let bgAnimData: any = null;
 
       GetBattleAnimBgData(bgAnimData, bgId);
-      CpuFill32(0, bgAnimData.bgTiles, _0x2000);
-      LoadBgTiles(bgAnimData.bgId, bgAnimData.bgTiles, _0x2000, bgAnimData.tilesOffset);
+      CpuFill32(0, bgAnimData.bgTiles, 0x2000);
+      LoadBgTiles(bgAnimData.bgId, bgAnimData.bgTiles, 0x2000, bgAnimData.tilesOffset);
       FillBgTilemapBufferRect(bgAnimData.bgId, 0, 0, 0, 32, 64, 17);
       CopyBgTilemapBufferToVram(bgAnimData.bgId);
 }
 
 /** void AnimLoadCompressedBgGfx(u32 bgId, const u32 *src, u32 tilesOffset) */
 export function AnimLoadCompressedBgGfx(bgId: any, src: any, tilesOffset: any): any {
-  CpuFill32(0, gBattleAnimBgTileBuffer, _0x2000);
+  CpuFill32(0, gBattleAnimBgTileBuffer, 0x2000);
       LZDecompressWram(src, gBattleAnimBgTileBuffer);
-      LoadBgTiles(bgId, gBattleAnimBgTileBuffer, _0x2000, tilesOffset);
+      LoadBgTiles(bgId, gBattleAnimBgTileBuffer, 0x2000, tilesOffset);
 }
 
 /** static void InitAnimBgTilemapBuffer(u32 bgId, const void *src) */
@@ -1113,7 +1087,7 @@ export function PrepareBattlerSpriteForRotScale(spriteId: any, objMode: any): an
 
 /** void ResetSpriteRotScale(u8 spriteId) */
 export function ResetSpriteRotScale(spriteId: any): any {
-  SetSpriteRotScale(spriteId, _0x100, _0x100, 0);
+  SetSpriteRotScale(spriteId, 0x100, 0x100, 0);
       gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
       gSprites[spriteId].oam.objMode = ST_OAM_OBJ_NORMAL;
       gSprites[spriteId].affineAnimPaused = FALSE;
@@ -1158,7 +1132,7 @@ export function TrySetSpriteRotScale(sprite: any, recalcCenterVector: any, xScal
 
 /** void ResetSpriteRotScale_PreserveAffine(struct Sprite *sprite) */
 export function ResetSpriteRotScale_PreserveAffine(sprite: any): any {
-  TrySetSpriteRotScale(sprite, TRUE, _0x100, _0x100, 0);
+  TrySetSpriteRotScale(sprite, TRUE, 0x100, 0x100, 0);
       sprite.affineAnimPaused = FALSE;
       CalcCenterToCornerVec(sprite, sprite.oam.shape, sprite.oam.size, sprite.oam.affineMode);
 }
@@ -1561,7 +1535,7 @@ export function AnimTask_BlendPalInAndOutByTag(task: any): any {
           DestroyAnimVisualTask(task);
           return;
       }
-      gTasks[task].data[0] = (palette * _0x10) + _0x101;
+      gTasks[task].data[0] = (palette * 0x10) + 0x101;
       AnimTask_BlendPalInAndOutSetup(gTasks[task]);
 }
 
@@ -1571,8 +1545,8 @@ export function PrepareAffineAnimInTaskData(task: any, spriteId: any, affineAnim
       task.data[8] = 0;
       task.data[9] = 0;
       task.data[15] = spriteId;
-      task.data[10] = _0x100;
-      task.data[11] = _0x100;
+      task.data[10] = 0x100;
+      task.data[11] = 0x100;
       task.data[12] = 0;
       StorePointerInVars(task.data[13],task.data[14], affineAnimCmds);
       PrepareBattlerSpriteForRotScale(spriteId, ST_OAM_OBJ_NORMAL);
@@ -1886,7 +1860,7 @@ export function CreateAdditionalMonSpriteForMoveAnim(species: any, isBackpic: an
                                    FALSE);
       }
 
-      RequestDma3Copy(gMonSpritesGfxPtr.buffer, (OBJ_VRAM0 + (sheet * _0x20)), MON_PIC_SIZE, 1);
+      RequestDma3Copy(gMonSpritesGfxPtr.buffer, (OBJ_VRAM0 + (sheet * 0x20)), MON_PIC_SIZE, 1);
       FREE_AND_SET_NULL(gMonSpritesGfxPtr.buffer);
 
       if (!isBackpic)

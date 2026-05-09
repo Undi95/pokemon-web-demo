@@ -15,51 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddBagItem, AddDecorationIconObject, AddItemIconSprite,
-  AddMoneyLabelObject, AddScrollIndicatorArrowPairParameterized, AddTextPrinterParameterized4, AddWindow,
-  AdjustQuantityAccordingToDPadInput, Alloc, AllocZeroed, AnimateSprites,
-  BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer,
-  ClearDialogWindowAndFrameToTransparent, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
-  ConvertIntToDecimalStringN, CopyItemName, CopyWindowToVram, CountTotalItemQuantityInBag,
-  CpuFastFill, CreateObjectGraphicsSprite, CreateTask, CreateYesNoMenuWithCallbacks,
-  DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST,
-  DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters,
-  DecompressAndCopyTileDataToVram, DecorationAdd, DestroySprite, DestroyTask,
-  DisplayItemMessageOnField, DisplayMessageAndContinueTask, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette,
-  FALSE, FadeInFromBlack, FadeScreen, FillBgTilemapBufferRect_Palette0,
-  FillWindowPixelBuffer, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetItemDescription,
-  GetItemPocket, GetItemPrice, GetMaxWidthInMenuTable, GetMoney,
-  GetObjectEventGraphicsInfo, GetObjectEventIdByXY, GetPlayerTextSpeedDelay, GetStringRightAlignXOffset,
-  GetXYCoordsOneStepInFrontOfPlayer, IncrementGameStat, InitBgsFromTemplates, InitMenuInUpperLeftCornerNormal,
-  InitWindows, IsEnoughMoney, IsPokeNewsActive, IsWeatherNotFadingIn,
-  ItemIdToBattleMoveId, JOY_NEW, LZDecompressWram, ListMenuGetScrollAndRow,
-  ListMenuGetYCoordForPrintingArrowCursor, ListMenuInit, ListMenu_ProcessInput, LoadCompressedPalette,
-  LoadMessageBoxGfx, LoadOam, LoadUserWindowBorderGfx, LockPlayerFieldControls,
-  MapGridGetMetatileIdAt, MapGridGetMetatileLayerTypeAt, Menu_ProcessInputNoWrap, OBJECT_EVENTS_COUNT,
-  PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE,
-  PrintMenuTable, PrintMoneyAmount, PrintMoneyAmountInMoneyBox, PrintMoneyAmountInMoneyBoxWithBorder,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
-  RemoveMoney, RemoveMoneyLabelObject, RemoveScrollIndicatorArrowPair, RemoveWindow,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, RunTasks, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN,
-  STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetStandardWindowBorderStyle, SetVBlankCallback,
-  SetVBlankHBlankCallbacksToNull, ShowBg, SpriteCallbackDummy, StartSpriteAnim,
-  StringCopy, StringExpandPlaceholders, TASK_NONE, TRUE,
-  TransferPlttBuffer, TryPutSmartShopperOnAir, UnlockPlayerFieldControls, UpdatePaletteFade,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static u8 CreateShopMenu(u8 martType) */
 export function CreateShopMenu(martType: any): any {
   let numMenuItems: any = null;
@@ -237,10 +192,10 @@ export function CB2_InitBuyMenu(): any {
           sShopData.itemSpriteIds[1] = SPRITE_NONE;
           BuyMenuBuildListMenuTemplate();
           BuyMenuInitBgs();
-          FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, _0x20, _0x20);
-          FillBgTilemapBufferRect_Palette0(1, 0, 0, 0, _0x20, _0x20);
-          FillBgTilemapBufferRect_Palette0(2, 0, 0, 0, _0x20, _0x20);
-          FillBgTilemapBufferRect_Palette0(3, 0, 0, 0, _0x20, _0x20);
+          FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 0x20, 0x20);
+          FillBgTilemapBufferRect_Palette0(1, 0, 0, 0, 0x20, 0x20);
+          FillBgTilemapBufferRect_Palette0(2, 0, 0, 0, 0x20, 0x20);
+          FillBgTilemapBufferRect_Palette0(3, 0, 0, 0, 0x20, 0x20);
           BuyMenuInitWindows();
           BuyMenuDecompressBgGraphics();
           gMain.state++;

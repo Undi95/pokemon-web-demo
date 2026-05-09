@@ -15,36 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, ActionSelectionCreateCursorAt, ActionSelectionDestroyCursorAt, AllocSpritePalette,
-  BATTLE_PARTNER, BattlePutTextOnWindow, BattleStopLowHpSound, BattleStringExpandPlaceholdersToDisplayedString,
-  BeginFastPaletteFade, BeginNormalPaletteFade, BtlController_EmitDataTransfer, BtlController_EmitOneReturnValue,
-  BtlController_EmitTwoReturnValues, BufferStringBattle, CopyAllBattleSpritesInvisibilities, CreateInvisibleSpriteWithCallback,
-  CreatePartyStatusSummarySprites, CreateSprite, CreateTask, DISPLAY_HEIGHT,
-  DISPLAY_WIDTH, DecompressTrainerBackPic, DestroySprite, DestroyTask,
-  DoHitAnimHealthboxEffect, DoMoveAnim, DoPokeballSendOutAnimation, DoWallyTutorialBagMenu,
-  FALSE, FadeOutMapMusic, FreeAllWindowBuffers, FreeSpriteOamMatrix,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetBattlerAtPosition, GetBattlerPosition,
-  GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority,
-  GetMonData, GetMultiplayerId, HandleIntroSlide, HandleLowHpMusicChange,
-  InitAndLaunchSpecialAnimation, InitMoveSelectionsVarsAndStrings, IsDma3ManagerBusyWithBgCopy, IsDoubleBattle,
-  IsMoveWithoutAnimation, IsTextPrinterActive, LoadBattleBarGfx, LoadCompressedPalette,
-  MoveBattleBar, OBJ_PLTT_ID, PALETTES_ALL, PLTT_SIZE_4BPP,
-  PlayBGM, PlayCry_Normal, PlayFanfare, PlaySE,
-  PlayerHandleGetRawMonData, PrepareBufferDataTransferLink, ReshowBattleScreenDummy, ST_OAM_AFFINE_NORMAL,
-  ST_OAM_AFFINE_OFF, SetBattleBarStruct, SetBattlerSpriteAffineMode, SetHealthboxSpriteInvisible,
-  SetHealthboxSpriteVisible, SetMonData, SetMultiuseSpriteTemplateToPokemon, SetMultiuseSpriteTemplateToTrainerBack,
-  SetSpritePrimaryCoordsFromSecondaryCoords, SpriteCallbackDummy, StartHealthboxSlideIn, StartSpriteAnim,
-  StoreSpriteCallbackInData6, StringCopy_Nickname, TRUE, TryHandleLaunchBattleTableAnimation,
-  TrySetBehindSubstituteSpriteBit, TryShinyAnimation, UpdateHealthboxAttribute, UpdateHpTextInHealthbox,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SetControllerToWally(void) */
 export function SetControllerToWally(): any {
   gBattlerControllerFuncs[gActiveBattler] = WallyBufferRunCommand;
@@ -1109,7 +1079,7 @@ export function WallyHandleChooseMove(): any {
           if (--gBattleStruct.wallyMoveFrames == 0)
           {
               PlaySE(SE_SELECT);
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, _0x100);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, 0x100);
               WallyBufferExecCompleted();
           }
           break;
@@ -1118,7 +1088,7 @@ export function WallyHandleChooseMove(): any {
 
 /** static void WallyHandleChooseItem(void) */
 export function WallyHandleChooseItem(): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
       gBattlerControllerFuncs[gActiveBattler] = OpenBagAfterPaletteFade;
       gBattlerInMenuId = gActiveBattler;
 }

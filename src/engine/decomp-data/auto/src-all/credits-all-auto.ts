@@ -15,43 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized4, AllocZeroed, AnimateSprites,
-  BGCNT_16COLOR, BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE,
-  BGCNT_TXT256x256, BG_PLTT_ID, BG_SCREEN_ADDR, BG_SCREEN_SIZE,
-  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT2_BG0, BLDCNT_TGT2_BG1,
-  BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3, BeginNormalPaletteFade, BuildOamBuffer,
-  CopyWindowToVram, CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroMaySprite,
-  CreateMonSpriteFromNationalDexNumber, CreateSprite, CreateTask, CycleSceneryPalette,
-  DISPCNT_BG0_ON, DISPCNT_BG3_ON, DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DISPLAY_WIDTH, DeactivateAllTextPrinters, DestroySprite,
-  DestroyTask, DmaFill16, DmaFill32, EnableInterrupts,
-  FALSE, FREE_AND_SET_NULL, FadeOutBGM, FillWindowPixelBuffer,
-  Free, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeAndDestroyMonPicSprite,
-  GetBgTilemapBuffer, GetSetPokedexFlag, GetStarterPokemon, GetStringCenterAlignXOffsetWithLetterSpacing,
-  InitBgsFromTemplates, InitHeap, InitWindows, JOY_HELD,
-  LZ77UnCompVram, LoadCompressedSpriteSheet, LoadCreditsSceneGraphics, LoadOam,
-  LoadPalette, LoadSpritePalette, LoadSpritePalettes, LoadSpriteSheet,
-  NULL, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE,
-  PLTT_SIZEOF, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, Random, ResetAllPicSprites,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  RunTasks, ST_OAM_AFFINE_NORMAL, ST_OAM_OBJ_BLEND, SetBgTilemapBuffer,
-  SetCreditsSceneBgCnt, SetGpuReg, SetMainCallback2, SetOamMatrix,
-  SetVBlankCallback, ShowBg, Sin, SoftReset,
-  SpeciesToNationalPokedexNum, StartSpriteAnimIfDifferent, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, VRAM_SIZE, VarGet, m4aSongNumStart,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_Credits(void) */
 export function VBlankCB_Credits(): any {
   LoadOam();
@@ -268,11 +231,11 @@ export function Task_LoadShowMons(taskId: any): any {
           LoadPalette(gBirchBagGrass_Pal + 1, BG_PLTT_ID(0) + 1, PLTT_SIZEOF(2 * 16 - 1));
 
           for (i = 0; i < MON_PIC_SIZE; i++)
-              gDecompressionBuffer[i] = _0x11;
+              gDecompressionBuffer[i] = 0x11;
           for (i = 0; i < MON_PIC_SIZE; i++)
-              (gDecompressionBuffer + MON_PIC_SIZE)[i] = _0x22;
+              (gDecompressionBuffer + MON_PIC_SIZE)[i] = 0x22;
           for (i = 0; i < MON_PIC_SIZE; i++)
-              (gDecompressionBuffer + MON_PIC_SIZE * 2)[i] = _0x33;
+              (gDecompressionBuffer + MON_PIC_SIZE * 2)[i] = 0x33;
 
           temp = (gDecompressionBuffer[MONBG_OFFSET]);
           temp[0] = RGB_BLACK;
@@ -338,7 +301,7 @@ export function Task_CreditsTheEnd2(taskId: any): any {
 export function Task_CreditsTheEnd3(taskId: any): any {
   ResetGpuAndVram();
       ResetPaletteFade();
-      LoadTheEndScreen(0, _0x3800, BG_PLTT_ID(0));
+      LoadTheEndScreen(0, 0x3800, BG_PLTT_ID(0));
       ResetSpriteData();
       FreeAllSpritePalettes();
       BeginNormalPaletteFade(PALETTES_ALL, 8, 16, 0, RGB_BLACK);
@@ -373,7 +336,7 @@ export function Task_CreditsTheEnd4(taskId: any): any {
 export function Task_CreditsTheEnd5(taskId: any): any {
   if (!gPaletteFade.active)
       {
-          DrawTheEnd(_0x3800, 0);
+          DrawTheEnd(0x3800, 0);
 
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0, RGB_BLACK);
           gTasks[taskId].tDelay = 7200;
@@ -478,9 +441,9 @@ export function Task_UpdatePage(taskId: any): any {
                   gTasks[gTasks[taskId].tMainTaskId].tPrintedPage = TRUE;
 
                   if (gTasks[gTasks[taskId].tMainTaskId].tCurrentMode == MODE_BIKE_SCENE)
-                      BeginNormalPaletteFade(_0x300, 0, 16, 0, COLOR_LIGHT_GREEN);
+                      BeginNormalPaletteFade(0x300, 0, 16, 0, COLOR_LIGHT_GREEN);
                   else  
-                      BeginNormalPaletteFade(_0x300, 0, 16, 0, COLOR_DARK_GREEN);
+                      BeginNormalPaletteFade(0x300, 0, 16, 0, COLOR_DARK_GREEN);
                   return;
               }
 
@@ -511,9 +474,9 @@ export function Task_UpdatePage(taskId: any): any {
           }
           gTasks[taskId].tState++;
           if (gTasks[gTasks[taskId].tMainTaskId].tCurrentMode == MODE_BIKE_SCENE)
-              BeginNormalPaletteFade(_0x300, 0, 0, 16, COLOR_LIGHT_GREEN);
+              BeginNormalPaletteFade(0x300, 0, 0, 16, COLOR_LIGHT_GREEN);
           else  
-              BeginNormalPaletteFade(_0x300, 0, 0, 16, COLOR_DARK_GREEN);
+              BeginNormalPaletteFade(0x300, 0, 0, 16, COLOR_DARK_GREEN);
           return;
       case 5:
           if (!gPaletteFade.active)
@@ -798,7 +761,7 @@ export function SetBikeScene(scene: any, taskId: any): any {
           gSprites[gTasks[taskId].tRivalSpriteId].y = 46;
           gSprites[gTasks[taskId].tPlayerSpriteId].data[0] = 0;
           gSprites[gTasks[taskId].tRivalSpriteId].data[0] = 0;
-          gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(0, _0x2000, _0x20, 8);
+          gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(0, 0x2000, 0x20, 8);
           break;
       case SCENE_OCEAN_SUNSET:
           gSprites[gTasks[taskId].tPlayerSpriteId].invisible = FALSE;
@@ -809,7 +772,7 @@ export function SetBikeScene(scene: any, taskId: any): any {
           gSprites[gTasks[taskId].tRivalSpriteId].y = 46;
           gSprites[gTasks[taskId].tPlayerSpriteId].data[0] = 0;
           gSprites[gTasks[taskId].tRivalSpriteId].data[0] = 0;
-          gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(0, _0x2000, _0x20, 8);
+          gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(0, 0x2000, 0x20, 8);
           break;
       case SCENE_FOREST_RIVAL_ARRIVE:
           gSprites[gTasks[taskId].tPlayerSpriteId].invisible = FALSE;
@@ -820,7 +783,7 @@ export function SetBikeScene(scene: any, taskId: any): any {
           gSprites[gTasks[taskId].tRivalSpriteId].y = 46;
           gSprites[gTasks[taskId].tPlayerSpriteId].data[0] = 0;
           gSprites[gTasks[taskId].tRivalSpriteId].data[0] = 0;
-          gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(1, _0x2000, _0x200, 8);
+          gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(1, 0x2000, 0x200, 8);
           break;
       case SCENE_FOREST_CATCH_RIVAL:
           gSprites[gTasks[taskId].tPlayerSpriteId].invisible = FALSE;
@@ -831,7 +794,7 @@ export function SetBikeScene(scene: any, taskId: any): any {
           gSprites[gTasks[taskId].tRivalSpriteId].y = 46;
           gSprites[gTasks[taskId].tPlayerSpriteId].data[0] = 0;
           gSprites[gTasks[taskId].tRivalSpriteId].data[0] = 0;
-          gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(1, _0x2000, _0x200, 8);
+          gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(1, 0x2000, 0x200, 8);
           break;
       case SCENE_CITY_NIGHT:
           gSprites[gTasks[taskId].tPlayerSpriteId].invisible = FALSE;
@@ -842,7 +805,7 @@ export function SetBikeScene(scene: any, taskId: any): any {
           gSprites[gTasks[taskId].tRivalSpriteId].y = 46;
           gSprites[gTasks[taskId].tPlayerSpriteId].data[0] = 0;
           gSprites[gTasks[taskId].tRivalSpriteId].data[0] = 0;
-          gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(2, _0x2000, _0x200, 8);
+          gTasks[taskId].tTaskId_BgScenery = CreateBicycleBgAnimationTask(2, 0x2000, 0x200, 8);
           break;
       }
 
@@ -1076,7 +1039,7 @@ export function SpriteCB_CreditsMon(sprite: any): any {
           sprite.oam.affineMode = ST_OAM_AFFINE_NORMAL;
           sprite.oam.matrixNum = sprite.sPosition;
           sprite.data[2] = 16;
-          SetOamMatrix(sprite.sPosition, _0x10000 / sprite.data[2], 0, 0, _0x10000 / sprite.data[2]);
+          SetOamMatrix(sprite.sPosition, 0x10000 / sprite.data[2], 0, 0, 0x10000 / sprite.data[2]);
           sprite.invisible = FALSE;
           sprite.sState = 1;
           break;
@@ -1084,7 +1047,7 @@ export function SpriteCB_CreditsMon(sprite: any): any {
           if (sprite.data[2] < 256)
           {
               sprite.data[2] += 8;
-              SetOamMatrix(sprite.sPosition, _0x10000 / sprite.data[2], 0, 0, _0x10000 / sprite.data[2]);
+              SetOamMatrix(sprite.sPosition, 0x10000 / sprite.data[2], 0, 0, 0x10000 / sprite.data[2]);
           }
           else
           {

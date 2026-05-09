@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AdjustFriendship, AllocZeroed, BattleScriptPushCursor,
-  BtlController_EmitSetMonData, CreateSecretBaseEnemyParty, FREE_AND_SET_NULL, FreeTrainerHillBattleStruct,
-  GetBattlerAtPosition, GetBattlerSide, GetPartyIdFromBattlePartyId, InitTrainerHillBattleStruct,
-  MarkBattlerForControllerExec, NULL, Random, SwitchPartyMonSlots,
-  UproarWakeUpCheck, VarGet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void AllocateBattleResources(void) */
 export function AllocateBattleResources(): any {
   if (gBattleResources != NULL) {
@@ -54,8 +40,8 @@ export function AllocateBattleResources(): any {
       gLinkBattleSendBuffer = AllocZeroed(BATTLE_BUFFER_LINK_SIZE);
       gLinkBattleRecvBuffer = AllocZeroed(BATTLE_BUFFER_LINK_SIZE);
 
-      gBattleAnimBgTileBuffer = AllocZeroed(_0x2000);
-      gBattleAnimBgTilemapBuffer = AllocZeroed(_0x1000);
+      gBattleAnimBgTileBuffer = AllocZeroed(0x2000);
+      gBattleAnimBgTilemapBuffer = AllocZeroed(0x1000);
 
       if (gBattleTypeFlags & BATTLE_TYPE_SECRET_BASE)
       {

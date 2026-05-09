@@ -15,18 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, FALSE, GET_B, GET_G,
-  GET_POINT_COLOR_TYPE, GET_POINT_DELTA, GET_POINT_OFFSET_DL, GET_R,
-  IS_ALPHA, Q_8_8, RGB2, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ApplyImageProcessingEffects(struct ImageProcessingContext *context) */
 export function ApplyImageProcessingEffects(context: any): any {
   gCanvasPixels = context.canvasPixels;

@@ -15,36 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, BattleSetup_ConfigureTrainerBattle, BattleTransition_StartOnField, BitmaskAllOtherLinkPlayers,
-  BufferApprenticeChallengeText, CalculateMonStats, ConvertEasyChatWordsToString, ConvertIntToDecimalStringN,
-  ConvertInternationalString, ConvertPokemonToBattleTowerPokemon, CopyFrontierBrainTrainerName, CopyTrainerId,
-  CpuFill32, CreateApprenticeMon, CreateBattleTowerMon, CreateBattleTowerMon_HandleLevel,
-  CreateFrontierBrainPokemon, CreateMon, CreateMonWithEVSpreadNatureOTID, CreateTask,
-  CreateTask_PlayMapChosenOrBattleBGM, DestroyTask, FALSE, FillFactoryBrainParty,
-  FlagClear, FlagGet, GetApprenticeNameInLanguage, GetBlockReceivedStatus,
-  GetCurrentFacilityWinStreak, GetFactoryMonFixedIV, GetFrontierBrainTrainerClass, GetFrontierBrainTrainerPicIndex,
-  GetMonData, GetMultiplayerId, GetNatureFromPersonality, GetRecordedBattleApprenticeId,
-  GetRecordedBattleApprenticeLanguage, GetRecordedBattleRecordMixFriendClass, GetRecordedBattleRecordMixFriendLanguage, GetRecordedBattleRecordMixFriendName,
-  GetRibbonCount, GetSpecialBattleTransition, GetStringWidth, HideBattleTowerReporter,
-  IncrementGameStat, IsBattleTransitionDone, IsFrontierBrainFemale, IsLinkTaskFinished,
-  IsShinyOtIdPersonality, NULL, OtherConvertEasyChatWordsToString, PlayMapChosenOrBattleBGM,
-  Random, Random32, RecordedBattle_SaveBattleOutcome, ResetApprenticeStruct,
-  ResetBlockReceivedFlags, ResetFrontierTrainerIds, STR_CONV_MODE_LEFT_ALIGN, SaveGameFrontier,
-  SendBlock, SetCloseLinkCallback, SetDynamicWarp, SetFrontierBrainObjEventGfx_2,
-  SetMainCallback2, SetMonData, SetMonMoveAvoidReturn, SetMonMoveSlot,
-  ShowFieldMessage, StringCopy, StringCopy_PlayerName, StripExtCtrlCodes,
-  T1_READ_32, TRUE, TVShowConvertInternationalString, TryPutSpotTheCutiesOnAir,
-  UpdateGymLeaderRematch, VarGet, VarSet, ZeroEnemyPartyMons,
-  memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CallBattleTowerFunc(void) */
 export function CallBattleTowerFunc(): any {
   sBattleTowerFuncs[gSpecialVar_0x8004]();

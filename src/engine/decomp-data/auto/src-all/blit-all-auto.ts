@@ -130,8 +130,8 @@ export function BlitBitmapRect4BitTo8Bit(src: any, dst: any, srcX: any, srcY: an
       let pixelsDst: any = null;
       let colorKeyBits: any = null;
 
-      palOffsetBits = (paletteOffset << 0x1C) >> _0x18;
-      colorKeyBits = (colorKey << 0x1C) >> _0x18;
+      palOffsetBits = (paletteOffset << 0x1C) >> 0x18;
+      colorKeyBits = (colorKey << 0x1C) >> 0x18;
 
       if (dst.width - dstX < width)
           xEnd = (dst.width - dstX) + srcX;

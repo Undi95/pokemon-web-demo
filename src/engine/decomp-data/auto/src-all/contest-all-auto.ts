@@ -15,59 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ALIGNED, ARRAY_COUNT, AddTextPrinter, AllocOamMatrix,
-  AllocZeroed, AllocateMonSpritesGfx, AnimateSprite, AnimateSprites,
-  AreMovesContestCombo, BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR,
-  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BeginFastPaletteFade, BeginNormalPaletteFade,
-  BlendPalette, BravoTrainerPokemonProfile_BeforeInterview1, BuildOamBuffer, ClearBattleAnimationVars,
-  ClearBattleMonForms, ContestAI_GetActionToUse, ContestAI_ResetAI, ContestLiveUpdates_Init,
-  ContestLiveUpdates_SetLoserData, ContestLiveUpdates_SetRound2Placing, ContestLiveUpdates_SetWinnerAppealFlag, ContestLiveUpdates_SetWinnerMoveUsed,
-  Contest_CopyStringWithColor, ConvertIntToDecimalStringN, ConvertInternationalString, CopyBgTilemapBufferToVram,
-  CopySpriteTiles, CopyToBgTilemapBuffer, CopyWindowToVram, CpuCopy16,
-  CpuCopy32, CpuFill32, CreateInvisibleSpriteWithCallback, CreateSprite,
-  CreateTask, CreateWirelessStatusIndicatorSprite, DISPCNT_BG0_ON, DISPCNT_BG1_ON,
-  DISPCNT_BG2_ON, DISPCNT_BG3_ON, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
-  DISPCNT_WIN0_ON, DISPCNT_WIN1_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-  DeactivateAllTextPrinters, DestroySprite, DestroySpriteAndFreeResources, DestroyTask,
-  DmaCopy16Defvars, DmaCopy32Defvars, DmaCopyLarge32, DoMoveAnim,
-  FALSE, FREE_AND_SET_NULL, FillPalette, FillWindowPixelBuffer,
-  FlagGet, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeMonSpritesGfx,
-  FreeSpriteOamMatrix, GetBattlerSpriteCoord, GetBattlerSpriteFinal_Y, GetBattlerSpriteSubpriority,
-  GetContestRand, GetGpuReg, GetMonData, GetMonSpritePalFromSpeciesAndPersonality,
-  GetMultiplayerId, GetPlayerTextSpeedDelay, GetStringRightAlignXOffset, GetTurnOrderNumberGfx,
-  HandleLoadSpecialPokePic_2, HandleLoadSpecialPokePic_DontHandleDeoxys, IndexOfSpritePaletteTag, InitBgsFromTemplates,
-  InitSpriteAffineAnim, InitWindows, IsLinkTaskFinished, IsTextPrinterActive,
-  JOY_NEW, LZDecompressVram, LoadCompressedPalette, LoadCompressedSpritePalette,
-  LoadCompressedSpriteSheet, LoadOam, LoadPalette, LoadSpritePalette,
-  LoadSpriteSheet, LoadWirelessStatusIndicatorSpriteGfx, NULL, OBJ_PLTT_ID,
-  PALETTES_ALL, PIXEL_FILL, PLTT_ID, PLTT_SIZE,
-  PLTT_SIZEOF, PLTT_SIZE_4BPP, PlayFanfare, PlaySE,
-  PlaySE12WithPanning, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0CNT,
-  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  Random, RequestDma3Copy, RequestDma3Fill, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
-  RunTextPrinters, STR_CONV_MODE_LEFT_ALIGN, ST_OAM_AFFINE_NORMAL, SWAP,
-  ScanlineEffect_Clear, ScanlineEffect_InitHBlankDmaTransfer, ScriptContext_Enable, SetBackdropFromColor,
-  SetBgAttribute, SetBgTilemapBuffer, SetGpuReg, SetGpuRegBits,
-  SetLinkStandbyCallback, SetMainCallback2, SetMultiuseSpriteTemplateToPokemon, SetSubspriteTables,
-  SetTaskFuncWithFollowupFunc, SetVBlankCallback, ShowBg, SpriteCallbackDummy,
-  StartSpriteAffineAnim, StringAppend, StringCopy, StringExpandPlaceholders,
-  StringGet_Nickname, StringLength, StripExtCtrlCodes, TRUE,
-  TransferPlttBuffer, UnlockPlayerFieldControls, UpdatePaletteFade, WriteSequenceToBgTilemapBuffer,
-  memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ResetLinkContestBoolean(void) */
 export function ResetLinkContestBoolean(): any {
   gLinkContestFlags = 0;
@@ -203,13 +150,13 @@ export function AllocContestResources(): any {
       gContestResources.moveAnim = AllocZeroed(0);
       gContestResources.tv = AllocZeroed(0 * CONTESTANT_COUNT);
       gContestResources.unused = AllocZeroed(0);
-      gContestResources.contestBgTilemaps[0] = AllocZeroed(_0x1000);
-      gContestResources.contestBgTilemaps[1] = AllocZeroed(_0x1000);
-      gContestResources.contestBgTilemaps[2] = AllocZeroed(_0x1000);
-      gContestResources.contestBgTilemaps[3] = AllocZeroed(_0x1000);
-      gContestResources.boxBlinkTiles1 = AllocZeroed(_0x800);
-      gContestResources.boxBlinkTiles2 = AllocZeroed(_0x800);
-      gContestResources.animBgTileBuffer = AllocZeroed(_0x2000);
+      gContestResources.contestBgTilemaps[0] = AllocZeroed(0x1000);
+      gContestResources.contestBgTilemaps[1] = AllocZeroed(0x1000);
+      gContestResources.contestBgTilemaps[2] = AllocZeroed(0x1000);
+      gContestResources.contestBgTilemaps[3] = AllocZeroed(0x1000);
+      gContestResources.boxBlinkTiles1 = AllocZeroed(0x800);
+      gContestResources.boxBlinkTiles2 = AllocZeroed(0x800);
+      gContestResources.animBgTileBuffer = AllocZeroed(0x2000);
       gBattleAnimBgTileBuffer = gContestResources.animBgTileBuffer;
       gBattleAnimBgTilemapBuffer = gContestResources.contestBgTilemaps[1];
 }
@@ -246,7 +193,7 @@ export function CB2_StartContest(): any {
           AllocContestResources();
           AllocateMonSpritesGfx();
           FREE_AND_SET_NULL(gMonSpritesGfxPtr.firstDecompressed);
-          gMonSpritesGfxPtr.firstDecompressed = AllocZeroed(_0x4000);
+          gMonSpritesGfxPtr.firstDecompressed = AllocZeroed(0x4000);
           SetVBlankCallback(NULL);
           InitContestInfoBgs();
           InitContestWindows();
@@ -375,16 +322,16 @@ export function SetupContestGraphics(stateVar: any): any {
       {
       case 0:
           gPaletteFade.bufferTransferDisabled = TRUE;
-          RequestDma3Fill(0, VRAM, _0x8000, 1);
-          RequestDma3Fill(0, VRAM + _0x8000, _0x8000, 1);
-          RequestDma3Fill(0, VRAM + _0x10000, _0x8000, 1);
+          RequestDma3Fill(0, VRAM, 0x8000, 1);
+          RequestDma3Fill(0, VRAM + 0x8000, 0x8000, 1);
+          RequestDma3Fill(0, VRAM + 0x10000, 0x8000, 1);
           break;
       case 1:
           LZDecompressVram(gContestInterfaceGfx, VRAM);
           break;
       case 2:
           LZDecompressVram(gContestAudienceGfx, (BG_SCREEN_ADDR(4)));
-          DmaCopyLarge32(3, (BG_SCREEN_ADDR(4)), eUnzippedContestAudience_Gfx, _0x2000, _0x1000);
+          DmaCopyLarge32(3, (BG_SCREEN_ADDR(4)), eUnzippedContestAudience_Gfx, 0x2000, 0x1000);
           break;
       case 3:
           CopyToBgTilemapBuffer(3, gContestAudienceTilemap, 0, 0);
@@ -2085,7 +2032,7 @@ export function PrintContestantTrainerNameWithColor(contestant: any, color: any)
       StringCopy(buffer, gText_Slash);
       StringAppend(buffer, gContestMons[contestant].trainerName);
       Contest_CopyStringWithColor(buffer, color);
-      offset = GetStringRightAlignXOffset(FONT_NARROW, gDisplayedStringBattle, _0x60);
+      offset = GetStringRightAlignXOffset(FONT_NARROW, gDisplayedStringBattle, 0x60);
       if (offset > 55)
           offset = 55;
       Contest_PrintTextToBg0WindowAt(gContestantTurnOrder[contestant], gDisplayedStringBattle, offset, 1, FONT_NARROW);
@@ -2185,7 +2132,7 @@ export function CreateContestantSprite(species: any, otId: any, personality: any
       LoadCompressedPalette(GetMonSpritePalFromSpeciesAndPersonality(species, otId, personality), OBJ_PLTT_ID(2), PLTT_SIZE_4BPP);
       SetMultiuseSpriteTemplateToPokemon(species, B_POSITION_PLAYER_LEFT);
 
-      spriteId = CreateSprite(gMultiuseSpriteTemplate, _0x70, GetBattlerSpriteFinal_Y(2, species, FALSE), 30);
+      spriteId = CreateSprite(gMultiuseSpriteTemplate, 0x70, GetBattlerSpriteFinal_Y(2, species, FALSE), 30);
       gSprites[spriteId].oam.paletteNum = 2;
       gSprites[spriteId].oam.priority = 2;
       gSprites[spriteId].subpriority = GetBattlerSpriteSubpriority(2);
@@ -2211,8 +2158,8 @@ export function IsSpeciesNotUnown(species: any): any {
 
 /** static void SwapMoveDescAndContestTilemaps(void) */
 export function SwapMoveDescAndContestTilemaps(): any {
-  CpuCopy16(gContestResources.contestBgTilemaps[0], gContestResources.contestBgTilemaps[0] + _0x500, 32 * 20);
-      CpuCopy16(gContestResources.contestBgTilemaps[2], gContestResources.contestBgTilemaps[2] + _0x500, 32 * 20);
+  CpuCopy16(gContestResources.contestBgTilemaps[0], gContestResources.contestBgTilemaps[0] + 0x500, 32 * 20);
+      CpuCopy16(gContestResources.contestBgTilemaps[2], gContestResources.contestBgTilemaps[2] + 0x500, 32 * 20);
 }
 
 /** static u16 GetMoveEffectSymbolTileOffset(u16 move, u8 contestant) */
@@ -2224,20 +2171,20 @@ export function GetMoveEffectSymbolTileOffset(move: any, contestant: any): any {
       case CONTEST_EFFECT_TYPE_APPEAL:
       case CONTEST_EFFECT_TYPE_AVOID_STARTLE:
       case CONTEST_EFFECT_TYPE_UNKNOWN:
-          offset = _0x9082;
+          offset = 0x9082;
           break;
       case CONTEST_EFFECT_TYPE_STARTLE_MON:
       case CONTEST_EFFECT_TYPE_STARTLE_MONS:
-          offset = _0x9088;
+          offset = 0x9088;
           break;
       default:
        
        
        
-          offset = _0x9086;
+          offset = 0x9086;
           break;
       }
-      offset += _0x9000 + (contestant << 12);
+      offset += 0x9000 + (contestant << 12);
       return offset;
 }
 
@@ -2250,9 +2197,9 @@ export function PrintContestMoveDescription(move: any): any {
        
       category = gContestMoves[move].contestCategory;
       if      (category == CONTEST_CATEGORY_COOL)
-          categoryTile = _0x4040;
+          categoryTile = 0x4040;
       else if (category == CONTEST_CATEGORY_BEAUTY)
-          categoryTile = _0x4045;
+          categoryTile = 0x4045;
       else if (category == CONTEST_CATEGORY_CUTE)
           categoryTile = 0x404A;
       else if (category == CONTEST_CATEGORY_SMART)
@@ -2260,8 +2207,8 @@ export function PrintContestMoveDescription(move: any): any {
       else
           categoryTile = 0x408A;
 
-      ContestBG_FillBoxWithIncrementingTile(0, categoryTile,        0x0b, 0x1f, _0x05, _0x01, _0x11, _0x01);
-      ContestBG_FillBoxWithIncrementingTile(0, categoryTile + _0x10, 0x0b, _0x20, _0x05, _0x01, _0x11, _0x01);
+      ContestBG_FillBoxWithIncrementingTile(0, categoryTile,        0x0b, 0x1f, 0x05, 0x01, 0x11, 0x01);
+      ContestBG_FillBoxWithIncrementingTile(0, categoryTile + 0x10, 0x0b, 0x20, 0x05, 0x01, 0x11, 0x01);
 
        
       if (gContestEffects[gContestMoves[move].effect].appeal == 0xFF)
@@ -2270,8 +2217,8 @@ export function PrintContestMoveDescription(move: any): any {
           numHearts = gContestEffects[gContestMoves[move].effect].appeal / 10;
       if (numHearts > MAX_CONTEST_MOVE_HEARTS)
           numHearts = MAX_CONTEST_MOVE_HEARTS;
-      ContestBG_FillBoxWithTile(0, TILE_EMPTY_APPEAL_HEART, _0x15, 0x1f, MAX_CONTEST_MOVE_HEARTS, _0x01, _0x11);
-      ContestBG_FillBoxWithTile(0, TILE_FILLED_APPEAL_HEART, _0x15, 0x1f, numHearts, _0x01, _0x11);
+      ContestBG_FillBoxWithTile(0, TILE_EMPTY_APPEAL_HEART, 0x15, 0x1f, MAX_CONTEST_MOVE_HEARTS, 0x01, 0x11);
+      ContestBG_FillBoxWithTile(0, TILE_FILLED_APPEAL_HEART, 0x15, 0x1f, numHearts, 0x01, 0x11);
 
        
       if (gContestEffects[gContestMoves[move].effect].jam == 0xFF)
@@ -2280,8 +2227,8 @@ export function PrintContestMoveDescription(move: any): any {
           numHearts = gContestEffects[gContestMoves[move].effect].jam / 10;
       if (numHearts > MAX_CONTEST_MOVE_HEARTS)
           numHearts = MAX_CONTEST_MOVE_HEARTS;
-      ContestBG_FillBoxWithTile(0, TILE_EMPTY_JAM_HEART, _0x15, _0x20, MAX_CONTEST_MOVE_HEARTS, _0x01, _0x11);
-      ContestBG_FillBoxWithTile(0, TILE_FILLED_JAM_HEART, _0x15, _0x20, numHearts, _0x01, _0x11);
+      ContestBG_FillBoxWithTile(0, TILE_EMPTY_JAM_HEART, 0x15, 0x20, MAX_CONTEST_MOVE_HEARTS, 0x01, 0x11);
+      ContestBG_FillBoxWithTile(0, TILE_FILLED_JAM_HEART, 0x15, 0x20, numHearts, 0x01, 0x11);
 
       FillWindowPixelBuffer(WIN_MOVE_DESCRIPTION, PIXEL_FILL(0));
       Contest_PrintTextToBg0WindowStd(WIN_MOVE_DESCRIPTION, gContestEffectDescriptionPointers[gContestMoves[move].effect]);
@@ -2307,7 +2254,7 @@ export function DrawMoveEffectSymbol(move: any, contestant: any): any {
 
 /** static u16 GetStarTileOffset(void) */
 export function GetStarTileOffset(): any {
-  return _0x2034;
+  return 0x2034;
 }
 
 /** static bool8 UpdateConditionStars(u8 contestantIdx, bool8 resetMod) */
@@ -2363,22 +2310,22 @@ export function GetStatusSymbolTileOffset(status: any): any {
       switch (status)
       {
       case STAT_SYMBOL_CIRCLE:  
-          offset = _0x80;
+          offset = 0x80;
           break;
       case STAT_SYMBOL_WAVE:  
-          offset = _0x84;
+          offset = 0x84;
           break;
       case STAT_SYMBOL_X:  
-          offset = _0x86;
+          offset = 0x86;
           break;
       case STAT_SYMBOL_SWIRL:  
-          offset = _0x88;
+          offset = 0x88;
           break;
       case STAT_SYMBOL_SQUARE:  
-          offset = _0x82;
+          offset = 0x82;
           break;
       }
-      offset += _0x9000;
+      offset += 0x9000;
       return offset;
 }
 
@@ -2720,7 +2667,7 @@ export function FillContestantWindowBgs(): any {
   let i: any = null;
 
       for(i = 0; i < CONTESTANT_COUNT; i++)
-          ContestBG_FillBoxWithTile(0, 0, _0x16, 2 + i * 5, 8, 2, _0x11);
+          ContestBG_FillBoxWithTile(0, 0, 0x16, 2 + i * 5, 8, 2, 0x11);
 }
 
 /** static u16 GetAppealHeartTileOffset(u8 contestant) */
@@ -2728,13 +2675,13 @@ export function GetAppealHeartTileOffset(contestant: any): any {
   let offset: any = null;
 
       if (contestant == 0)
-          offset = _0x5011;
+          offset = 0x5011;
       else if (contestant == 1)
-          offset = _0x6011;
+          offset = 0x6011;
       else if (contestant == 2)
-          offset = _0x7011;
+          offset = 0x7011;
       else
-          offset = _0x8011;
+          offset = 0x8011;
       return offset + 1;
 }
 
@@ -3147,25 +3094,25 @@ export function CreateContestantBoxBlinkSprites(contestant: any): any {
       CopySpriteTiles(0,
                       3,
                       VRAM,
-                      (BG_SCREEN_ADDR(28) + gContestantTurnOrder[contestant] * 5 * 64 + _0x26),
+                      (BG_SCREEN_ADDR(28) + gContestantTurnOrder[contestant] * 5 * 64 + 0x26),
                       gContestResources.boxBlinkTiles1);
 
       CopySpriteTiles(0,
                       3, VRAM,
-                      (BG_SCREEN_ADDR(28) + gContestantTurnOrder[contestant] * 5 * 64 + _0x36),
+                      (BG_SCREEN_ADDR(28) + gContestantTurnOrder[contestant] * 5 * 64 + 0x36),
                       gContestResources.boxBlinkTiles2);
 
-      CpuFill32(0, gContestResources.boxBlinkTiles1 + _0x500, _0x300);
-      CpuFill32(0, gContestResources.boxBlinkTiles2 + _0x500, _0x300);
+      CpuFill32(0, gContestResources.boxBlinkTiles1 + 0x500, 0x300);
+      CpuFill32(0, gContestResources.boxBlinkTiles2 + 0x500, 0x300);
 
       RequestDma3Copy(gContestResources.boxBlinkTiles1,
                       (OBJ_VRAM0 + gSprites[spriteId1].oam.tileNum * 32),
-                      _0x800,
+                      0x800,
                       1);
 
       RequestDma3Copy(gContestResources.boxBlinkTiles2,
                       (OBJ_VRAM0 + gSprites[spriteId2].oam.tileNum * 32),
-                      _0x800,
+                      0x800,
                       1);
 
       gSprites[spriteId1].data[0] = spriteId2;
@@ -3875,11 +3822,11 @@ export function Task_AnimateAudience(taskId: any): any {
           gTasks[taskId].tDelay = 0;
           if (gTasks[taskId].tFrame == 0)
           {
-              RequestDma3Copy(eContestAudienceFrame2_Gfx, (BG_SCREEN_ADDR(4)), _0x1000, 1);
+              RequestDma3Copy(eContestAudienceFrame2_Gfx, (BG_SCREEN_ADDR(4)), 0x1000, 1);
           }
           else
           {
-              RequestDma3Copy(eUnzippedContestAudience_Gfx, (BG_SCREEN_ADDR(4)), _0x1000, 1);
+              RequestDma3Copy(eUnzippedContestAudience_Gfx, (BG_SCREEN_ADDR(4)), 0x1000, 1);
               gTasks[taskId].tCycles++;
           }
 
@@ -4033,7 +3980,7 @@ export function SetBgForCurtainDrop(): any {
       SetGpuReg(REG_OFFSET_BG1HOFS, gBattle_BG1_X);
       SetGpuReg(REG_OFFSET_BG1VOFS, gBattle_BG1_Y);
 
-      CpuFill32(0, gContestResources.contestBgTilemaps[1], _0x1000);
+      CpuFill32(0, gContestResources.contestBgTilemaps[1], 0x1000);
 
       CopyToBgTilemapBuffer(1, gContestCurtainTilemap, 0, 0);
       Contest_SetBgCopyFlags(1);
@@ -4050,8 +3997,8 @@ export function UpdateContestantBoxOrder(): any {
   let i: any = null;
       let bg1Cnt: any = null;
 
-      RequestDma3Fill(0,(BG_CHAR_ADDR(2)), _0x2000, 1);
-      CpuFill32(0, gContestResources.contestBgTilemaps[1], _0x1000);
+      RequestDma3Fill(0,(BG_CHAR_ADDR(2)), 0x2000, 1);
+      CpuFill32(0, gContestResources.contestBgTilemaps[1], 0x1000);
       Contest_SetBgCopyFlags(1);
       bg1Cnt = GetGpuReg(REG_OFFSET_BG1CNT);
       (bg1Cnt).priority = 1;

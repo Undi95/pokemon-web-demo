@@ -15,17 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ALIGNED, BgAffineSet, CpuCopy32, CreateSprite,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u8 CreateInvisibleSpriteWithCallback(void (*callback)(struct Sprite *)) */
 export function CreateInvisibleSpriteWithCallback(callback: any): any {
   let sprite: any = CreateSprite(sInvisibleSpriteTemplate, DISPLAY_WIDTH + 8, DISPLAY_HEIGHT + 8, 14);
@@ -82,7 +71,7 @@ export function CopySpriteTiles(shape: any, size: any, tiles: any, tilemap: any,
               {
                   CpuCopy32(tiles + tile, output, 32);
               }
-              else if ((tilemap & 0xc00) == _0x800)   
+              else if ((tilemap & 0xc00) == 0x800)   
               {
                   for (i = 0; i < 8; i++)
                       CpuCopy32(tiles + (tile + (7 - i) * 4), output + i * 4, 4);
@@ -98,7 +87,7 @@ export function CopySpriteTiles(shape: any, size: any, tiles: any, tilemap: any,
                           xflip[i2 + (3-j)] |= tiles[tile + i2 + j] >> 4;
                       }
                   }
-                  if (tilemap & _0x800)   
+                  if (tilemap & 0x800)   
                   {
                       for (i = 0; i < 8; i++)
                           CpuCopy32(xflip + (7 - i) * 4, output + i * 4, 4);
@@ -132,7 +121,7 @@ export function CountTrailingZeroBits(value: any): any {
 /** u16 CalcCRC16(const u8 *data, s32 length) */
 export function CalcCRC16(data: any, length: any): any {
   let i, j;
-      let crc: any = _0x1121;
+      let crc: any = 0x1121;
 
       for (i = 0; i < length; i++)
       {
@@ -140,7 +129,7 @@ export function CalcCRC16(data: any, length: any): any {
           for (j = 0; j < 8; j++)
           {
               if (crc & 1)
-                  crc = (crc >> 1) ^ _0x8408;
+                  crc = (crc >> 1) ^ 0x8408;
               else
                   crc >>= 1;
           }
@@ -151,7 +140,7 @@ export function CalcCRC16(data: any, length: any): any {
 /** u16 CalcCRC16WithTable(const u8 *data, u32 length) */
 export function CalcCRC16WithTable(data: any, length: any): any {
   let i: any = null;
-      let crc: any = _0x1121;
+      let crc: any = 0x1121;
       let byte: any = null;
 
       for (i = 0; i < length; i++)

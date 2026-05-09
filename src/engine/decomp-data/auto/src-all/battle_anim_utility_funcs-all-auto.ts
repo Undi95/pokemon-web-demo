@@ -15,29 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocZeroed, AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemapHandleContest,
-  BATTLE_PARTNER, BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
-  BLDCNT_TGT1_BG1, BattleAnimAdjustPanning2, BeginHardwarePaletteFade, BlendPalette,
-  ClearBattleAnimBg, CloneBattlerSpriteWithBlend, CreateInvisibleSpriteCopy, CreateTask,
-  DestroyAnimVisualTask, DestroySprite, DestroySpriteWithActiveSheet, DestroyTask,
-  FALSE, FREE_AND_SET_NULL, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
-  GetBattleMonSpritePalettesMask, GetBattlePalettesMask, GetBattlerPosition, GetBattlerSide,
-  GetGpuReg, GetMonData, GetSpritePalIdxByBattler, IndexOfSpritePaletteTag,
-  IsBattlerSpriteVisible, IsContest, IsDoubleBattle, LoadCompressedPalette,
-  LoadPalette, OBJ_PLTT_ID, PLTT_ID, PLTT_SIZEOF,
-  PLTT_SIZE_4BPP, PlaySE12WithPanning, REG_OFFSET_BG1CNT, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  ResetBattleAnimBg, SetAnimBgAttribute, SetGpuReg, SetGpuRegBits,
-  TRUE, UnpackSelectedBattlePalettes, UpdateAnimBg3ScreenSize, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void AnimTask_BlendBattleAnimPal(u8 taskId) */
 export function AnimTask_BlendBattleAnimPal(taskId: any): any {
   let selectedPalettes: any = UnpackSelectedBattlePalettes(gBattleAnimArgs[0]);
@@ -91,7 +68,7 @@ export function AnimTask_BlendBattleAnimPalExclude(taskId: any): any {
       for (battler = 0; battler < MAX_BATTLERS_COUNT; battler++)
       {
           if (battler != animBattlers[0] && battler != animBattlers[1] && IsBattlerSpriteVisible(battler))
-              selectedPalettes |= _0x10000 << GetSpritePalIdxByBattler(battler);
+              selectedPalettes |= 0x10000 << GetSpritePalIdxByBattler(battler);
       }
 
       StartBlendAnimSpriteColor(taskId, selectedPalettes);
@@ -1042,7 +1019,7 @@ export function AnimTask_SetAttackerInvisibleWaitForSignal(taskId: any): any {
 
 /** static void AnimTask_WaitAndRestoreVisibility(u8 taskId) */
 export function AnimTask_WaitAndRestoreVisibility(taskId: any): any {
-  if (gBattleAnimArgs[7] == _0x1000)
+  if (gBattleAnimArgs[7] == 0x1000)
       {
           gBattleSpritesDataPtr.battlerData[gBattleAnimAttacker].invisible = gTasks[taskId].data[0] & 1;
           DestroyTask(taskId);

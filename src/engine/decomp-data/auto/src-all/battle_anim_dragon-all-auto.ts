@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CMD_ARGS, Cos, DestroyAnimSprite, DestroyAnimVisualTask,
-  GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr,
-  GetBattlerYCoordWithElevation, ScanlineEffect_SetParams, SetAnimSpriteInitialXOffset, SetSpriteCoordsToAnimAttackerCoords,
-  Sin, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
-  TRUE, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimOutrageFlame(struct Sprite *sprite) */
 export function AnimOutrageFlame(sprite: any): any {
   CMD_ARGS(x, y, duration, xVelocity, yVelocity, flickerDuration);
@@ -157,8 +143,8 @@ export function AnimDragonDanceOrb_Step(sprite: any): any {
           break;
       case 1:
           sprite.data[6] = (sprite.data[6] - sprite.data[5]) & 0xFF;
-          if (sprite.data[7] <= _0x95 && (sprite.data[7] += 8) > _0x95)
-              sprite.data[7] = _0x96;
+          if (sprite.data[7] <= 0x95 && (sprite.data[7] += 8) > 0x95)
+              sprite.data[7] = 0x96;
           sprite.x2 = Cos(sprite.data[6], sprite.data[7]);
           sprite.y2 = Sin(sprite.data[6], sprite.data[7]);
           if (++sprite.data[4] > 5)

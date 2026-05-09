@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BATTLE_PARTNER, BattleAnimAdjustPanning, CalculatePanIncrement, DestroyAnimSoundTask,
-  DestroyAnimVisualTask, GetBattlerSide, GetMonData, IsBattlerSpriteVisible,
-  IsContest, IsCryPlaying, KeepPanInRange, PlayCry_ByMode,
-  PlayCry_DuckNoRestore, PlaySE12WithPanning, PlaySE1WithPanning, PlaySE2WithPanning,
-  StopCryAndClearCrySongs,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SoundTask_FireBlast(u8 taskId) */
 export function SoundTask_FireBlast(taskId: any): any {
   let pan1, pan2, panIncrement;

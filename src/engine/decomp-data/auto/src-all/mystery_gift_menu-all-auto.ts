@@ -15,43 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized4, AddWindow, Alloc,
-  AllocZeroed, AnimateSprites, BG_PLTT_ID, BG_SCREEN_SIZE,
-  BuildOamBuffer, ChangeBgX, ChangeBgY, ClearGpuRegBits,
-  ClearSavedWonderCardAndRelated, ClearSavedWonderNewsAndRelated, ClearWindowTilemap, CloseLink,
-  CopyBgTilemapBufferToVram, CopyWindowToVram, CreateEReaderTask, CreateTask,
-  CreateTask_LinkMysteryGiftOverWireless, CreateTask_LinkMysteryGiftWithFriend, CreateTask_SendMysteryGift, CreateYesNoMenu,
-  DISPCNT_WIN0_ON, DISPCNT_WIN1_ON, DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap,
-  DestroyTask, DestroyWirelessStatusIndicatorSprite, DoMysteryGiftListMenu, DrawDownArrow,
-  DrawTextBorderOuter, EnableInterrupts, FALSE, FillBgTilemapBufferRect,
-  FillWindowPixelBuffer, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  GetBgTilemapBuffer, GetSavedWonderCard, GetSavedWonderCardMetadata, GetSavedWonderNews,
-  GetStringRightAlignXOffset, GetTextWindowPalette, InitBgsFromTemplates, InitWindows,
-  Intl_GetListMenuWidth, IsFanfareTaskInactive, IsSavedWonderCardGiftNotReceived, IsSendingSavedWonderCardAllowed,
-  IsSendingSavedWonderNewsAllowed, JOY_NEW, LoadOam, LoadPalette,
-  LoadUserWindowBorderGfx, LoadUserWindowBorderGfx_, Menu_LoadStdPalAt, Menu_ProcessInputNoWrapClearOnChoose,
-  MysterGiftServer_CreateForCard, MysterGiftServer_CreateForNews, MysterGiftServer_Run, MysteryGiftClient_AdvanceState,
-  MysteryGiftClient_Create, MysteryGiftClient_GetMsg, MysteryGiftClient_Run, MysteryGiftClient_SetParam,
-  NULL, PLTT_SIZE_4BPP, PlayBGM, PlayFanfare,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, RemoveWindow, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, Rfu_SetCloseLinkCallback,
-  RunTasks, RunTextPrinters, ScanlineEffect_Stop, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  StringCopy, StringExpandPlaceholders, TRUE, TransferPlttBuffer,
-  TrySavingData, ValidateSavedWonderCard, ValidateSavedWonderNews, WonderCard_Destroy,
-  WonderCard_Enter, WonderCard_Exit, WonderCard_Init, WonderNews_AddScrollIndicatorArrowPair,
-  WonderNews_Destroy, WonderNews_Enter, WonderNews_Exit, WonderNews_GetInput,
-  WonderNews_Init, WonderNews_RemoveScrollIndicatorArrowPair, WonderNews_SetReward, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_MysteryGiftEReader(void) */
 export function VBlankCB_MysteryGiftEReader(): any {
   ProcessSpriteCopyRequests();
@@ -109,10 +72,10 @@ export function HandleMysteryGiftOrEReaderSetup(isEReader: any): any {
           LoadPalette(GetTextWindowPalette(2), BG_PLTT_ID(13), PLTT_SIZE_4BPP);
           Menu_LoadStdPalAt(BG_PLTT_ID(12));
           LoadUserWindowBorderGfx(0, 0xA, BG_PLTT_ID(14));
-          LoadUserWindowBorderGfx_(0, _0x1, BG_PLTT_ID(15));
-          FillBgTilemapBufferRect(0, _0x000, 0, 0, 32, 32, 17);
-          FillBgTilemapBufferRect(1, _0x000, 0, 0, 32, 32, 17);
-          FillBgTilemapBufferRect(2, _0x000, 0, 0, 32, 32, 17);
+          LoadUserWindowBorderGfx_(0, 0x1, BG_PLTT_ID(15));
+          FillBgTilemapBufferRect(0, 0x000, 0, 0, 32, 32, 17);
+          FillBgTilemapBufferRect(1, 0x000, 0, 0, 32, 32, 17);
+          FillBgTilemapBufferRect(2, 0x000, 0, 0, 32, 32, 17);
           MG_DrawCheckerboardPattern(3);
           PrintMysteryGiftOrEReaderHeader(isEReader, FALSE);
           gMain.state++;
@@ -192,14 +155,14 @@ export function PrintMysteryGiftOrEReaderHeader(isEReader: any, useCancel: any):
 
 /** void MG_DrawTextBorder(u8 windowId) */
 export function MG_DrawTextBorder(windowId: any): any {
-  DrawTextBorderOuter(windowId, _0x01, 0xF);
+  DrawTextBorderOuter(windowId, 0x01, 0xF);
 }
 
 /** void MG_DrawCheckerboardPattern(u32 bg) */
 export function MG_DrawCheckerboardPattern(bg: any): any {
   let i: any = 0, j;
 
-      FillBgTilemapBufferRect(bg, _0x003, 0, 0, 32, 2, 17);
+      FillBgTilemapBufferRect(bg, 0x003, 0, 0, 32, 2, 17);
 
       for (i = 0; i < 18; i++)
       {
@@ -230,9 +193,9 @@ export function ClearScreenInBg0(ignoreTopTwoRows: any): any {
 /** void MG_AddMessageTextPrinter(const u8 *str) */
 export function MG_AddMessageTextPrinter(str: any): any {
   StringExpandPlaceholders(gStringVar4, str);
-      FillWindowPixelBuffer(WIN_MSG, _0x11);
+      FillWindowPixelBuffer(WIN_MSG, 0x11);
       AddTextPrinterParameterized4(WIN_MSG, FONT_NORMAL, 0, 1, 0, 0, sMG_Ereader_TextColor_2, 0, gStringVar4);
-      DrawTextBorderOuter(WIN_MSG, _0x001, 0xF);
+      DrawTextBorderOuter(WIN_MSG, 0x001, 0xF);
       PutWindowTilemap(WIN_MSG);
       CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
 }
@@ -341,9 +304,9 @@ export function DoMysteryGiftYesNo(textState: any, windowId: any, yesNoBoxPlacem
               windowId = AddWindow(sWindowTemplate_YesNoMsg_Wide);
           else
               windowId = AddWindow(sWindowTemplate_YesNoMsg);
-          FillWindowPixelBuffer(windowId, _0x11);
+          FillWindowPixelBuffer(windowId, 0x11);
           AddTextPrinterParameterized4(windowId, FONT_NORMAL, 0, 1, 0, 0, sMG_Ereader_TextColor_2, 0, gStringVar4);
-          DrawTextBorderOuter(windowId, _0x001, 0x0F);
+          DrawTextBorderOuter(windowId, 0x001, 0x0F);
           CopyWindowToVram(windowId, COPYWIN_GFX);
           PutWindowTilemap(windowId);
           textState++;
@@ -397,9 +360,9 @@ export function HandleGiftSelectMenu(textState: any, windowId: any, cannotToss: 
           else
               StringExpandPlaceholders(gStringVar4, gText_WhatToDoWithNews);
           windowId = AddWindow(sWindowTemplate_GiftSelect);
-          FillWindowPixelBuffer(windowId, _0x11);
+          FillWindowPixelBuffer(windowId, 0x11);
           AddTextPrinterParameterized4(windowId, FONT_NORMAL, 0, 1, 0, 0, sMG_Ereader_TextColor_2, 0, gStringVar4);
-          DrawTextBorderOuter(windowId, _0x001, 0x0F);
+          DrawTextBorderOuter(windowId, 0x001, 0x0F);
           CopyWindowToVram(windowId, COPYWIN_GFX);
           PutWindowTilemap(windowId);
           textState++;
@@ -1241,7 +1204,7 @@ export function GetMysteryGiftBaseBlock(): any {
 
 /** static void LoadMysteryGiftTextboxBorder(u8 bgId) */
 export function LoadMysteryGiftTextboxBorder(bgId: any): any {
-  DecompressAndLoadBgGfxUsingHeap(bgId, sTextboxBorder_Gfx, _0x100, 0, 0);
+  DecompressAndLoadBgGfxUsingHeap(bgId, sTextboxBorder_Gfx, 0x100, 0, 0);
 }
 
 // ─── callsTo manifest (= 124 unique callees) ───────────────────────

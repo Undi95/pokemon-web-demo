@@ -15,29 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AllocOamMatrix, BATTLE_PARTNER, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
-  BattleAnimAdjustPanning, CalcCenterToCornerVec, ChangeSpriteAffineAnim, CloneBattlerSpriteWithBlend,
-  CreateSprite, DISPLAY_WIDTH, DestroyAnimSprite, DestroyAnimVisualTask,
-  DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet, FALSE,
-  FreeOamMatrix, GetAnimBattlerSpriteId, GetBattlerAtPosition, GetBattlerSide,
-  GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, GetBattlerYCoordWithElevation,
-  IndexOfSpritePaletteTag, InitAnimArcTranslation, InitSpriteAffineAnim, InitSpritePosToAnimAttacker,
-  InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest, IsDoubleBattle,
-  MoveBattlerSpriteToBG, OBJ_PLTT_ID, PlaySE12WithPanning, PrepareAffineAnimInTaskData,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, ResetBattleAnimBg, ResetSpriteRotScale,
-  RunAffineAnimFromTaskData, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF,
-  ScanlineEffect_SetParams, SetBattlerSpriteYOffsetFromOtherYScale, SetGpuReg, SetSpriteRotScale,
-  SpriteCallbackDummy, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
-  TRUE, TranslateAnimHorizontalArc, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimDefensiveWall(struct Sprite *sprite) */
 export function AnimDefensiveWall(sprite: any): any {
   let isContest: any = IsContest();
@@ -765,7 +742,7 @@ export function AnimPsychoBoost(sprite: any): any {
               }
           }
 
-          sprite.data[3] += _0x380;
+          sprite.data[3] += 0x380;
           sprite.y2 -= sprite.data[3] >> 8;
           sprite.data[3] &= 0xFF;
           break;

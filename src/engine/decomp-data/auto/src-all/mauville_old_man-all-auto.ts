@@ -15,27 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, CalcWordSounds, ClearToTransparentAndRemoveWindow,
-  ConvertIntToDecimalStringN, ConvertInternationalString, ConvertPixelWidthToTileWidth, CopyEasyChatWord,
-  CopyWindowToVram, CreateTask, CreateWindowFromRect, DestroyTask,
-  DrawDialogueFrame, EasyChat_GetNumWordsInGroup, FALSE, FadeInBGM,
-  FadeOutBGMTemporarily, GetGameStat, GetRandomEasyChatWordFromUnlockedGroup, GetStoryActionByStat,
-  GetStoryTextByStat, GetStoryTitleByStat, GetStringWidth, GetWordSoundTemplates,
-  InitMenuInUpperLeftCornerNormal, IsBGMPausedOrStopped, IsStringJapanese, Menu_ProcessInput,
-  NULL, Random, RunTextPrintersAndIsPrinter0Active, STR_CONV_MODE_LEFT_ALIGN,
-  SWAP, ScriptContext_Enable, ScriptContext_Stop, SetStandardWindowBorderStyle,
-  ShowFieldMessage, StringCopy, StripExtCtrlCodes, TRUE,
-  TraderSetup, Trader_ResetFlag, UnlockRandomTrendySaying, VarSet,
-  WORD_TO_PITCH_TABLE_INDEX, m4aSongNumStart, memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void SetupBard(void) */
 export function SetupBard(): any {
   let i: any = null;
@@ -433,7 +412,7 @@ export function BardSing(task: any, song: any): any {
       {
           let easyChatWord: any = song.lyrics[song.lyricsIndex];
           song.soundTemplates = GetWordSoundTemplates(easyChatWord);
-          CalcWordSounds(song, WORD_TO_PITCH_TABLE_INDEX(easyChatWord));
+          CalcWordSounds(song, ( MOD((easyChatWord), (NUM_BARD_PITCH_TABLES_PER_SIZE-1)) + ((((easyChatWord)) >> 3) & 1) ));
           song.lyricsIndex++;
           if (song.soundTemplates[0].songId != PHONEME_ID_NONE)
           {
@@ -567,9 +546,9 @@ export function Task_BardSong(taskId: any): any {
 
            
           if (!task.tUseNewSongLyrics)
-              sUnusedPitchTableIndex = WORD_TO_PITCH_TABLE_INDEX(bard.songLyrics[task.tLyricsIndex]);
+              sUnusedPitchTableIndex = ( MOD((bard.songLyrics[task.tLyricsIndex]), (NUM_BARD_PITCH_TABLES_PER_SIZE-1)) + ((((bard.songLyrics[task.tLyricsIndex])) >> 3) & 1) );
           else
-              sUnusedPitchTableIndex = WORD_TO_PITCH_TABLE_INDEX(bard.newSongLyrics[task.tLyricsIndex]);
+              sUnusedPitchTableIndex = ( MOD((bard.newSongLyrics[task.tLyricsIndex]), (NUM_BARD_PITCH_TABLES_PER_SIZE-1)) + ((((bard.newSongLyrics[task.tLyricsIndex])) >> 3) & 1) );
 
           gBardSong.length /= wordLen;
           if (gBardSong.length <= 0)

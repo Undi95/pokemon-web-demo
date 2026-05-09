@@ -15,22 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BG_SCREEN_SIZE, BG_VRAM, BgAffineSet, CheckForSpaceForDma3Request,
-  CpuCopy16, DISPCNT_MODE_1, DISPCNT_MODE_2, FALSE,
-  GetGpuReg, LZ77UnCompWram, NULL, PLTT_OFFSET_4BPP,
-  REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS,
-  REG_OFFSET_BG3VOFS, REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, RequestDma3Copy,
-  SetGpuReg, SetGpuReg_ForcedBlank, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ResetBgs(void) */
 export function ResetBgs(): any {
   ResetBgControlStructs();
@@ -40,13 +24,13 @@ export function ResetBgs(): any {
 
 /** static void SetBgModeInternal(u8 bgMode) */
 export function SetBgModeInternal(bgMode: any): any {
-  sGpuBgConfigs.bgVisibilityAndMode &= ~_0x7;
+  sGpuBgConfigs.bgVisibilityAndMode &= ~0x7;
       sGpuBgConfigs.bgVisibilityAndMode |= bgMode;
 }
 
 /** u8 GetBgMode(void) */
 export function GetBgMode(): any {
-  return sGpuBgConfigs.bgVisibilityAndMode & _0x7;
+  return sGpuBgConfigs.bgVisibilityAndMode & 0x7;
 }
 
 /** void ResetBgControlStructs(void) */
@@ -151,14 +135,14 @@ export function LoadBgVram(bg: any, src: any, size: any, destOffset: any, mode: 
 
       switch (mode)
       {
-      case _0x1:
+      case 0x1:
           offset = sGpuBgConfigs.configs[bg].charBaseIndex * BG_CHAR_SIZE;
           offset = destOffset + offset;
           cursor = RequestDma3Copy(src, (offset + BG_VRAM), size, 0);
           if (cursor == -1)
               return -1;
           break;
-      case _0x2:
+      case 0x2:
           offset = sGpuBgConfigs.configs[bg].mapBaseIndex * BG_SCREEN_SIZE;
           offset = destOffset + offset;
           cursor = RequestDma3Copy(src, (offset + BG_VRAM), size, 0);
@@ -217,7 +201,7 @@ export function SetBgAffineInternal(bg: any, srcCenterX: any, srcCenterY: any, d
   let src: any = null;
       let dest: any = null;
 
-      switch (sGpuBgConfigs.bgVisibilityAndMode & _0x7)
+      switch (sGpuBgConfigs.bgVisibilityAndMode & 0x7)
       {
       default:
       case 0:
@@ -349,11 +333,11 @@ export function LoadBgTiles(bg: any, src: any, size: any, destOffset: any): any 
 
       if (GetBgControlAttribute(bg, BG_CTRL_ATTR_PALETTEMODE) == 0)
       {
-          tileOffset = (sGpuBgConfigs2[bg].baseTile + destOffset) * _0x20;
+          tileOffset = (sGpuBgConfigs2[bg].baseTile + destOffset) * 0x20;
       }
       else
       {
-          tileOffset = (sGpuBgConfigs2[bg].baseTile + destOffset) * _0x40;
+          tileOffset = (sGpuBgConfigs2[bg].baseTile + destOffset) * 0x40;
       }
 
       cursor = LoadBgVram(bg, src, size, tileOffset, DISPCNT_MODE_1);
@@ -363,10 +347,10 @@ export function LoadBgTiles(bg: any, src: any, size: any, destOffset: any): any 
           return -1;
       }
 
-      sDmaBusyBitfield[cursor / _0x20] |= (1 << (cursor % _0x20));
+      sDmaBusyBitfield[cursor / 0x20] |= (1 << (cursor % 0x20));
 
       if (gWindowTileAutoAllocEnabled == TRUE)
-          BgTileAllocOp(bg, tileOffset / _0x20, size / _0x20, 1);
+          BgTileAllocOp(bg, tileOffset / 0x20, size / 0x20, 1);
 
       return cursor;
 }
@@ -380,7 +364,7 @@ export function LoadBgTilemap(bg: any, src: any, size: any, destOffset: any): an
           return -1;
       }
 
-      sDmaBusyBitfield[cursor / _0x20] |= (1 << (cursor % _0x20));
+      sDmaBusyBitfield[cursor / 0x20] |= (1 << (cursor % 0x20));
 
       return cursor;
 }
@@ -402,7 +386,7 @@ export function Unused_LoadBgPalette(bg: any, src: any, size: any, destOffset: a
           return -1;
       }
 
-      sDmaBusyBitfield[cursor / _0x20] |= (1 << (cursor % _0x20));
+      sDmaBusyBitfield[cursor / 0x20] |= (1 << (cursor % 0x20));
 
       return cursor;
 }
@@ -411,10 +395,10 @@ export function Unused_LoadBgPalette(bg: any, src: any, size: any, destOffset: a
 export function IsDma3ManagerBusyWithBgCopy(): any {
   let i: any = null;
 
-      for (i = 0; i < _0x80; i++)
+      for (i = 0; i < 0x80; i++)
       {
-          let div: any = i / _0x20;
-          let mod: any = i % _0x20;
+          let div: any = i / 0x20;
+          let mod: any = i % 0x20;
 
           if ((sDmaBusyBitfield[div] & (1 << mod)))
           {
@@ -493,9 +477,9 @@ export function GetBgAttribute(bg: any, attributeId: any): any {
           switch (GetBgType(bg))
           {
           case BG_TYPE_NORMAL:
-              return GetBgMetricTextMode(bg, 0) * _0x800;
+              return GetBgMetricTextMode(bg, 0) * 0x800;
           case BG_TYPE_AFFINE:
-              return GetBgMetricAffineMode(bg, 0) * _0x100;
+              return GetBgMetricAffineMode(bg, 0) * 0x100;
           default:
               return 0;
           }
@@ -538,22 +522,22 @@ export function ChangeBgX(bg: any, value: any, op: any): any {
       switch (bg)
       {
       case 0:
-          temp1 = sGpuBgConfigs2[0].bg_x >> _0x8;
+          temp1 = sGpuBgConfigs2[0].bg_x >> 0x8;
           SetGpuReg(REG_OFFSET_BG0HOFS, temp1);
           break;
       case 1:
-          temp1 = sGpuBgConfigs2[1].bg_x >> _0x8;
+          temp1 = sGpuBgConfigs2[1].bg_x >> 0x8;
           SetGpuReg(REG_OFFSET_BG1HOFS, temp1);
           break;
       case 2:
           if (mode == 0)
           {
-              temp1 = sGpuBgConfigs2[2].bg_x >> _0x8;
+              temp1 = sGpuBgConfigs2[2].bg_x >> 0x8;
               SetGpuReg(REG_OFFSET_BG2HOFS, temp1);
           }
           else
           {
-              temp1 = sGpuBgConfigs2[2].bg_x >> _0x10;
+              temp1 = sGpuBgConfigs2[2].bg_x >> 0x10;
               temp2 = sGpuBgConfigs2[2].bg_x & 0xFFFF;
               SetGpuReg(REG_OFFSET_BG2X_H, temp1);
               SetGpuReg(REG_OFFSET_BG2X_L, temp2);
@@ -562,12 +546,12 @@ export function ChangeBgX(bg: any, value: any, op: any): any {
       case 3:
           if (mode == 0)
           {
-              temp1 = sGpuBgConfigs2[3].bg_x >> _0x8;
+              temp1 = sGpuBgConfigs2[3].bg_x >> 0x8;
               SetGpuReg(REG_OFFSET_BG3HOFS, temp1);
           }
           else if (mode == 2)
           {
-              temp1 = sGpuBgConfigs2[3].bg_x >> _0x10;
+              temp1 = sGpuBgConfigs2[3].bg_x >> 0x10;
               temp2 = sGpuBgConfigs2[3].bg_x & 0xFFFF;
               SetGpuReg(REG_OFFSET_BG3X_H, temp1);
               SetGpuReg(REG_OFFSET_BG3X_L, temp2);
@@ -618,22 +602,22 @@ export function ChangeBgY(bg: any, value: any, op: any): any {
       switch (bg)
       {
       case 0:
-          temp1 = sGpuBgConfigs2[0].bg_y >> _0x8;
+          temp1 = sGpuBgConfigs2[0].bg_y >> 0x8;
           SetGpuReg(REG_OFFSET_BG0VOFS, temp1);
           break;
       case 1:
-          temp1 = sGpuBgConfigs2[1].bg_y >> _0x8;
+          temp1 = sGpuBgConfigs2[1].bg_y >> 0x8;
           SetGpuReg(REG_OFFSET_BG1VOFS, temp1);
           break;
       case 2:
           if (mode == 0)
           {
-              temp1 = sGpuBgConfigs2[2].bg_y >> _0x8;
+              temp1 = sGpuBgConfigs2[2].bg_y >> 0x8;
               SetGpuReg(REG_OFFSET_BG2VOFS, temp1);
           }
           else
           {
-              temp1 = sGpuBgConfigs2[2].bg_y >> _0x10;
+              temp1 = sGpuBgConfigs2[2].bg_y >> 0x10;
               temp2 = sGpuBgConfigs2[2].bg_y & 0xFFFF;
               SetGpuReg(REG_OFFSET_BG2Y_H, temp1);
               SetGpuReg(REG_OFFSET_BG2Y_L, temp2);
@@ -642,12 +626,12 @@ export function ChangeBgY(bg: any, value: any, op: any): any {
       case 3:
           if (mode == 0)
           {
-              temp1 = sGpuBgConfigs2[3].bg_y >> _0x8;
+              temp1 = sGpuBgConfigs2[3].bg_y >> 0x8;
               SetGpuReg(REG_OFFSET_BG3VOFS, temp1);
           }
           else if (mode == 2)
           {
-              temp1 = sGpuBgConfigs2[3].bg_y >> _0x10;
+              temp1 = sGpuBgConfigs2[3].bg_y >> 0x10;
               temp2 = sGpuBgConfigs2[3].bg_y & 0xFFFF;
               SetGpuReg(REG_OFFSET_BG3Y_H, temp1);
               SetGpuReg(REG_OFFSET_BG3Y_L, temp2);
@@ -688,23 +672,23 @@ export function ChangeBgY_ScreenOff(bg: any, value: any, op: any): any {
       switch (bg)
       {
       case 0:
-          temp1 = sGpuBgConfigs2[0].bg_y >> _0x8;
+          temp1 = sGpuBgConfigs2[0].bg_y >> 0x8;
           SetGpuReg_ForcedBlank(REG_OFFSET_BG0VOFS, temp1);
           break;
       case 1:
-          temp1 = sGpuBgConfigs2[1].bg_y >> _0x8;
+          temp1 = sGpuBgConfigs2[1].bg_y >> 0x8;
           SetGpuReg_ForcedBlank(REG_OFFSET_BG1VOFS, temp1);
           break;
       case 2:
           if (mode == 0)
           {
-              temp1 = sGpuBgConfigs2[2].bg_y >> _0x8;
+              temp1 = sGpuBgConfigs2[2].bg_y >> 0x8;
               SetGpuReg_ForcedBlank(REG_OFFSET_BG2VOFS, temp1);
 
           }
           else
           {
-              temp1 = sGpuBgConfigs2[2].bg_y >> _0x10;
+              temp1 = sGpuBgConfigs2[2].bg_y >> 0x10;
               temp2 = sGpuBgConfigs2[2].bg_y & 0xFFFF;
               SetGpuReg_ForcedBlank(REG_OFFSET_BG2Y_H, temp1);
               SetGpuReg_ForcedBlank(REG_OFFSET_BG2Y_L, temp2);
@@ -713,12 +697,12 @@ export function ChangeBgY_ScreenOff(bg: any, value: any, op: any): any {
       case 3:
           if (mode == 0)
           {
-              temp1 = sGpuBgConfigs2[3].bg_y >> _0x8;
+              temp1 = sGpuBgConfigs2[3].bg_y >> 0x8;
               SetGpuReg_ForcedBlank(REG_OFFSET_BG3VOFS, temp1);
           }
           else if (mode == 2)
           {
-              temp1 = sGpuBgConfigs2[3].bg_y >> _0x10;
+              temp1 = sGpuBgConfigs2[3].bg_y >> 0x10;
               temp2 = sGpuBgConfigs2[3].bg_y & 0xFFFF;
               SetGpuReg_ForcedBlank(REG_OFFSET_BG3Y_H, temp1);
               SetGpuReg_ForcedBlank(REG_OFFSET_BG3Y_L, temp2);
@@ -757,7 +741,7 @@ export function Unused_AdjustBgMosaic(val: any, mode: any): any {
       case BG_MOSAIC_SET_HV:
       default:
           bgH = val & 0xF;
-          bgV = val >> _0x4;
+          bgV = val >> 0x4;
           break;
       case BG_MOSAIC_SET_H:
           bgH = val & 0xF;
@@ -775,7 +759,7 @@ export function Unused_AdjustBgMosaic(val: any, mode: any): any {
       case BG_MOSAIC_SUB_H:
           if ((bgH - val) < 0)
           {
-              bgH = _0x0;
+              bgH = 0x0;
           }
           else
           {
@@ -798,7 +782,7 @@ export function Unused_AdjustBgMosaic(val: any, mode: any): any {
       case BG_MOSAIC_SUB_V:
           if ((bgV - val) < 0)
           {
-              bgV = _0x0;
+              bgV = 0x0;
           }
           else
           {
@@ -807,7 +791,7 @@ export function Unused_AdjustBgMosaic(val: any, mode: any): any {
           break;
       }
 
-      mosaic |= ((bgV << _0x4) & 0xF0);
+      mosaic |= ((bgV << 0x4) & 0xF0);
       mosaic |= (bgH & 0xF);
 
       SetGpuReg(REG_OFFSET_MOSAIC, mosaic);
@@ -851,10 +835,10 @@ export function CopyBgTilemapBufferToVram(bg: any): any {
           switch (GetBgType(bg))
           {
           case BG_TYPE_NORMAL:
-              sizeToLoad = GetBgMetricTextMode(bg, 0) * _0x800;
+              sizeToLoad = GetBgMetricTextMode(bg, 0) * 0x800;
               break;
           case BG_TYPE_AFFINE:
-              sizeToLoad = GetBgMetricAffineMode(bg, 0) * _0x100;
+              sizeToLoad = GetBgMetricAffineMode(bg, 0) * 0x100;
               break;
           default:
               sizeToLoad = 0;
@@ -881,7 +865,7 @@ export function CopyToBgTilemapBufferRect(bg: any, src: any, destX: any, destY: 
               {
                   for (destX16 = destX; destX16 < (destX + width); destX16++)
                   {
-                      (sGpuBgConfigs2[bg].tilemap)[((destY16 * _0x20) + destX16)] = srcCopy++;
+                      (sGpuBgConfigs2[bg].tilemap)[((destY16 * 0x20) + destX16)] = srcCopy++;
                   }
               }
               break;
@@ -889,7 +873,7 @@ export function CopyToBgTilemapBufferRect(bg: any, src: any, destX: any, destY: 
           case BG_TYPE_AFFINE:
           {
               let srcCopy: any = src;
-              mode = GetBgMetricAffineMode(bg, _0x1);
+              mode = GetBgMetricAffineMode(bg, 0x1);
               for (destY16 = destY; destY16 < (destY + height); destY16++)
               {
                   for (destX16 = destX; destX16 < (destX + width); destX16++)
@@ -918,8 +902,8 @@ export function CopyRectToBgTilemapBufferRect(bg: any, src: any, srcX: any, srcY
       if (!IsInvalidBg32(bg) && !IsTileMapOutsideWram(bg))
       {
           screenSize = GetBgControlAttribute(bg, BG_CTRL_ATTR_SCREENSIZE);
-          screenWidth = GetBgMetricTextMode(bg, _0x1) * _0x20;
-          screenHeight = GetBgMetricTextMode(bg, _0x2) * _0x20;
+          screenWidth = GetBgMetricTextMode(bg, 0x1) * 0x20;
+          screenHeight = GetBgMetricTextMode(bg, 0x2) * 0x20;
           switch (GetBgType(bg))
           {
           case BG_TYPE_NORMAL:
@@ -937,7 +921,7 @@ export function CopyRectToBgTilemapBufferRect(bg: any, src: any, srcX: any, srcY
               break;
           case BG_TYPE_AFFINE:
               srcPtr = src + ((srcY * srcWidth) + srcX);
-              _var = GetBgMetricAffineMode(bg, _0x1);
+              _var = GetBgMetricAffineMode(bg, 0x1);
               for (i = destY; i < (destY + rectHeight); i++)
               {
                   for (j = destX; j < (destX + rectWidth); j++)
@@ -967,12 +951,12 @@ export function FillBgTilemapBufferRect_Palette0(bg: any, tileNum: any, x: any, 
               {
                   for (x16 = x; x16 < (x + width); x16++)
                   {
-                      (sGpuBgConfigs2[bg].tilemap)[((y16 * _0x20) + x16)] = tileNum;
+                      (sGpuBgConfigs2[bg].tilemap)[((y16 * 0x20) + x16)] = tileNum;
                   }
               }
               break;
           case BG_TYPE_AFFINE:
-              mode = GetBgMetricAffineMode(bg, _0x1);
+              mode = GetBgMetricAffineMode(bg, 0x1);
               for (y16 = y; y16 < (y + height); y16++)
               {
                   for (x16 = x; x16 < (x + width); x16++)
@@ -1001,8 +985,8 @@ export function WriteSequenceToBgTilemapBuffer(bg: any, firstTileNum: any, x: an
       if (!IsInvalidBg32(bg) && !IsTileMapOutsideWram(bg))
       {
           attribute = GetBgControlAttribute(bg, BG_CTRL_ATTR_SCREENSIZE);
-          mode = GetBgMetricTextMode(bg, _0x1) * _0x20;
-          mode2 = GetBgMetricTextMode(bg, _0x2) * _0x20;
+          mode = GetBgMetricTextMode(bg, 0x1) * 0x20;
+          mode2 = GetBgMetricTextMode(bg, 0x2) * 0x20;
           switch (GetBgType(bg))
           {
           case BG_TYPE_NORMAL:
@@ -1016,7 +1000,7 @@ export function WriteSequenceToBgTilemapBuffer(bg: any, firstTileNum: any, x: an
               }
               break;
           case BG_TYPE_AFFINE:
-              mode3 = GetBgMetricAffineMode(bg, _0x1);
+              mode3 = GetBgMetricAffineMode(bg, 0x1);
               for (y16 = y; y16 < (y + height); y16++)
               {
                   for (x16 = x; x16 < (x + width); x16++)
@@ -1086,18 +1070,18 @@ export function GetBgMetricAffineMode(bg: any, whichMetric: any): any {
           switch (screenSize)
           {
           case 0:
-              return _0x1;
+              return 0x1;
           case 1:
-              return _0x4;
+              return 0x4;
           case 2:
-              return _0x10;
+              return 0x10;
           case 3:
-              return _0x40;
+              return 0x40;
           }
           break;
       case 1:
       case 2:
-          return _0x10 << screenSize;
+          return 0x10 << screenSize;
       }
       return 0;
 }
@@ -1113,17 +1097,17 @@ export function GetTileMapIndexFromCoords(x: any, y: any, screenSize: any, scree
       case 2:
           break;
       case 3:
-          if (y >= _0x20)
-              y += _0x20;
+          if (y >= 0x20)
+              y += 0x20;
       case 1:
-          if (x >= _0x20)
+          if (x >= 0x20)
           {
-              x -= _0x20;
-              y += _0x20;
+              x -= 0x20;
+              y += 0x20;
           }
           break;
       }
-      return (y * _0x20) + x;
+      return (y * 0x20) + x;
 }
 
 /** void CopyTileMapEntry(const u16 *src, u16 *dest, s32 palette1, s32 tileOffset, s32 palette2) */

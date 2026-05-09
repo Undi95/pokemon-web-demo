@@ -15,69 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AbilityBattleEffects, AddMoney, AddTextPrinter,
-  AdjustFriendship, AdjustFriendshipOnBattleFaint, AtkCanceler_UnableToUseMove, BATTLE_OPPOSITE,
-  BATTLE_PARTNER, BG_PLTT_ID, BattleArena_AddSkillPoints, BattleArena_InitPoints,
-  BattleArena_ShowJudgmentWindow, BattlePalace_TryEscapeStatus, BattlePutTextOnWindow, BattleScriptPop,
-  BattleScriptPush, BattleScriptPushCursor, BattleScriptPushCursorAndCallback, BattleStopLowHpSound,
-  BattleStringExpandPlaceholdersToDisplayedString, BeginFastPaletteFade, BeginNormalPaletteFade, BtlController_EmitBallThrowAnim,
-  BtlController_EmitBattleAnimation, BtlController_EmitCantSwitch, BtlController_EmitChoosePokemon, BtlController_EmitDrawPartyStatusSummary,
-  BtlController_EmitEndLinkBattle, BtlController_EmitExpUpdate, BtlController_EmitFaintAnimation, BtlController_EmitFaintingCry,
-  BtlController_EmitGetMonData, BtlController_EmitHealthBarUpdate, BtlController_EmitHidePartyStatusSummary, BtlController_EmitHitAnimation,
-  BtlController_EmitLinkStandbyMsg, BtlController_EmitMoveAnimation, BtlController_EmitPlayFanfareOrBGM, BtlController_EmitPlaySE,
-  BtlController_EmitPrintSelectionString, BtlController_EmitResetActionMoveSelection, BtlController_EmitReturnMonToBall, BtlController_EmitSetMonData,
-  BtlController_EmitSpriteInvisibility, BtlController_EmitStatusAnimation, BtlController_EmitStatusIconUpdate, BtlController_EmitSwitchInAnim,
-  BtlController_EmitTrainerSlide, BtlController_EmitTrainerSlideBack, BtlController_EmitYesNoBox, CalculateBaseDamage,
-  CalculatePlayerPartyCount, CancelMultiTurnMoves, CastformDataTypeChange, CheckMoveLimitations,
-  ClearWindowTilemap, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect_ChangePalette,
-  CopyToWindowPixelBuffer, CopyWindowToVram, CountAliveMonsInBattle, CreateSprite,
-  CurrentBattlePyramidLocation, DestroySprite, DisplayCaughtMonDexPage, DoNamingScreen,
-  DrawArenaRefereeTextBox, DrawLevelUpWindowPg1, DrawLevelUpWindowPg2, EraseArenaRefereeTextBox,
-  FALSE, FaintClearSetData, FlagGet, FreeAllWindowBuffers,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GET_BATTLER_SIDE, GET_MOVE_TYPE,
-  GET_STAT_BUFF_ID, GET_STAT_BUFF_VALUE, GET_STAT_BUFF_VALUE2, GetAbilityBySpecies,
-  GetBattlePyramidPickupItemId, GetBattlerAtPosition, GetBattlerForBattleScript, GetBattlerMultiplayerId,
-  GetBattlerPosition, GetBattlerSide, GetBoxNamePtr, GetCurrentMapType,
-  GetGenderFromSpeciesAndPersonality, GetItemHoldEffect, GetItemHoldEffectParam, GetLinkTrainerFlankId,
-  GetMonData, GetMonGender, GetMonIconPtr, GetMonLevelUpWindowStats,
-  GetMonNickname, GetMoveSlotToReplace, GetMoveTarget, GetNatureFromPersonality,
-  GetPCBoxToSendMon, GetPokedexHeightWeight, GetScaledHPFraction, GetSetPokedexFlag,
-  GetValidMonIconPalettePtr, GiveMonToPlayer, GiveMoveToBattleMon, HITMARKER_FAINTED,
-  HITMARKER_FAINTED2, HandleLowHpMusicChange, HandleSetPokedexFlag, HasNoMonsToSwitch,
-  IS_BATTLER_OF_TYPE, IS_ITEM_MAIL, IS_TYPE_PHYSICAL, InBattlePike,
-  IncrementGameStat, InitBattleBgsVideo, IsCryFinished, IsDma3ManagerBusyWithBgCopy,
-  IsHMMove2, IsMonDisobedient, IsMultiBattle, IsRunningFromBattleImpossible,
-  IsTextPrinterActive, IsTradedMon, ItemBattleEffects, JOY_NEW,
-  LoadBattleTextboxAndBackground, LoadPalette, LoadSpritePalette, LoadSpriteSheet,
-  MOD, MOVE_IS_PERMANENT, MarkBattlerForControllerExec, MonGainEVs,
-  MonTryLearningNewMove, NULL, PALETTES_ALL, PALETTES_BG,
-  PREPARE_ABILITY_BUFFER, PREPARE_BYTE_NUMBER_BUFFER, PREPARE_HWORD_NUMBER_BUFFER, PREPARE_ITEM_BUFFER,
-  PREPARE_MON_NICK_BUFFER, PREPARE_MON_NICK_WITH_PREFIX_BUFFER, PREPARE_MOVE_BUFFER, PREPARE_SPECIES_BUFFER,
-  PREPARE_STAT_BUFFER, PREPARE_STRING_BUFFER, PREPARE_TYPE_BUFFER, PREPARE_WORD_NUMBER_BUFFER,
-  PlayBGM, PlaySE, PokemonUseItemEffects, PrepareStringBattle,
-  PressurePPLose, PressurePPLoseOnUsingImprison, PressurePPLoseOnUsingPerishSong, PutWindowTilemap,
-  Random, RecordAbilityBattle, RecordItemEffectBattle, RecordedBattle_SetBattlerAction,
-  RemoveBattleMonPPBonus, RemoveMonPPBonus, ResetSentPokesToOpponentValue, SAFE_DIV,
-  SET_BATTLER_TYPE, SET_STAT_BUFF_VALUE, STATUS1_SLEEP_TURN, STATUS2_BIDE_TURN,
-  STATUS2_CONFUSION_TURN, STATUS2_INFATUATED_WITH, STATUS2_LOCK_CONFUSE_TURN, STATUS2_UPROAR_TURN,
-  STATUS2_WRAPPED_TURN, STATUS3_ALWAYS_HITS_TURN, STATUS3_YAWN_TURN, STAT_BUFF_NEGATIVE,
-  STR_CONV_MODE_LEFT_ALIGN, SetBattleMonMoveSlot, SetBgAttribute, SetMonData,
-  SetMonMoveSlot, SetVBlankCallback, ShouldShowBoxWasFullMessage, ShowBg,
-  ShowSelectMovePokemonSummaryScreen, SpeciesToNationalPokedexNum, Sqrt, StringCopy,
-  StringFill, SwitchInClearSetData, SwitchPartyOrder, SwitchPartyOrderInGameMulti,
-  SwitchPartyOrderLinkMulti, T1_READ_16, T1_READ_32, T1_READ_PTR,
-  T2_READ_16, T2_READ_32, T2_READ_PTR, TRUE,
-  TYPE_EFFECT_ATK_TYPE, TYPE_EFFECT_DEF_TYPE, TYPE_EFFECT_MULTIPLIER, TryRunFromBattle,
-  UpdateSentPokesToOpponentValue, VarGet, WasUnableToUseMove, WriteColorChangeControlCode,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void Cmd_attackcanceler(void) */
 export function Cmd_attackcanceler(): any {
   let i: any = null;
@@ -5286,7 +5223,7 @@ export function PutMonIconOnLvlUpBanner(): any {
 
       let iconPtr: any = GetMonIconPtr(species, personality, 1);
       iconSheet.data = iconPtr;
-      iconSheet.size = _0x200;
+      iconSheet.size = 0x200;
       iconSheet.tag = TAG_LVLUP_BANNER_MON_ICON;
 
       iconPal = GetValidMonIconPalettePtr(species);
@@ -5593,10 +5530,10 @@ export function Cmd_various(): any {
           }
           break;
       case VARIOUS_VOLUME_DOWN:
-          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x55);
+          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x55);
           break;
       case VARIOUS_VOLUME_UP:
-          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+          m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
           break;
       case VARIOUS_SET_ALREADY_STATUS_MOVE_ATTEMPT:
           gBattleStruct.alreadyStatusedMoveAttempt |= gBitTable[gActiveBattler];
@@ -9200,38 +9137,38 @@ export function HandleBattleWindow(xStart: any, yStart: any, xEnd: any, yEnd: an
               if (destY == yStart)
               {
                   if (destX == xStart)
-                      _var = _0x1022;
+                      _var = 0x1022;
                   else if (destX == xEnd)
-                      _var = _0x1024;
+                      _var = 0x1024;
                   else
-                      _var = _0x1023;
+                      _var = 0x1023;
               }
               else if (destY == yEnd)
               {
                   if (destX == xStart)
-                      _var = _0x1028;
+                      _var = 0x1028;
                   else if (destX == xEnd)
                       _var = 0x102A;
                   else
-                      _var = _0x1029;
+                      _var = 0x1029;
               }
               else
               {
                   if (destX == xStart)
-                      _var = _0x1025;
+                      _var = 0x1025;
                   else if (destX == xEnd)
-                      _var = _0x1027;
+                      _var = 0x1027;
                   else
-                      _var = _0x1026;
+                      _var = 0x1026;
               }
 
               if (flags & WINDOW_CLEAR)
                   _var = 0;
 
               if (flags & WINDOW_BG1)
-                  CopyToBgTilemapBufferRect_ChangePalette(1,_var, destX, destY, 1, 1, _0x11);
+                  CopyToBgTilemapBufferRect_ChangePalette(1,_var, destX, destY, 1, 1, 0x11);
               else
-                  CopyToBgTilemapBufferRect_ChangePalette(0,_var, destX, destY, 1, 1, _0x11);
+                  CopyToBgTilemapBufferRect_ChangePalette(0,_var, destX, destY, 1, 1, 0x11);
           }
       }
 }
@@ -9243,18 +9180,18 @@ export function BattleCreateYesNoCursorAt(cursorPosition: any): any {
       src[1] = 2;
 
        
-      CopyToBgTilemapBufferRect_ChangePalette(0, src, _0x18, 9 + (2 * cursorPosition), 1, 2, _0x11);
+      CopyToBgTilemapBufferRect_ChangePalette(0, src, 0x18, 9 + (2 * cursorPosition), 1, 2, 0x11);
       CopyBgTilemapBufferToVram(0);
 }
 
 /** void BattleDestroyYesNoCursorAt(u8 cursorPosition) */
 export function BattleDestroyYesNoCursorAt(cursorPosition: any): any {
   const src: any[] = [];
-      src[0] = _0x1016;
-      src[1] = _0x1016;
+      src[0] = 0x1016;
+      src[1] = 0x1016;
 
        
-      CopyToBgTilemapBufferRect_ChangePalette(0, src, _0x18, 9 + (2 * cursorPosition), 1, 2, _0x11);
+      CopyToBgTilemapBufferRect_ChangePalette(0, src, 0x18, 9 + (2 * cursorPosition), 1, 2, 0x11);
       CopyBgTilemapBufferToVram(0);
 }
 

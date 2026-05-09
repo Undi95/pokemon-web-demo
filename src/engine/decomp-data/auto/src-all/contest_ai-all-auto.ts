@@ -15,18 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AreMovesContestCombo, Contest_GetMoveExcitement, Contest_IsMonsTurnDisabled, FALSE,
-  IsContestantAllowedToCombo, MOD, Random, T1_READ_16,
-  T1_READ_PTR, TRUE, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ContestAI_ResetAI(u8 contestantAI) */
 export function ContestAI_ResetAI(contestantAI: any): any {
   let i: any = null;

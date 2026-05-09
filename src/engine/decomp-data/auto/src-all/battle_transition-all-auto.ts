@@ -15,40 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocOamMatrix, AllocZeroed, AnimateSprites,
-  BGCNT_CHARBASE, BGCNT_SCREENBASE, BGCNT_TXT256x512, BG_PLTT_ID,
-  BG_SCREEN_SIZE, BG_VRAM, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
-  BLDCNT_EFFECT_LIGHTEN, BLDCNT_TGT1_BG0, BeginNormalPaletteFade, BlendPalette,
-  BlendPalettes, BuildOamBuffer, CalcCenterToCornerVec, ClearGpuRegBits,
-  CopyBgTilemapBufferToVram, CopyRectToBgTilemapBufferRect, Cos, CpuCopy16,
-  CpuCopy32, CpuFill16, CpuFill32, CpuSet,
-  CreateInvisibleSprite, CreateSpriteAtEnd, CreateTask, CreateTrainerSprite,
-  DISPCNT_BG0_ON, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON, DISPLAY_HEIGHT,
-  DISPLAY_WIDTH, DestroySprite, DestroyTask, DmaCopy16,
-  DmaSet, DmaStop, EnableInterrupts, FALSE,
-  FREE_AND_SET_NULL, FieldEffectActiveListContains, FieldEffectStart, FieldEffectStop,
-  FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FindTaskIdByFunc, GetCameraOffsetWithPan,
-  InitSpriteAffineAnim, LZ77UnCompVram, LoadOam, LoadPalette,
-  NULL, PALETTES_ALL, PALETTES_BG, PLTT_SIZE,
-  PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE, PlayerGenderToFrontTrainerPicId,
-  ProcessSpriteCopyRequests, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
-  REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT, REG_OFFSET_BLDY,
-  REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, REG_OFFSET_WIN0H, Random,
-  RunTasks, SET_TILE, SPRITE_SHAPE, SPRITE_SIZE,
-  ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL, ScanlineEffect_Clear, SetGpuReg,
-  SetGpuRegBits, SetHBlankCallback, SetMainCallback2, SetOamMatrixRotationScaling,
-  SetVBlankCallback, SetWeatherScreenFadeOut, Sin, StartSpriteAffineAnim,
-  TASK_NONE, TRUE, TransferPlttBuffer, UpdatePaletteFade,
-  WIN_RANGE, memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void CB2_TestBattleTransition(void) */
 export function CB2_TestBattleTransition(): any {
   switch (sTestingTransitionState)
@@ -371,7 +337,7 @@ export function InitPatternWeaveTransition(task: any): any {
       task.tBlendTarget1 = 16;
       task.tBlendTarget2 = 0;
       task.tSinIndex = 0;
-      task.tAmplitude = _0x4000;
+      task.tAmplitude = 0x4000;
       sTransitionData.WININ = WININ_WIN0_ALL;
       sTransitionData.WINOUT = 0;
       sTransitionData.WIN0H = DISPLAY_WIDTH;
@@ -423,7 +389,7 @@ export function Regi_Init(task: any): any {
       InitPatternWeaveTransition(task);
       GetBg0TilesDst(tilemap,tileset);
       CpuFill16(0, tilemap, BG_SCREEN_SIZE);
-      CpuCopy16(sRegis_Tileset, tileset, _0x2000);
+      CpuCopy16(sRegis_Tileset, tileset, 0x2000);
 
       task.tState++;
       return FALSE;
@@ -493,7 +459,7 @@ export function Regice_SetGfx(task: any): any {
 
       GetBg0TilesDst(tilemap,tileset);
       LoadPalette(sRegice_Palette, BG_PLTT_ID(15), 0);
-      CpuCopy16(sRegice_Tilemap, tilemap, _0x500);
+      CpuCopy16(sRegice_Tilemap, tilemap, 0x500);
       SetSinWave(gScanlineEffectRegBuffers[0], 0, task.tSinIndex, 132, task.tAmplitude, DISPLAY_HEIGHT);
 
       task.tState++;
@@ -506,7 +472,7 @@ export function Registeel_SetGfx(task: any): any {
 
       GetBg0TilesDst(tilemap,tileset);
       LoadPalette(sRegisteel_Palette, BG_PLTT_ID(15), 0);
-      CpuCopy16(sRegisteel_Tilemap, tilemap, _0x500);
+      CpuCopy16(sRegisteel_Tilemap, tilemap, 0x500);
       SetSinWave(gScanlineEffectRegBuffers[0], 0, task.tSinIndex, 132, task.tAmplitude, DISPLAY_HEIGHT);
 
       task.tState++;
@@ -519,7 +485,7 @@ export function Regirock_SetGfx(task: any): any {
 
       GetBg0TilesDst(tilemap,tileset);
       LoadPalette(sRegirock_Palette, BG_PLTT_ID(15), 0);
-      CpuCopy16(sRegirock_Tilemap, tilemap, _0x500);
+      CpuCopy16(sRegirock_Tilemap, tilemap, 0x500);
       SetSinWave(gScanlineEffectRegBuffers[0], 0, task.tSinIndex, 132, task.tAmplitude, DISPLAY_HEIGHT);
 
       task.tState++;
@@ -738,7 +704,7 @@ export function PokeballsTrail_Init(task: any): any {
   let tilemap, tileset;
 
       GetBg0TilesDst(tilemap,tileset);
-      CpuSet(sPokeballTrail_Tileset, tileset, _0x20);
+      CpuSet(sPokeballTrail_Tileset, tileset, 0x20);
       CpuFill32(0, tilemap, BG_SCREEN_SIZE);
       LoadPalette(sFieldEffectPal_Pokeball, BG_PLTT_ID(15), 0);
 
@@ -1052,10 +1018,10 @@ export function Ripple_Main(task: any): any {
 
       amplitude = task.tAmplitudeVal >> 8;
       sinVal = task.tSinVal;
-      speed = _0x180;
-      task.tSinVal += _0x400;
+      speed = 0x180;
+      task.tSinVal += 0x400;
       if (task.tAmplitudeVal <= 0x1FFF)
-          task.tAmplitudeVal += _0x180;
+          task.tAmplitudeVal += 0x180;
 
       for (i = 0; i < DISPLAY_HEIGHT; i++, sinVal += speed)
       {
@@ -2021,8 +1987,8 @@ export function RectangularSpiral_Init(task: any): any {
   let tilemap, tileset;
 
       GetBg0TilesDst(tilemap,tileset);
-      CpuCopy16(sShrinkingBoxTileset, tileset, _0x20);
-      CpuCopy16(sShrinkingBoxTileset[_0x70],tileset[_0x20], _0x20);
+      CpuCopy16(sShrinkingBoxTileset, tileset, 0x20);
+      CpuCopy16(sShrinkingBoxTileset[0x70],tileset[0x20], 0x20);
       CpuFill16(0xF0 << 8, tilemap, BG_SCREEN_SIZE);
       LoadPalette(sFieldEffectPal_Pokeball, BG_PLTT_ID(15), 0);
 
@@ -2257,7 +2223,7 @@ export function Rayquaza_Init(task: any): any {
       SetGpuReg(REG_OFFSET_BG0CNT, BGCNT_CHARBASE(2) | BGCNT_SCREENBASE(26) | BGCNT_TXT256x512);
       GetBg0TilesDst(tilemap,tileset);
       CpuFill16(0, tilemap, BG_SCREEN_SIZE);
-      CpuCopy16(sRayquaza_Tileset, tileset, _0x2000);
+      CpuCopy16(sRayquaza_Tileset, tileset, 0x2000);
 
       sTransitionData.counter = 0;
       task.tState++;
@@ -2266,7 +2232,7 @@ export function Rayquaza_Init(task: any): any {
       for (i = 0; i < DISPLAY_HEIGHT; i++)
       {
           gScanlineEffectRegBuffers[0][i] = 0;
-          gScanlineEffectRegBuffers[1][i] = _0x100;
+          gScanlineEffectRegBuffers[1][i] = 0x100;
       }
 
       SetVBlankCallback(VBlankCB_Rayquaza);

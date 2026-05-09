@@ -15,28 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ActionSelectionCreateCursorAt, BattleInitBgsAndWindows, BattleLoadAllHealthBoxesGfx, BattleLoadOpponentMonSpriteGfx,
-  BattleLoadPlayerMonSpriteGfx, BattleLoadSubstituteOrMonSpriteGfx, BeginHardwarePaletteFade, ClearSpritesHealthboxAnimData,
-  CpuFastFill, CreateBattlerHealthboxSprites, CreateSafariPlayerHealthboxSprites, CreateSprite,
-  CreateWirelessStatusIndicatorSprite, DecompressTrainerBackPic, DummyBattleInterfaceFunc, FALSE,
-  FillAroundBattleWindows, FreeAllSpritePalettes, GetBattlerAtPosition, GetBattlerPosition,
-  GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority,
-  GetMonData, GetSubstituteSpriteDefault_Y, InitBattlerHealthboxCoords, IsDoubleBattle,
-  LoadAndCreateEnemyShadowSprites, LoadBattleTextboxAndBackground, LoadWirelessStatusIndicatorSpriteGfx, NULL,
-  REG_OFFSET_MOSAIC, ResetPaletteFade, ResetSpriteData, ScanlineEffect_Clear,
-  SetBattlerShadowSpriteCallback, SetBgAttribute, SetGpuReg, SetHBlankCallback,
-  SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible, SetMainCallback2, SetMultiuseSpriteTemplateToPokemon,
-  SetMultiuseSpriteTemplateToTrainerBack, SetVBlankCallback, ShowBg, SpriteCallbackDummy,
-  StartSpriteAnim, TRUE, UpdateHealthboxAttribute, VRAM_SIZE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ReshowBattleScreenAfterMenu(void) */
 export function ReshowBattleScreenAfterMenu(): any {
   gPaletteFade.bufferTransferDisabled = 1;
@@ -168,7 +146,7 @@ export function CB2_ReshowBattleScreenAfterMenu(): any {
       default:
           SetVBlankCallback(VBlankCB_Battle);
           ClearBattleBgCntBaseBlocks();
-          BeginHardwarePaletteFade(0xFF, 0, _0x10, 0, 1);
+          BeginHardwarePaletteFade(0xFF, 0, 0x10, 0, 1);
           gPaletteFade.bufferTransferDisabled = 0;
           SetMainCallback2(BattleMainCB2);
           FillAroundBattleWindows();
@@ -244,7 +222,7 @@ export function CreateBattlerSprite(battler: any): any {
           else if (gBattleTypeFlags & BATTLE_TYPE_SAFARI && battler == B_POSITION_PLAYER_LEFT)
           {
               SetMultiuseSpriteTemplateToTrainerBack(gSaveBlock2Ptr.playerGender, GetBattlerPosition(B_POSITION_PLAYER_LEFT));
-              gBattlerSpriteIds[battler] = CreateSprite(gMultiuseSpriteTemplate, _0x50,
+              gBattlerSpriteIds[battler] = CreateSprite(gMultiuseSpriteTemplate, 0x50,
                                                   (8 - gTrainerBackPicCoords[gSaveBlock2Ptr.playerGender].size) * 4 + 80,
                                                    GetBattlerSpriteSubpriority(0));
               gSprites[gBattlerSpriteIds[battler]].oam.paletteNum = battler;
@@ -254,7 +232,7 @@ export function CreateBattlerSprite(battler: any): any {
           else if (gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL && battler == B_POSITION_PLAYER_LEFT)
           {
               SetMultiuseSpriteTemplateToTrainerBack(TRAINER_BACK_PIC_WALLY, GetBattlerPosition(0));
-              gBattlerSpriteIds[battler] = CreateSprite(gMultiuseSpriteTemplate, _0x50,
+              gBattlerSpriteIds[battler] = CreateSprite(gMultiuseSpriteTemplate, 0x50,
                                                   (8 - gTrainerBackPicCoords[TRAINER_BACK_PIC_WALLY].size) * 4 + 80,
                                                    GetBattlerSpriteSubpriority(0));
               gSprites[gBattlerSpriteIds[battler]].oam.paletteNum = battler;

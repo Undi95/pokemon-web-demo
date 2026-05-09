@@ -15,24 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, ArePlayerFieldControlsLocked, CheckBagHasItem, CreateTask,
-  CurrentMapDrawMetatileAt, DoTimeBasedEvents, FALSE, FindTaskIdByFunc,
-  FuncIsActiveTask, GetPacifidlogBridgeMetatileOffsets, GetPlayerSpeed, GetVarPointer,
-  MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MetatileBehavior_IsAshGrass,
-  MetatileBehavior_IsCrackedFloor, MetatileBehavior_IsCrackedFloorHole, MetatileBehavior_IsCrackedIce, MetatileBehavior_IsFortreeBridge,
-  MetatileBehavior_IsMuddySlope, MetatileBehavior_IsPacifidlogHorizontalLogLeft, MetatileBehavior_IsPacifidlogHorizontalLogRight, MetatileBehavior_IsPacifidlogLog,
-  MetatileBehavior_IsPacifidlogVerticalLogBottom, MetatileBehavior_IsPacifidlogVerticalLogTop, MetatileBehavior_IsThinIce, PlaySE,
-  PlayerGetDestCoords, PlayerGetElevation, StartAshFieldEffect, TASK_NONE,
-  TRUE, UpdateAmbientCry, VarGet, VarSet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void Task_RunPerStepCallback(u8 taskId) */
 export function Task_RunPerStepCallback(taskId: any): any {
   let idx: any = gTasks[taskId].tCallbackId;
@@ -653,10 +635,10 @@ export function Task_MuddySlope(taskId: any): any {
           tPrevX = x;
           tPrevY = y;
           tState = 1;
-          tSlopeAnimTime(0) = 0;
-          tSlopeAnimTime(1) = 0;
-          tSlopeAnimTime(2) = 0;
-          tSlopeAnimTime(3) = 0;
+          data[((0)) * SLOPE_DATA_SIZE + SLOPE_DATA_START + SLOPE_TIME] = 0;
+          data[((1)) * SLOPE_DATA_SIZE + SLOPE_DATA_START + SLOPE_TIME] = 0;
+          data[((2)) * SLOPE_DATA_SIZE + SLOPE_DATA_START + SLOPE_TIME] = 0;
+          data[((3)) * SLOPE_DATA_SIZE + SLOPE_DATA_START + SLOPE_TIME] = 0;
           break;
       case 1:
            

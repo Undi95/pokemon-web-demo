@@ -15,48 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddTextPrinterParameterized5,
-  AddWindow, Alloc, AnimateSprites, BG_CHAR_ADDR,
-  BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BlitBitmapToWindow,
-  BuildOamBuffer, ChangeBgX, ChangeBgY, ClearContinueGameWarpStatus2,
-  ClearGpuRegBits, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap, CopyBgTilemapBufferToVram,
-  CopyToBgTilemapBuffer, CopyWindowToVram, CpuFastCopy, CpuFastFill,
-  CpuFill16, CreateSprite, CreateTask, CreateWirelessStatusIndicatorSprite,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DecompressAndCopyTileDataToVram, DestroyTask,
-  DrawTextBorderInner, DrawTextBorderOuter, DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset,
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr, FALSE, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
-  FillWindowPixelRect, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeTempTileDataBuffersIfPossible, FuncIsActiveTask, GetBlockReceivedStatus, GetChatHostName,
-  GetEndOfMessagePtr, GetLastCharOfMessagePtr, GetLastReceivedMessage, GetLimitedMessageStartPtr,
-  GetLinkPlayerCount, GetMessageEntryBuffer, GetMultiplayerId, GetRegisteredTextByRow,
-  GetStringWidth, IndexOfSpritePaletteTag, InitBgsFromTemplates, InitMenuInUpperLeftCornerNormal,
-  InitMenuNormal, InitWindows, IsDma3ManagerBusyWithBgCopy, IsLinkTaskFinished,
-  JOY_NEW, JOY_REPEAT, LoadCompressedSpriteSheet, LoadOam,
-  LoadPalette, LoadSpritePalette, LoadUserWindowBorderGfx, LoadUserWindowBorderGfx_,
-  LoadWirelessStatusIndicatorSpriteGfx, MAX_RFU_PLAYERS, Menu_MoveCursor, Menu_ProcessInput,
-  NULL, OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL,
-  PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE, PrintMenuActionTextsAtPos,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  RemoveWindow, RequestDma3Fill, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlag,
-  ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, RfuSetNormalDisconnectMode,
-  Rfu_DisconnectPlayerById, Rfu_IsPlayerExchangeActive, Rfu_StopPartnerSearch, RunTasks,
-  ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams, ScrollWindow, SendBlock,
-  SetBgTilemapBuffer, SetCloseLinkCallback, SetContinueGameWarpStatusToDynamicWarp, SetGpuReg,
-  SetGpuRegBits, SetMainCallback2, SetUnionRoomChatPlayerData, SetVBlankCallback,
-  ShowBg, StartSpriteAnim, StringCopy, StringCopyN_Multibyte,
-  StringLength_Multibyte, TILE_SIZE_4BPP, TRUE, TRY_FREE_AND_SET_NULL,
-  TransferPlttBuffer, TrySavingData, UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void EnterUnionRoomChat(void) */
 export function EnterUnionRoomChat(): any {
   sChat = Alloc(0);
@@ -1826,7 +1784,7 @@ export function AddYesNoMenuAt(left: any, top: any, initialCursorPos: any): any 
       template.width = 6;
       template.height = 4;
       template.paletteNum = 14;
-      template.baseBlock = _0x52;
+      template.baseBlock = 0x52;
       sDisplay.yesNoMenuWindowId = AddWindow(template);
       if (sDisplay.yesNoMenuWindowId != WINDOW_NONE)
       {
@@ -2133,7 +2091,7 @@ export function SetBgTilemapBuffers(): any {
 
 /** static void ClearBg0(void) */
 export function ClearBg0(): any {
-  RequestDma3Fill(0, BG_CHAR_ADDR(0), _0x20, 1);
+  RequestDma3Fill(0, BG_CHAR_ADDR(0), 0x20, 1);
       FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 32, 32);
       CopyBgTilemapBufferToVram(0);
 }
@@ -2159,8 +2117,8 @@ export function LoadChatWindowGfx(): any {
            
            
            
-          CpuFastCopy(ptr[_0x11 * TILE_SIZE_4BPP],sDisplay.textEntryTiles[TILE_SIZE_4BPP * 0], TILE_SIZE_4BPP);
-          CpuFastCopy(ptr[_0x21 * TILE_SIZE_4BPP],sDisplay.textEntryTiles[TILE_SIZE_4BPP * 1], TILE_SIZE_4BPP);
+          CpuFastCopy(ptr[0x11 * TILE_SIZE_4BPP],sDisplay.textEntryTiles[TILE_SIZE_4BPP * 0], TILE_SIZE_4BPP);
+          CpuFastCopy(ptr[0x21 * TILE_SIZE_4BPP],sDisplay.textEntryTiles[TILE_SIZE_4BPP * 1], TILE_SIZE_4BPP);
       }
 
       CopyToBgTilemapBuffer(2, gUnionRoomChat_Background_Tilemap, 0, 0);
@@ -2226,16 +2184,16 @@ export function InitScanlineEffect(): any {
 
 /** static void UpdateSlidingKeyboard(s16 bg1hofs) */
 export function UpdateSlidingKeyboard(bg1hofs: any): any {
-  CpuFill16(bg1hofs, gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer], _0x120);
-      CpuFill16(0,       gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer] + _0x90, _0x20);
+  CpuFill16(bg1hofs, gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer], 0x120);
+      CpuFill16(0,       gScanlineEffectRegBuffers[gScanlineEffect.srcBuffer] + 0x90, 0x20);
 }
 
 /** static void FinishSlidingKeyboard(s16 bg1hofs) */
 export function FinishSlidingKeyboard(bg1hofs: any): any {
-  CpuFill16(bg1hofs, gScanlineEffectRegBuffers[0],         _0x120);
-      CpuFill16(0,       gScanlineEffectRegBuffers[0] +  _0x90, _0x20);
-      CpuFill16(bg1hofs, gScanlineEffectRegBuffers[0] + 0x3C0, _0x120);
-      CpuFill16(0,       gScanlineEffectRegBuffers[0] + _0x450, _0x20);
+  CpuFill16(bg1hofs, gScanlineEffectRegBuffers[0],         0x120);
+      CpuFill16(0,       gScanlineEffectRegBuffers[0] +  0x90, 0x20);
+      CpuFill16(bg1hofs, gScanlineEffectRegBuffers[0] + 0x3C0, 0x120);
+      CpuFill16(0,       gScanlineEffectRegBuffers[0] + 0x450, 0x20);
 }
 
 /** static bool32 TryAllocSprites(void) */

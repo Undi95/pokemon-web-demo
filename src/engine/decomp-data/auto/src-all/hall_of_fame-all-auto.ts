@@ -15,49 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized2, AddTextPrinterParameterized3, AddWindow,
-  AllocZeroed, AnimateSprites, BG_PLTT_ID, BLDALPHA_BLEND,
-  BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1, BeginNormalPaletteFade, BlendPalettes,
-  BlendPalettesUnfaded, BuildOamBuffer, ChangeBgX, ChangeBgY,
-  ClearDialogWindowAndFrame, ComputerScreenCloseEffect, ComputerScreenOpenEffect, ConfettiUtil_AddNew,
-  ConfettiUtil_Free, ConfettiUtil_Init, ConfettiUtil_Remove, ConfettiUtil_SetCallback,
-  ConfettiUtil_SetData, ConfettiUtil_Update, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram,
-  CopyWindowToVram, CpuCopy16, CreateMonPicSprite_Affine, CreateMonPicSprite_HandleDeoxys,
-  CreateSprite, CreateTask, CreateTrainerPicSprite, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DISPLAY_WIDTH, DecompressAndCopyTileDataToVram, DestroySprite,
-  DestroyTask, DmaFill16, DmaFill32, DoMonFrontSpriteAnimation,
-  DrawDialogueFrame, DrawStdFrameWithCustomTileAndPalette, FALSE, FadeOutBGM,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FindTaskIdByFunc, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeAndDestroyMonPicSprite, FreeAndDestroyTrainerPicSprite, FreeOamMatrix,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetGameStat,
-  GetGenderFromSpeciesAndPersonality, GetMonData, GetStringCenterAlignXOffset, GetStringRightAlignXOffset,
-  GetTextWindowPalette, HideBg, HofPCTopBar_AddWindow, HofPCTopBar_Print,
-  HofPCTopBar_PrintPair, HofPCTopBar_RemoveWindow, InitBgsFromTemplates, InitStandardTextBoxWindows,
-  InitTextBoxGfxAndPrinters, IsComputerScreenCloseEffectActive, IsComputerScreenOpenEffectActive, IsCryPlayingOrClearCrySongs,
-  JOY_NEW, LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadGameSave,
-  LoadOam, LoadPalette, LoadWindowGfx, NULL,
-  PALETTES_ALL, PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP,
-  PlayBGM, PlayCry_Normal, PlaySE, PlayerGenderToFrontTrainerPicId_Debug,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, Random, ResetAllPicSprites,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, ReturnFromHallOfFamePC, RunTasks, RunTextPrinters,
-  STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ST_OAM_AFFINE_OFF,
-  ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, SpeciesToPokedexNum, SpriteCallbackDummy,
-  StartSpriteAnim, StopCryAndClearCrySongs, StringCopy, StringExpandPlaceholders,
-  TASK_NONE, TRUE, TRY_FREE_AND_SET_NULL, TransferPlttBuffer,
-  TrySavingData, UnsetBgTilemapBuffer, UpdatePaletteFade, VRAM_SIZE,
-  gSineTable, memcpy, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_HallOfFame(void) */
 export function VBlankCB_HallOfFame(): any {
   LoadOam();
@@ -100,7 +57,7 @@ export function InitHallOfFameScreen(): any {
           if (!LoadHofBgs())
           {
               SetVBlankCallback(VBlankCB_HallOfFame);
-              BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
               gMain.state++;
           }
           break;
@@ -173,7 +130,7 @@ export function Task_Hof_InitMonData(taskId: any): any {
 
       for (i = 0; i < PARTY_SIZE; i++)
       {
-          gTasks[taskId].tMonSpriteId(i) = SPRITE_NONE;
+          gTasks[taskId].data[(i) + 5] = SPRITE_NONE;
       }
 
       if (gTasks[taskId].tDontSaveData)
@@ -288,7 +245,7 @@ export function Task_Hof_DisplayMon(taskId: any): any {
       gSprites[spriteId].data[0] = 0;
       gSprites[spriteId].tSpecies = currMon.species;
       gSprites[spriteId].callback = SpriteCB_GetOnScreenAndAnimate;
-      gTasks[taskId].tMonSpriteId(currMonId) = spriteId;
+      gTasks[taskId].data[(currMonId) + 5] = spriteId;
       ClearDialogWindowAndFrame(0, TRUE);
       gTasks[taskId].func = Task_Hof_PrintMonInfoAfterAnimating;
 }
@@ -297,7 +254,7 @@ export function Task_Hof_DisplayMon(taskId: any): any {
 export function Task_Hof_PrintMonInfoAfterAnimating(taskId: any): any {
   let currMonId: any = gTasks[taskId].tDisplayedMonId;
       let currMon: any =sHofMonPtr.mon[currMonId];
-      let monSprite: any =gSprites[gTasks[taskId].tMonSpriteId(currMonId)];
+      let monSprite: any =gSprites[gTasks[taskId].data[(currMonId) + 5]];
 
       if (monSprite.callback == SpriteCallbackDummy)
       {
@@ -319,12 +276,12 @@ export function Task_Hof_TryDisplayAnotherMon(taskId: any): any {
       }
       else
       {
-          sHofFadePalettes |= (_0x10000 << gSprites[gTasks[taskId].tMonSpriteId(currPokeID)].oam.paletteNum);
+          sHofFadePalettes |= (0x10000 << gSprites[gTasks[taskId].data[(currPokeID) + 5]].oam.paletteNum);
           if (gTasks[taskId].tDisplayedMonId < PARTY_SIZE - 1 && currMon[1].species != SPECIES_NONE)  
           {
               gTasks[taskId].tDisplayedMonId++;
               BeginNormalPaletteFade(sHofFadePalettes, 0, 12, 12, RGB(16, 29, 24));
-              gSprites[gTasks[taskId].tMonSpriteId(currPokeID)].oam.priority = 1;
+              gSprites[gTasks[taskId].data[(currPokeID) + 5]].oam.priority = 1;
               gTasks[taskId].func = Task_Hof_DisplayMon;
           }
           else
@@ -341,8 +298,8 @@ export function Task_Hof_PaletteFadeAndPrintWelcomeText(taskId: any): any {
       BeginNormalPaletteFade(PALETTES_OBJECTS, 0, 0, 0, RGB_BLACK);
       for (i = 0; i < PARTY_SIZE; i++)
       {
-          if (gTasks[taskId].tMonSpriteId(i) != SPRITE_NONE)
-              gSprites[gTasks[taskId].tMonSpriteId(i)].oam.priority = 0;
+          if (gTasks[taskId].data[(i) + 5] != SPRITE_NONE)
+              gSprites[gTasks[taskId].data[(i) + 5]].oam.priority = 0;
       }
 
       HallOfFame_PrintWelcomeText(0, 15);
@@ -367,8 +324,8 @@ export function Task_Hof_DoConfetti(taskId: any): any {
           let i: any = null;
           for (i = 0; i < PARTY_SIZE; i++)
           {
-              if (gTasks[taskId].tMonSpriteId(i) != SPRITE_NONE)
-                  gSprites[gTasks[taskId].tMonSpriteId(i)].oam.priority = 1;
+              if (gTasks[taskId].data[(i) + 5] != SPRITE_NONE)
+                  gSprites[gTasks[taskId].data[(i) + 5]].oam.priority = 1;
           }
           BeginNormalPaletteFade(sHofFadePalettes, 0, 12, 12, RGB(16, 29, 24));
           FillWindowPixelBuffer(0, PIXEL_FILL(0));
@@ -417,7 +374,7 @@ export function Task_Hof_WaitAndPrintPlayerInfo(taskId: any): any {
       }
       else
       {
-          FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, _0x20, _0x20);
+          FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 0x20, 0x20);
           HallOfFame_PrintPlayerInfo(1, 2);
           DrawDialogueFrame(0, FALSE);
           AddTextPrinterParameterized2(0, FONT_NORMAL, gText_LeagueChamp, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
@@ -438,7 +395,7 @@ export function Task_Hof_ExitOnKeyPressed(taskId: any): any {
 /** static void Task_Hof_HandlePaletteOnExit(u8 taskId) */
 export function Task_Hof_HandlePaletteOnExit(taskId: any): any {
   CpuCopy16(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);
-      BeginNormalPaletteFade(PALETTES_ALL, 8, 0, _0x10, RGB_BLACK);
+      BeginNormalPaletteFade(PALETTES_ALL, 8, 0, 0x10, RGB_BLACK);
       gTasks[taskId].func = Task_Hof_HandleExit;
 }
 
@@ -450,7 +407,7 @@ export function Task_Hof_HandleExit(taskId: any): any {
 
           for (i = 0; i < PARTY_SIZE; i++)
           {
-              let spriteId: any = gTasks[taskId].tMonSpriteId(i);
+              let spriteId: any = gTasks[taskId].data[(i) + 5];
               if (spriteId != SPRITE_NONE)
               {
                   FreeOamMatrix(gSprites[spriteId].oam.matrixNum);
@@ -531,7 +488,7 @@ export function CB2_DoHallOfFamePC(): any {
 
               for (i = 0; i < PARTY_SIZE; i++)
               {
-                  gTasks[taskId].tMonSpriteId(i) = SPRITE_NONE;
+                  gTasks[taskId].data[(i) + 5] = SPRITE_NONE;
               }
 
               sHofMonPtr = AllocZeroed(SECTOR_SIZE * NUM_HOF_SECTORS);
@@ -543,7 +500,7 @@ export function CB2_DoHallOfFamePC(): any {
 
 /** static void Task_HofPC_CopySaveData(u8 taskId) */
 export function Task_HofPC_CopySaveData(taskId: any): any {
-  HofPCTopBar_AddWindow(0, 30, 0, 12, _0x226);
+  HofPCTopBar_AddWindow(0, 30, 0, 12, 0x226);
       if (LoadGameSave(SAVE_HALL_OF_FAME) != SAVE_STATUS_OK)
       {
           gTasks[taskId].func = Task_HofPC_PrintDataIsCorrupted;
@@ -617,11 +574,11 @@ export function Task_HofPC_DrawSpritesPrintText(taskId: any): any {
 
               spriteId = CreateMonPicSprite_HandleDeoxys(currMon.species, currMon.tid, currMon.personality, TRUE, posX, posY, i, TAG_NONE);
               gSprites[spriteId].oam.priority = 1;
-              gTasks[taskId].tMonSpriteId(i) = spriteId;
+              gTasks[taskId].data[(i) + 5] = spriteId;
           }
           else
           {
-              gTasks[taskId].tMonSpriteId(i) = SPRITE_NONE;
+              gTasks[taskId].data[(i) + 5] = SPRITE_NONE;
           }
       }
 
@@ -650,14 +607,14 @@ export function Task_HofPC_PrintMonInfo(taskId: any): any {
 
       for (i = 0; i < PARTY_SIZE; i++)
       {
-          let spriteId: any = gTasks[taskId].tMonSpriteId(i);
+          let spriteId: any = gTasks[taskId].data[(i) + 5];
           if (spriteId != SPRITE_NONE)
               gSprites[spriteId].oam.priority = 1;
       }
 
-      currMonID = gTasks[taskId].tMonSpriteId(gTasks[taskId].tCurrMonId);
+      currMonID = gTasks[taskId].data[(gTasks[taskId].tCurrMonId) + 5];
       gSprites[currMonID].oam.priority = 0;
-      sHofFadePalettes = (_0x10000 << gSprites[currMonID].oam.paletteNum) ^ PALETTES_OBJECTS;
+      sHofFadePalettes = (0x10000 << gSprites[currMonID].oam.paletteNum) ^ PALETTES_OBJECTS;
       BlendPalettesUnfaded(sHofFadePalettes, 0xC, RGB(16, 29, 24));
 
       currMon =savedTeams.mon[gTasks[taskId].tCurrMonId];
@@ -682,11 +639,11 @@ export function Task_HofPC_HandleInput(taskId: any): any {
               gTasks[taskId].tCurrTeamNo--;
               for (i = 0; i < PARTY_SIZE; i++)
               {
-                  let spriteId: any = gTasks[taskId].tMonSpriteId(i);
+                  let spriteId: any = gTasks[taskId].data[(i) + 5];
                   if (spriteId != SPRITE_NONE)
                   {
                       FreeAndDestroyMonPicSprite(spriteId);
-                      gTasks[taskId].tMonSpriteId(i) = SPRITE_NONE;
+                      gTasks[taskId].data[(i) + 5] = SPRITE_NONE;
                   }
               }
               if (gTasks[taskId].tCurrPageNo != 0)
@@ -698,7 +655,7 @@ export function Task_HofPC_HandleInput(taskId: any): any {
               if (IsCryPlayingOrClearCrySongs())
               {
                   StopCryAndClearCrySongs();
-                  m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+                  m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
               }
               gTasks[taskId].func = Task_HofPC_HandlePaletteOnExit;
           }
@@ -708,7 +665,7 @@ export function Task_HofPC_HandleInput(taskId: any): any {
           if (IsCryPlayingOrClearCrySongs())
           {
               StopCryAndClearCrySongs();
-              m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, _0x100);
+              m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
           }
           gTasks[taskId].func = Task_HofPC_HandlePaletteOnExit;
       }
@@ -743,11 +700,11 @@ export function Task_HofPC_HandleExit(taskId: any): any {
 
           for (i = 0; i < PARTY_SIZE; i++)
           {
-              let spriteId: any = gTasks[taskId].tMonSpriteId(i);
+              let spriteId: any = gTasks[taskId].data[(i) + 5];
               if (spriteId != SPRITE_NONE)
               {
                   FreeAndDestroyMonPicSprite(spriteId);
-                  gTasks[taskId].tMonSpriteId(i) = SPRITE_NONE;
+                  gTasks[taskId].data[(i) + 5] = SPRITE_NONE;
               }
           }
 
@@ -823,7 +780,7 @@ export function HallOfFame_PrintMonInfo(currMon: any, unused1: any, unused2: any
               stringPtr =  CHAR_QUESTION_MARK;
           }
           stringPtr[0] = EOS;
-          AddTextPrinterParameterized3(0, FONT_NORMAL, _0x10, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x10, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
       }
 
        
@@ -837,7 +794,7 @@ export function HallOfFame_PrintMonInfo(currMon: any, unused1: any, unused2: any
       }
       else
       {
-          width = GetStringRightAlignXOffset(FONT_NORMAL, text, _0x80);
+          width = GetStringRightAlignXOffset(FONT_NORMAL, text, 0x80);
           AddTextPrinterParameterized3(0, FONT_NORMAL, width, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
 
           text[0] = CHAR_SLASH;
@@ -859,15 +816,15 @@ export function HallOfFame_PrintMonInfo(currMon: any, unused1: any, unused2: any
           }
 
           stringPtr[0] = EOS;
-          AddTextPrinterParameterized3(0, FONT_NORMAL, _0x80, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x80, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
 
           stringPtr = StringCopy(text, gText_Level);
           ConvertIntToDecimalStringN(stringPtr, currMon.lvl, STR_CONV_MODE_LEFT_ALIGN, 3);
-          AddTextPrinterParameterized3(0, FONT_NORMAL, _0x24, _0x11, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x24, 0x11, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
 
           stringPtr = StringCopy(text, gText_IDNumber);
           ConvertIntToDecimalStringN(stringPtr, (currMon.tid), STR_CONV_MODE_LEADING_ZEROS, 5);
-          AddTextPrinterParameterized3(0, FONT_NORMAL, _0x68, _0x11, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x68, 0x11, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
 
           CopyWindowToVram(0, COPYWIN_FULL);
       }
@@ -884,21 +841,21 @@ export function HallOfFame_PrintPlayerInfo(unused1: any, unused2: any): any {
       DrawStdFrameWithCustomTileAndPalette(1, FALSE, 0x21D, 0xD);
       AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 1, sPlayerInfoTextColors, TEXT_SKIP_DRAW, gText_Name);
 
-      width = GetStringRightAlignXOffset(FONT_NORMAL, gSaveBlock2Ptr.playerName, _0x70);
+      width = GetStringRightAlignXOffset(FONT_NORMAL, gSaveBlock2Ptr.playerName, 0x70);
       AddTextPrinterParameterized3(1, FONT_NORMAL, width, 1, sPlayerInfoTextColors, TEXT_SKIP_DRAW, gSaveBlock2Ptr.playerName);
 
       trainerId = (gSaveBlock2Ptr.playerTrainerId[0]) | (gSaveBlock2Ptr.playerTrainerId[1] << 8);
-      AddTextPrinterParameterized3(1, FONT_NORMAL, 0, _0x11, sPlayerInfoTextColors, 0, gText_IDNumber);
+      AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 0x11, sPlayerInfoTextColors, 0, gText_IDNumber);
       text[0] = (trainerId % 100000) / 10000 + CHAR_0;
       text[1] = (trainerId % 10000) / 1000 + CHAR_0;
       text[2] = (trainerId % 1000) / 100 + CHAR_0;
       text[3] = (trainerId % 100) / 10 + CHAR_0;
       text[4] = (trainerId % 10) / 1 + CHAR_0;
       text[5] = EOS;
-      width = GetStringRightAlignXOffset(FONT_NORMAL, text, _0x70);
-      AddTextPrinterParameterized3(1, FONT_NORMAL, width, _0x11, sPlayerInfoTextColors, TEXT_SKIP_DRAW, text);
+      width = GetStringRightAlignXOffset(FONT_NORMAL, text, 0x70);
+      AddTextPrinterParameterized3(1, FONT_NORMAL, width, 0x11, sPlayerInfoTextColors, TEXT_SKIP_DRAW, text);
 
-      AddTextPrinterParameterized3(1, FONT_NORMAL, 0, _0x21, sPlayerInfoTextColors, TEXT_SKIP_DRAW, gText_Time);
+      AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 0x21, sPlayerInfoTextColors, TEXT_SKIP_DRAW, gText_Time);
       text[0] = (gSaveBlock2Ptr.playTimeHours / 100) + CHAR_0;
       text[1] = (gSaveBlock2Ptr.playTimeHours % 100) / 10 + CHAR_0;
       text[2] = (gSaveBlock2Ptr.playTimeHours % 10) + CHAR_0;
@@ -913,8 +870,8 @@ export function HallOfFame_PrintPlayerInfo(unused1: any, unused2: any): any {
       text[5] = (gSaveBlock2Ptr.playTimeMinutes % 10) + CHAR_0;
       text[6] = EOS;
 
-      width = GetStringRightAlignXOffset(FONT_NORMAL, text, _0x70);
-      AddTextPrinterParameterized3(1, FONT_NORMAL, width, _0x21, sPlayerInfoTextColors, TEXT_SKIP_DRAW, text);
+      width = GetStringRightAlignXOffset(FONT_NORMAL, text, 0x70);
+      AddTextPrinterParameterized3(1, FONT_NORMAL, width, 0x21, sPlayerInfoTextColors, TEXT_SKIP_DRAW, text);
 
       CopyWindowToVram(1, COPYWIN_FULL);
 }
@@ -928,10 +885,10 @@ export function ClearVramOamPltt_LoadHofPal(): any {
       vramSize = VRAM_SIZE;
       while (TRUE)
       {
-          DmaFill16(3, 0, vramOffset, _0x1000);
-          vramOffset += _0x1000;
-          vramSize -= _0x1000;
-          if (vramSize <= _0x1000)
+          DmaFill16(3, 0, vramOffset, 0x1000);
+          vramOffset += 0x1000;
+          vramSize -= 0x1000;
+          if (vramSize <= 0x1000)
           {
               DmaFill16(3, 0, vramOffset, vramSize);
               break;
@@ -989,10 +946,10 @@ export function LoadHofBgs(): any {
               return TRUE;
           break;
       case 2:
-          FillBgTilemapBufferRect_Palette0(1, 1, 0, 0, _0x20, 2);
-          FillBgTilemapBufferRect_Palette0(1, 0, 0, 3, _0x20, 0xB);
-          FillBgTilemapBufferRect_Palette0(1, 1, 0, 0xE, _0x20, 6);
-          FillBgTilemapBufferRect_Palette0(3, 2, 0, 0, _0x20, _0x20);
+          FillBgTilemapBufferRect_Palette0(1, 1, 0, 0, 0x20, 2);
+          FillBgTilemapBufferRect_Palette0(1, 0, 0, 3, 0x20, 0xB);
+          FillBgTilemapBufferRect_Palette0(1, 1, 0, 0xE, 0x20, 6);
+          FillBgTilemapBufferRect_Palette0(3, 2, 0, 0, 0x20, 0x20);
 
           CopyBgTilemapBufferToVram(1);
           CopyBgTilemapBufferToVram(3);

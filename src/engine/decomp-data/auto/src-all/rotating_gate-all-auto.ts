@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, CreateSprite, DIR_EAST, DIR_NORTH,
-  DIR_SOUTH, DIR_WEST, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-  DestroySprite, FALSE, FreeSpriteOamMatrix, GetMapCoordsFromSpritePos,
-  GetPlayerSpeed, GetVarPointer, LoadSpriteSheets, MAP_GROUP,
-  MAP_NUM, MapGridGetCollisionAt, PlaySE, StartSpriteAffineAnim,
-  TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static s32 GetCurrentMapRotatingGatePuzzleType(void) */
 export function GetCurrentMapRotatingGatePuzzleType(): any {
   if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_FORTREE_CITY_GYM) &&
@@ -149,7 +134,7 @@ export function RotatingGate_CreateGate(gateId: any, deltaX: any, deltaY: any): 
 
       template.tileTag = gate.shape + ROTATING_GATE_TILE_TAG;
 
-      spriteId = CreateSprite(template, 0, 0, _0x94);
+      spriteId = CreateSprite(template, 0, 0, 0x94);
       if (spriteId == MAX_SPRITES)
           return MAX_SPRITES;
 

@@ -15,17 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  FALSE, GetFlagPointer, GetVarPointer, ResetPokedexScrollPositions,
-  TRUE, memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void InitEventData(void) */
 export function InitEventData(): any {
   memset(gSaveBlock1Ptr.flags, 0, sizeof(gSaveBlock1Ptr.flags));
@@ -61,7 +50,7 @@ export function DisableNationalPokedex(): any {
 export function EnableNationalPokedex(): any {
   let nationalDexVar: any = GetVarPointer(VAR_NATIONAL_DEX);
       gSaveBlock2Ptr.pokedex.nationalMagic = 0xDA;
-      nationalDexVar = _0x302;
+      nationalDexVar = 0x302;
       FlagSet(FLAG_SYS_NATIONAL_DEX);
       gSaveBlock2Ptr.pokedex.mode = DEX_MODE_NATIONAL;
       gSaveBlock2Ptr.pokedex.order = 0;
@@ -70,7 +59,7 @@ export function EnableNationalPokedex(): any {
 
 /** bool32 IsNationalPokedexEnabled(void) */
 export function IsNationalPokedexEnabled(): any {
-  if (gSaveBlock2Ptr.pokedex.nationalMagic == 0xDA && VarGet(VAR_NATIONAL_DEX) == _0x302 && FlagGet(FLAG_SYS_NATIONAL_DEX))
+  if (gSaveBlock2Ptr.pokedex.nationalMagic == 0xDA && VarGet(VAR_NATIONAL_DEX) == 0x302 && FlagGet(FLAG_SYS_NATIONAL_DEX))
           return TRUE;
       else
           return FALSE;
@@ -146,13 +135,13 @@ export function DisableResetRTC(): any {
 
 /** void EnableResetRTC(void) */
 export function EnableResetRTC(): any {
-  VarSet(VAR_RESET_RTC_ENABLE, _0x920);
+  VarSet(VAR_RESET_RTC_ENABLE, 0x920);
       FlagSet(FLAG_SYS_RESET_RTC_ENABLE);
 }
 
 /** bool32 CanResetRTC(void) */
 export function CanResetRTC(): any {
-  if (FlagGet(FLAG_SYS_RESET_RTC_ENABLE) && VarGet(VAR_RESET_RTC_ENABLE) == _0x920)
+  if (FlagGet(FLAG_SYS_RESET_RTC_ENABLE) && VarGet(VAR_RESET_RTC_ENABLE) == 0x920)
           return TRUE;
       else
           return FALSE;

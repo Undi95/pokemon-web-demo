@@ -15,40 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AnimateSprites, BGCNT_16COLOR, BGCNT_256COLOR,
-  BGCNT_AFF256x256, BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE,
-  BGCNT_TXT256x256, BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR,
-  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_LIGHTEN, BLDCNT_TGT1_BG1,
-  BLDCNT_TGT1_BG2, BLDCNT_TGT1_OBJ, BLDCNT_TGT2_BD, BLDCNT_TGT2_BG0,
-  BeginNormalPaletteFade, BuildOamBuffer, CanResetRTC, Cos,
-  CreateSprite, CreateTask, DISPCNT_BG0_ON, DISPCNT_BG1_ON,
-  DISPCNT_BG2_ON, DISPCNT_MODE_1, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
-  DISPCNT_WIN0_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroySprite,
-  DmaFill16, DmaFill32, EnableInterrupts, FALSE,
-  FadeOutBGM, FreeAllSpritePalettes, JOY_HELD, JOY_NEW,
-  LZ77UnCompVram, LoadCompressedSpriteSheet, LoadOam, LoadPalette,
-  LoadSpritePalette, NULL, OBJ_PLTT_ID, PALETTES_ALL,
-  PLTT_SIZE, PLTT_SIZE_4BPP, PanFadeAndZoomScreen, ProcessSpriteCopyRequests,
-  Q_8_8, Q_8_8_TO_INT, REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS,
-  REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H,
-  REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ,
-  REG_OFFSET_WINOUT, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  RunTasks, ST_OAM_OBJ_NORMAL, ST_OAM_OBJ_WINDOW, ScanlineEffect_InitHBlankDmaTransfer,
-  ScanlineEffect_InitWave, ScanlineEffect_Stop, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, StartSpriteAnim, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, VRAM_SIZE, _RGB, m4aMPlayAllStop,
-  m4aSongNumStart,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void SpriteCB_VersionBannerLeft(struct Sprite *sprite) */
 export function SpriteCB_VersionBannerLeft(sprite: any): any {
   if (gTasks[sprite.sParentTaskId].tSkipToNext)
@@ -290,7 +256,7 @@ export function CB2_InitTitleScreen(): any {
           gMain.state = 4;
           break;
       case 4:
-          PanFadeAndZoomScreen(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, _0x100, 0);
+          PanFadeAndZoomScreen(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, 0x100, 0);
           SetGpuReg(REG_OFFSET_BG2X_L, -29 * 256);
           SetGpuReg(REG_OFFSET_BG2X_H, -1);
           SetGpuReg(REG_OFFSET_BG2Y_L, -32 * 256);
@@ -420,7 +386,7 @@ export function Task_TitleScreenPhase2(taskId: any): any {
        
       yPos = gTasks[taskId].tBg2Y * 256;
       SetGpuReg(REG_OFFSET_BG2Y_L, yPos);
-      SetGpuReg(REG_OFFSET_BG2Y_H, yPos / _0x10000);
+      SetGpuReg(REG_OFFSET_BG2Y_H, yPos / 0x10000);
 
       gTasks[taskId].data[5] = 15;  
       gTasks[taskId].data[6] = 6;

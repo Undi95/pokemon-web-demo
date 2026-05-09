@@ -15,51 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, Alloc, AllocZeroed, CalcCenterToCornerVec,
-  CanCameraMoveInDirection, ChangeSpriteAffineAnimIfDifferent, ClearLinkPlayerObjectEvents, ClearPlayerAvatarInfo,
-  CreateSprite, CreateSpriteAtEnd, CreateTask, CreateWarpArrowSprite,
-  CurrentBattlePyramidLocation, DIR_EAST, DIR_NONE, DIR_NORTH,
-  DIR_SOUTH, DIR_WEST, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-  DestroySprite, DestroyTask, FALSE, FREE_AND_SET_NULL,
-  FieldEffectStart, FindCameraSprite, FindTallGrassFieldEffectSpriteId, FlagGet,
-  FlagSet, Free, FreeAllSpritePalettes, FreeOamMatrix,
-  GetBaseTemplateForObjectEvent, GetBerryTypeByBerryTreeId, GetFaceDirectionMovementAction, GetJump2MovementAction,
-  GetJumpInPlaceMovementAction, GetJumpMovementAction, GetMapBorderIdAt, GetMewMoveDirection,
-  GetNumBattlePyramidObjectEvents, GetObjectEventGraphicsInfo, GetObjectEventTemplateByLocalIdAndMap, GetPlayerAvatarGenderByGraphicsId,
-  GetPlayerFacingDirection, GetPlayerMovementDirection, GetSlideMovementAction, GetStageByBerryTreeId,
-  GetStepAnimTable, GetWalkFastMovementAction, GetWalkFasterMovementAction, GetWalkInPlaceFastMovementAction,
-  GetWalkInPlaceFasterMovementAction, GetWalkInPlaceNormalMovementAction, GetWalkInPlaceSlowMovementAction, GetWalkNormalMovementAction,
-  ITEM_TO_BERRY, InTrainerHill, IndexOfSpritePaletteTag, InitSpriteAffineAnim,
-  JUMP_DISTANCE_FAR, JUMP_DISTANCE_IN_PLACE, JUMP_DISTANCE_NORMAL, JUMP_TYPE_HIGH,
-  JUMP_TYPE_LOW, JUMP_TYPE_NORMAL, LOCALID_NONE, LOCALID_PLAYER,
-  LoadPalette, LoadSpritePalette, LoadWordFromTwoHalfwords, MAP_GROUP,
-  MAP_NUM, MAP_UNDEFINED, MOVE_SPEED_FASTER, MOVE_SPEED_FASTEST,
-  MOVE_SPEED_FAST_1, MOVE_SPEED_FAST_2, MOVE_SPEED_NORMAL, MapGridGetCollisionAt,
-  MapGridGetElevationAt, MapGridGetMetatileBehaviorAt, MetatileBehavior_HasRipples, MetatileBehavior_IsDeepSand,
-  MetatileBehavior_IsFootprints, MetatileBehavior_IsHotSprings, MetatileBehavior_IsIce, MetatileBehavior_IsJumpEast,
-  MetatileBehavior_IsJumpNorth, MetatileBehavior_IsJumpSouth, MetatileBehavior_IsJumpWest, MetatileBehavior_IsLongGrass,
-  MetatileBehavior_IsPacifidlogLog, MetatileBehavior_IsPuddle, MetatileBehavior_IsReflective, MetatileBehavior_IsSandOrDeepSand,
-  MetatileBehavior_IsSeaweed, MetatileBehavior_IsShallowFlowingWater, MetatileBehavior_IsShortGrass, MetatileBehavior_IsTallGrass,
-  NULL, OBJECT_EVENTS_COUNT, OBJ_PLTT_ID, ObjectEventIsFarawayIslandMew,
-  PLTT_SIZE_4BPP, PlayerGetCopyableMovement, PlayerGetDestCoords, RETURN_REFLECTION_TYPE_AT,
-  Random, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF,
-  SeekSpriteAnim, SetBuriedTrainerMovement, SetPlayerAvatarExtraStateTransition, SetSubspriteTables,
-  SetUpReflection, ShouldMewShakeGrass, StartRevealDisguise, StartSpriteAffineAnim,
-  StartSpriteAffineAnimIfDifferent, StartSpriteAnim, StartSpriteAnimIfDifferent, StoreWordInTwoHalfwords,
-  TRUE, TestPlayerAvatarFlags, UpdateRevealDisguise, VarGetObjectEventGraphicsId,
-  gStandardDirections, memcpy, sActionFuncId, sDirection,
-  sDirectionToVectors, sJumpDisplacements, sJumpInitDisplacements, sMoveDirectionAnimNums,
-  sMoveDirectionFastAnimNums, sMoveDirectionFasterAnimNums, sMoveDirectionFastestAnimNums, sObjEventId,
-  sOppositeDirections, sStepTimes, sTypeFuncId,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void ClearObjectEvent(struct ObjectEvent *objectEvent) */
 export function ClearObjectEvent(objectEvent: any): any {
   objectEvent = ({} as any);

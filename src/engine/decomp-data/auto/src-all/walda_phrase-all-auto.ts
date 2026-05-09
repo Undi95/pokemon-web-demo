@@ -15,20 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ALIGNED, ARRAY_COUNT, DoNamingScreen, FALSE,
-  GetTrainerId, GetWaldaPhrasePtr, IsWaldaPhraseEmpty, SetMainCallback2,
-  SetWaldaPhrase, SetWaldaWallpaperColors, SetWaldaWallpaperIconId, SetWaldaWallpaperLockedOrUnlocked,
-  SetWaldaWallpaperPatternId, StringCompare, StringCopy, StringLength,
-  TO_BIT_OFFSET, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u16 TryBufferWaldaPhrase(void) */
 export function TryBufferWaldaPhrase(): any {
   if (IsWaldaPhraseEmpty())
@@ -138,14 +124,14 @@ export function TryCalculateWallpaper(backgroundClr: any, foregroundClr: any, ic
        
        
       for (i = 0; i < WALDA_PHRASE_LENGTH - 1; i++)
-          SetWallpaperDataFromLetter(data, charsByTableId, BITS_PER_LETTER * i, TO_BIT_OFFSET(i), BITS_PER_LETTER);
+          SetWallpaperDataFromLetter(data, charsByTableId, BITS_PER_LETTER * i, (3 + (8 * ((i)))), BITS_PER_LETTER);
 
        
-      SetWallpaperDataFromLetter(data, charsByTableId, BITS_PER_LETTER * (WALDA_PHRASE_LENGTH - 1), TO_BIT_OFFSET(WALDA_PHRASE_LENGTH - 1), 2);
+      SetWallpaperDataFromLetter(data, charsByTableId, BITS_PER_LETTER * (WALDA_PHRASE_LENGTH - 1), (3 + (8 * ((WALDA_PHRASE_LENGTH - 1)))), 2);
 
        
        
-      if (GetWallpaperDataBits(data, 0, 3) != GetWallpaperDataBits(charsByTableId, TO_BIT_OFFSET(WALDA_PHRASE_LENGTH - 1) + 2, 3))
+      if (GetWallpaperDataBits(data, 0, 3) != GetWallpaperDataBits(charsByTableId, (3 + (8 * ((WALDA_PHRASE_LENGTH - 1)))) + 2, 3))
           return FALSE;
 
        

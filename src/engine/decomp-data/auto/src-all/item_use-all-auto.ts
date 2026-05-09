@@ -15,39 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, BagMenu_YesNo, CleanupOverworldWindowsAndTilemaps, ClearDialogWindowAndFrame,
-  CloseBattlePyramidBag, ConvertIntToDecimalStringN, CopyItemName, CreateTask,
-  CurrentBattlePyramidLocation, DIR_EAST, DIR_NONE, DIR_NORTH,
-  DIR_SOUTH, DIR_WEST, DestroyTask, DisplayItemMessage,
-  DisplayItemMessageInBattlePyramid, DisplayItemMessageOnField, ExecuteTableBasedItemEffect, FALSE,
-  FadeInFromBlack, FadeScreen, FlagClear, FlagGet,
-  FlagSet, GetBerryPowder, GetCoins, GetItemEffectType,
-  GetItemFieldFunc, GetItemHoldEffectParam, GetItemPocket, GetItemSecondaryId,
-  GetItemType, GetMapConnectionAtPos, GetMapHeaderFromConnection, GetObjectEventIdByLocalIdAndMap,
-  GetObjectEventIdByPosition, GetOnOffBike, GetPlayerFacingDirection, GetXYCoordsOneStepInFrontOfPlayer,
-  IncrementGameStat, IsBikingDisallowedByPlayer, IsPlayerFacingEmptyBerryTreePatch, IsPlayerFacingSurfableFishableWater,
-  IsPlayerPartyAndPokemonStorageFull, IsSEPlaying, IsWeatherNotFadingIn, ItemIdToBattleMoveId,
-  JOY_NEW, LOCALID_PLAYER, LockPlayerFieldControls, MapGridGetCollisionAt,
-  MapGridGetMetatileBehaviorAt, MenuHelpers_IsLinkActive, MetatileBehavior_IsBridgeOverWaterNoEdge, MetatileBehavior_IsHorizontalRail,
-  MetatileBehavior_IsIsolatedHorizontalRail, MetatileBehavior_IsIsolatedVerticalRail, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsVerticalRail,
-  MetatileBehavior_IsWaterfall, OBJECT_EVENTS_COUNT, ObjectEventCheckHeldMovementStatus, ObjectEventClearHeldMovement,
-  ObjectEventClearHeldMovementIfFinished, OpenPokeblockCase, Overworld_IsBikingAllowed, Overworld_ResetStateAfterDigEscRope,
-  PlaySE, PlayerGetDestCoords, PlayerGetElevation, PlayerTurnInPlace,
-  ReadMail, RemoveBagItem, ResetInitialPlayerAvatarState, STR_CONV_MODE_LEFT_ALIGN,
-  ScriptContext_SetupScript, ScriptUnfreezeObjectEvents, StartEscapeRopeFieldEffect, StartFishing,
-  StringCopy, StringExpandPlaceholders, TRUE, Task_FadeAndCloseBagMenu,
-  TestPlayerAvatarFlags, TryToWaterBerryTree, UnfreezeObjectEvent, UnlockPlayerFieldControls,
-  UpdatePocketItemList, UpdatePocketListPosition, UpdatePyramidBagCursorPos, UpdatePyramidBagList,
-  UseStatIncreaseItem, VarGet, VarSet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void SetUpItemUseCallback(u8 taskId) */
 export function SetUpItemUseCallback(taskId: any): any {
   let type: any = null;

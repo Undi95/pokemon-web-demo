@@ -15,39 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AbnormalWeatherHasExpired, AdjustFriendship, CheckForTrainersWantingBattle, CountSSTidalStep,
-  DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST,
-  DoDiveWarp, DoDoorWarp, DoEscalatorWarp, DoLavaridgeGym1FWarp,
-  DoLavaridgeGymB1FWarp, DoMossdeepGymWarp, DoPoisonFieldEffect, DoSecretBaseGlitterMatSparkle,
-  DoSpinExitWarp, DoTeleportTileWarp, DoWarp, FALSE,
-  FlagGet, GetCoordEventScriptAtPosition, GetCurrentTrainerHillMapId, GetInteractionScript,
-  GetNumFloorsInTrainerHillChallenge, GetPlayerFacingDirection, GetPlayerMovementDirection, GetPlayerSpeed,
-  GetVarPointer, GetXYCoordsOneStepInFrontOfPlayer, InUnionRoom, IncrementBirthIslandRockStepCount,
-  IncrementGameStat, IncrementRematchStepCounter, LOCALID_NONE, MAP_NUM,
-  MapGridGetElevationAt, MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MetatileBehavior_IsAquaHideoutWarp,
-  MetatileBehavior_IsBattlePyramidWarp, MetatileBehavior_IsCrackedFloorHole, MetatileBehavior_IsDiveable, MetatileBehavior_IsEastArrowWarp,
-  MetatileBehavior_IsEscalator, MetatileBehavior_IsForcedMovementTile, MetatileBehavior_IsLadder, MetatileBehavior_IsLavaridge1FWarp,
-  MetatileBehavior_IsLavaridgeB1FWarp, MetatileBehavior_IsMossdeepGymWarp, MetatileBehavior_IsMtPyreHole, MetatileBehavior_IsNonAnimDoor,
-  MetatileBehavior_IsNorthArrowWarp, MetatileBehavior_IsOpenSecretBaseDoor, MetatileBehavior_IsSecretBaseGlitterMat, MetatileBehavior_IsSecretBaseSoundMat,
-  MetatileBehavior_IsSouthArrowWarp, MetatileBehavior_IsUnableToEmerge, MetatileBehavior_IsUnionRoomWarp, MetatileBehavior_IsWarpDoor,
-  MetatileBehavior_IsWestArrowWarp, NULL, Overworld_GetMapHeaderByGroupAndId, PlaySE,
-  PlaySecretBaseMusicNoteMatSound, PlayerGetDestCoords, PlayerGetElevation, SafariZoneTakeStep,
-  ScriptContext_SetupScript, SetDiveWarpDive, SetDiveWarpEmerge, SetDynamicWarp,
-  SetWarpDestinationToDynamicWarp, SetWarpDestinationToMapWarp, SetWarpDestinationTrainerHill4F, SetWarpDestinationTrainerHillFinalFloor,
-  ShouldDoBrailleRegicePuzzle, ShouldDoRivalRayquazaCall, ShouldDoRoxanneCall, ShouldDoScottBattleFrontierCall,
-  ShouldDoScottFortreeCall, ShouldDoWallyCall, ShouldEggHatch, ShowStartMenu,
-  StandardWildEncounter, StoreInitialPlayerAvatarState, TRUE, TryRunOnFrameMapScript,
-  TryStartMatchCall, UpdateEscapeWarp, UpdateFarawayIslandStepCounter, UpdateRepelCounter,
-  UseRegisteredKeyItemOnField, VarSet, WarpIntoSecretBase,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void FieldClearPlayerInput(struct FieldInput *input) */
 export function FieldClearPlayerInput(input: any): any {
   input.pressedAButton = FALSE;

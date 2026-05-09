@@ -15,31 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemap, AnimLoadCompressedBgTilemapHandleContest, AnimTranslateLinear,
-  BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1,
-  CMD_ARGS, ClearBattleAnimBg, Cos, CreateInvisibleSpriteWithCallback,
-  CreateSprite, CreateTask, DISPLAY_HEIGHT, DISPLAY_WIDTH,
-  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, DestroyTask,
-  FALSE, FreeOamMatrix, FreeSpriteOamMatrix, GetAnimBattlerSpriteId,
-  GetBattleAnimBg1Data, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord,
-  GetBattlerSpriteSubpriority, GetMonData, ISO_RANDOMIZE2, IndexOfSpritePaletteTag,
-  InitAnimArcTranslation, InitAnimLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
-  IsContest, LoadCompressedPalette, OBJ_PLTT_ID, PLTT_SIZE_4BPP,
-  PrepareBattlerSpriteForRotScale, PrepareEruptAnimTaskData, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, Random2, ResetSpriteRotScale,
-  ST_OAM_OBJ_NORMAL, ScanlineEffect_SetParams, ScanlineEffect_Stop, SetAnimBgAttribute,
-  SetBattlerSpriteYOffsetFromYScale, SetGpuReg, Sin, SpriteCallbackDummy,
-  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6, TASK_NONE,
-  TRUE, TranslateAnimHorizontalArc, UpdateEruptAnimTask, gSineTable,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void AnimTask_CreateRaindrops(u8 taskId) */
 export function AnimTask_CreateRaindrops(taskId: any): any {
   let x, y;
@@ -398,8 +373,8 @@ export function AnimTask_CreateSurfWave(taskId: any): any {
       taskId2 = CreateTask(AnimTask_SurfWaveScanlineEffect, gTasks[taskId].priority + 1);
       gTasks[taskId].data[15] = taskId2;
       gTasks[taskId2].data[0] = 0;
-      gTasks[taskId2].data[1] = _0x1000;
-      gTasks[taskId2].data[2] = _0x1000;
+      gTasks[taskId2].data[1] = 0x1000;
+      gTasks[taskId2].data[2] = 0x1000;
       if (IsContest())
       {
           x = -80;
@@ -619,7 +594,7 @@ export function AnimTask_WaterSpoutLaunch_Step(taskId: any): any {
       switch (task.data[0])
       {
       case 0:
-          PrepareEruptAnimTaskData(task, task.data[15], _0x100, _0x100, 0xE0, _0x200, 32);
+          PrepareEruptAnimTaskData(task, task.data[15], 0x100, 0x100, 0xE0, 0x200, 32);
           task.data[0]++;
       case 1:
           if (++task.data[3] > 1)
@@ -647,7 +622,7 @@ export function AnimTask_WaterSpoutLaunch_Step(taskId: any): any {
       case 2:
           if (++task.data[3] > 4)
           {
-              PrepareEruptAnimTaskData(task, task.data[15], 0xE0, _0x200, _0x180, 0xE0, 8);
+              PrepareEruptAnimTaskData(task, task.data[15], 0xE0, 0x200, 0x180, 0xE0, 8);
               task.data[3] = 0;
               task.data[0]++;
           }
@@ -673,7 +648,7 @@ export function AnimTask_WaterSpoutLaunch_Step(taskId: any): any {
                   gSprites[task.data[15]].y2 -= 2;
               if (task.data[4] == 10)
               {
-                  PrepareEruptAnimTaskData(task, task.data[15], _0x180, 0xE0, _0x100, _0x100, 8);
+                  PrepareEruptAnimTaskData(task, task.data[15], 0x180, 0xE0, 0x100, 0x100, 8);
                   task.data[3] = 0;
                   task.data[4] = 0;
                   task.data[0]++;

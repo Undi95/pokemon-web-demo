@@ -15,34 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddScrollIndicatorArrowPair, AddTextPrinterParameterized, AllocZeroed,
-  AnimateSprites, BeginNormalPaletteFade, BuildOamBuffer, ClearScheduledBgCopiesToVram,
-  CopyWindowToVram, CreateSprite, CreateTask, DISPCNT_MODE_0,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DestroyListMenuTask, DestroyTask,
-  DoScheduledBgTilemapCopiesToVram, FALSE, FREE_AND_SET_NULL, FillWindowPixelBuffer,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, GetLRKeysPressed, GetMonData,
-  GetMoveRelearnerMoves, GiveMoveToMon, InitBgsFromTemplates, InitMoveRelearnerWindows,
-  IsFanfareTaskInactive, JOY_NEW, ListMenuGetScrollAndRow, ListMenuInit,
-  ListMenu_ProcessInput, LoadMoveRelearnerMovesList, LoadOam, LoadSpritePalette,
-  LoadSpriteSheet, LockPlayerFieldControls, Menu_ProcessInputNoWrapClearOnChoose, MoveRelearnerCreateYesNoMenu,
-  MoveRelearnerPrintMessage, MoveRelearnerRunTextPrinters, NULL, PALETTES_ALL,
-  PlayFanfare, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, RemoveMonPPBonus, RemoveScrollIndicatorArrowPair,
-  ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetSpriteData, ResetTasks,
-  ResetVramOamAndBgCntRegs, RunTasks, ScheduleBgCopyTilemapToVram, SetBackdropFromColor,
-  SetGpuReg, SetMainCallback2, SetMonMoveSlot, SetVBlankCallback,
-  ShowBg, ShowSelectMovePokemonSummaryScreen, StartSpriteAnim, StringCopy,
-  StringCopy_Nickname, StringExpandPlaceholders, TASK_NONE, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_MoveRelearner(void) */
 export function VBlankCB_MoveRelearner(): any {
   LoadOam();
@@ -55,7 +27,7 @@ export function TeachMoveRelearnerMove(): any {
   LockPlayerFieldControls();
       CreateTask(Task_WaitForFadeOut, 10);
        
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, _0x10, RGB_BLACK);
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
 }
 
 /** static void Task_WaitForFadeOut(u8 taskId) */
@@ -316,7 +288,7 @@ export function DoMoveRelearnerMain(): any {
       case MENU_STATE_CHOOSE_SETUP_STATE:
           if (!MoveRelearnerRunTextPrinters())
           {
-              FillWindowPixelBuffer(RELEARNERWIN_MSG, _0x11);
+              FillWindowPixelBuffer(RELEARNERWIN_MSG, 0x11);
               if (sMoveRelearnerMenuState.showContestInfo == FALSE)
               {
                   sMoveRelearnerStruct.state = MENU_STATE_SETUP_BATTLE_MODE;
@@ -447,7 +419,7 @@ export function HideHeartSpritesAndShowTeachMoveText(onlyHideSprites: any): any 
       if (!onlyHideSprites)
       {
           StringExpandPlaceholders(gStringVar4, gText_TeachWhichMoveToPkmn);
-          FillWindowPixelBuffer(RELEARNERWIN_MSG, _0x11);
+          FillWindowPixelBuffer(RELEARNERWIN_MSG, 0x11);
           AddTextPrinterParameterized(RELEARNERWIN_MSG, FONT_NORMAL, gStringVar4, 0, 1, 0, NULL);
       }
 }
@@ -509,7 +481,7 @@ export function ShowTeachMoveText(shouldDoNothingInstead: any): any {
   if (shouldDoNothingInstead == FALSE)
       {
           StringExpandPlaceholders(gStringVar4, gText_TeachWhichMoveToPkmn);
-          FillWindowPixelBuffer(RELEARNERWIN_MSG, _0x11);
+          FillWindowPixelBuffer(RELEARNERWIN_MSG, 0x11);
           AddTextPrinterParameterized(RELEARNERWIN_MSG, FONT_NORMAL, gStringVar4, 0, 1, 0, NULL);
       }
 }

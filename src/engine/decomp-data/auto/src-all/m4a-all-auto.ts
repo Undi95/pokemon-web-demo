@@ -15,18 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  CpuCopy32, CpuFill32, FALSE, MEMACC_COND_JUMP,
-  MPlayJumpTableCopy, NULL, READ_XCMD_BYTE, SoundMain,
-  TRUE, TrackStop, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u32 MidiKeyToFreq(struct WaveData *wav, u8 key, u8 fineAdjust) */
 export function MidiKeyToFreq(wav: any, key: any, fineAdjust: any): any {
   let val1: any = null;
@@ -242,14 +230,14 @@ export function MPlayExtender(cgbChans: any): any {
                      | SOUND_2_ON
                      | SOUND_1_ON;
       REG_SOUNDCNT_L = 0;  
-      REG_NR12 = _0x8;
-      REG_NR22 = _0x8;
-      REG_NR42 = _0x8;
-      REG_NR14 = _0x80;
-      REG_NR24 = _0x80;
-      REG_NR44 = _0x80;
+      REG_NR12 = 0x8;
+      REG_NR22 = 0x8;
+      REG_NR42 = 0x8;
+      REG_NR14 = 0x80;
+      REG_NR24 = 0x80;
+      REG_NR44 = 0x80;
       REG_NR30 = 0;
-      REG_NR50 = _0x77;
+      REG_NR50 = 0x77;
 
       soundInfo = SOUND_INFO_PTR;
 
@@ -278,13 +266,13 @@ export function MPlayExtender(cgbChans: any): any {
       CpuFill32(0, cgbChans, 0 * 4);
 
       cgbChans[0].type = 1;
-      cgbChans[0].panMask = _0x11;
+      cgbChans[0].panMask = 0x11;
       cgbChans[1].type = 2;
-      cgbChans[1].panMask = _0x22;
+      cgbChans[1].panMask = 0x22;
       cgbChans[2].type = 3;
-      cgbChans[2].panMask = _0x44;
+      cgbChans[2].panMask = 0x44;
       cgbChans[3].type = 4;
-      cgbChans[3].panMask = _0x88;
+      cgbChans[3].panMask = 0x88;
 
       soundInfo.ident = ident;
 }
@@ -321,7 +309,7 @@ export function SoundInit(soundInfo: any): any {
       REG_SOUNDCNT_H = SOUND_B_FIFO_RESET | SOUND_B_TIMER_0 | SOUND_B_LEFT_OUTPUT
                      | SOUND_A_FIFO_RESET | SOUND_A_TIMER_0 | SOUND_A_RIGHT_OUTPUT
                      | SOUND_ALL_MIX_FULL;
-      REG_SOUNDBIAS_H = (REG_SOUNDBIAS_H & 0x3F) | _0x40;
+      REG_SOUNDBIAS_H = (REG_SOUNDBIAS_H & 0x3F) | 0x40;
 
       REG_DMA1SAD = soundInfo.pcmBuffer;
       REG_DMA1DAD = (s32)&REG_FIFO_A;
@@ -423,7 +411,7 @@ export function m4aSoundMode(mode: any): any {
 
       if (temp)
       {
-          temp = (temp & _0x300000) >> 14;
+          temp = (temp & 0x300000) >> 14;
           REG_SOUNDBIAS_H = (REG_SOUNDBIAS_H & 0x3F) | temp;
       }
 
@@ -584,7 +572,7 @@ export function MPlayStart(mplayInfo: any, songHeader: any): any {
           mplayInfo.clock = 0;
           mplayInfo.tempoD = 150;
           mplayInfo.tempoI = 150;
-          mplayInfo.tempoU = _0x100;
+          mplayInfo.tempoU = 0x100;
           mplayInfo.tempoC = 0;
           mplayInfo.fadeOI = 0;
 
@@ -811,18 +799,18 @@ export function CgbOscOff(chanNum: any): any {
       {
       case 1:
           REG_NR12 = 8;
-          REG_NR14 = _0x80;
+          REG_NR14 = 0x80;
           break;
       case 2:
           REG_NR22 = 8;
-          REG_NR24 = _0x80;
+          REG_NR24 = 0x80;
           break;
       case 3:
           REG_NR30 = 0;
           break;
       default:
           REG_NR42 = 8;
-          REG_NR44 = _0x80;
+          REG_NR44 = 0x80;
       }
 }
 
@@ -954,7 +942,7 @@ export function CgbSound(): any {
                   case 3:
                       if (channels.wavePointer != channels.currentPointer)
                       {
-                          nrx0ptr = _0x40;
+                          nrx0ptr = 0x40;
                           REG_WAVE_RAM0 = channels.wavePointer[0];
                           REG_WAVE_RAM1 = channels.wavePointer[1];
                           REG_WAVE_RAM2 = channels.wavePointer[2];
@@ -966,7 +954,7 @@ export function CgbSound(): any {
                       if (channels.length)
                           channels.n4 = 0xC0;
                       else
-                          channels.n4 = _0x80;
+                          channels.n4 = 0x80;
                       break;
                   default:
                       nrx1ptr = channels.length;
@@ -974,9 +962,9 @@ export function CgbSound(): any {
                   // LABEL: init_env_step_time_dir:
                       envelopeStepTimeAndDir = channels.attack + CGB_NRx2_ENV_DIR_INC;
                       if (channels.length)
-                          channels.n4 = _0x40;
+                          channels.n4 = 0x40;
                       else
-                          channels.n4 = _0x00;
+                          channels.n4 = 0x00;
                       break;
                   }
                   channels.envelopeCounter = channels.attack;
@@ -1138,16 +1126,16 @@ export function CgbSound(): any {
               {
                   let dac_pwm_rate: any = REG_SOUNDBIAS_H;
 
-                  if (dac_pwm_rate < _0x40)         
+                  if (dac_pwm_rate < 0x40)         
                       channels.frequency = (channels.frequency + 2) & 0x7fc;
-                  else if (dac_pwm_rate < _0x80)    
+                  else if (dac_pwm_rate < 0x80)    
                       channels.frequency = (channels.frequency + 1) & 0x7fe;
               }
 
               if (ch != 4)
                   nrx3ptr = channels.frequency;
               else
-                  nrx3ptr = (nrx3ptr & _0x08) | channels.frequency;
+                  nrx3ptr = (nrx3ptr & 0x08) | channels.frequency;
               channels.n4 = (channels.n4 & 0xC0) + (((channels.frequency) + 1));
               nrx4ptr = (channels.n4 & mask);
           }
@@ -1159,9 +1147,9 @@ export function CgbSound(): any {
               if (ch == 3)
               {
                   nrx2ptr = gCgb3Vol[channels.envelopeVolume];
-                  if (channels.n4 & _0x80)
+                  if (channels.n4 & 0x80)
                   {
-                      nrx0ptr = _0x80;
+                      nrx0ptr = 0x80;
                       nrx4ptr = channels.n4;
                       channels.n4 &= 0x7f;
                   }
@@ -1170,9 +1158,9 @@ export function CgbSound(): any {
               {
                   let envMask: any = 0xF;
                   nrx2ptr = (envelopeStepTimeAndDir & envMask) + (channels.envelopeVolume << 4);
-                  nrx4ptr = channels.n4 | _0x80;
-                  if (ch == 1 && !(nrx0ptr & _0x08))
-                      nrx4ptr = channels.n4 | _0x80;
+                  nrx4ptr = channels.n4 | 0x80;
+                  if (ch == 1 && !(nrx0ptr & 0x08))
+                      nrx4ptr = channels.n4 | 0x80;
               }
           }
 
@@ -1414,40 +1402,40 @@ export function ply_memacc(mplayInfo: any, track: any): any {
           addr -= mplayInfo.memAccArea[data];
           return;
       case 6:
-          MEMACC_COND_JUMP(addr == data)
+          \
           return;
       case 7:
-          MEMACC_COND_JUMP(addr != data)
+          \
           return;
       case 8:
-          MEMACC_COND_JUMP(addr > data)
+          \
           return;
       case 9:
-          MEMACC_COND_JUMP(addr >= data)
+          \
           return;
       case 10:
-          MEMACC_COND_JUMP(addr <= data)
+          \
           return;
       case 11:
-          MEMACC_COND_JUMP(addr < data)
+          \
           return;
       case 12:
-          MEMACC_COND_JUMP(addr == mplayInfo.memAccArea[data])
+          \
           return;
       case 13:
-          MEMACC_COND_JUMP(addr != mplayInfo.memAccArea[data])
+          \
           return;
       case 14:
-          MEMACC_COND_JUMP(addr > mplayInfo.memAccArea[data])
+          \
           return;
       case 15:
-          MEMACC_COND_JUMP(addr >= mplayInfo.memAccArea[data])
+          \
           return;
       case 16:
-          MEMACC_COND_JUMP(addr <= mplayInfo.memAccArea[data])
+          \
           return;
       case 17:
-          MEMACC_COND_JUMP(addr < mplayInfo.memAccArea[data])
+          \
           return;
       default:
           return;
@@ -1592,7 +1580,7 @@ export function SetPokemonCryPanpot(val: any): any {
 
 /** void SetPokemonCryPitch(s16 val) */
 export function SetPokemonCryPitch(val: any): any {
-  let b: any = val + _0x80;
+  let b: any = val + 0x80;
       let a: any = gPokemonCrySong.tuneValue2 - gPokemonCrySong.tuneValue;
       gPokemonCrySong.tieKeyValue = (b >> 8) & 0x7F;
       gPokemonCrySong.tuneValue = (b >> 1) & 0x7F;

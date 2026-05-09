@@ -15,22 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AllocZeroed, CpuCopy16, CpuFill16,
-  CreateSprite, DestroySprite, FALSE, FlagGet,
-  Free, GetLinkPlayerCount, GetMultiplayerId, GetSpriteTileStartByTag,
-  IsNationalPokedexEnabled, IsRfuRecoveringFromLinkLoss, IsRfuSerialNumberValid, LoadCompressedSpriteSheet,
-  LoadSpritePalette, MAX_RFU_PLAYERS, NULL, RfuGetStatus,
-  StringCompare, StringCopy, TRUE, memcpy,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void RfuRecvQueue_Reset(struct RfuRecvQueue *queue) */
 export function RfuRecvQueue_Reset(queue: any): any {
   let i: any = null;

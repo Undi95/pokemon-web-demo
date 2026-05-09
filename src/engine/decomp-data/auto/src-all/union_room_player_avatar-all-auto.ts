@@ -15,24 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ArePlayerFieldControlsLocked, CreateTask, CreateVirtualObject, DIR_EAST,
-  DIR_SOUTH, DestroySprite, DestroyTask, FALSE,
-  FindTaskIdByFunc, FlagClear, FlagGet, FlagSet,
-  FreezeObjectEvent, FuncIsActiveTask, GetPlayerFacingDirection, GetXYCoordsOneStepInFrontOfPlayer,
-  IsVirtualObjectAnimating, IsVirtualObjectInvisible, MAX_RFU_PLAYERS, MapGridSetMetatileImpassabilityAt,
-  NULL, ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden, ObjectEventSetHeldMovement,
-  PlayerGetDestCoords, RemoveObjectEventByLocalIdAndMap, SetVirtualObjectGraphics, SetVirtualObjectInvisibility,
-  SetVirtualObjectSpriteAnim, TRUE, TryGetObjectEventIdByLocalIdAndMap, TrySpawnObjectEvent,
-  TurnVirtualObject, UR_PLAYER_SPRITE_ID, UnfreezeObjectEvent, VarSet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static bool32 IsPlayerStandingStill(void) */
 export function IsPlayerStandingStill(): any {
   if (gPlayerAvatar.tileTransitionState == T_TILE_CENTER || gPlayerAvatar.tileTransitionState == T_NOT_MOVING)

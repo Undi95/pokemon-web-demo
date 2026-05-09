@@ -15,33 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, Alloc, BufferContestLadyLanguage, BufferContestLadyMonName,
-  BufferContestLadyPlayerName, BufferContestName, CB2_ReturnToFieldContinueScriptPlayMapMusic, ConvertEasyChatWordsToString,
-  ConvertIntToDecimalStringN, ConvertInternationalString, CopyCurSecretBaseOwnerName_StrVar1, CopyEasyChatWord,
-  DoNamingScreen, DoTVShowDummiedOut, DrawWholeMapView, FALSE,
-  FlagClear, FlagGet, FlagSet, Free,
-  GetBoxMonData, GetBoxMonGender, GetBoxedMonPtr, GetContestLadyPokeblockState,
-  GetCurrentBattleTowerWinStreak, GetGameStat, GetHoennPokedexCount, GetItemName,
-  GetItemPrice, GetLeadMonIndex, GetLinkPlayerCount, GetLinkPlayerTrainerId,
-  GetMapName, GetMonData, GetMonGender, GetNationalPokedexCount,
-  GetNicknameLanguage, GetSetPokedexFlag, IncrementGameStat, InitializeEasyChatWordArray,
-  IsNationalPokedexEnabled, IsStringJapanese, MAP_GROUP, MAP_NUM,
-  MB_TELEVISION, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, NULL,
-  PokeNews, Random, RemoveObjectEventByLocalIdAndMap, STR_CONV_MODE_LEFT_ALIGN,
-  SWAP, SetBoxMonNickAt, SetMonData, ShowFieldMessage,
-  SpeciesToNationalPokedexNum, StringCompare, StringCopy, StringGet_Nickname,
-  StringLength, StripExtCtrlCodes, TRUE, TVShow,
-  TVShowConvertInternationalString, VarGet, VarSet, memcpy,
-  memset, strlen,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void ClearTVShowData(void) */
 export function ClearTVShowData(): any {
   let i, j;
@@ -1030,7 +1003,7 @@ export function RecordFishingAttemptForTV(caughtFish: any): any {
 
           sPokemonAnglerAttemptCounters &= 0xFF;
           if (sPokemonAnglerAttemptCounters != 0xFF)
-              sPokemonAnglerAttemptCounters += _0x01;
+              sPokemonAnglerAttemptCounters += 0x01;
       }
       else
       {
@@ -1039,7 +1012,7 @@ export function RecordFishingAttemptForTV(caughtFish: any): any {
 
           sPokemonAnglerAttemptCounters &= 0xFF00;
           if (sPokemonAnglerAttemptCounters >> 8 != 0xFF)
-              sPokemonAnglerAttemptCounters += _0x0100;
+              sPokemonAnglerAttemptCounters += 0x0100;
       }
 }
 
@@ -3984,7 +3957,7 @@ export function DoTVShowPokemonFanClubLetter(): any {
           sTVShowState = 7;
           break;
       case 7:
-          rval = (Random() % 0x1f) + _0x46;
+          rval = (Random() % 0x1f) + 0x46;
           ConvertIntToDecimalString(2, rval);
           TVShowDone();
           break;

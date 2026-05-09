@@ -15,16 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  FALSE, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void AGBPrintInit(void) */
 export function AGBPrintInit(): any {
    let pPrint: any = AGB_PRINT_STRUCT_ADDR;
@@ -32,7 +22,7 @@ export function AGBPrintInit(): any {
       let pProtect: any = AGB_PRINT_PROTECT_ADDR;
       let nOldWSCNT: any = pWSCNT;
       pWSCNT = WSCNT_DATA;
-      pProtect = _0x20;
+      pProtect = 0x20;
       pPrint.m_nRequest = pPrint.m_nGet = pPrint.m_nPut = 0;
       pPrint.m_nBank = 0xFD;
       pProtect = 0;
@@ -42,10 +32,10 @@ export function AGBPrintInit(): any {
 /** static void AGBPutcInternal(const char cChr) */
 export function AGBPutcInternal(cChr: any): any {
    let pPrint: any = AGB_PRINT_STRUCT_ADDR;
-      let pPrintBuf: any = (_0x8000000 + (pPrint.m_nBank << 16));
+      let pPrintBuf: any = (0x8000000 + (pPrint.m_nBank << 16));
       let pProtect: any = AGB_PRINT_PROTECT_ADDR;
       let nData: any = pPrintBuf[pPrint.m_nPut / 2];
-      pProtect = _0x20;
+      pProtect = 0x20;
       nData = (pPrint.m_nPut & 1) ? (nData & 0xFF) | (cChr << 8) : (nData & 0xFF00) | cChr;
       pPrintBuf[pPrint.m_nPut / 2] = nData;
       pPrint.m_nPut++;
@@ -84,8 +74,8 @@ export function AGBPrintf(pBuf: any): any {
   const bufPrint: any[] = [];
       va_list vArgv;
       va_start(vArgv, pBuf);
-      mini_vsnprintf(bufPrint, _0x100, pBuf, vArgv);
-      vsnprintf(bufPrint, _0x100, pBuf, vArgv);
+      mini_vsnprintf(bufPrint, 0x100, pBuf, vArgv);
+      vsnprintf(bufPrint, 0x100, pBuf, vArgv);
       va_end(vArgv);
       AGBPrint(bufPrint);
 }
@@ -114,14 +104,14 @@ export function AGBPrintTransferDataInternal(bAllData: any): any {
       {
           while (pPrint.m_nPut != pPrint.m_nGet)
           {
-              pProtect = _0x20;
+              pProtect = 0x20;
               lpfnFuncFlush();
               pProtect = 0;
           }
       }
       else if (pPrint.m_nPut != pPrint.m_nGet)
       {
-          pProtect = _0x20;
+          pProtect = 0x20;
           lpfnFuncFlush();
           pProtect = 0;
       }
@@ -164,8 +154,8 @@ export function NoCashGBAPrintf(pBuf: any): any {
   const bufPrint: any[] = [];
       va_list vArgv;
       va_start(vArgv, pBuf);
-      mini_vsnprintf(bufPrint, _0x100, pBuf, vArgv);
-      vsnprintf(bufPrint, _0x100, pBuf, vArgv);
+      mini_vsnprintf(bufPrint, 0x100, pBuf, vArgv);
+      vsnprintf(bufPrint, 0x100, pBuf, vArgv);
       va_end(vArgv);
       NoCashGBAPrint(bufPrint);
 }
@@ -198,12 +188,12 @@ export function MgbaClose(): any {
 export function MgbaPrintf(level: any, ptr: any): any {
   va_list args;
 
-      level &= _0x7;
+      level &= 0x7;
       va_start(args, ptr);
       mini_vsnprintf(REG_DEBUG_STRING, MGBA_REG_DEBUG_MAX, ptr, args);
       vsnprintf(REG_DEBUG_STRING, MGBA_REG_DEBUG_MAX, ptr, args);
       va_end(args);
-      REG_DEBUG_FLAGS = level | _0x100;
+      REG_DEBUG_FLAGS = level | 0x100;
 }
 
 /** void MgbaAssert(const char *pFile, s32 nLine, const char *pExpression, bool32 nStopProgram) */

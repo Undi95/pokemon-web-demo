@@ -15,47 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AlertTVThatPlayerPlayedRoulette, AllocZeroed,
-  AnimateSprites, BG_PLTT_ID, BG_SCREEN_ADDR, BLDALPHA_BLEND,
-  BLDCNT_EFFECT_NONE, BLDCNT_TGT2_BD, BLDCNT_TGT2_BG2, BeginHardwarePaletteFade,
-  BeginNormalPaletteFade, BuildOamBuffer, ClearStdWindowAndFrame, ConvertIntToDecimalStringN,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, Cos2,
-  CreateSprite, CreateTask, DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroySprite,
-  DestroyTask, DisplayYesNoMenuDefaultYes, DmaCopy16, DmaFill16,
-  DoYesNoFuncWithChoice, DrawStdWindowFrame, EnableInterrupts, FALSE,
-  FREE_AND_SET_NULL, FillTilemapRect, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeOamMatrix, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GET_COL,
-  GET_COL_IDX, GET_MIN_BET_ID, GET_ROW, GET_ROW_IDX,
-  GetCoins, GetGameStat, GetMonData, HideCoinsWindow,
-  IncrementDailyRouletteUses, InitBgsFromTemplates, InitTextBoxGfxAndPrinters, InitWindows,
-  IsFanfareTaskInactive, IsSEPlaying, JOY_NEW, LZ77UnCompWram,
-  LandBall, LoadCompressedSpriteSheet, LoadOam, LoadPalette,
-  LoadSpritePalettes, LoadSpriteSheet, LockPlayerFieldControls, NULL,
-  PALETTES_ALL, PLTT_ID, PLTT_SIZE_4BPP, PlayCry_Normal,
-  PlayFanfare, PlaySE, PrintCoinsString, ProcessSpriteCopyRequests,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
-  REG_OFFSET_DISPCNT, Random, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
-  ResetVramOamAndBgCntRegs, RouletteFlash_Add, RouletteFlash_Enable, RouletteFlash_Reset,
-  RouletteFlash_Run, RouletteFlash_Stop, RtcCalcLocalTime, RunTasks,
-  S16TOPOSFLOAT, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, ST_OAM_OBJ_BLEND,
-  ScanlineEffect_Stop, SetBgAttribute, SetBgTilemapBuffer, SetCoins,
-  SetGameStat, SetGpuReg, SetMainCallback2, SetTilemapRect,
-  SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg, ShowCoinsWindow,
-  Sin2, SpriteCallbackDummy, StartSpriteAnim, StringExpandPlaceholders,
-  TRUE, TransferPlttBuffer, TryPutFindThatGamerOnAir, UnlockPlayerFieldControls,
-  UnsetBgTilemapBuffer, UpdatePaletteFade, m4aSongNumStart, memcpy,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void CB2_Roulette(void) */
 export function CB2_Roulette(): any {
   RunTasks();
@@ -71,14 +30,14 @@ export function VBlankCB_Roulette(): any {
       ProcessSpriteCopyRequests();
       TransferPlttBuffer();
       UpdateWheelPosition();
-      SetGpuReg(REG_OFFSET_BG1HOFS, _0x200 - sRoulette.gridX);
+      SetGpuReg(REG_OFFSET_BG1HOFS, 0x200 - sRoulette.gridX);
 
       if (sRoulette.shroomishShadowTimer)
           SetGpuReg(REG_OFFSET_BLDALPHA, sRoulette.shroomishShadowAlpha);
 
       if (sRoulette.updateGridHighlight)
       {
-          DmaCopy16(3,sRoulette.tilemapBuffers[2][0xE0], BG_SCREEN_ADDR(4) + 0x1C0, _0x340);
+          DmaCopy16(3,sRoulette.tilemapBuffers[2][0xE0], BG_SCREEN_ADDR(4) + 0x1C0, 0x340);
           sRoulette.updateGridHighlight = FALSE;
       }
       switch (sRoulette.selectionRectDrawState)
@@ -86,16 +45,16 @@ export function VBlankCB_Roulette(): any {
       case SELECT_STATE_DRAW:
           SetBgAttribute(0, BG_ATTR_CHARBASEINDEX, 0);
           ShowBg(0);
-          DmaCopy16(3,sRoulette.tilemapBuffers[0][0xE0], BG_SCREEN_ADDR(31) + 0x1C0, _0x340);
+          DmaCopy16(3,sRoulette.tilemapBuffers[0][0xE0], BG_SCREEN_ADDR(31) + 0x1C0, 0x340);
           sRoulette.selectionRectDrawState = SELECT_STATE_UPDATE;
           break;
       case SELECT_STATE_UPDATE:
-          DmaCopy16(3,sRoulette.tilemapBuffers[0][0xE0], BG_SCREEN_ADDR(31) + 0x1C0, _0x340);
+          DmaCopy16(3,sRoulette.tilemapBuffers[0][0xE0], BG_SCREEN_ADDR(31) + 0x1C0, 0x340);
           break;
       case SELECT_STATE_ERASE:
           SetBgAttribute(0, BG_ATTR_CHARBASEINDEX, 2);
           ShowBg(0);
-          DmaFill16(3, 0, BG_SCREEN_ADDR(31) + 0x1C0, _0x340);
+          DmaFill16(3, 0, BG_SCREEN_ADDR(31) + 0x1C0, 0x340);
           sRoulette.selectionRectDrawState = SELECT_STATE_WAIT;
       case SELECT_STATE_WAIT:
           break;
@@ -344,7 +303,7 @@ export function UpdateGridSelectionRect(selectionId: any): any {
           break;
        
       default:
-          temp0 = GET_COL(selectionId) * 3 + 14;
+          temp0 = (((selectionId)) % (NUM_BOARD_POKES + 1)) * 3 + 14;
           temp1 = ((selectionId - 1) / 5 * 3 + 7);
           FillTilemapRect(sRoulette.tilemapBuffers[0][0], 0, 14, 7, 16, 13);
           SetTilemapRect(sRoulette.tilemapBuffers[0][0],sRoulette.gridTilemap[272], temp0, temp1, 3, 3);
@@ -410,14 +369,14 @@ export function CanMoveSelectionInDir(selectionId: any, dir: any): any {
       {
       case 0:  
       case 1:  
-          temp1 = GET_COL(selectionId);
+          temp1 = (((selectionId)) % (NUM_BOARD_POKES + 1));
           temp = temp1 + ROW_PURPLE;
           if (temp1 == SELECTION_NONE)
               temp1 = 5;
           break;
       case 2:  
       case 3:  
-          temp1 = GET_ROW(selectionId);
+          temp1 = (((selectionId)) / (NUM_BOARD_POKES + 1) * (NUM_BOARD_POKES + 1));
           temp = temp1 + COL_MAKUHITA;
           if (temp1 == SELECTION_NONE)
               temp1 = 1;
@@ -1159,8 +1118,8 @@ export function FlashSelectionOnWheel(selectionId: any): any {
           else
               numSelected = 1;
 
-          palOffset = GET_ROW_IDX(selectionId);
-          switch (GET_COL(selectionId))
+          palOffset = ((selectionId) / 5 - 1);
+          switch ((((selectionId)) % (NUM_BOARD_POKES + 1)))
           {
            
            
@@ -1182,8 +1141,8 @@ export function FlashSelectionOnWheel(selectionId: any): any {
                
               if (!(sRoulette.hitFlags & sGridSelections[selectionId].flag))
               {
-                  iconFlash[GET_ROW_IDX(selectionId)].paletteOffset += palOffset;
-                  RouletteFlash_Add(sRoulette.flashUtil, NUM_ROULETTE_SLOTS + 1,iconFlash[GET_ROW_IDX(selectionId)]);
+                  iconFlash[((selectionId) / 5 - 1)].paletteOffset += palOffset;
+                  RouletteFlash_Add(sRoulette.flashUtil, NUM_ROULETTE_SLOTS + 1,iconFlash[((selectionId) / 5 - 1)]);
               }
               else
               {
@@ -1200,8 +1159,8 @@ export function FlashSelectionOnWheel(selectionId: any): any {
                   let columnSlotId: any = i * 5 + selectionId + 5;
                   if (!(sRoulette.hitFlags & sGridSelections[columnSlotId].flag))
                   {
-                      iconFlash[GET_ROW_IDX(columnSlotId)].paletteOffset += palOffset;
-                      RouletteFlash_Add(sRoulette.flashUtil, i + NUM_ROULETTE_SLOTS + 1,iconFlash[GET_ROW_IDX(columnSlotId)]);
+                      iconFlash[((columnSlotId) / 5 - 1)].paletteOffset += palOffset;
+                      RouletteFlash_Add(sRoulette.flashUtil, i + NUM_ROULETTE_SLOTS + 1,iconFlash[((columnSlotId) / 5 - 1)]);
                       if (numSelected == 3)
                           flashFlags = sGridSelections[columnSlotId].flashFlags;
                       numSelected--;
@@ -1282,13 +1241,13 @@ export function GetMultiplier(selectionId: any): any {
       switch (sGridSelections[selectionId].baseMultiplier)
       {
       case NUM_BOARD_COLORS:
-          selectionId = GET_ROW_IDX(selectionId);
+          selectionId = ((selectionId) / 5 - 1);
            
           if (sRoulette.colorHits[selectionId] >= NUM_BOARD_POKES)
               return 0;
           return multipliers[sRoulette.colorHits[selectionId] + 1];
       case NUM_BOARD_POKES:
-          selectionId = GET_COL_IDX(selectionId);
+          selectionId = ((selectionId) - 1);
            
           if (sRoulette.pokeHits[selectionId] >= NUM_BOARD_COLORS)
               return 0;
@@ -1310,9 +1269,9 @@ export function UpdateWheelPosition(): any {
       SetGpuReg(REG_OFFSET_BG2PB, sRoulette.wheelRotation.b);
       SetGpuReg(REG_OFFSET_BG2PC, sRoulette.wheelRotation.c);
       SetGpuReg(REG_OFFSET_BG2PD, sRoulette.wheelRotation.d);
-      bg2x = _0x7400 - sRoulette.wheelRotation.a * (gSpriteCoordOffsetX + 116)
+      bg2x = 0x7400 - sRoulette.wheelRotation.a * (gSpriteCoordOffsetX + 116)
                   - sRoulette.wheelRotation.b * (gSpriteCoordOffsetY + 80);
-      bg2y = _0x5400 - sRoulette.wheelRotation.c * (gSpriteCoordOffsetX + 116)
+      bg2y = 0x5400 - sRoulette.wheelRotation.c * (gSpriteCoordOffsetX + 116)
                   - sRoulette.wheelRotation.d * (gSpriteCoordOffsetY + 80);
       SetGpuReg(REG_OFFSET_BG2X_L, bg2x);
       SetGpuReg(REG_OFFSET_BG2X_H, (bg2x & 0x0fff0000) >> 16);
@@ -1372,7 +1331,7 @@ export function Task_NotEnoughForMinBet(taskId: any): any {
 export function Task_PrintMinBet(taskId: any): any {
   if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          let minBet: any = sTableMinBets[GET_MIN_BET_ID(gSpecialVar_0x8004)];
+          let minBet: any = sTableMinBets[((((gSpecialVar_0x8004)) & 1) + ((((gSpecialVar_0x8004)) >> 7) * 2))];
           ConvertIntToDecimalStringN(gStringVar1, minBet, STR_CONV_MODE_LEADING_ZEROS, 1);
           StringExpandPlaceholders(gStringVar4, Roulette_Text_PlayMinimumWagerIsX);
           DrawStdWindowFrame(0, FALSE);
@@ -1386,7 +1345,7 @@ export function Task_PrintMinBet(taskId: any): any {
 export function Task_PrintRouletteEntryMsg(taskId: any): any {
   let minBet: any = null;
       PrintCoinsString(gTasks[taskId].tCoins);
-      minBet = sTableMinBets[GET_MIN_BET_ID(gSpecialVar_0x8004)];
+      minBet = sTableMinBets[((((gSpecialVar_0x8004)) & 1) + ((((gSpecialVar_0x8004)) >> 7) * 2))];
       ConvertIntToDecimalStringN(gStringVar1, minBet, STR_CONV_MODE_LEADING_ZEROS, 1);
 
       if (gTasks[taskId].tCoins >= minBet)
@@ -1705,12 +1664,12 @@ export function GetMultiplierAnimId(selectionId: any): any {
       switch (sGridSelections[selectionId].baseMultiplier)
       {
       case NUM_BOARD_COLORS:
-          selectionId = GET_ROW_IDX(selectionId);
+          selectionId = ((selectionId) / 5 - 1);
           if (sRoulette.colorHits[selectionId] > 3)
               return 0;
           return animIds[sRoulette.colorHits[selectionId] + 1];
       case NUM_BOARD_POKES:
-          selectionId = GET_COL_IDX(selectionId);
+          selectionId = ((selectionId) - 1);
           if (sRoulette.pokeHits[selectionId] > 2)
               return 0;
           return animIds[sRoulette.pokeHits[selectionId] + 2];

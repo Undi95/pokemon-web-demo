@@ -15,40 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AddTextPrinterParameterized, AddWindow, CheckLinkPlayersMatchSaved, CheckShouldAdvanceLinkState,
-  CleanupOverworldWindowsAndTilemaps, ClearLinkCallback_2, ClearLinkRfuCallback, ClearStdWindowAndFrame,
-  CloseLink, ConvertIntToDecimalStringN, ConvertLinkPlayerName, CopyTrainerCardData,
-  CopyWindowToVram, CreateTask, CreateTask_CreateTradeMenu, DestroyTask,
-  DoesLinkPlayerCountMatchSaved, EraseFieldMessageBox, FALSE, FadeScreen,
-  FindTaskIdByFunc, FuncIsActiveTask, GetBlockReceivedStatus, GetCableClubPartnersReady,
-  GetFieldMessageBoxMode, GetLinkPlayerCount, GetLinkPlayerCountAsBitFlags, GetLinkPlayerCount_2,
-  GetLinkPlayerDataExchangeStatusTimed, GetMonData, GetMultiplayerId, GetSavedLinkPlayerCountAsBitFlags,
-  GetSavedPlayerCount, GetSioMultiSI, GetStringCenterAlignXOffset, GetTrainerCardStars,
-  HasLinkErrorOccurred, HideFieldMessageBox, InUnionRoom, IsFieldMessageBoxHidden,
-  IsLinkConnectionEstablished, IsLinkMaster, IsLinkPlayerDataExchangeComplete, IsLinkTaskFinished,
-  JOY_HELD, JOY_NEW, Link_AnyPartnersPlayingRubyOrSapphire, LoadPlayerParty,
-  LockPlayerFieldControls, MysteryGift_TryIncrementStat, NULL, OpenLink,
-  OpenLinkTimed, Overworld_ResetMapMusic, PlayMapChosenOrBattleBGM, PlaySE,
-  QueueExitLinkRoomKey, ReducePlayerPartyToSelectedMons, RemoveWindow, ResetBlockReceivedFlag,
-  ResetBlockReceivedFlags, ResetLinkPlayerCount, ResetLinkPlayers, RunTasks,
-  STR_CONV_MODE_LEFT_ALIGN, SaveGame, SaveLinkPlayers, SavePlayerBag,
-  ScriptContext_Enable, ScriptContext_Stop, SendBlock, SendBlockRequest,
-  SetCloseLinkCallback, SetCloseLinkCallbackHandleJP, SetInCableClubSeat, SetLinkStandbyCallback,
-  SetLinkWaitingForScript, SetLocalLinkPlayerId, SetMainCallback2, SetStandardWindowBorderStyle,
-  SetStartedCableClubActivity, SetSuppressLinkErrorMessage, SetTaskFuncWithFollowupFunc, SetWarpDestinationToDynamicWarp,
-  ShowFieldAutoScrollMessage, ShowFieldMessage, ShowTrainerCardInLink, StartSendingKeysToLink,
-  StopFieldMessage, StringCopy, StringExpandPlaceholders, SwitchTaskToFollowupFunc,
-  TASK_NONE, TRUE, TrainerCard_GenerateCardForLinkPlayer, UpdatePlayerLinkBattleRecords,
-  UpdateTrainerFansAfterLinkBattle, m4aMPlayAllStop,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void CreateLinkupTask(u8 minPlayers, u8 maxPlayers) */
 export function CreateLinkupTask(minPlayers: any, maxPlayers: any): any {
   if (FindTaskIdByFunc(Task_LinkupStart) == TASK_NONE)

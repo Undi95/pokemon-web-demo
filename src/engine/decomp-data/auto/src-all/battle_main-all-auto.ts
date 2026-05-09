@@ -15,68 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ABILITY_ON_OPPOSING_FIELD, ANIM_SPRITES_START, ARRAY_COUNT, AbilityBattleEffects,
-  AdjustFriendship, Alloc, AllocateBattleResources, AllocateBattleSpritesData,
-  AllocateMonSpritesGfx, AnimateSprites, AreAllMovesUnusable, BATTLE_PARTNER,
-  BG_PLTT_ID, BUFFER_PARTY_VS_SCREEN_STATUS, BattleAnimateBackSprite, BattleAnimateFrontSprite,
-  BattleArena_InitPoints, BattleCreateYesNoCursorAt, BattleDestroyYesNoCursorAt, BattleInitAllSprites,
-  BattlePutTextOnWindow, BattleScriptExecute, BattleSetup_GetEnvironmentId, BattleStopLowHpSound,
-  BattleStringExpandPlaceholdersToDisplayedString, BeginFastPaletteFade, BeginNormalPaletteFade, BitmaskAllOtherLinkPlayers,
-  BtlController_EmitChooseAction, BtlController_EmitChooseItem, BtlController_EmitChooseMove, BtlController_EmitChoosePokemon,
-  BtlController_EmitDrawPartyStatusSummary, BtlController_EmitDrawTrainerPic, BtlController_EmitEndBounceEffect, BtlController_EmitGetMonData,
-  BtlController_EmitIntroSlide, BtlController_EmitIntroTrainerBallThrow, BtlController_EmitLinkStandbyMsg, BtlController_EmitLoadMonSprite,
-  BuildOamBuffer, CalculatePPWithBonus, CancelMultiTurnMoves, ClearBattlerAbilityHistory,
-  ClearBattlerMoveHistory, CpuFill32, CreateInvisibleSpriteWithCallback, CreateMon,
-  CreateTask, CreateWirelessStatusIndicatorSprite, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroySprite, DoBattlerEndTurnEffects,
-  DoFieldEndTurnEffects, DrawBattleEntryBackground, EvolutionScene, FALSE,
-  FREE_AND_SET_NULL, FadeOutMapMusic, FillAroundBattleWindows, FlagGet,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeBattleResources, FreeBattleSpritesData,
-  FreeMonSpritesGfx, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FuncIsActiveTask, GET_UNOWN_LETTER, GetAbilityBySpecies, GetBattleSceneInRecordedBattle,
-  GetBattleTowerTrainerLanguage, GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide,
-  GetBerryInfo, GetBlockReceivedStatus, GetEvolutionTargetSpecies, GetFrontierTrainerName,
-  GetItemHoldEffect, GetItemHoldEffectParam, GetMonData, GetMonGender,
-  GetMultiplayerId, GetPartyIdFromBattlePartyId, HandleBattleWindow, HandleFaintedMonActions,
-  HandleLinkBattleSetup, HandleSetPokedexFlag, HandleWishPerishSongOnTurnEnd, HasTwoFramesAnimation,
-  IS_BATTLER_OF_TYPE, IS_BATTLE_CONTROLLER_ACTIVE_OR_PENDING_SYNC_ANYWHERE, InitBattleBgsVideo, InitBattleControllers,
-  IsDma3ManagerBusyWithBgCopy, IsEnigmaBerryValid, IsLinkRfuTaskFinished, IsLinkTaskFinished,
-  IsMonShiny, IsPlayerPartyAndPokemonStorageFull, IsTextPrinterActive, ItemBattleEffects,
-  ItemIdToBerryType, JOY_HELD, JOY_NEW, LoadBattleMenuWindowGfx,
-  LoadBattleTextboxAndBackground, LoadChosenBattleElement, LoadCompressedPalette, LoadOam,
-  LoadWirelessStatusIndicatorSpriteGfx, MarkBattlerForControllerExec, MoveRecordedBattleToSaveData, MoveSaveBlocks_ResetHeap,
-  NULL, PALETTES_ALL, PLTT_SIZE_4BPP, PREPARE_MON_NICK_BUFFER,
-  PadNameString, PartySpreadPokerus, PlayBGM, PlaySE,
-  PrepareStringBattle, ProcessSpriteCopyRequests, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, Random, RandomlyGivePartyPokerus,
-  RecordedBattle_CanStopPlayback, RecordedBattle_CheckMovesetChanges, RecordedBattle_ClearBattlerAction, RecordedBattle_ClearFrontierPassFlag,
-  RecordedBattle_CopyBattlerMoves, RecordedBattle_GetFrontierPassFlag, RecordedBattle_SetBattlerAction, RecordedBattle_SetFrontierPassFlagFromHword,
-  RecordedBattle_SetPlaybackFinished, RecordedBattle_SetTrainerInfo, ResetBlockReceivedFlags, ResetPaletteFade,
-  ResetPaletteFadeControl, ResetSentPokesToOpponentValue, ResetSpriteData, ResetTasks,
-  RunTasks, RunTextPrinters, STATUS2_INFATUATED_WITH, STATUS3_ALWAYS_HITS_TURN,
-  SWAP, ScanlineEffect_Clear, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams,
-  SendBlock, SetCloseLinkCallback, SetDeoxysStats, SetGpuReg,
-  SetHBlankCallback, SetHealthboxSpriteVisible, SetLinkStandbyCallback, SetMainCallback2,
-  SetMonData, SetRoamerInactive, SetUpBattleVarsAndBirchZigzagoon, SetVBlankCallback,
-  SetWildMonHeldItem, ShowBg, ShowPartyMenuToShowcaseMultiBattleParty, Sin,
-  SpeciesToNationalPokedexNum, StartHealthboxSlideIn, StartSpriteAffineAnim, StartSpriteAnim,
-  StartSpriteAnimIfDifferent, StopCryAndClearCrySongs, StringCompareWithoutExtCtrlCodes, StripExtCtrlCodes,
-  SwitchPartyMonSlots, SwitchPartyOrderInGameMulti, TRUE, TransferPlttBuffer,
-  TryClearRageStatuses, TryPutBreakingNewsOnAir, TryPutPokemonTodayOnAir, TrySetCantSelectMoveBattleScript,
-  TrySetLinkBattleTowerEnemyPartyLevel, UpdatePaletteFade, UpdateRoamerHPStatus, VRAM_SIZE,
-  WIN_RANGE, ZeroEnemyPartyMons, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void CB2_InitBattle(void) */
 export function CB2_InitBattle(): any {
   MoveSaveBlocks_ResetHeap();
@@ -360,7 +298,7 @@ export function FindLinkBattleMaster(numPlayers: any, multiPlayerId: any): any {
   let found: any = 0;
 
        
-      if (gBlockRecvBuffer[0][0] == _0x100)
+      if (gBlockRecvBuffer[0][0] == 0x100)
       {
           if (multiPlayerId == 0)
               gBattleTypeFlags |= BATTLE_TYPE_IS_MASTER | BATTLE_TYPE_TRAINER;
@@ -394,12 +332,12 @@ export function FindLinkBattleMaster(numPlayers: any, multiPlayerId: any): any {
                
               for (i = 0; i < numPlayers; i++)
               {
-                  if (gBlockRecvBuffer[i][0] == _0x300 && i != multiPlayerId)
+                  if (gBlockRecvBuffer[i][0] == 0x300 && i != multiPlayerId)
                   {
                       if (i < multiPlayerId)
                           break;
                   }
-                  if (gBlockRecvBuffer[i][0] > _0x300 && i != multiPlayerId)
+                  if (gBlockRecvBuffer[i][0] > 0x300 && i != multiPlayerId)
                       break;
               }
 
@@ -700,8 +638,8 @@ export function CB2_HandleStartMultiPartnerBattle(): any {
               gTasks[taskId].data[1] = 0x10E;
               gTasks[taskId].data[2] = 0x5A;
               gTasks[taskId].data[5] = 0;
-              gTasks[taskId].data[3] = _0x145;
-              gTasks[taskId].data[4] = _0x145;
+              gTasks[taskId].data[3] = 0x145;
+              gTasks[taskId].data[4] = 0x145;
               gBattleCommunication[MULTIUSE_STATE]++;
           }
           break;
@@ -1379,7 +1317,7 @@ export function SpriteCB_UnusedBattleInit_Main(sprite: any): any {
       case 0:
           sprite.sState++;
           sprite.data[1] = 0;
-          sprite.data[2] = _0x281;
+          sprite.data[2] = 0x281;
           sprite.data[3] = 0;
           sprite.sDelay = 1;
            
@@ -1449,11 +1387,11 @@ export function CreateNPCTrainerParty(party: any, trainerNum: any, firstTrainer:
           {
 
               if (gTrainers[trainerNum].doubleBattle == TRUE)
-                  personalityValue = _0x80;
+                  personalityValue = 0x80;
               else if (gTrainers[trainerNum].encounterMusic_gender & F_TRAINER_FEMALE)
-                  personalityValue = _0x78;  
+                  personalityValue = 0x78;  
               else
-                  personalityValue = _0x88;  
+                  personalityValue = 0x88;  
 
               for (j = 0; gTrainers[trainerNum].trainerName[j] != EOS; j++)
                   nameHash += gTrainers[trainerNum].trainerName[j];
@@ -1563,7 +1501,7 @@ export function SpriteCB_VsLetter(sprite: any): any {
       else
           sprite.x = sprite.data[1] - ((sprite.data[2] & 0xFF00) >> 8);
 
-      sprite.data[2] += _0x180;
+      sprite.data[2] += 0x180;
 
       if (sprite.affineAnimEnded)
       {
@@ -1889,7 +1827,7 @@ export function CB2_InitAskRecordBattle(): any {
       gReservedSpritePaletteCount = MAX_BATTLERS_COUNT;
       SetVBlankCallback(VBlankCB_Battle);
       SetMainCallback2(CB2_AskRecordBattle);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, _0x10, 0, RGB_BLACK);
+      BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
       gBattleCommunication[MULTIUSE_STATE] = 0;
 }
 
@@ -2095,7 +2033,7 @@ export function GetBattleWindowTemplatePixelWidth(windowsType: any, tableId: any
 export function SpriteCB_WildMon(sprite: any): any {
   sprite.callback = SpriteCB_MoveWildMonToRight;
       StartSpriteAnimIfDifferent(sprite, 0);
-      BeginNormalPaletteFade(_0x20000, 0, 10, 10, RGB(8, 8, 8));
+      BeginNormalPaletteFade(0x20000, 0, 10, 10, RGB(8, 8, 8));
 }
 
 /** static void SpriteCB_MoveWildMonToRight(struct Sprite *sprite) */
@@ -2118,7 +2056,7 @@ export function SpriteCB_WildMonShowHealthbox(sprite: any): any {
           SetHealthboxSpriteVisible(gHealthboxSpriteIds[sprite.sBattler]);
           sprite.callback = SpriteCB_WildMonAnimate;
           StartSpriteAnimIfDifferent(sprite, 0);
-          BeginNormalPaletteFade(_0x20000, 0, 10, 0, RGB(8, 8, 8));
+          BeginNormalPaletteFade(0x20000, 0, 10, 0, RGB(8, 8, 8));
       }
 }
 
@@ -2208,7 +2146,7 @@ export function SpriteCB_AnimFaintOpponent(sprite: any): any {
           {
               let dst: any = gMonSpritesGfxPtr.sprites.byte[GetBattlerPosition(sprite.sBattler)] + (gBattleMonForms[sprite.sBattler] << 11) + (sprite.data[3] << 8);
 
-              for (i = 0; i < _0x100; i++)
+              for (i = 0; i < 0x100; i++)
                   dst =  0;
 
               StartSpriteAnim(sprite, gBattleMonForms[sprite.sBattler]);

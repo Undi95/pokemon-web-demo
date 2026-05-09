@@ -15,19 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  DestroyAnimSprite, GetBattlerSide, GetBattlerSpriteCoord, InitAnimArcTranslation,
-  InitSpriteDataForLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, SetAverageBattlerPositions,
-  Sin, StartSpriteAnim, StoreSpriteCallbackInData6, TRUE,
-  TranslateAnimHorizontalArc, TranslateSpriteLinearFixedPoint,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimSludgeProjectile(struct Sprite *sprite) */
 export function AnimSludgeProjectile(sprite: any): any {
   if (!gBattleAnimArgs[3])
@@ -148,7 +135,7 @@ export function AnimBubbleEffect(sprite: any): any {
 export function AnimBubbleEffect_Step(sprite: any): any {
   sprite.data[0] = (sprite.data[0] + 0xB) & 0xFF;
       sprite.x2 = Sin(sprite.data[0], 4);
-      sprite.data[1] += _0x30;
+      sprite.data[1] += 0x30;
       sprite.y2 = -(sprite.data[1] >> 8);
 
       if (sprite.affineAnimEnded)

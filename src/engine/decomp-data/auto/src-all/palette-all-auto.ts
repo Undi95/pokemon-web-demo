@@ -15,22 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BlendPalette, CpuCopy16, CpuCopy32, CpuFill16,
-  CpuFill32, CreateTask, DestroyTask, DmaCopy16,
-  DmaCopy32, FALSE, FAST_FADE, GET_B,
-  GET_G, GET_R, GetWordTaskArg, HARDWARE_FADE,
-  LZDecompressWram, NORMAL_FADE, PLTT_SIZE, Q_8_8,
-  REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, RGB2, SetGpuReg,
-  SetWordTaskArg, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void LoadCompressedPalette(const u32 *src, u16 offset, u16 size) */
 export function LoadCompressedPalette(src: any, offset: any, size: any): any {
   LZDecompressWram(src, gPaletteDecompressionBuffer);
@@ -616,7 +600,7 @@ export function UpdateFastPaletteFade(): any {
               CpuFill32(0xFFFFFFFF, gPlttBufferFaded, PLTT_SIZE);
               break;
           case FAST_FADE_OUT_TO_BLACK:
-              CpuFill32(_0x00000000, gPlttBufferFaded, PLTT_SIZE);
+              CpuFill32(0x00000000, gPlttBufferFaded, PLTT_SIZE);
               break;
           }
 

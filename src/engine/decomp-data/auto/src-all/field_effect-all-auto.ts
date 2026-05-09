@@ -15,54 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, BGMusicStopped, BG_CHAR_ADDR, BG_PLTT_ID,
-  BG_SCREEN_ADDR, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG0,
-  BLDCNT_TGT2_BD, BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BLDCNT_TGT2_BG3,
-  BLDCNT_TGT2_OBJ, BeginNormalPaletteFade, BlendPalettes, CalcCenterToCornerVec,
-  CalculatePlayerPartyCount, CameraObjectFreeze, CameraObjectReset, ClearMirageTowerPulseBlendEffect,
-  Cos, CpuCopy16, CpuFill32, CreateInvisibleSprite,
-  CreateMonPicSprite_HandleDeoxys, CreateSprite, CreateSpriteAtEnd, CreateTask,
-  DIR_EAST, DIR_NORTH, DIR_SOUTH, DIR_WEST,
-  DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroySprite, DestroyTask,
-  FALSE, FadeInFromBlack, FindTaskIdByFunc, FreeAndDestroyMonPicSprite,
-  FreeOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreezeObjectEvents,
-  FuncIsActiveTask, GetCurrentMapType, GetCursorSelectionMonId, GetFaceDirectionMovementAction,
-  GetJumpMovementAction, GetJumpSpecialMovementAction, GetMonData, GetMonSpritePalStructFromOtIdPersonality,
-  GetPlayerAvatarGraphicsIdByStateId, GetPlayerFacingDirection, GetSpritePaletteTagByPaletteNum, GetSpriteTileStartByTag,
-  GetSpriteTileTagByTileStart, GetWalkInPlaceFasterMovementAction, GetWalkNormalMovementAction, GetWalkSlowMovementAction,
-  IndexOfSpritePaletteTag, InitSpriteAffineAnim, InitTextBoxGfxAndPrinters, InstallCameraPanAheadCallback,
-  IsEscalatorMoving, IsFanfareTaskInactive, IsMapTypeOutdoors, IsWeatherNotFadingIn,
-  LoadCompressedSpritePaletteOverrideBuffer, LoadCompressedSpriteSheetOverrideBuffer, LoadPalette, LoadSpritePalette,
-  LoadSpriteSheet, LoadWordFromTwoHalfwords, LockPlayerFieldControls, MB_DOWN_ESCALATOR,
-  MB_UP_ESCALATOR, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsWaterfall, MoveCoords,
-  MoveObjectEventToMapCoords, NULL, OBJ_PLTT_ID, ObjectEventCheckHeldMovementStatus,
-  ObjectEventClearHeldMovementIfActive, ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden, ObjectEventSetGraphicsId,
-  ObjectEventSetHeldMovement, ObjectEventTurn, Overworld_ChangeMusicTo, Overworld_ClearSavedMusic,
-  Overworld_PlaySpecialMapMusic, Overworld_ResetStateAfterFly, PALETTES_BG, PlayCry_Normal,
-  PlayCry_NormalNoDucking, PlayFanfare, PlaySE, PlayerGetDestCoords,
-  PreservePaletteInWeather, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H,
-  REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, RemoveObjectEventByLocalIdAndMap,
-  ResetPreservedPalettesInWeather, SAFE_DIV, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_OFF,
-  SetCameraPanning, SetCameraPanningCallback, SetGpuReg, SetMainCallback2,
-  SetObjectEventDirection, SetPlayerAvatarFieldMove, SetPlayerAvatarStateMask, SetPlayerAvatarTransitionFlags,
-  SetSpritePosToOffsetMapCoords, SetSubspriteTables, SetSurfBlob_BobState, SetSurfBlob_DontSyncAnim,
-  SetVBlankCallback, SetWarpDestinationToEscapeWarp, SetWarpDestinationToLastHealLocation, ShiftObjectEventCoords,
-  ShiftStillObjectEventCoords, Sin, SpriteCallbackDummy, StartEscalator,
-  StartSpriteAffineAnim, StartSpriteAnim, StopEscalator, StoreWordInTwoHalfwords,
-  TRUE, TryDoDiveWarp, TryFadeOutOldMapMusic, TryGetObjectEventIdByLocalIdAndMap,
-  UnfreezeObjectEvents, UnlockPlayerFieldControls, UpdateCameraPanning, UpdateSpritePaletteWithWeather,
-  WIN_RANGE, WarpFadeInScreen, WarpFadeOutScreen, WarpIntoMap,
-  memset,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u32 FieldEffectStart(u8 id) */
 export function FieldEffectStart(id: any): any {
   let script: any = null;
@@ -282,8 +234,8 @@ export function AddNewGameBirchObject(x: any, y: any, subpriority: any): any {
 
 /** u8 CreateMonSprite_PicBox(u16 species, s16 x, s16 y, u8 subpriority) */
 export function CreateMonSprite_PicBox(species: any, x: any, y: any, subpriority: any): any {
-  let spriteId: any = CreateMonPicSprite_HandleDeoxys(species, 0, _0x8000, TRUE, x, y, 0, gMonPaletteTable[species].tag);
-      PreservePaletteInWeather(IndexOfSpritePaletteTag(gMonPaletteTable[species].tag) + _0x10);
+  let spriteId: any = CreateMonPicSprite_HandleDeoxys(species, 0, 0x8000, TRUE, x, y, 0, gMonPaletteTable[species].tag);
+      PreservePaletteInWeather(IndexOfSpritePaletteTag(gMonPaletteTable[species].tag) + 0x10);
       if (spriteId == 0xFFFF)
           return MAX_SPRITES;
       else
@@ -294,7 +246,7 @@ export function CreateMonSprite_PicBox(species: any, x: any, y: any, subpriority
 export function CreateMonSprite_FieldMove(species: any, otId: any, personality: any, x: any, y: any, subpriority: any): any {
   let spritePalette: any = GetMonSpritePalStructFromOtIdPersonality(species, otId, personality);
       let spriteId: any = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, x, y, 0, spritePalette.tag);
-      PreservePaletteInWeather(IndexOfSpritePaletteTag(spritePalette.tag) + _0x10);
+      PreservePaletteInWeather(IndexOfSpritePaletteTag(spritePalette.tag) + 0x10);
       if (spriteId == 0xFFFF)
           return MAX_SPRITES;
       else
@@ -947,8 +899,8 @@ export function EscalatorWarpOut_Down_End(task: any): any {
 export function RideUpEscalatorOut(task: any): any {
   let sprite: any = null;
       sprite =gSprites[gPlayerAvatar.spriteId];
-      sprite.x2 = Cos(_0x84, task.data[2]);
-      sprite.y2 = Sin(_0x94, task.data[2]);
+      sprite.x2 = Cos(0x84, task.data[2]);
+      sprite.y2 = Sin(0x94, task.data[2]);
       task.data[3]++;
       if (task.data[3] & 1)
       {
@@ -961,7 +913,7 @@ export function RideDownEscalatorOut(task: any): any {
   let sprite: any = null;
       sprite =gSprites[gPlayerAvatar.spriteId];
       sprite.x2 = Cos(0x7c, task.data[2]);
-      sprite.y2 = Sin(_0x76, task.data[2]);
+      sprite.y2 = Sin(0x76, task.data[2]);
       task.data[3]++;
       if (task.data[3] & 1)
       {
@@ -1036,8 +988,8 @@ export function EscalatorWarpIn_Init(task: any): any {
 export function EscalatorWarpIn_Down_Init(task: any): any {
   let sprite: any = null;
       sprite =gSprites[gPlayerAvatar.spriteId];
-      sprite.x2 = Cos(_0x84, task.data[1]);
-      sprite.y2 = Sin(_0x94, task.data[1]);
+      sprite.x2 = Cos(0x84, task.data[1]);
+      sprite.y2 = Sin(0x94, task.data[1]);
       task.tState++;
       return FALSE;
 }
@@ -1046,8 +998,8 @@ export function EscalatorWarpIn_Down_Init(task: any): any {
 export function EscalatorWarpIn_Down_Ride(task: any): any {
   let sprite: any = null;
       sprite =gSprites[gPlayerAvatar.spriteId];
-      sprite.x2 = Cos(_0x84, task.data[1]);
-      sprite.y2 = Sin(_0x94, task.data[1]);
+      sprite.x2 = Cos(0x84, task.data[1]);
+      sprite.y2 = Sin(0x94, task.data[1]);
       task.data[2]++;
       if (task.data[2] & 1)
       {
@@ -1067,7 +1019,7 @@ export function EscalatorWarpIn_Up_Init(task: any): any {
   let sprite: any = null;
       sprite =gSprites[gPlayerAvatar.spriteId];
       sprite.x2 = Cos(0x7c, task.data[1]);
-      sprite.y2 = Sin(_0x76, task.data[1]);
+      sprite.y2 = Sin(0x76, task.data[1]);
       task.tState++;
       return FALSE;
 }
@@ -1077,7 +1029,7 @@ export function EscalatorWarpIn_Up_Ride(task: any): any {
   let sprite: any = null;
       sprite =gSprites[gPlayerAvatar.spriteId];
       sprite.x2 = Cos(0x7c, task.data[1]);
-      sprite.y2 = Sin(_0x76, task.data[1]);
+      sprite.y2 = Sin(0x76, task.data[1]);
       task.data[2]++;
       if (task.data[2] & 1)
       {
@@ -1314,7 +1266,7 @@ export function LavaridgeGymB1FWarpEffect_Rise(task: any, objectEvent: any, spri
               task.data[4] = 1;
           }
       }
-      if (task.data[5] == 0 && sprite.y2 < -_0x10)
+      if (task.data[5] == 0 && sprite.y2 < -0x10)
       {
           task.data[5]++;
           objectEvent.fixedPriority = 1;
@@ -1767,7 +1719,7 @@ export function TeleportWarpInFieldEffect_SpinEnter(task: any): any {
               sprite.subspriteMode = SUBSPRITES_IGNORE_PRIORITY;
           }
       }
-      if (sprite.y2 >= -_0x30 && task.data[1] > 1 && !(sprite.y2 & 1))
+      if (sprite.y2 >= -0x30 && task.data[1] > 1 && !(sprite.y2 & 1))
       {
           task.data[1]--;
       }
@@ -1855,8 +1807,8 @@ export function FieldMoveShowMonOutdoorsEffect_Init(task: any): any {
 export function FieldMoveShowMonOutdoorsEffect_LoadGfx(task: any): any {
   let offset: any = ((REG_BG0CNT >> 2) << 14);
       let delta: any = ((REG_BG0CNT >> 8) << 11);
-      CpuCopy16(sFieldMoveStreaksOutdoors_Gfx, (VRAM + offset), _0x200);
-      CpuFill32(0, (VRAM + delta), _0x800);
+      CpuCopy16(sFieldMoveStreaksOutdoors_Gfx, (VRAM + offset), 0x200);
+      CpuFill32(0, (VRAM + delta), 0x800);
       LoadPalette(sFieldMoveStreaksOutdoors_Pal, BG_PLTT_ID(15), 0);
       LoadFieldMoveOutdoorStreaksTilemap(delta);
       task.tState++;
@@ -1926,7 +1878,7 @@ export function FieldMoveShowMonOutdoorsEffect_ShrinkBanner(task: any): any {
 /** static void FieldMoveShowMonOutdoorsEffect_RestoreBg(struct Task *task) */
 export function FieldMoveShowMonOutdoorsEffect_RestoreBg(task: any): any {
   let bg0cnt: any = (REG_BG0CNT >> 8) << 11;
-      CpuFill32(0, VRAM + bg0cnt, _0x800);
+      CpuFill32(0, VRAM + bg0cnt, 0x800);
       task.tWinHoriz = DISPLAY_WIDTH + 1;
       task.tWinVert = DISPLAY_HEIGHT + 1;
       task.tWinIn = task.data[11];
@@ -1991,8 +1943,8 @@ export function FieldMoveShowMonIndoorsEffect_LoadGfx(task: any): any {
       offset = ((REG_BG0CNT >> 2) << 14);
       delta = ((REG_BG0CNT >> 8) << 11);
       task.data[12] = delta;
-      CpuCopy16(sFieldMoveStreaksIndoors_Gfx, (VRAM + offset), _0x80);
-      CpuFill32(0, (VRAM + delta), _0x800);
+      CpuCopy16(sFieldMoveStreaksIndoors_Gfx, (VRAM + offset), 0x80);
+      CpuFill32(0, (VRAM + delta), 0x800);
       LoadPalette(sFieldMoveStreaksIndoors_Pal, BG_PLTT_ID(15), 0);
       task.tState++;
 }
@@ -2038,7 +1990,7 @@ export function FieldMoveShowMonIndoorsEffect_End(task: any): any {
   let intrCallback: any = null;
       let bg0cnt: any = null;
       bg0cnt = (REG_BG0CNT >> 8) << 11;
-      CpuFill32(0, VRAM + bg0cnt, _0x800);
+      CpuFill32(0, VRAM + bg0cnt, 0x800);
       LoadWordFromTwoHalfwords(task.data[13],intrCallback);
       SetVBlankCallback(intrCallback);
       InitTextBoxGfxAndPrinters();
@@ -2079,7 +2031,7 @@ export function SlideIndoorBannerOnscreen(task: any): any {
       {
           dstOffs = (32 - dstOffs) & 0x1f;
           srcOffs = (32 - task.tBgOffset) & 0x1f;
-          dest = (VRAM + _0x140 + task.data[12]);
+          dest = (VRAM + 0x140 + task.data[12]);
           for (i = 0; i < 10; i++)
           {
               dest[dstOffs + i * 32] = sFieldMoveStreaksIndoors_Tilemap[srcOffs + i * 32];
@@ -2106,7 +2058,7 @@ export function SlideIndoorBannerOffscreen(task: any): any {
       if (dstOffs >= task.tBgOffset)
       {
           dstOffs = (task.tBgHoriz >> 3) & 0x1f;
-          dest = (VRAM + _0x140 + task.data[12]);
+          dest = (VRAM + 0x140 + task.data[12]);
           for (i = 0; i < 10; i++)
           {
               dest[dstOffs + i * 32] = 0xf000;
@@ -2283,7 +2235,7 @@ export function FldEff_RayquazaSpotlight(): any {
 
 /** u8 FldEff_NPCFlyOut(void) */
 export function FldEff_NPCFlyOut(): any {
-  let spriteId: any = CreateSprite(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_BIRD], _0x78, 0, 1);
+  let spriteId: any = CreateSprite(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_BIRD], 0x78, 0, 1);
       let sprite: any =gSprites[spriteId];
 
       sprite.oam.paletteNum = 0;
@@ -2299,7 +2251,7 @@ export function SpriteCB_NPCFlyOut(sprite: any): any {
   let npcSprite: any = null;
 
       sprite.x2 = Cos(sprite.data[2], 0x8c);
-      sprite.y2 = Sin(sprite.data[2], _0x48);
+      sprite.y2 = Sin(sprite.data[2], 0x48);
       sprite.data[2] = (sprite.data[2] + 4) & 0xff;
       if (sprite.data[0])
       {
@@ -2311,7 +2263,7 @@ export function SpriteCB_NPCFlyOut(sprite: any): any {
           npcSprite.y2 = 0;
       }
 
-      if (sprite.data[2] >= _0x80)
+      if (sprite.data[2] >= 0x80)
           FieldEffectStop(sprite, FLDEFF_NPCFLY_OUT);
 }
 
@@ -2443,7 +2395,7 @@ export function FlyOutFieldEffect_End(task: any): any {
 export function CreateFlyBirdSprite(): any {
   let spriteId: any = null;
       let sprite: any = null;
-      spriteId = CreateSprite(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_BIRD], 0xff, 0xb4, _0x1);
+      spriteId = CreateSprite(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_BIRD], 0xff, 0xb4, 0x1);
       sprite =gSprites[spriteId];
       sprite.oam.paletteNum = 0;
       sprite.oam.priority = 1;
@@ -2484,20 +2436,20 @@ export function SpriteCB_FlyBirdLeaveBall(sprite: any): any {
               sprite.affineAnims = sAffineAnims_FlyBird;
               InitSpriteAffineAnim(sprite);
               StartSpriteAffineAnim(sprite, 0);
-              sprite.x = _0x76;
-              sprite.y = -_0x30;
+              sprite.x = 0x76;
+              sprite.y = -0x30;
               sprite.data[0]++;
-              sprite.data[1] = _0x40;
-              sprite.data[2] = _0x100;
+              sprite.data[1] = 0x40;
+              sprite.data[2] = 0x100;
           }
           sprite.data[1] += (sprite.data[2] >> 8);
-          sprite.x2 = Cos(sprite.data[1], _0x78);
-          sprite.y2 = Sin(sprite.data[1], _0x78);
-          if (sprite.data[2] < _0x800)
+          sprite.x2 = Cos(sprite.data[1], 0x78);
+          sprite.y2 = Sin(sprite.data[1], 0x78);
+          if (sprite.data[2] < 0x800)
           {
-              sprite.data[2] += _0x60;
+              sprite.data[2] += 0x60;
           }
-          if (sprite.data[1] > _0x81)
+          if (sprite.data[1] > 0x81)
           {
               sprite.sAnimCompleted++;
               sprite.oam.affineMode = ST_OAM_AFFINE_OFF;
@@ -2510,7 +2462,7 @@ export function SpriteCB_FlyBirdLeaveBall(sprite: any): any {
 /** static void SpriteCB_FlyBirdSwoopDown(struct Sprite *sprite) */
 export function SpriteCB_FlyBirdSwoopDown(sprite: any): any {
   sprite.x2 = Cos(sprite.data[2], 0x8c);
-      sprite.y2 = Sin(sprite.data[2], _0x48);
+      sprite.y2 = Sin(sprite.data[2], 0x48);
       sprite.data[2] = (sprite.data[2] + 4) & 0xff;
       if (sprite.sPlayerSpriteId != MAX_SPRITES)
       {
@@ -2521,7 +2473,7 @@ export function SpriteCB_FlyBirdSwoopDown(sprite: any): any {
           sprite1.x2 = 0;
           sprite1.y2 = 0;
       }
-      if (sprite.data[2] >= _0x80)
+      if (sprite.data[2] >= 0x80)
       {
           sprite.sAnimCompleted = TRUE;
       }
@@ -2538,28 +2490,28 @@ export function SpriteCB_FlyBirdReturnToBall(sprite: any): any {
               InitSpriteAffineAnim(sprite);
               StartSpriteAffineAnim(sprite, 1);
               sprite.x = 0x5e;
-              sprite.y = -_0x20;
+              sprite.y = -0x20;
               sprite.data[0]++;
               sprite.data[1] = 0xf0;
-              sprite.data[2] = _0x800;
-              sprite.data[4] = _0x80;
+              sprite.data[2] = 0x800;
+              sprite.data[4] = 0x80;
           }
           sprite.data[1] += sprite.data[2] >> 8;
           sprite.data[3] += sprite.data[2] >> 8;
           sprite.data[1] &= 0xff;
-          sprite.x2 = Cos(sprite.data[1], _0x20);
-          sprite.y2 = Sin(sprite.data[1], _0x78);
-          if (sprite.data[2] > _0x100)
+          sprite.x2 = Cos(sprite.data[1], 0x20);
+          sprite.y2 = Sin(sprite.data[1], 0x78);
+          if (sprite.data[2] > 0x100)
           {
               sprite.data[2] -= sprite.data[4];
           }
-          if (sprite.data[4] < _0x100)
+          if (sprite.data[4] < 0x100)
           {
               sprite.data[4] += 24;
           }
-          if (sprite.data[2] < _0x100)
+          if (sprite.data[2] < 0x100)
           {
-              sprite.data[2] = _0x100;
+              sprite.data[2] = 0x100;
           }
           if (sprite.data[3] >= 60)
           {
@@ -2798,8 +2750,8 @@ export function DestroyDeoxysRockEffect_RockFragments(data: any, taskId: any): a
       {
           let sprite: any =gSprites[gObjectEvents[tObjectEventId].spriteId];
           gObjectEvents[tObjectEventId].invisible = TRUE;
-          BlendPalettes(PALETTES_BG, _0x10, RGB_WHITE);
-          BeginNormalPaletteFade(PALETTES_BG, 0, _0x10, 0, RGB_WHITE);
+          BlendPalettes(PALETTES_BG, 0x10, RGB_WHITE);
+          BeginNormalPaletteFade(PALETTES_BG, 0, 0x10, 0, RGB_WHITE);
           CreateDeoxysRockFragments(sprite);
           PlaySE(SE_THUNDER);
           StartEndingDeoxysRockCameraShake(tCameraTaskId);

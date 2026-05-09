@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BeginNormalPaletteFade, BlendPalettes, CMD_ARGS, Cos,
-  DestroyAnimSprite, DestroyAnimVisualTask, FALSE, GetAnimBattlerSpriteId,
-  GetBattlePalettesMask, GetBattlerSide, IndexOfSpritePaletteTag, InitSpritePosToAnimAttacker,
-  InitSpritePosToAnimTarget, InvertPlttBuffer, IsContest, PALETTES_BG,
-  Random2, Sin, StartSpriteAffineAnim, StartSpriteAnim,
-  StoreSpriteCallbackInData6, TRUE, TintPlttBuffer, UnfadePlttBuffer,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static void AnimConfusionDuck(struct Sprite *sprite) */
 export function AnimConfusionDuck(sprite: any): any {
   CMD_ARGS(x, y, waveOffset, wavePeriod, duration);
@@ -138,12 +123,12 @@ export function AnimComplexPaletteBlend_Step1(sprite: any): any {
       }
 
       selectedPalettes = UnpackSelectedBattlePalettes(sprite.sPaletteSelector);
-      if (sprite.sDelay & _0x100)
+      if (sprite.sDelay & 0x100)
           BlendPalettes(selectedPalettes, sprite.sBlendY1, sprite.sColor1);
       else
           BlendPalettes(selectedPalettes, sprite.sBlendY2, sprite.sColor2);
 
-      sprite.sDelay ^= _0x100;
+      sprite.sDelay ^= 0x100;
       sprite.sTimer = sprite.sDelay & 0xFF;
       sprite.sNumBlends--;
 }
@@ -422,7 +407,7 @@ export function AnimTask_FlashAnimTagWithColor_Step1(taskId: any): any {
       }
 
       selectedPalettes = 1 << (IndexOfSpritePaletteTag(gTasks[taskId].tAnimTag) + 16);
-      if (gTasks[taskId].tDelay & _0x100)
+      if (gTasks[taskId].tDelay & 0x100)
       {
           BeginNormalPaletteFade(
               selectedPalettes,
@@ -441,7 +426,7 @@ export function AnimTask_FlashAnimTagWithColor_Step1(taskId: any): any {
               gTasks[taskId].tColor2);
       }
 
-      gTasks[taskId].tDelay ^= _0x100;
+      gTasks[taskId].tDelay ^= 0x100;
       gTasks[taskId].tTimer = gTasks[taskId].tDelay & 0xFF;
       gTasks[taskId].tNumBlends--;
 }
@@ -470,10 +455,10 @@ export function AnimTask_InvertScreenColor(taskId: any): any {
           selectedPalettes = GetBattlePalettesMask(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);
 
       if (cmd.flagsAttacker & (1 << 8))
-          selectedPalettes |= (_0x10000 << attackerBattler);
+          selectedPalettes |= (0x10000 << attackerBattler);
 
       if (cmd.flagsTarget & (1 << 8))
-          selectedPalettes |= (_0x10000 << targetBattler);
+          selectedPalettes |= (0x10000 << targetBattler);
 
       InvertPlttBuffer(selectedPalettes);
       DestroyAnimVisualTask(taskId);

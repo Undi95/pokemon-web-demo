@@ -15,24 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AllocZeroed, AllowObjectAtPosTriggerGroundEffects, CheckObjectGraphicsInFrontOfPlayer, Cos,
-  CreateFieldMoveTask, CreateSprite, DestroySprite, DrawWholeMapView,
-  FALSE, FREE_AND_SET_NULL, FieldEffectActiveListRemove, FieldEffectStart,
-  FieldEffectStop, GetCursorSelectionMonId, GetMonAbility, IncrementGameStat,
-  IsMewPlayingHideAndSeek, MapGridGetCollisionAt, MapGridGetElevationAt, MapGridGetMetatileBehaviorAt,
-  MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MetatileBehavior_IsAshGrass, MetatileBehavior_IsCuttableGrass,
-  MetatileBehavior_IsLongGrassSouthEdge, MetatileBehavior_IsLongGrass_Duplicate, MetatileBehavior_IsPokeGrass, PlaySE,
-  PlayerGetDestCoords, ScriptContext_Enable, ScriptContext_SetupScript, ScriptUnfreezeObjectEvents,
-  Sin, TRUE, UnlockPlayerFieldControls,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool8 SetUpFieldMove_Cut(void) */
 export function SetUpFieldMove_Cut(): any {
   let x, y;

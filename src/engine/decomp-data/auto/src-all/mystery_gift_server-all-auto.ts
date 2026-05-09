@@ -15,21 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AGB_ASSERT, ARRAY_COUNT, AllocZeroed, DisableWonderCardSending,
-  FALSE, FREE_AND_SET_NULL, Free, GetSavedRamScriptIfValid,
-  GetSavedWonderCard, GetSavedWonderNews, MysteryGiftLink_Init, MysteryGiftLink_InitRecv,
-  MysteryGiftLink_InitSend, MysteryGiftLink_Recv, MysteryGiftLink_Send, MysteryGift_CheckStamps,
-  MysteryGift_CompareCardFlags, MysteryGift_DoesQuestionnaireMatch, MysteryGift_GetCardStatFromLinkData, MysteryGift_ValidateLinkGameData,
-  NULL, TRUE, memcpy,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void MysterGiftServer_CreateForNews(void) */
 export function MysterGiftServer_CreateForNews(): any {
   sServer = AllocZeroed(0);

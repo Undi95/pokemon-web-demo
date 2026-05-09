@@ -15,27 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  AnimTranslateLinear, AnimateBallOpenParticles, AnimateSprite, ChangeSpriteAffineAnim,
-  Cos, CreateInvisibleSpriteWithCallback, CreateSprite, CreateTask,
-  DestroySprite, DestroySpriteAndFreeResources, DestroyTask, DoMonFrontSpriteAnimation,
-  FALSE, FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide,
-  GetBattlerSpriteCoord, GetMonData, GetSpriteTileStartByTag, HIBYTE,
-  InitAnimArcTranslation, IsBGMPlaying, IsCryPlayingOrClearCrySongs, IsDoubleBattle,
-  ItemIdToBallId, LZDecompressVram, LaunchBallFadeMonTask, LoadCompressedSpritePaletteUsingHeap,
-  LoadCompressedSpriteSheetUsingHeap, PlayCry_ByMode, PlayCry_ReleaseDouble, PlaySE,
-  ShouldPlayNormalMonCry, Sin, SpriteCallbackDummy, StartSpriteAffineAnim,
-  StartSpriteAnim, StopCryAndClearCrySongs, TRUE, TranslateAnimHorizontalArc,
-  gSineTable, m4aMPlayAllStop,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** u8 DoPokeballSendOutAnimation(s16 pan, u8 kindOfThrow) */
 export function DoPokeballSendOutAnimation(pan: any, kindOfThrow: any): any {
   let taskId: any = null;
@@ -76,7 +55,7 @@ export function Task_DoPokeballSendOutAnim(taskId: any): any {
       ballId = ItemIdToBallId(itemId);
       LoadBallGfx(ballId);
       ballSpriteId = CreateSprite(gBallSpriteTemplates[ballId], 32, 80, 29);
-      gSprites[ballSpriteId].data[0] = _0x80;
+      gSprites[ballSpriteId].data[0] = 0x80;
       gSprites[ballSpriteId].data[1] = 0;
       gSprites[ballSpriteId].data[7] = throwCaseId;
 
@@ -178,7 +157,7 @@ export function SpriteCB_BallThrow_ShrinkMon(sprite: any): any {
       }
       else
       {
-          gSprites[gBattlerSpriteIds[sprite.sBattler]].data[1] += _0x60;
+          gSprites[gBattlerSpriteIds[sprite.sBattler]].data[1] += 0x60;
           gSprites[gBattlerSpriteIds[sprite.sBattler]].y2 = -gSprites[gBattlerSpriteIds[sprite.sBattler]].data[1] >> 8;
       }
 }
@@ -212,7 +191,7 @@ export function SpriteCB_BallThrow_FallToGround(sprite: any): any {
           if (sprite.data[5] >= 64)
           {
               sprite.data[4] -= 10;
-              sprite.data[3] += _0x101;
+              sprite.data[3] += 0x101;
               if (sprite.data[3] >> 8 == 4)
                   r5 = TRUE;
               switch (sprite.data[3] >> 8)
@@ -307,7 +286,7 @@ export function SpriteCB_BallThrow_Shake(sprite: any): any {
           }
           break;
       case 3:
-          sprite.data[3] += _0x100;
+          sprite.data[3] += 0x100;
           if (sprite.data[3] >> 8 == sprite.data[7])
           {
               sprite.callback = SpriteCB_ReleaseMonFromBall;
@@ -503,7 +482,7 @@ export function SpriteCB_ReleaseMonFromBall(sprite: any): any {
           gSprites[gBattlerSpriteIds[sprite.sBattler]].callback = SpriteCB_PlayerMonFromBall;
 
       AnimateSprite(gSprites[gBattlerSpriteIds[sprite.sBattler]]);
-      gSprites[gBattlerSpriteIds[sprite.sBattler]].data[1] = _0x1000;
+      gSprites[gBattlerSpriteIds[sprite.sBattler]].data[1] = 0x1000;
 }
 
 /** static void SpriteCB_BallThrow_StartCaptureMon(struct Sprite *sprite) */
@@ -597,7 +576,7 @@ export function SpriteCB_PlayerMonSendOut_2(sprite: any): any {
   let r6: any = null;
       let r7: any = null;
 
-      if (HIBYTE(sprite.data[7]) >= 35 && HIBYTE(sprite.data[7]) < 80)
+      if (((((sprite.data[7])) >> 8) & 0xFF) >= 35 && ((((sprite.data[7])) >> 8) & 0xFF) < 80)
       {
           let r4: any = null;
 
@@ -612,13 +591,13 @@ export function SpriteCB_PlayerMonSendOut_2(sprite: any): any {
           r4 = sprite.data[0];
           AnimTranslateLinear(sprite);
           sprite.data[7] += sprite.sBattler / 3;
-          sprite.y2 += Sin(HIBYTE(sprite.data[7]), sprite.data[5]);
-          sprite.oam.affineParam += _0x100;
+          sprite.y2 += Sin(((((sprite.data[7])) >> 8) & 0xFF), sprite.data[5]);
+          sprite.oam.affineParam += 0x100;
           if ((sprite.oam.affineParam >> 8) % 3 != 0)
               sprite.data[0] = r4;
           else
               sprite.data[0] = r4 - 1;
-          if (HIBYTE(sprite.data[7]) >= 80)
+          if (((((sprite.data[7])) >> 8) & 0xFF) >= 80)
           {
               r6 = sprite.data[1] & 1;
               r7 = sprite.data[2] & 1;
@@ -729,7 +708,7 @@ export function SpriteCB_PokeballReleaseMon(sprite: any): any {
           gSprites[spriteId].invisible = FALSE;
           StartSpriteAffineAnim(gSprites[spriteId], BATTLER_AFFINE_EMERGE);
           AnimateSprite(gSprites[spriteId]);
-          gSprites[spriteId].data[1] = _0x1000;
+          gSprites[spriteId].data[1] = 0x1000;
           sprite.sTrigIdx = 0;
       }
       else
@@ -870,7 +849,7 @@ export function StartHealthboxSlideIn(battler: any): any {
 
       healthboxSprite.sSpeedX = 5;
       healthboxSprite.sSpeedY = 0;
-      healthboxSprite.x2 = _0x73;
+      healthboxSprite.x2 = 0x73;
       healthboxSprite.y2 = 0;
       healthboxSprite.callback = SpriteCB_HealthboxSlideIn;
       if (GetBattlerSide(battler) != B_SIDE_PLAYER)
@@ -946,7 +925,7 @@ export function LoadBallGfx(ballId: any): any {
           break;
       default:
           _var = GetSpriteTileStartByTag(gBallSpriteSheets[ballId].tag);
-          LZDecompressVram(gOpenPokeballGfx, (OBJ_VRAM0 + _0x100 + _var * 32));
+          LZDecompressVram(gOpenPokeballGfx, (OBJ_VRAM0 + 0x100 + _var * 32));
           break;
       }
 }

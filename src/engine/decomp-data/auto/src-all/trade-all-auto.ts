@@ -15,74 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddTextPrinterParameterized4,
-  Alloc, AllocZeroed, AllocateMonSpritesGfx, AnimateSprites,
-  BGCNT_16COLOR, BGCNT_256COLOR, BGCNT_AFF128x128, BGCNT_CHARBASE,
-  BGCNT_PRIORITY, BGCNT_SCREENBASE, BGCNT_TXT256x512, BGCNT_TXT512x256,
-  BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR, BG_SCREEN_SIZE,
-  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1, BLDCNT_TGT1_OBJ,
-  BLDCNT_TGT2_BG1, BLDCNT_TGT2_BG2, BeginNormalPaletteFade, BitmaskAllOtherLinkPlayers,
-  BlendPalettes, BuildOamBuffer, CalcCenterToCornerVec, CalculateEnemyPartyCount,
-  CalculateMonStats, CalculatePlayerPartyCount, ChangeBgX, ChangeBgY,
-  CheckShouldAdvanceLinkState, ClearContinueGameWarpStatus2, ClearGpuRegBits, ClearMail,
-  ClearWindowTilemap, CloseLink, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer,
-  CopyToBgTilemapBufferRect_ChangePalette, CopyWindowToVram, CreateMon, CreateMonIcon,
-  CreatePokeballSpriteToReleaseMon, CreateSprite, CreateTask, CreateTask_RfuIdle,
-  CreateTradePokeballSprite, CreateWirelessStatusIndicatorSprite, CreateYesNoMenu, DISPCNT_BG0_ON,
-  DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPCNT_MODE_0, DISPCNT_MODE_1,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON, DISPLAY_HEIGHT,
-  DISPLAY_WIDTH, DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap, DestroySprite,
-  DestroyTask, DestroyTask_RfuIdle, DestroyWirelessStatusIndicatorSprite, DmaCopy16Defvars,
-  DmaCopyLarge16, DoBgAffineSet, DrawHeldItemIconsForTrade, DrawTextBorderOuter,
-  DrawTextWindowAndBufferTiles, FALSE, FREE_AND_SET_NULL, FadeOutBGM,
-  FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FlagSet,
-  Free, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeMonSpritesGfx,
-  FreeSpriteOamMatrix, FuncIsActiveTask, GetBgTilemapBuffer, GetBlockReceivedStatus,
-  GetCurrentMapMusic, GetEvolutionTargetSpecies, GetFontAttribute, GetGpuReg,
-  GetHPBarLevel, GetLinkPlayerCount, GetLinkPlayerCount_2, GetMonData,
-  GetMonGender, GetMonSpritePalStruct, GetMultiplayerId, GetSavedPlayerCount,
-  GetSetPokedexFlag, GetStringCenterAlignXOffset, GetStringWidth, GiveMailToMon,
-  HandleLoadSpecialPokePic_2, HandleLoadSpecialPokePic_DontHandleDeoxys, HandleSetPokedexFlag, HasLinkErrorOccurred,
-  InUnionRoom, IncrementGameStat, InitBgsFromTemplates, InitMenuInUpperLeftCornerNormal,
-  InitWindows, IsBGMStopped, IsCryFinished, IsLinkMaster,
-  IsLinkPlayerDataExchangeComplete, IsLinkRfuTaskFinished, IsLinkTaskFinished, IsMonSpriteNotFlipped,
-  IsNationalPokedexEnabled, IsSpeciesInHoennDex, ItemIsMail, JOY_NEW,
-  JOY_REPEAT, LZ77UnCompVram, LZDecompressWram, LinkFullSave_Init,
-  LinkFullSave_ReplaceLastSector, LinkFullSave_SetLastSectorSignature, LinkFullSave_WriteSector, LoadBgTilemap,
-  LoadBgTiles, LoadCompressedPalette, LoadCompressedSpritePalette, LoadHeldItemIcons,
-  LoadMonIconPalettes, LoadOam, LoadPalette, LoadSpritePalette,
-  LoadSpriteSheet, LoadUserWindowBorderGfx, LoadUserWindowBorderGfx_, LoadWirelessStatusIndicatorSpriteGfx,
-  LockPlayerFieldControls, Menu_ProcessInputNoWrap, Menu_ProcessInputNoWrapClearOnChoose, MysteryGift_TryIncrementStat,
-  NULL, NameHasGenderSymbol, OBJ_PLTT_ID2, OpenLink,
-  PALETTES_ALL, PALETTES_BG, PIXEL_FILL, PLTT_SIZEOF,
-  PLTT_SIZE_4BPP, PadNameString, PlayBGM, PlayCry_Normal,
-  PlayFanfare, PlayNewMapMusic, PlaySE, PrintMenuTable,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BG0HOFS, REG_OFFSET_BG1CNT,
-  REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS,
-  REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ,
-  REG_OFFSET_WINOUT, Random, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlag,
-  ResetBlockReceivedFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  Rfu_GetIndexOfNewestChild, Rfu_SetLinkRecovery, RunTasks, RunTextPrinters,
-  RunTextPrintersAndIsPrinter0Active, SPRITE_SHAPE, SPRITE_SIZE, ST_OAM_AFFINE_DOUBLE,
-  SWAP, SendBlock, SendBlockRequest, SetBgTilemapBuffer,
-  SetCloseLinkCallback, SetCloseLinkCallbackAndType, SetContinueGameWarpStatusToDynamicWarp, SetGpuReg,
-  SetGpuRegBits, SetLinkStandbyCallback, SetMainCallback2, SetMonData,
-  SetMultiuseSpriteTemplateToPokemon, SetPartyHPBarSprite, SetVBlankCallback, SetWirelessCommType1,
-  ShowBg, ShowPokemonSummaryScreen, SpeciesToNationalPokedexNum, SpriteCallbackDummy,
-  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6, StringAppend,
-  StringCompareWithoutExtCtrlCodes, StringCopy, StringCopy_Nickname, StringExpandPlaceholders,
-  TRUE, TradeEvolutionScene, Trade_MoveSelectedMonToTarget, TransferPlttBuffer,
-  UpdatePaletteFade, WIN_RANGE2,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** static bool8 SendLinkData(const void *linkData, u32 size) */
 export function SendLinkData(linkData: any, size: any): any {
   if (gPlayerCurrActivity == ACTIVITY_29)
@@ -743,12 +675,12 @@ export function LoadTradeBgGfx(state: any): any {
       {
       case 0:
           LoadPalette(gTradeMenu_Pal, BG_PLTT_ID(0), 3 * PLTT_SIZE_4BPP);
-          LoadBgTiles(1, gTradeMenu_Gfx, _0x1280, 0);
+          LoadBgTiles(1, gTradeMenu_Gfx, 0x1280, 0);
           CopyToBgTilemapBufferRect_ChangePalette(1, gTradeMenu_Tilemap, 0, 0, 32, 20, 0);
-          LoadBgTilemap(2, sTradeStripesBG2Tilemap, _0x800, 0);
+          LoadBgTilemap(2, sTradeStripesBG2Tilemap, 0x800, 0);
           break;
       case 1:
-          LoadBgTilemap(3, sTradeStripesBG3Tilemap, _0x800, 0);
+          LoadBgTilemap(3, sTradeStripesBG3Tilemap, 0x800, 0);
           PrintPartyLevelsAndGenders(TRADE_PLAYER);
           PrintPartyLevelsAndGenders(TRADE_PARTNER);
           CopyBgTilemapBufferToVram(1);
@@ -1794,19 +1726,19 @@ export function PrintLevelAndGender(whichParty: any, monIdx: any, x: any, y: any
       if (!sTradeMenu.isEgg[whichParty][monIdx])
       {
           if (level / 10 != 0)
-              sTradeMenu.tilemapBuffer[x + (y * 32)] = (level / 10) + _0x60;
+              sTradeMenu.tilemapBuffer[x + (y * 32)] = (level / 10) + 0x60;
 
-          sTradeMenu.tilemapBuffer[x + (y * 32) + 1] = (level % 10) + _0x70;
+          sTradeMenu.tilemapBuffer[x + (y * 32) + 1] = (level % 10) + 0x70;
       }
       else
       {
           sTradeMenu.tilemapBuffer[x + (y * 32) - 32] = sTradeMenu.tilemapBuffer[x + (y * 32) - 33];
-          sTradeMenu.tilemapBuffer[x + (y * 32) - 31] = sTradeMenu.tilemapBuffer[x + (y * 32) - 36] | _0x400;
+          sTradeMenu.tilemapBuffer[x + (y * 32) - 31] = sTradeMenu.tilemapBuffer[x + (y * 32) - 36] | 0x400;
       }
 
       if (sTradeMenu.isEgg[whichParty][monIdx])
       {
-          symbolTile = _0x480;
+          symbolTile = 0x480;
       }
       else
       {
@@ -1824,13 +1756,13 @@ export function PrintLevelAndGender(whichParty: any, monIdx: any, x: any, y: any
           switch (gender)
           {
           case MON_MALE:
-              symbolTile = !NameHasGenderSymbol(nickname, MON_MALE) ? _0x84 : _0x83;
+              symbolTile = !NameHasGenderSymbol(nickname, MON_MALE) ? 0x84 : 0x83;
               break;
           case MON_FEMALE:
-              symbolTile = !NameHasGenderSymbol(nickname, MON_FEMALE) ? _0x85 : _0x83;
+              symbolTile = !NameHasGenderSymbol(nickname, MON_FEMALE) ? 0x85 : 0x83;
               break;
           default:
-              symbolTile = _0x83;
+              symbolTile = 0x83;
               break;
           }
       }
@@ -1990,7 +1922,7 @@ export function LoadUISpriteGfx(): any {
       if (sTradeMenu.timer < NUM_MENU_TEXT_SPRITES)
       {
           sheet.data = sMenuTextTileBuffers[sTradeMenu.timer];
-          sheet.size = _0x100;
+          sheet.size = 0x100;
           sheet.tag = GFXTAG_MENU_TEXT + sTradeMenu.timer;
       }
 
@@ -2460,7 +2392,7 @@ export function SpriteCB_GbaScreen(sprite: any): any {
 export function SetTradeBGAffine(): any {
   let affine: any = null;
 
-      DoBgAffineSet(affine, sTradeAnim.texX * _0x100, sTradeAnim.texY * _0x100, sTradeAnim.scrX, sTradeAnim.scrY, sTradeAnim.sXY, sTradeAnim.sXY, sTradeAnim.alpha);
+      DoBgAffineSet(affine, sTradeAnim.texX * 0x100, sTradeAnim.texY * 0x100, sTradeAnim.scrX, sTradeAnim.scrY, sTradeAnim.sXY, sTradeAnim.sXY, sTradeAnim.alpha);
       SetGpuReg(REG_OFFSET_BG2PA, affine.pa);
       SetGpuReg(REG_OFFSET_BG2PB, affine.pb);
       SetGpuReg(REG_OFFSET_BG2PC, affine.pc);
@@ -2920,8 +2852,8 @@ export function SetTradeSequenceBgGpuRegs(state: any): any {
                                        BGCNT_SCREENBASE(18) |
                                        BGCNT_TXT512x256);
           LoadPalette(gTradeGba2_Pal, BG_PLTT_ID(1), 3 * PLTT_SIZE_4BPP);
-          DmaCopyLarge16(3, gTradeGba_Gfx, BG_CHAR_ADDR(1), _0x1420, _0x1000);
-          DmaCopy16Defvars(3, gTradePlatform_Tilemap, BG_SCREEN_ADDR(18), _0x1000);
+          DmaCopyLarge16(3, gTradeGba_Gfx, BG_CHAR_ADDR(1), 0x1420, 0x1000);
+          DmaCopy16Defvars(3, gTradePlatform_Tilemap, BG_SCREEN_ADDR(18), 0x1000);
           break;
       case 1:
           sTradeAnim.bg1hofs = 0;
@@ -2940,14 +2872,14 @@ export function SetTradeSequenceBgGpuRegs(state: any): any {
 
           if (sTradeAnim.isCableTrade)
           {
-              DmaCopy16Defvars(3, sGbaMapCable, BG_SCREEN_ADDR(5), _0x1000);
+              DmaCopy16Defvars(3, sGbaMapCable, BG_SCREEN_ADDR(5), 0x1000);
           }
           else
           {
-              DmaCopy16Defvars(3, sGbaMapWireless, BG_SCREEN_ADDR(5), _0x1000);
+              DmaCopy16Defvars(3, sGbaMapWireless, BG_SCREEN_ADDR(5), 0x1000);
           }
 
-          DmaCopyLarge16(3, gTradeGba_Gfx, BG_CHAR_ADDR(0), _0x1420, _0x1000);
+          DmaCopyLarge16(3, gTradeGba_Gfx, BG_CHAR_ADDR(0), 0x1420, 0x1000);
           SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 |
                                         DISPCNT_OBJ_1D_MAP |
                                         DISPCNT_BG1_ON |
@@ -2963,7 +2895,7 @@ export function SetTradeSequenceBgGpuRegs(state: any): any {
                                             DISPCNT_BG1_ON |
                                             DISPCNT_OBJ_ON);
               LZ77UnCompVram(sWirelessCloseup_Map, BG_SCREEN_ADDR(5));
-              BlendPalettes(_0x8, 16, RGB_BLACK);
+              BlendPalettes(0x8, 16, RGB_BLACK);
           }
           else
           {
@@ -2971,8 +2903,8 @@ export function SetTradeSequenceBgGpuRegs(state: any): any {
                                             DISPCNT_OBJ_1D_MAP |
                                             DISPCNT_BG1_ON |
                                             DISPCNT_OBJ_ON);
-              DmaCopy16Defvars(3, sCableCloseup_Map, BG_SCREEN_ADDR(5), _0x800);
-              BlendPalettes(_0x1, 16, RGB_BLACK);
+              DmaCopy16Defvars(3, sCableCloseup_Map, BG_SCREEN_ADDR(5), 0x800);
+              BlendPalettes(0x1, 16, RGB_BLACK);
           }
           break;
       case 3:
@@ -3002,15 +2934,15 @@ export function SetTradeSequenceBgGpuRegs(state: any): any {
           sTradeAnim.gbaScale = 1024;
           sTradeAnim.alpha = 0;
 
-          DmaCopyLarge16(3, sGbaAffine_Gfx, BG_CHAR_ADDR(1), _0x2840, _0x1000);
+          DmaCopyLarge16(3, sGbaAffine_Gfx, BG_CHAR_ADDR(1), 0x2840, 0x1000);
 
           if (sTradeAnim.isCableTrade)
           {
-              DmaCopy16Defvars(3, sGbaAffineMapCable, BG_SCREEN_ADDR(18), _0x100);
+              DmaCopy16Defvars(3, sGbaAffineMapCable, BG_SCREEN_ADDR(18), 0x100);
           }
           else
           {
-              DmaCopy16Defvars(3, sGbaAffineMapWireless, BG_SCREEN_ADDR(18), _0x100);
+              DmaCopy16Defvars(3, sGbaAffineMapWireless, BG_SCREEN_ADDR(18), 0x100);
           }
           break;
       case 5:
@@ -3035,15 +2967,15 @@ export function SetTradeSequenceBgGpuRegs(state: any): any {
           sTradeAnim.scrY = 80;
           sTradeAnim.alpha = 0;
 
-          DmaCopyLarge16(3, sGbaAffine_Gfx, BG_CHAR_ADDR(1), _0x2840, _0x1000);
+          DmaCopyLarge16(3, sGbaAffine_Gfx, BG_CHAR_ADDR(1), 0x2840, 0x1000);
 
           if (sTradeAnim.isCableTrade)
           {
-              DmaCopy16Defvars(3, sGbaAffineMapCable, BG_SCREEN_ADDR(18), _0x100);
+              DmaCopy16Defvars(3, sGbaAffineMapCable, BG_SCREEN_ADDR(18), 0x100);
           }
           else
           {
-              DmaCopy16Defvars(3, sGbaAffineMapWireless, BG_SCREEN_ADDR(18), _0x100);
+              DmaCopy16Defvars(3, sGbaAffineMapWireless, BG_SCREEN_ADDR(18), 0x100);
           }
           break;
       case 7:
@@ -3056,8 +2988,8 @@ export function SetTradeSequenceBgGpuRegs(state: any): any {
                                        BGCNT_SCREENBASE(18) |
                                        BGCNT_TXT512x256);
           LoadPalette(gTradeGba2_Pal, BG_PLTT_ID(1), 3 * PLTT_SIZE_4BPP);
-          DmaCopyLarge16(3, gTradeGba_Gfx, BG_CHAR_ADDR(1), _0x1420, _0x1000);
-          DmaCopy16Defvars(3, gTradePlatform_Tilemap, BG_SCREEN_ADDR(18), _0x1000);
+          DmaCopyLarge16(3, gTradeGba_Gfx, BG_CHAR_ADDR(1), 0x1420, 0x1000);
+          DmaCopy16Defvars(3, gTradePlatform_Tilemap, BG_SCREEN_ADDR(18), 0x1000);
           break;
       }
 }
@@ -3147,7 +3079,7 @@ export function DoTradeAnim_Cable(): any {
       case STATE_BYE_BYE:
           if (++sTradeAnim.timer == 80)
           {
-              sTradeAnim.releasePokeballSpriteId = CreateTradePokeballSprite(sTradeAnim.monSpriteIds[TRADE_PLAYER], gSprites[sTradeAnim.monSpriteIds[TRADE_PLAYER]].oam.paletteNum, 120, 32, 2, 1, _0x14, 0xfffff);
+              sTradeAnim.releasePokeballSpriteId = CreateTradePokeballSprite(sTradeAnim.monSpriteIds[TRADE_PLAYER], gSprites[sTradeAnim.monSpriteIds[TRADE_PLAYER]].oam.paletteNum, 120, 32, 2, 1, 0x14, 0xfffff);
               sTradeAnim.state++;
               StringExpandPlaceholders(gStringVar4, gText_ByeByeVar1);
               DrawTextOnTradeWindow(0, gStringVar4, 0);
@@ -3187,18 +3119,18 @@ export function DoTradeAnim_Cable(): any {
               sTradeAnim.state = STATE_GBA_ZOOM_OUT;
           break;
       case STATE_GBA_ZOOM_OUT:
-          if (sTradeAnim.gbaScale > _0x100)
+          if (sTradeAnim.gbaScale > 0x100)
           {
-              sTradeAnim.gbaScale -= _0x34;
+              sTradeAnim.gbaScale -= 0x34;
           }
           else
           {
               SetTradeSequenceBgGpuRegs(1);
-              sTradeAnim.gbaScale = _0x80;
+              sTradeAnim.gbaScale = 0x80;
               sTradeAnim.state++;
               sTradeAnim.timer = 0;
           }
-          sTradeAnim.sXY = _0x8000 / sTradeAnim.gbaScale;
+          sTradeAnim.sXY = 0x8000 / sTradeAnim.gbaScale;
           break;
       case STATE_GBA_FLASH_SEND:
           if (++sTradeAnim.timer > 20)
@@ -3286,15 +3218,15 @@ export function DoTradeAnim_Cable(): any {
           }
           break;
       case STATE_CROSSING_BLEND_WHITE_1:
-          BlendPalettes(_0x1, 16, RGB_WHITEALPHA);
+          BlendPalettes(0x1, 16, RGB_WHITEALPHA);
           sTradeAnim.state++;
           break;
       case STATE_CROSSING_BLEND_WHITE_2:
-          BlendPalettes(_0x1, 0, RGB_WHITEALPHA);
+          BlendPalettes(0x1, 0, RGB_WHITEALPHA);
           sTradeAnim.state++;
           break;
       case STATE_CROSSING_BLEND_WHITE_3:
-          BlendPalettes(_0x1, 16, RGB_WHITEALPHA);
+          BlendPalettes(0x1, 16, RGB_WHITEALPHA);
           sTradeAnim.state++;
           break;
       case STATE_CROSSING_CREATE_MON_PICS:
@@ -3333,7 +3265,7 @@ export function DoTradeAnim_Cable(): any {
               sTradeAnim.state++;
               gSprites[sTradeAnim.monSpriteIds[TRADE_PLAYER]].invisible = TRUE;
               gSprites[sTradeAnim.monSpriteIds[TRADE_PARTNER]].invisible = TRUE;
-              BlendPalettes(_0x1, 0, RGB_WHITEALPHA);
+              BlendPalettes(0x1, 0, RGB_WHITEALPHA);
           }
           break;
       case STATE_CROSSING_LINK_MONS_EXIT:
@@ -3419,16 +3351,16 @@ export function DoTradeAnim_Cable(): any {
           }
           break;
       case STATE_GBA_ZOOM_IN:
-          if (sTradeAnim.gbaScale < _0x400)
+          if (sTradeAnim.gbaScale < 0x400)
           {
-              sTradeAnim.gbaScale += _0x34;
+              sTradeAnim.gbaScale += 0x34;
           }
           else
           {
-              sTradeAnim.gbaScale = _0x400;
+              sTradeAnim.gbaScale = 0x400;
               sTradeAnim.state++;
           }
-          sTradeAnim.sXY = _0x8000 / sTradeAnim.gbaScale;
+          sTradeAnim.sXY = 0x8000 / sTradeAnim.gbaScale;
           break;
       case STATE_FADE_OUT_TO_NEW_MON:
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
@@ -3613,7 +3545,7 @@ export function DoTradeAnim_Wireless(): any {
       case STATE_BYE_BYE:
           if (++sTradeAnim.timer == 80)
           {
-              sTradeAnim.releasePokeballSpriteId = CreateTradePokeballSprite(sTradeAnim.monSpriteIds[TRADE_PLAYER], gSprites[sTradeAnim.monSpriteIds[TRADE_PLAYER]].oam.paletteNum, 120, 32, 2, 1, _0x14, 0xfffff);
+              sTradeAnim.releasePokeballSpriteId = CreateTradePokeballSprite(sTradeAnim.monSpriteIds[TRADE_PLAYER], gSprites[sTradeAnim.monSpriteIds[TRADE_PLAYER]].oam.paletteNum, 120, 32, 2, 1, 0x14, 0xfffff);
               sTradeAnim.state++;
               StringExpandPlaceholders(gStringVar4, gText_ByeByeVar1);
               DrawTextOnTradeWindow(0, gStringVar4, 0);
@@ -3653,18 +3585,18 @@ export function DoTradeAnim_Wireless(): any {
               sTradeAnim.state = STATE_GBA_ZOOM_OUT;
           break;
       case STATE_GBA_ZOOM_OUT:
-          if (sTradeAnim.gbaScale > _0x100)
+          if (sTradeAnim.gbaScale > 0x100)
           {
-              sTradeAnim.gbaScale -= _0x34;
+              sTradeAnim.gbaScale -= 0x34;
           }
           else
           {
               SetTradeSequenceBgGpuRegs(1);
-              sTradeAnim.gbaScale = _0x80;
+              sTradeAnim.gbaScale = 0x80;
               sTradeAnim.state = STATE_GBA_FLASH_SEND_WIRELESS;
               sTradeAnim.timer = 0;
           }
-          sTradeAnim.sXY = _0x8000 / sTradeAnim.gbaScale;
+          sTradeAnim.sXY = 0x8000 / sTradeAnim.gbaScale;
           break;
       case STATE_GBA_FLASH_SEND_WIRELESS:
           if (++sTradeAnim.timer > 20)
@@ -3759,15 +3691,15 @@ export function DoTradeAnim_Wireless(): any {
           }
           break;
       case STATE_CROSSING_BLEND_WHITE_1:
-          BlendPalettes(_0x8, 16, RGB_WHITEALPHA);
+          BlendPalettes(0x8, 16, RGB_WHITEALPHA);
           sTradeAnim.state++;
           break;
       case STATE_CROSSING_BLEND_WHITE_2:
-          BlendPalettes(_0x8, 16, RGB_WHITEALPHA);
+          BlendPalettes(0x8, 16, RGB_WHITEALPHA);
           sTradeAnim.state++;
           break;
       case STATE_CROSSING_BLEND_WHITE_3:
-          BlendPalettes(_0x8, 16, RGB_WHITEALPHA);
+          BlendPalettes(0x8, 16, RGB_WHITEALPHA);
           sTradeAnim.state++;
           break;
       case STATE_CROSSING_CREATE_MON_PICS:
@@ -3912,16 +3844,16 @@ export function DoTradeAnim_Wireless(): any {
           }
           break;
       case STATE_GBA_ZOOM_IN:
-          if (sTradeAnim.gbaScale < _0x400)
+          if (sTradeAnim.gbaScale < 0x400)
           {
-              sTradeAnim.gbaScale += _0x34;
+              sTradeAnim.gbaScale += 0x34;
           }
           else
           {
-              sTradeAnim.gbaScale = _0x400;
+              sTradeAnim.gbaScale = 0x400;
               sTradeAnim.state++;
           }
-          sTradeAnim.sXY = _0x8000 / sTradeAnim.gbaScale;
+          sTradeAnim.sXY = 0x8000 / sTradeAnim.gbaScale;
           break;
       case STATE_FADE_OUT_TO_NEW_MON:
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
@@ -4128,7 +4060,7 @@ export function SpriteCB_BouncingPokeball(sprite: any): any {
           sprite.data[0] = -(sprite.data[0] * sprite.data[2]) / 100;
           sprite.data[3] ++;
       }
-      if (sprite.x == _0x78)
+      if (sprite.x == 0x78)
           sprite.data[1] = 0;
       sprite.data[0] += sprite.data[4];
       if (sprite.data[3] == 4)
@@ -4174,13 +4106,13 @@ export function SpriteCB_BouncingPokeballArrive(sprite: any): any {
           if ((sprite.y += 4) > sprite.data[3])
           {
               sprite.data[2] ++;
-              sprite.data[0] = _0x16;
+              sprite.data[0] = 0x16;
               PlaySE(SE_BALL_BOUNCE_1);
           }
       }
       else
       {
-          if (sprite.data[0] == _0x42)
+          if (sprite.data[0] == 0x42)
               PlaySE(SE_BALL_BOUNCE_2);
           if (sprite.data[0] == 0x5c)
               PlaySE(SE_BALL_BOUNCE_3);
@@ -4638,7 +4570,7 @@ export function Task_CloseCenterWhiteColumn(taskId: any): any {
           sTradeAnim.wirelessWinRight -= 5;
 
           if (sTradeAnim.wirelessWinLeft > DISPLAY_WIDTH / 2 - 5)
-              BlendPalettes(_0x8, 0, RGB_WHITEALPHA);
+              BlendPalettes(0x8, 0, RGB_WHITEALPHA);
       }
       else
       {

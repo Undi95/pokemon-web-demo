@@ -15,31 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  ARRAY_COUNT, AddTextPrinterParameterized3, AllocSpritePalette, AllocSubstruct,
-  BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, ChangeBgY,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, CpuCopy16,
-  CpuFill16, CreateLoopedTask, CreateSprite, DISPCNT_OBJ_1D_MAP,
-  DISPCNT_OBJ_ON, DecompressAndCopyTileDataToVram, DestroySprite, FALSE,
-  FillWindowPixelBuffer, FillWindowPixelRect, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeMenuHandlerSubstruct2, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
-  GET_B, GET_G, GET_R, GetBgY,
-  GetDecompressedDataSize, GetSpriteTileStartByTag, GetSubstructPtr, IndexOfSpritePaletteTag,
-  InitBgFromTemplate, InitBgsFromTemplates, InitWindows, IsDma3ManagerBusyWithBgCopy,
-  IsLoopedTaskActive, LZ77UnCompWram, LoadCompressedSpriteSheet, LoadPalette,
-  NULL, OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL,
-  PLTT_SIZE_4BPP, PlaySE, PutWindowTilemap, REG_OFFSET_DISPCNT,
-  RGB2, RequestDma3Copy, ResetBgPositions, ResetBgsAndClearDma3BusyFlags,
-  ResetBldCnt_, ResetSpriteData, ResetTempTileDataBuffers, SetBgTilemapBuffer,
-  SetGpuReg, ShowBg, SpriteCallbackDummy, TRUE,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** bool32 InitPokenavMainMenu(void) */
 export function InitPokenavMainMenu(): any {
   let menu: any = null;
@@ -171,9 +146,9 @@ export function LoopedTask_SlideMenuHeaderUp(state: any): any {
       case 0:
           return LT_INC_AND_PAUSE;
       case 2:
-          if (ChangeBgY(0, 384, BG_COORD_ADD) >= _0x2000)
+          if (ChangeBgY(0, 384, BG_COORD_ADD) >= 0x2000)
           {
-              ChangeBgY(0, _0x2000, BG_COORD_SET);
+              ChangeBgY(0, 0x2000, BG_COORD_SET);
               return LT_FINISH;
           }
 
@@ -323,7 +298,7 @@ export function WaitForHelpBar(): any {
 /** static void DrawHelpBar(u32 windowId) */
 export function DrawHelpBar(windowId: any): any {
   FillWindowPixelBuffer(windowId, PIXEL_FILL(4));
-      FillWindowPixelRect(windowId, PIXEL_FILL(5), 0, 0, _0x80, 1);
+      FillWindowPixelRect(windowId, PIXEL_FILL(5), 0, 0, 0x80, 1);
 }
 
 /** static void InitPokenavMainMenuResources(void) */
@@ -336,7 +311,7 @@ export function InitPokenavMainMenuResources(): any {
           LoadCompressedSpriteSheet(sSpinningPokenavSpriteSheet[i]);
 
       Pokenav_AllocAndLoadPalettes(sSpinningNavgearPalettes);
-      menu.palettes = ~1 & ~(_0x10000 << IndexOfSpritePaletteTag(0));
+      menu.palettes = ~1 & ~(0x10000 << IndexOfSpritePaletteTag(0));
       spriteId = CreateSprite(sSpinningPokenavSpriteTemplate, 220, 12, 0);
       menu.spinningPokenav =gSprites[spriteId];
 }
@@ -441,8 +416,8 @@ export function LoadLeftHeaderGfxForSubMenu(menuGfxId: any): any {
       tag = sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].tag;
       size = GetDecompressedDataSize(sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].data);
       LoadPalette(gPokenavLeftHeader_Pal[tag * 16], OBJ_PLTT_ID(IndexOfSpritePaletteTag(2)), PLTT_SIZE_4BPP);
-      LZ77UnCompWram(sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].data,gDecompressionBuffer[_0x1000]);
-      RequestDma3Copy(gDecompressionBuffer[_0x1000], OBJ_VRAM0 + _0x800 + (GetSpriteTileStartByTag(2) * 32), size, 1);
+      LZ77UnCompWram(sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].data,gDecompressionBuffer[0x1000]);
+      RequestDma3Copy(gDecompressionBuffer[0x1000], OBJ_VRAM0 + 0x800 + (GetSpriteTileStartByTag(2) * 32), size, 1);
 }
 
 /** void ShowLeftHeaderGfx(u32 menuGfxId, bool32 isMain, bool32 isOnRightSide) */
@@ -450,9 +425,9 @@ export function ShowLeftHeaderGfx(menuGfxId: any, isMain: any, isOnRightSide: an
   let tileTop: any = null;
 
       if (!isMain)
-          tileTop = _0x30;
+          tileTop = 0x30;
       else
-          tileTop = _0x10;
+          tileTop = 0x10;
 
       if (menuGfxId < POKENAV_GFX_SUBMENUS_START)
           ShowLeftHeaderSprites(tileTop, isOnRightSide);

@@ -15,25 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  BGCNT_16COLOR, BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE,
-  BGCNT_TXT256x512, BGCNT_TXT512x256, BG_SCREEN_ADDR, BG_SCREEN_SIZE,
-  BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1, BLDCNT_TGT2_BG3,
-  BLDCNT_TGT2_OBJ, Cos2, CpuCopy16, CpuFill32,
-  CreateTask, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
-  DISPCNT_WIN1_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroyTask,
-  GetBattlerAtPosition, GetGpuReg, LoadBgTilemap, LoadBgTiles,
-  REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  ST_OAM_OBJ_WINDOW, SetBgAttribute, SetGpuReg,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void SetAnimBgAttribute(u8 bgId, u8 attributeId, u8 value) */
 export function SetAnimBgAttribute(bgId: any, attributeId: any, value: any): any {
   if (bgId < 4)
@@ -174,7 +155,7 @@ export function BattleIntroSlide1(taskId: any): any {
           break;
       case 2:
           gBattle_WIN0V -= 0xFF;
-          if ((gBattle_WIN0V & 0xFF00) == _0x3000)
+          if ((gBattle_WIN0V & 0xFF00) == 0x3000)
           {
               gTasks[taskId].tState++;
               gTasks[taskId].data[2] = DISPLAY_WIDTH;
@@ -282,7 +263,7 @@ export function BattleIntroSlide2(taskId: any): any {
           break;
       case 2:
           gBattle_WIN0V -= 0xFF;
-          if ((gBattle_WIN0V & 0xFF00) == _0x3000)
+          if ((gBattle_WIN0V & 0xFF00) == 0x3000)
           {
               gTasks[taskId].tState++;
               gTasks[taskId].data[2] = DISPLAY_WIDTH;
@@ -375,7 +356,7 @@ export function BattleIntroSlide3(taskId: any): any {
           break;
       case 2:
           gBattle_WIN0V -= 0xFF;
-          if ((gBattle_WIN0V & 0xFF00) == _0x3000)
+          if ((gBattle_WIN0V & 0xFF00) == 0x3000)
           {
               gTasks[taskId].tState++;
               gTasks[taskId].data[2] = DISPLAY_WIDTH;
@@ -437,7 +418,7 @@ export function BattleIntroSlideLink(taskId: any): any {
 
       if (gTasks[taskId].tState > 1 && !gTasks[taskId].data[4])
       {
-          let var0: any = gBattle_BG1_X & _0x8000;
+          let var0: any = gBattle_BG1_X & 0x8000;
           if (var0 || gBattle_BG1_X < 80)
           {
               gBattle_BG1_X += 3;
@@ -471,7 +452,7 @@ export function BattleIntroSlideLink(taskId: any): any {
           break;
       case 2:
           gBattle_WIN0V -= 0xFF;
-          if ((gBattle_WIN0V & 0xFF00) == _0x3000)
+          if ((gBattle_WIN0V & 0xFF00) == 0x3000)
           {
               gTasks[taskId].tState++;
               gTasks[taskId].data[2] = DISPLAY_WIDTH;
@@ -532,11 +513,11 @@ export function BattleIntroSlidePartner(taskId: any): any {
           }
           break;
       case 2:
-          gBattle_WIN0V += _0x100;
-          if ((gBattle_WIN0V & 0xFF00) != _0x100)
+          gBattle_WIN0V += 0x100;
+          if ((gBattle_WIN0V & 0xFF00) != 0x100)
               gBattle_WIN0V--;
 
-          if ((gBattle_WIN0V & 0xFF00) == _0x2000)
+          if ((gBattle_WIN0V & 0xFF00) == 0x2000)
           {
               gTasks[taskId].tState++;
               gTasks[taskId].data[2] = DISPLAY_WIDTH;
@@ -558,7 +539,7 @@ export function BattleIntroSlidePartner(taskId: any): any {
       case 4:
           gBattle_BG0_Y += 2;
           gBattle_BG2_Y += 2;
-          if ((gBattle_WIN0V & 0xFF00) != _0x5000)
+          if ((gBattle_WIN0V & 0xFF00) != 0x5000)
               gBattle_WIN0V += 0xFF;
 
           if (!gBattle_BG0_Y)
@@ -585,7 +566,7 @@ export function DrawBattlerOnBg(bgId: any, x: any, y: any, battlerPosition: any,
       let battler: any = GetBattlerAtPosition(battlerPosition);
       let offset: any = tilesOffset;
       CpuCopy16(gMonSpritesGfxPtr.sprites.ptr[battlerPosition] + BG_SCREEN_SIZE * gBattleMonForms[battler], tiles, BG_SCREEN_SIZE);
-      LoadBgTiles(bgId, tiles, _0x1000, tilesOffset);
+      LoadBgTiles(bgId, tiles, 0x1000, tilesOffset);
       for (i = y; i < y + 8; i++)
       {
           for (j = x; j < x + 8; j++)

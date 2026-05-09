@@ -15,28 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-// ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
-// Pull tous les callees ce module fait depuis le bridge unifié.
-// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
-// Names already defined in this file via 'export function' are EXCLUDED
-// to avoid "already declared" esbuild errors.
-import * as _bridge from '../../../decomp-bridge';
-const {
-  APPRENTICE_SPECIES_ID, APPRENTICE_SPECIES_ID_NO_COND, ARRAY_COUNT, AddTextPrinterForMessage,
-  AddTextPrinterParameterized, AddWindow, AllocZeroed, ApprenticeOpenBagMenu,
-  CalcApprenticeChecksum, CanSpeciesLearnTMHM, ClearStdWindowAndFrameToTransparent, ConvertIntToDecimalStringN,
-  ConvertInternationalString, ConvertPixelWidthToTileWidth, CopyWindowToVram, CreateTask,
-  CreateWindowTemplate, DestroyTask, DrawDialogueFrame, FALSE,
-  FREE_AND_SET_NULL, FreezeObjectEvents, FrontierSpeechToString, GetApprenticeNameInLanguage,
-  GetItemName, GetStringWidth, GetTrainerId, InitMenuInUpperLeftCornerNormal,
-  ItemIdToBattleMoveId, JOY_NEW, LockPlayerFieldControls, Menu_ProcessInput,
-  Menu_ProcessInputNoWrap, NULL, PlaySE, PlayerFreeze,
-  PutWindowTilemap, Random, RemoveWindow, RunTextPrintersAndIsPrinter0Active,
-  STR_CONV_MODE_RIGHT_ALIGN, SWAP, ScriptContext_Enable, ScriptMenu_AdjustLeftCoordFromWidth,
-  SetStandardWindowBorderStyle, StopPlayerAvatar, StringCopy, StringCopy_PlayerName,
-  StringExpandPlaceholders, TRUE, TVShowConvertInternationalString, VarSet,  // 4-per-line for readability
-} = _bridge;
-// ─── END BRIDGE IMPORT ───
 /** void BufferApprenticeChallengeText(u8 saveApprenticeId) */
 export function BufferApprenticeChallengeText(saveApprenticeId: any): any {
   let i, num;
@@ -250,7 +228,7 @@ export function GetRandomAlternateMove(monId: any): any {
       let shouldUseMove: any = null;
       let level: any = null;
 
-      id = APPRENTICE_SPECIES_ID(monId);
+      id = \;
       species = gApprentices[PLAYER_APPRENTICE.id].species[id];
       learnset = gLevelUpLearnsets[species];
       j = 0;
@@ -442,7 +420,7 @@ export function SaveApprenticeParty(numQuestions: any): any {
        
       for (i = 0; i < MULTI_PARTY_SIZE; i++)
       {
-          speciesTableId = APPRENTICE_SPECIES_ID(i);
+          speciesTableId = \;
           apprenticeMons[i].species = gApprentices[PLAYER_APPRENTICE.id].species[speciesTableId];
           GetLatestLearnedMoves(apprenticeMons[i].species, apprenticeMons[i].moves);
       }
@@ -496,7 +474,7 @@ export function CreateApprenticeMenu(menu: any): any {
               let species: any = null;
               let speciesTableId: any = null;
 
-              speciesTableId = APPRENTICE_SPECIES_ID(i);
+              speciesTableId = \;
               species =  gApprentices[PLAYER_APPRENTICE.id].species[speciesTableId];
               strings[i] = gSpeciesNames[species];
           }
@@ -972,7 +950,7 @@ export function ApprenticeBufferString(): any {
           StringCopy(stringDst, gStringVar4);
           break;
       case APPRENTICE_BUFF_LEAD_MON_SPECIES:
-          speciesArrayId = APPRENTICE_SPECIES_ID(PLAYER_APPRENTICE.leadMonId);
+          speciesArrayId = \;
           StringCopy(stringDst, gSpeciesNames[gApprentices[PLAYER_APPRENTICE.id].species[speciesArrayId]]);
           break;
       }
