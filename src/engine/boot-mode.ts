@@ -165,6 +165,24 @@ function applyNoIntroPreset(): void {
   // Cf. décomp data/scripts/players_house.inc lignes ~50.
   gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_PLAYERS_HOUSE_VIGOROTH_1');
   gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_PLAYERS_HOUSE_VIGOROTH_2');
+
+  // 1:1 décomp `BrendansHouse_1F_EventScript_MoveMomToTV` (scripts.inc:37-40) :
+  //   setobjectxyperm LOCALID_PLAYERS_HOUSE_1F_MOM, 4, 5
+  //   setobjectmovementtype LOCALID_PLAYERS_HOUSE_1F_MOM, MOVEMENT_TYPE_FACE_UP
+  // À INTRO_STATE=7 (= post-PetalburgGymReport), le _OnTransition n'a aucune
+  // branch — Mom doit rester à la dernière position persistée par state 6.
+  // En `?nointro` on skip state 6, donc on applique manuellement l'override.
+  // Sans ça Mom spawn à la position map.json default (2, 6) FACE_RIGHT au lieu
+  // de (4, 5) FACE_UP devant la TV.
+  // Audit follow-up Issue 3 : memory/audit-2026-05-09-followup.md
+  const playerHouseMap = gameState.gender === 'FEMALE'
+    ? 'MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F'
+    : 'MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F';
+  gameState.setObjectXY(playerHouseMap, 'LOCALID_PLAYERS_HOUSE_1F_MOM', 4, 5);
+  // Note : movementType (FACE_UP) n'est pas persisté actuellement (= follow-up).
+  // L'API `setObjectMovementType` n'existe pas encore sur gameState. Mom
+  // gardera son MOVEMENT_TYPE_FACE_RIGHT du template jusqu'à ce qu'on étende.
+
   gameState.save();
   console.log(`[boot-mode] ?nointro preset : name='${gameState.playerName}' gender='${gameState.gender}' INTRO_STATE=6`);
 }

@@ -1235,6 +1235,21 @@ export async function SpawnObjectEventsOnMap(rt: DecompRuntime): Promise<void> {
   const currentMapId = gMapHeader.id;
   const catalog = await loadGraphicsCatalog();
 
+  // 1:1 décomp `gObjectEventTemplates[]` overlay : `setobjectxyperm` opcode
+  // (script-opcodes.ts:1068) modifie aussi gameState.__objectPositions pour
+  // persister cross map-reload. Apply the overlay BEFORE spawning so NPCs
+  // appear at their persisted position. Required pour ?nointro qui set Mom
+  // à (4, 5) post-MoveMomToTV même si la map.json default est (2, 6).
+  const { gameState } = await import('./game-state');
+  for (const template of templates) {
+    const idKey = template.localIdRaw || `idx_${template.localId}`;
+    const pos = gameState.getObjectXY(currentMapId, idKey);
+    if (pos) {
+      template.x = pos.x;
+      template.y = pos.y;
+    }
+  }
+
   // PARALLEL preload (= élimine sequential await + matches décomp instant
   // spawn). Templates qui referencent une PNG manquante après preload sont
   // loggées (= via _spawnSingleNpcFromTemplate which checks cache).
