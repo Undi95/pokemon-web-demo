@@ -31,6 +31,7 @@ import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from '
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from './gba-menu-system';
 import { ClearStdWindowAndFrame, RemoveWindow, type WindowTemplate } from './gba-window-system';
 import { getRuntime } from './decomp-globals';
+import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
 import { createPokemonInstance } from './pokemon';
 import { VarSet } from './script-vars';
@@ -94,6 +95,18 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
   const pokeballSpriteIds: number[] = [-1, -1, -1];
   let handSpriteId = -1;
   let circleSpriteId = -1;
+  let monSpriteId = -1;
+
+  // Pokemon front sprite asset state (= preloaded during LOAD_ASSETS).
+  // Each starter gets its own byteOffset + palette slot in OBJ VRAM.
+  // We use offsets after the pokeball sheet (= 0x0800 bytes) + circle sheet.
+  // 3 starters × 64×64 = 3 × 2048 bytes = 6144 bytes total.
+  const STARTER_FRONT_BYTE_OFFSET_BASE = 0x2000;  // Avoid clash with pokeball/circle.
+  const STARTER_FRONT_PALETTE_SLOT_BASE = 5;       // Slots 5/6/7 (= avoid pokeball+circle slots 0-4).
+  let starterFrontLoaded = false;
+  let starterFrontFailed = false;
+  const starterFrontPalettes: (Uint16Array | null)[] = [null, null, null];
+  const starterFrontWH: ({ w: number, h: number } | null)[] = [null, null, null];
 
   // Async preload state.
   let loadStarted = false;
@@ -132,6 +145,23 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
                   return null;
                 },
               );
+              // Phase 5.5d-bis : preload 3 starter front sprites pour confirm anim.
+              // Each starter has its own byteOffset + palette slot.
+              for (let i = 0; i < 3; i++) {
+                const dexId = STARTER_SPECIES[i].replace('SPECIES_', '').toLowerCase();
+                const url = `/decomp/em/pokemon/${dexId}/front.png`;
+                try {
+                  const offset = STARTER_FRONT_BYTE_OFFSET_BASE + i * 0x800;  // 2048 bytes per 64x64 sprite
+                  const result = await rt.LoadCompressedSpriteSheet(url, offset);
+                  starterFrontPalettes[i] = result.palette;
+                  rt.LoadPaletteObj(result.palette, OBJ_PLTT_ID(STARTER_FRONT_PALETTE_SLOT_BASE + i));
+                  // Detect sprite size (= front sprites usually 64x64 but vary).
+                  starterFrontWH[i] = { w: 64, h: 64 };  // Conservative default
+                } catch (subE) {
+                  console.warn(`[StarterChoose] front sprite load failed for ${dexId}`, subE);
+                }
+              }
+              starterFrontLoaded = true;
               loadDone = true;
             } catch (e) {
               console.error('[StarterChoose] asset load failed', e);
@@ -225,6 +255,21 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         // Spawn StarterCircle halo behind chosen pokeball (= 1:1 décomp Task_HandleStarterChooseInput).
         const [cx, cy] = POKEBALL_COORDS[selection];
         circleSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_StarterCircle', cx, cy);
+        // Phase 5.5d-bis : Spawn the chosen starter's front sprite ON TOP of the circle.
+        if (starterFrontLoaded && starterFrontWH[selection]) {
+          const tileId = (STARTER_FRONT_BYTE_OFFSET_BASE + selection * 0x800) / 32;
+          const palBank = STARTER_FRONT_PALETTE_SLOT_BASE + selection;
+          // Center sprite on pokeball coords. CreateSpriteAtOam takes top-left for OAM.
+          // For a 64×64 sprite to be centered at (cx, cy), we offset by -32, -32.
+          const spawn = rt.CreateSpriteAtOam({
+            tileId,
+            paletteBank: palBank,
+            x: cx - 32, y: cy - 32,
+            shape: 0, size: 3,  // 64×64
+            priority: 1,  // above circle
+          });
+          monSpriteId = spawn.spriteId;
+        }
         // Show confirm dialog with starter name + category.
         ShowFieldMessage(`${STARTER_NAMES[selection]}, ${STARTER_CATEGORIES[selection]}!\n${TEXT_CONFIRM_STARTER}`);
         state = 'ASK_CONFIRM_WAIT';
@@ -297,10 +342,14 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       }
 
       case 'DECLINE_INIT': {
-        // Cleanup circle + restore hand visibility.
+        // Cleanup circle + mon sprite + restore hand visibility.
         if (circleSpriteId >= 0) {
           rt.DestroySprite(circleSpriteId);
           circleSpriteId = -1;
+        }
+        if (monSpriteId >= 0) {
+          rt.DestroySprite(monSpriteId);
+          monSpriteId = -1;
         }
         if (handSpriteId >= 0) {
           const handSprite = rt.gSprites.get(handSpriteId);
@@ -318,6 +367,7 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         }
         if (handSpriteId >= 0) rt.DestroySprite(handSpriteId);
         if (circleSpriteId >= 0) rt.DestroySprite(circleSpriteId);
+        if (monSpriteId >= 0) rt.DestroySprite(monSpriteId);
         state = 'DONE';
         return false;
       }
