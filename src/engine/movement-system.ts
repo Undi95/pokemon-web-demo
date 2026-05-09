@@ -478,6 +478,15 @@ function _tickWalk(
     // CameraUpdate handle the BG scrolling.
     gFieldCamera.movementSpeedX = dx;
     gFieldCamera.movementSpeedY = dy;
+    // Session 124 fix : drive `stepFramesLeft` countdown pour que le sprite
+    // render walk anim frames pendant le scripted movement (= cf. user
+    // feedback "Le sprite du player ne marche pas lors d'une animation
+    // (suivre mom)"). PlayerStep ne décrémentera PAS car runningState reste
+    // NOT_MOVING (= notre scripted movement ne touche pas runningState).
+    // updateSpriteFrame check `stepFramesLeft >= halfStep` (= 8) pour render
+    // walk_a/walk_b alternant via walkAnimAlt, sinon face. Avec countdown
+    // duration→0, premier ~halfStep frames = walk, reste = face.
+    gPlayerAvatar.stepFramesLeft = duration - frame;
   } else if (target.npc) {
     target.npc.worldX += dx;
     target.npc.worldY += dy;
@@ -492,6 +501,11 @@ function _tickWalk(
       const { x: nx, y: ny } = MoveCoords(dir, gPlayerAvatar.x, gPlayerAvatar.y);
       gPlayerAvatar.x = nx;
       gPlayerAvatar.y = ny;
+      // Session 124 fix : reset stepFramesLeft + flip walkAnimAlt (= 1:1
+      // PlayerStep end-of-step behavior pour next walk action commence avec
+      // l'autre walk frame, donnant l'effet de pas alterné).
+      gPlayerAvatar.stepFramesLeft = 0;
+      gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
     } else if (target.npc) {
       // 1:1 décomp ShiftStillObjectEventCoords : previous = current.
       target.npc.previousCoordsX = target.npc.currentCoordsX;
