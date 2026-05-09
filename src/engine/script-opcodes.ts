@@ -868,6 +868,25 @@ registerOpcode('special', (ctx, args) => {
     });
     return true;
   }
+  // Phase 5.6 : Birch tutorial wild battle flow.
+  // 1:1 décomp battle_setup.c:CB2_GiveStarter chains starter give → CB2_StartFirstBattle
+  // (= BATTLE_TYPE_FIRST_BATTLE vs SPECIES_ZIGZAGOON Lv 2). Notre version :
+  // inline state machine via SetupNativeScript (= block script, no scene switch).
+  // Custom special name (= NOT in décomp directly — décomp uses CB2 chain
+  // through ChooseStarter. Exposed here for explicit script wiring + debug).
+  if (name === 'StartBirchTutorialBattle') {
+    let flowReady = false;
+    let flow: { tick: () => boolean } | null = null;
+    void import('./battle-flow').then((mod) => {
+      flow = mod.startBirchTutorialBattle();
+      flowReady = true;
+    });
+    SetupNativeScript(ctx, () => {
+      if (!flowReady) return false;
+      return flow!.tick();
+    });
+    return true;
+  }
   _invokeSpecial(name);
   return false;
 });

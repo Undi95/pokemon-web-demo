@@ -109,10 +109,13 @@ registerSpecial('BedroomPC', () => {
 });
 
 /** 1:1 décomp `GetBattleOutcome` (battle_util.c).
- *  Returns gBattleOutcome (= win/lose/run/draw). Stub return 1 (= WIN par
- *  défaut, fait progresser scripts post-battle sans crasher). */
+ *  Returns gBattleOutcome (= win/lose/run/draw). Phase 5.6 : on lit le résultat
+ *  stash par battle-flow.ts via globalThis.__gBattleOutcome (= notre proxy de
+ *  gBattleOutcome EWRAM_DATA). Si pas de battle eu lieu encore, return WIN par
+ *  défaut (= fait progresser scripts post-battle sans crash). */
 registerSpecial('GetBattleOutcome', () => {
-  return 1;  // BATTLE_OUTCOME_WIN
+  const out = (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome;
+  return typeof out === 'number' ? out : 1;  // BATTLE_OUTCOME_WIN default
 });
 
 /** 1:1 décomp `CalculatePlayerPartyCount` (pokemon_util.c:CalculatePlayerPartyCount).

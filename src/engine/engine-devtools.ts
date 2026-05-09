@@ -480,6 +480,33 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
     return hide ? 'all sprites hidden' : 'sprites restored';
   };
 
+  // ─── Battle test helpers (Phase 5.6) ──────────────────────────────────────
+  // dev.battle.startBirchTutorial() → trigger Birch tutorial wild battle inline.
+  // Useful pour tester sans chain ChooseStarter → script flow complète.
+  // Le flow est ticked chaque frame via le script engine (= ScriptContext_RunScript
+  // appelé par TestOverworldScene.update). On utilise ScriptContext_SetupInlineNative
+  // qui crée un native-mode script ctx → tickFn polled jusqu'à TRUE.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const battleNs = (dev.battle as Record<string, unknown> | undefined) ?? {};
+  battleNs.startBirchTutorial = async (): Promise<string> => {
+    const mod = await import('./battle-flow');
+    const scriptMod = await import('./script-runtime');
+    const flow = mod.startBirchTutorialBattle();
+    scriptMod.ScriptContext_SetupInlineNative(flow.tick);
+    return 'Birch tutorial battle started — flow ticked via script engine';
+  };
+  battleNs.startWild = async (species: string, level: number): Promise<string> => {
+    const mod = await import('./battle-flow');
+    const scriptMod = await import('./script-runtime');
+    const flow = mod.startWildBattle({ opponentSpecies: species, opponentLevel: level });
+    scriptMod.ScriptContext_SetupInlineNative(flow.tick);
+    return `wild battle vs ${species} Lv${level} started`;
+  };
+  battleNs.outcome = (): number => {
+    return (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome ?? 0;
+  };
+  dev.battle = battleNs;
+
   // ─── Engine-level pause condition poll ────────────────────────────────────
   // Hook posé sur globalThis ; appelé à la fin de runOneFrame (= toute scene).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

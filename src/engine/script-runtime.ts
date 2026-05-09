@@ -395,6 +395,18 @@ export function ScriptContext_RunScript(): boolean {
   return true;
 }
 
+/** Run an inline native script via the global script context. The script
+ *  consists of a single `tickFn` that returns true when done. Useful for
+ *  triggering UI flows (= ChooseStarter, BirchTutorialBattle, …) from devtools
+ *  without a label-named script. */
+export function ScriptContext_SetupInlineNative(tickFn: () => boolean): boolean {
+  InitScriptContext(sGlobalScriptContext);
+  SetupNativeScript(sGlobalScriptContext, tickFn);
+  LockPlayerFieldControls();
+  sGlobalScriptContextStatus = CONTEXT_RUNNING;
+  return true;
+}
+
 /** 1:1 décomp `ScriptContext_SetupScript(const u8 *ptr)`. */
 export function ScriptContext_SetupScript(label: string): boolean {
   const opcodes = _scriptsByLabel.get(label);
