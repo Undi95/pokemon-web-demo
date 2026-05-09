@@ -1,10 +1,16 @@
-# Branch upd2 — Final snapshot (overnight session, iter14 final)
+# Branch upd2 — Final snapshot (overnight session, iter16 final)
 
-Date : 2026-05-09 ~07h35
+Date : 2026-05-09 ~08h00
 
 ## TL;DR
 
-**48 commits sur upd2 cette nuit.** Build clean, game runs.
+**50 commits sur upd2 cette nuit.** Build clean, game runs.
+
+**🎯🎯🎯 Iter16 : MAJOR VISUAL UPGRADE** — battle scene now shows clean
+black background instead of overworld leaking through. Player overworld
+sprite + map BGs (BG1/2/3) are hidden during battle, restored on cleanup.
+Live screenshot confirms : battle has Zigzagoon vs Treecko on pure black
+BG, just like a "real" Pokemon battle.
 
 **🎯 Live test verified** : Birch tutorial battle + Trainer battle visible
 in browser, dialog shows correctly, sprites render (Treecko vs Zigzagoon /
@@ -51,6 +57,41 @@ sans crasher (= Battle Frontier scripts, Trainer Fan Club, etc.).
 | Main-story coverage | ✅ **100%** sur 70 maps (opcodes + specials) |
 | Global coverage | ✅ **70%** opcodes / 22% specials sur 470 maps |
 | Memory docs | ✅ 5 files briefing user |
+
+### Iteration 16 highlights (commit `5c8cb538`)
+
+**Battle BG hide** : during battle, hide overworld so player only sees
+black background + battle sprites + HP windows + dialog.
+
+```typescript
+// SPAWN_SPRITES state :
+HideBg(1); HideBg(2); HideBg(3);                  // hide overworld BGs
+const stash = new Set<number>();
+for (const [id, sprite] of rt.gSprites) {
+  if (sprite && !sprite.invisible) {
+    stash.add(id); sprite.invisible = true;
+  }
+}
+__battleSpriteStash = stash;
+
+// Per-tick re-hide (= UpdateObjectEvents un-hides each frame)
+for (const id of stash) {
+  const sprite = rt.gSprites.get(id);
+  if (sprite) sprite.invisible = true;
+}
+
+// CLEANUP state :
+ShowBg(1); ShowBg(2); ShowBg(3);
+for (const id of stash) {
+  const sprite = rt.gSprites.get(id);
+  if (sprite) sprite.invisible = false;
+}
+```
+
+### Iteration 14 highlights (commit `5d932d7e`)
+
+**dev.bridge URL fix** : changed `/__decomp/` (= source repo) to `/decomp/`
+(= public/decomp/). Bridge coverage now visible : 98% bridged.
 
 ### Iteration 11+12 highlights (commits `381fd869` + `5ebda3f8`)
 
@@ -239,9 +280,11 @@ await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
 window.dev.bridge.report().then(console.log)
 ```
 
-## Commit log (= 48 commits)
+## Commit log (= 50 commits)
 
 ```
+5c8cb538 Iter16 — battle hides overworld BGs + sprites (clean black BG)
+e5a9928b Memory — iter14 update : bridge coverage 98% visible
 5d932d7e Iter14 — fix dev.bridge URL prefix (/__decomp/ -> /decomp/) → 98% coverage visible
 7bde65cf Memory — iter11+12 update : live test verified battle flows
 5ebda3f8 Iter11 — battle-flow renderHpWindows missing CopyWindowToVram
