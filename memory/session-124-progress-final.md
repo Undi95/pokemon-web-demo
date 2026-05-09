@@ -5,11 +5,12 @@ Branche : `upd2` (= **84 commits** ahead of `main`, NE PAS PUSH)
 
 ## TL;DR
 
-Session 124 = **20 commits** : 4 bugs visuels signalés + 4 battle polish (EXP
+Session 124 = **22 commits** : 4 bugs visuels signalés + 4 battle polish (EXP
 gain, level up, cry, shake, HP bar visuel, fade transition) + 2 transpiler
 updates + truck audit ligne par ligne (= HMR-safe + Task_Truck3 box update +
 audio hacks reverted) + shiny support 1:1 + truck silence diagnostic
-(= SF2 sample manquant, accepted MVP).
+(= SF2 sample manquant, accepted MVP) + truck spawn coords fix (= user A/B
+test ROM identifia mismatch (1,2)DIR_EAST → (2,2)DIR_SOUTH center map).
 
 ## ✅ Décisions architecture (= confirmation user session 124)
 
@@ -212,6 +213,34 @@ swap de Task_Truck2 → Task_Truck3 :
 
 Notre code n'updatait PAS les box positions dans ce cas → boxes "freezent".
 Fix : nouveau helper `_applyBoxNoYBob(cameraXpan)` dans state 3 case xpan===2.
+
+### Truck spawn coords 1:1 décomp (`53016ac6`)
+
+User A/B test ROM screenshots côte-à-côte (= post-loop session 124) →
+player spawn position visiblement différent : ROM = centre exact pièce,
+notre = 1 tile à gauche.
+
+Audit décomp `new_game.c:WarpToTruck` :
+  ```c
+  SetWarpDestination(MAP_INSIDE_OF_TRUCK, WARP_ID_NONE, -1, -1);
+  WarpIntoMap();
+  ```
+
+`SetPlayerCoordsFromWarp` (overworld.c:603) :
+- warpId = -1 → invalid
+- x = -1, y = -1 → invalid
+- **ELSE branch** : `pos.x = mapLayout->width/2; pos.y = mapLayout->height/2;`
+
+Truck map = 5×5 → spawn = `(2, 2)`. Facing = DIR_SOUTH (= 1:1
+ResetInitialPlayerAvatarState).
+
+Notre code = `(1, 2) DIR_EAST` hardcodé → **2 erreurs** :
+1. x = 1 → should be 2 (= center)
+2. facing = DIR_EAST → should be DIR_SOUTH
+
+Fix dans `boot-mode.ts` 2 places (?truck shortcut + newgame default).
+
+Live verified : screenshot match user's ROM A/B reference.
 
 ### Shiny support 1:1 décomp (`08d12977`)
 
