@@ -810,7 +810,7 @@ export function ClearRibbonsSummaryBg(): any {
 
 /** static void DrawRibbonSmall(u32 i, u32 ribbonId) */
 export function DrawRibbonSmall(i: any, ribbonId: any): any {
-  const bgData: any[] = [];
+  let bgData: any = [];
       let destX: any = (i % RIBBONS_PER_ROW) * 2 + 11;
       let destY: any = (i / RIBBONS_PER_ROW) * 2 + 4;
 

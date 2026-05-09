@@ -1561,7 +1561,7 @@ export function MainMenu_FormatSavegamePlayer(): any {
 
 /** static void MainMenu_FormatSavegameTime(void) */
 export function MainMenu_FormatSavegameTime(): any {
-  const str: any[] = [];
+  let str: any = [];
       let ptr: any = null;
 
       StringExpandPlaceholders(gStringVar4, gText_ContinueMenuTime);
@@ -1574,7 +1574,7 @@ export function MainMenu_FormatSavegameTime(): any {
 
 /** static void MainMenu_FormatSavegamePokedex(void) */
 export function MainMenu_FormatSavegamePokedex(): any {
-  const str: any[] = [];
+  let str: any = [];
       let dexCount: any = null;
 
       if (FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE)
@@ -1592,7 +1592,7 @@ export function MainMenu_FormatSavegamePokedex(): any {
 
 /** static void MainMenu_FormatSavegameBadges(void) */
 export function MainMenu_FormatSavegameBadges(): any {
-  const str: any[] = [];
+  let str: any = [];
       let badgeCount: any = 0;
       let i: any = null;
 

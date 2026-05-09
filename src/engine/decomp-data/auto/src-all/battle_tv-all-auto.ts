@@ -888,7 +888,7 @@ export function AddPointsOnFainting(targetFainted: any): any {
 /** static void TrySetBattleSeminarShow(void) */
 export function TrySetBattleSeminarShow(): any {
   let i: any = null;
-      const dmgByMove: any[] = [];
+      let dmgByMove: any = [];
       let powerOverride: any = null;
       let currMoveSaved: any = null;
 

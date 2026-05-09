@@ -61,7 +61,7 @@ export function BeginEvolutionScene(mon: any, postEvoSpecies: any, canStopEvo: a
 
 /** void EvolutionScene(struct Pokemon *mon, u16 postEvoSpecies, bool8 canStopEvo, u8 partyId) */
 export function EvolutionScene(mon: any, postEvoSpecies: any, canStopEvo: any, partyId: any): any {
-  const name: any[] = [];
+  let name: any = [];
       let currSpecies: any = null;
       let trainerId, personality;
       let pokePal: any = null;
@@ -320,7 +320,7 @@ export function CB2_TradeEvolutionSceneLoadGraphics(): any {
 
 /** void TradeEvolutionScene(struct Pokemon *mon, u16 postEvoSpecies, u8 preEvoSpriteId, u8 partyId) */
 export function TradeEvolutionScene(mon: any, postEvoSpecies: any, preEvoSpriteId: any, partyId: any): any {
-  const name: any[] = [];
+  let name: any = [];
       let currSpecies: any = null;
       let trainerId, personality;
       let pokePal: any = null;
@@ -581,7 +581,7 @@ export function Task_EvolutionScene(taskId: any): any {
               _var = MonTryLearningNewMove(mon, gTasks[taskId].tLearnsFirstMove);
               if (_var != MOVE_NONE && !gTasks[taskId].tEvoWasStopped)
               {
-                  const nickname: any[] = [];
+                  let nickname: any = [];
                   if (!(gTasks[taskId].tBits & TASK_BIT_LEARN_MOVE))
                   {
                       StopMapMusic();
@@ -958,7 +958,7 @@ export function Task_TradeEvolutionScene(taskId: any): any {
               _var = MonTryLearningNewMove(mon, gTasks[taskId].tLearnsFirstMove);
               if (_var != MOVE_NONE && !gTasks[taskId].tEvoWasStopped)
               {
-                  const nickname: any[] = [];
+                  let nickname: any = [];
                   gTasks[taskId].tBits |= TASK_BIT_LEARN_MOVE;
                   gTasks[taskId].tLearnsFirstMove = FALSE;
                   gTasks[taskId].tLearnMoveState = 0;

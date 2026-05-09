@@ -852,7 +852,7 @@ export function BufferTradeParties(): any {
       case 21:
           for (i = 0, mon = gEnemyParty; i < PARTY_SIZE; mon++, i++)
           {
-              const name: any[] = [];
+              let name: any = [];
               let species: any = GetMonData(mon, MON_DATA_SPECIES);
 
               if (species != SPECIES_NONE)
@@ -1290,7 +1290,7 @@ export function CheckValidityOfTradeMons(aliveMons: any, playerPartyCount: any, 
 /** static bool32 CheckMonsBeforeTrade(void) */
 export function CheckMonsBeforeTrade(): any {
   let i: any = null;
-      const aliveMons: any[] = [];
+      let aliveMons: any = [];
 
       for (i = 0; i < sTradeMenu.partyCounts[TRADE_PLAYER]; i++)
           aliveMons[i] = sTradeMenu.isLiveMon[TRADE_PLAYER][i];
@@ -1554,8 +1554,8 @@ export function SetSelectedMon(cursorPosition: any): any {
 /** static void DrawSelectedMonScreen(u8 whichParty) */
 export function DrawSelectedMonScreen(whichParty: any): any {
   let nameStringWidth: any = null;
-      const nickname: any[] = [];
-      const movesString: any[] = [];
+      let nickname: any = [];
+      let movesString: any = [];
       let i: any = null;
       let partyIdx: any = null;
       let selectedMonParty: any = null;
@@ -1640,7 +1640,7 @@ export function DrawSelectedMonScreen(whichParty: any): any {
 
 /** static u8 GetMonNicknameWidth(u8 *str, u8 whichParty, u8 partyIdx) */
 export function GetMonNicknameWidth(str: any, whichParty: any, partyIdx: any): any {
-  const nickname: any[] = [];
+  let nickname: any = [];
 
       if (whichParty == TRADE_PLAYER)
           GetMonData(gPlayerParty[partyIdx], MON_DATA_NICKNAME, nickname);
@@ -1653,7 +1653,7 @@ export function GetMonNicknameWidth(str: any, whichParty: any, partyIdx: any): a
 
 /** static void BufferMovesString(u8 *str, u8 whichParty, u8 partyIdx) */
 export function BufferMovesString(str: any, whichParty: any, partyIdx: any): any {
-  const moves: any[] = [];
+  let moves: any = [];
       let i: any = null;
 
       if (!sTradeMenu.isEgg[whichParty][partyIdx])
@@ -1696,8 +1696,8 @@ export function PrintPartyMonNickname(whichParty: any, windowId: any, nickname: 
 /** static void PrintPartyNicknames(u8 whichParty) */
 export function PrintPartyNicknames(whichParty: any): any {
   let i: any = null;
-      const nickname: any[] = [];
-      const str: any[] = [];
+      let nickname: any = [];
+      let str: any = [];
       let party: any = (whichParty == TRADE_PLAYER) ? gPlayerParty : gEnemyParty;
 
       for (i = 0; i < sTradeMenu.partyCounts[whichParty]; i++)
@@ -1713,7 +1713,7 @@ export function PrintLevelAndGender(whichParty: any, monIdx: any, x: any, y: any
   let level: any = null;
       let symbolTile: any = null;
       let gender: any = null;
-      const nickname: any[] = [];
+      let nickname: any = [];
 
       CopyToBgTilemapBufferRect_ChangePalette(1, gTradeMenuMonBox_Tilemap, width, height, 6, 3, 0);
       CopyBgTilemapBufferToVram(1);
@@ -2079,8 +2079,8 @@ export function SaveTradeGiftRibbons(): any {
 export function CanTradeSelectedMon(playerParty: any, partyCount: any, monIdx: any): any {
   let i, numMonsLeft;
       let partner: any = null;
-      const species: any[] = [];
-      const species2: any[] = [];
+      let species: any = [];
+      let species2: any = [];
 
       for (i = 0; i < partyCount; i++)
       {
@@ -2273,7 +2273,7 @@ export function CanRegisterMonForTradingBoard(player: any, species2: any, specie
 /** int CanSpinTradeMon(struct Pokemon *mon, u16 monIdx) */
 export function CanSpinTradeMon(mon: any, monIdx: any): any {
   let i, version, versions, canTradeAnyMon, numMonsLeft;
-      const speciesArray: any[] = [];
+      let speciesArray: any = [];
 
        
       for (i = 0; i < gPlayerPartyCount; i++)
@@ -2677,7 +2677,7 @@ export function TradeAnimInit_LoadGfx(): any {
 
 /** static void CB2_InitInGameTrade(void) */
 export function CB2_InitInGameTrade(): any {
-  const otName: any[] = [];
+  let otName: any = [];
 
       switch (gMain.state)
       {
@@ -3007,7 +3007,7 @@ export function LoadTradeSequenceSpriteSheetsAndPalettes(): any {
 /** static void BufferTradeSceneStrings(void) */
 export function BufferTradeSceneStrings(): any {
   let mpId: any = null;
-      const name: any[] = [];
+      let name: any = [];
       let ingameTrade: any = null;
 
       if (sTradeAnim.isLinkTrade)
@@ -4134,7 +4134,7 @@ export function GetInGameTradeSpeciesInfo(): any {
 
 /** static void BufferInGameTradeMonName(void) */
 export function BufferInGameTradeMonName(): any {
-  const nickname: any[] = [];
+  let nickname: any = [];
       let inGameTrade: any =sIngameTrades[gSpecialVar_0x8004];
       GetMonData(gPlayerParty[gSpecialVar_0x8005], MON_DATA_NICKNAME, nickname);
       StringCopy_Nickname(gStringVar1, nickname);

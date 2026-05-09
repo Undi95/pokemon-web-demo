@@ -449,27 +449,35 @@ function patchAllAutoSyntaxBugs() {
     let s = fs.readFileSync(fp, 'utf8');
     const before = s;
 
-    // PATCH AA1 : `GetVarPointer(VAR_X) = Y;` → `VarSet(VAR_X, Y);`
+    // PATCH AA1 : `GetVarPointer(arg) = Y;` → `VarSet(arg, Y);`
+    // arg = identifier OR array-indexed expr (e.g. arr[y]).
     s = s.replace(
-      /GetVarPointer\(([A-Z_][A-Z_0-9]*)\)\s*=\s*([^;]+);/g,
+      /GetVarPointer\(([^()]+(?:\[[^\]]*\])?)\)\s*=(?!=)\s*([^;\n]+);/g,
       'VarSet($1, $2);',
     );
 
-    // PATCH AA2 : `GetVarPointer(VAR_X) += delta` → expression équiv.
+    // PATCH AA2 : `GetVarPointer(arg) += delta` → expression équiv.
     s = s.replace(
-      /GetVarPointer\(([A-Z_][A-Z_0-9]*)\)\s*\+=\s*([^)]+)\)/g,
+      /GetVarPointer\(([^()]+(?:\[[^\]]*\])?)\)\s*\+=\s*([^);]+)\)/g,
       '(VarSet($1, VarGet($1) + ($2)), VarGet($1)))',
     );
 
-    // PATCH AA3 : `++(GetVarPointer(VAR_X))` → `(VarSet(X, VarGet(X) + 1), VarGet(X))`.
+    // PATCH AA2b : `GetVarPointer(arg) op= rhs;` for op in `|& ^- * / %`.
+    // → `VarSet(arg, VarGet(arg) <op> (rhs));`
     s = s.replace(
-      /\+\+\(GetVarPointer\(([A-Z_][A-Z_0-9]*)\)\)/g,
+      /GetVarPointer\(([^()]+(?:\[[^\]]*\])?)\)\s*([\|\&\^\-\*\/%])=\s*([^;\n]+);/g,
+      (m, arg, op, rhs) => `VarSet(${arg}, VarGet(${arg}) ${op} (${rhs}));`,
+    );
+
+    // PATCH AA3 : `++(GetVarPointer(arg))` → `(VarSet(X, VarGet(X) + 1), VarGet(X))`.
+    s = s.replace(
+      /\+\+\(GetVarPointer\(([^()]+(?:\[[^\]]*\])?)\)\)/g,
       '(VarSet($1, VarGet($1) + 1), VarGet($1))',
     );
 
-    // PATCH AA4 : `--(GetVarPointer(VAR_X))` → idem decrement.
+    // PATCH AA4 : `--(GetVarPointer(arg))` → idem decrement.
     s = s.replace(
-      /--\(GetVarPointer\(([A-Z_][A-Z_0-9]*)\)\)/g,
+      /--\(GetVarPointer\(([^()]+(?:\[[^\]]*\])?)\)\)/g,
       '(VarSet($1, VarGet($1) - 1), VarGet($1))',
     );
 
@@ -482,6 +490,25 @@ function patchAllAutoSyntaxBugs() {
     // chaîne for/expr).
     s = s.replace(/^(\s*)\\;\s*$/gm, '$1;');
     s = s.replace(/^(\s*)\\\s*$/gm, '$1');
+
+    // PATCH AA6b : `\ = X;` (= bare backslash macro-LHS orphan, transpiler
+    // didn't expand multi-line macro). Comment-out the line.
+    s = s.replace(/^(\s*)\\\s*=\s*([^;\n]+);/gm, '$1/* transpiler bug \\= : $2; */');
+
+    // PATCH AA6c : `id = \;` (= backslash mid-assignment, RHS lost). Replace
+    // with `id = 0;` (lossy but parses).
+    s = s.replace(/^(\s*)([A-Za-z_]\w*(?:\.\w+|\[[^\]]+\])*)\s*=\s*\\;/gm, '$1$2 = 0; /* transpiler bug : RHS=\\ */');
+
+    // PATCH AA6d : Standalone `\` mid-expression (= macro-arg orphan).
+    // Patterns : `(\` `\)` `\,` `&\` `\ |` `\ <<` `\ >>` etc. Replace with `0`.
+    // Skip if preceded by `\` (= escape) or inside string literal (= we don't
+    // detect strings here, so this can corrupt strings — but auto files rarely
+    // have non-trivial strings).
+    // Special case `&\` at arg position (= addr-of orphan macro arg) → `0`
+    // (drop `&` AND the `\` to a single 0 placeholder).
+    s = s.replace(/&\\(?=\s*[,)])/g, '0');
+    s = s.replace(/(?<![\\"])\\(?=\s*[|&^<>+\-*\/%,)\]])/g, '0');
+    s = s.replace(/(?<=[(,&|<>+\-*\/%\[])\s*\\(?=\s)/g, ' 0');
 
     // PATCH AA7 : `customtype_t identifier` (= unknown typedef C type) au
     // début de body → préfix `let ` pour valid TS. Patterns observés :
@@ -521,26 +548,34 @@ function patchAllAutoSyntaxBugs() {
     // decl, le transpiler convertit pas le sizeof). Replace avec `let id`.
     s = s.replace(/^(\s*)struct\s+\w+\s+([A-Za-z_]\w*)\s*\[[^\]]*\]\s*;/gm, '$1let $2: any[] = [];');
 
-    // PATCH AA10 : `(expr) = X;` body-level (= invalid LHS). Comment-out
+    // PATCH AA10 : `(expr) op= X;` body-level (= invalid LHS). Comment-out
     // la ligne ; le runtime perdra ce write mais le file parse.
-    // Allow nested parens via greedy match jusqu'à `= ` (not `==`).
+    // Allow nested parens via greedy match.
+    // ⚠️ RHS [^;\n]+ (PAS [^;]+) pour empêcher le span multi-line (= était
+    // source des comment blocks cassés battle_script_commands/field_specials).
+    // ⚠️ Trailing `;` après le comment pour rester un empty statement valide
+    // (= sinon `for (...) /* */` n'a pas de body, parse fail).
+    // Op covers : `=`, `+= -= *= /= %= |= &= ^=`, `<<=`, `>>=`.
     s = s.replace(
-      /^(\s+)\(([^=;\n]+(?:\([^)]*\)[^=;\n]*)*)\)\s*=(?!=)\s*([^;]+);/gm,
-      '$1/* transpiler bug LHS : ($2) = $3; */',
+      /^(\s+)\(([^=;\n]+(?:\([^)]*\)[^=;\n]*)*)\)\s*((?:[\+\-\*\/%\|\&\^]?|<<|>>)=)(?!=)\s*([^;\n]+);/gm,
+      '$1/* transpiler bug LHS : ($2) $3 $4; */ ;',
     );
 
-    // PATCH AA11 : `func(args) = X;` (= invalid LHS function-call assignment).
+    // PATCH AA11 : `func(args) op= X;` (= invalid LHS function-call assignment).
     // Comment-out (= cas non couverts par AA1, comme StringCopyN(...) = EOS).
+    // ⚠️ RHS [^;\n]+ + lookahead `(?!=)` pour ne pas matcher `==` (comparaison).
+    // ⚠️ Trailing `;` (= empty statement after for/if).
     s = s.replace(
-      /^(\s+)([A-Z]\w*\([^()]*(?:\([^()]*\)[^()]*)*\))\s*=\s*([^;]+);/gm,
-      '$1/* transpiler bug : $2 = $3; */',
+      /^(\s+)([A-Z]\w*\([^()]*(?:\([^()]*\)[^()]*)*\))\s*((?:[\+\-\*\/%\|\&\^]?|<<|>>)=)(?!=)\s*([^;\n]+);/gm,
+      '$1/* transpiler bug : $2 $3 $4; */ ;',
     );
 
     // PATCH AA12 : `INFO_BUF(rtc, off) &= mask;` (= macro returns lvalue).
     // Comment-out (= rtc-related code, pas critique pour notre web build).
+    // ⚠️ Trailing `;`.
     s = s.replace(
-      /^(\s+)((?:INFO|TIME|DATETIME)_BUF\([^()]*\))\s*([&|^]=|=)\s*([^;]+);/gm,
-      '$1/* transpiler bug : $2 $3 $4; */',
+      /^(\s+)((?:INFO|TIME|DATETIME)_BUF\([^()]*\))\s*([&|^]=|=)\s*([^;\n]+);/gm,
+      '$1/* transpiler bug : $2 $3 $4; */ ;',
     );
 
     // PATCH AA13 : `for (;*str != X; str++)` C string iter → comment-out

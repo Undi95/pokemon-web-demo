@@ -1444,7 +1444,7 @@ export function ply_memacc(mplayInfo: any, track: any): any {
   // LABEL: cond_true:
       {
            
-          (gMPlayJumpTable[1])(mplayInfo, track);
+          gMPlayJumpTable[1](mplayInfo, track);
           return;
       }
 

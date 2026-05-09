@@ -244,13 +244,13 @@ export function SavePlayerBag(): any {
 
 /** void ApplyNewEncryptionKeyToHword(u16 *hWord, u32 newKey) */
 export function ApplyNewEncryptionKeyToHword(hWord: any, newKey: any): any {
-  *hWord ^= gSaveBlock2Ptr.encryptionKey;
+  hWord ^= gSaveBlock2Ptr.encryptionKey;
       hWord ^= newKey;
 }
 
 /** void ApplyNewEncryptionKeyToWord(u32 *word, u32 newKey) */
 export function ApplyNewEncryptionKeyToWord(word: any, newKey: any): any {
-  *word ^= gSaveBlock2Ptr.encryptionKey;
+  word ^= gSaveBlock2Ptr.encryptionKey;
       word ^= newKey;
 }
 

@@ -1182,7 +1182,7 @@ export function DrawGridBackground(selectionId: any): any {
   let i, j;
       let x, y;
       let tilemapOffset: any = null;
-      const selectionIds: any[] = [];
+      let selectionIds: any = [];
       let numSquares: any = null;
       sRoulette.updateGridHighlight = TRUE;
       ShowHideGridIcons(FALSE, 0);

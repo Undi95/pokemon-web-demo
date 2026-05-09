@@ -100,7 +100,7 @@ export function SetPlayersApprenticeLvlMode(mode: any): any {
 
 /** static void ShuffleApprenticeSpecies(void) */
 export function ShuffleApprenticeSpecies(): any {
-  const species: any[] = [];
+  let species: any = [];
       let i: any = null;
 
       for (i = 0; i < ARRAY_COUNT(species); i++)
@@ -147,8 +147,8 @@ export function GetMonIdForQuestion(questionId: any, party: any, partySlot: any)
 
 /** static void SetRandomQuestionData(void) */
 export function SetRandomQuestionData(): any {
-  const questionOrder: any[] = [];
-      const partyOrder: any[] = [];
+  let questionOrder: any = [];
+      let partyOrder: any = [];
       let partySlot: any = null;
       let i, j;
       let rand1, rand2;
@@ -228,7 +228,7 @@ export function GetRandomAlternateMove(monId: any): any {
       let shouldUseMove: any = null;
       let level: any = null;
 
-      id = \;
+      id = 0; /* transpiler bug : RHS=0 */
       species = gApprentices[PLAYER_APPRENTICE.id].species[id];
       learnset = gLevelUpLearnsets[species];
       j = 0;
@@ -371,7 +371,7 @@ export function GetLatestLearnedMoves(species: any, moves: any): any {
 
 /** static u16 GetDefaultMove(u8 monId, u8 speciesArrayId, u8 moveSlot) */
 export function GetDefaultMove(monId: any, speciesArrayId: any, moveSlot: any): any {
-  const moves: any[] = [];
+  let moves: any = [];
       let i, numQuestions;
 
       if (PLAYER_APPRENTICE.questionsAnswered < NUM_WHICH_MON_QUESTIONS)
@@ -420,7 +420,7 @@ export function SaveApprenticeParty(numQuestions: any): any {
        
       for (i = 0; i < MULTI_PARTY_SIZE; i++)
       {
-          speciesTableId = \;
+          speciesTableId = 0; /* transpiler bug : RHS=0 */
           apprenticeMons[i].species = gApprentices[PLAYER_APPRENTICE.id].species[speciesTableId];
           GetLatestLearnedMoves(apprenticeMons[i].species, apprenticeMons[i].moves);
       }
@@ -450,7 +450,7 @@ export function SaveApprenticeParty(numQuestions: any): any {
 export function CreateApprenticeMenu(menu: any): any {
   let i: any = null;
       let windowId: any = null;
-      const u8 strings[3];
+      let strings: any = [];
       let count: any = 2;
       let width: any = null;
       let left: any = null;
@@ -474,7 +474,7 @@ export function CreateApprenticeMenu(menu: any): any {
               let species: any = null;
               let speciesTableId: any = null;
 
-              speciesTableId = \;
+              speciesTableId = 0; /* transpiler bug : RHS=0 */
               species =  gApprentices[PLAYER_APPRENTICE.id].species[speciesTableId];
               strings[i] = gSpeciesNames[species];
           }
@@ -897,7 +897,7 @@ export function FreeQuestionData(): any {
 /** static void ApprenticeBufferString(void) */
 export function ApprenticeBufferString(): any {
   let stringDst: any = null;
-      const text: any[] = [];
+      let text: any = [];
       let speciesArrayId: any = null;
 
       switch (gSpecialVar_0x8005)
@@ -950,7 +950,7 @@ export function ApprenticeBufferString(): any {
           StringCopy(stringDst, gStringVar4);
           break;
       case APPRENTICE_BUFF_LEAD_MON_SPECIES:
-          speciesArrayId = \;
+          speciesArrayId = 0; /* transpiler bug : RHS=0 */
           StringCopy(stringDst, gSpeciesNames[gApprentices[PLAYER_APPRENTICE.id].species[speciesArrayId]]);
           break;
       }

@@ -102,7 +102,7 @@ export function Task_Hof_InitMonData(taskId: any): any {
 
       for (i = 0; i < PARTY_SIZE; i++)
       {
-          const nickname: any[] = [];
+          let nickname: any = [];
           if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES))
           {
               sHofMonPtr.mon[i].species = GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);
@@ -750,7 +750,7 @@ export function HallOfFame_PrintWelcomeText(unusedPossiblyWindowId: any, unused2
 
 /** static void HallOfFame_PrintMonInfo(struct HallofFameMon *currMon, u8 unused1, u8 unused2) */
 export function HallOfFame_PrintMonInfo(currMon: any, unused1: any, unused2: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let stringPtr: any = null;
       let dexNumber: any = null;
       let width: any = null;
@@ -832,7 +832,7 @@ export function HallOfFame_PrintMonInfo(currMon: any, unused1: any, unused2: any
 
 /** static void HallOfFame_PrintPlayerInfo(u8 unused1, u8 unused2) */
 export function HallOfFame_PrintPlayerInfo(unused1: any, unused2: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let width: any = null;
       let trainerId: any = null;
 

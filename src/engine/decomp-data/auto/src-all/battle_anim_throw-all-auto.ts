@@ -553,7 +553,7 @@ export function SpriteCB_Ball_Bounce_Step(sprite: any): any {
           if (sprite.sPhase >= 64)
           {
               sprite.sAmplitude -= 10;
-              ((sprite.sState) += 257);
+              /* transpiler bug LHS : ((sprite.sState) += 257); */ ;
 
               bounceCount = ((sprite.sState) >> 8);
               if (bounceCount == 4)
@@ -584,7 +584,7 @@ export function SpriteCB_Ball_Bounce_Step(sprite: any): any {
           {
                
               sprite.sPhase = 0;
-              ((sprite.sState) &= -0x100);
+              /* transpiler bug LHS : ((sprite.sState) &= -0x100); */ ;
           }
           break;
       }
@@ -727,7 +727,7 @@ export function SpriteCB_Ball_Wobble_Step(sprite: any): any {
           }
           break;
       case BALL_NEXT_MOVE:
-          ((sprite.sState) += 0x100);
+          /* transpiler bug LHS : ((sprite.sState) += 0x100); */ ;
           shakes = ((sprite.sState) >> 8);
           if (shakes == gBattleSpritesDataPtr.animationData.ballThrowCaseId)
           {
@@ -753,7 +753,7 @@ export function SpriteCB_Ball_Wobble_Step(sprite: any): any {
           if (++sprite.sTimer == 31)
           {
               sprite.sTimer = 0;
-              ((sprite.sState) &= -0x100);
+              /* transpiler bug LHS : ((sprite.sState) &= -0x100); */ ;
               StartSpriteAffineAnim(sprite, 3);
               if (sprite.sDirection < 0)
                   StartSpriteAffineAnim(sprite, BALL_ROTATE_LEFT);

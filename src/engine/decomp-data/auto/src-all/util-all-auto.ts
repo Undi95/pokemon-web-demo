@@ -57,7 +57,7 @@ export function DoBgAffineSet(dest: any, texX: any, texY: any, scrX: any, scrY: 
 export function CopySpriteTiles(shape: any, size: any, tiles: any, tilemap: any, output: any): any {
   let x, y;
       let i, j;
-      const xflip: any[] = [];
+      let xflip: any = [];
       let h: any = sSpriteDimensions[shape][size][1];
       let w: any = sSpriteDimensions[shape][size][0];
 

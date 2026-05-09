@@ -69,7 +69,7 @@ export function OpenEReaderLink(): any {
 /** static bool32 ValidateEReaderConnection(void) */
 export function ValidateEReaderConnection(): any {
    let backupIME: any = null;
-      const handshakes: any[] = [];
+      let handshakes: any = [];
 
       backupIME = REG_IME;
       REG_IME = 0;

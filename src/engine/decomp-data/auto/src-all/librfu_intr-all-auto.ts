@@ -370,8 +370,8 @@ export function STWI_set_timer_in_RAM(count: any): any {
 /** static void STWI_stop_timer_in_RAM(void) */
 export function STWI_stop_timer_in_RAM(): any {
   gSTWIStatus.timerState = 0;
-      /* transpiler bug : REG_TMCNT_L(gSTWIStatus.timerSelect) = 0; */
-      /* transpiler bug : REG_TMCNT_H(gSTWIStatus.timerSelect) = 0; */
+      /* transpiler bug : REG_TMCNT_L(gSTWIStatus.timerSelect) = 0; */ ;
+      /* transpiler bug : REG_TMCNT_H(gSTWIStatus.timerSelect) = 0; */ ;
 }
 
 /** static void STWI_init_slave(void) */

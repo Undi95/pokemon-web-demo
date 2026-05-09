@@ -416,7 +416,7 @@ export function CoordInIcePuzzleRegion(x: any, y: any): any {
 /** static void MarkIcePuzzleCoordVisited(s16 x, s16 y) */
 export function MarkIcePuzzleCoordVisited(x: any, y: any): any {
   if (CoordInIcePuzzleRegion(x, y))
-          GetVarPointer(sSootopolisGymIceRowVars[y]) |= (1 << (x - ICE_PUZZLE_L));
+          VarSet(sSootopolisGymIceRowVars[y], VarGet(sSootopolisGymIceRowVars[y]) | ((1 << (x - ICE_PUZZLE_L))));
 }
 
 /** static bool32 IsIcePuzzleCoordVisited(s16 x, s16 y) */

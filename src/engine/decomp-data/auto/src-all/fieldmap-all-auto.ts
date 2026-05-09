@@ -46,7 +46,7 @@ export function InitTrainerHillMap(): any {
 
 /** static void InitMapLayoutData(struct MapHeader *mapHeader) */
 export function InitMapLayoutData(mapHeader: any): any {
-  struct MapLayout const mapLayout;
+  let mapLayout: any = null;
       let width: any = null;
       let height: any = null;
       mapLayout = mapHeader.mapLayout;
@@ -90,7 +90,7 @@ export function InitBackupMapLayoutConnections(mapHeader: any): any {
           sMapConnectionFlags = sDummyConnectionFlags;
           for (i = 0; i < count; i++, connection++)
           {
-              struct MapHeader const cMap = GetMapHeaderFromConnection(connection);
+              let cMap: any = GetMapHeaderFromConnection(connection);
               let offset: any = connection.offset;
               switch (connection.direction)
               {
@@ -563,7 +563,7 @@ export function CanCameraMoveInDirection(direction: any): any {
 
 /** static void SetPositionFromConnection(const struct MapConnection *connection, int direction, int x, int y) */
 export function SetPositionFromConnection(connection: any, direction: any, x: any, y: any): any {
-  struct MapHeader const mapHeader;
+  let mapHeader: any = null;
       mapHeader = GetMapHeaderFromConnection(connection);
       switch (direction)
       {
@@ -619,7 +619,7 @@ export function CameraMove(x: any, y: any): any {
 
 /** static bool8 IsPosInIncomingConnectingMap(u8 direction, int x, int y, const struct MapConnection *connection) */
 export function IsPosInIncomingConnectingMap(direction: any, x: any, y: any, connection: any): any {
-  struct MapHeader const mapHeader;
+  let mapHeader: any = null;
       mapHeader = GetMapHeaderFromConnection(connection);
       switch (direction)
       {
@@ -660,7 +660,7 @@ export function IsCoordInConnectingMap(coord: any, max: any): any {
 
 /** static int IsPosInConnectingMap(const struct MapConnection *connection, int x, int y) */
 export function IsPosInConnectingMap(connection: any, x: any, y: any): any {
-  struct MapHeader const mapHeader;
+  let mapHeader: any = null;
       mapHeader = GetMapHeaderFromConnection(connection);
       switch (connection.direction)
       {

@@ -714,7 +714,7 @@ export function SetU32(ptr: any, value: any): any {
 
 /** static inline void SetPtr(const void *ptr, const void *value) */
 export function SetPtr(ptr: any, value: any): any {
-  /* transpiler bug LHS : (ptr) = value; */
+  /* transpiler bug LHS : (ptr) = value; */ ;
 }
 
 /** static void TrainerBattleLoadArgs(const struct TrainerBattleParameter *specs, const u8 *data) */

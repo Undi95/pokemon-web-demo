@@ -869,7 +869,7 @@ export function LinkTest_PrintChar(val: any, x: any, y: any): any {
 
 /** static void LinkTest_PrintHex(u32 num, u8 x, u8 y, u8 length) */
 export function LinkTest_PrintHex(num: any, x: any, y: any, length: any): any {
-  const buff: any[] = [];
+  let buff: any = [];
       let i: any = null;
 
       for (i = 0; i < length; i++)
@@ -894,7 +894,7 @@ export function LinkTest_PrintString(str: any, x: any, y: any): any {
       xOffset = 0;
       for (i = 0; str[i] != 0; str++)
       {
-          if (str[i] == *"\n")
+          if (str[i] == "\n".charCodeAt(0))
           {
               yOffset++;
               xOffset = 0;
@@ -918,7 +918,7 @@ export function LinkCB_RequestPlayerDataExchange(): any {
 
 /** static void Task_PrintTestData(u8 taskId) */
 export function Task_PrintTestData(taskId: any): any {
-  const testTitle: any[] = [];
+  let testTitle: any = [];
       let i: any = null;
 
       strcpy(testTitle, sASCIITestPrint);
@@ -1345,7 +1345,7 @@ export function ErrorMsg_CheckConnections(): any {
 export function CB2_PrintErrorMessage(): any {
   switch (gMain.state)
       {
-          case  00:
+          case 0:
                
                
               if (sLinkErrorBuffer.disconnected)
@@ -1353,7 +1353,7 @@ export function CB2_PrintErrorMessage(): any {
               else
                   ErrorMsg_CheckConnections();
               break;
-          case  02:
+          case 2:
               ShowBg(0);
               if (sLinkErrorBuffer.disconnected)
                   ShowBg(1);
@@ -1529,7 +1529,7 @@ export function ConvertLinkPlayerName(player: any): any {
 export function DisableSerial(): any {
   DisableInterrupts(INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL);
       REG_SIOCNT = SIO_MULTI_MODE;
-      /* transpiler bug : REG_TMCNT_H(3) = 0; */
+      /* transpiler bug : REG_TMCNT_H(3) = 0; */ ;
       REG_IF = INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL;
       REG_SIOMLT_SEND = 0;
       REG_SIOMLT_RECV = 0;
@@ -1897,7 +1897,7 @@ export function DoHandshake(): any {
 
 /** static void DoRecv(void) */
 export function DoRecv(): any {
-  const recv: any[] = [];
+  let recv: any = [];
       let i: any = null;
       let index: any = null;
 

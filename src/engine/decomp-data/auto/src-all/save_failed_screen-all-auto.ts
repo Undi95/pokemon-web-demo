@@ -17,7 +17,7 @@
 
 /** static void SaveFailedScreenTextPrint(const u8 *text, u8 x, u8 y) */
 export function SaveFailedScreenTextPrint(text: any, x: any, y: any): any {
-  const color: any[] = [];
+  let color: any = [];
 
       color[0] = TEXT_COLOR_TRANSPARENT;
       color[1] = TEXT_DYNAMIC_COLOR_6;

@@ -1714,7 +1714,7 @@ export function AnimSpeedDust(sprite: any): any {
 /** void AnimTask_LoadMusicNotesPals(u8 taskId) */
 export function AnimTask_LoadMusicNotesPals(taskId: any): any {
   let i: any = null;
-      const paletteNums: any[] = [];
+      let paletteNums: any = [];
 
       paletteNums[0] = IndexOfSpritePaletteTag(ANIM_TAG_MUSIC_NOTES_2);
       for (i = 1; i < NUM_MUSIC_NOTE_PAL_TAGS; i++)

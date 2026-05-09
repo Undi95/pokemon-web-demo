@@ -57,7 +57,7 @@ export function RecordedBattle_SetTrainerInfo(): any {
       {
            
           let linkPlayersCount: any = null;
-          const text: any[] = [];
+          let text: any = [];
 
           gRecordedBattleMultiplayerId = GetMultiplayerId();
           linkPlayersCount = GetLinkPlayerCount();
@@ -645,9 +645,9 @@ export function RecordedBattle_CheckMovesetChanges(mode: any): any {
               {
                   if (sBattleRecords[battler][sBattlerRecordSizes[battler]] == ACTION_MOVE_CHANGE)
                   {
-                      const ppBonuses: any[] = [];
-                      const moveSlots: any[] = [];
-                      const mimickedMoveSlots: any[] = [];
+                      let ppBonuses: any = [];
+                      let moveSlots: any = [];
+                      let mimickedMoveSlots: any = [];
                       let movePp: any = null;
                       let ppBonusSet: any = null;
 

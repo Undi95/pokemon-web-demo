@@ -674,8 +674,8 @@ export function Task_PetalburgGymSlideOpenRoomDoors(taskId: any): any {
 
 /** static void PetalburgGymSetDoorMetatiles(u8 roomNumber, u16 metatileId) */
 export function PetalburgGymSetDoorMetatiles(roomNumber: any, metatileId: any): any {
-  const doorCoordsX: any[] = [];
-      const doorCoordsY: any[] = [];
+  let doorCoordsX: any = [];
+      let doorCoordsY: any = [];
       let i: any = null;
       let nDoors: any = 0;
       switch (roomNumber)
@@ -1485,8 +1485,8 @@ export function IsBadEggInParty(): any {
 export function InMultiPartnerRoom(): any {
   if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM)
           && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM) &&
-          /* transpiler bug : VarGet(VAR_FRONTIER_BATTLE_MODE) = = FRONTIER_MODE_MULTIS)
-          return TRUE; */
+          VarGet(VAR_FRONTIER_BATTLE_MODE) == FRONTIER_MODE_MULTIS)
+          return TRUE;
       return FALSE;
 }
 
@@ -1690,7 +1690,7 @@ export function Task_MoveElevatorWindowLights(taskId: any): any {
 /** void BufferVarsForIVRater(void) */
 export function BufferVarsForIVRater(): any {
   let i: any = null;
-      const ivStorage: any[] = [];
+      let ivStorage: any = [];
 
       ivStorage[STAT_HP] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_HP_IV);
       ivStorage[STAT_ATK] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_ATK_IV);
@@ -2381,7 +2381,7 @@ export function FrontierGamblerSetWonOrLost(won: any): any {
 
 /** void UpdateBattlePointsWindow(void) */
 export function UpdateBattlePointsWindow(): any {
-  const string: any[] = [];
+  let string: any = [];
       let x: any = null;
       StringCopy(ConvertIntToDecimalStringN(string, gSaveBlock2Ptr.frontier.battlePoints, STR_CONV_MODE_RIGHT_ALIGN, 4), gText_BP);
       x = GetStringRightAlignXOffset(FONT_NORMAL, string, 48);

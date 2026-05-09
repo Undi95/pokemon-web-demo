@@ -46,7 +46,7 @@ export function GetFeebasFishingSpotId(targetX: any, targetY: any, section: any)
 /** static bool8 CheckFeebas(void) */
 export function CheckFeebas(): any {
   let i: any = null;
-      const feebasSpots: any[] = [];
+      let feebasSpots: any = [];
       let x, y;
       let route119Section: any = 0;
       let spotId: any = null;
@@ -267,7 +267,7 @@ export function PickWildMonNature(): any {
   let i: any = null;
       let j: any = null;
       let safariPokeblock: any = null;
-      const natures: any[] = [];
+      let natures: any = [];
 
       if (GetSafariZoneFlag() == TRUE && Random() % 100 < 80)
       {
@@ -836,7 +836,7 @@ export function IsAbilityAllowingEncounter(level: any): any {
 
 /** static bool8 TryGetRandomWildMonIndexByType(const struct WildPokemon *wildMon, u8 type, u8 numMon, u8 *monIndex) */
 export function TryGetRandomWildMonIndexByType(wildMon: any, _type: any, numMon: any, monIndex: any): any {
-  const validIndexes: any[] = [];  
+  let validIndexes: any = [];  
       let i, validMonCount;
 
       for (i = 0; i < numMon; i++)

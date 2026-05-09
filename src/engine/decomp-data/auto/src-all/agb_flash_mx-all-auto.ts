@@ -18,7 +18,7 @@
 /** u16 EraseFlashChip_MX(void) */
 export function EraseFlashChip_MX(): any {
   let result: any = null;
-      const readFlash1Buffer: any[] = [];
+      let readFlash1Buffer: any = [];
 
       REG_WAITCNT = (REG_WAITCNT & ~WAITCNT_SRAM_MASK) | gFlash.wait[0];
 
@@ -43,7 +43,7 @@ export function EraseFlashSector_MX(sectorNum: any): any {
   let numTries: any = null;
       let result: any = null;
       let addr: any = null;
-      const readFlash1Buffer: any[] = [];
+      let readFlash1Buffer: any = [];
 
       if (sectorNum >= gFlash.sector.count)
           return 0x80FF;
@@ -84,7 +84,7 @@ export function EraseFlashSector_MX(sectorNum: any): any {
 /** u16 ProgramFlashByte_MX(u16 sectorNum, u32 offset, u8 data) */
 export function ProgramFlashByte_MX(sectorNum: any, offset: any, data: any): any {
   let addr: any = null;
-      const readFlash1Buffer: any[] = [];
+      let readFlash1Buffer: any = [];
 
       if (offset >= gFlash.sector.size)
           return 0x8000;
@@ -120,7 +120,7 @@ export function ProgramByte(src: any, dest: any): any {
 export function ProgramFlashSector_MX(sectorNum: any, src: any): any {
   let result: any = null;
       let dest: any = null;
-      const readFlash1Buffer: any[] = [];
+      let readFlash1Buffer: any = [];
 
       if (sectorNum >= gFlash.sector.count)
           return 0x80FF;

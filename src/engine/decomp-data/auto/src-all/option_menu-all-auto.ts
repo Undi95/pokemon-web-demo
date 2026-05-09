@@ -289,7 +289,7 @@ export function TextSpeed_ProcessInput(selection: any): any {
 
 /** static void TextSpeed_DrawChoices(u8 selection) */
 export function TextSpeed_DrawChoices(selection: any): any {
-  const styles: any[] = [];
+  let styles: any = [];
       let widthSlow, widthMid, widthFast, xMid;
 
       styles[0] = 0;
@@ -323,7 +323,7 @@ export function BattleScene_ProcessInput(selection: any): any {
 
 /** static void BattleScene_DrawChoices(u8 selection) */
 export function BattleScene_DrawChoices(selection: any): any {
-  const styles: any[] = [];
+  let styles: any = [];
 
       styles[0] = 0;
       styles[1] = 0;
@@ -346,7 +346,7 @@ export function BattleStyle_ProcessInput(selection: any): any {
 
 /** static void BattleStyle_DrawChoices(u8 selection) */
 export function BattleStyle_DrawChoices(selection: any): any {
-  const styles: any[] = [];
+  let styles: any = [];
 
       styles[0] = 0;
       styles[1] = 0;
@@ -370,7 +370,7 @@ export function Sound_ProcessInput(selection: any): any {
 
 /** static void Sound_DrawChoices(u8 selection) */
 export function Sound_DrawChoices(selection: any): any {
-  const styles: any[] = [];
+  let styles: any = [];
 
       styles[0] = 0;
       styles[1] = 0;
@@ -409,7 +409,7 @@ export function FrameType_ProcessInput(selection: any): any {
 
 /** static void FrameType_DrawChoices(u8 selection) */
 export function FrameType_DrawChoices(selection: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let n: any = selection + 1;
       let i: any = null;
       let width: any = null;  
@@ -467,7 +467,7 @@ export function ButtonMode_ProcessInput(selection: any): any {
 /** static void ButtonMode_DrawChoices(u8 selection) */
 export function ButtonMode_DrawChoices(selection: any): any {
   let widthNormal, widthLR, widthLA, xLR;
-      const styles: any[] = [];
+      let styles: any = [];
 
       styles[0] = 0;
       styles[1] = 0;

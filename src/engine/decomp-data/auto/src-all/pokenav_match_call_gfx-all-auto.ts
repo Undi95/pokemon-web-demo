@@ -707,7 +707,7 @@ export function PrintNumberRegisteredLabel(windowId: any): any {
 
 /** static void PrintNumberRegistered(u16 windowId) */
 export function PrintNumberRegistered(windowId: any): any {
-  const str: any[] = [];
+  let str: any = [];
       ConvertIntToDecimalStringN(str, GetNumberRegistered(), STR_CONV_MODE_LEFT_ALIGN, 3);
       PrintMatchCallInfoNumber(windowId, str, 1);
 }
@@ -719,7 +719,7 @@ export function PrintNumberOfBattlesLabel(windowId: any): any {
 
 /** static void PrintNumberOfBattles(u16 windowId) */
 export function PrintNumberOfBattles(windowId: any): any {
-  const str: any[] = [];
+  let str: any = [];
       let numTrainerBattles: any = GetGameStat(GAME_STAT_TRAINER_BATTLES);
       if (numTrainerBattles > 99999)
           numTrainerBattles = 99999;
@@ -743,7 +743,7 @@ export function PrintMatchCallInfoNumber(windowId: any, str: any, top: any): any
 
 /** static void PrintMatchCallLocation(struct Pokenav_MatchCallGfx *gfx, int delta) */
 export function PrintMatchCallLocation(gfx: any, delta: any): any {
-  const mapName: any[] = [];
+  let mapName: any = [];
       let x: any = null;
       let index: any = PokenavList_GetSelectedIndex() + delta;
       let mapSec= GetMatchCallMapSec(index);

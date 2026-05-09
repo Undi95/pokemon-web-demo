@@ -656,7 +656,7 @@ export function SetMauvilleOldManObjEventGfx(): any {
 /** void SanitizeMauvilleOldManForRuby(union OldMan *oldMan) */
 export function SanitizeMauvilleOldManForRuby(oldMan: any): any {
   let i: any = null;
-      const playerName: any[] = [];
+      let playerName: any = [];
 
       switch (oldMan.common.id)
       {
@@ -695,7 +695,7 @@ export function SanitizeMauvilleOldManForRuby(oldMan: any): any {
 
 /** void SanitizeReceivedEmeraldOldMan(union OldMan *oldMan, u32 version, u32 language) */
 export function SanitizeReceivedEmeraldOldMan(oldMan: any, version: any, language: any): any {
-  const playerName: any[] = [];
+  let playerName: any = [];
       let i: any = null;
       if (oldMan.common.id == MAUVILLE_MAN_STORYTELLER && language == LANGUAGE_JAPANESE)
       {
@@ -912,7 +912,7 @@ export function ScrambleStatList(arr: any, count: any): any {
 
 /** static bool8 StorytellerInitializeRandomStat(void) */
 export function StorytellerInitializeRandomStat(): any {
-  const storyIds: any[] = [];
+  let storyIds: any = [];
       let i, j;
 
       ScrambleStatList(storyIds, sNumStories);

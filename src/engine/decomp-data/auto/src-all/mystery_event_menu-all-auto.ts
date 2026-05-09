@@ -257,7 +257,7 @@ export function CB2_MysteryEventMenu(): any {
 
 /** static void PrintMysteryMenuText(u8 windowId, const u8 *text, u8 x, u8 y, s32 speed) */
 export function PrintMysteryMenuText(windowId: any, text: any, x: any, y: any, speed: any): any {
-  const textColor: any[] = [];
+  let textColor: any = [];
       let letterSpacing: any = 0;
       let lineSpacing: any = 1;
       textColor[0] = 1;

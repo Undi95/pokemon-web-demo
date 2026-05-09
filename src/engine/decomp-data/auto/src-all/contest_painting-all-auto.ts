@@ -257,7 +257,7 @@ export function _InitContestMonPixels(spriteGfx: any, palette: any): any {
                           colorIndex &= 0xF;
 
                       if (colorIndex == 0)  
-                         let destPixels: any = 0x8000;
+                          destPixels[8 * tileY + pixelY][tileX * 8 + pixelX] = 0x8000;
                       let destPixels: any = palette[colorIndex];
                   }
               }
@@ -301,19 +301,19 @@ export function LoadContestPaintingFrame(contestWinnerId: any, isForArtist: any)
           for (y = 0; y < 20; y++)
           {
               for (x = 0; x < 32; x++)
-                  /* transpiler bug : VRAM_PICTURE_DATA(x, y) = 0x1015; */
+                  /* transpiler bug : VRAM_PICTURE_DATA(x, y) = 0x1015; */ ;
           }
 
            
           for (y = 0; y < 10; y++)
           {
               for (x = 0; x < 18; x++)
-                  /* transpiler bug : VRAM_PICTURE_DATA(x + 6, y + 2) = gContestMonPixels[y + 2][x + 6]; */
+                  /* transpiler bug : VRAM_PICTURE_DATA(x + 6, y + 2) = gContestMonPixels[y + 2][x + 6]; */ ;
           }
 
            
           for (x = 0; x < 16; x++)
-              /* transpiler bug : VRAM_PICTURE_DATA(x + 7, 2) = gContestMonPixels[2][7]; */
+              /* transpiler bug : VRAM_PICTURE_DATA(x + 7, 2) = gContestMonPixels[2][7]; */ ;
       }
       else if (contestWinnerId < MUSEUM_CONTEST_WINNERS_START)
       {

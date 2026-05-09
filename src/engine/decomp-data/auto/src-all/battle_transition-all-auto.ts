@@ -716,8 +716,8 @@ export function PokeballsTrail_Init(task: any): any {
 export function PokeballsTrail_Main(task: any): any {
   let i: any = null;
       let side: any = null;
-      const startX: any[] = [];
-      const delays: any[] = [];
+      let startX: any = [];
+      let delays: any = [];
       memcpy(startX, sPokeballsTrail_StartXCoords, 0);
       memcpy(delays, sPokeballsTrail_Delays, 0);
 
@@ -762,7 +762,7 @@ export function FldEff_PokeballTrail(): any {
 
 /** static void SpriteCB_FldEffPokeballTrail(struct Sprite *sprite) */
 export function SpriteCB_FldEffPokeballTrail(sprite: any): any {
-  const speeds: any[] = [];
+  let speeds: any = [];
       memcpy(speeds, sPokeballsTrail_Speeds, 0);
 
       if (sprite.sDelay != 0)
@@ -1497,8 +1497,8 @@ export function MugshotTrainerPic_Pause(sprite: any): any {
 
 /** static bool8 MugshotTrainerPic_Init(struct Sprite *sprite) */
 export function MugshotTrainerPic_Init(sprite: any): any {
-  const speeds: any[] = [];
-      const accels: any[] = [];
+  let speeds: any = [];
+      let accels: any = [];
 
       memcpy(speeds, sTrainerPicSlideSpeeds, 0);
       memcpy(accels, sTrainerPicSlideAccels, 0);
@@ -1708,8 +1708,8 @@ export function ShredSplit_Init(task: any): any {
 /** static bool8 ShredSplit_Main(struct Task *task) */
 export function ShredSplit_Main(task: any): any {
   let i, j, k;
-      const baseY: any[] = [];
-      const moveDirs: any[] = [];
+      let baseY: any = [];
+      let moveDirs: any = [];
       let linesFinished: any = null;
       let ptr4, ptr3, ptr1, ptr2;
       let y: any = null;
@@ -2379,7 +2379,7 @@ export function WhiteBarsFade_Init(task: any): any {
 /** static bool8 WhiteBarsFade_StartBars(struct Task *task) */
 export function WhiteBarsFade_StartBars(task: any): any {
   let i, posY;
-      const delays: any[] = [];
+      let delays: any = [];
       let sprite: any = null;
       memcpy(delays, sWhiteBarsFade_StartDelays, 0);
 

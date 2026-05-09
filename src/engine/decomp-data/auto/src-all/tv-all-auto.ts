@@ -517,7 +517,7 @@ export function InterviewAfter_ContestLiveUpdates(): any {
 /** void PutBattleUpdateOnTheAir(u8 opponentLinkPlayerId, u16 move, u16 speciesPlayer, u16 speciesOpponent) */
 export function PutBattleUpdateOnTheAir(opponentLinkPlayerId: any, move: any, speciesPlayer: any, speciesOpponent: any): any {
   let show: any = null;
-      const name: any[] = [];
+      let name: any = [];
 
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
@@ -556,7 +556,7 @@ export function PutBattleUpdateOnTheAir(opponentLinkPlayerId: any, move: any, sp
 /** bool8 Put3CheersForPokeblocksOnTheAir(const u8 *partnersName, u8 flavor, u8 color, u8 sheen, u8 language) */
 export function Put3CheersForPokeblocksOnTheAir(partnersName: any, flavor: any, color: any, sheen: any, language: any): any {
   let show: any = null;
-      const name: any[] = [];
+      let name: any = [];
 
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot == -1)
@@ -588,7 +588,7 @@ export function Put3CheersForPokeblocksOnTheAir(partnersName: any, flavor: any, 
 /** void PutFanClubSpecialOnTheAir(void) */
 export function PutFanClubSpecialOnTheAir(): any {
   let show: any = null;
-      const name: any[] = [];
+      let name: any = [];
       let id: any = null;
 
       show =gSaveBlock1Ptr.tvShows[gSpecialVar_0x8006];
@@ -1680,7 +1680,7 @@ export function TryPutFrontierTVShowOnAir(winStreak: any, facilityAndMode: any):
 /** void TryPutSecretBaseSecretsOnAir(void) */
 export function TryPutSecretBaseSecretsOnAir(): any {
   let show: any = null;
-      const strbuf: any[] = [];
+      let strbuf: any = [];
 
       if (IsRecordMixShowAlreadySpawned(TVSHOW_SECRET_BASE_SECRETS, FALSE) != TRUE)
       {
@@ -2422,7 +2422,7 @@ export function GetRandomNameRaterStateFromName(show: any): any {
 
 /** static void GetNicknameSubstring(u8 varIdx, u8 whichPosition, u8 charParam, u16 whichString, u16 species, TVShow *show) */
 export function GetNicknameSubstring(varIdx: any, whichPosition: any, charParam: any, whichString: any, species: any, show: any): any {
-  const buff: any[] = [];
+  let buff: any = [];
       let i: any = null;
       let strlen: any = null;
 

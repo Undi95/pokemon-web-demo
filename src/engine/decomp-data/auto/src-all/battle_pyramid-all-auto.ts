@@ -524,7 +524,7 @@ export function MarkPyramidTrainerAsBattled(trainerId: any): any {
 
 /** void GenerateBattlePyramidWildMon(void) */
 export function GenerateBattlePyramidWildMon(): any {
-  const name: any[] = [];
+  let name: any = [];
       let i: any = null;
       let wildMons: any = null;
       let id: any = null;

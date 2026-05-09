@@ -68,7 +68,7 @@ export function CreateMon(mon: any, species: any, level: any, fixedIV: any, hasF
 
 /** void CreateBoxMon(struct BoxPokemon *boxMon, u16 species, u8 level, u8 fixedIV, u8 hasFixedPersonality, u32 fixedPersonality, u8 otIdType, u32 fixedOtId) */
 export function CreateBoxMon(boxMon: any, species: any, level: any, fixedIV: any, hasFixedPersonality: any, fixedPersonality: any, otIdType: any, fixedOtId: any): any {
-  const speciesName: any[] = [];
+  let speciesName: any = [];
       let personality: any = null;
       let value: any = null;
       let checksum: any = null;
@@ -276,7 +276,7 @@ export function CreateMonWithEVSpread(mon: any, species: any, level: any, fixedI
 /** void CreateBattleTowerMon(struct Pokemon *mon, struct BattleTowerPokemon *src) */
 export function CreateBattleTowerMon(mon: any, src: any): any {
   let i: any = null;
-      const nickname: any[] = [];
+      let nickname: any = [];
       let language: any = null;
       let value: any = null;
 
@@ -330,7 +330,7 @@ export function CreateBattleTowerMon(mon: any, src: any): any {
 /** void CreateBattleTowerMon_HandleLevel(struct Pokemon *mon, struct BattleTowerPokemon *src, bool8 lvl50) */
 export function CreateBattleTowerMon_HandleLevel(mon: any, src: any, lvl50: any): any {
   let i: any = null;
-      const nickname: any[] = [];
+      let nickname: any = [];
       let level: any = null;
       let language: any = null;
       let value: any = null;
@@ -641,7 +641,7 @@ export function CreateEnemyEventMon(): any {
       CreateEventMon(gEnemyParty[0], species, level, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
       if (itemId)
       {
-          const heldItem: any[] = [];
+          let heldItem: any = [];
           heldItem[0] = itemId;
           heldItem[1] = itemId >> 8;
           SetMonData(gEnemyParty[0], MON_DATA_HELD_ITEM, heldItem);
@@ -896,8 +896,8 @@ export function MonTryLearningNewMove(mon: any, firstMove: any): any {
 /** void DeleteFirstMoveAndGiveMoveToMon(struct Pokemon *mon, u16 move) */
 export function DeleteFirstMoveAndGiveMoveToMon(mon: any, move: any): any {
   let i: any = null;
-      const moves: any[] = [];
-      const pp: any[] = [];
+      let moves: any = [];
+      let pp: any = [];
       let ppBonuses: any = null;
 
       for (i = 0; i < MAX_MON_MOVES - 1; i++)
@@ -923,8 +923,8 @@ export function DeleteFirstMoveAndGiveMoveToMon(mon: any, move: any): any {
 /** void DeleteFirstMoveAndGiveMoveToBoxMon(struct BoxPokemon *boxMon, u16 move) */
 export function DeleteFirstMoveAndGiveMoveToBoxMon(boxMon: any, move: any): any {
   let i: any = null;
-      const moves: any[] = [];
-      const pp: any[] = [];
+      let moves: any = [];
+      let pp: any = [];
       let ppBonuses: any = null;
 
       for (i = 0; i < MAX_MON_MOVES - 1; i++)
@@ -1828,34 +1828,34 @@ export function SetMonData(mon: any, field: any, dataArg: any): any {
       switch (field)
       {
       case MON_DATA_STATUS:
-          /* transpiler bug LHS : ((mon.status)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24); */
+          /* transpiler bug LHS : ((mon.status)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24); */ ;
           break;
       case MON_DATA_LEVEL:
-          /* transpiler bug LHS : ((mon.level)) = data; */
+          /* transpiler bug LHS : ((mon.level)) = data; */ ;
           break;
       case MON_DATA_HP:
-          /* transpiler bug LHS : ((mon.hp)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((mon.hp)) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_MAX_HP:
-          /* transpiler bug LHS : ((mon.maxHP)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((mon.maxHP)) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_ATK:
-          /* transpiler bug LHS : ((mon.attack)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((mon.attack)) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_DEF:
-          /* transpiler bug LHS : ((mon.defense)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((mon.defense)) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_SPEED:
-          /* transpiler bug LHS : ((mon.speed)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((mon.speed)) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_SPATK:
-          /* transpiler bug LHS : ((mon.spAttack)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((mon.spAttack)) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_SPDEF:
-          /* transpiler bug LHS : ((mon.spDefense)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((mon.spDefense)) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_MAIL:
-          /* transpiler bug LHS : ((mon.mail)) = data; */
+          /* transpiler bug LHS : ((mon.mail)) = data; */ ;
           break;
       case MON_DATA_SPECIES_OR_EGG:
           break;
@@ -1896,10 +1896,10 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
       switch (field)
       {
       case MON_DATA_PERSONALITY:
-          /* transpiler bug LHS : ((boxMon.personality)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24); */
+          /* transpiler bug LHS : ((boxMon.personality)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24); */ ;
           break;
       case MON_DATA_OT_ID:
-          /* transpiler bug LHS : ((boxMon.otId)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24); */
+          /* transpiler bug LHS : ((boxMon.otId)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24); */ ;
           break;
       case MON_DATA_NICKNAME:
       {
@@ -1909,16 +1909,16 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
           break;
       }
       case MON_DATA_LANGUAGE:
-          /* transpiler bug LHS : ((boxMon.language)) = data; */
+          /* transpiler bug LHS : ((boxMon.language)) = data; */ ;
           break;
       case MON_DATA_SANITY_IS_BAD_EGG:
-          /* transpiler bug LHS : ((boxMon.isBadEgg)) = data; */
+          /* transpiler bug LHS : ((boxMon.isBadEgg)) = data; */ ;
           break;
       case MON_DATA_SANITY_HAS_SPECIES:
-          /* transpiler bug LHS : ((boxMon.hasSpecies)) = data; */
+          /* transpiler bug LHS : ((boxMon.hasSpecies)) = data; */ ;
           break;
       case MON_DATA_SANITY_IS_EGG:
-          /* transpiler bug LHS : ((boxMon.isEgg)) = data; */
+          /* transpiler bug LHS : ((boxMon.isEgg)) = data; */ ;
           break;
       case MON_DATA_OT_NAME:
       {
@@ -1928,17 +1928,17 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
           break;
       }
       case MON_DATA_MARKINGS:
-          /* transpiler bug LHS : ((boxMon.markings)) = data; */
+          /* transpiler bug LHS : ((boxMon.markings)) = data; */ ;
           break;
       case MON_DATA_CHECKSUM:
-          /* transpiler bug LHS : ((boxMon.checksum)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((boxMon.checksum)) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_ENCRYPT_SEPARATOR:
-          /* transpiler bug LHS : ((boxMon.unknown)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((boxMon.unknown)) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_SPECIES:
       {
-          /* transpiler bug LHS : ((substruct0.species)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((substruct0.species)) = data[0] + (data[1] << 8); */ ;
           if (substruct0.species)
               boxMon.hasSpecies = TRUE;
           else
@@ -1946,67 +1946,67 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
           break;
       }
       case MON_DATA_HELD_ITEM:
-          /* transpiler bug LHS : ((substruct0.heldItem)) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((substruct0.heldItem)) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_EXP:
-          /* transpiler bug LHS : ((substruct0.experience)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24); */
+          /* transpiler bug LHS : ((substruct0.experience)) = data[0] + (data[1] << 8) + (data[2] << 16) + (data[3] << 24); */ ;
           break;
       case MON_DATA_PP_BONUSES:
-          /* transpiler bug LHS : ((substruct0.ppBonuses)) = data; */
+          /* transpiler bug LHS : ((substruct0.ppBonuses)) = data; */ ;
           break;
       case MON_DATA_FRIENDSHIP:
-          /* transpiler bug LHS : ((substruct0.friendship)) = data; */
+          /* transpiler bug LHS : ((substruct0.friendship)) = data; */ ;
           break;
       case MON_DATA_MOVE1:
       case MON_DATA_MOVE2:
       case MON_DATA_MOVE3:
       case MON_DATA_MOVE4:
-          /* transpiler bug LHS : ((substruct1.moves[field - MON_DATA_MOVE1])) = data[0] + (data[1] << 8); */
+          /* transpiler bug LHS : ((substruct1.moves[field - MON_DATA_MOVE1])) = data[0] + (data[1] << 8); */ ;
           break;
       case MON_DATA_PP1:
       case MON_DATA_PP2:
       case MON_DATA_PP3:
       case MON_DATA_PP4:
-          /* transpiler bug LHS : ((substruct1.pp[field - MON_DATA_PP1])) = data; */
+          /* transpiler bug LHS : ((substruct1.pp[field - MON_DATA_PP1])) = data; */ ;
           break;
       case MON_DATA_HP_EV:
-          /* transpiler bug LHS : ((substruct2.hpEV)) = data; */
+          /* transpiler bug LHS : ((substruct2.hpEV)) = data; */ ;
           break;
       case MON_DATA_ATK_EV:
-          /* transpiler bug LHS : ((substruct2.attackEV)) = data; */
+          /* transpiler bug LHS : ((substruct2.attackEV)) = data; */ ;
           break;
       case MON_DATA_DEF_EV:
-          /* transpiler bug LHS : ((substruct2.defenseEV)) = data; */
+          /* transpiler bug LHS : ((substruct2.defenseEV)) = data; */ ;
           break;
       case MON_DATA_SPEED_EV:
-          /* transpiler bug LHS : ((substruct2.speedEV)) = data; */
+          /* transpiler bug LHS : ((substruct2.speedEV)) = data; */ ;
           break;
       case MON_DATA_SPATK_EV:
-          /* transpiler bug LHS : ((substruct2.spAttackEV)) = data; */
+          /* transpiler bug LHS : ((substruct2.spAttackEV)) = data; */ ;
           break;
       case MON_DATA_SPDEF_EV:
-          /* transpiler bug LHS : ((substruct2.spDefenseEV)) = data; */
+          /* transpiler bug LHS : ((substruct2.spDefenseEV)) = data; */ ;
           break;
       case MON_DATA_COOL:
-          /* transpiler bug LHS : ((substruct2.cool)) = data; */
+          /* transpiler bug LHS : ((substruct2.cool)) = data; */ ;
           break;
       case MON_DATA_BEAUTY:
-          /* transpiler bug LHS : ((substruct2.beauty)) = data; */
+          /* transpiler bug LHS : ((substruct2.beauty)) = data; */ ;
           break;
       case MON_DATA_CUTE:
-          /* transpiler bug LHS : ((substruct2.cute)) = data; */
+          /* transpiler bug LHS : ((substruct2.cute)) = data; */ ;
           break;
       case MON_DATA_SMART:
-          /* transpiler bug LHS : ((substruct2.smart)) = data; */
+          /* transpiler bug LHS : ((substruct2.smart)) = data; */ ;
           break;
       case MON_DATA_TOUGH:
-          /* transpiler bug LHS : ((substruct2.tough)) = data; */
+          /* transpiler bug LHS : ((substruct2.tough)) = data; */ ;
           break;
       case MON_DATA_SHEEN:
-          /* transpiler bug LHS : ((substruct2.sheen)) = data; */
+          /* transpiler bug LHS : ((substruct2.sheen)) = data; */ ;
           break;
       case MON_DATA_POKERUS:
-          /* transpiler bug LHS : ((substruct3.pokerus)) = data; */
+          /* transpiler bug LHS : ((substruct3.pokerus)) = data; */ ;
           break;
       case MON_DATA_MET_LOCATION:
           ;
@@ -2018,7 +2018,7 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
           break;
       }
       case MON_DATA_MET_GAME:
-          /* transpiler bug LHS : ((substruct3.metGame)) = data; */
+          /* transpiler bug LHS : ((substruct3.metGame)) = data; */ ;
           break;
       case MON_DATA_POKEBALL:
       {
@@ -2027,92 +2027,92 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
           break;
       }
       case MON_DATA_OT_GENDER:
-          /* transpiler bug LHS : ((substruct3.otGender)) = data; */
+          /* transpiler bug LHS : ((substruct3.otGender)) = data; */ ;
           break;
       case MON_DATA_HP_IV:
-          /* transpiler bug LHS : ((substruct3.hpIV)) = data; */
+          /* transpiler bug LHS : ((substruct3.hpIV)) = data; */ ;
           break;
       case MON_DATA_ATK_IV:
-          /* transpiler bug LHS : ((substruct3.attackIV)) = data; */
+          /* transpiler bug LHS : ((substruct3.attackIV)) = data; */ ;
           break;
       case MON_DATA_DEF_IV:
-          /* transpiler bug LHS : ((substruct3.defenseIV)) = data; */
+          /* transpiler bug LHS : ((substruct3.defenseIV)) = data; */ ;
           break;
       case MON_DATA_SPEED_IV:
-          /* transpiler bug LHS : ((substruct3.speedIV)) = data; */
+          /* transpiler bug LHS : ((substruct3.speedIV)) = data; */ ;
           break;
       case MON_DATA_SPATK_IV:
-          /* transpiler bug LHS : ((substruct3.spAttackIV)) = data; */
+          /* transpiler bug LHS : ((substruct3.spAttackIV)) = data; */ ;
           break;
       case MON_DATA_SPDEF_IV:
-          /* transpiler bug LHS : ((substruct3.spDefenseIV)) = data; */
+          /* transpiler bug LHS : ((substruct3.spDefenseIV)) = data; */ ;
           break;
       case MON_DATA_IS_EGG:
-          /* transpiler bug LHS : ((substruct3.isEgg)) = data; */
+          /* transpiler bug LHS : ((substruct3.isEgg)) = data; */ ;
           if (substruct3.isEgg)
               boxMon.isEgg = TRUE;
           else
               boxMon.isEgg = FALSE;
           break;
       case MON_DATA_ABILITY_NUM:
-          /* transpiler bug LHS : ((substruct3.abilityNum)) = data; */
+          /* transpiler bug LHS : ((substruct3.abilityNum)) = data; */ ;
           break;
       case MON_DATA_COOL_RIBBON:
-          /* transpiler bug LHS : ((substruct3.coolRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.coolRibbon)) = data; */ ;
           break;
       case MON_DATA_BEAUTY_RIBBON:
-          /* transpiler bug LHS : ((substruct3.beautyRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.beautyRibbon)) = data; */ ;
           break;
       case MON_DATA_CUTE_RIBBON:
-          /* transpiler bug LHS : ((substruct3.cuteRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.cuteRibbon)) = data; */ ;
           break;
       case MON_DATA_SMART_RIBBON:
-          /* transpiler bug LHS : ((substruct3.smartRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.smartRibbon)) = data; */ ;
           break;
       case MON_DATA_TOUGH_RIBBON:
-          /* transpiler bug LHS : ((substruct3.toughRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.toughRibbon)) = data; */ ;
           break;
       case MON_DATA_CHAMPION_RIBBON:
-          /* transpiler bug LHS : ((substruct3.championRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.championRibbon)) = data; */ ;
           break;
       case MON_DATA_WINNING_RIBBON:
-          /* transpiler bug LHS : ((substruct3.winningRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.winningRibbon)) = data; */ ;
           break;
       case MON_DATA_VICTORY_RIBBON:
-          /* transpiler bug LHS : ((substruct3.victoryRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.victoryRibbon)) = data; */ ;
           break;
       case MON_DATA_ARTIST_RIBBON:
-          /* transpiler bug LHS : ((substruct3.artistRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.artistRibbon)) = data; */ ;
           break;
       case MON_DATA_EFFORT_RIBBON:
-          /* transpiler bug LHS : ((substruct3.effortRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.effortRibbon)) = data; */ ;
           break;
       case MON_DATA_MARINE_RIBBON:
-          /* transpiler bug LHS : ((substruct3.marineRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.marineRibbon)) = data; */ ;
           break;
       case MON_DATA_LAND_RIBBON:
-          /* transpiler bug LHS : ((substruct3.landRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.landRibbon)) = data; */ ;
           break;
       case MON_DATA_SKY_RIBBON:
-          /* transpiler bug LHS : ((substruct3.skyRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.skyRibbon)) = data; */ ;
           break;
       case MON_DATA_COUNTRY_RIBBON:
-          /* transpiler bug LHS : ((substruct3.countryRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.countryRibbon)) = data; */ ;
           break;
       case MON_DATA_NATIONAL_RIBBON:
-          /* transpiler bug LHS : ((substruct3.nationalRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.nationalRibbon)) = data; */ ;
           break;
       case MON_DATA_EARTH_RIBBON:
-          /* transpiler bug LHS : ((substruct3.earthRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.earthRibbon)) = data; */ ;
           break;
       case MON_DATA_WORLD_RIBBON:
-          /* transpiler bug LHS : ((substruct3.worldRibbon)) = data; */
+          /* transpiler bug LHS : ((substruct3.worldRibbon)) = data; */ ;
           break;
       case MON_DATA_UNUSED_RIBBONS:
-          /* transpiler bug LHS : ((substruct3.unusedRibbons)) = data; */
+          /* transpiler bug LHS : ((substruct3.unusedRibbons)) = data; */ ;
           break;
       case MON_DATA_MODERN_FATEFUL_ENCOUNTER:
-          /* transpiler bug LHS : ((substruct3.modernFatefulEncounter)) = data; */
+          /* transpiler bug LHS : ((substruct3.modernFatefulEncounter)) = data; */ ;
           break;
       case MON_DATA_IVS:
       {
@@ -2388,7 +2388,7 @@ export function RemoveBattleMonPPBonus(mon: any, moveIndex: any): any {
 export function CopyPlayerPartyMonToBattleData(battler: any, partyIndex: any): any {
   let hpSwitchout: any = null;
       let i: any = null;
-      const nickname: any[] = [];
+      let nickname: any = [];
 
       gBattleMons[battler].species = GetMonData(gPlayerParty[partyIndex], MON_DATA_SPECIES, NULL);
       gBattleMons[battler].item = GetMonData(gPlayerParty[partyIndex], MON_DATA_HELD_ITEM, NULL);
@@ -3524,7 +3524,7 @@ export function AdjustFriendship(mon: any, event: any): any {
 
 /** void MonGainEVs(struct Pokemon *mon, u16 defeatedSpecies) */
 export function MonGainEVs(mon: any, defeatedSpecies: any): any {
-  const evs: any[] = [];
+  let evs: any = [];
       let evIncrease: any = 0;
       let totalEVs: any = 0;
       let heldItem: any = null;
@@ -3820,7 +3820,7 @@ export function CanSpeciesLearnTMHM(species: any, tm: any): any {
 
 /** u8 GetMoveRelearnerMoves(struct Pokemon *mon, u16 *moves) */
 export function GetMoveRelearnerMoves(mon: any, moves: any): any {
-  const learnedMoves: any[] = [];
+  let learnedMoves: any = [];
       let numMoves: any = 0;
       let species: any = GetMonData(mon, MON_DATA_SPECIES, 0);
       let level: any = GetMonData(mon, MON_DATA_LEVEL, 0);
@@ -3870,8 +3870,8 @@ export function GetLevelUpMovesBySpecies(species: any, moves: any): any {
 
 /** u8 GetNumberOfRelearnableMoves(struct Pokemon *mon) */
 export function GetNumberOfRelearnableMoves(mon: any): any {
-  const learnedMoves: any[] = [];
-      const moves: any[] = [];
+  let learnedMoves: any = [];
+      let moves: any = [];
       let numMoves: any = 0;
       let species: any = GetMonData(mon, MON_DATA_SPECIES_OR_EGG, 0);
       let level: any = GetMonData(mon, MON_DATA_LEVEL, 0);
@@ -4073,7 +4073,7 @@ export function GetFlavorRelationByPersonality(personality: any, flavor: any): a
 
 /** bool8 IsTradedMon(struct Pokemon *mon) */
 export function IsTradedMon(mon: any): any {
-  const otName: any[] = [];
+  let otName: any = [];
       let otId: any = null;
       GetMonData(mon, MON_DATA_OT_NAME, otName);
       otId = GetMonData(mon, MON_DATA_OT_ID, 0);

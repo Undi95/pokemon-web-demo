@@ -315,7 +315,7 @@ export function IsHiddenItemPresentAtCoords(events: any, x: any, y: any): any {
 /** static bool8 IsHiddenItemPresentInConnection(const struct MapConnection *connection, int x, int y) */
 export function IsHiddenItemPresentInConnection(connection: any, x: any, y: any): any {
   let connectionX, connectionY;
-      struct MapHeader const const connectionHeader = GetMapHeaderFromConnection(connection);
+      let connectionHeader: any = GetMapHeaderFromConnection(connection);
       switch (connection.direction)
       {
       case CONNECTION_NORTH:

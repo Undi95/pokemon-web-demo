@@ -19,7 +19,7 @@
 export function HealPlayerParty(): any {
   let i, j;
       let ppBonuses: any = null;
-      const arg: any[] = [];
+      let arg: any = [];
 
        
       for(i = 0; i < gPlayerPartyCount; i++)
@@ -50,7 +50,7 @@ export function HealPlayerParty(): any {
 export function ScriptGiveMon(species: any, level: any, item: any, unused1: any, unused2: any, unused3: any): any {
   let nationalDexNum: any = null;
       let sentToPc: any = null;
-      const heldItem: any[] = [];
+      let heldItem: any = [];
       let mon: any = null;
 
       CreateMon(mon, species, level, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
@@ -124,7 +124,7 @@ export function DoesPartyHaveEnigmaBerry(): any {
 
 /** void CreateScriptedWildMon(u16 species, u8 level, u16 item) */
 export function CreateScriptedWildMon(species: any, level: any, item: any): any {
-  const heldItem: any[] = [];
+  let heldItem: any = [];
 
       ZeroEnemyPartyMons();
       CreateMon(gEnemyParty[0], species, level, USE_RANDOM_IVS, 0, 0, OT_ID_PLAYER_ID, 0);

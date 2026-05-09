@@ -20,8 +20,8 @@ export function CreateHatchedMon(egg: any, temp: any): any {
   let species: any = null;
       let personality, pokerus;
       let i, friendship, language, gameMet, markings, isModernFatefulEncounter;
-      const moves: any[] = [];
-      const ivs: any[] = [];
+      let moves: any = [];
+      let ivs: any = [];
 
       species = GetMonData(egg, MON_DATA_SPECIES);
 
@@ -65,7 +65,7 @@ export function CreateHatchedMon(egg: any, temp: any): any {
 export function AddHatchedMonToParty(id: any): any {
   let isEgg: any = 0x46;  
       let species: any = null;
-      const name: any[] = [];
+      let name: any = [];
       let ball: any = null;
       let metLevel: any = null;
       let metLocation;
@@ -105,7 +105,7 @@ export function ScriptHatchMon(): any {
 
 /** static bool8 _CheckDaycareMonReceivedMail(struct DayCare *daycare, u8 daycareId) */
 export function _CheckDaycareMonReceivedMail(daycare: any, daycareId: any): any {
-  const nickname: any[] = [];
+  let nickname: any = [];
       let daycareMon: any =daycare.mons[daycareId];
 
       GetBoxMonNickname(daycareMon.mon, nickname);

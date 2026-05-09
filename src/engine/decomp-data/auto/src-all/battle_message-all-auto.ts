@@ -379,7 +379,7 @@ export function BattleStringExpandPlaceholders(src: any, dst: any): any {
   let dstID: any = 0;  
       let toCpy: any = NULL;
        
-      const text: any[] = [];
+      let text: any = [];
       let multiplayerId: any = null;
       let i: any = null;
 
@@ -839,7 +839,7 @@ export function BattleStringExpandPlaceholders(src: any, dst: any): any {
 export function ExpandBattleTextBuffPlaceholders(src: any, dst: any): any {
   let srcID: any = 1;
       let value: any = 0;
-      const text: any[] = [];
+      let text: any = [];
       let hword: any = null;
 
       dst = EOS;

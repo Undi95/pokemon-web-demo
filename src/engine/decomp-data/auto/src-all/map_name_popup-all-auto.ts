@@ -119,7 +119,7 @@ export function HideMapNamePopUpWindow(): any {
 
 /** static void ShowMapNamePopUpWindow(void) */
 export function ShowMapNamePopUpWindow(): any {
-  const mapDisplayHeader: any[] = [];
+  let mapDisplayHeader: any = [];
       let withoutPrefixPtr: any = null;
       let x: any = null;
       let mapDisplayHeaderSource: any = null;

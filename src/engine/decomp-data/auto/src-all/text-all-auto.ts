@@ -1165,7 +1165,7 @@ export function RenderTextHandleBold(pixels: any, fontId: any, str: any): any {
       let strPos: any = null;
       let temp: any = null;
       let temp2: any = null;
-      const colorBackup: any[] = [];
+      let colorBackup: any = [];
       let fgColor: any = null;
       let bgColor: any = null;
 

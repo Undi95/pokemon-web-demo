@@ -120,7 +120,8 @@ const TS_RESERVED = new Set([
   'false', 'this', 'super', 'arguments',
 ]);
 
-const C_BASE_TYPES = '(?:u8|u16|u32|u64|s8|s16|s32|s64|int|long|short|char|signed|bool|bool8|bool16|bool32|f32|f64|float|double|size_t|ssize_t|ptrdiff_t|vu8|vu16|vu32|vs8|vs16|vs32|unsigned|register)';
+// Multi-token base types FIRST (= longest match wins in regex alternation order).
+const C_BASE_TYPES = '(?:unsigned\\s+(?:int|long\\s+long|long|short|char)|signed\\s+(?:int|long\\s+long|long|short|char)|long\\s+long|u8|u16|u32|u64|s8|s16|s32|s64|int|long|short|char|signed|bool|bool8|bool16|bool32|f32|f64|float|double|size_t|ssize_t|ptrdiff_t|uintptr_t|intptr_t|vu8|vu16|vu32|vs8|vs16|vs32|unsigned|va_list|register)';
 
 function renameIfReserved(name) {
   return TS_RESERVED.has(name) ? `_${name}` : name;
@@ -190,40 +191,42 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
   // `void (*func)(int) = expr;`   → `let func: any = expr;`
   // `void (**ptr)(void);`         → `let ptr: any = null;`
   // `bool8 (*addr)(void);`        → `let addr: any = null;`
+  // ⚠️ Le prefix `\w[\w\s\*]*?` requires un word-char au début (= sinon le
+  // regex match `(*destPixels)[X]` style C lvalue, traitant le `\s` vide
+  // comme TYPE).
   s = s.replace(
-    /^(\s*)(?:static\s+|const\s+)?[\w\s\*]+?\(\s*\*+\s*([A-Za-z_]\w*)\s*\)\s*\([^)]*\)\s*=/gm,
+    /^(\s*)(?:static\s+|const\s+)?\w[\w\s\*]*?\(\s*\*+\s*([A-Za-z_]\w*)\s*\)\s*\([^)]*\)\s*=/gm,
     '$1let $2: any ='
   );
   s = s.replace(
-    /^(\s*)(?:static\s+|const\s+)?[\w\s\*]+?\(\s*\*+\s*([A-Za-z_]\w*)\s*\)\s*\([^)]*\)\s*;/gm,
+    /^(\s*)(?:static\s+|const\s+)?\w[\w\s\*]*?\(\s*\*+\s*([A-Za-z_]\w*)\s*\)\s*\([^)]*\)\s*;/gm,
     '$1let $2: any = null;'
   );
   // Pointer-to-array decls : `const u8 (*ptr)[4];` → `let ptr: any = null;`
   s = s.replace(
-    /^(\s*)(?:static\s+|const\s+)?[\w\s\*]+?\(\s*\*+\s*([A-Za-z_]\w*)\s*\)(?:\s*\[[^\]]*\])+\s*=/gm,
+    /^(\s*)(?:static\s+|const\s+)?\w[\w\s\*]*?\(\s*\*+\s*([A-Za-z_]\w*)\s*\)(?:\s*\[[^\]]*\])+\s*=/gm,
     '$1let $2: any ='
   );
   s = s.replace(
-    /^(\s*)(?:static\s+|const\s+)?[\w\s\*]+?\(\s*\*+\s*([A-Za-z_]\w*)\s*\)(?:\s*\[[^\]]*\])+\s*;/gm,
+    /^(\s*)(?:static\s+|const\s+)?\w[\w\s\*]*?\(\s*\*+\s*([A-Za-z_]\w*)\s*\)(?:\s*\[[^\]]*\])+\s*;/gm,
     '$1let $2: any = null;'
   );
 
   // ─── Step 2 : variable declarations (struct types & base types) ─────────
-  // Multi-line typedef'd struct decls : `struct X *Y = init;` → `let Y: any = init;`
+  // Comprehensive struct decl regex — handles arbitrary modifier chains :
+  //   `struct X Y;`            → `let Y: any = null;`
+  //   `struct X *Y;`           → `let Y: any = null;`
+  //   `struct X const *Y;`     → `let Y: any = null;` (const after struct)
+  //   `struct X *const Y;`     → `let Y: any = null;` (const after *)
+  //   `const struct X *const *const Y = init;` → `let Y: any = init;`
+  // The modifier-chain regex `(?:\s+const)?\s*(?:\*+\s*(?:const\s+)?)*` matches
+  // optional `const` after type-name, then zero+ groups of `*+` + optional `const`.
   s = s.replace(
-    /^(\s*)(?:static\s+)?(?:const\s+)?struct\s+[A-Za-z_][A-Za-z0-9_]*\s*\*+\s*([A-Za-z_]\w*)\s*=/gm,
+    /^(\s*)(?:static\s+)?(?:const\s+)?struct\s+[A-Za-z_][A-Za-z0-9_]*(?:\s+const)?\s*(?:\*+\s*(?:const\s+)?)*([A-Za-z_]\w*)\s*=(?!=)/gm,
     '$1let $2: any ='
   );
   s = s.replace(
-    /^(\s*)(?:static\s+)?(?:const\s+)?struct\s+[A-Za-z_][A-Za-z0-9_]*\s*\*+\s*([A-Za-z_]\w*)\s*;/gm,
-    '$1let $2: any = null;'
-  );
-  s = s.replace(
-    /^(\s*)(?:static\s+)?(?:const\s+)?struct\s+[A-Za-z_][A-Za-z0-9_]*\s+([A-Za-z_]\w*)\s*=/gm,
-    '$1let $2: any ='
-  );
-  s = s.replace(
-    /^(\s*)(?:static\s+)?(?:const\s+)?struct\s+[A-Za-z_][A-Za-z0-9_]*\s+([A-Za-z_]\w*)\s*;/gm,
+    /^(\s*)(?:static\s+)?(?:const\s+)?struct\s+[A-Za-z_][A-Za-z0-9_]*(?:\s+const)?\s*(?:\*+\s*(?:const\s+)?)*([A-Za-z_]\w*)\s*;/gm,
     '$1let $2: any = null;'
   );
   // Multi-var struct decls : `struct X a, b, c;`, `struct X *a, *b;`, `struct X a, b[N];` → `let a, b, c;`
@@ -310,13 +313,23 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
   );
   // Array decls : `u8 X[N] = ...;` and `u8 X[N];` — also multi-dim `[N][M]`.
   // Also handle `u8 *X[N]` (array of pointers) and `u8 *const X[N]` (const ptr).
+  // Pointer-array variant FIRST (= `u8 *X[N]` has no whitespace after `*`).
   s = s.replace(
-    new RegExp(`^(\\s*)(?:static\\s+)?(?:const\\s+)?${C_BASE_TYPES}(?:\\s*\\*+)?(?:\\s*const)?\\s+([A-Za-z_]\\w*)(?:\\s*\\[[^\\]]*\\])+\\s*=`, 'gm'),
+    new RegExp(`^(\\s*)(?:static\\s+)?(?:const\\s+)?${C_BASE_TYPES}\\s+\\*+\\s*(?:const\\s+)?([A-Za-z_]\\w*)(?:\\s*\\[[^\\]]*\\])+\\s*=`, 'gm'),
     '$1const $2: any ='
   );
   s = s.replace(
-    new RegExp(`^(\\s*)(?:static\\s+)?(?:const\\s+)?${C_BASE_TYPES}(?:\\s*\\*+)?(?:\\s*const)?\\s+([A-Za-z_]\\w*)(?:\\s*\\[[^\\]]*\\])+\\s*;`, 'gm'),
-    '$1const $2: any[] = [];'
+    new RegExp(`^(\\s*)(?:static\\s+)?(?:const\\s+)?${C_BASE_TYPES}\\s+\\*+\\s*(?:const\\s+)?([A-Za-z_]\\w*)(?:\\s*\\[[^\\]]*\\])+\\s*;`, 'gm'),
+    '$1let $2: any = [];'
+  );
+  // Non-pointer variant.
+  s = s.replace(
+    new RegExp(`^(\\s*)(?:static\\s+)?(?:const\\s+)?${C_BASE_TYPES}\\s+([A-Za-z_]\\w*)(?:\\s*\\[[^\\]]*\\])+\\s*=`, 'gm'),
+    '$1const $2: any ='
+  );
+  s = s.replace(
+    new RegExp(`^(\\s*)(?:static\\s+)?(?:const\\s+)?${C_BASE_TYPES}\\s+([A-Za-z_]\\w*)(?:\\s*\\[[^\\]]*\\])+\\s*;`, 'gm'),
+    '$1let $2: any = [];'
   );
   // `void *X[N]` and `void *const X[N]`.
   s = s.replace(
@@ -539,15 +552,27 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
           }
           if (depth === 0) {
             const inner = text.slice(j + 1, k);
-            // Look ahead : if followed by `++` / `--` / `=` then we have a
-            // post-inc/dec or assignment LHS pattern that is HANDLED by other
-            // rules (step 10). Skip to let those rules deal with it.
+            // Look ahead : if followed by `++` / `--` / `=` / compound-assign,
+            // then we have a post-inc/dec or assignment LHS pattern that is
+            // HANDLED by step 10 (MEM_WRITE/MEM_OP_ASSIGN). Skip here.
             let m = k + 1;
             while (m < text.length && /[ \t]/.test(text[m])) m++;
+            // Compound assign ops : `+=`, `-=`, `*=`, `/=`, `%=`, `|=`, `&=`,
+            // `^=`, `<<=`, `>>=`. Detect by looking at next 1-3 chars.
+            const isCompoundAssign = (() => {
+              const c1 = text[m] || '';
+              const c2 = text[m + 1] || '';
+              const c3 = text[m + 2] || '';
+              if ('+-*/%|&^'.includes(c1) && c2 === '=' && c3 !== '=') return true;
+              if (c1 === '<' && c2 === '<' && c3 === '=') return true;
+              if (c1 === '>' && c2 === '>' && c3 === '=') return true;
+              return false;
+            })();
             if (
               text[m] === '+' && text[m + 1] === '+' ||
               text[m] === '-' && text[m + 1] === '-' ||
-              (text[m] === '=' && text[m + 1] !== '=')
+              (text[m] === '=' && text[m + 1] !== '=') ||
+              isCompoundAssign
             ) {
               // Don't transform here — let step 10 / MEM_WRITE handle it.
               out += text[i++];
@@ -568,16 +593,18 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
   // ─── Step 7 : (TYPE *) and (TYPE) C casts ─────────────────────────────
   // `(struct X *)expr` → `expr` (drop pointer cast — semantics preserved)
   // `(const u8 *)expr` → `expr`
+  // `(u8 * *)expr` → `expr` (= double pointer with spaces between `*`).
   // `(NativeFunc)expr` → `expr` (we accept loss of type info)
   // We must avoid eating function-pointer DECLS like `(void)` or
   // existing parens. So we only drop casts that come BEFORE an
   // identifier or `(` or `&`.
+  // Use `(?:\s*\*)+` to allow spaces between asterisks (= `* *`).
   s = s.replace(
-    /\(\s*(?:const\s+)?struct\s+\w+\s*\*+\s*\)\s*/g,
+    /\(\s*(?:const\s+)?struct\s+\w+(?:\s*\*)+\s*\)\s*/g,
     ''
   );
   s = s.replace(
-    new RegExp(`\\(\\s*(?:const\\s+)?${C_BASE_TYPES}\\s*\\*+\\s*\\)\\s*`, 'g'),
+    new RegExp(`\\(\\s*(?:const\\s+)?${C_BASE_TYPES}(?:\\s*\\*)+\\s*\\)\\s*`, 'g'),
     ''
   );
   s = s.replace(
@@ -661,6 +688,7 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
   //   - after `(`, `,`, `=`, `;`, `[`, `?`, `:`, `!`, `||`, `&&`, `return`
   //     directly (= no other operators in between)
   //   - OR at start of line/statement
+  //   - OR after arith operator `+ - * / %` (= unary in expr context).
   // The stricter pattern : punctuation directly followed by `&ident` (no space
   // or only whitespace, but the immediate non-space prev char is a starter).
   // We use a positive lookbehind on a SINGLE clear-starter char.
@@ -669,6 +697,9 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
   s = s.replace(/\breturn\s+&\s*([A-Za-z_(])/g, 'return $1');
   // After `!` (logical not), `||`, `&&` — unary `&` rare here but possible.
   s = s.replace(/(\!|\|\||\&\&)\s*&\s*([A-Za-z_(])/g, '$1 $2');
+  // After arith operators `+ - * / %` (= unary in expr context).
+  // E.g. `a - &b` → `a - b`. Match operator + whitespace + `&ident`.
+  s = s.replace(/([\+\-\*\/%])\s*&\s*([A-Za-z_(])/g, '$1 $2');
   // At start of line.
   s = s.replace(/^(\s*)&\s*([A-Za-z_(])/gm, '$1$2');
 
@@ -746,10 +777,22 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
             // Skip whitespace after `)`.
             let m = k + 1;
             while (m < text.length && /\s/.test(text[m])) m++;
-            // Must be `=` (not `==`).
-            if (text[m] === '=' && text[m + 1] !== '=') {
+            // Detect operator : `=` (simple), or compound `op=` for op in
+            // `+ - * / % | & ^ << >>`. Skip on `==` (comparison, not assign).
+            let opLen = 0;          // number of chars in the operator
+            let opName = null;      // 'set' for =, 'add' for +=, 'or' for |=, etc.
+            const c0 = text[m] || '', c1 = text[m + 1] || '', c2 = text[m + 2] || '';
+            if (c0 === '=' && c1 !== '=') { opLen = 1; opName = 'set'; }
+            else if ('+-*/%|&^'.includes(c0) && c1 === '=' && c2 !== '=') {
+              opLen = 2;
+              opName = ({ '+': 'add', '-': 'sub', '*': 'mul', '/': 'div', '%': 'mod',
+                '|': 'or', '&': 'and', '^': 'xor' })[c0];
+            }
+            else if (c0 === '<' && c1 === '<' && c2 === '=') { opLen = 3; opName = 'shl'; }
+            else if (c0 === '>' && c1 === '>' && c2 === '=') { opLen = 3; opName = 'shr'; }
+            if (opName) {
               // Find `;` end.
-              let sc = m + 1;
+              let sc = m + opLen;
               let pdepth = 0;
               while (sc < text.length && (text[sc] !== ';' || pdepth > 0)) {
                 if (text[sc] === '(') pdepth++;
@@ -757,8 +800,12 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
                 sc++;
               }
               if (sc < text.length) {
-                const rhs = text.slice(m + 1, sc).trim();
-                out += `MEM_WRITE((${inner.trim()}), ${rhs});`;
+                const rhs = text.slice(m + opLen, sc).trim();
+                if (opName === 'set') {
+                  out += `MEM_WRITE((${inner.trim()}), ${rhs});`;
+                } else {
+                  out += `MEM_OP_ASSIGN((${inner.trim()}), '${opName}', ${rhs});`;
+                }
                 i = sc + 1;
                 continue;
               }
@@ -772,12 +819,13 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
   })(s);
   // (*X)++ / (*X)-- → X++ / X--
   s = s.replace(/\(\s*\*\s*([A-Za-z_]\w*(?:\.\w+)*)\s*\)\s*(\+\+|--)/g, '$1$2');
-  // (*X) += / (*X) -= / (*X) = → X += / X -= / X =
-  s = s.replace(/\(\s*\*\s*([A-Za-z_]\w*(?:\.\w+)*)\s*\)\s*([\+\-\*\/%]?=)/g, '$1 $2');
+  // (*X) += / (*X) -= / (*X) = / (*X) |= ... → X += / X -= / X = / X |= ...
+  // Op covers : `=`, `+= -= *= /= %= |= &= ^=`, `<<=`, `>>=`. Negative lookahead `(?!=)` after final `=` to avoid `==`.
+  s = s.replace(/\(\s*\*\s*([A-Za-z_]\w*(?:\.\w+)*)\s*\)\s*((?:[\+\-\*\/%\|\&\^]?|<<|>>)=)(?!=)/g, '$1 $2');
   // (*X)[idx] → X[idx]
   s = s.replace(/\(\s*\*\s*([A-Za-z_]\w*(?:\.\w+)*)\s*\)\s*\[/g, '$1[');
-  // (*X)(args) → X(args)
-  s = s.replace(/\(\s*\*\s*([A-Za-z_]\w*(?:\.\w+)*)\s*\)\s*\(/g, '$1(');
+  // (*X)(args) → X(args). X can include `.prop` AND `[idx]` chains.
+  s = s.replace(/\(\s*\*\s*([A-Za-z_]\w*(?:\.\w+|\[[^\]]+\])*)\s*\)\s*\(/g, '$1(');
   // (*X) → (X)  (keep parens — they may be required syntactically).
   s = s.replace(/\(\s*\*\s*([A-Za-z_]\w*(?:\.\w+)*)\s*\)/g, '($1)');
   // *(X) → (X) (when X is an identifier).
@@ -785,8 +833,10 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
 
   // *X[idx] → X[idx]   (e.g. *gFieldEffectScriptFuncs[*script](...) — but `[*script]` first)
   // Drop `*` before `(` only at known positions (= statement start).
-  // Statement-level `*X = Y;` (line start whitespace, then `*ident = `) → `X = Y;`
-  s = s.replace(/^(\s*)\*\s*([A-Za-z_]\w*(?:\.\w+)*)\s*([\+\-\*\/%]?=)/gm, '$1$2 $3');
+  // Statement-level `*X op= Y;` (line start whitespace, then `*ident op= `) → `X op= Y;`
+  // Op covers : `=`, `+=`, `-=`, `*=`, `/=`, `%=`, `|=`, `&=`, `^=`, `<<=`, `>>=`.
+  // Negative lookahead `(?!=)` after final `=` to avoid swallowing `==`.
+  s = s.replace(/^(\s*)\*\s*([A-Za-z_]\w*(?:\.\w+)*)\s*((?:[\+\-\*\/%\|\&\^]?|<<|>>)=)(?!=)/gm, '$1$2 $3');
 
   // `*X++ = rhs` and `*X-- = rhs` — assignment form: drop deref+post-inc.
   // We just emit `X = rhs` (= we lose the post-inc semantically).
@@ -794,8 +844,29 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
 
   // Inline `*ident` deref → `ident` (when not multiplication).
   // We handle the common idiom `arr[*idx]` → `arr[idx]`, `func(*arg, ...)` → `func(arg, ...)`.
-  // Heuristic : `*` preceded by `(`, `,`, `[`, `=`, ` ` and followed by identifier.
-  s = s.replace(/(?<=[(,\[=\s])\*([A-Za-z_]\w*)/g, '$1');
+  // Heuristic : `*` preceded by `(`, `,`, `[`, `=`, ` `, `~`, `!` and followed by identifier.
+  s = s.replace(/(?<=[(,\[=\s~!])\*([A-Za-z_]\w*)/g, '$1');
+
+  // C string literal deref `*"\n"`, `*"X"` (= lvalue of single-char string,
+  // returns first byte). Replace with `"X".charCodeAt(0)` so it parses.
+  s = s.replace(/\*\s*"((?:[^"\\]|\\.)+)"/g, (m, content) => {
+    return `"${content}".charCodeAt(0)`;
+  });
+
+  // Step 10b : Pre-inc/dec of complex parenthesized expressions.
+  // After step 6/10 stripping `*`, `--*(complex)` becomes `--(complex)` which is
+  // INVALID JS (= `--` only works on idents/member-access, not paren exprs).
+  // Pattern : `--(complex)` or `++(complex)` where complex contains operators
+  // → wrap in MEM_PRE_DEC / MEM_PRE_INC stub call.
+  s = s.replace(/(--|\+\+)\s*\(((?:[^()]+|\([^()]*\))*)\)/g, (m, op, inner) => {
+    // Only transform "complex" exprs (= contain arith/logic operators).
+    // Simple `(ident)`, `(obj.prop)`, `(arr[idx])` should work natively.
+    if (/[+\-*/%&|^<>?:]/.test(inner) && !/^\s*[A-Za-z_]\w*(?:\.\w+|\[[^\]]*\])*\s*$/.test(inner)) {
+      const fn = op === '--' ? 'MEM_PRE_DEC' : 'MEM_PRE_INC';
+      return `${fn}(${inner})`;
+    }
+    return m;
+  });
 
   // ─── Step 11 : C array literals `= { ... };` → `= [ ... ];` ─────────────
   // Handle nested-brace literals iteratively : convert innermost `{...}` first.
@@ -907,6 +978,16 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
   // Float suffix : `2.0f`, `3.14F`, `1.5L`.
   s = s.replace(/(\b\d+\.\d*|\b\.\d+|\b\d+\.)([fFlL])\b/g, '$1');
   s = s.replace(/(\b\d+(?:\.\d+)?[eE][+-]?\d+)([fFlL])\b/g, '$1');
+
+  // ─── Step 22a : Strip leading zeros (= legacy octal literals interdits
+  // en ESM strict). C source `case 00:` `case 02:` → `case 0:` `case 2:`.
+  // Cible le pattern `case` + leading zeros + digits + `:` (= safe scope).
+  // Note : on accepte la perte sémantique d'octal (= `case 010:` devient
+  // `case 10:`), le décomp emerald n'utilise pas d'octal intentionnel.
+  s = s.replace(/\bcase\s+0+(\d+)\s*:/g, 'case $1:');
+  // Aussi : `case 0:` ne change pas (lookahead requires digit after 0+).
+  // Et `case 00:` (= juste `0` octal seul) → `case 0:` via pattern où
+  // `0+` consomme un `0` et `(\d+)` matche `0`.
 
   // ─── Step 22b : GCC `case A ... B:` → `case A:` (lossy fallthrough). ───
   s = s.replace(/\bcase\s+([^:]+?)\s*\.\.\.\s*([^:]+?)\s*:/g, 'case $1:');

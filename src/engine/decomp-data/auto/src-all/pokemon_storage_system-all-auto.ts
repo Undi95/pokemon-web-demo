@@ -19,7 +19,7 @@
 export function DrawTextWindowAndBufferTiles(string: any, dst: any, zero1: any, zero2: any, bytesToBuffer: any): any {
   let i, tileBytesToBuffer, remainingBytes;
       let windowId: any = null;
-      const txtColor: any[] = [];
+      let txtColor: any = [];
       let tileData1, tileData2;
       let winTemplate: any = [0];
 
@@ -476,7 +476,7 @@ export function ChooseBoxMenu_MoveLeft(): any {
 
 /** static void ChooseBoxMenu_PrintInfo(void) */
 export function ChooseBoxMenu_PrintInfo(): any {
-  const numBoxMonsText: any[] = [];
+  let numBoxMonsText: any = [];
       let template: any = null;
       let windowId: any = null;
       let boxName: any = GetBoxNamePtr(sChooseBoxMenu.curBox);

@@ -410,7 +410,7 @@ export function LoopedTask_CloseMonMarkingsWindow(state: any): any {
 
 /** static bool32 UpdateConditionGraphMenuWindows(u8 mode, u16 bufferIndex, bool8 winMode) */
 export function UpdateConditionGraphMenuWindows(mode: any, bufferIndex: any, winMode: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let str: any = null;
       let menu: any = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX);
 

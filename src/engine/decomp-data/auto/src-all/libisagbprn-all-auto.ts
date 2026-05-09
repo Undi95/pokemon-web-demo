@@ -71,8 +71,8 @@ export function AGBPrint(pBuf: any): any {
 
 /** void AGBPrintf(const char *pBuf, ...) */
 export function AGBPrintf(pBuf: any): any {
-  const bufPrint: any[] = [];
-      va_list vArgv;
+  let bufPrint: any = [];
+      let vArgv: any = null;
       va_start(vArgv, pBuf);
       mini_vsnprintf(bufPrint, 0x100, pBuf, vArgv);
       vsnprintf(bufPrint, 0x100, pBuf, vArgv);
@@ -151,8 +151,8 @@ export function NoCashGBAPrint(pBuf: any): any {
 
 /** void NoCashGBAPrintf(const char *pBuf, ...) */
 export function NoCashGBAPrintf(pBuf: any): any {
-  const bufPrint: any[] = [];
-      va_list vArgv;
+  let bufPrint: any = [];
+      let vArgv: any = null;
       va_start(vArgv, pBuf);
       mini_vsnprintf(bufPrint, 0x100, pBuf, vArgv);
       vsnprintf(bufPrint, 0x100, pBuf, vArgv);
@@ -186,7 +186,7 @@ export function MgbaClose(): any {
 
 /** void MgbaPrintf(s32 level, const char *ptr, ...) */
 export function MgbaPrintf(level: any, ptr: any): any {
-  va_list args;
+  let args: any = null;
 
       level &= 0x7;
       va_start(args, ptr);

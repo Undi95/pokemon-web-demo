@@ -303,7 +303,7 @@ export function rfu_REQ_configSystem(availSlotFlag: any, maxMFrame: any, mcTimer
 
 /** void rfu_REQ_configGameData(u8 mbootFlag, u16 serialNo, const u8 *gname, const u8 *uname) */
 export function rfu_REQ_configGameData(mbootFlag: any, serialNo: any, gname: any, uname: any): any {
-  const packet: any[] = [];
+  let packet: any = [];
       let i: any = null;
       let check_sum: any = null;
       let gnameBackup: any = gname;
@@ -452,7 +452,7 @@ export function rfu_STC_readChildList(): any {
       let data_p: any = null;
       let i: any = null;
       let bm_slot_id: any = null;
-      const true_slots: any[] = [];
+      let true_slots: any = [];
       if (numSlots != 0)
       {
           stwiParam = gRfuFixed.STWIBuffer.rxPacketAlloc.rfuPacket32.data[0];
@@ -540,7 +540,7 @@ export function rfu_STC_readParentCandidateList(): any {
           numSlots -= 7;
           uname_p = packet_p + 6;
           packet_p += 19;
-          check_sum = ~*packet_p;
+          check_sum = ~packet_p;
           ++packet_p;
           my_check_sum = 0;
           for (j = 0; j < 8; ++j)
@@ -1596,7 +1596,7 @@ export function rfu_constructSendLLFrame(): any {
               {
                   let maxSize: any = llf_p - 0;
 
-                  pakcketSize = maxSize - (u8 * *)&gRfuFixed;
+                  pakcketSize = maxSize - gRfuFixed;
               }
           }
           gRfuStatic.totalPacketSize = pakcketSize;
@@ -1742,7 +1742,7 @@ export function rfu_CB_recvData(reqCommand: any, reqResult: any): any {
 export function rfu_STC_PARENT_analyzeRecvPacket(): any {
   let frames32: any = null;
       let bm_slot_id: any = null;
-      const frame_counts: any[] = [];
+      let frame_counts: any = [];
       let packet_p: any = null;
 
       frames32 = gRfuFixed.STWIBuffer.rxPacketAlloc.rfuPacket32.data[0] >> 8;

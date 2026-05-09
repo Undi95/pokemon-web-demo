@@ -2220,7 +2220,7 @@ export function Task_ShowDodrioBerryPickingRecords(taskId: any): any {
 /** static void PrintRecordsText(u8 windowId, s32 width) */
 export function PrintRecordsText(windowId: any, width: any): any {
   let i, x, numWidth;
-      const recordNums: any[] = [];
+      let recordNums: any = [];
       recordNums[0] = gSaveBlock2Ptr.berryPick.berriesPicked;
       recordNums[1] = gSaveBlock2Ptr.berryPick.bestScore;
       recordNums[2] = gSaveBlock2Ptr.berryPick.berriesPickedInRow;
@@ -3130,7 +3130,7 @@ export function PrintRankedScores(numPlayers_: any): any {
       let numPlayers: any = numPlayers_;  
       let name: any = null;
       let x, numWidth;
-      const numString: any[] = [];
+      let numString: any = [];
       const playersByRanking: any = [0, 1, 2, 3, 4];
       let temp, scoreResults;
 

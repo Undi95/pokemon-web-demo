@@ -20,7 +20,7 @@ export function GiveGiftRibbonToParty(index: any, ribbonId: any): any {
   let i: any = null;
       let gotRibbon: any = FALSE;
       let data: any = 1;
-      const array: any[] = [];
+      let array: any = [];
       memcpy(array, sGiftRibbonsMonDataIds, 0);
 
       if (index < GIFT_RIBBONS_COUNT && ribbonId <= MAX_GIFT_RIBBON)

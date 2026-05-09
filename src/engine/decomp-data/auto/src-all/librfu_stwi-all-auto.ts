@@ -536,8 +536,8 @@ export function STWI_set_timer(count: any): any {
 /** static void STWI_stop_timer(void) */
 export function STWI_stop_timer(): any {
   gSTWIStatus.timerState = 0;
-      /* transpiler bug : REG_TMCNT_L(gSTWIStatus.timerSelect) = 0; */
-      /* transpiler bug : REG_TMCNT_H(gSTWIStatus.timerSelect) = 0; */
+      /* transpiler bug : REG_TMCNT_L(gSTWIStatus.timerSelect) = 0; */ ;
+      /* transpiler bug : REG_TMCNT_H(gSTWIStatus.timerSelect) = 0; */ ;
 }
 
 /** static u16 STWI_init(u8 request) */

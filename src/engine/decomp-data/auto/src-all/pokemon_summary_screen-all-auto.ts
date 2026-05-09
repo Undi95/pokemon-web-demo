@@ -1657,7 +1657,7 @@ export function PrintMonInfo(): any {
 
 /** static void PrintNotEggInfo(void) */
 export function PrintNotEggInfo(): any {
-  const strArray: any[] = [];
+  let strArray: any = [];
       let mon: any =sMonSummaryScreen.currentMon;
       let summary: any =sMonSummaryScreen.summary;
       let dexNum: any = SpeciesToPokedexNum(summary.species);

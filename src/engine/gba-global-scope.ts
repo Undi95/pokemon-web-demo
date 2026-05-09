@@ -465,6 +465,20 @@ const symbolsToExpose: Record<string, unknown> = {
   // Mutables : stored directly on globalThis so writes in auto-files persist.
   gFieldCallback: null,
   gFieldCallback2: null,
+
+  // Memory access stubs émis par le transpiler pour les patterns C de
+  // pointer arithmetic (ex: `*(ptr + idx) op= rhs;`) qui ne peuvent pas se
+  // traduire 1:1 en JS. Ces helpers no-op runtime → si un de ces appels est
+  // exécuté, le code ne crash pas mais l'effet est perdu (= acceptable car
+  // le code en question n'est pas dans le critical path web).
+  MEM_WRITE: (_addr: unknown, _value: unknown): void => {
+    // No-op stub. Real impl would write `_value` to `_addr` (memory ptr).
+  },
+  MEM_OP_ASSIGN: (_addr: unknown, _op: string, _rhs: unknown): void => {
+    // No-op stub. Real impl would do `*addr op= rhs`.
+  },
+  MEM_PRE_DEC: (_expr: unknown): number => 0,  // Lossy stub — returns 0.
+  MEM_PRE_INC: (_expr: unknown): number => 0,
 };
 
 export function exposeGbaGlobals(): void {

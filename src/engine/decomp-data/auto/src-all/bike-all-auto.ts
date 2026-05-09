@@ -908,7 +908,7 @@ export function Bike_SetBikeStill(): any {
 
 /** s16 GetPlayerSpeed(void) */
 export function GetPlayerSpeed(): any {
-  const machSpeeds: any[] = [];
+  let machSpeeds: any = [];
 
       memcpy(machSpeeds, sMachBikeSpeeds, 0);
 

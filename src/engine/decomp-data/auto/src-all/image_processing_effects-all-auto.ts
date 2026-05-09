@@ -568,8 +568,8 @@ export function QuantizePixel_Invert(color: any): any {
 
 /** static u16 QuantizePixel_MotionBlur(u16 *prevPixel, u16 *curPixel) */
 export function QuantizePixel_MotionBlur(prevPixel: any, curPixel: any): any {
-  const pixelChannels: any[] = [];
-      const diffs: any[] = [];
+  let pixelChannels: any = [];
+      let diffs: any = [];
       let i: any = null;
       let largestDiff: any = null;
       let red, green, blue;

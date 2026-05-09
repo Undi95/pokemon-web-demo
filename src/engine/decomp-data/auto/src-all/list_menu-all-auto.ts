@@ -293,7 +293,7 @@ export function ListMenuInitInternal(listMenuTemplate: any, scrollOffset: any, s
 
 /** static void ListMenuPrint(struct ListMenu *list, const u8 *str, u8 x, u8 y) */
 export function ListMenuPrint(list: any, str: any, x: any, y: any): any {
-  const colors: any[] = [];
+  let colors: any = [];
       if (gListMenuOverride.enabled)
       {
           colors[0] = gListMenuOverride.fillValue;

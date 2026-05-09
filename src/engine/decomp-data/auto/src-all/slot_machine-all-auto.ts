@@ -1205,7 +1205,7 @@ export function ReelTask_DecideStop(task: any): any {
 
 /** static bool8 ReelTask_MoveToStop(struct Task *task) */
 export function ReelTask_MoveToStop(task: any): any {
-  const reelStopShocks: any[] = [];
+  let reelStopShocks: any = [];
       let reelPixelPos: any = null;
 
       memcpy(reelStopShocks, sReelStopShocks, 0);
@@ -2206,9 +2206,9 @@ export function ReelTime_WaitStartPikachu(task: any): any {
 /** static void ReelTime_PikachuSpeedUp1(struct Task *task) */
 export function ReelTime_PikachuSpeedUp1(task: any): any {
   let i: any = null;
-      const pikachuAnimIds: any[] = [];
-      const reelTimeBoltDelays: any[] = [];
-      const pikachuAuraFlashDelays: any[] = [];
+      let pikachuAnimIds: any = [];
+      let reelTimeBoltDelays: any = [];
+      let pikachuAuraFlashDelays: any = [];
 
       memcpy(pikachuAnimIds, sReelTimePikachuAnimIds, 0);
       memcpy(reelTimeBoltDelays, sReelTimeBoltDelays, 0);

@@ -630,7 +630,7 @@ export function InitMultichoiceNoWrap(ignoreBPress: any, unusedCount: any, windo
 
 /** static int DisplayTextAndGetWidthInternal(const u8 *str) */
 export function DisplayTextAndGetWidthInternal(str: any): any {
-  const temp: any[] = [];
+  let temp: any = [];
       StringExpandPlaceholders(temp, str);
       return GetStringWidth(FONT_NORMAL, temp, 0);
 }

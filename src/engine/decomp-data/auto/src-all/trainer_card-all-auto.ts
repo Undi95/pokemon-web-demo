@@ -681,7 +681,7 @@ export function BufferTextsVarsForCardPage2(): any {
 
 /** static void PrintNameOnCardFront(void) */
 export function PrintNameOnCardFront(): any {
-  const buffer: any[] = [];
+  let buffer: any = [];
       let txtPtr: any = null;
       txtPtr = StringCopy(buffer, gText_TrainerCardName);
       StringCopy(txtPtr, sData.trainerCard.playerName);
@@ -694,7 +694,7 @@ export function PrintNameOnCardFront(): any {
 
 /** static void PrintIdOnCard(void) */
 export function PrintIdOnCard(): any {
-  const buffer: any[] = [];
+  let buffer: any = [];
       let txtPtr: any = null;
       let xPos: any = null;
       let top: any = null;

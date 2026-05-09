@@ -138,7 +138,7 @@ export function Task_StaticCountdown_Start(taskId: any): any {
 
 /** static void Task_StaticCountdown_Run(u8 taskId) */
 export function Task_StaticCountdown_Run(taskId: any): any {
-  const packet: any[] = [];
+  let packet: any = [];
       let data: any = gTasks[taskId].data;
 
       if (gReceivedRemoteLinkPlayers)

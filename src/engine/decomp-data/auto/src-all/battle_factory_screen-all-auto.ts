@@ -900,7 +900,7 @@ export function Select_OptionOthers(): any {
 /** static void Select_PrintMonCategory(void) */
 export function Select_PrintMonCategory(): any {
   let species: any = null;
-      const text: any[] = [];
+      let text: any = [];
       let x: any = null;
       let monId: any = sFactorySelectScreen.cursorPos;
       if (monId < SELECTABLE_MONS_COUNT)
@@ -2705,7 +2705,7 @@ export function Swap_PrintOneActionString(which: any): any {
 export function Swap_PrintMonSpeciesAtFade(): any {
   let species: any = null;
       let x: any = null;
-      const pal: any[] = [];
+      let pal: any = [];
 
       CpuCopy16(sSwapText_Pal, pal, 8);
       if (!sFactorySwapScreen.fromSummaryScreen)
@@ -2763,7 +2763,7 @@ export function Swap_PrintMonSpeciesForTransition(): any {
 /** static void Swap_PrintMonCategory(void) */
 export function Swap_PrintMonCategory(): any {
   let species: any = null;
-      const text: any[] = [];
+      let text: any = [];
       let x: any = null;
       let monId: any = sFactorySwapScreen.cursorPos;
 

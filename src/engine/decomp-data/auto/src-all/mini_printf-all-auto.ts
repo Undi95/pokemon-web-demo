@@ -255,8 +255,8 @@ export function mini_vsnprintf(buffer: any, buffer_len: any, fmt: any, va: any):
 
 /** s32 mini_vpprintf(void *buf, const char *fmt, va_list va) */
 export function mini_vpprintf(buf: any, fmt: any, va: any): any {
-  const bf: any[] = [];
-      const bf2: any[] = [];
+  let bf: any = [];
+      let bf2: any = [];
       let ch: any = null;
       let n: any = null;
       n = 0;

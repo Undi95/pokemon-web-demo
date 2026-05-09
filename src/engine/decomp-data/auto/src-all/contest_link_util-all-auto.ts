@@ -65,8 +65,8 @@ export function Task_LinkContest_SetUpContestEm(taskId: any): any {
   let i: any = null;
       let rank: any = null;
       let gameCleared: any = null;
-      const categories: any[] = [];
-      const leaderIds: any[] = [];
+      let categories: any = [];
+      let leaderIds: any = [];
 
       memset(categories, 0, 0);
       memset(leaderIds, 0, 0);
@@ -212,7 +212,7 @@ export function Task_LinkContest_CommunicateRngEm(taskId: any): any {
 /** static void Task_LinkContest_CommunicateLeaderIdsEm(u8 taskId) */
 export function Task_LinkContest_CommunicateLeaderIdsEm(taskId: any): any {
   let i: any = null;
-      const data: any[] = [];
+      let data: any = [];
       let leaderId: any = null;
 
       if (!LinkContest_TryLinkStandby(gTasks[taskId].data[12]))
@@ -251,7 +251,7 @@ export function Task_LinkContest_CommunicateLeaderIdsEm(taskId: any): any {
 /** static void Task_LinkContest_CommunicateCategoryEm(u8 taskId) */
 export function Task_LinkContest_CommunicateCategoryEm(taskId: any): any {
   let i: any = null;
-      const data: any[] = [];
+      let data: any = [];
       let category: any = null;
 
       if (!LinkContest_TryLinkStandby(gTasks[taskId].data[12]))

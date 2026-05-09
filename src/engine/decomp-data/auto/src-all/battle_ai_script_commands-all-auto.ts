@@ -130,8 +130,8 @@ export function BattleAI_ChooseMoveOrAction(): any {
 
 /** static u8 ChooseMoveOrAction_Singles(void) */
 export function ChooseMoveOrAction_Singles(): any {
-  const currentMoveArray: any[] = [];
-      const consideredMoveArray: any[] = [];
+  let currentMoveArray: any = [];
+      let consideredMoveArray: any = [];
       let numOfBestMoves: any = null;
       let i: any = null;
 
@@ -185,11 +185,11 @@ export function ChooseMoveOrAction_Doubles(): any {
   let i: any = null;
       let j: any = null;
       let scriptsToRun: any = null;
-      const bestMovePointsForTarget: any[] = [];
-      const mostViableTargetsArray: any[] = [];
-      const actionOrMoveIndex: any[] = [];
-      const mostViableMovesScores: any[] = [];
-      const mostViableMovesIndices: any[] = [];
+      let bestMovePointsForTarget: any = [];
+      let mostViableTargetsArray: any = [];
+      let actionOrMoveIndex: any = [];
+      let mostViableMovesScores: any = [];
+      let mostViableMovesIndices: any = [];
       let mostViableTargetsNo: any = null;
       let mostViableMovesNo: any = null;
       let mostMovePoints: any = null;
@@ -900,7 +900,7 @@ export function Cmd_get_considered_move_power(): any {
 /** static void Cmd_get_how_powerful_move_is(void) */
 export function Cmd_get_how_powerful_move_is(): any {
   let i, checkedMove;
-      const moveDmgs: any[] = [];
+      let moveDmgs: any = [];
 
       for (i = 0; sIgnoredPowerfulMoveEffects[i] != IGNORED_MOVES_END; i++)
       {

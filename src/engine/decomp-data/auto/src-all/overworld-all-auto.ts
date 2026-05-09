@@ -896,7 +896,7 @@ export function UpdateAmbientCry(state: any, delayCounter: any): any {
           state = AMB_CRY_WAIT;
           break;
       case AMB_CRY_WAIT:
-          if (--delayCounter == 0)
+          if (--(delayCounter) == 0)
           {
               PlayAmbientCry();
               state = AMB_CRY_RESET;

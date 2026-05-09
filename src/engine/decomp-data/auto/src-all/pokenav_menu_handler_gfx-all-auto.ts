@@ -902,7 +902,7 @@ export function IsTaskActive_UpdateBgDotsPalette(): any {
 
 /** static void Task_UpdateBgDotsPalette(u8 taskId) */
 export function Task_UpdateBgDotsPalette(taskId: any): any {
-  const sp8: any[] = [];
+  let sp8: any = [];
       let data: any = gTasks[taskId].data;
       let pal1: any = GetWordTaskArg(taskId, 1);
       let pal2: any = GetWordTaskArg(taskId, 3);

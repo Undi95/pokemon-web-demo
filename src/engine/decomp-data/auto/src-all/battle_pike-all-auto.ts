@@ -248,7 +248,7 @@ export function HealMon(mon: any): any {
   let i: any = null;
       let hp: any = null;
       let ppBonuses: any = null;
-      const data: any[] = [];
+      let data: any = [];
 
       for (i = 0; i < 4; i++)
           data[i] = 0;
@@ -338,7 +338,7 @@ export function DoesTypePreventStatus(species: any, status: any): any {
 export function TryInflictRandomStatus(): any {
   let j, i;
       let count: any = null;
-      const indices: any[] = [];
+      let indices: any = [];
       let status: any = null;
       let species: any = null;
       let statusChosen: any = null;
@@ -479,7 +479,7 @@ export function AtLeastOneHealthyMon(): any {
 
 /** static u8 GetNextRoomType(void) */
 export function GetNextRoomType(): any {
-  const roomTypesDisabled: any[] = [];  
+  let roomTypesDisabled: any = [];  
       let i: any = null;
       let nextRoomType: any = null;
       let roomHint: any = null;
@@ -569,7 +569,7 @@ export function TryGenerateBattlePikeWildMon(checkKeenEyeIntimidate: any): any {
       let monLevel: any = null;
       let headerId: any = GetBattlePikeWildMonHeaderId();
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      const struct PikeWildMon const const wildMons = sWildMons[lvlMode];
+      let wildMons: any = sWildMons[lvlMode];
       let abilityNum: any = null;
       let pikeMonId: any = GetMonData(gEnemyParty[0], MON_DATA_SPECIES, NULL);
       pikeMonId = SpeciesToPikeMonId(pikeMonId);
@@ -719,7 +719,7 @@ export function Task_DoStatusInflictionScreenFlash(taskId: any): any {
 /** static void TryHealMons(u8 healCount) */
 export function TryHealMons(healCount: any): any {
   let j, i, k;
-      const indices: any[] = [];
+      let indices: any = [];
 
       if (healCount == 0)
           return;

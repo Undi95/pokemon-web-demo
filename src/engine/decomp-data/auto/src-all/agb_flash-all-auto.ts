@@ -26,7 +26,7 @@ export function SwitchFlashBank(bankNum: any): any {
 /** u16 ReadFlashId(void) */
 export function ReadFlashId(): any {
   let flashId: any = null;
-      const readFlash1Buffer: any[] = [];
+      let readFlash1Buffer: any = [];
       let readFlash1: any = null;
 
       SetReadFlash1(readFlash1Buffer);
@@ -128,7 +128,7 @@ export function ReadFlash_Core(src: any, dest: any, size: any): any {
 export function ReadFlash(sectorNum: any, offset: any, dest: any, size: any): any {
   let src: any = null;
       let i: any = null;
-      const readFlash_Core_Buffer: any[] = [];
+      let readFlash_Core_Buffer: any = [];
       let funcSrc: any = null;
       let funcDest: any = null;
       let readFlash_Core: any = null;
@@ -174,7 +174,7 @@ export function VerifyFlashSector_Core(src: any, tgt: any, size: any): any {
 /** u32 VerifyFlashSector(u16 sectorNum, u8 *src) */
 export function VerifyFlashSector(sectorNum: any, src: any): any {
   let i: any = null;
-      const verifyFlashSector_Core_Buffer: any[] = [];
+      let verifyFlashSector_Core_Buffer: any = [];
       let funcSrc: any = null;
       let funcDest: any = null;
       let tgt: any = null;
@@ -212,7 +212,7 @@ export function VerifyFlashSector(sectorNum: any, src: any): any {
 /** u32 VerifyFlashSectorNBytes(u16 sectorNum, u8 *src, u32 n) */
 export function VerifyFlashSectorNBytes(sectorNum: any, src: any, n: any): any {
   let i: any = null;
-      const verifyFlashSector_Core_Buffer: any[] = [];
+      let verifyFlashSector_Core_Buffer: any = [];
       let funcSrc: any = null;
       let funcDest: any = null;
       let tgt: any = null;

@@ -175,7 +175,7 @@ export function LoadBattleTextboxAndBackground(): any {
 export function DrawLinkBattleParticipantPokeballs(taskId: any, multiplayerId: any, bgId: any, destX: any, destY: any): any {
   let i: any = null;
       let pokeballStatuses: any = 0;
-      const tiles: any[] = [];
+      let tiles: any = [];
 
       if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
       {

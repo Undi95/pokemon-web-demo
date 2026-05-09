@@ -692,17 +692,17 @@ export function PrepareBufferDataTransferLink(bufferId: any, size: any, data: an
       }
           gLinkBattleSendBuffer[gTasks[sLinkSendTaskId].tCurrentBlock_End + offset]
 
-      \            = bufferId;
-      \       = gActiveBattler;
-      \             = gBattlerAttacker;
-      \               = gBattlerTarget;
-      \              = alignedSize;
-      \              = (alignedSize & 0x0000FF00) >> 8;
-      \ = gAbsentBattlerFlags;
-      \       = gEffectBattler;
+      /* transpiler bug \= : bufferId; */
+      /* transpiler bug \= : gActiveBattler; */
+      /* transpiler bug \= : gBattlerAttacker; */
+      /* transpiler bug \= : gBattlerTarget; */
+      /* transpiler bug \= : alignedSize; */
+      /* transpiler bug \= : (alignedSize & 0x0000FF00) >> 8; */
+      /* transpiler bug \= : gAbsentBattlerFlags; */
+      /* transpiler bug \= : gEffectBattler; */
 
       for (i = 0; i < size; i++)
-          \ = data[i];
+          /* transpiler bug \= : data[i]; */
 
       gTasks[sLinkSendTaskId].tCurrentBlock_End = gTasks[sLinkSendTaskId].tCurrentBlock_End + alignedSize + LINK_BUFF_DATA;
 }
@@ -761,8 +761,8 @@ export function Task_HandleSendLinkBuffersData(taskId: any): any {
                       gTasks[taskId].tCurrentBlock_WrapFrom = 0;
                       gTasks[taskId].tCurrentBlock_Start    = 0;
                   }
-                  blockSize = (\ | (\ << 8)) + LINK_BUFF_DATA;
-                  SendBlock(BitmaskAllOtherLinkPlayers(), &\, blockSize);
+                  blockSize = (0 | (0 << 8)) + LINK_BUFF_DATA;
+                  SendBlock(BitmaskAllOtherLinkPlayers(), 0, blockSize);
                   gTasks[taskId].tState++;
               }
               else
@@ -775,7 +775,7 @@ export function Task_HandleSendLinkBuffersData(taskId: any): any {
       case SENDTASK_STATE_FINISH_SEND_BLOCK:
           if (IsLinkTaskFinished())
           {
-              blockSize = \ | (\ << 8);
+              blockSize = 0 | (0 << 8);
               gTasks[taskId].tBlockSendDelayTimer = 1;
               gTasks[taskId].tCurrentBlock_Start  = gTasks[taskId].tCurrentBlock_Start + blockSize + LINK_BUFF_DATA;
               gTasks[taskId].tState = SENDTASK_STATE_BEGIN_SEND_BLOCK;
@@ -845,31 +845,31 @@ export function Task_HandleCopyReceivedLinkBuffersData(taskId: any): any {
               gTasks[taskId].tCurrentBlock_WrapFrom = 0;
               gTasks[taskId].tCurrentBlock_Start    = 0;
           }
-          battler = \;
-          blockSize = \ | (\ << 8);
+          battler = 0; /* transpiler bug : RHS=0 */
+          blockSize = 0 | (0 << 8);
 
-          switch (\)
+          switch (0)
           {
           case B_COMM_TO_CONTROLLER:
               if (IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL(battler))
                   return;
 
-              memcpy(gBattleBufferA[battler], &\, blockSize);
+              memcpy(gBattleBufferA[battler], 0, blockSize);
               MarkBattlerReceivedLinkData(battler);
 
               if (!(gBattleTypeFlags & BATTLE_TYPE_IS_MASTER))
               {
-                  gBattlerAttacker    = \;
-                  gBattlerTarget      = \;
-                  gAbsentBattlerFlags = \;
-                  gEffectBattler      = \;
+                  gBattlerAttacker = 0; /* transpiler bug : RHS=0 */
+                  gBattlerTarget = 0; /* transpiler bug : RHS=0 */
+                  gAbsentBattlerFlags = 0; /* transpiler bug : RHS=0 */
+                  gEffectBattler = 0; /* transpiler bug : RHS=0 */
               }
               break;
           case B_COMM_TO_ENGINE:
               memcpy(gBattleBufferB[battler],gLinkBattleRecvBuffer[gTasks[taskId].tCurrentBlock_Start + LINK_BUFF_DATA], blockSize);
               break;
           case B_COMM_CONTROLLER_IS_DONE:
-              playerId = \;
+              playerId = 0; /* transpiler bug : RHS=0 */
               MARK_BATTLE_CONTROLLER_IDLE_FOR_PLAYER(battler, playerId);
               break;
           }

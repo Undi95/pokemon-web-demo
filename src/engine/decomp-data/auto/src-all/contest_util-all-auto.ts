@@ -461,7 +461,7 @@ export function Task_AnnounceWinner(taskId: any): any {
       case 4:
           if (++gTasks[taskId].tTimer == 21)
           {
-              const winnerTextBuffer: any[] = [];
+              let winnerTextBuffer: any = [];
               let x: any = null;
               gTasks[taskId].tTimer = 0;
               { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
@@ -767,7 +767,7 @@ export function DrawResultsTextWindow(text: any, spriteId: any): any {
   let windowId: any = null;
       let origWidth: any = null;
       let strWidth: any = null;
-      u8 spriteTilePtrs[4];
+      let spriteTilePtrs: any = [];
       let dst: any = null;
 
       let windowTemplate: any = null;
@@ -830,7 +830,7 @@ export function DrawResultsTextWindow(text: any, spriteId: any): any {
 export function CreateResultsTextWindowSprites(): any {
   let i: any = null;
       let template: any = null;
-      const spriteIds: any[] = [];
+      let spriteIds: any = [];
 
       template = sSpriteTemplate_ResultsTextWindow;
       for (i = 0; i < ARRAY_COUNT(sSpriteSheets_ResultsTextWindow); i++)
@@ -1755,8 +1755,8 @@ export function Task_StartCommunicateCategoryRS(taskId: any): any {
 /** static void Task_LinkContest_SetUpContestRS(u8 taskId) */
 export function Task_LinkContest_SetUpContestRS(taskId: any): any {
   let i: any = null;
-      const categories: any[] = [];
-      const leaderIds: any[] = [];
+      let categories: any = [];
+      let leaderIds: any = [];
 
       memset(categories, 0, 0);
       memset(leaderIds, 0, 0);
@@ -1941,7 +1941,7 @@ export function CountPlayerMuseumPaintings(): any {
 
 /** void GetContestantNamesAtRank(void) */
 export function GetContestantNamesAtRank(): any {
-  const conditions: any[] = [];
+  let conditions: any = [];
       let i, j;
       let condition: any = null;
       let numAtCondition: any = null;

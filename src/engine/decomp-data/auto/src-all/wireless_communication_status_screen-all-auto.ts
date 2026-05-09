@@ -95,7 +95,7 @@ export function CyclePalette(counter: any, palIdx: any): any {
   let idx: any = null;
       if (++(counter) > 5)
       {
-          if (++palIdx == ARRAY_COUNT(sPalettes) - 2)
+          if (++(palIdx) == ARRAY_COUNT(sPalettes) - 2)
               palIdx = 0;
 
           counter = 0;
@@ -186,7 +186,7 @@ export function Task_WirelessCommunicationScreen(taskId: any): any {
 
 /** static void WCSS_AddTextPrinterParameterized(u8 windowId, u8 fontId, const u8 *str, u8 x, u8 y, u8 mode) */
 export function WCSS_AddTextPrinterParameterized(windowId: any, fontId: any, str: any, x: any, y: any, mode: any): any {
-  const color: any[] = [];
+  let color: any = [];
 
       switch (mode)
       {

@@ -658,7 +658,7 @@ export function SetPlayerIdMaps(): any {
 export function PrintPlayerNames(): any {
   let i, xPos;
       let playerId: any = 0;
-      const text: any[] = [];
+      let text: any = [];
 
       if (gReceivedRemoteLinkPlayers)
           playerId = GetMultiplayerId();
@@ -1294,7 +1294,7 @@ export function AreBlenderBerriesSame(berries: any, a: any, b: any): any {
 
 /** static u32 CalculatePokeblockColor(struct BlenderBerry *berries, s16 *_flavors, u8 numPlayers, u8 negativeFlavors) */
 export function CalculatePokeblockColor(berries: any, _flavors: any, numPlayers: any, negativeFlavors: any): any {
-  const flavors: any[] = [];
+  let flavors: any = [];
       let i, j;
       let numFlavors: any = null;
 
@@ -2358,7 +2358,7 @@ export function ArrowSpeedToRPM(speed: any): any {
 /** static void UpdateRPM(u16 speed) */
 export function UpdateRPM(speed: any): any {
   let i: any = null;
-      const digits: any[] = [];
+      let digits: any = [];
 
        
       let currentRPM: any = ArrowSpeedToRPM(speed);
@@ -2460,9 +2460,9 @@ export function PrintBlendingResults(): any {
       let xPos, yPos;
 
       let pokeblock: any = null;
-      const flavors: any[] = [];
-      const text: any[] = [];
-      const berryIds: any[] = [];
+      let flavors: any = [];
+      let text: any = [];
+      let berryIds: any = [];
 
       switch (sBerryBlender.mainState)
       {
@@ -2599,7 +2599,7 @@ export function PrintBlendingResults(): any {
 
 /** static void PrintMadePokeblockString(struct Pokeblock *pokeblock, u8 *dst) */
 export function PrintMadePokeblockString(pokeblock: any, dst: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let flavorLvl, feel;
 
       dst[0] = EOS;
@@ -2644,8 +2644,8 @@ export function SortBasedOnPoints(places: any, playersNum: any, scores: any): an
 export function SortScores(): any {
   let playerId: any = null;
       let i: any = null;
-      const places: any[] = [];
-      const points: any[] = [];
+      let places: any = [];
+      let points: any = [];
 
       for (i = 0; i < sBerryBlender.numPlayers; i++)
           places[i] = i;
@@ -2768,7 +2768,7 @@ export function ShowBerryBlenderRecordWindow(): any {
       let winTemplate: any =
       [ 0, 6, 4, 18, 11, 15, 8
       ];
-      const text: any[] = [];
+      let text: any = [];
 
       gRecordsWindowId = AddWindow(winTemplate);
       DrawStdWindowFrame(gRecordsWindowId, FALSE);
@@ -2860,7 +2860,7 @@ export function TryAddContestLinkTvShow(pokeblock: any, tvBlender: any): any {
 
 /** static void Blender_AddTextPrinter(u8 windowId, const u8 *string, u8 x, u8 y, s32 speed, s32 caseId) */
 export function Blender_AddTextPrinter(windowId: any, string: any, x: any, y: any, speed: any, caseId: any): any {
-  const txtColor: any[] = [];
+  let txtColor: any = [];
       let letterSpacing: any = 0;
 
       switch (caseId)

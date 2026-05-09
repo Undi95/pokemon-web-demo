@@ -45,7 +45,7 @@ export function BuildDoorTiles(tiles: any, tileNum: any, paletteNums: any): any 
 
 /** static void DrawCurrentDoorAnimFrame(const struct DoorGraphics *gfx, u32 x, u32 y, const u8 *paletteNums) */
 export function DrawCurrentDoorAnimFrame(gfx: any, x: any, y: any, paletteNums: any): any {
-  const tiles: any[] = [];
+  let tiles: any = [];
 
       if (gfx.size == 2)
       {

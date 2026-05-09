@@ -227,7 +227,7 @@ export function Task_DeclineStarter(taskId: any): any {
 
 /** static void CreateStarterPokemonLabel(u8 selection) */
 export function CreateStarterPokemonLabel(selection: any): any {
-  const categoryText: any[] = [];
+  let categoryText: any = [];
       let winTemplate: any = null;
       let speciesName: any = null;
       let width: any = null;

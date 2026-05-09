@@ -2012,7 +2012,7 @@ export function AskRecordBattle(): any {
 
 /** static void TryCorrectShedinjaLanguage(struct Pokemon *mon) */
 export function TryCorrectShedinjaLanguage(mon: any): any {
-  const nickname: any[] = [];
+  let nickname: any = [];
       let language: any = LANGUAGE_JAPANESE;
 
       if (GetMonData(mon, MON_DATA_SPECIES) == SPECIES_SHEDINJA
@@ -2558,8 +2558,8 @@ export function SwitchInClearSetData(): any {
           MEM_WRITE((i * 8 + gActiveBattler * 2 + (gBattleStruct.lastTakenMoveFrom) + 1), 0);
       }
 
-      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 0) = MOVE_NONE; */
-      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 1) = MOVE_NONE; */
+      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 0) = MOVE_NONE; */ ;
+      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 1) = MOVE_NONE; */ ;
 
       gBattleResources.flags.flags[gActiveBattler] = 0;
       gCurrentMove = MOVE_NONE;
@@ -2626,8 +2626,8 @@ export function FaintClearSetData(): any {
       gLastPrintedMoves[gActiveBattler] = MOVE_NONE;
       gLastHitBy[gActiveBattler] = 0xFF;
 
-      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 0) = MOVE_NONE; */
-      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 1) = MOVE_NONE; */
+      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 0) = MOVE_NONE; */ ;
+      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gActiveBattler]) + 1) = MOVE_NONE; */ ;
 
       MEM_WRITE((gBattleStruct.lastTakenMove + gActiveBattler * 2 + 0), MOVE_NONE);
       MEM_WRITE((gBattleStruct.lastTakenMove + gActiveBattler * 2 + 1), MOVE_NONE);
@@ -3842,12 +3842,12 @@ export function UpdateBattlerPartyOrdersOnSwitch(): any {
 
       if (gBattleTypeFlags & BATTLE_TYPE_LINK && gBattleTypeFlags & BATTLE_TYPE_MULTI)
       {
-          (gActiveBattler * 3 + (gBattleStruct.battlerPartyOrders) + 0) &= 0xF;
-          (gActiveBattler * 3 + (gBattleStruct.battlerPartyOrders) + 0) |= (gBattleBufferB[gActiveBattler][2] & 0xF0);
+          MEM_OP_ASSIGN((gActiveBattler * 3 + (gBattleStruct.battlerPartyOrders) + 0), 'and', 0xF);
+          MEM_OP_ASSIGN((gActiveBattler * 3 + (gBattleStruct.battlerPartyOrders) + 0), 'or', (gBattleBufferB[gActiveBattler][2] & 0xF0));
           MEM_WRITE((gActiveBattler * 3 + (gBattleStruct.battlerPartyOrders) + 1), gBattleBufferB[gActiveBattler][3]);
 
-          ((BATTLE_PARTNER(gActiveBattler)) * 3 + (gBattleStruct.battlerPartyOrders) + 0) &= (0xF0);
-          ((BATTLE_PARTNER(gActiveBattler)) * 3 + (gBattleStruct.battlerPartyOrders) + 0) |= (gBattleBufferB[gActiveBattler][2] & 0xF0) >> 4;
+          MEM_OP_ASSIGN(((BATTLE_PARTNER(gActiveBattler)) * 3 + (gBattleStruct.battlerPartyOrders) + 0), 'and', (0xF0));
+          MEM_OP_ASSIGN(((BATTLE_PARTNER(gActiveBattler)) * 3 + (gBattleStruct.battlerPartyOrders) + 0), 'or', (gBattleBufferB[gActiveBattler][2] & 0xF0) >> 4);
           MEM_WRITE(((BATTLE_PARTNER(gActiveBattler)) * 3 + (gBattleStruct.battlerPartyOrders) + 2), gBattleBufferB[gActiveBattler][3]);
       }
 }

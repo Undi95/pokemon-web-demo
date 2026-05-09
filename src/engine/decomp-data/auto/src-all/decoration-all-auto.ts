@@ -1427,7 +1427,7 @@ export function CopyPalette(dest: any, pal: any): any {
 
 /** static void CopyTile(u8 *dest, u16 tile) */
 export function CopyTile(dest: any, tile: any): any {
-  const buffer: any[] = [];
+  let buffer: any = [];
       let mode: any = null;
       let i: any = null;
 

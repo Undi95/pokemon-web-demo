@@ -390,7 +390,7 @@ export function EReaderHelper_Timer3Callback(): any {
 export function EReaderHelper_SerialCallback(): any {
   let i, cnt1, cnt2;
       let recv32: any = null;
-      const recv: any[] = [];
+      let recv: any = [];
 
       switch (sSendRecvMgr.state)
       {

@@ -685,7 +685,7 @@ export function FreeWindowAndBgBuffers(): any {
 
 /** static void CreatePokedexList(u8 dexMode, u8 order) */
 export function CreatePokedexList(dexMode: any, order: any): any {
-  const vars: any[] = [];  
+  let vars: any = [];  
       let i: any = null;
 
       sPokedexView.pokemonListCount = 0;
@@ -828,7 +828,7 @@ export function CreatePokedexList(dexMode: any, order: any): any {
 
 /** static void PrintMonDexNumAndName(u8 windowId, u8 fontId, const u8 *str, u8 left, u8 top) */
 export function PrintMonDexNumAndName(windowId: any, fontId: any, str: any, left: any, top: any): any {
-  const color: any[] = [];
+  let color: any = [];
 
       color[0] = TEXT_COLOR_TRANSPARENT;
       color[1] = TEXT_DYNAMIC_COLOR_6;
@@ -927,7 +927,7 @@ export function CreateMonListEntry(position: any, b: any, ignored: any): any {
 
 /** static void CreateMonDexNum(u16 entryNum, u8 left, u8 top, u16 unused) */
 export function CreateMonDexNum(entryNum: any, left: any, top: any, unused: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let dexNum: any = null;
 
       memcpy(text, sText_No000, ARRAY_COUNT(text));
@@ -1671,7 +1671,7 @@ export function SpriteCB_DexListStartMenuCursor(sprite: any): any {
 
 /** static void PrintInfoScreenText(const u8 *str, u8 left, u8 top) */
 export function PrintInfoScreenText(str: any, left: any, top: any): any {
-  const color: any[] = [];
+  let color: any = [];
       color[0] = TEXT_COLOR_TRANSPARENT;
       color[1] = TEXT_DYNAMIC_COLOR_6;
       color[2] = TEXT_COLOR_LIGHT_GRAY;
@@ -2249,7 +2249,7 @@ export function Task_LoadSizeScreen(taskId: any): any {
           break;
       case 3:
           {
-              const string: any[] = [];
+              let string: any = [];
 
               StringCopy(string, gText_SizeComparedTo);
               StringAppend(string, gSaveBlock2Ptr.playerName);
@@ -2567,8 +2567,8 @@ export function SpriteCB_SlideCaughtMonToCenter(sprite: any): any {
 
 /** static void PrintMonInfo(u32 num, u32 value, u32 owned, u32 newEntry) */
 export function PrintMonInfo(num: any, value: any, owned: any, newEntry: any): any {
-  const str: any[] = [];
-      const str2: any[] = [];
+  let str: any = [];
+      let str2: any = [];
       let natNum: any = null;
       let name: any = null;
       let category: any = null;
@@ -2860,7 +2860,7 @@ export function ResetOtherVideoRegisters(regBits: any): any {
 
 /** static void PrintInfoSubMenuText(u8 windowId, const u8 *str, u8 left, u8 top) */
 export function PrintInfoSubMenuText(windowId: any, str: any, left: any, top: any): any {
-  const color: any[] = [];
+  let color: any = [];
       color[0] = TEXT_COLOR_TRANSPARENT;
       color[1] = TEXT_DYNAMIC_COLOR_6;
       color[2] = TEXT_COLOR_LIGHT_GRAY;
@@ -2870,7 +2870,7 @@ export function PrintInfoSubMenuText(windowId: any, str: any, left: any, top: an
 
 /** static u8 PrintCryScreenSpeciesName(u8 windowId, u16 num, u8 left, u8 top) */
 export function PrintCryScreenSpeciesName(windowId: any, num: any, left: any, top: any): any {
-  const str: any[] = [];
+  let str: any = [];
       let i: any = null;
 
       for (i = 0; i < ARRAY_COUNT(str); i++)
@@ -2893,7 +2893,7 @@ export function PrintCryScreenSpeciesName(windowId: any, num: any, left: any, to
 
 /** static void PrintDecimalNum(u8 windowId, u16 num, u8 left, u8 top) */
 export function PrintDecimalNum(windowId: any, num: any, left: any, top: any): any {
-  const str: any[] = [];
+  let str: any = [];
       let outputted: any = FALSE;
       let result: any = null;
 
@@ -2930,7 +2930,7 @@ export function PrintDecimalNum(windowId: any, num: any, left: any, top: any): a
 
 /** static void DrawFootprint(u8 windowId, u16 dexNum) */
 export function DrawFootprint(windowId: any, dexNum: any): any {
-  const footprint4bpp: any[] = [];
+  let footprint4bpp: any = [];
       let footprintGfx: any = gMonFootprintTable[NationalPokedexNumToSpecies(dexNum)];
       let tileIdx: any = 0;
       let i, j;
@@ -3015,7 +3015,7 @@ export function DoPokedexSearch(dexMode: any, order: any, abcGroup: any, bodyCol
   let species: any = null;
       let i: any = null;
       let resultsCount: any = null;
-      const types: any[] = [];
+      let types: any = [];
 
       CreatePokedexList(dexMode, order);
 
@@ -3131,7 +3131,7 @@ export function LoadSearchMenu(): any {
 
 /** static void PrintSearchText(const u8 *str, u32 x, u32 y) */
 export function PrintSearchText(str: any, x: any, y: any): any {
-  const color: any[] = [];
+  let color: any = [];
 
       color[0] = TEXT_COLOR_TRANSPARENT;
       color[1] = TEXT_DYNAMIC_COLOR_6;
@@ -3583,12 +3583,12 @@ export function SetSearchRectHighlight(flags: any, x: any, y: any, width: any): 
           temp = (ptr + (y + 0) * 64 + (x + i) * 2);
           temp &= 0x0fff;
           temp |= (flags << 12);
-          /* transpiler bug LHS : (ptr + (y + 0) * 64 + (x + i) * 2) = temp; */
+          /* transpiler bug LHS : (ptr + (y + 0) * 64 + (x + i) * 2) = temp; */ ;
 
           temp = (ptr + (y + 1) * 64 + (x + i) * 2);
           temp &= 0x0fff;
           temp |= (flags << 12);
-          /* transpiler bug LHS : (ptr + (y + 1) * 64 + (x + i) * 2) = temp; */
+          /* transpiler bug LHS : (ptr + (y + 1) * 64 + (x + i) * 2) = temp; */ ;
       }
 }
 

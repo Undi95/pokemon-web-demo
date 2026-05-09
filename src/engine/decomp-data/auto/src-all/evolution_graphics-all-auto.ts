@@ -399,7 +399,7 @@ export function Task_Sparkles_SprayAndFlashTrade(taskId: any): any {
 /** u8 CycleEvolutionMonSprite(u8 preEvoSpriteId, u8 postEvoSpriteId) */
 export function CycleEvolutionMonSprite(preEvoSpriteId: any, postEvoSpriteId: any): any {
   let i: any = null;
-      const monPalette: any[] = [];
+      let monPalette: any = [];
       let taskId: any = null;
       let toDiv: any = null;
 

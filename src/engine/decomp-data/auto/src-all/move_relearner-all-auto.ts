@@ -541,7 +541,7 @@ export function RemoveScrollArrows(): any {
 /** static void CreateLearnableMovesList(void) */
 export function CreateLearnableMovesList(): any {
   let i: any = null;
-      const nickname: any[] = [];
+      let nickname: any = [];
 
       sMoveRelearnerStruct.numMenuChoices = GetMoveRelearnerMoves(gPlayerParty[sMoveRelearnerStruct.partyMon], sMoveRelearnerStruct.movesToLearn);
 

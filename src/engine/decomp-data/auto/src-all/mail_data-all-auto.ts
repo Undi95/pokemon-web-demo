@@ -51,7 +51,7 @@ export function MonHasMail(mon: any): any {
 
 /** u8 GiveMailToMonByItemId(struct Pokemon *mon, u16 itemId) */
 export function GiveMailToMonByItemId(mon: any, itemId: any): any {
-  const heldItem: any[] = [];
+  let heldItem: any = [];
       let id, i;
       let species: any = null;
       let personality: any = null;
@@ -117,7 +117,7 @@ export function MailSpeciesToSpecies(mailSpecies: any, buffer: any): any {
 
 /** u8 GiveMailToMon(struct Pokemon *mon, struct Mail *mail) */
 export function GiveMailToMon(mon: any, mail: any): any {
-  const heldItem: any[] = [];
+  let heldItem: any = [];
       let itemId: any = mail.itemId;
       let mailId: any = GiveMailToMonByItemId(mon, itemId);
 
@@ -138,7 +138,7 @@ export function GiveMailToMon(mon: any, mail: any): any {
 
 /** void TakeMailFromMon(struct Pokemon *mon) */
 export function TakeMailFromMon(mon: any): any {
-  const heldItem: any[] = [];
+  let heldItem: any = [];
       let mailId: any = null;
 
       if (MonHasMail(mon))
@@ -161,7 +161,7 @@ export function ClearMailItemId(mailId: any): any {
 /** u8 TakeMailFromMonAndSave(struct Pokemon *mon) */
 export function TakeMailFromMonAndSave(mon: any): any {
   let i: any = null;
-      const newHeldItem: any[] = [];
+      let newHeldItem: any = [];
       let newMailId: any = null;
 
       newHeldItem[0] = ITEM_NONE;

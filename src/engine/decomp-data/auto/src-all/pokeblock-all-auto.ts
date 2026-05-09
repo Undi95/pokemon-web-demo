@@ -331,7 +331,7 @@ export function MovePokeblockMenuCursor(pkblId: any, onInit: any, list: any): an
 export function DrawPokeblockInfo(pkblId: any): any {
   let i: any = null;
       let pokeblock: any = null;
-      const rectTilemapSrc: any[] = [];
+      let rectTilemapSrc: any = [];
 
       FillWindowPixelBuffer(WIN_FEEL, PIXEL_FILL(0));
 

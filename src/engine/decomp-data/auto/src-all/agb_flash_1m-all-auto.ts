@@ -19,7 +19,7 @@
 export function IdentifyFlash(): any {
   let result: any = null;
       let flashId: any = null;
-      const struct FlashSetupInfo const setupInfo;
+      let setupInfo: any = null;
 
       REG_WAITCNT = (REG_WAITCNT & ~WAITCNT_SRAM_MASK) | WAITCNT_SRAM_8;
 

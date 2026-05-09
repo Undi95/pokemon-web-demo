@@ -567,7 +567,7 @@ export function GetWaterEncounterSlot(): any {
 
 /** static void PopulateSpeciesFromTrainerLocation(int matchCallId, u8 *destStr) */
 export function PopulateSpeciesFromTrainerLocation(matchCallId: any, destStr: any): any {
-  const species: any[] = [];
+  let species: any = [];
       let numSpecies: any = null;
       let slot: any = null;
       let i: any = 0;

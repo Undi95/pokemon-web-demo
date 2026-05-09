@@ -515,7 +515,7 @@ export function UpdateIndexNumberDisplay(menu: any): any {
 
 /** static void DrawListIndexNumber(s32 windowId, s32 index, s32 max) */
 export function DrawListIndexNumber(windowId: any, index: any, max: any): any {
-  const strbuf: any[] = [];
+  let strbuf: any = [];
       let x: any = null;
 
       let ptr: any = strbuf;

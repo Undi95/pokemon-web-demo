@@ -103,8 +103,8 @@ export function GetLetterTableId(letter: any): any {
 /** static bool32 TryCalculateWallpaper(u16 *backgroundClr, u16 *foregroundClr, u8 *iconId, u8 *patternId, u16 trainerId, u8 *phrase) */
 export function TryCalculateWallpaper(backgroundClr: any, foregroundClr: any, iconId: any, patternId: any, trainerId: any, phrase: any): any {
   let i: any = null;
-       const data: any[] = [];
-      const charsByTableId: any[] = [];
+       let data: any = [];
+      let charsByTableId: any = [];
       let ptr: any = null;
 
        

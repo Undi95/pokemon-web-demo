@@ -631,8 +631,8 @@ export function ChildBuildSendCmd(sendCmd: any, dst: any): any {
 export function RfuMain1_Child(): any {
   let i: any = null;
       let j: any = null;
-      const recv: any[] = [];
-      const send: any[] = [];
+      let recv: any = [];
+      let send: any = [];
       let status: any = null;
 
       RfuRecvQueue_Dequeue(gRfu.recvQueue, recv);

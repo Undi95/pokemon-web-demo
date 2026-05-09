@@ -2992,7 +2992,7 @@ export function Task_ShowPokemonJumpRecords(taskId: any): any {
 /** static void PrintRecordsText(u16 windowId, int width) */
 export function PrintRecordsText(windowId: any, width: any): any {
   let i, x;
-      const recordNums: any[] = [];
+      let recordNums: any = [];
       let records: any = GetPokeJumpRecords();
       recordNums[0] = records.jumpsInRow;
       recordNums[1] = records.bestJumpScore;

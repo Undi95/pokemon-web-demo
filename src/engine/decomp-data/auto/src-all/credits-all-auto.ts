@@ -66,7 +66,7 @@ export function FreeCreditsBgsAndWindows(): any {
 /** static void PrintCreditsText(const u8 *string, u8 y, bool8 isTitle) */
 export function PrintCreditsText(string: any, y: any, isTitle: any): any {
   let x: any = null;
-      const color: any[] = [];
+      let color: any = [];
 
       color[0] = TEXT_COLOR_TRANSPARENT;
 

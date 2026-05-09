@@ -42,7 +42,7 @@ export function PrintNumPlayersWaitingForMsg(windowId: any, capacityCode: any, s
 
 /** static void PrintPlayerNameAndIdOnWindow(u8 windowId) */
 export function PrintPlayerNameAndIdOnWindow(windowId: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let txtPtr: any = null;
 
       PrintUnionRoomText(windowId, FONT_NORMAL, gSaveBlock2Ptr.playerName, 0, 1, UR_COLOR_DEFAULT);
@@ -1081,7 +1081,7 @@ export function IsPartnerActivityAcceptable(activity: any, linkGroup: any): any 
 
           while (((bytes) != 0xFF))
           {
-              if (bytes == activity)
+              if ((bytes) == activity)
                   return TRUE;
               bytes++;
           }
@@ -3007,7 +3007,7 @@ export function InitUnionRoom(): any {
 /** static void Task_InitUnionRoom(u8 taskId) */
 export function Task_InitUnionRoom(taskId: any): any {
   let i: any = null;
-      const text: any[] = [];
+      let text: any = [];
       let data: any = sWirelessLinkMain.uRoom;
 
       switch (data.state)
@@ -3665,7 +3665,7 @@ export function TryAddIncomingPlayerToList(players: any, incomingPlayer: any, ma
 /** static void PrintGroupMemberOnWindow(u8 windowId, u8 x, u8 y, struct RfuPlayer *player, u8 colorIdx, u8 id) */
 export function PrintGroupMemberOnWindow(windowId: any, x: any, y: any, player: any, colorIdx: any, id: any): any {
   let activity: any = null;
-      const trainerId: any[] = [];
+      let trainerId: any = [];
 
       ConvertIntToDecimalStringN(gStringVar4, id + 1, STR_CONV_MODE_LEADING_ZEROS, 2);
       StringAppend(gStringVar4, sText_Colon);
@@ -3685,7 +3685,7 @@ export function PrintGroupMemberOnWindow(windowId: any, x: any, y: any, player: 
 
 /** static void PrintGroupCandidateOnWindow(u8 windowId, u8 x, u8 y, struct RfuPlayer *player, u8 colorIdx, u8 id) */
 export function PrintGroupCandidateOnWindow(windowId: any, x: any, y: any, player: any, colorIdx: any, id: any): any {
-  const trainerId: any[] = [];
+  let trainerId: any = [];
 
       if (player.groupScheduledAnim == UNION_ROOM_SPAWN_IN)
       {
@@ -3733,7 +3733,7 @@ export function GetResponseIdx_InviteToURoomActivity(activity: any): any {
 
 /** static u32 ConvPartnerUnameAndGetWhetherMetAlready(struct RfuPlayer *player) */
 export function ConvPartnerUnameAndGetWhetherMetAlready(player: any): any {
-  const name: any[] = [];
+  let name: any = [];
       CopyAndTranslatePlayerName(name, player);
       return PlayerHasMetTrainerBefore(ReadAsU16(player.rfu.data.compatibility.playerTrainerId), name);
 }
@@ -3790,7 +3790,7 @@ export function UnionRoomGetPlayerInteractionResponse(list: any, overrideGender:
 
 /** static void TradeBoardPrintItemInfo(u8 windowId, u8 y, struct RfuGameData *data, const u8 *playerName, u8 colorIdx) */
 export function TradeBoardPrintItemInfo(windowId: any, y: any, data: any, playerName: any, colorIdx: any): any {
-  const levelStr: any[] = [];
+  let levelStr: any = [];
       let species: any = data.tradeSpecies;
       let type: any = data.tradeType;
       let level: any = data.tradeLevel;
@@ -3814,7 +3814,7 @@ export function TradeBoardListMenuItemPrintFunc(windowId: any, itemId: any, y: a
   let leader: any = sWirelessLinkMain.leader;
       let gameData: any = null;
       let i, j;
-      const playerName: any[] = [];  
+      let playerName: any = [];  
 
       if (itemId == LIST_HEADER && y == sTradeBoardListMenuTemplate.upText_Y)
       {

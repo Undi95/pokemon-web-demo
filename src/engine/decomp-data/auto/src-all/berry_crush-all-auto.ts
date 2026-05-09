@@ -1143,7 +1143,7 @@ export function RunOrScheduleCommand(cmdId: any, mode: any, args: any): any {
 /** static u32 Cmd_BeginNormalPaletteFade(struct BerryCrushGame *game, u8 *args) */
 export function Cmd_BeginNormalPaletteFade(game: any, args: any): any {
   let color: any = null;
-      const selectedPals: any[] = [];
+      let selectedPals: any = [];
 
       selectedPals[0] = args[0];
       selectedPals[1] = args[1];

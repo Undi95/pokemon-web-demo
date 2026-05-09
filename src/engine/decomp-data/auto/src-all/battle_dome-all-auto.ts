@@ -174,7 +174,7 @@ export function SetDomeData(): any {
 export function InitDomeTrainers(): any {
   let i, j, k;
       let monLevel: any = null;
-      const species: any[] = [];
+      let species: any = [];
       let monTypesBits, monTypesCount;
       let trainerId: any = null;
       let monId: any = null;
@@ -384,7 +384,7 @@ export function CalcDomeMonStats(species: any, level: any, ivs: any, evBits: any
   let i, count;
       let bits: any = null;
       let resultingEvs: any = null;
-      const evs: any[] = [];
+      let evs: any = [];
 
       count = 0, bits = evBits;
       for (i = 0; i < NUM_STATS; bits >>= 1, i++)
@@ -536,7 +536,7 @@ export function GetDomeTrainerSelectedMons(tournamentTrainerId: any): any {
 /** static int SelectOpponentMons_Good(u16 tournamentTrainerId, bool8 allowRandom) */
 export function SelectOpponentMons_Good(tournamentTrainerId: any, allowRandom: any): any {
   let i, moveIndex, playerMonId;
-      const partyMovePoints: any[] = [];
+      let partyMovePoints: any = [];
 
       for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
       {
@@ -564,7 +564,7 @@ export function SelectOpponentMons_Good(tournamentTrainerId: any, allowRandom: a
 /** static int SelectOpponentMons_Bad(u16 tournamentTrainerId, bool8 allowRandom) */
 export function SelectOpponentMons_Bad(tournamentTrainerId: any, allowRandom: any): any {
   let i, moveIndex, playerMonId;
-      const partyMovePoints: any[] = [];
+      let partyMovePoints: any = [];
 
       for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
       {
@@ -593,7 +593,7 @@ export function SelectOpponentMons_Bad(tournamentTrainerId: any, allowRandom: an
 export function SelectOpponentMonsFromParty(partyMovePoints: any, allowRandom: any): any {
   let i, j;
       let selectedMonBits: any = 0;
-      const partyPositions: any[] = [];
+      let partyPositions: any = [];
 
       for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
           partyPositions[i] = i;
@@ -2580,9 +2580,9 @@ export function BufferDomeWinString(matchNum: any, tournamentIds: any): any {
 /** static void DisplayMatchInfoOnCard(u8 flags, u8 matchNo) */
 export function DisplayMatchInfoOnCard(flags: any, matchNo: any): any {
   let textPrinter: any = null;
-      const tournamentIds: any[] = [];
-      const trainerIds: any[] = [];
-      const lost: any[] = [];
+      let tournamentIds: any = [];
+      let trainerIds: any = [];
+      let lost: any = [];
       let i: any = null;
       let winStringId: any = 0;
       let arrId: any = 0;
@@ -2990,8 +2990,8 @@ export function ResolveDomeRoundWinners(): any {
 /** static u16 GetWinningMove(int winnerTournamentId, int loserTournamentId, u8 roundId) */
 export function GetWinningMove(winnerTournamentId: any, loserTournamentId: any, roundId: any): any {
   let i, j, k;
-      const moveScores: any[] = [];
-      const moves: any[] = [];
+      let moveScores: any = [];
+      let moves: any = [];
       let bestScore: any = 0;
       let bestId: any = 0;
       let movePower: any = 0;
@@ -3598,7 +3598,7 @@ export function BufferLastDomeWinnerName(): any {
 export function InitRandomTourneyTreeResults(): any {
   let i, j, k;
       let monLevel: any = null;
-      const species: any[] = [];
+      let species: any = [];
       let monTypesBits: any = null;
       let trainerId: any = null;
       let monId: any = null;
@@ -3756,7 +3756,7 @@ export function TrainerIdToDomeTournamentId(trainerId: any): any {
 
 /** static u8 GetOpposingNPCTournamentIdByRound(u8 tournamentId, u8 round) */
 export function GetOpposingNPCTournamentIdByRound(tournamentId: any, round: any): any {
-  const tournamentIds: any[] = [];
+  let tournamentIds: any = [];
       BufferDomeWinString(sTrainerAndRoundToLastMatchCardNum[sTournamentIdToPairedTrainerIds[tournamentId] / 2][round] - 16, tournamentIds);
       if (tournamentId == tournamentIds[0])
           return tournamentIds[1];

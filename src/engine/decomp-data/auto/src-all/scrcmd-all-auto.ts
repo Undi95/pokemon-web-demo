@@ -245,7 +245,7 @@ export function ScrCmd_loadbytefromptr(ctx: any): any {
 export function ScrCmd_setptr(ctx: any): any {
   let value: any = ScriptReadByte(ctx);
 
-      /* transpiler bug : ScriptReadWord(ctx) = value; */
+      /* transpiler bug : ScriptReadWord(ctx) = value; */ ;
       return FALSE;
 }
 
@@ -261,7 +261,7 @@ export function ScrCmd_loadbyte(ctx: any): any {
 export function ScrCmd_setptrbyte(ctx: any): any {
   let index: any = ScriptReadByte(ctx);
 
-      /* transpiler bug : ScriptReadWord(ctx) = ctx.data[index]; */
+      /* transpiler bug : ScriptReadWord(ctx) = ctx.data[index]; */ ;
       return FALSE;
 }
 

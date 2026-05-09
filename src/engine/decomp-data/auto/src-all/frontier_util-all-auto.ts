@@ -197,7 +197,7 @@ export function PrintAligned(str: any, y: any): any {
 /** static void PrintHyphens(s32 y) */
 export function PrintHyphens(y: any): any {
   let i: any = null;
-      const text: any[] = [];
+      let text: any = [];
 
       for (i = 0; i < ARRAY_COUNT(text) - 1; i++)
           text[i] = CHAR_HYPHEN;
@@ -756,7 +756,7 @@ export function ShowLinkContestResultsWindow(): any {
 
 /** static void CheckPutFrontierTVShowOnAir(void) */
 export function CheckPutFrontierTVShowOnAir(): any {
-  const name: any[] = [];
+  let name: any = [];
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
       let facility: any = VarGet(VAR_FRONTIER_FACILITY);
       let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
@@ -1233,8 +1233,8 @@ export function AppendIfValid(species: any, heldItem: any, hp: any, lvlMode: any
 
 /** static void CheckPartyIneligibility(void) */
 export function CheckPartyIneligibility(): any {
-  const speciesArray: any[] = [];
-      const itemArray: any[] = [];
+  let speciesArray: any = [];
+      let itemArray: any = [];
       let monId: any = 0;
       let toChoose: any = 0;
       let count: any = 0;
@@ -1442,7 +1442,7 @@ export function SetFacilityBrainObjectEvent(): any {
 
 /** static void Print1PRecord(s32 position, s32 x, s32 y, struct RankingHall1P *hallRecord, s32 hallFacilityId) */
 export function Print1PRecord(position: any, x: any, y: any, hallRecord: any, hallFacilityId: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let winStreak: any = null;
 
       AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_123Dot[position], x * 8, (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);
@@ -1462,7 +1462,7 @@ export function Print1PRecord(position: any, x: any, y: any, hallRecord: any, ha
 
 /** static void Print2PRecord(s32 position, s32 x, s32 y, struct RankingHall2P *hallRecord) */
 export function Print2PRecord(position: any, x: any, y: any, hallRecord: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let winStreak: any = null;
 
       AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_123Dot[position], x * 8, (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);

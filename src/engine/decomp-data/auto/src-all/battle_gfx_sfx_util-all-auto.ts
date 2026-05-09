@@ -730,7 +730,7 @@ export function BattleInitAllSprites(state1: any, battler: any): any {
           }
           break;
       case 5:
-          if (GetBattlerSidebattler == B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) == B_SIDE_PLAYER)
           {
               if (!(gBattleTypeFlags & BATTLE_TYPE_SAFARI))
                   UpdateHealthboxAttribute(gHealthboxSpriteIds[battler],gPlayerParty[gBattlerPartyIndexes[battler]], HEALTHBOX_ALL);

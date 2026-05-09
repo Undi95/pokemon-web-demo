@@ -776,7 +776,7 @@ export function AppendTextToMessage(): any {
       let charsStr: any = null;
       let strLength: any = null;
       let str: any = null;
-      const buffer: any[] = [];
+      let buffer: any = [];
 
       if (sChat.currentPage != UNION_ROOM_KB_PAGE_REGISTER)
       {
@@ -1915,8 +1915,8 @@ export function FillTextEntryWindow(x: any, width: any, fillValue: any): any {
 
 /** static void DrawTextEntryMessage(u16 x, u8 *str, u8 bgColor, u8 fgColor, u8 shadowColor) */
 export function DrawTextEntryMessage(x: any, str: any, bgColor: any, fgColor: any, shadowColor: any): any {
-  const color: any[] = [];
-      const strBuffer: any[] = [];
+  let color: any = [];
+      let strBuffer: any = [];
       if (bgColor != TEXT_COLOR_TRANSPARENT)
           FillTextEntryWindow(x, GetTextEntryCursorPosition() - x, bgColor);
 
@@ -1936,8 +1936,8 @@ export function PrintCurrentKeyboardPage(): any {
       let i: any = null;
       let left: any = null;
       let top: any = null;
-      const color: any[] = [];
-      const str: any[] = [];
+      let color: any = [];
+      let str: any = [];
       let str2: any = null;
 
       FillWindowPixelBuffer(WIN_KEYBOARD, PIXEL_FILL(15));
@@ -2048,7 +2048,7 @@ export function HideKeyboardSwapMenu(): any {
 
 /** static void PrintChatMessage(u16 row, u8 *str, u8 colorIdx) */
 export function PrintChatMessage(row: any, str: any, colorIdx: any): any {
-  const color: any[] = [];
+  let color: any = [];
       color[0] = TEXT_COLOR_WHITE;
       color[1] = colorIdx * 2 + 2;
       color[2] = colorIdx * 2 + 3;
@@ -2149,7 +2149,7 @@ export function DrawKeyboardWindow(): any {
 /** static void LoadTextEntryWindow(void) */
 export function LoadTextEntryWindow(): any {
   let i: any = null;
-      const unused: any[] = [];
+      let unused: any = [];
       unused[0] = 0;
       unused[1] = 0xFF;
 

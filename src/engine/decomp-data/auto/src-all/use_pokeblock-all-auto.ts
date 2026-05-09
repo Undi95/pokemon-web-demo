@@ -455,7 +455,7 @@ export function CloseUsePokeblockMenu(): any {
 
 /** static void AskUsePokeblock(void) */
 export function AskUsePokeblock(): any {
-  const stringBuffer: any[] = [];
+  let stringBuffer: any = [];
 
       GetMonData(gPlayerParty[GetPartyIdFromSelectionId(sMenu.info.curSelection)], MON_DATA_NICKNAME, stringBuffer);
       StringGet_Nickname(stringBuffer);

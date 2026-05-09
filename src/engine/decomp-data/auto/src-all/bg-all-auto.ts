@@ -926,7 +926,7 @@ export function CopyRectToBgTilemapBufferRect(bg: any, src: any, srcX: any, srcY
               {
                   for (j = destX; j < (destX + rectWidth); j++)
                   {
-                      /* transpiler bug LHS : (sGpuBgConfigs2[bg].tilemap + ((_var * i) + j)) = (srcPtr) + tileOffset; */
+                      /* transpiler bug LHS : (sGpuBgConfigs2[bg].tilemap + ((_var * i) + j)) = (srcPtr) + tileOffset; */ ;
                       srcPtr++;
                   }
                   srcPtr += (srcWidth - rectWidth);

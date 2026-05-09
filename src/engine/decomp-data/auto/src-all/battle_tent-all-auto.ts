@@ -205,9 +205,9 @@ export function GenerateInitialRentalMons(): any {
       let firstMonId: any = null;
       let monSetId: any = null;
       let currSpecies: any = null;
-      const species: any[] = [];
-      const monIds: any[] = [];
-      const heldItems: any[] = [];
+      let species: any = [];
+      let monIds: any = [];
+      let heldItems: any = [];
 
       firstMonId = 0;
       gFacilityTrainers = gSlateportBattleTentTrainers;
@@ -267,8 +267,8 @@ export function GenerateOpponentMons(): any {
   let trainerId: any = null;
       let i, j, k;
       let monSet: any = null;
-      const species: any[] = [];
-      const heldItems: any[] = [];
+      let species: any = [];
+      let heldItems: any = [];
       let numMons: any = 0;
 
       gFacilityTrainers = gSlateportBattleTentTrainers;

@@ -1005,7 +1005,7 @@ export function DoSpinExitWarp(): any {
 /** static void LoadOrbEffectPalette(bool8 blueOrb) */
 export function LoadOrbEffectPalette(blueOrb: any): any {
   let i: any = null;
-      const color: any[] = [];
+      let color: any = [];
 
       if (!blueOrb)
           color[0] = RGB_RED;

@@ -252,7 +252,7 @@ export function AnimMissileArc_Step(sprite: any): any {
       }
       else
       {
-          const tempData: any[] = [];
+          let tempData: any = [];
           let data: any = sprite.data;
           let x1: any = sprite.x;
           let x2: any = sprite.x2;

@@ -268,7 +268,7 @@ export function WallyBufferExecCompleted(): any {
 
 /** static void WallyHandleGetMonData(void) */
 export function WallyHandleGetMonData(): any {
-  const monData: any[] = [];  
+  let monData: any = [];  
       let size: any = 0;
       let monToCheck: any = null;
       let i: any = null;
@@ -295,7 +295,7 @@ export function WallyHandleGetMonData(): any {
 export function CopyWallyMonData(monId: any, dst: any): any {
   let battleMon: any = null;
       let moveData: any = null;
-      const nickname: any[] = [];
+      let nickname: any = [];
       let src: any = null;
       let data16: any = null;
       let data32: any = null;

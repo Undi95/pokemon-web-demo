@@ -472,7 +472,7 @@ export function SaveLinkTrainerNames(): any {
           let i: any = null;
           let j: any = null;
           let nextSpace: any = null;
-          const connectedTrainerRecordIndices: any[] = [];
+          let connectedTrainerRecordIndices: any = [];
           let newRecords: any = AllocZeroed(sizeof(gSaveBlock1Ptr.trainerNameRecords));
 
            

@@ -23,7 +23,7 @@ export function DummiedOutFunction(unused1: any, unused2: any, unused3: any): an
 /** static void Debug_DrawNumber(s16 number, u16 *dest, bool8 unk) */
 export function Debug_DrawNumber(number: any, dest: any, unk: any): any {
   let i, j;
-      const buff: any[] = [];
+      let buff: any = [];
 
       for (i = 0; i < 4; i++)
           buff[i] = 0;
@@ -318,7 +318,7 @@ export function InitBattlerHealthboxCoords(battler: any): any {
 export function UpdateLvlInHealthbox(healthboxSpriteId: any, lvl: any): any {
   let windowId, spriteTileNum;
       let windowTileData: any = null;
-      const text: any[] = [];
+      let text: any = [];
       let xPos: any = null;
       let objVram: any = null;
 
@@ -352,7 +352,7 @@ export function UpdateLvlInHealthbox(healthboxSpriteId: any, lvl: any): any {
 export function UpdateHpTextInHealthbox(healthboxSpriteId: any, value: any, maxOrCurrent: any): any {
   let windowId, spriteTileNum;
       let windowTileData: any = null;
-      const text: any[] = [];
+      let text: any = [];
       let objVram: any = null;
 
       if (GetBattlerSide(gSprites[healthboxSpriteId].hMain_Battler) == B_SIDE_PLAYER && !IsDoubleBattle())
@@ -429,7 +429,7 @@ export function UpdateHpTextInHealthbox(healthboxSpriteId: any, value: any, maxO
 export function UpdateHpTextInHealthboxInDoubles(healthboxSpriteId: any, value: any, maxOrCurrent: any): any {
   let windowId, spriteTileNum;
       let windowTileData: any = null;
-      const text: any[] = [];
+      let text: any = [];
       let objVram: any = null;
 
       if (GetBattlerSide(gSprites[healthboxSpriteId].hMain_Battler) == B_SIDE_PLAYER)
@@ -522,7 +522,7 @@ export function UpdateHpTextInHealthboxInDoubles(healthboxSpriteId: any, value: 
 
 /** static void PrintSafariMonInfo(u8 healthboxSpriteId, struct Pokemon *mon) */
 export function PrintSafariMonInfo(healthboxSpriteId: any, mon: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let j, spriteTileNum;
       let barFontGfx: any = null;
       let i, _var, nature, healthBarSpriteId;
@@ -658,7 +658,7 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
       let bar_X, bar_Y, bar_pos2_X, bar_data0;
       let i, j, _var;
       let summaryBarSpriteId: any = null;
-      const ballIconSpritesIds: any[] = [];
+      let ballIconSpritesIds: any = [];
       let taskId: any = null;
 
       if (!skipPlayer || GetBattlerPosition(battler) != B_POSITION_OPPONENT_RIGHT)
@@ -874,7 +874,7 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
 
 /** void Task_HidePartyStatusSummary(u8 taskId) */
 export function Task_HidePartyStatusSummary(taskId: any): any {
-  const ballIconSpriteIds: any[] = [];
+  let ballIconSpriteIds: any = [];
       let isBattleStart: any = null;
       let summaryBarSpriteId: any = null;
       let battler: any = null;
@@ -943,7 +943,7 @@ export function Task_HidePartyStatusSummary_BattleStart_1(taskId: any): any {
 
 /** static void Task_HidePartyStatusSummary_BattleStart_2(u8 taskId) */
 export function Task_HidePartyStatusSummary_BattleStart_2(taskId: any): any {
-  const ballIconSpriteIds: any[] = [];
+  let ballIconSpriteIds: any = [];
       let i: any = null;
 
       let battler: any = gTasks[taskId].tBattler;
@@ -982,7 +982,7 @@ export function Task_HidePartyStatusSummary_BattleStart_2(taskId: any): any {
 
 /** static void Task_HidePartyStatusSummary_DuringBattle(u8 taskId) */
 export function Task_HidePartyStatusSummary_DuringBattle(taskId: any): any {
-  const ballIconSpriteIds: any[] = [];
+  let ballIconSpriteIds: any = [];
       let i: any = null;
       let battler: any = gTasks[taskId].tBattler;
 
@@ -1109,7 +1109,7 @@ export function SpriteCB_StatusSummaryBalls_OnSwitchout(sprite: any): any {
 
 /** static void UpdateNickInHealthbox(u8 healthboxSpriteId, struct Pokemon *mon) */
 export function UpdateNickInHealthbox(healthboxSpriteId: any, mon: any): any {
-  const nickname: any[] = [];
+  let nickname: any = [];
       let ptr: any = null;
       let windowId, spriteTileNum;
       let windowTileData: any = null;
@@ -1343,7 +1343,7 @@ export function UpdateSafariBallsTextOnHealthbox(healthboxSpriteId: any): any {
 
 /** static void UpdateLeftNoOfBallsTextOnHealthbox(u8 healthboxSpriteId) */
 export function UpdateLeftNoOfBallsTextOnHealthbox(healthboxSpriteId: any): any {
-  const text: any[] = [];
+  let text: any = [];
       let txtPtr: any = null;
       let windowId, spriteTileNum;
       let windowTileData: any = null;
@@ -1467,7 +1467,7 @@ export function MoveBattleBar(battler: any, healthboxSpriteId: any, whichBar: an
 
 /** static void MoveBattleBarGraphically(u8 battler, u8 whichBar) */
 export function MoveBattleBarGraphically(battler: any, whichBar: any): any {
-  const array: any[] = [];
+  let array: any = [];
       let filledPixelsCount, level;
       let barElementId: any = null;
       let i: any = null;
@@ -1651,8 +1651,8 @@ export function CalcBarFilledPixels(maxValue: any, oldValue: any, receivedValue:
 
 /** static void Debug_TestHealthBar_Helper(struct TestingBar *barInfo, s32 *currValue, u16 *dest) */
 export function Debug_TestHealthBar_Helper(barInfo: any, currValue: any, dest: any): any {
-  const pixels: any[] = [];
-      const src: any[] = [];
+  let pixels: any = [];
+      let src: any = [];
       let i: any = null;
 
       CalcBarFilledPixels(barInfo.maxValue, barInfo.oldValue,

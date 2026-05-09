@@ -1116,7 +1116,7 @@ export function DrawNormalTextEntryBox(): any {
 
 /** static void DrawMonTextEntryBox(void) */
 export function DrawMonTextEntryBox(): any {
-  const buffer: any[] = [];
+  let buffer: any = [];
 
       StringCopy(gStringVar1, gSpeciesNames[sNamingScreen.monSpecies]);
       StringExpandPlaceholders(buffer, sNamingScreen.template.title);
@@ -1137,7 +1137,7 @@ export function TryDrawGenderIcon(): any {
 
 /** static void DrawGenderIcon(void) */
 export function DrawGenderIcon(): any {
-  const text: any[] = [];
+  let text: any = [];
       let isFemale: any = FALSE;
 
       StringCopy(text, gText_MaleSymbol);
@@ -1268,7 +1268,7 @@ export function DrawBgTilemap(bg: any, src: any): any {
 /** static void DrawTextEntry(void) */
 export function DrawTextEntry(): any {
   let i: any = null;
-      const temp: any[] = [];
+      let temp: any = [];
       let extraWidth: any = null;
       let maxChars: any = sNamingScreen.template.maxChars;
       let x: any = sNamingScreen.inputCharBaseXPos - 0x40;

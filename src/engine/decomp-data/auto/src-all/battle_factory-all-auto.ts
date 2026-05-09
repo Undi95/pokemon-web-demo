@@ -118,8 +118,8 @@ export function SetPerformedRentalSwap(): any {
 /** static void GenerateOpponentMons(void) */
 export function GenerateOpponentMons(): any {
   let i, j, k;
-      const species: any[] = [];
-      const heldItems: any[] = [];
+      let species: any = [];
+      let heldItems: any = [];
       let firstMonId: any = 0;
       let trainerId: any = 0;
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
@@ -333,9 +333,9 @@ export function GenerateInitialRentalMons(): any {
       let rentalRank: any = null;
       let monId: any = null;
       let currSpecies: any = null;
-      const species: any[] = [];
-      const monIds: any[] = [];
-      const heldItems: any[] = [];
+      let species: any = [];
+      let monIds: any = [];
+      let heldItems: any = [];
 
       gFacilityTrainers = gBattleFrontierTrainers;
       for (i = 0; i < PARTY_SIZE; i++)
@@ -418,8 +418,8 @@ export function GenerateInitialRentalMons(): any {
 /** static void GetOpponentMostCommonMonType(void) */
 export function GetOpponentMostCommonMonType(): any {
   let i: any = null;
-      const typeCounts: any[] = [];
-      const mostCommonTypes: any[] = [];
+      let typeCounts: any = [];
+      let mostCommonTypes: any = [];
 
       gFacilityTrainerMons = gBattleFrontierMons;
 
@@ -468,7 +468,7 @@ export function GetOpponentMostCommonMonType(): any {
 /** static void GetOpponentBattleStyle(void) */
 export function GetOpponentBattleStyle(): any {
   let i, j, count;
-      const stylePoints: any[] = [];
+      let stylePoints: any = [];
 
       count = 0;
       gFacilityTrainerMons = gBattleFrontierMons;
@@ -553,8 +553,8 @@ export function GetFactoryMonFixedIV(challengeNum: any, isLastBattle: any): any 
 /** void FillFactoryBrainParty(void) */
 export function FillFactoryBrainParty(): any {
   let i, j, k;
-      const species: any[] = [];
-      const heldItems: any[] = [];
+      let species: any = [];
+      let heldItems: any = [];
       let friendship: any = null;
       let monLevel: any = null;
       let fixedIV: any = null;

@@ -66,7 +66,7 @@ export function MailboxMenu_RemoveWindow(windowIdx: any): any {
 
 /** static void MailboxMenu_ItemPrintFunc(u8 windowId, u32 itemId, u8 y) */
 export function MailboxMenu_ItemPrintFunc(windowId: any, itemId: any, y: any): any {
-  const buffer: any[] = [];
+  let buffer: any = [];
       let length: any = null;
 
       if (itemId == LIST_CANCEL)
@@ -552,7 +552,7 @@ export function LoadMoveRelearnerMovesList(items: any, numChoices: any): any {
 export function MoveRelearnerLoadBattleMoveDescription(chosenMove: any): any {
   let x: any = null;
       let move: any = null;
-      const buffer: any[] = [];
+      let buffer: any = [];
       let str: any = null;
 
       FillWindowPixelBuffer(RELEARNERWIN_DESC_BATTLE, PIXEL_FILL(1));
@@ -1055,9 +1055,9 @@ export function ShowAllConditionSparkles(sprite: any): any {
 /** void DrawLevelUpWindowPg1(u16 windowId, u16 *statsBefore, u16 *statsAfter, u8 bgClr, u8 fgClr, u8 shadowClr) */
 export function DrawLevelUpWindowPg1(windowId: any, statsBefore: any, statsAfter: any, bgClr: any, fgClr: any, shadowClr: any): any {
   let i, x;
-      const statsDiff: any[] = [];
-      const text: any[] = [];
-      const color: any[] = [];
+      let statsDiff: any = [];
+      let text: any = [];
+      let color: any = [];
 
       FillWindowPixelBuffer(windowId, PIXEL_FILL(bgClr));
 
@@ -1110,9 +1110,9 @@ export function DrawLevelUpWindowPg1(windowId: any, statsBefore: any, statsAfter
 /** void DrawLevelUpWindowPg2(u16 windowId, u16 *currStats, u8 bgClr, u8 fgClr, u8 shadowClr) */
 export function DrawLevelUpWindowPg2(windowId: any, currStats: any, bgClr: any, fgClr: any, shadowClr: any): any {
   let i, numDigits, x;
-      const stats: any[] = [];
-      const text: any[] = [];
-      const color: any[] = [];
+      let stats: any = [];
+      let text: any = [];
+      let color: any = [];
 
       FillWindowPixelBuffer(windowId, PIXEL_FILL(bgClr));
 

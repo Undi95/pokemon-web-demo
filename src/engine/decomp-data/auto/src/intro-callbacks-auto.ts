@@ -62,6 +62,14 @@ import {
 import { CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroFlygonSprite, CreateIntroMaySprite, CycleSceneryPalette, DmaClear16, FreeAllSpritePalettes, INTRO3_RAW_PTR, LZ77UnCompVram, LZDecompressVram, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheet, LoadCompressedSpriteSheetUsingHeap, LoadIntroPart2Graphics, LoadPalette, LoadSpritePalette, LoadSpritePalettes, MALE, MUS_INTRO, MUS_INTRO_BATTLE, PanFadeAndZoomScreen, PlayCryInternal, PlaySE, SE_INTRO_BLAST, ScanlineEffect_InitWave, SetIntroPart2BgCnt, VRAM, getRuntime as _getRuntime, gBattleAnimPaletteTable, gBattleAnimPicTable, gIntro3Bg_Pal, gIntroCloudsSun_Tilemap, gIntroCloudsLeft_Tilemap, gIntroCloudsRight_Tilemap, gIntroClouds_Gfx, gIntroGameFreakTextFade_Pal, gIntroGroudonBg_Tilemap, gIntroGroudon_Gfx, gIntroGroudon_Tilemap, gIntroKyogreBg_Tilemap, gIntroKyogre_Gfx, gIntroKyogre_Tilemap, gIntroLegendBg_Gfx, gIntroRayquaza_Tilemap, gIntroRayquazaClouds_Tilemap, gIntroRayquaza_Gfx, gIntroRayquazaClouds_Gfx, gPlttBufferUnfaded, gSaveBlock2Ptr, gScanlineEffect, gTitleScreenAlphaBlend, BlendPalette, UpdatePaletteFade, m4aSongNumStart, sAnims_PlayerBicycle, sGameFreakLetterData, sGameFreakLetterStartDelays, sGameFreakLettersMoveSpeed, sGroudonRockData, sIntro1Bg0_Tilemap, sIntro1Bg1_Tilemap, sIntro1Bg2_Tilemap, sIntro1Bg3_Tilemap, sIntro1Bg_Gfx, sIntro1Bg_Pal, sIntroPokeball_Gfx, sIntroPokeball_Pal, sIntroPokeball_Tilemap, sKyogreBubbleData, sSparkleCoords, sSpritePalette_Bubbles, sSpritePalette_Lightning, sSpritePalette_RayquazaOrb, sSpritePalette_Sparkle, sSpritePalettes_Intro1, sSpritePalettes_RunningPokemon, sSpriteSheet_Bubbles, sSpriteSheet_FlygonSilhouette, sSpriteSheet_Lightning, sSpriteSheet_RayquazaOrb, sSpriteSheet_RunningPokemon, sSpriteSheet_Sparkle, sSpriteSheet_WaterDropsAndLogo } from '../../../decomp-globals';
 import { gSpriteSheet_IntroBrendan, gSpriteSheet_IntroMay, gSpriteSheet_IntroBicycle, gSpriteSheet_IntroFlygon, gSpritePalettes_IntroPlayerFlygon } from './intro_credits_graphics-data';
 import { CB2_InitTitleScreen } from './title_screen-callbacks-auto';
+
+// EWRAM_DATA vars locales au scope module (1:1 décomp .c + shadow ES module
+// const binding pour permettre re-assignment). Auto-injecté par post-transpile-patches.mjs.
+let sIntroCharacterGender = 0;
+let sFlygonYOffset = 0;
+let gIntroCredits_MovingSceneryVBase = 0;
+let gIntroCredits_MovingSceneryVOffset = 0;
+let gIntroCredits_MovingSceneryState = 0;
 // Constants resolved from decomp #defines / enums / TS data modules :
 const ANIM_TAG_ROCKS = 10058;
 const BGCNT_WRAP = 8192;

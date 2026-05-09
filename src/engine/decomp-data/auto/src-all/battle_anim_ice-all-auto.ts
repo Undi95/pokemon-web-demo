@@ -132,7 +132,7 @@ export function AnimFlickerIceEffectParticle(sprite: any): any {
 /** static void AnimSwirlingSnowball(struct Sprite *sprite) */
 export function AnimSwirlingSnowball(sprite: any): any {
   let i: any = null;
-      const tempDataHolder: any[] = [];
+      let tempDataHolder: any = [];
 
       InitSpritePosToAnimAttacker(sprite, TRUE);
 
@@ -244,7 +244,7 @@ export function AnimSwirlingSnowball_End(sprite: any): any {
 /** static void AnimMoveParticleBeyondTarget(struct Sprite *sprite) */
 export function AnimMoveParticleBeyondTarget(sprite: any): any {
   let i: any = null;
-      const tempDataHolder: any[] = [];
+      let tempDataHolder: any = [];
 
       InitSpritePosToAnimAttacker(sprite, TRUE);
 

@@ -315,8 +315,8 @@ export function Task_ReadyStartLinkContest(taskId: any): any {
 
 /** static bool8 SetupContestGraphics(u8 *stateVar) */
 export function SetupContestGraphics(stateVar: any): any {
-  const tempPalette1: any[] = [];
-      const tempPalette2: any[] = [];
+  let tempPalette1: any = [];
+      let tempPalette2: any = [];
 
       switch (stateVar)
       {
@@ -531,7 +531,7 @@ export function Task_TryShowMoveSelectScreen(taskId: any): any {
 /** static void Task_ShowMoveSelectScreen(u8 taskId) */
 export function Task_ShowMoveSelectScreen(taskId: any): any {
   let i: any = null;
-      const moveName: any[] = [];
+      let moveName: any = [];
 
       gBattle_BG0_Y = DISPLAY_HEIGHT;
       gBattle_BG2_Y = DISPLAY_HEIGHT;
@@ -1786,7 +1786,7 @@ export function IsPlayerLinkLeader(): any {
 
 /** void CreateContestMonFromParty(u8 partyIndex) */
 export function CreateContestMonFromParty(partyIndex: any): any {
-  const name: any[] = [];
+  let name: any = [];
       let heldItem: any = null;
       let cool: any = null;
       let beauty: any = null;
@@ -1863,7 +1863,7 @@ export function CreateContestMonFromParty(partyIndex: any): any {
 export function SetContestants(contestType: any, rank: any): any {
   let i: any = null;
       let opponentsCount: any = 0;
-      const opponents: any[] = [];
+      let opponents: any = [];
       let allowPostgameContestants: any = FALSE;
       let filter: any = null;
 
@@ -1921,7 +1921,7 @@ export function SetContestants(contestType: any, rank: any): any {
 export function SetLinkAIContestants(contestType: any, rank: any, isPostgame: any): any {
   let i, j;
       let opponentsCount: any = 0;
-      const opponents: any[] = [];
+      let opponents: any = [];
 
       if (gNumLinkContestPlayers == CONTESTANT_COUNT)
           return;
@@ -2026,7 +2026,7 @@ export function PrintContestantTrainerName(contestant: any): any {
 
 /** static void PrintContestantTrainerNameWithColor(u8 contestant, u8 color) */
 export function PrintContestantTrainerNameWithColor(contestant: any, color: any): any {
-  const buffer: any[] = [];
+  let buffer: any = [];
       let offset: any = null;
 
       StringCopy(buffer, gText_Slash);
@@ -2404,7 +2404,7 @@ export function GetAllChosenMoves(): any {
 export function RankContestants(): any {
   let i: any = null;
       let j: any = null;
-      const arr: any[] = [];
+      let arr: any = [];
 
       for (i = 0; i < CONTESTANT_COUNT; i++)
       {
@@ -3189,7 +3189,7 @@ export function ContestDebugDoPrint(): any {
   let i: any = null;
       let value: any = null;
       let txtPtr: any = null;
-      const text: any[] = [];
+      let text: any = [];
 
       if (!gEnableContestDebugging)
           return;
@@ -3239,7 +3239,7 @@ export function ContestDebugDoPrint(): any {
 
 /** void SortContestants(bool8 useRanking) */
 export function SortContestants(useRanking: any): any {
-  const scratch: any[] = [];
+  let scratch: any = [];
       const randomOrdering: any = [0];
       let i: any = null;
       let v3: any = null;
@@ -3536,8 +3536,8 @@ export function ApplyNextTurnOrder(): any {
   let nextContestant: any = 0;
       let i: any = null;
       let j: any = null;
-      const newTurnOrder: any[] = [];
-      const isContestantOrdered: any[] = [];
+      let newTurnOrder: any = [];
+      let isContestantOrdered: any = [];
 
        
       for (i = 0; i < CONTESTANT_COUNT; i++)
@@ -4584,9 +4584,9 @@ export function CalculateContestLiveUpdateData(): any {
   let loser: any = null;
       let i, j;
       let notLastInRound1, notLastInRound2;
-      const appealMoves: any[] = [];
-      const numMoveUses: any[] = [];
-      const moveCandidates: any[] = [];
+      let appealMoves: any = [];
+      let numMoveUses: any = [];
+      let moveCandidates: any = [];
       let winner: any = null;
       let mostUses: any = null;
       let numMoveCandidates: any = null;
@@ -4703,7 +4703,7 @@ export function SetConestLiveUpdateTVData(): any {
       let winnerFlag: any = null;
       let loserFlag: any = null;
       let loser: any = null;
-      const loserCandidates: any[] = [];
+      let loserCandidates: any = [];
 
        
       if (gContestFinalStandings[gContestPlayerMonIndex] != 0)
@@ -4833,8 +4833,8 @@ export function ContestDebugToggleBitfields(loserFlags: any): any {
 export function ContestDebugPrintBitStrings(): any {
   let i: any = null;
       let j: any = null;
-      const text1: any[] = [];
-      const text2: any[] = [];
+      let text1: any = [];
+      let text2: any = [];
       let txtPtr: any = null;
       let bits: any = null;
 

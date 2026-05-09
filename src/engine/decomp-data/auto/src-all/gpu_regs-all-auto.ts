@@ -39,7 +39,7 @@ export function CopyBufferedValueToGpuReg(regOffset: any): any {
       }
       else
       {
-          /* transpiler bug LHS : ((REG_BASE + (regOffset))) = ((sGpuRegBuffer[(regOffset)])); */
+          /* transpiler bug LHS : ((REG_BASE + (regOffset))) = ((sGpuRegBuffer[(regOffset)])); */ ;
       }
 }
 
@@ -66,7 +66,7 @@ export function SetGpuReg(regOffset: any, value: any): any {
       {
           let vcount: any = null;
 
-          /* transpiler bug LHS : ((sGpuRegBuffer[(regOffset)])) = value; */
+          /* transpiler bug LHS : ((sGpuRegBuffer[(regOffset)])) = value; */ ;
           vcount = REG_VCOUNT & 0xFF;
 
           if ((vcount >= 161 && vcount <= 225) || (REG_DISPCNT & DISPCNT_FORCED_BLANK))
@@ -98,7 +98,7 @@ export function SetGpuReg(regOffset: any, value: any): any {
 export function SetGpuReg_ForcedBlank(regOffset: any, value: any): any {
   if (regOffset < GPU_REG_BUF_SIZE)
       {
-          /* transpiler bug LHS : ((sGpuRegBuffer[(regOffset)])) = value; */
+          /* transpiler bug LHS : ((sGpuRegBuffer[(regOffset)])) = value; */ ;
 
           if (REG_DISPCNT & DISPCNT_FORCED_BLANK)
           {

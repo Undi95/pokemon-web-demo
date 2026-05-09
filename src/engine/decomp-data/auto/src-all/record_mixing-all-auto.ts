@@ -448,7 +448,7 @@ export function ReceiveOldManData(records: any, recordSize: any, multiplayerId: 
   let version: any = null;
       let language: any = null;
       let oldMan: any = null;
-      const mixIndices: any[] = [];
+      let mixIndices: any = [];
 
       ShufflePlayerIndices(mixIndices);
       oldMan = records + recordSize * mixIndices[multiplayerId];
@@ -468,7 +468,7 @@ export function ReceiveOldManData(records: any, recordSize: any, multiplayerId: 
 export function ReceiveBattleTowerData(records: any, recordSize: any, multiplayerId: any): any {
   let battleTowerRecord: any = null;
       let btPokemon: any = null;
-      const mixIndices: any[] = [];
+      let mixIndices: any = [];
       let i: any = null;
 
       ShufflePlayerIndices(mixIndices);
@@ -499,7 +499,7 @@ export function ReceiveBattleTowerData(records: any, recordSize: any, multiplaye
 /** static void ReceiveLilycoveLadyData(LilycoveLady *records, size_t recordSize, u8 multiplayerId) */
 export function ReceiveLilycoveLadyData(records: any, recordSize: any, multiplayerId: any): any {
   let lilycoveLady: any = null;
-      const mixIndices: any[] = [];
+      let mixIndices: any = [];
 
       ShufflePlayerIndices(mixIndices);
       memcpy(records + recordSize * multiplayerId, sLilycoveLadySave, 0);
@@ -573,11 +573,11 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
       let mixMail: any = null;
       let playerSlot1, playerSlot2;
       let ptr: any = null;
-      const unusedArr1: any[] = [];
-      const unusedArr2: any[] = [];
+      let unusedArr1: any = [];
+      let unusedArr2: any = [];
       let unusedMixMail: any[] = [];
-      const canHoldItem: any[] = [];
-      const idxs: any[] = [];
+      let canHoldItem: any = [];
+      let idxs: any = [];
       let numDaycareCanHold: any = null;
       let oldSeed: any = null;
       let anyRS: any = null;
@@ -775,7 +775,7 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
 
 /** static void ReceiveGiftItem(u16 *item, u8 multiplayerId) */
 export function ReceiveGiftItem(item: any, multiplayerId: any): any {
-  if (multiplayerId != 0 && item != ITEM_NONE && GetPocketByItemIditem == POCKET_KEY_ITEMS)
+  if (multiplayerId != 0 && item != ITEM_NONE && GetPocketByItemId(item) == POCKET_KEY_ITEMS)
       {
           if (!CheckBagHasItem(item, 1) && !CheckPCHasItem(item, 1) && AddBagItem(item, 1))
           {
@@ -977,7 +977,7 @@ export function IsApprenticeAlreadySaved(mixApprentice: any, apprentices: any): 
 export function ReceiveApprenticeData(records: any, recordSize: any, multiplayerId: any): any {
   let i, numApprentices, apprenticeId;
       let mixApprentice: any = null;
-      const mixIndices: any[] = [];
+      let mixIndices: any = [];
       let apprenticeSaveId: any = null;
 
       ShufflePlayerIndices(mixIndices);

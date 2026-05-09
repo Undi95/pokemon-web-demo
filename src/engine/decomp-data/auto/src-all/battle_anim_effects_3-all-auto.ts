@@ -2575,8 +2575,8 @@ export function CreateSweatDroplets(taskId: any, lowerDroplets: any): any {
   let i: any = null;
       let xOffset, yOffset;
       let task: any = null;
-      const xCoords: any[] = [];
-      const yCoords: any[] = [];
+      let xCoords: any = [];
+      let yCoords: any = [];
 
       task =gTasks[taskId];
       if (!lowerDroplets)

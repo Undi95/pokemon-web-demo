@@ -564,9 +564,9 @@ export function CheckWonderGuardAndLevitate(): any {
               }
               if (TYPE_EFFECT_DEF_TYPE(i) == gBattleMons[gBattlerTarget].types[1] &&
                   gBattleMons[gBattlerTarget].types[0] != gBattleMons[gBattlerTarget].types[1] &&
-                  /* transpiler bug : TYPE_EFFECT_MULTIPLIER(i) = = TYPE_MUL_NO_EFFECT)
+                  TYPE_EFFECT_MULTIPLIER(i) == TYPE_MUL_NO_EFFECT)
               {
-                  gMoveResultFlags |= MOVE_RESULT_DOESNT_AFFECT_FOE; */
+                  gMoveResultFlags |= MOVE_RESULT_DOESNT_AFFECT_FOE;
                   gProtectStructs[gBattlerAttacker].targetNotAffected = 1;
               }
 
@@ -1877,8 +1877,8 @@ export function SetMoveEffect(primary: any, certain: any): any {
                           BattleScriptPush(gBattlescriptCurrInstr + 1);
                           gBattlescriptCurrInstr = BattleScript_ItemSteal;
 
-                          /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 0) = 0; */
-                          /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 1) = 0; */
+                          /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 0) = 0; */ ;
+                          /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 1) = 0; */ ;
                       }
                   }
                   break;
@@ -1966,8 +1966,8 @@ export function SetMoveEffect(primary: any, certain: any): any {
                       BattleScriptPush(gBattlescriptCurrInstr + 1);
                       gBattlescriptCurrInstr = BattleScript_KnockedOff;
 
-                      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gEffectBattler]) + 0) = 0; */
-                      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gEffectBattler]) + 1) = 0; */
+                      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gEffectBattler]) + 0) = 0; */ ;
+                      /* transpiler bug LHS : ((gBattleStruct.choicedMove[gEffectBattler]) + 1) = 0; */ ;
                   }
                   else
                   {
@@ -2424,13 +2424,13 @@ export function Cmd_getexp(): any {
 
               if (holdEffect != HOLD_EFFECT_EXP_SHARE && !(gBattleStruct.sentInPokes & 1))
               {
-                  (gBattleStruct.sentInPokes) >>= 1;
+                  MEM_OP_ASSIGN((gBattleStruct.sentInPokes), 'shr', 1);
                   gBattleScripting.getexpState = 5;
                   gBattleMoveDamage = 0;  
               }
               else if (GetMonData(gPlayerParty[gBattleStruct.expGetterMonId], MON_DATA_LEVEL) == MAX_LEVEL)
               {
-                  (gBattleStruct.sentInPokes) >>= 1;
+                  MEM_OP_ASSIGN((gBattleStruct.sentInPokes), 'shr', 1);
                   gBattleScripting.getexpState = 5;
                   gBattleMoveDamage = 0;  
               }
@@ -4260,12 +4260,12 @@ export function Cmd_switchhandleorder(): any {
 
           if (gBattleTypeFlags & BATTLE_TYPE_LINK && gBattleTypeFlags & BATTLE_TYPE_MULTI)
           {
-              (gActiveBattler * 3 + (gBattleStruct.battlerPartyOrders) + 0) &= 0xF;
-              (gActiveBattler * 3 + (gBattleStruct.battlerPartyOrders) + 0) |= (gBattleBufferB[gActiveBattler][2] & 0xF0);
+              MEM_OP_ASSIGN((gActiveBattler * 3 + (gBattleStruct.battlerPartyOrders) + 0), 'and', 0xF);
+              MEM_OP_ASSIGN((gActiveBattler * 3 + (gBattleStruct.battlerPartyOrders) + 0), 'or', (gBattleBufferB[gActiveBattler][2] & 0xF0));
               MEM_WRITE((gActiveBattler * 3 + (gBattleStruct.battlerPartyOrders) + 1), gBattleBufferB[gActiveBattler][3]);
 
-              ((BATTLE_PARTNER(gActiveBattler)) * 3 + (gBattleStruct.battlerPartyOrders) + 0) &= (0xF0);
-              ((BATTLE_PARTNER(gActiveBattler)) * 3 + (gBattleStruct.battlerPartyOrders) + 0) |= (gBattleBufferB[gActiveBattler][2] & 0xF0) >> 4;
+              MEM_OP_ASSIGN(((BATTLE_PARTNER(gActiveBattler)) * 3 + (gBattleStruct.battlerPartyOrders) + 0), 'and', (0xF0));
+              MEM_OP_ASSIGN(((BATTLE_PARTNER(gActiveBattler)) * 3 + (gBattleStruct.battlerPartyOrders) + 0), 'or', (gBattleBufferB[gActiveBattler][2] & 0xF0) >> 4);
               MEM_WRITE(((BATTLE_PARTNER(gActiveBattler)) * 3 + (gBattleStruct.battlerPartyOrders) + 2), gBattleBufferB[gActiveBattler][3]);
           }
           else if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
@@ -5092,7 +5092,7 @@ export function Cmd_drawlvlupbox(): any {
 
 /** static void DrawLevelUpWindow1(void) */
 export function DrawLevelUpWindow1(): any {
-  const currStats: any[] = [];
+  let currStats: any = [];
 
       GetMonLevelUpWindowStats(gPlayerParty[gBattleStruct.expGetterMonId], currStats);
       DrawLevelUpWindowPg1(B_WIN_LEVEL_UP_BOX, gBattleResources.beforeLvlUp.stats, currStats, TEXT_DYNAMIC_COLOR_5, TEXT_DYNAMIC_COLOR_4, TEXT_DYNAMIC_COLOR_6);
@@ -5100,7 +5100,7 @@ export function DrawLevelUpWindow1(): any {
 
 /** static void DrawLevelUpWindow2(void) */
 export function DrawLevelUpWindow2(): any {
-  const currStats: any[] = [];
+  let currStats: any = [];
 
       GetMonLevelUpWindowStats(gPlayerParty[gBattleStruct.expGetterMonId], currStats);
       DrawLevelUpWindowPg2(B_WIN_LEVEL_UP_BOX, currStats, TEXT_DYNAMIC_COLOR_5, TEXT_DYNAMIC_COLOR_4, TEXT_DYNAMIC_COLOR_6);
@@ -5692,7 +5692,7 @@ export function Cmd_trymirrormove(): any {
   let validMovesCount: any = null;
       let i: any = null;
       let move: any = null;
-      const validMoves: any[] = [];
+      let validMoves: any = [];
 
       for (i = 0; i < (MAX_BATTLERS_COUNT - 1); i++)  
           validMoves[i] = MOVE_NONE;
@@ -8236,11 +8236,11 @@ export function Cmd_tryswapitems(): any {
               BtlController_EmitSetMonData(B_COMM_TO_CONTROLLER, REQUEST_HELDITEM_BATTLE, 0, sizeof(gBattleMons[gBattlerTarget].item),gBattleMons[gBattlerTarget].item);
               MarkBattlerForControllerExec(gBattlerTarget);
 
-              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 0) = 0; */
-              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 1) = 0; */
+              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 0) = 0; */ ;
+              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerTarget]) + 1) = 0; */ ;
 
-              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerAttacker]) + 0) = 0; */
-              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerAttacker]) + 1) = 0; */
+              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerAttacker]) + 0) = 0; */ ;
+              /* transpiler bug LHS : ((gBattleStruct.choicedMove[gBattlerAttacker]) + 1) = 0; */ ;
 
               gBattlescriptCurrInstr += 5;
 
@@ -8712,7 +8712,7 @@ export function Cmd_docastformchangeanimation(): any {
   gActiveBattler = gBattleScripting.battler;
 
       if (gBattleMons[gActiveBattler].status2 & STATUS2_SUBSTITUTE)
-          (gBattleStruct.formToChangeInto) |= CASTFORM_SUBSTITUTE;
+          MEM_OP_ASSIGN((gBattleStruct.formToChangeInto), 'or', CASTFORM_SUBSTITUTE);
 
       BtlController_EmitBattleAnimation(B_COMM_TO_CONTROLLER, B_ANIM_CASTFORM_CHANGE, gBattleStruct.formToChangeInto);
       MarkBattlerForControllerExec(gActiveBattler);
@@ -9175,7 +9175,7 @@ export function HandleBattleWindow(xStart: any, yStart: any, xEnd: any, yEnd: an
 
 /** void BattleCreateYesNoCursorAt(u8 cursorPosition) */
 export function BattleCreateYesNoCursorAt(cursorPosition: any): any {
-  const src: any[] = [];
+  let src: any = [];
       src[0] = 1;
       src[1] = 2;
 
@@ -9186,7 +9186,7 @@ export function BattleCreateYesNoCursorAt(cursorPosition: any): any {
 
 /** void BattleDestroyYesNoCursorAt(u8 cursorPosition) */
 export function BattleDestroyYesNoCursorAt(cursorPosition: any): any {
-  const src: any[] = [];
+  let src: any = [];
       src[0] = 0x1016;
       src[1] = 0x1016;
 

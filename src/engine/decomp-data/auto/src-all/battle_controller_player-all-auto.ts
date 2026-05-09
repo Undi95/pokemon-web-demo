@@ -157,7 +157,7 @@ export function HandleInputChooseAction(): any {
 /** static void HandleInputChooseTarget(void) */
 export function HandleInputChooseTarget(): any {
   let i: any = null;
-      const identities: any[] = [];
+      let identities: any = [];
       memcpy(identities, sTargetIdentities, ARRAY_COUNT(sTargetIdentities));
 
       DoBounceEffect(gMultiUsePlayerCursor, BOUNCE_HEALTHBOX, 15, 1);
@@ -430,7 +430,7 @@ export function HandleInputChooseMove(): any {
 
 /** static void HandleMoveSwitching(void) */
 export function HandleMoveSwitching(): any {
-  const perMovePPBonuses: any[] = [];
+  let perMovePPBonuses: any = [];
       let moveStruct: any = null;
       let totalPPBonuses: any = null;
 
@@ -1266,7 +1266,7 @@ export function MoveSelectionDisplayMoveType(): any {
 
 /** static void MoveSelectionCreateCursorAt(u8 cursorPosition, u8 baseTileNum) */
 export function MoveSelectionCreateCursorAt(cursorPosition: any, baseTileNum: any): any {
-  const src: any[] = [];
+  let src: any = [];
       src[0] = baseTileNum + 1;
       src[1] = baseTileNum + 2;
 
@@ -1276,7 +1276,7 @@ export function MoveSelectionCreateCursorAt(cursorPosition: any, baseTileNum: an
 
 /** static void MoveSelectionDestroyCursorAt(u8 cursorPosition) */
 export function MoveSelectionDestroyCursorAt(cursorPosition: any): any {
-  const src: any[] = [];
+  let src: any = [];
       src[0] = 0x1016;
       src[1] = 0x1016;
 
@@ -1286,7 +1286,7 @@ export function MoveSelectionDestroyCursorAt(cursorPosition: any): any {
 
 /** void ActionSelectionCreateCursorAt(u8 cursorPosition, u8 baseTileNum) */
 export function ActionSelectionCreateCursorAt(cursorPosition: any, baseTileNum: any): any {
-  const src: any[] = [];
+  let src: any = [];
       src[0] = 1;
       src[1] = 2;
 
@@ -1296,7 +1296,7 @@ export function ActionSelectionCreateCursorAt(cursorPosition: any, baseTileNum: 
 
 /** void ActionSelectionDestroyCursorAt(u8 cursorPosition) */
 export function ActionSelectionDestroyCursorAt(cursorPosition: any): any {
-  const src: any[] = [];
+  let src: any = [];
       src[0] = 0x1016;
       src[1] = 0x1016;
 
@@ -1338,7 +1338,7 @@ export function PrintLinkStandbyMsg(): any {
 
 /** static void PlayerHandleGetMonData(void) */
 export function PlayerHandleGetMonData(): any {
-  const monData: any[] = [];  
+  let monData: any = [];  
       let size: any = 0;
       let monToCheck: any = null;
       let i: any = null;
@@ -1365,7 +1365,7 @@ export function PlayerHandleGetMonData(): any {
 export function CopyPlayerMonData(monId: any, dst: any): any {
   let battleMon: any = null;
       let moveData: any = null;
-      const nickname: any[] = [];
+      let nickname: any = [];
       let src: any = null;
       let data16: any = null;
       let data32: any = null;
@@ -2359,7 +2359,7 @@ export function HandleChooseMoveAfterDma3(): any {
 
 /** static void PlayerChooseMoveInBattlePalace(void) */
 export function PlayerChooseMoveInBattlePalace(): any {
-  if (--(gBattleStruct.arenaMindPoints + gActiveBattler) == 0)
+  if (MEM_PRE_DEC(gBattleStruct.arenaMindPoints + gActiveBattler) == 0)
       {
           gBattlePalaceMoveSelectionRngValue = gRngValue;
           BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, ChooseMoveAndTargetInBattlePalace());

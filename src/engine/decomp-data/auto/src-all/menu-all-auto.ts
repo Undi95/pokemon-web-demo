@@ -677,7 +677,7 @@ export function HofPCTopBar_Print(string: any, left: any, copyToVram: any): any 
 
 /** void HofPCTopBar_PrintPair(const u8 *string, const u8 *string2, bool8 noBg, u8 left, bool8 copyToVram) */
 export function HofPCTopBar_PrintPair(string: any, string2: any, noBg: any, left: any, copyToVram: any): any {
-  const color: any[] = [];
+  let color: any = [];
       let width: any = 0;
 
       if (sHofPCTopBarWindowId != WINDOW_NONE)

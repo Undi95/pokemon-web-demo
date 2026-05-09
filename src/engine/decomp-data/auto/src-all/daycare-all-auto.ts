@@ -301,7 +301,7 @@ export function GetEggSpecies(species: any): any {
 
 /** static s32 GetParentToInheritNature(struct DayCare *daycare) */
 export function GetParentToInheritNature(daycare: any): any {
-  const species: any[] = [];
+  let species: any = [];
       let i: any = null;
       let dittoCount: any = null;
       let parent: any = -1;
@@ -388,7 +388,7 @@ export function TriggerPendingDaycareEgg(): any {
 /** static void RemoveIVIndexFromList(u8 *ivs, u8 selectedIv) */
 export function RemoveIVIndexFromList(ivs: any, selectedIv: any): any {
   let i, j;
-      const temp: any[] = [];
+      let temp: any = [];
 
       ivs[selectedIv] = 0xFF;
       for (i = 0; i < NUM_STATS; i++)
@@ -407,9 +407,9 @@ export function RemoveIVIndexFromList(ivs: any, selectedIv: any): any {
 /** static void InheritIVs(struct Pokemon *egg, struct DayCare *daycare) */
 export function InheritIVs(egg: any, daycare: any): any {
   let i: any = null;
-      const selectedIvs: any[] = [];
-      const availableIVs: any[] = [];
-      const whichParents: any[] = [];
+      let selectedIvs: any = [];
+      let availableIVs: any = [];
+      let whichParents: any = [];
       let iv: any = null;
 
        
@@ -628,7 +628,7 @@ export function GiveVoltTackleIfLightBall(mon: any, daycare: any): any {
 /** static u16 DetermineEggSpeciesAndParentSlots(struct DayCare *daycare, u8 *parentSlots) */
 export function DetermineEggSpeciesAndParentSlots(daycare: any, parentSlots: any): any {
   let i: any = null;
-      const species: any[] = [];
+      let species: any = [];
       let eggSpecies: any = null;
 
       for (i = 0; i < DAYCARE_MON_COUNT; i++)
@@ -671,7 +671,7 @@ export function DetermineEggSpeciesAndParentSlots(daycare: any, parentSlots: any
 export function _GiveEggFromDaycare(daycare: any): any {
   let egg: any = null;
       let species: any = null;
-      const parentSlots: any[] = [];
+      let parentSlots: any = [];
       let isEgg: any = null;
 
       species = DetermineEggSpeciesAndParentSlots(daycare, parentSlots);
@@ -806,7 +806,7 @@ export function IsEggPending(daycare: any): any {
 
 /** static void _GetDaycareMonNicknames(struct DayCare *daycare) */
 export function _GetDaycareMonNicknames(daycare: any): any {
-  const otName: any[] = [];
+  let otName: any = [];
       if (GetBoxMonData(daycare.mons[0].mon, MON_DATA_SPECIES) != 0)
       {
           GetBoxMonNickname(daycare.mons[0].mon, gStringVar1);
@@ -867,10 +867,10 @@ export function EggGroupsOverlap(eggGroups1: any, eggGroups2: any): any {
 /** static u8 GetDaycareCompatibilityScore(struct DayCare *daycare) */
 export function GetDaycareCompatibilityScore(daycare: any): any {
   let i: any = null;
-      const eggGroups: any[] = [];
-      const species: any[] = [];
-      const trainerIds: any[] = [];
-      const genders: any[] = [];
+      let eggGroups: any = [];
+      let species: any = [];
+      let trainerIds: any = [];
+      let genders: any = [];
 
       for (i = 0; i < DAYCARE_MON_COUNT; i++)
       {
@@ -953,7 +953,7 @@ export function SetDaycareCompatibilityString(): any {
 /** bool8 NameHasGenderSymbol(const u8 *name, u8 genderRatio) */
 export function NameHasGenderSymbol(name: any, genderRatio: any): any {
   let i: any = null;
-      const symbolsCount: any[] = [];
+      let symbolsCount: any = [];
       symbolsCount[MALE] = symbolsCount[FEMALE] = 0;
 
       for (i = 0; name[i] != EOS; i++)
@@ -996,7 +996,7 @@ export function DaycareAddTextPrinter(windowId: any, text: any, x: any, y: any):
 
 /** static void DaycarePrintMonNickname(struct DayCare *daycare, u8 windowId, u32 daycareSlotId, u32 y) */
 export function DaycarePrintMonNickname(daycare: any, windowId: any, daycareSlotId: any, y: any): any {
-  const nickname: any[] = [];
+  let nickname: any = [];
       GetBoxMonNickname(daycare.mons[daycareSlotId].mon, nickname);
       AppendMonGenderSymbol(nickname,daycare.mons[daycareSlotId].mon);
       DaycareAddTextPrinter(windowId, nickname, 8, y);
@@ -1006,8 +1006,8 @@ export function DaycarePrintMonNickname(daycare: any, windowId: any, daycareSlot
 export function DaycarePrintMonLvl(daycare: any, windowId: any, daycareSlotId: any, y: any): any {
   let level: any = null;
       let x: any = null;
-      const lvlText: any[] = [];
-      const intText: any[] = [];
+      let lvlText: any = [];
+      let intText: any = [];
 
       StringCopy(lvlText, gText_Lv);
       level = GetLevelAfterDaycareSteps(daycare.mons[daycareSlotId].mon, daycare.mons[daycareSlotId].steps);

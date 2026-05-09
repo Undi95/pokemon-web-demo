@@ -294,7 +294,7 @@ export function HandleAction_UseItem(): any {
                    
                   while (!((gBattleStruct.AI_itemFlags + gBattlerAttacker / 2) & 1))
                   {
-                      (gBattleStruct.AI_itemFlags + gBattlerAttacker / 2) >>= 1;
+                      MEM_OP_ASSIGN((gBattleStruct.AI_itemFlags + gBattlerAttacker / 2), 'shr', 1);
                       gBattleCommunication[MULTISTRING_CHOOSER]++;
                        
                        
@@ -314,7 +314,7 @@ export function HandleAction_UseItem(): any {
 
                   while (!(((gBattleStruct.AI_itemFlags + (gBattlerAttacker >> 1))) & 1))
                   {
-                      (gBattleStruct.AI_itemFlags + gBattlerAttacker / 2) >>= 1;
+                      MEM_OP_ASSIGN((gBattleStruct.AI_itemFlags + gBattlerAttacker / 2), 'shr', 1);
                       gBattleTextBuff1[2]++;
                   }
 

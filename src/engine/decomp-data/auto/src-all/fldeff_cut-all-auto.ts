@@ -21,7 +21,7 @@ export function SetUpFieldMove_Cut(): any {
       let i, j;
       let tileBehavior: any = null;
       let userAbility: any = null;
-      const cutTiles: any[] = [];
+      let cutTiles: any = [];
       let ret: any = null;
 
       if (CheckObjectGraphicsInFrontOfPlayer(OBJ_EVENT_GFX_CUTTABLE_TREE) == TRUE)
@@ -331,7 +331,7 @@ export function SetCutGrassMetatiles(x: any, y: any): any {
 /** static void HandleLongGrassOnHyper(u8 caseId, s16 x, s16 y) */
 export function HandleLongGrassOnHyper(caseId: any, x: any, y: any): any {
   let newX: any = null;
-      const arr: any[] = [];
+      let arr: any = [];
 
       if (caseId == 0)
       {

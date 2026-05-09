@@ -17,7 +17,7 @@
 
 /** bool8 AreMovesContestCombo(u16 lastMove, u16 nextMove) */
 export function AreMovesContestCombo(lastMove: any, nextMove: any): any {
-  const nextMoveComboMoves: any[] = [];
+  let nextMoveComboMoves: any = [];
       let lastMoveComboStarterId: any = gContestMoves[lastMove].comboStarterId;
       nextMoveComboMoves[0] = gContestMoves[nextMove].comboMoves[0];
       nextMoveComboMoves[1] = gContestMoves[nextMove].comboMoves[1];
@@ -322,11 +322,11 @@ export function ContestEffect_MakeFollowingMonNervous(): any {
 export function ContestEffect_MakeFollowingMonsNervous(): any {
   let numUnnerved: any = 0;
       let contestantUnnerved: any = FALSE;
-      const contestantIds: any[] = [];
+      let contestantIds: any = [];
       let i: any = null;
       let numAfter: any = null;
-      const oddsMod: any[] = [];
-      const odds: any[] = [];
+      let oddsMod: any = [];
+      let odds: any = [];
 
       memset(contestantIds, CONTESTANT_NONE, ARRAY_COUNT(contestantIds));
       for (i = 0, numAfter = 0; i < CONTESTANT_COUNT; i++)
@@ -673,7 +673,7 @@ export function ContestEffect_BetterWithGoodCondition(): any {
 export function ContestEffect_NextAppealEarlier(): any {
   let i: any = null;
       let j: any = null;
-      const turnOrder: any[] = [];
+      let turnOrder: any = [];
 
       if (eContest.appealNumber != CONTEST_LAST_APPEAL)
       {
@@ -714,7 +714,7 @@ export function ContestEffect_NextAppealEarlier(): any {
 export function ContestEffect_NextAppealLater(): any {
   let i: any = null;
       let j: any = null;
-      const turnOrder: any[] = [];
+      let turnOrder: any = [];
 
       if (eContest.appealNumber != CONTEST_LAST_APPEAL)
       {
@@ -755,8 +755,8 @@ export function ContestEffect_NextAppealLater(): any {
 export function ContestEffect_ScrambleNextTurnOrder(): any {
   let i: any = null;
       let j: any = null;
-      const turnOrder: any[] = [];
-      const unselectedContestants: any[] = [];
+      let turnOrder: any = [];
+      let unselectedContestants: any = [];
 
       if (eContest.appealNumber != CONTEST_LAST_APPEAL)
       {

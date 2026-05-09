@@ -1300,7 +1300,7 @@ export function DisplaySwitchedHeldItemMessage(item: any, item2: any, keepOpen: 
 
 /** static void GiveItemToMon(struct Pokemon *mon, u16 item) */
 export function GiveItemToMon(mon: any, item: any): any {
-  const itemBytes: any[] = [];
+  let itemBytes: any = [];
 
       if (ItemIsMail(item) == TRUE)
       {
@@ -1759,7 +1759,7 @@ export function DisplayPartyPokemonBarDetail(windowId: any, str: any, color: any
 
 /** static void DisplayPartyPokemonNickname(struct Pokemon *mon, struct PartyMenuBox *menuBox, u8 c) */
 export function DisplayPartyPokemonNickname(mon: any, menuBox: any, c: any): any {
-  const nickname: any[] = [];
+  let nickname: any = [];
 
       if (GetMonData(mon, MON_DATA_SPECIES) != SPECIES_NONE)
       {
@@ -1795,7 +1795,7 @@ export function DisplayPartyPokemonLevel(level: any, menuBox: any): any {
 
 /** static void DisplayPartyPokemonGenderNidoranCheck(struct Pokemon *mon, struct PartyMenuBox *menuBox, u8 c) */
 export function DisplayPartyPokemonGenderNidoranCheck(mon: any, menuBox: any, c: any): any {
-  const nickname: any[] = [];
+  let nickname: any = [];
 
       if (c == 1)
           menuBox.infoRects.blitFunc(menuBox.windowId, menuBox.infoRects.dimensions[8] >> 3, (menuBox.infoRects.dimensions[9] >> 3) + 1, menuBox.infoRects.dimensions[10] >> 3, menuBox.infoRects.dimensions[11] >> 3, FALSE);
@@ -2282,7 +2282,7 @@ export function CursorCb_Switch(taskId: any): any {
 /** static void SwitchSelectedMons(u8 taskId) */
 export function SwitchSelectedMons(taskId: any): any {
   let data: any = gTasks[taskId].data;
-      const windowIds: any[] = [];
+      let windowIds: any = [];
 
       if (gPartyMenu.slotId2 == gPartyMenu.slotId)
       {
@@ -2395,7 +2395,7 @@ export function SlidePartyMenuBoxOneStep(taskId: any): any {
 /** static void Task_SlideSelectedSlotsOffscreen(u8 taskId) */
 export function Task_SlideSelectedSlotsOffscreen(taskId: any): any {
   let data: any = gTasks[taskId].data;
-      const slidingSlotPositions: any[] = [];
+      let slidingSlotPositions: any = [];
 
       SlidePartyMenuBoxOneStep(taskId);
       SlidePartyMenuBoxSpritesOneStep(taskId);
@@ -5255,7 +5255,7 @@ export function BufferBattlePartyCurrentOrder(): any {
 
 /** static void BufferBattlePartyOrder(u8 *partyBattleOrder, u8 flankId) */
 export function BufferBattlePartyOrder(partyBattleOrder: any, flankId: any): any {
-  const partyIds: any[] = [];
+  let partyIds: any = [];
       let i, j;
 
       if (IsMultiBattle() == TRUE)
@@ -5314,7 +5314,7 @@ export function BufferBattlePartyCurrentOrderBySide(battler: any, flankId: any):
 
 /** static void BufferBattlePartyOrderBySide(u8 *partyBattleOrder, u8 flankId, u8 battler) */
 export function BufferBattlePartyOrderBySide(partyBattleOrder: any, flankId: any, battler: any): any {
-  const partyIndexes: any[] = [];
+  let partyIndexes: any = [];
       let i, j;
       let leftBattler: any = null;
       let rightBattler: any = null;
@@ -5380,7 +5380,7 @@ export function BufferBattlePartyOrderBySide(partyBattleOrder: any, flankId: any
 
 /** void SwitchPartyOrderLinkMulti(u8 battler, u8 slot, u8 slot2) */
 export function SwitchPartyOrderLinkMulti(battler: any, slot: any, slot2: any): any {
-  const partyIds: any[] = [];
+  let partyIds: any = [];
       let tempSlot: any = 0;
       let i, j;
       let partyBattleOrder: any = null;

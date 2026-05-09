@@ -29,7 +29,7 @@ export function AnimTask_BlendBattleAnimPal(taskId: any): any {
 export function AnimTask_BlendBattleAnimPalExclude(taskId: any): any {
   let battler: any = null;
       let selectedPalettes: any = null;
-      const animBattlers: any[] = [];
+      let animBattlers: any = [];
 
       animBattlers[1] = 0xFF;
       selectedPalettes = UnpackSelectedBattlePalettes(F_PAL_BG);

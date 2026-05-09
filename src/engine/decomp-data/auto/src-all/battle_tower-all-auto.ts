@@ -100,7 +100,7 @@ export function SetTowerBattleWon(): any {
 /** static bool8 ChooseSpecialBattleTowerTrainer(void) */
 export function ChooseSpecialBattleTowerTrainer(): any {
   let i, j, validMons;
-      const trainerIds: any[] = [];
+      let trainerIds: any = [];
       let idsCount: any = 0;
       let winStreak: any = 0;
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
@@ -398,8 +398,8 @@ export function GetBattleFacilityTrainerGfxId(trainerId: any): any {
 
 /** void PutNewBattleTowerRecord(struct EmeraldBattleTowerRecord *newRecordEm) */
 export function PutNewBattleTowerRecord(newRecordEm: any): any {
-  const slotValues: any[] = [];
-      const slotIds: any[] = [];
+  let slotValues: any = [];
+      let slotIds: any = [];
       let i, j, k;
       let slotsCount: any = 0;
       let newRecord: any = newRecordEm;  
@@ -715,7 +715,7 @@ export function FillTentTrainerParty(monsCount: any): any {
 /** static void FillTrainerParty(u16 trainerId, u8 firstMonId, u8 monCount) */
 export function FillTrainerParty(trainerId: any, firstMonId: any, monCount: any): any {
   let i, j;
-      const chosenMonIndices: any[] = [];
+      let chosenMonIndices: any = [];
       let friendship: any = MAX_FRIENDSHIP;
       let level: any = SetFacilityPtrsGetLevel();
       let fixedIV: any = 0;
@@ -1276,7 +1276,7 @@ export function SaveTowerChallenge(): any {
 /** static void GetApprenticeMultiPartnerParty(u16 trainerId) */
 export function GetApprenticeMultiPartnerParty(trainerId: any): any {
   let i, count;
-      const validSpecies: any[] = [];
+      let validSpecies: any = [];
       let species1: any = GetMonData(gPlayerParty[0], MON_DATA_SPECIES, NULL);
       let species2: any = GetMonData(gPlayerParty[1], MON_DATA_SPECIES, NULL);
 
@@ -1301,7 +1301,7 @@ export function GetApprenticeMultiPartnerParty(trainerId: any): any {
 /** static void GetRecordMixFriendMultiPartnerParty(u16 trainerId) */
 export function GetRecordMixFriendMultiPartnerParty(trainerId: any): any {
   let i, count;
-      const validSpecies: any[] = [];
+      let validSpecies: any = [];
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
       let species1: any = GetMonData(gPlayerParty[0], MON_DATA_SPECIES, NULL);
       let species2: any = GetMonData(gPlayerParty[1], MON_DATA_SPECIES, NULL);
@@ -1329,7 +1329,7 @@ export function GetRecordMixFriendMultiPartnerParty(trainerId: any): any {
 /** static void LoadMultiPartnerCandidatesData(void) */
 export function LoadMultiPartnerCandidatesData(): any {
   let i, j, k;
-      const spArray: any[] = [];
+      let spArray: any = [];
       let r10: any = null;
       let trainerId: any = null;
       let monId: any = null;
@@ -1719,7 +1719,7 @@ export function SetMultiPartnerGfx(): any {
 /** static void SetTowerInterviewData(void) */
 export function SetTowerInterviewData(): any {
   let i: any = null;
-      const text: any[] = [];
+      let text: any = [];
 
       if (VarGet(VAR_FRONTIER_BATTLE_MODE) != FRONTIER_MODE_SINGLES)
           return;
@@ -1801,7 +1801,7 @@ export function GetCurrentBattleTowerWinStreak(lvlMode: any, battleMode: any): a
 
 /** static u8 GetMonCountForBattleMode(u8 battleMode) */
 export function GetMonCountForBattleMode(battleMode: any): any {
-  const partySizes: any[] = [];
+  let partySizes: any = [];
       memcpy(partySizes, sBattleTowerPartySizes, 0);
 
       if (battleMode < ARRAY_COUNT(sBattleTowerPartySizes))
@@ -1962,7 +1962,7 @@ export function FillPartnerParty(trainerId: any): any {
       let friendship: any = null;
       let monId: any = null;
       let otID: any = null;
-      const trainerName: any[] = [];
+      let trainerName: any = [];
       SetFacilityPtrsGetLevel();
 
       if (trainerId == TRAINER_STEVEN_PARTNER)
@@ -2365,7 +2365,7 @@ export function SetNextBattleTentOpponent(): any {
 /** static void FillTentTrainerParty_(u16 trainerId, u8 firstMonId, u8 monCount) */
 export function FillTentTrainerParty_(trainerId: any, firstMonId: any, monCount: any): any {
   let i, j;
-      const chosenMonIndices: any[] = [];
+      let chosenMonIndices: any = [];
       let friendship: any = null;
       let level: any = SetTentPtrsGetLevel();
       let fixedIV: any = 0;

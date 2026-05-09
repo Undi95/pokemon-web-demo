@@ -17,7 +17,7 @@
 
 /** void ReadMail(struct Mail *mail, MainCallback exitCallback, bool8 hasText) */
 export function ReadMail(mail: any, exitCallback: any, hasText: any): any {
-  const buffer: any[] = [];
+  let buffer: any = [];
       let species: any = null;
 
       sMailRead = AllocZeroed(0);
@@ -241,7 +241,7 @@ export function BufferMailText(): any {
 /** static void PrintMailText(void) */
 export function PrintMailText(): any {
   let i: any = null;
-      const signature: any[] = [];
+      let signature: any = [];
       let y: any = null;
       let bufptr: any = null;
       let box_x: any = null;

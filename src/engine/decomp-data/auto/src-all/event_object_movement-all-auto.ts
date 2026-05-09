@@ -1271,7 +1271,7 @@ export function MovementType_WanderAround_Step3(objectEvent: any, sprite: any): 
 
 /** bool8 MovementType_WanderAround_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WanderAround_Step4(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       let chosenDirection: any = null;
 
       memcpy(directions, gStandardDirections, 0);
@@ -1552,7 +1552,7 @@ export function MovementType_LookAround_Step3(objectEvent: any, sprite: any): an
 /** bool8 MovementType_LookAround_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_LookAround_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gStandardDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_ANY);
       if (direction == DIR_NONE)
@@ -1600,7 +1600,7 @@ export function MovementType_WanderUpAndDown_Step3(objectEvent: any, sprite: any
 /** bool8 MovementType_WanderUpAndDown_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WanderUpAndDown_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gUpAndDownDirections, 0);
       direction = directions[Random() & 1];
       SetObjectEventDirection(objectEvent, direction);
@@ -1666,7 +1666,7 @@ export function MovementType_WanderLeftAndRight_Step3(objectEvent: any, sprite: 
 /** bool8 MovementType_WanderLeftAndRight_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WanderLeftAndRight_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gLeftAndRightDirections, 0);
       direction = directions[Random() & 1];
       SetObjectEventDirection(objectEvent, direction);
@@ -1862,7 +1862,7 @@ export function MovementType_FaceDownAndUp_Step3(objectEvent: any, sprite: any):
 /** bool8 MovementType_FaceDownAndUp_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_FaceDownAndUp_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gUpAndDownDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_SOUTH);
       if (direction == DIR_NONE)
@@ -1910,7 +1910,7 @@ export function MovementType_FaceLeftAndRight_Step3(objectEvent: any, sprite: an
 /** bool8 MovementType_FaceLeftAndRight_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_FaceLeftAndRight_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gLeftAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_EAST_WEST);
       if (direction == DIR_NONE)
@@ -1958,7 +1958,7 @@ export function MovementType_FaceUpAndLeft_Step3(objectEvent: any, sprite: any):
 /** bool8 MovementType_FaceUpAndLeft_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_FaceUpAndLeft_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gUpAndLeftDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_WEST);
       if (direction == DIR_NONE)
@@ -2006,7 +2006,7 @@ export function MovementType_FaceUpAndRight_Step3(objectEvent: any, sprite: any)
 /** bool8 MovementType_FaceUpAndRight_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_FaceUpAndRight_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gUpAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_EAST);
       if (direction == DIR_NONE)
@@ -2054,7 +2054,7 @@ export function MovementType_FaceDownAndLeft_Step3(objectEvent: any, sprite: any
 /** bool8 MovementType_FaceDownAndLeft_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_FaceDownAndLeft_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gDownAndLeftDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_SOUTH_WEST);
       if (direction == DIR_NONE)
@@ -2102,7 +2102,7 @@ export function MovementType_FaceDownAndRight_Step3(objectEvent: any, sprite: an
 /** bool8 MovementType_FaceDownAndRight_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_FaceDownAndRight_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gDownAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_SOUTH_EAST);
       if (direction == DIR_NONE)
@@ -2150,7 +2150,7 @@ export function MovementType_FaceDownUpAndLeft_Step3(objectEvent: any, sprite: a
 /** bool8 MovementType_FaceDownUpAndLeft_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_FaceDownUpAndLeft_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gDownUpAndLeftDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_SOUTH_WEST);
       if (direction == DIR_NONE)
@@ -2198,7 +2198,7 @@ export function MovementType_FaceDownUpAndRight_Step3(objectEvent: any, sprite: 
 /** bool8 MovementType_FaceDownUpAndRight_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_FaceDownUpAndRight_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gDownUpAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_SOUTH_EAST);
       if (direction == DIR_NONE)
@@ -2246,7 +2246,7 @@ export function MovementType_FaceUpLeftAndRight_Step3(objectEvent: any, sprite: 
 /** bool8 MovementType_FaceUpLeftAndRight_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_FaceUpLeftAndRight_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gUpLeftAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_EAST_WEST);
       if (direction == DIR_NONE)
@@ -2294,7 +2294,7 @@ export function MovementType_FaceDownLeftAndRight_Step3(objectEvent: any, sprite
 /** bool8 MovementType_FaceDownLeftAndRight_Step4(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_FaceDownLeftAndRight_Step4(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gDownLeftAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_SOUTH_EAST_WEST);
       if (direction == DIR_NONE)
@@ -2332,7 +2332,7 @@ export function MovementType_RotateCounterclockwise_Step2(objectEvent: any, spri
 /** bool8 MovementType_RotateCounterclockwise_Step3(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_RotateCounterclockwise_Step3(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gCounterclockwiseDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_ANY);
       if (direction == DIR_NONE)
@@ -2370,7 +2370,7 @@ export function MovementType_RotateClockwise_Step2(objectEvent: any, sprite: any
 /** bool8 MovementType_RotateClockwise_Step3(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_RotateClockwise_Step3(objectEvent: any, sprite: any): any {
   let direction: any = null;
-      const directions: any[] = [];
+      let directions: any = [];
       memcpy(directions, gClockwiseDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_ANY);
       if (direction == DIR_NONE)
@@ -2485,7 +2485,7 @@ export function MovementType_WalkSequence_Step2(objectEvent: any, sprite: any): 
 
 /** u8 MovementType_WalkSequenceUpRightLeftDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceUpRightLeftDown_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gUpRightLeftDownDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 3;
@@ -2495,7 +2495,7 @@ export function MovementType_WalkSequenceUpRightLeftDown_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceRightLeftDownUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceRightLeftDownUp_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gRightLeftDownUpDirections, 0);
       if (objectEvent.directionSequenceIndex == 1 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 2;
@@ -2505,7 +2505,7 @@ export function MovementType_WalkSequenceRightLeftDownUp_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceDownUpRightLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceDownUpRightLeft_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gDownUpRightLeftDirections, 0);
       if (objectEvent.directionSequenceIndex == 1 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 2;
@@ -2515,7 +2515,7 @@ export function MovementType_WalkSequenceDownUpRightLeft_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceLeftDownUpRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceLeftDownUpRight_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gLeftDownUpRightDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 3;
@@ -2525,7 +2525,7 @@ export function MovementType_WalkSequenceLeftDownUpRight_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceUpLeftRightDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceUpLeftRightDown_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gUpLeftRightDownDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 3;
@@ -2535,7 +2535,7 @@ export function MovementType_WalkSequenceUpLeftRightDown_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceLeftRightDownUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceLeftRightDownUp_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gLeftRightDownUpDirections, 0);
       if (objectEvent.directionSequenceIndex == 1 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 2;
@@ -2545,7 +2545,7 @@ export function MovementType_WalkSequenceLeftRightDownUp_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceDownUpLeftRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceDownUpLeftRight_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gStandardDirections, 0);
       if (objectEvent.directionSequenceIndex == 1 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 2;
@@ -2555,7 +2555,7 @@ export function MovementType_WalkSequenceDownUpLeftRight_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceRightDownUpLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceRightDownUpLeft_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gRightDownUpLeftDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 3;
@@ -2565,7 +2565,7 @@ export function MovementType_WalkSequenceRightDownUpLeft_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceLeftUpDownRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceLeftUpDownRight_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gLeftUpDownRightDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 3;
@@ -2575,7 +2575,7 @@ export function MovementType_WalkSequenceLeftUpDownRight_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceUpDownRightLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceUpDownRightLeft_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gUpDownRightLeftDirections, 0);
       if (objectEvent.directionSequenceIndex == 1 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 2;
@@ -2585,7 +2585,7 @@ export function MovementType_WalkSequenceUpDownRightLeft_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceRightLeftUpDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceRightLeftUpDown_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gRightLeftUpDownDirections, 0);
       if (objectEvent.directionSequenceIndex == 1 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 2;
@@ -2595,7 +2595,7 @@ export function MovementType_WalkSequenceRightLeftUpDown_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceDownRightLeftUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceDownRightLeftUp_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gDownRightLeftUpDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 3;
@@ -2605,7 +2605,7 @@ export function MovementType_WalkSequenceDownRightLeftUp_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceRightUpDownLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceRightUpDownLeft_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gRightUpDownLeftDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 3;
@@ -2615,7 +2615,7 @@ export function MovementType_WalkSequenceRightUpDownLeft_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceUpDownLeftRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceUpDownLeftRight_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gUpDownLeftRightDirections, 0);
       if (objectEvent.directionSequenceIndex == 1 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 2;
@@ -2625,7 +2625,7 @@ export function MovementType_WalkSequenceUpDownLeftRight_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceLeftRightUpDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceLeftRightUpDown_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gLeftRightUpDownDirections, 0);
       if (objectEvent.directionSequenceIndex == 1 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 2;
@@ -2635,7 +2635,7 @@ export function MovementType_WalkSequenceLeftRightUpDown_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceDownLeftRightUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceDownLeftRightUp_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gDownLeftRightUpDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 3;
@@ -2645,7 +2645,7 @@ export function MovementType_WalkSequenceDownLeftRightUp_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceUpLeftDownRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceUpLeftDownRight_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gUpLeftDownRightDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 3;
@@ -2655,7 +2655,7 @@ export function MovementType_WalkSequenceUpLeftDownRight_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceDownRightUpLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceDownRightUpLeft_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gDownRightUpLeftDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 3;
@@ -2665,7 +2665,7 @@ export function MovementType_WalkSequenceDownRightUpLeft_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceLeftDownRightUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceLeftDownRightUp_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gLeftDownRightUpDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 3;
@@ -2675,7 +2675,7 @@ export function MovementType_WalkSequenceLeftDownRightUp_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceRightUpLeftDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceRightUpLeftDown_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gRightUpLeftDownDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 3;
@@ -2685,7 +2685,7 @@ export function MovementType_WalkSequenceRightUpLeftDown_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceUpRightDownLeft_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceUpRightDownLeft_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gUpRightDownLeftDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 3;
@@ -2695,7 +2695,7 @@ export function MovementType_WalkSequenceUpRightDownLeft_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceDownLeftUpRight_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceDownLeftUpRight_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gDownLeftUpRightDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.y == objectEvent.currentCoords.y)
           objectEvent.directionSequenceIndex = 3;
@@ -2705,7 +2705,7 @@ export function MovementType_WalkSequenceDownLeftUpRight_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceLeftUpRightDown_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceLeftUpRightDown_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gLeftUpRightDownDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 3;
@@ -2715,7 +2715,7 @@ export function MovementType_WalkSequenceLeftUpRightDown_Step1(objectEvent: any,
 
 /** u8 MovementType_WalkSequenceRightDownLeftUp_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_WalkSequenceRightDownLeftUp_Step1(objectEvent: any, sprite: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
       memcpy(directions, gRightDownLeftUpDirections, 0);
       if (objectEvent.directionSequenceIndex == 2 && objectEvent.initialCoords.x == objectEvent.currentCoords.x)
           objectEvent.directionSequenceIndex = 3;
@@ -3485,7 +3485,7 @@ export function ObjectEventFaceOppositeDirection(objectEvent: any, direction: an
 
 /** u8 GetOppositeDirection(u8 direction) */
 export function GetOppositeDirection(direction: any): any {
-  const directions: any[] = [];
+  let directions: any = [];
 
       memcpy(directions, sOppositeDirections, 0);
       if (direction <= DIR_NONE || direction > (0))
@@ -3907,7 +3907,7 @@ export function MovementAction_WalkNormalRight_Step1(objectEvent: any, sprite: a
 
 /** static void InitJump(struct ObjectEvent *objectEvent, struct Sprite *sprite, u8 direction, u8 distance, u8 type) */
 export function InitJump(objectEvent: any, sprite: any, direction: any, distance: any, _type: any): any {
-  const displacements: any[] = [];
+  let displacements: any = [];
       let x: any = null;
       let y: any = null;
 
@@ -3933,7 +3933,7 @@ export function InitJumpRegular(objectEvent: any, sprite: any, direction: any, d
 
 /** static u8 UpdateJumpAnim(struct ObjectEvent *objectEvent, struct Sprite *sprite, u8 callback(struct Sprite *)) */
 export function UpdateJumpAnim(objectEvent: any, sprite: any): any {
-  const displacements: any[] = [];
+  let displacements: any = [];
       let x: any = null;
       let y: any = null;
       let result: any = null;

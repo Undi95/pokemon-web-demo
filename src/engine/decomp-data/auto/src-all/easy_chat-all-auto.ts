@@ -1613,7 +1613,7 @@ export function IsQuizAnswerEmpty(): any {
 
 /** static void GetQuizTitle(u8 *dst) */
 export function GetQuizTitle(dst: any): any {
-  const name: any[] = [];
+  let name: any = [];
       let saveBlock1: any = gSaveBlock1Ptr;
       DynamicPlaceholderTextUtil_Reset();
 
@@ -1863,7 +1863,7 @@ export function UpdateMainCursor(): any {
       let stringWidth: any = null;
       let trueStringWidth: any = null;
       let y: any = null;
-      const str: any[] = [];
+      let str: any = [];
 
       currentPhrase = GetCurrentPhrase();
       frameId = GetEasyChatScreenFrameId();
@@ -2650,7 +2650,7 @@ export function PrintEasyChatText(windowId: any, fontId: any, str: any, x: any, 
 
 /** static void PrintEasyChatTextWithColors(u8 windowId, u8 fontId, const u8 *str, u8 left, u8 top, u8 speed, u8 bg, u8 fg, u8 shadow) */
 export function PrintEasyChatTextWithColors(windowId: any, fontId: any, str: any, left: any, top: any, speed: any, bg: any, fg: any, shadow: any): any {
-  const color: any[] = [];
+  let color: any = [];
       color[0] = bg;
       color[1] = fg;
       color[2] = shadow;
@@ -2741,7 +2741,7 @@ export function AddPhraseWindow(): any {
 
 /** static void PrintCurrentPhrase(void) */
 export function PrintCurrentPhrase(): any {
-  const strClear: any[] = [];
+  let strClear: any = [];
       let currentPhrase: any = null;
       let numColumns, numRows;
       let str: any = null;
