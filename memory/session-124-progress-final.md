@@ -1,14 +1,15 @@
-# Session 124 final — bugs visuels fix
+# Session 124 final — bugs visuels fix + battle polish
 
 Date : 2026-05-09
-Branche : `upd2` (= **75 commits** ahead of `main`, NE PAS PUSH)
+Branche : `upd2` (= **80 commits** ahead of `main`, NE PAS PUSH)
 
 ## TL;DR
 
 User dort en micro-sieste, m'a dit de continuer en autonomous + tester. Session
-suivant 4 fixes majeurs livrés.
+livre **9 commits** : tous les 4 bugs visuels signalés + battle polish (EXP gain,
+level up, PlayCry on starter, shake on damage).
 
-## ✅ Bugs fixés (= 5 commits)
+## ✅ Bugs fixés (= 9 commits cette session)
 
 ### Bug 4 — WallClock freeze + 366-day overflow (`5950d0c5`)
 
@@ -91,47 +92,64 @@ play SE_STOP → no gap.
 Restoré ROM `tTimer > 300` 1:1 décomp (mes attempts précédents d'aligner sur
 durée audio sample = approche incorrect, reverted).
 
-### Bug 3 partial — caisse 1-pixel coupée (`a3812632`)
+### Bug 3 partial → full — caisse 1-pixel coupée (`a3812632` + `594d3c3b`)
 
 User : "(un pixel visible lors du trajet) — Notre cinématique n'est pas 1:1
 (preuve des cartons encore un peu bugué)"
 
-Diagnostic 1:1 décomp : `sElevationToPriority[elevation]` détermine priority
-OAM. Pour caisses elevation=8 → priority 1 au lieu de 2 hardcodé.
+**Partial fix (`a3812632`)** : `sElevationToPriority[elevation]` 1:1 décomp.
+Pour caisses elevation=8 → priority 1 (= au lieu de 2 hardcodé).
 
-Le décomp utilise AUSSI `sElevationToSubspriteTableNum[8]=2` qui split sprite
-16x16 en 2 sous-OAMs 16x8 (top priority 2, bottom priority 3). Ce split full
-1:1 = TODO future (= complex car nécessite refactor NamingSubsprite layout
-pour 16x16 boxes spécifiquement).
+**Full fix (`594d3c3b`)** : Implémente `sOamTable_16x16_2` 1:1 décomp = split
+sprite 16x16 en 2 sous-OAMs 16x8 :
+- Top half : x=-8, y=-8, shape=16x8, tileOffset=0, priority 2 (= ABOVE)
+- Bottom half : x=-8, y=0, shape=16x8, tileOffset=2, priority 3 (= BEHIND)
 
-Pour l'instant : single OAM 16x16 avec priority elevation-corrected. Devrait
-mitiger le 1-pixel artifact dans les cas communs où caisses overlap avec
-player.
+Élargi à toutes elevations qui ont subspriteTableNum=2 (= 4, 6, 8, 10, 12).
+Use `SetSubspriteTables` existant (= partagé avec truck 48x48 system).
+
+Permet le 1:1 décomp behavior où la moitié BOTTOM peut passer derrière
+d'autres sprites priority 2 (= player, etc.).
+
+### Bug 5 — EXP gain + level up post-victoire (`5d22d74a`)
+
+Implémente le 1:1 décomp Gen 3 formula : `exp = (baseExp × defeatedLevel) / 7`.
+
+`pokemon.ts` :
+- `PokemonInstance` : add `currentExp?: number` + `growthRate?: string`.
+- `createPokemonInstance` : init via `getExperienceForLevel(rate, level)`.
+- `calculateExpGain(defeatedSpeciesEnum, defeatedLevel)`.
+- `applyExpAward(mon, gained)` : add exp, loop level-up, recalc maxHp + heal
+  proportionally (= 1:1 décomp).
+
+`battle-flow.ts` :
+- States `EXP_AWARD_TEXT/WAIT` + `LEVEL_UP_TEXT/WAIT` après `OPP_FAINTED_WAIT`.
+- "PLAYER gagne X POINTS D'EXP.!" + "PLAYER monte au niveau N!" si applicable.
+
+### Bug 5b — PlayCry au confirm starter (`11916b18`)
+
+Au moment où player confirms son starter (= `COMMIT_INIT`), play le cri
+via `playCry(speciesName)`. Reproduit le moment iconic de Gen 3.
+
+### Bug 5c — shake on damage feedback visuel (`311763a1`)
+
+Sprite shake horizontal 14 frames quand damage > 0, typeMul ≠ 0.
+Décroissance linéaire amplitude (= 4px → 0). Trigger sur les deux camps
+(= player damage opp ET opp damage player).
 
 ## ❌ Bugs restants
 
-### Bug 3 full 1:1 — split subsprite 16x16 vers 2× 16x8
+### Bug 5d — Real HP bar tiles (= TODO Phase 5)
 
-Pour eliminate complètement le 1-pixel artifact, il faut spawn 2 sous-OAMs
-16x8 par caisse elevation=8 :
-- Top half : x=-8, y=-8, shape=16x8 (= shape=1, size=0), tileOffset=0,
-  priority=2
-- Bottom half : x=-8, y=0, shape=16x8 (= shape=1, size=0), tileOffset=2,
-  priority=3
+Replace text "Lv5 PV: 18/22" par tiles HP bar 1:1 décomp :
+- Bar fill avec couleur green/yellow/red selon HP%
+- Animation décroissante quand damage applied
+- Cf. `decomp/em/battle_interface.json` pour tilemap layout
 
-Cf. `D:/Projet 1/decomps/pokeemeraude/src/data/object_events/object_event_
-subsprites.h` for sOamTable_16x16_2 layout.
+### Bug 5e — Battle BG transition fade (= TODO Phase 5)
 
-Notre engine a déjà `SetSubspriteTables` + `syncSubspriteOam` (= used pour
-truck 48x48). À étendre pour 16x16 avec elevation=8 trigger.
-
-### Bug 5 (mentioned nuit) — Battle polish
-
-- Real HP bar tiles
-- Shake on damage
-- EXP gain + level-up
-- PlayCry on starter confirm
-- Battle BG transition fade
+Au début/fin du combat, fade-in/out animation. Décomp `battle_main.c:
+CB2_StartFirstBattle` use BattleStartTransition. Notre version : direct cut.
 
 ### Bug 6 — Update extractor/transpiler
 
