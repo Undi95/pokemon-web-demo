@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sClearSaveBgTemplates: any = null;
+let sClearSaveTextWindow: any = null;
+let sClearSaveYesNo: any = null;
 /** void CB2_InitClearSaveDataScreen(void) */
 export function CB2_InitClearSaveDataScreen(): any {
   if (SetupClearSaveDataScreen())

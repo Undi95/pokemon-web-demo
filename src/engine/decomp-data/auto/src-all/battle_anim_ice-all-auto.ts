@@ -15,6 +15,19 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAffineAnimNum: any = null;
+let sAffineAnims_HailParticle: any = null;
+let sHailCoordData: any = null;
+let sHazeBlendAmounts: any = null;
+let sMistBlendAmounts: any = null;
+let sOwnerTaskId: any = null;
+let sOwnerTaskSpriteCountField: any = null;
+let sSpawnImpactEffect: any = null;
+let sTargetX: any = null;
+let sTargetY: any = null;
+let sTimer: any = null;
 /** static void AnimUnusedIceCrystalThrow(struct Sprite *sprite) */
 export function AnimUnusedIceCrystalThrow(sprite: any): any {
   let targetX, targetY, attackerX, attackerY;

@@ -15,6 +15,89 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sActionStringTable: any = null;
+let sAlreadyHoldingOneMsgWindowTemplate: any = null;
+let sCancelButtonWindowTemplate: any = null;
+let sCancelButton_Tilemap: any = null;
+let sConfirmButtonWindowTemplate: any = null;
+let sConfirmButton_Tilemap: any = null;
+let sCursorOptions: any = null;
+let sDefaultPartyMsgWindowTemplate: any = null;
+let sDescriptionStringTable: any = null;
+let sDoWhatWithItemMsgWindowTemplate: any = null;
+let sDoWhatWithMailMsgWindowTemplate: any = null;
+let sDoWhatWithMonMsgWindowTemplate: any = null;
+let sDoublePartyMenuWindowTemplate: any = null;
+let sFieldMoveCursorCallbacks: any = null;
+let sFieldMoves: any = null;
+let sFontColorTable: any = null;
+let sGenderFemalePalIds: any = null;
+let sGenderMalePalIds: any = null;
+let sGenderPalOffsets: any = null;
+let sHPBarGreenPalIds: any = null;
+let sHPBarPalOffsets: any = null;
+let sHPBarRedPalIds: any = null;
+let sHPBarYellowPalIds: any = null;
+let sItemGiveTakeWindowTemplate: any = null;
+let sLevelUpStatsWindowTemplate: any = null;
+let sMailReadTakeWindowTemplate: any = null;
+let sMoveSelectWindowTemplate: any = null;
+let sMultiBattlePartnersPartyMask: any = null;
+let sMultiCancelButtonWindowTemplate: any = null;
+let sMultiPartyMenuWindowTemplate: any = null;
+let sPartyBgGfxTilemap: any = null;
+let sPartyBgTilemapBuffer: any = null;
+let sPartyBoxCurrSelectionFaintedPalIds: any = null;
+let sPartyBoxCurrSelectionMultiPalIds: any = null;
+let sPartyBoxCurrSelectionPalIds1: any = null;
+let sPartyBoxCurrSelectionPalIds2: any = null;
+let sPartyBoxEmptySlotPalIds1: any = null;
+let sPartyBoxEmptySlotPalIds2: any = null;
+let sPartyBoxFaintedPalIds1: any = null;
+let sPartyBoxFaintedPalIds2: any = null;
+let sPartyBoxInfoRects: any = null;
+let sPartyBoxMultiPalIds1: any = null;
+let sPartyBoxMultiPalIds2: any = null;
+let sPartyBoxNoMonPalIds: any = null;
+let sPartyBoxNoMonPalOffsets: any = null;
+let sPartyBoxPalOffsets1: any = null;
+let sPartyBoxPalOffsets2: any = null;
+let sPartyBoxSelectedForActionPalIds1: any = null;
+let sPartyBoxSelectedForActionPalIds2: any = null;
+let sPartyMenuActionCounts: any = null;
+let sPartyMenuActions: any = null;
+let sPartyMenuBgTemplates: any = null;
+let sPartyMenuBoxes: any = null;
+let sPartyMenuInternal: any = null;
+let sPartyMenuItemId: any = null;
+let sPartyMenuSpriteCoords: any = null;
+let sPartyMenuYesNoWindowTemplate: any = null;
+let sShowcaseMultiPartyMenuWindowTemplate: any = null;
+let sSinglePartyMenuWindowTemplate: any = null;
+let sSlot1TilemapBuffer: any = null;
+let sSlot2TilemapBuffer: any = null;
+let sSlotTilemap_Main: any = null;
+let sSlotTilemap_MainNoHP: any = null;
+let sSlotTilemap_Wide: any = null;
+let sSlotTilemap_WideEmpty: any = null;
+let sSlotTilemap_WideNoHP: any = null;
+let sSpritePalette_HeldItem: any = null;
+let sSpritePalette_MenuPokeball: any = null;
+let sSpritePalette_StatusIcons: any = null;
+let sSpriteSheet_HeldItem: any = null;
+let sSpriteSheet_MenuPokeball: any = null;
+let sSpriteSheet_MenuPokeballSmall: any = null;
+let sSpriteSheet_StatusIcons: any = null;
+let sSpriteTemplate_HeldItem: any = null;
+let sSpriteTemplate_MenuPokeball: any = null;
+let sSpriteTemplate_MenuPokeballSmall: any = null;
+let sSpriteTemplate_StatusIcons: any = null;
+let sTMHMMoves: any = null;
+let sTutorLearnsets: any = null;
+let sUnionRoomTradeMessages: any = null;
+let sWhichMoveMsgWindowTemplate: any = null;
 /** static void InitPartyMenu(u8 menuType, u8 layout, u8 partyAction, bool8 keepCursorPos, u8 messageId, TaskFunc task, MainCallback callback) */
 export function InitPartyMenu(menuType: any, layout: any, partyAction: any, keepCursorPos: any, messageId: any, task: any, callback: any): any {
   let i: any = null;
@@ -356,9 +439,9 @@ export function RenderPartyMenuBox(slot: any): any {
       {
           DisplayPartyPokemonDataForMultiBattle(slot);
           if (gMultiPartnerParty[slot - MULTI_PARTY_SIZE].species == SPECIES_NONE)
-              LoadPartyBoxPalette(sPartyMenuBoxes[slot], PARTY_PAL_NO_MON);
+              LoadPartyBoxPalette(sPartyMenuBoxes[slot], ((1 << 6)));
           else
-              LoadPartyBoxPalette(sPartyMenuBoxes[slot], PARTY_PAL_MULTI_ALT);
+              LoadPartyBoxPalette(sPartyMenuBoxes[slot], ((1 << 3)));
           CopyWindowToVram(sPartyMenuBoxes[slot].windowId, COPYWIN_GFX);
           PutWindowTilemap(sPartyMenuBoxes[slot].windowId);
           ScheduleBgCopyTilemapToVram(2);
@@ -368,7 +451,7 @@ export function RenderPartyMenuBox(slot: any): any {
           if (GetMonData(gPlayerParty[slot], MON_DATA_SPECIES) == SPECIES_NONE)
           {
               DrawEmptySlot(sPartyMenuBoxes[slot].windowId);
-              LoadPartyBoxPalette(sPartyMenuBoxes[slot], PARTY_PAL_NO_MON);
+              LoadPartyBoxPalette(sPartyMenuBoxes[slot], ((1 << 6)));
               CopyWindowToVram(sPartyMenuBoxes[slot].windowId, COPYWIN_GFX);
           }
           else
@@ -690,20 +773,20 @@ export function GetPartyBoxPaletteFlags(slot: any, animNum: any): any {
   let palFlags: any = 0;
 
       if (animNum == 1)
-          palFlags |= PARTY_PAL_SELECTED;
+          palFlags |= ((1 << 0));
       if (GetMonData(gPlayerParty[slot], MON_DATA_HP) == 0)
-          palFlags |= PARTY_PAL_FAINTED;
+          palFlags |= ((1 << 1));
       if (PartyBoxPal_ParnterOrDisqualifiedInArena(slot) == TRUE)
-          palFlags |= PARTY_PAL_MULTI_ALT;
+          palFlags |= ((1 << 3));
       if (gPartyMenu.action == PARTY_ACTION_SWITCHING)
-          palFlags |= PARTY_PAL_SWITCHING;
+          palFlags |= ((1 << 4));
       if (gPartyMenu.action == PARTY_ACTION_SWITCH)
       {
           if (slot == gPartyMenu.slotId || slot == gPartyMenu.slotId2)
-              palFlags |= PARTY_PAL_TO_SWITCH;
+              palFlags |= ((1 << 2));
       }
       if (gPartyMenu.action == PARTY_ACTION_SOFTBOILED && slot == gPartyMenu.slotId )
-          palFlags |= PARTY_PAL_TO_SOFTBOIL;
+          palFlags |= ((1 << 5));
 
       return palFlags;
 }
@@ -974,25 +1057,25 @@ export function PartyMenuButtonHandler(slotPtr: any): any {
       switch (gMain.newAndRepeatedKeys)
       {
       case DPAD_UP:
-          movementDir = MENU_DIR_UP;
+          movementDir = (-1);
           break;
       case DPAD_DOWN:
-          movementDir = MENU_DIR_DOWN;
+          movementDir = (1);
           break;
       case DPAD_LEFT:
-          movementDir = MENU_DIR_LEFT;
+          movementDir = (-2);
           break;
       case DPAD_RIGHT:
-          movementDir = MENU_DIR_RIGHT;
+          movementDir = (2);
           break;
       default:
           switch (GetLRKeysPressedAndHeld())
           {
           case MENU_L_PRESSED:
-              movementDir = MENU_DIR_UP;
+              movementDir = (-1);
               break;
           case MENU_R_PRESSED:
-              movementDir = MENU_DIR_DOWN;
+              movementDir = (1);
               break;
           default:
               movementDir = 0;
@@ -1039,7 +1122,7 @@ export function UpdateCurrentPartySelection(slotPtr: any, movementDir: any): any
 export function UpdatePartySelectionSingleLayout(slotPtr: any, movementDir: any): any {
   switch (movementDir)
       {
-      case MENU_DIR_UP:
+      case (-1):
           if (slotPtr == 0)
           {
               slotPtr = PARTY_SIZE + 1;
@@ -1060,7 +1143,7 @@ export function UpdatePartySelectionSingleLayout(slotPtr: any, movementDir: any)
               slotPtr--;
           }
           break;
-      case MENU_DIR_DOWN:
+      case (1):
           if (slotPtr == PARTY_SIZE + 1)
           {
               slotPtr = 0;
@@ -1080,7 +1163,7 @@ export function UpdatePartySelectionSingleLayout(slotPtr: any, movementDir: any)
               }
           }
           break;
-      case MENU_DIR_RIGHT:
+      case (2):
           if (gPlayerPartyCount != 1 && slotPtr == 0)
           {
               if (sPartyMenuInternal.lastSelectedSlot == 0)
@@ -1089,7 +1172,7 @@ export function UpdatePartySelectionSingleLayout(slotPtr: any, movementDir: any)
                   slotPtr = sPartyMenuInternal.lastSelectedSlot;
           }
           break;
-      case MENU_DIR_LEFT:
+      case (-2):
           if (slotPtr != 0 && slotPtr != PARTY_SIZE && slotPtr != PARTY_SIZE + 1)
           {
               sPartyMenuInternal.lastSelectedSlot = slotPtr;
@@ -1105,7 +1188,7 @@ export function UpdatePartySelectionDoubleLayout(slotPtr: any, movementDir: any)
 
       switch (movementDir)
       {
-      case MENU_DIR_UP:
+      case (-1):
           if (slotPtr == 0)
           {
               slotPtr = PARTY_SIZE + 1;
@@ -1129,7 +1212,7 @@ export function UpdatePartySelectionDoubleLayout(slotPtr: any, movementDir: any)
           if (newSlot != -1)
               slotPtr = newSlot;
           break;
-      case MENU_DIR_DOWN:
+      case (1):
           if (slotPtr == PARTY_SIZE)
           {
               slotPtr = PARTY_SIZE + 1;
@@ -1140,7 +1223,7 @@ export function UpdatePartySelectionDoubleLayout(slotPtr: any, movementDir: any)
           }
           else
           {
-              newSlot = GetNewSlotDoubleLayout(slotPtr, MENU_DIR_DOWN);
+              newSlot = GetNewSlotDoubleLayout(slotPtr, (1));
               if (newSlot == -1)
               {
                   if (sPartyMenuInternal.chooseHalf)
@@ -1154,7 +1237,7 @@ export function UpdatePartySelectionDoubleLayout(slotPtr: any, movementDir: any)
               }
           }
           break;
-      case MENU_DIR_RIGHT:
+      case (2):
           if (slotPtr == 0)
           {
               if (sPartyMenuInternal.lastSelectedSlot == 3)
@@ -1180,7 +1263,7 @@ export function UpdatePartySelectionDoubleLayout(slotPtr: any, movementDir: any)
               }
           }
           break;
-      case MENU_DIR_LEFT:
+      case (-2):
           if (slotPtr == 2 || slotPtr == 3)
           {
               sPartyMenuInternal.lastSelectedSlot = slotPtr;
@@ -1679,13 +1762,13 @@ export function DrawEmptySlot(windowId: any): any {
 export function LoadPartyBoxPalette(menuBox: any, palFlags: any): any {
   let palOffset: any = BG_PLTT_ID(GetWindowAttribute(menuBox.windowId, WINDOW_PALETTE_NUM));
 
-      if (palFlags & PARTY_PAL_NO_MON)
+      if (palFlags & ((1 << 6)))
       {
           LOAD_PARTY_BOX_PAL(sPartyBoxNoMonPalIds, sPartyBoxNoMonPalOffsets);
       }
-      else if (palFlags & PARTY_PAL_TO_SOFTBOIL)
+      else if (palFlags & ((1 << 5)))
       {
-          if (palFlags & PARTY_PAL_SELECTED)
+          if (palFlags & ((1 << 0)))
           {
               LOAD_PARTY_BOX_PAL(sPartyBoxSelectedForActionPalIds1, sPartyBoxPalOffsets1);
               LOAD_PARTY_BOX_PAL(sPartyBoxCurrSelectionPalIds2, sPartyBoxPalOffsets2);
@@ -1696,14 +1779,14 @@ export function LoadPartyBoxPalette(menuBox: any, palFlags: any): any {
               LOAD_PARTY_BOX_PAL(sPartyBoxSelectedForActionPalIds2, sPartyBoxPalOffsets2);
           }
       }
-      else if (palFlags & PARTY_PAL_SWITCHING)
+      else if (palFlags & ((1 << 4)))
       {
           LOAD_PARTY_BOX_PAL(sPartyBoxSelectedForActionPalIds1, sPartyBoxPalOffsets1);
           LOAD_PARTY_BOX_PAL(sPartyBoxSelectedForActionPalIds2, sPartyBoxPalOffsets2);
       }
-      else if (palFlags & PARTY_PAL_TO_SWITCH)
+      else if (palFlags & ((1 << 2)))
       {
-          if (palFlags & PARTY_PAL_SELECTED)
+          if (palFlags & ((1 << 0)))
           {
               LOAD_PARTY_BOX_PAL(sPartyBoxSelectedForActionPalIds1, sPartyBoxPalOffsets1);
               LOAD_PARTY_BOX_PAL(sPartyBoxCurrSelectionPalIds2, sPartyBoxPalOffsets2);
@@ -1714,9 +1797,9 @@ export function LoadPartyBoxPalette(menuBox: any, palFlags: any): any {
               LOAD_PARTY_BOX_PAL(sPartyBoxSelectedForActionPalIds2, sPartyBoxPalOffsets2);
           }
       }
-      else if (palFlags & PARTY_PAL_FAINTED)
+      else if (palFlags & ((1 << 1)))
       {
-          if (palFlags & PARTY_PAL_SELECTED)
+          if (palFlags & ((1 << 0)))
           {
               LOAD_PARTY_BOX_PAL(sPartyBoxCurrSelectionFaintedPalIds, sPartyBoxPalOffsets1);
               LOAD_PARTY_BOX_PAL(sPartyBoxCurrSelectionPalIds2, sPartyBoxPalOffsets2);
@@ -1727,9 +1810,9 @@ export function LoadPartyBoxPalette(menuBox: any, palFlags: any): any {
               LOAD_PARTY_BOX_PAL(sPartyBoxFaintedPalIds2, sPartyBoxPalOffsets2);
           }
       }
-      else if (palFlags & PARTY_PAL_MULTI_ALT)
+      else if (palFlags & ((1 << 3)))
       {
-          if (palFlags & PARTY_PAL_SELECTED)
+          if (palFlags & ((1 << 0)))
           {
               LOAD_PARTY_BOX_PAL(sPartyBoxCurrSelectionMultiPalIds, sPartyBoxPalOffsets1);
               LOAD_PARTY_BOX_PAL(sPartyBoxCurrSelectionPalIds2, sPartyBoxPalOffsets2);
@@ -1740,7 +1823,7 @@ export function LoadPartyBoxPalette(menuBox: any, palFlags: any): any {
               LOAD_PARTY_BOX_PAL(sPartyBoxMultiPalIds2, sPartyBoxPalOffsets2);
           }
       }
-      else if (palFlags & PARTY_PAL_SELECTED)
+      else if (palFlags & ((1 << 0)))
       {
           LOAD_PARTY_BOX_PAL(sPartyBoxCurrSelectionPalIds1, sPartyBoxPalOffsets1);
           LOAD_PARTY_BOX_PAL(sPartyBoxCurrSelectionPalIds2, sPartyBoxPalOffsets2);

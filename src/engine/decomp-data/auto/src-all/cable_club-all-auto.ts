@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sTrainerCardColorNames: any = null;
+let sWindowTemplate_LinkPlayerCount: any = null;
 /** static void CreateLinkupTask(u8 minPlayers, u8 maxPlayers) */
 export function CreateLinkupTask(minPlayers: any, maxPlayers: any): any {
   if (FindTaskIdByFunc(Task_LinkupStart) == TASK_NONE)

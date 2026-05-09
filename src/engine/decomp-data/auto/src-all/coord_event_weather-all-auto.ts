@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCoordEventWeatherFuncs: any = null;
 /** static void CoordEventWeather_Clouds(void) */
 export function CoordEventWeather_Clouds(): any {
   SetWeather(WEATHER_SUNNY_CLOUDS);

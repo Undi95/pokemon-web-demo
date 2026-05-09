@@ -15,6 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFarawayIslandRockCoords: any = null;
+let sGrassSpriteId: any = null;
+let sMewDirectionCandidates: any = null;
+let sPlayerToMewDeltaX: any = null;
+let sPlayerToMewDeltaY: any = null;
 /** static u8 GetMewObjectEventId(void) */
 export function GetMewObjectEventId(): any {
   let objectEventId: any = null;

@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sSSTidalSailEastMovementScript: any = null;
+let sSSTidalSailWestMovementScript: any = null;
+let sTruckCamera_HorizontalTable: any = null;
 /** static s16 GetTruckCameraBobbingY(int time) */
 export function GetTruckCameraBobbingY(time: any): any {
   if (!(time % 120))
@@ -40,11 +45,11 @@ export function Task_Truck1(taskId: any): any {
       let yBox1, yBox2, yBox3;
 
       yBox1 = GetTruckBoxYMovement(tTimer + 30) * 4;
-      SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_TOP,      gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX1_X_OFFSET - cameraXpan, BOX1_Y_OFFSET + yBox1);
+      SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_TOP,      gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (3) - cameraXpan, (3) + yBox1);
       yBox2 = GetTruckBoxYMovement(tTimer) * 2;
-      SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_L, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX2_X_OFFSET - cameraXpan, BOX2_Y_OFFSET + yBox2);
+      SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_L, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (0) - cameraXpan, (-3) + yBox2);
       yBox3 = GetTruckBoxYMovement(tTimer) * 4;
-      SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_R, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX3_X_OFFSET - cameraXpan, BOX3_Y_OFFSET + yBox3);
+      SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_R, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (-3) - cameraXpan, (0) + yBox3);
 
        
       if (++tTimer == 30000)
@@ -82,11 +87,11 @@ export function Task_Truck2(taskId: any): any {
           cameraYpan = GetTruckCameraBobbingY(tTimerVertical);
           SetCameraPanning(cameraXpan, cameraYpan);
           yBox1 = GetTruckBoxYMovement(tTimerVertical + 30) * 4;
-          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_TOP,      gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX1_X_OFFSET - cameraXpan, BOX1_Y_OFFSET + yBox1);
+          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_TOP,      gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (3) - cameraXpan, (3) + yBox1);
           yBox2 = GetTruckBoxYMovement(tTimerVertical) * 2;
-          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_L, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX2_X_OFFSET - cameraXpan, BOX2_Y_OFFSET + yBox2);
+          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_L, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (0) - cameraXpan, (-3) + yBox2);
           yBox3 = GetTruckBoxYMovement(tTimerVertical) * 4;
-          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_R, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX3_X_OFFSET - cameraXpan, BOX3_Y_OFFSET + yBox3);
+          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_R, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (-3) - cameraXpan, (0) + yBox3);
       }
 }
 
@@ -112,9 +117,9 @@ export function Task_Truck3(taskId: any): any {
          cameraXpan = sTruckCamera_HorizontalTable[tMoveStep];
          cameraYpan = 0;
          SetCameraPanning(cameraXpan, cameraYpan);
-         SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_TOP,      gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX1_X_OFFSET - cameraXpan, BOX1_Y_OFFSET + cameraYpan);
-         SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_L, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX2_X_OFFSET - cameraXpan, BOX2_Y_OFFSET + cameraYpan);
-         SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_R, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX3_X_OFFSET - cameraXpan, BOX3_Y_OFFSET + cameraYpan);
+         SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_TOP,      gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (3) - cameraXpan, (3) + cameraYpan);
+         SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_L, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (0) - cameraXpan, (-3) + cameraYpan);
+         SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_R, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (-3) - cameraXpan, (0) + cameraYpan);
      }
 }
 
@@ -204,9 +209,9 @@ export function ExecuteTruckSequence(): any {
 export function EndTruckSequence(taskId: any): any {
   if (!FuncIsActiveTask(Task_HandleTruckSequence))
       {
-          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_TOP,      gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX1_X_OFFSET, BOX1_Y_OFFSET);
-          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_L, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX2_X_OFFSET, BOX2_Y_OFFSET);
-          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_R, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, BOX3_X_OFFSET, BOX3_Y_OFFSET);
+          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_TOP,      gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (3), (3));
+          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_L, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (0), (-3));
+          SetObjectEventSpritePosByLocalIdAndMap(LOCALID_TRUCK_BOX_BOTTOM_R, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, (-3), (0));
       }
 }
 

@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates: any = null;
+let sUnused: any = null;
+let sWindowTemplates: any = null;
 /** static void VBlankCB(void) */
 export function VBlankCB(): any {
   LoadOam();

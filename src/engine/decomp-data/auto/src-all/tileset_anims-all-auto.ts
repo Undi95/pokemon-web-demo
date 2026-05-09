@@ -15,6 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sPrimaryTilesetAnimCallback: any = null;
+let sPrimaryTilesetAnimCounter: any = null;
+let sPrimaryTilesetAnimCounterMax: any = null;
+let sSecondaryTilesetAnimCallback: any = null;
+let sSecondaryTilesetAnimCounter: any = null;
+let sSecondaryTilesetAnimCounterMax: any = null;
+let sTilesetAnims_BattleDomeFloorLightPals: any = null;
+let sTilesetDMA3TransferBuffer: any = null;
+let sTilesetDMA3TransferBufferSize: any = null;
 /** static void ResetTilesetAnimBuffer(void) */
 export function ResetTilesetAnimBuffer(): any {
   sTilesetDMA3TransferBufferSize = 0;

@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sReceivedGiftFlags: any = null;
+let sStatsEnabled: any = null;
 /** void ClearMysteryGift(void) */
 export function ClearMysteryGift(): any {
   CpuFill32(0,gSaveBlock1Ptr.mysteryGift, sizeof(gSaveBlock1Ptr.mysteryGift));
@@ -284,7 +288,7 @@ export function MysteryGift_TrySaveStamp(stamp: any): any {
 export function MysteryGift_LoadLinkGameData(data: any, isWonderNews: any): any {
   let i: any = null;
       CpuFill32(0, data, 0);
-      data.validationVar = GAME_DATA_VALID_VAR;
+      data.validationVar = (0x101);
       data.validationFlag1 = 1;
       data.validationFlag2 = 1;
 
@@ -292,13 +296,13 @@ export function MysteryGift_LoadLinkGameData(data: any, isWonderNews: any): any 
       {
            
            
-          data.validationGiftType1 = GAME_DATA_VALID_GIFT_TYPE_1 | 1;
-          data.validationGiftType2 = GAME_DATA_VALID_GIFT_TYPE_2 | 1;
+          data.validationGiftType1 = ((1 << 2)) | 1;
+          data.validationGiftType2 = ((1 << 9)) | 1;
       }
       else  
       {
-          data.validationGiftType1 = GAME_DATA_VALID_GIFT_TYPE_1;
-          data.validationGiftType2 = GAME_DATA_VALID_GIFT_TYPE_2;
+          data.validationGiftType1 = ((1 << 2));
+          data.validationGiftType2 = ((1 << 9));
       }
 
       if (ValidateSavedWonderCard())
@@ -326,7 +330,7 @@ export function MysteryGift_LoadLinkGameData(data: any, isWonderNews: any): any 
 
 /** bool32 MysteryGift_ValidateLinkGameData(const struct MysteryGiftLinkGameData *data, bool32 isWonderNews) */
 export function MysteryGift_ValidateLinkGameData(data: any, isWonderNews: any): any {
-  if (data.validationVar != GAME_DATA_VALID_VAR)
+  if (data.validationVar != (0x101))
           return FALSE;
 
       if (!(data.validationFlag1 & 1))
@@ -337,10 +341,10 @@ export function MysteryGift_ValidateLinkGameData(data: any, isWonderNews: any): 
 
       if (!isWonderNews)
       {
-          if (!(data.validationGiftType1 & GAME_DATA_VALID_GIFT_TYPE_1))
+          if (!(data.validationGiftType1 & ((1 << 2))))
               return FALSE;
 
-          if (!(data.validationGiftType2 & (GAME_DATA_VALID_GIFT_TYPE_2 | 0x180)))
+          if (!(data.validationGiftType2 & (((1 << 9)) | 0x180)))
               return FALSE;
       }
 

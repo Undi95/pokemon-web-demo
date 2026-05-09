@@ -15,12 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sEmptyMapList: any = null;
+let sSaveLocationPokeCenterList: any = null;
+let sSaveLocationReloadLocList: any = null;
 /** static bool32 IsCurMapInLocationList(const u16 *list) */
 export function IsCurMapInLocationList(list: any): any {
   let i: any = null;
       let map: any = (gSaveBlock1Ptr.location.mapGroup << 8) + gSaveBlock1Ptr.location.mapNum;
 
-      for (i = 0; list[i] != LIST_END; i++)
+      for (i = 0; list[i] != (0xFFFF); i++)
       {
           if (list[i] == map)
               return TRUE;

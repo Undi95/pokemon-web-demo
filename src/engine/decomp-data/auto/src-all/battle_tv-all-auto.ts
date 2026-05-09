@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sPointsArray: any = null;
+let sSpecialBattleStrings: any = null;
+let sVariableDmgMoves: any = null;
 /** void BattleTv_SetDataBasedOnString(u16 stringId) */
 export function BattleTv_SetDataBasedOnString(stringId: any): any {
   let tvPtr: any = null;

@@ -15,6 +15,34 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sMatchCallBlueLightSpriteTemplate: any = null;
+let sMenuHandlerLoopTaskFuncs: any = null;
+let sMenuOptionSpriteTemplate: any = null;
+let sOptionDescTextColors: any = null;
+let sOptionDescTextColors2: any = null;
+let sOptionDescWindowTemplate: any = null;
+let sPageDescriptions: any = null;
+let sPokenavBgDotsPal: any = null;
+let sPokenavBgDotsTilemap: any = null;
+let sPokenavBgDotsTiles: any = null;
+let sPokenavDeviceBgPal: any = null;
+let sPokenavDeviceBgTilemap: any = null;
+let sPokenavDeviceBgTiles: any = null;
+let sPokenavMainMenuBgTemplates: any = null;
+let sPokenavMainMenuScanlineEffectParams: any = null;
+let sPokenavMenuOptionLabelGfx: any = null;
+let sPokenavOptionsSpritePalettes: any = null;
+let sPokenavOptionsSpriteSheets: any = null;
+let sSlideAccel: any = null;
+let sSlideEndX: any = null;
+let sSlideSpeed: any = null;
+let sSlideTime: any = null;
+let sZoomDelay: any = null;
+let sZoomSetAffine: any = null;
+let sZoomSpeed: any = null;
+let sZoomSubspriteId: any = null;
 /** static bool32 AreAnyTrainerRematchesNearby(void) */
 export function AreAnyTrainerRematchesNearby(): any {
   let i: any = null;
@@ -452,14 +480,14 @@ export function LoadPokenavOptionPalettes(): any {
 
 /** static void FreeAndDestroyMainMenuSprites(void) */
 export function FreeAndDestroyMainMenuSprites(): any {
-  FreeSpriteTilesByTag(GFXTAG_OPTIONS);
-      FreeSpriteTilesByTag(GFXTAG_BLUE_LIGHT);
-      FreeSpritePaletteByTag(PALTAG_OPTIONS_DEFAULT);
-      FreeSpritePaletteByTag(PALTAG_OPTIONS_BLUE);
-      FreeSpritePaletteByTag(PALTAG_OPTIONS_PINK);
-      FreeSpritePaletteByTag(PALTAG_OPTIONS_BEIGE);
-      FreeSpritePaletteByTag(PALTAG_OPTIONS_RED);
-      FreeSpritePaletteByTag(PALTAG_BLUE_LIGHT);
+  FreeSpriteTilesByTag((3));
+      FreeSpriteTilesByTag((1));
+      FreeSpritePaletteByTag((4));
+      FreeSpritePaletteByTag((5));
+      FreeSpritePaletteByTag((6));
+      FreeSpritePaletteByTag((7));
+      FreeSpritePaletteByTag((8));
+      FreeSpritePaletteByTag((3));
       DestroyMenuOptionSprites();
       DestroyRematchBlueLightSprite();
 }
@@ -471,7 +499,7 @@ export function CreateMenuOptionSprites(): any {
 
       for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
       {
-          for (j = 0; j < NUM_OPTION_SUBSPRITES; j++)
+          for (j = 0; j < (4); j++)
           {
               let spriteId: any = CreateSprite(sMenuOptionSpriteTemplate, 0x8c, 20 * i + 40, 3);
               gfx.iconSprites[i][j] =gSprites[spriteId];
@@ -487,7 +515,7 @@ export function DestroyMenuOptionSprites(): any {
 
       for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
       {
-          for (j = 0; j < NUM_OPTION_SUBSPRITES; j++)
+          for (j = 0; j < (4); j++)
           {
               FreeSpriteOamMatrix(gfx.iconSprites[i][j]);
               DestroySprite(gfx.iconSprites[i][j]);
@@ -505,26 +533,26 @@ export function DrawCurrentMenuOptionLabels(): any {
 export function DrawOptionLabelGfx(optionGfx: any, yPos: any, deltaY: any): any {
   let i, j;
       let gfx: any = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
-      let baseTile: any = GetSpriteTileStartByTag(GFXTAG_OPTIONS);
+      let baseTile: any = GetSpriteTileStartByTag((3));
 
       for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
       {
           if (optionGfx != NULL)
           {
-              for (j = 0; j < NUM_OPTION_SUBSPRITES; j++)
+              for (j = 0; j < (4); j++)
               {
                   gfx.iconSprites[i][j].oam.tileNum = optionGfx[0] + baseTile + 8 * j;
-                  gfx.iconSprites[i][j].oam.paletteNum = IndexOfSpritePaletteTag(optionGfx[1] + PALTAG_OPTIONS_START);
+                  gfx.iconSprites[i][j].oam.paletteNum = IndexOfSpritePaletteTag(optionGfx[1] + (PALTAG_OPTIONS_DEFAULT));
                   gfx.iconSprites[i][j].invisible = TRUE;
                   gfx.iconSprites[i][j].y = yPos;
-                  gfx.iconSprites[i][j].x = OPTION_DEFAULT_X;
+                  gfx.iconSprites[i][j].x = (140);
                   gfx.iconSprites[i][j].x2 = 32 * j;
               }
               gfx.iconVisible[i] = TRUE;
           }
           else
           {
-              for (j = 0; j < NUM_OPTION_SUBSPRITES; j++)
+              for (j = 0; j < (4); j++)
                   gfx.iconSprites[i][j].invisible = TRUE;
 
               gfx.iconVisible[i] = FALSE;
@@ -548,17 +576,17 @@ export function StartOptionAnimations_Enter(): any {
           {
               if (iconCount++ == cursorPos)
               {
-                  x = OPTION_SELECTED_X;
+                  x = (130);
                   gfx.cursorPos = i;
               }
               else
               {
                    
-                  x = OPTION_DEFAULT_X;
+                  x = (140);
               }
 
                
-              StartOptionSlide(gfx.iconSprites[i], OPTION_EXIT_X, x, 12);
+              StartOptionSlide(gfx.iconSprites[i], ((DISPLAY_WIDTH + 16)), x, 12);
               SetOptionInvisibility(gfx.iconSprites[i], FALSE);
           }
           else
@@ -591,8 +619,8 @@ export function StartOptionAnimations_CursorMoved(): any {
 
        
        
-      StartOptionSlide(gfx.iconSprites[gfx.cursorPos], OPTION_SELECTED_X, OPTION_DEFAULT_X, 4);
-      StartOptionSlide(gfx.iconSprites[newPos], OPTION_DEFAULT_X, OPTION_SELECTED_X, 4);
+      StartOptionSlide(gfx.iconSprites[gfx.cursorPos], (130), (140), 4);
+      StartOptionSlide(gfx.iconSprites[newPos], (140), (130), 4);
       gfx.cursorPos = newPos;
 }
 
@@ -608,7 +636,7 @@ export function StartOptionAnimations_Exit(): any {
                
                
               if (gfx.cursorPos != i)
-                  StartOptionSlide(gfx.iconSprites[i], OPTION_DEFAULT_X, OPTION_EXIT_X, 8);
+                  StartOptionSlide(gfx.iconSprites[i], (140), ((DISPLAY_WIDTH + 16)), 8);
               else
                   StartOptionZoom(gfx.iconSprites[i]);
           }
@@ -636,7 +664,7 @@ export function AreMenuOptionSpritesMoving(): any {
 export function StartOptionSlide(sprites: any, startX: any, endX: any, time: any): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_OPTION_SUBSPRITES; i++)
+      for (i = 0; i < (4); i++)
       {
           (sprites).x = startX;
           (sprites).sSlideTime = time;
@@ -654,7 +682,7 @@ export function StartOptionZoom(sprites: any): any {
       let gfx: any = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
       let taskId: any = null;
 
-      for (i = 0; i < NUM_OPTION_SUBSPRITES; i++)
+      for (i = 0; i < (4); i++)
       {
           (sprites).oam.objMode = ST_OAM_OBJ_BLEND;
           (sprites).oam.affineMode = ST_OAM_AFFINE_DOUBLE;
@@ -677,7 +705,7 @@ export function StartOptionZoom(sprites: any): any {
 export function SetOptionInvisibility(sprites: any, invisible: any): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_OPTION_SUBSPRITES; i++)
+      for (i = 0; i < (4); i++)
       {
           (sprites).invisible = invisible;
           sprites++;

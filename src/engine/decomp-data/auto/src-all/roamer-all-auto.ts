@@ -15,10 +15,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sLocationHistory: any = null;
+let sRoamerLocation: any = null;
+let sRoamerLocations: any = null;
 /** void ClearRoamerData(void) */
 export function ClearRoamerData(): any {
-  memset(ROAMER, 0, 0);
-      ROAMER.species = SPECIES_LATIAS;
+  memset(((gSaveBlock1Ptr.roamer)), 0, sizeof(((gSaveBlock1Ptr.roamer))));
+      ((gSaveBlock1Ptr.roamer)).species = SPECIES_LATIAS;
 }
 
 /** void ClearRoamerLocationData(void) */
@@ -38,23 +43,23 @@ export function ClearRoamerLocationData(): any {
 /** static void CreateInitialRoamerMon(bool16 createLatios) */
 export function CreateInitialRoamerMon(createLatios: any): any {
   if (!createLatios)
-          ROAMER.species = SPECIES_LATIAS;
+          ((gSaveBlock1Ptr.roamer)).species = SPECIES_LATIAS;
       else
-          ROAMER.species = SPECIES_LATIOS;
+          ((gSaveBlock1Ptr.roamer)).species = SPECIES_LATIOS;
 
-      CreateMon(gEnemyParty[0], ROAMER.species, 40, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
-      ROAMER.level = 40;
-      ROAMER.status = 0;
-      ROAMER.active = TRUE;
-      ROAMER.ivs = GetMonData(gEnemyParty[0], MON_DATA_IVS);
-      ROAMER.personality = GetMonData(gEnemyParty[0], MON_DATA_PERSONALITY);
-      ROAMER.hp = GetMonData(gEnemyParty[0], MON_DATA_MAX_HP);
-      ROAMER.cool = GetMonData(gEnemyParty[0], MON_DATA_COOL);
-      ROAMER.beauty = GetMonData(gEnemyParty[0], MON_DATA_BEAUTY);
-      ROAMER.cute = GetMonData(gEnemyParty[0], MON_DATA_CUTE);
-      ROAMER.smart = GetMonData(gEnemyParty[0], MON_DATA_SMART);
-      ROAMER.tough = GetMonData(gEnemyParty[0], MON_DATA_TOUGH);
-      sRoamerLocation[MAP_GRP] = ROAMER_MAP_GROUP;
+      CreateMon(gEnemyParty[0], ((gSaveBlock1Ptr.roamer)).species, 40, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
+      ((gSaveBlock1Ptr.roamer)).level = 40;
+      ((gSaveBlock1Ptr.roamer)).status = 0;
+      ((gSaveBlock1Ptr.roamer)).active = TRUE;
+      ((gSaveBlock1Ptr.roamer)).ivs = GetMonData(gEnemyParty[0], MON_DATA_IVS);
+      ((gSaveBlock1Ptr.roamer)).personality = GetMonData(gEnemyParty[0], MON_DATA_PERSONALITY);
+      ((gSaveBlock1Ptr.roamer)).hp = GetMonData(gEnemyParty[0], MON_DATA_MAX_HP);
+      ((gSaveBlock1Ptr.roamer)).cool = GetMonData(gEnemyParty[0], MON_DATA_COOL);
+      ((gSaveBlock1Ptr.roamer)).beauty = GetMonData(gEnemyParty[0], MON_DATA_BEAUTY);
+      ((gSaveBlock1Ptr.roamer)).cute = GetMonData(gEnemyParty[0], MON_DATA_CUTE);
+      ((gSaveBlock1Ptr.roamer)).smart = GetMonData(gEnemyParty[0], MON_DATA_SMART);
+      ((gSaveBlock1Ptr.roamer)).tough = GetMonData(gEnemyParty[0], MON_DATA_TOUGH);
+      sRoamerLocation[MAP_GRP] = (0);
       sRoamerLocation[MAP_NUM] = sRoamerLocations[Random() % NUM_LOCATION_SETS][0];
 }
 
@@ -81,10 +86,10 @@ export function UpdateLocationHistoryForRoamer(): any {
 export function RoamerMoveToOtherLocationSet(): any {
   let mapNum: any = 0;
 
-      if (!ROAMER.active)
+      if (!((gSaveBlock1Ptr.roamer)).active)
           return;
 
-      sRoamerLocation[MAP_GRP] = ROAMER_MAP_GROUP;
+      sRoamerLocation[MAP_GRP] = (0);
 
        
        
@@ -109,7 +114,7 @@ export function RoamerMove(): any {
       }
       else
       {
-          if (!ROAMER.active)
+          if (!((gSaveBlock1Ptr.roamer)).active)
               return;
 
           while (locSet < NUM_LOCATION_SETS)
@@ -123,7 +128,7 @@ export function RoamerMove(): any {
                        
                        
                       mapNum = sRoamerLocations[locSet][(Random() % (NUM_LOCATIONS_PER_SET - 1)) + 1];
-                      if (!(sLocationHistory[2][MAP_GRP] == ROAMER_MAP_GROUP
+                      if (!(sLocationHistory[2][MAP_GRP] == (0)
                          && sLocationHistory[2][MAP_NUM] == mapNum)
                          && mapNum != MAP_NUM(MAP_UNDEFINED))
                           break;
@@ -138,7 +143,7 @@ export function RoamerMove(): any {
 
 /** bool8 IsRoamerAt(u8 mapGroup, u8 mapNum) */
 export function IsRoamerAt(mapGroup: any, mapNum: any): any {
-  if (ROAMER.active && mapGroup == sRoamerLocation[MAP_GRP] && mapNum == sRoamerLocation[MAP_NUM])
+  if (((gSaveBlock1Ptr.roamer)).active && mapGroup == sRoamerLocation[MAP_GRP] && mapNum == sRoamerLocation[MAP_NUM])
           return TRUE;
       else
           return FALSE;
@@ -149,15 +154,15 @@ export function CreateRoamerMonInstance(): any {
   let status: any = null;
       let mon: any =gEnemyParty[0];
       ZeroEnemyPartyMons();
-      CreateMonWithIVsPersonality(mon, ROAMER.species, ROAMER.level, ROAMER.ivs, ROAMER.personality);
-      status = ROAMER.status;
+      CreateMonWithIVsPersonality(mon, ((gSaveBlock1Ptr.roamer)).species, ((gSaveBlock1Ptr.roamer)).level, ((gSaveBlock1Ptr.roamer)).ivs, ((gSaveBlock1Ptr.roamer)).personality);
+      status = ((gSaveBlock1Ptr.roamer)).status;
       SetMonData(mon, MON_DATA_STATUS,status);
-      SetMonData(mon, MON_DATA_HP,ROAMER.hp);
-      SetMonData(mon, MON_DATA_COOL,ROAMER.cool);
-      SetMonData(mon, MON_DATA_BEAUTY,ROAMER.beauty);
-      SetMonData(mon, MON_DATA_CUTE,ROAMER.cute);
-      SetMonData(mon, MON_DATA_SMART,ROAMER.smart);
-      SetMonData(mon, MON_DATA_TOUGH,ROAMER.tough);
+      SetMonData(mon, MON_DATA_HP,((gSaveBlock1Ptr.roamer)).hp);
+      SetMonData(mon, MON_DATA_COOL,((gSaveBlock1Ptr.roamer)).cool);
+      SetMonData(mon, MON_DATA_BEAUTY,((gSaveBlock1Ptr.roamer)).beauty);
+      SetMonData(mon, MON_DATA_CUTE,((gSaveBlock1Ptr.roamer)).cute);
+      SetMonData(mon, MON_DATA_SMART,((gSaveBlock1Ptr.roamer)).smart);
+      SetMonData(mon, MON_DATA_TOUGH,((gSaveBlock1Ptr.roamer)).tough);
 }
 
 /** bool8 TryStartRoamerEncounter(void) */
@@ -175,15 +180,15 @@ export function TryStartRoamerEncounter(): any {
 
 /** void UpdateRoamerHPStatus(struct Pokemon *mon) */
 export function UpdateRoamerHPStatus(mon: any): any {
-  ROAMER.hp = GetMonData(mon, MON_DATA_HP);
-      ROAMER.status = GetMonData(mon, MON_DATA_STATUS);
+  ((gSaveBlock1Ptr.roamer)).hp = GetMonData(mon, MON_DATA_HP);
+      ((gSaveBlock1Ptr.roamer)).status = GetMonData(mon, MON_DATA_STATUS);
 
       RoamerMoveToOtherLocationSet();
 }
 
 /** void SetRoamerInactive(void) */
 export function SetRoamerInactive(): any {
-  ROAMER.active = FALSE;
+  ((gSaveBlock1Ptr.roamer)).active = FALSE;
 }
 
 /** void GetRoamerLocation(u8 *mapGroup, u8 *mapNum) */

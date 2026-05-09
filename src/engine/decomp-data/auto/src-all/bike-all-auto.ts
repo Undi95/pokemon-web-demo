@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAcroBikeInputHandlers: any = null;
+let sAcroBikeTransitions: any = null;
+let sAcroBikeTricksList: any = null;
+let sMachBikeSpeedCallbacks: any = null;
+let sMachBikeSpeeds: any = null;
+let sMachBikeTransitions: any = null;
 /** void MovePlayerOnBike(u8 direction, u16 newKeys, u16 heldKeys) */
 export function MovePlayerOnBike(direction: any, newKeys: any, heldKeys: any): any {
   if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_MACH_BIKE)

@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFrozenIceCubeSpriteTemplate: any = null;
+let sFrozenIceCubeSubspriteTable: any = null;
 /** static void Task_UpdateFlashingCircleImpacts(u8 taskId) */
 export function Task_UpdateFlashingCircleImpacts(taskId: any): any {
   if (gTasks[taskId].data[2] == 2)

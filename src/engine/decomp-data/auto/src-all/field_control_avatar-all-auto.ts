@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sPrevMetatileBehavior: any = null;
+let sWildEncounterImmunitySteps: any = null;
 /** void FieldClearPlayerInput(struct FieldInput *input) */
 export function FieldClearPlayerInput(input: any): any {
   input.pressedAButton = FALSE;

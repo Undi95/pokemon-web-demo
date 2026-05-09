@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattle: any = null;
+let sBgTemplates: any = null;
+let sTextColors: any = null;
+let sWindowTemplates: any = null;
 /** static void CB2_SetUpPartiesAndStartBattle(void) */
 export function CB2_SetUpPartiesAndStartBattle(): any {
   let i: any = null;

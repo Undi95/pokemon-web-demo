@@ -15,6 +15,47 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnimCounter: any = null;
+let sAnimState: any = null;
+let sBitfield: any = null;
+let sBobY: any = null;
+let sCounter: any = null;
+let sCurrentMap: any = null;
+let sDelay: any = null;
+let sElevation: any = null;
+let sEndTimer: any = null;
+let sFinished: any = null;
+let sFldEff: any = null;
+let sIntervalIdx: any = null;
+let sIsStillReflection: any = null;
+let sJumpElevation: any = null;
+let sJumpFldEff: any = null;
+let sLocalId: any = null;
+let sMapGroup: any = null;
+let sMapNum: any = null;
+let sMetatileId: any = null;
+let sMoveTimer: any = null;
+let sObjectMoved: any = null;
+let sPlayerObjId: any = null;
+let sPlayerOffset: any = null;
+let sPrevX: any = null;
+let sPrevY: any = null;
+let sReadyToEnd: any = null;
+let sReflectionObjEventId: any = null;
+let sReflectionObjEventLocalId: any = null;
+let sReflectionVerticalOffset: any = null;
+let sShadowEffectTemplateIds: any = null;
+let sSpriteId: any = null;
+let sStartY: any = null;
+let sState: any = null;
+let sTimer: any = null;
+let sVelocity: any = null;
+let sWaitFldEff: any = null;
+let sX: any = null;
+let sY: any = null;
+let sYOffset: any = null;
 /** void SetUpReflection(struct ObjectEvent *objectEvent, struct Sprite *sprite, bool8 stillReflection) */
 export function SetUpReflection(objectEvent: any, sprite: any, stillReflection: any): any {
   let reflectionSprite: any = null;
@@ -65,7 +106,7 @@ export function LoadObjectReflectionPalette(objectEvent: any, reflectionSprite: 
 /** static void LoadObjectRegularReflectionPalette(struct ObjectEvent *objectEvent, u8 paletteIndex) */
 export function LoadObjectRegularReflectionPalette(objectEvent: any, paletteIndex: any): any {
   let graphicsInfo: any = GetObjectEventGraphicsInfo(objectEvent.graphicsId);
-      if (graphicsInfo.reflectionPaletteTag != OBJ_EVENT_PAL_TAG_NONE)
+      if (graphicsInfo.reflectionPaletteTag != (0x11FF))
       {
           if (graphicsInfo.paletteSlot == PALSLOT_PLAYER)
               LoadPlayerObjectReflectionPalette(graphicsInfo.paletteTag, paletteIndex);
@@ -80,7 +121,7 @@ export function LoadObjectRegularReflectionPalette(objectEvent: any, paletteInde
 /** static void LoadObjectHighBridgeReflectionPalette(struct ObjectEvent *objectEvent, u8 paletteNum) */
 export function LoadObjectHighBridgeReflectionPalette(objectEvent: any, paletteNum: any): any {
   let graphicsInfo: any = GetObjectEventGraphicsInfo(objectEvent.graphicsId);
-      if (graphicsInfo.reflectionPaletteTag != OBJ_EVENT_PAL_TAG_NONE)
+      if (graphicsInfo.reflectionPaletteTag != (0x11FF))
       {
           PatchObjectPalette(graphicsInfo.reflectionPaletteTag, paletteNum);
           UpdateSpritePaletteWithWeather(paletteNum);

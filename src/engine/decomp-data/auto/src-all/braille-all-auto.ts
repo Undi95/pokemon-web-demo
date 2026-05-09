@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFont_Braille: any = null;
+let sScrollDistances: any = null;
 /** u16 FontFunc_Braille(struct TextPrinter *textPrinter) */
 export function FontFunc_Braille(textPrinter: any): any {
   let char_: any = null;

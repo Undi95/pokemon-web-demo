@@ -15,6 +15,68 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates: any = null;
+let sButtonKeyRoles: any = null;
+let sButtonSpriteId: any = null;
+let sColor: any = null;
+let sColorDelay: any = null;
+let sColorIncr: any = null;
+let sDelay: any = null;
+let sDrawGenderIconFuncs: any = null;
+let sDrawTextEntryBoxFuncs: any = null;
+let sFillValues: any = null;
+let sFlashing: any = null;
+let sGenderColors: any = null;
+let sIconFunctions: any = null;
+let sId: any = null;
+let sInputFuncs: any = null;
+let sInvisible: any = null;
+let sKeyboardChars: any = null;
+let sKeyboardKeyHandlers: any = null;
+let sKeyboardTextColors: any = null;
+let sKeyboard_Pal: any = null;
+let sNamingScreen: any = null;
+let sNamingScreenKeyboardText: any = null;
+let sNamingScreenTemplates: any = null;
+let sNextKeyboardPageTilemaps: any = null;
+let sPage: any = null;
+let sPageColumnCounts: any = null;
+let sPageColumnXPos: any = null;
+let sPageSwapAnimStateFuncs: any = null;
+let sPageSwapGfxTags: any = null;
+let sPageSwapPalTags: any = null;
+let sPageSwapSpriteFuncs: any = null;
+let sPageToKeyboardId: any = null;
+let sPageToNextGfxId: any = null;
+let sPageToNextKeyboardId: any = null;
+let sPrevX: any = null;
+let sPrevY: any = null;
+let sSpritePalettes: any = null;
+let sSpriteSheets: any = null;
+let sSpriteTemplate_BackButton: any = null;
+let sSpriteTemplate_Cursor: any = null;
+let sSpriteTemplate_InputArrow: any = null;
+let sSpriteTemplate_OkButton: any = null;
+let sSpriteTemplate_PCIcon: any = null;
+let sSpriteTemplate_PageSwapButton: any = null;
+let sSpriteTemplate_PageSwapFrame: any = null;
+let sSpriteTemplate_PageSwapText: any = null;
+let sSpriteTemplate_Underscore: any = null;
+let sState: any = null;
+let sSubspriteTable_Button: any = null;
+let sSubspriteTable_PCIcon: any = null;
+let sSubspriteTable_PageSwapFrame: any = null;
+let sSubspriteTable_PageSwapText: any = null;
+let sTextSpriteId: any = null;
+let sText_AlphabetUpperLower: any = null;
+let sTransferredToPCMessages: any = null;
+let sWindowTemplates: any = null;
+let sX: any = null;
+let sXPosId: any = null;
+let sY: any = null;
+let sYPosId: any = null;
 /** void DoNamingScreen(u8 templateNum, u8 *destBuffer, u16 monSpecies, u16 monGender, u32 monPersonality, MainCallback returnCallback) */
 export function DoNamingScreen(templateNum: any, destBuffer: any, monSpecies: any, monGender: any, monPersonality: any, returnCallback: any): any {
   sNamingScreen = Alloc(0);
@@ -1100,8 +1162,8 @@ export function HandleDpadMovement(task: any): any {
       else
       {
           if (cursorY < 0)
-              cursorY = KBROW_COUNT - 1;
-          if (cursorY > KBROW_COUNT - 1)
+              cursorY = (4) - 1;
+          if (cursorY > (4) - 1)
               cursorY = 0;
       }
       SetCursorPos(cursorX, cursorY);
@@ -1295,7 +1357,7 @@ export function PrintKeyboardKeys(window: any, page: any): any {
 
       FillWindowPixelBuffer(window, sFillValues[page]);
 
-      for (i = 0; i < KBROW_COUNT; i++)
+      for (i = 0; i < (4); i++)
           AddTextPrinterParameterized3(window, FONT_NORMAL, 0, i * 16 + 1, sKeyboardTextColors[page], 0, sNamingScreenKeyboardText[page][i]);
 
       PutWindowTilemap(window);

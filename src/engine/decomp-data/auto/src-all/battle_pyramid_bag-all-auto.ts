@@ -15,6 +15,21 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates: any = null;
+let sListMenuTemplate: any = null;
+let sMenuActionIds_Battle: any = null;
+let sMenuActionIds_BattleCannotUse: any = null;
+let sMenuActionIds_ChooseToss: any = null;
+let sMenuActionIds_Field: any = null;
+let sMenuActions: any = null;
+let sSpriteSheet_PyramidBag: any = null;
+let sSpriteTemplate_PyramidBag: any = null;
+let sTextColors: any = null;
+let sWindowTemplates: any = null;
+let sWindowTemplates_MenuActions: any = null;
+let sYesNoTossFuncions: any = null;
 /** void InitBattlePyramidBagCursorPosition(void) */
 export function InitBattlePyramidBagCursorPosition(): any {
   gPyramidBagMenuState.cursorPosition = 0;
@@ -333,7 +348,7 @@ export function AddScrollArrows(): any {
   if (gPyramidBagMenu.scrollIndicatorsTaskId == TASK_NONE)
           gPyramidBagMenu.scrollIndicatorsTaskId = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 172, 12, 148,
                                                                                               gPyramidBagMenu.listMenuCount - gPyramidBagMenu.listMenuMaxShown,
-                                                                                              TAG_SCROLL_ARROW, TAG_SCROLL_ARROW,gPyramidBagMenuState.scrollPosition);
+                                                                                              (2910), (2910),gPyramidBagMenuState.scrollPosition);
 }
 
 /** static void RemoveScrollArrow(void) */
@@ -1149,8 +1164,8 @@ export function FreeItemIconSprite(spriteArrId: any): any {
       {
            
            
-          FreeSpriteTilesByTag(TAG_ITEM_ICON - 1 + spriteArrId);
-          FreeSpritePaletteByTag(TAG_ITEM_ICON - 1 + spriteArrId);
+          FreeSpriteTilesByTag((4133) - 1 + spriteArrId);
+          FreeSpritePaletteByTag((4133) - 1 + spriteArrId);
           FreeSpriteOamMatrix(gSprites[spriteId]);
           DestroySprite(gSprites[spriteId]);
           spriteId = SPRITE_NONE;
@@ -1164,7 +1179,7 @@ export function LoadPyramidBagPalette(): any {
 
       LZDecompressWram(gBattlePyramidBag_Pal, palPtr);
       spritePalette.data = palPtr + PLTT_ID(gSaveBlock2Ptr.frontier.lvlMode);
-      spritePalette.tag = TAG_PYRAMID_BAG;
+      spritePalette.tag = (4132);
       LoadSpritePalette(spritePalette);
       Free(palPtr);
 }
@@ -1200,9 +1215,9 @@ export function ShowItemIcon(itemId: any, isAlt: any): any {
       let spriteId: any =gPyramidBagMenu.spriteIds[isAlt + PBAG_SPRITE_ITEM_ICON];
       if (spriteId == SPRITE_NONE)
       {
-          FreeSpriteTilesByTag(TAG_ITEM_ICON + isAlt);
-          FreeSpritePaletteByTag(TAG_ITEM_ICON + isAlt);
-          itemSpriteId = AddItemIconSprite(TAG_ITEM_ICON + isAlt, TAG_ITEM_ICON + isAlt, itemId);
+          FreeSpriteTilesByTag((4133) + isAlt);
+          FreeSpritePaletteByTag((4133) + isAlt);
+          itemSpriteId = AddItemIconSprite((4133) + isAlt, (4133) + isAlt, itemId);
           if (itemSpriteId != MAX_SPRITES)
           {
               spriteId = itemSpriteId;

@@ -15,6 +15,27 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAlteringCaveWildMonHeldItems: any = null;
+let sAnimDelay: any = null;
+let sAnimId: any = null;
+let sDeoxysBaseStats: any = null;
+let sFriendshipEventModifiers: any = null;
+let sGetMonDataEVConstants: any = null;
+let sHMMoves: any = null;
+let sHoennToNationalOrder: any = null;
+let sHoldEffectToType: any = null;
+let sLearningMoveTableID: any = null;
+let sMonAnimationDelayTable: any = null;
+let sMonFrontAnimIdsTable: any = null;
+let sMonSpritesGfxManagers: any = null;
+let sSecretBaseFacilityClasses: any = null;
+let sSpeciesToHoennPokedexNum: any = null;
+let sSpeciesToNationalPokedexNum: any = null;
+let sSpriteTemplate_64x64: any = null;
+let sStatsToRaise: any = null;
+let sTrainerBackSpriteTemplates: any = null;
 /** void ZeroBoxMonData(struct BoxPokemon *boxMon) */
 export function ZeroBoxMonData(boxMon: any): any {
   let raw: any = boxMon;
@@ -2315,13 +2336,13 @@ export function CreateSecretBaseEnemyParty(secretBaseRecord: any): any {
 
 /** u8 GetSecretBaseTrainerPicIndex(void) */
 export function GetSecretBaseTrainerPicIndex(): any {
-  let facilityClass: any = sSecretBaseFacilityClasses[gBattleResources.secretBase.gender][gBattleResources.secretBase.trainerId[0] % NUM_SECRET_BASE_CLASSES];
+  let facilityClass: any = sSecretBaseFacilityClasses[gBattleResources.secretBase.gender][gBattleResources.secretBase.trainerId[0] % (5)];
       return gFacilityClassToPicIndex[facilityClass];
 }
 
 /** u8 GetSecretBaseTrainerClass(void) */
 export function GetSecretBaseTrainerClass(): any {
-  let facilityClass: any = sSecretBaseFacilityClasses[gBattleResources.secretBase.gender][gBattleResources.secretBase.trainerId[0] % NUM_SECRET_BASE_CLASSES];
+  let facilityClass: any = sSecretBaseFacilityClasses[gBattleResources.secretBase.gender][gBattleResources.secretBase.trainerId[0] % (5)];
       return gFacilityClassToTrainerClass[facilityClass];
 }
 
@@ -3178,17 +3199,17 @@ export function GetEvolutionTargetSpecies(mon: any, mode: any, evolutionItem: an
               switch (gEvolutionTable[species][i].method)
               {
               case EVO_FRIENDSHIP:
-                  if (friendship >= FRIENDSHIP_EVO_THRESHOLD)
+                  if (friendship >= (220))
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
               case EVO_FRIENDSHIP_DAY:
                   RtcCalcLocalTime();
-                  if (gLocalTime.hours >= DAY_EVO_HOUR_BEGIN && gLocalTime.hours < DAY_EVO_HOUR_END && friendship >= FRIENDSHIP_EVO_THRESHOLD)
+                  if (gLocalTime.hours >= (12) && gLocalTime.hours < (HOURS_PER_DAY) && friendship >= (220))
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
               case EVO_FRIENDSHIP_NIGHT:
                   RtcCalcLocalTime();
-                  if (gLocalTime.hours >= NIGHT_EVO_HOUR_BEGIN && gLocalTime.hours < NIGHT_EVO_HOUR_END && friendship >= FRIENDSHIP_EVO_THRESHOLD)
+                  if (gLocalTime.hours >= (0) && gLocalTime.hours < (12) && friendship >= (220))
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
               case EVO_LEVEL:
@@ -4046,7 +4067,7 @@ export function Task_PlayMapChosenOrBattleBGM(taskId: any): any {
 /** bool32 IsHMMove2(u16 move) */
 export function IsHMMove2(move: any): any {
   let i: any = 0;
-      while (sHMMoves[i] != HM_MOVES_END)
+      while (sHMMoves[i] != (0xFFFF))
       {
           if (sHMMoves[i++] == move)
               return TRUE;
@@ -4436,7 +4457,7 @@ export function DestroyMonSpritesGfxManager(managerId: any): any {
       if (gfx == NULL)
           return;
 
-      if (gfx.active != GFX_MANAGER_ACTIVE)
+      if (gfx.active != (0xA3))
       {
           memset(gfx, 0, 0);
       }

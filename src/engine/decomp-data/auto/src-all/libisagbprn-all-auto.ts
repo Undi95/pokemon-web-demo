@@ -17,11 +17,11 @@
 
 /** void AGBPrintInit(void) */
 export function AGBPrintInit(): any {
-   let pPrint: any = AGB_PRINT_STRUCT_ADDR;
+   let pPrint: any = (0x9FE20F8);
       let pWSCNT: any =REG_WAITCNT;
-      let pProtect: any = AGB_PRINT_PROTECT_ADDR;
+      let pProtect: any = (0x9FE2FFE);
       let nOldWSCNT: any = pWSCNT;
-      pWSCNT = WSCNT_DATA;
+      pWSCNT = ((WAITCNT_PHI_OUT_16MHZ | WAITCNT_WS0_S_2 | WAITCNT_WS0_N_4));
       pProtect = 0x20;
       pPrint.m_nRequest = pPrint.m_nGet = pPrint.m_nPut = 0;
       pPrint.m_nBank = 0xFD;
@@ -31,9 +31,9 @@ export function AGBPrintInit(): any {
 
 /** static void AGBPutcInternal(const char cChr) */
 export function AGBPutcInternal(cChr: any): any {
-   let pPrint: any = AGB_PRINT_STRUCT_ADDR;
+   let pPrint: any = (0x9FE20F8);
       let pPrintBuf: any = (0x8000000 + (pPrint.m_nBank << 16));
-      let pProtect: any = AGB_PRINT_PROTECT_ADDR;
+      let pProtect: any = (0x9FE2FFE);
       let nData: any = pPrintBuf[pPrint.m_nPut / 2];
       pProtect = 0x20;
       nData = (pPrint.m_nPut & 1) ? (nData & 0xFF) | (cChr << 8) : (nData & 0xFF00) | cChr;
@@ -47,20 +47,20 @@ export function AGBPutc(cChr: any): any {
   let pWSCNT: any =REG_WAITCNT;
       let nOldWSCNT: any = pWSCNT;
        let pPrint: any = null;
-      pWSCNT = WSCNT_DATA;
+      pWSCNT = ((WAITCNT_PHI_OUT_16MHZ | WAITCNT_WS0_S_2 | WAITCNT_WS0_N_4));
       AGBPutcInternal(cChr);
       pWSCNT = nOldWSCNT;
-      pPrint = AGB_PRINT_STRUCT_ADDR;
+      pPrint = (0x9FE20F8);
       if (pPrint.m_nPut == ((pPrint.m_nGet - 1) & 0xFFFF))
           AGBPrintFlush1Block();
 }
 
 /** void AGBPrint(const char *pBuf) */
 export function AGBPrint(pBuf: any): any {
-   let pPrint: any = AGB_PRINT_STRUCT_ADDR;
+   let pPrint: any = (0x9FE20F8);
       let pWSCNT: any =REG_WAITCNT;
       let nOldWSCNT: any = pWSCNT;
-      pWSCNT = WSCNT_DATA;
+      pWSCNT = ((WAITCNT_PHI_OUT_16MHZ | WAITCNT_WS0_S_2 | WAITCNT_WS0_N_4));
       while (pBuf)
       {
           AGBPutc(pBuf);
@@ -90,15 +90,15 @@ export function AGBPrintTransferDataInternal(bAllData: any): any {
       let pProtect: any = null;
        let pPrint: any = null;
 
-      pProtect = AGB_PRINT_PROTECT_ADDR;
-      pPrint = AGB_PRINT_STRUCT_ADDR;
-      lpfnFuncFlush = AGB_PRINT_FLUSH_ADDR;
+      pProtect = (0x9FE2FFE);
+      pPrint = (0x9FE20F8);
+      lpfnFuncFlush = (0x9FE209D);
       pIME =REG_IME;
       nIME = pIME;
       pWSCNT =REG_WAITCNT;
       nOldWSCNT = pWSCNT;
       pIME = nIME & ~1;
-      pWSCNT = WSCNT_DATA;
+      pWSCNT = ((WAITCNT_PHI_OUT_16MHZ | WAITCNT_WS0_S_2 | WAITCNT_WS0_N_4));
 
       if (bAllData)
       {
@@ -146,7 +146,7 @@ export function AGBAssert(pFile: any, nLine: any, pExpression: any, nStopProgram
 
 /** void NoCashGBAPrint(const char *pBuf) */
 export function NoCashGBAPrint(pBuf: any): any {
-  NOCASHGBAPRINTADDR2 = pBuf;
+  MEM_WRITE(0x4FFFA14, pBuf);
 }
 
 /** void NoCashGBAPrintf(const char *pBuf, ...) */
@@ -190,8 +190,8 @@ export function MgbaPrintf(level: any, ptr: any): any {
 
       level &= 0x7;
       va_start(args, ptr);
-      mini_vsnprintf(REG_DEBUG_STRING, MGBA_REG_DEBUG_MAX, ptr, args);
-      vsnprintf(REG_DEBUG_STRING, MGBA_REG_DEBUG_MAX, ptr, args);
+      mini_vsnprintf(REG_DEBUG_STRING, ((256)), ptr, args);
+      vsnprintf(REG_DEBUG_STRING, ((256)), ptr, args);
       va_end(args);
       REG_DEBUG_FLAGS = level | 0x100;
 }

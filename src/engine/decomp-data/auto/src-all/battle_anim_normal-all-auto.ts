@@ -15,6 +15,23 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBlendY1: any = null;
+let sBlendY2: any = null;
+let sColor1: any = null;
+let sColor2: any = null;
+let sDelay: any = null;
+let sNumBlends: any = null;
+let sOriginalValue: any = null;
+let sPaletteSelector: any = null;
+let sShakeDuration: any = null;
+let sShakePtrHi: any = null;
+let sShakePtrLo: any = null;
+let sShakeTimer: any = null;
+let sShakeVelocity: any = null;
+let sTimer: any = null;
+let sType: any = null;
 /** static void AnimConfusionDuck(struct Sprite *sprite) */
 export function AnimConfusionDuck(sprite: any): any {
   CMD_ARGS(x, y, waveOffset, wavePeriod, duration);

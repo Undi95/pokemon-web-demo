@@ -15,6 +15,24 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sArrowCursor_Gfx: any = null;
+let sMysteryGiftLinkMenu: any = null;
+let sOutlineCursor_Gfx: any = null;
+let sRedInterface_Pal: any = null;
+let sScrollIndicatorTemplates: any = null;
+let sScrollIndicator_Gfx: any = null;
+let sSpriteTemplate_RedArrowCursor: any = null;
+let sSpriteTemplate_ScrollArrowIndicator: any = null;
+let sSubsprite_RedOutline1: any = null;
+let sSubsprite_RedOutline2: any = null;
+let sSubsprite_RedOutline3: any = null;
+let sSubsprite_RedOutline4: any = null;
+let sSubsprite_RedOutline5: any = null;
+let sSubsprite_RedOutline6: any = null;
+let sSubsprite_RedOutline7: any = null;
+let sSubsprite_RedOutline8: any = null;
 /** s32 DoMysteryGiftListMenu(const struct WindowTemplate *windowTemplate, const struct ListMenuTemplate *listMenuTemplate, u8 drawMode, u16 tileNum, u16 palOffset) */
 export function DoMysteryGiftListMenu(windowTemplate: any, listMenuTemplate: any, drawMode: any, tileNum: any, palOffset: any): any {
   switch (sMysteryGiftLinkMenu.state)
@@ -179,7 +197,7 @@ export function DestroyListMenuTask(listTaskId: any, scrollOffset: any, selected
           selectedRow = list.selectedRow;
 
       if (list.taskId != TASK_NONE)
-          ListMenuRemoveCursorObject(list.taskId, list.template.cursorKind - CURSOR_OBJECT_START);
+          ListMenuRemoveCursorObject(list.taskId, list.template.cursorKind - (CURSOR_RED_OUTLINE));
 
       DestroyTask(listTaskId);
 }
@@ -356,19 +374,19 @@ export function ListMenuDrawCursor(list: any): any {
           break;
       case CURSOR_RED_OUTLINE:
           if (list.taskId == TASK_NONE)
-              list.taskId = ListMenuAddCursorObject(list, CURSOR_RED_OUTLINE - CURSOR_OBJECT_START);
+              list.taskId = ListMenuAddCursorObject(list, CURSOR_RED_OUTLINE - (CURSOR_RED_OUTLINE));
           ListMenuUpdateCursorObject(list.taskId,
                                      GetWindowAttribute(list.template.windowId, WINDOW_TILEMAP_LEFT) * 8 - 1,
                                      GetWindowAttribute(list.template.windowId, WINDOW_TILEMAP_TOP) * 8 + y - 1,
-                                     CURSOR_RED_OUTLINE - CURSOR_OBJECT_START);
+                                     CURSOR_RED_OUTLINE - (CURSOR_RED_OUTLINE));
           break;
       case CURSOR_RED_ARROW:
           if (list.taskId == TASK_NONE)
-              list.taskId = ListMenuAddCursorObject(list, CURSOR_RED_ARROW - CURSOR_OBJECT_START);
+              list.taskId = ListMenuAddCursorObject(list, CURSOR_RED_ARROW - (CURSOR_RED_OUTLINE));
           ListMenuUpdateCursorObject(list.taskId,
                                      GetWindowAttribute(list.template.windowId, WINDOW_TILEMAP_LEFT) * 8 + x,
                                      GetWindowAttribute(list.template.windowId, WINDOW_TILEMAP_TOP) * 8 + y,
-                                     CURSOR_RED_ARROW - CURSOR_OBJECT_START);
+                                     CURSOR_RED_ARROW - (CURSOR_RED_OUTLINE));
           break;
       }
 }
@@ -873,10 +891,10 @@ export function RemoveScrollIndicatorArrowPair(taskId: any): any {
 export function ListMenuAddCursorObjectInternal(cursor: any, cursorObjId: any): any {
   switch (cursorObjId)
       {
-      case CURSOR_RED_OUTLINE - CURSOR_OBJECT_START:
+      case CURSOR_RED_OUTLINE - (CURSOR_RED_OUTLINE):
       default:
           return ListMenuAddRedOutlineCursorObject(cursor);
-      case CURSOR_RED_ARROW - CURSOR_OBJECT_START:
+      case CURSOR_RED_ARROW - (CURSOR_RED_OUTLINE):
           return ListMenuAddRedArrowCursorObject(cursor);
       }
 }
@@ -885,10 +903,10 @@ export function ListMenuAddCursorObjectInternal(cursor: any, cursorObjId: any): 
 export function ListMenuUpdateCursorObject(taskId: any, x: any, y: any, cursorObjId: any): any {
   switch (cursorObjId)
       {
-      case CURSOR_RED_OUTLINE - CURSOR_OBJECT_START:
+      case CURSOR_RED_OUTLINE - (CURSOR_RED_OUTLINE):
           ListMenuUpdateRedOutlineCursorObject(taskId, x, y);
           break;
-      case CURSOR_RED_ARROW - CURSOR_OBJECT_START:
+      case CURSOR_RED_ARROW - (CURSOR_RED_OUTLINE):
           ListMenuUpdateRedArrowCursorObject(taskId, x, y);
           break;
       }
@@ -898,10 +916,10 @@ export function ListMenuUpdateCursorObject(taskId: any, x: any, y: any, cursorOb
 export function ListMenuRemoveCursorObject(taskId: any, cursorObjId: any): any {
   switch (cursorObjId)
       {
-      case CURSOR_RED_OUTLINE - CURSOR_OBJECT_START:
+      case CURSOR_RED_OUTLINE - (CURSOR_RED_OUTLINE):
           ListMenuRemoveRedOutlineCursorObject(taskId);
           break;
-      case CURSOR_RED_ARROW - CURSOR_OBJECT_START:
+      case CURSOR_RED_ARROW - (CURSOR_RED_OUTLINE):
           ListMenuRemoveRedArrowCursorObject(taskId);
           break;
       }

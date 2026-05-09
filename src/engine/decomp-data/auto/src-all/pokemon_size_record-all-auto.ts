@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBigMonSizeTable: any = null;
 /** static u32 GetMonSizeHash(struct Pokemon *pkmn) */
 export function GetMonSizeHash(pkmn: any): any {
   let personality: any = GetMonData(pkmn, MON_DATA_PERSONALITY);
@@ -112,7 +115,7 @@ export function GetMonSizeRecordInfo(species: any, sizeRecord: any): any {
 
       FormatMonSizeRecord(gStringVar3, size);
       StringCopy(gStringVar1, gSpeciesNames[species]);
-      if (sizeRecord == DEFAULT_MAX_SIZE)
+      if (sizeRecord == (0x8000))
           StringCopy(gStringVar2, gText_Marco);
       else
           StringCopy(gStringVar2, gSaveBlock2Ptr.playerName);
@@ -120,7 +123,7 @@ export function GetMonSizeRecordInfo(species: any, sizeRecord: any): any {
 
 /** void InitSeedotSizeRecord(void) */
 export function InitSeedotSizeRecord(): any {
-  VarSet(VAR_SEEDOT_SIZE_RECORD, DEFAULT_MAX_SIZE);
+  VarSet(VAR_SEEDOT_SIZE_RECORD, (0x8000));
 }
 
 /** void GetSeedotSizeRecordInfo(void) */
@@ -139,7 +142,7 @@ export function CompareSeedotSize(): any {
 
 /** void InitLotadSizeRecord(void) */
 export function InitLotadSizeRecord(): any {
-  VarSet(VAR_LOTAD_SIZE_RECORD, DEFAULT_MAX_SIZE);
+  VarSet(VAR_LOTAD_SIZE_RECORD, (0x8000));
 }
 
 /** void GetLotadSizeRecordInfo(void) */

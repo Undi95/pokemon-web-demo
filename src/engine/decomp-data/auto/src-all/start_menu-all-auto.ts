@@ -15,6 +15,26 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattlePyramidFloorWindowId: any = null;
+let sBgTemplates_LinkBattleSave: any = null;
+let sCurrentStartMenuActions: any = null;
+let sInitStartMenuData: any = null;
+let sNumStartMenuActions: any = null;
+let sPyramidFloorNames: any = null;
+let sSafariBallsWindowId: any = null;
+let sSaveDialogCallback: any = null;
+let sSaveDialogTimer: any = null;
+let sSaveInfoWindowId: any = null;
+let sSaveInfoWindowTemplate: any = null;
+let sSavingComplete: any = null;
+let sStartMenuCursorPos: any = null;
+let sStartMenuItems: any = null;
+let sWindowTemplate_PyramidFloor: any = null;
+let sWindowTemplate_PyramidPeak: any = null;
+let sWindowTemplate_SafariBalls: any = null;
+let sWindowTemplates_LinkBattleSave: any = null;
 /** void SetDexPokemonPokenavFlags(void) */
 export function SetDexPokemonPokenavFlags(): any {
   FlagSet(FLAG_SYS_POKEDEX_GET);

@@ -15,6 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCompatibilityMessages: any = null;
+let sDaycareLevelMenuWindowTemplate: any = null;
+let sDaycareListMenuLevelTemplate: any = null;
+let sHatchedEggEggMoves: any = null;
+let sHatchedEggFatherMoves: any = null;
+let sHatchedEggFinalMoves: any = null;
+let sHatchedEggLevelUpMoves: any = null;
+let sHatchedEggMotherMoves: any = null;
+let sJapaneseEggNickname: any = null;
 /** u8 CountPokemonInDaycare(struct DayCare *daycare) */
 export function CountPokemonInDaycare(daycare: any): any {
   let i, count;

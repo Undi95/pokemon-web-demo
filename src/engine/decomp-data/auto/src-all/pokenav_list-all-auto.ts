@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sInvisible: any = null;
+let sListArrowPalettes: any = null;
+let sListArrowSpriteSheets: any = null;
+let sMoveWindowDownIndex: any = null;
+let sOffset: any = null;
+let sSpriteTemplate_RightArrow: any = null;
+let sSpriteTemplate_UpDownArrow: any = null;
+let sTimer: any = null;
 /** bool32 CreatePokenavList(const struct BgTemplate *bgTemplate, struct PokenavListTemplate *listTemplate, s32 tileOffset) */
 export function CreatePokenavList(bgTemplate: any, listTemplate: any, tileOffset: any): any {
   let list: any = AllocSubstruct(POKENAV_SUBSTRUCT_LIST, 0);
@@ -710,8 +720,8 @@ export function DestroyListArrows(list: any): any {
   DestroySprite(list.rightArrow);
       DestroySprite(list.upArrow);
       DestroySprite(list.downArrow);
-      FreeSpriteTilesByTag(GFXTAG_ARROW);
-      FreeSpritePaletteByTag(PALTAG_ARROW);
+      FreeSpriteTilesByTag((10));
+      FreeSpritePaletteByTag((20));
 }
 
 /** static void ToggleListArrows(struct PokenavListSub *list, bool32 invisible) */

@@ -15,6 +15,42 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattleFrontier_TutorMoves1: any = null;
+let sBattleFrontier_TutorMoves2: any = null;
+let sBattlePointsWindowId: any = null;
+let sBattleTowerMultiBattleTypeFlags: any = null;
+let sBikeCyclingTimer: any = null;
+let sDeoxysRockCoords: any = null;
+let sDeoxysRockPalettes: any = null;
+let sDeptStoreFloorNames: any = null;
+let sElevatorWindowTiles_Ascending: any = null;
+let sElevatorWindowTiles_Descending: any = null;
+let sFrontierExchangeCorner_Decor1: any = null;
+let sFrontierExchangeCorner_Decor1Descriptions: any = null;
+let sFrontierExchangeCorner_Decor2: any = null;
+let sFrontierExchangeCorner_Decor2Descriptions: any = null;
+let sFrontierExchangeCorner_HoldItems: any = null;
+let sFrontierExchangeCorner_HoldItemsDescriptions: any = null;
+let sFrontierExchangeCorner_ItemIconWindowId: any = null;
+let sFrontierExchangeCorner_NeverRead: any = null;
+let sFrontierExchangeCorner_Vitamins: any = null;
+let sFrontierExchangeCorner_VitaminsDescriptions: any = null;
+let sLilycoveDeptStore_DefaultFloorChoice: any = null;
+let sLilycoveDeptStore_NeverRead: any = null;
+let sMauvilleGymSwitchCoords: any = null;
+let sPCBoxToSendMon: any = null;
+let sPetalburgGymSlidingDoorMetatiles: any = null;
+let sScrollableMultichoiceOptions: any = null;
+let sScrollableMultichoice_ItemSpriteId: any = null;
+let sScrollableMultichoice_ListMenuItem: any = null;
+let sScrollableMultichoice_ScrollOffset: any = null;
+let sSlidingDoorFrame: any = null;
+let sSlidingDoorNextFrameCounter: any = null;
+let sSlidingDoorNextFrameDelay: any = null;
+let sTutorMoveAndElevatorWindowId: any = null;
+let sWindowTemplate_ElevatorFloor: any = null;
 /** void Special_ShowDiploma(void) */
 export function Special_ShowDiploma(): any {
   SetMainCallback2(CB2_ShowDiploma);
@@ -1583,8 +1619,8 @@ export function MoveElevator(): any {
           tDescending = FALSE;
       }
 
-      if (floorDelta > MAX_ELEVATOR_TRIP - 1)
-          floorDelta = MAX_ELEVATOR_TRIP - 1;
+      if (floorDelta > (9) - 1)
+          floorDelta = (9) - 1;
 
       tTotalMoves = sElevatorTripLength[floorDelta];
 
@@ -1664,19 +1700,19 @@ export function Task_MoveElevatorWindowLights(taskId: any): any {
           if (!tDescending)
           {
                
-              for (y = 0; y < ELEVATOR_WINDOW_HEIGHT; y++)
+              for (y = 0; y < (3); y++)
               {
-                  for (x = 0; x < ELEVATOR_WINDOW_WIDTH; x++)
-                      MapGridSetMetatileIdAt(x + MAP_OFFSET + 1, y + MAP_OFFSET, sElevatorWindowTiles_Ascending[y][tMoveCounter % ELEVATOR_LIGHT_STAGES] | MAPGRID_IMPASSABLE);
+                  for (x = 0; x < (3); x++)
+                      MapGridSetMetatileIdAt(x + MAP_OFFSET + 1, y + MAP_OFFSET, sElevatorWindowTiles_Ascending[y][tMoveCounter % (3)] | MAPGRID_IMPASSABLE);
               }
           }
           else
           {
                
-              for (y = 0; y < ELEVATOR_WINDOW_HEIGHT; y++)
+              for (y = 0; y < (3); y++)
               {
-                  for (x = 0; x < ELEVATOR_WINDOW_WIDTH; x++)
-                      MapGridSetMetatileIdAt(x + MAP_OFFSET + 1, y + MAP_OFFSET, sElevatorWindowTiles_Descending[y][tMoveCounter % ELEVATOR_LIGHT_STAGES] | MAPGRID_IMPASSABLE);
+                  for (x = 0; x < (3); x++)
+                      MapGridSetMetatileIdAt(x + MAP_OFFSET + 1, y + MAP_OFFSET, sElevatorWindowTiles_Descending[y][tMoveCounter % (3)] | MAPGRID_IMPASSABLE);
               }
           }
           DrawWholeMapView();
@@ -2244,7 +2280,7 @@ export function Task_ScrollableMultichoice_ReturnToList(taskId: any): any {
 
 /** static void ScrollableMultichoice_UpdateScrollArrows(u8 taskId) */
 export function ScrollableMultichoice_UpdateScrollArrows(taskId: any): any {
-  let sScrollableMultichoice_ScrollArrowsTemplate: any = [ SCROLL_ARROW_UP, 0, 0, SCROLL_ARROW_DOWN, 0, 0, 0, 0, GFXTAG_MULTICHOICE_SCROLL_ARROWS, PALTAG_MULTICHOICE_SCROLL_ARROWS, 0
+  let sScrollableMultichoice_ScrollArrowsTemplate: any = [ SCROLL_ARROW_UP, 0, 0, SCROLL_ARROW_DOWN, 0, 0, 0, 0, (2000), (100), 0
       ];
 
       let task: any =gTasks[taskId];
@@ -2460,9 +2496,9 @@ export function FillFrontierExchangeCornerWindowAndItemIcon(menu: any, selection
               }
               else
               {
-                  FreeSpriteTilesByTag(TAG_ITEM_ICON);
-                  FreeSpritePaletteByTag(TAG_ITEM_ICON);
-                  sScrollableMultichoice_ItemSpriteId = AddDecorationIconObject(sFrontierExchangeCorner_Decor1[selection], 33, 88, 0, TAG_ITEM_ICON, TAG_ITEM_ICON);
+                  FreeSpriteTilesByTag((5500));
+                  FreeSpritePaletteByTag((5500));
+                  sScrollableMultichoice_ItemSpriteId = AddDecorationIconObject(sFrontierExchangeCorner_Decor1[selection], 33, 88, 0, (5500), (5500));
               }
               break;
           case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2:
@@ -2473,9 +2509,9 @@ export function FillFrontierExchangeCornerWindowAndItemIcon(menu: any, selection
               }
               else
               {
-                  FreeSpriteTilesByTag(TAG_ITEM_ICON);
-                  FreeSpritePaletteByTag(TAG_ITEM_ICON);
-                  sScrollableMultichoice_ItemSpriteId = AddDecorationIconObject(sFrontierExchangeCorner_Decor2[selection], 33, 88, 0, TAG_ITEM_ICON, TAG_ITEM_ICON);
+                  FreeSpriteTilesByTag((5500));
+                  FreeSpritePaletteByTag((5500));
+                  sScrollableMultichoice_ItemSpriteId = AddDecorationIconObject(sFrontierExchangeCorner_Decor2[selection], 33, 88, 0, (5500), (5500));
               }
               break;
           case SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR:
@@ -2492,9 +2528,9 @@ export function FillFrontierExchangeCornerWindowAndItemIcon(menu: any, selection
 
 /** static void ShowFrontierExchangeCornerItemIcon(u16 item) */
 export function ShowFrontierExchangeCornerItemIcon(item: any): any {
-  FreeSpriteTilesByTag(TAG_ITEM_ICON);
-      FreeSpritePaletteByTag(TAG_ITEM_ICON);
-      sScrollableMultichoice_ItemSpriteId = AddItemIconSprite(TAG_ITEM_ICON, TAG_ITEM_ICON, item);
+  FreeSpriteTilesByTag((5500));
+      FreeSpritePaletteByTag((5500));
+      sScrollableMultichoice_ItemSpriteId = AddItemIconSprite((5500), (5500), item);
 
       if (sScrollableMultichoice_ItemSpriteId != MAX_SPRITES)
       {
@@ -2698,7 +2734,7 @@ export function Task_DeoxysRockInteraction(taskId: any): any {
               gSpecialVar_Result = DEOXYS_ROCK_FAILED;
               DestroyTask(taskId);
           }
-          else if (rockLevel == DEOXYS_ROCK_LEVELS - 1)
+          else if (rockLevel == (11) - 1)
           {
               FlagSet(FLAG_DEOXYS_ROCK_COMPLETE);
               gSpecialVar_Result = DEOXYS_ROCK_SOLVED;
@@ -2719,7 +2755,7 @@ export function Task_DeoxysRockInteraction(taskId: any): any {
 /** static void ChangeDeoxysRockLevel(u8 rockLevel) */
 export function ChangeDeoxysRockLevel(rockLevel: any): any {
   let objectEventId: any = null;
-      LoadPalette(sDeoxysRockPalettes[rockLevel], OBJ_PLTT_ID(ROCK_PAL_ID), PLTT_SIZEOF(4));
+      LoadPalette(sDeoxysRockPalettes[rockLevel], OBJ_PLTT_ID((10)), PLTT_SIZEOF(4));
       TryGetObjectEventIdByLocalIdAndMap(LOCALID_BIRTH_ISLAND_EXTERIOR_ROCK, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup,objectEventId);
 
       if (rockLevel == 0)
@@ -2768,8 +2804,8 @@ export function IncrementBirthIslandRockStepCount(): any {
 
 /** void SetDeoxysRockPalette(void) */
 export function SetDeoxysRockPalette(): any {
-  LoadPalette(sDeoxysRockPalettes[VarGet(VAR_DEOXYS_ROCK_LEVEL)], OBJ_PLTT_ID(ROCK_PAL_ID), PLTT_SIZEOF(4));
-      BlendPalettes(1 << (ROCK_PAL_ID + 16), 16, 0);
+  LoadPalette(sDeoxysRockPalettes[VarGet(VAR_DEOXYS_ROCK_LEVEL)], OBJ_PLTT_ID((10)), PLTT_SIZEOF(4));
+      BlendPalettes(1 << ((10) + 16), 16, 0);
 }
 
 /** void SetPCBoxToSendMon(u8 boxId) */
@@ -3199,13 +3235,13 @@ export function Task_CloseBattlePikeCurtain(taskId: any): any {
       tFrameTimer[tCurrentFrame]--;
       if (tFrameTimer[tCurrentFrame] == 0)
       {
-          for (y = 0; y < CURTAIN_HEIGHT; y++)
+          for (y = 0; y < (4); y++)
           {
-              for (x = 0; x < CURTAIN_WIDTH; x++)
+              for (x = 0; x < (3); x++)
               {
                   MapGridSetMetatileIdAt(gSaveBlock1Ptr.pos.x + x + MAP_OFFSET - 1,
                                          gSaveBlock1Ptr.pos.y + y + MAP_OFFSET - 3,
-                                         (x + METATILE_BattlePike_CurtainFrames_Start) + (y * METATILE_ROW_WIDTH) + (tCurrentFrame * CURTAIN_HEIGHT * METATILE_ROW_WIDTH));
+                                         (x + METATILE_BattlePike_CurtainFrames_Start) + (y * METATILE_ROW_WIDTH) + (tCurrentFrame * (4) * METATILE_ROW_WIDTH));
               }
           }
           DrawWholeMapView();
@@ -3308,16 +3344,16 @@ export function TryGainNewFanFromCounter(incrementId: any): any {
 
       if (VarGet(VAR_LILYCOVE_FAN_CLUB_STATE) == 2)
       {
-          if (GET_TRAINER_FAN_CLUB_COUNTER + sCounterIncrements[incrementId] > 19)
+          if (((FANCLUB_BITFIELD & (0x007F))) + sCounterIncrements[incrementId] > 19)
           {
               if (GetNumFansOfPlayerInTrainerFanClub() < 3)
               {
                   PlayerGainRandomTrainerFan();
-                  CLEAR_TRAINER_FAN_CLUB_COUNTER;
+                  ((FANCLUB_BITFIELD &= ~(0x007F)));
               }
               else
               {
-                  (FANCLUB_BITFIELD = (FANCLUB_BITFIELD & ~FANCLUB_COUNTER) | ((20)));
+                  (FANCLUB_BITFIELD = (FANCLUB_BITFIELD & ~(0x007F)) | ((20)));
               }
           }
           else
@@ -3326,7 +3362,7 @@ export function TryGainNewFanFromCounter(incrementId: any): any {
           }
       }
 
-      return GET_TRAINER_FAN_CLUB_COUNTER;
+      return ((FANCLUB_BITFIELD & (0x007F)));
 }
 
 /** static u16 PlayerGainRandomTrainerFan(void) */

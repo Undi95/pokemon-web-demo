@@ -91,7 +91,7 @@ export function GiveMailToMonByItemId(mon: any, itemId: any): any {
 export function SpeciesToMailSpecies(species: any, personality: any): any {
   if (species == SPECIES_UNOWN)
       {
-          let species: any = GetUnownLetterByPersonality(personality) + UNOWN_OFFSET;
+          let species: any = GetUnownLetterByPersonality(personality) + (30000);
           return species;
       }
 
@@ -102,10 +102,10 @@ export function SpeciesToMailSpecies(species: any, personality: any): any {
 export function MailSpeciesToSpecies(mailSpecies: any, buffer: any): any {
   let result: any = null;
 
-      if (mailSpecies >= UNOWN_OFFSET && mailSpecies < UNOWN_OFFSET + NUM_UNOWN_FORMS)
+      if (mailSpecies >= (30000) && mailSpecies < (30000) + NUM_UNOWN_FORMS)
       {
           result = SPECIES_UNOWN;
-          buffer = mailSpecies - UNOWN_OFFSET;
+          buffer = mailSpecies - (30000);
       }
       else
       {

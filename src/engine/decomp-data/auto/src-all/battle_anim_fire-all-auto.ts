@@ -15,6 +15,25 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sActiveSpritesIdx: any = null;
+let sBounceDir: any = null;
+let sBounceTimer: any = null;
+let sEndTimer: any = null;
+let sEruptionLaunchRockSpeeds: any = null;
+let sFallDelay: any = null;
+let sLaunchStage: any = null;
+let sShakeDirsPattern0: any = null;
+let sShakeDirsPattern1: any = null;
+let sSpeedDelay: any = null;
+let sSpeedX: any = null;
+let sSpeedY: any = null;
+let sState: any = null;
+let sTargetY: any = null;
+let sTaskId: any = null;
+let sX: any = null;
+let sY: any = null;
 /** static void AnimFireSpiralInward(struct Sprite *sprite) */
 export function AnimFireSpiralInward(sprite: any): any {
   sprite.data[0] = gBattleAnimArgs[0];
@@ -372,7 +391,7 @@ export function AnimTask_EruptionLaunchRocks_Step(taskId: any): any {
       case 3:
           if (!UpdateEruptAnimTask(task))
           {
-              CreateEruptionLaunchRocks(task.tAttackerSpriteId, taskId, IDX_ACTIVE_SPRITES);
+              CreateEruptionLaunchRocks(task.tAttackerSpriteId, taskId, (6));
               task.tState++;
           }
           break;

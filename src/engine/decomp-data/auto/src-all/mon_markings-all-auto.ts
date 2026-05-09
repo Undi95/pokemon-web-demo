@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnims_MenuSprite: any = null;
+let sAnims_MenuWindow: any = null;
+let sCursorYOffset: any = null;
+let sMarkingId: any = null;
+let sMenu: any = null;
+let sMonMarkings_Gfx: any = null;
+let sOamData_8x8: any = null;
+let sOamData_MenuWindow: any = null;
 /** void InitMonMarkingsMenu(struct MonMarkingsMenu *ptr) */
 export function InitMonMarkingsMenu(ptr: any): any {
   sMenu = ptr;
@@ -126,14 +136,14 @@ export function HandleMonMarkingsMenuInput(): any {
       {
           PlaySE(SE_SELECT);
           if (--sMenu.cursorPos < 0)
-              sMenu.cursorPos = SELECTION_CANCEL;
+              sMenu.cursorPos = (((NUM_MON_MARKINGS) + 1));
           return TRUE;
       }
 
       if (JOY_NEW(DPAD_DOWN))
       {
           PlaySE(SE_SELECT);
-          if (++sMenu.cursorPos > SELECTION_CANCEL)
+          if (++sMenu.cursorPos > (((NUM_MON_MARKINGS) + 1)))
               sMenu.cursorPos = 0;
           return TRUE;
       }
@@ -144,12 +154,12 @@ export function HandleMonMarkingsMenuInput(): any {
 
           switch (sMenu.cursorPos)
           {
-          case SELECTION_OK:
+          case (NUM_MON_MARKINGS):
               sMenu.markings = 0;
               for (i = 0; i < NUM_MON_MARKINGS; i++)
                   sMenu.markings |= sMenu.markingsArray[i] << i;
               return FALSE;
-          case SELECTION_CANCEL:
+          case (((NUM_MON_MARKINGS) + 1)):
               return FALSE;
           }
 
@@ -238,7 +248,7 @@ export function CreateMonMarkingsMenuSprites(x: any, y: any, baseTileTag: any, b
           sMenu.textSprite =gSprites[spriteId];
           sMenu.textSprite.oam.shape = SPRITE_SHAPE(_32x32);
           sMenu.textSprite.oam.size = SPRITE_SIZE(_32x32);
-          StartSpriteAnim(sMenu.textSprite, ANIM_TEXT);
+          StartSpriteAnim(sMenu.textSprite, ((ANIM_CURSOR + 1)));
           sMenu.textSprite.x = x + 32;
           sMenu.textSprite.y = y + 80;
           CalcCenterToCornerVec(sMenu.textSprite, SPRITE_SHAPE(_32x16), SPRITE_SIZE(_32x16), ST_OAM_AFFINE_OFF);
@@ -255,7 +265,7 @@ export function CreateMonMarkingsMenuSprites(x: any, y: any, baseTileTag: any, b
       {
           sMenu.cursorSprite =gSprites[spriteId];
           sMenu.cursorSprite.sCursorYOffset = y + 16;
-          StartSpriteAnim(sMenu.cursorSprite, ANIM_CURSOR);
+          StartSpriteAnim(sMenu.cursorSprite, ((NUM_MON_MARKINGS * 2)));
       }
       else
       {

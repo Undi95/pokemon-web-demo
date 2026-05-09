@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sMovementScripts: any = null;
 /** bool8 ScriptMovement_StartObjectMovementScript(u8 localId, u8 mapNum, u8 mapGroup, const u8 *movementScript) */
 export function ScriptMovement_StartObjectMovementScript(localId: any, mapNum: any, mapGroup: any, movementScript: any): any {
   let objEventId: any = null;

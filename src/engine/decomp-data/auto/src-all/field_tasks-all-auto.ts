@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFloatingBridgeMetatileOffsets: any = null;
+let sFullySubmergedBridgeMetatileOffsets: any = null;
+let sHalfSubmergedBridgeMetatileOffsets: any = null;
+let sMuddySlopeMetatiles: any = null;
+let sPerStepCallbacks: any = null;
+let sSootopolisGymIceRowVars: any = null;
 /** static void Task_RunPerStepCallback(u8 taskId) */
 export function Task_RunPerStepCallback(taskId: any): any {
   let idx: any = gTasks[taskId].tCallbackId;
@@ -26,14 +34,14 @@ export function RunTimeBasedEvents(data: any): any {
   switch (tState)
       {
       case 0:
-          if (gMain.vblankCounter1 & TIME_UPDATE_INTERVAL)
+          if (gMain.vblankCounter1 & ((1 << 12)))
           {
               DoTimeBasedEvents();
               tState++;
           }
           break;
       case 1:
-          if (!(gMain.vblankCounter1 & TIME_UPDATE_INTERVAL))
+          if (!(gMain.vblankCounter1 & ((1 << 12))))
               tState--;
           break;
       }
@@ -405,8 +413,8 @@ export function FortreeBridgePerStepCallback(taskId: any): any {
 
 /** static bool32 CoordInIcePuzzleRegion(s16 x, s16 y) */
 export function CoordInIcePuzzleRegion(x: any, y: any): any {
-  if ((x - ICE_PUZZLE_L) < ICE_PUZZLE_WIDTH
-       && (y - ICE_PUZZLE_T) < ICE_PUZZLE_HEIGHT
+  if ((x - (3)) < (((13) - (3) + 1))
+       && (y - (6)) < (((19) - (6) + 1))
        && sSootopolisGymIceRowVars[y])
           return TRUE;
       else
@@ -416,7 +424,7 @@ export function CoordInIcePuzzleRegion(x: any, y: any): any {
 /** static void MarkIcePuzzleCoordVisited(s16 x, s16 y) */
 export function MarkIcePuzzleCoordVisited(x: any, y: any): any {
   if (CoordInIcePuzzleRegion(x, y))
-          VarSet(sSootopolisGymIceRowVars[y], VarGet(sSootopolisGymIceRowVars[y]) | ((1 << (x - ICE_PUZZLE_L))));
+          VarSet(sSootopolisGymIceRowVars[y], VarGet(sSootopolisGymIceRowVars[y]) | ((1 << (x - (3)))));
 }
 
 /** static bool32 IsIcePuzzleCoordVisited(s16 x, s16 y) */
@@ -426,7 +434,7 @@ export function IsIcePuzzleCoordVisited(x: any, y: any): any {
           return FALSE;
 
       _var = VarGet(sSootopolisGymIceRowVars[y]);
-      if (_var &= (1 << (x - ICE_PUZZLE_L)))
+      if (_var &= (1 << (x - (3))))
           return TRUE;
       else
           return FALSE;
@@ -635,10 +643,10 @@ export function Task_MuddySlope(taskId: any): any {
           tPrevX = x;
           tPrevY = y;
           tState = 1;
-          data[((0)) * SLOPE_DATA_SIZE + SLOPE_DATA_START + SLOPE_TIME] = 0;
-          data[((1)) * SLOPE_DATA_SIZE + SLOPE_DATA_START + SLOPE_TIME] = 0;
-          data[((2)) * SLOPE_DATA_SIZE + SLOPE_DATA_START + SLOPE_TIME] = 0;
-          data[((3)) * SLOPE_DATA_SIZE + SLOPE_DATA_START + SLOPE_TIME] = 0;
+          data[((0)) * SLOPE_DATA_SIZE + (4) + SLOPE_TIME] = 0;
+          data[((1)) * SLOPE_DATA_SIZE + (4) + SLOPE_TIME] = 0;
+          data[((2)) * SLOPE_DATA_SIZE + (4) + SLOPE_TIME] = 0;
+          data[((3)) * SLOPE_DATA_SIZE + (4) + SLOPE_TIME] = 0;
           break;
       case 1:
            
@@ -649,11 +657,11 @@ export function Task_MuddySlope(taskId: any): any {
           tPrevY = y;
           if (MetatileBehavior_IsMuddySlope(MapGridGetMetatileBehaviorAt(x, y)))
           {
-              for (i = SLOPE_DATA_START; i <= SLOPE_DATA_END; i += SLOPE_DATA_SIZE)
+              for (i = (4); i <= ((3 * SLOPE_DATA_SIZE + SLOPE_DATA_START)); i += SLOPE_DATA_SIZE)
               {
                   if (data[i] == 0)
                   {
-                      data[i + SLOPE_TIME] = SLOPE_ANIM_TIME;
+                      data[i + SLOPE_TIME] = (32);
                       data[i + SLOPE_X] = x;
                       data[i + SLOPE_Y] = y;
                       break;
@@ -675,7 +683,7 @@ export function Task_MuddySlope(taskId: any): any {
           cameraOffsetY = 0;
       }
 
-      for (i = SLOPE_DATA_START; i <= SLOPE_DATA_END; i += SLOPE_DATA_SIZE)
+      for (i = (4); i <= ((3 * SLOPE_DATA_SIZE + SLOPE_DATA_START)); i += SLOPE_DATA_SIZE)
       {
           if (data[i + SLOPE_TIME])
           {

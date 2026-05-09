@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattleBuffersTransferData: any = null;
+let sLinkReceiveTaskId: any = null;
+let sLinkSendTaskId: any = null;
+let sUnused: any = null;
 /** void HandleLinkBattleSetup(void) */
 export function HandleLinkBattleSetup(): any {
   if (gBattleTypeFlags & BATTLE_TYPE_LINK)

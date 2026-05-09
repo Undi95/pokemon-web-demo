@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCoinsWindowId: any = null;
 /** void PrintCoinsString(u32 coinAmount) */
 export function PrintCoinsString(coinAmount: any): any {
   let xAlign: any = null;

@@ -15,6 +15,148 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnimFinished: any = null;
+let sAtOriginalColor: any = null;
+let sBetToMatchLineIds: any = null;
+let sBgTemplates: any = null;
+let sBiasProbabilities_Regular: any = null;
+let sBiasProbabilities_Special: any = null;
+let sBiasSymbols: any = null;
+let sBiasesRegular: any = null;
+let sBiasesSpecial: any = null;
+let sColor: any = null;
+let sColorIdx: any = null;
+let sColorIncr: any = null;
+let sColors_ReeltimeHelp: any = null;
+let sCounter: any = null;
+let sCurNum: any = null;
+let sDarkMatchLinePalTable: any = null;
+let sDecideStop_Bias: any = null;
+let sDecideStop_Bias_Reel1_Bets: any = null;
+let sDecideStop_Bias_Reel2_Bets: any = null;
+let sDecideStop_Bias_Reel3_Bets: any = null;
+let sDecideStop_NoBias: any = null;
+let sDecideStop_NoBias_Reel2_Bets: any = null;
+let sDecideStop_NoBias_Reel3_Bets: any = null;
+let sDelay: any = null;
+let sDelayTimer: any = null;
+let sDigitMax: any = null;
+let sDigitMin: any = null;
+let sDigitalDisplayGfxPtr: any = null;
+let sDigitalDisplaySceneExitCallbacks: any = null;
+let sDigitalDisplayScenes: any = null;
+let sDigitalDisplayTasks: any = null;
+let sDigitalDisplay_Pal: any = null;
+let sDigitalDisplay_SpriteCallbacks: any = null;
+let sDigitalDisplay_SpriteCoords: any = null;
+let sEmptyTilemap: any = null;
+let sFlashDir: any = null;
+let sFlashPal: any = null;
+let sFlashState: any = null;
+let sFlashing: any = null;
+let sFlashingLightsPalTable: any = null;
+let sImageTable_BrokenReelTimeMachine: any = null;
+let sImageTable_DigitalDisplay_AButton: any = null;
+let sImageTable_DigitalDisplay_Big: any = null;
+let sImageTable_DigitalDisplay_Bonus: any = null;
+let sImageTable_DigitalDisplay_DPad: any = null;
+let sImageTable_DigitalDisplay_Insert: any = null;
+let sImageTable_DigitalDisplay_Lose: any = null;
+let sImageTable_DigitalDisplay_Number: any = null;
+let sImageTable_DigitalDisplay_Pokeball: any = null;
+let sImageTable_DigitalDisplay_Reel: any = null;
+let sImageTable_DigitalDisplay_Reg: any = null;
+let sImageTable_DigitalDisplay_Smoke: any = null;
+let sImageTable_DigitalDisplay_Stop: any = null;
+let sImageTable_DigitalDisplay_Time: any = null;
+let sImageTable_DigitalDisplay_Win: any = null;
+let sImageTable_ReelTimeMachine: any = null;
+let sImageTable_ReelTimeMachineAntennae: any = null;
+let sImageTable_ReelTimePikachu: any = null;
+let sImageTables_DigitalDisplay: any = null;
+let sInfoBoxTasks: any = null;
+let sInitialReelPositions: any = null;
+let sIsPayout: any = null;
+let sLitMatchLinePalTable: any = null;
+let sMatchLineId: any = null;
+let sMatchLinePalOffsets: any = null;
+let sMatchLinesPerBet: any = null;
+let sMenuGfx: any = null;
+let sMoveY: any = null;
+let sNumFullFlashes: any = null;
+let sPayoutTasks: any = null;
+let sPikaPowerBoltTasks: any = null;
+let sPikaPowerTileTable: any = null;
+let sPikachuAuraFlashDelays: any = null;
+let sPokeballShiningPalTable: any = null;
+let sQuarterSpeed_ProbabilityBoost: any = null;
+let sReelBackgroundSpriteSheet: any = null;
+let sReelBackground_Gfx: any = null;
+let sReelBackground_Tilemap: any = null;
+let sReelButtonOffsets: any = null;
+let sReelButtonPress_Tilemap: any = null;
+let sReelOverlay_Tilemap: any = null;
+let sReelStopButtonTasks: any = null;
+let sReelStopShocks: any = null;
+let sReelSymbols: any = null;
+let sReelTasks: any = null;
+let sReelTimeBoltDelays: any = null;
+let sReelTimeExplodeProbability: any = null;
+let sReelTimeGfx: any = null;
+let sReelTimeGfxPtr: any = null;
+let sReelTimePikachuAnimIds: any = null;
+let sReelTimeProbabilities_LuckyGame: any = null;
+let sReelTimeProbabilities_NormalGame: any = null;
+let sReelTimeSpeed_Probabilities: any = null;
+let sReelTimeSymbols: any = null;
+let sReelTimeTasks: any = null;
+let sReelTimeWindow_Tilemap: any = null;
+let sSelectedPikaPowerTile: any = null;
+let sSlotMachine: any = null;
+let sSlotMachineMenu_Pal: any = null;
+let sSlotMachineSpritePalettes: any = null;
+let sSlotMachineSpriteSheets: any = null;
+let sSlotMachineSpritesheetsPtr: any = null;
+let sSlotMatchFlags: any = null;
+let sSlotPayouts: any = null;
+let sSlotTasks: any = null;
+let sSpecialDrawOdds: any = null;
+let sSpriteId: any = null;
+let sSpriteTemplate_BrokenReelTimeMachine: any = null;
+let sSpriteTemplate_CoinNumber: any = null;
+let sSpriteTemplate_PikaPowerBolt: any = null;
+let sSpriteTemplate_ReelBackground: any = null;
+let sSpriteTemplate_ReelSymbol: any = null;
+let sSpriteTemplate_ReelTimeBolt: any = null;
+let sSpriteTemplate_ReelTimeDuck: any = null;
+let sSpriteTemplate_ReelTimeExplosion: any = null;
+let sSpriteTemplate_ReelTimeMachine: any = null;
+let sSpriteTemplate_ReelTimeMachineAntennae: any = null;
+let sSpriteTemplate_ReelTimeNumberGap: any = null;
+let sSpriteTemplate_ReelTimeNumbers: any = null;
+let sSpriteTemplate_ReelTimePikachu: any = null;
+let sSpriteTemplate_ReelTimePikachuAura: any = null;
+let sSpriteTemplate_ReelTimeShadow: any = null;
+let sSpriteTemplate_ReelTimeSmoke: any = null;
+let sSpriteTemplates_DigitalDisplay: any = null;
+let sState: any = null;
+let sSubspriteTable_BrokenReelTimeMachine: any = null;
+let sSubspriteTable_ReelBackground: any = null;
+let sSubspriteTable_ReelTimeMachine: any = null;
+let sSubspriteTable_ReelTimeMachineAntennae: any = null;
+let sSubspriteTable_ReelTimeNumberGap: any = null;
+let sSubspriteTable_ReelTimeShadow: any = null;
+let sSubspriteTables_DigitalDisplay: any = null;
+let sSymbolToMatch: any = null;
+let sTimer: any = null;
+let sUnkPalette: any = null;
+let sWaitForAnim: any = null;
+let sWindowTemplate_InfoBox: any = null;
+let sWindowTemplates: any = null;
+let sXDir: any = null;
+let sYDir: any = null;
 /** static void Task_FadeToSlotMachine(u8 taskId) */
 export function Task_FadeToSlotMachine(taskId: any): any {
   switch (gTasks[taskId].tState)
@@ -202,7 +344,7 @@ export function InitSlotMachine(): any {
       sSlotMachine.netCoinLoss = 0;
       sSlotMachine.bet = 0;
       sSlotMachine.currentReel = LEFT_REEL;
-      sSlotMachine.reelSpeed = REEL_NORMAL_SPEED;
+      sSlotMachine.reelSpeed = (8);
       sSlotMachine.win0h = DISPLAY_WIDTH;
       sSlotMachine.win0v = DISPLAY_HEIGHT;
       sSlotMachine.winIn = WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR;
@@ -212,9 +354,9 @@ export function InitSlotMachine(): any {
       for (i = 0; i < NUM_REELS; i++)
       {
           sSlotMachine.reelShockOffsets[i] = 0;
-          sSlotMachine.reelPositions[i] = sInitialReelPositions[i][sSlotMachine.luckyGame] % SYMBOLS_PER_REEL;
-          sSlotMachine.reelPixelOffsets[i] = REEL_HEIGHT - sSlotMachine.reelPositions[i] * REEL_SYMBOL_HEIGHT;
-          sSlotMachine.reelPixelOffsets[i] %= REEL_HEIGHT;
+          sSlotMachine.reelPositions[i] = sInitialReelPositions[i][sSlotMachine.luckyGame] % (21);
+          sSlotMachine.reelPixelOffsets[i] = ((SYMBOLS_PER_REEL * REEL_SYMBOL_HEIGHT)) - sSlotMachine.reelPositions[i] * (24);
+          sSlotMachine.reelPixelOffsets[i] %= ((SYMBOLS_PER_REEL * REEL_SYMBOL_HEIGHT));
       }
       AlertTVThatPlayerPlayedSlotMachine(GetCoins());
 }
@@ -301,7 +443,7 @@ export function SlotTask_ReadyNewSpin(task: any): any {
   sSlotMachine.payout = 0;
       sSlotMachine.bet = 0;
       sSlotMachine.currentReel = LEFT_REEL;
-      sSlotMachine.machineBias &= (BIAS_STRAIGHT_7 | BIAS_MIXED_7);
+      sSlotMachine.machineBias &= (((1 << 7)) | ((1 << 6)));
       sSlotMachine.state = SLOTTASK_ASK_INSERT_BET;
       if (sSlotMachine.coins <= 0)
       {
@@ -343,12 +485,12 @@ export function SlotTask_HandleBetInput(task: any): any {
        
       else if (JOY_NEW(R_BUTTON))
       {
-          if (sSlotMachine.coins - (MAX_BET - sSlotMachine.bet) >= 0)
+          if (sSlotMachine.coins - ((3) - sSlotMachine.bet) >= 0)
           {
-              for (i = sSlotMachine.bet; i < MAX_BET; i++)
+              for (i = sSlotMachine.bet; i < (3); i++)
                   LightenBetTiles(i);
-              sSlotMachine.coins -= (MAX_BET - sSlotMachine.bet);
-              sSlotMachine.bet = MAX_BET;
+              sSlotMachine.coins -= ((3) - sSlotMachine.bet);
+              sSlotMachine.bet = (3);
               sSlotMachine.state = SLOTTASK_START_SPIN;
               PlaySE(SE_SHOP);
           }
@@ -370,7 +512,7 @@ export function SlotTask_HandleBetInput(task: any): any {
           }
 
            
-          if (sSlotMachine.bet >= MAX_BET || (sSlotMachine.bet != 0 && JOY_NEW(A_BUTTON)))
+          if (sSlotMachine.bet >= (3) || (sSlotMachine.bet != 0 && JOY_NEW(A_BUTTON)))
               sSlotMachine.state = SLOTTASK_START_SPIN;
 
            
@@ -418,7 +560,7 @@ export function SlotTask_StartSpin(task: any): any {
       IncrementDailySlotsUses();
 
       task.tTimer = 0;
-      if (sSlotMachine.machineBias & BIAS_REELTIME)
+      if (sSlotMachine.machineBias & ((1 << 5)))
       {
           BeginReelTime();
           sSlotMachine.state = SLOTTASK_START_RT_SPIN;
@@ -428,7 +570,7 @@ export function SlotTask_StartSpin(task: any): any {
           CreateDigitalDisplayScene(DIG_DISPLAY_STOP_REEL);
           sSlotMachine.state = SLOTTASK_RESET_BIAS_FAILURE;
       }
-      sSlotMachine.reelSpeed = REEL_NORMAL_SPEED;
+      sSlotMachine.reelSpeed = (8);
       if (sSlotMachine.reelTimeSpinsLeft)
           sSlotMachine.reelSpeed = ReelTimeSpeed();
       return FALSE;
@@ -439,7 +581,7 @@ export function SlotTask_StartReelTimeSpin(task: any): any {
   if (IsReelTimeTaskDone())
       {
           CreateDigitalDisplayScene(DIG_DISPLAY_STOP_REEL);
-          sSlotMachine.machineBias &= ~BIAS_REELTIME;
+          sSlotMachine.machineBias &= ~((1 << 5));
           sSlotMachine.state = SLOTTASK_RESET_BIAS_FAILURE;
       }
       return FALSE;
@@ -484,7 +626,7 @@ export function SlotTask_WaitAllReelsStop(task: any): any {
 
 /** static bool8 SlotTask_CheckMatches(struct Task *task) */
 export function SlotTask_CheckMatches(task: any): any {
-  sSlotMachine.machineBias &= (BIAS_STRAIGHT_7 | BIAS_MIXED_7);
+  sSlotMachine.machineBias &= (((1 << 7)) | ((1 << 6)));
       CheckMatch();
       if (sSlotMachine.reelTimeSpinsLeft)
       {
@@ -519,7 +661,7 @@ export function SlotTask_CheckMatches(task: any): any {
 
           if (sSlotMachine.matches & ((1 << MATCH_MIXED_7) | (1 << MATCH_BLUE_7) | (1 << MATCH_RED_7)))
           {
-              sSlotMachine.machineBias &= ~(BIAS_STRAIGHT_7 | BIAS_MIXED_7);
+              sSlotMachine.machineBias &= ~(((1 << 7)) | ((1 << 6)));
               if (sSlotMachine.matches & ((1 << MATCH_BLUE_7) | (1 << MATCH_RED_7)))
               {
                    
@@ -750,7 +892,7 @@ export function DrawMachineBias(): any {
 
       if (sSlotMachine.reelTimeSpinsLeft == 0)
       {
-          if (!(sSlotMachine.machineBias & (BIAS_STRAIGHT_7 | BIAS_MIXED_7)))
+          if (!(sSlotMachine.machineBias & (((1 << 7)) | ((1 << 6)))))
           {
               if (ShouldTrySpecialBias())
               {
@@ -894,14 +1036,14 @@ export function ReelTimeSpeed(): any {
       rval = Random() % 100;
       value = sReelTimeSpeed_Probabilities[i][0];
       if (rval < value)
-          return REEL_HALF_SPEED;
+          return (4);
 
       rval = Random() % 100;
       value = sReelTimeSpeed_Probabilities[i][1] + sQuarterSpeed_ProbabilityBoost[sSlotMachine.reelTimeSpinsUsed];
       if (rval < value)
-          return REEL_QUARTER_SPEED;
+          return (2);
 
-      return REEL_NORMAL_SPEED;
+      return (8);
 }
 
 /** static void CheckMatch(void) */
@@ -1077,16 +1219,16 @@ export function PayoutTask_Free(task: any): any {
 
 /** static u8 GetSymbolAtRest(u8 reel, s16 offset) */
 export function GetSymbolAtRest(reel: any, offset: any): any {
-  let pos: any = (sSlotMachine.reelPositions[reel] + offset) % SYMBOLS_PER_REEL;
+  let pos: any = (sSlotMachine.reelPositions[reel] + offset) % (21);
       if (pos < 0)
-          pos += SYMBOLS_PER_REEL;
+          pos += (21);
       return sReelSymbols[reel][pos];
 }
 
 /** static u8 GetSymbol(u8 reel, s16 offset) */
 export function GetSymbol(reel: any, offset: any): any {
   let inc: any = 0;
-      let pixelOffset: any = sSlotMachine.reelPixelOffsets[reel] % REEL_SYMBOL_HEIGHT;
+      let pixelOffset: any = sSlotMachine.reelPixelOffsets[reel] % (24);
       if (pixelOffset != 0)
           inc = -1;
       return GetSymbolAtRest(reel, offset + inc);
@@ -1094,28 +1236,28 @@ export function GetSymbol(reel: any, offset: any): any {
 
 /** static u8 GetReelTimeSymbol(s16 offset) */
 export function GetReelTimeSymbol(offset: any): any {
-  let newPosition: any = (sSlotMachine.reeltimePosition + offset) % REELTIME_SYMBOLS;
+  let newPosition: any = (sSlotMachine.reeltimePosition + offset) % (6);
       if (newPosition < 0)
-          newPosition += REELTIME_SYMBOLS;
+          newPosition += (6);
       return sReelTimeSymbols[newPosition];
 }
 
 /** static void AdvanceSlotReel(u8 reelIndex, s16 value) */
 export function AdvanceSlotReel(reelIndex: any, value: any): any {
   sSlotMachine.reelPixelOffsets[reelIndex] += value;
-      sSlotMachine.reelPixelOffsets[reelIndex] %= REEL_HEIGHT;
-      sSlotMachine.reelPositions[reelIndex] = SYMBOLS_PER_REEL - sSlotMachine.reelPixelOffsets[reelIndex] / REEL_SYMBOL_HEIGHT;
+      sSlotMachine.reelPixelOffsets[reelIndex] %= ((SYMBOLS_PER_REEL * REEL_SYMBOL_HEIGHT));
+      sSlotMachine.reelPositions[reelIndex] = (21) - sSlotMachine.reelPixelOffsets[reelIndex] / (24);
 }
 
 /** s16 AdvanceSlotReelToNextSymbol(u8 reelIndex, s16 value) */
 export function AdvanceSlotReelToNextSymbol(reelIndex: any, value: any): any {
-  let offset: any = sSlotMachine.reelPixelOffsets[reelIndex] % REEL_SYMBOL_HEIGHT;
+  let offset: any = sSlotMachine.reelPixelOffsets[reelIndex] % (24);
       if (offset != 0)
       {
           if (offset < value)
               value = offset;
           AdvanceSlotReel(reelIndex, value);
-          offset = sSlotMachine.reelPixelOffsets[reelIndex] % REEL_SYMBOL_HEIGHT;
+          offset = sSlotMachine.reelPixelOffsets[reelIndex] % (24);
       }
       return offset;
 }
@@ -1123,19 +1265,19 @@ export function AdvanceSlotReelToNextSymbol(reelIndex: any, value: any): any {
 /** static void AdvanceReeltimeReel(s16 value) */
 export function AdvanceReeltimeReel(value: any): any {
   sSlotMachine.reeltimePixelOffset += value;
-      sSlotMachine.reeltimePixelOffset %= REELTIME_REEL_HEIGHT;
-      sSlotMachine.reeltimePosition = REELTIME_SYMBOLS - sSlotMachine.reeltimePixelOffset / REELTIME_SYMBOL_HEIGHT;
+      sSlotMachine.reeltimePixelOffset %= (((6) * REELTIME_SYMBOL_HEIGHT));
+      sSlotMachine.reeltimePosition = (6) - sSlotMachine.reeltimePixelOffset / (20);
 }
 
 /** s16 AdvanceReeltimeReelToNextSymbol(s16 value) */
 export function AdvanceReeltimeReelToNextSymbol(value: any): any {
-  let offset: any = sSlotMachine.reeltimePixelOffset % REELTIME_SYMBOL_HEIGHT;
+  let offset: any = sSlotMachine.reeltimePixelOffset % (20);
       if (offset != 0)
       {
           if (offset < value)
               value = offset;
           AdvanceReeltimeReel(value);
-          offset = sSlotMachine.reeltimePixelOffset % REELTIME_SYMBOL_HEIGHT;
+          offset = sSlotMachine.reeltimePixelOffset % (20);
       }
       return offset;
 }
@@ -1209,7 +1351,7 @@ export function ReelTask_MoveToStop(task: any): any {
       let reelPixelPos: any = null;
 
       memcpy(reelStopShocks, sReelStopShocks, 0);
-      reelPixelPos = sSlotMachine.reelPixelOffsets[task.tReelId] % REEL_SYMBOL_HEIGHT;
+      reelPixelPos = sSlotMachine.reelPixelOffsets[task.tReelId] % (24);
       if (reelPixelPos != 0)
       {
           reelPixelPos = AdvanceSlotReelToNextSymbol(task.tReelId, sSlotMachine.reelSpeed);
@@ -1218,7 +1360,7 @@ export function ReelTask_MoveToStop(task: any): any {
       {
           sSlotMachine.reelExtraTurns[task.tReelId]--;
           AdvanceSlotReel(task.tReelId, sSlotMachine.reelSpeed);
-          reelPixelPos = sSlotMachine.reelPixelOffsets[task.tReelId] % REEL_SYMBOL_HEIGHT;
+          reelPixelPos = sSlotMachine.reelPixelOffsets[task.tReelId] % (24);
       }
 
       if (reelPixelPos == 0 && sSlotMachine.reelExtraTurns[task.tReelId] == 0)
@@ -1250,7 +1392,7 @@ export function ReelTask_ShakingStop(task: any): any {
 export function DecideStop_Bias_Reel1(): any {
   let sym2: any = GetBiasSymbol(sSlotMachine.machineBias);
       let sym1: any = sym2;
-      if (sSlotMachine.machineBias & (BIAS_STRAIGHT_7 | BIAS_MIXED_7))
+      if (sSlotMachine.machineBias & (((1 << 7)) | ((1 << 6))))
       {
           sym1 = SYMBOL_7_RED;
           sym2 = SYMBOL_7_BLUE;
@@ -1281,7 +1423,7 @@ export function AreCherriesOnScreen_Reel1(turns: any): any {
 
 /** static bool8 BiasedTowardCherryOr7s(void) */
 export function BiasedTowardCherryOr7s(): any {
-  if (sSlotMachine.machineBias & (BIAS_STRAIGHT_7 | BIAS_MIXED_7 | BIAS_CHERRY))
+  if (sSlotMachine.machineBias & (((1 << 7)) | ((1 << 6)) | ((1 << 1))))
           return TRUE;
       else
           return FALSE;
@@ -1291,7 +1433,7 @@ export function BiasedTowardCherryOr7s(): any {
 export function DecideStop_Bias_Reel1_Bet1(sym1: any, sym2: any): any {
   let i: any = null;
 
-      for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+      for (i = 0; i <= (4); i++)
       {
           if (EitherSymbolAtPos_Reel1(2 - i, sym1, sym2))
           {
@@ -1322,7 +1464,7 @@ export function DecideStop_Bias_Reel1_Bet2or3(sym1: any, sym2: any): any {
       }
 
        
-      for (i = 1; i <= MAX_EXTRA_TURNS; i++)
+      for (i = 1; i <= (4); i++)
       {
           let cherry7BiasCopy: any = cherry7Bias;  
           if (cherry7BiasCopy || !AreCherriesOnScreen_Reel1(i))
@@ -1360,7 +1502,7 @@ export function DecideStop_Bias_Reel2_Bet1or2(): any {
   let i: any = null;
       let reel1BiasRow: any = sSlotMachine.winnerRows[0];
 
-      for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+      for (i = 0; i <= (4); i++)
       {
           if (GetSymbol(MIDDLE_REEL, reel1BiasRow - i) == sSlotMachine.biasSymbol)
           {
@@ -1385,7 +1527,7 @@ export function DecideStop_Bias_Reel2_Bet3(): any {
           {
                
                
-              for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+              for (i = 0; i <= (4); i++)
               {
                   if (GetSymbol(MIDDLE_REEL, 2 - i) == sSlotMachine.biasSymbol)
                   {
@@ -1404,7 +1546,7 @@ export function DecideStop_Bias_Reel2_Bet3(): any {
       {
            
            
-          for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+          for (i = 0; i <= (4); i++)
           {
               if (GetSymbol(MIDDLE_REEL, 2 - i) == sSlotMachine.biasSymbol)
               {
@@ -1420,7 +1562,7 @@ export function DecideStop_Bias_Reel2_Bet3(): any {
 /** static bool8 DecideStop_Bias_Reel3(void) */
 export function DecideStop_Bias_Reel3(): any {
   let biasSymbol: any = sSlotMachine.biasSymbol;
-      if (sSlotMachine.machineBias & BIAS_MIXED_7)
+      if (sSlotMachine.machineBias & ((1 << 6)))
       {
           biasSymbol = SYMBOL_7_RED;
           if (sSlotMachine.biasSymbol == SYMBOL_7_RED)
@@ -1436,7 +1578,7 @@ export function DecideStop_Bias_Reel3_Bet1or2(biasSymbol: any): any {
   let i: any = null;
       let reel2BiasRow: any = sSlotMachine.winnerRows[1];
 
-      for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+      for (i = 0; i <= (4); i++)
       {
           if (GetSymbol(RIGHT_REEL, reel2BiasRow - i) == biasSymbol)
           {
@@ -1463,7 +1605,7 @@ export function DecideStop_Bias_Reel3_Bet3(biasSymbol: any): any {
           biasRow = 3;
       else
           biasRow = 1;
-      for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+      for (i = 0; i <= (4); i++)
       {
           if (GetSymbol(RIGHT_REEL, biasRow - i) == biasSymbol)
           {
@@ -1506,7 +1648,7 @@ export function DecideStop_NoBias_Reel2(): any {
 
 /** static void DecideStop_NoBias_Reel2_Bet1(void) */
 export function DecideStop_NoBias_Reel2_Bet1(): any {
-  if (sSlotMachine.winnerRows[0] != 0 && sSlotMachine.machineBias & BIAS_STRAIGHT_7)
+  if (sSlotMachine.winnerRows[0] != 0 && sSlotMachine.machineBias & ((1 << 7)))
       {
            
            
@@ -1515,7 +1657,7 @@ export function DecideStop_NoBias_Reel2_Bet1(): any {
           if (IfSymbol7_SwitchColor(reel1MiddleSym))
           {
               let i: any = null;
-              for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+              for (i = 0; i <= (4); i++)
               {
                   if (reel1MiddleSym == GetSymbol(MIDDLE_REEL, 2 - i))
                   {
@@ -1530,13 +1672,13 @@ export function DecideStop_NoBias_Reel2_Bet1(): any {
 
 /** static void DecideStop_NoBias_Reel2_Bet2(void) */
 export function DecideStop_NoBias_Reel2_Bet2(): any {
-  if (sSlotMachine.winnerRows[0] != 0 && sSlotMachine.machineBias & BIAS_STRAIGHT_7)
+  if (sSlotMachine.winnerRows[0] != 0 && sSlotMachine.machineBias & ((1 << 7)))
       {
           let reel1BiasSym: any = GetSymbol(LEFT_REEL, sSlotMachine.winnerRows[0] - sSlotMachine.reelExtraTurns[0]);
           if (IfSymbol7_SwitchColor(reel1BiasSym))
           {
               let i: any = null;
-              for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+              for (i = 0; i <= (4); i++)
               {
                   if (reel1BiasSym == GetSymbol(MIDDLE_REEL, sSlotMachine.winnerRows[0] - i))
                   {
@@ -1555,7 +1697,7 @@ export function DecideStop_NoBias_Reel2_Bet3(): any {
       let j: any = null;
       let reel1BiasSym: any = null;
 
-      if (sSlotMachine.winnerRows[0] != 0 && sSlotMachine.machineBias & BIAS_STRAIGHT_7)
+      if (sSlotMachine.winnerRows[0] != 0 && sSlotMachine.machineBias & ((1 << 7)))
       {
            
           if (sSlotMachine.winnerRows[0] == 2)
@@ -1584,7 +1726,7 @@ export function DecideStop_NoBias_Reel2_Bet3(): any {
 
                
                
-              for (j = 1; j <= MAX_EXTRA_TURNS; j++)
+              for (j = 1; j <= (4); j++)
               {
                   if (reel1BiasSym == GetSymbol(MIDDLE_REEL, sSlotMachine.winnerRows[0] - j))
                   {
@@ -1682,9 +1824,9 @@ export function DecideStop_NoBias_Reel3_Bet1(): any {
       {
            
            
-          if (sSlotMachine.machineBias & BIAS_STRAIGHT_7)
+          if (sSlotMachine.machineBias & ((1 << 7)))
           {
-              for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+              for (i = 0; i <= (4); i++)
               {
                   if (sym1 == GetSymbol(RIGHT_REEL, 2 - i))
                   {
@@ -1717,7 +1859,7 @@ export function DecideStop_NoBias_Reel3_Bet2(): any {
        
       if (sSlotMachine.winnerRows[1] != 0 &&
           sSlotMachine.winnerRows[0] == sSlotMachine.winnerRows[1] &&
-          sSlotMachine.machineBias & BIAS_STRAIGHT_7)
+          sSlotMachine.machineBias & ((1 << 7)))
       {
           sym1 = GetSymbol(LEFT_REEL, sSlotMachine.winnerRows[0] - sSlotMachine.reelExtraTurns[0]);
           sym2 = GetSymbol(MIDDLE_REEL, sSlotMachine.winnerRows[1] - sSlotMachine.reelExtraTurns[1]);
@@ -1728,7 +1870,7 @@ export function DecideStop_NoBias_Reel3_Bet2(): any {
           if (MismatchedSyms_77(sym1, sym2))
           {
                
-              for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+              for (i = 0; i <= (4); i++)
               {
                   sym3 = GetSymbol(RIGHT_REEL, sSlotMachine.winnerRows[1] - i);
                   if (sym1 == sym3)
@@ -1755,7 +1897,7 @@ export function DecideStop_NoBias_Reel3_Bet2(): any {
                
                
               if (!NeitherMatchNor7Mismatch(sym1, sym2, sym3) &&
-                  !(MismatchedSyms_777(sym1, sym2, sym3) && (sSlotMachine.machineBias & BIAS_STRAIGHT_7)))
+                  !(MismatchedSyms_777(sym1, sym2, sym3) && (sSlotMachine.machineBias & ((1 << 7)))))
               {
                   numMatches++;
                   break;
@@ -1787,7 +1929,7 @@ export function DecideStop_NoBias_Reel3_Bet3(): any {
        
       if (sSlotMachine.winnerRows[1] != 0 &&
           sSlotMachine.winnerRows[0] != sSlotMachine.winnerRows[1] &&
-          sSlotMachine.machineBias & BIAS_STRAIGHT_7)
+          sSlotMachine.machineBias & ((1 << 7)))
       {
           sym1 = GetSymbol(LEFT_REEL, sSlotMachine.winnerRows[0] - sSlotMachine.reelExtraTurns[0]);
           sym2 = GetSymbol(MIDDLE_REEL, sSlotMachine.winnerRows[1] - sSlotMachine.reelExtraTurns[1]);
@@ -1800,7 +1942,7 @@ export function DecideStop_NoBias_Reel3_Bet3(): any {
               row = 1;
               if (sSlotMachine.winnerRows[0] == 1)
                   row = 3;
-              for (i = 0; i <= MAX_EXTRA_TURNS; i++)
+              for (i = 0; i <= (4); i++)
               {
                   sym3 = GetSymbol(RIGHT_REEL, row - (sSlotMachine.reelExtraTurns[2] + i));
                   if (sym1 == sym3)
@@ -1819,7 +1961,7 @@ export function DecideStop_NoBias_Reel3_Bet3(): any {
           sym2 = GetSymbol(MIDDLE_REEL, 2 - sSlotMachine.reelExtraTurns[1]);
           sym3 = GetSymbol(RIGHT_REEL, 3 - sSlotMachine.reelExtraTurns[2]);
           if (NeitherMatchNor7Mismatch(sym1, sym2, sym3)
-              || (MismatchedSyms_777(sym1, sym2, sym3) && sSlotMachine.machineBias & BIAS_STRAIGHT_7))
+              || (MismatchedSyms_777(sym1, sym2, sym3) && sSlotMachine.machineBias & ((1 << 7))))
               break;
           sSlotMachine.reelExtraTurns[2]++;
       }
@@ -1831,7 +1973,7 @@ export function DecideStop_NoBias_Reel3_Bet3(): any {
           sym2 = GetSymbol(MIDDLE_REEL, 2 - sSlotMachine.reelExtraTurns[1]);
           sym3 = GetSymbol(RIGHT_REEL, 1 - sSlotMachine.reelExtraTurns[2]);
           if (NeitherMatchNor7Mismatch(sym1, sym2, sym3)
-              || (MismatchedSyms_777(sym1, sym2, sym3) && sSlotMachine.machineBias & BIAS_STRAIGHT_7))
+              || (MismatchedSyms_777(sym1, sym2, sym3) && sSlotMachine.machineBias & ((1 << 7))))
               break;
           sSlotMachine.reelExtraTurns[2]++;
       }
@@ -2353,7 +2495,7 @@ export function ReelTime_DestroySprites(task: any): any {
       sSlotMachine.reelTimeSpinsLeft = sSlotMachine.reelTimeDraw;
       gSpriteCoordOffsetX = 0;
       SetGpuReg(REG_OFFSET_BG1HOFS, 0);
-      sSlotMachine.reelSpeed = REEL_NORMAL_SPEED;
+      sSlotMachine.reelSpeed = (8);
       DestroyReelTimePikachuSprite();
       DestroyReelTimeMachineSprites();
       DestroyReelTimeShadowSprites();
@@ -2376,7 +2518,7 @@ export function ReelTime_DestroySprites(task: any): any {
 export function ReelTime_SetReelSpeed(task: any): any {
   if (sSlotMachine.reelSpeed == task.tReelSpeed)
           task.tState++;  
-      else if (sSlotMachine.reelPixelOffsets[0] % REEL_SYMBOL_HEIGHT == 0 && (++task.tTimer3 & 0x07) == 0)
+      else if (sSlotMachine.reelPixelOffsets[0] % (24) == 0 && (++task.tTimer3 & 0x07) == 0)
           sSlotMachine.reelSpeed >>= 1;
 }
 

@@ -15,6 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sConditionSearchLoopedTaskFuncs: any = null;
+let sConditionSearchResultBgTemplates: any = null;
+let sListBg_Pal: any = null;
+let sSearchMonDataIds: any = null;
+let sSearchResultListMenuWindowTemplate: any = null;
+let sSearchResultLoopTaskFuncs: any = null;
+let sText_FemaleSymbol: any = null;
+let sText_MaleSymbol: any = null;
+let sText_NoGenderSymbol: any = null;
 /** bool32 PokenavCallback_Init_ConditionSearch(void) */
 export function PokenavCallback_Init_ConditionSearch(): any {
   let menu: any = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_SEARCH_RESULTS, 0);

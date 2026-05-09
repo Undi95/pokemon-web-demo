@@ -15,6 +15,20 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCableClubOptions_NoRecordMix: any = null;
+let sCableClubOptions_WithRecordMix: any = null;
+let sLilycoveSSTidalDestinations: any = null;
+let sLilycoveSSTidalSelections: any = null;
+let sLinkServicesMultichoiceIds: any = null;
+let sMultichoiceLists: any = null;
+let sPCNameStrings: any = null;
+let sProcessInputDelay: any = null;
+let sWirelessOptionsNoBerryCrush: any = null;
+let sWirelessOptions_AllServices: any = null;
+let sWirelessOptions_NoRecordMix: any = null;
+let sWirelessOptions_NoRecordMixBerryCrush: any = null;
 /** bool8 ScriptMenu_Multichoice(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress) */
 export function ScriptMenu_Multichoice(left: any, top: any, multichoiceId: any, ignoreBPress: any): any {
   if (FuncIsActiveTask(Task_HandleMultichoiceInput) == TRUE)

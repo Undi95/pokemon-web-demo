@@ -15,6 +15,79 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates_Charges: any = null;
+let sBgTemplates_ChasesAway: any = null;
+let sBgTemplates_Descends: any = null;
+let sBgTemplates_DuoFight: any = null;
+let sBgTemplates_TakesFlight: any = null;
+let sBodyPartSpriteId1: any = null;
+let sBodyPartSpriteId2: any = null;
+let sDecel: any = null;
+let sFloatTimer: any = null;
+let sGroudonBodySpriteId: any = null;
+let sGroudonClawSpriteId: any = null;
+let sGroudonShoulderSpriteId: any = null;
+let sIsKyogre: any = null;
+let sRayScene: any = null;
+let sScanlineParams_DuoFight_Clouds: any = null;
+let sSmokeId: any = null;
+let sSpeed: any = null;
+let sSpritePal_ChasesAway_Groudon: any = null;
+let sSpritePal_ChasesAway_Kyogre: any = null;
+let sSpritePal_ChasesAway_KyogreSplash: any = null;
+let sSpritePal_ChasesAway_Rayquaza: any = null;
+let sSpritePal_Descends_Rayquaza: any = null;
+let sSpritePal_DuoFight_Groudon: any = null;
+let sSpritePal_DuoFight_Kyogre: any = null;
+let sSpritePal_TakesFlight_Smoke: any = null;
+let sSpriteSheet_ChasesAway_Groudon: any = null;
+let sSpriteSheet_ChasesAway_GroudonTail: any = null;
+let sSpriteSheet_ChasesAway_Kyogre: any = null;
+let sSpriteSheet_ChasesAway_KyogreSplash: any = null;
+let sSpriteSheet_ChasesAway_Rayquaza: any = null;
+let sSpriteSheet_ChasesAway_RayquazaTail: any = null;
+let sSpriteSheet_Descends_Rayquaza: any = null;
+let sSpriteSheet_Descends_RayquazaTail: any = null;
+let sSpriteSheet_DuoFight_Groudon: any = null;
+let sSpriteSheet_DuoFight_GroudonClaw: any = null;
+let sSpriteSheet_DuoFight_GroudonShoulder: any = null;
+let sSpriteSheet_DuoFight_Kyogre: any = null;
+let sSpriteSheet_DuoFight_KyogreDorsalFin: any = null;
+let sSpriteSheet_DuoFight_KyogrePectoralFin: any = null;
+let sSpriteSheet_TakesFlight_Smoke: any = null;
+let sSpriteTemplate_ChasesAway_Groudon: any = null;
+let sSpriteTemplate_ChasesAway_GroudonTail: any = null;
+let sSpriteTemplate_ChasesAway_Kyogre: any = null;
+let sSpriteTemplate_ChasesAway_KyogreSplash: any = null;
+let sSpriteTemplate_ChasesAway_Rayquaza: any = null;
+let sSpriteTemplate_ChasesAway_RayquazaTail: any = null;
+let sSpriteTemplate_Descends_Rayquaza: any = null;
+let sSpriteTemplate_Descends_RayquazaTail: any = null;
+let sSpriteTemplate_DuoFightPre_Groudon: any = null;
+let sSpriteTemplate_DuoFightPre_GroudonClaw: any = null;
+let sSpriteTemplate_DuoFightPre_GroudonShoulder: any = null;
+let sSpriteTemplate_DuoFightPre_Kyogre: any = null;
+let sSpriteTemplate_DuoFightPre_KyogreDorsalFin: any = null;
+let sSpriteTemplate_DuoFightPre_KyogrePectoralFin: any = null;
+let sSpriteTemplate_DuoFight_Groudon: any = null;
+let sSpriteTemplate_DuoFight_GroudonClaw: any = null;
+let sSpriteTemplate_DuoFight_GroudonShoulder: any = null;
+let sSpriteTemplate_DuoFight_Kyogre: any = null;
+let sSpriteTemplate_DuoFight_KyogreDorsalFin: any = null;
+let sSpriteTemplate_DuoFight_KyogrePectoralFin: any = null;
+let sSpriteTemplate_TakesFlight_Smoke: any = null;
+let sTailFloatDelay: any = null;
+let sTailFloatPeak: any = null;
+let sTailSpriteId: any = null;
+let sTakesFlight_SmokeCoords: any = null;
+let sTasksForAnimations: any = null;
+let sTimer: any = null;
+let sXMovePeriod: any = null;
+let sYMovePeriod: any = null;
+let sYOffset: any = null;
+let sYOffsetDir: any = null;
 /** void DoRayquazaScene(u8 animId, bool8 endEarly, MainCallback exitCallback) */
 export function DoRayquazaScene(animId: any, endEarly: any, exitCallback: any): any {
   sRayScene = AllocZeroed(0);
@@ -839,7 +912,7 @@ export function Task_TakesFlight_CreateSmoke(taskId: any): any {
           gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_DOUBLE;
           gSprites[spriteId].oam.priority = 2;
           InitSpriteAffineAnim(gSprites[spriteId]);
-          if (tSmokeId == MAX_SMOKE - 1)
+          if (tSmokeId == (10) - 1)
           {
               DestroyTask(taskId);
               return;

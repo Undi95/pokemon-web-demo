@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sIsRegisteelPuzzle: any = null;
+let sRegicePathCoords: any = null;
 /** bool8 ShouldDoBrailleDigEffect(void) */
 export function ShouldDoBrailleDigEffect(): any {
   if (!FlagGet(FLAG_SYS_BRAILLE_DIG)

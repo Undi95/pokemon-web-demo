@@ -15,6 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattlePalaceEarlyPrizes: any = null;
+let sBattlePalaceFunctions: any = null;
+let sBattlePalaceLatePrizes: any = null;
+let sWinStreakFlags: any = null;
+let sWinStreakMasks: any = null;
 /** void CallBattlePalaceFunction(void) */
 export function CallBattlePalaceFunction(): any {
   sBattlePalaceFunctions[gSpecialVar_0x8004]();

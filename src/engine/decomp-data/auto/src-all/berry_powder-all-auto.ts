@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBerryPowderVendorWindowId: any = null;
 /** static u32 DecryptBerryPowder(u32 *powder) */
 export function DecryptBerryPowder(powder: any): any {
   return powder ^ gSaveBlock2Ptr.encryptionKey;
@@ -53,9 +56,9 @@ export function HasEnoughBerryPowder(): any {
 export function GiveBerryPowder(amountToAdd: any): any {
   let powder: any =gSaveBlock2Ptr.berryCrush.berryPowderAmount;
       let amount: any = DecryptBerryPowder(powder) + amountToAdd;
-      if (amount > MAX_BERRY_POWDER)
+      if (amount > (99999))
       {
-          SetBerryPowder(powder, MAX_BERRY_POWDER);
+          SetBerryPowder(powder, (99999));
           return FALSE;
       }
       else

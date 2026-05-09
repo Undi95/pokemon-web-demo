@@ -15,6 +15,26 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnims_Player: any = null;
+let sAnims_Rival: any = null;
+let sBackgroundTemplates: any = null;
+let sCreditsData: any = null;
+let sCreditsEntryPointerTable: any = null;
+let sCredits_Pal: any = null;
+let sMonSpriteId: any = null;
+let sMonSpritePos: any = null;
+let sPosition: any = null;
+let sSavedTaskId: any = null;
+let sSpriteId: any = null;
+let sSpritePalette_MonBg: any = null;
+let sSpriteSheet_MonBg: any = null;
+let sSpriteTemplate_CreditsMonBg: any = null;
+let sState: any = null;
+let sUnkVar: any = null;
+let sUsedSpeedUp: any = null;
+let sWindowTemplates: any = null;
 /** static void VBlankCB_Credits(void) */
 export function VBlankCB_Credits(): any {
   LoadOam();
@@ -237,7 +257,7 @@ export function Task_LoadShowMons(taskId: any): any {
           for (i = 0; i < MON_PIC_SIZE; i++)
               (gDecompressionBuffer + MON_PIC_SIZE * 2)[i] = 0x33;
 
-          temp = (gDecompressionBuffer[MONBG_OFFSET]);
+          temp = (gDecompressionBuffer[((MON_PIC_SIZE * 3))]);
           temp[0] = RGB_BLACK;
           temp[1] = RGB(31, 31, 20);  
           temp[2] = RGB(31, 20, 20);  
@@ -441,9 +461,9 @@ export function Task_UpdatePage(taskId: any): any {
                   gTasks[gTasks[taskId].tMainTaskId].tPrintedPage = TRUE;
 
                   if (gTasks[gTasks[taskId].tMainTaskId].tCurrentMode == MODE_BIKE_SCENE)
-                      BeginNormalPaletteFade(0x300, 0, 16, 0, COLOR_LIGHT_GREEN);
+                      BeginNormalPaletteFade(0x300, 0, 16, 0, (RGB(13, 20, 12)));
                   else  
-                      BeginNormalPaletteFade(0x300, 0, 16, 0, COLOR_DARK_GREEN);
+                      BeginNormalPaletteFade(0x300, 0, 16, 0, (RGB(7, 11, 6)));
                   return;
               }
 
@@ -474,9 +494,9 @@ export function Task_UpdatePage(taskId: any): any {
           }
           gTasks[taskId].tState++;
           if (gTasks[gTasks[taskId].tMainTaskId].tCurrentMode == MODE_BIKE_SCENE)
-              BeginNormalPaletteFade(0x300, 0, 0, 16, COLOR_LIGHT_GREEN);
+              BeginNormalPaletteFade(0x300, 0, 0, 16, (RGB(13, 20, 12)));
           else  
-              BeginNormalPaletteFade(0x300, 0, 0, 16, COLOR_DARK_GREEN);
+              BeginNormalPaletteFade(0x300, 0, 0, 16, (RGB(7, 11, 6)));
           return;
       case 5:
           if (!gPaletteFade.active)
@@ -498,52 +518,52 @@ export function Task_UpdatePage(taskId: any): any {
 
 /** static u8 CheckChangeScene(u8 page, u8 taskId) */
 export function CheckChangeScene(page: any, taskId: any): any {
-  if (page == PAGE_INTERVAL * 1)
+  if (page == ((PAGE_COUNT / 9)) * 1)
       {
            
           gTasks[taskId].tNextMode = MODE_SHOW_MONS;
       }
 
-      if (page == PAGE_INTERVAL * 2)
+      if (page == ((PAGE_COUNT / 9)) * 2)
       {
            
           gTasks[taskId].tSceneNum = SCENE_OCEAN_SUNSET;
           gTasks[taskId].tNextMode = MODE_BIKE_SCENE;
       }
 
-      if (page == PAGE_INTERVAL * 3)
+      if (page == ((PAGE_COUNT / 9)) * 3)
       {
            
           gTasks[taskId].tNextMode = MODE_SHOW_MONS;
       }
 
-      if (page == PAGE_INTERVAL * 4)
+      if (page == ((PAGE_COUNT / 9)) * 4)
       {
            
           gTasks[taskId].tSceneNum = SCENE_FOREST_RIVAL_ARRIVE;
           gTasks[taskId].tNextMode = MODE_BIKE_SCENE;
       }
 
-      if (page == PAGE_INTERVAL * 5)
+      if (page == ((PAGE_COUNT / 9)) * 5)
       {
            
           gTasks[taskId].tNextMode = MODE_SHOW_MONS;
       }
 
-      if (page == PAGE_INTERVAL * 6)
+      if (page == ((PAGE_COUNT / 9)) * 6)
       {
            
           gTasks[taskId].tSceneNum = SCENE_FOREST_CATCH_RIVAL;
           gTasks[taskId].tNextMode = MODE_BIKE_SCENE;
       }
 
-      if (page == PAGE_INTERVAL * 7)
+      if (page == ((PAGE_COUNT / 9)) * 7)
       {
            
           gTasks[taskId].tNextMode = MODE_SHOW_MONS;
       }
 
-      if (page == PAGE_INTERVAL * 8)
+      if (page == ((PAGE_COUNT / 9)) * 8)
       {
            
           gTasks[taskId].tSceneNum = SCENE_CITY_NIGHT;
@@ -573,7 +593,7 @@ export function Task_ShowMons(taskId: any): any {
           gTasks[taskId].tState++;
           break;
       case 2:
-          if (sCreditsData.imgCounter == NUM_MON_SLIDES || gTasks[gTasks[taskId].tMainTaskId].func != Task_CreditsMain)
+          if (sCreditsData.imgCounter == (71) || gTasks[gTasks[taskId].tMainTaskId].func != Task_CreditsMain)
               break;
           spriteId = CreateCreditsMonSprite(sCreditsData.monToShow[sCreditsData.currShownMon],
                                       sMonSpritePos[sCreditsData.nextImgPos][0],
@@ -699,12 +719,12 @@ export function Task_CycleSceneryPalette(taskId: any): any {
       {
       default:
       case SCENE_OCEAN_MORNING:
-          if (gTasks[taskId].tTimer != TIMER_STOP)
+          if (gTasks[taskId].tTimer != (0x7FFF))
           {
               if (gTasks[gTasks[gTasks[taskId].tMainTaskId].tTaskId_UpdatePage].tCurrentPage == 2)
               {
                   gTasks[gTasks[gTasks[taskId].tMainTaskId].tTaskId_BikeScene].tState = 20;
-                  gTasks[taskId].tTimer = TIMER_STOP;
+                  gTasks[taskId].tTimer = (0x7FFF);
               }
           }
           CycleSceneryPalette(0);
@@ -713,7 +733,7 @@ export function Task_CycleSceneryPalette(taskId: any): any {
           CycleSceneryPalette(0);
           break;
       case SCENE_FOREST_RIVAL_ARRIVE:
-          if (gTasks[taskId].tTimer != TIMER_STOP)
+          if (gTasks[taskId].tTimer != (0x7FFF))
           {
               bikeTaskId = gTasks[gTasks[taskId].tMainTaskId].tTaskId_BikeScene;
 
@@ -721,19 +741,19 @@ export function Task_CycleSceneryPalette(taskId: any): any {
               if ((gTasks[bikeTaskId].tSinIdx & -128) == 640)
               {
                   gTasks[bikeTaskId].tState = 1;
-                  gTasks[taskId].tTimer = TIMER_STOP;
+                  gTasks[taskId].tTimer = (0x7FFF);
               }
           }
           CycleSceneryPalette(1);
           break;
       case SCENE_FOREST_CATCH_RIVAL:
-          if (gTasks[taskId].tTimer != TIMER_STOP)
+          if (gTasks[taskId].tTimer != (0x7FFF))
           {
 
               if (gTasks[taskId].tTimer == 620)  
               {
                   gTasks[gTasks[gTasks[taskId].tMainTaskId].tTaskId_BikeScene].tState = 10;
-                  gTasks[taskId].tTimer = TIMER_STOP;
+                  gTasks[taskId].tTimer = (0x7FFF);
               }
               else
               {
@@ -1172,10 +1192,10 @@ export function DeterminePokemonToShow(): any {
 
        
       sCreditsData.numCaughtMon = j;
-      if (sCreditsData.numCaughtMon < NUM_MON_SLIDES)
+      if (sCreditsData.numCaughtMon < (71))
           sCreditsData.numMonToShow = j;
       else
-          sCreditsData.numMonToShow = NUM_MON_SLIDES;
+          sCreditsData.numMonToShow = (71);
 
        
       j = 0;
@@ -1196,12 +1216,12 @@ export function DeterminePokemonToShow(): any {
               sCreditsData.caughtMonIds[sCreditsData.numCaughtMon] = 0;
           }
       }
-      while (sCreditsData.numCaughtMon != 0 && j < NUM_MON_SLIDES);
+      while (sCreditsData.numCaughtMon != 0 && j < (71));
 
        
-      if (sCreditsData.numMonToShow < NUM_MON_SLIDES)
+      if (sCreditsData.numMonToShow < (71))
       {
-          for (j = sCreditsData.numMonToShow, page = 0; j < NUM_MON_SLIDES; j++)
+          for (j = sCreditsData.numMonToShow, page = 0; j < (71); j++)
           {
               sCreditsData.monToShow[j] = sCreditsData.monToShow[page];
 
@@ -1210,26 +1230,26 @@ export function DeterminePokemonToShow(): any {
                   page = 0;
           }
            
-          sCreditsData.monToShow[NUM_MON_SLIDES - 1] = starter;
+          sCreditsData.monToShow[(71) - 1] = starter;
       }
       else
       {
            
-          for (dexNum = 0; sCreditsData.monToShow[dexNum] != starter && dexNum < NUM_MON_SLIDES; dexNum++);
+          for (dexNum = 0; sCreditsData.monToShow[dexNum] != starter && dexNum < (71); dexNum++);
 
            
           if (dexNum < sCreditsData.numMonToShow - 1)
           {
-              sCreditsData.monToShow[dexNum] = sCreditsData.monToShow[NUM_MON_SLIDES-1];
-              sCreditsData.monToShow[NUM_MON_SLIDES - 1] = starter;
+              sCreditsData.monToShow[dexNum] = sCreditsData.monToShow[(71)-1];
+              sCreditsData.monToShow[(71) - 1] = starter;
           }
           else
           {
                
-              sCreditsData.monToShow[NUM_MON_SLIDES - 1] = starter;
+              sCreditsData.monToShow[(71) - 1] = starter;
           }
       }
-      sCreditsData.numMonToShow = NUM_MON_SLIDES;
+      sCreditsData.numMonToShow = (71);
 }
 
 // ─── callsTo manifest (= 87 unique callees) ───────────────────────

@@ -15,6 +15,19 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sHelpBarTextColors: any = null;
+let sHelpBarTexts: any = null;
+let sHelpBarWindowTemplate: any = null;
+let sLeftHeaderSpriteTemplate: any = null;
+let sMenuLeftHeaderSpriteSheet: any = null;
+let sMenuLeftHeaderSpriteSheets: any = null;
+let sPokenavSubMenuLeftHeaderSpriteSheets: any = null;
+let sSpinningNavgearPalettes: any = null;
+let sSpinningPokenavSpriteSheet: any = null;
+let sSpinningPokenavSpriteTemplate: any = null;
+let sSubmenuLeftHeaderSpriteTemplate: any = null;
 /** bool32 InitPokenavMainMenu(void) */
 export function InitPokenavMainMenu(): any {
   let menu: any = null;

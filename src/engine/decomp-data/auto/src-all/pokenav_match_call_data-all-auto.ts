@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCheckPageOverrides: any = null;
+let sMatchCallGetEnabledFuncs: any = null;
+let sMatchCallHeaders: any = null;
+let sMatchCall_GetMessageFunctions: any = null;
+let sMatchCall_GetNameAndDescFunctions: any = null;
+let sMatchCall_GetRematchTableIdxFunctions: any = null;
+let sMatchCall_HasCheckPageFunctions: any = null;
+let sMatchCall_IsRematchableFunctions: any = null;
 /** static u32 MatchCallGetFunctionIndex(match_call_t matchCall) */
 export function MatchCallGetFunctionIndex(matchCall: any): any {
   switch (matchCall.common.type)
@@ -267,11 +277,11 @@ export function MatchCall_BufferCallMessageText(textData: any, dest: any): any {
           i--;
       while (i)
       {
-          if (textData[i].availabilityFlag != ALWAYS_AVAILABLE && FlagGet(textData[i].availabilityFlag) == TRUE)
+          if (textData[i].availabilityFlag != (0xFFFF) && FlagGet(textData[i].availabilityFlag) == TRUE)
               break;
           i--;
       }
-      if (textData[i].flagToSetOnCompletion != NO_FLAG_TO_SET)
+      if (textData[i].flagToSetOnCompletion != (0xFFFF))
           FlagSet(textData[i].flagToSetOnCompletion);
       StringExpandPlaceholders(dest, textData[i].text);
 }
@@ -281,16 +291,16 @@ export function MatchCall_BufferCallMessageTextByRematchTeam(textData: any, idx:
   let i: any = null;
       for (i = 0; textData[i].text != NULL; i++)
       {
-          if (textData[i].availabilityFlag == REMATCH_CALL_START)
+          if (textData[i].availabilityFlag == (0xFFFE))
               break;
-          if (textData[i].availabilityFlag != ALWAYS_AVAILABLE && !FlagGet(textData[i].availabilityFlag))
+          if (textData[i].availabilityFlag != (0xFFFF) && !FlagGet(textData[i].availabilityFlag))
               break;
       }
-      if (textData[i].availabilityFlag != REMATCH_CALL_START)
+      if (textData[i].availabilityFlag != (0xFFFE))
       {
           if (i)
               i--;
-          if (textData[i].flagToSetOnCompletion != NO_FLAG_TO_SET)
+          if (textData[i].flagToSetOnCompletion != (0xFFFF))
               FlagSet(textData[i].flagToSetOnCompletion);
           StringExpandPlaceholders(dest, textData[i].text);
       }

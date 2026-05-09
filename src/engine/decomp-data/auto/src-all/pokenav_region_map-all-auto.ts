@@ -15,6 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCityZoomTextSpriteSheet: any = null;
+let sCityZoomTextSpriteTemplate: any = null;
+let sCityZoomTilesSpritePalette: any = null;
+let sMapSecInfoWindowTemplate: any = null;
+let sMapSecInfoWindow_Pal: any = null;
+let sPokenavCityMaps: any = null;
+let sRegionMapBgTemplates: any = null;
+let sRegionMapCityZoomTiles_Gfx: any = null;
+let sRegionMapLoopTaskFuncs: any = null;
 /** u32 PokenavCallback_Init_RegionMap(void) */
 export function PokenavCallback_Init_RegionMap(): any {
   let state: any = AllocSubstruct(POKENAV_SUBSTRUCT_REGION_MAP_STATE, 0);
@@ -340,8 +351,8 @@ export function LoadCityZoomViewGfx(): any {
 export function FreeCityZoomViewGfx(): any {
   let i: any = null;
       let state: any = GetSubstructPtr(POKENAV_SUBSTRUCT_REGION_MAP_ZOOM);
-      FreeSpriteTilesByTag(GFXTAG_CITY_ZOOM);
-      FreeSpritePaletteByTag(PALTAG_CITY_ZOOM);
+      FreeSpriteTilesByTag((6));
+      FreeSpritePaletteByTag((11));
       for (i = 0; i < ARRAY_COUNT(state.cityZoomTextSprites); i++)
           DestroySprite(state.cityZoomTextSprites[i]);
 }
@@ -465,7 +476,7 @@ export function IsDecompressCityMapsActive(): any {
 /** static u32 LoopedTask_DecompressCityMaps(s32 taskState) */
 export function LoopedTask_DecompressCityMaps(taskState: any): any {
   let state: any = GetSubstructPtr(POKENAV_SUBSTRUCT_REGION_MAP_ZOOM);
-      if (taskState < NUM_CITY_MAPS)
+      if (taskState < (22))
       {
           LZ77UnCompWram(sPokenavCityMaps[taskState].tilemap, state.cityZoomPics[taskState]);
           return LT_INC_AND_CONTINUE;
@@ -477,10 +488,10 @@ export function LoopedTask_DecompressCityMaps(taskState: any): any {
 /** static void DrawCityMap(struct Pokenav_RegionMapGfx *state, mapsec_s32_t mapSecId, int pos) */
 export function DrawCityMap(state: any, mapSecId: any, pos: any): any {
   let i: any = null;
-      for (i = 0; i < NUM_CITY_MAPS && (sPokenavCityMaps[i].mapSecId != mapSecId || sPokenavCityMaps[i].index != pos); i++)
+      for (i = 0; i < (22) && (sPokenavCityMaps[i].mapSecId != mapSecId || sPokenavCityMaps[i].index != pos); i++)
           ;
 
-      if (i == NUM_CITY_MAPS)
+      if (i == (22))
           return;
 
       FillBgTilemapBufferRect_Palette0(1, 0x1041, 17, 6, 13, 11);  

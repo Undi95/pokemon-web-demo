@@ -15,16 +15,35 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAlphaBlendIdx: any = null;
+let sAnimate: any = null;
+let sBgColor: any = null;
+let sMode: any = null;
+let sParentTaskId: any = null;
+let sPokemonLogoShineSpriteSheet: any = null;
+let sPokemonLogoShineSpriteTemplate: any = null;
+let sSpritePalette_PressStart: any = null;
+let sSpriteSheet_EmeraldVersion: any = null;
+let sSpriteSheet_PressStart: any = null;
+let sStartCopyrightBannerSpriteTemplate: any = null;
+let sTimer: any = null;
+let sTitleScreenCloudsGfx: any = null;
+let sTitleScreenRayquazaGfx: any = null;
+let sTitleScreenRayquazaTilemap: any = null;
+let sVersionBannerLeftSpriteTemplate: any = null;
+let sVersionBannerRightSpriteTemplate: any = null;
 /** static void SpriteCB_VersionBannerLeft(struct Sprite *sprite) */
 export function SpriteCB_VersionBannerLeft(sprite: any): any {
   if (gTasks[sprite.sParentTaskId].tSkipToNext)
       {
           sprite.oam.objMode = ST_OAM_OBJ_NORMAL;
-          sprite.y = VERSION_BANNER_Y_GOAL;
+          sprite.y = (68);
       }
       else
       {
-          if (sprite.y != VERSION_BANNER_Y_GOAL)
+          if (sprite.y != (68))
               sprite.y++;
           if (sprite.sAlphaBlendIdx != 0)
               sprite.sAlphaBlendIdx--;
@@ -37,11 +56,11 @@ export function SpriteCB_VersionBannerRight(sprite: any): any {
   if (gTasks[sprite.sParentTaskId].tSkipToNext)
       {
           sprite.oam.objMode = ST_OAM_OBJ_NORMAL;
-          sprite.y = VERSION_BANNER_Y_GOAL;
+          sprite.y = (68);
       }
       else
       {
-          if (sprite.y != VERSION_BANNER_Y_GOAL)
+          if (sprite.y != (68))
               sprite.y++;
       }
 }
@@ -68,7 +87,7 @@ export function CreatePressStartBanner(x: any, y: any): any {
       let spriteId: any = null;
 
       x -= 64;
-      for (i = 0; i < NUM_PRESS_START_FRAMES; i++, x += 32)
+      for (i = 0; i < (5); i++, x += 32)
       {
           spriteId = CreateSprite(sStartCopyrightBannerSpriteTemplate, x, y, 0);
           StartSpriteAnim(gSprites[spriteId], i);
@@ -82,10 +101,10 @@ export function CreateCopyrightBanner(x: any, y: any): any {
       let spriteId: any = null;
 
       x -= 64;
-      for (i = 0; i < NUM_COPYRIGHT_FRAMES; i++, x += 32)
+      for (i = 0; i < (5); i++, x += 32)
       {
           spriteId = CreateSprite(sStartCopyrightBannerSpriteTemplate, x, y, 0);
-          StartSpriteAnim(gSprites[spriteId], i + NUM_PRESS_START_FRAMES);
+          StartSpriteAnim(gSprites[spriteId], i + (5));
       }
 }
 
@@ -120,16 +139,16 @@ export function SpriteCB_PokemonLogoShine(sprite: any): any {
 
                
                
-              if (sprite.x == DISPLAY_WIDTH / 2 + (3 * SHINE_SPEED)
-               || sprite.x == DISPLAY_WIDTH / 2 + (4 * SHINE_SPEED)
-               || sprite.x == DISPLAY_WIDTH / 2 + (5 * SHINE_SPEED)
-               || sprite.x == DISPLAY_WIDTH / 2 + (6 * SHINE_SPEED))
+              if (sprite.x == DISPLAY_WIDTH / 2 + (3 * (4))
+               || sprite.x == DISPLAY_WIDTH / 2 + (4 * (4))
+               || sprite.x == DISPLAY_WIDTH / 2 + (5 * (4))
+               || sprite.x == DISPLAY_WIDTH / 2 + (6 * (4)))
                   gPlttBufferFaded[0] = RGB(24, 31, 12);
               else
                   gPlttBufferFaded[0] = backgroundColor;
           }
 
-          sprite.x += SHINE_SPEED;
+          sprite.x += (4);
       }
       else
       {
@@ -142,7 +161,7 @@ export function SpriteCB_PokemonLogoShine(sprite: any): any {
 /** static void SpriteCB_PokemonLogoShine_Fast(struct Sprite *sprite) */
 export function SpriteCB_PokemonLogoShine_Fast(sprite: any): any {
   if (sprite.x < DISPLAY_WIDTH + 32)
-          sprite.x += SHINE_SPEED * 2;
+          sprite.x += (4) * 2;
       else
           DestroySprite(sprite);
 }
@@ -304,7 +323,7 @@ export function MainCB2(): any {
 
 /** static void Task_TitleScreenPhase1(u8 taskId) */
 export function Task_TitleScreenPhase1(taskId: any): any {
-  if (JOY_NEW(A_B_START_SELECT) || gTasks[taskId].tSkipToNext)
+  if (JOY_NEW(((A_BUTTON | B_BUTTON | START_BUTTON | SELECT_BUTTON))) || gTasks[taskId].tSkipToNext)
       {
           gTasks[taskId].tSkipToNext = TRUE;
           gTasks[taskId].tCounter = 0;
@@ -332,12 +351,12 @@ export function Task_TitleScreenPhase1(taskId: any): any {
           SetGpuReg(REG_OFFSET_BLDY, 0);
 
            
-          spriteId = CreateSprite(sVersionBannerLeftSpriteTemplate, VERSION_BANNER_LEFT_X, VERSION_BANNER_Y, 0);
+          spriteId = CreateSprite(sVersionBannerLeftSpriteTemplate, (98), (4), 0);
           gSprites[spriteId].sAlphaBlendIdx = ARRAY_COUNT(gTitleScreenAlphaBlend);
           gSprites[spriteId].sParentTaskId = taskId;
 
            
-          spriteId = CreateSprite(sVersionBannerRightSpriteTemplate, VERSION_BANNER_RIGHT_X, VERSION_BANNER_Y, 0);
+          spriteId = CreateSprite(sVersionBannerRightSpriteTemplate, (162), (4), 0);
           gSprites[spriteId].sParentTaskId = taskId;
 
           gTasks[taskId].tCounter = 144;
@@ -350,7 +369,7 @@ export function Task_TitleScreenPhase2(taskId: any): any {
   let yPos: any = null;
 
        
-      if (JOY_NEW(A_B_START_SELECT) || gTasks[taskId].tSkipToNext)
+      if (JOY_NEW(((A_BUTTON | B_BUTTON | START_BUTTON | SELECT_BUTTON))) || gTasks[taskId].tSkipToNext)
       {
           gTasks[taskId].tSkipToNext = TRUE;
           gTasks[taskId].tCounter = 0;
@@ -372,8 +391,8 @@ export function Task_TitleScreenPhase2(taskId: any): any {
                                       | DISPCNT_BG1_ON
                                       | DISPCNT_BG2_ON
                                       | DISPCNT_OBJ_ON);
-          CreatePressStartBanner(START_BANNER_X, 108);
-          CreateCopyrightBanner(START_BANNER_X, 148);
+          CreatePressStartBanner((128), 108);
+          CreateCopyrightBanner((128), 148);
           gTasks[taskId].tBg1Y = 0;
           gTasks[taskId].func = Task_TitleScreenPhase3;
       }
@@ -400,18 +419,18 @@ export function Task_TitleScreenPhase3(taskId: any): any {
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITEALPHA);
           SetMainCallback2(CB2_GoToMainMenu);
       }
-      else if (JOY_HELD(CLEAR_SAVE_BUTTON_COMBO) == CLEAR_SAVE_BUTTON_COMBO)
+      else if (JOY_HELD(((B_BUTTON | SELECT_BUTTON | DPAD_UP))) == ((B_BUTTON | SELECT_BUTTON | DPAD_UP)))
       {
           SetMainCallback2(CB2_GoToClearSaveDataScreen);
       }
-      else if (JOY_HELD(RESET_RTC_BUTTON_COMBO) == RESET_RTC_BUTTON_COMBO
+      else if (JOY_HELD(((B_BUTTON | SELECT_BUTTON | DPAD_LEFT))) == ((B_BUTTON | SELECT_BUTTON | DPAD_LEFT))
         && CanResetRTC() == TRUE)
       {
           FadeOutBGM(4);
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
           SetMainCallback2(CB2_GoToResetRtcScreen);
       }
-      else if (JOY_HELD(BERRY_UPDATE_BUTTON_COMBO) == BERRY_UPDATE_BUTTON_COMBO)
+      else if (JOY_HELD(((B_BUTTON | SELECT_BUTTON))) == ((B_BUTTON | SELECT_BUTTON)))
       {
           FadeOutBGM(4);
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);

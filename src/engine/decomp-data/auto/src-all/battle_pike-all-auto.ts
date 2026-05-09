@@ -15,6 +15,22 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattlePikeFunctions: any = null;
+let sFrontierBrainStreakAppearances: any = null;
+let sInWildMonRoom: any = null;
+let sNPCSpeeches: any = null;
+let sNPCTable: any = null;
+let sNpcId: any = null;
+let sNumMonsToHealBeforePikeQueen: any = null;
+let sRoomType: any = null;
+let sRoomTypeHints: any = null;
+let sStatusFlags: any = null;
+let sStatusInflictionScreenFlashFuncs: any = null;
+let sStatusMon: any = null;
+let sWildMons: any = null;
+let sWinStreakFlags: any = null;
 /** void CallBattlePikeFunction(void) */
 export function CallBattlePikeFunction(): any {
   sBattlePikeFunctions[gSpecialVar_0x8004]();

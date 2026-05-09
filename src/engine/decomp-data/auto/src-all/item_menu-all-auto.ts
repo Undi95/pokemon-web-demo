@@ -15,6 +15,34 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBagScrollArrowsTemplate: any = null;
+let sBgTemplates_ItemMenu: any = null;
+let sContextMenuFuncs: any = null;
+let sContextMenuItems_Apprentice: any = null;
+let sContextMenuItems_BallsPocket: any = null;
+let sContextMenuItems_BattleUse: any = null;
+let sContextMenuItems_BerriesPocket: any = null;
+let sContextMenuItems_BerryBlenderCrush: any = null;
+let sContextMenuItems_Cancel: any = null;
+let sContextMenuItems_FavorLady: any = null;
+let sContextMenuItems_Give: any = null;
+let sContextMenuItems_ItemsPocket: any = null;
+let sContextMenuItems_KeyItemsPocket: any = null;
+let sContextMenuItems_QuizLady: any = null;
+let sContextMenuItems_TmHmPocket: any = null;
+let sContextMenuWindowTemplates: any = null;
+let sDefaultBagWindows: any = null;
+let sFontColorTable: any = null;
+let sItemListMenu: any = null;
+let sItemMenuActions: any = null;
+let sListBuffer1: any = null;
+let sListBuffer2: any = null;
+let sRegisteredSelect_Gfx: any = null;
+let sTempWallyBag: any = null;
+let sYesNoSellItemFunctions: any = null;
+let sYesNoTossFunctions: any = null;
 /** void ResetBagScrollPositions(void) */
 export function ResetBagScrollPositions(): any {
   gBagPosition.pocket = ITEMS_POCKET;
@@ -94,7 +122,7 @@ export function GoToBagMenu(location: any, pocket: any, exitCallback: any): any 
               gBagPosition.location == ITEMMENULOCATION_BERRY_BLENDER_CRUSH)
               gBagMenu.pocketSwitchDisabled = TRUE;
           gBagMenu.newScreenCallback = NULL;
-          gBagMenu.toSwapPos = NOT_SWAPPING;
+          gBagMenu.toSwapPos = (0xFF);
           gBagMenu.pocketScrollArrowsTask = TASK_NONE;
           gBagMenu.pocketSwitchArrowsTask = TASK_NONE;
           memset(gBagMenu.spriteIds, SPRITE_NONE, sizeof(gBagMenu.spriteIds));
@@ -383,7 +411,7 @@ export function BagMenu_MoveCursorCallback(itemIndex: any, onInit: any, list: an
           PlaySE(SE_SELECT);
           ShakeBagSprite();
       }
-      if (gBagMenu.toSwapPos == NOT_SWAPPING)
+      if (gBagMenu.toSwapPos == (0xFF))
       {
           RemoveBagItemIconSprite(gBagMenu.itemIconSlot ^ 1);
           if (itemIndex != LIST_CANCEL)
@@ -404,7 +432,7 @@ export function BagMenu_ItemPrintCallback(windowId: any, itemIndex: any, y: any)
 
       if (itemIndex != LIST_CANCEL)
       {
-          if (gBagMenu.toSwapPos != NOT_SWAPPING)
+          if (gBagMenu.toSwapPos != (0xFF))
           {
                
               if (gBagMenu.toSwapPos == itemIndex)
@@ -485,8 +513,8 @@ export function CreatePocketScrollArrowPair(): any {
               12,
               148,
               gBagMenu.numItemStacks[gBagPosition.pocket] - gBagMenu.numShownItems[gBagPosition.pocket],
-              TAG_POCKET_SCROLL_ARROW,
-              TAG_POCKET_SCROLL_ARROW,gBagPosition.scrollPosition[gBagPosition.pocket]);
+              (110),
+              (110),gBagPosition.scrollPosition[gBagPosition.pocket]);
 }
 
 /** void BagDestroyPocketScrollArrowPair(void) */
@@ -573,8 +601,8 @@ export function UpdatePocketItemList(pocketId: any): any {
       if (!gBagMenu.hideCloseBagText)
           gBagMenu.numItemStacks[pocketId]++;
 
-      if (gBagMenu.numItemStacks[pocketId] > MAX_ITEMS_SHOWN)
-          gBagMenu.numShownItems[pocketId] = MAX_ITEMS_SHOWN;
+      if (gBagMenu.numItemStacks[pocketId] > (8))
+          gBagMenu.numShownItems[pocketId] = (8);
       else
           gBagMenu.numShownItems[pocketId] = gBagMenu.numItemStacks[pocketId];
 }
@@ -602,7 +630,7 @@ export function InitPocketListPositions(): any {
 export function InitPocketScrollPositions(): any {
   let i: any = null;
       for (i = 0; i < POCKETS_COUNT; i++)
-          SetCursorScrollWithinListBounds(gBagPosition.scrollPosition[i],gBagPosition.cursorPosition[i], gBagMenu.numShownItems[i], gBagMenu.numItemStacks[i], MAX_ITEMS_SHOWN);
+          SetCursorScrollWithinListBounds(gBagPosition.scrollPosition[i],gBagPosition.cursorPosition[i], gBagMenu.numShownItems[i], gBagMenu.numItemStacks[i], (8));
 }
 
 /** u8 GetItemListPosition(u8 pocketId) */
@@ -946,7 +974,7 @@ export function DoItemSwap(taskId: any): any {
       else
       {
           MoveItemSlotInList(gBagPockets[gBagPosition.pocket].itemSlots, tListPosition, realPos);
-          gBagMenu.toSwapPos = NOT_SWAPPING;
+          gBagMenu.toSwapPos = (0xFF);
           DestroyListMenuTask(tListTaskId, scrollPos, cursorPos);
           if (tListPosition < realPos)
               gBagPosition.cursorPosition[gBagPosition.pocket]--;
@@ -964,7 +992,7 @@ export function CancelItemSwap(taskId: any): any {
       let scrollPos: any =gBagPosition.scrollPosition[gBagPosition.pocket];
       let cursorPos: any =gBagPosition.cursorPosition[gBagPosition.pocket];
 
-      gBagMenu.toSwapPos = NOT_SWAPPING;
+      gBagMenu.toSwapPos = (0xFF);
       DestroyListMenuTask(tListTaskId, scrollPos, cursorPos);
       if (tListPosition < scrollPos + cursorPos)
           gBagPosition.cursorPosition[gBagPosition.pocket]--;
@@ -1773,19 +1801,19 @@ export function Task_WallyTutorialBagMenu(taskId: any): any {
       {
           switch (tTimer)
           {
-          case WALLY_BAG_DELAY * 1:
+          case (102) * 1:
               PlaySE(SE_SELECT);
               SwitchBagPocket(taskId, MENU_CURSOR_DELTA_RIGHT, FALSE);
               tTimer++;
               break;
-          case WALLY_BAG_DELAY * 2:
+          case (102) * 2:
               PlaySE(SE_SELECT);
               BagMenu_PrintCursor(tListTaskId, COLORID_GRAY_CURSOR);
               gSpecialVar_ItemId = ITEM_POKE_BALL;
               OpenContextMenu(taskId);
               tTimer++;
               break;
-          case WALLY_BAG_DELAY * 3:
+          case (102) * 3:
               PlaySE(SE_SELECT);
               RemoveContextWindow();
               DestroyListMenuTask(tListTaskId, 0, 0);

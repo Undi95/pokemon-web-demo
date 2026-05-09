@@ -15,6 +15,22 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sApprenticeChallengeThreshold: any = null;
+let sBattleTowerFuncs: any = null;
+let sBattleTowerPartySizes: any = null;
+let sBattleTowerPartySizes2: any = null;
+let sFrontierTrainerIdRanges: any = null;
+let sFrontierTrainerIdRangesHard: any = null;
+let sPartnerApprenticeTextTables: any = null;
+let sPartnerTrainerTextTables: any = null;
+let sRecordTrainerSpeechLost: any = null;
+let sRecordTrainerSpeechWon: any = null;
+let sRubyFacilityClassToEmerald: any = null;
+let sStevenMons: any = null;
+let sWinStreakFlags: any = null;
+let sWinStreakMasks: any = null;
 /** void CallBattleTowerFunc(void) */
 export function CallBattleTowerFunc(): any {
   sBattleTowerFuncs[gSpecialVar_0x8004]();
@@ -417,9 +433,9 @@ export function PutNewBattleTowerRecord(newRecordEm: any): any {
           {
               for (k = 0; k < PLAYER_NAME_LENGTH; k++)
               {
-                  if (gSaveBlock2Ptr.frontier.towerRecords[i].name[INDEX] != newRecord.name[INDEX])
+                  if (gSaveBlock2Ptr.frontier.towerRecords[i].name[(j)] != newRecord.name[(j)])
                       break;
-                  if (newRecord.name[INDEX] == EOS)
+                  if (newRecord.name[(j)] == EOS)
                   {
                       k = PLAYER_NAME_LENGTH;
                       break;
@@ -1972,14 +1988,14 @@ export function FillPartnerParty(trainerId: any): any {
               do
               {
                   j = Random32();
-              } while (IsShinyOtIdPersonality(STEVEN_OTID, j) || sStevenMons[i].nature != GetNatureFromPersonality(j));
+              } while (IsShinyOtIdPersonality((61226), j) || sStevenMons[i].nature != GetNatureFromPersonality(j));
               CreateMon(gPlayerParty[MULTI_PARTY_SIZE + i],
                         sStevenMons[i].species,
                         sStevenMons[i].level,
                         sStevenMons[i].fixedIV,
                         TRUE,
                         j,
-                        OT_ID_PRESET, STEVEN_OTID);
+                        OT_ID_PRESET, (61226));
               for (j = 0; j < PARTY_SIZE; j++)
                   SetMonData(gPlayerParty[MULTI_PARTY_SIZE + i], MON_DATA_HP_EV + j,sStevenMons[i].evs[j]);
               for (j = 0; j < MAX_MON_MOVES; j++)

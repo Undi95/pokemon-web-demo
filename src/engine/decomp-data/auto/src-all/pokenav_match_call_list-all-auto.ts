@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sMatchCallOptionsHasCheckPage: any = null;
+let sMatchCallOptionsNoCheckPage: any = null;
 /** bool32 PokenavCallback_Init_MatchCall(void) */
 export function PokenavCallback_Init_MatchCall(): any {
   let state: any = AllocSubstruct(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN, 0);

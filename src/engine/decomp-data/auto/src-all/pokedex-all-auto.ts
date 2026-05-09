@@ -15,12 +15,62 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCaughtBall_Gfx: any = null;
+let sDexListStartMenuCursorSpriteTemplate: any = null;
+let sDexModeOptions: any = null;
+let sDexOrderOptions: any = null;
+let sDexSearchColorOptions: any = null;
+let sDexSearchNameOptions: any = null;
+let sDexSearchTypeIds: any = null;
+let sDexSearchTypeOptions: any = null;
+let sExpandedPlaceholder_PokedexDescription: any = null;
+let sHoennDexSeenOwnNumberSpriteTemplate: any = null;
+let sHoennNationalTextSpriteTemplate: any = null;
+let sInfoScreen_BgTemplate: any = null;
+let sInfoScreen_WindowTemplates: any = null;
+let sInterfaceSpritePalette: any = null;
+let sInterfaceSpriteSheet: any = null;
+let sInterfaceTextSpriteTemplate: any = null;
+let sIsDownArrow: any = null;
+let sLastSelectedPokemon: any = null;
+let sNationalDexSeenOwnNumberSpriteTemplate: any = null;
+let sNewEntryInfoScreen_BgTemplate: any = null;
+let sNewEntryInfoScreen_WindowTemplates: any = null;
+let sOrderOptions: any = null;
+let sPokeBallRotation: any = null;
+let sPokedexListItem: any = null;
+let sPokedexModes: any = null;
+let sPokedexView: any = null;
+let sPokedex_BgTemplate: any = null;
+let sPokemonList_WindowTemplate: any = null;
+let sRotatingPokeBallSpriteTemplate: any = null;
+let sScrollArrowSpriteTemplate: any = null;
+let sScrollBarSpriteTemplate: any = null;
+let sScrollMonIncrements: any = null;
+let sScrollTimers: any = null;
+let sSearchMenuItems: any = null;
+let sSearchMenuTopBarItems: any = null;
+let sSearchMenu_BgTemplate: any = null;
+let sSearchMenu_WindowTemplate: any = null;
+let sSearchMovementMap_SearchHoennDex: any = null;
+let sSearchMovementMap_SearchNatDex: any = null;
+let sSearchMovementMap_ShiftHoennDex: any = null;
+let sSearchMovementMap_ShiftNatDex: any = null;
+let sSearchOptions: any = null;
+let sSeenOwnTextSpriteTemplate: any = null;
+let sSizeScreenSilhouette_Pal: any = null;
+let sTaskId: any = null;
+let sText_No000: any = null;
+let sText_TenDashes: any = null;
+let sText_TenDashes2: any = null;
 /** void ResetPokedex(void) */
 export function ResetPokedex(): any {
   let i: any = null;
 
       sLastSelectedPokemon = 0;
-      sPokeBallRotation = POKEBALL_ROTATION_TOP;
+      sPokeBallRotation = (64);
       gUnusedPokedexU8 = 0;
       gSaveBlock2Ptr.pokedex.mode = DEX_MODE_HOENN;
       gSaveBlock2Ptr.pokedex.order = 0;
@@ -42,7 +92,7 @@ export function ResetPokedex(): any {
 /** void ResetPokedexScrollPositions(void) */
 export function ResetPokedexScrollPositions(): any {
   sLastSelectedPokemon = 0;
-      sPokeBallRotation = POKEBALL_ROTATION_TOP;
+      sPokeBallRotation = (64);
 }
 
 /** static void VBlankCB_Pokedex(void) */
@@ -74,7 +124,7 @@ export function ResetPokedexView(pokedexView: any): any {
       pokedexView.dexOrderBackup = ORDER_NUMERICAL;
       pokedexView.seenCount = 0;
       pokedexView.ownCount = 0;
-      for (i = 0; i < MAX_MONS_ON_SCREEN; i++)
+      for (i = 0; i < (4); i++)
           pokedexView.monSpriteIds[i] = 0xFFFF;
       pokedexView.pokeBallRotationStep = 0;
       pokedexView.pokeBallRotationBackup = 0;
@@ -259,14 +309,14 @@ export function Task_HandlePokedexStartMenuInput(taskId: any): any {
                   break;
               case 1:  
                   sPokedexView.selectedPokemon = 0;
-                  sPokedexView.pokeBallRotation = POKEBALL_ROTATION_TOP;
+                  sPokedexView.pokeBallRotation = (64);
                   ClearMonSprites();
                   CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xE);
                   gMain.newKeys |= START_BUTTON;   
                   break;
               case 2:  
                   sPokedexView.selectedPokemon = sPokedexView.pokemonListCount - 1;
-                  sPokedexView.pokeBallRotation = sPokedexView.pokemonListCount * 16 + POKEBALL_ROTATION_BOTTOM;
+                  sPokedexView.pokeBallRotation = sPokedexView.pokemonListCount * 16 + (((64) - 16));
                   ClearMonSprites();
                   CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xE);
                   gMain.newKeys |= START_BUTTON;   
@@ -301,7 +351,7 @@ export function Task_HandlePokedexStartMenuInput(taskId: any): any {
 
 /** static void Task_OpenInfoScreenAfterMonMovement(u8 taskId) */
 export function Task_OpenInfoScreenAfterMonMovement(taskId: any): any {
-  if (gSprites[sPokedexView.selectedMonSpriteId].x == MON_PAGE_X && gSprites[sPokedexView.selectedMonSpriteId].y == MON_PAGE_Y)
+  if (gSprites[sPokedexView.selectedMonSpriteId].x == (48) && gSprites[sPokedexView.selectedMonSpriteId].y == (56))
       {
           sPokedexView.currentPageBackup = sPokedexView.currentPage;
           gTasks[taskId].tLoadScreenTaskId = LoadInfoScreen(sPokedexView.pokedexList[sPokedexView.selectedPokemon], sPokedexView.selectedMonSpriteId);
@@ -336,7 +386,7 @@ export function Task_WaitForExitSearch(taskId: any): any {
           if (sPokedexView.screenSwitchState != 0)
           {
               sPokedexView.selectedPokemon = 0;
-              sPokedexView.pokeBallRotation = POKEBALL_ROTATION_TOP;
+              sPokedexView.pokeBallRotation = (64);
               gTasks[taskId].func = Task_OpenSearchResults;
           }
            
@@ -458,14 +508,14 @@ export function Task_HandleSearchResultsStartMenuInput(taskId: any): any {
                   break;
               case 1:  
                   sPokedexView.selectedPokemon = 0;
-                  sPokedexView.pokeBallRotation = POKEBALL_ROTATION_TOP;
+                  sPokedexView.pokeBallRotation = (64);
                   ClearMonSprites();
                   CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xE);
                   gMain.newKeys |= START_BUTTON;
                   break;
               case 2:  
                   sPokedexView.selectedPokemon = sPokedexView.pokemonListCount - 1;
-                  sPokedexView.pokeBallRotation = sPokedexView.pokemonListCount * 16 + POKEBALL_ROTATION_BOTTOM;
+                  sPokedexView.pokeBallRotation = sPokedexView.pokemonListCount * 16 + (((64) - 16));
                   ClearMonSprites();
                   CreateMonSpritesAtPos(sPokedexView.selectedPokemon, 0xE);
                   gMain.newKeys |= START_BUTTON;
@@ -505,7 +555,7 @@ export function Task_HandleSearchResultsStartMenuInput(taskId: any): any {
 
 /** static void Task_OpenSearchResultsInfoScreenAfterMonMovement(u8 taskId) */
 export function Task_OpenSearchResultsInfoScreenAfterMonMovement(taskId: any): any {
-  if (gSprites[sPokedexView.selectedMonSpriteId].x == MON_PAGE_X && gSprites[sPokedexView.selectedMonSpriteId].y == MON_PAGE_Y)
+  if (gSprites[sPokedexView.selectedMonSpriteId].x == (48) && gSprites[sPokedexView.selectedMonSpriteId].y == (56))
       {
           sPokedexView.currentPageBackup = sPokedexView.currentPage;
           gTasks[taskId].tLoadScreenTaskId = LoadInfoScreen(sPokedexView.pokedexList[sPokedexView.selectedPokemon], sPokedexView.selectedMonSpriteId);
@@ -898,8 +948,8 @@ export function CreateMonListEntry(position: any, b: any, ignored: any): any {
       case 2:  
           entryNum = b + 5;
           vOffset = sPokedexView.listVOffset + 10;
-          if (vOffset >= LIST_SCROLL_STEP)
-              vOffset -= LIST_SCROLL_STEP;
+          if (vOffset >= (16))
+              vOffset -= (16);
           if (entryNum < 0 || entryNum >= NATIONAL_DEX_COUNT || sPokedexView.pokedexList[entryNum].dexNum == 0xFFFF)
           {
               ClearMonListEntry(17, vOffset * 2, ignored);
@@ -974,7 +1024,7 @@ export function CreateMonSpritesAtPos(selectedMon: any, ignored: any): any {
 
       gPaletteFade.bufferTransferDisabled = TRUE;
 
-      for (i = 0; i < MAX_MONS_ON_SCREEN; i++)
+      for (i = 0; i < (4); i++)
           sPokedexView.monSpriteIds[i] = 0xFFFF;
       sPokedexView.selectedMonSpriteId = 0xFFFF;
 
@@ -1025,23 +1075,23 @@ export function UpdateDexListScroll(direction: any, monMoveIncrement: any, scrol
           switch (direction)
           {
           case 1:  
-              for (i = 0; i < MAX_MONS_ON_SCREEN; i++)
+              for (i = 0; i < (4); i++)
               {
                   if (sPokedexView.monSpriteIds[i] != 0xFFFF)
                       gSprites[sPokedexView.monSpriteIds[i]].data[5] += monMoveIncrement;
               }
-              step = LIST_SCROLL_STEP * (scrollTimerMax - sPokedexView.scrollTimer) / scrollTimerMax;
-              SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset + sPokedexView.listMovingVOffset * LIST_SCROLL_STEP - step);
+              step = (16) * (scrollTimerMax - sPokedexView.scrollTimer) / scrollTimerMax;
+              SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset + sPokedexView.listMovingVOffset * (16) - step);
               sPokedexView.pokeBallRotation -= sPokedexView.pokeBallRotationStep;
               break;
           case 2:  
-              for (i = 0; i < MAX_MONS_ON_SCREEN; i++)
+              for (i = 0; i < (4); i++)
               {
                   if (sPokedexView.monSpriteIds[i] != 0xFFFF)
                       gSprites[sPokedexView.monSpriteIds[i]].data[5] -= monMoveIncrement;
               }
-              step = LIST_SCROLL_STEP * (scrollTimerMax - sPokedexView.scrollTimer) / scrollTimerMax;
-              SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset + sPokedexView.listMovingVOffset * LIST_SCROLL_STEP + step);
+              step = (16) * (scrollTimerMax - sPokedexView.scrollTimer) / scrollTimerMax;
+              SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset + sPokedexView.listMovingVOffset * (16) + step);
               sPokedexView.pokeBallRotation += sPokedexView.pokeBallRotationStep;
               break;
           }
@@ -1049,7 +1099,7 @@ export function UpdateDexListScroll(direction: any, monMoveIncrement: any, scrol
       }
       else
       {
-          SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset + sPokedexView.listVOffset * LIST_SCROLL_STEP);
+          SetGpuReg(REG_OFFSET_BG2VOFS, sPokedexView.initialVOffset + sPokedexView.listVOffset * (16));
           return TRUE;
       }
 }
@@ -1073,7 +1123,7 @@ export function CreateScrollingPokemonSprite(direction: any, selectedMon: any): 
           if (sPokedexView.listVOffset > 0)
               sPokedexView.listVOffset--;
           else
-              sPokedexView.listVOffset = LIST_SCROLL_STEP - 1;
+              sPokedexView.listVOffset = (16) - 1;
           break;
       case 2:  
           dexNum = GetPokemonSpriteToDisplay(selectedMon + 1);
@@ -1083,7 +1133,7 @@ export function CreateScrollingPokemonSprite(direction: any, selectedMon: any): 
               gSprites[spriteId].callback = SpriteCB_PokedexListMonSprite;
               gSprites[spriteId].data[5] = 64;
           }
-          if (sPokedexView.listVOffset < LIST_SCROLL_STEP - 1)
+          if (sPokedexView.listVOffset < (16) - 1)
               sPokedexView.listVOffset++;
           else
               sPokedexView.listVOffset = 0;
@@ -1161,7 +1211,7 @@ export function TryDoPokedexScroll(selectedMon: any, ignored: any): any {
 export function UpdateSelectedMonSpriteId(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_MONS_ON_SCREEN; i++)
+      for (i = 0; i < (4); i++)
       {
           let spriteId: any = sPokedexView.monSpriteIds[i];
 
@@ -1232,7 +1282,7 @@ export function TryDoInfoScreenScroll(): any {
 export function ClearMonSprites(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_MONS_ON_SCREEN; i++)
+      for (i = 0; i < (4); i++)
       {
           if (sPokedexView.monSpriteIds[i] != 0xFFFF)
           {
@@ -1257,7 +1307,7 @@ export function GetPokemonSpriteToDisplay(species: any): any {
 export function CreatePokedexMonSprite(num: any, x: any, y: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_MONS_ON_SCREEN; i++)
+      for (i = 0; i < (4); i++)
       {
           if (sPokedexView.monSpriteIds[i] == 0xFFFF)
           {
@@ -1516,16 +1566,16 @@ export function SpriteCB_MoveMonForInfoScreen(sprite: any): any {
       sprite.oam.affineMode = ST_OAM_AFFINE_OFF;
       sprite.x2 = 0;
       sprite.y2 = 0;
-      if (sprite.x != MON_PAGE_X || sprite.y != MON_PAGE_Y)
+      if (sprite.x != (48) || sprite.y != (56))
       {
-          if (sprite.x > MON_PAGE_X)
+          if (sprite.x > (48))
               sprite.x--;
-          if (sprite.x < MON_PAGE_X)
+          if (sprite.x < (48))
               sprite.x++;
 
-          if (sprite.y > MON_PAGE_Y)
+          if (sprite.y > (56))
               sprite.y--;
-          if (sprite.y < MON_PAGE_Y)
+          if (sprite.y < (56))
               sprite.y++;
       }
       else
@@ -1775,7 +1825,7 @@ export function Task_LoadInfoScreen(taskId: any): any {
       case 5:
           if (!gTasks[taskId].tMonSpriteDone)
           {
-              gTasks[taskId].tMonSpriteId = CreateMonSpriteFromNationalDexNumber(sPokedexListItem.dexNum, MON_PAGE_X, MON_PAGE_Y, 0);
+              gTasks[taskId].tMonSpriteId = CreateMonSpriteFromNationalDexNumber(sPokedexListItem.dexNum, (48), (56), 0);
               gSprites[gTasks[taskId].tMonSpriteId].oam.priority = 0;
           }
           gMain.state++;
@@ -2065,7 +2115,7 @@ export function Task_LoadCryScreen(taskId: any): any {
           gMain.state++;
           break;
       case 5:
-          gTasks[taskId].tMonSpriteId = CreateMonSpriteFromNationalDexNumber(sPokedexListItem.dexNum, MON_PAGE_X, MON_PAGE_Y, 0);
+          gTasks[taskId].tMonSpriteId = CreateMonSpriteFromNationalDexNumber(sPokedexListItem.dexNum, (48), (56), 0);
           gSprites[gTasks[taskId].tMonSpriteId].oam.priority = 0;
           gDexCryScreenState = 0;
           gMain.state++;
@@ -2476,7 +2526,7 @@ export function Task_DisplayCaughtMonDexPage(taskId: any): any {
           gTasks[taskId].tState++;
           break;
       case 4:
-          spriteId = CreateMonSpriteFromNationalDexNumber(dexNum, MON_PAGE_X, MON_PAGE_Y, 0);
+          spriteId = CreateMonSpriteFromNationalDexNumber(dexNum, (48), (56), 0);
           gSprites[spriteId].oam.priority = 0;
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
           SetVBlankCallback(gPokedexVBlankCB);
@@ -2935,7 +2985,7 @@ export function DrawFootprint(windowId: any, dexNum: any): any {
       let tileIdx: any = 0;
       let i, j;
 
-      for (i = 0; i < TILE_SIZE_1BPP * NUM_FOOTPRINT_TILES; i++)
+      for (i = 0; i < TILE_SIZE_1BPP * (4); i++)
       {
           let footprint1bpp: any = footprintGfx[i];
 
@@ -2946,9 +2996,9 @@ export function DrawFootprint(windowId: any, dexNum: any): any {
           {
               let tile: any = 0;
               if (footprint1bpp & (1 << (2 * j)))
-                  tile |= FOOTPRINT_COLOR_IDX;  
+                  tile |= (2);  
               if (footprint1bpp & (2 << (2 * j)))
-                  tile |= FOOTPRINT_COLOR_IDX << 4;  
+                  tile |= (2) << 4;  
               footprint4bpp[tileIdx] = tile;
               tileIdx++;
           }
@@ -3331,8 +3381,8 @@ export function Task_HandleSearchMenuInput(taskId: any): any {
           {
               if (gTasks[taskId].tTopBarItem != SEARCH_TOPBAR_SEARCH)
               {
-                  sPokeBallRotation = POKEBALL_ROTATION_TOP;
-                  sPokedexView.pokeBallRotationBackup = POKEBALL_ROTATION_TOP;
+                  sPokeBallRotation = (64);
+                  sPokedexView.pokeBallRotationBackup = (64);
                   sLastSelectedPokemon = 0;
                   sPokedexView.selectedPokemonBackup = 0;
                   gSaveBlock2Ptr.pokedex.mode = GetSearchModeSelection(taskId, SEARCH_MODE);
@@ -3531,7 +3581,7 @@ export function Task_HandleSearchParameterInput(taskId: any): any {
       }
       if (JOY_REPEAT(DPAD_DOWN))
       {
-          if (cursorPos < MAX_SEARCH_PARAM_CURSOR_POS && cursorPos < maxOption)
+          if (cursorPos < (((6) - 1)) && cursorPos < maxOption)
           {
                
               EraseSelectorArrow(cursorPos);
@@ -3539,7 +3589,7 @@ export function Task_HandleSearchParameterInput(taskId: any): any {
               PrintSelectorArrow(cursorPos);
               moved = TRUE;
           }
-          else if (maxOption > MAX_SEARCH_PARAM_CURSOR_POS && scrollOffset < maxOption - MAX_SEARCH_PARAM_CURSOR_POS)
+          else if (maxOption > (((6) - 1)) && scrollOffset < maxOption - (((6) - 1)))
           {
                
               scrollOffset++;
@@ -3598,25 +3648,25 @@ export function DrawSearchMenuItemBgHighlight(searchBg: any, unselected: any, di
 
       switch (searchBg)
       {
-      case SEARCH_BG_SEARCH:
-      case SEARCH_BG_SHIFT:
-      case SEARCH_BG_CANCEL:
+      case (SEARCH_TOPBAR_SEARCH):
+      case (SEARCH_TOPBAR_SHIFT):
+      case (SEARCH_TOPBAR_CANCEL):
           SetSearchRectHighlight(highlightFlags, sSearchMenuTopBarItems[searchBg].highlightX, sSearchMenuTopBarItems[searchBg].highlightY, sSearchMenuTopBarItems[searchBg].highlightWidth);
           break;
-      case SEARCH_BG_NAME:
-      case SEARCH_BG_COLOR:
-      case SEARCH_BG_ORDER:
-      case SEARCH_BG_MODE:
+      case ((SEARCH_NAME + SEARCH_TOPBAR_COUNT)):
+      case ((SEARCH_COLOR + SEARCH_TOPBAR_COUNT)):
+      case ((SEARCH_ORDER + SEARCH_TOPBAR_COUNT)):
+      case ((SEARCH_MODE + SEARCH_TOPBAR_COUNT)):
           SetSearchRectHighlight(highlightFlags, sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT].titleBgX, sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT].titleBgY, sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT].titleBgWidth);
            
-      case SEARCH_BG_TYPE_SELECTION_LEFT:
-      case SEARCH_BG_TYPE_SELECTION_RIGHT:
+      case ((SEARCH_TYPE_LEFT + SEARCH_TOPBAR_COUNT)):
+      case ((SEARCH_TYPE_RIGHT + SEARCH_TOPBAR_COUNT)):
           SetSearchRectHighlight(highlightFlags, sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT].selectionBgX, sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT].selectionBgY, sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT].selectionBgWidth);
           break;
-      case SEARCH_BG_TYPE_TITLE:
+      case ((SEARCH_COUNT + SEARCH_TOPBAR_COUNT)):
           SetSearchRectHighlight(highlightFlags, sSearchMenuItems[SEARCH_TYPE_LEFT].titleBgX, sSearchMenuItems[SEARCH_TYPE_LEFT].titleBgY, sSearchMenuItems[SEARCH_TYPE_LEFT].titleBgWidth);
           break;
-      case SEARCH_BG_OK:
+      case ((SEARCH_OK + SEARCH_TOPBAR_COUNT)):
           if (!IsNationalPokedexEnabled())
               SetSearchRectHighlight(highlightFlags, sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT].titleBgX, sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT].titleBgY - 2, sSearchMenuItems[searchBg - SEARCH_TOPBAR_COUNT].titleBgWidth);
           else
@@ -3630,43 +3680,43 @@ export function SetInitialSearchMenuBgHighlights(topBarItem: any): any {
   switch (topBarItem)
       {
       case SEARCH_TOPBAR_SEARCH:
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_SEARCH, FALSE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_SHIFT, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_CANCEL, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_NAME, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_COLOR, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_TITLE, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_SELECTION_LEFT, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_SELECTION_RIGHT, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_ORDER, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_MODE, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_OK, TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight((SEARCH_TOPBAR_SEARCH), FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight((SEARCH_TOPBAR_SHIFT), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight((SEARCH_TOPBAR_CANCEL), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_NAME + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_COLOR + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_COUNT + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_TYPE_LEFT + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_TYPE_RIGHT + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_ORDER + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_MODE + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_OK + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
           break;
       case SEARCH_TOPBAR_SHIFT:
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_SEARCH, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_SHIFT, FALSE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_CANCEL, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_NAME, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_COLOR, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_TITLE, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_SELECTION_LEFT, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_SELECTION_RIGHT, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_ORDER, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_MODE, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_OK, TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight((SEARCH_TOPBAR_SEARCH), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight((SEARCH_TOPBAR_SHIFT), FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight((SEARCH_TOPBAR_CANCEL), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_NAME + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_COLOR + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_COUNT + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_TYPE_LEFT + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_TYPE_RIGHT + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_ORDER + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_MODE + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_OK + SEARCH_TOPBAR_COUNT)), TRUE, FALSE);
           break;
       case SEARCH_TOPBAR_CANCEL:
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_SEARCH, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_SHIFT, TRUE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_CANCEL, FALSE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_NAME, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_COLOR, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_TITLE, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_SELECTION_LEFT, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_SELECTION_RIGHT, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_ORDER, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_MODE, TRUE, TRUE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_OK, TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight((SEARCH_TOPBAR_SEARCH), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight((SEARCH_TOPBAR_SHIFT), TRUE, FALSE);
+          DrawSearchMenuItemBgHighlight((SEARCH_TOPBAR_CANCEL), FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_NAME + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_COLOR + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_COUNT + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_TYPE_LEFT + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_TYPE_RIGHT + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_ORDER + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_MODE + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_OK + SEARCH_TOPBAR_COUNT)), TRUE, TRUE);
           break;
       }
 }
@@ -3683,27 +3733,27 @@ export function HighlightSelectedSearchMenuItem(topBarItem: any, menuItem: any):
       switch (menuItem)
       {
       case SEARCH_NAME:
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_NAME, FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_NAME + SEARCH_TOPBAR_COUNT)), FALSE, FALSE);
           break;
       case SEARCH_COLOR:
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_COLOR, FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_COLOR + SEARCH_TOPBAR_COUNT)), FALSE, FALSE);
           break;
       case SEARCH_TYPE_LEFT:
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_TITLE, FALSE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_SELECTION_LEFT, FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_COUNT + SEARCH_TOPBAR_COUNT)), FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_TYPE_LEFT + SEARCH_TOPBAR_COUNT)), FALSE, FALSE);
           break;
       case SEARCH_TYPE_RIGHT:
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_TITLE, FALSE, FALSE);
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_TYPE_SELECTION_RIGHT, FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_COUNT + SEARCH_TOPBAR_COUNT)), FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_TYPE_RIGHT + SEARCH_TOPBAR_COUNT)), FALSE, FALSE);
           break;
       case SEARCH_ORDER:
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_ORDER, FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_ORDER + SEARCH_TOPBAR_COUNT)), FALSE, FALSE);
           break;
       case SEARCH_MODE:
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_MODE, FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_MODE + SEARCH_TOPBAR_COUNT)), FALSE, FALSE);
           break;
       case SEARCH_OK:
-          DrawSearchMenuItemBgHighlight(SEARCH_BG_OK, FALSE, FALSE);
+          DrawSearchMenuItemBgHighlight(((SEARCH_OK + SEARCH_TOPBAR_COUNT)), FALSE, FALSE);
           break;
       }
       EraseAndPrintSearchTextBox(sSearchMenuItems[menuItem].description);
@@ -3780,7 +3830,7 @@ export function PrintSearchParameterText(taskId: any): any {
 
       ClearSearchParameterBoxText();
 
-      for (i = 0, j = scrollOffset; i < MAX_SEARCH_PARAM_ON_SCREEN && texts[j].title != NULL; i++, j++)
+      for (i = 0, j = scrollOffset; i < (6) && texts[j].title != NULL; i++, j++)
           PrintSearchParameterTitle(i, texts[j].title);
 
       EraseAndPrintSearchTextBox(texts[cursorPos + scrollOffset].description);
@@ -3863,7 +3913,7 @@ export function SearchParamCantScrollUp(taskId: any): any {
       let scrollOffset: any =gTasks[taskId].data[sSearchOptions[menuItem].taskDataScrollOffset];
       let lastOption: any = sSearchOptions[menuItem].numOptions - 1;
 
-      if (lastOption > MAX_SEARCH_PARAM_CURSOR_POS && scrollOffset != 0)
+      if (lastOption > (((6) - 1)) && scrollOffset != 0)
           return FALSE;
       else
           return TRUE;
@@ -3875,7 +3925,7 @@ export function SearchParamCantScrollDown(taskId: any): any {
       let scrollOffset: any =gTasks[taskId].data[sSearchOptions[menuItem].taskDataScrollOffset];
       let lastOption: any = sSearchOptions[menuItem].numOptions - 1;
 
-      if (lastOption > MAX_SEARCH_PARAM_CURSOR_POS && scrollOffset < lastOption - MAX_SEARCH_PARAM_CURSOR_POS)
+      if (lastOption > (((6) - 1)) && scrollOffset < lastOption - (((6) - 1)))
           return FALSE;
       else
           return TRUE;

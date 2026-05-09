@@ -15,6 +15,73 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sActionTexts: any = null;
+let sAffineAnims_CrossingMonPics: any = null;
+let sBgTemplates: any = null;
+let sCableCloseup_Map: any = null;
+let sCursorMoveDestinations: any = null;
+let sCursor_SpritePalette: any = null;
+let sCursor_SpriteSheet: any = null;
+let sGbaAffineMapCable: any = null;
+let sGbaAffineMapWireless: any = null;
+let sGbaAffine_Gfx: any = null;
+let sGbaMapCable: any = null;
+let sGbaMapWireless: any = null;
+let sIngameTradeMail: any = null;
+let sIngameTrades: any = null;
+let sLinkMonShadow_Pal: any = null;
+let sMenuTextTileBuffer: any = null;
+let sMenuTextTileBuffers: any = null;
+let sMessages: any = null;
+let sPokeBallSpritePalette: any = null;
+let sPokeBallSpriteSheet: any = null;
+let sSelectTradeMonActions: any = null;
+let sSelectedMonLevelGenderCoords: any = null;
+let sSpritePalette_Gba: any = null;
+let sSpritePalette_LinkMon: any = null;
+let sSpritePalette_MenuText: any = null;
+let sSpriteSheet_CableEnd: any = null;
+let sSpriteSheet_GbaScreen: any = null;
+let sSpriteSheet_LinkMonGlow: any = null;
+let sSpriteSheet_LinkMonShadow: any = null;
+let sSpriteTemplate_CableEnd: any = null;
+let sSpriteTemplate_Cursor: any = null;
+let sSpriteTemplate_GbaScreenFlash_Long: any = null;
+let sSpriteTemplate_GbaScreenFlash_Short: any = null;
+let sSpriteTemplate_LinkMonGlow: any = null;
+let sSpriteTemplate_LinkMonShadow: any = null;
+let sSpriteTemplate_MenuText: any = null;
+let sSpriteTemplate_Pokeball: any = null;
+let sText_EmptyString: any = null;
+let sText_FourQuestionMarks: any = null;
+let sText_IsThisTradeOkay: any = null;
+let sText_NewLine: any = null;
+let sText_ShedinjaJP: any = null;
+let sTradeAnim: any = null;
+let sTradeBallVerticalVelocityTable: any = null;
+let sTradeMenu: any = null;
+let sTradeMonBoxCoords: any = null;
+let sTradeMonLevelCoords: any = null;
+let sTradeMonSpriteCoords: any = null;
+let sTradeMovesBoxTilemap: any = null;
+let sTradePartyBoxTilemap: any = null;
+let sTradeSequenceBgTemplates: any = null;
+let sTradeSequenceWindowTemplates: any = null;
+let sTradeStripesBG2Tilemap: any = null;
+let sTradeStripesBG3Tilemap: any = null;
+let sTradeTextColors: any = null;
+let sTradeYesNoWindowTemplate: any = null;
+let sWindowTemplates: any = null;
+let sWirelessCloseup_Map: any = null;
+let sWirelessSignalAnimParams: any = null;
+let sWirelessSignalNone_Pal: any = null;
+let sWirelessSignalRecv_Pal: any = null;
+let sWirelessSignalSend_Pal: any = null;
+let sWirelessSignal_Gfx: any = null;
+let sWirelessSignal_Tilemap: any = null;
+let sXY: any = null;
 /** static bool8 SendLinkData(const void *linkData, u32 size) */
 export function SendLinkData(linkData: any, size: any): any {
   if (gPlayerCurrActivity == ACTIVITY_29)
@@ -306,7 +373,7 @@ export function CB2_CreateTradeMenu(): any {
       case 12:
            
           xPos = GetStringCenterAlignXOffset(FONT_NORMAL, gSaveBlock2Ptr.playerName, 120);
-          for (i = 0; i < NUM_PLAYER_NAME_SPRITES; i++)
+          for (i = 0; i < ((1 + GFXTAG_PLAYER_NAME_R - GFXTAG_PLAYER_NAME_L)); i++)
           {
               temp = sSpriteTemplate_MenuText;
               temp.tileTag += i + GFXTAG_PLAYER_NAME_L;
@@ -315,7 +382,7 @@ export function CB2_CreateTradeMenu(): any {
 
            
           xPos = GetStringCenterAlignXOffset(FONT_NORMAL, gLinkPlayers[GetMultiplayerId() ^ 1].name, 120);
-          for (i = 0; i < NUM_PARTNER_NAME_SPRITES; i++)
+          for (i = 0; i < ((1 + GFXTAG_PARTNER_NAME_R - GFXTAG_PARTNER_NAME_L)); i++)
           {
               temp = sSpriteTemplate_MenuText;
               temp.tileTag += i + GFXTAG_PARTNER_NAME_L;
@@ -333,7 +400,7 @@ export function CB2_CreateTradeMenu(): any {
           CreateSprite(temp, 215 + 32, 152, 1);
 
            
-          for (i = 0; i < NUM_CHOOSE_PKMN_SPRITES; i++)
+          for (i = 0; i < ((1 + GFXTAG_CHOOSE_PKMN_EMPTY_3 - GFXTAG_CHOOSE_PKMN_L)); i++)
           {
               temp = sSpriteTemplate_MenuText;
               temp.tileTag += i + GFXTAG_CHOOSE_PKMN_L;
@@ -497,7 +564,7 @@ export function CB2_ReturnToTradeMenu(): any {
       case 12:
            
           xPos = GetStringCenterAlignXOffset(FONT_NORMAL, gSaveBlock2Ptr.playerName, 120);
-          for (i = 0; i < NUM_PLAYER_NAME_SPRITES; i++)
+          for (i = 0; i < ((1 + GFXTAG_PLAYER_NAME_R - GFXTAG_PLAYER_NAME_L)); i++)
           {
               temp = sSpriteTemplate_MenuText;
               temp.tileTag += i + GFXTAG_PLAYER_NAME_L;
@@ -506,7 +573,7 @@ export function CB2_ReturnToTradeMenu(): any {
 
            
           xPos = GetStringCenterAlignXOffset(FONT_NORMAL, gLinkPlayers[GetMultiplayerId() ^ 1].name, 120);
-          for (i = 0; i < NUM_PARTNER_NAME_SPRITES; i++)
+          for (i = 0; i < ((1 + GFXTAG_PARTNER_NAME_R - GFXTAG_PARTNER_NAME_L)); i++)
           {
               temp = sSpriteTemplate_MenuText;
               temp.tileTag += i + GFXTAG_PARTNER_NAME_L;
@@ -524,7 +591,7 @@ export function CB2_ReturnToTradeMenu(): any {
           CreateSprite(temp, 215 + 32, 152, 1);
 
            
-          for (i = 0; i < NUM_CHOOSE_PKMN_SPRITES; i++)
+          for (i = 0; i < ((1 + GFXTAG_CHOOSE_PKMN_EMPTY_3 - GFXTAG_CHOOSE_PKMN_L)); i++)
           {
               temp = sSpriteTemplate_MenuText;
               temp.tileTag += i + GFXTAG_CHOOSE_PKMN_L;
@@ -982,7 +1049,7 @@ export function Leader_HandleCommunication(): any {
               sTradeMenu.callbackId = CB_SET_SELECTED_MONS;
               sTradeMenu.linkData[0] = LINKCMD_SET_MONS_TO_TRADE;
               sTradeMenu.linkData[1] = sTradeMenu.cursorPosition;
-              QueueAction(QUEUE_DELAY_DATA, QUEUE_SEND_DATA);
+              QueueAction((5), QUEUE_SEND_DATA);
               sTradeMenu.playerSelectStatus = sTradeMenu.partnerSelectStatus = STATUS_NONE;
           }
           else if (sTradeMenu.playerSelectStatus == STATUS_READY
@@ -993,7 +1060,7 @@ export function Leader_HandleCommunication(): any {
               PrintTradeMessage(MSG_CANCELED);
               sTradeMenu.linkData[0] = LINKCMD_PARTNER_CANCEL_TRADE;
               sTradeMenu.linkData[1] = 0;
-              QueueAction(QUEUE_DELAY_DATA, QUEUE_SEND_DATA);
+              QueueAction((5), QUEUE_SEND_DATA);
               sTradeMenu.playerConfirmStatus = sTradeMenu.partnerConfirmStatus = STATUS_NONE;
               sTradeMenu.playerSelectStatus = sTradeMenu.partnerSelectStatus = STATUS_NONE;
               sTradeMenu.callbackId = CB_HANDLE_TRADE_CANCELED;
@@ -1006,7 +1073,7 @@ export function Leader_HandleCommunication(): any {
               PrintTradeMessage(MSG_FRIEND_WANTS_TO_TRADE);
               sTradeMenu.linkData[0] = LINKCMD_PLAYER_CANCEL_TRADE;
               sTradeMenu.linkData[1] = 0;
-              QueueAction(QUEUE_DELAY_DATA, QUEUE_SEND_DATA);
+              QueueAction((5), QUEUE_SEND_DATA);
               sTradeMenu.playerConfirmStatus = sTradeMenu.partnerConfirmStatus = STATUS_NONE;
               sTradeMenu.playerSelectStatus = sTradeMenu.partnerSelectStatus = STATUS_NONE;
               sTradeMenu.callbackId = CB_HANDLE_TRADE_CANCELED;
@@ -1017,7 +1084,7 @@ export function Leader_HandleCommunication(): any {
                
               sTradeMenu.linkData[0] = LINKCMD_BOTH_CANCEL_TRADE;
               sTradeMenu.linkData[1] = 0;
-              QueueAction(QUEUE_DELAY_DATA, QUEUE_SEND_DATA);
+              QueueAction((5), QUEUE_SEND_DATA);
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
               sTradeMenu.playerSelectStatus = sTradeMenu.partnerSelectStatus = STATUS_NONE;
               sTradeMenu.callbackId = CB_INIT_EXIT_CANCELED_TRADE;
@@ -1033,7 +1100,7 @@ export function Leader_HandleCommunication(): any {
                
               sTradeMenu.linkData[0] = LINKCMD_START_TRADE;
               sTradeMenu.linkData[1] = 0;
-              QueueAction(QUEUE_DELAY_DATA, QUEUE_SEND_DATA);
+              QueueAction((5), QUEUE_SEND_DATA);
               sTradeMenu.playerConfirmStatus = STATUS_NONE;
               sTradeMenu.partnerConfirmStatus = STATUS_NONE;
               sTradeMenu.callbackId = CB_FADE_TO_START_TRADE;
@@ -1047,7 +1114,7 @@ export function Leader_HandleCommunication(): any {
               PrintTradeMessage(MSG_CANCELED);
               sTradeMenu.linkData[0] = LINKCMD_PLAYER_CANCEL_TRADE;
               sTradeMenu.linkData[1] = 0;
-              QueueAction(QUEUE_DELAY_DATA, QUEUE_SEND_DATA);
+              QueueAction((5), QUEUE_SEND_DATA);
               sTradeMenu.playerConfirmStatus = STATUS_NONE;
               sTradeMenu.partnerConfirmStatus = STATUS_NONE;
               sTradeMenu.callbackId = CB_HANDLE_TRADE_CANCELED;
@@ -1059,7 +1126,7 @@ export function Leader_HandleCommunication(): any {
 export function _SetLinkData(linkData: any, linkCmd: any, cursorPosition: any): any {
   linkData[0] = linkCmd;
       linkData[1] = cursorPosition;
-      QueueAction(QUEUE_DELAY_DATA, QUEUE_SEND_DATA);
+      QueueAction((5), QUEUE_SEND_DATA);
 }
 
 /** static void SetLinkData(u16 linkCmd, u16 cursorPosition) */
@@ -1213,17 +1280,17 @@ export function CB_ProcessSelectedMonInput(): any {
               gSprites[sTradeMenu.cursorSpriteId].invisible = TRUE;
               break;
           case CANT_TRADE_LAST_MON:
-              QueueAction(QUEUE_DELAY_MSG, QUEUE_ONLY_MON2);
+              QueueAction((3), QUEUE_ONLY_MON2);
               sTradeMenu.callbackId = CB_HANDLE_TRADE_CANCELED;
               break;
           case CANT_TRADE_NATIONAL:
           case CANT_TRADE_INVALID_MON:
-              QueueAction(QUEUE_DELAY_MSG, QUEUE_MON_CANT_BE_TRADED);
+              QueueAction((3), QUEUE_MON_CANT_BE_TRADED);
               sTradeMenu.callbackId = CB_HANDLE_TRADE_CANCELED;
               break;
           case CANT_TRADE_EGG_YET:
           case CANT_TRADE_PARTNER_EGG_YET:
-              QueueAction(QUEUE_DELAY_MSG, QUEUE_EGG_CANT_BE_TRADED);
+              QueueAction((3), QUEUE_EGG_CANT_BE_TRADED);
               sTradeMenu.callbackId = CB_HANDLE_TRADE_CANCELED;
               break;
           }
@@ -1300,15 +1367,15 @@ export function CheckMonsBeforeTrade(): any {
                                                   sTradeMenu.partnerCursorPosition))
       {
       case PLAYER_MON_INVALID:
-          QueueAction(QUEUE_DELAY_MSG, QUEUE_ONLY_MON2);
+          QueueAction((3), QUEUE_ONLY_MON2);
           SetLinkData(LINKCMD_READY_CANCEL_TRADE, 0);
           break;
       case BOTH_MONS_VALID:
-          QueueAction(QUEUE_DELAY_MSG, QUEUE_STANDBY);
+          QueueAction((3), QUEUE_STANDBY);
           SetLinkData(LINKCMD_INIT_BLOCK, 0);
           break;
       case PARTNER_MON_INVALID:
-          QueueAction(QUEUE_DELAY_MSG, QUEUE_FRIENDS_MON_CANT_BE_TRADED);
+          QueueAction((3), QUEUE_FRIENDS_MON_CANT_BE_TRADED);
           return TRUE;
       }
 
@@ -1329,7 +1396,7 @@ export function CB_ProcessConfirmTradeInput(): any {
           break;
       case 1:  
       case MENU_B_PRESSED:
-          QueueAction(QUEUE_DELAY_MSG, QUEUE_STANDBY);
+          QueueAction((3), QUEUE_STANDBY);
           if (IsLinkTradeTaskFinished())
               SetLinkData(LINKCMD_READY_CANCEL_TRADE, 0);
           sTradeMenu.callbackId = CB_IDLE;
@@ -1381,8 +1448,8 @@ export function CB_SetSelectedMons(): any {
 
 /** static void CB_PrintIsThisTradeOkay(void) */
 export function CB_PrintIsThisTradeOkay(): any {
-  if (sTradeMenu.drawSelectedMonState[TRADE_PLAYER] == DRAW_SELECTED_FINISH
-       && sTradeMenu.drawSelectedMonState[TRADE_PARTNER] == DRAW_SELECTED_FINISH)
+  if (sTradeMenu.drawSelectedMonState[TRADE_PLAYER] == (5)
+       && sTradeMenu.drawSelectedMonState[TRADE_PARTNER] == (5))
       {
           PrintIsThisTradeOkay();
           sTradeMenu.callbackId = CB_INIT_CONFIRM_TRADE_PROMPT;

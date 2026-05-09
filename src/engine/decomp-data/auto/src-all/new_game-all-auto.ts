@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sContestWinnerPicDummy: any = null;
 /** void SetTrainerId(u32 trainerId, u8 *dst) */
 export function SetTrainerId(trainerId: any, dst: any): any {
   dst[0] = trainerId;

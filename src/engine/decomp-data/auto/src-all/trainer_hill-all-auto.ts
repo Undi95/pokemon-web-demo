@@ -15,6 +15,20 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sChallengeData: any = null;
+let sEReader_Pal: any = null;
+let sFloorTrainers: any = null;
+let sHillData: any = null;
+let sHillFunctions: any = null;
+let sModeStrings: any = null;
+let sNextFloorMapNum: any = null;
+let sPrizeListSets: any = null;
+let sRecordWinColors: any = null;
+let sTrainerClassesAndMusic: any = null;
+let sTrainerObjectEventTemplate: any = null;
+let sTrainerPartySlots: any = null;
 /** void CallTrainerHillFunction(void) */
 export function CallTrainerHillFunction(): any {
   SetUpDataStruct();
@@ -30,7 +44,7 @@ export function ResetTrainerHillResults(): any {
       gSaveBlock2Ptr.frontier.unk_EF9 = 0;
       gSaveBlock1Ptr.trainerHill.bestTime = 0;
       for (i = 0; i < NUM_TRAINER_HILL_MODES; i++)
-          SetTimerValue(gSaveBlock1Ptr.trainerHillTimes[i], HILL_MAX_TIME);
+          SetTimerValue(gSaveBlock1Ptr.trainerHillTimes[i], (215999));
 }
 
 /** static u8 GetFloorId(void) */
@@ -214,8 +228,8 @@ export function CheckFinalTime(): any {
 export function TrainerHillResumeTimer(): any {
   if (!gSaveBlock1Ptr.trainerHill.spokeToOwner)
       {
-          if (gSaveBlock1Ptr.trainerHill.timer >= HILL_MAX_TIME)
-              gSaveBlock1Ptr.trainerHill.timer = HILL_MAX_TIME;
+          if (gSaveBlock1Ptr.trainerHill.timer >= (215999))
+              gSaveBlock1Ptr.trainerHill.timer = (215999);
           else
               SetTrainerHillVBlankCounter(gSaveBlock1Ptr.trainerHill.timer);
       }
@@ -252,8 +266,8 @@ export function BufferChallengeTime(): any {
   let total, minutes, secondsWhole, secondsFraction;
 
       total = gSaveBlock1Ptr.trainerHill.timer;
-      if (total >= HILL_MAX_TIME)
-          total = HILL_MAX_TIME;
+      if (total >= (215999))
+          total = (215999);
 
       minutes = total / (60 * 60);
       total %= (60 * 60);

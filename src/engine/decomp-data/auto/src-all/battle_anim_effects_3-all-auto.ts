@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sActiveSpritesIdx: any = null;
+let sAffineAnims_Torment: any = null;
+let sTaskId: any = null;
+let sTimer: any = null;
+let sVelocX: any = null;
+let sVelocY: any = null;
 /** static void AnimBlackSmoke(struct Sprite *sprite) */
 export function AnimBlackSmoke(sprite: any): any {
   sprite.x += gBattleAnimArgs[0];
@@ -2606,7 +2614,7 @@ export function CreateSweatDroplets(taskId: any, lowerDroplets: any): any {
               gSprites[spriteId].sVelocX = i < 2 ? -2 : 2;  
               gSprites[spriteId].sVelocY = -1;
               gSprites[spriteId].sTaskId = taskId;
-              gSprites[spriteId].sActiveSpritesIdx = IDX_ACTIVE_SPRITES;
+              gSprites[spriteId].sActiveSpritesIdx = (10);
               task.tActiveSprites++;
           }
       }
@@ -2788,7 +2796,7 @@ export function AnimTask_GlareEyeDots_Step(taskId: any): any {
 
                       gSprites[spriteId].sTimer = 0;
                       gSprites[spriteId].sTaskId = taskId;
-                      gSprites[spriteId].sActiveSpritesIdx = IDX_ACTIVE_SPRITES;
+                      gSprites[spriteId].sActiveSpritesIdx = (10);
                       task.tActiveSprites++;
                   }
               }

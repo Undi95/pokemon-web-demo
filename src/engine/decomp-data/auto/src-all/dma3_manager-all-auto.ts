@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sDma3ManagerLocked: any = null;
+let sDma3RequestCursor: any = null;
+let sDma3Requests: any = null;
 /** void ClearDma3Requests(void) */
 export function ClearDma3Requests(): any {
   let i: any = null;
@@ -22,7 +27,7 @@ export function ClearDma3Requests(): any {
       sDma3ManagerLocked = TRUE;
       sDma3RequestCursor = 0;
 
-      for (i = 0; i < MAX_DMA_REQUESTS; i++)
+      for (i = 0; i < (128); i++)
       {
           sDma3Requests[i].size = 0;
           sDma3Requests[i].src = NULL;
@@ -53,22 +58,22 @@ export function ProcessDma3Requests(): any {
 
           switch (sDma3Requests[sDma3RequestCursor].mode)
           {
-          case DMA_REQUEST_COPY32:  
+          case (1):  
               Dma3CopyLarge32_(sDma3Requests[sDma3RequestCursor].src,
                                sDma3Requests[sDma3RequestCursor].dest,
                                sDma3Requests[sDma3RequestCursor].size);
               break;
-          case DMA_REQUEST_FILL32:  
+          case (2):  
               Dma3FillLarge32_(sDma3Requests[sDma3RequestCursor].value,
                                sDma3Requests[sDma3RequestCursor].dest,
                                sDma3Requests[sDma3RequestCursor].size);
               break;
-          case DMA_REQUEST_COPY16:     
+          case (3):     
               Dma3CopyLarge16_(sDma3Requests[sDma3RequestCursor].src,
                                sDma3Requests[sDma3RequestCursor].dest,
                                sDma3Requests[sDma3RequestCursor].size);
               break;
-          case DMA_REQUEST_FILL16:  
+          case (4):  
               Dma3FillLarge16_(sDma3Requests[sDma3RequestCursor].value,
                                sDma3Requests[sDma3RequestCursor].dest,
                                sDma3Requests[sDma3RequestCursor].size);
@@ -83,7 +88,7 @@ export function ProcessDma3Requests(): any {
           sDma3Requests[sDma3RequestCursor].value = 0;
           sDma3RequestCursor++;
 
-          if (sDma3RequestCursor >= MAX_DMA_REQUESTS)  
+          if (sDma3RequestCursor >= (128))  
               sDma3RequestCursor = 0;
       }
 }
@@ -96,7 +101,7 @@ export function RequestDma3Copy(src: any, dest: any, size: any, mode: any): any 
       sDma3ManagerLocked = TRUE;
       cursor = sDma3RequestCursor;
 
-      while (i < MAX_DMA_REQUESTS)
+      while (i < (128))
       {
           if (sDma3Requests[cursor].size == 0)  
           {
@@ -105,14 +110,14 @@ export function RequestDma3Copy(src: any, dest: any, size: any, mode: any): any 
               sDma3Requests[cursor].size = size;
 
               if (mode == 1)
-                  sDma3Requests[cursor].mode = DMA_REQUEST_COPY32;
+                  sDma3Requests[cursor].mode = (1);
               else
-                  sDma3Requests[cursor].mode = DMA_REQUEST_COPY16;
+                  sDma3Requests[cursor].mode = (3);
 
               sDma3ManagerLocked = FALSE;
               return cursor;
           }
-          if (++cursor >= MAX_DMA_REQUESTS)  
+          if (++cursor >= (128))  
               cursor = 0;
           i++;
       }
@@ -128,7 +133,7 @@ export function RequestDma3Fill(value: any, dest: any, size: any, mode: any): an
       cursor = sDma3RequestCursor;
       sDma3ManagerLocked = TRUE;
 
-      while (i < MAX_DMA_REQUESTS)
+      while (i < (128))
       {
           if (sDma3Requests[cursor].size == 0)  
           {
@@ -138,14 +143,14 @@ export function RequestDma3Fill(value: any, dest: any, size: any, mode: any): an
               sDma3Requests[cursor].value = value;
 
               if(mode == 1)
-                  sDma3Requests[cursor].mode = DMA_REQUEST_FILL32;
+                  sDma3Requests[cursor].mode = (2);
               else
-                  sDma3Requests[cursor].mode = DMA_REQUEST_FILL16;
+                  sDma3Requests[cursor].mode = (4);
 
               sDma3ManagerLocked = FALSE;
               return cursor;
           }
-          if (++cursor >= MAX_DMA_REQUESTS)  
+          if (++cursor >= (128))  
               cursor = 0;
           i++;
       }
@@ -159,7 +164,7 @@ export function CheckForSpaceForDma3Request(index: any): any {
 
       if (index == -1)   
       {
-          while (i < MAX_DMA_REQUESTS)
+          while (i < (128))
           {
               if (sDma3Requests[i].size != 0)
                   return -1;

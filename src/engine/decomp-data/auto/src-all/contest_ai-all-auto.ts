@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sContestAICmdTable: any = null;
 /** void ContestAI_ResetAI(u8 contestantAI) */
 export function ContestAI_ResetAI(contestantAI: any): any {
   let i: any = null;
@@ -84,9 +87,9 @@ export function ContestAI_DoAIProcessing(): any {
                   else
                   {
                       eContestAI.moveScores[eContestAI.nextMoveIndex] = 0;  
-                      eContestAI.aiAction |= AI_ACTION_DONE;
+                      eContestAI.aiAction |= ((1 << 0));
                   }
-                  if (eContestAI.aiAction & AI_ACTION_DONE)
+                  if (eContestAI.aiAction & ((1 << 0)))
                   {
                       eContestAI.nextMoveIndex++;
                       if (eContestAI.nextMoveIndex < MAX_MON_MOVES)
@@ -94,7 +97,7 @@ export function ContestAI_DoAIProcessing(): any {
                       else
                            
                           eContestAI.aiState++;
-                      eContestAI.aiAction &= ~AI_ACTION_DONE;
+                      eContestAI.aiAction &= ~((1 << 0));
                   }
                   break;
           }
@@ -1377,7 +1380,7 @@ export function ContestAICmd_call(): any {
 /** static void ContestAICmd_end(void) */
 export function ContestAICmd_end(): any {
   if (!AIStackPop())
-          eContestAI.aiAction |= AI_ACTION_DONE;
+          eContestAI.aiAction |= ((1 << 0));
 }
 
 /** static void AIStackPushVar(const u8 *ptr) */

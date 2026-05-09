@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sActivityGroupInfo: any = null;
+let sBgTemplates: any = null;
+let sBgTiles_Gfx: any = null;
+let sBgTiles_Tilemap: any = null;
+let sHeaderTexts: any = null;
+let sPalettes: any = null;
+let sStatusScreen: any = null;
+let sWindowTemplates: any = null;
 /** static void CB2_RunWirelessCommunicationScreen(void) */
 export function CB2_RunWirelessCommunicationScreen(): any {
   if (!IsDma3ManagerBusyWithBgCopy())
@@ -230,7 +240,7 @@ export function CountPlayersInGroupAndGetActivity(player: any, groupCounts: any)
            
            
            
-          if ((sActivityGroupInfo[((i))][1]) == GROUPTYPE_NONE)
+          if ((sActivityGroupInfo[((i))][1]) == (0xFF))
               continue;
           if (activity == (sActivityGroupInfo[((i))][0]) && player.groupScheduledAnim == UNION_ROOM_SPAWN_IN)
           {

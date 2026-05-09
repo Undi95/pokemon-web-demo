@@ -15,6 +15,34 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAI_Scripts: any = null;
+let sApprenticeId: any = null;
+let sApprenticeLanguage: any = null;
+let sBattleFlags: any = null;
+let sBattleOutcome: any = null;
+let sBattleRecords: any = null;
+let sBattleScene: any = null;
+let sBattlerPrevRecordSizes: any = null;
+let sBattlerRecordSizes: any = null;
+let sBattlerSavedRecordSizes: any = null;
+let sCallback2_AfterRecordedBattle: any = null;
+let sEasyChatSpeech: any = null;
+let sFrontierBrainSymbol: any = null;
+let sFrontierFacility: any = null;
+let sFrontierPassFlag: any = null;
+let sIsPlaybackFinished: any = null;
+let sLvlMode: any = null;
+let sPlayerMonMoves: any = null;
+let sPlayers: any = null;
+let sRecordMixFriendClass: any = null;
+let sRecordMixFriendLanguage: any = null;
+let sRecordMixFriendName: any = null;
+let sRecordMode: any = null;
+let sSavedOpponentParty: any = null;
+let sSavedPlayerParty: any = null;
+let sTextSpeed: any = null;
 /** void RecordedBattle_Init(u8 mode) */
 export function RecordedBattle_Init(mode: any): any {
   let i, j;
@@ -30,7 +58,7 @@ export function RecordedBattle_Init(mode: any): any {
 
           if (mode == B_RECORD_MODE_RECORDING)
           {
-              for (j = 0; j < BATTLER_RECORD_SIZE; j++)
+              for (j = 0; j < (664); j++)
                   sBattleRecords[i][j] = 0xFF;
               sBattleFlags = gBattleTypeFlags;
               sAI_Scripts = gBattleResources.ai.aiFlags;
@@ -102,7 +130,7 @@ export function RecordedBattle_SetTrainerInfo(): any {
 
 /** void RecordedBattle_SetBattlerAction(u8 battler, u8 action) */
 export function RecordedBattle_SetBattlerAction(battler: any, action: any): any {
-  if (sBattlerRecordSizes[battler] < BATTLER_RECORD_SIZE && sRecordMode != B_RECORD_MODE_PLAYBACK)
+  if (sBattlerRecordSizes[battler] < (664) && sRecordMode != B_RECORD_MODE_PLAYBACK)
           sBattleRecords[battler][sBattlerRecordSizes[battler]++] = action;
 }
 
@@ -121,7 +149,7 @@ export function RecordedBattle_ClearBattlerAction(battler: any, bytesToClear: an
 
 /** u8 RecordedBattle_GetBattlerAction(u8 battler) */
 export function RecordedBattle_GetBattlerAction(battler: any): any {
-  if (sBattlerRecordSizes[battler] >= BATTLER_RECORD_SIZE || sBattleRecords[battler][sBattlerRecordSizes[battler]] == 0xFF)
+  if (sBattlerRecordSizes[battler] >= (664) || sBattleRecords[battler][sBattlerRecordSizes[battler]] == 0xFF)
       {
           gSpecialVar_Result = gBattleOutcome = B_OUTCOME_PLAYER_TELEPORTED;  
           ResetPaletteFadeControl();
@@ -364,7 +392,7 @@ export function MoveRecordedBattleToSaveData(): any {
       }
 
       for (i = 0; i < MAX_BATTLERS_COUNT; i++)
-          for (j = 0; j < BATTLER_RECORD_SIZE; j++)
+          for (j = 0; j < (664); j++)
               battleSave.battleRecord[i][j] = sBattleRecords[i][j];
 
       while (1)
@@ -485,7 +513,7 @@ export function SetVariablesForRecordedBattle(src: any): any {
       gSaveBlock2Ptr.frontier.lvlMode = src.lvlMode;
 
       for (i = 0; i < MAX_BATTLERS_COUNT; i++)
-          for (j = 0; j < BATTLER_RECORD_SIZE; j++)
+          for (j = 0; j < (664); j++)
               sBattleRecords[i][j] = src.battleRecord[i][j];
 }
 
@@ -627,7 +655,7 @@ export function RecordedBattle_CheckMovesetChanges(mode: any): any {
                   if (j != MAX_MON_MOVES)
                   {
                        
-                      RecordedBattle_SetBattlerAction(battler, ACTION_MOVE_CHANGE);
+                      RecordedBattle_SetBattlerAction(battler, (6));
                       for (j = 0; j < MAX_MON_MOVES; j++)
                       {
                           for (k = 0; k < MAX_MON_MOVES; k++)
@@ -643,7 +671,7 @@ export function RecordedBattle_CheckMovesetChanges(mode: any): any {
               }
               else  
               {
-                  if (sBattleRecords[battler][sBattlerRecordSizes[battler]] == ACTION_MOVE_CHANGE)
+                  if (sBattleRecords[battler][sBattlerRecordSizes[battler]] == (6))
                   {
                       let ppBonuses: any = [];
                       let moveSlots: any = [];

@@ -15,6 +15,23 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattlePointAwards: any = null;
+let sBattledBrainBitFlags: any = null;
+let sFrontierBrainObjEventGfx: any = null;
+let sFrontierBrainPlayerLostTexts: any = null;
+let sFrontierBrainPlayerWonTexts: any = null;
+let sFrontierBrainStreakAppearances: any = null;
+let sFrontierBrainTrainerIds: any = null;
+let sFrontierBrainsMons: any = null;
+let sFrontierResultsWindowTemplate: any = null;
+let sFrontierUtilFuncs: any = null;
+let sHallFacilityToRecordsText: any = null;
+let sLevelModeText: any = null;
+let sLinkContestResultsWindowTemplate: any = null;
+let sRankingHallRecordsWindowTemplate: any = null;
+let sRecordsWindowChallengeTexts: any = null;
 /** void CallFrontierUtilFunc(void) */
 export function CallFrontierUtilFunc(): any {
   sFrontierUtilFuncs[gSpecialVar_0x8004]();
@@ -1611,7 +1628,7 @@ export function ClearRankingHallRecords(): any {
           {
               for (k = 0; k < HALL_RECORDS_COUNT; k++)
               {
-                  CopyTrainerId(gSaveBlock2Ptr.hallRecords1P[i][j][k].id, ZERO);
+                  CopyTrainerId(gSaveBlock2Ptr.hallRecords1P[i][j][k].id, (0));
                   gSaveBlock2Ptr.hallRecords1P[i][j][k].name[0] = EOS;
                   gSaveBlock2Ptr.hallRecords1P[i][j][k].winStreak = 0;
               }
@@ -1622,8 +1639,8 @@ export function ClearRankingHallRecords(): any {
       {
           for (k = 0; k < HALL_RECORDS_COUNT; k++)
           {
-              CopyTrainerId(gSaveBlock2Ptr.hallRecords2P[j][k].id1, ZERO);
-              CopyTrainerId(gSaveBlock2Ptr.hallRecords2P[j][k].id2, ZERO);
+              CopyTrainerId(gSaveBlock2Ptr.hallRecords2P[j][k].id1, (0));
+              CopyTrainerId(gSaveBlock2Ptr.hallRecords2P[j][k].id2, (0));
               gSaveBlock2Ptr.hallRecords2P[j][k].name1[0] = EOS;
               gSaveBlock2Ptr.hallRecords2P[j][k].name2[0] = EOS;
               gSaveBlock2Ptr.hallRecords2P[j][k].winStreak = 0;
@@ -1733,14 +1750,14 @@ export function CreateFrontierBrainPokemon(): any {
               do
               {
                   j = Random32();  
-              } while (IsShinyOtIdPersonality(FRONTIER_BRAIN_OTID, j));
+              } while (IsShinyOtIdPersonality((61226), j));
           } while (sFrontierBrainsMons[facility][symbol][i].nature != GetNatureFromPersonality(j));
           CreateMon(gEnemyParty[monPartyId],
                     sFrontierBrainsMons[facility][symbol][i].species,
                     monLevel,
                     sFrontierBrainsMons[facility][symbol][i].fixedIV,
                     TRUE, j,
-                    OT_ID_PRESET, FRONTIER_BRAIN_OTID);
+                    OT_ID_PRESET, (61226));
           SetMonData(gEnemyParty[monPartyId], MON_DATA_HELD_ITEM,sFrontierBrainsMons[facility][symbol][i].heldItem);
           for (j = 0; j < NUM_STATS; j++)
               SetMonData(gEnemyParty[monPartyId], MON_DATA_HP_EV + j,sFrontierBrainsMons[facility][symbol][i].evs[j]);

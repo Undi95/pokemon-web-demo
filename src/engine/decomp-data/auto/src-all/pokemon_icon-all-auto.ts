@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sMonIconAffineAnims: any = null;
+let sMonIconAnims: any = null;
+let sMonIconOamData: any = null;
+let sSpriteImageSizes: any = null;
 /** u8 CreateMonIcon(u16 species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority, u32 personality, bool32 handleDeoxys) */
 export function CreateMonIcon(species: any, callback: any, x: any, y: any, subpriority: any, personality: any, handleDeoxys: any): any {
   let spriteId: any = null;
@@ -63,7 +69,7 @@ export function GetIconSpecies(species: any, personality: any): any {
       else
       {
           if (species > NUM_SPECIES)
-              result = INVALID_ICON_SPECIES;
+              result = (SPECIES_OLD_UNOWN_J);
           else
               result = species;
       }
@@ -94,7 +100,7 @@ export function GetIconSpeciesNoPersonality(species: any): any {
       else
       {
           if (species > NUM_SPECIES)
-              species = INVALID_ICON_SPECIES;
+              species = (SPECIES_OLD_UNOWN_J);
           return GetIconSpecies(species, 0);
       }
 }
@@ -115,7 +121,7 @@ export function LoadMonIconPalettes(): any {
 export function SafeLoadMonIconPalette(species: any): any {
   let palIndex: any = null;
       if (species > NUM_SPECIES)
-          species = INVALID_ICON_SPECIES;
+          species = (SPECIES_OLD_UNOWN_J);
       palIndex = gMonIconPaletteIndices[species];
       if (IndexOfSpritePaletteTag(gMonIconPaletteTable[palIndex].tag) == 0xFF)
           LoadSpritePalette(gMonIconPaletteTable[palIndex]);
@@ -139,7 +145,7 @@ export function FreeMonIconPalettes(): any {
 export function SafeFreeMonIconPalette(species: any): any {
   let palIndex: any = null;
       if (species > NUM_SPECIES)
-          species = INVALID_ICON_SPECIES;
+          species = (SPECIES_OLD_UNOWN_J);
       palIndex = gMonIconPaletteIndices[species];
       FreeSpritePaletteByTag(gMonIconPaletteTable[palIndex].tag);
 }
@@ -177,7 +183,7 @@ export function TryLoadAllMonIconPalettesAtOffset(offset: any): any {
 /** u8 GetValidMonIconPalIndex(u16 species) */
 export function GetValidMonIconPalIndex(species: any): any {
   if (species > NUM_SPECIES)
-          species = INVALID_ICON_SPECIES;
+          species = (SPECIES_OLD_UNOWN_J);
       return gMonIconPaletteIndices[species];
 }
 

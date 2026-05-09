@@ -15,6 +15,23 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sContestLadyCategoryNames: any = null;
+let sContestLadyMonGfxId: any = null;
+let sContestLadyMonNames: any = null;
+let sContestLadyMonSpecies: any = null;
+let sContestLadyPtr: any = null;
+let sContestNames: any = null;
+let sFavorLadyAcceptedItemLists: any = null;
+let sFavorLadyPrizes: any = null;
+let sFavorLadyPtr: any = null;
+let sFavorLadyRequests: any = null;
+let sLilycoveLadyGfxId: any = null;
+let sQuizLadyPrizes: any = null;
+let sQuizLadyPtr: any = null;
+let sQuizLadyQuizAnswers: any = null;
+let sQuizLadyQuizQuestions: any = null;
 /** u8 GetLilycoveLadyId(void) */
 export function GetLilycoveLadyId(): any {
   return gSaveBlock1Ptr.lilycoveLady.id;

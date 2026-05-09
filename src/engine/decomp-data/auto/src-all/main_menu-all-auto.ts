@@ -15,6 +15,29 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBirchBgTemplate: any = null;
+let sBirchSpeechBgGradientPal: any = null;
+let sBirchSpeechBgMap: any = null;
+let sBirchSpeechBgPals: any = null;
+let sBirchSpeechMainTaskId: any = null;
+let sBirchSpeechPlatformBlackPal: any = null;
+let sBirchSpeechShadowGfx: any = null;
+let sCurrItemAndOptionMenuCheck: any = null;
+let sFemalePresetNames: any = null;
+let sMainMenuBgPal: any = null;
+let sMainMenuBgTemplates: any = null;
+let sMainMenuTextPal: any = null;
+let sMalePresetNames: any = null;
+let sMenuActions_Gender: any = null;
+let sNewGameBirchSpeechTextWindows: any = null;
+let sScrollArrowsTemplate_MainMenu: any = null;
+let sSpriteAffineAnimTable_PlayerShrink: any = null;
+let sStartedPokeBallTask: any = null;
+let sTextColor_Headers: any = null;
+let sTextColor_MenuInfo: any = null;
+let sWindowTemplates_MainMenu: any = null;
 /** static void CB2_MainMenu(void) */
 export function CB2_MainMenu(): any {
   RunTasks();
@@ -78,7 +101,7 @@ export function InitMainMenu(returningFromOptionsMenu: any): any {
       ChangeBgY(1, 0, BG_COORD_SET);
       InitWindows(sWindowTemplates_MainMenu);
       DeactivateAllTextPrinters();
-      LoadMainMenuWindowFrameTiles(0, MAIN_MENU_BORDER_TILE);
+      LoadMainMenuWindowFrameTiles(0, (0x1D5));
 
       SetGpuReg(REG_OFFSET_WIN0H, 0);
       SetGpuReg(REG_OFFSET_WIN0V, 0);
@@ -146,7 +169,7 @@ export function Task_MainMenuCheckSaveFile(taskId: any): any {
                   gTasks[taskId].func = Task_WaitForSaveFileErrorWindow;
                   break;
           }
-          if (sCurrItemAndOptionMenuCheck & OPTION_MENU_FLAG)    
+          if (sCurrItemAndOptionMenuCheck & ((1 << 15)))    
           {
               switch (tMenuType)   
               {
@@ -162,7 +185,7 @@ export function Task_MainMenuCheckSaveFile(taskId: any): any {
                       break;
               }
           }
-          sCurrItemAndOptionMenuCheck &= ~OPTION_MENU_FLAG;   
+          sCurrItemAndOptionMenuCheck &= ~((1 << 15));   
           tCurrItem = sCurrItemAndOptionMenuCheck;
           tItemCount = tMenuType + 2;
       }
@@ -266,8 +289,8 @@ export function Task_DisplayMainMenu(taskId: any): any {
                   PutWindowTilemap(1);
                   CopyWindowToVram(0, COPYWIN_GFX);
                   CopyWindowToVram(1, COPYWIN_GFX);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[0], MAIN_MENU_BORDER_TILE);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[1], MAIN_MENU_BORDER_TILE);
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[0], (0x1D5));
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[1], (0x1D5));
                   break;
               case HAS_SAVED_GAME:
                   FillWindowPixelBuffer(2, PIXEL_FILL(0xA));
@@ -283,9 +306,9 @@ export function Task_DisplayMainMenu(taskId: any): any {
                   CopyWindowToVram(2, COPYWIN_GFX);
                   CopyWindowToVram(3, COPYWIN_GFX);
                   CopyWindowToVram(4, COPYWIN_GFX);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[2], MAIN_MENU_BORDER_TILE);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[3], MAIN_MENU_BORDER_TILE);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[4], MAIN_MENU_BORDER_TILE);
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[2], (0x1D5));
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[3], (0x1D5));
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[4], (0x1D5));
                   break;
               case HAS_MYSTERY_GIFT:
                   FillWindowPixelBuffer(2, PIXEL_FILL(0xA));
@@ -305,10 +328,10 @@ export function Task_DisplayMainMenu(taskId: any): any {
                   CopyWindowToVram(3, COPYWIN_GFX);
                   CopyWindowToVram(4, COPYWIN_GFX);
                   CopyWindowToVram(5, COPYWIN_GFX);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[2], MAIN_MENU_BORDER_TILE);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[3], MAIN_MENU_BORDER_TILE);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[4], MAIN_MENU_BORDER_TILE);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[5], MAIN_MENU_BORDER_TILE);
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[2], (0x1D5));
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[3], (0x1D5));
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[4], (0x1D5));
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[5], (0x1D5));
                   break;
               case HAS_MYSTERY_EVENTS:
                   FillWindowPixelBuffer(2, PIXEL_FILL(0xA));
@@ -332,11 +355,11 @@ export function Task_DisplayMainMenu(taskId: any): any {
                   CopyWindowToVram(4, COPYWIN_GFX);
                   CopyWindowToVram(5, COPYWIN_GFX);
                   CopyWindowToVram(6, COPYWIN_GFX);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[2], MAIN_MENU_BORDER_TILE);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[3], MAIN_MENU_BORDER_TILE);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[4], MAIN_MENU_BORDER_TILE);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[5], MAIN_MENU_BORDER_TILE);
-                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[6], MAIN_MENU_BORDER_TILE);
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[2], (0x1D5));
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[3], (0x1D5));
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[4], (0x1D5));
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[5], (0x1D5));
+                  DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[6], (0x1D5));
                   tScrollArrowTaskId = AddScrollIndicatorArrowPair(sScrollArrowsTemplate_MainMenu,sCurrItemAndOptionMenuCheck);
                   gTasks[tScrollArrowTaskId].func = Task_ScrollIndicatorArrowPairOnMainMenu;
                   if (sCurrItemAndOptionMenuCheck == 4)
@@ -579,7 +602,7 @@ export function Task_HandleMainMenuAPressed(taskId: any): any {
           if (action != ACTION_OPTION)
               sCurrItemAndOptionMenuCheck = 0;
           else
-              sCurrItemAndOptionMenuCheck |= OPTION_MENU_FLAG;   
+              sCurrItemAndOptionMenuCheck |= ((1 << 15));   
       }
 }
 
@@ -647,10 +670,10 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(0) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(0) + MENU_HEIGHT_WIN(0) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(0) - 1) * 8) + (1), (MENU_TOP_WIN(0) + MENU_HEIGHT_WIN(0) + 1) * 8 - (1)));
                       break;
                   case 1:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(1) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(1) + MENU_HEIGHT_WIN(1) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(1) - 1) * 8) + (1), (MENU_TOP_WIN(1) + MENU_HEIGHT_WIN(1) + 1) * 8 - (1)));
                       break;
               }
               break;
@@ -659,13 +682,13 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(2) + MENU_HEIGHT_WIN(2) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(2) - 1) * 8) + (1), (MENU_TOP_WIN(2) + MENU_HEIGHT_WIN(2) + 1) * 8 - (1)));
                       break;
                   case 1:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + (1), (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - (1)));
                       break;
                   case 2:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + (1), (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - (1)));
                       break;
               }
               break;
@@ -674,16 +697,16 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(2) + MENU_HEIGHT_WIN(2) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(2) - 1) * 8) + (1), (MENU_TOP_WIN(2) + MENU_HEIGHT_WIN(2) + 1) * 8 - (1)));
                       break;
                   case 1:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + (1), (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - (1)));
                       break;
                   case 2:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + (1), (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - (1)));
                       break;
                   case 3:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(5) + MENU_HEIGHT_WIN(5) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(5) - 1) * 8) + (1), (MENU_TOP_WIN(5) + MENU_HEIGHT_WIN(5) + 1) * 8 - (1)));
                       break;
               }
               break;
@@ -692,28 +715,28 @@ export function HighlightSelectedMainMenuItem(menuType: any, selectedMenuItem: a
               {
                   case 0:
                   default:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(2) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(2) + MENU_HEIGHT_WIN(2) + 1) * 8 - MENU_SHADOW_PADDING));
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(2) - 1) * 8) + (1), (MENU_TOP_WIN(2) + MENU_HEIGHT_WIN(2) + 1) * 8 - (1)));
                       break;
                   case 1:
                       if (isScrolled)
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + (1), (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - (1)) - (WIN_RANGE(32, 32)));
                       else
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - MENU_SHADOW_PADDING));
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(3) - 1) * 8) + (1), (MENU_TOP_WIN(3) + MENU_HEIGHT_WIN(3) + 1) * 8 - (1)));
                       break;
                   case 2:
                       if (isScrolled)
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + (1), (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - (1)) - (WIN_RANGE(32, 32)));
                       else
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - MENU_SHADOW_PADDING));
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(4) - 1) * 8) + (1), (MENU_TOP_WIN(4) + MENU_HEIGHT_WIN(4) + 1) * 8 - (1)));
                       break;
                   case 3:
                       if (isScrolled)
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(5) + MENU_HEIGHT_WIN(5) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(5) - 1) * 8) + (1), (MENU_TOP_WIN(5) + MENU_HEIGHT_WIN(5) + 1) * 8 - (1)) - (WIN_RANGE(32, 32)));
                       else
-                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(5) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(5) + MENU_HEIGHT_WIN(5) + 1) * 8 - MENU_SHADOW_PADDING));
+                          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(5) - 1) * 8) + (1), (MENU_TOP_WIN(5) + MENU_HEIGHT_WIN(5) + 1) * 8 - (1)));
                       break;
                   case 4:
-                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(6) - 1) * 8) + MENU_SHADOW_PADDING, (MENU_TOP_WIN(6) + MENU_HEIGHT_WIN(6) + 1) * 8 - MENU_SHADOW_PADDING) - MENU_SCROLL_SHIFT);
+                      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(((MENU_TOP_WIN(6) - 1) * 8) + (1), (MENU_TOP_WIN(6) + MENU_HEIGHT_WIN(6) + 1) * 8 - (1)) - (WIN_RANGE(32, 32)));
                       break;
               }
               break;
@@ -788,7 +811,7 @@ export function Task_NewGameBirchSpeech_WaitForSpriteFadeInWelcome(taskId: any):
           {
               InitWindows(sNewGameBirchSpeechTextWindows);
               LoadMainMenuWindowFrameTiles(0, 0xF3);
-              LoadMessageBoxGfx(0, BIRCH_DLG_BASE_TILE_NUM, BG_PLTT_ID(15));
+              LoadMessageBoxGfx(0, (0xFC), BG_PLTT_ID(15));
               NewGameBirchSpeech_ShowDialogueWindow(0, 1);
               PutWindowTilemap(0);
               CopyWindowToVram(0, COPYWIN_GFX);
@@ -1310,7 +1333,7 @@ export function CB2_NewGameBirchSpeech_ReturnFromNamingScreen(): any {
       SetMainCallback2(CB2_MainMenu);
       InitWindows(sNewGameBirchSpeechTextWindows);
       LoadMainMenuWindowFrameTiles(0, 0xF3);
-      LoadMessageBoxGfx(0, BIRCH_DLG_BASE_TILE_NUM, BG_PLTT_ID(15));
+      LoadMessageBoxGfx(0, (0xFC), BG_PLTT_ID(15));
       PutWindowTilemap(0);
       CopyWindowToVram(0, COPYWIN_FULL);
 }
@@ -1539,7 +1562,7 @@ export function CreateMainMenuErrorWindow(str: any): any {
       AddTextPrinterParameterized(7, FONT_NORMAL, str, 0, 1, 2, 0);
       PutWindowTilemap(7);
       CopyWindowToVram(7, COPYWIN_GFX);
-      DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[7], MAIN_MENU_BORDER_TILE);
+      DrawMainMenuWindowBorder(sWindowTemplates_MainMenu[7], (0x1D5));
       SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(9, DISPLAY_WIDTH - 9));
       SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(113, DISPLAY_HEIGHT - 1));
 }
@@ -1692,20 +1715,20 @@ export function NewGameBirchSpeech_ShowDialogueWindow(windowId: any, copyToVram:
 
 /** static void NewGameBirchSpeech_CreateDialogueWindowBorder(u8 bg, u8 x, u8 y, u8 width, u8 height, u8 palNum) */
 export function NewGameBirchSpeech_CreateDialogueWindowBorder(bg: any, x: any, y: any, width: any, height: any, palNum: any): any {
-  FillBgTilemapBufferRect(bg, BIRCH_DLG_BASE_TILE_NUM +  1, x-2,       y-1, 1,       1, palNum);
-      FillBgTilemapBufferRect(bg, BIRCH_DLG_BASE_TILE_NUM +  3, x-1,       y-1, 1,       1, palNum);
-      FillBgTilemapBufferRect(bg, BIRCH_DLG_BASE_TILE_NUM +  4, x,         y-1, width,   1, palNum);
-      FillBgTilemapBufferRect(bg, BIRCH_DLG_BASE_TILE_NUM +  5, x+width-1, y-1, 1,       1, palNum);
-      FillBgTilemapBufferRect(bg, BIRCH_DLG_BASE_TILE_NUM +  6, x+width,   y-1, 1,       1, palNum);
-      FillBgTilemapBufferRect(bg, BIRCH_DLG_BASE_TILE_NUM +  7, x-2,       y,   1,       5, palNum);
-      FillBgTilemapBufferRect(bg, BIRCH_DLG_BASE_TILE_NUM +  9, x-1,       y,   width+1, 5, palNum);
-      FillBgTilemapBufferRect(bg, BIRCH_DLG_BASE_TILE_NUM + 10, x+width,   y,   1,       5, palNum);
+  FillBgTilemapBufferRect(bg, (0xFC) +  1, x-2,       y-1, 1,       1, palNum);
+      FillBgTilemapBufferRect(bg, (0xFC) +  3, x-1,       y-1, 1,       1, palNum);
+      FillBgTilemapBufferRect(bg, (0xFC) +  4, x,         y-1, width,   1, palNum);
+      FillBgTilemapBufferRect(bg, (0xFC) +  5, x+width-1, y-1, 1,       1, palNum);
+      FillBgTilemapBufferRect(bg, (0xFC) +  6, x+width,   y-1, 1,       1, palNum);
+      FillBgTilemapBufferRect(bg, (0xFC) +  7, x-2,       y,   1,       5, palNum);
+      FillBgTilemapBufferRect(bg, (0xFC) +  9, x-1,       y,   width+1, 5, palNum);
+      FillBgTilemapBufferRect(bg, (0xFC) + 10, x+width,   y,   1,       5, palNum);
 
-      FillBgTilemapBufferRect(bg, BG_TILE_V_FLIP(BIRCH_DLG_BASE_TILE_NUM + 1), x-2,       y+height, 1,       1, palNum);
-      FillBgTilemapBufferRect(bg, BG_TILE_V_FLIP(BIRCH_DLG_BASE_TILE_NUM + 3), x-1,       y+height, 1,       1, palNum);
-      FillBgTilemapBufferRect(bg, BG_TILE_V_FLIP(BIRCH_DLG_BASE_TILE_NUM + 4), x,         y+height, width-1, 1, palNum);
-      FillBgTilemapBufferRect(bg, BG_TILE_V_FLIP(BIRCH_DLG_BASE_TILE_NUM + 5), x+width-1, y+height, 1,       1, palNum);
-      FillBgTilemapBufferRect(bg, BG_TILE_V_FLIP(BIRCH_DLG_BASE_TILE_NUM + 6), x+width,   y+height, 1,       1, palNum);
+      FillBgTilemapBufferRect(bg, BG_TILE_V_FLIP((0xFC) + 1), x-2,       y+height, 1,       1, palNum);
+      FillBgTilemapBufferRect(bg, BG_TILE_V_FLIP((0xFC) + 3), x-1,       y+height, 1,       1, palNum);
+      FillBgTilemapBufferRect(bg, BG_TILE_V_FLIP((0xFC) + 4), x,         y+height, width-1, 1, palNum);
+      FillBgTilemapBufferRect(bg, BG_TILE_V_FLIP((0xFC) + 5), x+width-1, y+height, 1,       1, palNum);
+      FillBgTilemapBufferRect(bg, BG_TILE_V_FLIP((0xFC) + 6), x+width,   y+height, 1,       1, palNum);
 }
 
 /** static void Task_NewGameBirchSpeech_ReturnFromNamingScreenShowTextbox(u8 taskId) */

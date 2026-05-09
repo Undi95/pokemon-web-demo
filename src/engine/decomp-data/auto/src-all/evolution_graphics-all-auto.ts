@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAmplitude: any = null;
+let sEvoSparkleMatrices: any = null;
+let sEvoSparkleSpritePals: any = null;
+let sEvoSparkleSpriteSheets: any = null;
+let sEvoSparkleSpriteTemplate: any = null;
+let sSpeed: any = null;
+let sTimer: any = null;
+let sTrigIdx: any = null;
 /** static void SetEvoSparklesMatrices(void) */
 export function SetEvoSparklesMatrices(): any {
   let i: any = null;
@@ -409,22 +419,22 @@ export function CycleEvolutionMonSprite(preEvoSpriteId: any, postEvoSpriteId: an
       taskId = CreateTask(Task_CycleEvolutionMonSprite_Init, 0);
       gTasks[taskId].tPreEvoSpriteId = preEvoSpriteId;
       gTasks[taskId].tPostEvoSpriteId = postEvoSpriteId;
-      gTasks[taskId].tPreEvoScale = MON_MAX_SCALE;
-      gTasks[taskId].tPostEvoScale = MON_MIN_SCALE;
+      gTasks[taskId].tPreEvoScale = (256);
+      gTasks[taskId].tPostEvoScale = (16);
 
       toDiv = 65536;
-      SetOamMatrix(MATRIX_PRE_EVO, MON_MAX_SCALE, 0, 0, MON_MAX_SCALE);
-      SetOamMatrix(MATRIX_POST_EVO, toDiv / gTasks[taskId].tPostEvoScale, 0, 0, toDiv / gTasks[taskId].tPostEvoScale);
+      SetOamMatrix((30), (256), 0, 0, (256));
+      SetOamMatrix((31), toDiv / gTasks[taskId].tPostEvoScale, 0, 0, toDiv / gTasks[taskId].tPostEvoScale);
 
       gSprites[preEvoSpriteId].callback = SpriteCB_EvolutionMonSprite;
       gSprites[preEvoSpriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
-      gSprites[preEvoSpriteId].oam.matrixNum = MATRIX_PRE_EVO;
+      gSprites[preEvoSpriteId].oam.matrixNum = (30);
       gSprites[preEvoSpriteId].invisible = FALSE;
       CpuSet(monPalette,gPlttBufferFaded[OBJ_PLTT_ID(gSprites[preEvoSpriteId].oam.paletteNum)], 16);
 
       gSprites[postEvoSpriteId].callback = SpriteCB_EvolutionMonSprite;
       gSprites[postEvoSpriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
-      gSprites[postEvoSpriteId].oam.matrixNum = MATRIX_POST_EVO;
+      gSprites[postEvoSpriteId].oam.matrixNum = (31);
       gSprites[postEvoSpriteId].invisible = FALSE;
       CpuSet(monPalette,gPlttBufferFaded[OBJ_PLTT_ID(gSprites[postEvoSpriteId].oam.paletteNum)], 16);
 
@@ -470,59 +480,59 @@ export function Task_CycleEvolutionMonSprite_UpdateSize(taskId: any): any {
           if (!gTasks[taskId].tShowingPostEvo)
           {
                
-              if (gTasks[taskId].tPreEvoScale < MON_MAX_SCALE - gTasks[taskId].tScaleSpeed)
+              if (gTasks[taskId].tPreEvoScale < (256) - gTasks[taskId].tScaleSpeed)
               {
                   gTasks[taskId].tPreEvoScale += gTasks[taskId].tScaleSpeed;
               }
               else
               {
-                  gTasks[taskId].tPreEvoScale = MON_MAX_SCALE;
+                  gTasks[taskId].tPreEvoScale = (256);
                   numSpritesFinished++;
               }
 
                
-              if (gTasks[taskId].tPostEvoScale > MON_MIN_SCALE + gTasks[taskId].tScaleSpeed)
+              if (gTasks[taskId].tPostEvoScale > (16) + gTasks[taskId].tScaleSpeed)
               {
                   gTasks[taskId].tPostEvoScale  -= gTasks[taskId].tScaleSpeed;
               }
               else
               {
-                  gTasks[taskId].tPostEvoScale = MON_MIN_SCALE;
+                  gTasks[taskId].tPostEvoScale = (16);
                   numSpritesFinished++;
               }
           }
           else
           {
                
-              if (gTasks[taskId].tPostEvoScale < MON_MAX_SCALE - gTasks[taskId].tScaleSpeed)
+              if (gTasks[taskId].tPostEvoScale < (256) - gTasks[taskId].tScaleSpeed)
               {
                   gTasks[taskId].tPostEvoScale += gTasks[taskId].tScaleSpeed;
               }
               else
               {
-                  gTasks[taskId].tPostEvoScale = MON_MAX_SCALE;
+                  gTasks[taskId].tPostEvoScale = (256);
                   numSpritesFinished++;
               }
 
                
-              if (gTasks[taskId].tPreEvoScale > MON_MIN_SCALE + gTasks[taskId].tScaleSpeed)
+              if (gTasks[taskId].tPreEvoScale > (16) + gTasks[taskId].tScaleSpeed)
               {
                   gTasks[taskId].tPreEvoScale  -= gTasks[taskId].tScaleSpeed;
               }
               else
               {
-                  gTasks[taskId].tPreEvoScale = MON_MIN_SCALE;
+                  gTasks[taskId].tPreEvoScale = (16);
                   numSpritesFinished++;
               }
           }
 
            
           oamMatrixArg = 65536 / gTasks[taskId].tPreEvoScale;
-          SetOamMatrix(MATRIX_PRE_EVO, oamMatrixArg, 0, 0, oamMatrixArg);
+          SetOamMatrix((30), oamMatrixArg, 0, 0, oamMatrixArg);
 
            
           oamMatrixArg = 65536 / gTasks[taskId].tPostEvoScale;
-          SetOamMatrix(MATRIX_POST_EVO, oamMatrixArg, 0, 0, oamMatrixArg);
+          SetOamMatrix((31), oamMatrixArg, 0, 0, oamMatrixArg);
 
            
           if (numSpritesFinished == 2)

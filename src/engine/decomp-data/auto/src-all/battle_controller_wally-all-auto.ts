@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sSpeedX: any = null;
+let sWallyBufferCommands: any = null;
 /** void SetControllerToWally(void) */
 export function SetControllerToWally(): any {
   gBattlerControllerFuncs[gActiveBattler] = WallyBufferRunCommand;

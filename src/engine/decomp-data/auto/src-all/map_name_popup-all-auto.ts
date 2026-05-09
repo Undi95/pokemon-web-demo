@@ -15,6 +15,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattlePyramid_MapHeaderStrings: any = null;
+let sMapPopUp_OutlineTable: any = null;
+let sMapPopUp_PaletteTable: any = null;
+let sMapPopUp_Palette_Underwater: any = null;
+let sMapPopUp_Table: any = null;
+let sMapSectionToThemeId: any = null;
+let sPopupTaskId: any = null;
 /** void ShowMapNamePopup(void) */
 export function ShowMapNamePopup(): any {
   if (FlagGet(FLAG_HIDE_MAP_NAME_POPUP) != TRUE)
@@ -23,9 +32,9 @@ export function ShowMapNamePopup(): any {
           {
                
               sPopupTaskId = CreateTask(Task_MapNamePopUpWindow, 90);
-              SetGpuReg(REG_OFFSET_BG0VOFS, POPUP_OFFSCREEN_Y);
+              SetGpuReg(REG_OFFSET_BG0VOFS, (40));
               gTasks[sPopupTaskId].tState = STATE_PRINT;
-              gTasks[sPopupTaskId].tYOffset = POPUP_OFFSCREEN_Y;
+              gTasks[sPopupTaskId].tYOffset = (40);
           }
           else
           {
@@ -55,7 +64,7 @@ export function Task_MapNamePopUpWindow(taskId: any): any {
           break;
       case STATE_SLIDE_IN:
            
-          task.tYOffset -= POPUP_SLIDE_SPEED;
+          task.tYOffset -= (2);
           if (task.tYOffset <= 0 )
           {
               task.tYOffset = 0;
@@ -73,10 +82,10 @@ export function Task_MapNamePopUpWindow(taskId: any): any {
           break;
       case STATE_SLIDE_OUT:
            
-          task.tYOffset += POPUP_SLIDE_SPEED;
-          if (task.tYOffset >= POPUP_OFFSCREEN_Y)
+          task.tYOffset += (2);
+          if (task.tYOffset >= (40))
           {
-              task.tYOffset = POPUP_OFFSCREEN_Y;
+              task.tYOffset = (40);
               if (task.tIncomingPopUp)
               {
                    
@@ -158,20 +167,20 @@ export function DrawMapNamePopUpFrame(bg: any, x: any, y: any, deltaX: any, delt
   let i: any = null;
 
        
-      for (i = 0; i < 1 + TILE_TOP_EDGE_END - TILE_TOP_EDGE_START; i++)
-          FillBgTilemapBufferRect(bg, TILE_TOP_EDGE_START + i, i - 1 + x, y - 1, 1, 1, 14);
+      for (i = 0; i < 1 + (0x228) - (0x21D); i++)
+          FillBgTilemapBufferRect(bg, (0x21D) + i, i - 1 + x, y - 1, 1, 1, 14);
 
        
-      FillBgTilemapBufferRect(bg, TILE_LEFT_EDGE_TOP,       x - 1,     y, 1, 1, 14);
-      FillBgTilemapBufferRect(bg, TILE_RIGHT_EDGE_TOP, deltaX + x,     y, 1, 1, 14);
-      FillBgTilemapBufferRect(bg, TILE_LEFT_EDGE_MID,       x - 1, y + 1, 1, 1, 14);
-      FillBgTilemapBufferRect(bg, TILE_RIGHT_EDGE_MID, deltaX + x, y + 1, 1, 1, 14);
-      FillBgTilemapBufferRect(bg, TILE_LEFT_EDGE_BOT,       x - 1, y + 2, 1, 1, 14);
-      FillBgTilemapBufferRect(bg, TILE_RIGHT_EDGE_BOT, deltaX + x, y + 2, 1, 1, 14);
+      FillBgTilemapBufferRect(bg, (0x229),       x - 1,     y, 1, 1, 14);
+      FillBgTilemapBufferRect(bg, (0x22A), deltaX + x,     y, 1, 1, 14);
+      FillBgTilemapBufferRect(bg, (0x22B),       x - 1, y + 1, 1, 1, 14);
+      FillBgTilemapBufferRect(bg, (0x22C), deltaX + x, y + 1, 1, 1, 14);
+      FillBgTilemapBufferRect(bg, (0x22D),       x - 1, y + 2, 1, 1, 14);
+      FillBgTilemapBufferRect(bg, (0x22E), deltaX + x, y + 2, 1, 1, 14);
 
        
-      for (i = 0; i < 1 + TILE_BOT_EDGE_END - TILE_BOT_EDGE_START; i++)
-          FillBgTilemapBufferRect(bg, TILE_BOT_EDGE_START + i, i - 1 + x, y + deltaY, 1, 1, 14);
+      for (i = 0; i < 1 + (0x23A) - (0x22F); i++)
+          FillBgTilemapBufferRect(bg, (0x22F) + i, i - 1 + x, y + deltaY, 1, 1, 14);
 }
 
 /** static void LoadMapNamePopUpWindowBg(void) */

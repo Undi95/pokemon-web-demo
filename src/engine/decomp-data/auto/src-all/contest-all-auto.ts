@@ -15,6 +15,39 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAppealResultTexts: any = null;
+let sContestBgCopyFlags: any = null;
+let sContestBgTemplates: any = null;
+let sContestConditions: any = null;
+let sContestExcitementTable: any = null;
+let sContestWindowTemplates: any = null;
+let sContestant: any = null;
+let sInvalidContestMoveNames: any = null;
+let sMoveX: any = null;
+let sNextTurnSpriteYPositions: any = null;
+let sRoundResultTexts: any = null;
+let sSliderHeartYPositions: any = null;
+let sSpritePalette_ApplauseMeter: any = null;
+let sSpritePalette_JudgeSymbols: any = null;
+let sSpritePalette_NextTurn: any = null;
+let sSpritePalettes_ContestantsTurnBlinkEffect: any = null;
+let sSpriteSheet_ApplauseMeter: any = null;
+let sSpriteSheet_Judge: any = null;
+let sSpriteSheet_JudgeSymbols: any = null;
+let sSpriteSheet_NextTurn: any = null;
+let sSpriteSheet_SliderHeart: any = null;
+let sSpriteSheets_ContestantsTurnBlinkEffect: any = null;
+let sSpriteTemplate_ApplauseMeter: any = null;
+let sSpriteTemplate_Judge: any = null;
+let sSpriteTemplate_JudgeSpeechBubble: any = null;
+let sSpriteTemplate_SliderHeart: any = null;
+let sSpriteTemplates_ContestantsTurnBlinkEffect: any = null;
+let sSpriteTemplates_NextTurn: any = null;
+let sSubspriteTable_NextTurn: any = null;
+let sTargetX: any = null;
+let sText_Pal: any = null;
 /** void ResetLinkContestBoolean(void) */
 export function ResetLinkContestBoolean(): any {
   gLinkContestFlags = 0;
@@ -558,8 +591,8 @@ export function Task_ShowMoveSelectScreen(taskId: any): any {
           }
           moveNameBuffer = StringCopy(moveNameBuffer, gMoveNames[move]);
 
-          FillWindowPixelBuffer(i + MOVE_WINDOWS_START, PIXEL_FILL(0));
-          Contest_PrintTextToBg0WindowAt(i + MOVE_WINDOWS_START, moveName, 5, 1, FONT_NARROW);
+          FillWindowPixelBuffer(i + (WIN_MOVE0), PIXEL_FILL(0));
+          Contest_PrintTextToBg0WindowAt(i + (WIN_MOVE0), moveName, 5, 1, FONT_NARROW);
       }
 
       DrawMoveSelectArrow(eContest.playerMoveChoice);
@@ -681,9 +714,9 @@ export function Task_HideMoveSelectScreen(taskId: any): any {
 
       for (i = 0; i < MAX_MON_MOVES; i++)
       {
-          FillWindowPixelBuffer(MOVE_WINDOWS_START + i, PIXEL_FILL(0));
-          PutWindowTilemap(MOVE_WINDOWS_START + i);
-          CopyWindowToVram(MOVE_WINDOWS_START + i, COPYWIN_GFX);
+          FillWindowPixelBuffer((WIN_MOVE0) + i, PIXEL_FILL(0));
+          PutWindowTilemap((WIN_MOVE0) + i);
+          CopyWindowToVram((WIN_MOVE0) + i, COPYWIN_GFX);
       }
       Contest_SetBgCopyFlags(0);
        
@@ -2021,7 +2054,7 @@ export function DrawContestantWindowText(): any {
 
 /** static void PrintContestantTrainerName(u8 contestant) */
 export function PrintContestantTrainerName(contestant: any): any {
-  PrintContestantTrainerNameWithColor(contestant, contestant + CONTESTANT_TEXT_COLOR_START);
+  PrintContestantTrainerNameWithColor(contestant, contestant + (10));
 }
 
 /** static void PrintContestantTrainerNameWithColor(u8 contestant, u8 color) */
@@ -2040,7 +2073,7 @@ export function PrintContestantTrainerNameWithColor(contestant: any, color: any)
 
 /** static void PrintContestantMonName(u8 contestant) */
 export function PrintContestantMonName(contestant: any): any {
-  PrintContestantMonNameWithColor(contestant, contestant + CONTESTANT_TEXT_COLOR_START);
+  PrintContestantMonNameWithColor(contestant, contestant + (10));
 }
 
 /** static void PrintContestantMonNameWithColor(u8 contestant, u8 color) */
@@ -2217,8 +2250,8 @@ export function PrintContestMoveDescription(move: any): any {
           numHearts = gContestEffects[gContestMoves[move].effect].appeal / 10;
       if (numHearts > MAX_CONTEST_MOVE_HEARTS)
           numHearts = MAX_CONTEST_MOVE_HEARTS;
-      ContestBG_FillBoxWithTile(0, TILE_EMPTY_APPEAL_HEART, 0x15, 0x1f, MAX_CONTEST_MOVE_HEARTS, 0x01, 0x11);
-      ContestBG_FillBoxWithTile(0, TILE_FILLED_APPEAL_HEART, 0x15, 0x1f, numHearts, 0x01, 0x11);
+      ContestBG_FillBoxWithTile(0, (0x5035), 0x15, 0x1f, MAX_CONTEST_MOVE_HEARTS, 0x01, 0x11);
+      ContestBG_FillBoxWithTile(0, (0x5012), 0x15, 0x1f, numHearts, 0x01, 0x11);
 
        
       if (gContestEffects[gContestMoves[move].effect].jam == 0xFF)
@@ -2227,8 +2260,8 @@ export function PrintContestMoveDescription(move: any): any {
           numHearts = gContestEffects[gContestMoves[move].effect].jam / 10;
       if (numHearts > MAX_CONTEST_MOVE_HEARTS)
           numHearts = MAX_CONTEST_MOVE_HEARTS;
-      ContestBG_FillBoxWithTile(0, TILE_EMPTY_JAM_HEART, 0x15, 0x20, MAX_CONTEST_MOVE_HEARTS, 0x01, 0x11);
-      ContestBG_FillBoxWithTile(0, TILE_FILLED_JAM_HEART, 0x15, 0x20, numHearts, 0x01, 0x11);
+      ContestBG_FillBoxWithTile(0, (0x5036), 0x15, 0x20, MAX_CONTEST_MOVE_HEARTS, 0x01, 0x11);
+      ContestBG_FillBoxWithTile(0, (0x5014), 0x15, 0x20, numHearts, 0x01, 0x11);
 
       FillWindowPixelBuffer(WIN_MOVE_DESCRIPTION, PIXEL_FILL(0));
       Contest_PrintTextToBg0WindowStd(WIN_MOVE_DESCRIPTION, gContestEffectDescriptionPointers[gContestMoves[move].effect]);
@@ -3687,7 +3720,7 @@ export function StartApplauseOverflowAnimation(): any {
   let taskId: any = CreateTask(Task_ApplauseOverflowAnimation, 10);
 
       gTasks[taskId].data[1] = 1;
-      gTasks[taskId].data[2] = IndexOfSpritePaletteTag(TAG_APPLAUSE_METER);
+      gTasks[taskId].data[2] = IndexOfSpritePaletteTag((0xABE2));
       return taskId;
 }
 
@@ -4643,7 +4676,7 @@ export function CalculateContestLiveUpdateData(): any {
           appealMoves[i] = MOVE_NONE;
           numMoveUses[i] = 0;
       }
-      appealMoves[CONTEST_NUM_APPEALS] = APPEAL_MOVES_END;
+      appealMoves[CONTEST_NUM_APPEALS] = (0xFFFF);
       numMoveUses[CONTEST_NUM_APPEALS] = 0;
 
       for (i = 0; i < CONTEST_NUM_APPEALS; i++)
@@ -4672,7 +4705,7 @@ export function CalculateContestLiveUpdateData(): any {
       moveCandidates[0] = appealMoves[0];
       mostUses = numMoveUses[0];
       numMoveCandidates = 0;
-      for (i = 1; appealMoves[i] != APPEAL_MOVES_END; i++)
+      for (i = 1; appealMoves[i] != (0xFFFF); i++)
       {
           if (mostUses < numMoveUses[i])
           {

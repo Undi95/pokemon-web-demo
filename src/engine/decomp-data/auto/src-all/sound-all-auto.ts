@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCurrentMapMusic: any = null;
+let sFanfareCounter: any = null;
+let sFanfares: any = null;
+let sMapMusicFadeInSpeed: any = null;
+let sMapMusicState: any = null;
+let sNextMapMusic: any = null;
 /** void InitMapMusic(void) */
 export function InitMapMusic(): any {
   gDisableMusic = FALSE;

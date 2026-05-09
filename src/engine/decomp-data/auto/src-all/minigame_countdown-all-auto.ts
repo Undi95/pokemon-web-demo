@@ -15,6 +15,26 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAffineAnimTable_Numbers: any = null;
+let sAnimNum: any = null;
+let sAnimTable_Numbers: any = null;
+let sAnimTable_Start: any = null;
+let sId: any = null;
+let sInterval: any = null;
+let sNumberSpriteId: any = null;
+let sOamData_Numbers: any = null;
+let sOamData_Start: any = null;
+let sSpritePalette_321Start_Static: any = null;
+let sSpriteSheet_321Start_Static: any = null;
+let sSpriteTemplate_StaticCountdown: any = null;
+let sState: any = null;
+let sStaticCountdownFuncs: any = null;
+let sTaskId: any = null;
+let sTimer: any = null;
+let sY: any = null;
+let sYSpeed: any = null;
 /** static void Task_StaticCountdown(u8 taskId) */
 export function Task_StaticCountdown(taskId: any): any {
   let data: any = gTasks[taskId].data;

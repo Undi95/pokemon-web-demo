@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFieldRegionMapBgTemplates: any = null;
+let sFieldRegionMapHandler: any = null;
+let sFieldRegionMapWindowTemplates: any = null;
 /** void FieldInitRegionMap(MainCallback callback) */
 export function FieldInitRegionMap(callback: any): any {
   SetVBlankCallback(NULL);

@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattleFactoryFunctions: any = null;
+let sFixedIVTable: any = null;
+let sInitialRentalMonRanges: any = null;
+let sMoveStyles: any = null;
+let sPerformedRentalSwap: any = null;
+let sRequiredMoveCounts: any = null;
+let sWinStreakFlags: any = null;
+let sWinStreakMasks: any = null;
 /** void CallBattleFactoryFunction(void) */
 export function CallBattleFactoryFunction(): any {
   sBattleFactoryFunctions[gSpecialVar_0x8004]();

@@ -15,6 +15,19 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBerryFix: any = null;
+let sBerryFixBgTemplates: any = null;
+let sBerryFixGraphics: any = null;
+let sBerryFixWindowTemplates: any = null;
+let sBerryProgramTextColors: any = null;
+let sBerryProgramTexts: any = null;
+let sGameTitleTextColors: any = null;
+let sText_BerryProgramUpdate: any = null;
+let sText_Emerald: any = null;
+let sText_Pal: any = null;
+let sText_RubySapphire: any = null;
 /** void CB2_InitBerryFixProgram(void) */
 export function CB2_InitBerryFixProgram(): any {
   DisableInterrupts(0xFFFF);  

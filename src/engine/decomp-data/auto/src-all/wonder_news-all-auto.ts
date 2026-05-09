@@ -55,7 +55,7 @@ export function WonderNews_IncrementStepCounter(): any {
        
        
        
-      if (data.rewardCounter >= MAX_REWARD && ++(stepCounter) >= 500)
+      if (data.rewardCounter >= (5) && ++(stepCounter) >= 500)
       {
           data.rewardCounter = 0;
           stepCounter = 0;
@@ -115,20 +115,20 @@ export function ResetSentRewardCounter(data: any): any {
 /** static void IncrementSentRewardCounter(struct WonderNewsMetadata *data) */
 export function IncrementSentRewardCounter(data: any): any {
   data.sentRewardCounter++;
-      if (data.sentRewardCounter > MAX_SENT_REWARD)
-          data.sentRewardCounter = MAX_SENT_REWARD;
+      if (data.sentRewardCounter > (4))
+          data.sentRewardCounter = (4);
 }
 
 /** static void IncrementRewardCounter(struct WonderNewsMetadata *data) */
 export function IncrementRewardCounter(data: any): any {
   data.rewardCounter++;
-      if (data.rewardCounter > MAX_REWARD)
-          data.rewardCounter = MAX_REWARD;
+      if (data.rewardCounter > (5))
+          data.rewardCounter = (5);
 }
 
 /** static u32 GetRewardType(struct WonderNewsMetadata *data) */
 export function GetRewardType(data: any): any {
-  if (data.rewardCounter == MAX_REWARD)
+  if (data.rewardCounter == (5))
           return NEWS_REWARD_AT_MAX;
 
       switch (data.newsType)
@@ -140,7 +140,7 @@ export function GetRewardType(data: any): any {
       case WONDER_NEWS_RECV_WIRELESS:
           return NEWS_REWARD_RECV_BIG;
       case WONDER_NEWS_SENT:
-          if (data.sentRewardCounter < MAX_SENT_REWARD - 1)
+          if (data.sentRewardCounter < (4) - 1)
               return NEWS_REWARD_SENT_SMALL;
           return NEWS_REWARD_SENT_BIG;
       default:

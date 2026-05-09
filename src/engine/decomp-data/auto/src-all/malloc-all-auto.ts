@@ -15,12 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sHeapSize: any = null;
+let sHeapStart: any = null;
 /** void PutMemBlockHeader(void *block, struct MemBlock *prev, struct MemBlock *next, u32 size) */
 export function PutMemBlockHeader(block: any, prev: any, next: any, size: any): any {
   let header: any = block;
 
       header.flag = FALSE;
-      header.magic = MALLOC_SYSTEM_ID;
+      header.magic = (0xA3A3);
       header.size = size;
       header.prev = prev;
       header.next = next;
@@ -76,16 +80,16 @@ export function CheckMemBlockInternal(heapStart: any, pointer: any): any {
   let head: any = heapStart;
       let block: any = (pointer - 0);
 
-      if (block.magic != MALLOC_SYSTEM_ID)
+      if (block.magic != (0xA3A3))
           return FALSE;
 
-      if (block.next.magic != MALLOC_SYSTEM_ID)
+      if (block.next.magic != (0xA3A3))
           return FALSE;
 
       if (block.next != head && block.next.prev != block)
           return FALSE;
 
-      if (block.prev.magic != MALLOC_SYSTEM_ID)
+      if (block.prev.magic != (0xA3A3))
           return FALSE;
 
       if (block.prev != head && block.prev.next != block)

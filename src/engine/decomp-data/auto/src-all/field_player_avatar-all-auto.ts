@@ -15,6 +15,27 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAcroBikeTrickCollisionTypes: any = null;
+let sAcroBikeTrickMetatiles: any = null;
+let sArrowWarpMetatileBehaviorChecks: any = null;
+let sArrowWarpMetatileBehaviorChecks2: any = null;
+let sFRLGAvatarGfxIds: any = null;
+let sFishingStateFuncs: any = null;
+let sForcedMovementFuncs: any = null;
+let sForcedMovementTestFuncs: any = null;
+let sPlayerAvatarGfxIds: any = null;
+let sPlayerAvatarGfxToStateFlag: any = null;
+let sPlayerAvatarSecretBaseMatJump: any = null;
+let sPlayerAvatarSecretBaseMatSpin: any = null;
+let sPlayerAvatarTransitionFuncs: any = null;
+let sPlayerNotOnBikeFuncs: any = null;
+let sPushBoulderFuncs: any = null;
+let sRSAvatarGfxIds: any = null;
+let sRivalAvatarGfxIds: any = null;
+let sSpinDirections: any = null;
+let sSpinStartFacingDir: any = null;
 /** void MovementType_Player(struct Sprite *sprite) */
 export function MovementType_Player(sprite: any): any {
   UpdateObjectEventCurrentMovement(gObjectEvents[sprite.data[0]], sprite, ObjectEventCB2_NoMovement2);
@@ -113,7 +134,7 @@ export function GetForcedMovementByMetatileBehavior(): any {
       {
           let metatileBehavior: any = gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior;
 
-          for (i = 0; i < NUM_FORCED_MOVEMENTS; i++)
+          for (i = 0; i < (18); i++)
           {
               if (sForcedMovementTestFuncs[i](metatileBehavior))
                   return i + 1;
@@ -454,7 +475,7 @@ export function TryPushBoulder(x: any, y: any, direction: any): any {
 export function CheckAcroBikeCollision(x: any, y: any, metatileBehavior: any, collision: any): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_ACRO_BIKE_COLLISIONS; i++)
+      for (i = 0; i < (5); i++)
       {
           if (sAcroBikeTrickMetatiles[i](metatileBehavior))
           {
@@ -1416,9 +1437,9 @@ export function Fishing_ShowDots(task: any): any {
       task.tFrameCounter++;
       if (JOY_NEW(A_BUTTON))
       {
-          task.tStep = FISHING_NO_BITE;
+          task.tStep = (11);
           if (task.tRoundsPlayed != 0)
-              task.tStep = FISHING_GOT_AWAY;
+              task.tStep = (12);
           return TRUE;
       }
       else
@@ -1453,7 +1474,7 @@ export function Fishing_CheckForBite(task: any): any {
 
       if (!DoesCurrentMapHaveFishingMons())
       {
-          task.tStep = FISHING_NO_BITE;
+          task.tStep = (11);
       }
       else
       {
@@ -1470,7 +1491,7 @@ export function Fishing_CheckForBite(task: any): any {
           if (!bite)
           {
               if (Random() & 1)
-                  task.tStep = FISHING_NO_BITE;
+                  task.tStep = (11);
               else
                   bite = TRUE;
           }
@@ -1498,7 +1519,7 @@ export function Fishing_WaitForA(task: any): any {
       AlignFishingAnimationFrames();
       task.tFrameCounter++;
       if (task.tFrameCounter >= reelTimeouts[task.tFishingRod])
-          task.tStep = FISHING_GOT_AWAY;
+          task.tStep = (12);
       else if (JOY_NEW(A_BUTTON))
           task.tStep++;
       return FALSE;
@@ -1514,7 +1535,7 @@ export function Fishing_CheckMoreDots(task: any): any {
       task.tStep++;
       if (task.tRoundsPlayed < task.tMinRoundsRequired)
       {
-          task.tStep = FISHING_START_ROUND;
+          task.tStep = (3);
       }
       else if (task.tRoundsPlayed < 2)
       {
@@ -1522,7 +1543,7 @@ export function Fishing_CheckMoreDots(task: any): any {
           let probability: any = Random() % 100;
 
           if (moreDotsChance[task.tFishingRod][task.tRoundsPlayed] > probability)
-              task.tStep = FISHING_START_ROUND;
+              task.tStep = (3);
       }
       return FALSE;
 }
@@ -1579,7 +1600,7 @@ export function Fishing_NotEvenNibble(task: any): any {
       StartSpriteAnim(gSprites[gPlayerAvatar.spriteId], GetFishingNoCatchDirectionAnimNum(GetPlayerFacingDirection()));
       FillWindowPixelBuffer(0, PIXEL_FILL(1));
       AddTextPrinterParameterized2(0, FONT_NORMAL, gText_NotEvenANibble, 1, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
-      task.tStep = FISHING_SHOW_RESULT;
+      task.tStep = (13);
       return TRUE;
 }
 

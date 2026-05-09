@@ -15,6 +15,20 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgAnimPal: any = null;
+let sBgAnim_Gfx: any = null;
+let sBgAnim_Inner_Tilemap: any = null;
+let sBgAnim_Intro_Pal: any = null;
+let sBgAnim_Outer_Tilemap: any = null;
+let sBgAnim_Pal: any = null;
+let sBgAnim_PalIndexes: any = null;
+let sBgAnim_PaletteControl: any = null;
+let sEvoCursorPos: any = null;
+let sEvoGraphicsTaskId: any = null;
+let sEvoStructPtr: any = null;
+let sText_ShedinjaJapaneseName: any = null;
 /** static void CB2_BeginEvolutionScene(void) */
 export function CB2_BeginEvolutionScene(): any {
   UpdatePaletteFade();
@@ -444,7 +458,7 @@ export function Task_EvolutionScene(taskId: any): any {
       if (gMain.heldKeys == B_BUTTON
           && gTasks[taskId].tState == EVOSTATE_WAIT_CYCLE_MON_SPRITE
           && gTasks[sEvoGraphicsTaskId].isActive
-          && gTasks[taskId].tBits & TASK_BIT_CAN_STOP)
+          && gTasks[taskId].tBits & ((1 << 0)))
       {
           gTasks[taskId].tState = EVOSTATE_CANCEL;
           gTasks[sEvoGraphicsTaskId].tEvoStopped = TRUE;
@@ -582,13 +596,13 @@ export function Task_EvolutionScene(taskId: any): any {
               if (_var != MOVE_NONE && !gTasks[taskId].tEvoWasStopped)
               {
                   let nickname: any = [];
-                  if (!(gTasks[taskId].tBits & TASK_BIT_LEARN_MOVE))
+                  if (!(gTasks[taskId].tBits & ((1 << 7))))
                   {
                       StopMapMusic();
                       Overworld_PlaySpecialMapMusic();
                   }
 
-                  gTasks[taskId].tBits |= TASK_BIT_LEARN_MOVE;
+                  gTasks[taskId].tBits |= ((1 << 7));
                   gTasks[taskId].tLearnsFirstMove = FALSE;
                   gTasks[taskId].tLearnMoveState = MVSTATE_INTRO_MSG_1;
                   GetMonData(mon, MON_DATA_NICKNAME, nickname);
@@ -611,7 +625,7 @@ export function Task_EvolutionScene(taskId: any): any {
       case EVOSTATE_END:
           if (!gPaletteFade.active)
           {
-              if (!(gTasks[taskId].tBits & TASK_BIT_LEARN_MOVE))
+              if (!(gTasks[taskId].tBits & ((1 << 7))))
               {
                   StopMapMusic();
                   Overworld_PlaySpecialMapMusic();
@@ -959,7 +973,7 @@ export function Task_TradeEvolutionScene(taskId: any): any {
               if (_var != MOVE_NONE && !gTasks[taskId].tEvoWasStopped)
               {
                   let nickname: any = [];
-                  gTasks[taskId].tBits |= TASK_BIT_LEARN_MOVE;
+                  gTasks[taskId].tBits |= ((1 << 7));
                   gTasks[taskId].tLearnsFirstMove = FALSE;
                   gTasks[taskId].tLearnMoveState = 0;
                   GetMonData(mon, MON_DATA_NICKNAME, nickname);

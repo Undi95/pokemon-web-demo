@@ -15,6 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBlendCycleTime: any = null;
+let sBlendTableIdx: any = null;
+let sBlendTimer: any = null;
+let sFrenzyPlantRootData: any = null;
+let sMoveTimer: any = null;
+let sVelocX: any = null;
+let sVelocY: any = null;
+let sX: any = null;
+let sY: any = null;
 /** static void AnimMovePowderParticle(struct Sprite *sprite) */
 export function AnimMovePowderParticle(sprite: any): any {
   CMD_ARGS(x, y, duration, yVelocity, waveAmplitude, waveSpeed);

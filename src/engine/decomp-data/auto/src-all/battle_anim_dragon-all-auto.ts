@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sUnusedOverheatData: any = null;
 /** static void AnimOutrageFlame(struct Sprite *sprite) */
 export function AnimOutrageFlame(sprite: any): any {
   CMD_ARGS(x, y, duration, xVelocity, yVelocity, flickerDuration);

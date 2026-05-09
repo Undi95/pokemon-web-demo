@@ -15,6 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sMoneyBoxWindowId: any = null;
+let sMoneyLabelSpriteId: any = null;
+let sSpritePalette_MoneyLabel: any = null;
+let sSpriteSheet_MoneyLabel: any = null;
+let sSpriteTemplate_MoneyLabel: any = null;
 /** u32 GetMoney(u32 *moneyPtr) */
 export function GetMoney(moneyPtr: any): any {
   return moneyPtr ^ gSaveBlock2Ptr.encryptionKey;
@@ -38,16 +45,16 @@ export function AddMoney(moneyPtr: any, toAdd: any): any {
   let toSet: any = GetMoney(moneyPtr);
 
        
-      if (toSet + toAdd > MAX_MONEY)
+      if (toSet + toAdd > (999999))
       {
-          toSet = MAX_MONEY;
+          toSet = (999999);
       }
       else
       {
           toSet += toAdd;
            
           if (toSet < GetMoney(moneyPtr))
-              toSet = MAX_MONEY;
+              toSet = (999999);
       }
 
       SetMoney(moneyPtr, toSet);

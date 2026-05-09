@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sClockwiseDirections: any = null;
+let sItemUseCallbacks: any = null;
+let sItemUseOnFieldCB: any = null;
+let sUseTMHMYesNoFuncTable: any = null;
 /** static void SetUpItemUseCallback(u8 taskId) */
 export function SetUpItemUseCallback(taskId: any): any {
   let type: any = null;

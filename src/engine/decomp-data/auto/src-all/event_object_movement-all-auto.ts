@@ -15,6 +15,72 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAcroEndWheelieDirectionAnimNums: any = null;
+let sAcroUnusedActionDirectionAnimNums: any = null;
+let sAcroUnusedDirectionAnimNums: any = null;
+let sAcroWheelieDirectionAnimNums: any = null;
+let sAcroWheeliePedalDirectionAnimNums: any = null;
+let sActionFuncId: any = null;
+let sAnimNum: any = null;
+let sAnimState: any = null;
+let sBerryTreeFlags: any = null;
+let sCameraObjectFuncs: any = null;
+let sCameraSpriteTemplate: any = null;
+let sCamera_FollowSpriteId: any = null;
+let sCamera_MoveX: any = null;
+let sCamera_MoveY: any = null;
+let sCamera_State: any = null;
+let sCurrentReflectionType: any = null;
+let sCurrentSpecialObjectPaletteTag: any = null;
+let sDirection: any = null;
+let sDirectionAnimFuncsBySpeed: any = null;
+let sDirectionToVectors: any = null;
+let sDistance: any = null;
+let sElevationToPriority: any = null;
+let sElevationToSubpriority: any = null;
+let sElevationToSubspriteTableNum: any = null;
+let sFaceDirectionAnimNums: any = null;
+let sFigure8XOffsets: any = null;
+let sFigure8YOffsets: any = null;
+let sFishingBiteDirectionAnimNums: any = null;
+let sFishingDirectionAnimNums: any = null;
+let sFishingNoCatchDirectionAnimNums: any = null;
+let sGroundEffectFuncs: any = null;
+let sGroundEffectTracksFuncs: any = null;
+let sInvisible: any = null;
+let sJumpDisplacements: any = null;
+let sJumpInitDisplacements: any = null;
+let sJumpSpecialDirectionAnimNums: any = null;
+let sJumpType: any = null;
+let sJumpYTable: any = null;
+let sLockedAnimObjectEvents: any = null;
+let sMoveDirectionAnimNums: any = null;
+let sMoveDirectionFastAnimNums: any = null;
+let sMoveDirectionFasterAnimNums: any = null;
+let sMoveDirectionFastestAnimNums: any = null;
+let sMovementDelaysMedium: any = null;
+let sMovementDelaysShort: any = null;
+let sMovementTypeCallbacks: any = null;
+let sMovementTypeHasRange: any = null;
+let sNpcStepFuncTables: any = null;
+let sNumSteps: any = null;
+let sObjEventId: any = null;
+let sObjectEventSpritePalettes: any = null;
+let sObjectPaletteTagSets: any = null;
+let sOppositeDirections: any = null;
+let sPlayerDirectionToCopyDirection: any = null;
+let sPlayerDirectionsForCopy: any = null;
+let sPlayerReflectionPaletteSets: any = null;
+let sRunningDirectionAnimNums: any = null;
+let sSpecialObjectReflectionPaletteSets: any = null;
+let sSpeed: any = null;
+let sStepTimes: any = null;
+let sTimer: any = null;
+let sTypeFuncId: any = null;
+let sVirtualObjElev: any = null;
+let sVirtualObjId: any = null;
 /** static void ClearObjectEvent(struct ObjectEvent *objectEvent) */
 export function ClearObjectEvent(objectEvent: any): any {
   objectEvent = ({} as any);
@@ -850,7 +916,7 @@ export function PatchObjectPaletteRange(paletteTags: any, minSlot: any, maxSlot:
 export function FindObjectEventPaletteIndexByTag(tag: any): any {
   let i: any = null;
 
-      for (i = 0; sObjectEventSpritePalettes[i].tag != OBJ_EVENT_PAL_TAG_NONE; i++)
+      for (i = 0; sObjectEventSpritePalettes[i].tag != (0x11FF); i++)
       {
           if (sObjectEventSpritePalettes[i].tag == tag)
               return i;
@@ -863,7 +929,7 @@ export function LoadPlayerObjectReflectionPalette(tag: any, slot: any): any {
   let i: any = null;
 
       PatchObjectPalette(tag, slot);
-      for (i = 0; sPlayerReflectionPaletteSets[i].tag != OBJ_EVENT_PAL_TAG_NONE; i++)
+      for (i = 0; sPlayerReflectionPaletteSets[i].tag != (0x11FF); i++)
       {
           if (sPlayerReflectionPaletteSets[i].tag == tag)
           {
@@ -879,7 +945,7 @@ export function LoadSpecialObjectReflectionPalette(tag: any, slot: any): any {
 
       sCurrentSpecialObjectPaletteTag = tag;
       PatchObjectPalette(tag, slot);
-      for (i = 0; sSpecialObjectReflectionPaletteSets[i].tag != OBJ_EVENT_PAL_TAG_NONE; i++)
+      for (i = 0; sSpecialObjectReflectionPaletteSets[i].tag != (0x11FF); i++)
       {
           if (sSpecialObjectReflectionPaletteSets[i].tag == tag)
           {
@@ -1208,7 +1274,7 @@ export function OverrideSecretBaseDecorationSpriteScript(localId: any, mapNum: a
 /** void InitObjectEventPalettes(u8 reflectionType) */
 export function InitObjectEventPalettes(reflectionType: any): any {
   FreeAndReserveObjectSpritePalettes();
-      sCurrentSpecialObjectPaletteTag = OBJ_EVENT_PAL_TAG_NONE;
+      sCurrentSpecialObjectPaletteTag = (0x11FF);
       sCurrentReflectionType = reflectionType;
       if (reflectionType == 1)
       {
@@ -1228,12 +1294,12 @@ export function GetObjectPaletteTag(palSlot: any): any {
       if (palSlot < PALSLOT_NPC_SPECIAL)
           return sObjectPaletteTagSets[sCurrentReflectionType][palSlot];
 
-      for (i = 0; sSpecialObjectReflectionPaletteSets[i].tag != OBJ_EVENT_PAL_TAG_NONE; i++)
+      for (i = 0; sSpecialObjectReflectionPaletteSets[i].tag != (0x11FF); i++)
       {
           if (sSpecialObjectReflectionPaletteSets[i].tag == sCurrentSpecialObjectPaletteTag)
               return sSpecialObjectReflectionPaletteSets[i].data[sCurrentReflectionType];
       }
-      return OBJ_EVENT_PAL_TAG_NONE;
+      return (0x11FF);
 }
 
 /** bool8 MovementType_WanderAround_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
@@ -1724,10 +1790,10 @@ export function MovementType_BerryTreeGrowth(sprite: any): any {
   let objectEvent: any = null;
 
       objectEvent =gObjectEvents[sprite.sObjEventId];
-      if (!(sprite.sBerryTreeFlags & BERRY_FLAG_SET_GFX))
+      if (!(sprite.sBerryTreeFlags & ((1 << 0))))
       {
           SetBerryTreeGraphics(objectEvent, sprite);
-          sprite.sBerryTreeFlags |= BERRY_FLAG_SET_GFX;
+          sprite.sBerryTreeFlags |= ((1 << 0));
       }
       UpdateObjectEventCurrentMovement(objectEvent, sprite, ObjectEventCB2_BerryTree);
 }
@@ -1746,7 +1812,7 @@ export function MovementType_BerryTreeGrowth_Normal(objectEvent: any, sprite: an
       berryStage = GetStageByBerryTreeId(objectEvent.trainerRange_berryTreeId);
       if (berryStage == BERRY_STAGE_NO_BERRY)
       {
-          if (!(sprite.sBerryTreeFlags & BERRY_FLAG_JUST_PICKED) && sprite.animNum == BERRY_STAGE_FLOWERING)
+          if (!(sprite.sBerryTreeFlags & ((1 << 2))) && sprite.animNum == BERRY_STAGE_FLOWERING)
           {
               gFieldEffectArguments[0] = objectEvent.currentCoords.x;
               gFieldEffectArguments[1] = objectEvent.currentCoords.y;
@@ -1786,7 +1852,7 @@ export function MovementType_BerryTreeGrowth_SparkleStart(objectEvent: any, spri
   objectEvent.singleMovementActive = TRUE;
       sprite.sTypeFuncId = BERRYTREEFUNC_SPARKLE;
       sprite.sTimer = 0;
-      sprite.sBerryTreeFlags |= BERRY_FLAG_SPARKLING;
+      sprite.sBerryTreeFlags |= ((1 << 1));
       gFieldEffectArguments[0] = objectEvent.currentCoords.x;
       gFieldEffectArguments[1] = objectEvent.currentCoords.y;
       gFieldEffectArguments[2] = sprite.subpriority - 1;
@@ -1818,7 +1884,7 @@ export function MovementType_BerryTreeGrowth_SparkleEnd(objectEvent: any, sprite
       if (sprite.sTimer > 64)
       {
           sprite.sTypeFuncId = BERRYTREEFUNC_NORMAL;
-          sprite.sBerryTreeFlags &= ~BERRY_FLAG_SPARKLING;
+          sprite.sBerryTreeFlags &= ~((1 << 1));
           return TRUE;
       }
       return FALSE;
@@ -3290,7 +3356,7 @@ export function IsBerryTreeSparkling(localId: any, mapNum: any, mapGroup: any): 
   let objectEventId: any = null;
 
       if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup,objectEventId)
-          && gSprites[gObjectEvents[objectEventId].spriteId].sBerryTreeFlags & BERRY_FLAG_SPARKLING)
+          && gSprites[gObjectEvents[objectEventId].spriteId].sBerryTreeFlags & ((1 << 1)))
           return TRUE;
 
       return FALSE;
@@ -3301,7 +3367,7 @@ export function SetBerryTreeJustPicked(localId: any, mapNum: any, mapGroup: any)
   let objectEventId: any = null;
 
       if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup,objectEventId))
-          gSprites[gObjectEvents[objectEventId].spriteId].sBerryTreeFlags |= BERRY_FLAG_JUST_PICKED;
+          gSprites[gObjectEvents[objectEventId].spriteId].sBerryTreeFlags |= ((1 << 2));
 }
 
 /** void MoveCoords(u8 direction, s16 *x, s16 *y) */
@@ -3940,7 +4006,7 @@ export function UpdateJumpAnim(objectEvent: any, sprite: any): any {
 
       memcpy(displacements, sJumpDisplacements, 0);
       result = callback(sprite);
-      if (result == JUMP_HALFWAY && displacements[sprite.sDistance] != 0)
+      if (result == (1) && displacements[sprite.sDistance] != 0)
       {
           x = 0;
           y = 0;
@@ -3991,7 +4057,7 @@ export function DoJumpInPlaceAnim(objectEvent: any, sprite: any): any {
       {
           case JUMP_FINISHED:
               return TRUE;
-          case JUMP_HALFWAY:
+          case (1):
               SetObjectEventDirection(objectEvent, GetOppositeDirection(objectEvent.movementDirection));
               SetStepAnim(objectEvent, sprite, GetMoveDirectionAnimNum(objectEvent.facingDirection));
           default:
@@ -6742,7 +6808,7 @@ export function DoJumpSpriteMovement(sprite: any): any {
       sprite.sTimer++;
 
       if (sprite.sTimer == distanceToTime[sprite.sDistance] >> 1)
-          result = JUMP_HALFWAY;
+          result = (1);
 
       if (sprite.sTimer >= distanceToTime[sprite.sDistance])
       {
@@ -6769,7 +6835,7 @@ export function DoJumpSpecialSpriteMovement(sprite: any): any {
       sprite.sTimer++;
 
       if (sprite.sTimer == distanceToTime[sprite.sDistance] >> 1)
-          result = JUMP_HALFWAY;
+          result = (1);
 
       if (sprite.sTimer >= distanceToTime[sprite.sDistance])
       {

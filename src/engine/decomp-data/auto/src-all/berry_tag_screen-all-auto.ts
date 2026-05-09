@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBackgroundTemplates: any = null;
+let sBerryFirmnessStrings: any = null;
+let sBerryTag: any = null;
+let sFontPalette: any = null;
+let sTextColors: any = null;
+let sWindowTemplates: any = null;
 /** void DoBerryTagScreen(void) */
 export function DoBerryTagScreen(): any {
   sBerryTag = AllocZeroed(0);
@@ -179,12 +187,12 @@ export function LoadBerryTagGfx(): any {
           if (gSaveBlock2Ptr.playerGender == MALE)
           {
               for (i = 0; i < ARRAY_COUNT(sBerryTag.tilemapBuffers[1]); i++)
-                  sBerryTag.tilemapBuffers[1][i] = (4 << 12) | BG_TILE;
+                  sBerryTag.tilemapBuffers[1][i] = (4 << 12) | (0x42);
           }
           else
           {
               for (i = 0; i < ARRAY_COUNT(sBerryTag.tilemapBuffers[1]); i++)
-                  sBerryTag.tilemapBuffers[1][i] = (5 << 12) | BG_TILE;
+                  sBerryTag.tilemapBuffers[1][i] = (5 << 12) | (0x42);
           }
           sBerryTag.gfxState++;
           break;
@@ -428,42 +436,42 @@ export function Task_DisplayAnotherBerry(taskId: any): any {
   let i: any = null;
       let y: any = null;
       let data: any = gTasks[taskId].data;
-      tBerryY += DISPLAY_SPEED;
+      tBerryY += (16);
       tBerryY &= 0xFF;
 
       if (tBgOp == BG_COORD_ADD)
       {
           switch (tBerryY)
           {
-          case 3 * DISPLAY_SPEED:
+          case 3 * (16):
               FillWindowPixelBuffer(WIN_BERRY_NAME, PIXEL_FILL(0));
               break;
-          case 4 * DISPLAY_SPEED:
+          case 4 * (16):
               PrintBerryNumberAndName();
               break;
-          case 5 * DISPLAY_SPEED:
+          case 5 * (16):
               DestroyBerrySprite();
               CreateBerrySprite();
               break;
-          case 6 * DISPLAY_SPEED:
+          case 6 * (16):
               FillWindowPixelBuffer(WIN_SIZE_FIRM, PIXEL_FILL(0));
               break;
-          case 7 * DISPLAY_SPEED:
+          case 7 * (16):
               PrintBerrySize();
               break;
-          case 8 * DISPLAY_SPEED:
+          case 8 * (16):
               PrintBerryFirmness();
               break;
-          case 9 * DISPLAY_SPEED:
+          case 9 * (16):
               SetFlavorCirclesVisiblity();
               break;
-          case 10 * DISPLAY_SPEED:
+          case 10 * (16):
               FillWindowPixelBuffer(WIN_DESC, PIXEL_FILL(0));
               break;
-          case 11 * DISPLAY_SPEED:
+          case 11 * (16):
               PrintBerryDescription1();
               break;
-          case 12 * DISPLAY_SPEED:
+          case 12 * (16):
               PrintBerryDescription2();
               break;
           }
@@ -472,35 +480,35 @@ export function Task_DisplayAnotherBerry(taskId: any): any {
       {
           switch (tBerryY)
           {
-          case 3 * DISPLAY_SPEED:
+          case 3 * (16):
               FillWindowPixelBuffer(WIN_DESC, PIXEL_FILL(0));
               break;
-          case 4 * DISPLAY_SPEED:
+          case 4 * (16):
               PrintBerryDescription2();
               break;
-          case 5 * DISPLAY_SPEED:
+          case 5 * (16):
               PrintBerryDescription1();
               break;
-          case 6 * DISPLAY_SPEED:
+          case 6 * (16):
               SetFlavorCirclesVisiblity();
               break;
-          case 7 * DISPLAY_SPEED:
+          case 7 * (16):
               FillWindowPixelBuffer(WIN_SIZE_FIRM, PIXEL_FILL(0));
               break;
-          case 8 * DISPLAY_SPEED:
+          case 8 * (16):
               PrintBerryFirmness();
               break;
-          case 9 * DISPLAY_SPEED:
+          case 9 * (16):
               PrintBerrySize();
               break;
-          case 10 * DISPLAY_SPEED:
+          case 10 * (16):
               DestroyBerrySprite();
               CreateBerrySprite();
               break;
-          case 11 * DISPLAY_SPEED:
+          case 11 * (16):
               FillWindowPixelBuffer(WIN_BERRY_NAME, PIXEL_FILL(0));
               break;
-          case 12 * DISPLAY_SPEED:
+          case 12 * (16):
               PrintBerryNumberAndName();
               break;
           }

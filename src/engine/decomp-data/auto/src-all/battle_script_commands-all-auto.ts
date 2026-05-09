@@ -15,6 +15,28 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAccuracyStageRatios: any = null;
+let sBallCatchBonuses: any = null;
+let sBattlePalaceNatureToFlavorTextId: any = null;
+let sCriticalHitChance: any = null;
+let sDestroy: any = null;
+let sEnvironmentToType: any = null;
+let sFlailHpScaleToPowerTable: any = null;
+let sLevelUpBanner_Gfx: any = null;
+let sLevelUpBanner_Pal: any = null;
+let sMoveEffectBS_Ptrs: any = null;
+let sMovesForbiddenToCopy: any = null;
+let sNaturePowerMoves: any = null;
+let sPickupItems: any = null;
+let sPickupProbabilities: any = null;
+let sProtectSuccessRates: any = null;
+let sRarePickupItems: any = null;
+let sSpriteTemplate_MonIconOnLvlUpBanner: any = null;
+let sStatusFlagsForMoveEffects: any = null;
+let sWeightToDamageTable: any = null;
+let sXOffset: any = null;
 /** static void Cmd_attackcanceler(void) */
 export function Cmd_attackcanceler(): any {
   let i: any = null;
@@ -1332,19 +1354,19 @@ export function SetMoveEffect(primary: any, certain: any): any {
 
       if (gBattleMons[gEffectBattler].ability == ABILITY_SHIELD_DUST && !(gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
           && !primary && gBattleCommunication[MOVE_EFFECT_BYTE] <= 9)
-          INCREMENT_RESET_RETURN
+          (0)
 
       if (gSideStatuses[GET_BATTLER_SIDE(gEffectBattler)] & SIDE_STATUS_SAFEGUARD && !(gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
           && !primary && gBattleCommunication[MOVE_EFFECT_BYTE] <= 7)
-          INCREMENT_RESET_RETURN
+          (0)
 
       if (gBattleMons[gEffectBattler].hp == 0
           && gBattleCommunication[MOVE_EFFECT_BYTE] != MOVE_EFFECT_PAYDAY
           && gBattleCommunication[MOVE_EFFECT_BYTE] != MOVE_EFFECT_STEAL_ITEM)
-          INCREMENT_RESET_RETURN
+          (0)
 
       if (gBattleMons[gEffectBattler].status2 & STATUS2_SUBSTITUTE && affectsUser != MOVE_EFFECT_AFFECTS_USER)
-          INCREMENT_RESET_RETURN
+          (0)
 
       if (gBattleCommunication[MOVE_EFFECT_BYTE] <= PRIMARY_STATUS_MOVE_EFFECT)
       {
@@ -1395,7 +1417,7 @@ export function SetMoveEffect(primary: any, certain: any): any {
                   {
                       gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_ABILITY_PREVENTS_MOVE_STATUS;
                   }
-                  RESET_RETURN
+                  (0)
               }
               if ((IS_BATTLER_OF_TYPE(gEffectBattler, TYPE_POISON) || IS_BATTLER_OF_TYPE(gEffectBattler, TYPE_STEEL))
                   && (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
@@ -1405,7 +1427,7 @@ export function SetMoveEffect(primary: any, certain: any): any {
                   gBattlescriptCurrInstr = BattleScript_PSNPrevention;
 
                   gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_STATUS_HAD_NO_EFFECT;
-                  RESET_RETURN
+                  (0)
               }
               if (IS_BATTLER_OF_TYPE(gEffectBattler, TYPE_POISON))
                   break;
@@ -1436,7 +1458,7 @@ export function SetMoveEffect(primary: any, certain: any): any {
                   {
                       gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_ABILITY_PREVENTS_MOVE_STATUS;
                   }
-                  RESET_RETURN
+                  (0)
               }
               if (IS_BATTLER_OF_TYPE(gEffectBattler, TYPE_FIRE)
                   && (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
@@ -1446,7 +1468,7 @@ export function SetMoveEffect(primary: any, certain: any): any {
                   gBattlescriptCurrInstr = BattleScript_BRNPrevention;
 
                   gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_STATUS_HAD_NO_EFFECT;
-                  RESET_RETURN
+                  (0)
               }
               if (IS_BATTLER_OF_TYPE(gEffectBattler, TYPE_FIRE))
                   break;
@@ -1492,7 +1514,7 @@ export function SetMoveEffect(primary: any, certain: any): any {
                       {
                           gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_ABILITY_PREVENTS_MOVE_STATUS;
                       }
-                      RESET_RETURN
+                      (0)
                   }
                   else
                   {
@@ -1522,7 +1544,7 @@ export function SetMoveEffect(primary: any, certain: any): any {
                   {
                       gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_ABILITY_PREVENTS_MOVE_STATUS;
                   }
-                  RESET_RETURN
+                  (0)
               }
               if ((IS_BATTLER_OF_TYPE(gEffectBattler, TYPE_POISON) || IS_BATTLER_OF_TYPE(gEffectBattler, TYPE_STEEL))
                   && (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
@@ -1532,7 +1554,7 @@ export function SetMoveEffect(primary: any, certain: any): any {
                   gBattlescriptCurrInstr = BattleScript_PSNPrevention;
 
                   gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_STATUS_HAD_NO_EFFECT;
-                  RESET_RETURN
+                  (0)
               }
               if (gBattleMons[gEffectBattler].status1)
                   break;
@@ -5109,7 +5131,7 @@ export function DrawLevelUpWindow2(): any {
 /** static void InitLevelUpBanner(void) */
 export function InitLevelUpBanner(): any {
   gBattle_BG2_Y = 0;
-      gBattle_BG2_X = LEVEL_UP_BANNER_START;
+      gBattle_BG2_X = (416);
 
       LoadPalette(sLevelUpBanner_Pal, BG_PLTT_ID(6), 0);
       CopyToWindowPixelBuffer(B_WIN_LEVEL_UP_BANNER, sLevelUpBanner_Gfx, 0, 0);
@@ -5124,17 +5146,17 @@ export function SlideInLevelUpBanner(): any {
   if (IsDma3ManagerBusyWithBgCopy())
           return TRUE;
 
-      if (gBattle_BG2_X == LEVEL_UP_BANNER_END)
+      if (gBattle_BG2_X == (512))
           return FALSE;
 
-      if (gBattle_BG2_X == LEVEL_UP_BANNER_START)
+      if (gBattle_BG2_X == (416))
           DrawLevelUpBannerText();
 
       gBattle_BG2_X += 8;
-      if (gBattle_BG2_X >= LEVEL_UP_BANNER_END)
-          gBattle_BG2_X = LEVEL_UP_BANNER_END;
+      if (gBattle_BG2_X >= (512))
+          gBattle_BG2_X = (512);
 
-      return (gBattle_BG2_X != LEVEL_UP_BANNER_END);
+      return (gBattle_BG2_X != (512));
 }
 
 /** static void DrawLevelUpBannerText(void) */
@@ -5200,15 +5222,15 @@ export function DrawLevelUpBannerText(): any {
 
 /** static bool8 SlideOutLevelUpBanner(void) */
 export function SlideOutLevelUpBanner(): any {
-  if (gBattle_BG2_X == LEVEL_UP_BANNER_START)
+  if (gBattle_BG2_X == (416))
           return FALSE;
 
-      if (gBattle_BG2_X - 16 < LEVEL_UP_BANNER_START)
-          gBattle_BG2_X = LEVEL_UP_BANNER_START;
+      if (gBattle_BG2_X - 16 < (416))
+          gBattle_BG2_X = (416);
       else
           gBattle_BG2_X -= 16;
 
-      return (gBattle_BG2_X != LEVEL_UP_BANNER_START);
+      return (gBattle_BG2_X != (416));
 }
 
 /** static void PutMonIconOnLvlUpBanner(void) */
@@ -5224,11 +5246,11 @@ export function PutMonIconOnLvlUpBanner(): any {
       let iconPtr: any = GetMonIconPtr(species, personality, 1);
       iconSheet.data = iconPtr;
       iconSheet.size = 0x200;
-      iconSheet.tag = TAG_LVLUP_BANNER_MON_ICON;
+      iconSheet.tag = (55130);
 
       iconPal = GetValidMonIconPalettePtr(species);
       iconPalSheet.data = iconPal;
-      iconPalSheet.tag = TAG_LVLUP_BANNER_MON_ICON;
+      iconPalSheet.tag = (55130);
 
       LoadSpriteSheet(iconSheet);
       LoadSpritePalette(iconPalSheet);
@@ -5249,8 +5271,8 @@ export function SpriteCB_MonIconOnLvlUpBanner(sprite: any): any {
       else if (sprite.sDestroy)
       {
           DestroySprite(sprite);
-          FreeSpriteTilesByTag(TAG_LVLUP_BANNER_MON_ICON);
-          FreeSpritePaletteByTag(TAG_LVLUP_BANNER_MON_ICON);
+          FreeSpriteTilesByTag((55130));
+          FreeSpritePaletteByTag((55130));
       }
 }
 
@@ -6030,13 +6052,13 @@ export function ChangeStatBuffs(statValue: any, statId: any, flags: any, BS_ptr:
                       gSpecialStatuses[gActiveBattler].statLowered = 1;
                   }
               }
-              return STAT_CHANGE_DIDNT_WORK;
+              return (1);
           }
           else if (gCurrentMove != MOVE_CURSE
                    && notProtectAffected != TRUE && JumpIfMoveAffectedByProtect(0))
           {
               gBattlescriptCurrInstr = BattleScript_ButItFailed;
-              return STAT_CHANGE_DIDNT_WORK;
+              return (1);
           }
           else if ((gBattleMons[gActiveBattler].ability == ABILITY_CLEAR_BODY
                     || gBattleMons[gActiveBattler].ability == ABILITY_WHITE_SMOKE)
@@ -6058,7 +6080,7 @@ export function ChangeStatBuffs(statValue: any, statId: any, flags: any, BS_ptr:
                       gSpecialStatuses[gActiveBattler].statLowered = 1;
                   }
               }
-              return STAT_CHANGE_DIDNT_WORK;
+              return (1);
           }
           else if (gBattleMons[gActiveBattler].ability == ABILITY_KEEN_EYE
                    && !certain && statId == STAT_ACC)
@@ -6071,7 +6093,7 @@ export function ChangeStatBuffs(statValue: any, statId: any, flags: any, BS_ptr:
                   gLastUsedAbility = gBattleMons[gActiveBattler].ability;
                   RecordAbilityBattle(gActiveBattler, gLastUsedAbility);
               }
-              return STAT_CHANGE_DIDNT_WORK;
+              return (1);
           }
           else if (gBattleMons[gActiveBattler].ability == ABILITY_HYPER_CUTTER
                    && !certain && statId == STAT_ATK)
@@ -6084,11 +6106,11 @@ export function ChangeStatBuffs(statValue: any, statId: any, flags: any, BS_ptr:
                   gLastUsedAbility = gBattleMons[gActiveBattler].ability;
                   RecordAbilityBattle(gActiveBattler, gLastUsedAbility);
               }
-              return STAT_CHANGE_DIDNT_WORK;
+              return (1);
           }
           else if (gBattleMons[gActiveBattler].ability == ABILITY_SHIELD_DUST && flags == 0)
           {
-              return STAT_CHANGE_DIDNT_WORK;
+              return (1);
           }
           else  
           {
@@ -6146,15 +6168,15 @@ export function ChangeStatBuffs(statValue: any, statId: any, flags: any, BS_ptr:
           gMoveResultFlags |= MOVE_RESULT_MISSED;
 
       if (gBattleCommunication[MULTISTRING_CHOOSER] == B_MSG_STAT_WONT_INCREASE && !(flags & STAT_CHANGE_ALLOW_PTR))
-          return STAT_CHANGE_DIDNT_WORK;
+          return (1);
 
-      return STAT_CHANGE_WORKED;
+      return (0);
 }
 
 /** static void Cmd_statbuffchange(void) */
 export function Cmd_statbuffchange(): any {
   let jumpPtr: any = T1_READ_PTR(gBattlescriptCurrInstr + 2);
-      if (ChangeStatBuffs(gBattleScripting.statChanger & 0xF0, GET_STAT_BUFF_ID(gBattleScripting.statChanger), gBattlescriptCurrInstr[1], jumpPtr) == STAT_CHANGE_WORKED)
+      if (ChangeStatBuffs(gBattleScripting.statChanger & 0xF0, GET_STAT_BUFF_ID(gBattleScripting.statChanger), gBattlescriptCurrInstr[1], jumpPtr) == (0))
           gBattlescriptCurrInstr += 6;
 }
 
@@ -6836,10 +6858,10 @@ export function Cmd_setsubstitute(): any {
 /** static bool8 IsMoveUncopyableByMimic(u16 move) */
 export function IsMoveUncopyableByMimic(move: any): any {
   let i: any = null;
-      for (i = 0; sMovesForbiddenToCopy[i] != MIMIC_FORBIDDEN_END
+      for (i = 0; sMovesForbiddenToCopy[i] != (0xFFFE)
                   && sMovesForbiddenToCopy[i] != move; i++);
 
-      return (sMovesForbiddenToCopy[i] != MIMIC_FORBIDDEN_END);
+      return (sMovesForbiddenToCopy[i] != (0xFFFE));
 }
 
 /** static void Cmd_mimicattackcopy(void) */
@@ -6904,11 +6926,11 @@ export function Cmd_metronome(): any {
               i++;
               if (sMovesForbiddenToCopy[i] == gCurrentMove)
                   break;
-              if (sMovesForbiddenToCopy[i] == METRONOME_FORBIDDEN_END)
+              if (sMovesForbiddenToCopy[i] == (0xFFFF))
                   break;
           }
 
-          if (sMovesForbiddenToCopy[i] == METRONOME_FORBIDDEN_END)
+          if (sMovesForbiddenToCopy[i] == (0xFFFF))
           {
               gHitMarker &= ~HITMARKER_ATTACKSTRING_PRINTED;
               gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[gBattleMoves[gCurrentMove].effect];
@@ -8491,9 +8513,9 @@ export function Cmd_assistattackselect(): any {
               if (IsInvalidForSleepTalkOrAssist(move))
                   continue;
 
-              for (; sMovesForbiddenToCopy[i] != ASSIST_FORBIDDEN_END && move != sMovesForbiddenToCopy[i]; i++);
+              for (; sMovesForbiddenToCopy[i] != (0xFFFF) && move != sMovesForbiddenToCopy[i]; i++);
 
-              if (sMovesForbiddenToCopy[i] != ASSIST_FORBIDDEN_END)
+              if (sMovesForbiddenToCopy[i] != (0xFFFF))
                   continue;
               if (move == MOVE_NONE)
                   continue;

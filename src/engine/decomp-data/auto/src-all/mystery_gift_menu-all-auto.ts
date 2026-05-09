@@ -15,6 +15,30 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBGTemplates: any = null;
+let sDownArrowCounterAndYCoordIdx: any = null;
+let sListMenuItems_CardsOrNews: any = null;
+let sListMenuItems_WirelessOrFriend: any = null;
+let sListMenuTemplate_ThreeOptions: any = null;
+let sListMenu_Receive: any = null;
+let sListMenu_ReceiveSend: any = null;
+let sListMenu_ReceiveSendToss: any = null;
+let sListMenu_ReceiveToss: any = null;
+let sMG_Ereader_TextColor_2: any = null;
+let sMainWindows: any = null;
+let sTextColors_Header: any = null;
+let sTextboxBorder_Gfx: any = null;
+let sTextboxBorder_Pal: any = null;
+let sWindowTemplate_GiftSelect: any = null;
+let sWindowTemplate_GiftSelect_1Option: any = null;
+let sWindowTemplate_GiftSelect_2Options: any = null;
+let sWindowTemplate_GiftSelect_3Options: any = null;
+let sWindowTemplate_ThreeOptions: any = null;
+let sWindowTemplate_YesNoBox: any = null;
+let sWindowTemplate_YesNoMsg: any = null;
+let sWindowTemplate_YesNoMsg_Wide: any = null;
 /** static void VBlankCB_MysteryGiftEReader(void) */
 export function VBlankCB_MysteryGiftEReader(): any {
   ProcessSpriteCopyRequests();
@@ -216,12 +240,12 @@ export function PrintMysteryGiftMenuMessage(textState: any, str: any): any {
           textState++;
           break;
       case 1:
-          DrawDownArrow(WIN_MSG, DOWN_ARROW_X, DOWN_ARROW_Y, 1, FALSE,sDownArrowCounterAndYCoordIdx[0],sDownArrowCounterAndYCoordIdx[1]);
+          DrawDownArrow(WIN_MSG, (208), (20), 1, FALSE,sDownArrowCounterAndYCoordIdx[0],sDownArrowCounterAndYCoordIdx[1]);
           if (JOY_NEW(A_BUTTON | B_BUTTON))
               textState++;
           break;
       case 2:
-          DrawDownArrow(WIN_MSG, DOWN_ARROW_X, DOWN_ARROW_Y, 1, TRUE,sDownArrowCounterAndYCoordIdx[0],sDownArrowCounterAndYCoordIdx[1]);
+          DrawDownArrow(WIN_MSG, (208), (20), 1, TRUE,sDownArrowCounterAndYCoordIdx[0],sDownArrowCounterAndYCoordIdx[1]);
           textState = 0;
           ClearMessage();
           return TRUE;
@@ -234,12 +258,12 @@ export function PrintMysteryGiftMenuMessage(textState: any, str: any): any {
 
 /** static void HideDownArrow(void) */
 export function HideDownArrow(): any {
-  DrawDownArrow(WIN_MSG, DOWN_ARROW_X, DOWN_ARROW_Y, 1, FALSE,sDownArrowCounterAndYCoordIdx[0],sDownArrowCounterAndYCoordIdx[1]);
+  DrawDownArrow(WIN_MSG, (208), (20), 1, FALSE,sDownArrowCounterAndYCoordIdx[0],sDownArrowCounterAndYCoordIdx[1]);
 }
 
 /** static void ShowDownArrow(void) */
 export function ShowDownArrow(): any {
-  DrawDownArrow(WIN_MSG, DOWN_ARROW_X, DOWN_ARROW_Y, 1, TRUE,sDownArrowCounterAndYCoordIdx[0],sDownArrowCounterAndYCoordIdx[1]);
+  DrawDownArrow(WIN_MSG, (208), (20), 1, TRUE,sDownArrowCounterAndYCoordIdx[0],sDownArrowCounterAndYCoordIdx[1]);
 }
 
 /** static bool32 PrintStringAndWait2Seconds(u8 *counter, const u8 *str) */
@@ -281,7 +305,7 @@ export function MysteryGift_HandleThreeOptionMenu(unused0: any, unused1: any, wh
       else
           windowTemplate.tilemapLeft = 0;
 
-      response = DoMysteryGiftListMenu(windowTemplate,listMenuTemplate, 1, LIST_MENU_TILE_NUM, LIST_MENU_PAL_NUM);
+      response = DoMysteryGiftListMenu(windowTemplate,listMenuTemplate, 1, (10), (BG_PLTT_ID(14)));
       if (response != LIST_NOTHING_CHOSEN)
       {
           ClearWindowTilemap(WIN_UNK);
@@ -372,16 +396,16 @@ export function HandleGiftSelectMenu(textState: any, windowId: any, cannotToss: 
           if (cannotSend)
           {
               if (!cannotToss)
-                  input = DoMysteryGiftListMenu(sWindowTemplate_GiftSelect_2Options,sListMenu_ReceiveToss, 1, LIST_MENU_TILE_NUM, LIST_MENU_PAL_NUM);
+                  input = DoMysteryGiftListMenu(sWindowTemplate_GiftSelect_2Options,sListMenu_ReceiveToss, 1, (10), (BG_PLTT_ID(14)));
               else
-                  input = DoMysteryGiftListMenu(sWindowTemplate_GiftSelect_1Option,sListMenu_Receive, 1, LIST_MENU_TILE_NUM, LIST_MENU_PAL_NUM);
+                  input = DoMysteryGiftListMenu(sWindowTemplate_GiftSelect_1Option,sListMenu_Receive, 1, (10), (BG_PLTT_ID(14)));
           }
           else
           {
               if (!cannotToss)
-                  input = DoMysteryGiftListMenu(sWindowTemplate_GiftSelect_3Options,sListMenu_ReceiveSendToss, 1, LIST_MENU_TILE_NUM, LIST_MENU_PAL_NUM);
+                  input = DoMysteryGiftListMenu(sWindowTemplate_GiftSelect_3Options,sListMenu_ReceiveSendToss, 1, (10), (BG_PLTT_ID(14)));
               else
-                  input = DoMysteryGiftListMenu(sWindowTemplate_GiftSelect_2Options,sListMenu_ReceiveSend, 1, LIST_MENU_TILE_NUM, LIST_MENU_PAL_NUM);
+                  input = DoMysteryGiftListMenu(sWindowTemplate_GiftSelect_2Options,sListMenu_ReceiveSend, 1, (10), (BG_PLTT_ID(14)));
           }
           if (input != LIST_NOTHING_CHOSEN)
           {

@@ -15,6 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBasePaletteColorMapTypes: any = null;
+let sDroughtWeatherColors: any = null;
+let sFieldEffectPaletteColorMapTypes: any = null;
+let sPaletteColorMapTypes: any = null;
+let sWeatherFuncs: any = null;
 /** void StartWeather(void) */
 export function StartWeather(): any {
   if (!FuncIsActiveTask(Task_WeatherMain))

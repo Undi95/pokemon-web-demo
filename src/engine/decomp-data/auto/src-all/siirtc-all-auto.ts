@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sLocked: any = null;
 /** void SiiRtcUnprotect(void) */
 export function SiiRtcUnprotect(): any {
   EnableGpioPortRead();
@@ -53,7 +56,7 @@ export function SiiRtcProbe(): any {
 
       SiiRtcGetTime(rtc);
 
-      if (rtc.second & TEST_MODE)
+      if (rtc.second & (0x80))
       {
            
 
@@ -76,15 +79,15 @@ export function SiiRtcReset(): any {
 
       sLocked = TRUE;
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI | CS_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1) | (4);
 
-      GPIO_PORT_DIRECTION = DIR_ALL_OUT;
+      GPIO_PORT_DIRECTION = (((1) | (2) | (4)));
 
-      WriteCommand(CMD_RESET | WR);
+      WriteCommand((CMD(0)) | (0));
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1);
 
       sLocked = FALSE;
 
@@ -104,24 +107,24 @@ export function SiiRtcGetStatus(rtc: any): any {
 
       sLocked = TRUE;
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI | CS_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1) | (4);
 
-      GPIO_PORT_DIRECTION = DIR_ALL_OUT;
+      GPIO_PORT_DIRECTION = (((1) | (2) | (4)));
 
-      WriteCommand(CMD_STATUS | RD);
+      WriteCommand((CMD(1)) | (1));
 
-      GPIO_PORT_DIRECTION = DIR_0_OUT | DIR_1_IN | DIR_2_OUT;
+      GPIO_PORT_DIRECTION = (1) | (0) | (4);
 
       statusData = ReadData();
 
-      rtc.status = (statusData & (STATUS_POWER | STATUS_24HOUR))
-                  | ((statusData & STATUS_INTAE) >> 3)
-                  | ((statusData & STATUS_INTME) >> 2)
-                  | ((statusData & STATUS_INTFE) >> 1);
+      rtc.status = (statusData & ((0x80) | (0x40)))
+                  | ((statusData & (0x20)) >> 3)
+                  | ((statusData & (0x08)) >> 2)
+                  | ((statusData & (0x02)) >> 1);
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1);
 
       sLocked = FALSE;
 
@@ -137,22 +140,22 @@ export function SiiRtcSetStatus(rtc: any): any {
 
       sLocked = TRUE;
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI | CS_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1) | (4);
 
-      statusData = STATUS_24HOUR
+      statusData = (0x40)
                  | ((rtc.status & SIIRTCINFO_INTAE) << 3)
                  | ((rtc.status & SIIRTCINFO_INTME) << 2)
                  | ((rtc.status & SIIRTCINFO_INTFE) << 1);
 
-      GPIO_PORT_DIRECTION = DIR_ALL_OUT;
+      GPIO_PORT_DIRECTION = (((1) | (2) | (4)));
 
-      WriteCommand(CMD_STATUS | WR);
+      WriteCommand((CMD(1)) | (0));
 
       WriteData(statusData);
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1);
 
       sLocked = FALSE;
 
@@ -168,22 +171,22 @@ export function SiiRtcGetDateTime(rtc: any): any {
 
       sLocked = TRUE;
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI | CS_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1) | (4);
 
-      GPIO_PORT_DIRECTION = DIR_ALL_OUT;
+      GPIO_PORT_DIRECTION = (((1) | (2) | (4)));
 
-      WriteCommand(CMD_DATETIME | RD);
+      WriteCommand((CMD(2)) | (1));
 
-      GPIO_PORT_DIRECTION = DIR_0_OUT | DIR_1_IN | DIR_2_OUT;
+      GPIO_PORT_DIRECTION = (1) | (0) | (4);
 
-      for (i = 0; i < DATETIME_BUF_LEN; i++)
+      for (i = 0; i < (((0) - (0) + 1)); i++)
           /* transpiler bug : DATETIME_BUF(rtc, i) = ReadData(); */ ;
 
-      /* transpiler bug : INFO_BUF(rtc, OFFSET_HOUR) &= 0x7F; */ ;
+      /* transpiler bug : INFO_BUF(rtc, (0)) &= 0x7F; */ ;
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1);
 
       sLocked = FALSE;
 
@@ -199,18 +202,18 @@ export function SiiRtcSetDateTime(rtc: any): any {
 
       sLocked = TRUE;
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI | CS_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1) | (4);
 
-      GPIO_PORT_DIRECTION = DIR_ALL_OUT;
+      GPIO_PORT_DIRECTION = (((1) | (2) | (4)));
 
-      WriteCommand(CMD_DATETIME | WR);
+      WriteCommand((CMD(2)) | (0));
 
-      for (i = 0; i < DATETIME_BUF_LEN; i++)
+      for (i = 0; i < (((0) - (0) + 1)); i++)
           WriteData(DATETIME_BUF(rtc, i));
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1);
 
       sLocked = FALSE;
 
@@ -226,22 +229,22 @@ export function SiiRtcGetTime(rtc: any): any {
 
       sLocked = TRUE;
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI | CS_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1) | (4);
 
-      GPIO_PORT_DIRECTION = DIR_ALL_OUT;
+      GPIO_PORT_DIRECTION = (((1) | (2) | (4)));
 
-      WriteCommand(CMD_TIME | RD);
+      WriteCommand((CMD(3)) | (1));
 
-      GPIO_PORT_DIRECTION = DIR_0_OUT | DIR_1_IN | DIR_2_OUT;
+      GPIO_PORT_DIRECTION = (1) | (0) | (4);
 
-      for (i = 0; i < TIME_BUF_LEN; i++)
+      for (i = 0; i < ((OFFSET_SECOND - (0) + 1)); i++)
           /* transpiler bug : TIME_BUF(rtc, i) = ReadData(); */ ;
 
-      /* transpiler bug : INFO_BUF(rtc, OFFSET_HOUR) &= 0x7F; */ ;
+      /* transpiler bug : INFO_BUF(rtc, (0)) &= 0x7F; */ ;
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1);
 
       sLocked = FALSE;
 
@@ -257,18 +260,18 @@ export function SiiRtcSetTime(rtc: any): any {
 
       sLocked = TRUE;
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI | CS_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1) | (4);
 
-      GPIO_PORT_DIRECTION = DIR_ALL_OUT;
+      GPIO_PORT_DIRECTION = (((1) | (2) | (4)));
 
-      WriteCommand(CMD_TIME | WR);
+      WriteCommand((CMD(3)) | (0));
 
-      for (i = 0; i < TIME_BUF_LEN; i++)
+      for (i = 0; i < ((OFFSET_SECOND - (0) + 1)); i++)
           WriteData(TIME_BUF(rtc, i));
 
-      GPIO_PORT_DATA = SCK_HI;
-      GPIO_PORT_DATA = SCK_HI;
+      GPIO_PORT_DATA = (1);
+      GPIO_PORT_DATA = (1);
 
       sLocked = FALSE;
 
@@ -283,10 +286,10 @@ export function WriteCommand(value: any): any {
       for (i = 0; i < 8; i++)
       {
           temp = ((value >> (7 - i)) & 1);
-          GPIO_PORT_DATA = (temp << 1) | CS_HI;
-          GPIO_PORT_DATA = (temp << 1) | CS_HI;
-          GPIO_PORT_DATA = (temp << 1) | CS_HI;
-          GPIO_PORT_DATA = (temp << 1) | SCK_HI | CS_HI;
+          GPIO_PORT_DATA = (temp << 1) | (4);
+          GPIO_PORT_DATA = (temp << 1) | (4);
+          GPIO_PORT_DATA = (temp << 1) | (4);
+          GPIO_PORT_DATA = (temp << 1) | (1) | (4);
       }
       return 0;
 
@@ -300,10 +303,10 @@ export function WriteData(value: any): any {
       for (i = 0; i < 8; i++)
       {
           temp = ((value >> i) & 1);
-          GPIO_PORT_DATA = (temp << 1) | CS_HI;
-          GPIO_PORT_DATA = (temp << 1) | CS_HI;
-          GPIO_PORT_DATA = (temp << 1) | CS_HI;
-          GPIO_PORT_DATA = (temp << 1) | SCK_HI | CS_HI;
+          GPIO_PORT_DATA = (temp << 1) | (4);
+          GPIO_PORT_DATA = (temp << 1) | (4);
+          GPIO_PORT_DATA = (temp << 1) | (4);
+          GPIO_PORT_DATA = (temp << 1) | (1) | (4);
       }
       return 0;
 
@@ -318,14 +321,14 @@ export function ReadData(): any {
 
       for (i = 0; i < 8; i++)
       {
-          GPIO_PORT_DATA = CS_HI;
-          GPIO_PORT_DATA = CS_HI;
-          GPIO_PORT_DATA = CS_HI;
-          GPIO_PORT_DATA = CS_HI;
-          GPIO_PORT_DATA = CS_HI;
-          GPIO_PORT_DATA = SCK_HI | CS_HI;
+          GPIO_PORT_DATA = (4);
+          GPIO_PORT_DATA = (4);
+          GPIO_PORT_DATA = (4);
+          GPIO_PORT_DATA = (4);
+          GPIO_PORT_DATA = (4);
+          GPIO_PORT_DATA = (1) | (4);
 
-          temp = ((GPIO_PORT_DATA & SIO_HI) >> 1);
+          temp = ((GPIO_PORT_DATA & (2)) >> 1);
           value = (value >> 1) | (temp << 7);
       }
 

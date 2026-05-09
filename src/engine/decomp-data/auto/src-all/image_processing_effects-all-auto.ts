@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sPointillismPoints: any = null;
 /** void ApplyImageProcessingEffects(struct ImageProcessingContext *context) */
 export function ApplyImageProcessingEffects(context: any): any {
   gCanvasPixels = context.canvasPixels;
@@ -269,9 +272,9 @@ export function ApplyImageEffect_Shimmer(): any {
 
        
       pixel = gCanvasPixels;
-      for (i = 0; i < MAX_DIMENSION; i++)
+      for (i = 0; i < (64); i++)
       {
-          for (j = 0; j < MAX_DIMENSION; j++, pixel++)
+          for (j = 0; j < (64); j++, pixel++)
           {
               if (!IS_ALPHA(pixel))
                   pixel = QuantizePixel_Invert(pixel);
@@ -279,16 +282,16 @@ export function ApplyImageEffect_Shimmer(): any {
       }
 
        
-      for (j = 0; j < MAX_DIMENSION; j++)
+      for (j = 0; j < (64); j++)
       {
           pixel =gCanvasPixels[j];
           prevPixel = pixel;
           pixel = RGB_ALPHA;
-          for (i = 1, pixel += MAX_DIMENSION; i < MAX_DIMENSION - 1; i++, pixel += MAX_DIMENSION)
+          for (i = 1, pixel += (64); i < (64) - 1; i++, pixel += (64))
           {
               if (!IS_ALPHA(pixel))
               {
-                  pixel = QuantizePixel_BlurHard(prevPixel, pixel, pixel + MAX_DIMENSION);
+                  pixel = QuantizePixel_BlurHard(prevPixel, pixel, pixel + (64));
                   prevPixel = pixel;
               }
           }
@@ -297,11 +300,11 @@ export function ApplyImageEffect_Shimmer(): any {
           pixel =gCanvasPixels[j];
           prevPixel = pixel;
           pixel = RGB_ALPHA;
-          for (i = 1, pixel += MAX_DIMENSION; i < MAX_DIMENSION - 1; i++, pixel += MAX_DIMENSION)
+          for (i = 1, pixel += (64); i < (64) - 1; i++, pixel += (64))
           {
               if (!IS_ALPHA(pixel))
               {
-                  pixel = QuantizePixel_BlurHard(prevPixel, pixel, pixel + MAX_DIMENSION);
+                  pixel = QuantizePixel_BlurHard(prevPixel, pixel, pixel + (64));
                   prevPixel = pixel;
               }
           }
@@ -313,9 +316,9 @@ export function ApplyImageEffect_Shimmer(): any {
        
        
       pixel = gCanvasPixels;
-      for (i = 0; i < MAX_DIMENSION; i++)
+      for (i = 0; i < (64); i++)
       {
-          for (j = 0; j < MAX_DIMENSION; j++, pixel++)
+          for (j = 0; j < (64); j++, pixel++)
           {
               if (!IS_ALPHA(pixel))
                   pixel = QuantizePixel_Invert(pixel);
@@ -389,7 +392,7 @@ export function AddPointillismPoints(point: any): any {
               points[i].row = points[0].row - 1;
           }
 
-          if (points[i].column >= MAX_DIMENSION || points[i].row >= MAX_DIMENSION)
+          if (points[i].column >= (64) || points[i].row >= (64))
           {
               points[0].delta = i - 1;
               break;
@@ -400,7 +403,7 @@ export function AddPointillismPoints(point: any): any {
 
       for (i = 0; i < points[0].delta; i++)
       {
-          let pixel: any =gCanvasPixels[points[i].row * MAX_DIMENSION] + points[i].column;
+          let pixel: any =gCanvasPixels[points[i].row * (64)] + points[i].column;
 
           if (!IS_ALPHA(pixel))
           {

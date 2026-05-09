@@ -68,6 +68,59 @@ function extractMacros(srcText) {
   return macros;
 }
 
+/** Extract OBJECT-like macros `#define NAME value` (no args).
+ *  Returns Map<name, body>. Used to substitute inline in function bodies.
+ *  E.g. `#define SHINE_SPEED 4` → replace `SHINE_SPEED` → `(4)` in bodies.
+ *
+ *  ⚠️ N'extrait QUE les macros à value SCALAIRE (= nombre/expression arithmétique
+ *  simple). Les macros qui ressemblent à un field accessor (`#define sBgColor
+ *  data[1]`) sont skippées car les substituer casse le parse (`sprite.sBgColor`
+ *  → `sprite.(data[1])` = invalid). */
+function extractObjectMacros(srcText) {
+  const macros = new Map();
+  // Match `#define NAME value` where NAME is followed by whitespace (NOT `(`).
+  // Body is rest of line, can include parens, operators, etc.
+  const re = /^[ \t]*#[ \t]*define[ \t]+(\w+)[ \t]+([^\n()]*?(?:\([^()]*\)[^\n()]*?)*)\s*$/gm;
+  let m;
+  while ((m = re.exec(srcText)) !== null) {
+    const name = m[1];
+    let body = m[2]
+      .replace(/\/\/.*$/, '')
+      .replace(/\/\*.*?\*\//g, '')
+      .trim();
+    if (!body) continue;
+    if (TS_RESERVED.has(name)) continue;
+    // Skip if body contains the macro name itself (= recursive).
+    if (new RegExp(`\\b${name}\\b`).test(body)) continue;
+    // Skip very long bodies (= likely complex macro better left as-is).
+    if (body.length > 100) continue;
+    // Skip field-accessor-like macros (= `data[1]`, `obj.field`, `arr[idx]`).
+    // Si on les substitue dans `sprite.MACRO`, on obtient `sprite.(body)` qui
+    // est invalid. Better leave them as bare identifiers (will resolve via
+    // globalThis or fail with proper ReferenceError).
+    if (/[\[\].]/.test(body)) continue;
+    // Skip if name is lowercase + Capitalize-mixed (= likely field alias style
+    // `sBgColor`, `tState`, `sParentTaskId`) versus ALL_CAPS constants.
+    // Heuristic : si name commence par minuscule, skip.
+    if (/^[a-z]/.test(name)) continue;
+    macros.set(name, body);
+  }
+  return macros;
+}
+
+/** Substitute object-like macros inline. Replace bare `\bNAME\b` with `(body)`. */
+function substituteObjectMacros(text, macros) {
+  if (!macros.size) return text;
+  // Process largest names first to avoid prefix conflicts (= `MAX_FOO_BAR`
+  // before `MAX_FOO`).
+  const names = [...macros.keys()].sort((a, b) => b.length - a.length);
+  for (const name of names) {
+    const body = macros.get(name);
+    text = text.replace(new RegExp(`\\b${name}\\b`, 'g'), `(${body})`);
+  }
+  return text;
+}
+
 /** Substitute `MACRO(<expr>)` calls with body-text where <arg> ↦ (<expr>). */
 function substituteMacros(text, macros) {
   if (!macros.size) return text;
@@ -131,7 +184,7 @@ function renameIfReserved(name) {
 //
 // Most rewrites are single-pass regex. The order matters !
 
-function transpileBody(bodyC, paramNames = [], macros = null) {
+function transpileBody(bodyC, paramNames = [], macros = null, objMacros = null) {
   if (!bodyC) return { tsCode: '', warnings: [] };
   let s = bodyC;
 
@@ -145,6 +198,13 @@ function transpileBody(bodyC, paramNames = [], macros = null) {
       s = substituteMacros(s, macros);
       if (s === before) break;
     }
+  }
+
+  // ─── Pre-pass A2 : OBJECT-like macro substitution ──────────────────────
+  // Expand `#define NAME value` (no args) so e.g. `SHINE_SPEED` → `(4)` in
+  // function bodies. Sinon le ref reste un bare identifier non-déclaré.
+  if (objMacros && objMacros.size) {
+    s = substituteObjectMacros(s, objMacros);
   }
 
   // ─── Pre-pass : strip preprocessor and attribute macros ─────────────────
@@ -1029,12 +1089,16 @@ function generateFile(sceneName, json) {
 
   // Extract per-source-file 1-arg object-like macros so transpileBody can
   // expand calls like `linkGender(o) = x` → `o.singleMovementActive = x`.
+  // Plus extract OBJECT-like `#define NAME value` macros (= `SHINE_SPEED 4`).
   let macros = null;
+  let objMacros = null;
   if (json.srcFile) {
     const srcAbs = resolve(decompRoot, json.srcFile);
     if (existsSync(srcAbs)) {
       try {
-        macros = extractMacros(readFileSync(srcAbs, 'utf8'));
+        const src = readFileSync(srcAbs, 'utf8');
+        macros = extractMacros(src);
+        objMacros = extractObjectMacros(src);
       } catch { /* swallow — proceed without macros */ }
     }
   }
@@ -1057,7 +1121,7 @@ function generateFile(sceneName, json) {
         ? ''
         : paramsList.map(p => `${renameIfReserved(p.name)}: any`).join(', ');
 
-      const { tsCode } = transpileBody(info.body, paramNames, macros);
+      const { tsCode } = transpileBody(info.body, paramNames, macros, objMacros);
       lines.push(`/** ${info.signature.replace(/\*\//g, '* /')} */`);
       lines.push(`export function ${name}(${tsParams}): any {`);
       const indented = (tsCode ?? '').split('\n').map(l => l ? '  ' + l : l).join('\n');

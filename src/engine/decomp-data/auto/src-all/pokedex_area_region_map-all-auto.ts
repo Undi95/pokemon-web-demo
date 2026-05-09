@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sPokedexAreaMapAffine_Gfx: any = null;
+let sPokedexAreaMapAffine_Tilemap: any = null;
+let sPokedexAreaMapBgNum: any = null;
+let sPokedexAreaMap_Gfx: any = null;
+let sPokedexAreaMap_Pal: any = null;
+let sPokedexAreaMap_Tilemap: any = null;
 /** void LoadPokedexAreaMapGfx(const struct PokedexAreaMapTemplate *template) */
 export function LoadPokedexAreaMapGfx(template: any): any {
   let mode: any = null;

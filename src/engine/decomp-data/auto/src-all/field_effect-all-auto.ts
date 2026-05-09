@@ -15,6 +15,65 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sActiveList: any = null;
+let sAffineAnims_FlyBird: any = null;
+let sAnimCompleted: any = null;
+let sCounter: any = null;
+let sDestroyDeoxysRockEffectFuncs: any = null;
+let sDiveFieldEffectFuncs: any = null;
+let sEffectSpriteId: any = null;
+let sEscalatorWarpInFieldEffectFuncs: any = null;
+let sEscalatorWarpOutFieldEffectFuncs: any = null;
+let sEscapeRopeWarpInEffectFuncs: any = null;
+let sEscapeRopeWarpOutEffectFuncs: any = null;
+let sFallWarpFieldEffectFuncs: any = null;
+let sFieldMoveShowMonIndoorsEffectFuncs: any = null;
+let sFieldMoveShowMonOutdoorsEffectFuncs: any = null;
+let sFieldMoveStreaksIndoors_Gfx: any = null;
+let sFieldMoveStreaksIndoors_Pal: any = null;
+let sFieldMoveStreaksIndoors_Tilemap: any = null;
+let sFieldMoveStreaksOutdoors_Gfx: any = null;
+let sFieldMoveStreaksOutdoors_Pal: any = null;
+let sFieldMoveStreaksOutdoors_Tilemap: any = null;
+let sFlyInFieldEffectFuncs: any = null;
+let sFlyOutFieldEffectFuncs: any = null;
+let sHallOfFameRecordEffectFuncs: any = null;
+let sLavaridgeGym1FWarpEffectFuncs: any = null;
+let sLavaridgeGymB1FWarpEffectFuncs: any = null;
+let sLavaridgeGymB1FWarpExitEffectFuncs: any = null;
+let sNumMons: any = null;
+let sOam_64x64: any = null;
+let sOnscreenTimer: any = null;
+let sPlayHealSe: any = null;
+let sPlayerSpriteId: any = null;
+let sPokeballCoordOffsets: any = null;
+let sPokeballGlowBlues: any = null;
+let sPokeballGlowEffectFuncs: any = null;
+let sPokeballGlowGreens: any = null;
+let sPokeballGlowReds: any = null;
+let sPokecenterHealEffectFuncs: any = null;
+let sSlidOffscreen: any = null;
+let sSpecies: any = null;
+let sSpotlight_Gfx: any = null;
+let sSpotlight_Pal: any = null;
+let sSpriteId: any = null;
+let sSpritePalette_NewGameBirch: any = null;
+let sSpriteTemplate_DeoxysRockFragment: any = null;
+let sSpriteTemplate_HofMonitorBig: any = null;
+let sSpriteTemplate_HofMonitorSmall: any = null;
+let sSpriteTemplate_NewGameBirch: any = null;
+let sSpriteTemplate_PokeballGlow: any = null;
+let sSpriteTemplate_PokecenterMonitor: any = null;
+let sState: any = null;
+let sSubspriteTable_HofMonitorBig: any = null;
+let sSubspriteTable_PokecenterMonitor: any = null;
+let sSurfFieldEffectFuncs: any = null;
+let sTeleportWarpInFieldEffectFuncs: any = null;
+let sTeleportWarpOutFieldEffectFuncs: any = null;
+let sTimer: any = null;
+let sWaterfallFieldEffectFuncs: any = null;
 /** u32 FieldEffectStart(u8 id) */
 export function FieldEffectStart(id: any): any {
   let script: any = null;
@@ -1770,7 +1829,7 @@ export function FldEff_FieldMoveShowMon(): any {
 /** bool8 FldEff_FieldMoveShowMonInit(void) */
 export function FldEff_FieldMoveShowMonInit(): any {
   let pokemon: any = null;
-      let noDucking: any = gFieldEffectArguments[0] & SHOW_MON_CRY_NO_DUCKING;
+      let noDucking: any = gFieldEffectArguments[0] & ((1 << 31));
       pokemon =gPlayerParty[gFieldEffectArguments[0]];
       gFieldEffectArguments[0] = GetMonData(pokemon, MON_DATA_SPECIES);
       gFieldEffectArguments[1] = GetMonData(pokemon, MON_DATA_OT_ID);
@@ -2074,8 +2133,8 @@ export function InitFieldMoveMonSprite(species: any, otId: any, personality: any
   let noDucking: any = null;
       let monSprite: any = null;
       let sprite: any = null;
-      noDucking = (species & SHOW_MON_CRY_NO_DUCKING) >> 16;
-      species &= ~SHOW_MON_CRY_NO_DUCKING;
+      noDucking = (species & ((1 << 31))) >> 16;
+      species &= ~((1 << 31));
       monSprite = CreateMonSprite_FieldMove(species, otId, personality, 320, 80, 0);
       sprite =gSprites[monSprite];
       sprite.callback = SpriteCallbackDummy;
@@ -2156,7 +2215,7 @@ export function SurfFieldEffect_ShowMon(task: any): any {
       objectEvent =gObjectEvents[gPlayerAvatar.objectEventId];
       if (ObjectEventCheckHeldMovementStatus(objectEvent))
       {
-          gFieldEffectArguments[0] = task.tMonId | SHOW_MON_CRY_NO_DUCKING;
+          gFieldEffectArguments[0] = task.tMonId | ((1 << 31));
           FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);
           task.tState++;
       }

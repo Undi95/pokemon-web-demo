@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sConstestMoveHeartSprite: any = null;
+let sDisplayModeArrowsTemplate: any = null;
+let sMoveListScrollArrowsTemplate: any = null;
+let sMoveRelearnerMenuBackgroundTemplates: any = null;
+let sMoveRelearnerMenuState: any = null;
+let sMoveRelearnerPalette: any = null;
+let sMoveRelearnerSpriteSheet: any = null;
+let sMoveRelearnerStruct: any = null;
 /** static void VBlankCB_MoveRelearner(void) */
 export function VBlankCB_MoveRelearner(): any {
   LoadOam();
@@ -75,7 +85,7 @@ export function CB2_InitLearnMoveReturnFromSelectMove(): any {
       ResetTasks();
       ClearScheduledBgCopiesToVram();
       sMoveRelearnerStruct = AllocZeroed(0);
-      sMoveRelearnerStruct.state = MENU_STATE_FADE_FROM_SUMMARY_SCREEN;
+      sMoveRelearnerStruct.state = (28);
       sMoveRelearnerStruct.partyMon = gSpecialVar_0x8004;
       sMoveRelearnerStruct.moveSlot = gSpecialVar_0x8005;
       SetVBlankCallback(VBlankCB_MoveRelearner);
@@ -127,45 +137,45 @@ export function PrintMessageWithPlaceholders(src: any): any {
 export function DoMoveRelearnerMain(): any {
   switch (sMoveRelearnerStruct.state)
       {
-      case MENU_STATE_FADE_TO_BLACK:
+      case (0):
           sMoveRelearnerStruct.state++;
           HideHeartSpritesAndShowTeachMoveText(FALSE);
           BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
           break;
-      case MENU_STATE_WAIT_FOR_FADE:
+      case (1):
           if (!gPaletteFade.active)
           {
-              sMoveRelearnerStruct.state = MENU_STATE_IDLE_BATTLE_MODE;
+              sMoveRelearnerStruct.state = (4);
           }
           break;
-      case MENU_STATE_UNREACHABLE:
+      case (2):
           sMoveRelearnerStruct.state++;
           break;
-      case MENU_STATE_SETUP_BATTLE_MODE:
+      case (3):
 
           HideHeartSpritesAndShowTeachMoveText(FALSE);
           sMoveRelearnerStruct.state++;
           AddScrollArrows();
           break;
-      case MENU_STATE_IDLE_BATTLE_MODE:
+      case (4):
           HandleInput(FALSE);
           break;
-      case MENU_STATE_SETUP_CONTEST_MODE:
+      case (5):
           ShowTeachMoveText(FALSE);
           sMoveRelearnerStruct.state++;
           AddScrollArrows();
           break;
-      case MENU_STATE_IDLE_CONTEST_MODE:
+      case (6):
           HandleInput(TRUE);
           break;
-      case MENU_STATE_PRINT_TEACH_MOVE_PROMPT:
+      case (8):
           if (!MoveRelearnerRunTextPrinters())
           {
               MoveRelearnerCreateYesNoMenu();
               sMoveRelearnerStruct.state++;
           }
           break;
-      case MENU_STATE_TEACH_MOVE_CONFIRM:
+      case (9):
           {
               let selection: any = Menu_ProcessInputNoWrapClearOnChoose();
 
@@ -175,138 +185,138 @@ export function DoMoveRelearnerMain(): any {
                   {
                       PrintMessageWithPlaceholders(gText_MoveRelearnerPkmnLearnedMove);
                       gSpecialVar_0x8004 = TRUE;
-                      sMoveRelearnerStruct.state = MENU_STATE_PRINT_TEXT_THEN_FANFARE;
+                      sMoveRelearnerStruct.state = (31);
                   }
                   else
                   {
-                      sMoveRelearnerStruct.state = MENU_STATE_PRINT_TRYING_TO_LEARN_PROMPT;
+                      sMoveRelearnerStruct.state = (16);
                   }
               }
               else if (selection == MENU_B_PRESSED || selection == 1)
               {
                   if (sMoveRelearnerMenuState.showContestInfo == FALSE)
                   {
-                      sMoveRelearnerStruct.state = MENU_STATE_SETUP_BATTLE_MODE;
+                      sMoveRelearnerStruct.state = (3);
                   }
                   else if (sMoveRelearnerMenuState.showContestInfo == TRUE)
                   {
-                      sMoveRelearnerStruct.state = MENU_STATE_SETUP_CONTEST_MODE;
+                      sMoveRelearnerStruct.state = (5);
                   }
               }
           }
           break;
-      case MENU_STATE_PRINT_GIVE_UP_PROMPT:
+      case (12):
           if (!MoveRelearnerRunTextPrinters())
           {
               MoveRelearnerCreateYesNoMenu();
               sMoveRelearnerStruct.state++;
           }
           break;
-      case MENU_STATE_GIVE_UP_CONFIRM:
+      case (13):
           {
               let selection: any = Menu_ProcessInputNoWrapClearOnChoose();
 
               if (selection == 0)
               {
                   gSpecialVar_0x8004 = FALSE;
-                  sMoveRelearnerStruct.state = MENU_STATE_FADE_AND_RETURN;
+                  sMoveRelearnerStruct.state = (14);
               }
               else if (selection == MENU_B_PRESSED || selection == 1)
               {
                   if (sMoveRelearnerMenuState.showContestInfo == FALSE)
                   {
-                      sMoveRelearnerStruct.state = MENU_STATE_SETUP_BATTLE_MODE;
+                      sMoveRelearnerStruct.state = (3);
                   }
                   else if (sMoveRelearnerMenuState.showContestInfo == TRUE)
                   {
-                      sMoveRelearnerStruct.state = MENU_STATE_SETUP_CONTEST_MODE;
+                      sMoveRelearnerStruct.state = (5);
                   }
               }
           }
           break;
-      case MENU_STATE_PRINT_TRYING_TO_LEARN_PROMPT:
+      case (16):
           PrintMessageWithPlaceholders(gText_MoveRelearnerPkmnTryingToLearnMove);
           sMoveRelearnerStruct.state++;
           break;
-      case MENU_STATE_WAIT_FOR_TRYING_TO_LEARN:
+      case (17):
           if (!MoveRelearnerRunTextPrinters())
           {
               MoveRelearnerCreateYesNoMenu();
-              sMoveRelearnerStruct.state = MENU_STATE_CONFIRM_DELETE_OLD_MOVE;
+              sMoveRelearnerStruct.state = (18);
           }
           break;
-      case MENU_STATE_CONFIRM_DELETE_OLD_MOVE:
+      case (18):
           {
               let selection: any = Menu_ProcessInputNoWrapClearOnChoose();
 
               if (selection == 0)
               {
                   PrintMessageWithPlaceholders(gText_MoveRelearnerWhichMoveToForget);
-                  sMoveRelearnerStruct.state = MENU_STATE_PRINT_WHICH_MOVE_PROMPT;
+                  sMoveRelearnerStruct.state = (19);
               }
               else if (selection == MENU_B_PRESSED || selection == 1)
               {
-                  sMoveRelearnerStruct.state = MENU_STATE_PRINT_STOP_TEACHING;
+                  sMoveRelearnerStruct.state = (24);
               }
           }
           break;
-      case MENU_STATE_PRINT_STOP_TEACHING:
+      case (24):
           StringCopy(gStringVar2, gMoveNames[GetCurrentSelectedMove()]);
           PrintMessageWithPlaceholders(gText_MoveRelearnerStopTryingToTeachMove);
           sMoveRelearnerStruct.state++;
           break;
-      case MENU_STATE_WAIT_FOR_STOP_TEACHING:
+      case (25):
           if (!MoveRelearnerRunTextPrinters())
           {
               MoveRelearnerCreateYesNoMenu();
               sMoveRelearnerStruct.state++;
           }
           break;
-      case MENU_STATE_CONFIRM_STOP_TEACHING:
+      case (26):
           {
               let selection: any = Menu_ProcessInputNoWrapClearOnChoose();
 
               if (selection == 0)
               {
-                  sMoveRelearnerStruct.state = MENU_STATE_CHOOSE_SETUP_STATE;
+                  sMoveRelearnerStruct.state = (27);
               }
               else if (selection == MENU_B_PRESSED || selection == 1)
               {
                    
                   if (sMoveRelearnerMenuState.showContestInfo == FALSE)
                   {
-                      sMoveRelearnerStruct.state = MENU_STATE_SETUP_BATTLE_MODE;
+                      sMoveRelearnerStruct.state = (3);
                   }
                   else if (sMoveRelearnerMenuState.showContestInfo == TRUE)
                   {
-                      sMoveRelearnerStruct.state = MENU_STATE_SETUP_CONTEST_MODE;
+                      sMoveRelearnerStruct.state = (5);
                   }
-                  sMoveRelearnerStruct.state = MENU_STATE_PRINT_TRYING_TO_LEARN_PROMPT;
+                  sMoveRelearnerStruct.state = (16);
               }
           }
           break;
-      case MENU_STATE_CHOOSE_SETUP_STATE:
+      case (27):
           if (!MoveRelearnerRunTextPrinters())
           {
               FillWindowPixelBuffer(RELEARNERWIN_MSG, 0x11);
               if (sMoveRelearnerMenuState.showContestInfo == FALSE)
               {
-                  sMoveRelearnerStruct.state = MENU_STATE_SETUP_BATTLE_MODE;
+                  sMoveRelearnerStruct.state = (3);
               }
               else if (sMoveRelearnerMenuState.showContestInfo == TRUE)
               {
-                  sMoveRelearnerStruct.state = MENU_STATE_SETUP_CONTEST_MODE;
+                  sMoveRelearnerStruct.state = (5);
               }
           }
           break;
-      case MENU_STATE_PRINT_WHICH_MOVE_PROMPT:
+      case (19):
           if (!MoveRelearnerRunTextPrinters())
           {
-              sMoveRelearnerStruct.state = MENU_STATE_SHOW_MOVE_SUMMARY_SCREEN;
+              sMoveRelearnerStruct.state = (20);
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
           }
           break;
-      case MENU_STATE_SHOW_MOVE_SUMMARY_SCREEN:
+      case (20):
           if (!gPaletteFade.active)
           {
               ShowSelectMovePokemonSummaryScreen(gPlayerParty, sMoveRelearnerStruct.partyMon, gPlayerPartyCount - 1, CB2_InitLearnMoveReturnFromSelectMove, GetCurrentSelectedMove());
@@ -316,24 +326,24 @@ export function DoMoveRelearnerMain(): any {
       case 21:
           if (!MoveRelearnerRunTextPrinters())
           {
-              sMoveRelearnerStruct.state = MENU_STATE_FADE_AND_RETURN;
+              sMoveRelearnerStruct.state = (14);
           }
           break;
       case 22:
           BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
           break;
-      case MENU_STATE_FADE_AND_RETURN:
+      case (14):
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
           sMoveRelearnerStruct.state++;
           break;
-      case MENU_STATE_RETURN_TO_FIELD:
+      case (15):
           if (!gPaletteFade.active)
           {
               FreeMoveRelearnerResources();
               SetMainCallback2(CB2_ReturnToField);
           }
           break;
-      case MENU_STATE_FADE_FROM_SUMMARY_SCREEN:
+      case (28):
           BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
           sMoveRelearnerStruct.state++;
           if (sMoveRelearnerMenuState.showContestInfo == FALSE)
@@ -347,12 +357,12 @@ export function DoMoveRelearnerMain(): any {
           RemoveScrollArrows();
           CopyWindowToVram(RELEARNERWIN_MSG, COPYWIN_GFX);
           break;
-      case MENU_STATE_TRY_OVERWRITE_MOVE:
+      case (29):
           if (!gPaletteFade.active)
           {
               if (sMoveRelearnerStruct.moveSlot == MAX_MON_MOVES)
               {
-                  sMoveRelearnerStruct.state = MENU_STATE_PRINT_STOP_TEACHING;
+                  sMoveRelearnerStruct.state = (24);
               }
               else
               {
@@ -363,37 +373,37 @@ export function DoMoveRelearnerMain(): any {
                   SetMonMoveSlot(gPlayerParty[sMoveRelearnerStruct.partyMon], GetCurrentSelectedMove(), sMoveRelearnerStruct.moveSlot);
                   StringCopy(gStringVar2, gMoveNames[GetCurrentSelectedMove()]);
                   PrintMessageWithPlaceholders(gText_MoveRelearnerAndPoof);
-                  sMoveRelearnerStruct.state = MENU_STATE_DOUBLE_FANFARE_FORGOT_MOVE;
+                  sMoveRelearnerStruct.state = (30);
                   gSpecialVar_0x8004 = TRUE;
               }
           }
           break;
-      case MENU_STATE_DOUBLE_FANFARE_FORGOT_MOVE:
+      case (30):
           if (!MoveRelearnerRunTextPrinters())
           {
               PrintMessageWithPlaceholders(gText_MoveRelearnerPkmnForgotMoveAndLearnedNew);
-              sMoveRelearnerStruct.state = MENU_STATE_PRINT_TEXT_THEN_FANFARE;
+              sMoveRelearnerStruct.state = (31);
               PlayFanfare(MUS_LEVEL_UP);
           }
           break;
-      case MENU_STATE_PRINT_TEXT_THEN_FANFARE:
+      case (31):
           if (!MoveRelearnerRunTextPrinters())
           {
               PlayFanfare(MUS_LEVEL_UP);
-              sMoveRelearnerStruct.state = MENU_STATE_WAIT_FOR_FANFARE;
+              sMoveRelearnerStruct.state = (32);
           }
           break;
-      case MENU_STATE_WAIT_FOR_FANFARE:
+      case (32):
           if (IsFanfareTaskInactive())
           {
-              sMoveRelearnerStruct.state = MENU_STATE_WAIT_FOR_A_BUTTON;
+              sMoveRelearnerStruct.state = (33);
           }
           break;
-      case MENU_STATE_WAIT_FOR_A_BUTTON:
+      case (33):
           if (JOY_NEW(A_BUTTON))
           {
               PlaySE(SE_SELECT);
-              sMoveRelearnerStruct.state = MENU_STATE_FADE_AND_RETURN;
+              sMoveRelearnerStruct.state = (14);
           }
           break;
       }
@@ -440,13 +450,13 @@ export function HandleInput(showContest: any): any {
           if (showContest == FALSE)
           {
               PutWindowTilemap(RELEARNERWIN_DESC_CONTEST);
-              sMoveRelearnerStruct.state = MENU_STATE_SETUP_CONTEST_MODE;
+              sMoveRelearnerStruct.state = (5);
               sMoveRelearnerMenuState.showContestInfo = TRUE;
           }
           else
           {
               PutWindowTilemap(RELEARNERWIN_DESC_BATTLE);
-              sMoveRelearnerStruct.state = MENU_STATE_SETUP_BATTLE_MODE;
+              sMoveRelearnerStruct.state = (3);
               sMoveRelearnerMenuState.showContestInfo = FALSE;
           }
 
@@ -456,14 +466,14 @@ export function HandleInput(showContest: any): any {
       case LIST_CANCEL:
           PlaySE(SE_SELECT);
           RemoveScrollArrows();
-          sMoveRelearnerStruct.state = MENU_STATE_PRINT_GIVE_UP_PROMPT;
+          sMoveRelearnerStruct.state = (12);
           StringExpandPlaceholders(gStringVar4, gText_MoveRelearnerGiveUp);
           MoveRelearnerPrintMessage(gStringVar4);
           break;
       default:
           PlaySE(SE_SELECT);
           RemoveScrollArrows();
-          sMoveRelearnerStruct.state = MENU_STATE_PRINT_TEACH_MOVE_PROMPT;
+          sMoveRelearnerStruct.state = (8);
           StringCopy(gStringVar2, gMoveNames[itemId]);
           StringExpandPlaceholders(gStringVar4, gText_MoveRelearnerTeachMoveConfirm);
           MoveRelearnerPrintMessage(gStringVar4);

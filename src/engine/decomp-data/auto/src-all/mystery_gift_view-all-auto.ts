@@ -15,6 +15,21 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCardGraphics: any = null;
+let sCard_FooterTextOffsets: any = null;
+let sCard_TextColorTable: any = null;
+let sCard_WindowTemplates: any = null;
+let sNewsGraphics: any = null;
+let sNews_ArrowsTemplate: any = null;
+let sNews_TextColorTable: any = null;
+let sNews_WindowTemplates: any = null;
+let sSpritePalettes_StampShadow: any = null;
+let sSpriteSheet_StampShadow: any = null;
+let sSpriteTemplate_StampShadow: any = null;
+let sWonderCardData: any = null;
+let sWonderNewsData: any = null;
 /** bool32 WonderCard_Init(struct WonderCard *card, struct WonderCardMetadata *metadata) */
 export function WonderCard_Init(card: any, metadata: any): any {
   if (card == NULL || metadata == NULL)
@@ -362,8 +377,8 @@ export function DestroyCardSprites(): any {
               if (sWonderCardData.stampSpriteIds[i][1] != SPRITE_NONE)
                   FreeAndDestroyMonIconSprite(gSprites[sWonderCardData.stampSpriteIds[i][1]]);
           }
-          FreeSpriteTilesByTag(TAG_STAMP_SHADOW);
-          FreeSpritePaletteByTag(TAG_STAMP_SHADOW);
+          FreeSpriteTilesByTag((0x8000));
+          FreeSpritePaletteByTag((0x8000));
       }
 }
 

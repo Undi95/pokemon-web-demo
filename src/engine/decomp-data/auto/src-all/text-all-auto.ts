@@ -15,6 +15,24 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sDarkDownArrowTiles: any = null;
+let sDownArrowTiles: any = null;
+let sDownArrowYCoords: any = null;
+let sFontBoldJapaneseGlyphs: any = null;
+let sFontHalfRowLookupTable: any = null;
+let sFontHalfRowOffsets: any = null;
+let sFontInfos: any = null;
+let sKeypadIconTiles: any = null;
+let sKeypadIcons: any = null;
+let sLastTextBgColor: any = null;
+let sLastTextFgColor: any = null;
+let sLastTextShadowColor: any = null;
+let sMenuCursorDimensions: any = null;
+let sTempTextPrinter: any = null;
+let sTextPrinters: any = null;
+let sWindowVerticalScrollSpeeds: any = null;
 /** static void SetFontsPointer(const struct FontInfo *fonts) */
 export function SetFontsPointer(fonts: any): any {
   gFonts = fonts;

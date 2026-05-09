@@ -15,6 +15,41 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sASCIIGameFreakInc: any = null;
+let sASCIITestPrint: any = null;
+let sBlockRecv: any = null;
+let sBlockRequests: any = null;
+let sBlockSend: any = null;
+let sBlockSendDelayCounter: any = null;
+let sChecksumAvailable: any = null;
+let sCommErrorBg_Gfx: any = null;
+let sDummy1: any = null;
+let sDummyFlag: any = null;
+let sHandshakePlayerCount: any = null;
+let sLinkErrorBgTemplates: any = null;
+let sLinkErrorBgTilemapBuffer: any = null;
+let sLinkErrorBuffer: any = null;
+let sLinkErrorWindowTemplates: any = null;
+let sLinkOpen: any = null;
+let sLinkTestDebugValuesEnabled: any = null;
+let sLinkTestDigitsGfx: any = null;
+let sLinkTestDigitsPal: any = null;
+let sLinkTestLastBlockRecvPos: any = null;
+let sLinkTestLastBlockSendPos: any = null;
+let sNumVBlanksWithoutSerialIntr: any = null;
+let sPlayerDataExchangeStatus: any = null;
+let sReadyCloseLinkAttempts: any = null;
+let sRecvNonzeroCheck: any = null;
+let sSavedLinkPlayers: any = null;
+let sSendBufferEmpty: any = null;
+let sSendNonzeroCheck: any = null;
+let sTextColors: any = null;
+let sTimeOutCounter: any = null;
+let sWirelessLinkDisplayGfx: any = null;
+let sWirelessLinkDisplayPal: any = null;
+let sWirelessLinkDisplayTilemap: any = null;
 /** bool8 IsWirelessAdapterConnected(void) */
 export function IsWirelessAdapterConnected(): any {
   SetWirelessCommType1();

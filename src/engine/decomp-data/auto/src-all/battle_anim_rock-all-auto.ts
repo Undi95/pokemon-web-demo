@@ -15,6 +15,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFlyingSandSubspriteTable: any = null;
+let sFractionalX: any = null;
+let sFractionalY: any = null;
+let sMirroredX: any = null;
+let sState: any = null;
+let sVelocityX: any = null;
+let sVelocityY: any = null;
 /** static void AnimFallingRock(struct Sprite *sprite) */
 export function AnimFallingRock(sprite: any): any {
   if (gBattleAnimArgs[3] != 0)

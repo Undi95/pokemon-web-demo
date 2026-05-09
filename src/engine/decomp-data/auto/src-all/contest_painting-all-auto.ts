@@ -15,6 +15,32 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgPalette: any = null;
+let sBgTemplates: any = null;
+let sContestPaintingMonOamData: any = null;
+let sContestRankNames: any = null;
+let sFadeCounter: any = null;
+let sHoldState: any = null;
+let sMosaicVal: any = null;
+let sMuseumCaptions: any = null;
+let sPictureFramePalettes: any = null;
+let sPictureFrameTilemap_Beauty: any = null;
+let sPictureFrameTilemap_Cool: any = null;
+let sPictureFrameTilemap_Cute: any = null;
+let sPictureFrameTilemap_HallLobby: any = null;
+let sPictureFrameTilemap_Smart: any = null;
+let sPictureFrameTilemap_Tough: any = null;
+let sPictureFrameTiles_Beauty: any = null;
+let sPictureFrameTiles_Cool: any = null;
+let sPictureFrameTiles_Cute: any = null;
+let sPictureFrameTiles_HallLobby: any = null;
+let sPictureFrameTiles_Smart: any = null;
+let sPictureFrameTiles_Tough: any = null;
+let sVarsInitialized: any = null;
+let sWindowId: any = null;
+let sWindowTemplate: any = null;
 /** void SetContestWinnerForPainting(int contestWinnerId) */
 export function SetContestWinnerForPainting(contestWinnerId: any): any {
   let saveIdx: any =gCurContestWinnerSaveIdx;

@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sDmaBusyBitfield: any = null;
+let sGpuBgConfigs: any = null;
+let sGpuBgConfigs2: any = null;
+let sZeroedBgControlStruct: any = null;
 /** void ResetBgs(void) */
 export function ResetBgs(): any {
   ResetBgControlStructs();
@@ -173,7 +179,7 @@ export function ShowBgInternal(bg: any): any {
           SetGpuReg((bg << 1) + REG_OFFSET_BG0CNT, value);
 
           sGpuBgConfigs.bgVisibilityAndMode |= 1 << (bg + 8);
-          sGpuBgConfigs.bgVisibilityAndMode &= DISPCNT_ALL_BG_AND_MODE_BITS;
+          sGpuBgConfigs.bgVisibilityAndMode &= ((DISPCNT_BG_ALL_ON | 0x7));
       }
 }
 
@@ -182,18 +188,18 @@ export function HideBgInternal(bg: any): any {
   if (!IsInvalidBg(bg))
       {
           sGpuBgConfigs.bgVisibilityAndMode &= ~(1 << (bg + 8));
-          sGpuBgConfigs.bgVisibilityAndMode &= DISPCNT_ALL_BG_AND_MODE_BITS;
+          sGpuBgConfigs.bgVisibilityAndMode &= ((DISPCNT_BG_ALL_ON | 0x7));
       }
 }
 
 /** static void SyncBgVisibilityAndMode(void) */
 export function SyncBgVisibilityAndMode(): any {
-  SetGpuReg(REG_OFFSET_DISPCNT, (GetGpuReg(REG_OFFSET_DISPCNT) & ~DISPCNT_ALL_BG_AND_MODE_BITS) | sGpuBgConfigs.bgVisibilityAndMode);
+  SetGpuReg(REG_OFFSET_DISPCNT, (GetGpuReg(REG_OFFSET_DISPCNT) & ~((DISPCNT_BG_ALL_ON | 0x7))) | sGpuBgConfigs.bgVisibilityAndMode);
 }
 
 /** void SetTextModeAndHideBgs(void) */
 export function SetTextModeAndHideBgs(): any {
-  SetGpuReg(REG_OFFSET_DISPCNT, GetGpuReg(REG_OFFSET_DISPCNT) & ~DISPCNT_ALL_BG_AND_MODE_BITS);
+  SetGpuReg(REG_OFFSET_DISPCNT, GetGpuReg(REG_OFFSET_DISPCNT) & ~((DISPCNT_BG_ALL_ON | 0x7)));
 }
 
 /** static void SetBgAffineInternal(u8 bg, s32 srcCenterX, s32 srcCenterY, s16 dispCenterX, s16 dispCenterY, s16 scaleX, s16 scaleY, u16 rotationAngle) */

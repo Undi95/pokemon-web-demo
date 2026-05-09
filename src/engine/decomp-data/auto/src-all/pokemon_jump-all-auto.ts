@@ -15,6 +15,50 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates: any = null;
+let sBg_Gfx: any = null;
+let sBg_Pal: any = null;
+let sBg_Tilemap: any = null;
+let sCompressedSpriteSheets: any = null;
+let sHopPos: any = null;
+let sInterface_Pal: any = null;
+let sJumpOffsets: any = null;
+let sMonXCoords: any = null;
+let sNumHops: any = null;
+let sNumShakes: any = null;
+let sOffset: any = null;
+let sPlayerNameWindowCoords: any = null;
+let sPokeJumpGfxFuncs: any = null;
+let sPokeJumpLeaderFuncs: any = null;
+let sPokeJumpMemberFuncs: any = null;
+let sPokeJumpMons: any = null;
+let sPokemonJump: any = null;
+let sPokemonJumpGfx: any = null;
+let sPrizeItems: any = null;
+let sPrizeQuantityData: any = null;
+let sRecordsTexts: any = null;
+let sScoreBonuses: any = null;
+let sSoundEffects: any = null;
+let sSpritePalette_Digits: any = null;
+let sSpritePalettes: any = null;
+let sSpriteSheet_Digits: any = null;
+let sSpriteTemplate_JumpMon: any = null;
+let sSpriteTemplate_Star: any = null;
+let sSpriteTemplates_Vine: any = null;
+let sState: any = null;
+let sTimer: any = null;
+let sVenusaurStates: any = null;
+let sVenusaur_Gfx: any = null;
+let sVenusaur_Pal: any = null;
+let sVenusaur_Tilemap: any = null;
+let sVineBaseSpeeds: any = null;
+let sVineSpeedDelays: any = null;
+let sVineXCoords: any = null;
+let sVineYCoords: any = null;
+let sWindowTemplate_Records: any = null;
+let sWindowTemplates: any = null;
 /** void StartPokemonJump(u16 partyId, MainCallback exitCallback) */
 export function StartPokemonJump(partyId: any, exitCallback: any): any {
   let taskId: any = null;
@@ -231,12 +275,12 @@ export function Task_StartPokemonJump(taskId: any): any {
 
 /** static void SetLinkTimeInterval(int intervalId) */
 export function SetLinkTimeInterval(intervalId: any): any {
-  if (intervalId == LINK_INTERVAL_NONE)
+  if (intervalId == (0))
       {
            
            
            
-          sPokemonJump.linkTimerLimit = LINK_TIMER_STOPPED;
+          sPokemonJump.linkTimerLimit = (0x1111);
           sPokemonJump.linkTimer = 1;
       }
       else
@@ -293,7 +337,7 @@ export function Task_PokemonJump_Leader(taskId: any): any {
       if (!sPokemonJump.funcActive && sPokemonJump.allPlayersReady)
       {
           SetFunc_Leader(sPokemonJump.nextFuncId);
-          SetLinkTimeInterval(LINK_INTERVAL_SHORT);
+          SetLinkTimeInterval((3));
       }
 
       if (sPokemonJump.funcActive == TRUE)
@@ -314,7 +358,7 @@ export function SendLinkData_Leader(): any {
   if (!sPokemonJump.linkTimer)
           SendPacket_LeaderState(sPokemonJump.players,sPokemonJump.comm);
 
-      if (sPokemonJump.linkTimerLimit != LINK_TIMER_STOPPED)
+      if (sPokemonJump.linkTimerLimit != (0x1111))
       {
           sPokemonJump.linkTimer++;
           sPokemonJump.linkTimer &= sPokemonJump.linkTimerLimit;
@@ -381,7 +425,7 @@ export function Task_PokemonJump_Member(taskId: any): any {
           {
               sPokemonJump.funcActive = FALSE;
               sPokemonJump.players[sPokemonJump.multiplayerId].funcFinished = TRUE;
-              SetLinkTimeInterval(LINK_INTERVAL_SHORT);
+              SetLinkTimeInterval((3));
           }
       }
 
@@ -394,7 +438,7 @@ export function SendLinkData_Member(): any {
   if (!sPokemonJump.linkTimer)
           SendPacket_MemberState(sPokemonJump.players[sPokemonJump.multiplayerId], sPokemonJump.comm.funcId, sPokemonJump.playAgainComm);
 
-      if (sPokemonJump.linkTimerLimit != LINK_TIMER_STOPPED)
+      if (sPokemonJump.linkTimerLimit != (0x1111))
       {
           sPokemonJump.linkTimer++;
           sPokemonJump.linkTimer &= sPokemonJump.linkTimerLimit;
@@ -406,7 +450,7 @@ export function GameIntro_Leader(): any {
   switch (sPokemonJump.mainState)
       {
       case 0:
-          SetLinkTimeInterval(LINK_INTERVAL_SHORT);
+          SetLinkTimeInterval((3));
           sPokemonJump.mainState++;
            
       case 1:
@@ -427,7 +471,7 @@ export function GameIntro_Member(): any {
   switch (sPokemonJump.mainState)
       {
       case 0:
-          SetLinkTimeInterval(LINK_INTERVAL_NONE);
+          SetLinkTimeInterval((0));
           sPokemonJump.rngSeed = sPokemonJump.comm.data;
           sPokemonJump.mainState++;
            
@@ -444,7 +488,7 @@ export function WaitRound_Leader(): any {
       {
       case 0:
           ResetPlayersJumpStates();
-          SetLinkTimeInterval(LINK_INTERVAL_LONG);
+          SetLinkTimeInterval((5));
           sPokemonJump.mainState++;
           break;
       case 1:
@@ -465,7 +509,7 @@ export function WaitRound_Member(): any {
       {
       case 0:
           ResetPlayersJumpStates();
-          SetLinkTimeInterval(LINK_INTERVAL_NONE);
+          SetLinkTimeInterval((0));
           sPokemonJump.vineTimer = sPokemonJump.comm.data;
           sPokemonJump.mainState++;
            
@@ -579,7 +623,7 @@ export function AskPlayAgain_Leader(): any {
   switch (sPokemonJump.mainState)
       {
       case 0:
-          SetLinkTimeInterval(LINK_INTERVAL_MEDIUM);
+          SetLinkTimeInterval((4));
           sPokemonJump.mainState++;
            
       case 1:
@@ -613,7 +657,7 @@ export function AskPlayAgain_Member(): any {
   switch (sPokemonJump.mainState)
       {
       case 0:
-          SetLinkTimeInterval(LINK_INTERVAL_NONE);
+          SetLinkTimeInterval((0));
           sPokemonJump.mainState++;
            
       case 1:
@@ -679,7 +723,7 @@ export function ExitGame(): any {
           sPokemonJump.mainState = 1;
           break;
       case 1:
-          SetLinkTimeInterval(LINK_INTERVAL_NONE);
+          SetLinkTimeInterval((0));
           sPokemonJump.mainState++;
           break;
       case 2:
@@ -699,7 +743,7 @@ export function GivePrize_Leader(): any {
   switch (sPokemonJump.mainState)
       {
       case 0:
-          SetLinkTimeInterval(LINK_INTERVAL_MEDIUM);
+          SetLinkTimeInterval((4));
           sPokemonJump.mainState++;
           break;
       case 1:
@@ -717,7 +761,7 @@ export function GivePrize_Leader(): any {
 
 /** static bool32 GivePrize_Member(void) */
 export function GivePrize_Member(): any {
-  SetLinkTimeInterval(LINK_INTERVAL_NONE);
+  SetLinkTimeInterval((0));
       if (!TryGivePrize())
           return FALSE;
       else
@@ -736,7 +780,7 @@ export function SavePokeJump(): any {
       case 1:
           if (!IsPokeJumpGfxFuncFinished())
           {
-              SetLinkTimeInterval(LINK_INTERVAL_NONE);
+              SetLinkTimeInterval((0));
               sPokemonJump.mainState++;
           }
           break;
@@ -843,7 +887,7 @@ export function HandleSwingRound(): any {
           if (JOY_NEW(A_BUTTON))
           {
               SetMonStateJump();
-              SetLinkTimeInterval(LINK_INTERVAL_SHORT);
+              SetLinkTimeInterval((3));
               sPokemonJump.helperState++;
           }
           break;
@@ -993,12 +1037,12 @@ export function DoPlayAgainPrompt(): any {
           {
           case MENU_B_PRESSED:
           case 1:  
-              sPokemonJump.playAgainState = PLAY_AGAIN_NO;
+              sPokemonJump.playAgainState = (1);
               SetUpPokeJumpGfxFuncById(GFXFUNC_ERASE_MSG);
               sPokemonJump.helperState++;
               break;
           case 0:  
-              sPokemonJump.playAgainState = PLAY_AGAIN_YES;
+              sPokemonJump.playAgainState = (2);
               SetUpPokeJumpGfxFuncById(GFXFUNC_ERASE_MSG);
               sPokemonJump.helperState++;
               break;
@@ -1098,7 +1142,7 @@ export function CloseMessageAndResetScore(): any {
 export function Task_CommunicateMonInfo(taskId: any): any {
   let i: any = null;
       let data: any = gTasks[taskId].data;
-      let jump: any = GetWordTaskArg(taskId, DATAIDX_GAME_STRUCT);
+      let jump: any = GetWordTaskArg(taskId, (14));
 
       switch (tState)
       {
@@ -1132,7 +1176,7 @@ export function Task_CommunicateMonInfo(taskId: any): any {
 /** static void SetTaskWithPokeJumpStruct(TaskFunc func, u8 taskPriority) */
 export function SetTaskWithPokeJumpStruct(func: any, taskPriority: any): any {
   let taskId: any = CreateTask(func, taskPriority);
-      SetWordTaskArg(taskId, DATAIDX_GAME_STRUCT, sPokemonJump);
+      SetWordTaskArg(taskId, (14), sPokemonJump);
 }
 
 /** static void InitVineState(void) */
@@ -1372,7 +1416,7 @@ export function HandleMonState(): any {
                   if (i == sPokemonJump.multiplayerId)
                       sPokemonJump.players[i].prevMonState = MONSTATE_JUMP;
 
-                  soundFlags |= F_SE_JUMP;
+                  soundFlags |= ((1 << 0));
                   sPokemonJump.players[i].jumpOffsetIdx = INT_MAX;
                   sPokemonJump.jumpTimeStarts[i] = sPokemonJump.players[i].jumpTimeStart;
               }
@@ -1385,16 +1429,16 @@ export function HandleMonState(): any {
                   if (i == sPokemonJump.multiplayerId)
                       sPokemonJump.players[i].prevMonState = MONSTATE_HIT;
 
-                  soundFlags |= F_SE_FAIL;
+                  soundFlags |= ((1 << 1));
                   StartMonHitShake(i);
               }
               break;
           }
       }
 
-      if (soundFlags & F_SE_FAIL)
+      if (soundFlags & ((1 << 1)))
           PlaySE(SE_RG_POKE_JUMP_FAILURE);
-      else if (soundFlags & F_SE_JUMP)
+      else if (soundFlags & ((1 << 0)))
           PlaySE(SE_LEDGE);
 }
 
@@ -1479,11 +1523,11 @@ export function TryUpdateScore(): any {
               sPokemonJump.numPlayersAtPeak = 0;
               sPokemonJump.initScoreUpdate = TRUE;
               sPokemonJump.comm.receivedBonusFlags = 0;
-              if (sPokemonJump.comm.jumpsInRow < MAX_JUMPS)
+              if (sPokemonJump.comm.jumpsInRow < (9999))
                   sPokemonJump.comm.jumpsInRow++;
 
               AddJumpScore(10);
-              SetLinkTimeInterval(LINK_INTERVAL_SHORT);
+              SetLinkTimeInterval((3));
           }
       }
 
@@ -1491,7 +1535,7 @@ export function TryUpdateScore(): any {
       {
           let numPlayers: any = GetNumPlayersForBonus(sPokemonJump.atJumpPeak3);
           AddJumpScore(GetScoreBonus(numPlayers));
-          SetLinkTimeInterval(LINK_INTERVAL_SHORT);
+          SetLinkTimeInterval((3));
           sPokemonJump.giveBonus = FALSE;
       }
 
@@ -1523,7 +1567,7 @@ export function UpdateVineHitStates(): any {
           {
                
               SetMonStateHit();
-              SetLinkTimeInterval(LINK_INTERVAL_SHORT);
+              SetLinkTimeInterval((3));
           }
       }
 
@@ -1532,7 +1576,7 @@ export function UpdateVineHitStates(): any {
        && sPokemonJump.player.monState != MONSTATE_HIT)
       {
           sPokemonJump.player.jumpState = JUMPSTATE_SUCCESS;
-          SetLinkTimeInterval(LINK_INTERVAL_SHORT);
+          SetLinkTimeInterval((3));
       }
 
       for (i = 0; i < sPokemonJump.numPlayers; i++)
@@ -1574,12 +1618,12 @@ export function DidAllPlayersClearVine(): any {
 export function ShouldPlayAgain(): any {
   let i: any = null;
 
-      if (sPokemonJump.playAgainState == PLAY_AGAIN_NO)
+      if (sPokemonJump.playAgainState == (1))
           return FALSE;
 
       for (i = 1; i < sPokemonJump.numPlayers; i++)
       {
-          if (sPokemonJump.playAgainStates[i] == PLAY_AGAIN_NO)
+          if (sPokemonJump.playAgainStates[i] == (1))
               return FALSE;
       }
 
@@ -1590,8 +1634,8 @@ export function ShouldPlayAgain(): any {
 export function AddJumpScore(score: any): any {
   sPokemonJump.comm.jumpScore += score;
       sPokemonJump.updateScore = TRUE;
-      if (sPokemonJump.comm.jumpScore >= MAX_JUMP_SCORE)
-          sPokemonJump.comm.jumpScore = MAX_JUMP_SCORE;
+      if (sPokemonJump.comm.jumpScore >= (99990))
+          sPokemonJump.comm.jumpScore = (99990);
 }
 
 /** static int GetPlayersAtJumpPeak(void) */
@@ -1602,7 +1646,7 @@ export function GetPlayersAtJumpPeak(): any {
 
       for (i = 0; i < numPlayers; i++)
       {
-          if (sPokemonJump.players[i].jumpOffset == JUMP_PEAK)
+          if (sPokemonJump.players[i].jumpOffset == ((-30)))
           {
               sPokemonJump.atJumpPeak[i] = TRUE;
               numAtPeak++;
@@ -1755,8 +1799,8 @@ export function LoadSpriteSheetsAndPalettes(jumpGfx: any): any {
       for (i = 0; i < ARRAY_COUNT(sSpritePalettes); i++)
           LoadSpritePalette(sSpritePalettes[i]);
 
-      jumpGfx.vinePalNumDownswing = IndexOfSpritePaletteTag(PALTAG_1);
-      jumpGfx.vinePalNumUpswing = IndexOfSpritePaletteTag(PALTAG_2);
+      jumpGfx.vinePalNumDownswing = IndexOfSpritePaletteTag((5));
+      jumpGfx.vinePalNumUpswing = IndexOfSpritePaletteTag((6));
 }
 
 /** static void ResetPokeJumpSpriteData(struct Sprite *sprite) */
@@ -1988,14 +2032,14 @@ export function CreateVineSprites(jumpGfx: any): any {
       let spriteId: any = null;
 
       count = 0;
-      for (i = 0; i < VINE_SPRITES_PER_SIDE; i++)
+      for (i = 0; i < (4); i++)
       {
           spriteId = CreateSprite(sSpriteTemplates_Vine[i], sVineXCoords[count], sVineYCoords[i][0], 2);
           jumpGfx.vineSprites[count] =gSprites[spriteId];
           count++;
       }
 
-      for (i = VINE_SPRITES_PER_SIDE - 1; i >= 0; i--)
+      for (i = (4) - 1; i >= 0; i--)
       {
           spriteId = CreateSprite(sSpriteTemplates_Vine[i], sVineXCoords[count], sVineYCoords[i][0], 2);
           jumpGfx.vineSprites[count] =gSprites[spriteId];
@@ -2024,7 +2068,7 @@ export function UpdateVineAnim(jumpGfx: any, vineState: any): any {
       }
 
       count = 0;
-      for (i = 0; i < VINE_SPRITES_PER_SIDE; i++)
+      for (i = 0; i < (4); i++)
       {
           jumpGfx.vineSprites[count].y = sVineYCoords[i][vineState];
           jumpGfx.vineSprites[count].oam.priority = priority;
@@ -2033,7 +2077,7 @@ export function UpdateVineAnim(jumpGfx: any, vineState: any): any {
           count++;
       }
 
-      for (i = VINE_SPRITES_PER_SIDE - 1; i >= 0; i--)
+      for (i = (4) - 1; i >= 0; i--)
       {
           jumpGfx.vineSprites[count].y = sVineYCoords[i][vineState];
           jumpGfx.vineSprites[count].oam.priority = priority;
@@ -2045,7 +2089,7 @@ export function UpdateVineAnim(jumpGfx: any, vineState: any): any {
 
 /** static void StartPokeJumpCountdown(struct PokemonJumpGfx *jumpGfx) */
 export function StartPokeJumpCountdown(jumpGfx: any): any {
-  StartMinigameCountdown(GFXTAG_COUNTDOWN, PALTAG_COUNTDOWN, 120, 80, 0);
+  StartMinigameCountdown((9), (7), 120, 80, 0);
       Gfx_ResetMonSpriteSubpriorities(jumpGfx);
 }
 
@@ -2916,11 +2960,11 @@ export function TryUpdateRecords(jumpScore: any, jumpsInRow: any, excellentsInRo
   let records: any = GetPokeJumpRecords();
       let newRecord: any = FALSE;
 
-      if (records.bestJumpScore < jumpScore && jumpScore <= MAX_JUMP_SCORE)
+      if (records.bestJumpScore < jumpScore && jumpScore <= (99990))
           records.bestJumpScore = jumpScore, newRecord = TRUE;
-      if (records.jumpsInRow < jumpsInRow && jumpsInRow <= MAX_JUMPS)
+      if (records.jumpsInRow < jumpsInRow && jumpsInRow <= (9999))
           records.jumpsInRow = jumpsInRow, newRecord = TRUE;
-      if (records.excellentsInRow < excellentsInRow && excellentsInRow <= MAX_JUMPS)
+      if (records.excellentsInRow < excellentsInRow && excellentsInRow <= (9999))
           records.excellentsInRow = excellentsInRow, newRecord = TRUE;
 
       return newRecord;

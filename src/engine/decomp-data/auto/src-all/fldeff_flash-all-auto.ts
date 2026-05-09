@@ -15,6 +15,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCaveTransitionPalette_Black: any = null;
+let sCaveTransitionPalette_Enter: any = null;
+let sCaveTransitionPalette_Exit: any = null;
+let sCaveTransitionPalette_White: any = null;
+let sCaveTransitionTilemap: any = null;
+let sCaveTransitionTiles: any = null;
+let sTransitionTypes: any = null;
 /** bool8 SetUpFieldMove_Flash(void) */
 export function SetUpFieldMove_Flash(): any {
   if (ShouldDoBrailleRegisteelEffect())

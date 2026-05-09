@@ -15,6 +15,24 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBadgeFlags: any = null;
+let sBattleFrontierFacilityNames: any = null;
+let sBattleFrontierStreakInfo: any = null;
+let sBirchDexRatingTexts: any = null;
+let sMatchCallState: any = null;
+let sMatchCallTaskFuncs: any = null;
+let sMatchCallTextStringVars: any = null;
+let sMatchCallTextWindow: any = null;
+let sMatchCallTrainers: any = null;
+let sMatchCallWindow_Gfx: any = null;
+let sMatchCallWindow_Pal: any = null;
+let sMultiTrainerMatchCallTexts: any = null;
+let sPokenavIcon_Gfx: any = null;
+let sPokenavIcon_Pal: any = null;
+let sPopulateMatchCallStringVarFuncs: any = null;
+let sText_PokenavCallEllipsis: any = null;
 /** void InitMatchCallCounters(void) */
 export function InitMatchCallCounters(): any {
   RtcCalcLocalTime();
@@ -195,14 +213,14 @@ export function MatchCall_LoadGfx(taskId: any): any {
           return FALSE;
       }
 
-      if (LoadBgTiles(0, sMatchCallWindow_Gfx, 0, TILE_MC_WINDOW) == 0xFFFF)
+      if (LoadBgTiles(0, sMatchCallWindow_Gfx, 0, (0x270)) == 0xFFFF)
       {
           RemoveWindow(tWindowId);
           DestroyTask(taskId);
           return FALSE;
       }
 
-      if (!DecompressAndCopyTileDataToVram(0, sPokenavIcon_Gfx, 0, TILE_POKENAV_ICON, 0))
+      if (!DecompressAndCopyTileDataToVram(0, sPokenavIcon_Gfx, 0, (0x279), 0))
       {
           RemoveWindow(tWindowId);
           DestroyTask(taskId);
@@ -223,8 +241,8 @@ export function MatchCall_DrawWindow(taskId: any): any {
           return FALSE;
 
       PutWindowTilemap(tWindowId);
-      DrawMatchCallTextBoxBorder_Internal(tWindowId, TILE_MC_WINDOW, 14);
-      WriteSequenceToBgTilemapBuffer(0, (0xF << 12) | TILE_POKENAV_ICON, 1, 15, 4, 4, 17, 1);
+      DrawMatchCallTextBoxBorder_Internal(tWindowId, (0x270), 14);
+      WriteSequenceToBgTilemapBuffer(0, (0xF << 12) | (0x279), 1, 15, 4, 4, 17, 1);
       tIconTaskId = CreateTask(Task_SpinPokenavIcon, 10);
       CopyWindowToVram(tWindowId, COPYWIN_GFX);
       CopyBgTilemapBufferToVram(0);
@@ -386,7 +404,7 @@ export function Task_SpinPokenavIcon(taskId: any): any {
           if (++tSpinStage > 7)
               tSpinStage = 0;
 
-          tTileNum = (tSpinStage * 16) + TILE_POKENAV_ICON;
+          tTileNum = (tSpinStage * 16) + (0x279);
           WriteSequenceToBgTilemapBuffer(0, tTileNum | ~0xFFF, 1, 15, 4, 4, 17, 1);
           CopyBgTilemapBufferToVram(0);
       }
@@ -488,7 +506,7 @@ export function BuildMatchCallString(matchCallId: any, matchCallText: any, str: 
 /** static void PopulateMatchCallStringVars(int matchCallId, const s8 *stringVarFuncIds) */
 export function PopulateMatchCallStringVars(matchCallId: any, stringVarFuncIds: any): any {
   let i: any = null;
-      for (i = 0; i < NUM_STRVARS_IN_MSG; i++)
+      for (i = 0; i < (3); i++)
       {
           if (stringVarFuncIds[i] >= 0)
               PopulateMatchCallStringVar(matchCallId, stringVarFuncIds[i], sMatchCallTextStringVars[i]);
@@ -720,7 +738,7 @@ export function GetFrontierStreakInfo(facilityId: any, topicTextId: any): any {
           }
           topicTextId = GEN_TOPIC_B_DOME - 1;
           break;
-      case MATCH_CALL_PIKE:
+      case (FRONTIER_FACILITY_FACTORY):
           for (i = 0; i < FRONTIER_LVL_MODE_COUNT; i++)
           {
               if (streak < gSaveBlock2Ptr.frontier.pikeRecordStreaks[i])
@@ -750,7 +768,7 @@ export function GetFrontierStreakInfo(facilityId: any, topicTextId: any): any {
           }
           topicTextId = GEN_TOPIC_STREAK_RECORD - 1;
           break;
-      case MATCH_CALL_FACTORY:
+      case (FRONTIER_FACILITY_PIKE):
           for (i = 0; i < ARRAY_COUNT(gSaveBlock2Ptr.frontier.factoryRecordWinStreaks); i++)
           {
               for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)

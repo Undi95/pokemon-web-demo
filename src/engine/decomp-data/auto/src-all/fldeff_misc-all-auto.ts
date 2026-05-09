@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sSpritePalette_RecordMixLights: any = null;
+let sSpriteTemplate_RecordMixLights: any = null;
+let sSpriteTemplate_SandPillar: any = null;
+let sSpriteTemplate_SecretPowerCave: any = null;
+let sSpriteTemplate_SecretPowerShrub: any = null;
+let sSpriteTemplate_SecretPowerTree: any = null;
 /** void ComputerScreenOpenEffect(u16 increment, u16 unused, u8 priority) */
 export function ComputerScreenOpenEffect(increment: any, unused: any, priority: any): any {
   CreateComputerScreenEffectTask(Task_ComputerScreenOpenEffect, increment, unused, priority);

@@ -15,6 +15,22 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattler: any = null;
+let sDelay: any = null;
+let sDelayTimer: any = null;
+let sFadePalsHi: any = null;
+let sFadePalsLo: any = null;
+let sFinalMonX: any = null;
+let sFinalMonY: any = null;
+let sMonPalNum: any = null;
+let sMonSpriteId: any = null;
+let sSpecies: any = null;
+let sSpeedX: any = null;
+let sSpeedY: any = null;
+let sTimer: any = null;
+let sTrigIdx: any = null;
 /** u8 DoPokeballSendOutAnimation(s16 pan, u8 kindOfThrow) */
 export function DoPokeballSendOutAnimation(pan: any, kindOfThrow: any): any {
   let taskId: any = null;

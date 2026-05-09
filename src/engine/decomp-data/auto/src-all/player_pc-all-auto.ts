@@ -15,6 +15,21 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBedroomPC_OptionOrder: any = null;
+let sItemStorageMenu: any = null;
+let sItemStorage_MenuActions: any = null;
+let sItemStorage_OptionDescriptions: any = null;
+let sListMenuTemplate_ItemStorage: any = null;
+let sNewGamePCItems: any = null;
+let sPlayerPCMenuActions: any = null;
+let sPlayerPC_OptionOrder: any = null;
+let sSwapArrowTextColors: any = null;
+let sTopMenuNumOptions: any = null;
+let sTopMenuOptionOrder: any = null;
+let sWindowTemplates_ItemStorage: any = null;
+let sWindowTemplates_MainMenus: any = null;
 /** void NewGameInitPCItems(void) */
 export function NewGameInitPCItems(): any {
   let i: any = 0;
@@ -33,14 +48,14 @@ export function NewGameInitPCItems(): any {
 /** void BedroomPC(void) */
 export function BedroomPC(): any {
   sTopMenuOptionOrder = sBedroomPC_OptionOrder;
-      sTopMenuNumOptions = NUM_BEDROOM_PC_OPTIONS;
+      sTopMenuNumOptions = (ARRAY_COUNT(sBedroomPC_OptionOrder));
       DisplayItemMessageOnField(CreateTask(TaskDummy, 0), gText_WhatWouldYouLike, InitPlayerPCMenu);
 }
 
 /** void PlayerPC(void) */
 export function PlayerPC(): any {
   sTopMenuOptionOrder = sPlayerPC_OptionOrder;
-      sTopMenuNumOptions = NUM_PLAYER_PC_OPTIONS;
+      sTopMenuNumOptions = (ARRAY_COUNT(sPlayerPC_OptionOrder));
       DisplayItemMessageOnField(CreateTask(TaskDummy, 0), gText_WhatWouldYouLike, InitPlayerPCMenu);
 }
 
@@ -50,7 +65,7 @@ export function InitPlayerPCMenu(taskId: any): any {
       let windowTemplate: any = null;
       data = gTasks[taskId].data;
 
-      if (sTopMenuNumOptions == NUM_PLAYER_PC_OPTIONS)
+      if (sTopMenuNumOptions == (ARRAY_COUNT(sPlayerPC_OptionOrder)))
           windowTemplate = sWindowTemplates_MainMenus[WIN_MAIN_MENU];
       else  
           windowTemplate = sWindowTemplates_MainMenus[WIN_MAIN_MENU_BEDROOM];
@@ -145,7 +160,7 @@ export function PlayerPC_Decoration(taskId: any): any {
 
 /** static void PlayerPC_TurnOff(u8 taskId) */
 export function PlayerPC_TurnOff(taskId: any): any {
-  if (sTopMenuNumOptions == NUM_BEDROOM_PC_OPTIONS)  
+  if (sTopMenuNumOptions == (ARRAY_COUNT(sBedroomPC_OptionOrder)))  
       {
           if (gSaveBlock2Ptr.playerGender == MALE)
               ScriptContext_SetupScript(LittlerootTown_BrendansHouse_2F_EventScript_TurnOffPlayerPC);
@@ -289,7 +304,7 @@ export function ItemStorage_Enter(taskId: any, toss: any): any {
       ItemStorage_Init();
       FreeAndReserveObjectSpritePalettes();
       LoadListMenuSwapLineGfx();
-      CreateSwapLineSprites(sItemStorageMenu.swapLineSpriteIds, SWAP_LINE_LENGTH);
+      CreateSwapLineSprites(sItemStorageMenu.swapLineSpriteIds, (7));
       ClearDialogWindowAndFrame(0, FALSE);
       gTasks[taskId].func = ItemStorage_CreateListMenu;
 }
@@ -598,7 +613,7 @@ export function Mailbox_Cancel(taskId: any): any {
 export function ItemStorage_Init(): any {
   sItemStorageMenu = AllocZeroed(0);
       memset(sItemStorageMenu.windowIds, WINDOW_NONE, ITEMPC_WIN_COUNT);
-      sItemStorageMenu.toSwapPos = NOT_SWAPPING;
+      sItemStorageMenu.toSwapPos = (0xFF);
       sItemStorageMenu.spriteId = SPRITE_NONE;
 }
 
@@ -669,7 +684,7 @@ export function CopyItemName_PlayerPC(string: any, itemId: any): any {
 export function ItemStorage_MoveCursor(id: any, onInit: any, list: any): any {
   if (onInit != TRUE)
           PlaySE(SE_SELECT);
-      if (sItemStorageMenu.toSwapPos == NOT_SWAPPING)
+      if (sItemStorageMenu.toSwapPos == (0xFF))
       {
           ItemStorage_EraseItemIcon();
           if (id != LIST_CANCEL)
@@ -684,7 +699,7 @@ export function ItemStorage_MoveCursor(id: any, onInit: any, list: any): any {
 export function ItemStorage_PrintMenuItem(windowId: any, id: any, yOffset: any): any {
   if (id != LIST_CANCEL)
       {
-          if (sItemStorageMenu.toSwapPos != NOT_SWAPPING)
+          if (sItemStorageMenu.toSwapPos != (0xFF))
           {
               if (sItemStorageMenu.toSwapPos == id)
                   ItemStorage_DrawSwapArrow(yOffset, 0, TEXT_SKIP_DRAW);
@@ -717,8 +732,8 @@ export function ItemStorage_AddScrollIndicator(): any {
   if (gPlayerPCItemPageInfo.scrollIndicatorTaskId == TASK_NONE)
           gPlayerPCItemPageInfo.scrollIndicatorTaskId = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 176, 12, 148,
                                                                                                   gPlayerPCItemPageInfo.count - gPlayerPCItemPageInfo.pageItems,
-                                                                                                  TAG_SCROLL_ARROW,
-                                                                                                  TAG_SCROLL_ARROW,gPlayerPCItemPageInfo.itemsAbove);
+                                                                                                  (5112),
+                                                                                                  (5112),gPlayerPCItemPageInfo.itemsAbove);
 }
 
 /** static void ItemStorage_RemoveScrollIndicator(void) */
@@ -751,9 +766,9 @@ export function ItemStorage_DrawItemIcon(itemId: any): any {
 
       if (spriteIdLoc == SPRITE_NONE)
       {
-          FreeSpriteTilesByTag(TAG_ITEM_ICON);
-          FreeSpritePaletteByTag(TAG_ITEM_ICON);
-          spriteId = AddItemIconSprite(TAG_ITEM_ICON, TAG_ITEM_ICON, itemId);
+          FreeSpriteTilesByTag((5110));
+          FreeSpritePaletteByTag((5110));
+          spriteId = AddItemIconSprite((5110), (5110), itemId);
           if (spriteId != MAX_SPRITES)
           {
               spriteIdLoc = spriteId;
@@ -769,8 +784,8 @@ export function ItemStorage_EraseItemIcon(): any {
   let spriteIdLoc: any =sItemStorageMenu.spriteId;
       if (spriteIdLoc != SPRITE_NONE)
       {
-          FreeSpriteTilesByTag(TAG_ITEM_ICON);
-          FreeSpritePaletteByTag(TAG_ITEM_ICON);
+          FreeSpriteTilesByTag((5110));
+          FreeSpritePaletteByTag((5110));
           DestroySprite(gSprites[spriteIdLoc]);
           spriteIdLoc = SPRITE_NONE;
       }
@@ -795,7 +810,7 @@ export function ItemStorage_CreateListMenu(taskId: any): any {
       let text: any = null;
 
       data = gTasks[taskId].data;
-      for (i = 0; i <= ITEMPC_WIN_LIST_END; i++)
+      for (i = 0; i <= (ITEMPC_WIN_TITLE); i++)
           ItemStorage_AddWindow(i);
       toss = tInTossMenu;
       text = gText_TossItem;
@@ -876,7 +891,7 @@ export function ItemStorage_ExitItemList(taskId: any): any {
       ItemStorage_EraseItemIcon();
       ItemStorage_RemoveScrollIndicator();
       DestroyListMenuTask(tListTaskId, NULL, NULL);
-      DestroySwapLineSprites(sItemStorageMenu.swapLineSpriteIds, SWAP_LINE_LENGTH);
+      DestroySwapLineSprites(sItemStorageMenu.swapLineSpriteIds, (7));
       ItemStorage_Free();
       gTasks[taskId].func = ItemStorage_ReturnToMenuSelect;
 }
@@ -907,7 +922,7 @@ export function ItemStorage_ProcessItemSwapInput(taskId: any): any {
       }
       id = ListMenu_ProcessInput(tListTaskId);
       ListMenuGetScrollAndRow(tListTaskId,gPlayerPCItemPageInfo.itemsAbove,gPlayerPCItemPageInfo.cursorPos);
-      SetSwapLineSpritesInvisibility(sItemStorageMenu.swapLineSpriteIds, SWAP_LINE_LENGTH, FALSE);
+      SetSwapLineSpritesInvisibility(sItemStorageMenu.swapLineSpriteIds, (7), FALSE);
       ItemStorage_UpdateSwapLinePos(gPlayerPCItemPageInfo.cursorPos);
       switch (id)
       {
@@ -940,8 +955,8 @@ export function ItemStorage_FinishItemSwap(taskId: any, canceled: any): any {
       if (sItemStorageMenu.toSwapPos < newPos)
           gPlayerPCItemPageInfo.cursorPos--;
 
-      SetSwapLineSpritesInvisibility(sItemStorageMenu.swapLineSpriteIds, SWAP_LINE_LENGTH, TRUE);
-      sItemStorageMenu.toSwapPos = NOT_SWAPPING;
+      SetSwapLineSpritesInvisibility(sItemStorageMenu.swapLineSpriteIds, (7), TRUE);
+      sItemStorageMenu.toSwapPos = (0xFF);
       tListTaskId = ListMenuInit(gMultiuseListMenuTemplate, gPlayerPCItemPageInfo.itemsAbove, gPlayerPCItemPageInfo.cursorPos);
       ScheduleBgCopyTilemapToVram(0);
       gTasks[taskId].func = ItemStorage_ProcessInput;
@@ -949,7 +964,7 @@ export function ItemStorage_FinishItemSwap(taskId: any, canceled: any): any {
 
 /** static void ItemStorage_UpdateSwapLinePos(u8 y) */
 export function ItemStorage_UpdateSwapLinePos(y: any): any {
-  UpdateSwapLineSpritesPos(sItemStorageMenu.swapLineSpriteIds, SWAP_LINE_LENGTH, 128, (y+1) * 16);
+  UpdateSwapLineSpritesPos(sItemStorageMenu.swapLineSpriteIds, (7), 128, (y+1) * 16);
 }
 
 /** static void ItemStorage_PrintItemQuantity(u8 windowId, u16 value, u32 mode, u8 x, u8 y, u8 n) */

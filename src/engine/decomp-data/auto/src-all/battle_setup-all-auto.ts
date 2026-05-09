@@ -15,6 +15,27 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBadgeFlags: any = null;
+let sBattleTransitionTable_BattleDome: any = null;
+let sBattleTransitionTable_BattleFrontier: any = null;
+let sBattleTransitionTable_BattlePyramid: any = null;
+let sBattleTransitionTable_Trainer: any = null;
+let sBattleTransitionTable_Wild: any = null;
+let sNoOfPossibleTrainerRetScripts: any = null;
+let sShouldCheckTrainerBScript: any = null;
+let sTrainerABattleScriptRetAddr: any = null;
+let sTrainerADefeatSpeech: any = null;
+let sTrainerAIntroSpeech: any = null;
+let sTrainerBBattleScriptRetAddr: any = null;
+let sTrainerBDefeatSpeech: any = null;
+let sTrainerBIntroSpeech: any = null;
+let sTrainerBattleEndScript: any = null;
+let sTrainerBattleMode: any = null;
+let sTrainerCannotBattleSpeech: any = null;
+let sTrainerObjectEventLocalId: any = null;
+let sTrainerVictorySpeech: any = null;
 /** static void Task_BattleStart(u8 taskId) */
 export function Task_BattleStart(taskId: any): any {
   let data: any = gTasks[taskId].data;
@@ -1278,8 +1299,8 @@ export function HasAtLeastFiveBadges(): any {
 export function IncrementRematchStepCounter(): any {
   if (HasAtLeastFiveBadges())
       {
-          if (gSaveBlock1Ptr.trainerRematchStepCounter >= STEP_COUNTER_MAX)
-              gSaveBlock1Ptr.trainerRematchStepCounter = STEP_COUNTER_MAX;
+          if (gSaveBlock1Ptr.trainerRematchStepCounter >= (255))
+              gSaveBlock1Ptr.trainerRematchStepCounter = (255);
           else
               gSaveBlock1Ptr.trainerRematchStepCounter++;
       }
@@ -1287,7 +1308,7 @@ export function IncrementRematchStepCounter(): any {
 
 /** static bool32 IsRematchStepCounterMaxed(void) */
 export function IsRematchStepCounterMaxed(): any {
-  if (HasAtLeastFiveBadges() && gSaveBlock1Ptr.trainerRematchStepCounter >= STEP_COUNTER_MAX)
+  if (HasAtLeastFiveBadges() && gSaveBlock1Ptr.trainerRematchStepCounter >= (255))
           return TRUE;
       else
           return FALSE;

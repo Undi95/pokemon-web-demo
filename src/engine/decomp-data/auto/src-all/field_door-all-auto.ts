@@ -15,12 +15,18 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBigDoorOpenAnimFrames: any = null;
+let sDoorAnimGraphicsTable: any = null;
+let sDoorCloseAnimFrames: any = null;
+let sDoorOpenAnimFrames: any = null;
 /** static void CopyDoorTilesToVram(const struct DoorGraphics *gfx, const struct DoorAnimFrame *frame) */
 export function CopyDoorTilesToVram(gfx: any, frame: any): any {
   if (gfx.size == 2)
-          CpuFastCopy(gfx.tiles + frame.offset, (VRAM + TILE_OFFSET_4BPP(DOOR_TILE_START_SIZE2)), 16 * TILE_SIZE_4BPP);
+          CpuFastCopy(gfx.tiles + frame.offset, (VRAM + TILE_OFFSET_4BPP(((NUM_TILES_TOTAL - 16)))), 16 * TILE_SIZE_4BPP);
       else
-          CpuFastCopy(gfx.tiles + frame.offset, (VRAM + TILE_OFFSET_4BPP(DOOR_TILE_START_SIZE1)), 8 * TILE_SIZE_4BPP);
+          CpuFastCopy(gfx.tiles + frame.offset, (VRAM + TILE_OFFSET_4BPP(((NUM_TILES_TOTAL - 8)))), 8 * TILE_SIZE_4BPP);
 }
 
 /** static void BuildDoorTiles(u16 *tiles, u16 tileNum, const u8 *paletteNums) */
@@ -50,29 +56,29 @@ export function DrawCurrentDoorAnimFrame(gfx: any, x: any, y: any, paletteNums: 
       if (gfx.size == 2)
       {
            
-          BuildDoorTiles(tiles[8], DOOR_TILE_START_SIZE2 + 0,paletteNums[0]);
+          BuildDoorTiles(tiles[8], ((NUM_TILES_TOTAL - 16)) + 0,paletteNums[0]);
           DrawDoorMetatileAt(x, y - 1,tiles[8]);
 
            
-          BuildDoorTiles(tiles[8], DOOR_TILE_START_SIZE2 + 4,paletteNums[4]);
+          BuildDoorTiles(tiles[8], ((NUM_TILES_TOTAL - 16)) + 4,paletteNums[4]);
           DrawDoorMetatileAt(x, y,tiles[8]);
 
            
-          BuildDoorTiles(tiles[8], DOOR_TILE_START_SIZE2 + 8,paletteNums[0]);
+          BuildDoorTiles(tiles[8], ((NUM_TILES_TOTAL - 16)) + 8,paletteNums[0]);
           DrawDoorMetatileAt(x + 1, y - 1,tiles[8]);
 
            
-          BuildDoorTiles(tiles[8], DOOR_TILE_START_SIZE2 + 12,paletteNums[4]);
+          BuildDoorTiles(tiles[8], ((NUM_TILES_TOTAL - 16)) + 12,paletteNums[4]);
           DrawDoorMetatileAt(x + 1, y,tiles[8]);
       }
       else
       {
            
-          BuildDoorTiles(tiles[0], DOOR_TILE_START_SIZE1 + 0,paletteNums[0]);
+          BuildDoorTiles(tiles[0], ((NUM_TILES_TOTAL - 8)) + 0,paletteNums[0]);
           DrawDoorMetatileAt(x, y - 1,tiles[0]);
 
            
-          BuildDoorTiles(tiles[0], DOOR_TILE_START_SIZE1 + 4,paletteNums[4]);
+          BuildDoorTiles(tiles[0], ((NUM_TILES_TOTAL - 8)) + 4,paletteNums[4]);
           DrawDoorMetatileAt(x, y,tiles[0]);
       }
 }
@@ -241,11 +247,11 @@ export function FieldIsDoorAnimationRunning(): any {
 export function GetDoorSoundEffect(x: any, y: any): any {
   let sound: any = GetDoorSoundType(sDoorAnimGraphicsTable, x, y);
 
-      if (sound == DOOR_SOUND_NORMAL)
+      if (sound == (0))
           return SE_DOOR;
-      else if (sound == DOOR_SOUND_SLIDING)
+      else if (sound == (1))
           return SE_SLIDING_DOOR;
-      else if (sound == DOOR_SOUND_ARENA)
+      else if (sound == (2))
           return SE_REPEL;
       else
           return SE_DOOR;

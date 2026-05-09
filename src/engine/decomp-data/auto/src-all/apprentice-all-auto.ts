@@ -15,6 +15,19 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sApprenticeChallengeTexts: any = null;
+let sApprenticeFirstMeetingTexts: any = null;
+let sApprenticeFunctions: any = null;
+let sApprenticeHeldItemTexts: any = null;
+let sApprenticePickWinSpeechTexts: any = null;
+let sApprenticeWhichMonFirstTexts: any = null;
+let sApprenticeWhichMonTexts: any = null;
+let sApprenticeWhichMoveTexts: any = null;
+let sInitialApprenticeIds: any = null;
+let sQuestionPossibilities: any = null;
+let sValidApprenticeMoves: any = null;
 /** void BufferApprenticeChallengeText(u8 saveApprenticeId) */
 export function BufferApprenticeChallengeText(saveApprenticeId: any): any {
   let i, num;
@@ -51,7 +64,7 @@ export function ResetApprenticeStruct(apprentice: any): any {
 export function ResetAllApprenticeData(): any {
   let i, j;
 
-      PLAYER_APPRENTICE.saveId = 0;
+      (gSaveBlock2Ptr.playerApprentice).saveId = 0;
       for (i = 0; i < APPRENTICE_COUNT; i++)
       {
           for (j = 0; j < ARRAY_COUNT(gSaveBlock2Ptr.apprentices[i].speechWon); j++)
@@ -72,7 +85,7 @@ export function ResetAllApprenticeData(): any {
 
 /** static bool8 GivenApprenticeLvlMode(void) */
 export function GivenApprenticeLvlMode(): any {
-  return (PLAYER_APPRENTICE.lvlMode != 0);
+  return ((gSaveBlock2Ptr.playerApprentice).lvlMode != 0);
 }
 
 /** static void SetApprenticeId(void) */
@@ -81,21 +94,21 @@ export function SetApprenticeId(): any {
       {
           do
           {
-              PLAYER_APPRENTICE.id = sInitialApprenticeIds[Random() % ARRAY_COUNT(sInitialApprenticeIds)];
-          } while (PLAYER_APPRENTICE.id == gSaveBlock2Ptr.apprentices[0].id);
+              (gSaveBlock2Ptr.playerApprentice).id = sInitialApprenticeIds[Random() % ARRAY_COUNT(sInitialApprenticeIds)];
+          } while ((gSaveBlock2Ptr.playerApprentice).id == gSaveBlock2Ptr.apprentices[0].id);
       }
       else
       {
           do
           {
-              PLAYER_APPRENTICE.id = Random() % (NUM_APPRENTICES);
-          } while (PLAYER_APPRENTICE.id == gSaveBlock2Ptr.apprentices[0].id);
+              (gSaveBlock2Ptr.playerApprentice).id = Random() % (NUM_APPRENTICES);
+          } while ((gSaveBlock2Ptr.playerApprentice).id == gSaveBlock2Ptr.apprentices[0].id);
       }
 }
 
 /** static void SetPlayersApprenticeLvlMode(u8 mode) */
 export function SetPlayersApprenticeLvlMode(mode: any): any {
-  PLAYER_APPRENTICE.lvlMode = mode;
+  (gSaveBlock2Ptr.playerApprentice).lvlMode = mode;
 }
 
 /** static void ShuffleApprenticeSpecies(void) */
@@ -116,7 +129,7 @@ export function ShuffleApprenticeSpecies(): any {
       }
 
       for (i = 0; i < MULTI_PARTY_SIZE; i++)
-          PLAYER_APPRENTICE.speciesIds[i] = ((species[i * 2] & 0xF) << 4) | ((species[i * 2 + 1]) & 0xF);
+          (gSaveBlock2Ptr.playerApprentice).speciesIds[i] = ((species[i * 2] & 0xF) << 4) | ((species[i * 2 + 1]) & 0xF);
 }
 
 /** static u8 GetMonIdForQuestion(u8 questionId, u8 *party, u8 *partySlot) */
@@ -189,11 +202,11 @@ export function SetRandomQuestionData(): any {
       partySlot = 0;
       for (i = 0; i < APPRENTICE_MAX_QUESTIONS; i++)
       {
-          PLAYER_APPRENTICE.questions[i].questionId = questionOrder[i];
+          (gSaveBlock2Ptr.playerApprentice).questions[i].questionId = questionOrder[i];
           if (questionOrder[i] != QUESTION_ID_WHICH_FIRST)
           {
-              PLAYER_APPRENTICE.questions[i].monId = GetMonIdForQuestion(questionOrder[i], partyOrder,partySlot);
-              id = PLAYER_APPRENTICE.questions[i].monId;
+              (gSaveBlock2Ptr.playerApprentice).questions[i].monId = GetMonIdForQuestion(questionOrder[i], partyOrder,partySlot);
+              id = (gSaveBlock2Ptr.playerApprentice).questions[i].monId;
               if (questionOrder[i] == QUESTION_ID_WHICH_MOVE)
               {
                   do
@@ -207,8 +220,8 @@ export function SetRandomQuestionData(): any {
                   } while (j != gApprenticePartyMovesData.moveCounter + 1);
 
                   gApprenticePartyMovesData.moveSlots[id][gApprenticePartyMovesData.moveCounter] = rand1;
-                  PLAYER_APPRENTICE.questions[i].moveSlot = rand1;
-                  PLAYER_APPRENTICE.questions[i].data = GetRandomAlternateMove(PLAYER_APPRENTICE.questions[i].monId);
+                  (gSaveBlock2Ptr.playerApprentice).questions[i].moveSlot = rand1;
+                  (gSaveBlock2Ptr.playerApprentice).questions[i].data = GetRandomAlternateMove((gSaveBlock2Ptr.playerApprentice).questions[i].monId);
               }
           }
       }
@@ -229,11 +242,11 @@ export function GetRandomAlternateMove(monId: any): any {
       let level: any = null;
 
       id = 0; /* transpiler bug : RHS=0 */
-      species = gApprentices[PLAYER_APPRENTICE.id].species[id];
+      species = gApprentices[(gSaveBlock2Ptr.playerApprentice).id].species[id];
       learnset = gLevelUpLearnsets[species];
       j = 0;
 
-      if (PLAYER_APPRENTICE.lvlMode == APPRENTICE_LVL_MODE_50)
+      if ((gSaveBlock2Ptr.playerApprentice).lvlMode == APPRENTICE_LVL_MODE_50)
           level = FRONTIER_MAX_LEVEL_50;
       else  
           level = 60;  
@@ -349,7 +362,7 @@ export function GetLatestLearnedMoves(species: any, moves: any): any {
       let level, numLearnsetMoves;
       let learnset: any = null;
 
-      if (PLAYER_APPRENTICE.lvlMode == APPRENTICE_LVL_MODE_50)
+      if ((gSaveBlock2Ptr.playerApprentice).lvlMode == APPRENTICE_LVL_MODE_50)
           level = FRONTIER_MAX_LEVEL_50;
       else  
           level = 60;
@@ -374,21 +387,21 @@ export function GetDefaultMove(monId: any, speciesArrayId: any, moveSlot: any): 
   let moves: any = [];
       let i, numQuestions;
 
-      if (PLAYER_APPRENTICE.questionsAnswered < NUM_WHICH_MON_QUESTIONS)
+      if ((gSaveBlock2Ptr.playerApprentice).questionsAnswered < NUM_WHICH_MON_QUESTIONS)
           return MOVE_NONE;
 
       numQuestions = 0;
-      for (i = 0; i < APPRENTICE_MAX_QUESTIONS && PLAYER_APPRENTICE.questions[i].questionId != QUESTION_ID_WIN_SPEECH; i++)
+      for (i = 0; i < APPRENTICE_MAX_QUESTIONS && (gSaveBlock2Ptr.playerApprentice).questions[i].questionId != QUESTION_ID_WIN_SPEECH; i++)
           numQuestions++;
 
-      GetLatestLearnedMoves(gApprentices[PLAYER_APPRENTICE.id].species[speciesArrayId], moves);
+      GetLatestLearnedMoves(gApprentices[(gSaveBlock2Ptr.playerApprentice).id].species[speciesArrayId], moves);
       for (i = 0; i < numQuestions && i < CURRENT_QUESTION_NUM; i++)
       {
-          if (PLAYER_APPRENTICE.questions[i].questionId == QUESTION_ID_WHICH_MOVE
-              && PLAYER_APPRENTICE.questions[i].monId == monId
-              && PLAYER_APPRENTICE.questions[i].suggestedChange)
+          if ((gSaveBlock2Ptr.playerApprentice).questions[i].questionId == QUESTION_ID_WHICH_MOVE
+              && (gSaveBlock2Ptr.playerApprentice).questions[i].monId == monId
+              && (gSaveBlock2Ptr.playerApprentice).questions[i].suggestedChange)
           {
-              moves[PLAYER_APPRENTICE.questions[i].moveSlot] = PLAYER_APPRENTICE.questions[i].data;
+              moves[(gSaveBlock2Ptr.playerApprentice).questions[i].moveSlot] = (gSaveBlock2Ptr.playerApprentice).questions[i].data;
           }
       }
 
@@ -410,7 +423,7 @@ export function SaveApprenticeParty(numQuestions: any): any {
       }
 
        
-      j = PLAYER_APPRENTICE.leadMonId;
+      j = (gSaveBlock2Ptr.playerApprentice).leadMonId;
       for (i = 0; i < MULTI_PARTY_SIZE; i++)
       {
           apprenticeMons[j] =gSaveBlock2Ptr.apprentices[0].party[i];
@@ -421,26 +434,26 @@ export function SaveApprenticeParty(numQuestions: any): any {
       for (i = 0; i < MULTI_PARTY_SIZE; i++)
       {
           speciesTableId = 0; /* transpiler bug : RHS=0 */
-          apprenticeMons[i].species = gApprentices[PLAYER_APPRENTICE.id].species[speciesTableId];
+          apprenticeMons[i].species = gApprentices[(gSaveBlock2Ptr.playerApprentice).id].species[speciesTableId];
           GetLatestLearnedMoves(apprenticeMons[i].species, apprenticeMons[i].moves);
       }
 
        
       for (i = 0; i < numQuestions; i++)
       {
-          let questionId: any = PLAYER_APPRENTICE.questions[i].questionId;
-          let monId: any = PLAYER_APPRENTICE.questions[i].monId;
+          let questionId: any = (gSaveBlock2Ptr.playerApprentice).questions[i].questionId;
+          let monId: any = (gSaveBlock2Ptr.playerApprentice).questions[i].monId;
           if (questionId == QUESTION_ID_WHAT_ITEM)
           {
-              if (PLAYER_APPRENTICE.questions[i].suggestedChange)
-                  apprenticeMons[monId].item = PLAYER_APPRENTICE.questions[i].data;
+              if ((gSaveBlock2Ptr.playerApprentice).questions[i].suggestedChange)
+                  apprenticeMons[monId].item = (gSaveBlock2Ptr.playerApprentice).questions[i].data;
           }
           else if (questionId == QUESTION_ID_WHICH_MOVE)
           {
-              if (PLAYER_APPRENTICE.questions[i].suggestedChange)
+              if ((gSaveBlock2Ptr.playerApprentice).questions[i].suggestedChange)
               {
-                  let moveSlot: any = PLAYER_APPRENTICE.questions[i].moveSlot;
-                  apprenticeMons[monId].moves[moveSlot] = PLAYER_APPRENTICE.questions[i].data;
+                  let moveSlot: any = (gSaveBlock2Ptr.playerApprentice).questions[i].moveSlot;
+                  apprenticeMons[monId].moves[moveSlot] = (gSaveBlock2Ptr.playerApprentice).questions[i].data;
               }
           }
       }
@@ -475,14 +488,14 @@ export function CreateApprenticeMenu(menu: any): any {
               let speciesTableId: any = null;
 
               speciesTableId = 0; /* transpiler bug : RHS=0 */
-              species =  gApprentices[PLAYER_APPRENTICE.id].species[speciesTableId];
+              species =  gApprentices[(gSaveBlock2Ptr.playerApprentice).id].species[speciesTableId];
               strings[i] = gSpeciesNames[species];
           }
           break;
       case APPRENTICE_ASK_2SPECIES:
           left = 18;
           top = 8;
-          if (PLAYER_APPRENTICE.questionsAnswered >= NUM_WHICH_MON_QUESTIONS)
+          if ((gSaveBlock2Ptr.playerApprentice).questionsAnswered >= NUM_WHICH_MON_QUESTIONS)
               return;
           strings[1] = gSpeciesNames[gApprenticeQuestionData.altSpeciesId];
           strings[0] = gSpeciesNames[gApprenticeQuestionData.speciesId];
@@ -604,21 +617,21 @@ export function Script_ResetPlayerApprentice(): any {
   let i: any = null;
 
       SetApprenticeId();
-      PLAYER_APPRENTICE.lvlMode = 0;
-      PLAYER_APPRENTICE.questionsAnswered = 0;
-      PLAYER_APPRENTICE.leadMonId = 0;
-      PLAYER_APPRENTICE.party = 0;
+      (gSaveBlock2Ptr.playerApprentice).lvlMode = 0;
+      (gSaveBlock2Ptr.playerApprentice).questionsAnswered = 0;
+      (gSaveBlock2Ptr.playerApprentice).leadMonId = 0;
+      (gSaveBlock2Ptr.playerApprentice).party = 0;
 
       for (i = 0; i < MULTI_PARTY_SIZE; i++)
-          PLAYER_APPRENTICE.speciesIds[i] = 0;
+          (gSaveBlock2Ptr.playerApprentice).speciesIds[i] = 0;
 
       for (i = 0; i < APPRENTICE_MAX_QUESTIONS; i++)
       {
-          PLAYER_APPRENTICE.questions[i].questionId = 0;
-          PLAYER_APPRENTICE.questions[i].monId = 0;
-          PLAYER_APPRENTICE.questions[i].moveSlot = 0;
-          PLAYER_APPRENTICE.questions[i].suggestedChange = 0;
-          PLAYER_APPRENTICE.questions[i].data = 0;
+          (gSaveBlock2Ptr.playerApprentice).questions[i].questionId = 0;
+          (gSaveBlock2Ptr.playerApprentice).questions[i].monId = 0;
+          (gSaveBlock2Ptr.playerApprentice).questions[i].moveSlot = 0;
+          (gSaveBlock2Ptr.playerApprentice).questions[i].suggestedChange = 0;
+          (gSaveBlock2Ptr.playerApprentice).questions[i].data = 0;
       }
 }
 
@@ -647,12 +660,12 @@ export function Script_SetRandomQuestionData(): any {
 
 /** static void IncrementQuestionsAnswered(void) */
 export function IncrementQuestionsAnswered(): any {
-  PLAYER_APPRENTICE.questionsAnswered++;
+  (gSaveBlock2Ptr.playerApprentice).questionsAnswered++;
 }
 
 /** static void GetNumApprenticePartyMonsAssigned(void) */
 export function GetNumApprenticePartyMonsAssigned(): any {
-  gSpecialVar_Result = PLAYER_APPRENTICE.questionsAnswered;
+  gSpecialVar_Result = (gSaveBlock2Ptr.playerApprentice).questionsAnswered;
 }
 
 /** static void IsFinalQuestion(void) */
@@ -669,7 +682,7 @@ export function IsFinalQuestion(): any {
           if (questionNum > APPRENTICE_MAX_QUESTIONS - 1)
               gSpecialVar_Result = TRUE;
 
-          if (PLAYER_APPRENTICE.questions[questionNum].questionId == QUESTION_ID_WIN_SPEECH)
+          if ((gSaveBlock2Ptr.playerApprentice).questions[questionNum].questionId == QUESTION_ID_WIN_SPEECH)
               gSpecialVar_Result = TRUE;
           else
               gSpecialVar_Result = FALSE;
@@ -699,71 +712,71 @@ export function PrintApprenticeMessage(): any {
 
       if (gSpecialVar_0x8006 == APPRENTICE_MSG_WHICH_MON)
       {
-          string = sApprenticeWhichMonTexts[PLAYER_APPRENTICE.id][0];
+          string = sApprenticeWhichMonTexts[(gSaveBlock2Ptr.playerApprentice).id][0];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_MON)
       {
-          string = sApprenticeWhichMonTexts[PLAYER_APPRENTICE.id][1];
+          string = sApprenticeWhichMonTexts[(gSaveBlock2Ptr.playerApprentice).id][1];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_WHICH_MOVE)
       {
-          string = sApprenticeWhichMoveTexts[PLAYER_APPRENTICE.id][0];
+          string = sApprenticeWhichMoveTexts[(gSaveBlock2Ptr.playerApprentice).id][0];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_MOVE)
       {
-          string = sApprenticeWhichMoveTexts[PLAYER_APPRENTICE.id][1];
+          string = sApprenticeWhichMoveTexts[(gSaveBlock2Ptr.playerApprentice).id][1];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_WHICH_MON_FIRST)
       {
-          string = sApprenticeWhichMonFirstTexts[PLAYER_APPRENTICE.id][0];
+          string = sApprenticeWhichMonFirstTexts[(gSaveBlock2Ptr.playerApprentice).id][0];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_MON_FIRST)
       {
-          string = sApprenticeWhichMonFirstTexts[PLAYER_APPRENTICE.id][1];
+          string = sApprenticeWhichMonFirstTexts[(gSaveBlock2Ptr.playerApprentice).id][1];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_WHAT_HELD_ITEM)
       {
-          string = sApprenticeHeldItemTexts[PLAYER_APPRENTICE.id][0];
+          string = sApprenticeHeldItemTexts[(gSaveBlock2Ptr.playerApprentice).id][0];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_PICK_WIN_SPEECH)
       {
-          string = sApprenticePickWinSpeechTexts[PLAYER_APPRENTICE.id][0];
+          string = sApprenticePickWinSpeechTexts[(gSaveBlock2Ptr.playerApprentice).id][0];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_HELD_ITEM)
       {
-          string = sApprenticeHeldItemTexts[PLAYER_APPRENTICE.id][3];
+          string = sApprenticeHeldItemTexts[(gSaveBlock2Ptr.playerApprentice).id][3];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_HOLD_NOTHING)
       {
-          string = sApprenticeHeldItemTexts[PLAYER_APPRENTICE.id][1];
+          string = sApprenticeHeldItemTexts[(gSaveBlock2Ptr.playerApprentice).id][1];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_ITEM_ALREADY_SUGGESTED)
       {
-          string = sApprenticeHeldItemTexts[PLAYER_APPRENTICE.id][4];
+          string = sApprenticeHeldItemTexts[(gSaveBlock2Ptr.playerApprentice).id][4];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_NO_HELD_ITEM)
       {
-          string = sApprenticeHeldItemTexts[PLAYER_APPRENTICE.id][2];
+          string = sApprenticeHeldItemTexts[(gSaveBlock2Ptr.playerApprentice).id][2];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_WIN_SPEECH)
       {
-          string = sApprenticePickWinSpeechTexts[PLAYER_APPRENTICE.id][1];
+          string = sApprenticePickWinSpeechTexts[(gSaveBlock2Ptr.playerApprentice).id][1];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_PLEASE_TEACH)
       {
-          string = sApprenticeFirstMeetingTexts[PLAYER_APPRENTICE.id][0];
+          string = sApprenticeFirstMeetingTexts[(gSaveBlock2Ptr.playerApprentice).id][0];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_REJECT)
       {
-          string = sApprenticeFirstMeetingTexts[PLAYER_APPRENTICE.id][1];
+          string = sApprenticeFirstMeetingTexts[(gSaveBlock2Ptr.playerApprentice).id][1];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_WHICH_LVL_MODE)
       {
-          string = sApprenticeFirstMeetingTexts[PLAYER_APPRENTICE.id][2];
+          string = sApprenticeFirstMeetingTexts[(gSaveBlock2Ptr.playerApprentice).id][2];
       }
       else if (gSpecialVar_0x8006 == APPRENTICE_MSG_THANKS_LVL_MODE)
       {
-          string = sApprenticeFirstMeetingTexts[PLAYER_APPRENTICE.id][3];
+          string = sApprenticeFirstMeetingTexts[(gSaveBlock2Ptr.playerApprentice).id][3];
       }
       else
       {
@@ -788,18 +801,18 @@ export function Script_PrintApprenticeMessage(): any {
 
 /** static void ApprenticeGetQuestion(void) */
 export function ApprenticeGetQuestion(): any {
-  if (PLAYER_APPRENTICE.questionsAnswered < NUM_WHICH_MON_QUESTIONS)
+  if ((gSaveBlock2Ptr.playerApprentice).questionsAnswered < NUM_WHICH_MON_QUESTIONS)
       {
           gSpecialVar_Result = APPRENTICE_QUESTION_WHICH_MON;
       }
-      else if (PLAYER_APPRENTICE.questionsAnswered > (APPRENTICE_MAX_QUESTIONS + NUM_WHICH_MON_QUESTIONS - 1))
+      else if ((gSaveBlock2Ptr.playerApprentice).questionsAnswered > (APPRENTICE_MAX_QUESTIONS + NUM_WHICH_MON_QUESTIONS - 1))
       {
           gSpecialVar_Result = APPRENTICE_QUESTION_WIN_SPEECH;
       }
       else
       {
           let id: any = CURRENT_QUESTION_NUM;
-          switch (PLAYER_APPRENTICE.questions[id].questionId)
+          switch ((gSaveBlock2Ptr.playerApprentice).questions[id].questionId)
           {
           case QUESTION_ID_WHAT_ITEM:
               gSpecialVar_Result = APPRENTICE_QUESTION_WHAT_ITEM;
@@ -823,19 +836,19 @@ export function SetApprenticePartyMon(): any {
   if (gSpecialVar_0x8005)
       {
           let partySlot: any = gSpecialVar_0x8006;
-          PLAYER_APPRENTICE.party |= 1 << partySlot;
+          (gSaveBlock2Ptr.playerApprentice).party |= 1 << partySlot;
       }
 }
 
 /** static void SetApprenticeMonMove(void) */
 export function SetApprenticeMonMove(): any {
-  if (PLAYER_APPRENTICE.questionsAnswered >= NUM_WHICH_MON_QUESTIONS)
+  if ((gSaveBlock2Ptr.playerApprentice).questionsAnswered >= NUM_WHICH_MON_QUESTIONS)
       {
           let id: any = CURRENT_QUESTION_NUM;
           if (gSpecialVar_0x8005)
-              PLAYER_APPRENTICE.questions[id].suggestedChange = TRUE;
+              (gSaveBlock2Ptr.playerApprentice).questions[id].suggestedChange = TRUE;
           else
-              PLAYER_APPRENTICE.questions[id].suggestedChange = FALSE;
+              (gSaveBlock2Ptr.playerApprentice).questions[id].suggestedChange = FALSE;
       }
 }
 
@@ -845,46 +858,46 @@ export function InitQuestionData(): any {
       let count: any = 0;
       let id1, id2;
 
-      for (i = 0; i < APPRENTICE_MAX_QUESTIONS && (PLAYER_APPRENTICE.questions[i].questionId != QUESTION_ID_WIN_SPEECH); count++, i++)
+      for (i = 0; i < APPRENTICE_MAX_QUESTIONS && ((gSaveBlock2Ptr.playerApprentice).questions[i].questionId != QUESTION_ID_WIN_SPEECH); count++, i++)
           ;
 
       gApprenticeQuestionData = AllocZeroed(0);
       if (gSpecialVar_0x8005 == APPRENTICE_QUESTION_WHICH_MON)
       {
-          if (PLAYER_APPRENTICE.questionsAnswered < NUM_WHICH_MON_QUESTIONS)
+          if ((gSaveBlock2Ptr.playerApprentice).questionsAnswered < NUM_WHICH_MON_QUESTIONS)
           {
                
-              id1 = PLAYER_APPRENTICE.speciesIds[PLAYER_APPRENTICE.questionsAnswered] >> 4;
-              gApprenticeQuestionData.altSpeciesId = gApprentices[PLAYER_APPRENTICE.id].species[id1];
+              id1 = (gSaveBlock2Ptr.playerApprentice).speciesIds[(gSaveBlock2Ptr.playerApprentice).questionsAnswered] >> 4;
+              gApprenticeQuestionData.altSpeciesId = gApprentices[(gSaveBlock2Ptr.playerApprentice).id].species[id1];
 
-              id2 = PLAYER_APPRENTICE.speciesIds[PLAYER_APPRENTICE.questionsAnswered] & 0xF;
-              gApprenticeQuestionData.speciesId = gApprentices[PLAYER_APPRENTICE.id].species[id2];
+              id2 = (gSaveBlock2Ptr.playerApprentice).speciesIds[(gSaveBlock2Ptr.playerApprentice).questionsAnswered] & 0xF;
+              gApprenticeQuestionData.speciesId = gApprentices[(gSaveBlock2Ptr.playerApprentice).id].species[id2];
           }
       }
       else if (gSpecialVar_0x8005 == APPRENTICE_QUESTION_WHICH_MOVE)
       {
-          if (PLAYER_APPRENTICE.questionsAnswered >= NUM_WHICH_MON_QUESTIONS
-              && PLAYER_APPRENTICE.questionsAnswered < count + NUM_WHICH_MON_QUESTIONS
-              && PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].questionId == QUESTION_ID_WHICH_MOVE)
+          if ((gSaveBlock2Ptr.playerApprentice).questionsAnswered >= NUM_WHICH_MON_QUESTIONS
+              && (gSaveBlock2Ptr.playerApprentice).questionsAnswered < count + NUM_WHICH_MON_QUESTIONS
+              && (gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].questionId == QUESTION_ID_WHICH_MOVE)
           {
                
-              count = PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].monId;
+              count = (gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].monId;
               APPRENTICE_SPECIES_ID_NO_COND(id1, count);
-              gApprenticeQuestionData.speciesId = gApprentices[PLAYER_APPRENTICE.id].species[id1];
-              gApprenticeQuestionData.move1 = GetDefaultMove(count, id1, PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].moveSlot);
-              gApprenticeQuestionData.move2 = PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].data;
+              gApprenticeQuestionData.speciesId = gApprentices[(gSaveBlock2Ptr.playerApprentice).id].species[id1];
+              gApprenticeQuestionData.move1 = GetDefaultMove(count, id1, (gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].moveSlot);
+              gApprenticeQuestionData.move2 = (gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].data;
           }
       }
       else if (gSpecialVar_0x8005 == APPRENTICE_QUESTION_WHAT_ITEM)
       {
-          if (PLAYER_APPRENTICE.questionsAnswered >= NUM_WHICH_MON_QUESTIONS
-              && PLAYER_APPRENTICE.questionsAnswered < count + NUM_WHICH_MON_QUESTIONS
-              && PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].questionId == QUESTION_ID_WHAT_ITEM)
+          if ((gSaveBlock2Ptr.playerApprentice).questionsAnswered >= NUM_WHICH_MON_QUESTIONS
+              && (gSaveBlock2Ptr.playerApprentice).questionsAnswered < count + NUM_WHICH_MON_QUESTIONS
+              && (gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].questionId == QUESTION_ID_WHAT_ITEM)
           {
                
-              count = PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].monId;
+              count = (gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].monId;
               APPRENTICE_SPECIES_ID_NO_COND(id2, count);
-              gApprenticeQuestionData.speciesId = gApprentices[PLAYER_APPRENTICE.id].species[id2];
+              gApprenticeQuestionData.speciesId = gApprentices[(gSaveBlock2Ptr.playerApprentice).id].species[id2];
           }
       }
 }
@@ -933,14 +946,14 @@ export function ApprenticeBufferString(): any {
           StringCopy(stringDst, gMoveNames[gApprenticeQuestionData.move2]);
           break;
       case APPRENTICE_BUFF_ITEM:
-          StringCopy(stringDst, GetItemName(PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].data));
+          StringCopy(stringDst, GetItemName((gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].data));
           break;
       case APPRENTICE_BUFF_NAME:
-          TVShowConvertInternationalString(text, GetApprenticeNameInLanguage(PLAYER_APPRENTICE.id, GAME_LANGUAGE), GAME_LANGUAGE);
+          TVShowConvertInternationalString(text, GetApprenticeNameInLanguage((gSaveBlock2Ptr.playerApprentice).id, GAME_LANGUAGE), GAME_LANGUAGE);
           StringCopy(stringDst, text);
           break;
       case APPRENTICE_BUFF_LEVEL:
-          if (PLAYER_APPRENTICE.lvlMode == APPRENTICE_LVL_MODE_50)
+          if ((gSaveBlock2Ptr.playerApprentice).lvlMode == APPRENTICE_LVL_MODE_50)
               StringCopy(stringDst, gText_Lv50);
           else  
               StringCopy(stringDst, gText_OpenLevel);
@@ -951,14 +964,14 @@ export function ApprenticeBufferString(): any {
           break;
       case APPRENTICE_BUFF_LEAD_MON_SPECIES:
           speciesArrayId = 0; /* transpiler bug : RHS=0 */
-          StringCopy(stringDst, gSpeciesNames[gApprentices[PLAYER_APPRENTICE.id].species[speciesArrayId]]);
+          StringCopy(stringDst, gSpeciesNames[gApprentices[(gSaveBlock2Ptr.playerApprentice).id].species[speciesArrayId]]);
           break;
       }
 }
 
 /** static void SetLeadApprenticeMon(void) */
 export function SetLeadApprenticeMon(): any {
-  PLAYER_APPRENTICE.leadMonId = gSpecialVar_0x8005;
+  (gSaveBlock2Ptr.playerApprentice).leadMonId = gSpecialVar_0x8005;
 }
 
 /** static void Script_ApprenticeOpenBagMenu(void) */
@@ -971,13 +984,13 @@ export function TrySetApprenticeHeldItem(): any {
   let i, j;
       let count: any = null;
 
-      if (PLAYER_APPRENTICE.questionsAnswered < NUM_WHICH_MON_QUESTIONS)
+      if ((gSaveBlock2Ptr.playerApprentice).questionsAnswered < NUM_WHICH_MON_QUESTIONS)
           return;
 
       count = 0;
       for (j = 0; j < APPRENTICE_MAX_QUESTIONS; j++)
       {
-          if (PLAYER_APPRENTICE.questions[j].questionId == QUESTION_ID_WIN_SPEECH)
+          if ((gSaveBlock2Ptr.playerApprentice).questions[j].questionId == QUESTION_ID_WIN_SPEECH)
               break;
           count++;
       }
@@ -987,20 +1000,20 @@ export function TrySetApprenticeHeldItem(): any {
       {
           if (i >= CURRENT_QUESTION_NUM)
               break;
-          if (PLAYER_APPRENTICE.questions[i].questionId != QUESTION_ID_WHAT_ITEM ||
-              PLAYER_APPRENTICE.questions[i].suggestedChange == 0)
+          if ((gSaveBlock2Ptr.playerApprentice).questions[i].questionId != QUESTION_ID_WHAT_ITEM ||
+              (gSaveBlock2Ptr.playerApprentice).questions[i].suggestedChange == 0)
               continue;
-          if (PLAYER_APPRENTICE.questions[i].data == gSpecialVar_0x8005)
+          if ((gSaveBlock2Ptr.playerApprentice).questions[i].data == gSpecialVar_0x8005)
           {
-              PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].suggestedChange = FALSE;
-              PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].data = gSpecialVar_0x8005;
+              (gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].suggestedChange = FALSE;
+              (gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].data = gSpecialVar_0x8005;
               gSpecialVar_Result = FALSE;
               return;
           }
       }
 
-      PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].suggestedChange = TRUE;
-      PLAYER_APPRENTICE.questions[CURRENT_QUESTION_NUM].data = gSpecialVar_0x8005;
+      (gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].suggestedChange = TRUE;
+      (gSaveBlock2Ptr.playerApprentice).questions[CURRENT_QUESTION_NUM].data = gSpecialVar_0x8005;
       gSpecialVar_Result = TRUE;
 }
 
@@ -1042,11 +1055,11 @@ export function ShiftSavedApprentices(): any {
 export function SaveApprentice(): any {
   let i: any = null;
 
-      gSaveBlock2Ptr.apprentices[0].id = PLAYER_APPRENTICE.id;
-      gSaveBlock2Ptr.apprentices[0].lvlMode = PLAYER_APPRENTICE.lvlMode;
+      gSaveBlock2Ptr.apprentices[0].id = (gSaveBlock2Ptr.playerApprentice).id;
+      gSaveBlock2Ptr.apprentices[0].lvlMode = (gSaveBlock2Ptr.playerApprentice).lvlMode;
 
        
-      for (i = 0; i < APPRENTICE_MAX_QUESTIONS && (PLAYER_APPRENTICE.questions[i].questionId != QUESTION_ID_WIN_SPEECH); i++)
+      for (i = 0; i < APPRENTICE_MAX_QUESTIONS && ((gSaveBlock2Ptr.playerApprentice).questions[i].questionId != QUESTION_ID_WIN_SPEECH); i++)
           ;
 
       gSaveBlock2Ptr.apprentices[0].numQuestions = i;
@@ -1090,7 +1103,7 @@ export function SetSavedApprenticeTrainerGfxId(): any {
 export function SetPlayerApprenticeTrainerGfxId(): any {
   let i: any = null;
       let objectEventGfxId: any = null;
-      let _class: any = gApprentices[PLAYER_APPRENTICE.id].facilityClass;
+      let _class: any = gApprentices[(gSaveBlock2Ptr.playerApprentice).id].facilityClass;
 
       for (i = 0; i < ARRAY_COUNT(gTowerMaleFacilityClasses) && gTowerMaleFacilityClasses[i] != _class; i++)
           ;

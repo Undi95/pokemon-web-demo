@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sEscalatorAnim_TaskId: any = null;
+let sEscalatorMetatiles_1F_0: any = null;
+let sEscalatorMetatiles_1F_1: any = null;
+let sEscalatorMetatiles_1F_2: any = null;
+let sEscalatorMetatiles_1F_3: any = null;
+let sEscalatorMetatiles_2F_0: any = null;
+let sEscalatorMetatiles_2F_1: any = null;
+let sEscalatorMetatiles_2F_2: any = null;
 /** static void SetEscalatorMetatile(u8 taskId, const s16 *metatileIds, u16 metatileMasks) */
 export function SetEscalatorMetatile(taskId: any, metatileIds: any, metatileMasks: any): any {
   let x: any = gTasks[taskId].tPlayerX - 1;
@@ -34,7 +44,7 @@ export function SetEscalatorMetatile(taskId: any, metatileIds: any, metatileMask
 
                   if (metatileIds[transitionStage] == metatileId)
                   {
-                      if (transitionStage != LAST_ESCALATOR_STAGE)
+                      if (transitionStage != (((3) - 1)))
                           MapGridSetMetatileIdAt(x + j, y + i, metatileMasks | metatileIds[transitionStage + 1]);
                       else
                           MapGridSetMetatileIdAt(x + j, y + i, metatileMasks | metatileIds[0]);
@@ -50,12 +60,12 @@ export function SetEscalatorMetatile(taskId: any, metatileIds: any, metatileMask
               {
                   let metatileId: any = MapGridGetMetatileIdAt(x + j, y + i);
 
-                  if (metatileIds[LAST_ESCALATOR_STAGE - transitionStage] == metatileId)
+                  if (metatileIds[(((3) - 1)) - transitionStage] == metatileId)
                   {
-                      if (transitionStage != LAST_ESCALATOR_STAGE)
+                      if (transitionStage != (((3) - 1)))
                           MapGridSetMetatileIdAt(x + j, y + i, metatileMasks | metatileIds[1 - transitionStage]);
                       else
-                          MapGridSetMetatileIdAt(x + j, y + i, metatileMasks | metatileIds[LAST_ESCALATOR_STAGE]);
+                          MapGridSetMetatileIdAt(x + j, y + i, metatileMasks | metatileIds[(((3) - 1))]);
                   }
               }
           }
@@ -100,7 +110,7 @@ export function Task_DrawEscalator(taskId: any): any {
       if (tState == 0)
       {
           DrawWholeMapView();
-          tTransitionStage = (tTransitionStage + 1) % ESCALATOR_STAGES;
+          tTransitionStage = (tTransitionStage + 1) % (3);
           tDrawingEscalator = FALSE;
       }
 }
@@ -131,7 +141,7 @@ export function StopEscalator(): any {
 /** bool8 IsEscalatorMoving(void) */
 export function IsEscalatorMoving(): any {
   if (gTasks[sEscalatorAnim_TaskId].tDrawingEscalator == FALSE
-       && gTasks[sEscalatorAnim_TaskId].tTransitionStage == LAST_ESCALATOR_STAGE)
+       && gTasks[sEscalatorAnim_TaskId].tTransitionStage == (((3) - 1)))
           return FALSE;
       else
           return TRUE;

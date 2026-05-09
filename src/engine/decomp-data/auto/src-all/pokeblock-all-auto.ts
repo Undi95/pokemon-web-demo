@@ -15,6 +15,26 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sActionsInBattle: any = null;
+let sActionsOnField: any = null;
+let sActionsOnPokeblockFeeder: any = null;
+let sActionsWhenGivingToLady: any = null;
+let sAffineAnims_PokeblockCaseShake: any = null;
+let sBgTemplatesForPokeblockMenu: any = null;
+let sFavoritePokeblocksTable: any = null;
+let sPokeblockListMenuTemplate: any = null;
+let sPokeblockMenu: any = null;
+let sPokeblockMenuActions: any = null;
+let sSavedPokeblockData: any = null;
+let sSpriteTemplate_PokeblockCase: any = null;
+let sState: any = null;
+let sTextColor: any = null;
+let sTimer: any = null;
+let sTossPkblockWindowTemplate: any = null;
+let sTossYesNoFuncTable: any = null;
+let sWindowTemplates: any = null;
 /** void OpenPokeblockCase(u8 caseId, void (*callback)(void)) */
 export function OpenPokeblockCase(caseId: any, callback: any): any {
   sPokeblockMenu = Alloc(0);
@@ -144,7 +164,7 @@ export function InitPokeblockMenu(): any {
           gMain.state++;
           break;
       case 11:
-          DrawPokeblockMenuHighlight(sSavedPokeblockData.selectedRow, TILE_HIGHLIGHT_BLUE);
+          DrawPokeblockMenuHighlight(sSavedPokeblockData.selectedRow, (0x1005));
           gMain.state++;
           break;
       case 12:
@@ -449,8 +469,8 @@ export function SetMenuItemsCountAndMaxShowed(): any {
 
       sPokeblockMenu.itemsNo++;  
 
-      if (sPokeblockMenu.itemsNo > MAX_MENU_ITEMS)
-          sPokeblockMenu.maxShowed = MAX_MENU_ITEMS;
+      if (sPokeblockMenu.itemsNo > (9))
+          sPokeblockMenu.maxShowed = (9);
       else
           sPokeblockMenu.maxShowed = sPokeblockMenu.itemsNo;
 }
@@ -474,12 +494,12 @@ export function LimitMenuScrollAndRow(): any {
 
 /** static void SetInitialScroll(void) */
 export function SetInitialScroll(): any {
-  if (sSavedPokeblockData.selectedRow > MENU_MIDPOINT)
+  if (sSavedPokeblockData.selectedRow > ((MAX_MENU_ITEMS / 2)))
       {
           let i: any = null;
 
           for (i = 0;
-               (i < sSavedPokeblockData.selectedRow - MENU_MIDPOINT) && (sSavedPokeblockData.scrollOffset + sPokeblockMenu.maxShowed != sPokeblockMenu.itemsNo);
+               (i < sSavedPokeblockData.selectedRow - ((MAX_MENU_ITEMS / 2))) && (sSavedPokeblockData.scrollOffset + sPokeblockMenu.maxShowed != sPokeblockMenu.itemsNo);
                sSavedPokeblockData.selectedRow--, sSavedPokeblockData.scrollOffset++, i++);
       }
 }
@@ -489,7 +509,7 @@ export function CreateScrollArrows(): any {
   if (sPokeblockMenu.arrowTaskId == TASK_NONE)
       {
           sPokeblockMenu.arrowTaskId = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 0xB0, 8, 0x98, sPokeblockMenu.itemsNo - sPokeblockMenu.maxShowed,
-                                                                                 TAG_SCROLL_ARROW, TAG_SCROLL_ARROW,sSavedPokeblockData.scrollOffset);
+                                                                                 (1110), (1110),sSavedPokeblockData.scrollOffset);
       }
 }
 
@@ -578,7 +598,7 @@ export function Task_HandlePokeblockMenuInput(taskId: any): any {
               {
                    
                   PlaySE(SE_SELECT);
-                  DrawPokeblockMenuHighlight(sSavedPokeblockData.selectedRow, TILE_HIGHLIGHT_RED);
+                  DrawPokeblockMenuHighlight(sSavedPokeblockData.selectedRow, (0x2005));
                   tToSwapId = sSavedPokeblockData.scrollOffset + sSavedPokeblockData.selectedRow;
                   sPokeblockMenu.isSwapping = TRUE;
                   gTasks[taskId].func = Task_HandlePokeblocksSwapInput;
@@ -593,8 +613,8 @@ export function Task_HandlePokeblockMenuInput(taskId: any): any {
               if (oldPosition != sSavedPokeblockData.selectedRow)
               {
                    
-                  DrawPokeblockMenuHighlight(oldPosition, TILE_HIGHLIGHT_NONE);
-                  DrawPokeblockMenuHighlight(sSavedPokeblockData.selectedRow, TILE_HIGHLIGHT_BLUE);
+                  DrawPokeblockMenuHighlight(oldPosition, (0x0005));
+                  DrawPokeblockMenuHighlight(sSavedPokeblockData.selectedRow, (0x1005));
               }
 
               switch (input)
@@ -641,13 +661,13 @@ export function Task_HandlePokeblocksSwapInput(taskId: any): any {
 
           if (i != sSavedPokeblockData.scrollOffset || row != sSavedPokeblockData.selectedRow)
           {
-              for (i = 0; i < MAX_MENU_ITEMS; i++)
+              for (i = 0; i < (9); i++)
               {
                   row = i + sSavedPokeblockData.scrollOffset;
                   if (row == tToSwapId)
-                      DrawPokeblockMenuHighlight(i, TILE_HIGHLIGHT_RED);
+                      DrawPokeblockMenuHighlight(i, (0x2005));
                   else
-                      DrawPokeblockMenuHighlight(i, TILE_HIGHLIGHT_NONE);
+                      DrawPokeblockMenuHighlight(i, (0x0005));
               }
           }
 
@@ -696,10 +716,10 @@ export function UpdatePokeblockSwapMenu(taskId: any, noSwap: any): any {
       ScheduleBgCopyTilemapToVram(0);
       SetSwapLineSpritesInvisibility(sPokeblockMenu.swapLineSpriteIds, ARRAY_COUNT(sPokeblockMenu.swapLineSpriteIds), TRUE);
 
-      for (i = 0; i < MAX_MENU_ITEMS; i++)
-          DrawPokeblockMenuHighlight(i, TILE_HIGHLIGHT_NONE);
+      for (i = 0; i < (9); i++)
+          DrawPokeblockMenuHighlight(i, (0x0005));
 
-      DrawPokeblockMenuHighlight(sSavedPokeblockData.selectedRow, TILE_HIGHLIGHT_BLUE);
+      DrawPokeblockMenuHighlight(sSavedPokeblockData.selectedRow, (0x1005));
       gTasks[taskId].func = Task_HandlePokeblockMenuInput;
 }
 
@@ -798,12 +818,12 @@ export function TossPokeblock(taskId: any): any {
           data = gTasks[taskId].data;
 
           DestroyListMenuTask(tListTaskId, scrollOffset, selectedRow);
-          DrawPokeblockMenuHighlight(selectedRow, TILE_HIGHLIGHT_NONE);
+          DrawPokeblockMenuHighlight(selectedRow, (0x0005));
           SetMenuItemsCountAndMaxShowed();
           LimitMenuScrollAndRow();
           UpdatePokeblockList();
           tListTaskId = ListMenuInit(gMultiuseListMenuTemplate, scrollOffset, selectedRow);
-          DrawPokeblockMenuHighlight(selectedRow, TILE_HIGHLIGHT_BLUE);
+          DrawPokeblockMenuHighlight(selectedRow, (0x1005));
           ScheduleBgCopyTilemapToVram(0);
           ScheduleBgCopyTilemapToVram(1);
           CloseTossPokeblockWindow(taskId);
@@ -902,8 +922,8 @@ export function GetHighestPokeblocksFlavorLevel(pokeblock: any): any {
 /** u8 GetPokeblocksFeel(const struct Pokeblock *pokeblock) */
 export function GetPokeblocksFeel(pokeblock: any): any {
   let feel: any = GetPokeblockData(pokeblock, PBLOCK_FEEL);
-      if (feel > POKEBLOCK_MAX_FEEL)
-          feel = POKEBLOCK_MAX_FEEL;
+      if (feel > (99))
+          feel = (99);
 
       return feel;
 }

@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sPokeblockFeeders: any = null;
+let sSafariZoneCaughtMons: any = null;
+let sSafariZonePkblkUses: any = null;
+let sSafariZoneStepCounter: any = null;
 /** bool32 GetSafariZoneFlag(void) */
 export function GetSafariZoneFlag(): any {
   return FlagGet(FLAG_SYS_SAFARI_MODE);
@@ -113,7 +119,7 @@ export function GetPokeblockFeederInFront(): any {
 
       GetXYCoordsOneStepInFrontOfPlayer(x,y);
 
-      for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)
+      for (i = 0; i < (10); i++)
       {
           if (gSaveBlock1Ptr.location.mapNum == sPokeblockFeeders[i].mapNum
            && sPokeblockFeeders[i].x == x
@@ -135,7 +141,7 @@ export function GetPokeblockFeederWithinRange(): any {
 
       PlayerGetDestCoords(x,y);
 
-      for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)
+      for (i = 0; i < (10); i++)
       {
           if (gSaveBlock1Ptr.location.mapNum == sPokeblockFeeders[i].mapNum)
           {
@@ -162,7 +168,7 @@ export function SafariZoneActivatePokeblockFeeder(pkblId: any): any {
   let x, y;
       let i: any = null;
 
-      for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)
+      for (i = 0; i < (10); i++)
       {
            
           if (sPokeblockFeeders[i].mapNum == 0
@@ -185,7 +191,7 @@ export function SafariZoneActivatePokeblockFeeder(pkblId: any): any {
 export function DecrementFeederStepCounters(): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_POKEBLOCK_FEEDERS; i++)
+      for (i = 0; i < (10); i++)
       {
           if (sPokeblockFeeders[i].stepCounter != 0)
           {

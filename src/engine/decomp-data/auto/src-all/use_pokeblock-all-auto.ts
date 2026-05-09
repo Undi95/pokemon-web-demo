@@ -15,6 +15,34 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates: any = null;
+let sConditionNames: any = null;
+let sConditionToFlavor: any = null;
+let sConditionToMonData: any = null;
+let sExitCallback: any = null;
+let sGraphData_Tilemap: any = null;
+let sGraph_Gfx: any = null;
+let sGraph_Tilemap: any = null;
+let sInfo: any = null;
+let sMenu: any = null;
+let sMonFrame_Gfx: any = null;
+let sMonFrame_Pal: any = null;
+let sMonFrame_Tilemap: any = null;
+let sMonFrame_TilemapPtr: any = null;
+let sNatureTextColors: any = null;
+let sPokeblock: any = null;
+let sSpeed: any = null;
+let sSpritePalette_Condition: any = null;
+let sSpritePalette_UpDown: any = null;
+let sSpriteSheet_UpDown: any = null;
+let sSpriteTemplate_Condition: any = null;
+let sSpriteTemplate_UpDown: any = null;
+let sTargetX: any = null;
+let sUpDownCoordsOnGraph: any = null;
+let sUsePokeblockYesNoWinTemplate: any = null;
+let sWindowTemplates: any = null;
 /** void ChooseMonToGivePokeblock(struct Pokeblock *pokeblock, void (*callback)(void)) */
 export function ChooseMonToGivePokeblock(pokeblock: any, callback: any): any {
   sMenu = AllocZeroed(0);
@@ -432,10 +460,10 @@ export function CloseUsePokeblockMenu(): any {
           for (i = 0; i < ARRAY_COUNT(sMenu.selectionIconSpriteIds); i++)
               DestroySprite(gSprites[sMenu.selectionIconSpriteIds[i]]);
 
-          FreeSpriteTilesByTag(TAG_UP_DOWN);
-          FreeSpriteTilesByTag(TAG_CONDITION);
-          FreeSpritePaletteByTag(TAG_UP_DOWN);
-          FreeSpritePaletteByTag(TAG_CONDITION);
+          FreeSpriteTilesByTag((0));
+          FreeSpriteTilesByTag((1));
+          FreeSpritePaletteByTag((0));
+          FreeSpritePaletteByTag((1));
 
           for (i = 0; i < ARRAY_COUNT(sMenu.condition); i++)
               DestroySprite(sMenu.condition[i]);
@@ -1187,7 +1215,7 @@ export function LoadConditionGfx(): any {
       spritePalette = sSpritePalette_Condition;
       spriteSheet.data = gUsePokeblockCondition_Gfx;
       spriteSheet.size = 0x800;
-      spriteSheet.tag = TAG_CONDITION;
+      spriteSheet.tag = (1);
       LoadCompressedSpriteSheet(spriteSheet);
       LoadSpritePalette(spritePalette);
 }

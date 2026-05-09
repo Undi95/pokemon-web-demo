@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sMonRibbonListBgTemplates: any = null;
+let sMonRibbonListLoopTaskFuncs: any = null;
+let sMonRibbonListUi_Pal: any = null;
+let sRibbonsMonListWindowTemplate: any = null;
+let sRibbonsMonMenuLoopTaskFuncs: any = null;
+let sText_FemaleSymbol: any = null;
+let sText_MaleSymbol: any = null;
+let sText_NoGenderSymbol: any = null;
 /** bool32 PokenavCallback_Init_MonRibbonList(void) */
 export function PokenavCallback_Init_MonRibbonList(): any {
   let list: any = AllocSubstruct(POKENAV_SUBSTRUCT_RIBBONS_MON_LIST, 0);

@@ -15,6 +15,77 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sActiveColumnMap: any = null;
+let sAnims_Berry: any = null;
+let sAnims_Cloud: any = null;
+let sAnims_Dodrio: any = null;
+let sAnims_StatusBar: any = null;
+let sBerries_Gfx: any = null;
+let sBerries_Pal: any = null;
+let sBerryFallDelays: any = null;
+let sBerryIconSpriteIds: any = null;
+let sBerryIconXCoords: any = null;
+let sBerryScoreMultipliers: any = null;
+let sBerrySpriteIds: any = null;
+let sBgTemplates: any = null;
+let sBg_Gfx: any = null;
+let sBg_Pal: any = null;
+let sBg_Tilemap: any = null;
+let sCloudSpriteIds: any = null;
+let sCloudStartCoords: any = null;
+let sCloud_Gfx: any = null;
+let sCloud_Pal: any = null;
+let sDifficultyThresholds: any = null;
+let sDodrioHeadToColumnMap: any = null;
+let sDodrioNeighborMap: any = null;
+let sDodrioNormal_Pal: any = null;
+let sDodrioShiny_Pal: any = null;
+let sDodrioSpriteIds: any = null;
+let sDodrio_Gfx: any = null;
+let sExitingGame: any = null;
+let sFrozen: any = null;
+let sGame: any = null;
+let sGfx: any = null;
+let sGfxFuncs: any = null;
+let sLeaderFuncs: any = null;
+let sMemberFuncs: any = null;
+let sNameWindowCoords: any = null;
+let sOamData_16x16_Priority0: any = null;
+let sOamData_Berry: any = null;
+let sOamData_Cloud: any = null;
+let sOamData_Dodrio: any = null;
+let sPlayerIdAtColumn: any = null;
+let sPrizeBerryIds: any = null;
+let sRankingTexts: any = null;
+let sRankingYCoords: any = null;
+let sRecordNumMaxDigits: any = null;
+let sRecordNumYCoords: any = null;
+let sRecordTextYCoords: any = null;
+let sRecordsTexts: any = null;
+let sResultsXCoords: any = null;
+let sResultsYCoords: any = null;
+let sState: any = null;
+let sStatusBar: any = null;
+let sStatus_Gfx: any = null;
+let sStatus_Pal: any = null;
+let sTextColorTable: any = null;
+let sTimer: any = null;
+let sTreeBorderLeft_Tilemap: any = null;
+let sTreeBorderRight_Tilemap: any = null;
+let sTreeBorderXPos: any = null;
+let sTreeBorder_Gfx: any = null;
+let sUnsharedColumns: any = null;
+let sUnused1: any = null;
+let sUnused2: any = null;
+let sUnused3: any = null;
+let sWindowTemplate_CommStandby: any = null;
+let sWindowTemplate_DroppedOut: any = null;
+let sWindowTemplate_Prize: any = null;
+let sWindowTemplates_PlayAgain: any = null;
+let sWindowTemplates_Records: any = null;
+let sWindowTemplates_Results: any = null;
 /** void StartDodrioBerryPicking(u16 partyId, MainCallback exitCallback) */
 export function StartDodrioBerryPicking(partyId: any, exitCallback: any): any {
   sExitingGame = FALSE;
@@ -81,13 +152,13 @@ export function InitDodrioGame(game: any): any {
           game.readyToEnd[i] = FALSE;
       }
 
-      for (i = 0; i < NUM_BERRY_COLUMNS; i++)
+      for (i = 0; i < (11); i++)
       {
           game.fallTimer[i] = 0;
           game.newBerryTimer[i] = 0;
           game.berryState[i] = BERRYSTATE_NONE;
-          game.playersAttemptingPick[i][0] = PLAYER_NONE;
-          game.playersAttemptingPick[i][1] = PLAYER_NONE;
+          game.playersAttemptingPick[i][0] = (0xFF);
+          game.playersAttemptingPick[i][1] = (0xFF);
       }
 
       game.isLeader = GetMultiplayerId() == 0 ? TRUE : FALSE;
@@ -227,7 +298,7 @@ export function DoCountdown(): any {
   switch (sGame.state)
       {
       case 0:
-          StartMinigameCountdown(GFXTAG_COUNTDOWN, PALTAG_COUNTDOWN, 120, 80, 0);
+          StartMinigameCountdown((7), (8), 120, 80, 0);
           sGame.state++;
           break;
       case 1:
@@ -275,7 +346,7 @@ export function PlayGame_Leader(): any {
   switch (sGame.state)
       {
       case 0:
-          if (sGame.numGraySquares < NUM_STATUS_SQUARES)
+          if (sGame.numGraySquares < (10))
           {
               if (sGame.inputState[0] == INPUTSTATE_NONE)
               {
@@ -321,7 +392,7 @@ export function PlayGame_Leader(): any {
 
 /** static void PlayGame_Member(void) */
 export function PlayGame_Member(): any {
-  if (sGame.numGraySquares < NUM_STATUS_SQUARES)
+  if (sGame.numGraySquares < (10))
       {
           if (JOY_NEW(DPAD_UP))
           {
@@ -553,7 +624,7 @@ export function AskPlayAgain(): any {
       switch (sGame.state)
       {
       case 0:
-          if (GetHighestScore() >= PRIZE_SCORE)
+          if (GetHighestScore() >= (3000))
           {
               SetGfxFuncById(GFXFUNC_MSG_SAVING);
           }
@@ -1018,7 +1089,7 @@ export function HandleSound_Leader(): any {
           }
       }
 
-      if (sGame.endSoundState == 0 && sGame.numGraySquares >= NUM_STATUS_SQUARES)
+      if (sGame.endSoundState == 0 && sGame.numGraySquares >= (10))
       {
            
           StopMapMusic();
@@ -1064,7 +1135,7 @@ export function HandleSound_Member(): any {
       for (i = berryStart; i < berryEnd; i++)
       {
           let berries: any =sGame.players[sGame.multiplayerId].berries;
-          if (berries.fallDist[i] >= MAX_FALL_DIST)
+          if (berries.fallDist[i] >= (10))
           {
               if (!sGame.playingSquishSound[i])
               {
@@ -1077,7 +1148,7 @@ export function HandleSound_Member(): any {
               sGame.playingSquishSound[i] = FALSE;
           }
       }
-      if (sGame.endSoundState == 0 && sGame.numGraySquares >= NUM_STATUS_SQUARES)
+      if (sGame.endSoundState == 0 && sGame.numGraySquares >= (10))
       {
            
           StopMapMusic();
@@ -1179,7 +1250,7 @@ export function HandlePickBerries(): any {
       let i, j, k, column;
 
        
-      if (sGame.numGraySquares >= NUM_STATUS_SQUARES)
+      if (sGame.numGraySquares >= (10))
           return;
 
       for (i = 0; i < numPlayers; i++)
@@ -1203,7 +1274,7 @@ export function HandlePickBerries(): any {
                        
                       for (k = 0; k < ARRAY_COUNT(sGame.playersAttemptingPick[0]); k++)
                       {
-                          if (sGame.playersAttemptingPick[column][k] == PLAYER_NONE)
+                          if (sGame.playersAttemptingPick[column][k] == (0xFF))
                           {
                               sGame.playersAttemptingPick[column][k] = i;
                               sGame.inputState[i] = INPUTSTATE_PICKED;
@@ -1221,12 +1292,12 @@ export function HandlePickBerries(): any {
 
       for (j = berryStart; j < berryEnd; j++)
       {
-          let playerIdMissed: any = PLAYER_NONE;
+          let playerIdMissed: any = (0xFF);
           column = sActiveColumnMap[0][0][j];
           if (sGame.berryState[column] == BERRYSTATE_PICKED)
           {
               let delayRemaining: any = null;
-              let playerIdPicked, delayStage = sGame.difficulty / NUM_DIFFICULTIES;
+              let playerIdPicked, delayStage = sGame.difficulty / (7);
               if (delayStage >= ARRAY_COUNT(sBerryFallDelays) - 1)
                   delayStage = ARRAY_COUNT(sBerryFallDelays) - 1;
 
@@ -1238,14 +1309,14 @@ export function HandlePickBerries(): any {
               {
                   sGame.eatTimer[column] = 0;
 
-                  if (sGame.playersAttemptingPick[column][0] == PLAYER_NONE
-                   && sGame.playersAttemptingPick[column][1] == PLAYER_NONE)
+                  if (sGame.playersAttemptingPick[column][0] == (0xFF)
+                   && sGame.playersAttemptingPick[column][1] == (0xFF))
                   {
                        
                       continue;
                   }
-                  else if (sGame.playersAttemptingPick[column][0] != PLAYER_NONE
-                        && sGame.playersAttemptingPick[column][1] == PLAYER_NONE)
+                  else if (sGame.playersAttemptingPick[column][0] != (0xFF)
+                        && sGame.playersAttemptingPick[column][1] == (0xFF))
                   {
                        
                       playerIdPicked = sGame.playersAttemptingPick[column][0];
@@ -1269,12 +1340,12 @@ export function HandlePickBerries(): any {
                   }
 
                    
-                  sGame.player.berries.fallDist[column] = EAT_FALL_DIST;
+                  sGame.player.berries.fallDist[column] = (7);
                   sGame.berryState[column] = BERRYSTATE_EATEN;
                   sGame.inputState[playerIdPicked] = INPUTSTATE_ATE_BERRY;
                   sGame.berryEatenBy[column] = playerIdPicked;
                   sGame.players[playerIdPicked].comm.ateBerry = TRUE;
-                  if (playerIdMissed != PLAYER_NONE)
+                  if (playerIdMissed != (0xFF))
                       sGame.players[playerIdMissed].comm.missedBerry = TRUE;  
 
                   sGame.berriesEaten[playerIdPicked]++;
@@ -1283,8 +1354,8 @@ export function HandlePickBerries(): any {
                   TryIncrementDifficulty(playerIdPicked);
                   sGame.prevBerryIds[column] = sGame.player.berries.ids[column];
                   sGame.player.berries.ids[column] = BERRY_MISSED;  
-                  sGame.playersAttemptingPick[column][0] = PLAYER_NONE;
-                  sGame.playersAttemptingPick[column][1] = PLAYER_NONE;
+                  sGame.playersAttemptingPick[column][0] = (0xFF);
+                  sGame.playersAttemptingPick[column][1] = (0xFF);
               }
           }
       }
@@ -1311,7 +1382,7 @@ export function TryPickBerry(playerId: any, pickState: any, column: any): any {
       }
 
        
-      if (berries.fallDist[column] == EAT_FALL_DIST - 1 || berries.fallDist[column] == EAT_FALL_DIST)
+      if (berries.fallDist[column] == (7) - 1 || berries.fallDist[column] == (7))
       {
            
           if (column == sDodrioHeadToColumnMap[numPlayersIdx][playerId][pick])
@@ -1361,21 +1432,21 @@ export function UpdateFallingBerries(): any {
           {
               sGame.berriesFalling = TRUE;
 
-              if (game.player.berries.fallDist[i] >= MAX_FALL_DIST)
+              if (game.player.berries.fallDist[i] >= (10))
               {
                    
-                  game.player.berries.fallDist[i] = MAX_FALL_DIST;
+                  game.player.berries.fallDist[i] = (10);
                   sGame.berryState[i] = BERRYSTATE_SQUISHED;
                   if (!sGame.playingSquishSound[i])
                   {
                       sGame.playingSquishSound[i] = TRUE;
                       PlaySE(SE_BALLOON_RED + game.player.berries.ids[i]);
                   }
-                  if (sGame.numGraySquares < NUM_STATUS_SQUARES || otherBerryMissed == TRUE)
+                  if (sGame.numGraySquares < (10) || otherBerryMissed == TRUE)
                   {
                       otherBerryMissed = TRUE;
                       sGame.playingSquishSound[i] = FALSE;
-                      if (sGame.numGraySquares < NUM_STATUS_SQUARES)
+                      if (sGame.numGraySquares < (10))
                           sGame.numGraySquares++;
 
                       IncrementBerryResult(BERRY_MISSED, i, 0);
@@ -1386,7 +1457,7 @@ export function UpdateFallingBerries(): any {
               {
                    
                   let delay: any = null;
-                  delayStage = sGame.difficulty[GetPlayerIdAtColumn(i)] / NUM_DIFFICULTIES;
+                  delayStage = sGame.difficulty[GetPlayerIdAtColumn(i)] / (7);
                   if (delayStage >= ARRAY_COUNT(sBerryFallDelays) - 1)
                       delayStage = ARRAY_COUNT(sBerryFallDelays) - 1;
 
@@ -1418,7 +1489,7 @@ export function UpdateFallingBerries(): any {
                
               if (++sGame.newBerryTimer[i] >= 20)
               {
-                  if (sGame.numGraySquares < NUM_STATUS_SQUARES)
+                  if (sGame.numGraySquares < (10))
                   {
                       sGame.newBerryTimer[i] = 0;
                       sGame.fallTimer[i] = 0;
@@ -1448,7 +1519,7 @@ export function UpdateBerrySprites(): any {
           else
               SetBerryInvisibility(i, TRUE);
 
-          if (player.berries.fallDist[column] >= MAX_FALL_DIST)
+          if (player.berries.fallDist[column] >= (10))
           {
                
               SetBerryAnim(i, player.berries.ids[column] + BERRY_MISSED);
@@ -1457,8 +1528,8 @@ export function UpdateBerrySprites(): any {
           else if (player.berries.ids[column] == 3)
           {
                
-              player.berries.fallDist[column] = EAT_FALL_DIST;
-              SetBerryAnim(i, ANIM_EATEN);
+              player.berries.fallDist[column] = (7);
+              SetBerryAnim(i, ((BERRY_MISSED * 2)));
               SetBerryYPos(i, player.berries.fallDist[column] * 2 - 1);
           }
           else
@@ -1494,7 +1565,7 @@ export function SetAllDodrioDisabled(): any {
 /** static void UpdateGame_Leader(void) */
 export function UpdateGame_Leader(): any {
   UpdateBerrySprites();
-      if (sGame.numGraySquares >= NUM_STATUS_SQUARES)
+      if (sGame.numGraySquares >= (10))
           SetAllDodrioDisabled();
       else
           UpdateAllDodrioAnims();
@@ -1505,7 +1576,7 @@ export function UpdateGame_Leader(): any {
 /** static void UpdateGame_Member(void) */
 export function UpdateGame_Member(): any {
   UpdateBerrySprites();
-      if (sGame.numGraySquares >= NUM_STATUS_SQUARES)
+      if (sGame.numGraySquares >= (10))
           SetAllDodrioDisabled();
       else
           UpdateAllDodrioAnims();
@@ -1567,9 +1638,9 @@ export function ResetReadyToStart(): any {
 
 /** static bool32 ReadyToEndGame_Leader(void) */
 export function ReadyToEndGame_Leader(): any {
-  if (sGame.numGraySquares >= NUM_STATUS_SQUARES && !sGame.berriesFalling)
+  if (sGame.numGraySquares >= (10) && !sGame.berriesFalling)
       {
-          sGame.numGraySquares = NUM_STATUS_SQUARES;
+          sGame.numGraySquares = (10);
           if (sGame.allReadyToEnd)
               return TRUE;
       }
@@ -1581,11 +1652,11 @@ export function ReadyToEndGame_Leader(): any {
 export function ReadyToEndGame_Member(): any {
   let i, berryStart, berryEnd;
 
-      if (sGame.numGraySquares >= NUM_STATUS_SQUARES)
+      if (sGame.numGraySquares >= (10))
       {
           berryStart = sGame.berryColStart;
           berryEnd = sGame.berryColEnd;
-          sGame.numGraySquares = NUM_STATUS_SQUARES;
+          sGame.numGraySquares = (10);
           if (sGame.allReadyToEnd)
           {
               for (i = berryStart; i < berryEnd; i++)
@@ -1593,7 +1664,7 @@ export function ReadyToEndGame_Member(): any {
                   let player: any =sGame.players[sGame.multiplayerId];
                   let column: any = sActiveColumnMap[sGame.numPlayers - 1][sGame.multiplayerId][i];
 
-                  if (player.berries.fallDist[column] != MAX_FALL_DIST)
+                  if (player.berries.fallDist[column] != (10))
                       return FALSE;
               }
               return TRUE;
@@ -1605,7 +1676,7 @@ export function ReadyToEndGame_Member(): any {
 
 /** static void TryIncrementDifficulty(u8 playerId) */
 export function TryIncrementDifficulty(playerId: any): any {
-  let threshold: any = sDifficultyThresholds[sGame.difficulty[playerId] % NUM_DIFFICULTIES] + (sGame.difficulty[playerId] / NUM_DIFFICULTIES) * 100;
+  let threshold: any = sDifficultyThresholds[sGame.difficulty[playerId] % (7)] + (sGame.difficulty[playerId] / (7)) * 100;
       if (sGame.berriesEaten[playerId] >= threshold)
           sGame.difficulty[playerId]++;
 }
@@ -1645,7 +1716,7 @@ export function GetNewBerryId(playerId: any, column: any): any {
 /** static u8 GetNewBerryIdByDifficulty(u8 difficulty, u8 column) */
 export function GetNewBerryIdByDifficulty(difficulty: any, column: any): any {
   let prevBerryId: any = sGame.prevBerryIds[column];
-      switch (difficulty % NUM_DIFFICULTIES)
+      switch (difficulty % (7))
       {
       default: return BERRY_BLUE;
       case 0:  return BERRY_BLUE;
@@ -1837,8 +1908,8 @@ export function UpdateBerriesPickedInRow(picked: any): any {
       {
           if (++sGame.berriesPickedInRow > sGame.maxBerriesPickedInRow)
               sGame.maxBerriesPickedInRow = sGame.berriesPickedInRow;
-          if (sGame.berriesPickedInRow > MAX_BERRIES)
-              sGame.berriesPickedInRow = MAX_BERRIES;
+          if (sGame.berriesPickedInRow > (9999))
+              sGame.berriesPickedInRow = (9999);
       }
       else  
       {
@@ -1861,7 +1932,7 @@ export function ResetForPlayAgainPrompt(): any {
 
       for (i = 0; i < MAX_RFU_PLAYERS; i++)
       {
-          for (j = 0; j < NUM_BERRY_COLUMNS; j++)
+          for (j = 0; j < (11); j++)
               sGame.players[i].berries.fallDist[j] = 0;
           sGame.players[i].comm.pickState = PICK_NONE;
           sGame.players[i].comm.ateBerry = FALSE;
@@ -1903,13 +1974,13 @@ export function GetBerriesPicked(playerId: any): any {
   let sum: any = sGame.berryResults[playerId][BERRY_BLUE]
               + sGame.berryResults[playerId][BERRY_GREEN]
               + sGame.berryResults[playerId][BERRY_GOLD];
-      return min(sum, MAX_BERRIES);
+      return min(sum, (9999));
 }
 
 /** static void TryUpdateRecords(void) */
 export function TryUpdateRecords(): any {
-  let berriesPicked: any = Min(GetBerriesPicked(sGame.multiplayerId), MAX_BERRIES);  
-      let score: any = Min(GetScore(sGame.multiplayerId), MAX_SCORE);
+  let berriesPicked: any = Min(GetBerriesPicked(sGame.multiplayerId), (9999));  
+      let score: any = Min(GetScore(sGame.multiplayerId), (999990));
 
       if (gSaveBlock2Ptr.berryPick.bestScore < score)
           gSaveBlock2Ptr.berryPick.bestScore = score;
@@ -2012,7 +2083,7 @@ export function GetHighestScore(): any {
           if (score > maxScore)
               maxScore = score;
       }
-      return Min(maxScore, MAX_SCORE);
+      return Min(maxScore, (999990));
 }
 
 /** static u32 GetHighestBerryResult(u8 berryId) */
@@ -2077,7 +2148,7 @@ export function SetScoreResults(): any {
 
        
       for (i = 0; i < numPlayers; i++)
-          sGame.scoreResults[i].score = Min(GetScore(i), MAX_SCORE);
+          sGame.scoreResults[i].score = Min(GetScore(i), (999990));
 
        
       do
@@ -2229,7 +2300,7 @@ export function PrintRecordsText(windowId: any, width: any): any {
       DrawTextBorderOuter(windowId, 0x21D, 13);
       FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
       AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_BerryPickingRecords, GetStringCenterAlignXOffset(FONT_NORMAL, gText_BerryPickingRecords, width * 8), 1, TEXT_SKIP_DRAW, NULL);
-      for (i = 0; i < NUM_RECORD_TYPES; i++)
+      for (i = 0; i < (3); i++)
       {
           ConvertIntToDecimalStringN(gStringVar1, recordNums[i], STR_CONV_MODE_LEFT_ALIGN, sRecordNumMaxDigits[i]);
           numWidth = GetStringWidth(FONT_NORMAL, gStringVar1, -1);
@@ -2445,13 +2516,13 @@ export function RecvPacket_ReadyToEnd(playerId: any): any {
 /** static void LoadDodrioGfx(void) */
 export function LoadDodrioGfx(): any {
   let ptr: any = AllocZeroed(0x3000);
-      let normal: any = [sDodrioNormal_Pal, PALTAG_DODRIO_NORMAL];
-      let shiny: any = [sDodrioShiny_Pal, PALTAG_DODRIO_SHINY];
+      let normal: any = [sDodrioNormal_Pal, (0)];
+      let shiny: any = [sDodrioShiny_Pal, (1)];
 
       LZ77UnCompWram(sDodrio_Gfx, ptr);
       if (ptr)
       {
-          let sheet: any = [ptr, 0x3000, GFXTAG_DODRIO];
+          let sheet: any = [ptr, 0x3000, (0)];
           LoadSpriteSheet(sheet);
           Free(ptr);
       }
@@ -2462,7 +2533,7 @@ export function LoadDodrioGfx(): any {
 /** static void CreateDodrioSprite(struct DodrioGame_MonInfo *monInfo, u8 playerId, u8 id, u8 numPlayers) */
 export function CreateDodrioSprite(monInfo: any, playerId: any, id: any, numPlayers: any): any {
   let template: any =
-      [ GFXTAG_DODRIO, monInfo.isShiny, sOamData_Dodrio, sAnims_Dodrio, NULL, gDummySpriteAffineAnimTable, SpriteCB_Dodrio,
+      [ (0), monInfo.isShiny, sOamData_Dodrio, sAnims_Dodrio, NULL, gDummySpriteAffineAnimTable, SpriteCB_Dodrio,
       ];
 
       sDodrioSpriteIds[id] = AllocZeroed(4);
@@ -2536,13 +2607,13 @@ export function DoDodrioMissedAnim(sprite: any): any {
 
 /** static u32 DoDodrioIntroAnim(struct Sprite *sprite) */
 export function DoDodrioIntroAnim(sprite: any): any {
-  let pickState: any = (++sprite.sTimer / FRAMES_PER_STATE) % NUM_INTRO_PICK_STATES;
+  let pickState: any = (++sprite.sTimer / (13)) % (PICK_DISABLED);
 
        
-      if (sprite.sTimer % FRAMES_PER_STATE == 0 && pickState != PICK_NONE)
+      if (sprite.sTimer % (13) == 0 && pickState != PICK_NONE)
           PlaySE(SE_M_CHARM);
 
-      if (sprite.sTimer >= FRAMES_PER_STATE * NUM_INTRO_PICK_STATES * 2)
+      if (sprite.sTimer >= (13) (PICK_DISABLED) * 2)
       {
            
           sprite.sState = 0;
@@ -2584,7 +2655,7 @@ export function SetDodrioAnim(id: any, pickState: any): any {
 /** static void InitStatusBarPos(void) */
 export function InitStatusBarPos(): any {
   let i: any = null;
-      for (i = 0; i < NUM_STATUS_SQUARES; i++)
+      for (i = 0; i < (10); i++)
       {
           let sprite: any =gSprites[sStatusBar.spriteIds[i]];
           sprite.x = (i * 16) + 48;
@@ -2597,21 +2668,21 @@ export function InitStatusBarPos(): any {
 export function CreateStatusBarSprites(): any {
   let i: any = null;
       let ptr: any = AllocZeroed(0x180);
-      let pal: any = [sStatus_Pal, PALTAG_STATUS];
+      let pal: any = [sStatus_Pal, (2)];
 
       LZ77UnCompWram(sStatus_Gfx, ptr);
        
       if (ptr)
       {
-          let sheet: any = [ptr, 0x180, GFXTAG_STATUS];
+          let sheet: any = [ptr, 0x180, (1)];
           let template: any =
-          [ GFXTAG_STATUS, PALTAG_STATUS, sOamData_16x16_Priority0, sAnims_StatusBar, NULL, gDummySpriteAffineAnimTable, SpriteCB_Status,
+          [ (1), (2), sOamData_16x16_Priority0, sAnims_StatusBar, NULL, gDummySpriteAffineAnimTable, SpriteCB_Status,
           ];
 
           sStatusBar = AllocZeroed(0);
           LoadSpriteSheet(sheet);
           LoadSpritePalette(pal);
-          for (i = 0; i < NUM_STATUS_SQUARES; i++)
+          for (i = 0; i < (10); i++)
               sStatusBar.spriteIds[i] = CreateSprite(template, (i * 16) + 48, -8 - (i * 8), 0);
       }
 
@@ -2621,7 +2692,7 @@ export function CreateStatusBarSprites(): any {
 /** static void FreeStatusBar(void) */
 export function FreeStatusBar(): any {
   let i: any = null;
-      for (i = 0; i < NUM_STATUS_SQUARES; i++)
+      for (i = 0; i < (10); i++)
       {
           let sprite: any =gSprites[sStatusBar.spriteIds[i]];
           if (sprite)
@@ -2634,7 +2705,7 @@ export function FreeStatusBar(): any {
 export function DoStatusBarIntro(): any {
   let i: any = null;
       let animActive: any = FALSE;
-      for (i = 0; i < NUM_STATUS_SQUARES; i++)
+      for (i = 0; i < (10); i++)
       {
           let sprite: any =gSprites[sStatusBar.spriteIds[i]];
           sStatusBar.yChange[i] = 2;
@@ -2666,16 +2737,16 @@ export function DoStatusBarIntro(): any {
 export function UpdateStatusBarAnim(numEmpty: any): any {
   let i: any = null;
 
-      if (numEmpty > NUM_STATUS_SQUARES)
+      if (numEmpty > (10))
       {
            
-          for (i = 0; i < NUM_STATUS_SQUARES; i++)
+          for (i = 0; i < (10); i++)
               StartSpriteAnim(gSprites[sStatusBar.spriteIds[i]], STATUS_GRAY);
       }
       else
       {
            
-          for (i = 0; i < NUM_STATUS_SQUARES - numEmpty; i++)
+          for (i = 0; i < (10) - numEmpty; i++)
           {
               if (numEmpty > 6)
               {
@@ -2697,7 +2768,7 @@ export function UpdateStatusBarAnim(numEmpty: any): any {
           }
 
            
-          for (; i < NUM_STATUS_SQUARES; i++)
+          for (; i < (10); i++)
               StartSpriteAnim(gSprites[sStatusBar.spriteIds[i]], STATUS_GRAY);
       }
 }
@@ -2705,19 +2776,19 @@ export function UpdateStatusBarAnim(numEmpty: any): any {
 /** static void SetStatusBarInvisibility(bool8 invisible) */
 export function SetStatusBarInvisibility(invisible: any): any {
   let i: any = null;
-      for (i = 0; i < NUM_STATUS_SQUARES; i++)
+      for (i = 0; i < (10); i++)
           gSprites[sStatusBar.spriteIds[i]].invisible = invisible;
 }
 
 /** static void LoadBerryGfx(void) */
 export function LoadBerryGfx(): any {
   let ptr: any = AllocZeroed(0x480);
-      let pal: any = [sBerries_Pal, PALTAG_BERRIES];
+      let pal: any = [sBerries_Pal, (3)];
 
       LZ77UnCompWram(sBerries_Gfx, ptr);
       if (ptr)
       {
-          let sheet: any = [ptr, 0x480, GFXTAG_BERRIES];
+          let sheet: any = [ptr, 0x480, (2)];
           LoadSpriteSheet(sheet);
       }
 
@@ -2731,14 +2802,14 @@ export function CreateBerrySprites(): any {
       let x: any = null;
 
       let berry: any =
-      [ GFXTAG_BERRIES, PALTAG_BERRIES, sOamData_Berry, sAnims_Berry, NULL, gDummySpriteAffineAnimTable, SpriteCallbackDummy,
+      [ (2), (3), sOamData_Berry, sAnims_Berry, NULL, gDummySpriteAffineAnimTable, SpriteCallbackDummy,
       ];
       let berryIcon: any =
-      [ GFXTAG_BERRIES, PALTAG_BERRIES, sOamData_16x16_Priority0, sAnims_Berry, NULL, gDummySpriteAffineAnimTable, SpriteCallbackDummy,
+      [ (2), (3), sOamData_16x16_Priority0, sAnims_Berry, NULL, gDummySpriteAffineAnimTable, SpriteCallbackDummy,
       ];
 
        
-      for (i = 0; i < NUM_BERRY_COLUMNS; i++)
+      for (i = 0; i < (11); i++)
       {
           sBerrySpriteIds[i] = AllocZeroed(4);
           x = i * 16;
@@ -2747,7 +2818,7 @@ export function CreateBerrySprites(): any {
       }
 
        
-      for (i = 0; i < NUM_BERRY_TYPES; i++)
+      for (i = 0; i < (4); i++)
       {
           sBerryIconSpriteIds[i] = AllocZeroed(4);
           if (i == BERRY_MISSED)
@@ -2764,14 +2835,14 @@ export function FreeBerrySprites(): any {
   let sprite: any = null;
       let i: any = null;
 
-      for (i = 0; i < NUM_BERRY_COLUMNS; i++)
+      for (i = 0; i < (11); i++)
       {
           sprite =gSprites[sBerrySpriteIds[i]];
           if (sprite)
               DestroySprite(sprite);
           FREE_AND_SET_NULL(sBerrySpriteIds[i]);
       }
-      for (i = 0; i < NUM_BERRY_TYPES; i++)
+      for (i = 0; i < (4); i++)
       {
           sprite =gSprites[sBerryIconSpriteIds[i]];
           if (sprite)
@@ -2788,7 +2859,7 @@ export function SetBerryInvisibility(id: any, invisible: any): any {
 /** static void SetBerryIconsInvisibility(bool8 invisible) */
 export function SetBerryIconsInvisibility(invisible: any): any {
   let i: any = null;
-      for (i = 0; i < NUM_BERRY_TYPES; i++)
+      for (i = 0; i < (4); i++)
           gSprites[sBerryIconSpriteIds[i]].invisible = invisible;
 }
 
@@ -2809,7 +2880,7 @@ export function SpriteCB_Cloud(sprite: any): any {
 
       if (sprite.sFrozen != TRUE)
       {
-          for (i = 0; i < NUM_CLOUDS; i++)
+          for (i = 0; i < (2); i++)
           {
               if (++sCloudSpriteIds[i][1] > moveDelays[i])
               {
@@ -2824,19 +2895,19 @@ export function SpriteCB_Cloud(sprite: any): any {
 export function CreateCloudSprites(): any {
   let i: any = null;
       let ptr: any = AllocZeroed(0x400);
-      let pal: any = [sCloud_Pal, PALTAG_CLOUD];
+      let pal: any = [sCloud_Pal, (6)];
 
       LZ77UnCompWram(sCloud_Gfx, ptr);
       if (ptr)
       {
-          let sheet: any = [ptr, 0x400, GFXTAG_CLOUD];
+          let sheet: any = [ptr, 0x400, (5)];
           let template: any =
-          [ GFXTAG_CLOUD, PALTAG_CLOUD, sOamData_Cloud, sAnims_Cloud, NULL, gDummySpriteAffineAnimTable, SpriteCB_Cloud,
+          [ (5), (6), sOamData_Cloud, sAnims_Cloud, NULL, gDummySpriteAffineAnimTable, SpriteCB_Cloud,
           ];
 
           LoadSpriteSheet(sheet);
           LoadSpritePalette(pal);
-          for (i = 0; i < NUM_CLOUDS; i++)
+          for (i = 0; i < (2); i++)
           {
               sCloudSpriteIds[i] = AllocZeroed(4);
               sCloudSpriteIds[i] = CreateSprite(template, sCloudStartCoords[i][0], sCloudStartCoords[i][1], 4);
@@ -2849,7 +2920,7 @@ export function CreateCloudSprites(): any {
 /** static void ResetCloudPos(void) */
 export function ResetCloudPos(): any {
   let i: any = null;
-      for (i = 0; i < NUM_CLOUDS; i++)
+      for (i = 0; i < (2); i++)
       {
           let sprite: any =gSprites[sCloudSpriteIds[i]];
           sprite.sFrozen = TRUE;
@@ -2861,7 +2932,7 @@ export function ResetCloudPos(): any {
 /** static void StartCloudMovement(void) */
 export function StartCloudMovement(): any {
   let i: any = null;
-      for (i = 0; i < NUM_CLOUDS; i++)
+      for (i = 0; i < (2); i++)
       {
           let sprite: any =gSprites[sCloudSpriteIds[i]];
           sprite.sFrozen = FALSE;
@@ -2871,7 +2942,7 @@ export function StartCloudMovement(): any {
 /** static void FreeCloudSprites(void) */
 export function FreeCloudSprites(): any {
   let i: any = null;
-      for (i = 0; i < NUM_CLOUDS; i++)
+      for (i = 0; i < (2); i++)
       {
           let sprite: any =gSprites[sCloudSpriteIds[i]];
           if (sprite)
@@ -2883,7 +2954,7 @@ export function FreeCloudSprites(): any {
 /** static void SetCloudInvisibility(bool8 invisible) */
 export function SetCloudInvisibility(invisible: any): any {
   let i: any = null;
-      for (i = 0; i < NUM_CLOUDS; i++)
+      for (i = 0; i < (2); i++)
           gSprites[sCloudSpriteIds[i]].invisible = invisible;
 }
 
@@ -2937,7 +3008,7 @@ export function GetDodrioXPos(playerId: any, numPlayers: any): any {
 /** static void ResetBerryAndStatusBarSprites(void) */
 export function ResetBerryAndStatusBarSprites(): any {
   let i: any = null;
-      for (i = 0; i < NUM_BERRY_COLUMNS; i++)
+      for (i = 0; i < (11); i++)
       {
           SetBerryInvisibility(i, TRUE);
           SetBerryYPos(i, 1);
@@ -3226,8 +3297,8 @@ export function ShowResults(): any {
               for (j = 0; j < 4; j++)
               {
                   let width: any = null;
-                  let berriesPicked: any = Min(GetBerryResult(i, j), MAX_BERRIES);
-                  let maxBerriesPicked: any = Min(GetHighestBerryResult(j), MAX_BERRIES);
+                  let berriesPicked: any = Min(GetBerryResult(i, j), (9999));
+                  let maxBerriesPicked: any = Min(GetHighestBerryResult(j), (9999));
 
                   ConvertIntToDecimalStringN(gStringVar4, berriesPicked, STR_CONV_MODE_LEFT_ALIGN, 4);
                   width = GetStringWidth(FONT_NORMAL, gStringVar4, -1);
@@ -3290,7 +3361,7 @@ export function ShowResults(): any {
           {
               sGfx.timer = 0;
               PlaySE(SE_SELECT);
-              if (GetHighestScore() < PRIZE_SCORE)
+              if (GetHighestScore() < (3000))
               {
                   sGfx.state = 127;  
               }

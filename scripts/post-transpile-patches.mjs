@@ -603,6 +603,141 @@ function patchAllAutoSyntaxBugs() {
     // PATCH AA17 : `(*&expr)` (= C addr-of+deref qui se cancel) → `(expr)`.
     s = s.replace(/\(\s*\*\s*&\s*/g, '(');
 
+    // PATCH AA18 : Auto-déclare les file-scope vars utilisées comme bare
+    // identifier dans les function bodies (= EWRAM_DATA static / IWRAM_DATA
+    // static depuis le C source, qui ne sont PAS extraites par le transpiler).
+    // Algorithme : scan tous les bodies pour `ident = ...;` et `(ident)` et
+    // détecte les noms qui ne sont :
+    //   - ni un import (top-level `import { X } from`)
+    //   - ni un export local (top-level `export function/const X`)
+    //   - ni un keyword TS / global (NULL, TRUE, FALSE, gMain, etc.)
+    // Pour chaque ident manquant, prepend `let <ident>: any = null;` en début
+    // de fichier (= après les imports). Ces vars deviennent file-scope locals
+    // initialisés à null. Lossy mais permet le PARSE + l'exécution sans
+    // ReferenceError.
+    {
+      // Detect imported names (from `import { X } from`).
+      const importedNames = new Set();
+      for (const m of s.matchAll(/^import\s*(?:type\s*)?\{([^}]+)\}\s*from/gm)) {
+        for (const sym of m[1].split(',')) {
+          const name = sym.trim().split(/\s+as\s+/)[0].trim();
+          if (name) importedNames.add(name);
+        }
+      }
+      // Detect locally declared (export const, export function, let, const).
+      const localNames = new Set();
+      for (const m of s.matchAll(/^(?:export\s+)?(?:const|function|let|var)\s+(\w+)/gm)) {
+        localNames.add(m[1]);
+      }
+      // Pre-known global names (= notre runtime expose ces symboles via
+      // gba-global-scope.ts ou decomp-globals.ts). Les undéfined-mais-fournis-
+      // par-runtime ne doivent PAS être ré-déclarés.
+      const KNOWN_GLOBALS = new Set([
+        'NULL', 'TRUE', 'FALSE', 'undefined', 'null', 'true', 'false',
+        'globalThis', 'window', 'console', 'document',
+        'Math', 'Number', 'String', 'Boolean', 'Object', 'Array', 'Error',
+        'Promise', 'Date', 'JSON', 'parseInt', 'parseFloat', 'isNaN', 'isFinite',
+        'Symbol', 'Map', 'Set', 'WeakMap', 'WeakSet',
+        // Décomp + runtime
+        'gMain', 'gTasks', 'gSprites', 'gPaletteFade', 'gPlttBufferFaded',
+        'gPlttBufferUnfaded', 'gSaveBlock1Ptr', 'gSaveBlock2Ptr',
+        'gObjectEvents', 'gPlayerAvatar', 'gFieldEffectArguments',
+        'gBattleStruct', 'gBattleMons', 'gBattlerAttacker', 'gBattlerTarget',
+        'gActiveBattler', 'gBattlersCount', 'gBattleTypeFlags',
+        'gBattleCommunication', 'gBattleBufferB', 'gBattleBufferA',
+        'gChosenActionByBattler', 'gChosenMoveByBattler', 'gDisableStructs',
+        'gProtectStructs', 'gBattleScripting', 'gMoveResultFlags',
+        'gHitMarker', 'gRngValue', 'gLastUsedItem', 'gLastUsedAbility',
+        'gBitTable', 'gStatuses3', 'gSelectionBattleScripts', 'gBattlescriptCurrInstr',
+        'gSpecialVar_Result', 'gSpecialVar_LastTalked', 'gSpecialVar_Facing',
+        'gMonSpritesGfxPtr', 'gContestPaintingMonPalette', 'gContestPaintingWinner',
+        'gContestMonPixels', 'gMonFrontPicTable', 'gMonBackPicTable',
+        'gEnemyParty', 'gPlayerParty', 'gWildMonHeaders',
+        'gFieldCallback', 'gFieldCallback2', 'gWirelessCommType',
+        // Hardware regs
+        'REG_DISPCNT', 'REG_DISPSTAT', 'REG_VCOUNT',
+        'REG_BG0CNT', 'REG_BG1CNT', 'REG_BG2CNT', 'REG_BG3CNT',
+        'REG_BG0HOFS', 'REG_BG0VOFS', 'REG_BG1HOFS', 'REG_BG1VOFS',
+        'REG_BG2HOFS', 'REG_BG2VOFS', 'REG_BG3HOFS', 'REG_BG3VOFS',
+        'REG_WIN0H', 'REG_WIN1H', 'REG_WIN0V', 'REG_WIN1V',
+        'REG_WININ', 'REG_WINOUT', 'REG_BLDCNT', 'REG_BLDALPHA', 'REG_BLDY',
+        'REG_IME', 'REG_IE', 'REG_IF', 'REG_TM3CNT_H', 'REG_WAITCNT',
+        'REG_SIOMLT_SEND', 'REG_SIOMLT_RECV', 'REG_SIODATA32',
+        'GPIO_PORT_DATA', 'GPIO_PORT_DIRECTION',
+        // Memory helpers
+        'MEM_WRITE', 'MEM_OP_ASSIGN', 'MEM_PRE_DEC', 'MEM_PRE_INC',
+        // Common helpers
+        'memset', 'memcpy', 'strcmp', 'strlen', 'sprintf', 'snprintf',
+        'va_arg', 'va_start', 'va_end',
+      ]);
+      // Function params (= scoped to body, ne PAS déclarer comme file-scope).
+      // Extract params depuis `export function X(p1: any, p2: any, ...): any {`.
+      const paramNames = new Set();
+      for (const m of s.matchAll(/^export\s+function\s+\w+\s*\(([^)]*)\)/gm)) {
+        const params = m[1].split(',');
+        for (const p of params) {
+          const name = p.trim().split(':')[0].trim();
+          if (name) paramNames.add(name);
+        }
+      }
+      // Local lets/consts inside function bodies (= scoped).
+      // Approximation : tous les `let X` ou `const X` dans le file, peu importe
+      // le scope. La présence dans localNames suffira.
+      for (const m of s.matchAll(/\b(?:let|const)\s+(\w+)/g)) {
+        localNames.add(m[1]);
+      }
+
+      // Find candidates : bare assignments `^\s+IDENT = ...;` inside bodies.
+      const candidates = new Set();
+      // Pattern : assignment LHS at function body indent (= 6+ spaces).
+      // Skip if part of `let X =` / `const X =` etc.
+      for (const m of s.matchAll(/^(?:    |\t)+(?!let\s|const\s|var\s|return\s|if\s|else|while\s|for\s|switch\s|case\s|do\s|try\s|throw\s|continue|break|MEM_WRITE|MEM_OP_ASSIGN)([A-Za-z_]\w*)\s*=(?!=)/gm)) {
+        candidates.add(m[1]);
+      }
+      // Reads : `IDENT.field` or `IDENT(...)` or `IDENT[idx]` patterns.
+      // We focus on reads of identifiers that look like `s<UpperCase>` (= static
+      // by emerald naming convention) to avoid huge false positive list.
+      for (const m of s.matchAll(/\b(s[A-Z]\w*)\b/g)) {
+        if (!m[1].endsWith('_t')) candidates.add(m[1]);
+      }
+
+      // Filter : remove imports, locals, params, known globals.
+      const toDecl = new Set();
+      for (const name of candidates) {
+        if (importedNames.has(name)) continue;
+        if (localNames.has(name)) continue;
+        if (paramNames.has(name)) continue;
+        if (KNOWN_GLOBALS.has(name)) continue;
+        if (/^[A-Z_]+$/.test(name)) continue;  // ALL_CAPS = constant macro, likely defined elsewhere.
+        toDecl.add(name);
+      }
+
+      if (toDecl.size > 0) {
+        // Inject after the last import (or at file start if no imports).
+        const declBlock = '\n// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──\n'
+          + Array.from(toDecl).sort().map(n => `let ${n}: any = null;`).join('\n')
+          + '\n';
+        // Find insertion point : after last `import ... from '...';` or after
+        // `// @ts-nocheck` comment if no imports.
+        const lastImportMatch = [...s.matchAll(/^import[^\n]+\n/gm)].pop();
+        if (lastImportMatch) {
+          const insertAt = lastImportMatch.index + lastImportMatch[0].length;
+          if (!s.slice(insertAt, insertAt + 200).includes('AUTO-INJECTED file-scope vars')) {
+            s = s.slice(0, insertAt) + declBlock + s.slice(insertAt);
+          }
+        } else {
+          // No imports — inject after `// @ts-nocheck` line.
+          const tsNocheckMatch = s.match(/\/\/\s*@ts-nocheck\s*\n/);
+          if (tsNocheckMatch) {
+            const insertAt = tsNocheckMatch.index + tsNocheckMatch[0].length;
+            if (!s.slice(insertAt, insertAt + 200).includes('AUTO-INJECTED file-scope vars')) {
+              s = s.slice(0, insertAt) + declBlock + s.slice(insertAt);
+            }
+          }
+        }
+      }
+    }
+
     if (s !== before) {
       fs.writeFileSync(fp, s, 'utf8');
       totalPatched++;

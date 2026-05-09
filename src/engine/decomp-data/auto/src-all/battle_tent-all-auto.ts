@@ -15,6 +15,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFallarborTentFuncs: any = null;
+let sFallarborTentRewards: any = null;
+let sRandMonId: any = null;
+let sSlateportTentFuncs: any = null;
+let sSlateportTentRewards: any = null;
+let sVerdanturfTentFuncs: any = null;
+let sVerdanturfTentRewards: any = null;
 /** void CallVerdanturfTentFunction(void) */
 export function CallVerdanturfTentFunction(): any {
   sVerdanturfTentFuncs[gSpecialVar_0x8004]();

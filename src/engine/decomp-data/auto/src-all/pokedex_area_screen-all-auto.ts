@@ -15,6 +15,22 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAreaGlowTilemapMapping: any = null;
+let sAreaGlow_Gfx: any = null;
+let sAreaGlow_Pal: any = null;
+let sAreaMarkerSpritePalette: any = null;
+let sAreaMarkerSpriteSheet: any = null;
+let sAreaMarkerSpriteTemplate: any = null;
+let sAreaUnknownSpritePalette: any = null;
+let sAreaUnknownSpriteTemplate: any = null;
+let sFeebasData: any = null;
+let sLandmarkData: any = null;
+let sMovingRegionMapSections: any = null;
+let sPokedexAreaMapTemplate: any = null;
+let sPokedexAreaScreen: any = null;
+let sSpeciesHiddenFromAreaScreen: any = null;
 /** static void ResetDrawAreaGlowState(void) */
 export function ResetDrawAreaGlowState(): any {
   sPokedexAreaScreen.drawAreaGlowState = 0;
@@ -37,7 +53,7 @@ export function DrawAreaGlow(): any {
       case 3:
           if (!FreeTempTileDataBuffersIfPossible())
           {
-              CpuCopy32(sAreaGlow_Pal,gPlttBufferUnfaded[BG_PLTT_ID(GLOW_PALETTE)], 0);
+              CpuCopy32(sAreaGlow_Pal,gPlttBufferUnfaded[BG_PLTT_ID((10))], 0);
               sPokedexAreaScreen.drawAreaGlowState++;
           }
           return TRUE;
@@ -86,11 +102,11 @@ export function FindMapsWithMon(species: any): any {
               {
                   switch (sFeebasData[i][1])
                   {
-                  case MAP_GROUP_TOWNS_AND_ROUTES:
+                  case (MAP_GROUP(MAP_PETALBURG_CITY)):
                       SetAreaHasMon(sFeebasData[i][1], sFeebasData[i][2]);
                       break;
-                  case MAP_GROUP_DUNGEONS:
-                  case MAP_GROUP_SPECIAL_AREA:
+                  case (MAP_GROUP(MAP_METEOR_FALLS_1F_1R)):
+                  case (MAP_GROUP(MAP_SAFARI_ZONE_NORTHWEST)):
                       SetSpecialMapHasMon(sFeebasData[i][1], sFeebasData[i][2]);
                       break;
                   }
@@ -104,11 +120,11 @@ export function FindMapsWithMon(species: any): any {
               {
                   switch (gWildMonHeaders[i].mapGroup)
                   {
-                  case MAP_GROUP_TOWNS_AND_ROUTES:
+                  case (MAP_GROUP(MAP_PETALBURG_CITY)):
                       SetAreaHasMon(gWildMonHeaders[i].mapGroup, gWildMonHeaders[i].mapNum);
                       break;
-                  case MAP_GROUP_DUNGEONS:
-                  case MAP_GROUP_SPECIAL_AREA:
+                  case (MAP_GROUP(MAP_METEOR_FALLS_1F_1R)):
+                  case (MAP_GROUP(MAP_SAFARI_ZONE_NORTHWEST)):
                       SetSpecialMapHasMon(gWildMonHeaders[i].mapGroup, gWildMonHeaders[i].mapNum);
                       break;
                   }
@@ -134,7 +150,7 @@ export function FindMapsWithMon(species: any): any {
 
 /** static void SetAreaHasMon(u16 mapGroup, u16 mapNum) */
 export function SetAreaHasMon(mapGroup: any, mapNum: any): any {
-  if (sPokedexAreaScreen.numOverworldAreas < MAX_AREA_HIGHLIGHTS)
+  if (sPokedexAreaScreen.numOverworldAreas < (64))
       {
           sPokedexAreaScreen.overworldAreasWithMons[sPokedexAreaScreen.numOverworldAreas].mapGroup = mapGroup;
           sPokedexAreaScreen.overworldAreasWithMons[sPokedexAreaScreen.numOverworldAreas].mapNum = mapNum;
@@ -147,7 +163,7 @@ export function SetAreaHasMon(mapGroup: any, mapNum: any): any {
 export function SetSpecialMapHasMon(mapGroup: any, mapNum: any): any {
   let i: any = null;
 
-      if (sPokedexAreaScreen.numSpecialAreas < MAX_AREA_MARKERS)
+      if (sPokedexAreaScreen.numSpecialAreas < (32))
       {
           let regionMapSectionId= GetRegionMapSectionId(mapGroup, mapNum);
           if (regionMapSectionId < MAPSEC_NONE)
@@ -230,12 +246,12 @@ export function BuildAreaGlowTilemap(): any {
       for (i = 0; i < sPokedexAreaScreen.numOverworldAreas; i++)
       {
           j = 0;
-          for (y = 0; y < AREA_SCREEN_HEIGHT; y++)
+          for (y = 0; y < (20); y++)
           {
-              for (x = 0; x < AREA_SCREEN_WIDTH; x++)
+              for (x = 0; x < (32); x++)
               {
                   if (GetRegionMapSecIdAt(x, y) == sPokedexAreaScreen.overworldAreasWithMons[i].regionMapSectionId)
-                      sPokedexAreaScreen.areaGlowTilemap[j] = GLOW_FULL;
+                      sPokedexAreaScreen.areaGlowTilemap[j] = (0xFFFF);
                   j++;
               }
           }
@@ -243,34 +259,34 @@ export function BuildAreaGlowTilemap(): any {
 
        
       j = 0;
-      for (y = 0; y < AREA_SCREEN_HEIGHT; y++)
+      for (y = 0; y < (20); y++)
       {
-          for (x = 0; x < AREA_SCREEN_WIDTH; x++)
+          for (x = 0; x < (32); x++)
           {
-              if (sPokedexAreaScreen.areaGlowTilemap[j] == GLOW_FULL)
+              if (sPokedexAreaScreen.areaGlowTilemap[j] == (0xFFFF))
               {
                    
                    
 
                    
-                  if (x != 0 && sPokedexAreaScreen.areaGlowTilemap[j - 1] != GLOW_FULL)
-                      sPokedexAreaScreen.areaGlowTilemap[j - 1] |= GLOW_EDGE_L;
-                  if (x != AREA_SCREEN_WIDTH - 1 && sPokedexAreaScreen.areaGlowTilemap[j + 1] != GLOW_FULL)
-                      sPokedexAreaScreen.areaGlowTilemap[j + 1] |= GLOW_EDGE_R;
-                  if (y != 0 && sPokedexAreaScreen.areaGlowTilemap[j - AREA_SCREEN_WIDTH] != GLOW_FULL)
-                      sPokedexAreaScreen.areaGlowTilemap[j - AREA_SCREEN_WIDTH] |= GLOW_EDGE_T;
-                  if (y != AREA_SCREEN_HEIGHT - 1 && sPokedexAreaScreen.areaGlowTilemap[j + AREA_SCREEN_WIDTH] != GLOW_FULL)
-                      sPokedexAreaScreen.areaGlowTilemap[j + AREA_SCREEN_WIDTH] |= GLOW_EDGE_B;
+                  if (x != 0 && sPokedexAreaScreen.areaGlowTilemap[j - 1] != (0xFFFF))
+                      sPokedexAreaScreen.areaGlowTilemap[j - 1] |= ((1 << 1));
+                  if (x != (32) - 1 && sPokedexAreaScreen.areaGlowTilemap[j + 1] != (0xFFFF))
+                      sPokedexAreaScreen.areaGlowTilemap[j + 1] |= ((1 << 0));
+                  if (y != 0 && sPokedexAreaScreen.areaGlowTilemap[j - (32)] != (0xFFFF))
+                      sPokedexAreaScreen.areaGlowTilemap[j - (32)] |= ((1 << 3));
+                  if (y != (20) - 1 && sPokedexAreaScreen.areaGlowTilemap[j + (32)] != (0xFFFF))
+                      sPokedexAreaScreen.areaGlowTilemap[j + (32)] |= ((1 << 2));
 
                    
-                  if (x != 0 && y != 0 && sPokedexAreaScreen.areaGlowTilemap[j - AREA_SCREEN_WIDTH - 1] != GLOW_FULL)
-                      sPokedexAreaScreen.areaGlowTilemap[j - AREA_SCREEN_WIDTH - 1] |= GLOW_CORNER_TL;
-                  if (x != AREA_SCREEN_WIDTH - 1 && y != 0 && sPokedexAreaScreen.areaGlowTilemap[j - AREA_SCREEN_WIDTH + 1] != GLOW_FULL)
-                      sPokedexAreaScreen.areaGlowTilemap[j - AREA_SCREEN_WIDTH + 1] |= GLOW_CORNER_TR;
-                  if (x != 0 && y != AREA_SCREEN_HEIGHT - 1 && sPokedexAreaScreen.areaGlowTilemap[j + AREA_SCREEN_WIDTH - 1] != GLOW_FULL)
-                      sPokedexAreaScreen.areaGlowTilemap[j + AREA_SCREEN_WIDTH - 1] |= GLOW_CORNER_BL;
-                  if (x != AREA_SCREEN_WIDTH - 1 && y != AREA_SCREEN_HEIGHT - 1 && sPokedexAreaScreen.areaGlowTilemap[j + AREA_SCREEN_WIDTH + 1] != GLOW_FULL)
-                      sPokedexAreaScreen.areaGlowTilemap[j + AREA_SCREEN_WIDTH + 1] |= GLOW_CORNER_BR;
+                  if (x != 0 && y != 0 && sPokedexAreaScreen.areaGlowTilemap[j - (32) - 1] != (0xFFFF))
+                      sPokedexAreaScreen.areaGlowTilemap[j - (32) - 1] |= ((1 << 4));
+                  if (x != (32) - 1 && y != 0 && sPokedexAreaScreen.areaGlowTilemap[j - (32) + 1] != (0xFFFF))
+                      sPokedexAreaScreen.areaGlowTilemap[j - (32) + 1] |= ((1 << 6));
+                  if (x != 0 && y != (20) - 1 && sPokedexAreaScreen.areaGlowTilemap[j + (32) - 1] != (0xFFFF))
+                      sPokedexAreaScreen.areaGlowTilemap[j + (32) - 1] |= ((1 << 5));
+                  if (x != (32) - 1 && y != (20) - 1 && sPokedexAreaScreen.areaGlowTilemap[j + (32) + 1] != (0xFFFF))
+                      sPokedexAreaScreen.areaGlowTilemap[j + (32) + 1] |= ((1 << 7));
               }
 
               j++;
@@ -281,27 +297,27 @@ export function BuildAreaGlowTilemap(): any {
        
       for (i = 0; i < ARRAY_COUNT(sPokedexAreaScreen.areaGlowTilemap); i++)
       {
-          if (sPokedexAreaScreen.areaGlowTilemap[i] == GLOW_FULL)
+          if (sPokedexAreaScreen.areaGlowTilemap[i] == (0xFFFF))
           {
               sPokedexAreaScreen.areaGlowTilemap[i] = GLOW_TILE_FULL;
-              sPokedexAreaScreen.areaGlowTilemap[i] |= (GLOW_PALETTE << 12);
+              sPokedexAreaScreen.areaGlowTilemap[i] |= ((10) << 12);
           }
           else if (sPokedexAreaScreen.areaGlowTilemap[i])
           {
                
                
-              if (sPokedexAreaScreen.areaGlowTilemap[i] & GLOW_EDGE_L)
-                  sPokedexAreaScreen.areaGlowTilemap[i] &= ~(GLOW_CORNER_TL | GLOW_CORNER_BL);
-              if (sPokedexAreaScreen.areaGlowTilemap[i] & GLOW_EDGE_R)
-                  sPokedexAreaScreen.areaGlowTilemap[i] &= ~(GLOW_CORNER_TR | GLOW_CORNER_BR);
-              if (sPokedexAreaScreen.areaGlowTilemap[i] & GLOW_EDGE_T)
-                  sPokedexAreaScreen.areaGlowTilemap[i] &= ~(GLOW_CORNER_TR | GLOW_CORNER_TL);
-              if (sPokedexAreaScreen.areaGlowTilemap[i] & GLOW_EDGE_B)
-                  sPokedexAreaScreen.areaGlowTilemap[i] &= ~(GLOW_CORNER_BR | GLOW_CORNER_BL);
+              if (sPokedexAreaScreen.areaGlowTilemap[i] & ((1 << 1)))
+                  sPokedexAreaScreen.areaGlowTilemap[i] &= ~(((1 << 4)) | ((1 << 5)));
+              if (sPokedexAreaScreen.areaGlowTilemap[i] & ((1 << 0)))
+                  sPokedexAreaScreen.areaGlowTilemap[i] &= ~(((1 << 6)) | ((1 << 7)));
+              if (sPokedexAreaScreen.areaGlowTilemap[i] & ((1 << 3)))
+                  sPokedexAreaScreen.areaGlowTilemap[i] &= ~(((1 << 6)) | ((1 << 4)));
+              if (sPokedexAreaScreen.areaGlowTilemap[i] & ((1 << 2)))
+                  sPokedexAreaScreen.areaGlowTilemap[i] &= ~(((1 << 7)) | ((1 << 5)));
 
                
               sPokedexAreaScreen.areaGlowTilemap[i] = sAreaGlowTilemapMapping[sPokedexAreaScreen.areaGlowTilemap[i]];
-              sPokedexAreaScreen.areaGlowTilemap[i] |= (GLOW_PALETTE << 12);
+              sPokedexAreaScreen.areaGlowTilemap[i] |= ((10) << 12);
           }
       }
 }
@@ -537,14 +553,14 @@ export function DestroyAreaScreenSprites(): any {
   let i: any = null;
 
        
-      FreeSpriteTilesByTag(TAG_AREA_MARKER);
-      FreeSpritePaletteByTag(TAG_AREA_MARKER);
+      FreeSpriteTilesByTag((2));
+      FreeSpritePaletteByTag((2));
       for (i = 0; i < sPokedexAreaScreen.numAreaMarkerSprites; i++)
           DestroySprite(sPokedexAreaScreen.areaMarkerSprites[i]);
 
        
-      FreeSpriteTilesByTag(TAG_AREA_UNKNOWN);
-      FreeSpritePaletteByTag(TAG_AREA_UNKNOWN);
+      FreeSpriteTilesByTag((3));
+      FreeSpritePaletteByTag((3));
       for (i = 0; i < ARRAY_COUNT(sPokedexAreaScreen.areaUnknownSprites); i++)
       {
           if (sPokedexAreaScreen.areaUnknownSprites[i])
@@ -554,7 +570,7 @@ export function DestroyAreaScreenSprites(): any {
 
 /** static void LoadAreaUnknownGraphics(void) */
 export function LoadAreaUnknownGraphics(): any {
-  let spriteSheet: any = [ sPokedexAreaScreen.areaUnknownGraphicsBuffer, sizeof(sPokedexAreaScreen.areaUnknownGraphicsBuffer), TAG_AREA_UNKNOWN,
+  let spriteSheet: any = [ sPokedexAreaScreen.areaUnknownGraphicsBuffer, sizeof(sPokedexAreaScreen.areaUnknownGraphicsBuffer), (3),
       ];
       LZ77UnCompWram(gPokedexAreaScreenAreaUnknown_Gfx, sPokedexAreaScreen.areaUnknownGraphicsBuffer);
       LoadSpriteSheet(spriteSheet);

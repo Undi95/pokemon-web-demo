@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sWork: any = null;
 /** bool32 ConfettiUtil_Init(u8 count) */
 export function ConfettiUtil_Init(count: any): any {
   let i: any = 0;

@@ -15,6 +15,18 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sMemberFacingDirections: any = null;
+let sMovement_UnionPlayerEnter: any = null;
+let sMovement_UnionPlayerExit: any = null;
+let sOppositeFacingDirection: any = null;
+let sUnionObjRefreshTimer: any = null;
+let sUnionObjWork: any = null;
+let sUnionRoomGroupOffsets: any = null;
+let sUnionRoomLocalIds: any = null;
+let sUnionRoomObjGfxIds: any = null;
+let sUnionRoomPlayerCoords: any = null;
 /** static bool32 IsPlayerStandingStill(void) */
 export function IsPlayerStandingStill(): any {
   if (gPlayerAvatar.tileTransitionState == T_TILE_CENTER || gPlayerAvatar.tileTransitionState == T_NOT_MOVING)
@@ -295,11 +307,11 @@ export function CreateUnionRoomPlayerSprites(spriteIds: any, leaderId: any): any
       {
           let id: any = UR_PLAYER_SPRITE_ID(leaderId, memberId);
           spriteIds[id] = CreateVirtualObject(OBJ_EVENT_GFX_MAN_4,
-                                             id - UR_SPRITE_START_ID,
+                                             id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)),
                                              sUnionRoomPlayerCoords[leaderId][0] + sUnionRoomGroupOffsets[memberId][0],
                                              sUnionRoomPlayerCoords[leaderId][1] + sUnionRoomGroupOffsets[memberId][1],
                                              3, 1);
-          SetVirtualObjectInvisibility(id - UR_SPRITE_START_ID, TRUE);
+          SetVirtualObjectInvisibility(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)), TRUE);
       }
 }
 
@@ -335,7 +347,7 @@ export function GetNewFacingDirectionForUnionRoomPlayer(memberId: any, leaderId:
 
 /** static bool32 IsUnionRoomPlayerInvisible(u32 leaderId, u32 memberId) */
 export function IsUnionRoomPlayerInvisible(leaderId: any, memberId: any): any {
-  return IsVirtualObjectInvisible(UR_PLAYER_SPRITE_ID(leaderId, memberId) - UR_SPRITE_START_ID);
+  return IsVirtualObjectInvisible(UR_PLAYER_SPRITE_ID(leaderId, memberId) - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)));
 }
 
 /** static void SpawnGroupMember(u32 leaderId, u32 memberId, u8 graphicsId, struct RfuGameData *gameData) */
@@ -344,10 +356,10 @@ export function SpawnGroupMember(leaderId: any, memberId: any, graphicsId: any, 
       let id: any = UR_PLAYER_SPRITE_ID(leaderId, memberId);
       if (IsUnionRoomPlayerInvisible(leaderId, memberId) == TRUE)
       {
-          SetVirtualObjectInvisibility(id - UR_SPRITE_START_ID, FALSE);
-          SetVirtualObjectSpriteAnim(id - UR_SPRITE_START_ID, UNION_ROOM_SPAWN_IN);
+          SetVirtualObjectInvisibility(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)), FALSE);
+          SetVirtualObjectSpriteAnim(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)), UNION_ROOM_SPAWN_IN);
       }
-      SetVirtualObjectGraphics(id - UR_SPRITE_START_ID, graphicsId);
+      SetVirtualObjectGraphics(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)), graphicsId);
       SetUnionRoomObjectFacingDirection(memberId, leaderId, GetNewFacingDirectionForUnionRoomPlayer(memberId, leaderId, gameData));
       GetUnionRoomPlayerCoords(leaderId, memberId,x,y);
       MapGridSetMetatileImpassabilityAt(x, y, TRUE);
@@ -356,7 +368,7 @@ export function SpawnGroupMember(leaderId: any, memberId: any, graphicsId: any, 
 /** static void DespawnGroupMember(u32 leaderId, u32 memberId) */
 export function DespawnGroupMember(leaderId: any, memberId: any): any {
   let x, y;
-      SetVirtualObjectSpriteAnim(UR_PLAYER_SPRITE_ID(leaderId, memberId) - UR_SPRITE_START_ID, UNION_ROOM_SPAWN_OUT);
+      SetVirtualObjectSpriteAnim(UR_PLAYER_SPRITE_ID(leaderId, memberId) - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)), UNION_ROOM_SPAWN_OUT);
       GetUnionRoomPlayerCoords(leaderId, memberId,x,y);
       MapGridSetMetatileImpassabilityAt(x, y, FALSE);
 }
@@ -368,7 +380,7 @@ export function AssembleGroup(leaderId: any, gameData: any): any {
 
       PlayerGetDestCoords(x,y);
       player_get_pos_including_state_based_drift(x2,y2);
-      if (IsVirtualObjectInvisible(UR_PLAYER_SPRITE_ID(leaderId, 0) - UR_SPRITE_START_ID) == TRUE)
+      if (IsVirtualObjectInvisible(UR_PLAYER_SPRITE_ID(leaderId, 0) - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS))) == TRUE)
       {
           if (IsUnionRoomPlayerAt(leaderId, 0, x, y) == TRUE || IsUnionRoomPlayerAt(leaderId, 0, x2, y2) == TRUE)
               return;
@@ -468,9 +480,9 @@ export function TryInteractWithUnionRoomMember(list: any, memberIdPtr: any, lead
                   continue;
 
                
-              if (IsVirtualObjectInvisible(id - UR_SPRITE_START_ID))
+              if (IsVirtualObjectInvisible(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS))))
                   continue;
-              if (IsVirtualObjectAnimating(id - UR_SPRITE_START_ID))
+              if (IsVirtualObjectAnimating(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS))))
                   continue;
               if (leaders[i].groupScheduledAnim != UNION_ROOM_SPAWN_IN)
                   continue;
@@ -487,7 +499,7 @@ export function TryInteractWithUnionRoomMember(list: any, memberIdPtr: any, lead
 
 /** static void SetUnionRoomObjectFacingDirection(s32 memberId, s32 leaderId, u8 newDirection) */
 export function SetUnionRoomObjectFacingDirection(memberId: any, leaderId: any, newDirection: any): any {
-  TurnVirtualObject(MAX_RFU_PLAYERS * leaderId - UR_SPRITE_START_ID + memberId, newDirection);
+  TurnVirtualObject(MAX_RFU_PLAYERS * leaderId - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)) + memberId, newDirection);
 }
 
 /** void UpdateUnionRoomMemberFacing(u32 memberId, u32 leaderId, struct RfuPlayerList *list) */

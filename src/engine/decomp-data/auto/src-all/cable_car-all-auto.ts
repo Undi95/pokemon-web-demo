@@ -15,6 +15,31 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgMountains_Tilemap: any = null;
+let sBgTemplates: any = null;
+let sCableCar: any = null;
+let sDelay: any = null;
+let sGroundSegmentY_Down: any = null;
+let sGroundSegmentY_Up: any = null;
+let sGroundX_Down: any = null;
+let sGroundX_Up: any = null;
+let sGroundY_Down: any = null;
+let sGroundY_Up: any = null;
+let sGround_Tilemap: any = null;
+let sPylonPole_Tilemap: any = null;
+let sPylonTop_Tilemap: any = null;
+let sSameDir: any = null;
+let sSpritePalettes: any = null;
+let sSpriteSheets: any = null;
+let sSpriteTemplate_Cable: any = null;
+let sSpriteTemplates_CableCar: any = null;
+let sState: any = null;
+let sTimer: any = null;
+let sTrees_Tilemap: any = null;
+let sXPos: any = null;
+let sYPos: any = null;
 /** static void Task_LoadCableCar(u8 taskId) */
 export function Task_LoadCableCar(taskId: any): any {
   if (!gPaletteFade.active)
@@ -120,7 +145,7 @@ export function CB2_LoadCableCar(): any {
           gMain.state++;
           break;
       case 7:
-          InitGroundTilemapData(GOING_DOWN);
+          InitGroundTilemapData((gSpecialVar_0x8004));
           CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  0x48,  0, 14, 12, 3, 17);
           CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  0x6C, 12, 17, 12, 3, 17);
           CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap +  0x90, 24, 20, 12, 3, 17);
@@ -145,7 +170,7 @@ export function CB2_LoadCableCar(): any {
           SetVBlankCallback(VBlankCB_CableCar);
           SetMainCallback2(CB2_CableCar);
           CreateTask(Task_CableCar, 0);
-          if (!GOING_DOWN)
+          if (!(gSpecialVar_0x8004))
               sCableCar.bgTaskId = CreateTask(Task_AnimateBgGoingUp, 1);
           else
               sCableCar.bgTaskId = CreateTask(Task_AnimateBgGoingDown, 1);
@@ -257,9 +282,9 @@ export function Task_CableCar(taskId: any): any {
       case 3:
            
           if (!gPaletteFade.active)
-              sCableCar.state = STATE_END;
+              sCableCar.state = (0xFF);
           break;
-      case STATE_END:
+      case (0xFF):
           SetVBlankCallback(NULL);
           DestroyTask(taskId);
           DestroyTask(sCableCar.bgTaskId);
@@ -270,7 +295,7 @@ export function Task_CableCar(taskId: any): any {
 
 /** static void Task_AnimateBgGoingUp(u8 taskId) */
 export function Task_AnimateBgGoingUp(taskId: any): any {
-  if (sCableCar.state != STATE_END)
+  if (sCableCar.state != (0xFF))
       {
           sCableCar.bg3HorizontalOffset--;
           if ((sCableCar.timer % 2) == 0)
@@ -307,7 +332,7 @@ export function Task_AnimateBgGoingUp(taskId: any): any {
 
 /** static void Task_AnimateBgGoingDown(u8 taskId) */
 export function Task_AnimateBgGoingDown(taskId: any): any {
-  if (sCableCar.state != STATE_END)
+  if (sCableCar.state != (0xFF))
       {
           sCableCar.bg3HorizontalOffset++;
           if ((sCableCar.timer % 2) == 0)
@@ -366,9 +391,9 @@ export function VBlankCB_CableCar(): any {
 
 /** static void SpriteCB_CableCar(struct Sprite *sprite) */
 export function SpriteCB_CableCar(sprite: any): any {
-  if (sCableCar.state != STATE_END)
+  if (sCableCar.state != (0xFF))
       {
-          if (!GOING_DOWN)
+          if (!(gSpecialVar_0x8004))
           {
               sprite.x = sprite.sXPos - (0.14 * S16TOPOSFLOAT(sCableCar.timer));
               sprite.y = sprite.sYPos - (0.067 * S16TOPOSFLOAT(sCableCar.timer));
@@ -383,10 +408,10 @@ export function SpriteCB_CableCar(sprite: any): any {
 
 /** static void SpriteCB_Player(struct Sprite *sprite) */
 export function SpriteCB_Player(sprite: any): any {
-  if (sCableCar.state != STATE_END)
+  if (sCableCar.state != (0xFF))
       {
            
-          if (!GOING_DOWN)
+          if (!(gSpecialVar_0x8004))
           {
               sprite.x = sprite.sXPos - (0.14 * S16TOPOSFLOAT(sCableCar.timer));
               sprite.y = sprite.sYPos - (0.067 * S16TOPOSFLOAT(sCableCar.timer));
@@ -517,7 +542,7 @@ export function SetBgRegs(active: any): any {
           SetGpuReg(REG_OFFSET_WIN1H, 0);
           SetGpuReg(REG_OFFSET_WIN0V, 0);
           SetGpuReg(REG_OFFSET_WIN1V, 0);
-          if (!GOING_DOWN)
+          if (!(gSpecialVar_0x8004))
           {
               sCableCar.bg3HorizontalOffset = 176;
               sCableCar.bg3VerticalOffset = 16;
@@ -580,7 +605,7 @@ export function CreateCableCarSprites(): any {
           SpriteCB_HikerGoingDown
       ];
 
-      switch (GOING_DOWN)
+      switch ((gSpecialVar_0x8004))
       {
           case FALSE:
           default:
@@ -649,7 +674,7 @@ export function CreateCableCarSprites(): any {
        
       if ((rval % 64) == 0)
       {
-          spriteId = CreateObjectGraphicsSprite(hikerGraphicsIds[rval % ARRAY_COUNT(hikerGraphicsIds)], hikerCallbacks[GOING_DOWN], hikerCoords[GOING_DOWN][0], hikerCoords[GOING_DOWN][1], 106);
+          spriteId = CreateObjectGraphicsSprite(hikerGraphicsIds[rval % ARRAY_COUNT(hikerGraphicsIds)], hikerCallbacks[(gSpecialVar_0x8004)], hikerCoords[(gSpecialVar_0x8004)][0], hikerCoords[(gSpecialVar_0x8004)][1], 106);
           if (spriteId != MAX_SPRITES)
           {
               gSprites[spriteId].oam.priority = 2;
@@ -657,7 +682,7 @@ export function CreateCableCarSprites(): any {
               gSprites[spriteId].y2 = -gSprites[spriteId].centerToCornerVecY;
 
                
-              if (!GOING_DOWN)
+              if (!(gSpecialVar_0x8004))
               {
                   if (rval % 2)
                   {

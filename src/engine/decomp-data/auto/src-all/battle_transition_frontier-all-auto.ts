@@ -15,6 +15,35 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAngle: any = null;
+let sDelayX: any = null;
+let sDelayY: any = null;
+let sFrontierCirclesAsymmetricSpiralInSeq_Funcs: any = null;
+let sFrontierCirclesAsymmetricSpiral_Funcs: any = null;
+let sFrontierCirclesCrossInSeq_Funcs: any = null;
+let sFrontierCirclesCross_Funcs: any = null;
+let sFrontierCirclesMeetInSeq_Funcs: any = null;
+let sFrontierCirclesMeet_Funcs: any = null;
+let sFrontierCirclesSymmetricSpiralInSeq_Funcs: any = null;
+let sFrontierCirclesSymmetricSpiral_Funcs: any = null;
+let sLogoCenter_Gfx: any = null;
+let sLogoCenter_Tilemap: any = null;
+let sLogo_Pal: any = null;
+let sRadius: any = null;
+let sRadiusDelta: any = null;
+let sRotateSpeed: any = null;
+let sSpeedX: any = null;
+let sSpeedY: any = null;
+let sSpritePalette_LogoCircles: any = null;
+let sSpriteSheet_LogoCircles: any = null;
+let sSpriteTemplate_LogoCircles: any = null;
+let sTargetRadius: any = null;
+let sTargetX: any = null;
+let sTargetY: any = null;
+let sTimerX: any = null;
+let sTimerY: any = null;
 /** static void LoadLogoGfx(void) */
 export function LoadLogoGfx(): any {
   let tilemap, tileset;
@@ -140,8 +169,8 @@ export function SpriteCB_LogoCircleSpiral(sprite: any): any {
 
 /** static void DestroyLogoCirclesGfx(struct Task *task) */
 export function DestroyLogoCirclesGfx(task: any): any {
-  FreeSpriteTilesByTag(PALTAG_LOGO_CIRCLES);
-      FreeSpritePaletteByTag(PALTAG_LOGO_CIRCLES);
+  FreeSpriteTilesByTag((0x2E90));
+      FreeSpritePaletteByTag((0x2E90));
 
       DestroySprite(gSprites[task.tCircle1SpriteId]);
       DestroySprite(gSprites[task.tCircle2SpriteId]);

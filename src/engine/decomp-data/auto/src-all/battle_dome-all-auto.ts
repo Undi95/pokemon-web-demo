@@ -15,6 +15,55 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattleDomeFunctions: any = null;
+let sBattleDomeMatchNumberTexts: any = null;
+let sBattleDomeOpponentStatsTexts: any = null;
+let sBattleDomeOpponentStyleTexts: any = null;
+let sBattleDomePotentialTexts: any = null;
+let sBattleDomeWinTexts: any = null;
+let sBattleStyleMovePoints: any = null;
+let sBattleStyleThresholds: any = null;
+let sCancelButtonSpriteTemplate: any = null;
+let sCompetitorRangeByMatch: any = null;
+let sExitButtonSpriteTemplate: any = null;
+let sHorizontalScrollArrowSpriteTemplate: any = null;
+let sIdToMatchNumber: any = null;
+let sIdToOpponentId: any = null;
+let sInfoCard: any = null;
+let sInfoCardBgTemplates: any = null;
+let sInfoCardWindowTemplates: any = null;
+let sInfoTrainerMonX: any = null;
+let sInfoTrainerMonY: any = null;
+let sLastMatchCardNum: any = null;
+let sLeftTrainerMonX: any = null;
+let sLeftTrainerMonY: any = null;
+let sMonIconStill: any = null;
+let sPlayerPartyMaxHP: any = null;
+let sRightTrainerMonX: any = null;
+let sRightTrainerMonY: any = null;
+let sSpeciesNameTextYCoords: any = null;
+let sStatTextOffsets: any = null;
+let sTilemapBuffer: any = null;
+let sTournamentIdToPairedTrainerIds: any = null;
+let sTourneyTreeBgTemplates: any = null;
+let sTourneyTreeButtonsSpriteSheet: any = null;
+let sTourneyTreeCursorMovementMap: any = null;
+let sTourneyTreeLineSectionArrayCounts: any = null;
+let sTourneyTreeLineSections: any = null;
+let sTourneyTreePokeballCoords: any = null;
+let sTourneyTreePokeballSpriteTemplate: any = null;
+let sTourneyTreeScanlineEffectParams: any = null;
+let sTourneyTreeTrainerIds: any = null;
+let sTourneyTreeTrainerIds2: any = null;
+let sTourneyTreeTrainerOpponentIds: any = null;
+let sTourneyTreeWindowTemplates: any = null;
+let sTrainerAndRoundToLastMatchCardNum: any = null;
+let sTrainerNamePositions: any = null;
+let sVerticalScrollArrowSpriteTemplate: any = null;
+let sWinStreakFlags: any = null;
+let sWinStreakMasks: any = null;
 /** void CallBattleDomeFunction(void) */
 export function CallBattleDomeFunction(): any {
   sBattleDomeFunctions[gSpecialVar_0x8004]();
@@ -651,7 +700,7 @@ export function SelectOpponentMonsFromParty(partyMovePoints: any, allowRandom: a
 export function GetTypeEffectivenessPoints(move: any, targetSpecies: any, mode: any): any {
   let defType1, defType2, defAbility, moveType;
       let i: any = 0;
-      let typePower: any = TYPE_x1;
+      let typePower: any = (20);
 
       if (move == MOVE_NONE || move == MOVE_UNAVAILABLE || gBattleMoves[move].power == 0)
           return 0;
@@ -685,10 +734,10 @@ export function GetTypeEffectivenessPoints(move: any, targetSpecies: any, mode: 
               if (TYPE_EFFECT_ATK_TYPE(i) == moveType)
               {
                   if (TYPE_EFFECT_DEF_TYPE(i) == defType1)
-                      if ((defAbility == ABILITY_WONDER_GUARD && TYPE_EFFECT_MULTIPLIER(i) == WONDER_GUARD_EFFECTIVENESS) || defAbility != ABILITY_WONDER_GUARD)
+                      if ((defAbility == ABILITY_WONDER_GUARD && TYPE_EFFECT_MULTIPLIER(i) == (TYPE_MUL_SUPER_EFFECTIVE)) || defAbility != ABILITY_WONDER_GUARD)
                           typePower = (typePower * TYPE_EFFECT_MULTIPLIER(i)) / 10;
                   if (TYPE_EFFECT_DEF_TYPE(i) == defType2 && defType1 != defType2)
-                      if ((defAbility == ABILITY_WONDER_GUARD && TYPE_EFFECT_MULTIPLIER(i) == WONDER_GUARD_EFFECTIVENESS) || defAbility != ABILITY_WONDER_GUARD)
+                      if ((defAbility == ABILITY_WONDER_GUARD && TYPE_EFFECT_MULTIPLIER(i) == (TYPE_MUL_SUPER_EFFECTIVE)) || defAbility != ABILITY_WONDER_GUARD)
                           typePower = (typePower * TYPE_EFFECT_MULTIPLIER(i)) / 10;
               }
               i += 3;
@@ -701,19 +750,19 @@ export function GetTypeEffectivenessPoints(move: any, targetSpecies: any, mode: 
            
           switch (typePower)
           {
-          case TYPE_x0:
-          case TYPE_x0_25:
-          case TYPE_x0_50:
+          case (0):
+          case (5):
+          case (10):
           default:
               typePower = 0;
               break;
-          case TYPE_x1:
+          case (20):
               typePower = 2;
               break;
-          case TYPE_x2:
+          case (40):
               typePower = 4;
               break;
-          case TYPE_x4:
+          case (80):
               typePower = 8;
               break;
           }
@@ -723,23 +772,23 @@ export function GetTypeEffectivenessPoints(move: any, targetSpecies: any, mode: 
            
           switch (typePower)
           {
-          case TYPE_x0:
+          case (0):
               typePower = 8;
               break;
-          case TYPE_x0_25:
+          case (5):
               typePower = 4;
               break;
-          case TYPE_x0_50:
+          case (10):
               typePower = 2;
               break;
           default:
-          case TYPE_x1:
+          case (20):
               typePower = 0;
               break;
-          case TYPE_x2:
+          case (40):
               typePower = -2;
               break;
-          case TYPE_x4:
+          case (80):
               typePower = -4;
               break;
           }
@@ -749,23 +798,23 @@ export function GetTypeEffectivenessPoints(move: any, targetSpecies: any, mode: 
            
           switch (typePower)
           {
-          case TYPE_x0:
+          case (0):
               typePower = -16;
               break;
-          case TYPE_x0_25:
+          case (5):
               typePower = -8;
               break;
-          case TYPE_x0_50:
+          case (10):
           default:
               typePower = 0;
               break;
-          case TYPE_x1:
+          case (20):
               typePower = 4;
               break;
-          case TYPE_x2:
+          case (40):
               typePower = 12;
               break;
-          case TYPE_x4:
+          case (80):
               typePower = 20;
               break;
           }
@@ -1288,24 +1337,24 @@ export function Task_HandleInfoCardInput(taskId: any): any {
 
       switch (gTasks[taskId].tState)
       {
-      case STATE_FADE_IN:
+      case (0):
           if (!gPaletteFade.active)
           {
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
-              gTasks[taskId].tState = STATE_WAIT_FADE;
+              gTasks[taskId].tState = (1);
           }
           break;
-      case STATE_WAIT_FADE:
+      case (1):
           if (!gPaletteFade.active)
-              gTasks[taskId].tState = STATE_GET_INPUT;
+              gTasks[taskId].tState = (2);
           break;
-      case STATE_GET_INPUT:
+      case (2):
           i = Task_GetInfoCardInput(taskId);
           switch (i)
           {
           case INFOCARD_INPUT_AB:
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
-              gTasks[taskId].tState = STATE_CLOSE_CARD;
+              gTasks[taskId].tState = (8);
               break;
           case TRAINERCARD_INPUT_UP:
           case MATCHCARD_INPUT_UP:
@@ -1320,13 +1369,13 @@ export function Task_HandleInfoCardInput(taskId: any): any {
                   CopyWindowToVram(i, COPYWIN_GFX);
                   FillWindowPixelBuffer(i, PIXEL_FILL(0));
               }
-              gTasks[taskId].tState = STATE_REACT_INPUT;
+              gTasks[taskId].tState = (3);
               break;
           case INFOCARD_INPUT_NONE:
               break;
           }
           break;
-      case STATE_REACT_INPUT:
+      case (3):
           i = gTasks[taskId].data[5];
           switch (i)
           {
@@ -1443,7 +1492,7 @@ export function Task_HandleInfoCardInput(taskId: any): any {
                   }
               }
 
-              gTasks[taskId].tState = STATE_MOVE_UP;
+              gTasks[taskId].tState = (4);
               gTasks[taskId].data[5] = 0;
               break;
           case TRAINERCARD_INPUT_DOWN:
@@ -1559,7 +1608,7 @@ export function Task_HandleInfoCardInput(taskId: any): any {
                   }
               }
 
-              gTasks[taskId].tState = STATE_MOVE_DOWN;
+              gTasks[taskId].tState = (5);
               gTasks[taskId].data[5] = 0;
               break;
           case TRAINERCARD_INPUT_LEFT:
@@ -1642,7 +1691,7 @@ export function Task_HandleInfoCardInput(taskId: any): any {
                   }
               }
 
-              gTasks[taskId].tState = STATE_MOVE_LEFT;
+              gTasks[taskId].tState = (6);
               gTasks[taskId].data[5] = 0;
               break;
           case MATCHCARD_INPUT_LEFT:
@@ -1725,7 +1774,7 @@ export function Task_HandleInfoCardInput(taskId: any): any {
                   }
               }
 
-              gTasks[taskId].tState = STATE_MOVE_LEFT;
+              gTasks[taskId].tState = (6);
               gTasks[taskId].data[5] = 0;
               break;
           case TRAINERCARD_INPUT_RIGHT:
@@ -1806,7 +1855,7 @@ export function Task_HandleInfoCardInput(taskId: any): any {
                   }
               }
 
-              gTasks[taskId].tState = STATE_MOVE_RIGHT;
+              gTasks[taskId].tState = (7);
               gTasks[taskId].data[5] = 0;
               break;
           case MATCHCARD_INPUT_RIGHT:
@@ -1889,12 +1938,12 @@ export function Task_HandleInfoCardInput(taskId: any): any {
                   }
               }
 
-              gTasks[taskId].tState = STATE_MOVE_RIGHT;
+              gTasks[taskId].tState = (7);
               gTasks[taskId].data[5] = 0;
               break;
           }
           break;
-      case STATE_MOVE_UP:
+      case (4):
           if (++gTasks[taskId].data[5] != 41)
           {
               gBattle_BG0_Y -= 4;
@@ -1903,10 +1952,10 @@ export function Task_HandleInfoCardInput(taskId: any): any {
           }
           else
           {
-              gTasks[taskId].tState = STATE_GET_INPUT;
+              gTasks[taskId].tState = (2);
           }
           break;
-      case STATE_MOVE_DOWN:
+      case (5):
           if (++gTasks[taskId].data[5] != 41)
           {
               gBattle_BG0_Y += 4;
@@ -1915,10 +1964,10 @@ export function Task_HandleInfoCardInput(taskId: any): any {
           }
           else
           {
-              gTasks[taskId].tState = STATE_GET_INPUT;
+              gTasks[taskId].tState = (2);
           }
           break;
-      case STATE_MOVE_LEFT:
+      case (6):
           if (++gTasks[taskId].data[5] != 65)
           {
               gBattle_BG0_X -= 4;
@@ -1927,10 +1976,10 @@ export function Task_HandleInfoCardInput(taskId: any): any {
           }
           else
           {
-              gTasks[taskId].tState = STATE_GET_INPUT;
+              gTasks[taskId].tState = (2);
           }
           break;
-      case STATE_MOVE_RIGHT:
+      case (7):
           if (++gTasks[taskId].data[5] != 65)
           {
               gBattle_BG0_X += 4;
@@ -1939,10 +1988,10 @@ export function Task_HandleInfoCardInput(taskId: any): any {
           }
           else
           {
-              gTasks[taskId].tState = STATE_GET_INPUT;
+              gTasks[taskId].tState = (2);
           }
           break;
-      case STATE_CLOSE_CARD:
+      case (8):
           if (!gPaletteFade.active)
           {
               for (i = 0; i < NUM_INFOCARD_SPRITES / 2; i++)
@@ -2125,7 +2174,7 @@ export function DisplayTrainerInfoOnCard(flags: any, trainerTourneyId: any): any
       let windowId: any = WIN_TRAINER_NAME;
       let x: any = 0, y = 0;
       let palSlot: any = 0;
-      let allocatedArray: any = AllocZeroed(0 * ALLOC_ARRAY_SIZE);
+      let allocatedArray: any = AllocZeroed(0 * (max(NUM_STATS * FRONTIER_PARTY_SIZE, NUM_MOVE_POINT_TYPES)));
       trainerId = DOME_TRAINERS[trainerTourneyId].trainerId;
 
       if (flags & CARD_ALTERNATE_SLOT)
@@ -2318,7 +2367,7 @@ export function DisplayTrainerInfoOnCard(flags: any, trainerTourneyId: any): any
       textPrinter.currentY = 20;
       AddTextPrinter(textPrinter, 0, NULL);
 
-      for (i = 0; i < ALLOC_ARRAY_SIZE; i++)
+      for (i = 0; i < (max(NUM_STATS * FRONTIER_PARTY_SIZE, NUM_MOVE_POINT_TYPES)); i++)
           allocatedArray[i] = 0;
 
        
@@ -2603,7 +2652,7 @@ export function DisplayMatchInfoOnCard(flags: any, matchNo: any): any {
 
        
       winStringId = BufferDomeWinString(matchNo, sInfoCard.tournamentIds);
-      for (i = 0; i < NUM_INFOCARD_TRAINERS; i++)
+      for (i = 0; i < (2); i++)
       {
           tournamentIds[i] = sInfoCard.tournamentIds[i];
           trainerIds[i] = DOME_TRAINERS[tournamentIds[i]].trainerId;
@@ -2818,39 +2867,39 @@ export function Task_HandleTourneyTreeInput(taskId: any): any {
 
       switch (gTasks[taskId].tState)
       {
-      case STATE_FADE_IN:
+      case (0):
           if (!gPaletteFade.active)
           {
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
-              gTasks[taskId].tState = STATE_WAIT_FADE;
+              gTasks[taskId].tState = (1);
               StartSpriteAnim(gSprites[spriteId], 1);
           }
           break;
-      case STATE_WAIT_FADE:
+      case (1):
           if (!gPaletteFade.active)
-              gTasks[taskId].tState = STATE_GET_INPUT;
+              gTasks[taskId].tState = (2);
           break;
-      case STATE_GET_INPUT:
+      case (2):
           switch (UpdateTourneyTreeCursor(taskId))
           {
           case TOURNEY_TREE_SELECTED_CLOSE:
           default:
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
-              gTasks[taskId].tState = STATE_CLOSE_TOURNEY_TREE;
+              gTasks[taskId].tState = (4);
               break;
           case TOURNEY_TREE_NO_SELECTION:
               break;
           case TOURNEY_TREE_SELECTED_TRAINER:
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
-              gTasks[taskId].tState = STATE_SHOW_INFOCARD_TRAINER;
+              gTasks[taskId].tState = (3);
               break;
           case TOURNEY_TREE_SELECTED_MATCH:
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
-              gTasks[taskId].tState = STATE_SHOW_INFOCARD_MATCH;
+              gTasks[taskId].tState = (5);
               break;
           }
           break;
-      case STATE_SHOW_INFOCARD_TRAINER:
+      case (3):
           if (!gPaletteFade.active)
           {
               FreeAllWindowBuffers();
@@ -2862,13 +2911,13 @@ export function Task_HandleTourneyTreeInput(taskId: any): any {
               gTasks[newTaskId].tMode = INFOCARD_TRAINER;
               gTasks[newTaskId].tPrevTaskId = taskId;
 
-              gTasks[taskId].tState = STATE_SHOW_INFOCARD_TRAINER + 1;
+              gTasks[taskId].tState = (3) + 1;
               sInfoCard.pos = 0;
           }
           break;
-      case STATE_SHOW_INFOCARD_TRAINER + 1:
+      case (3) + 1:
           break;
-      case STATE_SHOW_INFOCARD_MATCH:
+      case (5):
           if (!gPaletteFade.active)
           {
               FreeAllWindowBuffers();
@@ -2880,12 +2929,12 @@ export function Task_HandleTourneyTreeInput(taskId: any): any {
               gTasks[newTaskId].tMode = INFOCARD_MATCH;
               gTasks[newTaskId].tPrevTaskId = taskId;
 
-              gTasks[taskId].tState = STATE_SHOW_INFOCARD_MATCH + 1;
+              gTasks[taskId].tState = (5) + 1;
           }
           break;
-      case STATE_SHOW_INFOCARD_MATCH + 1:
+      case (5) + 1:
           break;
-      case STATE_CLOSE_TOURNEY_TREE:
+      case (4):
           if (!gPaletteFade.active)
           {
               FreeAllWindowBuffers();
@@ -2902,7 +2951,7 @@ export function Task_HandleTourneyTreeInput(taskId: any): any {
 /** static u8 UpdateTourneyTreeCursor(u8 taskId) */
 export function UpdateTourneyTreeCursor(taskId: any): any {
   let selection: any = TOURNEY_TREE_NO_SELECTION;
-      let direction: any = MOVE_DIR_NONE;
+      let direction: any = (4);
       let tourneyTreeCursorSpriteId: any = gTasks[taskId].data[1];
       let roundId: any = gSaveBlock2Ptr.frontier.curChallengeBattleNum;
 
@@ -2927,16 +2976,16 @@ export function UpdateTourneyTreeCursor(taskId: any): any {
       else
       {
           if (gMain.newKeys == DPAD_UP && sTourneyTreeCursorMovementMap[tourneyTreeCursorSpriteId][roundId][0] != 0xFF)
-              direction = MOVE_DIR_UP;
+              direction = (0);
           else if (gMain.newKeys == DPAD_DOWN && sTourneyTreeCursorMovementMap[tourneyTreeCursorSpriteId][roundId][1] != 0xFF)
-              direction = MOVE_DIR_DOWN;
+              direction = (1);
           else if (gMain.newKeys == DPAD_LEFT && sTourneyTreeCursorMovementMap[tourneyTreeCursorSpriteId][roundId][2] != 0xFF)
-              direction = MOVE_DIR_LEFT;
+              direction = (2);
           else if (gMain.newKeys == DPAD_RIGHT && sTourneyTreeCursorMovementMap[tourneyTreeCursorSpriteId][roundId][3] != 0xFF)
-              direction = MOVE_DIR_RIGHT;
+              direction = (3);
       }
 
-      if (direction != MOVE_DIR_NONE)
+      if (direction != (4))
       {
           PlaySE(SE_SELECT);
           StartSpriteAnim(gSprites[tourneyTreeCursorSpriteId], 0);  
@@ -3349,14 +3398,14 @@ export function Task_HandleStaticTourneyTreeInput(taskId: any): any {
 
       switch (gTasks[taskId].tState)
       {
-      case STATE_FADE_IN:
+      case (0):
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
-          gTasks[taskId].tState = STATE_SHOW_RESULTS;
+          gTasks[taskId].tState = (1);
           break;
-      case STATE_SHOW_RESULTS:
+      case (1):
           if (!gPaletteFade.active)
           {
-              gTasks[taskId].tState = STATE_DELAY;
+              gTasks[taskId].tState = (2);
               gTasks[taskId].data[3] = 64;
               textPrinter.fontId = FONT_SHORT;
               textPrinter.x = 0;
@@ -3393,18 +3442,18 @@ export function Task_HandleStaticTourneyTreeInput(taskId: any): any {
               }
           }
           break;
-      case STATE_DELAY:
+      case (2):
           if (--gTasks[taskId].data[3] == 0)
-              gTasks[taskId].tState = STATE_WAIT_FOR_INPUT;
+              gTasks[taskId].tState = (3);
           break;
-      case STATE_WAIT_FOR_INPUT:
+      case (3):
           if (JOY_NEW(A_BUTTON | B_BUTTON))
           {
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
-              gTasks[taskId].tState = STATE_CLOSE_TOURNEY_TREE;
+              gTasks[taskId].tState = (4);
           }
           break;
-      case STATE_CLOSE_TOURNEY_TREE:
+      case (4):
           if (!gPaletteFade.active)
           {
               SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);

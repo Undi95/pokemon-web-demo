@@ -15,6 +15,21 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAngle: any = null;
+let sBgTemplates: any = null;
+let sClockHandCoords: any = null;
+let sSpritePalettes_Clock: any = null;
+let sSpriteSheet_ClockHand: any = null;
+let sSpriteTemplate_AM: any = null;
+let sSpriteTemplate_HourHand: any = null;
+let sSpriteTemplate_MinuteHand: any = null;
+let sSpriteTemplate_PM: any = null;
+let sTaskId: any = null;
+let sTextPrompt_Pal: any = null;
+let sWindowTemplate_ConfirmYesNo: any = null;
+let sWindowTemplates: any = null;
 /** static void VBlankCB_WallClock(void) */
 export function VBlankCB_WallClock(): any {
   LoadOam();

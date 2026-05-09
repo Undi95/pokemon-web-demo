@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sMessageNextTask: any = null;
+let sMessageWindowId: any = null;
+let sSpritePalette_SwapLine: any = null;
+let sSpriteSheet_SwapLine: any = null;
+let sSpriteTemplate_SwapLine: any = null;
+let sYesNo: any = null;
 /** void ResetVramOamAndBgCntRegs(void) */
 export function ResetVramOamAndBgCntRegs(): any {
   SetGpuReg(REG_OFFSET_DISPCNT, 0);

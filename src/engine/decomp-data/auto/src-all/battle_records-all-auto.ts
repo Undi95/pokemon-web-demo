@@ -15,6 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sLinkBattleRecordsWindow: any = null;
+let sText_DashesNoPlayer: any = null;
+let sText_DashesNoScore: any = null;
+let sTilemapBuffer: any = null;
+let sTrainerHillRecordsBgTemplates: any = null;
+let sTrainerHillRecordsWindowTemplates: any = null;
+let sTrainerHillWindowPalette: any = null;
+let sTrainerHillWindowTilemap: any = null;
+let sTrainerHillWindowTileset: any = null;
 /** static void ClearLinkBattleRecord(struct LinkBattleRecord *record) */
 export function ClearLinkBattleRecord(record: any): any {
   CpuFill16(0, record, 0);

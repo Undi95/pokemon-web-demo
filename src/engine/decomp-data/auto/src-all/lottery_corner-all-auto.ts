@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sLotteryPrizes: any = null;
+let sOtIdDigit: any = null;
+let sWinNumberDigit: any = null;
 /** void ResetLotteryCorner(void) */
 export function ResetLotteryCorner(): any {
   let rand: any = Random();

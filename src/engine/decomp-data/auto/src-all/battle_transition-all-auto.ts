@@ -15,6 +15,119 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAngledWipes_EndDelays: any = null;
+let sAngledWipes_Funcs: any = null;
+let sAngledWipes_MoveData: any = null;
+let sAqua_Funcs: any = null;
+let sBigPokeball_Funcs: any = null;
+let sBigPokeball_Tilemap: any = null;
+let sBigPokeball_Tileset: any = null;
+let sBlackholePulsate_Funcs: any = null;
+let sBlackhole_Funcs: any = null;
+let sBlackhole_Vibrations: any = null;
+let sBlur_Funcs: any = null;
+let sClockwiseWipe_Funcs: any = null;
+let sDebug_RectangularSpiralData: any = null;
+let sDelay: any = null;
+let sDestroyAttempts: any = null;
+let sDone: any = null;
+let sEliteFour_Tileset: any = null;
+let sEvilTeam_Palette: any = null;
+let sFade: any = null;
+let sFieldEffectPal_Pokeball: any = null;
+let sFinished: any = null;
+let sFrontierLogoWave_Funcs: any = null;
+let sFrontierLogoWiggle_Funcs: any = null;
+let sFrontierLogo_Palette: any = null;
+let sFrontierLogo_Tilemap: any = null;
+let sFrontierLogo_Tileset: any = null;
+let sFrontierSquaresScroll_Funcs: any = null;
+let sFrontierSquaresScroll_Positions: any = null;
+let sFrontierSquaresSpiral_Funcs: any = null;
+let sFrontierSquaresSpiral_Positions: any = null;
+let sFrontierSquares_EmptyBg_Tileset: any = null;
+let sFrontierSquares_FilledBg_Tileset: any = null;
+let sFrontierSquares_Funcs: any = null;
+let sFrontierSquares_Palette: any = null;
+let sFrontierSquares_Shrink1_Tileset: any = null;
+let sFrontierSquares_Shrink2_Tileset: any = null;
+let sFrontierSquares_Tilemap: any = null;
+let sGridSquares_Funcs: any = null;
+let sGroudon1_Palette: any = null;
+let sGroudon2_Palette: any = null;
+let sGroudon_Funcs: any = null;
+let sGroudon_Tilemap: any = null;
+let sGroudon_Tileset: any = null;
+let sIsMainSprite: any = null;
+let sKyogre1_Palette: any = null;
+let sKyogre2_Palette: any = null;
+let sKyogre_Funcs: any = null;
+let sKyogre_Tilemap: any = null;
+let sKyogre_Tileset: any = null;
+let sMagma_Funcs: any = null;
+let sMugshotTrainerPicFuncs: any = null;
+let sMugshot_Funcs: any = null;
+let sMugshotsOpponentCoords: any = null;
+let sMugshotsOpponentRotationScales: any = null;
+let sMugshotsTilemap: any = null;
+let sMugshotsTrainerPicIDsTable: any = null;
+let sOpponentMugshotsPals: any = null;
+let sPlayerMugshotsPals: any = null;
+let sPokeballTrail_Tileset: any = null;
+let sPokeballsTrail_Delays: any = null;
+let sPokeballsTrail_Funcs: any = null;
+let sPokeballsTrail_Speeds: any = null;
+let sPokeballsTrail_StartXCoords: any = null;
+let sPrevX: any = null;
+let sRayquaza_Funcs: any = null;
+let sRayquaza_Palette: any = null;
+let sRayquaza_Tilemap: any = null;
+let sRayquaza_Tileset: any = null;
+let sRectangularSpiralLines: any = null;
+let sRectangularSpiral_Funcs: any = null;
+let sRectangularSpiral_MoveDataTables: any = null;
+let sRegice_Funcs: any = null;
+let sRegice_Palette: any = null;
+let sRegice_Tilemap: any = null;
+let sRegirock_Funcs: any = null;
+let sRegirock_Palette: any = null;
+let sRegirock_Tilemap: any = null;
+let sRegis_Tileset: any = null;
+let sRegisteel_Funcs: any = null;
+let sRegisteel_Palette: any = null;
+let sRegisteel_Tilemap: any = null;
+let sRipple_Funcs: any = null;
+let sShredSplit_Funcs: any = null;
+let sShredSplit_SectionMoveDirs: any = null;
+let sShredSplit_SectionYCoords: any = null;
+let sShrinkingBoxTileset: any = null;
+let sShuffle_Funcs: any = null;
+let sSide: any = null;
+let sSlice_Funcs: any = null;
+let sSlideAccel: any = null;
+let sSlideDir: any = null;
+let sSlideSpeed: any = null;
+let sSpriteTemplate_Pokeball: any = null;
+let sState: any = null;
+let sSwirl_Funcs: any = null;
+let sTaskHandlers: any = null;
+let sTasks_Intro: any = null;
+let sTasks_Main: any = null;
+let sTeamAqua_Tilemap: any = null;
+let sTeamAqua_Tileset: any = null;
+let sTeamMagma_Tilemap: any = null;
+let sTeamMagma_Tileset: any = null;
+let sTestingTransitionId: any = null;
+let sTestingTransitionState: any = null;
+let sTrainerPicSlideAccels: any = null;
+let sTrainerPicSlideSpeeds: any = null;
+let sTransitionData: any = null;
+let sTransitionIntroFuncs: any = null;
+let sWave_Funcs: any = null;
+let sWhiteBarsFade_Funcs: any = null;
+let sWhiteBarsFade_StartDelays: any = null;
 /** static void CB2_TestBattleTransition(void) */
 export function CB2_TestBattleTransition(): any {
   switch (sTestingTransitionState)
@@ -724,7 +837,7 @@ export function PokeballsTrail_Main(task: any): any {
        
        
       side = Random() & 1;
-      for (i = 0; i < NUM_POKEBALL_TRAILS; i++, side ^= 1)
+      for (i = 0; i < (5); i++, side ^= 1)
       {
           gFieldEffectArguments[0] = startX[side];    
           gFieldEffectArguments[1] = (i * 32) + 16;   
@@ -1996,28 +2109,28 @@ export function RectangularSpiral_Init(task: any): any {
       task.tState++;
 
        
-      sRectangularSpiralLines[0].state = SPIRAL_INWARD_START;
+      sRectangularSpiralLines[0].state = (0);
       sRectangularSpiralLines[0].position = -1;
       sRectangularSpiralLines[0].moveIndex = 1;
       sRectangularSpiralLines[0].reboundPosition = 308;
       sRectangularSpiralLines[0].outward = FALSE;
 
        
-      sRectangularSpiralLines[1].state = SPIRAL_INWARD_START;
+      sRectangularSpiralLines[1].state = (0);
       sRectangularSpiralLines[1].position = -1;
       sRectangularSpiralLines[1].moveIndex = 1;
       sRectangularSpiralLines[1].reboundPosition = 308;
       sRectangularSpiralLines[1].outward = FALSE;
 
        
-      sRectangularSpiralLines[2].state = SPIRAL_INWARD_START;
+      sRectangularSpiralLines[2].state = (0);
       sRectangularSpiralLines[2].position = -3;
       sRectangularSpiralLines[2].moveIndex = 1;
       sRectangularSpiralLines[2].reboundPosition = 307;
       sRectangularSpiralLines[2].outward = FALSE;
 
        
-      sRectangularSpiralLines[3].state = SPIRAL_INWARD_START;
+      sRectangularSpiralLines[3].state = (0);
       sRectangularSpiralLines[3].position = -3;
       sRectangularSpiralLines[3].moveIndex = 1;
       sRectangularSpiralLines[3].reboundPosition = 307;
@@ -2081,7 +2194,7 @@ export function UpdateRectangularSpiralLine(moveDataTable: any, line: any): any 
        
        
        
-      if (moveData[line.moveIndex] == SPIRAL_END)
+      if (moveData[line.moveIndex] == ((-1)))
           return FALSE;
 
        
@@ -2112,17 +2225,17 @@ export function UpdateRectangularSpiralLine(moveDataTable: any, line: any): any 
 
        
        
-      if (line.position >= 640 || moveData[line.moveIndex] == SPIRAL_END)
+      if (line.position >= 640 || moveData[line.moveIndex] == ((-1)))
           return FALSE;
 
-      if (!line.outward && moveData[line.moveIndex] == SPIRAL_REBOUND)
+      if (!line.outward && moveData[line.moveIndex] == ((-2)))
       {
            
            
           line.outward = TRUE;
           line.moveIndex = 1;
           line.position = line.reboundPosition;
-          line.state = SPIRAL_OUTWARD_START;
+          line.state = (4);
       }
 
        
@@ -2131,24 +2244,24 @@ export function UpdateRectangularSpiralLine(moveDataTable: any, line: any): any 
           line.state++;
           if (line.outward == TRUE)
           {
-              if (line.state > SPIRAL_OUTWARD_END)
+              if (line.state > (7))
               {
                    
                    
                    
                   line.moveIndex++;
-                  line.state = SPIRAL_OUTWARD_START;
+                  line.state = (4);
               }
           }
           else
           {
-              if (line.state > SPIRAL_INWARD_END)
+              if (line.state > (3))
               {
                    
                    
                    
                   line.moveIndex++;
-                  line.state = SPIRAL_INWARD_START;
+                  line.state = (0);
               }
           }
       }
@@ -2383,7 +2496,7 @@ export function WhiteBarsFade_StartBars(task: any): any {
       let sprite: any = null;
       memcpy(delays, sWhiteBarsFade_StartDelays, 0);
 
-      for (i = 0, posY = 0; i < NUM_WHITE_BARS; i++, posY += DISPLAY_HEIGHT / NUM_WHITE_BARS)
+      for (i = 0, posY = 0; i < (8); i++, posY += DISPLAY_HEIGHT / (8))
       {
           sprite =gSprites[CreateInvisibleSprite(SpriteCB_WhiteBarFade)];
           sprite.x = DISPLAY_WIDTH;
@@ -2402,7 +2515,7 @@ export function WhiteBarsFade_StartBars(task: any): any {
 /** static bool8 WhiteBarsFade_WaitBars(struct Task *task) */
 export function WhiteBarsFade_WaitBars(task: any): any {
   sTransitionData.VBlank_DMA = 0;
-      if (sTransitionData.counter >= NUM_WHITE_BARS)
+      if (sTransitionData.counter >= (8))
       {
           BlendPalettes(PALETTES_ALL, 16, RGB_WHITE);
           task.tState++;
@@ -2481,21 +2594,21 @@ export function SpriteCB_WhiteBarFade(sprite: any): any {
           let i: any = null;
           let ptr1: any =gScanlineEffectRegBuffers[0][sprite.y];
           let ptr2: any =gScanlineEffectRegBuffers[0][sprite.y + DISPLAY_HEIGHT];
-          for (i = 0; i < DISPLAY_HEIGHT / NUM_WHITE_BARS; i++)
+          for (i = 0; i < DISPLAY_HEIGHT / (8); i++)
           {
               ptr1[i] = sprite.sFade >> 8;
               ptr2[i] = sprite.x;
           }
-          if (sprite.x == 0 && sprite.sFade == FADE_TARGET)
+          if (sprite.x == 0 && sprite.sFade == ((16 << 8)))
               sprite.sFinished = TRUE;
 
           sprite.x -= 16;
-          sprite.sFade += FADE_TARGET / 32;
+          sprite.sFade += ((16 << 8)) / 32;
 
           if (sprite.x < 0)
               sprite.x = 0;
-          if (sprite.sFade > FADE_TARGET)
-              sprite.sFade = FADE_TARGET;
+          if (sprite.sFade > ((16 << 8)))
+              sprite.sFade = ((16 << 8));
 
           if (sprite.sIsMainSprite)
               sTransitionData.VBlank_DMA = 1;
@@ -2504,7 +2617,7 @@ export function SpriteCB_WhiteBarFade(sprite: any): any {
           {
                
                
-              if (!sprite.sIsMainSprite || (sTransitionData.counter >= NUM_WHITE_BARS - 1 && sprite.sDestroyAttempts++ > 7))
+              if (!sprite.sIsMainSprite || (sTransitionData.counter >= (8) - 1 && sprite.sDestroyAttempts++ > 7))
               {
                   sTransitionData.counter++;
                   DestroySprite(sprite);
@@ -2643,7 +2756,7 @@ export function AngledWipes_DoWipe(task: any): any {
 
 /** static bool8 AngledWipes_TryEnd(struct Task *task) */
 export function AngledWipes_TryEnd(task: any): any {
-  if (++task.tWipeId < NUM_ANGLED_WIPES)
+  if (++task.tWipeId < (7))
       {
            
           task.tState++;
@@ -3120,12 +3233,12 @@ export function FrontierSquares_Init(task: any): any {
       LZ77UnCompVram(sFrontierSquares_FilledBg_Tileset, tileset);
 
       FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 32, 32);
-      FillBgTilemapBufferRect(0, 1, 0, 0, MARGIN_SIZE, 32, 15);
-      FillBgTilemapBufferRect(0, 1, 30 - MARGIN_SIZE, 0, MARGIN_SIZE, 32, 15);
+      FillBgTilemapBufferRect(0, 1, 0, 0, (1), 32, 15);
+      FillBgTilemapBufferRect(0, 1, 30 - (1), 0, (1), 32, 15);
       CopyBgTilemapBufferToVram(0);
       LoadPalette(sFrontierSquares_Palette, BG_PLTT_ID(15), 0);
 
-      task.tPosX = MARGIN_SIZE;
+      task.tPosX = (1);
       task.tPosY = 0;
       task.tRowPos = 0;
       task.tShrinkDelay = 10;
@@ -3137,19 +3250,19 @@ export function FrontierSquares_Init(task: any): any {
 /** static bool8 FrontierSquares_Draw(struct Task *task) */
 export function FrontierSquares_Draw(task: any): any {
   CopyRectToBgTilemapBufferRect(0, sFrontierSquares_Tilemap, 0, 0,
-                                    SQUARE_SIZE, SQUARE_SIZE,
+                                    (4), (4),
                                     task.tPosX, task.tPosY,
-                                    SQUARE_SIZE, SQUARE_SIZE,
+                                    (4), (4),
                                     15, 0, 0);
       CopyBgTilemapBufferToVram(0);
 
-      task.tPosX += SQUARE_SIZE;
+      task.tPosX += (4);
       if (++task.tRowPos == NUM_SQUARES_PER_ROW)
       {
-          task.tPosX = MARGIN_SIZE;
-          task.tPosY += SQUARE_SIZE;
+          task.tPosX = (1);
+          task.tPosY += (4);
           task.tRowPos = 0;
-          if (task.tPosY >= NUM_SQUARES_PER_COL * SQUARE_SIZE)
+          if (task.tPosY >= NUM_SQUARES_PER_COL * (4))
               task.tState++;
       }
 
@@ -3205,14 +3318,14 @@ export function FrontierSquaresSpiral_Init(task: any): any {
       LZ77UnCompVram(sFrontierSquares_FilledBg_Tileset, tileset);
 
       FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 32, 32);
-      FillBgTilemapBufferRect(0, 1, 0, 0, MARGIN_SIZE, 32, 15);
-      FillBgTilemapBufferRect(0, 1, 30 - MARGIN_SIZE, 0, MARGIN_SIZE, 32, 15);
+      FillBgTilemapBufferRect(0, 1, 0, 0, (1), 32, 15);
+      FillBgTilemapBufferRect(0, 1, 30 - (1), 0, (1), 32, 15);
       CopyBgTilemapBufferToVram(0);
       LoadPalette(sFrontierSquares_Palette, BG_PLTT_ID(14), 0);
       LoadPalette(sFrontierSquares_Palette, BG_PLTT_ID(15), 0);
       BlendPalette(BG_PLTT_ID(14), 16, 8, RGB_BLACK);
 
-      task.tSquareNum = NUM_SQUARES - 1;
+      task.tSquareNum = ((NUM_SQUARES_PER_ROW * NUM_SQUARES_PER_COL)) - 1;
       task.tFadeFlag = 0;
 
       task.tState++;
@@ -3225,9 +3338,9 @@ export function FrontierSquaresSpiral_Outward(task: any): any {
       let x: any = pos % NUM_SQUARES_PER_ROW;
       let y: any = pos / NUM_SQUARES_PER_ROW;
       CopyRectToBgTilemapBufferRect(0, sFrontierSquares_Tilemap, 0, 0,
-                                    SQUARE_SIZE, SQUARE_SIZE,
-                                    SQUARE_SIZE * x + MARGIN_SIZE, SQUARE_SIZE * y,
-                                    SQUARE_SIZE, SQUARE_SIZE,
+                                    (4), (4),
+                                    (4) * x + (1), (4) * y,
+                                    (4), (4),
                                     15, 0, 0);
       CopyBgTilemapBufferToVram(0);
 
@@ -3254,10 +3367,10 @@ export function FrontierSquaresSpiral_Inward(task: any): any {
       {
            
           CopyRectToBgTilemapBufferRect(0, sFrontierSquares_Tilemap, 0, 0,
-                                        SQUARE_SIZE, SQUARE_SIZE,
-                                        SQUARE_SIZE * (sFrontierSquaresSpiral_Positions[task.tSquareNum] % NUM_SQUARES_PER_ROW) + MARGIN_SIZE,
-                                        SQUARE_SIZE * (sFrontierSquaresSpiral_Positions[task.tSquareNum] / NUM_SQUARES_PER_ROW),
-                                        SQUARE_SIZE, SQUARE_SIZE,
+                                        (4), (4),
+                                        (4) * (sFrontierSquaresSpiral_Positions[task.tSquareNum] % NUM_SQUARES_PER_ROW) + (1),
+                                        (4) * (sFrontierSquaresSpiral_Positions[task.tSquareNum] / NUM_SQUARES_PER_ROW),
+                                        (4), (4),
                                         14, 0, 0);
       }
       else
@@ -3266,15 +3379,15 @@ export function FrontierSquaresSpiral_Inward(task: any): any {
           {
                
               FillBgTilemapBufferRect(0, 1,
-                                      SQUARE_SIZE * (sFrontierSquaresSpiral_Positions[task.tSquareNum - 1] % NUM_SQUARES_PER_ROW) + MARGIN_SIZE,
-                                      SQUARE_SIZE * (sFrontierSquaresSpiral_Positions[task.tSquareNum - 1] / NUM_SQUARES_PER_ROW),
-                                      SQUARE_SIZE, SQUARE_SIZE,
+                                      (4) * (sFrontierSquaresSpiral_Positions[task.tSquareNum - 1] % NUM_SQUARES_PER_ROW) + (1),
+                                      (4) * (sFrontierSquaresSpiral_Positions[task.tSquareNum - 1] / NUM_SQUARES_PER_ROW),
+                                      (4), (4),
                                       15);
           }
           task.tSquareNum++;
       }
 
-      if (task.tSquareNum >= NUM_SQUARES)
+      if (task.tSquareNum >= ((NUM_SQUARES_PER_ROW * NUM_SQUARES_PER_COL)))
           task.tState++;
 
       CopyBgTilemapBufferToVram(0);
@@ -3352,9 +3465,9 @@ export function FrontierSquaresScroll_Draw(task: any): any {
       let y: any = pos % (NUM_SQUARES_PER_ROW + 1);
 
       CopyRectToBgTilemapBufferRect(0,sFrontierSquares_Tilemap, 0, 0,
-                                    SQUARE_SIZE, SQUARE_SIZE,
-                                    SQUARE_SIZE * x + MARGIN_SIZE, SQUARE_SIZE * y,
-                                    SQUARE_SIZE, SQUARE_SIZE,
+                                    (4), (4),
+                                    (4) * x + (1), (4) * y,
+                                    (4), (4),
                                     15, 0, 0);
       CopyBgTilemapBufferToVram(0);
 
@@ -3380,8 +3493,8 @@ export function FrontierSquaresScroll_Erase(task: any): any {
       let y: any = pos % (NUM_SQUARES_PER_ROW + 1);
 
       FillBgTilemapBufferRect(0, 1,
-                              SQUARE_SIZE * x + MARGIN_SIZE, SQUARE_SIZE * y,
-                              SQUARE_SIZE, SQUARE_SIZE,
+                              (4) * x + (1), (4) * y,
+                              (4), (4),
                               15);
       CopyBgTilemapBufferToVram(0);
 

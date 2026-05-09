@@ -15,6 +15,28 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAffineAnimCmdFuncs: any = null;
+let sAffineAnimFuncs: any = null;
+let sAffineAnimStates: any = null;
+let sAnchorX: any = null;
+let sAnchorY: any = null;
+let sAnimCmdFuncs: any = null;
+let sAnimFuncs: any = null;
+let sCenterToCornerVecTable: any = null;
+let sDummySprite: any = null;
+let sOamDimensions: any = null;
+let sOamDimensions32: any = null;
+let sShouldProcessSpriteCopyRequests: any = null;
+let sSpriteCopyRequestCount: any = null;
+let sSpriteCopyRequests: any = null;
+let sSpriteOrder: any = null;
+let sSpritePaletteTags: any = null;
+let sSpritePriorities: any = null;
+let sSpriteTileAllocBitmap: any = null;
+let sSpriteTileRangeTags: any = null;
+let sSpriteTileRanges: any = null;
 /** void ResetSpriteData(void) */
 export function ResetSpriteData(): any {
   ResetOamRange(0, 128);
@@ -372,7 +394,7 @@ export function ClearSpriteCopyRequests(): any {
       sShouldProcessSpriteCopyRequests = FALSE;
       sSpriteCopyRequestCount = 0;
 
-      for (i = 0; i < MAX_SPRITE_COPY_REQUESTS; i++)
+      for (i = 0; i < (64); i++)
       {
           sSpriteCopyRequests[i].src = 0;
           sSpriteCopyRequests[i].dest = 0;
@@ -517,7 +539,7 @@ export function ProcessSpriteCopyRequests(): any {
 
 /** void RequestSpriteFrameImageCopy(u16 index, u16 tileNum, const struct SpriteFrameImage *images) */
 export function RequestSpriteFrameImageCopy(index: any, tileNum: any, images: any): any {
-  if (sSpriteCopyRequestCount < MAX_SPRITE_COPY_REQUESTS)
+  if (sSpriteCopyRequestCount < (64))
       {
           sSpriteCopyRequests[sSpriteCopyRequestCount].src = images[index].data;
           sSpriteCopyRequests[sSpriteCopyRequestCount].dest = OBJ_VRAM0 + TILE_SIZE_4BPP * tileNum;
@@ -528,7 +550,7 @@ export function RequestSpriteFrameImageCopy(index: any, tileNum: any, images: an
 
 /** void RequestSpriteCopy(const u8 *src, u8 *dest, u16 size) */
 export function RequestSpriteCopy(src: any, dest: any, size: any): any {
-  if (sSpriteCopyRequestCount < MAX_SPRITE_COPY_REQUESTS)
+  if (sSpriteCopyRequestCount < (64))
       {
           sSpriteCopyRequests[sSpriteCopyRequestCount].src = src;
           sSpriteCopyRequests[sSpriteCopyRequestCount].dest = dest;

@@ -15,6 +15,58 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBallAngle: any = null;
+let sBallDistToCenter: any = null;
+let sBallShadowSpriteId: any = null;
+let sBallWheelAngle: any = null;
+let sBgTemplates: any = null;
+let sFlashData_Colors: any = null;
+let sFlashData_PokeIcons: any = null;
+let sGridSelections: any = null;
+let sGrid_Tilemap: any = null;
+let sMonShadowSpriteId: any = null;
+let sMonSpriteId: any = null;
+let sRoulette: any = null;
+let sRouletteSlots: any = null;
+let sRouletteTables: any = null;
+let sShroomishShadowAlphas: any = null;
+let sSlotMidpointDist: any = null;
+let sSpritePalettes: any = null;
+let sSpriteSheet_Ball: any = null;
+let sSpriteSheet_GridIcons: any = null;
+let sSpriteSheet_Headers: any = null;
+let sSpriteSheet_Shadow: any = null;
+let sSpriteSheet_ShroomishTaillow: any = null;
+let sSpriteSheet_WheelCenter: any = null;
+let sSpriteSheet_WheelIcons: any = null;
+let sSpriteSheets_Interface: any = null;
+let sSpriteTemplate_Ball: any = null;
+let sSpriteTemplate_BallCounter: any = null;
+let sSpriteTemplate_Credit: any = null;
+let sSpriteTemplate_CreditDigit: any = null;
+let sSpriteTemplate_Cursor: any = null;
+let sSpriteTemplate_Multiplier: any = null;
+let sSpriteTemplate_Shroomish: any = null;
+let sSpriteTemplate_ShroomishShadow: any = null;
+let sSpriteTemplate_Taillow: any = null;
+let sSpriteTemplate_TaillowShadow: any = null;
+let sSpriteTemplate_WheelCenter: any = null;
+let sSpriteTemplates_ColorHeaders: any = null;
+let sSpriteTemplates_GridIcons: any = null;
+let sSpriteTemplates_PokeHeaders: any = null;
+let sSpriteTemplates_WheelIcons: any = null;
+let sState: any = null;
+let sStillStuck: any = null;
+let sStuckOnWheelLeft: any = null;
+let sTableMinBets: any = null;
+let sTextWindowId: any = null;
+let sWheel_Pal: any = null;
+let sWheel_Tilemap: any = null;
+let sWindowTemplates: any = null;
+let sYesNoTable_AcceptMinBet: any = null;
+let sYesNoTable_KeepPlaying: any = null;
 /** static void CB2_Roulette(void) */
 export function CB2_Roulette(): any {
   RunTasks();
@@ -114,7 +166,7 @@ export function InitRouletteTableData(): any {
 
        
        
-      for (i = 0; i < NUM_ROULETTE_SLOTS + 1; i++)
+      for (i = 0; i < (((3) * (4))) + 1; i++)
       {
           RouletteFlash_Add(sRoulette.flashUtil, i,sFlashData_Colors[i]);
       }
@@ -124,10 +176,10 @@ export function InitRouletteTableData(): any {
           switch (GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG))
           {
           case SPECIES_SHROOMISH:
-              sRoulette.partySpeciesFlags |= HAS_SHROOMISH;
+              sRoulette.partySpeciesFlags |= ((1 << 0));
               break;
           case SPECIES_TAILLOW:
-              sRoulette.partySpeciesFlags |= HAS_TAILLOW;
+              sRoulette.partySpeciesFlags |= ((1 << 1));
               break;
           }
       }
@@ -186,9 +238,9 @@ export function CB2_LoadRoulette(): any {
           AnimateSprites();
           BuildOamBuffer();
           SetCreditDigits(GetCoins());
-          SetBallCounterNumLeft(BALLS_PER_ROUND);
-          SetMultiplierSprite(SELECTION_NONE);
-          DrawGridBackground(SELECTION_NONE);
+          SetBallCounterNumLeft((6));
+          SetMultiplierSprite((0));
+          DrawGridBackground((0));
           DrawStdWindowFrame(sTextWindowId, FALSE);
           AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_ControlsInstruction, 0, 1, TEXT_SKIP_DRAW, NULL);
           CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
@@ -210,7 +262,7 @@ export function CB2_LoadRoulette(): any {
           SetVBlankCallback(VBlankCB_Roulette);
           BeginHardwarePaletteFade(0xFF, 0, 16, 0, 1);
           taskId = sRoulette.playTaskId = CreateTask(Task_StartPlaying, 0);
-          gTasks[taskId].tBallNum = BALLS_PER_ROUND;
+          gTasks[taskId].tBallNum = (6);
           gTasks[taskId].tCoins = GetCoins();
           AlertTVThatPlayerPlayedRoulette(GetCoins());
           sRoulette.spinTaskId = CreateTask(Task_SpinWheel, 1);
@@ -251,9 +303,9 @@ export function Task_StartPlaying(taskId: any): any {
           ResetBallDataForNewSpin(taskId);
           ResetHits();
           HideWheelBalls();
-          DrawGridBackground(SELECTION_NONE);
-          SetBallCounterNumLeft(BALLS_PER_ROUND);
-          StartTaskAfterDelayOrInput(taskId, Task_ContinuePlaying, NO_DELAY, A_BUTTON | B_BUTTON);
+          DrawGridBackground((0));
+          SetBallCounterNumLeft((6));
+          StartTaskAfterDelayOrInput(taskId, Task_ContinuePlaying, (0xFFFF), A_BUTTON | B_BUTTON);
       }
 }
 
@@ -283,27 +335,27 @@ export function UpdateGridSelectionRect(selectionId: any): any {
   let temp0, temp1;
       switch (selectionId)
       {
-      case SELECTION_NONE:
+      case (0):
           FillTilemapRect(sRoulette.tilemapBuffers[0][0], 0, 14, 7, 16, 13);
           break;
-      case COL_WYNAUT:
-      case COL_AZURILL:
-      case COL_SKITTY:
-      case COL_MAKUHITA:
+      case (1):
+      case (2):
+      case (3):
+      case (4):
           temp0 = (selectionId * 3 + 14);
           FillTilemapRect(sRoulette.tilemapBuffers[0][0], 0, 14, 7, 16, 13);
           SetTilemapRect(sRoulette.tilemapBuffers[0][0],sRoulette.gridTilemap[281], temp0, 7, 3, 13);
           break;
-      case ROW_ORANGE:
-      case ROW_GREEN:
-      case ROW_PURPLE:
+      case ((COL_MAKUHITA + 1)):
+      case ((SQU_ORANGE_MAKUHITA + 1)):
+      case ((SQU_GREEN_MAKUHITA + 1)):
           temp1 = ((selectionId - 1) / 5 * 3 + 10);
           FillTilemapRect(sRoulette.tilemapBuffers[0][0], 0, 14, 7, 16, 13);
           SetTilemapRect(sRoulette.tilemapBuffers[0][0],sRoulette.gridTilemap[320], 14, temp1, 16, 3);
           break;
        
       default:
-          temp0 = (((selectionId)) % (NUM_BOARD_POKES + 1)) * 3 + 14;
+          temp0 = (((selectionId)) % ((4) + 1)) * 3 + 14;
           temp1 = ((selectionId - 1) / 5 * 3 + 7);
           FillTilemapRect(sRoulette.tilemapBuffers[0][0], 0, 14, 7, 16, 13);
           SetTilemapRect(sRoulette.tilemapBuffers[0][0],sRoulette.gridTilemap[272], temp0, temp1, 3, 3);
@@ -330,10 +382,10 @@ export function Task_StartHandleBetGridInput(taskId: any): any {
 export function Task_SelectFirstEmptySquare(taskId: any): any {
   let i: any = null;
 
-      if (sRoulette.hitFlags & F_ORANGE_ROW)
+      if (sRoulette.hitFlags & ((1 << ((COL_MAKUHITA + 1)))))
       {
            
-          for (i = SQU_GREEN_WYNAUT; i < SQU_GREEN_MAKUHITA; i++)
+          for (i = ((((SQU_ORANGE_MAKUHITA + 1)) + (1))); i < ((((SQU_ORANGE_MAKUHITA + 1)) + (4))); i++)
           {
               if (!(sRoulette.hitFlags & sGridSelections[i].flag))
                   break;
@@ -343,7 +395,7 @@ export function Task_SelectFirstEmptySquare(taskId: any): any {
       {
            
            
-          for (i = SQU_ORANGE_WYNAUT; i <= SQU_ORANGE_MAKUHITA; i++)  
+          for (i = ((((COL_MAKUHITA + 1)) + (1))); i <= ((((COL_MAKUHITA + 1)) + (4))); i++)  
           {
               if (!(sRoulette.hitFlags & sGridSelections[i].flag))
                   break;
@@ -369,16 +421,16 @@ export function CanMoveSelectionInDir(selectionId: any, dir: any): any {
       {
       case 0:  
       case 1:  
-          temp1 = (((selectionId)) % (NUM_BOARD_POKES + 1));
-          temp = temp1 + ROW_PURPLE;
-          if (temp1 == SELECTION_NONE)
+          temp1 = (((selectionId)) % ((4) + 1));
+          temp = temp1 + ((SQU_GREEN_MAKUHITA + 1));
+          if (temp1 == (0))
               temp1 = 5;
           break;
       case 2:  
       case 3:  
-          temp1 = (((selectionId)) / (NUM_BOARD_POKES + 1) * (NUM_BOARD_POKES + 1));
-          temp = temp1 + COL_MAKUHITA;
-          if (temp1 == SELECTION_NONE)
+          temp1 = (((selectionId)) / ((4) + 1) * ((4) + 1));
+          temp = temp1 + (4);
+          if (temp1 == (0))
               temp1 = 1;
           break;
       }
@@ -413,23 +465,23 @@ export function ProcessBetGridInput(taskId: any): any {
           gTasks[taskId].data[1] = 0;
           PlaySE(SE_SELECT);
           RouletteFlash_Stop(sRoulette.flashUtil, 0xFFFF);
-          sRoulette.flashUtil.palettes[FLASH_ICON].available = sRoulette.flashUtil.palettes[FLASH_ICON_2].available = sRoulette.flashUtil.palettes[FLASH_ICON_3].available = FALSE;
+          sRoulette.flashUtil.palettes[((NUM_ROULETTE_SLOTS + 1))].available = sRoulette.flashUtil.palettes[((((NUM_ROULETTE_SLOTS + 1)) + 1))].available = sRoulette.flashUtil.palettes[((((NUM_ROULETTE_SLOTS + 1)) + 2))].available = FALSE;
           FlashSelectionOnWheel(gTasks[taskId].tSelectionId);
 
            
-          for (i = 0; i < NUM_BOARD_POKES; i++)
+          for (i = 0; i < (4); i++)
           {
-              gSprites[sRoulette.spriteIds[i + SPR_POKE_HEADERS]].oam.tileNum =
-              gSprites[sRoulette.spriteIds[i + SPR_POKE_HEADERS]].sheetTileStart
-              + (gSprites[sRoulette.spriteIds[i + SPR_POKE_HEADERS]].anims).type;
+              gSprites[sRoulette.spriteIds[i + (SPR_POKE_HEADER_1)]].oam.tileNum =
+              gSprites[sRoulette.spriteIds[i + (SPR_POKE_HEADER_1)]].sheetTileStart
+              + (gSprites[sRoulette.spriteIds[i + (SPR_POKE_HEADER_1)]].anims).type;
           }
            
-          if ((gTasks[taskId].tSelectionId - 1) < COL_MAKUHITA && !(sRoulette.hitFlags & sGridSelections[gTasks[taskId].tSelectionId].flag))
+          if ((gTasks[taskId].tSelectionId - 1) < (4) && !(sRoulette.hitFlags & sGridSelections[gTasks[taskId].tSelectionId].flag))
           {
               headerOffset = gTasks[taskId].tSelectionId - 1;
-              gSprites[sRoulette.spriteIds[headerOffset + SPR_POKE_HEADERS]].oam.tileNum =
-              gSprites[sRoulette.spriteIds[headerOffset + SPR_POKE_HEADERS]].sheetTileStart
-              + (gSprites[sRoulette.spriteIds[headerOffset + SPR_POKE_HEADERS]].anims + 1).type;
+              gSprites[sRoulette.spriteIds[headerOffset + (SPR_POKE_HEADER_1)]].oam.tileNum =
+              gSprites[sRoulette.spriteIds[headerOffset + (SPR_POKE_HEADER_1)]].sheetTileStart
+              + (gSprites[sRoulette.spriteIds[headerOffset + (SPR_POKE_HEADER_1)]].anims + 1).type;
           }
       }
 }
@@ -470,7 +522,7 @@ export function Task_HandleBetGridInput(taskId: any): any {
           gTasks[taskId].data[1]++;
           break;
       case 30:
-          UpdateGridSelectionRect(SELECTION_NONE);
+          UpdateGridSelectionRect((0));
           gTasks[taskId].data[1]++;
           break;
       case 59:
@@ -520,12 +572,12 @@ export function Task_SlideGridOffscreen(taskId: any): any {
 export function GetRandomForBallTravelDistance(ballNum: any, rand: any): any {
   switch (sRoulette.partySpeciesFlags)
       {
-      case HAS_SHROOMISH:
-      case HAS_TAILLOW:
+      case ((1 << 0)):
+      case ((1 << 1)):
            
           if (gLocalTime.hours > 3 && gLocalTime.hours < 10)
           {
-              if (ballNum < BALLS_PER_ROUND * 2 || (rand & 1))
+              if (ballNum < (6) * 2 || (rand & 1))
                   return sRouletteTables[sRoulette.tableId].randDistanceLow / 2;
               else
                   return 1;
@@ -539,16 +591,16 @@ export function GetRandomForBallTravelDistance(ballNum: any, rand: any): any {
               return sRouletteTables[sRoulette.tableId].randDistanceLow;
           }
           break;
-      case HAS_SHROOMISH | HAS_TAILLOW:
+      case ((1 << 0)) | ((1 << 1)):
            
           if (gLocalTime.hours > 3 && gLocalTime.hours < 11)
           {
-              if (ballNum < BALLS_PER_ROUND || (rand & 1))
+              if (ballNum < (6) || (rand & 1))
                   return sRouletteTables[sRoulette.tableId].randDistanceLow / 2;
               else
                   return 1;
           }
-          else if ((rand & 1) && ballNum > BALLS_PER_ROUND)
+          else if ((rand & 1) && ballNum > (6))
           {
               return sRouletteTables[sRoulette.tableId].randDistanceLow / 4;
           }
@@ -569,14 +621,14 @@ export function GetRandomForBallTravelDistance(ballNum: any, rand: any): any {
           }
           else if (!(rand & 3))
           {
-              if (ballNum > BALLS_PER_ROUND * 2)
+              if (ballNum > (6) * 2)
                   return sRouletteTables[sRoulette.tableId].randDistanceLow / 2;
               else
                   return sRouletteTables[sRoulette.tableId].randDistanceLow;
           }
           else if (rand & (1 << 15))
           {
-              if (ballNum > BALLS_PER_ROUND * 2)
+              if (ballNum > (6) * 2)
                   return sRouletteTables[sRoulette.tableId].randDistanceLow;
               else
                   return sRouletteTables[sRoulette.tableId].randDistanceHigh;
@@ -640,7 +692,7 @@ export function Task_RollBall(taskId: any): any {
       sRoulette.ball.callback = SpriteCB_RollBall_Start;
       gTasks[taskId].tBallNum++;
       gTasks[taskId].tTotalBallNum++;
-      SetBallCounterNumLeft(BALLS_PER_ROUND - gTasks[taskId].tBallNum);
+      SetBallCounterNumLeft((6) - gTasks[taskId].tBallNum);
       m4aSongNumStart(SE_ROULETTE_BALL);
       gTasks[taskId].func = Task_RecordBallHit;
 }
@@ -665,7 +717,7 @@ export function Task_RecordBallHit(taskId: any): any {
                   let won: any = IsHitInBetSelection(RecordHit(taskId, sRoulette.hitSlot), sRoulette.betSelection[sRoulette.curBallNum]);
                   gTasks[taskId].tWonBet = won;
                   if (won == TRUE)
-                      RouletteFlash_Enable(sRoulette.flashUtil, F_FLASH_OUTER_EDGES);
+                      RouletteFlash_Enable(sRoulette.flashUtil, ((1 << 12)));
               }
               if (gTasks[taskId].data[1] <= 60)
               {
@@ -743,7 +795,7 @@ export function Task_TryIncrementWins(taskId: any): any {
               let wins: any = GetGameStat(GAME_STAT_CONSECUTIVE_ROULETTE_WINS);
               if (wins < ++gTasks[taskId].tConsecutiveWins)
                   SetGameStat(GAME_STAT_CONSECUTIVE_ROULETTE_WINS, gTasks[taskId].tConsecutiveWins);
-              StartTaskAfterDelayOrInput(taskId, Task_PrintPayout, NO_DELAY, A_BUTTON | B_BUTTON);
+              StartTaskAfterDelayOrInput(taskId, Task_PrintPayout, (0xFFFF), A_BUTTON | B_BUTTON);
           }
           break;
       case FALSE:
@@ -751,7 +803,7 @@ export function Task_TryIncrementWins(taskId: any): any {
           if (!IsSEPlaying())
           {
               gTasks[taskId].tConsecutiveWins = 0;
-              StartTaskAfterDelayOrInput(taskId, Task_EndTurn, NO_DELAY, A_BUTTON | B_BUTTON);
+              StartTaskAfterDelayOrInput(taskId, Task_EndTurn, (0xFFFF), A_BUTTON | B_BUTTON);
           }
           break;
       }
@@ -763,7 +815,7 @@ export function Task_PrintSpinResult(taskId: any): any {
       {
       case TRUE:
       case 2:  
-          if (gTasks[taskId].tMultiplier == MAX_MULTIPLIER)
+          if (gTasks[taskId].tMultiplier == (12))
           {
               PlayFanfare(MUS_SLOTS_JACKPOT);
               DrawStdWindowFrame(sTextWindowId, FALSE);
@@ -817,7 +869,7 @@ export function Task_GivePayout(taskId: any): any {
           break;
       }
       if (gTasks[taskId].tPayout == 0)
-          StartTaskAfterDelayOrInput(taskId, Task_EndTurn, NO_DELAY, A_BUTTON | B_BUTTON);
+          StartTaskAfterDelayOrInput(taskId, Task_EndTurn, (0xFFFF), A_BUTTON | B_BUTTON);
 }
 
 /** static void Task_PrintPayout(u8 taskId) */
@@ -835,8 +887,8 @@ export function Task_PrintPayout(taskId: any): any {
 /** static void Task_EndTurn(u8 taskId) */
 export function Task_EndTurn(taskId: any): any {
   RouletteFlash_Stop(sRoulette.flashUtil, 0xFFFF);
-      sRoulette.flashUtil.palettes[FLASH_ICON].available = sRoulette.flashUtil.palettes[FLASH_ICON_2].available = sRoulette.flashUtil.palettes[FLASH_ICON_3].available = FALSE;
-      gSprites[sRoulette.spriteIds[SPR_WHEEL_ICONS + sGridSelections[gTasks[taskId].tWinningSquare].spriteIdOffset]].invisible = TRUE;
+      sRoulette.flashUtil.palettes[((NUM_ROULETTE_SLOTS + 1))].available = sRoulette.flashUtil.palettes[((((NUM_ROULETTE_SLOTS + 1)) + 1))].available = sRoulette.flashUtil.palettes[((((NUM_ROULETTE_SLOTS + 1)) + 2))].available = FALSE;
+      gSprites[sRoulette.spriteIds[(SPR_WHEEL_ICON_ORANGE_WYNAUT) + sGridSelections[gTasks[taskId].tWinningSquare].spriteIdOffset]].invisible = TRUE;
       gTasks[taskId].func = Task_TryPrintEndTurnMsg;
 }
 
@@ -844,24 +896,24 @@ export function Task_EndTurn(taskId: any): any {
 export function Task_TryPrintEndTurnMsg(taskId: any): any {
   let i: any = 0;
       gTasks[taskId].tSelectionId = i;
-      sRoulette.betSelection[sRoulette.curBallNum] = SELECTION_NONE;
-      DrawGridBackground(SELECTION_NONE);
+      sRoulette.betSelection[sRoulette.curBallNum] = (0);
+      DrawGridBackground((0));
       gSprites[sRoulette.spriteIds[SPR_WIN_SLOT_CURSOR]].invisible = TRUE;
-      for (i = 0; i < NUM_BOARD_POKES; i++)
+      for (i = 0; i < (4); i++)
       {
-          gSprites[sRoulette.spriteIds[i + SPR_POKE_HEADERS]].oam.tileNum =
-              gSprites[sRoulette.spriteIds[i + SPR_POKE_HEADERS]].sheetTileStart
-              + (gSprites[sRoulette.spriteIds[i + SPR_POKE_HEADERS]].anims).type;
+          gSprites[sRoulette.spriteIds[i + (SPR_POKE_HEADER_1)]].oam.tileNum =
+              gSprites[sRoulette.spriteIds[i + (SPR_POKE_HEADER_1)]].sheetTileStart
+              + (gSprites[sRoulette.spriteIds[i + (SPR_POKE_HEADER_1)]].anims).type;
       }
       if (gTasks[taskId].tCoins >= sRoulette.minBet)
       {
-          if (gTasks[taskId].tBallNum == BALLS_PER_ROUND)
+          if (gTasks[taskId].tBallNum == (6))
           {
                
               DrawStdWindowFrame(sTextWindowId, FALSE);
               AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_BoardWillBeCleared, 0, 1, TEXT_SKIP_DRAW, NULL);
               CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
-              StartTaskAfterDelayOrInput(taskId, Task_ClearBoard, NO_DELAY, A_BUTTON | B_BUTTON);
+              StartTaskAfterDelayOrInput(taskId, Task_ClearBoard, (0xFFFF), A_BUTTON | B_BUTTON);
           }
           else if (gTasks[taskId].tCoins == MAX_COINS)
           {
@@ -869,7 +921,7 @@ export function Task_TryPrintEndTurnMsg(taskId: any): any {
               DrawStdWindowFrame(sTextWindowId, FALSE);
               AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_CoinCaseIsFull, 0, 1, TEXT_SKIP_DRAW, NULL);
               CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
-              StartTaskAfterDelayOrInput(taskId, Task_AskKeepPlaying, NO_DELAY, A_BUTTON | B_BUTTON);
+              StartTaskAfterDelayOrInput(taskId, Task_AskKeepPlaying, (0xFFFF), A_BUTTON | B_BUTTON);
           }
           else
           {
@@ -895,12 +947,12 @@ export function Task_ClearBoard(taskId: any): any {
       ResetBallDataForNewSpin(taskId);
       ResetHits();
       HideWheelBalls();
-      DrawGridBackground(SELECTION_NONE);
-      SetBallCounterNumLeft(BALLS_PER_ROUND);
+      DrawGridBackground((0));
+      SetBallCounterNumLeft((6));
 
-      for (i = 0; i < NUM_ROULETTE_SLOTS; i++)
+      for (i = 0; i < (((3) * (4))); i++)
       {
-          gSprites[sRoulette.spriteIds[i + SPR_WHEEL_ICONS]].invisible = FALSE;
+          gSprites[sRoulette.spriteIds[i + (SPR_WHEEL_ICON_ORANGE_WYNAUT)]].invisible = FALSE;
       }
 
       if (gTasks[taskId].tCoins == MAX_COINS)
@@ -908,7 +960,7 @@ export function Task_ClearBoard(taskId: any): any {
           DrawStdWindowFrame(sTextWindowId, FALSE);
           AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_CoinCaseIsFull, 0, 1, TEXT_SKIP_DRAW, NULL);
           CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
-          StartTaskAfterDelayOrInput(taskId, Task_AskKeepPlaying, NO_DELAY, A_BUTTON | B_BUTTON);
+          StartTaskAfterDelayOrInput(taskId, Task_AskKeepPlaying, (0xFFFF), A_BUTTON | B_BUTTON);
       }
       else
       {
@@ -962,7 +1014,7 @@ export function Task_WaitForNextTask(taskId: any): any {
           sRoulette.taskWaitKey = 0;
           sRoulette.taskWaitDelay = 0;
       }
-      if (sRoulette.taskWaitDelay != NO_DELAY)
+      if (sRoulette.taskWaitDelay != (0xFFFF))
           sRoulette.taskWaitDelay--;
 }
 
@@ -973,7 +1025,7 @@ export function StartTaskAfterDelayOrInput(taskId: any, task: any, delay: any, k
           task = sRoulette.prevTask;
       sRoulette.nextTask = task;
       sRoulette.taskWaitDelay = delay;
-      if (delay == NO_DELAY && key == 0)
+      if (delay == (0xFFFF) && key == 0)
           sRoulette.taskWaitKey = 0xFFFF;
       else
           sRoulette.taskWaitKey = key;
@@ -989,8 +1041,8 @@ export function ResetBallDataForNewSpin(taskId: any): any {
       sRoulette.ballUnstuck = FALSE;
       sRoulette.useTaillow = FALSE;
 
-      for (i = 0; i < BALLS_PER_ROUND; i++)
-          sRoulette.betSelection[i] = SELECTION_NONE;
+      for (i = 0; i < (6); i++)
+          sRoulette.betSelection[i] = (0);
 
       sRoulette.curBallNum = 0;
       gTasks[taskId].data[1] = 0;
@@ -1001,13 +1053,13 @@ export function ResetHits(): any {
   let i: any = null;
       sRoulette.hitFlags = 0;
 
-      for (i = 0; i < BALLS_PER_ROUND; i++)
+      for (i = 0; i < (6); i++)
           sRoulette.hitSquares[i] = 0;
 
-      for (i = 0; i < NUM_BOARD_POKES; i++)
+      for (i = 0; i < (4); i++)
           sRoulette.pokeHits[i] = 0;
 
-      for (i = 0; i < NUM_BOARD_COLORS; i++)
+      for (i = 0; i < (3); i++)
           sRoulette.colorHits[i] = 0;
 
       ShowHideGridBalls(TRUE, -1);
@@ -1017,37 +1069,37 @@ export function ResetHits(): any {
 export function RecordHit(taskId: any, slotId: any): any {
   let i, j;
       const columnFlags: any = [
-          F_WYNAUT_COL | F_ORANGE_WYNAUT | F_GREEN_WYNAUT | F_PURPLE_WYNAUT,
-          F_AZURILL_COL | F_ORANGE_AZURILL | F_GREEN_AZURILL | F_PURPLE_AZURILL,
-          F_SKITTY_COL | F_ORANGE_SKITTY | F_GREEN_SKITTY | F_PURPLE_SKITTY,
-          F_MAKUHITA_COL | F_ORANGE_MAKUHITA | F_GREEN_MAKUHITA | F_PURPLE_MAKUHITA
+          ((1 << (1))) | ((1 << SQU_ORANGE_WYNAUT)) | ((1 << SQU_GREEN_WYNAUT)) | ((1 << SQU_PURPLE_WYNAUT)),
+          ((1 << (2))) | ((1 << SQU_ORANGE_AZURILL)) | ((1 << SQU_GREEN_AZURILL)) | ((1 << SQU_PURPLE_AZURILL)),
+          ((1 << (3))) | ((1 << SQU_ORANGE_SKITTY)) | ((1 << SQU_GREEN_SKITTY)) | ((1 << SQU_PURPLE_SKITTY)),
+          ((1 << (4))) | ((1 << SQU_ORANGE_MAKUHITA)) | ((1 << SQU_GREEN_MAKUHITA)) | ((1 << SQU_PURPLE_MAKUHITA))
       ];
       const rowFlags: any = [
-          F_ORANGE_ROW | F_ORANGE_WYNAUT | F_ORANGE_AZURILL | F_ORANGE_SKITTY | F_ORANGE_MAKUHITA,
-          F_GREEN_ROW | F_GREEN_WYNAUT | F_GREEN_AZURILL | F_GREEN_SKITTY | F_GREEN_MAKUHITA,
-          F_PURPLE_ROW | F_PURPLE_WYNAUT | F_PURPLE_AZURILL | F_PURPLE_SKITTY | F_PURPLE_MAKUHITA
+          ((1 << ((COL_MAKUHITA + 1)))) | ((1 << SQU_ORANGE_WYNAUT)) | ((1 << SQU_ORANGE_AZURILL)) | ((1 << SQU_ORANGE_SKITTY)) | ((1 << SQU_ORANGE_MAKUHITA)),
+          ((1 << ((SQU_ORANGE_MAKUHITA + 1)))) | ((1 << SQU_GREEN_WYNAUT)) | ((1 << SQU_GREEN_AZURILL)) | ((1 << SQU_GREEN_SKITTY)) | ((1 << SQU_GREEN_MAKUHITA)),
+          ((1 << ((SQU_GREEN_MAKUHITA + 1)))) | ((1 << SQU_PURPLE_WYNAUT)) | ((1 << SQU_PURPLE_AZURILL)) | ((1 << SQU_PURPLE_SKITTY)) | ((1 << SQU_PURPLE_MAKUHITA))
       ];
 
-      if (slotId >= NUM_ROULETTE_SLOTS)
+      if (slotId >= (((3) * (4))))
           return 0;
 
       sRoulette.hitSquares[gTasks[taskId].tBallNum - 1] = sRouletteSlots[slotId].gridSquare;
       gTasks[taskId].tWinningSquare = sRouletteSlots[slotId].gridSquare;
       sRoulette.hitFlags |= sRouletteSlots[slotId].flag;
-      for (i = 0; i < NUM_BOARD_POKES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (sRouletteSlots[slotId].flag & columnFlags[i])
               sRoulette.pokeHits[i]++;
            
-          if (sRoulette.pokeHits[i] >= NUM_BOARD_COLORS)
+          if (sRoulette.pokeHits[i] >= (3))
               sRoulette.hitFlags |= columnFlags[i];
       }
-      for (j = 0; j < NUM_BOARD_COLORS; j++)
+      for (j = 0; j < (3); j++)
       {
           if (sRouletteSlots[slotId].flag & rowFlags[j])
               sRoulette.colorHits[j]++;
            
-          if (sRoulette.colorHits[j] >= NUM_BOARD_POKES)
+          if (sRoulette.colorHits[j] >= (4))
               sRoulette.hitFlags |= rowFlags[j];
       }
       return sRouletteSlots[slotId].gridSquare;
@@ -1056,26 +1108,26 @@ export function RecordHit(taskId: any, slotId: any): any {
 /** static bool8 IsHitInBetSelection(u8 gridSquare, u8 betSelection) */
 export function IsHitInBetSelection(gridSquare: any, betSelection: any): any {
   let hit: any = gridSquare;
-      if (--gridSquare < NUM_GRID_SELECTIONS)
+      if (--gridSquare < (SQU_PURPLE_MAKUHITA))
       {
           switch (betSelection)
           {
-          case SELECTION_NONE:
+          case (0):
               return 3;  
-          case COL_WYNAUT:
-          case COL_AZURILL:
-          case COL_SKITTY:
-          case COL_MAKUHITA:
-              if (hit == betSelection + ROW_ORANGE
-               || hit == betSelection + ROW_GREEN
-               || hit == betSelection + ROW_PURPLE)
+          case (1):
+          case (2):
+          case (3):
+          case (4):
+              if (hit == betSelection + ((COL_MAKUHITA + 1))
+               || hit == betSelection + ((SQU_ORANGE_MAKUHITA + 1))
+               || hit == betSelection + ((SQU_GREEN_MAKUHITA + 1)))
                   return TRUE;
               break;
-          case ROW_ORANGE:
-          case ROW_GREEN:
-          case ROW_PURPLE:
-              if (hit >= (betSelection + COL_WYNAUT)
-               && hit <= (betSelection + COL_MAKUHITA))
+          case ((COL_MAKUHITA + 1)):
+          case ((SQU_ORANGE_MAKUHITA + 1)):
+          case ((SQU_GREEN_MAKUHITA + 1)):
+              if (hit >= (betSelection + (1))
+               && hit <= (betSelection + (4)))
                   return TRUE;
               break;
            
@@ -1096,16 +1148,16 @@ export function FlashSelectionOnWheel(selectionId: any): any {
 
       switch (selectionId)
       {
-      case ROW_ORANGE:
-      case ROW_GREEN:
-      case ROW_PURPLE:
+      case ((COL_MAKUHITA + 1)):
+      case ((SQU_ORANGE_MAKUHITA + 1)):
+      case ((SQU_GREEN_MAKUHITA + 1)):
            
           for (i = (selectionId + 1); i < (selectionId + 5); i++)
           {
               if (!(sRoulette.hitFlags & sGridSelections[i].flag))
                   flashFlags |= sGridSelections[i].flashFlags;
           }
-          RouletteFlash_Enable(sRoulette.flashUtil, flashFlags &= ~(F_FLASH_ICON));
+          RouletteFlash_Enable(sRoulette.flashUtil, flashFlags &= ~(((1 << ((NUM_ROULETTE_SLOTS + 1))))));
           break;
       default:
       {
@@ -1113,26 +1165,26 @@ export function FlashSelectionOnWheel(selectionId: any): any {
           let iconFlash: any[] = [];
           memcpy(iconFlash, sFlashData_PokeIcons, 0);
 
-          if (selectionId >= COL_WYNAUT && selectionId <= COL_MAKUHITA)
-              numSelected = NUM_BOARD_COLORS;  
+          if (selectionId >= (1) && selectionId <= (4))
+              numSelected = (3);  
           else
               numSelected = 1;
 
           palOffset = ((selectionId) / 5 - 1);
-          switch ((((selectionId)) % (NUM_BOARD_POKES + 1)))
+          switch ((((selectionId)) % ((4) + 1)))
           {
            
            
-          case COL_WYNAUT:
+          case (1):
               palOffset = PLTT_ID(gSprites[sRoulette.spriteIds[SPR_WHEEL_ICON_ORANGE_WYNAUT]].oam.paletteNum);
               break;
-          case COL_AZURILL:
+          case (2):
               palOffset = PLTT_ID(gSprites[sRoulette.spriteIds[SPR_WHEEL_ICON_GREEN_AZURILL]].oam.paletteNum);
               break;
-          case COL_SKITTY:
+          case (3):
               palOffset = PLTT_ID(gSprites[sRoulette.spriteIds[SPR_WHEEL_ICON_PURPLE_SKITTY]].oam.paletteNum);
               break;
-          case COL_MAKUHITA:
+          case (4):
               palOffset = PLTT_ID(gSprites[sRoulette.spriteIds[SPR_WHEEL_ICON_ORANGE_MAKUHITA]].oam.paletteNum);
               break;
           }
@@ -1142,7 +1194,7 @@ export function FlashSelectionOnWheel(selectionId: any): any {
               if (!(sRoulette.hitFlags & sGridSelections[selectionId].flag))
               {
                   iconFlash[((selectionId) / 5 - 1)].paletteOffset += palOffset;
-                  RouletteFlash_Add(sRoulette.flashUtil, NUM_ROULETTE_SLOTS + 1,iconFlash[((selectionId) / 5 - 1)]);
+                  RouletteFlash_Add(sRoulette.flashUtil, (((3) * (4))) + 1,iconFlash[((selectionId) / 5 - 1)]);
               }
               else
               {
@@ -1154,13 +1206,13 @@ export function FlashSelectionOnWheel(selectionId: any): any {
           {
                
                
-              for (i = 0; i < NUM_BOARD_COLORS; i++)
+              for (i = 0; i < (3); i++)
               {
                   let columnSlotId: any = i * 5 + selectionId + 5;
                   if (!(sRoulette.hitFlags & sGridSelections[columnSlotId].flag))
                   {
                       iconFlash[((columnSlotId) / 5 - 1)].paletteOffset += palOffset;
-                      RouletteFlash_Add(sRoulette.flashUtil, i + NUM_ROULETTE_SLOTS + 1,iconFlash[((columnSlotId) / 5 - 1)]);
+                      RouletteFlash_Add(sRoulette.flashUtil, i + (((3) * (4))) + 1,iconFlash[((columnSlotId) / 5 - 1)]);
                       if (numSelected == 3)
                           flashFlags = sGridSelections[columnSlotId].flashFlags;
                       numSelected--;
@@ -1192,20 +1244,20 @@ export function DrawGridBackground(selectionId: any): any {
        
       switch (selectionId)
       {
-      case SELECTION_NONE:
+      case (0):
           return;
-      case COL_WYNAUT:
-      case COL_AZURILL:
-      case COL_SKITTY:
-      case COL_MAKUHITA:
-          numSquares = NUM_BOARD_COLORS + 1;  
+      case (1):
+      case (2):
+      case (3):
+      case (4):
+          numSquares = (3) + 1;  
           for (i = 0; i < numSquares; i++)
-              selectionIds[i] = i * ROW_ORANGE + selectionId;
+              selectionIds[i] = i * ((COL_MAKUHITA + 1)) + selectionId;
           break;
-      case ROW_ORANGE:
-      case ROW_GREEN:
-      case ROW_PURPLE:
-          numSquares = NUM_BOARD_POKES + 1;  
+      case ((COL_MAKUHITA + 1)):
+      case ((SQU_ORANGE_MAKUHITA + 1)):
+      case ((SQU_GREEN_MAKUHITA + 1)):
+          numSquares = (4) + 1;  
           for (i = 0; i < numSquares; i++)
               selectionIds[i] = i + selectionId;
           break;
@@ -1233,26 +1285,26 @@ export function DrawGridBackground(selectionId: any): any {
 
 /** static u8 GetMultiplier(u8 selectionId) */
 export function GetMultiplier(selectionId: any): any {
-  const multipliers: any = [0, 3, 4, 6, MAX_MULTIPLIER];
+  const multipliers: any = [0, 3, 4, 6, (12)];
 
-      if (selectionId > NUM_GRID_SELECTIONS)
+      if (selectionId > (SQU_PURPLE_MAKUHITA))
           selectionId = 0;
 
       switch (sGridSelections[selectionId].baseMultiplier)
       {
-      case NUM_BOARD_COLORS:
+      case (3):
           selectionId = ((selectionId) / 5 - 1);
            
-          if (sRoulette.colorHits[selectionId] >= NUM_BOARD_POKES)
+          if (sRoulette.colorHits[selectionId] >= (4))
               return 0;
           return multipliers[sRoulette.colorHits[selectionId] + 1];
-      case NUM_BOARD_POKES:
+      case (4):
           selectionId = ((selectionId) - 1);
            
-          if (sRoulette.pokeHits[selectionId] >= NUM_BOARD_COLORS)
+          if (sRoulette.pokeHits[selectionId] >= (3))
               return 0;
           return multipliers[sRoulette.pokeHits[selectionId] + 2];
-      case NUM_ROULETTE_SLOTS:
+      case (((3) * (4))):
            
           if (sRoulette.hitFlags & sGridSelections[selectionId].flag)
               return 0;
@@ -1403,9 +1455,9 @@ export function LoadOrFreeMiscSpritePalettesAndSheets(free: any): any {
       else
       {
            
-          FreeSpriteTilesByTag(GFXTAG_SHADOW);
-          FreeSpriteTilesByTag(GFXTAG_SHROOMISH_TAILLOW);
-          FreeSpriteTilesByTag(GFXTAG_BALL);
+          FreeSpriteTilesByTag((14));
+          FreeSpriteTilesByTag((13));
+          FreeSpriteTilesByTag((12));
           FreeAllSpritePalettes();
       }
 }
@@ -1420,9 +1472,9 @@ export function CreateWheelIconSprite(template: any, r1: any, angle: any): any {
       gSprites[spriteId].animPaused = TRUE;
       gSprites[spriteId].affineAnimPaused = TRUE;
       temp = angle;
-      angle += DEGREES_PER_SLOT;
+      angle += ((360 / NUM_ROULETTE_SLOTS));
       if (angle >= 360)
-          angle = temp - (360 - DEGREES_PER_SLOT);
+          angle = temp - (360 - ((360 / NUM_ROULETTE_SLOTS)));
       return spriteId;
 }
 
@@ -1441,12 +1493,12 @@ export function CreateGridSprites(): any {
       s.size = sSpriteSheet_GridIcons.size;
       s.tag  = sSpriteSheet_GridIcons.tag;
       LoadSpriteSheet(s);
-      for (i = 0; i < NUM_BOARD_COLORS; i++)
+      for (i = 0; i < (3); i++)
       {
           let y: any = i * 24;
-          for (j = 0; j < NUM_BOARD_POKES; j++)
+          for (j = 0; j < (4); j++)
           {
-              spriteId = sRoulette.spriteIds[(i * NUM_BOARD_POKES) + SPR_GRID_ICONS + j] = CreateSprite(sSpriteTemplates_GridIcons[j], (j * 24) + 148, y + 92, 30);
+              spriteId = sRoulette.spriteIds[(i * (4)) + (SPR_GRID_ICON_ORANGE_WYNAUT) + j] = CreateSprite(sSpriteTemplates_GridIcons[j], (j * 24) + 148, y + 92, 30);
               gSprites[spriteId].animPaused = TRUE;
               y += 24;
               if (y >= 72)
@@ -1455,12 +1507,12 @@ export function CreateGridSprites(): any {
       }
       for (i = 0; i < ARRAY_COUNT(sSpriteTemplates_PokeHeaders); i++)
       {
-          spriteId = sRoulette.spriteIds[i + SPR_POKE_HEADERS] = CreateSprite(sSpriteTemplates_PokeHeaders[i], (i * 24) + 148, 70, 30);
+          spriteId = sRoulette.spriteIds[i + (SPR_POKE_HEADER_1)] = CreateSprite(sSpriteTemplates_PokeHeaders[i], (i * 24) + 148, 70, 30);
           gSprites[spriteId].animPaused = TRUE;
       }
       for (i = 0; i < ARRAY_COUNT(sSpriteTemplates_ColorHeaders); i++)
       {
-          spriteId = sRoulette.spriteIds[i + SPR_COLOR_HEADERS] = CreateSprite(sSpriteTemplates_ColorHeaders[i], 126, (i * 24) + 92, 30);
+          spriteId = sRoulette.spriteIds[i + (SPR_COLOR_HEADER_1)] = CreateSprite(sSpriteTemplates_ColorHeaders[i], 126, (i * 24) + 92, 30);
           gSprites[spriteId].animPaused = TRUE;
       }
 }
@@ -1472,25 +1524,25 @@ export function ShowHideGridIcons(hideAll: any, hideSquare: any): any {
       {
       case TRUE:
            
-          for (i = 0; i < NUM_GRID_SELECTIONS; i++)
+          for (i = 0; i < (SQU_PURPLE_MAKUHITA); i++)
           {
-              gSprites[sRoulette.spriteIds[i + SPR_GRID_ICONS]].invisible = TRUE;
+              gSprites[sRoulette.spriteIds[i + (SPR_GRID_ICON_ORANGE_WYNAUT)]].invisible = TRUE;
           }
           break;
       case FALSE:
-          for (i = 0; i < NUM_ROULETTE_SLOTS; i++)
+          for (i = 0; i < (((3) * (4))); i++)
           {
               if (!(sRoulette.hitFlags & sRouletteSlots[i].flag))
-                  gSprites[sRoulette.spriteIds[i + SPR_GRID_ICONS]].invisible = FALSE;
+                  gSprites[sRoulette.spriteIds[i + (SPR_GRID_ICON_ORANGE_WYNAUT)]].invisible = FALSE;
               else if (sRouletteSlots[i].gridSquare != hideSquare)
-                  gSprites[sRoulette.spriteIds[i + SPR_GRID_ICONS]].invisible = TRUE;
+                  gSprites[sRoulette.spriteIds[i + (SPR_GRID_ICON_ORANGE_WYNAUT)]].invisible = TRUE;
               else
-                  gSprites[sRoulette.spriteIds[i + SPR_GRID_ICONS]].invisible = FALSE;
+                  gSprites[sRoulette.spriteIds[i + (SPR_GRID_ICON_ORANGE_WYNAUT)]].invisible = FALSE;
           }
            
-          for (; i < NUM_GRID_SELECTIONS; i++)
+          for (; i < (SQU_PURPLE_MAKUHITA); i++)
           {
-              gSprites[sRoulette.spriteIds[i + SPR_GRID_ICONS]].invisible = FALSE;
+              gSprites[sRoulette.spriteIds[i + (SPR_GRID_ICON_ORANGE_WYNAUT)]].invisible = FALSE;
           }
           break;
       }
@@ -1499,14 +1551,14 @@ export function ShowHideGridIcons(hideAll: any, hideSquare: any): any {
 /** static void CreateGridBallSprites(void) */
 export function CreateGridBallSprites(): any {
   let i: any = null;
-      for (i = 0; i < BALLS_PER_ROUND; i++)
+      for (i = 0; i < (6); i++)
       {
-          sRoulette.spriteIds[i + SPR_GRID_BALLS] = CreateSprite(sSpriteTemplate_Ball, 116, 20, 10);
-          gSprites[sRoulette.spriteIds[i + SPR_GRID_BALLS]].invisible = TRUE;
-          gSprites[sRoulette.spriteIds[i + SPR_GRID_BALLS]].data[0] = 1;
-          gSprites[sRoulette.spriteIds[i + SPR_GRID_BALLS]].callback = SpriteCB_GridSquare;
-          gSprites[sRoulette.spriteIds[i + SPR_GRID_BALLS]].oam.priority = 1;
-          StartSpriteAnim(gSprites[sRoulette.spriteIds[i + SPR_GRID_BALLS]], 8);
+          sRoulette.spriteIds[i + (SPR_GRID_BALL_1)] = CreateSprite(sSpriteTemplate_Ball, 116, 20, 10);
+          gSprites[sRoulette.spriteIds[i + (SPR_GRID_BALL_1)]].invisible = TRUE;
+          gSprites[sRoulette.spriteIds[i + (SPR_GRID_BALL_1)]].data[0] = 1;
+          gSprites[sRoulette.spriteIds[i + (SPR_GRID_BALL_1)]].callback = SpriteCB_GridSquare;
+          gSprites[sRoulette.spriteIds[i + (SPR_GRID_BALL_1)]].oam.priority = 1;
+          StartSpriteAnim(gSprites[sRoulette.spriteIds[i + (SPR_GRID_BALL_1)]], 8);
       }
 }
 
@@ -1515,24 +1567,24 @@ export function ShowHideGridBalls(hideAll: any, hideBallId: any): any {
   let i: any = 0;
       if (hideAll)
       {
-          for (; i < BALLS_PER_ROUND; i++)
+          for (; i < (6); i++)
           {
-              gSprites[sRoulette.spriteIds[i + SPR_GRID_BALLS]].invisible = TRUE;
+              gSprites[sRoulette.spriteIds[i + (SPR_GRID_BALL_1)]].invisible = TRUE;
           }
       }
       else
       {
-          for (; i < BALLS_PER_ROUND; i++)
+          for (; i < (6); i++)
           {
               if (!sRoulette.hitSquares[i] || i == hideBallId)
               {
-                  gSprites[sRoulette.spriteIds[i + SPR_GRID_BALLS]].invisible = TRUE;
+                  gSprites[sRoulette.spriteIds[i + (SPR_GRID_BALL_1)]].invisible = TRUE;
               }
               else
               {
-                  gSprites[sRoulette.spriteIds[i + SPR_GRID_BALLS]].invisible = FALSE;
-                  gSprites[sRoulette.spriteIds[i + SPR_GRID_BALLS]].x = (sGridSelections[sRoulette.hitSquares[i]].x + 1) * 8 + 4;
-                  gSprites[sRoulette.spriteIds[i + SPR_GRID_BALLS]].y = (sGridSelections[sRoulette.hitSquares[i]].y + 1) * 8 + 3;
+                  gSprites[sRoulette.spriteIds[i + (SPR_GRID_BALL_1)]].invisible = FALSE;
+                  gSprites[sRoulette.spriteIds[i + (SPR_GRID_BALL_1)]].x = (sGridSelections[sRoulette.hitSquares[i]].x + 1) * 8 + 4;
+                  gSprites[sRoulette.spriteIds[i + (SPR_GRID_BALL_1)]].y = (sGridSelections[sRoulette.hitSquares[i]].y + 1) * 8 + 3;
               }
           }
       }
@@ -1565,12 +1617,12 @@ export function CreateWheelIconSprites(): any {
       LoadSpriteSheet(s);
 
       angle = 15;
-      for (i = 0; i < NUM_BOARD_COLORS; i++)
+      for (i = 0; i < (3); i++)
       {
-          for (j = 0; j < NUM_BOARD_POKES; j++)
+          for (j = 0; j < (4); j++)
           {
               let spriteId: any = null;
-              spriteId = sRoulette.spriteIds[(i * NUM_BOARD_POKES) + SPR_WHEEL_ICONS + j] = CreateWheelIconSprite(sSpriteTemplates_WheelIcons[i * NUM_BOARD_POKES + j], 40,angle);
+              spriteId = sRoulette.spriteIds[(i * (4)) + (SPR_WHEEL_ICON_ORANGE_WYNAUT) + j] = CreateWheelIconSprite(sSpriteTemplates_WheelIcons[i * (4) + j], 40,angle);
               gSprites[spriteId].animPaused = TRUE;
               gSprites[spriteId].affineAnimPaused = TRUE;
           }
@@ -1613,18 +1665,18 @@ export function CreateInterfaceSprites(): any {
       gSprites[sRoulette.spriteIds[SPR_CREDIT]].animPaused = TRUE;
       for (i = 0; i < MAX_COIN_DIGITS; i++)
       {
-          sRoulette.spriteIds[i + SPR_CREDIT_DIGITS] = CreateSprite(sSpriteTemplate_CreditDigit, i * 8 + 196, 24, 0);
-          gSprites[sRoulette.spriteIds[i + SPR_CREDIT_DIGITS]].invisible = TRUE;
-          gSprites[sRoulette.spriteIds[i + SPR_CREDIT_DIGITS]].animPaused = TRUE;
+          sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)] = CreateSprite(sSpriteTemplate_CreditDigit, i * 8 + 196, 24, 0);
+          gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].invisible = TRUE;
+          gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].animPaused = TRUE;
       }
       sRoulette.spriteIds[SPR_MULTIPLIER] = CreateSprite(sSpriteTemplate_Multiplier, 120, 68, 4);
       gSprites[sRoulette.spriteIds[SPR_MULTIPLIER]].animPaused = TRUE;
-      for (i = 0; i < BALLS_PER_ROUND / 2; i++)
+      for (i = 0; i < (6) / 2; i++)
       {
            
-          sRoulette.spriteIds[i + SPR_BALL_COUNTER] = CreateSprite(sSpriteTemplate_BallCounter, i * 16 + 192, 36, 4);
-          gSprites[sRoulette.spriteIds[i + SPR_BALL_COUNTER]].invisible = TRUE;
-          gSprites[sRoulette.spriteIds[i + SPR_BALL_COUNTER]].animPaused = TRUE;
+          sRoulette.spriteIds[i + (SPR_BALL_COUNTER_1)] = CreateSprite(sSpriteTemplate_BallCounter, i * 16 + 192, 36, 4);
+          gSprites[sRoulette.spriteIds[i + (SPR_BALL_COUNTER_1)]].invisible = TRUE;
+          gSprites[sRoulette.spriteIds[i + (SPR_BALL_COUNTER_1)]].animPaused = TRUE;
       }
       sRoulette.spriteIds[SPR_WIN_SLOT_CURSOR] = CreateSprite(sSpriteTemplate_Cursor, 152, 96, 9);
       gSprites[sRoulette.spriteIds[SPR_WIN_SLOT_CURSOR]].oam.priority = 1;
@@ -1640,13 +1692,13 @@ export function SetCreditDigits(num: any): any {
       for (i = 0; i < MAX_COIN_DIGITS; i++)
       {
           let digit: any = num / d;
-          gSprites[sRoulette.spriteIds[i + SPR_CREDIT_DIGITS]].invisible = TRUE;
+          gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].invisible = TRUE;
           if (digit > 0 || printZero || i == MAX_COIN_DIGITS - 1)
           {
-              gSprites[sRoulette.spriteIds[i + SPR_CREDIT_DIGITS]].invisible = FALSE;
-              gSprites[sRoulette.spriteIds[i + SPR_CREDIT_DIGITS]].oam.tileNum =
-                  gSprites[sRoulette.spriteIds[i + SPR_CREDIT_DIGITS]].sheetTileStart
-                  + (gSprites[sRoulette.spriteIds[i + SPR_CREDIT_DIGITS]].anims + digit).type;
+              gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].invisible = FALSE;
+              gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].oam.tileNum =
+                  gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].sheetTileStart
+                  + (gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].anims + digit).type;
               printZero = TRUE;
           }
           num = num % d;
@@ -1658,22 +1710,22 @@ export function SetCreditDigits(num: any): any {
 export function GetMultiplierAnimId(selectionId: any): any {
   const animIds: any = [0, 1, 2, 3, 4];
 
-      if (selectionId > NUM_GRID_SELECTIONS)
+      if (selectionId > (SQU_PURPLE_MAKUHITA))
           selectionId = 0;
 
       switch (sGridSelections[selectionId].baseMultiplier)
       {
-      case NUM_BOARD_COLORS:
+      case (3):
           selectionId = ((selectionId) / 5 - 1);
           if (sRoulette.colorHits[selectionId] > 3)
               return 0;
           return animIds[sRoulette.colorHits[selectionId] + 1];
-      case NUM_BOARD_POKES:
+      case (4):
           selectionId = ((selectionId) - 1);
           if (sRoulette.pokeHits[selectionId] > 2)
               return 0;
           return animIds[sRoulette.pokeHits[selectionId] + 2];
-      case NUM_ROULETTE_SLOTS:
+      case (((3) * (4))):
           if (sRoulette.hitFlags & sGridSelections[selectionId].flag)
               return 0;
           return animIds[4];
@@ -1697,12 +1749,12 @@ export function SetBallCounterNumLeft(numBalls: any): any {
       switch (numBalls)
       {
       case 6:
-          for (i = 0; i < BALLS_PER_ROUND / 2; i++)
+          for (i = 0; i < (6) / 2; i++)
           {
-              gSprites[sRoulette.spriteIds[i + SPR_BALL_COUNTER]].invisible = FALSE;
-              gSprites[sRoulette.spriteIds[i + SPR_BALL_COUNTER]].oam.tileNum =
-                  gSprites[sRoulette.spriteIds[i + SPR_BALL_COUNTER]].sheetTileStart
-                  + (gSprites[sRoulette.spriteIds[i + SPR_BALL_COUNTER]].anims).type;
+              gSprites[sRoulette.spriteIds[i + (SPR_BALL_COUNTER_1)]].invisible = FALSE;
+              gSprites[sRoulette.spriteIds[i + (SPR_BALL_COUNTER_1)]].oam.tileNum =
+                  gSprites[sRoulette.spriteIds[i + (SPR_BALL_COUNTER_1)]].sheetTileStart
+                  + (gSprites[sRoulette.spriteIds[i + (SPR_BALL_COUNTER_1)]].anims).type;
           }
           break;
       case 5:
@@ -1732,11 +1784,11 @@ export function SetBallCounterNumLeft(numBalls: any): any {
           break;
       case 0:
       default:
-          for (i = 0; i < BALLS_PER_ROUND / 2; i++)
+          for (i = 0; i < (6) / 2; i++)
           {
-              gSprites[sRoulette.spriteIds[i + SPR_BALL_COUNTER]].oam.tileNum =
-                  gSprites[sRoulette.spriteIds[i + SPR_BALL_COUNTER]].sheetTileStart
-                  + (gSprites[sRoulette.spriteIds[i + SPR_BALL_COUNTER]].anims + t + 2).type;
+              gSprites[sRoulette.spriteIds[i + (SPR_BALL_COUNTER_1)]].oam.tileNum =
+                  gSprites[sRoulette.spriteIds[i + (SPR_BALL_COUNTER_1)]].sheetTileStart
+                  + (gSprites[sRoulette.spriteIds[i + (SPR_BALL_COUNTER_1)]].anims + t + 2).type;
           }
       }
 }
@@ -1778,7 +1830,7 @@ export function SpriteCB_WheelCenter(sprite: any): any {
 /** static void CreateWheelBallSprites(void) */
 export function CreateWheelBallSprites(): any {
   let i: any = null;
-      for (i = 0; i < BALLS_PER_ROUND; i++)
+      for (i = 0; i < (6); i++)
       {
           sRoulette.spriteIds[i] = CreateSprite(sSpriteTemplate_Ball, 116, 80, 57 - i);
           if (sRoulette.spriteIds[i] != MAX_SPRITES)
@@ -1791,9 +1843,9 @@ export function CreateWheelBallSprites(): any {
 
 /** static void HideWheelBalls(void) */
 export function HideWheelBalls(): any {
-  let spriteId: any = sRoulette.spriteIds[SPR_WHEEL_BALLS];
+  let spriteId: any = sRoulette.spriteIds[(SPR_WHEEL_BALL_1)];
       let i: any = null;
-      for (i = 0; i < BALLS_PER_ROUND; i++)
+      for (i = 0; i < (6); i++)
       {
           let j: any = null;
           gSprites[spriteId].invisible = TRUE;
@@ -1824,30 +1876,30 @@ export function UpdateBallRelativeWheelAngle(sprite: any): any {
 
 /** static u8 UpdateSlotBelowBall(struct Sprite *sprite) */
 export function UpdateSlotBelowBall(sprite: any): any {
-  sRoulette.hitSlot = UpdateBallRelativeWheelAngle(sprite) / DEGREES_PER_SLOT;
+  sRoulette.hitSlot = UpdateBallRelativeWheelAngle(sprite) / ((360 / NUM_ROULETTE_SLOTS));
       return sRoulette.hitSlot;
 }
 
 /** static s16 GetBallDistanceToSlotMidpoint(struct Sprite *sprite) */
 export function GetBallDistanceToSlotMidpoint(sprite: any): any {
-  let angleIntoSlot: any = UpdateBallRelativeWheelAngle(sprite) % DEGREES_PER_SLOT;
+  let angleIntoSlot: any = UpdateBallRelativeWheelAngle(sprite) % ((360 / NUM_ROULETTE_SLOTS));
       let distanceToMidpoint: any = null;
-      if (angleIntoSlot == SLOT_MIDPOINT)
+      if (angleIntoSlot == ((DEGREES_PER_SLOT / 2 - 1)))
       {
            
           distanceToMidpoint = 0;
           return sprite.sSlotMidpointDist = distanceToMidpoint;
       }
-      else if (angleIntoSlot >= SLOT_MIDPOINT)
+      else if (angleIntoSlot >= ((DEGREES_PER_SLOT / 2 - 1)))
       {
            
-          distanceToMidpoint = (DEGREES_PER_SLOT - 1) + SLOT_MIDPOINT - angleIntoSlot;
+          distanceToMidpoint = (((360 / NUM_ROULETTE_SLOTS)) - 1) + ((DEGREES_PER_SLOT / 2 - 1)) - angleIntoSlot;
           return sprite.sSlotMidpointDist = distanceToMidpoint;
       }
       else
       {
            
-          distanceToMidpoint = SLOT_MIDPOINT - angleIntoSlot;
+          distanceToMidpoint = ((DEGREES_PER_SLOT / 2 - 1)) - angleIntoSlot;
           return sprite.sSlotMidpointDist = distanceToMidpoint;
       }
 }
@@ -1900,7 +1952,7 @@ export function SpriteCB_UnstickBall_ShroomishBallFall(sprite: any): any {
       else
           sprite.invisible = FALSE;
 
-      if (sprite.data[2] >= DEGREES_PER_SLOT)
+      if (sprite.data[2] >= ((360 / NUM_ROULETTE_SLOTS)))
       {
           if (!sprite.sStuckOnWheelLeft)
           {
@@ -1971,7 +2023,7 @@ export function SpriteCB_UnstickBall_Shroomish(sprite: any): any {
 export function SpriteCB_UnstickBall_TaillowDrop(sprite: any): any {
   sprite.y2 = (sprite.data[2] * 0.05 * sprite.data[2]) - 45;
       sprite.data[2]++;
-      if (sprite.data[2] >= DEGREES_PER_SLOT && sprite.y2 >= 0)
+      if (sprite.data[2] >= ((360 / NUM_ROULETTE_SLOTS)) && sprite.y2 >= 0)
       {
           LandBallsRoulette.ballUnstuck = TRUE;
       }
@@ -2097,13 +2149,13 @@ export function SpriteCB_RollBall_TryLand(sprite: any): any {
           if (fallRight)
           {
               sRoulette.ballAngleSpeed = 0.0;
-              sRoulette.stuckHitSlot = slotId = (sRoulette.hitSlot + 1) % NUM_ROULETTE_SLOTS;
+              sRoulette.stuckHitSlot = slotId = (sRoulette.hitSlot + 1) % (((3) * (4)));
           }
           else  
           {
               let temp: any = null;
               sRoulette.ballAngleSpeed = (temp = sRouletteTables[sRoulette.tableId].var1C) * 2.0;
-              slotId = (sRoulette.hitSlot + NUM_ROULETTE_SLOTS - 1) % NUM_ROULETTE_SLOTS;
+              slotId = (sRoulette.hitSlot + (((3) * (4))) - 1) % (((3) * (4)));
               sRoulette.stuckHitSlot = sRoulette.hitSlot;
           }
           if (sRouletteSlots[slotId].flag & sRoulette.hitFlags)
@@ -2284,7 +2336,7 @@ export function SetBallStuck(sprite: any): any {
       sRoulette.ballFallSpeed = 0.0;
       sRoulette.ballAngleSpeed = sRouletteTables[sRoulette.tableId].var1C;
 
-      angle = (sRoulette.tableId * DEGREES_PER_SLOT + 33) + (1 - sRoulette.useTaillow) * 15;
+      angle = (sRoulette.tableId * ((360 / NUM_ROULETTE_SLOTS)) + 33) + (1 - sRoulette.useTaillow) * 15;
 
        
        
@@ -2318,7 +2370,7 @@ export function SetBallStuck(sprite: any): any {
       }
 
       slotsToSkip = 2;
-      slotId = (sRoulette.stuckHitSlot + 2) % NUM_ROULETTE_SLOTS;
+      slotId = (sRoulette.stuckHitSlot + 2) % (((3) * (4)));
 
       if (sRoulette.useTaillow == TRUE && sRoulette.tableId == 1)
           maxSlotToCheck += 6;  
@@ -2334,7 +2386,7 @@ export function SetBallStuck(sprite: any): any {
               if (betSlotId == 0 && (sRouletteSlots[slotId].flag & sGridSelections[sRoulette.betSelection[sRoulette.curBallNum]].inSelectionFlags))
                   betSlotId = i;
           }
-          slotId = (slotId + 1) % NUM_ROULETTE_SLOTS;
+          slotId = (slotId + 1) % (((3) * (4)));
       }
 
        

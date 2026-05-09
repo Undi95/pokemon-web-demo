@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sSpecialFlags: any = null;
 /** void InitEventData(void) */
 export function InitEventData(): any {
   memset(gSaveBlock1Ptr.flags, 0, sizeof(gSaveBlock1Ptr.flags));
@@ -24,8 +27,8 @@ export function InitEventData(): any {
 
 /** void ClearTempFieldEventData(void) */
 export function ClearTempFieldEventData(): any {
-  memset(gSaveBlock1Ptr.flags[TEMP_FLAGS_START / 8], 0, TEMP_FLAGS_SIZE);
-      memset(gSaveBlock1Ptr.vars[TEMP_VARS_START - VARS_START], 0, TEMP_VARS_SIZE);
+  memset(gSaveBlock1Ptr.flags[TEMP_FLAGS_START / 8], 0, ((NUM_TEMP_FLAGS / 8)));
+      memset(gSaveBlock1Ptr.vars[TEMP_VARS_START - VARS_START], 0, ((NUM_TEMP_VARS * 2)));
       FlagClear(FLAG_SYS_ENC_UP_ITEM);
       FlagClear(FLAG_SYS_ENC_DOWN_ITEM);
       FlagClear(FLAG_SYS_USE_STRENGTH);
@@ -35,7 +38,7 @@ export function ClearTempFieldEventData(): any {
 
 /** void ClearDailyFlags(void) */
 export function ClearDailyFlags(): any {
-  memset(gSaveBlock1Ptr.flags[DAILY_FLAGS_START / 8], 0, DAILY_FLAGS_SIZE);
+  memset(gSaveBlock1Ptr.flags[DAILY_FLAGS_START / 8], 0, ((NUM_DAILY_FLAGS / 8)));
 }
 
 /** void DisableNationalPokedex(void) */

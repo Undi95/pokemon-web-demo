@@ -15,6 +15,28 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAmplitude: any = null;
+let sBattler: any = null;
+let sBouncerSpriteId: any = null;
+let sCenterToCornerVecXs: any = null;
+let sDelay: any = null;
+let sDelta: any = null;
+let sEndTurnFuncsTable: any = null;
+let sFlickerArray: any = null;
+let sIntroScanlineParams16Bit: any = null;
+let sMultiPartnerPartyBuffer: any = null;
+let sNumFlickers: any = null;
+let sSinIndex: any = null;
+let sSpeciesId: any = null;
+let sSpeedX: any = null;
+let sSpeedY: any = null;
+let sState: any = null;
+let sText_ShedinjaJpnName: any = null;
+let sTurnActionsFuncsTable: any = null;
+let sUnusedBattlersArray: any = null;
+let sWhich: any = null;
 /** void CB2_InitBattle(void) */
 export function CB2_InitBattle(): any {
   MoveSaveBlocks_ResetHeap();
@@ -1845,22 +1867,22 @@ export function CB2_AskRecordBattle(): any {
 export function AskRecordBattle(): any {
   switch (gBattleCommunication[MULTIUSE_STATE])
       {
-      case STATE_INIT:
+      case (0):
           ShowBg(0);
           ShowBg(1);
           ShowBg(2);
           gBattleCommunication[MULTIUSE_STATE]++;
           break;
-      case STATE_LINK:
+      case (1):
           if (gMain.anyLinkBattlerHasFrontierPass && gReceivedRemoteLinkPlayers == 0)
               CreateTask(Task_ReconnectWithLinkPlayers, 5);
           gBattleCommunication[MULTIUSE_STATE]++;
           break;
-      case STATE_WAIT_LINK:
+      case (2):
           if (!FuncIsActiveTask(Task_ReconnectWithLinkPlayers))
               gBattleCommunication[MULTIUSE_STATE]++;
           break;
-      case STATE_ASK_RECORD:
+      case (3):
           if (!gPaletteFade.active)
           {
                
@@ -1868,7 +1890,7 @@ export function AskRecordBattle(): any {
               gBattleCommunication[MULTIUSE_STATE]++;
           }
           break;
-      case STATE_PRINT_YES_NO:
+      case (4):
           if (!IsTextPrinterActive(B_WIN_MSG))
           {
               HandleBattleWindow(YESNOBOX_X_Y, 0);
@@ -1878,7 +1900,7 @@ export function AskRecordBattle(): any {
               gBattleCommunication[MULTIUSE_STATE]++;
           }
           break;
-      case STATE_HANDLE_YES_NO:
+      case (5):
           if (JOY_NEW(DPAD_UP))
           {
               if (gBattleCommunication[CURSOR_POSITION] != 0)
@@ -1909,7 +1931,7 @@ export function AskRecordBattle(): any {
                    
                   HandleBattleWindow(YESNOBOX_X_Y, WINDOW_CLEAR);
                   gBattleCommunication[1] = MoveRecordedBattleToSaveData();
-                  gBattleCommunication[MULTIUSE_STATE] = STATE_RECORD_YES;
+                  gBattleCommunication[MULTIUSE_STATE] = (10);
               }
               else
               {
@@ -1923,7 +1945,7 @@ export function AskRecordBattle(): any {
               gBattleCommunication[MULTIUSE_STATE]++;
           }
           break;
-      case STATE_RECORD_NO:
+      case (6):
           if (IsLinkTaskFinished() == TRUE)
           {
               HandleBattleWindow(YESNOBOX_X_Y, WINDOW_CLEAR);
@@ -1936,7 +1958,7 @@ export function AskRecordBattle(): any {
               gBattleCommunication[MULTIUSE_STATE]++;  
           }
           break;
-      case STATE_WAIT_END:
+      case (8):
           if (--gBattleCommunication[1] == 0)
           {
               if (gMain.anyLinkBattlerHasFrontierPass && !gWirelessCommType)
@@ -1944,7 +1966,7 @@ export function AskRecordBattle(): any {
               gBattleCommunication[MULTIUSE_STATE]++;
           }
           break;
-      case STATE_END:
+      case (9):
           if (!gMain.anyLinkBattlerHasFrontierPass || gWirelessCommType || gReceivedRemoteLinkPlayers != 1)
           {
               gMain.anyLinkBattlerHasFrontierPass = FALSE;
@@ -1957,7 +1979,7 @@ export function AskRecordBattle(): any {
               }
           }
           break;
-      case STATE_RECORD_YES:
+      case (10):
           if (gBattleCommunication[1] == 1)
           {
               PlaySE(SE_SAVE);
@@ -1974,7 +1996,7 @@ export function AskRecordBattle(): any {
               gBattleCommunication[MULTIUSE_STATE]++;
           }
           break;
-      case STATE_RECORD_WAIT:
+      case (11):
           if (IsLinkTaskFinished() == TRUE && !IsTextPrinterActive(B_WIN_MSG) && --gBattleCommunication[1] == 0)
           {
               if (gMain.anyLinkBattlerHasFrontierPass)
@@ -1985,8 +2007,8 @@ export function AskRecordBattle(): any {
               gBattleCommunication[MULTIUSE_STATE]++;
           }
           break;
-      case STATE_END_RECORD_YES:
-      case STATE_END_RECORD_NO:
+      case (12):
+      case (7):
           if (!IsTextPrinterActive(B_WIN_MSG))
           {
               if (gMain.anyLinkBattlerHasFrontierPass)
@@ -1995,7 +2017,7 @@ export function AskRecordBattle(): any {
                   {
                       BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
                       gBattleCommunication[1] = 32;  
-                      gBattleCommunication[MULTIUSE_STATE] = STATE_WAIT_END;
+                      gBattleCommunication[MULTIUSE_STATE] = (8);
                   }
 
               }
@@ -2003,7 +2025,7 @@ export function AskRecordBattle(): any {
               {
                   BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
                   gBattleCommunication[1] = 32;  
-                  gBattleCommunication[MULTIUSE_STATE] = STATE_WAIT_END;
+                  gBattleCommunication[MULTIUSE_STATE] = (8);
               }
           }
           break;

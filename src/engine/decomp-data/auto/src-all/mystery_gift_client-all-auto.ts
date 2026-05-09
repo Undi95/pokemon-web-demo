@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sClient: any = null;
 /** void MysteryGiftClient_Create(bool32 isWonderNews) */
 export function MysteryGiftClient_Create(isWonderNews: any): any {
   sClient = AllocZeroed(0);

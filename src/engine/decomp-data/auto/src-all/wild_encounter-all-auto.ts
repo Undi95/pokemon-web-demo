@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFeebasRngValue: any = null;
+let sRoute119WaterTileData: any = null;
+let sWildEncountersDisabled: any = null;
+let sWildFeebas: any = null;
 /** void DisableWildEncounters(bool8 disabled) */
 export function DisableWildEncounters(disabled: any): any {
   sWildEncountersDisabled = disabled;
@@ -74,11 +80,11 @@ export function CheckFeebas(): any {
 
            
            
-          for (i = 0; i != NUM_FEEBAS_SPOTS;)
+          for (i = 0; i != (6);)
           {
-              feebasSpots[i] = FeebasRandom() % NUM_FISHING_SPOTS;
+              feebasSpots[i] = FeebasRandom() % ((NUM_FISHING_SPOTS_1 + NUM_FISHING_SPOTS_2 + NUM_FISHING_SPOTS_3));
               if (feebasSpots[i] == 0)
-                  feebasSpots[i] = NUM_FISHING_SPOTS;
+                  feebasSpots[i] = ((NUM_FISHING_SPOTS_1 + NUM_FISHING_SPOTS_2 + NUM_FISHING_SPOTS_3));
 
                
                
@@ -91,7 +97,7 @@ export function CheckFeebas(): any {
            
            
           spotId = GetFeebasFishingSpotId(x, y, route119Section);
-          for (i = 0; i < NUM_FEEBAS_SPOTS; i++)
+          for (i = 0; i < (6); i++)
           {
               if (spotId == feebasSpots[i])
                   return TRUE;
@@ -259,7 +265,7 @@ export function GetCurrentMapWildMonHeaderId(): any {
           }
       }
 
-      return HEADER_NONE;
+      return (0xFFFF);
 }
 
 /** static u8 PickWildMonNature(void) */
@@ -371,9 +377,9 @@ export function TryGenerateWildMon(wildMonInfo: any, area: any, flags: any): any
       }
 
       level = ChooseWildMonLevel(wildMonInfo.wildPokemon[wildMonIndex]);
-      if (flags & WILD_CHECK_REPEL && !IsWildLevelAllowedByRepel(level))
+      if (flags & ((1 << 0)) && !IsWildLevelAllowedByRepel(level))
           return FALSE;
-      if (gMapHeader.mapLayoutId != LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS && flags & WILD_CHECK_KEEN_EYE && !IsAbilityAllowingEncounter(level))
+      if (gMapHeader.mapLayoutId != LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS && flags & ((1 << 1)) && !IsAbilityAllowingEncounter(level))
           return FALSE;
 
       CreateWildMon(wildMonInfo.wildPokemon[wildMonIndex].species, level);
@@ -393,7 +399,7 @@ export function GenerateFishingWildMon(wildMonInfo: any, rod: any): any {
 export function SetUpMassOutbreakEncounter(flags: any): any {
   let i: any = null;
 
-      if (flags & WILD_CHECK_REPEL && !IsWildLevelAllowedByRepel(gSaveBlock1Ptr.outbreakPokemonLevel))
+      if (flags & ((1 << 0)) && !IsWildLevelAllowedByRepel(gSaveBlock1Ptr.outbreakPokemonLevel))
           return FALSE;
 
       CreateWildMon(gSaveBlock1Ptr.outbreakPokemonSpecies, gSaveBlock1Ptr.outbreakPokemonLevel);
@@ -417,7 +423,7 @@ export function DoMassOutbreakEncounterTest(): any {
 
 /** static bool8 EncounterOddsCheck(u16 encounterRate) */
 export function EncounterOddsCheck(encounterRate: any): any {
-  if (Random() % MAX_ENCOUNTER_RATE < encounterRate)
+  if (Random() % (2880) < encounterRate)
           return TRUE;
       else
           return FALSE;
@@ -447,8 +453,8 @@ export function WildEncounterCheck(encounterRate: any, ignoreAbility: any): any 
           else if (ability == ABILITY_SAND_VEIL && gSaveBlock1Ptr.weather == WEATHER_SANDSTORM)
               encounterRate /= 2;
       }
-      if (encounterRate > MAX_ENCOUNTER_RATE)
-          encounterRate = MAX_ENCOUNTER_RATE;
+      if (encounterRate > (2880))
+          encounterRate = (2880);
       return EncounterOddsCheck(encounterRate);
 }
 
@@ -480,7 +486,7 @@ export function StandardWildEncounter(curMetatileBehavior: any, prevMetatileBeha
           return FALSE;
 
       headerId = GetCurrentMapWildMonHeaderId();
-      if (headerId == HEADER_NONE)
+      if (headerId == (0xFFFF))
       {
           if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS)
           {
@@ -489,7 +495,7 @@ export function StandardWildEncounter(curMetatileBehavior: any, prevMetatileBeha
                   return FALSE;
               else if (WildEncounterCheck(gBattlePikeWildMonHeaders[headerId].landMonsInfo.encounterRate, FALSE) != TRUE)
                   return FALSE;
-              else if (TryGenerateWildMon(gBattlePikeWildMonHeaders[headerId].landMonsInfo, WILD_AREA_LAND, WILD_CHECK_KEEN_EYE) != TRUE)
+              else if (TryGenerateWildMon(gBattlePikeWildMonHeaders[headerId].landMonsInfo, WILD_AREA_LAND, ((1 << 1))) != TRUE)
                   return FALSE;
               else if (!TryGenerateBattlePikeWildMon(TRUE))
                   return FALSE;
@@ -504,7 +510,7 @@ export function StandardWildEncounter(curMetatileBehavior: any, prevMetatileBeha
                   return FALSE;
               else if (WildEncounterCheck(gBattlePyramidWildMonHeaders[headerId].landMonsInfo.encounterRate, FALSE) != TRUE)
                   return FALSE;
-              else if (TryGenerateWildMon(gBattlePyramidWildMonHeaders[headerId].landMonsInfo, WILD_AREA_LAND, WILD_CHECK_KEEN_EYE) != TRUE)
+              else if (TryGenerateWildMon(gBattlePyramidWildMonHeaders[headerId].landMonsInfo, WILD_AREA_LAND, ((1 << 1))) != TRUE)
                   return FALSE;
 
               GenerateBattlePyramidWildMon();
@@ -534,14 +540,14 @@ export function StandardWildEncounter(curMetatileBehavior: any, prevMetatileBeha
               }
               else
               {
-                  if (DoMassOutbreakEncounterTest() == TRUE && SetUpMassOutbreakEncounter(WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE) == TRUE)
+                  if (DoMassOutbreakEncounterTest() == TRUE && SetUpMassOutbreakEncounter(((1 << 0)) | ((1 << 1))) == TRUE)
                   {
                       BattleSetup_StartWildBattle();
                       return TRUE;
                   }
 
                    
-                  if (TryGenerateWildMon(gWildMonHeaders[headerId].landMonsInfo, WILD_AREA_LAND, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE) == TRUE)
+                  if (TryGenerateWildMon(gWildMonHeaders[headerId].landMonsInfo, WILD_AREA_LAND, ((1 << 0)) | ((1 << 1))) == TRUE)
                   {
                       BattleSetup_StartWildBattle();
                       return TRUE;
@@ -573,7 +579,7 @@ export function StandardWildEncounter(curMetatileBehavior: any, prevMetatileBeha
               }
               else  
               {
-                  if (TryGenerateWildMon(gWildMonHeaders[headerId].waterMonsInfo, WILD_AREA_WATER, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE) == TRUE)
+                  if (TryGenerateWildMon(gWildMonHeaders[headerId].waterMonsInfo, WILD_AREA_WATER, ((1 << 0)) | ((1 << 1))) == TRUE)
                   {
                       BattleSetup_StartWildBattle();
                       return TRUE;
@@ -591,7 +597,7 @@ export function StandardWildEncounter(curMetatileBehavior: any, prevMetatileBeha
 export function RockSmashWildEncounter(): any {
   let headerId: any = GetCurrentMapWildMonHeaderId();
 
-      if (headerId != HEADER_NONE)
+      if (headerId != (0xFFFF))
       {
           let wildPokemonInfo: any = gWildMonHeaders[headerId].rockSmashMonsInfo;
 
@@ -600,7 +606,7 @@ export function RockSmashWildEncounter(): any {
               gSpecialVar_Result = FALSE;
           }
           else if (WildEncounterCheck(wildPokemonInfo.encounterRate, TRUE) == TRUE
-           && TryGenerateWildMon(wildPokemonInfo, WILD_AREA_ROCKS, WILD_CHECK_REPEL | WILD_CHECK_KEEN_EYE) == TRUE)
+           && TryGenerateWildMon(wildPokemonInfo, WILD_AREA_ROCKS, ((1 << 0)) | ((1 << 1))) == TRUE)
           {
               BattleSetup_StartWildBattle();
               gSpecialVar_Result = TRUE;
@@ -623,7 +629,7 @@ export function SweetScentWildEncounter(): any {
 
       PlayerGetDestCoords(x,y);
       headerId = GetCurrentMapWildMonHeaderId();
-      if (headerId == HEADER_NONE)
+      if (headerId == (0xFFFF))
       {
           if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS)
           {
@@ -693,7 +699,7 @@ export function SweetScentWildEncounter(): any {
 export function DoesCurrentMapHaveFishingMons(): any {
   let headerId: any = GetCurrentMapWildMonHeaderId();
 
-      if (headerId != HEADER_NONE && gWildMonHeaders[headerId].fishingMonsInfo != NULL)
+      if (headerId != (0xFFFF) && gWildMonHeaders[headerId].fishingMonsInfo != NULL)
           return TRUE;
       else
           return FALSE;
@@ -727,7 +733,7 @@ export function GetLocalWildMon(isWaterMon: any): any {
 
       isWaterMon = FALSE;
       headerId = GetCurrentMapWildMonHeaderId();
-      if (headerId == HEADER_NONE)
+      if (headerId == (0xFFFF))
           return SPECIES_NONE;
       landMonsInfo = gWildMonHeaders[headerId].landMonsInfo;
       waterMonsInfo = gWildMonHeaders[headerId].waterMonsInfo;
@@ -759,7 +765,7 @@ export function GetLocalWildMon(isWaterMon: any): any {
 export function GetLocalWaterMon(): any {
   let headerId: any = GetCurrentMapWildMonHeaderId();
 
-      if (headerId != HEADER_NONE)
+      if (headerId != (0xFFFF))
       {
           let waterMonsInfo: any = gWildMonHeaders[headerId].waterMonsInfo;
 

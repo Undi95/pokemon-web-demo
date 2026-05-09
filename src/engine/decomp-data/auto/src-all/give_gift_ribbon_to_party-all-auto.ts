@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sGiftRibbonsMonDataIds: any = null;
 /** void GiveGiftRibbonToParty(u8 index, u8 ribbonId) */
 export function GiveGiftRibbonToParty(index: any, ribbonId: any): any {
   let i: any = null;

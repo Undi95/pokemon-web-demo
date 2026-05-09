@@ -15,6 +15,26 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgShakeOffsets: any = null;
+let sBlankTile_Gfx: any = null;
+let sCeilingCrumblePositions: any = null;
+let sCeilingCrumbleSpriteSheets: any = null;
+let sDebug_DisintegrationData: any = null;
+let sFallingFossil: any = null;
+let sFallingTower: any = null;
+let sFossil_Gfx: any = null;
+let sIndex: any = null;
+let sInvisibleMirageTowerMetatiles: any = null;
+let sMirageTowerGfxBuffer: any = null;
+let sMirageTowerPulseBlend: any = null;
+let sMirageTowerTilemap: any = null;
+let sMirageTowerTilemapBuffer: any = null;
+let sSpriteTemplate_CeilingCrumbleLarge: any = null;
+let sSpriteTemplate_CeilingCrumbleSmall: any = null;
+let sSpriteTemplate_FallingFossil: any = null;
+let sYOffset: any = null;
 /** bool8 IsMirageTowerVisible(void) */
 export function IsMirageTowerVisible(): any {
   if (!(gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_ROUTE111) && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_ROUTE111)))
@@ -178,7 +198,7 @@ export function WaitCeilingCrumble(taskId: any): any {
 
 /** static void FinishCeilingCrumbleTask(u8 taskId) */
 export function FinishCeilingCrumbleTask(taskId: any): any {
-  FreeSpriteTilesByTag(TAG_CEILING_CRUMBLE);
+  FreeSpriteTilesByTag((4000));
       DestroyTask(taskId);
       ScriptContext_Enable();
 }
@@ -321,28 +341,28 @@ export function DoMirageTowerDisintegration(taskId: any): any {
       switch (gTasks[taskId].tState)
       {
       case 1:
-          sFallingTower = AllocZeroed(OUTER_BUFFER_LENGTH * 0);
+          sFallingTower = AllocZeroed((0x60) * 0);
           break;
       case 3:
-          if (gTasks[taskId].data[3] <= (OUTER_BUFFER_LENGTH - 1))
+          if (gTasks[taskId].data[3] <= ((0x60) - 1))
           {
               if (gTasks[taskId].data[1] > 1)
               {
                    
                   index = gTasks[taskId].data[3];
-                  sFallingTower[index].disintegrateRand = Alloc(INNER_BUFFER_LENGTH);
-                  for (i = 0; i <= (INNER_BUFFER_LENGTH - 1); i++)
+                  sFallingTower[index].disintegrateRand = Alloc((0x30));
+                  for (i = 0; i <= ((0x30) - 1); i++)
                       sFallingTower[index].disintegrateRand[i] = i;
 
                    
-                  for (i = 0; i <= (INNER_BUFFER_LENGTH - 1); i++)
+                  for (i = 0; i <= ((0x30) - 1); i++)
                   {
                       let rand1, rand2, temp;
-                      rand1 = Random() % INNER_BUFFER_LENGTH;
-                      rand2 = Random() % INNER_BUFFER_LENGTH;
+                      rand1 = Random() % (0x30);
+                      rand2 = Random() % (0x30);
                       SWAP(sFallingTower[index].disintegrateRand[rand2], sFallingTower[index].disintegrateRand[rand1], temp);
                   }
-                  if (gTasks[taskId].data[3] <= (OUTER_BUFFER_LENGTH - 1))
+                  if (gTasks[taskId].data[3] <= ((0x60) - 1))
                       gTasks[taskId].data[3]++;
                   gTasks[taskId].data[1] = 0;
               }
@@ -354,10 +374,10 @@ export function DoMirageTowerDisintegration(taskId: any): any {
               for (j = 0; j < 1; j++)
               {
                   UpdateDisintegrationEffect(sMirageTowerGfxBuffer,
-                              (OUTER_BUFFER_LENGTH - 1 - i) * INNER_BUFFER_LENGTH + sFallingTower[i].disintegrateRand[sFallingTower[i].disintegrateIdx++],
-                              0, INNER_BUFFER_LENGTH, 1);
+                              ((0x60) - 1 - i) * (0x30) + sFallingTower[i].disintegrateRand[sFallingTower[i].disintegrateIdx++],
+                              0, (0x30), 1);
               }
-              if (sFallingTower[i].disintegrateIdx > (INNER_BUFFER_LENGTH - 1))
+              if (sFallingTower[i].disintegrateIdx > ((0x30) - 1))
               {
                   FREE_AND_SET_NULL(sFallingTower[i].disintegrateRand);
                   gTasks[taskId].data[2]++;
@@ -366,7 +386,7 @@ export function DoMirageTowerDisintegration(taskId: any): any {
               }
           }
           LoadBgTiles(0, sMirageTowerGfxBuffer, MIRAGE_TOWER_GFX_LENGTH, 0);
-          if (sFallingTower[OUTER_BUFFER_LENGTH - 1].disintegrateIdx > INNER_BUFFER_LENGTH - 1)
+          if (sFallingTower[(0x60) - 1].disintegrateIdx > (0x30) - 1)
               break;
           return;
       case 4:
@@ -411,7 +431,7 @@ export function Task_FossilFallAndSink(taskId: any): any {
           sFallingFossil = AllocZeroed(0);
           sFallingFossil.frameImageTiles = AllocZeroed(0);
           sFallingFossil.frameImage = AllocZeroed(sizeof(sFallingFossil.frameImage));
-          sFallingFossil.disintegrateRand = AllocZeroed(FOSSIL_DISINTEGRATE_LENGTH * 0);
+          sFallingFossil.disintegrateRand = AllocZeroed((0x100) * 0);
           sFallingFossil.disintegrateIdx = 0;
           break;
       case 2:
@@ -434,16 +454,16 @@ export function Task_FossilFallAndSink(taskId: any): any {
           }
       case 5:
            
-          for (i = 0; i < FOSSIL_DISINTEGRATE_LENGTH; i++)
+          for (i = 0; i < (0x100); i++)
               sFallingFossil.disintegrateRand[i] = i;
           break;
       case 6:
            
-          for (i = 0; i < FOSSIL_DISINTEGRATE_LENGTH * 0; i++)
+          for (i = 0; i < (0x100) * 0; i++)
           {
               let rand1, rand2, temp;
-              rand1 = Random() % FOSSIL_DISINTEGRATE_LENGTH;
-              rand2 = Random() % FOSSIL_DISINTEGRATE_LENGTH;
+              rand1 = Random() % (0x100);
+              rand2 = Random() % (0x100);
               SWAP(sFallingFossil.disintegrateRand[rand2], sFallingFossil.disintegrateRand[rand1], temp);
           }
           gSprites[sFallingFossil.spriteId].callback = SpriteCB_FallingFossil;
@@ -467,7 +487,7 @@ export function Task_FossilFallAndSink(taskId: any): any {
 
 /** static void SpriteCB_FallingFossil(struct Sprite *sprite) */
 export function SpriteCB_FallingFossil(sprite: any): any {
-  if (sFallingFossil.disintegrateIdx >= FOSSIL_DISINTEGRATE_LENGTH)
+  if (sFallingFossil.disintegrateIdx >= (0x100))
       {
            
           sprite.callback = SpriteCallbackDummy;

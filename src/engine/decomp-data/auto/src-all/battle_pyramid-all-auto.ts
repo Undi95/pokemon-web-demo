@@ -15,6 +15,26 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattlePyramidFunctions: any = null;
+let sBorderedSquareIds: any = null;
+let sFloorTemplateOffsets: any = null;
+let sHintTextTypes: any = null;
+let sLevel50WildMonPointers: any = null;
+let sLongStreakRewardItems: any = null;
+let sOpenLevelWildMonPointers: any = null;
+let sPickupItemOffsets: any = null;
+let sPickupItemSlots: any = null;
+let sPickupItemsLvl50: any = null;
+let sPickupItemsLvlOpen: any = null;
+let sPickupPercentages: any = null;
+let sPostBattleTexts: any = null;
+let sPyramidFloorTemplateOptions: any = null;
+let sPyramidFloorTemplates: any = null;
+let sShortStreakRewardItems: any = null;
+let sTrainerClassEncounterMusic: any = null;
+let sTrainerTextGroups: any = null;
 /** void CallBattlePyramidFunction(void) */
 export function CallBattlePyramidFunction(): any {
   sBattlePyramidFunctions[gSpecialVar_0x8004]();
@@ -562,7 +582,7 @@ export function GenerateBattlePyramidWildMon(): any {
       case 1:
           SetMonData(gEnemyParty[0], MON_DATA_ABILITY_NUM,wildMons[id].abilityNum);
           break;
-      case ABILITY_RANDOM:
+      case (2):
       default:
           if (gSpeciesInfo[wildMons[id].species].abilities[1])
           {
@@ -1070,7 +1090,7 @@ export function GetPyramidFloorLayoutOffsets(layoutOffsets: any): any {
 
       for (i = 0; i < NUM_PYRAMID_FLOOR_SQUARES; i++)
       {
-          layoutOffsets[i] = sPyramidFloorTemplates[id].layoutOffsets[MOD(rand, NUM_LAYOUT_OFFSETS)];
+          layoutOffsets[i] = sPyramidFloorTemplates[id].layoutOffsets[MOD(rand, (8))];
           rand >>= 3;
           if (i == 7)
           {

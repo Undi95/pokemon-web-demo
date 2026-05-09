@@ -15,6 +15,46 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAlphabetGroupIdMap: any = null;
+let sAlphabetKeyboardColumnOffsets: any = null;
+let sAnimateCursor: any = null;
+let sBerryMasterWifePhrases: any = null;
+let sCompressedSpriteSheets: any = null;
+let sDefaultBattleLostWords: any = null;
+let sDefaultBattleStartWords: any = null;
+let sDefaultBattleWonWords: any = null;
+let sDefaultProfileWords: any = null;
+let sDelayTimer: any = null;
+let sEasyChatBgTemplates: any = null;
+let sEasyChatKeyboardAlphabet: any = null;
+let sEasyChatScreen: any = null;
+let sEasyChatScreenTemplates: any = null;
+let sEasyChatWindowTemplates: any = null;
+let sEasyChatYesNoWindowTemplate: any = null;
+let sFooterOptionXOffsets: any = null;
+let sFooterTextOptions: any = null;
+let sMysteryGiftPhrase: any = null;
+let sPhraseFrameDimensions: any = null;
+let sQuizLadyEasyChatScreens: any = null;
+let sRestrictedWordSpecies: any = null;
+let sScreenControl: any = null;
+let sSpritePalettes: any = null;
+let sSpriteSheets: any = null;
+let sSpriteTemplate_ButtonWindow: any = null;
+let sSpriteTemplate_ModeWindow: any = null;
+let sSpriteTemplate_RectangleCursor: any = null;
+let sSpriteTemplate_ScrollIndicator: any = null;
+let sSpriteTemplate_StartSelectButton: any = null;
+let sSpriteTemplate_TriangleCursor: any = null;
+let sTextInputFrameGreen_Pal: any = null;
+let sTextInputFrameOrange_Pal: any = null;
+let sTextInputFrame_Gfx: any = null;
+let sText_Clear17: any = null;
+let sText_Pal: any = null;
+let sTitleText_Pal: any = null;
+let sWordData: any = null;
 /** void DoEasyChatScreen(u8 type, u16 *words, MainCallback exitCallback, u8 displayedPersonType) */
 export function DoEasyChatScreen(_type: any, words: any, exitCallback: any, displayedPersonType: any): any {
   let taskId: any = null;
@@ -23,8 +63,8 @@ export function DoEasyChatScreen(_type: any, words: any, exitCallback: any, disp
       taskId = CreateTask(Task_InitEasyChatScreen, 0);
       gTasks[taskId].tType = _type;
       gTasks[taskId].tPersonType = displayedPersonType;
-      SetWordTaskArg(taskId, TASKIDX_WORDS, words);
-      SetWordTaskArg(taskId, TASKIDX_EXIT_CALLBACK, exitCallback);
+      SetWordTaskArg(taskId, (2), words);
+      SetWordTaskArg(taskId, (4), exitCallback);
       SetMainCallback2(CB2_EasyChatScreen);
 }
 
@@ -109,7 +149,7 @@ export function Task_EasyChatScreen(taskId: any): any {
           break;
       case MAINSTATE_EXIT:
           if (!gPaletteFade.active)
-              ExitEasyChatScreen(GetWordTaskArg(taskId, TASKIDX_EXIT_CALLBACK));
+              ExitEasyChatScreen(GetWordTaskArg(taskId, (4)));
           break;
       case MAINSTATE_WAIT_FADE_IN:
           if (!gPaletteFade.active)
@@ -135,21 +175,21 @@ export function InitEasyChatScreen(taskId: any): any {
           if (!InitEasyChatScreenWordData())
           {
                
-              ExitEasyChatScreen(GetWordTaskArg(taskId, TASKIDX_EXIT_CALLBACK));
+              ExitEasyChatScreen(GetWordTaskArg(taskId, (4)));
           }
           break;
       case 2:
-          if (!InitEasyChatScreenStruct(tType, GetWordTaskArg(taskId, TASKIDX_WORDS), tPersonType))
+          if (!InitEasyChatScreenStruct(tType, GetWordTaskArg(taskId, (2)), tPersonType))
           {
                
-              ExitEasyChatScreen(GetWordTaskArg(taskId, TASKIDX_EXIT_CALLBACK));
+              ExitEasyChatScreen(GetWordTaskArg(taskId, (4)));
           }
           break;
       case 3:
           if (!InitEasyChatScreenControl())
           {
                
-              ExitEasyChatScreen(GetWordTaskArg(taskId, TASKIDX_EXIT_CALLBACK));
+              ExitEasyChatScreen(GetWordTaskArg(taskId, (4)));
           }
           break;
       case 4:
@@ -1095,7 +1135,7 @@ export function MoveKeyboardCursor_GroupNames(input: any): any {
           if (sEasyChatScreen.keyboardRow + sEasyChatScreen.keyboardScrollOffset < sEasyChatScreen.keyboardLastRow - 1)
           {
               let funcId: any = null;
-              if (sEasyChatScreen.keyboardRow < NUM_GROUP_NAME_ROWS - 1)
+              if (sEasyChatScreen.keyboardRow < (4) - 1)
               {
                   sEasyChatScreen.keyboardRow++;
                   funcId = ECFUNC_UPDATE_KEYBOARD_CURSOR;
@@ -1142,12 +1182,12 @@ export function MoveKeyboardCursor_Alphabet(input: any): any {
           if (sEasyChatScreen.keyboardRow > 0)
               sEasyChatScreen.keyboardRow--;
           else
-              sEasyChatScreen.keyboardRow = NUM_ALPHABET_ROWS - 1;
+              sEasyChatScreen.keyboardRow = (4) - 1;
 
           ReduceToValidKeyboardColumn();
           return ECFUNC_UPDATE_KEYBOARD_CURSOR;
       case INPUT_DOWN:
-          if (sEasyChatScreen.keyboardRow < NUM_ALPHABET_ROWS - 1)
+          if (sEasyChatScreen.keyboardRow < (4) - 1)
               sEasyChatScreen.keyboardRow++;
           else
               sEasyChatScreen.keyboardRow = 0;
@@ -1179,11 +1219,11 @@ export function MoveKeyboardCursor_ButtonWindow(input: any): any {
           if (sEasyChatScreen.keyboardRow)
               sEasyChatScreen.keyboardRow--;
           else
-              sEasyChatScreen.keyboardRow = NUM_BUTTON_ROWS - 1;
+              sEasyChatScreen.keyboardRow = (3) - 1;
 
           return ECFUNC_UPDATE_KEYBOARD_CURSOR;
       case INPUT_DOWN:
-          if (sEasyChatScreen.keyboardRow < NUM_BUTTON_ROWS - 1)
+          if (sEasyChatScreen.keyboardRow < (3) - 1)
               sEasyChatScreen.keyboardRow++;
           else
               sEasyChatScreen.keyboardRow = 0;
@@ -1248,7 +1288,7 @@ export function MoveWordSelectCursor(input: any): any {
       case INPUT_DOWN:
           if (sEasyChatScreen.wordSelectRow + sEasyChatScreen.wordSelectScrollOffset < sEasyChatScreen.wordSelectLastRow)
           {
-              if (sEasyChatScreen.wordSelectRow < NUM_WORD_SELECT_ROWS - 1)
+              if (sEasyChatScreen.wordSelectRow < (4) - 1)
               {
                   sEasyChatScreen.wordSelectRow++;
                   funcId = ECFUNC_UPDATE_WORD_SELECT_CURSOR;
@@ -1287,8 +1327,8 @@ export function MoveWordSelectCursor(input: any): any {
            
           if (sEasyChatScreen.wordSelectScrollOffset)
           {
-              if (sEasyChatScreen.wordSelectScrollOffset >= NUM_WORD_SELECT_ROWS)
-                  sEasyChatScreen.wordSelectScrollOffset -= NUM_WORD_SELECT_ROWS;
+              if (sEasyChatScreen.wordSelectScrollOffset >= (4))
+                  sEasyChatScreen.wordSelectScrollOffset -= (4);
               else
                   sEasyChatScreen.wordSelectScrollOffset = 0;
 
@@ -1297,11 +1337,11 @@ export function MoveWordSelectCursor(input: any): any {
           break;
       case INPUT_SELECT:
            
-          if (sEasyChatScreen.wordSelectScrollOffset <= sEasyChatScreen.wordSelectLastRow - NUM_WORD_SELECT_ROWS)
+          if (sEasyChatScreen.wordSelectScrollOffset <= sEasyChatScreen.wordSelectLastRow - (4))
           {
-              sEasyChatScreen.wordSelectScrollOffset += NUM_WORD_SELECT_ROWS;
-              if (sEasyChatScreen.wordSelectScrollOffset > sEasyChatScreen.wordSelectLastRow - NUM_WORD_SELECT_ROWS + 1)
-                  sEasyChatScreen.wordSelectScrollOffset = sEasyChatScreen.wordSelectLastRow - NUM_WORD_SELECT_ROWS + 1;
+              sEasyChatScreen.wordSelectScrollOffset += (4);
+              if (sEasyChatScreen.wordSelectScrollOffset > sEasyChatScreen.wordSelectLastRow - (4) + 1)
+                  sEasyChatScreen.wordSelectScrollOffset = sEasyChatScreen.wordSelectLastRow - (4) + 1;
 
               ReduceToValidWordSelectColumn();
               return ECFUNC_WORD_SELECT_PAGE_DOWN;
@@ -1319,19 +1359,19 @@ export function GetWordIndexToReplace(): any {
 
 /** static u16 GetSelectedGroupIndex(void) */
 export function GetSelectedGroupIndex(): any {
-  return NUM_GROUP_NAME_COLUMNS * (sEasyChatScreen.keyboardRow + sEasyChatScreen.keyboardScrollOffset) + sEasyChatScreen.keyboardColumn;
+  return (2) * (sEasyChatScreen.keyboardRow + sEasyChatScreen.keyboardScrollOffset) + sEasyChatScreen.keyboardColumn;
 }
 
 /** static int GetSelectedAlphabetGroupId(void) */
 export function GetSelectedAlphabetGroupId(): any {
-  let column: any = sEasyChatScreen.keyboardColumn < NUM_ALPHABET_COLUMNS ? sEasyChatScreen.keyboardColumn : 0;
-      let row: any = sEasyChatScreen.keyboardRow < NUM_ALPHABET_ROWS ? sEasyChatScreen.keyboardRow : 0;
+  let column: any = sEasyChatScreen.keyboardColumn < (7) ? sEasyChatScreen.keyboardColumn : 0;
+      let row: any = sEasyChatScreen.keyboardRow < (4) ? sEasyChatScreen.keyboardRow : 0;
       return sAlphabetGroupIdMap[row][column];
 }
 
 /** static u16 GetSelectedWordIndex(void) */
 export function GetSelectedWordIndex(): any {
-  return NUM_WORD_SELECT_COLUMNS * (sEasyChatScreen.wordSelectRow + sEasyChatScreen.wordSelectScrollOffset) + sEasyChatScreen.wordSelectColumn;
+  return (2) * (sEasyChatScreen.wordSelectRow + sEasyChatScreen.wordSelectScrollOffset) + sEasyChatScreen.wordSelectColumn;
 }
 
 /** static u8 GetLastAlphabetColumn(u8 row) */
@@ -1340,9 +1380,9 @@ export function GetLastAlphabetColumn(row: any): any {
       {
       case 0:
       default:
-          return NUM_ALPHABET_COLUMNS - 1;
+          return (7) - 1;
       case 1:
-          return NUM_ALPHABET_COLUMNS - 2;  
+          return (7) - 2;  
                                             
       }
 }
@@ -1509,11 +1549,11 @@ export function CanScrollDown(): any {
   switch (sEasyChatScreen.inputState)
       {
       case INPUTSTATE_KEYBOARD:
-          if (!sEasyChatScreen.inAlphabetMode && sEasyChatScreen.keyboardScrollOffset + NUM_GROUP_NAME_ROWS <= sEasyChatScreen.keyboardLastRow - 1)
+          if (!sEasyChatScreen.inAlphabetMode && sEasyChatScreen.keyboardScrollOffset + (4) <= sEasyChatScreen.keyboardLastRow - 1)
               return TRUE;
           break;
       case INPUTSTATE_WORD_SELECT:
-          if (sEasyChatScreen.wordSelectScrollOffset + NUM_WORD_SELECT_ROWS <= sEasyChatScreen.wordSelectLastRow)
+          if (sEasyChatScreen.wordSelectScrollOffset + (4) <= sEasyChatScreen.wordSelectLastRow)
               return TRUE;
           break;
       }
@@ -2829,12 +2869,12 @@ export function BufferFrameTilemap(tilemap: any): any {
           for (y = sPhraseFrameDimensions[frameId].top; y < bottom; y++)
           {
               x = sPhraseFrameDimensions[frameId].left - 1;
-              tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_L_EDGE;
+              tilemap[y * 32 + x] = (0x1000) + (0x5);
               x++;
               for (; x < right; x++)
-                  tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TRANSPARENT;
+                  tilemap[y * 32 + x] = (0x1000) + (0x0);
 
-              tilemap[y* 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_R_EDGE;
+              tilemap[y* 32 + x] = (0x1000) + (0x7);
           }
       }
       else
@@ -2845,34 +2885,34 @@ export function BufferFrameTilemap(tilemap: any): any {
           bottom = sPhraseFrameDimensions[frameId].top + sPhraseFrameDimensions[frameId].height;
 
            
-          tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TOP_L_CORNER;
+          tilemap[y * 32 + x] = (0x1000) + (0x1);
           x++;
           for (; x < right; x++)
-              tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TOP_EDGE;
+              tilemap[y * 32 + x] = (0x1000) + (0x2);
 
-          tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TOP_R_CORNER;
+          tilemap[y * 32 + x] = (0x1000) + (0x3);
           y++;
 
            
           for (; y < bottom; y++)
           {
               x = sPhraseFrameDimensions[frameId].left - 1;
-              tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_L_EDGE;
+              tilemap[y * 32 + x] = (0x1000) + (0x5);
               x++;
               for (; x < right; x++)
-                  tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_TRANSPARENT;
+                  tilemap[y * 32 + x] = (0x1000) + (0x0);
 
-              tilemap[y* 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_R_EDGE;
+              tilemap[y* 32 + x] = (0x1000) + (0x7);
           }
 
            
           x = sPhraseFrameDimensions[frameId].left - 1;
-          tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_BOTTOM_L_CORNER;
+          tilemap[y * 32 + x] = (0x1000) + (0x9);
           x++;
           for (; x < right; x++)
-              tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_BOTTOM_EDGE;
+              tilemap[y * 32 + x] = (0x1000) + (0xA);
 
-          tilemap[y * 32 + x] = FRAME_OFFSET_ORANGE + FRAME_TILE_BOTTOM_R_CORNER;
+          tilemap[y * 32 + x] = (0x1000) + (0xB);
       }
 }
 
@@ -2968,12 +3008,12 @@ export function PrintKeyboardAlphabet(): any {
 
 /** static void PrintInitialWordSelectText(void) */
 export function PrintInitialWordSelectText(): any {
-  PrintWordSelectText(0, NUM_WORD_SELECT_ROWS);
+  PrintWordSelectText(0, (4));
 }
 
 /** static void PrintWordSelectNextRowDown(void) */
 export function PrintWordSelectNextRowDown(): any {
-  let wordScroll: any = GetWordSelectScrollOffset() + NUM_WORD_SELECT_ROWS - 1;
+  let wordScroll: any = GetWordSelectScrollOffset() + (4) - 1;
       EraseWordSelectRows(wordScroll, 1);
       PrintWordSelectText(wordScroll, 1);
 }
@@ -2988,7 +3028,7 @@ export function PrintWordSelectNextRowUp(): any {
 /** static void PrintWordSelectRowsPageDown(void) */
 export function PrintWordSelectRowsPageDown(): any {
   let wordScroll: any = GetWordSelectScrollOffset();
-      let maxScroll: any = wordScroll + NUM_WORD_SELECT_ROWS;
+      let maxScroll: any = wordScroll + (4);
       let maxRows: any = GetWordSelectLastRow() + 1;
       if (maxScroll > maxRows)
           maxScroll = maxRows;
@@ -3020,7 +3060,7 @@ export function PrintWordSelectText(scrollOffset: any, numRows: any): any {
       let y: any = null;
       let wordIndex: any = null;
 
-      wordIndex = scrollOffset * NUM_WORD_SELECT_COLUMNS;
+      wordIndex = scrollOffset * (2);
       y = (scrollOffset * 16 + 96) & 0xFF;
       y++;
       for (i = 0; i < numRows; i++)
@@ -3218,32 +3258,32 @@ export function BufferLowerWindowFrame(left: any, top: any, width: any, height: 
       y = top;
 
        
-      tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_TOP_L_CORNER;
+      tilemap[y * 32 + x] = (0x4000) + (0x1);
       x++;
       for (; x < right; x++)
-          tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_TOP_EDGE;
+          tilemap[y * 32 + x] = (0x4000) + (0x2);
 
-      tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_TOP_R_CORNER;
+      tilemap[y * 32 + x] = (0x4000) + (0x3);
       y++;
 
        
       for (; y < bottom; y++)
       {
-          tilemap[y * 32 + left] = FRAME_OFFSET_GREEN + FRAME_TILE_L_EDGE;
+          tilemap[y * 32 + left] = (0x4000) + (0x5);
           x = left + 1;
           for (; x < right; x++)
-              tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_TRANSPARENT;
+              tilemap[y * 32 + x] = (0x4000) + (0x0);
 
-          tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_R_EDGE;
+          tilemap[y * 32 + x] = (0x4000) + (0x7);
       }
 
        
-      tilemap[y * 32 + left] = FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_L_CORNER;
+      tilemap[y * 32 + left] = (0x4000) + (0x9);
       x = left + 1;
       for (; x < right; x++)
-          tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_EDGE;
+          tilemap[y * 32 + x] = (0x4000) + (0xA);
 
-      tilemap[y * 32 + x] = FRAME_OFFSET_GREEN + FRAME_TILE_BOTTOM_R_CORNER;
+      tilemap[y * 32 + x] = (0x4000) + (0xB);
 
       SetWindowDimensions((left + 1) * 8, (top + 1) * 8, (width - 2) * 8, (height - 2) * 8);
 }
@@ -3431,7 +3471,7 @@ export function SetRectangleCursorPos_AlphabetMode(column: any, row: any): any {
       {
           y = row * 16 + 96;
           x = 32;
-          if (column == NUM_ALPHABET_COLUMNS - 1 && row == 0)
+          if (column == (7) - 1 && row == 0)
           {
                
               x = 158;
@@ -3440,7 +3480,7 @@ export function SetRectangleCursorPos_AlphabetMode(column: any, row: any): any {
           else
           {
                
-              x += sAlphabetKeyboardColumnOffsets[column < NUM_ALPHABET_COLUMNS ? column : 0];
+              x += sAlphabetKeyboardColumnOffsets[column < (7) ? column : 0];
               anim = RECTCURSOR_ANIM_ON_LETTER;
           }
 

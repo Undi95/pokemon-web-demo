@@ -15,6 +15,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCutGrassSpriteArrayPtr: any = null;
+let sCutSquareSide: any = null;
+let sHyperCutStruct: any = null;
+let sHyperCutTiles: any = null;
+let sSpriteTemplate_CutGrass: any = null;
+let sTileCountFromPlayer_X: any = null;
+let sTileCountFromPlayer_Y: any = null;
 /** bool8 SetUpFieldMove_Cut(void) */
 export function SetUpFieldMove_Cut(): any {
   let x, y;
@@ -37,28 +46,28 @@ export function SetUpFieldMove_Cut(): any {
           userAbility = GetMonAbility(gPlayerParty[GetCursorSelectionMonId()]);
           if (userAbility == ABILITY_HYPER_CUTTER)
           {
-              sCutSquareSide = CUT_HYPER_SIDE;
+              sCutSquareSide = (5);
               sTileCountFromPlayer_X = 2;
               sTileCountFromPlayer_Y = 2;
           }
           else
           {
-              sCutSquareSide = CUT_NORMAL_SIDE;
+              sCutSquareSide = (3);
               sTileCountFromPlayer_X = 1;
               sTileCountFromPlayer_Y = 1;
           }
 
-          for (i = 0; i < CUT_NORMAL_AREA; i++)
+          for (i = 0; i < (CUT_NORMAL_SIDE * CUT_NORMAL_SIDE); i++)
               cutTiles[i] = FALSE;
-          for (i = 0; i < CUT_HYPER_AREA; i++)
+          for (i = 0; i < (CUT_HYPER_SIDE * CUT_HYPER_SIDE); i++)
               sHyperCutTiles[i] = FALSE;
 
           ret = FALSE;
 
-          for (i = 0; i < CUT_NORMAL_SIDE; i++)
+          for (i = 0; i < (3); i++)
           {
               y = i - 1 + gPlayerFacingPosition.y;
-              for (j = 0; j < CUT_NORMAL_SIDE; j++)
+              for (j = 0; j < (3); j++)
               {
                   x = j - 1 + gPlayerFacingPosition.x;
                   if (MapGridGetElevationAt(x, y) == gPlayerFacingPosition.elevation)
@@ -196,7 +205,7 @@ export function FldEff_CutGrass(): any {
 
       PlaySE(SE_M_CUT);
       PlayerGetDestCoords(gPlayerFacingPosition.x,gPlayerFacingPosition.y);
-      for (i = 0; i < CUT_HYPER_AREA; i++)
+      for (i = 0; i < (CUT_HYPER_SIDE * CUT_HYPER_SIDE); i++)
       {
           if (sHyperCutTiles[i] == TRUE)
           {
@@ -213,10 +222,10 @@ export function FldEff_CutGrass(): any {
 
       SetCutGrassMetatiles(gPlayerFacingPosition.x - sTileCountFromPlayer_X, gPlayerFacingPosition.y - (1 + sTileCountFromPlayer_Y));
       DrawWholeMapView();
-      sCutGrassSpriteArrayPtr = AllocZeroed(CUT_SPRITE_ARRAY_COUNT);
+      sCutGrassSpriteArrayPtr = AllocZeroed((8));
 
        
-      for (i = 0; i < CUT_SPRITE_ARRAY_COUNT; i++)
+      for (i = 0; i < (8); i++)
       {
           sCutGrassSpriteArrayPtr[i] = CreateSprite(sSpriteTemplate_CutGrass,
           gSprites[gPlayerAvatar.spriteId].oam.x + 8, gSprites[gPlayerAvatar.spriteId].oam.y + 20, 0);
@@ -321,7 +330,7 @@ export function SetCutGrassMetatiles(x: any, y: any): any {
           }
       }
 
-      if (sCutSquareSide == CUT_HYPER_SIDE)
+      if (sCutSquareSide == (5))
       {
           HandleLongGrassOnHyper(0, x, y);
           HandleLongGrassOnHyper(1, x, y);
@@ -443,7 +452,7 @@ export function CutGrassSpriteCallback2(sprite: any): any {
 export function CutGrassSpriteCallbackEnd(sprite: any): any {
   let i: any = null;
 
-      for (i = 1; i < CUT_SPRITE_ARRAY_COUNT; i++)
+      for (i = 1; i < (8); i++)
           DestroySprite(gSprites[sCutGrassSpriteArrayPtr[i]]);
 
       FieldEffectStop(gSprites[sCutGrassSpriteArrayPtr[0]], FLDEFF_CUT_GRASS);

@@ -15,6 +15,31 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates: any = null;
+let sCurrX: any = null;
+let sDestX: any = null;
+let sFemaleIconString: any = null;
+let sGenderlessIconString: any = null;
+let sInvisibleWhenDone: any = null;
+let sMaleIconString: any = null;
+let sMonInfo_Pal: any = null;
+let sMoveIncr: any = null;
+let sRibbonCountWindowTemplate: any = null;
+let sRibbonData: any = null;
+let sRibbonDraw_Current: any = null;
+let sRibbonDraw_Total: any = null;
+let sRibbonGfxData: any = null;
+let sRibbonIcons1_Pal: any = null;
+let sRibbonIconsSmall_Gfx: any = null;
+let sRibbonMonListIndexWindowTemplate: any = null;
+let sRibbonSummaryMonNameWindowTemplate: any = null;
+let sRibbonsSummaryMenuLoopTaskFuncs: any = null;
+let sSpritePalettes_RibbonIcons: any = null;
+let sSpriteSheet_RibbonIconsBig: any = null;
+let sSpriteTemplate_RibbonIconBig: any = null;
+let sTime: any = null;
 /** bool32 PokenavCallback_Init_RibbonsSummaryMenu(void) */
 export function PokenavCallback_Init_RibbonsSummaryMenu(): any {
   let list: any = AllocSubstruct(POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_LIST, 0);
@@ -105,10 +130,10 @@ export function TrySelectRibbonUp(list: any): any {
   if (list.selectedPos < FIRST_GIFT_RIBBON)
       {
            
-          if (list.selectedPos < RIBBONS_PER_ROW)
+          if (list.selectedPos < (9))
               return FALSE;
 
-          list.selectedPos -= RIBBONS_PER_ROW;
+          list.selectedPos -= (9);
           return TRUE;
       }
       if (list.numNormalRibbons != 0)
@@ -116,7 +141,7 @@ export function TrySelectRibbonUp(list: any): any {
            
            
            
-          let ribbonPos: any = list.selectedPos - GIFT_RIBBON_START_POS;
+          let ribbonPos: any = list.selectedPos - (((9) * GIFT_RIBBON_ROW));
           list.selectedPos = ribbonPos + list.normalRibbonLastRowStart;
           if (list.selectedPos >= list.numNormalRibbons)
               list.selectedPos = list.numNormalRibbons - 1;
@@ -132,7 +157,7 @@ export function TrySelectRibbonDown(list: any): any {
       if (list.selectedPos < list.normalRibbonLastRowStart)
       {
            
-          list.selectedPos += RIBBONS_PER_ROW;
+          list.selectedPos += (9);
           if (list.selectedPos >= list.numNormalRibbons)
               list.selectedPos = list.numNormalRibbons - 1;
           return TRUE;
@@ -144,7 +169,7 @@ export function TrySelectRibbonDown(list: any): any {
           if (ribbonPos >= list.numGiftRibbons)
               ribbonPos = list.numGiftRibbons - 1;
 
-          list.selectedPos = ribbonPos + GIFT_RIBBON_START_POS;
+          list.selectedPos = ribbonPos + (((9) * GIFT_RIBBON_ROW));
           return TRUE;
       }
       return FALSE;
@@ -152,7 +177,7 @@ export function TrySelectRibbonDown(list: any): any {
 
 /** static bool32 TrySelectRibbonLeft(struct Pokenav_RibbonsSummaryList *list) */
 export function TrySelectRibbonLeft(list: any): any {
-  let column: any = list.selectedPos % RIBBONS_PER_ROW;
+  let column: any = list.selectedPos % (9);
       if (column != 0)
       {
           list.selectedPos--;
@@ -164,12 +189,12 @@ export function TrySelectRibbonLeft(list: any): any {
 
 /** static bool32 TrySelectRibbonRight(struct Pokenav_RibbonsSummaryList *list) */
 export function TrySelectRibbonRight(list: any): any {
-  let column: any = list.selectedPos % RIBBONS_PER_ROW;
+  let column: any = list.selectedPos % (9);
 
-      if (column >= RIBBONS_PER_ROW - 1)
+      if (column >= (9) - 1)
           return FALSE;
 
-      if (list.selectedPos < GIFT_RIBBON_START_POS)
+      if (list.selectedPos < (((9) * GIFT_RIBBON_ROW)))
       {
            
           if (list.selectedPos < list.numNormalRibbons - 1)
@@ -297,14 +322,14 @@ export function GetMonRibbons(list: any): any {
 
       if (list.numNormalRibbons != 0)
       {
-          list.normalRibbonLastRowStart = ((list.numNormalRibbons - 1) / RIBBONS_PER_ROW) * RIBBONS_PER_ROW;
+          list.normalRibbonLastRowStart = ((list.numNormalRibbons - 1) / (9)) * (9);
           list.selectedPos = 0;
       }
       else
       {
            
           list.normalRibbonLastRowStart = 0;
-          list.selectedPos = GIFT_RIBBON_START_POS;
+          list.selectedPos = (((9) * GIFT_RIBBON_ROW));
       }
 }
 
@@ -321,7 +346,7 @@ export function GetRibbonId(): any {
       if (ribbonPos < FIRST_GIFT_RIBBON)
           return list.ribbonIds[ribbonPos];
       else
-          return list.giftRibbonIds[ribbonPos - GIFT_RIBBON_START_POS];
+          return list.giftRibbonIds[ribbonPos - (((9) * GIFT_RIBBON_ROW))];
 }
 
 /** bool32 OpenRibbonsSummaryMenu(void) */
@@ -356,12 +381,12 @@ export function FreeRibbonsSummaryScreen2(): any {
       RemoveWindow(menu.listIdxWindowId);
       RemoveWindow(menu.unusedWindowId);  
       DestroyRibbonsMonFrontPic(menu);
-      FreeSpriteTilesByTag(GFXTAG_RIBBON_ICONS_BIG);
-      FreeSpritePaletteByTag(PALTAG_RIBBON_ICONS_1);
-      FreeSpritePaletteByTag(PALTAG_RIBBON_ICONS_2);
-      FreeSpritePaletteByTag(PALTAG_RIBBON_ICONS_3);
-      FreeSpritePaletteByTag(PALTAG_RIBBON_ICONS_4);
-      FreeSpritePaletteByTag(PALTAG_RIBBON_ICONS_5);
+      FreeSpriteTilesByTag((9));
+      FreeSpritePaletteByTag((15));
+      FreeSpritePaletteByTag((16));
+      FreeSpritePaletteByTag((17));
+      FreeSpritePaletteByTag((18));
+      FreeSpritePaletteByTag((19));
       FreeSpriteOamMatrix(menu.bigRibbonSprite);
       DestroySprite(menu.bigRibbonSprite);
       FreePokenavSubstruct(POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_MENU);
@@ -715,7 +740,7 @@ export function ResetSpritesAndDrawMonFrontPic(menu: any): any {
 
       GetMonSpeciesPersonalityOtId(species,personality,otId);
       ResetAllPicSprites();
-      menu.monSpriteId = DrawRibbonsMonFrontPic(MON_SPRITE_X_ON, MON_SPRITE_Y);
+      menu.monSpriteId = DrawRibbonsMonFrontPic((40), (104));
       PokenavFillPalette(15, 0);
 }
 
@@ -730,23 +755,23 @@ export function DrawRibbonsMonFrontPic(x: any, y: any): any {
       let personality, otId;
 
       GetMonSpeciesPersonalityOtId(species,personality,otId);
-      spriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, MON_SPRITE_X_ON, MON_SPRITE_Y, 15, TAG_NONE);
+      spriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, (40), (104), 15, TAG_NONE);
       gSprites[spriteId].oam.priority = 0;
       return spriteId;
 }
 
 /** static void SlideMonSpriteOff(struct Pokenav_RibbonsSummaryMenu *menu) */
 export function SlideMonSpriteOff(menu: any): any {
-  StartMonSpriteSlide(gSprites[menu.monSpriteId], MON_SPRITE_X_ON, MON_SPRITE_X_OFF, 6);
+  StartMonSpriteSlide(gSprites[menu.monSpriteId], (40), (-32), 6);
 }
 
 /** static void SlideMonSpriteOn(struct Pokenav_RibbonsSummaryMenu *menu) */
 export function SlideMonSpriteOn(menu: any): any {
   FreeAndDestroyMonPicSprite(menu.monSpriteId);
-      menu.monSpriteId = DrawRibbonsMonFrontPic(MON_SPRITE_X_OFF, MON_SPRITE_Y);
+      menu.monSpriteId = DrawRibbonsMonFrontPic((-32), (104));
 
        
-      StartMonSpriteSlide(gSprites[menu.monSpriteId], MON_SPRITE_X_OFF, MON_SPRITE_X_ON, 6);
+      StartMonSpriteSlide(gSprites[menu.monSpriteId], (-32), (40), 6);
 }
 
 /** static bool32 IsMonSpriteAnimating(struct Pokenav_RibbonsSummaryMenu *menu) */
@@ -774,7 +799,7 @@ export function SpriteCB_MonSpriteSlide(sprite: any): any {
           sprite.sTime--;
           sprite.sCurrX += sprite.sMoveIncr;
           sprite.x = sprite.sCurrX >> 4;
-          if (sprite.x <= MON_SPRITE_X_OFF)
+          if (sprite.x <= (-32))
               sprite.invisible = TRUE;
           else
               sprite.invisible = FALSE;
@@ -798,7 +823,7 @@ export function DrawAllRibbonsSmall(menu: any): any {
 
       ribbonIds = GetGiftRibbonIds(sRibbonDraw_Total);
       for (sRibbonDraw_Current = 0; sRibbonDraw_Current < sRibbonDraw_Total; sRibbonDraw_Current++)
-          DrawRibbonSmall(sRibbonDraw_Current + GIFT_RIBBON_START_POS, (ribbonIds++));
+          DrawRibbonSmall(sRibbonDraw_Current + (((9) * GIFT_RIBBON_ROW)), (ribbonIds++));
 
       CopyBgTilemapBufferToVram(1);
 }
@@ -811,8 +836,8 @@ export function ClearRibbonsSummaryBg(): any {
 /** static void DrawRibbonSmall(u32 i, u32 ribbonId) */
 export function DrawRibbonSmall(i: any, ribbonId: any): any {
   let bgData: any = [];
-      let destX: any = (i % RIBBONS_PER_ROW) * 2 + 11;
-      let destY: any = (i / RIBBONS_PER_ROW) * 2 + 4;
+      let destX: any = (i % (9)) * 2 + 11;
+      let destY: any = (i / (9)) * 2 + 4;
 
       BufferSmallRibbonGfxData(bgData, ribbonId);
       CopyToBgTilemapBufferRect(1, bgData, destX, destY, 2, 2);
@@ -845,16 +870,16 @@ export function CreateBigRibbonSprite(menu: any): any {
 export function UpdateAndZoomInSelectedRibbon(menu: any): any {
   let ribbonId: any = null;
       let position: any = GetSelectedPosition();
-      let x: any = (position % RIBBONS_PER_ROW) * 16 + 96;
-      let y: any = (position / RIBBONS_PER_ROW) * 16 + 40;
+      let x: any = (position % (9)) * 16 + 96;
+      let y: any = (position / (9)) * 16 + 40;
 
       menu.bigRibbonSprite.x = x;
       menu.bigRibbonSprite.y = y;
 
        
       ribbonId = GetRibbonId();
-      menu.bigRibbonSprite.oam.tileNum = (sRibbonGfxData[ribbonId].tileNumOffset * 16) + GetSpriteTileStartByTag(GFXTAG_RIBBON_ICONS_BIG);
-      menu.bigRibbonSprite.oam.paletteNum = IndexOfSpritePaletteTag(sRibbonGfxData[ribbonId].palNumOffset + PALTAG_RIBBON_ICONS_1);
+      menu.bigRibbonSprite.oam.tileNum = (sRibbonGfxData[ribbonId].tileNumOffset * 16) + GetSpriteTileStartByTag((9));
+      menu.bigRibbonSprite.oam.paletteNum = IndexOfSpritePaletteTag(sRibbonGfxData[ribbonId].palNumOffset + (15));
 
        
       StartSpriteAffineAnim(menu.bigRibbonSprite, RIBBONANIM_ZOOM_IN);

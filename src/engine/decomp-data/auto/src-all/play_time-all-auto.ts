@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sPlayTimeCounterState: any = null;
 /** void PlayTimeCounter_Reset(void) */
 export function PlayTimeCounter_Reset(): any {
   sPlayTimeCounterState = STOPPED;

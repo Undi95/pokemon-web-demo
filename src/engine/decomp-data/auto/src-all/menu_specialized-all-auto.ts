@@ -15,6 +15,34 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnims_ConditionSelectionIcon: any = null;
+let sConditionGraphScanline: any = null;
+let sConditionPokeballPlaceholder_Gfx: any = null;
+let sConditionPokeball_Gfx: any = null;
+let sConditionSparkleCoords: any = null;
+let sConditionSparkle_Gfx: any = null;
+let sConditionSparkle_Pal: any = null;
+let sConditionToLineLength: any = null;
+let sCurSparkleId: any = null;
+let sDelayTimer: any = null;
+let sEmptyItemName: any = null;
+let sLvlUpStatStrings: any = null;
+let sMailboxList: any = null;
+let sMailboxWindowIds: any = null;
+let sMonSpriteId: any = null;
+let sMoveRelearnerMovesListTemplate: any = null;
+let sMoveRelearnerWindowTemplates: any = null;
+let sMoveRelearnerYesNoMenuTemplate: any = null;
+let sNextSparkleSpriteId: any = null;
+let sNumExtraSparkles: any = null;
+let sOam_ConditionMonPic: any = null;
+let sOam_ConditionSelectionIcon: any = null;
+let sPlayerNameTextColors: any = null;
+let sSparkleId: any = null;
+let sSpriteTemplate_ConditionSparkle: any = null;
+let sWindowTemplates_MailboxMenu: any = null;
 /** bool8 MailboxMenu_Alloc(u8 count) */
 export function MailboxMenu_Alloc(count: any): any {
   let i: any = null;

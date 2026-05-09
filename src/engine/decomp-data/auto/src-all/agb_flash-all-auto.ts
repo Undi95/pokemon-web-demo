@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sSavedIme: any = null;
+let sTimerCount: any = null;
+let sTimerNum: any = null;
+let sTimerReg: any = null;
 /** void SwitchFlashBank(u8 bankNum) */
 export function SwitchFlashBank(bankNum: any): any {
   FLASH_WRITE(0x5555, 0xAA);

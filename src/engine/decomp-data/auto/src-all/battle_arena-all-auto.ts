@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sArenaFunctions: any = null;
+let sBattleArenaJudgmentSymbolsSpriteSheet: any = null;
+let sLongStreakPrizeItems: any = null;
+let sMindRatings: any = null;
+let sShortStreakPrizeItems: any = null;
+let sSpriteTemplate_JudgmentIcon: any = null;
 /** void CallBattleArenaFunction(void) */
 export function CallBattleArenaFunction(): any {
   sArenaFunctions[gSpecialVar_0x8004]();
@@ -122,11 +130,11 @@ export function BattleArena_ShowJudgmentWindow(state: any): any {
           }
           state++;
           break;
-      case JUDGMENT_STATE_FINISHED:
+      case (8):
            
           state++;
           break;
-      case JUDGMENT_STATE_FINISHED + 1:
+      case (8) + 1:
           SetGpuReg(REG_OFFSET_WININ, (WININ_WIN0_ALL & ~WININ_WIN0_BG0) | WININ_WIN1_ALL);
           HandleBattleWindow(5, 0, 24, 13, WINDOW_CLEAR);
           CopyBgTilemapBufferToVram(0);
@@ -134,11 +142,11 @@ export function BattleArena_ShowJudgmentWindow(state: any): any {
           BeginNormalPaletteFade(0x7FFFFF1C, 4, 8, 0, RGB_BLACK);
           state++;
           break;
-      case JUDGMENT_STATE_FINISHED + 2:
+      case (8) + 2:
           if (!gPaletteFade.active)
           {
               SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_ALL | WININ_WIN1_ALL);
-              FreeSpriteTilesByTag(TAG_JUDGMENT_ICON);
+              FreeSpriteTilesByTag((1000));
               result = ARENA_RESULT_STEP_DONE;
               state++;
           }
@@ -202,7 +210,7 @@ export function ShowJudgmentSprite(x: any, y: any, category: any, battler: any):
 
 /** static void SpriteCB_JudgmentIcon(struct Sprite *sprite) */
 export function SpriteCB_JudgmentIcon(sprite: any): any {
-  if (gBattleCommunication[0] > JUDGMENT_STATE_FINISHED)
+  if (gBattleCommunication[0] > (8))
           DestroySprite(sprite);
 }
 

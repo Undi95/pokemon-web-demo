@@ -15,6 +15,19 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCurrAnimNum: any = null;
+let sFrameDelay: any = null;
+let sFrameIdx: any = null;
+let sNextAnimNum: any = null;
+let sSavedAnimNum: any = null;
+let sTileStart: any = null;
+let sValidator: any = null;
+let sWirelessStatusIndicatorOamData: any = null;
+let sWirelessStatusIndicatorSpritePalette: any = null;
+let sWirelessStatusIndicatorSpriteSheet: any = null;
+let sWirelessStatusIndicatorSpriteTemplate: any = null;
 /** void RfuRecvQueue_Reset(struct RfuRecvQueue *queue) */
 export function RfuRecvQueue_Reset(queue: any): any {
   let i: any = null;
@@ -330,7 +343,7 @@ export function CreateWirelessStatusIndicatorSprite(x: any, y: any): any {
       if (gRfuLinkStatus.parentChild == MODE_PARENT)
       {
           sprId = CreateSprite(sWirelessStatusIndicatorSpriteTemplate, x, y, 0);
-          gSprites[sprId].sValidator = STATUS_INDICATOR_ACTIVE;
+          gSprites[sprId].sValidator = (0x1234);
           gSprites[sprId].sTileStart = GetSpriteTileStartByTag(sWirelessStatusIndicatorSpriteSheet.tag);
           gSprites[sprId].invisible = TRUE;
           gWirelessStatusIndicatorSpriteId = sprId;
@@ -338,7 +351,7 @@ export function CreateWirelessStatusIndicatorSprite(x: any, y: any): any {
       else
       {
           gWirelessStatusIndicatorSpriteId = CreateSprite(sWirelessStatusIndicatorSpriteTemplate, x, y, 0);
-          gSprites[gWirelessStatusIndicatorSpriteId].sValidator = STATUS_INDICATOR_ACTIVE;
+          gSprites[gWirelessStatusIndicatorSpriteId].sValidator = (0x1234);
           gSprites[gWirelessStatusIndicatorSpriteId].sTileStart = GetSpriteTileStartByTag(sWirelessStatusIndicatorSpriteSheet.tag);
           gSprites[gWirelessStatusIndicatorSpriteId].invisible = TRUE;
       }
@@ -346,7 +359,7 @@ export function CreateWirelessStatusIndicatorSprite(x: any, y: any): any {
 
 /** void DestroyWirelessStatusIndicatorSprite(void) */
 export function DestroyWirelessStatusIndicatorSprite(): any {
-  if (gSprites[gWirelessStatusIndicatorSpriteId].sValidator == STATUS_INDICATOR_ACTIVE)
+  if (gSprites[gWirelessStatusIndicatorSpriteId].sValidator == (0x1234))
       {
           gSprites[gWirelessStatusIndicatorSpriteId].sValidator = 0;
           DestroySprite(gSprites[gWirelessStatusIndicatorSpriteId]);
@@ -388,7 +401,7 @@ export function SetWirelessStatusIndicatorAnim(sprite: any, animNum: any): any {
 
 /** void UpdateWirelessStatusIndicatorSprite(void) */
 export function UpdateWirelessStatusIndicatorSprite(): any {
-  if (gWirelessStatusIndicatorSpriteId != SPRITE_NONE && gSprites[gWirelessStatusIndicatorSpriteId].sValidator == STATUS_INDICATOR_ACTIVE)
+  if (gWirelessStatusIndicatorSpriteId != SPRITE_NONE && gSprites[gWirelessStatusIndicatorSpriteId].sValidator == (0x1234))
       {
           let sprite: any =gSprites[gWirelessStatusIndicatorSpriteId];
           let signalStrength: any = RFU_LINK_ICON_LEVEL4_MAX;

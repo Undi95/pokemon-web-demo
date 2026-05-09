@@ -15,6 +15,19 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBagSpriteTemplate: any = null;
+let sBerryCheckCircleSpriteTemplate: any = null;
+let sBerryPicRotatingSpriteTemplate: any = null;
+let sBerryPicSpriteTemplate: any = null;
+let sBerryPicTable: any = null;
+let sPocketId: any = null;
+let sRotatingBallAnimCmds: any = null;
+let sRotatingBallAnimCmds_FullRotation: any = null;
+let sRotatingBallPaletteTable: any = null;
+let sRotatingBallSpriteTemplate: any = null;
+let sRotatingBallTable: any = null;
 /** void RemoveBagSprite(u8 id) */
 export function RemoveBagSprite(id: any): any {
   let spriteId: any =gBagMenu.spriteIds[id];
@@ -209,7 +222,7 @@ export function LoadBerryGfx(berryId: any): any {
       }
 
       pal.data = sBerryPicTable[berryId].pal;
-      pal.tag = TAG_BERRY_PIC_PAL;
+      pal.tag = (30020);
       LoadCompressedSpritePalette(pal);
       LZDecompressWram(sBerryPicTable[berryId].tiles,gDecompressionBuffer[0x1000]);
       ArrangeBerryGfx(gDecompressionBuffer[0x1000],gDecompressionBuffer[0]);
@@ -223,14 +236,14 @@ export function CreateBerryTagSprite(id: any, x: any, y: any): any {
 
 /** void FreeBerryTagSpritePalette(void) */
 export function FreeBerryTagSpritePalette(): any {
-  FreeSpritePaletteByTag(TAG_BERRY_PIC_PAL);
+  FreeSpritePaletteByTag((30020));
 }
 
 /** u8 CreateSpinningBerrySprite(u8 berryId, u8 x, u8 y, bool8 startAffine) */
 export function CreateSpinningBerrySprite(berryId: any, x: any, y: any, startAffine: any): any {
   let spriteId: any = null;
 
-      FreeSpritePaletteByTag(TAG_BERRY_PIC_PAL);
+      FreeSpritePaletteByTag((30020));
       LoadBerryGfx(berryId);
       spriteId = CreateSprite(sBerryPicRotatingSpriteTemplate, x, y, 0);
       if (startAffine == TRUE)

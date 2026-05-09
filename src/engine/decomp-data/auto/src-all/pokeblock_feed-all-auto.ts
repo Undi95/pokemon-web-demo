@@ -15,6 +15,25 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAccel: any = null;
+let sAffineAnims_Mon: any = null;
+let sAffineAnims_PokeblockCase_Still: any = null;
+let sAffineAnims_PokeblockCase_ThrowFromHorizontal: any = null;
+let sAffineAnims_PokeblockCase_ThrowFromVertical: any = null;
+let sBackgroundTemplates: any = null;
+let sMonPokeblockAnims: any = null;
+let sNatureToMonPokeblockAnim: any = null;
+let sPokeblockFeed: any = null;
+let sPokeblockSpritePal: any = null;
+let sPokeblocksPals: any = null;
+let sSpecies: any = null;
+let sSpeed: any = null;
+let sSpriteAffineAnimTable_MonNoFlip: any = null;
+let sSpriteSheet_Pokeblock: any = null;
+let sSpriteTemplate_Pokeblock: any = null;
+let sWindowTemplates: any = null;
 /** static void CB2_PokeblockFeed(void) */
 export function CB2_PokeblockFeed(): any {
   RunTasks();
@@ -227,16 +246,16 @@ export function Task_HandlePokeblockFeed(taskId: any): any {
               sPokeblockFeed.timer = 0;
               CalculateMonAnimLength();
               break;
-          case STATE_START_THROW:
+          case (255):
               DoPokeblockCaseThrowEffect(sPokeblockFeed.pokeblockCaseSpriteId, gTasks[taskId].tHorizontalThrow);
               break;
-          case STATE_SPAWN_PBLOCK:
+          case (((255) + 14)):
               sPokeblockFeed.pokeblockSpriteId = CreatePokeblockSprite();
               break;
-          case STATE_START_JUMP:
+          case ((STATE_SPAWN_PBLOCK + 12)):
               StartMonJumpForPokeblock(sPokeblockFeed.monSpriteId);
               break;
-          case STATE_PRINT_MSG:
+          case ((STATE_START_JUMP + 16)):
               gTasks[taskId].func = Task_PrintAtePokeblockMessage;
               return;
           }
@@ -244,7 +263,7 @@ export function Task_HandlePokeblockFeed(taskId: any): any {
           if (sPokeblockFeed.timer < sPokeblockFeed.monAnimLength)
               UpdateMonAnim();
           else if (sPokeblockFeed.timer == sPokeblockFeed.monAnimLength)
-              gTasks[taskId].tState = STATE_START_THROW - 1;
+              gTasks[taskId].tState = (255) - 1;
 
           sPokeblockFeed.timer++;
           gTasks[taskId].tState++;
@@ -309,7 +328,7 @@ export function Task_FadeOutPokeblockFeed(taskId: any): any {
 /** static u8 CreateMonSprite(struct Pokemon *mon) */
 export function CreateMonSprite(mon: any): any {
   let species: any = GetMonData(mon, MON_DATA_SPECIES_OR_EGG);
-      let spriteId: any = CreateSprite(gMultiuseSpriteTemplate, MON_X, MON_Y, 2);
+      let spriteId: any = CreateSprite(gMultiuseSpriteTemplate, (48), (80), 2);
 
       sPokeblockFeed.species = species;
       sPokeblockFeed.monSpriteId_ = spriteId;
@@ -331,8 +350,8 @@ export function CreateMonSprite(mon: any): any {
 
 /** static void StartMonJumpForPokeblock(u8 spriteId) */
 export function StartMonJumpForPokeblock(spriteId: any): any {
-  gSprites[spriteId].x = MON_X;
-      gSprites[spriteId].y = MON_Y;
+  gSprites[spriteId].x = (48);
+      gSprites[spriteId].y = (80);
       gSprites[spriteId].sSpeed = -8;
       gSprites[spriteId].sAccel = 1;
       gSprites[spriteId].callback = SpriteCB_MonJumpForPokeblock;

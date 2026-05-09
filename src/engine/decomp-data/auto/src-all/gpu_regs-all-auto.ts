@@ -15,14 +15,21 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sGpuRegBuffer: any = null;
+let sGpuRegBufferLocked: any = null;
+let sGpuRegWaitingList: any = null;
+let sRegIE: any = null;
+let sShouldSyncRegIE: any = null;
 /** void InitGpuRegManager(void) */
 export function InitGpuRegManager(): any {
   let i: any = null;
 
-      for (i = 0; i < GPU_REG_BUF_SIZE; i++)
+      for (i = 0; i < (0x60); i++)
       {
           sGpuRegBuffer[i] = 0;
-          sGpuRegWaitingList[i] = EMPTY_SLOT;
+          sGpuRegWaitingList[i] = (0xFF);
       }
 
       sGpuRegBufferLocked = FALSE;
@@ -49,20 +56,20 @@ export function CopyBufferedValuesToGpuRegs(): any {
       {
           let i: any = null;
 
-          for (i = 0; i < GPU_REG_BUF_SIZE; i++)
+          for (i = 0; i < (0x60); i++)
           {
               let regOffset: any = sGpuRegWaitingList[i];
-              if (regOffset == EMPTY_SLOT)
+              if (regOffset == (0xFF))
                   return;
               CopyBufferedValueToGpuReg(regOffset);
-              sGpuRegWaitingList[i] = EMPTY_SLOT;
+              sGpuRegWaitingList[i] = (0xFF);
           }
       }
 }
 
 /** void SetGpuReg(u8 regOffset, u16 value) */
 export function SetGpuReg(regOffset: any, value: any): any {
-  if (regOffset < GPU_REG_BUF_SIZE)
+  if (regOffset < (0x60))
       {
           let vcount: any = null;
 
@@ -79,7 +86,7 @@ export function SetGpuReg(regOffset: any, value: any): any {
 
               sGpuRegBufferLocked = TRUE;
 
-              for (i = 0; i < GPU_REG_BUF_SIZE && sGpuRegWaitingList[i] != EMPTY_SLOT; i++)
+              for (i = 0; i < (0x60) && sGpuRegWaitingList[i] != (0xFF); i++)
               {
                   if (sGpuRegWaitingList[i] == regOffset)
                   {
@@ -96,7 +103,7 @@ export function SetGpuReg(regOffset: any, value: any): any {
 
 /** void SetGpuReg_ForcedBlank(u8 regOffset, u16 value) */
 export function SetGpuReg_ForcedBlank(regOffset: any, value: any): any {
-  if (regOffset < GPU_REG_BUF_SIZE)
+  if (regOffset < (0x60))
       {
           /* transpiler bug LHS : ((sGpuRegBuffer[(regOffset)])) = value; */ ;
 
@@ -110,7 +117,7 @@ export function SetGpuReg_ForcedBlank(regOffset: any, value: any): any {
 
               sGpuRegBufferLocked = TRUE;
 
-              for (i = 0; i < GPU_REG_BUF_SIZE && sGpuRegWaitingList[i] != EMPTY_SLOT; i++)
+              for (i = 0; i < (0x60) && sGpuRegWaitingList[i] != (0xFF); i++)
               {
                   if (sGpuRegWaitingList[i] == regOffset)
                   {

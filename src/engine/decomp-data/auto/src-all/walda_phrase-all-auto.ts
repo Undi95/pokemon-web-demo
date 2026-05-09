@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sWaldaLettersTable: any = null;
 /** u16 TryBufferWaldaPhrase(void) */
 export function TryBufferWaldaPhrase(): any {
   if (IsWaldaPhraseEmpty())
@@ -124,10 +127,10 @@ export function TryCalculateWallpaper(backgroundClr: any, foregroundClr: any, ic
        
        
       for (i = 0; i < WALDA_PHRASE_LENGTH - 1; i++)
-          SetWallpaperDataFromLetter(data, charsByTableId, BITS_PER_LETTER * i, (3 + (8 * ((i)))), BITS_PER_LETTER);
+          SetWallpaperDataFromLetter(data, charsByTableId, (5) * i, (3 + (8 * ((i)))), (5));
 
        
-      SetWallpaperDataFromLetter(data, charsByTableId, BITS_PER_LETTER * (WALDA_PHRASE_LENGTH - 1), (3 + (8 * ((WALDA_PHRASE_LENGTH - 1)))), 2);
+      SetWallpaperDataFromLetter(data, charsByTableId, (5) * (WALDA_PHRASE_LENGTH - 1), (3 + (8 * ((WALDA_PHRASE_LENGTH - 1)))), 2);
 
        
        
@@ -135,9 +138,9 @@ export function TryCalculateWallpaper(backgroundClr: any, foregroundClr: any, ic
           return FALSE;
 
        
-      RotateWallpaperDataLeft(data, NUM_WALLPAPER_DATA_BYTES,     21);
-      RotateWallpaperDataLeft(data, NUM_WALLPAPER_DATA_BYTES - 1, KEY & 0xF);
-      MaskWallpaperData(data, NUM_WALLPAPER_DATA_BYTES - 1, KEY >> 4);
+      RotateWallpaperDataLeft(data, (9),     21);
+      RotateWallpaperDataLeft(data, (9) - 1, KEY & 0xF);
+      MaskWallpaperData(data, (9) - 1, KEY >> 4);
 
        
       if (TID_CHECK_HI != (BG_COLOR_LO ^ FG_COLOR_LO ^ ICON_ID ^ (trainerId >> 8)))

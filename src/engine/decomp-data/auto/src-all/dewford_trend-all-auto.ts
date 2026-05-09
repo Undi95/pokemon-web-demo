@@ -171,11 +171,11 @@ export function ReceiveDewfordTrendData(linkedTrends: any, size: any, unused: an
       let linkedTrendsBuffer, savedTrendsBuffer, src, dst, temp;
 
        
-      if (!(linkedTrendsBuffer = Alloc(BUFFER_SIZE)))
+      if (!(linkedTrendsBuffer = Alloc((max(SAVED_TRENDS_SIZE * MAX_LINK_PLAYERS, 0x100)))))
           return;
 
        
-      if (!(savedTrendsBuffer = Alloc(BUFFER_SIZE)))
+      if (!(savedTrendsBuffer = Alloc((max(SAVED_TRENDS_SIZE * MAX_LINK_PLAYERS, 0x100)))))
       {
           Free(linkedTrendsBuffer);
           return;

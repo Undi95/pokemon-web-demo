@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sTileBitAttributes: any = null;
 /** bool8 MetatileBehavior_IsATile(u8 metatileBehavior) */
 export function MetatileBehavior_IsATile(metatileBehavior: any): any {
   return TRUE;
@@ -22,7 +25,7 @@ export function MetatileBehavior_IsATile(metatileBehavior: any): any {
 
 /** bool8 MetatileBehavior_IsEncounterTile(u8 metatileBehavior) */
 export function MetatileBehavior_IsEncounterTile(metatileBehavior: any): any {
-  if ((sTileBitAttributes[metatileBehavior] & TILE_FLAG_HAS_ENCOUNTERS))
+  if ((sTileBitAttributes[metatileBehavior] & ((1 << 0))))
           return TRUE;
       else
           return FALSE;
@@ -167,7 +170,7 @@ export function MetatileBehavior_IsDeepSouthWarp(metatileBehavior: any): any {
 
 /** bool8 MetatileBehavior_IsSurfableWaterOrUnderwater(u8 metatileBehavior) */
 export function MetatileBehavior_IsSurfableWaterOrUnderwater(metatileBehavior: any): any {
-  if ((sTileBitAttributes[metatileBehavior] & TILE_FLAG_SURFABLE))
+  if ((sTileBitAttributes[metatileBehavior] & ((1 << 1))))
           return TRUE;
       else
           return FALSE;

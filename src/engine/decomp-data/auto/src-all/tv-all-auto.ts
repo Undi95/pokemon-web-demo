@@ -15,6 +15,62 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCurTVShowSlot: any = null;
+let sFindThatGamerCoinsSpent: any = null;
+let sFindThatGamerWhichGame: any = null;
+let sGoldSymbolFlags: any = null;
+let sNumberOneVarsAndThresholds: any = null;
+let sPokeNewsTextGroup_Ending: any = null;
+let sPokeNewsTextGroup_Ongoing: any = null;
+let sPokeNewsTextGroup_Upcoming: any = null;
+let sPokeOutbreakSpeciesList: any = null;
+let sPokemonAnglerAttemptCounters: any = null;
+let sPokemonAnglerSpecies: any = null;
+let sRecordMixingPartnersWithoutShowsToShare: any = null;
+let sSilverSymbolFlags: any = null;
+let sTV3CheersForPokeblocksTextGroup: any = null;
+let sTVBravoTrainerBattleTowerTextGroup: any = null;
+let sTVBravoTrainerTextGroup: any = null;
+let sTVBreakingNewsTextGroup: any = null;
+let sTVContestLiveUpdatesTextGroup: any = null;
+let sTVCutiesTextGroup: any = null;
+let sTVDewfordTrendWatcherNetworkTextGroup: any = null;
+let sTVFanClubOpinionsTextGroup: any = null;
+let sTVFanClubTextGroup: any = null;
+let sTVFindThatGamerTextGroup: any = null;
+let sTVHoennTreasureInvestisatorsTextGroup: any = null;
+let sTVInSearchOfTrainersTextGroup: any = null;
+let sTVLilycoveContestLadyTextGroup: any = null;
+let sTVMassOutbreakTextGroup: any = null;
+let sTVNameRaterTextGroup: any = null;
+let sTVPokemonAnglerTextGroup: any = null;
+let sTVPokemonBattleUpdateTextGroup: any = null;
+let sTVPokemonLotteryWinnerFlashReportTextGroup: any = null;
+let sTVPokemonNewsBattleFrontierTextGroup: any = null;
+let sTVPokemonTodayFailedTextGroup: any = null;
+let sTVPokemonTodaySuccessfulTextGroup: any = null;
+let sTVRecentHappeninssTextGroup: any = null;
+let sTVSafariFanClubTextGroup: any = null;
+let sTVSecretBaseSecretsActions: any = null;
+let sTVSecretBaseSecretsRandomValues: any = null;
+let sTVSecretBaseSecretsTextGroup: any = null;
+let sTVSecretBaseVisitTextGroup: any = null;
+let sTVShowMixingCurSlot: any = null;
+let sTVShowMixingNumPlayers: any = null;
+let sTVShowNewsMixingNumPlayers: any = null;
+let sTVShowState: any = null;
+let sTVThePokemonBattleSeminarTextGroup: any = null;
+let sTVTodaysRivalTrainerTextGroup: any = null;
+let sTVTodaysSmartShopperTextGroup: any = null;
+let sTVTrainerFanClubSpecialTextGroup: any = null;
+let sTVTrainerFanClubTextGroup: any = null;
+let sTVWhatsNo1InHoennTodayTextGroup: any = null;
+let sTVWorldOfMastersTextGroup: any = null;
+let sTV_DecorationsBuffer: any = null;
+let sTV_SecretBaseVisitMonsTemp: any = null;
+let sTV_SecretBaseVisitMovesTemp: any = null;
 /** void ClearTVShowData(void) */
 export function ClearTVShowData(): any {
   let i, j;
@@ -37,7 +93,7 @@ export function GetRandomActiveShowIdx(): any {
       let show: any = null;
 
        
-      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < LAST_TVSHOW_IDX; i++)
+      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < ((TV_SHOWS_COUNT - 1)); i++)
       {
           if (gSaveBlock1Ptr.tvShows[i].common.kind == TVSHOW_OFF_AIR)
               break;
@@ -419,10 +475,10 @@ export function TryPutPokemonTodayOnAir(): any {
 
 /** static void InitWorldOfMastersShowAttempt(void) */
 export function InitWorldOfMastersShowAttempt(): any {
-  let show: any =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       if (show.common.kind != TVSHOW_WORLD_OF_MASTERS)
       {
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, LAST_TVSHOW_IDX);
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
           show.worldOfMasters.steps = GetGameStat(GAME_STAT_STEPS);
           show.worldOfMasters.kind = TVSHOW_WORLD_OF_MASTERS;
       }
@@ -491,7 +547,7 @@ export function InterviewAfter_ContestLiveUpdates(): any {
   let show: any = null;
       let show2: any = null;
 
-      show =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+      show =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       if (show.contestLiveUpdates.kind == TVSHOW_CONTEST_LIVE_UPDATES)
       {
           show2 =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
@@ -510,7 +566,7 @@ export function InterviewAfter_ContestLiveUpdates(): any {
           StorePlayerIdInNormalShow(show2);
           show2.contestLiveUpdates.winningTrainerLanguage = gGameLanguage;
           show2.contestLiveUpdates.losingTrainerLanguage = show.contestLiveUpdates.losingTrainerLanguage;
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, LAST_TVSHOW_IDX);
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
       }
 }
 
@@ -614,11 +670,11 @@ export function PutFanClubSpecialOnTheAir(): any {
 export function ContestLiveUpdates_Init(round1Placing: any): any {
   let show: any = null;
 
-      DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, LAST_TVSHOW_IDX);
+      DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
-          show =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+          show =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
           show.contestLiveUpdates.round1Placing = round1Placing;
           show.contestLiveUpdates.kind = TVSHOW_CONTEST_LIVE_UPDATES;
       }
@@ -626,7 +682,7 @@ export function ContestLiveUpdates_Init(round1Placing: any): any {
 
 /** void ContestLiveUpdates_SetRound2Placing(u8 round2Placing) */
 export function ContestLiveUpdates_SetRound2Placing(round2Placing: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
           show.contestLiveUpdates.round2Placing = round2Placing;
@@ -634,7 +690,7 @@ export function ContestLiveUpdates_SetRound2Placing(round2Placing: any): any {
 
 /** void ContestLiveUpdates_SetWinnerAppealFlag(u8 flag) */
 export function ContestLiveUpdates_SetWinnerAppealFlag(flag: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
           show.contestLiveUpdates.winnerAppealFlag = flag;
@@ -642,7 +698,7 @@ export function ContestLiveUpdates_SetWinnerAppealFlag(flag: any): any {
 
 /** void ContestLiveUpdates_SetWinnerMoveUsed(u16 move) */
 export function ContestLiveUpdates_SetWinnerMoveUsed(move: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
           show.contestLiveUpdates.move = move;
@@ -650,7 +706,7 @@ export function ContestLiveUpdates_SetWinnerMoveUsed(move: any): any {
 
 /** void ContestLiveUpdates_SetLoserData(u8 flag, u8 loser) */
 export function ContestLiveUpdates_SetLoserData(flag: any, loser: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
@@ -673,7 +729,7 @@ export function InterviewAfter_BravoTrainerPokemonProfile(): any {
   let show: any = null;
       let show2: any = null;
 
-      show =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+      show =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       if (show.bravoTrainer.kind == TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE)
       {
           show2 =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
@@ -693,18 +749,18 @@ export function InterviewAfter_BravoTrainerPokemonProfile(): any {
               show2.bravoTrainer.pokemonNameLanguage = LANGUAGE_JAPANESE;
           else
               show2.bravoTrainer.pokemonNameLanguage = show.bravoTrainer.pokemonNameLanguage;
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, LAST_TVSHOW_IDX);
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
       }
 }
 
 /** void BravoTrainerPokemonProfile_BeforeInterview1(u16 move) */
 export function BravoTrainerPokemonProfile_BeforeInterview1(move: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       InterviewBefore_BravoTrainerPkmnProfile();
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, LAST_TVSHOW_IDX);
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
           show.bravoTrainer.move = move;
           show.bravoTrainer.kind = TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE;
       }
@@ -712,7 +768,7 @@ export function BravoTrainerPokemonProfile_BeforeInterview1(move: any): any {
 
 /** void BravoTrainerPokemonProfile_BeforeInterview2(u8 contestStandingPlace) */
 export function BravoTrainerPokemonProfile_BeforeInterview2(contestStandingPlace: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
@@ -901,7 +957,7 @@ export function TryStartRandomMassOutbreak(): any {
 
       if (FlagGet(FLAG_SYS_GAME_CLEAR))
       {
-          for (i = 0; i < LAST_TVSHOW_IDX; i++)
+          for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
           {
               if (gSaveBlock1Ptr.tvShows[i].common.kind == TVSHOW_MASS_OUTBREAK)
                   return;
@@ -970,7 +1026,7 @@ export function UpdateMassOutbreakTimeLeft(days: any): any {
 
       if (gSaveBlock1Ptr.outbreakPokemonSpecies == SPECIES_NONE)
       {
-          for (i = 0; i < LAST_TVSHOW_IDX; i++)
+          for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
           {
               if (gSaveBlock1Ptr.tvShows[i].massOutbreak.kind == TVSHOW_MASS_OUTBREAK && gSaveBlock1Ptr.tvShows[i].massOutbreak.active == TRUE)
               {
@@ -1042,13 +1098,13 @@ export function SetPokemonAnglerSpecies(species: any): any {
 
 /** static void ResolveWorldOfMastersShow(u16 days) */
 export function ResolveWorldOfMastersShow(days: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       if (show.worldOfMasters.kind == TVSHOW_WORLD_OF_MASTERS)
       {
           if (show.worldOfMasters.numPokeCaught >= 20)
               TryPutWorldOfMastersOnAir();
 
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, LAST_TVSHOW_IDX);
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
       }
 }
 
@@ -1057,7 +1113,7 @@ export function TryPutWorldOfMastersOnAir(): any {
   let show: any = null;
       let show2: any = null;
 
-      show =gSaveBlock1Ptr.tvShows[LAST_TVSHOW_IDX];
+      show =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
       if (!rbernoulli(1, 1))
       {
           sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
@@ -1074,7 +1130,7 @@ export function TryPutWorldOfMastersOnAir(): any {
               StringCopy(show2.worldOfMasters.playerName, gSaveBlock2Ptr.playerName);
               StorePlayerIdInRecordMixShow(show2);
               show2.worldOfMasters.language = gGameLanguage;
-              DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, LAST_TVSHOW_IDX);
+              DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
           }
       }
 }
@@ -1611,7 +1667,7 @@ export function ShouldAirFrontierTVShow(): any {
       {
           shows = gSaveBlock1Ptr.tvShows;
           playerId = GetPlayerIDAsU32();
-          for (showIdx = NUM_NORMAL_TVSHOW_SLOTS; showIdx < LAST_TVSHOW_IDX; showIdx++)
+          for (showIdx = NUM_NORMAL_TVSHOW_SLOTS; showIdx < ((TV_SHOWS_COUNT - 1)); showIdx++)
           {
               if (shows[showIdx].common.kind == TVSHOW_FRONTIER && (playerId & 0xFF) == shows[showIdx].common.trainerIdLo && ((playerId >> 8) & 0xFF) == shows[showIdx].common.trainerIdHi)
               {
@@ -2064,7 +2120,7 @@ export function IsRecordMixShowAlreadySpawned(kind: any, _delete: any): any {
 
       shows = gSaveBlock1Ptr.tvShows;
       playerId = GetPlayerIDAsU32();
-      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < LAST_TVSHOW_IDX; i++)
+      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < ((TV_SHOWS_COUNT - 1)); i++)
       {
           if (shows[i].common.kind == kind
            && (playerId & 0xFF) == shows[i].common.trainerIdLo
@@ -2297,11 +2353,11 @@ export function CompactTVShowArray(shows: any): any {
       }
 
        
-      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < LAST_TVSHOW_IDX; i++)
+      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < ((TV_SHOWS_COUNT - 1)); i++)
       {
           if (shows[i].common.kind == TVSHOW_OFF_AIR)
           {
-              for (j = i + 1; j < LAST_TVSHOW_IDX; j++)
+              for (j = i + 1; j < ((TV_SHOWS_COUNT - 1)); j++)
               {
                   if (shows[j].common.kind != TVSHOW_OFF_AIR)
                   {
@@ -2369,7 +2425,7 @@ export function FindFirstEmptyNormalTVShowSlot(shows: any): any {
 export function FindFirstEmptyRecordMixTVShowSlot(shows: any): any {
   let i: any = null;
 
-      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < LAST_TVSHOW_IDX; i++)
+      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < ((TV_SHOWS_COUNT - 1)); i++)
       {
           if (shows[i].common.kind == TVSHOW_OFF_AIR)
               return i;
@@ -2859,7 +2915,7 @@ export function TryMixOutbreakTVShow(dest: any, src: any, idx: any): any {
 export function FindInactiveShowInArray(tvShows: any): any {
   let i: any = null;
 
-      for (i = 0; i < LAST_TVSHOW_IDX; i++)
+      for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
       {
            
           if (tvShows[i].common.active == FALSE && (tvShows[i].common.kind - 1) < TVGROUP_OUTBREAK_END)
@@ -2873,7 +2929,7 @@ export function DeactivateShowsWithUnseenSpecies(): any {
   let i: any = null;
       let species: any = null;
 
-      for (i = 0; i < LAST_TVSHOW_IDX; i++)
+      for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
       {
           switch (gSaveBlock1Ptr.tvShows[i].common.kind)
           {
@@ -3029,7 +3085,7 @@ export function DeactivateGameCompleteShowsIfNotUnlocked(): any {
 
       if (FlagGet(FLAG_SYS_GAME_CLEAR) != TRUE)
       {
-          for (i = 0; i < LAST_TVSHOW_IDX; i++)
+          for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
           {
               if (gSaveBlock1Ptr.tvShows[i].common.kind == TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE)
                   gSaveBlock1Ptr.tvShows[i].common.active = FALSE;
@@ -3054,7 +3110,7 @@ export function DeactivateAllNormalTVShows(): any {
 export function DeleteExcessMixedShows(): any {
   let i: any = null;
       let numEmptyMixSlots: any = 0;
-      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < LAST_TVSHOW_IDX; i++)
+      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < ((TV_SHOWS_COUNT - 1)); i++)
       {
           if (gSaveBlock1Ptr.tvShows[i].common.kind == TVSHOW_OFF_AIR)
               numEmptyMixSlots++;
@@ -3189,7 +3245,7 @@ export function SanitizeTVShowsForRuby(shows: any): any {
   let curShow: any = null;
 
       SanitizeTVShowLocationsForRuby(shows);
-      for (curShow = shows; curShow < shows + LAST_TVSHOW_IDX; curShow++)
+      for (curShow = shows; curShow < shows + ((TV_SHOWS_COUNT - 1)); curShow++)
       {
           if (curShow.bravoTrainerTower.kind == TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE)
           {
@@ -3204,7 +3260,7 @@ export function SanitizeTVShowsForRuby(shows: any): any {
 export function TranslateRubyShows(shows: any): any {
   let curShow: any = null;
 
-      for (curShow = shows; curShow < shows + LAST_TVSHOW_IDX; curShow++)
+      for (curShow = shows; curShow < shows + ((TV_SHOWS_COUNT - 1)); curShow++)
       {
           if (curShow.bravoTrainerTower.kind == TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE)
           {
@@ -3225,7 +3281,7 @@ export function GetStringLanguage(str: any): any {
 export function TranslateJapaneseEmeraldShows(shows: any): any {
   let curShow: any = null;
 
-      for (curShow = shows; curShow < shows + LAST_TVSHOW_IDX; curShow++)
+      for (curShow = shows; curShow < shows + ((TV_SHOWS_COUNT - 1)); curShow++)
       {
           switch(curShow.common.kind)
           {
@@ -3334,7 +3390,7 @@ export function TranslateJapaneseEmeraldShows(shows: any): any {
 export function SanitizeTVShowLocationsForRuby(shows: any): any {
   let i: any = null;
 
-      for (i = 0; i < LAST_TVSHOW_IDX; i++)
+      for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
       {
           switch (shows[i].common.kind)
           {

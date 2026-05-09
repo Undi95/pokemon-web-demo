@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sHealLocations: any = null;
 /** u32 GetHealLocationIndexByMap(u16 mapGroup, u16 mapNum) */
 export function GetHealLocationIndexByMap(mapGroup: any, mapNum: any): any {
   let i: any = null;

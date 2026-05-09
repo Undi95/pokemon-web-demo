@@ -15,6 +15,19 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCryMeterNeedle: any = null;
+let sCryMeterNeedleSpritePalettes: any = null;
+let sCryMeterNeedleSpriteSheets: any = null;
+let sCryMeterNeedleSpriteTemplate: any = null;
+let sCryScreenBg_Gfx: any = null;
+let sCryScreenBg_Pal: any = null;
+let sCryWaveformWindowTiledata: any = null;
+let sDexCryScreen: any = null;
+let sWaveformColor: any = null;
+let sWaveformOffsets: any = null;
+let sWaveformTileDataNybbleMasks: any = null;
 /** bool8 LoadCryWaveformWindow(struct CryScreenWindow *window, u8 windowId) */
 export function LoadCryWaveformWindow(window: any, windowId: any): any {
   let i: any = null;
@@ -34,7 +47,7 @@ export function LoadCryWaveformWindow(window: any, windowId: any): any {
           sDexCryScreen.cryOverrideCountdown = 0;
           sDexCryScreen.cryRepeatDelay = 0;
           sDexCryScreen.cryState = 0;
-          sDexCryScreen.waveformPreviousY = WAVEFORM_WINDOW_HEIGHT / 2;
+          sDexCryScreen.waveformPreviousY = (56) / 2;
           sDexCryScreen.playhead = 0;
           ShiftWaveformOver(windowId, -8 * window.xPos, TRUE);  
           for (i = 0; i < 224; i++)
@@ -186,16 +199,16 @@ export function DrawWaveformSegment(position: any, amplitude: any): any {
 
       temp = (amplitude + 127) * 256;
       y = temp / 1152.0;
-      if (y > WAVEFORM_WINDOW_HEIGHT - 1)
-          y = WAVEFORM_WINDOW_HEIGHT - 1;
+      if (y > (56) - 1)
+          y = (56) - 1;
       currentPointY = y;
-      nybble = VERT_SLICE;
+      nybble = ((position & 1));
       if (y > sDexCryScreen.waveformPreviousY)
       {
            
           do
           {
-              offset = sWaveformOffsets[PLAYHEAD_POS][y] + PLAY_START_POS * TILE_SIZE_4BPP;
+              offset = sWaveformOffsets[PLAYHEAD_POS][y] + ((position >> 3)) * TILE_SIZE_4BPP;
               sCryWaveformWindowTiledata[offset] &= sWaveformTileDataNybbleMasks[nybble];
               sCryWaveformWindowTiledata[offset] |= sWaveformColor[nybble][((y / 3) - 1) & 0x0F];
               y--;
@@ -206,7 +219,7 @@ export function DrawWaveformSegment(position: any, amplitude: any): any {
            
           do
           {
-              offset = sWaveformOffsets[PLAYHEAD_POS][y] + PLAY_START_POS * TILE_SIZE_4BPP;
+              offset = sWaveformOffsets[PLAYHEAD_POS][y] + ((position >> 3)) * TILE_SIZE_4BPP;
               sCryWaveformWindowTiledata[offset] &= sWaveformTileDataNybbleMasks[nybble];
               sCryWaveformWindowTiledata[offset] |= sWaveformColor[nybble][((y / 3) - 1) & 0x0F];
               y++;
@@ -249,8 +262,8 @@ export function LoadCryMeter(window: any, windowId: any): any {
           LoadSpriteSheets(sCryMeterNeedleSpriteSheets);
           LoadSpritePalettes(sCryMeterNeedleSpritePalettes);
           sCryMeterNeedle.spriteId = CreateSprite(sCryMeterNeedleSpriteTemplate, 40 + window.xPos * 8, 56 + window.yPos * 8, 1);
-          sCryMeterNeedle.rotation = MIN_NEEDLE_POS;
-          sCryMeterNeedle.targetRotation = MIN_NEEDLE_POS;
+          sCryMeterNeedle.rotation = (32);
+          sCryMeterNeedle.targetRotation = (32);
           sCryMeterNeedle.moveIncrement = 0;
           finished = TRUE;
           break;
@@ -285,7 +298,7 @@ export function SpriteCB_CryMeterNeedle(sprite: any): any {
       switch (sDexCryScreen.cryState)
       {
       case 0:
-          sCryMeterNeedle.targetRotation = MIN_NEEDLE_POS;
+          sCryMeterNeedle.targetRotation = (32);
           if (sCryMeterNeedle.rotation > 0)
           {
               if (sCryMeterNeedle.moveIncrement != 1)
@@ -293,7 +306,7 @@ export function SpriteCB_CryMeterNeedle(sprite: any): any {
           }
           else
           {
-              sCryMeterNeedle.moveIncrement = NEEDLE_MOVE_INCREMENT;
+              sCryMeterNeedle.moveIncrement = (5);
           }
           break;
       case 2:
@@ -350,14 +363,14 @@ export function SpriteCB_CryMeterNeedle(sprite: any): any {
 
 /** static void SetCryMeterNeedleTarget(s8 offset) */
 export function SetCryMeterNeedleTarget(offset: any): any {
-  let rotation: any = (MIN_NEEDLE_POS - offset) & 0xFF;
+  let rotation: any = ((32) - offset) & 0xFF;
 
        
-      if (rotation > MIN_NEEDLE_POS && rotation < MAX_NEEDLE_POS)
-          rotation = MAX_NEEDLE_POS;
+      if (rotation > (32) && rotation < (-32))
+          rotation = (-32);
 
       sCryMeterNeedle.targetRotation = rotation;
-      sCryMeterNeedle.moveIncrement = NEEDLE_MOVE_INCREMENT;
+      sCryMeterNeedle.moveIncrement = (5);
 }
 
 // ─── callsTo manifest (= 31 unique callees) ───────────────────────

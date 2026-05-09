@@ -15,6 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnimBackgroundFadeState: any = null;
+let sAnimFramesToWait: any = null;
+let sAnimMoveIndex: any = null;
+let sAnimSpriteIndexArray: any = null;
+let sBattleAnimScriptPtr: any = null;
+let sBattleAnimScriptRetAddr: any = null;
+let sMonAnimTaskIdArray: any = null;
+let sScriptCmdTable: any = null;
+let sSoundAnimFramesToWait: any = null;
 /** void ClearBattleAnimationVars(void) */
 export function ClearBattleAnimationVars(): any {
   let i: any = null;
@@ -29,7 +40,7 @@ export function ClearBattleAnimationVars(): any {
       gAnimFriendship = 0;
 
        
-      for (i = 0; i < ANIM_SPRITE_INDEX_COUNT; i++)
+      for (i = 0; i < (8); i++)
           sAnimSpriteIndexArray[i] = 0xFFFF;
 
        
@@ -90,7 +101,7 @@ export function LaunchBattleAnimation(animsTable: any, tableId: any, isMoveAnim:
       sAnimFramesToWait = 0;
       gAnimScriptCallback = RunAnimScriptCommand;
 
-      for (i = 0; i < ANIM_SPRITE_INDEX_COUNT; i++)
+      for (i = 0; i < (8); i++)
           sAnimSpriteIndexArray[i] = 0xFFFF;
 
       if (isMoveAnim)
@@ -134,7 +145,7 @@ export function DestroyAnimSoundTask(taskId: any): any {
 export function AddSpriteIndex(index: any): any {
   let i: any = null;
 
-      for (i = 0; i < ANIM_SPRITE_INDEX_COUNT; i++)
+      for (i = 0; i < (8); i++)
       {
           if (sAnimSpriteIndexArray[i] == 0xFFFF)
           {
@@ -148,7 +159,7 @@ export function AddSpriteIndex(index: any): any {
 export function ClearSpriteIndex(index: any): any {
   let i: any = null;
 
-      for (i = 0; i < ANIM_SPRITE_INDEX_COUNT; i++)
+      for (i = 0; i < (8); i++)
       {
           if (sAnimSpriteIndexArray[i] == index)
           {
@@ -344,7 +355,7 @@ export function Cmd_end(): any {
        
       sSoundAnimFramesToWait = 0;
 
-      for (i = 0; i < ANIM_SPRITE_INDEX_COUNT; i++)
+      for (i = 0; i < (8); i++)
       {
           if (sAnimSpriteIndexArray[i] != 0xFFFF)
           {

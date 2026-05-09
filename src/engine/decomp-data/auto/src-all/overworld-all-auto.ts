@@ -15,6 +15,26 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAmbientCrySpecies: any = null;
+let sDummyWarpData: any = null;
+let sFixedDiveWarp: any = null;
+let sFixedHoleWarp: any = null;
+let sFlashEffectParams: any = null;
+let sInitialPlayerAvatarState: any = null;
+let sIsAmbientCryWaterMon: any = null;
+let sLastMapSectionId: any = null;
+let sLinkPlayerFacingHandlers: any = null;
+let sMovementStatusHandler: any = null;
+let sObjectEventLoadFlag: any = null;
+let sOverworldBgTemplates: any = null;
+let sPlayerKeyInterceptCallback: any = null;
+let sPlayerLinkStates: any = null;
+let sReceivingFromLink: any = null;
+let sRfuKeepAliveTimer: any = null;
+let sUnusedOverworldCallback: any = null;
+let sWarpDestination: any = null;
 /** void DoWhiteOut(void) */
 export function DoWhiteOut(): any {
   RunScriptImmediately(EventScript_WhiteOut);
@@ -1866,7 +1886,7 @@ export function CheckRfuKeepAliveTimer(): any {
 export function ResetAllPlayerLinkStates(): any {
   let i: any = null;
       for (i = 0; i < MAX_LINK_PLAYERS; i++)
-          sPlayerLinkStates[i] = PLAYER_LINK_STATE_IDLE;
+          sPlayerLinkStates[i] = (0x80);
 }
 
 /** static bool32 AreAllPlayersInLinkState(u16 state) */
@@ -1895,13 +1915,13 @@ export function IsAnyPlayerInLinkState(state: any): any {
 export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, forceFacing: any): any {
   let script: any = null;
 
-      if (sPlayerLinkStates[playerId] == PLAYER_LINK_STATE_IDLE)
+      if (sPlayerLinkStates[playerId] == (0x80))
       {
           script = TryGetTileEventScript(trainer);
           if (script)
           {
               forceFacing = GetDirectionForEventScript(script);
-              sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;
+              sPlayerLinkStates[playerId] = (0x81);
               if (trainer.isLocalPlayer)
               {
                   SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);
@@ -1909,9 +1929,9 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
               }
               return;
           }
-          if (IsAnyPlayerInLinkState(PLAYER_LINK_STATE_EXITING_ROOM) == TRUE)
+          if (IsAnyPlayerInLinkState((0x83)) == TRUE)
           {
-              sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;
+              sPlayerLinkStates[playerId] = (0x81);
               if (trainer.isLocalPlayer)
               {
                   SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);
@@ -1925,7 +1945,7 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
           case LINK_KEY_CODE_START_BUTTON:
               if (CanCableClubPlayerPressStart(trainer))
               {
-                  sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;
+                  sPlayerLinkStates[playerId] = (0x81);
                   if (trainer.isLocalPlayer)
                   {
                       SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);
@@ -1936,7 +1956,7 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
           case LINK_KEY_CODE_DPAD_DOWN:
               if (PlayerIsAtSouthExit(trainer) == TRUE)
               {
-                  sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;
+                  sPlayerLinkStates[playerId] = (0x81);
                   if (trainer.isLocalPlayer)
                   {
                       SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);
@@ -1948,7 +1968,7 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
               script = TryInteractWithPlayer(trainer);
               if (script)
               {
-                  sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;
+                  sPlayerLinkStates[playerId] = (0x81);
                   if (trainer.isLocalPlayer)
                   {
                       SetKeyInterceptCallback(KeyInterCB_DeferToEventScript);
@@ -1959,7 +1979,7 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
           case LINK_KEY_CODE_HANDLE_RECV_QUEUE:
               if (IsCableClubPlayerUnfrozen(trainer))
               {
-                  sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;
+                  sPlayerLinkStates[playerId] = (0x81);
                   if (trainer.isLocalPlayer)
                   {
                       SetKeyInterceptCallback(KeyInterCB_DeferToRecvQueue);
@@ -1970,7 +1990,7 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
           case LINK_KEY_CODE_HANDLE_SEND_QUEUE:
               if (IsCableClubPlayerUnfrozen(trainer))
               {
-                  sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;
+                  sPlayerLinkStates[playerId] = (0x81);
                   if (trainer.isLocalPlayer)
                   {
                       SetKeyInterceptCallback(KeyInterCB_DeferToSendQueue);
@@ -1984,19 +2004,19 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
       switch (key)
       {
       case LINK_KEY_CODE_EXIT_ROOM:
-          sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_EXITING_ROOM;
+          sPlayerLinkStates[playerId] = (0x83);
           break;
       case LINK_KEY_CODE_READY:
-          sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_READY;
+          sPlayerLinkStates[playerId] = (0x82);
           break;
       case LINK_KEY_CODE_IDLE:
-          sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_IDLE;
+          sPlayerLinkStates[playerId] = (0x80);
           if (trainer.isLocalPlayer)
               SetKeyInterceptCallback(KeyInterCB_SelfIdle);
           break;
       case LINK_KEY_CODE_EXIT_SEAT:
-          if (sPlayerLinkStates[playerId] == PLAYER_LINK_STATE_READY)
-              sPlayerLinkStates[playerId] = PLAYER_LINK_STATE_BUSY;
+          if (sPlayerLinkStates[playerId] == (0x82))
+              sPlayerLinkStates[playerId] = (0x81);
           break;
       }
 }
@@ -2009,10 +2029,10 @@ export function UpdateAllLinkPlayers(keys: any, selfId: any): any {
       for (i = 0; i < MAX_LINK_PLAYERS; i++)
       {
           let key: any = keys[i];
-          let setFacing: any = FACING_NONE;
+          let setFacing: any = (0);
           LoadCableClubPlayer(i, selfId,trainer);
           HandleLinkPlayerKeyInput(i, key,trainer,setFacing);
-          if (sPlayerLinkStates[i] == PLAYER_LINK_STATE_IDLE)
+          if (sPlayerLinkStates[i] == (0x80))
               setFacing = GetDirectionForDpadKey(key);
           SetPlayerFacingDirection(i, setFacing);
       }
@@ -2067,15 +2087,15 @@ export function GetDirectionForDpadKey(key: any): any {
   switch (key)
       {
       case LINK_KEY_CODE_DPAD_RIGHT:
-          return FACING_RIGHT;
+          return (4);
       case LINK_KEY_CODE_DPAD_LEFT:
-          return FACING_LEFT;
+          return (3);
       case LINK_KEY_CODE_DPAD_UP:
-          return FACING_UP;
+          return (1);
       case LINK_KEY_CODE_DPAD_DOWN:
-          return FACING_DOWN;
+          return (2);
       default:
-          return FACING_NONE;
+          return (0);
       }
 }
 
@@ -2158,7 +2178,7 @@ export function KeyInterCB_ExitingSeat(key: any): any {
 
 /** static u16 KeyInterCB_Ready(u32 keyOrPlayerId) */
 export function KeyInterCB_Ready(keyOrPlayerId: any): any {
-  if (sPlayerLinkStates[keyOrPlayerId] == PLAYER_LINK_STATE_READY)
+  if (sPlayerLinkStates[keyOrPlayerId] == (0x82))
       {
           if (JOY_NEW(B_BUTTON))
           {
@@ -2190,9 +2210,9 @@ export function KeyInterCB_SendNothing(key: any): any {
 
 /** static u16 KeyInterCB_WaitForPlayersToExit(u32 keyOrPlayerId) */
 export function KeyInterCB_WaitForPlayersToExit(keyOrPlayerId: any): any {
-  if (sPlayerLinkStates[keyOrPlayerId] != PLAYER_LINK_STATE_EXITING_ROOM)
+  if (sPlayerLinkStates[keyOrPlayerId] != (0x83))
           CheckRfuKeepAliveTimer();
-      if (AreAllPlayersInLinkState(PLAYER_LINK_STATE_EXITING_ROOM) == TRUE)
+      if (AreAllPlayersInLinkState((0x83)) == TRUE)
       {
           ScriptContext_SetupScript(EventScript_DoLinkRoomExit);
           SetKeyInterceptCallback(KeyInterCB_SendNothing);
@@ -2213,13 +2233,13 @@ export function KeyInterCB_InLinkActivity(key: any): any {
 
 /** u32 GetCableClubPartnersReady(void) */
 export function GetCableClubPartnersReady(): any {
-  if (IsAnyPlayerInLinkState(PLAYER_LINK_STATE_EXITING_ROOM) == TRUE)
+  if (IsAnyPlayerInLinkState((0x83)) == TRUE)
           return CABLE_SEAT_FAILED;
-      if (sPlayerKeyInterceptCallback == KeyInterCB_Ready && sPlayerLinkStates[gLocalLinkPlayerId] != PLAYER_LINK_STATE_READY)
+      if (sPlayerKeyInterceptCallback == KeyInterCB_Ready && sPlayerLinkStates[gLocalLinkPlayerId] != (0x82))
           return CABLE_SEAT_WAITING;
-      if (sPlayerKeyInterceptCallback == KeyInterCB_ExitingSeat && sPlayerLinkStates[gLocalLinkPlayerId] == PLAYER_LINK_STATE_BUSY)
+      if (sPlayerKeyInterceptCallback == KeyInterCB_ExitingSeat && sPlayerLinkStates[gLocalLinkPlayerId] == (0x81))
           return CABLE_SEAT_FAILED;
-      if (AreAllPlayersInLinkState(PLAYER_LINK_STATE_READY))
+      if (AreAllPlayersInLinkState((0x82)))
           return CABLE_SEAT_SUCCESS;
       return CABLE_SEAT_WAITING;
 }
@@ -2296,31 +2316,31 @@ export function PlayerIsAtSouthExit(player: any): any {
 /** static u16 GetDirectionForEventScript(const u8 *script) */
 export function GetDirectionForEventScript(script: any): any {
   if (script == EventScript_BattleColosseum_4P_PlayerSpot0)
-          return FACING_FORCED_RIGHT;
+          return (10);
       else if (script == EventScript_BattleColosseum_4P_PlayerSpot1)
-          return FACING_FORCED_LEFT;
+          return (9);
       else if (script == EventScript_BattleColosseum_4P_PlayerSpot2)
-          return FACING_FORCED_RIGHT;
+          return (10);
       else if (script == EventScript_BattleColosseum_4P_PlayerSpot3)
-          return FACING_FORCED_LEFT;
+          return (9);
       else if (script == EventScript_RecordCenter_Spot0)
-          return FACING_FORCED_RIGHT;
+          return (10);
       else if (script == EventScript_RecordCenter_Spot1)
-          return FACING_FORCED_LEFT;
+          return (9);
       else if (script == EventScript_RecordCenter_Spot2)
-          return FACING_FORCED_RIGHT;
+          return (10);
       else if (script == EventScript_RecordCenter_Spot3)
-          return FACING_FORCED_LEFT;
+          return (9);
       else if (script == EventScript_BattleColosseum_2P_PlayerSpot0)
-          return FACING_FORCED_RIGHT;
+          return (10);
       else if (script == EventScript_BattleColosseum_2P_PlayerSpot1)
-          return FACING_FORCED_LEFT;
+          return (9);
       else if (script == EventScript_TradeCenter_Chair0)
-          return FACING_FORCED_RIGHT;
+          return (10);
       else if (script == EventScript_TradeCenter_Chair1)
-          return FACING_FORCED_LEFT;
+          return (9);
       else
-          return FACING_NONE;
+          return (0);
 }
 
 /** static void InitLinkPlayerQueueScript(void) */
@@ -2532,7 +2552,7 @@ export function SetPlayerFacingDirection(linkPlayerId: any, facing: any): any {
 
       if (linkPlayerObjEvent.active)
       {
-          if (facing > FACING_FORCED_RIGHT)
+          if (facing > (10))
           {
               objEvent.triggerGroundEffectsOnMove = TRUE;
           }
@@ -2551,7 +2571,7 @@ export function MovementEventModeCB_Normal(linkPlayerObjEvent: any, objEvent: an
 
 /** static u8 MovementEventModeCB_Ignored(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir) */
 export function MovementEventModeCB_Ignored(linkPlayerObjEvent: any, objEvent: any, dir: any): any {
-  return FACING_UP;
+  return (1);
 }
 
 /** static u8 MovementEventModeCB_Scripted(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent, u8 dir) */
@@ -2611,17 +2631,17 @@ export function MovementStatusHandler_TryAdvanceScript(linkPlayerObjEvent: any, 
 export function FlipVerticalAndClearForced(newFacing: any, oldFacing: any): any {
   switch (newFacing)
       {
-      case FACING_UP:
-      case FACING_FORCED_UP:
+      case (1):
+      case (7):
           return DIR_NORTH;
-      case FACING_DOWN:
-      case FACING_FORCED_DOWN:
+      case (2):
+      case (8):
           return DIR_SOUTH;
-      case FACING_LEFT:
-      case FACING_FORCED_LEFT:
+      case (3):
+      case (9):
           return DIR_WEST;
-      case FACING_RIGHT:
-      case FACING_FORCED_RIGHT:
+      case (4):
+      case (10):
           return DIR_EAST;
       }
       return oldFacing;

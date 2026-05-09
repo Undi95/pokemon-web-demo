@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattleEnvironmentTable: any = null;
+let sVsLetter_S_SpriteTemplate: any = null;
+let sVsLetter_V_SpriteTemplate: any = null;
+let sVsLettersSpriteSheet: any = null;
 /** void BattleInitBgsAndWindows(void) */
 export function BattleInitBgsAndWindows(): any {
   ResetBgsAndClearDma3BusyFlags(0);
@@ -376,7 +382,7 @@ export function InitLinkBattleVsScreen(taskId: any): any {
           gTasks[taskId].data[0]++;
           break;
       case 1:
-          palId = AllocSpritePalette(TAG_VS_LETTERS);
+          palId = AllocSpritePalette((10000));
           gPlttBufferUnfaded[OBJ_PLTT_ID(palId) + 15] = gPlttBufferFaded[OBJ_PLTT_ID(palId) + 15] = RGB_WHITE;
           gBattleStruct.linkBattleVsSpriteId_V = CreateSprite(sVsLetter_V_SpriteTemplate, 111, 80, 0);
           gBattleStruct.linkBattleVsSpriteId_S = CreateSprite(sVsLetter_S_SpriteTemplate, 129, 80, 0);

@@ -15,6 +15,30 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sApprenticesSave: any = null;
+let sBattleTowerSave: any = null;
+let sBattleTowerSave_Duplicate: any = null;
+let sDaycareMailRandSum: any = null;
+let sDaycareMailSwapIds_3Player: any = null;
+let sDaycareMailSwapIds_4Player: any = null;
+let sDewfordTrendsSave: any = null;
+let sLilycoveLadySave: any = null;
+let sOldManSave: any = null;
+let sPartnerHallRecords: any = null;
+let sPlayerIdxOrders_2Player: any = null;
+let sPlayerIdxOrders_3Player: any = null;
+let sPlayerIdxOrders_4Player: any = null;
+let sPokeNewsSave: any = null;
+let sReadyToReceive: any = null;
+let sReceivedRecords: any = null;
+let sRecordMixMail: any = null;
+let sRecordMixMailSave: any = null;
+let sRecordStructSize: any = null;
+let sSecretBasesSave: any = null;
+let sSentRecord: any = null;
+let sTvShowsSave: any = null;
 /** void RecordMixingPlayerSpotTriggered(void) */
 export function RecordMixingPlayerSpotTriggered(): any {
   CreateTask_EnterCableClubSeat(Task_RecordMixing_Main);
@@ -322,9 +346,9 @@ export function Task_SendPacket(taskId: any): any {
       {
       case 0:  
           {
-              let recordData: any = LoadPtrFromTaskData(task.tSentRecord) + task.tNumChunksSent * BUFFER_CHUNK_SIZE;
+              let recordData: any = LoadPtrFromTaskData(task.tSentRecord) + task.tNumChunksSent * (200);
 
-              memcpy(gBlockSendBuffer, recordData, BUFFER_CHUNK_SIZE);
+              memcpy(gBlockSendBuffer, recordData, (200));
               task.tState++;
           }
           break;
@@ -339,7 +363,7 @@ export function Task_SendPacket(taskId: any): any {
            
            
           task.tNumChunksSent++;
-          if (task.tNumChunksSent == sRecordStructSize / BUFFER_CHUNK_SIZE + 1)
+          if (task.tNumChunksSent == sRecordStructSize / (200) + 1)
               task.tState++;
           else
               task.tState = 0;
@@ -364,15 +388,15 @@ export function Task_CopyReceiveBuffer(taskId: any): any {
           {
               if ((status >> i) & 1)
               {
-                  let dest: any = LoadPtrFromTaskData(task.tRecvRecords) + task.data[1 + ((i))] * BUFFER_CHUNK_SIZE + sRecordStructSize * i;
+                  let dest: any = LoadPtrFromTaskData(task.tRecvRecords) + task.data[1 + ((i))] * (200) + sRecordStructSize * i;
                   let src: any = GetPlayerRecvBuffer(i);
-                  if ((task.data[1 + ((i))] + 1) * BUFFER_CHUNK_SIZE > sRecordStructSize)
-                      memcpy(dest, src, sRecordStructSize - task.data[1 + ((i))] * BUFFER_CHUNK_SIZE);
+                  if ((task.data[1 + ((i))] + 1) * (200) > sRecordStructSize)
+                      memcpy(dest, src, sRecordStructSize - task.data[1 + ((i))] * (200));
                   else
-                      memcpy(dest, src, BUFFER_CHUNK_SIZE);
+                      memcpy(dest, src, (200));
                   ResetBlockReceivedFlag(i);
                   task.data[1 + ((i))]++;
-                  if (task.data[1 + ((i))] == sRecordStructSize / BUFFER_CHUNK_SIZE + 1)
+                  if (task.data[1 + ((i))] == sRecordStructSize / (200) + 1)
                       handledPlayers++;
               }
           }
@@ -737,7 +761,7 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
 
        
        
-      tableId = GetDaycareMailRandSum() % NUM_SWAP_COMBOS;
+      tableId = GetDaycareMailRandSum() % (3);
       switch (numDaycareCanHold)
       {
       case 2:

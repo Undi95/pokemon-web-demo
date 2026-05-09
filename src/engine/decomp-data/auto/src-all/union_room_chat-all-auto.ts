@@ -15,6 +15,31 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates: any = null;
+let sCaseToggleTable: any = null;
+let sChat: any = null;
+let sChatMainFunctions: any = null;
+let sChatMessagesWindow_Pal: any = null;
+let sDisplay: any = null;
+let sDisplayStdMessages: any = null;
+let sDisplaySubtasks: any = null;
+let sKeyboardPageMaxRow: any = null;
+let sKeyboardPageTitleTexts: any = null;
+let sSpritePalette: any = null;
+let sSpriteSheets: any = null;
+let sSpriteTemplate_KeyboardCursor: any = null;
+let sSpriteTemplate_RButtonIcon: any = null;
+let sSpriteTemplate_RButtonLabels: any = null;
+let sSpriteTemplate_TextEntryArrow: any = null;
+let sSpriteTemplate_TextEntryCursor: any = null;
+let sSprites: any = null;
+let sText_Ellipsis: any = null;
+let sUnionRoomChatInterfacePal: any = null;
+let sUnionRoomKeyboardText: any = null;
+let sUnusedPalette: any = null;
+let sWinTemplates: any = null;
 /** void EnterUnionRoomChat(void) */
 export function EnterUnionRoomChat(): any {
   sChat = Alloc(0);
@@ -806,7 +831,7 @@ export function AppendTextToMessage(): any {
           return;
 
       str = GetEndOfMessagePtr();
-      while (--strLength != -1 && sChat.bufferCursorPos < MAX_MESSAGE_LENGTH)
+      while (--strLength != -1 && sChat.bufferCursorPos < (15))
       {
           if (charsStr == CHAR_EXTRA_SYMBOL)
           {
@@ -869,7 +894,7 @@ export function RegisterTextAtRow(): any {
 /** static void ResetMessageEntryBuffer(void) */
 export function ResetMessageEntryBuffer(): any {
   sChat.messageEntryBuffer[0] = EOS;
-      sChat.lastBufferCursorPos = MAX_MESSAGE_LENGTH;
+      sChat.lastBufferCursorPos = (15);
       sChat.bufferCursorPos = 0;
 }
 
@@ -1993,13 +2018,13 @@ export function PrintCurrentKeyboardPage(): any {
 
 /** static bool32 SlideKeyboardPageOut(void) */
 export function SlideKeyboardPageOut(): any {
-  if (sDisplay.bg1hofs < KEYBOARD_HOFS_END)
+  if (sDisplay.bg1hofs < (56))
       {
           sDisplay.bg1hofs += 12;
-          if (sDisplay.bg1hofs >= KEYBOARD_HOFS_END)
-              sDisplay.bg1hofs = KEYBOARD_HOFS_END;
+          if (sDisplay.bg1hofs >= (56))
+              sDisplay.bg1hofs = (56);
 
-          if (sDisplay.bg1hofs < KEYBOARD_HOFS_END)
+          if (sDisplay.bg1hofs < (56))
           {
                
               UpdateSlidingKeyboard(sDisplay.bg1hofs);
@@ -2154,7 +2179,7 @@ export function LoadTextEntryWindow(): any {
       unused[1] = 0xFF;
 
        
-      for (i = 0; i < MAX_MESSAGE_LENGTH; i++)
+      for (i = 0; i < (15); i++)
           BlitBitmapToWindow(WIN_TEXT_ENTRY, sDisplay.textEntryTiles, i * 8, 0, 8, 16);
 
       FillWindowPixelBuffer(WIN_TEXT_ENTRY, PIXEL_FILL(0));
@@ -2249,7 +2274,7 @@ export function MoveKeyboardCursor(): any {
 /** static void SetRegisteredTextPalette(bool32 registering) */
 export function SetRegisteredTextPalette(registering: any): any {
   let palette: any =sUnionRoomChatInterfacePal[registering * 2 + 1];
-      let index: any = IndexOfSpritePaletteTag(PALTAG_INTERFACE);
+      let index: any = IndexOfSpritePaletteTag((0));
       LoadPalette(palette, OBJ_PLTT_ID(index) + 1, PLTT_SIZEOF(2));
 }
 
@@ -2292,7 +2317,7 @@ export function CreateTextEntrySprites(): any {
 /** static void SpriteCB_TextEntryCursor(struct Sprite *sprite) */
 export function SpriteCB_TextEntryCursor(sprite: any): any {
   let pos: any = GetTextEntryCursorPosition();
-      if (pos == MAX_MESSAGE_LENGTH)
+      if (pos == (15))
       {
           sprite.invisible = TRUE;
       }

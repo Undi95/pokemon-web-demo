@@ -15,6 +15,27 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAccelY: any = null;
+let sBgTemplates_EggHatch: any = null;
+let sDelayTimer: any = null;
+let sDeltaX: any = null;
+let sDeltaY: any = null;
+let sEggHatchData: any = null;
+let sEggHatch_Sheet: any = null;
+let sEggShardVelocities: any = null;
+let sEggShards_Sheet: any = null;
+let sEgg_SpritePalette: any = null;
+let sSinIdx: any = null;
+let sSpriteAnimTable_EggShard: any = null;
+let sSpriteTemplate_Egg: any = null;
+let sSpriteTemplate_EggShard: any = null;
+let sTimer: any = null;
+let sVelocX: any = null;
+let sVelocY: any = null;
+let sWinTemplates_EggHatch: any = null;
+let sYesNoWinTemplate: any = null;
 /** static void CreateHatchedMon(struct Pokemon *egg, struct Pokemon *temp) */
 export function CreateHatchedMon(egg: any, temp: any): any {
   let species: any = null;
@@ -160,7 +181,7 @@ export function EggHatchCreateMonSprite(useAlt: any, state: any, partyId: any, s
       case 1:
            
           SetMultiuseSpriteTemplateToPokemon(GetMonSpritePalStruct(mon).tag, position);
-          spriteId = CreateSprite(gMultiuseSpriteTemplate, EGG_X, EGG_Y, 6);
+          spriteId = CreateSprite(gMultiuseSpriteTemplate, ((DISPLAY_WIDTH / 2)), ((DISPLAY_HEIGHT / 2 - 5)), 6);
           gSprites[spriteId].invisible = TRUE;
           gSprites[spriteId].callback = SpriteCallbackDummy;
           break;
@@ -317,7 +338,7 @@ export function CB2_EggHatch(): any {
       {
       case 0:
           BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
-          sEggHatchData.eggSpriteId = CreateSprite(sSpriteTemplate_Egg, EGG_X, EGG_Y, 5);
+          sEggHatchData.eggSpriteId = CreateSprite(sSpriteTemplate_Egg, ((DISPLAY_WIDTH / 2)), ((DISPLAY_HEIGHT / 2 - 5)), 5);
           ShowBg(0);
           ShowBg(1);
           sEggHatchData.state++;
@@ -592,7 +613,7 @@ export function CreateRandomEggShardSprite(): any {
        
       spriteAnimIndex = Random() % ARRAY_COUNT(sSpriteAnimTable_EggShard);
 
-      CreateEggShardSprite(EGG_X, EGG_Y - 15, velocityX, velocityY, 100, spriteAnimIndex);
+      CreateEggShardSprite(((DISPLAY_WIDTH / 2)), ((DISPLAY_HEIGHT / 2 - 5)) - 15, velocityX, velocityY, 100, spriteAnimIndex);
 }
 
 /** static void CreateEggShardSprite(u8 x, u8 y, s16 velocityX, s16 velocityY, s16 acceleration, u8 spriteAnimIndex) */

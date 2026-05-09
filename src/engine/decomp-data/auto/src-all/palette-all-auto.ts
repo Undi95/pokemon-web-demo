@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sDummyPaletteStructTemplate: any = null;
+let sPaletteStructs: any = null;
+let sPlttBufferTransferPending: any = null;
+let sRoundedDownGrayscaleMap: any = null;
 /** void LoadCompressedPalette(const u32 *src, u16 offset, u16 size) */
 export function LoadCompressedPalette(src: any, offset: any, size: any): any {
   LZDecompressWram(src, gPaletteDecompressionBuffer);
@@ -71,7 +77,7 @@ export function UpdatePaletteFade(): any {
 export function ResetPaletteFade(): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_PALETTE_STRUCTS; i++)
+      for (i = 0; i < (16); i++)
           PaletteStruct_Reset(i);
 
       ResetPaletteFadeControl();
@@ -244,7 +250,7 @@ export function PaletteStruct_TryEnd(pal: any): any {
 /** void PaletteStruct_ResetById(u16 id) */
 export function PaletteStruct_ResetById(id: any): any {
   let paletteNum: any = PaletteStruct_GetPalNum(id);
-      if (paletteNum != NUM_PALETTE_STRUCTS)
+      if (paletteNum != (16))
           PaletteStruct_Reset(paletteNum);
 }
 
@@ -284,11 +290,11 @@ export function ResetPaletteFadeControl(): any {
 export function PaletteStruct_GetPalNum(id: any): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_PALETTE_STRUCTS; i++)
+      for (i = 0; i < (16); i++)
           if (sPaletteStructs[i].template.id == id)
               return i;
 
-      return NUM_PALETTE_STRUCTS;
+      return (16);
 }
 
 /** static u8 UpdateNormalPaletteFade(void) */

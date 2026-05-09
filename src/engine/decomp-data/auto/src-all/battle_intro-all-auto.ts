@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattleIntroSlideFuncs: any = null;
+let sBgCnt: any = null;
 /** void SetAnimBgAttribute(u8 bgId, u8 attributeId, u8 value) */
 export function SetAnimBgAttribute(bgId: any, attributeId: any, value: any): any {
   if (bgId < 4)

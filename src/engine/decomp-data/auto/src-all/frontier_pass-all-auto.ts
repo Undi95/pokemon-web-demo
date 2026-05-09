@@ -15,6 +15,31 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattleRecord_Tilemap: any = null;
+let sBgAffineCoords: any = null;
+let sCursorSpriteSheets: any = null;
+let sHeadsSpriteSheet: any = null;
+let sMapAndCard_ZoomedOut_Tilemap: any = null;
+let sMapAndCard_Zooming_Tilemap: any = null;
+let sMapBgTemplates: any = null;
+let sMapData: any = null;
+let sMapLandmarks: any = null;
+let sMapScreen_Tilemap: any = null;
+let sMapWindowTemplates: any = null;
+let sPassAreaDescriptions: any = null;
+let sPassAreasLayout: any = null;
+let sPassBgTemplates: any = null;
+let sPassData: any = null;
+let sPassGfx: any = null;
+let sPassWindowTemplates: any = null;
+let sSavedPassData: any = null;
+let sSpritePalettes: any = null;
+let sSpriteTemplate_Medal: any = null;
+let sSpriteTemplate_PlayerHead: any = null;
+let sSpriteTemplates_Cursors: any = null;
+let sTextColors: any = null;
 /** static void ResetGpuRegsAndBgs(void) */
 export function ResetGpuRegsAndBgs(): any {
   SetGpuReg(REG_OFFSET_DISPCNT, 0);
@@ -230,7 +255,7 @@ export function InitFrontierPass(): any {
           CopyBgTilemapBufferToVram(2);
           break;
       case 8:
-          LoadPalette(gFrontierPassBg_Pal, 0, NUM_BG_PAL_SLOTS * PLTT_SIZE_4BPP);
+          LoadPalette(gFrontierPassBg_Pal, 0, (13) * PLTT_SIZE_4BPP);
           LoadPalette(gFrontierPassBg_Pal[1 + sPassData.trainerStars], BG_PLTT_ID(1), PLTT_SIZE_4BPP);
           LoadPalette(GetTextWindowPalette(0), BG_PLTT_ID(15), PLTT_SIZE_4BPP);
           DrawFrontierPassBg();
@@ -325,7 +350,7 @@ export function GetCursorAreaFromCoords(x: any, y: any): any {
           if (sPassAreasLayout[i].yStart <= y && sPassAreasLayout[i].yEnd >= y
            && sPassAreasLayout[i].xStart <= x && sPassAreasLayout[i].xEnd >= x)
           {
-              if (i >= CURSOR_AREA_SYMBOL - 1 && sPassData.facilitySymbols[i - CURSOR_AREA_SYMBOL + 1] == 0)
+              if (i >= (CURSOR_AREA_SYMBOL_TOWER) - 1 && sPassData.facilitySymbols[i - (CURSOR_AREA_SYMBOL_TOWER) + 1] == 0)
                   break;
 
               return i + 1;
@@ -761,7 +786,7 @@ export function LoadCursorAndSymbolSprites(): any {
               let sprite: any = sSpriteTemplate_Medal;
 
               sprite.paletteTag += sPassData.facilitySymbols[i] - 1;  
-              spriteId = CreateSprite(sprite, sPassAreasLayout[i + CURSOR_AREA_SYMBOL - 1].xStart + 8, sPassAreasLayout[i + CURSOR_AREA_SYMBOL - 1].yStart + 6, i + 1);
+              spriteId = CreateSprite(sprite, sPassAreasLayout[i + (CURSOR_AREA_SYMBOL_TOWER) - 1].xStart + 8, sPassAreasLayout[i + (CURSOR_AREA_SYMBOL_TOWER) - 1].yStart + 6, i + 1);
               sPassGfx.symbolSprites[i] =gSprites[spriteId];
               sPassGfx.symbolSprites[i].oam.priority = 2;
               StartSpriteAnim(sPassGfx.symbolSprites[i], i);
@@ -850,7 +875,7 @@ export function InitFrontierMap(): any {
       case 5:
           if (FreeTempTileDataBuffersIfPossible())
               return FALSE;
-          LoadPalette(gFrontierPassBg_Pal, BG_PLTT_ID(0), NUM_BG_PAL_SLOTS * PLTT_SIZE_4BPP);
+          LoadPalette(gFrontierPassBg_Pal, BG_PLTT_ID(0), (13) * PLTT_SIZE_4BPP);
           LoadPalette(GetTextWindowPalette(0), BG_PLTT_ID(15), PLTT_SIZE_4BPP);
           CopyToBgTilemapBuffer(2, sMapScreen_Tilemap, 0, 0);
           CopyBgTilemapBufferToVram(2);

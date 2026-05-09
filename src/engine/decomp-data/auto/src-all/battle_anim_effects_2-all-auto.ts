@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAffineAnims_StretchBattlerUp: any = null;
+let sAffineAnims_UproarDistortion: any = null;
+let sAmplitudeX: any = null;
+let sAmplitudeY: any = null;
+let sCircleSpeed: any = null;
+let sMoveSteps: any = null;
+let sMusicNotePaletteTagsTable: any = null;
+let sVoidLinesSpriteTemplate: any = null;
 /** static void AnimCirclingFinger(struct Sprite *sprite) */
 export function AnimCirclingFinger(sprite: any): any {
   SetSpriteCoordsToAnimAttackerCoords(sprite);
@@ -1717,12 +1727,12 @@ export function AnimTask_LoadMusicNotesPals(taskId: any): any {
       let paletteNums: any = [];
 
       paletteNums[0] = IndexOfSpritePaletteTag(ANIM_TAG_MUSIC_NOTES_2);
-      for (i = 1; i < NUM_MUSIC_NOTE_PAL_TAGS; i++)
+      for (i = 1; i < (3); i++)
           paletteNums[i] = AllocSpritePalette(ANIM_SPRITES_START - i);
 
       gMonSpritesGfxPtr.buffer = AllocZeroed(MON_PIC_SIZE * MAX_MON_PIC_FRAMES);
       LZDecompressWram(gBattleAnimSpritePal_MusicNotes2, gMonSpritesGfxPtr.buffer);
-      for (i = 0; i < NUM_MUSIC_NOTE_PAL_TAGS; i++)
+      for (i = 0; i < (3); i++)
           LoadPalette(gMonSpritesGfxPtr.buffer[i * 32], (OBJ_PLTT_ID(paletteNums[i])), PLTT_SIZE_4BPP);
 
       FREE_AND_SET_NULL(gMonSpritesGfxPtr.buffer);
@@ -1732,7 +1742,7 @@ export function AnimTask_LoadMusicNotesPals(taskId: any): any {
 /** void AnimTask_FreeMusicNotesPals(u8 taskId) */
 export function AnimTask_FreeMusicNotesPals(taskId: any): any {
   let i: any = null;
-      for (i = 0; i < NUM_MUSIC_NOTE_PAL_TAGS; i++)
+      for (i = 0; i < (3); i++)
           FreeSpritePaletteByTag(sMusicNotePaletteTagsTable[i]);
 
       DestroyAnimVisualTask(taskId);

@@ -15,6 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sMovement_FaceDown: any = null;
+let sMovement_FaceLeft: any = null;
+let sMovement_FaceRight: any = null;
+let sMovement_FaceUp: any = null;
+let sMovement_ShiftDown: any = null;
+let sMovement_ShiftLeft: any = null;
+let sMovement_ShiftRight: any = null;
+let sMovement_ShiftUp: any = null;
+let sRotatingTilePuzzle: any = null;
 /** void InitRotatingTilePuzzle(bool8 isTrickHouse) */
 export function InitRotatingTilePuzzle(isTrickHouse: any): any {
   if (sRotatingTilePuzzle == NULL)
@@ -154,16 +165,16 @@ export function TurnRotatingTileObjects(): any {
           {
                
               if (tileDifference == -3)
-                  rotation = ROTATE_CLOCKWISE;
+                  rotation = (1);
               else
-                  rotation = ROTATE_COUNTERCLOCKWISE;
+                  rotation = (0);
           }
           else
           {
               if (tileDifference > 0)
-                  rotation = ROTATE_CLOCKWISE;
+                  rotation = (1);
               else
-                  rotation = ROTATE_NONE;
+                  rotation = (2);
           }
 
           objectEventId = GetObjectEventIdByLocalIdAndMap(objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].localId, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup);
@@ -171,7 +182,7 @@ export function TurnRotatingTileObjects(): any {
           {
               let movementScript: any = null;
               let direction: any = gObjectEvents[objectEventId].facingDirection;
-              if (rotation == ROTATE_COUNTERCLOCKWISE)
+              if (rotation == (0))
               {
                   switch (direction)
                   {
@@ -200,7 +211,7 @@ export function TurnRotatingTileObjects(): any {
                                                            movementScript);
               }
                
-              else if (rotation == ROTATE_CLOCKWISE)
+              else if (rotation == (1))
               {
                   switch (direction)
                   {
@@ -259,14 +270,14 @@ export function TurnUnsavedRotatingTileObject(eventTemplateId: any, puzzleTileNu
       tileDifference -= puzzleTileNum;
 
       if (tileDifference < 0 || tileDifference == 3)
-          rotation = ROTATE_COUNTERCLOCKWISE;
+          rotation = (0);
       else if (tileDifference > 0 || tileDifference == -3)
-          rotation = ROTATE_CLOCKWISE;
+          rotation = (1);
       else
-          rotation = ROTATE_NONE;
+          rotation = (2);
 
       movementType = objectEvents[eventTemplateId].movementType;
-      if (rotation == ROTATE_COUNTERCLOCKWISE)
+      if (rotation == (0))
       {
           switch (movementType)
           {
@@ -286,7 +297,7 @@ export function TurnUnsavedRotatingTileObject(eventTemplateId: any, puzzleTileNu
               break;
           }
       }
-      else if (rotation == ROTATE_CLOCKWISE)
+      else if (rotation == (1))
       {
           switch (movementType)
           {

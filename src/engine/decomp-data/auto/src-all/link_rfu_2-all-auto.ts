@@ -15,6 +15,26 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sASCII_30Spaces: any = null;
+let sASCII_LinkLossDisconnect: any = null;
+let sASCII_LinkLossRecoveryNow: any = null;
+let sASCII_PokemonSioInfo: any = null;
+let sAcceptedSerialNos: any = null;
+let sAllBlocksReceived: any = null;
+let sAvailSlots: any = null;
+let sBlockRequests: any = null;
+let sHeldKeyCount: any = null;
+let sPlayerBitsToCount: any = null;
+let sPlayerBitsToNewChildIdx: any = null;
+let sResendBlock16: any = null;
+let sResendBlock8: any = null;
+let sRfuDebug: any = null;
+let sRfuReqConfig: any = null;
+let sRfuReqConfigTemplate: any = null;
+let sShutdownTasks: any = null;
+let sSlotToLinkPlayerTableId: any = null;
 /** void ResetLinkRfuGFLayer(void) */
 export function ResetLinkRfuGFLayer(): any {
   let i: any = null;
@@ -84,12 +104,12 @@ export function Task_ParentSearchForChildren(taskId: any): any {
           break;
       case RFUSTATE_STOP_MANAGER_END:
           break;
-      case RFUSTATE_PARENT_FINALIZE:
+      case (18):
           gRfu.parentFinished = FALSE;
           rfu_LMAN_setMSCCallback(MSCCallback_Parent);
           InitChildRecvBuffers();
           InitParentSendData();
-          gRfu.state = RFUSTATE_FINALIZED;
+          gRfu.state = (20);
           gTasks[taskId].data[1] = 8;
           CreateTask(Task_PlayerExchange, 5);
           DestroyTask(taskId);
@@ -243,12 +263,12 @@ export function Task_UnionRoomListen(taskId: any): any {
           break;
       case RFUSTATE_INIT_END:
           break;
-      case RFUSTATE_UR_CONNECT:
+      case (17):
           rfu_LMAN_establishConnection(MODE_P_C_SWITCH, 0, 240, sAcceptedSerialNos);
           rfu_LMAN_setMSCCallback(MSCCallback_Child);
-          gRfu.state = RFUSTATE_UR_CONNECT_END;
+          gRfu.state = (18);
           break;
-      case RFUSTATE_UR_CONNECT_END:
+      case (18):
           break;
       case RFUSTATE_UR_PLAYER_EXCHANGE:
           if (rfu_UNI_setSendData(1 << gRfu.childSlot, gRfu.childSendBuffer, sizeof(gRfu.childSendBuffer)) == 0)
@@ -273,7 +293,7 @@ export function Task_UnionRoomListen(taskId: any): any {
           UpdateGameData_GroupLockedIn(TRUE);
           InitChildRecvBuffers();
           InitParentSendData();
-          gRfu.state = RFUSTATE_FINALIZED;
+          gRfu.state = (20);
           gTasks[taskId].data[1] = 8;
           gRfu.parentChild = MODE_PARENT;
           CreateTask(Task_PlayerExchange, 5);
@@ -402,9 +422,9 @@ export function LinkRfu_StopManagerAndFinalizeSlots(): any {
 
 /** bool32 WaitRfuState(bool32 force) */
 export function WaitRfuState(force: any): any {
-  if (gRfu.state == RFUSTATE_PARENT_FINALIZE_START || force)
+  if (gRfu.state == (17) || force)
       {
-          gRfu.state = RFUSTATE_PARENT_FINALIZE;
+          gRfu.state = (18);
           return TRUE;
       }
       return FALSE;
@@ -478,7 +498,7 @@ export function IsRfuRecvQueueEmpty(): any {
 
 /** static bool32 RfuMain1_Parent(void) */
 export function RfuMain1_Parent(): any {
-  if (gRfu.state < RFUSTATE_FINALIZED)
+  if (gRfu.state < (20))
       {
           rfu_REQ_recvData();
           rfu_waitREQComplete();
@@ -530,7 +550,7 @@ export function RfuMain2_Parent(): any {
       let j: any = null;
       let failed: any = null;
 
-      if (gRfu.state >= RFUSTATE_FINALIZED && gRfu.runParentMain2 == TRUE)
+      if (gRfu.state >= (20) && gRfu.runParentMain2 == TRUE)
       {
           rfu_waitREQComplete();
           while (gRfu.parentFinished == FALSE)
@@ -1905,7 +1925,7 @@ export function LinkManagerCB_Parent(msg: any, paramCount: any): any {
               rfu_REQ_disconnect(gRfu.acceptSlot_flag ^ lman.acceptSlot_flag);
               rfu_waitREQComplete();
           }
-          gRfu.state = RFUSTATE_PARENT_FINALIZE_START;
+          gRfu.state = (17);
           break;
       case LMAN_MSG_LINK_LOSS_DETECTED_AND_START_RECOVERY:
           gRfu.linkLossRecoveryState = 1;
@@ -2057,7 +2077,7 @@ export function LinkManagerCB_UnionRoom(msg: any, paramCount: any): any {
       switch (msg)
       {
       case LMAN_MSG_INITIALIZE_COMPLETED:
-          gRfu.state = RFUSTATE_UR_CONNECT;
+          gRfu.state = (17);
           break;
       case LMAN_MSG_NEW_CHILD_CONNECT_DETECTED:
           RfuSetStatus(RFU_STATUS_NEW_CHILD_DETECTED, 0);
@@ -2117,7 +2137,7 @@ export function LinkManagerCB_UnionRoom(msg: any, paramCount: any): any {
           gRfu.childSlot = lman.param[0];
           break;
       case LMAN_MSG_CONNECT_PARENT_FAILED:
-          gRfu.state = RFUSTATE_UR_CONNECT_END;
+          gRfu.state = (18);
           if (gRfu.connectParentFailures < 2)
           {
               gRfu.connectParentFailures++;
@@ -2170,7 +2190,7 @@ export function LinkManagerCB_UnionRoom(msg: any, paramCount: any): any {
           if (gRfuLinkStatus.parentChild == MODE_NEUTRAL
               && !lman.pcswitch_flag
               && FuncIsActiveTask(Task_UnionRoomListen) == TRUE)
-              gRfu.state = RFUSTATE_UR_CONNECT;
+              gRfu.state = (17);
 
           RfuSetStatus(RFU_STATUS_CONNECTION_ERROR, msg);
           break;

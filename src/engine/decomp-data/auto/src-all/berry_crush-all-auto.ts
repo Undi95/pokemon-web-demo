@@ -15,6 +15,50 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAmplitude: any = null;
+let sBerryCrushCommands: any = null;
+let sBgTemplates: any = null;
+let sBg_Tilemap: any = null;
+let sBigSparkleThresholds: any = null;
+let sBitTable: any = null;
+let sBitfield: any = null;
+let sContainerCap_Tilemap: any = null;
+let sCrusherTop_Tilemap: any = null;
+let sDigitObjTemplates: any = null;
+let sGame: any = null;
+let sImpactCoords: any = null;
+let sIntroOutroVibrationData: any = null;
+let sMessages: any = null;
+let sPlayerBerrySpriteTags: any = null;
+let sPlayerCoords: any = null;
+let sPlayerIdToPosId: any = null;
+let sPressingSpeedConversionTable: any = null;
+let sReceivedPlayerBitmasks: any = null;
+let sResultsTexts: any = null;
+let sResultsWindowHeights: any = null;
+let sSinIdx: any = null;
+let sSinSpeed: any = null;
+let sSparkleCoords: any = null;
+let sSparkleThresholds: any = null;
+let sSpritePals: any = null;
+let sSpriteSheets: any = null;
+let sSpriteTemplate_CrusherBase: any = null;
+let sSpriteTemplate_Impact: any = null;
+let sSpriteTemplate_PlayerBerry: any = null;
+let sSpriteTemplate_Sparkle: any = null;
+let sSpriteTemplate_Timer: any = null;
+let sSyncPressBonus: any = null;
+let sTextColorTable: any = null;
+let sVibrationData: any = null;
+let sWindowTemplate_Rankings: any = null;
+let sWindowTemplates_PlayerNames: any = null;
+let sWindowTemplates_Results: any = null;
+let sX: any = null;
+let sXSpeed: any = null;
+let sYAccel: any = null;
+let sYSpeed: any = null;
 /** static struct BerryCrushGame * GetBerryCrushGame(void) */
 export function GetBerryCrushGame(): any {
   return sGame;
@@ -385,10 +429,10 @@ export function UpdateGame(game: any): any {
 
 /** static void ResetCrusherPos(struct BerryCrushGame *game) */
 export function ResetCrusherPos(game: any): any {
-  game.depth = CRUSHER_START_Y;
+  game.depth = ((-104));
       game.vibration = 0;
       gSpriteCoordOffsetX = 0;
-      gSpriteCoordOffsetY = CRUSHER_START_Y;
+      gSpriteCoordOffsetY = ((-104));
 }
 
 /** static void CreateBerrySprites(struct BerryCrushGame *game, struct BerryCrushGame_Gfx *gfx) */
@@ -427,7 +471,7 @@ export function CreateBerrySprites(game: any, gfx: any): any {
           var1 = MathUtil_Mul16Shift(7, var1, 85);
           sSinIdx = 0;
           sSinSpeed = MathUtil_Div16Shift(7, Q_8_8(63.5), var1);
-          sBitfield |= F_MOVE_HORIZ;
+          sBitfield |= (0x8000);
           if (gfx.playerCoords[i].berryXOffset < 0)
               StartSpriteAffineAnim(gfx.berrySprites[i], 1);
       }
@@ -439,20 +483,20 @@ export function SpriteCB_DropBerryIntoCrusher(sprite: any): any {
 
       sYSpeed += sYAccel;
       sprite.y2 += sYSpeed >> 8;
-      if (sBitfield & F_MOVE_HORIZ)
+      if (sBitfield & (0x8000))
       {
           sprite.sX += sXSpeed;
           sSinIdx += sSinSpeed;
           sprite.x2 = Sin(sSinIdx >> 7, sAmplitude);
-          if ((sBitfield & F_MOVE_HORIZ) && (sSinIdx >> 7) > 126)
+          if ((sBitfield & (0x8000)) && (sSinIdx >> 7) > 126)
           {
               sprite.x2 = 0;
-              sBitfield &= MASK_TARGET_Y;
+              sBitfield &= (0x7FFF);
           }
       }
 
       sprite.x = sX >> 7;
-      if (sprite.y + sprite.y2 >= (sBitfield & MASK_TARGET_Y))
+      if (sprite.y + sprite.y2 >= (sBitfield & (0x7FFF)))
       {
           sprite.callback = SpriteCallbackDummy;
           FreeSpriteOamMatrix(sprite);
@@ -484,12 +528,12 @@ export function UpdateInputEffects(game: any, gfx: any): any {
       for (i = 0; i < game.playerCount; i++)
       {
 
-          flags = linkState.inputFlags >> (i * INPUT_FLAGS_PER_PLAYER);
+          flags = linkState.inputFlags >> (i * (3));
           flags &= INPUT_FLAG_MASK;
           if (flags)
           {
               numPlayersPressed++;
-              if (flags & F_INPUT_HIT_SYNC)
+              if (flags & ((1 << 2)))
                   StartSpriteAnim(gfx.impactSprites[i], 1);  
               else
                   StartSpriteAnim(gfx.impactSprites[i], 0);  
@@ -739,7 +783,7 @@ export function OpenResultsWindow(game: any, gfx: any): any {
       case 0:
           playerCountIdx = game.playerCount - 2;
           HideTimer(gfx);
-          memcpy(template,sWindowTemplates_Results[game.gameState - RESULTS_STATE_START], 0);
+          memcpy(template,sWindowTemplates_Results[game.gameState - (STATE_RESULTS_PRESSES)], 0);
           if (game.gameState == STATE_RESULTS_CRUSHING)
               template.height = sResultsWindowHeights[1][playerCountIdx];
           else
@@ -964,10 +1008,10 @@ export function CreateGameSprites(game: any): any {
   let i: any = 0;
       let spriteId: any = null;
 
-      game.depth = CRUSHER_START_Y;
+      game.depth = ((-104));
       game.vibration = 0;
       gSpriteCoordOffsetX = 0;
-      gSpriteCoordOffsetY = CRUSHER_START_Y;
+      gSpriteCoordOffsetY = ((-104));
       for (i = 0; i < ARRAY_COUNT(sSpriteSheets) - 1; i++)
           LoadCompressedSpriteSheet(sSpriteSheets[i]);
       LoadSpritePalettes(sSpritePals);
@@ -1029,13 +1073,13 @@ export function CreateGameSprites(game: any): any {
 /** static void DestroyGameSprites(struct BerryCrushGame *game) */
 export function DestroyGameSprites(game: any): any {
   let i: any = 0;
-      FreeSpriteTilesByTag(TAG_TIMER_DIGITS);
-      FreeSpriteTilesByTag(GFXTAG_SPARKLE);
-      FreeSpriteTilesByTag(GFXTAG_IMPACT);
-      FreeSpriteTilesByTag(TAG_CRUSHER_BASE);
-      FreeSpritePaletteByTag(TAG_TIMER_DIGITS);
-      FreeSpritePaletteByTag(PALTAG_EFFECT);
-      FreeSpritePaletteByTag(TAG_CRUSHER_BASE);
+      FreeSpriteTilesByTag((4));
+      FreeSpriteTilesByTag((3));
+      FreeSpriteTilesByTag((2));
+      FreeSpriteTilesByTag((1));
+      FreeSpritePaletteByTag((4));
+      FreeSpritePaletteByTag((2));
+      FreeSpritePaletteByTag((1));
       for (i = 0; i < ARRAY_COUNT(game.gfx.timerSprites); i++)
           DestroySprite(game.gfx.timerSprites[i]);
       DigitObjUtil_DeletePrinter(2);
@@ -1076,19 +1120,19 @@ export function SpriteCB_Sparkle(sprite: any): any {
 
       sYSpeed += sYAccel;
       sprite.y2 += sYSpeed >> 8;
-      if (sBitfield & F_MOVE_HORIZ)
+      if (sBitfield & (0x8000))
       {
           sprite.sX += sXSpeed;
           sSinIdx += sSinSpeed;
           sprite.x2 = Sin(sSinIdx >> 7, sAmplitude);
-          if (sBitfield & F_MOVE_HORIZ && sSinIdx >> 7 > 126)
+          if (sBitfield & (0x8000) && sSinIdx >> 7 > 126)
           {
               sprite.x2 = 0;
-              sBitfield &= MASK_TARGET_Y;
+              sBitfield &= (0x7FFF);
           }
       }
       sprite.x = sX >> 7;
-      if (sprite.y + sprite.y2 > (sBitfield & MASK_TARGET_Y))
+      if (sprite.y + sprite.y2 > (sBitfield & (0x7FFF)))
           sprite.callback = SpriteCB_Sparkle_End;
 }
 
@@ -1111,7 +1155,7 @@ export function SpriteCB_Sparkle_Init(sprite: any): any {
       sSinIdx = zero;
       sSinSpeed = MathUtil_Div16Shift(7, Q_8_8(63.5), _var);
       sAmplitude = sprite.x2 / 4;
-      sBitfield |= F_MOVE_HORIZ;
+      sBitfield |= (0x8000);
       sprite.y2 = zero;
       sprite.x2 = zero;
       sprite.callback = SpriteCB_Sparkle;
@@ -1214,7 +1258,7 @@ export function Cmd_PrintMessage(game: any, args: any): any {
       {
       case 0:
           DrawDialogueFrame(0, FALSE);
-          if (args[1] & F_MSG_EXPAND)
+          if (args[1] & ((1 << 1)))
           {
               StringExpandPlaceholders(gStringVar4, sMessages[args[0]]);
               AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, game.textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
@@ -1240,7 +1284,7 @@ export function Cmd_PrintMessage(game: any, args: any): any {
               return 0;
           break;
       case 3:
-          if (args[1] & F_MSG_CLEAR)
+          if (args[1] & ((1 << 0)))
               ClearDialogWindowAndFrame(0, TRUE);
           RunOrScheduleCommand(game.nextCmd, SCHEDULE_CMD, NULL);
           game.cmdState = args[4];
@@ -1294,7 +1338,7 @@ export function Cmd_AskPickBerry(game: any, args: any): any {
           break;
       case 0:
           ResetGame(game);
-          SetPrintMessageArgs(args, MSG_PICK_BERRY, F_MSG_CLEAR, 0, 1);
+          SetPrintMessageArgs(args, MSG_PICK_BERRY, ((1 << 0)), 0, 1);
           game.nextCmd = CMD_ASK_PICK_BERRY;
           RunOrScheduleCommand(CMD_PRINT_MSG, SCHEDULE_CMD, NULL);
           break;
@@ -1480,7 +1524,7 @@ export function Cmd_Countdown(game: any, args: any): any {
       case 1:
           if (!IsLinkTaskFinished())
               return 0;
-          StartMinigameCountdown(TAG_COUNTDOWN, TAG_COUNTDOWN, 120, 80, 0);
+          StartMinigameCountdown((0x1000), (0x1000), 120, 80, 0);
           break;
       case 2:
           if (IsMinigameCountdownRunning())
@@ -1524,7 +1568,7 @@ export function HandlePartnerInput(game: any): any {
            
           if ((linkState.rfuCmd & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
               continue;
-          if (linkState.sendFlag != SEND_GAME_STATE)
+          if (linkState.sendFlag != (2))
               continue;
 
           if (linkState.pushedAButton)
@@ -1555,7 +1599,7 @@ export function HandlePartnerInput(game: any): any {
 
               game.players[i].inputTime = game.timer;
               game.players[i].inputFlags++;
-              if (game.players[i].inputFlags > F_INPUT_HIT_B)
+              if (game.players[i].inputFlags > ((1 << 1)))
                   game.players[i].inputFlags = 0;
           }
           else
@@ -1609,10 +1653,10 @@ export function UpdateLeaderGameState(game: any): any {
           if (game.players[i].inputState != INPUT_STATE_NONE)
           {
               numPlayersPressed++;
-              flags = game.players[i].inputFlags + F_INPUT_HIT_A;
+              flags = game.players[i].inputFlags + ((1 << 0));
               if (game.players[i].inputState & INPUT_STATE_HIT_SYNC)
-                  flags |= F_INPUT_HIT_SYNC;
-              flags <<= INPUT_FLAGS_PER_PLAYER * i;
+                  flags |= ((1 << 2));
+              flags <<= (3) * i;
               game.localState.inputFlags |= flags;
           }
       }
@@ -1680,7 +1724,7 @@ export function HandlePlayerInput(game: any): any {
        
       if (game.localId != 0 && !game.localState.pushedAButton)
           return;
-      game.localState.sendFlag = SEND_GAME_STATE;
+      game.localState.sendFlag = (2);
 
        
        
@@ -1734,7 +1778,7 @@ export function HandlePlayerInput(game: any): any {
           }
 
       }
-      if (game.timer >= MAX_TIME)
+      if (game.timer >= ((10 * 60 * 60)))
           game.localState.endGame = TRUE;
       game.localState.bigSparkle = game.bigSparkle;
       game.localState.sparkleAmount = game.sparkleAmount;
@@ -1782,9 +1826,9 @@ export function Cmd_PlayGame_Leader(game: any, args: any): any {
       SetGpuReg(REG_OFFSET_BG3VOFS, -game.vibration);
       if (game.endGame)
       {
-          if (game.timer >= MAX_TIME)
+          if (game.timer >= ((10 * 60 * 60)))
           {
-              game.timer = MAX_TIME;
+              game.timer = ((10 * 60 * 60));
               RunOrScheduleCommand(CMD_TIMES_UP, SCHEDULE_CMD, NULL);
           }
           else
@@ -1815,9 +1859,9 @@ export function Cmd_PlayGame_Member(game: any, args: any): any {
       SetGpuReg(REG_OFFSET_BG3VOFS, -game.vibration);
       if (game.endGame)
       {
-          if (game.timer >= MAX_TIME)
+          if (game.timer >= ((10 * 60 * 60)))
           {
-              game.timer = MAX_TIME;
+              game.timer = ((10 * 60 * 60));
               RunOrScheduleCommand(CMD_TIMES_UP, SCHEDULE_CMD, NULL);
           }
           else
@@ -1921,7 +1965,7 @@ export function Cmd_HandleTimeUp(game: any, args: any): any {
           if (!IsLinkTaskFinished())
               return 0;
           ConvertIntToDecimalStringN(gStringVar1, game.powder, STR_CONV_MODE_LEFT_ALIGN, 6);
-          SetPrintMessageArgs(args, MSG_TIMES_UP, F_MSG_CLEAR, 0, 0);
+          SetPrintMessageArgs(args, MSG_TIMES_UP, ((1 << 0)), 0, 0);
           game.nextCmd = CMD_SAVE;
           RunOrScheduleCommand(CMD_PRINT_MSG, SCHEDULE_CMD, NULL);
           game.cmdTimer = 0;
@@ -2146,7 +2190,7 @@ export function Cmd_ShowResults(game: any, args: any): any {
           break;
       case 3:
            
-          if (game.gameState < RESULTS_STATE_END)
+          if (game.gameState < (STATE_RESULTS_CRUSHING))
           {
               game.gameState++;
               game.cmdState = 0;
@@ -2157,7 +2201,7 @@ export function Cmd_ShowResults(game: any, args: any): any {
            
           ConvertIntToDecimalStringN(gStringVar1, game.powder, STR_CONV_MODE_LEFT_ALIGN, 6);
           ConvertIntToDecimalStringN(gStringVar2, GetBerryPowder(), STR_CONV_MODE_LEFT_ALIGN, 6);
-          SetPrintMessageArgs(args, MSG_POWDER, F_MSG_CLEAR | F_MSG_EXPAND, 0, 0);
+          SetPrintMessageArgs(args, MSG_POWDER, ((1 << 0)) | ((1 << 1)), 0, 0);
           game.nextCmd = CMD_SAVE;
           RunOrScheduleCommand(CMD_PRINT_MSG, SCHEDULE_CMD, NULL);
           game.cmdState = 0;
@@ -2172,7 +2216,7 @@ export function Cmd_SaveGame(game: any, args: any): any {
   switch (game.cmdState)
       {
       case 0:
-          if (game.timer >= MAX_TIME)
+          if (game.timer >= ((10 * 60 * 60)))
               HideTimer(game.gfx);
           SetPrintMessageArgs(args, MSG_COMM_STANDBY, 0, 0, 1);
           game.nextCmd = CMD_SAVE;
@@ -2228,14 +2272,14 @@ export function Cmd_AskPlayAgain(game: any, args: any): any {
               {
                    
                   if (HasAtLeastOneBerry())
-                      game.playAgainState = PLAY_AGAIN_YES;
+                      game.playAgainState = (0);
                   else
-                      game.playAgainState = PLAY_AGAIN_NO_BERRIES;
+                      game.playAgainState = (3);
               }
               else
               {
                    
-                  game.playAgainState = PLAY_AGAIN_NO;
+                  game.playAgainState = (1);
               }
 
                
@@ -2283,7 +2327,7 @@ export function Cmd_CommunicatePlayAgainResponses(game: any, args: any): any {
           for (i = 0; i < game.playerCount; i++)
               game.recvCmd[0] += gBlockRecvBuffer[i][0];
 
-          if (game.recvCmd[0] != PLAY_AGAIN_YES)
+          if (game.recvCmd[0] != (0))
               RunOrScheduleCommand(CMD_PLAY_AGAIN_NO, SCHEDULE_CMD, NULL);
           else
               RunOrScheduleCommand(CMD_PLAY_AGAIN_YES, SCHEDULE_CMD, NULL);
@@ -2334,7 +2378,7 @@ export function Cmd_StopGame(game: any, args: any): any {
       {
       case 0:
           DrawDialogueFrame(0, FALSE);
-          if (game.playAgainState == PLAY_AGAIN_NO_BERRIES)
+          if (game.playAgainState == (3))
               AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[MSG_NO_BERRIES], game.textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
           else
               AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[MSG_DROPPED], game.textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);

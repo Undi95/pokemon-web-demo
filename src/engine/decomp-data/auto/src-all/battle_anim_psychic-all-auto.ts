@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAffineAnim_MeditateStretchAttacker: any = null;
+let sAffineAnim_Teleport: any = null;
+let sAffineAnims_QuestionMark: any = null;
 /** static void AnimDefensiveWall(struct Sprite *sprite) */
 export function AnimDefensiveWall(sprite: any): any {
   let isContest: any = IsContest();

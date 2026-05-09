@@ -15,6 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAddressOffset: any = null;
+let sBrailleWindowId: any = null;
+let sFieldEffectScriptId: any = null;
+let sMovingNpcId: any = null;
+let sMovingNpcMapGroup: any = null;
+let sMovingNpcMapNum: any = null;
+let sPauseCounter: any = null;
+let sScriptConditionTable: any = null;
+let sScriptStringVars: any = null;
 /** bool8 ScrCmd_nop(struct ScriptContext *ctx) */
 export function ScrCmd_nop(ctx: any): any {
   return FALSE;

@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnimStatsChangeData: any = null;
+let sCurseLinesPalette: any = null;
 /** void AnimTask_BlendBattleAnimPal(u8 taskId) */
 export function AnimTask_BlendBattleAnimPal(taskId: any): any {
   let selectedPalettes: any = UnpackSelectedBattlePalettes(gBattleAnimArgs[0]);

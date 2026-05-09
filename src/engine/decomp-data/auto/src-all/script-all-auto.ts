@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sGlobalScriptContext: any = null;
+let sGlobalScriptContextStatus: any = null;
+let sImmediateScriptContext: any = null;
+let sLockFieldControls: any = null;
 /** void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTableEnd) */
 export function InitScriptContext(ctx: any, cmdTable: any, cmdTableEnd: any): any {
   let i: any = null;
@@ -298,7 +304,7 @@ export function InitRamScript(script: any, scriptSize: any, mapGroup: any, mapNu
       if (scriptSize > sizeof(scriptData.script))
           return FALSE;
 
-      scriptData.magic = RAM_SCRIPT_MAGIC;
+      scriptData.magic = (51);
       scriptData.mapGroup = mapGroup;
       scriptData.mapNum = mapNum;
       scriptData.localId = localId;
@@ -310,13 +316,13 @@ export function InitRamScript(script: any, scriptSize: any, mapGroup: any, mapNu
 /** bool32 ValidateSavedRamScript(void) */
 export function ValidateSavedRamScript(): any {
   let scriptData: any =gSaveBlock1Ptr.ramScript.data;
-      if (scriptData.magic != RAM_SCRIPT_MAGIC)
+      if (scriptData.magic != (51))
           return FALSE;
       if (scriptData.mapGroup != MAP_GROUP(MAP_UNDEFINED))
           return FALSE;
       if (scriptData.mapNum != MAP_NUM(MAP_UNDEFINED))
           return FALSE;
-      if (scriptData.localId != NO_OBJECT)
+      if (scriptData.localId != (LOCALID_PLAYER))
           return FALSE;
       if (CalculateRamScriptChecksum() != gSaveBlock1Ptr.ramScript.checksum)
           return FALSE;
@@ -327,7 +333,7 @@ export function ValidateSavedRamScript(): any {
 export function InitRamScript_NoObjectEvent(script: any, scriptSize: any): any {
   if (scriptSize > sizeof(gSaveBlock1Ptr.ramScript.data.script))
           scriptSize = sizeof(gSaveBlock1Ptr.ramScript.data.script);
-      InitRamScript(script, scriptSize, MAP_GROUP(MAP_UNDEFINED), MAP_NUM(MAP_UNDEFINED), NO_OBJECT);
+      InitRamScript(script, scriptSize, MAP_GROUP(MAP_UNDEFINED), MAP_NUM(MAP_UNDEFINED), (LOCALID_PLAYER));
 }
 
 // ─── callsTo manifest (= 20 unique callees) ───────────────────────

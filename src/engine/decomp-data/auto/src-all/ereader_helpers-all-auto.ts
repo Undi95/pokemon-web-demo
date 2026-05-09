@@ -15,6 +15,20 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCounter1: any = null;
+let sCounter2: any = null;
+let sJoyNew: any = null;
+let sJoyNewOrRepeated: any = null;
+let sSavedIe: any = null;
+let sSavedIme: any = null;
+let sSavedRCnt: any = null;
+let sSavedSioCnt: any = null;
+let sSavedTm3Cnt: any = null;
+let sSendRecvMgr: any = null;
+let sSendRecvStatus: any = null;
+let sTrainerHillTrainerTemplates_JP: any = null;
 /** static u8 GetTrainerHillUnkVal(void) */
 export function GetTrainerHillUnkVal(): any {
   return (gSaveBlock1Ptr.trainerHill.unused + 1) % 256;

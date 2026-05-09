@@ -15,6 +15,17 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sDefaultBardSongLyrics: any = null;
+let sGiddyAdjectives: any = null;
+let sGiddyQuestions: any = null;
+let sNumStories: any = null;
+let sSelectedStory: any = null;
+let sStorytellerPtr: any = null;
+let sStorytellerStories: any = null;
+let sStorytellerWindowId: any = null;
+let sUnusedPitchTableIndex: any = null;
 /** static void SetupBard(void) */
 export function SetupBard(): any {
   let i: any = null;
@@ -454,11 +465,11 @@ export function BardSing(task: any, song: any): any {
               {
                    
                    
-                  song.volume = BARD_SONG_BASE_VOLUME + template.volume * 16;
+                  song.volume = (0x100) + template.volume * 16;
                   m4aMPlayVolumeControl(gMPlayInfo_SE2, TRACKS_ALL, song.volume);
 
                    
-                  song.pitch = BARD_SONG_BASE_PITCH + song.sounds[song.soundIndex].pitch;
+                  song.pitch = (0x200) + song.sounds[song.soundIndex].pitch;
                   m4aMPlayPitchControl(gMPlayInfo_SE2, TRACKS_ALL, song.pitch);
               }
               break;

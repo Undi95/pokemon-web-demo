@@ -42,7 +42,7 @@ export function ClearSav1(): any {
 export function SetSaveBlocksPointers(offset: any): any {
   let sav1_LocalVar: any =gSaveBlock1Ptr;
 
-      offset = (offset + Random()) & (SAVEBLOCK_MOVE_RANGE - 4);
+      offset = (offset + Random()) & ((128) - 4);
 
       gSaveBlock2Ptr = (gSaveblock2) + offset;
       sav1_LocalVar = (gSaveblock1) + offset;

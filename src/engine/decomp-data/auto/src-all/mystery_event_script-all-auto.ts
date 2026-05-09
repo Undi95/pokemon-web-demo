@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sMysteryEventScriptContext: any = null;
 /** static bool32 CheckCompatibility(u16 unk0, u32 unk1, u16 unk2, u32 version) */
 export function CheckCompatibility(unk0: any, unk1: any, unk2: any, version: any): any {
   if (!(unk0 & 0x1))
@@ -28,7 +31,7 @@ export function CheckCompatibility(unk0: any, unk1: any, unk2: any, version: any
       if (!(unk2 & 0x4))
           return FALSE;
 
-      if (!(version & VERSION_MASK))
+      if (!(version & ((1 << 9))))
           return FALSE;
 
       return TRUE;

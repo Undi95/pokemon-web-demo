@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sSaveSlotLayout: any = null;
 /** void ClearSaveData(void) */
 export function ClearSaveData(): any {
   let i: any = null;

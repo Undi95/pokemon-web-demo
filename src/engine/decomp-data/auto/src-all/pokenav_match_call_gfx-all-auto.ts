@@ -15,6 +15,22 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCallMsgBoxWindowTemplate: any = null;
+let sCallWindow_Pal: any = null;
+let sListWindow_Pal: any = null;
+let sMatchCallBgTemplates: any = null;
+let sMatchCallInfoBoxWindowTemplate: any = null;
+let sMatchCallLocationWindowTemplate: any = null;
+let sMatchCallLoopTaskFuncs: any = null;
+let sMatchCallOptionTexts: any = null;
+let sOptionsCursorSpritePalettes: any = null;
+let sOptionsCursorSpriteSheets: any = null;
+let sOptionsCursorSpriteTemplate: any = null;
+let sPokeball_Gfx: any = null;
+let sPokeball_Pal: any = null;
+let sText_CallingDots: any = null;
 /** bool32 OpenMatchCall(void) */
 export function OpenMatchCall(): any {
   let gfx: any = AllocSubstruct(POKENAV_SUBSTRUCT_MATCH_CALL_OPEN, 0);
@@ -907,9 +923,9 @@ export function AllocMatchCallSprites(): any {
        
       spriteSheet.data = gfx.trainerPicGfx;
       spriteSheet.size = sizeof(gfx.trainerPicGfx);
-      spriteSheet.tag = GFXTAG_TRAINER_PIC;
+      spriteSheet.tag = (8);
       gfx.trainerPicGfxPtr = OBJ_VRAM0 + LoadSpriteSheet(spriteSheet) * 0x20;
-      paletteNum = AllocSpritePalette(PALTAG_TRAINER_PIC);
+      paletteNum = AllocSpritePalette((13));
       gfx.trainerPicPalOffset = OBJ_PLTT_ID(paletteNum);
       gfx.trainerPicSprite = CreateTrainerPicSprite();
       gfx.trainerPicSprite.invisible = TRUE;
@@ -923,10 +939,10 @@ export function FreeMatchCallSprites(): any {
       if (gfx.trainerPicSprite)
           DestroySprite(gfx.trainerPicSprite);
 
-      FreeSpriteTilesByTag(GFXTAG_TRAINER_PIC);
-      FreeSpriteTilesByTag(GFXTAG_CURSOR);
-      FreeSpritePaletteByTag(PALTAG_CURSOR);
-      FreeSpritePaletteByTag(PALTAG_TRAINER_PIC);
+      FreeSpriteTilesByTag((8));
+      FreeSpriteTilesByTag((7));
+      FreeSpritePaletteByTag((12));
+      FreeSpritePaletteByTag((13));
 }
 
 /** static void CreateOptionsCursorSprite(struct Pokenav_MatchCallGfx *gfx, int top) */

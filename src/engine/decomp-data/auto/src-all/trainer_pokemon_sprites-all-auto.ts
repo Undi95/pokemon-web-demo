@@ -15,11 +15,18 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCreatingSpriteTemplate: any = null;
+let sDummyPicData: any = null;
+let sOamData_Affine: any = null;
+let sOamData_Normal: any = null;
+let sSpritePics: any = null;
 /** bool16 ResetAllPicSprites(void) */
 export function ResetAllPicSprites(): any {
   let i: any = null;
 
-      for (i = 0; i < PICS_COUNT; i ++)
+      for (i = 0; i < (8); i ++)
           sSpritePics[i] = sDummyPicData;
 
       return FALSE;
@@ -119,19 +126,19 @@ export function CreatePicSprite(species: any, otId: any, personality: any, isFro
       let j: any = null;
       let spriteId: any = null;
 
-      for (i = 0; i < PICS_COUNT; i ++)
+      for (i = 0; i < (8); i ++)
       {
           if (!sSpritePics[i].active)
               break;
       }
-      if (i == PICS_COUNT)
+      if (i == (8))
           return 0xFFFF;
 
-      framePics = Alloc(PIC_SPRITE_SIZE * MAX_PIC_FRAMES);
+      framePics = Alloc((max(MON_PIC_SIZE, TRAINER_PIC_SIZE)) * (max(MAX_MON_PIC_FRAMES, MAX_TRAINER_PIC_FRAMES)));
       if (!framePics)
           return 0xFFFF;
 
-      images = Alloc(0 * MAX_PIC_FRAMES);
+      images = Alloc(0 * (max(MAX_MON_PIC_FRAMES, MAX_TRAINER_PIC_FRAMES)));
       if (!images)
       {
           Free(framePics);
@@ -142,10 +149,10 @@ export function CreatePicSprite(species: any, otId: any, personality: any, isFro
            
           return 0xFFFF;
       }
-      for (j = 0; j < MAX_PIC_FRAMES; j ++)
+      for (j = 0; j < (max(MAX_MON_PIC_FRAMES, MAX_TRAINER_PIC_FRAMES)); j ++)
       {
-          images[j].data = framePics + PIC_SPRITE_SIZE * j;
-          images[j].size = PIC_SPRITE_SIZE;
+          images[j].data = framePics + (max(MON_PIC_SIZE, TRAINER_PIC_SIZE)) * j;
+          images[j].size = (max(MON_PIC_SIZE, TRAINER_PIC_SIZE));
       }
       sCreatingSpriteTemplate.tileTag = TAG_NONE;
       sCreatingSpriteTemplate.oam =sOamData_Normal;
@@ -179,12 +186,12 @@ export function CreateMonPicSprite_Affine(species: any, otId: any, personality: 
       let spriteId: any = null;
       let type: any = null;
 
-      for (i = 0; i < PICS_COUNT; i++)
+      for (i = 0; i < (8); i++)
       {
           if (!sSpritePics[i].active)
               break;
       }
-      if (i == PICS_COUNT)
+      if (i == (8))
           return 0xFFFF;
 
       framePics = Alloc(MON_PIC_SIZE * MAX_MON_PIC_FRAMES);
@@ -253,12 +260,12 @@ export function FreeAndDestroyPicSpriteInternal(spriteId: any): any {
       let framePics: any = null;
       let images: any = null;
 
-      for (i = 0; i < PICS_COUNT; i ++)
+      for (i = 0; i < (8); i ++)
       {
           if (sSpritePics[i].spriteId == spriteId)
               break;
       }
-      if (i == PICS_COUNT)
+      if (i == (8))
           return 0xFFFF;
 
       framePics = sSpritePics[i].frames;

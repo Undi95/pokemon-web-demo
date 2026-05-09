@@ -15,6 +15,46 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnims_Clouds: any = null;
+let sAnims_HouseSilhouette: any = null;
+let sAnims_Trees: any = null;
+let sCloudsBgSunset_Pal: any = null;
+let sCloudsBg_Gfx: any = null;
+let sCloudsBg_Pal: any = null;
+let sCloudsBg_Tilemap: any = null;
+let sCloudsSunset_Pal: any = null;
+let sClouds_Gfx: any = null;
+let sClouds_Pal: any = null;
+let sGrassNight_Pal: any = null;
+let sGrassSunset_Pal: any = null;
+let sGrass_Gfx: any = null;
+let sGrass_Pal: any = null;
+let sGrass_Tilemap: any = null;
+let sHouseSilhouette_Pal: any = null;
+let sHouses_Gfx: any = null;
+let sHouses_Pal: any = null;
+let sHouses_Tilemap: any = null;
+let sLeftSpriteId: any = null;
+let sPlayerSpriteId: any = null;
+let sSpriteMetadata_Clouds: any = null;
+let sSpriteMetadata_HouseSilhouette: any = null;
+let sSpriteMetadata_Trees: any = null;
+let sSpriteSheet_Clouds: any = null;
+let sSpriteSheet_HouseSilhouette: any = null;
+let sSpriteSheet_TreesSmall: any = null;
+let sSpriteTemplate_Brendan: any = null;
+let sSpriteTemplate_BrendanBicycle: any = null;
+let sSpriteTemplate_FlygonLatias: any = null;
+let sSpriteTemplate_May: any = null;
+let sSpriteTemplate_MayBicycle: any = null;
+let sSpriteTemplate_MovingScenery: any = null;
+let sTreesSmall_Pal: any = null;
+let sTreesSunset_Pal: any = null;
+let sTrees_Gfx: any = null;
+let sTrees_Pal: any = null;
+let sTrees_Tilemap: any = null;
 /** void LoadIntroPart2Graphics(u8 scenery) */
 export function LoadIntroPart2Graphics(scenery: any): any {
   LZ77UnCompVram(sGrass_Gfx, (BG_CHAR_ADDR(1)));

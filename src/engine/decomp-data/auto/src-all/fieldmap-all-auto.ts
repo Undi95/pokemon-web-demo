@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBackupMapData: any = null;
+let sDummyConnectionFlags: any = null;
+let sMapConnectionFlags: any = null;
 /** void InitMap(void) */
 export function InitMap(): any {
   InitMapLayoutData(gMapHeader);

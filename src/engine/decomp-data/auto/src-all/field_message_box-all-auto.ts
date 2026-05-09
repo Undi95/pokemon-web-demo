@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFieldMessageBoxMode: any = null;
 /** void InitFieldMessageBox(void) */
 export function InitFieldMessageBox(): any {
   sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;

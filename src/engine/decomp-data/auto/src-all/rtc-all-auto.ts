@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sErrorStatus: any = null;
+let sNumDaysInMonths: any = null;
+let sProbeResult: any = null;
+let sRtc: any = null;
+let sRtcDummy: any = null;
+let sSavedIme: any = null;
 /** void RtcDisableInterrupts(void) */
 export function RtcDisableInterrupts(): any {
   sSavedIme = REG_IME;

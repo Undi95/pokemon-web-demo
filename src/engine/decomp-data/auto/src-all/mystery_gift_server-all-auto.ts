@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFuncTable: any = null;
+let sServer: any = null;
 /** void MysterGiftServer_CreateForNews(void) */
 export function MysterGiftServer_CreateForNews(): any {
   sServer = AllocZeroed(0);

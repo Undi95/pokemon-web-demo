@@ -15,6 +15,33 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sActiveTime: any = null;
+let sAmplitude: any = null;
+let sAmplitudeChange: any = null;
+let sAmplitudeSpeed: any = null;
+let sAmplitudeX: any = null;
+let sAmplitudeY: any = null;
+let sAnimTaskAffineAnim: any = null;
+let sBattlerCoords: any = null;
+let sCastformBackSpriteYCoords: any = null;
+let sCastformElevations: any = null;
+let sCirclePos: any = null;
+let sCircleSpeed: any = null;
+let sDuration: any = null;
+let sMoveSteps: any = null;
+let sSpeedX: any = null;
+let sSpeedY: any = null;
+let sSpriteId: any = null;
+let sSpriteSheets_MoveEffectMons: any = null;
+let sSpriteTemplates_MoveEffectMons: any = null;
+let sStartX: any = null;
+let sStartY: any = null;
+let sStepsX: any = null;
+let sTargetX: any = null;
+let sTargetY: any = null;
+let sTaskId: any = null;
 /** u8 GetBattlerSpriteCoord(u8 battler, u8 coordType) */
 export function GetBattlerSpriteCoord(battler: any, coordType: any): any {
   let retVal: any = null;
@@ -704,7 +731,7 @@ export function GetBattleAnimBg1Data(out: any): any {
       {
           out.bgTiles = gBattleAnimBgTileBuffer;
           out.bgTilemap = gBattleAnimBgTilemapBuffer;
-          out.paletteId = BG_ANIM_PAL_CONTEST;
+          out.paletteId = (14);
           out.bgId = 1;
           out.tilesOffset = 0;
           out.unused = 0;
@@ -713,7 +740,7 @@ export function GetBattleAnimBg1Data(out: any): any {
       {
           out.bgTiles = gBattleAnimBgTileBuffer;
           out.bgTilemap = gBattleAnimBgTilemapBuffer;
-          out.paletteId = BG_ANIM_PAL_1;
+          out.paletteId = (8);
           out.bgId = 1;
           out.tilesOffset = 0x200;
           out.unused = 0;
@@ -726,7 +753,7 @@ export function GetBattleAnimBgData(out: any, bgId: any): any {
       {
           out.bgTiles = gBattleAnimBgTileBuffer;
           out.bgTilemap = gBattleAnimBgTilemapBuffer;
-          out.paletteId = BG_ANIM_PAL_CONTEST;
+          out.paletteId = (14);
           out.bgId = 1;
           out.tilesOffset = 0;
           out.unused = 0;
@@ -739,7 +766,7 @@ export function GetBattleAnimBgData(out: any, bgId: any): any {
       {
           out.bgTiles = gBattleAnimBgTileBuffer;
           out.bgTilemap = gBattleAnimBgTilemapBuffer;
-          out.paletteId = BG_ANIM_PAL_2;
+          out.paletteId = (9);
           out.bgId = 2;
           out.tilesOffset = 0x300;
           out.unused = 0;
@@ -752,21 +779,21 @@ export function GetBgDataForTransform(out: any, battler: any): any {
       out.bgTilemap = gBattleAnimBgTilemapBuffer;
       if (IsContest())
       {
-          out.paletteId = BG_ANIM_PAL_CONTEST;
+          out.paletteId = (14);
           out.bgId = 1;
           out.tilesOffset = 0;
           out.unused = 0;
       }
       else if (GetBattlerSpriteBGPriorityRank(gBattleAnimAttacker) == 1)
       {
-          out.paletteId = BG_ANIM_PAL_1;
+          out.paletteId = (8);
           out.bgId = 1;
           out.tilesOffset = 0x200;
           out.unused = 0;
       }
       else
       {
-          out.paletteId = BG_ANIM_PAL_2;
+          out.paletteId = (9);
           out.bgId = 2;
           out.tilesOffset = 0x300;
           out.unused = 0;
@@ -1217,14 +1244,14 @@ export function GetBattlePalettesMask(battleBackground: any, attacker: any, targ
       if (anim1)
       {
           if (!IsContest())
-              selectedPalettes |= 1 << BG_ANIM_PAL_1;
+              selectedPalettes |= 1 << (8);
           else
-              selectedPalettes |= 1 << BG_ANIM_PAL_CONTEST;
+              selectedPalettes |= 1 << (14);
       }
       if (anim2)
       {
           if (!IsContest())
-              selectedPalettes |= 1 << BG_ANIM_PAL_2;
+              selectedPalettes |= 1 << (9);
       }
       return selectedPalettes;
 }

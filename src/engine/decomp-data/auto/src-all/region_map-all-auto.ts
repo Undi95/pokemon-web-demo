@@ -15,6 +15,44 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sDrawFlyDestTextWindow: any = null;
+let sFlickerTimer: any = null;
+let sFlyDestIconSpriteTemplate: any = null;
+let sFlyMap: any = null;
+let sFlyMapBgTemplates: any = null;
+let sFlyMapWindowTemplates: any = null;
+let sFlyTargetIconsSpritePalette: any = null;
+let sFlyTargetIcons_Gfx: any = null;
+let sIconMapSec: any = null;
+let sMapHealLocations: any = null;
+let sMapSecAquaHideoutOld: any = null;
+let sMapSecIdsOffMap: any = null;
+let sMarineCaveLocationCoords: any = null;
+let sMultiNameFlyDestinations: any = null;
+let sRedOutlineFlyDestinations: any = null;
+let sRegionMap: any = null;
+let sRegionMapBg_GfxLZ: any = null;
+let sRegionMapBg_Pal: any = null;
+let sRegionMapBg_TilemapLZ: any = null;
+let sRegionMapCursorLargeGfxLZ: any = null;
+let sRegionMapCursorSmallGfxLZ: any = null;
+let sRegionMapCursorSpritePalette: any = null;
+let sRegionMapCursorSpriteTemplate: any = null;
+let sRegionMapFrameGfxLZ: any = null;
+let sRegionMapFramePal: any = null;
+let sRegionMapFrameTilemapLZ: any = null;
+let sRegionMapPlayerIconAnimTable: any = null;
+let sRegionMapPlayerIconOam: any = null;
+let sRegionMapPlayerIcon_BrendanGfx: any = null;
+let sRegionMapPlayerIcon_BrendanPal: any = null;
+let sRegionMapPlayerIcon_MayGfx: any = null;
+let sRegionMapPlayerIcon_MayPal: any = null;
+let sTimer: any = null;
+let sVisible: any = null;
+let sX: any = null;
+let sY: any = null;
 /** void InitRegionMap(struct RegionMap *regionMap, bool8 zoomed) */
 export function InitRegionMap(regionMap: any, zoomed: any): any {
   InitRegionMapData(regionMap, NULL, zoomed);
@@ -162,22 +200,22 @@ export function ProcessRegionMapInput_Full(): any {
       input = MAP_INPUT_NONE;
       sRegionMap.cursorDeltaX = 0;
       sRegionMap.cursorDeltaY = 0;
-      if (JOY_HELD(DPAD_UP) && sRegionMap.cursorPosY > MAPCURSOR_Y_MIN)
+      if (JOY_HELD(DPAD_UP) && sRegionMap.cursorPosY > (2))
       {
           sRegionMap.cursorDeltaY = -1;
           input = MAP_INPUT_MOVE_START;
       }
-      if (JOY_HELD(DPAD_DOWN) && sRegionMap.cursorPosY < MAPCURSOR_Y_MAX)
+      if (JOY_HELD(DPAD_DOWN) && sRegionMap.cursorPosY < ((MAPCURSOR_Y_MIN + (15) - 1)))
       {
           sRegionMap.cursorDeltaY = +1;
           input = MAP_INPUT_MOVE_START;
       }
-      if (JOY_HELD(DPAD_LEFT) && sRegionMap.cursorPosX > MAPCURSOR_X_MIN)
+      if (JOY_HELD(DPAD_LEFT) && sRegionMap.cursorPosX > (1))
       {
           sRegionMap.cursorDeltaX = -1;
           input = MAP_INPUT_MOVE_START;
       }
-      if (JOY_HELD(DPAD_RIGHT) && sRegionMap.cursorPosX < MAPCURSOR_X_MAX)
+      if (JOY_HELD(DPAD_RIGHT) && sRegionMap.cursorPosX < ((MAPCURSOR_X_MIN + (28) - 1)))
       {
           sRegionMap.cursorDeltaX = +1;
           input = MAP_INPUT_MOVE_START;
@@ -615,8 +653,8 @@ export function InitMapBasedOnPlayerLocation(): any {
           GetMarineCaveCoords(sRegionMap.cursorPosX,sRegionMap.cursorPosY);
           return;
       }
-      sRegionMap.cursorPosX = gRegionMapEntries[sRegionMap.mapSecId].x + x + MAPCURSOR_X_MIN;
-      sRegionMap.cursorPosY = gRegionMapEntries[sRegionMap.mapSecId].y + y + MAPCURSOR_Y_MIN;
+      sRegionMap.cursorPosX = gRegionMapEntries[sRegionMap.mapSecId].x + x + (1);
+      sRegionMap.cursorPosY = gRegionMapEntries[sRegionMap.mapSecId].y + y + (2);
 }
 
 /** static void RegionMap_InitializeStateBasedOnSSTidalLocation(void) */
@@ -667,8 +705,8 @@ export function RegionMap_InitializeStateBasedOnSSTidalLocation(): any {
           break;
       }
       sRegionMap.playerIsInCave = FALSE;
-      sRegionMap.cursorPosX = gRegionMapEntries[sRegionMap.mapSecId].x + x + MAPCURSOR_X_MIN;
-      sRegionMap.cursorPosY = gRegionMapEntries[sRegionMap.mapSecId].y + y + MAPCURSOR_Y_MIN;
+      sRegionMap.cursorPosX = gRegionMapEntries[sRegionMap.mapSecId].x + x + (1);
+      sRegionMap.cursorPosY = gRegionMapEntries[sRegionMap.mapSecId].y + y + (2);
 }
 
 /** static u8 GetMapsecType(mapsec_u16_t mapSecId) */
@@ -729,8 +767,8 @@ export function GetMarineCaveCoords(x: any, y: any): any {
       }
       idx -= MARINE_CAVE_LOCATIONS_START;
 
-      x = sMarineCaveLocationCoords[idx].x + MAPCURSOR_X_MIN;
-      y = sMarineCaveLocationCoords[idx].y + MAPCURSOR_Y_MIN;
+      x = sMarineCaveLocationCoords[idx].x + (1);
+      y = sMarineCaveLocationCoords[idx].y + (2);
 }
 
 /** static bool32 IsPlayerInAquaHideout(mapsec_u8_t mapSecId) */
@@ -769,12 +807,12 @@ export function GetPositionOfCursorWithinMapSec(): any {
       posWithinMapSec = 0;
       while (1)
       {
-          if (x <= MAPCURSOR_X_MIN)
+          if (x <= (1))
           {
               if (RegionMap_IsMapSecIdInNextRow(y))
               {
                   y--;
-                  x = MAPCURSOR_X_MAX + 1;
+                  x = ((MAPCURSOR_X_MIN + (28) - 1)) + 1;
               }
               else
               {
@@ -801,7 +839,7 @@ export function RegionMap_IsMapSecIdInNextRow(y: any): any {
       {
           return FALSE;
       }
-      for (x = MAPCURSOR_X_MIN; x <= MAPCURSOR_X_MAX; x++)
+      for (x = (1); x <= ((MAPCURSOR_X_MIN + (28) - 1)); x++)
       {
           if (GetMapSecIdAt(x, y) == sRegionMap.mapSecId)
           {
@@ -1221,8 +1259,8 @@ export function CreateFlyDestIcons(): any {
       for (mapSecId = MAPSEC_LITTLEROOT_TOWN; mapSecId <= MAPSEC_EVER_GRANDE_CITY; mapSecId++)
       {
           GetMapSecDimensions(mapSecId,x,y,width,height);
-          x = (x + MAPCURSOR_X_MIN) * 8 + 4;
-          y = (y + MAPCURSOR_Y_MIN) * 8 + 4;
+          x = (x + (1)) * 8 + 4;
+          y = (y + (2)) * 8 + 4;
 
           if (width == 2)
               shape = SPRITE_SHAPE(_16x8);
@@ -1264,14 +1302,14 @@ export function TryCreateRedOutlineFlyDestIcons(): any {
           {
               mapSecId = sRedOutlineFlyDestinations[i][1];
               GetMapSecDimensions(mapSecId,x,y,width,height);
-              x = (x + MAPCURSOR_X_MIN) * 8;
-              y = (y + MAPCURSOR_Y_MIN) * 8;
+              x = (x + (1)) * 8;
+              y = (y + (2)) * 8;
               spriteId = CreateSprite(sFlyDestIconSpriteTemplate, x, y, 10);
               if (spriteId != MAX_SPRITES)
               {
                   gSprites[spriteId].oam.size = SPRITE_SIZE(_16x16);
                   gSprites[spriteId].callback = SpriteCB_FlyDestIcon;
-                  StartSpriteAnim(gSprites[spriteId], FLYDESTICON_RED_OUTLINE);
+                  StartSpriteAnim(gSprites[spriteId], (6));
                   gSprites[spriteId].sIconMapSec = mapSecId;
               }
           }

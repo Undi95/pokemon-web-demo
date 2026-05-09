@@ -15,6 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sArrowPressed: any = null;
+let sOptionMenuBgTemplates: any = null;
+let sOptionMenuBg_Pal: any = null;
+let sOptionMenuText_Pal: any = null;
+let sOptionMenuWinTemplates: any = null;
 /** static void MainCB2(void) */
 export function MainCB2(): any {
   RunTasks();
@@ -297,7 +304,7 @@ export function TextSpeed_DrawChoices(selection: any): any {
       styles[2] = 0;
       styles[selection] = 1;
 
-      DrawOptionMenuChoice(gText_TextSpeedSlow, 104, YPOS_TEXTSPEED, styles[0]);
+      DrawOptionMenuChoice(gText_TextSpeedSlow, 104, ((MENUITEM_TEXTSPEED * 16)), styles[0]);
 
       widthSlow = GetStringWidth(FONT_NORMAL, gText_TextSpeedSlow, 0);
       widthMid = GetStringWidth(FONT_NORMAL, gText_TextSpeedMid, 0);
@@ -305,9 +312,9 @@ export function TextSpeed_DrawChoices(selection: any): any {
 
       widthMid -= 94;
       xMid = (widthSlow - widthMid - widthFast) / 2 + 104;
-      DrawOptionMenuChoice(gText_TextSpeedMid, xMid, YPOS_TEXTSPEED, styles[1]);
+      DrawOptionMenuChoice(gText_TextSpeedMid, xMid, ((MENUITEM_TEXTSPEED * 16)), styles[1]);
 
-      DrawOptionMenuChoice(gText_TextSpeedFast, GetStringRightAlignXOffset(FONT_NORMAL, gText_TextSpeedFast, 198), YPOS_TEXTSPEED, styles[2]);
+      DrawOptionMenuChoice(gText_TextSpeedFast, GetStringRightAlignXOffset(FONT_NORMAL, gText_TextSpeedFast, 198), ((MENUITEM_TEXTSPEED * 16)), styles[2]);
 }
 
 /** static u8 BattleScene_ProcessInput(u8 selection) */
@@ -329,8 +336,8 @@ export function BattleScene_DrawChoices(selection: any): any {
       styles[1] = 0;
       styles[selection] = 1;
 
-      DrawOptionMenuChoice(gText_BattleSceneOn, 104, YPOS_BATTLESCENE, styles[0]);
-      DrawOptionMenuChoice(gText_BattleSceneOff, GetStringRightAlignXOffset(FONT_NORMAL, gText_BattleSceneOff, 198), YPOS_BATTLESCENE, styles[1]);
+      DrawOptionMenuChoice(gText_BattleSceneOn, 104, ((MENUITEM_BATTLESCENE * 16)), styles[0]);
+      DrawOptionMenuChoice(gText_BattleSceneOff, GetStringRightAlignXOffset(FONT_NORMAL, gText_BattleSceneOff, 198), ((MENUITEM_BATTLESCENE * 16)), styles[1]);
 }
 
 /** static u8 BattleStyle_ProcessInput(u8 selection) */
@@ -352,8 +359,8 @@ export function BattleStyle_DrawChoices(selection: any): any {
       styles[1] = 0;
       styles[selection] = 1;
 
-      DrawOptionMenuChoice(gText_BattleStyleShift, 104, YPOS_BATTLESTYLE, styles[0]);
-      DrawOptionMenuChoice(gText_BattleStyleSet, GetStringRightAlignXOffset(FONT_NORMAL, gText_BattleStyleSet, 198), YPOS_BATTLESTYLE, styles[1]);
+      DrawOptionMenuChoice(gText_BattleStyleShift, 104, ((MENUITEM_BATTLESTYLE * 16)), styles[0]);
+      DrawOptionMenuChoice(gText_BattleStyleSet, GetStringRightAlignXOffset(FONT_NORMAL, gText_BattleStyleSet, 198), ((MENUITEM_BATTLESTYLE * 16)), styles[1]);
 }
 
 /** static u8 Sound_ProcessInput(u8 selection) */
@@ -376,8 +383,8 @@ export function Sound_DrawChoices(selection: any): any {
       styles[1] = 0;
       styles[selection] = 1;
 
-      DrawOptionMenuChoice(gText_SoundMono, 104, YPOS_SOUND, styles[0]);
-      DrawOptionMenuChoice(gText_SoundStereo, GetStringRightAlignXOffset(FONT_NORMAL, gText_SoundStereo, 198), YPOS_SOUND, styles[1]);
+      DrawOptionMenuChoice(gText_SoundMono, 104, ((MENUITEM_SOUND * 16)), styles[0]);
+      DrawOptionMenuChoice(gText_SoundStereo, GetStringRightAlignXOffset(FONT_NORMAL, gText_SoundStereo, 198), ((MENUITEM_SOUND * 16)), styles[1]);
 }
 
 /** static u8 FrameType_ProcessInput(u8 selection) */
@@ -437,8 +444,8 @@ export function FrameType_DrawChoices(selection: any): any {
 
        
       width = GetStringWidth(1, gText_FrameType, 0);
-      DrawOptionMenuChoice(gText_FrameType, 104, YPOS_FRAMETYPE, 0);
-      DrawOptionMenuChoice(text, width + 107, YPOS_FRAMETYPE, 1);
+      DrawOptionMenuChoice(gText_FrameType, 104, ((MENUITEM_FRAMETYPE * 16)), 0);
+      DrawOptionMenuChoice(text, width + 107, ((MENUITEM_FRAMETYPE * 16)), 1);
 }
 
 /** static u8 ButtonMode_ProcessInput(u8 selection) */
@@ -474,7 +481,7 @@ export function ButtonMode_DrawChoices(selection: any): any {
       styles[2] = 0;
       styles[selection] = 1;
 
-      DrawOptionMenuChoice(gText_ButtonTypeNormal, 104, YPOS_BUTTONMODE, styles[0]);
+      DrawOptionMenuChoice(gText_ButtonTypeNormal, 104, ((MENUITEM_BUTTONMODE * 16)), styles[0]);
 
       widthNormal = GetStringWidth(FONT_NORMAL, gText_ButtonTypeNormal, 0);
       widthLR = GetStringWidth(FONT_NORMAL, gText_ButtonTypeLR, 0);
@@ -482,9 +489,9 @@ export function ButtonMode_DrawChoices(selection: any): any {
 
       widthLR -= 94;
       xLR = (widthNormal - widthLR - widthLA) / 2 + 104;
-      DrawOptionMenuChoice(gText_ButtonTypeLR, xLR, YPOS_BUTTONMODE, styles[1]);
+      DrawOptionMenuChoice(gText_ButtonTypeLR, xLR, ((MENUITEM_BUTTONMODE * 16)), styles[1]);
 
-      DrawOptionMenuChoice(gText_ButtonTypeLEqualsA, GetStringRightAlignXOffset(FONT_NORMAL, gText_ButtonTypeLEqualsA, 198), YPOS_BUTTONMODE, styles[2]);
+      DrawOptionMenuChoice(gText_ButtonTypeLEqualsA, GetStringRightAlignXOffset(FONT_NORMAL, gText_ButtonTypeLEqualsA, 198), ((MENUITEM_BUTTONMODE * 16)), styles[2]);
 }
 
 /** ⚠️ MANUAL FIX post-transpile : delegate à option-menu-impl.ts. */
@@ -499,24 +506,24 @@ export function DrawOptionMenuTexts(): any {
 
 /** static void DrawBgWindowFrames(void) */
 export function DrawBgWindowFrames(): any {
-  FillBgTilemapBufferRect(1, TILE_TOP_CORNER_L,  1,  0,  1,  1,  7);
-      FillBgTilemapBufferRect(1, TILE_TOP_EDGE,      2,  0, 27,  1,  7);
-      FillBgTilemapBufferRect(1, TILE_TOP_CORNER_R, 28,  0,  1,  1,  7);
-      FillBgTilemapBufferRect(1, TILE_LEFT_EDGE,     1,  1,  1,  2,  7);
-      FillBgTilemapBufferRect(1, TILE_RIGHT_EDGE,   28,  1,  1,  2,  7);
-      FillBgTilemapBufferRect(1, TILE_BOT_CORNER_L,  1,  3,  1,  1,  7);
-      FillBgTilemapBufferRect(1, TILE_BOT_EDGE,      2,  3, 27,  1,  7);
-      FillBgTilemapBufferRect(1, TILE_BOT_CORNER_R, 28,  3,  1,  1,  7);
+  FillBgTilemapBufferRect(1, (0x1A2),  1,  0,  1,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1A3),      2,  0, 27,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1A4), 28,  0,  1,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1A5),     1,  1,  1,  2,  7);
+      FillBgTilemapBufferRect(1, (0x1A7),   28,  1,  1,  2,  7);
+      FillBgTilemapBufferRect(1, (0x1A8),  1,  3,  1,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1A9),      2,  3, 27,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1AA), 28,  3,  1,  1,  7);
 
        
-      FillBgTilemapBufferRect(1, TILE_TOP_CORNER_L,  1,  4,  1,  1,  7);
-      FillBgTilemapBufferRect(1, TILE_TOP_EDGE,      2,  4, 26,  1,  7);
-      FillBgTilemapBufferRect(1, TILE_TOP_CORNER_R, 28,  4,  1,  1,  7);
-      FillBgTilemapBufferRect(1, TILE_LEFT_EDGE,     1,  5,  1, 18,  7);
-      FillBgTilemapBufferRect(1, TILE_RIGHT_EDGE,   28,  5,  1, 18,  7);
-      FillBgTilemapBufferRect(1, TILE_BOT_CORNER_L,  1, 19,  1,  1,  7);
-      FillBgTilemapBufferRect(1, TILE_BOT_EDGE,      2, 19, 26,  1,  7);
-      FillBgTilemapBufferRect(1, TILE_BOT_CORNER_R, 28, 19,  1,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1A2),  1,  4,  1,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1A3),      2,  4, 26,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1A4), 28,  4,  1,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1A5),     1,  5,  1, 18,  7);
+      FillBgTilemapBufferRect(1, (0x1A7),   28,  5,  1, 18,  7);
+      FillBgTilemapBufferRect(1, (0x1A8),  1, 19,  1,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1A9),      2, 19, 26,  1,  7);
+      FillBgTilemapBufferRect(1, (0x1AA), 28, 19,  1,  1,  7);
 
       CopyBgTilemapBufferToVram(1);
 }

@@ -15,6 +15,94 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAffineAnims_ReleaseMon: any = null;
+let sAnims_ChooseBoxMenu: any = null;
+let sAutoActionOn: any = null;
+let sBgTemplates: any = null;
+let sBoxTitleColors: any = null;
+let sChooseBoxMenu: any = null;
+let sChooseBoxMenuCenter_Gfx: any = null;
+let sChooseBoxMenuSides_Gfx: any = null;
+let sChooseBoxMenu_Pal: any = null;
+let sChooseBoxMenu_TextColors: any = null;
+let sCloseBoxButton_Tilemap: any = null;
+let sCurrentBoxOption: any = null;
+let sCursorArea: any = null;
+let sCursorPos: any = null;
+let sCursorPosition: any = null;
+let sDelay: any = null;
+let sDepositBoxId: any = null;
+let sDisplayMenu_Tilemap: any = null;
+let sDistance: any = null;
+let sHandCursorShadow_Gfx: any = null;
+let sHandCursor_Gfx: any = null;
+let sHandCursor_Pal: any = null;
+let sInPartyMenu: any = null;
+let sIncomingDelay: any = null;
+let sIncomingX: any = null;
+let sInterface_Pal: any = null;
+let sIsMonBeingMoved: any = null;
+let sItemIconGfxBuffer: any = null;
+let sItemIconId: any = null;
+let sItemInfoFrame_Gfx: any = null;
+let sLastUsedBox: any = null;
+let sMainMenuTexts: any = null;
+let sMenuTexts: any = null;
+let sMessages: any = null;
+let sMonX: any = null;
+let sMonY: any = null;
+let sMoveSteps: any = null;
+let sMovingItemId: any = null;
+let sMovingMonOrigBoxId: any = null;
+let sMovingMonOrigBoxPos: any = null;
+let sMultiMove: any = null;
+let sNumTilemapUtilIds: any = null;
+let sOutgoingDelay: any = null;
+let sOutgoingX: any = null;
+let sPartyId: any = null;
+let sPartySlotEmpty_Tilemap: any = null;
+let sPartySlotFilled_Tilemap: any = null;
+let sPkmnDataGray_Pal: any = null;
+let sPkmnData_Tilemap: any = null;
+let sPreviousBoxOption: any = null;
+let sRestrictedReleaseMoves: any = null;
+let sSavedCursorPosition: any = null;
+let sSavedMovingMon: any = null;
+let sScrollInDestX: any = null;
+let sScrollOutX: any = null;
+let sScrollingBgMoveItems_Pal: any = null;
+let sScrollingBg_Gfx: any = null;
+let sScrollingBg_Pal: any = null;
+let sScrollingBg_Tilemap: any = null;
+let sSpeed: any = null;
+let sSpeedX: any = null;
+let sSpeedY: any = null;
+let sSpriteSheet_Arrow: any = null;
+let sSpriteSheet_Waveform: any = null;
+let sSpriteTemplate_Arrow: any = null;
+let sSpriteTemplate_BoxTitle: any = null;
+let sSpriteTemplate_DisplayMon: any = null;
+let sSpriteTemplate_ItemIcon: any = null;
+let sSpriteTemplate_Waveform: any = null;
+let sState: any = null;
+let sStorage: any = null;
+let sTextWindows_Pal: any = null;
+let sText_OutOf30: any = null;
+let sTilemapDimensions: any = null;
+let sTilemapUtil: any = null;
+let sTimer: any = null;
+let sUnkUtil: any = null;
+let sWaldaWallpaperIcons: any = null;
+let sWaldaWallpapers: any = null;
+let sWallpapers: any = null;
+let sWaveformSpritePalette: any = null;
+let sWhichToReshow: any = null;
+let sWindowTemplate_MainMenu: any = null;
+let sWindowTemplate_MultiMove: any = null;
+let sWindowTemplates: any = null;
+let sYesNoWindowTemplate: any = null;
 /** void DrawTextWindowAndBufferTiles(const u8 *string, void *dst, u8 zero1, u8 zero2, s32 bytesToBuffer) */
 export function DrawTextWindowAndBufferTiles(string: any, dst: any, zero1: any, zero2: any, bytesToBuffer: any): any {
   let i, tileBytesToBuffer, remainingBytes;
@@ -364,7 +452,7 @@ export function HandleChooseBoxMenuInput(): any {
   if (JOY_NEW(B_BUTTON))
       {
           PlaySE(SE_SELECT);
-          return BOXID_CANCELED;
+          return (201);
       }
       if (JOY_NEW(A_BUTTON))
       {
@@ -381,7 +469,7 @@ export function HandleChooseBoxMenuInput(): any {
           PlaySE(SE_SELECT);
           ChooseBoxMenu_MoveRight();
       }
-      return BOXID_NONE_CHOSEN;
+      return (200);
 }
 
 /** static void ChooseBoxMenu_CreateSprites(u8 curBox) */
@@ -1389,9 +1477,9 @@ export function Task_DepositMenu(taskId: any): any {
           boxId = HandleChooseBoxMenuInput();
           switch (boxId)
           {
-          case BOXID_NONE_CHOSEN:
+          case (200):
               break;
-          case BOXID_CANCELED:
+          case (201):
               ClearBottomWindow();
               DestroyChooseBoxMenuSprites();
               FreeChooseBoxMenu();
@@ -1972,7 +2060,7 @@ export function Task_HandleWallpapers(taskId: any): any {
           case MENU_ETCETERA:
               PlaySE(SE_SELECT);
               RemoveMenu();
-              sStorage.wallpaperSetId -= MENU_WALLPAPER_SETS_START;
+              sStorage.wallpaperSetId -= (MENU_SCENERY_1);
               sStorage.state++;
               break;
           case MENU_FRIENDS:
@@ -2006,7 +2094,7 @@ export function Task_HandleWallpapers(taskId: any): any {
           default:
               PlaySE(SE_SELECT);
               ClearBottomWindow();
-              sStorage.wallpaperId -= MENU_WALLPAPERS_START;
+              sStorage.wallpaperId -= (MENU_FOREST);
               SetWallpaperForCurrentBox(sStorage.wallpaperId);
               sStorage.state++;
               break;
@@ -2043,13 +2131,13 @@ export function Task_JumpBox(taskId: any): any {
           sStorage.newCurrBoxId = HandleChooseBoxMenuInput();
           switch (sStorage.newCurrBoxId)
           {
-          case BOXID_NONE_CHOSEN:
+          case (200):
               break;
           default:
               ClearBottomWindow();
               DestroyChooseBoxMenuSprites();
               FreeChooseBoxMenu();
-              if (sStorage.newCurrBoxId == BOXID_CANCELED || sStorage.newCurrBoxId == StorageGetCurrentBox())
+              if (sStorage.newCurrBoxId == (201) || sStorage.newCurrBoxId == StorageGetCurrentBox())
               {
                   AnimateBoxScrollArrows(TRUE);
                   SetPokeStorageTask(Task_PokeStorageMain);
@@ -2858,25 +2946,25 @@ export function AddWallpapersMenu(wallpaperSet: any): any {
   InitMenu();
       switch (wallpaperSet)
       {
-      case MENU_SCENERY_1 - MENU_WALLPAPER_SETS_START:
+      case MENU_SCENERY_1 - (MENU_SCENERY_1):
           SetMenuText(MENU_FOREST);
           SetMenuText(MENU_CITY);
           SetMenuText(MENU_DESERT);
           SetMenuText(MENU_SAVANNA);
           break;
-      case MENU_SCENERY_2 - MENU_WALLPAPER_SETS_START:
+      case MENU_SCENERY_2 - (MENU_SCENERY_1):
           SetMenuText(MENU_CRAG);
           SetMenuText(MENU_VOLCANO);
           SetMenuText(MENU_SNOW);
           SetMenuText(MENU_CAVE);
           break;
-      case MENU_SCENERY_3 - MENU_WALLPAPER_SETS_START:
+      case MENU_SCENERY_3 - (MENU_SCENERY_1):
           SetMenuText(MENU_BEACH);
           SetMenuText(MENU_SEAFLOOR);
           SetMenuText(MENU_RIVER);
           SetMenuText(MENU_SKY);
           break;
-      case MENU_ETCETERA - MENU_WALLPAPER_SETS_START:
+      case MENU_ETCETERA - (MENU_SCENERY_1):
           SetMenuText(MENU_POLKADOT);
           SetMenuText(MENU_POKECENTER);
           SetMenuText(MENU_MACHINE);
@@ -2913,9 +3001,9 @@ export function InitMonIconFields(): any {
   let i: any = null;
 
       LoadMonIconPalettes();
-      for (i = 0; i < MAX_MON_ICONS; i++)
+      for (i = 0; i < (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)); i++)
           sStorage.numIconsPerSpecies[i] = 0;
-      for (i = 0; i < MAX_MON_ICONS; i++)
+      for (i = 0; i < (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)); i++)
           sStorage.iconSpeciesList[i] = SPECIES_NONE;
       for (i = 0; i < PARTY_SIZE; i++)
           sStorage.partySprites[i] = NULL;
@@ -3570,24 +3658,24 @@ export function TryLoadMonIconTiles(species: any): any {
   let i, offset;
 
        
-      for (i = 0; i < MAX_MON_ICONS; i++)
+      for (i = 0; i < (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)); i++)
       {
           if (sStorage.iconSpeciesList[i] == species)
               break;
       }
 
-      if (i == MAX_MON_ICONS)
+      if (i == (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)))
       {
            
            
-          for (i = 0; i < MAX_MON_ICONS; i++)
+          for (i = 0; i < (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)); i++)
           {
               if (sStorage.iconSpeciesList[i] == 0)
                   break;
           }
 
            
-          if (i == MAX_MON_ICONS)
+          if (i == (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)))
               return 0xFFFF;
       }
 
@@ -3604,7 +3692,7 @@ export function TryLoadMonIconTiles(species: any): any {
 export function RemoveSpeciesFromIconList(species: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_MON_ICONS; i++)
+      for (i = 0; i < (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)); i++)
       {
           if (sStorage.iconSpeciesList[i] == species)
           {
@@ -6817,7 +6905,7 @@ export function CreateItemIconSprites(): any {
           spriteSheet.size = 0x200;
           spriteTemplate = sSpriteTemplate_ItemIcon;
 
-          for (i = 0; i < MAX_ITEM_ICONS; i++)
+          for (i = 0; i < (3); i++)
           {
               spriteSheet.tag = GFXTAG_ITEM_ICON_0 + i;
               LoadCompressedSpriteSheet(spriteSheet);
@@ -6899,7 +6987,7 @@ export function TakeItemFromMon(cursorArea: any, cursorPos: any): any {
       itemId = ITEM_NONE;
       SetItemIconAffineAnim(id, ITEM_ANIM_PICK_UP);
       SetItemIconCallback(id, ITEM_CB_TO_HAND, cursorArea, cursorPos);
-      SetItemIconPosition(id, CURSOR_AREA_IN_HAND, 0);
+      SetItemIconPosition(id, (CURSOR_AREA_BOX_TITLE), 0);
       if (cursorArea == CURSOR_AREA_IN_BOX)
       {
           SetCurrentBoxMonData(cursorPos, MON_DATA_HELD_ITEM,itemId);
@@ -6922,7 +7010,7 @@ export function InitItemIconInCursor(itemId: any): any {
       LoadItemIconGfx(id, tiles, pal);
       SetItemIconAffineAnim(id, ITEM_ANIM_LARGE);
       SetItemIconCallback(id, ITEM_CB_TO_HAND, CURSOR_AREA_IN_BOX, 0);
-      SetItemIconPosition(id, CURSOR_AREA_IN_HAND, 0);
+      SetItemIconPosition(id, (CURSOR_AREA_BOX_TITLE), 0);
       SetItemIconActive(id, TRUE);
       sStorage.movingItemId = itemId;
 }
@@ -6937,7 +7025,7 @@ export function SwapItemsWithMon(cursorArea: any, cursorPos: any): any {
 
       id = GetItemIconIdxByPosition(cursorArea, cursorPos);
       SetItemIconAffineAnim(id, ITEM_ANIM_PICK_UP);
-      SetItemIconCallback(id, ITEM_CB_SWAP_TO_HAND, CURSOR_AREA_IN_HAND, 0);
+      SetItemIconCallback(id, ITEM_CB_SWAP_TO_HAND, (CURSOR_AREA_BOX_TITLE), 0);
       if (cursorArea == CURSOR_AREA_IN_BOX)
       {
           itemId = GetCurrentBoxMonData(cursorPos, MON_DATA_HELD_ITEM);
@@ -6951,7 +7039,7 @@ export function SwapItemsWithMon(cursorArea: any, cursorPos: any): any {
           sStorage.movingItemId = itemId;
       }
 
-      id = GetItemIconIdxByPosition(CURSOR_AREA_IN_HAND, 0);
+      id = GetItemIconIdxByPosition((CURSOR_AREA_BOX_TITLE), 0);
       SetItemIconAffineAnim(id, ITEM_ANIM_PUT_DOWN);
       SetItemIconCallback(id, ITEM_CB_SWAP_TO_MON, cursorArea, cursorPos);
 }
@@ -6963,7 +7051,7 @@ export function GiveItemToMon(cursorArea: any, cursorPos: any): any {
       if (sStorage.boxOption != OPTION_MOVE_ITEMS)
           return;
 
-      id = GetItemIconIdxByPosition(CURSOR_AREA_IN_HAND, 0);
+      id = GetItemIconIdxByPosition((CURSOR_AREA_BOX_TITLE), 0);
       SetItemIconAffineAnim(id, ITEM_ANIM_PUT_DOWN);
       SetItemIconCallback(id, ITEM_CB_TO_MON, cursorArea, cursorPos);
       if (cursorArea == CURSOR_AREA_IN_BOX)
@@ -7006,9 +7094,9 @@ export function MoveItemFromMonToBag(cursorArea: any, cursorPos: any): any {
 export function MoveItemFromCursorToBag(): any {
   if (sStorage.boxOption == OPTION_MOVE_ITEMS)
       {
-          let id: any = GetItemIconIdxByPosition(CURSOR_AREA_IN_HAND, 0);
+          let id: any = GetItemIconIdxByPosition((CURSOR_AREA_BOX_TITLE), 0);
           SetItemIconAffineAnim(id, ITEM_ANIM_PUT_AWAY);
-          SetItemIconCallback(id, ITEM_CB_WAIT_ANIM, CURSOR_AREA_IN_HAND, 0);
+          SetItemIconCallback(id, ITEM_CB_WAIT_ANIM, (CURSOR_AREA_BOX_TITLE), 0);
       }
 }
 
@@ -7019,11 +7107,11 @@ export function MoveHeldItemWithPartyMenu(): any {
       if (sStorage.boxOption != OPTION_MOVE_ITEMS)
           return;
 
-      for (i = 0; i < MAX_ITEM_ICONS; i++)
+      for (i = 0; i < (3); i++)
       {
           if (sStorage.itemIcons[i].active
            && sStorage.itemIcons[i].area == CURSOR_AREA_IN_PARTY)
-              SetItemIconCallback(i, ITEM_CB_HIDE_PARTY, CURSOR_AREA_IN_HAND, 0);
+              SetItemIconCallback(i, ITEM_CB_HIDE_PARTY, (CURSOR_AREA_BOX_TITLE), 0);
       }
 }
 
@@ -7031,7 +7119,7 @@ export function MoveHeldItemWithPartyMenu(): any {
 export function IsItemIconAnimActive(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_ITEM_ICONS; i++)
+      for (i = 0; i < (3); i++)
       {
           if (sStorage.itemIcons[i].active)
           {
@@ -7052,10 +7140,10 @@ export function IsMovingItem(): any {
 
       if (sStorage.boxOption == OPTION_MOVE_ITEMS)
       {
-          for (i = 0; i < MAX_ITEM_ICONS; i++)
+          for (i = 0; i < (3); i++)
           {
               if (sStorage.itemIcons[i].active
-               && sStorage.itemIcons[i].area == CURSOR_AREA_IN_HAND)
+               && sStorage.itemIcons[i].area == (CURSOR_AREA_BOX_TITLE))
                   return TRUE;
           }
       }
@@ -7071,7 +7159,7 @@ export function GetMovingItemId(): any {
 export function GetNewItemIconIdx(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_ITEM_ICONS; i++)
+      for (i = 0; i < (3); i++)
       {
           if (!sStorage.itemIcons[i].active)
           {
@@ -7079,14 +7167,14 @@ export function GetNewItemIconIdx(): any {
               return i;
           }
       }
-      return MAX_ITEM_ICONS;
+      return (3);
 }
 
 /** static bool32 IsItemIconAtPosition(u8 cursorArea, u8 cursorPos) */
 export function IsItemIconAtPosition(cursorArea: any, cursorPos: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_ITEM_ICONS; i++)
+      for (i = 0; i < (3); i++)
       {
           if (sStorage.itemIcons[i].active
            && sStorage.itemIcons[i].area == cursorArea
@@ -7100,34 +7188,34 @@ export function IsItemIconAtPosition(cursorArea: any, cursorPos: any): any {
 export function GetItemIconIdxByPosition(cursorArea: any, cursorPos: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_ITEM_ICONS; i++)
+      for (i = 0; i < (3); i++)
       {
           if (sStorage.itemIcons[i].active
            && sStorage.itemIcons[i].area == cursorArea
            && sStorage.itemIcons[i].pos == cursorPos)
               return i;
       }
-      return MAX_ITEM_ICONS;
+      return (3);
 }
 
 /** static u8 GetItemIconIdxBySprite(struct Sprite *sprite) */
 export function GetItemIconIdxBySprite(sprite: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_ITEM_ICONS; i++)
+      for (i = 0; i < (3); i++)
       {
           if (sStorage.itemIcons[i].active
            && sStorage.itemIcons[i].sprite == sprite)
               return i;
       }
-      return MAX_ITEM_ICONS;
+      return (3);
 }
 
 /** static void SetItemIconPosition(u8 id, u8 cursorArea, u8 cursorPos) */
 export function SetItemIconPosition(id: any, cursorArea: any, cursorPos: any): any {
   let x, y;
 
-      if (id >= MAX_ITEM_ICONS)
+      if (id >= (3))
           return;
 
       switch (cursorArea)
@@ -7162,7 +7250,7 @@ export function SetItemIconPosition(id: any, cursorArea: any, cursorPos: any): a
 export function LoadItemIconGfx(id: any, itemTiles: any, itemPal: any): any {
   let i: any = null;
 
-      if (id >= MAX_ITEM_ICONS)
+      if (id >= (3))
           return;
 
       CpuFastFill(0, sStorage.itemIconBuffer, 0x200);
@@ -7177,7 +7265,7 @@ export function LoadItemIconGfx(id: any, itemTiles: any, itemPal: any): any {
 
 /** static void SetItemIconAffineAnim(u8 id, u8 animNum) */
 export function SetItemIconAffineAnim(id: any, animNum: any): any {
-  if (id >= MAX_ITEM_ICONS)
+  if (id >= (3))
           return;
 
       StartSpriteAffineAnim(sStorage.itemIcons[id].sprite, animNum);
@@ -7185,7 +7273,7 @@ export function SetItemIconAffineAnim(id: any, animNum: any): any {
 
 /** static void SetItemIconCallback(u8 id, u8 callbackId, u8 cursorArea, u8 cursorPos) */
 export function SetItemIconCallback(id: any, callbackId: any, cursorArea: any, cursorPos: any): any {
-  if (id >= MAX_ITEM_ICONS)
+  if (id >= (3))
           return;
 
       switch (callbackId)
@@ -7227,7 +7315,7 @@ export function SetItemIconCallback(id: any, callbackId: any, cursorArea: any, c
 
 /** static void SetItemIconActive(u8 id, bool8 active) */
 export function SetItemIconActive(id: any, active: any): any {
-  if (id >= MAX_ITEM_ICONS)
+  if (id >= (3))
           return;
 
       sStorage.itemIcons[id].active = active;

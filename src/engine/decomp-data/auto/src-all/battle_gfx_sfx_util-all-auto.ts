@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sSpeedX: any = null;
+let sSpritePalettes_HealthBoxHealthBar: any = null;
+let sSpriteSheet_SafariHealthbox: any = null;
+let sSpriteSheet_SinglesOpponentHealthbox: any = null;
+let sSpriteSheet_SinglesPlayerHealthbox: any = null;
+let sSpriteSheets_DoublesOpponentHealthbox: any = null;
+let sSpriteSheets_DoublesPlayerHealthbox: any = null;
+let sSpriteSheets_HealthBar: any = null;
 /** void AllocateBattleSpritesData(void) */
 export function AllocateBattleSpritesData(): any {
   gBattleSpritesDataPtr = AllocZeroed(0);

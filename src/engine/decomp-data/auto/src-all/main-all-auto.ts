@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sTrainerId: any = null;
+let sUnusedVar: any = null;
 /** void AgbMain(void) */
 export function AgbMain(): any {
       RegisterRamReset(RESET_ALL);
@@ -50,7 +54,7 @@ export function AgbMain(): any {
 
           if (gSoftResetDisabled == FALSE
            && JOY_HELD_RAW(A_BUTTON)
-           && JOY_HELD_RAW(B_START_SELECT) == B_START_SELECT)
+           && JOY_HELD_RAW(((B_BUTTON | START_BUTTON | SELECT_BUTTON))) == ((B_BUTTON | START_BUTTON | SELECT_BUTTON)))
           {
               rfu_REQ_stopMode();
               rfu_waitREQComplete();

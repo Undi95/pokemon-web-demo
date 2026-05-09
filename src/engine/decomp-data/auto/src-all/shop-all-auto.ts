@@ -15,6 +15,22 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sItemNames: any = null;
+let sListMenuItems: any = null;
+let sMartInfo: any = null;
+let sPurchaseHistoryId: any = null;
+let sShopBuyMenuBgTemplates: any = null;
+let sShopBuyMenuListTemplate: any = null;
+let sShopBuyMenuTextColors: any = null;
+let sShopBuyMenuWindowTemplates: any = null;
+let sShopBuyMenuYesNoWindowTemplates: any = null;
+let sShopData: any = null;
+let sShopMenuActions_BuyQuit: any = null;
+let sShopMenuActions_BuySellQuit: any = null;
+let sShopMenuWindowTemplates: any = null;
+let sShopPurchaseYesNoFuncs: any = null;
 /** static u8 CreateShopMenu(u8 martType) */
 export function CreateShopMenu(martType: any): any {
   let numMenuItems: any = null;
@@ -241,8 +257,8 @@ export function BuyMenuBuildListMenuTemplate(): any {
       gMultiuseListMenuTemplate = sShopBuyMenuListTemplate;
       gMultiuseListMenuTemplate.items = sListMenuItems;
       gMultiuseListMenuTemplate.totalItems = sMartInfo.itemCount + 1;
-      if (gMultiuseListMenuTemplate.totalItems > MAX_ITEMS_SHOWN)
-          gMultiuseListMenuTemplate.maxShowed = MAX_ITEMS_SHOWN;
+      if (gMultiuseListMenuTemplate.totalItems > (8))
+          gMultiuseListMenuTemplate.maxShowed = (8);
       else
           gMultiuseListMenuTemplate.maxShowed = gMultiuseListMenuTemplate.totalItems;
 
@@ -320,16 +336,16 @@ export function BuyMenuPrintPriceInList(windowId: any, itemId: any, y: any): any
 
 /** static void BuyMenuAddScrollIndicatorArrows(void) */
 export function BuyMenuAddScrollIndicatorArrows(): any {
-  if (sShopData.scrollIndicatorsTaskId == TASK_NONE && sMartInfo.itemCount + 1 > MAX_ITEMS_SHOWN)
+  if (sShopData.scrollIndicatorsTaskId == TASK_NONE && sMartInfo.itemCount + 1 > (8))
       {
           sShopData.scrollIndicatorsTaskId = AddScrollIndicatorArrowPairParameterized(
               SCROLL_ARROW_UP,
               172,
               12,
               148,
-              sMartInfo.itemCount - (MAX_ITEMS_SHOWN - 1),
-              TAG_SCROLL_ARROW,
-              TAG_SCROLL_ARROW,sShopData.scrollOffset);
+              sMartInfo.itemCount - ((8) - 1),
+              (2100),
+              (2100),sShopData.scrollOffset);
       }
 }
 
@@ -357,7 +373,7 @@ export function BuyMenuAddItemIcon(item: any, iconSlot: any): any {
 
       if (sMartInfo.martType == MART_TYPE_NORMAL || item == ITEM_LIST_END)
       {
-          spriteId = AddItemIconSprite(iconSlot + TAG_ITEM_ICON_BASE, iconSlot + TAG_ITEM_ICON_BASE, item);
+          spriteId = AddItemIconSprite(iconSlot + (2110), iconSlot + (2110), item);
           if (spriteId != MAX_SPRITES)
           {
               spriteIdPtr = spriteId;
@@ -367,7 +383,7 @@ export function BuyMenuAddItemIcon(item: any, iconSlot: any): any {
       }
       else
       {
-          spriteId = AddDecorationIconObject(item, 20, 84, 1, iconSlot + TAG_ITEM_ICON_BASE, iconSlot + TAG_ITEM_ICON_BASE);
+          spriteId = AddDecorationIconObject(item, 20, 84, 1, iconSlot + (2110), iconSlot + (2110));
           if (spriteId != MAX_SPRITES)
               spriteIdPtr = spriteId;
       }
@@ -379,8 +395,8 @@ export function BuyMenuRemoveItemIcon(item: any, iconSlot: any): any {
       if (spriteIdPtr == SPRITE_NONE)
           return;
 
-      FreeSpriteTilesByTag(iconSlot + TAG_ITEM_ICON_BASE);
-      FreeSpritePaletteByTag(iconSlot + TAG_ITEM_ICON_BASE);
+      FreeSpriteTilesByTag(iconSlot + (2110));
+      FreeSpritePaletteByTag(iconSlot + (2110));
       DestroySprite(gSprites[spriteIdPtr]);
       spriteIdPtr = SPRITE_NONE;
 }
@@ -412,7 +428,7 @@ export function BuyMenuInitBgs(): any {
 export function BuyMenuDecompressBgGraphics(): any {
   DecompressAndCopyTileDataToVram(1, gShopMenu_Gfx, 0x3A0, 0x3E3, 0);
       LZDecompressWram(gShopMenu_Tilemap, sShopData.tilemapBuffers[0]);
-      LoadCompressedPalette(gShopMenu_Pal, BG_PLTT_ID(SHOP_MENU_PALETTE_ID), PLTT_SIZE_4BPP);
+      LoadCompressedPalette(gShopMenu_Pal, BG_PLTT_ID((12)), PLTT_SIZE_4BPP);
 }
 
 /** static void BuyMenuInitWindows(void) */
@@ -612,7 +628,7 @@ export function BuyMenuCopyMenuBgToBg1TilemapBuffer(): any {
       for (i = 0; i < 1024; i++)
       {
           if (src[i] != 0)
-              dest[i] = src[i] + ((SHOP_MENU_PALETTE_ID << 12) | 0x3E3);
+              dest[i] = src[i] + (((12) << 12) | 0x3E3);
       }
 }
 

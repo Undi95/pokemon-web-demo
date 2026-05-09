@@ -15,6 +15,40 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnimDelayTaskId: any = null;
+let sAppealJamSlidingWindow: any = null;
+let sBgTemplates: any = null;
+let sButtons_Gfx: any = null;
+let sMarkings_Pal: any = null;
+let sMemoMiscTextColor: any = null;
+let sMemoNatureTextColor: any = null;
+let sMonSummaryScreen: any = null;
+let sMoveSelectorSpritePal: any = null;
+let sMoveSelectorSpriteSheet: any = null;
+let sMoveSelectorSpriteTemplate: any = null;
+let sMoveSlotToReplace: any = null;
+let sMoveTypeToOamPaletteNum: any = null;
+let sMovesPPLayout: any = null;
+let sMultiBattleOrder: any = null;
+let sPageInfoTemplate: any = null;
+let sPageMovesTemplate: any = null;
+let sPageSkillsTemplate: any = null;
+let sPowerAccSlidingWindow: any = null;
+let sSpriteSheet_MoveTypes: any = null;
+let sSpriteTemplate_MoveTypes: any = null;
+let sSpriteTemplate_StatusCondition: any = null;
+let sStatsLeftColumnLayout: any = null;
+let sStatsRightColumnLayout: any = null;
+let sStatusIconsSpritePalette: any = null;
+let sStatusIconsSpriteSheet: any = null;
+let sStatusSlidingWindow1: any = null;
+let sStatusSlidingWindow2: any = null;
+let sSummaryTemplate: any = null;
+let sTextColors: any = null;
+let sTextPrinterFunctions: any = null;
+let sTextPrinterTasks: any = null;
 /** void ShowPokemonSummaryScreen(u8 mode, void *mons, u8 monIndex, u8 maxMonIndex, void (*callback)(void)) */
 export function ShowPokemonSummaryScreen(mode: any, mons: any, monIndex: any, maxMonIndex: any, callback: any): any {
   sMonSummaryScreen = AllocZeroed(0);
@@ -404,14 +438,14 @@ export function SetDefaultTilemaps(): any {
           SetBgTilemapBuffer(1, sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES][0]);
           SetBgTilemapBuffer(2, sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES][0]);
           ChangeBgX(2, 0x10000, BG_COORD_ADD);
-          ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
-          ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+          ClearWindowTilemap((19));
+          ClearWindowTilemap((13));
       }
 
       if (sMonSummaryScreen.summary.ailment == AILMENT_NONE)
           PositionStatusSlidingWindow(0, 0xFF);
       else if (sMonSummaryScreen.currPageIndex != PSS_PAGE_BATTLE_MOVES && sMonSummaryScreen.currPageIndex != PSS_PAGE_CONTEST_MOVES)
-          PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+          PutWindowTilemap((13));
 
       LimitEggSummaryPageDisplay();
       DrawPokerusCuredSymbol(sMonSummaryScreen.currentMon);
@@ -532,7 +566,7 @@ export function ChangeSummaryPokemon(taskId: any, delta: any): any {
               if (sMonSummaryScreen.summary.ailment != AILMENT_NONE)
               {
                   SetSpriteInvisibility(SPRITE_ARR_ID_STATUS, TRUE);
-                  ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+                  ClearWindowTilemap((13));
                   ScheduleBgCopyTilemapToVram(0);
                   PositionStatusSlidingWindow(0, 2);
               }
@@ -804,15 +838,15 @@ export function SwitchToMoveSelection(taskId: any): any {
 
       sMonSummaryScreen.firstMoveIndex = 0;
       move = sMonSummaryScreen.summary.moves[sMonSummaryScreen.firstMoveIndex];
-      ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+      ClearWindowTilemap((19));
       if (!gSprites[sMonSummaryScreen.spriteIds[SPRITE_ARR_ID_STATUS]].invisible)
-          ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+          ClearWindowTilemap((13));
       PositionPowerAccSlidingWindow(9, -3);
       PositionAppealJamSlidingWindow(9, -3, move);
       if (!sMonSummaryScreen.lockMovesFlag)
       {
-          ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
-          PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_SWITCH);
+          ClearWindowTilemap((5));
+          PutWindowTilemap((6));
       }
       TilemapFiveMovesDisplay(sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES][0], 3, FALSE);
       TilemapFiveMovesDisplay(sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES][0], 1, FALSE);
@@ -910,9 +944,9 @@ export function ChangeSelectedMove(taskData: any, direction: any, moveIndexPtr: 
       if ((moveIndexPtr == MAX_MON_MOVES && sMonSummaryScreen.newMove == MOVE_NONE)
           || taskData[1] == 1)
       {
-          ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+          ClearWindowTilemap((19));
           if (!gSprites[sMonSummaryScreen.spriteIds[SPRITE_ARR_ID_STATUS]].invisible)
-              ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+              ClearWindowTilemap((13));
           ScheduleBgCopyTilemapToVram(0);
           PositionPowerAccSlidingWindow(9, -3);
           PositionAppealJamSlidingWindow(9, -3, move);
@@ -921,8 +955,8 @@ export function ChangeSelectedMove(taskData: any, direction: any, moveIndexPtr: 
           && newMoveIndex == MAX_MON_MOVES
           && sMonSummaryScreen.newMove == MOVE_NONE)
       {
-          ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
-          ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+          ClearWindowTilemap((14));
+          ClearWindowTilemap((15));
           ScheduleBgCopyTilemapToVram(0);
           PositionPowerAccSlidingWindow(0, 3);
           PositionAppealJamSlidingWindow(0, 3, 0);
@@ -939,16 +973,16 @@ export function ChangeSelectedMove(taskData: any, direction: any, moveIndexPtr: 
 /** static void CloseMoveSelectMode(u8 taskId) */
 export function CloseMoveSelectMode(taskId: any): any {
   DestroyMoveSelectorSprites(SPRITE_ARR_ID_MOVE_SELECTOR1);
-      ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_SWITCH);
-      PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+      ClearWindowTilemap((6));
+      PutWindowTilemap((5));
       PrintMoveDetails(0);
       TilemapFiveMovesDisplay(sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_BATTLE_MOVES][0], 3, TRUE);
       TilemapFiveMovesDisplay(sMonSummaryScreen.bgTilemapBuffers[PSS_PAGE_CONTEST_MOVES][0], 1, TRUE);
       AddAndFillMoveNamesWindow();  
       if (sMonSummaryScreen.firstMoveIndex != MAX_MON_MOVES)
       {
-          ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
-          ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+          ClearWindowTilemap((14));
+          ClearWindowTilemap((15));
           PositionPowerAccSlidingWindow(0, 3);
           PositionAppealJamSlidingWindow(0, 3, 0);
       }
@@ -1173,8 +1207,8 @@ export function CanReplaceMove(): any {
 
 /** static void ShowCantForgetHMsWindow(u8 taskId) */
 export function ShowCantForgetHMsWindow(taskId: any): any {
-  ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
-      ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+  ClearWindowTilemap((14));
+      ClearWindowTilemap((15));
       ScheduleBgCopyTilemapToVram(0);
       PositionPowerAccSlidingWindow(0, 3);
       PositionAppealJamSlidingWindow(0, 3, 0);
@@ -1208,9 +1242,9 @@ export function Task_HandleInputCantForgetHMsMoves(taskId: any): any {
           {
               if (sMonSummaryScreen.currPageIndex != PSS_PAGE_BATTLE_MOVES)
               {
-                  ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+                  ClearWindowTilemap((19));
                   if (!gSprites[sMonSummaryScreen.spriteIds[SPRITE_ARR_ID_STATUS]].invisible)
-                      ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+                      ClearWindowTilemap((13));
                   move = sMonSummaryScreen.summary.moves[sMonSummaryScreen.firstMoveIndex];
                   gTasks[taskId].func = Task_HandleReplaceMoveInput;
                   ChangePage(taskId, -1);
@@ -1222,9 +1256,9 @@ export function Task_HandleInputCantForgetHMsMoves(taskId: any): any {
           {
               if (sMonSummaryScreen.currPageIndex != PSS_PAGE_CONTEST_MOVES)
               {
-                  ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+                  ClearWindowTilemap((19));
                   if (!gSprites[sMonSummaryScreen.spriteIds[SPRITE_ARR_ID_STATUS]].invisible)
-                      ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+                      ClearWindowTilemap((13));
                   move = sMonSummaryScreen.summary.moves[sMonSummaryScreen.firstMoveIndex];
                   gTasks[taskId].func = Task_HandleReplaceMoveInput;
                   ChangePage(taskId, 1);
@@ -1234,9 +1268,9 @@ export function Task_HandleInputCantForgetHMsMoves(taskId: any): any {
           }
           else if (JOY_NEW(A_BUTTON | B_BUTTON))
           {
-              ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+              ClearWindowTilemap((19));
               if (!gSprites[sMonSummaryScreen.spriteIds[SPRITE_ARR_ID_STATUS]].invisible)
-                  ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+                  ClearWindowTilemap((13));
               move = sMonSummaryScreen.summary.moves[sMonSummaryScreen.firstMoveIndex];
               PrintMoveDetails(move);
               ScheduleBgCopyTilemapToVram(0);
@@ -1380,13 +1414,13 @@ export function Task_SlidePowerAccWindow(taskId: any): any {
           if (tScrollingSpeed < 0)
           {
               if (sMonSummaryScreen.currPageIndex == PSS_PAGE_BATTLE_MOVES)
-                  PutWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
+                  PutWindowTilemap((14));
           }
           else
           {
               if (!gSprites[sMonSummaryScreen.spriteIds[SPRITE_ARR_ID_STATUS]].invisible)
-                  PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
-              PutWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+                  PutWindowTilemap((13));
+              PutWindowTilemap((19));
           }
           ScheduleBgCopyTilemapToVram(0);
           DestroyTask(taskId);
@@ -1433,16 +1467,16 @@ export function Task_SlideAppealJamWindow(taskId: any): any {
           if (tScrollingSpeed < 0)
           {
               if (sMonSummaryScreen.currPageIndex == PSS_PAGE_CONTEST_MOVES && FuncIsActiveTask(PssScrollRight) == 0)
-                  PutWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+                  PutWindowTilemap((15));
               DrawContestMoveHearts(tMove);
           }
           else
           {
               if (!gSprites[sMonSummaryScreen.spriteIds[SPRITE_ARR_ID_STATUS]].invisible)
               {
-                  PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+                  PutWindowTilemap((13));
               }
-              PutWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+              PutWindowTilemap((19));
           }
           ScheduleBgCopyTilemapToVram(0);
           DestroyTask(taskId);
@@ -1484,7 +1518,7 @@ export function Task_SlideStatusWindow(taskId: any): any {
           if (tScrollingSpeed < 0)
           {
               CreateSetStatusSprite();
-              PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS);
+              PutWindowTilemap((13));
               ScheduleBgCopyTilemapToVram(0);
           }
           DestroyTask(taskId);
@@ -1598,9 +1632,9 @@ export function DrawContestMoveHearts(move: any): any {
           for (i = 0; i < MAX_CONTEST_MOVE_HEARTS; i++)
           {
               if (effectValue != 0xFF && i < effectValue)
-                  tilemap[(i / 4 * 32) + (i & 3) + 0x1E6] = TILE_FILLED_APPEAL_HEART;
+                  tilemap[(i / 4 * 32) + (i & 3) + 0x1E6] = (0x103A);
               else
-                  tilemap[(i / 4 * 32) + (i & 3) + 0x1E6] = TILE_EMPTY_APPEAL_HEART;
+                  tilemap[(i / 4 * 32) + (i & 3) + 0x1E6] = (0x1039);
           }
 
            
@@ -1611,9 +1645,9 @@ export function DrawContestMoveHearts(move: any): any {
           for (i = 0; i < MAX_CONTEST_MOVE_HEARTS; i++)
           {
               if (effectValue != 0xFF && i < effectValue)
-                  tilemap[(i / 4 * 32) + (i & 3) + 0x226] = TILE_FILLED_JAM_HEART;
+                  tilemap[(i / 4 * 32) + (i & 3) + 0x226] = (0x103C);
               else
-                  tilemap[(i / 4 * 32) + (i & 3) + 0x226] = TILE_EMPTY_JAM_HEART;
+                  tilemap[(i / 4 * 32) + (i & 3) + 0x226] = (0x103D);
           }
       }
 }
@@ -1632,7 +1666,7 @@ export function ResetWindows(): any {
 
       InitWindows(sSummaryTemplate);
       DeactivateAllTextPrinters();
-      for (i = 0; i < PSS_LABEL_WINDOW_END; i++)
+      for (i = 0; i < (20); i++)
           FillWindowPixelBuffer(i, PIXEL_FILL(0));
       for (i = 0; i < ARRAY_COUNT(sMonSummaryScreen.windowIds); i++)
           sMonSummaryScreen.windowIds[i] = WINDOW_NONE;
@@ -1645,9 +1679,9 @@ export function PrintTextOnWindow(windowId: any, string: any, x: any, y: any, li
 
 /** static void PrintMonInfo(void) */
 export function PrintMonInfo(): any {
-  FillWindowPixelBuffer(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER, PIXEL_FILL(0));
-      FillWindowPixelBuffer(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME, PIXEL_FILL(0));
-      FillWindowPixelBuffer(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, PIXEL_FILL(0));
+  FillWindowPixelBuffer((17), PIXEL_FILL(0));
+      FillWindowPixelBuffer((18), PIXEL_FILL(0));
+      FillWindowPixelBuffer((19), PIXEL_FILL(0));
       if (!sMonSummaryScreen.summary.isEgg)
           PrintNotEggInfo();
       else
@@ -1669,19 +1703,19 @@ export function PrintNotEggInfo(): any {
           StringAppend(gStringVar1, gStringVar2);
           if (!IsMonShiny(mon))
           {
-              PrintTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER, gStringVar1, 0, 1, 0, 1);
+              PrintTextOnWindow((17), gStringVar1, 0, 1, 0, 1);
               SetMonPicBackgroundPalette(FALSE);
           }
           else
           {
-              PrintTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER, gStringVar1, 0, 1, 0, 7);
+              PrintTextOnWindow((17), gStringVar1, 0, 1, 0, 7);
               SetMonPicBackgroundPalette(TRUE);
           }
-          PutWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER);
+          PutWindowTilemap((17));
       }
       else
       {
-          ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER);
+          ClearWindowTilemap((17));
           if (!IsMonShiny(mon))
               SetMonPicBackgroundPalette(FALSE);
           else
@@ -1690,24 +1724,24 @@ export function PrintNotEggInfo(): any {
       StringCopy(gStringVar1, gText_LevelSymbol);
       ConvertIntToDecimalStringN(gStringVar2, summary.level, STR_CONV_MODE_LEFT_ALIGN, 3);
       StringAppend(gStringVar1, gStringVar2);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, gStringVar1, 24, 17, 0, 1);
+      PrintTextOnWindow((19), gStringVar1, 24, 17, 0, 1);
       GetMonNickname(mon, gStringVar1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME, gStringVar1, 0, 1, 0, 1);
+      PrintTextOnWindow((18), gStringVar1, 0, 1, 0, 1);
       strArray[0] = CHAR_SLASH;
       StringCopy(strArray[1],gSpeciesNames[summary.species2][0]);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, strArray, 0, 1, 0, 1);
+      PrintTextOnWindow((19), strArray, 0, 1, 0, 1);
       PrintGenderSymbol(mon, summary.species2);
-      PutWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME);
-      PutWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+      PutWindowTilemap((18));
+      PutWindowTilemap((19));
 }
 
 /** static void PrintEggInfo(void) */
 export function PrintEggInfo(): any {
   GetMonNickname(sMonSummaryScreen.currentMon, gStringVar1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME, gStringVar1, 0, 1, 0, 1);
-      PutWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_NICKNAME);
-      ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER);
-      ClearWindowTilemap(PSS_LABEL_WINDOW_PORTRAIT_SPECIES);
+      PrintTextOnWindow((18), gStringVar1, 0, 1, 0, 1);
+      PutWindowTilemap((18));
+      ClearWindowTilemap((17));
+      ClearWindowTilemap((19));
 }
 
 /** static void PrintGenderSymbol(struct Pokemon *mon, u16 species) */
@@ -1717,10 +1751,10 @@ export function PrintGenderSymbol(mon: any, species: any): any {
           switch (GetMonGender(mon))
           {
           case MON_MALE:
-              PrintTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, gText_MaleSymbol, 57, 17, 0, 3);
+              PrintTextOnWindow((19), gText_MaleSymbol, 57, 17, 0, 3);
               break;
           case MON_FEMALE:
-              PrintTextOnWindow(PSS_LABEL_WINDOW_PORTRAIT_SPECIES, gText_FemaleSymbol, 57, 17, 0, 4);
+              PrintTextOnWindow((19), gText_FemaleSymbol, 57, 17, 0, 4);
               break;
           }
       }
@@ -1743,101 +1777,101 @@ export function PrintPageNamesAndStats(): any {
       let iconXPos: any = null;
       let statsXPos: any = null;
 
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_INFO_TITLE, gText_PkmnInfo, 2, 1, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_SKILLS_TITLE, gText_PkmnSkills, 2, 1, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_BATTLE_MOVES_TITLE, gText_BattleMoves, 2, 1, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_CONTEST_MOVES_TITLE, gText_ContestMoves, 2, 1, 0, 1);
+      PrintTextOnWindow((0), gText_PkmnInfo, 2, 1, 0, 1);
+      PrintTextOnWindow((1), gText_PkmnSkills, 2, 1, 0, 1);
+      PrintTextOnWindow((2), gText_BattleMoves, 2, 1, 0, 1);
+      PrintTextOnWindow((3), gText_ContestMoves, 2, 1, 0, 1);
 
       stringXPos = GetStringRightAlignXOffset(FONT_NORMAL, gText_Cancel2, 62);
       iconXPos = stringXPos - 16;
       if (iconXPos < 0)
           iconXPos = 0;
-      PrintAOrBButtonIcon(PSS_LABEL_WINDOW_PROMPT_CANCEL, FALSE, iconXPos);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_PROMPT_CANCEL, gText_Cancel2, stringXPos, 1, 0, 0);
+      PrintAOrBButtonIcon((4), FALSE, iconXPos);
+      PrintTextOnWindow((4), gText_Cancel2, stringXPos, 1, 0, 0);
 
       stringXPos = GetStringRightAlignXOffset(FONT_NORMAL, gText_Info, 62);
       iconXPos = stringXPos - 16;
       if (iconXPos < 0)
           iconXPos = 0;
-      PrintAOrBButtonIcon(PSS_LABEL_WINDOW_PROMPT_INFO, FALSE, iconXPos);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_PROMPT_INFO, gText_Info, stringXPos, 1, 0, 0);
+      PrintAOrBButtonIcon((5), FALSE, iconXPos);
+      PrintTextOnWindow((5), gText_Info, stringXPos, 1, 0, 0);
 
       stringXPos = GetStringRightAlignXOffset(FONT_NORMAL, gText_Switch, 62);
       iconXPos = stringXPos - 16;
       if (iconXPos < 0)
           iconXPos = 0;
-      PrintAOrBButtonIcon(PSS_LABEL_WINDOW_PROMPT_SWITCH, FALSE, iconXPos);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_PROMPT_SWITCH, gText_Switch, stringXPos, 1, 0, 0);
+      PrintAOrBButtonIcon((6), FALSE, iconXPos);
+      PrintTextOnWindow((6), gText_Switch, stringXPos, 1, 0, 0);
 
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_INFO_RENTAL, gText_RentalPkmn, 0, 1, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_INFO_TYPE, gText_TypeSlash, 0, 1, 0, 0);
+      PrintTextOnWindow((8), gText_RentalPkmn, 0, 1, 0, 1);
+      PrintTextOnWindow((9), gText_TypeSlash, 0, 1, 0, 0);
       statsXPos = 6 + GetStringCenterAlignXOffset(FONT_NORMAL, gText_HP4, 42);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_LEFT, gText_HP4, statsXPos, 1, 0, 1);
+      PrintTextOnWindow((10), gText_HP4, statsXPos, 1, 0, 1);
       statsXPos = 6 + GetStringCenterAlignXOffset(FONT_NORMAL, gText_Attack3, 42);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_LEFT, gText_Attack3, statsXPos, 17, 0, 1);
+      PrintTextOnWindow((10), gText_Attack3, statsXPos, 17, 0, 1);
       statsXPos = 6 + GetStringCenterAlignXOffset(FONT_NORMAL, gText_Defense3, 42);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_LEFT, gText_Defense3, statsXPos, 33, 0, 1);
+      PrintTextOnWindow((10), gText_Defense3, statsXPos, 33, 0, 1);
       statsXPos = 2 + GetStringCenterAlignXOffset(FONT_NORMAL, gText_SpAtk4, 36);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_RIGHT, gText_SpAtk4, statsXPos, 1, 0, 1);
+      PrintTextOnWindow((11), gText_SpAtk4, statsXPos, 1, 0, 1);
       statsXPos = 2 + GetStringCenterAlignXOffset(FONT_NORMAL, gText_SpDef4, 36);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_RIGHT, gText_SpDef4, statsXPos, 17, 0, 1);
+      PrintTextOnWindow((11), gText_SpDef4, statsXPos, 17, 0, 1);
       statsXPos = 2 + GetStringCenterAlignXOffset(FONT_NORMAL, gText_Speed2, 36);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_RIGHT, gText_Speed2, statsXPos, 33, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_SKILLS_EXP, gText_ExpPoints, 6, 1, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_SKILLS_EXP, gText_NextLv, 6, 17, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS, gText_Status, 2, 1, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_MOVES_POWER_ACC, gText_Power, 0, 1, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_MOVES_POWER_ACC, gText_Accuracy2, 0, 17, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM, gText_Appeal, 0, 1, 0, 1);
-      PrintTextOnWindow(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM, gText_Jam, 0, 17, 0, 1);
+      PrintTextOnWindow((11), gText_Speed2, statsXPos, 33, 0, 1);
+      PrintTextOnWindow((12), gText_ExpPoints, 6, 1, 0, 1);
+      PrintTextOnWindow((12), gText_NextLv, 6, 17, 0, 1);
+      PrintTextOnWindow((13), gText_Status, 2, 1, 0, 1);
+      PrintTextOnWindow((14), gText_Power, 0, 1, 0, 1);
+      PrintTextOnWindow((14), gText_Accuracy2, 0, 17, 0, 1);
+      PrintTextOnWindow((15), gText_Appeal, 0, 1, 0, 1);
+      PrintTextOnWindow((15), gText_Jam, 0, 17, 0, 1);
 }
 
 /** static void PutPageWindowTilemaps(u8 page) */
 export function PutPageWindowTilemaps(page: any): any {
   let i: any = null;
 
-      ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_INFO_TITLE);
-      ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_TITLE);
-      ClearWindowTilemap(PSS_LABEL_WINDOW_BATTLE_MOVES_TITLE);
-      ClearWindowTilemap(PSS_LABEL_WINDOW_CONTEST_MOVES_TITLE);
+      ClearWindowTilemap((0));
+      ClearWindowTilemap((1));
+      ClearWindowTilemap((2));
+      ClearWindowTilemap((3));
 
       switch (page)
       {
       case PSS_PAGE_INFO:
-          PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_INFO_TITLE);
-          PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_CANCEL);
+          PutWindowTilemap((0));
+          PutWindowTilemap((4));
           if (InBattleFactory() == TRUE || InSlateportBattleTent() == TRUE)
-              PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_INFO_RENTAL);
-          PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_INFO_TYPE);
+              PutWindowTilemap((8));
+          PutWindowTilemap((9));
           break;
       case PSS_PAGE_SKILLS:
-          PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_TITLE);
-          PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_LEFT);
-          PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_RIGHT);
-          PutWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_EXP);
+          PutWindowTilemap((1));
+          PutWindowTilemap((10));
+          PutWindowTilemap((11));
+          PutWindowTilemap((12));
           break;
       case PSS_PAGE_BATTLE_MOVES:
-          PutWindowTilemap(PSS_LABEL_WINDOW_BATTLE_MOVES_TITLE);
+          PutWindowTilemap((2));
           if (sMonSummaryScreen.mode == SUMMARY_MODE_SELECT_MOVE)
           {
               if (sMonSummaryScreen.newMove != MOVE_NONE || sMonSummaryScreen.firstMoveIndex != MAX_MON_MOVES)
-                  PutWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
+                  PutWindowTilemap((14));
           }
           else
           {
-              PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+              PutWindowTilemap((5));
           }
           break;
       case PSS_PAGE_CONTEST_MOVES:
-          PutWindowTilemap(PSS_LABEL_WINDOW_CONTEST_MOVES_TITLE);
+          PutWindowTilemap((3));
           if (sMonSummaryScreen.mode == SUMMARY_MODE_SELECT_MOVE)
           {
               if (sMonSummaryScreen.newMove != MOVE_NONE || sMonSummaryScreen.firstMoveIndex != MAX_MON_MOVES)
-                  PutWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+                  PutWindowTilemap((15));
           }
           else
           {
-              PutWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+              PutWindowTilemap((5));
           }
           break;
       }
@@ -1855,36 +1889,36 @@ export function ClearPageWindowTilemaps(page: any): any {
       switch (page)
       {
       case PSS_PAGE_INFO:
-          ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_CANCEL);
+          ClearWindowTilemap((4));
           if (InBattleFactory() == TRUE || InSlateportBattleTent() == TRUE)
-              ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_INFO_RENTAL);
-          ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_INFO_TYPE);
+              ClearWindowTilemap((8));
+          ClearWindowTilemap((9));
           break;
       case PSS_PAGE_SKILLS:
-          ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_LEFT);
-          ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_RIGHT);
-          ClearWindowTilemap(PSS_LABEL_WINDOW_POKEMON_SKILLS_EXP);
+          ClearWindowTilemap((10));
+          ClearWindowTilemap((11));
+          ClearWindowTilemap((12));
           break;
       case PSS_PAGE_BATTLE_MOVES:
           if (sMonSummaryScreen.mode == SUMMARY_MODE_SELECT_MOVE)
           {
               if (sMonSummaryScreen.newMove != MOVE_NONE || sMonSummaryScreen.firstMoveIndex != MAX_MON_MOVES)
-                  ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_POWER_ACC);
+                  ClearWindowTilemap((14));
           }
           else
           {
-              ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+              ClearWindowTilemap((5));
           }
           break;
       case PSS_PAGE_CONTEST_MOVES:
           if (sMonSummaryScreen.mode == SUMMARY_MODE_SELECT_MOVE)
           {
               if (sMonSummaryScreen.newMove != MOVE_NONE || sMonSummaryScreen.firstMoveIndex != MAX_MON_MOVES)
-                  ClearWindowTilemap(PSS_LABEL_WINDOW_MOVES_APPEAL_JAM);
+                  ClearWindowTilemap((15));
           }
           else
           {
-              ClearWindowTilemap(PSS_LABEL_WINDOW_PROMPT_INFO);
+              ClearWindowTilemap((5));
           }
           break;
       }
@@ -1988,7 +2022,7 @@ export function PrintMonOTName(): any {
   let x, windowId;
       if (InBattleFactory() != TRUE && InSlateportBattleTent() != TRUE)
       {
-          windowId = AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ORIGINAL_TRAINER);
+          windowId = AddWindowFromTemplateList(sPageInfoTemplate, (0));
           PrintTextOnWindow(windowId, gText_OTSlash, 0, 1, 0, 1);
           x = GetStringWidth(FONT_NORMAL, gText_OTSlash, 0);
           if (sMonSummaryScreen.summary.OTGender == 0)
@@ -2005,20 +2039,20 @@ export function PrintMonOTID(): any {
       {
           ConvertIntToDecimalStringN(StringCopy(gStringVar1, gText_IDNumber2), sMonSummaryScreen.summary.OTID, STR_CONV_MODE_LEADING_ZEROS, 5);
           xPos = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar1, 56);
-          PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ID), gStringVar1, xPos, 1, 0, 1);
+          PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, (1)), gStringVar1, xPos, 1, 0, 1);
       }
 }
 
 /** static void PrintMonAbilityName(void) */
 export function PrintMonAbilityName(): any {
   let ability: any = GetAbilityBySpecies(sMonSummaryScreen.summary.species, sMonSummaryScreen.summary.abilityNum);
-      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ABILITY), gAbilityNames[ability], 0, 1, 0, 1);
+      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, (2)), gAbilityNames[ability], 0, 1, 0, 1);
 }
 
 /** static void PrintMonAbilityDescription(void) */
 export function PrintMonAbilityDescription(): any {
   let ability: any = GetAbilityBySpecies(sMonSummaryScreen.summary.species, sMonSummaryScreen.summary.abilityNum);
-      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ABILITY), gAbilityDescriptionPointers[ability], 0, 17, 0, 0);
+      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, (2)), gAbilityDescriptionPointers[ability], 0, 17, 0, 0);
 }
 
 /** static void BufferMonTrainerMemo(void) */
@@ -2075,7 +2109,7 @@ export function BufferMonTrainerMemo(): any {
 
 /** static void PrintMonTrainerMemo(void) */
 export function PrintMonTrainerMemo(): any {
-  PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_MEMO), gStringVar4, 0, 1, 0, 0);
+  PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, (3)), gStringVar4, 0, 1, 0, 0);
 }
 
 /** static void BufferNatureString(void) */
@@ -2148,7 +2182,7 @@ export function IsInGamePartnerMon(): any {
 
 /** static void PrintEggOTName(void) */
 export function PrintEggOTName(): any {
-  let windowId: any = AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ORIGINAL_TRAINER);
+  let windowId: any = AddWindowFromTemplateList(sPageInfoTemplate, (0));
       let width: any = GetStringWidth(FONT_NORMAL, gText_OTSlash, 0);
       PrintTextOnWindow(windowId, gText_OTSlash, 0, 1, 0, 1);
       PrintTextOnWindow(windowId, gText_FiveMarks, width, 1, 0, 1);
@@ -2160,7 +2194,7 @@ export function PrintEggOTID(): any {
       StringCopy(gStringVar1, gText_IDNumber2);
       StringAppend(gStringVar1, gText_FiveMarks);
       x = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar1, 56);
-      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ID), gStringVar1, x, 1, 0, 1);
+      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, (1)), gStringVar1, x, 1, 0, 1);
 }
 
 /** static void PrintEggState(void) */
@@ -2179,7 +2213,7 @@ export function PrintEggState(): any {
       else
           text = gText_EggWillTakeALongTime;
 
-      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_ABILITY), text, 0, 1, 0, 0);
+      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, (2)), text, 0, 1, 0, 0);
 }
 
 /** static void PrintEggMemo(void) */
@@ -2203,7 +2237,7 @@ export function PrintEggMemo(): any {
           text = gText_OddEggFoundByCouple;
       }
 
-      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, PSS_DATA_WINDOW_INFO_MEMO), text, 0, 1, 0, 0);
+      PrintTextOnWindow(AddWindowFromTemplateList(sPageInfoTemplate, (3)), text, 0, 1, 0, 0);
 }
 
 /** static void PrintSkillsPageText(void) */
@@ -2273,7 +2307,7 @@ export function PrintHeldItemName(): any {
       }
 
       x = GetStringCenterAlignXOffset(FONT_NORMAL, text, 72) + 6;
-      PrintTextOnWindow(AddWindowFromTemplateList(sPageSkillsTemplate, PSS_DATA_WINDOW_SKILLS_HELD_ITEM), text, x, 1, 0, 0);
+      PrintTextOnWindow(AddWindowFromTemplateList(sPageSkillsTemplate, (0)), text, x, 1, 0, 0);
 }
 
 /** static void PrintRibbonCount(void) */
@@ -2293,7 +2327,7 @@ export function PrintRibbonCount(): any {
       }
 
       x = GetStringCenterAlignXOffset(FONT_NORMAL, text, 70) + 6;
-      PrintTextOnWindow(AddWindowFromTemplateList(sPageSkillsTemplate, PSS_DATA_WINDOW_SKILLS_RIBBON_COUNT), text, x, 1, 0, 0);
+      PrintTextOnWindow(AddWindowFromTemplateList(sPageSkillsTemplate, (1)), text, x, 1, 0, 0);
 }
 
 /** static void BufferLeftColumnStats(void) */
@@ -2323,7 +2357,7 @@ export function BufferLeftColumnStats(): any {
 
 /** static void PrintLeftColumnStats(void) */
 export function PrintLeftColumnStats(): any {
-  PrintTextOnWindow(AddWindowFromTemplateList(sPageSkillsTemplate, PSS_DATA_WINDOW_SKILLS_STATS_LEFT), gStringVar4, 4, 1, 0, 0);
+  PrintTextOnWindow(AddWindowFromTemplateList(sPageSkillsTemplate, (2)), gStringVar4, 4, 1, 0, 0);
 }
 
 /** static void BufferRightColumnStats(void) */
@@ -2341,13 +2375,13 @@ export function BufferRightColumnStats(): any {
 
 /** static void PrintRightColumnStats(void) */
 export function PrintRightColumnStats(): any {
-  PrintTextOnWindow(AddWindowFromTemplateList(sPageSkillsTemplate, PSS_DATA_WINDOW_SKILLS_STATS_RIGHT), gStringVar4, 2, 1, 0, 0);
+  PrintTextOnWindow(AddWindowFromTemplateList(sPageSkillsTemplate, (3)), gStringVar4, 2, 1, 0, 0);
 }
 
 /** static void PrintExpPointsNextLevel(void) */
 export function PrintExpPointsNextLevel(): any {
   let sum: any =sMonSummaryScreen.summary;
-      let windowId: any = AddWindowFromTemplateList(sPageSkillsTemplate, PSS_DATA_WINDOW_EXP);
+      let windowId: any = AddWindowFromTemplateList(sPageSkillsTemplate, (4));
       let x: any = null;
       let expToNextLevel: any = null;
 
@@ -2438,8 +2472,8 @@ export function PrintMoveNameAndPP(moveIndex: any): any {
       let ppState, x;
       let text: any = null;
       let summary: any =sMonSummaryScreen.summary;
-      let moveNameWindowId: any = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
-      let ppValueWindowId: any = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_PP);
+      let moveNameWindowId: any = AddWindowFromTemplateList(sPageMovesTemplate, (0));
+      let ppValueWindowId: any = AddWindowFromTemplateList(sPageMovesTemplate, (1));
       let move: any = summary.moves[moveIndex];
 
       if (move != 0)
@@ -2472,7 +2506,7 @@ export function PrintMovePowerAndAccuracy(moveIndex: any): any {
   let text: any = null;
       if (moveIndex != 0)
       {
-          FillWindowPixelRect(PSS_LABEL_WINDOW_MOVES_POWER_ACC, PIXEL_FILL(0), 53, 0, 19, 32);
+          FillWindowPixelRect((14), PIXEL_FILL(0), 53, 0, 19, 32);
 
           if (gBattleMoves[moveIndex].power < 2)
           {
@@ -2484,7 +2518,7 @@ export function PrintMovePowerAndAccuracy(moveIndex: any): any {
               text = gStringVar1;
           }
 
-          PrintTextOnWindow(PSS_LABEL_WINDOW_MOVES_POWER_ACC, text, 53, 1, 0, 0);
+          PrintTextOnWindow((14), text, 53, 1, 0, 0);
 
           if (gBattleMoves[moveIndex].accuracy == 0)
           {
@@ -2496,7 +2530,7 @@ export function PrintMovePowerAndAccuracy(moveIndex: any): any {
               text = gStringVar1;
           }
 
-          PrintTextOnWindow(PSS_LABEL_WINDOW_MOVES_POWER_ACC, text, 53, 17, 0, 0);
+          PrintTextOnWindow((14), text, 53, 17, 0, 0);
       }
 }
 
@@ -2561,14 +2595,14 @@ export function PrintContestMoveDescription(moveSlot: any): any {
 
       if (move != MOVE_NONE)
       {
-          let windowId: any = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_DESCRIPTION);
+          let windowId: any = AddWindowFromTemplateList(sPageMovesTemplate, (2));
           PrintTextOnWindow(windowId, gContestEffectDescriptionPointers[gContestMoves[move].effect], 6, 1, 0, 0);
       }
 }
 
 /** static void PrintMoveDetails(u16 move) */
 export function PrintMoveDetails(move: any): any {
-  let windowId: any = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_DESCRIPTION);
+  let windowId: any = AddWindowFromTemplateList(sPageMovesTemplate, (2));
       FillWindowPixelBuffer(windowId, PIXEL_FILL(0));
       if (move != MOVE_NONE)
       {
@@ -2593,8 +2627,8 @@ export function PrintMoveDetails(move: any): any {
 
 /** static void PrintNewMoveDetailsOrCancelText(void) */
 export function PrintNewMoveDetailsOrCancelText(): any {
-  let windowId1: any = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
-      let windowId2: any = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_PP);
+  let windowId1: any = AddWindowFromTemplateList(sPageMovesTemplate, (0));
+      let windowId2: any = AddWindowFromTemplateList(sPageMovesTemplate, (1));
 
       if (sMonSummaryScreen.newMove == MOVE_NONE)
       {
@@ -2620,15 +2654,15 @@ export function PrintNewMoveDetailsOrCancelText(): any {
 
 /** static void AddAndFillMoveNamesWindow(void) */
 export function AddAndFillMoveNamesWindow(): any {
-  let windowId: any = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
+  let windowId: any = AddWindowFromTemplateList(sPageMovesTemplate, (0));
       FillWindowPixelRect(windowId, PIXEL_FILL(0), 0, 65, 72, 15);  
       CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
 /** static void SwapMovesNamesPP(u8 moveIndex1, u8 moveIndex2) */
 export function SwapMovesNamesPP(moveIndex1: any, moveIndex2: any): any {
-  let windowId1: any = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_NAMES);
-      let windowId2: any = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_PP);
+  let windowId1: any = AddWindowFromTemplateList(sPageMovesTemplate, (0));
+      let windowId2: any = AddWindowFromTemplateList(sPageMovesTemplate, (1));
 
       FillWindowPixelRect(windowId1, PIXEL_FILL(0), 0, moveIndex1 * 16, 72, 16);
       FillWindowPixelRect(windowId1, PIXEL_FILL(0), 0, moveIndex2 * 16, 72, 16);
@@ -2642,7 +2676,7 @@ export function SwapMovesNamesPP(moveIndex1: any, moveIndex2: any): any {
 
 /** static void PrintHMMovesCantBeForgotten(void) */
 export function PrintHMMovesCantBeForgotten(): any {
-  let windowId: any = AddWindowFromTemplateList(sPageMovesTemplate, PSS_DATA_WINDOW_MOVE_DESCRIPTION);
+  let windowId: any = AddWindowFromTemplateList(sPageMovesTemplate, (2));
       FillWindowPixelBuffer(windowId, PIXEL_FILL(0));
       PrintTextOnWindow(windowId, gText_HMMovesCantBeForgotten2, 6, 1, 0, 0);
 }
@@ -2702,7 +2736,7 @@ export function SetTypeIcons(): any {
 export function CreateMoveTypeIcons(): any {
   let i: any = null;
 
-      for (i = SPRITE_ARR_ID_TYPE; i < SPRITE_ARR_ID_TYPE + TYPE_ICON_SPRITE_COUNT; i++)
+      for (i = SPRITE_ARR_ID_TYPE; i < SPRITE_ARR_ID_TYPE + ((MAX_MON_MOVES + 1)); i++)
       {
           if (sMonSummaryScreen.spriteIds[i] == SPRITE_NONE)
               sMonSummaryScreen.spriteIds[i] = CreateSprite(sSpriteTemplate_MoveTypes, 0, 0, 2);
@@ -2944,7 +2978,7 @@ export function StopPokemonAnimations(): any {
 
 /** static void CreateMonMarkingsSprite(struct Pokemon *mon) */
 export function CreateMonMarkingsSprite(mon: any): any {
-  let sprite: any = CreateMonMarkingAllCombosSprite(TAG_MON_MARKINGS, TAG_MON_MARKINGS, sMarkings_Pal);
+  let sprite: any = CreateMonMarkingAllCombosSprite((30003), (30003), sMarkings_Pal);
 
       sMonSummaryScreen.markingsSprite = sprite;
       if (sprite != NULL)
@@ -2959,7 +2993,7 @@ export function CreateMonMarkingsSprite(mon: any): any {
 /** static void RemoveAndCreateMonMarkingsSprite(struct Pokemon *mon) */
 export function RemoveAndCreateMonMarkingsSprite(mon: any): any {
   DestroySprite(sMonSummaryScreen.markingsSprite);
-      FreeSpriteTilesByTag(TAG_MON_MARKINGS);
+      FreeSpriteTilesByTag((30003));
       CreateMonMarkingsSprite(mon);
 }
 
@@ -3004,7 +3038,7 @@ export function CreateMoveSelectorSprites(idArrayStart: any): any {
           if (idArrayStart == SPRITE_ARR_ID_MOVE_SELECTOR1)
               subpriority = 1;
 
-          for (i = 0; i < MOVE_SELECTOR_SPRITES_COUNT; i++)
+          for (i = 0; i < (10); i++)
           {
               spriteIds[i] = CreateSprite(sMoveSelectorSpriteTemplate, i * 16 + 89, 40, subpriority);
               if (i == 0)
@@ -3046,7 +3080,7 @@ export function SpriteCB_MoveSelector(sprite: any): any {
 /** static void DestroyMoveSelectorSprites(u8 firstArrayId) */
 export function DestroyMoveSelectorSprites(firstArrayId: any): any {
   let i: any = null;
-      for (i = 0; i < MOVE_SELECTOR_SPRITES_COUNT; i++)
+      for (i = 0; i < (10); i++)
           DestroySpriteInArray(firstArrayId + i);
 }
 
@@ -3056,7 +3090,7 @@ export function SetMainMoveSelectorColor(which: any): any {
       let spriteIds: any =sMonSummaryScreen.spriteIds[SPRITE_ARR_ID_MOVE_SELECTOR1];
 
       which *= 3;
-      for (i = 0; i < MOVE_SELECTOR_SPRITES_COUNT; i++)
+      for (i = 0; i < (10); i++)
       {
           if (i == 0)
               StartSpriteAnim(gSprites[spriteIds[i]], which + 4);
@@ -3072,7 +3106,7 @@ export function KeepMoveSelectorVisible(firstSpriteId: any): any {
   let i: any = null;
       let spriteIds: any =sMonSummaryScreen.spriteIds[firstSpriteId];
 
-      for (i = 0; i < MOVE_SELECTOR_SPRITES_COUNT; i++)
+      for (i = 0; i < (10); i++)
       {
           gSprites[spriteIds[i]].data[1] = 0;
           gSprites[spriteIds[i]].invisible = FALSE;

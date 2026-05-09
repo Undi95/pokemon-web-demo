@@ -15,9 +15,83 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnimId: any = null;
+let sArrowHitRangeStart: any = null;
+let sArrowStartPos: any = null;
+let sArrowStartPosIds: any = null;
+let sBerryBlender: any = null;
+let sBerryMasterBerries: any = null;
+let sBerrySpriteData: any = null;
+let sBgTemplates: any = null;
+let sBlackPokeblockFlavorFlags: any = null;
+let sBlenderCenter_Tilemap: any = null;
+let sBlenderOpponentsNames: any = null;
+let sBlenderOuter_Pal: any = null;
+let sBounceSpeed: any = null;
+let sBounces: any = null;
+let sDebug_GameTimeStage: any = null;
+let sDebug_MaxRPMStage: any = null;
+let sDebug_PokeblockFactorFlavors: any = null;
+let sDebug_PokeblockFactorFlavorsAfterRPM: any = null;
+let sDebug_PokeblockFactorRPM: any = null;
+let sDelay: any = null;
+let sLocalOpponentTasks: any = null;
+let sNumPlayersToSpeedDivisor: any = null;
+let sOpponentBerrySets: any = null;
+let sPlayerArrowPos: any = null;
+let sPlayerArrowQuadrant: any = null;
+let sPlayerIdMap: any = null;
+let sPokeblockFlavors: any = null;
+let sPokeblockPresentFlavors: any = null;
+let sSpritePal_BlenderMisc: any = null;
+let sSpritePal_PlayerArrow: any = null;
+let sSpriteSheet_CountdownNumbers: any = null;
+let sSpriteSheet_Particles: any = null;
+let sSpriteSheet_PlayerArrow: any = null;
+let sSpriteSheet_ScoreSymbols: any = null;
+let sSpriteSheet_Start: any = null;
+let sSpriteTemplate_CountdownNumbers: any = null;
+let sSpriteTemplate_Particles: any = null;
+let sSpriteTemplate_PlayerArrow: any = null;
+let sSpriteTemplate_ScoreSymbols: any = null;
+let sSpriteTemplate_Start: any = null;
+let sState: any = null;
+let sTargetY: any = null;
+let sText_ApostropheSPokeblockCaseIsFull: any = null;
+let sText_BerryBlenderStart: any = null;
+let sText_BlendingResults: any = null;
+let sText_CommunicationStandby: any = null;
+let sText_Dot: any = null;
+let sText_Dot2: any = null;
+let sText_HasNoBerriesToPut: any = null;
+let sText_MaximumSpeed: any = null;
+let sText_Min: any = null;
+let sText_NewLine: any = null;
+let sText_NewParagraph: any = null;
+let sText_RPM: any = null;
+let sText_Ranking: any = null;
+let sText_RunOutOfBerriesForBlending: any = null;
+let sText_Sec: any = null;
+let sText_SpaceBerry: any = null;
+let sText_TheFeelIs: any = null;
+let sText_TheLevelIs: any = null;
+let sText_Time: any = null;
+let sText_WasMade: any = null;
+let sText_WouldLikeToBlendAnotherBerry: any = null;
+let sText_YourPokeblockCaseIsFull: any = null;
+let sWindowTemplates: any = null;
+let sX: any = null;
+let sXSpeed: any = null;
+let sY: any = null;
+let sYDownSpeed: any = null;
+let sYPos: any = null;
+let sYUpSpeed: any = null;
+let sYesNoWindowTemplate_ContinuePlaying: any = null;
 /** static void UpdateHitPitch(void) */
 export function UpdateHitPitch(): any {
-  m4aMPlayPitchControl(gMPlayInfo_SE2, TRACKS_ALL, 2 * (sBerryBlender.speed - MIN_ARROW_SPEED));
+  m4aMPlayPitchControl(gMPlayInfo_SE2, TRACKS_ALL, 2 * (sBerryBlender.speed - (0x80)));
 }
 
 /** static void VBlankCB_BerryBlender(void) */
@@ -165,7 +239,7 @@ export function CB2_LoadBerryBlender(): any {
       case 1:
           if (LoadBerryBlenderGfx())
           {
-              for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+              for (i = 0; i < (MAX_LINK_PLAYERS); i++)
               {
                   sBerryBlender.playerArrowSpriteIds[i] = CreateSprite(sSpriteTemplate_PlayerArrow, sPlayerArrowPos[i][0], sPlayerArrowPos[i][1], 1);
                   StartSpriteAnim(gSprites[sBerryBlender.playerArrowSpriteIds[i]], i + 8);
@@ -335,7 +409,7 @@ export function StartBlender(): any {
       sBerryBlender.mainState = 0;
       sBerryBlender.unk1 = 0;
 
-      for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+      for (i = 0; i < (MAX_LINK_PLAYERS); i++)
           sBerryBlender.chosenItemId[i] = ITEM_NONE;
 
       InitLocalPlayers(gSpecialVar_0x8004);
@@ -356,7 +430,7 @@ export function CB2_StartBlenderLink(): any {
           InitBlenderBgs();
           gLinkType = LINKTYPE_BERRY_BLENDER;
           sBerryBlender.slowdownTimer = 0;
-          for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
           {
               sBerryBlender.playerContinueResponses[i] = 0;
               for (j = 0; j < NUM_SCORE_TYPES; j++)
@@ -377,7 +451,7 @@ export function CB2_StartBlenderLink(): any {
           }
           break;
       case 2:
-          for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
           {
               sBerryBlender.playerArrowSpriteIds2[i] = CreateSprite(sSpriteTemplate_PlayerArrow, sPlayerArrowPos[i][0], sPlayerArrowPos[i][1], 1);
               StartSpriteAnim(gSprites[sBerryBlender.playerArrowSpriteIds2[i]], i + 8);
@@ -445,7 +519,7 @@ export function CB2_StartBlenderLink(): any {
           sBerryBlender.numPlayers = GetLinkPlayerCount();
 
            
-          for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
           {
               if (sBerryBlender.playerToThrowBerry == sPlayerIdMap[sBerryBlender.numPlayers - 2][i])
               {
@@ -465,7 +539,7 @@ export function CB2_StartBlenderLink(): any {
               {
                    
                   sBerryBlender.mainState++;
-                  sBerryBlender.arrowPos = sArrowStartPos[sArrowStartPosIds[sBerryBlender.numPlayers - 2]] - ARROW_FALL_ROTATION;
+                  sBerryBlender.arrowPos = sArrowStartPos[sArrowStartPosIds[sBerryBlender.numPlayers - 2]] - (0x5800);
               }
               else
               {
@@ -532,7 +606,7 @@ export function CB2_StartBlenderLink(): any {
           }
           break;
       case 21:
-          sBerryBlender.speed = MIN_ARROW_SPEED;
+          sBerryBlender.speed = (0x80);
           sBerryBlender.gameFrameTime = 0;
           SetMainCallback2(CB2_PlayBlender);
           if (GetCurrentMapMusic() != MUS_CYCLING)
@@ -609,13 +683,13 @@ export function SetOpponentsBerryData(playerBerryItemId: any, playersNum: any, p
               if (playerBerry.flavors[opponentSetId] > playerBerry.flavors[i])
                   opponentSetId = i;
           }
-          opponentSetId += NUM_NPC_BERRIES;
+          opponentSetId += (ITEM_TO_BERRY(ITEM_ASPEAR_BERRY));
       }
       else
       {
           opponentSetId = ITEM_TO_BERRY(playerBerryItemId) - 1;
-          if (opponentSetId >= NUM_NPC_BERRIES)
-              opponentSetId = (opponentSetId % NUM_NPC_BERRIES) + NUM_NPC_BERRIES;
+          if (opponentSetId >= (ITEM_TO_BERRY(ITEM_ASPEAR_BERRY)))
+              opponentSetId = (opponentSetId % (ITEM_TO_BERRY(ITEM_ASPEAR_BERRY))) + (ITEM_TO_BERRY(ITEM_ASPEAR_BERRY));
       }
       for (i = 0; i < playersNum - 1; i++)
       {
@@ -639,14 +713,14 @@ export function SetOpponentsBerryData(playerBerryItemId: any, playersNum: any, p
 export function SetPlayerIdMaps(): any {
   let i, j;
 
-      for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+      for (i = 0; i < (MAX_LINK_PLAYERS); i++)
       {
-          sBerryBlender.playerIdToArrowId[i] = NO_PLAYER;
+          sBerryBlender.playerIdToArrowId[i] = (0xFF);
           sBerryBlender.arrowIdToPlayerId[i] = sPlayerIdMap[sBerryBlender.numPlayers - 2][i];
       }
-      for (j = 0; j < BLENDER_MAX_PLAYERS; j++)
+      for (j = 0; j < (MAX_LINK_PLAYERS); j++)
       {
-          for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
           {
               if (sBerryBlender.arrowIdToPlayerId[i] == j)
                   sBerryBlender.playerIdToArrowId[j] = i;
@@ -663,9 +737,9 @@ export function PrintPlayerNames(): any {
       if (gReceivedRemoteLinkPlayers)
           playerId = GetMultiplayerId();
 
-      for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+      for (i = 0; i < (MAX_LINK_PLAYERS); i++)
       {
-          if (sBerryBlender.arrowIdToPlayerId[i] != NO_PLAYER)
+          if (sBerryBlender.arrowIdToPlayerId[i] != (0xFF))
           {
               sBerryBlender.playerArrowSpriteIds[sBerryBlender.arrowIdToPlayerId[i]] = sBerryBlender.playerArrowSpriteIds2[i];
               StartSpriteAnim(gSprites[sBerryBlender.playerArrowSpriteIds[sBerryBlender.arrowIdToPlayerId[i]]], i);
@@ -698,7 +772,7 @@ export function CB2_StartBlenderLocal(): any {
           ConvertItemToBlenderBerry(sBerryBlender.blendedBerries[0], gSpecialVar_ItemId);
           SetOpponentsBerryData(gSpecialVar_ItemId, sBerryBlender.numPlayers,sBerryBlender.blendedBerries[0]);
 
-          for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
           {
               sBerryBlender.playerContinueResponses[i] = 0;
               for (j = 0; j < NUM_SCORE_TYPES; j++)
@@ -720,7 +794,7 @@ export function CB2_StartBlenderLocal(): any {
           }
           break;
       case 2:
-          for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
           {
               sBerryBlender.playerArrowSpriteIds2[i] = CreateSprite(sSpriteTemplate_PlayerArrow, sPlayerArrowPos[i][0], sPlayerArrowPos[i][1], 1);
               StartSpriteAnim(gSprites[sBerryBlender.playerArrowSpriteIds2[i]], i + 8);
@@ -743,7 +817,7 @@ export function CB2_StartBlenderLocal(): any {
           sBerryBlender.playerToThrowBerry = 0;
           break;
       case 11:
-          for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
           {
                
               let playerId: any = sPlayerIdMap[sBerryBlender.numPlayers - 2][i];
@@ -763,7 +837,7 @@ export function CB2_StartBlenderLocal(): any {
               if (sBerryBlender.playerToThrowBerry >= sBerryBlender.numPlayers)
               {
                    
-                  sBerryBlender.arrowPos = sArrowStartPos[sArrowStartPosIds[sBerryBlender.numPlayers - 2]] - ARROW_FALL_ROTATION;
+                  sBerryBlender.arrowPos = sArrowStartPos[sArrowStartPosIds[sBerryBlender.numPlayers - 2]] - (0x5800);
                   sBerryBlender.mainState++;
               }
               else
@@ -823,7 +897,7 @@ export function CB2_StartBlenderLocal(): any {
           break;
       case 21:
           ResetLinkCmds();
-          sBerryBlender.speed = MIN_ARROW_SPEED;
+          sBerryBlender.speed = (0x80);
           sBerryBlender.gameFrameTime = 0;
           sBerryBlender.perfectOpponents = FALSE;
           sBerryBlender.slowdownTimer = 0;
@@ -863,7 +937,7 @@ export function CB2_StartBlenderLocal(): any {
 /** static void ResetLinkCmds(void) */
 export function ResetLinkCmds(): any {
   let i: any = null;
-      for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+      for (i = 0; i < (MAX_LINK_PLAYERS); i++)
       {
           gSendCmd[BLENDER_COMM_INPUT_STATE] = 0;
           gSendCmd[BLENDER_COMM_SCORE] = 0;
@@ -1107,8 +1181,8 @@ export function UpdateSpeedFromHit(cmd: any): any {
           break;
       case LINKCMD_BLENDER_SCORE_MISS:
           sBerryBlender.speed -= (256 / sNumPlayersToSpeedDivisor[sBerryBlender.numPlayers]);
-          if (sBerryBlender.speed < MIN_ARROW_SPEED)
-              sBerryBlender.speed = MIN_ARROW_SPEED;
+          if (sBerryBlender.speed < (0x80))
+              sBerryBlender.speed = (0x80);
           break;
       }
 }
@@ -1145,7 +1219,7 @@ export function UpdateOpponentScores(): any {
 
            
            
-          for (i = 1; i < BLENDER_MAX_PLAYERS; i++)
+          for (i = 1; i < (MAX_LINK_PLAYERS); i++)
           {
               if (gRecvCmds[i][BLENDER_COMM_SCORE] != 0)
                   gRecvCmds[i][BLENDER_COMM_INPUT_STATE] = LINKCMD_BLENDER_SEND_KEYS;
@@ -1160,8 +1234,8 @@ export function UpdateOpponentScores(): any {
               {
                   UpdateSpeedFromHit(LINKCMD_BLENDER_SCORE_BEST);
                   sBerryBlender.progressBarValue += (sBerryBlender.speed / 55);
-                  if (sBerryBlender.progressBarValue >= MAX_PROGRESS_BAR)
-                      sBerryBlender.progressBarValue = MAX_PROGRESS_BAR;
+                  if (sBerryBlender.progressBarValue >= (1000))
+                      sBerryBlender.progressBarValue = (1000);
                   CreateScoreSymbolSprite(LINKCMD_BLENDER_SCORE_BEST, arrowId);
                   sBerryBlender.scores[i][SCORE_BEST]++;
               }
@@ -1239,7 +1313,7 @@ export function HandlePlayerInput(): any {
       }
       if (++sBerryBlender.slowdownTimer > 5)
       {
-          if (sBerryBlender.speed > MIN_ARROW_SPEED)
+          if (sBerryBlender.speed > (0x80))
               sBerryBlender.speed--;
           sBerryBlender.slowdownTimer = 0;
       }
@@ -1258,13 +1332,13 @@ export function CB2_PlayBlender(): any {
       HandlePlayerInput();
       SetLinkDebugValues((sBerryBlender.speed), sBerryBlender.progressBarValue);
       UpdateOpponentScores();
-      TryUpdateProgressBar(sBerryBlender.progressBarValue, MAX_PROGRESS_BAR);
+      TryUpdateProgressBar(sBerryBlender.progressBarValue, (1000));
       UpdateRPM(sBerryBlender.speed);
       RestoreBgCoords();
       ProcessLinkPlayerCmds();
-      if (sBerryBlender.gameEndState == 0 && sBerryBlender.maxProgressBarValue >= MAX_PROGRESS_BAR)
+      if (sBerryBlender.gameEndState == 0 && sBerryBlender.maxProgressBarValue >= (1000))
       {
-          sBerryBlender.progressBarValue = MAX_PROGRESS_BAR;
+          sBerryBlender.progressBarValue = (1000);
           sBerryBlender.gameEndState = 1;
           SetMainCallback2(CB2_EndBlenderGame);
       }
@@ -1616,7 +1690,7 @@ export function CB2_EndBlenderGame(): any {
                   sBerryBlender.gameBlock.timeRPM.time = sBerryBlender.gameFrameTime;
                   sBerryBlender.gameBlock.timeRPM.maxRPM = sBerryBlender.maxRPM;
 
-                  for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+                  for (i = 0; i < (MAX_LINK_PLAYERS); i++)
                   {
                       for (j = 0; j < NUM_SCORE_TYPES; j++)
                           sBerryBlender.gameBlock.scores[i][j] = sBerryBlender.scores[i][j];
@@ -1647,7 +1721,7 @@ export function CB2_EndBlenderGame(): any {
                   sBerryBlender.maxRPM = receivedBlock.timeRPM.maxRPM;
                   sBerryBlender.gameFrameTime = receivedBlock.timeRPM.time;
 
-                  for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+                  for (i = 0; i < (MAX_LINK_PLAYERS); i++)
                   {
                       for (j = 0; j < NUM_SCORE_TYPES; j++)
                           sBerryBlender.scores[i][j] = receivedBlock.scores[i][j];
@@ -1693,9 +1767,9 @@ export function CB2_EndBlenderGame(): any {
           case MENU_B_PRESSED:
               sBerryBlender.yesNoAnswer = 1;
               sBerryBlender.gameEndState++;
-              for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+              for (i = 0; i < (MAX_LINK_PLAYERS); i++)
               {
-                  if (sBerryBlender.arrowIdToPlayerId[i] != NO_PLAYER)
+                  if (sBerryBlender.arrowIdToPlayerId[i] != (0xFF))
                   {
                       PutWindowTilemap(i);
                       CopyWindowToVram(i, COPYWIN_FULL);
@@ -1705,9 +1779,9 @@ export function CB2_EndBlenderGame(): any {
           case 0:
               sBerryBlender.yesNoAnswer = 0;
               sBerryBlender.gameEndState++;
-              for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+              for (i = 0; i < (MAX_LINK_PLAYERS); i++)
               {
-                  if (sBerryBlender.arrowIdToPlayerId[i] != NO_PLAYER)
+                  if (sBerryBlender.arrowIdToPlayerId[i] != (0xFF))
                   {
                       PutWindowTilemap(i);
                       CopyWindowToVram(i, COPYWIN_FULL);
@@ -2328,16 +2402,16 @@ export function UpdateProgressBar(value: any, limit: any): any {
        
       for (i = 0; i < maxFilledSegment; i++)
       {
-          vram[11 + i] = PROGRESS_BAR_FILLED_TOP;
-          vram[43 + i] = PROGRESS_BAR_FILLED_BOTTOM;
+          vram[11 + i] = (0x80E9);
+          vram[43 + i] = (0x80F9);
       }
 
        
       subSegmentsFilled = amountFilled % 8;
       if (subSegmentsFilled != 0)
       {
-          vram[11 + i] = subSegmentsFilled + PROGRESS_BAR_EMPTY_TOP;
-          vram[43 + i] = subSegmentsFilled + PROGRESS_BAR_EMPTY_BOTTOM;
+          vram[11 + i] = subSegmentsFilled + (0x80E1);
+          vram[43 + i] = subSegmentsFilled + (0x80F1);
           i++;
       }
 
@@ -2345,14 +2419,14 @@ export function UpdateProgressBar(value: any, limit: any): any {
        
       for (; i < 8; i++)
       {
-          vram[11 + i] = PROGRESS_BAR_EMPTY_TOP;
-          vram[43 + i] = PROGRESS_BAR_EMPTY_BOTTOM;
+          vram[11 + i] = (0x80E1);
+          vram[43 + i] = (0x80F1);
       }
 }
 
 /** static u32 ArrowSpeedToRPM(u16 speed) */
 export function ArrowSpeedToRPM(speed: any): any {
-  return 60 * 60 * 100 * speed / MAX_ARROW_POS;
+  return 60 * 60 * 100 * speed / (0x10000);
 }
 
 /** static void UpdateRPM(u16 speed) */
@@ -2371,11 +2445,11 @@ export function UpdateRPM(speed: any): any {
           digits[i] = currentRPM % 10;
           currentRPM /= 10;
       }
-      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x458)), digits[4] + RPM_DIGIT);
-      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x45A)), digits[3] + RPM_DIGIT);
-      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x45C)), digits[2] + RPM_DIGIT);
-      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x460)), digits[1] + RPM_DIGIT);
-      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x462)), digits[0] + RPM_DIGIT);
+      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x458)), digits[4] + (0x8072));
+      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x45A)), digits[3] + (0x8072));
+      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x45C)), digits[2] + (0x8072));
+      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x460)), digits[1] + (0x8072));
+      MEM_WRITE(((BG_SCREEN_ADDR(12) + 0x462)), digits[0] + (0x8072));
 }
 
 /** static void ShakeBgCoordForHit(s16 *coord, u16 speed) */
@@ -2496,7 +2570,7 @@ export function PrintBlendingResults(): any {
               xPos = GetStringCenterAlignXOffset(FONT_NORMAL, sText_BlendingResults, 0xA8);
               Blender_AddTextPrinter(WIN_RESULTS, sText_BlendingResults, xPos, 1, TEXT_SKIP_DRAW, 0);
 
-              if (sBerryBlender.numPlayers == BLENDER_MAX_PLAYERS)
+              if (sBerryBlender.numPlayers == (MAX_LINK_PLAYERS))
                   yPos = 17;
               else
                   yPos = 21;
@@ -2560,11 +2634,11 @@ export function PrintBlendingResults(): any {
       case 5:
           ClearStdWindowAndFrameToTransparent(WIN_RESULTS, TRUE);
 
-          for (i = 0; i < BLENDER_MAX_PLAYERS; i++)
+          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
           {
               if (sBerryBlender.chosenItemId[i] != 0)
                   berryIds[i] = sBerryBlender.chosenItemId[i] - FIRST_BERRY_INDEX;
-              if (sBerryBlender.arrowIdToPlayerId[i] != NO_PLAYER)
+              if (sBerryBlender.arrowIdToPlayerId[i] != (0xFF))
               {
                   PutWindowTilemap(i);
                   CopyWindowToVram(i, COPYWIN_FULL);

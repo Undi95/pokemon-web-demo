@@ -15,6 +15,19 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates: any = null;
+let sClockFrames: any = null;
+let sClockInfo: any = null;
+let sClockOamData: any = null;
+let sDummyWindowTemplate: any = null;
+let sSaveFailedClockGfx: any = null;
+let sSaveFailedClockPal: any = null;
+let sSaveFailedType: any = null;
+let sWindowIds: any = null;
+let sWindowTemplate_Clock: any = null;
+let sWindowTemplate_Text: any = null;
 /** static void SaveFailedScreenTextPrint(const u8 *text, u8 x, u8 y) */
 export function SaveFailedScreenTextPrint(text: any, x: any, y: any): any {
   let color: any = [];
@@ -207,7 +220,7 @@ export function VBlankCB_UpdateClockGraphics(): any {
 
       gMain.oamBuffer[0] = sClockOamData;
       gMain.oamBuffer[0].x = 112;
-      gMain.oamBuffer[0].y = (CLOCK_WIN_TOP + 1) * 8;
+      gMain.oamBuffer[0].y = ((((12) - 4)) + 1) * 8;
 
       if (sClockInfo[CLOCK_RUNNING])
       {

@@ -15,6 +15,19 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sDirectionalApproachDistanceFuncs: any = null;
+let sFldEffId: any = null;
+let sLocalId: any = null;
+let sMapGroup: any = null;
+let sMapNum: any = null;
+let sSpriteTemplate_ExclamationQuestionMark: any = null;
+let sSpriteTemplate_HeartIcon: any = null;
+let sTrainerSeeFuncList: any = null;
+let sTrainerSeeFuncList2: any = null;
+let sYOffset: any = null;
+let sYVelocity: any = null;
 /** bool8 CheckForTrainersWantingBattle(void) */
 export function CheckForTrainersWantingBattle(): any {
   let i: any = null;

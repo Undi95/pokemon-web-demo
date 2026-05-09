@@ -15,6 +15,75 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnims_PlayerBicycle: any = null;
+let sBaseY: any = null;
+let sBigDropSpriteId: any = null;
+let sColorDelay: any = null;
+let sCosIdx: any = null;
+let sCosYIdx: any = null;
+let sDelay: any = null;
+let sFig8Loops: any = null;
+let sFlygonYOffset: any = null;
+let sGameFreakLetterData: any = null;
+let sGameFreakLetterStartDelays: any = null;
+let sGameFreakLettersMoveSpeed: any = null;
+let sGroudonRockData: any = null;
+let sIntro1Bg0_Tilemap: any = null;
+let sIntro1Bg1_Tilemap: any = null;
+let sIntro1Bg2_Tilemap: any = null;
+let sIntro1Bg3_Tilemap: any = null;
+let sIntro1Bg_Gfx: any = null;
+let sIntro1Bg_Pal: any = null;
+let sIntroCharacterGender: any = null;
+let sIntroPokeball_Gfx: any = null;
+let sIntroPokeball_Pal: any = null;
+let sIntroPokeball_Tilemap: any = null;
+let sKyogreBubbleData: any = null;
+let sLetterId: any = null;
+let sLetterX: any = null;
+let sMoveTimer: any = null;
+let sNextState: any = null;
+let sPalIdx: any = null;
+let sPos: any = null;
+let sRockId: any = null;
+let sRot: any = null;
+let sScale: any = null;
+let sSinIdx: any = null;
+let sSinXIdx: any = null;
+let sSinYIdx: any = null;
+let sSparkleCoords: any = null;
+let sSpeed: any = null;
+let sSpritePalette_Bubbles: any = null;
+let sSpritePalette_Lightning: any = null;
+let sSpritePalette_RayquazaOrb: any = null;
+let sSpritePalette_Sparkle: any = null;
+let sSpritePalettes_Intro1: any = null;
+let sSpritePalettes_RunningPokemon: any = null;
+let sSpriteSheet_Bubbles: any = null;
+let sSpriteSheet_FlygonSilhouette: any = null;
+let sSpriteSheet_Lightning: any = null;
+let sSpriteSheet_RayquazaOrb: any = null;
+let sSpriteSheet_RunningPokemon: any = null;
+let sSpriteSheet_Sparkle: any = null;
+let sSpriteSheet_WaterDropsAndLogo: any = null;
+let sSpriteTemplate_Bubbles: any = null;
+let sSpriteTemplate_FlygonSilhouette: any = null;
+let sSpriteTemplate_GameFreakLetter: any = null;
+let sSpriteTemplate_GameFreakLogo: any = null;
+let sSpriteTemplate_Lightning: any = null;
+let sSpriteTemplate_Manectric: any = null;
+let sSpriteTemplate_RayquazaOrb: any = null;
+let sSpriteTemplate_Sparkle: any = null;
+let sSpriteTemplate_Torchic: any = null;
+let sSpriteTemplate_Volbeat: any = null;
+let sSpriteTemplate_WaterDrop: any = null;
+let sState: any = null;
+let sStateDelay: any = null;
+let sTaskId: any = null;
+let sTimer: any = null;
+let sUnk: any = null;
 /** static void VBlankCB_Intro(void) */
 export function VBlankCB_Intro(): any {
   LoadOam();
@@ -109,10 +178,10 @@ export function SetUpCopyrightScreen(): any {
               if (gMultibootProgramStruct.gcmb_field_2 == 2)
               {
                    
-                  if ((EWRAM_START + 0xAC) == COLOSSEUM_GAME_CODE)
+                  if ((EWRAM_START + 0xAC) == (0x65366347))
                   {
                       CpuCopy16(gMultiBootProgram_PokemonColosseum_Start, EWRAM_START, 0);
-                      MEM_WRITE(EWRAM_START + 0xAC, COLOSSEUM_GAME_CODE);
+                      MEM_WRITE(EWRAM_START + 0xAC, (0x65366347));
                   }
                   GameCubeMultiBoot_ExecuteProgram(gMultibootProgramStruct);
               }
@@ -201,28 +270,28 @@ export function Task_Scene1_FadeIn(taskId: any): any {
 
 /** static void Task_Scene1_WaterDrops(u8 taskId) */
 export function Task_Scene1_WaterDrops(taskId: any): any {
-  if (gIntroFrameCounter == TIMER_BIG_DROP_START)
+  if (gIntroFrameCounter == (76))
           gSprites[gTasks[taskId].sBigDropSpriteId].sState = 1;
 
-      if (gIntroFrameCounter == TIMER_LOGO_APPEAR)
+      if (gIntroFrameCounter == (128))
           CreateTask(Task_BlendLogoIn, 0);
 
-      if (gIntroFrameCounter == TIMER_BIG_DROP_FALLS)
+      if (gIntroFrameCounter == (251))
           gSprites[gTasks[taskId].sBigDropSpriteId].sState = 2;
 
-      if (gIntroFrameCounter == TIMER_LOGO_BLEND_OUT)
+      if (gIntroFrameCounter == (256))
           CreateTask(Task_BlendLogoOut, 0);
 
-      if (gIntroFrameCounter == TIMER_SMALL_DROP_1)
+      if (gIntroFrameCounter == (368))
           CreateWaterDrop(48, 0, 0x400, 5, 0x70, TRUE);
 
-      if (gIntroFrameCounter == TIMER_SMALL_DROP_2)
+      if (gIntroFrameCounter == (384))
           CreateWaterDrop(200, 60, 0x400, 9, 0x80, TRUE);
 
-      if (gIntroFrameCounter == TIMER_SPARKLES)
+      if (gIntroFrameCounter == (560))
           CreateTask(Task_CreateSparkles, 0);
 
-      if (gIntroFrameCounter > TIMER_SPARKLES)
+      if (gIntroFrameCounter > (560))
       {
           gTasks[taskId].tBg2PosHi = 80;
           gTasks[taskId].tBg2PosLo = 0;
@@ -267,7 +336,7 @@ export function SpriteCB_Sparkle(sprite: any): any {
 
 /** static void Task_Scene1_PanUp(u8 taskId) */
 export function Task_Scene1_PanUp(taskId: any): any {
-  if (gIntroFrameCounter < TIMER_END_PAN_UP)
+  if (gIntroFrameCounter < (904))
       {
           let offset: any = null;
 
@@ -292,7 +361,7 @@ export function Task_Scene1_PanUp(taskId: any): any {
           gTasks[taskId].tBg3PosLo = offset;
           SetGpuReg(REG_OFFSET_BG0VOFS, gTasks[taskId].tBg3PosHi);
 
-          if (gIntroFrameCounter == TIMER_FLYGON_SILHOUETTE_APPEAR)
+          if (gIntroFrameCounter == (832))
           {
                
               let spriteId: any = CreateSprite(sSpriteTemplate_FlygonSilhouette, 120, DISPLAY_HEIGHT, 10);
@@ -301,7 +370,7 @@ export function Task_Scene1_PanUp(taskId: any): any {
       }
       else
       {
-          if (gIntroFrameCounter > TIMER_END_SCENE_1)
+          if (gIntroFrameCounter > (1007))
           {
                
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITEALPHA);
@@ -312,7 +381,7 @@ export function Task_Scene1_PanUp(taskId: any): any {
 
 /** static void Task_Scene1_End(u8 taskId) */
 export function Task_Scene1_End(taskId: any): any {
-  if (gIntroFrameCounter > TIMER_START_SCENE_2)
+  if (gIntroFrameCounter > (1026))
           gTasks[taskId].func = Task_Scene2_Load;
 }
 
@@ -378,14 +447,14 @@ export function Task_Scene2_CreateSprites(taskId: any): any {
 export function Task_Scene2_BikeRide(taskId: any): any {
   let offset: any = null;
 
-      if (gIntroFrameCounter == TIMER_TORCHIC_EXIT)
+      if (gIntroFrameCounter == (1856))
       {
            
           gIntroCredits_MovingSceneryState = INTROCRED_SCENERY_FROZEN;
           DestroyTask(gTasks[taskId].tBgAnimTaskId);
       }
 
-      if (gIntroFrameCounter > TIMER_END_SCENE_2)
+      if (gIntroFrameCounter > (1946))
       {
            
           BeginNormalPaletteFade(PALETTES_ALL, 8, 0, 16, RGB_WHITEALPHA);
@@ -394,17 +463,17 @@ export function Task_Scene2_BikeRide(taskId: any): any {
 
        
        
-      if (gIntroFrameCounter == TIMER_PLAYER_DRIFT_BACK)
+      if (gIntroFrameCounter == (1109))
           gSprites[gTasks[taskId].tPlayerSpriteId].sState = 1;
-      if (gIntroFrameCounter == TIMER_PLAYER_MOVE_FORWARD)
+      if (gIntroFrameCounter == (1214))
           gSprites[gTasks[taskId].tPlayerSpriteId].sState = 0;
-      if (gIntroFrameCounter == TIMER_FLYGON_ENTER)
+      if (gIntroFrameCounter == (1394))
           gSprites[gTasks[taskId].tFlygonSpriteId].sState = 1;
-      if (gIntroFrameCounter == TIMER_PLAYER_MOVE_BACKWARD)
+      if (gIntroFrameCounter == (1398))
           gSprites[gTasks[taskId].tPlayerSpriteId].sState = 2;
-      if (gIntroFrameCounter == TIMER_PLAYER_HOLD_POSITION)
+      if (gIntroFrameCounter == (1576))
           gSprites[gTasks[taskId].tPlayerSpriteId].sState = 3;
-      if (gIntroFrameCounter == TIMER_PLAYER_EXIT)
+      if (gIntroFrameCounter == (1727))
           gSprites[gTasks[taskId].tPlayerSpriteId].sState = 4;
 
        
@@ -419,7 +488,7 @@ export function Task_Scene2_BikeRide(taskId: any): any {
 
 /** static void Task_Scene2_End(u8 taskId) */
 export function Task_Scene2_End(taskId: any): any {
-  if (gIntroFrameCounter > TIMER_START_SCENE_3)
+  if (gIntroFrameCounter > (2068))
           gTasks[taskId].func = Task_Scene3_Load;
 }
 
@@ -515,14 +584,14 @@ export function SpriteCB_Torchic(sprite: any): any {
   switch (sprite.sState)
       {
       case 0:
-          if (gIntroFrameCounter == TIMER_TORCHIC_ENTER)
+          if (gIntroFrameCounter == (1224))
           {
               StartSpriteAnim(sprite, TORCHIC_ANIM_RUN);
               sprite.sState++;
           }
           break;
       case 1:
-          if (gIntroFrameCounter == TIMER_PLAYER_HOLD_POSITION)
+          if (gIntroFrameCounter == (1576))
           {
               StartSpriteAnim(sprite, TORCHIC_ANIM_WALK);
               sprite.sState++;
@@ -538,7 +607,7 @@ export function SpriteCB_Torchic(sprite: any): any {
           }
           break;
       case 2:
-          if (gIntroFrameCounter != TIMER_TORCHIC_SPEED_UP)
+          if (gIntroFrameCounter != (1735))
           {
               sprite.sMoveTimer += 32;
               if (sprite.sMoveTimer & 0xFF00)
@@ -581,7 +650,7 @@ export function SpriteCB_Torchic(sprite: any): any {
           }
           break;
       case 5:
-          if (gIntroFrameCounter >= TIMER_TORCHIC_EXIT)
+          if (gIntroFrameCounter >= (1856))
               sprite.x -= 2;
           break;
       }
@@ -592,12 +661,12 @@ export function SpriteCB_Manectric(sprite: any): any {
   switch (sprite.sState)
       {
       case 0:
-          if (gIntroFrameCounter == TIMER_MANECTRIC_ENTER)
+          if (gIntroFrameCounter == (1088))
               sprite.sState++;
           break;
       case 1:
           sprite.x -= 2;
-          if (gIntroFrameCounter != TIMER_MANECTRIC_RUN_CIRCULAR)
+          if (gIntroFrameCounter != (1168))
               break;
 
            
@@ -670,13 +739,13 @@ export function Task_Scene3_SpinPokeball(taskId: any): any {
 
       PanFadeAndZoomScreen(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, SAFE_DIV(0x10000, gTasks[taskId].tZoomDiv), gTasks[taskId].tAlpha);
 
-      if (gIntroFrameCounter == TIMER_POKEBALL_FADE)
+      if (gIntroFrameCounter == (28))
           BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITEALPHA);
 }
 
 /** static void Task_Scene3_WaitGroudon(u8 taskId) */
 export function Task_Scene3_WaitGroudon(taskId: any): any {
-  if (gIntroFrameCounter > TIMER_START_LEGENDARIES)
+  if (gIntroFrameCounter > (43))
           gTasks[taskId].func = Task_Scene3_LoadGroudon;
 }
 
@@ -733,14 +802,14 @@ export function Task_Scene3_InitGroudonBg(taskId: any): any {
 
 /** static void Task_Scene3_NarrowWindow(u8 taskId) */
 export function Task_Scene3_NarrowWindow(taskId: any): any {
-  if (gTasks[taskId].tWinPos != NARROW_HEIGHT)
+  if (gTasks[taskId].tWinPos != (32))
       {
           gTasks[taskId].tWinPos += 4;
           SetGpuReg(REG_OFFSET_WIN0V, (gTasks[taskId].tWinPos * 256) - (gTasks[taskId].tWinPos - DISPLAY_HEIGHT));
       }
       else
       {
-          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(NARROW_HEIGHT, DISPLAY_HEIGHT - NARROW_HEIGHT));
+          SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE((32), DISPLAY_HEIGHT - (32)));
           gTasks[taskId].func = Task_Scene3_EndNarrowWindow;
       }
 }
@@ -1080,7 +1149,7 @@ export function CreateKyogreBubbleSprites_Body(taskId: any): any {
   let i: any = null;
       let spriteId: any = null;
 
-      for (i = 0; i < NUM_BUBBLES_IN_SET; i++)
+      for (i = 0; i < (6); i++)
       {
           spriteId = CreateSprite(sSpriteTemplate_Bubbles,
                                   sKyogreBubbleData[i][0],
@@ -1098,14 +1167,14 @@ export function CreateKyogreBubbleSprites_Fins(): any {
   let i: any = null;
       let spriteId: any = null;
 
-      for (i = 0; i < NUM_BUBBLES_IN_SET; i++)
+      for (i = 0; i < (6); i++)
       {
           spriteId = CreateSprite(sSpriteTemplate_Bubbles,
-                                  sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][0],
-                                  sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][1],
+                                  sKyogreBubbleData[i + (6)][0],
+                                  sKyogreBubbleData[i + (6)][1],
                                   i);
           gSprites[spriteId].invisible = TRUE;
-          gSprites[spriteId].sDelay = sKyogreBubbleData[i + NUM_BUBBLES_IN_SET][2];
+          gSprites[spriteId].sDelay = sKyogreBubbleData[i + (6)][2];
           gSprites[spriteId].sUnk = 64;
       }
 }
@@ -1984,11 +2053,11 @@ export function SpriteCB_LogoLetter(sprite: any): any {
           }
           break;
       case 1:
-          if (gIntroFrameCounter == TIMER_LOGO_LETTERS_COLOR)
+          if (gIntroFrameCounter == (144))
           {
                
               sprite.sState++;
-              sprite.sTimer = COLOR_CHANGES;
+              sprite.sTimer = (9);
               sprite.sColorDelay = 2;
           }
           break;
@@ -2026,7 +2095,7 @@ export function SpriteCB_LogoLetter(sprite: any): any {
           else
           {
               sprite.sColorDelay = 2;
-              if (sprite.sTimer <= COLOR_CHANGES)
+              if (sprite.sTimer <= (9))
               {
                   CpuCopy16(gIntroGameFreakTextFade_Pal[sprite.sTimer],gPlttBufferFaded[OBJ_PLTT_ID(1) + 15], PLTT_SIZEOF(1));
                   CpuCopy16(gIntroGameFreakTextFade_Pal[sprite.sTimer + 16],gPlttBufferFaded[OBJ_PLTT_ID(1) + 4], PLTT_SIZEOF(1));
@@ -2040,7 +2109,7 @@ export function SpriteCB_LogoLetter(sprite: any): any {
           }
           break;
       case 4:
-          if (gIntroFrameCounter == TIMER_LOGO_DISAPPEAR)
+          if (gIntroFrameCounter == (272))
           {
                
               StartSpriteAffineAnim(sprite, 2);
@@ -2069,14 +2138,14 @@ export function SpriteCB_GameFreakLogo(sprite: any): any {
   switch(sprite.sState)
       {
       case 0:
-          if (gIntroFrameCounter == TIMER_LOGO_APPEAR)
+          if (gIntroFrameCounter == (128))
           {
               sprite.invisible = FALSE;
               sprite.sState++;
           }
           break;
       case 1:
-          if (gIntroFrameCounter == TIMER_LOGO_DISAPPEAR)
+          if (gIntroFrameCounter == (272))
           {
                
               StartSpriteAffineAnim(sprite, 3);
@@ -2096,7 +2165,7 @@ export function CreateGameFreakLogoSprites(x: any, y: any, unused: any): any {
       let spriteId: any = null;
 
        
-      for (i = 0; i < NUM_GF_LETTERS; i++)
+      for (i = 0; i < (9); i++)
       {
           spriteId = CreateSprite(sSpriteTemplate_GameFreakLetter, sGameFreakLetterData[i][1] + x, y - 4, 0);
           gSprites[spriteId].sState = 0;

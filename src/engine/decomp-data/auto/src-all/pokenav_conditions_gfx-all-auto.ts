@@ -15,6 +15,18 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sConditionGraphData_Gfx: any = null;
+let sConditionGraphData_Tilemap: any = null;
+let sInitialLoadId: any = null;
+let sListIndexWindowTemplate: any = null;
+let sLoopedTaskFuncs: any = null;
+let sMenuBgTemplates: any = null;
+let sMonMarkings_Pal: any = null;
+let sMonNameGenderWindowTemplate: any = null;
+let sUnusedWindowTemplate1: any = null;
+let sUnusedWindowTemplate2: any = null;
 /** bool32 OpenConditionGraphMenu(void) */
 export function OpenConditionGraphMenu(): any {
   let menu: any = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX, 0);

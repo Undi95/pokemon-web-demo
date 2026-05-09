@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sFlashEffectParams: any = null;
+let sFlashLevelToRadius: any = null;
 /** static void FillPalBufferWhite(void) */
 export function FillPalBufferWhite(): any {
   CpuFastFill16(RGB_WHITE, gPlttBufferFaded, PLTT_SIZE);

@@ -15,9 +15,30 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAffineAnims_StarterPokemon: any = null;
+let sBallId: any = null;
+let sBgTemplates: any = null;
+let sCursorCoords: any = null;
+let sPokeballCoords: any = null;
+let sSpritePalettes_StarterChoose: any = null;
+let sSpriteSheet_PokeballSelect: any = null;
+let sSpriteSheet_StarterCircle: any = null;
+let sSpriteTemplate_Hand: any = null;
+let sSpriteTemplate_Pokeball: any = null;
+let sSpriteTemplate_StarterCircle: any = null;
+let sStarterLabelCoords: any = null;
+let sStarterLabelWindowId: any = null;
+let sStarterMon: any = null;
+let sTaskId: any = null;
+let sTextColors: any = null;
+let sWindowTemplate_ConfirmStarter: any = null;
+let sWindowTemplate_StarterLabel: any = null;
+let sWindowTemplates: any = null;
 /** u16 GetStarterPokemon(u16 chosenStarterId) */
 export function GetStarterPokemon(chosenStarterId: any): any {
-  if (chosenStarterId > STARTER_MON_COUNT)
+  if (chosenStarterId > (3))
           chosenStarterId = 0;
       return sStarterMon[chosenStarterId];
 }
@@ -166,7 +187,7 @@ export function Task_HandleStarterChooseInput(taskId: any): any {
           gTasks[taskId].tStarterSelection--;
           gTasks[taskId].func = Task_MoveStarterChooseCursor;
       }
-      else if (JOY_NEW(DPAD_RIGHT) && selection < STARTER_MON_COUNT - 1)
+      else if (JOY_NEW(DPAD_RIGHT) && selection < (3) - 1)
       {
           gTasks[taskId].tStarterSelection++;
           gTasks[taskId].func = Task_MoveStarterChooseCursor;
@@ -176,8 +197,8 @@ export function Task_HandleStarterChooseInput(taskId: any): any {
 /** static void Task_WaitForStarterSprite(u8 taskId) */
 export function Task_WaitForStarterSprite(taskId: any): any {
   if (gSprites[gTasks[taskId].tCircleSpriteId].affineAnimEnded &&
-          gSprites[gTasks[taskId].tCircleSpriteId].x == STARTER_PKMN_POS_X &&
-          gSprites[gTasks[taskId].tCircleSpriteId].y == STARTER_PKMN_POS_Y)
+          gSprites[gTasks[taskId].tCircleSpriteId].x == ((DISPLAY_WIDTH / 2)) &&
+          gSprites[gTasks[taskId].tCircleSpriteId].y == (64))
       {
           gTasks[taskId].func = Task_AskConfirmStarter;
       }
@@ -313,13 +334,13 @@ export function SpriteCB_Pokeball(sprite: any): any {
 
 /** static void SpriteCB_StarterPokemon(struct Sprite *sprite) */
 export function SpriteCB_StarterPokemon(sprite: any): any {
-  if (sprite.x > STARTER_PKMN_POS_X)
+  if (sprite.x > ((DISPLAY_WIDTH / 2)))
           sprite.x -= 4;
-      if (sprite.x < STARTER_PKMN_POS_X)
+      if (sprite.x < ((DISPLAY_WIDTH / 2)))
           sprite.x += 4;
-      if (sprite.y > STARTER_PKMN_POS_Y)
+      if (sprite.y > (64))
           sprite.y -= 2;
-      if (sprite.y < STARTER_PKMN_POS_Y)
+      if (sprite.y < (64))
           sprite.y += 2;
 }
 

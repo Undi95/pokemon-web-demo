@@ -15,6 +15,30 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAmplitude: any = null;
+let sBallParticleAnimNums: any = null;
+let sBallParticleAnimationFuncs: any = null;
+let sBallParticlePalettes: any = null;
+let sBallParticleSpriteSheets: any = null;
+let sBallParticleSpriteTemplates: any = null;
+let sCaptureStars: any = null;
+let sDirection: any = null;
+let sDuration: any = null;
+let sDx: any = null;
+let sDy: any = null;
+let sFrame: any = null;
+let sOffsetX: any = null;
+let sOffsetY: any = null;
+let sPhase: any = null;
+let sState: any = null;
+let sTargetX: any = null;
+let sTargetXArg: any = null;
+let sTargetY: any = null;
+let sTargetYArg: any = null;
+let sTaskId: any = null;
+let sTimer: any = null;
 /** void AnimTask_UnusedLevelUpHealthBox(u8 taskId) */
 export function AnimTask_UnusedLevelUpHealthBox(taskId: any): any {
   let animBgData: any = null;
@@ -546,7 +570,7 @@ export function SpriteCB_Ball_Bounce_Step(sprite: any): any {
 
       switch (((sprite.sState) & 0xFF))
       {
-      case BALL_FALLING:
+      case (0):
           sprite.y2 = -Cos(sprite.sPhase, sprite.sAmplitude);
           sprite.sPhase += ((sprite.sState) >> 8) + 4;
            
@@ -576,7 +600,7 @@ export function SpriteCB_Ball_Bounce_Step(sprite: any): any {
               }
           }
           break;
-      case BALL_RISING:
+      case (1):
           sprite.y2 = -Cos(sprite.sPhase, sprite.sAmplitude);
           sprite.sPhase -= ((sprite.sState) >> 8) + 4;
            

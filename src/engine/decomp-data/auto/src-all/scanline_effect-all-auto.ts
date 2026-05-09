@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sShouldStopWaveTask: any = null;
 /** void ScanlineEffect_Stop(void) */
 export function ScanlineEffect_Stop(): any {
   gScanlineEffect.state = 0;

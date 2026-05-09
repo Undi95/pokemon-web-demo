@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sDummyWindowTemplate: any = null;
+let sWindowPtr: any = null;
+let sWindowSize: any = null;
 /** bool16 InitWindows(const struct WindowTemplate *templates) */
 export function InitWindows(templates: any): any {
   let i: any = null;

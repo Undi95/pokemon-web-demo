@@ -15,6 +15,33 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sData: any = null;
+let sHoennTrainerCardBadges_Gfx: any = null;
+let sHoennTrainerCardBadges_Pal: any = null;
+let sHoennTrainerCardFemaleBg_Pal: any = null;
+let sHoennTrainerCardPals: any = null;
+let sKantoTrainerCardBadges_Gfx: any = null;
+let sKantoTrainerCardBadges_Pal: any = null;
+let sKantoTrainerCardFemaleBg_Pal: any = null;
+let sKantoTrainerCardPals: any = null;
+let sLinkBattleTexts: any = null;
+let sText_HofTime: any = null;
+let sTimeColonTextColors: any = null;
+let sTrainerCardBgTemplates: any = null;
+let sTrainerCardFlipTasks: any = null;
+let sTrainerCardStar_Pal: any = null;
+let sTrainerCardStatColors: any = null;
+let sTrainerCardSticker1_Pal: any = null;
+let sTrainerCardSticker2_Pal: any = null;
+let sTrainerCardSticker3_Pal: any = null;
+let sTrainerCardSticker4_Pal: any = null;
+let sTrainerCardStickers_Gfx: any = null;
+let sTrainerCardTextColors: any = null;
+let sTrainerCardWindowTemplates: any = null;
+let sTrainerPicFacilityClass: any = null;
+let sTrainerPicOffset: any = null;
 /** static void VblankCb_TrainerCard(void) */
 export function VblankCb_TrainerCard(): any {
   LoadOam();
@@ -107,14 +134,14 @@ export function Task_TrainerCard(taskId: any): any {
           if (!UpdatePaletteFade() && !IsDma3ManagerBusyWithBgCopy())
           {
               PlaySE(SE_RG_CARD_OPEN);
-              sData.mainState = STATE_HANDLE_INPUT_FRONT;
+              sData.mainState = (10);
           }
           break;
       case 9:
           if (!IsSEPlaying())
               sData.mainState++;
           break;
-      case STATE_HANDLE_INPUT_FRONT:
+      case (10):
            
           if (!gReceivedRemoteLinkPlayers && sData.timeColonNeedDraw)
           {
@@ -126,44 +153,44 @@ export function Task_TrainerCard(taskId: any): any {
           {
               FlipTrainerCard();
               PlaySE(SE_RG_CARD_FLIP);
-              sData.mainState = STATE_WAIT_FLIP_TO_BACK;
+              sData.mainState = (12);
           }
           else if (JOY_NEW(B_BUTTON))
           {
               if (gReceivedRemoteLinkPlayers && sData.isLink && InUnionRoom() == TRUE)
               {
-                  sData.mainState = STATE_WAIT_LINK_PARTNER;
+                  sData.mainState = (15);
               }
               else
               {
                   BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, sData.blendColor);
-                  sData.mainState = STATE_CLOSE_CARD;
+                  sData.mainState = (14);
               }
           }
           break;
-      case STATE_WAIT_FLIP_TO_BACK:
+      case (12):
           if (IsCardFlipTaskActive() && Overworld_IsRecvQueueAtMax() != TRUE)
           {
               PlaySE(SE_RG_CARD_OPEN);
-              sData.mainState = STATE_HANDLE_INPUT_BACK;
+              sData.mainState = (11);
           }
           break;
-      case STATE_HANDLE_INPUT_BACK:
+      case (11):
           if (JOY_NEW(B_BUTTON))
           {
               if (gReceivedRemoteLinkPlayers && sData.isLink && InUnionRoom() == TRUE)
               {
-                  sData.mainState = STATE_WAIT_LINK_PARTNER;
+                  sData.mainState = (15);
               }
               else if (gReceivedRemoteLinkPlayers)
               {
                   BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, sData.blendColor);
-                  sData.mainState = STATE_CLOSE_CARD;
+                  sData.mainState = (14);
               }
               else
               {
                   FlipTrainerCard();
-                  sData.mainState = STATE_WAIT_FLIP_TO_FRONT;
+                  sData.mainState = (13);
                   PlaySE(SE_RG_CARD_FLIP);
               }
           }
@@ -171,37 +198,37 @@ export function Task_TrainerCard(taskId: any): any {
           {
              if (gReceivedRemoteLinkPlayers && sData.isLink && InUnionRoom() == TRUE)
              {
-                 sData.mainState = STATE_WAIT_LINK_PARTNER;
+                 sData.mainState = (15);
              }
              else
              {
                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, sData.blendColor);
-                 sData.mainState = STATE_CLOSE_CARD;
+                 sData.mainState = (14);
              }
           }
           break;
-      case STATE_WAIT_LINK_PARTNER:
+      case (15):
           SetCloseLinkCallback();
           DrawDialogueFrame(WIN_MSG, TRUE);
           AddTextPrinterParameterized(WIN_MSG, FONT_NORMAL, gText_WaitingTrainerFinishReading, 0, 1, 255, 0);
           CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
-          sData.mainState = STATE_CLOSE_CARD_LINK;
+          sData.mainState = (16);
           break;
-      case STATE_CLOSE_CARD_LINK:
+      case (16):
           if (!gReceivedRemoteLinkPlayers)
           {
               BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, sData.blendColor);
-              sData.mainState = STATE_CLOSE_CARD;
+              sData.mainState = (14);
           }
           break;
-      case STATE_CLOSE_CARD:
+      case (14):
           if (!UpdatePaletteFade())
               CloseTrainerCard(taskId);
           break;
-      case STATE_WAIT_FLIP_TO_FRONT:
+      case (13):
           if (IsCardFlipTaskActive() && Overworld_IsRecvQueueAtMax() != TRUE)
           {
-              sData.mainState = STATE_HANDLE_INPUT_FRONT;
+              sData.mainState = (10);
               PlaySE(SE_RG_CARD_OPEN);
           }
           break;

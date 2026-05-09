@@ -15,6 +15,24 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sEmptyWhiteText_GrayHighlight: any = null;
+let sEmptyWhiteText_TransparentHighlight: any = null;
+let sHealthBar_SubspriteTables: any = null;
+let sHealthbarSpriteTemplates: any = null;
+let sHealthboxOpponentSpriteTemplates: any = null;
+let sHealthboxPlayerSpriteTemplates: any = null;
+let sHealthboxSafariSpriteTemplate: any = null;
+let sStatusIconColors: any = null;
+let sStatusSummaryBallsSpritePal: any = null;
+let sStatusSummaryBallsSpriteSheet: any = null;
+let sStatusSummaryBallsSpriteTemplates: any = null;
+let sStatusSummaryBarSpritePal: any = null;
+let sStatusSummaryBarSpriteSheet: any = null;
+let sStatusSummaryBarSpriteTemplates: any = null;
+let sStatusSummaryBar_SubspriteTable_Enter: any = null;
+let sStatusSummaryBar_SubspriteTable_Exit: any = null;
 /** static s32 DummiedOutFunction(s16 unused1, s16 unused2, s32 unused3) */
 export function DummiedOutFunction(unused1: any, unused2: any, unused3: any): any {
   return 9;
@@ -1439,7 +1457,7 @@ export function MoveBattleBar(battler: any, healthboxSpriteId: any, whichBar: an
           currentBarValue = CalcNewBarValue(gBattleSpritesDataPtr.battleBars[battler].maxValue,
                       gBattleSpritesDataPtr.battleBars[battler].oldValue,
                       gBattleSpritesDataPtr.battleBars[battler].receivedValue,gBattleSpritesDataPtr.battleBars[battler].currValue,
-                      B_HEALTHBAR_PIXELS / 8, 1);
+                      (48) / 8, 1);
       }
       else  
       {
@@ -1453,7 +1471,7 @@ export function MoveBattleBar(battler: any, healthboxSpriteId: any, whichBar: an
           currentBarValue = CalcNewBarValue(gBattleSpritesDataPtr.battleBars[battler].maxValue,
                       gBattleSpritesDataPtr.battleBars[battler].oldValue,
                       gBattleSpritesDataPtr.battleBars[battler].receivedValue,gBattleSpritesDataPtr.battleBars[battler].currValue,
-                      B_EXPBAR_PIXELS / 8, expFraction);
+                      (64) / 8, expFraction);
       }
 
       if (whichBar == EXP_BAR || (whichBar == HEALTH_BAR && !gBattleSpritesDataPtr.battlerData[battler].hpNumbersNoBars))
@@ -1478,11 +1496,11 @@ export function MoveBattleBarGraphically(battler: any, whichBar: any): any {
           filledPixelsCount = CalcBarFilledPixels(gBattleSpritesDataPtr.battleBars[battler].maxValue,
                               gBattleSpritesDataPtr.battleBars[battler].oldValue,
                               gBattleSpritesDataPtr.battleBars[battler].receivedValue,gBattleSpritesDataPtr.battleBars[battler].currValue,
-                              array, B_HEALTHBAR_PIXELS / 8);
+                              array, (48) / 8);
 
-          if (filledPixelsCount > (B_HEALTHBAR_PIXELS * 50 / 100))  
+          if (filledPixelsCount > ((48) * 50 / 100))  
               barElementId = HEALTHBOX_GFX_HP_BAR_GREEN;
-          else if (filledPixelsCount > (B_HEALTHBAR_PIXELS * 20 / 100))  
+          else if (filledPixelsCount > ((48) * 20 / 100))  
               barElementId = HEALTHBOX_GFX_HP_BAR_YELLOW;
           else
               barElementId = HEALTHBOX_GFX_HP_BAR_RED;  
@@ -1502,7 +1520,7 @@ export function MoveBattleBarGraphically(battler: any, whichBar: any): any {
           CalcBarFilledPixels(gBattleSpritesDataPtr.battleBars[battler].maxValue,
                       gBattleSpritesDataPtr.battleBars[battler].oldValue,
                       gBattleSpritesDataPtr.battleBars[battler].receivedValue,gBattleSpritesDataPtr.battleBars[battler].currValue,
-                      array, B_EXPBAR_PIXELS / 8);
+                      array, (64) / 8);
           level = GetMonData(gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_LEVEL);
           if (level == MAX_LEVEL)
           {
@@ -1656,7 +1674,7 @@ export function Debug_TestHealthBar_Helper(barInfo: any, currValue: any, dest: a
       let i: any = null;
 
       CalcBarFilledPixels(barInfo.maxValue, barInfo.oldValue,
-                  barInfo.receivedValue, currValue, pixels, B_HEALTHBAR_PIXELS / 8);
+                  barInfo.receivedValue, currValue, pixels, (48) / 8);
 
       for (i = 0; i < 6; i++)
           src[i] = (barInfo.unkC_0 << 12) | (barInfo.unk10 + pixels[i]);
@@ -1704,10 +1722,10 @@ export function GetHPBarLevel(hp: any, maxhp: any): any {
       }
       else
       {
-          let fraction: any = GetScaledHPFraction(hp, maxhp, B_HEALTHBAR_PIXELS);
-          if (fraction > (B_HEALTHBAR_PIXELS * 50 / 100))  
+          let fraction: any = GetScaledHPFraction(hp, maxhp, (48));
+          if (fraction > ((48) * 50 / 100))  
               result = HP_BAR_GREEN;
-          else if (fraction > (B_HEALTHBAR_PIXELS * 20 / 100))  
+          else if (fraction > ((48) * 20 / 100))  
               result = HP_BAR_YELLOW;
           else if (fraction > 0)
               result = HP_BAR_RED;

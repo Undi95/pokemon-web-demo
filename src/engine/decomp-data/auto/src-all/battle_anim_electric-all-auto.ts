@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sElectricChargingParticleCoordOffsets: any = null;
 /** static void AnimLightning(struct Sprite *sprite) */
 export function AnimLightning(sprite: any): any {
   if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)

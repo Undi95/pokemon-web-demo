@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates: any = null;
+let sInputMap: any = null;
+let sInputTimeWindow: any = null;
+let sSpritePalette_Arrow: any = null;
+let sSpriteTemplate_Arrow: any = null;
+let sState: any = null;
+let sTaskId: any = null;
+let sWindowTemplates: any = null;
 /** static void SpriteCB_Cursor_UpOrRight(struct Sprite *sprite) */
 export function SpriteCB_Cursor_UpOrRight(sprite: any): any {
   let state: any = gTasks[sprite.sTaskId].tSelection;

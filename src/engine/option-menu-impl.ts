@@ -140,6 +140,11 @@ export async function preloadOptionMenuAssets(): Promise<void> {
   // Install hooks Task_X signature après que exposeGbaGlobals() ait set
   // globalThis.CreateTask (= sinon notre wrapper se fait écraser).
   installAutoTaskHooks();
+  // Flatten barrel auto-files sur globalThis (= 1:1 décomp scope C visibility
+  // pour CB2_ReturnToFieldWithOpenMenu chain). Lazy ici pour pas polluer
+  // globalThis avant l'ouverture du menu — sinon les SpriteCB_* du barrel
+  // override les versions manuelles que GameScene a registered.
+  flattenBarrelOnGlobalThis();
 }
 
 // ─── Helpers de rendu ────────────────────────────────────────────────────────
@@ -604,13 +609,25 @@ for (const [k, v] of Object.entries(autoOptionMenu)) {
     (globalThis as Record<string, unknown>)[k] = v;
   }
 }
-// Puis flatten le barrel : itère chaque namespace, expose ses exports si
-// pas déjà set (= first-seen wins, dedupe par name).
-for (const [, ns] of Object.entries(allAutoBarrel)) {
-  if (!ns || typeof ns !== 'object') continue;
-  for (const [k, v] of Object.entries(ns as Record<string, unknown>)) {
-    if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {
-      (globalThis as Record<string, unknown>)[k] = v;
+
+/** Flatten le barrel auto-files sur globalThis. Lazy-called depuis
+ *  preloadOptionMenuAssets() pour éviter de polluer globalThis au boot
+ *  (= title screen registers `SpriteCB_PokemonLogoShine_Fast` via
+ *  rt.spriteCallbacks, mais le barrel re-export le auto/src-all version
+ *  qui RÉFÉRENCE des constants non-importées comme SHINE_SPEED).
+ *
+ *  La règle "first-seen wins" (= `if undefined`) protège les symboles
+ *  manuels déjà sur globalThis. */
+let _barrelFlattened = false;
+function flattenBarrelOnGlobalThis(): void {
+  if (_barrelFlattened) return;
+  _barrelFlattened = true;
+  for (const [, ns] of Object.entries(allAutoBarrel)) {
+    if (!ns || typeof ns !== 'object') continue;
+    for (const [k, v] of Object.entries(ns as Record<string, unknown>)) {
+      if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {
+        (globalThis as Record<string, unknown>)[k] = v;
+      }
     }
   }
 }

@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBattleAICmdTable: any = null;
+let sBattler_AI: any = null;
+let sIgnoredPowerfulMoveEffects: any = null;
 /** void BattleAI_HandleItemUseBeforeAISetup(u8 defaultScoreMoves) */
 export function BattleAI_HandleItemUseBeforeAISetup(defaultScoreMoves: any): any {
   let i: any = null;
@@ -150,9 +155,9 @@ export function ChooseMoveOrAction_Singles(): any {
       }
 
        
-      if (AI_THINKING_STRUCT.aiAction & AI_ACTION_FLEE)
+      if (AI_THINKING_STRUCT.aiAction & ((1 << 1)))
           return AI_CHOICE_FLEE;
-      if (AI_THINKING_STRUCT.aiAction & AI_ACTION_WATCH)
+      if (AI_THINKING_STRUCT.aiAction & ((1 << 2)))
           return AI_CHOICE_WATCH;
 
       numOfBestMoves = 1;
@@ -228,11 +233,11 @@ export function ChooseMoveOrAction_Doubles(): any {
                   AI_THINKING_STRUCT.movesetIndex = 0;
               }
 
-              if (AI_THINKING_STRUCT.aiAction & AI_ACTION_FLEE)
+              if (AI_THINKING_STRUCT.aiAction & ((1 << 1)))
               {
                   actionOrMoveIndex[i] = AI_CHOICE_FLEE;
               }
-              else if (AI_THINKING_STRUCT.aiAction & AI_ACTION_WATCH)
+              else if (AI_THINKING_STRUCT.aiAction & ((1 << 2)))
               {
                   actionOrMoveIndex[i] = AI_CHOICE_WATCH;
               }
@@ -323,18 +328,18 @@ export function BattleAI_DoAIProcessing(): any {
                   else
                   {
                       AI_THINKING_STRUCT.score[AI_THINKING_STRUCT.movesetIndex] = 0;
-                      AI_THINKING_STRUCT.aiAction |= AI_ACTION_DONE;
+                      AI_THINKING_STRUCT.aiAction |= ((1 << 0));
                   }
-                  if (AI_THINKING_STRUCT.aiAction & AI_ACTION_DONE)
+                  if (AI_THINKING_STRUCT.aiAction & ((1 << 0)))
                   {
                      AI_THINKING_STRUCT.movesetIndex++;
 
-                      if (AI_THINKING_STRUCT.movesetIndex < MAX_MON_MOVES && !(AI_THINKING_STRUCT.aiAction & AI_ACTION_DO_NOT_ATTACK))
+                      if (AI_THINKING_STRUCT.movesetIndex < MAX_MON_MOVES && !(AI_THINKING_STRUCT.aiAction & ((1 << 3))))
                           AI_THINKING_STRUCT.aiState = AIState_SettingUp;
                       else
                           AI_THINKING_STRUCT.aiState++;
 
-                      AI_THINKING_STRUCT.aiAction &= ~(AI_ACTION_DONE);
+                      AI_THINKING_STRUCT.aiAction &= ~(((1 << 0)));
                   }
                   break;
           }
@@ -902,14 +907,14 @@ export function Cmd_get_how_powerful_move_is(): any {
   let i, checkedMove;
       let moveDmgs: any = [];
 
-      for (i = 0; sIgnoredPowerfulMoveEffects[i] != IGNORED_MOVES_END; i++)
+      for (i = 0; sIgnoredPowerfulMoveEffects[i] != (0xFFFF); i++)
       {
           if (gBattleMoves[AI_THINKING_STRUCT.moveConsidered].effect == sIgnoredPowerfulMoveEffects[i])
               break;
       }
 
       if (gBattleMoves[AI_THINKING_STRUCT.moveConsidered].power > 1
-          && sIgnoredPowerfulMoveEffects[i] == IGNORED_MOVES_END)
+          && sIgnoredPowerfulMoveEffects[i] == (0xFFFF))
       {
           gDynamicBasePower = 0;
           MEM_WRITE((gBattleStruct.dynamicMoveType), 0);
@@ -921,14 +926,14 @@ export function Cmd_get_how_powerful_move_is(): any {
            
           for (checkedMove = 0; checkedMove < MAX_MON_MOVES; checkedMove++)
           {
-              for (i = 0; sIgnoredPowerfulMoveEffects[i] != IGNORED_MOVES_END; i++)
+              for (i = 0; sIgnoredPowerfulMoveEffects[i] != (0xFFFF); i++)
               {
                   if (gBattleMoves[gBattleMons[sBattler_AI].moves[checkedMove]].effect == sIgnoredPowerfulMoveEffects[i])
                       break;
               }
 
               if (gBattleMons[sBattler_AI].moves[checkedMove] != MOVE_NONE
-                  && sIgnoredPowerfulMoveEffects[i] == IGNORED_MOVES_END
+                  && sIgnoredPowerfulMoveEffects[i] == (0xFFFF)
                   && gBattleMoves[gBattleMons[sBattler_AI].moves[checkedMove]].power > 1)
               {
                   gCurrentMove = gBattleMons[sBattler_AI].moves[checkedMove];
@@ -1687,7 +1692,7 @@ export function Cmd_if_curr_move_disabled_or_encored(): any {
 
 /** static void Cmd_flee(void) */
 export function Cmd_flee(): any {
-  AI_THINKING_STRUCT.aiAction |= (AI_ACTION_DONE | AI_ACTION_FLEE | AI_ACTION_DO_NOT_ATTACK);
+  AI_THINKING_STRUCT.aiAction |= (((1 << 0)) | ((1 << 1)) | ((1 << 3)));
 }
 
 /** static void Cmd_if_random_safari_flee(void) */
@@ -1702,7 +1707,7 @@ export function Cmd_if_random_safari_flee(): any {
 
 /** static void Cmd_watch(void) */
 export function Cmd_watch(): any {
-  AI_THINKING_STRUCT.aiAction |= (AI_ACTION_DONE | AI_ACTION_WATCH | AI_ACTION_DO_NOT_ATTACK);
+  AI_THINKING_STRUCT.aiAction |= (((1 << 0)) | ((1 << 2)) | ((1 << 3)));
 }
 
 /** static void Cmd_get_hold_effect(void) */
@@ -1856,7 +1861,7 @@ export function Cmd_goto(): any {
 /** static void Cmd_end(void) */
 export function Cmd_end(): any {
   if (AIStackPop() == 0)
-          AI_THINKING_STRUCT.aiAction |= AI_ACTION_DONE;
+          AI_THINKING_STRUCT.aiAction |= ((1 << 0));
 }
 
 /** static void Cmd_if_level_cond(void) */

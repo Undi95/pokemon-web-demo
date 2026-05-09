@@ -15,6 +15,51 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCancelDecoratingYesNoFunctions: any = null;
+let sCurDecorMapX: any = null;
+let sCurDecorMapY: any = null;
+let sCurDecorSelectedInRearrangement: any = null;
+let sCurDecorationCategory: any = null;
+let sDecorMenuWindowIds: any = null;
+let sDecorRearrangementDataBuffer: any = null;
+let sDecorSelectorOam: any = null;
+let sDecorShapeSizes: any = null;
+let sDecorTilemaps: any = null;
+let sDecorWhilePlacingSpriteTemplate: any = null;
+let sDecor_CameraSpriteObjectIdx1: any = null;
+let sDecor_CameraSpriteObjectIdx2: any = null;
+let sDecorationActionsCursorPos: any = null;
+let sDecorationCategoryNames: any = null;
+let sDecorationContext: any = null;
+let sDecorationItemsListMenuTemplate: any = null;
+let sDecorationItemsMenu: any = null;
+let sDecorationLastDirectionMoved: any = null;
+let sDecorationMainMenuActions: any = null;
+let sDecorationMenuPalette: any = null;
+let sDecorationMovementInfo: any = null;
+let sDecorationSelectorSpriteTemplate: any = null;
+let sDecorationSlideElevation: any = null;
+let sDecorationStandElevations: any = null;
+let sDecorationWindowTemplates: any = null;
+let sDecorationsCursorPos: any = null;
+let sDecorationsScrollOffset: any = null;
+let sNumOwnedDecorationsInCurCategory: any = null;
+let sPlaceDecorationGraphicsDataBuffer: any = null;
+let sPlaceDecorationYesNoFunctions: any = null;
+let sPlacePutAwayYesNoFunctions: any = null;
+let sPlayerRoomItemsIndicesBuffer: any = null;
+let sPuttingAwayCursorSpriteTemplate: any = null;
+let sReturnDecorationYesNoFunctions: any = null;
+let sSecretBaseItemsIndicesBuffer: any = null;
+let sSecretBasePCMenuItemDescriptions: any = null;
+let sSecretBasePC_SelectedDecorationActions: any = null;
+let sSpritePal_PlaceDecoration: any = null;
+let sSpritePal_PuttingAwayCursorBrendan: any = null;
+let sSpritePal_PuttingAwayCursorMay: any = null;
+let sStopPuttingAwayDecorationsYesNoFunctions: any = null;
+let sTossDecorationYesNoFunctions: any = null;
 /** void InitDecorationContextItems(void) */
 export function InitDecorationContextItems(): any {
   if (sCurDecorationCategory < DECORCAT_COUNT)
@@ -140,7 +185,7 @@ export function DecorationMenuAction_Decorate(taskId: any): any {
       }
       else
       {
-          gTasks[taskId].tDecorationMenuCommand = DECOR_MENU_PLACE;
+          gTasks[taskId].tDecorationMenuCommand = (0);
           sCurDecorationCategory = DECORCAT_DESK;
           SecretBasePC_PrepMenuForSelectingStoredDecors(taskId);
       }
@@ -172,7 +217,7 @@ export function DecorationMenuAction_Toss(taskId: any): any {
       }
       else
       {
-          gTasks[taskId].tDecorationMenuCommand = DECOR_MENU_TOSS;
+          gTasks[taskId].tDecorationMenuCommand = (1);
           sCurDecorationCategory = DECORCAT_DESK;
           SecretBasePC_PrepMenuForSelectingStoredDecors(taskId);
       }
@@ -229,7 +274,7 @@ export function PrintDecorationCategoryMenuItems(taskId: any): any {
       let windowId: any = sDecorMenuWindowIds[WINDOW_DECORATION_CATEGORIES];
       let isPlayerRoom: any = sDecorationContext.isPlayerRoom;
       let shouldDisable: any = FALSE;
-      if (isPlayerRoom == TRUE && tDecorationMenuCommand == DECOR_MENU_PLACE)
+      if (isPlayerRoom == TRUE && tDecorationMenuCommand == (0))
           shouldDisable = TRUE;
 
       for (i = 0; i < DECORCAT_COUNT; i++)
@@ -241,7 +286,7 @@ export function PrintDecorationCategoryMenuItems(taskId: any): any {
               PrintDecorationCategoryMenuItem(windowId, i, 8, i * 16, FALSE, TEXT_SKIP_DRAW);
       }
 
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gTasks[taskId].tDecorationMenuCommand == DECOR_MENU_TRADE ? gText_Exit : gText_Cancel, 8, i * 16 + 1, 0, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gTasks[taskId].tDecorationMenuCommand == (2) ? gText_Exit : gText_Cancel, 8, i * 16 + 1, 0, NULL);
       ScheduleBgCopyTilemapToVram(0);
 }
 
@@ -329,7 +374,7 @@ export function ReturnToDecorationCategoriesAfterInvalidSelection(taskId: any): 
 
 /** static void ExitDecorationCategoriesMenu(u8 taskId) */
 export function ExitDecorationCategoriesMenu(taskId: any): any {
-  if (gTasks[taskId].tDecorationMenuCommand != DECOR_MENU_TRADE)
+  if (gTasks[taskId].tDecorationMenuCommand != (2))
           ReturnToActionsMenuFromCategories(taskId);
       else
           ExitTraderDecorationMenu(taskId);
@@ -348,7 +393,7 @@ export function ReturnToActionsMenuFromCategories(taskId: any): any {
 export function ShowDecorationCategoriesWindow(taskId: any): any {
   LoadPalette(sDecorationMenuPalette, BG_PLTT_ID(13), 0);
       ClearDialogWindowAndFrame(0, FALSE);
-      gTasks[taskId].tDecorationMenuCommand = DECOR_MENU_TRADE;
+      gTasks[taskId].tDecorationMenuCommand = (2);
       sCurDecorationCategory = DECORCAT_DESK;
       InitDecorationCategoriesWindow(taskId);
 }
@@ -389,7 +434,7 @@ export function PrintDecorationItemMenuItems(taskId: any): any {
       let i: any = null;
 
       data = gTasks[taskId].data;
-      if ((sCurDecorationCategory < DECORCAT_DOLL || sCurDecorationCategory > DECORCAT_CUSHION) && sDecorationContext.isPlayerRoom == TRUE && tDecorationMenuCommand == DECOR_MENU_PLACE)
+      if ((sCurDecorationCategory < DECORCAT_DOLL || sCurDecorationCategory > DECORCAT_CUSHION) && sDecorationContext.isPlayerRoom == TRUE && tDecorationMenuCommand == (0))
           ColorMenuItemString(gStringVar1, TRUE);
       else
           ColorMenuItemString(gStringVar1, FALSE);
@@ -786,7 +831,7 @@ export function SetDecoration(): any {
   let i: any = null;
       let j: any = null;
 
-      for (i = 0; i < NUM_DECORATION_FLAGS; i++)
+      for (i = 0; i < ((FLAG_DECORATION_14 - FLAG_DECORATION_1 + 1)); i++)
       {
           if (FlagGet(FLAG_DECORATION_1 + i) == TRUE)
           {
@@ -883,7 +928,7 @@ export function Task_PlaceDecoration(taskId: any): any {
           case 2:
               if (IsWeatherNotFadingIn() == TRUE)
               {
-                  gTasks[taskId].tDecorationItemsMenuCommand = DECOR_ITEMS_MENU_PLACE;
+                  gTasks[taskId].tDecorationItemsMenuCommand = (0);
                   ContinueDecorating(taskId);
               }
               break;
@@ -1243,7 +1288,7 @@ export function c1_overworld_prev_quest(taskId: any): any {
           break;
       case 1:
           FreePlayerSpritePalette();
-          FreeSpritePaletteByTag(PLACE_DECORATION_SELECTOR_TAG);
+          FreeSpritePaletteByTag((0xbe5));
           gFieldCallback = FieldCB_InitDecorationItemsWindow;
           SetMainCallback2(CB2_ReturnToField);
           DestroyTask(taskId);
@@ -1544,7 +1589,7 @@ export function gpu_pal_decompress_alloc_tag_and_upload(data: any, decor: any): 
       if (data.decoration.permission == DECORPERM_SPRITE)
           return CreateObjectGraphicsSprite(data.decoration.tiles[0], SpriteCallbackDummy, 0, 0, 1);
 
-      FreeSpritePaletteByTag(PLACE_DECORATION_SELECTOR_TAG);
+      FreeSpritePaletteByTag((0xbe5));
       SetDecorSelectionMetatiles(data);
       SetDecorSelectionBoxOamAttributes(data.decoration.shape);
       SetDecorSelectionBoxTiles(data);
@@ -1819,7 +1864,7 @@ export function Task_ContinuePuttingAwayDecorations(taskId: any): any {
       case 2:
           if (IsWeatherNotFadingIn() == TRUE)
           {
-              tDecorationItemsMenuCommand = DECOR_ITEMS_MENU_PUT_AWAY;
+              tDecorationItemsMenuCommand = (1);
               ContinuePuttingAwayDecorations(taskId);
           }
           break;
@@ -2187,7 +2232,7 @@ export function LoadPlayerSpritePalette(): any {
 
 /** static void FreePlayerSpritePalette(void) */
 export function FreePlayerSpritePalette(): any {
-  FreeSpritePaletteByTag(PLACE_DECORATION_PLAYER_TAG);
+  FreeSpritePaletteByTag((0x008));
 }
 
 /** static void DecorationItemsMenuAction_AttemptToss(u8 taskId) */

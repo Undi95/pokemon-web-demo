@@ -15,6 +15,26 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgTemplates: any = null;
+let sContestLinkTextColors: any = null;
+let sContestResults: any = null;
+let sDistance: any = null;
+let sResultsTextWindow_Gfx: any = null;
+let sResultsTextWindow_Pal: any = null;
+let sSlideIncrement: any = null;
+let sSlideOutTimer: any = null;
+let sSpritePalette_Confetti: any = null;
+let sSpritePalette_ResultsTextWindow: any = null;
+let sSpriteSheet_Confetti: any = null;
+let sSpriteSheet_WirelessIndicatorWindow: any = null;
+let sSpriteSheets_ResultsTextWindow: any = null;
+let sSpriteTemplate_Confetti: any = null;
+let sSpriteTemplate_ResultsTextWindow: any = null;
+let sSpriteTemplate_WirelessIndicatorWindow: any = null;
+let sTargetX: any = null;
+let sWindowTemplates: any = null;
 /** static void InitContestResultsDisplay(void) */
 export function InitContestResultsDisplay(): any {
   let i: any = null;
@@ -312,7 +332,7 @@ export function Task_AnnouncePreliminaryResults(taskId: any): any {
       {
           CreateTask(Task_FlashStarsAndHearts, 20);
           x = DrawResultsTextWindow(gText_AnnouncingResults, sContestResults.data.slidingTextBoxSpriteId);
-          StartTextBoxSlideIn(x, TEXT_BOX_Y, 120, 1088);
+          StartTextBoxSlideIn(x, ((DISPLAY_HEIGHT - 16)), 120, 1088);
           gTasks[taskId].tState++;
       }
       else if (gTasks[taskId].tState == 1)
@@ -335,7 +355,7 @@ export function Task_AnnouncePreliminaryResults(taskId: any): any {
       else if (gTasks[taskId].tState == 3)
       {
           x = DrawResultsTextWindow(gText_PreliminaryResults, sContestResults.data.slidingTextBoxSpriteId);
-          StartTextBoxSlideIn(x, TEXT_BOX_Y, -1, 1088);
+          StartTextBoxSlideIn(x, ((DISPLAY_HEIGHT - 16)), -1, 1088);
           gTasks[taskId].tState++;
       }
       else if (gTasks[taskId].tState == 4)
@@ -385,7 +405,7 @@ export function Task_AnnounceRound2Results(taskId: any): any {
           {
               gTasks[taskId].tTimer = 0;
               x = DrawResultsTextWindow(gText_Round2Results, sContestResults.data.slidingTextBoxSpriteId);
-              StartTextBoxSlideIn(x, TEXT_BOX_Y, -1, 1088);
+              StartTextBoxSlideIn(x, ((DISPLAY_HEIGHT - 16)), -1, 1088);
           }
       }
       else if (sContestResults.data.slidingTextBoxState == SLIDING_TEXT_ARRIVED)
@@ -470,7 +490,7 @@ export function Task_AnnounceWinner(taskId: any): any {
               StringCopy(gStringVar2, gContestMons[i].nickname);
               StringExpandPlaceholders(winnerTextBuffer, gText_ContestantsMonWon);
               x = DrawResultsTextWindow(winnerTextBuffer, sContestResults.data.slidingTextBoxSpriteId);
-              StartTextBoxSlideIn(x, TEXT_BOX_Y, -1, 1088);
+              StartTextBoxSlideIn(x, ((DISPLAY_HEIGHT - 16)), -1, 1088);
               gTasks[taskId].tState++;
           }
           break;
@@ -841,7 +861,7 @@ export function CreateResultsTextWindowSprites(): any {
        
       for (i = 0; i < ARRAY_COUNT(sSpriteSheets_ResultsTextWindow); i++)
       {
-          spriteIds[i] = CreateSprite(template, TEXT_BOX_X, TEXT_BOX_Y, 10);
+          spriteIds[i] = CreateSprite(template, ((DISPLAY_WIDTH + 32)), ((DISPLAY_HEIGHT - 16)), 10);
           template.tileTag++;
       }
 
@@ -864,7 +884,7 @@ export function CreateResultsTextWindowSprites(): any {
 /** static void StartTextBoxSlideIn(s16 x, u16 y, u16 slideOutTimer, u16 slideIncrement) */
 export function StartTextBoxSlideIn(x: any, y: any, slideOutTimer: any, slideIncrement: any): any {
   let sprite: any =gSprites[sContestResults.data.slidingTextBoxSpriteId];
-      sprite.x = TEXT_BOX_X;
+      sprite.x = ((DISPLAY_WIDTH + 32));
       sprite.y = y;
       sprite.x2 = 0;
       sprite.y2 = 0;
@@ -891,8 +911,8 @@ export function StartTextBoxSlideOut(slideIncrement: any): any {
 
 /** static void EndTextBoxSlideOut(struct Sprite *sprite) */
 export function EndTextBoxSlideOut(sprite: any): any {
-  sprite.x = TEXT_BOX_X;
-      sprite.y = TEXT_BOX_Y;
+  sprite.x = ((DISPLAY_WIDTH + 32));
+      sprite.y = ((DISPLAY_HEIGHT - 16));
       sprite.y2 = 0;
       sprite.x2 = 0;
       sprite.callback = SpriteCallbackDummy;
@@ -1314,7 +1334,7 @@ export function CalculateContestantsResultData(): any {
               if (sContestResults.monResults[i].lostPoints)
                   barLengthRound2 *= -1;
 
-              if (barLengthPreliminary + barLengthRound2 == MAX_BAR_LENGTH)
+              if (barLengthPreliminary + barLengthRound2 == ((NUM_BAR_SEGMENTS * BAR_SEGMENT_LENGTH)))
               {
                   if (barLengthRound2 > 0)
                       sContestResults.monResults[i].barLengthRound2--;
@@ -1411,7 +1431,7 @@ export function Task_UpdateContestResultBar(taskId: any): any {
       }
       else
       {
-          if (sContestResults.data.barLength[monId] >= MAX_BAR_LENGTH)
+          if (sContestResults.data.barLength[monId] >= ((NUM_BAR_SEGMENTS * BAR_SEGMENT_LENGTH)))
               minMaxReached = TRUE;
       }
 
@@ -1434,11 +1454,11 @@ export function Task_UpdateContestResultBar(taskId: any): any {
       {
           let tileOffset: any = null;
           let tileNum: any = null;
-          for (i = 0; i < NUM_BAR_SEGMENTS; i++)
+          for (i = 0; i < (11); i++)
           {
-              if (sContestResults.data.barLength[monId] >= (i + 1) * BAR_SEGMENT_LENGTH)
+              if (sContestResults.data.barLength[monId] >= (i + 1) * (8))
                   tileOffset = 8;  
-              else if (sContestResults.data.barLength[monId] >= i * BAR_SEGMENT_LENGTH)
+              else if (sContestResults.data.barLength[monId] >= i * (8))
                   tileOffset = sContestResults.data.barLength[monId] % 8;  
               else
                   tileOffset = 0;  

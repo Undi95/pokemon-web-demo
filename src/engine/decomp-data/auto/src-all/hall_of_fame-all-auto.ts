@@ -15,6 +15,27 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnims_Confetti: any = null;
+let sDummyFameMon: any = null;
+let sExtraY: any = null;
+let sHallOfFame_Gfx: any = null;
+let sHallOfFame_MonFullTeamPositions: any = null;
+let sHallOfFame_MonHalfTeamPositions: any = null;
+let sHallOfFame_Pal: any = null;
+let sHofFadePalettes: any = null;
+let sHofGfxPtr: any = null;
+let sHofMonPtr: any = null;
+let sHof_BgTemplates: any = null;
+let sHof_WindowTemplate: any = null;
+let sMonInfoTextColors: any = null;
+let sOamData_Confetti: any = null;
+let sPlayerInfoTextColors: any = null;
+let sSineIdx: any = null;
+let sSpritePalette_Confetti: any = null;
+let sSpriteSheet_Confetti: any = null;
+let sSpriteTemplate_HofConfetti: any = null;
 /** static void VBlankCB_HallOfFame(void) */
 export function VBlankCB_HallOfFame(): any {
   LoadOam();
@@ -154,17 +175,17 @@ export function Task_Hof_InitTeamSaveData(taskId: any): any {
               memset(gDecompressionBuffer, 0, SECTOR_SIZE * NUM_HOF_SECTORS);
       }
 
-      for (i = 0; i < HALL_OF_FAME_MAX_TEAMS; i++, lastSavedTeam++)
+      for (i = 0; i < (50); i++, lastSavedTeam++)
       {
           if (lastSavedTeam.mon[0].species == SPECIES_NONE)
               break;
       }
-      if (i >= HALL_OF_FAME_MAX_TEAMS)
+      if (i >= (50))
       {
           let afterTeam: any = (gDecompressionBuffer);
           let beforeTeam: any = (gDecompressionBuffer);
           afterTeam++;
-          for (i = 0; i < HALL_OF_FAME_MAX_TEAMS - 1; i++, beforeTeam++, afterTeam++)
+          for (i = 0; i < (50) - 1; i++, beforeTeam++, afterTeam++)
           {
               beforeTeam = afterTeam;
           }
@@ -512,16 +533,16 @@ export function Task_HofPC_CopySaveData(taskId: any): any {
 
           CpuCopy16(gDecompressionBuffer, sHofMonPtr, SECTOR_SIZE * NUM_HOF_SECTORS);
           savedTeams = sHofMonPtr;
-          for (i = 0; i < HALL_OF_FAME_MAX_TEAMS; i++, savedTeams++)
+          for (i = 0; i < (50); i++, savedTeams++)
           {
               if (savedTeams.mon[0].species == SPECIES_NONE)
                   break;
           }
 
-          if (i < HALL_OF_FAME_MAX_TEAMS)
+          if (i < (50))
               gTasks[taskId].tCurrTeamNo = i - 1;
           else
-              gTasks[taskId].tCurrTeamNo = HALL_OF_FAME_MAX_TEAMS - 1;
+              gTasks[taskId].tCurrTeamNo = (50) - 1;
 
           gTasks[taskId].tCurrPageNo = GetGameStat(GAME_STAT_ENTERED_HOF);
 
@@ -1062,8 +1083,8 @@ export function StopDomeConfetti(): any {
           DestroyTask(taskId);
 
       ConfettiUtil_Free();
-      FreeSpriteTilesByTag(TAG_CONFETTI);
-      FreeSpritePaletteByTag(TAG_CONFETTI);
+      FreeSpriteTilesByTag((1001));
+      FreeSpritePaletteByTag((1001));
 }
 
 /** static void UpdateDomeConfetti(struct ConfettiUtil *util) */
@@ -1071,7 +1092,7 @@ export function UpdateDomeConfetti(util: any): any {
   if (util.yDelta > 110)
       {
            
-          gTasks[util.data[CONFETTI_TASK_ID]].tConfettiCount--;
+          gTasks[util.data[(7)]].tConfettiCount--;
           ConfettiUtil_Remove(util.id);
       }
       else
@@ -1081,15 +1102,15 @@ export function UpdateDomeConfetti(util: any): any {
           let rand: any = null;
 
           util.yDelta++;
-          util.yDelta += util.data[CONFETTI_EXTRA_Y];
+          util.yDelta += util.data[(1)];
 
-          sineIdx = util.data[CONFETTI_SINE_IDX];
+          sineIdx = util.data[(0)];
           rand = Random();
           rand &= 3;
           rand += 8;
           util.xDelta = (rand) * ((gSineTable[sineIdx])) / 256;
 
-          util.data[CONFETTI_SINE_IDX] += 4;
+          util.data[(0)] += 4;
       }
 }
 
@@ -1117,8 +1138,8 @@ export function Task_DoDomeConfetti(taskId: any): any {
           {
                
               id = ConfettiUtil_AddNew(sOamData_Confetti,
-                                TAG_CONFETTI,
-                                TAG_CONFETTI,
+                                (1001),
+                                (1001),
                                 Random() % DISPLAY_WIDTH,
                                 -(Random() % 8),
                                 Random() % ARRAY_COUNT(sAnims_Confetti),
@@ -1129,9 +1150,9 @@ export function Task_DoDomeConfetti(taskId: any): any {
 
                    
                   if ((Random() % 4) == 0)
-                      ConfettiUtil_SetData(id, CONFETTI_EXTRA_Y, 1);
+                      ConfettiUtil_SetData(id, (1), 1);
 
-                  ConfettiUtil_SetData(id, CONFETTI_TASK_ID, taskId);
+                  ConfettiUtil_SetData(id, (7), taskId);
                   tConfettiCount++;
               }
           }

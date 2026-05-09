@@ -15,6 +15,18 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sCurSecretBaseId: any = null;
+let sDeleteRegistryYesNoFuncs: any = null;
+let sInFriendSecretBase: any = null;
+let sRegistryListMenuTemplate: any = null;
+let sRegistryMenu: any = null;
+let sRegistryMenuActions: any = null;
+let sRegistryWindowTemplates: any = null;
+let sSecretBaseEntranceMetatiles: any = null;
+let sSecretBaseEntrancePositions: any = null;
+let sSecretBaseOwnerGfxIds: any = null;
 /** static void ClearSecretBase(struct SecretBase *secretBase) */
 export function ClearSecretBase(secretBase: any): any {
   let i: any = null;
@@ -752,7 +764,7 @@ export function FinalizeRegistryMenu(taskId: any): any {
 /** static void AddRegistryMenuScrollArrows(u8 taskId) */
 export function AddRegistryMenuScrollArrows(taskId: any): any {
   let data: any = gTasks[taskId].data;
-      tArrowTaskId = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 188, 12, 148, tNumBases - tMaxShownItems, TAG_SCROLL_ARROW, TAG_SCROLL_ARROW,tScrollOffset);
+      tArrowTaskId = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 188, 12, 148, tNumBases - tMaxShownItems, (5112), (5112),tScrollOffset);
 }
 
 /** static void HandleRegistryMenuInput(u8 taskId) */
@@ -1263,34 +1275,34 @@ export function DeleteFirstOldBaseFromPlayerInRecordMixingFriendsRecords(basesA:
 
       for (i = 0; i < SECRET_BASES_COUNT; i++)
       {
-          if (!(sbFlags & DELETED_BASE_A))
+          if (!(sbFlags & ((1 << 0))))
           {
               if (SecretBaseBelongsToPlayer(basesA[i]) == TRUE)
               {
                   ClearSecretBase(basesA[i]);
-                  sbFlags |= DELETED_BASE_A;
+                  sbFlags |= ((1 << 0));
               }
           }
 
-          if (!(sbFlags & DELETED_BASE_B))
+          if (!(sbFlags & ((1 << 1))))
           {
               if (SecretBaseBelongsToPlayer(basesB[i]) == TRUE)
               {
                   ClearSecretBase(basesB[i]);
-                  sbFlags |= DELETED_BASE_B;
+                  sbFlags |= ((1 << 1));
               }
           }
 
-          if (!(sbFlags & DELETED_BASE_C))
+          if (!(sbFlags & ((1 << 2))))
           {
               if (SecretBaseBelongsToPlayer(basesC[i]) == TRUE)
               {
                   ClearSecretBase(basesC[i]);
-                  sbFlags |= DELETED_BASE_C;
+                  sbFlags |= ((1 << 2));
               }
           }
 
-          if (sbFlags == (DELETED_BASE_A | DELETED_BASE_B | DELETED_BASE_C))
+          if (sbFlags == (((1 << 0)) | ((1 << 1)) | ((1 << 2))))
           {
               break;
           }

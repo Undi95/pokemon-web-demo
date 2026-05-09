@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sGoNearCounterToCatchFactor: any = null;
+let sGoNearCounterToEscapeFactor: any = null;
+let sPkblToEscapeFactor: any = null;
+let sSoundMovesTable: any = null;
 /** void HandleAction_UseMove(void) */
 export function HandleAction_UseMove(): any {
   let side: any = null;
@@ -1807,10 +1813,10 @@ export function HandleFaintedMonActions(): any {
                   return TRUE;
               gBattleStruct.faintedActionsState++;
               break;
-          case FAINTED_ACTIONS_MAX_CASE:
+          case (7):
               break;
           }
-      } while (gBattleStruct.faintedActionsState != FAINTED_ACTIONS_MAX_CASE);
+      } while (gBattleStruct.faintedActionsState != (7));
       return FALSE;
 }
 
@@ -2484,12 +2490,12 @@ export function AbilityBattleEffects(caseID: any, battler: any, ability: any, sp
           case ABILITYEFFECT_MOVES_BLOCK:  
               if (gLastUsedAbility == ABILITY_SOUNDPROOF)
               {
-                  for (i = 0; sSoundMovesTable[i] != SOUND_MOVES_END; i++)
+                  for (i = 0; sSoundMovesTable[i] != (0xFFFF); i++)
                   {
                       if (sSoundMovesTable[i] == move)
                           break;
                   }
-                  if (sSoundMovesTable[i] != SOUND_MOVES_END)
+                  if (sSoundMovesTable[i] != (0xFFFF))
                   {
                       if (gBattleMons[gBattlerAttacker].status2 & STATUS2_MULTIPLETURNS)
                           gHitMarker |= HITMARKER_NO_PPDEDUCT;

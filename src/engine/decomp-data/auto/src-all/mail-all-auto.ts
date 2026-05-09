@@ -15,6 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBgColors: any = null;
+let sBgTemplates: any = null;
+let sMailGraphics: any = null;
+let sMailLayouts_Tall: any = null;
+let sMailLayouts_Wide: any = null;
+let sMailRead: any = null;
+let sTextColors: any = null;
+let sWindowTemplates: any = null;
 /** void ReadMail(struct Mail *mail, MainCallback exitCallback, bool8 hasText) */
 export function ReadMail(mail: any, exitCallback: any, hasText: any): any {
   let buffer: any = [];

@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sOpponentBufferCommands: any = null;
+let sSpeedX: any = null;
 /** void SetControllerToOpponent(void) */
 export function SetControllerToOpponent(): any {
   gBattlerControllerFuncs[gActiveBattler] = OpponentBufferRunCommand;

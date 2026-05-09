@@ -15,6 +15,32 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAshSpriteSheet: any = null;
+let sAshSpriteTemplate: any = null;
+let sBubbleSpriteTemplate: any = null;
+let sBubbleStartCoords: any = null;
+let sBubbleStartDelays: any = null;
+let sCloudSpriteMapCoords: any = null;
+let sCloudSpriteSheet: any = null;
+let sCloudSpriteTemplate: any = null;
+let sCurrentAbnormalWeather: any = null;
+let sFogDiagonalSpriteSheet: any = null;
+let sFogDiagonalSpriteTemplate: any = null;
+let sFogHorizontalSpriteTemplate: any = null;
+let sRainSpriteCoords: any = null;
+let sRainSpriteFallingDurations: any = null;
+let sRainSpriteMovement: any = null;
+let sRainSpriteSheet: any = null;
+let sRainSpriteTemplate: any = null;
+let sSandstormSpriteSheet: any = null;
+let sSandstormSpriteTemplate: any = null;
+let sSnowflakeSpriteTemplate: any = null;
+let sSwirlEntranceDelays: any = null;
+let sWeatherBubbleSpriteSheet: any = null;
+let sWeatherCycleRoute119: any = null;
+let sWeatherCycleRoute123: any = null;
 /** void Clouds_InitVars(void) */
 export function Clouds_InitVars(): any {
   gWeatherPtr.targetColorMapIndex = 0;
@@ -1366,7 +1392,7 @@ export function Sandstorm_InitVars(): any {
           gWeatherPtr.sandstormWaveIndex = 8;
           gWeatherPtr.sandstormWaveCounter = 0;
            
-          if (gWeatherPtr.sandstormWaveIndex >= 0x80 - MIN_SANDSTORM_WAVE_INDEX)
+          if (gWeatherPtr.sandstormWaveIndex >= 0x80 - (0x20))
               gWeatherPtr.sandstormWaveIndex = 0x80 - gWeatherPtr.sandstormWaveIndex;
 
           Weather_SetBlendCoeffs(0, 16);
@@ -1384,8 +1410,8 @@ export function Sandstorm_InitAll(): any {
 export function Sandstorm_Main(): any {
   UpdateSandstormMovement();
       UpdateSandstormWaveIndex();
-      if (gWeatherPtr.sandstormWaveIndex >= 0x80 - MIN_SANDSTORM_WAVE_INDEX)
-          gWeatherPtr.sandstormWaveIndex = MIN_SANDSTORM_WAVE_INDEX;
+      if (gWeatherPtr.sandstormWaveIndex >= 0x80 - (0x20))
+          gWeatherPtr.sandstormWaveIndex = (0x20);
 
       switch (gWeatherPtr.initStep)
       {
@@ -1849,7 +1875,7 @@ export function TranslateWeatherNum(weather: any): any {
 /** void UpdateWeatherPerDay(u16 increment) */
 export function UpdateWeatherPerDay(increment: any): any {
   let weatherStage: any = gSaveBlock1Ptr.weatherCycleStage + increment;
-      weatherStage %= WEATHER_CYCLE_LENGTH;
+      weatherStage %= (4);
       gSaveBlock1Ptr.weatherCycleStage = weatherStage;
 }
 

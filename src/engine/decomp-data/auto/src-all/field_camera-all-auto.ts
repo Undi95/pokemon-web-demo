@@ -15,6 +15,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sBikeCameraPanFlag: any = null;
+let sCamera_MoveX: any = null;
+let sCamera_MoveY: any = null;
+let sFieldCameraOffset: any = null;
+let sFieldCameraPanningCallback: any = null;
+let sHorizontalCameraPan: any = null;
+let sVerticalCameraPan: any = null;
 /** static void ResetCameraOffset(struct FieldCameraOffset *cameraOffset) */
 export function ResetCameraOffset(cameraOffset: any): any {
   cameraOffset.xTileOffset = 0;

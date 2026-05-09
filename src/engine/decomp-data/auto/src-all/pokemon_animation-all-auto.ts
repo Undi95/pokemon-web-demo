@@ -15,6 +15,23 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sAnimIdx: any = null;
+let sAnims: any = null;
+let sBackAnimNatureModTable: any = null;
+let sBackAnimationIds: any = null;
+let sBounceRotateToSidesData: any = null;
+let sDontFlip: any = null;
+let sIsSummaryAnim: any = null;
+let sMonAffineAnims: any = null;
+let sMonAnimFunctions: any = null;
+let sShakeYellowFlashData: any = null;
+let sSpeciesToBackAnimSet: any = null;
+let sTriangleDownData: any = null;
+let sVerticalShakeData: any = null;
+let sYellowFlashData: any = null;
+let sZigzagData: any = null;
 /** static void SetPosForRotation(struct Sprite *sprite, u16 index, s16 amplitudeX, s16 amplitudeY) */
 export function SetPosForRotation(sprite: any, index: any, amplitudeX: any, amplitudeY: any): any {
   let xAdder, yAdder;

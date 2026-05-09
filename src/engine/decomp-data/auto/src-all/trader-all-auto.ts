@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sDefaultTraderDecorations: any = null;
+let sDefaultTraderNames: any = null;
 /** void TraderSetup(void) */
 export function TraderSetup(): any {
   let i: any = null;

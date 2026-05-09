@@ -15,6 +15,23 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let sRotatingGate_ArmLayout: any = null;
+let sRotatingGate_ArmPositionsAntiClockwiseRotation: any = null;
+let sRotatingGate_ArmPositionsClockwiseRotation: any = null;
+let sRotatingGate_FortreePuzzleConfig: any = null;
+let sRotatingGate_GateSpriteIds: any = null;
+let sRotatingGate_PuzzleConfig: any = null;
+let sRotatingGate_PuzzleCount: any = null;
+let sRotatingGate_RotationInfoEast: any = null;
+let sRotatingGate_RotationInfoNorth: any = null;
+let sRotatingGate_RotationInfoSouth: any = null;
+let sRotatingGate_RotationInfoWest: any = null;
+let sRotatingGate_TrickHousePuzzleConfig: any = null;
+let sRotatingGatesGraphicsTable: any = null;
+let sSpriteTemplate_RotatingGateLarge: any = null;
+let sSpriteTemplate_RotatingGateRegular: any = null;
 /** static s32 GetCurrentMapRotatingGatePuzzleType(void) */
 export function GetCurrentMapRotatingGatePuzzleType(): any {
   if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_FORTREE_CITY_GYM) &&
@@ -90,7 +107,7 @@ export function RotatingGate_LoadPuzzleConfig(): any {
           return;
       }
 
-      for (i = 0; i < ROTATING_GATE_PUZZLE_MAX - 1; i++)
+      for (i = 0; i < (12) - 1; i++)
           sRotatingGate_GateSpriteIds[i] = MAX_SPRITES;
 }
 
@@ -132,7 +149,7 @@ export function RotatingGate_CreateGate(gateId: any, deltaX: any, deltaY: any): 
       else
           template = sSpriteTemplate_RotatingGateLarge;
 
-      template.tileTag = gate.shape + ROTATING_GATE_TILE_TAG;
+      template.tileTag = gate.shape + (0x1300);
 
       spriteId = CreateSprite(template, 0, 0, 0x94);
       if (spriteId == MAX_SPRITES)
@@ -265,7 +282,7 @@ export function RotatingGate_CanRotate(gateId: any, rotationDirection: any): any
       for (i = GATE_ARM_NORTH; i <= GATE_ARM_WEST; i++)
       {
            
-          for (j = 0; j < GATE_ARM_MAX_LENGTH; j++)
+          for (j = 0; j < (2); j++)
           {
               let armIndex: any = 2 * ((orientation + i) % 4) + j;
 
@@ -314,7 +331,7 @@ export function RotatingGate_GetRotationInfo(direction: any, x: any, y: any): an
       else if (direction == DIR_EAST)
           ptr = sRotatingGate_RotationInfoEast;
       else
-          return GATE_ROT_NONE;
+          return (255);
 
       return ptr[y * 4 + x];
 }
@@ -364,7 +381,7 @@ export function CheckForRotatingGatePuzzleCollision(direction: any, x: any, y: a
               let centerY: any = y - gateY + 2;
               let rotationInfo: any = RotatingGate_GetRotationInfo(direction, centerX, centerY);
 
-              if (rotationInfo != GATE_ROT_NONE)
+              if (rotationInfo != (255))
               {
                   let rotationDirection: any = ((rotationInfo & 0xF0) >> 4);
                   let armInfo: any = rotationInfo & 0xF;
@@ -402,7 +419,7 @@ export function CheckForRotatingGatePuzzleCollisionWithoutAnimation(direction: a
               let centerY: any = y - gateY + 2;
               let rotationInfo: any = RotatingGate_GetRotationInfo(direction, centerX, centerY);
 
-              if (rotationInfo != GATE_ROT_NONE)
+              if (rotationInfo != (255))
               {
                   let rotationDirection: any = ((rotationInfo & 0xF0) >> 4);
                   let armInfo: any = rotationInfo & 0xF;
