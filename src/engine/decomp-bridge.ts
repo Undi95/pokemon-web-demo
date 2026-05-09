@@ -490,7 +490,94 @@ export function DynamicPlaceholderTextUtil_ExpandPlaceholders(_dest: any, src: s
 }
 
 /** 1:1 décomp `src/random.c` Random() — already implemented. Re-export from random.ts. */
-export { Random, SeedRng, SeedRngAndSetTrainerId } from './random';
+export { Random, SeedRng, SeedRngAndSetTrainerId, Random32 } from './random';
+
+// ─── Re-exports : object events graphics info (object-event-graphics.ts) ──────
+
+/** 1:1 décomp `event_object_movement.c:1914 GetObjectEventGraphicsInfo(graphicsId)`.
+ *  Re-export with a normalized signature : the décomp returns
+ *  `const struct ObjectEventGraphicsInfo *`, our impl returns either the info
+ *  or undefined for unregistered gfxIds. The auto bodies typically dereference
+ *  fields like `.size`, `.height`, `.tracks`, `.inanimate`, etc. ; if the gfxId
+ *  isn't registered, calls will get undefined → the auto body crashes
+ *  (= fail-fast, surface the bug).
+ *  Note 1:1 : in the real décomp, this function also handles OBJ_EVENT_GFX_VARS
+ *  (= dynamic gfxId lookups via VarGet) + OBJ_EVENT_GFX_BARD (= old man variants).
+ *  Notre impl simple ne gère pas ces cas spéciaux ; on les ajoutera si besoin. */
+import { getObjectEventGraphicsInfo as _getOEGI } from './object-event-graphics';
+export function GetObjectEventGraphicsInfo(graphicsId: number): any {
+  return _getOEGI(graphicsId);
+}
+
+// ─── Re-exports : window frame tiles + palettes (gba-text-window.ts) ──────────
+
+export {
+  GetWindowFrameTilesPal,
+  LoadWindowGfx,
+  LoadUserWindowBorderGfx,
+  LoadUserWindowBorderGfx_,
+} from './gba-text-window';
+
+// ─── Re-exports : data tables FR (data-tables.ts) ────────────────────────────
+//
+// Notre `data-tables.ts` expose les lookup fns FR avec un signature légèrement
+// différente du décomp (= retourne string, pas u8*). On adapte ici pour matcher
+// l'API décomp utilisée dans les auto-bodies.
+
+import { getItemNameFr as _getItemNameFr } from './data-tables';
+
+/** 1:1 décomp `src/item.c:879 GetItemName(itemId)` :
+ *    return gItems[SanitizeItemId(itemId)].name;
+ *
+ *  Notre data table contient les noms FR ; on les retourne tels quels.
+ *  Le code auto les passe à StringCopy/StringExpand, qui acceptent string ou u8*. */
+export function GetItemName(itemId: number | string): string {
+  // itemId peut être un enum string (ITEM_POTION) ou u16 ; data-tables accepte string.
+  return _getItemNameFr(typeof itemId === 'number' ? `ITEM_${itemId}` : itemId);
+}
+
+// ─── Re-exports : map names (map-names-fr) ───────────────────────────────────
+
+import { getMapNameFr } from '../data/map-names-fr';
+
+/** 1:1 décomp `src/region_map.c:1568 GetMapName(dest, regionMapId, padLength)` :
+ *    if (regionMapId == MAPSEC_SECRET_BASE) return GetSecretBaseMapName(dest);
+ *    else if (regionMapId < MAPSEC_NONE) return StringCopy(dest, gRegionMapEntries[id].name);
+ *    else return StringFill(dest, CHAR_SPACE, padLength ?? 18);
+ *
+ *  Notre impl simplifié : lookup FR directement, write into dest.length bytes
+ *  (= dest is a Uint8Array slot in gStringVar1/2/3 typically). En auto-body,
+ *  c'est toujours appelé pour passer à StringExpand → string-mode est OK. */
+export function GetMapName(dest: any, regionMapId: number | string, padLength: number = 0): string {
+  const key = typeof regionMapId === 'number'
+    ? `MAPSEC_${regionMapId}` // best-effort : auto-body devrait passer enum str
+    : String(regionMapId);
+  let name = getMapNameFr(key) ?? '';
+  if (padLength > 0 && name.length < padLength) {
+    name = name.padEnd(padLength, ' ');
+  }
+  // Mutable string-buffer write (= for Uint8Array dests, copy bytes ; else no-op).
+  if (dest instanceof Uint8Array) {
+    for (let i = 0; i < Math.min(name.length, dest.length); i++) {
+      dest[i] = name.charCodeAt(i);
+    }
+  }
+  return name;
+}
+
+/** 1:1 décomp `src/region_map.c GetMapNameGeneric(dest, regionMapId)` :
+ *    Same as GetMapName but with padLength=0. */
+export function GetMapNameGeneric(dest: any, regionMapId: number | string): string {
+  return GetMapName(dest, regionMapId, 0);
+}
+
+/** 1:1 décomp `src/region_map.c GetMapNameHandleAquaHideout(dest, regionMapId)` :
+ *    Like GetMapNameGeneric, but if mapsec is AQUA_HIDEOUT_OLD → "HIDEOUT".
+ *    Used in summary screen "met at" display. */
+export function GetMapNameHandleAquaHideout(dest: any, regionMapId: number | string): string {
+  // Best-effort : delegate to generic for now.
+  return GetMapNameGeneric(dest, regionMapId);
+}
 
 /** 1:1 décomp `include/battle_anim.h` :
  *    #define CMD_ARGS(...) ARGS args; ARGS
@@ -1529,6 +1616,11 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'DmaCopy16Defvars', 'DmaCopy32Defvars',
   'MOD', 'Q_24_8_TO_INT', 'Q_24_8',
   'AGB_ASSERT', 'DebugAssert', 'AgbAssert', 'ALIGNED',
+  'Random32',
+  'GetObjectEventGraphicsInfo',
+  'GetWindowFrameTilesPal', 'LoadWindowGfx',
+  'LoadUserWindowBorderGfx', 'LoadUserWindowBorderGfx_',
+  'GetItemName', 'GetMapName', 'GetMapNameGeneric', 'GetMapNameHandleAquaHideout',
   'StringCopy_Nickname', 'StringGet_Nickname',
   'DynamicPlaceholderTextUtil_ExpandPlaceholders',
   // Runtime method wrappers (= delegate to getRuntime().X)
