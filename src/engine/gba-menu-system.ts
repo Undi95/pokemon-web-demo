@@ -240,8 +240,10 @@ export function RtcGetErrorStatus(): number {
 }
 
 /** 1:1 décomp `sound.c PlayBGM(songNum)` — bridge vers m4aSongNumStart avec loop=true.
- *  Utilisé par Birch (MUS_ROUTE122) et autres scenes. */
+ *  Utilisé par Birch (MUS_ROUTE122) et autres scenes. Skip si MUS_NONE (= 0xFFFF)
+ *  ou 0 pour éviter spam warnings sur les maps sans music (= MAP_INSIDE_OF_TRUCK). */
 export function PlayBGM(songNum: number): void {
+  if (songNum === 0xFFFF || songNum === 0) return;
   m4aSongNumStart(songNum, true);  // BGM = loop
 }
 

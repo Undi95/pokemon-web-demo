@@ -617,11 +617,14 @@ export class TestOverworldScene extends Phaser.Scene {
     // Sans ce check : warp Bourg-en-Vol → Mays House (= les 2 ont MUS_LITTLEROOT)
     // restart le BGM à chaque transition = audio glitch.
     const songId = (Songs as unknown as Record<string, number>)[header.music] ?? 0;
-    if (songId > 0 && songId !== _currentMapBgmId) {
+    // MUS_NONE = 0xFFFF (= map sans music, e.g. MAP_INSIDE_OF_TRUCK). Skip pour
+    // éviter spam warnings. 0 = invalid lookup, skip aussi.
+    const isValidSong = songId !== 0 && songId !== 0xFFFF;
+    if (isValidSong && songId !== _currentMapBgmId) {
       console.log(`[TestOverworld] PlayBGM(${header.music} = ${songId})`);
       PlayBGM(songId);
       _currentMapBgmId = songId;
-    } else if (songId > 0) {
+    } else if (isValidSong) {
       console.log(`[TestOverworld] BGM ${header.music} déjà playing, skip restart`);
     }
 

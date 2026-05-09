@@ -660,6 +660,9 @@ let _currentSongId: number | null = null;
 export function getCurrentSongId(): number | null { return _currentSongId; }
 
 export function m4aSongNumStart(songId: number, loop: boolean = false): void {
+  // 1:1 décomp : MUS_NONE (= 0xFFFF) et 0 = no music. Silent skip pour éviter
+  // spam warnings sur les maps sans music (= MAP_INSIDE_OF_TRUCK et autres).
+  if (songId === 0xFFFF || songId === 0) return;
   const songName = SONG_ID_TO_NAME[songId];
   if (!songName) {
     console.warn(`[m4aSongNumStart] song ID ${songId} not mapped, skip`);
@@ -752,11 +755,12 @@ export function FillPalBufferWhite(): void {
  *  Wrapper qui dispatch vers notre m4aSongNumStart (= slot bgm via M4A engine
  *  custom). Avant ce wrapper, les `PlayBGM(MUS_X)` des auto-callbacks tombaient
  *  en undefined → BGM silence partout dans menus. */
-const MUS_NONE = 0;
+/** 1:1 décomp constants/songs.h : `#define MUS_NONE 0xFFFF`. */
+const MUS_NONE = 0xFFFF;
 let _gDisableMusic = false;
 export function PlayBGM(songNum: number): void {
-  if (_gDisableMusic) songNum = 0;
-  if (songNum === MUS_NONE) songNum = 0;
+  if (_gDisableMusic) return;
+  if (songNum === MUS_NONE || songNum === 0) return;
   m4aSongNumStart(songNum);
 }
 
