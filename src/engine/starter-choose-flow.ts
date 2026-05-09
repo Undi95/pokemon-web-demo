@@ -325,6 +325,11 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           gameState.setVar('VAR_RESULT', chosenIdx);
           gameState.setVar('VAR_STARTER_MON', chosenIdx);
           console.log(`[StarterChoose] commit ${speciesEnum} (idx=${chosenIdx}) → party size=${gameState.partySize}`);
+          // Session 124 Bug 5b : play starter cry on confirm (= 1:1 décomp
+          // Task_AskConfirmStarter pattern, PlayCry(speciesId, 0) à confirm).
+          // speciesEnum format : "SPECIES_TREECKO" → "treecko" file.
+          const cryName = speciesEnum.replace('SPECIES_', '').toLowerCase();
+          void import('./music').then(({ playCry }) => playCry(cryName));
         } catch (e) {
           console.error('[StarterChoose] commit failed', e);
         }
