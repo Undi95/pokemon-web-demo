@@ -1,10 +1,14 @@
-# Branch upd2 — Final snapshot (overnight session, iter10 final)
+# Branch upd2 — Final snapshot (overnight session, iter12 final)
 
-Date : 2026-05-09 ~06h45
+Date : 2026-05-09 ~07h10
 
 ## TL;DR
 
-**41 commits sur upd2 cette nuit.** Build clean, game runs.
+**44 commits sur upd2 cette nuit.** Build clean, game runs.
+
+**🎯 Live test verified** : Birch tutorial battle + Trainer battle visible
+in browser, dialog shows correctly, sprites render (Treecko vs Zigzagoon /
+Brendan trainer). Zero `console.warn` during full battle flow.
 
 **🎯🎯🎯 Milestone iter9 : 100% MAIN-STORY coverage** (= 70 maps de tout
 le scénario principal Hoenn jusqu'à Sootopolis exclus). Zero opcodes
@@ -37,6 +41,40 @@ sans crasher (= Battle Frontier scripts, Trainer Fan Club, etc.).
 | Main-story coverage | ✅ **100%** sur 70 maps (opcodes + specials) |
 | Global coverage | ✅ **70%** opcodes / 22% specials sur 470 maps |
 | Memory docs | ✅ 5 files briefing user |
+
+### Iteration 11+12 highlights (commits `381fd869` + `5ebda3f8`)
+
+**Live testing verified the game flow** :
+
+1. Loaded `?nointro=1` → game spawns directly in TestOverworldScene at
+   Bourg-en-Vol (LITTLEROOT_TOWN) with overworld visible (player sprite,
+   Mom's house, May's house, Birch lab path).
+2. Triggered `dev.battle.startBirchTutorial()` → wild battle correctly
+   shows :
+   - "Un ZIGZAGOON sauvage apparaît!" dialog
+   - Treecko back sprite (player)
+   - Zigzagoon front sprite (opponent)
+   - HP windows top-left + bottom-right
+3. Triggered `dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TREECKO')`
+   → "BRICE veut combattre!" dialog → Brendan's Torchic Lv5 (= correct
+   décomp data : trainer ID encodes player's starter, rival uses the
+   counter-type).
+
+**Bug fixes** :
+- `dev.battle.startBirchTutorial()` / `startWild()` / `startTrainer()`
+  now auto-add a Treecko Lv5/8 if party is empty (= dev convenience).
+  Previously they would auto-defeat with `[battle-flow] no player
+  Pokemon — auto-defeat` warning.
+- `battle-flow.renderHpWindows()` was missing `CopyWindowToVram()` calls
+  → HP text rendering was inconsistent. Pattern now matches
+  `refreshMoveMenu()` which had it correctly.
+
+**Zero warnings** : Full Birch tutorial + Trainer battle flow logged
+zero `console.warn` after fixes. Coverage is solid.
+
+**Note FPS** : Live profiling shows 40-50 fps but `documentVisible:
+'hidden'` / `hasFocus: false` (= browser tab in background throttles
+setTimeout). Not a real bug — user playing in focused tab gets 60.
 
 ### Iteration 10 highlights (commit `6f7260a3`)
 
@@ -191,9 +229,13 @@ await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
 window.dev.bridge.report().then(console.log)
 ```
 
-## Commit log (= 41 commits)
+## Commit log (= 44 commits)
 
 ```
+5ebda3f8 Iter11 — battle-flow renderHpWindows missing CopyWindowToVram
+381fd869 Iter11 — dev.battle.* auto-adds Treecko if party empty
+a7ba4ce3 Memory — troubleshooting MD updated with iter10 audit workflow
+f7140d1f Memory — iter10 final : bulk post-game stubs documented
 6f7260a3 Phase 5.7+ iter10 — bulk post-game stubs (+93 opcodes +46 specials)
 50bcb759 Memory — iter9 final : 100% main-story coverage milestone
 ab1c8678 Phase 5.7+ iter9 — 100% main-story coverage (+5 opcodes +16 specials)
