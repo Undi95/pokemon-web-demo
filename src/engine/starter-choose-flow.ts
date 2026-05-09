@@ -39,6 +39,8 @@ import { Sin } from './decomp-helpers';
 import { loadTileBin, loadGbaPal } from './gba/png-loader';
 import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from './map-loader';
 import { pauseTilesetAnimations, resumeTilesetAnimations } from './tileset-anims';
+import { getString, initStringsFromDecomp } from './gba-strings';
+import { getSpeciesNameFr } from './data-tables';
 
 // 1:1 décomp `sStarterMon[]` (= public/decomp/em/static-tables/starter_choose.json).
 const STARTER_SPECIES: ReadonlyArray<string> = [
@@ -53,15 +55,18 @@ const CURSOR_COORDS: ReadonlyArray<readonly [number, number]> = [
   [60, 32], [120, 56], [180, 32],
 ];
 
-// FR labels (= cf. species_names_fr).
-const STARTER_NAMES: ReadonlyArray<string>      = ['ARCKO', 'POUSSIFEU', 'GOBOU'];
-// 1:1 décomp pokedex-entries.json categories.
-const STARTER_CATEGORIES: ReadonlyArray<string> = ['BOIS GECKO', 'POUSSIN', 'POISSONBOUE'];
-
-// 1:1 décomp gText_BirchInTrouble.
-const TEXT_BIRCH_IN_TROUBLE = 'Le PROF. SEKO a des ennuis!\nChoisis un POKéMON et sauve-le!';
-// 1:1 décomp gText_ConfirmStarterChoice.
-const TEXT_CONFIRM_STARTER = 'Prendre ce POKéMON?';
+// 1:1 décomp `CopyMonCategoryText(SpeciesToNationalPokedexNum(species))` :
+// lookup pokedex-entries.json (= extracted from data/pokemon/pokedex_text.h)
+// keyed par NATIONAL_DEX_* (= SPECIES_TORCHIC → NATIONAL_DEX_TORCHIC).
+let _pokedexEntries: Record<string, { category: string }> | null = null;
+async function getDexCategoryFr(speciesEnum: string): Promise<string> {
+  if (!_pokedexEntries) {
+    const resp = await fetch('/decomp/em/pokedex-entries.json');
+    if (resp.ok) _pokedexEntries = await resp.json() as Record<string, { category: string }>;
+  }
+  const dexKey = 'NATIONAL_DEX_' + speciesEnum.replace(/^SPECIES_/, '');
+  return _pokedexEntries?.[dexKey]?.category ?? '';
+}
 
 // GBA key masks (= 1:1 décomp gba/key.h).
 const A_BUTTON   = 0x01;
@@ -78,7 +83,7 @@ const STARTER_CIRCLE_SHEET_URL = '/decomp/em/starter_choose/starter_circle.png';
 type State = 'LOAD_ASSETS' | 'WAIT_LOAD' | 'SPAWN_SPRITES'
            | 'PROMPT_INIT' | 'PROMPT_WAIT' | 'WAIT_INPUT'
            | 'ASK_CONFIRM_INIT' | 'ASK_CONFIRM_WAIT' | 'WAIT_CONFIRM'
-           | 'COMMIT_INIT' | 'COMMIT_WAIT'
+           | 'COMMIT_INIT'
            | 'DECLINE_INIT'
            | 'CLEANUP'
            | 'DONE';
@@ -116,6 +121,15 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
   let loadDone = false;
   let loadFailed = false;
 
+  // 1:1 décomp `CopyMonCategoryText` resolved at load (= sync access in tick).
+  const starterCategories: string[] = ['', '', ''];
+
+  // 1:1 décomp `ResetSpriteData()` setup : save visible OAM slots avant hide,
+  // pour restore au cleanup. Notre approche inline ne destroy pas les overworld
+  // sprites (= NPCs, player avatar, follow Mom, etc.) — juste hide leur OAM
+  // visibility flag pendant Birch BG, restore au cleanup.
+  const savedVisibleOam = new Set<number>();
+
   // Hand bob timer.
   let handBobTimer = 0;
   let lastSelection = -1;
@@ -134,6 +148,11 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           //   LoadSpritePalettes(sSpritePalettes_StarterChoose);
           (async () => {
             try {
+              // Ensure decomp strings are loaded (= gText_BirchInTrouble +
+              // gText_ConfirmStarterChoice). En `?nointro` mode TestOverworldScene
+              // ne boot pas GameScene / BirchRuntimeScene qui init normalement.
+              // Idempotent : skip fetch si déjà loaded.
+              await initStringsFromDecomp();
               // Load tile sheet for pokeball + hand + starter circle.
               await rt.LoadCompressedSpriteSheetsFromTable(
                 'sSpriteSheet_PokeballSelect',
@@ -166,6 +185,12 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
               }
               starterFrontLoaded = true;
 
+              // 1:1 décomp `CopyMonCategoryText(SpeciesToNationalPokedexNum(species))`
+              // pre-resolved au load pour sync access dans ASK_CONFIRM_INIT.
+              for (let i = 0; i < 3; i++) {
+                starterCategories[i] = await getDexCategoryFr(STARTER_SPECIES[i]);
+              }
+
               // Phase 5.1 — Birch BG scene switch (= 1:1 décomp `CB2_ChooseStarter`
               // setup BG2 + BG3 avec birch_bag tilemap + birch_grass tilemap).
               // Replace l'overworld background avec la scène ROM authentique
@@ -179,6 +204,15 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
                   fetch('/decomp/em/starter_choose/birch_bag.bin').then(r => r.arrayBuffer()),
                   fetch('/decomp/em/starter_choose/birch_grass.bin').then(r => r.arrayBuffer()),
                 ]);
+                // 1:1 décomp `ResetSpriteData()` : hide all OAM sprites avant
+                // de spawn nos pokeballs/hand. Notre approche inline est non-
+                // destructive : save les visible slots overworld pour restore
+                // au cleanup (= NPCs, player avatar, follow Mom restent spawned
+                // côté engine, juste OAM visibility off le temps de Birch BG).
+                for (let i = 0; i < 128; i++) {
+                  if (rt.gba.oam[i].visible) savedVisibleOam.add(i);
+                  rt.gba.oam[i].visible = false;
+                }
                 // Hide overworld BG1/BG2/BG3 (= keep BG0 pour windows dialog).
                 HideBg(1); HideBg(2); HideBg(3);
                 // Pause overworld tileset animations : sinon TilesetAnim_General
@@ -244,7 +278,8 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       }
 
       case 'PROMPT_INIT': {
-        ShowFieldMessage(TEXT_BIRCH_IN_TROUBLE);
+        // 1:1 décomp `AddTextPrinterParameterized(0, FONT_NORMAL, gText_BirchInTrouble, ...)`.
+        ShowFieldMessage(getString('gText_BirchInTrouble'));
         state = 'PROMPT_WAIT';
         return false;
       }
@@ -316,8 +351,16 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           });
           monSpriteId = spawn.spriteId;
         }
-        // Show confirm dialog with starter name + category.
-        ShowFieldMessage(`${STARTER_NAMES[selection]}, ${STARTER_CATEGORIES[selection]}!\n${TEXT_CONFIRM_STARTER}`);
+        // 1:1 décomp `CreateStarterPokemonLabel(selection)` + Task_AskConfirmStarter :
+        // species name (= gSpeciesNames[species]) + category (= CopyMonCategoryText)
+        // dans une label window séparée, puis gText_ConfirmStarterChoice dans le
+        // main dialog. Notre approche inline concatène en un seul message en
+        // attendant l'implémentation full sStarterLabelWindowId.
+        const speciesEnum = STARTER_SPECIES[selection];
+        const speciesName = getSpeciesNameFr(speciesEnum);
+        const category = starterCategories[selection];
+        const confirmText = getString('gText_ConfirmStarterChoice');
+        ShowFieldMessage(`${speciesName}, ${category}!\n${confirmText}`);
         state = 'ASK_CONFIRM_WAIT';
         return false;
       }
@@ -362,6 +405,13 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       }
 
       case 'COMMIT_INIT': {
+        // 1:1 décomp `Task_HandleConfirmStarterInput` case 0 (= YES) :
+        //   gSpecialVar_Result = task.data[0];
+        //   ResetAllPicSprites();
+        //   SetMainCallback2(gMain.savedCallback);
+        // Notre approche inline : addToParty + setVar + cry, puis directly CLEANUP
+        // (= overworld restore). Pas de message custom "X est ton POKéMON" : c'est
+        // le script overworld qui suit (= Birch dialog route 101) qui dit ça.
         try {
           const speciesEnum = STARTER_SPECIES[chosenIdx];
           const starter = createPokemonInstance(speciesEnum, 5);
@@ -371,24 +421,14 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           gameState.setVar('VAR_RESULT', chosenIdx);
           gameState.setVar('VAR_STARTER_MON', chosenIdx);
           console.log(`[StarterChoose] commit ${speciesEnum} (idx=${chosenIdx}) → party size=${gameState.partySize}`);
-          // Session 124 Bug 5b : play starter cry on confirm (= 1:1 décomp
-          // Task_AskConfirmStarter pattern, PlayCry(speciesId, 0) à confirm).
-          // speciesEnum format : "SPECIES_TREECKO" → "treecko" file.
+          // Session 124 Bug 5b : 1:1 décomp Task_AskConfirmStarter
+          // PlayCry_Normal(GetStarterPokemon(task.data[0]), 0).
           const cryName = speciesEnum.replace('SPECIES_', '').toLowerCase();
           void import('./music').then(({ playCry }) => playCry(cryName));
         } catch (e) {
           console.error('[StarterChoose] commit failed', e);
         }
-        ShowFieldMessage(`${STARTER_NAMES[chosenIdx]} est ton POKéMON !`);
-        state = 'COMMIT_WAIT';
-        return false;
-      }
-
-      case 'COMMIT_WAIT': {
-        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
-          HideFieldMessageBox();
-          state = 'CLEANUP';
-        }
+        state = 'CLEANUP';
         return false;
       }
 
@@ -436,7 +476,13 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
           // Resume overworld tileset animations (= water/flower tile cycling).
           resumeTilesetAnimations();
           ShowBg(1); ShowBg(2); ShowBg(3);
-          console.log('[StarterChoose] overworld BGs restored');
+          // Restore visible OAM slots (= overworld NPCs, player avatar, etc.)
+          // saved au LOAD_ASSETS avant notre hide-all.
+          for (const i of savedVisibleOam) {
+            rt.gba.oam[i].visible = true;
+          }
+          savedVisibleOam.clear();
+          console.log('[StarterChoose] overworld BGs + OAM sprites restored');
         } catch (bgErr) {
           console.warn('[StarterChoose] overworld restore failed', bgErr);
         }
