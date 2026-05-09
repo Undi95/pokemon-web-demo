@@ -12,7 +12,9 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 const SCRIPT = path.resolve('scripts/extract-png-indexed-tiles.mjs');
+const PALETTE_SCRIPT = path.resolve('scripts/extract-png-palette.mjs');
 const PUBLIC = 'public/decomp/em';
+const DECOMP_GRAPHICS = '../decomps/pokeemeraude/graphics';
 
 // Chaque entrée : { src: png path, bpp: 4|8 }
 const targets = [
@@ -70,10 +72,23 @@ const targets = [
   // Pokeball release sprite (Birch Lotad release scene + battle pokemon release)
   { src: `${PUBLIC}/balls/poke.png`, bpp: 4 },
   { src: `${PUBLIC}/balls/open.png`, bpp: 4 },
+  // Phase 5.1 — ChooseStarter Birch BG (= 32-color palette via 2 sub-palettes,
+  // bloquait loadIndexedPng strict avant). bpp:4 + extractPalette:true génère
+  // tiles.4bpp.bin + tiles.gbapal pour LoadPalette(BG_PLTT_ID(0), 64 bytes).
+  { src: `${PUBLIC}/starter_choose/tiles.png`, bpp: 4, extractPalette: true },
+];
+
+// Phase 5.1 — Tilemaps copiés direct depuis le décomp source (= raw uncompressed
+// .bin files). Le décomp ROM utilise `.bin.lz` LZ77-compressed, mais nos source
+// files sont uncompressed → direct VRAM write OK.
+const TILEMAP_COPIES = [
+  { src: `${DECOMP_GRAPHICS}/starter_choose/birch_bag.bin`,   dst: `${PUBLIC}/starter_choose/birch_bag.bin` },
+  { src: `${DECOMP_GRAPHICS}/starter_choose/birch_grass.bin`, dst: `${PUBLIC}/starter_choose/birch_grass.bin` },
 ];
 
 let success = 0, fail = 0;
-for (const { src, bpp } of targets) {
+for (const target of targets) {
+  const { src, bpp, extractPalette } = target;
   if (!fs.existsSync(src)) {
     console.warn(`[extract-all-tile-bins] skip (not found): ${src}`);
     continue;
@@ -86,5 +101,28 @@ for (const { src, bpp } of targets) {
     console.warn(`[extract-all-tile-bins] FAIL ${src}: ${e.stderr || e.message}`);
     fail++;
   }
+  // Phase 5.1 — pour les BG scenes avec sub-palettes (PLTE > 16 colors), aussi
+  // extract la palette en .gbapal pour LoadPalette runtime.
+  if (extractPalette) {
+    const palOut = src.replace(/\.png$/, '.gbapal');
+    try {
+      execSync(`node "${PALETTE_SCRIPT}" "${src}" "${palOut}"`, { stdio: 'pipe', encoding: 'utf8' });
+    } catch (e) {
+      console.warn(`[extract-all-tile-bins] palette FAIL ${src}: ${e.stderr || e.message}`);
+      fail++;
+    }
+  }
 }
+
+// Phase 5.1 — copy raw tilemaps from decomp source (= uncompressed .bin files).
+for (const { src, dst } of TILEMAP_COPIES) {
+  if (!fs.existsSync(src)) {
+    console.warn(`[extract-all-tile-bins] tilemap copy skip (not found): ${src}`);
+    continue;
+  }
+  fs.mkdirSync(path.dirname(dst), { recursive: true });
+  fs.copyFileSync(src, dst);
+  success++;
+}
+
 console.log(`[extract-all-tile-bins] done: ${success} OK, ${fail} failed.`);

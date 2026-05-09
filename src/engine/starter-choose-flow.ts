@@ -29,13 +29,16 @@
  */
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field-message-box';
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from './gba-menu-system';
-import { ClearStdWindowAndFrame, RemoveWindow, type WindowTemplate } from './gba-window-system';
-import { getRuntime } from './decomp-globals';
+import { ClearStdWindowAndFrame, RemoveWindow, ShowBg, HideBg, InitBgFromTemplate, type WindowTemplate } from './gba-window-system';
+import { getRuntime, LoadPalette } from './decomp-globals';
 import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
 import { createPokemonInstance } from './pokemon';
 import { VarSet } from './script-vars';
 import { Sin } from './decomp-helpers';
+import { loadTileBin, loadGbaPal } from './gba/png-loader';
+import { CopyMapTilesetsToVram, flushOverworldTilemaps, gMapHeader } from './map-loader';
+import { pauseTilesetAnimations, resumeTilesetAnimations } from './tileset-anims';
 
 // 1:1 décomp `sStarterMon[]` (= public/decomp/em/static-tables/starter_choose.json).
 const STARTER_SPECIES: ReadonlyArray<string> = [
@@ -162,6 +165,49 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
                 }
               }
               starterFrontLoaded = true;
+
+              // Phase 5.1 — Birch BG scene switch (= 1:1 décomp `CB2_ChooseStarter`
+              // setup BG2 + BG3 avec birch_bag tilemap + birch_grass tilemap).
+              // Replace l'overworld background avec la scène ROM authentique
+              // pendant le starter choice. Assets : tiles.4bpp.bin (= 256 tiles
+              // 4bpp packed) + tiles.gbapal (= 32 colors split en 2 sub-palettes,
+              // tilemap encodes via bits 12-15 quel sub-palette par tile).
+              try {
+                const [tilesData, palette, birchBagBin, birchGrassBin] = await Promise.all([
+                  loadTileBin('/decomp/em/starter_choose/tiles.png', 4),
+                  loadGbaPal('/decomp/em/starter_choose/tiles.gbapal'),
+                  fetch('/decomp/em/starter_choose/birch_bag.bin').then(r => r.arrayBuffer()),
+                  fetch('/decomp/em/starter_choose/birch_grass.bin').then(r => r.arrayBuffer()),
+                ]);
+                // Hide overworld BG1/BG2/BG3 (= keep BG0 pour windows dialog).
+                HideBg(1); HideBg(2); HideBg(3);
+                // Pause overworld tileset animations : sinon TilesetAnim_General
+                // réécrit les water/flower tiles à VRAM 0x3000-0x3800 chaque frame
+                // et clobbe nos tilemaps Birch (BG3 mapBase 6 = 0x3000, BG2 mapBase 7
+                // = 0x3800). Cf. tileset-anims.ts:312 UpdateTilesetAnimations.
+                pauseTilesetAnimations();
+                // Reset BG scroll (= overworld camera vofs/hofs leftover).
+                rt.gba.bg(2).config.vofs = 0;
+                rt.gba.bg(2).config.hofs = 0;
+                rt.gba.bg(3).config.vofs = 0;
+                rt.gba.bg(3).config.hofs = 0;
+                // Write tile graphics → VRAM offset 0 (= charBase 0 shared).
+                rt.gba.vram.set(tilesData, 0);
+                // Write tilemaps → mapBase 6 (BG3 birch_bag) + 7 (BG2 birch_grass).
+                rt.gba.vram.set(new Uint8Array(birchBagBin), 6 * 0x800);
+                rt.gba.vram.set(new Uint8Array(birchGrassBin), 7 * 0x800);
+                // Load 32-entry palette → BG_PLTT_ID(0) (= flow into sub-pal 0+1).
+                LoadPalette(palette, 0, palette.length * 2);
+                // Init BG2 (charBase 0, mapBase 7, priority 3 = grass behind)
+                // et BG3 (charBase 0, mapBase 6, priority 1 = bag in front).
+                // 1:1 décomp `sBgTemplates[1..2]` (starter_choose.c:131-149).
+                InitBgFromTemplate({ bg: 2, charBaseIndex: 0, mapBaseIndex: 7, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 });
+                InitBgFromTemplate({ bg: 3, charBaseIndex: 0, mapBaseIndex: 6, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0 });
+                ShowBg(2); ShowBg(3);
+                console.log('[StarterChoose] Birch BG scene loaded (32-color palette, sub-palettes 0+1)');
+              } catch (bgErr) {
+                console.warn('[StarterChoose] Birch BG load failed (non-fatal)', bgErr);
+              }
               loadDone = true;
             } catch (e) {
               console.error('[StarterChoose] asset load failed', e);
@@ -373,6 +419,27 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         if (handSpriteId >= 0) rt.DestroySprite(handSpriteId);
         if (circleSpriteId >= 0) rt.DestroySprite(circleSpriteId);
         if (monSpriteId >= 0) rt.DestroySprite(monSpriteId);
+        // Phase 5.1 — restore overworld BGs après le scene switch Birch.
+        // Hide nos BG2/BG3 with Birch tilemaps, restore overworld config + tile
+        // graphics + tilemaps. 1:1 décomp `sOverworldBgTemplates`
+        // (overworld-data.ts:34) : BG1 mapBase 29 prio 1, BG2 mapBase 28 prio 2,
+        // BG3 mapBase 30 prio 3.
+        try {
+          HideBg(2); HideBg(3);
+          InitBgFromTemplate({ bg: 1, charBaseIndex: 0, mapBaseIndex: 29, screenSize: 0, paletteMode: 0, priority: 1, baseTile: 0 });
+          InitBgFromTemplate({ bg: 2, charBaseIndex: 0, mapBaseIndex: 28, screenSize: 0, paletteMode: 0, priority: 2, baseTile: 0 });
+          InitBgFromTemplate({ bg: 3, charBaseIndex: 0, mapBaseIndex: 30, screenSize: 0, paletteMode: 0, priority: 3, baseTile: 0 });
+          // Restore overworld VRAM tile graphics (= we overwrote charBase 0).
+          if (gMapHeader) CopyMapTilesetsToVram(gMapHeader.mapLayout);
+          // Restore overworld tilemaps (= flush from buffer to VRAM).
+          flushOverworldTilemaps(rt);
+          // Resume overworld tileset animations (= water/flower tile cycling).
+          resumeTilesetAnimations();
+          ShowBg(1); ShowBg(2); ShowBg(3);
+          console.log('[StarterChoose] overworld BGs restored');
+        } catch (bgErr) {
+          console.warn('[StarterChoose] overworld restore failed', bgErr);
+        }
         state = 'DONE';
         return false;
       }

@@ -300,6 +300,24 @@ export function InitTilesetAnimations(): void {
   _initSecondaryTilesetAnimation();
 }
 
+/** Pause les tileset animations overworld (= no-op le dispatch per-frame).
+ *  Utilisé par les scenes qui réutilisent le VRAM area des overworld tiles
+ *  (= starter choose Birch BG, battle transition, etc.) — sans pause les anim
+ *  callbacks overworld réécrivent les tiles à 0x3000-0x3800 chaque frame et
+ *  clobberent les tilemaps custom. À résumer via `resumeTilesetAnimations()`. */
+export function pauseTilesetAnimations(): void {
+  sPrimaryTilesetAnimCallback = null;
+  sSecondaryTilesetAnimCallback = null;
+  resetTilesetAnimBuffer();
+}
+
+/** Restaure les tileset animations overworld (= re-init depuis les init
+ *  callbacks gPrimary/SecondaryTilesetInitCallback qui restent set). */
+export function resumeTilesetAnimations(): void {
+  _initPrimaryTilesetAnimation();
+  _initSecondaryTilesetAnimation();
+}
+
 /** 1:1 décomp `InitSecondaryTilesetAnimation(void)`.
  *  Re-init seulement le secondaire (ex: after indoor/outdoor transition). */
 export function InitSecondaryTilesetAnimation(): void {

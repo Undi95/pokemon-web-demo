@@ -523,6 +523,21 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   };
   dev.battle = battleNs;
 
+  // ─── Starter test helpers (Phase 5.1) ─────────────────────────────────────
+  // dev.starter.choose() → trigger ChooseStarter UI inline (= 1:1 décomp
+  // CB2_ChooseStarter). Useful pour tester le scene switch Birch BG sans
+  // navigate vers Mom + Birch flow complet.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const starterNs = (dev.starter as Record<string, unknown> | undefined) ?? {};
+  starterNs.choose = async (): Promise<string> => {
+    const flowMod = await import('./starter-choose-flow');
+    const scriptMod = await import('./script-runtime');
+    const flow = flowMod.startChooseStarterFlow();
+    scriptMod.ScriptContext_SetupInlineNative(flow.tick);
+    return 'starter choose UI triggered — Birch BG should appear after async loads';
+  };
+  dev.starter = starterNs;
+
   // ─── Engine-level pause condition poll ────────────────────────────────────
   // Hook posé sur globalThis ; appelé à la fin de runOneFrame (= toute scene).
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
