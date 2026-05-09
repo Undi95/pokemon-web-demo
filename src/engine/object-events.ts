@@ -384,6 +384,35 @@ function pngTo1dObjLayout(pngCharData: Uint8Array, numFrames: number, pngWidthTi
   return out;
 }
 
+/**
+ * Like `pngTo1dObjLayout` but only extracts a single frame (= avoid loading
+ * unused frames into VRAM). Used for 32×32 NPCs où le PNG contient plusieurs
+ * frames partagés (= Vigoroth has 5 frames split between CarryingBox/FacingAway).
+ *
+ * Session 124 fix Bug 1.
+ */
+function pngTo1dObjLayoutSingleFrame(
+  pngCharData: Uint8Array, frameIdx: number, pngWidthTiles: number,
+  framePxW: number, framePxH: number,
+): Uint8Array {
+  const TILE_BYTES = 32;
+  const FRAME_W_TILES = framePxW / 8;
+  const FRAME_H_TILES = framePxH / 8;
+  const TILES_PER_FRAME = FRAME_W_TILES * FRAME_H_TILES;
+  const out = new Uint8Array(TILES_PER_FRAME * TILE_BYTES);
+  for (let row = 0; row < FRAME_H_TILES; row++) {
+    for (let col = 0; col < FRAME_W_TILES; col++) {
+      const pngTileIdx = row * pngWidthTiles + (frameIdx * FRAME_W_TILES) + col;
+      const objTileIdx = row * FRAME_W_TILES + col;
+      out.set(
+        pngCharData.subarray(pngTileIdx * TILE_BYTES, (pngTileIdx + 1) * TILE_BYTES),
+        objTileIdx * TILE_BYTES,
+      );
+    }
+  }
+  return out;
+}
+
 // ─── Sprite frame layout 1:1 player-avatar.ts ───────────────────────────────
 
 const NPC_SPRITE_FRAMES: Record<number, { face: number; walk1: number; walk2: number; hFlip: boolean }> = {
@@ -1041,11 +1070,29 @@ function _spawnSingleNpcFromTemplate(
     // Just copy the 36 tiles directly into OBJ VRAM at objTileBase.
     rt.gba.objVram.set(png.charData.subarray(0, 36 * 32), objTileBase * 32);
   } else if (is32x32) {
-    // 32×32 large Pokemon (= Vigoroth déménageurs, etc.). 16 tiles per frame.
-    // Pour MVP : load le 1er frame seul (= facing down classic). Anim multi-
-    // frame possible plus tard via 1d-obj layout reorder.
-    const numTiles = 16;  // 32×32 = 16 tiles 8×8
-    rt.gba.objVram.set(png.charData.subarray(0, numTiles * 32), objTileBase * 32);
+    // 32×32 large Pokemon (= Vigoroth déménageurs, Latios, etc.).
+    //
+    // **Session 124 fix Bug 1** : PNG row-major NE MATCHE PAS le format OBJ
+    // 1D MAP. Pour un PNG multi-frames (= Vigoroth 5 frames horizontaux de
+    // 32x32, 160x32 PNG = 20 tiles wide), copier `subarray(0, 16*32)` prend
+    // les 16 PREMIERS tiles row-major du PNG = 16 tiles de la row 0 (= 4
+    // frames partiels horizontalement) → garbage rendering.
+    //
+    // Fix : utiliser pngTo1dObjLayoutSingleFrame (= reorganise 16 tiles d'un
+    // frame N en row-major frame-local).
+    //
+    // Frame index selon graphics ID :
+    //   - VIGOROTH_CARRYING_BOX  → frame 0 (= face down avec boîte, 1:1
+    //     décomp sPicTable_VigorothCarryingBox[0])
+    //   - VIGOROTH_FACING_AWAY   → frame 3 (= face up, 1:1 décomp
+    //     sPicTable_VigorothFacingAway[0])
+    //   - autres 32x32 (futur)   → frame 0 (default)
+    let frameIdx = 0;
+    if (graphicsKey === 'OBJ_EVENT_GFX_VIGOROTH_FACING_AWAY') frameIdx = 3;
+    const reordered = pngTo1dObjLayoutSingleFrame(
+      png.charData, frameIdx, png.widthTiles, 32, 32,
+    );
+    rt.gba.objVram.set(reordered, objTileBase * 32);
   } else if (is16x16) {
     // 16×16 inanimate (= moving box, berry, egg). 4 tiles row-major.
     // Single frame, sequential layout dans le PNG.

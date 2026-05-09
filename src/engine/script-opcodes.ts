@@ -803,33 +803,41 @@ registerOpcode('gettime', () => {
   return false;
 });
 
+// Session 124 fix Bug 4 : signal generic pour UI flows (= wallclock, starter,
+// future MartUI, etc.). Le décomp `waitstate` poll `ScriptContext_Stop` cleared
+// par `ScriptContext_Enable()` appelé par le UI flow quand il finit. Notre
+// equivalent : un latch booleen set par `SignalWaitState()`.
+let _waitStateSignaled = false;
+export function SignalWaitState(): void {
+  _waitStateSignaled = true;
+}
+
 registerOpcode('waitstate', (ctx) => {
   // 1:1 décomp ScrCmd_waitstate (scrcmd.c:ScrCmd_waitstate) : ScriptContext_Stop
-  // jusqu'à ce qu'une autre routine (= warp completion, multichoice result)
-  // call ScriptContext_Enable. Utilisé après `warpsilent` pour bloquer le
-  // script jusqu'à ce que la nouvelle map soit chargée et que le player
-  // soit replacé. Sans ce wait, `releaseall` + `end` s'exécutent immédiatement
-  // → player et NPCs dégelés au mauvais moment.
+  // jusqu'à ce qu'une autre routine (= warp completion, multichoice result,
+  // UI flow done) call ScriptContext_Enable. Utilisé après `warpsilent`,
+  // après `special X waitstate=1` (= wallclock, starter choose), etc.
   //
-  // Notre impl : poll `getPendingWarp() === null` (= warp consumed) ET
-  // `gMapHeader.id` switch (= map réellement chargée). Imports ESM statiques
-  // (= require() introuvable en browser, fix bug session 122).
+  // Notre impl : poll signal latch + warp completion + map switch (= 3
+  // sources possibles de release). Si signaled UPSTREAM (= UI flow déjà
+  // terminé avant waitstate dispatch), consume + continue immédiat.
+  if (_waitStateSignaled) {
+    _waitStateSignaled = false;
+    return false;
+  }
   const startMapId = gMapHeader?.id;
   const tick = (): boolean => {
-    // Waiting for warp to consume + map to switch.
+    if (_waitStateSignaled) {
+      _waitStateSignaled = false;
+      return true;
+    }
+    // Warp path : poll warp consume + map switch (= 1:1 session 122 fix).
     if (getPendingWarp()) return false;
     const currentMapId = gMapHeader?.id;
     if (currentMapId && currentMapId !== startMapId) return true;
-    // Si pas de warp en cours mais map identique : on attend un autre signal
-    // (= multichoice exit, fade complete, etc.). Pour les warpsilent flow,
-    // la 2e condition se vérifiera après le swap.
-    // Edge case : si `waitstate` est appelé sans warp pending et sans map
-    // change, on continue après ~120 frames (= safety timeout).
     return false;
   };
   SetupNativeScript(ctx, tick);
-  // 1:1 décomp : ctx.mode = SCRIPT_MODE_STOPPED + native callback ; le runtime
-  // resume quand callback retourne true. Si timeout safety nécessaire, à add.
   return true;
 });
 

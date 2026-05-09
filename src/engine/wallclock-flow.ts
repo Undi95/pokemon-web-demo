@@ -31,8 +31,9 @@
  */
 
 import { gMain } from './decomp-globals';
-import { RtcCalcLocalTime, gLocalTime, RtcCalcLocalTimeOffset, getInGame12Hour } from './rtc';
+import { RtcCalcLocalTime, gLocalTime, RtcCalcLocalTimeOffset } from './rtc';
 import { gameState } from './game-state';
+import { SignalWaitState } from './script-opcodes';
 
 // GBA key masks (= 1:1 décomp gba/key.h).
 const A_BUTTON   = 0x01;
@@ -284,18 +285,20 @@ export function startWallClockFlow(mode: Mode): WallClockFlow {
       case 'FADE_OUT': {
         if (overlay) {
           overlay.style.opacity = '0';
-          // Wait ~18 frames ≈ 300ms for fade complete.
-          if (animTimer % 60 === 0 || true) {
-            // Simple : remove après 18 ticks.
-            setTimeout(() => cleanup(), 320);
-          }
+          setTimeout(() => cleanup(), 320);
         }
         state = 'DONE';
         return false;
       }
 
-      case 'DONE':
+      case 'DONE': {
+        // Session 124 fix Bug 4 : signal le `waitstate` qui suit (= 1:1 décomp
+        // pattern `ScriptContext_Enable()` appelé par CB2_ReturnToFieldContinue
+        // ScriptPlayMapMusic). Sans ça, le waitstate poll un map-switch qui
+        // n'arrive jamais → freeze du jeu après close de l'horloge.
+        SignalWaitState();
         return true;
+      }
     }
     return false;
   };

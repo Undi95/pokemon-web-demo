@@ -119,6 +119,16 @@ const symbolsToExpose: Record<string, unknown> = {
   SetGpuReg: (reg: number, value: number) => dg.getRuntime().SetGpuReg(reg, value),
   SetMainCallback2: (cb: unknown) => dg.getRuntime().SetMainCallback2(cb as any),
   SetVBlankCallback: (cb: (() => void) | null) => dg.getRuntime().SetVBlankCallback(cb),
+  // Session 124 fix : `FieldClearVBlankHBlankCallbacks` est utilisé par
+  // overworld-callbacks-auto.ts (= 11 callsites incl. CB2_ContinueSavedGame).
+  // 1:1 décomp `overworld.c`: clear VBlank + HBlank callbacks. Notre engine
+  // n'a pas vraiment de HBlank, donc on stub HBlank et clear VBlank only.
+  FieldClearVBlankHBlankCallbacks: () => {
+    dg.getRuntime().SetVBlankCallback(null);
+    // SetHBlankCallback : pas implémenté côté engine, no-op safe.
+  },
+  // SetHBlankCallback : aussi stubbed pour 1:1 compat décomp.
+  SetHBlankCallback: (_cb: (() => void) | null) => { /* no-op stub */ },
   BeginNormalPaletteFade: (palettes: string, delay: number, startY: number, endY: number, color: string) =>
     dg.getRuntime().BeginNormalPaletteFade(palettes, delay, startY, endY, color),
   UpdatePaletteFade: dg.UpdatePaletteFade,
