@@ -402,9 +402,39 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     return { damage, typeMul };
   };
 
+  // Session 124 Bug 5c : shake state pour feedback visuel "hit" damage.
+  // 1:1 décomp pattern : `sprite.x2` / `sprite.y2` offsets temporaires.
+  let _shakeSpriteId = -1;
+  let _shakeFramesLeft = 0;
+  const startShake = (spriteId: number, frames = 14) => {
+    _shakeSpriteId = spriteId;
+    _shakeFramesLeft = frames;
+  };
+  const tickShake = (): void => {
+    if (_shakeFramesLeft <= 0) return;
+    const rt2 = getRuntime();
+    if (!rt2) return;
+    const sprite = rt2.gSprites.get(_shakeSpriteId);
+    if (!sprite) { _shakeFramesLeft = 0; return; }
+    // Oscillation horizontale décroissante (= 4px → 0).
+    const decay = _shakeFramesLeft / 14;
+    const offset = Math.sin(_shakeFramesLeft * 1.2) * 4 * decay;
+    sprite.x2 = Math.round(offset);
+    _shakeFramesLeft--;
+    if (_shakeFramesLeft === 0) {
+      sprite.x2 = 0;
+      sprite.y2 = 0;
+      _shakeSpriteId = -1;
+    }
+  };
+
   const tick = (): boolean => {
     const rt = getRuntime();
     if (!rt) return false;
+
+    // Tick shake animation (= run regardless of state, so shake survives
+    // text waits + transitions).
+    tickShake();
 
     // Iter16 : during battle, re-hide overworld sprites each frame because
     // UpdateObjectEvents() runs before our tick and re-shows them. Skip during
@@ -657,6 +687,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         const { damage, typeMul } = applyMoveDamage(playerMon, opponentMon, chosenMoveIndex);
         renderHpWindows();
         if (damage > 0) {
+          // Bug 5c : shake opp sprite on damage.
+          if (opponentSpriteId >= 0) startShake(opponentSpriteId);
+        }
+        if (damage > 0) {
           // Iter19 : type effectiveness messages.
           if (typeMul === 0) {
             ShowFieldMessage(`Ça n'a aucun effet sur\n${opponentMon.nickname}...`);
@@ -781,6 +815,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
         const { damage, typeMul } = applyMoveDamage(opponentMon, playerMon, chosenMoveIndex);
         renderHpWindows();
+        if (damage > 0) {
+          // Bug 5c : shake player sprite on damage.
+          if (playerSpriteId >= 0) startShake(playerSpriteId);
+        }
         if (damage > 0) {
           // Iter19 : type effectiveness messages (= same as player turn).
           if (typeMul === 0) {
