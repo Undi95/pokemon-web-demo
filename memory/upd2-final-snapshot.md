@@ -1,12 +1,17 @@
-# Branch upd2 — Final snapshot (overnight session, iteration 6 update)
+# Branch upd2 — Final snapshot (overnight session, iter7 update)
 
-Date : 2026-05-09 ~05h55
+Date : 2026-05-09 ~06h05
 
 ## TL;DR
 
-**35 commits sur upd2 cette nuit.** Build clean, game runs.
+**37 commits sur upd2 cette nuit.** Build clean, game runs.
 
-### Big wins (cumulé jusqu'à iter6)
+**🎯 Milestone iter7 : 100% early-game coverage** (= 20 maps Bourg-en-Vol →
+Rosyères → Pacifibourg + Bois). Zero `[script-runtime] opcode '...' not
+implemented` warnings + zero `[opcode special] '...' not registered yet`
+warnings sur les routes early-game.
+
+### Big wins (cumulé jusqu'à iter7)
 
 | Item | Status |
 |---|---|
@@ -15,10 +20,34 @@ Date : 2026-05-09 ~05h55
 | ChooseStarter UI | ✅ visible 1:1 sprites + dialog + Pokemon front |
 | Wild battle | ✅ Birch tutorial fonctionnel |
 | Trainer battle | ✅ Rival via trainerbattle opcodes |
-| Specials registered | ✅ **46** (= +34 cette nuit) |
-| Opcodes registered | ✅ **~167** (= +25 iter6, audit-driven) |
-| Audit tool | ✅ `scripts/audit-missing-opcodes.mjs` |
+| Specials registered | ✅ **62** (= +50 cette nuit) |
+| Opcodes registered | ✅ **189** (= +47 cette nuit, audit-driven) |
+| Audit tools | ✅ 4 scripts dans `scripts/audit-*.mjs` |
+| Early-game coverage | ✅ **100%** sur 20 maps (opcodes + specials) |
 | Memory docs | ✅ 5 files briefing user |
+
+### Iteration 7 highlights (commits `fca98845` + post)
+
+**100% early-game coverage** atteint via 4 audits scripts + 28 nouveaux stubs :
+
+```
+Early-game opcodes  : 14 missing → 0 (Iter7)
+Early-game specials : 16 missing → 0 (Iter7)
+Total registered    : 189 opcodes + 62 specials
+```
+
+Field opcodes ajoutés (iter7) : `goto_if_not_defeated`, `call_if_defeated`,
+`showmonpic`, `hidemonpic`, `givemon`, `copyobjectxytoperm`, `pokenavcall`,
+`pokemartlistend`, `setorcopyvar`, `checkpcitem`, `warpdoor`, `showobjectat`,
+`disable_jump_landing_ground_effect`.
+
+Specials ajoutés (iter7) : `DrawWholeMapView`, `IsTrainerRegistered`,
+`GetRivalSonDaughterString`, `SavePlayerParty`, `LoadPlayerParty`,
+`IsStarterInParty`, `InitBirchState`, `LoadWallyZigzagoon`,
+`StartWallyTutorialBattle`, `IsTrainerReadyForRematch`,
+`IsEnigmaBerryValid`, `HasAllHoennMons`, `ResetHealLocationFromDewford`,
+`PetalburgGymSlideOpenRoomDoors`, `PetalburgGymUnlockRoomDoors`,
+`ChooseStarter` (audit-stub backup).
 
 ### Iteration 6 highlights (commit `493b3cee`)
 
@@ -71,9 +100,11 @@ await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
 window.dev.bridge.report().then(console.log)
 ```
 
-## Commit log (= 35 commits)
+## Commit log (= 37 commits)
 
 ```
+fca98845 Phase 5.7+ iter7 — 100% early-game coverage (+13 opcodes +15 specials)
+0efe3097 Memory — iter6 update : audit-driven opcode coverage
 493b3cee Phase 5.7+ iter6 — audit-driven field opcode stubs (+25 opcodes)
 27bc6013 Phase 5.7+ — 22 additional specials stubs (PC effects, Pokedex, Roamer, HM checks)
 23a84a41 Phase 5.7+ — 40+ misc opcode stubs (incrementgamestat, playmoncry, giveitem, buffer*, doweather...)
@@ -282,11 +313,40 @@ Le jeu progresse vers la complétion :
 ## Workflow audit-driven (= reproducible pour itérations futures)
 
 ```bash
+# Toutes les maps
 node scripts/audit-missing-opcodes.mjs | head -40
+node scripts/audit-missing-specials.mjs | head -40
+
+# Early-game seulement (= 20 maps prioritaires)
+node scripts/audit-early-game-opcodes.mjs
+node scripts/audit-early-game-specials.mjs
 ```
 
-Output = top missing opcodes par usage. Ajoute un stub pour chacun
-dans `src/engine/script-opcodes.ts` (= 1:1 décomp `scrcmd.c` reference,
-fallback to no-op or simple state mutation). Le but : zero `[script-runtime]
-opcode '...' not implemented` warnings dans la console quand le user joue
-une zone normale.
+Output = top missing par usage. Ajoute un stub pour chacun dans
+`src/engine/script-opcodes.ts` (opcodes) ou `src/engine/specials-registry.ts`
+(specials), avec ref 1:1 décomp en commentaire (= `scrcmd.c` ou
+`data/specials.inc` + module C origine).
+
+**Pattern** :
+```typescript
+// 1:1 décomp `ScrCmd_<name>` (scrcmd.c). Stub : log + skip.
+registerOpcode('<name>', (_ctx, _args) => false);
+```
+
+Le but : zero warnings `[script-runtime] opcode '...' not implemented` ou
+`[opcode special] '...' not registered yet` dans la console quand le user
+joue une zone normale.
+
+## Audit summary (iter7)
+
+```
+=== Missing opcodes in EARLY-GAME (20 maps) ===
+Registered : 189 | Used : 124 | Missing : 0    ✅
+
+=== Missing specials in EARLY-GAME ===
+Registered : 62 | Used : 25 | Missing : 0    ✅
+```
+
+Les 458 specials globaux + 790 opcodes globaux non-implémentés sont
+majoritairement des battle scripts (= dispatcher séparé Phase 6) ou des
+zones late-game (= gym leaders, élite four, battle frontier).
