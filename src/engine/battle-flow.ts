@@ -52,6 +52,8 @@ import {
   ClearStdWindowAndFrame,
   FillWindowPixelBuffer,
   CopyWindowToVram,
+  ShowBg,
+  HideBg,
   type WindowTemplate,
 } from './gba-window-system';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
@@ -370,6 +372,17 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     const rt = getRuntime();
     if (!rt) return false;
 
+    // Iter16 : during battle, re-hide overworld sprites each frame because
+    // UpdateObjectEvents() runs before our tick and re-shows them. Skip during
+    // INIT/LOAD_ASSETS (= our battle sprites not yet spawned) and CLEANUP.
+    const stashedSprites = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
+    if (stashedSprites && state !== 'CLEANUP' && state !== 'DONE' && state !== 'INIT' && state !== 'LOAD_ASSETS' && state !== 'WAIT_LOAD') {
+      for (const id of stashedSprites) {
+        const sprite = rt.gSprites.get(id);
+        if (sprite) sprite.invisible = true;
+      }
+    }
+
     switch (state) {
       case 'INIT': {
         // Pick player Pokemon : first non-fainted from party.
@@ -455,6 +468,27 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'SPAWN_SPRITES': {
+        // Iter16 : hide overworld BGs (BG1=foreground, BG2=middleground,
+        //   BG3=background tiles) during battle pour donner un fond noir.
+        //   On garde BG0 visible car c'est là où nos windows (HP + dialog)
+        //   sont rendues. La couleur de fond du screen (= backgroundColor
+        //   du Phaser game = '#000000') sera visible sous les BGs cachés.
+        HideBg(1);
+        HideBg(2);
+        HideBg(3);
+        // Iter16 : hide overworld OAM sprites (= player + NPCs) so they don't
+        //   show on top of the battle. Stash their visibility for restore on
+        //   cleanup. Iterate sprites par spriteId (= gSprites map) AVANT le
+        //   spawn de nos sprites battle (= ceux-ci seront ajoutés ensuite).
+        const stashSprites: Set<number> = new Set();
+        for (const [spriteId, sprite] of rt.gSprites) {
+          if (sprite && !sprite.invisible) {
+            stashSprites.add(spriteId);
+            sprite.invisible = true;
+          }
+        }
+        (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash = stashSprites;
+
         // Compute tileId for each sprite (= byteOffset / 32 bytes per tile).
         const playerTileId   = PLAYER_SPRITE_BYTE_OFFSET   / 32;
         const opponentTileId = OPPONENT_SPRITE_BYTE_OFFSET / 32;
@@ -713,6 +747,19 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           playerHpWindowId = -1;
         }
         closeMoveMenu();
+        // Iter16 : restore overworld BGs after battle.
+        ShowBg(1);
+        ShowBg(2);
+        ShowBg(3);
+        // Iter16 : restore overworld sprites that were hidden at battle start.
+        const stashRestore = (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash;
+        if (stashRestore) {
+          for (const id of stashRestore) {
+            const sprite = rt.gSprites.get(id);
+            if (sprite) sprite.invisible = false;
+          }
+          (globalThis as { __battleSpriteStash?: Set<number> }).__battleSpriteStash = undefined;
+        }
         // Set outcome vars (= 1:1 décomp battle_main.c gBattleOutcome + VAR_RESULT).
         VarSet('VAR_RESULT', outcome);
         gameState.setVar('VAR_RESULT', outcome);
