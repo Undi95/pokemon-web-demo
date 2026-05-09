@@ -491,6 +491,14 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   battleNs.startBirchTutorial = async (): Promise<string> => {
     const mod = await import('./battle-flow');
     const scriptMod = await import('./script-runtime');
+    const gsMod = await import('./game-state');
+    // Auto-add Treecko if party is empty (= dev convenience for tutorial test).
+    if (gsMod.gameState.partySize === 0) {
+      const pokeMod = await import('./pokemon');
+      const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', 5);
+      gsMod.gameState.addToParty(starter);
+      console.log('[dev.battle.startBirchTutorial] auto-added Treecko Lv5 (party était vide)');
+    }
     const flow = mod.startBirchTutorialBattle();
     scriptMod.ScriptContext_SetupInlineNative(flow.tick);
     return 'Birch tutorial battle started — flow ticked via script engine';
@@ -498,6 +506,14 @@ export function installEngineDevtools(rt: DecompRuntime, opts: EngineDevtoolsOpt
   battleNs.startWild = async (species: string, level: number): Promise<string> => {
     const mod = await import('./battle-flow');
     const scriptMod = await import('./script-runtime');
+    const gsMod = await import('./game-state');
+    // Auto-add Treecko if party is empty.
+    if (gsMod.gameState.partySize === 0) {
+      const pokeMod = await import('./pokemon');
+      const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', Math.max(5, level - 1));
+      gsMod.gameState.addToParty(starter);
+      console.log(`[dev.battle.startWild] auto-added Treecko Lv${starter.level} (party était vide)`);
+    }
     const flow = mod.startWildBattle({ opponentSpecies: species, opponentLevel: level });
     scriptMod.ScriptContext_SetupInlineNative(flow.tick);
     return `wild battle vs ${species} Lv${level} started`;

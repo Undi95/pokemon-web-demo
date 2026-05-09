@@ -227,7 +227,15 @@ if (typeof window !== 'undefined') {
   w.dev = w.dev ?? {};
   const dev = w.dev as Record<string, any>;
   dev.battle = dev.battle ?? {};
-  dev.battle.startTrainer = (trainerId: string) => {
+  dev.battle.startTrainer = async (trainerId: string) => {
+    // Auto-add starter Pokemon if party is empty (= dev convenience).
+    const gsMod = await import('./game-state');
+    if (gsMod.gameState.partySize === 0) {
+      const pokeMod = await import('./pokemon');
+      const starter = pokeMod.createPokemonInstance('SPECIES_TREECKO', 8);
+      gsMod.gameState.addToParty(starter);
+      console.log('[dev.battle.startTrainer] auto-added Treecko Lv8 (party était vide)');
+    }
     const flow = startTrainerBattle(trainerId);
     const interval = setInterval(() => {
       if (flow.tick()) {
