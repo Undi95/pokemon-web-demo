@@ -1,10 +1,10 @@
-# Branch upd2 — Final snapshot (overnight session, iter18 final)
+# Branch upd2 — Final snapshot (overnight session, iter19 final)
 
-Date : 2026-05-09 ~08h45
+Date : 2026-05-09 ~09h00
 
 ## TL;DR
 
-**54 commits sur upd2 cette nuit.** Build clean, game runs.
+**56 commits sur upd2 cette nuit.** Build clean, game runs.
 
 **🎯🎯🎯 Iter16 : MAJOR VISUAL UPGRADE** — battle scene now shows clean
 black background instead of overworld leaking through. Player overworld
@@ -57,6 +57,30 @@ sans crasher (= Battle Frontier scripts, Trainer Fan Club, etc.).
 | Main-story coverage | ✅ **100%** sur 70 maps (opcodes + specials) |
 | Global coverage | ✅ **70%** opcodes / 22% specials sur 470 maps |
 | Memory docs | ✅ 5 files briefing user |
+
+### Iteration 19 highlights (commit `d57838fa`)
+
+**STAB + Type effectiveness** in battle damage formula :
+- STAB : 1.5× if move type matches attacker's type
+- Type chart multiplier : 0×/0.5×/1×/2×/4× from species `types[2]`
+- Classic Pokemon messages :
+  - "Ça n'a aucun effet sur X..."     (immune)
+  - "C'est super efficace!"            (super)
+  - "Ce n'est pas très efficace..."    (not effective)
+  - (silent for neutral 1× damage)
+
+Implementation :
+- `getSpeciesTypes(speciesEnum)` : reads `species-info.json types[2]`
+- `getTypeEffectivenessMul(moveType, dType1, dType2)` : product of
+  `getTypeMultiplier(att, def)` vs each defender type
+- `applyMoveDamage()` now returns `{ damage, typeMul }`
+
+Example numbers (Treecko Lv5 vs Zigzagoon Lv2 with Tackle Normal) :
+- Atk 13, Def 10, Power 35, Lv 5
+- Base damage = floor(13 × 35 × 4 / 10 / 50) = 3
+- STAB : Tackle is TYPE_NORMAL, Treecko is TYPE_GRASS → no STAB
+- Type effectiveness : NORMAL vs NORMAL = 1× neutral
+- Final damage : 3 × random(0.85-1) = 2-3
 
 ### Iteration 18 highlights (commit `cc6908c5`)
 
@@ -307,9 +331,11 @@ await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
 window.dev.bridge.report().then(console.log)
 ```
 
-## Commit log (= 54 commits)
+## Commit log (= 56 commits)
 
 ```
+d57838fa Iter19 — add STAB + type effectiveness in battle damage formula
+87ad9cc3 Memory — iter18 update : Pokemon cry sounds added in battle
 cc6908c5 Iter18 — add Pokemon cry on opponent appear + first player turn
 b44da28f Memory — iter17 update : trainer battle BG hide also working
 70c712e1 Iter17 — trainer-battle-flow also hides BGs/sprites during INTRO
