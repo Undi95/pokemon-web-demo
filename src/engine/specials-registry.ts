@@ -106,19 +106,41 @@ registerSpecial('ChooseStarter', () => {
   //   SetMainCallback2(CB2_StartFirstBattle);
   //   BattleTransition_Start(B_TRANSITION_BLUR);
   //
-  // Pour MVP : auto-pick idx 0 (= TREECKO). Donne level 5 à la party.
-  // Skip transition battle = Phase 5.
+  // Phase 5.5 : launch StarterChooseScene Phaser pour 3 pokeballs picker.
+  // La scene set VAR_RESULT + addToParty + appelle window.__starterChooseDone(idx)
+  // qui resume notre script-runtime (= waitstate gate).
+  //
+  // IMPORTANT : la script Route 101 fait `special ChooseStarter` puis
+  // `applymovement Birch` IMMEDIATEMENT (= no waitstate). Donc notre special
+  // doit BLOCK le script (= via SetupNativeScript wait-for-scene) pour que
+  // l'UI ait le temps de jouer.
   void (async () => {
     try {
-      const idx = 0;  // TREECKO (idx 1 = TORCHIC, 2 = MUDKIP)
+      const game = (typeof window !== 'undefined') ? (window as any).__phaserGame : null;
+      if (game?.scene) {
+        // Set up callback BEFORE launching scene.
+        let isDone = false;
+        (window as any).__starterChooseDone = (_idx: number) => {
+          isDone = true;
+          // Resume script via game-state flag (= polled by SetupNativeScript).
+          gameState.setVar('VAR_STARTER_CHOOSE_DONE', 1);
+        };
+        // Launch scene.
+        gameState.setVar('VAR_STARTER_CHOOSE_DONE', 0);
+        game.scene.start('StarterChooseScene');
+        console.log('[special ChooseStarter] launched StarterChooseScene');
+        // Block script via simple polling : cf. script-opcodes.ts SetupNativeScript wait pour ChooseStarter.
+        return;
+      }
+      // Fallback (= no game instance) : auto-pick idx 0.
+      console.warn('[special ChooseStarter] no Phaser game, auto-picking TREECKO');
+      const idx = 0;
       const speciesEnum = ['SPECIES_TREECKO', 'SPECIES_TORCHIC', 'SPECIES_MUDKIP'][idx];
       const { createPokemonInstance } = await import('./pokemon');
-      const { gameState } = await import('./game-state');
       const starter = createPokemonInstance(speciesEnum, 5);
       gameState.addToParty(starter);
       gameState.setVar('VAR_RESULT', idx);
       gameState.setVar('VAR_STARTER_MON', idx);
-      console.log(`[special ChooseStarter] auto-pick ${speciesEnum} (idx=${idx}) → party size=${gameState.partySize}`);
     } catch (e) {
       console.warn('[special ChooseStarter] failed', e);
     }
