@@ -304,41 +304,62 @@ registerOpcode('copyvar', (_ctx, args) => {
 //   trainerbattle_rematch_double trainer, intro, lose, not_enough_text
 //   trainerbattle_no_intro trainer, lose_text  →  TRAINER_BATTLE_SINGLE_NO_INTRO_TEXT
 function _stubTrainerBattle(trainerArg: string): void {
-  console.log(`[trainerbattle stub] ${trainerArg} — BattleScene pas encore implémentée (Phase 5), set VAR_RESULT=1 (= win) pour continuer`);
+  console.log(`[trainerbattle stub fallback] ${trainerArg} — VAR_RESULT=1`);
   gSpecialVar.Result = 1;
-  // Marqueur "défeated" persistant (= proxy de FLAG_TRAINER_X_DEFEATED).
   gameState.setFlag(`__defeated_${trainerArg}`);
 }
 
-registerOpcode('trainerbattle', (_ctx, args) => {
+/** Phase 5.7 : real trainer battle via state machine + battle-flow.
+ *  Reads trainer party from JSON, runs battles in sequence.
+ *  Falls back to stub if trainer data not available or battle fails. */
+function _runTrainerBattle(ctx: ScriptContext, trainerArg: string): boolean {
+  if (!trainerArg) {
+    _stubTrainerBattle(trainerArg);
+    return false;
+  }
+  // Dynamic import : avoid circular deps at load.
+  let flowReady = false;
+  let flow: { tick: () => boolean } | null = null;
+  void import('./trainer-battle-flow').then((mod) => {
+    flow = mod.startTrainerBattle(trainerArg);
+    flowReady = true;
+  }).catch(() => {
+    // Fallback to stub if import fails.
+    _stubTrainerBattle(trainerArg);
+    flowReady = true;
+    flow = { tick: () => true };
+  });
+  SetupNativeScript(ctx, () => {
+    if (!flowReady) return false;
+    return flow!.tick();
+  });
+  return true;  // block script
+}
+
+registerOpcode('trainerbattle', (ctx, args) => {
   // args = [type, trainer, localId, ptr1, ...]
-  _stubTrainerBattle(args[1] ?? '');
-  return false;
+  return _runTrainerBattle(ctx, args[1] ?? '');
 });
 
-registerOpcode('trainerbattle_single', (_ctx, args) => {
-  _stubTrainerBattle(args[0] ?? '');
-  return false;
+registerOpcode('trainerbattle_single', (ctx, args) => {
+  return _runTrainerBattle(ctx, args[0] ?? '');
 });
 
-registerOpcode('trainerbattle_double', (_ctx, args) => {
-  _stubTrainerBattle(args[0] ?? '');
-  return false;
+registerOpcode('trainerbattle_double', (ctx, args) => {
+  // Double battles not yet supported — fallback to single.
+  return _runTrainerBattle(ctx, args[0] ?? '');
 });
 
-registerOpcode('trainerbattle_rematch', (_ctx, args) => {
-  _stubTrainerBattle(args[0] ?? '');
-  return false;
+registerOpcode('trainerbattle_rematch', (ctx, args) => {
+  return _runTrainerBattle(ctx, args[0] ?? '');
 });
 
-registerOpcode('trainerbattle_rematch_double', (_ctx, args) => {
-  _stubTrainerBattle(args[0] ?? '');
-  return false;
+registerOpcode('trainerbattle_rematch_double', (ctx, args) => {
+  return _runTrainerBattle(ctx, args[0] ?? '');
 });
 
-registerOpcode('trainerbattle_no_intro', (_ctx, args) => {
-  _stubTrainerBattle(args[0] ?? '');
-  return false;
+registerOpcode('trainerbattle_no_intro', (ctx, args) => {
+  return _runTrainerBattle(ctx, args[0] ?? '');
 });
 
 // 1:1 décomp asm/macros/event.inc:1914-1921 :
