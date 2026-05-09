@@ -164,6 +164,77 @@ ou similaire pour retrouver le commit perdu.
 - `species-info.json` has `expYield` field per species
 - Formule Gen 3 : `expGain = (baseExp × level) / 7` (= défait Pokemon's)
 
+## 🛠️ Bug 6 — Update extractor/transpiler avec nos fixes manuels
+
+User explicit : "Ajoute aussi de mettre à jour le transpiler avec nos
+fix manuel".
+
+**Patches manuels actuellement en place dans des auto-files** (= s'effacent
+si on re-run l'extracteur sans le mettre à jour) :
+
+### 6a. `src/engine/decomp-data/auto/src/sprite-system.ts`
+
+Ajout manuel de `sStartCopyrightBannerAnimTable` dans `SPRITE_ANIM_TABLES`
+(= line ~485). L'extracteur ne parse pas le designated initializer C :
+
+```c
+// src/title_screen.c:271-284
+static const union AnimCmd *const sStartCopyrightBannerAnimTable[
+  NUM_PRESS_START_FRAMES + NUM_COPYRIGHT_FRAMES] =
+{
+    sAnim_PressStart_0,
+    sAnim_PressStart_1,
+    sAnim_PressStart_2,
+    sAnim_PressStart_3,
+    sAnim_PressStart_4,
+    [NUM_PRESS_START_FRAMES] =        // ← designated initializer skip
+    sAnim_Copyright_0,
+    sAnim_Copyright_1,
+    sAnim_Copyright_2,
+    sAnim_Copyright_3,
+    sAnim_Copyright_4,
+};
+```
+
+**Fix transpiler** : updater `scripts/extract-sprite-system.mjs` (ou wherever
+l'extracteur sprite-system lit le C) pour gérer le pattern
+`[CONSTANT_NAME] = value`. Le parser doit :
+1. Détecter `\[\s*([A-Z_][A-Z0-9_]*)\s*\]\s*=` dans les array initializers
+2. Résoudre le `CONSTANT_NAME` via `_define_constants` map
+3. Skip aux entries entre les indices implicites jusqu'à l'index résolu
+4. Continue l'array
+
+Pre-search : run `audit-missing-anim-tables.mjs` après extracteur update
+pour confirm que toutes les anim tables sont définies.
+
+### 6b. Garder le hotfix `_resolveTileNum()` du runtime
+
+Le helper `_resolveTileNum()` dans `decomp-runtime.ts:32-42` résout les
+string constants (= e.g. `"VERSION_BANNER_RIGHT_TILEOFFSET"`) qui restent
+dans les SPRITE_ANIMS data. C'est un fallback runtime — peut rester
+indéfiniment, mais idéalement l'extracteur résoudrait ces constantes
+DIRECTEMENT et stockerait des numbers.
+
+Look at the SPRITE_ANIMS extractor : trouver les `tileNum: "STRING"` et
+résoudre via `_define_constants`. Aujourd'hui une seule string :
+`VERSION_BANNER_RIGHT_TILEOFFSET = 64`.
+
+### 6c. (Possible) Subpriority dans CreateSprite
+
+Le compositor sort utilise maintenant `subpriority` (= commit `c7d63fca`).
+L'extracteur pourrait s'assurer que les CreateSprite calls dans les
+auto-bodies passent bien le 4ème arg (= subpriority) — pas un fallback
+silencieux à `0xFF`. Currently OK car le décomp source a déjà ces args
+explicites, mais à double-check si on régénère.
+
+### 6d. Audit script à ajouter
+
+Créer `scripts/audit-extractor-output.mjs` qui :
+1. Run après chaque `extract:*` script
+2. Run all our `audit-*.mjs` (= dupes, missing, etc.)
+3. Fail loud avec exit 1 si regression
+4. Output résumé clair : "X regressions, Y new entries, Z deletions"
+
 ## ⚠️ Workflow pour fix ces bugs
 
 1. **Lire ce fichier** + `session-2026-05-09-status.md` AVANT toute action
@@ -171,6 +242,7 @@ ou similaire pour retrouver le commit perdu.
 3. **AVANT bulk-add** : `npm run audit:dupes` pour 0 dupes
 4. **Test live après chaque fix** via `?nointro=1` ou `?truck=1`
 5. **Commit séparément** chaque bug fix avec message explicite
+6. **AVANT re-extract** : check ce file pour les manual patches à conserver
 
 ## 📅 Que faire ensuite (= roadmap post-bugs)
 
