@@ -1,8 +1,23 @@
-# Branch upd2 — Final snapshot (overnight session, iter19 final)
+# Branch upd2 — Final snapshot (= matin user-driven debug session)
 
-Date : 2026-05-09 ~09h00
+Date : 2026-05-09 fin matin
 
-## TL;DR
+## ⚠️ POST-COMPACTION ENTRY POINT
+
+**Lire `memory/session-2026-05-09-status.md` EN PREMIER**. Ce fichier est
+le snapshot cumulé de la nuit ; le status.md a tous les fixes du matin
++ les 5 bugs restants documentés dans
+`memory/next-session-bugs-2026-05-09.md`.
+
+## TL;DR Final (= 70 commits sur upd2)
+
+Game runs much better. Title screen + warps + intro Z-axis + new game
+flow tous fixés. Battle polish (BG hide, cry sounds, type effectiveness,
+STAB) shippé pendant la nuit.
+
+5 bugs visuels restants documentés. NE PAS PUSH.
+
+## TL;DR Nuit (= 56 commits autonomous loop)
 
 **56 commits sur upd2 cette nuit.** Build clean, game runs.
 
