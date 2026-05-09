@@ -1,13 +1,30 @@
-# Session 124 final — bugs visuels fix + battle polish
+# Session 124 final — bugs visuels + battle polish + truck audit
 
 Date : 2026-05-09
-Branche : `upd2` (= **80 commits** ahead of `main`, NE PAS PUSH)
+Branche : `upd2` (= **84 commits** ahead of `main`, NE PAS PUSH)
 
 ## TL;DR
 
-User dort en micro-sieste, m'a dit de continuer en autonomous + tester. Session
-livre **9 commits** : tous les 4 bugs visuels signalés + battle polish (EXP gain,
-level up, PlayCry on starter, shake on damage).
+Session 124 = **15 commits** : 4 bugs visuels signalés + 3 battle polish +
+2 transpiler updates + truck audit ligne par ligne (= HMR-safe + Task_Truck3
+box update) + shiny support 1:1.
+
+## ✅ Décisions architecture (= confirmation user session 124)
+
+**1:1 décomp strict** sauf 2 exceptions justifiées :
+
+| Module | 1:1 ? | Justification |
+|--------|-------|---------------|
+| Wallclock + RTC | NON | Fix bug critique 366-day overflow + UX (PC time as source) |
+| Battle engine | Backend NON, Front-end OUI | Backend = Showdown (@pkmn/sim), Front-end = GBA visuel 1:1 |
+| RNG | OUI | Critique pour ROM hacking community ("SR au boot pour shiny") |
+| Tout le reste | OUI | Strict, audits réguliers |
+
+**RNG decision** : reste 1:1. User a tâté l'idée de modifier mais on a conclu :
+- Le 366-day était un BUG (= passe à day 366 → wrap → events cassés)
+- Le RNG n'est PAS un bug — c'est une FEATURE attendue par la communauté
+- ROM hackers ont des outils basés sur RNG behaviour ROM (= frame-perfect IVs)
+- Pas de gain réel à modifier
 
 ## ✅ Bugs fixés (= 9 commits cette session)
 
@@ -136,6 +153,63 @@ via `playCry(speciesName)`. Reproduit le moment iconic de Gen 3.
 Sprite shake horizontal 14 frames quand damage > 0, typeMul ≠ 0.
 Décroissance linéaire amplitude (= 4px → 0). Trigger sur les deux camps
 (= player damage opp ET opp damage player).
+
+### Bug 6a — extractor parse C array sizes avec expressions (`7244d75f`)
+
+Regex `RE_ANIMS_TABLE` + `RE_AFFINE_ANIMS_TABLE` relaxées de `\[\s*\]` à
+`\[[^\]]*\]`. Capture maintenant `[NUM_PRESS_START_FRAMES + NUM_COPYRIGHT_FRAMES]`
+→ `sStartCopyrightBannerAnimTable` extrait automatiquement (= patch manuel
+session 113 supprimé).
+
+### Bug 6b — extractor resolve constants extract-time (`74a11903`)
+
+`parseAnimCmd(name, body, macros)` lookup les constants via macroCtx.
+Résolution `tileNum: "VERSION_BANNER_RIGHT_TILEOFFSET"` → `tileNum: 64`
+au extract-time → moins de runtime fallback `_resolveTileNum`.
+
+### Truck cinematic — HMR-safe + Task_Truck3 box update (`b98b4c74`)
+
+**User insight critique** : "c'est bizarre ce spam de lancement de musique
+dans les logs" → HMR Vite reloadait le module à chaque commit, mais sans
+détruire les anciens `Task_HandleTruckSequence` → 6 cinematics jouant leurs
+SE simultanément = cacophonie audio + boxes "freezent" car 6 sources
+écrivent leurs visualOffsets concurrently.
+
+Fix HMR :
+- Guard `_truckGlobal` via `globalThis` (= survit module reload).
+- Track `taskId` courant. Au start : si guard active, kill ancien task +
+  stop tous SE sur slots se1/se2.
+
+Audit ligne par ligne décomp `field_special_scene.c` Task_Truck3 (lignes
+152-178) : quand `sTruckCamera_HorizontalTable[step]===2`, le func task
+swap de Task_Truck2 → Task_Truck3 :
+- Y bob arrêté (cameraYpan=0)
+- **Boxes Y revient à offset spawn (3, -3, 0)**
+- Boxes X continue de follow le shake horizontal
+
+Notre code n'updatait PAS les box positions dans ce cas → boxes "freezent".
+Fix : nouveau helper `_applyBoxNoYBob(cameraXpan)` dans state 3 case xpan===2.
+
+### Shiny support 1:1 décomp (`08d12977`)
+
+User explicit demande : "Il faut aussi ajouté le caractère shiny support
+showdown lors de l'import (pas dans la liste)".
+
+`pokemon.c:CreateBoxMon` (lignes 2207-2244) implementation :
+  ```
+  personality = Random32();
+  value = playerTrainerId;
+  shinyValue = HIHALF(otId) ^ LOHALF(otId) ^ HIHALF(personality) ^ LOHALF(personality);
+  isShiny = shinyValue < SHINY_ODDS;  // SHINY_ODDS = 8
+  ```
+
+Probability = 8/65536 = 1/8192 (= classic Gen 3 odds).
+
+`PokemonInstance` add `personality` + `isShiny`. `pokemonToShowdownSet`
+propage `shiny: p.isShiny ?? false` vers @pkmn/sim.
+
+RNG impact : aucun — décomp utilise déjà 2× Random() pour personality
+avant les IVs. Notre code matche cet order exact → frame-perfect compat.
 
 ## ❌ Bugs restants
 
