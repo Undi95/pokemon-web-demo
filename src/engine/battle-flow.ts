@@ -292,29 +292,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     }
   };
 
-  /** Init the move menu window with 4 move slots. */
-  const initMoveMenu = (): void => {
-    if (!playerMon) return;
-    if (moveMenuWindowId < 0) moveMenuWindowId = AddWindow(MOVE_MENU_WINDOW);
-    DrawStdFrameWithCustomTileAndPalette(moveMenuWindowId, true, 0x214, 14);
-
-    const moves = playerMon.moves;
-    let menuText = '';
-    for (let i = 0; i < 4; i++) {
-      const mv = moves[i];
-      menuText += '  ' + (mv ? mv.nameFr.toUpperCase() : '-') + (i < 3 ? '\n' : '');
-    }
-    AddTextPrinterParameterized3(
-      moveMenuWindowId, 1, 0, 1, [1, 2, 3], 255, menuText,
-    );
-    drawMoveCursor();
-  };
-
-  const drawMoveCursor = (): void => {
-    if (moveMenuWindowId < 0) return;
-    // Clear all rows then draw arrow at current cursor.
+  /** Refresh the move menu window with the current cursor position drawn as `>`. */
+  const refreshMoveMenu = (): void => {
+    if (moveMenuWindowId < 0 || !playerMon) return;
+    // Clear pixel buffer (= bg color 1, both nibbles).
     FillWindowPixelBuffer(moveMenuWindowId, 0x11);
-    if (!playerMon) return;
     const moves = playerMon.moves;
     let menuText = '';
     for (let i = 0; i < 4; i++) {
@@ -323,9 +305,21 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       menuText += arrow + ' ' + (mv ? mv.nameFr.toUpperCase() : '-') + (i < 3 ? '\n' : '');
     }
     AddTextPrinterParameterized3(
-      moveMenuWindowId, 1, 0, 1, [1, 2, 3], 255, menuText,
+      moveMenuWindowId, 1, 0, 1, [1, 2, 3], 255 /* TEXT_SKIP_DRAW = sync */, menuText,
     );
     CopyWindowToVram(moveMenuWindowId, 2);
+  };
+
+  /** Init the move menu window with 4 move slots. */
+  const initMoveMenu = (): void => {
+    if (!playerMon) return;
+    if (moveMenuWindowId < 0) moveMenuWindowId = AddWindow(MOVE_MENU_WINDOW);
+    DrawStdFrameWithCustomTileAndPalette(moveMenuWindowId, true, 0x214, 14);
+    refreshMoveMenu();
+  };
+
+  const drawMoveCursor = (): void => {
+    refreshMoveMenu();
   };
 
   const closeMoveMenu = (): void => {
