@@ -52,6 +52,14 @@ export interface PokemonInstance {
   ivs: StatSpread;
   evs: StatSpread;
   status?: 'PSN' | 'PAR' | 'BRN' | 'SLP' | 'FRZ' | 'TOX' | null;
+  /** Session 124 : EXP cumul (= 1:1 décomp `MON_DATA_EXP`).
+   *  Total XP accumulated since lvl 1. Initialized via `getExperienceForLevel`
+   *  pour ce growthRate × level au create. Optional pour back-compat saves. */
+  currentExp?: number;
+  /** Growth rate (= 1:1 décomp `gSpeciesInfo[species].growthRate`).
+   *  GROWTH_MEDIUM_FAST / FAST / MEDIUM_SLOW / SLOW / ERRATIC / FLUCTUATING.
+   *  Cached at create pour éviter lookup species à chaque check level-up. */
+  growthRate?: string;
 }
 
 const ZERO_STATS: StatSpread = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
@@ -150,6 +158,20 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     };
   });
   const ability = opts?.ability ?? (species.abilities?.[0] || '');
+  // Session 124 : EXP/growth init via species data + experienceTables.
+  const speciesInfo = (() => {
+    try {
+      const dataMod = (globalThis as { __game_data?: { getSpeciesInfo: (k: string) => { growthRate?: string } | undefined } }).__game_data;
+      return dataMod?.getSpeciesInfo(speciesEnum);
+    } catch { return undefined; }
+  })();
+  const growthRate = speciesInfo?.growthRate ?? 'GROWTH_MEDIUM_FAST';
+  const currentExp = (() => {
+    try {
+      const dataMod = (globalThis as { __game_data?: { getExperienceForLevel: (rate: string, lvl: number) => number } }).__game_data;
+      return dataMod?.getExperienceForLevel(growthRate, level) ?? 0;
+    } catch { return 0; }
+  })();
   return {
     speciesEnum, speciesId, speciesName, speciesNameFr,
     nickname: opts?.nickname ?? speciesNameFr,
@@ -159,7 +181,69 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     nature: opts?.nature ?? 'Hardy',
     ivs, evs,
     status: null,
+    currentExp,
+    growthRate,
   };
+}
+
+/**
+ * 1:1 décomp Gen 3 EXP gain formula (= pokemon.c:GiveMonExperience).
+ *
+ *   exp = (baseExp × defeatedLevel) / 7
+ *
+ * Plus boosts (= traded mon ×1.5, lucky egg ×1.5, etc.) — pour MVP : pas de
+ * boost, formule de base.
+ *
+ * Returns le total exp gain.
+ */
+export function calculateExpGain(defeatedSpeciesEnum: string, defeatedLevel: number): number {
+  try {
+    const dataMod = (globalThis as { __game_data?: { getSpeciesInfo: (k: string) => { expYield?: number } | undefined } }).__game_data;
+    const baseExp = dataMod?.getSpeciesInfo(defeatedSpeciesEnum)?.expYield ?? 0;
+    return Math.floor((baseExp * defeatedLevel) / 7);
+  } catch { return 0; }
+}
+
+/**
+ * Award exp à un mon + recalc level/stats si nécessaire.
+ *
+ * Returns un object avec :
+ *   - gained: number (= XP add)
+ *   - leveledUp: boolean (= true si level changed)
+ *   - newLevel: number (= level final, peut être > old)
+ *   - newMaxHp: number (= maxHp recalculé si level changed)
+ */
+export function applyExpAward(mon: PokemonInstance, gained: number): {
+  gained: number; leveledUp: boolean; newLevel: number; newMaxHp: number;
+} {
+  if (!mon.growthRate || mon.currentExp === undefined) {
+    return { gained: 0, leveledUp: false, newLevel: mon.level, newMaxHp: mon.maxHp };
+  }
+  let dataMod;
+  try {
+    dataMod = (globalThis as { __game_data?: { getExperienceForLevel: (rate: string, lvl: number) => number; getSpeciesInfo: (k: string) => { stats?: { hp: number } } | undefined } }).__game_data;
+  } catch { return { gained: 0, leveledUp: false, newLevel: mon.level, newMaxHp: mon.maxHp }; }
+  if (!dataMod) return { gained: 0, leveledUp: false, newLevel: mon.level, newMaxHp: mon.maxHp };
+
+  mon.currentExp = (mon.currentExp ?? 0) + gained;
+  let leveledUp = false;
+  // Loop : tant que le level peut monter (= max 100).
+  while (mon.level < 100) {
+    const expForNext = dataMod.getExperienceForLevel(mon.growthRate, mon.level + 1);
+    if (mon.currentExp < expForNext) break;
+    mon.level++;
+    leveledUp = true;
+  }
+  if (leveledUp) {
+    // Recalc maxHp via formule Gen 3 standard (= 1:1 calcHp helper).
+    const baseHp = dataMod.getSpeciesInfo(mon.speciesEnum)?.stats?.hp ?? 50;
+    const oldMaxHp = mon.maxHp;
+    mon.maxHp = calcHp(baseHp, mon.ivs.hp, mon.evs.hp, mon.level);
+    // Heal proportionally (= 1:1 décomp behavior : current_HP += (newMax - oldMax)).
+    const hpDelta = mon.maxHp - oldMaxHp;
+    if (hpDelta > 0) mon.currentHp += hpDelta;
+  }
+  return { gained, leveledUp, newLevel: mon.level, newMaxHp: mon.maxHp };
 }
 
 /** Convertit un PokemonInstance en set Showdown packé pour @pkmn/sim. */

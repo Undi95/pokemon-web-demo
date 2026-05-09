@@ -65,7 +65,7 @@ import {
 import { getRuntime } from './decomp-globals';
 import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
-import { createPokemonInstance, type PokemonInstance } from './pokemon';
+import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
 import { VarSet } from './script-vars';
 import { getMove, getMoveName, loadGameData } from './data/game-data';
 import { Random } from './random';
@@ -157,6 +157,8 @@ type State =
   | 'PLAYER_DAMAGE_OPP' | 'PLAYER_DAMAGE_OPP_WAIT'
   | 'CHECK_OPP_FAINTED'
   | 'OPP_FAINTED_TEXT' | 'OPP_FAINTED_WAIT'
+  | 'EXP_AWARD_TEXT' | 'EXP_AWARD_WAIT'
+  | 'LEVEL_UP_TEXT' | 'LEVEL_UP_WAIT'
   | 'OPPONENT_USES_MOVE' | 'OPPONENT_USES_MOVE_WAIT'
   | 'OPPONENT_DAMAGE_PLAYER' | 'OPPONENT_DAMAGE_PLAYER_WAIT'
   | 'CHECK_PLAYER_FAINTED'
@@ -709,6 +711,45 @@ export function startWildBattle(params: BattleParams): BattleFlow {
       }
 
       case 'OPP_FAINTED_WAIT': {
+        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+          HideFieldMessageBox();
+          // Session 124 Bug 5 : EXP gain post-K.O. (= 1:1 décomp Gen 3 formula).
+          state = 'EXP_AWARD_TEXT';
+        }
+        return false;
+      }
+
+      case 'EXP_AWARD_TEXT': {
+        if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
+        // 1:1 décomp `pokemon.c:GiveMonExperience` formula :
+        //   exp = (baseExp × defeatedLevel) / 7
+        const gained = calculateExpGain(opponentMon.speciesEnum, opponentMon.level);
+        const result = applyExpAward(playerMon, gained);
+        // Stash level-up flag for next state.
+        chosenMoveIndex = result.leveledUp ? 1 : 0;  // reuse var as flag
+        ShowFieldMessage(`${playerMon.nickname} gagne\n${gained} POINTS D'EXP.!`);
+        state = 'EXP_AWARD_WAIT';
+        return false;
+      }
+
+      case 'EXP_AWARD_WAIT': {
+        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+          HideFieldMessageBox();
+          state = chosenMoveIndex === 1 ? 'LEVEL_UP_TEXT' : 'CLEANUP';
+        }
+        return false;
+      }
+
+      case 'LEVEL_UP_TEXT': {
+        if (!playerMon) { state = 'CLEANUP'; return false; }
+        ShowFieldMessage(`${playerMon.nickname} monte au\nniveau ${playerMon.level}!`);
+        // Refresh HP window pour refleter nouveau maxHp.
+        renderHpWindows();
+        state = 'LEVEL_UP_WAIT';
+        return false;
+      }
+
+      case 'LEVEL_UP_WAIT': {
         if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
           HideFieldMessageBox();
           state = 'CLEANUP';
