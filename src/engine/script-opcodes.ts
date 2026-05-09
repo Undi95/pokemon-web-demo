@@ -1861,9 +1861,125 @@ registerOpcode('checktrainerflag', (_ctx, args) => {
   return false;
 });
 
+// ─── Phase 5.7+ iter7 : early-game-specific gap fillers ─────────────────────
+// Audit: scripts/audit-early-game-opcodes.mjs found 14 missing opcodes for the
+// 20 maps the user actually traverses first.
+
+// 1:1 décomp `ScrCmd_goto_if_not_defeated` — branch if trainer NOT defeated.
+//   Used 10x in early-game scripts (= rival rematch logic, etc.).
+registerOpcode('goto_if_not_defeated', (ctx, args) => {
+  const trainer = args[0] ?? '';
+  const target = args[1] ?? '';
+  const g = globalThis as Record<string, unknown>;
+  const defeated = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
+  if (!defeated) {
+    const sub = getScript(target);
+    if (sub) ScriptJump(ctx, sub);
+  }
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_call_if_defeated`. 7x usage.
+registerOpcode('call_if_defeated', (ctx, args) => {
+  const trainer = args[0] ?? '';
+  const target = args[1] ?? '';
+  const g = globalThis as Record<string, unknown>;
+  const defeated = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
+  if (defeated) {
+    const sub = getScript(target);
+    if (sub) ScriptCall(ctx, sub);
+  }
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_showmonpic` / `hidemonpic` — show/hide a Pokemon front
+//   sprite in a window. 10x usage in Birch lab + cinematic moments.
+//   MVP : log + skip (= would integrate with starter-choose-flow style sprite).
+registerOpcode('showmonpic', (_ctx, args) => {
+  console.log(`[opcode showmonpic] species=${args[0]} x=${args[1]} y=${args[2]} — TODO mon pic UI`);
+  return false;
+});
+registerOpcode('hidemonpic', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_givemon` — gives a Pokemon to player party. 3x usage in
+//   early-game (= starter choose alternate path, gift Pokemon).
+//   MVP : log + skip (= the actual `starter-choose-flow.ts` does the real work
+//   for ChooseStarter, this stub is for other gift flows).
+registerOpcode('givemon', (_ctx, args) => {
+  console.log(`[opcode givemon] species=${args[0]} level=${args[1]} item=${args[2]} — TODO gift mon`);
+  VarSet('VAR_RESULT', 1); // success
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_copyobjectxytoperm` — persist NPC current XY to template
+//   (= so NPC doesn't reset on map reload). 3x usage.
+registerOpcode('copyobjectxytoperm', (_ctx, args) => {
+  const npc = _findNpcByLocalId(args[0] ?? '');
+  const tmpl = _findTemplateByLocalId(args[0] ?? '');
+  if (npc && tmpl) {
+    tmpl.x = npc.currentCoordsX - MAP_OFFSET;
+    tmpl.y = npc.currentCoordsY - MAP_OFFSET;
+  }
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_disable_jump_landing_ground_effect` — movement modifier.
+//   Pseudo-op equivalent (= movement script element, not real opcode).
+registerOpcode('disable_jump_landing_ground_effect', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_pokenavcall` — initiates a PokéNav call.
+//   2x usage in early-game (= Birch wakes you for ChooseStarter).
+//   MVP : log + skip (= no PokéNav UI).
+registerOpcode('pokenavcall', (_ctx, args) => {
+  console.log(`[opcode pokenavcall] '${args[0]}' — TODO PokeNav UI`);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_pokemartlistend` — data terminator for pokemart lists.
+//   4x usage (= each shop has a list ending with this).
+registerOpcode('pokemartlistend', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_setorcopyvar` (scrcmd.c) — alt setvar that handles VAR_*.
+registerOpcode('setorcopyvar', (_ctx, args) => {
+  const dst = args[0] ?? '';
+  const src = args[1] ?? '';
+  if (src && src.startsWith('VAR_')) {
+    VarSet(dst, VarGet(src));
+  } else {
+    VarSet(dst, parseValue(src));
+  }
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_checkpcitem` — checks if PC has a given item.
+registerOpcode('checkpcitem', (_ctx, _args) => {
+  VarSet('VAR_RESULT', 0); // No PC items implemented
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_warpdoor` — warp through a door (= warp + door anim).
+//   Same effect as warp for MVP.
+registerOpcode('warpdoor', (ctx, args) => {
+  const handler = (globalThis as Record<string, unknown>).__opcodeWarp as
+    ((ctx: ScriptContext, args: string[]) => boolean) | undefined;
+  if (handler) return handler(ctx, args);
+  // Fallback : same logic as 'warp' opcode (= we registered it earlier).
+  // Use the warp-system directly.
+  const dst = (args[0] ?? '').replace(/^MAP_/, '');
+  setPendingWarp({ mapName: dst, x: parseValue(args[2]), y: parseValue(args[3]) });
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_showobjectat` — alt showobject with explicit map id.
+registerOpcode('showobjectat', (_ctx, args) => {
+  const npc = _findNpcByLocalId(args[0] ?? '');
+  if (npc) npc.invisible = false;
+  return false;
+});
+
 // ─── Mark module loaded (= for sanity check) ────────────────────────────────
 
-console.log('[script-opcodes] registered Phase 4.5 MVP opcodes + iter6 stubs');
+console.log('[script-opcodes] registered Phase 4.5 MVP opcodes + iter6/7 stubs');
 
 // Lint-friendly export to avoid "unused imports".
 export { COMPARE_LT, COMPARE_EQ, COMPARE_GT };

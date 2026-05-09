@@ -1,23 +1,44 @@
 #!/usr/bin/env node
-// Audit : list opcodes used by extracted scripts that are NOT registered
-// in src/engine/script-opcodes.ts. Sort by frequency desc.
-//
-// Usage : node scripts/audit-missing-opcodes.mjs
+// Audit : list opcodes used by the EARLY-GAME scripts (= LittlerootTown,
+// ProfessorBirchsLab, BrendansHouse, MaysHouse, Route 101-103).
+// These are the scripts the user will actually hit first.
+
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const SCRIPTS_DIR = 'public/decomp/em/scripts';
 const OPCODES_FILE = 'src/engine/script-opcodes.ts';
 
-// 1. Tally all opcodes used in script JSON files
+const EARLY_GAME = [
+  'LittlerootTown',
+  'LittlerootTown_BrendansHouse_1F',
+  'LittlerootTown_BrendansHouse_2F',
+  'LittlerootTown_MaysHouse_1F',
+  'LittlerootTown_MaysHouse_2F',
+  'LittlerootTown_ProfessorBirchsLab',
+  'OldaleTown',
+  'OldaleTown_PokemonCenter_1F',
+  'OldaleTown_PokemonCenter_2F',
+  'OldaleTown_Mart',
+  'PetalburgCity',
+  'PetalburgCity_Gym',
+  'PetalburgCity_Mart',
+  'PetalburgCity_PokemonCenter_1F',
+  'PetalburgCity_PokemonCenter_2F',
+  'Route101',
+  'Route102',
+  'Route103',
+  'Route104',
+  'PetalburgWoods',
+];
+
 const counts = new Map();
-const files = readdirSync(SCRIPTS_DIR);
-for (const f of files) {
-  if (!f.endsWith('.json')) continue;
+for (const name of EARLY_GAME) {
+  const f = join(SCRIPTS_DIR, name + '.json');
   try {
-    const j = JSON.parse(readFileSync(join(SCRIPTS_DIR, f), 'utf8'));
+    const j = JSON.parse(readFileSync(f, 'utf8'));
     if (!j.scripts) continue;
-    for (const [_name, instrs] of Object.entries(j.scripts)) {
+    for (const [_n, instrs] of Object.entries(j.scripts)) {
       if (!Array.isArray(instrs)) continue;
       for (const line of instrs) {
         if (typeof line !== 'string') continue;
@@ -25,17 +46,17 @@ for (const f of files) {
         if (op) counts.set(op, (counts.get(op) || 0) + 1);
       }
     }
-  } catch {}
+  } catch (e) {
+    console.error('skip', name, e.message);
+  }
 }
 
-// 2. List registered opcodes
 const opSrc = readFileSync(OPCODES_FILE, 'utf8');
 const re = /registerOpcode\(['"]([^'"]+)['"]/g;
 const registered = new Set();
 let m;
 while ((m = re.exec(opSrc))) registered.add(m[1]);
 
-// 3. Pseudo-ops that aren't real script opcodes (= movement actions, table entries, etc.)
 const pseudoOps = new Set([
   'def_special', 'script_cmd_table_entry', 'map_script', 'map_script_2',
   'step_end', 'walk_up', 'walk_down', 'walk_left', 'walk_right',
@@ -62,26 +83,16 @@ const pseudoOps = new Set([
   'jump_in_place_left_right', 'jump_in_place_right_left',
   'delay_1', 'delay_2', 'delay_4', 'delay_8', 'delay_16',
   'lock_facing_direction', 'unlock_facing_direction',
-  'set_invisible', 'set_visible', 'emote_exclamation_mark', 'emote_question_mark', 'emote_x', 'emote_double_exclamation_mark', 'emote_smile', 'emote_heart',
-  'fly_up', 'fly_down', 'lunge_up', 'lunge_down',
-  'set_my_state', 'spin_pal', 'lock_anim',
+  'set_invisible', 'set_visible', 'emote_exclamation_mark', 'emote_question_mark',
+  'emote_x', 'emote_double_exclamation_mark', 'emote_smile', 'emote_heart',
+  'set_my_state',
   'walk_left_affine', 'walk_right_affine',
-  'fly_up_2', 'fly_down_2',
-  'walk_run_down', 'walk_run_up', 'walk_run_left', 'walk_run_right',
 ]);
-// Also pseudo : anything starting with "create_" or "if_" used as condition
-// in event scripts and 'if_random_less_than' etc.
+
 const isPseudo = (op) => pseudoOps.has(op) ||
   op.startsWith('createsprite') || op.startsWith('createvisualtask') ||
-  op.startsWith('createvobject') ||
-  op.startsWith('clearmonbg') || op.startsWith('monbg') ||
-  op.startsWith('setalpha') || op.startsWith('blendcolor') ||
-  op.startsWith('if_effect') || op.startsWith('if_random') ||
-  op.startsWith('animation_started') ||
-  op.startsWith('create_basic') ||
-  op.startsWith('printstring') || op.startsWith('score');
+  op.startsWith('createvobject');
 
-// 4. Compute missing
 const missing = [];
 for (const [op, n] of counts.entries()) {
   if (registered.has(op)) continue;
@@ -90,11 +101,9 @@ for (const [op, n] of counts.entries()) {
 }
 missing.sort((a, b) => b[1] - a[1]);
 
-console.log('=== Missing script opcodes (most-used first) ===');
-console.log(`Total registered : ${registered.size}`);
-console.log(`Total used in scripts : ${counts.size}`);
-console.log(`Missing real opcodes : ${missing.length}`);
+console.log(`=== Missing opcodes in EARLY-GAME (${EARLY_GAME.length} maps) ===`);
+console.log(`Registered : ${registered.size} | Used : ${counts.size} | Missing : ${missing.length}`);
 console.log();
-for (const [op, n] of missing.slice(0, 80)) {
-  console.log(`  ${n.toString().padStart(6)}  ${op}`);
+for (const [op, n] of missing.slice(0, 50)) {
+  console.log(`  ${n.toString().padStart(4)}  ${op}`);
 }
