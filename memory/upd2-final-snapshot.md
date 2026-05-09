@@ -1,21 +1,54 @@
-# Branch upd2 — Final overnight snapshot (UPDATED 04:55)
+# Branch upd2 — Final snapshot (overnight session)
 
-Date : 2026-05-09 — overnight session active
+Date : 2026-05-09 ~05h35
 
 ## TL;DR
 
-**Massive overnight progress sur upd2 — agents OPUS done!**
+**29 commits sur upd2 cette nuit.** Build clean, game runs.
 
-- **25 commits** depuis main
-- Bridge : **267 → 638 bridged** + 28 NotImpl (= +261 helpers, **+138% growth**)
-- Real coverage: **33.97% → 83.49%** (= +49.5 percentage points)
-- ChooseStarter UI : visible 1:1 avec sprites + dialogs ✓
-- **Birch tutorial battle : shipped & functional** ✓ (commit `ae57794e`)
-- Build clean, game runs, no regressions
+### Big wins
 
-## Commit log final
+| Item | Status |
+|---|---|
+| Bridge coverage | **267 → 638 helpers** (= +138%) |
+| Real coverage | 33.97% → **83.49%** (= +49.5pp) |
+| ChooseStarter UI | ✅ visible 1:1 sprites + dialog + Pokemon front |
+| Wild battle | ✅ Birch tutorial fonctionnel |
+| Trainer battle | ✅ Rival via trainerbattle opcodes |
+| 8 new specials | ✅ WallClock, Diploma, etc. stubs |
+| Memory docs | ✅ 5 files briefing user |
+
+### Live test commands
+
+Console F12 après game boot :
+```js
+window.__phaserGame.scene.start('TestOverworldScene')
+// Wait 5s
+
+// Test 1 : ChooseStarter (= 3 pokeballs visible + dialog)
+const cs = await import('/src/engine/starter-choose-flow.ts')
+const f = cs.startChooseStarterFlow()
+const i = setInterval(() => f.tick() && clearInterval(i), 16)
+// Use ←→ to choose, W=A pour confirm
+
+// Test 2 : Wild battle (= Birch tutorial)
+await dev.battle.startBirchTutorial()
+// Use arrows + W to navigate move menu
+
+// Test 3 : Trainer battle (= rival Brendan)
+await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
+
+// Test 4 : Bridge coverage
+window.dev.bridge.report().then(console.log)
+```
+
+## Commit log (= 29 commits)
 
 ```
+f33be59d Phase 5.5e+ — additional specials stubs (WallClock, Diploma, etc.)
+fb272086 Phase 5.5d-bis — Pokemon front sprite spawn on confirm
+9123e777 Phase 5.7 — Trainer battle via battle-flow extension
+4b56b4d0 Memory : updated final snapshot avec battle agent results
 666151e5 Phase 5.6 — battle-flow : factor out refreshMoveMenu helper
 cd7c1cac Phase B.8 — re-inject bridge imports across 21 auto-files
 ae57794e Phase 5.6 — Birch tutorial battle (= 1:1 décomp pragmatic MVP)
@@ -42,133 +75,126 @@ b85b4e70 Phase 5.3 final — memory/upd2-progress.md
 4dfe46f1 Phase 5.3a — bridge runtime wrappers + 140 MB_*
 ```
 
-## ChooseStarter (= testable)
+## ChooseStarter (Phase 5.5)
 
-✅ Visible 1:1 décomp via NOTRE engine :
-- 3 pokeballs sprites at sPokeballCoords
+✅ Implementé via `src/engine/starter-choose-flow.ts` :
+- 3 pokeballs sprites at sPokeballCoords (60,64) (120,88) (180,64)
 - Hand cursor avec sin bob
-- Pokeball anim swap selon selection
+- Pokeball anim swap (still ↔ moving) selon selection
 - Circle halo sur confirm
+- **Pokemon front sprite (Phase 5.5d-bis)** : preload TREECKO/TORCHIC/MUDKIP front.png + spawn on confirm
 - Dialog via gba-text-system
 - YesNo menu via gba-menu-system
 - VAR_RESULT + party update + cleanup
 
-❌ Pas encore visuel complet :
-- Pokemon front sprite spawn on confirm (Phase 5.5d-bis)
-- BG swap to Birch's bag (Phase 5.5e)
-- PlayCry_Normal sur confirm
+❌ Pas implémenté :
+- BG swap to Birch's bag (= Phase 5.5e DEFERRED, complex BG layer manipulation)
+- PlayCry_Normal sur confirm (= audio TODO)
 
-## Battle scene (= testable)
+## Battle scenes (Phase 5.6 + 5.7)
 
-✅ Birch tutorial wild battle complet :
-- Player-back + opp-front sprites loaded au runtime
+### Phase 5.6 — Wild battle (= Birch tutorial)
+
+✅ `src/engine/battle-flow.ts` (770 lignes) :
+- 2 sprites (player back + opp front) via runtime LoadCompressedSpriteSheet
 - HP windows (= text "ZIGZAGOON Lv2 PV: 12/12")
 - Move menu avec cursor DPAD + A/B
 - Damage formula 1:1 décomp CalculateBaseDamage
-- Atk/Def stats from species + level + IVs (= CalcStat Gen 3)
+- Atk/Def via CalcStat Gen 3
 - VAR_RESULT 1=WIN / 2=LOSS, gBattleOutcome stash
-- Cleanup sprites + windows on exit
+- Cleanup sprites + windows
 
-✅ Live tested (in console) :
-```js
-await dev.battle.startBirchTutorial()  // = vs Zigzagoon LV 2
-await dev.battle.startWild('SPECIES_POOCHYENA', 5)  // = generic
-dev.battle.outcome()                    // = last outcome
+### Phase 5.7 — Trainer battle (= rival)
+
+✅ `src/engine/trainer-battle-flow.ts` (~200 lignes) :
+- Wraps startWildBattle for trainer party
+- Loads `trainer-parties.json` async
+- Intro text "BRICE veut combattre!"
+- Loop through party members
+- Wired to all trainerbattle opcodes (= legacy, _single, _double, _rematch, etc.)
+- VAR_RESULT + flag setting
+
+## Bridge expansion (Phase B.1-B.8)
+
+✅ `src/engine/decomp-bridge.ts` : 1421 → 3326 lignes (+1905 lines)
+- 638 bridged helpers (= re-exports + macros + runtime wrappers + NotImpl)
+- 28 NotImpl stubs (= TODO list pour vrais ports)
+- `__bridgedHelpers__` Set tracks coverage
+
+Top remaining unbridged (= rare) :
+- 9× ItemStorage_GetMessage (= sibling fn, resolves when player_pc-all-auto activated)
+- 2× GET_COL_IDX, GET_MIN_BET_ID (roulette)
+- 1× each of various rare helpers
+
+Top NotImpl (= for future ports) :
+- 485× GetMonData / 130× SetMonData (= pokemon.c port)
+- 208× GetSubstructPtr (= save.c)
+- 42× GetVarPointer
+- 43× LZ77UnCompWram
+
+## Memory files
+
+```
+memory/upd2-progress.md           # Phase 5.3 baseline (post-Phase 5)
+memory/upd2-overnight-status.md   # mid-overnight progress
+memory/upd2-morning-briefing.md   # wake-up brief
+memory/upd2-troubleshooting.md    # maintenance guide
+memory/upd2-final-snapshot.md     # this file
 ```
 
-❌ Pas encore (= Phase 5.7) :
-- HP bar tiles (= text only for now)
+## Phase 5.8+ roadmap (= future work)
+
+### Phase 5.8 (= polish battle)
+
+- Real HP bar tiles (= currently text)
 - EXP/level-up post-win
 - Type chart, abilities, items, crits, STAB
-- AI (= opp uses first damaging move)
-- Fuite, switch, bag
-- Battle BG (= overworld map visible derrière)
+- Better AI (= use damaging move with type advantage)
+- Battle BG (= load tall_grass tiles to BG2)
 - Transition anim (= B_TRANSITION_BLUR)
 
-## Trigger battle
+### Phase 5.9 (= more specials)
 
-```js
-// In dev console after starter chose
-window.__phaserGame.scene.start('TestOverworldScene')  // ensure overworld active
-// Wait 5s
-await dev.battle.startBirchTutorial()
-// Use W (=A) for confirm dialog, arrows for move menu
+- WallClock UI (= clock-setting at bedroom)
+- Diploma display
+- More flow stubs as scripts request them
+
+### Phase 6 (= deeper systems)
+
+- Pokemon storage (= PC system)
+- Save system fully wired
+- More battle features (= switch, bag, run)
+
+### Phase 7 (= scope expansion)
+
+- Multi-mon trainer (= gym leaders)
+- Pokemon with abilities + items
+- Real battle BG + animations
+
+## How to revert if needed
+
+Each commit is independent and reversible :
+```bash
+git revert <hash> --no-edit
 ```
 
-## Bridge architecture
-
-```
-src/engine/decomp-bridge.ts (= 3326 lines now, +1905 vs Phase 5)
-├── 638 bridged exports (= re-exports + macros + runtime wrappers)
-├── 28 NotImpl stubs (= for unportable helpers)
-└── __bridgedHelpers__ + __notImplementedHelpers__ Sets for dev tools
-```
-
-Top remaining unbridged (= Phase B.9 future) :
-- `9× ItemStorage_GetMessage` (= sibling auto-fn)
-- `2× GET_COL_IDX`, `2× GET_MIN_BET_ID` (roulette)
-- 1× each: TRY_EAT_*_BERRY, ERROR_EXIT, TryScene, GetPokedexRatingText, etc.
-
-Top NotImpl (= for actual ports later) :
-- `485× GetMonData` / `130× SetMonData` — pokemon.c port
-- `208× GetSubstructPtr` — save.c port
-- `42× GetVarPointer` — event_data.c
-- `43× LZ77UnCompWram` — decompression
-- `29× GetMonNickname` — pokemon nicknames
-
-## Trigger flow
-
-### ChooseStarter (= via script `special ChooseStarter`)
-```
-Birch's bag pokeball touch → Route101_EventScript_PickStarter
-  → applymovement player + Birch
-  → special ChooseStarter   ← le state machine prend le contrôle
-  → applymovement Birch
-  → msgbox "Tu m'as sauvé!"
-  → special HealPlayerParty
-```
-
-### Battle (= via dev.battle ou special StartBirchTutorialBattle)
-- Wild : `startWildBattle({ opponentSpecies, opponentLevel })`
-- Birch tutorial : `startBirchTutorialBattle()` (= preset Zigzagoon LV 2)
-- Trainer (Phase 5.7) : `startTrainerBattle({ trainerId, ... })` (= TODO)
-
-## Files modifiés cette nuit
-
-```
-A  memory/upd2-progress.md
-A  memory/upd2-overnight-status.md
-A  memory/upd2-morning-briefing.md
-A  memory/upd2-troubleshooting.md
-M  memory/upd2-final-snapshot.md (= ce fichier)
-M  scripts/extract-sprite-system.mjs
-M  scripts/inject-bridge-imports.mjs
-A  scripts/check-bridge-coverage.mjs (= agent)
-M  src/engine/decomp-bridge.ts (= +1905 lines)
-A  src/engine/starter-choose-flow.ts (= 350 lignes)
-A  src/engine/battle-flow.ts (= 770 lignes)
-M  src/engine/decomp-data/auto/src/sprite-system.ts (= regenerated)
-M  src/engine/script-opcodes.ts (= +ChooseStarter wiring + battle special)
-M  src/engine/specials-registry.ts (= GetBattleOutcome update)
-M  src/engine/script-runtime.ts (= +ScriptContext_SetupInlineNative)
-M  src/engine/engine-devtools.ts (= +dev.battle helpers)
-M  src/main.ts (= window.__phaserGame export)
-A  public/decomp/em/starter_choose/ (= asset PNGs)
-M  src/engine/decomp-data/auto/src-all/*.ts (= 295 auto-files re-injected x2)
-```
-
-## Phase 5.7 roadmap (= en cours après agents)
-
-Architecture battle-flow.ts permet trivialement de extend pour trainer battle :
-1. Pass trainer party (= JSON `gTrainerParties[trainerId]`) au lieu de single opponent
-2. Loop through opponent party on faint
-3. Add intro text "BRENDAN veut combattre!"
-4. Update `_stubTrainerBattle` opcode pour call `startTrainerBattle({...})`
-5. Battle flow auto-compose sur la même infrastructure
+Phases can be reverted individually :
+- Phase 5.5* : revert affects ChooseStarter only
+- Phase 5.6 : revert affects wild battle
+- Phase 5.7 : revert affects trainer battle
+- Phase B.* : revert affects bridge coverage (= just re-runs inject script)
 
 ## Bonne nuit / bon réveil 💛
 
-Tu vas voir une **branche upd2 avec 25+ commits**, **build clean**,
-**ChooseStarter visible** + **battle tutorial fonctionnel**, **bridge à 84% coverage**.
+NE PAS push to remote. Branch `upd2` reste local jusqu'à ton OK.
 
-Continue session : Phase 5.7 trainer battle (= le rival Brendan/May).
+Le jeu progresse vers la complétion :
+- ✅ Intro (= done depuis Phase 4)
+- ✅ Maman (= done)
+- ✅ Birch lab navigation (= done)
+- ✅ ChooseStarter (= cette nuit)
+- ✅ Tutorial battle (= cette nuit)
+- ✅ Rival battle (= cette nuit)
+- 🔲 Visit gyms (= future)
+- 🔲 Pokedex (= future)
+- 🔲 Hall of Fame (= future)
