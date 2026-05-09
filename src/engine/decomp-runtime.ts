@@ -35,6 +35,21 @@ import {
 } from './decomp-data/auto/src/sprite-system';
 import { CalcCenterToCornerVec, ST_OAM_AFFINE_DOUBLE, PaletteBuffer } from './decomp-helpers';
 import { tickAllAffineAnims, StartSpriteAffineAnim as _StartSpriteAffineAnim } from './decomp-impls/sprite-engine-impl';
+import { resolveDecompConstant } from './decomp-constants';
+
+/** HOTFIX 2026-05-09 : auto-extracted SPRITE_ANIMS data has tileNum stored
+ *  as STRING for unresolved constants (= "VERSION_BANNER_RIGHT_TILEOFFSET").
+ *  Previously the runtime fell back to 0 when tileNum was a string → ALL
+ *  sprites with named tile offsets shared tileNum=0 → visible bug : title
+ *  screen "VERSION EMERAUDE" right banner showed LEFT banner tiles
+ *  (= duplicated "VERSI EMERA"). User reported "title screen cassé".
+ *  Fix : resolve string constants via decomp-constants at runtime. */
+function _resolveTileNum(raw: number | string | undefined): number {
+  if (typeof raw === 'number') return raw;
+  if (typeof raw !== 'string') return 0;
+  const resolved = resolveDecompConstant(raw);
+  return typeof resolved === 'number' ? resolved : 0;
+}
 
 /** OAM shape+size encoding 1:1 GBA hardware (cf. types.ts OAM_SIZES).
  *  Retourne [shape, size] depuis (width, height) en pixels. */
@@ -546,7 +561,7 @@ export class DecompRuntime {
     // Apply frame 0 immediately to OAM (= 1:1 décomp StartSpriteAnim semantic).
     const sprite = this.gSprites.get(spriteId);
     if (sprite) {
-      const tileNum = (typeof anim.frames[0].tileNum === 'number') ? anim.frames[0].tileNum : 0;
+      const tileNum = _resolveTileNum(anim.frames[0].tileNum);
       this.gba.oam[sprite.oamIndex].tileId = tileBase + tileNum;
       // hFlip/vFlip per-frame (= OAM hardware mirror, used by EAST direction
       // which reuses WEST tiles flipped).
@@ -1691,7 +1706,7 @@ export class DecompRuntime {
     const animTable = (SPRITE_ANIM_TABLES as Record<string, { anims: ReadonlyArray<string> }>)[tpl.anims];
     const firstAnimName = animTable?.anims[0];
     const firstAnim = firstAnimName ? (SPRITE_ANIMS as Record<string, { frames: ReadonlyArray<{ tileNum: number | string, duration: number }>, terminator: string, jumpTo?: number }>)[firstAnimName] : null;
-    const initialTileOffset = (typeof firstAnim?.frames[0]?.tileNum === 'number') ? firstAnim.frames[0].tileNum : 0;
+    const initialTileOffset = firstAnim?.frames[0]?.tileNum !== undefined ? _resolveTileNum(firstAnim.frames[0].tileNum) : 0;
 
     const tileBase = this.spriteSheetTagToTileStart.get(tpl.tileTag) ?? 0;
     const palSlot = this.paletteTagToSlot.get(tpl.paletteTag) ?? 0;
@@ -1768,7 +1783,7 @@ export class DecompRuntime {
     state.frameIdx = 0;
     state.framesRemaining = anim.frames[0].duration;
     const sprite = this.gSprites.get(spriteId);
-    const tileNum = (typeof anim.frames[0].tileNum === 'number') ? anim.frames[0].tileNum : 0;
+    const tileNum = _resolveTileNum(anim.frames[0].tileNum);
     if (sprite) this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;
   }
 
@@ -1816,7 +1831,7 @@ export class DecompRuntime {
       }
       const frame = anim.frames[state.frameIdx];
       state.framesRemaining = frame.duration;
-      const tileNum = (typeof frame.tileNum === 'number') ? frame.tileNum : 0;
+      const tileNum = _resolveTileNum(frame.tileNum);
       const sprite = this.gSprites.get(spriteId);
       if (sprite) {
         this.gba.oam[sprite.oamIndex].tileId = state.tileBase + tileNum;

@@ -47,6 +47,11 @@ import * as fieldEffects from './decomp-data/auto/include/constants/field_effect
 import * as opponents from './decomp-data/auto/include/constants/opponents-data';
 import * as pokemon from './decomp-data/auto/include/constants/pokemon-data';
 import * as vars from './decomp-data/auto/include/constants/vars-data';
+// Misc per-screen constants (= title screen tile offsets, etc.) extraits
+// dans `decomp-data/*-data.ts`. Pas dans `auto/include/constants/` car
+// définis inline dans .c files. Inclus pour résoudre tileNum strings comme
+// "VERSION_BANNER_RIGHT_TILEOFFSET" au runtime sprite anim.
+import * as titleScreen from './decomp-data/title-screen-data';
 // HEAL_LOCATION_* sont définis comme enum dans heal_locations.h mais pas
 // extraits dans nos auto-data — pour setrespawn opcode, on accepte la string
 // raw (= var stocke le hash, lookup ailleurs).
@@ -77,6 +82,7 @@ _mergeConstants(fieldEffects);
 _mergeConstants(opponents);
 _mergeConstants(pokemon);
 _mergeConstants(vars);
+_mergeConstants(titleScreen);
 
 /** Resolve a constant name to its numeric value. Returns undefined si pas trouvé.
  *  Caller decide quoi faire (= fallback 0, log warning, etc.). */
