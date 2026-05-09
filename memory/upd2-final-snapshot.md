@@ -1,10 +1,10 @@
-# Branch upd2 — Final snapshot (overnight session, iter17 final)
+# Branch upd2 — Final snapshot (overnight session, iter18 final)
 
-Date : 2026-05-09 ~08h25
+Date : 2026-05-09 ~08h45
 
 ## TL;DR
 
-**52 commits sur upd2 cette nuit.** Build clean, game runs.
+**54 commits sur upd2 cette nuit.** Build clean, game runs.
 
 **🎯🎯🎯 Iter16 : MAJOR VISUAL UPGRADE** — battle scene now shows clean
 black background instead of overworld leaking through. Player overworld
@@ -57,6 +57,18 @@ sans crasher (= Battle Frontier scripts, Trainer Fan Club, etc.).
 | Main-story coverage | ✅ **100%** sur 70 maps (opcodes + specials) |
 | Global coverage | ✅ **70%** opcodes / 22% specials sur 470 maps |
 | Memory docs | ✅ 5 files briefing user |
+
+### Iteration 18 highlights (commit `cc6908c5`)
+
+**Pokemon cry sounds in battle** :
+- INTRO_TEXT : opponent cry on "Un X sauvage apparaît!"
+- PLAYER_TURN_PROMPT : player cry on first turn (= when "comes out")
+- Once-per-battle flag prevents replay each turn
+
+Network log live-verified :
+```
+GET /decomp/em/cries/zigzagoon.wav -> 200 OK
+```
 
 ### Iteration 17 highlights (commit `70c712e1`)
 
@@ -295,9 +307,11 @@ await dev.battle.startTrainer('TRAINER_BRENDAN_ROUTE_103_TORCHIC')
 window.dev.bridge.report().then(console.log)
 ```
 
-## Commit log (= 52 commits)
+## Commit log (= 54 commits)
 
 ```
+cc6908c5 Iter18 — add Pokemon cry on opponent appear + first player turn
+b44da28f Memory — iter17 update : trainer battle BG hide also working
 70c712e1 Iter17 — trainer-battle-flow also hides BGs/sprites during INTRO
 01010c83 Memory — iter16 update : battle BG hide visual upgrade
 5c8cb538 Iter16 — battle hides overworld BGs + sprites (clean black BG)
