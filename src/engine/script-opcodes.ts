@@ -2025,6 +2025,124 @@ registerOpcode('giveegg', (_ctx, args) => {
   return false;
 });
 
+// ─── Iter10 — bulk stubs for post-game / late-game opcodes ──────────────────
+// These are scoped to post-game maps (Battle Frontier, Sootopolis, Mt Pyre,
+// Casino, Secret Bases, etc.). Stubs prevent warnings if the user manages to
+// reach those maps before we ship full implementations.
+
+// Battle Frontier (= post-game) — 159+ usages combined
+registerOpcode('frontier_set', (_ctx, _args) => false);
+registerOpcode('frontier_get', (_ctx, _args) => false);
+registerOpcode('frontier_setpartyorder', (_ctx, _args) => false);
+registerOpcode('frontier_getsymbols', (_ctx, _args) => false);
+registerOpcode('frontier_givesymbol', (_ctx, _args) => false);
+registerOpcode('frontier_results', (_ctx, _args) => false);
+registerOpcode('frontier_getstatus', (_ctx, _args) => false);
+registerOpcode('frontier_checkairshow', (_ctx, _args) => false);
+registerOpcode('frontier_checkineligible', (_ctx, _args) => false);
+registerOpcode('frontier_getbrainstatus', (_ctx, _args) => false);
+registerOpcode('frontier_reset', (_ctx, _args) => false);
+registerOpcode('frontier_isbrain', (_ctx, _args) => false);
+registerOpcode('frontier_givepoints', (_ctx, _args) => false);
+
+// Battle Tower / Dome / Factory / Pike (= specific facilities) :
+registerOpcode('tower_set', (_ctx, _args) => false);
+registerOpcode('tower_get', (_ctx, _args) => false);
+registerOpcode('tower_save', (_ctx, _args) => false);
+registerOpcode('tower_setopponent', (_ctx, _args) => false);
+registerOpcode('dome_set', (_ctx, _args) => false);
+registerOpcode('dome_get', (_ctx, _args) => false);
+registerOpcode('factory_set', (_ctx, _args) => false);
+registerOpcode('factory_get', (_ctx, _args) => false);
+registerOpcode('pike_set', (_ctx, _args) => false);
+registerOpcode('pike_get', (_ctx, _args) => false);
+registerOpcode('palace_set', (_ctx, _args) => false);
+registerOpcode('palace_get', (_ctx, _args) => false);
+registerOpcode('arena_set', (_ctx, _args) => false);
+registerOpcode('arena_get', (_ctx, _args) => false);
+registerOpcode('pyramid_set', (_ctx, _args) => false);
+registerOpcode('pyramid_get', (_ctx, _args) => false);
+
+// Money / Coin UI :
+registerOpcode('showmoneybox', (_ctx, _args) => false);
+registerOpcode('hidemoneybox', (_ctx, _args) => false);
+registerOpcode('updatemoneybox', (_ctx, _args) => false);
+registerOpcode('showcoinsbox', (_ctx, _args) => false);
+registerOpcode('hidecoinsbox', (_ctx, _args) => false);
+registerOpcode('updatecoinsbox', (_ctx, _args) => false);
+registerOpcode('removemoney', (_ctx, _args) => false);
+
+// Flash HM (Mt. Pyre, Granite Cave) :
+registerOpcode('setflashlevel', (_ctx, _args) => false);
+registerOpcode('animateflash', (_ctx, _args) => false);
+
+// Mt. Pyre / Sky Pillar rotating puzzles :
+registerOpcode('initrotatingtilepuzzle', (_ctx, _args) => false);
+registerOpcode('moverotatingtileobjects', (_ctx, _args) => false);
+registerOpcode('turnrotatingtileobjects', (_ctx, _args) => false);
+registerOpcode('freerotatingtilepuzzle', (_ctx, _args) => false);
+
+// Secret Base décoration :
+registerOpcode('givedecoration', (_ctx, _args) => false);
+registerOpcode('takedecoration', (_ctx, _args) => false);
+registerOpcode('checkdecor', (_ctx, _args) => false);
+registerOpcode('checkdecorspace', (_ctx, _args) => false);
+registerOpcode('movedecoration', (_ctx, _args) => false);
+
+// Other late-game / minigames :
+registerOpcode('setdivewarp', (_ctx, _args) => false);
+registerOpcode('setholewarp', (_ctx, _args) => false);
+registerOpcode('dofieldeffectsparkle', (_ctx, _args) => false);
+registerOpcode('setwildbattle', (_ctx, _args) => false);
+registerOpcode('dowildbattle', (_ctx, _args) => false);
+registerOpcode('dotimebasedevents', (_ctx, _args) => false);
+registerOpcode('showcontestpainting', (_ctx, _args) => false);
+registerOpcode('playslotmachine', (_ctx, _args) => false);
+registerOpcode('setvaddress', (_ctx, _args) => false);
+registerOpcode('vgoto', (_ctx, _args) => false);
+registerOpcode('vcall', (_ctx, _args) => false);
+registerOpcode('vgoto_if_eq', (_ctx, _args) => false);
+registerOpcode('vgoto_if_unset', (_ctx, _args) => false);
+registerOpcode('vgoto_if_set', (_ctx, _args) => false);
+registerOpcode('vcall_if_eq', (_ctx, _args) => false);
+registerOpcode('vcall_if_unset', (_ctx, _args) => false);
+registerOpcode('vcall_if_set', (_ctx, _args) => false);
+
+// More post-game / battle facility stubs (= further audit findings)
+registerOpcode('removecoins', (_ctx, _args) => false);
+registerOpcode('seteventmon', (_ctx, _args) => false);
+registerOpcode('frontier_settrainers', (_ctx, _args) => false);
+registerOpcode('frontier_resetsketch', (_ctx, _args) => false);
+registerOpcode('frontier_restorehelditems', (_ctx, _args) => false);
+registerOpcode('dome_resolvewinners', (_ctx, _args) => false);
+registerOpcode('dome_save', (_ctx, _args) => false);
+registerOpcode('tower_dopartnermsg', (_ctx, _args) => false);
+registerOpcode('tower_getopponentintro', (_ctx, _args) => false);
+registerOpcode('tower_init', (_ctx, _args) => false);
+registerOpcode('factory_save', (_ctx, _args) => false);
+registerOpcode('factory_setswapped', (_ctx, _args) => false);
+registerOpcode('pike_save', (_ctx, _args) => false);
+registerOpcode('pike_gettrainerintro', (_ctx, _args) => false);
+registerOpcode('pyramid_save', (_ctx, _args) => false);
+registerOpcode('palace_getopponentintro', (_ctx, _args) => false);
+registerOpcode('arena_save', (_ctx, _args) => false);
+registerOpcode('fallarbortent_save', (_ctx, _args) => false);
+registerOpcode('slateporttent_save', (_ctx, _args) => false);
+registerOpcode('verdanturftent_save', (_ctx, _args) => false);
+registerOpcode('adddecoration', (_ctx, _args) => false);
+registerOpcode('setwarp', (_ctx, _args) => false);
+registerOpcode('init_affine_anim', (_ctx, _args) => false);
+registerOpcode('walk_down_affine', (_ctx, _args) => false);
+registerOpcode('walk_up_affine', (_ctx, _args) => false);
+registerOpcode('slide_face_up', (_ctx, _args) => false);
+registerOpcode('slide_face_down', (_ctx, _args) => false);
+registerOpcode('slide_face_left', (_ctx, _args) => false);
+registerOpcode('slide_face_right', (_ctx, _args) => false);
+
+// Catch-all : pour les opcodes vraiment rares (5 ou moins usages global) on
+// peut log + skip via le default warning. Si tu vois des warns en jouant,
+// re-run audits + ajoute les stubs ici.
+
 // ─── Mark module loaded (= for sanity check) ────────────────────────────────
 
 console.log('[script-opcodes] registered Phase 4.5 MVP opcodes + iter6/7 stubs');

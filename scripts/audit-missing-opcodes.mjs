@@ -9,11 +9,15 @@ import { join } from 'path';
 const SCRIPTS_DIR = 'public/decomp/em/scripts';
 const OPCODES_FILE = 'src/engine/script-opcodes.ts';
 
+// Exclude bundled battle script bundles (= different dispatcher, not field).
+const EXCLUDED_BATTLE_BUNDLES = new Set(['_all', '_common', 'battle_anim_scripts']);
+
 // 1. Tally all opcodes used in script JSON files
 const counts = new Map();
 const files = readdirSync(SCRIPTS_DIR);
 for (const f of files) {
   if (!f.endsWith('.json')) continue;
+  if (EXCLUDED_BATTLE_BUNDLES.has(f.replace(/\.json$/, ''))) continue;
   try {
     const j = JSON.parse(readFileSync(join(SCRIPTS_DIR, f), 'utf8'));
     if (!j.scripts) continue;
@@ -58,6 +62,15 @@ const pseudoOps = new Set([
   'jump_2_up', 'jump_2_down', 'jump_2_left', 'jump_2_right',
   'jump_up', 'jump_down', 'jump_left', 'jump_right',
   'jump_in_place_up', 'jump_in_place_down', 'jump_in_place_left', 'jump_in_place_right',
+  'walk_slow_diag_northeast', 'walk_slow_diag_northwest',
+  'walk_slow_diag_southeast', 'walk_slow_diag_southwest',
+  'slide_up', 'slide_down', 'slide_left', 'slide_right',
+  'slide_face_up', 'slide_face_down', 'slide_face_left', 'slide_face_right',
+  'disable_jump_landing_ground_effect',
+  'lunge_up', 'lunge_down', 'lunge_left', 'lunge_right',
+  'spin_pal',
+  'fly_up', 'fly_down',
+  '#endif', '#else', '#if', '#ifdef', '#ifndef', '#define', '#include',  // C preprocessor leakage
   'jump_in_place_up_down', 'jump_in_place_down_up',
   'jump_in_place_left_right', 'jump_in_place_right_left',
   'delay_1', 'delay_2', 'delay_4', 'delay_8', 'delay_16',

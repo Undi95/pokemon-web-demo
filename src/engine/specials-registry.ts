@@ -450,6 +450,81 @@ registerSpecial('LookThroughPorthole', () => { /* no-op */ });
 /** 1:1 décomp `RunUnionRoom` (link). Stub. */
 registerSpecial('RunUnionRoom', () => { /* no-op */ });
 
+// ─── Iter10 — bulk stubs for top global specials (post-game heavy) ──────────
+
+/** GBA-link cleanup (post-game, 56x usage). */
+registerSpecial('CloseLink', () => { /* no-op */ });
+registerSpecial('IsWirelessAdapterConnected', () => 0);
+
+/** Cinematic camera (= e.g. Rayquaza scene, Steven battle). */
+registerSpecial('ShakeCamera', () => { /* no-op */ });
+registerSpecial('SpawnCameraObject', () => 0);
+registerSpecial('RemoveCameraObject', () => { /* no-op */ });
+
+/** Trainer Fan Club (Lilycove, post-game). */
+registerSpecial('IsFanClubMemberFanOfPlayer', () => 0);
+registerSpecial('BufferFanClubTrainerName', () => { /* no-op */ });
+registerSpecial('GetNumFansOfPlayerInTrainerFanClub', () => 0);
+registerSpecial('Script_TryGainNewFanFromCounter', () => 0);
+
+/** Special trainer battles (= legendary, gym leaders specifics, Rayquaza). */
+registerSpecial('SetBattledOwnerFromResult', () => { /* no-op */ });
+registerSpecial('DoSpecialTrainerBattle', () => 0);
+registerSpecial('BattleSetup_StartLegendaryBattle', () => 0);
+registerSpecial('PlayTrainerEncounterMusic', () => { /* no-op */ });
+
+/** Records / Link Battle UI. */
+registerSpecial('RemoveRecordsWindow', () => { /* no-op */ });
+registerSpecial('CloseBattlePointsWindow', () => { /* no-op */ });
+registerSpecial('ShowBattlePointsWindow', () => { /* no-op */ });
+registerSpecial('TakeFrontierBattlePoints', () => { /* no-op */ });
+
+/** Scrollable multichoice (= shop with many items). */
+registerSpecial('ShowScrollableMultichoice', () => { /* no-op */ });
+
+/** Battle Frontier party. */
+registerSpecial('ChoosePartyForBattleFrontier', () => 0);
+registerSpecial('ChooseHalfPartyForBattle', () => 0);
+registerSpecial('HasEnoughMonsForDoubleBattle', () => 1);
+
+/** Casino. */
+registerSpecial('GetSlotMachineId', () => 0);
+registerSpecial('PlayerEnteredTradeSeat', () => { /* no-op */ });
+
+/** Secret Base. */
+registerSpecial('DeclinedSecretBaseBattle', () => { /* no-op */ });
+registerSpecial('DoSecretBasePCTurnOffEffect', () => { /* no-op */ });
+
+/** Interview / TV. */
+registerSpecial('InterviewBefore', () => 0);
+
+/** Berries. */
+registerSpecial('PlayerHasBerries', () => 0);
+registerSpecial('GetFirstFreePokeblockSlot', () => 0);
+registerSpecial('ObjectEventInteractionGetBerryName', () => { /* no-op */ });
+
+/** Contests. */
+registerSpecial('DoContestHallWarp', () => { /* no-op */ });
+registerSpecial('GetContestWinnerId', () => 0);
+registerSpecial('BufferContestWinnerMonName', () => { /* no-op */ });
+
+/** Misc small specials. */
+registerSpecial('ColosseumPlayerSpotTriggered', () => { /* no-op */ });
+registerSpecial('RecordMixingPlayerSpotTriggered', () => { /* no-op */ });
+registerSpecial('ShowFrontierExchangeCornerItemIconWindow', () => { /* no-op */ });
+registerSpecial('CloseFrontierExchangeCornerItemIconWindow', () => { /* no-op */ });
+registerSpecial('GetLeadMonFriendshipScore', () => 0);
+registerSpecial('WaitWeather', () => 0);
+registerSpecial('MauvilleGymPressSwitch', () => { /* no-op */ });
+registerSpecial('Script_DoRayquazaScene', () => { /* no-op */ });
+registerSpecial('ShowFieldMessageStringVar4', () => { /* no-op */ });
+registerSpecial('Script_FacePlayer', () => { /* no-op */ });
+registerSpecial('Script_ClearHeldMovement', () => { /* no-op */ });
+registerSpecial('SetTrainerFacingDirection', () => { /* no-op */ });
+registerSpecial('BufferFavorLadyRequest', () => { /* no-op */ });
+registerSpecial('GetDaycareState', () => 0);
+// IsTrainerRegistered + IsWirelessContest already registered in iter7/iter9.
+
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */
-console.log('[specials-registry] loaded — 84 stubs registered (Phase 5.7+ iter9)');
+console.log('[specials-registry] loaded — 130 stubs registered (Phase 5.7+ iter10)');
