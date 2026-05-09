@@ -579,6 +579,15 @@ export class TestOverworldScene extends Phaser.Scene {
     // Phase 4.4.a : spawn NPCs après que vars soient set par OnTransition.
     await SpawnObjectEventsOnMap(this.rt);
 
+    // 1:1 décomp `CopyPartyAndObjectsFromSave` (= LoadObjectEvents). Apply les
+    // saved NPC positions ON TOP des templates default. Sans ça les NPCs spawn
+    // toujours à leur position initiale, même si le user a déplacé un NPC via
+    // setobjectxy ou si une cinematic l'a déplacé puis user a save (= le décomp
+    // sauvegarde l'état des objectEvents et le restore au resume). Critique
+    // pour le resume : l'animation du Mom dialog dans la maison déplace Mom
+    // → user save → reload → Mom doit rester à sa nouvelle position.
+    gameState.applyLoadedNpcPositions();
+
     // Sync NPC sprite OAM positions IMMÉDIATEMENT après spawn. Sans ça, les
     // NPCs créés via CreateSpriteAtOam(x:0, y:0) restent en (0, 0) à l'écran
     // jusqu'à ce que MainCB2_Overworld tick UpdateObjectEvents (= warpInProgress

@@ -78,12 +78,14 @@ interface MenuItem {
 }
 
 type SubState =
-  | 'menu'           // main menu : nav + select
-  | 'msg_wait'       // showing dialog ; wait for A/B → close dialog → return to menu
-  | 'msg_close'      // showing dialog ; wait for A/B → close dialog AND close menu
-  | 'save_confirm'   // showing "Sauvegarder?" dialog ; once printer done → spawn Yes/No
-  | 'save_yesno'     // Yes/No menu open ; wait input
-  | 'save_done';     // showing "Partie sauvegardée!" ; A/B → close menu
+  | 'menu'                  // main menu : nav + select
+  | 'msg_wait'              // showing dialog ; wait for A/B → close dialog → return to menu
+  | 'msg_close'             // showing dialog ; wait for A/B → close dialog AND close menu
+  | 'save_confirm'          // showing "Sauvegarder?" dialog ; once printer done → spawn Yes/No
+  | 'save_yesno'            // Yes/No menu open ; wait input
+  | 'save_overwrite_msg'    // showing "Une partie déjà sauvegardée. Remplacer?" dialog ; printer done → spawn Yes/No
+  | 'save_overwrite_yesno'  // Yes/No menu open for overwrite confirm
+  | 'save_done';            // showing "Partie sauvegardée!" ; A/B → close menu
 
 let sIsOpen = false;
 let sWindowId = -1;
@@ -342,8 +344,20 @@ function _removeSaveInfoWindow(): void {
 }
 
 /** SAUVER action : 1:1 décomp start_menu.c:982 — ShowSaveInfoWindow + dialog
- *  "Voulez-vous sauvegarder la partie?" + Yes/No menu. */
+ *  "Voulez-vous sauvegarder la partie?" + Yes/No menu.
+ *
+ *  ⚠️ 1:1 décomp `SaveStartCallback` (start_menu.c:808) ferme le start menu
+ *  AVANT d'afficher le save info window. Sinon le menu reste visible derrière
+ *  le dialog (= bug user report 2026-05-10). On hide le start menu window ici
+ *  mais on garde sIsOpen=true pour que `TickStartMenu` drive le save flow. */
 function saveAction(): boolean {
+  // Hide start menu window (= ClearStdWindowAndFrame + RemoveWindow), mais
+  // keep sIsOpen et sSubState pour driver le flow save_confirm/yesno/done.
+  if (sWindowId >= 0) {
+    ClearStdWindowAndFrame(sWindowId, true);
+    RemoveWindow(sWindowId);
+    sWindowId = -1;
+  }
   _showSaveInfoWindow();
   // 1:1 décomp gText_BattleTowerLinkSavePrompt = "Voulez-vous sauvegarder la partie?"
   ShowFieldMessage('Voulez-vous sauvegarder la partie?$');
@@ -539,6 +553,12 @@ export function TickStartMenu(): void {
     case 'save_yesno':
       _tickSaveYesNo();
       break;
+    case 'save_overwrite_msg':
+      _tickSaveOverwriteMsg(newKeys);
+      break;
+    case 'save_overwrite_yesno':
+      _tickSaveOverwriteYesNo();
+      break;
     case 'save_done':
       _tickSaveDone(newKeys);
       break;
@@ -618,18 +638,59 @@ function _tickSaveYesNo(): void {
   const result = Menu_ProcessInputNoWrapClearOnChoose();
   if (result === -2) return;
   if (result === 0) {
-    // OUI → save.
-    gameState.save();
-    HideFieldMessageBox();
-    ShowFieldMessage(`${gameState.playerName} a sauvegardé\nla partie!$`);
-    sSubState = 'save_done';
+    // OUI → check si une save existe déjà → si oui, demander confirmation
+    // de remplacement (= 1:1 décomp `SaveFileExistsCallback` start_menu.c:1034
+    // qui affiche "Une partie est déjà sauvegardée. Voulez-vous la remplacer?")
+    if (gameState.hasPersistedSave()) {
+      HideFieldMessageBox();
+      ShowFieldMessage('Une partie est déjà\nsauvegardée. Voulez-vous\nla remplacer?$');
+      sSubState = 'save_overwrite_msg';
+    } else {
+      // Pas de save existante → save direct.
+      _doSave();
+    }
   } else {
-    // NON ou B → cancel, retour menu. 1:1 décomp HideSaveInfoWindow.
+    // NON ou B → cancel save, fully close start menu (= 1:1 décomp
+    // `SaveDialogCB_Cancel` clear save info window + close start menu, retour
+    // overworld. Pas de retour au start menu).
     _removeSaveInfoWindow();
     HideFieldMessageBox();
-    sSubState = 'menu';
-    _redrawMenu();
+    CloseStartMenu();
   }
+}
+
+function _tickSaveOverwriteMsg(newKeys: number): void {
+  // Wait for "Une partie est déjà sauvegardée..." printer done, THEN show Yes/No menu.
+  const dialogDone = GetFieldMessageBoxMode() === FIELD_MESSAGE_BOX_HIDDEN;
+  if (!dialogDone) return;
+  if (GetYesNoWindowId() < 0) {
+    CreateYesNoMenu(YESNO_WINDOW_TEMPLATE, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM, 0);
+    sSubState = 'save_overwrite_yesno';
+    return;
+  }
+  void newKeys;
+}
+
+function _tickSaveOverwriteYesNo(): void {
+  const result = Menu_ProcessInputNoWrapClearOnChoose();
+  if (result === -2) return;
+  if (result === 0) {
+    // OUI → save par-dessus l'existant.
+    _doSave();
+  } else {
+    // NON ou B → cancel save, fully close start menu.
+    _removeSaveInfoWindow();
+    HideFieldMessageBox();
+    CloseStartMenu();
+  }
+}
+
+/** Execute le save effectif + affiche "X a sauvegardé la partie!". */
+function _doSave(): void {
+  gameState.save();
+  HideFieldMessageBox();
+  ShowFieldMessage(`${gameState.playerName} a sauvegardé\nla partie!$`);
+  sSubState = 'save_done';
 }
 
 function _tickSaveDone(newKeys: number): void {

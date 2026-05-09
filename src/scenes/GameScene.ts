@@ -375,6 +375,25 @@ export class GameScene extends Phaser.Scene {
 
   update(_: number, deltaMs: number) {
     if (!this.rt) return;
+    // Phase 4.10 : detect post-MainMenu CB2 transitions AVANT tickFixed (=
+    // sinon le auto CB2_ContinueSavedGame fire et crash sur les undef refs
+    // `LoadSaveblockMapHeader`, `Overworld_GetMapHeaderByGroupAndId`, etc.
+    // qui vivent dans auto/src-all et nécessitent le barrel flatten — pas
+    // disponible avant que option-menu-impl soit loaded). Notre transition
+    // vers TestOverworldScene gère le resume nativement, donc on bypass
+    // l'auto CB2 entièrement.
+    // 2 cases handled :
+    //   - CB2_NewGame : post-Birch (= NEW_GAME action) → truck cinematic.
+    //   - CB2_ContinueSavedGame : Continue action → load + spawn saved map.
+    if (!this.overworldTransitionStarted) {
+      if (this.rt.gMain.callback2 === CB2_NewGame) {
+        void this.transitionToOverworld('newgame');
+        return;
+      } else if (this.rt.gMain.callback2 === CB2_ContinueSavedGame) {
+        void this.transitionToOverworld('continue');
+        return;
+      }
+    }
     // Optim : skip bridge.tick si pas de frame logique avancée. Cf
     // TestOverworldScene.update().
     let framesProcessed = 0;
@@ -389,17 +408,6 @@ export class GameScene extends Phaser.Scene {
         if (this.bridge) this.bridge.tick();
       } catch (e) {
         console.error('[GameScene.update] bridge.tick THREW:', e);
-      }
-    }
-    // Phase 4.10 : detect post-MainMenu CB2 transitions → start TestOverworldScene.
-    // 2 cases handled :
-    //   - CB2_NewGame : post-Birch (= NEW_GAME action) → truck cinematic.
-    //   - CB2_ContinueSavedGame : Continue action → load + spawn saved map.
-    if (!this.overworldTransitionStarted) {
-      if (this.rt.gMain.callback2 === CB2_NewGame) {
-        void this.transitionToOverworld('newgame');
-      } else if (this.rt.gMain.callback2 === CB2_ContinueSavedGame) {
-        void this.transitionToOverworld('continue');
       }
     }
   }
