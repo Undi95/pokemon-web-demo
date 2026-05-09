@@ -1545,9 +1545,12 @@ registerOpcode('setobjectsubpriority', (_ctx, _args) => false);
 registerOpcode('resetobjectsubpriority', (_ctx, _args) => false);
 registerOpcode('createvobject', (_ctx, _args) => false);
 registerOpcode('turnvobject', (_ctx, _args) => false);
-registerOpcode('opendoor', (_ctx, _args) => false);
-registerOpcode('closedoor', (_ctx, _args) => false);
-registerOpcode('waitdooranim', (_ctx, _args) => false);
+// HOTFIX 2026-05-09 : opendoor/closedoor/waitdooranim sont déjà registered avec
+// les vraies implementations plus haut dans le fichier (lignes 1277-1313).
+// Les stubs no-op qui étaient ici écrasaient les vraies fonctions → portes ne
+// s'ouvrent plus pour le player. Reported by user. Removed.
+// setdoor_opened/setdoor_closed sont des opcodes différents (= snake_case avec
+// underscore), pas dupliqués, on les garde.
 registerOpcode('setdoor_opened', (_ctx, _args) => false);
 registerOpcode('setdoor_closed', (_ctx, _args) => false);
 registerOpcode('addelevmenuitem', (_ctx, _args) => false);
@@ -1575,8 +1578,9 @@ registerOpcode('bufferattackname', (_ctx, _args) => false);
 registerOpcode('preparemsg', (_ctx, _args) => false);
 registerOpcode('selectapproachingtrainer', (_ctx, _args) => false);
 registerOpcode('lockfortrainer', (_ctx, _args) => false);
-registerOpcode('faceplayer', (_ctx, _args) => false);
-registerOpcode('turnobject', (_ctx, _args) => false);
+// HOTFIX 2026-05-09 : faceplayer/turnobject sont déjà registered avec les vraies
+// implementations plus haut (lignes 496, 505). Les stubs no-op qui étaient ici
+// écrasaient → NPCs ne se tournent plus vers le player. Reported by user. Removed.
 registerOpcode('vmessage', (_ctx, _args) => false);
 registerOpcode('vmsgbox', (_ctx, _args) => false);
 registerOpcode('vbufferstring', (_ctx, _args) => false);
