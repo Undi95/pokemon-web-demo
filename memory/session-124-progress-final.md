@@ -5,9 +5,11 @@ Branche : `upd2` (= **84 commits** ahead of `main`, NE PAS PUSH)
 
 ## TL;DR
 
-Session 124 = **15 commits** : 4 bugs visuels signalés + 3 battle polish +
-2 transpiler updates + truck audit ligne par ligne (= HMR-safe + Task_Truck3
-box update) + shiny support 1:1.
+Session 124 = **20 commits** : 4 bugs visuels signalés + 4 battle polish (EXP
+gain, level up, cry, shake, HP bar visuel, fade transition) + 2 transpiler
+updates + truck audit ligne par ligne (= HMR-safe + Task_Truck3 box update +
+audio hacks reverted) + shiny support 1:1 + truck silence diagnostic
+(= SF2 sample manquant, accepted MVP).
 
 ## ✅ Décisions architecture (= confirmation user session 124)
 
@@ -167,7 +169,28 @@ session 113 supprimé).
 Résolution `tileNum: "VERSION_BANNER_RIGHT_TILEOFFSET"` → `tileNum: 64`
 au extract-time → moins de runtime fallback `_resolveTileNum`.
 
-### Truck cinematic — HMR-safe + Task_Truck3 box update (`b98b4c74`)
+### Truck cinematic — HMR-safe + Task_Truck3 box update + audio revert (`b98b4c74`, `d73230ee`)
+
+**User insight final A/B test ROM** : "Soit il manque des notes de fin au
+son 1, soit il y a un son entre les deux qu'on a pas. Sur la rom, y a un
+son qu'on entend pas chez nous. Le timing 1:1 est juste, enlève tes hack."
+
+→ Le timing décomp est PARFAIT 1:1. Le silence perçu = un sample audio
+MANQUANT côté SF2 / spessasynth (= rendu MIDI imparfait vs ROM m4a
+hardware). Ne peut pas être fix sans re-ripper les samples ROM proprement.
+
+**Accepted as-is** pour MVP. Tous les hacks audio reverted dans `d73230ee` :
+- Pas de `playPrerenderedSEWithLoop`
+- Pas de mono-cut sur slot se1
+- `PlaySE(SE_TRUCK_MOVE)` + `PlaySE(SE_TRUCK_STOP)` standard 1:1 décomp
+
+**Conservé** (= bug fixes réels) :
+- HMR-safe guard via globalThis (= empêche cacophonie 6× tasks)
+- Task_Truck3 box update (= 1:1 décomp box continue X-shake when xpan===2)
+- preloadPrerenderedSEs (= optimization no-harm, pre-load les 4 SE truck)
+
+**TODO future** : re-rip ROM samples via bregalad gba-mus-ripper pour les
+4 SE truck pour close le gap audio vs ROM authentic.
 
 **User insight critique** : "c'est bizarre ce spam de lancement de musique
 dans les logs" → HMR Vite reloadait le module à chaque commit, mais sans
@@ -211,19 +234,25 @@ propage `shiny: p.isShiny ?? false` vers @pkmn/sim.
 RNG impact : aucun — décomp utilise déjà 2× Random() pour personality
 avant les IVs. Notre code matche cet order exact → frame-perfect compat.
 
-## ❌ Bugs restants
+## ❌ Bugs restants (= TODO Phase 5+)
 
-### Bug 5d — Real HP bar tiles (= TODO Phase 5)
+### Truck SE samples manquants
 
-Replace text "Lv5 PV: 18/22" par tiles HP bar 1:1 décomp :
-- Bar fill avec couleur green/yellow/red selon HP%
-- Animation décroissante quand damage applied
-- Cf. `decomp/em/battle_interface.json` pour tilemap layout
+Re-rip via bregalad gba-mus-ripper pour close le gap audio. User a confirmé
+en A/B test ROM que le timing 1:1 est juste mais qu'il manque un son
+intermediate (= peut-être queue de SE_MOVE, ou un SE_TRUCK_BRAKE entre
+MOVE et STOP) absent de notre rendu SF2.
 
-### Bug 5e — Battle BG transition fade (= TODO Phase 5)
+### HP bar tilemap pixel-perfect
 
-Au début/fin du combat, fade-in/out animation. Décomp `battle_main.c:
-CB2_StartFirstBattle` use BattleStartTransition. Notre version : direct cut.
+Notre impl Bug 5d = simple FillWindowPixelRect. Le ROM utilise un tilemap
+dédié avec gradient + drain animation. Phase 5 = real tilemap HP bar.
+
+### Battle transition effects
+
+Notre impl Bug 5e = simple BeginNormalPaletteFade. Le ROM utilise
+`BattleStartTransition` avec swirl/wave effects multi-mode. Phase 5 =
+real transition system avec `transition-type` selon trainer/wild/etc.
 
 ### Bug 6 — Update extractor/transpiler
 
