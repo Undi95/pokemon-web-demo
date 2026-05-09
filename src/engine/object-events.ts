@@ -1214,12 +1214,23 @@ function _spawnSingleNpcFromTemplate(
     // puisque cfg.face * 8 ne matche pas notre tile layout 16×16).
     npc.useSubsprites = true; // hack : skip updateNpcSpriteFrame (= pas de
                                // frame layout 16×32) en réutilisant le flag.
+    // Session 124 fix Bug 3 partiel : priority 1:1 décomp via
+    // `sElevationToPriority[elevation]`. Pour les caisses elevation=8
+    // → priority 1 au lieu de 2 hardcodé. Permet aux caisses haut de
+    // l'écran de masquer correctement les bas (= overlap visual).
+    // Note : pour le full fix 1:1, il faudrait aussi split en 2 OAMs
+    // 16x8 selon sOamTable_16x16_2 (= subsprite top half priority 2 +
+    // bottom half priority 3). Pour l'instant single OAM avec elevation
+    // priority qui couvre le commun.
+    const elevPriority = (template.elevation >= 0 && template.elevation < 16)
+      ? [2,2,2,2,1,2,1,2,1,2,1,2,1,0,0,2][template.elevation]
+      : 2;
     const result = rt.CreateSpriteAtOam({
       tileId: objTileBase,
       paletteBank,
       x: 0, y: 0,
       shape: 0 /* square */, size: 1 /* 16×16 */,
-      priority: 2,
+      priority: elevPriority,
       paletteMode: 0,
       affineMode: 0,
     });
