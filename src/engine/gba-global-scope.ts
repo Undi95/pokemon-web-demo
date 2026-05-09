@@ -11,6 +11,7 @@
  */
 import * as _dg from './decomp-globals';
 import * as _cb from './copyright-boot';
+import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 const dg = _dg as any;
 const cb = _cb as any;
 
@@ -466,6 +467,12 @@ const symbolsToExpose: Record<string, unknown> = {
   gFieldCallback: null,
   gFieldCallback2: null,
 
+  // Flag/Var API 1:1 décomp event_data.c. Notre impl manuelle vit dans
+  // script-vars.ts et stocke dans gameState (= persisté). Expose ICI sur
+  // globalThis (= avant que le option-menu-impl barrel flatten n'expose la
+  // version auto/src-all cassée — first-seen wins). Sinon `FlagClear` du
+  // barrel call `GetFlagPointer` non-défini → ReferenceError au resume.
+  FlagSet, FlagClear, FlagGet, VarSet, VarGet,
   // Memory access stubs émis par le transpiler pour les patterns C de
   // pointer arithmetic (ex: `*(ptr + idx) op= rhs;`) qui ne peuvent pas se
   // traduire 1:1 en JS. Ces helpers no-op runtime → si un de ces appels est

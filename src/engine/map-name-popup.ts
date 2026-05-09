@@ -183,6 +183,14 @@ export async function preloadMapNames(): Promise<void> {
     console.warn('[map-name-popup] failed to load map-names-fr.json:', e);
     _mapNamesFr = {};
   }
+  // Aussi charger dans le module partagé src/data/map-names-fr.ts (= utilisé
+  // par start-menu.ts ShowSaveInfoWindow + autres consumers via getMapNameFr).
+  try {
+    const { loadMapNamesFr } = await import('../data/map-names-fr');
+    loadMapNamesFr(_mapNamesFr);
+  } catch (e) {
+    console.warn('[map-name-popup] failed to bridge to map-names-fr module:', e);
+  }
   // Preload tous les 6 themes en parallèle (= évite le miss de theme au 1er
   // popup, le map name FR seul ne fait pas tout). Cache via _themeCache.
   await Promise.all([

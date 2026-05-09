@@ -220,23 +220,36 @@ export function UseContinueGameWarp(): boolean {
 /** Helper web-port : sync la position courante du player vers `block1.pos`.
  *  À call avant le save pour que pos reflète où le player est *vraiment*.
  *
- *  ⚠️ Notre web port a 2 sources de pos : `gPlayerAvatar.x/y` (= updated
- *  uniquement aux map transitions, donc STALE pendant le walk) et `_camPos`
- *  dans field-camera.ts (= updated à chaque step via CameraMove). Le décomp
- *  ROM update `gSaveBlock1Ptr->pos` directement à chaque step. Pour 1:1 le
- *  ROM behavior, on lit `GetCameraTopLeftCoords()` (= source de vérité
- *  courante au step).
+ *  ⚠️ Source de vérité : `gPlayerAvatar.x/y` est updated à chaque step
+ *  player (= player-avatar.ts:706 dans CameraUpdate). C'est la position
+ *  LOGIQUE du player. `_camPos` (field-camera.ts) peut diverger au-delà
+ *  des bornes de la map (= small maps avec camera scroll), donc moins
+ *  fiable comme source pour la save.
  *
  *  Préserve aussi le `__facing` pour spawn direction au resume. */
 export function SyncPlayerPositionToBlock(): void {
   const block1 = GetSaveBlock1();
-  // _camPos = source de vérité step-level. gPlayerAvatar fallback pour les
-  // edge cases (= avant le 1er map load).
-  const camPos = GetCameraTopLeftCoords();
-  const x = (camPos.x !== 0 || camPos.y !== 0) ? camPos.x : gPlayerAvatar.x;
-  const y = (camPos.x !== 0 || camPos.y !== 0) ? camPos.y : gPlayerAvatar.y;
+  // gPlayerAvatar est la source primaire (= updated à chaque step).
+  // Si gPlayerAvatar non initialisé (= boot pre-1er-map-load), fallback
+  // au _camPos (= field-camera).
+  const gpaX = gPlayerAvatar.x;
+  const gpaY = gPlayerAvatar.y;
+  const cp = GetCameraTopLeftCoords();
+  let x = gpaX;
+  let y = gpaY;
+  if (x === 0 && y === 0) {
+    if (cp.x >= 0 && cp.y >= 0 && (cp.x !== 0 || cp.y !== 0)) {
+      x = cp.x;
+      y = cp.y;
+    }
+  }
+  // Sanitize : reject negative values (= invalid map coord).
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
   block1.pos = { x, y };
   (block1 as { __facing?: number }).__facing = gPlayerAvatar.facing;
+  // Debug log : aide à diagnostiquer pourquoi pos est (0,0) au save.
+  console.log(`[SyncPlayerPositionToBlock] gPlayerAvatar=(${gpaX},${gpaY}) camPos=(${cp.x},${cp.y}) → block1.pos=(${x},${y}) facing=${gPlayerAvatar.facing}`);
 }
 
 /** Helper web-port : sync la map courante vers `block1.location` et update
