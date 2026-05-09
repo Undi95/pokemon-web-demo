@@ -76,6 +76,19 @@ export function preloadPrerenderedList(): Promise<void> {
   return loadPrerenderedList().then(() => undefined);
 }
 
+/**
+ * Force pre-load de N samples SE en parallèle. Returns Promise qui resolve
+ * quand tous sont cachés en memory. Utile avant cinematics où la latence du
+ * 1er play matche pas le timing désiré (= truck cinematic).
+ *
+ * Session 124 fix Bug 2 : pre-load SE_TRUCK_MOVE / STOP / UNLOAD / DOOR avant
+ * lancer la cinematic → quand state 2→3 fire PlaySE(SE_TRUCK_STOP), le
+ * buffer est déjà décodé → start instantané, pas de gap audible.
+ */
+export function preloadPrerenderedSEs(songNames: string[]): Promise<void> {
+  return Promise.all(songNames.map(n => loadBuffer(n).catch(() => null))).then(() => undefined);
+}
+
 async function loadBuffer(songName: string): Promise<AudioBuffer> {
   const cached = _bufferCache.get(songName);
   if (cached) return cached;

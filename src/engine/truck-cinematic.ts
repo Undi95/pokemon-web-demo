@@ -29,7 +29,10 @@
  */
 import type { DecompRuntime, DecompTask } from './decomp-runtime';
 import { PlaySE } from './decomp-globals';
-import { stopPrerenderedSE, playPrerenderedSEWithLoop } from './m4a/se-noise-prerendered';
+import {
+  stopPrerenderedSE, playPrerenderedSE, playPrerenderedSEWithLoop,
+  preloadPrerenderedSEs,
+} from './m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,
   SE_TRUCK_STOP,
@@ -158,6 +161,11 @@ export function ExecuteTruckSequence(rt: DecompRuntime): void {
     _truckGlobal.taskId = -1;
   }
   _truckGlobal.active = true;
+  // Session 124 Bug 2 attempt 2 : pre-load tous les SE truck pour qu'ils
+  // soient cachés en mémoire AVANT que les state transitions les jouent.
+  // Sinon le 1er play d'un SE peut prendre plusieurs frames (= fetch +
+  // decodeAudioData) → silence audible entre SE_MOVE end et SE_STOP start.
+  void preloadPrerenderedSEs(['se_truck_move', 'se_truck_stop', 'se_truck_unload', 'se_truck_door']);
   // 1:1 décomp : 3 metatile changes pour mettre la door en "closed floor".
   MapGridSetMetatileIdAt(4 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Top);
   MapGridSetMetatileIdAt(4 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Mid);
@@ -248,11 +256,16 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
         data[2] = 0;  // ← FIX : reset bobTimer (= mimic fresh Task_Truck2)
         data[0] = 3;
         data[3] = 0;  // reset horizontal step
-        // Stop le SE_TRUCK_MOVE explicit pour que SE_TRUCK_STOP soit séquentiel.
-        stopPrerenderedSE('se1');
+        // Session 124 fix attempt 3 truck silence : play SE_TRUCK_STOP sur le
+        // MÊME slot que SE_MOVE (= se1) pour que le mono-cut interne de
+        // playPrerenderedSE kill SE_MOVE + start SE_STOP en une seule op
+        // atomique. Avant : `stopPrerenderedSE + PlaySE` async séparés
+        // créaient un gap audible (= user "toujours silence"). Bypass `PlaySE`
+        // (= alterne slots) en appelant playPrerenderedSE direct.
+        void playPrerenderedSE('se_truck_stop', 'se1');
+        // Stop slot se2 par sécurité au cas où.
         stopPrerenderedSE('se2');
-        PlaySE(SE_TRUCK_STOP);
-        console.log('[truck-cinematic] state 2→3 : SE_TRUCK_STOP played (MOVE stopped, bobTimer reset 1:1 décomp)');
+        console.log('[truck-cinematic] state 2→3 : SE_TRUCK_STOP via mono-cut on slot se1 (= no gap)');
       }
       break;
     case 3:
