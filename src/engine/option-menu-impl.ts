@@ -137,6 +137,9 @@ export async function preloadOptionMenuAssets(): Promise<void> {
     tasks.push(initStringsFromDecomp());
   }
   await Promise.all(tasks);
+  // Install hooks Task_X signature après que exposeGbaGlobals() ait set
+  // globalThis.CreateTask (= sinon notre wrapper se fait écraser).
+  installAutoTaskHooks();
 }
 
 // ─── Helpers de rendu ────────────────────────────────────────────────────────
@@ -219,8 +222,19 @@ export function HighlightOptionMenuItem(idx: number): void {
  *  Notre version : on travaille avec strings non-encodées, donc on string-replace
  *  `{COLOR X}{SHADOW Y}` vers `{COLOR RED}{SHADOW LIGHT_RED}` quand style=1.
  *  Effet visuel identique (= les inline codes overrident le colorArray du printer). */
-export function DrawOptionMenuChoice(text: string, x: number, y: number, style: number): void {
-  let renderText = text;
+export function DrawOptionMenuChoice(text: unknown, x: number, y: number, style: number): void {
+  // Accept string (= notre style FR) OU u8 array (= auto-file via patched
+  // delegate, qui passe le buffer brut du décomp). Si array, decode en string
+  // via charCode (= les inline codes restent intacts car les strings.json sont
+  // déjà décodées en UTF-8).
+  let renderText: string;
+  if (typeof text === 'string') {
+    renderText = text;
+  } else if (Array.isArray(text)) {
+    renderText = String.fromCharCode(...(text as number[]).filter(c => c !== 0xFF));
+  } else {
+    renderText = String(text ?? '');
+  }
   if (style === 1) {
     // Patch les premiers {COLOR …}/{SHADOW …} pour passer en RED/LIGHT_RED.
     renderText = renderText
@@ -425,6 +439,13 @@ import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from './decomp-data/a
 // fichier). On les expose sur globalThis pour matcher le scope C où ces
 // symboles statiques sont visibles partout dans le fichier.
 import * as autoOptionMenu from './decomp-data/auto/src-all/option_menu-all-auto';
+// Le retour CB2_ReturnToFieldWithOpenMenu (= savedCallback après option menu)
+// vit dans overworld-all-auto.ts et appelle des helpers cross-fichier
+// (FieldCB_ReturnToFieldOpenStartMenu, ClearMirageTowerPulseBlend, etc.).
+// Pour 1:1 décomp complet, on importe TOUS les *-all-auto.ts via le barrel
+// `_barrel.ts` (= généré par scripts/gen-all-auto-barrel.mjs) puis on
+// expose tous leurs exports à plat sur globalThis (= scope C visibility).
+import * as allAutoBarrel from './decomp-data/auto/src-all/_barrel';
 
 // Helpers requis par CB2_InitOptionMenu / Task_* (= cf. callsTo manifest).
 // decomp-globals re-exporte tout depuis gba-window/text/menu-system.
@@ -538,9 +559,12 @@ const _globals: Record<string, unknown> = {
   DPAD_UP: 0x40,
   DPAD_DOWN: 0x80,
   // Char encoding 1:1 décomp `include/string_util.h`/`charmap.h` :
-  CHAR_0: 0xA1,           // = '0' in decomp char encoding
-  CHAR_SPACER: 0x77,      // = "Empty space" pad
-  EOS: 0xFF,              // = end of string sentinel
+  // ⚠️ Décomp utilise charmap custom (CHAR_0=0xA1) mais notre engine
+  // string-system décode en ASCII. Pour que FrameType_DrawChoices auto-file
+  // produise "1"/"2"/... et pas du junk, on expose CHAR_0 en ASCII '0' (0x30).
+  CHAR_0: 0x30,           // = '0' ASCII (au lieu de 0xA1 décomp)
+  CHAR_SPACER: 0x20,      // = ' ' ASCII (au lieu de 0x77 décomp)
+  EOS: 0xFF,              // = end of string sentinel (= idem décomp)
   // Font / text constants 1:1 décomp `include/text.h` :
   FONT_NORMAL: 1,
   TEXT_COLOR_RED: 4,
@@ -573,14 +597,30 @@ for (const [k, v] of Object.entries(_runtimeHelpers)) {
   }
 }
 
-// Expose tous les exports de l'auto-file (= Task_*, MainCB2, VBlankCB
-// statiques + helpers Draw/ProcessInput) sur globalThis pour que les
-// références cross-function bare-name dans le même fichier fonctionnent.
+// Expose les exports de option_menu en PRIORITY (= overrides barrel pour
+// les fonctions ayant des homonymes statiques dans plusieurs fichiers).
 for (const [k, v] of Object.entries(autoOptionMenu)) {
   if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {
     (globalThis as Record<string, unknown>)[k] = v;
   }
 }
+// Puis flatten le barrel : itère chaque namespace, expose ses exports si
+// pas déjà set (= first-seen wins, dedupe par name).
+for (const [, ns] of Object.entries(allAutoBarrel)) {
+  if (!ns || typeof ns !== 'object') continue;
+  for (const [k, v] of Object.entries(ns as Record<string, unknown>)) {
+    if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {
+      (globalThis as Record<string, unknown>)[k] = v;
+    }
+  }
+}
+
+// Expose les versions IMPL (= 1:1 décomp valid JS) sous des noms préfixés
+// pour que le patch post-transpile-patches.mjs delegate à elles via
+// `globalThis.__optionMenuImpl_DrawOptionMenuChoice` etc.
+(globalThis as Record<string, unknown>).__optionMenuImpl_DrawOptionMenuChoice = DrawOptionMenuChoice;
+(globalThis as Record<string, unknown>).__optionMenuImpl_DrawHeaderText = DrawHeaderText;
+(globalThis as Record<string, unknown>).__optionMenuImpl_DrawOptionMenuTexts = DrawOptionMenuTexts;
 
 // gPaletteFade + gTasks : forwarders dynamiques vers le runtime courant.
 Object.defineProperty(globalThis, 'gPaletteFade', {
@@ -612,6 +652,68 @@ Object.defineProperty(globalThis, 'gTasks', {
   },
   configurable: true, enumerable: true,
 });
+
+/** Install hooks for Task_X signature mismatch :
+ *
+ *  - Notre runTasks() appelle `task.func(taskObject)` (= signature engine).
+ *  - L'auto-file décomp signe `Task_X(u8 taskId)` (= number primitif).
+ *
+ *  Quand l'auto-file fait `CreateTask(Task_OptionMenuFadeIn, 0)` ou
+ *  `gTasks[id].func = Task_OptionMenuProcessInput`, on doit wrapper la
+ *  fn auto avec un trampoline `(taskObj) => autoFn(taskObj.taskId)`.
+ *
+ *  Cette fn est appelée APRÈS exposeGbaGlobals() (= via preloadOptionMenuAssets)
+ *  pour s'assurer qu'on override le globalThis.CreateTask post-init. */
+function installAutoTaskHooks(): void {
+  // 1) Wrap CreateTask : si fn.name commence par Task_, trampoline.
+  const _origCreateTask = (globalThis as { CreateTask?: (fn: unknown, prio: number) => number }).CreateTask;
+  if (typeof _origCreateTask === 'function' && !(_origCreateTask as { __wrapped?: boolean }).__wrapped) {
+    const wrapped = (fn: unknown, prio: number): number => {
+      let actual = fn;
+      if (typeof fn === 'function' && (fn as { name?: string }).name?.startsWith('Task_')) {
+        const autoFn = fn as (id: number) => unknown;
+        actual = (taskObj: { taskId: number }): unknown => autoFn(taskObj.taskId);
+      }
+      return _origCreateTask(actual, prio);
+    };
+    (wrapped as { __wrapped: boolean }).__wrapped = true;
+    (globalThis as Record<string, unknown>).CreateTask = wrapped;
+  }
+
+  // 2) gTasks Proxy : intercepte `gTasks[id].func = Task_X` pour trampoline.
+  Object.defineProperty(globalThis, 'gTasks', {
+    get: () => {
+      const map = _getRt().gTasks as Map<number, unknown>;
+      return new Proxy(map, {
+        get(target, prop) {
+          if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+            const id = Number(prop);
+            let t = target.get(id) as Record<string, unknown> | undefined;
+            if (!t) {
+              t = { taskId: id, data: new Array(16).fill(0), func: null } as Record<string, unknown>;
+              target.set(id, t as unknown as Parameters<typeof target.set>[1]);
+            }
+            return new Proxy(t, {
+              set(taskTarget, taskProp, value) {
+                if (taskProp === 'func' && typeof value === 'function'
+                    && (value as { name?: string }).name?.startsWith('Task_')) {
+                  const autoFn = value as (id: number) => unknown;
+                  taskTarget.func = (taskObj: { taskId: number }): unknown => autoFn(taskObj.taskId);
+                  return true;
+                }
+                taskTarget[taskProp as string] = value;
+                return true;
+              },
+            });
+          }
+          const v = (target as unknown as Record<string | symbol, unknown>)[prop];
+          return typeof v === 'function' ? (v as (...a: unknown[]) => unknown).bind(target) : v;
+        },
+      });
+    },
+    configurable: true, enumerable: true,
+  });
+}
 // sArrowPressed is mutable from the auto file → use getter/setter on globalThis
 Object.defineProperty(globalThis, 'sArrowPressed', {
   get: () => sArrowPressed,

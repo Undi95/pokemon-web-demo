@@ -442,6 +442,29 @@ const symbolsToExpose: Record<string, unknown> = {
   RGB_RED: 0x001F,
   RGB_GREEN: 0x03E0,
   RGB_BLUE: 0x7C00,
+  // Stubs pour CB2_ReturnToFieldWithOpenMenu (= return path après option menu).
+  // Ces helpers décomp lifecycle/wireless n'ont pas d'équivalent côté web —
+  // safe stubs (= no-op ou FALSE) pour éviter les ReferenceError.
+  UsedPokemonCenterWarp: (): number => 0,  // FALSE = pas warpé via Pokemon Center.
+  CloseLink: (): void => { /* no-op : pas de wireless link en web */ },
+  gWirelessCommType: 0,                    // 0 = pas de wireless.
+  // Interrupt flag bits 1:1 décomp `include/gba/io_reg.h` :
+  INTR_FLAG_VCOUNT: 1 << 1,
+  INTR_FLAG_TIMER0: 1 << 2,
+  INTR_FLAG_TIMER1: 1 << 3,
+  INTR_FLAG_TIMER2: 1 << 4,
+  INTR_FLAG_TIMER3: 1 << 5,
+  INTR_FLAG_SERIAL: 1 << 6,
+  INTR_FLAG_HBLANK: 1 << 1,
+  // REG_IE/REG_IME stubs — les writes sont no-op côté web (= pas de hardware
+  // interrupt mask). Notre runtime simule VBlank via setTimeout.
+  REG_IME: 1,
+  REG_IE: 0,
+  DisableInterrupts: (_flags: number): void => { /* no-op web stub */ },
+  // EWRAM_DATA function pointers (= 1:1 décomp `void (*X)(void) = NULL`).
+  // Mutables : stored directly on globalThis so writes in auto-files persist.
+  gFieldCallback: null,
+  gFieldCallback2: null,
 };
 
 export function exposeGbaGlobals(): void {

@@ -237,7 +237,9 @@ export function LoadPalette(srcSymbol: string | Uint16Array | number, offset: nu
   if (!u16 || u16.length === 0) return;
   // Si srcSymbol est une string : on ignore sizeBytes (artefact du transpileur)
   // et on utilise la vraie taille du buffer cache.
-  const numEntries = typeof srcSymbol === 'string'
+  // Si sizeBytes === 0 : artefact du transpileur qui converti `sizeof(arr)` → `0`.
+  // On fallback à la full taille du buffer (= ce que sizeof(...) aurait donné en C).
+  const numEntries = typeof srcSymbol === 'string' || sizeBytes === 0
     ? u16.length
     : Math.floor(sizeBytes / 2);
   const r = rt();

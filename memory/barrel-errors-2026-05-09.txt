@@ -1,0 +1,85 @@
+X [ERROR] Expected ";" but found "FlashSetupInfo"
+    src/engine/decomp-data/auto/src-all/agb_flash_1m-all-auto.ts:22:19:
+X [ERROR] Syntax error ";"
+    src/engine/decomp-data/auto/src-all/apprentice-all-auto.ts:231:12:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:869:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:875:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:880:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:885:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:890:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:895:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:904:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:906:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:908:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:910:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:912:19:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_ai_switch_items-all-auto.ts:914:19:
+X [ERROR] Cannot assign to "handshakes" because it is a constant
+    src/engine/decomp-data/auto/src-all/ereader_screen-all-auto.ts:76:6:
+    src/engine/decomp-data/auto/src-all/ereader_screen-all-auto.ts:72:12:
+X [ERROR] Syntax error " "
+    src/engine/decomp-data/auto/src-all/battle_controllers-all-auto.ts:695:7:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_anim_normal-all-auto.ts:562:15:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_controller_player-all-auto.ts:2362:9:
+X [ERROR] Expected ")" but found ";"
+    src/engine/decomp-data/auto/src-all/battle_script_commands-all-auto.ts:570:73:
+X [ERROR] Expected ";" but found "PikeWildMon"
+    src/engine/decomp-data/auto/src-all/battle_pike-all-auto.ts:572:19:
+X [ERROR] Unexpected "return"
+    src/engine/decomp-data/auto/src-all/field_specials-all-auto.ts:1490:6:
+X [ERROR] Expected ";" but found "MapHeader"
+    src/engine/decomp-data/auto/src-all/item_use-all-auto.ts:318:13:
+X [ERROR] Expected ";" but found "vArgv"
+    src/engine/decomp-data/auto/src-all/libisagbprn-all-auto.ts:75:14:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_main-all-auto.ts:3845:11:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_main-all-auto.ts:3846:11:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_main-all-auto.ts:3849:12:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_main-all-auto.ts:3850:12:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/field_tasks-all-auto.ts:419:10:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_util-all-auto.ts:297:23:
+X [ERROR] Invalid assignment target
+    src/engine/decomp-data/auto/src-all/battle_util-all-auto.ts:317:23:
+X [ERROR] Expected ";" but found "MapLayout"
+    src/engine/decomp-data/auto/src-all/fieldmap-all-auto.ts:49:9:
+X [ERROR] Unexpected "*"
+    src/engine/decomp-data/auto/src-all/librfu_rfu-all-auto.ts:543:23:
+X [ERROR] Unexpected "*"
+    src/engine/decomp-data/auto/src-all/load_save-all-auto.ts:247:2:
+X [ERROR] Unexpected "*"
+    src/engine/decomp-data/auto/src-all/link-all-auto.ts:897:24:
+X [ERROR] Cannot use a declaration in a single-statement context
+    src/engine/decomp-data/auto/src-all/contest_painting-all-auto.ts:260:25:
+X [ERROR] The symbol "destPixels" has already been declared
+    src/engine/decomp-data/auto/src-all/contest_painting-all-auto.ts:261:26:
+    src/engine/decomp-data/auto/src-all/contest_painting-all-auto.ts:260:29:
+X [ERROR] Unexpected "}"
+    src/engine/decomp-data/auto/src-all/contest_painting-all-auto.ts:305:10:
+X [ERROR] Cannot assign to "recv" because it is a constant
+    src/engine/decomp-data/auto/src-all/ereader_helpers-all-auto.ts:399:10:
+    src/engine/decomp-data/auto/src-all/ereader_helpers-all-auto.ts:393:12:
+X [ERROR] Cannot assign to "recv" because it is a constant
+    src/engine/decomp-data/auto/src-all/ereader_helpers-all-auto.ts:466:10:
+    src/engine/decomp-data/auto/src-all/ereader_helpers-all-auto.ts:393:12:
+X [ERROR] Expected ";" but found "spriteTilePtrs"
+    src/engine/decomp-data/auto/src-all/contest_util-all-auto.ts:770:9:
+Error: Command failed: D:\Projet 1\pokemon-web-demo\node_modules\@esbuild\win32-x64\esbuild.exe src/engine/decomp-data/auto/src-all/_barrel.ts --bundle --platform=browser --format=esm --outfile=C:/Users/Undi/AppData/Local/Temp/barrel-build.js --log-limit=0
