@@ -99,6 +99,20 @@ const ITEM_LABEL_KEYS = [
   'gText_OptionMenuCancel',  // 6 MENUITEM_CANCEL
 ];
 
+/** sOptionMenuItemsNames Proxy : array of strings résolus depuis globalThis
+ *  au moment où le décomp y accède (= après initStringsFromDecomp).
+ *  Match le décomp `static const u8 *const sOptionMenuItemsNames[]` qui
+ *  contient les pointeurs vers les strings réelles. */
+const sOptionMenuItemsNames = new Proxy([] as unknown as string[], {
+  get(_t, prop) {
+    if (typeof prop !== 'string') return undefined;
+    if (prop === 'length') return ITEM_LABEL_KEYS.length;
+    const idx = Number(prop);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= ITEM_LABEL_KEYS.length) return undefined;
+    return String((globalThis as Record<string, unknown>)[ITEM_LABEL_KEYS[idx]] ?? ITEM_LABEL_KEYS[idx]);
+  },
+});
+
 // ─── Asset preload ───────────────────────────────────────────────────────────
 
 /** Pré-charge les assets spécifiques au option menu (= juste la palette texte
@@ -116,6 +130,12 @@ export async function preloadOptionMenuAssets(): Promise<void> {
   }
   // Frame tiles partagés (= main menu, dialogues, etc. l'utilisent aussi).
   tasks.push(preloadTextWindowFrames());
+  // gText_* strings (= si pas déjà loadés par un autre boot path comme
+  // GameScene/BirchRuntime). Les modes test type `?nointro=1` n'en font pas.
+  if (typeof (globalThis as { gText_Option?: string }).gText_Option === 'undefined') {
+    const { initStringsFromDecomp } = await import('./gba-strings');
+    tasks.push(initStringsFromDecomp());
+  }
   await Promise.all(tasks);
 }
 
@@ -401,12 +421,59 @@ import { DmaClearLarge16, DmaClear32 } from './decomp-globals';
 // Import templates depuis option_menu-data.ts (auto-générés)
 import { sOptionMenuBgTemplates, sOptionMenuWinTemplates } from './decomp-data/auto/src/option_menu-data';
 
+// Import des fonctions auto-transpilées (Tasks + MainCB2/VBlankCB locaux au
+// fichier). On les expose sur globalThis pour matcher le scope C où ces
+// symboles statiques sont visibles partout dans le fichier.
+import * as autoOptionMenu from './decomp-data/auto/src-all/option_menu-all-auto';
+
+// Helpers requis par CB2_InitOptionMenu / Task_* (= cf. callsTo manifest).
+// decomp-globals re-exporte tout depuis gba-window/text/menu-system.
+import {
+  AnimateSprites, BuildOamBuffer, RunTasks,
+  TransferPlttBuffer, ProcessSpriteCopyRequests, LoadOam,
+  CopyBgTilemapBufferToVram,
+  GetStringWidth,
+} from './decomp-globals';
+// SetPokemonCryStereo : pas implémenté côté audio engine — stub no-op pour
+// éviter ReferenceError. Effet visuel zéro (= preview audio mono/stereo).
+const SetPokemonCryStereo = (_mode: number): void => { /* stub no-op */ };
+
+/** AddTextPrinterParameterized — wrapper signature 1:1 décomp text.c :
+ *
+ *    void AddTextPrinterParameterized(u8 windowId, u8 fontId, const u8 *str,
+ *                                      u8 x, u8 y, u8 speed, void (*cb)(...))
+ *
+ *  Notre foundation est `AddTextPrinterParameterized3` (= 7 args avec colors
+ *  au milieu). On adapte vers les couleurs FONT_NORMAL par défaut. */
+function AddTextPrinterParameterizedDecomp(
+  windowId: number, fontId: number, str: unknown,
+  x: number, y: number, speed: number, _cb: unknown,
+): void {
+  const text = typeof str === 'string' ? str
+    : Array.isArray(str) ? String.fromCharCode(...(str as number[]).filter(c => c !== 0xFF))
+    : String(str ?? '');
+  AddTextPrinterParameterized3(windowId, fontId, x, y, TEXT_COLOR_NORMAL, speed, text);
+}
+
+/** GetStringWidth — wrapper signature 1:1 décomp text.c :
+ *
+ *    u32 GetStringWidth(u8 fontId, const u8 *str, s16 letterSpacing)
+ *
+ *  Notre foundation `GetStringWidth(str)` ne prend que la string. */
+function GetStringWidthDecomp(_fontId: number, str: unknown, _letterSpacing: number): number {
+  const text = typeof str === 'string' ? str
+    : Array.isArray(str) ? String.fromCharCode(...(str as number[]).filter(c => c !== 0xFF))
+    : String(str ?? '');
+  return GetStringWidth(text);
+}
+
 // ─── Globals exposure (auto file uses globalThis scope) ─────────────────────
 
 const _globals: Record<string, unknown> = {
   // Templates auto file (= references via bare identifier)
   sOptionMenuBgTemplates,
   sOptionMenuWinTemplates,
+  sOptionMenuItemsNames,
   // DMA helpers (= 1:1 décomp depuis decomp-globals, dispatch VRAM/OAM/PLTT)
   DmaClearLarge16, DmaClear32,
   // State
@@ -420,12 +487,118 @@ const _globals: Record<string, unknown> = {
   Sound_ProcessInput, ButtonMode_ProcessInput, FrameType_ProcessInput,
   // Data (inline pal + cached pal accessor pattern)
   sOptionMenuBg_Pal,
-  // Constants the auto file uses with `BG_PLTT_ID(0)` etc. — already provided
-  // via gba-global-scope, but we make sure
+  // Constants 1:1 décomp option_menu.c (= referenced via bare identifier in
+  // the auto-transpiled body, since the C #define/enum names aren't auto-
+  // unwrapped from `ENUM_MENUITEM_0.MENUITEM_TEXTSPEED`).
+  MENUITEM_TEXTSPEED: 0,
+  MENUITEM_BATTLESCENE: 1,
+  MENUITEM_BATTLESTYLE: 2,
+  MENUITEM_SOUND: 3,
+  MENUITEM_BUTTONMODE: 4,
+  MENUITEM_FRAMETYPE: 5,
+  MENUITEM_CANCEL: 6,
+  MENUITEM_COUNT: 7,
+  WIN_HEADER: 0,
+  WIN_OPTIONS: 1,
+  // YPOS_* = MENUITEM_* * 16 (= rendered Y position).
+  YPOS_TEXTSPEED: 0 * 16,
+  YPOS_BATTLESCENE: 1 * 16,
+  YPOS_BATTLESTYLE: 2 * 16,
+  YPOS_SOUND: 3 * 16,
+  YPOS_BUTTONMODE: 4 * 16,
+  YPOS_FRAMETYPE: 5 * 16,
+  // Frame border tile indices (= already exported from option_menu-data,
+  // but re-expose as bare globals for the auto file scope).
+  TILE_TOP_CORNER_L: 418,
+  TILE_TOP_EDGE: 419,
+  TILE_TOP_CORNER_R: 420,
+  TILE_LEFT_EDGE: 421,
+  TILE_RIGHT_EDGE: 423,
+  TILE_BOT_CORNER_L: 424,
+  TILE_BOT_EDGE: 425,
+  TILE_BOT_CORNER_R: 426,
+  // Input bits 1:1 décomp `include/gba/io_reg.h` :
+  A_BUTTON: 0x1,
+  B_BUTTON: 0x2,
+  DPAD_RIGHT: 0x10,
+  DPAD_LEFT: 0x20,
+  DPAD_UP: 0x40,
+  DPAD_DOWN: 0x80,
+  // Char encoding 1:1 décomp `include/string_util.h`/`charmap.h` :
+  CHAR_0: 0xA1,           // = '0' in decomp char encoding
+  CHAR_SPACER: 0x77,      // = "Empty space" pad
+  EOS: 0xFF,              // = end of string sentinel
+  // Font / text constants 1:1 décomp `include/text.h` :
+  FONT_NORMAL: 1,
+  TEXT_COLOR_RED: 4,
+  TEXT_COLOR_LIGHT_RED: 5,
+  TEXT_SKIP_DRAW: 0xFF,   // 1:1 décomp text.c
+  WINDOW_FRAMES_COUNT,
+  // PIXEL_FILL macro 1:1 décomp `include/window.h` : `((c)<<4)|(c)` (4bpp).
+  PIXEL_FILL: (c: number) => ((c << 4) | c) & 0xFF,
 };
 for (const [k, v] of Object.entries(_globals)) {
   (globalThis as Record<string, unknown>)[k] = v;
 }
+
+// Expose les helpers depuis decomp-globals.ts (= bare identifiers que
+// l'auto-file référence sans import). Pour `AddTextPrinterParameterized`
+// (sans le `3`), on alias vers `AddTextPrinterParameterized3` (= notre
+// foundation), même signature de wrapper.
+const _runtimeHelpers: Record<string, unknown> = {
+  AddTextPrinterParameterized: AddTextPrinterParameterizedDecomp,
+  GetStringWidth: GetStringWidthDecomp,
+  CopyBgTilemapBufferToVram, FillBgTilemapBufferRect,
+  AnimateSprites, BuildOamBuffer, RunTasks,
+  TransferPlttBuffer, ProcessSpriteCopyRequests, LoadOam,
+  SetPokemonCryStereo,
+  GetStringRightAlignXOffset,
+};
+for (const [k, v] of Object.entries(_runtimeHelpers)) {
+  if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {
+    (globalThis as Record<string, unknown>)[k] = v;
+  }
+}
+
+// Expose tous les exports de l'auto-file (= Task_*, MainCB2, VBlankCB
+// statiques + helpers Draw/ProcessInput) sur globalThis pour que les
+// références cross-function bare-name dans le même fichier fonctionnent.
+for (const [k, v] of Object.entries(autoOptionMenu)) {
+  if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {
+    (globalThis as Record<string, unknown>)[k] = v;
+  }
+}
+
+// gPaletteFade + gTasks : forwarders dynamiques vers le runtime courant.
+Object.defineProperty(globalThis, 'gPaletteFade', {
+  get: () => _getRt().gPaletteFade,
+  configurable: true, enumerable: true,
+});
+// gTasks : runtime stocke `Map<number, DecompTask>`. Le décomp accède via
+// `gTasks[taskId].tField = X`. On expose un Proxy qui matche les 2 styles
+// (= numeric indexing + Map.get) en route les `[id]` au `.get(id)` interne. */
+Object.defineProperty(globalThis, 'gTasks', {
+  get: () => {
+    const map = _getRt().gTasks as Map<number, unknown>;
+    return new Proxy(map, {
+      get(target, prop) {
+        // Map methods (.get, .set, .has, etc.) — passthrough.
+        if (typeof prop === 'string' && /^\d+$/.test(prop)) {
+          const id = Number(prop);
+          let t = target.get(id) as Record<string, unknown> | undefined;
+          if (!t) {
+            t = { data: new Array(16).fill(0) } as Record<string, unknown>;
+            target.set(id, t as unknown as Parameters<typeof target.set>[1]);
+          }
+          return t;
+        }
+        const v = (target as unknown as Record<string | symbol, unknown>)[prop];
+        return typeof v === 'function' ? (v as (...a: unknown[]) => unknown).bind(target) : v;
+      },
+    });
+  },
+  configurable: true, enumerable: true,
+});
 // sArrowPressed is mutable from the auto file → use getter/setter on globalThis
 Object.defineProperty(globalThis, 'sArrowPressed', {
   get: () => sArrowPressed,

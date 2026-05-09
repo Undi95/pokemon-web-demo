@@ -54,7 +54,7 @@ import {
 import {
   CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId,
 } from './gba-menu-system';
-import { PlaySE, getRuntime } from './decomp-globals';
+import { PlaySE, getRuntime, gMain } from './decomp-globals';
 import * as Songs from './decomp-data/auto/include/constants/songs-data';
 import { gameState } from './game-state';
 import { bagContents } from './bag';
@@ -65,11 +65,8 @@ import { getMapNameFr } from '../data/map-names-fr';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 import { FlagGet } from './script-vars';
 import { CB2_InitOptionMenu } from './decomp-data/auto/src-all/option_menu-all-auto';
+import { CB2_ReturnToFieldWithOpenMenu } from './decomp-data/auto/src-all/overworld-all-auto';
 import { preloadOptionMenuAssets } from './option-menu-impl';
-// Note : `CB2_ReturnToFieldWithOpenMenu` est dans overworld-all-auto.ts qui a
-// des parse errors pré-existants (= linkGender(obj) = ... patterns C non
-// transpilés correctement). On ne l'importe pas — pour MVP on save le current
-// callback2 directement comme savedCallback.
 
 // ─── Types + state ───────────────────────────────────────────────────────────
 
@@ -354,40 +351,31 @@ function saveAction(): boolean {
   return false;
 }
 
-/** OPTIONS action : MVP cycle text speed inline + persist via gameState.save().
+/** OPTIONS action — 1:1 décomp `StartMenuOptionCallback` (start_menu.c:484) :
  *
- *  Le décomp `StartMenuOptionCallback` (start_menu.c:484) fait
- *  `SetMainCallback2(CB2_InitOptionMenu)` qui swap vers le full options menu UI.
- *  Notre wire fonctionnait au niveau swap CB2, mais `CB2_InitOptionMenu`
- *  auto-extracted a multiples transpiler bugs (= `_0x1000`, `_0x120`, macros
- *  `linkGender`/`linkDirection` dans imports transitifs). Patcher tous = gros
- *  chantier. Pour MVP, on garde le cycle inline qui marche stable.
+ *    if (!gPaletteFade.active) {
+ *        PlayRainStoppingSoundEffect();
+ *        RemoveExtraStartMenuWindows();
+ *        CleanupOverworldWindowsAndTilemaps();
+ *        SetMainCallback2(CB2_InitOptionMenu);
+ *        gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
+ *        return TRUE;
+ *    }
  *
- *  TODO follow-up : fixer scripts/extract-decomp-all.mjs pour :
- *    1. Substituer macros C 1-arg `linkGender(obj)` → `obj.range.rangeX` etc.
- *    2. Convert hex literals `_0xNNNN` → `0xNNNN` (no underscore prefix).
- *    3. Re-run extract → option_menu-all-auto.ts compile + run propre.
- *  Ensuite, wire optionsAction → SetMainCallback2(CB2_InitOptionMenu) deviendra
- *  trivial (= les imports CB2_InitOptionMenu et preloadOptionMenuAssets sont
- *  déjà en place, juste commentés ici).
- *
- *  En attendant, persist immédiat via gameState.save() au cycle. Match le
- *  comportement effectif décomp (= options dans gSaveBlock2 → flash au prochain
- *  TrySavingData). */
+ *  On preload les assets options (= textWindow frames + sOptionMenuText_Pal),
+ *  reset gMain.state à 0, set savedCallback = CB2_ReturnToFieldWithOpenMenu,
+ *  puis SetMainCallback2(CB2_InitOptionMenu) qui prend le relais. */
 function optionsAction(): boolean {
-  const cur = gameState.options.textSpeed ?? 1;
-  const next = (cur + 1) % 3;  // SLOW=0, MID=1, FAST=2
-  gameState.setOptions({ textSpeed: next });
-  // Persist immédiat (= 1:1 décomp comportement effectif via gSaveBlock2Ptr).
-  gameState.save();
-  const labels = ['LENT', 'MOY', 'RAPIDE'];
-  // Mark imports as referenced pour éviter unused warning quand follow-up
-  // wire est ré-activé.
-  void CB2_InitOptionMenu;
-  void preloadOptionMenuAssets;
-  return showMessageThenReturn(
-    `VITESSE TEXTE : ${labels[next]}\n(Sauvegardé)`,
-  );
+  // Async preload (= attendre que les frame tiles + text palette soient en
+  // mémoire avant d'appeler CB2_InitOptionMenu qui s'attend à les trouver).
+  void preloadOptionMenuAssets().then(() => {
+    gMain.state = 0;
+    gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
+    const rt = getRuntime();
+    rt.SetMainCallback2(CB2_InitOptionMenu);
+  });
+  // Return true = close the start menu now ; the CB2 swap takes over the frame.
+  return true;
 }
 
 // ─── Build items list ────────────────────────────────────────────────────────

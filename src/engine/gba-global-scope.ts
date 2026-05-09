@@ -103,6 +103,7 @@ const symbolsToExpose: Record<string, unknown> = {
   LZ77UnCompVram: dg.LZ77UnCompVram,
   LZDecompressVram: dg.LZDecompressVram,
   LoadPalette: dg.LoadPalette,
+  LoadBgTiles: dg.LoadBgTiles,
   DmaFill16: dg.DmaFill16,
   DmaFill32: dg.DmaFill32,
   DmaClear16: dg.DmaClear16,
@@ -250,6 +251,7 @@ const symbolsToExpose: Record<string, unknown> = {
   WININ_WIN1_OBJ: dg.WININ_WIN1_OBJ,
   WINOUT_WIN01_BG_ALL: dg.WINOUT_WIN01_BG_ALL,
   WINOUT_WIN01_OBJ: dg.WINOUT_WIN01_OBJ,
+  WINOUT_WIN01_CLR: dg.WINOUT_WIN01_CLR,
   WINOUT_WINOBJ_ALL: dg.WINOUT_WINOBJ_ALL,
   INTR_FLAG_VBLANK: dg.INTR_FLAG_VBLANK,
 
@@ -259,6 +261,7 @@ const symbolsToExpose: Record<string, unknown> = {
   PLTT: dg.PLTT,
   OAM_SIZE: dg.OAM_SIZE,
   VRAM_SIZE: dg.VRAM_SIZE,
+  PLTT_SIZE: dg.PLTT_SIZE,
 
   // Audio
   m4aSongNumStart: dg.m4aSongNumStart,
@@ -407,6 +410,38 @@ const symbolsToExpose: Record<string, unknown> = {
   gText_Birch_SoItsPlayer: dg.gText_Birch_SoItsPlayer,
   gText_Birch_YourePlayer: dg.gText_Birch_YourePlayer,
   gText_Birch_AreYouReady: dg.gText_Birch_AreYouReady,
+
+  // C-style boolean / null literals (= référencés `as-is` par les bodies
+  // auto-transpilés depuis le décomp). Le transpiler ne les substitue pas
+  // — on les expose comme globals pour matcher la sémantique C.
+  TRUE: 1,
+  FALSE: 0,
+  NULL: null,
+
+  // GBA bit constants utilisés par les CB2 auto-transpilés (= valeurs 1:1
+  // décomp `include/gba/io_reg.h`).
+  WININ_WIN0_BG0: 0x1,
+  WININ_WIN0_BG1: 0x2,
+  WININ_WIN0_BG2: 0x4,
+  WININ_WIN0_BG3: 0x8,
+  WINOUT_WIN01_BG0: 0x1,
+  WINOUT_WIN01_BG1: 0x2,
+  WINOUT_WIN01_BG2: 0x4,
+  WINOUT_WIN01_BG3: 0x8,
+  // BG / window helpers
+  BG_COORD_SET: 0,
+  BG_COORD_ADD: 1,
+  COPYWIN_FULL: 3,
+  COPYWIN_GFX: 1,
+  COPYWIN_MAP: 2,
+  // ARRAY_COUNT(arr) → arr.length (TS-side macro for C `sizeof(arr)/sizeof(arr[0])`).
+  ARRAY_COUNT: <T>(arr: ArrayLike<T>): number => arr?.length ?? 0,
+  // RGB color sentinels 1:1 décomp `include/gba/types.h` :
+  RGB_BLACK: 0,
+  RGB_WHITE: 0x7FFF,
+  RGB_RED: 0x001F,
+  RGB_GREEN: 0x03E0,
+  RGB_BLUE: 0x7C00,
 };
 
 export function exposeGbaGlobals(): void {
