@@ -19,7 +19,7 @@
 import { gameState } from './game-state';
 import { NewGameInit } from './new-game-flags';
 import { AddBagItem } from './bag';
-import { DIR_SOUTH, DIR_EAST } from './direction-coords';
+import { DIR_SOUTH } from './direction-coords';
 import { loadItemsTable, type ItemDef } from './data-tables';
 
 const ITEMS_JSON_URL = '/decomp/em/items.json';
@@ -227,7 +227,12 @@ export function decideBootMode(): BootSpawn {
     gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
     gameState.save();
     console.log('[boot-mode] ?truck shortcut : save reset + truck spawn pour test cinematic');
-    return { mapId: 'MAP_INSIDE_OF_TRUCK', x: 1, y: 2, facing: DIR_EAST, mode: 'newgame' };
+    // 1:1 décomp `WarpToTruck` (new_game.c:127) → SetWarpDestination(..., -1, -1, -1) →
+    // SetPlayerCoordsFromWarp() falls into "Invalid warpId and coords" branch
+    // → `pos.x = mapLayout->width / 2; pos.y = mapLayout->height / 2;`
+    // Truck map 5×5 → spawn at (2, 2). Facing = DIR_SOUTH (= 1:1
+    // ResetInitialPlayerAvatarState).
+    return { mapId: 'MAP_INSIDE_OF_TRUCK', x: 2, y: 2, facing: DIR_SOUTH, mode: 'newgame' };
   }
 
   // Tentative de resume from save.
@@ -265,5 +270,8 @@ export function decideBootMode(): BootSpawn {
   //   trigger SetIntroFlagsMale fait son setdynamicwarp + warp).
   NewGameInit();
   gameState.setDynamicWarp('MAP_LITTLEROOT_TOWN', 3, 10);
-  return { mapId: 'MAP_INSIDE_OF_TRUCK', x: 1, y: 2, facing: DIR_EAST, mode: 'newgame' };
+  // 1:1 décomp `WarpToTruck` (new_game.c:127) → coords par défaut center map +
+  // facing DIR_SOUTH (= ResetInitialPlayerAvatarState). User a A/B testé contre
+  // ROM (session 124) : spawn ROM = (2, 2) DIR_SOUTH pour truck 5×5.
+  return { mapId: 'MAP_INSIDE_OF_TRUCK', x: 2, y: 2, facing: DIR_SOUTH, mode: 'newgame' };
 }
