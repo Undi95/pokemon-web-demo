@@ -95,6 +95,24 @@ function _applyBoxBouncing(time: number, cameraXpan: number): void {
   SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_BOTTOM_R', BOX3_X_OFFSET - cameraXpan, BOX3_Y_OFFSET + yBox3);
 }
 
+/**
+ * 1:1 décomp `Task_Truck3` (field_special_scene.c:152-178) box update.
+ * Quand sTruckCamera_HorizontalTable[step] === 2, le func task swap de
+ * Task_Truck2 vers Task_Truck3. Task_Truck3 :
+ * - Y bob ARRÊTÉ (cameraYpan = 0)
+ * - Boxes Y revient à leur offset spawn (= 3, -3, 0 selon la box)
+ * - Boxes X continue de follow le cameraXpan shake horizontal
+ *
+ * AUDIT session 124 : notre code initial n'updatait PAS les boxes quand
+ * xpan === 2 → boxes "freeze" mid-bounce → user "preuve des cartons
+ * encore un peu bugué".
+ */
+function _applyBoxNoYBob(cameraXpan: number): void {
+  SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_TOP',      BOX1_X_OFFSET - cameraXpan, BOX1_Y_OFFSET);
+  SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_BOTTOM_L', BOX2_X_OFFSET - cameraXpan, BOX2_Y_OFFSET);
+  SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_BOTTOM_R', BOX3_X_OFFSET - cameraXpan, BOX3_Y_OFFSET);
+}
+
 /** Reset box visual offsets à leurs spawn-time defaults (= post-cinematic).
  *  1:1 décomp implicit via Task_Truck3 finale qui appelle SetObjectEventSpritePos
  *  avec yBox=0. */
@@ -104,16 +122,42 @@ function _resetBoxOffsets(): void {
   SetObjectEventSpritePosByLocalIdAndMap('LOCALID_TRUCK_BOX_BOTTOM_R', BOX3_X_OFFSET, BOX3_Y_OFFSET);
 }
 
-/** Guard global : empêche double-call `ExecuteTruckSequence`. */
-let _truckSequenceActive = false;
+/**
+ * Guard via `globalThis` pour SURVIVRE le HMR Vite (= si on use juste
+ * `let _truckSequenceActive`, le module re-load reset la var → multiple
+ * tasks accumulés, chacun jouant ses SE en parallèle = cacophonie).
+ *
+ * Track aussi le taskId en cours pour pouvoir le kill au prochain start.
+ */
+type TruckGlobalState = {
+  active: boolean;
+  taskId: number;
+};
+const _truckGlobal = ((): TruckGlobalState => {
+  const g = globalThis as { __truckCinematic?: TruckGlobalState };
+  if (!g.__truckCinematic) {
+    g.__truckCinematic = { active: false, taskId: -1 };
+  }
+  return g.__truckCinematic;
+})();
 
 /** 1:1 décomp `ExecuteTruckSequence()` (field_special_scene.c:260-269). */
 export function ExecuteTruckSequence(rt: DecompRuntime): void {
-  if (_truckSequenceActive) {
-    console.warn('[truck-cinematic] ExecuteTruckSequence already running, skip duplicate');
-    return;
+  // Session 124 fix : si une cinematic était déjà active (= HMR sans full
+  // reload), kill l'ancienne task + stop tous les SE en cours pour éviter
+  // la cacophonie de tasks parallèles.
+  if (_truckGlobal.active) {
+    console.warn('[truck-cinematic] previous run still active — killing it (HMR safe)');
+    if (_truckGlobal.taskId >= 0) {
+      try { rt.DestroyTask(_truckGlobal.taskId); } catch { /* ignore */ }
+    }
+    // Stop any orphan SE encore actif sur slots se1/se2.
+    stopPrerenderedSE('se1');
+    stopPrerenderedSE('se2');
+    _truckGlobal.active = false;
+    _truckGlobal.taskId = -1;
   }
-  _truckSequenceActive = true;
+  _truckGlobal.active = true;
   // 1:1 décomp : 3 metatile changes pour mettre la door en "closed floor".
   MapGridSetMetatileIdAt(4 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Top);
   MapGridSetMetatileIdAt(4 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Mid);
@@ -123,8 +167,9 @@ export function ExecuteTruckSequence(rt: DecompRuntime): void {
   // 1:1 décomp `CpuFastFill(0, gPlttBufferFaded, PLTT_SIZE)` : screen instantly
   // black. Notre équivalent : BeginNormalPaletteFade target startY=16 endY=16.
   rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 16, 'RGB_BLACK');
-  rt.CreateTask((task: DecompTask) => Task_HandleTruckSequence(task, rt), 0xA);
-  console.log('[truck-cinematic] ExecuteTruckSequence : black palette fill + task started');
+  const taskId = rt.CreateTask((task: DecompTask) => Task_HandleTruckSequence(task, rt), 0xA);
+  _truckGlobal.taskId = taskId;
+  console.log('[truck-cinematic] ExecuteTruckSequence : black palette fill + task started (id=' + taskId + ')');
 }
 
 // ─── Task data layout ────────────────────────────────────────────────────────
@@ -236,8 +281,13 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
         // 1:1 décomp : si table[step] === 2 → Task_Truck3 (= Y bob stops).
         // Sinon Task_Truck2 (= Y bob continue + box bouncing).
         if (xpan === 2) {
-          // Task_Truck3 : X seulement, no Y bob, no box bouncing.
+          // Task_Truck3 : X seulement, no Y bob.
+          // AUDIT session 124 fix : décomp Task_Truck3 update aussi les box
+          // positions avec cameraYpan=0. Sans ça, les boxes "freezent" au
+          // moment du swap Task_Truck2→Task_Truck3 → user "preuve des
+          // cartons encore un peu bugué".
           SetCameraPanning(xpan, 0);
+          _applyBoxNoYBob(xpan);
         } else {
           // Task_Truck2 : X + Y bob + box bouncing.
           SetCameraPanning(xpan, GetTruckCameraBobbingY(data[2]));
@@ -269,7 +319,9 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
         UnlockPlayerFieldControls();
         // Reset camera panning (= safety).
         SetCameraPanning(0, 0);
-        _truckSequenceActive = false;
+        // Session 124 : reset global guard (= HMR-safe).
+        _truckGlobal.active = false;
+        _truckGlobal.taskId = -1;
         console.log('[truck-cinematic] state 5 done : SE_TRUCK_DOOR played + controls unlocked');
       }
       break;
