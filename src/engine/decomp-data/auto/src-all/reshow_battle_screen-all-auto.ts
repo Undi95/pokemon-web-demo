@@ -15,6 +15,18 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gBattle_BG0_X: any = null;
+let gBattle_BG0_Y: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gBattle_BG2_X: any = null;
+let gBattle_BG2_Y: any = null;
+let gBattle_BG3_X: any = null;
+let gBattle_BG3_Y: any = null;
+let gReservedSpritePaletteCount: any = null;
+let regBgcnt2: any = null;
 /** void ReshowBattleScreenAfterMenu(void) */
 export function ReshowBattleScreenAfterMenu(): any {
   gPaletteFade.bufferTransferDisabled = 1;
@@ -171,17 +183,17 @@ export function ClearBattleBgCntBaseBlocks(): any {
 export function LoadBattlerSpriteGfx(battler: any): any {
   if (battler < gBattlersCount)
       {
-          if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) != (0))
           {
               if (!gBattleSpritesDataPtr.battlerData[battler].behindSubstitute)
                   BattleLoadOpponentMonSpriteGfx(gEnemyParty[gBattlerPartyIndexes[battler]], battler);
               else
                   BattleLoadSubstituteOrMonSpriteGfx(battler, FALSE);
           }
-          else if (gBattleTypeFlags & BATTLE_TYPE_SAFARI && battler == B_POSITION_PLAYER_LEFT)  
+          else if (gBattleTypeFlags & ((1 << 7)) && battler == B_POSITION_PLAYER_LEFT)  
               DecompressTrainerBackPic(gSaveBlock2Ptr.playerGender, battler);
-          else if (gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL && battler == B_POSITION_PLAYER_LEFT)  
-              DecompressTrainerBackPic(TRAINER_BACK_PIC_WALLY, battler);
+          else if (gBattleTypeFlags & ((1 << 9)) && battler == B_POSITION_PLAYER_LEFT)  
+              DecompressTrainerBackPic((6), battler);
           else if (!gBattleSpritesDataPtr.battlerData[battler].behindSubstitute)
               BattleLoadPlayerMonSpriteGfx(gPlayerParty[gBattlerPartyIndexes[battler]], battler);
           else
@@ -203,7 +215,7 @@ export function CreateBattlerSprite(battler: any): any {
           else
               posY = GetBattlerSpriteDefault_Y(battler);
 
-          if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) != (0))
           {
               if (GetMonData(gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_HP) == 0)
                   return;
@@ -216,10 +228,10 @@ export function CreateBattlerSprite(battler: any): any {
               gSprites[gBattlerSpriteIds[battler]].data[2] = GetMonData(gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES);
 
               StartSpriteAnim(gSprites[gBattlerSpriteIds[battler]], gBattleMonForms[battler]);
-              if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == SPECIES_CASTFORM)
-                  gSprites[gBattlerSpriteIds[battler]].anims = gMonFrontAnimsPtrTable[SPECIES_CASTFORM];
+              if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == (385))
+                  gSprites[gBattlerSpriteIds[battler]].anims = gMonFrontAnimsPtrTable[(385)];
           }
-          else if (gBattleTypeFlags & BATTLE_TYPE_SAFARI && battler == B_POSITION_PLAYER_LEFT)
+          else if (gBattleTypeFlags & ((1 << 7)) && battler == B_POSITION_PLAYER_LEFT)
           {
               SetMultiuseSpriteTemplateToTrainerBack(gSaveBlock2Ptr.playerGender, GetBattlerPosition(B_POSITION_PLAYER_LEFT));
               gBattlerSpriteIds[battler] = CreateSprite(gMultiuseSpriteTemplate, 0x50,
@@ -229,11 +241,11 @@ export function CreateBattlerSprite(battler: any): any {
               gSprites[gBattlerSpriteIds[battler]].callback = SpriteCallbackDummy;
               gSprites[gBattlerSpriteIds[battler]].data[0] = battler;
           }
-          else if (gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL && battler == B_POSITION_PLAYER_LEFT)
+          else if (gBattleTypeFlags & ((1 << 9)) && battler == B_POSITION_PLAYER_LEFT)
           {
-              SetMultiuseSpriteTemplateToTrainerBack(TRAINER_BACK_PIC_WALLY, GetBattlerPosition(0));
+              SetMultiuseSpriteTemplateToTrainerBack((6), GetBattlerPosition(0));
               gBattlerSpriteIds[battler] = CreateSprite(gMultiuseSpriteTemplate, 0x50,
-                                                  (8 - gTrainerBackPicCoords[TRAINER_BACK_PIC_WALLY].size) * 4 + 80,
+                                                  (8 - gTrainerBackPicCoords[(6)].size) * 4 + 80,
                                                    GetBattlerSpriteSubpriority(0));
               gSprites[gBattlerSpriteIds[battler]].oam.paletteNum = battler;
               gSprites[gBattlerSpriteIds[battler]].callback = SpriteCallbackDummy;
@@ -252,8 +264,8 @@ export function CreateBattlerSprite(battler: any): any {
               gSprites[gBattlerSpriteIds[battler]].data[2] = GetMonData(gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES);
 
               StartSpriteAnim(gSprites[gBattlerSpriteIds[battler]], gBattleMonForms[battler]);
-              if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == SPECIES_CASTFORM)
-                  gSprites[gBattlerSpriteIds[battler]].anims = gMonFrontAnimsPtrTable[SPECIES_CASTFORM];
+              if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == (385))
+                  gSprites[gBattlerSpriteIds[battler]].anims = gMonFrontAnimsPtrTable[(385)];
           }
 
           gSprites[gBattlerSpriteIds[battler]].invisible = gBattleSpritesDataPtr.battlerData[battler].invisible;
@@ -266,9 +278,9 @@ export function CreateHealthboxSprite(battler: any): any {
       {
           let healthboxSpriteId: any = null;
 
-          if (gBattleTypeFlags & BATTLE_TYPE_SAFARI && battler == B_POSITION_PLAYER_LEFT)
+          if (gBattleTypeFlags & ((1 << 7)) && battler == B_POSITION_PLAYER_LEFT)
               healthboxSpriteId = CreateSafariPlayerHealthboxSprites();
-          else if (gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL && battler == B_POSITION_PLAYER_LEFT)
+          else if (gBattleTypeFlags & ((1 << 9)) && battler == B_POSITION_PLAYER_LEFT)
               return;
           else
               healthboxSpriteId = CreateBattlerHealthboxSprites(battler);
@@ -277,9 +289,9 @@ export function CreateHealthboxSprite(battler: any): any {
           InitBattlerHealthboxCoords(battler);
           SetHealthboxSpriteVisible(healthboxSpriteId);
 
-          if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) != (0))
               UpdateHealthboxAttribute(gHealthboxSpriteIds[battler],gEnemyParty[gBattlerPartyIndexes[battler]], HEALTHBOX_ALL);
-          else if (gBattleTypeFlags & BATTLE_TYPE_SAFARI)
+          else if (gBattleTypeFlags & ((1 << 7)))
               UpdateHealthboxAttribute(gHealthboxSpriteIds[battler],gPlayerParty[gBattlerPartyIndexes[battler]], HEALTHBOX_SAFARI_ALL_TEXT);
           else
               UpdateHealthboxAttribute(gHealthboxSpriteIds[battler],gPlayerParty[gBattlerPartyIndexes[battler]], HEALTHBOX_ALL);
@@ -289,12 +301,12 @@ export function CreateHealthboxSprite(battler: any): any {
           else
               DummyBattleInterfaceFunc(gHealthboxSpriteIds[battler], FALSE);
 
-          if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) != (0))
           {
               if (GetMonData(gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_HP) == 0)
                   SetHealthboxSpriteInvisible(healthboxSpriteId);
           }
-          else if (!(gBattleTypeFlags & BATTLE_TYPE_SAFARI))
+          else if (!(gBattleTypeFlags & ((1 << 7))))
           {
               if (GetMonData(gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_HP) == 0)
                   SetHealthboxSpriteInvisible(healthboxSpriteId);

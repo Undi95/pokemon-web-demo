@@ -17,22 +17,16 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBadgeFlags: any = null;
-let sBattleFrontierFacilityNames: any = null;
-let sBattleFrontierStreakInfo: any = null;
-let sBirchDexRatingTexts: any = null;
-let sMatchCallState: any = null;
-let sMatchCallTaskFuncs: any = null;
-let sMatchCallTextStringVars: any = null;
-let sMatchCallTextWindow: any = null;
-let sMatchCallTrainers: any = null;
-let sMatchCallWindow_Gfx: any = null;
-let sMatchCallWindow_Pal: any = null;
-let sMultiTrainerMatchCallTexts: any = null;
-let sPokenavIcon_Gfx: any = null;
-let sPokenavIcon_Pal: any = null;
-let sPopulateMatchCallStringVarFuncs: any = null;
-let sText_PokenavCallEllipsis: any = null;
+let height: any = null;
+let numCaught: any = null;
+let tIconTaskId: any = null;
+let tSpinStage: any = null;
+let tTileNum: any = null;
+let tTimer: any = null;
+let tWindowId: any = null;
+let width: any = null;
+let x: any = null;
+let y: any = null;
 /** void InitMatchCallCounters(void) */
 export function InitMatchCallCounters(): any {
   RtcCalcLocalTime();
@@ -62,7 +56,7 @@ export function UpdateMatchCallMinutesCounter(): any {
 /** static bool32 CheckMatchCallChance(void) */
 export function CheckMatchCallChance(): any {
   let callChance: any = 1;
-      if (!GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG) && GetMonAbility(gPlayerParty[0]) == ABILITY_LIGHTNING_ROD)
+      if (!GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG) && GetMonAbility(gPlayerParty[0]) == (31))
           callChance = 2;
 
       if (Random() % 10 < callChance * 3)
@@ -77,13 +71,13 @@ export function MapAllowsMatchCall(): any {
           return FALSE;
 
       if (gMapHeader.regionMapSectionId == MAPSEC_SOOTOPOLIS_CITY
-       && FlagGet(FLAG_HIDE_SOOTOPOLIS_CITY_RAYQUAZA) == TRUE
-       && FlagGet(FLAG_NEVER_SET_0x0DC) == FALSE)
+       && FlagGet((0x3E4)) == TRUE
+       && FlagGet((0xDC)) == FALSE)
           return FALSE;
 
       if (gMapHeader.regionMapSectionId == MAPSEC_MT_CHIMNEY
-       && FlagGet(FLAG_MET_ARCHIE_METEOR_FALLS) == TRUE
-       && FlagGet(FLAG_DEFEATED_EVIL_TEAM_MT_CHIMNEY) == FALSE)
+       && FlagGet((0xCF)) == TRUE
+       && FlagGet((0x8B)) == FALSE)
           return FALSE;
 
       return TRUE;
@@ -124,9 +118,9 @@ export function SelectMatchCallTrainer(): any {
 /** static u32 GetNumRegisteredTrainers(void) */
 export function GetNumRegisteredTrainers(): any {
   let i, count;
-      for (i = 0, count = 0; i < REMATCH_SPECIAL_TRAINER_START; i++)
+      for (i = 0, count = 0; i < (REMATCH_WALLY_VR); i++)
       {
-          if (FlagGet(TRAINER_REGISTERED_FLAGS_START + i))
+          if (FlagGet((0x15C) + i))
               count++;
       }
 
@@ -136,9 +130,9 @@ export function GetNumRegisteredTrainers(): any {
 /** static u32 GetActiveMatchCallTrainerId(u32 activeMatchCallId) */
 export function GetActiveMatchCallTrainerId(activeMatchCallId: any): any {
   let i: any = null;
-      for (i = 0; i < REMATCH_SPECIAL_TRAINER_START; i++)
+      for (i = 0; i < (REMATCH_WALLY_VR); i++)
       {
-          if (FlagGet(TRAINER_REGISTERED_FLAGS_START + i))
+          if (FlagGet((0x15C) + i))
           {
               if (!activeMatchCallId)
                   return gRematchTable[i].trainerIds[0];
@@ -152,7 +146,7 @@ export function GetActiveMatchCallTrainerId(activeMatchCallId: any): any {
 
 /** bool32 TryStartMatchCall(void) */
 export function TryStartMatchCall(): any {
-  if (FlagGet(FLAG_HAS_MATCH_CALL)
+  if (FlagGet((0x12F))
           && UpdateMatchCallStepCounter()
           && UpdateMatchCallMinutesCounter()
           && CheckMatchCallChance()
@@ -187,7 +181,7 @@ export function StartMatchCall(): any {
           StopPlayerAvatar();
       }
 
-      PlaySE(SE_POKENAV_CALL);
+      PlaySE((263));
       CreateTask(ExecuteMatchCall, 1);
 }
 
@@ -207,7 +201,7 @@ export function ExecuteMatchCall(taskId: any): any {
 export function MatchCall_LoadGfx(taskId: any): any {
   let data: any = gTasks[taskId].data;
       tWindowId = AddWindow(sMatchCallTextWindow);
-      if (tWindowId == WINDOW_NONE)
+      if (tWindowId == (0xFF))
       {
           DestroyTask(taskId);
           return FALSE;
@@ -297,7 +291,7 @@ export function MatchCall_PrintMessage(taskId: any): any {
       {
           FillWindowPixelBuffer(tWindowId, PIXEL_FILL(8));
           CopyWindowToVram(tWindowId, COPYWIN_GFX);
-          PlaySE(SE_POKENAV_HANG_UP);
+          PlaySE((264));
           return TRUE;
       }
 
@@ -328,7 +322,7 @@ export function MatchCall_EndCall(taskId: any): any {
           if (!sMatchCallState.triggeredFromScript)
           {
               LoadMessageBoxAndBorderGfx();
-              playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+              playerObjectId = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
               ObjectEventClearHeldMovementIfFinished(gObjectEvents[playerObjectId]);
               ScriptMovement_UnfreezeObjectEvents();
               UnfreezeObjectEvents();
@@ -376,9 +370,9 @@ export function InitMatchCallTextPrinter(windowId: any, str: any): any {
       printerTemplate.letterSpacing = 0;
       printerTemplate.lineSpacing = 0;
       printerTemplate.unk = 0;
-      printerTemplate.fgColor = TEXT_DYNAMIC_COLOR_1;
-      printerTemplate.bgColor = TEXT_COLOR_BLUE;
-      printerTemplate.shadowColor = TEXT_DYNAMIC_COLOR_5;
+      printerTemplate.fgColor = (0xA);
+      printerTemplate.bgColor = (0x8);
+      printerTemplate.shadowColor = (0xE);
       gTextFlags.useAlternateDownArrow = FALSE;
 
       AddTextPrinter(printerTemplate, GetPlayerTextSpeedDelay(), NULL);
@@ -418,7 +412,7 @@ export function TrainerIsEligibleForRematch(matchCallId: any): any {
 /** static u32 GetNumRematchTrainersFought(void) */
 export function GetNumRematchTrainersFought(): any {
   let i, count;
-      for (i = 0, count = 0; i < REMATCH_SPECIAL_TRAINER_START; i++)
+      for (i = 0, count = 0; i < (REMATCH_WALLY_VR); i++)
       {
           if (HasTrainerBeenFought(gRematchTable[i].trainerIds[0]))
               count++;
@@ -626,7 +620,7 @@ export function PopulateSpeciesFromTrainerLocation(matchCallId: any, destStr: an
           }
       }
 
-      destStr[0] = EOS;
+      destStr[0] = (0xFF);
 }
 
 /** static void PopulateSpeciesFromTrainerParty(int matchCallId, u8 *destStr) */
@@ -646,13 +640,13 @@ export function PopulateSpeciesFromTrainerParty(matchCallId: any, destStr: any):
       default:
           speciesName = gSpeciesNames[party.NoItemDefaultMoves[monId].species];
           break;
-      case F_TRAINER_PARTY_CUSTOM_MOVESET:
+      case ((1 << 0)):
           speciesName = gSpeciesNames[party.NoItemCustomMoves[monId].species];
           break;
-      case F_TRAINER_PARTY_HELD_ITEM:
+      case ((1 << 1)):
           speciesName = gSpeciesNames[party.ItemDefaultMoves[monId].species];
           break;
-      case F_TRAINER_PARTY_CUSTOM_MOVESET | F_TRAINER_PARTY_HELD_ITEM:
+      case ((1 << 0)) | ((1 << 1)):
           speciesName = gSpeciesNames[party.ItemCustomMoves[monId].species];
           break;
       }
@@ -682,7 +676,7 @@ export function PopulateBattleFrontierStreak(matchCallId: any, destStr: any): an
 export function GetNumOwnedBadges(): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_BADGES; i++)
+      for (i = 0; i < ((1 + (((((((0x500) + (864) - 1)) + 1)) + 0xE)) - (((((((0x500) + (864) - 1)) + 1)) + 0x7)))); i++)
       {
           if (!FlagGet(sBadgeFlags[i]))
               break;
@@ -708,7 +702,7 @@ export function ShouldTrainerRequestBattle(matchCallId: any): any {
       dewfordRand = gSaveBlock1Ptr.dewfordTrends[0].rand;
       numRematchTrainersFought = GetNumRematchTrainersFought();
       max = (numRematchTrainersFought * 13) / 10;
-      rand = ((dayCount ^ dewfordRand) + (dewfordRand ^ GetGameStat(GAME_STAT_TRAINER_BATTLES))) ^ otId;
+      rand = ((dayCount ^ dewfordRand) + (dewfordRand ^ GetGameStat((9)))) ^ otId;
       n = rand % max;
       if (n < numRematchTrainersFought)
       {
@@ -727,10 +721,10 @@ export function GetFrontierStreakInfo(facilityId: any, topicTextId: any): any {
 
       switch (facilityId)
       {
-      case FRONTIER_FACILITY_DOME:
+      case (1):
           for (i = 0; i < ARRAY_COUNT(gSaveBlock2Ptr.frontier.domeRecordWinStreaks); i++)
           {
-              for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+              for (j = 0; j < (2); j++)
               {
                   if (streak < gSaveBlock2Ptr.frontier.domeRecordWinStreaks[i][j])
                       streak = gSaveBlock2Ptr.frontier.domeRecordWinStreaks[i][j];
@@ -739,17 +733,17 @@ export function GetFrontierStreakInfo(facilityId: any, topicTextId: any): any {
           topicTextId = GEN_TOPIC_B_DOME - 1;
           break;
       case (FRONTIER_FACILITY_FACTORY):
-          for (i = 0; i < FRONTIER_LVL_MODE_COUNT; i++)
+          for (i = 0; i < (2); i++)
           {
               if (streak < gSaveBlock2Ptr.frontier.pikeRecordStreaks[i])
                   streak = gSaveBlock2Ptr.frontier.pikeRecordStreaks[i];
           }
           topicTextId = GEN_TOPIC_B_PIKE - 1;
           break;
-      case FRONTIER_FACILITY_TOWER:
+      case (0):
           for (i = 0; i < ARRAY_COUNT(gSaveBlock2Ptr.frontier.towerRecordWinStreaks); i++)
           {
-              for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+              for (j = 0; j < (2); j++)
               {
                   if (streak < gSaveBlock2Ptr.frontier.towerRecordWinStreaks[i][j])
                       streak = gSaveBlock2Ptr.frontier.towerRecordWinStreaks[i][j];
@@ -757,10 +751,10 @@ export function GetFrontierStreakInfo(facilityId: any, topicTextId: any): any {
           }
           topicTextId = GEN_TOPIC_STREAK_RECORD - 1;
           break;
-      case FRONTIER_FACILITY_PALACE:
+      case (2):
           for (i = 0; i < ARRAY_COUNT(gSaveBlock2Ptr.frontier.palaceRecordWinStreaks); i++)
           {
-              for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+              for (j = 0; j < (2); j++)
               {
                   if (streak < gSaveBlock2Ptr.frontier.palaceRecordWinStreaks[i][j])
                       streak = gSaveBlock2Ptr.frontier.palaceRecordWinStreaks[i][j];
@@ -771,7 +765,7 @@ export function GetFrontierStreakInfo(facilityId: any, topicTextId: any): any {
       case (FRONTIER_FACILITY_PIKE):
           for (i = 0; i < ARRAY_COUNT(gSaveBlock2Ptr.frontier.factoryRecordWinStreaks); i++)
           {
-              for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+              for (j = 0; j < (2); j++)
               {
                   if (streak < gSaveBlock2Ptr.frontier.factoryRecordWinStreaks[i][j])
                       streak = gSaveBlock2Ptr.frontier.factoryRecordWinStreaks[i][j];
@@ -779,16 +773,16 @@ export function GetFrontierStreakInfo(facilityId: any, topicTextId: any): any {
           }
           topicTextId = GEN_TOPIC_STREAK_RECORD - 1;
           break;
-      case FRONTIER_FACILITY_ARENA:
-          for (i = 0; i < FRONTIER_LVL_MODE_COUNT; i++)
+      case (3):
+          for (i = 0; i < (2); i++)
           {
               if (streak < gSaveBlock2Ptr.frontier.arenaRecordStreaks[i])
                   streak = gSaveBlock2Ptr.frontier.arenaRecordStreaks[i];
           }
           topicTextId = GEN_TOPIC_STREAK_RECORD - 1;
           break;
-      case FRONTIER_FACILITY_PYRAMID:
-          for (i = 0; i < FRONTIER_LVL_MODE_COUNT; i++)
+      case (6):
+          for (i = 0; i < (2); i++)
           {
               if (streak < gSaveBlock2Ptr.frontier.pyramidRecordStreaks[i])
                   streak = gSaveBlock2Ptr.frontier.pyramidRecordStreaks[i];
@@ -843,9 +837,9 @@ export function GetPokedexRatingLevel(numSeen: any): any {
       if (numSeen < 200)
           return 19;
 
-      if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(SPECIES_DEOXYS), FLAG_GET_CAUGHT))
+      if (GetSetPokedexFlag(SpeciesToNationalPokedexNum((410)), FLAG_GET_CAUGHT))
           numSeen--;
-      if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(SPECIES_JIRACHI), FLAG_GET_CAUGHT))
+      if (GetSetPokedexFlag(SpeciesToNationalPokedexNum((409)), FLAG_GET_CAUGHT))
           numSeen--;
 
       if (numSeen < 200)
@@ -863,7 +857,7 @@ export function BufferPokedexRatingForMatchCall(destStr: any): any {
       let buffer: any = Alloc(0);
       if (!buffer)
       {
-          destStr[0] = EOS;
+          destStr[0] = (0xFF);
           return;
       }
 
@@ -873,15 +867,15 @@ export function BufferPokedexRatingForMatchCall(destStr: any): any {
       ConvertIntToDecimalStringN(gStringVar2, numCaught, STR_CONV_MODE_LEFT_ALIGN, 3);
       dexRatingLevel = GetPokedexRatingLevel(numCaught);
       str = StringCopy(buffer, gBirchDexRatingText_AreYouCurious);
-      str =  CHAR_PROMPT_CLEAR;
+      str =  (0xFB);
       str = StringCopy(str, gBirchDexRatingText_SoYouveSeenAndCaught);
-      str =  CHAR_PROMPT_CLEAR;
+      str =  (0xFB);
       StringCopy(str, sBirchDexRatingTexts[dexRatingLevel]);
       str = StringExpandPlaceholders(destStr, buffer);
 
       if (IsNationalPokedexEnabled())
       {
-          str =  CHAR_PROMPT_CLEAR;
+          str =  (0xFB);
           numSeen = GetNationalPokedexCount(FLAG_GET_SEEN);
           numCaught = GetNationalPokedexCount(FLAG_GET_CAUGHT);
           ConvertIntToDecimalStringN(gStringVar1, numSeen, STR_CONV_MODE_LEFT_ALIGN, 3);

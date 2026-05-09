@@ -121,6 +121,51 @@ function substituteObjectMacros(text, macros) {
   return text;
 }
 
+/** Cache global header macros (= scan once). Headers in include/constants/
+ *  contiennent les FLAG_*, VAR_*, etc. utilisés cross-file. Sinon les
+ *  bare references échouent au runtime. */
+let _globalHeaderMacrosCache = null;
+function getGlobalHeaderMacros() {
+  if (_globalHeaderMacrosCache) return _globalHeaderMacrosCache;
+  const macros = new Map();
+  const HEADER_DIRS = [
+    resolve(decompRoot, 'include', 'constants'),
+    resolve(decompRoot, 'include'),
+  ];
+  for (const dir of HEADER_DIRS) {
+    if (!existsSync(dir)) continue;
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { continue; }
+    for (const e of entries) {
+      if (!e.isFile() || !e.name.endsWith('.h')) continue;
+      try {
+        const src = readFileSync(resolve(dir, e.name), 'utf8');
+        const fileMacros = extractObjectMacros(src);
+        // First-seen wins (= include/constants prioritaire sur include/).
+        for (const [k, v] of fileMacros) {
+          if (!macros.has(k)) macros.set(k, v);
+        }
+      } catch { /* swallow */ }
+    }
+  }
+  // Resolve nested macros via 3 substitution passes (= e.g. FLAG_SYS_SAFARI_MODE
+  // body = `(SYSTEM_FLAGS + 0x2C)` qui contient un autre macro SYSTEM_FLAGS).
+  for (let pass = 0; pass < 5; pass++) {
+    let changed = false;
+    for (const [name, body] of macros) {
+      const newBody = substituteObjectMacros(body, macros);
+      if (newBody !== body) {
+        macros.set(name, newBody);
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+  _globalHeaderMacrosCache = macros;
+  console.log(`[transpile] loaded ${macros.size} global header macros`);
+  return macros;
+}
+
 /** Substitute `MACRO(<expr>)` calls with body-text where <arg> ↦ (<expr>). */
 function substituteMacros(text, macros) {
   if (!macros.size) return text;
@@ -1090,6 +1135,8 @@ function generateFile(sceneName, json) {
   // Extract per-source-file 1-arg object-like macros so transpileBody can
   // expand calls like `linkGender(o) = x` → `o.singleMovementActive = x`.
   // Plus extract OBJECT-like `#define NAME value` macros (= `SHINE_SPEED 4`).
+  // Plus merge with global header macros (= flags.h, vars.h, etc.) qui sont
+  // utilisés cross-file (= FLAG_SYS_SAFARI_MODE, VAR_*).
   let macros = null;
   let objMacros = null;
   if (json.srcFile) {
@@ -1099,6 +1146,11 @@ function generateFile(sceneName, json) {
         const src = readFileSync(srcAbs, 'utf8');
         macros = extractMacros(src);
         objMacros = extractObjectMacros(src);
+        // Merge global header macros (= les constants partagées).
+        const globalHdrMacros = getGlobalHeaderMacros();
+        for (const [k, v] of globalHdrMacros) {
+          if (!objMacros.has(k)) objMacros.set(k, v);
+        }
       } catch { /* swallow — proceed without macros */ }
     }
   }

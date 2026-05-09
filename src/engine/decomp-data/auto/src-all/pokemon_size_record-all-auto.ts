@@ -15,9 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBigMonSizeTable: any = null;
 /** static u32 GetMonSizeHash(struct Pokemon *pkmn) */
 export function GetMonSizeHash(pkmn: any): any {
   let personality: any = GetMonData(pkmn, MON_DATA_PERSONALITY);
@@ -74,7 +71,7 @@ export function FormatMonSizeRecord(string: any, size: any): any {
 
 /** static u8 CompareMonSize(u16 species, u16 *sizeRecord) */
 export function CompareMonSize(species: any, sizeRecord: any): any {
-  if (gSpecialVar_Result == PARTY_NOTHING_CHOSEN)
+  if (gSpecialVar_Result == (0xFF))
       {
           return COMPARE_SIZE_NONE;
       }
@@ -123,40 +120,40 @@ export function GetMonSizeRecordInfo(species: any, sizeRecord: any): any {
 
 /** void InitSeedotSizeRecord(void) */
 export function InitSeedotSizeRecord(): any {
-  VarSet(VAR_SEEDOT_SIZE_RECORD, (0x8000));
+  VarSet((0x4047), (0x8000));
 }
 
 /** void GetSeedotSizeRecordInfo(void) */
 export function GetSeedotSizeRecordInfo(): any {
-  let sizeRecord: any = GetVarPointer(VAR_SEEDOT_SIZE_RECORD);
+  let sizeRecord: any = GetVarPointer((0x4047));
 
-      GetMonSizeRecordInfo(SPECIES_SEEDOT, sizeRecord);
+      GetMonSizeRecordInfo((298), sizeRecord);
 }
 
 /** void CompareSeedotSize(void) */
 export function CompareSeedotSize(): any {
-  let sizeRecord: any = GetVarPointer(VAR_SEEDOT_SIZE_RECORD);
+  let sizeRecord: any = GetVarPointer((0x4047));
 
-      gSpecialVar_Result = CompareMonSize(SPECIES_SEEDOT, sizeRecord);
+      gSpecialVar_Result = CompareMonSize((298), sizeRecord);
 }
 
 /** void InitLotadSizeRecord(void) */
 export function InitLotadSizeRecord(): any {
-  VarSet(VAR_LOTAD_SIZE_RECORD, (0x8000));
+  VarSet((0x404F), (0x8000));
 }
 
 /** void GetLotadSizeRecordInfo(void) */
 export function GetLotadSizeRecordInfo(): any {
-  let sizeRecord: any = GetVarPointer(VAR_LOTAD_SIZE_RECORD);
+  let sizeRecord: any = GetVarPointer((0x404F));
 
-      GetMonSizeRecordInfo(SPECIES_LOTAD, sizeRecord);
+      GetMonSizeRecordInfo((295), sizeRecord);
 }
 
 /** void CompareLotadSize(void) */
 export function CompareLotadSize(): any {
-  let sizeRecord: any = GetVarPointer(VAR_LOTAD_SIZE_RECORD);
+  let sizeRecord: any = GetVarPointer((0x404F));
 
-      gSpecialVar_Result = CompareMonSize(SPECIES_LOTAD, sizeRecord);
+      gSpecialVar_Result = CompareMonSize((295), sizeRecord);
 }
 
 // ─── callsTo manifest (= 14 unique callees) ───────────────────────

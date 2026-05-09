@@ -18,10 +18,7 @@
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sErrorStatus: any = null;
-let sNumDaysInMonths: any = null;
 let sProbeResult: any = null;
-let sRtc: any = null;
-let sRtcDummy: any = null;
 let sSavedIme: any = null;
 /** void RtcDisableInterrupts(void) */
 export function RtcDisableInterrupts(): any {
@@ -96,12 +93,12 @@ export function RtcInit(): any {
 
       if ((sProbeResult & 0xF) != 1)
       {
-          sErrorStatus = RTC_INIT_ERROR;
+          sErrorStatus = (0x0001);
           return;
       }
 
       if (sProbeResult & 0xF0)
-          sErrorStatus = RTC_INIT_WARNING;
+          sErrorStatus = (0x0002);
       else
           sErrorStatus = 0;
 
@@ -116,7 +113,7 @@ export function RtcGetErrorStatus(): any {
 
 /** void RtcGetInfo(struct SiiRtcInfo *rtc) */
 export function RtcGetInfo(rtc: any): any {
-  if (sErrorStatus & RTC_ERR_FLAG_MASK)
+  if (sErrorStatus & (0x0FF0))
           rtc = sRtcDummy;
       else
           RtcGetRawInfo(rtc);
@@ -149,52 +146,52 @@ export function RtcCheckInfo(rtc: any): any {
       let month: any = null;
       let value: any = null;
 
-      if (rtc.status & SIIRTCINFO_POWER)
-          errorFlags |= RTC_ERR_POWER_FAILURE;
+      if (rtc.status & (0x80))
+          errorFlags |= (0x0020);
 
-      if (!(rtc.status & SIIRTCINFO_24HOUR))
-          errorFlags |= RTC_ERR_12HOUR_CLOCK;
+      if (!(rtc.status & (0x40)))
+          errorFlags |= (0x0010);
 
       year = ConvertBcdToBinary(rtc.year);
 
       if (year == 0xFF)
-          errorFlags |= RTC_ERR_INVALID_YEAR;
+          errorFlags |= (0x0040);
 
       month = ConvertBcdToBinary(rtc.month);
 
       if (month == 0xFF || month == 0 || month > MONTH_COUNT)
-          errorFlags |= RTC_ERR_INVALID_MONTH;
+          errorFlags |= (0x0080);
 
       value = ConvertBcdToBinary(rtc.day);
 
       if (value == 0xFF)
-          errorFlags |= RTC_ERR_INVALID_DAY;
+          errorFlags |= (0x0100);
 
       if (month == MONTH_FEB)
       {
           if (value > IsLeapYear(year) + sNumDaysInMonths[month - 1])
-              errorFlags |= RTC_ERR_INVALID_DAY;
+              errorFlags |= (0x0100);
       }
       else
       {
           if (value > sNumDaysInMonths[month - 1])
-              errorFlags |= RTC_ERR_INVALID_DAY;
+              errorFlags |= (0x0100);
       }
 
       value = ConvertBcdToBinary(rtc.hour);
 
-      if (value > HOURS_PER_DAY)
-          errorFlags |= RTC_ERR_INVALID_HOUR;
+      if (value > (24))
+          errorFlags |= (0x0200);
 
       value = ConvertBcdToBinary(rtc.minute);
 
-      if (value > MINUTES_PER_HOUR)
-          errorFlags |= RTC_ERR_INVALID_MINUTE;
+      if (value > (60))
+          errorFlags |= (0x0400);
 
       value = ConvertBcdToBinary(rtc.second);
 
-      if (value > SECONDS_PER_MINUTE)
-          errorFlags |= RTC_ERR_INVALID_SECOND;
+      if (value > (60))
+          errorFlags |= (0x0800);
 
       return errorFlags;
 }
@@ -216,19 +213,19 @@ export function RtcCalcTimeDifference(rtc: any, result: any, t: any): any {
 
       if (result.seconds < 0)
       {
-          result.seconds += SECONDS_PER_MINUTE;
+          result.seconds += (60);
           --result.minutes;
       }
 
       if (result.minutes < 0)
       {
-          result.minutes += MINUTES_PER_HOUR;
+          result.minutes += (60);
           --result.hours;
       }
 
       if (result.hours < 0)
       {
-          result.hours += HOURS_PER_DAY;
+          result.hours += (24);
           --result.days;
       }
 }
@@ -263,19 +260,19 @@ export function CalcTimeDifference(result: any, t1: any, t2: any): any {
 
       if (result.seconds < 0)
       {
-          result.seconds += SECONDS_PER_MINUTE;
+          result.seconds += (60);
           --result.minutes;
       }
 
       if (result.minutes < 0)
       {
-          result.minutes += MINUTES_PER_HOUR;
+          result.minutes += (60);
           --result.hours;
       }
 
       if (result.hours < 0)
       {
-          result.hours += HOURS_PER_DAY;
+          result.hours += (24);
           --result.days;
       }
 }
@@ -283,7 +280,7 @@ export function CalcTimeDifference(result: any, t1: any, t2: any): any {
 /** u32 RtcGetMinuteCount(void) */
 export function RtcGetMinuteCount(): any {
   RtcGetInfo(sRtc);
-      return (HOURS_PER_DAY * MINUTES_PER_HOUR) * RtcGetDayCount(sRtc) + MINUTES_PER_HOUR * sRtc.hour + sRtc.minute;
+      return ((24) * (60)) * RtcGetDayCount(sRtc) + (60) * sRtc.hour + sRtc.minute;
 }
 
 /** u32 RtcGetLocalDayCount(void) */

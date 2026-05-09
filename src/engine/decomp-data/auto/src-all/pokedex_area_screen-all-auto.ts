@@ -17,20 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAreaGlowTilemapMapping: any = null;
-let sAreaGlow_Gfx: any = null;
-let sAreaGlow_Pal: any = null;
-let sAreaMarkerSpritePalette: any = null;
-let sAreaMarkerSpriteSheet: any = null;
-let sAreaMarkerSpriteTemplate: any = null;
-let sAreaUnknownSpritePalette: any = null;
-let sAreaUnknownSpriteTemplate: any = null;
-let sFeebasData: any = null;
-let sLandmarkData: any = null;
-let sMovingRegionMapSections: any = null;
-let sPokedexAreaMapTemplate: any = null;
+let j: any = null;
 let sPokedexAreaScreen: any = null;
-let sSpeciesHiddenFromAreaScreen: any = null;
 /** static void ResetDrawAreaGlowState(void) */
 export function ResetDrawAreaGlowState(): any {
   sPokedexAreaScreen.drawAreaGlowState = 0;
@@ -74,8 +62,8 @@ export function FindMapsWithMon(species: any): any {
       let roamer: any = null;
 
       sPokedexAreaScreen.alteringCaveCounter = 0;
-      sPokedexAreaScreen.alteringCaveId = VarGet(VAR_ALTERING_CAVE_WILD_SET);
-      if (sPokedexAreaScreen.alteringCaveId >= NUM_ALTERING_CAVE_TABLES)
+      sPokedexAreaScreen.alteringCaveId = VarGet((0x403E));
+      if (sPokedexAreaScreen.alteringCaveId >= (9))
           sPokedexAreaScreen.alteringCaveId = 0;
 
       roamer =gSaveBlock1Ptr.roamer;
@@ -96,7 +84,7 @@ export function FindMapsWithMon(species: any): any {
            
            
            
-          for (i = 0; sFeebasData[i][0] != NUM_SPECIES; i++)
+          for (i = 0; sFeebasData[i][0] != ((412)); i++)
           {
               if (species == sFeebasData[i][0])
               {
@@ -208,13 +196,13 @@ export function MapHasSpecies(info: any, species: any): any {
               return FALSE;
       }
 
-      if (MonListHasSpecies(info.landMonsInfo, species, LAND_WILD_COUNT))
+      if (MonListHasSpecies(info.landMonsInfo, species, (12)))
           return TRUE;
-      if (MonListHasSpecies(info.waterMonsInfo, species, WATER_WILD_COUNT))
+      if (MonListHasSpecies(info.waterMonsInfo, species, (5)))
           return TRUE;
-      if (MonListHasSpecies(info.fishingMonsInfo, species, FISH_WILD_COUNT))
+      if (MonListHasSpecies(info.fishingMonsInfo, species, (10)))
           return TRUE;
-      if (MonListHasSpecies(info.rockSmashMonsInfo, species, ROCK_WILD_COUNT))
+      if (MonListHasSpecies(info.rockSmashMonsInfo, species, (5)))
           return TRUE;
       return FALSE;
 }
@@ -421,7 +409,7 @@ export function Task_ShowPokedexAreaScreen(taskId: any): any {
       case 1:
           SetBgAttribute(3, BG_ATTR_CHARBASEINDEX, 3);
           LoadPokedexAreaMapGfx(sPokedexAreaMapTemplate);
-          StringFill(sPokedexAreaScreen.charBuffer, CHAR_SPACE, 16);
+          StringFill(sPokedexAreaScreen.charBuffer, (0x00), 16);
           break;
       case 2:
           if (TryShowPokedexAreaMap() == TRUE)
@@ -450,7 +438,7 @@ export function Task_ShowPokedexAreaScreen(taskId: any): any {
           CreateAreaUnknownSprites();
           break;
       case 9:
-          BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))) & ~(0x14), 0, 16, 0, (RGB(0, 0, 0)));
           break;
       case 10:
           SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG0 | BLDCNT_TGT2_ALL);
@@ -484,18 +472,18 @@ export function Task_HandlePokedexAreaScreenInput(taskId: any): any {
           if (JOY_NEW(B_BUTTON))
           {
               gTasks[taskId].data[1] = 1;
-              PlaySE(SE_PC_OFF);
+              PlaySE((3));
           }
-          else if (JOY_NEW(DPAD_RIGHT) || (JOY_NEW(R_BUTTON) && gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_LR))
+          else if (JOY_NEW(DPAD_RIGHT) || (JOY_NEW(R_BUTTON) && gSaveBlock2Ptr.optionsButtonMode == (1)))
           {
               gTasks[taskId].data[1] = 2;
-              PlaySE(SE_DEX_PAGE);
+              PlaySE((109));
           }
           else
               return;
           break;
       case 2:
-          BeginNormalPaletteFade(PALETTES_ALL & ~(0x14), 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))) & ~(0x14), 0, 0, 16, (RGB(0, 0, 0)));
           break;
       case 3:
           if (gPaletteFade.active)
@@ -538,7 +526,7 @@ export function CreateAreaMarkerSprites(): any {
           x += 4 * (gRegionMapEntries[mapSecId].width - 1);
           y += 4 * (gRegionMapEntries[mapSecId].height - 1);
           spriteId = CreateSprite(sAreaMarkerSpriteTemplate, x, y, 0);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               gSprites[spriteId].invisible = TRUE;
               sPokedexAreaScreen.areaMarkerSprites[numSprites++] =gSprites[spriteId];
@@ -593,7 +581,7 @@ export function CreateAreaUnknownSprites(): any {
           for (i = 0; i < ARRAY_COUNT(sPokedexAreaScreen.areaUnknownSprites); i++)
           {
               let spriteId: any = CreateSprite(sAreaUnknownSpriteTemplate, i * 32 + 160, 140, 0);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   gSprites[spriteId].oam.tileNum += i * 16;
                   sPokedexAreaScreen.areaUnknownSprites[i] =gSprites[spriteId];

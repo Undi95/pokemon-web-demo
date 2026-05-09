@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gHasHallOfFameRecords: any = null;
 /** int GameClear(void) */
 export function GameClear(): any {
   let i: any = null;
@@ -23,29 +26,29 @@ export function GameClear(): any {
 
       HealPlayerParty();
 
-      if (FlagGet(FLAG_SYS_GAME_CLEAR) == TRUE)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))) == TRUE)
       {
           gHasHallOfFameRecords = TRUE;
       }
       else
       {
           gHasHallOfFameRecords = FALSE;
-          FlagSet(FLAG_SYS_GAME_CLEAR);
+          FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x4)));
       }
 
-      if (GetGameStat(GAME_STAT_FIRST_HOF_PLAY_TIME) == 0)
-          SetGameStat(GAME_STAT_FIRST_HOF_PLAY_TIME, (gSaveBlock2Ptr.playTimeHours << 16) | (gSaveBlock2Ptr.playTimeMinutes << 8) | gSaveBlock2Ptr.playTimeSeconds);
+      if (GetGameStat((1)) == 0)
+          SetGameStat((1), (gSaveBlock2Ptr.playTimeHours << 16) | (gSaveBlock2Ptr.playTimeMinutes << 8) | gSaveBlock2Ptr.playTimeSeconds);
 
       SetContinueGameWarpStatus();
 
-      if (gSaveBlock2Ptr.playerGender == MALE)
+      if (gSaveBlock2Ptr.playerGender == (0))
           SetContinueGameWarpToHealLocation(HEAL_LOCATION_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F);
       else
           SetContinueGameWarpToHealLocation(HEAL_LOCATION_LITTLEROOT_TOWN_MAYS_HOUSE_2F);
 
       ribbonGet = FALSE;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           let mon: any =gPlayerParty[i];
 
@@ -65,8 +68,8 @@ export function GameClear(): any {
 
       if (ribbonGet == TRUE)
       {
-          IncrementGameStat(GAME_STAT_RECEIVED_RIBBONS);
-          FlagSet(FLAG_SYS_RIBBON_GET);
+          IncrementGameStat((42));
+          FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x3B)));
 
           for (i = 1; i < 6; i++)
           {
@@ -78,7 +81,7 @@ export function GameClear(): any {
               }
           }
 
-          if (ribbonCounts[0].count > NUM_CUTIES_RIBBONS)
+          if (ribbonCounts[0].count > (4))
           {
               TryPutSpotTheCutiesOnAir(gPlayerParty[ribbonCounts[0].partyIndex], MON_DATA_CHAMPION_RIBBON);
           }

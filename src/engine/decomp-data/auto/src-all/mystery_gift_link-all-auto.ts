@@ -51,7 +51,7 @@ export function MysteryGiftLink_InitSend(link: any, ident: any, src: any, size: 
       if (size != 0)
           link.sendSize = size;
       else
-          link.sendSize = MG_LINK_BUFFER_SIZE;
+          link.sendSize = (0x400);
       link.sendBuffer = src;
 }
 
@@ -95,7 +95,7 @@ export function MGL_Receive(link: any): any {
               MGL_ReceiveBlock(link.recvPlayerId,header, 0);
               link.recvSize = header.size;
               link.recvCRC = header.crc;
-              if (link.recvSize > MG_LINK_BUFFER_SIZE)
+              if (link.recvSize > (0x400))
               {
                   LinkRfu_FatalError();
                   return FALSE;

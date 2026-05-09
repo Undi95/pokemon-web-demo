@@ -17,13 +17,14 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sFlyingSandSubspriteTable: any = null;
-let sFractionalX: any = null;
-let sFractionalY: any = null;
-let sMirroredX: any = null;
-let sState: any = null;
-let sVelocityX: any = null;
-let sVelocityY: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gBattle_BG3_Y: any = null;
+let pan2: any = null;
+let var1: any = null;
+let var2: any = null;
+let var3: any = null;
+let y: any = null;
 /** static void AnimFallingRock(struct Sprite *sprite) */
 export function AnimFallingRock(sprite: any): any {
   if (gBattleAnimArgs[3] != 0)
@@ -67,7 +68,7 @@ export function AnimRockFragment(sprite: any): any {
   StartSpriteAnim(sprite, gBattleAnimArgs[5]);
       AnimateSprite(sprite);
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.x -= gBattleAnimArgs[0];
       else
           sprite.x += gBattleAnimArgs[0];
@@ -90,7 +91,7 @@ export function AnimRockFragment(sprite: any): any {
 
 /** static void AnimParticleInVortex(struct Sprite *sprite) */
 export function AnimParticleInVortex(sprite: any): any {
-  if (gBattleAnimArgs[6] == ANIM_ATTACKER)
+  if (gBattleAnimArgs[6] == (0))
           InitSpritePosToAnimAttacker(sprite, FALSE);
       else
           InitSpritePosToAnimTarget(sprite, FALSE);
@@ -140,7 +141,7 @@ export function AnimTask_LoadSandstormBackground(taskId: any): any {
       AnimLoadCompressedBgTilemapHandleContest(animBg, gBattleAnimBgTilemap_Sandstorm, FALSE);
       LoadCompressedPalette(gBattleAnimSpritePal_FlyingDirt, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
 
-      if (gBattleAnimArgs[0] && GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (gBattleAnimArgs[0] && GetBattlerSide(gBattleAnimAttacker) != (0))
           var0 = 1;
 
       gTasks[taskId].data[0] = var0;
@@ -216,7 +217,7 @@ export function AnimTask_LoadSandstormBackground_Step(taskId: any): any {
 export function AnimFlyingSandCrescent(sprite: any): any {
   if (sprite.sState == 0)
       {
-          if (gBattleAnimArgs[3] != 0 && GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (gBattleAnimArgs[3] != 0 && GetBattlerSide(gBattleAnimAttacker) != (0))
           {
               sprite.x = DISPLAY_WIDTH + 64;
               gBattleAnimArgs[1] = -gBattleAnimArgs[1];
@@ -305,13 +306,13 @@ export function AnimTask_Rollout(taskId: any): any {
       task.data[6] = 0;
       task.data[7] = 0;
 
-      pan1 = BattleAnimAdjustPanning(SOUND_PAN_ATTACKER);
-      pan2 = BattleAnimAdjustPanning(SOUND_PAN_TARGET);
+      pan1 = BattleAnimAdjustPanning((-64));
+      pan2 = BattleAnimAdjustPanning((63));
 
       task.data[13] = pan1;
       task.data[14] = (pan2 - pan1) / task.data[8];
       task.data[1] = rolloutCounter;
-      task.data[15] = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      task.data[15] = GetAnimBattlerSpriteId((0));
 
       task.func = AnimTask_Rollout_Step;
 }
@@ -336,7 +337,7 @@ export function AnimTask_Rollout_Step(taskId: any): any {
               task.data[0]++;
           }
 
-          PlaySE12WithPanning(SE_M_HEADBUTT, task.data[13]);
+          PlaySE12WithPanning((162), task.data[13]);
           break;
       case 1:
           if (--task.data[11] == 0)
@@ -366,7 +367,7 @@ export function AnimTask_Rollout_Step(taskId: any): any {
               task.data[9] = 0;
               CreateRolloutDirtSprite(task);
               task.data[13] += task.data[14];
-              PlaySE12WithPanning(SE_M_DIG, task.data[13]);
+              PlaySE12WithPanning((175), task.data[13]);
           }
 
           if (--task.data[8] == 0)
@@ -416,7 +417,7 @@ export function CreateRolloutDirtSprite(task: any): any {
       x += (task.data[12] * 4);
 
       spriteId = CreateSprite(spriteTemplate, x, y, 35);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].data[0] = 18;
           gSprites[spriteId].data[2] = ((task.data[12] * 20) + x) + (task.data[1] * 3);
@@ -436,7 +437,7 @@ export function AnimRolloutParticle(sprite: any): any {
   if (TranslateAnimHorizontalArc(sprite))
       {
           let taskId: any = FindTaskIdByFunc(AnimTask_Rollout_Step);
-          if (taskId != TASK_NONE)
+          if (taskId != ((0xFF)))
               gTasks[taskId].data[11]--;
 
           DestroySprite(sprite);
@@ -488,7 +489,7 @@ export function AnimRockTomb_Step(sprite: any): any {
 
 /** static void AnimRockBlastRock(struct Sprite *sprite) */
 export function AnimRockBlastRock(sprite: any): any {
-  if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_OPPONENT)
+  if (GetBattlerSide(gBattleAnimAttacker) == (1))
           StartSpriteAffineAnim(sprite, 1);
 
       TranslateAnimSpriteToTargetMonLocation(sprite);
@@ -525,11 +526,11 @@ export function AnimRockScatter_Step(sprite: any): any {
 /** void AnimTask_GetSeismicTossDamageLevel(u8 taskId) */
 export function AnimTask_GetSeismicTossDamageLevel(taskId: any): any {
   if (gAnimMoveDmg < 33)
-          gBattleAnimArgs[ARG_RET_ID] = 0;
+          gBattleAnimArgs[(7)] = 0;
       if (gAnimMoveDmg - 33 < 33)
-          gBattleAnimArgs[ARG_RET_ID] = 1;
+          gBattleAnimArgs[(7)] = 1;
       if (gAnimMoveDmg > 65)
-          gBattleAnimArgs[ARG_RET_ID] = 2;
+          gBattleAnimArgs[(7)] = 2;
 
       DestroyAnimVisualTask(taskId);
 }

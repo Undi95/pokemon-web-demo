@@ -17,66 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates: any = null;
-let sButtonKeyRoles: any = null;
-let sButtonSpriteId: any = null;
-let sColor: any = null;
-let sColorDelay: any = null;
-let sColorIncr: any = null;
-let sDelay: any = null;
-let sDrawGenderIconFuncs: any = null;
-let sDrawTextEntryBoxFuncs: any = null;
-let sFillValues: any = null;
-let sFlashing: any = null;
-let sGenderColors: any = null;
-let sIconFunctions: any = null;
-let sId: any = null;
-let sInputFuncs: any = null;
-let sInvisible: any = null;
-let sKeyboardChars: any = null;
-let sKeyboardKeyHandlers: any = null;
-let sKeyboardTextColors: any = null;
-let sKeyboard_Pal: any = null;
+let gKeyRepeatStartDelay: any = null;
 let sNamingScreen: any = null;
-let sNamingScreenKeyboardText: any = null;
-let sNamingScreenTemplates: any = null;
-let sNextKeyboardPageTilemaps: any = null;
-let sPage: any = null;
-let sPageColumnCounts: any = null;
-let sPageColumnXPos: any = null;
-let sPageSwapAnimStateFuncs: any = null;
-let sPageSwapGfxTags: any = null;
-let sPageSwapPalTags: any = null;
-let sPageSwapSpriteFuncs: any = null;
-let sPageToKeyboardId: any = null;
-let sPageToNextGfxId: any = null;
-let sPageToNextKeyboardId: any = null;
-let sPrevX: any = null;
-let sPrevY: any = null;
-let sSpritePalettes: any = null;
-let sSpriteSheets: any = null;
-let sSpriteTemplate_BackButton: any = null;
-let sSpriteTemplate_Cursor: any = null;
-let sSpriteTemplate_InputArrow: any = null;
-let sSpriteTemplate_OkButton: any = null;
-let sSpriteTemplate_PCIcon: any = null;
-let sSpriteTemplate_PageSwapButton: any = null;
-let sSpriteTemplate_PageSwapFrame: any = null;
-let sSpriteTemplate_PageSwapText: any = null;
-let sSpriteTemplate_Underscore: any = null;
-let sState: any = null;
-let sSubspriteTable_Button: any = null;
-let sSubspriteTable_PCIcon: any = null;
-let sSubspriteTable_PageSwapFrame: any = null;
-let sSubspriteTable_PageSwapText: any = null;
-let sTextSpriteId: any = null;
-let sText_AlphabetUpperLower: any = null;
-let sTransferredToPCMessages: any = null;
-let sWindowTemplates: any = null;
-let sX: any = null;
-let sXPosId: any = null;
-let sY: any = null;
-let sYPosId: any = null;
 /** void DoNamingScreen(u8 templateNum, u8 *destBuffer, u16 monSpecies, u16 monGender, u32 monPersonality, MainCallback returnCallback) */
 export function DoNamingScreen(templateNum: any, destBuffer: any, monSpecies: any, monGender: any, monPersonality: any, returnCallback: any): any {
   sNamingScreen = Alloc(0);
@@ -162,7 +104,7 @@ export function NamingScreen_Init(): any {
       if (sNamingScreen.templateNum == NAMING_SCREEN_WALDA)
           sNamingScreen.inputCharBaseXPos += 11;
       sNamingScreen.keyRepeatStartDelayCopy = gKeyRepeatStartDelay;
-      memset(sNamingScreen.textBuffer, EOS, sizeof(sNamingScreen.textBuffer));
+      memset(sNamingScreen.textBuffer, (0xFF), sizeof(sNamingScreen.textBuffer));
       if (sNamingScreen.template.copyExistingString)
           StringCopy(sNamingScreen.textBuffer, sNamingScreen.destBuffer);
       gKeyRepeatStartDelay = 16;
@@ -171,7 +113,7 @@ export function NamingScreen_Init(): any {
 /** static void SetSpritesVisible(void) */
 export function SetSpritesVisible(): any {
   let i: any = null;
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
           if (gSprites[i].inUse)
               gSprites[i].invisible = FALSE;
@@ -296,8 +238,8 @@ export function MainState_FadeIn(): any {
       CopyBgTilemapBufferToVram(1);
       CopyBgTilemapBufferToVram(2);
       CopyBgTilemapBufferToVram(3);
-      BlendPalettes(PALETTES_ALL, 16, 0);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, 0);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       sNamingScreen.state++;
       return FALSE;
 }
@@ -336,7 +278,7 @@ export function MainState_PressedOKButton(): any {
       SetCursorFlashing(FALSE);
       TryStartButtonFlash(BUTTON_COUNT, FALSE, TRUE);
       if (sNamingScreen.templateNum == NAMING_SCREEN_CAUGHT_MON
-          && CalculatePlayerPartyCount() >= PARTY_SIZE)
+          && CalculatePlayerPartyCount() >= (6))
       {
           DisplaySentToPCMessage();
           sNamingScreen.state = STATE_WAIT_SENT_TO_PC_MESSAGE;
@@ -351,7 +293,7 @@ export function MainState_PressedOKButton(): any {
 
 /** static bool8 MainState_FadeOut(void) */
 export function MainState_FadeOut(): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       sNamingScreen.state++;
       return FALSE;
 }
@@ -376,24 +318,24 @@ export function DisplaySentToPCMessage(): any {
 
       if (!IsDestinationBoxFull())
       {
-          StringCopy(gStringVar1, GetBoxNamePtr(VarGet(VAR_PC_BOX_TO_SEND_MON)));
+          StringCopy(gStringVar1, GetBoxNamePtr(VarGet((0x4036))));
           StringCopy(gStringVar2, sNamingScreen.destBuffer);
       }
       else
       {
-          StringCopy(gStringVar1, GetBoxNamePtr(VarGet(VAR_PC_BOX_TO_SEND_MON)));
+          StringCopy(gStringVar1, GetBoxNamePtr(VarGet((0x4036))));
           StringCopy(gStringVar2, sNamingScreen.destBuffer);
           StringCopy(gStringVar3, GetBoxNamePtr(GetPCBoxToSendMon()));
           stringToDisplay = 2;
       }
 
-      if (FlagGet(FLAG_SYS_PC_LANETTE))
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4B))))
           stringToDisplay++;
 
       StringExpandPlaceholders(gStringVar4, sTransferredToPCMessages[stringToDisplay]);
       DrawDialogueFrame(0, FALSE);
       gTextFlags.canABSpeedUpPrint = TRUE;
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), 0, (0x2), (0x1), (0x3));
       CopyWindowToVram(0, COPYWIN_FULL);
 }
 
@@ -413,7 +355,7 @@ export function MainState_StartPageSwap(): any {
       StartPageSwapAnim();
       SetCursorInvisibility(TRUE);
       TryStartButtonFlash(BUTTON_PAGE, FALSE, TRUE);
-      PlaySE(SE_WIN_OPEN);
+      PlaySE((6));
       sNamingScreen.state = STATE_WAIT_PAGE_SWAP;
       return FALSE;
 }
@@ -467,7 +409,7 @@ export function Task_HandlePageSwapAnim(taskId: any): any {
 
 /** static bool8 IsPageSwapAnimNotInProgress(void) */
 export function IsPageSwapAnimNotInProgress(): any {
-  if (FindTaskIdByFunc(Task_HandlePageSwapAnim) == TASK_NONE)
+  if (FindTaskIdByFunc(Task_HandlePageSwapAnim) == ((0xFF)))
           return TRUE;
       else
           return FALSE;
@@ -923,7 +865,7 @@ export function NamingScreen_CreatePlayerIcon(): any {
       rivalGfxId = GetRivalAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, sNamingScreen.monSpecies);
       spriteId = CreateObjectGraphicsSprite(rivalGfxId, SpriteCallbackDummy, 56, 37, 0);
       gSprites[spriteId].oam.priority = 3;
-      StartSpriteAnim(gSprites[spriteId], ANIM_STD_GO_SOUTH);
+      StartSpriteAnim(gSprites[spriteId], (4));
 }
 
 /** static void NamingScreen_CreatePCIcon(void) */
@@ -948,9 +890,9 @@ export function NamingScreen_CreateMonIcon(): any {
 export function NamingScreen_CreateWaldaDadIcon(): any {
   let spriteId: any = null;
 
-      spriteId = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_MAN_1, SpriteCallbackDummy, 56, 37, 0);
+      spriteId = CreateObjectGraphicsSprite((19), SpriteCallbackDummy, 56, 37, 0);
       gSprites[spriteId].oam.priority = 3;
-      StartSpriteAnim(gSprites[spriteId], ANIM_STD_GO_SOUTH);
+      StartSpriteAnim(gSprites[spriteId], (4));
 }
 
 /** static bool8 HandleKeyboardEvent(void) */
@@ -1017,7 +959,7 @@ export function KeyboardKeyHandler_OK(input: any): any {
   TryStartButtonFlash(BUTTON_OK, TRUE, FALSE);
       if (input == INPUT_A_BUTTON)
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           sNamingScreen.state = STATE_PRESSED_OK;
           return TRUE;
       }
@@ -1203,14 +1145,14 @@ export function DrawGenderIcon(): any {
       let isFemale: any = FALSE;
 
       StringCopy(text, gText_MaleSymbol);
-      if (sNamingScreen.monGender != MON_GENDERLESS)
+      if (sNamingScreen.monGender != (0xFF))
       {
-          if (sNamingScreen.monGender == MON_FEMALE)
+          if (sNamingScreen.monGender == (0xFE))
           {
               StringCopy(text, gText_FemaleSymbol);
               isFemale = TRUE;
           }
-          AddTextPrinterParameterized3(sNamingScreen.windows[WIN_TEXT_ENTRY], FONT_NORMAL, (POKEMON_NAME_LENGTH * 4) + 64, 1, sGenderColors[isFemale], TEXT_SKIP_DRAW, text);
+          AddTextPrinterParameterized3(sNamingScreen.windows[WIN_TEXT_ENTRY], FONT_NORMAL, ((10) * 4) + 64, 1, sGenderColors[isFemale], (0xFF), text);
       }
 }
 
@@ -1225,7 +1167,7 @@ export function GetTextEntryPosition(): any {
 
       for (i = 0; i < sNamingScreen.template.maxChars; i++)
       {
-          if (sNamingScreen.textBuffer[i] == EOS)
+          if (sNamingScreen.textBuffer[i] == (0xFF))
               return i;
       }
       return sNamingScreen.template.maxChars - 1;
@@ -1237,7 +1179,7 @@ export function GetPreviousTextCaretPosition(): any {
 
       for (i = sNamingScreen.template.maxChars - 1; i > 0; i--)
       {
-          if (sNamingScreen.textBuffer[i] != EOS)
+          if (sNamingScreen.textBuffer[i] != (0xFF))
               return i;
       }
       return 0;
@@ -1252,14 +1194,14 @@ export function DeleteTextCharacter(): any {
       sNamingScreen.textBuffer[index] = 0;
       DrawTextEntry();
       CopyBgTilemapBufferToVram(3);
-      sNamingScreen.textBuffer[index] = EOS;
+      sNamingScreen.textBuffer[index] = (0xFF);
       keyRole = GetKeyRoleAtCursorPos();
 
        
        
       if (keyRole == KEY_ROLE_CHAR || keyRole == KEY_ROLE_BACKSPACE)
           TryStartButtonFlash(BUTTON_BACK, FALSE, TRUE);
-      PlaySE(SE_BALL);
+      PlaySE((23));
 }
 
 /** static bool8 AddTextCharacter(void) */
@@ -1271,7 +1213,7 @@ export function AddTextCharacter(): any {
       BufferCharacter(GetCharAtKeyboardPos(x, y));
       DrawTextEntry();
       CopyBgTilemapBufferToVram(3);
-      PlaySE(SE_SELECT);
+      PlaySE((5));
 
       if (GetPreviousTextCaretPosition() != sNamingScreen.template.maxChars - 1)
           return FALSE;
@@ -1291,7 +1233,7 @@ export function SaveInputText(): any {
 
       for (i = 0; i < sNamingScreen.template.maxChars; i++)
       {
-          if (sNamingScreen.textBuffer[i] != CHAR_SPACE && sNamingScreen.textBuffer[i] != EOS)
+          if (sNamingScreen.textBuffer[i] != (0x00) && sNamingScreen.textBuffer[i] != (0xFF))
           {
               StringCopyN(sNamingScreen.destBuffer, sNamingScreen.textBuffer, sNamingScreen.template.maxChars + 1);
               break;
@@ -1343,7 +1285,7 @@ export function DrawTextEntry(): any {
           temp[1] = gText_ExpandedPlaceholder_Empty[0];
           extraWidth = (IsWideLetter(temp[0]) == TRUE) ? 2 : 0;
 
-          AddTextPrinterParameterized(sNamingScreen.windows[WIN_TEXT_ENTRY], FONT_NORMAL, temp, i * 8 + x + extraWidth, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sNamingScreen.windows[WIN_TEXT_ENTRY], FONT_NORMAL, temp, i * 8 + x + extraWidth, 1, (0xFF), NULL);
       }
 
       TryDrawGenderIcon();
@@ -1392,7 +1334,7 @@ export function DrawKeyboardPageOnDeck(): any {
 
 /** static void PrintControls(void) */
 export function PrintControls(): any {
-  const color: any = [ TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY ];
+  const color: any = [ (0xF), (0x1), (0x2) ];
 
       FillWindowPixelBuffer(sNamingScreen.windows[WIN_BANNER], PIXEL_FILL(15));
       AddTextPrinterParameterized3(sNamingScreen.windows[WIN_BANNER], FONT_SMALL, 2, 1, color, 0, gText_MoveOkBack);
@@ -1444,7 +1386,7 @@ export function NamingScreen_ShowBgs(): any {
 export function IsWideLetter(character: any): any {
   let i: any = null;
 
-      for (i = 0; sText_AlphabetUpperLower[i] != EOS; i++)
+      for (i = 0; sText_AlphabetUpperLower[i] != (0xFF); i++)
       {
           if (character == sText_AlphabetUpperLower[i])
               return FALSE;

@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let toOrr2: any = null;
 /** void BlitBitmapRect4BitWithoutColorKey(const struct Bitmap *src, struct Bitmap *dst, u16 srcX, u16 srcY, u16 dstX, u16 dstY, u16 width, u16 height) */
 export function BlitBitmapRect4BitWithoutColorKey(src: any, dst: any, srcX: any, srcY: any, dstX: any, dstY: any, width: any, height: any): any {
   BlitBitmapRect4Bit(src, dst, srcX, srcY, dstX, dstY, width, height, 0xFF);

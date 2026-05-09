@@ -17,29 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates: any = null;
-let sCurrX: any = null;
-let sDestX: any = null;
-let sFemaleIconString: any = null;
-let sGenderlessIconString: any = null;
-let sInvisibleWhenDone: any = null;
-let sMaleIconString: any = null;
-let sMonInfo_Pal: any = null;
-let sMoveIncr: any = null;
-let sRibbonCountWindowTemplate: any = null;
-let sRibbonData: any = null;
-let sRibbonDraw_Current: any = null;
-let sRibbonDraw_Total: any = null;
-let sRibbonGfxData: any = null;
-let sRibbonIcons1_Pal: any = null;
-let sRibbonIconsSmall_Gfx: any = null;
-let sRibbonMonListIndexWindowTemplate: any = null;
-let sRibbonSummaryMonNameWindowTemplate: any = null;
-let sRibbonsSummaryMenuLoopTaskFuncs: any = null;
-let sSpritePalettes_RibbonIcons: any = null;
-let sSpriteSheet_RibbonIconsBig: any = null;
-let sSpriteTemplate_RibbonIconBig: any = null;
-let sTime: any = null;
+let gKeyRepeatContinueDelay: any = null;
+let gKeyRepeatStartDelay: any = null;
 /** bool32 PokenavCallback_Init_RibbonsSummaryMenu(void) */
 export function PokenavCallback_Init_RibbonsSummaryMenu(): any {
   let list: any = AllocSubstruct(POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_LIST, 0);
@@ -127,7 +106,7 @@ export function ReturnToRibbonsListFromSummary(list: any): any {
 
 /** static bool32 TrySelectRibbonUp(struct Pokenav_RibbonsSummaryList *list) */
 export function TrySelectRibbonUp(list: any): any {
-  if (list.selectedPos < FIRST_GIFT_RIBBON)
+  if (list.selectedPos < ((25)))
       {
            
           if (list.selectedPos < (9))
@@ -152,7 +131,7 @@ export function TrySelectRibbonUp(list: any): any {
 
 /** static bool32 TrySelectRibbonDown(struct Pokenav_RibbonsSummaryList *list) */
 export function TrySelectRibbonDown(list: any): any {
-  if (list.selectedPos >= FIRST_GIFT_RIBBON)
+  if (list.selectedPos >= ((25)))
           return FALSE;
       if (list.selectedPos < list.normalRibbonLastRowStart)
       {
@@ -233,7 +212,7 @@ export function GetMonNicknameLevelGender(nick: any, level: any, gender: any): a
       let mons: any = list.monList;
       let monInfo: any =mons.monData[mons.currIndex];
 
-      if (monInfo.boxId == TOTAL_BOXES_COUNT)
+      if (monInfo.boxId == (14))
       {
            
           let mon: any =gPlayerParty[monInfo.monId];
@@ -258,7 +237,7 @@ export function GetMonSpeciesPersonalityOtId(species: any, personality: any, otI
       let mons: any = list.monList;
       let monInfo: any =mons.monData[mons.currIndex];
 
-      if (monInfo.boxId == TOTAL_BOXES_COUNT)
+      if (monInfo.boxId == (14))
       {
            
           let mon: any =gPlayerParty[monInfo.monId];
@@ -282,7 +261,7 @@ export function GetCurrMonRibbonCount(): any {
       let mons: any = list.monList;
       let monInfo: any =mons.monData[mons.currIndex];
 
-      if (monInfo.boxId == TOTAL_BOXES_COUNT)
+      if (monInfo.boxId == (14))
           return GetMonData(gPlayerParty[monInfo.monId], MON_DATA_RIBBON_COUNT);
       else
           return GetBoxMonDataAt(monInfo.boxId, monInfo.monId, MON_DATA_RIBBON_COUNT);
@@ -295,7 +274,7 @@ export function GetMonRibbons(list: any): any {
       let mons: any = list.monList;
       let monInfo: any =mons.monData[mons.currIndex];
 
-      if (monInfo.boxId == TOTAL_BOXES_COUNT)
+      if (monInfo.boxId == (14))
           ribbonFlags = GetMonData(gPlayerParty[monInfo.monId], MON_DATA_RIBBONS);
       else
           ribbonFlags = GetBoxMonDataAt(monInfo.boxId, monInfo.monId, MON_DATA_RIBBONS);
@@ -343,7 +322,7 @@ export function GetSelectedPosition(): any {
 export function GetRibbonId(): any {
   let list: any = GetSubstructPtr(POKENAV_SUBSTRUCT_RIBBONS_SUMMARY_LIST);
       let ribbonPos: any = list.selectedPos;
-      if (ribbonPos < FIRST_GIFT_RIBBON)
+      if (ribbonPos < ((25)))
           return list.ribbonIds[ribbonPos];
       else
           return list.giftRibbonIds[ribbonPos - (((9) * GIFT_RIBBON_ROW))];
@@ -410,7 +389,7 @@ export function LoopedTask_OpenRibbonsSummaryMenu(state: any): any {
           CopyToBgTilemapBuffer(2, gPokenavRibbonsSummaryBg_Tilemap, 0, 0);
           CopyPaletteIntoBufferUnfaded(gPokenavRibbonsSummaryBg_Pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
           CopyBgTilemapBufferToVram(2);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (!FreeTempTileDataBuffersIfPossible())
           {
@@ -421,48 +400,48 @@ export function LoopedTask_OpenRibbonsSummaryMenu(state: any): any {
               CopyPaletteIntoBufferUnfaded(sRibbonIcons1_Pal, BG_PLTT_ID(2), 5 * PLTT_SIZE_4BPP);
               CopyPaletteIntoBufferUnfaded(sMonInfo_Pal, BG_PLTT_ID(10), 0);
               CopyBgTilemapBufferToVram(1);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 2:
           if (!FreeTempTileDataBuffersIfPossible())
           {
               AddRibbonCountWindow(menu);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 3:
           if (!FreeTempTileDataBuffersIfPossible())
           {
               AddRibbonSummaryMonNameWindow(menu);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 4:
           if (!FreeTempTileDataBuffersIfPossible())
           {
               AddRibbonListIndexWindow(menu);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 5:
           if (!IsDma3ManagerBusyWithBgCopy())
           {
               CopyBgTilemapBufferToVram(2);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 6:
           if (!IsDma3ManagerBusyWithBgCopy())
           {
               ResetSpritesAndDrawMonFrontPic(menu);
-              return LT_INC_AND_CONTINUE;
+              return (1);
           }
-          return LT_PAUSE;
+          return (2);
       case 7:
           DrawAllRibbonsSmall(menu);
           PrintHelpBarText(HELPBAR_RIBBONS_LIST);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 8:
           if (!IsDma3ManagerBusyWithBgCopy())
           {
@@ -475,14 +454,14 @@ export function LoopedTask_OpenRibbonsSummaryMenu(state: any): any {
               ShowBg(2);
               HideBg(3);
               PokenavFadeScreen(POKENAV_FADE_FROM_BLACK);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 9:
           if (IsPaletteFadeActive())
-              return LT_PAUSE;
+              return (2);
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_ExitRibbonsSummaryMenu(s32 state) */
@@ -490,15 +469,15 @@ export function LoopedTask_ExitRibbonsSummaryMenu(state: any): any {
   switch (state)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           PokenavFadeScreen(POKENAV_FADE_TO_BLACK);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (IsPaletteFadeActive())
-              return LT_PAUSE;
-          return LT_FINISH;
+              return (2);
+          return (4);
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_SwitchRibbonsSummaryMon(s32 state) */
@@ -507,37 +486,37 @@ export function LoopedTask_SwitchRibbonsSummaryMon(state: any): any {
       switch (state)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           SlideMonSpriteOff(menu);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (!IsMonSpriteAnimating(menu))
           {
               PrintRibbbonsSummaryMonInfo(menu);
-              return LT_INC_AND_CONTINUE;
+              return (1);
           }
-          return LT_PAUSE;
+          return (2);
       case 2:
           DrawAllRibbonsSmall(menu);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 3:
           PrintRibbonsMonListIndex(menu);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 4:
           PrintCurrentMonRibbonCount(menu);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 5:
           if (!IsDma3ManagerBusyWithBgCopy())
           {
               SlideMonSpriteOn(menu);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 6:
           if (IsMonSpriteAnimating(menu))
-              return LT_PAUSE;
+              return (2);
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_ExpandSelectedRibbon(s32 state) */
@@ -546,22 +525,22 @@ export function LoopedTask_ExpandSelectedRibbon(state: any): any {
       switch (state)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           UpdateAndZoomInSelectedRibbon(menu);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (!IsRibbonAnimating(menu))
           {
               PrintRibbonNameAndDescription(menu);
               PrintHelpBarText(HELPBAR_RIBBONS_CHECK);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 2:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
+              return (2);
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_MoveRibbonsCursorExpanded(s32 state) */
@@ -570,28 +549,28 @@ export function LoopedTask_MoveRibbonsCursorExpanded(state: any): any {
       switch (state)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           ZoomOutSelectedRibbon(menu);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (!IsRibbonAnimating(menu))
           {
               UpdateAndZoomInSelectedRibbon(menu);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 2:
           if (!IsRibbonAnimating(menu))
           {
               PrintRibbonNameAndDescription(menu);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 3:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
+              return (2);
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_ShrinkExpandedRibbon(s32 state) */
@@ -600,22 +579,22 @@ export function LoopedTask_ShrinkExpandedRibbon(state: any): any {
       switch (state)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           ZoomOutSelectedRibbon(menu);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (!IsRibbonAnimating(menu))
           {
               PrintCurrentMonRibbonCount(menu);
               PrintHelpBarText(HELPBAR_RIBBONS_LIST);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 2:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
+              return (2);
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static void AddRibbonCountWindow(struct Pokenav_RibbonsSummaryMenu *menu) */
@@ -627,14 +606,14 @@ export function AddRibbonCountWindow(menu: any): any {
 
 /** static void PrintCurrentMonRibbonCount(struct Pokenav_RibbonsSummaryMenu *menu) */
 export function PrintCurrentMonRibbonCount(menu: any): any {
-  const color: any = [TEXT_COLOR_RED, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY];
+  const color: any = [(0x4), (0x2), (0x3)];
 
       ConvertIntToDecimalStringN(gStringVar1, GetCurrMonRibbonCount(), STR_CONV_MODE_LEFT_ALIGN, 2);
       DynamicPlaceholderTextUtil_Reset();
       DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
       DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gText_RibbonsF700);
       FillWindowPixelBuffer(menu.ribbonCountWindowId, PIXEL_FILL(4));
-      AddTextPrinterParameterized3(menu.ribbonCountWindowId, FONT_NORMAL, 0, 1, color, TEXT_SKIP_DRAW, gStringVar4);
+      AddTextPrinterParameterized3(menu.ribbonCountWindowId, FONT_NORMAL, 0, 1, color, (0xFF), gStringVar4);
       CopyWindowToVram(menu.ribbonCountWindowId, COPYWIN_GFX);
 }
 
@@ -642,21 +621,21 @@ export function PrintCurrentMonRibbonCount(menu: any): any {
 export function PrintRibbonNameAndDescription(menu: any): any {
   let i: any = null;
       let ribbonId: any = GetRibbonId();
-      const color: any = [TEXT_COLOR_RED, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY];
+      const color: any = [(0x4), (0x2), (0x3)];
 
       FillWindowPixelBuffer(menu.ribbonCountWindowId, PIXEL_FILL(4));
-      if (ribbonId < FIRST_GIFT_RIBBON)
+      if (ribbonId < ((25)))
       {
            
           for (i = 0; i < 2; i++)
-              AddTextPrinterParameterized3(menu.ribbonCountWindowId, FONT_NORMAL, 0, (i * 16) + 1, color, TEXT_SKIP_DRAW, gRibbonDescriptionPointers[ribbonId][i]);
+              AddTextPrinterParameterized3(menu.ribbonCountWindowId, FONT_NORMAL, 0, (i * 16) + 1, color, (0xFF), gRibbonDescriptionPointers[ribbonId][i]);
       }
       else
       {
            
            
            
-          ribbonId = gSaveBlock1Ptr.giftRibbons[ribbonId - FIRST_GIFT_RIBBON];
+          ribbonId = gSaveBlock1Ptr.giftRibbons[ribbonId - ((25))];
 
            
           if (ribbonId == 0)
@@ -665,7 +644,7 @@ export function PrintRibbonNameAndDescription(menu: any): any {
            
           ribbonId--;
           for (i = 0; i < 2; i++)
-              AddTextPrinterParameterized3(menu.ribbonCountWindowId, FONT_NORMAL, 0, (i * 16) + 1, color, TEXT_SKIP_DRAW, gGiftRibbonDescriptionPointers[ribbonId][i]);
+              AddTextPrinterParameterized3(menu.ribbonCountWindowId, FONT_NORMAL, 0, (i * 16) + 1, color, (0xFF), gGiftRibbonDescriptionPointers[ribbonId][i]);
       }
 
       CopyWindowToVram(menu.ribbonCountWindowId, COPYWIN_GFX);
@@ -687,13 +666,13 @@ export function PrintRibbbonsSummaryMonInfo(menu: any): any {
 
       FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
       GetMonNicknameLevelGender(gStringVar3,level,gender);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar3, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar3, 0, 1, (0xFF), NULL);
       switch (gender)
       {
-      case MON_MALE:
+      case (0x00):
           genderTxt = sMaleIconString;
           break;
-      case MON_FEMALE:
+      case (0xFE):
           genderTxt = sFemaleIconString;
           break;
       default:
@@ -702,11 +681,11 @@ export function PrintRibbbonsSummaryMonInfo(menu: any): any {
       }
 
       txtPtr = StringCopy(gStringVar1, genderTxt);
-      txtPtr =  CHAR_SLASH;
-      txtPtr =  CHAR_EXTRA_SYMBOL;
-      txtPtr =  CHAR_LV_2;
+      txtPtr =  (0xBA);
+      txtPtr =  (0xF9);
+      txtPtr =  (0x05);
       ConvertIntToDecimalStringN(txtPtr, level, STR_CONV_MODE_LEFT_ALIGN, 3);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar1, 60, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar1, 60, 1, (0xFF), NULL);
       CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
@@ -726,10 +705,10 @@ export function PrintRibbonsMonListIndex(menu: any): any {
       let count: any = GetRibbonsSummaryMonListCount();
 
       txtPtr = ConvertIntToDecimalStringN(gStringVar1, id, STR_CONV_MODE_RIGHT_ALIGN, 3);
-      txtPtr =  CHAR_SLASH;
+      txtPtr =  (0xBA);
       ConvertIntToDecimalStringN(txtPtr, count, STR_CONV_MODE_RIGHT_ALIGN, 3);
       x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar1, 56);
-      AddTextPrinterParameterized(menu.listIdxWindowId, FONT_NORMAL, gStringVar1, x, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(menu.listIdxWindowId, FONT_NORMAL, gStringVar1, x, 1, (0xFF), NULL);
       CopyWindowToVram(menu.listIdxWindowId, COPYWIN_GFX);
 }
 
@@ -755,7 +734,7 @@ export function DrawRibbonsMonFrontPic(x: any, y: any): any {
       let personality, otId;
 
       GetMonSpeciesPersonalityOtId(species,personality,otId);
-      spriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, (40), (104), 15, TAG_NONE);
+      spriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, (40), (104), 15, (0xFFFF));
       gSprites[spriteId].oam.priority = 0;
       return spriteId;
 }

@@ -17,9 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sGlobalScriptContext: any = null;
 let sGlobalScriptContextStatus: any = null;
-let sImmediateScriptContext: any = null;
 let sLockFieldControls: any = null;
 /** void InitScriptContext(struct ScriptContext *ctx, void *cmdTable, void *cmdTableEnd) */
 export function InitScriptContext(ctx: any, cmdTable: any, cmdTableEnd: any): any {
@@ -244,32 +242,32 @@ export function MapHeaderRunScriptType(tag: any): any {
 
 /** void RunOnLoadMapScript(void) */
 export function RunOnLoadMapScript(): any {
-  MapHeaderRunScriptType(MAP_SCRIPT_ON_LOAD);
+  MapHeaderRunScriptType((1));
 }
 
 /** void RunOnTransitionMapScript(void) */
 export function RunOnTransitionMapScript(): any {
-  MapHeaderRunScriptType(MAP_SCRIPT_ON_TRANSITION);
+  MapHeaderRunScriptType((3));
 }
 
 /** void RunOnResumeMapScript(void) */
 export function RunOnResumeMapScript(): any {
-  MapHeaderRunScriptType(MAP_SCRIPT_ON_RESUME);
+  MapHeaderRunScriptType((5));
 }
 
 /** void RunOnReturnToFieldMapScript(void) */
 export function RunOnReturnToFieldMapScript(): any {
-  MapHeaderRunScriptType(MAP_SCRIPT_ON_RETURN_TO_FIELD);
+  MapHeaderRunScriptType((7));
 }
 
 /** void RunOnDiveWarpMapScript(void) */
 export function RunOnDiveWarpMapScript(): any {
-  MapHeaderRunScriptType(MAP_SCRIPT_ON_DIVE_WARP);
+  MapHeaderRunScriptType((6));
 }
 
 /** bool8 TryRunOnFrameMapScript(void) */
 export function TryRunOnFrameMapScript(): any {
-  let ptr: any = MapHeaderCheckScriptTable(MAP_SCRIPT_ON_FRAME_TABLE);
+  let ptr: any = MapHeaderCheckScriptTable((2));
 
       if (!ptr)
           return FALSE;
@@ -280,7 +278,7 @@ export function TryRunOnFrameMapScript(): any {
 
 /** void TryRunOnWarpIntoMapScript(void) */
 export function TryRunOnWarpIntoMapScript(): any {
-  let ptr: any = MapHeaderCheckScriptTable(MAP_SCRIPT_ON_WARP_INTO_MAP_TABLE);
+  let ptr: any = MapHeaderCheckScriptTable((4));
       if (ptr)
           RunScriptImmediately(ptr);
 }

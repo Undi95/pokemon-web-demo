@@ -15,9 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sMysteryEventScriptContext: any = null;
 /** static bool32 CheckCompatibility(u16 unk0, u32 unk1, u16 unk2, u32 version) */
 export function CheckCompatibility(unk0: any, unk1: any, unk2: any, version: any): any {
   if (!(unk0 & 0x1))
@@ -218,9 +215,9 @@ export function MEScrCmd_setenigmaberry(ctx: any): any {
       let message: any = null;
       let haveBerry: any = IsEnigmaBerryValid();
       let berry: any = (ScriptReadWord(ctx) - ctx.mOffset + ctx.mScriptBase);
-      StringCopyN(gStringVar1, gSaveBlock1Ptr.enigmaBerry.berry.name, BERRY_NAME_LENGTH + 1);
+      StringCopyN(gStringVar1, gSaveBlock1Ptr.enigmaBerry.berry.name, (6) + 1);
       SetEnigmaBerry(berry);
-      StringCopyN(gStringVar2, gSaveBlock1Ptr.enigmaBerry.berry.name, BERRY_NAME_LENGTH + 1);
+      StringCopyN(gStringVar2, gSaveBlock1Ptr.enigmaBerry.berry.name, (6) + 1);
 
       if (!haveBerry)
       {
@@ -243,7 +240,7 @@ export function MEScrCmd_setenigmaberry(ctx: any): any {
       ctx.mStatus = MEVENT_STATUS_SUCCESS;
 
       if (IsEnigmaBerryValid() == TRUE)
-          VarSet(VAR_ENIGMA_BERRY_AVAILABLE, 1);
+          VarSet((0x402D), 1);
       else
           ctx.mStatus = MEVENT_STATUS_LOAD_ERROR;
 
@@ -309,31 +306,31 @@ export function MEScrCmd_givepokemon(ctx: any): any {
       pokemon = pokemonPtr;
       species = GetMonData(pokemon, MON_DATA_SPECIES_OR_EGG);
 
-      if (species == SPECIES_EGG)
-          StringCopyN(gStringVar1, gText_EggNickname, POKEMON_NAME_LENGTH + 1);
+      if (species == (412))
+          StringCopyN(gStringVar1, gText_EggNickname, (10) + 1);
       else
-          StringCopyN(gStringVar1, gText_Pokemon, POKEMON_NAME_LENGTH + 1);
+          StringCopyN(gStringVar1, gText_Pokemon, (10) + 1);
 
-      if (gPlayerPartyCount == PARTY_SIZE)
+      if (gPlayerPartyCount == (6))
       {
           StringExpandPlaceholders(gStringVar4, gText_MysteryEventFullParty);
           ctx.mStatus = MEVENT_STATUS_FAILURE;
       }
       else
       {
-          memcpy(gPlayerParty[PARTY_SIZE - 1], pokemonPtr, 0);
+          memcpy(gPlayerParty[(6) - 1], pokemonPtr, 0);
           memcpy(mail, mailPtr, 0);
 
-          if (species != SPECIES_EGG)
+          if (species != (412))
           {
               let pokedexNum: any = SpeciesToNationalPokedexNum(species);
               GetSetPokedexFlag(pokedexNum, FLAG_SET_SEEN);
               GetSetPokedexFlag(pokedexNum, FLAG_SET_CAUGHT);
           }
 
-          heldItem = GetMonData(gPlayerParty[PARTY_SIZE - 1], MON_DATA_HELD_ITEM);
+          heldItem = GetMonData(gPlayerParty[(6) - 1], MON_DATA_HELD_ITEM);
           if (ItemIsMail(heldItem))
-              GiveMailToMon(gPlayerParty[PARTY_SIZE - 1],mail);
+              GiveMailToMon(gPlayerParty[(6) - 1],mail);
           CompactPartySlots();
           CalculatePlayerPartyCount();
           StringExpandPlaceholders(gStringVar4, gText_MysteryEventSentOver);

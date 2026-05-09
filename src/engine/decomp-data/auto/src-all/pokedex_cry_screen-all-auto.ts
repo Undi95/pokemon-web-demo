@@ -18,16 +18,8 @@
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sCryMeterNeedle: any = null;
-let sCryMeterNeedleSpritePalettes: any = null;
-let sCryMeterNeedleSpriteSheets: any = null;
-let sCryMeterNeedleSpriteTemplate: any = null;
-let sCryScreenBg_Gfx: any = null;
-let sCryScreenBg_Pal: any = null;
 let sCryWaveformWindowTiledata: any = null;
 let sDexCryScreen: any = null;
-let sWaveformColor: any = null;
-let sWaveformOffsets: any = null;
-let sWaveformTileDataNybbleMasks: any = null;
 /** bool8 LoadCryWaveformWindow(struct CryScreenWindow *window, u8 windowId) */
 export function LoadCryWaveformWindow(window: any, windowId: any): any {
   let i: any = null;
@@ -150,7 +142,7 @@ export function CryScreenPlayButton(species: any): any {
 
 /** static void PlayCryScreenCry(u16 species) */
 export function PlayCryScreenCry(species: any): any {
-  PlayCry_NormalNoDucking(species, 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL);
+  PlayCry_NormalNoDucking(species, 0, (125), (10));
       sDexCryScreen.cryState = 1;
 }
 

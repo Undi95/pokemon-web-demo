@@ -18,43 +18,43 @@
 /** static inline char mini_pchar_decode(char encoded) */
 export function mini_pchar_decode(encoded: any): any {
   let ret: any = '?';
-      if (encoded >= CHAR_a && encoded <= CHAR_z)
-          ret = encoded-(CHAR_a-'a');  
-      else if (encoded >= CHAR_A && encoded <= CHAR_Z)
-          ret = encoded-(CHAR_A-'A');  
-      else if (encoded >= CHAR_0 && encoded <= CHAR_9)
-          ret = encoded-(CHAR_0-'0');  
-      else if (encoded == CHAR_SPACE)
+      if (encoded >= (0xD5) && encoded <= (0xEE))
+          ret = encoded-((0xD5)-'a');  
+      else if (encoded >= (0xBB) && encoded <= (0xD4))
+          ret = encoded-((0xBB)-'A');  
+      else if (encoded >= (0xA1) && encoded <= (0xAA))
+          ret = encoded-((0xA1)-'0');  
+      else if (encoded == (0x00))
           ret = ' ';  
-      else if (encoded == CHAR_EXCL_MARK)
+      else if (encoded == (0xAB))
           ret = '!';  
-      else if (encoded == CHAR_QUESTION_MARK)
+      else if (encoded == (0xAC))
           ret = '?';  
-      else if (encoded == CHAR_PERIOD)
+      else if (encoded == (0xAD))
           ret = '.';  
-      else if (encoded == CHAR_DBL_QUOTE_LEFT || encoded == CHAR_DBL_QUOTE_RIGHT)
+      else if (encoded == (0xB1) || encoded == (0xB2))
           ret = '"';  
-      else if (encoded == CHAR_SGL_QUOTE_LEFT || encoded == CHAR_SGL_QUOTE_RIGHT)
+      else if (encoded == (0xB3) || encoded == (0xB4))
           ret = '\'';  
-      else if (encoded == CHAR_CURRENCY)
+      else if (encoded == (0xB7))
           ret = '$';  
-      else if (encoded == CHAR_COMMA)
+      else if (encoded == (0xB8))
           ret = ',';  
-      else if (encoded == CHAR_MULT_SIGN)
+      else if (encoded == (0xB9))
           ret = '#';  
-      else if (encoded == CHAR_SLASH)
+      else if (encoded == (0xBA))
           ret = '/';  
-      else if (encoded == CHAR_LESS_THAN)
+      else if (encoded == (0x85))
           ret = '<';  
-      else if (encoded == CHAR_GREATER_THAN)
+      else if (encoded == (0x86))
           ret = '>';  
-      else if (encoded == CHAR_PERCENT)
+      else if (encoded == (0x5B))
           ret = '%';  
-      else if (encoded == CHAR_LEFT_PAREN)
+      else if (encoded == (0x5C))
           ret = '(';  
-      else if (encoded == CHAR_RIGHT_PAREN)
+      else if (encoded == (0x5D))
           ret = ')';  
-      else if (encoded == CHAR_HYPHEN)
+      else if (encoded == (0xAE))
           ret = '-';  
       return ret;
 }
@@ -103,22 +103,22 @@ export function _putsEncoded(s: any, len: any, buf: any): any {
           {
               break;
           }
-          if (s[i] == CHAR_NEWLINE)
+          if (s[i] == (0xFE))
           {
               b.pbuffer =  '\\';
               b.pbuffer =  'n';
           }
-          else if (s[i] == CHAR_PROMPT_SCROLL)
+          else if (s[i] == (0xFA))
           {
               b.pbuffer =  '\\';
               b.pbuffer =  'l';
           }
-          else if (s[i] == CHAR_PROMPT_CLEAR)
+          else if (s[i] == (0xFB))
           {
               b.pbuffer =  '\\';
               b.pbuffer =  'p';
           }
-          else if (s[i] == CHAR_ELLIPSIS)
+          else if (s[i] == (0xB0))
           {
               b.pbuffer =  '.';
               b.pbuffer =  '.';

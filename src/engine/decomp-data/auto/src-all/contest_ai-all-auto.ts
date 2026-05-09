@@ -17,13 +17,13 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sContestAICmdTable: any = null;
+let gAIScriptPtr: any = null;
 /** void ContestAI_ResetAI(u8 contestantAI) */
 export function ContestAI_ResetAI(contestantAI: any): any {
   let i: any = null;
       memset(eContestAI, 0, 0);
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           eContestAI.moveScores[i] = 100;
 
       eContestAI.contestantId = contestantAI;
@@ -49,15 +49,15 @@ export function ContestAI_GetActionToUse(): any {
       {
            
            
-          let moveIndex: any = MOD(Random(), MAX_MON_MOVES);
+          let moveIndex: any = MOD(Random(), (4));
           let score: any = eContestAI.moveScores[moveIndex];
           let i: any = null;
-          for (i = 0; i < MAX_MON_MOVES; i++)
+          for (i = 0; i < (4); i++)
           {
               if (score < eContestAI.moveScores[i])
                   break;
           }
-          if (i == MAX_MON_MOVES)
+          if (i == (4))
               return moveIndex;
       }
 }
@@ -73,14 +73,14 @@ export function ContestAI_DoAIProcessing(): any {
               case CONTESTAI_SETTING_UP:
                   gAIScriptPtr = gContestAI_ScriptsTable[eContestAI.currentAIFlag];
 
-                  if (gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex] == MOVE_NONE)
-                      eContestAI.nextMove = MOVE_NONE;  
+                  if (gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex] == (0))
+                      eContestAI.nextMove = (0);  
                   else
                       eContestAI.nextMove = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];
                   eContestAI.aiState++;
                   break;
               case CONTESTAI_PROCESSING:
-                  if (eContestAI.nextMove != MOVE_NONE)
+                  if (eContestAI.nextMove != (0))
                   {
                       sContestAICmdTable[gAIScriptPtr]();  
                   }
@@ -92,7 +92,7 @@ export function ContestAI_DoAIProcessing(): any {
                   if (eContestAI.aiAction & ((1 << 0)))
                   {
                       eContestAI.nextMoveIndex++;
-                      if (eContestAI.nextMoveIndex < MAX_MON_MOVES)
+                      if (eContestAI.nextMoveIndex < (4))
                           eContestAI.aiState = 0;
                       else
                            
@@ -108,7 +108,7 @@ export function ContestAI_DoAIProcessing(): any {
 export function GetContestantIdByTurn(turn: any): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           if (eContestAppealResults.turnOrder[i] == turn)
               break;
 
@@ -539,14 +539,14 @@ export function ContestAICmd_check_most_appealing_move(): any {
       let move: any = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];
       let appeal: any = gContestEffects[gContestMoves[move].effect].appeal;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           let newMove: any = gContestMons[eContestAI.contestantId].moves[i];
           if (newMove != 0 && appeal < gContestEffects[gContestMoves[newMove].effect].appeal)
               break;
       }
 
-      if (i == MAX_MON_MOVES)
+      if (i == (4))
           eContestAI.scriptResult = TRUE;
       else
           eContestAI.scriptResult = FALSE;
@@ -570,14 +570,14 @@ export function ContestAICmd_check_most_jamming_move(): any {
       let move: any = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];
       let jam: any = gContestEffects[gContestMoves[move].effect].jam;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           let newMove: any = gContestMons[eContestAI.contestantId].moves[i];
-          if (newMove != MOVE_NONE && jam < gContestEffects[gContestMoves[newMove].effect].jam)
+          if (newMove != (0) && jam < gContestEffects[gContestMoves[newMove].effect].jam)
               break;
       }
 
-      if (i == MAX_MON_MOVES)
+      if (i == (4))
           eContestAI.scriptResult = TRUE;
       else
           eContestAI.scriptResult = FALSE;
@@ -751,7 +751,7 @@ export function ContestAICmd_check_combo_starter(): any {
       let i: any = null;
       let move: any = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gContestMons[eContestAI.contestantId].moves[i])
           {
@@ -797,7 +797,7 @@ export function ContestAICmd_check_combo_finisher(): any {
       let i: any = null;
       let move: any = gContestMons[eContestAI.contestantId].moves[eContestAI.nextMoveIndex];
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gContestMons[eContestAI.contestantId].moves[i])
           {
@@ -1407,7 +1407,7 @@ export function ContestAICmd_check_user_has_exciting_move(): any {
   let result: any = 0;
       let i: any = null;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gContestMons[eContestAI.contestantId].moves[i])
           {
@@ -1449,7 +1449,7 @@ export function ContestAICmd_check_user_has_move(): any {
       let i: any = null;
       let targetMove: any = T1_READ_16(gAIScriptPtr + 1);
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           let move: any = gContestMoves[gContestMons[eContestAI.contestantId].moves[i]].effect;
 

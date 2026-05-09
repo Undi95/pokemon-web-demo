@@ -17,30 +17,11 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAshSpriteSheet: any = null;
-let sAshSpriteTemplate: any = null;
-let sBubbleSpriteTemplate: any = null;
-let sBubbleStartCoords: any = null;
-let sBubbleStartDelays: any = null;
-let sCloudSpriteMapCoords: any = null;
-let sCloudSpriteSheet: any = null;
-let sCloudSpriteTemplate: any = null;
 let sCurrentAbnormalWeather: any = null;
-let sFogDiagonalSpriteSheet: any = null;
-let sFogDiagonalSpriteTemplate: any = null;
-let sFogHorizontalSpriteTemplate: any = null;
-let sRainSpriteCoords: any = null;
-let sRainSpriteFallingDurations: any = null;
-let sRainSpriteMovement: any = null;
-let sRainSpriteSheet: any = null;
-let sRainSpriteTemplate: any = null;
-let sSandstormSpriteSheet: any = null;
-let sSandstormSpriteTemplate: any = null;
-let sSnowflakeSpriteTemplate: any = null;
-let sSwirlEntranceDelays: any = null;
-let sWeatherBubbleSpriteSheet: any = null;
-let sWeatherCycleRoute119: any = null;
-let sWeatherCycleRoute123: any = null;
+let tDelay: any = null;
+let tState: any = null;
+let tWeatherA: any = null;
+let tWeatherB: any = null;
 /** void Clouds_InitVars(void) */
 export function Clouds_InitVars(): any {
   gWeatherPtr.targetColorMapIndex = 0;
@@ -126,14 +107,14 @@ export function CreateCloudSprites(): any {
 
       LoadSpriteSheet(sCloudSpriteSheet);
       LoadCustomWeatherSpritePalette(gCloudsWeatherPalette);
-      for (i = 0; i < NUM_CLOUD_SPRITES; i++)
+      for (i = 0; i < (3); i++)
       {
           spriteId = CreateSprite(sCloudSpriteTemplate, 0, 0, 0xFF);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               gWeatherPtr.sprites.s1.cloudSprites[i] =gSprites[spriteId];
               sprite = gWeatherPtr.sprites.s1.cloudSprites[i];
-              SetSpritePosToMapCoords(sCloudSpriteMapCoords[i].x + MAP_OFFSET, sCloudSpriteMapCoords[i].y + MAP_OFFSET,sprite.x,sprite.y);
+              SetSpritePosToMapCoords(sCloudSpriteMapCoords[i].x + (7), sCloudSpriteMapCoords[i].y + (7),sprite.x,sprite.y);
               sprite.coordOffsetEnabled = TRUE;
           }
           else
@@ -152,7 +133,7 @@ export function DestroyCloudSprites(): any {
       if (!gWeatherPtr.cloudSpritesCreated)
           return;
 
-      for (i = 0; i < NUM_CLOUD_SPRITES; i++)
+      for (i = 0; i < (3); i++)
       {
           if (gWeatherPtr.sprites.s1.cloudSprites[i] != NULL)
               DestroySprite(gWeatherPtr.sprites.s1.cloudSprites[i]);
@@ -189,7 +170,7 @@ export function Drought_Main(): any {
   switch (gWeatherPtr.initStep)
       {
       case 0:
-          if (gWeatherPtr.palProcessingState != WEATHER_PAL_STATE_CHANGING_WEATHER)
+          if (gWeatherPtr.palProcessingState != (0))
               gWeatherPtr.initStep++;
           break;
       case 1:
@@ -288,7 +269,7 @@ export function Rain_InitVars(): any {
       gWeatherPtr.targetRainSpriteCount = 10;
       gWeatherPtr.targetColorMapIndex = 3;
       gWeatherPtr.colorMapStepDelay = 20;
-      SetRainStrengthFromSoundEffect(SE_RAIN);
+      SetRainStrengthFromSoundEffect((85));
 }
 
 /** void Rain_InitAll(void) */
@@ -325,9 +306,9 @@ export function Rain_Finish(): any {
   switch (gWeatherPtr.finishStep)
       {
       case 0:
-          if (gWeatherPtr.nextWeather == WEATHER_RAIN
-           || gWeatherPtr.nextWeather == WEATHER_RAIN_THUNDERSTORM
-           || gWeatherPtr.nextWeather == WEATHER_DOWNPOUR)
+          if (gWeatherPtr.nextWeather == (3)
+           || gWeatherPtr.nextWeather == (5)
+           || gWeatherPtr.nextWeather == (13))
           {
               gWeatherPtr.finishStep = 0xFF;
               return FALSE;
@@ -469,14 +450,14 @@ export function CreateRainSprite(): any {
   let spriteIndex: any = null;
       let spriteId: any = null;
 
-      if (gWeatherPtr.rainSpriteCount == MAX_RAIN_SPRITES)
+      if (gWeatherPtr.rainSpriteCount == (24))
           return FALSE;
 
       spriteIndex = gWeatherPtr.rainSpriteCount;
       spriteId = CreateSpriteAtEnd(sRainSpriteTemplate,
         sRainSpriteCoords[spriteIndex].x, sRainSpriteCoords[spriteIndex].y, 78);
 
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].tActive = FALSE;
           gSprites[spriteId].tRandom = spriteIndex * 145;
@@ -493,10 +474,10 @@ export function CreateRainSprite(): any {
           gWeatherPtr.sprites.s1.rainSprites[spriteIndex] = NULL;
       }
 
-      if (++gWeatherPtr.rainSpriteCount == MAX_RAIN_SPRITES)
+      if (++gWeatherPtr.rainSpriteCount == (24))
       {
           let i: any = null;
-          for (i = 0; i < MAX_RAIN_SPRITES; i++)
+          for (i = 0; i < (24); i++)
           {
               if (gWeatherPtr.sprites.s1.rainSprites[i])
               {
@@ -554,7 +535,7 @@ export function Snow_InitVars(): any {
       gWeatherPtr.weatherGfxLoaded = FALSE;
       gWeatherPtr.targetColorMapIndex = 3;
       gWeatherPtr.colorMapStepDelay = 20;
-      gWeatherPtr.targetSnowflakeSpriteCount = NUM_SNOWFLAKE_SPRITES;
+      gWeatherPtr.targetSnowflakeSpriteCount = (16);
       gWeatherPtr.snowflakeVisibleCounter = 0;
 }
 
@@ -621,7 +602,7 @@ export function UpdateVisibleSnowflakeSprites(): any {
 /** static bool8 CreateSnowflakeSprite(void) */
 export function CreateSnowflakeSprite(): any {
   let spriteId: any = CreateSpriteAtEnd(sSnowflakeSpriteTemplate, 0, 0, 78);
-      if (spriteId == MAX_SPRITES)
+      if (spriteId == (64))
           return FALSE;
 
       gSprites[spriteId].tSnowflakeId = gWeatherPtr.snowflakeSpriteCount;
@@ -732,7 +713,7 @@ export function Thunderstorm_InitVars(): any {
       gWeatherPtr.colorMapStepDelay = 20;
       gWeatherPtr.weatherGfxLoaded = FALSE;   
       gWeatherPtr.thunderEnqueued = FALSE;
-      SetRainStrengthFromSoundEffect(SE_THUNDERSTORM);
+      SetRainStrengthFromSoundEffect((81));
 }
 
 /** void Thunderstorm_InitAll(void) */
@@ -753,7 +734,7 @@ export function Downpour_InitVars(): any {
       gWeatherPtr.targetColorMapIndex = 3;
       gWeatherPtr.colorMapStepDelay = 20;
       gWeatherPtr.weatherGfxLoaded = FALSE;   
-      SetRainStrengthFromSoundEffect(SE_DOWNPOUR);
+      SetRainStrengthFromSoundEffect((83));
 }
 
 /** void Downpour_InitAll(void) */
@@ -784,7 +765,7 @@ export function Thunderstorm_Main(): any {
           }
           break;
       case THUNDER_STATE_WAIT_CHANGE:
-          if (gWeatherPtr.palProcessingState != WEATHER_PAL_STATE_CHANGING_WEATHER)
+          if (gWeatherPtr.palProcessingState != (0))
               gWeatherPtr.initStep = THUNDER_STATE_INIT_CYCLE_1;
           break;
       case THUNDER_STATE_NEW_CYCLE:
@@ -867,7 +848,7 @@ export function Thunderstorm_Main(): any {
           }
           break;
       case THUNDER_STATE_END_BOLT_LONG:
-          if (gWeatherPtr.palProcessingState == WEATHER_PAL_STATE_IDLE)
+          if (gWeatherPtr.palProcessingState == (3))
           {
               gWeatherPtr.thunderAllowEnd = TRUE;
               gWeatherPtr.initStep = THUNDER_STATE_NEW_CYCLE;
@@ -888,9 +869,9 @@ export function Thunderstorm_Finish(): any {
           Thunderstorm_Main();
           if (gWeatherPtr.thunderAllowEnd)
           {
-              if (gWeatherPtr.nextWeather == WEATHER_RAIN
-               || gWeatherPtr.nextWeather == WEATHER_RAIN_THUNDERSTORM
-               || gWeatherPtr.nextWeather == WEATHER_DOWNPOUR)
+              if (gWeatherPtr.nextWeather == (3)
+               || gWeatherPtr.nextWeather == (5)
+               || gWeatherPtr.nextWeather == (13))
                   return FALSE;
 
               gWeatherPtr.targetRainSpriteCount = 0;
@@ -931,9 +912,9 @@ export function UpdateThunderSound(): any {
                   return;
 
               if (Random() & 1)
-                  PlaySE(SE_THUNDER);
+                  PlaySE((87));
               else
-                  PlaySE(SE_THUNDER2);
+                  PlaySE((88));
 
               gWeatherPtr.thunderEnqueued = FALSE;
           }
@@ -978,7 +959,7 @@ export function FogHorizontal_Main(): any {
       {
       case 0:
           CreateFogHorizontalSprites();
-          if (gWeatherPtr.currWeather == WEATHER_FOG_HORIZONTAL)
+          if (gWeatherPtr.currWeather == (6))
               Weather_SetTargetBlendCoeffs(12, 8, 3);
           else
               Weather_SetTargetBlendCoeffs(4, 16, 0);
@@ -1045,10 +1026,10 @@ export function CreateFogHorizontalSprites(): any {
           let fogHorizontalSpriteSheet: any = [ gWeatherFogHorizontalTiles, 0, GFXTAG_FOG_H,
           ];
           LoadSpriteSheet(fogHorizontalSpriteSheet);
-          for (i = 0; i < NUM_FOG_HORIZONTAL_SPRITES; i++)
+          for (i = 0; i < (20); i++)
           {
               spriteId = CreateSpriteAtEnd(sFogHorizontalSpriteTemplate, 0, 0, 0xFF);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   sprite =gSprites[spriteId];
                   sprite.tSpriteColumn = i % 5;
@@ -1072,7 +1053,7 @@ export function DestroyFogHorizontalSprites(): any {
 
       if (gWeatherPtr.fogHSpritesCreated)
       {
-          for (i = 0; i < NUM_FOG_HORIZONTAL_SPRITES; i++)
+          for (i = 0; i < (20); i++)
           {
               if (gWeatherPtr.sprites.s2.fogHSprites[i] != NULL)
                   DestroySprite(gWeatherPtr.sprites.s2.fogHSprites[i]);
@@ -1174,10 +1155,10 @@ export function CreateAshSprites(): any {
 
       if (!gWeatherPtr.ashSpritesCreated)
       {
-          for (i = 0; i < NUM_ASH_SPRITES; i++)
+          for (i = 0; i < (20); i++)
           {
               spriteId = CreateSpriteAtEnd(sAshSpriteTemplate, 0, 0, 0x4E);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   sprite =gSprites[spriteId];
                   sprite.tCounterY = 0;
@@ -1202,7 +1183,7 @@ export function DestroyAshSprites(): any {
 
       if (gWeatherPtr.ashSpritesCreated)
       {
-          for (i = 0; i < NUM_ASH_SPRITES; i++)
+          for (i = 0; i < (20); i++)
           {
               if (gWeatherPtr.sprites.s2.ashSprites[i] != NULL)
                   DestroySprite(gWeatherPtr.sprites.s2.ashSprites[i]);
@@ -1332,10 +1313,10 @@ export function CreateFogDiagonalSprites(): any {
       {
           fogDiagonalSpriteSheet = sFogDiagonalSpriteSheet;
           LoadSpriteSheet(fogDiagonalSpriteSheet);
-          for (i = 0; i < NUM_FOG_DIAGONAL_SPRITES; i++)
+          for (i = 0; i < (20); i++)
           {
               spriteId = CreateSpriteAtEnd(sFogDiagonalSpriteTemplate, 0, (i / 5) * 64, 0xFF);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   sprite =gSprites[spriteId];
                   sprite.tSpriteColumn = i % 5;
@@ -1358,7 +1339,7 @@ export function DestroyFogDiagonalSprites(): any {
 
       if (gWeatherPtr.fogDSpritesCreated)
       {
-          for (i = 0; i < NUM_FOG_DIAGONAL_SPRITES; i++)
+          for (i = 0; i < (20); i++)
           {
               if (gWeatherPtr.sprites.s2.fogDSprites[i])
                   DestroySprite(gWeatherPtr.sprites.s2.fogDSprites[i]);
@@ -1482,7 +1463,7 @@ export function DestroySandstormSprites(): any {
 
       if (gWeatherPtr.sandstormSpritesCreated)
       {
-          for (i = 0; i < NUM_SANDSTORM_SPRITES; i++)
+          for (i = 0; i < (20); i++)
           {
               if (gWeatherPtr.sprites.s2.sandstormSprites1[i])
                   DestroySprite(gWeatherPtr.sprites.s2.sandstormSprites1[i]);
@@ -1494,7 +1475,7 @@ export function DestroySandstormSprites(): any {
 
       if (gWeatherPtr.sandstormSwirlSpritesCreated)
       {
-          for (i = 0; i < NUM_SWIRL_SANDSTORM_SPRITES; i++)
+          for (i = 0; i < (5); i++)
           {
               if (gWeatherPtr.sprites.s2.sandstormSprites2[i] != NULL)
                   DestroySprite(gWeatherPtr.sprites.s2.sandstormSprites2[i]);
@@ -1513,10 +1494,10 @@ export function CreateSandstormSprites(): any {
       {
           LoadSpriteSheet(sSandstormSpriteSheet);
           LoadCustomWeatherSpritePalette(gSandstormWeatherPalette);
-          for (i = 0; i < NUM_SANDSTORM_SPRITES; i++)
+          for (i = 0; i < (20); i++)
           {
               spriteId = CreateSpriteAtEnd(sSandstormSpriteTemplate, 0, (i / 5) * 64, 1);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   gWeatherPtr.sprites.s2.sandstormSprites1[i] =gSprites[spriteId];
                   gWeatherPtr.sprites.s2.sandstormSprites1[i].tSpriteColumn = i % 5;
@@ -1539,10 +1520,10 @@ export function CreateSwirlSandstormSprites(): any {
 
       if (!gWeatherPtr.sandstormSwirlSpritesCreated)
       {
-          for (i = 0; i < NUM_SWIRL_SANDSTORM_SPRITES; i++)
+          for (i = 0; i < (5); i++)
           {
               spriteId = CreateSpriteAtEnd(sSandstormSpriteTemplate, i * 48 + 24, 208, 1);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   gWeatherPtr.sprites.s2.sandstormSprites2[i] =gSprites[spriteId];
                   gWeatherPtr.sprites.s2.sandstormSprites2[i].oam.size = ST_OAM_SIZE_2;
@@ -1672,7 +1653,7 @@ export function CreateBubbleSprite(coordsIndex: any): any {
   let x: any = sBubbleStartCoords[coordsIndex][0];
       let y: any = sBubbleStartCoords[coordsIndex][1] - gSpriteCoordOffsetY;
       let spriteId: any = CreateSpriteAtEnd(sBubbleSpriteTemplate, x, y, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].oam.priority = 1;
           gSprites[spriteId].coordOffsetEnabled = TRUE;
@@ -1689,7 +1670,7 @@ export function DestroyBubbleSprites(): any {
 
       if (gWeatherPtr.bubblesSpriteCount)
       {
-          for (i = 0; i < MAX_SPRITES; i++)
+          for (i = 0; i < (64); i++)
           {
               if (gSprites[i].template ==sBubbleSpriteTemplate)
                   DestroySprite(gSprites[i]);
@@ -1756,24 +1737,24 @@ export function CreateAbnormalWeatherTask(): any {
       let data: any = gTasks[taskId].data;
 
       tDelay = 600;
-      if (sCurrentAbnormalWeather == WEATHER_DOWNPOUR)
+      if (sCurrentAbnormalWeather == (13))
       {
            
-          tWeatherA = WEATHER_DROUGHT;
-          tWeatherB = WEATHER_DOWNPOUR;
+          tWeatherA = (12);
+          tWeatherB = (13);
       }
-      else if (sCurrentAbnormalWeather == WEATHER_DROUGHT)
+      else if (sCurrentAbnormalWeather == (12))
       {
            
-          tWeatherA = WEATHER_DOWNPOUR;
-          tWeatherB = WEATHER_DROUGHT;
+          tWeatherA = (13);
+          tWeatherB = (12);
       }
       else
       {
            
-          sCurrentAbnormalWeather = WEATHER_DOWNPOUR;
-          tWeatherA = WEATHER_DROUGHT;
-          tWeatherB = WEATHER_DOWNPOUR;
+          sCurrentAbnormalWeather = (13);
+          tWeatherA = (12);
+          tWeatherB = (13);
       }
 }
 
@@ -1812,7 +1793,7 @@ export function SetWeather_Unused(weather: any): any {
 export function DoCurrentWeather(): any {
   let weather: any = GetSavedWeather();
 
-      if (weather == WEATHER_ABNORMAL)
+      if (weather == (15))
       {
           if (!FuncIsActiveTask(Task_DoAbnormalWeather))
               CreateAbnormalWeatherTask();
@@ -1822,7 +1803,7 @@ export function DoCurrentWeather(): any {
       {
           if (FuncIsActiveTask(Task_DoAbnormalWeather))
               DestroyTask(FindTaskIdByFunc(Task_DoAbnormalWeather));
-          sCurrentAbnormalWeather = WEATHER_DOWNPOUR;
+          sCurrentAbnormalWeather = (13);
       }
       SetNextWeather(weather);
 }
@@ -1831,7 +1812,7 @@ export function DoCurrentWeather(): any {
 export function ResumePausedWeather(): any {
   let weather: any = GetSavedWeather();
 
-      if (weather == WEATHER_ABNORMAL)
+      if (weather == (15))
       {
           if (!FuncIsActiveTask(Task_DoAbnormalWeather))
               CreateAbnormalWeatherTask();
@@ -1841,7 +1822,7 @@ export function ResumePausedWeather(): any {
       {
           if (FuncIsActiveTask(Task_DoAbnormalWeather))
               DestroyTask(FindTaskIdByFunc(Task_DoAbnormalWeather));
-          sCurrentAbnormalWeather = WEATHER_DOWNPOUR;
+          sCurrentAbnormalWeather = (13);
       }
       SetCurrentAndNextWeather(weather);
 }
@@ -1850,25 +1831,25 @@ export function ResumePausedWeather(): any {
 export function TranslateWeatherNum(weather: any): any {
   switch (weather)
       {
-      case WEATHER_NONE:               return WEATHER_NONE;
-      case WEATHER_SUNNY_CLOUDS:       return WEATHER_SUNNY_CLOUDS;
-      case WEATHER_SUNNY:              return WEATHER_SUNNY;
-      case WEATHER_RAIN:               return WEATHER_RAIN;
-      case WEATHER_SNOW:               return WEATHER_SNOW;
-      case WEATHER_RAIN_THUNDERSTORM:  return WEATHER_RAIN_THUNDERSTORM;
-      case WEATHER_FOG_HORIZONTAL:     return WEATHER_FOG_HORIZONTAL;
-      case WEATHER_VOLCANIC_ASH:       return WEATHER_VOLCANIC_ASH;
-      case WEATHER_SANDSTORM:          return WEATHER_SANDSTORM;
-      case WEATHER_FOG_DIAGONAL:       return WEATHER_FOG_DIAGONAL;
-      case WEATHER_UNDERWATER:         return WEATHER_UNDERWATER;
-      case WEATHER_SHADE:              return WEATHER_SHADE;
-      case WEATHER_DROUGHT:            return WEATHER_DROUGHT;
-      case WEATHER_DOWNPOUR:           return WEATHER_DOWNPOUR;
-      case WEATHER_UNDERWATER_BUBBLES: return WEATHER_UNDERWATER_BUBBLES;
-      case WEATHER_ABNORMAL:           return WEATHER_ABNORMAL;
-      case WEATHER_ROUTE119_CYCLE:     return sWeatherCycleRoute119[gSaveBlock1Ptr.weatherCycleStage];
-      case WEATHER_ROUTE123_CYCLE:     return sWeatherCycleRoute123[gSaveBlock1Ptr.weatherCycleStage];
-      default:                         return WEATHER_NONE;
+      case (0):               return (0);
+      case (1):       return (1);
+      case (2):              return (2);
+      case (3):               return (3);
+      case (4):               return (4);
+      case (5):  return (5);
+      case (6):     return (6);
+      case (7):       return (7);
+      case (8):          return (8);
+      case (9):       return (9);
+      case (10):         return (10);
+      case (11):              return (11);
+      case (12):            return (12);
+      case (13):           return (13);
+      case (14): return (14);
+      case (15):           return (15);
+      case (20):     return sWeatherCycleRoute119[gSaveBlock1Ptr.weatherCycleStage];
+      case (21):     return sWeatherCycleRoute123[gSaveBlock1Ptr.weatherCycleStage];
+      default:                         return (0);
       }
 }
 
@@ -1882,8 +1863,8 @@ export function UpdateWeatherPerDay(increment: any): any {
 /** static void UpdateRainCounter(u8 newWeather, u8 oldWeather) */
 export function UpdateRainCounter(newWeather: any, oldWeather: any): any {
   if (newWeather != oldWeather
-       && (newWeather == WEATHER_RAIN || newWeather == WEATHER_RAIN_THUNDERSTORM))
-          IncrementGameStat(GAME_STAT_GOT_RAINED_ON);
+       && (newWeather == (3) || newWeather == (5)))
+          IncrementGameStat((40));
 }
 
 // ─── callsTo manifest (= 96 unique callees) ───────────────────────

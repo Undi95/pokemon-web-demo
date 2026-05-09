@@ -15,72 +15,69 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCoordEventWeatherFuncs: any = null;
 /** static void CoordEventWeather_Clouds(void) */
 export function CoordEventWeather_Clouds(): any {
-  SetWeather(WEATHER_SUNNY_CLOUDS);
+  SetWeather((1));
 }
 
 /** static void CoordEventWeather_Sunny(void) */
 export function CoordEventWeather_Sunny(): any {
-  SetWeather(WEATHER_SUNNY);
+  SetWeather((2));
 }
 
 /** static void CoordEventWeather_Rain(void) */
 export function CoordEventWeather_Rain(): any {
-  SetWeather(WEATHER_RAIN);
+  SetWeather((3));
 }
 
 /** static void CoordEventWeather_Snow(void) */
 export function CoordEventWeather_Snow(): any {
-  SetWeather(WEATHER_SNOW);
+  SetWeather((4));
 }
 
 /** static void CoordEventWeather_Thunderstorm(void) */
 export function CoordEventWeather_Thunderstorm(): any {
-  SetWeather(WEATHER_RAIN_THUNDERSTORM);
+  SetWeather((5));
 }
 
 /** static void CoordEventWeather_HorizontalFog(void) */
 export function CoordEventWeather_HorizontalFog(): any {
-  SetWeather(WEATHER_FOG_HORIZONTAL);
+  SetWeather((6));
 }
 
 /** static void CoordEventWeather_DiagonalFog(void) */
 export function CoordEventWeather_DiagonalFog(): any {
-  SetWeather(WEATHER_FOG_DIAGONAL);
+  SetWeather((9));
 }
 
 /** static void CoordEventWeather_Ash(void) */
 export function CoordEventWeather_Ash(): any {
-  SetWeather(WEATHER_VOLCANIC_ASH);
+  SetWeather((7));
 }
 
 /** static void CoordEventWeather_Sandstorm(void) */
 export function CoordEventWeather_Sandstorm(): any {
-  SetWeather(WEATHER_SANDSTORM);
+  SetWeather((8));
 }
 
 /** static void CoordEventWeather_Shade(void) */
 export function CoordEventWeather_Shade(): any {
-  SetWeather(WEATHER_SHADE);
+  SetWeather((11));
 }
 
 /** static void CoordEventWeather_Drought(void) */
 export function CoordEventWeather_Drought(): any {
-  SetWeather(WEATHER_DROUGHT);
+  SetWeather((12));
 }
 
 /** static void CoordEventWeather_Route119Cycle(void) */
 export function CoordEventWeather_Route119Cycle(): any {
-  SetWeather(WEATHER_ROUTE119_CYCLE);
+  SetWeather((20));
 }
 
 /** static void CoordEventWeather_Route123Cycle(void) */
 export function CoordEventWeather_Route123Cycle(): any {
-  SetWeather(WEATHER_ROUTE123_CYCLE);
+  SetWeather((21));
 }
 
 /** void DoCoordEventWeather(u8 coordEventWeather) */

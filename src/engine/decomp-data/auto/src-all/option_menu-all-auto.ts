@@ -18,10 +18,12 @@
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sArrowPressed: any = null;
-let sOptionMenuBgTemplates: any = null;
-let sOptionMenuBg_Pal: any = null;
-let sOptionMenuText_Pal: any = null;
-let sOptionMenuWinTemplates: any = null;
+let widthFast: any = null;
+let widthLA: any = null;
+let widthLR: any = null;
+let widthMid: any = null;
+let xLR: any = null;
+let xMid: any = null;
 /** static void MainCB2(void) */
 export function MainCB2(): any {
   RunTasks();
@@ -136,7 +138,7 @@ export function CB2_InitOptionMenu(): any {
           break;
       }
       case 11:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           SetVBlankCallback(VBlankCB);
           SetMainCallback2(MainCB2);
           return;
@@ -245,7 +247,7 @@ export function Task_OptionMenuSave(taskId: any): any {
       gSaveBlock2Ptr.optionsButtonMode = gTasks[taskId].tButtonMode;
       gSaveBlock2Ptr.optionsWindowFrameType = gTasks[taskId].tWindowFrameType;
 
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_OptionMenuFadeOut;
 }
 
@@ -391,7 +393,7 @@ export function Sound_DrawChoices(selection: any): any {
 export function FrameType_ProcessInput(selection: any): any {
   if (JOY_NEW(DPAD_RIGHT))
       {
-          if (selection < WINDOW_FRAMES_COUNT - 1)
+          if (selection < (20) - 1)
               selection++;
           else
               selection = 0;
@@ -405,7 +407,7 @@ export function FrameType_ProcessInput(selection: any): any {
           if (selection != 0)
               selection--;
           else
-              selection = WINDOW_FRAMES_COUNT - 1;
+              selection = (20) - 1;
 
           LoadBgTiles(1, GetWindowFrameTilesPal(selection).tiles, 0x120, 0x1A2);
           LoadPalette(GetWindowFrameTilesPal(selection).pal, BG_PLTT_ID(7), PLTT_SIZE_4BPP);
@@ -421,26 +423,26 @@ export function FrameType_DrawChoices(selection: any): any {
       let i: any = null;
       let width: any = null;  
 
-      for (i = 0; gText_FrameTypeNumber[i] != EOS && i <= 5; i++)
+      for (i = 0; gText_FrameTypeNumber[i] != (0xFF) && i <= 5; i++)
           text[i] = gText_FrameTypeNumber[i];
 
        
       if (n / 10 != 0)
       {
-          text[i] = n / 10 + CHAR_0;
+          text[i] = n / 10 + (0xA1);
           i++;
-          text[i] = n % 10 + CHAR_0;
+          text[i] = n % 10 + (0xA1);
           i++;
       }
       else
       {
-          text[i] = n % 10 + CHAR_0;
+          text[i] = n % 10 + (0xA1);
           i++;
-          text[i] = CHAR_SPACER;
+          text[i] = (0x77);
           i++;
       }
 
-      text[i] = EOS;
+      text[i] = (0xFF);
 
        
       width = GetStringWidth(1, gText_FrameType, 0);

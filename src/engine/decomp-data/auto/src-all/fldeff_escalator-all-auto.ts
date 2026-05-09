@@ -18,13 +18,10 @@
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sEscalatorAnim_TaskId: any = null;
-let sEscalatorMetatiles_1F_0: any = null;
-let sEscalatorMetatiles_1F_1: any = null;
-let sEscalatorMetatiles_1F_2: any = null;
-let sEscalatorMetatiles_1F_3: any = null;
-let sEscalatorMetatiles_2F_0: any = null;
-let sEscalatorMetatiles_2F_1: any = null;
-let sEscalatorMetatiles_2F_2: any = null;
+let tDrawingEscalator: any = null;
+let tGoingUp: any = null;
+let tState: any = null;
+let tTransitionStage: any = null;
 /** static void SetEscalatorMetatile(u8 taskId, const s16 *metatileIds, u16 metatileMasks) */
 export function SetEscalatorMetatile(taskId: any, metatileIds: any, metatileMasks: any): any {
   let x: any = gTasks[taskId].tPlayerX - 1;
@@ -88,13 +85,13 @@ export function Task_DrawEscalator(taskId: any): any {
               SetEscalatorMetatile(taskId, sEscalatorMetatiles_1F_1, 0);
               break;
           case 2:
-              SetEscalatorMetatile(taskId, sEscalatorMetatiles_1F_2, MAPGRID_IMPASSABLE);
+              SetEscalatorMetatile(taskId, sEscalatorMetatiles_1F_2, ((0x0C00)));
               break;
           case 3:
               SetEscalatorMetatile(taskId, sEscalatorMetatiles_1F_3, 0);
               break;
           case 4:
-              SetEscalatorMetatile(taskId, sEscalatorMetatiles_2F_0, MAPGRID_IMPASSABLE);
+              SetEscalatorMetatile(taskId, sEscalatorMetatiles_2F_0, ((0x0C00)));
               break;
           case 5:
               SetEscalatorMetatile(taskId, sEscalatorMetatiles_2F_1, 0);

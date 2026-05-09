@@ -17,45 +17,10 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAnimCounter: any = null;
-let sAnimState: any = null;
-let sBitfield: any = null;
-let sBobY: any = null;
-let sCounter: any = null;
-let sCurrentMap: any = null;
-let sDelay: any = null;
-let sElevation: any = null;
-let sEndTimer: any = null;
-let sFinished: any = null;
-let sFldEff: any = null;
-let sIntervalIdx: any = null;
-let sIsStillReflection: any = null;
-let sJumpElevation: any = null;
-let sJumpFldEff: any = null;
-let sLocalId: any = null;
-let sMapGroup: any = null;
-let sMapNum: any = null;
-let sMetatileId: any = null;
-let sMoveTimer: any = null;
-let sObjectMoved: any = null;
-let sPlayerObjId: any = null;
-let sPlayerOffset: any = null;
-let sPrevX: any = null;
-let sPrevY: any = null;
-let sReadyToEnd: any = null;
-let sReflectionObjEventId: any = null;
-let sReflectionObjEventLocalId: any = null;
-let sReflectionVerticalOffset: any = null;
-let sShadowEffectTemplateIds: any = null;
-let sSpriteId: any = null;
-let sStartY: any = null;
-let sState: any = null;
-let sTimer: any = null;
-let sVelocity: any = null;
-let sWaitFldEff: any = null;
-let sX: any = null;
-let sY: any = null;
-let sYOffset: any = null;
+let lyhi: any = null;
+let xhi: any = null;
+let yhi: any = null;
+let ylo: any = null;
 /** void SetUpReflection(struct ObjectEvent *objectEvent, struct Sprite *sprite, bool8 stillReflection) */
 export function SetUpReflection(objectEvent: any, sprite: any, stillReflection: any): any {
   let reflectionSprite: any = null;
@@ -171,8 +136,8 @@ export function UpdateObjectReflectionSprite(reflectionSprite: any): any {
 
 /** u8 CreateWarpArrowSprite(void) */
 export function CreateWarpArrowSprite(): any {
-  let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_ARROW], 0, 0, 82);
-      if (spriteId != MAX_SPRITES)
+  let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(8)], 0, 0, 82);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.oam.priority = 1;
@@ -209,7 +174,7 @@ export function FldEff_Shadow(): any {
   let objectEventId: any = GetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
       let graphicsInfo: any = GetObjectEventGraphicsInfo(gObjectEvents[objectEventId].graphicsId);
       let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[sShadowEffectTemplateIds[graphicsInfo.shadowSize]], 0, 0, 148);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].coordOffsetEnabled = TRUE;
           gSprites[spriteId].sLocalId = gFieldEffectArguments[0];
@@ -226,7 +191,7 @@ export function UpdateShadowFieldEffect(sprite: any): any {
 
       if (TryGetObjectEventIdByLocalIdAndMap(sprite.sLocalId, sprite.sMapNum, sprite.sMapGroup,objectEventId))
       {
-          FieldEffectStop(sprite, FLDEFF_SHADOW);
+          FieldEffectStop(sprite, (3));
       }
       else
       {
@@ -242,7 +207,7 @@ export function UpdateShadowFieldEffect(sprite: any): any {
            || MetatileBehavior_IsReflective(objectEvent.currentMetatileBehavior)
            || MetatileBehavior_IsReflective(objectEvent.previousMetatileBehavior))
           {
-              FieldEffectStop(sprite, FLDEFF_SHADOW);
+              FieldEffectStop(sprite, (3));
           }
       }
 }
@@ -253,8 +218,8 @@ export function FldEff_TallGrass(): any {
       let x: any = gFieldEffectArguments[0];
       let y: any = gFieldEffectArguments[1];
       SetSpritePosToOffsetMapCoords(x,y, 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_TALL_GRASS], x, y, 0);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(4)], x, y, 0);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
@@ -295,7 +260,7 @@ export function UpdateTallGrassFieldEffect(sprite: any): any {
        || !MetatileBehavior_IsTallGrass(metatileBehavior)
        || (sprite.sObjectMoved && sprite.animEnded))
       {
-          FieldEffectStop(sprite, FLDEFF_TALL_GRASS);
+          FieldEffectStop(sprite, (4));
       }
       else
       {
@@ -320,14 +285,14 @@ export function FldEff_JumpTallGrass(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 12);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_JUMP_TALL_GRASS], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(10)], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
           sprite.sJumpElevation = gFieldEffectArguments[2];
-          sprite.sJumpFldEff = FLDEFF_JUMP_TALL_GRASS;
+          sprite.sJumpFldEff = (12);
       }
       return 0;
 }
@@ -335,7 +300,7 @@ export function FldEff_JumpTallGrass(): any {
 /** u8 FindTallGrassFieldEffectSpriteId(u8 localId, u8 mapNum, u8 mapGroup, s16 x, s16 y) */
 export function FindTallGrassFieldEffectSpriteId(localId: any, mapNum: any, mapGroup: any, x: any, y: any): any {
   let i: any = null;
-      for (i = 0; i < MAX_SPRITES; i ++)
+      for (i = 0; i < (64); i ++)
       {
           if (gSprites[i].inUse)
           {
@@ -348,7 +313,7 @@ export function FindTallGrassFieldEffectSpriteId(localId: any, mapNum: any, mapG
                   return i;
           }
       }
-      return MAX_SPRITES;
+      return (64);
 }
 
 /** u32 FldEff_LongGrass(void) */
@@ -357,8 +322,8 @@ export function FldEff_LongGrass(): any {
       let x: any = gFieldEffectArguments[0];
       let y: any = gFieldEffectArguments[1];
       SetSpritePosToOffsetMapCoords(x,y, 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_LONG_GRASS], x, y, 0);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(15)], x, y, 0);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
@@ -398,7 +363,7 @@ export function UpdateLongGrassFieldEffect(sprite: any): any {
        || !MetatileBehavior_IsLongGrass(metatileBehavior)
        || (sprite.sObjectMoved && sprite.animEnded))
       {
-          FieldEffectStop(sprite, FLDEFF_LONG_GRASS);
+          FieldEffectStop(sprite, (17));
       }
       else
       {
@@ -418,14 +383,14 @@ export function FldEff_JumpLongGrass(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_JUMP_LONG_GRASS], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(16)], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
           sprite.sJumpElevation = gFieldEffectArguments[2];
-          sprite.sJumpFldEff = FLDEFF_JUMP_LONG_GRASS;
+          sprite.sJumpFldEff = (18);
       }
       return 0;
 }
@@ -434,8 +399,8 @@ export function FldEff_JumpLongGrass(): any {
 export function FldEff_ShortGrass(): any {
   let objectEventId: any = GetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
       let objectEvent: any =gObjectEvents[objectEventId];
-      let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SHORT_GRASS], 0, 0, 0);
-      if (spriteId != MAX_SPRITES)
+      let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(30)], 0, 0, 0);
+      if (spriteId != (64))
       {
           let sprite: any =(gSprites[spriteId]);
           sprite.coordOffsetEnabled = TRUE;
@@ -455,7 +420,7 @@ export function UpdateShortGrassFieldEffect(sprite: any): any {
 
       if (TryGetObjectEventIdByLocalIdAndMap(sprite.sLocalId, sprite.sMapNum, sprite.sMapGroup,objectEventId) || !gObjectEvents[objectEventId].inShortGrass)
       {
-          FieldEffectStop(sprite, FLDEFF_SHORT_GRASS);
+          FieldEffectStop(sprite, (41));
       }
       else
       {
@@ -486,13 +451,13 @@ export function FldEff_SandFootprints(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SAND_FOOTPRINTS], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(11)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
-          sprite.sFldEff = FLDEFF_SAND_FOOTPRINTS;
+          sprite.sFldEff = (13);
           StartSpriteAnim(sprite, gFieldEffectArguments[4]);
       }
       return 0;
@@ -503,13 +468,13 @@ export function FldEff_DeepSandFootprints(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_DEEP_SAND_FOOTPRINTS], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(23)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
-          sprite.sFldEff = FLDEFF_DEEP_SAND_FOOTPRINTS;
+          sprite.sFldEff = (24);
           StartSpriteAnim(sprite, gFieldEffectArguments[4]);
       }
       return spriteId;
@@ -520,13 +485,13 @@ export function FldEff_BikeTireTracks(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_BIKE_TIRE_TRACKS], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(27)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
-          sprite.sFldEff = FLDEFF_BIKE_TIRE_TRACKS;
+          sprite.sFldEff = (35);
           StartSpriteAnim(sprite, gFieldEffectArguments[4]);
       }
       return spriteId;
@@ -558,8 +523,8 @@ export function FadeFootprintsTireTracks_Step1(sprite: any): any {
 export function FldEff_Splash(): any {
   let objectEventId: any = GetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
       let objectEvent: any =gObjectEvents[objectEventId];
-      let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SPLASH], 0, 0, 0);
-      if (spriteId != MAX_SPRITES)
+      let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(13)], 0, 0, 0);
+      if (spriteId != (64))
       {
           let linkedSprite: any = null;
           let graphicsInfo: any = GetObjectEventGraphicsInfo(objectEvent.graphicsId);
@@ -571,7 +536,7 @@ export function FldEff_Splash(): any {
           sprite.sMapNum = gFieldEffectArguments[1];
           sprite.sMapGroup = gFieldEffectArguments[2];
           sprite.y2 = (graphicsInfo.height >> 1) - 4;
-          PlaySE(SE_PUDDLE);
+          PlaySE((70));
       }
       return 0;
 }
@@ -582,7 +547,7 @@ export function UpdateSplashFieldEffect(sprite: any): any {
 
       if (sprite.animEnded || TryGetObjectEventIdByLocalIdAndMap(sprite.sLocalId, sprite.sMapNum, sprite.sMapGroup,objectEventId))
       {
-          FieldEffectStop(sprite, FLDEFF_SPLASH);
+          FieldEffectStop(sprite, (15));
       }
       else
       {
@@ -597,14 +562,14 @@ export function FldEff_JumpSmallSplash(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 12);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_JUMP_SMALL_SPLASH], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(14)], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
           sprite.sJumpElevation = gFieldEffectArguments[2];
-          sprite.sJumpFldEff = FLDEFF_JUMP_SMALL_SPLASH;
+          sprite.sJumpFldEff = (16);
       }
       return 0;
 }
@@ -614,14 +579,14 @@ export function FldEff_JumpBigSplash(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_JUMP_BIG_SPLASH], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(12)], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
           sprite.sJumpElevation = gFieldEffectArguments[2];
-          sprite.sJumpFldEff = FLDEFF_JUMP_BIG_SPLASH;
+          sprite.sJumpFldEff = (14);
       }
       return 0;
 }
@@ -630,8 +595,8 @@ export function FldEff_JumpBigSplash(): any {
 export function FldEff_FeetInFlowingWater(): any {
   let objectEventId: any = GetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
       let objectEvent: any =gObjectEvents[objectEventId];
-      let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SPLASH], 0, 0, 0);
-      if (spriteId != MAX_SPRITES)
+      let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(13)], 0, 0, 0);
+      if (spriteId != (64))
       {
           let graphicsInfo: any = GetObjectEventGraphicsInfo(objectEvent.graphicsId);
           let sprite: any =gSprites[spriteId];
@@ -655,7 +620,7 @@ export function UpdateFeetInFlowingWaterFieldEffect(sprite: any): any {
 
       if (TryGetObjectEventIdByLocalIdAndMap(sprite.sLocalId, sprite.sMapNum, sprite.sMapGroup,objectEventId) || !gObjectEvents[objectEventId].inShallowFlowingWater)
       {
-          FieldEffectStop(sprite, FLDEFF_FEET_IN_FLOWING_WATER);
+          FieldEffectStop(sprite, (34));
       }
       else
       {
@@ -670,20 +635,20 @@ export function UpdateFeetInFlowingWaterFieldEffect(sprite: any): any {
               sprite.sPrevX = objectEvent.currentCoords.x;
               sprite.sPrevY = objectEvent.currentCoords.y;
               if (!sprite.invisible)
-                  PlaySE(SE_PUDDLE);
+                  PlaySE((70));
           }
       }
 }
 
 /** u32 FldEff_Ripple(void) */
 export function FldEff_Ripple(): any {
-  let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_RIPPLE], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-      if (spriteId != MAX_SPRITES)
+  let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(5)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
-          sprite.sWaitFldEff = FLDEFF_RIPPLE;
+          sprite.sWaitFldEff = (5);
       }
       return 0;
 }
@@ -692,8 +657,8 @@ export function FldEff_Ripple(): any {
 export function FldEff_HotSpringsWater(): any {
   let objectEventId: any = GetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
       let objectEvent: any =gObjectEvents[objectEventId];
-      let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_HOT_SPRINGS_WATER], 0, 0, 0);
-      if (spriteId != MAX_SPRITES)
+      let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(31)], 0, 0, 0);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
@@ -713,7 +678,7 @@ export function UpdateHotSpringsWaterFieldEffect(sprite: any): any {
 
       if (TryGetObjectEventIdByLocalIdAndMap(sprite.sLocalId, sprite.sMapNum, sprite.sMapGroup,objectEventId) || !gObjectEvents[objectEventId].inHotSprings)
       {
-          FieldEffectStop(sprite, FLDEFF_HOT_SPRINGS_WATER);
+          FieldEffectStop(sprite, (42));
       }
       else
       {
@@ -731,13 +696,13 @@ export function FldEff_UnusedGrass(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_UNUSED_GRASS], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(17)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
-          sprite.sWaitFldEff = FLDEFF_UNUSED_GRASS;
+          sprite.sWaitFldEff = (19);
       }
       return 0;
 }
@@ -747,13 +712,13 @@ export function FldEff_UnusedGrass2(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_UNUSED_GRASS_2], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(18)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
-          sprite.sWaitFldEff = FLDEFF_UNUSED_GRASS_2;
+          sprite.sWaitFldEff = (20);
       }
       return 0;
 }
@@ -763,13 +728,13 @@ export function FldEff_UnusedSand(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_UNUSED_SAND], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(19)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
-          sprite.sWaitFldEff = FLDEFF_UNUSED_SAND;
+          sprite.sWaitFldEff = (21);
       }
       return 0;
 }
@@ -779,13 +744,13 @@ export function FldEff_WaterSurfacing(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_WATER_SURFACING], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(20)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
-          sprite.sWaitFldEff = FLDEFF_WATER_SURFACING;
+          sprite.sWaitFldEff = (22);
       }
       return 0;
 }
@@ -798,7 +763,7 @@ export function StartAshFieldEffect(x: any, y: any, metatileId: any, delay: any)
       gFieldEffectArguments[3] = 1;  
       gFieldEffectArguments[4] = metatileId;
       gFieldEffectArguments[5] = delay;
-      FieldEffectStart(FLDEFF_ASH);
+      FieldEffectStart((7));
 }
 
 /** u32 FldEff_Ash(void) */
@@ -808,8 +773,8 @@ export function FldEff_Ash(): any {
       let x: any = gFieldEffectArguments[0];
       let y: any = gFieldEffectArguments[1];
       SetSpritePosToOffsetMapCoords(x,y, 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_ASH], x, y, gFieldEffectArguments[2]);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(6)], x, y, gFieldEffectArguments[2]);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
@@ -849,7 +814,7 @@ export function UpdateAshFieldEffect_Show(sprite: any): any {
 export function UpdateAshFieldEffect_End(sprite: any): any {
   UpdateObjectEventSpriteInvisibility(sprite, FALSE);
       if (sprite.animEnded)
-          FieldEffectStop(sprite, FLDEFF_ASH);
+          FieldEffectStop(sprite, (7));
 }
 
 /** u32 FldEff_SurfBlob(void) */
@@ -857,8 +822,8 @@ export function FldEff_SurfBlob(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SURF_BLOB], gFieldEffectArguments[0], gFieldEffectArguments[1], 150);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(7)], gFieldEffectArguments[0], gFieldEffectArguments[1], 150);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
@@ -868,7 +833,7 @@ export function FldEff_SurfBlob(): any {
           sprite.sPrevX = -1;
           sprite.sPrevY = -1;
       }
-      FieldEffectActiveListRemove(FLDEFF_SURF_BLOB);
+      FieldEffectActiveListRemove((8));
       return spriteId;
 }
 
@@ -935,7 +900,7 @@ export function SynchronizeSurfPosition(playerObj: any, sprite: any): any {
           sprite.sIntervalIdx = 0;
           sprite.sPrevX = x;
           sprite.sPrevY = y;
-          for (i = DIR_SOUTH; i <= DIR_EAST; i++, x = sprite.sPrevX, y = sprite.sPrevY)
+          for (i = (1); i <= (4); i++, x = sprite.sPrevX, y = sprite.sPrevY)
           {
               MoveCoords(i,x,y);
               if (MapGridGetElevationAt(x, y) == ELEVATION_DEFAULT)
@@ -1004,14 +969,14 @@ export function FldEff_Dust(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 12);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_GROUND_IMPACT_DUST], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(9)], gFieldEffectArguments[0], gFieldEffectArguments[1], 0);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
           sprite.sJumpElevation = gFieldEffectArguments[2];
-          sprite.sJumpFldEff = FLDEFF_DUST;
+          sprite.sJumpFldEff = (10);
       }
       return 0;
 }
@@ -1020,8 +985,8 @@ export function FldEff_Dust(): any {
 export function FldEff_SandPile(): any {
   let objectEventId: any = GetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
       let objectEvent: any =gObjectEvents[objectEventId];
-      let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SAND_PILE], 0, 0, 0);
-      if (spriteId != MAX_SPRITES)
+      let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(29)], 0, 0, 0);
+      if (spriteId != (64))
       {
           let graphicsInfo: any = GetObjectEventGraphicsInfo(objectEvent.graphicsId);
           let sprite: any =gSprites[spriteId];
@@ -1044,7 +1009,7 @@ export function UpdateSandPileFieldEffect(sprite: any): any {
 
       if (TryGetObjectEventIdByLocalIdAndMap(sprite.sLocalId, sprite.sMapNum, sprite.sMapGroup,objectEventId) || !gObjectEvents[objectEventId].inSandPile)
       {
-          FieldEffectStop(sprite, FLDEFF_SAND_PILE);
+          FieldEffectStop(sprite, (39));
       }
       else
       {
@@ -1069,8 +1034,8 @@ export function FldEff_Bubbles(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 0);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_BUBBLES], gFieldEffectArguments[0], gFieldEffectArguments[1], 82);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(34)], gFieldEffectArguments[0], gFieldEffectArguments[1], 82);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
@@ -1086,7 +1051,7 @@ export function UpdateBubblesFieldEffect(sprite: any): any {
       sprite.y -= sprite.sY >> 8;
       UpdateObjectEventSpriteInvisibility(sprite, FALSE);
       if (sprite.invisible || sprite.animEnded)
-          FieldEffectStop(sprite, FLDEFF_BUBBLES);
+          FieldEffectStop(sprite, (53));
 }
 
 /** u32 FldEff_BerryTreeGrowthSparkle(void) */
@@ -1094,31 +1059,31 @@ export function FldEff_BerryTreeGrowthSparkle(): any {
   let spriteId: any = null;
 
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 4);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SPARKLE], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(22)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled = TRUE;
           sprite.oam.priority = gFieldEffectArguments[3];
           sprite.oam.paletteNum = 5;
-          sprite.sWaitFldEff = FLDEFF_BERRY_TREE_GROWTH_SPARKLE;
+          sprite.sWaitFldEff = (23);
       }
       return 0;
 }
 
 /** u32 ShowTreeDisguiseFieldEffect(void) */
 export function ShowTreeDisguiseFieldEffect(): any {
-  return ShowDisguiseFieldEffect(FLDEFF_TREE_DISGUISE, FLDEFFOBJ_TREE_DISGUISE, 4);
+  return ShowDisguiseFieldEffect((28), (24), 4);
 }
 
 /** u32 ShowMountainDisguiseFieldEffect(void) */
 export function ShowMountainDisguiseFieldEffect(): any {
-  return ShowDisguiseFieldEffect(FLDEFF_MOUNTAIN_DISGUISE, FLDEFFOBJ_MOUNTAIN_DISGUISE, 3);
+  return ShowDisguiseFieldEffect((29), (25), 3);
 }
 
 /** u32 ShowSandDisguiseFieldEffect(void) */
 export function ShowSandDisguiseFieldEffect(): any {
-  return ShowDisguiseFieldEffect(FLDEFF_SAND_DISGUISE, FLDEFFOBJ_SAND_DISGUISE, 2);
+  return ShowDisguiseFieldEffect((36), (28), 2);
 }
 
 /** static u32 ShowDisguiseFieldEffect(u8 fldEff, u8 fldEffObj, u8 paletteNum) */
@@ -1128,10 +1093,10 @@ export function ShowDisguiseFieldEffect(fldEff: any, fldEffObj: any, paletteNum:
       if (TryGetObjectEventIdByLocalIdAndMap(gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2],spriteId))
       {
           FieldEffectActiveListRemove(fldEff);
-          return MAX_SPRITES;
+          return (64);
       }
       spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[fldEffObj], 0, 0, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           sprite.coordOffsetEnabled ++;
@@ -1203,11 +1168,11 @@ export function UpdateRevealDisguise(objectEvent: any): any {
 export function FldEff_Sparkle(): any {
   let spriteId: any = null;
 
-      gFieldEffectArguments[0] += MAP_OFFSET;
-      gFieldEffectArguments[1] += MAP_OFFSET;
+      gFieldEffectArguments[0] += (7);
+      gFieldEffectArguments[1] += (7);
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SMALL_SPARKLE], gFieldEffectArguments[0], gFieldEffectArguments[1], 82);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(35)], gFieldEffectArguments[0], gFieldEffectArguments[1], 82);
+      if (spriteId != (64))
       {
           gSprites[spriteId].oam.priority = gFieldEffectArguments[2];
           gSprites[spriteId].coordOffsetEnabled = TRUE;
@@ -1227,7 +1192,7 @@ export function UpdateSparkleFieldEffect(sprite: any): any {
       }
 
       if (sprite.sFinished && ++sprite.sEndTimer > 34)
-          FieldEffectStop(sprite, FLDEFF_SPARKLE);
+          FieldEffectStop(sprite, (54));
 }
 
 /** static void InitRayquazaForFigure8Anim(struct Sprite *sprite) */
@@ -1247,23 +1212,23 @@ export function AnimateRayquazaInFigure8(sprite: any): any {
           sprite.y2 += GetFigure8YOffset(sprite.sAnimCounter);
           break;
       case 1:
-          sprite.x2 -= GetFigure8XOffset((FIGURE_8_LENGTH - 1) - sprite.sAnimCounter);
-          sprite.y2 += GetFigure8YOffset((FIGURE_8_LENGTH - 1) - sprite.sAnimCounter);
+          sprite.x2 -= GetFigure8XOffset(((72) - 1) - sprite.sAnimCounter);
+          sprite.y2 += GetFigure8YOffset(((72) - 1) - sprite.sAnimCounter);
           break;
       case 2:
           sprite.x2 -= GetFigure8XOffset(sprite.sAnimCounter);
           sprite.y2 += GetFigure8YOffset(sprite.sAnimCounter);
           break;
       case 3:
-          sprite.x2 += GetFigure8XOffset((FIGURE_8_LENGTH - 1) - sprite.sAnimCounter);
-          sprite.y2 += GetFigure8YOffset((FIGURE_8_LENGTH - 1) - sprite.sAnimCounter);
+          sprite.x2 += GetFigure8XOffset(((72) - 1) - sprite.sAnimCounter);
+          sprite.y2 += GetFigure8YOffset(((72) - 1) - sprite.sAnimCounter);
           break;
       }
 
        
       SetGpuReg(REG_OFFSET_BG0HOFS, -sprite.x2);
 
-      if (++sprite.sAnimCounter == FIGURE_8_LENGTH)
+      if (++sprite.sAnimCounter == (72))
       {
           sprite.sAnimCounter = 0;
           sprite.sAnimState++;
@@ -1382,7 +1347,7 @@ export function UpdateRayquazaSpotlightEffect(sprite: any): any {
                   }
               }
               SetGpuReg(REG_OFFSET_BG0VOFS, 0);
-              FieldEffectStop(sprite, FLDEFF_RAYQUAZA_SPOTLIGHT);
+              FieldEffectStop(sprite, (64));
               break;
       }
 
@@ -1427,7 +1392,7 @@ export function UpdateGrassFieldEffectSubpriority(sprite: any, elevation: any, s
       let _var, xhi, lyhi, yhi, ylo;
 
       SetObjectSubpriorityByElevation(elevation, sprite, subpriority);
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i ++)
+      for (i = 0; i < (16); i ++)
       {
           let objectEvent: any =gObjectEvents[i];
           if (objectEvent.active)

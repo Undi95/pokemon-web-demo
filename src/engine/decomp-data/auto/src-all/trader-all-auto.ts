@@ -17,21 +17,23 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sDefaultTraderDecorations: any = null;
-let sDefaultTraderNames: any = null;
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_0x8005: any = null;
+let gSpecialVar_0x8006: any = null;
+let tWindowId: any = null;
 /** void TraderSetup(void) */
 export function TraderSetup(): any {
   let i: any = null;
       let trader: any =gSaveBlock1Ptr.oldMan.trader;
 
-      trader.id = MAUVILLE_MAN_TRADER;
+      trader.id = (2);
       trader.alreadyTraded = FALSE;
 
-      for (i = 0; i < NUM_TRADER_ITEMS; i++)
+      for (i = 0; i < (4); i++)
       {
           StringCopy(trader.playerNames[i], sDefaultTraderNames[i]);
           trader.decorations[i] = sDefaultTraderDecorations[i];
-          trader.language[i] = GAME_LANGUAGE;
+          trader.language[i] = (((3)));
       }
 }
 
@@ -50,10 +52,10 @@ export function CreateAvailableDecorationsMenu(taskId: any): any {
       ];
       let windowWidth: any = GetStringWidth(FONT_NORMAL, gText_Exit, 0);
       let fiveMarksWidth: any = GetStringWidth(FONT_NORMAL, gText_FiveMarks, 0);
-      for (i = 0; i < NUM_TRADER_ITEMS; i++)
+      for (i = 0; i < (4); i++)
       {
           let curWidth: any = null;
-          if (trader.decorations[i] > NUM_DECORATIONS)
+          if (trader.decorations[i] > ((120)))
               curWidth = fiveMarksWidth;
           else
               curWidth = GetStringWidth(FONT_NORMAL, gDecorations[trader.decorations[i]].name, 0);
@@ -63,22 +65,22 @@ export function CreateAvailableDecorationsMenu(taskId: any): any {
       windowTemplate.width = ConvertPixelWidthToTileWidth(windowWidth);
       tWindowId = AddWindow(windowTemplate);
       DrawStdFrameWithCustomTileAndPalette(tWindowId, FALSE, 0x214, 14);
-      for (i = 0; i < NUM_TRADER_ITEMS; i++)
+      for (i = 0; i < (4); i++)
       {
-          if (trader.decorations[i] > NUM_DECORATIONS)
-              AddTextPrinterParameterized(tWindowId, FONT_NORMAL, gText_FiveMarks, 8, 16 * i + 1, TEXT_SKIP_DRAW, NULL);
+          if (trader.decorations[i] > ((120)))
+              AddTextPrinterParameterized(tWindowId, FONT_NORMAL, gText_FiveMarks, 8, 16 * i + 1, (0xFF), NULL);
           else
-              AddTextPrinterParameterized(tWindowId, FONT_NORMAL, gDecorations[trader.decorations[i]].name, 8, 16 * i + 1, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(tWindowId, FONT_NORMAL, gDecorations[trader.decorations[i]].name, 8, 16 * i + 1, (0xFF), NULL);
       }
-      AddTextPrinterParameterized(tWindowId, FONT_NORMAL, gText_Exit, 8, 16 * i + 1, TEXT_SKIP_DRAW, NULL);
-      InitMenuInUpperLeftCornerNormal(tWindowId, NUM_TRADER_ITEMS + 1, 0);
+      AddTextPrinterParameterized(tWindowId, FONT_NORMAL, gText_Exit, 8, 16 * i + 1, (0xFF), NULL);
+      InitMenuInUpperLeftCornerNormal(tWindowId, (4) + 1, 0);
       ScheduleBgCopyTilemapToVram(0);
 }
 
 /** void Task_BufferDecorSelectionAndCloseWindow(u8 taskId, u8 decorationId) */
 export function Task_BufferDecorSelectionAndCloseWindow(taskId: any, decorationId: any): any {
   let data: any = gTasks[taskId].data;
-      if (decorationId > NUM_DECORATIONS)
+      if (decorationId > ((120)))
           gSpecialVar_0x8004 = 0xFFFF;
       else
           gSpecialVar_0x8004 = decorationId;
@@ -98,15 +100,15 @@ export function Task_HandleGetDecorationMenuInput(taskId: any): any {
 
       switch (input)
       {
-          case MENU_NOTHING_CHOSEN:
+          case (-2):
               break;
-          case MENU_B_PRESSED:
-          case NUM_TRADER_ITEMS:  
-              PlaySE(SE_SELECT);
+          case (-1):
+          case (4):  
+              PlaySE((5));
               Task_BufferDecorSelectionAndCloseWindow(taskId, 0);
               break;
           default:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               gSpecialVar_0x8005 = input;
               StringCopy(gStringVar1, trader.playerNames[input]);
               ConvertInternationalString(gStringVar1, trader.language[input]);
@@ -183,7 +185,7 @@ export function TraderDoDecorationTrade(): any {
       DecorationAdd(gSpecialVar_0x8004);
       StringCopy(trader.playerNames[gSpecialVar_0x8005], gSaveBlock2Ptr.playerName);
       trader.decorations[gSpecialVar_0x8005] = gSpecialVar_0x8006;
-      trader.language[gSpecialVar_0x8005] = GAME_LANGUAGE;
+      trader.language[gSpecialVar_0x8005] = (((3)));
       trader.alreadyTraded = TRUE;
 }
 

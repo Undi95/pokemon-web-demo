@@ -22,10 +22,10 @@ let sShouldStopWaveTask: any = null;
 export function ScanlineEffect_Stop(): any {
   gScanlineEffect.state = 0;
       DmaStop(0);
-      if (gScanlineEffect.waveTaskId != TASK_NONE)
+      if (gScanlineEffect.waveTaskId != ((0xFF)))
       {
           DestroyTask(gScanlineEffect.waveTaskId);
-          gScanlineEffect.waveTaskId = TASK_NONE;
+          gScanlineEffect.waveTaskId = ((0xFF));
       }
 }
 
@@ -40,7 +40,7 @@ export function ScanlineEffect_Clear(): any {
       gScanlineEffect.state = 0;
       gScanlineEffect.unused16 = 0;
       gScanlineEffect.unused17 = 0;
-      gScanlineEffect.waveTaskId = TASK_NONE;
+      gScanlineEffect.waveTaskId = ((0xFF));
 }
 
 /** void ScanlineEffect_SetParams(struct ScanlineEffectParams params) */
@@ -120,7 +120,7 @@ export function TaskFunc_UpdateWavePerFrame(taskId: any): any {
       if (sShouldStopWaveTask)
       {
           DestroyTask(taskId);
-          gScanlineEffect.waveTaskId = TASK_NONE;
+          gScanlineEffect.waveTaskId = ((0xFF));
       }
       else
       {
@@ -128,28 +128,28 @@ export function TaskFunc_UpdateWavePerFrame(taskId: any): any {
           {
               switch (gTasks[taskId].tRegOffset)
               {
-              case SCANLINE_EFFECT_REG_BG0HOFS:
+              case ((REG_ADDR_BG0HOFS - REG_ADDR_BG0HOFS)):
                   value = gBattle_BG0_X;
                   break;
-              case SCANLINE_EFFECT_REG_BG0VOFS:
+              case ((REG_ADDR_BG0VOFS - REG_ADDR_BG0HOFS)):
                   value = gBattle_BG0_Y;
                   break;
-              case SCANLINE_EFFECT_REG_BG1HOFS:
+              case ((REG_ADDR_BG1HOFS - REG_ADDR_BG0HOFS)):
                   value = gBattle_BG1_X;
                   break;
-              case SCANLINE_EFFECT_REG_BG1VOFS:
+              case ((REG_ADDR_BG1VOFS - REG_ADDR_BG0HOFS)):
                   value = gBattle_BG1_Y;
                   break;
-              case SCANLINE_EFFECT_REG_BG2HOFS:
+              case ((REG_ADDR_BG2HOFS - REG_ADDR_BG0HOFS)):
                   value = gBattle_BG2_X;
                   break;
-              case SCANLINE_EFFECT_REG_BG2VOFS:
+              case ((REG_ADDR_BG2VOFS - REG_ADDR_BG0HOFS)):
                   value = gBattle_BG2_Y;
                   break;
-              case SCANLINE_EFFECT_REG_BG3HOFS:
+              case ((REG_ADDR_BG3HOFS - REG_ADDR_BG0HOFS)):
                   value = gBattle_BG3_X;
                   break;
-              case SCANLINE_EFFECT_REG_BG3VOFS:
+              case ((REG_ADDR_BG3VOFS - REG_ADDR_BG0HOFS)):
                   value = gBattle_BG3_Y;
                   break;
               }

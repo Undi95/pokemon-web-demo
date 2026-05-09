@@ -17,12 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sArenaFunctions: any = null;
-let sBattleArenaJudgmentSymbolsSpriteSheet: any = null;
-let sLongStreakPrizeItems: any = null;
-let sMindRatings: any = null;
-let sShortStreakPrizeItems: any = null;
-let sSpriteTemplate_JudgmentIcon: any = null;
+let gBattle_WIN0H: any = null;
+let gBattle_WIN0V: any = null;
+let gTrainerBattleOpponent_A: any = null;
 /** void CallBattleArenaFunction(void) */
 export function CallBattleArenaFunction(): any {
   sArenaFunctions[gSpecialVar_0x8004]();
@@ -31,11 +28,11 @@ export function CallBattleArenaFunction(): any {
 /** u8 BattleArena_ShowJudgmentWindow(u8 *state) */
 export function BattleArena_ShowJudgmentWindow(state: any): any {
   let i: any = null;
-      let result: any = ARENA_RESULT_RUNNING;
+      let result: any = (0);
       switch (state)
       {
       case 0:
-          BeginNormalPaletteFade(0x7FFFFF1C, 4, 0, 8, RGB_BLACK);
+          BeginNormalPaletteFade(0x7FFFFF1C, 4, 0, 8, (RGB(0, 0, 0)));
           SetGpuReg(REG_OFFSET_WININ, (WININ_WIN0_ALL & ~WININ_WIN0_BG0) | WININ_WIN1_ALL);
           LoadCompressedSpriteSheet(sBattleArenaJudgmentSymbolsSpriteSheet);
           LoadCompressedPalette(gBattleArenaJudgmentSymbolsPalette, OBJ_PLTT_ID(15), PLTT_SIZE_4BPP);
@@ -53,20 +50,20 @@ export function BattleArena_ShowJudgmentWindow(state: any): any {
       case 2:
           if (!IsDma3ManagerBusyWithBgCopy())
           {
-              gBattleTextBuff1[0] = CHAR_0;
-              gBattleTextBuff1[1] = EOS;
-              gBattleTextBuff2[0] = CHAR_0;
-              gBattleTextBuff2[1] = EOS;
+              gBattleTextBuff1[0] = (0xA1);
+              gBattleTextBuff1[1] = (0xFF);
+              gBattleTextBuff2[0] = (0xA1);
+              gBattleTextBuff2[1] = (0xFF);
               BattleStringExpandPlaceholdersToDisplayedString(gText_PlayerMon1Name);
-              BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_PLAYER_NAME);
-              BattlePutTextOnWindow(gText_Vs, ARENA_WIN_VS);
+              BattlePutTextOnWindow(gDisplayedStringBattle, (15));
+              BattlePutTextOnWindow(gText_Vs, (16));
               BattleStringExpandPlaceholdersToDisplayedString(gText_OpponentMon1Name);
-              BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_OPPONENT_NAME);
-              BattlePutTextOnWindow(gText_Mind, ARENA_WIN_MIND);
-              BattlePutTextOnWindow(gText_Skill, ARENA_WIN_SKILL);
-              BattlePutTextOnWindow(gText_Body, ARENA_WIN_BODY);
+              BattlePutTextOnWindow(gDisplayedStringBattle, (17));
+              BattlePutTextOnWindow(gText_Mind, (18));
+              BattlePutTextOnWindow(gText_Skill, (19));
+              BattlePutTextOnWindow(gText_Body, (20));
               BattleStringExpandPlaceholdersToDisplayedString(gText_Judgment);
-              BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_JUDGMENT_TITLE);
+              BattlePutTextOnWindow(gDisplayedStringBattle, (21));
               state++;
           }
           break;
@@ -81,52 +78,52 @@ export function BattleArena_ShowJudgmentWindow(state: any): any {
                   let spriteId: any = CreateSprite(sSpriteTemplate_JudgmentIcon, 64 + i * 16, 84, 0);
                   StartSpriteAnim(gSprites[spriteId], ANIM_ICON_LINE);
               }
-              result = ARENA_RESULT_STEP_DONE;
+              result = (1);
               state++;
           }
           break;
       case 4:
-          PlaySE(SE_ARENA_TIMEUP1);
-          ShowJudgmentSprite(80, 40, ARENA_CATEGORY_MIND, B_POSITION_PLAYER_LEFT);
-          ShowJudgmentSprite(160, 40, ARENA_CATEGORY_MIND, B_POSITION_OPPONENT_LEFT);
+          PlaySE((265));
+          ShowJudgmentSprite(80, 40, (0), B_POSITION_PLAYER_LEFT);
+          ShowJudgmentSprite(160, 40, (0), B_POSITION_OPPONENT_LEFT);
           BattleStringExpandPlaceholdersToDisplayedString(gText_Judgment);
-          BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_JUDGMENT_TITLE);
+          BattlePutTextOnWindow(gDisplayedStringBattle, (21));
           state++;
-          result = ARENA_RESULT_STEP_DONE;
+          result = (1);
           break;
       case 5:
-          PlaySE(SE_ARENA_TIMEUP1);
-          ShowJudgmentSprite(80, 56, ARENA_CATEGORY_SKILL, B_POSITION_PLAYER_LEFT);
-          ShowJudgmentSprite(160, 56, ARENA_CATEGORY_SKILL, B_POSITION_OPPONENT_LEFT);
+          PlaySE((265));
+          ShowJudgmentSprite(80, 56, (1), B_POSITION_PLAYER_LEFT);
+          ShowJudgmentSprite(160, 56, (1), B_POSITION_OPPONENT_LEFT);
           BattleStringExpandPlaceholdersToDisplayedString(gText_Judgment);
-          BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_JUDGMENT_TITLE);
+          BattlePutTextOnWindow(gDisplayedStringBattle, (21));
           state++;
-          result = ARENA_RESULT_STEP_DONE;
+          result = (1);
           break;
       case 6:
-          PlaySE(SE_ARENA_TIMEUP1);
-          ShowJudgmentSprite(80, 72, ARENA_CATEGORY_BODY, B_POSITION_PLAYER_LEFT);
-          ShowJudgmentSprite(160, 72, ARENA_CATEGORY_BODY, B_POSITION_OPPONENT_LEFT);
+          PlaySE((265));
+          ShowJudgmentSprite(80, 72, (2), B_POSITION_PLAYER_LEFT);
+          ShowJudgmentSprite(160, 72, (2), B_POSITION_OPPONENT_LEFT);
           BattleStringExpandPlaceholdersToDisplayedString(gText_Judgment);
-          BattlePutTextOnWindow(gDisplayedStringBattle, ARENA_WIN_JUDGMENT_TITLE);
+          BattlePutTextOnWindow(gDisplayedStringBattle, (21));
           state++;
-          result = ARENA_RESULT_STEP_DONE;
+          result = (1);
           break;
       case 7:
-          PlaySE(SE_ARENA_TIMEUP2);
+          PlaySE((266));
           if (gBattleTextBuff1[0] > gBattleTextBuff2[0])
           {
-              result = ARENA_RESULT_PLAYER_WON;
+              result = (2);
               gBattleScripting.battler = 0;
           }
           else if (gBattleTextBuff1[0] < gBattleTextBuff2[0])
           {
-              result = ARENA_RESULT_PLAYER_LOST;
+              result = (3);
               gBattleScripting.battler = 1;
           }
           else
           {
-              result = ARENA_RESULT_TIE;
+              result = (4);
           }
           state++;
           break;
@@ -136,10 +133,10 @@ export function BattleArena_ShowJudgmentWindow(state: any): any {
           break;
       case (8) + 1:
           SetGpuReg(REG_OFFSET_WININ, (WININ_WIN0_ALL & ~WININ_WIN0_BG0) | WININ_WIN1_ALL);
-          HandleBattleWindow(5, 0, 24, 13, WINDOW_CLEAR);
+          HandleBattleWindow(5, 0, 24, 13, ((1 << 0)));
           CopyBgTilemapBufferToVram(0);
           m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 256);
-          BeginNormalPaletteFade(0x7FFFFF1C, 4, 8, 0, RGB_BLACK);
+          BeginNormalPaletteFade(0x7FFFFF1C, 4, 8, 0, (RGB(0, 0, 0)));
           state++;
           break;
       case (8) + 2:
@@ -147,7 +144,7 @@ export function BattleArena_ShowJudgmentWindow(state: any): any {
           {
               SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_ALL | WININ_WIN1_ALL);
               FreeSpriteTilesByTag((1000));
-              result = ARENA_RESULT_STEP_DONE;
+              result = (1);
               state++;
           }
           break;
@@ -167,15 +164,15 @@ export function ShowJudgmentSprite(x: any, y: any, category: any, battler: any):
 
       switch (category)
       {
-      case ARENA_CATEGORY_MIND:
+      case (0):
           pointsPlayer = mindPoints[battler];
           pointsOpponent = mindPoints[BATTLE_OPPOSITE(battler)];
           break;
-      case ARENA_CATEGORY_SKILL:
+      case (1):
           pointsPlayer = skillPoints[battler];
           pointsOpponent = skillPoints[BATTLE_OPPOSITE(battler)];
           break;
-      case ARENA_CATEGORY_BODY:
+      case (2):
           pointsPlayer = (gBattleMons[battler].hp * 100) / hpAtStart[battler];
           pointsOpponent = (gBattleMons[BATTLE_OPPOSITE(battler)].hp * 100) / hpAtStart[BATTLE_OPPOSITE(battler)];
           break;
@@ -238,7 +235,7 @@ export function BattleArena_AddMindPoints(battler: any): any {
 export function BattleArena_AddSkillPoints(battler: any): any {
   let skillPoints: any = gBattleStruct.arenaSkillPoints;
 
-      if (gHitMarker & HITMARKER_OBEYS)
+      if (gHitMarker & ((1 << 25)))
       {
           let failedMoveBits: any =gBattleStruct.alreadyStatusedMoveAttempt;
           if (failedMoveBits & gBitTable[battler])
@@ -246,20 +243,20 @@ export function BattleArena_AddSkillPoints(battler: any): any {
               failedMoveBits &= ~(gBitTable[battler]);
               skillPoints[battler] -= 2;
           }
-          else if (gMoveResultFlags & MOVE_RESULT_NO_EFFECT)
+          else if (gMoveResultFlags & ((((1 << 0)) | ((1 << 3)) | ((1 << 5)))))
           {
-              if (!(gMoveResultFlags & MOVE_RESULT_MISSED) || gBattleCommunication[MISS_TYPE] != B_MSG_PROTECTED)
+              if (!(gMoveResultFlags & ((1 << 0))) || gBattleCommunication[(6)] != (1))
                   skillPoints[battler] -= 2;
           }
-          else if ((gMoveResultFlags & MOVE_RESULT_SUPER_EFFECTIVE) && (gMoveResultFlags & MOVE_RESULT_NOT_VERY_EFFECTIVE))
+          else if ((gMoveResultFlags & ((1 << 1))) && (gMoveResultFlags & ((1 << 2))))
           {
               skillPoints[battler] += 1;
           }
-          else if (gMoveResultFlags & MOVE_RESULT_SUPER_EFFECTIVE)
+          else if (gMoveResultFlags & ((1 << 1)))
           {
               skillPoints[battler] += 2;
           }
-          else if (gMoveResultFlags & MOVE_RESULT_NOT_VERY_EFFECTIVE)
+          else if (gMoveResultFlags & ((1 << 2)))
           {
               skillPoints[battler] -= 1;
           }
@@ -276,25 +273,25 @@ export function BattleArena_DeductSkillPoints(battler: any, stringId: any): any 
 
       switch (stringId)
       {
-      case STRINGID_PKMNSXMADEYUSELESS:
-      case STRINGID_PKMNSXMADEITINEFFECTIVE:
-      case STRINGID_PKMNSXPREVENTSFLINCHING:
-      case STRINGID_PKMNSXBLOCKSY2:
-      case STRINGID_PKMNSXPREVENTSYLOSS:
-      case STRINGID_PKMNSXMADEYINEFFECTIVE:
-      case STRINGID_PKMNSXPREVENTSBURNS:
-      case STRINGID_PKMNSXBLOCKSY:
-      case STRINGID_PKMNPROTECTEDBY:
-      case STRINGID_PKMNPREVENTSUSAGE:
-      case STRINGID_PKMNRESTOREDHPUSING:
-      case STRINGID_PKMNPREVENTSPARALYSISWITH:
-      case STRINGID_PKMNPREVENTSROMANCEWITH:
-      case STRINGID_PKMNPREVENTSPOISONINGWITH:
-      case STRINGID_PKMNPREVENTSCONFUSIONWITH:
-      case STRINGID_PKMNRAISEDFIREPOWERWITH:
-      case STRINGID_PKMNANCHORSITSELFWITH:
-      case STRINGID_PKMNPREVENTSSTATLOSSWITH:
-      case STRINGID_PKMNSTAYEDAWAKEUSING:
+      case (327):
+      case (346):
+      case (347):
+      case (350):
+      case (309):
+      case (311):
+      case (305):
+      case (306):
+      case (195):
+      case (196):
+      case (197):
+      case (199):
+      case (200):
+      case (201):
+      case (202):
+      case (203):
+      case (204):
+      case (206):
+      case (119):
           skillPoints[battler] -= 3;
           break;
       }
@@ -309,15 +306,15 @@ export function InitArenaChallenge(): any {
       gSaveBlock2Ptr.frontier.curChallengeBattleNum = 0;
       gSaveBlock2Ptr.frontier.challengePaused = FALSE;
       gSaveBlock2Ptr.frontier.disableRecordBattle = FALSE;
-      if (lvlMode != FRONTIER_LVL_50)
-          isCurrent = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_ARENA_OPEN;
+      if (lvlMode != (0))
+          isCurrent = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 7));
       else
-          isCurrent = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_ARENA_50;
+          isCurrent = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 6));
 
       if (!isCurrent)
           gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode] = 0;
 
-      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE);
+      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)));
       gTrainerBattleOpponent_A = 0;
 }
 
@@ -327,17 +324,17 @@ export function GetArenaData(): any {
 
       switch (gSpecialVar_0x8005)
       {
-      case ARENA_DATA_PRIZE:
+      case (0):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.arenaPrize;
           break;
-      case ARENA_DATA_WIN_STREAK:
+      case (1):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode];
           break;
-      case ARENA_DATA_WIN_STREAK_ACTIVE:
-          if (lvlMode != FRONTIER_LVL_50)
-              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_ARENA_OPEN;
+      case (2):
+          if (lvlMode != (0))
+              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 7));
           else
-              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_ARENA_50;
+              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 6));
           break;
       }
 }
@@ -348,26 +345,26 @@ export function SetArenaData(): any {
 
       switch (gSpecialVar_0x8005)
       {
-      case ARENA_DATA_PRIZE:
+      case (0):
           gSaveBlock2Ptr.frontier.arenaPrize = gSpecialVar_0x8006;
           break;
-      case ARENA_DATA_WIN_STREAK:
+      case (1):
           gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode] = gSpecialVar_0x8006;
           break;
-      case ARENA_DATA_WIN_STREAK_ACTIVE:
-          if (lvlMode != FRONTIER_LVL_50)
+      case (2):
+          if (lvlMode != (0))
           {
               if (gSpecialVar_0x8006)
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= STREAK_ARENA_OPEN;
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= ((1 << 7));
               else
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(STREAK_ARENA_OPEN);
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(((1 << 7)));
           }
           else
           {
               if (gSpecialVar_0x8006)
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= STREAK_ARENA_50;
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= ((1 << 6));
               else
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(STREAK_ARENA_50);
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(((1 << 6)));
           }
           break;
       }
@@ -376,7 +373,7 @@ export function SetArenaData(): any {
 /** static void SaveArenaChallenge(void) */
 export function SaveArenaChallenge(): any {
   gSaveBlock2Ptr.frontier.challengeStatus = gSpecialVar_0x8005;
-      VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);
+      VarSet(((((0x4000) + 0x0))), 0);
       gSaveBlock2Ptr.frontier.challengePaused = TRUE;
       SaveGameFrontier();
 }
@@ -396,7 +393,7 @@ export function GiveArenaPrize(): any {
   if (AddBagItem(gSaveBlock2Ptr.frontier.arenaPrize, 1) == TRUE)
       {
           CopyItemName(gSaveBlock2Ptr.frontier.arenaPrize, gStringVar1);
-          gSaveBlock2Ptr.frontier.arenaPrize = ITEM_NONE;
+          gSaveBlock2Ptr.frontier.arenaPrize = (0);
           gSpecialVar_Result = TRUE;
       }
       else

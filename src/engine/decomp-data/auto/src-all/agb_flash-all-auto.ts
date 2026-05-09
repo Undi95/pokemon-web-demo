@@ -17,6 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let PollFlashStatus: any = null;
+let gFlashTimeoutFlag: any = null;
+let intrFunc: any = null;
 let sSavedIme: any = null;
 let sTimerCount: any = null;
 let sTimerNum: any = null;

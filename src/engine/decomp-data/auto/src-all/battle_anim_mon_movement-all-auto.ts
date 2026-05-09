@@ -19,7 +19,7 @@
 export function AnimTask_ShakeMon(taskId: any): any {
   let spriteId: any = null;
       spriteId = GetAnimBattlerSpriteId(gBattleAnimArgs[0]);
-      if (spriteId == SPRITE_NONE)
+      if (spriteId == (0xFF))
       {
           DestroyAnimVisualTask(taskId);
           return;
@@ -80,27 +80,27 @@ export function AnimTask_ShakeMon2(taskId: any): any {
       if (gBattleAnimArgs[0] < MAX_BATTLERS_COUNT)
       {
           spriteId = GetAnimBattlerSpriteId(gBattleAnimArgs[0]);
-          if (spriteId == SPRITE_NONE)
+          if (spriteId == (0xFF))
           {
                
               DestroyAnimVisualTask(taskId);
               return;
           }
       }
-      else if (gBattleAnimArgs[0] != ANIM_ATTACKER_FORCE)
+      else if (gBattleAnimArgs[0] != ((MAX_BATTLERS_COUNT + 4)))
       {
           switch (gBattleAnimArgs[0])
           {
-          case ANIM_PLAYER_LEFT:
+          case ((MAX_BATTLERS_COUNT + 0)):
               battler = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
               break;
-          case ANIM_PLAYER_RIGHT:
+          case ((MAX_BATTLERS_COUNT + 1)):
               battler = GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT);
               break;
-          case ANIM_OPPONENT_LEFT:
+          case ((MAX_BATTLERS_COUNT + 2)):
               battler = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
               break;
-          case ANIM_OPPONENT_RIGHT:
+          case ((MAX_BATTLERS_COUNT + 3)):
           default:
               battler = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
               break;
@@ -166,7 +166,7 @@ export function AnimTask_ShakeMon2_Step(taskId: any): any {
 /** void AnimTask_ShakeMonInPlace(u8 taskId) */
 export function AnimTask_ShakeMonInPlace(taskId: any): any {
   let spriteId: any = GetAnimBattlerSpriteId(gBattleAnimArgs[0]);
-      if (spriteId == SPRITE_NONE)
+      if (spriteId == (0xFF))
       {
           DestroyAnimVisualTask(taskId);
           return;
@@ -303,7 +303,7 @@ export function AnimTask_TranslateMonElliptical_Step(taskId: any): any {
 
 /** void AnimTask_TranslateMonEllipticalRespectSide(u8 taskId) */
 export function AnimTask_TranslateMonEllipticalRespectSide(taskId: any): any {
-  if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+  if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
 
       AnimTask_TranslateMonElliptical(taskId);
@@ -312,7 +312,7 @@ export function AnimTask_TranslateMonEllipticalRespectSide(taskId: any): any {
 /** static void DoHorizontalLunge(struct Sprite *sprite) */
 export function DoHorizontalLunge(sprite: any): any {
   sprite.invisible = TRUE;
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.data[1] = -gBattleAnimArgs[1];
       else
           sprite.data[1] = gBattleAnimArgs[1];
@@ -424,7 +424,7 @@ export function SlideMonToOffset(sprite: any): any {
           battler = gBattleAnimTarget;
 
       monSpriteId = gBattlerSpriteIds[battler];
-      if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) != (0))
       {
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
           if (gBattleAnimArgs[3] == 1)
@@ -453,7 +453,7 @@ export function SlideMonToOffsetAndBack(sprite: any): any {
       let battler: any = null;
       sprite.invisible = TRUE;
 
-      if (gBattleAnimArgs[0] == ANIM_ATTACKER)
+      if (gBattleAnimArgs[0] == (0))
           battler = gBattleAnimAttacker;
       else
           battler = gBattleAnimTarget;
@@ -498,7 +498,7 @@ export function SlideMonToOffsetAndBack_End(sprite: any): any {
 /** void AnimTask_WindUpLunge(u8 taskId) */
 export function AnimTask_WindUpLunge(taskId: any): any {
   let wavePeriod: any = 0x8000 / gBattleAnimArgs[3];
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
           gBattleAnimArgs[5] = -gBattleAnimArgs[5];
@@ -553,11 +553,11 @@ export function AnimTask_SlideOffScreen(taskId: any): any {
   let spriteId: any = null;
       switch (gBattleAnimArgs[0])
       {
-      case ANIM_ATTACKER:
-      case ANIM_TARGET:
+      case (0):
+      case (1):
           spriteId = GetAnimBattlerSpriteId(gBattleAnimArgs[0]);
           break;
-      case ANIM_ATK_PARTNER:
+      case (2):
           if (!IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimAttacker)))
           {
               DestroyAnimVisualTask(taskId);
@@ -565,7 +565,7 @@ export function AnimTask_SlideOffScreen(taskId: any): any {
           }
           spriteId = gBattlerSpriteIds[BATTLE_PARTNER(gBattleAnimAttacker)];
           break;
-      case ANIM_DEF_PARTNER:
+      case (3):
           if (!IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimTarget)))
           {
               DestroyAnimVisualTask(taskId);
@@ -578,7 +578,7 @@ export function AnimTask_SlideOffScreen(taskId: any): any {
           return;
       }
       gTasks[taskId].data[0] = spriteId;
-      if (GetBattlerSide(gBattleAnimTarget) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) != (0))
       {
           gTasks[taskId].data[1] = gBattleAnimArgs[1];
       }
@@ -603,7 +603,7 @@ export function AnimTask_SlideOffScreen_Step(taskId: any): any {
 /** void AnimTask_SwayMon(u8 taskId) */
 export function AnimTask_SwayMon(taskId: any): any {
   let spriteId: any = null;
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
 
       spriteId = GetAnimBattlerSpriteId(gBattleAnimArgs[4]);
@@ -641,7 +641,7 @@ export function AnimTask_SwayMonStep(taskId: any): any {
       }
       else
       {
-          if (GetBattlerSide(gTasks[taskId].data[5]) == B_SIDE_PLAYER)
+          if (GetBattlerSide(gTasks[taskId].data[5]) == (0))
           {
               gSprites[spriteId].y2 = (sineValue >= 0) ? sineValue : -sineValue;
           }
@@ -729,13 +729,13 @@ export function AnimTask_RotateMonSpriteToSide(taskId: any): any {
       }
       else
       {
-          if (gBattleAnimArgs[2] == ANIM_ATTACKER)
+          if (gBattleAnimArgs[2] == (0))
           {
-              gTasks[taskId].data[7] = GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER;
+              gTasks[taskId].data[7] = GetBattlerSide(gBattleAnimAttacker) == (0);
           }
           else
           {
-              gTasks[taskId].data[7] = GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER;
+              gTasks[taskId].data[7] = GetBattlerSide(gBattleAnimTarget) == (0);
           }
       }
       if (gTasks[taskId].data[7])
@@ -755,7 +755,7 @@ export function AnimTask_RotateMonToSideAndRestore(taskId: any): any {
       PrepareBattlerSpriteForRotScale(spriteId, ST_OAM_OBJ_NORMAL);
       gTasks[taskId].data[1] = 0;
       gTasks[taskId].data[2] = gBattleAnimArgs[0];
-      if (gBattleAnimArgs[2] == ANIM_ATTACKER)
+      if (gBattleAnimArgs[2] == (0))
       {
           if (GetBattlerSide(gBattleAnimAttacker))
           {
@@ -844,7 +844,7 @@ export function AnimTask_ShakeTargetBasedOnMovePowerOrDmg(taskId: any): any {
       gTasks[taskId].data[12] = 0;
       gTasks[taskId].data[10] = gBattleAnimArgs[3];
       gTasks[taskId].data[11] = gBattleAnimArgs[4];
-      gTasks[taskId].data[7] = GetAnimBattlerSpriteId(ANIM_TARGET);
+      gTasks[taskId].data[7] = GetAnimBattlerSpriteId((1));
       gTasks[taskId].data[8] = gSprites[gTasks[taskId].data[7]].x2;
       gTasks[taskId].data[9] = gSprites[gTasks[taskId].data[7]].y2;
       gTasks[taskId].data[0] = 0;

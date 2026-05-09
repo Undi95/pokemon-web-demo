@@ -23,8 +23,6 @@ let sPrimaryTilesetAnimCounterMax: any = null;
 let sSecondaryTilesetAnimCallback: any = null;
 let sSecondaryTilesetAnimCounter: any = null;
 let sSecondaryTilesetAnimCounterMax: any = null;
-let sTilesetAnims_BattleDomeFloorLightPals: any = null;
-let sTilesetDMA3TransferBuffer: any = null;
 let sTilesetDMA3TransferBufferSize: any = null;
 /** static void ResetTilesetAnimBuffer(void) */
 export function ResetTilesetAnimBuffer(): any {
@@ -446,28 +444,28 @@ export function QueueAnimTiles_General_LandWaterEdge(timer: any): any {
 /** static void QueueAnimTiles_Lavaridge_Steam(u8 timer) */
 export function QueueAnimTiles_Lavaridge_Steam(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_Lavaridge_Steam);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Steam[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 288)), 4 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Steam[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 288)), 4 * TILE_SIZE_4BPP);
 
       i = (timer + 2) % ARRAY_COUNT(gTilesetAnims_Lavaridge_Steam);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Steam[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 292)), 4 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Steam[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 292)), 4 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_Pacifidlog_LogBridges(u8 timer) */
 export function QueueAnimTiles_Pacifidlog_LogBridges(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_Pacifidlog_LogBridges);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Pacifidlog_LogBridges[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 464)), 30 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Pacifidlog_LogBridges[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 464)), 30 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_Underwater_Seaweed(u8 timer) */
 export function QueueAnimTiles_Underwater_Seaweed(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_Underwater_Seaweed);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Underwater_Seaweed[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496)), 4 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Underwater_Seaweed[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 496)), 4 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_Pacifidlog_WaterCurrents(u8 timer) */
 export function QueueAnimTiles_Pacifidlog_WaterCurrents(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_Pacifidlog_WaterCurrents);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Pacifidlog_WaterCurrents[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496)), 8 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Pacifidlog_WaterCurrents[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 496)), 8 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_Mauville_Flowers(u16 timer_div, u8 timer_mod) */
@@ -498,13 +496,13 @@ export function QueueAnimTiles_Rustboro_WindyWater(timer_div: any, timer_mod: an
 /** static void QueueAnimTiles_Rustboro_Fountain(u16 timer) */
 export function QueueAnimTiles_Rustboro_Fountain(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_Rustboro_Fountain);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Rustboro_Fountain[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 448)), 4 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Rustboro_Fountain[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 448)), 4 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_Lavaridge_Lava(u16 timer) */
 export function QueueAnimTiles_Lavaridge_Lava(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_Lavaridge_Cave_Lava);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Cave_Lava[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 160)), 4 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Cave_Lava[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 160)), 4 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_EverGrande_Flowers(u16 timer_div, u8 timer_mod) */
@@ -518,31 +516,31 @@ export function QueueAnimTiles_EverGrande_Flowers(timer_div: any, timer_mod: any
 /** static void QueueAnimTiles_Cave_Lava(u16 timer) */
 export function QueueAnimTiles_Cave_Lava(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_Lavaridge_Cave_Lava);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Cave_Lava[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 416)), 4 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Lavaridge_Cave_Lava[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 416)), 4 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_Dewford_Flag(u16 timer) */
 export function QueueAnimTiles_Dewford_Flag(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_Dewford_Flag);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Dewford_Flag[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 170)), 6 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Dewford_Flag[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 170)), 6 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_BattleFrontierOutsideWest_Flag(u16 timer) */
 export function QueueAnimTiles_BattleFrontierOutsideWest_Flag(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_BattleFrontierOutsideWest_Flag);
-      AppendTilesetAnimToBuffer(gTilesetAnims_BattleFrontierOutsideWest_Flag[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 218)), 6 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_BattleFrontierOutsideWest_Flag[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 218)), 6 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_BattleFrontierOutsideEast_Flag(u16 timer) */
 export function QueueAnimTiles_BattleFrontierOutsideEast_Flag(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_BattleFrontierOutsideEast_Flag);
-      AppendTilesetAnimToBuffer(gTilesetAnims_BattleFrontierOutsideEast_Flag[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 218)), 6 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_BattleFrontierOutsideEast_Flag[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 218)), 6 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_Slateport_Balloons(u16 timer) */
 export function QueueAnimTiles_Slateport_Balloons(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_Slateport_Balloons);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Slateport_Balloons[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 224)), 4 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Slateport_Balloons[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 224)), 4 * TILE_SIZE_4BPP);
 }
 
 /** static void TilesetAnim_MauvilleGym(u16 timer) */
@@ -601,57 +599,57 @@ export function QueueAnimTiles_Building_TVTurnedOn(timer: any): any {
 /** static void QueueAnimTiles_SootopolisGym_Waterfalls(u16 timer) */
 export function QueueAnimTiles_SootopolisGym_Waterfalls(timer: any): any {
   let i: any = timer % min(ARRAY_COUNT(gTilesetAnims_SootopolisGym_SideWaterfall), ARRAY_COUNT(gTilesetAnims_SootopolisGym_FrontWaterfall));
-      AppendTilesetAnimToBuffer(gTilesetAnims_SootopolisGym_SideWaterfall[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496)), 12 * TILE_SIZE_4BPP);
-      AppendTilesetAnimToBuffer(gTilesetAnims_SootopolisGym_FrontWaterfall[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 464)), 20 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_SootopolisGym_SideWaterfall[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 496)), 12 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_SootopolisGym_FrontWaterfall[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 464)), 20 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_EliteFour_WallLights(u16 timer) */
 export function QueueAnimTiles_EliteFour_WallLights(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_EliteFour_WallLights);
-      AppendTilesetAnimToBuffer(gTilesetAnims_EliteFour_WallLights[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 504)), 1 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_EliteFour_WallLights[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 504)), 1 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_EliteFour_GroundLights(u16 timer) */
 export function QueueAnimTiles_EliteFour_GroundLights(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_EliteFour_FloorLight);
-      AppendTilesetAnimToBuffer(gTilesetAnims_EliteFour_FloorLight[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 480)), 4 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_EliteFour_FloorLight[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 480)), 4 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_MauvilleGym_ElectricGates(u16 timer) */
 export function QueueAnimTiles_MauvilleGym_ElectricGates(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_MauvilleGym_ElectricGates);
-      AppendTilesetAnimToBuffer(gTilesetAnims_MauvilleGym_ElectricGates[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 144)), 16 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_MauvilleGym_ElectricGates[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 144)), 16 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_BikeShop_BlinkingLights(u16 timer) */
 export function QueueAnimTiles_BikeShop_BlinkingLights(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_BikeShop_BlinkingLights);
-      AppendTilesetAnimToBuffer(gTilesetAnims_BikeShop_BlinkingLights[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 496)), 9 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_BikeShop_BlinkingLights[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 496)), 9 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_Sootopolis_StormyWater(u16 timer) */
 export function QueueAnimTiles_Sootopolis_StormyWater(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_Sootopolis_StormyWater);
-      AppendTilesetAnimToBuffer(gTilesetAnims_Sootopolis_StormyWater[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 240)), 96 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_Sootopolis_StormyWater[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 240)), 96 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_BattlePyramid_Torch(u16 timer) */
 export function QueueAnimTiles_BattlePyramid_Torch(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_BattlePyramid_Torch);
-      AppendTilesetAnimToBuffer(gTilesetAnims_BattlePyramid_Torch[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 151)), 8 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_BattlePyramid_Torch[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 151)), 8 * TILE_SIZE_4BPP);
 }
 
 /** static void QueueAnimTiles_BattlePyramid_StatueShadow(u16 timer) */
 export function QueueAnimTiles_BattlePyramid_StatueShadow(timer: any): any {
   let i: any = timer % ARRAY_COUNT(gTilesetAnims_BattlePyramid_StatueShadow);
-      AppendTilesetAnimToBuffer(gTilesetAnims_BattlePyramid_StatueShadow[i], (BG_VRAM + TILE_OFFSET_4BPP(NUM_TILES_IN_PRIMARY + 135)), 8 * TILE_SIZE_4BPP);
+      AppendTilesetAnimToBuffer(gTilesetAnims_BattlePyramid_StatueShadow[i], (BG_VRAM + TILE_OFFSET_4BPP((512) + 135)), 8 * TILE_SIZE_4BPP);
 }
 
 /** static void BlendAnimPalette_BattleDome_FloorLights(u16 timer) */
 export function BlendAnimPalette_BattleDome_FloorLights(timer: any): any {
   CpuCopy16(sTilesetAnims_BattleDomeFloorLightPals[timer % ARRAY_COUNT(sTilesetAnims_BattleDomeFloorLightPals)],gPlttBufferUnfaded[BG_PLTT_ID(8)], PLTT_SIZE_4BPP);
       BlendPalette(BG_PLTT_ID(8), 16, gPaletteFade.y, gPaletteFade.blendColor & 0x7FFF);
-      if (FindTaskIdByFunc(Task_BattleTransition_Intro) != TASK_NONE)
+      if (FindTaskIdByFunc(Task_BattleTransition_Intro) != ((0xFF)))
       {
           sSecondaryTilesetAnimCallback = TilesetAnim_BattleDome2;
           sSecondaryTilesetAnimCounterMax = 32;
@@ -661,7 +659,7 @@ export function BlendAnimPalette_BattleDome_FloorLights(timer: any): any {
 /** static void BlendAnimPalette_BattleDome_FloorLightsNoBlend(u16 timer) */
 export function BlendAnimPalette_BattleDome_FloorLightsNoBlend(timer: any): any {
   CpuCopy16(sTilesetAnims_BattleDomeFloorLightPals[timer % ARRAY_COUNT(sTilesetAnims_BattleDomeFloorLightPals)],gPlttBufferUnfaded[BG_PLTT_ID(8)], PLTT_SIZE_4BPP);
-      if (FindTaskIdByFunc(Task_BattleTransition_Intro) == TASK_NONE)
+      if (FindTaskIdByFunc(Task_BattleTransition_Intro) == ((0xFF)))
       {
           BlendPalette(BG_PLTT_ID(8), 16, gPaletteFade.y, gPaletteFade.blendColor & 0x7FFF);
           if (!--sSecondaryTilesetAnimCounterMax)

@@ -19,7 +19,6 @@
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sDma3ManagerLocked: any = null;
 let sDma3RequestCursor: any = null;
-let sDma3Requests: any = null;
 /** void ClearDma3Requests(void) */
 export function ClearDma3Requests(): any {
   let i: any = null;

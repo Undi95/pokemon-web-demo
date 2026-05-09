@@ -17,60 +17,18 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_0x8005: any = null;
+let gSpecialVar_0x8006: any = null;
 let sCurTVShowSlot: any = null;
 let sFindThatGamerCoinsSpent: any = null;
 let sFindThatGamerWhichGame: any = null;
-let sGoldSymbolFlags: any = null;
-let sNumberOneVarsAndThresholds: any = null;
-let sPokeNewsTextGroup_Ending: any = null;
-let sPokeNewsTextGroup_Ongoing: any = null;
-let sPokeNewsTextGroup_Upcoming: any = null;
-let sPokeOutbreakSpeciesList: any = null;
-let sPokemonAnglerAttemptCounters: any = null;
 let sPokemonAnglerSpecies: any = null;
 let sRecordMixingPartnersWithoutShowsToShare: any = null;
-let sSilverSymbolFlags: any = null;
-let sTV3CheersForPokeblocksTextGroup: any = null;
-let sTVBravoTrainerBattleTowerTextGroup: any = null;
-let sTVBravoTrainerTextGroup: any = null;
-let sTVBreakingNewsTextGroup: any = null;
-let sTVContestLiveUpdatesTextGroup: any = null;
-let sTVCutiesTextGroup: any = null;
-let sTVDewfordTrendWatcherNetworkTextGroup: any = null;
-let sTVFanClubOpinionsTextGroup: any = null;
-let sTVFanClubTextGroup: any = null;
-let sTVFindThatGamerTextGroup: any = null;
-let sTVHoennTreasureInvestisatorsTextGroup: any = null;
-let sTVInSearchOfTrainersTextGroup: any = null;
-let sTVLilycoveContestLadyTextGroup: any = null;
-let sTVMassOutbreakTextGroup: any = null;
-let sTVNameRaterTextGroup: any = null;
-let sTVPokemonAnglerTextGroup: any = null;
-let sTVPokemonBattleUpdateTextGroup: any = null;
-let sTVPokemonLotteryWinnerFlashReportTextGroup: any = null;
-let sTVPokemonNewsBattleFrontierTextGroup: any = null;
-let sTVPokemonTodayFailedTextGroup: any = null;
-let sTVPokemonTodaySuccessfulTextGroup: any = null;
-let sTVRecentHappeninssTextGroup: any = null;
-let sTVSafariFanClubTextGroup: any = null;
-let sTVSecretBaseSecretsActions: any = null;
-let sTVSecretBaseSecretsRandomValues: any = null;
-let sTVSecretBaseSecretsTextGroup: any = null;
-let sTVSecretBaseVisitTextGroup: any = null;
 let sTVShowMixingCurSlot: any = null;
 let sTVShowMixingNumPlayers: any = null;
 let sTVShowNewsMixingNumPlayers: any = null;
 let sTVShowState: any = null;
-let sTVThePokemonBattleSeminarTextGroup: any = null;
-let sTVTodaysRivalTrainerTextGroup: any = null;
-let sTVTodaysSmartShopperTextGroup: any = null;
-let sTVTrainerFanClubSpecialTextGroup: any = null;
-let sTVTrainerFanClubTextGroup: any = null;
-let sTVWhatsNo1InHoennTodayTextGroup: any = null;
-let sTVWorldOfMastersTextGroup: any = null;
-let sTV_DecorationsBuffer: any = null;
-let sTV_SecretBaseVisitMonsTemp: any = null;
-let sTV_SecretBaseVisitMovesTemp: any = null;
 /** void ClearTVShowData(void) */
 export function ClearTVShowData(): any {
   let i, j;
@@ -93,9 +51,9 @@ export function GetRandomActiveShowIdx(): any {
       let show: any = null;
 
        
-      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < ((TV_SHOWS_COUNT - 1)); i++)
+      for (i = (5); i < (((((5) + 20)) - 1)); i++)
       {
-          if (gSaveBlock1Ptr.tvShows[i].common.kind == TVSHOW_OFF_AIR)
+          if (gSaveBlock1Ptr.tvShows[i].common.kind == (0))
               break;
       }
       j = Random() % i;
@@ -129,8 +87,8 @@ export function FindAnyTVShowOnTheAir(): any {
       if (slot == 0xFF)
           return 0xFF;
 
-      if (gSaveBlock1Ptr.outbreakPokemonSpecies != SPECIES_NONE
-       && gSaveBlock1Ptr.tvShows[slot].common.kind == TVSHOW_MASS_OUTBREAK)
+      if (gSaveBlock1Ptr.outbreakPokemonSpecies != (0)
+       && gSaveBlock1Ptr.tvShows[slot].common.kind == (41))
           return FindFirstActiveTVShowThatIsNotAMassOutbreak();
 
       return slot;
@@ -138,13 +96,13 @@ export function FindAnyTVShowOnTheAir(): any {
 
 /** void UpdateTVScreensOnMap(int width, int height) */
 export function UpdateTVScreensOnMap(width: any, height: any): any {
-  FlagSet(FLAG_SYS_TV_WATCH);
+  FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x31)));
       switch (CheckForPlayersHouseNews())
       {
-      case PLAYERS_HOUSE_TV_LATI:
-          SetTVMetatilesOnMap(width, height, METATILE_Building_TV_On);
+      case (1):
+          SetTVMetatilesOnMap(width, height, (0x003));
           break;
-      case PLAYERS_HOUSE_TV_MOVIE:
+      case (2):
            
           break;
    
@@ -153,12 +111,12 @@ export function UpdateTVScreensOnMap(width: any, height: any): any {
            && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_LILYCOVE_CITY_COVE_LILY_MOTEL_1F))
           {
                
-              SetTVMetatilesOnMap(width, height, METATILE_Building_TV_On);
+              SetTVMetatilesOnMap(width, height, (0x003));
           }
-          else if (FlagGet(FLAG_SYS_TV_START) && (FindAnyTVShowOnTheAir() != 0xFF || FindAnyPokeNewsOnTheAir() != 0xFF || IsGabbyAndTyShowOnTheAir()))
+          else if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x32))) && (FindAnyTVShowOnTheAir() != 0xFF || FindAnyPokeNewsOnTheAir() != 0xFF || IsGabbyAndTyShowOnTheAir()))
           {
-              FlagClear(FLAG_SYS_TV_WATCH);
-              SetTVMetatilesOnMap(width, height, METATILE_Building_TV_On);
+              FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x31)));
+              SetTVMetatilesOnMap(width, height, (0x003));
           }
           break;
       }
@@ -174,20 +132,20 @@ export function SetTVMetatilesOnMap(width: any, height: any, metatileId: any): a
           for (x = 0; x < width; x++)
           {
               if (MapGridGetMetatileBehaviorAt(x, y) == MB_TELEVISION)
-                  MapGridSetMetatileIdAt(x, y, metatileId | MAPGRID_COLLISION_MASK);
+                  MapGridSetMetatileIdAt(x, y, metatileId | (0x0C00));
           }
       }
 }
 
 /** void TurnOffTVScreen(void) */
 export function TurnOffTVScreen(): any {
-  SetTVMetatilesOnMap(gBackupMapLayout.width, gBackupMapLayout.height, METATILE_Building_TV_Off);
+  SetTVMetatilesOnMap(gBackupMapLayout.width, gBackupMapLayout.height, (0x002));
       DrawWholeMapView();
 }
 
 /** void TurnOnTVScreen(void) */
 export function TurnOnTVScreen(): any {
-  SetTVMetatilesOnMap(gBackupMapLayout.width, gBackupMapLayout.height, METATILE_Building_TV_On);
+  SetTVMetatilesOnMap(gBackupMapLayout.width, gBackupMapLayout.height, (0x003));
       DrawWholeMapView();
 }
 
@@ -202,8 +160,8 @@ export function FindFirstActiveTVShowThatIsNotAMassOutbreak(): any {
 
       for (i = 0; i < ARRAY_COUNT(gSaveBlock1Ptr.tvShows) - 1; i++)
       {
-          if (gSaveBlock1Ptr.tvShows[i].common.kind != TVSHOW_OFF_AIR
-           && gSaveBlock1Ptr.tvShows[i].common.kind != TVSHOW_MASS_OUTBREAK
+          if (gSaveBlock1Ptr.tvShows[i].common.kind != (0)
+           && gSaveBlock1Ptr.tvShows[i].common.kind != (41)
            && gSaveBlock1Ptr.tvShows[i].common.active == TRUE)
               return i;
       }
@@ -215,7 +173,7 @@ export function GetNextActiveShowIfMassOutbreak(): any {
   let tvShow: any = null;
 
       tvShow =gSaveBlock1Ptr.tvShows[gSpecialVar_0x8004];
-      if (tvShow.common.kind == TVSHOW_MASS_OUTBREAK && gSaveBlock1Ptr.outbreakPokemonSpecies != SPECIES_NONE)
+      if (tvShow.common.kind == (41) && gSaveBlock1Ptr.outbreakPokemonSpecies != (0))
           return FindFirstActiveTVShowThatIsNotAMassOutbreak();
 
       return gSpecialVar_0x8004;
@@ -223,9 +181,9 @@ export function GetNextActiveShowIfMassOutbreak(): any {
 
 /** void ResetGabbyAndTy(void) */
 export function ResetGabbyAndTy(): any {
-  gSaveBlock1Ptr.gabbyAndTyData.mon1 = SPECIES_NONE;
-      gSaveBlock1Ptr.gabbyAndTyData.mon2 = SPECIES_NONE;
-      gSaveBlock1Ptr.gabbyAndTyData.lastMove = MOVE_NONE;
+  gSaveBlock1Ptr.gabbyAndTyData.mon1 = (0);
+      gSaveBlock1Ptr.gabbyAndTyData.mon2 = (0);
+      gSaveBlock1Ptr.gabbyAndTyData.lastMove = (0);
       gSaveBlock1Ptr.gabbyAndTyData.quote[0] = -1;
       gSaveBlock1Ptr.gabbyAndTyData.battleTookMoreThanOneTurn = FALSE;
       gSaveBlock1Ptr.gabbyAndTyData.playerLostAMon = FALSE;
@@ -282,8 +240,8 @@ export function GabbyAndTyBeforeInterview(): any {
       }
 
       TakeGabbyAndTyOffTheAir();
-      if (gSaveBlock1Ptr.gabbyAndTyData.lastMove == MOVE_NONE)
-          FlagSet(FLAG_TEMP_SKIP_GABBY_INTERVIEW);
+      if (gSaveBlock1Ptr.gabbyAndTyData.lastMove == (0))
+          FlagSet(((((0x0) + 0x1))));
 }
 
 /** void GabbyAndTyAfterInterview(void) */
@@ -294,7 +252,7 @@ export function GabbyAndTyAfterInterview(): any {
       gSaveBlock1Ptr.gabbyAndTyData.playerThrewABall2 = gSaveBlock1Ptr.gabbyAndTyData.playerThrewABall;
       gSaveBlock1Ptr.gabbyAndTyData.onAir = TRUE;
       gSaveBlock1Ptr.gabbyAndTyData.mapnum = gMapHeader.regionMapSectionId;
-      IncrementGameStat(GAME_STAT_GOT_INTERVIEWED);
+      IncrementGameStat((6));
 }
 
 /** static void TakeGabbyAndTyOffTheAir(void) */
@@ -317,7 +275,7 @@ export function IsGabbyAndTyShowOnTheAir(): any {
 
 /** bool8 GabbyAndTyGetLastQuote(void) */
 export function GabbyAndTyGetLastQuote(): any {
-  if (gSaveBlock1Ptr.gabbyAndTyData.quote[0] == EC_EMPTY_WORD)
+  if (gSaveBlock1Ptr.gabbyAndTyData.quote[0] == (0xFFFF))
       {
           return FALSE;
       }
@@ -386,25 +344,25 @@ export function GetGabbyAndTyLocalIds(): any {
 export function InterviewAfter(): any {
   switch (gSpecialVar_0x8005)
       {
-      case TVSHOW_FAN_CLUB_LETTER:
+      case (1):
           InterviewAfter_FanClubLetter();
           break;
-      case TVSHOW_RECENT_HAPPENINGS:
+      case (2):
           InterviewAfter_RecentHappenings();
           break;
-      case TVSHOW_PKMN_FAN_CLUB_OPINIONS:
+      case (3):
           InterviewAfter_PkmnFanClubOpinions();
           break;
-      case TVSHOW_DUMMY:
+      case (4):
           InterviewAfter_Dummy();
           break;
-      case TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE:
+      case (6):
           InterviewAfter_BravoTrainerPokemonProfile();
           break;
-      case TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE:
+      case (7):
           InterviewAfter_BravoTrainerBattleTowerProfile();
           break;
-      case TVSHOW_CONTEST_LIVE_UPDATES:
+      case (8):
           InterviewAfter_ContestLiveUpdates();
           break;
       }
@@ -423,7 +381,7 @@ export function TryPutPokemonTodayOnAir(): any {
       TryStartRandomMassOutbreak();
 
        
-      if (gBattleResults.caughtMonSpecies == SPECIES_NONE)
+      if (gBattleResults.caughtMonSpecies == (0))
       {
           TryPutPokemonTodayFailedOnTheAir();
       }
@@ -433,7 +391,7 @@ export function TryPutPokemonTodayOnAir(): any {
           if (!rbernoulli(1, 1) && StringCompare(gSpeciesNames[gBattleResults.caughtMonSpecies], gBattleResults.caughtMonNick))
           {
               sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-              if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_POKEMON_TODAY_CAUGHT, FALSE) != TRUE)
+              if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((21), FALSE) != TRUE)
               {
                   for (i = 0; i < POKEBALL_COUNT - 1; i++)
                       ballsUsed += gBattleResults.catchAttempts[i];
@@ -442,12 +400,12 @@ export function TryPutPokemonTodayOnAir(): any {
                   {
                       ballsUsed = 0;
                       show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-                      show.pokemonToday.kind = TVSHOW_POKEMON_TODAY_CAUGHT;
+                      show.pokemonToday.kind = (21);
                       show.pokemonToday.active = FALSE;  
                       if (gBattleResults.usedMasterBall)
                       {
                           ballsUsed = 1;
-                          itemLastUsed = ITEM_MASTER_BALL;
+                          itemLastUsed = (1);
                       }
                       else
                       {
@@ -475,12 +433,12 @@ export function TryPutPokemonTodayOnAir(): any {
 
 /** static void InitWorldOfMastersShowAttempt(void) */
 export function InitWorldOfMastersShowAttempt(): any {
-  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
-      if (show.common.kind != TVSHOW_WORLD_OF_MASTERS)
+  let show: any =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
+      if (show.common.kind != (25))
       {
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
-          show.worldOfMasters.steps = GetGameStat(GAME_STAT_STEPS);
-          show.worldOfMasters.kind = TVSHOW_WORLD_OF_MASTERS;
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, (((((5) + 20)) - 1)));
+          show.worldOfMasters.steps = GetGameStat((5));
+          show.worldOfMasters.kind = (25);
       }
       show.worldOfMasters.numPokeCaught++;
       show.worldOfMasters.caughtPoke = gBattleResults.caughtMonSpecies;
@@ -501,13 +459,13 @@ export function TryPutPokemonTodayFailedOnTheAir(): any {
           if (ballsUsed > 255)
               ballsUsed = 255;
 
-          if (ballsUsed > 2 && (gBattleOutcome == B_OUTCOME_MON_FLED || gBattleOutcome == B_OUTCOME_WON))
+          if (ballsUsed > 2 && (gBattleOutcome == (6) || gBattleOutcome == (1)))
           {
               sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-              if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_POKEMON_TODAY_FAILED, FALSE) != TRUE)
+              if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((23), FALSE) != TRUE)
               {
                   show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-                  show.pokemonTodayFailed.kind = TVSHOW_POKEMON_TODAY_FAILED;
+                  show.pokemonTodayFailed.kind = (23);
                   show.pokemonTodayFailed.active = FALSE;  
                   show.pokemonTodayFailed.species = gBattleResults.playerMon1Species;
                   show.pokemonTodayFailed.species2 = gBattleResults.lastOpponentSpecies;
@@ -547,11 +505,11 @@ export function InterviewAfter_ContestLiveUpdates(): any {
   let show: any = null;
       let show2: any = null;
 
-      show =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
-      if (show.contestLiveUpdates.kind == TVSHOW_CONTEST_LIVE_UPDATES)
+      show =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
+      if (show.contestLiveUpdates.kind == (8))
       {
           show2 =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show2.contestLiveUpdates.kind = TVSHOW_CONTEST_LIVE_UPDATES;
+          show2.contestLiveUpdates.kind = (8);
           show2.contestLiveUpdates.active = TRUE;
           StringCopy(show2.contestLiveUpdates.winningTrainerName, gSaveBlock2Ptr.playerName);  
           show2.contestLiveUpdates.category = gSpecialVar_ContestCategory;
@@ -566,7 +524,7 @@ export function InterviewAfter_ContestLiveUpdates(): any {
           StorePlayerIdInNormalShow(show2);
           show2.contestLiveUpdates.winningTrainerLanguage = gGameLanguage;
           show2.contestLiveUpdates.losingTrainerLanguage = show.contestLiveUpdates.losingTrainerLanguage;
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, (((((5) + 20)) - 1)));
       }
 }
 
@@ -578,17 +536,17 @@ export function PutBattleUpdateOnTheAir(opponentLinkPlayerId: any, move: any, sp
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
-          TryReplaceOldTVShowOfKind(TVSHOW_BATTLE_UPDATE);
+          TryReplaceOldTVShowOfKind((10));
           if (gSpecialVar_Result != TRUE)
           {
               show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-              show.battleUpdate.kind = TVSHOW_BATTLE_UPDATE;
+              show.battleUpdate.kind = (10);
               show.battleUpdate.active = TRUE;
               StringCopy(show.battleUpdate.playerName, gSaveBlock2Ptr.playerName);
 
-              if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
+              if (gBattleTypeFlags & ((1 << 6)))
                   show.battleUpdate.battleType = 2;
-              else if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+              else if (gBattleTypeFlags & ((1 << 0)))
                   show.battleUpdate.battleType = 1;
               else
                   show.battleUpdate.battleType = 0;
@@ -601,8 +559,8 @@ export function PutBattleUpdateOnTheAir(opponentLinkPlayerId: any, move: any, sp
               StringCopy(show.battleUpdate.linkOpponentName, name);
               StorePlayerIdInNormalShow(show);
               show.battleUpdate.language = gGameLanguage;
-              if (show.battleUpdate.language == LANGUAGE_JAPANESE || gLinkPlayers[opponentLinkPlayerId].language == LANGUAGE_JAPANESE)
-                  show.battleUpdate.linkOpponentLanguage = LANGUAGE_JAPANESE;
+              if (show.battleUpdate.language == (1) || gLinkPlayers[opponentLinkPlayerId].language == (1))
+                  show.battleUpdate.linkOpponentLanguage = (1);
               else
                   show.battleUpdate.linkOpponentLanguage = gLinkPlayers[opponentLinkPlayerId].language;
           }
@@ -618,12 +576,12 @@ export function Put3CheersForPokeblocksOnTheAir(partnersName: any, flavor: any, 
       if (sCurTVShowSlot == -1)
           return FALSE;
 
-      TryReplaceOldTVShowOfKind(TVSHOW_3_CHEERS_FOR_POKEBLOCKS);
+      TryReplaceOldTVShowOfKind((9));
       if (gSpecialVar_Result == TRUE)
           return FALSE;  
 
       show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-      show.threeCheers.kind = TVSHOW_3_CHEERS_FOR_POKEBLOCKS;
+      show.threeCheers.kind = (9);
       show.threeCheers.active = TRUE;
       StringCopy(show.threeCheers.playerName, gSaveBlock2Ptr.playerName);
       StringCopy(name, partnersName);
@@ -634,8 +592,8 @@ export function Put3CheersForPokeblocksOnTheAir(partnersName: any, flavor: any, 
       show.threeCheers.sheen = sheen;
       StorePlayerIdInNormalShow(show);
       show.threeCheers.language = gGameLanguage;
-      if (show.threeCheers.language == LANGUAGE_JAPANESE || language == LANGUAGE_JAPANESE)
-          show.threeCheers.worstBlenderLanguage = LANGUAGE_JAPANESE;
+      if (show.threeCheers.language == (1) || language == (1))
+          show.threeCheers.worstBlenderLanguage = (1);
       else
           show.threeCheers.worstBlenderLanguage = language;
       return TRUE;
@@ -650,7 +608,7 @@ export function PutFanClubSpecialOnTheAir(): any {
       show =gSaveBlock1Ptr.tvShows[gSpecialVar_0x8006];
       show.fanClubSpecial.score = gSpecialVar_0x8005 * 10;
       StringCopy(show.fanClubSpecial.playerName, gSaveBlock2Ptr.playerName);
-      show.fanClubSpecial.kind = TVSHOW_FAN_CLUB_SPECIAL;
+      show.fanClubSpecial.kind = (11);
       show.fanClubSpecial.active = TRUE;
       id = GetPlayerIDAsU32();
       show.fanClubSpecial.idLo = id;
@@ -660,8 +618,8 @@ export function PutFanClubSpecialOnTheAir(): any {
       StringCopy(show.fanClubSpecial.idolName, name);
       StorePlayerIdInNormalShow(show);
       show.fanClubSpecial.language = gGameLanguage;
-      if (show.fanClubSpecial.language == LANGUAGE_JAPANESE || gSaveBlock1Ptr.linkBattleRecords.languages[0] == LANGUAGE_JAPANESE)
-          show.fanClubSpecial.idolNameLanguage = LANGUAGE_JAPANESE;
+      if (show.fanClubSpecial.language == (1) || gSaveBlock1Ptr.linkBattleRecords.languages[0] == (1))
+          show.fanClubSpecial.idolNameLanguage = (1);
       else
           show.fanClubSpecial.idolNameLanguage = gSaveBlock1Ptr.linkBattleRecords.languages[0];
 }
@@ -670,19 +628,19 @@ export function PutFanClubSpecialOnTheAir(): any {
 export function ContestLiveUpdates_Init(round1Placing: any): any {
   let show: any = null;
 
-      DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
+      DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, (((((5) + 20)) - 1)));
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
-          show =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
+          show =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
           show.contestLiveUpdates.round1Placing = round1Placing;
-          show.contestLiveUpdates.kind = TVSHOW_CONTEST_LIVE_UPDATES;
+          show.contestLiveUpdates.kind = (8);
       }
 }
 
 /** void ContestLiveUpdates_SetRound2Placing(u8 round2Placing) */
 export function ContestLiveUpdates_SetRound2Placing(round2Placing: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
+  let show: any =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
           show.contestLiveUpdates.round2Placing = round2Placing;
@@ -690,7 +648,7 @@ export function ContestLiveUpdates_SetRound2Placing(round2Placing: any): any {
 
 /** void ContestLiveUpdates_SetWinnerAppealFlag(u8 flag) */
 export function ContestLiveUpdates_SetWinnerAppealFlag(flag: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
+  let show: any =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
           show.contestLiveUpdates.winnerAppealFlag = flag;
@@ -698,7 +656,7 @@ export function ContestLiveUpdates_SetWinnerAppealFlag(flag: any): any {
 
 /** void ContestLiveUpdates_SetWinnerMoveUsed(u16 move) */
 export function ContestLiveUpdates_SetWinnerMoveUsed(move: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
+  let show: any =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
           show.contestLiveUpdates.move = move;
@@ -706,7 +664,7 @@ export function ContestLiveUpdates_SetWinnerMoveUsed(move: any): any {
 
 /** void ContestLiveUpdates_SetLoserData(u8 flag, u8 loser) */
 export function ContestLiveUpdates_SetLoserData(flag: any, loser: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
+  let show: any =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
@@ -717,8 +675,8 @@ export function ContestLiveUpdates_SetLoserData(flag: any, loser: any): any {
 
           if (loser + 1 > gNumLinkContestPlayers)
               show.contestLiveUpdates.losingTrainerLanguage = gLinkPlayers[0].language;
-          else if (gGameLanguage == LANGUAGE_JAPANESE || gLinkPlayers[loser].language == LANGUAGE_JAPANESE)
-              show.contestLiveUpdates.losingTrainerLanguage = LANGUAGE_JAPANESE;
+          else if (gGameLanguage == (1) || gLinkPlayers[loser].language == (1))
+              show.contestLiveUpdates.losingTrainerLanguage = (1);
           else
               show.contestLiveUpdates.losingTrainerLanguage = gLinkPlayers[loser].language;
       }
@@ -729,11 +687,11 @@ export function InterviewAfter_BravoTrainerPokemonProfile(): any {
   let show: any = null;
       let show2: any = null;
 
-      show =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
-      if (show.bravoTrainer.kind == TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE)
+      show =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
+      if (show.bravoTrainer.kind == (6))
       {
           show2 =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show2.bravoTrainer.kind = TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE;
+          show2.bravoTrainer.kind = (6);
           show2.bravoTrainer.active = TRUE;
           show2.bravoTrainer.species = show.bravoTrainer.species;
           StringCopy(show2.bravoTrainer.playerName, gSaveBlock2Ptr.playerName);
@@ -745,30 +703,30 @@ export function InterviewAfter_BravoTrainerPokemonProfile(): any {
           show2.bravoTrainer.contestCategory = show.bravoTrainer.contestCategory;
           StorePlayerIdInNormalShow(show2);
           show2.bravoTrainer.language = gGameLanguage;
-          if (show2.bravoTrainer.language == LANGUAGE_JAPANESE || show.bravoTrainer.pokemonNameLanguage == LANGUAGE_JAPANESE)
-              show2.bravoTrainer.pokemonNameLanguage = LANGUAGE_JAPANESE;
+          if (show2.bravoTrainer.language == (1) || show.bravoTrainer.pokemonNameLanguage == (1))
+              show2.bravoTrainer.pokemonNameLanguage = (1);
           else
               show2.bravoTrainer.pokemonNameLanguage = show.bravoTrainer.pokemonNameLanguage;
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, (((((5) + 20)) - 1)));
       }
 }
 
 /** void BravoTrainerPokemonProfile_BeforeInterview1(u16 move) */
 export function BravoTrainerPokemonProfile_BeforeInterview1(move: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
+  let show: any =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
       InterviewBefore_BravoTrainerPkmnProfile();
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, (((((5) + 20)) - 1)));
           show.bravoTrainer.move = move;
-          show.bravoTrainer.kind = TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE;
+          show.bravoTrainer.kind = (6);
       }
 }
 
 /** void BravoTrainerPokemonProfile_BeforeInterview2(u8 contestStandingPlace) */
 export function BravoTrainerPokemonProfile_BeforeInterview2(contestStandingPlace: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
+  let show: any =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
       sCurTVShowSlot = FindFirstEmptyNormalTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
@@ -785,7 +743,7 @@ export function BravoTrainerPokemonProfile_BeforeInterview2(contestStandingPlace
 /** static void InterviewAfter_BravoTrainerBattleTowerProfile(void) */
 export function InterviewAfter_BravoTrainerBattleTowerProfile(): any {
   let show: any =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-      show.bravoTrainerTower.kind = TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE;
+      show.bravoTrainerTower.kind = (7);
       show.bravoTrainerTower.active = TRUE;
       StringCopy(show.bravoTrainerTower.playerName, gSaveBlock2Ptr.playerName);
       StringCopy(show.bravoTrainerTower.opponentName, gSaveBlock2Ptr.frontier.towerInterview.opponentName);
@@ -793,15 +751,15 @@ export function InterviewAfter_BravoTrainerBattleTowerProfile(): any {
       show.bravoTrainerTower.defeatedSpecies = gSaveBlock2Ptr.frontier.towerInterview.opponentSpecies;
       show.bravoTrainerTower.numFights = GetCurrentBattleTowerWinStreak(gSaveBlock2Ptr.frontier.towerLvlMode, 0);
       show.bravoTrainerTower.wonTheChallenge = gSaveBlock2Ptr.frontier.towerBattleOutcome;
-      if (gSaveBlock2Ptr.frontier.towerLvlMode == FRONTIER_LVL_50)
-          show.bravoTrainerTower.btLevel = FRONTIER_MAX_LEVEL_50;
+      if (gSaveBlock2Ptr.frontier.towerLvlMode == (0))
+          show.bravoTrainerTower.btLevel = (50);
       else
-          show.bravoTrainerTower.btLevel = FRONTIER_MAX_LEVEL_OPEN;
+          show.bravoTrainerTower.btLevel = ((100));
       show.bravoTrainerTower.interviewResponse = gSpecialVar_0x8004;
       StorePlayerIdInNormalShow(show);
       show.bravoTrainerTower.playerLanguage = gGameLanguage;
-      if (show.bravoTrainerTower.playerLanguage == LANGUAGE_JAPANESE || gSaveBlock2Ptr.frontier.towerInterview.opponentLanguage == LANGUAGE_JAPANESE)
-          show.bravoTrainerTower.opponentLanguage = LANGUAGE_JAPANESE;
+      if (show.bravoTrainerTower.playerLanguage == (1) || gSaveBlock2Ptr.frontier.towerInterview.opponentLanguage == (1))
+          show.bravoTrainerTower.opponentLanguage = (1);
       else
           show.bravoTrainerTower.opponentLanguage = gSaveBlock2Ptr.frontier.towerInterview.opponentLanguage;
 }
@@ -816,21 +774,21 @@ export function TryPutSmartShopperOnAir(): any {
        && !rbernoulli(1, 3))
       {
           sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-          if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_SMART_SHOPPER, FALSE) != TRUE)
+          if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((22), FALSE) != TRUE)
           {
               SortPurchasesByQuantity();
               if (gMartPurchaseHistory[0].quantity >= 20)
               {
                   show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-                  show.smartshopperShow.kind = TVSHOW_SMART_SHOPPER;
+                  show.smartshopperShow.kind = (22);
                   show.smartshopperShow.active = FALSE;  
                   show.smartshopperShow.shopLocation = gMapHeader.regionMapSectionId;
-                  for (i = 0; i < SMARTSHOPPER_NUM_ITEMS; i++)
+                  for (i = 0; i < (3); i++)
                   {
                       show.smartshopperShow.itemIds[i] = gMartPurchaseHistory[i].itemId;
                       show.smartshopperShow.itemAmounts[i] = gMartPurchaseHistory[i].quantity;
                   }
-                  show.smartshopperShow.priceReduced = IsPokeNewsActive(POKENEWS_SLATEPORT);
+                  show.smartshopperShow.priceReduced = IsPokeNewsActive((1));
                   StringCopy(show.smartshopperShow.playerName, gSaveBlock2Ptr.playerName);
                   StorePlayerIdInRecordMixShow(show);
                   show.smartshopperShow.language = gGameLanguage;
@@ -850,7 +808,7 @@ export function PutNameRaterShowOnTheAir(): any {
           if (StringLength(gSaveBlock2Ptr.playerName) > 1 && StringLength(gStringVar1) > 1)
           {
               show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-              show.nameRaterShow.kind = TVSHOW_NAME_RATER_SHOW;
+              show.nameRaterShow.kind = (5);
               show.nameRaterShow.active = TRUE;
               show.nameRaterShow.species = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPECIES, NULL);
               show.nameRaterShow.random = Random() % 3;
@@ -893,8 +851,8 @@ export function PutLilycoveContestLadyShowOnTheAir(): any {
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
           BufferContestLadyLanguage(show.contestLady.language);
-          show.contestLady.pokemonNameLanguage = GAME_LANGUAGE;
-          show.contestLady.kind = TVSHOW_LILYCOVE_CONTEST_LADY;
+          show.contestLady.pokemonNameLanguage = (((3)));
+          show.contestLady.kind = (12);
           show.contestLady.active = TRUE;
           BufferContestLadyPlayerName(show.contestLady.playerName);
           BufferContestLadyMonName(show.contestLady.contestCategory, show.contestLady.nickname);
@@ -906,7 +864,7 @@ export function PutLilycoveContestLadyShowOnTheAir(): any {
 /** static void InterviewAfter_FanClubLetter(void) */
 export function InterviewAfter_FanClubLetter(): any {
   let show: any =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-      show.fanclubLetter.kind = TVSHOW_FAN_CLUB_LETTER;
+      show.fanclubLetter.kind = (1);
       show.fanclubLetter.active = TRUE;
       StringCopy(show.fanclubLetter.playerName, gSaveBlock2Ptr.playerName);
       show.fanclubLetter.species = GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_SPECIES, NULL);
@@ -917,10 +875,10 @@ export function InterviewAfter_FanClubLetter(): any {
 /** static void InterviewAfter_RecentHappenings(void) */
 export function InterviewAfter_RecentHappenings(): any {
   let show: any =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-      show.recentHappenings.kind = TVSHOW_RECENT_HAPPENINGS;
+      show.recentHappenings.kind = (2);
       show.recentHappenings.active = TRUE;
       StringCopy(show.recentHappenings.playerName, gSaveBlock2Ptr.playerName);
-      show.recentHappenings.species = SPECIES_NONE;
+      show.recentHappenings.species = (0);
       StorePlayerIdInNormalShow(show);
       show.recentHappenings.language = gGameLanguage;
 }
@@ -928,7 +886,7 @@ export function InterviewAfter_RecentHappenings(): any {
 /** static void InterviewAfter_PkmnFanClubOpinions(void) */
 export function InterviewAfter_PkmnFanClubOpinions(): any {
   let show: any =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-      show.fanclubOpinions.kind = TVSHOW_PKMN_FAN_CLUB_OPINIONS;
+      show.fanclubOpinions.kind = (3);
       show.fanclubOpinions.active = TRUE;
       show.fanclubOpinions.friendshipHighNybble = GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_FRIENDSHIP, NULL) >> 4;
       show.fanclubOpinions.questionAsked = gSpecialVar_0x8007;
@@ -938,8 +896,8 @@ export function InterviewAfter_PkmnFanClubOpinions(): any {
       show.fanclubOpinions.species = GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_SPECIES, NULL);
       StorePlayerIdInNormalShow(show);
       show.fanclubOpinions.language = gGameLanguage;
-      if (gGameLanguage == LANGUAGE_JAPANESE || GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_LANGUAGE) == LANGUAGE_JAPANESE)
-          show.fanclubOpinions.pokemonNameLanguage = LANGUAGE_JAPANESE;
+      if (gGameLanguage == (1) || GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_LANGUAGE) == (1))
+          show.fanclubOpinions.pokemonNameLanguage = (1);
       else
           show.fanclubOpinions.pokemonNameLanguage = GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_LANGUAGE);
 }
@@ -955,11 +913,11 @@ export function TryStartRandomMassOutbreak(): any {
       let outbreakIdx: any = null;
       let show: any = null;
 
-      if (FlagGet(FLAG_SYS_GAME_CLEAR))
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))))
       {
-          for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
+          for (i = 0; i < (((((5) + 20)) - 1)); i++)
           {
-              if (gSaveBlock1Ptr.tvShows[i].common.kind == TVSHOW_MASS_OUTBREAK)
+              if (gSaveBlock1Ptr.tvShows[i].common.kind == (41))
                   return;
           }
           if (!rbernoulli(1, 200))
@@ -969,7 +927,7 @@ export function TryStartRandomMassOutbreak(): any {
               {
                   outbreakIdx = Random() % ARRAY_COUNT(sPokeOutbreakSpeciesList);
                   show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-                  show.massOutbreak.kind = TVSHOW_MASS_OUTBREAK;
+                  show.massOutbreak.kind = (41);
                   show.massOutbreak.active = TRUE;
                   show.massOutbreak.level = sPokeOutbreakSpeciesList[outbreakIdx].level;
                   show.massOutbreak.unused1 = 0;
@@ -995,16 +953,16 @@ export function TryStartRandomMassOutbreak(): any {
 
 /** void EndMassOutbreak(void) */
 export function EndMassOutbreak(): any {
-  gSaveBlock1Ptr.outbreakPokemonSpecies = SPECIES_NONE;
+  gSaveBlock1Ptr.outbreakPokemonSpecies = (0);
       gSaveBlock1Ptr.outbreakLocationMapNum = 0;
       gSaveBlock1Ptr.outbreakLocationMapGroup = 0;
       gSaveBlock1Ptr.outbreakPokemonLevel = 0;
       gSaveBlock1Ptr.outbreakUnused1 = 0;
       gSaveBlock1Ptr.outbreakUnused2 = 0;
-      gSaveBlock1Ptr.outbreakPokemonMoves[0] = MOVE_NONE;
-      gSaveBlock1Ptr.outbreakPokemonMoves[1] = MOVE_NONE;
-      gSaveBlock1Ptr.outbreakPokemonMoves[2] = MOVE_NONE;
-      gSaveBlock1Ptr.outbreakPokemonMoves[3] = MOVE_NONE;
+      gSaveBlock1Ptr.outbreakPokemonMoves[0] = (0);
+      gSaveBlock1Ptr.outbreakPokemonMoves[1] = (0);
+      gSaveBlock1Ptr.outbreakPokemonMoves[2] = (0);
+      gSaveBlock1Ptr.outbreakPokemonMoves[3] = (0);
       gSaveBlock1Ptr.outbreakUnused3 = 0;
       gSaveBlock1Ptr.outbreakPokemonProbability = 0;
       gSaveBlock1Ptr.outbreakDaysLeft = 0;
@@ -1024,11 +982,11 @@ export function UpdateMassOutbreakTimeLeft(days: any): any {
   let i: any = null;
       let show: any = null;
 
-      if (gSaveBlock1Ptr.outbreakPokemonSpecies == SPECIES_NONE)
+      if (gSaveBlock1Ptr.outbreakPokemonSpecies == (0))
       {
-          for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
+          for (i = 0; i < (((((5) + 20)) - 1)); i++)
           {
-              if (gSaveBlock1Ptr.tvShows[i].massOutbreak.kind == TVSHOW_MASS_OUTBREAK && gSaveBlock1Ptr.tvShows[i].massOutbreak.active == TRUE)
+              if (gSaveBlock1Ptr.tvShows[i].massOutbreak.kind == (41) && gSaveBlock1Ptr.tvShows[i].massOutbreak.active == TRUE)
               {
                   show =gSaveBlock1Ptr.tvShows[i];
                   if (show.massOutbreak.daysLeft < days)
@@ -1077,10 +1035,10 @@ export function TryPutFishingAdviceOnAir(): any {
   let show: any = null;
 
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_FISHING_ADVICE, FALSE) != TRUE)
+      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((24), FALSE) != TRUE)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.pokemonAngler.kind = TVSHOW_FISHING_ADVICE;
+          show.pokemonAngler.kind = (24);
           show.pokemonAngler.active = FALSE;  
           show.pokemonAngler.nBites = sPokemonAnglerAttemptCounters;
           show.pokemonAngler.nFails = sPokemonAnglerAttemptCounters >> 8;
@@ -1098,13 +1056,13 @@ export function SetPokemonAnglerSpecies(species: any): any {
 
 /** static void ResolveWorldOfMastersShow(u16 days) */
 export function ResolveWorldOfMastersShow(days: any): any {
-  let show: any =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
-      if (show.worldOfMasters.kind == TVSHOW_WORLD_OF_MASTERS)
+  let show: any =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
+      if (show.worldOfMasters.kind == (25))
       {
           if (show.worldOfMasters.numPokeCaught >= 20)
               TryPutWorldOfMastersOnAir();
 
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, (((((5) + 20)) - 1)));
       }
 }
 
@@ -1113,24 +1071,24 @@ export function TryPutWorldOfMastersOnAir(): any {
   let show: any = null;
       let show2: any = null;
 
-      show =gSaveBlock1Ptr.tvShows[((TV_SHOWS_COUNT - 1))];
+      show =gSaveBlock1Ptr.tvShows[(((((5) + 20)) - 1))];
       if (!rbernoulli(1, 1))
       {
           sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-          if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_WORLD_OF_MASTERS, FALSE) != TRUE)
+          if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((25), FALSE) != TRUE)
           {
               show2 =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-              show2.worldOfMasters.kind = TVSHOW_WORLD_OF_MASTERS;
+              show2.worldOfMasters.kind = (25);
               show2.worldOfMasters.active = FALSE;  
               show2.worldOfMasters.numPokeCaught = show.worldOfMasters.numPokeCaught;
-              show2.worldOfMasters.steps = GetGameStat(GAME_STAT_STEPS) - show.worldOfMasters.steps;
+              show2.worldOfMasters.steps = GetGameStat((5)) - show.worldOfMasters.steps;
               show2.worldOfMasters.caughtPoke = show.worldOfMasters.caughtPoke;
               show2.worldOfMasters.species = show.worldOfMasters.species;
               show2.worldOfMasters.location = show.worldOfMasters.location;
               StringCopy(show2.worldOfMasters.playerName, gSaveBlock2Ptr.playerName);
               StorePlayerIdInRecordMixShow(show2);
               show2.worldOfMasters.language = gGameLanguage;
-              DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, ((TV_SHOWS_COUNT - 1)));
+              DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, (((((5) + 20)) - 1)));
           }
       }
 }
@@ -1141,14 +1099,14 @@ export function TryPutTodaysRivalTrainerOnAir(): any {
       let i: any = null;
       let nBadges: any = null;
 
-      IsRecordMixShowAlreadySpawned(TVSHOW_TODAYS_RIVAL_TRAINER, TRUE);  
+      IsRecordMixShowAlreadySpawned((26), TRUE);  
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.rivalTrainer.kind = TVSHOW_TODAYS_RIVAL_TRAINER;
+          show.rivalTrainer.kind = (26);
           show.rivalTrainer.active = FALSE;  
-          for (i = FLAG_BADGE01_GET, nBadges = 0; i < FLAG_BADGE01_GET + NUM_BADGES; i++)
+          for (i = (((((((0x500) + (864) - 1)) + 1)) + 0x7)), nBadges = 0; i < (((((((0x500) + (864) - 1)) + 1)) + 0x7)) + ((1 + (((((((0x500) + (864) - 1)) + 1)) + 0xE)) - (((((((0x500) + (864) - 1)) + 1)) + 0x7)))); i++)
           {
               if (FlagGet(i))
                   nBadges++;
@@ -1162,7 +1120,7 @@ export function TryPutTodaysRivalTrainerOnAir(): any {
           show.rivalTrainer.mapLayoutId = gMapHeader.mapLayoutId;
           show.rivalTrainer.nSilverSymbols = 0;
           show.rivalTrainer.nGoldSymbols = 0;
-          for (i = 0; i < NUM_FRONTIER_FACILITIES; i++)
+          for (i = 0; i < (7); i++)
           {
               if (FlagGet(sSilverSymbolFlags[i]) == TRUE)
                   show.rivalTrainer.nSilverSymbols++;
@@ -1182,10 +1140,10 @@ export function TryPutTrendWatcherOnAir(words: any): any {
   let show: any = null;
 
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_TREND_WATCHER, FALSE) != TRUE)
+      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((27), FALSE) != TRUE)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.trendWatcher.kind = TVSHOW_TREND_WATCHER;
+          show.trendWatcher.kind = (27);
           show.trendWatcher.active = FALSE;  
           show.trendWatcher.gender = gSaveBlock2Ptr.playerGender;
           show.trendWatcher.words[0] = words[0];
@@ -1201,10 +1159,10 @@ export function TryPutTreasureInvestigatorsOnAir(): any {
   let show: any = null;
 
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_TREASURE_INVESTIGATORS, FALSE) != TRUE)
+      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((28), FALSE) != TRUE)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.treasureInvestigators.kind = TVSHOW_TREASURE_INVESTIGATORS;
+          show.treasureInvestigators.kind = (28);
           show.treasureInvestigators.active = FALSE;  
           show.treasureInvestigators.item = gSpecialVar_0x8005;
           show.treasureInvestigators.location = gMapHeader.regionMapSectionId;
@@ -1222,7 +1180,7 @@ export function TryPutFindThatGamerOnAir(nCoinsPaidOut: any): any {
       let nCoinsWon: any = null;
 
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_FIND_THAT_GAMER, FALSE) != TRUE)
+      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((29), FALSE) != TRUE)
       {
           flag = FALSE;
           switch (sFindThatGamerWhichGame)
@@ -1257,7 +1215,7 @@ export function TryPutFindThatGamerOnAir(nCoinsPaidOut: any): any {
               return;
           }
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.findThatGamer.kind = TVSHOW_FIND_THAT_GAMER;
+          show.findThatGamer.kind = (29);
           show.findThatGamer.active = FALSE;  
           show.findThatGamer.nCoins = nCoinsWon;
           show.findThatGamer.whichGame = sFindThatGamerWhichGame;
@@ -1287,19 +1245,19 @@ export function SecretBaseVisit_CalculateDecorationData(show: any): any {
       let n: any = null;
       let decoration: any = null;
 
-      for (i = 0; i < DECOR_MAX_SECRET_BASE; i++)
-          sTV_DecorationsBuffer[i] = DECOR_NONE;
+      for (i = 0; i < (16); i++)
+          sTV_DecorationsBuffer[i] = (0);
 
        
-      for (i = 0, n = 0; i < DECOR_MAX_SECRET_BASE; i++)
+      for (i = 0, n = 0; i < (16); i++)
       {
           decoration = gSaveBlock1Ptr.secretBases[0].decorations[i];
-          if (decoration != DECOR_NONE)
+          if (decoration != (0))
           {
                
-              for (j = 0; j < DECOR_MAX_SECRET_BASE; j++)
+              for (j = 0; j < (16); j++)
               {
-                  if (sTV_DecorationsBuffer[j] == DECOR_NONE)
+                  if (sTV_DecorationsBuffer[j] == (0))
                   {
                        
                       sTV_DecorationsBuffer[j] = decoration;
@@ -1352,9 +1310,9 @@ export function SecretBaseVisit_CalculatePartyData(show: any): any {
       let numPokemon: any = null;
       let sum: any = null;
 
-      for (i = 0, numPokemon = 0; i < PARTY_SIZE; i++)
+      for (i = 0, numPokemon = 0; i < (6); i++)
       {
-          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) != SPECIES_NONE && !GetMonData(gPlayerParty[i], MON_DATA_IS_EGG))
+          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) != (0) && !GetMonData(gPlayerParty[i], MON_DATA_IS_EGG))
           {
               sTV_SecretBaseVisitMonsTemp[numPokemon].level = GetMonData(gPlayerParty[i], MON_DATA_LEVEL);
               sTV_SecretBaseVisitMonsTemp[numPokemon].species = GetMonData(gPlayerParty[i], MON_DATA_SPECIES);
@@ -1362,25 +1320,25 @@ export function SecretBaseVisit_CalculatePartyData(show: any): any {
                
               numMoves = 0;
               move = GetMonData(gPlayerParty[i], MON_DATA_MOVE1);
-              if (move != MOVE_NONE)
+              if (move != (0))
               {
                   sTV_SecretBaseVisitMovesTemp[numMoves] = move;
                   numMoves++;
               }
               move = GetMonData(gPlayerParty[i], MON_DATA_MOVE2);
-              if (move != MOVE_NONE)
+              if (move != (0))
               {
                   sTV_SecretBaseVisitMovesTemp[numMoves] = move;
                   numMoves++;
               }
               move = GetMonData(gPlayerParty[i], MON_DATA_MOVE3);
-              if (move != MOVE_NONE)
+              if (move != (0))
               {
                   sTV_SecretBaseVisitMovesTemp[numMoves] = move;
                   numMoves++;
               }
               move = GetMonData(gPlayerParty[i], MON_DATA_MOVE4);
-              if (move != MOVE_NONE)
+              if (move != (0))
               {
                   sTV_SecretBaseVisitMovesTemp[numMoves] = move;
                   numMoves++;
@@ -1405,12 +1363,12 @@ export function SecretBaseVisit_CalculatePartyData(show: any): any {
 export function TryPutSecretBaseVisitOnAir(): any {
   let show: any = null;
 
-      IsRecordMixShowAlreadySpawned(TVSHOW_SECRET_BASE_VISIT, TRUE);  
+      IsRecordMixShowAlreadySpawned((31), TRUE);  
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.secretBaseVisit.kind = TVSHOW_SECRET_BASE_VISIT;
+          show.secretBaseVisit.kind = (31);
           show.secretBaseVisit.active = FALSE;  
           StringCopy(show.secretBaseVisit.playerName, gSaveBlock2Ptr.playerName);
           SecretBaseVisit_CalculateDecorationData(show);
@@ -1427,10 +1385,10 @@ export function TryPutBreakingNewsOnAir(): any {
       let balls: any = null;
 
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_BREAKING_NEWS, FALSE) != TRUE)
+      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((30), FALSE) != TRUE)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.breakingNews.kind = TVSHOW_BREAKING_NEWS;
+          show.breakingNews.kind = (30);
           show.breakingNews.active = FALSE;  
           balls = 0;
           for (i = 0; i < POKEBALL_COUNT - 1; i++)
@@ -1443,23 +1401,23 @@ export function TryPutBreakingNewsOnAir(): any {
           show.breakingNews.poke1Species = gBattleResults.playerMon1Species;
           switch (gBattleOutcome)
           {
-          case B_OUTCOME_LOST:
-          case B_OUTCOME_DREW:
-              show.breakingNews.kind = TVSHOW_OFF_AIR;
+          case (2):
+          case (3):
+              show.breakingNews.kind = (0);
               return;
-          case B_OUTCOME_CAUGHT:
+          case (7):
               show.breakingNews.outcome = 0;
               break;
-          case B_OUTCOME_WON:
+          case (1):
               show.breakingNews.outcome = 1;
               break;
-          case B_OUTCOME_RAN:
-          case B_OUTCOME_PLAYER_TELEPORTED:
-          case B_OUTCOME_NO_SAFARI_BALLS:
+          case (4):
+          case (5):
+          case (8):
               show.breakingNews.outcome = 2;
               break;
-          case B_OUTCOME_MON_FLED:
-          case B_OUTCOME_MON_TELEPORTED:
+          case (6):
+          case (10):
               show.breakingNews.outcome = 3;
               break;
           }
@@ -1468,7 +1426,7 @@ export function TryPutBreakingNewsOnAir(): any {
           {
           case 0:
               if (gBattleResults.usedMasterBall)
-                  show.breakingNews.caughtMonBall = ITEM_MASTER_BALL;
+                  show.breakingNews.caughtMonBall = (1);
               else
                   show.breakingNews.caughtMonBall = gBattleResults.caughtMonBall;
               show.breakingNews.balls = balls;
@@ -1490,10 +1448,10 @@ export function TryPutLotteryWinnerReportOnAir(): any {
   let show: any = null;
 
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_LOTTO_WINNER, FALSE) != TRUE)
+      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((32), FALSE) != TRUE)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.lottoWinner.kind = TVSHOW_LOTTO_WINNER;
+          show.lottoWinner.kind = (32);
           show.lottoWinner.active = FALSE;  
           StringCopy(show.lottoWinner.playerName, gSaveBlock2Ptr.playerName);
           show.lottoWinner.whichPrize = 4 - gSpecialVar_0x8004;
@@ -1510,16 +1468,16 @@ export function TryPutBattleSeminarOnAir(foeSpecies: any, species: any, moveInde
       let j: any = null;
 
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_BATTLE_SEMINAR, FALSE) != TRUE)
+      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((33), FALSE) != TRUE)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.battleSeminar.kind = TVSHOW_BATTLE_SEMINAR;
+          show.battleSeminar.kind = (33);
           show.battleSeminar.active = FALSE;  
           StringCopy(show.battleSeminar.playerName, gSaveBlock2Ptr.playerName);
           show.battleSeminar.foeSpecies = foeSpecies;
           show.battleSeminar.species = species;
           show.battleSeminar.move = movePtr[moveIndex];
-          for (i = 0, j = 0; i < MAX_MON_MOVES; i++)
+          for (i = 0, j = 0; i < (4); i++)
           {
               if (i != moveIndex && movePtr[i])
               {
@@ -1539,10 +1497,10 @@ export function TryPutSafariFanClubOnAir(monsCaught: any, pokeblocksUsed: any): 
   let show: any = null;
 
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_SAFARI_FAN_CLUB, FALSE) != TRUE)
+      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((39), FALSE) != TRUE)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.safariFanClub.kind = TVSHOW_SAFARI_FAN_CLUB;
+          show.safariFanClub.kind = (39);
           show.safariFanClub.active = FALSE;  
           StringCopy(show.safariFanClub.playerName, gSaveBlock2Ptr.playerName);
           show.safariFanClub.monsCaught = monsCaught;
@@ -1557,10 +1515,10 @@ export function TryPutSpotTheCutiesOnAir(pokemon: any, ribbonMonDataIdx: any): a
   let show: any = null;
 
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_CUTIES, FALSE) != TRUE)
+      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((35), FALSE) != TRUE)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.cuties.kind = TVSHOW_CUTIES;
+          show.cuties.kind = (35);
           show.cuties.active = FALSE;  
           StringCopy(show.cuties.playerName, gSaveBlock2Ptr.playerName);
           GetMonData(pokemon, MON_DATA_NICKNAME, show.cuties.nickname);
@@ -1569,8 +1527,8 @@ export function TryPutSpotTheCutiesOnAir(pokemon: any, ribbonMonDataIdx: any): a
           show.cuties.selectedRibbon = MonDataIdxToRibbon(ribbonMonDataIdx);
           StorePlayerIdInRecordMixShow(show);
           show.cuties.language = gGameLanguage;
-          if (show.cuties.language == LANGUAGE_JAPANESE || GetMonData(pokemon, MON_DATA_LANGUAGE) == LANGUAGE_JAPANESE)
-              show.cuties.pokemonNameLanguage = LANGUAGE_JAPANESE;
+          if (show.cuties.language == (1) || GetMonData(pokemon, MON_DATA_LANGUAGE) == (1))
+              show.cuties.pokemonNameLanguage = (1);
           else
               show.cuties.pokemonNameLanguage = GetMonData(pokemon, MON_DATA_LANGUAGE);
       }
@@ -1603,24 +1561,24 @@ export function GetRibbonCount(pokemon: any): any {
 
 /** static u8 MonDataIdxToRibbon(u8 monDataIdx) */
 export function MonDataIdxToRibbon(monDataIdx: any): any {
-  if (monDataIdx == MON_DATA_CHAMPION_RIBBON) return CHAMPION_RIBBON;
-      if (monDataIdx == MON_DATA_COOL_RIBBON)     return COOL_RIBBON_NORMAL;
-      if (monDataIdx == MON_DATA_BEAUTY_RIBBON)   return BEAUTY_RIBBON_NORMAL;
-      if (monDataIdx == MON_DATA_CUTE_RIBBON)     return CUTE_RIBBON_NORMAL;
-      if (monDataIdx == MON_DATA_SMART_RIBBON)    return SMART_RIBBON_NORMAL;
-      if (monDataIdx == MON_DATA_TOUGH_RIBBON)    return TOUGH_RIBBON_NORMAL;
-      if (monDataIdx == MON_DATA_WINNING_RIBBON)  return WINNING_RIBBON;
-      if (monDataIdx == MON_DATA_VICTORY_RIBBON)  return VICTORY_RIBBON;
-      if (monDataIdx == MON_DATA_ARTIST_RIBBON)   return ARTIST_RIBBON;
-      if (monDataIdx == MON_DATA_EFFORT_RIBBON)   return EFFORT_RIBBON;
-      if (monDataIdx == MON_DATA_MARINE_RIBBON)   return MARINE_RIBBON;
-      if (monDataIdx == MON_DATA_LAND_RIBBON)     return LAND_RIBBON;
-      if (monDataIdx == MON_DATA_SKY_RIBBON)      return SKY_RIBBON;
-      if (monDataIdx == MON_DATA_COUNTRY_RIBBON)  return COUNTRY_RIBBON;
-      if (monDataIdx == MON_DATA_NATIONAL_RIBBON) return NATIONAL_RIBBON;
-      if (monDataIdx == MON_DATA_EARTH_RIBBON)    return EARTH_RIBBON;
-      if (monDataIdx == MON_DATA_WORLD_RIBBON)    return WORLD_RIBBON;
-      return CHAMPION_RIBBON;
+  if (monDataIdx == MON_DATA_CHAMPION_RIBBON) return (0);
+      if (monDataIdx == MON_DATA_COOL_RIBBON)     return (1);
+      if (monDataIdx == MON_DATA_BEAUTY_RIBBON)   return (5);
+      if (monDataIdx == MON_DATA_CUTE_RIBBON)     return (9);
+      if (monDataIdx == MON_DATA_SMART_RIBBON)    return (13);
+      if (monDataIdx == MON_DATA_TOUGH_RIBBON)    return (17);
+      if (monDataIdx == MON_DATA_WINNING_RIBBON)  return (21);
+      if (monDataIdx == MON_DATA_VICTORY_RIBBON)  return (22);
+      if (monDataIdx == MON_DATA_ARTIST_RIBBON)   return (23);
+      if (monDataIdx == MON_DATA_EFFORT_RIBBON)   return (24);
+      if (monDataIdx == MON_DATA_MARINE_RIBBON)   return (25);
+      if (monDataIdx == MON_DATA_LAND_RIBBON)     return (26);
+      if (monDataIdx == MON_DATA_SKY_RIBBON)      return (27);
+      if (monDataIdx == MON_DATA_COUNTRY_RIBBON)  return (28);
+      if (monDataIdx == MON_DATA_NATIONAL_RIBBON) return (29);
+      if (monDataIdx == MON_DATA_EARTH_RIBBON)    return (30);
+      if (monDataIdx == MON_DATA_WORLD_RIBBON)    return (31);
+      return (0);
 }
 
 /** void TryPutTrainerFanClubOnAir(void) */
@@ -1628,10 +1586,10 @@ export function TryPutTrainerFanClubOnAir(): any {
   let show: any = null;
 
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
-      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned(TVSHOW_TRAINER_FAN_CLUB, FALSE) != TRUE)
+      if (sCurTVShowSlot != -1 && IsRecordMixShowAlreadySpawned((34), FALSE) != TRUE)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.trainerFanClub.kind = TVSHOW_TRAINER_FAN_CLUB;
+          show.trainerFanClub.kind = (34);
           show.trainerFanClub.active = FALSE;  
           StringCopy(show.trainerFanClub.playerName, gSaveBlock2Ptr.playerName);
           show.trainerFanClub.words[0] = gSaveBlock1Ptr.easyChatProfile[0];
@@ -1647,11 +1605,11 @@ export function ShouldHideFanClubInterviewer(): any {
       if (sCurTVShowSlot == -1)
           return TRUE;
 
-      TryReplaceOldTVShowOfKind(TVSHOW_FAN_CLUB_SPECIAL);
+      TryReplaceOldTVShowOfKind((11));
       if (gSpecialVar_Result == TRUE)
           return TRUE;
 
-      if (gSaveBlock1Ptr.linkBattleRecords.entries[0].name[0] == EOS)
+      if (gSaveBlock1Ptr.linkBattleRecords.entries[0].name[0] == (0xFF))
           return TRUE;
 
       return FALSE;
@@ -1663,13 +1621,13 @@ export function ShouldAirFrontierTVShow(): any {
       let showIdx: any = null;
       let shows: any = null;
 
-      if (IsRecordMixShowAlreadySpawned(TVSHOW_FRONTIER, FALSE) == TRUE)
+      if (IsRecordMixShowAlreadySpawned((36), FALSE) == TRUE)
       {
           shows = gSaveBlock1Ptr.tvShows;
           playerId = GetPlayerIDAsU32();
-          for (showIdx = NUM_NORMAL_TVSHOW_SLOTS; showIdx < ((TV_SHOWS_COUNT - 1)); showIdx++)
+          for (showIdx = (5); showIdx < (((((5) + 20)) - 1)); showIdx++)
           {
-              if (shows[showIdx].common.kind == TVSHOW_FRONTIER && (playerId & 0xFF) == shows[showIdx].common.trainerIdLo && ((playerId >> 8) & 0xFF) == shows[showIdx].common.trainerIdHi)
+              if (shows[showIdx].common.kind == (36) && (playerId & 0xFF) == shows[showIdx].common.trainerIdLo && ((playerId >> 8) & 0xFF) == shows[showIdx].common.trainerIdHi)
               {
                   DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, showIdx);
                   CompactTVShowArray(gSaveBlock1Ptr.tvShows);
@@ -1692,38 +1650,38 @@ export function TryPutFrontierTVShowOnAir(winStreak: any, facilityAndMode: any):
       if (sCurTVShowSlot != -1)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.frontier.kind = TVSHOW_FRONTIER;
+          show.frontier.kind = (36);
           show.frontier.active = FALSE;  
           StringCopy(show.frontier.playerName, gSaveBlock2Ptr.playerName);
           show.frontier.winStreak = winStreak;
           show.frontier.facilityAndMode = facilityAndMode;
           switch (facilityAndMode)
           {
-          case FRONTIER_SHOW_TOWER_SINGLES:
-          case FRONTIER_SHOW_DOME_SINGLES:
-          case FRONTIER_SHOW_DOME_DOUBLES:
-          case FRONTIER_SHOW_FACTORY_SINGLES:
-          case FRONTIER_SHOW_FACTORY_DOUBLES:
-          case FRONTIER_SHOW_PIKE:
-          case FRONTIER_SHOW_ARENA:
-          case FRONTIER_SHOW_PALACE_SINGLES:
-          case FRONTIER_SHOW_PALACE_DOUBLES:
-          case FRONTIER_SHOW_PYRAMID:
+          case (1):
+          case (5):
+          case (6):
+          case (7):
+          case (8):
+          case (9):
+          case (10):
+          case (11):
+          case (12):
+          case (13):
               show.frontier.species1 = GetMonData(gPlayerParty[0], MON_DATA_SPECIES, NULL);
               show.frontier.species2 = GetMonData(gPlayerParty[1], MON_DATA_SPECIES, NULL);
               show.frontier.species3 = GetMonData(gPlayerParty[2], MON_DATA_SPECIES, NULL);
               break;
-          case FRONTIER_SHOW_TOWER_DOUBLES:
+          case (2):
               show.frontier.species1 = GetMonData(gPlayerParty[0], MON_DATA_SPECIES, NULL);
               show.frontier.species2 = GetMonData(gPlayerParty[1], MON_DATA_SPECIES, NULL);
               show.frontier.species3 = GetMonData(gPlayerParty[2], MON_DATA_SPECIES, NULL);
               show.frontier.species4 = GetMonData(gPlayerParty[3], MON_DATA_SPECIES, NULL);
               break;
-          case FRONTIER_SHOW_TOWER_MULTIS:
+          case (3):
               show.frontier.species1 = GetMonData(gPlayerParty[0], MON_DATA_SPECIES, NULL);
               show.frontier.species2 = GetMonData(gPlayerParty[1], MON_DATA_SPECIES, NULL);
               break;
-          case FRONTIER_SHOW_TOWER_LINK_MULTIS:
+          case (4):
               show.frontier.species1 = GetMonData(gSaveBlock1Ptr.playerParty[gSaveBlock2Ptr.frontier.selectedPartyMons[0] - 1], MON_DATA_SPECIES, NULL);
               show.frontier.species2 = GetMonData(gSaveBlock1Ptr.playerParty[gSaveBlock2Ptr.frontier.selectedPartyMons[1] - 1], MON_DATA_SPECIES, NULL);
               break;
@@ -1738,28 +1696,28 @@ export function TryPutSecretBaseSecretsOnAir(): any {
   let show: any = null;
       let strbuf: any = [];
 
-      if (IsRecordMixShowAlreadySpawned(TVSHOW_SECRET_BASE_SECRETS, FALSE) != TRUE)
+      if (IsRecordMixShowAlreadySpawned((38), FALSE) != TRUE)
       {
           sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
           if (sCurTVShowSlot != -1)
           {
               show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-              show.secretBaseSecrets.kind = TVSHOW_SECRET_BASE_SECRETS;
+              show.secretBaseSecrets.kind = (38);
               show.secretBaseSecrets.active = FALSE;  
               StringCopy(show.secretBaseSecrets.playerName, gSaveBlock2Ptr.playerName);
-              show.secretBaseSecrets.stepsInBase = VarGet(VAR_SECRET_BASE_STEP_COUNTER);
+              show.secretBaseSecrets.stepsInBase = VarGet((0x40EC));
               CopyCurSecretBaseOwnerName_StrVar1();
               StringCopy(strbuf, gStringVar1);
               StripExtCtrlCodes(strbuf);
               StringCopy(show.secretBaseSecrets.baseOwnersName, strbuf);
-              show.secretBaseSecrets.item = VarGet(VAR_SECRET_BASE_LAST_ITEM_USED);
-              show.secretBaseSecrets.flags = VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) + (VarGet(VAR_SECRET_BASE_HIGH_TV_FLAGS) << 16);
+              show.secretBaseSecrets.item = VarGet((0x40ED));
+              show.secretBaseSecrets.flags = VarGet((0x40EE)) + (VarGet((0x40EF)) << 16);
               StorePlayerIdInRecordMixShow(show);
               show.secretBaseSecrets.language = gGameLanguage;
-              if (show.secretBaseSecrets.language == LANGUAGE_JAPANESE || gSaveBlock1Ptr.secretBases[VarGet(VAR_CURRENT_SECRET_BASE)].language == LANGUAGE_JAPANESE)
-                  show.secretBaseSecrets.baseOwnersNameLanguage = LANGUAGE_JAPANESE;
+              if (show.secretBaseSecrets.language == (1) || gSaveBlock1Ptr.secretBases[VarGet((0x4054))].language == (1))
+                  show.secretBaseSecrets.baseOwnersNameLanguage = (1);
               else
-                  show.secretBaseSecrets.baseOwnersNameLanguage = gSaveBlock1Ptr.secretBases[VarGet(VAR_CURRENT_SECRET_BASE)].language;
+                  show.secretBaseSecrets.baseOwnersNameLanguage = gSaveBlock1Ptr.secretBases[VarGet((0x4054))].language;
           }
       }
 }
@@ -1785,12 +1743,12 @@ export function ResolveNumberOneShow(days: any): any {
 export function TryPutNumberOneOnAir(actionIdx: any): any {
   let show: any = null;
 
-      IsRecordMixShowAlreadySpawned(TVSHOW_NUMBER_ONE, TRUE);  
+      IsRecordMixShowAlreadySpawned((37), TRUE);  
       sCurTVShowSlot = FindFirstEmptyRecordMixTVShowSlot(gSaveBlock1Ptr.tvShows);
       if (sCurTVShowSlot != -1)
       {
           show =gSaveBlock1Ptr.tvShows[sCurTVShowSlot];
-          show.numberOne.kind = TVSHOW_NUMBER_ONE;
+          show.numberOne.kind = (37);
           show.numberOne.active = FALSE;  
           StringCopy(show.numberOne.playerName, gSaveBlock2Ptr.playerName);
           show.numberOne.actionIdx = actionIdx;
@@ -1802,52 +1760,52 @@ export function TryPutNumberOneOnAir(actionIdx: any): any {
 
 /** void IncrementDailySlotsUses(void) */
 export function IncrementDailySlotsUses(): any {
-  VarSet(VAR_DAILY_SLOTS, VarGet(VAR_DAILY_SLOTS) + 1);
+  VarSet((0x40E6), VarGet((0x40E6)) + 1);
 }
 
 /** void IncrementDailyRouletteUses(void) */
 export function IncrementDailyRouletteUses(): any {
-  VarSet(VAR_DAILY_ROULETTE, VarGet(VAR_DAILY_ROULETTE) + 1);
+  VarSet((0x40EB), VarGet((0x40EB)) + 1);
 }
 
 /** void IncrementDailyWildBattles(void) */
 export function IncrementDailyWildBattles(): any {
-  VarSet(VAR_DAILY_WILDS, VarGet(VAR_DAILY_WILDS) + 1);
+  VarSet((0x40E7), VarGet((0x40E7)) + 1);
 }
 
 /** void IncrementDailyBerryBlender(void) */
 export function IncrementDailyBerryBlender(): any {
-  VarSet(VAR_DAILY_BLENDER, VarGet(VAR_DAILY_BLENDER) + 1);
+  VarSet((0x40E8), VarGet((0x40E8)) + 1);
 }
 
 /** void IncrementDailyPlantedBerries(void) */
 export function IncrementDailyPlantedBerries(): any {
-  VarSet(VAR_DAILY_PLANTED_BERRIES, VarGet(VAR_DAILY_PLANTED_BERRIES) + 1);
+  VarSet((0x40E9), VarGet((0x40E9)) + 1);
 }
 
 /** void IncrementDailyPickedBerries(void) */
 export function IncrementDailyPickedBerries(): any {
-  VarSet(VAR_DAILY_PICKED_BERRIES, VarGet(VAR_DAILY_PICKED_BERRIES) + gSpecialVar_0x8006);
+  VarSet((0x40EA), VarGet((0x40EA)) + gSpecialVar_0x8006);
 }
 
 /** void IncrementDailyBattlePoints(u16 delta) */
 export function IncrementDailyBattlePoints(delta: any): any {
-  VarSet(VAR_DAILY_BP, VarGet(VAR_DAILY_BP) + delta);
+  VarSet((0x40F1), VarGet((0x40F1)) + delta);
 }
 
 /** static void TryPutRandomPokeNewsOnAir(void) */
 export function TryPutRandomPokeNewsOnAir(): any {
-  if (FlagGet(FLAG_SYS_GAME_CLEAR))
+  if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))))
       {
           sCurTVShowSlot = GetFirstEmptyPokeNewsSlot(gSaveBlock1Ptr.pokeNews);
           if (sCurTVShowSlot != -1 && rbernoulli(1, 100) != TRUE)
           {
-              let newsKind: any = (Random() % NUM_POKENEWS_TYPES) + 1;  
+              let newsKind: any = (Random() % (4)) + 1;  
               if (IsAddingPokeNewsDisallowed(newsKind) != TRUE)
               {
                   gSaveBlock1Ptr.pokeNews[sCurTVShowSlot].kind = newsKind;
-                  gSaveBlock1Ptr.pokeNews[sCurTVShowSlot].dayCountdown = POKENEWS_COUNTDOWN;
-                  gSaveBlock1Ptr.pokeNews[sCurTVShowSlot].state = POKENEWS_STATE_UPCOMING;
+                  gSaveBlock1Ptr.pokeNews[sCurTVShowSlot].dayCountdown = (4);
+                  gSaveBlock1Ptr.pokeNews[sCurTVShowSlot].state = (1);
               }
           }
       }
@@ -1857,9 +1815,9 @@ export function TryPutRandomPokeNewsOnAir(): any {
 export function GetFirstEmptyPokeNewsSlot(pokeNews: any): any {
   let i: any = null;
 
-      for (i = 0; i < POKE_NEWS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
-          if (pokeNews[i].kind == POKENEWS_NONE)
+          if (pokeNews[i].kind == (0))
               return i;
       }
       return -1;
@@ -1869,14 +1827,14 @@ export function GetFirstEmptyPokeNewsSlot(pokeNews: any): any {
 export function ClearPokeNews(): any {
   let i: any = null;
 
-      for (i = 0; i < POKE_NEWS_COUNT; i++)
+      for (i = 0; i < (16); i++)
           ClearPokeNewsBySlot(i);
 }
 
 /** static void ClearPokeNewsBySlot(u8 i) */
 export function ClearPokeNewsBySlot(i: any): any {
-  gSaveBlock1Ptr.pokeNews[i].kind = POKENEWS_NONE;
-      gSaveBlock1Ptr.pokeNews[i].state = POKENEWS_STATE_INACTIVE;
+  gSaveBlock1Ptr.pokeNews[i].kind = (0);
+      gSaveBlock1Ptr.pokeNews[i].state = (0);
       gSaveBlock1Ptr.pokeNews[i].dayCountdown = 0;
 }
 
@@ -1885,13 +1843,13 @@ export function CompactPokeNews(): any {
   let i: any = null;
       let j: any = null;
 
-      for (i = 0; i < POKE_NEWS_COUNT - 1; i++)
+      for (i = 0; i < (16) - 1; i++)
       {
-          if (gSaveBlock1Ptr.pokeNews[i].kind == POKENEWS_NONE)
+          if (gSaveBlock1Ptr.pokeNews[i].kind == (0))
           {
-              for (j = i + 1; j < POKE_NEWS_COUNT; j++)
+              for (j = i + 1; j < (16); j++)
               {
-                  if (gSaveBlock1Ptr.pokeNews[j].kind != POKENEWS_NONE)
+                  if (gSaveBlock1Ptr.pokeNews[j].kind != (0))
                   {
                       gSaveBlock1Ptr.pokeNews[i] = gSaveBlock1Ptr.pokeNews[j];
                       ClearPokeNewsBySlot(j);
@@ -1906,11 +1864,11 @@ export function CompactPokeNews(): any {
 export function FindAnyPokeNewsOnTheAir(): any {
   let i: any = null;
 
-      for (i = 0; i < POKE_NEWS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
-          if (gSaveBlock1Ptr.pokeNews[i].kind != POKENEWS_NONE
-           && gSaveBlock1Ptr.pokeNews[i].state == POKENEWS_STATE_UPCOMING
-           && gSaveBlock1Ptr.pokeNews[i].dayCountdown < POKENEWS_COUNTDOWN - 1)
+          if (gSaveBlock1Ptr.pokeNews[i].kind != (0)
+           && gSaveBlock1Ptr.pokeNews[i].state == (1)
+           && gSaveBlock1Ptr.pokeNews[i].dayCountdown < (4) - 1)
               return i;
       }
       return 0xFF;
@@ -1928,7 +1886,7 @@ export function DoPokeNews(): any {
           if (gSaveBlock1Ptr.pokeNews[i].dayCountdown == 0)
           {
                
-              gSaveBlock1Ptr.pokeNews[i].state = POKENEWS_STATE_ACTIVE;
+              gSaveBlock1Ptr.pokeNews[i].state = (2);
               if (gLocalTime.hours < 20)
                   ShowFieldMessage(sPokeNewsTextGroup_Ongoing[gSaveBlock1Ptr.pokeNews[i].kind]);
               else
@@ -1942,7 +1900,7 @@ export function DoPokeNews(): any {
 
                
                
-              gSaveBlock1Ptr.pokeNews[i].state = POKENEWS_STATE_INACTIVE;
+              gSaveBlock1Ptr.pokeNews[i].state = (0);
               ShowFieldMessage(sPokeNewsTextGroup_Upcoming[gSaveBlock1Ptr.pokeNews[i].kind]);
           }
           gSpecialVar_Result = TRUE;
@@ -1953,14 +1911,14 @@ export function DoPokeNews(): any {
 export function IsPokeNewsActive(newsKind: any): any {
   let i: any = null;
 
-      if (newsKind == POKENEWS_NONE)
+      if (newsKind == (0))
           return FALSE;
 
-      for (i = 0; i < POKE_NEWS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (gSaveBlock1Ptr.pokeNews[i].kind == newsKind)
           {
-              if (gSaveBlock1Ptr.pokeNews[i].state == POKENEWS_STATE_ACTIVE && ShouldApplyPokeNewsEffect(newsKind))
+              if (gSaveBlock1Ptr.pokeNews[i].state == (2) && ShouldApplyPokeNewsEffect(newsKind))
                   return TRUE;
 
               return FALSE;
@@ -1973,13 +1931,13 @@ export function IsPokeNewsActive(newsKind: any): any {
 export function ShouldApplyPokeNewsEffect(newsKind: any): any {
   switch (newsKind)
       {
-      case POKENEWS_SLATEPORT:
+      case (1):
           if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_SLATEPORT_CITY)
            && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_SLATEPORT_CITY)
            && gSpecialVar_LastTalked == LOCALID_SLATEPORT_ENERGY_GURU)
               return TRUE;
           return FALSE;
-      case POKENEWS_LILYCOVE:
+      case (3):
           if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_ROOFTOP)
            && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_ROOFTOP))
               return TRUE;
@@ -1991,11 +1949,11 @@ export function ShouldApplyPokeNewsEffect(newsKind: any): any {
 /** static bool8 IsAddingPokeNewsDisallowed(u8 newsKind) */
 export function IsAddingPokeNewsDisallowed(newsKind: any): any {
   let i: any = null;
-      if (newsKind == POKENEWS_NONE)
+      if (newsKind == (0))
           return TRUE;
 
        
-      for (i = 0; i < POKE_NEWS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (gSaveBlock1Ptr.pokeNews[i].kind == newsKind)
               return TRUE;
@@ -2007,9 +1965,9 @@ export function IsAddingPokeNewsDisallowed(newsKind: any): any {
 export function UpdatePokeNewsCountdown(days: any): any {
   let i: any = null;
 
-      for (i = 0; i < POKE_NEWS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
-          if (gSaveBlock1Ptr.pokeNews[i].kind != POKENEWS_NONE)
+          if (gSaveBlock1Ptr.pokeNews[i].kind != (0))
           {
               if (gSaveBlock1Ptr.pokeNews[i].dayCountdown < days)
               {
@@ -2019,8 +1977,8 @@ export function UpdatePokeNewsCountdown(days: any): any {
               else
               {
                    
-                  if (gSaveBlock1Ptr.pokeNews[i].state == POKENEWS_STATE_INACTIVE && FlagGet(FLAG_SYS_GAME_CLEAR) == TRUE)
-                      gSaveBlock1Ptr.pokeNews[i].state = POKENEWS_STATE_UPCOMING;
+                  if (gSaveBlock1Ptr.pokeNews[i].state == (0) && FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))) == TRUE)
+                      gSaveBlock1Ptr.pokeNews[i].state = (1);
 
                   gSaveBlock1Ptr.pokeNews[i].dayCountdown -= days;
               }
@@ -2033,17 +1991,17 @@ export function UpdatePokeNewsCountdown(days: any): any {
 export function CopyContestRankToStringVar(varIdx: any, rank: any): any {
   switch (rank)
       {
-      case CONTEST_RANK_NORMAL:
-          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[STDSTRING_NORMAL]);
+      case (0):
+          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[(5)]);
           break;
-      case CONTEST_RANK_SUPER:
-          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[STDSTRING_SUPER]);
+      case (1):
+          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[(6)]);
           break;
-      case CONTEST_RANK_HYPER:
-          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[STDSTRING_HYPER]);
+      case (2):
+          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[(7)]);
           break;
-      case CONTEST_RANK_MASTER:
-          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[STDSTRING_MASTER]);
+      case (3):
+          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[(8)]);
           break;
       }
 }
@@ -2052,20 +2010,20 @@ export function CopyContestRankToStringVar(varIdx: any, rank: any): any {
 export function CopyContestCategoryToStringVar(varIdx: any, category: any): any {
   switch (category)
       {
-      case CONTEST_CATEGORY_COOL:
-          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[STDSTRING_COOL]);
+      case (0):
+          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[(0)]);
           break;
-      case CONTEST_CATEGORY_BEAUTY:
-          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[STDSTRING_BEAUTY]);
+      case (1):
+          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[(1)]);
           break;
-      case CONTEST_CATEGORY_CUTE:
-          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[STDSTRING_CUTE]);
+      case (2):
+          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[(2)]);
           break;
-      case CONTEST_CATEGORY_SMART:
-          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[STDSTRING_SMART]);
+      case (3):
+          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[(3)]);
           break;
-      case CONTEST_CATEGORY_TOUGH:
-          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[STDSTRING_TOUGH]);
+      case (4):
+          StringCopy(gTVStringVarPtrs[varIdx], gStdStrings[(4)]);
           break;
       }
 }
@@ -2100,9 +2058,9 @@ export function CountDigits(value: any): any {
 export function SmartShopper_BufferPurchaseTotal(varIdx: any, show: any): any {
   let i: any = null;
       let price: any = 0;
-      for (i = 0; i < SMARTSHOPPER_NUM_ITEMS; i++)
+      for (i = 0; i < (3); i++)
       {
-          if (show.smartshopperShow.itemIds[i] != ITEM_NONE)
+          if (show.smartshopperShow.itemIds[i] != (0))
               price += GetItemPrice(show.smartshopperShow.itemIds[i]) * show.smartshopperShow.itemAmounts[i];
       }
 
@@ -2120,7 +2078,7 @@ export function IsRecordMixShowAlreadySpawned(kind: any, _delete: any): any {
 
       shows = gSaveBlock1Ptr.tvShows;
       playerId = GetPlayerIDAsU32();
-      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < ((TV_SHOWS_COUNT - 1)); i++)
+      for (i = (5); i < (((((5) + 20)) - 1)); i++)
       {
           if (shows[i].common.kind == kind
            && (playerId & 0xFF) == shows[i].common.trainerIdLo
@@ -2141,9 +2099,9 @@ export function IsRecordMixShowAlreadySpawned(kind: any, _delete: any): any {
 export function SortPurchasesByQuantity(): any {
   let i, j;
 
-      for (i = 0; i < SMARTSHOPPER_NUM_ITEMS - 1; i++)
+      for (i = 0; i < (3) - 1; i++)
       {
-          for (j = i + 1; j < SMARTSHOPPER_NUM_ITEMS; j++)
+          for (j = i + 1; j < (3); j++)
           {
               if (gMartPurchaseHistory[i].quantity < gMartPurchaseHistory[j].quantity)
               {
@@ -2161,7 +2119,7 @@ export function SortPurchasesByQuantity(): any {
 /** static void TryReplaceOldTVShowOfKind(u8 kind) */
 export function TryReplaceOldTVShowOfKind(kind: any): any {
   let i: any = null;
-      for (i = 0; i < NUM_NORMAL_TVSHOW_SLOTS; i++)
+      for (i = 0; i < (5); i++)
       {
           if (gSaveBlock1Ptr.tvShows[i].common.kind == kind)
           {
@@ -2190,34 +2148,34 @@ export function InterviewBefore(): any {
   gSpecialVar_Result = FALSE;
       switch (gSpecialVar_0x8005)
       {
-      case TVSHOW_FAN_CLUB_LETTER:
+      case (1):
           InterviewBefore_FanClubLetter();
           break;
-      case TVSHOW_RECENT_HAPPENINGS:
+      case (2):
           InterviewBefore_RecentHappenings();
           break;
-      case TVSHOW_PKMN_FAN_CLUB_OPINIONS:
+      case (3):
           InterviewBefore_PkmnFanClubOpinions();
           break;
-      case TVSHOW_DUMMY:
+      case (4):
           InterviewBefore_Dummy();
           break;
-      case TVSHOW_NAME_RATER_SHOW:
+      case (5):
           InterviewBefore_NameRater();
           break;
-      case TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE:
+      case (6):
           InterviewBefore_BravoTrainerPkmnProfile();
           break;
-      case TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE:
+      case (7):
           InterviewBefore_BravoTrainerBTProfile();
           break;
-      case TVSHOW_CONTEST_LIVE_UPDATES:
+      case (8):
           InterviewBefore_ContestLiveUpdates();
           break;
-      case TVSHOW_3_CHEERS_FOR_POKEBLOCKS:
+      case (9):
           InterviewBefore_3CheersForPokeblocks();
           break;
-      case TVSHOW_FAN_CLUB_SPECIAL:
+      case (11):
           InterviewBefore_FanClubSpecial();
           break;
       }
@@ -2225,7 +2183,7 @@ export function InterviewBefore(): any {
 
 /** static void InterviewBefore_FanClubLetter(void) */
 export function InterviewBefore_FanClubLetter(): any {
-  TryReplaceOldTVShowOfKind(TVSHOW_FAN_CLUB_LETTER);
+  TryReplaceOldTVShowOfKind((1));
       if (!gSpecialVar_Result)
       {
           StringCopy(gStringVar1, gSpeciesNames[GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_SPECIES, NULL)]);
@@ -2236,7 +2194,7 @@ export function InterviewBefore_FanClubLetter(): any {
 
 /** static void InterviewBefore_RecentHappenings(void) */
 export function InterviewBefore_RecentHappenings(): any {
-  TryReplaceOldTVShowOfKind(TVSHOW_RECENT_HAPPENINGS);
+  TryReplaceOldTVShowOfKind((2));
       if (!gSpecialVar_Result)
       {
           InitializeEasyChatWordArray(gSaveBlock1Ptr.tvShows[sCurTVShowSlot].recentHappenings.words,
@@ -2246,7 +2204,7 @@ export function InterviewBefore_RecentHappenings(): any {
 
 /** static void InterviewBefore_PkmnFanClubOpinions(void) */
 export function InterviewBefore_PkmnFanClubOpinions(): any {
-  TryReplaceOldTVShowOfKind(TVSHOW_PKMN_FAN_CLUB_OPINIONS);
+  TryReplaceOldTVShowOfKind((3));
       if (!gSpecialVar_Result)
       {
           StringCopy(gStringVar1, gSpeciesNames[GetMonData(gPlayerParty[GetLeadMonIndex()], MON_DATA_SPECIES, NULL)]);
@@ -2264,12 +2222,12 @@ export function InterviewBefore_Dummy(): any {
 
 /** static void InterviewBefore_NameRater(void) */
 export function InterviewBefore_NameRater(): any {
-  TryReplaceOldTVShowOfKind(TVSHOW_NAME_RATER_SHOW);
+  TryReplaceOldTVShowOfKind((5));
 }
 
 /** static void InterviewBefore_BravoTrainerPkmnProfile(void) */
 export function InterviewBefore_BravoTrainerPkmnProfile(): any {
-  TryReplaceOldTVShowOfKind(TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE);
+  TryReplaceOldTVShowOfKind((6));
       if (!gSpecialVar_Result)
           InitializeEasyChatWordArray(gSaveBlock1Ptr.tvShows[sCurTVShowSlot].bravoTrainer.words,
                           ARRAY_COUNT(gSaveBlock1Ptr.tvShows[sCurTVShowSlot].bravoTrainer.words));
@@ -2277,17 +2235,17 @@ export function InterviewBefore_BravoTrainerPkmnProfile(): any {
 
 /** static void InterviewBefore_ContestLiveUpdates(void) */
 export function InterviewBefore_ContestLiveUpdates(): any {
-  TryReplaceOldTVShowOfKind(TVSHOW_CONTEST_LIVE_UPDATES);
+  TryReplaceOldTVShowOfKind((8));
 }
 
 /** static void InterviewBefore_3CheersForPokeblocks(void) */
 export function InterviewBefore_3CheersForPokeblocks(): any {
-  TryReplaceOldTVShowOfKind(TVSHOW_3_CHEERS_FOR_POKEBLOCKS);
+  TryReplaceOldTVShowOfKind((9));
 }
 
 /** static void InterviewBefore_BravoTrainerBTProfile(void) */
 export function InterviewBefore_BravoTrainerBTProfile(): any {
-  TryReplaceOldTVShowOfKind(TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE);
+  TryReplaceOldTVShowOfKind((7));
       if (!gSpecialVar_Result)
           InitializeEasyChatWordArray(gSaveBlock1Ptr.tvShows[sCurTVShowSlot].bravoTrainerTower.words,
                           ARRAY_COUNT(gSaveBlock1Ptr.tvShows[sCurTVShowSlot].bravoTrainerTower.words));
@@ -2295,7 +2253,7 @@ export function InterviewBefore_BravoTrainerBTProfile(): any {
 
 /** static void InterviewBefore_FanClubSpecial(void) */
 export function InterviewBefore_FanClubSpecial(): any {
-  TryReplaceOldTVShowOfKind(TVSHOW_FAN_CLUB_SPECIAL);
+  TryReplaceOldTVShowOfKind((11));
       if (!gSpecialVar_Result)
           InitializeEasyChatWordArray(gSaveBlock1Ptr.tvShows[sCurTVShowSlot].fanClubSpecial.words,
                           ARRAY_COUNT(gSaveBlock1Ptr.tvShows[sCurTVShowSlot].fanClubSpecial.words));
@@ -2309,7 +2267,7 @@ export function IsPartyMonNicknamedOrNotEnglish(monIdx: any): any {
       pokemon =gPlayerParty[monIdx];
       GetMonData(pokemon, MON_DATA_NICKNAME, gStringVar1);
       language = GetMonData(pokemon, MON_DATA_LANGUAGE,language);
-      if (language == GAME_LANGUAGE && !StringCompare(gSpeciesNames[GetMonData(pokemon, MON_DATA_SPECIES, NULL)], gStringVar1))
+      if (language == (((3))) && !StringCompare(gSpeciesNames[GetMonData(pokemon, MON_DATA_SPECIES, NULL)], gStringVar1))
           return FALSE;
 
       return TRUE;
@@ -2324,7 +2282,7 @@ export function IsLeadMonNicknamedOrNotEnglish(): any {
 export function DeleteTVShowInArrayByIdx(shows: any, idx: any): any {
   let i: any = null;
 
-      shows[idx].commonInit.kind = TVSHOW_OFF_AIR;
+      shows[idx].commonInit.kind = (0);
       shows[idx].commonInit.active = FALSE;
       for (i = 0; i < ARRAY_COUNT(shows[idx].commonInit.data); i++)
           shows[idx].commonInit.data[i] = 0;
@@ -2336,13 +2294,13 @@ export function CompactTVShowArray(shows: any): any {
       let j: any = null;
 
        
-      for (i = 0; i < NUM_NORMAL_TVSHOW_SLOTS - 1; i++)
+      for (i = 0; i < (5) - 1; i++)
       {
-          if (shows[i].common.kind == TVSHOW_OFF_AIR)
+          if (shows[i].common.kind == (0))
           {
-              for (j = i + 1; j < NUM_NORMAL_TVSHOW_SLOTS; j++)
+              for (j = i + 1; j < (5); j++)
               {
-                  if (shows[j].common.kind != TVSHOW_OFF_AIR)
+                  if (shows[j].common.kind != (0))
                   {
                       shows[i] = shows[j];
                       DeleteTVShowInArrayByIdx(shows, j);
@@ -2353,13 +2311,13 @@ export function CompactTVShowArray(shows: any): any {
       }
 
        
-      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < ((TV_SHOWS_COUNT - 1)); i++)
+      for (i = (5); i < (((((5) + 20)) - 1)); i++)
       {
-          if (shows[i].common.kind == TVSHOW_OFF_AIR)
+          if (shows[i].common.kind == (0))
           {
-              for (j = i + 1; j < ((TV_SHOWS_COUNT - 1)); j++)
+              for (j = i + 1; j < (((((5) + 20)) - 1)); j++)
               {
-                  if (shows[j].common.kind != TVSHOW_OFF_AIR)
+                  if (shows[j].common.kind != (0))
                   {
                       shows[i] = shows[j];
                       DeleteTVShowInArrayByIdx(shows, j);
@@ -2379,13 +2337,13 @@ export function GetRandomDifferentSpeciesAndNameSeenByPlayer(varIdx: any, exclud
 
 /** static u16 GetRandomDifferentSpeciesSeenByPlayer(u16 excludedSpecies) */
 export function GetRandomDifferentSpeciesSeenByPlayer(excludedSpecies: any): any {
-  let species: any = Random() % (NUM_SPECIES - 1) + 1;
+  let species: any = Random() % (((412)) - 1) + 1;
       let initSpecies: any = species;
 
       while (GetSetPokedexFlag(SpeciesToNationalPokedexNum(species), FLAG_GET_SEEN) != TRUE || species == excludedSpecies)
       {
-          if (species == SPECIES_NONE + 1)
-              species = NUM_SPECIES - 1;
+          if (species == (0) + 1)
+              species = ((412)) - 1;
           else
               species--;
 
@@ -2413,9 +2371,9 @@ export function Script_FindFirstEmptyNormalTVShowSlot(): any {
 export function FindFirstEmptyNormalTVShowSlot(shows: any): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_NORMAL_TVSHOW_SLOTS; i++)
+      for (i = 0; i < (5); i++)
       {
-          if (shows[i].common.kind == TVSHOW_OFF_AIR)
+          if (shows[i].common.kind == (0))
               return i;
       }
       return -1;
@@ -2425,9 +2383,9 @@ export function FindFirstEmptyNormalTVShowSlot(shows: any): any {
 export function FindFirstEmptyRecordMixTVShowSlot(shows: any): any {
   let i: any = null;
 
-      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < ((TV_SHOWS_COUNT - 1)); i++)
+      for (i = (5); i < (((((5) + 20)) - 1)); i++)
       {
-          if (shows[i].common.kind == TVSHOW_OFF_AIR)
+          if (shows[i].common.kind == (0))
               return i;
       }
       return -1;
@@ -2453,7 +2411,7 @@ export function GetRandomWordFromShow(show: any): any {
           if (i == ARRAY_COUNT(show.fanclubLetter.words))
               i = 0;
 
-          if (show.fanclubLetter.words[i] != EC_EMPTY_WORD)
+          if (show.fanclubLetter.words[i] != (0xFFFF))
               break;
           i++;
       }
@@ -2466,9 +2424,9 @@ export function GetRandomNameRaterStateFromName(show: any): any {
       let nameSum: any = null;
 
       nameSum = 0;
-      for (i = 0; i < POKEMON_NAME_LENGTH + 1; i++)
+      for (i = 0; i < (10) + 1; i++)
       {
-          if (show.nameRaterShow.pokemonName[i] == EOS)
+          if (show.nameRaterShow.pokemonName[i] == (0xFF))
               break;
 
           nameSum += show.nameRaterShow.pokemonName[i];
@@ -2483,7 +2441,7 @@ export function GetNicknameSubstring(varIdx: any, whichPosition: any, charParam:
       let strlen: any = null;
 
       for (i = 0; i < 3; i++)
-          buff[i] = EOS;
+          buff[i] = (0xFF);
 
       if (whichString == 0)
       {
@@ -2560,7 +2518,7 @@ export function GetNicknameSubstring(varIdx: any, whichPosition: any, charParam:
 export function IsTVShowAlreadyInQueue(): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_NORMAL_TVSHOW_SLOTS; i++)
+      for (i = 0; i < (5); i++)
       {
           if (gSaveBlock1Ptr.tvShows[i].common.kind == gSpecialVar_0x8004)
               return TRUE;
@@ -2626,16 +2584,16 @@ export function IsMonOTIDNotPlayers(): any {
 
 /** static u8 GetTVGroupByShowId(u8 kind) */
 export function GetTVGroupByShowId(kind: any): any {
-  if (kind == TVSHOW_OFF_AIR)
+  if (kind == (0))
           return TVGROUP_NONE;
 
-      if (kind >= TVGROUP_NORMAL_START && kind <= TVGROUP_NORMAL_END)
+      if (kind >= (1) && kind <= (20))
           return TVGROUP_NORMAL;
 
-      if (kind >= TVGROUP_RECORD_MIX_START && kind <= TVGROUP_RECORD_MIX_END)
+      if (kind >= (21) && kind <= (40))
           return TVGROUP_RECORD_MIX;
 
-      if (kind >= TVGROUP_OUTBREAK_START && kind <= TVGROUP_OUTBREAK_END)
+      if (kind >= (41) && kind <= (60))
           return TVGROUP_OUTBREAK;
 
       return TVGROUP_NONE;
@@ -2649,39 +2607,39 @@ export function GetPlayerIDAsU32(): any {
 /** u8 CheckForPlayersHouseNews(void) */
 export function CheckForPlayersHouseNews(): any {
   if (gSaveBlock1Ptr.location.mapGroup != MAP_GROUP(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
-          return PLAYERS_HOUSE_TV_NONE;
+          return (0);
 
        
-      if (gSaveBlock2Ptr.playerGender == MALE)
+      if (gSaveBlock2Ptr.playerGender == (0))
       {
           if (gSaveBlock1Ptr.location.mapNum != MAP_NUM(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
-              return PLAYERS_HOUSE_TV_NONE;
+              return (0);
       }
       else
       {
           if (gSaveBlock1Ptr.location.mapNum != MAP_NUM(MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F))
-              return PLAYERS_HOUSE_TV_NONE;
+              return (0);
       }
 
-      if (FlagGet(FLAG_SYS_TV_LATIAS_LATIOS) == TRUE)
-          return PLAYERS_HOUSE_TV_LATI;
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x5D))) == TRUE)
+          return (1);
 
-      if (FlagGet(FLAG_SYS_TV_HOME) == TRUE)
-          return PLAYERS_HOUSE_TV_MOVIE;
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x30))) == TRUE)
+          return (2);
 
-      return PLAYERS_HOUSE_TV_LATI;
+      return (1);
 }
 
 /** void GetMomOrDadStringForTVMessage(void) */
 export function GetMomOrDadStringForTVMessage(): any {
   if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
       {
-          if (gSaveBlock2Ptr.playerGender == MALE)
+          if (gSaveBlock2Ptr.playerGender == (0))
           {
               if (gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_LITTLEROOT_TOWN_BRENDANS_HOUSE_1F))
               {
                   StringCopy(gStringVar1, gText_Mom);
-                  VarSet(VAR_TEMP_3, 1);
+                  VarSet((((0x4000) + 0x3)), 1);
               }
           }
           else
@@ -2689,22 +2647,22 @@ export function GetMomOrDadStringForTVMessage(): any {
               if (gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_LITTLEROOT_TOWN_MAYS_HOUSE_1F))
               {
                   StringCopy(gStringVar1, gText_Mom);
-                  VarSet(VAR_TEMP_3, 1);
+                  VarSet((((0x4000) + 0x3)), 1);
               }
           }
       }
-      if (VarGet(VAR_TEMP_3) == 1)
+      if (VarGet((((0x4000) + 0x3))) == 1)
       {
           StringCopy(gStringVar1, gText_Mom);
       }
-      else if (VarGet(VAR_TEMP_3) == 2)
+      else if (VarGet((((0x4000) + 0x3))) == 2)
       {
           StringCopy(gStringVar1, gText_Dad);
       }
-      else if (VarGet(VAR_TEMP_3) > 2)
+      else if (VarGet((((0x4000) + 0x3))) > 2)
       {
            
-          if (VarGet(VAR_TEMP_3) % 2 == 0)
+          if (VarGet((((0x4000) + 0x3))) % 2 == 0)
               StringCopy(gStringVar1, gText_Mom);
           else
               StringCopy(gStringVar1, gText_Dad);
@@ -2717,21 +2675,21 @@ export function GetMomOrDadStringForTVMessage(): any {
           if (Random() % 2 != 0)
           {
               StringCopy(gStringVar1, gText_Mom);
-              VarSet(VAR_TEMP_3, 1);
+              VarSet((((0x4000) + 0x3)), 1);
           }
           else
           {
               StringCopy(gStringVar1, gText_Dad);
-              VarSet(VAR_TEMP_3, 2);
+              VarSet((((0x4000) + 0x3)), 2);
           }
       }
 }
 
 /** void HideBattleTowerReporter(void) */
 export function HideBattleTowerReporter(): any {
-  VarSet(VAR_BRAVO_TRAINER_BATTLE_TOWER_ON, 0);
+  VarSet((0x40BC), 0);
       RemoveObjectEventByLocalIdAndMap(LOCALID_TOWER_LOBBY_REPORTER, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup);
-      FlagSet(FLAG_HIDE_BATTLE_TOWER_REPORTER);
+      FlagSet((0x396));
 }
 
 /** void ReceiveTvShowsData(void *src, u32 size, u8 playersLinkId) */
@@ -2741,19 +2699,19 @@ export function ReceiveTvShowsData(src: any, size: any, playersLinkId: any): any
       let rmBuffer2: any = null;
       let rmBuffer: any = null;
 
-      rmBuffer2 = Alloc(MAX_LINK_PLAYERS * TV_SHOWS_COUNT * 0);
+      rmBuffer2 = Alloc((4) * (((5) + 20)) * 0);
       if (rmBuffer2 != NULL)
       {
-          for (i = 0; i < MAX_LINK_PLAYERS; i++)
+          for (i = 0; i < (4); i++)
               memcpy(rmBuffer2[i], src + i * size, sizeof(rmBuffer2[i]));
 
           rmBuffer = rmBuffer2;
           for (i = 0; i < GetLinkPlayerCount(); i++)
           {
               version = gLinkPlayers[i].version;
-              if (version == VERSION_RUBY || version == VERSION_SAPPHIRE)
+              if (version == (2) || version == (1))
                   TranslateRubyShows(rmBuffer[i]);
-              else if (version == VERSION_EMERALD && gLinkPlayers[i].language == LANGUAGE_JAPANESE)
+              else if (version == (3) && gLinkPlayers[i].language == (1))
                   TranslateJapaneseEmeraldShows(rmBuffer[i]);
           }
 
@@ -2787,7 +2745,7 @@ export function ReceiveTvShowsData(src: any, size: any, playersLinkId: any): any
 export function SetMixedTVShows(player1: any, player2: any, player3: any, player4: any): any {
   let i: any = null;
       let j: any = null;
-      TVShow **tvShows[MAX_LINK_PLAYERS];
+      TVShow **tvShows[(4)];
 
       tvShows[0] =player1;
       tvShows[1] =player2;
@@ -2915,10 +2873,10 @@ export function TryMixOutbreakTVShow(dest: any, src: any, idx: any): any {
 export function FindInactiveShowInArray(tvShows: any): any {
   let i: any = null;
 
-      for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
+      for (i = 0; i < (((((5) + 20)) - 1)); i++)
       {
            
-          if (tvShows[i].common.active == FALSE && (tvShows[i].common.kind - 1) < TVGROUP_OUTBREAK_END)
+          if (tvShows[i].common.active == FALSE && (tvShows[i].common.kind - 1) < (60))
               return i;
       }
       return -1;
@@ -2929,87 +2887,87 @@ export function DeactivateShowsWithUnseenSpecies(): any {
   let i: any = null;
       let species: any = null;
 
-      for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
+      for (i = 0; i < (((((5) + 20)) - 1)); i++)
       {
           switch (gSaveBlock1Ptr.tvShows[i].common.kind)
           {
-          case TVSHOW_CONTEST_LIVE_UPDATES:
+          case (8):
               species = (gSaveBlock1Ptr.tvShows[i]).contestLiveUpdates.winningSpecies;
               DeactivateShowIfNotSeenSpecies(species, i);
               species = (gSaveBlock1Ptr.tvShows[i]).contestLiveUpdates.losingSpecies;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_BATTLE_UPDATE:
+          case (10):
               species = (gSaveBlock1Ptr.tvShows[i]).battleUpdate.speciesPlayer;
               DeactivateShowIfNotSeenSpecies(species, i);
               species = (gSaveBlock1Ptr.tvShows[i]).battleUpdate.speciesOpponent;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_FAN_CLUB_LETTER:
+          case (1):
               species = (gSaveBlock1Ptr.tvShows[i]).fanclubLetter.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_PKMN_FAN_CLUB_OPINIONS:
+          case (3):
               species = (gSaveBlock1Ptr.tvShows[i]).fanclubOpinions.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_DUMMY:
+          case (4):
               species = (gSaveBlock1Ptr.tvShows[i]).dummy.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_NAME_RATER_SHOW:
+          case (5):
               species = (gSaveBlock1Ptr.tvShows[i]).nameRaterShow.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               species = (gSaveBlock1Ptr.tvShows[i]).nameRaterShow.randomSpecies;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE:
+          case (6):
               species = (gSaveBlock1Ptr.tvShows[i]).bravoTrainer.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE:
+          case (7):
               species = (gSaveBlock1Ptr.tvShows[i]).bravoTrainerTower.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               species = (gSaveBlock1Ptr.tvShows[i]).bravoTrainerTower.defeatedSpecies;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_POKEMON_TODAY_CAUGHT:
+          case (21):
               species = (gSaveBlock1Ptr.tvShows[i]).pokemonToday.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_POKEMON_TODAY_FAILED:
+          case (23):
               species = (gSaveBlock1Ptr.tvShows[i]).pokemonTodayFailed.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               species = (gSaveBlock1Ptr.tvShows[i]).pokemonTodayFailed.species2;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_FISHING_ADVICE:
+          case (24):
               species = (gSaveBlock1Ptr.tvShows[i]).pokemonAngler.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_WORLD_OF_MASTERS:
+          case (25):
               species = (gSaveBlock1Ptr.tvShows[i]).worldOfMasters.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               species = (gSaveBlock1Ptr.tvShows[i]).worldOfMasters.caughtPoke;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_BREAKING_NEWS:
+          case (30):
               species = (gSaveBlock1Ptr.tvShows[i]).breakingNews.lastOpponentSpecies;
               DeactivateShowIfNotSeenSpecies(species, i);
               species = (gSaveBlock1Ptr.tvShows[i]).breakingNews.poke1Species;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_SECRET_BASE_VISIT:
+          case (31):
               species = (gSaveBlock1Ptr.tvShows[i]).secretBaseVisit.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_BATTLE_SEMINAR:
+          case (33):
               species = (gSaveBlock1Ptr.tvShows[i]).battleSeminar.species;
               DeactivateShowIfNotSeenSpecies(species, i);
               species = (gSaveBlock1Ptr.tvShows[i]).battleSeminar.foeSpecies;
               DeactivateShowIfNotSeenSpecies(species, i);
               break;
-          case TVSHOW_FRONTIER:
+          case (36):
               species = (gSaveBlock1Ptr.tvShows[i]).frontier.species1;
               DeactivateShowIfNotSeenSpecies(species, i);
               species = (gSaveBlock1Ptr.tvShows[i]).frontier.species2;
@@ -3018,23 +2976,23 @@ export function DeactivateShowsWithUnseenSpecies(): any {
               species = (gSaveBlock1Ptr.tvShows[i]).frontier.facilityAndMode;
               switch (species)
               {
-              case FRONTIER_SHOW_TOWER_MULTIS:
-              case FRONTIER_SHOW_TOWER_LINK_MULTIS:
+              case (3):
+              case (4):
                   break;
-              case FRONTIER_SHOW_TOWER_SINGLES:
-              case FRONTIER_SHOW_DOME_SINGLES:
-              case FRONTIER_SHOW_DOME_DOUBLES:
-              case FRONTIER_SHOW_FACTORY_SINGLES:
-              case FRONTIER_SHOW_FACTORY_DOUBLES:
-              case FRONTIER_SHOW_PIKE:
-              case FRONTIER_SHOW_ARENA:
-              case FRONTIER_SHOW_PALACE_SINGLES:
-              case FRONTIER_SHOW_PALACE_DOUBLES:
-              case FRONTIER_SHOW_PYRAMID:
+              case (1):
+              case (5):
+              case (6):
+              case (7):
+              case (8):
+              case (9):
+              case (10):
+              case (11):
+              case (12):
+              case (13):
                   species = (gSaveBlock1Ptr.tvShows[i]).frontier.species3;
                   DeactivateShowIfNotSeenSpecies(species, i);
                   break;
-              case FRONTIER_SHOW_TOWER_DOUBLES:
+              case (2):
                   species = (gSaveBlock1Ptr.tvShows[i]).frontier.species3;
                   DeactivateShowIfNotSeenSpecies(species, i);
                   species = (gSaveBlock1Ptr.tvShows[i]).frontier.species4;
@@ -3043,23 +3001,23 @@ export function DeactivateShowsWithUnseenSpecies(): any {
               }
               break;
            
-          case TVSHOW_OFF_AIR:
-          case TVSHOW_RECENT_HAPPENINGS:
-          case TVSHOW_3_CHEERS_FOR_POKEBLOCKS:
-          case TVSHOW_TODAYS_RIVAL_TRAINER:
-          case TVSHOW_TREND_WATCHER:
-          case TVSHOW_TREASURE_INVESTIGATORS:
-          case TVSHOW_FIND_THAT_GAMER:
-          case TVSHOW_TRAINER_FAN_CLUB:
-          case TVSHOW_CUTIES:
-          case TVSHOW_SMART_SHOPPER:
-          case TVSHOW_FAN_CLUB_SPECIAL:
-          case TVSHOW_LILYCOVE_CONTEST_LADY:
-          case TVSHOW_LOTTO_WINNER:
-          case TVSHOW_NUMBER_ONE:
-          case TVSHOW_SECRET_BASE_SECRETS:
-          case TVSHOW_SAFARI_FAN_CLUB:
-          case TVSHOW_MASS_OUTBREAK:
+          case (0):
+          case (2):
+          case (9):
+          case (26):
+          case (27):
+          case (28):
+          case (29):
+          case (34):
+          case (35):
+          case (22):
+          case (11):
+          case (12):
+          case (32):
+          case (37):
+          case (38):
+          case (39):
+          case (41):
               break;
           default:
               DeactivateShow(i);
@@ -3083,13 +3041,13 @@ export function DeactivateShowIfNotSeenSpecies(species: any, showIdx: any): any 
 export function DeactivateGameCompleteShowsIfNotUnlocked(): any {
   let i: any = null;
 
-      if (FlagGet(FLAG_SYS_GAME_CLEAR) != TRUE)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))) != TRUE)
       {
-          for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
+          for (i = 0; i < (((((5) + 20)) - 1)); i++)
           {
-              if (gSaveBlock1Ptr.tvShows[i].common.kind == TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE)
+              if (gSaveBlock1Ptr.tvShows[i].common.kind == (7))
                   gSaveBlock1Ptr.tvShows[i].common.active = FALSE;
-              else if (gSaveBlock1Ptr.tvShows[i].common.kind == TVSHOW_MASS_OUTBREAK)
+              else if (gSaveBlock1Ptr.tvShows[i].common.kind == (41))
                   gSaveBlock1Ptr.tvShows[i].common.active = FALSE;
           }
       }
@@ -3099,7 +3057,7 @@ export function DeactivateGameCompleteShowsIfNotUnlocked(): any {
 export function DeactivateAllNormalTVShows(): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_NORMAL_TVSHOW_SLOTS; i++)
+      for (i = 0; i < (5); i++)
       {
           if (GetTVGroupByShowId(gSaveBlock1Ptr.tvShows[i].common.kind) == TVGROUP_NORMAL)
               gSaveBlock1Ptr.tvShows[i].common.active = FALSE;
@@ -3110,13 +3068,13 @@ export function DeactivateAllNormalTVShows(): any {
 export function DeleteExcessMixedShows(): any {
   let i: any = null;
       let numEmptyMixSlots: any = 0;
-      for (i = NUM_NORMAL_TVSHOW_SLOTS; i < ((TV_SHOWS_COUNT - 1)); i++)
+      for (i = (5); i < (((((5) + 20)) - 1)); i++)
       {
-          if (gSaveBlock1Ptr.tvShows[i].common.kind == TVSHOW_OFF_AIR)
+          if (gSaveBlock1Ptr.tvShows[i].common.kind == (0))
               numEmptyMixSlots++;
       }
-      for (i = 0; i < NUM_NORMAL_TVSHOW_SLOTS - numEmptyMixSlots; i++)
-          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, i + NUM_NORMAL_TVSHOW_SLOTS);
+      for (i = 0; i < (5) - numEmptyMixSlots; i++)
+          DeleteTVShowInArrayByIdx(gSaveBlock1Ptr.tvShows, i + (5));
 }
 
 /** void ReceivePokeNewsData(void *src, u32 size, u8 playersLinkId) */
@@ -3125,10 +3083,10 @@ export function ReceivePokeNewsData(src: any, size: any, playersLinkId: any): an
       let rmBuffer2: any = null;
       let rmBuffer: any = null;
 
-      rmBuffer2 = Alloc(MAX_LINK_PLAYERS * POKE_NEWS_COUNT * 0);
+      rmBuffer2 = Alloc((4) * (16) * 0);
       if (rmBuffer2 != NULL)
       {
-          for (i = 0; i < MAX_LINK_PLAYERS; i++)
+          for (i = 0; i < (4); i++)
               memcpy(rmBuffer2[i], src + i * size, sizeof(rmBuffer2[i]));
 
           rmBuffer = rmBuffer2;
@@ -3158,14 +3116,14 @@ export function ReceivePokeNewsData(src: any, size: any, playersLinkId: any): an
 /** static void SetMixedPokeNews(PokeNews player1[POKE_NEWS_COUNT], PokeNews player2[POKE_NEWS_COUNT], PokeNews player3[POKE_NEWS_COUNT], PokeNews player4[POKE_NEWS_COUNT]) */
 export function SetMixedPokeNews(player1: any, player2: any, player3: any, player4: any): any {
   let i, j, k;
-      PokeNews **pokeNews[MAX_LINK_PLAYERS];
+      PokeNews **pokeNews[(4)];
 
       pokeNews[0] =player1;
       pokeNews[1] =player2;
       pokeNews[2] =player3;
       pokeNews[3] =player4;
       sTVShowNewsMixingNumPlayers = GetLinkPlayerCount();
-      for (i = 0; i < POKE_NEWS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           for (j = 0; j < sTVShowNewsMixingNumPlayers; j++)
           {
@@ -3195,23 +3153,23 @@ export function InitTryMixPokeNewsShow(dest: any, src: any): any {
 export function TryMixPokeNewsShow(dest: any, src: any, slot: any): any {
   let i: any = null;
 
-      if (src.kind == POKENEWS_NONE)
+      if (src.kind == (0))
           return FALSE;
 
-      for (i = 0; i < POKE_NEWS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (dest[i].kind == src.kind)
               return FALSE;
       }
       dest[slot].kind = src.kind;
-      dest[slot].state = POKENEWS_STATE_UPCOMING;
+      dest[slot].state = (1);
       dest[slot].dayCountdown = src.dayCountdown;
       return TRUE;
 }
 
 /** static s8 GetPokeNewsSlotIfActive(PokeNews *pokeNews, u8 idx) */
 export function GetPokeNewsSlotIfActive(pokeNews: any, idx: any): any {
-  if (pokeNews[idx].kind == POKENEWS_NONE)
+  if (pokeNews[idx].kind == (0))
           return -1;
 
       return idx;
@@ -3221,9 +3179,9 @@ export function GetPokeNewsSlotIfActive(pokeNews: any, idx: any): any {
 export function ClearInvalidPokeNews(): any {
   let i: any = null;
 
-      for (i = 0; i < POKE_NEWS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
-          if (gSaveBlock1Ptr.pokeNews[i].kind > POKENEWS_BLENDMASTER)
+          if (gSaveBlock1Ptr.pokeNews[i].kind > (4))
               ClearPokeNewsBySlot(i);
       }
       CompactPokeNews();
@@ -3233,10 +3191,10 @@ export function ClearInvalidPokeNews(): any {
 export function ClearPokeNewsIfGameNotComplete(): any {
   let i: any = null;
 
-      if (FlagGet(FLAG_SYS_GAME_CLEAR) != TRUE)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))) != TRUE)
       {
-          for (i = 0; i < POKE_NEWS_COUNT; i++)
-              gSaveBlock1Ptr.pokeNews[i].state = POKENEWS_STATE_INACTIVE;
+          for (i = 0; i < (16); i++)
+              gSaveBlock1Ptr.pokeNews[i].state = (0);
       }
 }
 
@@ -3245,12 +3203,12 @@ export function SanitizeTVShowsForRuby(shows: any): any {
   let curShow: any = null;
 
       SanitizeTVShowLocationsForRuby(shows);
-      for (curShow = shows; curShow < shows + ((TV_SHOWS_COUNT - 1)); curShow++)
+      for (curShow = shows; curShow < shows + (((((5) + 20)) - 1)); curShow++)
       {
-          if (curShow.bravoTrainerTower.kind == TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE)
+          if (curShow.bravoTrainerTower.kind == (7))
           {
-              if ((curShow.bravoTrainerTower.playerLanguage == LANGUAGE_JAPANESE && curShow.bravoTrainerTower.opponentLanguage != LANGUAGE_JAPANESE)
-               || (curShow.bravoTrainerTower.playerLanguage != LANGUAGE_JAPANESE && curShow.bravoTrainerTower.opponentLanguage == LANGUAGE_JAPANESE))
+              if ((curShow.bravoTrainerTower.playerLanguage == (1) && curShow.bravoTrainerTower.opponentLanguage != (1))
+               || (curShow.bravoTrainerTower.playerLanguage != (1) && curShow.bravoTrainerTower.opponentLanguage == (1)))
                   memset(curShow, 0, 0);
           }
       }
@@ -3260,127 +3218,127 @@ export function SanitizeTVShowsForRuby(shows: any): any {
 export function TranslateRubyShows(shows: any): any {
   let curShow: any = null;
 
-      for (curShow = shows; curShow < shows + ((TV_SHOWS_COUNT - 1)); curShow++)
+      for (curShow = shows; curShow < shows + (((((5) + 20)) - 1)); curShow++)
       {
-          if (curShow.bravoTrainerTower.kind == TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE)
+          if (curShow.bravoTrainerTower.kind == (7))
           {
               if (IsStringJapanese(curShow.bravoTrainerTower.opponentName))
-                  curShow.bravoTrainerTower.opponentLanguage = LANGUAGE_JAPANESE;
+                  curShow.bravoTrainerTower.opponentLanguage = (1);
               else
-                  curShow.bravoTrainerTower.opponentLanguage = GAME_LANGUAGE;
+                  curShow.bravoTrainerTower.opponentLanguage = (((3)));
           }
       }
 }
 
 /** static u8 GetStringLanguage(u8 *str) */
 export function GetStringLanguage(str: any): any {
-  return IsStringJapanese(str) ? LANGUAGE_JAPANESE : GAME_LANGUAGE;
+  return IsStringJapanese(str) ? (1) : (((3)));
 }
 
 /** static void TranslateJapaneseEmeraldShows(TVShow *shows) */
 export function TranslateJapaneseEmeraldShows(shows: any): any {
   let curShow: any = null;
 
-      for (curShow = shows; curShow < shows + ((TV_SHOWS_COUNT - 1)); curShow++)
+      for (curShow = shows; curShow < shows + (((((5) + 20)) - 1)); curShow++)
       {
           switch(curShow.common.kind)
           {
-          case TVSHOW_FAN_CLUB_LETTER:
+          case (1):
               curShow.fanclubLetter.language = GetStringLanguage(curShow.fanclubLetter.playerName);
               break;
-          case TVSHOW_RECENT_HAPPENINGS:
+          case (2):
               curShow.recentHappenings.language = GetStringLanguage(curShow.recentHappenings.playerName);
               break;
-          case TVSHOW_PKMN_FAN_CLUB_OPINIONS:
+          case (3):
               curShow.fanclubOpinions.language = GetStringLanguage(curShow.fanclubOpinions.playerName);
               curShow.fanclubOpinions.pokemonNameLanguage = GetStringLanguage(curShow.fanclubOpinions.nickname);
               break;
-          case TVSHOW_DUMMY:
+          case (4):
               curShow.dummy.language = GetStringLanguage(curShow.dummy.name);
               break;
-          case TVSHOW_NAME_RATER_SHOW:
+          case (5):
               curShow.nameRaterShow.language = GetStringLanguage(curShow.nameRaterShow.trainerName);
               curShow.nameRaterShow.pokemonNameLanguage = GetStringLanguage(curShow.nameRaterShow.pokemonName);
               break;
-          case TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE:
+          case (6):
               curShow.bravoTrainer.language = GetStringLanguage(curShow.bravoTrainer.playerName);
               curShow.bravoTrainer.pokemonNameLanguage = GetStringLanguage(curShow.bravoTrainer.pokemonNickname);
               break;
-          case TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE:
+          case (7):
               curShow.bravoTrainerTower.playerLanguage = GetStringLanguage(curShow.bravoTrainerTower.playerName);
               curShow.bravoTrainerTower.opponentLanguage = GetStringLanguage(curShow.bravoTrainerTower.opponentName);
               break;
-          case TVSHOW_CONTEST_LIVE_UPDATES:
+          case (8):
               curShow.contestLiveUpdates.winningTrainerLanguage = GetStringLanguage(curShow.contestLiveUpdates.winningTrainerName);
               curShow.contestLiveUpdates.losingTrainerLanguage = GetStringLanguage(curShow.contestLiveUpdates.losingTrainerName);
               break;
-          case TVSHOW_3_CHEERS_FOR_POKEBLOCKS:
+          case (9):
               curShow.threeCheers.language = GetStringLanguage(curShow.threeCheers.playerName);
               curShow.threeCheers.worstBlenderLanguage = GetStringLanguage(curShow.threeCheers.worstBlenderName);
               break;
-          case TVSHOW_BATTLE_UPDATE:
+          case (10):
               curShow.battleUpdate.language = GetStringLanguage(curShow.battleUpdate.playerName);
               curShow.battleUpdate.linkOpponentLanguage = GetStringLanguage(curShow.battleUpdate.linkOpponentName);
               break;
-          case TVSHOW_FAN_CLUB_SPECIAL:
+          case (11):
               curShow.fanClubSpecial.language = GetStringLanguage(curShow.fanClubSpecial.playerName);
               curShow.fanClubSpecial.idolNameLanguage = GetStringLanguage(curShow.fanClubSpecial.idolName);
               break;
-          case TVSHOW_LILYCOVE_CONTEST_LADY:
+          case (12):
               curShow.contestLady.language = GetStringLanguage(curShow.contestLady.playerName);
               curShow.contestLady.pokemonNameLanguage = GetStringLanguage(curShow.contestLady.nickname);
               break;
-          case TVSHOW_POKEMON_TODAY_CAUGHT:
+          case (21):
               curShow.pokemonToday.language = GetStringLanguage(curShow.pokemonToday.playerName);
               curShow.pokemonToday.language2 = GetStringLanguage(curShow.pokemonToday.nickname);
               break;
-          case TVSHOW_SMART_SHOPPER:
+          case (22):
               curShow.smartshopperShow.language = GetStringLanguage(curShow.smartshopperShow.playerName);
               break;
-          case TVSHOW_POKEMON_TODAY_FAILED:
+          case (23):
               curShow.pokemonTodayFailed.language = GetStringLanguage(curShow.pokemonTodayFailed.playerName);
               break;
-          case TVSHOW_FISHING_ADVICE:
+          case (24):
               curShow.pokemonAngler.language = GetStringLanguage(curShow.pokemonAngler.playerName);
               break;
-          case TVSHOW_WORLD_OF_MASTERS:
+          case (25):
               curShow.worldOfMasters.language = GetStringLanguage(curShow.worldOfMasters.playerName);
               break;
-          case TVSHOW_TREND_WATCHER:
+          case (27):
               curShow.trendWatcher.language = GetStringLanguage(curShow.trendWatcher.playerName);
               break;
-          case TVSHOW_BREAKING_NEWS:
+          case (30):
               curShow.breakingNews.language = GetStringLanguage(curShow.breakingNews.playerName);
               break;
-          case TVSHOW_BATTLE_SEMINAR:
+          case (33):
               curShow.battleSeminar.language = GetStringLanguage(curShow.battleSeminar.playerName);
               break;
-          case TVSHOW_FIND_THAT_GAMER:
-          case TVSHOW_TRAINER_FAN_CLUB:
+          case (29):
+          case (34):
               curShow.trainerFanClub.language = GetStringLanguage(curShow.trainerFanClub.playerName);
               break;
-          case TVSHOW_CUTIES:
+          case (35):
               curShow.cuties.language = GetStringLanguage(curShow.cuties.playerName);
               curShow.cuties.pokemonNameLanguage = GetStringLanguage(curShow.cuties.nickname);
               break;
-          case TVSHOW_TODAYS_RIVAL_TRAINER:
-          case TVSHOW_SECRET_BASE_VISIT:
-          case TVSHOW_FRONTIER:
+          case (26):
+          case (31):
+          case (36):
               curShow.rivalTrainer.language = GetStringLanguage(curShow.rivalTrainer.playerName);
               break;
-          case TVSHOW_TREASURE_INVESTIGATORS:
-          case TVSHOW_LOTTO_WINNER:
-          case TVSHOW_NUMBER_ONE:
+          case (28):
+          case (32):
+          case (37):
               curShow.treasureInvestigators.language = GetStringLanguage(curShow.treasureInvestigators.playerName);
               break;
-          case TVSHOW_SECRET_BASE_SECRETS:
+          case (38):
               curShow.secretBaseSecrets.language = GetStringLanguage(curShow.secretBaseSecrets.playerName);
               curShow.secretBaseSecrets.baseOwnersNameLanguage = GetStringLanguage(curShow.secretBaseSecrets.baseOwnersName);
               break;
-          case TVSHOW_SAFARI_FAN_CLUB:
+          case (39):
               curShow.safariFanClub.language = GetStringLanguage(curShow.safariFanClub.playerName);
               break;
-          case TVSHOW_MASS_OUTBREAK:
+          case (41):
               break;
           }
       }
@@ -3390,15 +3348,15 @@ export function TranslateJapaneseEmeraldShows(shows: any): any {
 export function SanitizeTVShowLocationsForRuby(shows: any): any {
   let i: any = null;
 
-      for (i = 0; i < ((TV_SHOWS_COUNT - 1)); i++)
+      for (i = 0; i < (((((5) + 20)) - 1)); i++)
       {
           switch (shows[i].common.kind)
           {
-          case TVSHOW_WORLD_OF_MASTERS:
+          case (25):
               if (shows[i].worldOfMasters.location > KANTO_MAPSEC_START)
                   memset(shows[i], 0, 0);
               break;
-          case TVSHOW_POKEMON_TODAY_FAILED:
+          case (23):
               if (shows[i].pokemonTodayFailed.location > KANTO_MAPSEC_START)
                   memset(shows[i], 0, 0);
               break;
@@ -3412,100 +3370,100 @@ export function DoTVShow(): any {
       {
           switch (gSaveBlock1Ptr.tvShows[gSpecialVar_0x8004].common.kind)
           {
-          case TVSHOW_FAN_CLUB_LETTER:
+          case (1):
               DoTVShowPokemonFanClubLetter();
               break;
-          case TVSHOW_RECENT_HAPPENINGS:
+          case (2):
               DoTVShowRecentHappenings();
               break;
-          case TVSHOW_PKMN_FAN_CLUB_OPINIONS:
+          case (3):
               DoTVShowPokemonFanClubOpinions();
               break;
-          case TVSHOW_DUMMY:
+          case (4):
               DoTVShowDummiedOut();
               break;
-          case TVSHOW_MASS_OUTBREAK:
+          case (41):
               DoTVShowPokemonNewsMassOutbreak();
               break;
-          case TVSHOW_BRAVO_TRAINER_POKEMON_PROFILE:
+          case (6):
               DoTVShowBravoTrainerPokemonProfile();
               break;
-          case TVSHOW_BRAVO_TRAINER_BATTLE_TOWER_PROFILE:
+          case (7):
               DoTVShowBravoTrainerBattleTower();
               break;
-          case TVSHOW_POKEMON_TODAY_CAUGHT:
+          case (21):
               DoTVShowPokemonTodaySuccessfulCapture();
               break;
-          case TVSHOW_SMART_SHOPPER:
+          case (22):
               DoTVShowTodaysSmartShopper();
               break;
-          case TVSHOW_NAME_RATER_SHOW:
+          case (5):
               DoTVShowTheNameRaterShow();
               break;
-          case TVSHOW_CONTEST_LIVE_UPDATES:
+          case (8):
               DoTVShowPokemonContestLiveUpdates();
               break;
-          case TVSHOW_BATTLE_UPDATE:
+          case (10):
               DoTVShowPokemonBattleUpdate();
               break;
-          case TVSHOW_3_CHEERS_FOR_POKEBLOCKS:
+          case (9):
               DoTVShow3CheersForPokeblocks();
               break;
-          case TVSHOW_POKEMON_TODAY_FAILED:
+          case (23):
               DoTVShowPokemonTodayFailedCapture();
               break;
-          case TVSHOW_FISHING_ADVICE:
+          case (24):
               DoTVShowPokemonAngler();
               break;
-          case TVSHOW_WORLD_OF_MASTERS:
+          case (25):
               DoTVShowTheWorldOfMasters();
               break;
-          case TVSHOW_TODAYS_RIVAL_TRAINER:
+          case (26):
               DoTVShowTodaysRivalTrainer();
               break;
-          case TVSHOW_TREND_WATCHER:
+          case (27):
               DoTVShowDewfordTrendWatcherNetwork();
               break;
-          case TVSHOW_TREASURE_INVESTIGATORS:
+          case (28):
               DoTVShowHoennTreasureInvestigators();
               break;
-          case TVSHOW_FIND_THAT_GAMER:
+          case (29):
               DoTVShowFindThatGamer();
               break;
-          case TVSHOW_BREAKING_NEWS:
+          case (30):
               DoTVShowBreakingNewsTV();
               break;
-          case TVSHOW_SECRET_BASE_VISIT:
+          case (31):
               DoTVShowSecretBaseVisit();
               break;
-          case TVSHOW_LOTTO_WINNER:
+          case (32):
               DoTVShowPokemonLotteryWinnerFlashReport();
               break;
-          case TVSHOW_BATTLE_SEMINAR:
+          case (33):
               DoTVShowThePokemonBattleSeminar();
               break;
-          case TVSHOW_FAN_CLUB_SPECIAL:
+          case (11):
               DoTVShowTrainerFanClubSpecial();
               break;
-          case TVSHOW_TRAINER_FAN_CLUB:
+          case (34):
               DoTVShowTrainerFanClub();
               break;
-          case TVSHOW_CUTIES:
+          case (35):
               DoTVShowSpotTheCuties();
               break;
-          case TVSHOW_FRONTIER:
+          case (36):
               DoTVShowPokemonNewsBattleFrontier();
               break;
-          case TVSHOW_NUMBER_ONE:
+          case (37):
               DoTVShowWhatsNo1InHoennToday();
               break;
-          case TVSHOW_SECRET_BASE_SECRETS:
+          case (38):
               DoTVShowSecretBaseSecrets();
               break;
-          case TVSHOW_SAFARI_FAN_CLUB:
+          case (39):
               DoTVShowSafariFanClub();
               break;
-          case TVSHOW_LILYCOVE_CONTEST_LADY:
+          case (12):
               DoTVShowLilycoveContestLady();
               break;
           }
@@ -3594,83 +3552,83 @@ export function DoTVShowBravoTrainerBattleTower(): any {
       state = sTVShowState;
       switch(state)
       {
-      case BRAVOTOWER_STATE_INTRO:
+      case (0):
           TVShowConvertInternationalString(gStringVar1, show.bravoTrainerTower.playerName, show.bravoTrainerTower.playerLanguage);
           StringCopy(gStringVar2, gSpeciesNames[show.bravoTrainerTower.species]);
-          if (show.bravoTrainerTower.numFights >= FRONTIER_STAGES_PER_CHALLENGE)
-              sTVShowState = BRAVOTOWER_STATE_NEW_RECORD;
+          if (show.bravoTrainerTower.numFights >= (7))
+              sTVShowState = (1);
           else
-              sTVShowState = BRAVOTOWER_STATE_LOST;
+              sTVShowState = (2);
           break;
-      case BRAVOTOWER_STATE_NEW_RECORD:
+      case (1):
            
            
-          if (show.bravoTrainerTower.btLevel == FRONTIER_MAX_LEVEL_50)
+          if (show.bravoTrainerTower.btLevel == (50))
               StringCopy(gStringVar1, gText_Lv50);
           else
               StringCopy(gStringVar1, gText_OpenLevel);
           ConvertIntToDecimalString(1, show.bravoTrainerTower.numFights);
           if (show.bravoTrainerTower.wonTheChallenge == TRUE)
-              sTVShowState = BRAVOTOWER_STATE_WON;
+              sTVShowState = (3);
           else
-              sTVShowState = BRAVOTOWER_STATE_LOST_FINAL;
+              sTVShowState = (4);
           break;
-      case BRAVOTOWER_STATE_LOST:
+      case (2):
           TVShowConvertInternationalString(gStringVar1, show.bravoTrainerTower.opponentName, show.bravoTrainerTower.opponentLanguage);
           ConvertIntToDecimalString(1, show.bravoTrainerTower.numFights + 1);
           if (show.bravoTrainerTower.interviewResponse == 0)
-              sTVShowState = BRAVOTOWER_STATE_SATISFIED;
+              sTVShowState = (5);
           else
-              sTVShowState = BRAVOTOWER_STATE_UNSATISFIED;
+              sTVShowState = (6);
           break;
-      case BRAVOTOWER_STATE_WON:
+      case (3):
           TVShowConvertInternationalString(gStringVar1, show.bravoTrainerTower.opponentName, show.bravoTrainerTower.opponentLanguage);
           StringCopy(gStringVar2, gSpeciesNames[show.bravoTrainerTower.defeatedSpecies]);
           if (show.bravoTrainerTower.interviewResponse == 0)
-              sTVShowState = BRAVOTOWER_STATE_SATISFIED;
+              sTVShowState = (5);
           else
-              sTVShowState = BRAVOTOWER_STATE_UNSATISFIED;
+              sTVShowState = (6);
           break;
-      case BRAVOTOWER_STATE_LOST_FINAL:
+      case (4):
           TVShowConvertInternationalString(gStringVar1, show.bravoTrainerTower.opponentName, show.bravoTrainerTower.opponentLanguage);
           StringCopy(gStringVar2, gSpeciesNames[show.bravoTrainerTower.defeatedSpecies]);
           if (show.bravoTrainerTower.interviewResponse == 0)
-              sTVShowState = BRAVOTOWER_STATE_SATISFIED;
+              sTVShowState = (5);
           else
-              sTVShowState = BRAVOTOWER_STATE_UNSATISFIED;
+              sTVShowState = (6);
           break;
-      case BRAVOTOWER_STATE_SATISFIED:
+      case (5):
           TVShowConvertInternationalString(gStringVar1, show.bravoTrainerTower.opponentName, show.bravoTrainerTower.opponentLanguage);
-          sTVShowState = BRAVOTOWER_STATE_RESPONSE;
+          sTVShowState = (11);
           break;
-      case BRAVOTOWER_STATE_UNSATISFIED:
+      case (6):
           TVShowConvertInternationalString(gStringVar1, show.bravoTrainerTower.opponentName, show.bravoTrainerTower.opponentLanguage);
-          sTVShowState = BRAVOTOWER_STATE_RESPONSE;
+          sTVShowState = (11);
           break;
-      case BRAVOTOWER_STATE_UNUSED_1:
-          sTVShowState = BRAVOTOWER_STATE_RESPONSE;
+      case (7):
+          sTVShowState = (11);
           break;
-      case BRAVOTOWER_STATE_UNUSED_2:
-      case BRAVOTOWER_STATE_UNUSED_3:
-      case BRAVOTOWER_STATE_UNUSED_4:
+      case (8):
+      case (9):
+      case (10):
           TVShowConvertInternationalString(gStringVar1, show.bravoTrainerTower.playerName, show.bravoTrainerTower.playerLanguage);
-          sTVShowState = BRAVOTOWER_STATE_RESPONSE;
+          sTVShowState = (11);
           break;
-      case BRAVOTOWER_STATE_RESPONSE:
+      case (11):
           CopyEasyChatWord(gStringVar1, show.bravoTrainerTower.words[0]);
           if (show.bravoTrainerTower.interviewResponse == 0)
-              sTVShowState = BRAVOTOWER_STATE_RESPONSE_SATISFIED;
+              sTVShowState = (12);
           else
-              sTVShowState = BRAVOTOWER_STATE_RESPONSE_UNSATISFIED;
+              sTVShowState = (13);
           break;
-      case BRAVOTOWER_STATE_RESPONSE_SATISFIED:
-      case BRAVOTOWER_STATE_RESPONSE_UNSATISFIED:
+      case (12):
+      case (13):
           CopyEasyChatWord(gStringVar1, show.bravoTrainerTower.words[0]);
           TVShowConvertInternationalString(gStringVar2, show.bravoTrainerTower.playerName, show.bravoTrainerTower.playerLanguage);
           TVShowConvertInternationalString(gStringVar3, show.bravoTrainerTower.opponentName, show.bravoTrainerTower.opponentLanguage);
-          sTVShowState = BRAVOTOWER_STATE_OUTRO;
+          sTVShowState = (14);
           break;
-      case BRAVOTOWER_STATE_OUTRO:
+      case (14):
           TVShowConvertInternationalString(gStringVar1, show.bravoTrainerTower.playerName, show.bravoTrainerTower.playerLanguage);
           StringCopy(gStringVar2, gSpeciesNames[show.bravoTrainerTower.species]);
           TVShowDone();
@@ -3689,84 +3647,84 @@ export function DoTVShowTodaysSmartShopper(): any {
       state = sTVShowState;
       switch(state)
       {
-      case SMARTSHOPPER_STATE_INTRO:
+      case (0):
           TVShowConvertInternationalString(gStringVar1, show.smartshopperShow.playerName, show.smartshopperShow.language);
           GetMapName(gStringVar2, show.smartshopperShow.shopLocation, 0);
           if (show.smartshopperShow.itemAmounts[0] >= 255)
-              sTVShowState = SMARTSHOPPER_STATE_CLERK_MAX;
+              sTVShowState = (11);
           else
-              sTVShowState = SMARTSHOPPER_STATE_CLERK_NORMAL;
+              sTVShowState = (1);
           break;
-      case SMARTSHOPPER_STATE_CLERK_NORMAL:
+      case (1):
           TVShowConvertInternationalString(gStringVar1, show.smartshopperShow.playerName, show.smartshopperShow.language);
           StringCopy(gStringVar2, GetItemName(show.smartshopperShow.itemIds[0]));
           ConvertIntToDecimalString(2, show.smartshopperShow.itemAmounts[0]);
            
-          sTVShowState += SMARTSHOPPER_STATE_CLERK_NORMAL + (Random() % (SMARTSHOPPER_STATE_RAND_COMMENT_4 - SMARTSHOPPER_STATE_RAND_COMMENT_1 + 1));
+          sTVShowState += (1) + (Random() % ((5) - (2) + 1));
           break;
-      case SMARTSHOPPER_STATE_RAND_COMMENT_1:
-      case SMARTSHOPPER_STATE_RAND_COMMENT_3:
-      case SMARTSHOPPER_STATE_RAND_COMMENT_4:
-          if (show.smartshopperShow.itemIds[1] != ITEM_NONE)
-              sTVShowState = SMARTSHOPPER_STATE_SECOND_ITEM;
+      case (2):
+      case (4):
+      case (5):
+          if (show.smartshopperShow.itemIds[1] != (0))
+              sTVShowState = (6);
           else
-              sTVShowState = SMARTSHOPPER_STATE_IS_VIP;
+              sTVShowState = (10);
           break;
-      case SMARTSHOPPER_STATE_RAND_COMMENT_2:
+      case (3):
           ConvertIntToDecimalString(2, show.smartshopperShow.itemAmounts[0] + 1);
-          if (show.smartshopperShow.itemIds[1] != ITEM_NONE)
-              sTVShowState = SMARTSHOPPER_STATE_SECOND_ITEM;
+          if (show.smartshopperShow.itemIds[1] != (0))
+              sTVShowState = (6);
           else
-              sTVShowState = SMARTSHOPPER_STATE_IS_VIP;
+              sTVShowState = (10);
           break;
-      case SMARTSHOPPER_STATE_SECOND_ITEM:
+      case (6):
            
           StringCopy(gStringVar2, GetItemName(show.smartshopperShow.itemIds[1]));
           ConvertIntToDecimalString(2, show.smartshopperShow.itemAmounts[1]);
-          if (show.smartshopperShow.itemIds[2] != ITEM_NONE)
-              sTVShowState = SMARTSHOPPER_STATE_THIRD_ITEM;
+          if (show.smartshopperShow.itemIds[2] != (0))
+              sTVShowState = (7);
           else if (show.smartshopperShow.priceReduced == TRUE)
-              sTVShowState = SMARTSHOPPER_STATE_DURING_SALE;
+              sTVShowState = (8);
           else
-              sTVShowState = SMARTSHOPPER_STATE_OUTRO_NORMAL;
+              sTVShowState = (9);
           break;
-      case SMARTSHOPPER_STATE_THIRD_ITEM:
+      case (7):
            
           StringCopy(gStringVar2, GetItemName(show.smartshopperShow.itemIds[2]));
           ConvertIntToDecimalString(2, show.smartshopperShow.itemAmounts[2]);
           if (show.smartshopperShow.priceReduced == TRUE)
-              sTVShowState = SMARTSHOPPER_STATE_DURING_SALE;
+              sTVShowState = (8);
           else
-              sTVShowState = SMARTSHOPPER_STATE_OUTRO_NORMAL;
+              sTVShowState = (9);
           break;
-      case SMARTSHOPPER_STATE_DURING_SALE:
+      case (8):
           if (show.smartshopperShow.itemAmounts[0] >= 255)
-              sTVShowState = SMARTSHOPPER_STATE_OUTRO_MAX;
+              sTVShowState = (12);
           else
-              sTVShowState = SMARTSHOPPER_STATE_OUTRO_NORMAL;
+              sTVShowState = (9);
           break;
-      case SMARTSHOPPER_STATE_OUTRO_NORMAL:
+      case (9):
           SmartShopper_BufferPurchaseTotal(1, show);
           TVShowDone();
           break;
-      case SMARTSHOPPER_STATE_IS_VIP:
+      case (10):
            
            
           if (show.smartshopperShow.priceReduced == TRUE)
-              sTVShowState = SMARTSHOPPER_STATE_DURING_SALE;
+              sTVShowState = (8);
           else
-              sTVShowState = SMARTSHOPPER_STATE_OUTRO_NORMAL;
+              sTVShowState = (9);
           break;
-      case SMARTSHOPPER_STATE_CLERK_MAX:
+      case (11):
            
           TVShowConvertInternationalString(gStringVar1, show.smartshopperShow.playerName, show.smartshopperShow.language);
           StringCopy(gStringVar2, GetItemName(show.smartshopperShow.itemIds[0]));
           if (show.smartshopperShow.priceReduced == TRUE)
-              sTVShowState = SMARTSHOPPER_STATE_DURING_SALE;
+              sTVShowState = (8);
           else
-              sTVShowState = SMARTSHOPPER_STATE_OUTRO_MAX;
+              sTVShowState = (12);
           break;
-      case SMARTSHOPPER_STATE_OUTRO_MAX:
+      case (12):
            
           TVShowConvertInternationalString(gStringVar1, show.smartshopperShow.playerName, show.smartshopperShow.language);
           TVShowDone();
@@ -3875,7 +3833,7 @@ export function DoTVShowPokemonTodaySuccessfulCapture(): any {
           TVShowConvertInternationalString(gStringVar1, show.pokemonToday.playerName, show.pokemonToday.language);
           StringCopy(gStringVar2, gSpeciesNames[show.pokemonToday.species]);
           TVShowConvertInternationalString(gStringVar3, show.pokemonToday.nickname, show.pokemonToday.language2);
-          if (show.pokemonToday.ball == ITEM_MASTER_BALL)
+          if (show.pokemonToday.ball == (1))
               sTVShowState = 5;
           else
               sTVShowState = 1;
@@ -4120,330 +4078,330 @@ export function DoTVShowPokemonContestLiveUpdates(): any {
       state = sTVShowState;
       switch (state)
       {
-      case CONTESTLIVE_STATE_INTRO:
+      case (0):
           BufferContestName(gStringVar1, show.contestLiveUpdates.category);
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           TVShowConvertInternationalString(gStringVar3, show.contestLiveUpdates.winningTrainerName, show.contestLiveUpdates.winningTrainerLanguage);
           if (show.contestLiveUpdates.round1Placing == show.contestLiveUpdates.round2Placing)
           {
               if (show.contestLiveUpdates.round1Placing == 0)
-                  sTVShowState = CONTESTLIVE_STATE_WON_BOTH_ROUNDS;
+                  sTVShowState = (1);
               else
-                  sTVShowState = CONTESTLIVE_STATE_EQUAL_ROUNDS;
+                  sTVShowState = (3);
           }
           else if (show.contestLiveUpdates.round1Placing > show.contestLiveUpdates.round2Placing)
           {
-              sTVShowState = CONTESTLIVE_STATE_BETTER_ROUND2;
+              sTVShowState = (2);
           }
           else
           {
-              sTVShowState = CONTESTLIVE_STATE_BETTER_ROUND1;
+              sTVShowState = (4);
           }
           break;
-      case CONTESTLIVE_STATE_WON_BOTH_ROUNDS:
+      case (1):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           switch (show.contestLiveUpdates.winnerAppealFlag)
           {
-          case CONTESTLIVE_FLAG_EXCITING_APPEAL:
-              sTVShowState = CONTESTLIVE_STATE_EXCITING_APPEAL;
+          case ((1 << 0)):
+              sTVShowState = (8);
               break;
-          case CONTESTLIVE_FLAG_GOT_NERVOUS:
-              sTVShowState = CONTESTLIVE_STATE_GOT_NERVOUS;
+          case ((1 << 1)):
+              sTVShowState = (5);
               break;
-          case CONTESTLIVE_FLAG_MAXED_EXCITEMENT:
-              sTVShowState = CONTESTLIVE_STATE_VERY_EXCITING_APPEAL;
+          case ((1 << 2)):
+              sTVShowState = (14);
               break;
-          case CONTESTLIVE_FLAG_USED_COMBO:
-              sTVShowState = CONTESTLIVE_STATE_USED_COMBO;
+          case ((1 << 3)):
+              sTVShowState = (7);
               break;
-          case CONTESTLIVE_FLAG_STARTLED_OTHER:
-              sTVShowState = CONTESTLIVE_STATE_STARTLED_OTHER;
+          case ((1 << 4)):
+              sTVShowState = (6);
               break;
-          case CONTESTLIVE_FLAG_SKIPPED_TURN:
-              sTVShowState = CONTESTLIVE_STATE_TOOK_BREAK;
+          case ((1 << 5)):
+              sTVShowState = (20);
               break;
-          case CONTESTLIVE_FLAG_GOT_STARTLED:
-              sTVShowState = CONTESTLIVE_STATE_GOT_STARTLED;
+          case ((1 << 6)):
+              sTVShowState = (21);
               break;
-          case CONTESTLIVE_FLAG_MADE_APPEAL:
-              sTVShowState = CONTESTLIVE_STATE_USED_MOVE;
+          case ((1 << 7)):
+              sTVShowState = (22);
               break;
           }
           break;
-      case CONTESTLIVE_STATE_BETTER_ROUND2:
+      case (2):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           switch (show.contestLiveUpdates.winnerAppealFlag)
           {
-          case CONTESTLIVE_FLAG_EXCITING_APPEAL:
-              sTVShowState = CONTESTLIVE_STATE_EXCITING_APPEAL;
+          case ((1 << 0)):
+              sTVShowState = (8);
               break;
-          case CONTESTLIVE_FLAG_GOT_NERVOUS:
-              sTVShowState = CONTESTLIVE_STATE_GOT_NERVOUS;
+          case ((1 << 1)):
+              sTVShowState = (5);
               break;
-          case CONTESTLIVE_FLAG_MAXED_EXCITEMENT:
-              sTVShowState = CONTESTLIVE_STATE_VERY_EXCITING_APPEAL;
+          case ((1 << 2)):
+              sTVShowState = (14);
               break;
-          case CONTESTLIVE_FLAG_USED_COMBO:
-              sTVShowState = CONTESTLIVE_STATE_USED_COMBO;
+          case ((1 << 3)):
+              sTVShowState = (7);
               break;
-          case CONTESTLIVE_FLAG_STARTLED_OTHER:
-              sTVShowState = CONTESTLIVE_STATE_STARTLED_OTHER;
+          case ((1 << 4)):
+              sTVShowState = (6);
               break;
-          case CONTESTLIVE_FLAG_SKIPPED_TURN:
-              sTVShowState = CONTESTLIVE_STATE_TOOK_BREAK;
+          case ((1 << 5)):
+              sTVShowState = (20);
               break;
-          case CONTESTLIVE_FLAG_GOT_STARTLED:
-              sTVShowState = CONTESTLIVE_STATE_GOT_STARTLED;
+          case ((1 << 6)):
+              sTVShowState = (21);
               break;
-          case CONTESTLIVE_FLAG_MADE_APPEAL:
-              sTVShowState = CONTESTLIVE_STATE_USED_MOVE;
+          case ((1 << 7)):
+              sTVShowState = (22);
               break;
           }
           break;
-      case CONTESTLIVE_STATE_EQUAL_ROUNDS:
+      case (3):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           TVShowConvertInternationalString(gStringVar3, show.contestLiveUpdates.winningTrainerName, show.contestLiveUpdates.winningTrainerLanguage);
           switch (show.contestLiveUpdates.winnerAppealFlag)
           {
-          case CONTESTLIVE_FLAG_EXCITING_APPEAL:
-              sTVShowState = CONTESTLIVE_STATE_EXCITING_APPEAL;
+          case ((1 << 0)):
+              sTVShowState = (8);
               break;
-          case CONTESTLIVE_FLAG_GOT_NERVOUS:
-              sTVShowState = CONTESTLIVE_STATE_GOT_NERVOUS;
+          case ((1 << 1)):
+              sTVShowState = (5);
               break;
-          case CONTESTLIVE_FLAG_MAXED_EXCITEMENT:
-              sTVShowState = CONTESTLIVE_STATE_VERY_EXCITING_APPEAL;
+          case ((1 << 2)):
+              sTVShowState = (14);
               break;
-          case CONTESTLIVE_FLAG_USED_COMBO:
-              sTVShowState = CONTESTLIVE_STATE_USED_COMBO;
+          case ((1 << 3)):
+              sTVShowState = (7);
               break;
-          case CONTESTLIVE_FLAG_STARTLED_OTHER:
-              sTVShowState = CONTESTLIVE_STATE_STARTLED_OTHER;
+          case ((1 << 4)):
+              sTVShowState = (6);
               break;
-          case CONTESTLIVE_FLAG_SKIPPED_TURN:
-              sTVShowState = CONTESTLIVE_STATE_TOOK_BREAK;
+          case ((1 << 5)):
+              sTVShowState = (20);
               break;
-          case CONTESTLIVE_FLAG_GOT_STARTLED:
-              sTVShowState = CONTESTLIVE_STATE_GOT_STARTLED;
+          case ((1 << 6)):
+              sTVShowState = (21);
               break;
-          case CONTESTLIVE_FLAG_MADE_APPEAL:
-              sTVShowState = CONTESTLIVE_STATE_USED_MOVE;
+          case ((1 << 7)):
+              sTVShowState = (22);
               break;
           }
           break;
-      case CONTESTLIVE_STATE_BETTER_ROUND1:
+      case (4):
           switch (show.contestLiveUpdates.category)
           {
-          case CONTEST_CATEGORY_COOL:
+          case (0):
               StringCopy(gStringVar1, gText_Cool);
               break;
-          case CONTEST_CATEGORY_BEAUTY:
+          case (1):
               StringCopy(gStringVar1, gText_Beauty);
               break;
-          case CONTEST_CATEGORY_CUTE:
+          case (2):
               StringCopy(gStringVar1, gText_Cute);
               break;
-          case CONTEST_CATEGORY_SMART:
+          case (3):
               StringCopy(gStringVar1, gText_Smart);
               break;
-          case CONTEST_CATEGORY_TOUGH:
+          case (4):
               StringCopy(gStringVar1, gText_Tough);
               break;
           }
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           switch (show.contestLiveUpdates.winnerAppealFlag)
           {
-          case CONTESTLIVE_FLAG_EXCITING_APPEAL:
-              sTVShowState = CONTESTLIVE_STATE_EXCITING_APPEAL;
+          case ((1 << 0)):
+              sTVShowState = (8);
               break;
-          case CONTESTLIVE_FLAG_GOT_NERVOUS:
-              sTVShowState = CONTESTLIVE_STATE_GOT_NERVOUS;
+          case ((1 << 1)):
+              sTVShowState = (5);
               break;
-          case CONTESTLIVE_FLAG_MAXED_EXCITEMENT:
-              sTVShowState = CONTESTLIVE_STATE_VERY_EXCITING_APPEAL;
+          case ((1 << 2)):
+              sTVShowState = (14);
               break;
-          case CONTESTLIVE_FLAG_USED_COMBO:
-              sTVShowState = CONTESTLIVE_STATE_USED_COMBO;
+          case ((1 << 3)):
+              sTVShowState = (7);
               break;
-          case CONTESTLIVE_FLAG_STARTLED_OTHER:
-              sTVShowState = CONTESTLIVE_STATE_STARTLED_OTHER;
+          case ((1 << 4)):
+              sTVShowState = (6);
               break;
-          case CONTESTLIVE_FLAG_SKIPPED_TURN:
-              sTVShowState = CONTESTLIVE_STATE_TOOK_BREAK;
+          case ((1 << 5)):
+              sTVShowState = (20);
               break;
-          case CONTESTLIVE_FLAG_GOT_STARTLED:
-              sTVShowState = CONTESTLIVE_STATE_GOT_STARTLED;
+          case ((1 << 6)):
+              sTVShowState = (21);
               break;
-          case CONTESTLIVE_FLAG_MADE_APPEAL:
-              sTVShowState = CONTESTLIVE_STATE_USED_MOVE;
+          case ((1 << 7)):
+              sTVShowState = (22);
               break;
           }
           break;
-      case CONTESTLIVE_STATE_GOT_NERVOUS:
+      case (5):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_STARTLED_OTHER:
+      case (6):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_USED_COMBO:
+      case (7):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_EXCITING_APPEAL:
+      case (8):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           switch (show.contestLiveUpdates.category)
           {
-          case CONTEST_CATEGORY_COOL:
-              sTVShowState = CONTESTLIVE_STATE_COOL;
+          case (0):
+              sTVShowState = (9);
               break;
-          case CONTEST_CATEGORY_BEAUTY:
-              sTVShowState = CONTESTLIVE_STATE_BEAUTIFUL;
+          case (1):
+              sTVShowState = (10);
               break;
-          case CONTEST_CATEGORY_CUTE:
-              sTVShowState = CONTESTLIVE_STATE_CUTE;
+          case (2):
+              sTVShowState = (11);
               break;
-          case CONTEST_CATEGORY_SMART:
-              sTVShowState = CONTESTLIVE_STATE_SMART;
+          case (3):
+              sTVShowState = (12);
               break;
-          case CONTEST_CATEGORY_TOUGH:
-              sTVShowState = CONTESTLIVE_STATE_TOUGH;
+          case (4):
+              sTVShowState = (13);
               break;
           }
           break;
-      case CONTESTLIVE_STATE_COOL:
+      case (9):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_BEAUTIFUL:
+      case (10):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_CUTE:
+      case (11):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_SMART:
+      case (12):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_TOUGH:
+      case (13):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_VERY_EXCITING_APPEAL:
+      case (14):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           switch (show.contestLiveUpdates.category)
           {
-          case CONTEST_CATEGORY_COOL:
-              sTVShowState = CONTESTLIVE_STATE_VERY_COOL;
+          case (0):
+              sTVShowState = (15);
               break;
-          case CONTEST_CATEGORY_BEAUTY:
-              sTVShowState = CONTESTLIVE_STATE_VERY_BEAUTIFUL;
+          case (1):
+              sTVShowState = (16);
               break;
-          case CONTEST_CATEGORY_CUTE:
-              sTVShowState = CONTESTLIVE_STATE_VERY_CUTE;
+          case (2):
+              sTVShowState = (17);
               break;
-          case CONTEST_CATEGORY_SMART:
-              sTVShowState = CONTESTLIVE_STATE_VERY_SMART;
+          case (3):
+              sTVShowState = (18);
               break;
-          case CONTEST_CATEGORY_TOUGH:
-              sTVShowState = CONTESTLIVE_STATE_VERY_TOUGH;
+          case (4):
+              sTVShowState = (19);
               break;
           }
           break;
-      case CONTESTLIVE_STATE_VERY_COOL:
+      case (15):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_VERY_BEAUTIFUL:
+      case (16):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_VERY_CUTE:
+      case (17):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_VERY_SMART:
+      case (18):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_VERY_TOUGH:
+      case (19):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_TOOK_BREAK:
+      case (20):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_GOT_STARTLED:
+      case (21):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_USED_MOVE:
+      case (22):
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           StringCopy(gStringVar3, gMoveNames[show.contestLiveUpdates.move]);
-          sTVShowState = CONTESTLIVE_STATE_TALK_ABOUT_LOSER;
+          sTVShowState = (23);
           break;
-      case CONTESTLIVE_STATE_TALK_ABOUT_LOSER:
+      case (23):
           StringCopy(gStringVar1, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           TVShowConvertInternationalString(gStringVar2, show.contestLiveUpdates.losingTrainerName, show.contestLiveUpdates.losingTrainerLanguage);
           StringCopy(gStringVar3, gSpeciesNames[show.contestLiveUpdates.losingSpecies]);
           switch (show.contestLiveUpdates.loserAppealFlag)
           {
-          case CONTESTLIVE_FLAG_LOST:
-              sTVShowState = CONTESTLIVE_STATE_LOST;
+          case ((1 << 0)):
+              sTVShowState = (31);
               break;
-          case CONTESTLIVE_FLAG_REPEATED_MOVE:
-              sTVShowState = CONTESTLIVE_STATE_REPEATED_APPEALS;
+          case ((1 << 1)):
+              sTVShowState = (30);
               break;
-          case CONTESTLIVE_FLAG_LOST_SMALL_MARGIN:
-              sTVShowState = CONTESTLIVE_STATE_LOST_SMALL_MARGIN;
+          case ((1 << 2)):
+              sTVShowState = (29);
               break;
-          case CONTESTLIVE_FLAG_NO_EXCITEMENT:
-              sTVShowState = CONTESTLIVE_STATE_NO_EXCITING_APPEALS;
+          case ((1 << 3)):
+              sTVShowState = (28);
               break;
-          case CONTESTLIVE_FLAG_BLEW_LEAD:
-              sTVShowState = CONTESTLIVE_STATE_LOST_AFTER_ROUND1_WIN;
+          case ((1 << 4)):
+              sTVShowState = (27);
               break;
-          case CONTESTLIVE_FLAG_MISSED_EXCITEMENT:
-              sTVShowState = CONTESTLIVE_STATE_NOT_EXCITING_ENOUGH;
+          case ((1 << 5)):
+              sTVShowState = (26);
               break;
-          case CONTESTLIVE_FLAG_LAST_BOTH_ROUNDS:
-              sTVShowState = CONTESTLIVE_STATE_LAST_BOTH;
+          case ((1 << 6)):
+              sTVShowState = (25);
               break;
-          case CONTESTLIVE_FLAG_NO_APPEALS:
-              sTVShowState = CONTESTLIVE_STATE_NO_APPEALS;
+          case ((1 << 7)):
+              sTVShowState = (24);
               break;
           }
           break;
-      case CONTESTLIVE_STATE_NO_APPEALS:
+      case (24):
           StringCopy(gStringVar1, gSpeciesNames[show.contestLiveUpdates.losingSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_OUTRO;
+          sTVShowState = (32);
           break;
-      case CONTESTLIVE_STATE_LAST_BOTH:
+      case (25):
           TVShowConvertInternationalString(gStringVar1, show.contestLiveUpdates.losingTrainerName, show.contestLiveUpdates.losingTrainerLanguage);
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.losingSpecies]);
-          sTVShowState = CONTESTLIVE_STATE_OUTRO;
+          sTVShowState = (32);
           break;
-      case CONTESTLIVE_STATE_NO_EXCITING_APPEALS:
-          sTVShowState = CONTESTLIVE_STATE_OUTRO;
+      case (28):
+          sTVShowState = (32);
           break;
-      case CONTESTLIVE_STATE_LOST_SMALL_MARGIN:
+      case (29):
           TVShowConvertInternationalString(gStringVar1, show.contestLiveUpdates.winningTrainerName, show.contestLiveUpdates.winningTrainerLanguage);
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           TVShowConvertInternationalString(gStringVar3, show.contestLiveUpdates.losingTrainerName, show.contestLiveUpdates.losingTrainerLanguage);
-          sTVShowState = CONTESTLIVE_STATE_OUTRO;
+          sTVShowState = (32);
           break;
-      case CONTESTLIVE_STATE_NOT_EXCITING_ENOUGH:
-      case CONTESTLIVE_STATE_LOST_AFTER_ROUND1_WIN:
-      case CONTESTLIVE_STATE_REPEATED_APPEALS:
-      case CONTESTLIVE_STATE_LOST:
+      case (26):
+      case (27):
+      case (30):
+      case (31):
           TVShowConvertInternationalString(gStringVar1, show.contestLiveUpdates.losingTrainerName, show.contestLiveUpdates.losingTrainerLanguage);
-          sTVShowState = CONTESTLIVE_STATE_OUTRO;
+          sTVShowState = (32);
           break;
-      case CONTESTLIVE_STATE_OUTRO:
+      case (32):
           TVShowConvertInternationalString(gStringVar1, show.contestLiveUpdates.winningTrainerName, show.contestLiveUpdates.winningTrainerLanguage);
           StringCopy(gStringVar2, gSpeciesNames[show.contestLiveUpdates.winningSpecies]);
           TVShowDone();
@@ -4804,7 +4762,7 @@ export function DoTVShowTodaysRivalTrainer(): any {
           break;
       case 1:
           ConvertIntToDecimalString(0, show.rivalTrainer.badgeCount);
-          if (FlagGet(FLAG_LANDMARK_BATTLE_FRONTIER))
+          if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x48))))
           {
               if (show.rivalTrainer.nSilverSymbols || show.rivalTrainer.nGoldSymbols)
                   sTVShowState = 4;
@@ -4817,7 +4775,7 @@ export function DoTVShowTodaysRivalTrainer(): any {
           }
           break;
       case 2:
-          if (FlagGet(FLAG_LANDMARK_BATTLE_FRONTIER))
+          if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x48))))
           {
               if (show.rivalTrainer.nSilverSymbols || show.rivalTrainer.nGoldSymbols)
                   sTVShowState = 4;
@@ -4864,37 +4822,37 @@ export function DoTVShowDewfordTrendWatcherNetwork(): any {
       state = sTVShowState;
       switch (state)
       {
-      case TRENDWATCHER_STATE_INTRO:
+      case (0):
           CopyEasyChatWord(gStringVar1, show.trendWatcher.words[0]);
           CopyEasyChatWord(gStringVar2, show.trendWatcher.words[1]);
-          if (show.trendWatcher.gender == MALE)
-              sTVShowState = TRENDWATCHER_STATE_TAUGHT_MALE;
+          if (show.trendWatcher.gender == (0))
+              sTVShowState = (1);
           else
-              sTVShowState = TRENDWATCHER_STATE_TAUGHT_FEMALE;
+              sTVShowState = (2);
           break;
-      case TRENDWATCHER_STATE_TAUGHT_MALE:
-      case TRENDWATCHER_STATE_TAUGHT_FEMALE:
+      case (1):
+      case (2):
           CopyEasyChatWord(gStringVar1, show.trendWatcher.words[0]);
           CopyEasyChatWord(gStringVar2, show.trendWatcher.words[1]);
           TVShowConvertInternationalString(gStringVar3, show.trendWatcher.playerName, show.trendWatcher.language);
-          sTVShowState = TRENDWATCHER_STATE_PHRASE_HOPELESS;
+          sTVShowState = (3);
           break;
-      case TRENDWATCHER_STATE_PHRASE_HOPELESS:
+      case (3):
           CopyEasyChatWord(gStringVar1, show.trendWatcher.words[0]);
           CopyEasyChatWord(gStringVar2, show.trendWatcher.words[1]);
-          if (show.trendWatcher.gender == MALE)
-              sTVShowState = TRENDWATCHER_STATE_BIGGER_MALE;
+          if (show.trendWatcher.gender == (0))
+              sTVShowState = (4);
           else
-              sTVShowState = TRENDWATCHER_STATE_BIGGER_FEMALE;
+              sTVShowState = (5);
           break;
-      case TRENDWATCHER_STATE_BIGGER_MALE:
-      case TRENDWATCHER_STATE_BIGGER_FEMALE:
+      case (4):
+      case (5):
           CopyEasyChatWord(gStringVar1, show.trendWatcher.words[0]);
           CopyEasyChatWord(gStringVar2, show.trendWatcher.words[1]);
           TVShowConvertInternationalString(gStringVar3, show.trendWatcher.playerName, show.trendWatcher.language);
-          sTVShowState = TRENDWATCHER_STATE_OUTRO;
+          sTVShowState = (6);
           break;
-      case TRENDWATCHER_STATE_OUTRO:
+      case (6):
           CopyEasyChatWord(gStringVar1, show.trendWatcher.words[0]);
           CopyEasyChatWord(gStringVar2, show.trendWatcher.words[1]);
           TVShowDone();
@@ -5069,7 +5027,7 @@ export function DoTVShowBreakingNewsTV(): any {
           switch (show.breakingNews.outcome)
           {
           case 1:
-              if (show.breakingNews.lastUsedMove == MOVE_NONE)
+              if (show.breakingNews.lastUsedMove == (0))
                   sTVShowState = 12;
               else
                   sTVShowState = 7;
@@ -5437,94 +5395,94 @@ export function DoTVShowSpotTheCuties(): any {
       state = sTVShowState;
       switch (state)
       {
-      case SPOTCUTIES_STATE_INTRO:
+      case (0):
           TVShowConvertInternationalString(gStringVar1, show.cuties.playerName, show.cuties.language);
           TVShowConvertInternationalString(gStringVar2, show.cuties.nickname, show.cuties.pokemonNameLanguage);
 
            
           if (show.cuties.nRibbons < 10)
-              sTVShowState = SPOTCUTIES_STATE_RIBBONS_LOW;
+              sTVShowState = (1);
           else if (show.cuties.nRibbons < 20)
-              sTVShowState = SPOTCUTIES_STATE_RIBBONS_MID;
+              sTVShowState = (2);
           else
-              sTVShowState = SPOTCUTIES_STATE_RIBBONS_HIGH;
+              sTVShowState = (3);
           break;
-      case SPOTCUTIES_STATE_RIBBONS_LOW:
-      case SPOTCUTIES_STATE_RIBBONS_MID:
-      case SPOTCUTIES_STATE_RIBBONS_HIGH:
+      case (1):
+      case (2):
+      case (3):
           TVShowConvertInternationalString(gStringVar1, show.cuties.playerName, show.cuties.language);
           TVShowConvertInternationalString(gStringVar2, show.cuties.nickname, show.cuties.pokemonNameLanguage);
           ConvertIntToDecimalString(2, show.cuties.nRibbons);
-          sTVShowState = SPOTCUTIES_STATE_RIBBON_INTRO;
+          sTVShowState = (4);
           break;
-      case SPOTCUTIES_STATE_RIBBON_INTRO:
+      case (4):
           TVShowConvertInternationalString(gStringVar2, show.cuties.nickname, show.cuties.pokemonNameLanguage);
           switch (show.cuties.selectedRibbon)
           {
-          case CHAMPION_RIBBON:
-              sTVShowState = SPOTCUTIES_STATE_RIBBON_CHAMPION;
+          case (0):
+              sTVShowState = (5);
               break;
-          case COOL_RIBBON_NORMAL:
-          case COOL_RIBBON_SUPER:
-          case COOL_RIBBON_HYPER:
-          case COOL_RIBBON_MASTER:
-              sTVShowState = SPOTCUTIES_STATE_RIBBON_COOL;
+          case (1):
+          case (2):
+          case (3):
+          case (4):
+              sTVShowState = (6);
               break;
-          case BEAUTY_RIBBON_NORMAL:
-          case BEAUTY_RIBBON_SUPER:
-          case BEAUTY_RIBBON_HYPER:
-          case BEAUTY_RIBBON_MASTER:
-              sTVShowState = SPOTCUTIES_STATE_RIBBON_BEAUTY;
+          case (5):
+          case (6):
+          case (7):
+          case (8):
+              sTVShowState = (7);
               break;
-          case CUTE_RIBBON_NORMAL:
-          case CUTE_RIBBON_SUPER:
-          case CUTE_RIBBON_HYPER:
-          case CUTE_RIBBON_MASTER:
-              sTVShowState = SPOTCUTIES_STATE_RIBBON_CUTE;
+          case (9):
+          case (10):
+          case (11):
+          case (12):
+              sTVShowState = (8);
               break;
-          case SMART_RIBBON_NORMAL:
-          case SMART_RIBBON_SUPER:
-          case SMART_RIBBON_HYPER:
-          case SMART_RIBBON_MASTER:
-              sTVShowState = SPOTCUTIES_STATE_RIBBON_SMART;
+          case (13):
+          case (14):
+          case (15):
+          case (16):
+              sTVShowState = (9);
               break;
-          case TOUGH_RIBBON_NORMAL:
-          case TOUGH_RIBBON_SUPER:
-          case TOUGH_RIBBON_HYPER:
-          case TOUGH_RIBBON_MASTER:
-              sTVShowState = SPOTCUTIES_STATE_RIBBON_TOUGH;
+          case (17):
+          case (18):
+          case (19):
+          case (20):
+              sTVShowState = (10);
               break;
-          case WINNING_RIBBON:
-              sTVShowState = SPOTCUTIES_STATE_RIBBON_WINNING;
+          case (21):
+              sTVShowState = (11);
               break;
-          case VICTORY_RIBBON:
-              sTVShowState = SPOTCUTIES_STATE_RIBBON_VICTORY;
+          case (22):
+              sTVShowState = (12);
               break;
-          case ARTIST_RIBBON:
-              sTVShowState = SPOTCUTIES_STATE_RIBBON_ARTIST;
+          case (23):
+              sTVShowState = (13);
               break;
-          case EFFORT_RIBBON:
-              sTVShowState = SPOTCUTIES_STATE_RIBBON_EFFORT;
+          case (24):
+              sTVShowState = (14);
               break;
            
            
            
           }
           break;
-      case SPOTCUTIES_STATE_RIBBON_CHAMPION:
-      case SPOTCUTIES_STATE_RIBBON_COOL:
-      case SPOTCUTIES_STATE_RIBBON_BEAUTY:
-      case SPOTCUTIES_STATE_RIBBON_CUTE:
-      case SPOTCUTIES_STATE_RIBBON_SMART:
-      case SPOTCUTIES_STATE_RIBBON_TOUGH:
-      case SPOTCUTIES_STATE_RIBBON_WINNING:
-      case SPOTCUTIES_STATE_RIBBON_VICTORY:
-      case SPOTCUTIES_STATE_RIBBON_ARTIST:
-      case SPOTCUTIES_STATE_RIBBON_EFFORT:
+      case (5):
+      case (6):
+      case (7):
+      case (8):
+      case (9):
+      case (10):
+      case (11):
+      case (12):
+      case (13):
+      case (14):
           TVShowConvertInternationalString(gStringVar2, show.cuties.nickname, show.cuties.pokemonNameLanguage);
-          sTVShowState = SPOTCUTIES_STATE_OUTRO;
+          sTVShowState = (15);
           break;
-      case SPOTCUTIES_STATE_OUTRO:
+      case (15):
           TVShowDone();
       }
       ShowFieldMessage(sTVCutiesTextGroup[state]);
@@ -5763,7 +5721,7 @@ export function SecretBaseSecrets_GetNumActionsTaken(show: any): any {
   let i: any = null;
       let flagsSet: any = null;
 
-      for (i = 0, flagsSet = 0; i < NUM_SECRET_BASE_FLAGS; i++)
+      for (i = 0, flagsSet = 0; i < (32); i++)
       {
           if ((show.secretBaseSecrets.flags >> i) & 1)
               flagsSet++;
@@ -5776,7 +5734,7 @@ export function SecretBaseSecrets_GetStateByFlagNumber(show: any, flagId: any): 
   let i: any = null;
       let flagsSet: any = null;
 
-      for (i = 0, flagsSet = 0; i < NUM_SECRET_BASE_FLAGS; i++)
+      for (i = 0, flagsSet = 0; i < (32); i++)
       {
           if ((show.secretBaseSecrets.flags >> i) & 1)
           {
@@ -5801,31 +5759,31 @@ export function DoTVShowSecretBaseSecrets(): any {
       state = sTVShowState;
       switch (state)
       {
-      case SBSECRETS_STATE_INTRO:
+      case (0):
           TVShowConvertInternationalString(gStringVar1, show.secretBaseSecrets.baseOwnersName, show.secretBaseSecrets.baseOwnersNameLanguage);
           TVShowConvertInternationalString(gStringVar2, show.secretBaseSecrets.playerName, show.secretBaseSecrets.language);
           numActions = SecretBaseSecrets_GetNumActionsTaken(show);
           if (numActions == 0)
           {
-              sTVShowState = SBSECRETS_STATE_NOTHING_USED1;
+              sTVShowState = (8);
           }
           else
           {
-              show.secretBaseSecrets.savedState = SBSECRETS_STATE_DO_NEXT1;
+              show.secretBaseSecrets.savedState = (1);
               sTVSecretBaseSecretsRandomValues[0] = Random() % numActions;
               sTVShowState = SecretBaseSecrets_GetStateByFlagNumber(show, sTVSecretBaseSecretsRandomValues[0]);
           }
           break;
-      case SBSECRETS_STATE_DO_NEXT1:
+      case (1):
           TVShowConvertInternationalString(gStringVar2, show.secretBaseSecrets.playerName, show.secretBaseSecrets.language);
           numActions = SecretBaseSecrets_GetNumActionsTaken(show);
           switch (numActions)
           {
           case 1:
-              sTVShowState = SBSECRETS_STATE_NOTHING_USED2;
+              sTVShowState = (9);
               break;
           case 2:
-              show.secretBaseSecrets.savedState = SBSECRETS_STATE_DO_NEXT2;
+              show.secretBaseSecrets.savedState = (2);
               if (sTVSecretBaseSecretsRandomValues[0] == 0)
                   sTVShowState = SecretBaseSecrets_GetStateByFlagNumber(show, 1);
               else
@@ -5838,17 +5796,17 @@ export function DoTVShowSecretBaseSecrets(): any {
                   if (sTVSecretBaseSecretsRandomValues[1] != sTVSecretBaseSecretsRandomValues[0])
                       break;
               }
-              show.secretBaseSecrets.savedState = SBSECRETS_STATE_DO_NEXT2;
+              show.secretBaseSecrets.savedState = (2);
               sTVShowState = SecretBaseSecrets_GetStateByFlagNumber(show, sTVSecretBaseSecretsRandomValues[1]);
               break;
           }
           break;
-      case SBSECRETS_STATE_DO_NEXT2:
+      case (2):
           TVShowConvertInternationalString(gStringVar2, show.secretBaseSecrets.playerName, show.secretBaseSecrets.language);
           numActions = SecretBaseSecrets_GetNumActionsTaken(show);
           if (numActions == 2)
           {
-              sTVShowState = SBSECRETS_STATE_NOTHING_USED2;
+              sTVShowState = (9);
           }
           else
           {
@@ -5858,53 +5816,53 @@ export function DoTVShowSecretBaseSecrets(): any {
                   if (sTVSecretBaseSecretsRandomValues[2] != sTVSecretBaseSecretsRandomValues[0] && sTVSecretBaseSecretsRandomValues[2] != sTVSecretBaseSecretsRandomValues[1])
                       break;
               }
-              show.secretBaseSecrets.savedState = SBSECRETS_STATE_TOOK_X_STEPS;
+              show.secretBaseSecrets.savedState = (3);
               sTVShowState = SecretBaseSecrets_GetStateByFlagNumber(show, sTVSecretBaseSecretsRandomValues[2]);
           }
           break;
-      case SBSECRETS_STATE_TOOK_X_STEPS:
+      case (3):
           TVShowConvertInternationalString(gStringVar1, show.secretBaseSecrets.baseOwnersName, show.secretBaseSecrets.baseOwnersNameLanguage);
           TVShowConvertInternationalString(gStringVar2, show.secretBaseSecrets.playerName, show.secretBaseSecrets.language);
           ConvertIntToDecimalString(2, show.secretBaseSecrets.stepsInBase);
           if (show.secretBaseSecrets.stepsInBase <= 30)
-              sTVShowState = SBSECRETS_STATE_BASE_INTEREST_LOW;
+              sTVShowState = (4);
           else if (show.secretBaseSecrets.stepsInBase <= 100)
-              sTVShowState = SBSECRETS_STATE_BASE_INTEREST_MED;
+              sTVShowState = (5);
           else
-              sTVShowState = SBSECRETS_STATE_BASE_INTEREST_HIGH;
+              sTVShowState = (6);
           break;
-      case SBSECRETS_STATE_BASE_INTEREST_LOW:
+      case (4):
           TVShowConvertInternationalString(gStringVar1, show.secretBaseSecrets.baseOwnersName, show.secretBaseSecrets.baseOwnersNameLanguage);
           TVShowConvertInternationalString(gStringVar2, show.secretBaseSecrets.playerName, show.secretBaseSecrets.language);
-          sTVShowState = SBSECRETS_STATE_OUTRO;
+          sTVShowState = (7);
           break;
-      case SBSECRETS_STATE_OUTRO:
+      case (7):
           TVShowConvertInternationalString(gStringVar1, show.secretBaseSecrets.baseOwnersName, show.secretBaseSecrets.baseOwnersNameLanguage);
           TVShowConvertInternationalString(gStringVar2, show.secretBaseSecrets.playerName, show.secretBaseSecrets.language);
           TVShowDone();
           break;
        
-      case SBSECRETS_STATE_NOTHING_USED1:
-          sTVShowState = SBSECRETS_STATE_TOOK_X_STEPS;
+      case (8):
+          sTVShowState = (3);
           break;
-      case SBSECRETS_STATE_NOTHING_USED2:
-          sTVShowState = SBSECRETS_STATE_TOOK_X_STEPS;
+      case (9):
+          sTVShowState = (3);
           break;
-      case SBSECRETS_STATE_USED_CHAIR:
+      case (10):
           sTVShowState = show.secretBaseSecrets.savedState;
           break;
-      case SBSECRETS_STATE_USED_BAG:
+      case (19):
           StringCopy(gStringVar2, GetItemName(show.secretBaseSecrets.item));
           sTVShowState = show.secretBaseSecrets.savedState;
           break;
-      case SBSECRETS_STATE_USED_CUSHION:
+      case (20):
            
           if (show.common.trainerIdLo & 1)
-              sTVShowState = SBSECRETS_STATE_HUGGED_CUSHION;
+              sTVShowState = (22);
           else
-              sTVShowState = SBSECRETS_STATE_HIT_CUSHION;
+              sTVShowState = (21);
           break;
-      case SBSECRETS_STATE_HIT_CUSHION:
+      case (21):
           sTVShowState = show.secretBaseSecrets.savedState;
           break;
       }
@@ -5991,19 +5949,19 @@ export function DoTVShowLilycoveContestLady(): any {
       state = sTVShowState;
       switch (state)
       {
-      case CONTESTLADYLIVE_STATE_INTRO:
+      case (0):
           BufferContestName(gStringVar1, show.contestLady.contestCategory);
-          if (show.contestLady.pokeblockState == CONTEST_LADY_GOOD)
-              sTVShowState = CONTESTLADYLIVE_STATE_WON;
-          else if (show.contestLady.pokeblockState == CONTEST_LADY_NORMAL)
-              sTVShowState = CONTESTLADYLIVE_STATE_LOST;
+          if (show.contestLady.pokeblockState == (1))
+              sTVShowState = (1);
+          else if (show.contestLady.pokeblockState == (0))
+              sTVShowState = (2);
           else  
-              sTVShowState = CONTESTLADYLIVE_STATE_LOST_BADLY;
+              sTVShowState = (3);
           break;
-      case CONTESTLADYLIVE_STATE_WON:
-      case CONTESTLADYLIVE_STATE_LOST:
+      case (1):
+      case (2):
           TVShowConvertInternationalString(gStringVar3, show.contestLady.playerName, show.contestLady.language);
-      case CONTESTLADYLIVE_STATE_LOST_BADLY:
+      case (3):
           TVShowConvertInternationalString(gStringVar2, show.contestLady.nickname, show.contestLady.pokemonNameLanguage);
           TVShowDone();
           break;

@@ -17,44 +17,50 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sASCIIGameFreakInc: any = null;
-let sASCIITestPrint: any = null;
-let sBlockRecv: any = null;
-let sBlockRequests: any = null;
-let sBlockSend: any = null;
+let REG_TM3CNT_L: any = null;
+let gBerryBlenderKeySendAttempts: any = null;
+let gBlockRequestType: any = null;
+let gLastRecvQueueCount: any = null;
+let gLastSendQueueCount: any = null;
+let gLinkCallback: any = null;
+let gLinkDebugFlags: any = null;
+let gLinkDebugSeed: any = null;
+let gLinkDummy1: any = null;
+let gLinkDummy2: any = null;
+let gLinkErrorOccurred: any = null;
+let gLinkHeldKeys: any = null;
+let gLinkSavedIme: any = null;
+let gLinkStatus: any = null;
+let gLinkVSyncDisabled: any = null;
+let gReadyCloseLinkType: any = null;
+let gReceivedRemoteLinkPlayers: any = null;
+let gSavedLinkPlayerCount: any = null;
+let gSavedMultiplayerId: any = null;
+let gShouldAdvanceLinkState: any = null;
+let gSoftResetDisabled: any = null;
+let gSpecialVar_0x8005: any = null;
+let gSuppressLinkErrorMessage: any = null;
+let main2Failed: any = null;
 let sBlockSendDelayCounter: any = null;
 let sChecksumAvailable: any = null;
-let sCommErrorBg_Gfx: any = null;
 let sDummy1: any = null;
 let sDummyFlag: any = null;
 let sHandshakePlayerCount: any = null;
-let sLinkErrorBgTemplates: any = null;
 let sLinkErrorBgTilemapBuffer: any = null;
-let sLinkErrorBuffer: any = null;
-let sLinkErrorWindowTemplates: any = null;
 let sLinkOpen: any = null;
 let sLinkTestDebugValuesEnabled: any = null;
-let sLinkTestDigitsGfx: any = null;
-let sLinkTestDigitsPal: any = null;
-let sLinkTestLastBlockRecvPos: any = null;
 let sLinkTestLastBlockSendPos: any = null;
 let sNumVBlanksWithoutSerialIntr: any = null;
 let sPlayerDataExchangeStatus: any = null;
-let sReadyCloseLinkAttempts: any = null;
 let sRecvNonzeroCheck: any = null;
-let sSavedLinkPlayers: any = null;
 let sSendBufferEmpty: any = null;
 let sSendNonzeroCheck: any = null;
-let sTextColors: any = null;
 let sTimeOutCounter: any = null;
-let sWirelessLinkDisplayGfx: any = null;
-let sWirelessLinkDisplayPal: any = null;
-let sWirelessLinkDisplayTilemap: any = null;
 /** bool8 IsWirelessAdapterConnected(void) */
 export function IsWirelessAdapterConnected(): any {
   SetWirelessCommType1();
       InitRFUAPI();
-      if (rfu_LMAN_REQBN_softReset_and_checkID() == RFU_ID)
+      if (rfu_LMAN_REQBN_softReset_and_checkID() == (0x00008001))
       {
           rfu_REQ_stopMode();
           rfu_waitREQComplete();
@@ -109,7 +115,7 @@ export function InitLocalLinkPlayer(): any {
       gLocalLinkPlayer.version = gGameVersion + 0x4000;
       gLocalLinkPlayer.lp_field_2 = 0x8000;
       gLocalLinkPlayer.progressFlags = IsNationalPokedexEnabled();
-      if (FlagGet(FLAG_IS_CHAMPION))
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1F))))
       {
           gLocalLinkPlayer.progressFlags |= 0x10;
       }
@@ -126,8 +132,8 @@ export function VBlankCB_LinkError(): any {
 export function InitLink(): any {
   let i: any = null;
 
-      for (i = 0; i < CMD_LENGTH; i++)
-          gSendCmd[i] = LINKCMD_NONE;
+      for (i = 0; i < (8); i++)
+          gSendCmd[i] = (0xEFFF);
 
       sLinkOpen = TRUE;
       EnableSerial();
@@ -167,7 +173,7 @@ export function OpenLink(): any {
           InitRFUAPI();
       }
       gReceivedRemoteLinkPlayers = 0;
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
       {
           gRemoteLinkPlayersNotReceived[i] = TRUE;
           gReadyToCloseLink[i] = FALSE;
@@ -194,7 +200,7 @@ export function TestBlockTransfer(nothing: any, is: any, used: any): any {
           LinkTest_PrintHex(sBlockSend.pos, 2, 3, 2);
           sLinkTestLastBlockSendPos = sBlockSend.pos;
       }
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
       {
           if (sLinkTestLastBlockRecvPos[i] != sBlockRecv[i].pos)
           {
@@ -205,7 +211,7 @@ export function TestBlockTransfer(nothing: any, is: any, used: any): any {
       status = GetBlockReceivedStatus();
       if (status == 0xF)  
       {
-          for (i = 0; i < MAX_LINK_PLAYERS; i++)
+          for (i = 0; i < (4); i++)
           {
               if ((status >> i) & 1)
               {
@@ -233,7 +239,7 @@ export function LinkTestProcessKeyInput(): any {
       }
       if (JOY_NEW(L_BUTTON))
       {
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB(2, 0, 0));
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, RGB(2, 0, 0));
       }
       if (JOY_NEW(START_BUTTON))
       {
@@ -270,11 +276,11 @@ export function LinkMain2(heldKeys: any): any {
       if (!sLinkOpen)
           return 0;
 
-      for (i = 0; i < CMD_LENGTH; i++)
+      for (i = 0; i < (8); i++)
           gSendCmd[i] = 0;
 
       gLinkHeldKeys = heldKeys;
-      if (gLinkStatus & LINK_STAT_CONN_ESTABLISHED)
+      if (gLinkStatus & (0x00000040))
       {
           ProcessRecvCmds(SIO_MULTI_CNT.id);
           if (gLinkCallback != NULL)
@@ -305,7 +311,7 @@ export function HandleReceiveRemoteLinkPlayer(who: any): any {
 export function ProcessRecvCmds(unused: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
       {
           gLinkPartnersHeldKeys[i] = 0;
           if (gRecvCmds[i][0] == 0)
@@ -314,7 +320,7 @@ export function ProcessRecvCmds(unused: any): any {
           }
           switch (gRecvCmds[i][0])
           {
-              case LINKCMD_SEND_LINK_TYPE:
+              case (0x2222):
               {
                   let block: any = null;
 
@@ -326,16 +332,16 @@ export function ProcessRecvCmds(unused: any): any {
                   InitBlockSend(block, 0);
                   break;
               }
-              case LINKCMD_BLENDER_SEND_KEYS:
+              case (0x4444):
                   gLinkPartnersHeldKeys[i] = gRecvCmds[i][1];
                   break;
-              case LINKCMD_DUMMY_1:
+              case (0x5555):
                   gLinkDummy2 = TRUE;
                   break;
-              case LINKCMD_DUMMY_2:
+              case (0x5566):
                   gLinkDummy2 = TRUE;
                   break;
-              case LINKCMD_INIT_BLOCK:
+              case (0xBBBB):
               {
                   let blockRecv: any = null;
 
@@ -345,15 +351,15 @@ export function ProcessRecvCmds(unused: any): any {
                   blockRecv.multiplayerId = gRecvCmds[i][2];
                   break;
               }
-              case LINKCMD_CONT_BLOCK:
+              case (0x8888):
               {
-                  if (sBlockRecv[i].size > BLOCK_BUFFER_SIZE)
+                  if (sBlockRecv[i].size > (0x100))
                   {
                       let buffer: any = null;
                       let j: any = null;
 
                       buffer = gDecompressionBuffer;
-                      for (j = 0; j < CMD_LENGTH - 1; j++)
+                      for (j = 0; j < (8) - 1; j++)
                       {
                           buffer[(sBlockRecv[i].pos / 2) + j] = gRecvCmds[i][j + 1];
                       }
@@ -362,13 +368,13 @@ export function ProcessRecvCmds(unused: any): any {
                   {
                       let j: any = null;
 
-                      for (j = 0; j < CMD_LENGTH - 1; j++)
+                      for (j = 0; j < (8) - 1; j++)
                       {
                           gBlockRecvBuffer[i][(sBlockRecv[i].pos / 2) + j] = gRecvCmds[i][j + 1];
                       }
                   }
 
-                  sBlockRecv[i].pos += (CMD_LENGTH - 1) * 2;
+                  sBlockRecv[i].pos += ((8) - 1) * 2;
 
                   if (sBlockRecv[i].pos >= sBlockRecv[i].size)
                   {
@@ -380,7 +386,7 @@ export function ProcessRecvCmds(unused: any): any {
                           block =gBlockRecvBuffer[i];
                           linkPlayer =gLinkPlayers[i];
                           linkPlayer = block.linkPlayer;
-                          if ((linkPlayer.version & 0xFF) == VERSION_RUBY || (linkPlayer.version & 0xFF) == VERSION_SAPPHIRE)
+                          if ((linkPlayer.version & 0xFF) == (2) || (linkPlayer.version & 0xFF) == (1))
                           {
                               linkPlayer.progressFlagsCopy = 0;
                               linkPlayer.neverRead = 0;
@@ -404,19 +410,19 @@ export function ProcessRecvCmds(unused: any): any {
                   }
               }
                   break;
-              case LINKCMD_READY_CLOSE_LINK:
+              case (0x5FFF):
                   gReadyToCloseLink[i] = TRUE;
                   break;
-              case LINKCMD_READY_EXIT_STANDBY:
+              case (0x2FFE):
                   gReadyToExitStandby[i] = TRUE;
                   break;
-              case LINKCMD_BLENDER_NO_PBLOCK_SPACE:
+              case (0xAAAA):
                   SetBerryBlenderLinkCallback();
                   break;
-              case LINKCMD_SEND_BLOCK_REQ:
+              case (0xCCCC):
                   SendBlock(0, sBlockRequests[gRecvCmds[i][1]].address, sBlockRequests[gRecvCmds[i][1]].size);
                   break;
-              case LINKCMD_SEND_HELD_KEYS:
+              case (0xCAFE):
                   gLinkPartnersHeldKeys[i] = gRecvCmds[i][1];
                   break;
           }
@@ -427,60 +433,60 @@ export function ProcessRecvCmds(unused: any): any {
 export function BuildSendCmd(command: any): any {
   switch (command)
       {
-          case LINKCMD_SEND_LINK_TYPE:
-              gSendCmd[0] = LINKCMD_SEND_LINK_TYPE;
+          case (0x2222):
+              gSendCmd[0] = (0x2222);
               gSendCmd[1] = gLinkType;
               break;
-          case LINKCMD_READY_EXIT_STANDBY:
-              gSendCmd[0] = LINKCMD_READY_EXIT_STANDBY;
+          case (0x2FFE):
+              gSendCmd[0] = (0x2FFE);
               break;
-          case LINKCMD_BLENDER_SEND_KEYS:
-              gSendCmd[0] = LINKCMD_BLENDER_SEND_KEYS;
+          case (0x4444):
+              gSendCmd[0] = (0x4444);
               gSendCmd[1] = gMain.heldKeys;
               break;
-          case LINKCMD_DUMMY_1:
-              gSendCmd[0] = LINKCMD_DUMMY_1;
+          case (0x5555):
+              gSendCmd[0] = (0x5555);
               break;
-          case LINKCMD_SEND_EMPTY:
-              gSendCmd[0] = LINKCMD_SEND_EMPTY;
+          case (0x6666):
+              gSendCmd[0] = (0x6666);
               gSendCmd[1] = 0;
               break;
-          case LINKCMD_SEND_0xEE:
+          case (0x7777):
           {
               let i: any = null;
-              gSendCmd[0] = LINKCMD_SEND_0xEE;
+              gSendCmd[0] = (0x7777);
               for (i = 0; i < 5; i++)
                   gSendCmd[i + 1] = 0xEE;
               break;
           }
-          case LINKCMD_INIT_BLOCK:
-              gSendCmd[0] = LINKCMD_INIT_BLOCK;
+          case (0xBBBB):
+              gSendCmd[0] = (0xBBBB);
               gSendCmd[1] = sBlockSend.size;
               gSendCmd[2] = sBlockSend.multiplayerId + 0x80;
               break;
-          case LINKCMD_BLENDER_NO_PBLOCK_SPACE:
-              gSendCmd[0] = LINKCMD_BLENDER_NO_PBLOCK_SPACE;
+          case (0xAAAA):
+              gSendCmd[0] = (0xAAAA);
               break;
-          case LINKCMD_SEND_ITEM:
-              gSendCmd[0] = LINKCMD_SEND_ITEM;
+          case (0xAAAB):
+              gSendCmd[0] = (0xAAAB);
               gSendCmd[1] = gSpecialVar_ItemId;
               break;
-          case LINKCMD_SEND_BLOCK_REQ:
-              gSendCmd[0] = LINKCMD_SEND_BLOCK_REQ;
+          case (0xCCCC):
+              gSendCmd[0] = (0xCCCC);
               gSendCmd[1] = gBlockRequestType;
               break;
-          case LINKCMD_READY_CLOSE_LINK:
-              gSendCmd[0] = LINKCMD_READY_CLOSE_LINK;
+          case (0x5FFF):
+              gSendCmd[0] = (0x5FFF);
               gSendCmd[1] = gReadyCloseLinkType;
               break;
-          case LINKCMD_DUMMY_2:
-              gSendCmd[0] = LINKCMD_DUMMY_2;
+          case (0x5566):
+              gSendCmd[0] = (0x5566);
               break;
-          case LINKCMD_SEND_HELD_KEYS:
+          case (0xCAFE):
               if (gHeldKeyCodeToSend == 0 || gLinkTransferringData)
                   break;
 
-              gSendCmd[0] = LINKCMD_SEND_HELD_KEYS;
+              gSendCmd[0] = (0xCAFE);
               gSendCmd[1] = gHeldKeyCodeToSend;
               break;
       }
@@ -508,7 +514,7 @@ export function IsSendingKeysToLink(): any {
 /** static void LinkCB_SendHeldKeys(void) */
 export function LinkCB_SendHeldKeys(): any {
   if (gReceivedRemoteLinkPlayers == TRUE)
-          BuildSendCmd(LINKCMD_SEND_HELD_KEYS);
+          BuildSendCmd((0xCAFE));
 }
 
 /** void ClearLinkCallback(void) */
@@ -557,7 +563,7 @@ export function LinkDummy_Return2(): any {
 
 /** bool32 Link_AnyPartnersPlayingRubyOrSapphire(void) */
 export function Link_AnyPartnersPlayingRubyOrSapphire(): any {
-  if (AreAnyLinkPlayersUsingVersions(VERSION_RUBY, VERSION_SAPPHIRE) >= 0)
+  if (AreAnyLinkPlayersUsingVersions((2), (1)) >= 0)
       {
           return TRUE;
       }
@@ -568,8 +574,8 @@ export function Link_AnyPartnersPlayingRubyOrSapphire(): any {
 export function Link_AnyPartnersPlayingFRLG_JP(): any {
   let i: any = null;
 
-      i = AreAnyLinkPlayersUsingVersions(VERSION_FIRE_RED, VERSION_LEAF_GREEN);
-      if (i >= 0 && gLinkPlayers[i].language == LANGUAGE_JAPANESE)
+      i = AreAnyLinkPlayersUsingVersions((4), (5));
+      if (i >= 0 && gLinkPlayers[i].language == (1))
       {
           return TRUE;
       }
@@ -617,17 +623,17 @@ export function GetLinkPlayerDataExchangeStatusTimed(minPlayers: any, maxPlayers
               }
               if (count == GetLinkPlayerCount())
               {
-                  if (gLinkPlayers[0].linkType == LINKTYPE_TRADE_SETUP)
+                  if (gLinkPlayers[0].linkType == (0x1133))
                   {
                       switch (GetGameProgressForLinkTrade())
                       {
-                      case TRADE_PLAYER_NOT_READY:
+                      case (1):
                           sPlayerDataExchangeStatus = EXCHANGE_PLAYER_NOT_READY;
                           break;
-                      case TRADE_PARTNER_NOT_READY:
+                      case (2):
                           sPlayerDataExchangeStatus = EXCHANGE_PARTNER_NOT_READY;
                           break;
-                      case TRADE_BOTH_PLAYERS_READY:
+                      case (0):
                           sPlayerDataExchangeStatus = EXCHANGE_COMPLETE;
                           break;
                       }
@@ -642,8 +648,8 @@ export function GetLinkPlayerDataExchangeStatusTimed(minPlayers: any, maxPlayers
                   sPlayerDataExchangeStatus = EXCHANGE_DIFF_SELECTIONS;
                   linkType1 = gLinkPlayers[GetMultiplayerId()].linkType;
                   linkType2 = gLinkPlayers[GetMultiplayerId() ^ 1].linkType;
-                  if ((linkType1 == LINKTYPE_BATTLE_TOWER_50 && linkType2 == LINKTYPE_BATTLE_TOWER_OPEN)
-                   || (linkType1 == LINKTYPE_BATTLE_TOWER_OPEN && linkType2 == LINKTYPE_BATTLE_TOWER_50))
+                  if ((linkType1 == (0x2266) && linkType2 == (0x2277))
+                   || (linkType1 == (0x2277) && linkType2 == (0x2266)))
                   {
                        
                        
@@ -693,7 +699,7 @@ export function GetLinkPlayerTrainerId(who: any): any {
 export function ResetLinkPlayers(): any {
   let i: any = null;
 
-      for (i = 0; i <= MAX_LINK_PLAYERS; i++)
+      for (i = 0; i <= (4); i++)
           gLinkPlayers[i] = ({} as any);
 }
 
@@ -715,7 +721,7 @@ export function InitBlockSend(src: any, size: any): any {
       sBlockSend.active = TRUE;
       sBlockSend.size = size;
       sBlockSend.pos = 0;
-      if (size > BLOCK_BUFFER_SIZE)
+      if (size > (0x100))
       {
           sBlockSend.src = src;
       }
@@ -726,7 +732,7 @@ export function InitBlockSend(src: any, size: any): any {
 
           sBlockSend.src = gBlockSendBuffer;
       }
-      BuildSendCmd(LINKCMD_INIT_BLOCK);
+      BuildSendCmd((0xBBBB));
       gLinkCallback = LinkCB_BlockSendBegin;
       sBlockSendDelayCounter = 0;
       return TRUE;
@@ -744,8 +750,8 @@ export function LinkCB_BlockSend(): any {
       let src: any = null;
 
       src = sBlockSend.src;
-      gSendCmd[0] = LINKCMD_CONT_BLOCK;
-      for (i = 0; i < CMD_LENGTH - 1; i++)
+      gSendCmd[0] = (0x8888);
+      for (i = 0; i < (8) - 1; i++)
       {
           gSendCmd[i + 1] = (src[sBlockSend.pos + i * 2 + 1] << 8) | src[sBlockSend.pos + i * 2];
       }
@@ -765,7 +771,7 @@ export function LinkCB_BlockSendEnd(): any {
 /** static void LinkCB_BerryBlenderSendHeldKeys(void) */
 export function LinkCB_BerryBlenderSendHeldKeys(): any {
   GetMultiplayerId();
-      BuildSendCmd(LINKCMD_BLENDER_SEND_KEYS);
+      BuildSendCmd((0x4444));
       gBerryBlenderKeySendAttempts++;
 }
 
@@ -791,7 +797,7 @@ export function BitmaskAllOtherLinkPlayers(): any {
   let mpId: any = null;
 
       mpId = GetMultiplayerId();
-      return ((1 << MAX_LINK_PLAYERS) - 1) ^ (1 << mpId);
+      return ((1 << (4)) - 1) ^ (1 << mpId);
 }
 
 /** bool8 SendBlock(u8 unused, const void *src, u16 size) */
@@ -810,7 +816,7 @@ export function SendBlockRequest(blockReqType: any): any {
       if (gLinkCallback == NULL)
       {
           gBlockRequestType = blockReqType;
-          BuildSendCmd(LINKCMD_SEND_BLOCK_REQ);
+          BuildSendCmd((0xCCCC));
           return TRUE;
       }
       return FALSE;
@@ -846,12 +852,12 @@ export function ResetBlockReceivedFlags(): any {
 
       if (gWirelessCommType == TRUE)
       {
-          for (i = 0; i < MAX_RFU_PLAYERS; i++)
+          for (i = 0; i < (5); i++)
               Rfu_ResetBlockReceivedFlag(i);
       }
       else
       {
-          for (i = 0; i < MAX_LINK_PLAYERS; i++)
+          for (i = 0; i < (4); i++)
               gBlockReceivedStatus[i] = FALSE;
       }
 }
@@ -870,7 +876,7 @@ export function ResetBlockReceivedFlag(who: any): any {
 
 /** void CheckShouldAdvanceLinkState(void) */
 export function CheckShouldAdvanceLinkState(): any {
-  if ((gLinkStatus & LINK_STAT_MASTER) && EXTRACT_PLAYER_COUNT(gLinkStatus) > 1)
+  if ((gLinkStatus & (0x00000020)) && EXTRACT_PLAYER_COUNT(gLinkStatus) > 1)
           gShouldAdvanceLinkState = 1;
 }
 
@@ -944,9 +950,9 @@ export function LinkTest_PrintString(str: any, x: any, y: any): any {
 
 /** static void LinkCB_RequestPlayerDataExchange(void) */
 export function LinkCB_RequestPlayerDataExchange(): any {
-  if (gLinkStatus & LINK_STAT_MASTER)
+  if (gLinkStatus & (0x00000020))
       {
-          BuildSendCmd(LINKCMD_SEND_LINK_TYPE);
+          BuildSendCmd((0x2222));
       }
       gLinkCallback = NULL;
 }
@@ -973,7 +979,7 @@ export function Task_PrintTestData(taskId: any): any {
       LinkTest_PrintHex(IsLinkConnectionEstablished(), 25, 7, 1);
       LinkTest_PrintHex(HasLinkErrorOccurred(), 25, 8, 1);
 
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
           LinkTest_PrintHex(gLinkTestBlockChecksums[i], 10, 4 + i, 4);
 }
 
@@ -1013,7 +1019,7 @@ export function SaveLinkPlayers(playerCount: any): any {
 
       gSavedLinkPlayerCount = playerCount;
       gSavedMultiplayerId = GetMultiplayerId();
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
           sSavedLinkPlayers[i] = gLinkPlayers[i];
 }
 
@@ -1031,7 +1037,7 @@ export function DoesLinkPlayerCountMatchSaved(): any {
       {
           if (gLinkPlayers[i].trainerId == sSavedLinkPlayers[i].trainerId)
           {
-              if (gLinkType == LINKTYPE_BATTLE_TOWER)
+              if (gLinkType == (0x2288))
               {
                   if (gLinkType == gLinkPlayers[i].linkType)
                       count++;
@@ -1135,7 +1141,7 @@ export function SetCloseLinkCallback(): any {
 export function LinkCB_ReadyCloseLink(): any {
   if (gLastRecvQueueCount == 0)
       {
-          BuildSendCmd(LINKCMD_READY_CLOSE_LINK);
+          BuildSendCmd((0x5FFF));
           gLinkCallback = LinkCB_WaitCloseLink;
       }
 }
@@ -1157,7 +1163,7 @@ export function LinkCB_WaitCloseLink(): any {
       if (count == linkPlayerCount)
       {
            
-          gBattleTypeFlags &= ~BATTLE_TYPE_LINK_IN_BATTLE;
+          gBattleTypeFlags &= ~((1 << 5));
           gLinkVSyncDisabled = TRUE;
           CloseLink();
           gLinkCallback = NULL;
@@ -1190,7 +1196,7 @@ export function SetCloseLinkCallbackHandleJP(): any {
 export function LinkCB_ReadyCloseLinkWithJP(): any {
   if (gLastRecvQueueCount == 0)
       {
-          BuildSendCmd(LINKCMD_READY_CLOSE_LINK);
+          BuildSendCmd((0x5FFF));
           gLinkCallback = LinkCB_WaitCloseLinkWithJP;
       }
 }
@@ -1209,7 +1215,7 @@ export function LinkCB_WaitCloseLinkWithJP(): any {
       {
            
            
-          if (gLinkPlayers[i].language == LANGUAGE_JAPANESE)
+          if (gLinkPlayers[i].language == (1))
               count++;
           else if (gReadyToCloseLink[i])
               count++;
@@ -1218,7 +1224,7 @@ export function LinkCB_WaitCloseLinkWithJP(): any {
       if (count == linkPlayerCount)
       {
            
-          gBattleTypeFlags &= ~BATTLE_TYPE_LINK_IN_BATTLE;
+          gBattleTypeFlags &= ~((1 << 5));
           gLinkVSyncDisabled = TRUE;
           CloseLink();
           gLinkCallback = NULL;
@@ -1245,7 +1251,7 @@ export function SetLinkStandbyCallback(): any {
 export function LinkCB_Standby(): any {
   if (gLastRecvQueueCount == 0)
       {
-          BuildSendCmd(LINKCMD_READY_EXIT_STANDBY);
+          BuildSendCmd((0x2FFE));
           gLinkCallback = LinkCB_StandbyForAll;
       }
 }
@@ -1263,7 +1269,7 @@ export function LinkCB_StandbyForAll(): any {
        
       if (i == linkPlayerCount)
       {
-          for (i = 0; i < MAX_LINK_PLAYERS; i++)
+          for (i = 0; i < (4); i++)
               gReadyToExitStandby[i] = FALSE;
 
           gLinkCallback = NULL;
@@ -1304,11 +1310,11 @@ export function CB2_LinkError(): any {
       m4aMPlayStop(gMPlayInfo_SE1);
       m4aMPlayStop(gMPlayInfo_SE2);
       m4aMPlayStop(gMPlayInfo_SE3);
-      InitHeap(gHeap, HEAP_SIZE);
+      InitHeap(gHeap, (0x1C000));
       ResetSpriteData();
       FreeAllSpritePalettes();
       ResetPaletteFadeControl();
-      SetBackdropFromColor(RGB_BLACK);
+      SetBackdropFromColor((RGB(0, 0, 0)));
       ResetTasks();
       ScanlineEffect_Stop();
       if (gWirelessCommType)
@@ -1394,13 +1400,13 @@ export function CB2_PrintErrorMessage(): any {
                   ShowBg(1);
               break;
           case  30:
-              PlaySE(SE_BOO);
+              PlaySE((22));
               break;
           case  60:
-              PlaySE(SE_BOO);
+              PlaySE((22));
               break;
           case  90:
-              PlaySE(SE_BOO);
+              PlaySE((22));
               break;
           case 130:
               if (gWirelessCommType == 2)
@@ -1415,7 +1421,7 @@ export function CB2_PrintErrorMessage(): any {
           {
               if (JOY_NEW(A_BUTTON))
               {
-                  PlaySE(SE_PIN);
+                  PlaySE((21));
                   gWirelessCommType = 0;
                   sLinkErrorBuffer.disconnected = FALSE;
                   ReloadSave();
@@ -1497,7 +1503,7 @@ export function HandleLinkConnection(): any {
       {
           gLinkStatus = LinkMain1(gShouldAdvanceLinkState, gSendCmd, gRecvCmds);
           LinkMain2(gMain.heldKeys);
-          if ((gLinkStatus & LINK_STAT_RECEIVED_NOTHING) && IsSendingKeysOverCable() == TRUE)
+          if ((gLinkStatus & (0x00000100)) && IsSendingKeysOverCable() == TRUE)
               return TRUE;
       }
       else
@@ -1543,7 +1549,7 @@ export function GetLinkRecvQueueLength(): any {
 
 /** bool32 IsLinkRecvQueueAtOverworldMax(void) */
 export function IsLinkRecvQueueAtOverworldMax(): any {
-  if (GetLinkRecvQueueLength() >= OVERWORLD_RECV_QUEUE_MAX)
+  if (GetLinkRecvQueueLength() >= (3))
           return TRUE;
 
       return FALSE;
@@ -1620,7 +1626,7 @@ export function LinkMain1(shouldAdvanceLinkState: any, sendCmd: any): any {
                       CheckMasterOrSlave();
                       break;
                   case 1:
-                      if (gLink.isMaster == LINK_MASTER && gLink.playerCount > 1)
+                      if (gLink.isMaster == (8) && gLink.playerCount > 1)
                           gLink.handshakeAsMaster = TRUE;
                       break;
                   case 2:
@@ -1640,22 +1646,22 @@ export function LinkMain1(shouldAdvanceLinkState: any, sendCmd: any): any {
       }
       shouldAdvanceLinkState = 0;
       retVal = gLink.localId;
-      retVal |= (gLink.playerCount << LINK_STAT_PLAYER_COUNT_SHIFT);
-      if (gLink.isMaster == LINK_MASTER)
+      retVal |= (gLink.playerCount << (2));
+      if (gLink.isMaster == (8))
       {
-          retVal |= LINK_STAT_MASTER;
+          retVal |= (0x00000020);
       }
       {
-          let receivedNothing: any = gLink.receivedNothing << LINK_STAT_RECEIVED_NOTHING_SHIFT;
-          let link_field_F: any = gLink.link_field_F << LINK_STAT_UNK_FLAG_9_SHIFT;
-          let hardwareError: any = gLink.hardwareError << LINK_STAT_ERROR_HARDWARE_SHIFT;
-          let badChecksum: any = gLink.badChecksum << LINK_STAT_ERROR_CHECKSUM_SHIFT;
-          let queueFull: any = gLink.queueFull << LINK_STAT_ERROR_QUEUE_FULL_SHIFT;
+          let receivedNothing: any = gLink.receivedNothing << (8);
+          let link_field_F: any = gLink.link_field_F << (9);
+          let hardwareError: any = gLink.hardwareError << (12);
+          let badChecksum: any = gLink.badChecksum << (13);
+          let queueFull: any = gLink.queueFull << (14);
           let val: any = null;
 
           if (gLink.state == LINK_STATE_CONN_ESTABLISHED)
           {
-              val = LINK_STAT_CONN_ESTABLISHED;
+              val = (0x00000040);
               val |= receivedNothing;
               val |= retVal;
               val |= link_field_F;
@@ -1677,14 +1683,14 @@ export function LinkMain1(shouldAdvanceLinkState: any, sendCmd: any): any {
       }
 
       if (gLink.lag == LAG_MASTER)
-          retVal |= LINK_STAT_ERROR_LAG_MASTER;
+          retVal |= (0x00010000);
 
-      if (gLink.localId >= MAX_LINK_PLAYERS)
-          retVal |= LINK_STAT_ERROR_INVALID_ID;
+      if (gLink.localId >= (4))
+          retVal |= (0x00020000);
 
       retVal2 = retVal;
       if (gLink.lag == LAG_SLAVE)
-          retVal2 |= LINK_STAT_ERROR_LAG_SLAVE;
+          retVal2 |= (0x00040000);
 
       return retVal2;
 }
@@ -1696,11 +1702,11 @@ export function CheckMasterOrSlave(): any {
       terminals = REG_ADDR_SIOCNT & (SIO_MULTI_SD | SIO_MULTI_SI);
       if (terminals == SIO_MULTI_SD && gLink.localId == 0)
       {
-          gLink.isMaster = LINK_MASTER;
+          gLink.isMaster = (8);
       }
       else
       {
-          gLink.isMaster = LINK_SLAVE;
+          gLink.isMaster = (0);
       }
 }
 
@@ -1721,14 +1727,14 @@ export function EnqueueSendCmd(sendCmd: any): any {
 
       gLinkSavedIme = REG_IME;
       REG_IME = 0;
-      if (gLink.sendQueue.count < QUEUE_CAPACITY)
+      if (gLink.sendQueue.count < (50))
       {
           offset = gLink.sendQueue.pos + gLink.sendQueue.count;
-          if (offset >= QUEUE_CAPACITY)
+          if (offset >= (50))
           {
-              offset -= QUEUE_CAPACITY;
+              offset -= (50);
           }
-          for (i = 0; i < CMD_LENGTH; i++)
+          for (i = 0; i < (8); i++)
           {
               sSendNonzeroCheck |= sendCmd;
               gLink.sendQueue.data[i][offset] = sendCmd;
@@ -1760,7 +1766,7 @@ export function DequeueRecvCmds(): any {
       {
           for (i = 0; i < gLink.playerCount; i++)
           {
-              for (j = 0; j < CMD_LENGTH; j++)
+              for (j = 0; j < (8); j++)
               {
                   recvCmds[i][j] = 0;
               }
@@ -1772,14 +1778,14 @@ export function DequeueRecvCmds(): any {
       {
           for (i = 0; i < gLink.playerCount; i++)
           {
-              for (j = 0; j < CMD_LENGTH; j++)
+              for (j = 0; j < (8); j++)
               {
                   recvCmds[i][j] = gLink.recvQueue.data[i][j][gLink.recvQueue.pos];
               }
           }
           gLink.recvQueue.count--;
           gLink.recvQueue.pos++;
-          if (gLink.recvQueue.pos >= QUEUE_CAPACITY)
+          if (gLink.recvQueue.pos >= (50))
           {
               gLink.recvQueue.pos = 0;
           }
@@ -1889,18 +1895,18 @@ export function DoHandshake(): any {
       minRecv = 0xFFFF;
       if (gLink.handshakeAsMaster == TRUE)
       {
-          REG_SIOMLT_SEND = MASTER_HANDSHAKE;
+          REG_SIOMLT_SEND = (0x8FFF);
       }
       else
       {
-          REG_SIOMLT_SEND = SLAVE_HANDSHAKE;
+          REG_SIOMLT_SEND = (0xB9A0);
       }
       gLink.handshakeBuffer = REG_SIOMLT_RECV;
       REG_SIOMLT_RECV = 0;
       gLink.handshakeAsMaster = FALSE;
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
       {
-          if ((gLink.handshakeBuffer[i] & ~0x3) == SLAVE_HANDSHAKE || gLink.handshakeBuffer[i] == MASTER_HANDSHAKE)
+          if ((gLink.handshakeBuffer[i] & ~0x3) == (0xB9A0) || gLink.handshakeBuffer[i] == (0x8FFF))
           {
               playerCount++;
               if (minRecv > gLink.handshakeBuffer[i] && gLink.handshakeBuffer[i] != 0)
@@ -1914,7 +1920,7 @@ export function DoHandshake(): any {
           }
       }
       gLink.playerCount = playerCount;
-      if (gLink.playerCount > 1 && gLink.playerCount == sHandshakePlayerCount && gLink.handshakeBuffer[0] == MASTER_HANDSHAKE)
+      if (gLink.playerCount > 1 && gLink.playerCount == sHandshakePlayerCount && gLink.handshakeBuffer[0] == (0x8FFF))
       {
           return TRUE;
       }
@@ -1952,11 +1958,11 @@ export function DoRecv(): any {
       else
       {
           index = gLink.recvQueue.pos + gLink.recvQueue.count;
-          if (index >= QUEUE_CAPACITY)
+          if (index >= (50))
           {
-              index -= QUEUE_CAPACITY;
+              index -= (50);
           }
-          if (gLink.recvQueue.count < QUEUE_CAPACITY)
+          if (gLink.recvQueue.count < (50))
           {
               for (i = 0; i < gLink.playerCount; i++)
               {
@@ -1970,7 +1976,7 @@ export function DoRecv(): any {
               gLink.queueFull = QUEUE_FULL_RECV;
           }
           gLink.recvCmdIndex++;
-          if (gLink.recvCmdIndex == CMD_LENGTH && sRecvNonzeroCheck)
+          if (gLink.recvCmdIndex == (8) && sRecvNonzeroCheck)
           {
               gLink.recvQueue.count++;
               sRecvNonzeroCheck = 0;
@@ -1980,14 +1986,14 @@ export function DoRecv(): any {
 
 /** static void DoSend(void) */
 export function DoSend(): any {
-  if (gLink.sendCmdIndex == CMD_LENGTH)
+  if (gLink.sendCmdIndex == (8))
       {
           REG_SIOMLT_SEND = gLink.checksum;
           if (!sSendBufferEmpty)
           {
               gLink.sendQueue.count--;
               gLink.sendQueue.pos++;
-              if (gLink.sendQueue.pos >= QUEUE_CAPACITY)
+              if (gLink.sendQueue.pos >= (50))
               {
                   gLink.sendQueue.pos = 0;
               }
@@ -2026,7 +2032,7 @@ export function StopTimer(): any {
 
 /** static void SendRecvDone(void) */
 export function SendRecvDone(): any {
-  if (gLink.recvCmdIndex == CMD_LENGTH)
+  if (gLink.recvCmdIndex == (8))
       {
           gLink.sendCmdIndex = 0;
           gLink.recvCmdIndex = 0;
@@ -2044,10 +2050,10 @@ export function ResetSendBuffer(): any {
 
       gLink.sendQueue.count = 0;
       gLink.sendQueue.pos = 0;
-      for (i = 0; i < CMD_LENGTH; i++)
+      for (i = 0; i < (8); i++)
       {
-          for (j = 0; j < QUEUE_CAPACITY; j++)
-              gLink.sendQueue.data[i][j] = LINKCMD_NONE;
+          for (j = 0; j < (50); j++)
+              gLink.sendQueue.data[i][j] = (0xEFFF);
       }
 }
 
@@ -2059,12 +2065,12 @@ export function ResetRecvBuffer(): any {
 
       gLink.recvQueue.count = 0;
       gLink.recvQueue.pos = 0;
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
       {
-          for (j = 0; j < CMD_LENGTH; j++)
+          for (j = 0; j < (8); j++)
           {
-              for (k = 0; k < QUEUE_CAPACITY; k++)
-                  gLink.recvQueue.data[i][j][k] = LINKCMD_NONE;
+              for (k = 0; k < (50); k++)
+                  gLink.recvQueue.data[i][j][k] = (0xEFFF);
           }
       }
 }

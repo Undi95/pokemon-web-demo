@@ -17,17 +17,10 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sDirectionalApproachDistanceFuncs: any = null;
-let sFldEffId: any = null;
-let sLocalId: any = null;
-let sMapGroup: any = null;
-let sMapNum: any = null;
-let sSpriteTemplate_ExclamationQuestionMark: any = null;
-let sSpriteTemplate_HeartIcon: any = null;
-let sTrainerSeeFuncList: any = null;
-let sTrainerSeeFuncList2: any = null;
-let sYOffset: any = null;
-let sYVelocity: any = null;
+let gApproachingTrainerId: any = null;
+let gNoOfApproachingTrainers: any = null;
+let gTrainerApproachedPlayer: any = null;
+let rangeY: any = null;
 /** bool8 CheckForTrainersWantingBattle(void) */
 export function CheckForTrainersWantingBattle(): any {
   let i: any = null;
@@ -35,13 +28,13 @@ export function CheckForTrainersWantingBattle(): any {
       gNoOfApproachingTrainers = 0;
       gApproachingTrainerId = 0;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           let numTrainers: any = null;
 
           if (!gObjectEvents[i].active)
               continue;
-          if (gObjectEvents[i].trainerType != TRAINER_TYPE_NORMAL && gObjectEvents[i].trainerType != TRAINER_TYPE_BURIED)
+          if (gObjectEvents[i].trainerType != (1) && gObjectEvents[i].trainerType != (3))
               continue;
 
           numTrainers = CheckTrainer(i);
@@ -53,7 +46,7 @@ export function CheckForTrainersWantingBattle(): any {
 
           if (gNoOfApproachingTrainers > 1)
               break;
-          if (GetMonsStateToDoubles_2() != PLAYER_HAS_TWO_USABLE_MONS)  
+          if (GetMonsStateToDoubles_2() != (0))  
               break;
       }
 
@@ -96,7 +89,7 @@ export function CheckTrainer(objectEventId: any): any {
       else
           scriptPtr = GetObjectEventScriptPointerByObjectEventId(objectEventId);
 
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+      if (CurrentBattlePyramidLocation() != (0))
       {
           if (GetBattlePyramidTrainerFlag(objectEventId))
               return 0;
@@ -116,11 +109,11 @@ export function CheckTrainer(objectEventId: any): any {
 
       if (approachDistance != 0)
       {
-          if (scriptPtr[1] == TRAINER_BATTLE_DOUBLE
-              || scriptPtr[1] == TRAINER_BATTLE_REMATCH_DOUBLE
-              || scriptPtr[1] == TRAINER_BATTLE_CONTINUE_SCRIPT_DOUBLE)
+          if (scriptPtr[1] == (4)
+              || scriptPtr[1] == (7)
+              || scriptPtr[1] == (6))
           {
-              if (GetMonsStateToDoubles_2() != PLAYER_HAS_TWO_USABLE_MONS)
+              if (GetMonsStateToDoubles_2() != (0))
                   return 0;
 
               numTrainers = 2;
@@ -145,7 +138,7 @@ export function GetTrainerApproachDistance(trainerObj: any): any {
       let approachDistance: any = null;
 
       PlayerGetDestCoords(x,y);
-      if (trainerObj.trainerType == TRAINER_TYPE_NORMAL)   
+      if (trainerObj.trainerType == (1))   
       {
           approachDistance = sDirectionalApproachDistanceFuncs[trainerObj.facingDirection - 1](trainerObj, trainerObj.trainerRange_berryTreeId, x, y);
           return CheckPathBetweenTrainerAndPlayer(trainerObj, approachDistance, trainerObj.facingDirection);
@@ -291,7 +284,7 @@ export function TrainerExclamationMark(taskId: any, task: any, trainerObj: any):
   let direction: any = null;
 
       ObjectEventGetLocalIdAndMap(trainerObj,gFieldEffectArguments[0],gFieldEffectArguments[1],gFieldEffectArguments[2]);
-      FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON);
+      FieldEffectStart((0));
       direction = GetFaceDirectionMovementAction(trainerObj.facingDirection);
       ObjectEventSetHeldMovement(trainerObj, direction);
       task.tFuncId++;  
@@ -300,16 +293,16 @@ export function TrainerExclamationMark(taskId: any, task: any, trainerObj: any):
 
 /** static bool8 WaitTrainerExclamationMark(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj) */
 export function WaitTrainerExclamationMark(taskId: any, task: any, trainerObj: any): any {
-  if (FieldEffectActiveListContains(FLDEFF_EXCLAMATION_MARK_ICON))
+  if (FieldEffectActiveListContains((0)))
       {
           return FALSE;
       }
       else
       {
           task.tFuncId++;  
-          if (trainerObj.movementType == MOVEMENT_TYPE_TREE_DISGUISE || trainerObj.movementType == MOVEMENT_TYPE_MOUNTAIN_DISGUISE)
+          if (trainerObj.movementType == (0x39) || trainerObj.movementType == (0x3A))
               task.tFuncId = TRSEE_REVEAL_DISGUISE;
-          if (trainerObj.movementType == MOVEMENT_TYPE_BURIED)
+          if (trainerObj.movementType == (0x3F))
               task.tFuncId = TRSEE_REVEAL_BURIED;
           return TRUE;
       }
@@ -326,7 +319,7 @@ export function TrainerMoveToPlayer(taskId: any, task: any, trainerObj: any): an
           }
           else
           {
-              ObjectEventSetHeldMovement(trainerObj, MOVEMENT_ACTION_FACE_PLAYER);
+              ObjectEventSetHeldMovement(trainerObj, (0x3E));
               task.tFuncId++;  
           }
       }
@@ -370,7 +363,7 @@ export function RevealDisguisedTrainer(taskId: any, task: any, trainerObj: any):
   if (!ObjectEventIsMovementOverridden(trainerObj)
        || ObjectEventClearHeldMovementIfFinished(trainerObj))
       {
-          ObjectEventSetHeldMovement(trainerObj, MOVEMENT_ACTION_REVEAL_TRAINER);
+          ObjectEventSetHeldMovement(trainerObj, (0x59));
           task.tFuncId++;  
       }
       return FALSE;
@@ -389,7 +382,7 @@ export function RevealBuriedTrainer(taskId: any, task: any, trainerObj: any): an
   if (!ObjectEventIsMovementOverridden(trainerObj)
        || ObjectEventClearHeldMovementIfFinished(trainerObj))
       {
-          ObjectEventSetHeldMovement(trainerObj, MOVEMENT_ACTION_FACE_PLAYER);
+          ObjectEventSetHeldMovement(trainerObj, (0x3E));
           task.tFuncId++;
       }
       return FALSE;
@@ -403,7 +396,7 @@ export function PopOutOfAshBuriedTrainer(taskId: any, task: any, trainerObj: any
           gFieldEffectArguments[1] = trainerObj.currentCoords.y;
           gFieldEffectArguments[2] = gSprites[trainerObj.spriteId].subpriority - 1;
           gFieldEffectArguments[3] = 2;
-          task.tOutOfAshSpriteId = FieldEffectStart(FLDEFF_ASH_PUFF);
+          task.tOutOfAshSpriteId = FieldEffectStart((49));
           task.tFuncId++;
       }
       return FALSE;
@@ -430,7 +423,7 @@ export function JumpInPlaceBuriedTrainer(taskId: any, task: any, trainerObj: any
 
 /** static bool8 WaitRevealBuriedTrainer(u8 taskId, struct Task *task, struct ObjectEvent *trainerObj) */
 export function WaitRevealBuriedTrainer(taskId: any, task: any, trainerObj: any): any {
-  if (!FieldEffectActiveListContains(FLDEFF_ASH_PUFF))
+  if (!FieldEffectActiveListContains((49)))
           task.tFuncId = TRSEE_MOVE_TO_PLAYER;
 
       return FALSE;
@@ -448,7 +441,7 @@ export function Task_SetBuriedTrainerMovement(taskId: any): any {
           task.data[7]++;
       }
       sTrainerSeeFuncList2[task.tFuncId](taskId, task, objEvent);
-      if (task.tFuncId == (ARRAY_COUNT(sTrainerSeeFuncList2) - 1) && !FieldEffectActiveListContains(FLDEFF_ASH_PUFF))
+      if (task.tFuncId == (ARRAY_COUNT(sTrainerSeeFuncList2) - 1) && !FieldEffectActiveListContains((49)))
       {
           SetTrainerMovementType(objEvent, GetTrainerFacingDirectionMovementType(objEvent.facingDirection));
           TryOverrideTemplateCoordsForObjectEvent(objEvent, GetTrainerFacingDirectionMovementType(objEvent.facingDirection));
@@ -503,8 +496,8 @@ export function TryPrepareSecondApproachingTrainer(): any {
 export function FldEff_ExclamationMarkIcon(): any {
   let spriteId: any = CreateSpriteAtEnd(sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x53);
 
-      if (spriteId != MAX_SPRITES)
-          SetIconSpriteData(gSprites[spriteId], FLDEFF_EXCLAMATION_MARK_ICON, 0);
+      if (spriteId != (64))
+          SetIconSpriteData(gSprites[spriteId], (0), 0);
 
       return 0;
 }
@@ -513,8 +506,8 @@ export function FldEff_ExclamationMarkIcon(): any {
 export function FldEff_QuestionMarkIcon(): any {
   let spriteId: any = CreateSpriteAtEnd(sSpriteTemplate_ExclamationQuestionMark, 0, 0, 0x52);
 
-      if (spriteId != MAX_SPRITES)
-          SetIconSpriteData(gSprites[spriteId], FLDEFF_QUESTION_MARK_ICON, 1);
+      if (spriteId != (64))
+          SetIconSpriteData(gSprites[spriteId], (33), 1);
 
       return 0;
 }
@@ -523,11 +516,11 @@ export function FldEff_QuestionMarkIcon(): any {
 export function FldEff_HeartIcon(): any {
   let spriteId: any = CreateSpriteAtEnd(sSpriteTemplate_HeartIcon, 0, 0, 0x52);
 
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
 
-          SetIconSpriteData(sprite, FLDEFF_HEART_ICON, 0);
+          SetIconSpriteData(sprite, (46), 0);
           sprite.oam.paletteNum = 2;
       }
 
@@ -598,18 +591,18 @@ export function PlayerFaceTrainerAfterBattle(): any {
       {
           objEvent =gObjectEvents[gApproachingTrainers[gWhichTrainerToFaceAfterBattle].objectEventId];
           gPostBattleMovementScript[0] = GetFaceDirectionMovementAction(GetOppositeDirection(objEvent.facingDirection));
-          gPostBattleMovementScript[1] = MOVEMENT_ACTION_STEP_END;
-          ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, gPostBattleMovementScript);
+          gPostBattleMovementScript[1] = (0xFE);
+          ScriptMovement_StartObjectMovementScript((255), gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, gPostBattleMovementScript);
       }
       else
       {
           objEvent =gObjectEvents[gPlayerAvatar.objectEventId];
           gPostBattleMovementScript[0] = GetFaceDirectionMovementAction(objEvent.facingDirection);
-          gPostBattleMovementScript[1] = MOVEMENT_ACTION_STEP_END;
-          ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, gPostBattleMovementScript);
+          gPostBattleMovementScript[1] = (0xFE);
+          ScriptMovement_StartObjectMovementScript((255), gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup, gPostBattleMovementScript);
       }
 
-      SetMovingNpcId(LOCALID_PLAYER);
+      SetMovingNpcId((255));
 }
 
 // ─── callsTo manifest (= 55 unique callees) ───────────────────────

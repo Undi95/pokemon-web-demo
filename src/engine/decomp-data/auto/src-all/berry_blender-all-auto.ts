@@ -17,78 +17,20 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAnimId: any = null;
-let sArrowHitRangeStart: any = null;
-let sArrowStartPos: any = null;
-let sArrowStartPosIds: any = null;
+let feel: any = null;
+let gInGameOpponentsNo: any = null;
+let gLinkType: any = null;
+let gRecordsWindowId: any = null;
+let gSoftResetDisabled: any = null;
+let j: any = null;
+let maxFilledSegment: any = null;
 let sBerryBlender: any = null;
-let sBerryMasterBerries: any = null;
-let sBerrySpriteData: any = null;
-let sBgTemplates: any = null;
-let sBlackPokeblockFlavorFlags: any = null;
-let sBlenderCenter_Tilemap: any = null;
-let sBlenderOpponentsNames: any = null;
-let sBlenderOuter_Pal: any = null;
-let sBounceSpeed: any = null;
-let sBounces: any = null;
 let sDebug_GameTimeStage: any = null;
 let sDebug_MaxRPMStage: any = null;
-let sDebug_PokeblockFactorFlavors: any = null;
-let sDebug_PokeblockFactorFlavorsAfterRPM: any = null;
 let sDebug_PokeblockFactorRPM: any = null;
-let sDelay: any = null;
-let sLocalOpponentTasks: any = null;
-let sNumPlayersToSpeedDivisor: any = null;
-let sOpponentBerrySets: any = null;
-let sPlayerArrowPos: any = null;
-let sPlayerArrowQuadrant: any = null;
-let sPlayerIdMap: any = null;
-let sPokeblockFlavors: any = null;
-let sPokeblockPresentFlavors: any = null;
-let sSpritePal_BlenderMisc: any = null;
-let sSpritePal_PlayerArrow: any = null;
-let sSpriteSheet_CountdownNumbers: any = null;
-let sSpriteSheet_Particles: any = null;
-let sSpriteSheet_PlayerArrow: any = null;
-let sSpriteSheet_ScoreSymbols: any = null;
-let sSpriteSheet_Start: any = null;
-let sSpriteTemplate_CountdownNumbers: any = null;
-let sSpriteTemplate_Particles: any = null;
-let sSpriteTemplate_PlayerArrow: any = null;
-let sSpriteTemplate_ScoreSymbols: any = null;
-let sSpriteTemplate_Start: any = null;
-let sState: any = null;
-let sTargetY: any = null;
-let sText_ApostropheSPokeblockCaseIsFull: any = null;
-let sText_BerryBlenderStart: any = null;
-let sText_BlendingResults: any = null;
-let sText_CommunicationStandby: any = null;
-let sText_Dot: any = null;
-let sText_Dot2: any = null;
-let sText_HasNoBerriesToPut: any = null;
-let sText_MaximumSpeed: any = null;
-let sText_Min: any = null;
-let sText_NewLine: any = null;
-let sText_NewParagraph: any = null;
-let sText_RPM: any = null;
-let sText_Ranking: any = null;
-let sText_RunOutOfBerriesForBlending: any = null;
-let sText_Sec: any = null;
-let sText_SpaceBerry: any = null;
-let sText_TheFeelIs: any = null;
-let sText_TheLevelIs: any = null;
-let sText_Time: any = null;
-let sText_WasMade: any = null;
-let sText_WouldLikeToBlendAnotherBerry: any = null;
-let sText_YourPokeblockCaseIsFull: any = null;
-let sWindowTemplates: any = null;
-let sX: any = null;
-let sXSpeed: any = null;
-let sY: any = null;
-let sYDownSpeed: any = null;
-let sYPos: any = null;
-let sYUpSpeed: any = null;
-let sYesNoWindowTemplate_ContinuePlaying: any = null;
+let seconds: any = null;
+let subSegmentsFilled: any = null;
+let yPos: any = null;
 /** static void UpdateHitPitch(void) */
 export function UpdateHitPitch(): any {
   m4aMPlayPitchControl(gMPlayInfo_SE2, TRACKS_ALL, 2 * (sBerryBlender.speed - (0x80)));
@@ -239,7 +181,7 @@ export function CB2_LoadBerryBlender(): any {
       case 1:
           if (LoadBerryBlenderGfx())
           {
-              for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+              for (i = 0; i < ((4)); i++)
               {
                   sBerryBlender.playerArrowSpriteIds[i] = CreateSprite(sSpriteTemplate_PlayerArrow, sPlayerArrowPos[i][0], sPlayerArrowPos[i][1], 1);
                   StartSpriteAnim(gSprites[sBerryBlender.playerArrowSpriteIds[i]], i + 8);
@@ -254,7 +196,7 @@ export function CB2_LoadBerryBlender(): any {
           }
           break;
       case 2:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
           UpdateBlenderCenter();
           sBerryBlender.mainState++;
           break;
@@ -268,7 +210,7 @@ export function CB2_LoadBerryBlender(): any {
               sBerryBlender.mainState++;
           break;
       case 5:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
           sBerryBlender.mainState++;
           break;
       case 6:
@@ -307,7 +249,7 @@ export function SpriteCB_Berry(sprite: any): any {
           if (++sprite.sBounces > 3)
               DestroySprite(sprite);
           else
-              PlaySE(SE_BALL_TRAY_EXIT);
+              PlaySE((116));
       }
       sprite.x = sprite.sX;
       sprite.y = sprite.sY;
@@ -343,12 +285,12 @@ export function ConvertItemToBlenderBerry(berry: any, itemId: any): any {
 
       berry.itemId = itemId;
       StringCopy(berry.name, berryInfo.name);
-      berry.flavors[FLAVOR_SPICY] = berryInfo.spicy;
-      berry.flavors[FLAVOR_DRY] = berryInfo.dry;
-      berry.flavors[FLAVOR_SWEET] = berryInfo.sweet;
-      berry.flavors[FLAVOR_BITTER] = berryInfo.bitter;
-      berry.flavors[FLAVOR_SOUR] = berryInfo.sour;
-      berry.flavors[FLAVOR_COUNT] = berryInfo.smoothness;
+      berry.flavors[(0)] = berryInfo.spicy;
+      berry.flavors[(1)] = berryInfo.dry;
+      berry.flavors[(2)] = berryInfo.sweet;
+      berry.flavors[(3)] = berryInfo.bitter;
+      berry.flavors[(4)] = berryInfo.sour;
+      berry.flavors[(5)] = berryInfo.smoothness;
 }
 
 /** static void InitLocalPlayers(u8 opponentsNum) */
@@ -363,13 +305,13 @@ export function InitLocalPlayers(opponentsNum: any): any {
           sBerryBlender.numPlayers = 2;
           StringCopy(gLinkPlayers[0].name, gSaveBlock2Ptr.playerName);
 
-          if (!FlagGet(FLAG_HIDE_LILYCOVE_CONTEST_HALL_BLEND_MASTER))
+          if (!FlagGet((0x340)))
               StringCopy(gLinkPlayers[1].name, sBlenderOpponentsNames[BLENDER_MASTER]);
           else
               StringCopy(gLinkPlayers[1].name, sBlenderOpponentsNames[BLENDER_MISTER]);
 
-          gLinkPlayers[0].language = GAME_LANGUAGE;
-          gLinkPlayers[1].language = GAME_LANGUAGE;
+          gLinkPlayers[0].language = (((3)));
+          gLinkPlayers[1].language = (((3)));
           break;
       case 2:
           gInGameOpponentsNo = 2;
@@ -378,9 +320,9 @@ export function InitLocalPlayers(opponentsNum: any): any {
           StringCopy(gLinkPlayers[1].name, sBlenderOpponentsNames[BLENDER_DUDE]);
           StringCopy(gLinkPlayers[2].name, sBlenderOpponentsNames[BLENDER_LASSIE]);
 
-          gLinkPlayers[0].language = GAME_LANGUAGE;
-          gLinkPlayers[1].language = GAME_LANGUAGE;
-          gLinkPlayers[2].language = GAME_LANGUAGE;
+          gLinkPlayers[0].language = (((3)));
+          gLinkPlayers[1].language = (((3)));
+          gLinkPlayers[2].language = (((3)));
           break;
       case 3:
           gInGameOpponentsNo = 3;
@@ -390,10 +332,10 @@ export function InitLocalPlayers(opponentsNum: any): any {
           StringCopy(gLinkPlayers[2].name, sBlenderOpponentsNames[BLENDER_LADDIE]);
           StringCopy(gLinkPlayers[3].name, sBlenderOpponentsNames[BLENDER_LASSIE]);
 
-          gLinkPlayers[0].language = GAME_LANGUAGE;
-          gLinkPlayers[1].language = GAME_LANGUAGE;
-          gLinkPlayers[2].language = GAME_LANGUAGE;
-          gLinkPlayers[3].language = GAME_LANGUAGE;
+          gLinkPlayers[0].language = (((3)));
+          gLinkPlayers[1].language = (((3)));
+          gLinkPlayers[2].language = (((3)));
+          gLinkPlayers[3].language = (((3)));
           break;
       }
 }
@@ -409,8 +351,8 @@ export function StartBlender(): any {
       sBerryBlender.mainState = 0;
       sBerryBlender.unk1 = 0;
 
-      for (i = 0; i < (MAX_LINK_PLAYERS); i++)
-          sBerryBlender.chosenItemId[i] = ITEM_NONE;
+      for (i = 0; i < ((4)); i++)
+          sBerryBlender.chosenItemId[i] = (0);
 
       InitLocalPlayers(gSpecialVar_0x8004);
 
@@ -428,9 +370,9 @@ export function CB2_StartBlenderLink(): any {
       {
       case 0:
           InitBlenderBgs();
-          gLinkType = LINKTYPE_BERRY_BLENDER;
+          gLinkType = (0x4422);
           sBerryBlender.slowdownTimer = 0;
-          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+          for (i = 0; i < ((4)); i++)
           {
               sBerryBlender.playerContinueResponses[i] = 0;
               for (j = 0; j < NUM_SCORE_TYPES; j++)
@@ -451,7 +393,7 @@ export function CB2_StartBlenderLink(): any {
           }
           break;
       case 2:
-          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+          for (i = 0; i < ((4)); i++)
           {
               sBerryBlender.playerArrowSpriteIds2[i] = CreateSprite(sSpriteTemplate_PlayerArrow, sPlayerArrowPos[i][0], sPlayerArrowPos[i][1], 1);
               StartSpriteAnim(gSprites[sBerryBlender.playerArrowSpriteIds2[i]], i + 8);
@@ -464,7 +406,7 @@ export function CB2_StartBlenderLink(): any {
           sBerryBlender.mainState++;
           break;
       case 3:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
           sBerryBlender.mainState++;
           break;
       case 4:
@@ -519,7 +461,7 @@ export function CB2_StartBlenderLink(): any {
           sBerryBlender.numPlayers = GetLinkPlayerCount();
 
            
-          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+          for (i = 0; i < ((4)); i++)
           {
               if (sBerryBlender.playerToThrowBerry == sPlayerIdMap[sBerryBlender.numPlayers - 2][i])
               {
@@ -554,7 +496,7 @@ export function CB2_StartBlenderLink(): any {
           {
               sBerryBlender.mainState++;
               DrawBlenderCenter(sBerryBlender.bgAffineSrc);
-              PlaySE(SE_FALL);
+              PlaySE((43));
               ShowBg(2);
           }
           break;
@@ -569,7 +511,7 @@ export function CB2_StartBlenderLink(): any {
               sBerryBlender.centerScale = 256;
               sBerryBlender.arrowPos = sArrowStartPos[sArrowStartPosIds[sBerryBlender.numPlayers - 2]];
               sBerryBlender.framesToWait = 0;
-              PlaySE(SE_TRUCK_DOOR);
+              PlaySE((52));
               SetPlayerIdMaps();
               PrintPlayerNames();
           }
@@ -609,11 +551,11 @@ export function CB2_StartBlenderLink(): any {
           sBerryBlender.speed = (0x80);
           sBerryBlender.gameFrameTime = 0;
           SetMainCallback2(CB2_PlayBlender);
-          if (GetCurrentMapMusic() != MUS_CYCLING)
+          if (GetCurrentMapMusic() != (403))
           {
               sBerryBlender.savedMusic = GetCurrentMapMusic();
           }
-          PlayBGM(MUS_CYCLING);
+          PlayBGM((403));
           break;
       }
 
@@ -676,9 +618,9 @@ export function SetOpponentsBerryData(playerBerryItemId: any, playersNum: any, p
       let berryMasterDiff: any = null;
       let i: any = null;
 
-      if (playerBerryItemId == ITEM_ENIGMA_BERRY)
+      if (playerBerryItemId == (175))
       {
-          for (i = 0; i < FLAVOR_COUNT; i++)
+          for (i = 0; i < (5); i++)
           {
               if (playerBerry.flavors[opponentSetId] > playerBerry.flavors[i])
                   opponentSetId = i;
@@ -694,8 +636,8 @@ export function SetOpponentsBerryData(playerBerryItemId: any, playersNum: any, p
       for (i = 0; i < playersNum - 1; i++)
       {
           opponentBerryId = sOpponentBerrySets[opponentSetId][i];
-          berryMasterDiff = ITEM_TO_BERRY(playerBerryItemId) - ITEM_TO_BERRY(ITEM_SPELON_BERRY);
-          if (!FlagGet(FLAG_HIDE_LILYCOVE_CONTEST_HALL_BLEND_MASTER) && gSpecialVar_0x8004 == 1)
+          berryMasterDiff = ITEM_TO_BERRY(playerBerryItemId) - ITEM_TO_BERRY((163));
+          if (!FlagGet((0x340)) && gSpecialVar_0x8004 == 1)
           {
               opponentSetId %= ARRAY_COUNT(sBerryMasterBerries);
               opponentBerryId = sBerryMasterBerries[opponentSetId];
@@ -705,7 +647,7 @@ export function SetOpponentsBerryData(playerBerryItemId: any, playersNum: any, p
               if (berryMasterDiff < ARRAY_COUNT(sBerryMasterBerries))
                   opponentBerryId -= ARRAY_COUNT(sBerryMasterBerries);
           }
-          SetPlayerBerryData(i + 1, opponentBerryId + FIRST_BERRY_INDEX);
+          SetPlayerBerryData(i + 1, opponentBerryId + ((133)));
       }
 }
 
@@ -713,14 +655,14 @@ export function SetOpponentsBerryData(playerBerryItemId: any, playersNum: any, p
 export function SetPlayerIdMaps(): any {
   let i, j;
 
-      for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+      for (i = 0; i < ((4)); i++)
       {
           sBerryBlender.playerIdToArrowId[i] = (0xFF);
           sBerryBlender.arrowIdToPlayerId[i] = sPlayerIdMap[sBerryBlender.numPlayers - 2][i];
       }
-      for (j = 0; j < (MAX_LINK_PLAYERS); j++)
+      for (j = 0; j < ((4)); j++)
       {
-          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+          for (i = 0; i < ((4)); i++)
           {
               if (sBerryBlender.arrowIdToPlayerId[i] == j)
                   sBerryBlender.playerIdToArrowId[j] = i;
@@ -737,14 +679,14 @@ export function PrintPlayerNames(): any {
       if (gReceivedRemoteLinkPlayers)
           playerId = GetMultiplayerId();
 
-      for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+      for (i = 0; i < ((4)); i++)
       {
           if (sBerryBlender.arrowIdToPlayerId[i] != (0xFF))
           {
               sBerryBlender.playerArrowSpriteIds[sBerryBlender.arrowIdToPlayerId[i]] = sBerryBlender.playerArrowSpriteIds2[i];
               StartSpriteAnim(gSprites[sBerryBlender.playerArrowSpriteIds[sBerryBlender.arrowIdToPlayerId[i]]], i);
 
-              text[0] = EOS;
+              text[0] = (0xFF);
               StringCopy(text, gLinkPlayers[sBerryBlender.arrowIdToPlayerId[i]].name);
               xPos = GetStringCenterAlignXOffset(FONT_NORMAL, text, 0x38);
 
@@ -772,7 +714,7 @@ export function CB2_StartBlenderLocal(): any {
           ConvertItemToBlenderBerry(sBerryBlender.blendedBerries[0], gSpecialVar_ItemId);
           SetOpponentsBerryData(gSpecialVar_ItemId, sBerryBlender.numPlayers,sBerryBlender.blendedBerries[0]);
 
-          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+          for (i = 0; i < ((4)); i++)
           {
               sBerryBlender.playerContinueResponses[i] = 0;
               for (j = 0; j < NUM_SCORE_TYPES; j++)
@@ -783,7 +725,7 @@ export function CB2_StartBlenderLocal(): any {
 
           sBerryBlender.playAgainState = 0;
           sBerryBlender.loadGfxState = 0;
-          gLinkType = LINKTYPE_BERRY_BLENDER;
+          gLinkType = (0x4422);
           sBerryBlender.mainState++;
           break;
       case 1:
@@ -794,7 +736,7 @@ export function CB2_StartBlenderLocal(): any {
           }
           break;
       case 2:
-          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+          for (i = 0; i < ((4)); i++)
           {
               sBerryBlender.playerArrowSpriteIds2[i] = CreateSprite(sSpriteTemplate_PlayerArrow, sPlayerArrowPos[i][0], sPlayerArrowPos[i][1], 1);
               StartSpriteAnim(gSprites[sBerryBlender.playerArrowSpriteIds2[i]], i + 8);
@@ -802,7 +744,7 @@ export function CB2_StartBlenderLocal(): any {
           sBerryBlender.mainState++;
           break;
       case 3:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
           sBerryBlender.mainState++;
           sBerryBlender.framesToWait = 0;
           break;
@@ -817,7 +759,7 @@ export function CB2_StartBlenderLocal(): any {
           sBerryBlender.playerToThrowBerry = 0;
           break;
       case 11:
-          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+          for (i = 0; i < ((4)); i++)
           {
                
               let playerId: any = sPlayerIdMap[sBerryBlender.numPlayers - 2][i];
@@ -851,7 +793,7 @@ export function CB2_StartBlenderLocal(): any {
       case 13:
           sBerryBlender.mainState++;
           SetPlayerIdMaps();
-          PlaySE(SE_FALL);
+          PlaySE((43));
           DrawBlenderCenter(sBerryBlender.bgAffineSrc);
           ShowBg(2);
           break;
@@ -866,7 +808,7 @@ export function CB2_StartBlenderLocal(): any {
               sBerryBlender.arrowPos = sArrowStartPos[sArrowStartPosIds[sBerryBlender.numPlayers - 2]];
               SetGpuRegBits(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(2));
               sBerryBlender.framesToWait = 0;
-              PlaySE(SE_TRUCK_DOOR);
+              PlaySE((52));
               PrintPlayerNames();
           }
           DrawBlenderCenter(sBerryBlender.bgAffineSrc);
@@ -905,7 +847,7 @@ export function CB2_StartBlenderLocal(): any {
 
           if (gSpecialVar_0x8004 == 1)
           {
-              if (!FlagGet(FLAG_HIDE_LILYCOVE_CONTEST_HALL_BLEND_MASTER))
+              if (!FlagGet((0x340)))
                   sBerryBlender.opponentTaskIds[0] = CreateTask(Task_HandleBerryMaster, 10);
               else
                   sBerryBlender.opponentTaskIds[0] = CreateTask(sLocalOpponentTasks[0], 10);
@@ -917,11 +859,11 @@ export function CB2_StartBlenderLocal(): any {
                   sBerryBlender.opponentTaskIds[i] = CreateTask(sLocalOpponentTasks[i], 10 + i);
           }
 
-          if (GetCurrentMapMusic() != MUS_CYCLING)
+          if (GetCurrentMapMusic() != (403))
               sBerryBlender.savedMusic = GetCurrentMapMusic();
 
-          PlayBGM(MUS_CYCLING);
-          PlaySE(SE_BERRY_BLENDER);
+          PlayBGM((403));
+          PlaySE((53));
           UpdateHitPitch();
           break;
       }
@@ -937,12 +879,12 @@ export function CB2_StartBlenderLocal(): any {
 /** static void ResetLinkCmds(void) */
 export function ResetLinkCmds(): any {
   let i: any = null;
-      for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+      for (i = 0; i < ((4)); i++)
       {
-          gSendCmd[BLENDER_COMM_INPUT_STATE] = 0;
-          gSendCmd[BLENDER_COMM_SCORE] = 0;
-          gRecvCmds[i][BLENDER_COMM_INPUT_STATE] = 0;
-          gRecvCmds[i][BLENDER_COMM_SCORE] = 0;
+          gSendCmd[(0)] = 0;
+          gSendCmd[(2)] = 0;
+          gRecvCmds[i][(0)] = 0;
+          gRecvCmds[i][(2)] = 0;
       }
 }
 
@@ -950,7 +892,7 @@ export function ResetLinkCmds(): any {
 export function Task_OpponentMiss(taskId: any): any {
   if(++gTasks[taskId].tTimer > gTasks[taskId].tDelay)
      {
-          gRecvCmds[gTasks[taskId].tPlayerId][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_MISS;
+          gRecvCmds[gTasks[taskId].tPlayerId][(2)] = (0x2345);
           DestroyTask(taskId);
      }
 }
@@ -974,22 +916,22 @@ export function Task_HandleOpponent1(taskId: any): any {
                   if (sBerryBlender.speed < 500)
                   {
                       if (rand > 75)
-                          gRecvCmds[1][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                          gRecvCmds[1][(2)] = (0x4523);
                       else
-                          gRecvCmds[1][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_GOOD;
-                      gRecvCmds[1][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_GOOD;
+                          gRecvCmds[1][(2)] = (0x5432);
+                      gRecvCmds[1][(2)] = (0x5432);
                   }
                   else if (sBerryBlender.speed < 1500)
                   {
                       if (rand > 80)
                       {
-                          gRecvCmds[1][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                          gRecvCmds[1][(2)] = (0x4523);
                       }
                       else
                       {
                           let value: any = rand - 21;
                           if (value < 60)
-                              gRecvCmds[1][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_GOOD;
+                              gRecvCmds[1][(2)] = (0x5432);
                           else if (rand < 10)
                               CreateOpponentMissTask(1, 5);
                       }
@@ -998,18 +940,18 @@ export function Task_HandleOpponent1(taskId: any): any {
                   {
                       let value: any = rand - 71;
                       if (value < 20)
-                          gRecvCmds[1][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_GOOD;
+                          gRecvCmds[1][(2)] = (0x5432);
                       else if (rand < 30)
                           CreateOpponentMissTask(1, 5);
                   }
                   else
                   {
-                      gRecvCmds[1][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                      gRecvCmds[1][(2)] = (0x4523);
                   }
               }
               else
               {
-                  gRecvCmds[1][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                  gRecvCmds[1][(2)] = (0x4523);
               }
 
               gTasks[taskId].tDidInput = TRUE;
@@ -1035,18 +977,18 @@ export function Task_HandleOpponent2(taskId: any): any {
                   if (sBerryBlender.speed < 500)
                   {
                       if (rand > 66)
-                          gRecvCmds[2][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                          gRecvCmds[2][(2)] = (0x4523);
                       else
-                          gRecvCmds[2][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_GOOD;
+                          gRecvCmds[2][(2)] = (0x5432);
                   }
                   else
                   {
                       let value: any = null;
                       if (rand > 65)
-                          gRecvCmds[2][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                          gRecvCmds[2][(2)] = (0x4523);
                       value = rand - 41;
                       if (value < 25)
-                          gRecvCmds[2][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_GOOD;
+                          gRecvCmds[2][(2)] = (0x5432);
                       if (rand < 10)
                           CreateOpponentMissTask(2, 5);
                   }
@@ -1055,7 +997,7 @@ export function Task_HandleOpponent2(taskId: any): any {
               }
               else
               {
-                  gRecvCmds[2][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                  gRecvCmds[2][(2)] = (0x4523);
                   gTasks[taskId].tDidInput = TRUE;
               }
           }
@@ -1080,22 +1022,22 @@ export function Task_HandleOpponent3(taskId: any): any {
                   if (sBerryBlender.speed < 500)
                   {
                       if (rand > 88)
-                          gRecvCmds[3][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                          gRecvCmds[3][(2)] = (0x4523);
                       else
-                          gRecvCmds[3][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_GOOD;
+                          gRecvCmds[3][(2)] = (0x5432);
                   }
                   else
                   {
                       if (rand > 60)
                       {
-                          gRecvCmds[3][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                          gRecvCmds[3][(2)] = (0x4523);
                       }
                       else
                       {
                           let value: any = rand - 56;  
                           let value2: any = value;
                           if (value2 < 5)
-                              gRecvCmds[3][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_GOOD;
+                              gRecvCmds[3][(2)] = (0x5432);
                       }
                       if (rand < 5)
                           CreateOpponentMissTask(3, 5);
@@ -1104,7 +1046,7 @@ export function Task_HandleOpponent3(taskId: any): any {
               }
               else
               {
-                  gRecvCmds[3][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                  gRecvCmds[3][(2)] = (0x4523);
                   gTasks[taskId].tDidInput = TRUE;
               }
           }
@@ -1121,7 +1063,7 @@ export function Task_HandleBerryMaster(taskId: any): any {
       {
           if (!gTasks[taskId].tDidInput)
           {
-              gRecvCmds[1][BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+              gRecvCmds[1][(2)] = (0x4523);
               gTasks[taskId].tDidInput = TRUE;
           }
       }
@@ -1139,21 +1081,21 @@ export function CreateScoreSymbolSprite(cmd: any, arrowId: any): any {
                               sPlayerArrowPos[arrowId][0] - (10 * sPlayerArrowQuadrant[arrowId][0]),
                               sPlayerArrowPos[arrowId][1] - (10 * sPlayerArrowQuadrant[arrowId][1]),
                               1);
-      if (cmd == LINKCMD_BLENDER_SCORE_BEST)
+      if (cmd == (0x4523))
       {
           StartSpriteAnim(gSprites[spriteId], SCOREANIM_BEST_FLASH);
           gSprites[spriteId].callback = SpriteCB_ScoreSymbolBest;
-          PlaySE(SE_ICE_STAIRS);
+          PlaySE((40));
       }
-      else if (cmd == LINKCMD_BLENDER_SCORE_GOOD)
+      else if (cmd == (0x5432))
       {
           StartSpriteAnim(gSprites[spriteId], SCOREANIM_GOOD);
-          PlaySE(SE_SUCCESS);
+          PlaySE((31));
       }
-      else if (cmd == LINKCMD_BLENDER_SCORE_MISS)
+      else if (cmd == (0x2345))
       {
           StartSpriteAnim(gSprites[spriteId], SCOREANIM_MISS);
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
       }
       CreateParticleSprites();
 }
@@ -1163,7 +1105,7 @@ export function UpdateSpeedFromHit(cmd: any): any {
   UpdateHitPitch();
       switch (cmd)
       {
-      case LINKCMD_BLENDER_SCORE_BEST:
+      case (0x4523):
           if (sBerryBlender.speed < 1500)
           {
               sBerryBlender.speed += (384 / sNumPlayersToSpeedDivisor[sBerryBlender.numPlayers]);
@@ -1175,11 +1117,11 @@ export function UpdateSpeedFromHit(cmd: any): any {
               ShakeBgCoordForHit(sBerryBlender.bg_Y, (sBerryBlender.speed / 100) - 10);
           }
           break;
-      case LINKCMD_BLENDER_SCORE_GOOD:
+      case (0x5432):
           if (sBerryBlender.speed < 1500)
               sBerryBlender.speed += (256 / sNumPlayersToSpeedDivisor[sBerryBlender.numPlayers]);
           break;
-      case LINKCMD_BLENDER_SCORE_MISS:
+      case (0x2345):
           sBerryBlender.speed -= (256 / sNumPlayersToSpeedDivisor[sBerryBlender.numPlayers]);
           if (sBerryBlender.speed < (0x80))
               sBerryBlender.speed = (0x80);
@@ -1191,7 +1133,7 @@ export function UpdateSpeedFromHit(cmd: any): any {
 export function CheckRecvCmdMatches(recvCmd: any, linkCmd: any, rfuCmd: any): any {
   if (gReceivedRemoteLinkPlayers && gWirelessCommType)
       {
-          if ((recvCmd & RFUCMD_MASK) == rfuCmd)
+          if ((recvCmd & (0xFF00)) == rfuCmd)
               return TRUE;
       }
       else
@@ -1210,52 +1152,52 @@ export function UpdateOpponentScores(): any {
       if (gSpecialVar_0x8004 != 0)
       {
            
-          if (gSendCmd[BLENDER_COMM_SCORE] != 0)
+          if (gSendCmd[(2)] != 0)
           {
-              gRecvCmds[0][BLENDER_COMM_SCORE] = gSendCmd[BLENDER_COMM_SCORE];
-              gRecvCmds[0][BLENDER_COMM_INPUT_STATE] = LINKCMD_BLENDER_SEND_KEYS;
-              gSendCmd[BLENDER_COMM_SCORE] = 0;
+              gRecvCmds[0][(2)] = gSendCmd[(2)];
+              gRecvCmds[0][(0)] = (0x4444);
+              gSendCmd[(2)] = 0;
           }
 
            
            
-          for (i = 1; i < (MAX_LINK_PLAYERS); i++)
+          for (i = 1; i < ((4)); i++)
           {
-              if (gRecvCmds[i][BLENDER_COMM_SCORE] != 0)
-                  gRecvCmds[i][BLENDER_COMM_INPUT_STATE] = LINKCMD_BLENDER_SEND_KEYS;
+              if (gRecvCmds[i][(2)] != 0)
+                  gRecvCmds[i][(0)] = (0x4444);
           }
       }
       for (i = 0; i < sBerryBlender.numPlayers; i++)
       {
-          if (CheckRecvCmdMatches(gRecvCmds[i][BLENDER_COMM_INPUT_STATE], LINKCMD_BLENDER_SEND_KEYS, RFUCMD_BLENDER_SEND_KEYS))
+          if (CheckRecvCmdMatches(gRecvCmds[i][(0)], (0x4444), (0x4400)))
           {
               let arrowId: any = sBerryBlender.playerIdToArrowId[i];
-              if (gRecvCmds[i][BLENDER_COMM_SCORE] == LINKCMD_BLENDER_SCORE_BEST)
+              if (gRecvCmds[i][(2)] == (0x4523))
               {
-                  UpdateSpeedFromHit(LINKCMD_BLENDER_SCORE_BEST);
+                  UpdateSpeedFromHit((0x4523));
                   sBerryBlender.progressBarValue += (sBerryBlender.speed / 55);
                   if (sBerryBlender.progressBarValue >= (1000))
                       sBerryBlender.progressBarValue = (1000);
-                  CreateScoreSymbolSprite(LINKCMD_BLENDER_SCORE_BEST, arrowId);
+                  CreateScoreSymbolSprite((0x4523), arrowId);
                   sBerryBlender.scores[i][SCORE_BEST]++;
               }
-              else if (gRecvCmds[i][BLENDER_COMM_SCORE] == LINKCMD_BLENDER_SCORE_GOOD)
+              else if (gRecvCmds[i][(2)] == (0x5432))
               {
-                  UpdateSpeedFromHit(LINKCMD_BLENDER_SCORE_GOOD);
+                  UpdateSpeedFromHit((0x5432));
                   sBerryBlender.progressBarValue += (sBerryBlender.speed / 70);
-                  CreateScoreSymbolSprite(LINKCMD_BLENDER_SCORE_GOOD, arrowId);
+                  CreateScoreSymbolSprite((0x5432), arrowId);
                   sBerryBlender.scores[i][SCORE_GOOD]++;
               }
-              else if (gRecvCmds[i][BLENDER_COMM_SCORE] == LINKCMD_BLENDER_SCORE_MISS)
+              else if (gRecvCmds[i][(2)] == (0x2345))
               {
-                  CreateScoreSymbolSprite(LINKCMD_BLENDER_SCORE_MISS, arrowId);
-                  UpdateSpeedFromHit(LINKCMD_BLENDER_SCORE_MISS);
+                  CreateScoreSymbolSprite((0x2345), arrowId);
+                  UpdateSpeedFromHit((0x2345));
                   if (sBerryBlender.scores[i][SCORE_MISS] < 999)
                       sBerryBlender.scores[i][SCORE_MISS]++;
               }
-              if (gRecvCmds[i][BLENDER_COMM_SCORE] == LINKCMD_BLENDER_SCORE_MISS
-               || gRecvCmds[i][BLENDER_COMM_SCORE] == LINKCMD_BLENDER_SCORE_BEST
-               || gRecvCmds[i][BLENDER_COMM_SCORE] == LINKCMD_BLENDER_SCORE_GOOD)
+              if (gRecvCmds[i][(2)] == (0x2345)
+               || gRecvCmds[i][(2)] == (0x4523)
+               || gRecvCmds[i][(2)] == (0x5432))
               {
                   if (sBerryBlender.speed > 1500)
                       m4aMPlayTempoControl(gMPlayInfo_BGM, ((sBerryBlender.speed - 750) / 20) + 256);
@@ -1268,8 +1210,8 @@ export function UpdateOpponentScores(): any {
       {
           for (i = 0; i < sBerryBlender.numPlayers; i++)
           {
-              gRecvCmds[i][BLENDER_COMM_INPUT_STATE] = 0;
-              gRecvCmds[i][BLENDER_COMM_SCORE] = 0;
+              gRecvCmds[i][(0)] = 0;
+              gRecvCmds[i][(2)] = 0;
           }
       }
 }
@@ -1287,7 +1229,7 @@ export function HandlePlayerInput(): any {
 
       if (sBerryBlender.gameEndState == 0)
       {
-          if (gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_L_EQUALS_A && JOY_NEW(A_BUTTON))
+          if (gSaveBlock2Ptr.optionsButtonMode == (2) && JOY_NEW(A_BUTTON))
           {
               if (JOY_HELD_RAW(A_BUTTON | L_BUTTON) != (A_BUTTON | L_BUTTON))
                   pressedA = TRUE;
@@ -1304,11 +1246,11 @@ export function HandlePlayerInput(): any {
               proximity = GetArrowProximity(sBerryBlender.arrowPos, playerId);
 
               if (proximity == PROXIMITY_BEST)
-                  gSendCmd[BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_BEST;
+                  gSendCmd[(2)] = (0x4523);
               else if (proximity == PROXIMITY_GOOD)
-                  gSendCmd[BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_GOOD;
+                  gSendCmd[(2)] = (0x5432);
               else
-                  gSendCmd[BLENDER_COMM_SCORE] = LINKCMD_BLENDER_SCORE_MISS;
+                  gSendCmd[(2)] = (0x2345);
           }
       }
       if (++sBerryBlender.slowdownTimer > 5)
@@ -1355,12 +1297,12 @@ export function CB2_PlayBlender(): any {
 export function AreBlenderBerriesSame(berries: any, a: any, b: any): any {
   if (berries[a].itemId != berries[b].itemId
        || (StringCompare(berries[a].name, berries[b].name) == 0
-        && (berries[a].flavors[FLAVOR_SPICY] == berries[b].flavors[FLAVOR_SPICY]
-         && berries[a].flavors[FLAVOR_DRY] == berries[b].flavors[FLAVOR_DRY]
-         && berries[a].flavors[FLAVOR_SWEET] == berries[b].flavors[FLAVOR_SWEET]
-         && berries[a].flavors[FLAVOR_BITTER] == berries[b].flavors[FLAVOR_BITTER]
-         && berries[a].flavors[FLAVOR_SOUR] == berries[b].flavors[FLAVOR_SOUR]
-         && berries[a].flavors[FLAVOR_COUNT] == berries[b].flavors[FLAVOR_COUNT])))
+        && (berries[a].flavors[(0)] == berries[b].flavors[(0)]
+         && berries[a].flavors[(1)] == berries[b].flavors[(1)]
+         && berries[a].flavors[(2)] == berries[b].flavors[(2)]
+         && berries[a].flavors[(3)] == berries[b].flavors[(3)]
+         && berries[a].flavors[(4)] == berries[b].flavors[(4)]
+         && berries[a].flavors[(5)] == berries[b].flavors[(5)])))
           return TRUE;
       else
           return FALSE;
@@ -1372,11 +1314,11 @@ export function CalculatePokeblockColor(berries: any, _flavors: any, numPlayers:
       let i, j;
       let numFlavors: any = null;
 
-      for (i = 0; i < FLAVOR_COUNT + 1; i++)
+      for (i = 0; i < (5) + 1; i++)
           flavors[i] = _flavors[i];
 
       j = 0;
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           if (flavors[i] == 0)
               j++;
@@ -1384,7 +1326,7 @@ export function CalculatePokeblockColor(berries: any, _flavors: any, numPlayers:
 
        
        
-      if (j == FLAVOR_COUNT || negativeFlavors > 3)
+      if (j == (5) || negativeFlavors > 3)
           return PBLOCK_CLR_BLACK;
 
       for (i = 0; i < numPlayers; i++)
@@ -1392,13 +1334,13 @@ export function CalculatePokeblockColor(berries: any, _flavors: any, numPlayers:
           for (j = 0; j < numPlayers; j++)
           {
               if (berries[i].itemId == berries[j].itemId && i != j
-                  && (berries[i].itemId != ITEM_ENIGMA_BERRY || AreBlenderBerriesSame(berries, i, j)))
+                  && (berries[i].itemId != (175) || AreBlenderBerriesSame(berries, i, j)))
                       return PBLOCK_CLR_BLACK;
           }
       }
 
       numFlavors = 0;
-      for (numFlavors = 0, i = 0; i < FLAVOR_COUNT; i++)
+      for (numFlavors = 0, i = 0; i < (5); i++)
       {
           if (flavors[i] > 0)
               numFlavors++;
@@ -1411,29 +1353,29 @@ export function CalculatePokeblockColor(berries: any, _flavors: any, numPlayers:
       if (numFlavors == 3)
           return PBLOCK_CLR_GRAY;
 
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           if (flavors[i] > 50)
               return PBLOCK_CLR_GOLD;
       }
 
        
-      if (numFlavors == 1 && flavors[FLAVOR_SPICY] > 0)
+      if (numFlavors == 1 && flavors[(0)] > 0)
           return PBLOCK_CLR_RED;
-      if (numFlavors == 1 && flavors[FLAVOR_DRY] > 0)
+      if (numFlavors == 1 && flavors[(1)] > 0)
           return PBLOCK_CLR_BLUE;
-      if (numFlavors == 1 && flavors[FLAVOR_SWEET] > 0)
+      if (numFlavors == 1 && flavors[(2)] > 0)
           return PBLOCK_CLR_PINK;
-      if (numFlavors == 1 && flavors[FLAVOR_BITTER] > 0)
+      if (numFlavors == 1 && flavors[(3)] > 0)
           return PBLOCK_CLR_GREEN;
-      if (numFlavors == 1 && flavors[FLAVOR_SOUR] > 0)
+      if (numFlavors == 1 && flavors[(4)] > 0)
           return PBLOCK_CLR_YELLOW;
 
       if (numFlavors == 2)
       {
            
           let idx: any = 0;
-          for (i = 0; i < FLAVOR_COUNT; i++)
+          for (i = 0; i < (5); i++)
           {
               if (flavors[i] > 0)
                   sPokeblockPresentFlavors[idx++] = i;
@@ -1442,28 +1384,28 @@ export function CalculatePokeblockColor(berries: any, _flavors: any, numPlayers:
            
           if (flavors[sPokeblockPresentFlavors[0]] >= flavors[sPokeblockPresentFlavors[1]])
           {
-              if (sPokeblockPresentFlavors[0] == FLAVOR_SPICY)
+              if (sPokeblockPresentFlavors[0] == (0))
                   return (sPokeblockPresentFlavors[1] << 16) | PBLOCK_CLR_PURPLE;
-              if (sPokeblockPresentFlavors[0] == FLAVOR_DRY)
+              if (sPokeblockPresentFlavors[0] == (1))
                   return (sPokeblockPresentFlavors[1] << 16) | PBLOCK_CLR_INDIGO;
-              if (sPokeblockPresentFlavors[0] == FLAVOR_SWEET)
+              if (sPokeblockPresentFlavors[0] == (2))
                   return (sPokeblockPresentFlavors[1] << 16) | PBLOCK_CLR_BROWN;
-              if (sPokeblockPresentFlavors[0] == FLAVOR_BITTER)
+              if (sPokeblockPresentFlavors[0] == (3))
                   return (sPokeblockPresentFlavors[1] << 16) | PBLOCK_CLR_LITE_BLUE;
-              if (sPokeblockPresentFlavors[0] == FLAVOR_SOUR)
+              if (sPokeblockPresentFlavors[0] == (4))
                   return (sPokeblockPresentFlavors[1] << 16) | PBLOCK_CLR_OLIVE;
           }
           else
           {
-              if (sPokeblockPresentFlavors[1] == FLAVOR_SPICY)
+              if (sPokeblockPresentFlavors[1] == (0))
                   return (sPokeblockPresentFlavors[0] << 16) | PBLOCK_CLR_PURPLE;
-              if (sPokeblockPresentFlavors[1] == FLAVOR_DRY)
+              if (sPokeblockPresentFlavors[1] == (1))
                   return (sPokeblockPresentFlavors[0] << 16) | PBLOCK_CLR_INDIGO;
-              if (sPokeblockPresentFlavors[1] == FLAVOR_SWEET)
+              if (sPokeblockPresentFlavors[1] == (2))
                   return (sPokeblockPresentFlavors[0] << 16) | PBLOCK_CLR_BROWN;
-              if (sPokeblockPresentFlavors[1] == FLAVOR_BITTER)
+              if (sPokeblockPresentFlavors[1] == (3))
                   return (sPokeblockPresentFlavors[0] << 16) | PBLOCK_CLR_LITE_BLUE;
-              if (sPokeblockPresentFlavors[1] == FLAVOR_SOUR)
+              if (sPokeblockPresentFlavors[1] == (4))
                   return (sPokeblockPresentFlavors[0] << 16) | PBLOCK_CLR_OLIVE;
           }
       }
@@ -1486,13 +1428,13 @@ export function CalculatePokeblock(berries: any, pokeblock: any, numPlayers: any
       let multiuseVar: any = null;
       let numNegatives: any = null;
 
-      for (i = 0; i < FLAVOR_COUNT + 1; i++)
+      for (i = 0; i < (5) + 1; i++)
           sPokeblockFlavors[i] = 0;
 
        
       for (i = 0; i < numPlayers; i++)
       {
-          for (j = 0; j < FLAVOR_COUNT + 1; j++)
+          for (j = 0; j < (5) + 1; j++)
               sPokeblockFlavors[j] += berries[i].flavors[j];
       }
 
@@ -1500,15 +1442,15 @@ export function CalculatePokeblock(berries: any, pokeblock: any, numPlayers: any
        
        
       multiuseVar = sPokeblockFlavors[0];
-      sPokeblockFlavors[FLAVOR_SPICY]  -= sPokeblockFlavors[FLAVOR_DRY];
-      sPokeblockFlavors[FLAVOR_DRY]    -= sPokeblockFlavors[FLAVOR_SWEET];
-      sPokeblockFlavors[FLAVOR_SWEET]  -= sPokeblockFlavors[FLAVOR_BITTER];
-      sPokeblockFlavors[FLAVOR_BITTER] -= sPokeblockFlavors[FLAVOR_SOUR];
-      sPokeblockFlavors[FLAVOR_SOUR]   -= multiuseVar;
+      sPokeblockFlavors[(0)]  -= sPokeblockFlavors[(1)];
+      sPokeblockFlavors[(1)]    -= sPokeblockFlavors[(2)];
+      sPokeblockFlavors[(2)]  -= sPokeblockFlavors[(3)];
+      sPokeblockFlavors[(3)] -= sPokeblockFlavors[(4)];
+      sPokeblockFlavors[(4)]   -= multiuseVar;
 
        
       multiuseVar = 0;
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           if (sPokeblockFlavors[i] < 0)
           {
@@ -1519,7 +1461,7 @@ export function CalculatePokeblock(berries: any, pokeblock: any, numPlayers: any
       numNegatives = multiuseVar;
 
        
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           if (sPokeblockFlavors[i] > 0)
           {
@@ -1530,12 +1472,12 @@ export function CalculatePokeblock(berries: any, pokeblock: any, numPlayers: any
           }
       }
 
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
           sDebug_PokeblockFactorFlavors[i] = sPokeblockFlavors[i];
 
        
       sDebug_PokeblockFactorRPM = multiuseVar = maxRPM / 333 + 100;
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           let remainder: any = null;
           let flavor: any = sPokeblockFlavors[i];
@@ -1547,21 +1489,21 @@ export function CalculatePokeblock(berries: any, pokeblock: any, numPlayers: any
           sPokeblockFlavors[i] = flavor;
       }
 
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
           sDebug_PokeblockFactorFlavorsAfterRPM[i] = sPokeblockFlavors[i];
 
        
       pokeblock.color = CalculatePokeblockColor(berries,sPokeblockFlavors[0], numPlayers, numNegatives);
-      sPokeblockFlavors[FLAVOR_COUNT] = (sPokeblockFlavors[FLAVOR_COUNT] / numPlayers) - numPlayers;
+      sPokeblockFlavors[(5)] = (sPokeblockFlavors[(5)] / numPlayers) - numPlayers;
 
-      if (sPokeblockFlavors[FLAVOR_COUNT] < 0)
-          sPokeblockFlavors[FLAVOR_COUNT] = 0;
+      if (sPokeblockFlavors[(5)] < 0)
+          sPokeblockFlavors[(5)] = 0;
 
       if (pokeblock.color == PBLOCK_CLR_BLACK)
       {
            
           multiuseVar = Random() % ARRAY_COUNT(sBlackPokeblockFlavorFlags);
-          for (i = 0; i < FLAVOR_COUNT; i++)
+          for (i = 0; i < (5); i++)
           {
               if ((sBlackPokeblockFlavorFlags[multiuseVar] >> i) & 1)
                   sPokeblockFlavors[i] = 2;
@@ -1570,20 +1512,20 @@ export function CalculatePokeblock(berries: any, pokeblock: any, numPlayers: any
           }
       }
 
-      for (i = 0; i < FLAVOR_COUNT + 1; i++)
+      for (i = 0; i < (5) + 1; i++)
       {
           if (sPokeblockFlavors[i] > 255)
               sPokeblockFlavors[i] = 255;
       }
 
-      pokeblock.spicy  = sPokeblockFlavors[FLAVOR_SPICY];
-      pokeblock.dry    = sPokeblockFlavors[FLAVOR_DRY];
-      pokeblock.sweet  = sPokeblockFlavors[FLAVOR_SWEET];
-      pokeblock.bitter = sPokeblockFlavors[FLAVOR_BITTER];
-      pokeblock.sour   = sPokeblockFlavors[FLAVOR_SOUR];
-      pokeblock.feel   = sPokeblockFlavors[FLAVOR_COUNT];
+      pokeblock.spicy  = sPokeblockFlavors[(0)];
+      pokeblock.dry    = sPokeblockFlavors[(1)];
+      pokeblock.sweet  = sPokeblockFlavors[(2)];
+      pokeblock.bitter = sPokeblockFlavors[(3)];
+      pokeblock.sour   = sPokeblockFlavors[(4)];
+      pokeblock.feel   = sPokeblockFlavors[(5)];
 
-      for (i = 0; i < FLAVOR_COUNT + 1; i++)
+      for (i = 0; i < (5) + 1; i++)
           flavors[i] = sPokeblockFlavors[i];
 }
 
@@ -1637,9 +1579,9 @@ export function Debug_SetStageVars(): any {
 /** static void SendContinuePromptResponse(u16 *cmd) */
 export function SendContinuePromptResponse(cmd: any): any {
   if (gReceivedRemoteLinkPlayers && gWirelessCommType)
-          cmd = RFUCMD_SEND_PACKET;
+          cmd = (0x2F00);
       else
-          cmd = LINKCMD_SEND_PACKET;
+          cmd = (0x2FFF);
 }
 
 /** static void CB2_EndBlenderGame(void) */
@@ -1690,7 +1632,7 @@ export function CB2_EndBlenderGame(): any {
                   sBerryBlender.gameBlock.timeRPM.time = sBerryBlender.gameFrameTime;
                   sBerryBlender.gameBlock.timeRPM.maxRPM = sBerryBlender.maxRPM;
 
-                  for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+                  for (i = 0; i < ((4)); i++)
                   {
                       for (j = 0; j < NUM_SCORE_TYPES; j++)
                           sBerryBlender.gameBlock.scores[i][j] = sBerryBlender.scores[i][j];
@@ -1721,7 +1663,7 @@ export function CB2_EndBlenderGame(): any {
                   sBerryBlender.maxRPM = receivedBlock.timeRPM.maxRPM;
                   sBerryBlender.gameFrameTime = receivedBlock.timeRPM.time;
 
-                  for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+                  for (i = 0; i < ((4)); i++)
                   {
                       for (j = 0; j < NUM_SCORE_TYPES; j++)
                           sBerryBlender.scores[i][j] = receivedBlock.scores[i][j];
@@ -1744,9 +1686,9 @@ export function CB2_EndBlenderGame(): any {
           if (PrintBlendingResults())
           {
               if (gInGameOpponentsNo == 0)
-                  IncrementGameStat(GAME_STAT_POKEBLOCKS_WITH_FRIENDS);
+                  IncrementGameStat((34));
               else
-                  IncrementGameStat(GAME_STAT_POKEBLOCKS);
+                  IncrementGameStat((33));
 
               sBerryBlender.gameEndState++;
           }
@@ -1764,10 +1706,10 @@ export function CB2_EndBlenderGame(): any {
           switch (Menu_ProcessInputNoWrapClearOnChoose())
           {
           case 1:
-          case MENU_B_PRESSED:
+          case (-1):
               sBerryBlender.yesNoAnswer = 1;
               sBerryBlender.gameEndState++;
-              for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+              for (i = 0; i < ((4)); i++)
               {
                   if (sBerryBlender.arrowIdToPlayerId[i] != (0xFF))
                   {
@@ -1779,7 +1721,7 @@ export function CB2_EndBlenderGame(): any {
           case 0:
               sBerryBlender.yesNoAnswer = 0;
               sBerryBlender.gameEndState++;
-              for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+              for (i = 0; i < ((4)); i++)
               {
                   if (sBerryBlender.arrowIdToPlayerId[i] != (0xFF))
                   {
@@ -1791,32 +1733,32 @@ export function CB2_EndBlenderGame(): any {
           }
           break;
       case 11:
-          SendContinuePromptResponse(gSendCmd[BLENDER_COMM_INPUT_STATE]);
+          SendContinuePromptResponse(gSendCmd[(0)]);
           if (sBerryBlender.yesNoAnswer == 0)
           {
-              if (IsBagPocketNonEmpty(POCKET_BERRIES) == FALSE)
+              if (IsBagPocketNonEmpty((4)) == FALSE)
               {
                    
                   sBerryBlender.playAgainState = CANT_PLAY_NO_BERRIES;
-                  gSendCmd[BLENDER_COMM_RESP] = LINKCMD_BLENDER_NO_BERRIES;
+                  gSendCmd[(1)] = (0x9999);
               }
               else if (GetFirstFreePokeblockSlot() == -1)
               {
                    
                   sBerryBlender.playAgainState = CANT_PLAY_NO_PKBLCK_SPACE;
-                  gSendCmd[BLENDER_COMM_RESP] = LINKCMD_BLENDER_NO_PBLOCK_SPACE;
+                  gSendCmd[(1)] = (0xAAAA);
               }
               else
               {
                   sBerryBlender.playAgainState = PLAY_AGAIN_YES;
-                  gSendCmd[BLENDER_COMM_RESP] = LINKCMD_BLENDER_PLAY_AGAIN;
+                  gSendCmd[(1)] = (0x7779);
               }
               sBerryBlender.gameEndState++;
           }
           else
           {
               sBerryBlender.playAgainState = PLAY_AGAIN_NO;
-              gSendCmd[BLENDER_COMM_RESP] = LINKCMD_CONT_BLOCK;
+              gSendCmd[(1)] = (0x8888);
               sBerryBlender.gameEndState++;
           }
           break;
@@ -1919,17 +1861,17 @@ export function CB2_CheckPlayAgainLink(): any {
   switch (sBerryBlender.gameEndState)
       {
       case 0:
-          if (sBerryBlender.playerContinueResponses[0] == LINKCMD_SEND_LINK_TYPE)
+          if (sBerryBlender.playerContinueResponses[0] == (0x2222))
           {
                
               sBerryBlender.gameEndState = 5;
           }
-          else if (sBerryBlender.playerContinueResponses[0] == LINKCMD_BLENDER_STOP)
+          else if (sBerryBlender.playerContinueResponses[0] == (0x1111))
           {
                
-              if (sBerryBlender.canceledPlayerCmd == LINKCMD_BLENDER_NO_BERRIES)
+              if (sBerryBlender.canceledPlayerCmd == (0x9999))
                   sBerryBlender.gameEndState = 2;
-              else if (sBerryBlender.canceledPlayerCmd == LINKCMD_BLENDER_NO_PBLOCK_SPACE)
+              else if (sBerryBlender.canceledPlayerCmd == (0xAAAA))
                   sBerryBlender.gameEndState = 1;
               else
                   sBerryBlender.gameEndState = 5;
@@ -1972,7 +1914,7 @@ export function CB2_CheckPlayAgainLink(): any {
       case 7:
           if (LinkPlayAgainHandleSaving())
           {
-              PlaySE(SE_SAVE);
+              PlaySE((55));
               sBerryBlender.gameEndState++;
           }
           break;
@@ -1983,14 +1925,14 @@ export function CB2_CheckPlayAgainLink(): any {
       case 9:
           if (IsLinkTaskFinished())
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
               sBerryBlender.gameEndState++;
           }
           break;
       case 10:
           if (!gPaletteFade.active)
           {
-              if (sBerryBlender.playerContinueResponses[0] == LINKCMD_SEND_LINK_TYPE)
+              if (sBerryBlender.playerContinueResponses[0] == (0x2222))
               {
                   FreeAllWindowBuffers();
                   UnsetBgTilemapBuffer(2);
@@ -2089,61 +2031,61 @@ export function CB2_CheckPlayAgainLocal(): any {
 export function ProcessLinkPlayerCmds(): any {
   if (gReceivedRemoteLinkPlayers)
       {
-          if (CheckRecvCmdMatches(gRecvCmds[0][BLENDER_COMM_INPUT_STATE], LINKCMD_SEND_PACKET, RFUCMD_SEND_PACKET))
+          if (CheckRecvCmdMatches(gRecvCmds[0][(0)], (0x2FFF), (0x2F00)))
           {
-              if (gRecvCmds[0][BLENDER_COMM_RESP] == LINKCMD_BLENDER_STOP)
+              if (gRecvCmds[0][(1)] == (0x1111))
               {
                    
-                  switch (gRecvCmds[0][BLENDER_COMM_STOP_TYPE])
+                  switch (gRecvCmds[0][(2)])
                   {
-                  case LINKCMD_CONT_BLOCK:  
-                      sBerryBlender.canceledPlayerCmd = LINKCMD_CONT_BLOCK;
-                      sBerryBlender.canceledPlayerId = gRecvCmds[0][BLENDER_COMM_PLAYER_ID];
+                  case (0x8888):  
+                      sBerryBlender.canceledPlayerCmd = (0x8888);
+                      sBerryBlender.canceledPlayerId = gRecvCmds[0][(3)];
                       break;
-                  case LINKCMD_BLENDER_NO_BERRIES:
-                      sBerryBlender.canceledPlayerCmd = LINKCMD_BLENDER_NO_BERRIES;
-                      sBerryBlender.canceledPlayerId = gRecvCmds[0][BLENDER_COMM_PLAYER_ID];
+                  case (0x9999):
+                      sBerryBlender.canceledPlayerCmd = (0x9999);
+                      sBerryBlender.canceledPlayerId = gRecvCmds[0][(3)];
                       break;
-                  case LINKCMD_BLENDER_NO_PBLOCK_SPACE:
-                      sBerryBlender.canceledPlayerCmd = LINKCMD_BLENDER_NO_PBLOCK_SPACE;
-                      sBerryBlender.canceledPlayerId = gRecvCmds[0][BLENDER_COMM_PLAYER_ID];
+                  case (0xAAAA):
+                      sBerryBlender.canceledPlayerCmd = (0xAAAA);
+                      sBerryBlender.canceledPlayerId = gRecvCmds[0][(3)];
                       break;
                   }
 
-                  sBerryBlender.playerContinueResponses[0] = LINKCMD_BLENDER_STOP;
+                  sBerryBlender.playerContinueResponses[0] = (0x1111);
               }
-              else if (gRecvCmds[0][BLENDER_COMM_RESP] == LINKCMD_SEND_LINK_TYPE)
+              else if (gRecvCmds[0][(1)] == (0x2222))
               {
                    
-                  sBerryBlender.playerContinueResponses[0] = LINKCMD_SEND_LINK_TYPE;
+                  sBerryBlender.playerContinueResponses[0] = (0x2222);
               }
           }
 
            
           if (GetMultiplayerId() == 0
-              && sBerryBlender.playerContinueResponses[0] != LINKCMD_BLENDER_STOP
-              && sBerryBlender.playerContinueResponses[0] != LINKCMD_SEND_LINK_TYPE)
+              && sBerryBlender.playerContinueResponses[0] != (0x1111)
+              && sBerryBlender.playerContinueResponses[0] != (0x2222))
           {
               let i: any = null;
 
                
               for (i = 0; i < GetLinkPlayerCount(); i++)
               {
-                  if (CheckRecvCmdMatches(gRecvCmds[i][BLENDER_COMM_INPUT_STATE], LINKCMD_SEND_PACKET, RFUCMD_SEND_PACKET))
+                  if (CheckRecvCmdMatches(gRecvCmds[i][(0)], (0x2FFF), (0x2F00)))
                   {
-                      switch (gRecvCmds[i][BLENDER_COMM_RESP])
+                      switch (gRecvCmds[i][(1)])
                       {
-                      case LINKCMD_CONT_BLOCK:  
-                          sBerryBlender.playerContinueResponses[i] = LINKCMD_CONT_BLOCK;
+                      case (0x8888):  
+                          sBerryBlender.playerContinueResponses[i] = (0x8888);
                           break;
-                      case LINKCMD_BLENDER_PLAY_AGAIN:  
-                          sBerryBlender.playerContinueResponses[i] = LINKCMD_BLENDER_PLAY_AGAIN;
+                      case (0x7779):  
+                          sBerryBlender.playerContinueResponses[i] = (0x7779);
                           break;
-                      case LINKCMD_BLENDER_NO_BERRIES:
-                          sBerryBlender.playerContinueResponses[i] = LINKCMD_BLENDER_NO_BERRIES;
+                      case (0x9999):
+                          sBerryBlender.playerContinueResponses[i] = (0x9999);
                           break;
-                      case LINKCMD_BLENDER_NO_PBLOCK_SPACE:
-                          sBerryBlender.playerContinueResponses[i] = LINKCMD_BLENDER_NO_PBLOCK_SPACE;
+                      case (0xAAAA):
+                          sBerryBlender.playerContinueResponses[i] = (0xAAAA);
                           break;
                       }
                   }
@@ -2162,23 +2104,23 @@ export function ProcessLinkPlayerCmds(): any {
                    
                   for (i = 0; i < GetLinkPlayerCount(); i++)
                   {
-                      if (sBerryBlender.playerContinueResponses[i] != LINKCMD_BLENDER_PLAY_AGAIN)
+                      if (sBerryBlender.playerContinueResponses[i] != (0x7779))
                           break;
                   }
 
                    
-                  SendContinuePromptResponse(gSendCmd[BLENDER_COMM_INPUT_STATE]);
+                  SendContinuePromptResponse(gSendCmd[(0)]);
                   if (i == GetLinkPlayerCount())
                   {
                        
-                      gSendCmd[BLENDER_COMM_RESP] = LINKCMD_SEND_LINK_TYPE;
+                      gSendCmd[(1)] = (0x2222);
                   }
                   else
                   {
                        
-                      gSendCmd[BLENDER_COMM_RESP] = LINKCMD_BLENDER_STOP;
-                      gSendCmd[BLENDER_COMM_STOP_TYPE] = sBerryBlender.playerContinueResponses[i];
-                      gSendCmd[BLENDER_COMM_PLAYER_ID] = i;
+                      gSendCmd[(1)] = (0x1111);
+                      gSendCmd[(2)] = sBerryBlender.playerContinueResponses[i];
+                      gSendCmd[(3)] = i;
                   }
               }
           }
@@ -2217,16 +2159,16 @@ export function UpdateBlenderCenter(): any {
           if (playerId == 0)
           {
               sBerryBlender.arrowPos += sBerryBlender.speed;
-              gSendCmd[BLENDER_COMM_PROGRESS_BAR] = sBerryBlender.progressBarValue;
-              gSendCmd[BLENDER_COMM_ARROW_POS] = sBerryBlender.arrowPos;
+              gSendCmd[(5)] = sBerryBlender.progressBarValue;
+              gSendCmd[(6)] = sBerryBlender.arrowPos;
               DrawBlenderCenter(sBerryBlender.bgAffineSrc);
           }
           else
           {
-              if ((gRecvCmds[0][BLENDER_COMM_INPUT_STATE] & RFUCMD_MASK) == RFUCMD_BLENDER_SEND_KEYS)
+              if ((gRecvCmds[0][(0)] & (0xFF00)) == (0x4400))
               {
-                  sBerryBlender.progressBarValue = gRecvCmds[0][BLENDER_COMM_PROGRESS_BAR];
-                  sBerryBlender.arrowPos = gRecvCmds[0][BLENDER_COMM_ARROW_POS];
+                  sBerryBlender.progressBarValue = gRecvCmds[0][(5)];
+                  sBerryBlender.arrowPos = gRecvCmds[0][(6)];
                   DrawBlenderCenter(sBerryBlender.bgAffineSrc);
               }
           }
@@ -2318,7 +2260,7 @@ export function SpriteCB_CountdownNumber(sprite: any): any {
           {
               sprite.sYPos = DISPLAY_HEIGHT / 2 + 8;
               sprite.sState++;
-              PlaySE(SE_BALL_BOUNCE_1);
+              PlaySE((56));
           }
           break;
       case 1:
@@ -2360,7 +2302,7 @@ export function SpriteCB_Start(sprite: any): any {
           {
               sprite.data[1] = 92;
               sprite.data[0]++;
-              PlaySE(SE_PIN);
+              PlaySE((21));
           }
           break;
       case 1:
@@ -2568,9 +2510,9 @@ export function PrintBlendingResults(): any {
               let txtPtr: any = null;
 
               xPos = GetStringCenterAlignXOffset(FONT_NORMAL, sText_BlendingResults, 0xA8);
-              Blender_AddTextPrinter(WIN_RESULTS, sText_BlendingResults, xPos, 1, TEXT_SKIP_DRAW, 0);
+              Blender_AddTextPrinter(WIN_RESULTS, sText_BlendingResults, xPos, 1, (0xFF), 0);
 
-              if (sBerryBlender.numPlayers == (MAX_LINK_PLAYERS))
+              if (sBerryBlender.numPlayers == ((4)))
                   yPos = 17;
               else
                   yPos = 21;
@@ -2583,16 +2525,16 @@ export function PrintBlendingResults(): any {
                   StringAppend(sBerryBlender.stringVar, sText_Dot);
                   StringAppend(sBerryBlender.stringVar, gText_Space);
                   StringAppend(sBerryBlender.stringVar, gLinkPlayers[place].name);
-                  Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 8, yPos, TEXT_SKIP_DRAW, 3);
+                  Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 8, yPos, (0xFF), 3);
 
                   StringCopy(sBerryBlender.stringVar, sBerryBlender.blendedBerries[place].name);
                   ConvertInternationalString(sBerryBlender.stringVar, gLinkPlayers[place].language);
                    
                   StringAppendWithPlaceholder(sBerryBlender.stringVar, sText_SpaceBerry, sBerryBlender.stringVar);
-                  Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 0x54, yPos, TEXT_SKIP_DRAW, 3);
+                  Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 0x54, yPos, (0xFF), 3);
               }
 
-              Blender_AddTextPrinter(WIN_RESULTS, sText_MaximumSpeed, 0, 0x51, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sText_MaximumSpeed, 0, 0x51, (0xFF), 3);
               ConvertIntToDecimalStringN(sBerryBlender.stringVar, sBerryBlender.maxRPM / 100, STR_CONV_MODE_RIGHT_ALIGN, 3);
                
               {
@@ -2606,8 +2548,8 @@ export function PrintBlendingResults(): any {
               StringAppend(sBerryBlender.stringVar, sText_RPM);
 
               xPos = GetStringRightAlignXOffset(FONT_NORMAL, sBerryBlender.stringVar, 0xA8);
-              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, xPos, 0x51, TEXT_SKIP_DRAW, 3);
-              Blender_AddTextPrinter(WIN_RESULTS, sText_Time, 0, 0x61, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, xPos, 0x51, (0xFF), 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sText_Time, 0, 0x61, (0xFF), 3);
 
               seconds = (sBerryBlender.gameFrameTime / 60) % 60;
               minutes = (sBerryBlender.gameFrameTime / (60 * 60));
@@ -2619,7 +2561,7 @@ export function PrintBlendingResults(): any {
               StringAppend(sBerryBlender.stringVar, sText_Sec);
 
               xPos = GetStringRightAlignXOffset(FONT_NORMAL, sBerryBlender.stringVar, 0xA8);
-              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, xPos, 0x61, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, xPos, 0x61, (0xFF), 3);
 
               sBerryBlender.framesToWait = 0;
               sBerryBlender.mainState++;
@@ -2634,10 +2576,10 @@ export function PrintBlendingResults(): any {
       case 5:
           ClearStdWindowAndFrameToTransparent(WIN_RESULTS, TRUE);
 
-          for (i = 0; i < (MAX_LINK_PLAYERS); i++)
+          for (i = 0; i < ((4)); i++)
           {
               if (sBerryBlender.chosenItemId[i] != 0)
-                  berryIds[i] = sBerryBlender.chosenItemId[i] - FIRST_BERRY_INDEX;
+                  berryIds[i] = sBerryBlender.chosenItemId[i] - ((133));
               if (sBerryBlender.arrowIdToPlayerId[i] != (0xFF))
               {
                   PutWindowTilemap(i);
@@ -2676,7 +2618,7 @@ export function PrintMadePokeblockString(pokeblock: any, dst: any): any {
   let text: any = [];
       let flavorLvl, feel;
 
-      dst[0] = EOS;
+      dst[0] = (0xFF);
       StringCopy(dst, gPokeblockNames[pokeblock.color]);
        
       StringAppendWithPlaceholder(dst, sText_WasMade, dst);
@@ -2774,7 +2716,7 @@ export function PrintBlendingRanking(): any {
       case 3:
           DrawStdFrameWithCustomTileAndPalette(WIN_RESULTS, FALSE, 1, 0xD);
           xPos = GetStringCenterAlignXOffset(FONT_NORMAL, sText_Ranking, 168);
-          Blender_AddTextPrinter(WIN_RESULTS, sText_Ranking, xPos, 1, TEXT_SKIP_DRAW, 0);
+          Blender_AddTextPrinter(WIN_RESULTS, sText_Ranking, xPos, 1, (0xFF), 0);
 
           sBerryBlender.scoreIconIds[SCORE_BEST] = CreateSprite(sSpriteTemplate_ScoreSymbols, 128, 52, 0);
           StartSpriteAnim(gSprites[sBerryBlender.scoreIconIds[SCORE_BEST]], SCOREANIM_BEST_STATIC);
@@ -2798,16 +2740,16 @@ export function PrintBlendingRanking(): any {
               StringAppend(sBerryBlender.stringVar, sText_Dot);
               StringAppend(sBerryBlender.stringVar, gText_Space);
               StringAppend(sBerryBlender.stringVar, gLinkPlayers[place].name);
-              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 0, yPos, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 0, yPos, (0xFF), 3);
 
               ConvertIntToDecimalStringN(sBerryBlender.stringVar, sBerryBlender.scores[place][SCORE_BEST], STR_CONV_MODE_RIGHT_ALIGN, 3);
-              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 78, yPos, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 78, yPos, (0xFF), 3);
 
               ConvertIntToDecimalStringN(sBerryBlender.stringVar, sBerryBlender.scores[place][SCORE_GOOD], STR_CONV_MODE_RIGHT_ALIGN, 3);
-              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 78 + 32, yPos, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 78 + 32, yPos, (0xFF), 3);
 
               ConvertIntToDecimalStringN(sBerryBlender.stringVar, sBerryBlender.scores[place][SCORE_MISS], STR_CONV_MODE_RIGHT_ALIGN, 3);
-              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 78 + 64, yPos, TEXT_SKIP_DRAW, 3);
+              Blender_AddTextPrinter(WIN_RESULTS, sBerryBlender.stringVar, 78 + 64, yPos, (0xFF), 3);
           }
 
           PutWindowTilemap(WIN_RESULTS);
@@ -2823,7 +2765,7 @@ export function PrintBlendingRanking(): any {
       case 5:
           if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sBerryBlender.mainState++;
           }
           break;
@@ -2861,8 +2803,8 @@ export function ShowBerryBlenderRecordWindow(): any {
 
           txtPtr = ConvertIntToDecimalStringN(text, record / 100, STR_CONV_MODE_RIGHT_ALIGN, 3);
            
-          txtPtr =  CHAR_COMMA;
-          txtPtr = EOS;
+          txtPtr =  (0xB8);
+          txtPtr = (0xFF);
           txtPtr = ConvertIntToDecimalStringN(txtPtr, record % 100, STR_CONV_MODE_LEADING_ZEROS, 2);
           txtPtr = StringAppend(txtPtr, sText_RPM);
 
@@ -2878,7 +2820,7 @@ export function ShowBerryBlenderRecordWindow(): any {
 export function Task_PlayPokeblockFanfare(taskId: any): any {
   if (gTasks[taskId].data[0] == 0)
       {
-          PlayFanfare(MUS_LEVEL_UP);
+          PlayFanfare((367));
           gTasks[taskId].data[0]++;
       }
       if (IsFanfareTaskInactive())
@@ -2895,7 +2837,7 @@ export function TryAddContestLinkTvShow(pokeblock: any, tvBlender: any): any {
 
       tvBlender.pokeblockSheen = sheen;
       tvBlender.pokeblockColor = pokeblock.color;
-      tvBlender.name[0] = EOS;
+      tvBlender.name[0] = (0xFF);
 
       if (gReceivedRemoteLinkPlayers)
       {
@@ -2942,19 +2884,19 @@ export function Blender_AddTextPrinter(windowId: any, string: any, x: any, y: an
       case 0:
       case 3:
       default:
-          txtColor[0] = TEXT_COLOR_WHITE;
-          txtColor[1] = TEXT_COLOR_DARK_GRAY;
-          txtColor[2] = TEXT_COLOR_LIGHT_GRAY;
+          txtColor[0] = (0x1);
+          txtColor[1] = (0x2);
+          txtColor[2] = (0x3);
           break;
       case 1:
-          txtColor[0] = TEXT_COLOR_TRANSPARENT;
-          txtColor[1] = TEXT_COLOR_DARK_GRAY;
-          txtColor[2] = TEXT_COLOR_LIGHT_GRAY;
+          txtColor[0] = (0x0);
+          txtColor[1] = (0x2);
+          txtColor[2] = (0x3);
           break;
       case 2:
-          txtColor[0] = TEXT_COLOR_TRANSPARENT;
-          txtColor[1] = TEXT_COLOR_RED;
-          txtColor[2] = TEXT_COLOR_LIGHT_RED;
+          txtColor[0] = (0x0);
+          txtColor[1] = (0x4);
+          txtColor[2] = (0x5);
           break;
       }
 

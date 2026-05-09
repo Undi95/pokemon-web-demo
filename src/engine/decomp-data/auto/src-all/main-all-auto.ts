@@ -17,12 +17,20 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let REG_TM1CNT_H: any = null;
+let gKeyRepeatContinueDelay: any = null;
+let gKeyRepeatStartDelay: any = null;
+let gLinkTransferringData: any = null;
+let gPcmDmaCounter: any = null;
+let gPokemonStoragePtr: any = null;
+let gSoftResetDisabled: any = null;
+let gTrainerHillVBlankCounter: any = null;
 let sTrainerId: any = null;
 let sUnusedVar: any = null;
 /** void AgbMain(void) */
 export function AgbMain(): any {
       RegisterRamReset(RESET_ALL);
-      BG_PLTT = RGB_WHITE;  
+      BG_PLTT = (RGB(31, 31, 31));  
       InitGpuRegManager();
       REG_WAITCNT = WAITCNT_PREFETCH_ENABLE | WAITCNT_WS0_S_1 | WAITCNT_WS0_N_3;
       InitKeys();
@@ -38,7 +46,7 @@ export function AgbMain(): any {
       ClearDma3Requests();
       ResetBgs();
       SetDefaultFontsPointer();
-      InitHeap(gHeap, HEAP_SIZE);
+      InitHeap(gHeap, (0x1C000));
 
       gSoftResetDisabled = FALSE;
 
@@ -195,7 +203,7 @@ export function ReadKeys(): any {
       gMain.heldKeys = gMain.heldKeysRaw;
 
        
-      if (gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_L_EQUALS_A)
+      if (gSaveBlock2Ptr.optionsButtonMode == (2))
       {
           if (JOY_NEW(L_BUTTON))
               gMain.newKeys |= A_BUTTON;
@@ -279,7 +287,7 @@ export function VBlankIntr(): any {
       m4aSoundMain();
       TryReceiveLinkBattleData();
 
-      if (!gMain.inBattle || !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_FRONTIER | BATTLE_TYPE_RECORDED)))
+      if (!gMain.inBattle || !(gBattleTypeFlags & (((1 << 1)) | BATTLE_TYPE_FRONTIER | ((1 << 24)))))
           Random();
 
       UpdateWirelessStatusIndicatorSprite();

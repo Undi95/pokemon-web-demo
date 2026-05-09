@@ -17,32 +17,18 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAnims_ConditionSelectionIcon: any = null;
-let sConditionGraphScanline: any = null;
-let sConditionPokeballPlaceholder_Gfx: any = null;
-let sConditionPokeball_Gfx: any = null;
-let sConditionSparkleCoords: any = null;
-let sConditionSparkle_Gfx: any = null;
-let sConditionSparkle_Pal: any = null;
-let sConditionToLineLength: any = null;
-let sCurSparkleId: any = null;
-let sDelayTimer: any = null;
-let sEmptyItemName: any = null;
-let sLvlUpStatStrings: any = null;
+let bottom: any = null;
+let firstSpriteId: any = null;
+let gMultiuseListMenuTemplate: any = null;
+let height: any = null;
+let increment: any = null;
+let numDigits: any = null;
 let sMailboxList: any = null;
-let sMailboxWindowIds: any = null;
-let sMonSpriteId: any = null;
-let sMoveRelearnerMovesListTemplate: any = null;
-let sMoveRelearnerWindowTemplates: any = null;
-let sMoveRelearnerYesNoMenuTemplate: any = null;
-let sNextSparkleSpriteId: any = null;
-let sNumExtraSparkles: any = null;
-let sOam_ConditionMonPic: any = null;
-let sOam_ConditionSelectionIcon: any = null;
-let sPlayerNameTextColors: any = null;
-let sSparkleId: any = null;
-let sSpriteTemplate_ConditionSparkle: any = null;
-let sWindowTemplates_MailboxMenu: any = null;
+let sinIdx: any = null;
+let spriteId: any = null;
+let top: any = null;
+let x2: any = null;
+let xIncrement: any = null;
 /** bool8 MailboxMenu_Alloc(u8 count) */
 export function MailboxMenu_Alloc(count: any): any {
   let i: any = null;
@@ -53,14 +39,14 @@ export function MailboxMenu_Alloc(count: any): any {
           return FALSE;
 
       for (i = 0; i < ARRAY_COUNT(sMailboxWindowIds); i++)
-          sMailboxWindowIds[i] = WINDOW_NONE;
+          sMailboxWindowIds[i] = (0xFF);
 
       return TRUE;
 }
 
 /** u8 MailboxMenu_AddWindow(u8 windowIdx) */
 export function MailboxMenu_AddWindow(windowIdx: any): any {
-  if (sMailboxWindowIds[windowIdx] == WINDOW_NONE)
+  if (sMailboxWindowIds[windowIdx] == (0xFF))
       {
           if (windowIdx == MAILBOXWIN_OPTIONS)
           {
@@ -89,7 +75,7 @@ export function MailboxMenu_RemoveWindow(windowIdx: any): any {
   ClearStdWindowAndFrameToTransparent(sMailboxWindowIds[windowIdx], FALSE);
       ClearWindowTilemap(sMailboxWindowIds[windowIdx]);
       RemoveWindow(sMailboxWindowIds[windowIdx]);
-      sMailboxWindowIds[windowIdx] = WINDOW_NONE;
+      sMailboxWindowIds[windowIdx] = (0xFF);
 }
 
 /** static void MailboxMenu_ItemPrintFunc(u8 windowId, u32 itemId, u8 y) */
@@ -97,15 +83,15 @@ export function MailboxMenu_ItemPrintFunc(windowId: any, itemId: any, y: any): a
   let buffer: any = [];
       let length: any = null;
 
-      if (itemId == LIST_CANCEL)
+      if (itemId == (-2))
           return;
 
-      StringCopy(buffer, gSaveBlock1Ptr.mail[PARTY_SIZE + itemId].playerName);
+      StringCopy(buffer, gSaveBlock1Ptr.mail[(6) + itemId].playerName);
       ConvertInternationalPlayerName(buffer);
       length = StringLength(buffer);
-      if (length < PLAYER_NAME_LENGTH - 1)
-          ConvertInternationalString(buffer, LANGUAGE_JAPANESE);
-      AddTextPrinterParameterized4(windowId, FONT_NORMAL, 8, y, 0, 0, sPlayerNameTextColors, TEXT_SKIP_DRAW, buffer);
+      if (length < (7) - 1)
+          ConvertInternationalString(buffer, (1));
+      AddTextPrinterParameterized4(windowId, FONT_NORMAL, 8, y, 0, 0, sPlayerNameTextColors, (0xFF), buffer);
 }
 
 /** u8 MailboxMenu_CreateList(struct PlayerPCItemPageStruct *page) */
@@ -118,7 +104,7 @@ export function MailboxMenu_CreateList(page: any): any {
       }
 
       sMailboxList[i].name = gText_Cancel2;
-      sMailboxList[i].id = LIST_CANCEL;
+      sMailboxList[i].id = (-2);
 
       gMultiuseListMenuTemplate.items = sMailboxList;
       gMultiuseListMenuTemplate.totalItems = page.count + 1;
@@ -144,7 +130,7 @@ export function MailboxMenu_CreateList(page: any): any {
 /** static void MailboxMenu_MoveCursorFunc(s32 itemIndex, bool8 onInit, struct ListMenu *list) */
 export function MailboxMenu_MoveCursorFunc(itemIndex: any, onInit: any, list: any): any {
   if (onInit != TRUE)
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 }
 
 /** void MailboxMenu_AddScrollArrows(struct PlayerPCItemPageStruct *page) */
@@ -163,16 +149,16 @@ export function ConditionGraph_Init(graph: any): any {
 
       for (j = 0; j < CONDITION_COUNT; j++)
       {
-          for (i = 0; i < CONDITION_GRAPH_UPDATE_STEPS; i++)
+          for (i = 0; i < (10); i++)
           {
               graph.newPositions[i][j].x = 0;
               graph.newPositions[i][j].y = 0;
           }
 
-          for (i = 0; i < CONDITION_GRAPH_LOAD_MAX; i++)
+          for (i = 0; i < (4); i++)
           {
               graph.conditions[i][j] = 0;
-              graph.savedPositions[i][j].x = CONDITION_GRAPH_CENTER_X;
+              graph.savedPositions[i][j].x = (155);
               graph.savedPositions[i][j].y = CONDITION_GRAPH_CENTER_Y;
           }
 
@@ -192,8 +178,8 @@ export function ConditionGraph_SetNewPositions(graph: any, old: any, _new: any):
       for (i = 0; i < CONDITION_COUNT; i++)
       {
           coord = old[i].x << 8;
-          increment = ((_new[i].x - old[i].x) << 8) / CONDITION_GRAPH_UPDATE_STEPS;
-          for (j = 0; j < CONDITION_GRAPH_UPDATE_STEPS - 1; j++)
+          increment = ((_new[i].x - old[i].x) << 8) / (10);
+          for (j = 0; j < (10) - 1; j++)
           {
               graph.newPositions[j][i].x = SHIFT_RIGHT_ADJUSTED(coord, 8);
               coord += increment;
@@ -201,8 +187,8 @@ export function ConditionGraph_SetNewPositions(graph: any, old: any, _new: any):
           graph.newPositions[j][i].x = _new[i].x;
 
           coord = old[i].y << 8;
-          increment = ((_new[i].y - old[i].y) << 8) / CONDITION_GRAPH_UPDATE_STEPS;
-          for (j = 0; j < CONDITION_GRAPH_UPDATE_STEPS - 1; j++)
+          increment = ((_new[i].y - old[i].y) << 8) / (10);
+          for (j = 0; j < (10) - 1; j++)
           {
               graph.newPositions[j][i].y = SHIFT_RIGHT_ADJUSTED(coord, 8);
               coord += increment;
@@ -215,10 +201,10 @@ export function ConditionGraph_SetNewPositions(graph: any, old: any, _new: any):
 
 /** bool8 ConditionGraph_TryUpdate(struct ConditionGraph *graph) */
 export function ConditionGraph_TryUpdate(graph: any): any {
-  if (graph.updateCounter < CONDITION_GRAPH_UPDATE_STEPS)
+  if (graph.updateCounter < (10))
       {
           ConditionGraph_Update(graph);
-          return (++graph.updateCounter != CONDITION_GRAPH_UPDATE_STEPS);
+          return (++graph.updateCounter != (10));
       }
       else
       {
@@ -261,14 +247,14 @@ export function ConditionGraph_Draw(graph: any): any {
       ConditionGraph_CalcRightHalf(graph);
       ConditionGraph_CalcLeftHalf(graph);
 
-      for (i = 0; i < CONDITION_GRAPH_HEIGHT; i++)
+      for (i = 0; i < (((121) - (56) + 1)); i++)
       {
            
-          gScanlineEffectRegBuffers[1][(i + CONDITION_GRAPH_TOP_Y - 1) * 2 + 0] =  
-          gScanlineEffectRegBuffers[0][(i + CONDITION_GRAPH_TOP_Y - 1) * 2 + 0] = (graph.scanlineRight[i][0] << 8) | (graph.scanlineRight[i][1]);
+          gScanlineEffectRegBuffers[1][(i + (56) - 1) * 2 + 0] =  
+          gScanlineEffectRegBuffers[0][(i + (56) - 1) * 2 + 0] = (graph.scanlineRight[i][0] << 8) | (graph.scanlineRight[i][1]);
            
-          gScanlineEffectRegBuffers[1][(i + CONDITION_GRAPH_TOP_Y - 1) * 2 + 1] =  
-          gScanlineEffectRegBuffers[0][(i + CONDITION_GRAPH_TOP_Y - 1) * 2 + 1] = (graph.scanlineLeft[i][0] << 8) | (graph.scanlineLeft[i][1]);
+          gScanlineEffectRegBuffers[1][(i + (56) - 1) * 2 + 1] =  
+          gScanlineEffectRegBuffers[0][(i + (56) - 1) * 2 + 1] = (graph.scanlineLeft[i][0] << 8) | (graph.scanlineLeft[i][1]);
       }
 
       graph.needsDraw = FALSE;
@@ -286,9 +272,9 @@ export function ConditionGraph_InitWindow(bg: any): any {
 
        
       SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE( 0, DISPLAY_WIDTH));  
-      SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE( 0, CONDITION_GRAPH_CENTER_X));  
-      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE(CONDITION_GRAPH_TOP_Y, CONDITION_GRAPH_BOTTOM_Y));  
-      SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE(CONDITION_GRAPH_TOP_Y, CONDITION_GRAPH_BOTTOM_Y));  
+      SetGpuReg(REG_OFFSET_WIN1H, WIN_RANGE( 0, (155)));  
+      SetGpuReg(REG_OFFSET_WIN0V, WIN_RANGE((56), (121)));  
+      SetGpuReg(REG_OFFSET_WIN1V, WIN_RANGE((56), (121)));  
       SetGpuReg(REG_OFFSET_WININ, WININ_WIN0_BG_ALL | WININ_WIN0_OBJ | WININ_WIN0_CLR | WININ_WIN1_BG_ALL | WININ_WIN1_OBJ | WININ_WIN1_CLR);
       SetGpuReg(REG_OFFSET_WINOUT, flags);
 }
@@ -332,7 +318,7 @@ export function ConditionGraph_CalcLine(graph: any, scanline: any, pos1: any, po
       height++;
       if (overflowScanline == NULL)
       {
-          scanline += (top - CONDITION_GRAPH_TOP_Y) * 2;
+          scanline += (top - (56)) * 2;
           for (i = 0; i < height; i++)
           {
               scanline[dir] = SHIFT_RIGHT_ADJUSTED(x, 10) + dir;
@@ -344,16 +330,16 @@ export function ConditionGraph_CalcLine(graph: any, scanline: any, pos1: any, po
       }
       else if (xIncrement > 0)
       {
-          overflowScanline += (top - CONDITION_GRAPH_TOP_Y) * 2;
+          overflowScanline += (top - (56)) * 2;
            
           for (i = 0; i < height; overflowScanline[dir] = SHIFT_RIGHT_ADJUSTED(x, 10) + dir, x += xIncrement, overflowScanline += 2, i++)
           {
-              if (x >= (CONDITION_GRAPH_CENTER_X << 10))
+              if (x >= ((155) << 10))
                   break;
           }
 
           graph.bottom = top + i;
-          scanline += (graph.bottom - CONDITION_GRAPH_TOP_Y) * 2;
+          scanline += (graph.bottom - (56)) * 2;
           for (; i < height; i++)
           {
               scanline[dir] = SHIFT_RIGHT_ADJUSTED(x, 10) + dir;
@@ -365,13 +351,13 @@ export function ConditionGraph_CalcLine(graph: any, scanline: any, pos1: any, po
       }
       else if (xIncrement < 0)
       {
-          scanline += (top - CONDITION_GRAPH_TOP_Y) * 2;
+          scanline += (top - (56)) * 2;
           for (i = 0; i < height; i++)
           {
               scanline[dir] = SHIFT_RIGHT_ADJUSTED(x, 10) + dir;
-              if (x < (CONDITION_GRAPH_CENTER_X << 10))
+              if (x < ((155) << 10))
               {
-                  scanline[dir] = CONDITION_GRAPH_CENTER_X;
+                  scanline[dir] = (155);
                   break;
               }
               x += xIncrement;
@@ -379,7 +365,7 @@ export function ConditionGraph_CalcLine(graph: any, scanline: any, pos1: any, po
           }
 
           graph.bottom = top + i;
-          overflowScanline += (graph.bottom - CONDITION_GRAPH_TOP_Y) * 2;
+          overflowScanline += (graph.bottom - (56)) * 2;
           for (; i < height; i++)
           {
               overflowScanline[dir] = SHIFT_RIGHT_ADJUSTED(x, 10) + dir;
@@ -392,11 +378,11 @@ export function ConditionGraph_CalcLine(graph: any, scanline: any, pos1: any, po
       else
       {
           graph.bottom = top;
-          scanline += (top - CONDITION_GRAPH_TOP_Y) * 2;
-          overflowScanline += (top - CONDITION_GRAPH_TOP_Y) * 2;
+          scanline += (top - (56)) * 2;
+          overflowScanline += (top - (56)) * 2;
           scanline[1] = pos1.x + 1;
           overflowScanline[0] = pos2.x;
-          overflowScanline[1] = CONDITION_GRAPH_CENTER_X;
+          overflowScanline[1] = (155);
           return;
       }
 
@@ -428,28 +414,28 @@ export function ConditionGraph_CalcRightHalf(graph: any): any {
       ConditionGraph_CalcLine(graph, graph.scanlineRight[0],graph.curPositions[GRAPH_CUTE],graph.curPositions[GRAPH_SMART], i, graph.scanlineLeft[0]);
 
        
-      for (i = CONDITION_GRAPH_TOP_Y; i < y; i++)
+      for (i = (56); i < y; i++)
       {
-          graph.scanlineRight[i - CONDITION_GRAPH_TOP_Y][0] = 0;
-          graph.scanlineRight[i - CONDITION_GRAPH_TOP_Y][1] = 0;
+          graph.scanlineRight[i - (56)][0] = 0;
+          graph.scanlineRight[i - (56)][1] = 0;
       }
 
       for (i = graph.curPositions[GRAPH_COOL].y; i <= graph.bottom; i++)
-          graph.scanlineRight[i - CONDITION_GRAPH_TOP_Y][0] = CONDITION_GRAPH_CENTER_X;
+          graph.scanlineRight[i - (56)][0] = (155);
 
        
       bottom = max(graph.bottom, graph.curPositions[GRAPH_CUTE].y);
-      for (i = bottom + 1; i <= CONDITION_GRAPH_BOTTOM_Y; i++)
+      for (i = bottom + 1; i <= (121); i++)
       {
-          graph.scanlineRight[i - CONDITION_GRAPH_TOP_Y][0] = 0;
-          graph.scanlineRight[i - CONDITION_GRAPH_TOP_Y][1] = 0;
+          graph.scanlineRight[i - (56)][0] = 0;
+          graph.scanlineRight[i - (56)][1] = 0;
       }
 
-      for (i = CONDITION_GRAPH_TOP_Y; i <= CONDITION_GRAPH_BOTTOM_Y; i++)
+      for (i = (56); i <= (121); i++)
       {
-          if (graph.scanlineRight[i - CONDITION_GRAPH_TOP_Y][0] == 0
-           && graph.scanlineRight[i - CONDITION_GRAPH_TOP_Y][1] != 0)
-              graph.scanlineRight[i - CONDITION_GRAPH_TOP_Y][0] = CONDITION_GRAPH_CENTER_X;
+          if (graph.scanlineRight[i - (56)][0] == 0
+           && graph.scanlineRight[i - (56)][1] != 0)
+              graph.scanlineRight[i - (56)][0] = (155);
       }
 }
 
@@ -474,24 +460,24 @@ export function ConditionGraph_CalcLeftHalf(graph: any): any {
       ConditionGraph_CalcLine(graph, graph.scanlineLeft[0],graph.curPositions[GRAPH_TOUGH],graph.curPositions[GRAPH_SMART], FALSE, NULL);
 
        
-      for (i = CONDITION_GRAPH_TOP_Y; i < y; i++)
+      for (i = (56); i < y; i++)
       {
-          graph.scanlineLeft[i - CONDITION_GRAPH_TOP_Y][0] = 0;
-          graph.scanlineLeft[i - CONDITION_GRAPH_TOP_Y][1] = 0;
+          graph.scanlineLeft[i - (56)][0] = 0;
+          graph.scanlineLeft[i - (56)][1] = 0;
       }
 
       for (i = graph.curPositions[GRAPH_COOL].y; i <= graph.bottom; i++)
-          graph.scanlineLeft[i - CONDITION_GRAPH_TOP_Y][1] = CONDITION_GRAPH_CENTER_X;
+          graph.scanlineLeft[i - (56)][1] = (155);
 
        
       bottom = max(graph.bottom, graph.curPositions[GRAPH_SMART].y + 1);
-      for (i = bottom; i <= CONDITION_GRAPH_BOTTOM_Y; i++)
+      for (i = bottom; i <= (121); i++)
       {
-          graph.scanlineLeft[i - CONDITION_GRAPH_TOP_Y][0] = 0;
-          graph.scanlineLeft[i - CONDITION_GRAPH_TOP_Y][1] = 0;
+          graph.scanlineLeft[i - (56)][0] = 0;
+          graph.scanlineLeft[i - (56)][1] = 0;
       }
 
-      for (i = 0; i < CONDITION_GRAPH_HEIGHT; i++)
+      for (i = 0; i < (((121) - (56) + 1)); i++)
       {
           if (graph.scanlineLeft[i][0] >= graph.scanlineLeft[i][1])
           {
@@ -509,7 +495,7 @@ export function ConditionGraph_CalcPositions(conditions: any, positions: any): a
 
        
       lineLength = sConditionToLineLength[(conditions++)];
-      positions[GRAPH_COOL].x = CONDITION_GRAPH_CENTER_X;
+      positions[GRAPH_COOL].x = (155);
       positions[GRAPH_COOL].y = CONDITION_GRAPH_CENTER_Y - lineLength;
 
       sinIdx = 64;
@@ -524,7 +510,7 @@ export function ConditionGraph_CalcPositions(conditions: any, positions: any): a
               sinIdx++;
 
           lineLength = sConditionToLineLength[(conditions++)];
-          positions[posIdx].x = CONDITION_GRAPH_CENTER_X + ((lineLength * gSineTable[64 + sinIdx]) >> 8);
+          positions[posIdx].x = (155) + ((lineLength * gSineTable[64 + sinIdx]) >> 8);
           positions[posIdx].y = CONDITION_GRAPH_CENTER_Y - ((lineLength * gSineTable[sinIdx]) >> 8);
 
           if (posIdx <= GRAPH_CUTE && (lineLength != 32 || posIdx != GRAPH_CUTE))
@@ -586,19 +572,19 @@ export function MoveRelearnerLoadBattleMoveDescription(chosenMove: any): any {
       FillWindowPixelBuffer(RELEARNERWIN_DESC_BATTLE, PIXEL_FILL(1));
       str = gText_MoveRelearnerBattleMoves;
       x = GetStringCenterAlignXOffset(FONT_NORMAL, str, 128);
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, x, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, x, 1, (0xFF), NULL);
 
       str = gText_MoveRelearnerPP;
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 4, 41, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 4, 41, (0xFF), NULL);
 
       str = gText_MoveRelearnerPower;
       x = GetStringRightAlignXOffset(FONT_NORMAL, str, 106);
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, x, 25, (0xFF), NULL);
 
       str = gText_MoveRelearnerAccuracy;
       x = GetStringRightAlignXOffset(FONT_NORMAL, str, 106);
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, x, 41, TEXT_SKIP_DRAW, NULL);
-      if (chosenMove == LIST_CANCEL)
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, x, 41, (0xFF), NULL);
+      if (chosenMove == (-2))
       {
            
           CopyWindowToVram(RELEARNERWIN_DESC_BATTLE, COPYWIN_GFX);
@@ -606,11 +592,11 @@ export function MoveRelearnerLoadBattleMoveDescription(chosenMove: any): any {
       }
       move =gBattleMoves[chosenMove];
       str = gTypeNames[move.type];
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 4, 25, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 4, 25, (0xFF), NULL);
 
       x = 4 + GetStringWidth(FONT_NORMAL, gText_MoveRelearnerPP, 0);
       ConvertIntToDecimalStringN(buffer, move.pp, STR_CONV_MODE_LEFT_ALIGN, 2);
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, buffer, x, 41, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, buffer, x, 41, (0xFF), NULL);
 
       if (move.power < 2)
       {
@@ -621,7 +607,7 @@ export function MoveRelearnerLoadBattleMoveDescription(chosenMove: any): any {
           ConvertIntToDecimalStringN(buffer, move.power, STR_CONV_MODE_LEFT_ALIGN, 3);
           str = buffer;
       }
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 106, 25, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 106, 25, (0xFF), NULL);
 
       if (move.accuracy == 0)
       {
@@ -632,7 +618,7 @@ export function MoveRelearnerLoadBattleMoveDescription(chosenMove: any): any {
           ConvertIntToDecimalStringN(buffer, move.accuracy, STR_CONV_MODE_LEFT_ALIGN, 3);
           str = buffer;
       }
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 106, 41, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NORMAL, str, 106, 41, (0xFF), NULL);
 
       str = gMoveDescriptionPointers[chosenMove - 1];
       AddTextPrinterParameterized(RELEARNERWIN_DESC_BATTLE, FONT_NARROW, str, 0, 65, 0, NULL);
@@ -648,17 +634,17 @@ export function MoveRelearnerMenuLoadContestMoveDescription(chosenMove: any): an
       FillWindowPixelBuffer(RELEARNERWIN_DESC_CONTEST, PIXEL_FILL(1));
       str = gText_MoveRelearnerContestMovesTitle;
       x = GetStringCenterAlignXOffset(FONT_NORMAL, str, 128);
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, x, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, x, 1, (0xFF), NULL);
 
       str = gText_MoveRelearnerAppeal;
       x = GetStringRightAlignXOffset(FONT_NORMAL, str, 92);
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, x, 25, (0xFF), NULL);
 
       str = gText_MoveRelearnerJam;
       x = GetStringRightAlignXOffset(FONT_NORMAL, str, 92);
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, x, 41, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, x, 41, (0xFF), NULL);
 
-      if (chosenMove == MENU_NOTHING_CHOSEN)
+      if (chosenMove == (-2))
       {
           CopyWindowToVram(RELEARNERWIN_DESC_CONTEST, COPYWIN_GFX);
           return;
@@ -666,10 +652,10 @@ export function MoveRelearnerMenuLoadContestMoveDescription(chosenMove: any): an
 
       move =gContestMoves[chosenMove];
       str = gContestMoveTypeTextPointers[move.contestCategory];
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, 4, 25, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NORMAL, str, 4, 25, (0xFF), NULL);
 
       str = gContestEffectDescriptionPointers[move.effect];
-      AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NARROW, str, 0, 65, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(RELEARNERWIN_DESC_CONTEST, FONT_NARROW, str, 0, 65, (0xFF), NULL);
 
       CopyWindowToVram(RELEARNERWIN_DESC_CONTEST, COPYWIN_GFX);
 }
@@ -677,7 +663,7 @@ export function MoveRelearnerMenuLoadContestMoveDescription(chosenMove: any): an
 /** static void MoveRelearnerCursorCallback(s32 itemIndex, bool8 onInit, struct ListMenu *list) */
 export function MoveRelearnerCursorCallback(itemIndex: any, onInit: any, list: any): any {
   if (onInit != TRUE)
-          PlaySE(SE_SELECT);
+          PlaySE((5));
       MoveRelearnerLoadBattleMoveDescription(itemIndex);
       MoveRelearnerMenuLoadContestMoveDescription(itemIndex);
 }
@@ -689,7 +675,7 @@ export function MoveRelearnerPrintMessage(str: any): any {
       FillWindowPixelBuffer(RELEARNERWIN_MSG, PIXEL_FILL(1));
       gTextFlags.canABSpeedUpPrint = TRUE;
       speed = GetPlayerTextSpeedDelay();
-      AddTextPrinterParameterized2(RELEARNERWIN_MSG, FONT_NORMAL, str, speed, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, 3);
+      AddTextPrinterParameterized2(RELEARNERWIN_MSG, FONT_NORMAL, str, speed, NULL, (0x2), (0x1), 3);
 }
 
 /** bool16 MoveRelearnerRunTextPrinters(void) */
@@ -707,7 +693,7 @@ export function MoveRelearnerCreateYesNoMenu(): any {
 export function GetBoxOrPartyMonData(boxId: any, monId: any, request: any, dst: any): any {
   let ret: any = null;
 
-      if (boxId == TOTAL_BOXES_COUNT)  
+      if (boxId == (14))  
       {
           if (request == MON_DATA_NICKNAME || request == MON_DATA_OT_NAME)
               ret = GetMonData(gPlayerParty[monId], request, dst);
@@ -740,24 +726,24 @@ export function GetConditionMenuMonNameAndLocString(locationDst: any, nameDst: a
       if (partyId != numMons)
       {
           GetConditionMenuMonString(nameDst, box, mon);
-          locationDst[0] = EXT_CTRL_CODE_BEGIN;
-          locationDst[1] = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW;
-          locationDst[2] = TEXT_COLOR_BLUE;
-          locationDst[3] = TEXT_COLOR_TRANSPARENT;
-          locationDst[4] = TEXT_COLOR_LIGHT_BLUE;
-          if (box == TOTAL_BOXES_COUNT)  
-              BufferConditionMenuSpacedStringN(locationDst[5], gText_InParty, BOX_NAME_LENGTH);
+          locationDst[0] = (0xFC);
+          locationDst[1] = (0x04);
+          locationDst[2] = (0x8);
+          locationDst[3] = (0x0);
+          locationDst[4] = (0x9);
+          if (box == (14))  
+              BufferConditionMenuSpacedStringN(locationDst[5], gText_InParty, (8));
           else
-              BufferConditionMenuSpacedStringN(locationDst[5], GetBoxNamePtr(box), BOX_NAME_LENGTH);
+              BufferConditionMenuSpacedStringN(locationDst[5], GetBoxNamePtr(box), (8));
       }
       else
       {
-          for (i = 0; i < POKEMON_NAME_LENGTH + 2; i++)
-              nameDst[i] = CHAR_SPACE;
-          nameDst[i] = EOS;
-          for (i = 0; i < BOX_NAME_LENGTH; i++)
-              locationDst[i] = CHAR_SPACE;
-          locationDst[i] = EOS;
+          for (i = 0; i < (10) + 2; i++)
+              nameDst[i] = (0x00);
+          nameDst[i] = (0xFF);
+          for (i = 0; i < (8); i++)
+              locationDst[i] = (0x00);
+          locationDst[i] = (0xFF);
       }
 }
 
@@ -785,7 +771,7 @@ export function GetConditionMenuMonConditions(graph: any, numSparkles: any, boxI
           for (i = 0; i < CONDITION_COUNT; i++)
           {
               graph.conditions[id][i] = 0;
-              graph.savedPositions[id][i].x = CONDITION_GRAPH_CENTER_X;
+              graph.savedPositions[id][i].x = (155);
               graph.savedPositions[id][i].y = CONDITION_GRAPH_CENTER_Y;
           }
       }
@@ -843,7 +829,7 @@ export function ConditionMenu_UpdateMonExit(graph: any, x: any): any {
 
 /** void LoadConditionMonPicTemplate(struct SpriteSheet *sheet, struct SpriteTemplate *template, struct SpritePalette *pal) */
 export function LoadConditionMonPicTemplate(sheet: any, template: any, pal: any): any {
-  let dataSheet: any = [NULL, MON_PIC_SIZE, TAG_CONDITION_MON];
+  let dataSheet: any = [NULL, (((64) * (64) / 2)), TAG_CONDITION_MON];
 
       let dataTemplate: any =
       [ TAG_CONDITION_MON, TAG_CONDITION_MON, sOam_ConditionMonPic, gDummySpriteAnimTable, NULL, gDummySpriteAffineAnimTable, SpriteCallbackDummy,
@@ -936,7 +922,7 @@ export function SetConditionSparklePosition(sprite: any): any {
 export function InitConditionSparkles(count: any, allowFirstShowAll: any, sprites: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_CONDITION_SPARKLES; i++)
+      for (i = 0; i < (10); i++)
       {
           if (sprites[i] != NULL)
           {
@@ -944,7 +930,7 @@ export function InitConditionSparkles(count: any, allowFirstShowAll: any, sprite
               sprites[i].sDelayTimer = (i * 16) + 1;
               sprites[i].sNumExtraSparkles = count;
               sprites[i].sCurSparkleId = i;
-              if (!allowFirstShowAll || count != MAX_CONDITION_SPARKLES - 1)
+              if (!allowFirstShowAll || count != (10) - 1)
               {
                   sprites[i].callback = SpriteCB_ConditionSparkle;
               }
@@ -975,7 +961,7 @@ export function SetNextConditionSparkle(sprite: any): any {
 export function ResetConditionSparkleSprites(sprites: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_CONDITION_SPARKLES; i++)
+      for (i = 0; i < (10); i++)
           sprites[i] = NULL;
 }
 
@@ -987,7 +973,7 @@ export function CreateConditionSparkleSprites(sprites: any, monSpriteId: any, _c
       for (i = 0; i < count + 1; i++)
       {
           spriteId = CreateSprite(sSpriteTemplate_ConditionSparkle, 0, 0, 0);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               sprites[i] =gSprites[spriteId];
               sprites[i].invisible = TRUE;
@@ -1011,7 +997,7 @@ export function CreateConditionSparkleSprites(sprites: any, monSpriteId: any, _c
 export function DestroyConditionSparkleSprites(sprites: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_CONDITION_SPARKLES; i++)
+      for (i = 0; i < (10); i++)
       {
           if (sprites[i] != NULL)
           {
@@ -1051,7 +1037,7 @@ export function SpriteCB_ConditionSparkle(sprite: any): any {
           sprite.invisible = TRUE;
           if (sprite.sCurSparkleId == sprite.sNumExtraSparkles)
           {
-              if (sprite.sCurSparkleId == MAX_CONDITION_SPARKLES - 1)
+              if (sprite.sCurSparkleId == (10) - 1)
               {
                   ShowAllConditionSparkles(sprite);
                   sprite.callback = SpriteCB_ConditionSparkle_WaitForAllAnim;
@@ -1089,18 +1075,18 @@ export function DrawLevelUpWindowPg1(windowId: any, statsBefore: any, statsAfter
 
       FillWindowPixelBuffer(windowId, PIXEL_FILL(bgClr));
 
-      statsDiff[0] = statsAfter[STAT_HP]    - statsBefore[STAT_HP];
-      statsDiff[1] = statsAfter[STAT_ATK]   - statsBefore[STAT_ATK];
-      statsDiff[2] = statsAfter[STAT_DEF]   - statsBefore[STAT_DEF];
-      statsDiff[3] = statsAfter[STAT_SPATK] - statsBefore[STAT_SPATK];
-      statsDiff[4] = statsAfter[STAT_SPDEF] - statsBefore[STAT_SPDEF];
-      statsDiff[5] = statsAfter[STAT_SPEED] - statsBefore[STAT_SPEED];
+      statsDiff[0] = statsAfter[(0)]    - statsBefore[(0)];
+      statsDiff[1] = statsAfter[(1)]   - statsBefore[(1)];
+      statsDiff[2] = statsAfter[(2)]   - statsBefore[(2)];
+      statsDiff[3] = statsAfter[(4)] - statsBefore[(4)];
+      statsDiff[4] = statsAfter[(5)] - statsBefore[(5)];
+      statsDiff[5] = statsAfter[(3)] - statsBefore[(3)];
 
       color[0] = bgClr;
       color[1] = fgClr;
       color[2] = shadowClr;
 
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
 
           AddTextPrinterParameterized3(windowId,
@@ -1108,7 +1094,7 @@ export function DrawLevelUpWindowPg1(windowId: any, statsBefore: any, statsAfter
                                        0,
                                        15 * i,
                                        color,
-                                       TEXT_SKIP_DRAW,
+                                       (0xFF),
                                        sLvlUpStatStrings[i]);
 
           StringCopy(text, (statsDiff[i] >= 0) ? gText_Plus : gText_Dash);
@@ -1117,7 +1103,7 @@ export function DrawLevelUpWindowPg1(windowId: any, statsBefore: any, statsAfter
                                        56,
                                        15 * i,
                                        color,
-                                       TEXT_SKIP_DRAW,
+                                       (0xFF),
                                        text);
           if (abs(statsDiff[i]) <= 9)
               x = 18;
@@ -1130,7 +1116,7 @@ export function DrawLevelUpWindowPg1(windowId: any, statsBefore: any, statsAfter
                                        56 + x,
                                        15 * i,
                                        color,
-                                       TEXT_SKIP_DRAW,
+                                       (0xFF),
                                        text);
       }
 }
@@ -1144,18 +1130,18 @@ export function DrawLevelUpWindowPg2(windowId: any, currStats: any, bgClr: any, 
 
       FillWindowPixelBuffer(windowId, PIXEL_FILL(bgClr));
 
-      stats[0] = currStats[STAT_HP];
-      stats[1] = currStats[STAT_ATK];
-      stats[2] = currStats[STAT_DEF];
-      stats[3] = currStats[STAT_SPATK];
-      stats[4] = currStats[STAT_SPDEF];
-      stats[5] = currStats[STAT_SPEED];
+      stats[0] = currStats[(0)];
+      stats[1] = currStats[(1)];
+      stats[2] = currStats[(2)];
+      stats[3] = currStats[(4)];
+      stats[4] = currStats[(5)];
+      stats[5] = currStats[(3)];
 
       color[0] = bgClr;
       color[1] = fgClr;
       color[2] = shadowClr;
 
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
           if (stats[i] > 99)
               numDigits = 3;
@@ -1172,7 +1158,7 @@ export function DrawLevelUpWindowPg2(windowId: any, currStats: any, bgClr: any, 
                                        0,
                                        15 * i,
                                        color,
-                                       TEXT_SKIP_DRAW,
+                                       (0xFF),
                                        sLvlUpStatStrings[i]);
 
           AddTextPrinterParameterized3(windowId,
@@ -1180,19 +1166,19 @@ export function DrawLevelUpWindowPg2(windowId: any, currStats: any, bgClr: any, 
                                        56 + x,
                                        15 * i,
                                        color,
-                                       TEXT_SKIP_DRAW,
+                                       (0xFF),
                                        text);
       }
 }
 
 /** void GetMonLevelUpWindowStats(struct Pokemon *mon, u16 *currStats) */
 export function GetMonLevelUpWindowStats(mon: any, currStats: any): any {
-  currStats[STAT_HP]    = GetMonData(mon, MON_DATA_MAX_HP);
-      currStats[STAT_ATK]   = GetMonData(mon, MON_DATA_ATK);
-      currStats[STAT_DEF]   = GetMonData(mon, MON_DATA_DEF);
-      currStats[STAT_SPEED] = GetMonData(mon, MON_DATA_SPEED);
-      currStats[STAT_SPATK] = GetMonData(mon, MON_DATA_SPATK);
-      currStats[STAT_SPDEF] = GetMonData(mon, MON_DATA_SPDEF);
+  currStats[(0)]    = GetMonData(mon, MON_DATA_MAX_HP);
+      currStats[(1)]   = GetMonData(mon, MON_DATA_ATK);
+      currStats[(2)]   = GetMonData(mon, MON_DATA_DEF);
+      currStats[(3)] = GetMonData(mon, MON_DATA_SPEED);
+      currStats[(4)] = GetMonData(mon, MON_DATA_SPATK);
+      currStats[(5)] = GetMonData(mon, MON_DATA_SPDEF);
 }
 
 // ─── callsTo manifest (= 77 unique callees) ───────────────────────

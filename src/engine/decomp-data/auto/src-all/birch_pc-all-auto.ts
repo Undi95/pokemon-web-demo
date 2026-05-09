@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gSpecialVar_0x8005: any = null;
+let gSpecialVar_0x8006: any = null;
 /** bool16 ScriptGetPokedexInfo(void) */
 export function ScriptGetPokedexInfo(): any {
   if (gSpecialVar_0x8004 == 0)  

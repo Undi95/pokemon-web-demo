@@ -18,7 +18,6 @@
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sOamWork: any = null;
-let sTilesPerImage: any = null;
 /** bool32 DigitObjUtil_Init(u32 count) */
 export function DigitObjUtil_Init(count: any): any {
   let i: any = null;

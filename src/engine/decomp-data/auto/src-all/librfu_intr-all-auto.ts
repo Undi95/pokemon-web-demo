@@ -24,7 +24,7 @@ export function IntrSIO32(): any {
       }
       else
       {
-          if (gSTWIStatus.msMode == AGB_CLK_MASTER)
+          if (gSTWIStatus.msMode == (1))
               sio32intr_clock_master();
           else
               sio32intr_clock_slave();
@@ -110,14 +110,14 @@ export function sio32intr_clock_master(): any {
       if (gSTWIStatus.state == 3)  
       {
           if (
-              gSTWIStatus.ackActiveCommand == (0x80 | ID_MS_CHANGE_REQ)
-           || gSTWIStatus.ackActiveCommand == (0x80 | ID_DATA_TX_AND_CHANGE_REQ)
-           || gSTWIStatus.ackActiveCommand == (0x80 | ID_UNK35_REQ)
-           || gSTWIStatus.ackActiveCommand == (0x80 | ID_RESUME_RETRANSMIT_AND_CHANGE_REQ)
+              gSTWIStatus.ackActiveCommand == (0x80 | (0x0027))
+           || gSTWIStatus.ackActiveCommand == (0x80 | (0x0025))
+           || gSTWIStatus.ackActiveCommand == (0x80 | (0x0035))
+           || gSTWIStatus.ackActiveCommand == (0x80 | (0x0037))
           )
           {
 
-              gSTWIStatus.msMode = AGB_CLK_SLAVE;
+              gSTWIStatus.msMode = (0);
               REG_SIODATA32 = 0x80000000;
               REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_57600_BPS;
               REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_57600_BPS | SIO_ENABLE;
@@ -129,7 +129,7 @@ export function sio32intr_clock_master(): any {
               {
                   REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_115200_BPS;
                   gSTWIStatus.state = 4;  
-                  gSTWIStatus.error = ERR_REQ_CMD_ACK_REJECTION;
+                  gSTWIStatus.error = (((0x0000) | 0x0003));
               }
               else
               {
@@ -176,10 +176,10 @@ export function sio32intr_clock_slave(): any {
               if (gSTWIStatus.reqLength == 0)
               {
                   if (
-                      gSTWIStatus.reqActiveCommand == ID_MS_CHANGE_REQ
-                   || gSTWIStatus.reqActiveCommand == ID_DATA_READY_AND_CHANGE_REQ
-                   || gSTWIStatus.reqActiveCommand == ID_DISCONNECTED_AND_CHANGE_REQ
-                   || gSTWIStatus.reqActiveCommand == ID_UNK36_REQ
+                      gSTWIStatus.reqActiveCommand == (0x0027)
+                   || gSTWIStatus.reqActiveCommand == (0x0028)
+                   || gSTWIStatus.reqActiveCommand == (0x0029)
+                   || gSTWIStatus.reqActiveCommand == (0x0036)
                   )
                   {
                       gSTWIStatus.ackActiveCommand = gSTWIStatus.reqActiveCommand + 0x80;
@@ -198,7 +198,7 @@ export function sio32intr_clock_slave(): any {
                           (gSTWIStatus.txPacket)[1] = 2;
                       }
                       gSTWIStatus.ackLength = 1;
-                      gSTWIStatus.error = ERR_REQ_CMD_ACK_REJECTION;
+                      gSTWIStatus.error = (((0x0000) | 0x0003));
                   }
                   REG_SIODATA32 = (gSTWIStatus.txPacket)[0];
                   gSTWIStatus.ackNext = 1;
@@ -225,9 +225,9 @@ export function sio32intr_clock_slave(): any {
           if (gSTWIStatus.reqLength < gSTWIStatus.reqNext)
           {
               if (
-                  gSTWIStatus.reqActiveCommand == ID_DATA_READY_AND_CHANGE_REQ
-               || gSTWIStatus.reqActiveCommand == ID_DISCONNECTED_AND_CHANGE_REQ
-               || gSTWIStatus.reqActiveCommand == ID_UNK36_REQ
+                  gSTWIStatus.reqActiveCommand == (0x0028)
+               || gSTWIStatus.reqActiveCommand == (0x0029)
+               || gSTWIStatus.reqActiveCommand == (0x0036)
               )
               {
                   gSTWIStatus.ackActiveCommand = gSTWIStatus.reqActiveCommand + 0x80;
@@ -246,7 +246,7 @@ export function sio32intr_clock_slave(): any {
                       (gSTWIStatus.txPacket)[1] = 2;
                   }
                   gSTWIStatus.ackLength = 1;
-                  gSTWIStatus.error = ERR_REQ_CMD_ACK_REJECTION;
+                  gSTWIStatus.error = (((0x0000) | 0x0003));
               }
               REG_SIODATA32 = (gSTWIStatus.txPacket)[0];
               gSTWIStatus.ackNext = 1;
@@ -284,7 +284,7 @@ export function sio32intr_clock_slave(): any {
       {
           REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_57600_BPS;
           STWI_stop_timer_in_RAM();
-          if (gSTWIStatus.error == ERR_REQ_CMD_ACK_REJECTION)
+          if (gSTWIStatus.error == (((0x0000) | 0x0003)))
           {
               STWI_init_slave();
               if (gSTWIStatus.callbackS != NULL)
@@ -297,7 +297,7 @@ export function sio32intr_clock_slave(): any {
               REG_SIODATA32 = 0;
               REG_SIOCNT = 0;
               REG_SIOCNT = SIO_INTR_ENABLE | SIO_32BIT_MODE | SIO_115200_BPS;
-              gSTWIStatus.msMode = AGB_CLK_MASTER;
+              gSTWIStatus.msMode = (1);
               gSTWIStatus.state = 0;  
               if (gSTWIStatus.callbackS != NULL)
               {
@@ -377,7 +377,7 @@ export function STWI_stop_timer_in_RAM(): any {
 /** static void STWI_init_slave(void) */
 export function STWI_init_slave(): any {
   gSTWIStatus.state = 5;  
-      gSTWIStatus.msMode = AGB_CLK_SLAVE;
+      gSTWIStatus.msMode = (0);
       gSTWIStatus.reqLength = 0;
       gSTWIStatus.reqNext = 0;
       gSTWIStatus.reqActiveCommand = 0;

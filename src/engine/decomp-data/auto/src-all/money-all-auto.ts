@@ -19,9 +19,6 @@
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sMoneyBoxWindowId: any = null;
 let sMoneyLabelSpriteId: any = null;
-let sSpritePalette_MoneyLabel: any = null;
-let sSpriteSheet_MoneyLabel: any = null;
-let sSpriteTemplate_MoneyLabel: any = null;
 /** u32 GetMoney(u32 *moneyPtr) */
 export function GetMoney(moneyPtr: any): any {
   return moneyPtr ^ gSaveBlock2Ptr.encryptionKey;
@@ -99,7 +96,7 @@ export function PrintMoneyAmount(windowId: any, x: any, y: any, amount: any, spe
       txtPtr = gStringVar4;
 
       while (strLength-- > 0)
-          txtPtr =  CHAR_SPACER;
+          txtPtr =  (0x77);
 
       StringExpandPlaceholders(txtPtr, gText_PokedollarVar1);
       AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, x, y, speed, NULL);

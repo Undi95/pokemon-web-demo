@@ -17,18 +17,29 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sClockwiseDirections: any = null;
-let sItemUseCallbacks: any = null;
+let absY: any = null;
+let connectionY: any = null;
+let distanceX: any = null;
+let distanceY: any = null;
+let gItemUseCB: any = null;
+let itemY: any = null;
+let newItemAbsX: any = null;
+let newItemAbsY: any = null;
+let oldItemAbsY: any = null;
 let sItemUseOnFieldCB: any = null;
-let sUseTMHMYesNoFuncTable: any = null;
+let tCounter: any = null;
+let tFacingDir: any = null;
+let tItemDistanceX: any = null;
+let tItemDistanceY: any = null;
+let tItemFound: any = null;
 /** static void SetUpItemUseCallback(u8 taskId) */
 export function SetUpItemUseCallback(taskId: any): any {
   let type: any = null;
-      if (gSpecialVar_ItemId == ITEM_ENIGMA_BERRY)
+      if (gSpecialVar_ItemId == (175))
           type = gTasks[taskId].tEnigmaBerryType - 1;
       else
           type = GetItemType(gSpecialVar_ItemId) - 1;
-      if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+      if (CurrentBattlePyramidLocation() == (0))
       {
           gBagMenu.newScreenCallback = sItemUseCallbacks[type];
           Task_FadeAndCloseBagMenu(taskId);
@@ -70,7 +81,7 @@ export function DisplayCannotUseItemMessage(taskId: any, isUsingRegisteredKeyIte
   StringExpandPlaceholders(gStringVar4, str);
       if (!isUsingRegisteredKeyItemOnField)
       {
-          if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() == (0))
               DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);
           else
               DisplayItemMessageInBattlePyramid(taskId, gText_DadsAdvice, Task_CloseBattlePyramidBagMessage);
@@ -130,7 +141,7 @@ export function ItemUseOutOfBattle_Bike(taskId: any): any {
       let behavior: any = null;
       PlayerGetDestCoords(coordsX,coordsY);
       behavior = MapGridGetMetatileBehaviorAt(coordsX, coordsY);
-      if (FlagGet(FLAG_SYS_CYCLING_ROAD) == TRUE || MetatileBehavior_IsVerticalRail(behavior) == TRUE || MetatileBehavior_IsHorizontalRail(behavior) == TRUE || MetatileBehavior_IsIsolatedVerticalRail(behavior) == TRUE || MetatileBehavior_IsIsolatedHorizontalRail(behavior) == TRUE)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x2B))) == TRUE || MetatileBehavior_IsVerticalRail(behavior) == TRUE || MetatileBehavior_IsHorizontalRail(behavior) == TRUE || MetatileBehavior_IsIsolatedVerticalRail(behavior) == TRUE || MetatileBehavior_IsIsolatedHorizontalRail(behavior) == TRUE)
       {
           DisplayCannotDismountBikeMessage(taskId, tUsingRegisteredKeyItem);
       }
@@ -150,10 +161,10 @@ export function ItemUseOutOfBattle_Bike(taskId: any): any {
 
 /** static void ItemUseOnFieldCB_Bike(u8 taskId) */
 export function ItemUseOnFieldCB_Bike(taskId: any): any {
-  if (GetItemSecondaryId(gSpecialVar_ItemId) == MACH_BIKE)
-          GetOnOffBike(PLAYER_AVATAR_FLAG_MACH_BIKE);
+  if (GetItemSecondaryId(gSpecialVar_ItemId) == (0))
+          GetOnOffBike(((1 << 1)));
       else  
-          GetOnOffBike(PLAYER_AVATAR_FLAG_ACRO_BIKE);
+          GetOnOffBike(((1 << 2)));
       ScriptUnfreezeObjectEvents();
       UnlockPlayerFieldControls();
       DestroyTask(taskId);
@@ -170,10 +181,10 @@ export function CanFish(): any {
       if (MetatileBehavior_IsWaterfall(tileBehavior))
           return FALSE;
 
-      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_UNDERWATER))
+      if (TestPlayerAvatarFlags(((1 << 4))))
           return FALSE;
 
-      if (!TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
+      if (!TestPlayerAvatarFlags(((1 << 3))))
       {
           if (IsPlayerFacingSurfableFishableWater())
               return TRUE;
@@ -210,7 +221,7 @@ export function ItemUseOnFieldCB_Rod(taskId: any): any {
 
 /** void ItemUseOutOfBattle_Itemfinder(u8 var) */
 export function ItemUseOutOfBattle_Itemfinder(_var: any): any {
-  IncrementGameStat(GAME_STAT_USED_ITEMFINDER);
+  IncrementGameStat((39));
       sItemUseOnFieldCB = ItemUseOnFieldCB_Itemfinder;
       SetUpItemUseOnFieldCallback(_var);
 }
@@ -234,7 +245,7 @@ export function Task_UseItemfinder(taskId: any): any {
           if (tItemfinderBeeps == 4)
           {
               playerDirToItem = GetDirectionToHiddenItem(tItemDistanceX, tItemDistanceY);
-              if (playerDirToItem != DIR_NONE)
+              if (playerDirToItem != (0))
               {
                   PlayerFaceHiddenItem(sClockwiseDirections[playerDirToItem - 1]);
                   gTasks[taskId].func = Task_HiddenItemNearby;
@@ -254,7 +265,7 @@ export function Task_UseItemfinder(taskId: any): any {
               }
               return;
           }
-          PlaySE(SE_ITEMFINDER);
+          PlaySE((72));
           tItemfinderBeeps++;
       }
       tCounter = (tCounter + 1) & 0x1F;
@@ -278,11 +289,11 @@ export function ItemfinderCheckForHiddenItems(events: any, taskId: any): any {
       for (i = 0; i < events.bgEventCount; i++)
       {
            
-          if (events.bgEvents[i].kind == BG_EVENT_HIDDEN_ITEM && !FlagGet(events.bgEvents[i].bgUnion.hiddenItem.hiddenItemId + FLAG_HIDDEN_ITEMS_START))
+          if (events.bgEvents[i].kind == (7) && !FlagGet(events.bgEvents[i].bgUnion.hiddenItem.hiddenItemId + (0x1F4)))
           {
-              itemX = events.bgEvents[i].x + MAP_OFFSET;
+              itemX = events.bgEvents[i].x + (7);
               distanceX = itemX - playerX;
-              itemY = events.bgEvents[i].y + MAP_OFFSET;
+              itemY = events.bgEvents[i].y + (7);
               distanceY = itemY - playerY;
 
                
@@ -307,9 +318,9 @@ export function IsHiddenItemPresentAtCoords(events: any, x: any, y: any): any {
 
       for (i = 0; i < bgEventCount; i++)
       {
-          if (bgEvent[i].kind == BG_EVENT_HIDDEN_ITEM && x == bgEvent[i].x && y == bgEvent[i].y)  
+          if (bgEvent[i].kind == (7) && x == bgEvent[i].x && y == bgEvent[i].y)  
           {
-              if (!FlagGet(bgEvent[i].bgUnion.hiddenItem.hiddenItemId + FLAG_HIDDEN_ITEMS_START))
+              if (!FlagGet(bgEvent[i].bgUnion.hiddenItem.hiddenItemId + (0x1F4)))
                   return TRUE;
               else
                   return FALSE;
@@ -324,19 +335,19 @@ export function IsHiddenItemPresentInConnection(connection: any, x: any, y: any)
       let connectionHeader: any = GetMapHeaderFromConnection(connection);
       switch (connection.direction)
       {
-      case CONNECTION_NORTH:
+      case (2):
           connectionX = localX - connection.offset;
           connectionY = connectionHeader.mapLayout.height + localY;
           break;
-      case CONNECTION_SOUTH:
+      case (1):
           connectionX = localX - connection.offset;
           connectionY = localY - gMapHeader.mapLayout.height;
           break;
-      case CONNECTION_WEST:
+      case (3):
           connectionX = connectionHeader.mapLayout.width + localX;
           connectionY = localY - connection.offset;
           break;
-      case CONNECTION_EAST:
+      case (4):
           connectionX = localX - gMapHeader.mapLayout.width;
           connectionY = localY - connection.offset;
           break;
@@ -350,11 +361,11 @@ export function IsHiddenItemPresentInConnection(connection: any, x: any, y: any)
 export function CheckForHiddenItemsInMapConnection(taskId: any): any {
   let playerX, playerY;
       let x, y;
-      let width: any = gMapHeader.mapLayout.width + MAP_OFFSET;
-      let height: any = gMapHeader.mapLayout.height + MAP_OFFSET;
+      let width: any = gMapHeader.mapLayout.width + (7);
+      let height: any = gMapHeader.mapLayout.height + (7);
 
-      let var1: any = MAP_OFFSET;
-      let var2: any = MAP_OFFSET;
+      let var1: any = (7);
+      let var2: any = (7);
 
       PlayerGetDestCoords(playerX,playerY);
 
@@ -442,7 +453,7 @@ export function GetDirectionToHiddenItem(itemDistanceX: any, itemDistanceY: any)
   let absX, absY;
 
       if (itemDistanceX == 0 && itemDistanceY == 0)
-          return DIR_NONE;  
+          return (0);  
 
        
       if (itemDistanceX < 0)
@@ -459,41 +470,41 @@ export function GetDirectionToHiddenItem(itemDistanceX: any, itemDistanceY: any)
       if (absX > absY)
       {
           if (itemDistanceX < 0)
-              return DIR_EAST;
+              return (4);
           else
-              return DIR_NORTH;
+              return (2);
       }
       else
       {
           if (absX < absY)
           {
               if (itemDistanceY < 0)
-                  return DIR_SOUTH;
+                  return (1);
               else
-                  return DIR_WEST;
+                  return (3);
           }
           if (absX == absY)
           {
               if (itemDistanceY < 0)
-                  return DIR_SOUTH;
+                  return (1);
               else
-                  return DIR_WEST;
+                  return (3);
           }
-          return DIR_NONE;  
+          return (0);  
       }
 }
 
 /** static void PlayerFaceHiddenItem(u8 direction) */
 export function PlayerFaceHiddenItem(direction: any): any {
-  ObjectEventClearHeldMovementIfFinished(gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]);
-      ObjectEventClearHeldMovement(gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]);
-      UnfreezeObjectEvent(gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]);
+  ObjectEventClearHeldMovementIfFinished(gObjectEvents[GetObjectEventIdByLocalIdAndMap((255), 0, 0)]);
+      ObjectEventClearHeldMovement(gObjectEvents[GetObjectEventIdByLocalIdAndMap((255), 0, 0)]);
+      UnfreezeObjectEvent(gObjectEvents[GetObjectEventIdByLocalIdAndMap((255), 0, 0)]);
       PlayerTurnInPlace(direction);
 }
 
 /** static void Task_HiddenItemNearby(u8 taskId) */
 export function Task_HiddenItemNearby(taskId: any): any {
-  if (ObjectEventCheckHeldMovementStatus(gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]) == TRUE)
+  if (ObjectEventCheckHeldMovementStatus(gObjectEvents[GetObjectEventIdByLocalIdAndMap((255), 0, 0)]) == TRUE)
           DisplayItemMessageOnField(taskId, gText_ItemFinderNearby, Task_CloseItemfinderMessage);
 }
 
@@ -501,7 +512,7 @@ export function Task_HiddenItemNearby(taskId: any): any {
 export function Task_StandingOnHiddenItem(taskId: any): any {
   let data: any = gTasks[taskId].data;
 
-      if (ObjectEventCheckHeldMovementStatus(gObjectEvents[GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0)]) == TRUE
+      if (ObjectEventCheckHeldMovementStatus(gObjectEvents[GetObjectEventIdByLocalIdAndMap((255), 0, 0)]) == TRUE
       || tItemFound == FALSE)
       {
            
@@ -529,7 +540,7 @@ export function ItemUseOutOfBattle_PokeblockCase(taskId: any): any {
       else
       {
           gFieldCallback = FieldCB_ReturnToFieldNoScript;
-          FadeScreen(FADE_TO_BLACK, 0);
+          FadeScreen((1), 0);
           gTasks[taskId].func = Task_OpenRegisteredPokeblockCase;
       }
 }
@@ -635,7 +646,7 @@ export function TryToWaterSudowoodo(): any {
       GetXYCoordsOneStepInFrontOfPlayer(x,y);
       elevation = PlayerGetElevation();
       objId = GetObjectEventIdByPosition(x, y, elevation);
-      if (objId == OBJECT_EVENTS_COUNT || gObjectEvents[objId].graphicsId != OBJ_EVENT_GFX_SUDOWOODO)
+      if (objId == (16) || gObjectEvents[objId].graphicsId != (228))
           return FALSE;
       else
           return TRUE;
@@ -686,7 +697,7 @@ export function ItemUseOutOfBattle_RareCandy(taskId: any): any {
 
 /** void ItemUseOutOfBattle_TMHM(u8 taskId) */
 export function ItemUseOutOfBattle_TMHM(taskId: any): any {
-  if (gSpecialVar_ItemId >= ITEM_HM01)
+  if (gSpecialVar_ItemId >= (339))
           DisplayItemMessage(taskId, FONT_NORMAL, gText_BootedUpHM, BootUpSoundTMHM);  
       else
           DisplayItemMessage(taskId, FONT_NORMAL, gText_BootedUpTM, BootUpSoundTMHM);
@@ -694,7 +705,7 @@ export function ItemUseOutOfBattle_TMHM(taskId: any): any {
 
 /** static void BootUpSoundTMHM(u8 taskId) */
 export function BootUpSoundTMHM(taskId: any): any {
-  PlaySE(SE_PC_LOGIN);
+  PlaySE((2));
       gTasks[taskId].func = Task_ShowTMHMContainedMessage;
 }
 
@@ -724,7 +735,7 @@ export function RemoveUsedItem(): any {
   RemoveBagItem(gSpecialVar_ItemId, 1);
       CopyItemName(gSpecialVar_ItemId, gStringVar2);
       StringExpandPlaceholders(gStringVar4, gText_PlayerUsedVar2);
-      if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+      if (CurrentBattlePyramidLocation() == (0))
       {
           UpdatePocketItemList(GetItemPocket(gSpecialVar_ItemId));
           UpdatePocketListPosition(GetItemPocket(gSpecialVar_ItemId));
@@ -738,9 +749,9 @@ export function RemoveUsedItem(): any {
 
 /** void ItemUseOutOfBattle_Repel(u8 taskId) */
 export function ItemUseOutOfBattle_Repel(taskId: any): any {
-  if (VarGet(VAR_REPEL_STEP_COUNT) == 0)
+  if (VarGet((0x4021)) == 0)
           gTasks[taskId].func = Task_StartUseRepel;
-      else if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+      else if (CurrentBattlePyramidLocation() == (0))
           DisplayItemMessage(taskId, FONT_NORMAL, gText_RepelEffectsLingered, CloseItemMessage);
       else
           DisplayItemMessageInBattlePyramid(taskId, gText_RepelEffectsLingered, Task_CloseBattlePyramidBagMessage);
@@ -753,7 +764,7 @@ export function Task_StartUseRepel(taskId: any): any {
       if (++data[8] > 7)
       {
           data[8] = 0;
-          PlaySE(SE_REPEL);
+          PlaySE((47));
           gTasks[taskId].func = Task_UseRepel;
       }
 }
@@ -762,9 +773,9 @@ export function Task_StartUseRepel(taskId: any): any {
 export function Task_UseRepel(taskId: any): any {
   if (!IsSEPlaying())
       {
-          VarSet(VAR_REPEL_STEP_COUNT, GetItemHoldEffectParam(gSpecialVar_ItemId));
+          VarSet((0x4021), GetItemHoldEffectParam(gSpecialVar_ItemId));
           RemoveUsedItem();
-          if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() == (0))
               DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);
           else
               DisplayItemMessageInBattlePyramid(taskId, gStringVar4, Task_CloseBattlePyramidBagMessage);
@@ -775,8 +786,8 @@ export function Task_UseRepel(taskId: any): any {
 export function Task_UsedBlackWhiteFlute(taskId: any): any {
   if(++gTasks[taskId].data[8] > 7)
       {
-          PlaySE(SE_GLASS_FLUTE);
-          if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+          PlaySE((117));
+          if (CurrentBattlePyramidLocation() == (0))
               DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, CloseItemMessage);
           else
               DisplayItemMessageInBattlePyramid(taskId, gStringVar4, Task_CloseBattlePyramidBagMessage);
@@ -786,16 +797,16 @@ export function Task_UsedBlackWhiteFlute(taskId: any): any {
 /** void ItemUseOutOfBattle_BlackWhiteFlute(u8 taskId) */
 export function ItemUseOutOfBattle_BlackWhiteFlute(taskId: any): any {
   CopyItemName(gSpecialVar_ItemId, gStringVar2);
-      if (gSpecialVar_ItemId == ITEM_WHITE_FLUTE)
+      if (gSpecialVar_ItemId == (43))
       {
-          FlagSet(FLAG_SYS_ENC_UP_ITEM);
-          FlagClear(FLAG_SYS_ENC_DOWN_ITEM);
+          FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x4D)));
+          FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x4E)));
           StringExpandPlaceholders(gStringVar4, gText_UsedVar2WildLured);
       }
       else
       {
-          FlagSet(FLAG_SYS_ENC_DOWN_ITEM);
-          FlagClear(FLAG_SYS_ENC_UP_ITEM);
+          FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x4E)));
+          FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x4D)));
           StringExpandPlaceholders(gStringVar4, gText_UsedVar2WildRepelled);
       }
       gTasks[taskId].data[8] = 0;
@@ -849,12 +860,12 @@ export function ItemUseInBattle_PokeBall(taskId: any): any {
   if (IsPlayerPartyAndPokemonStorageFull() == FALSE)  
       {
           RemoveBagItem(gSpecialVar_ItemId, 1);
-          if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() == (0))
               Task_FadeAndCloseBagMenu(taskId);
           else
               CloseBattlePyramidBag(taskId);
       }
-      else if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+      else if (CurrentBattlePyramidLocation() == (0))
       {
           DisplayItemMessage(taskId, FONT_NORMAL, gText_BoxFull, CloseItemMessage);
       }
@@ -868,7 +879,7 @@ export function ItemUseInBattle_PokeBall(taskId: any): any {
 export function Task_CloseStatIncreaseMessage(taskId: any): any {
   if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() == (0))
               Task_FadeAndCloseBagMenu(taskId);
           else
               CloseBattlePyramidBag(taskId);
@@ -879,9 +890,9 @@ export function Task_CloseStatIncreaseMessage(taskId: any): any {
 export function Task_UseStatIncreaseItem(taskId: any): any {
   if(++gTasks[taskId].data[8] > 7)
       {
-          PlaySE(SE_USE_ITEM);
+          PlaySE((1));
           RemoveBagItem(gSpecialVar_ItemId, 1);
-          if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() == (0))
               DisplayItemMessage(taskId, FONT_NORMAL, UseStatIncreaseItem(gSpecialVar_ItemId), Task_CloseStatIncreaseMessage);
           else
               DisplayItemMessageInBattlePyramid(taskId, UseStatIncreaseItem(gSpecialVar_ItemId), Task_CloseStatIncreaseMessage);
@@ -894,7 +905,7 @@ export function ItemUseInBattle_StatIncrease(taskId: any): any {
 
       if (ExecuteTableBasedItemEffect(gPlayerParty[partyId], gSpecialVar_ItemId, partyId, 0) != FALSE)
       {
-          if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() == (0))
               DisplayItemMessage(taskId, FONT_NORMAL, gText_WontHaveEffect, CloseItemMessage);
           else
               DisplayItemMessageInBattlePyramid(taskId, gText_WontHaveEffect, Task_CloseBattlePyramidBagMessage);
@@ -908,7 +919,7 @@ export function ItemUseInBattle_StatIncrease(taskId: any): any {
 
 /** static void ItemUseInBattle_ShowPartyMenu(u8 taskId) */
 export function ItemUseInBattle_ShowPartyMenu(taskId: any): any {
-  if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+  if (CurrentBattlePyramidLocation() == (0))
       {
           gBagMenu.newScreenCallback = ChooseMonForInBattleItem;
           Task_FadeAndCloseBagMenu(taskId);
@@ -940,10 +951,10 @@ export function ItemUseInBattle_PPRecovery(taskId: any): any {
 
 /** void ItemUseInBattle_Escape(u8 taskId) */
 export function ItemUseInBattle_Escape(taskId: any): any {
-  if((gBattleTypeFlags & BATTLE_TYPE_TRAINER) == FALSE)
+  if((gBattleTypeFlags & ((1 << 3))) == FALSE)
       {
           RemoveUsedItem();
-          if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() == (0))
               DisplayItemMessage(taskId, FONT_NORMAL, gStringVar4, Task_FadeAndCloseBagMenu);
           else
               DisplayItemMessageInBattlePyramid(taskId, gStringVar4, CloseBattlePyramidBag);
@@ -958,41 +969,41 @@ export function ItemUseInBattle_Escape(taskId: any): any {
 export function ItemUseOutOfBattle_EnigmaBerry(taskId: any): any {
   switch (GetItemEffectType(gSpecialVar_ItemId))
       {
-      case ITEM_EFFECT_HEAL_HP:
-      case ITEM_EFFECT_CURE_POISON:
-      case ITEM_EFFECT_CURE_SLEEP:
-      case ITEM_EFFECT_CURE_BURN:
-      case ITEM_EFFECT_CURE_FREEZE:
-      case ITEM_EFFECT_CURE_PARALYSIS:
-      case ITEM_EFFECT_CURE_ALL_STATUS:
-      case ITEM_EFFECT_ATK_EV:
-      case ITEM_EFFECT_HP_EV:
-      case ITEM_EFFECT_SPATK_EV:
-      case ITEM_EFFECT_SPDEF_EV:
-      case ITEM_EFFECT_SPEED_EV:
-      case ITEM_EFFECT_DEF_EV:
-          gTasks[taskId].tEnigmaBerryType = ITEM_USE_PARTY_MENU;
+      case (2):
+      case (3):
+      case (4):
+      case (5):
+      case (6):
+      case (7):
+      case (11):
+      case (12):
+      case (13):
+      case (14):
+      case (15):
+      case (16):
+      case (17):
+          gTasks[taskId].tEnigmaBerryType = (1);
           ItemUseOutOfBattle_Medicine(taskId);
           break;
-      case ITEM_EFFECT_SACRED_ASH:
-          gTasks[taskId].tEnigmaBerryType = ITEM_USE_PARTY_MENU;
+      case (10):
+          gTasks[taskId].tEnigmaBerryType = (1);
           ItemUseOutOfBattle_SacredAsh(taskId);
           break;
-      case ITEM_EFFECT_RAISE_LEVEL:
-          gTasks[taskId].tEnigmaBerryType = ITEM_USE_PARTY_MENU;
+      case (1):
+          gTasks[taskId].tEnigmaBerryType = (1);
           ItemUseOutOfBattle_RareCandy(taskId);
           break;
-      case ITEM_EFFECT_PP_UP:
-      case ITEM_EFFECT_PP_MAX:
-          gTasks[taskId].tEnigmaBerryType = ITEM_USE_PARTY_MENU;
+      case (19):
+      case (20):
+          gTasks[taskId].tEnigmaBerryType = (1);
           ItemUseOutOfBattle_PPUp(taskId);
           break;
-      case ITEM_EFFECT_HEAL_PP:
-          gTasks[taskId].tEnigmaBerryType = ITEM_USE_PARTY_MENU;
+      case (21):
+          gTasks[taskId].tEnigmaBerryType = (1);
           ItemUseOutOfBattle_PPRecovery(taskId);
           break;
       default:
-          gTasks[taskId].tEnigmaBerryType = ITEM_USE_BAG_MENU;
+          gTasks[taskId].tEnigmaBerryType = (4);
           ItemUseOutOfBattle_CannotUse(taskId);
           break;
       }
@@ -1002,21 +1013,21 @@ export function ItemUseOutOfBattle_EnigmaBerry(taskId: any): any {
 export function ItemUseInBattle_EnigmaBerry(taskId: any): any {
   switch (GetItemEffectType(gSpecialVar_ItemId))
       {
-      case ITEM_EFFECT_X_ITEM:
+      case (0):
           ItemUseInBattle_StatIncrease(taskId);
           break;
-      case ITEM_EFFECT_HEAL_HP:
-      case ITEM_EFFECT_CURE_POISON:
-      case ITEM_EFFECT_CURE_SLEEP:
-      case ITEM_EFFECT_CURE_BURN:
-      case ITEM_EFFECT_CURE_FREEZE:
-      case ITEM_EFFECT_CURE_PARALYSIS:
-      case ITEM_EFFECT_CURE_ALL_STATUS:
-      case ITEM_EFFECT_CURE_CONFUSION:
-      case ITEM_EFFECT_CURE_INFATUATION:
+      case (2):
+      case (3):
+      case (4):
+      case (5):
+      case (6):
+      case (7):
+      case (11):
+      case (8):
+      case (9):
           ItemUseInBattle_Medicine(taskId);
           break;
-      case ITEM_EFFECT_HEAL_PP:
+      case (21):
           ItemUseInBattle_PPRecovery(taskId);
           break;
       default:

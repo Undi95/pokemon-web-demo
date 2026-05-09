@@ -15,23 +15,28 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let dst: any = null;
+let players: any = null;
+let src: any = null;
 /** void InitDewfordTrend(void) */
 export function InitDewfordTrend(): any {
   let i: any = null;
 
-      for (i = 0; i < SAVED_TRENDS_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
-          gSaveBlock1Ptr.dewfordTrends[i].words[0] = GetRandomEasyChatWordFromGroup(EC_GROUP_CONDITIONS);
+          gSaveBlock1Ptr.dewfordTrends[i].words[0] = GetRandomEasyChatWordFromGroup((10));
 
           if (Random() & 1)
-              gSaveBlock1Ptr.dewfordTrends[i].words[1] = GetRandomEasyChatWordFromGroup(EC_GROUP_LIFESTYLE);
+              gSaveBlock1Ptr.dewfordTrends[i].words[1] = GetRandomEasyChatWordFromGroup((12));
           else
-              gSaveBlock1Ptr.dewfordTrends[i].words[1] = GetRandomEasyChatWordFromGroup(EC_GROUP_HOBBIES);
+              gSaveBlock1Ptr.dewfordTrends[i].words[1] = GetRandomEasyChatWordFromGroup((13));
 
           gSaveBlock1Ptr.dewfordTrends[i].gainingTrendiness = Random() & 1;
           SeedTrendRng((gSaveBlock1Ptr.dewfordTrends[i]));
       }
-      SortTrends(gSaveBlock1Ptr.dewfordTrends, SAVED_TRENDS_COUNT, SORT_MODE_NORMAL);
+      SortTrends(gSaveBlock1Ptr.dewfordTrends, (5), SORT_MODE_NORMAL);
 }
 
 /** void UpdateDewfordTrendPerDay(u16 days) */
@@ -42,7 +47,7 @@ export function UpdateDewfordTrendPerDay(days: any): any {
       {
           let clockRand: any = days * 5;
 
-          for (i = 0; i < SAVED_TRENDS_COUNT; i++)
+          for (i = 0; i < (5); i++)
           {
               let trendiness: any = null;
               let rand: any = clockRand;
@@ -87,7 +92,7 @@ export function UpdateDewfordTrendPerDay(days: any): any {
                       trend.gainingTrendiness = FALSE;
               }
           }
-          SortTrends(gSaveBlock1Ptr.dewfordTrends, SAVED_TRENDS_COUNT, SORT_MODE_NORMAL);
+          SortTrends(gSaveBlock1Ptr.dewfordTrends, (5), SORT_MODE_NORMAL);
       }
 }
 
@@ -98,12 +103,12 @@ export function TrySetTrendyPhrase(phrase: any): any {
 
       if (!IsPhraseInSavedTrends(phrase))
       {
-          if (!FlagGet(FLAG_SYS_CHANGED_DEWFORD_TREND))
+          if (!FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x33))))
           {
-              FlagSet(FLAG_SYS_CHANGED_DEWFORD_TREND);
+              FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x33)));
 
                
-              if (!FlagGet(FLAG_SYS_MIX_RECORD))
+              if (!FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x34))))
               {
                    
                    
@@ -119,13 +124,13 @@ export function TrySetTrendyPhrase(phrase: any): any {
           trend.gainingTrendiness = TRUE;
           SeedTrendRng(trend);
 
-          for (i = 0; i < SAVED_TRENDS_COUNT; i++)
+          for (i = 0; i < (5); i++)
           {
               if (CompareTrends(trend,(gSaveBlock1Ptr.dewfordTrends[i]), SORT_MODE_NORMAL))
               {
                    
                    
-                  let j: any = SAVED_TRENDS_COUNT - 1;
+                  let j: any = (5) - 1;
                   while (j > i)
                   {
                       gSaveBlock1Ptr.dewfordTrends[j] = gSaveBlock1Ptr.dewfordTrends[j - 1];
@@ -133,7 +138,7 @@ export function TrySetTrendyPhrase(phrase: any): any {
                   }
                   gSaveBlock1Ptr.dewfordTrends[i] = trend;
 
-                  if (i == SAVED_TRENDS_COUNT - 1)
+                  if (i == (5) - 1)
                       TryPutTrendWatcherOnAir(phrase);
 
                    
@@ -142,7 +147,7 @@ export function TrySetTrendyPhrase(phrase: any): any {
           }
 
            
-          gSaveBlock1Ptr.dewfordTrends[SAVED_TRENDS_COUNT - 1] = trend;
+          gSaveBlock1Ptr.dewfordTrends[(5) - 1] = trend;
           TryPutTrendWatcherOnAir(phrase);
       }
       return FALSE;
@@ -184,7 +189,7 @@ export function ReceiveDewfordTrendData(linkedTrends: any, size: any, unused: an
        
       players = GetLinkPlayerCount();
       for (i = 0; i < players; i++)
-          memcpy(linkedTrendsBuffer[i * SAVED_TRENDS_COUNT], linkedTrends + i * size, SAVED_TRENDS_SIZE);
+          memcpy(linkedTrendsBuffer[i * (5)], linkedTrends + i * size, SAVED_TRENDS_SIZE);
 
        
        
@@ -194,7 +199,7 @@ export function ReceiveDewfordTrendData(linkedTrends: any, size: any, unused: an
       numTrends = 0;
       for (i = 0; i < players; i++)
       {
-          for (j = 0; j < SAVED_TRENDS_COUNT; j++)
+          for (j = 0; j < (5); j++)
           {
               let idx: any = GetSavedTrendIndex(savedTrendsBuffer, src, numTrends);
               if (idx < 0)
@@ -219,7 +224,7 @@ export function ReceiveDewfordTrendData(linkedTrends: any, size: any, unused: an
        
       src = savedTrendsBuffer;
       dst = gSaveBlock1Ptr.dewfordTrends;
-      for (i = 0; i < SAVED_TRENDS_COUNT; i++)
+      for (i = 0; i < (5); i++)
           dst =  (src++);
 
       Free(linkedTrendsBuffer);
@@ -316,7 +321,7 @@ export function SeedTrendRng(trend: any): any {
 export function IsPhraseInSavedTrends(phrase: any): any {
   let i: any = null;
 
-      for (i = 0; i < SAVED_TRENDS_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           if (IsEasyChatPairEqual(phrase, gSaveBlock1Ptr.dewfordTrends[i].words))
               return TRUE;

@@ -68,7 +68,7 @@ export function Sio32IDMain(): any {
   switch (gRfuSIO32Id.state)
       {
       case 0:
-          gRfuSIO32Id.MS_mode = AGB_CLK_MASTER;
+          gRfuSIO32Id.MS_mode = (1);
           REG_SIOCNT |= SIO_38400_BPS;
           REG_IME = 0;
           REG_IE |= INTR_FLAG_SERIAL;
@@ -79,7 +79,7 @@ export function Sio32IDMain(): any {
       case 1:
           if (gRfuSIO32Id.lastId == 0)
           {
-              if (gRfuSIO32Id.MS_mode == AGB_CLK_MASTER)
+              if (gRfuSIO32Id.MS_mode == (1))
               {
                   if (gRfuSIO32Id.count == 0)
                   {
@@ -88,7 +88,7 @@ export function Sio32IDMain(): any {
                       REG_IME = 1;
                   }
               }
-              else if (gRfuSIO32Id.send_id != RFU_ID && !gRfuSIO32Id.count)
+              else if (gRfuSIO32Id.send_id != (0x00008001) && !gRfuSIO32Id.count)
               {
                   REG_IME = 0;
                   REG_IE &= ~INTR_FLAG_SERIAL;
@@ -121,7 +121,7 @@ export function Sio32IDIntr(): any {
       let rfuSIO32IdUnk0_times_16: any = null;
 
       regSIODATA32 = REG_SIODATA32;
-      if (gRfuSIO32Id.MS_mode != AGB_CLK_MASTER)
+      if (gRfuSIO32Id.MS_mode != (1))
           REG_SIOCNT |= SIO_ENABLE;
       rfuSIO32IdUnk0_times_16 = (regSIODATA32 << (16 * gRfuSIO32Id.MS_mode)) >> 16;
       regSIODATA32 = (regSIODATA32 << 16 * (1 - gRfuSIO32Id.MS_mode)) >> 16;
@@ -152,11 +152,11 @@ export function Sio32IDIntr(): any {
       if (gRfuSIO32Id.count < 4)
           gRfuSIO32Id.send_id = (gRfuSIO32Id.count + Sio32ConnectionData);
       else
-          gRfuSIO32Id.send_id = RFU_ID;
+          gRfuSIO32Id.send_id = (0x00008001);
       gRfuSIO32Id.recv_id = ~regSIODATA32;
       REG_SIODATA32 = (gRfuSIO32Id.send_id << 16 * (1 - gRfuSIO32Id.MS_mode))
                     + (gRfuSIO32Id.recv_id << 16 * gRfuSIO32Id.MS_mode);
-      if (gRfuSIO32Id.MS_mode == AGB_CLK_MASTER && (gRfuSIO32Id.count != 0 || regSIODATA32 == 0x494e))
+      if (gRfuSIO32Id.MS_mode == (1) && (gRfuSIO32Id.count != 0 || regSIODATA32 == 0x494e))
       {
           for (delay = 0; delay < 600; ++delay)
               ;

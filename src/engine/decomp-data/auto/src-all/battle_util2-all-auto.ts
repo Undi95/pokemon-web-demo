@@ -15,6 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gBattleAnimBgTileBuffer: any = null;
+let gBattleAnimBgTilemapBuffer: any = null;
+let gBattleResources: any = null;
+let gLinkBattleRecvBuffer: any = null;
+let gLinkBattleSendBuffer: any = null;
 /** void AllocateBattleResources(void) */
 export function AllocateBattleResources(): any {
   if (gBattleResources != NULL) {
@@ -22,7 +29,7 @@ export function AllocateBattleResources(): any {
            
       }
 
-      if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
+      if (gBattleTypeFlags & ((1 << 26)))
           InitTrainerHillBattleStruct();
 
       gBattleStruct = AllocZeroed(0);
@@ -37,22 +44,22 @@ export function AllocateBattleResources(): any {
       gBattleResources.battleHistory = AllocZeroed(sizeof(gBattleResources.battleHistory));
       gBattleResources.AI_ScriptsStack = AllocZeroed(sizeof(gBattleResources.AI_ScriptsStack));
 
-      gLinkBattleSendBuffer = AllocZeroed(BATTLE_BUFFER_LINK_SIZE);
-      gLinkBattleRecvBuffer = AllocZeroed(BATTLE_BUFFER_LINK_SIZE);
+      gLinkBattleSendBuffer = AllocZeroed((0x1000));
+      gLinkBattleRecvBuffer = AllocZeroed((0x1000));
 
       gBattleAnimBgTileBuffer = AllocZeroed(0x2000);
       gBattleAnimBgTilemapBuffer = AllocZeroed(0x1000);
 
-      if (gBattleTypeFlags & BATTLE_TYPE_SECRET_BASE)
+      if (gBattleTypeFlags & ((1 << 27)))
       {
-          let currSecretBaseId: any = VarGet(VAR_CURRENT_SECRET_BASE);
+          let currSecretBaseId: any = VarGet((0x4054));
           CreateSecretBaseEnemyParty(gSaveBlock1Ptr.secretBases[currSecretBaseId]);
       }
 }
 
 /** void FreeBattleResources(void) */
 export function FreeBattleResources(): any {
-  if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
+  if (gBattleTypeFlags & ((1 << 26)))
           FreeTrainerHillBattleStruct();
 
       if (gBattleResources != NULL)
@@ -81,7 +88,7 @@ export function FreeBattleResources(): any {
 export function AdjustFriendshipOnBattleFaint(battler: any): any {
   let opposingBattlerId: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+      if (gBattleTypeFlags & ((1 << 0)))
       {
           let opposingBattlerId2: any = null;
 
@@ -99,19 +106,19 @@ export function AdjustFriendshipOnBattleFaint(battler: any): any {
       if (gBattleMons[opposingBattlerId].level > gBattleMons[battler].level)
       {
           if (gBattleMons[opposingBattlerId].level - gBattleMons[battler].level > 29)
-              AdjustFriendship(gPlayerParty[gBattlerPartyIndexes[battler]], FRIENDSHIP_EVENT_FAINT_LARGE);
+              AdjustFriendship(gPlayerParty[gBattlerPartyIndexes[battler]], (8));
           else
-              AdjustFriendship(gPlayerParty[gBattlerPartyIndexes[battler]], FRIENDSHIP_EVENT_FAINT_SMALL);
+              AdjustFriendship(gPlayerParty[gBattlerPartyIndexes[battler]], (6));
       }
       else
       {
-          AdjustFriendship(gPlayerParty[gBattlerPartyIndexes[battler]], FRIENDSHIP_EVENT_FAINT_SMALL);
+          AdjustFriendship(gPlayerParty[gBattlerPartyIndexes[battler]], (6));
       }
 }
 
 /** void SwitchPartyOrderInGameMulti(u8 battler, u8 arg1) */
 export function SwitchPartyOrderInGameMulti(battler: any, arg1: any): any {
-  if (GetBattlerSide(battler) != B_SIDE_OPPONENT)
+  if (GetBattlerSide(battler) != (1))
       {
           let i: any = null;
           for (i = 0; i < ARRAY_COUNT(gBattlePartyCurrentOrder); i++)
@@ -130,18 +137,18 @@ export function BattlePalace_TryEscapeStatus(battler: any): any {
 
       do
       {
-          switch (gBattleCommunication[MULTIUSE_STATE])
+          switch (gBattleCommunication[(0)])
           {
           case 0:
-              if (gBattleMons[battler].status1 & STATUS1_SLEEP)
+              if (gBattleMons[battler].status1 & ((1 << 0 | 1 << 1 | 1 << 2)))
               {
                   if (UproarWakeUpCheck(battler))
                   {
                        
-                      gBattleMons[battler].status1 &= ~(STATUS1_SLEEP);
-                      gBattleMons[battler].status2 &= ~(STATUS2_NIGHTMARE);
+                      gBattleMons[battler].status1 &= ~(((1 << 0 | 1 << 1 | 1 << 2)));
+                      gBattleMons[battler].status2 &= ~(((1 << 27)));
                       BattleScriptPushCursor();
-                      gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_WOKE_UP_UPROAR;
+                      gBattleCommunication[(5)] = (1);
                       gBattlescriptCurrInstr = BattleScript_MoveUsedWokeUp;
                       effect = 2;
                   }
@@ -149,18 +156,18 @@ export function BattlePalace_TryEscapeStatus(battler: any): any {
                   {
                       let toSub: any = null;
 
-                      if (gBattleMons[battler].ability == ABILITY_EARLY_BIRD)
+                      if (gBattleMons[battler].ability == (48))
                           toSub = 2;
                       else
                           toSub = 1;
 
                        
-                      if ((gBattleMons[battler].status1 & STATUS1_SLEEP) < toSub)
-                          gBattleMons[battler].status1 &= ~(STATUS1_SLEEP);
+                      if ((gBattleMons[battler].status1 & ((1 << 0 | 1 << 1 | 1 << 2))) < toSub)
+                          gBattleMons[battler].status1 &= ~(((1 << 0 | 1 << 1 | 1 << 2)));
                       else
                           gBattleMons[battler].status1 -= toSub;
 
-                      if (gBattleMons[battler].status1 & STATUS1_SLEEP)
+                      if (gBattleMons[battler].status1 & ((1 << 0 | 1 << 1 | 1 << 2)))
                       {
                            
                           gBattlescriptCurrInstr = BattleScript_MoveUsedIsAsleep;
@@ -169,18 +176,18 @@ export function BattlePalace_TryEscapeStatus(battler: any): any {
                       else
                       {
                            
-                          gBattleMons[battler].status2 &= ~(STATUS2_NIGHTMARE);
+                          gBattleMons[battler].status2 &= ~(((1 << 27)));
                           BattleScriptPushCursor();
-                          gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_WOKE_UP;
+                          gBattleCommunication[(5)] = (0);
                           gBattlescriptCurrInstr = BattleScript_MoveUsedWokeUp;
                           effect = 2;
                       }
                   }
               }
-              gBattleCommunication[MULTIUSE_STATE]++;
+              gBattleCommunication[(0)]++;
               break;
           case 1:
-              if (gBattleMons[battler].status1 & STATUS1_FREEZE)
+              if (gBattleMons[battler].status1 & ((1 << 5)))
               {
                   if (Random() % 5 != 0)
                   {
@@ -190,20 +197,20 @@ export function BattlePalace_TryEscapeStatus(battler: any): any {
                   else
                   {
                        
-                      gBattleMons[battler].status1 &= ~(STATUS1_FREEZE);
+                      gBattleMons[battler].status1 &= ~(((1 << 5)));
                       BattleScriptPushCursor();
                       gBattlescriptCurrInstr = BattleScript_MoveUsedUnfroze;
-                      gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_DEFROSTED;
+                      gBattleCommunication[(5)] = (0);
                   }
                   effect = 2;
               }
-              gBattleCommunication[MULTIUSE_STATE]++;
+              gBattleCommunication[(0)]++;
               break;
           case 2:
               break;
           }
            
-      } while (gBattleCommunication[MULTIUSE_STATE] != 2 && effect == 0);
+      } while (gBattleCommunication[(0)] != 2 && effect == 0);
 
       if (effect == 2)
       {

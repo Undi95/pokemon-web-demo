@@ -17,16 +17,31 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sFlashEffectParams: any = null;
-let sFlashLevelToRadius: any = null;
+let tBldAlpha: any = null;
+let tBldCnt: any = null;
+let tBlueOrb: any = null;
+let tCenterX: any = null;
+let tCenterY: any = null;
+let tClearScanlineEffect: any = null;
+let tCurFlashRadius: any = null;
+let tDestFlashRadius: any = null;
+let tDispCnt: any = null;
+let tFlashCenterX: any = null;
+let tFlashCenterY: any = null;
+let tFlashRadiusDelta: any = null;
+let tShakeDelay: any = null;
+let tShakeDir: any = null;
+let tState: any = null;
+let tWinIn: any = null;
+let tWinOut: any = null;
 /** static void FillPalBufferWhite(void) */
 export function FillPalBufferWhite(): any {
-  CpuFastFill16(RGB_WHITE, gPlttBufferFaded, PLTT_SIZE);
+  CpuFastFill16((RGB(31, 31, 31)), gPlttBufferFaded, PLTT_SIZE);
 }
 
 /** static void FillPalBufferBlack(void) */
 export function FillPalBufferBlack(): any {
-  CpuFastFill16(RGB_BLACK, gPlttBufferFaded, PLTT_SIZE);
+  CpuFastFill16((RGB(0, 0, 0)), gPlttBufferFaded, PLTT_SIZE);
 }
 
 /** void WarpFadeInScreen(void) */
@@ -36,24 +51,24 @@ export function WarpFadeInScreen(): any {
       {
       case 0:
           FillPalBufferBlack();
-          FadeScreen(FADE_FROM_BLACK, 0);
+          FadeScreen((0), 0);
           break;
       case 1:
           FillPalBufferWhite();
-          FadeScreen(FADE_FROM_WHITE, 0);
+          FadeScreen((2), 0);
       }
 }
 
 /** void FadeInFromWhite(void) */
 export function FadeInFromWhite(): any {
   FillPalBufferWhite();
-      FadeScreen(FADE_FROM_WHITE, 8);
+      FadeScreen((2), 8);
 }
 
 /** void FadeInFromBlack(void) */
 export function FadeInFromBlack(): any {
   FillPalBufferBlack();
-      FadeScreen(FADE_FROM_BLACK, 0);
+      FadeScreen((0), 0);
 }
 
 /** void WarpFadeOutScreen(void) */
@@ -62,10 +77,10 @@ export function WarpFadeOutScreen(): any {
       switch (GetMapPairFadeToType(currentMapType, GetDestinationWarpMapHeader().mapType))
       {
       case 0:
-          FadeScreen(FADE_TO_BLACK, 0);
+          FadeScreen((1), 0);
           break;
       case 1:
-          FadeScreen(FADE_TO_WHITE, 0);
+          FadeScreen((3), 0);
       }
 }
 
@@ -161,7 +176,7 @@ export function Task_ReturnToFieldWirelessLink(taskId: any): any {
           if (!IsLinkTaskFinished())
           {
               if (++task.data[1] > 1800)
-                  RfuSetErrorParams(F_RFU_ERROR_6 | F_RFU_ERROR_7);
+                  RfuSetErrorParams(((1 << 13)) | ((1 << 14)));
           }
           else
           {
@@ -257,7 +272,7 @@ export function FieldCB_WarpExitFadeFromBlack(): any {
 export function FieldCB_SpinEnterWarp(): any {
   Overworld_PlaySpecialMapMusic();
       WarpFadeInScreen();
-      PlaySE(SE_WARP_OUT);
+      PlaySE((46));
       CreateTask(Task_SpinEnterWarp, 10);
       LockPlayerFieldControls();
 }
@@ -266,10 +281,10 @@ export function FieldCB_SpinEnterWarp(): any {
 export function FieldCB_MossdeepGymWarpExit(): any {
   Overworld_PlaySpecialMapMusic();
       WarpFadeInScreen();
-      PlaySE(SE_WARP_OUT);
+      PlaySE((46));
       CreateTask(Task_ExitNonDoor, 10);
       LockPlayerFieldControls();
-      SetObjectEventLoadFlag((~SKIP_OBJECT_EVENT_LOAD) & 0xF);
+      SetObjectEventLoadFlag((~(1)) & 0xF);
 }
 
 /** static void Task_ExitDoor(u8 taskId) */
@@ -292,8 +307,8 @@ export function Task_ExitDoor(taskId: any): any {
           {
               let objEventId: any = null;
               SetPlayerVisibility(TRUE);
-              objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
-              ObjectEventSetHeldMovement(gObjectEvents[objEventId], MOVEMENT_ACTION_WALK_NORMAL_DOWN);
+              objEventId = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
+              ObjectEventSetHeldMovement(gObjectEvents[objEventId], (0x8));
               task.tState = 2;
           }
           break;
@@ -302,7 +317,7 @@ export function Task_ExitDoor(taskId: any): any {
           {
               let objEventId: any = null;
               task.data[1] = FieldAnimateDoorClose(x, y);
-              objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+              objEventId = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
               ObjectEventClearHeldMovementIfFinished(gObjectEvents[objEventId]);
               task.tState = 3;
           }
@@ -340,7 +355,7 @@ export function Task_ExitNonAnimDoor(taskId: any): any {
           {
               let objEventId: any = null;
               SetPlayerVisibility(TRUE);
-              objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+              objEventId = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
               ObjectEventSetHeldMovement(gObjectEvents[objEventId], GetWalkNormalMovementAction(GetPlayerFacingDirection()));
               task.tState = 2;
           }
@@ -445,7 +460,7 @@ export function DoWarp(): any {
       TryFadeOutOldMapMusic();
       WarpFadeOutScreen();
       PlayRainStoppingSoundEffect();
-      PlaySE(SE_EXIT);
+      PlaySE((9));
       gFieldCallback = FieldCB_DefaultWarpExit;
       CreateTask(Task_WarpAndLoadMap, 10);
 }
@@ -464,7 +479,7 @@ export function DoDiveWarp(): any {
 export function DoWhiteFadeWarp(): any {
   LockPlayerFieldControls();
       TryFadeOutOldMapMusic();
-      FadeScreen(FADE_TO_WHITE, 8);
+      FadeScreen((3), 8);
       PlayRainStoppingSoundEffect();
       gFieldCallback = FieldCB_WarpExitFadeFromWhite;
       CreateTask(Task_WarpAndLoadMap, 10);
@@ -506,19 +521,19 @@ export function DoTeleportTileWarp(): any {
   LockPlayerFieldControls();
       TryFadeOutOldMapMusic();
       WarpFadeOutScreen();
-      PlaySE(SE_WARP_IN);
+      PlaySE((45));
       CreateTask(Task_WarpAndLoadMap, 10);
       gFieldCallback = FieldCB_SpinEnterWarp;
 }
 
 /** void DoMossdeepGymWarp(void) */
 export function DoMossdeepGymWarp(): any {
-  SetObjectEventLoadFlag(SKIP_OBJECT_EVENT_LOAD);
+  SetObjectEventLoadFlag((1));
       LockPlayerFieldControls();
       SaveObjectEvents();
       TryFadeOutOldMapMusic();
       WarpFadeOutScreen();
-      PlaySE(SE_WARP_IN);
+      PlaySE((45));
       CreateTask(Task_WarpAndLoadMap, 10);
       gFieldCallback = FieldCB_MossdeepGymWarpExit;
 }
@@ -558,7 +573,7 @@ export function DoCableClubWarp(): any {
   LockPlayerFieldControls();
       TryFadeOutOldMapMusic();
       WarpFadeOutScreen();
-      PlaySE(SE_EXIT);
+      PlaySE((9));
       CreateTask(Task_DoCableClubWarp, 10);
 }
 
@@ -570,9 +585,9 @@ export function Task_ReturnToWorldFromLinkRoom(taskId: any): any {
       {
       case 0:
           ClearLinkCallback_2();
-          FadeScreen(FADE_TO_BLACK, 0);
+          FadeScreen((1), 0);
           TryFadeOutOldMapMusic();
-          PlaySE(SE_EXIT);
+          PlaySE((9));
           tState++;
           break;
       case 1:
@@ -648,10 +663,10 @@ export function Task_DoDoorWarp(taskId: any): any {
           if (task.data[1] < 0 || gTasks[task.data[1]].isActive != TRUE)
           {
               let objEventId: any = null;
-              objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+              objEventId = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
               ObjectEventClearHeldMovementIfActive(gObjectEvents[objEventId]);
-              objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
-              ObjectEventSetHeldMovement(gObjectEvents[objEventId], MOVEMENT_ACTION_WALK_NORMAL_UP);
+              objEventId = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
+              ObjectEventSetHeldMovement(gObjectEvents[objEventId], (0x9));
               task.tState = 2;
           }
           break;
@@ -660,7 +675,7 @@ export function Task_DoDoorWarp(taskId: any): any {
           {
               let objEventId: any = null;
               task.data[1] = FieldAnimateDoorClose(x, y - 1);
-              objEventId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+              objEventId = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
               ObjectEventClearHeldMovementIfFinished(gObjectEvents[objEventId]);
               SetPlayerVisibility(FALSE);
               task.tState = 3;
@@ -713,7 +728,7 @@ export function DoContestHallWarp(): any {
       TryFadeOutOldMapMusic();
       WarpFadeOutScreen();
       PlayRainStoppingSoundEffect();
-      PlaySE(SE_EXIT);
+      PlaySE((9));
       gFieldCallback = FieldCB_WarpExitFadeFromBlack;
       CreateTask(Task_DoContestHallWarp, 10);
 }
@@ -969,7 +984,7 @@ export function Task_SpinExitWarp(taskId: any): any {
       case 0:
           FreezeObjectEvents();
           LockPlayerFieldControls();
-          PlaySE(SE_WARP_IN);
+          PlaySE((45));
           DoPlayerSpinExit();
           task.tState++;
           break;
@@ -1012,9 +1027,9 @@ export function LoadOrbEffectPalette(blueOrb: any): any {
       let color: any = [];
 
       if (!blueOrb)
-          color[0] = RGB_RED;
+          color[0] = (RGB(31, 0, 0));
       else
-          color[0] = RGB_BLUE;
+          color[0] = (RGB(0, 0, 31));
 
       for (i = 0; i < 16; i++)
           LoadPalette(color, BG_PLTT_ID(15) + i, PLTT_SIZEOF(1));

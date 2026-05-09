@@ -17,13 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sDefaultBardSongLyrics: any = null;
-let sGiddyAdjectives: any = null;
-let sGiddyQuestions: any = null;
-let sNumStories: any = null;
+let gDisableTextPrinters: any = null;
 let sSelectedStory: any = null;
 let sStorytellerPtr: any = null;
-let sStorytellerStories: any = null;
 let sStorytellerWindowId: any = null;
 let sUnusedPitchTableIndex: any = null;
 /** static void SetupBard(void) */
@@ -31,10 +27,10 @@ export function SetupBard(): any {
   let i: any = null;
       let bard: any =gSaveBlock1Ptr.oldMan.bard;
 
-      bard.id = MAUVILLE_MAN_BARD;
+      bard.id = (0);
       bard.hasChangedSong = FALSE;
       bard.language = gGameLanguage;
-      for (i = 0; i < NUM_BARD_SONG_WORDS; i++)
+      for (i = 0; i < (6); i++)
           bard.songLyrics[i] = sDefaultBardSongLyrics[i];
 }
 
@@ -42,7 +38,7 @@ export function SetupBard(): any {
 export function SetupHipster(): any {
   let hipster: any =gSaveBlock1Ptr.oldMan.hipster;
 
-      hipster.id = MAUVILLE_MAN_HIPSTER;
+      hipster.id = (1);
       hipster.taughtWord = FALSE;
       hipster.language = gGameLanguage;
 }
@@ -56,7 +52,7 @@ export function SetupStoryteller(): any {
 export function SetupGiddy(): any {
   let giddy: any =gSaveBlock1Ptr.oldMan.giddy;
 
-      giddy.id = MAUVILLE_MAN_GIDDY;
+      giddy.id = (4);
       giddy.taleCounter = 0;
       giddy.language = gGameLanguage;
 }
@@ -74,19 +70,19 @@ export function SetMauvilleOldMan(): any {
        
       switch ((trainerId % 10) / 2)
       {
-      case MAUVILLE_MAN_BARD:
+      case (0):
           SetupBard();
           break;
-      case MAUVILLE_MAN_HIPSTER:
+      case (1):
           SetupHipster();
           break;
-      case MAUVILLE_MAN_TRADER:
+      case (2):
           SetupTrader();
           break;
-      case MAUVILLE_MAN_STORYTELLER:
+      case (3):
           SetupStoryteller();
           break;
-      case MAUVILLE_MAN_GIDDY:
+      case (4):
           SetupGiddy();
           break;
       }
@@ -115,10 +111,10 @@ export function SaveBardSongLyrics(): any {
 
       StringCopy(bard.playerName, gSaveBlock2Ptr.playerName);
 
-      for (i = 0; i < TRAINER_ID_LENGTH; i++)
+      for (i = 0; i < (4); i++)
           bard.playerTrainerId[i] = gSaveBlock2Ptr.playerTrainerId[i];
 
-      for (i = 0; i < NUM_BARD_SONG_WORDS; i++)
+      for (i = 0; i < (6); i++)
           bard.songLyrics[i] = bard.newSongLyrics[i];
 
       bard.hasChangedSong = TRUE;
@@ -144,32 +140,32 @@ export function PrepareSongText(): any {
           wordEnd = CopyEasyChatWord(wordEnd, (lyrics++));
           while (wordEnd != str)
           {
-              if (str == CHAR_SPACE)
-                  str = CHAR_BARD_WORD_DELIMIT;
+              if (str == (0x00))
+                  str = (0x37);
               str++;
           }
 
           str++;
-          wordEnd =  CHAR_SPACE;
+          wordEnd =  (0x00);
 
            
           wordEnd = CopyEasyChatWord(wordEnd, (lyrics++));
           while (wordEnd != str)
           {
-              if (str == CHAR_SPACE)
-                  str = CHAR_BARD_WORD_DELIMIT;
+              if (str == (0x00))
+                  str = (0x37);
               str++;
           }
 
           str++;
-          wordEnd =  CHAR_NEWLINE;
+          wordEnd =  (0xFE);
 
            
           wordEnd = CopyEasyChatWord(wordEnd, (lyrics++));
           while (wordEnd != str)
           {
-              if (str == CHAR_SPACE)
-                  str = CHAR_BARD_WORD_DELIMIT;
+              if (str == (0x00))
+                  str = (0x37);
               str++;
           }
 
@@ -177,8 +173,8 @@ export function PrepareSongText(): any {
           {
                
                
-              wordEnd =  EXT_CTRL_CODE_BEGIN;
-              wordEnd =  EXT_CTRL_CODE_FILL_WINDOW;
+              wordEnd =  (0xFC);
+              wordEnd =  (0x0F);
           }
       }
 }
@@ -203,7 +199,7 @@ export function SetHipsterTaughtWord(): any {
 export function HipsterTryTeachWord(): any {
   let word: any = UnlockRandomTrendySaying();
 
-      if (word == EC_EMPTY_WORD)
+      if (word == (0xFFFF))
       {
            
           gSpecialVar_Result = FALSE;
@@ -219,7 +215,7 @@ export function HipsterTryTeachWord(): any {
 export function GiddyShouldTellAnotherTale(): any {
   let giddy: any =gSaveBlock1Ptr.oldMan.giddy;
 
-      if (giddy.taleCounter == GIDDY_MAX_TALES)
+      if (giddy.taleCounter == (10))
       {
           gSpecialVar_Result = FALSE;
           giddy.taleCounter = 0;
@@ -240,7 +236,7 @@ export function GenerateGiddyLine(): any {
        
        
        
-      if (giddy.randomWords[giddy.taleCounter] != EC_EMPTY_WORD)
+      if (giddy.randomWords[giddy.taleCounter] != (0xFFFF))
       {
           let stringPtr: any = null;
           let adjective: any = Random();
@@ -258,7 +254,7 @@ export function GenerateGiddyLine(): any {
 
        
       if (!(Random() % 10))
-          giddy.taleCounter = GIDDY_MAX_TALES;
+          giddy.taleCounter = (10);
       else
           giddy.taleCounter++;
 
@@ -269,12 +265,12 @@ export function GenerateGiddyLine(): any {
 export function InitGiddyTaleList(): any {
   let giddy: any =gSaveBlock1Ptr.oldMan.giddy;
       const wordGroupsAndCount: any = [
-          [EC_GROUP_POKEMON,   0],
-          [EC_GROUP_LIFESTYLE, 0],
-          [EC_GROUP_HOBBIES,   0],
-          [EC_GROUP_MOVE_1,    0],
-          [EC_GROUP_MOVE_2,    0],
-          [EC_GROUP_POKEMON_NATIONAL, 0]
+          [(0),   0],
+          [(12), 0],
+          [(13),   0],
+          [(18),    0],
+          [(19),    0],
+          [(21), 0]
       ];
       let i: any = null;
       let totalWords: any = null;
@@ -282,9 +278,9 @@ export function InitGiddyTaleList(): any {
       let _var: any = null;  
 
        
-      for (i = 0; i < GIDDY_MAX_QUESTIONS; i++)
+      for (i = 0; i < (8); i++)
           giddy.questionList[i] = i;
-      for (i = 0; i < GIDDY_MAX_QUESTIONS; i++)
+      for (i = 0; i < (8); i++)
       {
           _var = Random() % (i + 1);
           SWAP(giddy.questionList[i], giddy.questionList[_var], temp);
@@ -300,15 +296,15 @@ export function InitGiddyTaleList(): any {
 
       giddy.questionNum = 0;
       temp = 0;
-      for (i = 0; i < GIDDY_MAX_TALES; i++)
+      for (i = 0; i < (10); i++)
       {
           _var = Random() % 10;
-          if (_var < 3 && temp < GIDDY_MAX_QUESTIONS)
+          if (_var < 3 && temp < (8))
           {
                
                
                
-              giddy.randomWords[i] = EC_EMPTY_WORD;
+              giddy.randomWords[i] = (0xFFFF);
               temp++;
           }
           else
@@ -352,19 +348,19 @@ export function ResetStorytellerFlag(): any {
 export function ResetMauvilleOldManFlag(): any {
   switch (GetCurrentMauvilleOldMan())
       {
-      case MAUVILLE_MAN_BARD:
+      case (0):
           ResetBardFlag();
           break;
-      case MAUVILLE_MAN_HIPSTER:
+      case (1):
           ResetHipsterFlag();
           break;
-      case MAUVILLE_MAN_STORYTELLER:
+      case (3):
           ResetStorytellerFlag();
           break;
-      case MAUVILLE_MAN_TRADER:
+      case (2):
           ResetTraderFlag();
           break;
-      case MAUVILLE_MAN_GIDDY:
+      case (4):
           break;
       }
       SetMauvilleOldManObjEventGfx();
@@ -411,7 +407,7 @@ export function BardSing(task: any, song: any): any {
           else
               lyrics = bard.newSongLyrics;
 
-          for (i = 0; i < NUM_BARD_SONG_WORDS; i++)
+          for (i = 0; i < (6); i++)
               song.lyrics[i] = lyrics[i];
 
           song.lyricsIndex = 0;
@@ -423,9 +419,9 @@ export function BardSing(task: any, song: any): any {
       {
           let easyChatWord: any = song.lyrics[song.lyricsIndex];
           song.soundTemplates = GetWordSoundTemplates(easyChatWord);
-          CalcWordSounds(song, ( MOD((easyChatWord), (NUM_BARD_PITCH_TABLES_PER_SIZE-1)) + ((((easyChatWord)) >> 3) & 1) ));
+          CalcWordSounds(song, ( MOD((easyChatWord), ((5)-1)) + ((((easyChatWord)) >> 3) & 1) ));
           song.lyricsIndex++;
-          if (song.soundTemplates[0].songId != PHONEME_ID_NONE)
+          if (song.soundTemplates[0].songId != (0xFF))
           {
                
               song.state = SOUND_STATE_START;
@@ -447,21 +443,21 @@ export function BardSing(task: any, song: any): any {
           {
           case SOUND_STATE_START:
               song.timer = song.sounds[song.soundIndex].length;
-              if (template.songId < NUM_PHONEME_SONGS)
+              if (template.songId < ((((609)) - ((559)) + 1)))
               {
                    
                    
                    
                    
                   let phonemeTripletId: any = template.songId / 3;
-                  m4aSongNumStart((FIRST_PHONEME_SONG + 1) + phonemeTripletId * 3);
+                  m4aSongNumStart((((559)) + 1) + phonemeTripletId * 3);
               }
               song.state = SOUND_STATE_SET_BASE;
               song.timer--;
               break;
           case SOUND_STATE_SET_BASE:
               song.state = SOUND_STATE_PLAY;
-              if (template.songId < NUM_PHONEME_SONGS)
+              if (template.songId < ((((609)) - ((559)) + 1)))
               {
                    
                    
@@ -488,7 +484,7 @@ export function BardSing(task: any, song: any): any {
               song.timer--;
               if (song.timer == 0)
               {
-                  if (++song.soundIndex != MAX_BARD_SOUNDS_PER_WORD && song.soundTemplates[song.soundIndex].songId != PHONEME_ID_NONE)
+                  if (++song.soundIndex != (6) && song.soundTemplates[song.soundIndex].songId != (0xFF))
                   {
                        
                       song.state = SOUND_STATE_START;
@@ -546,10 +542,10 @@ export function Task_BardSong(taskId: any): any {
           let wordLen: any = 0;
 
            
-          while (str != CHAR_SPACE
-              && str != CHAR_NEWLINE
-              && str != EXT_CTRL_CODE_BEGIN
-              && str != EOS)
+          while (str != (0x00)
+              && str != (0xFE)
+              && str != (0xFC)
+              && str != (0xFF))
           {
               str++;
               wordLen++;
@@ -557,9 +553,9 @@ export function Task_BardSong(taskId: any): any {
 
            
           if (!task.tUseNewSongLyrics)
-              sUnusedPitchTableIndex = ( MOD((bard.songLyrics[task.tLyricsIndex]), (NUM_BARD_PITCH_TABLES_PER_SIZE-1)) + ((((bard.songLyrics[task.tLyricsIndex])) >> 3) & 1) );
+              sUnusedPitchTableIndex = ( MOD((bard.songLyrics[task.tLyricsIndex]), ((5)-1)) + ((((bard.songLyrics[task.tLyricsIndex])) >> 3) & 1) );
           else
-              sUnusedPitchTableIndex = ( MOD((bard.newSongLyrics[task.tLyricsIndex]), (NUM_BARD_PITCH_TABLES_PER_SIZE-1)) + ((((bard.newSongLyrics[task.tLyricsIndex])) >> 3) & 1) );
+              sUnusedPitchTableIndex = ( MOD((bard.newSongLyrics[task.tLyricsIndex]), ((5)-1)) + ((((bard.newSongLyrics[task.tLyricsIndex])) >> 3) & 1) );
 
           gBardSong.length /= wordLen;
           if (gBardSong.length <= 0)
@@ -587,7 +583,7 @@ export function Task_BardSong(taskId: any): any {
               task.tDelay--;
           break;
       case BARD_STATE_HANDLE_WORD:
-          if (gStringVar4[task.tCharIndex] == EOS)
+          if (gStringVar4[task.tCharIndex] == (0xFF))
           {
                
               FadeInBGM(6);
@@ -595,7 +591,7 @@ export function Task_BardSong(taskId: any): any {
               ScriptContext_Enable();
               DestroyTask(taskId);
           }
-          else if (gStringVar4[task.tCharIndex] == CHAR_SPACE)
+          else if (gStringVar4[task.tCharIndex] == (0x00))
           {
                
               EnableTextPrinters();
@@ -603,14 +599,14 @@ export function Task_BardSong(taskId: any): any {
               task.tState = BARD_STATE_GET_WORD;
               task.tDelay = 0;
           }
-          else if (gStringVar4[task.tCharIndex] == CHAR_NEWLINE)
+          else if (gStringVar4[task.tCharIndex] == (0xFE))
           {
                
               task.tCharIndex++;
               task.tState = BARD_STATE_GET_WORD;
               task.tDelay = 0;
           }
-          else if (gStringVar4[task.tCharIndex] == EXT_CTRL_CODE_BEGIN)
+          else if (gStringVar4[task.tCharIndex] == (0xFC))
           {
                
                
@@ -619,10 +615,10 @@ export function Task_BardSong(taskId: any): any {
               task.tState = BARD_STATE_GET_WORD;
               task.tDelay = 8;
           }
-          else if (gStringVar4[task.tCharIndex] == CHAR_BARD_WORD_DELIMIT)
+          else if (gStringVar4[task.tCharIndex] == (0x37))
           {
                
-              gStringVar4[task.tCharIndex] = CHAR_SPACE;
+              gStringVar4[task.tCharIndex] = (0x00);
               EnableTextPrinters();
               task.tCharIndex++;
               task.tDelay = 0;
@@ -661,7 +657,7 @@ export function Task_BardSong(taskId: any): any {
 
 /** void SetMauvilleOldManObjEventGfx(void) */
 export function SetMauvilleOldManObjEventGfx(): any {
-  VarSet(VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_BARD);
+  VarSet((0x4010), (69));
 }
 
 /** void SanitizeMauvilleOldManForRuby(union OldMan *oldMan) */
@@ -671,31 +667,31 @@ export function SanitizeMauvilleOldManForRuby(oldMan: any): any {
 
       switch (oldMan.common.id)
       {
-      case MAUVILLE_MAN_TRADER:
+      case (2):
       {
           let trader: any =oldMan.trader;
-          for (i = 0; i < NUM_TRADER_ITEMS; i++)
+          for (i = 0; i < (4); i++)
           {
-              if (trader.language[i] == LANGUAGE_JAPANESE)
-                  ConvertInternationalString(trader.playerNames[i], LANGUAGE_JAPANESE);
+              if (trader.language[i] == (1))
+                  ConvertInternationalString(trader.playerNames[i], (1));
           }
           break;
       }
-      case MAUVILLE_MAN_STORYTELLER:
+      case (3):
       {
           let storyteller: any =oldMan.storyteller;
-          for (i = 0; i < NUM_STORYTELLER_TALES; i++)
+          for (i = 0; i < (4); i++)
           {
               if (storyteller.gameStatIDs[i] != 0)
               {
-                  memcpy(playerName, storyteller.trainerNames[i], PLAYER_NAME_LENGTH);
-                  playerName[PLAYER_NAME_LENGTH] = EOS;
+                  memcpy(playerName, storyteller.trainerNames[i], (7));
+                  playerName[(7)] = (0xFF);
                   if (IsStringJapanese(playerName))
                   {
-                      memset(playerName, CHAR_SPACE, PLAYER_NAME_LENGTH + 1);
+                      memset(playerName, (0x00), (7) + 1);
                       StringCopy(playerName, gText_Friend);
-                      memcpy(storyteller.trainerNames[i], playerName, PLAYER_NAME_LENGTH);
-                      storyteller.language[i] = GAME_LANGUAGE;
+                      memcpy(storyteller.trainerNames[i], playerName, (7));
+                      storyteller.language[i] = (((3)));
                   }
               }
           }
@@ -708,20 +704,20 @@ export function SanitizeMauvilleOldManForRuby(oldMan: any): any {
 export function SanitizeReceivedEmeraldOldMan(oldMan: any, version: any, language: any): any {
   let playerName: any = [];
       let i: any = null;
-      if (oldMan.common.id == MAUVILLE_MAN_STORYTELLER && language == LANGUAGE_JAPANESE)
+      if (oldMan.common.id == (3) && language == (1))
       {
           let storyteller: any =oldMan.storyteller;
 
-          for (i = 0; i < NUM_STORYTELLER_TALES; i++)
+          for (i = 0; i < (4); i++)
           {
               if (storyteller.gameStatIDs[i] != 0)
               {
-                  memcpy(playerName, storyteller.trainerNames[i], PLAYER_NAME_LENGTH);
-                  playerName[PLAYER_NAME_LENGTH] = EOS;
+                  memcpy(playerName, storyteller.trainerNames[i], (7));
+                  playerName[(7)] = (0xFF);
                   if (IsStringJapanese(playerName))
-                      storyteller.language[i] = LANGUAGE_JAPANESE;
+                      storyteller.language[i] = (1);
                   else
-                      storyteller.language[i] = GAME_LANGUAGE;
+                      storyteller.language[i] = (((3)));
               }
           }
       }
@@ -729,24 +725,24 @@ export function SanitizeReceivedEmeraldOldMan(oldMan: any, version: any, languag
 
 /** void SanitizeReceivedRubyOldMan(union OldMan *oldMan, u32 version, u32 language) */
 export function SanitizeReceivedRubyOldMan(oldMan: any, version: any, language: any): any {
-  let isRuby: any = (version == VERSION_SAPPHIRE || version == VERSION_RUBY);
+  let isRuby: any = (version == (1) || version == (2));
 
       switch (oldMan.common.id)
       {
-      case MAUVILLE_MAN_TRADER:
+      case (2):
       {
           let trader: any =oldMan.trader;
           let i: any = null;
 
           if (isRuby)
           {
-              for (i = 0; i < NUM_TRADER_ITEMS; i++)
+              for (i = 0; i < (4); i++)
               {
                   let str: any = trader.playerNames[i];
-                  if (str[0] == EXT_CTRL_CODE_BEGIN && str[1] == EXT_CTRL_CODE_JPN)
+                  if (str[0] == (0xFC) && str[1] == (0x15))
                   {
                       StripExtCtrlCodes(str);
-                      trader.language[i] = LANGUAGE_JAPANESE;
+                      trader.language[i] = (1);
                   }
                   else
                   {
@@ -756,9 +752,9 @@ export function SanitizeReceivedRubyOldMan(oldMan: any, version: any, language: 
           }
           else
           {
-              for (i = 0; i < NUM_TRADER_ITEMS; i++)
+              for (i = 0; i < (4); i++)
               {
-                  if (trader.language[i] == LANGUAGE_JAPANESE)
+                  if (trader.language[i] == (1))
                   {
                       StripExtCtrlCodes(trader.playerNames[i]);
                   }
@@ -766,7 +762,7 @@ export function SanitizeReceivedRubyOldMan(oldMan: any, version: any, language: 
           }
       }
       break;
-      case MAUVILLE_MAN_STORYTELLER:
+      case (3):
       {
 
           let storyteller: any =oldMan.storyteller;
@@ -774,7 +770,7 @@ export function SanitizeReceivedRubyOldMan(oldMan: any, version: any, language: 
 
           if (isRuby)
           {
-              for (i = 0; i < NUM_STORYTELLER_TALES; i++)
+              for (i = 0; i < (4); i++)
               {
                   if (storyteller.gameStatIDs[i] != 0)
                       storyteller.language[i] = language;
@@ -782,7 +778,7 @@ export function SanitizeReceivedRubyOldMan(oldMan: any, version: any, language: 
           }
       }
       break;
-      case MAUVILLE_MAN_BARD:
+      case (0):
       {
           let bard: any =oldMan.bard;
 
@@ -792,7 +788,7 @@ export function SanitizeReceivedRubyOldMan(oldMan: any, version: any, language: 
           }
       }
       break;
-      case MAUVILLE_MAN_HIPSTER:
+      case (1):
       {
           let hipster: any =oldMan.hipster;
 
@@ -802,7 +798,7 @@ export function SanitizeReceivedRubyOldMan(oldMan: any, version: any, language: 
           }
       }
       break;
-      case MAUVILLE_MAN_GIDDY:
+      case (4):
       {
           let giddy: any =oldMan.giddy;
 
@@ -820,12 +816,12 @@ export function StorytellerSetup(): any {
   let i: any = null;
       sStorytellerPtr =gSaveBlock1Ptr.oldMan.storyteller;
 
-      sStorytellerPtr.id = MAUVILLE_MAN_STORYTELLER;
+      sStorytellerPtr.id = (3);
       sStorytellerPtr.alreadyRecorded = FALSE;
-      for (i = 0; i < NUM_STORYTELLER_TALES; i++)
+      for (i = 0; i < (4); i++)
       {
           sStorytellerPtr.gameStatIDs[i] = 0;
-          sStorytellerPtr.trainerNames[0][i] = EOS;   
+          sStorytellerPtr.trainerNames[0][i] = (0xFF);   
       }
 }
 
@@ -833,14 +829,14 @@ export function StorytellerSetup(): any {
 export function Storyteller_ResetFlag(): any {
   sStorytellerPtr =gSaveBlock1Ptr.oldMan.storyteller;
 
-      sStorytellerPtr.id = MAUVILLE_MAN_STORYTELLER;
+      sStorytellerPtr.id = (3);
       sStorytellerPtr.alreadyRecorded = FALSE;
 }
 
 /** static u32 StorytellerGetGameStat(u8 stat) */
 export function StorytellerGetGameStat(stat: any): any {
   if (stat == 50)
-          stat = GAME_STAT_SAVED_GAME;
+          stat = (0);
       return GetGameStat(stat);
 }
 
@@ -848,7 +844,7 @@ export function StorytellerGetGameStat(stat: any): any {
 export function GetFreeStorySlot(): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_STORYTELLER_TALES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (sStorytellerPtr.gameStatIDs[i] == 0)
               break;
@@ -885,15 +881,15 @@ export function HasTrainerStatIncreased(trainer: any): any {
 export function GetStoryByStattellerPlayerName(player: any, dst: any): any {
   let name: any = sStorytellerPtr.trainerNames[player];
 
-      memset(dst, EOS, PLAYER_NAME_LENGTH + 1);
-      memcpy(dst, name, PLAYER_NAME_LENGTH);
+      memset(dst, (0xFF), (7) + 1);
+      memcpy(dst, name, (7));
 }
 
 /** static void StorytellerSetPlayerName(u32 player, const u8 *src) */
 export function StorytellerSetPlayerName(player: any, src: any): any {
   let name: any = sStorytellerPtr.trainerNames[player];
-      memset(name, EOS, PLAYER_NAME_LENGTH);
-      memcpy(name, src, PLAYER_NAME_LENGTH);
+      memset(name, (0xFF), (7));
+      memcpy(name, src, (7));
 }
 
 /** static void StorytellerRecordNewStat(u32 player, u32 stat) */
@@ -932,15 +928,15 @@ export function StorytellerInitializeRandomStat(): any {
           let stat: any = sStorytellerStories[storyIds[i]].stat;
           let minVal: any = sStorytellerStories[storyIds[i]].minVal;
 
-          for (j = 0; j < NUM_STORYTELLER_TALES; j++)
+          for (j = 0; j < (4); j++)
           {
               if (sStorytellerPtr.gameStatIDs[j] == stat)
                   break;
           }
-          if (j == NUM_STORYTELLER_TALES && StorytellerGetGameStat(stat) >= minVal)
+          if (j == (4) && StorytellerGetGameStat(stat) >= minVal)
           {
               sStorytellerPtr.alreadyRecorded = TRUE;
-              if (GetFreeStorySlot() == NUM_STORYTELLER_TALES)
+              if (GetFreeStorySlot() == (4))
                   StorytellerRecordNewStat(sSelectedStory, stat);
               else
                   StorytellerRecordNewStat(GetFreeStorySlot(), stat);
@@ -965,7 +961,7 @@ export function StorytellerDisplayStory(player: any): any {
 export function PrintStoryList(): any {
   let i: any = null;
       let width: any = GetStringWidth(FONT_NORMAL, gText_Exit, 0);
-      for (i = 0; i < NUM_STORYTELLER_TALES; i++)
+      for (i = 0; i < (4); i++)
       {
           let curWidth: any = null;
           let gameStatID: any = sStorytellerPtr.gameStatIDs[i];
@@ -978,14 +974,14 @@ export function PrintStoryList(): any {
       }
       sStorytellerWindowId = CreateWindowFromRect(0, 0, ConvertPixelWidthToTileWidth(width), GetFreeStorySlot() * 2 + 2);
       SetStandardWindowBorderStyle(sStorytellerWindowId, FALSE);
-      for (i = 0; i < NUM_STORYTELLER_TALES; i++)
+      for (i = 0; i < (4); i++)
       {
           let gameStatID: any = sStorytellerPtr.gameStatIDs[i];
           if (gameStatID == 0)
               break;
-          AddTextPrinterParameterized(sStorytellerWindowId, FONT_NORMAL, GetStoryTitleByStat(gameStatID), 8, 16 * i + 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sStorytellerWindowId, FONT_NORMAL, GetStoryTitleByStat(gameStatID), 8, 16 * i + 1, (0xFF), NULL);
       }
-      AddTextPrinterParameterized(sStorytellerWindowId, FONT_NORMAL, gText_Exit, 8, 16 * i + 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sStorytellerWindowId, FONT_NORMAL, gText_Exit, 8, 16 * i + 1, (0xFF), NULL);
       InitMenuInUpperLeftCornerNormal(sStorytellerWindowId, GetFreeStorySlot() + 1, 0);
       CopyWindowToVram(sStorytellerWindowId, COPYWIN_FULL);
 }
@@ -1003,9 +999,9 @@ export function Task_StoryListMenu(taskId: any): any {
           break;
       case 1:
           selection = Menu_ProcessInput();
-          if (selection == MENU_NOTHING_CHOSEN)
+          if (selection == (-2))
               break;
-          if (selection == MENU_B_PRESSED || selection == GetFreeStorySlot())
+          if (selection == (-1) || selection == GetFreeStorySlot())
           {
               gSpecialVar_Result = 0;
           }

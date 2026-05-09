@@ -19,7 +19,7 @@
 export function ClearAllMail(): any {
   let i: any = null;
 
-      for (i = 0; i < MAIL_COUNT; i++)
+      for (i = 0; i < ((10 + (6))); i++)
           ClearMail(gSaveBlock1Ptr.mail[i]);
 }
 
@@ -27,23 +27,23 @@ export function ClearAllMail(): any {
 export function ClearMail(mail: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAIL_WORDS_COUNT; i++)
-          mail.words[i] = EC_EMPTY_WORD;
+      for (i = 0; i < (9); i++)
+          mail.words[i] = (0xFFFF);
 
-      for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)
-          mail.playerName[i] = EOS;
+      for (i = 0; i < (7) + 1; i++)
+          mail.playerName[i] = (0xFF);
 
-      for (i = 0; i < TRAINER_ID_LENGTH; i++)
+      for (i = 0; i < (4); i++)
           mail.trainerId[i] = 0;
 
-      mail.species = SPECIES_BULBASAUR;
-      mail.itemId = ITEM_NONE;
+      mail.species = (1);
+      mail.itemId = (0);
 }
 
 /** bool8 MonHasMail(struct Pokemon *mon) */
 export function MonHasMail(mon: any): any {
   let heldItem: any = GetMonData(mon, MON_DATA_HELD_ITEM);
-      if (ItemIsMail(heldItem) && GetMonData(mon, MON_DATA_MAIL) != MAIL_NONE)
+      if (ItemIsMail(heldItem) && GetMonData(mon, MON_DATA_MAIL) != (0xFF))
           return TRUE;
       else
           return FALSE;
@@ -59,19 +59,19 @@ export function GiveMailToMonByItemId(mon: any, itemId: any): any {
       heldItem[0] = itemId;
       heldItem[1] = itemId >> 8;
 
-      for (id = 0; id < PARTY_SIZE; id++)
+      for (id = 0; id < (6); id++)
       {
-          if (gSaveBlock1Ptr.mail[id].itemId == ITEM_NONE)
+          if (gSaveBlock1Ptr.mail[id].itemId == (0))
           {
-              for (i = 0; i < MAIL_WORDS_COUNT; i++)
-                  gSaveBlock1Ptr.mail[id].words[i] = EC_EMPTY_WORD;
+              for (i = 0; i < (9); i++)
+                  gSaveBlock1Ptr.mail[id].words[i] = (0xFFFF);
 
-              for (i = 0; i < PLAYER_NAME_LENGTH; i++)
+              for (i = 0; i < (7); i++)
                   gSaveBlock1Ptr.mail[id].playerName[i] = gSaveBlock2Ptr.playerName[i];
-              gSaveBlock1Ptr.mail[id].playerName[i] = EOS;
-              PadNameString(gSaveBlock1Ptr.mail[id].playerName, CHAR_SPACE);
+              gSaveBlock1Ptr.mail[id].playerName[i] = (0xFF);
+              PadNameString(gSaveBlock1Ptr.mail[id].playerName, (0x00));
 
-              for (i = 0; i < TRAINER_ID_LENGTH; i++)
+              for (i = 0; i < (4); i++)
                   gSaveBlock1Ptr.mail[id].trainerId[i] = gSaveBlock2Ptr.playerTrainerId[i];
 
               species = GetBoxMonData(mon.box, MON_DATA_SPECIES);
@@ -84,12 +84,12 @@ export function GiveMailToMonByItemId(mon: any, itemId: any): any {
           }
       }
 
-      return MAIL_NONE;
+      return (0xFF);
 }
 
 /** u16 SpeciesToMailSpecies(u16 species, u32 personality) */
 export function SpeciesToMailSpecies(species: any, personality: any): any {
-  if (species == SPECIES_UNOWN)
+  if (species == (201))
       {
           let species: any = GetUnownLetterByPersonality(personality) + (30000);
           return species;
@@ -102,9 +102,9 @@ export function SpeciesToMailSpecies(species: any, personality: any): any {
 export function MailSpeciesToSpecies(mailSpecies: any, buffer: any): any {
   let result: any = null;
 
-      if (mailSpecies >= (30000) && mailSpecies < (30000) + NUM_UNOWN_FORMS)
+      if (mailSpecies >= (30000) && mailSpecies < (30000) + (28))
       {
-          result = SPECIES_UNOWN;
+          result = (201);
           buffer = mailSpecies - (30000);
       }
       else
@@ -121,8 +121,8 @@ export function GiveMailToMon(mon: any, mail: any): any {
       let itemId: any = mail.itemId;
       let mailId: any = GiveMailToMonByItemId(mon, itemId);
 
-      if (mailId == MAIL_NONE)
-          return MAIL_NONE;
+      if (mailId == (0xFF))
+          return (0xFF);
 
       gSaveBlock1Ptr.mail[mailId] = mail;
 
@@ -144,10 +144,10 @@ export function TakeMailFromMon(mon: any): any {
       if (MonHasMail(mon))
       {
           mailId = GetMonData(mon, MON_DATA_MAIL);
-          gSaveBlock1Ptr.mail[mailId].itemId = ITEM_NONE;
-          mailId = MAIL_NONE;
-          heldItem[0] = ITEM_NONE;
-          heldItem[1] = ITEM_NONE << 8;
+          gSaveBlock1Ptr.mail[mailId].itemId = (0);
+          mailId = (0xFF);
+          heldItem[0] = (0);
+          heldItem[1] = (0) << 8;
           SetMonData(mon, MON_DATA_MAIL,mailId);
           SetMonData(mon, MON_DATA_HELD_ITEM, heldItem);
       }
@@ -155,7 +155,7 @@ export function TakeMailFromMon(mon: any): any {
 
 /** void ClearMailItemId(u8 mailId) */
 export function ClearMailItemId(mailId: any): any {
-  gSaveBlock1Ptr.mail[mailId].itemId = ITEM_NONE;
+  gSaveBlock1Ptr.mail[mailId].itemId = (0);
 }
 
 /** u8 TakeMailFromMonAndSave(struct Pokemon *mon) */
@@ -164,16 +164,16 @@ export function TakeMailFromMonAndSave(mon: any): any {
       let newHeldItem: any = [];
       let newMailId: any = null;
 
-      newHeldItem[0] = ITEM_NONE;
-      newHeldItem[1] = ITEM_NONE << 8;
-      newMailId = MAIL_NONE;
+      newHeldItem[0] = (0);
+      newHeldItem[1] = (0) << 8;
+      newMailId = (0xFF);
 
-      for (i = PARTY_SIZE; i < MAIL_COUNT; i++)
+      for (i = (6); i < ((10 + (6))); i++)
       {
-          if (gSaveBlock1Ptr.mail[i].itemId == ITEM_NONE)
+          if (gSaveBlock1Ptr.mail[i].itemId == (0))
           {
               memcpy(gSaveBlock1Ptr.mail[i],gSaveBlock1Ptr.mail[GetMonData(mon, MON_DATA_MAIL)], 0);
-              gSaveBlock1Ptr.mail[GetMonData(mon, MON_DATA_MAIL)].itemId = ITEM_NONE;
+              gSaveBlock1Ptr.mail[GetMonData(mon, MON_DATA_MAIL)].itemId = (0);
               SetMonData(mon, MON_DATA_MAIL,newMailId);
               SetMonData(mon, MON_DATA_HELD_ITEM, newHeldItem);
               return i;
@@ -181,25 +181,25 @@ export function TakeMailFromMonAndSave(mon: any): any {
       }
 
        
-      return MAIL_NONE;
+      return (0xFF);
 }
 
 /** bool8 ItemIsMail(u16 itemId) */
 export function ItemIsMail(itemId: any): any {
   switch (itemId)
       {
-      case ITEM_ORANGE_MAIL:
-      case ITEM_HARBOR_MAIL:
-      case ITEM_GLITTER_MAIL:
-      case ITEM_MECH_MAIL:
-      case ITEM_WOOD_MAIL:
-      case ITEM_WAVE_MAIL:
-      case ITEM_BEAD_MAIL:
-      case ITEM_SHADOW_MAIL:
-      case ITEM_TROPIC_MAIL:
-      case ITEM_DREAM_MAIL:
-      case ITEM_FAB_MAIL:
-      case ITEM_RETRO_MAIL:
+      case (121):
+      case (122):
+      case (123):
+      case (124):
+      case (125):
+      case (126):
+      case (127):
+      case (128):
+      case (129):
+      case (130):
+      case (131):
+      case (132):
           return TRUE;
       default:
           return FALSE;

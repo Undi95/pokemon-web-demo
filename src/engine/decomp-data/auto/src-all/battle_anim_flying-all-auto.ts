@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let base: any = null;
+let sinIndex: any = null;
+let t2: any = null;
 /** static void AnimEllipticalGust(struct Sprite *sprite) */
 export function AnimEllipticalGust(sprite: any): any {
   InitSpritePosToAnimTarget(sprite, FALSE);
@@ -38,7 +43,7 @@ export function AnimEllipticalGust_Step(sprite: any): any {
 export function AnimTask_AnimateGustTornadoPalette(taskId: any): any {
   gTasks[taskId].data[0] = gBattleAnimArgs[1];
       gTasks[taskId].data[1] = gBattleAnimArgs[0];
-      gTasks[taskId].data[2] = IndexOfSpritePaletteTag(ANIM_TAG_GUST);
+      gTasks[taskId].data[2] = IndexOfSpritePaletteTag((((10000) + 9)));
       gTasks[taskId].func = AnimTask_AnimateGustTornadoPalette_Step;
 }
 
@@ -58,11 +63,11 @@ export function AnimTask_AnimateGustTornadoPalette_Step(taskId: any): any {
 
           do
           {
-              gPlttBufferFaded[base + OBJ_PLTT_OFFSET + 1 + i] = gPlttBufferFaded[base + OBJ_PLTT_OFFSET + i];
+              gPlttBufferFaded[base + (0x100) + 1 + i] = gPlttBufferFaded[base + (0x100) + i];
               i--;
           } while (i > 0);
 
-          gPlttBufferFaded[base + OBJ_PLTT_OFFSET + 1] = temp;
+          gPlttBufferFaded[base + (0x100) + 1] = temp;
       }
 
       if (--gTasks[taskId].data[0] == 0)
@@ -72,7 +77,7 @@ export function AnimTask_AnimateGustTornadoPalette_Step(taskId: any): any {
 /** static void AnimGustToTarget(struct Sprite *sprite) */
 export function AnimGustToTarget(sprite: any): any {
   InitSpritePosToAnimAttacker(sprite, TRUE);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
 
       sprite.data[0] = gBattleAnimArgs[4];
@@ -93,7 +98,7 @@ export function AnimGustToTarget_Step(sprite: any): any {
 
 /** static void AnimAirWaveCrescent(struct Sprite *sprite) */
 export function AnimAirWaveCrescent(sprite: any): any {
-  if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+  if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           gBattleAnimArgs[0] = -gBattleAnimArgs[0];
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
@@ -137,7 +142,7 @@ export function AnimFlyBallUp(sprite: any): any {
       sprite.data[0] = gBattleAnimArgs[2];
       sprite.data[1] = gBattleAnimArgs[3];
       sprite.callback = AnimFlyBallUp_Step;
-      gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = TRUE;
+      gSprites[GetAnimBattlerSpriteId((0))].invisible = TRUE;
 }
 
 /** static void AnimFlyBallUp_Step(struct Sprite *sprite) */
@@ -158,7 +163,7 @@ export function AnimFlyBallUp_Step(sprite: any): any {
 
 /** static void AnimFlyBallAttack(struct Sprite *sprite) */
 export function AnimFlyBallAttack(sprite: any): any {
-  if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+  if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           sprite.x = DISPLAY_WIDTH + 32;
           sprite.y = -32;
@@ -195,7 +200,7 @@ export function AnimFlyBallAttack_Step(sprite: any): any {
        || sprite.x + sprite.x2 > DISPLAY_WIDTH + 32
        || sprite.y + sprite.y2 > DISPLAY_HEIGHT)
       {
-          gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = FALSE;
+          gSprites[GetAnimBattlerSpriteId((0))].invisible = FALSE;
           DestroyAnimSprite(sprite);
       }
 }
@@ -227,7 +232,7 @@ export function AnimFallingFeather(sprite: any): any {
       else
           battler = gBattleAnimTarget;
 
-      if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) == (0))
           gBattleAnimArgs[0] = -gBattleAnimArgs[0];
 
       sprite.x = GetBattlerSpriteCoord(battler, BATTLER_COORD_ATTR_HEIGHT) + gBattleAnimArgs[0];
@@ -551,13 +556,13 @@ export function AnimWhirlwindLine(sprite: any): any {
   let offset: any = null;
       let mult: any = null;
 
-      if (gBattleAnimArgs[2] == ANIM_ATTACKER)
+      if (gBattleAnimArgs[2] == (0))
           InitSpritePosToAnimAttacker(sprite, FALSE);
       else
           InitSpritePosToAnimTarget(sprite, FALSE);
 
-      if ((gBattleAnimArgs[2] == ANIM_ATTACKER && GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
-          || (gBattleAnimArgs[2] == ANIM_TARGET && GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER))
+      if ((gBattleAnimArgs[2] == (0) && GetBattlerSide(gBattleAnimAttacker) == (0))
+          || (gBattleAnimArgs[2] == (1) && GetBattlerSide(gBattleAnimTarget) == (0)))
       {
           sprite.x += 8;
       }
@@ -618,7 +623,7 @@ export function AnimBounceBallShrink(sprite: any): any {
       {
       case 0:
           InitSpritePosToAnimAttacker(sprite, TRUE);
-          gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = TRUE;
+          gSprites[GetAnimBattlerSpriteId((0))].invisible = TRUE;
           ++sprite.data[0];
           break;
       case 1:
@@ -646,7 +651,7 @@ export function AnimBounceBallLand(sprite: any): any {
           sprite.y2 -= 10;
           if (sprite.y + sprite.y2 < -32)
           {
-              gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = FALSE;
+              gSprites[GetAnimBattlerSpriteId((0))].invisible = FALSE;
               DestroyAnimSprite(sprite);
           }
           break;
@@ -659,7 +664,7 @@ export function AnimDiveBall(sprite: any): any {
       sprite.data[0] = gBattleAnimArgs[2];
       sprite.data[1] = gBattleAnimArgs[3];
       sprite.callback = AnimDiveBall_Step1;
-      gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].invisible = TRUE;
+      gSprites[GetAnimBattlerSpriteId((0))].invisible = TRUE;
 }
 
 /** void AnimDiveBall_Step1(struct Sprite *sprite) */

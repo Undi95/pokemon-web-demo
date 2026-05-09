@@ -17,75 +17,16 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sActiveColumnMap: any = null;
-let sAnims_Berry: any = null;
-let sAnims_Cloud: any = null;
-let sAnims_Dodrio: any = null;
-let sAnims_StatusBar: any = null;
-let sBerries_Gfx: any = null;
-let sBerries_Pal: any = null;
-let sBerryFallDelays: any = null;
-let sBerryIconSpriteIds: any = null;
-let sBerryIconXCoords: any = null;
-let sBerryScoreMultipliers: any = null;
-let sBerrySpriteIds: any = null;
-let sBgTemplates: any = null;
-let sBg_Gfx: any = null;
-let sBg_Pal: any = null;
-let sBg_Tilemap: any = null;
-let sCloudSpriteIds: any = null;
-let sCloudStartCoords: any = null;
-let sCloud_Gfx: any = null;
-let sCloud_Pal: any = null;
-let sDifficultyThresholds: any = null;
-let sDodrioHeadToColumnMap: any = null;
-let sDodrioNeighborMap: any = null;
-let sDodrioNormal_Pal: any = null;
-let sDodrioShiny_Pal: any = null;
-let sDodrioSpriteIds: any = null;
-let sDodrio_Gfx: any = null;
+let highestDifficulty: any = null;
+let nextState: any = null;
+let numWidth: any = null;
+let prizeIdx: any = null;
+let prizeState: any = null;
 let sExitingGame: any = null;
-let sFrozen: any = null;
-let sGame: any = null;
 let sGfx: any = null;
-let sGfxFuncs: any = null;
-let sLeaderFuncs: any = null;
-let sMemberFuncs: any = null;
-let sNameWindowCoords: any = null;
-let sOamData_16x16_Priority0: any = null;
-let sOamData_Berry: any = null;
-let sOamData_Cloud: any = null;
-let sOamData_Dodrio: any = null;
-let sPlayerIdAtColumn: any = null;
-let sPrizeBerryIds: any = null;
-let sRankingTexts: any = null;
-let sRankingYCoords: any = null;
-let sRecordNumMaxDigits: any = null;
-let sRecordNumYCoords: any = null;
-let sRecordTextYCoords: any = null;
-let sRecordsTexts: any = null;
-let sResultsXCoords: any = null;
-let sResultsYCoords: any = null;
-let sState: any = null;
 let sStatusBar: any = null;
-let sStatus_Gfx: any = null;
-let sStatus_Pal: any = null;
-let sTextColorTable: any = null;
-let sTimer: any = null;
-let sTreeBorderLeft_Tilemap: any = null;
-let sTreeBorderRight_Tilemap: any = null;
-let sTreeBorderXPos: any = null;
-let sTreeBorder_Gfx: any = null;
-let sUnsharedColumns: any = null;
-let sUnused1: any = null;
-let sUnused2: any = null;
-let sUnused3: any = null;
-let sWindowTemplate_CommStandby: any = null;
-let sWindowTemplate_DroppedOut: any = null;
-let sWindowTemplate_Prize: any = null;
-let sWindowTemplates_PlayAgain: any = null;
-let sWindowTemplates_Records: any = null;
-let sWindowTemplates_Results: any = null;
+let tWindowId: any = null;
+let widthCurr: any = null;
 /** void StartDodrioBerryPicking(u16 partyId, MainCallback exitCallback) */
 export function StartDodrioBerryPicking(partyId: any, exitCallback: any): any {
   sExitingGame = FALSE;
@@ -103,7 +44,7 @@ export function StartDodrioBerryPicking(partyId: any, exitCallback: any): any {
           SetRandomPrize();
           GetActiveBerryColumns(sGame.numPlayers,sGame.berryColStart,sGame.berryColEnd);
           StopMapMusic();
-          PlayNewMapMusic(MUS_RG_BERRY_PICK);
+          PlayNewMapMusic((542));
       }
       else
       {
@@ -139,7 +80,7 @@ export function InitDodrioGame(game: any): any {
       for (i = 0; i < ARRAY_COUNT(game.pickStateQueue); i++)
           game.pickStateQueue[i] = PICK_NONE;
 
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
       {
           game.inputState[i] = INPUTSTATE_NONE;
           game.inputDelay[i] = 0;
@@ -225,8 +166,8 @@ export function Task_StartDodrioGame(taskId: any): any {
           sGame.startState++;
           break;
       case 6:
-          BlendPalettes(PALETTES_ALL, 0x10, 0x00);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, 0);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 0x10, 0x00);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, 0);
           SetVBlankCallback(VBlankCB_DodrioGame);
           sGame.startState++;
           break;
@@ -506,7 +447,7 @@ export function InitResults_Leader(): any {
           if (WaitFanfare(TRUE))
           {
               SetGameFunc(FUNC_RESULTS);
-              FadeOutAndPlayNewMapMusic(MUS_RG_VICTORY_WILD, 4);
+              FadeOutAndPlayNewMapMusic((523), 4);
           }
           break;
       }
@@ -551,7 +492,7 @@ export function InitResults_Member(): any {
           {
               sGame.maxBerriesPickedInRow = sGame.berryResults[sGame.multiplayerId][BERRY_IN_ROW];
               SetGameFunc(FUNC_RESULTS);
-              FadeOutAndPlayNewMapMusic(MUS_RG_VICTORY_WILD, 4);
+              FadeOutAndPlayNewMapMusic((523), 4);
           }
           break;
       }
@@ -738,7 +679,7 @@ export function ExitGame(): any {
   switch (sGame.state)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, 0);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, 0);
           sGame.state++;
           break;
       case 1:
@@ -773,7 +714,7 @@ export function ResetGame(): any {
       {
       case 0:
           SetGfxFuncById(GFXFUNC_IDLE);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, 0);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, 0);
           sGame.state++;
           break;
       case 1:
@@ -799,13 +740,13 @@ export function ResetGame(): any {
           sGame.state++;
           break;
       case 4:
-          PlayNewMapMusic(MUS_RG_BERRY_PICK);
+          PlayNewMapMusic((542));
           StartCloudMovement();
           sGame.state++;
           break;
       case 5:
-          BlendPalettes(PALETTES_ALL, 16, 0);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, 0);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, 0);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, 0);
           sGame.state++;
           break;
       case 6:
@@ -1074,8 +1015,8 @@ export function HandleSound_Leader(): any {
       {
           if (!sGame.playingPickSound)
           {
-              m4aSongNumStop(SE_SUCCESS);
-              PlaySE(SE_SUCCESS);
+              m4aSongNumStop((31));
+              PlaySE((31));
               sGame.playingPickSound = TRUE;
           }
       }
@@ -1083,7 +1024,7 @@ export function HandleSound_Leader(): any {
       {
           if (!sGame.playingPickSound && !IsSEPlaying())
           {
-              PlaySE(SE_BOO);
+              PlaySE((22));
               StartDodrioMissedAnim(1);
               sGame.playingPickSound = TRUE;
           }
@@ -1098,7 +1039,7 @@ export function HandleSound_Leader(): any {
       else if (sGame.endSoundState == 1)
       {
            
-          PlayFanfareByFanfareNum(FANFARE_TOO_BAD);
+          PlayFanfareByFanfareNum((11));
           sGame.endSoundState = 2;
       }
 }
@@ -1118,8 +1059,8 @@ export function HandleSound_Member(): any {
       {
           if (!sGame.playingPickSound)
           {
-              m4aSongNumStop(SE_SUCCESS);
-              PlaySE(SE_SUCCESS);
+              m4aSongNumStop((31));
+              PlaySE((31));
               sGame.playingPickSound = TRUE;
           }
       }
@@ -1127,7 +1068,7 @@ export function HandleSound_Member(): any {
       {
           if (!sGame.playingPickSound && !IsSEPlaying())
           {
-              PlaySE(SE_BOO);
+              PlaySE((22));
               StartDodrioMissedAnim(1);
               sGame.playingPickSound = TRUE;
           }
@@ -1139,7 +1080,7 @@ export function HandleSound_Member(): any {
           {
               if (!sGame.playingSquishSound[i])
               {
-                  PlaySE(SE_BALLOON_RED + berries.ids[i]);
+                  PlaySE((74) + berries.ids[i]);
                   sGame.playingSquishSound[i] = TRUE;
               }
           }
@@ -1157,7 +1098,7 @@ export function HandleSound_Member(): any {
       else if (sGame.endSoundState == 1)
       {
            
-          PlayFanfareByFanfareNum(FANFARE_TOO_BAD);
+          PlayFanfareByFanfareNum((11));
           sGame.endSoundState = 2;
       }
 }
@@ -1440,7 +1381,7 @@ export function UpdateFallingBerries(): any {
                   if (!sGame.playingSquishSound[i])
                   {
                       sGame.playingSquishSound[i] = TRUE;
-                      PlaySE(SE_BALLOON_RED + game.player.berries.ids[i]);
+                      PlaySE((74) + game.player.berries.ids[i]);
                   }
                   if (sGame.numGraySquares < (10) || otherBerryMissed == TRUE)
                   {
@@ -1632,7 +1573,7 @@ export function AllPlayersReadyToStart(): any {
 export function ResetReadyToStart(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
           sGame.readyToStart[i] = FALSE;
 }
 
@@ -1901,7 +1842,7 @@ export function IncrementBerryResult(berryIdArg: any, column: any, playerId: any
 
 /** static void UpdateBerriesPickedInRow(bool32 picked) */
 export function UpdateBerriesPickedInRow(picked: any): any {
-  if (sGame.numPlayers != MAX_RFU_PLAYERS)
+  if (sGame.numPlayers != (5))
           return;
 
       if (picked == TRUE)
@@ -1930,7 +1871,7 @@ export function SetMaxBerriesPickedInRow(): any {
 export function ResetForPlayAgainPrompt(): any {
   let i, j;
 
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
       {
           for (j = 0; j < (11); j++)
               sGame.players[i].berries.fallDist[j] = 0;
@@ -1965,7 +1906,7 @@ export function SetRandomPrize(): any {
       }
 
       prizeIdx = Random() % ARRAY_COUNT(sPrizeBerryIds[0]);
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
           sGame.berryResults[i][BERRY_PRIZE] = sPrizeBerryIds[prizeSet][prizeIdx];
 }
 
@@ -2009,19 +1950,19 @@ export function HandleWaitPlayAgainInput(): any {
           {
               sGame.players[sGame.multiplayerId].comm.pickState = PICK_MIDDLE;
               sGame.inputDelay[sGame.multiplayerId] = 6;
-              PlaySE(SE_M_CHARM);
+              PlaySE((212));
           }
           else if (JOY_NEW(DPAD_LEFT))
           {
               sGame.players[sGame.multiplayerId].comm.pickState = PICK_LEFT;
               sGame.inputDelay[sGame.multiplayerId] = 6;
-              PlaySE(SE_M_CHARM);
+              PlaySE((212));
           }
           else if (JOY_NEW(DPAD_RIGHT))
           {
               sGame.players[sGame.multiplayerId].comm.pickState = PICK_RIGHT;
               sGame.inputDelay[sGame.multiplayerId] = 6;
-              PlaySE(SE_M_CHARM);
+              PlaySE((212));
           }
           else
           {
@@ -2041,7 +1982,7 @@ export function ResetPickState(): any {
 
 /** static u16 GetPrizeItemId(void) */
 export function GetPrizeItemId(): any {
-  return sGame.berryResults[sGame.multiplayerId][BERRY_PRIZE] + FIRST_BERRY_INDEX;
+  return sGame.berryResults[sGame.multiplayerId][BERRY_PRIZE] + ((133));
 }
 
 /** static u8 GetNumPlayers(void) */
@@ -2141,7 +2082,7 @@ export function SetScoreResults(): any {
            
           for (i = 0; i < numPlayers; i++)
           {
-              sGame.scoreResults[i].ranking = MAX_RFU_PLAYERS - 1;
+              sGame.scoreResults[i].ranking = (5) - 1;
               sGame.scoreResults[i].score = 0;
           }
       }
@@ -2219,10 +2160,10 @@ export function GetPlayerIdByPos(id: any): any {
 /** void IsDodrioInParty(void) */
 export function IsDodrioInParty(): any {
   let i: any = null;
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (GetMonData(gPlayerParty[i], MON_DATA_SANITY_HAS_SPECIES)
-              && GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG) == SPECIES_DODRIO)
+              && GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG) == (85))
           {
               gSpecialVar_Result = TRUE;
               return;
@@ -2299,14 +2240,14 @@ export function PrintRecordsText(windowId: any, width: any): any {
       LoadUserWindowBorderGfx_(windowId, 0x21D, BG_PLTT_ID(13));
       DrawTextBorderOuter(windowId, 0x21D, 13);
       FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_BerryPickingRecords, GetStringCenterAlignXOffset(FONT_NORMAL, gText_BerryPickingRecords, width * 8), 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_BerryPickingRecords, GetStringCenterAlignXOffset(FONT_NORMAL, gText_BerryPickingRecords, width * 8), 1, (0xFF), NULL);
       for (i = 0; i < (3); i++)
       {
           ConvertIntToDecimalStringN(gStringVar1, recordNums[i], STR_CONV_MODE_LEFT_ALIGN, sRecordNumMaxDigits[i]);
           numWidth = GetStringWidth(FONT_NORMAL, gStringVar1, -1);
-          AddTextPrinterParameterized(windowId, FONT_NORMAL, sRecordsTexts[i], 0, sRecordTextYCoords[i][0], TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(windowId, FONT_NORMAL, sRecordsTexts[i], 0, sRecordTextYCoords[i][0], (0xFF), NULL);
           x = (width * 8) - numWidth;
-          AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar1, x, sRecordNumYCoords[i][0], TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar1, x, sRecordNumYCoords[i][0], (0xFF), NULL);
       }
       PutWindowTilemap(windowId);
 }
@@ -2323,7 +2264,7 @@ export function SendPacket_ReadyToStart(ready: any): any {
 export function RecvPacket_ReadyToStart(playerId: any): any {
   let packet: any = null;
 
-      if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
+      if ((gRecvCmds[0][0] & (0xFF00)) != (0x2F00))
           return FALSE;
 
       packet =gRecvCmds[playerId][1];
@@ -2407,7 +2348,7 @@ export function RecvPacket_GameState(playerId: any, player: any, player1: any, p
   let packet: any = null;
       let berries: any =player.berries;
 
-      if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
+      if ((gRecvCmds[0][0] & (0xFF00)) != (0x2F00))
           return FALSE;
 
       packet =gRecvCmds[0][1];
@@ -2478,7 +2419,7 @@ export function SendPacket_PickState(pickState: any): any {
 export function RecvPacket_PickState(playerId: any, pickState: any): any {
   let packet: any = null;
 
-      if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
+      if ((gRecvCmds[0][0] & (0xFF00)) != (0x2F00))
           return FALSE;
 
       packet =gRecvCmds[playerId][1];
@@ -2503,7 +2444,7 @@ export function SendPacket_ReadyToEnd(ready: any): any {
 export function RecvPacket_ReadyToEnd(playerId: any): any {
   let packet: any = null;
 
-      if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
+      if ((gRecvCmds[0][0] & (0xFF00)) != (0x2F00))
           return FALSE;
 
       packet =gRecvCmds[playerId][1];
@@ -2611,7 +2552,7 @@ export function DoDodrioIntroAnim(sprite: any): any {
 
        
       if (sprite.sTimer % (13) == 0 && pickState != PICK_NONE)
-          PlaySE(SE_M_CHARM);
+          PlaySE((212));
 
       if (sprite.sTimer >= (13) (PICK_DISABLED) * 2)
       {
@@ -2722,7 +2663,7 @@ export function DoStatusBarIntro(): any {
                
               sStatusBar.entered[i] = TRUE;
               sStatusBar.yChange[i] = -16;
-              PlaySE(SE_CLICK);
+              PlaySE((36));
           }
           sprite.y += sStatusBar.yChange[i];
       }
@@ -3161,7 +3102,7 @@ export function ShowNames(): any {
               if (playerId == GetMultiplayerId())
                   colorsId = COLORID_BLUE;
               name = GetPlayerName(playerId);
-              AddTextPrinterParameterized3(sGfx.windowIds[i], FONT_NORMAL, left, 1, sTextColorTable[colorsId], TEXT_SKIP_DRAW, name);
+              AddTextPrinterParameterized3(sGfx.windowIds[i], FONT_NORMAL, left, 1, sTextColorTable[colorsId], (0xFF), name);
               CopyWindowToVram(sGfx.windowIds[i], COPYWIN_GFX);
               window.baseBlock += 0xE;
               DrawMessageWindow(window);
@@ -3245,15 +3186,15 @@ export function PrintRankedScores(numPlayers_: any): any {
           let playerId: any = playersByRanking[i];
           let points: any = scoreResults[playerId].score;
 
-          AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, sRankingTexts[scoreResults[playerId].ranking], 8, sRankingYCoords[i], TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, sRankingTexts[scoreResults[playerId].ranking], 8, sRankingYCoords[i], (0xFF), NULL);
           if (playerId == GetMultiplayerId())
               colorsId = COLORID_BLUE;
           name = GetPlayerName(playerId);
-          AddTextPrinterParameterized3(sGfx.windowIds[1], FONT_NORMAL, 28, sRankingYCoords[i], sTextColorTable[colorsId], TEXT_SKIP_DRAW, name);
+          AddTextPrinterParameterized3(sGfx.windowIds[1], FONT_NORMAL, 28, sRankingYCoords[i], sTextColorTable[colorsId], (0xFF), name);
           ConvertIntToDecimalStringN(numString, points, STR_CONV_MODE_LEFT_ALIGN, 7);
           numWidth = GetStringWidth(FONT_NORMAL, numString, -1);
-          AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, numString, x - numWidth, sRankingYCoords[i], TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, gText_SpacePoints, x, sRankingYCoords[i], TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, numString, x - numWidth, sRankingYCoords[i], (0xFF), NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, gText_SpacePoints, x, sRankingYCoords[i], (0xFF), NULL);
       }
 }
 
@@ -3284,8 +3225,8 @@ export function ShowResults(): any {
           FillWindowPixelBuffer(sGfx.windowIds[1], PIXEL_FILL(1));
           strWidth = GetStringWidth(FONT_NORMAL, gText_BerryPickingResults, -1);
           x = (224 - strWidth) / 2;
-          AddTextPrinterParameterized(sGfx.windowIds[0], FONT_NORMAL, gText_BerryPickingResults, x, 1, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, gText_10P30P50P50P, 68, 17, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[0], FONT_NORMAL, gText_BerryPickingResults, x, 1, (0xFF), NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, gText_10P30P50P50P, 68, 17, (0xFF), NULL);
           for (i = 0; i < numPlayers; i++)
           {
               let colorsId: any = COLORID_GRAY;
@@ -3293,7 +3234,7 @@ export function ShowResults(): any {
                   colorsId = COLORID_BLUE;
 
               name = GetPlayerName(i);
-              AddTextPrinterParameterized3(sGfx.windowIds[1], FONT_NORMAL, 0, sResultsYCoords[i], sTextColorTable[colorsId], TEXT_SKIP_DRAW, name);
+              AddTextPrinterParameterized3(sGfx.windowIds[1], FONT_NORMAL, 0, sResultsYCoords[i], sTextColorTable[colorsId], (0xFF), name);
               for (j = 0; j < 4; j++)
               {
                   let width: any = null;
@@ -3305,9 +3246,9 @@ export function ShowResults(): any {
 
                    
                   if (maxBerriesPicked == berriesPicked && maxBerriesPicked != 0)
-                      AddTextPrinterParameterized3(sGfx.windowIds[1], FONT_NORMAL, sResultsXCoords[j] - width, sResultsYCoords[i], sTextColorTable[COLORID_RED], TEXT_SKIP_DRAW, gStringVar4);
+                      AddTextPrinterParameterized3(sGfx.windowIds[1], FONT_NORMAL, sResultsXCoords[j] - width, sResultsYCoords[i], sTextColorTable[COLORID_RED], (0xFF), gStringVar4);
                   else
-                      AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, gStringVar4, sResultsXCoords[j] - width, sResultsYCoords[i], TEXT_SKIP_DRAW, NULL);
+                      AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, gStringVar4, sResultsXCoords[j] - width, sResultsYCoords[i], (0xFF), NULL);
               }
           }
           CopyWindowToVram(sGfx.windowIds[0], COPYWIN_GFX);
@@ -3328,7 +3269,7 @@ export function ShowResults(): any {
           if (++sGfx.timer >= 30 && JOY_NEW(A_BUTTON))
           {
               sGfx.timer = 0;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetBerryIconsInvisibility(TRUE);
               sGfx.state++;
           }
@@ -3338,7 +3279,7 @@ export function ShowResults(): any {
           FillWindowPixelBuffer(sGfx.windowIds[1], PIXEL_FILL(1));
           strWidth = GetStringWidth(FONT_NORMAL, gText_AnnouncingRankings, -1);
           x = (224 - strWidth) / 2;
-          AddTextPrinterParameterized(sGfx.windowIds[0], FONT_NORMAL, gText_AnnouncingRankings, x, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[0], FONT_NORMAL, gText_AnnouncingRankings, x, 1, (0xFF), NULL);
           sGfx.state++;
           break;
       case 6:
@@ -3360,7 +3301,7 @@ export function ShowResults(): any {
           if (++sGfx.timer >= 30 && JOY_NEW(A_BUTTON))
           {
               sGfx.timer = 0;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               if (GetHighestScore() < (3000))
               {
                   sGfx.state = 127;  
@@ -3379,17 +3320,17 @@ export function ShowResults(): any {
           }
           break;
       case 9:
-          PlayNewMapMusic(MUS_LEVEL_UP);
+          PlayNewMapMusic((367));
           FillWindowPixelBuffer(sGfx.windowIds[0], PIXEL_FILL(1));
           FillWindowPixelBuffer(sGfx.windowIds[1], PIXEL_FILL(1));
           strWidth = GetStringWidth(FONT_NORMAL, gText_AnnouncingPrizes, -1);
           x = (224 - strWidth) / 2;
-          AddTextPrinterParameterized(sGfx.windowIds[0], FONT_NORMAL, gText_AnnouncingPrizes, x, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[0], FONT_NORMAL, gText_AnnouncingPrizes, x, 1, (0xFF), NULL);
           DynamicPlaceholderTextUtil_Reset();
           CopyItemName(GetPrizeItemId(), gStringVar1);
           DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, gStringVar1);
           DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gText_FirstPlacePrize);
-          AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, gStringVar4, 0, 1, (0xFF), NULL);
           prizeState = TryGivePrize();
           if (prizeState != PRIZE_RECEIVED && prizeState != NO_PRIZE)
           {
@@ -3400,7 +3341,7 @@ export function ShowResults(): any {
                   DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gText_CantHoldAnyMore);
               else if (prizeState == PRIZE_FILLED_BAG)
                   DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gText_FilledStorageSpace);
-              AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, gStringVar4, 0, 41, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(sGfx.windowIds[1], FONT_NORMAL, gStringVar4, 0, 41, (0xFF), NULL);
           }
           CopyWindowToVram(sGfx.windowIds[0], COPYWIN_GFX);
           CopyWindowToVram(sGfx.windowIds[1], COPYWIN_GFX);
@@ -3413,14 +3354,14 @@ export function ShowResults(): any {
               PutWindowTilemap(sGfx.windowIds[1]);
           }
           CopyBgTilemapBufferToVram(BG_INTERFACE);
-          FadeOutAndFadeInNewMapMusic(MUS_RG_VICTORY_WILD, 20, 10);
+          FadeOutAndFadeInNewMapMusic((523), 20, 10);
           sGfx.state++;
           break;
       case 11:
           if (++sGfx.timer >= 30 && JOY_NEW(A_BUTTON))
           {
               sGfx.timer = 0;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sGfx.state++;
           }
           break;
@@ -3458,10 +3399,10 @@ export function Msg_WantToPlayAgain(): any {
            
           FillWindowPixelBuffer(sGfx.windowIds[WIN_PLAY_AGAIN], PIXEL_FILL(1));
           FillWindowPixelBuffer(sGfx.windowIds[WIN_YES_NO], PIXEL_FILL(1));
-          AddTextPrinterParameterized(sGfx.windowIds[WIN_PLAY_AGAIN], FONT_NORMAL, gText_WantToPlayAgain, 0, 5, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_Yes, 8, 1, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_No, 8, 17, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_SelectorArrow2, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[WIN_PLAY_AGAIN], FONT_NORMAL, gText_WantToPlayAgain, 0, 5, (0xFF), NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_Yes, 8, 1, (0xFF), NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_No, 8, 17, (0xFF), NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_SelectorArrow2, 0, 1, (0xFF), NULL);
           CopyWindowToVram(sGfx.windowIds[WIN_PLAY_AGAIN], COPYWIN_GFX);
           CopyWindowToVram(sGfx.windowIds[WIN_YES_NO], COPYWIN_GFX);
           sGfx.state++;
@@ -3482,22 +3423,22 @@ export function Msg_WantToPlayAgain(): any {
           if (y == PLAY_AGAIN_NONE)
               y = PLAY_AGAIN_YES;
           FillWindowPixelBuffer(sGfx.windowIds[WIN_YES_NO], PIXEL_FILL(1));
-          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_Yes, 8, 1, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_No, 8, 17, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_SelectorArrow2, 0, ((y - 1) * 16) + 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_Yes, 8, 1, (0xFF), NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_No, 8, 17, (0xFF), NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[WIN_YES_NO], FONT_NORMAL, gText_SelectorArrow2, 0, ((y - 1) * 16) + 1, (0xFF), NULL);
           CopyWindowToVram(sGfx.windowIds[WIN_YES_NO], COPYWIN_FULL);
 
            
           if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               if (sGfx.cursorSelection == PLAY_AGAIN_NONE)
                   sGfx.cursorSelection = PLAY_AGAIN_YES;
               sGfx.state++;
           }
           else if (JOY_NEW(DPAD_UP | DPAD_DOWN))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               switch (sGfx.cursorSelection)
               {
               case PLAY_AGAIN_NONE:
@@ -3513,7 +3454,7 @@ export function Msg_WantToPlayAgain(): any {
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sGfx.cursorSelection = PLAY_AGAIN_NO;
               sGfx.state++;
           }
@@ -3537,7 +3478,7 @@ export function Msg_SavingDontTurnOff(): any {
       {
       case 0:
           DrawDialogueFrame(0, FALSE);
-          AddTextPrinterParameterized2(0, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          AddTextPrinterParameterized2(0, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, NULL, (0x2), (0x1), (0x3));
           sGfx.state++;
           break;
       case 1:
@@ -3575,7 +3516,7 @@ export function Msg_CommunicationStandby(): any {
           break;
       case 1:
           FillWindowPixelBuffer(sGfx.windowIds[0], PIXEL_FILL(1));
-          AddTextPrinterParameterized(sGfx.windowIds[0], FONT_NORMAL, gText_CommunicationStandby3, 0, 5, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[0], FONT_NORMAL, gText_CommunicationStandby3, 0, 5, (0xFF), NULL);
           CopyWindowToVram(sGfx.windowIds[0], COPYWIN_GFX);
           sGfx.state++;
           break;
@@ -3615,7 +3556,7 @@ export function Msg_SomeoneDroppedOut(): any {
           break;
       case 1:
           FillWindowPixelBuffer(sGfx.windowIds[0], PIXEL_FILL(1));
-          AddTextPrinterParameterized(sGfx.windowIds[0], FONT_NORMAL, gText_SomeoneDroppedOut, 0, 5, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sGfx.windowIds[0], FONT_NORMAL, gText_SomeoneDroppedOut, 0, 5, (0xFF), NULL);
           CopyWindowToVram(sGfx.windowIds[0], COPYWIN_GFX);
           sGfx.state++;
           break;

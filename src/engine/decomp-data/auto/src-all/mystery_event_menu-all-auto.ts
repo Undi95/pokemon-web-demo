@@ -17,9 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates: any = null;
+let gLinkType: any = null;
 let sUnused: any = null;
-let sWindowTemplates: any = null;
 /** static void VBlankCB(void) */
 export function VBlankCB(): any {
   LoadOam();
@@ -60,7 +59,7 @@ export function CB2_InitMysteryEventMenu(): any {
           BuildOamBuffer();
           RunTextPrinters();
           UpdatePaletteFade();
-          SetBackdropFromColor(RGB_BLACK);
+          SetBackdropFromColor((RGB(0, 0, 0)));
           SetMainCallback2(CB2_MysteryEventMenu);
       }
 }
@@ -93,7 +92,7 @@ export function CB2_MysteryEventMenu(): any {
           PutWindowTilemap(WIN_MSG);
           CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
           ShowBg(0);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
           gMain.state++;
           break;
       case 1:
@@ -107,20 +106,20 @@ export function CB2_MysteryEventMenu(): any {
           if (!IsTextPrinterActive(WIN_MSG))
           {
               gMain.state++;
-              gLinkType = LINKTYPE_MYSTERY_EVENT;
+              gLinkType = (0x5501);
               OpenLink();
           }
           break;
       case 3:
-          if ((gLinkStatus & LINK_STAT_MASTER) && (gLinkStatus & LINK_STAT_PLAYER_COUNT) > 4)
+          if ((gLinkStatus & (0x00000020)) && (gLinkStatus & (0x0000001C)) > 4)
           {
-              PlaySE(SE_PIN);
+              PlaySE((21));
               PrintMysteryMenuText(WIN_MSG, gText_PressAToLoadEvent, 1, 2, 1);
               gMain.state++;
           }
           if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               CloseLink();
               gMain.state = 15;
           }
@@ -134,7 +133,7 @@ export function CB2_MysteryEventMenu(): any {
           {
               if (JOY_NEW(A_BUTTON))
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   CheckShouldAdvanceLinkState();
                   DrawStdFrameWithCustomTileAndPalette(WIN_LOADING, TRUE, 1, 0xD);
                   PrintMysteryMenuText(WIN_LOADING, gText_LoadingEvent, 1, 2, 0);
@@ -144,7 +143,7 @@ export function CB2_MysteryEventMenu(): any {
               }
               else if (JOY_NEW(B_BUTTON))
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   CloseLink();
                   gMain.state = 15;
               }
@@ -184,7 +183,7 @@ export function CB2_MysteryEventMenu(): any {
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               CloseLink();
               gMain.state = 15;
           }
@@ -231,12 +230,12 @@ export function CB2_MysteryEventMenu(): any {
       case 14:
           if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               gMain.state++;
           }
           break;
       case 15:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
           gMain.state++;
           break;
       case 16:
@@ -245,7 +244,7 @@ export function CB2_MysteryEventMenu(): any {
           break;
       }
 
-      if (gLinkStatus & LINK_STAT_CONN_ESTABLISHED && !IsLinkMaster())
+      if (gLinkStatus & (0x00000040) && !IsLinkMaster())
       {
           CloseLink();
           GetEventLoadMessage(gStringVar4, MEVENT_STATUS_LOAD_ERROR);

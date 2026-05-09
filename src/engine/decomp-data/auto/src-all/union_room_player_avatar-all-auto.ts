@@ -17,16 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sMemberFacingDirections: any = null;
-let sMovement_UnionPlayerEnter: any = null;
-let sMovement_UnionPlayerExit: any = null;
-let sOppositeFacingDirection: any = null;
 let sUnionObjRefreshTimer: any = null;
 let sUnionObjWork: any = null;
-let sUnionRoomGroupOffsets: any = null;
-let sUnionRoomLocalIds: any = null;
-let sUnionRoomObjGfxIds: any = null;
-let sUnionRoomPlayerCoords: any = null;
 /** static bool32 IsPlayerStandingStill(void) */
 export function IsPlayerStandingStill(): any {
   if (gPlayerAvatar.tileTransitionState == T_TILE_CENTER || gPlayerAvatar.tileTransitionState == T_NOT_MOVING)
@@ -37,19 +29,19 @@ export function IsPlayerStandingStill(): any {
 
 /** static u8 GetUnionRoomPlayerGraphicsId(u32 gender, u32 id) */
 export function GetUnionRoomPlayerGraphicsId(gender: any, id: any): any {
-  return sUnionRoomObjGfxIds[gender][id % NUM_UNION_ROOM_CLASSES];
+  return sUnionRoomObjGfxIds[gender][id % ((1 << 3))];
 }
 
 /** static void GetUnionRoomPlayerCoords(u32 leaderId, u32 memberId, s32 *x, s32 *y) */
 export function GetUnionRoomPlayerCoords(leaderId: any, memberId: any, x: any, y: any): any {
-  x = sUnionRoomPlayerCoords[leaderId][0] + sUnionRoomGroupOffsets[memberId][0] + MAP_OFFSET;
-      y = sUnionRoomPlayerCoords[leaderId][1] + sUnionRoomGroupOffsets[memberId][1] + MAP_OFFSET;
+  x = sUnionRoomPlayerCoords[leaderId][0] + sUnionRoomGroupOffsets[memberId][0] + (7);
+      y = sUnionRoomPlayerCoords[leaderId][1] + sUnionRoomGroupOffsets[memberId][1] + (7);
 }
 
 /** static bool32 IsUnionRoomPlayerAt(u32 leaderId, u32 memberId, s32 x, s32 y) */
 export function IsUnionRoomPlayerAt(leaderId: any, memberId: any, x: any, y: any): any {
-  if ((sUnionRoomPlayerCoords[leaderId][0] + sUnionRoomGroupOffsets[memberId][0] + MAP_OFFSET == x)
-      &&  (sUnionRoomPlayerCoords[leaderId][1] + sUnionRoomGroupOffsets[memberId][1] + MAP_OFFSET == y))
+  if ((sUnionRoomPlayerCoords[leaderId][0] + sUnionRoomGroupOffsets[memberId][0] + (7) == x)
+      &&  (sUnionRoomPlayerCoords[leaderId][1] + sUnionRoomGroupOffsets[memberId][1] + (7) == y))
           return TRUE;
       else
           return FALSE;
@@ -57,22 +49,22 @@ export function IsUnionRoomPlayerAt(leaderId: any, memberId: any, x: any, y: any
 
 /** static bool32 IsUnionRoomPlayerHidden(u32 player_idx) */
 export function IsUnionRoomPlayerHidden(player_idx: any): any {
-  return FlagGet(FLAG_HIDE_UNION_ROOM_PLAYER_1 + player_idx);
+  return FlagGet((0x2BF) + player_idx);
 }
 
 /** static void HideUnionRoomPlayer(u32 player_idx) */
 export function HideUnionRoomPlayer(player_idx: any): any {
-  FlagSet(FLAG_HIDE_UNION_ROOM_PLAYER_1 + player_idx);
+  FlagSet((0x2BF) + player_idx);
 }
 
 /** static void ShowUnionRoomPlayer(u32 player_idx) */
 export function ShowUnionRoomPlayer(player_idx: any): any {
-  FlagClear(FLAG_HIDE_UNION_ROOM_PLAYER_1 + player_idx);
+  FlagClear((0x2BF) + player_idx);
 }
 
 /** static void SetUnionRoomPlayerGfx(u32 leaderId, u32 gfxId) */
 export function SetUnionRoomPlayerGfx(leaderId: any, gfxId: any): any {
-  VarSet(VAR_OBJ_GFX_ID_0 + leaderId, gfxId);
+  VarSet((0x4010) + leaderId, gfxId);
 }
 
 /** static void CreateUnionRoomPlayerObjectEvent(u32 leaderId) */
@@ -123,12 +115,12 @@ export function InitUnionRoomPlayerObjects(players: any): any {
 
       sUnionObjRefreshTimer = 0;
       sUnionObjWork = players;
-      for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)
+      for (i = 0; i < (8); i++)
       {
           players[i].state = 0;
           players[i].gfxId = 0;
           players[i].animState = 0;
-          players[i].schedAnim = UNION_ROOM_SPAWN_NONE;
+          players[i].schedAnim = (0);
       }
       return CreateTask_AnimateUnionRoomPlayers();
 }
@@ -195,7 +187,7 @@ export function AnimateUnionRoomPlayerSpawn(state: any, leaderId: any, object: a
 /** static bool32 SpawnGroupLeader(u32 leaderId, u32 gender, u32 id) */
 export function SpawnGroupLeader(leaderId: any, gender: any, id: any): any {
   let object: any =sUnionObjWork[leaderId];
-      object.schedAnim = UNION_ROOM_SPAWN_IN;
+      object.schedAnim = (1);
       object.gfxId = GetUnionRoomPlayerGraphicsId(gender, id);
 
       if (object.state == 0)
@@ -207,7 +199,7 @@ export function SpawnGroupLeader(leaderId: any, gender: any, id: any): any {
 /** static bool32 DespawnGroupLeader(u32 leaderId) */
 export function DespawnGroupLeader(leaderId: any): any {
   let object: any =sUnionObjWork[leaderId];
-      object.schedAnim = UNION_ROOM_SPAWN_OUT;
+      object.schedAnim = (2);
 
       if (object.state == 1)
           return TRUE;
@@ -220,7 +212,7 @@ export function AnimateUnionRoomPlayer(leaderId: any, object: any): any {
   switch (object.state)
       {
       case 0:
-          if (object.schedAnim == UNION_ROOM_SPAWN_IN)
+          if (object.schedAnim == (1))
           {
               object.state = 2;
               object.animState = 0;
@@ -231,7 +223,7 @@ export function AnimateUnionRoomPlayer(leaderId: any, object: any): any {
           }
            
       case 2:
-          if (!IsUnionRoomPlayerInvisible(leaderId, 0) && object.schedAnim == UNION_ROOM_SPAWN_OUT)
+          if (!IsUnionRoomPlayerInvisible(leaderId, 0) && object.schedAnim == (2))
           {
               object.state = 0;
               object.animState = 0;
@@ -245,7 +237,7 @@ export function AnimateUnionRoomPlayer(leaderId: any, object: any): any {
           break;
       case 1:
            
-          if (object.schedAnim == UNION_ROOM_SPAWN_OUT)
+          if (object.schedAnim == (2))
           {
               object.state = 3;
               object.animState = 0;
@@ -260,20 +252,20 @@ export function AnimateUnionRoomPlayer(leaderId: any, object: any): any {
               object.state = 0;
           break;
       }
-      object.schedAnim = UNION_ROOM_SPAWN_NONE;
+      object.schedAnim = (0);
 }
 
 /** static void Task_AnimateUnionRoomPlayers(u8 taskId) */
 export function Task_AnimateUnionRoomPlayers(taskId: any): any {
   let i: any = null;
-      for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)
+      for (i = 0; i < (8); i++)
           AnimateUnionRoomPlayer(i,sUnionObjWork[i]);
 }
 
 /** static u8 CreateTask_AnimateUnionRoomPlayers(void) */
 export function CreateTask_AnimateUnionRoomPlayers(): any {
   if (FuncIsActiveTask(Task_AnimateUnionRoomPlayers) == TRUE)
-          return NUM_TASKS;
+          return (16);
       else
           return CreateTask(Task_AnimateUnionRoomPlayers, 5);
 }
@@ -281,14 +273,14 @@ export function CreateTask_AnimateUnionRoomPlayers(): any {
 /** static void DestroyTask_AnimateUnionRoomPlayers(void) */
 export function DestroyTask_AnimateUnionRoomPlayers(): any {
   let taskId: any = FindTaskIdByFunc(Task_AnimateUnionRoomPlayers);
-      if (taskId < NUM_TASKS)
+      if (taskId < (16))
           DestroyTask(taskId);
 }
 
 /** void DestroyUnionRoomPlayerObjects(void) */
 export function DestroyUnionRoomPlayerObjects(): any {
   let i: any = null;
-      for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)
+      for (i = 0; i < (8); i++)
       {
           if (!IsUnionRoomPlayerHidden(i))
           {
@@ -303,31 +295,31 @@ export function DestroyUnionRoomPlayerObjects(): any {
 /** void CreateUnionRoomPlayerSprites(u8 *spriteIds, s32 leaderId) */
 export function CreateUnionRoomPlayerSprites(spriteIds: any, leaderId: any): any {
   let memberId: any = null;
-      for (memberId = 0; memberId < MAX_RFU_PLAYERS; memberId++)
+      for (memberId = 0; memberId < (5); memberId++)
       {
           let id: any = UR_PLAYER_SPRITE_ID(leaderId, memberId);
-          spriteIds[id] = CreateVirtualObject(OBJ_EVENT_GFX_MAN_4,
-                                             id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)),
+          spriteIds[id] = CreateVirtualObject((65),
+                                             id - (((64) - MAX_UNION_ROOM_LEADERS)),
                                              sUnionRoomPlayerCoords[leaderId][0] + sUnionRoomGroupOffsets[memberId][0],
                                              sUnionRoomPlayerCoords[leaderId][1] + sUnionRoomGroupOffsets[memberId][1],
                                              3, 1);
-          SetVirtualObjectInvisibility(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)), TRUE);
+          SetVirtualObjectInvisibility(id - (((64) - MAX_UNION_ROOM_LEADERS)), TRUE);
       }
 }
 
 /** void DestroyUnionRoomPlayerSprites(u8 *spriteIds) */
 export function DestroyUnionRoomPlayerSprites(spriteIds: any): any {
   let i: any = null;
-      for (i = 0; i < NUM_UNION_ROOM_SPRITES; i++)
+      for (i = 0; i < (((8) * (5))); i++)
           DestroySprite(gSprites[spriteIds[i]]);
 }
 
 /** void SetTilesAroundUnionRoomPlayersPassable(void) */
 export function SetTilesAroundUnionRoomPlayersPassable(): any {
   let i, memberId, x, y;
-      for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)
+      for (i = 0; i < (8); i++)
       {
-          for (memberId = 0; memberId < MAX_RFU_PLAYERS; memberId++)
+          for (memberId = 0; memberId < (5); memberId++)
           {
               GetUnionRoomPlayerCoords(i, memberId,x,y);
               MapGridSetMetatileImpassabilityAt(x, y, FALSE);
@@ -339,15 +331,15 @@ export function SetTilesAroundUnionRoomPlayersPassable(): any {
 export function GetNewFacingDirectionForUnionRoomPlayer(memberId: any, leaderId: any, gameData: any): any {
   if (memberId)  
           return sMemberFacingDirections[memberId];
-      else if (gameData.activity == (ACTIVITY_CHAT | IN_UNION_ROOM))
-          return DIR_SOUTH;
+      else if (gameData.activity == ((5) | ((1 << 6))))
+          return (1);
       else
-          return DIR_EAST;
+          return (4);
 }
 
 /** static bool32 IsUnionRoomPlayerInvisible(u32 leaderId, u32 memberId) */
 export function IsUnionRoomPlayerInvisible(leaderId: any, memberId: any): any {
-  return IsVirtualObjectInvisible(UR_PLAYER_SPRITE_ID(leaderId, memberId) - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)));
+  return IsVirtualObjectInvisible(UR_PLAYER_SPRITE_ID(leaderId, memberId) - (((64) - MAX_UNION_ROOM_LEADERS)));
 }
 
 /** static void SpawnGroupMember(u32 leaderId, u32 memberId, u8 graphicsId, struct RfuGameData *gameData) */
@@ -356,10 +348,10 @@ export function SpawnGroupMember(leaderId: any, memberId: any, graphicsId: any, 
       let id: any = UR_PLAYER_SPRITE_ID(leaderId, memberId);
       if (IsUnionRoomPlayerInvisible(leaderId, memberId) == TRUE)
       {
-          SetVirtualObjectInvisibility(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)), FALSE);
-          SetVirtualObjectSpriteAnim(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)), UNION_ROOM_SPAWN_IN);
+          SetVirtualObjectInvisibility(id - (((64) - MAX_UNION_ROOM_LEADERS)), FALSE);
+          SetVirtualObjectSpriteAnim(id - (((64) - MAX_UNION_ROOM_LEADERS)), (1));
       }
-      SetVirtualObjectGraphics(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)), graphicsId);
+      SetVirtualObjectGraphics(id - (((64) - MAX_UNION_ROOM_LEADERS)), graphicsId);
       SetUnionRoomObjectFacingDirection(memberId, leaderId, GetNewFacingDirectionForUnionRoomPlayer(memberId, leaderId, gameData));
       GetUnionRoomPlayerCoords(leaderId, memberId,x,y);
       MapGridSetMetatileImpassabilityAt(x, y, TRUE);
@@ -368,7 +360,7 @@ export function SpawnGroupMember(leaderId: any, memberId: any, graphicsId: any, 
 /** static void DespawnGroupMember(u32 leaderId, u32 memberId) */
 export function DespawnGroupMember(leaderId: any, memberId: any): any {
   let x, y;
-      SetVirtualObjectSpriteAnim(UR_PLAYER_SPRITE_ID(leaderId, memberId) - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)), UNION_ROOM_SPAWN_OUT);
+      SetVirtualObjectSpriteAnim(UR_PLAYER_SPRITE_ID(leaderId, memberId) - (((64) - MAX_UNION_ROOM_LEADERS)), (2));
       GetUnionRoomPlayerCoords(leaderId, memberId,x,y);
       MapGridSetMetatileImpassabilityAt(x, y, FALSE);
 }
@@ -380,13 +372,13 @@ export function AssembleGroup(leaderId: any, gameData: any): any {
 
       PlayerGetDestCoords(x,y);
       player_get_pos_including_state_based_drift(x2,y2);
-      if (IsVirtualObjectInvisible(UR_PLAYER_SPRITE_ID(leaderId, 0) - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS))) == TRUE)
+      if (IsVirtualObjectInvisible(UR_PLAYER_SPRITE_ID(leaderId, 0) - (((64) - MAX_UNION_ROOM_LEADERS))) == TRUE)
       {
           if (IsUnionRoomPlayerAt(leaderId, 0, x, y) == TRUE || IsUnionRoomPlayerAt(leaderId, 0, x2, y2) == TRUE)
               return;
           SpawnGroupMember(leaderId, 0, GetUnionRoomPlayerGraphicsId(gameData.playerGender, gameData.compatibility.playerTrainerId[0]), gameData);
       }
-      for (i = 1; i < MAX_RFU_PLAYERS; i++)
+      for (i = 1; i < (5); i++)
       {
           if (gameData.partnerInfo[i - 1] == 0)
           {
@@ -394,8 +386,8 @@ export function AssembleGroup(leaderId: any, gameData: any): any {
           }
           else if (IsUnionRoomPlayerAt(leaderId, i, x, y) == FALSE && IsUnionRoomPlayerAt(leaderId, i, x2, y2) == FALSE)
           {
-              SpawnGroupMember(leaderId, i, GetUnionRoomPlayerGraphicsId((gameData.partnerInfo[i - 1] >> PINFO_GENDER_SHIFT) & 1,
-                                                                          gameData.partnerInfo[i - 1] & PINFO_TID_MASK),
+              SpawnGroupMember(leaderId, i, GetUnionRoomPlayerGraphicsId((gameData.partnerInfo[i - 1] >> (3)) & 1,
+                                                                          gameData.partnerInfo[i - 1] & (0x7)),
                                                                           gameData);
           }
       }
@@ -406,19 +398,19 @@ export function SpawnGroupLeaderAndMembers(leaderId: any, gameData: any): any {
   let i: any = null;
       switch (gameData.activity)
       {
-      case ACTIVITY_NONE | IN_UNION_ROOM:
-      case ACTIVITY_PLYRTALK | IN_UNION_ROOM:
+      case (0) | ((1 << 6)):
+      case (20) | ((1 << 6)):
           SpawnGroupLeader(leaderId, gameData.playerGender, gameData.compatibility.playerTrainerId[0]);
-          for (i = 0; i < MAX_RFU_PLAYERS; i++)
+          for (i = 0; i < (5); i++)
               DespawnGroupMember(leaderId, i);
           break;
-      case ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM:
-      case ACTIVITY_TRADE | IN_UNION_ROOM:
-      case ACTIVITY_CHAT | IN_UNION_ROOM:
-      case ACTIVITY_CARD | IN_UNION_ROOM:
-      case ACTIVITY_ACCEPT | IN_UNION_ROOM:
-      case ACTIVITY_DECLINE | IN_UNION_ROOM:
-      case ACTIVITY_NPCTALK | IN_UNION_ROOM:
+      case (1) | ((1 << 6)):
+      case (4) | ((1 << 6)):
+      case (5) | ((1 << 6)):
+      case (8) | ((1 << 6)):
+      case (17) | ((1 << 6)):
+      case (18) | ((1 << 6)):
+      case (19) | ((1 << 6)):
           DespawnGroupLeader(leaderId);
           AssembleGroup(leaderId, gameData);
           break;
@@ -429,7 +421,7 @@ export function SpawnGroupLeaderAndMembers(leaderId: any, gameData: any): any {
 export function DespawnGroupLeaderAndMembers(leaderId: any, gameData: any): any {
   let i: any = null;
       DespawnGroupLeader(leaderId);
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
           DespawnGroupMember(leaderId, i);
 }
 
@@ -438,11 +430,11 @@ export function UpdateUnionRoomPlayerSprites(uroom: any): any {
   let i: any = null;
       let leaders: any = null;
       sUnionObjRefreshTimer = 0;
-      for (i = 0, leaders = uroom.playerList.players; i < MAX_UNION_ROOM_LEADERS; i++)
+      for (i = 0, leaders = uroom.playerList.players; i < (8); i++)
       {
-          if (leaders[i].groupScheduledAnim == UNION_ROOM_SPAWN_IN)
+          if (leaders[i].groupScheduledAnim == (1))
               SpawnGroupLeaderAndMembers(i,leaders[i].rfu.data);
-          else if (leaders[i].groupScheduledAnim == UNION_ROOM_SPAWN_OUT)
+          else if (leaders[i].groupScheduledAnim == (2))
               DespawnGroupLeaderAndMembers(i,leaders[i].rfu.data);
       }
 }
@@ -467,9 +459,9 @@ export function TryInteractWithUnionRoomMember(list: any, memberIdPtr: any, lead
           return FALSE;
 
       GetXYCoordsOneStepInFrontOfPlayer(x,y);
-      for (i = 0, leaders = list.players; i < MAX_UNION_ROOM_LEADERS; i++)
+      for (i = 0, leaders = list.players; i < (8); i++)
       {
-          for (memberId = 0; memberId < MAX_RFU_PLAYERS; memberId++)
+          for (memberId = 0; memberId < (5); memberId++)
           {
               let id: any = UR_PLAYER_SPRITE_ID(i, memberId);
 
@@ -480,11 +472,11 @@ export function TryInteractWithUnionRoomMember(list: any, memberIdPtr: any, lead
                   continue;
 
                
-              if (IsVirtualObjectInvisible(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS))))
+              if (IsVirtualObjectInvisible(id - (((64) - MAX_UNION_ROOM_LEADERS))))
                   continue;
-              if (IsVirtualObjectAnimating(id - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS))))
+              if (IsVirtualObjectAnimating(id - (((64) - MAX_UNION_ROOM_LEADERS))))
                   continue;
-              if (leaders[i].groupScheduledAnim != UNION_ROOM_SPAWN_IN)
+              if (leaders[i].groupScheduledAnim != (1))
                   continue;
 
                
@@ -499,7 +491,7 @@ export function TryInteractWithUnionRoomMember(list: any, memberIdPtr: any, lead
 
 /** static void SetUnionRoomObjectFacingDirection(s32 memberId, s32 leaderId, u8 newDirection) */
 export function SetUnionRoomObjectFacingDirection(memberId: any, leaderId: any, newDirection: any): any {
-  TurnVirtualObject(MAX_RFU_PLAYERS * leaderId - ((MAX_SPRITES - MAX_UNION_ROOM_LEADERS)) + memberId, newDirection);
+  TurnVirtualObject((5) * leaderId - (((64) - MAX_UNION_ROOM_LEADERS)) + memberId, newDirection);
 }
 
 /** void UpdateUnionRoomMemberFacing(u32 memberId, u32 leaderId, struct RfuPlayerList *list) */

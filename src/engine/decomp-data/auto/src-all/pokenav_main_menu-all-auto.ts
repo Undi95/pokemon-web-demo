@@ -17,17 +17,11 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sHelpBarTextColors: any = null;
-let sHelpBarTexts: any = null;
-let sHelpBarWindowTemplate: any = null;
-let sLeftHeaderSpriteTemplate: any = null;
-let sMenuLeftHeaderSpriteSheet: any = null;
-let sMenuLeftHeaderSpriteSheets: any = null;
-let sPokenavSubMenuLeftHeaderSpriteSheets: any = null;
-let sSpinningNavgearPalettes: any = null;
-let sSpinningPokenavSpriteSheet: any = null;
-let sSpinningPokenavSpriteTemplate: any = null;
-let sSubmenuLeftHeaderSpriteTemplate: any = null;
+let b: any = null;
+let b1: any = null;
+let g: any = null;
+let g1: any = null;
+let tag: any = null;
 /** bool32 InitPokenavMainMenu(void) */
 export function InitPokenavMainMenu(): any {
   let menu: any = null;
@@ -50,9 +44,9 @@ export function PokenavMainMenuLoopedTaskIsActive(): any {
 
 /** void ShutdownPokenav(void) */
 export function ShutdownPokenav(): any {
-  PlaySE(SE_POKENAV_OFF);
+  PlaySE((111));
       ResetBldCnt_();
-      BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 0, 16, (RGB(0, 0, 0)));
 }
 
 /** bool32 WaitForPokenavShutdownFade(void) */
@@ -81,7 +75,7 @@ export function LoopedTask_InitPokenavMenu(state: any): any {
           InitBgsFromTemplates(0, gPokenavMainMenuBgTemplates, ARRAY_COUNT(gPokenavMainMenuBgTemplates));
           ResetBgPositions();
           ResetTempTileDataBuffers();
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 1:
           menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);
           DecompressAndCopyTileDataToVram(0,gPokenavHeader_Gfx, 0, 0, 0);
@@ -89,23 +83,23 @@ export function LoopedTask_InitPokenavMenu(state: any): any {
           CopyToBgTilemapBuffer(0,gPokenavHeader_Tilemap, 0, 0);
           CopyPaletteIntoBufferUnfaded(gPokenavHeader_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
           CopyBgTilemapBufferToVram(0);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
 
           InitHelpBar();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
+              return (2);
 
           InitPokenavMainMenuResources();
           CreateLeftHeaderSprites();
           ShowBg(0);
-          return LT_FINISH;
+          return (4);
       default:
-          return LT_FINISH;
+          return (4);
       }
 }
 
@@ -153,19 +147,19 @@ export function LoopedTask_SlideMenuHeaderUp(state: any): any {
   switch (state)
       {
       default:
-          return LT_FINISH;
+          return (4);
       case 1:
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 0:
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           if (ChangeBgY(0, 384, BG_COORD_ADD) >= 0x2000)
           {
               ChangeBgY(0, 0x2000, BG_COORD_SET);
-              return LT_FINISH;
+              return (4);
           }
 
-          return LT_PAUSE;
+          return (2);
       }
 }
 
@@ -174,9 +168,9 @@ export function LoopedTask_SlideMenuHeaderDown(state: any): any {
   if (ChangeBgY(0, 384, BG_COORD_SUB) <= 0)
       {
           ChangeBgY(0, 0, BG_COORD_SET);
-          return LT_FINISH;
+          return (4);
       }
-      return LT_PAUSE;
+      return (2);
 }
 
 /** void CopyPaletteIntoBufferUnfaded(const u16 *palette, u32 bufferOffset, u32 size) */
@@ -252,16 +246,16 @@ export function PokenavFadeScreen(fadeType: any): any {
       switch (fadeType)
       {
       case POKENAV_FADE_TO_BLACK:
-          BeginNormalPaletteFade(menu.palettes, -2, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade(menu.palettes, -2, 0, 16, (RGB(0, 0, 0)));
           break;
       case POKENAV_FADE_FROM_BLACK:
-          BeginNormalPaletteFade(menu.palettes, -2, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade(menu.palettes, -2, 16, 0, (RGB(0, 0, 0)));
           break;
       case POKENAV_FADE_TO_BLACK_ALL:
-          BeginNormalPaletteFade(PALETTES_ALL, -2, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -2, 0, 16, (RGB(0, 0, 0)));
           break;
       case POKENAV_FADE_FROM_BLACK_ALL:
-          BeginNormalPaletteFade(PALETTES_ALL, -2, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -2, 16, 0, (RGB(0, 0, 0)));
           break;
       }
 }
@@ -273,7 +267,7 @@ export function IsPaletteFadeActive(): any {
 
 /** void FadeToBlackExceptPrimary(void) */
 export function FadeToBlackExceptPrimary(): any {
-  BlendPalettes(PALETTES_ALL & ~(1 << 16 | 1), 16, RGB_BLACK);
+  BlendPalettes((((0x0000FFFF) | (0xFFFF0000))) & ~(1 << 16 | 1), 16, (RGB(0, 0, 0)));
 }
 
 /** void InitBgTemplates(const struct BgTemplate *templates, int count) */
@@ -384,10 +378,10 @@ export function CreateLeftHeaderSprites(): any {
 
 /** void LoadLeftHeaderGfxForIndex(u32 menuGfxId) */
 export function LoadLeftHeaderGfxForIndex(menuGfxId: any): any {
-  if (menuGfxId < POKENAV_GFX_SUBMENUS_START)
+  if (menuGfxId < (POKENAV_GFX_PARTY_MENU))
           LoadLeftHeaderGfxForMenu(menuGfxId);
       else
-          LoadLeftHeaderGfxForSubMenu(menuGfxId - POKENAV_GFX_SUBMENUS_START);
+          LoadLeftHeaderGfxForSubMenu(menuGfxId - (POKENAV_GFX_PARTY_MENU));
 }
 
 /** void UpdateRegionMapRightHeaderTiles(u32 menuGfxId) */
@@ -405,7 +399,7 @@ export function LoadLeftHeaderGfxForMenu(menuGfxId: any): any {
   let menu: any = null;
       let size, tag;
 
-      if (menuGfxId >= POKENAV_GFX_SUBMENUS_START)
+      if (menuGfxId >= (POKENAV_GFX_PARTY_MENU))
           return;
 
       menu = GetSubstructPtr(POKENAV_SUBSTRUCT_MAIN_MENU);
@@ -423,7 +417,7 @@ export function LoadLeftHeaderGfxForMenu(menuGfxId: any): any {
 export function LoadLeftHeaderGfxForSubMenu(menuGfxId: any): any {
   let size, tag;
 
-      if (menuGfxId >= POKENAV_GFX_MENUS_END - POKENAV_GFX_SUBMENUS_START)
+      if (menuGfxId >= POKENAV_GFX_MENUS_END - (POKENAV_GFX_PARTY_MENU))
           return;
 
       tag = sPokenavSubMenuLeftHeaderSpriteSheets[menuGfxId].tag;
@@ -442,7 +436,7 @@ export function ShowLeftHeaderGfx(menuGfxId: any, isMain: any, isOnRightSide: an
       else
           tileTop = 0x10;
 
-      if (menuGfxId < POKENAV_GFX_SUBMENUS_START)
+      if (menuGfxId < (POKENAV_GFX_PARTY_MENU))
           ShowLeftHeaderSprites(tileTop, isOnRightSide);
       else
           ShowLeftHeaderSubmenuSprites(tileTop, isOnRightSide);

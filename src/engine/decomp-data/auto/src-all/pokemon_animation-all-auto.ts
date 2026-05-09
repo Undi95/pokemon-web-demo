@@ -17,21 +17,14 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let animId: any = null;
+let battler: any = null;
+let cmpVal1: any = null;
+let cmpVal2: any = null;
+let index2: any = null;
 let sAnimIdx: any = null;
-let sAnims: any = null;
-let sBackAnimNatureModTable: any = null;
-let sBackAnimationIds: any = null;
-let sBounceRotateToSidesData: any = null;
-let sDontFlip: any = null;
 let sIsSummaryAnim: any = null;
-let sMonAffineAnims: any = null;
-let sMonAnimFunctions: any = null;
-let sShakeYellowFlashData: any = null;
-let sSpeciesToBackAnimSet: any = null;
-let sTriangleDownData: any = null;
-let sVerticalShakeData: any = null;
-let sYellowFlashData: any = null;
-let sZigzagData: any = null;
+let yAdder: any = null;
 /** static void SetPosForRotation(struct Sprite *sprite, u16 index, s16 amplitudeX, s16 amplitudeY) */
 export function SetPosForRotation(sprite: any, index: any, amplitudeX: any, amplitudeY: any): any {
   let xAdder, yAdder;
@@ -51,7 +44,7 @@ export function SetPosForRotation(sprite: any, index: any, amplitudeX: any, ampl
 
 /** u8 GetSpeciesBackAnimSet(u16 species) */
 export function GetSpeciesBackAnimSet(species: any): any {
-  if (sSpeciesToBackAnimSet[species] != BACK_ANIM_NONE)
+  if (sSpeciesToBackAnimSet[species] != (0))
           return sSpeciesToBackAnimSet[species] - 1;
       else
           return 0;
@@ -663,7 +656,7 @@ export function Anim_CircleCounterclockwise(sprite: any): any {
 
 /** static void Anim_GlowBlack(struct Sprite *sprite) */
 export function Anim_GlowBlack(sprite: any): any {
-  GlowColor(RGB_BLACK, 16, 1);
+  GlowColor((RGB(0, 0, 0)), 16, 1);
 }
 
 /** static void Anim_HorizontalStretch(struct Sprite *sprite) */
@@ -1090,17 +1083,17 @@ export function Anim_GlowOrange(sprite: any): any {
 
 /** static void Anim_GlowRed(struct Sprite *sprite) */
 export function Anim_GlowRed(sprite: any): any {
-  GlowColor(RGB_RED, 12, 2);
+  GlowColor((RGB(31, 0, 0)), 12, 2);
 }
 
 /** static void Anim_GlowBlue(struct Sprite *sprite) */
 export function Anim_GlowBlue(sprite: any): any {
-  GlowColor(RGB_BLUE, 12, 2);
+  GlowColor((RGB(0, 0, 31)), 12, 2);
 }
 
 /** static void Anim_GlowYellow(struct Sprite *sprite) */
 export function Anim_GlowYellow(sprite: any): any {
-  GlowColor(RGB_YELLOW, 12, 2);
+  GlowColor((RGB(31, 31, 0)), 12, 2);
 }
 
 /** static void Anim_GlowPurple(struct Sprite *sprite) */
@@ -1550,9 +1543,9 @@ export function Anim_FlashYellow(sprite: any): any {
           if (sprite.data[4] == 1)
           {
               if (sYellowFlashData[sprite.data[6]][0])
-                  BlendPalette(sprite.data[7], 16, 16, RGB_YELLOW);
+                  BlendPalette(sprite.data[7], 16, 16, (RGB(31, 31, 0)));
               else
-                  BlendPalette(sprite.data[7], 16, 0, RGB_YELLOW);
+                  BlendPalette(sprite.data[7], 16, 0, (RGB(31, 31, 0)));
 
               sprite.data[4] = 0;
           }
@@ -4195,9 +4188,9 @@ export function ShakeFlashYellow(sprite: any): any {
           if (sprite.data[4] == 1)
           {
               if (array[sprite.data[6]].isYellow)
-                  BlendPalette(sprite.data[7], 16, 16, RGB_YELLOW);
+                  BlendPalette(sprite.data[7], 16, 16, (RGB(31, 31, 0)));
               else
-                  BlendPalette(sprite.data[7], 16, 0, RGB_YELLOW);
+                  BlendPalette(sprite.data[7], 16, 0, (RGB(31, 31, 0)));
 
               sprite.data[4] = 0;
           }
@@ -4260,12 +4253,12 @@ export function Anim_ShakeFlashYellow_Slow(sprite: any): any {
 /** static void ShakeGlow_Blend(struct Sprite *sprite) */
 export function ShakeGlow_Blend(sprite: any): any {
   const sColors: any =
-      [ RGB_RED, RGB_GREEN, RGB_BLUE, RGB_BLACK
+      [ (RGB(31, 0, 0)), (RGB(0, 31, 0)), (RGB(0, 0, 31)), (RGB(0, 0, 0))
       ];
 
       if (sprite.data[2] > 127)
       {
-          BlendPalette(sprite.data[7], 16, 0, RGB_RED);
+          BlendPalette(sprite.data[7], 16, 0, (RGB(31, 0, 0)));
           sprite.callback = WaitAnimEnd;
       }
       else

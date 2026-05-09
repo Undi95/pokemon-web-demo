@@ -17,9 +17,14 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattleAICmdTable: any = null;
+let battlerOnField2: any = null;
+let gAIScriptPtr: any = null;
+let gBattleMoveDamage: any = null;
+let gCritMultiplier: any = null;
+let gCurrentMove: any = null;
+let gDynamicBasePower: any = null;
+let itemHi: any = null;
 let sBattler_AI: any = null;
-let sIgnoredPowerfulMoveEffects: any = null;
 /** void BattleAI_HandleItemUseBeforeAISetup(u8 defaultScoreMoves) */
 export function BattleAI_HandleItemUseBeforeAISetup(defaultScoreMoves: any): any {
   let i: any = null;
@@ -29,16 +34,16 @@ export function BattleAI_HandleItemUseBeforeAISetup(defaultScoreMoves: any): any
           data[i] = 0;
 
        
-      if ((gBattleTypeFlags & BATTLE_TYPE_TRAINER)
-          && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_SAFARI | BATTLE_TYPE_BATTLE_TOWER
-                                 | BATTLE_TYPE_EREADER_TRAINER | BATTLE_TYPE_SECRET_BASE | BATTLE_TYPE_FRONTIER
-                                 | BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_RECORDED_LINK)
+      if ((gBattleTypeFlags & ((1 << 3)))
+          && !(gBattleTypeFlags & (((1 << 1)) | ((1 << 7)) | ((1 << 8))
+                                 | ((1 << 11)) | ((1 << 27)) | BATTLE_TYPE_FRONTIER
+                                 | ((1 << 22)) | ((1 << 25)))
               )
          )
       {
-          for (i = 0; i < MAX_TRAINER_ITEMS; i++)
+          for (i = 0; i < (4); i++)
           {
-              if (gTrainers[gTrainerBattleOpponent_A].items[i] != ITEM_NONE)
+              if (gTrainers[gTrainerBattleOpponent_A].items[i] != (0))
               {
                   BATTLE_HISTORY.trainerItems[BATTLE_HISTORY.itemsNo] = gTrainers[gTrainerBattleOpponent_A].items[i];
                   BATTLE_HISTORY.itemsNo++;
@@ -60,7 +65,7 @@ export function BattleAI_SetupAIData(defaultScoreMoves: any): any {
           data[i] = 0;
 
        
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (defaultScoreMoves & 1)
               AI_THINKING_STRUCT.score[i] = 100;
@@ -70,10 +75,10 @@ export function BattleAI_SetupAIData(defaultScoreMoves: any): any {
           defaultScoreMoves >>= 1;
       }
 
-      moveLimitations = CheckMoveLimitations(gActiveBattler, 0, MOVE_LIMITATIONS_ALL);
+      moveLimitations = CheckMoveLimitations(gActiveBattler, 0, (0xFF));
 
        
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gBitTable[i] & moveLimitations)
               AI_THINKING_STRUCT.score[i] = 0;
@@ -85,11 +90,11 @@ export function BattleAI_SetupAIData(defaultScoreMoves: any): any {
       sBattler_AI = gActiveBattler;
 
        
-      if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+      if (gBattleTypeFlags & ((1 << 0)))
       {
-          gBattlerTarget = (Random() & BIT_FLANK) + BATTLE_OPPOSITE(GetBattlerSide(gActiveBattler));
+          gBattlerTarget = (Random() & (2)) + BATTLE_OPPOSITE(GetBattlerSide(gActiveBattler));
           if (gAbsentBattlerFlags & gBitTable[gBattlerTarget])
-              gBattlerTarget ^= BIT_FLANK;
+              gBattlerTarget ^= (2);
       }
        
       else
@@ -98,25 +103,25 @@ export function BattleAI_SetupAIData(defaultScoreMoves: any): any {
       }
 
        
-      if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+      if (gBattleTypeFlags & ((1 << 24)))
           AI_THINKING_STRUCT.aiFlags = GetAiScriptsInRecordedBattle();
-      else if (gBattleTypeFlags & BATTLE_TYPE_SAFARI)
-          AI_THINKING_STRUCT.aiFlags = AI_SCRIPT_SAFARI;
-      else if (gBattleTypeFlags & BATTLE_TYPE_ROAMER)
-          AI_THINKING_STRUCT.aiFlags = AI_SCRIPT_ROAMING;
-      else if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE)
-          AI_THINKING_STRUCT.aiFlags = AI_SCRIPT_FIRST_BATTLE;
-      else if (gBattleTypeFlags & BATTLE_TYPE_FACTORY)
+      else if (gBattleTypeFlags & ((1 << 7)))
+          AI_THINKING_STRUCT.aiFlags = ((1 << 30));
+      else if (gBattleTypeFlags & ((1 << 10)))
+          AI_THINKING_STRUCT.aiFlags = ((1 << 29));
+      else if (gBattleTypeFlags & ((1 << 4)))
+          AI_THINKING_STRUCT.aiFlags = ((1 << 31));
+      else if (gBattleTypeFlags & ((1 << 19)))
           AI_THINKING_STRUCT.aiFlags = GetAiScriptsInBattleFactory();
-      else if (gBattleTypeFlags & (BATTLE_TYPE_FRONTIER | BATTLE_TYPE_EREADER_TRAINER | BATTLE_TYPE_TRAINER_HILL | BATTLE_TYPE_SECRET_BASE))
-          AI_THINKING_STRUCT.aiFlags = AI_SCRIPT_CHECK_BAD_MOVE | AI_SCRIPT_CHECK_VIABILITY | AI_SCRIPT_TRY_TO_FAINT;
-      else if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
+      else if (gBattleTypeFlags & (BATTLE_TYPE_FRONTIER | ((1 << 11)) | ((1 << 26)) | ((1 << 27))))
+          AI_THINKING_STRUCT.aiFlags = ((1 << 0)) | ((1 << 2)) | ((1 << 1));
+      else if (gBattleTypeFlags & ((1 << 15)))
           AI_THINKING_STRUCT.aiFlags = gTrainers[gTrainerBattleOpponent_A].aiFlags | gTrainers[gTrainerBattleOpponent_B].aiFlags;
       else
          AI_THINKING_STRUCT.aiFlags = gTrainers[gTrainerBattleOpponent_A].aiFlags;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
-          AI_THINKING_STRUCT.aiFlags |= AI_SCRIPT_DOUBLE_BATTLE;
+      if (gBattleTypeFlags & ((1 << 0)))
+          AI_THINKING_STRUCT.aiFlags |= ((1 << 7));
 }
 
 /** u8 BattleAI_ChooseMoveOrAction(void) */
@@ -124,7 +129,7 @@ export function BattleAI_ChooseMoveOrAction(): any {
   let savedCurrentMove: any = gCurrentMove;
       let ret: any = null;
 
-      if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
+      if (!(gBattleTypeFlags & ((1 << 0))))
           ret = ChooseMoveOrAction_Singles();
       else
           ret = ChooseMoveOrAction_Doubles();
@@ -156,17 +161,17 @@ export function ChooseMoveOrAction_Singles(): any {
 
        
       if (AI_THINKING_STRUCT.aiAction & ((1 << 1)))
-          return AI_CHOICE_FLEE;
+          return (4);
       if (AI_THINKING_STRUCT.aiAction & ((1 << 2)))
-          return AI_CHOICE_WATCH;
+          return (5);
 
       numOfBestMoves = 1;
       currentMoveArray[0] = AI_THINKING_STRUCT.score[0];
       consideredMoveArray[0] = 0;
 
-      for (i = 1; i < MAX_MON_MOVES; i++)
+      for (i = 1; i < (4); i++)
       {
-          if (gBattleMons[sBattler_AI].moves[i] != MOVE_NONE)
+          if (gBattleMons[sBattler_AI].moves[i] != (0))
           {
                
               if (currentMoveArray[0] == AI_THINKING_STRUCT.score[i])
@@ -208,14 +213,14 @@ export function ChooseMoveOrAction_Doubles(): any {
           }
           else
           {
-              if (gBattleTypeFlags & BATTLE_TYPE_PALACE)
+              if (gBattleTypeFlags & ((1 << 17)))
                   BattleAI_SetupAIData(gBattleStruct.palaceFlags >> MAX_BATTLERS_COUNT);
               else
                   BattleAI_SetupAIData(ALL_MOVES_MASK);
 
               gBattlerTarget = i;
 
-              if ((i & BIT_SIDE) != (sBattler_AI & BIT_SIDE))
+              if ((i & (1)) != (sBattler_AI & (1)))
                   RecordLastUsedMoveByTarget();
 
               AI_THINKING_STRUCT.aiLogicId = 0;
@@ -235,18 +240,18 @@ export function ChooseMoveOrAction_Doubles(): any {
 
               if (AI_THINKING_STRUCT.aiAction & ((1 << 1)))
               {
-                  actionOrMoveIndex[i] = AI_CHOICE_FLEE;
+                  actionOrMoveIndex[i] = (4);
               }
               else if (AI_THINKING_STRUCT.aiAction & ((1 << 2)))
               {
-                  actionOrMoveIndex[i] = AI_CHOICE_WATCH;
+                  actionOrMoveIndex[i] = (5);
               }
               else
               {
                   mostViableMovesScores[0] = AI_THINKING_STRUCT.score[0];
                   mostViableMovesIndices[0] = 0;
                   mostViableMovesNo = 1;
-                  for (j = 1; j < MAX_MON_MOVES; j++)
+                  for (j = 1; j < (4); j++)
                   {
                       if (gBattleMons[sBattler_AI].moves[j] != 0)
                       {
@@ -334,7 +339,7 @@ export function BattleAI_DoAIProcessing(): any {
                   {
                      AI_THINKING_STRUCT.movesetIndex++;
 
-                      if (AI_THINKING_STRUCT.movesetIndex < MAX_MON_MOVES && !(AI_THINKING_STRUCT.aiAction & ((1 << 3))))
+                      if (AI_THINKING_STRUCT.movesetIndex < (4) && !(AI_THINKING_STRUCT.aiAction & ((1 << 3))))
                           AI_THINKING_STRUCT.aiState = AIState_SettingUp;
                       else
                           AI_THINKING_STRUCT.aiState++;
@@ -350,12 +355,12 @@ export function BattleAI_DoAIProcessing(): any {
 export function RecordLastUsedMoveByTarget(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (BATTLE_HISTORY.usedMoves[gBattlerTarget].moves[i] == gLastMoves[gBattlerTarget])
               break;
 
-          if (BATTLE_HISTORY.usedMoves[gBattlerTarget].moves[i] == MOVE_NONE)
+          if (BATTLE_HISTORY.usedMoves[gBattlerTarget].moves[i] == (0))
           {
               BATTLE_HISTORY.usedMoves[gBattlerTarget].moves[i] = gLastMoves[gBattlerTarget];
               break;
@@ -367,8 +372,8 @@ export function RecordLastUsedMoveByTarget(): any {
 export function ClearBattlerMoveHistory(battler: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
-          BATTLE_HISTORY.usedMoves[battler].moves[i] = MOVE_NONE;
+      for (i = 0; i < (4); i++)
+          BATTLE_HISTORY.usedMoves[battler].moves[i] = (0);
 }
 
 /** void RecordAbilityBattle(u8 battler, u8 abilityId) */
@@ -378,7 +383,7 @@ export function RecordAbilityBattle(battler: any, abilityId: any): any {
 
 /** void ClearBattlerAbilityHistory(u8 battler) */
 export function ClearBattlerAbilityHistory(battler: any): any {
-  BATTLE_HISTORY.abilities[battler] = ABILITY_NONE;
+  BATTLE_HISTORY.abilities[battler] = (0);
 }
 
 /** void RecordItemEffectBattle(u8 battler, u8 itemEffect) */
@@ -445,7 +450,7 @@ export function Cmd_score(): any {
 export function Cmd_if_hp_less_than(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -460,7 +465,7 @@ export function Cmd_if_hp_less_than(): any {
 export function Cmd_if_hp_more_than(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -475,7 +480,7 @@ export function Cmd_if_hp_more_than(): any {
 export function Cmd_if_hp_equal(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -490,7 +495,7 @@ export function Cmd_if_hp_equal(): any {
 export function Cmd_if_hp_not_equal(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -506,7 +511,7 @@ export function Cmd_if_status(): any {
   let battler: any = null;
       let status: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -524,7 +529,7 @@ export function Cmd_if_not_status(): any {
   let battler: any = null;
       let status: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -542,7 +547,7 @@ export function Cmd_if_status2(): any {
   let battler: any = null;
       let status: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -560,7 +565,7 @@ export function Cmd_if_not_status2(): any {
   let battler: any = null;
       let status: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -578,7 +583,7 @@ export function Cmd_if_status3(): any {
   let battler: any = null;
       let status: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -596,7 +601,7 @@ export function Cmd_if_not_status3(): any {
   let battler: any = null;
       let status: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -614,7 +619,7 @@ export function Cmd_if_side_affecting(): any {
   let battler: any = null;
       let side, status;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -633,7 +638,7 @@ export function Cmd_if_not_side_affecting(): any {
   let battler: any = null;
       let side, status;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -807,14 +812,14 @@ export function Cmd_if_not_in_hwords(): any {
 export function Cmd_if_user_has_attacking_move(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gBattleMons[sBattler_AI].moves[i] != 0
               && gBattleMoves[gBattleMons[sBattler_AI].moves[i]].power != 0)
               break;
       }
 
-      if (i == MAX_MON_MOVES)
+      if (i == (4))
           gAIScriptPtr += 5;
       else
           gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);
@@ -824,14 +829,14 @@ export function Cmd_if_user_has_attacking_move(): any {
 export function Cmd_if_user_has_no_attacking_moves(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gBattleMons[sBattler_AI].moves[i] != 0
            && gBattleMoves[gBattleMons[sBattler_AI].moves[i]].power != 0)
               break;
       }
 
-      if (i != MAX_MON_MOVES)
+      if (i != (4))
           gAIScriptPtr += 5;
       else
           gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);
@@ -849,19 +854,19 @@ export function Cmd_get_type(): any {
 
       switch (typeVar)
       {
-      case AI_TYPE1_USER:  
+      case (1):  
           AI_THINKING_STRUCT.funcResult = gBattleMons[sBattler_AI].types[0];
           break;
-      case AI_TYPE1_TARGET:  
+      case (0):  
           AI_THINKING_STRUCT.funcResult = gBattleMons[gBattlerTarget].types[0];
           break;
-      case AI_TYPE2_USER:  
+      case (3):  
           AI_THINKING_STRUCT.funcResult = gBattleMons[sBattler_AI].types[1];
           break;
-      case AI_TYPE2_TARGET:  
+      case (2):  
           AI_THINKING_STRUCT.funcResult = gBattleMons[gBattlerTarget].types[1];
           break;
-      case AI_TYPE_MOVE:  
+      case (4):  
           AI_THINKING_STRUCT.funcResult = gBattleMoves[AI_THINKING_STRUCT.moveConsidered].type;
           break;
       }
@@ -872,14 +877,14 @@ export function Cmd_get_type(): any {
 export function BattleAI_GetWantedBattler(wantedBattler: any): any {
   switch (wantedBattler)
       {
-      case AI_USER:
+      case (1):
           return sBattler_AI;
-      case AI_TARGET:
+      case (0):
       default:
           return gBattlerTarget;
-      case AI_USER_PARTNER:
+      case (3):
           return BATTLE_PARTNER(sBattler_AI);
-      case AI_TARGET_PARTNER:
+      case (2):
           return BATTLE_PARTNER(gBattlerTarget);
       }
 }
@@ -924,7 +929,7 @@ export function Cmd_get_how_powerful_move_is(): any {
 
            
            
-          for (checkedMove = 0; checkedMove < MAX_MON_MOVES; checkedMove++)
+          for (checkedMove = 0; checkedMove < (4); checkedMove++)
           {
               for (i = 0; sIgnoredPowerfulMoveEffects[i] != (0xFFFF); i++)
               {
@@ -932,7 +937,7 @@ export function Cmd_get_how_powerful_move_is(): any {
                       break;
               }
 
-              if (gBattleMons[sBattler_AI].moves[checkedMove] != MOVE_NONE
+              if (gBattleMons[sBattler_AI].moves[checkedMove] != (0)
                   && sIgnoredPowerfulMoveEffects[i] == (0xFFFF)
                   && gBattleMoves[gBattleMons[sBattler_AI].moves[checkedMove]].power > 1)
               {
@@ -950,21 +955,21 @@ export function Cmd_get_how_powerful_move_is(): any {
           }
 
            
-          for (checkedMove = 0; checkedMove < MAX_MON_MOVES; checkedMove++)
+          for (checkedMove = 0; checkedMove < (4); checkedMove++)
           {
               if (moveDmgs[checkedMove] > moveDmgs[AI_THINKING_STRUCT.movesetIndex])
                   break;
           }
 
-          if (checkedMove == MAX_MON_MOVES)
-              AI_THINKING_STRUCT.funcResult = MOVE_MOST_POWERFUL;
+          if (checkedMove == (4))
+              AI_THINKING_STRUCT.funcResult = (2);
           else
-              AI_THINKING_STRUCT.funcResult = MOVE_NOT_MOST_POWERFUL;
+              AI_THINKING_STRUCT.funcResult = (1);
       }
       else
       {
            
-          AI_THINKING_STRUCT.funcResult = MOVE_POWER_OTHER;
+          AI_THINKING_STRUCT.funcResult = (0);
       }
 
       gAIScriptPtr++;
@@ -972,7 +977,7 @@ export function Cmd_get_how_powerful_move_is(): any {
 
 /** static void Cmd_get_last_used_battler_move(void) */
 export function Cmd_get_last_used_battler_move(): any {
-  if (gAIScriptPtr[1] == AI_USER)
+  if (gAIScriptPtr[1] == (1))
           AI_THINKING_STRUCT.funcResult = gLastMoves[sBattler_AI];
       else
           AI_THINKING_STRUCT.funcResult = gLastMoves[gBattlerTarget];
@@ -1021,17 +1026,17 @@ export function Cmd_count_usable_party_mons(): any {
 
       AI_THINKING_STRUCT.funcResult = 0;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
 
-      if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) == (0))
           party = gPlayerParty;
       else
           party = gEnemyParty;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+      if (gBattleTypeFlags & ((1 << 0)))
       {
           let position: any = null;
           battlerOnField1 = gBattlerPartyIndexes[battler];
@@ -1044,12 +1049,12 @@ export function Cmd_count_usable_party_mons(): any {
           battlerOnField2 = gBattlerPartyIndexes[battler];
       }
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (i != battlerOnField1 && i != battlerOnField2
            && GetMonData(party[i], MON_DATA_HP) != 0
-           && GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) != SPECIES_NONE
-           && GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG)
+           && GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) != (0)
+           && GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) != (412))
           {
               AI_THINKING_STRUCT.funcResult++;
           }
@@ -1074,7 +1079,7 @@ export function Cmd_get_considered_move_effect(): any {
 export function Cmd_get_ability(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1089,18 +1094,18 @@ export function Cmd_get_ability(): any {
           }
 
            
-          if (gBattleMons[battler].ability == ABILITY_SHADOW_TAG
-          || gBattleMons[battler].ability == ABILITY_MAGNET_PULL
-          || gBattleMons[battler].ability == ABILITY_ARENA_TRAP)
+          if (gBattleMons[battler].ability == (23)
+          || gBattleMons[battler].ability == (42)
+          || gBattleMons[battler].ability == (71))
           {
               AI_THINKING_STRUCT.funcResult = gBattleMons[battler].ability;
               gAIScriptPtr += 2;
               return;
           }
 
-          if (gSpeciesInfo[gBattleMons[battler].species].abilities[0] != ABILITY_NONE)
+          if (gSpeciesInfo[gBattleMons[battler].species].abilities[0] != (0))
           {
-              if (gSpeciesInfo[gBattleMons[battler].species].abilities[1] != ABILITY_NONE)
+              if (gSpeciesInfo[gBattleMons[battler].species].abilities[1] != (0))
               {
                    
                   if (Random() & 1)
@@ -1132,23 +1137,23 @@ export function Cmd_check_ability(): any {
   let battler: any = BattleAI_GetWantedBattler(gAIScriptPtr[1]);
       let ability: any = gAIScriptPtr[2];
 
-      if (gAIScriptPtr[1] == AI_TARGET || gAIScriptPtr[1] == AI_TARGET_PARTNER)
+      if (gAIScriptPtr[1] == (0) || gAIScriptPtr[1] == (2))
       {
-          if (BATTLE_HISTORY.abilities[battler] != ABILITY_NONE)
+          if (BATTLE_HISTORY.abilities[battler] != (0))
           {
               ability = BATTLE_HISTORY.abilities[battler];
               AI_THINKING_STRUCT.funcResult = ability;
           }
            
-          else if (gBattleMons[battler].ability == ABILITY_SHADOW_TAG
-          || gBattleMons[battler].ability == ABILITY_MAGNET_PULL
-          || gBattleMons[battler].ability == ABILITY_ARENA_TRAP)
+          else if (gBattleMons[battler].ability == (23)
+          || gBattleMons[battler].ability == (42)
+          || gBattleMons[battler].ability == (71))
           {
               ability = gBattleMons[battler].ability;
           }
-          else if (gSpeciesInfo[gBattleMons[battler].species].abilities[0] != ABILITY_NONE)
+          else if (gSpeciesInfo[gBattleMons[battler].species].abilities[0] != (0))
           {
-              if (gSpeciesInfo[gBattleMons[battler].species].abilities[1] != ABILITY_NONE)
+              if (gSpeciesInfo[gBattleMons[battler].species].abilities[1] != (0))
               {
                   let abilityDummyVariable: any = ability;  
                   if (gSpeciesInfo[gBattleMons[battler].species].abilities[0] != abilityDummyVariable
@@ -1158,7 +1163,7 @@ export function Cmd_check_ability(): any {
                   }
                   else
                   {
-                      ability = ABILITY_NONE;
+                      ability = (0);
                   }
               }
               else
@@ -1200,26 +1205,26 @@ export function Cmd_get_highest_type_effectiveness(): any {
       gCritMultiplier = 1;
       AI_THINKING_STRUCT.funcResult = 0;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           gBattleMoveDamage = 40;
           gCurrentMove = gBattleMons[sBattler_AI].moves[i];
 
-          if (gCurrentMove != MOVE_NONE)
+          if (gCurrentMove != (0))
           {
               gMoveResultFlags = TypeCalc(gCurrentMove, sBattler_AI, gBattlerTarget);
 
               if (gBattleMoveDamage == 120)  
-                  gBattleMoveDamage = AI_EFFECTIVENESS_x2;
+                  gBattleMoveDamage = (80);
               if (gBattleMoveDamage == 240)
-                  gBattleMoveDamage = AI_EFFECTIVENESS_x4;
+                  gBattleMoveDamage = (160);
               if (gBattleMoveDamage == 30)  
-                  gBattleMoveDamage = AI_EFFECTIVENESS_x0_5;
+                  gBattleMoveDamage = (20);
               if (gBattleMoveDamage == 15)
-                  gBattleMoveDamage = AI_EFFECTIVENESS_x0_25;
+                  gBattleMoveDamage = (10);
 
-              if (gMoveResultFlags & MOVE_RESULT_DOESNT_AFFECT_FOE)
-                  gBattleMoveDamage = AI_EFFECTIVENESS_x0;
+              if (gMoveResultFlags & ((1 << 3)))
+                  gBattleMoveDamage = (0);
 
               if (AI_THINKING_STRUCT.funcResult < gBattleMoveDamage)
                   AI_THINKING_STRUCT.funcResult = gBattleMoveDamage;
@@ -1239,21 +1244,21 @@ export function Cmd_if_type_effectiveness(): any {
       gMoveResultFlags = 0;
       gCritMultiplier = 1;
 
-      gBattleMoveDamage = AI_EFFECTIVENESS_x1;
+      gBattleMoveDamage = (40);
       gCurrentMove = AI_THINKING_STRUCT.moveConsidered;
       gMoveResultFlags = TypeCalc(gCurrentMove, sBattler_AI, gBattlerTarget);
 
       if (gBattleMoveDamage == 120)  
-          gBattleMoveDamage = AI_EFFECTIVENESS_x2;
+          gBattleMoveDamage = (80);
       if (gBattleMoveDamage == 240)
-          gBattleMoveDamage = AI_EFFECTIVENESS_x4;
+          gBattleMoveDamage = (160);
       if (gBattleMoveDamage == 30)  
-          gBattleMoveDamage = AI_EFFECTIVENESS_x0_5;
+          gBattleMoveDamage = (20);
       if (gBattleMoveDamage == 15)
-          gBattleMoveDamage = AI_EFFECTIVENESS_x0_25;
+          gBattleMoveDamage = (10);
 
-      if (gMoveResultFlags & MOVE_RESULT_DOESNT_AFFECT_FOE)
-          gBattleMoveDamage = AI_EFFECTIVENESS_x0;
+      if (gMoveResultFlags & ((1 << 3)))
+          gBattleMoveDamage = (0);
 
        
       damageVar = gBattleMoveDamage;
@@ -1273,7 +1278,7 @@ export function Cmd_if_status_in_party(): any {
 
       switch (gAIScriptPtr[1])
       {
-      case AI_USER:
+      case (1):
           battler = sBattler_AI;
           break;
       default:
@@ -1281,17 +1286,17 @@ export function Cmd_if_status_in_party(): any {
           break;
       }
 
-      party = (GetBattlerSide(battler) == B_SIDE_PLAYER) ? gPlayerParty : gEnemyParty;
+      party = (GetBattlerSide(battler) == (0)) ? gPlayerParty : gEnemyParty;
 
       statusToCompareTo = T1_READ_32(gAIScriptPtr + 2);
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           let species: any = GetMonData(party[i], MON_DATA_SPECIES);
           let hp: any = GetMonData(party[i], MON_DATA_HP);
           let status: any = GetMonData(party[i], MON_DATA_STATUS);
 
-          if (species != SPECIES_NONE && species != SPECIES_EGG && hp != 0 && status == statusToCompareTo)
+          if (species != (0) && species != (412) && hp != 0 && status == statusToCompareTo)
           {
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 6);
               return;
@@ -1318,17 +1323,17 @@ export function Cmd_if_status_not_in_party(): any {
           break;
       }
 
-      party = (GetBattlerSide(battler) == B_SIDE_PLAYER) ? gPlayerParty : gEnemyParty;
+      party = (GetBattlerSide(battler) == (0)) ? gPlayerParty : gEnemyParty;
 
       statusToCompareTo = T1_READ_32(gAIScriptPtr + 2);
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           let species: any = GetMonData(party[i], MON_DATA_SPECIES);
           let hp: any = GetMonData(party[i], MON_DATA_HP);
           let status: any = GetMonData(party[i], MON_DATA_STATUS);
 
-          if (species != SPECIES_NONE && species != SPECIES_EGG && hp != 0 && status == statusToCompareTo)
+          if (species != (0) && species != (412) && hp != 0 && status == statusToCompareTo)
           {
               gAIScriptPtr += 10;
               return;
@@ -1340,16 +1345,16 @@ export function Cmd_if_status_not_in_party(): any {
 
 /** static void Cmd_get_weather(void) */
 export function Cmd_get_weather(): any {
-          AI_THINKING_STRUCT.funcResult = AI_WEATHER_NONE;
+          AI_THINKING_STRUCT.funcResult = (UINT32_MAX);
 
-      if (gBattleWeather & B_WEATHER_RAIN)
-          AI_THINKING_STRUCT.funcResult = AI_WEATHER_RAIN;
-      if (gBattleWeather & B_WEATHER_SANDSTORM)
-          AI_THINKING_STRUCT.funcResult = AI_WEATHER_SANDSTORM;
-      if (gBattleWeather & B_WEATHER_SUN)
-          AI_THINKING_STRUCT.funcResult = AI_WEATHER_SUN;
-      if (gBattleWeather & B_WEATHER_HAIL)
-          AI_THINKING_STRUCT.funcResult = AI_WEATHER_HAIL;
+      if (gBattleWeather & ((((1 << 0)) | ((1 << 1)) | ((1 << 2)))))
+          AI_THINKING_STRUCT.funcResult = (1);
+      if (gBattleWeather & ((((1 << 3)) | ((1 << 4)))))
+          AI_THINKING_STRUCT.funcResult = (2);
+      if (gBattleWeather & ((((1 << 5)) | ((1 << 6)))))
+          AI_THINKING_STRUCT.funcResult = (0);
+      if (gBattleWeather & ((((1 << 7)))))
+          AI_THINKING_STRUCT.funcResult = (3);
 
       gAIScriptPtr += 1;
 }
@@ -1374,7 +1379,7 @@ export function Cmd_if_not_effect(): any {
 export function Cmd_if_stat_level_less_than(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1389,7 +1394,7 @@ export function Cmd_if_stat_level_less_than(): any {
 export function Cmd_if_stat_level_more_than(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1404,7 +1409,7 @@ export function Cmd_if_stat_level_more_than(): any {
 export function Cmd_if_stat_level_equal(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1419,7 +1424,7 @@ export function Cmd_if_stat_level_equal(): any {
 export function Cmd_if_stat_level_not_equal(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1494,18 +1499,18 @@ export function Cmd_if_has_move(): any {
 
       switch (gAIScriptPtr[1])
       {
-      case AI_USER:
-          for (i = 0; i < MAX_MON_MOVES; i++)
+      case (1):
+          for (i = 0; i < (4); i++)
           {
               if (gBattleMons[sBattler_AI].moves[i] == movePtr)
                   break;
           }
-          if (i == MAX_MON_MOVES)
+          if (i == (4))
               gAIScriptPtr += 8;
           else
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 4);
           break;
-      case AI_USER_PARTNER:
+      case (3):
           if (gBattleMons[BATTLE_PARTNER(sBattler_AI)].hp == 0)
           {
               gAIScriptPtr += 8;
@@ -1513,25 +1518,25 @@ export function Cmd_if_has_move(): any {
           }
           else
           {
-              for (i = 0; i < MAX_MON_MOVES; i++)
+              for (i = 0; i < (4); i++)
               {
                   if (gBattleMons[BATTLE_PARTNER(sBattler_AI)].moves[i] == movePtr)
                       break;
               }
           }
-          if (i == MAX_MON_MOVES)
+          if (i == (4))
               gAIScriptPtr += 8;
           else
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 4);
           break;
-      case AI_TARGET:
-      case AI_TARGET_PARTNER:
-          for (i = 0; i < MAX_MON_MOVES; i++)
+      case (0):
+      case (2):
+          for (i = 0; i < (4); i++)
           {
               if (BATTLE_HISTORY.usedMoves[gBattlerTarget].moves[i] == movePtr)
                   break;
           }
-          if (i == MAX_MON_MOVES)
+          if (i == (4))
               gAIScriptPtr += 8;
           else
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 4);
@@ -1546,26 +1551,26 @@ export function Cmd_if_doesnt_have_move(): any {
 
       switch(gAIScriptPtr[1])
       {
-      case AI_USER:
-      case AI_USER_PARTNER:  
-          for (i = 0; i < MAX_MON_MOVES; i++)
+      case (1):
+      case (3):  
+          for (i = 0; i < (4); i++)
           {
               if (gBattleMons[sBattler_AI].moves[i] == movePtr)
                   break;
           }
-          if (i != MAX_MON_MOVES)
+          if (i != (4))
               gAIScriptPtr += 8;
           else
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 4);
           break;
-      case AI_TARGET:
-      case AI_TARGET_PARTNER:
-          for (i = 0; i < MAX_MON_MOVES; i++)
+      case (0):
+      case (2):
+          for (i = 0; i < (4); i++)
           {
               if (BATTLE_HISTORY.usedMoves[gBattlerTarget].moves[i] == movePtr)
                   break;
           }
-          if (i != MAX_MON_MOVES)
+          if (i != (4))
               gAIScriptPtr += 8;
           else
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 4);
@@ -1579,26 +1584,26 @@ export function Cmd_if_has_move_with_effect(): any {
 
       switch (gAIScriptPtr[1])
       {
-      case AI_USER:
-      case AI_USER_PARTNER:
-          for (i = 0; i < MAX_MON_MOVES; i++)
+      case (1):
+      case (3):
+          for (i = 0; i < (4); i++)
           {
               if (gBattleMons[sBattler_AI].moves[i] != 0 && gBattleMoves[gBattleMons[sBattler_AI].moves[i]].effect == gAIScriptPtr[2])
                   break;
           }
-          if (i == MAX_MON_MOVES)
+          if (i == (4))
               gAIScriptPtr += 7;
           else
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 3);
           break;
-      case AI_TARGET:
-      case AI_TARGET_PARTNER:
-          for (i = 0; i < MAX_MON_MOVES; i++)
+      case (0):
+      case (2):
+          for (i = 0; i < (4); i++)
           {
               if (gBattleMons[sBattler_AI].moves[i] != 0 && gBattleMoves[BATTLE_HISTORY.usedMoves[gBattlerTarget].moves[i]].effect == gAIScriptPtr[2])
                   break;
           }
-          if (i == MAX_MON_MOVES)
+          if (i == (4))
               gAIScriptPtr += 7;
           else
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 3);
@@ -1612,26 +1617,26 @@ export function Cmd_if_doesnt_have_move_with_effect(): any {
 
       switch (gAIScriptPtr[1])
       {
-      case AI_USER:
-      case AI_USER_PARTNER:
-          for (i = 0; i < MAX_MON_MOVES; i++)
+      case (1):
+      case (3):
+          for (i = 0; i < (4); i++)
           {
               if(gBattleMons[sBattler_AI].moves[i] != 0 && gBattleMoves[gBattleMons[sBattler_AI].moves[i]].effect == gAIScriptPtr[2])
                   break;
           }
-          if (i != MAX_MON_MOVES)
+          if (i != (4))
               gAIScriptPtr += 7;
           else
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 3);
           break;
-      case AI_TARGET:
-      case AI_TARGET_PARTNER:
-          for (i = 0; i < MAX_MON_MOVES; i++)
+      case (0):
+      case (2):
+          for (i = 0; i < (4); i++)
           {
               if (BATTLE_HISTORY.usedMoves[gBattlerTarget].moves[i] && gBattleMoves[BATTLE_HISTORY.usedMoves[gBattlerTarget].moves[i]].effect == gAIScriptPtr[2])
                   break;
           }
-          if (i != MAX_MON_MOVES)
+          if (i != (4))
               gAIScriptPtr += 7;
           else
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 3);
@@ -1643,14 +1648,14 @@ export function Cmd_if_doesnt_have_move_with_effect(): any {
 export function Cmd_if_any_move_disabled_or_encored(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
 
       if (gAIScriptPtr[2] == 0)
       {
-          if (gDisableStructs[battler].disabledMove == MOVE_NONE)
+          if (gDisableStructs[battler].disabledMove == (0))
               gAIScriptPtr += 7;
           else
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 3);
@@ -1661,7 +1666,7 @@ export function Cmd_if_any_move_disabled_or_encored(): any {
       }
       else
       {
-          if (gDisableStructs[battler].encoredMove != MOVE_NONE)
+          if (gDisableStructs[battler].encoredMove != (0))
               gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 3);
           else
               gAIScriptPtr += 7;
@@ -1714,7 +1719,7 @@ export function Cmd_watch(): any {
 export function Cmd_get_hold_effect(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1733,7 +1738,7 @@ export function Cmd_if_holds_item(): any {
       let item: any = null;
       let itemLo, itemHi;
 
-      if ((battler & BIT_SIDE) == (sBattler_AI & BIT_SIDE))
+      if ((battler & (1)) == (sBattler_AI & (1)))
           item = gBattleMons[battler].item;
       else
           item = BATTLE_HISTORY.itemEffects[battler];
@@ -1753,7 +1758,7 @@ export function Cmd_if_holds_item(): any {
 export function Cmd_get_gender(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1767,7 +1772,7 @@ export function Cmd_get_gender(): any {
 export function Cmd_is_first_turn_for(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1781,7 +1786,7 @@ export function Cmd_is_first_turn_for(): any {
 export function Cmd_get_stockpile_count(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1793,7 +1798,7 @@ export function Cmd_get_stockpile_count(): any {
 
 /** static void Cmd_is_double_battle(void) */
 export function Cmd_is_double_battle(): any {
-  AI_THINKING_STRUCT.funcResult = gBattleTypeFlags & BATTLE_TYPE_DOUBLE;
+  AI_THINKING_STRUCT.funcResult = gBattleTypeFlags & ((1 << 0));
 
       gAIScriptPtr += 1;
 }
@@ -1802,7 +1807,7 @@ export function Cmd_is_double_battle(): any {
 export function Cmd_get_used_held_item(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1837,7 +1842,7 @@ export function Cmd_get_move_effect_from_result(): any {
 export function Cmd_get_protect_count(): any {
   let battler: any = null;
 
-      if (gAIScriptPtr[1] == AI_USER)
+      if (gAIScriptPtr[1] == (1))
           battler = sBattler_AI;
       else
           battler = gBattlerTarget;
@@ -1907,7 +1912,7 @@ export function Cmd_if_target_not_taunted(): any {
 
 /** static void Cmd_if_target_is_ally(void) */
 export function Cmd_if_target_is_ally(): any {
-  if ((sBattler_AI & BIT_SIDE) == (gBattlerTarget & BIT_SIDE))
+  if ((sBattler_AI & (1)) == (gBattlerTarget & (1)))
           gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 1);
       else
           gAIScriptPtr += 5;
@@ -1917,7 +1922,7 @@ export function Cmd_if_target_is_ally(): any {
 export function Cmd_if_flash_fired(): any {
   let battler: any = BattleAI_GetWantedBattler(gAIScriptPtr[1]);
 
-      if (gBattleResources.flags.flags[battler] & RESOURCE_FLAG_FLASH_FIRE)
+      if (gBattleResources.flags.flags[battler] & (1))
           gAIScriptPtr = T1_READ_PTR(gAIScriptPtr + 2);
       else
           gAIScriptPtr += 6;

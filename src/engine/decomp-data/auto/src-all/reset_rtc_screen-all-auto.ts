@@ -17,14 +17,17 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates: any = null;
-let sInputMap: any = null;
-let sInputTimeWindow: any = null;
-let sSpritePalette_Arrow: any = null;
-let sSpriteTemplate_Arrow: any = null;
-let sState: any = null;
-let sTaskId: any = null;
-let sWindowTemplates: any = null;
+let gLocalTime: any = null;
+let tDays: any = null;
+let tFinished: any = null;
+let tHours: any = null;
+let tMinutes: any = null;
+let tSeconds: any = null;
+let tSelection: any = null;
+let tSetTime: any = null;
+let tState: any = null;
+let tSubTaskId: any = null;
+let tWindowId: any = null;
 /** static void SpriteCB_Cursor_UpOrRight(struct Sprite *sprite) */
 export function SpriteCB_Cursor_UpOrRight(sprite: any): any {
   let state: any = gTasks[sprite.sTaskId].tSelection;
@@ -175,7 +178,7 @@ export function PrintTime(windowId: any, x: any, y: any, days: any, hours: any, 
       ConvertIntToDecimalStringN(gStringVar1, seconds, STR_CONV_MODE_LEADING_ZEROS, 2);
       dest = StringCopy(dest, gStringVar1);
 
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, x, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, x, y, (0xFF), NULL);
 }
 
 /** static void ShowChooseTimeWindow(u8 windowId, u16 days, u8 hours, u8 minutes, u8 seconds) */
@@ -245,7 +248,7 @@ export function Task_ResetRtc_HandleInput(taskId: any): any {
           gTasks[taskId].func = Task_ResetRtc_Exit;
           tSetTime = FALSE;
           tSelection = SELECTION_NONE;
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           return;
       }
 
@@ -254,7 +257,7 @@ export function Task_ResetRtc_HandleInput(taskId: any): any {
           if (selectionInfo.right)
           {
               tSelection = selectionInfo.right;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               return;
           }
       }
@@ -264,7 +267,7 @@ export function Task_ResetRtc_HandleInput(taskId: any): any {
           if (selectionInfo.left)
           {
               tSelection = selectionInfo.left;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               return;
           }
       }
@@ -277,7 +280,7 @@ export function Task_ResetRtc_HandleInput(taskId: any): any {
               gLocalTime.hours = tHours;
               gLocalTime.minutes = tMinutes;
               gLocalTime.seconds = tSeconds;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               gTasks[taskId].func = Task_ResetRtc_Exit;
               tSetTime = TRUE;
               tSelection = SELECTION_NONE;
@@ -285,7 +288,7 @@ export function Task_ResetRtc_HandleInput(taskId: any): any {
       }
       else if (MoveTimeUpDown(data[selectionInfo.dataIndex], selectionInfo.minVal, selectionInfo.maxVal, JOY_REPEAT(DPAD_UP | DPAD_DOWN)))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           PrintTime(tWindowId, 0, 1, tDays, tHours, tMinutes, tSeconds);
           CopyWindowToVram(tWindowId, COPYWIN_GFX);
       }
@@ -370,7 +373,7 @@ export function Task_ShowResetRtcPrompt(taskId: any): any {
       case 0:
           DrawStdFrameWithCustomTileAndPalette(WIN_TIME, FALSE, 0x214, 0xE);
 
-          AddTextPrinterParameterized(WIN_TIME, FONT_NORMAL, gText_PresentTime, 0, 1, TEXT_SKIP_DRAW, 0);
+          AddTextPrinterParameterized(WIN_TIME, FONT_NORMAL, gText_PresentTime, 0, 1, (0xFF), 0);
           PrintTime(
               WIN_TIME,
               0,
@@ -380,7 +383,7 @@ export function Task_ShowResetRtcPrompt(taskId: any): any {
               gLocalTime.minutes,
               gLocalTime.seconds);
 
-          AddTextPrinterParameterized(WIN_TIME, FONT_NORMAL, gText_PreviousTime, 0, 33, TEXT_SKIP_DRAW, 0);
+          AddTextPrinterParameterized(WIN_TIME, FONT_NORMAL, gText_PreviousTime, 0, 33, (0xFF), 0);
           PrintTime(
               WIN_TIME,
               0,
@@ -404,7 +407,7 @@ export function Task_ShowResetRtcPrompt(taskId: any): any {
           else if (JOY_NEW(A_BUTTON))
           {
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               DestroyTask(taskId);
           }
           break;
@@ -418,14 +421,14 @@ export function Task_ResetRtcScreen(taskId: any): any {
       switch (tState)
       {
       case MAINSTATE_FADE_IN:
-          BeginNormalPaletteFade(PALETTES_ALL, 1, 0x10, 0, RGB_WHITEALPHA);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 1, 0x10, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
           tState = MAINSTATE_CHECK_SAVE;
           break;
       case MAINSTATE_CHECK_SAVE:
           if (!gPaletteFade.active)
           {
-              if (gSaveFileStatus == SAVE_STATUS_EMPTY
-               || gSaveFileStatus == SAVE_STATUS_CORRUPT)
+              if (gSaveFileStatus == (0)
+               || gSaveFileStatus == (2))
               {
                   ShowMessage(gText_NoSaveFileCantSetTime);
                   tState = MAINSTATE_WAIT_EXIT;
@@ -469,7 +472,7 @@ export function Task_ResetRtcScreen(taskId: any): any {
                       gLocalTime.minutes,
                       gLocalTime.seconds);
                   gSaveBlock2Ptr.lastBerryTreeUpdate = gLocalTime;
-                  VarSet(VAR_DAYS, gLocalTime.days);
+                  VarSet((0x4040), gLocalTime.days);
                   DisableResetRTC();
                   ShowMessage(gText_ClockHasBeenReset);
                   tState = MAINSTATE_SAVE;
@@ -477,22 +480,22 @@ export function Task_ResetRtcScreen(taskId: any): any {
           }
           break;
       case MAINSTATE_SAVE:
-          if (TrySavingData(SAVE_NORMAL) == SAVE_STATUS_OK)
+          if (TrySavingData(SAVE_NORMAL) == (1))
           {
               ShowMessage(gText_SaveCompleted);
-              PlaySE(SE_DING_DONG);
+              PlaySE((73));
           }
           else
           {
               ShowMessage(gText_SaveFailed);
-              PlaySE(SE_BOO);
+              PlaySE((22));
           }
           tState = MAINSTATE_WAIT_EXIT;
            
       case MAINSTATE_WAIT_EXIT:
           if (JOY_NEW(A_BUTTON))
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 1, 0, 0x10, RGB_WHITEALPHA);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 1, 0, 0x10, (((RGB(31, 31, 31)) | ((1 << 15)))));
               tState = MAINSTATE_EXIT;
                
           }

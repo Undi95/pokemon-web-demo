@@ -17,10 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sDmaBusyBitfield: any = null;
-let sGpuBgConfigs: any = null;
-let sGpuBgConfigs2: any = null;
-let sZeroedBgControlStruct: any = null;
+let gWindowTileAutoAllocEnabled: any = null;
 /** void ResetBgs(void) */
 export function ResetBgs(): any {
   ResetBgControlStructs();
@@ -1001,7 +998,7 @@ export function WriteSequenceToBgTilemapBuffer(bg: any, firstTileNum: any, x: an
                   for (x16 = x; x16 < (x + width); x16++)
                   {
                       CopyTileMapEntry(firstTileNum,(sGpuBgConfigs2[bg].tilemap)[GetTileMapIndexFromCoords(x16, y16, attribute, mode, mode2)], paletteSlot, 0, 0);
-                      firstTileNum = (firstTileNum & (MAPGRID_COLLISION_MASK | MAPGRID_ELEVATION_MASK)) + ((firstTileNum + tileNumDelta) & MAPGRID_METATILE_ID_MASK);
+                      firstTileNum = (firstTileNum & ((0x0C00) | (0xF000))) + ((firstTileNum + tileNumDelta) & (0x03FF));
                   }
               }
               break;
@@ -1012,7 +1009,7 @@ export function WriteSequenceToBgTilemapBuffer(bg: any, firstTileNum: any, x: an
                   for (x16 = x; x16 < (x + width); x16++)
                   {
                       (sGpuBgConfigs2[bg].tilemap)[(y16 * mode3) + x16] = firstTileNum;
-                      firstTileNum = (firstTileNum & (MAPGRID_COLLISION_MASK | MAPGRID_ELEVATION_MASK)) + ((firstTileNum + tileNumDelta) & MAPGRID_METATILE_ID_MASK);
+                      firstTileNum = (firstTileNum & ((0x0C00) | (0xF000))) + ((firstTileNum + tileNumDelta) & (0x03FF));
                   }
               }
               break;

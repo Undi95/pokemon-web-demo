@@ -15,12 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sElectricChargingParticleCoordOffsets: any = null;
 /** static void AnimLightning(struct Sprite *sprite) */
 export function AnimLightning(sprite: any): any {
-  if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+  if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.x -= gBattleAnimArgs[0];
       else
           sprite.x += gBattleAnimArgs[0];
@@ -37,7 +34,7 @@ export function AnimLightning_Step(sprite: any): any {
 
 /** static void AnimUnusedSpinningFist(struct Sprite *sprite) */
 export function AnimUnusedSpinningFist(sprite: any): any {
-  if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+  if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.x -= gBattleAnimArgs[0];
       else
           sprite.x += gBattleAnimArgs[0];
@@ -56,7 +53,7 @@ export function AnimUnusedCirclingShock(sprite: any): any {
   sprite.x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);
       sprite.y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           sprite.x -= gBattleAnimArgs[0];
           sprite.y -= gBattleAnimArgs[1];
@@ -82,20 +79,20 @@ export function AnimSparkElectricity(sprite: any): any {
 
       switch (gBattleAnimArgs[4])
       {
-      case ANIM_ATTACKER:
+      case (0):
           battler = gBattleAnimAttacker;
           break;
-      case ANIM_TARGET:
+      case (1):
       default:
           battler = gBattleAnimTarget;
           break;
-      case ANIM_ATK_PARTNER:
+      case (2):
           if (!IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimAttacker)))
               battler = gBattleAnimAttacker;
           else
               battler = BATTLE_PARTNER(gBattleAnimAttacker);
           break;
-      case ANIM_DEF_PARTNER:
+      case (3):
           if (IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimAttacker)))
               battler = BATTLE_PARTNER(gBattleAnimTarget);
           else
@@ -177,7 +174,7 @@ export function AnimThunderboltOrb_Step(sprite: any): any {
 
 /** static void AnimThunderboltOrb(struct Sprite *sprite) */
 export function AnimThunderboltOrb(sprite: any): any {
-  if (IsContest() || GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+  if (IsContest() || GetBattlerSide(gBattleAnimTarget) == (0))
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
 
       sprite.x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2) + gBattleAnimArgs[1];
@@ -198,7 +195,7 @@ export function AnimSparkElectricityFlashing(sprite: any): any {
       else
           battler = gBattleAnimAttacker;
 
-      if (IsContest() || GetBattlerSide(battler) == B_SIDE_PLAYER)
+      if (IsContest() || GetBattlerSide(battler) == (0))
           gBattleAnimArgs[0] = -gBattleAnimArgs[0];
 
       sprite.x = GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2) + gBattleAnimArgs[0];
@@ -364,7 +361,7 @@ export function AnimThunderWave_Step(sprite: any): any {
 export function AnimTask_ElectricChargingParticles(taskId: any): any {
   let task: any =gTasks[taskId];
 
-      if (gBattleAnimArgs[0] == ANIM_ATTACKER)
+      if (gBattleAnimArgs[0] == (0))
       {
           task.data[14] = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
           task.data[15] = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
@@ -397,7 +394,7 @@ export function AnimTask_ElectricChargingParticles_Step(taskId: any): any {
               let spriteId: any = null;
               task.data[12] = 0;
               spriteId = CreateSprite(gElectricChargingParticlesSpriteTemplate, task.data[14], task.data[15], 2);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   let sprite: any =gSprites[spriteId];
                   sprite.x += sElectricChargingParticleCoordOffsets[task.data[9]][0];
@@ -452,7 +449,7 @@ export function AnimElectricChargingParticles(sprite: any): any {
 
 /** static void AnimGrowingChargeOrb(struct Sprite *sprite) */
 export function AnimGrowingChargeOrb(sprite: any): any {
-  if (gBattleAnimArgs[0] == ANIM_ATTACKER)
+  if (gBattleAnimArgs[0] == (0))
       {
           sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
           sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
@@ -469,7 +466,7 @@ export function AnimGrowingChargeOrb(sprite: any): any {
 
 /** static void AnimElectricPuff(struct Sprite *sprite) */
 export function AnimElectricPuff(sprite: any): any {
-  if (gBattleAnimArgs[0] == ANIM_ATTACKER)
+  if (gBattleAnimArgs[0] == (0))
       {
           sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
           sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
@@ -491,10 +488,10 @@ export function AnimVoltTackleOrbSlide(sprite: any): any {
   StartSpriteAffineAnim(sprite, 1);
       sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
       sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
-      sprite.data[6] = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      sprite.data[6] = GetAnimBattlerSpriteId((0));
       sprite.data[7] = 16;
 
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_OPPONENT)
+      if (GetBattlerSide(gBattleAnimAttacker) == (1))
           sprite.data[7] *= -1;
 
       sprite.callback = AnimVoltTackleOrbSlide_Step;
@@ -523,9 +520,9 @@ export function AnimTask_VoltTackleAttackerReappear(taskId: any): any {
       switch (task.data[0])
       {
       case 0:
-          task.data[15] = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+          task.data[15] = GetAnimBattlerSpriteId((0));
           task.data[14] = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
-          if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) == (0))
           {
               task.data[14] = -32;
               task.data[13] = 2;
@@ -580,7 +577,7 @@ export function AnimTask_VoltTackleBolt(taskId: any): any {
       switch(task.data[0])
       {
       case 0:
-          task.data[1] = GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER ? 1 : -1;
+          task.data[1] = GetBattlerSide(gBattleAnimAttacker) == (0) ? 1 : -1;
 
           switch (gBattleAnimArgs[0])
           {
@@ -650,7 +647,7 @@ export function AnimTask_VoltTackleBolt(taskId: any): any {
 /** static bool8 CreateVoltTackleBolt(struct Task *task, u8 taskId) */
 export function CreateVoltTackleBolt(task: any, taskId: any): any {
   let spriteId: any = CreateSprite(gVoltTackleBoltSpriteTemplate, task.data[3], task.data[5], 35);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].data[6] = taskId;
           gSprites[spriteId].data[7] = 7;
@@ -720,8 +717,8 @@ export function AnimTask_ShockWaveProgressingBolt(taskId: any): any {
           task.data[5] = -1;
           task.data[11] = 12;
            
-          task.data[12] = BattleAnimAdjustPanning(SOUND_PAN_ATTACKER);
-          task.data[13] = BattleAnimAdjustPanning(SOUND_PAN_TARGET);
+          task.data[12] = BattleAnimAdjustPanning((-64));
+          task.data[13] = BattleAnimAdjustPanning((63));
           task.data[14] = task.data[12];
           task.data[15] = (task.data[13] - task.data[12]) / 3;
           task.data[0]++;
@@ -786,7 +783,7 @@ export function AnimTask_ShockWaveProgressingBolt(taskId: any): any {
 /** static bool8 CreateShockWaveBoltSprite(struct Task *task, u8 taskId) */
 export function CreateShockWaveBoltSprite(task: any, taskId: any): any {
   let spriteId: any = CreateSprite(gShockWaveProgressingBoltSpriteTemplate, task.data[6], task.data[7], 35);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].oam.tileNum += task.data[4];
           task.data[4] += task.data[5];
@@ -803,7 +800,7 @@ export function CreateShockWaveBoltSprite(task: any, taskId: any): any {
       if (task.data[4] == 0 && task.data[5] > 0)
       {
           task.data[14] += task.data[15];
-          PlaySE12WithPanning(SE_M_THUNDERBOLT, task.data[14]);
+          PlaySE12WithPanning((118), task.data[14]);
       }
 
       if ((task.data[5] < 0 && task.data[7] <= task.data[8])
@@ -866,7 +863,7 @@ export function AnimTask_ShockWaveLightning(taskId: any): any {
 export function CreateShockWaveLightningSprite(task: any, taskId: any): any {
   let spriteId: any = CreateSprite(gLightningSpriteTemplate, task.data[13], task.data[14], task.data[12]);
 
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].callback = AnimShockWaveLightning;
           gSprites[spriteId].data[6] = taskId;

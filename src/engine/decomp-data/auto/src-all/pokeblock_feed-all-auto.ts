@@ -17,23 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAccel: any = null;
-let sAffineAnims_Mon: any = null;
-let sAffineAnims_PokeblockCase_Still: any = null;
-let sAffineAnims_PokeblockCase_ThrowFromHorizontal: any = null;
-let sAffineAnims_PokeblockCase_ThrowFromVertical: any = null;
-let sBackgroundTemplates: any = null;
-let sMonPokeblockAnims: any = null;
-let sNatureToMonPokeblockAnim: any = null;
+let gPokeblockGain: any = null;
 let sPokeblockFeed: any = null;
-let sPokeblockSpritePal: any = null;
-let sPokeblocksPals: any = null;
-let sSpecies: any = null;
-let sSpeed: any = null;
-let sSpriteAffineAnimTable_MonNoFlip: any = null;
-let sSpriteSheet_Pokeblock: any = null;
-let sSpriteTemplate_Pokeblock: any = null;
-let sWindowTemplates: any = null;
+let trainerId: any = null;
 /** static void CB2_PokeblockFeed(void) */
 export function CB2_PokeblockFeed(): any {
   RunTasks();
@@ -106,11 +92,11 @@ export function LoadPokeblockFeedScene(): any {
           gMain.state++;
           break;
       case 12:
-          BlendPalettes(PALETTES_ALL, 16, 0);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, 0);
           gMain.state++;
           break;
       case 13:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           gPaletteFade.bufferTransferDisabled = FALSE;
           gMain.state++;
           break;
@@ -232,7 +218,7 @@ export function HandleInitWindows(): any {
 export function SetPokeblockSpritePal(pokeblockCaseId: any): any {
   let colorId: any = GetPokeblockData(gSaveBlock1Ptr.pokeblocks[pokeblockCaseId], PBLOCK_COLOR);
       sPokeblockSpritePal.data = sPokeblocksPals[colorId - 1];
-      sPokeblockSpritePal.tag = TAG_POKEBLOCK;
+      sPokeblockSpritePal.tag = (14818);
 }
 
 /** static void Task_HandlePokeblockFeed(u8 taskId) */
@@ -300,7 +286,7 @@ export function Task_PrintAtePokeblockMessage(taskId: any): any {
           StringExpandPlaceholders(gStringVar4, gText_Var1DisdainfullyAteVar2);
 
       gTextFlags.canABSpeedUpPrint = TRUE;
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), NULL, (0x2), (0x1), (0x3));
       gTasks[taskId].func = Task_WaitForAtePokeblockMessage;
 }
 
@@ -321,7 +307,7 @@ export function Task_ExitPokeblockFeed(taskId: any): any {
 
 /** static void Task_FadeOutPokeblockFeed(u8 taskId) */
 export function Task_FadeOutPokeblockFeed(taskId: any): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_ExitPokeblockFeed;
 }
 

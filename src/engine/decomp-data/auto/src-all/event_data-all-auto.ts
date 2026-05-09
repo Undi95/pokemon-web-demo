@@ -15,9 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sSpecialFlags: any = null;
 /** void InitEventData(void) */
 export function InitEventData(): any {
   memset(gSaveBlock1Ptr.flags, 0, sizeof(gSaveBlock1Ptr.flags));
@@ -27,34 +24,34 @@ export function InitEventData(): any {
 
 /** void ClearTempFieldEventData(void) */
 export function ClearTempFieldEventData(): any {
-  memset(gSaveBlock1Ptr.flags[TEMP_FLAGS_START / 8], 0, ((NUM_TEMP_FLAGS / 8)));
-      memset(gSaveBlock1Ptr.vars[TEMP_VARS_START - VARS_START], 0, ((NUM_TEMP_VARS * 2)));
-      FlagClear(FLAG_SYS_ENC_UP_ITEM);
-      FlagClear(FLAG_SYS_ENC_DOWN_ITEM);
-      FlagClear(FLAG_SYS_USE_STRENGTH);
-      FlagClear(FLAG_SYS_CTRL_OBJ_DELETE);
-      FlagClear(FLAG_NURSE_UNION_ROOM_REMINDER);
+  memset(gSaveBlock1Ptr.flags[(0x0) / 8], 0, ((((((((0x0) + 0x1F))) - (0x0) + 1)) / 8)));
+      memset(gSaveBlock1Ptr.vars[(0x4000) - (0x4000)], 0, ((((((((0x4000) + 0xF))) - (0x4000) + 1)) * 2)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x4D)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x4E)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x29)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x61)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x20)));
 }
 
 /** void ClearDailyFlags(void) */
 export function ClearDailyFlags(): any {
-  memset(gSaveBlock1Ptr.flags[DAILY_FLAGS_START / 8], 0, ((NUM_DAILY_FLAGS / 8)));
+  memset(gSaveBlock1Ptr.flags[DAILY_FLAGS_START / 8], 0, ((((DAILY_FLAGS_END - DAILY_FLAGS_START + 1)) / 8)));
 }
 
 /** void DisableNationalPokedex(void) */
 export function DisableNationalPokedex(): any {
-  let nationalDexVar: any = GetVarPointer(VAR_NATIONAL_DEX);
+  let nationalDexVar: any = GetVarPointer((0x4046));
       gSaveBlock2Ptr.pokedex.nationalMagic = 0;
       nationalDexVar = 0;
-      FlagClear(FLAG_SYS_NATIONAL_DEX);
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x36)));
 }
 
 /** void EnableNationalPokedex(void) */
 export function EnableNationalPokedex(): any {
-  let nationalDexVar: any = GetVarPointer(VAR_NATIONAL_DEX);
+  let nationalDexVar: any = GetVarPointer((0x4046));
       gSaveBlock2Ptr.pokedex.nationalMagic = 0xDA;
       nationalDexVar = 0x302;
-      FlagSet(FLAG_SYS_NATIONAL_DEX);
+      FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x36)));
       gSaveBlock2Ptr.pokedex.mode = DEX_MODE_NATIONAL;
       gSaveBlock2Ptr.pokedex.order = 0;
       ResetPokedexScrollPositions();
@@ -62,7 +59,7 @@ export function EnableNationalPokedex(): any {
 
 /** bool32 IsNationalPokedexEnabled(void) */
 export function IsNationalPokedexEnabled(): any {
-  if (gSaveBlock2Ptr.pokedex.nationalMagic == 0xDA && VarGet(VAR_NATIONAL_DEX) == 0x302 && FlagGet(FLAG_SYS_NATIONAL_DEX))
+  if (gSaveBlock2Ptr.pokedex.nationalMagic == 0xDA && VarGet((0x4046)) == 0x302 && FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x36))))
           return TRUE;
       else
           return FALSE;
@@ -70,81 +67,81 @@ export function IsNationalPokedexEnabled(): any {
 
 /** void DisableMysteryEvent(void) */
 export function DisableMysteryEvent(): any {
-  FlagClear(FLAG_SYS_MYSTERY_EVENT_ENABLE);
+  FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x4C)));
 }
 
 /** void EnableMysteryEvent(void) */
 export function EnableMysteryEvent(): any {
-  FlagSet(FLAG_SYS_MYSTERY_EVENT_ENABLE);
+  FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x4C)));
 }
 
 /** bool32 IsMysteryEventEnabled(void) */
 export function IsMysteryEventEnabled(): any {
-  return FlagGet(FLAG_SYS_MYSTERY_EVENT_ENABLE);
+  return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4C)));
 }
 
 /** void DisableMysteryGift(void) */
 export function DisableMysteryGift(): any {
-  FlagClear(FLAG_SYS_MYSTERY_GIFT_ENABLE);
+  FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x7B)));
 }
 
 /** void EnableMysteryGift(void) */
 export function EnableMysteryGift(): any {
-  FlagSet(FLAG_SYS_MYSTERY_GIFT_ENABLE);
+  FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x7B)));
 }
 
 /** bool32 IsMysteryGiftEnabled(void) */
 export function IsMysteryGiftEnabled(): any {
-  return FlagGet(FLAG_SYS_MYSTERY_GIFT_ENABLE);
+  return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x7B)));
 }
 
 /** void ClearMysteryGiftFlags(void) */
 export function ClearMysteryGiftFlags(): any {
-  FlagClear(FLAG_MYSTERY_GIFT_DONE);
-      FlagClear(FLAG_MYSTERY_GIFT_1);
-      FlagClear(FLAG_MYSTERY_GIFT_2);
-      FlagClear(FLAG_MYSTERY_GIFT_3);
-      FlagClear(FLAG_MYSTERY_GIFT_4);
-      FlagClear(FLAG_MYSTERY_GIFT_5);
-      FlagClear(FLAG_MYSTERY_GIFT_6);
-      FlagClear(FLAG_MYSTERY_GIFT_7);
-      FlagClear(FLAG_MYSTERY_GIFT_8);
-      FlagClear(FLAG_MYSTERY_GIFT_9);
-      FlagClear(FLAG_MYSTERY_GIFT_10);
-      FlagClear(FLAG_MYSTERY_GIFT_11);
-      FlagClear(FLAG_MYSTERY_GIFT_12);
-      FlagClear(FLAG_MYSTERY_GIFT_13);
-      FlagClear(FLAG_MYSTERY_GIFT_14);
-      FlagClear(FLAG_MYSTERY_GIFT_15);
+  FlagClear((0x1E4));
+      FlagClear((0x1E5));
+      FlagClear((0x1E6));
+      FlagClear((0x1E7));
+      FlagClear((0x1E8));
+      FlagClear((0x1E9));
+      FlagClear((0x1EA));
+      FlagClear((0x1EB));
+      FlagClear((0x1EC));
+      FlagClear((0x1ED));
+      FlagClear((0x1EE));
+      FlagClear((0x1EF));
+      FlagClear((0x1F0));
+      FlagClear((0x1F1));
+      FlagClear((0x1F2));
+      FlagClear((0x1F3));
 }
 
 /** void ClearMysteryGiftVars(void) */
 export function ClearMysteryGiftVars(): any {
-  VarSet(VAR_GIFT_PICHU_SLOT, 0);
-      VarSet(VAR_GIFT_UNUSED_1, 0);
-      VarSet(VAR_GIFT_UNUSED_2, 0);
-      VarSet(VAR_GIFT_UNUSED_3, 0);
-      VarSet(VAR_GIFT_UNUSED_4, 0);
-      VarSet(VAR_GIFT_UNUSED_5, 0);
-      VarSet(VAR_GIFT_UNUSED_6, 0);
-      VarSet(VAR_GIFT_UNUSED_7, 0);
+  VarSet((0x40DD), 0);
+      VarSet((0x40DE), 0);
+      VarSet((0x40DF), 0);
+      VarSet((0x40E0), 0);
+      VarSet((0x40E1), 0);
+      VarSet((0x40E2), 0);
+      VarSet((0x40E3), 0);
+      VarSet((0x40E4), 0);
 }
 
 /** void DisableResetRTC(void) */
 export function DisableResetRTC(): any {
-  VarSet(VAR_RESET_RTC_ENABLE, 0);
-      FlagClear(FLAG_SYS_RESET_RTC_ENABLE);
+  VarSet((0x402C), 0);
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x62)));
 }
 
 /** void EnableResetRTC(void) */
 export function EnableResetRTC(): any {
-  VarSet(VAR_RESET_RTC_ENABLE, 0x920);
-      FlagSet(FLAG_SYS_RESET_RTC_ENABLE);
+  VarSet((0x402C), 0x920);
+      FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x62)));
 }
 
 /** bool32 CanResetRTC(void) */
 export function CanResetRTC(): any {
-  if (FlagGet(FLAG_SYS_RESET_RTC_ENABLE) && VarGet(VAR_RESET_RTC_ENABLE) == 0x920)
+  if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x62))) && VarGet((0x402C)) == 0x920)
           return TRUE;
       else
           return FALSE;
@@ -169,7 +166,7 @@ export function VarSet(id: any, value: any): any {
 
 /** u8 VarGetObjectEventGraphicsId(u8 id) */
 export function VarGetObjectEventGraphicsId(id: any): any {
-  return VarGet(VAR_OBJ_GFX_ID_0 + id);
+  return VarGet((0x4010) + id);
 }
 
 /** u8 FlagSet(u16 id) */

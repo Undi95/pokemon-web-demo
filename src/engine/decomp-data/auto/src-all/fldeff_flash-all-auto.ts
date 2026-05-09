@@ -17,13 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCaveTransitionPalette_Black: any = null;
-let sCaveTransitionPalette_Enter: any = null;
-let sCaveTransitionPalette_Exit: any = null;
-let sCaveTransitionPalette_White: any = null;
-let sCaveTransitionTilemap: any = null;
-let sCaveTransitionTiles: any = null;
-let sTransitionTypes: any = null;
+let gPostMenuFieldCallback: any = null;
 /** bool8 SetUpFieldMove_Flash(void) */
 export function SetUpFieldMove_Flash(): any {
   if (ShouldDoBrailleRegisteelEffect())
@@ -33,7 +27,7 @@ export function SetUpFieldMove_Flash(): any {
           gPostMenuFieldCallback = SetUpPuzzleEffectRegisteel;
           return TRUE;
       }
-      else if (gMapHeader.cave == TRUE && !FlagGet(FLAG_SYS_USE_FLASH))
+      else if (gMapHeader.cave == TRUE && !FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x28))))
       {
           gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
           gPostMenuFieldCallback = FieldCallback_Flash;
@@ -53,8 +47,8 @@ export function FieldCallback_Flash(): any {
 
 /** static void FldEff_UseFlash(void) */
 export function FldEff_UseFlash(): any {
-  PlaySE(SE_M_REFLECT);
-      FlagSet(FLAG_SYS_USE_FLASH);
+  PlaySE((207));
+      FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x28)));
       ScriptContext_SetupScript(EventScript_UseFlash);
 }
 

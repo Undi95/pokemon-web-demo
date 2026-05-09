@@ -17,7 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sWaldaLettersTable: any = null;
+let gSpecialVar_0x8004: any = null;
+let temp2: any = null;
 /** u16 TryBufferWaldaPhrase(void) */
 export function TryBufferWaldaPhrase(): any {
   if (IsWaldaPhraseEmpty())
@@ -61,7 +62,7 @@ export function CB2_HandleGivenWaldaPhrase(): any {
 
 /** static u32 GetWaldaPhraseInputCase(u8 *inputPtr) */
 export function GetWaldaPhraseInputCase(inputPtr: any): any {
-  if (inputPtr[0] == EOS)
+  if (inputPtr[0] == (0xFF))
           return PHRASE_EMPTY;
 
        
@@ -111,11 +112,11 @@ export function TryCalculateWallpaper(backgroundClr: any, foregroundClr: any, ic
       let ptr: any = null;
 
        
-      if (StringLength(phrase) != WALDA_PHRASE_LENGTH)
+      if (StringLength(phrase) != (15))
           return FALSE;
 
        
-      for (i = 0; i < WALDA_PHRASE_LENGTH; i++)
+      for (i = 0; i < (15); i++)
       {
           charsByTableId[i] = GetLetterTableId(phrase[i]);
           if (charsByTableId[i] == ARRAY_COUNT(sWaldaLettersTable))
@@ -126,15 +127,15 @@ export function TryCalculateWallpaper(backgroundClr: any, foregroundClr: any, ic
        
        
        
-      for (i = 0; i < WALDA_PHRASE_LENGTH - 1; i++)
+      for (i = 0; i < (15) - 1; i++)
           SetWallpaperDataFromLetter(data, charsByTableId, (5) * i, (3 + (8 * ((i)))), (5));
 
        
-      SetWallpaperDataFromLetter(data, charsByTableId, (5) * (WALDA_PHRASE_LENGTH - 1), (3 + (8 * ((WALDA_PHRASE_LENGTH - 1)))), 2);
+      SetWallpaperDataFromLetter(data, charsByTableId, (5) * ((15) - 1), (3 + (8 * (((15) - 1)))), 2);
 
        
        
-      if (GetWallpaperDataBits(data, 0, 3) != GetWallpaperDataBits(charsByTableId, (3 + (8 * ((WALDA_PHRASE_LENGTH - 1)))) + 2, 3))
+      if (GetWallpaperDataBits(data, 0, 3) != GetWallpaperDataBits(charsByTableId, (3 + (8 * (((15) - 1)))) + 2, 3))
           return FALSE;
 
        

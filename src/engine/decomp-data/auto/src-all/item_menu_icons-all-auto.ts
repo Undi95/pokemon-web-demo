@@ -15,29 +15,16 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBagSpriteTemplate: any = null;
-let sBerryCheckCircleSpriteTemplate: any = null;
-let sBerryPicRotatingSpriteTemplate: any = null;
-let sBerryPicSpriteTemplate: any = null;
-let sBerryPicTable: any = null;
-let sPocketId: any = null;
-let sRotatingBallAnimCmds: any = null;
-let sRotatingBallAnimCmds_FullRotation: any = null;
-let sRotatingBallPaletteTable: any = null;
-let sRotatingBallSpriteTemplate: any = null;
-let sRotatingBallTable: any = null;
 /** void RemoveBagSprite(u8 id) */
 export function RemoveBagSprite(id: any): any {
   let spriteId: any =gBagMenu.spriteIds[id];
-      if (spriteId != SPRITE_NONE)
+      if (spriteId != (0xFF))
       {
           FreeSpriteTilesByTag(id + TAG_BAG_GFX);
           FreeSpritePaletteByTag(id + TAG_BAG_GFX);
           FreeSpriteOamMatrix(gSprites[spriteId]);
           DestroySprite(gSprites[spriteId]);
-          spriteId = SPRITE_NONE;
+          spriteId = (0xFF);
       }
 }
 
@@ -56,7 +43,7 @@ export function SetBagVisualPocketId(bagPocketId: any, isSwitchingPockets: any):
           sprite.y2 = -5;
           sprite.callback = SpriteCB_BagVisualSwitchingPockets;
           sprite.sPocketId = bagPocketId + 1;
-          StartSpriteAnim(sprite, POCKET_NONE);
+          StartSpriteAnim(sprite, (0));
       }
       else
       {
@@ -137,7 +124,7 @@ export function SpriteCB_SwitchPocketRotatingBallContinue(sprite: any): any {
 /** void AddBagItemIconSprite(u16 itemId, u8 id) */
 export function AddBagItemIconSprite(itemId: any, id: any): any {
   let spriteId: any =gBagMenu.spriteIds[id + ITEMMENUSPRITE_ITEM];
-      if (spriteId == SPRITE_NONE)
+      if (spriteId == (0xFF))
       {
           let iconSpriteId: any = null;
 
@@ -145,7 +132,7 @@ export function AddBagItemIconSprite(itemId: any, id: any): any {
           FreeSpriteTilesByTag(id + TAG_ITEM_ICON);
           FreeSpritePaletteByTag(id + TAG_ITEM_ICON);
           iconSpriteId = AddItemIconSprite(id + TAG_ITEM_ICON, id + TAG_ITEM_ICON, itemId);
-          if (iconSpriteId != MAX_SPRITES)
+          if (iconSpriteId != (64))
           {
               spriteId = iconSpriteId;
               gSprites[iconSpriteId].x2 = 24;
@@ -158,30 +145,30 @@ export function AddBagItemIconSprite(itemId: any, id: any): any {
 export function RemoveBagItemIconSprite(id: any): any {
       let spriteId: any =gBagMenu.spriteIds[ITEMMENUSPRITE_ITEM];
 
-      if (spriteId[id ^ 1] != SPRITE_NONE)
+      if (spriteId[id ^ 1] != (0xFF))
           gSprites[spriteId[id ^ 1]].invisible = TRUE;
 
-      if (spriteId[id] != SPRITE_NONE)
+      if (spriteId[id] != (0xFF))
       {
           DestroySpriteAndFreeResources(gSprites[spriteId[id]]);
-          spriteId[id] = SPRITE_NONE;
+          spriteId[id] = (0xFF);
       }
 
 }
 
 /** void CreateItemMenuSwapLine(void) */
 export function CreateItemMenuSwapLine(): any {
-  CreateSwapLineSprites(gBagMenu.spriteIds[ITEMMENUSPRITE_SWAP_LINE], ITEMMENU_SWAP_LINE_LENGTH);
+  CreateSwapLineSprites(gBagMenu.spriteIds[ITEMMENUSPRITE_SWAP_LINE], (8));
 }
 
 /** void SetItemMenuSwapLineInvisibility(bool8 invisible) */
 export function SetItemMenuSwapLineInvisibility(invisible: any): any {
-  SetSwapLineSpritesInvisibility(gBagMenu.spriteIds[ITEMMENUSPRITE_SWAP_LINE], ITEMMENU_SWAP_LINE_LENGTH, invisible);
+  SetSwapLineSpritesInvisibility(gBagMenu.spriteIds[ITEMMENUSPRITE_SWAP_LINE], (8), invisible);
 }
 
 /** void UpdateItemMenuSwapLinePos(u8 y) */
 export function UpdateItemMenuSwapLinePos(y: any): any {
-  UpdateSwapLineSpritesPos(gBagMenu.spriteIds[ITEMMENUSPRITE_SWAP_LINE], ITEMMENU_SWAP_LINE_LENGTH | SWAP_LINE_HAS_MARGIN, 120, (y + 1) * 16);
+  UpdateSwapLineSpritesPos(gBagMenu.spriteIds[ITEMMENUSPRITE_SWAP_LINE], (8) | ((1 << 7)), 120, (y + 1) * 16);
 }
 
 /** static void ArrangeBerryGfx(void *src, void *dest) */
@@ -216,7 +203,7 @@ export function ArrangeBerryGfx(src: any, dest: any): any {
 export function LoadBerryGfx(berryId: any): any {
   let pal: any = null;
 
-      if (berryId == ITEM_TO_BERRY(ITEM_ENIGMA_BERRY) - 1 && IsEnigmaBerryValid())
+      if (berryId == ITEM_TO_BERRY((175)) - 1 && IsEnigmaBerryValid())
       {
            
       }

@@ -17,19 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAngle: any = null;
-let sBgTemplates: any = null;
-let sClockHandCoords: any = null;
-let sSpritePalettes_Clock: any = null;
-let sSpriteSheet_ClockHand: any = null;
-let sSpriteTemplate_AM: any = null;
-let sSpriteTemplate_HourHand: any = null;
-let sSpriteTemplate_MinuteHand: any = null;
-let sSpriteTemplate_PM: any = null;
-let sTaskId: any = null;
-let sTextPrompt_Pal: any = null;
-let sWindowTemplate_ConfirmYesNo: any = null;
-let sWindowTemplates: any = null;
+let y: any = null;
 /** static void VBlankCB_WallClock(void) */
 export function VBlankCB_WallClock(): any {
   LoadOam();
@@ -58,7 +46,7 @@ export function LoadWallClockGraphics(): any {
       DmaClear16(3, PLTT, PLTT_SIZE);
       LZ77UnCompVram(gWallClock_Gfx, VRAM);
 
-      if (gSpecialVar_0x8004 == MALE)
+      if (gSpecialVar_0x8004 == (0))
           LoadPalette(gWallClockMale_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
       else
           LoadPalette(gWallClockFemale_Pal, BG_PLTT_ID(0), PLTT_SIZE_4BPP);
@@ -82,7 +70,7 @@ export function LoadWallClockGraphics(): any {
 
 /** static void WallClockInit(void) */
 export function WallClockInit(): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       EnableInterrupts(INTR_FLAG_VBLANK);
       SetVBlankCallback(VBlankCB_WallClock);
       SetMainCallback2(CB2_WallClock);
@@ -218,7 +206,7 @@ export function Task_SetClock_HandleInput(taskId: any): any {
           }
           else
           {
-              gTasks[taskId].tMoveDir = MOVE_NONE;
+              gTasks[taskId].tMoveDir = (0);
 
               if (JOY_HELD(DPAD_LEFT))
                   gTasks[taskId].tMoveDir = MOVE_BACKWARD;
@@ -226,7 +214,7 @@ export function Task_SetClock_HandleInput(taskId: any): any {
               if (JOY_HELD(DPAD_RIGHT))
                   gTasks[taskId].tMoveDir = MOVE_FORWARD;
 
-              if (gTasks[taskId].tMoveDir != MOVE_NONE)
+              if (gTasks[taskId].tMoveDir != (0))
               {
                   if (gTasks[taskId].tMoveSpeed < 0xFF)
                       gTasks[taskId].tMoveSpeed++;
@@ -257,12 +245,12 @@ export function Task_SetClock_HandleConfirmInput(taskId: any): any {
   switch (Menu_ProcessInputNoWrapClearOnChoose())
       {
       case 0:  
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           gTasks[taskId].func = Task_SetClock_Confirmed;
           break;
       case 1:  
-      case MENU_B_PRESSED:
-          PlaySE(SE_SELECT);
+      case (-1):
+          PlaySE((5));
           ClearStdWindowAndFrameToTransparent(WIN_MSG, FALSE);
           ClearWindowTilemap(WIN_MSG);
           gTasks[taskId].func = Task_SetClock_HandleInput;
@@ -273,7 +261,7 @@ export function Task_SetClock_HandleConfirmInput(taskId: any): any {
 /** static void Task_SetClock_Confirmed(u8 taskId) */
 export function Task_SetClock_Confirmed(taskId: any): any {
   RtcInitLocalTimeOffset(gTasks[taskId].tHours, gTasks[taskId].tMinutes);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_SetClock_Exit;
 }
 
@@ -301,7 +289,7 @@ export function Task_ViewClock_HandleInput(taskId: any): any {
 
 /** static void Task_ViewClock_FadeOut(u8 taskId) */
 export function Task_ViewClock_FadeOut(taskId: any): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_ViewClock_Exit;
 }
 

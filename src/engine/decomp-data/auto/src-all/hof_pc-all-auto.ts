@@ -33,7 +33,7 @@ export function ReshowPCMenuAfterHallOfFamePC(): any {
       Overworld_PlaySpecialMapMusic();
       ScriptMenu_CreatePCMultichoice();
       ScriptMenu_DisplayPCStartupPrompt();
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
       CreateTask(Task_WaitForPaletteFade, 10);
 }
 

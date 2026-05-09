@@ -17,29 +17,27 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let baseOffset: any = null;
+let height: any = null;
+let rand2: any = null;
+let row: any = null;
 let sBgShakeOffsets: any = null;
-let sBlankTile_Gfx: any = null;
-let sCeilingCrumblePositions: any = null;
-let sCeilingCrumbleSpriteSheets: any = null;
-let sDebug_DisintegrationData: any = null;
 let sFallingFossil: any = null;
 let sFallingTower: any = null;
-let sFossil_Gfx: any = null;
-let sIndex: any = null;
-let sInvisibleMirageTowerMetatiles: any = null;
 let sMirageTowerGfxBuffer: any = null;
 let sMirageTowerPulseBlend: any = null;
-let sMirageTowerTilemap: any = null;
 let sMirageTowerTilemapBuffer: any = null;
-let sSpriteTemplate_CeilingCrumbleLarge: any = null;
-let sSpriteTemplate_CeilingCrumbleSmall: any = null;
-let sSpriteTemplate_FallingFossil: any = null;
-let sYOffset: any = null;
+let tTimer: any = null;
+let tXShakeOffset: any = null;
+let tYShakeOffset: any = null;
+let tileMask: any = null;
+let width: any = null;
+let widthTiles: any = null;
 /** bool8 IsMirageTowerVisible(void) */
 export function IsMirageTowerVisible(): any {
   if (!(gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_ROUTE111) && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_ROUTE111)))
           return FALSE;
-      return FlagGet(FLAG_MIRAGE_TOWER_VISIBLE);
+      return FlagGet((0x14E));
 }
 
 /** static void UpdateMirageTowerPulseBlend(u8 taskId) */
@@ -62,7 +60,7 @@ export function TryStartMirageTowerPulseBlendEffect(): any {
 
       if (gSaveBlock1Ptr.location.mapGroup != MAP_GROUP(MAP_ROUTE111)
        || gSaveBlock1Ptr.location.mapNum != MAP_NUM(MAP_ROUTE111)
-       || !FlagGet(FLAG_MIRAGE_TOWER_VISIBLE))
+       || !FlagGet((0x14E)))
           return;
 
       sMirageTowerPulseBlend = AllocZeroed(0);
@@ -76,7 +74,7 @@ export function TryStartMirageTowerPulseBlendEffect(): any {
 export function ClearMirageTowerPulseBlendEffect(): any {
   if (gSaveBlock1Ptr.location.mapGroup != MAP_GROUP(MAP_ROUTE111)
        || gSaveBlock1Ptr.location.mapNum   != MAP_NUM(MAP_ROUTE111)
-       || !FlagGet(FLAG_MIRAGE_TOWER_VISIBLE)
+       || !FlagGet((0x14E))
        || sMirageTowerPulseBlend == NULL)
           return;
 
@@ -93,26 +91,26 @@ export function SetMirageTowerVisibility(): any {
   let rand: any = null;
       let visible: any = null;
 
-      if (VarGet(VAR_MIRAGE_TOWER_STATE))
+      if (VarGet((0x40CB)))
       {
            
-          FlagClear(FLAG_MIRAGE_TOWER_VISIBLE);
+          FlagClear((0x14E));
           return;
       }
 
       rand = Random();
       visible = rand & 1;
-      if (FlagGet(FLAG_FORCE_MIRAGE_TOWER_VISIBLE) == TRUE)
+      if (FlagGet((0x9D)) == TRUE)
           visible = TRUE;
 
       if (visible)
       {
-          FlagSet(FLAG_MIRAGE_TOWER_VISIBLE);
+          FlagSet((0x14E));
           TryStartMirageTowerPulseBlendEffect();
           return;
       }
 
-      FlagClear(FLAG_MIRAGE_TOWER_VISIBLE);
+      FlagClear((0x14E));
 }
 
 /** void StartPlayerDescendMirageTower(void) */
@@ -147,7 +145,7 @@ export function StartScreenShake(yShakeOffset: any, xShakeOffset: any, numShakes
       gTasks[taskId].tShakeDelay = shakeDelay;
       gTasks[taskId].tYShakeOffset = yShakeOffset;
       SetCameraPanningCallback(NULL);
-      PlaySE(SE_M_STRENGTH);
+      PlaySE((214));
 }
 
 /** static void DoScreenShake(u8 taskId) */
@@ -175,7 +173,7 @@ export function DoScreenShake(taskId: any): any {
 /** static void IncrementCeilingCrumbleFinishedCount(void) */
 export function IncrementCeilingCrumbleFinishedCount(): any {
   let taskId: any = FindTaskIdByFunc(WaitCeilingCrumble);
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
           gTasks[taskId].data[0]++;
 }
 
@@ -242,8 +240,8 @@ export function SpriteCB_CeilingCrumble(sprite: any): any {
 export function SetInvisibleMirageTowerMetatiles(): any {
   let i: any = null;
       for (i = 0; i < ARRAY_COUNT(sInvisibleMirageTowerMetatiles); i++)
-          MapGridSetMetatileIdAt(sInvisibleMirageTowerMetatiles[i].x + MAP_OFFSET,
-                                 sInvisibleMirageTowerMetatiles[i].y + MAP_OFFSET,
+          MapGridSetMetatileIdAt(sInvisibleMirageTowerMetatiles[i].x + (7),
+                                 sInvisibleMirageTowerMetatiles[i].y + (7),
                                  sInvisibleMirageTowerMetatiles[i].metatileId);
       DrawWholeMapView();
 }
@@ -392,7 +390,7 @@ export function DoMirageTowerDisintegration(taskId: any): any {
       case 4:
           UnsetBgTilemapBuffer(0);
           bgShakeTaskId = FindTaskIdByFunc(UpdateBgShake);
-          if (bgShakeTaskId != TASK_NONE)
+          if (bgShakeTaskId != ((0xFF)))
               DestroyTask(bgShakeTaskId);
           sBgShakeOffsets.bgVOFS = sBgShakeOffsets.bgHOFS = 0;
           SetBgShakeOffsets();

@@ -15,6 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gBattle_BG3_X: any = null;
+let gBattle_BG3_Y: any = null;
+let y: any = null;
+let yMod: any = null;
 /** static void AnimUnusedHumanoidFoot(struct Sprite *sprite) */
 export function AnimUnusedHumanoidFoot(sprite: any): any {
   SetAnimSpriteInitialXOffset(sprite, gBattleAnimArgs[0]);
@@ -26,7 +32,7 @@ export function AnimUnusedHumanoidFoot(sprite: any): any {
 
 /** static void AnimSlideHandOrFootToTarget(struct Sprite *sprite) */
 export function AnimSlideHandOrFootToTarget(sprite: any): any {
-  if (gBattleAnimArgs[7] == 1 && GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+  if (gBattleAnimArgs[7] == 1 && GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
           gBattleAnimArgs[3] = -gBattleAnimArgs[3];
@@ -91,7 +97,7 @@ export function AnimFistOrFootRandomPos(sprite: any): any {
       if (Random2() & 1)
           y *= -1;
 
-      if (GET_BATTLER_SIDE2(battler) == B_SIDE_PLAYER)
+      if (GET_BATTLER_SIDE2(battler) == (0))
           y -= 16;
 
       sprite.x += x;
@@ -99,7 +105,7 @@ export function AnimFistOrFootRandomPos(sprite: any): any {
 
       sprite.data[0] = gBattleAnimArgs[1];
       sprite.data[7] = CreateSprite(gBasicHitSplatSpriteTemplate, sprite.x, sprite.y, sprite.subpriority + 1);
-      if (sprite.data[7] != MAX_SPRITES)
+      if (sprite.data[7] != (64))
       {
           StartSpriteAffineAnim(gSprites[sprite.data[7]], 0);
           gSprites[sprite.data[7]].callback = SpriteCallbackDummy;
@@ -112,7 +118,7 @@ export function AnimFistOrFootRandomPos(sprite: any): any {
 export function AnimFistOrFootRandomPos_Step(sprite: any): any {
   if (sprite.data[0] == 0)
       {
-          if (sprite.data[7] != MAX_SPRITES)
+          if (sprite.data[7] != (64))
           {
               FreeOamMatrix(gSprites[sprite.data[7]].oam.matrixNum);
               DestroySprite(gSprites[sprite.data[7]]);
@@ -170,7 +176,7 @@ export function AnimSlidingKick(sprite: any): any {
 
       InitSpritePosToAnimTarget(sprite, TRUE);
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
 
       sprite.data[0] = gBattleAnimArgs[3];
@@ -276,7 +282,7 @@ export function AnimDizzyPunchDuck(sprite: any): any {
 
 /** static void AnimBrickBreakWall(struct Sprite *sprite) */
 export function AnimBrickBreakWall(sprite: any): any {
-  if (gBattleAnimArgs[0] == ANIM_ATTACKER)
+  if (gBattleAnimArgs[0] == (0))
       {
           sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X);
           sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y);
@@ -329,7 +335,7 @@ export function AnimBrickBreakWall_Step(sprite: any): any {
 
 /** static void AnimBrickBreakWallShard(struct Sprite *sprite) */
 export function AnimBrickBreakWallShard(sprite: any): any {
-  if (gBattleAnimArgs[0] == ANIM_ATTACKER)
+  if (gBattleAnimArgs[0] == (0))
       {
           sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X) + gBattleAnimArgs[2];
           sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y) + gBattleAnimArgs[3];
@@ -380,7 +386,7 @@ export function AnimBrickBreakWallShard_Step(sprite: any): any {
 
 /** static void AnimSuperpowerOrb(struct Sprite *sprite) */
 export function AnimSuperpowerOrb(sprite: any): any {
-  if (gBattleAnimArgs[0] == ANIM_ATTACKER)
+  if (gBattleAnimArgs[0] == (0))
       {
           sprite.x = GetBattlerSpriteCoord(gBattlerAttacker, BATTLER_COORD_X_2);
           sprite.y = GetBattlerSpriteCoord(gBattlerAttacker, BATTLER_COORD_Y_PIC_OFFSET);
@@ -482,7 +488,7 @@ export function AnimSuperpowerRock_Step2(sprite: any): any {
 export function AnimSuperpowerFireball(sprite: any): any {
   let battler: any = null;
 
-      if (gBattleAnimArgs[0] == ANIM_ATTACKER)
+      if (gBattleAnimArgs[0] == (0))
       {
           sprite.x = GetBattlerSpriteCoord(gBattlerAttacker, BATTLER_COORD_X_2);
           sprite.y = GetBattlerSpriteCoord(gBattlerAttacker, BATTLER_COORD_Y_PIC_OFFSET);
@@ -497,7 +503,7 @@ export function AnimSuperpowerFireball(sprite: any): any {
 
       if (IsContest())
           sprite.oam.matrixNum |= ST_OAM_HFLIP;
-      else if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+      else if (GetBattlerSide(battler) == (0))
           sprite.oam.matrixNum |= (ST_OAM_HFLIP | ST_OAM_VFLIP);
 
       sprite.data[0] = 16;
@@ -531,7 +537,7 @@ export function AnimArmThrustHit(sprite: any): any {
       sprite.data[4] = gBattleAnimArgs[2];
 
       turn = gAnimMoveTurn;
-      if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) == (0))
           turn++;
 
       if (turn & 1)
@@ -548,7 +554,7 @@ export function AnimArmThrustHit(sprite: any): any {
 
 /** static void AnimRevengeScratch(struct Sprite *sprite) */
 export function AnimRevengeScratch(sprite: any): any {
-  if (gBattleAnimArgs[2] == ANIM_ATTACKER)
+  if (gBattleAnimArgs[2] == (0))
           InitSpritePosToAnimAttacker(sprite, FALSE);
       else
           InitSpritePosToAnimTarget(sprite, FALSE);
@@ -557,7 +563,7 @@ export function AnimRevengeScratch(sprite: any): any {
       {
           StartSpriteAnim(sprite, 2);
       }
-      else if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      else if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           StartSpriteAnim(sprite, 1);
       }
@@ -600,7 +606,7 @@ export function AnimTask_MoveSkyUppercutBg(taskId: any): any {
 
       task.data[10] += 2816;
 
-      if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) == (0))
           gBattle_BG3_X += task.data[9] >> 8;
       else
           gBattle_BG3_X -= task.data[9] >> 8;

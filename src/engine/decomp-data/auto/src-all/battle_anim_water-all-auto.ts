@@ -60,7 +60,7 @@ export function AnimRainDrop_Step(sprite: any): any {
 export function AnimWaterBubbleProjectile(sprite: any): any {
   let spriteId: any = null;
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2) - gBattleAnimArgs[0];
           sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET) + gBattleAnimArgs[1];
@@ -72,7 +72,7 @@ export function AnimWaterBubbleProjectile(sprite: any): any {
           sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET) + gBattleAnimArgs[1];
           sprite.animPaused = TRUE;
       }
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
       sprite.data[0] = gBattleAnimArgs[6];
       sprite.data[1] = sprite.x;
@@ -134,7 +134,7 @@ export function AnimAuroraBeamRings(sprite: any): any {
   let unkArg: any = null;
 
       InitSpritePosToAnimAttacker(sprite, TRUE);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           unkArg = -gBattleAnimArgs[2];
       else
           unkArg = gBattleAnimArgs[2];
@@ -163,7 +163,7 @@ export function AnimAuroraBeamRings_Step(sprite: any): any {
 /** void AnimTask_RotateAuroraRingColors(u8 taskId) */
 export function AnimTask_RotateAuroraRingColors(taskId: any): any {
   gTasks[taskId].data[0] = gBattleAnimArgs[0];
-      gTasks[taskId].data[2] = OBJ_PLTT_ID(IndexOfSpritePaletteTag(ANIM_TAG_RAINBOW_RINGS));
+      gTasks[taskId].data[2] = OBJ_PLTT_ID(IndexOfSpritePaletteTag((((10000) + 140))));
       gTasks[taskId].func = AnimTask_RotateAuroraRingColors_Step;
 }
 
@@ -253,7 +253,7 @@ export function AnimHydroCannonCharge(sprite: any): any {
       priority = GetBattlerSpriteSubpriority(gBattleAnimAttacker);
       if (!IsContest())
       {
-          if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) == (0))
           {
               sprite.x2 = 10;
               sprite.subpriority = priority + 2;
@@ -297,7 +297,7 @@ export function AnimHydroCannonBeam(sprite: any): any {
       else
           coordType = BATTLER_COORD_Y;
       InitSpritePosToAnimAttacker(sprite, respectMonPicOffsets);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
       sprite.data[0] = gBattleAnimArgs[4];
       sprite.data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2) + gBattleAnimArgs[2];
@@ -318,7 +318,7 @@ export function AnimWaterGunDroplet(sprite: any): any {
 
 /** static void AnimSmallBubblePair(struct Sprite *sprite) */
 export function AnimSmallBubblePair(sprite: any): any {
-  if (gBattleAnimArgs[3] != ANIM_ATTACKER)
+  if (gBattleAnimArgs[3] != (0))
           InitSpritePosToAnimTarget(sprite, TRUE);
       else
           InitSpritePosToAnimAttacker(sprite, TRUE);
@@ -356,7 +356,7 @@ export function AnimTask_CreateSurfWave(taskId: any): any {
       if (!IsContest())
       {
           SetAnimBgAttribute(1, BG_ANIM_CHAR_BASE_BLOCK, 1);
-          if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_OPPONENT)
+          if (GetBattlerSide(gBattleAnimAttacker) == (1))
               AnimLoadCompressedBgTilemap(animBg.bgId, gBattleAnimBgTilemap_SurfOpponent);
           else
               AnimLoadCompressedBgTilemap(animBg.bgId, gBattleAnimBgTilemap_SurfPlayer);
@@ -366,7 +366,7 @@ export function AnimTask_CreateSurfWave(taskId: any): any {
           AnimLoadCompressedBgTilemapHandleContest(animBg, gBattleAnimBgTilemap_SurfContest, TRUE);
       }
       AnimLoadCompressedBgGfx(animBg.bgId, gBattleAnimBgImage_Surf, animBg.tilesOffset);
-      if (cmd.palette == ANIM_SURF_PAL_SURF)
+      if (cmd.palette == (0))
           LoadCompressedPalette(gBattleAnimBgPalette_Surf, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
       else
           LoadCompressedPalette(gBattleAnimBackgroundImageMuddyWater_Pal, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
@@ -383,7 +383,7 @@ export function AnimTask_CreateSurfWave(taskId: any): any {
           gTasks[taskId].data[1] = 1;
           gTasks[taskId2].data[3] = 0;
       }
-      else if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_OPPONENT)
+      else if (GetBattlerSide(gBattleAnimAttacker) == (1))
       {
           x = -224;
           y = 256;
@@ -580,7 +580,7 @@ export function AnimSmallDriftingBubbles_Step(sprite: any): any {
 export function AnimTask_WaterSpoutLaunch(taskId: any): any {
   let task: any =gTasks[taskId];
 
-      task.data[15] = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      task.data[15] = GetAnimBattlerSpriteId((0));
       task.data[5] = gSprites[task.data[15]].y;
       task.data[1] = GetWaterSpoutPowerForAnim();
       PrepareBattlerSpriteForRotScale(task.data[15], ST_OAM_OBJ_NORMAL);
@@ -680,7 +680,7 @@ export function GetWaterSpoutPowerForAnim(): any {
       let partyIndex: any = null;
       let slot: any = null;
 
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
       {
           partyIndex = gBattlerPartyIndexes[gBattleAnimAttacker];
           slot =gPlayerParty[partyIndex];
@@ -719,7 +719,7 @@ export function CreateWaterSpoutLaunchDroplets(task: any, taskId: any): any {
       for (i = 0; i < 20; i += increment)
       {
           spriteId = CreateSprite(gSmallWaterOrbSpriteTemplate, attackerCoordX, attackerCoordY, subpriority);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               gSprites[spriteId].data[1] = i;
               gSprites[spriteId].data[2] = attackerCoordX * 16;
@@ -764,7 +764,7 @@ export function AnimTask_WaterSpoutRain(taskId: any): any {
   let task: any =gTasks[taskId];
 
       task.data[1] = GetWaterSpoutPowerForAnim();
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
       {
           task.data[4] = 136;
           task.data[6] = 40;
@@ -795,18 +795,18 @@ export function AnimTask_WaterSpoutRain_Step(taskId: any): any {
           }
           if (task.data[10] != 0 && task.data[13] == 0)
           {
-              gBattleAnimArgs[0] = ANIM_TARGET;
+              gBattleAnimArgs[0] = (1);
               gBattleAnimArgs[1] = 0;
               gBattleAnimArgs[2] = 12;
               taskId2 = CreateTask(AnimTask_HorizontalShake, 80);
-              if (taskId2 != TASK_NONE)
+              if (taskId2 != ((0xFF)))
               {
                   gTasks[taskId2].func(taskId2);
                   gAnimVisualTaskCount++;
               }
-              gBattleAnimArgs[0] = ANIM_DEF_PARTNER;
+              gBattleAnimArgs[0] = (3);
               taskId2 = CreateTask(AnimTask_HorizontalShake, 80);
-              if (taskId2 != TASK_NONE)
+              if (taskId2 != ((0xFF)))
               {
                   gTasks[taskId2].func(taskId2);
                   gAnimVisualTaskCount++;
@@ -828,7 +828,7 @@ export function CreateWaterSpoutRainDroplet(task: any, taskId: any): any {
   let yPosArg: any = ((gSineTable[task.data[8]] + 3) >> 4) + task.data[6];
       let spriteId: any = CreateSprite(gSmallWaterOrbSpriteTemplate, task.data[7], 0, 0);
 
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].callback = AnimWaterSpoutRain;
           gSprites[spriteId].data[5] = yPosArg;
@@ -850,7 +850,7 @@ export function AnimWaterSpoutRain(sprite: any): any {
           {
               gTasks[sprite.data[6]].data[10] = 1;
               sprite.data[1] = CreateSprite(gWaterHitSplatSpriteTemplate, sprite.x, sprite.y, 1);
-              if (sprite.data[1] != MAX_SPRITES)
+              if (sprite.data[1] != (64))
               {
                   StartSpriteAffineAnim(gSprites[sprite.data[1]], 3);
                   gSprites[sprite.data[1]].data[6] = sprite.data[6];
@@ -883,7 +883,7 @@ export function AnimTask_WaterSport(taskId: any): any {
 
       task.data[3] = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
       task.data[4] = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
-      task.data[7] = (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER) ? 1 : -1;
+      task.data[7] = (GetBattlerSide(gBattleAnimAttacker) == (0)) ? 1 : -1;
       if (IsContest())
           task.data[7] *= -1;
       task.data[5] = task.data[3] + task.data[7] * 8;
@@ -971,7 +971,7 @@ export function CreateWaterSportDroplet(task: any): any {
       {
           task.data[2] = 0;
           spriteId = CreateSprite(gSmallWaterOrbSpriteTemplate, task.data[3], task.data[4], 10);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               gSprites[spriteId].data[0] = 16;
               gSprites[spriteId].data[2] = task.data[5];
@@ -1005,7 +1005,7 @@ export function AnimWaterSportDroplet_Step(sprite: any): any {
 
       if (TranslateAnimHorizontalArc(sprite))
       {
-          for (i = 0; i < NUM_TASKS; i++)
+          for (i = 0; i < (16); i++)
           {
               if (gTasks[i].func == AnimTask_WaterSport_Step)
               {

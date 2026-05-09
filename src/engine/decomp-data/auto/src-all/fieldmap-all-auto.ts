@@ -17,9 +17,12 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBackupMapData: any = null;
-let sDummyConnectionFlags: any = null;
+let desti: any = null;
+let j: any = null;
+let old_y: any = null;
+let r8: any = null;
 let sMapConnectionFlags: any = null;
+let y0: any = null;
 /** void InitMap(void) */
 export function InitMap(): any {
   InitMapLayoutData(gMapHeader);
@@ -39,13 +42,13 @@ export function InitMapFromSavedGame(): any {
 
 /** void InitBattlePyramidMap(bool8 setPlayerPosition) */
 export function InitBattlePyramidMap(setPlayerPosition: any): any {
-  CpuFastFill16(MAPGRID_UNDEFINED, sBackupMapData, 0);
+  CpuFastFill16(((0x03FF)), sBackupMapData, 0);
       GenerateBattlePyramidFloorLayout(sBackupMapData, setPlayerPosition);
 }
 
 /** void InitTrainerHillMap(void) */
 export function InitTrainerHillMap(): any {
-  CpuFastFill16(MAPGRID_UNDEFINED, sBackupMapData, 0);
+  CpuFastFill16(((0x03FF)), sBackupMapData, 0);
       GenerateTrainerHillFloorLayout(sBackupMapData);
 }
 
@@ -55,13 +58,13 @@ export function InitMapLayoutData(mapHeader: any): any {
       let width: any = null;
       let height: any = null;
       mapLayout = mapHeader.mapLayout;
-      CpuFastFill16(MAPGRID_UNDEFINED, sBackupMapData, 0);
+      CpuFastFill16(((0x03FF)), sBackupMapData, 0);
       gBackupMapLayout.map = sBackupMapData;
-      width = mapLayout.width + MAP_OFFSET_W;
+      width = mapLayout.width + (((7) * 2 + 1));
       gBackupMapLayout.width = width;
-      height = mapLayout.height + MAP_OFFSET_H;
+      height = mapLayout.height + (((7) * 2));
       gBackupMapLayout.height = height;
-      if (width * height <= MAX_MAP_DATA_SIZE)
+      if (width * height <= (10240))
       {
           InitBackupMapLayoutData(mapLayout.map, mapLayout.width, mapLayout.height);
           InitBackupMapLayoutConnections(mapHeader);
@@ -73,11 +76,11 @@ export function InitBackupMapLayoutData(map: any, width: any, height: any): any 
   let dest: any = null;
       let y: any = null;
       dest = gBackupMapLayout.map;
-      dest += gBackupMapLayout.width * 7 + MAP_OFFSET;
+      dest += gBackupMapLayout.width * 7 + (7);
       for (y = 0; y < height; y++)
       {
           CpuCopy16(map, dest, width * 2);
-          dest += width + MAP_OFFSET_W;
+          dest += width + (((7) * 2 + 1));
           map += width;
       }
 }
@@ -99,19 +102,19 @@ export function InitBackupMapLayoutConnections(mapHeader: any): any {
               let offset: any = connection.offset;
               switch (connection.direction)
               {
-              case CONNECTION_SOUTH:
+              case (1):
                   FillSouthConnection(mapHeader, cMap, offset);
                   sMapConnectionFlags.south = TRUE;
                   break;
-              case CONNECTION_NORTH:
+              case (2):
                   FillNorthConnection(mapHeader, cMap, offset);
                   sMapConnectionFlags.north = TRUE;
                   break;
-              case CONNECTION_WEST:
+              case (3):
                   FillWestConnection(mapHeader, cMap, offset);
                   sMapConnectionFlags.west = TRUE;
                   break;
-              case CONNECTION_EAST:
+              case (4):
                   FillEastConnection(mapHeader, cMap, offset);
                   sMapConnectionFlags.east = TRUE;
                   break;
@@ -149,8 +152,8 @@ export function FillSouthConnection(mapHeader: any, connectedMapHeader: any, off
       if (connectedMapHeader)
       {
           cWidth = connectedMapHeader.mapLayout.width;
-          x = offset + MAP_OFFSET;
-          y = mapHeader.mapLayout.height + MAP_OFFSET;
+          x = offset + (7);
+          y = mapHeader.mapLayout.height + (7);
           if (x < 0)
           {
               x2 = -x;
@@ -174,7 +177,7 @@ export function FillSouthConnection(mapHeader: any, connectedMapHeader: any, off
               x, y,
               connectedMapHeader,
               x2,   0,
-              width,   MAP_OFFSET);
+              width,   (7));
       }
 }
 
@@ -189,8 +192,8 @@ export function FillNorthConnection(mapHeader: any, connectedMapHeader: any, off
       {
           cWidth = connectedMapHeader.mapLayout.width;
           cHeight = connectedMapHeader.mapLayout.height;
-          x = offset + MAP_OFFSET;
-          y2 = cHeight - MAP_OFFSET;
+          x = offset + (7);
+          y2 = cHeight - (7);
           if (x < 0)
           {
               x2 = -x;
@@ -214,7 +217,7 @@ export function FillNorthConnection(mapHeader: any, connectedMapHeader: any, off
               x,   0,
               connectedMapHeader,
               x2, y2,
-              width,   MAP_OFFSET);
+              width,   (7));
 
       }
 }
@@ -229,8 +232,8 @@ export function FillWestConnection(mapHeader: any, connectedMapHeader: any, offs
       {
           cWidth = connectedMapHeader.mapLayout.width;
           cHeight = connectedMapHeader.mapLayout.height;
-          y = offset + MAP_OFFSET;
-          x2 = cWidth - MAP_OFFSET;
+          y = offset + (7);
+          x2 = cWidth - (7);
           if (y < 0)
           {
               y2 = -y;
@@ -253,7 +256,7 @@ export function FillWestConnection(mapHeader: any, connectedMapHeader: any, offs
                 0, y,
               connectedMapHeader,
               x2, y2,
-                MAP_OFFSET, height);
+                (7), height);
       }
 }
 
@@ -266,8 +269,8 @@ export function FillEastConnection(mapHeader: any, connectedMapHeader: any, offs
       if (connectedMapHeader)
       {
           cHeight = connectedMapHeader.mapLayout.height;
-          x = mapHeader.mapLayout.width + MAP_OFFSET;
-          y = offset + MAP_OFFSET;
+          x = mapHeader.mapLayout.width + (7);
+          y = offset + (7);
           if (y < 0)
           {
               y2 = -y;
@@ -290,7 +293,7 @@ export function FillEastConnection(mapHeader: any, connectedMapHeader: any, offs
               x, y,
               connectedMapHeader,
                 0, y2,
-                MAP_OFFSET + 1, height);
+                (7) + 1, height);
       }
 }
 
@@ -298,7 +301,7 @@ export function FillEastConnection(mapHeader: any, connectedMapHeader: any, offs
 export function MapGridGetElevationAt(x: any, y: any): any {
   let block: any = GetMapGridBlockAt(x, y);
 
-      if (block == MAPGRID_UNDEFINED)
+      if (block == ((0x03FF)))
           return 0;
 
       return UNPACK_ELEVATION(block);
@@ -308,7 +311,7 @@ export function MapGridGetElevationAt(x: any, y: any): any {
 export function MapGridGetCollisionAt(x: any, y: any): any {
   let block: any = GetMapGridBlockAt(x, y);
 
-      if (block == MAPGRID_UNDEFINED)
+      if (block == ((0x03FF)))
           return TRUE;
 
       return UNPACK_COLLISION(block);
@@ -318,7 +321,7 @@ export function MapGridGetCollisionAt(x: any, y: any): any {
 export function MapGridGetMetatileIdAt(x: any, y: any): any {
   let block: any = GetMapGridBlockAt(x, y);
 
-      if (block == MAPGRID_UNDEFINED)
+      if (block == ((0x03FF)))
           return UNPACK_METATILE(GetBorderBlockAt(x, y));
 
       return UNPACK_METATILE(block);
@@ -344,7 +347,7 @@ export function MapGridSetMetatileIdAt(x: any, y: any, metatile: any): any {
           i = x + y * gBackupMapLayout.width;
 
            
-          gBackupMapLayout.map[i] = (gBackupMapLayout.map[i] & MAPGRID_ELEVATION_MASK) | (metatile & ~MAPGRID_ELEVATION_MASK);
+          gBackupMapLayout.map[i] = (gBackupMapLayout.map[i] & (0xF000)) | (metatile & ~(0xF000));
       }
 }
 
@@ -361,19 +364,19 @@ export function MapGridSetMetatileEntryAt(x: any, y: any, metatile: any): any {
 /** u16 GetMetatileAttributesById(u16 metatile) */
 export function GetMetatileAttributesById(metatile: any): any {
   let attributes: any = null;
-      if (metatile < NUM_METATILES_IN_PRIMARY)
+      if (metatile < (512))
       {
           attributes = gMapHeader.mapLayout.primaryTileset.metatileAttributes;
           return attributes[metatile];
       }
-      else if (metatile < NUM_METATILES_TOTAL)
+      else if (metatile < (1024))
       {
           attributes = gMapHeader.mapLayout.secondaryTileset.metatileAttributes;
-          return attributes[metatile - NUM_METATILES_IN_PRIMARY];
+          return attributes[metatile - (512)];
       }
       else
       {
-          return MB_INVALID;
+          return (UCHAR_MAX);
       }
 }
 
@@ -387,9 +390,9 @@ export function SaveMapView(): any {
       width = gBackupMapLayout.width;
       x = gSaveBlock1Ptr.pos.x;
       y = gSaveBlock1Ptr.pos.y;
-      for (i = y; i < y + MAP_OFFSET_H; i++)
+      for (i = y; i < y + (((7) * 2)); i++)
       {
-          for (j = x; j < x + MAP_OFFSET_W; j++)
+          for (j = x; j < x + (((7) * 2 + 1)); j++)
               mapView =  sBackupMapData[width * i + j];
       }
 }
@@ -427,28 +430,28 @@ export function LoadSavedMapView(): any {
           width = gBackupMapLayout.width;
           x = gSaveBlock1Ptr.pos.x;
           y = gSaveBlock1Ptr.pos.y;
-          for (i = y; i < y + MAP_OFFSET_H; i++)
+          for (i = y; i < y + (((7) * 2)); i++)
           {
               if (i == y && i != 0)
                   yMode = 0;
-              else if (i == y + MAP_OFFSET_H - 1 && i != gMapHeader.mapLayout.height - 1)
+              else if (i == y + (((7) * 2)) - 1 && i != gMapHeader.mapLayout.height - 1)
                   yMode = 1;
               else
                   yMode = 0xFF;
 
-              for (j = x; j < x + MAP_OFFSET_W; j++)
+              for (j = x; j < x + (((7) * 2 + 1)); j++)
               {
                   if (!SkipCopyingMetatileFromSavedMap(sBackupMapData[j + width * i], width, yMode))
                       sBackupMapData[j + width * i] = mapView;
                   mapView++;
               }
           }
-          for (j = x; j < x + MAP_OFFSET_W; j++)
+          for (j = x; j < x + (((7) * 2 + 1)); j++)
           {
               if (y != 0)
                   FixLongGrassMetatilesWindowTop(j, y - 1);
               if (i < gMapHeader.mapLayout.height - 1)
-                  FixLongGrassMetatilesWindowBottom(j, y + MAP_OFFSET_H - 1);
+                  FixLongGrassMetatilesWindowBottom(j, y + (((7) * 2)) - 1);
           }
           ClearSavedMapView();
       }
@@ -471,25 +474,25 @@ export function MoveMapViewToBackup(direction: any): any {
       r8 = 0;
       x0 = gSaveBlock1Ptr.pos.x;
       y0 = gSaveBlock1Ptr.pos.y;
-      x2 = MAP_OFFSET_W;
-      y2 = MAP_OFFSET_H;
+      x2 = (((7) * 2 + 1));
+      y2 = (((7) * 2));
       switch (direction)
       {
-      case CONNECTION_NORTH:
+      case (2):
           y0 += 1;
-          y2 = MAP_OFFSET_H - 1;
+          y2 = (((7) * 2)) - 1;
           break;
-      case CONNECTION_SOUTH:
+      case (1):
           r8 = 1;
-          y2 = MAP_OFFSET_H - 1;
+          y2 = (((7) * 2)) - 1;
           break;
-      case CONNECTION_WEST:
+      case (3):
           x0 += 1;
-          x2 = MAP_OFFSET_W - 1;
+          x2 = (((7) * 2 + 1)) - 1;
           break;
-      case CONNECTION_EAST:
+      case (4):
           r9 = 1;
-          x2 = MAP_OFFSET_W - 1;
+          x2 = (((7) * 2 + 1)) - 1;
           break;
       }
       for (y = 0; y < y2; y++)
@@ -499,7 +502,7 @@ export function MoveMapViewToBackup(direction: any): any {
           for (x = 0; x < x2; x++)
           {
               desti = width * (y + y0);
-              srci = (y + r8) * MAP_OFFSET_W + r9;
+              srci = (y + r8) * (((7) * 2 + 1)) + r9;
               src =mapView[srci + i];
               dest =sBackupMapData[x0 + desti + j];
               dest = src;
@@ -512,55 +515,55 @@ export function MoveMapViewToBackup(direction: any): any {
 
 /** int GetMapBorderIdAt(int x, int y) */
 export function GetMapBorderIdAt(x: any, y: any): any {
-  if (GetMapGridBlockAt(x, y) == MAPGRID_UNDEFINED)
-          return CONNECTION_INVALID;
+  if (GetMapGridBlockAt(x, y) == ((0x03FF)))
+          return (-1);
 
-      if (x >= (gBackupMapLayout.width - (MAP_OFFSET + 1)))
+      if (x >= (gBackupMapLayout.width - ((7) + 1)))
       {
           if (!sMapConnectionFlags.east)
-              return CONNECTION_INVALID;
+              return (-1);
 
-          return CONNECTION_EAST;
+          return (4);
       }
-      else if (x < MAP_OFFSET)
+      else if (x < (7))
       {
           if (!sMapConnectionFlags.west)
-              return CONNECTION_INVALID;
+              return (-1);
 
-          return CONNECTION_WEST;
+          return (3);
       }
-      else if (y >= (gBackupMapLayout.height - MAP_OFFSET))
+      else if (y >= (gBackupMapLayout.height - (7)))
       {
           if (!sMapConnectionFlags.south)
-              return CONNECTION_INVALID;
+              return (-1);
 
-          return CONNECTION_SOUTH;
+          return (1);
       }
-      else if (y < MAP_OFFSET)
+      else if (y < (7))
       {
           if (!sMapConnectionFlags.north)
-              return CONNECTION_INVALID;
+              return (-1);
 
-          return CONNECTION_NORTH;
+          return (2);
       }
       else
       {
-          return CONNECTION_NONE;
+          return (0);
       }
 }
 
 /** int GetPostCameraMoveMapBorderId(int x, int y) */
 export function GetPostCameraMoveMapBorderId(x: any, y: any): any {
-  return GetMapBorderIdAt(gSaveBlock1Ptr.pos.x + MAP_OFFSET + x, gSaveBlock1Ptr.pos.y + MAP_OFFSET + y);
+  return GetMapBorderIdAt(gSaveBlock1Ptr.pos.x + (7) + x, gSaveBlock1Ptr.pos.y + (7) + y);
 }
 
 /** bool32 CanCameraMoveInDirection(int direction) */
 export function CanCameraMoveInDirection(direction: any): any {
   let x, y;
-      x = gSaveBlock1Ptr.pos.x + MAP_OFFSET + gDirectionToVectors[direction].x;
-      y = gSaveBlock1Ptr.pos.y + MAP_OFFSET + gDirectionToVectors[direction].y;
+      x = gSaveBlock1Ptr.pos.x + (7) + gDirectionToVectors[direction].x;
+      y = gSaveBlock1Ptr.pos.y + (7) + gDirectionToVectors[direction].y;
 
-      if (GetMapBorderIdAt(x, y) == CONNECTION_INVALID)
+      if (GetMapBorderIdAt(x, y) == (-1))
           return FALSE;
 
       return TRUE;
@@ -572,19 +575,19 @@ export function SetPositionFromConnection(connection: any, direction: any, x: an
       mapHeader = GetMapHeaderFromConnection(connection);
       switch (direction)
       {
-      case CONNECTION_EAST:
+      case (4):
           gSaveBlock1Ptr.pos.x = -x;
           gSaveBlock1Ptr.pos.y -= connection.offset;
           break;
-      case CONNECTION_WEST:
+      case (3):
           gSaveBlock1Ptr.pos.x = mapHeader.mapLayout.width;
           gSaveBlock1Ptr.pos.y -= connection.offset;
           break;
-      case CONNECTION_SOUTH:
+      case (1):
           gSaveBlock1Ptr.pos.x -= connection.offset;
           gSaveBlock1Ptr.pos.y = -y;
           break;
-      case CONNECTION_NORTH:
+      case (2):
           gSaveBlock1Ptr.pos.x -= connection.offset;
           gSaveBlock1Ptr.pos.y = mapHeader.mapLayout.height;
           break;
@@ -598,7 +601,7 @@ export function CameraMove(x: any, y: any): any {
       let old_x, old_y;
       gCamera.active = FALSE;
       direction = GetPostCameraMoveMapBorderId(x, y);
-      if (direction == CONNECTION_NONE || direction == CONNECTION_INVALID)
+      if (direction == (0) || direction == (-1))
       {
           gSaveBlock1Ptr.pos.x += x;
           gSaveBlock1Ptr.pos.y += y;
@@ -628,11 +631,11 @@ export function IsPosInIncomingConnectingMap(direction: any, x: any, y: any, con
       mapHeader = GetMapHeaderFromConnection(connection);
       switch (direction)
       {
-      case CONNECTION_SOUTH:
-      case CONNECTION_NORTH:
+      case (1):
+      case (2):
           return IsCoordInIncomingConnectingMap(x, gMapHeader.mapLayout.width, mapHeader.mapLayout.width, connection.offset);
-      case CONNECTION_WEST:
-      case CONNECTION_EAST:
+      case (3):
+      case (4):
           return IsCoordInIncomingConnectingMap(y, gMapHeader.mapLayout.height, mapHeader.mapLayout.height, connection.offset);
       }
       return FALSE;
@@ -669,11 +672,11 @@ export function IsPosInConnectingMap(connection: any, x: any, y: any): any {
       mapHeader = GetMapHeaderFromConnection(connection);
       switch (connection.direction)
       {
-      case CONNECTION_SOUTH:
-      case CONNECTION_NORTH:
+      case (1):
+      case (2):
           return IsCoordInConnectingMap(x - connection.offset, mapHeader.mapLayout.width);
-      case CONNECTION_WEST:
-      case CONNECTION_EAST:
+      case (3):
+      case (4):
           return IsCoordInConnectingMap(y - connection.offset, mapHeader.mapLayout.height);
       }
       return FALSE;
@@ -681,14 +684,14 @@ export function IsPosInConnectingMap(connection: any, x: any, y: any): any {
 
 /** void SetCameraFocusCoords(u16 x, u16 y) */
 export function SetCameraFocusCoords(x: any, y: any): any {
-  gSaveBlock1Ptr.pos.x = x - MAP_OFFSET;
-      gSaveBlock1Ptr.pos.y = y - MAP_OFFSET;
+  gSaveBlock1Ptr.pos.x = x - (7);
+      gSaveBlock1Ptr.pos.y = y - (7);
 }
 
 /** void GetCameraFocusCoords(u16 *x, u16 *y) */
 export function GetCameraFocusCoords(x: any, y: any): any {
-  x = gSaveBlock1Ptr.pos.x + MAP_OFFSET;
-      y = gSaveBlock1Ptr.pos.y + MAP_OFFSET;
+  x = gSaveBlock1Ptr.pos.x + (7);
+      y = gSaveBlock1Ptr.pos.y + (7);
 }
 
 /** void GetCameraCoords(u16 *x, u16 *y) */
@@ -702,9 +705,9 @@ export function MapGridSetMetatileImpassabilityAt(x: any, y: any, impassable: an
   if (AreCoordsWithinMapGridBounds(x, y))
       {
           if (impassable)
-              gBackupMapLayout.map[x + gBackupMapLayout.width * y] |= MAPGRID_COLLISION_MASK;
+              gBackupMapLayout.map[x + gBackupMapLayout.width * y] |= (0x0C00);
           else
-              gBackupMapLayout.map[x + gBackupMapLayout.width * y] &= ~MAPGRID_COLLISION_MASK;
+              gBackupMapLayout.map[x + gBackupMapLayout.width * y] &= ~(0x0C00);
       }
 }
 
@@ -747,7 +750,7 @@ export function CopyTilesetToVramUsingHeap(tileset: any, numTiles: any, offset: 
 
 /** static void LoadTilesetPalette(struct Tileset const *tileset, u16 destOffset, u16 size) */
 export function LoadTilesetPalette(tileset: any, destOffset: any, size: any): any {
-  let black: any = RGB_BLACK;
+  let black: any = (RGB(0, 0, 0));
 
       if (tileset)
       {
@@ -759,7 +762,7 @@ export function LoadTilesetPalette(tileset: any, destOffset: any, size: any): an
           }
           else if (tileset.isSecondary == TRUE)
           {
-              LoadPalette(tileset.palettes[NUM_PALS_IN_PRIMARY], destOffset, size);
+              LoadPalette(tileset.palettes[(6)], destOffset, size);
               ApplyGlobalTintToPaletteEntries(destOffset, size >> 1);
           }
           else
@@ -772,35 +775,35 @@ export function LoadTilesetPalette(tileset: any, destOffset: any, size: any): an
 
 /** void CopyPrimaryTilesetToVram(struct MapLayout const *mapLayout) */
 export function CopyPrimaryTilesetToVram(mapLayout: any): any {
-  CopyTilesetToVram(mapLayout.primaryTileset, NUM_TILES_IN_PRIMARY, 0);
+  CopyTilesetToVram(mapLayout.primaryTileset, (512), 0);
 }
 
 /** void CopySecondaryTilesetToVram(struct MapLayout const *mapLayout) */
 export function CopySecondaryTilesetToVram(mapLayout: any): any {
-  CopyTilesetToVram(mapLayout.secondaryTileset, NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY, NUM_TILES_IN_PRIMARY);
+  CopyTilesetToVram(mapLayout.secondaryTileset, (1024) - (512), (512));
 }
 
 /** void CopySecondaryTilesetToVramUsingHeap(struct MapLayout const *mapLayout) */
 export function CopySecondaryTilesetToVramUsingHeap(mapLayout: any): any {
-  CopyTilesetToVramUsingHeap(mapLayout.secondaryTileset, NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY, NUM_TILES_IN_PRIMARY);
+  CopyTilesetToVramUsingHeap(mapLayout.secondaryTileset, (1024) - (512), (512));
 }
 
 /** static void LoadPrimaryTilesetPalette(struct MapLayout const *mapLayout) */
 export function LoadPrimaryTilesetPalette(mapLayout: any): any {
-  LoadTilesetPalette(mapLayout.primaryTileset, BG_PLTT_ID(0), NUM_PALS_IN_PRIMARY * PLTT_SIZE_4BPP);
+  LoadTilesetPalette(mapLayout.primaryTileset, BG_PLTT_ID(0), (6) * PLTT_SIZE_4BPP);
 }
 
 /** void LoadSecondaryTilesetPalette(struct MapLayout const *mapLayout) */
 export function LoadSecondaryTilesetPalette(mapLayout: any): any {
-  LoadTilesetPalette(mapLayout.secondaryTileset, BG_PLTT_ID(NUM_PALS_IN_PRIMARY), (NUM_PALS_TOTAL - NUM_PALS_IN_PRIMARY) * PLTT_SIZE_4BPP);
+  LoadTilesetPalette(mapLayout.secondaryTileset, BG_PLTT_ID((6)), ((13) - (6)) * PLTT_SIZE_4BPP);
 }
 
 /** void CopyMapTilesetsToVram(struct MapLayout const *mapLayout) */
 export function CopyMapTilesetsToVram(mapLayout: any): any {
   if (mapLayout)
       {
-          CopyTilesetToVramUsingHeap(mapLayout.primaryTileset, NUM_TILES_IN_PRIMARY, 0);
-          CopyTilesetToVramUsingHeap(mapLayout.secondaryTileset, NUM_TILES_TOTAL - NUM_TILES_IN_PRIMARY, NUM_TILES_IN_PRIMARY);
+          CopyTilesetToVramUsingHeap(mapLayout.primaryTileset, (512), 0);
+          CopyTilesetToVramUsingHeap(mapLayout.secondaryTileset, (1024) - (512), (512));
       }
 }
 

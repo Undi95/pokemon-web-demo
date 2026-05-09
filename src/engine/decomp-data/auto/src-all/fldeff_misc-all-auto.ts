@@ -17,12 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sSpritePalette_RecordMixLights: any = null;
-let sSpriteTemplate_RecordMixLights: any = null;
-let sSpriteTemplate_SandPillar: any = null;
-let sSpriteTemplate_SecretPowerCave: any = null;
-let sSpriteTemplate_SecretPowerShrub: any = null;
-let sSpriteTemplate_SecretPowerTree: any = null;
+let gPostMenuFieldCallback: any = null;
 /** void ComputerScreenOpenEffect(u16 increment, u16 unused, u8 priority) */
 export function ComputerScreenOpenEffect(increment: any, unused: any, priority: any): any {
   CreateComputerScreenEffectTask(Task_ComputerScreenOpenEffect, increment, unused, priority);
@@ -90,7 +85,7 @@ export function Task_ComputerScreenOpenEffect(taskId: any): any {
               task.tWinRight = DISPLAY_WIDTH;
               SetGpuReg(REG_OFFSET_BLDY, 0);
               SetGpuReg(REG_OFFSET_BLDCNT, task.tBlendCnt);
-              BlendPalettes(PALETTES_ALL, 0, 0);
+              BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 0, 0);
               gPlttBufferFaded[0] = 0;
           }
           SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(task.tWinLeft, task.tWinRight));
@@ -166,7 +161,7 @@ export function Task_ComputerScreenCloseEffect(taskId: any): any {
           {
               task.tWinLeft = DISPLAY_WIDTH / 2;
               task.tWinRight = DISPLAY_WIDTH / 2;
-              BlendPalettes(PALETTES_ALL, 16, 0);
+              BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, 0);
               gPlttBufferFaded[0] = 0;
           }
           SetGpuReg(REG_OFFSET_WIN0H, WIN_RANGE(task.tWinLeft, task.tWinRight));
@@ -192,23 +187,23 @@ export function SetCurrentSecretBase(): any {
 
 /** static void AdjustSecretPowerSpritePixelOffsets(void) */
 export function AdjustSecretPowerSpritePixelOffsets(): any {
-  if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+  if (gPlayerAvatar.flags & (((1 << 1)) | ((1 << 2))))
       {
           switch (gFieldEffectArguments[1])
           {
-          case DIR_SOUTH:
+          case (1):
               gFieldEffectArguments[5] = 16;
               gFieldEffectArguments[6] = 40;
               break;
-          case DIR_NORTH:
+          case (2):
               gFieldEffectArguments[5] = 16;
               gFieldEffectArguments[6] = 8;
               break;
-          case DIR_WEST:
+          case (3):
               gFieldEffectArguments[5] = -8;
               gFieldEffectArguments[6] = 24;
               break;
-          case DIR_EAST:
+          case (4):
               gFieldEffectArguments[5] = 24;
               gFieldEffectArguments[6] = 24;
               break;
@@ -218,19 +213,19 @@ export function AdjustSecretPowerSpritePixelOffsets(): any {
       {
           switch (gFieldEffectArguments[1])
           {
-          case DIR_SOUTH:
+          case (1):
               gFieldEffectArguments[5] = 8;
               gFieldEffectArguments[6] = 40;
               break;
-          case DIR_NORTH:
+          case (2):
               gFieldEffectArguments[5] = 8;
               gFieldEffectArguments[6] = 8;
               break;
-          case DIR_WEST:
+          case (3):
               gFieldEffectArguments[5] = -8;
               gFieldEffectArguments[6] = 24;
               break;
-          case DIR_EAST:
+          case (4):
               gFieldEffectArguments[5] = 24;
               gFieldEffectArguments[6] = 24;
               break;
@@ -244,7 +239,7 @@ export function SetUpFieldMove_SecretPower(): any {
 
       CheckPlayerHasSecretBase();
 
-      if (gSpecialVar_Result == 1 || GetPlayerFacingDirection() != DIR_NORTH)
+      if (gSpecialVar_Result == 1 || GetPlayerFacingDirection() != (2))
           return FALSE;
 
       GetXYCoordsOneStepInFrontOfPlayer(gPlayerFacingPosition.x,gPlayerFacingPosition.y);
@@ -295,8 +290,8 @@ export function FldEff_UseSecretPowerCave(): any {
 
 /** static void StartSecretBaseCaveFieldEffect(void) */
 export function StartSecretBaseCaveFieldEffect(): any {
-  FieldEffectActiveListRemove(FLDEFF_USE_SECRET_POWER_CAVE);
-      FieldEffectStart(FLDEFF_SECRET_POWER_CAVE);
+  FieldEffectActiveListRemove((11));
+      FieldEffectStart((55));
 }
 
 /** bool8 FldEff_SecretPowerCave(void) */
@@ -311,7 +306,7 @@ export function FldEff_SecretPowerCave(): any {
 
 /** static void SpriteCB_CaveEntranceInit(struct Sprite *sprite) */
 export function SpriteCB_CaveEntranceInit(sprite: any): any {
-  PlaySE(SE_M_ROCK_THROW);
+  PlaySE((131));
 
       sprite.data[0] = 0;
       sprite.callback = SpriteCB_CaveEntranceOpen;
@@ -333,7 +328,7 @@ export function SpriteCB_CaveEntranceOpen(sprite: any): any {
 
 /** static void SpriteCB_CaveEntranceEnd(struct Sprite *sprite) */
 export function SpriteCB_CaveEntranceEnd(sprite: any): any {
-  FieldEffectStop(sprite, FLDEFF_SECRET_POWER_CAVE);
+  FieldEffectStop(sprite, (55));
       ScriptContext_Enable();
 }
 
@@ -355,8 +350,8 @@ export function FldEff_UseSecretPowerTree(): any {
 
 /** static void StartSecretBaseTreeFieldEffect(void) */
 export function StartSecretBaseTreeFieldEffect(): any {
-  FieldEffectActiveListRemove(FLDEFF_USE_SECRET_POWER_TREE);
-      FieldEffectStart(FLDEFF_SECRET_POWER_TREE);
+  FieldEffectActiveListRemove((26));
+      FieldEffectStart((56));
 }
 
 /** bool8 FldEff_SecretPowerTree(void) */
@@ -384,7 +379,7 @@ export function FldEff_SecretPowerTree(): any {
 
 /** static void SpriteCB_TreeEntranceInit(struct Sprite *sprite) */
 export function SpriteCB_TreeEntranceInit(sprite: any): any {
-  PlaySE(SE_M_SCRATCH);
+  PlaySE((155));
 
       sprite.animNum = gFieldEffectArguments[7];
       sprite.data[0] = 0;
@@ -407,7 +402,7 @@ export function SpriteCB_TreeEntranceOpen(sprite: any): any {
 
 /** static void SpriteCB_TreeEntranceEnd(struct Sprite *sprite) */
 export function SpriteCB_TreeEntranceEnd(sprite: any): any {
-  FieldEffectStop(sprite, FLDEFF_SECRET_POWER_TREE);
+  FieldEffectStop(sprite, (56));
       ScriptContext_Enable();
 }
 
@@ -429,8 +424,8 @@ export function FldEff_UseSecretPowerShrub(): any {
 
 /** static void StartSecretBaseShrubFieldEffect(void) */
 export function StartSecretBaseShrubFieldEffect(): any {
-  FieldEffectActiveListRemove(FLDEFF_USE_SECRET_POWER_SHRUB);
-      FieldEffectStart(FLDEFF_SECRET_POWER_SHRUB);
+  FieldEffectActiveListRemove((27));
+      FieldEffectStart((57));
 }
 
 /** bool8 FldEff_SecretPowerShrub(void) */
@@ -447,7 +442,7 @@ export function FldEff_SecretPowerShrub(): any {
 
 /** static void SpriteCB_ShrubEntranceInit(struct Sprite *sprite) */
 export function SpriteCB_ShrubEntranceInit(sprite: any): any {
-  PlaySE(SE_M_POISON_POWDER);
+  PlaySE((169));
 
       sprite.data[0] = 0;
       sprite.callback = SpriteCB_ShrubEntranceOpen;
@@ -471,7 +466,7 @@ export function SpriteCB_ShrubEntranceOpen(sprite: any): any {
 
 /** static void SpriteCB_ShrubEntranceEnd(struct Sprite *sprite) */
 export function SpriteCB_ShrubEntranceEnd(sprite: any): any {
-  FieldEffectStop(sprite, FLDEFF_SECRET_POWER_SHRUB);
+  FieldEffectStop(sprite, (57));
       ScriptContext_Enable();
 }
 
@@ -498,18 +493,18 @@ export function Task_SecretBasePCTurnOn(taskId: any): any {
       {
       case 4:
       case 12:
-          MapGridSetMetatileIdAt(tX, tY, METATILE_SecretBase_PC_On);
+          MapGridSetMetatileIdAt(tX, tY, (0x224));
           CurrentMapDrawMetatileAt(tX, tY);
           break;
       case 8:
       case 16:
-          MapGridSetMetatileIdAt(tX, tY, METATILE_SecretBase_PC);
+          MapGridSetMetatileIdAt(tX, tY, (0x220));
           CurrentMapDrawMetatileAt(tX, tY);
           break;
       case 20:
-          MapGridSetMetatileIdAt(tX, tY, METATILE_SecretBase_PC_On);
+          MapGridSetMetatileIdAt(tX, tY, (0x224));
           CurrentMapDrawMetatileAt(tX, tY);
-          FieldEffectActiveListRemove(FLDEFF_PCTURN_ON);
+          FieldEffectActiveListRemove((61));
           ScriptContext_Enable();
           DestroyTask(taskId);
           return;
@@ -523,12 +518,12 @@ export function DoSecretBasePCTurnOffEffect(): any {
   let x, y;
 
       GetXYCoordsOneStepInFrontOfPlayer(x,y);
-      PlaySE(SE_PC_OFF);
+      PlaySE((3));
 
-      if (!VarGet(VAR_CURRENT_SECRET_BASE))
-          MapGridSetMetatileIdAt(x, y, METATILE_SecretBase_PC | MAPGRID_IMPASSABLE);
+      if (!VarGet((0x4054)))
+          MapGridSetMetatileIdAt(x, y, (0x220) | ((0x0C00)));
       else
-          MapGridSetMetatileIdAt(x, y, METATILE_SecretBase_RegisterPC | MAPGRID_IMPASSABLE);
+          MapGridSetMetatileIdAt(x, y, (0x221) | ((0x0C00)));
 
       CurrentMapDrawMetatileAt(x, y);
 }
@@ -572,17 +567,17 @@ export function Task_PopSecretBaseBalloon(taskId: any): any {
 export function DoBalloonSoundEffect(metatileId: any): any {
   switch (metatileId)
       {
-      case METATILE_SecretBase_RedBalloon:
-          PlaySE(SE_BALLOON_RED);
+      case (0x338):
+          PlaySE((74));
           break;
-      case METATILE_SecretBase_BlueBalloon:
-          PlaySE(SE_BALLOON_BLUE);
+      case (0x33C):
+          PlaySE((75));
           break;
-      case METATILE_SecretBase_YellowBalloon:
-          PlaySE(SE_BALLOON_YELLOW);
+      case (0x340):
+          PlaySE((76));
           break;
-      case METATILE_SecretBase_MudBall:
-          PlaySE(SE_MUD_BALL);
+      case (0x228):
+          PlaySE((78));
           break;
       }
 }
@@ -599,9 +594,9 @@ export function FldEff_Nop48(): any {
 
 /** static void DoSecretBaseBreakableDoorEffect(s16 x, s16 y) */
 export function DoSecretBaseBreakableDoorEffect(x: any, y: any): any {
-  PlaySE(SE_BREAKABLE_DOOR);
-      MapGridSetMetatileIdAt(x, y, METATILE_SecretBase_BreakableDoor_BottomOpen);
-      MapGridSetMetatileIdAt(x, y - 1, METATILE_SecretBase_BreakableDoor_TopOpen);
+  PlaySE((77));
+      MapGridSetMetatileIdAt(x, y, (0x276));
+      MapGridSetMetatileIdAt(x, y - 1, (0x26E));
       CurrentMapDrawMetatileAt(x, y);
       CurrentMapDrawMetatileAt(x, y - 1);
 }
@@ -623,11 +618,11 @@ export function Task_ShatterSecretBaseBreakableDoor(taskId: any): any {
 export function ShatterSecretBaseBreakableDoor(x: any, y: any): any {
   let dir: any = GetPlayerFacingDirection();
 
-      if (dir == DIR_SOUTH)
+      if (dir == (1))
       {
           DoSecretBaseBreakableDoorEffect(x, y);
       }
-      else if (dir == DIR_NORTH)
+      else if (dir == (2))
       {
           let taskId: any = CreateTask(Task_ShatterSecretBaseBreakableDoor, 5);
           gTasks[taskId].data[0] = 0;
@@ -642,29 +637,29 @@ export function Task_SecretBaseMusicNoteMatSound(taskId: any): any {
       {
           switch (gTasks[taskId].tMetatileID)
           {
-          case METATILE_SecretBase_NoteMat_C_Low:
-              PlaySE(SE_NOTE_C);
+          case (0x278):
+              PlaySE((62));
               break;
-          case METATILE_SecretBase_NoteMat_D:
-              PlaySE(SE_NOTE_D);
+          case (0x279):
+              PlaySE((63));
               break;
-          case METATILE_SecretBase_NoteMat_E:
-              PlaySE(SE_NOTE_E);
+          case (0x27A):
+              PlaySE((64));
               break;
-          case METATILE_SecretBase_NoteMat_F:
-              PlaySE(SE_NOTE_F);
+          case (0x27B):
+              PlaySE((65));
               break;
-          case METATILE_SecretBase_NoteMat_G:
-              PlaySE(SE_NOTE_G);
+          case (0x27C):
+              PlaySE((66));
               break;
-          case METATILE_SecretBase_NoteMat_A:
-              PlaySE(SE_NOTE_A);
+          case (0x27D):
+              PlaySE((67));
               break;
-          case METATILE_SecretBase_NoteMat_B:
-              PlaySE(SE_NOTE_B);
+          case (0x27E):
+              PlaySE((68));
               break;
-          case METATILE_SecretBase_NoteMat_C_High:
-              PlaySE(SE_NOTE_C_HIGH);
+          case (0x2B3):
+              PlaySE((69));
               break;
           }
 
@@ -689,7 +684,7 @@ export function SpriteCB_GlitterMatSparkle(sprite: any): any {
   sprite.data[0]++;
 
       if (sprite.data[0] == 8)
-          PlaySE(SE_M_HEAL_BELL);
+          PlaySE((195));
 
       if (sprite.data[0] >= 32)
           DestroySprite(sprite);
@@ -703,8 +698,8 @@ export function DoSecretBaseGlitterMatSparkle(): any {
 
       SetSpritePosToOffsetMapCoords(x,y, 8, 4);
 
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_SPARKLE], x, y, 0);
-      if (spriteId != MAX_SPRITES)
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(22)], x, y, 0);
+      if (spriteId != (64))
       {
           gSprites[spriteId].coordOffsetEnabled = TRUE;
           gSprites[spriteId].oam.priority = 1;
@@ -726,7 +721,7 @@ export function FldEff_SandPillar(): any {
 
       switch (GetPlayerFacingDirection())
       {
-      case DIR_SOUTH:
+      case (1):
           CreateSprite(sSpriteTemplate_SandPillar,
                        gSprites[gPlayerAvatar.spriteId].oam.x + 8,
                        gSprites[gPlayerAvatar.spriteId].oam.y + 32,
@@ -734,7 +729,7 @@ export function FldEff_SandPillar(): any {
 
           break;
 
-      case DIR_NORTH:
+      case (2):
           CreateSprite(sSpriteTemplate_SandPillar,
                        gSprites[gPlayerAvatar.spriteId].oam.x + 8,
                        gSprites[gPlayerAvatar.spriteId].oam.y,
@@ -742,7 +737,7 @@ export function FldEff_SandPillar(): any {
 
           break;
 
-      case DIR_WEST:
+      case (3):
           CreateSprite(sSpriteTemplate_SandPillar,
                        gSprites[gPlayerAvatar.spriteId].oam.x - 8,
                        gSprites[gPlayerAvatar.spriteId].oam.y + 16,
@@ -750,7 +745,7 @@ export function FldEff_SandPillar(): any {
 
           break;
 
-      case DIR_EAST:
+      case (4):
           CreateSprite(sSpriteTemplate_SandPillar,
                        gSprites[gPlayerAvatar.spriteId].oam.x + 24,
                        gSprites[gPlayerAvatar.spriteId].oam.y + 16,
@@ -764,14 +759,14 @@ export function FldEff_SandPillar(): any {
 
 /** static void SpriteCB_SandPillar_BreakTop(struct Sprite *sprite) */
 export function SpriteCB_SandPillar_BreakTop(sprite: any): any {
-  PlaySE(SE_M_ROCK_THROW);
+  PlaySE((131));
 
-      if (MapGridGetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1) == METATILE_SecretBase_SandOrnament_TopWall)
-          MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1, METATILE_SecretBase_Wall_TopMid | MAPGRID_IMPASSABLE);
+      if (MapGridGetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1) == (0x286))
+          MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1, (0x202) | ((0x0C00)));
       else
-          MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1, METATILE_SecretBase_SandOrnament_BrokenTop);
+          MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1, (0x284));
 
-      MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6], METATILE_SecretBase_Ground);
+      MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6], (0x20A));
       CurrentMapDrawMetatileAt(gFieldEffectArguments[5], gFieldEffectArguments[6] - 1);
       CurrentMapDrawMetatileAt(gFieldEffectArguments[5], gFieldEffectArguments[6]);
 
@@ -787,7 +782,7 @@ export function SpriteCB_SandPillar_BreakBase(sprite: any): any {
       }
       else
       {
-          MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6], METATILE_SecretBase_SandOrnament_BrokenBase | MAPGRID_IMPASSABLE);
+          MapGridSetMetatileIdAt(gFieldEffectArguments[5], gFieldEffectArguments[6], (0x28C) | ((0x0C00)));
           CurrentMapDrawMetatileAt(gFieldEffectArguments[5], gFieldEffectArguments[6]);
           sprite.data[0] = 0;
           sprite.callback = SpriteCB_SandPillar_End;
@@ -796,7 +791,7 @@ export function SpriteCB_SandPillar_BreakBase(sprite: any): any {
 
 /** static void SpriteCB_SandPillar_End(struct Sprite *sprite) */
 export function SpriteCB_SandPillar_End(sprite: any): any {
-  FieldEffectStop(sprite, FLDEFF_SAND_PILLAR);
+  FieldEffectStop(sprite, (52));
       ScriptContext_Enable();
 }
 
@@ -811,51 +806,51 @@ export function InteractWithShieldOrTVDecoration(): any {
 
       switch (metatileId)
       {
-      case METATILE_SecretBase_GoldShield_Base1:
+      case (0x336):
           ConvertIntToDecimalStringN(gStringVar1, 100, STR_CONV_MODE_LEFT_ALIGN, 3);
           StringCopy(gStringVar2, gText_Gold);
 
           gSpecialVar_Result = 0;
 
-          if (!VarGet(VAR_CURRENT_SECRET_BASE))
+          if (!VarGet((0x4054)))
               return;
 
-          VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_GOLD_SHIELD);
+          VarSet((0x40EE), VarGet((0x40EE)) | ((1 << 4)));
           break;
-      case METATILE_SecretBase_SilverShield_Base1:
+      case (0x2DE):
           ConvertIntToDecimalStringN(gStringVar1, 50, STR_CONV_MODE_LEFT_ALIGN, 2);
           StringCopy(gStringVar2, gText_Silver);
 
           gSpecialVar_Result = 0;
 
-          if (!VarGet(VAR_CURRENT_SECRET_BASE))
+          if (!VarGet((0x4054)))
               return;
 
-          VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_SILVER_SHIELD);
+          VarSet((0x40EE), VarGet((0x40EE)) | ((1 << 5)));
           break;
-      case METATILE_SecretBase_TV:
+      case (0x2F4):
           gSpecialVar_Result = 1;
 
-          if (!VarGet(VAR_CURRENT_SECRET_BASE))
+          if (!VarGet((0x4054)))
               return;
 
-          VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_TV);
+          VarSet((0x40EE), VarGet((0x40EE)) | ((1 << 7)));
           break;
-      case METATILE_SecretBase_RoundTV:
+      case (0x2F5):
           gSpecialVar_Result = 2;
 
-          if (!VarGet(VAR_CURRENT_SECRET_BASE))
+          if (!VarGet((0x4054)))
               return;
 
-          VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_TV);
+          VarSet((0x40EE), VarGet((0x40EE)) | ((1 << 7)));
           break;
-      case METATILE_SecretBase_CuteTV:
+      case (0x2F6):
           gSpecialVar_Result = 3;
 
-          if (!VarGet(VAR_CURRENT_SECRET_BASE))
+          if (!VarGet((0x4054)))
               return;
 
-          VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_TV);
+          VarSet((0x40EE), VarGet((0x40EE)) | ((1 << 7)));
           break;
       }
 }
@@ -867,16 +862,16 @@ export function IsLargeBreakableDecoration(metatileId: any, checkBase: any): any
 
       if (!checkBase)
       {
-          if (metatileId == METATILE_SecretBase_SandOrnament_Top || metatileId == METATILE_SecretBase_SandOrnament_TopWall)
+          if (metatileId == (0x285) || metatileId == (0x286))
               return TRUE;
-          if (metatileId == METATILE_SecretBase_BreakableDoor_TopClosed)
+          if (metatileId == (0x237))
               return TRUE;
       }
       else
       {
-          if (metatileId == METATILE_SecretBase_SandOrnament_Base1)
+          if (metatileId == (0x28D))
               return TRUE;
-          if (metatileId == METATILE_SecretBase_BreakableDoor_BottomClosed)
+          if (metatileId == (0x23F))
               return TRUE;
       }
 
@@ -908,7 +903,7 @@ export function Task_FieldPoisonEffect(taskId: any): any {
 
 /** void FldEffPoison_Start(void) */
 export function FldEffPoison_Start(): any {
-  PlaySE(SE_FIELD_POISON);
+  PlaySE((79));
       CreateTask(Task_FieldPoisonEffect, 80);
 }
 
@@ -972,9 +967,9 @@ export function CreateRecordMixingLights(): any {
 
       spriteId = CreateSprite(sSpriteTemplate_RecordMixLights, 0, 0, 82);
 
-      if (spriteId == MAX_SPRITES)
+      if (spriteId == (64))
       {
-          return MAX_SPRITES;
+          return (64);
       }
       else
       {
@@ -991,7 +986,7 @@ export function CreateRecordMixingLights(): any {
 export function DestroyRecordMixingLights(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
           if (gSprites[i].template ==sSpriteTemplate_RecordMixLights)
           {

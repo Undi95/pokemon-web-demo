@@ -17,12 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sDiplomaBgTemplates: any = null;
-let sDiplomaPalettes: any = null;
-let sDiplomaTilemap: any = null;
 let sDiplomaTilemapPtr: any = null;
-let sDiplomaTiles: any = null;
-let sDiplomaWinTemplates: any = null;
 /** static void VBlankCB(void) */
 export function VBlankCB(): any {
   LoadOam();
@@ -66,8 +61,8 @@ export function CB2_ShowDiploma(): any {
       LZDecompressWram(sDiplomaTilemap, sDiplomaTilemapPtr);
       CopyBgTilemapBufferToVram(1);
       DisplayDiplomaText();
-      BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       EnableInterrupts(1);
       SetVBlankCallback(VBlankCB);
       SetMainCallback2(MainCB2);
@@ -92,7 +87,7 @@ export function Task_DiplomaFadeIn(taskId: any): any {
 export function Task_DiplomaWaitForKeyPress(taskId: any): any {
   if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           gTasks[taskId].func = Task_DiplomaFadeOut;
       }
 }
@@ -152,7 +147,7 @@ export function InitDiplomaWindow(): any {
 export function PrintDiplomaText(text: any, var1: any, var2: any): any {
   const color: any = [0, 2, 3];
 
-      AddTextPrinterParameterized4(0, FONT_NORMAL, var1, var2, 0, 0, color, TEXT_SKIP_DRAW, text);
+      AddTextPrinterParameterized4(0, FONT_NORMAL, var1, var2, 0, 0, color, (0xFF), text);
 }
 
 // ─── callsTo manifest (= 52 unique callees) ───────────────────────

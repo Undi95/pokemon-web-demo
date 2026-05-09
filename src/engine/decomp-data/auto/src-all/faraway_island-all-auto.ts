@@ -17,9 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sFarawayIslandRockCoords: any = null;
 let sGrassSpriteId: any = null;
-let sMewDirectionCandidates: any = null;
 let sPlayerToMewDeltaX: any = null;
 let sPlayerToMewDeltaY: any = null;
 /** static u8 GetMewObjectEventId(void) */
@@ -38,24 +36,24 @@ export function GetMewMoveDirection(): any {
       sPlayerToMewDeltaX = gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x - mew.currentCoords.x;
       sPlayerToMewDeltaY = gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y - mew.currentCoords.y;
       for (i = 0; i < ARRAY_COUNT(sMewDirectionCandidates); i++)
-          sMewDirectionCandidates[i] = DIR_NONE;
+          sMewDirectionCandidates[i] = (0);
 
        
       if (gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x == gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x
        && gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y == gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y)
       {
-          return DIR_NONE;
+          return (0);
       }
 
        
-      if (VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) % 8 == 0)
+      if (VarGet((0x403A)) % 8 == 0)
           mew.invisible = FALSE;
       else
           mew.invisible = TRUE;
 
        
-      if (VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) % 9 == 0)
-          return DIR_NONE;
+      if (VarGet((0x403A)) % 9 == 0)
+          return (0);
 
        
       for (i = 0; i < ARRAY_COUNT(sFarawayIslandRockCoords); i++)
@@ -81,7 +79,7 @@ export function GetMewMoveDirection(): any {
                       if (mew.currentCoords.x + 1 == gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x)
                       {
                           if (CanMewMoveToCoords(mew.currentCoords.x + 1, mew.currentCoords.y))
-                              return DIR_EAST;
+                              return (4);
                       }
                   }
                   else if (sPlayerToMewDeltaX < 0)
@@ -89,7 +87,7 @@ export function GetMewMoveDirection(): any {
                       if (mew.currentCoords.x - 1 == gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.x)
                       {
                           if (CanMewMoveToCoords(mew.currentCoords.x - 1, mew.currentCoords.y))
-                              return DIR_WEST;
+                              return (3);
                       }
                   }
 
@@ -98,12 +96,12 @@ export function GetMewMoveDirection(): any {
                       if (sPlayerToMewDeltaY > 0)
                       {
                           if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y - 1))
-                              return DIR_NORTH;
+                              return (2);
                       }
                       else
                       {
                           if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y + 1))
-                              return DIR_SOUTH;
+                              return (1);
                       }
                   }
               }
@@ -130,7 +128,7 @@ export function GetMewMoveDirection(): any {
                       if (mew.currentCoords.y + 1 == gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y)
                       {
                           if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y + 1))
-                              return DIR_SOUTH;
+                              return (1);
                       }
                   }
                   else if (sPlayerToMewDeltaY < 0)
@@ -138,7 +136,7 @@ export function GetMewMoveDirection(): any {
                       if (mew.currentCoords.y - 1 == gObjectEvents[gPlayerAvatar.objectEventId].previousCoords.y)
                       {
                           if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y - 1))
-                              return DIR_NORTH;
+                              return (2);
                       }
                   }
 
@@ -147,12 +145,12 @@ export function GetMewMoveDirection(): any {
                       if (sPlayerToMewDeltaX > 0)
                       {
                           if (CanMewMoveToCoords(mew.currentCoords.x - 1, mew.currentCoords.y))
-                              return DIR_WEST;
+                              return (3);
                       }
                       else
                       {
                           if (CanMewMoveToCoords(mew.currentCoords.x + 1, mew.currentCoords.y))
-                              return DIR_EAST;
+                              return (4);
                       }
                   }
               }
@@ -169,7 +167,7 @@ export function GetMewMoveDirection(): any {
           else if (ShouldMewMoveWest(mew, 1))
               return GetRandomMewDirectionCandidate(2);
           else
-              return DIR_NORTH;
+              return (2);
       }
 
       if (ShouldMewMoveSouth(mew, 0))
@@ -179,7 +177,7 @@ export function GetMewMoveDirection(): any {
           else if (ShouldMewMoveWest(mew, 1))
               return GetRandomMewDirectionCandidate(2);
           else
-              return DIR_SOUTH;
+              return (1);
       }
 
       if (ShouldMewMoveEast(mew, 0))
@@ -189,7 +187,7 @@ export function GetMewMoveDirection(): any {
           else if (ShouldMewMoveSouth(mew, 1))
               return GetRandomMewDirectionCandidate(2);
           else
-              return DIR_EAST;
+              return (4);
       }
 
       if (ShouldMewMoveWest(mew, 0))
@@ -199,7 +197,7 @@ export function GetMewMoveDirection(): any {
           else if (ShouldMewMoveSouth(mew, 1))
               return GetRandomMewDirectionCandidate(2);
           else
-              return DIR_WEST;
+              return (3);
       }
 
        
@@ -210,20 +208,20 @@ export function GetMewMoveDirection(): any {
           if (gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y > mew.currentCoords.y)
           {
               if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y - 1))
-                  return DIR_NORTH;
+                  return (2);
           }
 
           if (gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.y < mew.currentCoords.y)
           {
               if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y + 1))
-                  return DIR_SOUTH;
+                  return (1);
           }
 
           if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y - 1))
-              return DIR_NORTH;
+              return (2);
 
           if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y + 1))
-              return DIR_SOUTH;
+              return (1);
       }
 
        
@@ -232,24 +230,24 @@ export function GetMewMoveDirection(): any {
           if (gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x > mew.currentCoords.x)
           {
               if (CanMewMoveToCoords(mew.currentCoords.x - 1, mew.currentCoords.y))
-                  return DIR_WEST;
+                  return (3);
           }
 
           if (gObjectEvents[gPlayerAvatar.objectEventId].currentCoords.x < mew.currentCoords.x)
           {
               if (CanMewMoveToCoords(mew.currentCoords.x + 1, mew.currentCoords.y))
-                  return DIR_EAST;
+                  return (4);
           }
 
           if (CanMewMoveToCoords(mew.currentCoords.x + 1, mew.currentCoords.y))
-              return DIR_EAST;
+              return (4);
 
           if (CanMewMoveToCoords(mew.currentCoords.x - 1, mew.currentCoords.y))
-              return DIR_WEST;
+              return (3);
       }
 
        
-      return GetValidMewMoveDirection(DIR_NONE);
+      return GetValidMewMoveDirection((0));
 }
 
 /** static bool8 CanMewMoveToCoords(s16 x, s16 y) */
@@ -270,49 +268,49 @@ export function GetValidMewMoveDirection(ignoredDir: any): any {
       let mew: any =gObjectEvents[GetMewObjectEventId()];
 
       for (i = 0; i < ARRAY_COUNT(sMewDirectionCandidates); i++)
-          sMewDirectionCandidates[i] = DIR_NONE;
+          sMewDirectionCandidates[i] = (0);
 
-      if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y - 1) == TRUE && ignoredDir != DIR_NORTH)
+      if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y - 1) == TRUE && ignoredDir != (2))
       {
-          sMewDirectionCandidates[count] = DIR_NORTH;
+          sMewDirectionCandidates[count] = (2);
           count++;
       }
 
-      if (CanMewMoveToCoords(mew.currentCoords.x + 1, mew.currentCoords.y) == TRUE && ignoredDir != DIR_EAST)
+      if (CanMewMoveToCoords(mew.currentCoords.x + 1, mew.currentCoords.y) == TRUE && ignoredDir != (4))
       {
-          sMewDirectionCandidates[count] = DIR_EAST;
+          sMewDirectionCandidates[count] = (4);
           count++;
       }
 
-      if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y + 1) == TRUE && ignoredDir != DIR_SOUTH)
+      if (CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y + 1) == TRUE && ignoredDir != (1))
       {
-          sMewDirectionCandidates[count] = DIR_SOUTH;
+          sMewDirectionCandidates[count] = (1);
           count++;
       }
 
-      if (CanMewMoveToCoords(mew.currentCoords.x - 1, mew.currentCoords.y) == TRUE && ignoredDir != DIR_WEST)
+      if (CanMewMoveToCoords(mew.currentCoords.x - 1, mew.currentCoords.y) == TRUE && ignoredDir != (3))
       {
-          sMewDirectionCandidates[count] = DIR_WEST;
+          sMewDirectionCandidates[count] = (3);
           count++;
       }
 
       if (count > 1)
-          return sMewDirectionCandidates[VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) % count];
+          return sMewDirectionCandidates[VarGet((0x403A)) % count];
       else
           return sMewDirectionCandidates[0];
 }
 
 /** void UpdateFarawayIslandStepCounter(void) */
 export function UpdateFarawayIslandStepCounter(): any {
-  let steps: any = VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER);
+  let steps: any = VarGet((0x403A));
       if (gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_FARAWAY_ISLAND_INTERIOR)
        && gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_FARAWAY_ISLAND_INTERIOR))
       {
           steps++;
           if (steps >= 9999)
-              VarSet(VAR_FARAWAY_ISLAND_STEP_COUNTER, 0);
+              VarSet((0x403A), 0);
           else
-              VarSet(VAR_FARAWAY_ISLAND_STEP_COUNTER, steps);
+              VarSet((0x403A), steps);
       }
 }
 
@@ -321,7 +319,7 @@ export function ObjectEventIsFarawayIslandMew(objectEvent: any): any {
   if (gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_FARAWAY_ISLAND_INTERIOR)
        && gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_FARAWAY_ISLAND_INTERIOR))
       {
-          if (objectEvent.graphicsId == OBJ_EVENT_GFX_MEW)
+          if (objectEvent.graphicsId == (229))
               return TRUE;
       }
 
@@ -333,7 +331,7 @@ export function IsMewPlayingHideAndSeek(): any {
   if (gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_FARAWAY_ISLAND_INTERIOR)
        && gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_FARAWAY_ISLAND_INTERIOR))
       {
-          if (FlagGet(FLAG_CAUGHT_MEW) != TRUE && FlagGet(FLAG_HIDE_MEW) != TRUE)
+          if (FlagGet((0x1CA)) != TRUE && FlagGet((0x2CE)) != TRUE)
               return TRUE;
       }
 
@@ -342,8 +340,8 @@ export function IsMewPlayingHideAndSeek(): any {
 
 /** bool8 ShouldMewShakeGrass(struct ObjectEvent *objectEvent) */
 export function ShouldMewShakeGrass(objectEvent: any): any {
-  if (VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) != 0xFFFF
-       && VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) % 4 == 0)
+  if (VarGet((0x403A)) != 0xFFFF
+       && VarGet((0x403A)) % 4 == 0)
           return TRUE;
 
       return FALSE;
@@ -367,10 +365,10 @@ export function SetMewAboveGrass(): any {
       {
            
            
-          VarSet(VAR_FARAWAY_ISLAND_STEP_COUNTER, 0xFFFF);
+          VarSet((0x403A), 0xFFFF);
           mew.fixedPriority = 1;
           gSprites[mew.spriteId].subspriteMode = SUBSPRITES_IGNORE_PRIORITY;
-          if (gSpecialVar_Facing != DIR_NORTH)
+          if (gSpecialVar_Facing != (2))
               gSprites[mew.spriteId].subpriority = 1;
 
           LoadSpritePalette(gSpritePalette_GeneralFieldEffect1);
@@ -379,8 +377,8 @@ export function SetMewAboveGrass(): any {
           x = mew.currentCoords.x;
           y = mew.currentCoords.y;
           SetSpritePosToOffsetMapCoords(x,y, 8, 8);
-          sGrassSpriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_LONG_GRASS], x, y, gSprites[mew.spriteId].subpriority - 1);
-          if (sGrassSpriteId != MAX_SPRITES)
+          sGrassSpriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(15)], x, y, gSprites[mew.spriteId].subpriority - 1);
+          if (sGrassSpriteId != (64))
           {
               let sprite: any =gSprites[sGrassSpriteId];
               sprite.coordOffsetEnabled = 1;
@@ -392,7 +390,7 @@ export function SetMewAboveGrass(): any {
 
 /** void DestroyMewEmergingGrassSprite(void) */
 export function DestroyMewEmergingGrassSprite(): any {
-  if (sGrassSpriteId != MAX_SPRITES)
+  if (sGrassSpriteId != (64))
           DestroySprite(gSprites[sGrassSpriteId]);
 }
 
@@ -400,7 +398,7 @@ export function DestroyMewEmergingGrassSprite(): any {
 export function ShouldMewMoveNorth(mew: any, index: any): any {
   if (sPlayerToMewDeltaY > 0 && CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y - 1))
       {
-          sMewDirectionCandidates[index] = DIR_NORTH;
+          sMewDirectionCandidates[index] = (2);
           return TRUE;
       }
 
@@ -411,7 +409,7 @@ export function ShouldMewMoveNorth(mew: any, index: any): any {
 export function ShouldMewMoveEast(mew: any, index: any): any {
   if (sPlayerToMewDeltaX < 0 && CanMewMoveToCoords(mew.currentCoords.x + 1, mew.currentCoords.y))
       {
-          sMewDirectionCandidates[index] = DIR_EAST;
+          sMewDirectionCandidates[index] = (4);
           return TRUE;
       }
 
@@ -422,7 +420,7 @@ export function ShouldMewMoveEast(mew: any, index: any): any {
 export function ShouldMewMoveSouth(mew: any, index: any): any {
   if (sPlayerToMewDeltaY < 0 && CanMewMoveToCoords(mew.currentCoords.x, mew.currentCoords.y + 1))
       {
-          sMewDirectionCandidates[index] = DIR_SOUTH;
+          sMewDirectionCandidates[index] = (1);
           return TRUE;
       }
 
@@ -433,7 +431,7 @@ export function ShouldMewMoveSouth(mew: any, index: any): any {
 export function ShouldMewMoveWest(mew: any, index: any): any {
   if (sPlayerToMewDeltaX > 0 && CanMewMoveToCoords(mew.currentCoords.x - 1, mew.currentCoords.y))
       {
-          sMewDirectionCandidates[index] = DIR_WEST;
+          sMewDirectionCandidates[index] = (3);
           return TRUE;
       }
 
@@ -442,7 +440,7 @@ export function ShouldMewMoveWest(mew: any, index: any): any {
 
 /** static u8 GetRandomMewDirectionCandidate(u8 numDirections) */
 export function GetRandomMewDirectionCandidate(numDirections: any): any {
-  return sMewDirectionCandidates[VarGet(VAR_FARAWAY_ISLAND_STEP_COUNTER) % numDirections];
+  return sMewDirectionCandidates[VarGet((0x403A)) % numDirections];
 }
 
 // ─── callsTo manifest (= 23 unique callees) ───────────────────────

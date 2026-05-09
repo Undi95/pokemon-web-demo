@@ -17,25 +17,21 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAlteringCaveWildMonHeldItems: any = null;
-let sAnimDelay: any = null;
-let sAnimId: any = null;
-let sDeoxysBaseStats: any = null;
-let sFriendshipEventModifiers: any = null;
-let sGetMonDataEVConstants: any = null;
-let sHMMoves: any = null;
-let sHoennToNationalOrder: any = null;
-let sHoldEffectToType: any = null;
+let defense: any = null;
+let evVal: any = null;
+let gBattleMoveDamage: any = null;
+let gBattleMovePower: any = null;
+let gEnemyPartyCount: any = null;
+let gMoveToLearn: any = null;
+let gMultiuseSpriteTemplate: any = null;
+let gPlayerPartyCount: any = null;
+let gPotentialItemEffectBattler: any = null;
+let gSpecialVar_MonBoxId: any = null;
+let gSpecialVar_MonBoxPos: any = null;
+let multiplier: any = null;
 let sLearningMoveTableID: any = null;
-let sMonAnimationDelayTable: any = null;
-let sMonFrontAnimIdsTable: any = null;
-let sMonSpritesGfxManagers: any = null;
-let sSecretBaseFacilityClasses: any = null;
-let sSpeciesToHoennPokedexNum: any = null;
-let sSpeciesToNationalPokedexNum: any = null;
-let sSpriteTemplate_64x64: any = null;
-let sStatsToRaise: any = null;
-let sTrainerBackSpriteTemplates: any = null;
+let spDefense: any = null;
+let temp2: any = null;
 /** void ZeroBoxMonData(struct BoxPokemon *boxMon) */
 export function ZeroBoxMonData(boxMon: any): any {
   let raw: any = boxMon;
@@ -58,21 +54,21 @@ export function ZeroMonData(mon: any): any {
       SetMonData(mon, MON_DATA_SPEED,arg);
       SetMonData(mon, MON_DATA_SPATK,arg);
       SetMonData(mon, MON_DATA_SPDEF,arg);
-      arg = MAIL_NONE;
+      arg = (0xFF);
       SetMonData(mon, MON_DATA_MAIL,arg);
 }
 
 /** void ZeroPlayerPartyMons(void) */
 export function ZeroPlayerPartyMons(): any {
   let i: any = null;
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
           ZeroMonData(gPlayerParty[i]);
 }
 
 /** void ZeroEnemyPartyMons(void) */
 export function ZeroEnemyPartyMons(): any {
   let i: any = null;
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
           ZeroMonData(gEnemyParty[i]);
 }
 
@@ -82,7 +78,7 @@ export function CreateMon(mon: any, species: any, level: any, fixedIV: any, hasF
       ZeroMonData(mon);
       CreateBoxMon(mon.box, species, level, fixedIV, hasFixedPersonality, fixedPersonality, otIdType, fixedOtId);
       SetMonData(mon, MON_DATA_LEVEL,level);
-      mail = MAIL_NONE;
+      mail = (0xFF);
       SetMonData(mon, MON_DATA_MAIL,mail);
       CalculateMonStats(mon);
 }
@@ -104,7 +100,7 @@ export function CreateBoxMon(boxMon: any, species: any, level: any, fixedIV: any
       SetBoxMonData(boxMon, MON_DATA_PERSONALITY,personality);
 
        
-      if (otIdType == OT_ID_RANDOM_NO_SHINY)
+      if (otIdType == (2))
       {
           let shinyValue: any = null;
           do
@@ -112,9 +108,9 @@ export function CreateBoxMon(boxMon: any, species: any, level: any, fixedIV: any
                
               value = Random32();
               shinyValue = GET_SHINY_VALUE(value, personality);
-          } while (shinyValue < SHINY_ODDS);
+          } while (shinyValue < (8));
       }
-      else if (otIdType == OT_ID_PRESET)
+      else if (otIdType == (1))
       {
           value = fixedOtId;
       }
@@ -142,11 +138,11 @@ export function CreateBoxMon(boxMon: any, species: any, level: any, fixedIV: any
       SetBoxMonData(boxMon, MON_DATA_MET_LOCATION,value);
       SetBoxMonData(boxMon, MON_DATA_MET_LEVEL,level);
       SetBoxMonData(boxMon, MON_DATA_MET_GAME,gGameVersion);
-      value = ITEM_POKE_BALL;
+      value = (4);
       SetBoxMonData(boxMon, MON_DATA_POKEBALL,value);
       SetBoxMonData(boxMon, MON_DATA_OT_GENDER,gSaveBlock2Ptr.playerGender);
 
-      if (fixedIV < USE_RANDOM_IVS)
+      if (fixedIV < (((31) + 1)))
       {
           SetBoxMonData(boxMon, MON_DATA_HP_IV,fixedIV);
           SetBoxMonData(boxMon, MON_DATA_ATK_IV,fixedIV);
@@ -160,20 +156,20 @@ export function CreateBoxMon(boxMon: any, species: any, level: any, fixedIV: any
           let iv: any = null;
           value = Random();
 
-          iv = value & MAX_IV_MASK;
+          iv = value & (31);
           SetBoxMonData(boxMon, MON_DATA_HP_IV,iv);
-          iv = (value & (MAX_IV_MASK << 5)) >> 5;
+          iv = (value & ((31) << 5)) >> 5;
           SetBoxMonData(boxMon, MON_DATA_ATK_IV,iv);
-          iv = (value & (MAX_IV_MASK << 10)) >> 10;
+          iv = (value & ((31) << 10)) >> 10;
           SetBoxMonData(boxMon, MON_DATA_DEF_IV,iv);
 
           value = Random();
 
-          iv = value & MAX_IV_MASK;
+          iv = value & (31);
           SetBoxMonData(boxMon, MON_DATA_SPEED_IV,iv);
-          iv = (value & (MAX_IV_MASK << 5)) >> 5;
+          iv = (value & ((31) << 5)) >> 5;
           SetBoxMonData(boxMon, MON_DATA_SPATK_IV,iv);
-          iv = (value & (MAX_IV_MASK << 10)) >> 10;
+          iv = (value & ((31) << 10)) >> 10;
           SetBoxMonData(boxMon, MON_DATA_SPDEF_IV,iv);
       }
 
@@ -196,14 +192,14 @@ export function CreateMonWithNature(mon: any, species: any, level: any, fixedIV:
       }
       while (nature != GetNatureFromPersonality(personality));
 
-      CreateMon(mon, species, level, fixedIV, TRUE, personality, OT_ID_PLAYER_ID, 0);
+      CreateMon(mon, species, level, fixedIV, TRUE, personality, (0), 0);
 }
 
 /** void CreateMonWithGenderNatureLetter(struct Pokemon *mon, u16 species, u8 level, u8 fixedIV, u8 gender, u8 nature, u8 unownLetter) */
 export function CreateMonWithGenderNatureLetter(mon: any, species: any, level: any, fixedIV: any, gender: any, nature: any, unownLetter: any): any {
   let personality: any = null;
 
-      if ((unownLetter - 1) < NUM_UNOWN_FORMS)
+      if ((unownLetter - 1) < (28))
       {
           let actualLetter: any = null;
 
@@ -226,7 +222,7 @@ export function CreateMonWithGenderNatureLetter(mon: any, species: any, level: a
               || gender != GetGenderFromSpeciesAndPersonality(species, personality));
       }
 
-      CreateMon(mon, species, level, fixedIV, TRUE, personality, OT_ID_PLAYER_ID, 0);
+      CreateMon(mon, species, level, fixedIV, TRUE, personality, (0), 0);
 }
 
 /** void CreateMaleMon(struct Pokemon *mon, u16 species, u8 level) */
@@ -239,26 +235,26 @@ export function CreateMaleMon(mon: any, species: any, level: any): any {
           otId = Random32();
           personality = Random32();
       }
-      while (GetGenderFromSpeciesAndPersonality(species, personality) != MON_MALE);
-      CreateMon(mon, species, level, USE_RANDOM_IVS, TRUE, personality, OT_ID_PRESET, otId);
+      while (GetGenderFromSpeciesAndPersonality(species, personality) != (0x00));
+      CreateMon(mon, species, level, (((31) + 1)), TRUE, personality, (1), otId);
 }
 
 /** void CreateMonWithIVsPersonality(struct Pokemon *mon, u16 species, u8 level, u32 ivs, u32 personality) */
 export function CreateMonWithIVsPersonality(mon: any, species: any, level: any, ivs: any, personality: any): any {
-  CreateMon(mon, species, level, 0, TRUE, personality, OT_ID_PLAYER_ID, 0);
+  CreateMon(mon, species, level, 0, TRUE, personality, (0), 0);
       SetMonData(mon, MON_DATA_IVS,ivs);
       CalculateMonStats(mon);
 }
 
 /** void CreateMonWithIVsOTID(struct Pokemon *mon, u16 species, u8 level, u8 *ivs, u32 otId) */
 export function CreateMonWithIVsOTID(mon: any, species: any, level: any, ivs: any, otId: any): any {
-  CreateMon(mon, species, level, 0, FALSE, 0, OT_ID_PRESET, otId);
-      SetMonData(mon, MON_DATA_HP_IV,ivs[STAT_HP]);
-      SetMonData(mon, MON_DATA_ATK_IV,ivs[STAT_ATK]);
-      SetMonData(mon, MON_DATA_DEF_IV,ivs[STAT_DEF]);
-      SetMonData(mon, MON_DATA_SPEED_IV,ivs[STAT_SPEED]);
-      SetMonData(mon, MON_DATA_SPATK_IV,ivs[STAT_SPATK]);
-      SetMonData(mon, MON_DATA_SPDEF_IV,ivs[STAT_SPDEF]);
+  CreateMon(mon, species, level, 0, FALSE, 0, (1), otId);
+      SetMonData(mon, MON_DATA_HP_IV,ivs[(0)]);
+      SetMonData(mon, MON_DATA_ATK_IV,ivs[(1)]);
+      SetMonData(mon, MON_DATA_DEF_IV,ivs[(2)]);
+      SetMonData(mon, MON_DATA_SPEED_IV,ivs[(3)]);
+      SetMonData(mon, MON_DATA_SPATK_IV,ivs[(4)]);
+      SetMonData(mon, MON_DATA_SPDEF_IV,ivs[(5)]);
       CalculateMonStats(mon);
 }
 
@@ -269,22 +265,22 @@ export function CreateMonWithEVSpread(mon: any, species: any, level: any, fixedI
       let evAmount: any = null;
       let evsBits: any = null;
 
-      CreateMon(mon, species, level, fixedIV, FALSE, 0, OT_ID_PLAYER_ID, 0);
+      CreateMon(mon, species, level, fixedIV, FALSE, 0, (0), 0);
 
       evsBits = evSpread;
 
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
           if (evsBits & 1)
               statCount++;
           evsBits >>= 1;
       }
 
-      evAmount = MAX_TOTAL_EVS / statCount;
+      evAmount = (510) / statCount;
 
       evsBits = 1;
 
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
           if (evSpread & evsBits)
               SetMonData(mon, MON_DATA_HP_EV + i,evAmount);
@@ -301,9 +297,9 @@ export function CreateBattleTowerMon(mon: any, src: any): any {
       let language: any = null;
       let value: any = null;
 
-      CreateMon(mon, src.species, src.level, 0, TRUE, src.personality, OT_ID_PRESET, src.otId);
+      CreateMon(mon, src.species, src.level, 0, TRUE, src.personality, (1), src.otId);
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           SetMonMoveSlot(mon, src.moves[i], i);
 
       SetMonData(mon, MON_DATA_PP_BONUSES,src.ppBonuses);
@@ -312,14 +308,14 @@ export function CreateBattleTowerMon(mon: any, src: any): any {
 
       StringCopy(nickname, src.nickname);
 
-      if (nickname[0] == EXT_CTRL_CODE_BEGIN && nickname[1] == EXT_CTRL_CODE_JPN)
+      if (nickname[0] == (0xFC) && nickname[1] == (0x15))
       {
-          language = LANGUAGE_JAPANESE;
+          language = (1);
           StripExtCtrlCodes(nickname);
       }
       else
       {
-          language = GAME_LANGUAGE;
+          language = (((3)));
       }
 
       SetMonData(mon, MON_DATA_LANGUAGE,language);
@@ -356,16 +352,16 @@ export function CreateBattleTowerMon_HandleLevel(mon: any, src: any, lvl50: any)
       let language: any = null;
       let value: any = null;
 
-      if (gSaveBlock2Ptr.frontier.lvlMode != FRONTIER_LVL_50)
+      if (gSaveBlock2Ptr.frontier.lvlMode != (0))
           level = GetFrontierEnemyMonLevel(gSaveBlock2Ptr.frontier.lvlMode);
       else if (lvl50)
-          level = FRONTIER_MAX_LEVEL_50;
+          level = (50);
       else
           level = src.level;
 
-      CreateMon(mon, src.species, level, 0, TRUE, src.personality, OT_ID_PRESET, src.otId);
+      CreateMon(mon, src.species, level, 0, TRUE, src.personality, (1), src.otId);
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           SetMonMoveSlot(mon, src.moves[i], i);
 
       SetMonData(mon, MON_DATA_PP_BONUSES,src.ppBonuses);
@@ -374,14 +370,14 @@ export function CreateBattleTowerMon_HandleLevel(mon: any, src: any, lvl50: any)
 
       StringCopy(nickname, src.nickname);
 
-      if (nickname[0] == EXT_CTRL_CODE_BEGIN && nickname[1] == EXT_CTRL_CODE_JPN)
+      if (nickname[0] == (0xFC) && nickname[1] == (0x15))
       {
-          language = LANGUAGE_JAPANESE;
+          language = (1);
           StripExtCtrlCodes(nickname);
       }
       else
       {
-          language = GAME_LANGUAGE;
+          language = (((3)));
       }
 
       SetMonData(mon, MON_DATA_LANGUAGE,language);
@@ -422,18 +418,18 @@ export function CreateApprenticeMon(mon: any, src: any, monId: any): any {
       CreateMon(mon,
                 src.party[monId].species,
                 GetFrontierEnemyMonLevel(src.lvlMode - 1),
-                MAX_PER_STAT_IVS,
+                (31),
                 TRUE,
                 personality,
-                OT_ID_PRESET,
+                (1),
                 otId);
 
       SetMonData(mon, MON_DATA_HELD_ITEM,src.party[monId].item);
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           SetMonMoveSlot(mon, src.party[monId].moves[i], i);
 
-      evAmount = MAX_TOTAL_EVS / NUM_STATS;
-      for (i = 0; i < NUM_STATS; i++)
+      evAmount = (510) / (6);
+      for (i = 0; i < (6); i++)
           SetMonData(mon, MON_DATA_HP_EV + i,evAmount);
 
       language = src.language;
@@ -455,18 +451,18 @@ export function CreateMonWithEVSpreadNatureOTID(mon: any, species: any, level: a
           i = Random32();
       } while (nature != GetNatureFromPersonality(i));
 
-      CreateMon(mon, species, level, fixedIV, TRUE, i, OT_ID_PRESET, otId);
+      CreateMon(mon, species, level, fixedIV, TRUE, i, (1), otId);
       evsBits = evSpread;
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
           if (evsBits & 1)
               statCount++;
           evsBits >>= 1;
       }
 
-      evAmount = MAX_TOTAL_EVS / statCount;
+      evAmount = (510) / statCount;
       evsBits = 1;
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
           if (evSpread & evsBits)
               SetMonData(mon, MON_DATA_HP_EV + i,evAmount);
@@ -484,12 +480,12 @@ export function ConvertPokemonToBattleTowerPokemon(mon: any, dest: any): any {
       dest.species = GetMonData(mon, MON_DATA_SPECIES, NULL);
       heldItem = GetMonData(mon, MON_DATA_HELD_ITEM, NULL);
 
-      if (heldItem == ITEM_ENIGMA_BERRY)
-          heldItem = ITEM_NONE;
+      if (heldItem == (175))
+          heldItem = (0);
 
       dest.heldItem = heldItem;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           dest.moves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, NULL);
 
       dest.level = GetMonData(mon, MON_DATA_LEVEL, NULL);
@@ -529,7 +525,7 @@ export function ShouldIgnoreDeoxysForm(caseId: any, battler: any): any {
       default:
           return FALSE;
       case 1:  
-          if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI))
+          if (!(gBattleTypeFlags & ((1 << 6))))
               return FALSE;
           if (!gMain.inBattle)
               return FALSE;
@@ -539,7 +535,7 @@ export function ShouldIgnoreDeoxysForm(caseId: any, battler: any): any {
       case 2:
           break;
       case 3:  
-          if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI))
+          if (!(gBattleTypeFlags & ((1 << 6))))
               return FALSE;
           if (!gMain.inBattle)
               return FALSE;
@@ -549,18 +545,18 @@ export function ShouldIgnoreDeoxysForm(caseId: any, battler: any): any {
       case 4:
           break;
       case 5:  
-          if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+          if (gBattleTypeFlags & ((1 << 1)))
           {
               if (!gMain.inBattle)
                   return FALSE;
-              if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
+              if (gBattleTypeFlags & ((1 << 6)))
               {
                   if (gLinkPlayers[GetMultiplayerId()].id == battler)
                       return FALSE;
               }
               else
               {
-                  if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+                  if (GetBattlerSide(battler) == (0))
                       return FALSE;
               }
           }
@@ -568,7 +564,7 @@ export function ShouldIgnoreDeoxysForm(caseId: any, battler: any): any {
           {
               if (!gMain.inBattle)
                   return FALSE;
-              if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+              if (GetBattlerSide(battler) == (0))
                   return FALSE;
           }
           break;
@@ -583,7 +579,7 @@ export function GetDeoxysStat(mon: any, statId: any): any {
       let statValue: any = 0;
       let nature: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_LINK_IN_BATTLE || GetMonData(mon, MON_DATA_SPECIES, NULL) != SPECIES_DEOXYS)
+      if (gBattleTypeFlags & ((1 << 5)) || GetMonData(mon, MON_DATA_SPECIES, NULL) != (410))
           return 0;
 
       ivVal = GetMonData(mon, MON_DATA_HP_IV + statId, NULL);
@@ -598,11 +594,11 @@ export function GetDeoxysStat(mon: any, statId: any): any {
 export function SetDeoxysStats(): any {
   let i, value;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           let mon: any =gPlayerParty[i];
 
-          if (GetMonData(mon, MON_DATA_SPECIES, NULL) != SPECIES_DEOXYS)
+          if (GetMonData(mon, MON_DATA_SPECIES, NULL) != (410))
               continue;
 
           value = GetMonData(mon, MON_DATA_ATK, NULL);
@@ -627,13 +623,13 @@ export function GetUnionRoomTrainerPic(): any {
   let linkId: any = null;
       let arrId: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK)
+      if (gBattleTypeFlags & ((1 << 25)))
           linkId = gRecordedBattleMultiplayerId ^ 1;
       else
           linkId = GetMultiplayerId() ^ 1;
 
-      arrId = gLinkPlayers[linkId].trainerId % NUM_UNION_ROOM_CLASSES;
-      arrId |= gLinkPlayers[linkId].gender * NUM_UNION_ROOM_CLASSES;
+      arrId = gLinkPlayers[linkId].trainerId % ((1 << 3));
+      arrId |= gLinkPlayers[linkId].gender * ((1 << 3));
       return FacilityClassToPicIndex(gUnionRoomFacilityClasses[arrId]);
 }
 
@@ -642,13 +638,13 @@ export function GetUnionRoomTrainerClass(): any {
   let linkId: any = null;
       let arrId: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK)
+      if (gBattleTypeFlags & ((1 << 25)))
           linkId = gRecordedBattleMultiplayerId ^ 1;
       else
           linkId = GetMultiplayerId() ^ 1;
 
-      arrId = gLinkPlayers[linkId].trainerId % NUM_UNION_ROOM_CLASSES;
-      arrId |= gLinkPlayers[linkId].gender * NUM_UNION_ROOM_CLASSES;
+      arrId = gLinkPlayers[linkId].trainerId % ((1 << 3));
+      arrId |= gLinkPlayers[linkId].gender * ((1 << 3));
       return gFacilityClassToTrainerClass[gUnionRoomFacilityClasses[arrId]];
 }
 
@@ -659,7 +655,7 @@ export function CreateEnemyEventMon(): any {
       let itemId: any = gSpecialVar_0x8006;
 
       ZeroEnemyPartyMons();
-      CreateEventMon(gEnemyParty[0], species, level, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
+      CreateEventMon(gEnemyParty[0], species, level, (((31) + 1)), FALSE, 0, (0), 0);
       if (itemId)
       {
           let heldItem: any = [];
@@ -715,7 +711,7 @@ export function CalculateMonStats(mon: any): any {
 
       SetMonData(mon, MON_DATA_LEVEL,level);
 
-      if (species == SPECIES_SHEDINJA)
+      if (species == (303))
       {
           newMaxHP = 1;
       }
@@ -731,13 +727,13 @@ export function CalculateMonStats(mon: any): any {
 
       SetMonData(mon, MON_DATA_MAX_HP,newMaxHP);
 
-      CALC_STAT(baseAttack, attackIV, attackEV, STAT_ATK, MON_DATA_ATK)
-      CALC_STAT(baseDefense, defenseIV, defenseEV, STAT_DEF, MON_DATA_DEF)
-      CALC_STAT(baseSpeed, speedIV, speedEV, STAT_SPEED, MON_DATA_SPEED)
-      CALC_STAT(baseSpAttack, spAttackIV, spAttackEV, STAT_SPATK, MON_DATA_SPATK)
-      CALC_STAT(baseSpDefense, spDefenseIV, spDefenseEV, STAT_SPDEF, MON_DATA_SPDEF)
+      CALC_STAT(baseAttack, attackIV, attackEV, (1), MON_DATA_ATK)
+      CALC_STAT(baseDefense, defenseIV, defenseEV, (2), MON_DATA_DEF)
+      CALC_STAT(baseSpeed, speedIV, speedEV, (3), MON_DATA_SPEED)
+      CALC_STAT(baseSpAttack, spAttackIV, spAttackEV, (4), MON_DATA_SPATK)
+      CALC_STAT(baseSpDefense, spDefenseIV, spDefenseEV, (5), MON_DATA_SPDEF)
 
-      if (species == SPECIES_SHEDINJA)
+      if (species == (303))
       {
           if (currentHP != 0 || oldMaxHP == 0)
               currentHP = 1;
@@ -773,7 +769,7 @@ export function BoxMonToMon(src: any, dest: any): any {
       SetMonData(dest, MON_DATA_STATUS,value);
       SetMonData(dest, MON_DATA_HP,value);
       SetMonData(dest, MON_DATA_MAX_HP,value);
-      value = MAIL_NONE;
+      value = (0xFF);
       SetMonData(dest, MON_DATA_MAIL,value);
       CalculateMonStats(dest);
 }
@@ -784,7 +780,7 @@ export function GetLevelFromMonExp(mon: any): any {
       let exp: any = GetMonData(mon, MON_DATA_EXP, NULL);
       let level: any = 1;
 
-      while (level <= MAX_LEVEL && gExperienceTables[gSpeciesInfo[species].growthRate][level] <= exp)
+      while (level <= (100) && gExperienceTables[gSpeciesInfo[species].growthRate][level] <= exp)
           level++;
 
       return level - 1;
@@ -796,7 +792,7 @@ export function GetLevelFromBoxMonExp(boxMon: any): any {
       let exp: any = GetBoxMonData(boxMon, MON_DATA_EXP, NULL);
       let level: any = 1;
 
-      while (level <= MAX_LEVEL && gExperienceTables[gSpeciesInfo[species].growthRate][level] <= exp)
+      while (level <= (100) && gExperienceTables[gSpeciesInfo[species].growthRate][level] <= exp)
           level++;
 
       return level - 1;
@@ -810,28 +806,28 @@ export function GiveMoveToMon(mon: any, move: any): any {
 /** static u16 GiveMoveToBoxMon(struct BoxPokemon *boxMon, u16 move) */
 export function GiveMoveToBoxMon(boxMon: any, move: any): any {
   let i: any = null;
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           let existingMove: any = GetBoxMonData(boxMon, MON_DATA_MOVE1 + i, NULL);
-          if (existingMove == MOVE_NONE)
+          if (existingMove == (0))
           {
               SetBoxMonData(boxMon, MON_DATA_MOVE1 + i,move);
               SetBoxMonData(boxMon, MON_DATA_PP1 + i,gBattleMoves[move].pp);
               return move;
           }
           if (existingMove == move)
-              return MON_ALREADY_KNOWS_MOVE;
+              return (0xFFFE);
       }
-      return MON_HAS_MAX_MOVES;
+      return (0xFFFF);
 }
 
 /** u16 GiveMoveToBattleMon(struct BattlePokemon *mon, u16 move) */
 export function GiveMoveToBattleMon(mon: any, move: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
-          if (mon.moves[i] == MOVE_NONE)
+          if (mon.moves[i] == (0))
           {
               mon.moves[i] = move;
               mon.pp[i] = gBattleMoves[move].pp;
@@ -839,7 +835,7 @@ export function GiveMoveToBattleMon(mon: any, move: any): any {
           }
       }
 
-      return MON_HAS_MAX_MOVES;
+      return (0xFFFF);
 }
 
 /** void SetMonMoveSlot(struct Pokemon *mon, u16 move, u8 slot) */
@@ -865,26 +861,26 @@ export function GiveBoxMonInitialMoveset(boxMon: any): any {
       let level: any = GetLevelFromBoxMonExp(boxMon);
       let i: any = null;
 
-      for (i = 0; gLevelUpLearnsets[species][i] != LEVEL_UP_END; i++)
+      for (i = 0; gLevelUpLearnsets[species][i] != (0xFFFF); i++)
       {
           let moveLevel: any = null;
           let move: any = null;
 
-          moveLevel = (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_LV);
+          moveLevel = (gLevelUpLearnsets[species][i] & (0xFE00));
 
           if (moveLevel > (level << 9))
               break;
 
-          move = (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID);
+          move = (gLevelUpLearnsets[species][i] & (0x01FF));
 
-          if (GiveMoveToBoxMon(boxMon, move) == MON_HAS_MAX_MOVES)
+          if (GiveMoveToBoxMon(boxMon, move) == (0xFFFF))
               DeleteFirstMoveAndGiveMoveToBoxMon(boxMon, move);
       }
 }
 
 /** u16 MonTryLearningNewMove(struct Pokemon *mon, bool8 firstMove) */
 export function MonTryLearningNewMove(mon: any, firstMove: any): any {
-  let retVal: any = MOVE_NONE;
+  let retVal: any = (0);
       let species: any = GetMonData(mon, MON_DATA_SPECIES, NULL);
       let level: any = GetMonData(mon, MON_DATA_LEVEL, NULL);
 
@@ -896,17 +892,17 @@ export function MonTryLearningNewMove(mon: any, firstMove: any): any {
       {
           sLearningMoveTableID = 0;
 
-          while ((gLevelUpLearnsets[species][sLearningMoveTableID] & LEVEL_UP_MOVE_LV) != (level << 9))
+          while ((gLevelUpLearnsets[species][sLearningMoveTableID] & (0xFE00)) != (level << 9))
           {
               sLearningMoveTableID++;
-              if (gLevelUpLearnsets[species][sLearningMoveTableID] == LEVEL_UP_END)
-                  return MOVE_NONE;
+              if (gLevelUpLearnsets[species][sLearningMoveTableID] == (0xFFFF))
+                  return (0);
           }
       }
 
-      if ((gLevelUpLearnsets[species][sLearningMoveTableID] & LEVEL_UP_MOVE_LV) == (level << 9))
+      if ((gLevelUpLearnsets[species][sLearningMoveTableID] & (0xFE00)) == (level << 9))
       {
-          gMoveToLearn = (gLevelUpLearnsets[species][sLearningMoveTableID] & LEVEL_UP_MOVE_ID);
+          gMoveToLearn = (gLevelUpLearnsets[species][sLearningMoveTableID] & (0x01FF));
           sLearningMoveTableID++;
           retVal = GiveMoveToMon(mon, gMoveToLearn);
       }
@@ -921,7 +917,7 @@ export function DeleteFirstMoveAndGiveMoveToMon(mon: any, move: any): any {
       let pp: any = [];
       let ppBonuses: any = null;
 
-      for (i = 0; i < MAX_MON_MOVES - 1; i++)
+      for (i = 0; i < (4) - 1; i++)
       {
           moves[i] = GetMonData(mon, MON_DATA_MOVE2 + i, NULL);
           pp[i] = GetMonData(mon, MON_DATA_PP2 + i, NULL);
@@ -929,10 +925,10 @@ export function DeleteFirstMoveAndGiveMoveToMon(mon: any, move: any): any {
 
       ppBonuses = GetMonData(mon, MON_DATA_PP_BONUSES, NULL);
       ppBonuses >>= 2;
-      moves[MAX_MON_MOVES - 1] = move;
-      pp[MAX_MON_MOVES - 1] = gBattleMoves[move].pp;
+      moves[(4) - 1] = move;
+      pp[(4) - 1] = gBattleMoves[move].pp;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           SetMonData(mon, MON_DATA_MOVE1 + i,moves[i]);
           SetMonData(mon, MON_DATA_PP1 + i,pp[i]);
@@ -948,7 +944,7 @@ export function DeleteFirstMoveAndGiveMoveToBoxMon(boxMon: any, move: any): any 
       let pp: any = [];
       let ppBonuses: any = null;
 
-      for (i = 0; i < MAX_MON_MOVES - 1; i++)
+      for (i = 0; i < (4) - 1; i++)
       {
           moves[i] = GetBoxMonData(boxMon, MON_DATA_MOVE2 + i, NULL);
           pp[i] = GetBoxMonData(boxMon, MON_DATA_PP2 + i, NULL);
@@ -956,10 +952,10 @@ export function DeleteFirstMoveAndGiveMoveToBoxMon(boxMon: any, move: any): any 
 
       ppBonuses = GetBoxMonData(boxMon, MON_DATA_PP_BONUSES, NULL);
       ppBonuses >>= 2;
-      moves[MAX_MON_MOVES - 1] = move;
-      pp[MAX_MON_MOVES - 1] = gBattleMoves[move].pp;
+      moves[(4) - 1] = move;
+      pp[(4) - 1] = gBattleMoves[move].pp;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           SetBoxMonData(boxMon, MON_DATA_MOVE1 + i,moves[i]);
           SetBoxMonData(boxMon, MON_DATA_PP1 + i,pp[i]);
@@ -997,7 +993,7 @@ export function CalculateBaseDamage(attacker: any, defender: any, move: any, sid
       spDefense = defender.spDefense;
 
        
-      if (attacker.item == ITEM_ENIGMA_BERRY)
+      if (attacker.item == (175))
       {
           attackerHoldEffect = gEnigmaBerries[battlerIdAtk].holdEffect;
           attackerHoldEffectParam = gEnigmaBerries[battlerIdAtk].holdEffectParam;
@@ -1009,7 +1005,7 @@ export function CalculateBaseDamage(attacker: any, defender: any, move: any, sid
       }
 
        
-      if (defender.item == ITEM_ENIGMA_BERRY)
+      if (defender.item == (175))
       {
           defenderHoldEffect = gEnigmaBerries[battlerIdDef].holdEffect;
           defenderHoldEffectParam = gEnigmaBerries[battlerIdDef].holdEffectParam;
@@ -1020,16 +1016,16 @@ export function CalculateBaseDamage(attacker: any, defender: any, move: any, sid
           defenderHoldEffectParam = GetItemHoldEffectParam(defender.item);
       }
 
-      if (attacker.ability == ABILITY_HUGE_POWER || attacker.ability == ABILITY_PURE_POWER)
+      if (attacker.ability == (37) || attacker.ability == (74))
           attack *= 2;
 
-      if (ShouldGetStatBadgeBoost(FLAG_BADGE01_GET, battlerIdAtk))
+      if (ShouldGetStatBadgeBoost((((((((0x500) + (864) - 1)) + 1)) + 0x7)), battlerIdAtk))
           attack = (110 * attack) / 100;
-      if (ShouldGetStatBadgeBoost(FLAG_BADGE05_GET, battlerIdDef))
+      if (ShouldGetStatBadgeBoost((((((((0x500) + (864) - 1)) + 1)) + 0xB)), battlerIdDef))
           defense = (110 * defense) / 100;
-      if (ShouldGetStatBadgeBoost(FLAG_BADGE07_GET, battlerIdAtk))
+      if (ShouldGetStatBadgeBoost((((((((0x500) + (864) - 1)) + 1)) + 0xD)), battlerIdAtk))
           spAttack = (110 * spAttack) / 100;
-      if (ShouldGetStatBadgeBoost(FLAG_BADGE07_GET, battlerIdDef))
+      if (ShouldGetStatBadgeBoost((((((((0x500) + (864) - 1)) + 1)) + 0xD)), battlerIdDef))
           spDefense = (110 * spDefense) / 100;
 
        
@@ -1047,51 +1043,51 @@ export function CalculateBaseDamage(attacker: any, defender: any, move: any, sid
       }
 
        
-      if (attackerHoldEffect == HOLD_EFFECT_CHOICE_BAND)
+      if (attackerHoldEffect == (29))
           attack = (150 * attack) / 100;
-      if (attackerHoldEffect == HOLD_EFFECT_SOUL_DEW && !(gBattleTypeFlags & (BATTLE_TYPE_FRONTIER)) && (attacker.species == SPECIES_LATIAS || attacker.species == SPECIES_LATIOS))
+      if (attackerHoldEffect == (34) && !(gBattleTypeFlags & (BATTLE_TYPE_FRONTIER)) && (attacker.species == (407) || attacker.species == (408)))
           spAttack = (150 * spAttack) / 100;
-      if (defenderHoldEffect == HOLD_EFFECT_SOUL_DEW && !(gBattleTypeFlags & (BATTLE_TYPE_FRONTIER)) && (defender.species == SPECIES_LATIAS || defender.species == SPECIES_LATIOS))
+      if (defenderHoldEffect == (34) && !(gBattleTypeFlags & (BATTLE_TYPE_FRONTIER)) && (defender.species == (407) || defender.species == (408)))
           spDefense = (150 * spDefense) / 100;
-      if (attackerHoldEffect == HOLD_EFFECT_DEEP_SEA_TOOTH && attacker.species == SPECIES_CLAMPERL)
+      if (attackerHoldEffect == (35) && attacker.species == (373))
           spAttack *= 2;
-      if (defenderHoldEffect == HOLD_EFFECT_DEEP_SEA_SCALE && defender.species == SPECIES_CLAMPERL)
+      if (defenderHoldEffect == (36) && defender.species == (373))
           spDefense *= 2;
-      if (attackerHoldEffect == HOLD_EFFECT_LIGHT_BALL && attacker.species == SPECIES_PIKACHU)
+      if (attackerHoldEffect == (45) && attacker.species == (25))
           spAttack *= 2;
-      if (defenderHoldEffect == HOLD_EFFECT_METAL_POWDER && defender.species == SPECIES_DITTO)
+      if (defenderHoldEffect == (64) && defender.species == (132))
           defense *= 2;
-      if (attackerHoldEffect == HOLD_EFFECT_THICK_CLUB && (attacker.species == SPECIES_CUBONE || attacker.species == SPECIES_MAROWAK))
+      if (attackerHoldEffect == (65) && (attacker.species == (104) || attacker.species == (105)))
           attack *= 2;
 
        
-      if (defender.ability == ABILITY_THICK_FAT && (type == TYPE_FIRE || type == TYPE_ICE))
+      if (defender.ability == (47) && (type == (10) || type == (15)))
           spAttack /= 2;
-      if (attacker.ability == ABILITY_HUSTLE)
+      if (attacker.ability == (55))
           attack = (150 * attack) / 100;
-      if (attacker.ability == ABILITY_PLUS && ABILITY_ON_FIELD2(ABILITY_MINUS))
+      if (attacker.ability == (57) && ABILITY_ON_FIELD2((58)))
           spAttack = (150 * spAttack) / 100;
-      if (attacker.ability == ABILITY_MINUS && ABILITY_ON_FIELD2(ABILITY_PLUS))
+      if (attacker.ability == (58) && ABILITY_ON_FIELD2((57)))
           spAttack = (150 * spAttack) / 100;
-      if (attacker.ability == ABILITY_GUTS && attacker.status1)
+      if (attacker.ability == (62) && attacker.status1)
           attack = (150 * attack) / 100;
-      if (defender.ability == ABILITY_MARVEL_SCALE && defender.status1)
+      if (defender.ability == (63) && defender.status1)
           defense = (150 * defense) / 100;
-      if (type == TYPE_ELECTRIC && AbilityBattleEffects(ABILITYEFFECT_FIELD_SPORT, 0, 0, ABILITYEFFECT_MUD_SPORT, 0))
+      if (type == (13) && AbilityBattleEffects((14), 0, 0, (253), 0))
           gBattleMovePower /= 2;
-      if (type == TYPE_FIRE && AbilityBattleEffects(ABILITYEFFECT_FIELD_SPORT, 0, 0, ABILITYEFFECT_WATER_SPORT, 0))
+      if (type == (10) && AbilityBattleEffects((14), 0, 0, (254), 0))
           gBattleMovePower /= 2;
-      if (type == TYPE_GRASS && attacker.ability == ABILITY_OVERGROW && attacker.hp <= (attacker.maxHP / 3))
+      if (type == (12) && attacker.ability == (65) && attacker.hp <= (attacker.maxHP / 3))
           gBattleMovePower = (150 * gBattleMovePower) / 100;
-      if (type == TYPE_FIRE && attacker.ability == ABILITY_BLAZE && attacker.hp <= (attacker.maxHP / 3))
+      if (type == (10) && attacker.ability == (66) && attacker.hp <= (attacker.maxHP / 3))
           gBattleMovePower = (150 * gBattleMovePower) / 100;
-      if (type == TYPE_WATER && attacker.ability == ABILITY_TORRENT && attacker.hp <= (attacker.maxHP / 3))
+      if (type == (11) && attacker.ability == (67) && attacker.hp <= (attacker.maxHP / 3))
           gBattleMovePower = (150 * gBattleMovePower) / 100;
-      if (type == TYPE_BUG && attacker.ability == ABILITY_SWARM && attacker.hp <= (attacker.maxHP / 3))
+      if (type == (6) && attacker.ability == (68) && attacker.hp <= (attacker.maxHP / 3))
           gBattleMovePower = (150 * gBattleMovePower) / 100;
 
        
-      if (gBattleMoves[gCurrentMove].effect == EFFECT_EXPLOSION)
+      if (gBattleMoves[gCurrentMove].effect == (7))
           defense /= 2;
 
       if (IS_TYPE_PHYSICAL(type))
@@ -1099,13 +1095,13 @@ export function CalculateBaseDamage(attacker: any, defender: any, move: any, sid
           if (gCritMultiplier == 2)
           {
                
-              if (attacker.statStages[STAT_ATK] > DEFAULT_STAT_STAGE)
-                  APPLY_STAT_MOD(damage, attacker, attack, STAT_ATK)
+              if (attacker.statStages[(1)] > (6))
+                  APPLY_STAT_MOD(damage, attacker, attack, (1))
               else
                   damage = attack;
           }
           else
-              APPLY_STAT_MOD(damage, attacker, attack, STAT_ATK)
+              APPLY_STAT_MOD(damage, attacker, attack, (1))
 
           damage = damage * gBattleMovePower;
           damage *= (2 * attacker.level / 5 + 2);
@@ -1113,32 +1109,32 @@ export function CalculateBaseDamage(attacker: any, defender: any, move: any, sid
           if (gCritMultiplier == 2)
           {
                
-              if (defender.statStages[STAT_DEF] < DEFAULT_STAT_STAGE)
-                  APPLY_STAT_MOD(damageHelper, defender, defense, STAT_DEF)
+              if (defender.statStages[(2)] < (6))
+                  APPLY_STAT_MOD(damageHelper, defender, defense, (2))
               else
                   damageHelper = defense;
           }
           else
-              APPLY_STAT_MOD(damageHelper, defender, defense, STAT_DEF)
+              APPLY_STAT_MOD(damageHelper, defender, defense, (2))
 
           damage = damage / damageHelper;
           damage /= 50;
 
            
-          if ((attacker.status1 & STATUS1_BURN) && attacker.ability != ABILITY_GUTS)
+          if ((attacker.status1 & ((1 << 4))) && attacker.ability != (62))
               damage /= 2;
 
            
-          if ((sideStatus & SIDE_STATUS_REFLECT) && gCritMultiplier == 1)
+          if ((sideStatus & ((1 << 0))) && gCritMultiplier == 1)
           {
-              if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE) && CountAliveMonsInBattle(BATTLE_ALIVE_DEF_SIDE) == 2)
+              if ((gBattleTypeFlags & ((1 << 0))) && CountAliveMonsInBattle((2)) == 2)
                   damage = 2 * (damage / 3);
               else
                   damage /= 2;
           }
 
            
-          if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE) && gBattleMoves[move].target == MOVE_TARGET_BOTH && CountAliveMonsInBattle(BATTLE_ALIVE_DEF_SIDE) == 2)
+          if ((gBattleTypeFlags & ((1 << 0))) && gBattleMoves[move].target == ((1 << 3)) && CountAliveMonsInBattle((2)) == 2)
               damage /= 2;
 
            
@@ -1146,7 +1142,7 @@ export function CalculateBaseDamage(attacker: any, defender: any, move: any, sid
               damage = 1;
       }
 
-      if (type == TYPE_MYSTERY)
+      if (type == (9))
           damage = 0;  
 
       if (IS_TYPE_SPECIAL(type))
@@ -1154,13 +1150,13 @@ export function CalculateBaseDamage(attacker: any, defender: any, move: any, sid
           if (gCritMultiplier == 2)
           {
                
-              if (attacker.statStages[STAT_SPATK] > DEFAULT_STAT_STAGE)
-                  APPLY_STAT_MOD(damage, attacker, spAttack, STAT_SPATK)
+              if (attacker.statStages[(4)] > (6))
+                  APPLY_STAT_MOD(damage, attacker, spAttack, (4))
               else
                   damage = spAttack;
           }
           else
-              APPLY_STAT_MOD(damage, attacker, spAttack, STAT_SPATK)
+              APPLY_STAT_MOD(damage, attacker, spAttack, (4))
 
           damage = damage * gBattleMovePower;
           damage *= (2 * attacker.level / 5 + 2);
@@ -1168,60 +1164,60 @@ export function CalculateBaseDamage(attacker: any, defender: any, move: any, sid
           if (gCritMultiplier == 2)
           {
                
-              if (defender.statStages[STAT_SPDEF] < DEFAULT_STAT_STAGE)
-                  APPLY_STAT_MOD(damageHelper, defender, spDefense, STAT_SPDEF)
+              if (defender.statStages[(5)] < (6))
+                  APPLY_STAT_MOD(damageHelper, defender, spDefense, (5))
               else
                   damageHelper = spDefense;
           }
           else
-              APPLY_STAT_MOD(damageHelper, defender, spDefense, STAT_SPDEF)
+              APPLY_STAT_MOD(damageHelper, defender, spDefense, (5))
 
           damage = (damage / damageHelper);
           damage /= 50;
 
            
-          if ((sideStatus & SIDE_STATUS_LIGHTSCREEN) && gCritMultiplier == 1)
+          if ((sideStatus & ((1 << 1))) && gCritMultiplier == 1)
           {
-              if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE) && CountAliveMonsInBattle(BATTLE_ALIVE_DEF_SIDE) == 2)
+              if ((gBattleTypeFlags & ((1 << 0))) && CountAliveMonsInBattle((2)) == 2)
                   damage = 2 * (damage / 3);
               else
                   damage /= 2;
           }
 
            
-          if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE) && gBattleMoves[move].target == MOVE_TARGET_BOTH && CountAliveMonsInBattle(BATTLE_ALIVE_DEF_SIDE) == 2)
+          if ((gBattleTypeFlags & ((1 << 0))) && gBattleMoves[move].target == ((1 << 3)) && CountAliveMonsInBattle((2)) == 2)
               damage /= 2;
 
            
           if (WEATHER_HAS_EFFECT2)
           {
                
-              if (gBattleWeather & B_WEATHER_RAIN_TEMPORARY)
+              if (gBattleWeather & ((1 << 0)))
               {
                   switch (type)
                   {
-                  case TYPE_FIRE:
+                  case (10):
                       damage /= 2;
                       break;
-                  case TYPE_WATER:
+                  case (11):
                       damage = (15 * damage) / 10;
                       break;
                   }
               }
 
                
-              if ((gBattleWeather & (B_WEATHER_RAIN | B_WEATHER_SANDSTORM | B_WEATHER_HAIL)) && gCurrentMove == MOVE_SOLAR_BEAM)
+              if ((gBattleWeather & (((((1 << 0)) | ((1 << 1)) | ((1 << 2)))) | ((((1 << 3)) | ((1 << 4)))) | ((((1 << 7)))))) && gCurrentMove == (76))
                   damage /= 2;
 
                
-              if (gBattleWeather & B_WEATHER_SUN)
+              if (gBattleWeather & ((((1 << 5)) | ((1 << 6)))))
               {
                   switch (type)
                   {
-                  case TYPE_FIRE:
+                  case (10):
                       damage = (15 * damage) / 10;
                       break;
-                  case TYPE_WATER:
+                  case (11):
                       damage /= 2;
                       break;
                   }
@@ -1229,7 +1225,7 @@ export function CalculateBaseDamage(attacker: any, defender: any, move: any, sid
           }
 
            
-          if ((gBattleResources.flags.flags[battlerIdAtk] & RESOURCE_FLAG_FLASH_FIRE) && type == TYPE_FIRE)
+          if ((gBattleResources.flags.flags[battlerIdAtk] & (1)) && type == (10))
               damage = (15 * damage) / 10;
       }
 
@@ -1243,21 +1239,21 @@ export function CountAliveMonsInBattle(caseId: any): any {
 
       switch (caseId)
       {
-      case BATTLE_ALIVE_EXCEPT_ACTIVE:
+      case (0):
           for (i = 0; i < MAX_BATTLERS_COUNT; i++)
           {
               if (i != gActiveBattler && !(gAbsentBattlerFlags & gBitTable[i]))
                   retVal++;
           }
           break;
-      case BATTLE_ALIVE_ATK_SIDE:
+      case (1):
           for (i = 0; i < MAX_BATTLERS_COUNT; i++)
           {
               if (GetBattlerSide(i) == GetBattlerSide(gBattlerAttacker) && !(gAbsentBattlerFlags & gBitTable[i]))
                   retVal++;
           }
           break;
-      case BATTLE_ALIVE_DEF_SIDE:
+      case (2):
           for (i = 0; i < MAX_BATTLERS_COUNT; i++)
           {
               if (GetBattlerSide(i) == GetBattlerSide(gBattlerTarget) && !(gAbsentBattlerFlags & gBitTable[i]))
@@ -1271,11 +1267,11 @@ export function CountAliveMonsInBattle(caseId: any): any {
 
 /** static bool8 ShouldGetStatBadgeBoost(u16 badgeFlag, u8 battler) */
 export function ShouldGetStatBadgeBoost(badgeFlag: any, battler: any): any {
-  if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_EREADER_TRAINER | BATTLE_TYPE_RECORDED_LINK | BATTLE_TYPE_FRONTIER))
+  if (gBattleTypeFlags & (((1 << 1)) | ((1 << 11)) | ((1 << 25)) | BATTLE_TYPE_FRONTIER))
           return FALSE;
-      else if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+      else if (GetBattlerSide(battler) != (0))
           return FALSE;
-      else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER && gTrainerBattleOpponent_A == TRAINER_SECRET_BASE)
+      else if (gBattleTypeFlags & ((1 << 3)) && gTrainerBattleOpponent_A == (1024))
           return FALSE;
       else if (FlagGet(badgeFlag))
           return TRUE;
@@ -1287,9 +1283,9 @@ export function ShouldGetStatBadgeBoost(badgeFlag: any, battler: any): any {
 export function GetDefaultMoveTarget(battler: any): any {
   let opposing: any = BATTLE_OPPOSITE(GET_BATTLER_SIDE(battler));
 
-      if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
+      if (!(gBattleTypeFlags & ((1 << 0))))
           return GetBattlerAtPosition(opposing);
-      if (CountAliveMonsInBattle(BATTLE_ALIVE_EXCEPT_ACTIVE) > 1)
+      if (CountAliveMonsInBattle((0)) > 1)
       {
           let position: any = null;
 
@@ -1321,32 +1317,32 @@ export function GetBoxMonGender(boxMon: any): any {
 
       switch (gSpeciesInfo[species].genderRatio)
       {
-      case MON_MALE:
-      case MON_FEMALE:
-      case MON_GENDERLESS:
+      case (0x00):
+      case (0xFE):
+      case (0xFF):
           return gSpeciesInfo[species].genderRatio;
       }
 
       if (gSpeciesInfo[species].genderRatio > (personality & 0xFF))
-          return MON_FEMALE;
+          return (0xFE);
       else
-          return MON_MALE;
+          return (0x00);
 }
 
 /** u8 GetGenderFromSpeciesAndPersonality(u16 species, u32 personality) */
 export function GetGenderFromSpeciesAndPersonality(species: any, personality: any): any {
   switch (gSpeciesInfo[species].genderRatio)
       {
-      case MON_MALE:
-      case MON_FEMALE:
-      case MON_GENDERLESS:
+      case (0x00):
+      case (0xFE):
+      case (0xFF):
           return gSpeciesInfo[species].genderRatio;
       }
 
       if (gSpeciesInfo[species].genderRatio > (personality & 0xFF))
-          return MON_FEMALE;
+          return (0xFE);
       else
-          return MON_MALE;
+          return (0x00);
 }
 
 /** void SetMultiuseSpriteTemplateToPokemon(u16 speciesTag, u8 battlerPosition) */
@@ -1363,8 +1359,8 @@ export function SetMultiuseSpriteTemplateToPokemon(speciesTag: any, battlerPosit
       gMultiuseSpriteTemplate.paletteTag = speciesTag;
       if (battlerPosition == B_POSITION_PLAYER_LEFT || battlerPosition == B_POSITION_PLAYER_RIGHT)
           gMultiuseSpriteTemplate.anims = gAnims_MonPic;
-      else if (speciesTag > SPECIES_SHINY_TAG)
-          gMultiuseSpriteTemplate.anims = gMonFrontAnimsPtrTable[speciesTag - SPECIES_SHINY_TAG];
+      else if (speciesTag > (500))
+          gMultiuseSpriteTemplate.anims = gMonFrontAnimsPtrTable[speciesTag - (500)];
       else
           gMultiuseSpriteTemplate.anims = gMonFrontAnimsPtrTable[speciesTag];
 }
@@ -1437,27 +1433,27 @@ export function GetMonData3(mon: any, field: any, data: any): any {
           ret = mon.maxHP;
           break;
       case MON_DATA_ATK:
-          ret = GetDeoxysStat(mon, STAT_ATK);
+          ret = GetDeoxysStat(mon, (1));
           if (!ret)
               ret = mon.attack;
           break;
       case MON_DATA_DEF:
-          ret = GetDeoxysStat(mon, STAT_DEF);
+          ret = GetDeoxysStat(mon, (2));
           if (!ret)
               ret = mon.defense;
           break;
       case MON_DATA_SPEED:
-          ret = GetDeoxysStat(mon, STAT_SPEED);
+          ret = GetDeoxysStat(mon, (3));
           if (!ret)
               ret = mon.speed;
           break;
       case MON_DATA_SPATK:
-          ret = GetDeoxysStat(mon, STAT_SPATK);
+          ret = GetDeoxysStat(mon, (4));
           if (!ret)
               ret = mon.spAttack;
           break;
       case MON_DATA_SPDEF:
-          ret = GetDeoxysStat(mon, STAT_SPDEF);
+          ret = GetDeoxysStat(mon, (5));
           if (!ret)
               ret = mon.spDefense;
           break;
@@ -1526,36 +1522,36 @@ export function GetBoxMonData3(boxMon: any, field: any, data: any): any {
           if (boxMon.isBadEgg)
           {
               for (retVal = 0;
-                  retVal < POKEMON_NAME_LENGTH && gText_BadEgg[retVal] != EOS;
+                  retVal < (10) && gText_BadEgg[retVal] != (0xFF);
                   data[retVal] = gText_BadEgg[retVal], retVal++) {}
 
-              data[retVal] = EOS;
+              data[retVal] = (0xFF);
           }
           else if (boxMon.isEgg)
           {
               StringCopy(data, gText_EggNickname);
               retVal = StringLength(data);
           }
-          else if (boxMon.language == LANGUAGE_JAPANESE)
+          else if (boxMon.language == (1))
           {
-              data[0] = EXT_CTRL_CODE_BEGIN;
-              data[1] = EXT_CTRL_CODE_JPN;
+              data[0] = (0xFC);
+              data[1] = (0x15);
 
               for (retVal = 2, i = 0;
-                  i < 5 && boxMon.nickname[i] != EOS;
+                  i < 5 && boxMon.nickname[i] != (0xFF);
                   data[retVal] = boxMon.nickname[i], retVal++, i++) {}
 
-              data[retVal++] = EXT_CTRL_CODE_BEGIN;
-              data[retVal++] = EXT_CTRL_CODE_ENG;
-              data[retVal] = EOS;
+              data[retVal++] = (0xFC);
+              data[retVal++] = (0x16);
+              data[retVal] = (0xFF);
           }
           else
           {
               for (retVal = 0;
-                  retVal < POKEMON_NAME_LENGTH;
+                  retVal < (10);
                   data[retVal] = boxMon.nickname[retVal], retVal++){}
 
-              data[retVal] = EOS;
+              data[retVal] = (0xFF);
           }
           break;
       }
@@ -1575,13 +1571,13 @@ export function GetBoxMonData3(boxMon: any, field: any, data: any): any {
       {
           retVal = 0;
 
-          while (retVal < PLAYER_NAME_LENGTH)
+          while (retVal < (7))
           {
               data[retVal] = boxMon.otName[retVal];
               retVal++;
           }
 
-          data[retVal] = EOS;
+          data[retVal] = (0xFF);
           break;
       }
       case MON_DATA_MARKINGS:
@@ -1594,7 +1590,7 @@ export function GetBoxMonData3(boxMon: any, field: any, data: any): any {
           retVal = boxMon.unknown;
           break;
       case MON_DATA_SPECIES:
-          retVal = boxMon.isBadEgg ? SPECIES_EGG : substruct0.species;
+          retVal = boxMon.isBadEgg ? (412) : substruct0.species;
           break;
       case MON_DATA_HELD_ITEM:
           retVal = substruct0.heldItem;
@@ -1758,7 +1754,7 @@ export function GetBoxMonData3(boxMon: any, field: any, data: any): any {
       case MON_DATA_SPECIES_OR_EGG:
           retVal = substruct0.species;
           if (substruct0.species && (substruct3.isEgg || boxMon.isBadEgg))
-              retVal = SPECIES_EGG;
+              retVal = (412);
           break;
       case MON_DATA_IVS:
           retVal = substruct3.hpIV
@@ -1774,7 +1770,7 @@ export function GetBoxMonData3(boxMon: any, field: any, data: any): any {
               let moves: any = data;
               let i: any = 0;
 
-              while (moves[i] != MOVES_COUNT)
+              while (moves[i] != (355))
               {
                   let move: any = moves[i];
                   if (substruct1.moves[0] == move
@@ -1925,7 +1921,7 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
       case MON_DATA_NICKNAME:
       {
           let i: any = null;
-          for (i = 0; i < POKEMON_NAME_LENGTH; i++)
+          for (i = 0; i < (10); i++)
               boxMon.nickname[i] = data[i];
           break;
       }
@@ -1944,7 +1940,7 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
       case MON_DATA_OT_NAME:
       {
           let i: any = null;
-          for (i = 0; i < PLAYER_NAME_LENGTH; i++)
+          for (i = 0; i < (7); i++)
               boxMon.otName[i] = data[i];
           break;
       }
@@ -2138,12 +2134,12 @@ export function SetBoxMonData(boxMon: any, field: any, dataArg: any): any {
       case MON_DATA_IVS:
       {
           let ivs: any = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
-          substruct3.hpIV = ivs & MAX_IV_MASK;
-          substruct3.attackIV = (ivs >> 5) & MAX_IV_MASK;
-          substruct3.defenseIV = (ivs >> 10) & MAX_IV_MASK;
-          substruct3.speedIV = (ivs >> 15) & MAX_IV_MASK;
-          substruct3.spAttackIV = (ivs >> 20) & MAX_IV_MASK;
-          substruct3.spDefenseIV = (ivs >> 25) & MAX_IV_MASK;
+          substruct3.hpIV = ivs & (31);
+          substruct3.attackIV = (ivs >> 5) & (31);
+          substruct3.defenseIV = (ivs >> 10) & (31);
+          substruct3.speedIV = (ivs >> 15) & (31);
+          substruct3.spAttackIV = (ivs >> 20) & (31);
+          substruct3.spDefenseIV = (ivs >> 25) & (31);
           break;
       }
       default:
@@ -2170,60 +2166,60 @@ export function GiveMonToPlayer(mon: any): any {
       SetMonData(mon, MON_DATA_OT_GENDER,gSaveBlock2Ptr.playerGender);
       SetMonData(mon, MON_DATA_OT_ID, gSaveBlock2Ptr.playerTrainerId);
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
-          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES, NULL) == SPECIES_NONE)
+          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES, NULL) == (0))
               break;
       }
 
-      if (i >= PARTY_SIZE)
+      if (i >= (6))
           return CopyMonToPC(mon);
 
       CopyMon(gPlayerParty[i], mon, 0);
       gPlayerPartyCount = i + 1;
-      return MON_GIVEN_TO_PARTY;
+      return (0);
 }
 
 /** static u8 CopyMonToPC(struct Pokemon *mon) */
 export function CopyMonToPC(mon: any): any {
   let boxNo, boxPos;
 
-      SetPCBoxToSendMon(VarGet(VAR_PC_BOX_TO_SEND_MON));
+      SetPCBoxToSendMon(VarGet((0x4036)));
 
       boxNo = StorageGetCurrentBox();
 
       do
       {
-          for (boxPos = 0; boxPos < IN_BOX_COUNT; boxPos++)
+          for (boxPos = 0; boxPos < (((5) * (6))); boxPos++)
           {
               let checkingMon: any = GetBoxedMonPtr(boxNo, boxPos);
-              if (GetBoxMonData(checkingMon, MON_DATA_SPECIES, NULL) == SPECIES_NONE)
+              if (GetBoxMonData(checkingMon, MON_DATA_SPECIES, NULL) == (0))
               {
                   MonRestorePP(mon);
                   CopyMon(checkingMon,mon.box, sizeof(mon.box));
                   gSpecialVar_MonBoxId = boxNo;
                   gSpecialVar_MonBoxPos = boxPos;
                   if (GetPCBoxToSendMon() != boxNo)
-                      FlagClear(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE);
-                  VarSet(VAR_PC_BOX_TO_SEND_MON, boxNo);
-                  return MON_GIVEN_TO_PC;
+                      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x77)));
+                  VarSet((0x4036), boxNo);
+                  return (1);
               }
           }
 
           boxNo++;
-          if (boxNo == TOTAL_BOXES_COUNT)
+          if (boxNo == (14))
               boxNo = 0;
       } while (boxNo != StorageGetCurrentBox());
 
-      return MON_CANT_GIVE;
+      return (2);
 }
 
 /** u8 CalculatePlayerPartyCount(void) */
 export function CalculatePlayerPartyCount(): any {
   gPlayerPartyCount = 0;
 
-      while (gPlayerPartyCount < PARTY_SIZE
-          && GetMonData(gPlayerParty[gPlayerPartyCount], MON_DATA_SPECIES, NULL) != SPECIES_NONE)
+      while (gPlayerPartyCount < (6)
+          && GetMonData(gPlayerParty[gPlayerPartyCount], MON_DATA_SPECIES, NULL) != (0))
       {
           gPlayerPartyCount++;
       }
@@ -2235,8 +2231,8 @@ export function CalculatePlayerPartyCount(): any {
 export function CalculateEnemyPartyCount(): any {
   gEnemyPartyCount = 0;
 
-      while (gEnemyPartyCount < PARTY_SIZE
-          && GetMonData(gEnemyParty[gEnemyPartyCount], MON_DATA_SPECIES, NULL) != SPECIES_NONE)
+      while (gEnemyPartyCount < (6)
+          && GetMonData(gEnemyParty[gEnemyPartyCount], MON_DATA_SPECIES, NULL) != (0))
       {
           gEnemyPartyCount++;
       }
@@ -2255,13 +2251,13 @@ export function GetMonsStateToDoubles(): any {
 
       for (i = 0; i < gPlayerPartyCount; i++)
       {
-          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != SPECIES_EGG
+          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != (412)
            && GetMonData(gPlayerParty[i], MON_DATA_HP, NULL) != 0
-           && GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != SPECIES_NONE)
+           && GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != (0))
               aliveCount++;
       }
 
-      return (aliveCount > 1) ? PLAYER_HAS_TWO_USABLE_MONS : PLAYER_HAS_ONE_USABLE_MON;
+      return (aliveCount > 1) ? (0) : (2);
 }
 
 /** u8 GetMonsStateToDoubles_2(void) */
@@ -2269,18 +2265,18 @@ export function GetMonsStateToDoubles_2(): any {
   let aliveCount: any = 0;
       let i: any = null;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           let species: any = GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL);
-          if (species != SPECIES_EGG && species != SPECIES_NONE
+          if (species != (412) && species != (0)
            && GetMonData(gPlayerParty[i], MON_DATA_HP, NULL) != 0)
               aliveCount++;
       }
 
       if (aliveCount == 1)
-          return PLAYER_HAS_ONE_MON;  
+          return (1);  
 
-      return (aliveCount > 1) ? PLAYER_HAS_TWO_USABLE_MONS : PLAYER_HAS_ONE_USABLE_MON;
+      return (aliveCount > 1) ? (0) : (2);
 }
 
 /** u8 GetAbilityBySpecies(u16 species, u8 abilityNum) */
@@ -2307,7 +2303,7 @@ export function CreateSecretBaseEnemyParty(secretBaseRecord: any): any {
       ZeroEnemyPartyMons();
       gBattleResources.secretBase = secretBaseRecord;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (gBattleResources.secretBase.party.species[i])
           {
@@ -2317,18 +2313,18 @@ export function CreateSecretBaseEnemyParty(secretBaseRecord: any): any {
                   15,
                   TRUE,
                   gBattleResources.secretBase.party.personality[i],
-                  OT_ID_RANDOM_NO_SHINY,
+                  (2),
                   0);
 
               SetMonData(gEnemyParty[i], MON_DATA_HELD_ITEM,gBattleResources.secretBase.party.heldItems[i]);
 
-              for (j = 0; j < NUM_STATS; j++)
+              for (j = 0; j < (6); j++)
                   SetMonData(gEnemyParty[i], MON_DATA_HP_EV + j,gBattleResources.secretBase.party.EVs[i]);
 
-              for (j = 0; j < MAX_MON_MOVES; j++)
+              for (j = 0; j < (4); j++)
               {
-                  SetMonData(gEnemyParty[i], MON_DATA_MOVE1 + j,gBattleResources.secretBase.party.moves[i * MAX_MON_MOVES + j]);
-                  SetMonData(gEnemyParty[i], MON_DATA_PP1 + j,gBattleMoves[gBattleResources.secretBase.party.moves[i * MAX_MON_MOVES + j]].pp);
+                  SetMonData(gEnemyParty[i], MON_DATA_MOVE1 + j,gBattleResources.secretBase.party.moves[i * (4) + j]);
+                  SetMonData(gEnemyParty[i], MON_DATA_PP1 + j,gBattleMoves[gBattleResources.secretBase.party.moves[i * (4) + j]].pp);
               }
           }
       }
@@ -2350,8 +2346,8 @@ export function GetSecretBaseTrainerClass(): any {
 export function IsPlayerPartyAndPokemonStorageFull(): any {
   let i: any = null;
 
-      for (i = 0; i < PARTY_SIZE; i++)
-          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES, NULL) == SPECIES_NONE)
+      for (i = 0; i < (6); i++)
+          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES, NULL) == (0))
               return FALSE;
 
       return IsPokemonStorageFull();
@@ -2361,9 +2357,9 @@ export function IsPlayerPartyAndPokemonStorageFull(): any {
 export function IsPokemonStorageFull(): any {
   let i, j;
 
-      for (i = 0; i < TOTAL_BOXES_COUNT; i++)
-          for (j = 0; j < IN_BOX_COUNT; j++)
-              if (GetBoxMonDataAt(i, j, MON_DATA_SPECIES) == SPECIES_NONE)
+      for (i = 0; i < (14); i++)
+          for (j = 0; j < (((5) * (6))); j++)
+              if (GetBoxMonDataAt(i, j, MON_DATA_SPECIES) == (0))
                   return FALSE;
 
       return TRUE;
@@ -2373,18 +2369,18 @@ export function IsPokemonStorageFull(): any {
 export function GetSpeciesName(name: any, species: any): any {
   let i: any = null;
 
-      for (i = 0; i <= POKEMON_NAME_LENGTH; i++)
+      for (i = 0; i <= (10); i++)
       {
-          if (species > NUM_SPECIES)
-              name[i] = gSpeciesNames[SPECIES_NONE][i];
+          if (species > ((412)))
+              name[i] = gSpeciesNames[(0)][i];
           else
               name[i] = gSpeciesNames[species][i];
 
-          if (name[i] == EOS)
+          if (name[i] == (0xFF))
               break;
       }
 
-      name[i] = EOS;
+      name[i] = (0xFF);
 }
 
 /** u8 CalculatePPWithBonus(u16 move, u8 ppBonuses, u8 moveIndex) */
@@ -2414,7 +2410,7 @@ export function CopyPlayerPartyMonToBattleData(battler: any, partyIndex: any): a
       gBattleMons[battler].species = GetMonData(gPlayerParty[partyIndex], MON_DATA_SPECIES, NULL);
       gBattleMons[battler].item = GetMonData(gPlayerParty[partyIndex], MON_DATA_HELD_ITEM, NULL);
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           gBattleMons[battler].moves[i] = GetMonData(gPlayerParty[partyIndex], MON_DATA_MOVE1 + i, NULL);
           gBattleMons[battler].pp[i] = GetMonData(gPlayerParty[partyIndex], MON_DATA_PP1 + i, NULL);
@@ -2452,8 +2448,8 @@ export function CopyPlayerPartyMonToBattleData(battler: any, partyIndex: any): a
       hpSwitchout =gBattleStruct.hpOnSwitchout[GetBattlerSide(battler)];
       hpSwitchout = gBattleMons[battler].hp;
 
-      for (i = 0; i < NUM_BATTLE_STATS; i++)
-          gBattleMons[battler].statStages[i] = DEFAULT_STAT_STAGE;
+      for (i = 0; i < (((6) + 2)); i++)
+          gBattleMons[battler].statStages[i] = (6);
 
       gBattleMons[battler].status2 = 0;
       UpdateSentPokesToOpponentValue(battler);
@@ -2473,7 +2469,7 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
       let i: any = null;
       let retVal: any = TRUE;
       let itemEffect: any = null;
-      let itemEffectParam: any = ITEM_EFFECT_ARG_START;
+      let itemEffectParam: any = (6);
       let temp1, temp2;
       let friendshipChange: any = 0;
       let holdEffect: any = null;
@@ -2486,7 +2482,7 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
 
        
       heldItem = GetMonData(mon, MON_DATA_HELD_ITEM, NULL);
-      if (heldItem == ITEM_ENIGMA_BERRY)
+      if (heldItem == (175))
       {
           if (gMain.inBattle)
               holdEffect = gEnigmaBerries[gBattlerInMenuId].holdEffect;
@@ -2503,7 +2499,7 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
       if (gMain.inBattle)
       {
           gActiveBattler = gBattlerInMenuId;
-          i = (GetBattlerSide(gActiveBattler) != B_SIDE_PLAYER);
+          i = (GetBattlerSide(gActiveBattler) != (0));
           while (i < gBattlersCount)
           {
               if (gBattlerPartyIndexes[i] == partyIndex)
@@ -2523,11 +2519,11 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
        
       if (!ITEM_HAS_EFFECT(item))
           return TRUE;
-      if (gItemEffectTable[item - ITEM_POTION] == NULL && item != ITEM_ENIGMA_BERRY)
+      if (gItemEffectTable[item - (13)] == NULL && item != (175))
           return TRUE;
 
        
-      if (item == ITEM_ENIGMA_BERRY)
+      if (item == (175))
       {
           if (gMain.inBattle)
               itemEffect = gEnigmaBerries[gActiveBattler].itemEffect;
@@ -2536,11 +2532,11 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
       }
       else
       {
-          itemEffect = gItemEffectTable[item - ITEM_POTION];
+          itemEffect = gItemEffectTable[item - (13)];
       }
 
        
-      for (i = 0; i < ITEM_EFFECT_ARG_START; i++)
+      for (i = 0; i < (6); i++)
       {
           switch (i)
           {
@@ -2548,28 +2544,28 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
            
           case 0:
                
-              if ((itemEffect[i] & ITEM0_INFATUATION)
-               && gMain.inBattle && battler != MAX_BATTLERS_COUNT && (gBattleMons[battler].status2 & STATUS2_INFATUATION))
+              if ((itemEffect[i] & (0x80))
+               && gMain.inBattle && battler != MAX_BATTLERS_COUNT && (gBattleMons[battler].status2 & ((1 << 16 | 1 << 17 | 1 << 18 | 1 << 19))))
               {
-                  gBattleMons[battler].status2 &= ~STATUS2_INFATUATION;
+                  gBattleMons[battler].status2 &= ~((1 << 16 | 1 << 17 | 1 << 18 | 1 << 19));
                   retVal = FALSE;
               }
 
                
-              if ((itemEffect[i] & ITEM0_DIRE_HIT)
-               && !(gBattleMons[gActiveBattler].status2 & STATUS2_FOCUS_ENERGY))
+              if ((itemEffect[i] & (0x30))
+               && !(gBattleMons[gActiveBattler].status2 & ((1 << 20))))
               {
-                  gBattleMons[gActiveBattler].status2 |= STATUS2_FOCUS_ENERGY;
+                  gBattleMons[gActiveBattler].status2 |= ((1 << 20));
                   retVal = FALSE;
               }
 
                
-              if ((itemEffect[i] & ITEM0_X_ATTACK)
-               && gBattleMons[gActiveBattler].statStages[STAT_ATK] < MAX_STAT_STAGE)
+              if ((itemEffect[i] & (0x0F))
+               && gBattleMons[gActiveBattler].statStages[(1)] < (12))
               {
-                  gBattleMons[gActiveBattler].statStages[STAT_ATK] += itemEffect[i] & ITEM0_X_ATTACK;
-                  if (gBattleMons[gActiveBattler].statStages[STAT_ATK] > MAX_STAT_STAGE)
-                      gBattleMons[gActiveBattler].statStages[STAT_ATK] = MAX_STAT_STAGE;
+                  gBattleMons[gActiveBattler].statStages[(1)] += itemEffect[i] & (0x0F);
+                  if (gBattleMons[gActiveBattler].statStages[(1)] > (12))
+                      gBattleMons[gActiveBattler].statStages[(1)] = (12);
                   retVal = FALSE;
               }
               break;
@@ -2577,44 +2573,44 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
            
           case 1:
                
-              if ((itemEffect[i] & ITEM1_X_DEFEND)
-               && gBattleMons[gActiveBattler].statStages[STAT_DEF] < MAX_STAT_STAGE)
+              if ((itemEffect[i] & (0xF0))
+               && gBattleMons[gActiveBattler].statStages[(2)] < (12))
               {
-                  gBattleMons[gActiveBattler].statStages[STAT_DEF] += (itemEffect[i] & ITEM1_X_DEFEND) >> 4;
-                  if (gBattleMons[gActiveBattler].statStages[STAT_DEF] > MAX_STAT_STAGE)
-                      gBattleMons[gActiveBattler].statStages[STAT_DEF] = MAX_STAT_STAGE;
+                  gBattleMons[gActiveBattler].statStages[(2)] += (itemEffect[i] & (0xF0)) >> 4;
+                  if (gBattleMons[gActiveBattler].statStages[(2)] > (12))
+                      gBattleMons[gActiveBattler].statStages[(2)] = (12);
                   retVal = FALSE;
               }
 
                
-              if ((itemEffect[i] & ITEM1_X_SPEED)
-               && gBattleMons[gActiveBattler].statStages[STAT_SPEED] < MAX_STAT_STAGE)
+              if ((itemEffect[i] & (0x0F))
+               && gBattleMons[gActiveBattler].statStages[(3)] < (12))
               {
-                  gBattleMons[gActiveBattler].statStages[STAT_SPEED] += itemEffect[i] & ITEM1_X_SPEED;
-                  if (gBattleMons[gActiveBattler].statStages[STAT_SPEED] > MAX_STAT_STAGE)
-                      gBattleMons[gActiveBattler].statStages[STAT_SPEED] = MAX_STAT_STAGE;
+                  gBattleMons[gActiveBattler].statStages[(3)] += itemEffect[i] & (0x0F);
+                  if (gBattleMons[gActiveBattler].statStages[(3)] > (12))
+                      gBattleMons[gActiveBattler].statStages[(3)] = (12);
                   retVal = FALSE;
               }
               break;
            
           case 2:
                
-              if ((itemEffect[i] & ITEM2_X_ACCURACY)
-               && gBattleMons[gActiveBattler].statStages[STAT_ACC] < MAX_STAT_STAGE)
+              if ((itemEffect[i] & (0xF0))
+               && gBattleMons[gActiveBattler].statStages[(6)] < (12))
               {
-                  gBattleMons[gActiveBattler].statStages[STAT_ACC] += (itemEffect[i] & ITEM2_X_ACCURACY) >> 4;
-                  if (gBattleMons[gActiveBattler].statStages[STAT_ACC] > MAX_STAT_STAGE)
-                      gBattleMons[gActiveBattler].statStages[STAT_ACC] = MAX_STAT_STAGE;
+                  gBattleMons[gActiveBattler].statStages[(6)] += (itemEffect[i] & (0xF0)) >> 4;
+                  if (gBattleMons[gActiveBattler].statStages[(6)] > (12))
+                      gBattleMons[gActiveBattler].statStages[(6)] = (12);
                   retVal = FALSE;
               }
 
                
-              if ((itemEffect[i] & ITEM2_X_SPATK)
-               && gBattleMons[gActiveBattler].statStages[STAT_SPATK] < MAX_STAT_STAGE)
+              if ((itemEffect[i] & (0x0F))
+               && gBattleMons[gActiveBattler].statStages[(4)] < (12))
               {
-                  gBattleMons[gActiveBattler].statStages[STAT_SPATK] += itemEffect[i] & ITEM2_X_SPATK;
-                  if (gBattleMons[gActiveBattler].statStages[STAT_SPATK] > MAX_STAT_STAGE)
-                      gBattleMons[gActiveBattler].statStages[STAT_SPATK] = MAX_STAT_STAGE;
+                  gBattleMons[gActiveBattler].statStages[(4)] += itemEffect[i] & (0x0F);
+                  if (gBattleMons[gActiveBattler].statStages[(4)] > (12))
+                      gBattleMons[gActiveBattler].statStages[(4)] = (12);
                   retVal = FALSE;
               }
               break;
@@ -2622,7 +2618,7 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
            
           case 3:
                
-              if ((itemEffect[i] & ITEM3_GUARD_SPEC)
+              if ((itemEffect[i] & (0x80))
                && gSideTimers[GetBattlerSide(gActiveBattler)].mistTimer == 0)
               {
                   gSideTimers[GetBattlerSide(gActiveBattler)].mistTimer = 5;
@@ -2630,8 +2626,8 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
               }
 
                
-              if ((itemEffect[i] & ITEM3_LEVEL_UP)
-               && GetMonData(mon, MON_DATA_LEVEL, NULL) != MAX_LEVEL)
+              if ((itemEffect[i] & (0x40))
+               && GetMonData(mon, MON_DATA_LEVEL, NULL) != (100))
               {
                   dataUnsigned = gExperienceTables[gSpeciesInfo[GetMonData(mon, MON_DATA_SPECIES, NULL)].growthRate][GetMonData(mon, MON_DATA_LEVEL, NULL) + 1];
                   SetMonData(mon, MON_DATA_EXP,dataUnsigned);
@@ -2640,25 +2636,25 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
               }
 
                
-              if ((itemEffect[i] & ITEM3_SLEEP)
-               && HealStatusConditions(mon, partyIndex, STATUS1_SLEEP, battler) == 0)
+              if ((itemEffect[i] & (0x20))
+               && HealStatusConditions(mon, partyIndex, ((1 << 0 | 1 << 1 | 1 << 2)), battler) == 0)
               {
                   if (battler != MAX_BATTLERS_COUNT)
-                      gBattleMons[battler].status2 &= ~STATUS2_NIGHTMARE;
+                      gBattleMons[battler].status2 &= ~((1 << 27));
                   retVal = FALSE;
               }
-              if ((itemEffect[i] & ITEM3_POISON) && HealStatusConditions(mon, partyIndex, STATUS1_PSN_ANY | STATUS1_TOXIC_COUNTER, battler) == 0)
+              if ((itemEffect[i] & (0x10)) && HealStatusConditions(mon, partyIndex, ((((1 << 3)) | ((1 << 7)))) | ((1 << 8 | 1 << 9 | 1 << 10 | 1 << 11)), battler) == 0)
                   retVal = FALSE;
-              if ((itemEffect[i] & ITEM3_BURN) && HealStatusConditions(mon, partyIndex, STATUS1_BURN, battler) == 0)
+              if ((itemEffect[i] & (0x8)) && HealStatusConditions(mon, partyIndex, ((1 << 4)), battler) == 0)
                   retVal = FALSE;
-              if ((itemEffect[i] & ITEM3_FREEZE) && HealStatusConditions(mon, partyIndex, STATUS1_FREEZE, battler) == 0)
+              if ((itemEffect[i] & (0x4)) && HealStatusConditions(mon, partyIndex, ((1 << 5)), battler) == 0)
                   retVal = FALSE;
-              if ((itemEffect[i] & ITEM3_PARALYSIS) && HealStatusConditions(mon, partyIndex, STATUS1_PARALYSIS, battler) == 0)
+              if ((itemEffect[i] & (0x2)) && HealStatusConditions(mon, partyIndex, ((1 << 6)), battler) == 0)
                   retVal = FALSE;
-              if ((itemEffect[i] & ITEM3_CONFUSION)   
-               && gMain.inBattle && battler != MAX_BATTLERS_COUNT && (gBattleMons[battler].status2 & STATUS2_CONFUSION))
+              if ((itemEffect[i] & (0x1))   
+               && gMain.inBattle && battler != MAX_BATTLERS_COUNT && (gBattleMons[battler].status2 & ((1 << 0 | 1 << 1 | 1 << 2))))
               {
-                  gBattleMons[battler].status2 &= ~STATUS2_CONFUSION;
+                  gBattleMons[battler].status2 &= ~((1 << 0 | 1 << 1 | 1 << 2));
                   retVal = FALSE;
               }
               break;
@@ -2668,9 +2664,9 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
               effectFlags = itemEffect[i];
 
                
-              if (effectFlags & ITEM4_PP_UP)
+              if (effectFlags & (0x20))
               {
-                  effectFlags &= ~ITEM4_PP_UP;
+                  effectFlags &= ~(0x20);
                   dataUnsigned = (GetMonData(mon, MON_DATA_PP_BONUSES, NULL) & gPPUpGetMask[moveIndex]) >> (moveIndex * 2);
                   temp1 = CalculatePPWithBonus(GetMonData(mon, MON_DATA_MOVE1 + moveIndex, NULL), GetMonData(mon, MON_DATA_PP_BONUSES, NULL), moveIndex);
                   if (dataUnsigned <= 2 && temp1 > 4)
@@ -2703,19 +2699,19 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
                           if (evChange > 0)  
                           {
                                
-                              if (evCount >= MAX_TOTAL_EVS)
+                              if (evCount >= (510))
                                   return TRUE;
-                              if (dataSigned >= EV_ITEM_RAISE_LIMIT)
+                              if (dataSigned >= (100))
                                   break;
 
                                
-                              if (dataSigned + evChange > EV_ITEM_RAISE_LIMIT)
-                                  temp2 = EV_ITEM_RAISE_LIMIT - (dataSigned + evChange) + evChange;
+                              if (dataSigned + evChange > (100))
+                                  temp2 = (100) - (dataSigned + evChange) + evChange;
                               else
                                   temp2 = evChange;
 
-                              if (evCount + temp2 > MAX_TOTAL_EVS)
-                                  temp2 += MAX_TOTAL_EVS - (evCount + temp2);
+                              if (evCount + temp2 > (510))
+                                  temp2 += (510) - (evCount + temp2);
 
                               dataSigned += temp2;
                           }
@@ -2742,7 +2738,7 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
 
                       case 2:  
                            
-                          if (effectFlags & (ITEM4_REVIVE >> 2))
+                          if (effectFlags & ((0x40) >> 2))
                           {
                               if (GetMonData(mon, MON_DATA_HP, NULL) != 0)
                               {
@@ -2755,13 +2751,13 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
                                   {
                                       gAbsentBattlerFlags &= ~gBitTable[battler];
                                       CopyPlayerPartyMonToBattleData(battler, GetPartyIdFromBattlePartyId(gBattlerPartyIndexes[battler]));
-                                      if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER && gBattleResults.numRevivesUsed < 255)
+                                      if (GetBattlerSide(gActiveBattler) == (0) && gBattleResults.numRevivesUsed < 255)
                                           gBattleResults.numRevivesUsed++;
                                   }
                                   else
                                   {
                                       gAbsentBattlerFlags &= ~gBitTable[gActiveBattler ^ 2];
-                                      if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER && gBattleResults.numRevivesUsed < 255)
+                                      if (GetBattlerSide(gActiveBattler) == (0) && gBattleResults.numRevivesUsed < 255)
                                           gBattleResults.numRevivesUsed++;
                                   }
                               }
@@ -2807,7 +2803,7 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
                                   if (gMain.inBattle && battler != MAX_BATTLERS_COUNT)
                                   {
                                       gBattleMons[battler].hp = dataUnsigned;
-                                      if (!(effectFlags & (ITEM4_REVIVE >> 2)) && GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)
+                                      if (!(effectFlags & ((0x40) >> 2)) && GetBattlerSide(gActiveBattler) == (0))
                                       {
                                           if (gBattleResults.numHealingItemsUsed < 255)
                                               gBattleResults.numHealingItemsUsed++;
@@ -2826,14 +2822,14 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
                               }
                               retVal = FALSE;
                           }
-                          effectFlags &= ~(ITEM4_REVIVE >> 2);
+                          effectFlags &= ~((0x40) >> 2);
                           break;
 
                       case 3:  
-                          if (!(effectFlags & (ITEM4_HEAL_PP_ONE >> 3)))
+                          if (!(effectFlags & ((0x10) >> 3)))
                           {
                                
-                              for (temp2 = 0; (temp2) < (MAX_MON_MOVES); temp2++)
+                              for (temp2 = 0; (temp2) < ((4)); temp2++)
                               {
                                   let move: any = null;
                                   dataUnsigned = GetMonData(mon, MON_DATA_PP1 + temp2, NULL);
@@ -2889,9 +2885,9 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
 
                       case 7:  
                           {
-                              let targetSpecies: any = GetEvolutionTargetSpecies(mon, EVO_MODE_ITEM_USE, item);
+                              let targetSpecies: any = GetEvolutionTargetSpecies(mon, (2), item);
 
-                              if (targetSpecies != SPECIES_NONE)
+                              if (targetSpecies != (0))
                               {
                                   BeginEvolutionScene(mon, targetSpecies, FALSE, partyIndex);
                                   return FALSE;
@@ -2928,19 +2924,19 @@ export function PokemonUseItemEffects(mon: any, item: any, partyIndex: any, move
                           if (evChange > 0)  
                           {
                                
-                              if (evCount >= MAX_TOTAL_EVS)
+                              if (evCount >= (510))
                                   return TRUE;
-                              if (dataSigned >= EV_ITEM_RAISE_LIMIT)
+                              if (dataSigned >= (100))
                                   break;
 
                                
-                              if (dataSigned + evChange > EV_ITEM_RAISE_LIMIT)
-                                  temp2 = EV_ITEM_RAISE_LIMIT - (dataSigned + evChange) + evChange;
+                              if (dataSigned + evChange > (100))
+                                  temp2 = (100) - (dataSigned + evChange) + evChange;
                               else
                                   temp2 = evChange;
 
-                              if (evCount + temp2 > MAX_TOTAL_EVS)
-                                  temp2 += MAX_TOTAL_EVS - (evCount + temp2);
+                              if (evCount + temp2 > (510))
+                                  temp2 += (510) - (evCount + temp2);
 
                               dataSigned += temp2;
                           }
@@ -3043,21 +3039,21 @@ export function GetItemEffectParamOffset(itemId: any, effectByte: any, effectBit
       let j: any = null;
       let effectFlags: any = null;
 
-      offset = ITEM_EFFECT_ARG_START;
+      offset = (6);
 
-      temp = gItemEffectTable[itemId - ITEM_POTION];
+      temp = gItemEffectTable[itemId - (13)];
 
-      if (!temp && itemId != ITEM_ENIGMA_BERRY)
+      if (!temp && itemId != (175))
           return 0;
 
-      if (itemId == ITEM_ENIGMA_BERRY)
+      if (itemId == (175))
       {
           temp = gEnigmaBerries[gActiveBattler].itemEffect;
       }
 
       itemEffect = temp;
 
-      for (i = 0; i < ITEM_EFFECT_ARG_START; i++)
+      for (i = 0; i < (6); i++)
       {
           switch (i)
           {
@@ -3070,8 +3066,8 @@ export function GetItemEffectParamOffset(itemId: any, effectByte: any, effectBit
               break;
           case 4:
               effectFlags = itemEffect[4];
-              if (effectFlags & ITEM4_PP_UP)
-                  effectFlags &= ~(ITEM4_PP_UP);
+              if (effectFlags & (0x20))
+                  effectFlags &= ~((0x20));
               j = 0;
               while (effectFlags)
               {
@@ -3080,8 +3076,8 @@ export function GetItemEffectParamOffset(itemId: any, effectByte: any, effectBit
                       switch (j)
                       {
                       case 2:  
-                          if (effectFlags & (ITEM4_REVIVE >> 2))
-                              effectFlags &= ~(ITEM4_REVIVE >> 2);
+                          if (effectFlags & ((0x40) >> 2))
+                              effectFlags &= ~((0x40) >> 2);
                            
                       case 0:  
                           if (i == effectByte && (effectFlags & effectBit))
@@ -3158,12 +3154,12 @@ export function BufferStatRoseMessage(statIdx: any): any {
 
 /** u8 GetNature(struct Pokemon *mon) */
 export function GetNature(mon: any): any {
-  return GetMonData(mon, MON_DATA_PERSONALITY, 0) % NUM_NATURES;
+  return GetMonData(mon, MON_DATA_PERSONALITY, 0) % (25);
 }
 
 /** u8 GetNatureFromPersonality(u32 personality) */
 export function GetNatureFromPersonality(personality: any): any {
-  return personality % NUM_NATURES;
+  return personality % (25);
 }
 
 /** u16 GetEvolutionTargetSpecies(struct Pokemon *mon, u8 mode, u16 evolutionItem) */
@@ -3179,89 +3175,89 @@ export function GetEvolutionTargetSpecies(mon: any, mode: any, evolutionItem: an
       let upperPersonality: any = personality >> 16;
       let holdEffect: any = null;
 
-      if (heldItem == ITEM_ENIGMA_BERRY)
+      if (heldItem == (175))
           holdEffect = gSaveBlock1Ptr.enigmaBerry.holdEffect;
       else
           holdEffect = GetItemHoldEffect(heldItem);
 
        
-      if (holdEffect == HOLD_EFFECT_PREVENT_EVOLVE && mode != EVO_MODE_ITEM_CHECK)
-          return SPECIES_NONE;
+      if (holdEffect == (38) && mode != (3))
+          return (0);
 
       switch (mode)
       {
-      case EVO_MODE_NORMAL:
+      case (0):
           level = GetMonData(mon, MON_DATA_LEVEL, 0);
           friendship = GetMonData(mon, MON_DATA_FRIENDSHIP, 0);
 
-          for (i = 0; i < EVOS_PER_MON; i++)
+          for (i = 0; i < (5); i++)
           {
               switch (gEvolutionTable[species][i].method)
               {
-              case EVO_FRIENDSHIP:
+              case (1):
                   if (friendship >= (220))
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_FRIENDSHIP_DAY:
+              case (2):
                   RtcCalcLocalTime();
-                  if (gLocalTime.hours >= (12) && gLocalTime.hours < (HOURS_PER_DAY) && friendship >= (220))
+                  if (gLocalTime.hours >= (12) && gLocalTime.hours < ((24)) && friendship >= (220))
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_FRIENDSHIP_NIGHT:
+              case (3):
                   RtcCalcLocalTime();
                   if (gLocalTime.hours >= (0) && gLocalTime.hours < (12) && friendship >= (220))
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_LEVEL:
+              case (4):
                   if (gEvolutionTable[species][i].param <= level)
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_LEVEL_ATK_GT_DEF:
+              case (8):
                   if (gEvolutionTable[species][i].param <= level)
                       if (GetMonData(mon, MON_DATA_ATK, 0) > GetMonData(mon, MON_DATA_DEF, 0))
                           targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_LEVEL_ATK_EQ_DEF:
+              case (9):
                   if (gEvolutionTable[species][i].param <= level)
                       if (GetMonData(mon, MON_DATA_ATK, 0) == GetMonData(mon, MON_DATA_DEF, 0))
                           targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_LEVEL_ATK_LT_DEF:
+              case (10):
                   if (gEvolutionTable[species][i].param <= level)
                       if (GetMonData(mon, MON_DATA_ATK, 0) < GetMonData(mon, MON_DATA_DEF, 0))
                           targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_LEVEL_SILCOON:
+              case (11):
                   if (gEvolutionTable[species][i].param <= level && (upperPersonality % 10) <= 4)
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_LEVEL_CASCOON:
+              case (12):
                   if (gEvolutionTable[species][i].param <= level && (upperPersonality % 10) > 4)
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_LEVEL_NINJASK:
+              case (13):
                   if (gEvolutionTable[species][i].param <= level)
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_BEAUTY:
+              case (15):
                   if (gEvolutionTable[species][i].param <= beauty)
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
               }
           }
           break;
-      case EVO_MODE_TRADE:
-          for (i = 0; i < EVOS_PER_MON; i++)
+      case (1):
+          for (i = 0; i < (5); i++)
           {
               switch (gEvolutionTable[species][i].method)
               {
-              case EVO_TRADE:
+              case (5):
                   targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   break;
-              case EVO_TRADE_ITEM:
+              case (6):
                   if (gEvolutionTable[species][i].param == heldItem)
                   {
-                      heldItem = ITEM_NONE;
+                      heldItem = (0);
                       SetMonData(mon, MON_DATA_HELD_ITEM,heldItem);
                       targetSpecies = gEvolutionTable[species][i].targetSpecies;
                   }
@@ -3269,11 +3265,11 @@ export function GetEvolutionTargetSpecies(mon: any, mode: any, evolutionItem: an
               }
           }
           break;
-      case EVO_MODE_ITEM_USE:
-      case EVO_MODE_ITEM_CHECK:
-          for (i = 0; i < EVOS_PER_MON; i++)
+      case (2):
+      case (3):
+          for (i = 0; i < (5); i++)
           {
-              if (gEvolutionTable[species][i].method == EVO_ITEM
+              if (gEvolutionTable[species][i].method == (7)
                && gEvolutionTable[species][i].param == evolutionItem)
               {
                   targetSpecies = gEvolutionTable[species][i].targetSpecies;
@@ -3295,10 +3291,10 @@ export function HoennPokedexNumToSpecies(hoennNum: any): any {
 
       species = 0;
 
-      while (species < (NUM_SPECIES - 1) && sSpeciesToHoennPokedexNum[species] != hoennNum)
+      while (species < (((412)) - 1) && sSpeciesToHoennPokedexNum[species] != hoennNum)
           species++;
 
-      if (species == NUM_SPECIES - 1)
+      if (species == ((412)) - 1)
           return 0;
 
       return species + 1;
@@ -3313,10 +3309,10 @@ export function NationalPokedexNumToSpecies(nationalNum: any): any {
 
       species = 0;
 
-      while (species < (NUM_SPECIES - 1) && sSpeciesToNationalPokedexNum[species] != nationalNum)
+      while (species < (((412)) - 1) && sSpeciesToNationalPokedexNum[species] != nationalNum)
           species++;
 
-      if (species == NUM_SPECIES - 1)
+      if (species == ((412)) - 1)
           return 0;
 
       return species + 1;
@@ -3331,10 +3327,10 @@ export function NationalToHoennOrder(nationalNum: any): any {
 
       hoennNum = 0;
 
-      while (hoennNum < (NUM_SPECIES - 1) && sHoennToNationalOrder[hoennNum] != nationalNum)
+      while (hoennNum < (((412)) - 1) && sHoennToNationalOrder[hoennNum] != nationalNum)
           hoennNum++;
 
-      if (hoennNum == NUM_SPECIES - 1)
+      if (hoennNum == ((412)) - 1)
           return 0;
 
       return hoennNum + 1;
@@ -3366,18 +3362,18 @@ export function HoennToNationalOrder(hoennNum: any): any {
 
 /** u16 SpeciesToCryId(u16 species) */
 export function SpeciesToCryId(species: any): any {
-  if (species <= SPECIES_CELEBI - 1)
+  if (species <= (251) - 1)
           return species;
 
-      if (species < SPECIES_TREECKO - 1)
-          return SPECIES_UNOWN - 1;
+      if (species < (277) - 1)
+          return (201) - 1;
 
-      return gSpeciesIdToCryId[species - (SPECIES_TREECKO - 1)];
+      return gSpeciesIdToCryId[species - ((277) - 1)];
 }
 
 /** void DrawSpindaSpots(u16 species, u32 personality, u8 *dest, bool8 isFrontPic) */
 export function DrawSpindaSpots(species: any, personality: any, dest: any, isFrontPic: any): any {
-  if (species == SPECIES_SPINDA && isFrontPic)
+  if (species == (308) && isFrontPic)
           DRAW_SPINDA_SPOTS(personality, dest);
 }
 
@@ -3386,7 +3382,7 @@ export function EvolutionRenameMon(mon: any, oldSpecies: any, newSpecies: any): 
   let language: any = null;
       GetMonData(mon, MON_DATA_NICKNAME, gStringVar1);
       language = GetMonData(mon, MON_DATA_LANGUAGE,language);
-      if (language == GAME_LANGUAGE && !StringCompare(gSpeciesNames[oldSpecies], gStringVar1))
+      if (language == (((3))) && !StringCompare(gSpeciesNames[oldSpecies], gStringVar1))
           SetMonData(mon, MON_DATA_NICKNAME, gSpeciesNames[newSpecies]);
 }
 
@@ -3427,7 +3423,7 @@ export function GetLinkTrainerFlankId(linkPlayerId: any): any {
 /** s32 GetBattlerMultiplayerId(u16 id) */
 export function GetBattlerMultiplayerId(id: any): any {
   let multiplayerId: any = null;
-      for (multiplayerId = 0; multiplayerId < MAX_LINK_PLAYERS; multiplayerId++)
+      for (multiplayerId = 0; multiplayerId < (4); multiplayerId++)
           if (gLinkPlayers[multiplayerId].id == id)
               break;
       return multiplayerId;
@@ -3435,7 +3431,7 @@ export function GetBattlerMultiplayerId(id: any): any {
 
 /** u8 GetTrainerEncounterMusicId(u16 trainerOpponentId) */
 export function GetTrainerEncounterMusicId(trainerOpponentId: any): any {
-  if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+  if (CurrentBattlePyramidLocation() != (0))
           return GetTrainerEncounterMusicIdInBattlePyramid(trainerOpponentId);
       else if (InTrainerHillChallenge())
           return GetTrainerEncounterMusicIdInTrainerHill(trainerOpponentId);
@@ -3448,7 +3444,7 @@ export function ModifyStatByNature(nature: any, stat: any, statIndex: any): any 
       let retVal: any = null;
 
        
-      if (statIndex <= STAT_HP || statIndex > NUM_NATURE_STATS)
+      if (statIndex <= (0) || statIndex > (((6) - 1)))
           return stat;
 
       switch (gNatureStatTable[nature][statIndex - 1])
@@ -3481,7 +3477,7 @@ export function AdjustFriendship(mon: any, event: any): any {
       species = GetMonData(mon, MON_DATA_SPECIES_OR_EGG, 0);
       heldItem = GetMonData(mon, MON_DATA_HELD_ITEM, 0);
 
-      if (heldItem == ITEM_ENIGMA_BERRY)
+      if (heldItem == (175))
       {
           if (gMain.inBattle)
               holdEffect = gEnigmaBerries[0].holdEffect;
@@ -3493,7 +3489,7 @@ export function AdjustFriendship(mon: any, event: any): any {
           holdEffect = GetItemHoldEffect(heldItem);
       }
 
-      if (species && species != SPECIES_EGG)
+      if (species && species != (412))
       {
           let friendshipLevel: any = 0;
           let friendship: any = GetMonData(mon, MON_DATA_FRIENDSHIP, 0);
@@ -3503,32 +3499,32 @@ export function AdjustFriendship(mon: any, event: any): any {
           if (friendship > 199)
               friendshipLevel++;
 
-          if (event == FRIENDSHIP_EVENT_WALKING)
+          if (event == (5))
           {
                
               if (Random() & 1)
                   return;
           }
-          if (event == FRIENDSHIP_EVENT_LEAGUE_BATTLE)
+          if (event == (3))
           {
                
-              if (!(gBattleTypeFlags & BATTLE_TYPE_TRAINER))
+              if (!(gBattleTypeFlags & ((1 << 3))))
                   return;
-              if (!(gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_LEADER
-                  || gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_ELITE_FOUR
-                  || gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_CHAMPION))
+              if (!(gTrainers[gTrainerBattleOpponent_A].trainerClass == (0x20)
+                  || gTrainers[gTrainerBattleOpponent_A].trainerClass == (0x1f)
+                  || gTrainers[gTrainerBattleOpponent_A].trainerClass == (0x26)))
                   return;
           }
 
           mod = sFriendshipEventModifiers[event][friendshipLevel];
-          if (mod > 0 && holdEffect == HOLD_EFFECT_FRIENDSHIP_UP)
+          if (mod > 0 && holdEffect == (27))
                
               mod = (150 * mod) / 100;
 
           friendship += mod;
           if (mod > 0)
           {
-              if (GetMonData(mon, MON_DATA_POKEBALL, NULL) == ITEM_LUXURY_BALL)
+              if (GetMonData(mon, MON_DATA_POKEBALL, NULL) == (11))
                   friendship++;
               if (GetMonData(mon, MON_DATA_MET_LOCATION, NULL) == GetCurrentRegionMapSectionId())
                   friendship++;
@@ -3536,8 +3532,8 @@ export function AdjustFriendship(mon: any, event: any): any {
 
           if (friendship < 0)
               friendship = 0;
-          if (friendship > MAX_FRIENDSHIP)
-              friendship = MAX_FRIENDSHIP;
+          if (friendship > (255))
+              friendship = (255);
 
           SetMonData(mon, MON_DATA_FRIENDSHIP,friendship);
       }
@@ -3552,15 +3548,15 @@ export function MonGainEVs(mon: any, defeatedSpecies: any): any {
       let holdEffect: any = null;
       let i, multiplier;
 
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
           evs[i] = GetMonData(mon, MON_DATA_HP_EV + i, 0);
           totalEVs += evs[i];
       }
 
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
-          if (totalEVs >= MAX_TOTAL_EVS)
+          if (totalEVs >= (510))
               break;
 
           if (CheckPartyHasHadPokerus(mon, 0))
@@ -3570,28 +3566,28 @@ export function MonGainEVs(mon: any, defeatedSpecies: any): any {
 
           switch (i)
           {
-          case STAT_HP:
+          case (0):
               evIncrease = gSpeciesInfo[defeatedSpecies].evYield_HP * multiplier;
               break;
-          case STAT_ATK:
+          case (1):
               evIncrease = gSpeciesInfo[defeatedSpecies].evYield_Attack * multiplier;
               break;
-          case STAT_DEF:
+          case (2):
               evIncrease = gSpeciesInfo[defeatedSpecies].evYield_Defense * multiplier;
               break;
-          case STAT_SPEED:
+          case (3):
               evIncrease = gSpeciesInfo[defeatedSpecies].evYield_Speed * multiplier;
               break;
-          case STAT_SPATK:
+          case (4):
               evIncrease = gSpeciesInfo[defeatedSpecies].evYield_SpAttack * multiplier;
               break;
-          case STAT_SPDEF:
+          case (5):
               evIncrease = gSpeciesInfo[defeatedSpecies].evYield_SpDefense * multiplier;
               break;
           }
 
           heldItem = GetMonData(mon, MON_DATA_HELD_ITEM, 0);
-          if (heldItem == ITEM_ENIGMA_BERRY)
+          if (heldItem == (175))
           {
               if (gMain.inBattle)
                   holdEffect = gEnigmaBerries[0].holdEffect;
@@ -3603,15 +3599,15 @@ export function MonGainEVs(mon: any, defeatedSpecies: any): any {
               holdEffect = GetItemHoldEffect(heldItem);
           }
 
-          if (holdEffect == HOLD_EFFECT_MACHO_BRACE)
+          if (holdEffect == (24))
               evIncrease *= 2;
 
-          if (totalEVs + evIncrease > MAX_TOTAL_EVS)
-              evIncrease = (evIncrease + MAX_TOTAL_EVS) - (totalEVs + evIncrease);
+          if (totalEVs + evIncrease > (510))
+              evIncrease = (evIncrease + (510)) - (totalEVs + evIncrease);
 
-          if (evs[i] + evIncrease > MAX_PER_STAT_EVS)
+          if (evs[i] + evIncrease > (255))
           {
-              let val1: any = evIncrease + MAX_PER_STAT_EVS;
+              let val1: any = evIncrease + (255);
               let val2: any = evs[i] + evIncrease;
               evIncrease = val1 - val2;
           }
@@ -3627,7 +3623,7 @@ export function GetMonEVCount(mon: any): any {
   let i: any = null;
       let count: any = 0;
 
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
           count += GetMonData(mon, MON_DATA_HP_EV + i, 0);
 
       return count;
@@ -3642,7 +3638,7 @@ export function RandomlyGivePartyPokerus(party: any): any {
 
           do
           {
-              rnd = Random() % PARTY_SIZE;
+              rnd = Random() % (6);
               mon =party[rnd];
           }
           while (!GetMonData(mon, MON_DATA_SPECIES, 0) || GetMonData(mon, MON_DATA_IS_EGG, 0));
@@ -3728,7 +3724,7 @@ export function CheckPartyHasHadPokerus(party: any, selection: any): any {
 /** void UpdatePartyPokerusTime(u16 days) */
 export function UpdatePartyPokerusTime(days: any): any {
   let i: any = null;
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES, 0))
           {
@@ -3754,7 +3750,7 @@ export function PartySpreadPokerus(party: any): any {
   if ((Random() % 3) == 0)
       {
           let i: any = null;
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
               if (GetMonData(party[i], MON_DATA_SPECIES, 0))
               {
@@ -3767,7 +3763,7 @@ export function PartySpreadPokerus(party: any): any {
                            
                           if (i != 0 && !(GetMonData(party[i - 1], MON_DATA_POKERUS, 0) & 0xF0))
                               SetMonData(party[i - 1], MON_DATA_POKERUS,curPokerus);
-                          if (i != (PARTY_SIZE - 1) && !(GetMonData(party[i + 1], MON_DATA_POKERUS, 0) & 0xF0))
+                          if (i != ((6) - 1) && !(GetMonData(party[i + 1], MON_DATA_POKERUS, 0) & 0xF0))
                           {
                               SetMonData(party[i + 1], MON_DATA_POKERUS,curPokerus);
                               i++;
@@ -3784,12 +3780,12 @@ export function TryIncrementMonLevel(mon: any): any {
   let species: any = GetMonData(mon, MON_DATA_SPECIES, 0);
       let nextLevel: any = GetMonData(mon, MON_DATA_LEVEL, 0) + 1;
       let expPoints: any = GetMonData(mon, MON_DATA_EXP, 0);
-      if (expPoints > gExperienceTables[gSpeciesInfo[species].growthRate][MAX_LEVEL])
+      if (expPoints > gExperienceTables[gSpeciesInfo[species].growthRate][(100)])
       {
-          expPoints = gExperienceTables[gSpeciesInfo[species].growthRate][MAX_LEVEL];
+          expPoints = gExperienceTables[gSpeciesInfo[species].growthRate][(100)];
           SetMonData(mon, MON_DATA_EXP,expPoints);
       }
-      if (nextLevel > MAX_LEVEL || expPoints < gExperienceTables[gSpeciesInfo[species].growthRate][nextLevel])
+      if (nextLevel > (100) || expPoints < gExperienceTables[gSpeciesInfo[species].growthRate][nextLevel])
       {
           return FALSE;
       }
@@ -3803,7 +3799,7 @@ export function TryIncrementMonLevel(mon: any): any {
 /** u32 CanMonLearnTMHM(struct Pokemon *mon, u8 tm) */
 export function CanMonLearnTMHM(mon: any, tm: any): any {
   let species: any = GetMonData(mon, MON_DATA_SPECIES_OR_EGG, 0);
-      if (species == SPECIES_EGG)
+      if (species == (412))
       {
           return 0;
       }
@@ -3822,7 +3818,7 @@ export function CanMonLearnTMHM(mon: any, tm: any): any {
 
 /** u32 CanSpeciesLearnTMHM(u16 species, u8 tm) */
 export function CanSpeciesLearnTMHM(species: any, tm: any): any {
-  if (species == SPECIES_EGG)
+  if (species == (412))
       {
           return 0;
       }
@@ -3847,30 +3843,30 @@ export function GetMoveRelearnerMoves(mon: any, moves: any): any {
       let level: any = GetMonData(mon, MON_DATA_LEVEL, 0);
       let i, j, k;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           learnedMoves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, 0);
 
-      for (i = 0; i < MAX_LEVEL_UP_MOVES; i++)
+      for (i = 0; i < (20); i++)
       {
           let moveLevel: any = null;
 
-          if (gLevelUpLearnsets[species][i] == LEVEL_UP_END)
+          if (gLevelUpLearnsets[species][i] == (0xFFFF))
               break;
 
-          moveLevel = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_LV;
+          moveLevel = gLevelUpLearnsets[species][i] & (0xFE00);
 
           if (moveLevel <= (level << 9))
           {
-              for (j = 0; j < MAX_MON_MOVES && learnedMoves[j] != (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID); j++)
+              for (j = 0; j < (4) && learnedMoves[j] != (gLevelUpLearnsets[species][i] & (0x01FF)); j++)
                   ;
 
-              if (j == MAX_MON_MOVES)
+              if (j == (4))
               {
-                  for (k = 0; k < numMoves && moves[k] != (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID); k++)
+                  for (k = 0; k < numMoves && moves[k] != (gLevelUpLearnsets[species][i] & (0x01FF)); k++)
                       ;
 
                   if (k == numMoves)
-                      moves[numMoves++] = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID;
+                      moves[numMoves++] = gLevelUpLearnsets[species][i] & (0x01FF);
               }
           }
       }
@@ -3883,8 +3879,8 @@ export function GetLevelUpMovesBySpecies(species: any, moves: any): any {
   let numMoves: any = 0;
       let i: any = null;
 
-      for (i = 0; i < MAX_LEVEL_UP_MOVES && gLevelUpLearnsets[species][i] != LEVEL_UP_END; i++)
-           moves[numMoves++] = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID;
+      for (i = 0; i < (20) && gLevelUpLearnsets[species][i] != (0xFFFF); i++)
+           moves[numMoves++] = gLevelUpLearnsets[species][i] & (0x01FF);
 
        return numMoves;
 }
@@ -3898,33 +3894,33 @@ export function GetNumberOfRelearnableMoves(mon: any): any {
       let level: any = GetMonData(mon, MON_DATA_LEVEL, 0);
       let i, j, k;
 
-      if (species == SPECIES_EGG)
+      if (species == (412))
           return 0;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           learnedMoves[i] = GetMonData(mon, MON_DATA_MOVE1 + i, 0);
 
-      for (i = 0; i < MAX_LEVEL_UP_MOVES; i++)
+      for (i = 0; i < (20); i++)
       {
           let moveLevel: any = null;
 
-          if (gLevelUpLearnsets[species][i] == LEVEL_UP_END)
+          if (gLevelUpLearnsets[species][i] == (0xFFFF))
               break;
 
-          moveLevel = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_LV;
+          moveLevel = gLevelUpLearnsets[species][i] & (0xFE00);
 
           if (moveLevel <= (level << 9))
           {
-              for (j = 0; j < MAX_MON_MOVES && learnedMoves[j] != (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID); j++)
+              for (j = 0; j < (4) && learnedMoves[j] != (gLevelUpLearnsets[species][i] & (0x01FF)); j++)
                   ;
 
-              if (j == MAX_MON_MOVES)
+              if (j == (4))
               {
-                  for (k = 0; k < numMoves && moves[k] != (gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID); k++)
+                  for (k = 0; k < numMoves && moves[k] != (gLevelUpLearnsets[species][i] & (0x01FF)); k++)
                       ;
 
                   if (k == numMoves)
-                      moves[numMoves++] = gLevelUpLearnsets[species][i] & LEVEL_UP_MOVE_ID;
+                      moves[numMoves++] = gLevelUpLearnsets[species][i] & (0x01FF);
               }
           }
       }
@@ -3941,7 +3937,7 @@ export function SpeciesToPokedexNum(species: any): any {
       else
       {
           species = SpeciesToHoennPokedexNum(species);
-          if (species <= HOENN_DEX_COUNT)
+          if (species <= (HOENN_DEX_DEOXYS))
               return species;
           return 0xFFFF;
       }
@@ -3949,7 +3945,7 @@ export function SpeciesToPokedexNum(species: any): any {
 
 /** bool32 IsSpeciesInHoennDex(u16 species) */
 export function IsSpeciesInHoennDex(species: any): any {
-  if (SpeciesToHoennPokedexNum(species) > HOENN_DEX_COUNT)
+  if (SpeciesToHoennPokedexNum(species) > (HOENN_DEX_DEOXYS))
           return FALSE;
       else
           return TRUE;
@@ -3964,66 +3960,66 @@ export function ClearBattleMonForms(): any {
 
 /** u16 GetBattleBGM(void) */
 export function GetBattleBGM(): any {
-  if (gBattleTypeFlags & BATTLE_TYPE_KYOGRE_GROUDON)
+  if (gBattleTypeFlags & ((1 << 12)))
       {
-          return MUS_VS_KYOGRE_GROUDON;
+          return (480);
       }
-      else if (gBattleTypeFlags & BATTLE_TYPE_REGI)
+      else if (gBattleTypeFlags & ((1 << 14)))
       {
-          return MUS_VS_REGI;
+          return (479);
       }
-      else if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))
+      else if (gBattleTypeFlags & (((1 << 1)) | ((1 << 25))))
       {
-          return MUS_VS_TRAINER;
+          return (476);
       }
-      else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+      else if (gBattleTypeFlags & ((1 << 3)))
       {
           let trainerClass: any = null;
 
           if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
               trainerClass = GetFrontierOpponentClass(gTrainerBattleOpponent_A);
-          else if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL)
-              trainerClass = TRAINER_CLASS_EXPERT;
+          else if (gBattleTypeFlags & ((1 << 26)))
+              trainerClass = (0xa);
           else
               trainerClass = gTrainers[gTrainerBattleOpponent_A].trainerClass;
 
           switch (trainerClass)
           {
-          case TRAINER_CLASS_AQUA_LEADER:
-          case TRAINER_CLASS_MAGMA_LEADER:
-              return MUS_VS_AQUA_MAGMA_LEADER;
-          case TRAINER_CLASS_TEAM_AQUA:
-          case TRAINER_CLASS_TEAM_MAGMA:
-          case TRAINER_CLASS_AQUA_ADMIN:
-          case TRAINER_CLASS_MAGMA_ADMIN:
-              return MUS_VS_AQUA_MAGMA;
-          case TRAINER_CLASS_LEADER:
-              return MUS_VS_GYM_LEADER;
-          case TRAINER_CLASS_CHAMPION:
-              return MUS_VS_CHAMPION;
-          case TRAINER_CLASS_RIVAL:
+          case (0xd):
+          case (0x35):
+              return (483);
+          case (0x3):
+          case (0x9):
+          case (0xb):
+          case (0x31):
+              return (475);
+          case (0x20):
+              return (477);
+          case (0x26):
+              return (478);
+          case (0x32):
               if (gBattleTypeFlags & BATTLE_TYPE_FRONTIER)
-                  return MUS_VS_RIVAL;
+                  return (481);
               if (!StringCompare(gTrainers[gTrainerBattleOpponent_A].trainerName, gText_BattleWallyName))
-                  return MUS_VS_TRAINER;
-              return MUS_VS_RIVAL;
-          case TRAINER_CLASS_ELITE_FOUR:
-              return MUS_VS_ELITE_FOUR;
-          case TRAINER_CLASS_SALON_MAIDEN:
-          case TRAINER_CLASS_DOME_ACE:
-          case TRAINER_CLASS_PALACE_MAVEN:
-          case TRAINER_CLASS_ARENA_TYCOON:
-          case TRAINER_CLASS_FACTORY_HEAD:
-          case TRAINER_CLASS_PIKE_QUEEN:
-          case TRAINER_CLASS_PYRAMID_KING:
-              return MUS_VS_FRONTIER_BRAIN;
+                  return (476);
+              return (481);
+          case (0x1f):
+              return (482);
+          case (0x3a):
+          case (0x3b):
+          case (0x3c):
+          case (0x3d):
+          case (0x3e):
+          case (0x3f):
+          case (0x40):
+              return (471);
           default:
-              return MUS_VS_TRAINER;
+              return (476);
           }
       }
       else
       {
-          return MUS_VS_WILD;
+          return (474);
       }
 }
 
@@ -4083,13 +4079,13 @@ export function IsMonSpriteNotFlipped(species: any): any {
 /** s8 GetMonFlavorRelation(struct Pokemon *mon, u8 flavor) */
 export function GetMonFlavorRelation(mon: any, flavor: any): any {
   let nature: any = GetNature(mon);
-      return gPokeblockFlavorCompatibilityTable[nature * FLAVOR_COUNT + flavor];
+      return gPokeblockFlavorCompatibilityTable[nature * (5) + flavor];
 }
 
 /** s8 GetFlavorRelationByPersonality(u32 personality, u8 flavor) */
 export function GetFlavorRelationByPersonality(personality: any, flavor: any): any {
   let nature: any = GetNatureFromPersonality(personality);
-      return gPokeblockFlavorCompatibilityTable[nature * FLAVOR_COUNT + flavor];
+      return gPokeblockFlavorCompatibilityTable[nature * (5) + flavor];
 }
 
 /** bool8 IsTradedMon(struct Pokemon *mon) */
@@ -4110,7 +4106,7 @@ export function IsOtherTrainer(otId: any, otName: any): any {
         | (gSaveBlock2Ptr.playerTrainerId[3] << 24)))
       {
           let i: any = null;
-          for (i = 0; otName[i] != EOS; i++)
+          for (i = 0; otName[i] != (0xFF); i++)
               if (otName[i] != gSaveBlock2Ptr.playerName[i])
                   return TRUE;
           return FALSE;
@@ -4128,7 +4124,7 @@ export function MonRestorePP(mon: any): any {
 export function BoxMonRestorePP(boxMon: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           if (GetBoxMonData(boxMon, MON_DATA_MOVE1 + i, 0))
           {
@@ -4144,12 +4140,12 @@ export function BoxMonRestorePP(boxMon: any): any {
 export function SetMonPreventsSwitchingString(): any {
   gLastUsedAbility = gBattleStruct.abilityPreventingSwitchout;
 
-      gBattleTextBuff1[0] = B_BUFF_PLACEHOLDER_BEGIN;
-      gBattleTextBuff1[1] = B_BUFF_MON_NICK_WITH_PREFIX;
+      gBattleTextBuff1[0] = (0xFD);
+      gBattleTextBuff1[1] = (4);
       gBattleTextBuff1[2] = gBattleStruct.battlerPreventingSwitchout;
-      gBattleTextBuff1[4] = B_BUFF_EOS;
+      gBattleTextBuff1[4] = (0xFF);
 
-      if (GetBattlerSide(gBattleStruct.battlerPreventingSwitchout) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleStruct.battlerPreventingSwitchout) == (0))
           gBattleTextBuff1[3] = GetPartyIdFromBattlePartyId(gBattlerPartyIndexes[gBattleStruct.battlerPreventingSwitchout]);
       else
           gBattleTextBuff1[3] = gBattlerPartyIndexes[gBattleStruct.battlerPreventingSwitchout];
@@ -4170,14 +4166,14 @@ export function GetWildMonTableIdInAlteringCave(species: any): any {
 
 /** void SetWildMonHeldItem(void) */
 export function SetWildMonHeldItem(): any {
-  if (!(gBattleTypeFlags & (BATTLE_TYPE_LEGENDARY | BATTLE_TYPE_TRAINER | BATTLE_TYPE_PYRAMID | BATTLE_TYPE_PIKE)))
+  if (!(gBattleTypeFlags & (((1 << 13)) | ((1 << 3)) | ((1 << 21)) | ((1 << 20)))))
       {
           let rnd: any = Random() % 100;
           let species: any = GetMonData(gEnemyParty[0], MON_DATA_SPECIES, 0);
           let chanceNoItem: any = 45;
           let chanceNotRare: any = 95;
           if (!GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG, 0)
-              && GetMonAbility(gPlayerParty[0]) == ABILITY_COMPOUND_EYES)
+              && GetMonAbility(gPlayerParty[0]) == (14))
           {
               chanceNoItem = 20;
               chanceNotRare = 80;
@@ -4205,7 +4201,7 @@ export function SetWildMonHeldItem(): any {
           }
           else
           {
-              if (gSpeciesInfo[species].itemCommon == gSpeciesInfo[species].itemRare && gSpeciesInfo[species].itemCommon != ITEM_NONE)
+              if (gSpeciesInfo[species].itemCommon == gSpeciesInfo[species].itemRare && gSpeciesInfo[species].itemCommon != (0))
               {
                    
                   SetMonData(gEnemyParty[0], MON_DATA_HELD_ITEM,gSpeciesInfo[species].itemCommon);
@@ -4234,7 +4230,7 @@ export function IsMonShiny(mon: any): any {
 export function IsShinyOtIdPersonality(otId: any, personality: any): any {
   let retVal: any = FALSE;
       let shinyValue: any = GET_SHINY_VALUE(otId, personality);
-      if (shinyValue < SHINY_ODDS)
+      if (shinyValue < (8))
           retVal = TRUE;
       return retVal;
 }
@@ -4253,15 +4249,15 @@ export function Task_PokemonSummaryAnimateAfterDelay(taskId: any): any {
   if (--gTasks[taskId].sAnimDelay == 0)
       {
           StartMonSummaryAnimation(READ_PTR_FROM_TASK(taskId, 0), gTasks[taskId].sAnimId);
-          SummaryScreen_SetAnimDelayTaskId(TASK_NONE);
+          SummaryScreen_SetAnimDelayTaskId(((0xFF)));
           DestroyTask(taskId);
       }
 }
 
 /** void BattleAnimateFrontSprite(struct Sprite *sprite, u16 species, bool8 noCry, u8 panMode) */
 export function BattleAnimateFrontSprite(sprite: any, species: any, noCry: any, panMode: any): any {
-  if (gHitMarker & HITMARKER_NO_ANIMATIONS && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)))
-          DoMonFrontSpriteAnimation(sprite, species, noCry, panMode | SKIP_FRONT_ANIM);
+  if (gHitMarker & ((1 << 7)) && !(gBattleTypeFlags & (((1 << 1)) | ((1 << 25)))))
+          DoMonFrontSpriteAnimation(sprite, species, noCry, panMode | ((1 << 7)));
       else
           DoMonFrontSpriteAnimation(sprite, species, noCry, panMode);
 }
@@ -4269,7 +4265,7 @@ export function BattleAnimateFrontSprite(sprite: any, species: any, noCry: any, 
 /** void DoMonFrontSpriteAnimation(struct Sprite *sprite, u16 species, bool8 noCry, u8 panModeAnimFlag) */
 export function DoMonFrontSpriteAnimation(sprite: any, species: any, noCry: any, panModeAnimFlag: any): any {
   let pan: any = null;
-      switch (panModeAnimFlag & ~SKIP_FRONT_ANIM)  
+      switch (panModeAnimFlag & ~((1 << 7)))  
       {
       case 0:
           pan = -25;
@@ -4281,7 +4277,7 @@ export function DoMonFrontSpriteAnimation(sprite: any, species: any, noCry: any,
           pan = 0;
           break;
       }
-      if (panModeAnimFlag & SKIP_FRONT_ANIM)
+      if (panModeAnimFlag & ((1 << 7)))
       {
            
           if (!noCry)
@@ -4337,13 +4333,13 @@ export function PokemonSummaryDoMonAnimation(sprite: any, species: any, oneFrame
 /** void StopPokemonAnimationDelayTask(void) */
 export function StopPokemonAnimationDelayTask(): any {
   let delayTaskId: any = FindTaskIdByFunc(Task_PokemonSummaryAnimateAfterDelay);
-      if (delayTaskId != TASK_NONE)
+      if (delayTaskId != ((0xFF)))
           DestroyTask(delayTaskId);
 }
 
 /** void BattleAnimateBackSprite(struct Sprite *sprite, u16 species) */
 export function BattleAnimateBackSprite(sprite: any, species: any): any {
-  if (gHitMarker & HITMARKER_NO_ANIMATIONS && !(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)))
+  if (gHitMarker & ((1 << 7)) && !(gBattleTypeFlags & (((1 << 1)) | ((1 << 25)))))
       {
           sprite.callback = SpriteCallbackDummy;
       }
@@ -4369,7 +4365,7 @@ export function GetOpposingLinkMultiBattlerId(rightSide: any, multiplayerId: any
           battler = rightSide ? 2 : 0;
           break;
       }
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gLinkPlayers[i].id == battler)
               break;
@@ -4384,10 +4380,10 @@ export function FacilityClassToPicIndex(facilityClass: any): any {
 
 /** u16 PlayerGenderToFrontTrainerPicId(u8 playerGender) */
 export function PlayerGenderToFrontTrainerPicId(playerGender: any): any {
-  if (playerGender != MALE)
-          return FacilityClassToPicIndex(FACILITY_CLASS_MAY);
+  if (playerGender != (0))
+          return FacilityClassToPicIndex((0x3f));
       else
-          return FacilityClassToPicIndex(FACILITY_CLASS_BRENDAN);
+          return FacilityClassToPicIndex((0x3c));
 }
 
 /** void HandleSetPokedexFlag(u16 nationalNum, u8 caseId, u32 personality) */
@@ -4396,26 +4392,26 @@ export function HandleSetPokedexFlag(nationalNum: any, caseId: any, personality:
       if (!GetSetPokedexFlag(nationalNum, getFlagCaseId))  
       {
           GetSetPokedexFlag(nationalNum, caseId);
-          if (NationalPokedexNumToSpecies(nationalNum) == SPECIES_UNOWN)
+          if (NationalPokedexNumToSpecies(nationalNum) == (201))
               gSaveBlock2Ptr.pokedex.unownPersonality = personality;
-          if (NationalPokedexNumToSpecies(nationalNum) == SPECIES_SPINDA)
+          if (NationalPokedexNumToSpecies(nationalNum) == (308))
               gSaveBlock2Ptr.pokedex.spindaPersonality = personality;
       }
 }
 
 /** bool8 HasTwoFramesAnimation(u16 species) */
 export function HasTwoFramesAnimation(species: any): any {
-  return (species != SPECIES_CASTFORM
-           && species != SPECIES_DEOXYS
-           && species != SPECIES_SPINDA
-           && species != SPECIES_UNOWN);
+  return (species != (385)
+           && species != (410)
+           && species != (308)
+           && species != (201));
 }
 
 /** static bool8 ShouldSkipFriendshipChange(void) */
 export function ShouldSkipFriendshipChange(): any {
   if (gMain.inBattle && gBattleTypeFlags & (BATTLE_TYPE_FRONTIER))
           return TRUE;
-      if (!gMain.inBattle && (InBattlePike() || CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE))
+      if (!gMain.inBattle && (InBattlePike() || CurrentBattlePyramidLocation() != (0)))
           return TRUE;
       return FALSE;
 }
@@ -4427,7 +4423,7 @@ export function InitMonSpritesGfx_Battle(gfx: any): any {
       {
           gfx.templates[i] = gBattlerSpriteTemplates[i];
           for (j = 0; j < gfx.numFrames; j++)
-              gfx.frameImages[i * gfx.numFrames + j].data =gfx.spritePointers[i][j * MON_PIC_SIZE];
+              gfx.frameImages[i * gfx.numFrames + j].data =gfx.spritePointers[i][j * (((64) * (64) / 2))];
 
           gfx.templates[i].images =gfx.frameImages[i * gfx.numFrames];
       }
@@ -4440,7 +4436,7 @@ export function InitMonSpritesGfx_FullParty(gfx: any): any {
       {
           gfx.templates[i] = sSpriteTemplate_64x64;
           for (j = 0; j < gfx.numFrames; j++)
-              gfx.frameImages[i * gfx.numSprites + j].data =gfx.spritePointers[i][j * MON_PIC_SIZE];
+              gfx.frameImages[i * gfx.numSprites + j].data =gfx.spritePointers[i][j * (((64) * (64) / 2))];
 
           gfx.templates[i].images =gfx.frameImages[i * gfx.numSprites];
           gfx.templates[i].anims = gAnims_MonPic;

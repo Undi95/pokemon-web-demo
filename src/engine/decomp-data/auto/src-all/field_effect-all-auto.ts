@@ -17,63 +17,17 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sActiveList: any = null;
-let sAffineAnims_FlyBird: any = null;
-let sAnimCompleted: any = null;
-let sCounter: any = null;
-let sDestroyDeoxysRockEffectFuncs: any = null;
-let sDiveFieldEffectFuncs: any = null;
-let sEffectSpriteId: any = null;
-let sEscalatorWarpInFieldEffectFuncs: any = null;
-let sEscalatorWarpOutFieldEffectFuncs: any = null;
-let sEscapeRopeWarpInEffectFuncs: any = null;
-let sEscapeRopeWarpOutEffectFuncs: any = null;
-let sFallWarpFieldEffectFuncs: any = null;
-let sFieldMoveShowMonIndoorsEffectFuncs: any = null;
-let sFieldMoveShowMonOutdoorsEffectFuncs: any = null;
-let sFieldMoveStreaksIndoors_Gfx: any = null;
-let sFieldMoveStreaksIndoors_Pal: any = null;
-let sFieldMoveStreaksIndoors_Tilemap: any = null;
-let sFieldMoveStreaksOutdoors_Gfx: any = null;
-let sFieldMoveStreaksOutdoors_Pal: any = null;
-let sFieldMoveStreaksOutdoors_Tilemap: any = null;
-let sFlyInFieldEffectFuncs: any = null;
-let sFlyOutFieldEffectFuncs: any = null;
-let sHallOfFameRecordEffectFuncs: any = null;
-let sLavaridgeGym1FWarpEffectFuncs: any = null;
-let sLavaridgeGymB1FWarpEffectFuncs: any = null;
-let sLavaridgeGymB1FWarpExitEffectFuncs: any = null;
-let sNumMons: any = null;
-let sOam_64x64: any = null;
-let sOnscreenTimer: any = null;
-let sPlayHealSe: any = null;
-let sPlayerSpriteId: any = null;
-let sPokeballCoordOffsets: any = null;
-let sPokeballGlowBlues: any = null;
-let sPokeballGlowEffectFuncs: any = null;
-let sPokeballGlowGreens: any = null;
-let sPokeballGlowReds: any = null;
-let sPokecenterHealEffectFuncs: any = null;
-let sSlidOffscreen: any = null;
-let sSpecies: any = null;
-let sSpotlight_Gfx: any = null;
-let sSpotlight_Pal: any = null;
-let sSpriteId: any = null;
-let sSpritePalette_NewGameBirch: any = null;
-let sSpriteTemplate_DeoxysRockFragment: any = null;
-let sSpriteTemplate_HofMonitorBig: any = null;
-let sSpriteTemplate_HofMonitorSmall: any = null;
-let sSpriteTemplate_NewGameBirch: any = null;
-let sSpriteTemplate_PokeballGlow: any = null;
-let sSpriteTemplate_PokecenterMonitor: any = null;
-let sState: any = null;
-let sSubspriteTable_HofMonitorBig: any = null;
-let sSubspriteTable_PokecenterMonitor: any = null;
-let sSurfFieldEffectFuncs: any = null;
-let sTeleportWarpInFieldEffectFuncs: any = null;
-let sTeleportWarpOutFieldEffectFuncs: any = null;
-let sTimer: any = null;
-let sWaterfallFieldEffectFuncs: any = null;
+let curBlue: any = null;
+let curGreen: any = null;
+let tCameraTaskId: any = null;
+let tCurX: any = null;
+let tCurY: any = null;
+let tEndDelay: any = null;
+let tShake: any = null;
+let tShakeDelay: any = null;
+let tTimer: any = null;
+let tVelocityX: any = null;
+let tVelocityY: any = null;
 /** u32 FieldEffectStart(u8 id) */
 export function FieldEffectStart(id: any): any {
   let script: any = null;
@@ -205,9 +159,9 @@ export function FieldEffectFreeTilesIfUnused(tileStart: any): any {
   let i: any = null;
       let tag: any = GetSpriteTileTagByTileStart(tileStart);
 
-      if (tag != TAG_NONE)
+      if (tag != (0xFFFF))
       {
-          for (i = 0; i < MAX_SPRITES; i++)
+          for (i = 0; i < (64); i++)
               if (gSprites[i].inUse && gSprites[i].usingSheet && tileStart == gSprites[i].sheetTileStart)
                   return;
           FreeSpriteTilesByTag(tag);
@@ -219,9 +173,9 @@ export function FieldEffectFreePaletteIfUnused(paletteNum: any): any {
   let i: any = null;
       let tag: any = GetSpritePaletteTagByPaletteNum(paletteNum);
 
-      if (tag != TAG_NONE)
+      if (tag != (0xFFFF))
       {
-          for (i = 0; i < MAX_SPRITES; i++)
+          for (i = 0; i < (64); i++)
               if (gSprites[i].inUse && gSprites[i].oam.paletteNum == paletteNum)
                   return;
           FreeSpritePaletteByTag(tag);
@@ -296,7 +250,7 @@ export function CreateMonSprite_PicBox(species: any, x: any, y: any, subpriority
   let spriteId: any = CreateMonPicSprite_HandleDeoxys(species, 0, 0x8000, TRUE, x, y, 0, gMonPaletteTable[species].tag);
       PreservePaletteInWeather(IndexOfSpritePaletteTag(gMonPaletteTable[species].tag) + 0x10);
       if (spriteId == 0xFFFF)
-          return MAX_SPRITES;
+          return (64);
       else
           return spriteId;
 }
@@ -307,7 +261,7 @@ export function CreateMonSprite_FieldMove(species: any, otId: any, personality: 
       let spriteId: any = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, x, y, 0, spritePalette.tag);
       PreservePaletteInWeather(IndexOfSpritePaletteTag(spritePalette.tag) + 0x10);
       if (spriteId == 0xFFFF)
-          return MAX_SPRITES;
+          return (64);
       else
           return spriteId;
 }
@@ -327,9 +281,9 @@ export function MultiplyInvertedPaletteRGBComponents(i: any, r: any, g: any, b: 
   let curRed, curGreen, curBlue;
       let color: any = gPlttBufferUnfaded[i];
 
-      curRed   = (color & RGB_RED);
-      curGreen = (color & RGB_GREEN) >>  5;
-      curBlue  = (color & RGB_BLUE)  >> 10;
+      curRed   = (color & (RGB(31, 0, 0)));
+      curGreen = (color & (RGB(0, 31, 0))) >>  5;
+      curBlue  = (color & (RGB(0, 0, 31)))  >> 10;
 
       curRed   += (((0x1F - curRed)   * r) >> 4);
       curGreen += (((0x1F - curGreen) * g) >> 4);
@@ -347,9 +301,9 @@ export function MultiplyPaletteRGBComponents(i: any, r: any, g: any, b: any): an
   let curRed, curGreen, curBlue;
       let color: any = gPlttBufferUnfaded[i];
 
-      curRed   = (color & RGB_RED);
-      curGreen = (color & RGB_GREEN) >>  5;
-      curBlue  = (color & RGB_BLUE)  >> 10;
+      curRed   = (color & (RGB(31, 0, 0)));
+      curGreen = (color & (RGB(0, 31, 0))) >>  5;
+      curBlue  = (color & (RGB(0, 0, 31)))  >> 10;
 
       curRed   -= ((curRed   * r) >> 4);
       curGreen -= ((curGreen * g) >> 4);
@@ -413,7 +367,7 @@ export function PokecenterHealEffect_WaitForSoundAndEnd(task: any): any {
   if (gSprites[task.tBallSpriteId].sState > 6)
       {
           DestroySprite(gSprites[task.tBallSpriteId]);
-          FieldEffectActiveListRemove(FLDEFF_POKECENTER_HEAL);
+          FieldEffectActiveListRemove((25));
           DestroyTask(FindTaskIdByFunc(Task_PokecenterHeal));
       }
 }
@@ -473,7 +427,7 @@ export function HallOfFameRecordEffect_WaitForSoundAndEnd(task: any): any {
   if (gSprites[task.tBallSpriteId].sState > 6)
       {
           DestroySprite(gSprites[task.tBallSpriteId]);
-          FieldEffectActiveListRemove(FLDEFF_HALL_OF_FAME_RECORD);
+          FieldEffectActiveListRemove((62));
           DestroyTask(FindTaskIdByFunc(Task_HallOfFameRecord));
       }
 }
@@ -508,7 +462,7 @@ export function PokeballGlowEffect_PlaceBalls(sprite: any): any {
           gSprites[spriteId].sEffectSpriteId = sprite.sSpriteId;
           sprite.sCounter++;
           sprite.sNumMons--;
-          PlaySE(SE_BALL);
+          PlaySE((23));
       }
       if (sprite.sNumMons == 0)
       {
@@ -527,7 +481,7 @@ export function PokeballGlowEffect_TryPlaySe(sprite: any): any {
           sprite.data[3] = 0;
           if (sprite.sPlayHealSe)
           {
-              PlayFanfare(MUS_HEAL);
+              PlayFanfare((368));
           }
       }
 }
@@ -545,14 +499,14 @@ export function PokeballGlowEffect_Flash1(sprite: any): any {
               sprite.data[3]++;
       }
       phase = (sprite.sCounter + 3) & 3;
-      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 8, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
+      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag((0x1007))) + 8, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
       phase = (sprite.sCounter + 2) & 3;
-      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 6, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
+      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag((0x1007))) + 6, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
       phase = (sprite.sCounter + 1) & 3;
-      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 2, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
+      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag((0x1007))) + 2, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
       phase = sprite.sCounter;
-      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 5, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
-      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 3, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
+      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag((0x1007))) + 5, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
+      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag((0x1007))) + 3, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
       if (sprite.data[3] > 2)
       {
           sprite.sState++;
@@ -576,11 +530,11 @@ export function PokeballGlowEffect_Flash2(sprite: any): any {
           }
       }
       phase = sprite.sCounter;
-      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 8, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
-      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 6, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
-      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 2, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
-      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 5, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
-      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag(FLDEFF_PAL_TAG_POKEBALL_GLOW)) + 3, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
+      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag((0x1007))) + 8, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
+      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag((0x1007))) + 6, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
+      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag((0x1007))) + 2, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
+      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag((0x1007))) + 5, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
+      MultiplyInvertedPaletteRGBComponents(OBJ_PLTT_ID(IndexOfSpritePaletteTag((0x1007))) + 3, sPokeballGlowReds[phase], sPokeballGlowGreens[phase], sPokeballGlowBlues[phase]);
 }
 
 /** static void PokeballGlowEffect_WaitAfterFlash(struct Sprite *sprite) */
@@ -694,13 +648,13 @@ export function Task_UseFly(taskId: any): any {
               return;
 
           gFieldEffectArguments[0] = GetCursorSelectionMonId();
-          if (gFieldEffectArguments[0] > PARTY_SIZE - 1)
+          if (gFieldEffectArguments[0] > (6) - 1)
               gFieldEffectArguments[0] = 0;
 
-          FieldEffectStart(FLDEFF_USE_FLY);
+          FieldEffectStart((31));
           task.data[0]++;
       }
-      if (!FieldEffectActiveListContains(FLDEFF_USE_FLY))
+      if (!FieldEffectActiveListContains((31)))
       {
           Overworld_ResetStateAfterFly();
           WarpIntoMap();
@@ -716,9 +670,9 @@ export function FieldCallback_FlyIntoMap(): any {
       FadeInFromBlack();
       CreateTask(Task_FlyIntoMap, 0);
       gObjectEvents[gPlayerAvatar.objectEventId].invisible = TRUE;
-      if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+      if (gPlayerAvatar.flags & ((1 << 3)))
       {
-          ObjectEventTurn(gObjectEvents[gPlayerAvatar.objectEventId], DIR_WEST);
+          ObjectEventTurn(gObjectEvents[gPlayerAvatar.objectEventId], (3));
       }
       LockPlayerFieldControls();
       FreezeObjectEvents();
@@ -735,10 +689,10 @@ export function Task_FlyIntoMap(taskId: any): any {
           {
               return;
           }
-          FieldEffectStart(FLDEFF_FLY_IN);
+          FieldEffectStart((32));
           task.data[0]++;
       }
-      if (!FieldEffectActiveListContains(FLDEFF_FLY_IN))
+      if (!FieldEffectActiveListContains((32)))
       {
           UnlockPlayerFieldControls();
           UnfreezeObjectEvents();
@@ -799,7 +753,7 @@ export function FallWarpEffect_StartFall(task: any): any {
       task.tFallOffset = 1;
       task.tTotalFall = 0;
       gObjectEvents[gPlayerAvatar.objectEventId].invisible = FALSE;
-      PlaySE(SE_FALL);
+      PlaySE((43));
       task.tState++;
       return FALSE;
 }
@@ -828,7 +782,7 @@ export function FallWarpEffect_Fall(task: any): any {
       }
       if (sprite.y2 >= 0)
       {
-          PlaySE(SE_M_STRENGTH);
+          PlaySE((214));
           objectEvent.triggerGroundEffectsOnStop = 1;
           objectEvent.landingJump = 1;
           sprite.y2 = 0;
@@ -913,7 +867,7 @@ export function EscalatorWarpOut_WaitForPlayer(task: any): any {
           {
               task.tState = 4;  
           }
-          PlaySE(SE_ESCALATOR);
+          PlaySE((80));
       }
       return FALSE;
 }
@@ -1022,7 +976,7 @@ export function EscalatorWarpIn_Init(task: any): any {
       let behavior: any = null;
       CameraObjectFreeze();
       objectEvent =gObjectEvents[gPlayerAvatar.objectEventId];
-      ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(DIR_EAST));
+      ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction((4)));
       PlayerGetDestCoords(x,y);
       behavior = MapGridGetMetatileBehaviorAt(x, y);
       task.tState++;
@@ -1122,7 +1076,7 @@ export function EscalatorWarpIn_End(task: any): any {
       {
           CameraObjectReset();
           UnlockPlayerFieldControls();
-          ObjectEventSetHeldMovement(objectEvent, GetWalkNormalMovementAction(DIR_EAST));
+          ObjectEventSetHeldMovement(objectEvent, GetWalkNormalMovementAction((4)));
           DestroyTask(FindTaskIdByFunc(Task_EscalatorWarpIn));
       }
       return FALSE;
@@ -1157,7 +1111,7 @@ export function WaterfallFieldEffect_ShowMon(task: any, objectEvent: any): any {
       {
           ObjectEventClearHeldMovementIfFinished(objectEvent);
           gFieldEffectArguments[0] = task.tMonId;
-          FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);
+          FieldEffectStart((59));
           task.tState++;
       }
       return FALSE;
@@ -1165,7 +1119,7 @@ export function WaterfallFieldEffect_ShowMon(task: any, objectEvent: any): any {
 
 /** static bool8 WaterfallFieldEffect_WaitForShowMon(struct Task *task, struct ObjectEvent *objectEvent) */
 export function WaterfallFieldEffect_WaitForShowMon(task: any, objectEvent: any): any {
-  if (FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON))
+  if (FieldEffectActiveListContains((6)))
       {
           return FALSE;
       }
@@ -1175,7 +1129,7 @@ export function WaterfallFieldEffect_WaitForShowMon(task: any, objectEvent: any)
 
 /** static bool8 WaterfallFieldEffect_RideUp(struct Task *task, struct ObjectEvent *objectEvent) */
 export function WaterfallFieldEffect_RideUp(task: any, objectEvent: any): any {
-  ObjectEventSetHeldMovement(objectEvent, GetWalkSlowMovementAction(DIR_NORTH));
+  ObjectEventSetHeldMovement(objectEvent, GetWalkSlowMovementAction((2)));
       task.tState++;
       return FALSE;
 }
@@ -1195,7 +1149,7 @@ export function WaterfallFieldEffect_ContinueRideOrEnd(task: any, objectEvent: a
       UnlockPlayerFieldControls();
       gPlayerAvatar.preventStep = FALSE;
       DestroyTask(FindTaskIdByFunc(Task_UseWaterfall));
-      FieldEffectActiveListRemove(FLDEFF_USE_WATERFALL);
+      FieldEffectActiveListRemove((43));
       return FALSE;
 }
 
@@ -1225,7 +1179,7 @@ export function DiveFieldEffect_Init(task: any): any {
 export function DiveFieldEffect_ShowMon(task: any): any {
   LockPlayerFieldControls();
       gFieldEffectArguments[0] = task.data[15];
-      FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);
+      FieldEffectStart((59));
       task.data[0]++;
       return FALSE;
 }
@@ -1236,11 +1190,11 @@ export function DiveFieldEffect_TryWarp(task: any): any {
       PlayerGetDestCoords(mapPosition.x,mapPosition.y);
 
        
-      if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON))
+      if (!FieldEffectActiveListContains((6)))
       {
           TryDoDiveWarp(mapPosition, gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior);
           DestroyTask(FindTaskIdByFunc(Task_UseDive));
-          FieldEffectActiveListRemove(FLDEFF_USE_DIVE);
+          FieldEffectActiveListRemove((44));
       }
       return FALSE;
 }
@@ -1288,8 +1242,8 @@ export function LavaridgeGymB1FWarpEffect_Launch(task: any, objectEvent: any, sp
       gFieldEffectArguments[1] = objectEvent.currentCoords.y;
       gFieldEffectArguments[2] = sprite.subpriority - 1;
       gFieldEffectArguments[3] = sprite.oam.priority;
-      FieldEffectStart(FLDEFF_ASH_LAUNCH);
-      PlaySE(SE_M_EXPLOSION);
+      FieldEffectStart((50));
+      PlaySE((178));
       task.data[0]++;
       return TRUE;
 }
@@ -1391,7 +1345,7 @@ export function LavaridgeGymB1FWarpExitEffect_StartPopOut(task: any, objectEvent
           gFieldEffectArguments[1] = objectEvent.currentCoords.y;
           gFieldEffectArguments[2] = sprite.subpriority - 1;
           gFieldEffectArguments[3] = sprite.oam.priority;
-          task.data[1] = FieldEffectStart(FLDEFF_ASH_PUFF);
+          task.data[1] = FieldEffectStart((49));
           task.data[0]++;
       }
       return FALSE;
@@ -1405,8 +1359,8 @@ export function LavaridgeGymB1FWarpExitEffect_PopOut(task: any, objectEvent: any
           task.data[0]++;
           objectEvent.invisible = FALSE;
           CameraObjectReset();
-          PlaySE(SE_M_DIG);
-          ObjectEventSetHeldMovement(objectEvent, GetJumpMovementAction(DIR_EAST));
+          PlaySE((175));
+          ObjectEventSetHeldMovement(objectEvent, GetJumpMovementAction((4)));
       }
       return FALSE;
 }
@@ -1427,7 +1381,7 @@ export function LavaridgeGymB1FWarpExitEffect_End(task: any, objectEvent: any, s
 export function FldEff_AshLaunch(): any {
   let spriteId: any = null;
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_ASH_LAUNCH], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(33)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
       gSprites[spriteId].oam.priority = gFieldEffectArguments[3];
       gSprites[spriteId].coordOffsetEnabled = TRUE;
       return spriteId;
@@ -1436,7 +1390,7 @@ export function FldEff_AshLaunch(): any {
 /** void SpriteCB_AshLaunch(struct Sprite *sprite) */
 export function SpriteCB_AshLaunch(sprite: any): any {
   if (sprite.animEnded)
-          FieldEffectStop(sprite, FLDEFF_ASH_LAUNCH);
+          FieldEffectStop(sprite, (50));
 }
 
 /** void StartLavaridgeGym1FWarp(u8 priority) */
@@ -1469,14 +1423,14 @@ export function LavaridgeGym1FWarpEffect_AshPuff(task: any, objectEvent: any, sp
               gFieldEffectArguments[1] = objectEvent.currentCoords.y;
               gFieldEffectArguments[2] = sprite.subpriority - 1;
               gFieldEffectArguments[3] = sprite.oam.priority;
-              task.data[1] = FieldEffectStart(FLDEFF_ASH_PUFF);
+              task.data[1] = FieldEffectStart((49));
               task.data[0]++;
           }
           else
           {
               task.data[1]++;
               ObjectEventSetHeldMovement(objectEvent, GetWalkInPlaceFasterMovementAction(objectEvent.facingDirection));
-              PlaySE(SE_LAVARIDGE_FALL_WARP);
+              PlaySE((39));
           }
       }
       return FALSE;
@@ -1494,7 +1448,7 @@ export function LavaridgeGym1FWarpEffect_Disappear(task: any, objectEvent: any, 
 
 /** static bool8 LavaridgeGym1FWarpEffect_FadeOut(struct Task *task, struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function LavaridgeGym1FWarpEffect_FadeOut(task: any, objectEvent: any, sprite: any): any {
-  if (!FieldEffectActiveListContains(FLDEFF_ASH_PUFF))
+  if (!FieldEffectActiveListContains((49)))
       {
           TryFadeOutOldMapMusic();
           WarpFadeOutScreen();
@@ -1519,7 +1473,7 @@ export function LavaridgeGym1FWarpEffect_Warp(task: any, objectEvent: any, sprit
 export function FldEff_AshPuff(): any {
   let spriteId: any = null;
       SetSpritePosToOffsetMapCoords(gFieldEffectArguments[0],gFieldEffectArguments[1], 8, 8);
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_ASH_PUFF], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(32)], gFieldEffectArguments[0], gFieldEffectArguments[1], gFieldEffectArguments[2]);
       gSprites[spriteId].oam.priority = gFieldEffectArguments[3];
       gSprites[spriteId].coordOffsetEnabled = TRUE;
       return spriteId;
@@ -1528,7 +1482,7 @@ export function FldEff_AshPuff(): any {
 /** void SpriteCB_AshPuff(struct Sprite *sprite) */
 export function SpriteCB_AshPuff(sprite: any): any {
   if (sprite.animEnded)
-          FieldEffectStop(sprite, FLDEFF_ASH_PUFF);
+          FieldEffectStop(sprite, (49));
 }
 
 /** void StartEscapeRopeFieldEffect(void) */
@@ -1553,7 +1507,7 @@ export function EscapeRopeWarpOutEffect_Init(task: any): any {
 /** static void EscapeRopeWarpOutEffect_Spin(struct Task *task) */
 export function EscapeRopeWarpOutEffect_Spin(task: any): any {
   let objectEvent: any = null;
-      const spinDirections: any =  [DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH];
+      const spinDirections: any =  [(1), (3), (4), (2), (1)];
       if (task.tTimer != 0 && (--task.tTimer) == 0)
       {
           TryFadeOutOldMapMusic();
@@ -1608,7 +1562,7 @@ export function EscapeRopeWarpInEffect_Init(task: any): any {
 
 /** static void EscapeRopeWarpInEffect_Spin(struct Task *task) */
 export function EscapeRopeWarpInEffect_Spin(task: any): any {
-  const spinDirections: any = [DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH];
+  const spinDirections: any = [(1), (3), (4), (2), (1)];
       let objectEvent: any =gObjectEvents[gPlayerAvatar.objectEventId];
       if (task.tSpinDelay == 0 || (--task.tSpinDelay) == 0)
       {
@@ -1653,7 +1607,7 @@ export function TeleportWarpOutFieldEffect_Init(task: any): any {
 
 /** static void TeleportWarpOutFieldEffect_SpinGround(struct Task *task) */
 export function TeleportWarpOutFieldEffect_SpinGround(task: any): any {
-  const spinDirections: any = [DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH];
+  const spinDirections: any = [(1), (3), (4), (2), (1)];
       let objectEvent: any =gObjectEvents[gPlayerAvatar.objectEventId];
       if (task.data[1] == 0 || (--task.data[1]) == 0)
       {
@@ -1667,13 +1621,13 @@ export function TeleportWarpOutFieldEffect_SpinGround(task: any): any {
           task.data[1] = 4;
           task.data[2] = 8;
           task.data[3] = 1;
-          PlaySE(SE_WARP_IN);
+          PlaySE((45));
       }
 }
 
 /** static void TeleportWarpOutFieldEffect_SpinExit(struct Task *task) */
 export function TeleportWarpOutFieldEffect_SpinExit(task: any): any {
-  const spinDirections: any = [DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH];
+  const spinDirections: any = [(1), (3), (4), (2), (1)];
       let objectEvent: any =gObjectEvents[gPlayerAvatar.objectEventId];
       let sprite: any =gSprites[gPlayerAvatar.spriteId];
       if ((--task.data[1]) <= 0)
@@ -1752,13 +1706,13 @@ export function TeleportWarpInFieldEffect_Init(task: any): any {
           task.data[2] = 1;
           task.data[14] = sprite.subspriteMode;
           task.data[15] = GetPlayerFacingDirection();
-          PlaySE(SE_WARP_IN);
+          PlaySE((45));
       }
 }
 
 /** static void TeleportWarpInFieldEffect_SpinEnter(struct Task *task) */
 export function TeleportWarpInFieldEffect_SpinEnter(task: any): any {
-  const spinDirections: any = [DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH];
+  const spinDirections: any = [(1), (3), (4), (2), (1)];
       let objectEvent: any =gObjectEvents[gPlayerAvatar.objectEventId];
       let sprite: any =gSprites[gPlayerAvatar.spriteId];
       if ((sprite.y2 += task.data[1]) >= -8)
@@ -1798,7 +1752,7 @@ export function TeleportWarpInFieldEffect_SpinEnter(task: any): any {
 
 /** static void TeleportWarpInFieldEffect_SpinGround(struct Task *task) */
 export function TeleportWarpInFieldEffect_SpinGround(task: any): any {
-  const spinDirections: any = [DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH];
+  const spinDirections: any = [(1), (3), (4), (2), (1)];
       let objectEvent: any =gObjectEvents[gPlayerAvatar.objectEventId];
       if ((--task.data[1]) == 0)
       {
@@ -1835,8 +1789,8 @@ export function FldEff_FieldMoveShowMonInit(): any {
       gFieldEffectArguments[1] = GetMonData(pokemon, MON_DATA_OT_ID);
       gFieldEffectArguments[2] = GetMonData(pokemon, MON_DATA_PERSONALITY);
       gFieldEffectArguments[0] |= noDucking;
-      FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON);
-      FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);
+      FieldEffectStart((6));
+      FieldEffectActiveListRemove((59));
       return FALSE;
 }
 
@@ -1952,7 +1906,7 @@ export function FieldMoveShowMonOutdoorsEffect_End(task: any): any {
       SetVBlankCallback(callback);
       InitTextBoxGfxAndPrinters();
       FreeResourcesAndDestroySprite(gSprites[task.tMonSpriteId], task.tMonSpriteId);
-      FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
+      FieldEffectActiveListRemove((6));
       DestroyTask(FindTaskIdByFunc(Task_FieldMoveShowMonOutdoors));
 }
 
@@ -2054,7 +2008,7 @@ export function FieldMoveShowMonIndoorsEffect_End(task: any): any {
       SetVBlankCallback(intrCallback);
       InitTextBoxGfxAndPrinters();
       FreeResourcesAndDestroySprite(gSprites[task.tMonSpriteId], task.tMonSpriteId);
-      FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
+      FieldEffectActiveListRemove((6));
       DestroyTask(FindTaskIdByFunc(Task_FieldMoveShowMonIndoors));
 }
 
@@ -2152,7 +2106,7 @@ export function SpriteCB_FieldMoveMonSlideOnscreen(sprite: any): any {
           sprite.sOnscreenTimer = 30;
           sprite.callback = SpriteCB_FieldMoveMonWaitAfterCry;
           if (sprite.data[6])
-              PlayCry_NormalNoDucking(sprite.sSpecies, 0, CRY_VOLUME_RS, CRY_PRIORITY_NORMAL);
+              PlayCry_NormalNoDucking(sprite.sSpecies, 0, (125), (10));
           else
               PlayCry_Normal(sprite.sSpecies, 0);
       }
@@ -2177,7 +2131,7 @@ export function FldEff_UseSurf(): any {
   let taskId: any = CreateTask(Task_SurfFieldEffect, 0xff);
       gTasks[taskId].tMonId = gFieldEffectArguments[0];
       Overworld_ClearSavedMusic();
-      Overworld_ChangeMusicTo(MUS_SURF);
+      Overworld_ChangeMusicTo((365));
       return FALSE;
 }
 
@@ -2191,7 +2145,7 @@ export function SurfFieldEffect_Init(task: any): any {
   LockPlayerFieldControls();
       FreezeObjectEvents();
       gPlayerAvatar.preventStep = TRUE;
-      SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_SURFING);
+      SetPlayerAvatarStateMask(((1 << 3)));
       PlayerGetDestCoords(task.tDestX,task.tDestY);
       MoveCoords(gObjectEvents[gPlayerAvatar.objectEventId].movementDirection,task.tDestX,task.tDestY);
       task.tState++;
@@ -2204,7 +2158,7 @@ export function SurfFieldEffect_FieldMovePose(task: any): any {
       if (!ObjectEventIsMovementOverridden(objectEvent) || ObjectEventClearHeldMovementIfFinished(objectEvent))
       {
           SetPlayerAvatarFieldMove();
-          ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);
+          ObjectEventSetHeldMovement(objectEvent, (0x39));
           task.tState++;
       }
 }
@@ -2216,7 +2170,7 @@ export function SurfFieldEffect_ShowMon(task: any): any {
       if (ObjectEventCheckHeldMovementStatus(objectEvent))
       {
           gFieldEffectArguments[0] = task.tMonId | ((1 << 31));
-          FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);
+          FieldEffectStart((59));
           task.tState++;
       }
 }
@@ -2224,7 +2178,7 @@ export function SurfFieldEffect_ShowMon(task: any): any {
 /** static void SurfFieldEffect_JumpOnSurfBlob(struct Task *task) */
 export function SurfFieldEffect_JumpOnSurfBlob(task: any): any {
   let objectEvent: any = null;
-      if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON))
+      if (!FieldEffectActiveListContains((6)))
       {
           objectEvent =gObjectEvents[gPlayerAvatar.objectEventId];
           ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));
@@ -2233,7 +2187,7 @@ export function SurfFieldEffect_JumpOnSurfBlob(task: any): any {
           gFieldEffectArguments[0] = task.tDestX;
           gFieldEffectArguments[1] = task.tDestY;
           gFieldEffectArguments[2] = gPlayerAvatar.objectEventId;
-          objectEvent.fieldEffectSpriteId = FieldEffectStart(FLDEFF_SURF_BLOB);
+          objectEvent.fieldEffectSpriteId = FieldEffectStart((8));
           task.tState++;
       }
 }
@@ -2245,12 +2199,12 @@ export function SurfFieldEffect_End(task: any): any {
       if (ObjectEventClearHeldMovementIfFinished(objectEvent))
       {
           gPlayerAvatar.preventStep = FALSE;
-          gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_CONTROLLABLE;
+          gPlayerAvatar.flags &= ~((1 << 5));
           ObjectEventSetHeldMovement(objectEvent, GetFaceDirectionMovementAction(objectEvent.movementDirection));
           SetSurfBlob_BobState(objectEvent.fieldEffectSpriteId, BOB_PLAYER_AND_MON);
           UnfreezeObjectEvents();
           UnlockPlayerFieldControls();
-          FieldEffectActiveListRemove(FLDEFF_USE_SURF);
+          FieldEffectActiveListRemove((9));
           DestroyTask(FindTaskIdByFunc(Task_SurfFieldEffect));
       }
 }
@@ -2258,7 +2212,7 @@ export function SurfFieldEffect_End(task: any): any {
 /** u8 FldEff_RayquazaSpotlight(void) */
 export function FldEff_RayquazaSpotlight(): any {
   let i, j, k;
-      let spriteId: any = CreateSprite(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_RAYQUAZA], 120, -24, 1);
+      let spriteId: any = CreateSprite(gFieldEffectObjectTemplatePointers[(36)], 120, -24, 1);
       let sprite: any =gSprites[spriteId];
 
       sprite.oam.priority = 1;
@@ -2294,14 +2248,14 @@ export function FldEff_RayquazaSpotlight(): any {
 
 /** u8 FldEff_NPCFlyOut(void) */
 export function FldEff_NPCFlyOut(): any {
-  let spriteId: any = CreateSprite(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_BIRD], 0x78, 0, 1);
+  let spriteId: any = CreateSprite(gFieldEffectObjectTemplatePointers[(26)], 0x78, 0, 1);
       let sprite: any =gSprites[spriteId];
 
       sprite.oam.paletteNum = 0;
       sprite.oam.priority = 1;
       sprite.callback = SpriteCB_NPCFlyOut;
       sprite.data[1] = gFieldEffectArguments[0];
-      PlaySE(SE_M_FLY);
+      PlaySE((158));
       return spriteId;
 }
 
@@ -2323,7 +2277,7 @@ export function SpriteCB_NPCFlyOut(sprite: any): any {
       }
 
       if (sprite.data[2] >= 0x80)
-          FieldEffectStop(sprite, FLDEFF_NPCFLY_OUT);
+          FieldEffectStop(sprite, (30));
 }
 
 /** u8 FldEff_UseFly(void) */
@@ -2345,9 +2299,9 @@ export function FlyOutFieldEffect_FieldMovePose(task: any): any {
       {
           task.tAvatarFlags = gPlayerAvatar.flags;
           gPlayerAvatar.preventStep = TRUE;
-          SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ON_FOOT);
+          SetPlayerAvatarStateMask(((1 << 0)));
           SetPlayerAvatarFieldMove();
-          ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);
+          ObjectEventSetHeldMovement(objectEvent, (0x39));
           task.tState++;
       }
 }
@@ -2359,16 +2313,16 @@ export function FlyOutFieldEffect_ShowMon(task: any): any {
       {
           task.tState++;
           gFieldEffectArguments[0] = task.tMonId;
-          FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);
+          FieldEffectStart((59));
       }
 }
 
 /** static void FlyOutFieldEffect_BirdLeaveBall(struct Task *task) */
 export function FlyOutFieldEffect_BirdLeaveBall(task: any): any {
-  if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON))
+  if (!FieldEffectActiveListContains((6)))
       {
           let objectEvent: any =gObjectEvents[gPlayerAvatar.objectEventId];
-          if (task.tAvatarFlags & PLAYER_AVATAR_FLAG_SURFING)
+          if (task.tAvatarFlags & ((1 << 3)))
           {
               SetSurfBlob_BobState(objectEvent.fieldEffectSpriteId, BOB_JUST_MON);
               SetSurfBlob_DontSyncAnim(objectEvent.fieldEffectSpriteId, FALSE);
@@ -2384,8 +2338,8 @@ export function FlyOutFieldEffect_WaitBirdLeave(task: any): any {
       {
           task.tState++;
           task.tTimer = 16;
-          SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_ON_FOOT);
-          ObjectEventSetHeldMovement(gObjectEvents[gPlayerAvatar.objectEventId], MOVEMENT_ACTION_FACE_LEFT);
+          SetPlayerAvatarTransitionFlags(((1 << 0)));
+          ObjectEventSetHeldMovement(gObjectEvents[gPlayerAvatar.objectEventId], (0x2));
       }
 }
 
@@ -2395,7 +2349,7 @@ export function FlyOutFieldEffect_BirdSwoopDown(task: any): any {
       if ((task.tTimer == 0 || (--task.tTimer) == 0) && ObjectEventClearHeldMovementIfFinished(objectEvent))
       {
           task.tState++;
-          PlaySE(SE_M_FLY);
+          PlaySE((158));
           StartFlyBirdSwoopDown(task.tBirdSpriteId);
       }
 }
@@ -2406,10 +2360,10 @@ export function FlyOutFieldEffect_JumpOnBird(task: any): any {
       {
           let objectEvent: any =gObjectEvents[gPlayerAvatar.objectEventId];
           ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));
-          StartSpriteAnim(gSprites[objectEvent.spriteId], ANIM_GET_ON_OFF_POKEMON_WEST);
+          StartSpriteAnim(gSprites[objectEvent.spriteId], (((20) + 2)));
           objectEvent.inanimate = TRUE;
-          ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_JUMP_IN_PLACE_LEFT);
-          if (task.tAvatarFlags & PLAYER_AVATAR_FLAG_SURFING)
+          ObjectEventSetHeldMovement(objectEvent, (0x48));
+          if (task.tAvatarFlags & ((1 << 3)))
           {
               DestroySprite(gSprites[objectEvent.fieldEffectSpriteId]);
           }
@@ -2445,7 +2399,7 @@ export function FlyOutFieldEffect_WaitFlyOff(task: any): any {
 export function FlyOutFieldEffect_End(task: any): any {
   if (!gPaletteFade.active)
       {
-          FieldEffectActiveListRemove(FLDEFF_USE_FLY);
+          FieldEffectActiveListRemove((31));
           DestroyTask(FindTaskIdByFunc(Task_FlyOut));
       }
 }
@@ -2454,7 +2408,7 @@ export function FlyOutFieldEffect_End(task: any): any {
 export function CreateFlyBirdSprite(): any {
   let spriteId: any = null;
       let sprite: any = null;
-      spriteId = CreateSprite(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_BIRD], 0xff, 0xb4, 0x1);
+      spriteId = CreateSprite(gFieldEffectObjectTemplatePointers[(26)], 0xff, 0xb4, 0x1);
       sprite =gSprites[spriteId];
       sprite.oam.paletteNum = 0;
       sprite.oam.priority = 1;
@@ -2477,7 +2431,7 @@ export function StartFlyBirdSwoopDown(spriteId: any): any {
       sprite.x2 = 0;
       sprite.y2 = 0;
       memset(sprite.data[0], 0, 8 * 0  );
-      sprite.sPlayerSpriteId = MAX_SPRITES;
+      sprite.sPlayerSpriteId = (64);
 }
 
 /** static void SetFlyBirdPlayerSpriteId(u8 birdSpriteId, u8 playerSpriteId) */
@@ -2523,7 +2477,7 @@ export function SpriteCB_FlyBirdSwoopDown(sprite: any): any {
   sprite.x2 = Cos(sprite.data[2], 0x8c);
       sprite.y2 = Sin(sprite.data[2], 0x48);
       sprite.data[2] = (sprite.data[2] + 4) & 0xff;
-      if (sprite.sPlayerSpriteId != MAX_SPRITES)
+      if (sprite.sPlayerSpriteId != (64))
       {
           let sprite1: any =gSprites[sprite.sPlayerSpriteId];
           sprite1.coordOffsetEnabled = FALSE;
@@ -2609,15 +2563,15 @@ export function FlyInFieldEffect_BirdSwoopDown(task: any): any {
           task.tTimer = 17;
           task.tAvatarFlags = gPlayerAvatar.flags;
           gPlayerAvatar.preventStep = TRUE;
-          SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ON_FOOT);
-          if (task.tAvatarFlags & PLAYER_AVATAR_FLAG_SURFING)
+          SetPlayerAvatarStateMask(((1 << 0)));
+          if (task.tAvatarFlags & ((1 << 3)))
           {
               SetSurfBlob_BobState(objectEvent.fieldEffectSpriteId, BOB_NONE);
           }
           ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));
           CameraObjectFreeze();
-          ObjectEventTurn(objectEvent, DIR_WEST);
-          StartSpriteAnim(gSprites[objectEvent.spriteId], ANIM_GET_ON_OFF_POKEMON_WEST);
+          ObjectEventTurn(objectEvent, (3));
+          StartSpriteAnim(gSprites[objectEvent.spriteId], (((20) + 2)));
           objectEvent.invisible = FALSE;
           task.tBirdSpriteId = CreateFlyBirdSprite();
           StartFlyBirdSwoopDown(task.tBirdSpriteId);
@@ -2633,7 +2587,7 @@ export function FlyInFieldEffect_FlyInWithBird(task: any): any {
       {
           objectEvent =gObjectEvents[gPlayerAvatar.objectEventId];
           sprite =gSprites[objectEvent.spriteId];
-          SetFlyBirdPlayerSpriteId(task.tBirdSpriteId, MAX_SPRITES);
+          SetFlyBirdPlayerSpriteId(task.tBirdSpriteId, (64));
           sprite.x += sprite.x2;
           sprite.y += sprite.y2;
           sprite.x2 = 0;
@@ -2686,7 +2640,7 @@ export function FlyInFieldEffect_FieldMovePose(task: any): any {
           sprite.y2 = 0;
           sprite.coordOffsetEnabled = TRUE;
           SetPlayerAvatarFieldMove();
-          ObjectEventSetHeldMovement(objectEvent, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);
+          ObjectEventSetHeldMovement(objectEvent, (0x39));
           task.tState++;
       }
 }
@@ -2718,16 +2672,16 @@ export function FlyInFieldEffect_End(task: any): any {
       {
           objectEvent =gObjectEvents[gPlayerAvatar.objectEventId];
           state = PLAYER_AVATAR_STATE_NORMAL;
-          if (task.tAvatarFlags & PLAYER_AVATAR_FLAG_SURFING)
+          if (task.tAvatarFlags & ((1 << 3)))
           {
               state = PLAYER_AVATAR_STATE_SURFING;
               SetSurfBlob_BobState(objectEvent.fieldEffectSpriteId, BOB_PLAYER_AND_MON);
           }
           ObjectEventSetGraphicsId(objectEvent, GetPlayerAvatarGraphicsIdByStateId(state));
-          ObjectEventTurn(objectEvent, DIR_SOUTH);
+          ObjectEventTurn(objectEvent, (1));
           gPlayerAvatar.flags = task.tAvatarFlags;
           gPlayerAvatar.preventStep = FALSE;
-          FieldEffectActiveListRemove(FLDEFF_FLY_IN);
+          FieldEffectActiveListRemove((32));
           DestroyTask(FindTaskIdByFunc(Task_FlyIn));
       }
 }
@@ -2746,7 +2700,7 @@ export function FldEff_DestroyDeoxysRock(): any {
       }
       else
       {
-          FieldEffectActiveListRemove(FLDEFF_DESTROY_DEOXYS_ROCK);
+          FieldEffectActiveListRemove((65));
       }
       return FALSE;
 }
@@ -2798,7 +2752,7 @@ export function Task_DestroyDeoxysRock(taskId: any): any {
 /** static void DestroyDeoxysRockEffect_CameraShake(s16 *data, u8 taskId) */
 export function DestroyDeoxysRockEffect_CameraShake(data: any, taskId: any): any {
   let newTaskId: any = CreateTask(Task_DeoxysRockCameraShake, 90);
-      PlaySE(SE_THUNDER2);
+      PlaySE((88));
       tCameraTaskId = newTaskId;
       tState++;
 }
@@ -2809,10 +2763,10 @@ export function DestroyDeoxysRockEffect_RockFragments(data: any, taskId: any): a
       {
           let sprite: any =gSprites[gObjectEvents[tObjectEventId].spriteId];
           gObjectEvents[tObjectEventId].invisible = TRUE;
-          BlendPalettes(PALETTES_BG, 0x10, RGB_WHITE);
-          BeginNormalPaletteFade(PALETTES_BG, 0, 0x10, 0, RGB_WHITE);
+          BlendPalettes((0x0000FFFF), 0x10, (RGB(31, 31, 31)));
+          BeginNormalPaletteFade((0x0000FFFF), 0, 0x10, 0, (RGB(31, 31, 31)));
           CreateDeoxysRockFragments(sprite);
-          PlaySE(SE_THUNDER);
+          PlaySE((87));
           StartEndingDeoxysRockCameraShake(tCameraTaskId);
           tTimer = 0;
           tState++;
@@ -2825,7 +2779,7 @@ export function DestroyDeoxysRockEffect_WaitAndEnd(data: any, taskId: any): any 
       {
           InstallCameraPanAheadCallback();
           RemoveObjectEventByLocalIdAndMap(tLocalId, tMapNum, tMapGroup);
-          FieldEffectActiveListRemove(FLDEFF_DESTROY_DEOXYS_ROCK);
+          FieldEffectActiveListRemove((65));
           DestroyTask(taskId);
       }
 }
@@ -2839,7 +2793,7 @@ export function CreateDeoxysRockFragments(sprite: any): any {
       for (i = 0; i < 4; i++)
       {
           let spriteId: any = CreateSprite(sSpriteTemplate_DeoxysRockFragment, xPos, yPos, 0);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               StartSpriteAnim(gSprites[spriteId], i);
               gSprites[spriteId].data[0] = i;
@@ -2882,11 +2836,11 @@ export function FldEff_MoveDeoxysRock(sprite: any): any {
           let xPos, yPos;
           let taskId: any = null;
           object =gObjectEvents[objectEventId];
-          xPos = object.currentCoords.x - MAP_OFFSET;
-          yPos = object.currentCoords.y - MAP_OFFSET;
+          xPos = object.currentCoords.x - (7);
+          yPos = object.currentCoords.y - (7);
           xPos = (gFieldEffectArguments[3] - xPos) * 16;
           yPos = (gFieldEffectArguments[4] - yPos) * 16;
-          ShiftObjectEventCoords(object, gFieldEffectArguments[3] + MAP_OFFSET, gFieldEffectArguments[4] + MAP_OFFSET);
+          ShiftObjectEventCoords(object, gFieldEffectArguments[3] + (7), gFieldEffectArguments[4] + (7));
           taskId = CreateTask(Task_MoveDeoxysRock, 80);
           gTasks[taskId].tSpriteId = object.spriteId;
           gTasks[taskId].tTargetX = gSprites[object.spriteId].x + xPos;
@@ -2926,7 +2880,7 @@ export function Task_MoveDeoxysRock(taskId: any): any {
                   sprite.y = tTargetY;
                   ShiftStillObjectEventCoords(object);
                   object.triggerGroundEffectsOnStop = TRUE;
-                  FieldEffectActiveListRemove(FLDEFF_MOVE_DEOXYS_ROCK);
+                  FieldEffectActiveListRemove((66));
                   DestroyTask(taskId);
               }
               break;

@@ -17,28 +17,35 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let apprenticeId: any = null;
+let id: any = null;
+let itemId2: any = null;
+let j: any = null;
+let k: any = null;
+let mixMail2: any = null;
+let nicknameLanguage: any = null;
+let numApprentices: any = null;
+let numMixApprentices: any = null;
+let oldPlayerApprenticeSaveId: any = null;
 let sApprenticesSave: any = null;
 let sBattleTowerSave: any = null;
 let sBattleTowerSave_Duplicate: any = null;
 let sDaycareMailRandSum: any = null;
-let sDaycareMailSwapIds_3Player: any = null;
-let sDaycareMailSwapIds_4Player: any = null;
 let sDewfordTrendsSave: any = null;
 let sLilycoveLadySave: any = null;
 let sOldManSave: any = null;
-let sPartnerHallRecords: any = null;
-let sPlayerIdxOrders_2Player: any = null;
-let sPlayerIdxOrders_3Player: any = null;
-let sPlayerIdxOrders_4Player: any = null;
 let sPokeNewsSave: any = null;
 let sReadyToReceive: any = null;
 let sReceivedRecords: any = null;
-let sRecordMixMail: any = null;
 let sRecordMixMailSave: any = null;
 let sRecordStructSize: any = null;
 let sSecretBasesSave: any = null;
 let sSentRecord: any = null;
 let sTvShowsSave: any = null;
+let tLinkTaskId: any = null;
+let tSoundTaskId: any = null;
+let tState: any = null;
+let tTimer: any = null;
 /** void RecordMixingPlayerSpotTriggered(void) */
 export function RecordMixingPlayerSpotTriggered(): any {
   CreateTask_EnterCableClubSeat(Task_RecordMixing_Main);
@@ -169,7 +176,7 @@ export function PrintTextOnRecordMixing(src: any): any {
 export function Task_RecordMixing_SoundEffect(taskId: any): any {
   if (++gTasks[taskId].tCounter == 50)
       {
-          PlaySE(SE_M_ATTRACT);
+          PlaySE((226));
           gTasks[taskId].tCounter = 0;
       }
 }
@@ -182,9 +189,9 @@ export function Task_RecordMixing_Main(taskId: any): any {
       {
       case 0:  
           sSentRecord = Alloc(0);
-          sReceivedRecords = Alloc(0 * MAX_LINK_PLAYERS);
+          sReceivedRecords = Alloc(0 * (4));
           SetLocalLinkPlayerId(gSpecialVar_0x8005);
-          VarSet(VAR_TEMP_MIXED_RECORDS, 1);
+          VarSet(((((0x4000) + 0x0))), 1);
           sReadyToReceive = FALSE;
           PrepareExchangePacket();
           CreateRecordMixingLights();
@@ -196,7 +203,7 @@ export function Task_RecordMixing_Main(taskId: any): any {
           if (!gTasks[tLinkTaskId].isActive)
           {
               tState = 2;
-              FlagSet(FLAG_SYS_MIX_RECORD);
+              FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x34)));
               DestroyRecordMixingLights();
               DestroyTask(tSoundTaskId);
           }
@@ -204,7 +211,7 @@ export function Task_RecordMixing_Main(taskId: any): any {
       case 2:
           tLinkTaskId = CreateTask(Task_DoRecordMixing, 10);
           tState = 3;
-          PlaySE(SE_M_BATON_PASS);
+          PlaySE((224));
           break;
       case 3:  
           if (!gTasks[tLinkTaskId].isActive)
@@ -263,14 +270,14 @@ export function Task_MixingRecordsRecv(taskId: any): any {
               {
                   if (players == GetSavedPlayerCount())
                   {
-                      PlaySE(SE_PIN);
+                      PlaySE((21));
                       task.tState = 201;
                       task.data[12] = 0;
                   }
               }
               else
               {
-                  PlaySE(SE_BOO);
+                  PlaySE((22));
                   task.tState = 301;
               }
           }
@@ -512,8 +519,8 @@ export function ReceiveBattleTowerData(records: any, recordSize: any, multiplaye
           for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)
           {
               btPokemon =battleTowerRecord.party[i];
-              if (btPokemon.species != SPECIES_NONE && IsStringJapanese(btPokemon.nickname))
-                  ConvertInternationalString(btPokemon.nickname, LANGUAGE_JAPANESE);
+              if (btPokemon.species != (0) && IsStringJapanese(btPokemon.nickname))
+                  ConvertInternationalString(btPokemon.nickname, (1));
           }
           CalcEmeraldBattleTowerChecksum(battleTowerRecord);
       }
@@ -612,7 +619,7 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
       oldSeed = Random2();
       SeedRng2(gLinkPlayers[0].trainerId);
       linkPlayerCount = GetLinkPlayerCount();
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
       {
           unusedArr1[i] = 0xFF;
           unusedArr2[i] = 0;
@@ -635,7 +642,7 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
               let otNameLanguage, nicknameLanguage;
               let daycareMail: any =mixMail.mail[j];
 
-              if (daycareMail.message.itemId == ITEM_NONE)
+              if (daycareMail.message.itemId == (0))
                   continue;
 
               if (anyRS)
@@ -643,7 +650,7 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
                    
                   if (StringLength(daycareMail.otName) <= 5)
                   {
-                      otNameLanguage = LANGUAGE_JAPANESE;
+                      otNameLanguage = (1);
                   }
                   else
                   {
@@ -652,10 +659,10 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
                   }
 
                    
-                  if (daycareMail.monName[0] == EXT_CTRL_CODE_BEGIN && daycareMail.monName[1] == EXT_CTRL_CODE_JPN)
+                  if (daycareMail.monName[0] == (0xFC) && daycareMail.monName[1] == (0x15))
                   {
                       StripExtCtrlCodes(daycareMail.monName);
-                      nicknameLanguage = LANGUAGE_JAPANESE;
+                      nicknameLanguage = (1);
                   }
                   else
                   {
@@ -663,23 +670,23 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
                   }
 
                    
-                  if (version == VERSION_RUBY || version == VERSION_SAPPHIRE)
+                  if (version == (2) || version == (1))
                   {
                       daycareMail.gameLanguage = otNameLanguage;
                       daycareMail.monLanguage = nicknameLanguage;
                   }
               }
-              else if (language == LANGUAGE_JAPANESE)
+              else if (language == (1))
               {
                   if (IsStringJapanese(daycareMail.otName))
-                      daycareMail.gameLanguage = LANGUAGE_JAPANESE;
+                      daycareMail.gameLanguage = (1);
                   else
-                      daycareMail.gameLanguage = GAME_LANGUAGE;
+                      daycareMail.gameLanguage = (((3)));
 
                   if (IsStringJapanese(daycareMail.monName))
-                      daycareMail.monLanguage = LANGUAGE_JAPANESE;
+                      daycareMail.monLanguage = (1);
                   else
-                      daycareMail.monLanguage = GAME_LANGUAGE;
+                      daycareMail.monLanguage = (((3)));
               }
           }
       }
@@ -753,7 +760,7 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
       }
 
        
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
       {
           mixMail =records[multiplayerId * recordSize];
           unusedMixMail[i] = mixMail;
@@ -799,18 +806,18 @@ export function ReceiveDaycareMailData(records: any, recordSize: any, multiplaye
 
 /** static void ReceiveGiftItem(u16 *item, u8 multiplayerId) */
 export function ReceiveGiftItem(item: any, multiplayerId: any): any {
-  if (multiplayerId != 0 && item != ITEM_NONE && GetPocketByItemId(item) == POCKET_KEY_ITEMS)
+  if (multiplayerId != 0 && item != (0) && GetPocketByItemId(item) == (5))
       {
           if (!CheckBagHasItem(item, 1) && !CheckPCHasItem(item, 1) && AddBagItem(item, 1))
           {
-              VarSet(VAR_TEMP_RECORD_MIX_GIFT_ITEM, item);
+              VarSet(((((0x4000) + 0x1))), item);
               StringCopy(gStringVar1, gLinkPlayers[0].name);
-              if (item == ITEM_EON_TICKET)
-                  FlagSet(FLAG_ENABLE_SHIP_SOUTHERN_ISLAND);
+              if (item == (275))
+                  FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x53)));
           }
           else
           {
-              VarSet(VAR_TEMP_RECORD_MIX_GIFT_ITEM, ITEM_NONE);
+              VarSet(((((0x4000) + 0x1))), (0));
           }
       }
 }
@@ -896,8 +903,8 @@ export function GetSavedApprentices(dst: any, src: any): any {
       let apprenticeSaveId, oldPlayerApprenticeSaveId;
       let numOldPlayerApprentices, numMixApprentices;
 
-      dst[0].playerName[0] = EOS;
-      dst[1].playerName[0] = EOS;
+      dst[0].playerName[0] = (0xFF);
+      dst[1].playerName[0] = (0xFF);
 
       dst[0] = src[0];
 
@@ -907,8 +914,8 @@ export function GetSavedApprentices(dst: any, src: any): any {
       numMixApprentices = 0;
       for (i = 0; i < 2; i++)
       {
-          id = (i + gSaveBlock2Ptr.playerApprentice.saveId) % (APPRENTICE_COUNT - 1) + 1;
-          if (src[id].playerName[0] != EOS)
+          id = (i + gSaveBlock2Ptr.playerApprentice.saveId) % ((4) - 1) + 1;
+          if (src[id].playerName[0] != (0xFF))
           {
               if (GetTrainerId(src[id].playerId) != GetTrainerId(gSaveBlock2Ptr.playerTrainerId))
               {
@@ -939,7 +946,7 @@ export function GetSavedApprentices(dst: any, src: any): any {
           if (Random2() > 0x3333)
               dst[1] = src[gSaveBlock2Ptr.playerApprentice.saveId + 1];
           else
-              dst[1] = src[((gSaveBlock2Ptr.playerApprentice.saveId + 1) % (APPRENTICE_COUNT - 1) + 1)];
+              dst[1] = src[((gSaveBlock2Ptr.playerApprentice.saveId + 1) % ((4) - 1) + 1)];
           break;
       }
 }
@@ -948,38 +955,38 @@ export function GetSavedApprentices(dst: any, src: any): any {
 export function GetPlayerHallRecords(dst: any): any {
   let i, j;
 
-      for (i = 0; i < HALL_FACILITIES_COUNT; i++)
+      for (i = 0; i < (9); i++)
       {
-          for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+          for (j = 0; j < (2); j++)
           {
               CopyTrainerId(dst.onePlayer[i][j].id, gSaveBlock2Ptr.playerTrainerId);
-              dst.onePlayer[i][j].language = GAME_LANGUAGE;
+              dst.onePlayer[i][j].language = (((3)));
               StringCopy(dst.onePlayer[i][j].name, gSaveBlock2Ptr.playerName);
           }
       }
 
-      for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+      for (j = 0; j < (2); j++)
       {
-          dst.twoPlayers[j].language = GAME_LANGUAGE;
+          dst.twoPlayers[j].language = (((3)));
           CopyTrainerId(dst.twoPlayers[j].id1, gSaveBlock2Ptr.playerTrainerId);
           CopyTrainerId(dst.twoPlayers[j].id2, gSaveBlock2Ptr.frontier.opponentTrainerIds[j]);
           StringCopy(dst.twoPlayers[j].name1, gSaveBlock2Ptr.playerName);
           StringCopy(dst.twoPlayers[j].name2, gSaveBlock2Ptr.frontier.opponentNames[j]);
       }
 
-      for (i = 0; i < FRONTIER_LVL_MODE_COUNT; i++)
+      for (i = 0; i < (2); i++)
       {
-          dst.onePlayer[RANKING_HALL_TOWER_SINGLES][i].winStreak = gSaveBlock2Ptr.frontier.towerRecordWinStreaks[FRONTIER_MODE_SINGLES][i];
-          dst.onePlayer[RANKING_HALL_TOWER_DOUBLES][i].winStreak = gSaveBlock2Ptr.frontier.towerRecordWinStreaks[FRONTIER_MODE_DOUBLES][i];
-          dst.onePlayer[RANKING_HALL_TOWER_MULTIS][i].winStreak = gSaveBlock2Ptr.frontier.towerRecordWinStreaks[FRONTIER_MODE_MULTIS][i];
-          dst.onePlayer[RANKING_HALL_DOME][i].winStreak = gSaveBlock2Ptr.frontier.domeRecordWinStreaks[FRONTIER_MODE_SINGLES][i];
-          dst.onePlayer[RANKING_HALL_PALACE][i].winStreak = gSaveBlock2Ptr.frontier.palaceRecordWinStreaks[FRONTIER_MODE_SINGLES][i];
-          dst.onePlayer[RANKING_HALL_ARENA][i].winStreak = gSaveBlock2Ptr.frontier.arenaRecordStreaks[i];
-          dst.onePlayer[RANKING_HALL_FACTORY][i].winStreak = gSaveBlock2Ptr.frontier.factoryRecordWinStreaks[FRONTIER_MODE_SINGLES][i];
-          dst.onePlayer[RANKING_HALL_PIKE][i].winStreak = gSaveBlock2Ptr.frontier.pikeRecordStreaks[i];
-          dst.onePlayer[RANKING_HALL_PYRAMID][i].winStreak = gSaveBlock2Ptr.frontier.pyramidRecordStreaks[i];
+          dst.onePlayer[(0)][i].winStreak = gSaveBlock2Ptr.frontier.towerRecordWinStreaks[(0)][i];
+          dst.onePlayer[(1)][i].winStreak = gSaveBlock2Ptr.frontier.towerRecordWinStreaks[(1)][i];
+          dst.onePlayer[(2)][i].winStreak = gSaveBlock2Ptr.frontier.towerRecordWinStreaks[(2)][i];
+          dst.onePlayer[(3)][i].winStreak = gSaveBlock2Ptr.frontier.domeRecordWinStreaks[(0)][i];
+          dst.onePlayer[(4)][i].winStreak = gSaveBlock2Ptr.frontier.palaceRecordWinStreaks[(0)][i];
+          dst.onePlayer[(5)][i].winStreak = gSaveBlock2Ptr.frontier.arenaRecordStreaks[i];
+          dst.onePlayer[(6)][i].winStreak = gSaveBlock2Ptr.frontier.factoryRecordWinStreaks[(0)][i];
+          dst.onePlayer[(7)][i].winStreak = gSaveBlock2Ptr.frontier.pikeRecordStreaks[i];
+          dst.onePlayer[(8)][i].winStreak = gSaveBlock2Ptr.frontier.pyramidRecordStreaks[i];
 
-          dst.twoPlayers[i].winStreak = gSaveBlock2Ptr.frontier.towerRecordWinStreaks[FRONTIER_MODE_LINK_MULTIS][i];
+          dst.twoPlayers[i].winStreak = gSaveBlock2Ptr.frontier.towerRecordWinStreaks[(3)][i];
       }
 }
 
@@ -987,7 +994,7 @@ export function GetPlayerHallRecords(dst: any): any {
 export function IsApprenticeAlreadySaved(mixApprentice: any, apprentices: any): any {
   let i: any = null;
 
-      for (i = 0; i < APPRENTICE_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (GetTrainerId(mixApprentice.playerId) == GetTrainerId(apprentices[i].playerId)
               && mixApprentice.number == apprentices[i].number)
@@ -1010,7 +1017,7 @@ export function ReceiveApprenticeData(records: any, recordSize: any, multiplayer
       apprenticeId = 0;
       for (i = 0; i < 2; i++)
       {
-          if (mixApprentice[i].playerName[0] != EOS && !IsApprenticeAlreadySaved(mixApprentice[i],gSaveBlock2Ptr.apprentices[0]))
+          if (mixApprentice[i].playerName[0] != (0xFF) && !IsApprenticeAlreadySaved(mixApprentice[i],gSaveBlock2Ptr.apprentices[0]))
           {
               numApprentices++;
               apprenticeId = i;
@@ -1022,15 +1029,15 @@ export function ReceiveApprenticeData(records: any, recordSize: any, multiplayer
       case 1:
           apprenticeSaveId = gSaveBlock2Ptr.playerApprentice.saveId + 1;
           gSaveBlock2Ptr.apprentices[apprenticeSaveId] = mixApprentice[apprenticeId];
-          gSaveBlock2Ptr.playerApprentice.saveId = (gSaveBlock2Ptr.playerApprentice.saveId + 1) % (APPRENTICE_COUNT - 1);
+          gSaveBlock2Ptr.playerApprentice.saveId = (gSaveBlock2Ptr.playerApprentice.saveId + 1) % ((4) - 1);
           break;
       case 2:
           for (i = 0; i < 2; i++)
           {
-              apprenticeSaveId = ((i ^ 1) + gSaveBlock2Ptr.playerApprentice.saveId) % (APPRENTICE_COUNT - 1) + 1;
+              apprenticeSaveId = ((i ^ 1) + gSaveBlock2Ptr.playerApprentice.saveId) % ((4) - 1) + 1;
               gSaveBlock2Ptr.apprentices[apprenticeSaveId] = mixApprentice[i];
           }
-          gSaveBlock2Ptr.playerApprentice.saveId = (gSaveBlock2Ptr.playerApprentice.saveId + 2) % (APPRENTICE_COUNT - 1);
+          gSaveBlock2Ptr.playerApprentice.saveId = (gSaveBlock2Ptr.playerApprentice.saveId + 2) % ((4) - 1);
           break;
       }
 }
@@ -1046,25 +1053,25 @@ export function GetNewHallRecords(dst: any, records: any, recordSize: any, multi
       {
           if (i != multiplayerId)
               sPartnerHallRecords[k++] = records;
-          if (k == HALL_RECORDS_COUNT)
+          if (k == (3))
               break;
           records += recordSize;
       }
 
        
-      for (i = 0; i < HALL_FACILITIES_COUNT; i++)
+      for (i = 0; i < (9); i++)
       {
-          for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+          for (j = 0; j < (2); j++)
           {
                
-              for (k = 0; k < HALL_RECORDS_COUNT; k++)
+              for (k = 0; k < (3); k++)
                   dst.hallRecords1P[i][j][k] = gSaveBlock2Ptr.hallRecords1P[i][j][k];
 
                
               for (k = 0; k < linkPlayerCount - 1; k++)
               {
                   repeatTrainers = 0;
-                  for (l = 0; l < HALL_RECORDS_COUNT; l++)
+                  for (l = 0; l < (3); l++)
                   {
                        
                        
@@ -1078,23 +1085,23 @@ export function GetNewHallRecords(dst: any, records: any, recordSize: any, multi
 
                    
                   if (repeatTrainers == 0)
-                      dst.hallRecords1P[i][j][k + HALL_RECORDS_COUNT] = sPartnerHallRecords[k].onePlayer[i][j];
+                      dst.hallRecords1P[i][j][k + (3)] = sPartnerHallRecords[k].onePlayer[i][j];
               }
           }
       }
 
        
-      for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+      for (j = 0; j < (2); j++)
       {
            
-          for (k = 0; k < HALL_RECORDS_COUNT; k++)
+          for (k = 0; k < (3); k++)
               dst.hallRecords2P[j][k] = gSaveBlock2Ptr.hallRecords2P[j][k];
 
            
           for (k = 0; k < linkPlayerCount - 1; k++)
           {
               repeatTrainers = 0;
-              for (l = 0; l < HALL_RECORDS_COUNT; l++)
+              for (l = 0; l < (3); l++)
               {
                    
                    
@@ -1109,7 +1116,7 @@ export function GetNewHallRecords(dst: any, records: any, recordSize: any, multi
 
                
               if (repeatTrainers == 0)
-                  dst.hallRecords2P[j][k + HALL_RECORDS_COUNT] = sPartnerHallRecords[k].twoPlayers[j];
+                  dst.hallRecords2P[j][k + (3)] = sPartnerHallRecords[k].twoPlayers[j];
           }
       }
 }
@@ -1119,12 +1126,12 @@ export function FillWinStreakRecords1P(playerRecords: any, mixRecords: any): any
   let i, j;
 
        
-      for (i = 0; i < HALL_RECORDS_COUNT; i++)
+      for (i = 0; i < (3); i++)
       {
            
           let highestWinStreak: any = 0;
           let highestId: any = -1;
-          for (j = 0; j < HALL_RECORDS_COUNT * 2; j++)
+          for (j = 0; j < (3) * 2; j++)
           {
               if (mixRecords[j].winStreak > highestWinStreak)
               {
@@ -1147,12 +1154,12 @@ export function FillWinStreakRecords2P(playerRecords: any, mixRecords: any): any
   let i, j;
 
        
-      for (i = 0; i < HALL_RECORDS_COUNT; i++)
+      for (i = 0; i < (3); i++)
       {
            
           let highestWinStreak: any = 0;
           let highestId: any = -1;
-          for (j = 0; j < HALL_RECORDS_COUNT * 2; j++)
+          for (j = 0; j < (3) * 2; j++)
           {
               if (mixRecords[j].winStreak > highestWinStreak)
               {
@@ -1174,12 +1181,12 @@ export function FillWinStreakRecords2P(playerRecords: any, mixRecords: any): any
 export function SaveHighestWinStreakRecords(mixHallRecords: any): any {
   let i, j;
 
-      for (i = 0; i < HALL_FACILITIES_COUNT; i++)
+      for (i = 0; i < (9); i++)
       {
-          for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+          for (j = 0; j < (2); j++)
               FillWinStreakRecords1P(gSaveBlock2Ptr.hallRecords1P[i][j], mixHallRecords.hallRecords1P[i][j]);
       }
-      for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+      for (j = 0; j < (2); j++)
           FillWinStreakRecords2P(gSaveBlock2Ptr.hallRecords2P[j], mixHallRecords.hallRecords2P[j]);
 }
 
@@ -1209,10 +1216,10 @@ export function SanitizeDaycareMailForRuby(src: any): any {
       for (i = 0; i < src.numDaycareMons; i++)
       {
           let mail: any =src.mail[i];
-          if (mail.message.itemId != ITEM_NONE)
+          if (mail.message.itemId != (0))
           {
-              if (mail.gameLanguage != LANGUAGE_JAPANESE)
-                  PadNameString(mail.otName, EXT_CTRL_CODE_BEGIN);
+              if (mail.gameLanguage != (1))
+                  PadNameString(mail.otName, (0xFC));
 
               ConvertInternationalString(mail.monName, mail.monLanguage);
           }
@@ -1226,7 +1233,7 @@ export function SanitizeEmeraldBattleTowerRecord(dst: any): any {
       for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)
       {
           let towerMon: any =dst.party[i];
-          if (towerMon.species != SPECIES_NONE)
+          if (towerMon.species != (0))
               StripExtCtrlCodes(towerMon.nickname);
       }
 

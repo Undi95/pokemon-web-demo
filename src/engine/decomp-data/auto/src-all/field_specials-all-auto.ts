@@ -17,40 +17,35 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattleFrontier_TutorMoves1: any = null;
-let sBattleFrontier_TutorMoves2: any = null;
+let delay: any = null;
+let gBikeCollisions: any = null;
+let gBikeCyclingChallenge: any = null;
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_0x8005: any = null;
+let gSpecialVar_0x8006: any = null;
+let gSpecialVar_0x8007: any = null;
 let sBattlePointsWindowId: any = null;
 let sBattleTowerMultiBattleTypeFlags: any = null;
 let sBikeCyclingTimer: any = null;
-let sDeoxysRockCoords: any = null;
-let sDeoxysRockPalettes: any = null;
-let sDeptStoreFloorNames: any = null;
-let sElevatorWindowTiles_Ascending: any = null;
-let sElevatorWindowTiles_Descending: any = null;
-let sFrontierExchangeCorner_Decor1: any = null;
-let sFrontierExchangeCorner_Decor1Descriptions: any = null;
-let sFrontierExchangeCorner_Decor2: any = null;
-let sFrontierExchangeCorner_Decor2Descriptions: any = null;
-let sFrontierExchangeCorner_HoldItems: any = null;
-let sFrontierExchangeCorner_HoldItemsDescriptions: any = null;
 let sFrontierExchangeCorner_ItemIconWindowId: any = null;
 let sFrontierExchangeCorner_NeverRead: any = null;
-let sFrontierExchangeCorner_Vitamins: any = null;
-let sFrontierExchangeCorner_VitaminsDescriptions: any = null;
 let sLilycoveDeptStore_DefaultFloorChoice: any = null;
 let sLilycoveDeptStore_NeverRead: any = null;
-let sMauvilleGymSwitchCoords: any = null;
 let sPCBoxToSendMon: any = null;
-let sPetalburgGymSlidingDoorMetatiles: any = null;
-let sScrollableMultichoiceOptions: any = null;
 let sScrollableMultichoice_ItemSpriteId: any = null;
 let sScrollableMultichoice_ListMenuItem: any = null;
 let sScrollableMultichoice_ScrollOffset: any = null;
 let sSlidingDoorFrame: any = null;
 let sSlidingDoorNextFrameCounter: any = null;
-let sSlidingDoorNextFrameDelay: any = null;
 let sTutorMoveAndElevatorWindowId: any = null;
-let sWindowTemplate_ElevatorFloor: any = null;
+let tDelayCounter: any = null;
+let tDescending: any = null;
+let tHorizontalPan: any = null;
+let tMoveCounter: any = null;
+let tTimer: any = null;
+let tTotalMoves: any = null;
+let tVerticalPan: any = null;
+let windowId: any = null;
 /** void Special_ShowDiploma(void) */
 export function Special_ShowDiploma(): any {
   SetMainCallback2(CB2_ShowDiploma);
@@ -80,9 +75,9 @@ export function Special_BeginCyclingRoadChallenge(): any {
 
 /** u16 GetPlayerAvatarBike(void) */
 export function GetPlayerAvatarBike(): any {
-  if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_ACRO_BIKE))
+  if (TestPlayerAvatarFlags(((1 << 2))))
           return 1;
-      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE))
+      if (TestPlayerAvatarFlags(((1 << 1))))
           return 2;
       return 0;
 }
@@ -104,7 +99,7 @@ export function DetermineCyclingRoadResults(numFrames: any, numBikeCollisions: a
       if (numFrames < 3600)
       {
           ConvertIntToDecimalStringN(gStringVar2, numFrames / 60, STR_CONV_MODE_RIGHT_ALIGN, 2);
-          gStringVar2[2] = CHAR_DEC_SEPARATOR;
+          gStringVar2[2] = ((0xB8));
           ConvertIntToDecimalStringN(gStringVar2[3], ((numFrames % 60) * 100) / 60, STR_CONV_MODE_LEADING_ZEROS, 2);
           StringAppend(gStringVar2, gText_SpaceSeconds);
       }
@@ -149,28 +144,28 @@ export function FinishCyclingRoadChallenge(): any {
 
 /** static void RecordCyclingRoadResults(u32 numFrames, u8 numBikeCollisions) */
 export function RecordCyclingRoadResults(numFrames: any, numBikeCollisions: any): any {
-  let low: any = VarGet(VAR_CYCLING_ROAD_RECORD_TIME_L);
-      let high: any = VarGet(VAR_CYCLING_ROAD_RECORD_TIME_H);
+  let low: any = VarGet((0x4028));
+      let high: any = VarGet((0x4029));
       let framesRecord: any = low + (high << 16);
 
       if (framesRecord > numFrames || framesRecord == 0)
       {
-          VarSet(VAR_CYCLING_ROAD_RECORD_TIME_L, numFrames);
-          VarSet(VAR_CYCLING_ROAD_RECORD_TIME_H, numFrames >> 16);
-          VarSet(VAR_CYCLING_ROAD_RECORD_COLLISIONS, numBikeCollisions);
+          VarSet((0x4028), numFrames);
+          VarSet((0x4029), numFrames >> 16);
+          VarSet((0x4027), numBikeCollisions);
       }
 }
 
 /** u16 GetRecordedCyclingRoadResults(void) */
 export function GetRecordedCyclingRoadResults(): any {
-  let low: any = VarGet(VAR_CYCLING_ROAD_RECORD_TIME_L);
-      let high: any = VarGet(VAR_CYCLING_ROAD_RECORD_TIME_H);
+  let low: any = VarGet((0x4028));
+      let high: any = VarGet((0x4029));
       let framesRecord: any = low + (high << 16);
 
       if (framesRecord == 0)
           return FALSE;
 
-      DetermineCyclingRoadResults(framesRecord, VarGet(VAR_CYCLING_ROAD_RECORD_COLLISIONS));
+      DetermineCyclingRoadResults(framesRecord, VarGet((0x4027)));
       return TRUE;
 }
 
@@ -179,27 +174,26 @@ export function UpdateCyclingRoadState(): any {
   if (gLastUsedWarp.mapNum == MAP_NUM(MAP_ROUTE110_SEASIDE_CYCLING_ROAD_NORTH_ENTRANCE) && gLastUsedWarp.mapGroup == MAP_GROUP(MAP_ROUTE110_SEASIDE_CYCLING_ROAD_NORTH_ENTRANCE))
           return;
 
-      if (VarGet(VAR_CYCLING_CHALLENGE_STATE) == 2 || VarGet(VAR_CYCLING_CHALLENGE_STATE) == 3)
+      if (VarGet((0x40A9)) == 2 || VarGet((0x40A9)) == 3)
       {
-          VarSet(VAR_CYCLING_CHALLENGE_STATE, 0);
-          Overworld_SetSavedMusic(MUS_DUMMY);
+          VarSet((0x40A9), 0);
+          Overworld_SetSavedMusic((0));
       }
 }
 
 /** void SetSSTidalFlag(void) */
 export function SetSSTidalFlag(): any {
-  FlagSet(FLAG_SYS_CRUISE_MODE);
-      VarSet(VAR_CRUISE_STEP_COUNT, 0);
+  FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x2D)));VarSet(0x404A, 0);
 }
 
 /** void ResetSSTidalFlag(void) */
 export function ResetSSTidalFlag(): any {
-  FlagClear(FLAG_SYS_CRUISE_MODE);
+  FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2D)));
 }
 
 /** bool32 CountSSTidalStep(u16 delta) */
 export function CountSSTidalStep(delta: any): any {
-  if (!FlagGet(FLAG_SYS_CRUISE_MODE) || ((VarSet(VAR_CRUISE_STEP_COUNT, VarGet(VAR_CRUISE_STEP_COUNT) + (delta)), VarGet(VAR_CRUISE_STEP_COUNT))) < SS_TIDAL_MAX_STEPS)
+  if (!FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x2D))) || ((VarSet(0x404A, VarGet(0x404A) + (delta)), VarGet(0x404A))) < (205))
           return FALSE;
 
       return TRUE;
@@ -207,22 +201,22 @@ export function CountSSTidalStep(delta: any): any {
 
 /** u8 GetSSTidalLocation(s8 *mapGroup, s8 *mapNum, s16 *x, s16 *y) */
 export function GetSSTidalLocation(mapGroup: any, mapNum: any, x: any, y: any): any {
-  let varCruiseStepCount: any = GetVarPointer(VAR_CRUISE_STEP_COUNT);
-      switch (GetVarPointer(VAR_SS_TIDAL_STATE))
+  let varCruiseStepCount: any = GetVarPointer((0x404A));
+      switch (GetVarPointer((0x40B4)))
       {
-      case SS_TIDAL_BOARD_SLATEPORT:
-      case SS_TIDAL_LAND_SLATEPORT:
-          return SS_TIDAL_LOCATION_SLATEPORT;
-      case SS_TIDAL_HALFWAY_LILYCOVE:
-      case SS_TIDAL_EXIT_CURRENTS_RIGHT:
-          return SS_TIDAL_LOCATION_ROUTE131;
-      case SS_TIDAL_LAND_LILYCOVE:
-      case SS_TIDAL_BOARD_LILYCOVE:
-          return SS_TIDAL_LOCATION_LILYCOVE;
-      case SS_TIDAL_DEPART_LILYCOVE:
-      case SS_TIDAL_EXIT_CURRENTS_LEFT:
-          return SS_TIDAL_LOCATION_ROUTE124;
-      case SS_TIDAL_DEPART_SLATEPORT:
+      case (1):
+      case (8):
+          return (1);
+      case (3):
+      case (9):
+          return (4);
+      case (4):
+      case (5):
+          return (2);
+      case (6):
+      case (10):
+          return (3);
+      case (2):
           if (varCruiseStepCount < 60)
           {
               mapNum = MAP_NUM(MAP_ROUTE134);
@@ -239,7 +233,7 @@ export function GetSSTidalLocation(mapGroup: any, mapNum: any, x: any, y: any): 
               x = varCruiseStepCount - 140;
           }
           break;
-      case SS_TIDAL_HALFWAY_SLATEPORT:
+      case (7):
           if (varCruiseStepCount < 66)
           {
               mapNum = MAP_NUM(MAP_ROUTE132);
@@ -259,20 +253,20 @@ export function GetSSTidalLocation(mapGroup: any, mapNum: any, x: any, y: any): 
       }
       mapGroup = MAP_GROUP(MAP_ROUTE132);
       y = 20;
-      return SS_TIDAL_LOCATION_CURRENTS;
+      return (0);
 }
 
 /** bool32 ShouldDoWallyCall(void) */
 export function ShouldDoWallyCall(): any {
-  if (FlagGet(FLAG_ENABLE_FIRST_WALLY_POKENAV_CALL))
+  if (FlagGet((0x88)))
       {
           switch (gMapHeader.mapType)
           {
-          case MAP_TYPE_TOWN:
-          case MAP_TYPE_CITY:
-          case MAP_TYPE_ROUTE:
-          case MAP_TYPE_OCEAN_ROUTE:
-              if ((VarSet(VAR_WALLY_CALL_STEP_COUNTER, VarGet(VAR_WALLY_CALL_STEP_COUNTER) + 1), VarGet(VAR_WALLY_CALL_STEP_COUNTER)) < 250)
+          case (1):
+          case (2):
+          case (3):
+          case (6):
+              if ((VarSet(0x40F2, VarGet(0x40F2) + 1), VarGet(0x40F2)) < 250)
                   return FALSE;
               break;
           default:
@@ -289,15 +283,15 @@ export function ShouldDoWallyCall(): any {
 
 /** bool32 ShouldDoScottFortreeCall(void) */
 export function ShouldDoScottFortreeCall(): any {
-  if (FlagGet(FLAG_SCOTT_CALL_FORTREE_GYM))
+  if (FlagGet((0x8A)))
       {
           switch (gMapHeader.mapType)
           {
-          case MAP_TYPE_TOWN:
-          case MAP_TYPE_CITY:
-          case MAP_TYPE_ROUTE:
-          case MAP_TYPE_OCEAN_ROUTE:
-              if ((VarSet(VAR_SCOTT_FORTREE_CALL_STEP_COUNTER, VarGet(VAR_SCOTT_FORTREE_CALL_STEP_COUNTER) + 1), VarGet(VAR_SCOTT_FORTREE_CALL_STEP_COUNTER)) < 10)
+          case (1):
+          case (2):
+          case (3):
+          case (6):
+              if ((VarSet(0x40F3, VarGet(0x40F3) + 1), VarGet(0x40F3)) < 10)
                   return FALSE;
               break;
           default:
@@ -314,15 +308,15 @@ export function ShouldDoScottFortreeCall(): any {
 
 /** bool32 ShouldDoScottBattleFrontierCall(void) */
 export function ShouldDoScottBattleFrontierCall(): any {
-  if (FlagGet(FLAG_SCOTT_CALL_BATTLE_FRONTIER))
+  if (FlagGet((0x72)))
       {
           switch (gMapHeader.mapType)
           {
-          case MAP_TYPE_TOWN:
-          case MAP_TYPE_CITY:
-          case MAP_TYPE_ROUTE:
-          case MAP_TYPE_OCEAN_ROUTE:
-              if ((VarSet(VAR_SCOTT_BF_CALL_STEP_COUNTER, VarGet(VAR_SCOTT_BF_CALL_STEP_COUNTER) + 1), VarGet(VAR_SCOTT_BF_CALL_STEP_COUNTER)) < 10)
+          case (1):
+          case (2):
+          case (3):
+          case (6):
+              if ((VarSet(0x40F5, VarGet(0x40F5) + 1), VarGet(0x40F5)) < 10)
                   return FALSE;
               break;
           default:
@@ -339,15 +333,15 @@ export function ShouldDoScottBattleFrontierCall(): any {
 
 /** bool32 ShouldDoRoxanneCall(void) */
 export function ShouldDoRoxanneCall(): any {
-  if (FlagGet(FLAG_ENABLE_ROXANNE_FIRST_CALL))
+  if (FlagGet((0x80)))
       {
           switch (gMapHeader.mapType)
           {
-          case MAP_TYPE_TOWN:
-          case MAP_TYPE_CITY:
-          case MAP_TYPE_ROUTE:
-          case MAP_TYPE_OCEAN_ROUTE:
-              if ((VarSet(VAR_ROXANNE_CALL_STEP_COUNTER, VarGet(VAR_ROXANNE_CALL_STEP_COUNTER) + 1), VarGet(VAR_ROXANNE_CALL_STEP_COUNTER)) < 250)
+          case (1):
+          case (2):
+          case (3):
+          case (6):
+              if ((VarSet(0x40F4, VarGet(0x40F4) + 1), VarGet(0x40F4)) < 250)
                   return FALSE;
               break;
           default:
@@ -364,15 +358,15 @@ export function ShouldDoRoxanneCall(): any {
 
 /** bool32 ShouldDoRivalRayquazaCall(void) */
 export function ShouldDoRivalRayquazaCall(): any {
-  if (FlagGet(FLAG_DEFEATED_MAGMA_SPACE_CENTER))
+  if (FlagGet((0x75)))
       {
           switch (gMapHeader.mapType)
           {
-          case MAP_TYPE_TOWN:
-          case MAP_TYPE_CITY:
-          case MAP_TYPE_ROUTE:
-          case MAP_TYPE_OCEAN_ROUTE:
-              if ((VarSet(VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER, VarGet(VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER) + 1), VarGet(VAR_RIVAL_RAYQUAZA_CALL_STEP_COUNTER)) < 250)
+          case (1):
+          case (2):
+          case (3):
+          case (6):
+              if ((VarSet(0x40F6, VarGet(0x40F6) + 1), VarGet(0x40F6)) < 250)
                   return FALSE;
               break;
           default:
@@ -410,10 +404,10 @@ export function SpawnLinkPartnerObjectEvent(): any {
       let x: any = 0;
       let y: any = 0;
       const movementTypes: any = [
-          MOVEMENT_TYPE_FACE_UP,
-          MOVEMENT_TYPE_FACE_LEFT,
-          MOVEMENT_TYPE_FACE_DOWN,
-          MOVEMENT_TYPE_FACE_RIGHT
+          (0x7),
+          (0x9),
+          (0x8),
+          (0xA)
       ];
       const coordOffsets: any = [
           [ 0,  1],
@@ -430,21 +424,21 @@ export function SpawnLinkPartnerObjectEvent(): any {
       playerFacingDirection = GetPlayerFacingDirection();
       switch (playerFacingDirection)
       {
-      case DIR_WEST:
+      case (3):
           j = 2;
           x = gSaveBlock1Ptr.pos.x - 1;
           y = gSaveBlock1Ptr.pos.y;
           break;
-      case DIR_NORTH:
+      case (2):
           j = 1;
           x = gSaveBlock1Ptr.pos.x;
           y = gSaveBlock1Ptr.pos.y - 1;
           break;
-      case DIR_EAST:
+      case (4):
           x = gSaveBlock1Ptr.pos.x + 1;
           y = gSaveBlock1Ptr.pos.y;
           break;
-      case DIR_SOUTH:
+      case (1):
           j = 3;
           x = gSaveBlock1Ptr.pos.x;
           y = gSaveBlock1Ptr.pos.y + 1;
@@ -455,30 +449,30 @@ export function SpawnLinkPartnerObjectEvent(): any {
           {
               switch (gLinkPlayers[i].version)
               {
-              case VERSION_RUBY:
-              case VERSION_SAPPHIRE:
+              case (2):
+              case (1):
                   if (gLinkPlayers[i].gender == 0)
-                      linkSpriteId = OBJ_EVENT_GFX_LINK_RS_BRENDAN;
+                      linkSpriteId = (235);
                   else
-                      linkSpriteId = OBJ_EVENT_GFX_LINK_RS_MAY;
+                      linkSpriteId = (236);
                   break;
-              case VERSION_EMERALD:
+              case (3):
                   if (gLinkPlayers[i].gender == 0)
-                      linkSpriteId = OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL;
+                      linkSpriteId = (100);
                   else
-                      linkSpriteId = OBJ_EVENT_GFX_RIVAL_MAY_NORMAL;
+                      linkSpriteId = (105);
                   break;
               default:
                   if (gLinkPlayers[i].gender == 0)
-                      linkSpriteId = OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL;
+                      linkSpriteId = (100);
                   else
-                      linkSpriteId = OBJ_EVENT_GFX_RIVAL_MAY_NORMAL;
+                      linkSpriteId = (105);
                   break;
               }
-              SpawnSpecialObjectEventParameterized(linkSpriteId, movementTypes[j], LOCALID_BERRY_BLENDER_PLAYER_END - i, coordOffsets[j][0] + x + MAP_OFFSET, coordOffsets[j][1] + y + MAP_OFFSET, 0);
-              LoadLinkPartnerObjectEventSpritePalette(linkSpriteId, LOCALID_BERRY_BLENDER_PLAYER_END - i, i);
+              SpawnSpecialObjectEventParameterized(linkSpriteId, movementTypes[j], (240) - i, coordOffsets[j][0] + x + (7), coordOffsets[j][1] + y + (7), 0);
+              LoadLinkPartnerObjectEventSpritePalette(linkSpriteId, (240) - i, i);
               j++;
-              if (j == MAX_LINK_PLAYERS)
+              if (j == (4))
                   j = 0;
           }
       }
@@ -489,13 +483,13 @@ export function LoadLinkPartnerObjectEventSpritePalette(graphicsId: any, localEv
   let adjustedPaletteNum: any = null;
        
       adjustedPaletteNum = paletteNum + 6;
-      if (graphicsId == OBJ_EVENT_GFX_LINK_RS_BRENDAN ||
-          graphicsId == OBJ_EVENT_GFX_LINK_RS_MAY ||
-          graphicsId == OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL ||
-          graphicsId == OBJ_EVENT_GFX_RIVAL_MAY_NORMAL)
+      if (graphicsId == (235) ||
+          graphicsId == (236) ||
+          graphicsId == (100) ||
+          graphicsId == (105))
       {
           let obj: any = GetObjectEventIdByLocalIdAndMap(localEventId, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup);
-          if (obj != OBJECT_EVENTS_COUNT)
+          if (obj != (16))
           {
               let spriteId: any = gObjectEvents[obj].spriteId;
               let sprite: any =gSprites[spriteId];
@@ -503,16 +497,16 @@ export function LoadLinkPartnerObjectEventSpritePalette(graphicsId: any, localEv
 
               switch (graphicsId)
               {
-              case OBJ_EVENT_GFX_LINK_RS_BRENDAN:
+              case (235):
                   LoadPalette(gObjectEventPal_RubySapphireBrendan, OBJ_PLTT_ID(adjustedPaletteNum), PLTT_SIZE_4BPP);
                   break;
-              case OBJ_EVENT_GFX_LINK_RS_MAY:
+              case (236):
                   LoadPalette(gObjectEventPal_RubySapphireMay, OBJ_PLTT_ID(adjustedPaletteNum), PLTT_SIZE_4BPP);
                   break;
-              case OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL:
+              case (100):
                   LoadPalette(gObjectEventPal_Brendan, OBJ_PLTT_ID(adjustedPaletteNum), PLTT_SIZE_4BPP);
                   break;
-              case OBJ_EVENT_GFX_RIVAL_MAY_NORMAL:
+              case (105):
                   LoadPalette(gObjectEventPal_May, OBJ_PLTT_ID(adjustedPaletteNum), PLTT_SIZE_4BPP);
                   break;
               }
@@ -526,9 +520,9 @@ export function MauvilleGymPressSwitch(): any {
       for (i = 0; i < ARRAY_COUNT(sMauvilleGymSwitchCoords); i++)
       {
           if (i == gSpecialVar_0x8004)
-              MapGridSetMetatileIdAt(sMauvilleGymSwitchCoords[i].x, sMauvilleGymSwitchCoords[i].y, METATILE_MauvilleGym_PressedSwitch);
+              MapGridSetMetatileIdAt(sMauvilleGymSwitchCoords[i].x, sMauvilleGymSwitchCoords[i].y, (0x206));
           else
-              MapGridSetMetatileIdAt(sMauvilleGymSwitchCoords[i].x, sMauvilleGymSwitchCoords[i].y, METATILE_MauvilleGym_RaisedSwitch);
+              MapGridSetMetatileIdAt(sMauvilleGymSwitchCoords[i].x, sMauvilleGymSwitchCoords[i].y, (0x205));
       }
 }
 
@@ -536,89 +530,89 @@ export function MauvilleGymPressSwitch(): any {
 export function MauvilleGymSetDefaultBarriers(): any {
   let x, y;
        
-      for (y = 5 + MAP_OFFSET; y < 17 + MAP_OFFSET; y++)
+      for (y = 5 + (7); y < 17 + (7); y++)
       {
-          for (x = 0 + MAP_OFFSET; x < 9 + MAP_OFFSET; x++)
+          for (x = 0 + (7); x < 9 + (7); x++)
           {
               switch (MapGridGetMetatileIdAt(x, y))
               {
-              case METATILE_MauvilleGym_GreenBeamH1_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH1_Off);
+              case (0x220):
+                  MapGridSetMetatileIdAt(x, y, (0x230));
                   break;
-              case METATILE_MauvilleGym_GreenBeamH2_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH2_Off);
+              case (0x221):
+                  MapGridSetMetatileIdAt(x, y, (0x231));
                   break;
-              case METATILE_MauvilleGym_GreenBeamH3_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH3_Off);
+              case (0x228):
+                  MapGridSetMetatileIdAt(x, y, (0x238));
                   break;
-              case METATILE_MauvilleGym_GreenBeamH4_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH4_Off);
+              case (0x229):
+                  MapGridSetMetatileIdAt(x, y, (0x239));
                   break;
-              case METATILE_MauvilleGym_GreenBeamH1_Off:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH1_On);
+              case (0x230):
+                  MapGridSetMetatileIdAt(x, y, (0x220));
                   break;
-              case METATILE_MauvilleGym_GreenBeamH2_Off:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH2_On);
+              case (0x231):
+                  MapGridSetMetatileIdAt(x, y, (0x221));
                   break;
-              case METATILE_MauvilleGym_GreenBeamH3_Off:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH3_On | MAPGRID_IMPASSABLE);
+              case (0x238):
+                  MapGridSetMetatileIdAt(x, y, (0x228) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_GreenBeamH4_Off:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH4_On | MAPGRID_IMPASSABLE);
+              case (0x239):
+                  MapGridSetMetatileIdAt(x, y, (0x229) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_RedBeamH1_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH1_Off);
+              case (0x222):
+                  MapGridSetMetatileIdAt(x, y, (0x232));
                   break;
-              case METATILE_MauvilleGym_RedBeamH2_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH2_Off);
+              case (0x223):
+                  MapGridSetMetatileIdAt(x, y, (0x233));
                   break;
-              case METATILE_MauvilleGym_RedBeamH3_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH3_Off);
+              case (0x22A):
+                  MapGridSetMetatileIdAt(x, y, (0x23A));
                   break;
-              case METATILE_MauvilleGym_RedBeamH4_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH4_Off);
+              case (0x22B):
+                  MapGridSetMetatileIdAt(x, y, (0x23B));
                   break;
-              case METATILE_MauvilleGym_RedBeamH1_Off:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH1_On);
+              case (0x232):
+                  MapGridSetMetatileIdAt(x, y, (0x222));
                   break;
-              case METATILE_MauvilleGym_RedBeamH2_Off:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH2_On);
+              case (0x233):
+                  MapGridSetMetatileIdAt(x, y, (0x223));
                   break;
-              case METATILE_MauvilleGym_RedBeamH3_Off:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH3_On | MAPGRID_IMPASSABLE);
+              case (0x23A):
+                  MapGridSetMetatileIdAt(x, y, (0x22A) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_RedBeamH4_Off:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH4_On | MAPGRID_IMPASSABLE);
+              case (0x23B):
+                  MapGridSetMetatileIdAt(x, y, (0x22B) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_GreenBeamV1_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_On | MAPGRID_IMPASSABLE);
+              case (0x240):
+                  MapGridSetMetatileIdAt(x, y, (0x242) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_GreenBeamV2_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_FloorTile);
+              case (0x248):
+                  MapGridSetMetatileIdAt(x, y, (0x21A));
                   break;
-              case METATILE_MauvilleGym_RedBeamV1_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_Off | MAPGRID_IMPASSABLE);
+              case (0x241):
+                  MapGridSetMetatileIdAt(x, y, (0x243) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_RedBeamV2_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_FloorTile);
+              case (0x249):
+                  MapGridSetMetatileIdAt(x, y, (0x21A));
                   break;
-              case METATILE_MauvilleGym_PoleBottom_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamV1_On | MAPGRID_IMPASSABLE);
+              case (0x242):
+                  MapGridSetMetatileIdAt(x, y, (0x240) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_FloorTile:
-                  if (MapGridGetMetatileIdAt(x, y - 1) == METATILE_MauvilleGym_GreenBeamV1_On)
-                      MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamV2_On | MAPGRID_IMPASSABLE);
+              case (0x21A):
+                  if (MapGridGetMetatileIdAt(x, y - 1) == (0x240))
+                      MapGridSetMetatileIdAt(x, y, (0x248) | ((0x0C00)));
                   else
-                      MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamV2_On | MAPGRID_IMPASSABLE);
+                      MapGridSetMetatileIdAt(x, y, (0x249) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_PoleBottom_Off:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamV1_On | MAPGRID_IMPASSABLE);
+              case (0x243):
+                  MapGridSetMetatileIdAt(x, y, (0x241) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_PoleTop_Off:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleTop_On | MAPGRID_IMPASSABLE);
+              case (0x251):
+                  MapGridSetMetatileIdAt(x, y, (0x250) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_PoleTop_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleTop_Off);
+              case (0x250):
+                  MapGridSetMetatileIdAt(x, y, (0x251));
                   break;
               }
           }
@@ -631,51 +625,51 @@ export function MauvilleGymDeactivatePuzzle(): any {
       let switchCoords: any = sMauvilleGymSwitchCoords;
       for (i = ARRAY_COUNT(sMauvilleGymSwitchCoords) - 1; i >= 0; i--)
       {
-          MapGridSetMetatileIdAt(switchCoords.x, switchCoords.y, METATILE_MauvilleGym_PressedSwitch);
+          MapGridSetMetatileIdAt(switchCoords.x, switchCoords.y, (0x206));
           switchCoords++;
       }
-      for (y = 5 + MAP_OFFSET; y < 17 + MAP_OFFSET; y++)
+      for (y = 5 + (7); y < 17 + (7); y++)
       {
-          for (x = 0 + MAP_OFFSET; x < 9 + MAP_OFFSET; x++)
+          for (x = 0 + (7); x < 9 + (7); x++)
           {
               switch (MapGridGetMetatileIdAt(x, y))
               {
-              case METATILE_MauvilleGym_GreenBeamH1_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH1_Off);
+              case (0x220):
+                  MapGridSetMetatileIdAt(x, y, (0x230));
                   break;
-              case METATILE_MauvilleGym_GreenBeamH2_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH2_Off);
+              case (0x221):
+                  MapGridSetMetatileIdAt(x, y, (0x231));
                   break;
-              case METATILE_MauvilleGym_GreenBeamH3_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH3_Off);
+              case (0x228):
+                  MapGridSetMetatileIdAt(x, y, (0x238));
                   break;
-              case METATILE_MauvilleGym_GreenBeamH4_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_GreenBeamH4_Off);
+              case (0x229):
+                  MapGridSetMetatileIdAt(x, y, (0x239));
                   break;
-              case METATILE_MauvilleGym_RedBeamH1_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH1_Off);
+              case (0x222):
+                  MapGridSetMetatileIdAt(x, y, (0x232));
                   break;
-              case METATILE_MauvilleGym_RedBeamH2_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH2_Off);
+              case (0x223):
+                  MapGridSetMetatileIdAt(x, y, (0x233));
                   break;
-              case METATILE_MauvilleGym_RedBeamH3_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH3_Off);
+              case (0x22A):
+                  MapGridSetMetatileIdAt(x, y, (0x23A));
                   break;
-              case METATILE_MauvilleGym_RedBeamH4_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_RedBeamH4_Off);
+              case (0x22B):
+                  MapGridSetMetatileIdAt(x, y, (0x23B));
                   break;
-              case METATILE_MauvilleGym_GreenBeamV1_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_On | MAPGRID_IMPASSABLE);
+              case (0x240):
+                  MapGridSetMetatileIdAt(x, y, (0x242) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_RedBeamV1_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleBottom_Off | MAPGRID_IMPASSABLE);
+              case (0x241):
+                  MapGridSetMetatileIdAt(x, y, (0x243) | ((0x0C00)));
                   break;
-              case METATILE_MauvilleGym_GreenBeamV2_On:
-              case METATILE_MauvilleGym_RedBeamV2_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_FloorTile);
+              case (0x248):
+              case (0x249):
+                  MapGridSetMetatileIdAt(x, y, (0x21A));
                   break;
-              case METATILE_MauvilleGym_PoleTop_On:
-                  MapGridSetMetatileIdAt(x, y, METATILE_MauvilleGym_PoleTop_Off);
+              case (0x250):
+                  MapGridSetMetatileIdAt(x, y, (0x251));
                   break;
               }
           }
@@ -686,7 +680,7 @@ export function MauvilleGymDeactivatePuzzle(): any {
 export function PetalburgGymSlideOpenRoomDoors(): any {
   sSlidingDoorNextFrameCounter = 0;
       sSlidingDoorFrame = 0;
-      PlaySE(SE_UNLOCK);
+      PlaySE((44));
       CreateTask(Task_PetalburgGymSlideOpenRoomDoors, 8);
 }
 
@@ -767,8 +761,8 @@ export function PetalburgGymSetDoorMetatiles(roomNumber: any, metatileId: any): 
       }
       for (i = 0; i < nDoors; i++)
       {
-          MapGridSetMetatileIdAt(doorCoordsX[i] + MAP_OFFSET, doorCoordsY[i] + MAP_OFFSET, metatileId | MAPGRID_IMPASSABLE);
-          MapGridSetMetatileIdAt(doorCoordsX[i] + MAP_OFFSET, doorCoordsY[i] + MAP_OFFSET + 1, (metatileId + METATILE_ROW_WIDTH) | MAPGRID_IMPASSABLE);
+          MapGridSetMetatileIdAt(doorCoordsX[i] + (7), doorCoordsY[i] + (7), metatileId | ((0x0C00)));
+          MapGridSetMetatileIdAt(doorCoordsX[i] + (7), doorCoordsY[i] + (7) + 1, (metatileId + (8)) | ((0x0C00)));
       }
       DrawWholeMapView();
 }
@@ -796,7 +790,7 @@ export function GetPlayerTrainerIdOnesDigit(): any {
 
 /** void GetPlayerBigGuyGirlString(void) */
 export function GetPlayerBigGuyGirlString(): any {
-  if (gSaveBlock2Ptr.playerGender == MALE)
+  if (gSaveBlock2Ptr.playerGender == (0))
           StringCopy(gStringVar1, gText_BigGuy);
       else
           StringCopy(gStringVar1, gText_BigGirl);
@@ -804,7 +798,7 @@ export function GetPlayerBigGuyGirlString(): any {
 
 /** void GetRivalSonDaughterString(void) */
 export function GetRivalSonDaughterString(): any {
-  if (gSaveBlock2Ptr.playerGender == MALE)
+  if (gSaveBlock2Ptr.playerGender == (0))
           StringCopy(gStringVar1, gText_Daughter);
       else
           StringCopy(gStringVar1, gText_Son);
@@ -818,9 +812,9 @@ export function GetBattleOutcome(): any {
 /** void CableCarWarp(void) */
 export function CableCarWarp(): any {
   if (gSpecialVar_0x8004 != 0)
-          SetWarpDestination(MAP_GROUP(MAP_ROUTE112_CABLE_CAR_STATION), MAP_NUM(MAP_ROUTE112_CABLE_CAR_STATION), WARP_ID_NONE, 6, 4);
+          SetWarpDestination(MAP_GROUP(MAP_ROUTE112_CABLE_CAR_STATION), MAP_NUM(MAP_ROUTE112_CABLE_CAR_STATION), ((-1)), 6, 4);
       else
-          SetWarpDestination(MAP_GROUP(MAP_MT_CHIMNEY_CABLE_CAR_STATION), MAP_NUM(MAP_MT_CHIMNEY_CABLE_CAR_STATION), WARP_ID_NONE, 6, 4);
+          SetWarpDestination(MAP_GROUP(MAP_MT_CHIMNEY_CABLE_CAR_STATION), MAP_NUM(MAP_MT_CHIMNEY_CABLE_CAR_STATION), ((-1)), 6, 4);
 }
 
 /** void SetHiddenItemFlag(void) */
@@ -840,20 +834,20 @@ export function GetWeekCount(): any {
 /** u8 GetLeadMonFriendshipScore(void) */
 export function GetLeadMonFriendshipScore(): any {
   let pokemon: any =gPlayerParty[GetLeadMonIndex()];
-      if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) == MAX_FRIENDSHIP)
-          return FRIENDSHIP_MAX;
+      if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) == (255))
+          return (6);
       if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) >= 200)
-          return FRIENDSHIP_200_TO_254;
+          return (5);
       if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) >= 150)
-          return FRIENDSHIP_150_TO_199;
+          return (4);
       if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) >= 100)
-          return FRIENDSHIP_100_TO_149;
+          return (3);
       if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) >= 50)
-          return FRIENDSHIP_50_TO_99;
+          return (2);
       if (GetMonData(pokemon, MON_DATA_FRIENDSHIP) >= 1)
-          return FRIENDSHIP_1_TO_49;
+          return (1);
 
-      return FRIENDSHIP_NONE;
+      return (0);
 }
 
 /** static void CB2_FieldShowRegionMap(void) */
@@ -899,15 +893,15 @@ export function PCTurnOnEffect(task: any): any {
           playerDirection = GetPlayerFacingDirection();
           switch (playerDirection)
           {
-          case DIR_NORTH:
+          case (2):
               dx = 0;
               dy = -1;
               break;
-          case DIR_WEST:
+          case (3):
               dx = -1;
               dy = -1;
               break;
-          case DIR_EAST:
+          case (4):
               dx = 1;
               dy = -1;
               break;
@@ -932,24 +926,24 @@ export function PCTurnOnEffect_SetMetatile(isScreenOn: any, dx: any, dy: any): a
       if (isScreenOn)
       {
            
-          if (gSpecialVar_0x8004 == PC_LOCATION_OTHER)
-              metatileId = METATILE_Building_PC_Off;
-          else if (gSpecialVar_0x8004 == PC_LOCATION_BRENDANS_HOUSE)
-              metatileId = METATILE_BrendansMaysHouse_BrendanPC_Off;
-          else if (gSpecialVar_0x8004 == PC_LOCATION_MAYS_HOUSE)
-              metatileId = METATILE_BrendansMaysHouse_MayPC_Off;
+          if (gSpecialVar_0x8004 == (0))
+              metatileId = (0x004);
+          else if (gSpecialVar_0x8004 == (1))
+              metatileId = (0x25A);
+          else if (gSpecialVar_0x8004 == (2))
+              metatileId = (0x259);
       }
       else
       {
            
-          if (gSpecialVar_0x8004 == PC_LOCATION_OTHER)
-              metatileId = METATILE_Building_PC_On;
-          else if (gSpecialVar_0x8004 == PC_LOCATION_BRENDANS_HOUSE)
-              metatileId = METATILE_BrendansMaysHouse_BrendanPC_On;
-          else if (gSpecialVar_0x8004 == PC_LOCATION_MAYS_HOUSE)
-              metatileId = METATILE_BrendansMaysHouse_MayPC_On;
+          if (gSpecialVar_0x8004 == (0))
+              metatileId = (0x005);
+          else if (gSpecialVar_0x8004 == (1))
+              metatileId = (0x27F);
+          else if (gSpecialVar_0x8004 == (2))
+              metatileId = (0x27E);
       }
-      MapGridSetMetatileIdAt(gSaveBlock1Ptr.pos.x + dx + MAP_OFFSET, gSaveBlock1Ptr.pos.y + dy + MAP_OFFSET, metatileId | MAPGRID_IMPASSABLE);
+      MapGridSetMetatileIdAt(gSaveBlock1Ptr.pos.x + dx + (7), gSaveBlock1Ptr.pos.y + dy + (7), metatileId | ((0x0C00)));
 }
 
 /** void DoPCTurnOffEffect(void) */
@@ -967,28 +961,28 @@ export function PCTurnOffEffect(): any {
       let playerDirection: any = GetPlayerFacingDirection();
       switch (playerDirection)
       {
-      case DIR_NORTH:
+      case (2):
           dx = 0;
           dy = -1;
           break;
-      case DIR_WEST:
+      case (3):
           dx = -1;
           dy = -1;
           break;
-      case DIR_EAST:
+      case (4):
           dx = 1;
           dy = -1;
           break;
       }
 
-      if (gSpecialVar_0x8004 == PC_LOCATION_OTHER)
-          metatileId = METATILE_Building_PC_Off;
-      else if (gSpecialVar_0x8004 == PC_LOCATION_BRENDANS_HOUSE)
-          metatileId = METATILE_BrendansMaysHouse_BrendanPC_Off;
-      else if (gSpecialVar_0x8004 == PC_LOCATION_MAYS_HOUSE)
-          metatileId = METATILE_BrendansMaysHouse_MayPC_Off;
+      if (gSpecialVar_0x8004 == (0))
+          metatileId = (0x004);
+      else if (gSpecialVar_0x8004 == (1))
+          metatileId = (0x25A);
+      else if (gSpecialVar_0x8004 == (2))
+          metatileId = (0x259);
 
-      MapGridSetMetatileIdAt(gSaveBlock1Ptr.pos.x + dx + MAP_OFFSET, gSaveBlock1Ptr.pos.y + dy + MAP_OFFSET, metatileId | MAPGRID_IMPASSABLE);
+      MapGridSetMetatileIdAt(gSaveBlock1Ptr.pos.x + dx + (7), gSaveBlock1Ptr.pos.y + dy + (7), metatileId | ((0x0C00)));
       DrawWholeMapView();
 }
 
@@ -1020,14 +1014,14 @@ export function LotteryCornerComputerEffect(task: any): any {
           if (task.tIsScreenOn)
           {
                
-              MapGridSetMetatileIdAt(11 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Shop_Laptop1_Normal | MAPGRID_IMPASSABLE);
-              MapGridSetMetatileIdAt(11 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Shop_Laptop2_Normal | MAPGRID_IMPASSABLE);
+              MapGridSetMetatileIdAt(11 + (7), 1 + (7), (0x29D) | ((0x0C00)));
+              MapGridSetMetatileIdAt(11 + (7), 2 + (7), (0x2A5) | ((0x0C00)));
           }
           else
           {
                
-              MapGridSetMetatileIdAt(11 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Shop_Laptop1_Flash | MAPGRID_IMPASSABLE);
-              MapGridSetMetatileIdAt(11 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Shop_Laptop2_Flash | MAPGRID_IMPASSABLE);
+              MapGridSetMetatileIdAt(11 + (7), 1 + (7), (0x258) | ((0x0C00)));
+              MapGridSetMetatileIdAt(11 + (7), 2 + (7), (0x260) | ((0x0C00)));
           }
           DrawWholeMapView();
 
@@ -1042,15 +1036,15 @@ export function LotteryCornerComputerEffect(task: any): any {
 
 /** void EndLotteryCornerComputerEffect(void) */
 export function EndLotteryCornerComputerEffect(): any {
-  MapGridSetMetatileIdAt(11 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Shop_Laptop1_Normal | MAPGRID_IMPASSABLE);
-      MapGridSetMetatileIdAt(11 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Shop_Laptop2_Normal | MAPGRID_IMPASSABLE);
+  MapGridSetMetatileIdAt(11 + (7), 1 + (7), (0x29D) | ((0x0C00)));
+      MapGridSetMetatileIdAt(11 + (7), 2 + (7), (0x2A5) | ((0x0C00)));
       DrawWholeMapView();
 }
 
 /** void SetTrickHouseNuggetFlag(void) */
 export function SetTrickHouseNuggetFlag(): any {
   let specVar: any =gSpecialVar_0x8004;
-      let flag: any = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET;
+      let flag: any = (((0x1F4) + 0x01));
       specVar = flag;
       FlagSet(flag);
 }
@@ -1058,7 +1052,7 @@ export function SetTrickHouseNuggetFlag(): any {
 /** void ResetTrickHouseNuggetFlag(void) */
 export function ResetTrickHouseNuggetFlag(): any {
   let specVar: any =gSpecialVar_0x8004;
-      let flag: any = FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET;
+      let flag: any = (((0x1F4) + 0x01));
       specVar = flag;
       FlagClear(flag);
 }
@@ -1108,13 +1102,13 @@ export function IsGrassTypeInParty(): any {
   let i: any = null;
       let species: any = null;
       let pokemon: any = null;
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           pokemon =gPlayerParty[i];
           if (GetMonData(pokemon, MON_DATA_SANITY_HAS_SPECIES) && !GetMonData(pokemon, MON_DATA_IS_EGG))
           {
               species = GetMonData(pokemon, MON_DATA_SPECIES);
-              if (gSpeciesInfo[species].types[0] == TYPE_GRASS || gSpeciesInfo[species].types[1] == TYPE_GRASS)
+              if (gSpeciesInfo[species].types[0] == (12) || gSpeciesInfo[species].types[1] == (12))
               {
                   gSpecialVar_Result = TRUE;
                   return;
@@ -1126,11 +1120,11 @@ export function IsGrassTypeInParty(): any {
 
 /** void SpawnCameraObject(void) */
 export function SpawnCameraObject(): any {
-  let obj: any = SpawnSpecialObjectEventParameterized(OBJ_EVENT_GFX_BOY_1,
-                                                    MOVEMENT_TYPE_FACE_DOWN,
-                                                    LOCALID_CAMERA,
-                                                    gSaveBlock1Ptr.pos.x + MAP_OFFSET,
-                                                    gSaveBlock1Ptr.pos.y + MAP_OFFSET,
+  let obj: any = SpawnSpecialObjectEventParameterized((7),
+                                                    (0x8),
+                                                    (127),
+                                                    gSaveBlock1Ptr.pos.x + (7),
+                                                    gSaveBlock1Ptr.pos.y + (7),
                                                     ELEVATION_DEFAULT);
       gObjectEvents[obj].invisible = TRUE;
       CameraObjectSetFollowedSpriteId(gObjectEvents[obj].spriteId);
@@ -1139,7 +1133,7 @@ export function SpawnCameraObject(): any {
 /** void RemoveCameraObject(void) */
 export function RemoveCameraObject(): any {
   CameraObjectSetFollowedSpriteId(GetPlayerAvatarSpriteId());
-      RemoveObjectEventByLocalIdAndMap(LOCALID_CAMERA, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup);
+      RemoveObjectEventByLocalIdAndMap((127), gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup);
 }
 
 /** u8 GetPokeblockNameByMonNature(void) */
@@ -1149,12 +1143,12 @@ export function GetPokeblockNameByMonNature(): any {
 
 /** void GetSecretBaseNearbyMapName(void) */
 export function GetSecretBaseNearbyMapName(): any {
-  GetMapName(gStringVar1, VarGet(VAR_SECRET_BASE_MAP), 0);
+  GetMapName(gStringVar1, VarGet((0x4026)), 0);
 }
 
 /** u16 GetBattleTowerSinglesStreak(void) */
 export function GetBattleTowerSinglesStreak(): any {
-  return GetGameStat(GAME_STAT_BATTLE_TOWER_SINGLES_STREAK);
+  return GetGameStat((32));
 }
 
 /** void BufferEReaderTrainerName(void) */
@@ -1166,45 +1160,45 @@ export function BufferEReaderTrainerName(): any {
 export function GetSlotMachineId(): any {
   const sSlotMachineRandomSeeds: any = [12, 2, 4, 5, 1, 8, 7, 11, 3, 10, 9, 6];
       const sSlotMachineIds: any = [
-          SLOT_MACHINE_UNLUCKIEST,
-          SLOT_MACHINE_UNLUCKIER,
-          SLOT_MACHINE_UNLUCKIER,
-          SLOT_MACHINE_UNLUCKY,
-          SLOT_MACHINE_UNLUCKY,
-          SLOT_MACHINE_UNLUCKY,
-          SLOT_MACHINE_LUCKY,
-          SLOT_MACHINE_LUCKY,
-          SLOT_MACHINE_LUCKY,
-          SLOT_MACHINE_LUCKIER,
-          SLOT_MACHINE_LUCKIER,
-          SLOT_MACHINE_LUCKIEST
+          (0),
+          (1),
+          (1),
+          (2),
+          (2),
+          (2),
+          (3),
+          (3),
+          (3),
+          (4),
+          (4),
+          (5)
       ];
       const sSlotMachineServiceDayIds: any = [
-          SLOT_MACHINE_LUCKY,
-          SLOT_MACHINE_LUCKY,
-          SLOT_MACHINE_LUCKY,
-          SLOT_MACHINE_LUCKY,
-          SLOT_MACHINE_LUCKY,
-          SLOT_MACHINE_LUCKY,
-          SLOT_MACHINE_LUCKIER,
-          SLOT_MACHINE_LUCKIER,
-          SLOT_MACHINE_LUCKIER,
-          SLOT_MACHINE_LUCKIER,
-          SLOT_MACHINE_LUCKIEST,
-          SLOT_MACHINE_LUCKIEST
+          (3),
+          (3),
+          (3),
+          (3),
+          (3),
+          (3),
+          (4),
+          (4),
+          (4),
+          (4),
+          (5),
+          (5)
       ];
 
       let rnd: any = gSaveBlock1Ptr.dewfordTrends[0].trendiness + gSaveBlock1Ptr.dewfordTrends[0].rand + sSlotMachineRandomSeeds[gSpecialVar_0x8004];
-      if (IsPokeNewsActive(POKENEWS_GAME_CORNER))
-          return sSlotMachineServiceDayIds[rnd % SLOT_MACHINE_COUNT];
+      if (IsPokeNewsActive((2)))
+          return sSlotMachineServiceDayIds[rnd % (12)];
 
-      return sSlotMachineIds[rnd % SLOT_MACHINE_COUNT];
+      return sSlotMachineIds[rnd % (12)];
 }
 
 /** bool8 FoundAbandonedShipRoom1Key(void) */
 export function FoundAbandonedShipRoom1Key(): any {
   let specVar: any =gSpecialVar_0x8004;
-      let flag: any = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_1_KEY;
+      let flag: any = (((0x1F4) + 0x1F));
       specVar = flag;
       if (!FlagGet(flag))
           return FALSE;
@@ -1215,7 +1209,7 @@ export function FoundAbandonedShipRoom1Key(): any {
 /** bool8 FoundAbandonedShipRoom2Key(void) */
 export function FoundAbandonedShipRoom2Key(): any {
   let specVar: any =gSpecialVar_0x8004;
-      let flag: any = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_2_KEY;
+      let flag: any = (((0x1F4) + 0x20));
       specVar = flag;
       if (!FlagGet(flag))
           return FALSE;
@@ -1226,7 +1220,7 @@ export function FoundAbandonedShipRoom2Key(): any {
 /** bool8 FoundAbandonedShipRoom4Key(void) */
 export function FoundAbandonedShipRoom4Key(): any {
   let specVar: any =gSpecialVar_0x8004;
-      let flag: any = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_4_KEY;
+      let flag: any = (((0x1F4) + 0x21));
       specVar = flag;
       if (!FlagGet(flag))
           return FALSE;
@@ -1237,7 +1231,7 @@ export function FoundAbandonedShipRoom4Key(): any {
 /** bool8 FoundAbandonedShipRoom6Key(void) */
 export function FoundAbandonedShipRoom6Key(): any {
   let specVar: any =gSpecialVar_0x8004;
-      let flag: any = FLAG_HIDDEN_ITEM_ABANDONED_SHIP_RM_6_KEY;
+      let flag: any = (((0x1F4) + 0x22));
       specVar = flag;
       if (!FlagGet(flag))
           return FALSE;
@@ -1254,18 +1248,18 @@ export function LeadMonHasEffortRibbon(): any {
 export function GiveLeadMonEffortRibbon(): any {
   let ribbonSet: any = null;
       let leadMon: any = null;
-      IncrementGameStat(GAME_STAT_RECEIVED_RIBBONS);
-      FlagSet(FLAG_SYS_RIBBON_GET);
+      IncrementGameStat((42));
+      FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x3B)));
       ribbonSet = TRUE;
       leadMon =gPlayerParty[GetLeadMonIndex()];
       SetMonData(leadMon, MON_DATA_EFFORT_RIBBON,ribbonSet);
-      if (GetRibbonCount(leadMon) > NUM_CUTIES_RIBBONS)
+      if (GetRibbonCount(leadMon) > (4))
           TryPutSpotTheCutiesOnAir(leadMon, MON_DATA_EFFORT_RIBBON);
 }
 
 /** bool8 Special_AreLeadMonEVsMaxedOut(void) */
 export function Special_AreLeadMonEVsMaxedOut(): any {
-  if (GetMonEVCount(gPlayerParty[GetLeadMonIndex()]) >= MAX_TOTAL_EVS)
+  if (GetMonEVCount(gPlayerParty[GetLeadMonIndex()]) >= (510))
           return TRUE;
 
       return FALSE;
@@ -1273,18 +1267,18 @@ export function Special_AreLeadMonEVsMaxedOut(): any {
 
 /** u8 TryUpdateRusturfTunnelState(void) */
 export function TryUpdateRusturfTunnelState(): any {
-  if (!FlagGet(FLAG_RUSTURF_TUNNEL_OPENED)
+  if (!FlagGet((0xC7))
           && gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_RUSTURF_TUNNEL)
           && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_RUSTURF_TUNNEL))
       {
-          if (FlagGet(FLAG_HIDE_RUSTURF_TUNNEL_ROCK_1))
+          if (FlagGet((0x3A3)))
           {
-              VarSet(VAR_RUSTURF_TUNNEL_STATE, 4);
+              VarSet((0x409A), 4);
               return TRUE;
           }
-          else if (FlagGet(FLAG_HIDE_RUSTURF_TUNNEL_ROCK_2))
+          else if (FlagGet((0x3A4)))
           {
-              VarSet(VAR_RUSTURF_TUNNEL_STATE, 5);
+              VarSet((0x409A), 5);
               return TRUE;
           }
       }
@@ -1293,18 +1287,18 @@ export function TryUpdateRusturfTunnelState(): any {
 
 /** void SetShoalItemFlag(u16 unused) */
 export function SetShoalItemFlag(unused: any): any {
-  FlagSet(FLAG_SYS_SHOAL_ITEM);
+  FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x5F)));
 }
 
 /** void LoadWallyZigzagoon(void) */
 export function LoadWallyZigzagoon(): any {
   let monData: any = null;
-      CreateMon(gPlayerParty[0], SPECIES_ZIGZAGOON, 7, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
+      CreateMon(gPlayerParty[0], (288), 7, (((31) + 1)), FALSE, 0, (0), 0);
       monData = TRUE;
       SetMonData(gPlayerParty[0], MON_DATA_ABILITY_NUM,monData);
-      monData = MOVE_TACKLE;
+      monData = (33);
       SetMonData(gPlayerParty[0], MON_DATA_MOVE1,monData);
-      monData = MOVE_NONE;
+      monData = (0);
       SetMonData(gPlayerParty[0], MON_DATA_MOVE2,monData);
       SetMonData(gPlayerParty[0], MON_DATA_MOVE3,monData);
       SetMonData(gPlayerParty[0], MON_DATA_MOVE4,monData);
@@ -1313,7 +1307,7 @@ export function LoadWallyZigzagoon(): any {
 /** bool8 IsStarterInParty(void) */
 export function IsStarterInParty(): any {
   let i: any = null;
-      let starter: any = GetStarterPokemon(VarGet(VAR_STARTER_MON));
+      let starter: any = GetStarterPokemon(VarGet((0x4023)));
       let partyCount: any = CalculatePlayerPartyCount();
       for (i = 0; i < partyCount; i++)
       {
@@ -1330,7 +1324,7 @@ export function ScriptCheckFreePokemonStorageSpace(): any {
 
 /** bool8 IsPokerusInParty(void) */
 export function IsPokerusInParty(): any {
-  if (!CheckPartyPokerus(gPlayerParty, (1 << PARTY_SIZE) - 1))
+  if (!CheckPartyPokerus(gPlayerParty, (1 << (6)) - 1))
           return FALSE;
 
       return TRUE;
@@ -1345,7 +1339,7 @@ export function ShakeCamera(): any {
       gTasks[taskId].tDelay = gSpecialVar_0x8007;
       gTasks[taskId].tVerticalPan = gSpecialVar_0x8004;
       SetCameraPanningCallback(NULL);
-      PlaySE(SE_M_STRENGTH);
+      PlaySE((214));
 }
 
 /** static void Task_ShakeCamera(u8 taskId) */
@@ -1376,19 +1370,19 @@ export function StopCameraShake(taskId: any): any {
 
 /** bool8 FoundBlackGlasses(void) */
 export function FoundBlackGlasses(): any {
-  return FlagGet(FLAG_HIDDEN_ITEM_ROUTE_116_BLACK_GLASSES);
+  return FlagGet((((0x1F4) + 0x60)));
 }
 
 /** void SetRoute119Weather(void) */
 export function SetRoute119Weather(): any {
   if (IsMapTypeOutdoors(GetLastUsedWarpMapType()) != TRUE)
-          SetSavedWeather(WEATHER_ROUTE119_CYCLE);
+          SetSavedWeather((20));
 }
 
 /** void SetRoute123Weather(void) */
 export function SetRoute123Weather(): any {
   if (IsMapTypeOutdoors(GetLastUsedWarpMapType()) != TRUE)
-          SetSavedWeather(WEATHER_ROUTE123_CYCLE);
+          SetSavedWeather((21));
 }
 
 /** u8 GetLeadMonIndex(void) */
@@ -1397,8 +1391,8 @@ export function GetLeadMonIndex(): any {
       let partyCount: any = CalculatePlayerPartyCount();
       for (i = 0; i < partyCount; i++)
       {
-          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != SPECIES_EGG
-           && GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != SPECIES_NONE)
+          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != (412)
+           && GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG, NULL) != (0))
               return i;
       }
       return 0;
@@ -1411,7 +1405,7 @@ export function ScriptGetPartyMonSpecies(): any {
 
 /** u16 GetDaysUntilPacifidlogTMAvailable(void) */
 export function GetDaysUntilPacifidlogTMAvailable(): any {
-  let tmReceivedDay: any = VarGet(VAR_PACIFIDLOG_TM_RECEIVED_DAY);
+  let tmReceivedDay: any = VarGet((0x40C2));
       if (gLocalTime.days - tmReceivedDay >= 7)
           return 0;
       else if (gLocalTime.days < 0)
@@ -1422,13 +1416,13 @@ export function GetDaysUntilPacifidlogTMAvailable(): any {
 
 /** u16 SetPacifidlogTMReceivedDay(void) */
 export function SetPacifidlogTMReceivedDay(): any {
-  VarSet(VAR_PACIFIDLOG_TM_RECEIVED_DAY, gLocalTime.days);
+  VarSet((0x40C2), gLocalTime.days);
       return gLocalTime.days;
 }
 
 /** bool8 MonOTNameNotPlayer(void) */
 export function MonOTNameNotPlayer(): any {
-  if (GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_LANGUAGE) != GAME_LANGUAGE)
+  if (GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_LANGUAGE) != (((3))))
           return TRUE;
 
       GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_OT_NAME, gStringVar1);
@@ -1447,28 +1441,28 @@ export function BufferLottoTicketNumber(): any {
       }
       else if (gSpecialVar_Result >= 1000)
       {
-          gStringVar1[0] = CHAR_0;
+          gStringVar1[0] = (0xA1);
           ConvertIntToDecimalStringN(gStringVar1 + 1, gSpecialVar_Result, STR_CONV_MODE_LEFT_ALIGN, CountDigits(gSpecialVar_Result));
       }
       else if (gSpecialVar_Result >= 100)
       {
-          gStringVar1[0] = CHAR_0;
-          gStringVar1[1] = CHAR_0;
+          gStringVar1[0] = (0xA1);
+          gStringVar1[1] = (0xA1);
           ConvertIntToDecimalStringN(gStringVar1 + 2, gSpecialVar_Result, STR_CONV_MODE_LEFT_ALIGN, CountDigits(gSpecialVar_Result));
       }
       else if (gSpecialVar_Result >= 10)
       {
-          gStringVar1[0] = CHAR_0;
-          gStringVar1[1] = CHAR_0;
-          gStringVar1[2] = CHAR_0;
+          gStringVar1[0] = (0xA1);
+          gStringVar1[1] = (0xA1);
+          gStringVar1[2] = (0xA1);
           ConvertIntToDecimalStringN(gStringVar1 + 3, gSpecialVar_Result, STR_CONV_MODE_LEFT_ALIGN, CountDigits(gSpecialVar_Result));
       }
       else
       {
-          gStringVar1[0] = CHAR_0;
-          gStringVar1[1] = CHAR_0;
-          gStringVar1[2] = CHAR_0;
-          gStringVar1[3] = CHAR_0;
+          gStringVar1[0] = (0xA1);
+          gStringVar1[1] = (0xA1);
+          gStringVar1[2] = (0xA1);
+          gStringVar1[3] = (0xA1);
           ConvertIntToDecimalStringN(gStringVar1 + 4, gSpecialVar_Result, STR_CONV_MODE_LEFT_ALIGN, CountDigits(gSpecialVar_Result));
       }
 }
@@ -1477,16 +1471,16 @@ export function BufferLottoTicketNumber(): any {
 export function GetMysteryGiftCardStat(): any {
   switch (gSpecialVar_Result)
       {
-      case GET_NUM_STAMPS:
-          return MysteryGift_GetCardStat(CARD_STAT_NUM_STAMPS);
-      case GET_MAX_STAMPS:
-          return MysteryGift_GetCardStat(CARD_STAT_MAX_STAMPS);
-      case GET_CARD_BATTLES_WON:
-          return MysteryGift_GetCardStat(CARD_STAT_BATTLES_WON);
-      case GET_CARD_BATTLES_LOST:  
-          return MysteryGift_GetCardStat(CARD_STAT_BATTLES_LOST);
-      case GET_CARD_NUM_TRADES:  
-          return MysteryGift_GetCardStat(CARD_STAT_NUM_TRADES);
+      case (0):
+          return MysteryGift_GetCardStat((3));
+      case (1):
+          return MysteryGift_GetCardStat((4));
+      case (2):
+          return MysteryGift_GetCardStat((0));
+      case (3):  
+          return MysteryGift_GetCardStat((1));
+      case (4):  
+          return MysteryGift_GetCardStat((2));
       default:
           return 0;
       }
@@ -1494,7 +1488,7 @@ export function GetMysteryGiftCardStat(): any {
 
 /** bool8 BufferTMHMMoveName(void) */
 export function BufferTMHMMoveName(): any {
-  if (gSpecialVar_0x8004 >= ITEM_TM01 && gSpecialVar_0x8004 <= ITEM_HM08)
+  if (gSpecialVar_0x8004 >= (289) && gSpecialVar_0x8004 <= (346))
       {
           StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(gSpecialVar_0x8004)]);
           return TRUE;
@@ -1521,7 +1515,7 @@ export function IsBadEggInParty(): any {
 export function InMultiPartnerRoom(): any {
   if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM)
           && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM) &&
-          VarGet(VAR_FRONTIER_BATTLE_MODE) == FRONTIER_MODE_MULTIS)
+          VarGet((0x40CE)) == (2))
           return TRUE;
       return FALSE;
 }
@@ -1538,28 +1532,28 @@ export function SetDeptStoreFloor(): any {
       switch (gSaveBlock1Ptr.dynamicWarp.mapNum)
       {
       case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_1F):
-          deptStoreFloor = DEPT_STORE_FLOORNUM_1F;
+          deptStoreFloor = (4);
           break;
       case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_2F):
-          deptStoreFloor = DEPT_STORE_FLOORNUM_2F;
+          deptStoreFloor = (5);
           break;
       case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_3F):
-          deptStoreFloor = DEPT_STORE_FLOORNUM_3F;
+          deptStoreFloor = (6);
           break;
       case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_4F):
-          deptStoreFloor = DEPT_STORE_FLOORNUM_4F;
+          deptStoreFloor = (7);
           break;
       case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_5F):
-          deptStoreFloor = DEPT_STORE_FLOORNUM_5F;
+          deptStoreFloor = (8);
           break;
       case MAP_NUM(MAP_LILYCOVE_CITY_DEPARTMENT_STORE_ROOFTOP):
-          deptStoreFloor = DEPT_STORE_FLOORNUM_ROOFTOP;
+          deptStoreFloor = (15);
           break;
       default:
-          deptStoreFloor = DEPT_STORE_FLOORNUM_1F;
+          deptStoreFloor = (4);
           break;
       }
-      VarSet(VAR_DEPT_STORE_FLOOR, deptStoreFloor);
+      VarSet((0x4043), deptStoreFloor);
 }
 
 /** u16 GetDeptStoreDefaultFloorChoice(void) */
@@ -1626,7 +1620,7 @@ export function MoveElevator(): any {
 
       SetCameraPanningCallback(NULL);
       MoveElevatorWindowLights(floorDelta, tDescending);
-      PlaySE(SE_ELEVATOR);
+      PlaySE((89));
 }
 
 /** static void Task_MoveElevator(u8 taskId) */
@@ -1643,7 +1637,7 @@ export function Task_MoveElevator(taskId: any): any {
           if (tMoveCounter == tTotalMoves)
           {
                
-              PlaySE(SE_DING_DONG);
+              PlaySE((73));
               DestroyTask(taskId);
               ScriptContext_Enable();
               InstallCameraPanAheadCallback();
@@ -1659,10 +1653,10 @@ export function ShowDeptStoreElevatorFloorSelect(): any {
       SetStandardWindowBorderStyle(sTutorMoveAndElevatorWindowId, FALSE);
 
       xPos = GetStringCenterAlignXOffset(FONT_NORMAL, gText_ElevatorNowOn, 64);
-      AddTextPrinterParameterized(sTutorMoveAndElevatorWindowId, FONT_NORMAL, gText_ElevatorNowOn, xPos, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sTutorMoveAndElevatorWindowId, FONT_NORMAL, gText_ElevatorNowOn, xPos, 1, (0xFF), NULL);
 
       xPos = GetStringCenterAlignXOffset(FONT_NORMAL, sDeptStoreFloorNames[gSpecialVar_0x8005], 64);
-      AddTextPrinterParameterized(sTutorMoveAndElevatorWindowId, FONT_NORMAL, sDeptStoreFloorNames[gSpecialVar_0x8005], xPos, 17, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sTutorMoveAndElevatorWindowId, FONT_NORMAL, sDeptStoreFloorNames[gSpecialVar_0x8005], xPos, 17, (0xFF), NULL);
 
       PutWindowTilemap(sTutorMoveAndElevatorWindowId);
       CopyWindowToVram(sTutorMoveAndElevatorWindowId, COPYWIN_FULL);
@@ -1703,7 +1697,7 @@ export function Task_MoveElevatorWindowLights(taskId: any): any {
               for (y = 0; y < (3); y++)
               {
                   for (x = 0; x < (3); x++)
-                      MapGridSetMetatileIdAt(x + MAP_OFFSET + 1, y + MAP_OFFSET, sElevatorWindowTiles_Ascending[y][tMoveCounter % (3)] | MAPGRID_IMPASSABLE);
+                      MapGridSetMetatileIdAt(x + (7) + 1, y + (7), sElevatorWindowTiles_Ascending[y][tMoveCounter % (3)] | ((0x0C00)));
               }
           }
           else
@@ -1712,7 +1706,7 @@ export function Task_MoveElevatorWindowLights(taskId: any): any {
               for (y = 0; y < (3); y++)
               {
                   for (x = 0; x < (3); x++)
-                      MapGridSetMetatileIdAt(x + MAP_OFFSET + 1, y + MAP_OFFSET, sElevatorWindowTiles_Descending[y][tMoveCounter % (3)] | MAPGRID_IMPASSABLE);
+                      MapGridSetMetatileIdAt(x + (7) + 1, y + (7), sElevatorWindowTiles_Descending[y][tMoveCounter % (3)] | ((0x0C00)));
               }
           }
           DrawWholeMapView();
@@ -1728,22 +1722,22 @@ export function BufferVarsForIVRater(): any {
   let i: any = null;
       let ivStorage: any = [];
 
-      ivStorage[STAT_HP] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_HP_IV);
-      ivStorage[STAT_ATK] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_ATK_IV);
-      ivStorage[STAT_DEF] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_DEF_IV);
-      ivStorage[STAT_SPEED] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPEED_IV);
-      ivStorage[STAT_SPATK] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPATK_IV);
-      ivStorage[STAT_SPDEF] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPDEF_IV);
+      ivStorage[(0)] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_HP_IV);
+      ivStorage[(1)] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_ATK_IV);
+      ivStorage[(2)] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_DEF_IV);
+      ivStorage[(3)] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPEED_IV);
+      ivStorage[(4)] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPATK_IV);
+      ivStorage[(5)] = GetMonData(gPlayerParty[gSpecialVar_0x8004], MON_DATA_SPDEF_IV);
 
       gSpecialVar_0x8005 = 0;
 
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
           gSpecialVar_0x8005 += ivStorage[i];
 
       gSpecialVar_0x8006 = 0;
-      gSpecialVar_0x8007 = ivStorage[STAT_HP];
+      gSpecialVar_0x8007 = ivStorage[(0)];
 
-      for (i = 1; i < NUM_STATS; i++)
+      for (i = 1; i < (6); i++)
       {
           if (ivStorage[gSpecialVar_0x8006] < ivStorage[i])
           {
@@ -1809,9 +1803,9 @@ export function PlayerNotAtTrainerHillEntrance(): any {
 
 /** void UpdateFrontierManiac(u16 daysSince) */
 export function UpdateFrontierManiac(daysSince: any): any {
-  let _var: any = GetVarPointer(VAR_FRONTIER_MANIAC_FACILITY);
+  let _var: any = GetVarPointer((0x402F));
       _var += daysSince;
-      _var %= FRONTIER_MANIAC_FACILITY_COUNT;
+      _var %= (10);
 }
 
 /** void ShowFrontierManiacMessage(void) */
@@ -1866,65 +1860,65 @@ export function ShowFrontierManiacMessage(): any {
 
       let i: any = null;
       let winStreak: any = 0;
-      let facility: any = VarGet(VAR_FRONTIER_MANIAC_FACILITY);
+      let facility: any = VarGet((0x402F));
 
       switch (facility)
       {
-      case FRONTIER_MANIAC_TOWER_SINGLES:
-      case FRONTIER_MANIAC_TOWER_DOUBLES:
-      case FRONTIER_MANIAC_TOWER_MULTIS:
-      case FRONTIER_MANIAC_TOWER_LINK:
-          if (gSaveBlock2Ptr.frontier.towerWinStreaks[facility][FRONTIER_LVL_50]
-              >= gSaveBlock2Ptr.frontier.towerWinStreaks[facility][FRONTIER_LVL_OPEN])
-              winStreak = gSaveBlock2Ptr.frontier.towerWinStreaks[facility][FRONTIER_LVL_50];
+      case (0):
+      case (1):
+      case (2):
+      case (3):
+          if (gSaveBlock2Ptr.frontier.towerWinStreaks[facility][(0)]
+              >= gSaveBlock2Ptr.frontier.towerWinStreaks[facility][(1)])
+              winStreak = gSaveBlock2Ptr.frontier.towerWinStreaks[facility][(0)];
           else
-              winStreak = gSaveBlock2Ptr.frontier.towerWinStreaks[facility][FRONTIER_LVL_OPEN];
+              winStreak = gSaveBlock2Ptr.frontier.towerWinStreaks[facility][(1)];
           break;
-      case FRONTIER_MANIAC_DOME:
-          if (gSaveBlock2Ptr.frontier.domeWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50]
-              >= gSaveBlock2Ptr.frontier.domeWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN])
-              winStreak = gSaveBlock2Ptr.frontier.domeWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50];
+      case (4):
+          if (gSaveBlock2Ptr.frontier.domeWinStreaks[(0)][(0)]
+              >= gSaveBlock2Ptr.frontier.domeWinStreaks[(0)][(1)])
+              winStreak = gSaveBlock2Ptr.frontier.domeWinStreaks[(0)][(0)];
           else
-              winStreak = gSaveBlock2Ptr.frontier.domeWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN];
+              winStreak = gSaveBlock2Ptr.frontier.domeWinStreaks[(0)][(1)];
           break;
-      case FRONTIER_MANIAC_FACTORY:
-          if (gSaveBlock2Ptr.frontier.factoryWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50]
-              >= gSaveBlock2Ptr.frontier.factoryWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN])
-              winStreak = gSaveBlock2Ptr.frontier.factoryWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50];
+      case (5):
+          if (gSaveBlock2Ptr.frontier.factoryWinStreaks[(0)][(0)]
+              >= gSaveBlock2Ptr.frontier.factoryWinStreaks[(0)][(1)])
+              winStreak = gSaveBlock2Ptr.frontier.factoryWinStreaks[(0)][(0)];
           else
-              winStreak = gSaveBlock2Ptr.frontier.factoryWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN];
+              winStreak = gSaveBlock2Ptr.frontier.factoryWinStreaks[(0)][(1)];
           break;
-      case FRONTIER_MANIAC_PALACE:
-          if (gSaveBlock2Ptr.frontier.palaceWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50]
-              >= gSaveBlock2Ptr.frontier.palaceWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN])
-              winStreak = gSaveBlock2Ptr.frontier.palaceWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_50];
+      case (6):
+          if (gSaveBlock2Ptr.frontier.palaceWinStreaks[(0)][(0)]
+              >= gSaveBlock2Ptr.frontier.palaceWinStreaks[(0)][(1)])
+              winStreak = gSaveBlock2Ptr.frontier.palaceWinStreaks[(0)][(0)];
           else
-              winStreak = gSaveBlock2Ptr.frontier.palaceWinStreaks[FRONTIER_MODE_SINGLES][FRONTIER_LVL_OPEN];
+              winStreak = gSaveBlock2Ptr.frontier.palaceWinStreaks[(0)][(1)];
           break;
-      case FRONTIER_MANIAC_ARENA:
-          if (gSaveBlock2Ptr.frontier.arenaWinStreaks[FRONTIER_LVL_50]
-              >= gSaveBlock2Ptr.frontier.arenaWinStreaks[FRONTIER_LVL_OPEN])
-              winStreak = gSaveBlock2Ptr.frontier.arenaWinStreaks[FRONTIER_LVL_50];
+      case (7):
+          if (gSaveBlock2Ptr.frontier.arenaWinStreaks[(0)]
+              >= gSaveBlock2Ptr.frontier.arenaWinStreaks[(1)])
+              winStreak = gSaveBlock2Ptr.frontier.arenaWinStreaks[(0)];
           else
-              winStreak = gSaveBlock2Ptr.frontier.arenaWinStreaks[FRONTIER_LVL_OPEN];
+              winStreak = gSaveBlock2Ptr.frontier.arenaWinStreaks[(1)];
           break;
-      case FRONTIER_MANIAC_PIKE:
-          if (gSaveBlock2Ptr.frontier.pikeWinStreaks[FRONTIER_LVL_50]
-              >= gSaveBlock2Ptr.frontier.pikeWinStreaks[FRONTIER_LVL_OPEN])
-              winStreak = gSaveBlock2Ptr.frontier.pikeWinStreaks[FRONTIER_LVL_50];
+      case (8):
+          if (gSaveBlock2Ptr.frontier.pikeWinStreaks[(0)]
+              >= gSaveBlock2Ptr.frontier.pikeWinStreaks[(1)])
+              winStreak = gSaveBlock2Ptr.frontier.pikeWinStreaks[(0)];
           else
-              winStreak = gSaveBlock2Ptr.frontier.pikeWinStreaks[FRONTIER_LVL_OPEN];
+              winStreak = gSaveBlock2Ptr.frontier.pikeWinStreaks[(1)];
           break;
-      case FRONTIER_MANIAC_PYRAMID:
-          if (gSaveBlock2Ptr.frontier.pyramidWinStreaks[FRONTIER_LVL_50]
-              >= gSaveBlock2Ptr.frontier.pyramidWinStreaks[FRONTIER_LVL_OPEN])
-              winStreak = gSaveBlock2Ptr.frontier.pyramidWinStreaks[FRONTIER_LVL_50];
+      case (9):
+          if (gSaveBlock2Ptr.frontier.pyramidWinStreaks[(0)]
+              >= gSaveBlock2Ptr.frontier.pyramidWinStreaks[(1)])
+              winStreak = gSaveBlock2Ptr.frontier.pyramidWinStreaks[(0)];
           else
-              winStreak = gSaveBlock2Ptr.frontier.pyramidWinStreaks[FRONTIER_LVL_OPEN];
+              winStreak = gSaveBlock2Ptr.frontier.pyramidWinStreaks[(1)];
           break;
       }
 
-      for (i = 0; i < FRONTIER_MANIAC_MESSAGE_COUNT - 1 && sFrontierManiacStreakThresholds[facility][i] < winStreak; i++);
+      for (i = 0; i < (3) - 1 && sFrontierManiacStreakThresholds[facility][i] < winStreak; i++);
 
       ShowFieldMessage(sFrontierManiacMessages[facility][i]);
 }
@@ -1936,17 +1930,17 @@ export function BufferBattleTowerElevatorFloors(): any {
       ];
 
       let i: any = null;
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+      let battleMode: any = VarGet((0x40CE));
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
 
-      if (battleMode == FRONTIER_MODE_LINK_MULTIS)  
+      if (battleMode == (3))  
       {
           gSpecialVar_0x8005 = 4;
           gSpecialVar_0x8006 = 5;
           return;
       }
 
-      if (battleMode == FRONTIER_MODE_MULTIS && !FlagGet(FLAG_CHOSEN_MULTI_BATTLE_NPC_PARTNER))
+      if (battleMode == (2) && !FlagGet((0x152)))
       {
           gSpecialVar_0x8005 = 5;
           gSpecialVar_0x8006 = 4;
@@ -1975,7 +1969,7 @@ export function ShowScrollableMultichoice(): any {
 
       switch (gSpecialVar_0x8004)
       {
-      case SCROLL_MULTI_NONE:
+      case (0):
           task.tMaxItemsOnScreen = 1;
           task.tNumItems = 1;
           task.tLeft = 1;
@@ -1985,8 +1979,8 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_GLASS_WORKSHOP_VENDOR:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN - 1;
+      case (1):
+          task.tMaxItemsOnScreen = (6) - 1;
           task.tNumItems = 8;
           task.tLeft = 1;
           task.tTop = 1;
@@ -1995,8 +1989,8 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_POKEMON_FAN_CLUB_RATER:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+      case (2):
+          task.tMaxItemsOnScreen = (6);
           task.tNumItems = 12;
           task.tLeft = 1;
           task.tTop = 1;
@@ -2005,8 +1999,8 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+      case (3):
+          task.tMaxItemsOnScreen = (6);
           task.tNumItems = 11;
           task.tLeft = 14;
           task.tTop = 1;
@@ -2015,8 +2009,8 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+      case (4):
+          task.tMaxItemsOnScreen = (6);
           task.tNumItems = 6;
           task.tLeft = 14;
           task.tTop = 1;
@@ -2025,8 +2019,8 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+      case (5):
+          task.tMaxItemsOnScreen = (6);
           task.tNumItems = 7;
           task.tLeft = 14;
           task.tTop = 1;
@@ -2035,8 +2029,8 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+      case (6):
+          task.tMaxItemsOnScreen = (6);
           task.tNumItems = 10;
           task.tLeft = 14;
           task.tTop = 1;
@@ -2045,8 +2039,8 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_BERRY_POWDER_VENDOR:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+      case (7):
+          task.tMaxItemsOnScreen = (6);
           task.tNumItems = 12;
           task.tLeft = 15;
           task.tTop = 1;
@@ -2055,8 +2049,8 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_BF_RECEPTIONIST:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+      case (8):
+          task.tMaxItemsOnScreen = (6);
           task.tNumItems = 10;
           task.tLeft = 17;
           task.tTop = 1;
@@ -2065,9 +2059,9 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_BF_MOVE_TUTOR_1:
-      case SCROLL_MULTI_BF_MOVE_TUTOR_2:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+      case (9):
+      case (10):
+          task.tMaxItemsOnScreen = (6);
           task.tNumItems = 11;
           task.tLeft = 15;
           task.tTop = 1;
@@ -2076,8 +2070,8 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_SS_TIDAL_DESTINATION:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+      case (11):
+          task.tMaxItemsOnScreen = (6);
           task.tNumItems = 7;
           task.tLeft = 19;
           task.tTop = 1;
@@ -2086,8 +2080,8 @@ export function ShowScrollableMultichoice(): any {
           task.tKeepOpenAfterSelect = FALSE;
           task.tTaskId = taskId;
           break;
-      case SCROLL_MULTI_BATTLE_TENT_RULES:
-          task.tMaxItemsOnScreen = MAX_SCROLL_MULTI_ON_SCREEN;
+      case (12):
+          task.tMaxItemsOnScreen = (6);
           task.tNumItems = 7;
           task.tLeft = 17;
           task.tTop = 1;
@@ -2097,7 +2091,7 @@ export function ShowScrollableMultichoice(): any {
           task.tTaskId = taskId;
           break;
       default:
-          gSpecialVar_Result = MULTI_B_PRESSED;
+          gSpecialVar_Result = (127);
           DestroyTask(taskId);
           break;
       }
@@ -2112,7 +2106,7 @@ export function Task_ShowScrollableMultichoice(taskId: any): any {
 
       LockPlayerFieldControls();
       sScrollableMultichoice_ScrollOffset = 0;
-      sScrollableMultichoice_ItemSpriteId = MAX_SPRITES;
+      sScrollableMultichoice_ItemSpriteId = (64);
       FillFrontierExchangeCornerWindowAndItemIcon(task.tScrollMultiId, 0);
       ShowBattleFrontierTutorWindow(task.tScrollMultiId, 0);
       sScrollableMultichoice_ListMenuItem = AllocZeroed(task.tNumItems * 0);
@@ -2129,9 +2123,9 @@ export function Task_ShowScrollableMultichoice(taskId: any): any {
 
       task.tWidth = ConvertPixelWidthToTileWidth(width);
 
-      if (task.tLeft + task.tWidth > MAX_MULTICHOICE_WIDTH + 1)
+      if (task.tLeft + task.tWidth > (28) + 1)
       {
-          let adjustedLeft: any = MAX_MULTICHOICE_WIDTH + 1 - task.tWidth;
+          let adjustedLeft: any = (28) + 1 - task.tWidth;
           if (adjustedLeft < 0)
               task.tLeft = 0;
           else
@@ -2178,9 +2172,9 @@ export function InitScrollableMultichoice(): any {
 /** static void ScrollableMultichoice_MoveCursor(s32 itemIndex, bool8 onInit, struct ListMenu *list) */
 export function ScrollableMultichoice_MoveCursor(itemIndex: any, onInit: any, list: any): any {
   let taskId: any = null;
-      PlaySE(SE_SELECT);
+      PlaySE((5));
       taskId = FindTaskIdByFunc(ScrollableMultichoice_ProcessInput);
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
       {
           let selection: any = null;
           let task: any =gTasks[taskId];
@@ -2201,16 +2195,16 @@ export function ScrollableMultichoice_ProcessInput(taskId: any): any {
 
       switch (input)
       {
-      case LIST_NOTHING_CHOSEN:
+      case (-1):
           break;
-      case LIST_CANCEL:
-          gSpecialVar_Result = MULTI_B_PRESSED;
-          PlaySE(SE_SELECT);
+      case (-2):
+          gSpecialVar_Result = (127);
+          PlaySE((5));
           CloseScrollableMultichoice(taskId);
           break;
       default:
           gSpecialVar_Result = input;
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           if (!task.tKeepOpenAfterSelect)
           {
               CloseScrollableMultichoice(taskId);
@@ -2265,7 +2259,7 @@ export function Task_ScrollableMultichoice_WaitReturnToList(taskId: any): any {
 /** void ScrollableMultichoice_TryReturnToList(void) */
 export function ScrollableMultichoice_TryReturnToList(): any {
   let taskId: any = FindTaskIdByFunc(Task_ScrollableMultichoice_WaitReturnToList);
-      if (taskId == TASK_NONE)
+      if (taskId == ((0xFF)))
           ScriptContext_Enable();
       else
           gTasks[taskId].tKeepOpenAfterSelect++;
@@ -2309,10 +2303,10 @@ export function SetBattleTowerLinkPlayerGfx(): any {
   let i: any = null;
       for (i = 0; i < 2; i++)
       {
-          if (gLinkPlayers[i].gender == MALE)
-              VarSet(VAR_OBJ_GFX_ID_F - i, OBJ_EVENT_GFX_BRENDAN_NORMAL);
+          if (gLinkPlayers[i].gender == (0))
+              VarSet((0x401F) - i, (0));
           else
-              VarSet(VAR_OBJ_GFX_ID_F - i, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL);
+              VarSet((0x401F) - i, (105));
       }
 }
 
@@ -2323,7 +2317,7 @@ export function ShowNatureGirlMessage(): any {
 
       let nature: any = null;
 
-      if (gSpecialVar_0x8004 >= PARTY_SIZE)
+      if (gSpecialVar_0x8004 >= (6))
           gSpecialVar_0x8004 = 0;
 
       nature = GetNature(gPlayerParty[gSpecialVar_0x8004]);
@@ -2332,9 +2326,9 @@ export function ShowNatureGirlMessage(): any {
 
 /** void UpdateFrontierGambler(u16 daysSince) */
 export function UpdateFrontierGambler(daysSince: any): any {
-  let _var: any = GetVarPointer(VAR_FRONTIER_GAMBLER_CHALLENGE);
+  let _var: any = GetVarPointer((0x4030));
       _var += daysSince;
-      _var %= FRONTIER_GAMBLER_CHALLENGE_COUNT;
+      _var %= (12);
 }
 
 /** void ShowFrontierGamblerLookingMessage(void) */
@@ -2355,9 +2349,9 @@ export function ShowFrontierGamblerLookingMessage(): any {
           BattleFrontier_Lounge3_Text_ChallengeBattlePyramid,
       ];
 
-      let challenge: any = VarGet(VAR_FRONTIER_GAMBLER_CHALLENGE);
+      let challenge: any = VarGet((0x4030));
       ShowFieldMessage(sFrontierGamblerLookingMessages[challenge]);
-      VarSet(VAR_FRONTIER_GAMBLER_SET_CHALLENGE, challenge);
+      VarSet((0x4031), challenge);
 }
 
 /** void ShowFrontierGamblerGoMessage(void) */
@@ -2378,39 +2372,39 @@ export function ShowFrontierGamblerGoMessage(): any {
           BattleFrontier_Lounge3_Text_GetToBattlePyramid,
       ];
 
-      ShowFieldMessage(sFrontierGamblerGoMessages[VarGet(VAR_FRONTIER_GAMBLER_SET_CHALLENGE)]);
+      ShowFieldMessage(sFrontierGamblerGoMessages[VarGet((0x4031))]);
 }
 
 /** void FrontierGamblerSetWonOrLost(bool8 won) */
 export function FrontierGamblerSetWonOrLost(won: any): any {
   const sFrontierChallenges: any =
       [
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_SINGLES),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_DOUBLES),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_MULTIS),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_DOME,    FRONTIER_MODE_SINGLES),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_DOME,    FRONTIER_MODE_DOUBLES),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_FACTORY, FRONTIER_MODE_SINGLES),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_FACTORY, FRONTIER_MODE_DOUBLES),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_PALACE,  FRONTIER_MODE_SINGLES),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_PALACE,  FRONTIER_MODE_DOUBLES),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_ARENA,   FRONTIER_MODE_SINGLES),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_PIKE,    FRONTIER_MODE_SINGLES),
-          FRONTIER_CHALLENGE(FRONTIER_FACILITY_PYRAMID, FRONTIER_MODE_SINGLES)
+          FRONTIER_CHALLENGE((0),   (0)),
+          FRONTIER_CHALLENGE((0),   (1)),
+          FRONTIER_CHALLENGE((0),   (2)),
+          FRONTIER_CHALLENGE((1),    (0)),
+          FRONTIER_CHALLENGE((1),    (1)),
+          FRONTIER_CHALLENGE((4), (0)),
+          FRONTIER_CHALLENGE((4), (1)),
+          FRONTIER_CHALLENGE((2),  (0)),
+          FRONTIER_CHALLENGE((2),  (1)),
+          FRONTIER_CHALLENGE((3),   (0)),
+          FRONTIER_CHALLENGE((5),    (0)),
+          FRONTIER_CHALLENGE((6), (0))
       ];
 
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
-      let challenge: any = VarGet(VAR_FRONTIER_GAMBLER_SET_CHALLENGE);
-      let frontierFacilityId: any = VarGet(VAR_FRONTIER_FACILITY);
+      let battleMode: any = VarGet((0x40CE));
+      let challenge: any = VarGet((0x4031));
+      let frontierFacilityId: any = VarGet((0x40CF));
 
-      if (VarGet(VAR_FRONTIER_GAMBLER_STATE) == FRONTIER_GAMBLER_PLACED_BET)
+      if (VarGet((0x4033)) == (1))
       {
           if (sFrontierChallenges[challenge] ==  FRONTIER_CHALLENGE(frontierFacilityId, battleMode))
           {
               if (won)
-                  VarSet(VAR_FRONTIER_GAMBLER_STATE, FRONTIER_GAMBLER_WON);
+                  VarSet((0x4033), (2));
               else
-                  VarSet(VAR_FRONTIER_GAMBLER_STATE, FRONTIER_GAMBLER_LOST);
+                  VarSet((0x4033), (3));
           }
       }
 }
@@ -2452,8 +2446,8 @@ export function TakeFrontierBattlePoints(): any {
 
 /** void GiveFrontierBattlePoints(void) */
 export function GiveFrontierBattlePoints(): any {
-  if (gSaveBlock2Ptr.frontier.battlePoints + gSpecialVar_0x8004 > MAX_BATTLE_FRONTIER_POINTS)
-          gSaveBlock2Ptr.frontier.battlePoints = MAX_BATTLE_FRONTIER_POINTS;
+  if (gSaveBlock2Ptr.frontier.battlePoints + gSpecialVar_0x8004 > (9999))
+          gSaveBlock2Ptr.frontier.battlePoints = (9999);
       else
           gSaveBlock2Ptr.frontier.battlePoints = gSaveBlock2Ptr.frontier.battlePoints + gSpecialVar_0x8004;
 }
@@ -2483,14 +2477,14 @@ export function CloseFrontierExchangeCornerItemIconWindow(): any {
 /** static void FillFrontierExchangeCornerWindowAndItemIcon(u16 menu, u16 selection) */
 export function FillFrontierExchangeCornerWindowAndItemIcon(menu: any, selection: any): any {
 
-      if (menu >= SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1 && menu <= SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR)
+      if (menu >= (3) && menu <= (6))
       {
           FillWindowPixelRect(0, PIXEL_FILL(1), 0, 0, 216, 32);
           switch (menu)
           {
-          case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1:
-              AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_Decor1Descriptions[selection], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
-              if (sFrontierExchangeCorner_Decor1[selection] == ITEM_LIST_END)
+          case (3):
+              AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_Decor1Descriptions[selection], 0, NULL, (0x2), (0x1), (0x3));
+              if (sFrontierExchangeCorner_Decor1[selection] == (0xFFFF))
               {
                   ShowFrontierExchangeCornerItemIcon(sFrontierExchangeCorner_Decor1[selection]);
               }
@@ -2501,9 +2495,9 @@ export function FillFrontierExchangeCornerWindowAndItemIcon(menu: any, selection
                   sScrollableMultichoice_ItemSpriteId = AddDecorationIconObject(sFrontierExchangeCorner_Decor1[selection], 33, 88, 0, (5500), (5500));
               }
               break;
-          case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2:
-              AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_Decor2Descriptions[selection], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
-              if (sFrontierExchangeCorner_Decor2[selection] == ITEM_LIST_END)
+          case (4):
+              AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_Decor2Descriptions[selection], 0, NULL, (0x2), (0x1), (0x3));
+              if (sFrontierExchangeCorner_Decor2[selection] == (0xFFFF))
               {
                   ShowFrontierExchangeCornerItemIcon(sFrontierExchangeCorner_Decor2[selection]);
               }
@@ -2514,12 +2508,12 @@ export function FillFrontierExchangeCornerWindowAndItemIcon(menu: any, selection
                   sScrollableMultichoice_ItemSpriteId = AddDecorationIconObject(sFrontierExchangeCorner_Decor2[selection], 33, 88, 0, (5500), (5500));
               }
               break;
-          case SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR:
-              AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_VitaminsDescriptions[selection], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          case (5):
+              AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_VitaminsDescriptions[selection], 0, NULL, (0x2), (0x1), (0x3));
               ShowFrontierExchangeCornerItemIcon(sFrontierExchangeCorner_Vitamins[selection]);
               break;
-          case SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR:
-              AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_HoldItemsDescriptions[selection], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          case (6):
+              AddTextPrinterParameterized2(0, FONT_NORMAL, sFrontierExchangeCorner_HoldItemsDescriptions[selection], 0, NULL, (0x2), (0x1), (0x3));
               ShowFrontierExchangeCornerItemIcon(sFrontierExchangeCorner_HoldItems[selection]);
               break;
           }
@@ -2532,7 +2526,7 @@ export function ShowFrontierExchangeCornerItemIcon(item: any): any {
       FreeSpritePaletteByTag((5500));
       sScrollableMultichoice_ItemSpriteId = AddItemIconSprite((5500), (5500), item);
 
-      if (sScrollableMultichoice_ItemSpriteId != MAX_SPRITES)
+      if (sScrollableMultichoice_ItemSpriteId != (64))
       {
           gSprites[sScrollableMultichoice_ItemSpriteId].oam.priority = 0;
           gSprites[sScrollableMultichoice_ItemSpriteId].x = 36;
@@ -2542,18 +2536,18 @@ export function ShowFrontierExchangeCornerItemIcon(item: any): any {
 
 /** static void HideFrontierExchangeCornerItemIcon(u16 menu, u16 unused) */
 export function HideFrontierExchangeCornerItemIcon(menu: any, unused: any): any {
-  if (sScrollableMultichoice_ItemSpriteId != MAX_SPRITES)
+  if (sScrollableMultichoice_ItemSpriteId != (64))
       {
           switch (menu)
           {
-          case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_1:
-          case SCROLL_MULTI_BF_EXCHANGE_CORNER_DECOR_VENDOR_2:
-          case SCROLL_MULTI_BF_EXCHANGE_CORNER_VITAMIN_VENDOR:
-          case SCROLL_MULTI_BF_EXCHANGE_CORNER_HOLD_ITEM_VENDOR:
+          case (3):
+          case (4):
+          case (5):
+          case (6):
               DestroySpriteAndFreeResources(gSprites[sScrollableMultichoice_ItemSpriteId]);
               break;
           }
-          sScrollableMultichoice_ItemSpriteId = MAX_SPRITES;
+          sScrollableMultichoice_ItemSpriteId = (64);
       }
 }
 
@@ -2571,7 +2565,7 @@ export function ShowBattleFrontierTutorWindow(menu: any, selection: any): any {
       [ 0, 1, 7, 12, 6, 15, 28,
       ];
 
-      if (menu == SCROLL_MULTI_BF_MOVE_TUTOR_1 || menu == SCROLL_MULTI_BF_MOVE_TUTOR_2)
+      if (menu == (9) || menu == (10))
       {
           if (gSpecialVar_0x8006 == 0)
           {
@@ -2614,10 +2608,10 @@ export function ShowBattleFrontierTutorMoveDescription(menu: any, selection: any
           gText_Exit,
       ];
 
-      if (menu == SCROLL_MULTI_BF_MOVE_TUTOR_1 || menu == SCROLL_MULTI_BF_MOVE_TUTOR_2)
+      if (menu == (9) || menu == (10))
       {
           FillWindowPixelRect(sTutorMoveAndElevatorWindowId, PIXEL_FILL(1), 0, 0, 96, 48);
-          if (menu == SCROLL_MULTI_BF_MOVE_TUTOR_2)
+          if (menu == (10))
               AddTextPrinterParameterized(sTutorMoveAndElevatorWindowId, FONT_NORMAL, sBattleFrontier_TutorMoveDescriptions2[selection], 0, 1, 0, NULL);
           else
               AddTextPrinterParameterized(sTutorMoveAndElevatorWindowId, FONT_NORMAL, sBattleFrontier_TutorMoveDescriptions1[selection], 0, 1, 0, NULL);
@@ -2635,16 +2629,16 @@ export function ScrollableMultichoice_RedrawPersistentMenu(): any {
   let scrollOffset, selectedRow;
       let i: any = null;
       let taskId: any = FindTaskIdByFunc(Task_ScrollableMultichoice_WaitReturnToList);
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
       {
           let task: any =gTasks[taskId];
           ListMenuGetScrollAndRow(task.tListTaskId,scrollOffset,selectedRow);
           SetStandardWindowBorderStyle(task.tWindowId, FALSE);
 
-          for (i = 0; i < MAX_SCROLL_MULTI_ON_SCREEN; i++)
-              AddTextPrinterParameterized5(task.tWindowId, FONT_NORMAL, sScrollableMultichoiceOptions[gSpecialVar_0x8004][scrollOffset + i], 10, i * 16, TEXT_SKIP_DRAW, NULL, 0, 0);
+          for (i = 0; i < (6); i++)
+              AddTextPrinterParameterized5(task.tWindowId, FONT_NORMAL, sScrollableMultichoiceOptions[gSpecialVar_0x8004][scrollOffset + i], 10, i * 16, (0xFF), NULL, 0, 0);
 
-          AddTextPrinterParameterized(task.tWindowId, FONT_NORMAL, gText_SelectorArrow, 0, selectedRow * 16, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(task.tWindowId, FONT_NORMAL, gText_SelectorArrow, 0, selectedRow * 16, (0xFF), NULL);
           PutWindowTilemap(task.tWindowId);
           CopyWindowToVram(task.tWindowId, COPYWIN_FULL);
       }
@@ -2657,8 +2651,8 @@ export function GetBattleFrontierTutorMoveIndex(): any {
       let moveIndex: any = 0;
       gSpecialVar_0x8005 = 0;
 
-      moveTutor = VarGet(VAR_TEMP_FRONTIER_TUTOR_ID);
-      moveIndex = VarGet(VAR_TEMP_FRONTIER_TUTOR_SELECTION);
+      moveTutor = VarGet(((((0x4000) + 0xE))));
+      moveIndex = VarGet(((((0x4000) + 0xD))));
 
       if (moveTutor != 0)
       {
@@ -2671,7 +2665,7 @@ export function GetBattleFrontierTutorMoveIndex(): any {
                   break;
               }
               i++;
-          } while (i < TUTOR_MOVE_COUNT);
+          } while (i < (30));
       }
       else
       {
@@ -2684,14 +2678,14 @@ export function GetBattleFrontierTutorMoveIndex(): any {
                   break;
               }
               i++;
-          } while (i < TUTOR_MOVE_COUNT);
+          } while (i < (30));
       }
 }
 
 /** void ScrollableMultichoice_ClosePersistentMenu(void) */
 export function ScrollableMultichoice_ClosePersistentMenu(): any {
   let taskId: any = FindTaskIdByFunc(Task_ScrollableMultichoice_WaitReturnToList);
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
       {
           let task: any =gTasks[taskId];
           DestroyListMenuTask(task.tListTaskId, NULL, NULL);
@@ -2714,30 +2708,30 @@ export function DoDeoxysRockInteraction(): any {
 export function Task_DeoxysRockInteraction(taskId: any): any {
   const sStoneMaxStepCounts: any = [ 4, 8, 8, 8, 4, 4, 4, 6, 3, 3 ];
 
-      if (FlagGet(FLAG_DEOXYS_ROCK_COMPLETE) == TRUE)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x74))) == TRUE)
       {
-          gSpecialVar_Result = DEOXYS_ROCK_COMPLETE;
+          gSpecialVar_Result = (3);
           ScriptContext_Enable();
           DestroyTask(taskId);
       }
       else
       {
-          let rockLevel: any = VarGet(VAR_DEOXYS_ROCK_LEVEL);
-          let stepCount: any = VarGet(VAR_DEOXYS_ROCK_STEP_COUNT);
+          let rockLevel: any = VarGet((0x4035));
+          let stepCount: any = VarGet((0x4034));
 
-          VarSet(VAR_DEOXYS_ROCK_STEP_COUNT, 0);
+          VarSet((0x4034), 0);
           if (rockLevel != 0 && sStoneMaxStepCounts[rockLevel - 1] < stepCount)
           {
                
               ChangeDeoxysRockLevel(0);
-              VarSet(VAR_DEOXYS_ROCK_LEVEL, 0);
-              gSpecialVar_Result = DEOXYS_ROCK_FAILED;
+              VarSet((0x4035), 0);
+              gSpecialVar_Result = (0);
               DestroyTask(taskId);
           }
           else if (rockLevel == (11) - 1)
           {
-              FlagSet(FLAG_DEOXYS_ROCK_COMPLETE);
-              gSpecialVar_Result = DEOXYS_ROCK_SOLVED;
+              FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x74)));
+              gSpecialVar_Result = (2);
               ScriptContext_Enable();
               DestroyTask(taskId);
           }
@@ -2745,8 +2739,8 @@ export function Task_DeoxysRockInteraction(taskId: any): any {
           {
               rockLevel++;
               ChangeDeoxysRockLevel(rockLevel);
-              VarSet(VAR_DEOXYS_ROCK_LEVEL, rockLevel);
-              gSpecialVar_Result = DEOXYS_ROCK_PROGRESSED;
+              VarSet((0x4035), rockLevel);
+              gSpecialVar_Result = (1);
               DestroyTask(taskId);
           }
       }
@@ -2759,9 +2753,9 @@ export function ChangeDeoxysRockLevel(rockLevel: any): any {
       TryGetObjectEventIdByLocalIdAndMap(LOCALID_BIRTH_ISLAND_EXTERIOR_ROCK, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup,objectEventId);
 
       if (rockLevel == 0)
-          PlaySE(SE_M_CONFUSE_RAY);  
+          PlaySE((196));  
       else
-          PlaySE(SE_RG_DEOXYS_MOVE);  
+          PlaySE((260));  
 
       CreateTask(WaitForDeoxysRockMovement, 8);
       gFieldEffectArguments[0] = LOCALID_BIRTH_ISLAND_EXTERIOR_ROCK;
@@ -2777,13 +2771,13 @@ export function ChangeDeoxysRockLevel(rockLevel: any): any {
       else
           gFieldEffectArguments[5] = 5;
 
-      FieldEffectStart(FLDEFF_MOVE_DEOXYS_ROCK);
+      FieldEffectStart((66));
       SetObjEventTemplateCoords(LOCALID_BIRTH_ISLAND_EXTERIOR_ROCK, sDeoxysRockCoords[rockLevel][0], sDeoxysRockCoords[rockLevel][1]);
 }
 
 /** static void WaitForDeoxysRockMovement(u8 taskId) */
 export function WaitForDeoxysRockMovement(taskId: any): any {
-  if (FieldEffectActiveListContains(FLDEFF_MOVE_DEOXYS_ROCK) == FALSE)
+  if (FieldEffectActiveListContains((66)) == FALSE)
       {
           ScriptContext_Enable();
           DestroyTask(taskId);
@@ -2792,19 +2786,19 @@ export function WaitForDeoxysRockMovement(taskId: any): any {
 
 /** void IncrementBirthIslandRockStepCount(void) */
 export function IncrementBirthIslandRockStepCount(): any {
-  let stepCount: any = VarGet(VAR_DEOXYS_ROCK_STEP_COUNT);
+  let stepCount: any = VarGet((0x4034));
       if (gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_BIRTH_ISLAND_EXTERIOR) && gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_BIRTH_ISLAND_EXTERIOR))
       {
           if (++stepCount > 99)
-              VarSet(VAR_DEOXYS_ROCK_STEP_COUNT, 0);
+              VarSet((0x4034), 0);
           else
-              VarSet(VAR_DEOXYS_ROCK_STEP_COUNT, stepCount);
+              VarSet((0x4034), stepCount);
       }
 }
 
 /** void SetDeoxysRockPalette(void) */
 export function SetDeoxysRockPalette(): any {
-  LoadPalette(sDeoxysRockPalettes[VarGet(VAR_DEOXYS_ROCK_LEVEL)], OBJ_PLTT_ID((10)), PLTT_SIZEOF(4));
+  LoadPalette(sDeoxysRockPalettes[VarGet((0x4035))], OBJ_PLTT_ID((10)), PLTT_SIZEOF(4));
       BlendPalettes(1 << ((10) + 16), 16, 0);
 }
 
@@ -2820,11 +2814,11 @@ export function GetPCBoxToSendMon(): any {
 
 /** bool8 ShouldShowBoxWasFullMessage(void) */
 export function ShouldShowBoxWasFullMessage(): any {
-  if (!FlagGet(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE))
+  if (!FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x77))))
       {
-          if (StorageGetCurrentBox() != VarGet(VAR_PC_BOX_TO_SEND_MON))
+          if (StorageGetCurrentBox() != VarGet((0x4036)))
           {
-              FlagSet(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE);
+              FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x77)));
               return TRUE;
           }
       }
@@ -2835,22 +2829,22 @@ export function ShouldShowBoxWasFullMessage(): any {
 export function IsDestinationBoxFull(): any {
   let box: any = null;
       let i: any = null;
-      SetPCBoxToSendMon(VarGet(VAR_PC_BOX_TO_SEND_MON));
+      SetPCBoxToSendMon(VarGet((0x4036)));
       box = StorageGetCurrentBox();
       do
       {
-          for (i = 0; i < IN_BOX_COUNT; i++)
+          for (i = 0; i < (((5) * (6))); i++)
           {
-              if (GetBoxMonData(GetBoxedMonPtr(box, i), MON_DATA_SPECIES, 0) == SPECIES_NONE)
+              if (GetBoxMonData(GetBoxedMonPtr(box, i), MON_DATA_SPECIES, 0) == (0))
               {
                   if (GetPCBoxToSendMon() != box)
-                      FlagClear(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE);
-                  VarSet(VAR_PC_BOX_TO_SEND_MON, box);
+                      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x77)));
+                  VarSet((0x4036), box);
                   return ShouldShowBoxWasFullMessage();
               }
           }
 
-          if (++box == TOTAL_BOXES_COUNT)
+          if (++box == (14))
               box = 0;
       } while (box != StorageGetCurrentBox());
       return FALSE;
@@ -2859,25 +2853,25 @@ export function IsDestinationBoxFull(): any {
 /** void CreateAbnormalWeatherEvent(void) */
 export function CreateAbnormalWeatherEvent(): any {
   let randomValue: any = Random();
-      VarSet(VAR_ABNORMAL_WEATHER_STEP_COUNTER, 0);
+      VarSet((0x4038), 0);
 
-      if (FlagGet(FLAG_DEFEATED_KYOGRE) == TRUE)
+      if (FlagGet((0x1BE)) == TRUE)
       {
-          VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % TERRA_CAVE_LOCATIONS) + TERRA_CAVE_LOCATIONS_START);
+          VarSet((0x4037), (randomValue % (8)) + (1));
       }
-      else if (FlagGet(FLAG_DEFEATED_GROUDON) == TRUE)
+      else if (FlagGet((0x1BF)) == TRUE)
       {
-          VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % MARINE_CAVE_LOCATIONS) + MARINE_CAVE_LOCATIONS_START);
+          VarSet((0x4037), (randomValue % (8)) + (((1) + (8))));
       }
       else if ((randomValue & 1) == 0)
       {
           randomValue = Random();
-          VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % TERRA_CAVE_LOCATIONS) + TERRA_CAVE_LOCATIONS_START);
+          VarSet((0x4037), (randomValue % (8)) + (1));
       }
       else
       {
           randomValue = Random();
-          VarSet(VAR_ABNORMAL_WEATHER_LOCATION, (randomValue % MARINE_CAVE_LOCATIONS) + MARINE_CAVE_LOCATIONS_START);
+          VarSet((0x4037), (randomValue % (8)) + (((1) + (8))));
       }
 }
 
@@ -2902,11 +2896,11 @@ export function GetAbnormalWeatherMapNameAndType(): any {
           MAP_NUM(MAP_ROUTE129)
       ];
 
-      let abnormalWeather: any = VarGet(VAR_ABNORMAL_WEATHER_LOCATION);
+      let abnormalWeather: any = VarGet((0x4037));
 
       GetMapName(gStringVar1, sAbnormalWeatherMapNumbers[abnormalWeather - 1], 0);
 
-      if (abnormalWeather < MARINE_CAVE_LOCATIONS_START)
+      if (abnormalWeather < (((1) + (8))))
           return FALSE;
       else
           return TRUE;
@@ -2934,15 +2928,15 @@ export function AbnormalWeatherHasExpired(): any {
           MAP_NUM(MAP_ROUTE129)
       ];
 
-      let steps: any = VarGet(VAR_ABNORMAL_WEATHER_STEP_COUNTER);
-      let abnormalWeather: any = VarGet(VAR_ABNORMAL_WEATHER_LOCATION);
+      let steps: any = VarGet((0x4038));
+      let abnormalWeather: any = VarGet((0x4037));
 
-      if (abnormalWeather == ABNORMAL_WEATHER_NONE)
+      if (abnormalWeather == (0))
           return FALSE;
 
       if (++steps > 999)
       {
-          VarSet(VAR_ABNORMAL_WEATHER_STEP_COUNTER, 0);
+          VarSet((0x4038), 0);
           if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_UNDERWATER_MARINE_CAVE))
           {
               switch (gSaveBlock1Ptr.location.mapNum)
@@ -2952,7 +2946,7 @@ export function AbnormalWeatherHasExpired(): any {
               case MAP_NUM(MAP_MARINE_CAVE_END):
               case MAP_NUM(MAP_TERRA_CAVE_ENTRANCE):
               case MAP_NUM(MAP_TERRA_CAVE_END):
-                  VarSet(VAR_SHOULD_END_ABNORMAL_WEATHER, 1);
+                  VarSet((0x4039), 1);
                   return FALSE;
               default:
                   break;
@@ -2967,7 +2961,7 @@ export function AbnormalWeatherHasExpired(): any {
               case MAP_NUM(MAP_UNDERWATER_ROUTE129):
               case MAP_NUM(MAP_UNDERWATER_ROUTE105):
               case MAP_NUM(MAP_UNDERWATER_ROUTE125):
-                  VarSet(VAR_SHOULD_END_ABNORMAL_WEATHER, 1);
+                  VarSet((0x4039), 1);
                   return FALSE;
               default:
                   break;
@@ -2981,20 +2975,20 @@ export function AbnormalWeatherHasExpired(): any {
           }
           else
           {
-              VarSet(VAR_ABNORMAL_WEATHER_LOCATION, ABNORMAL_WEATHER_NONE);
+              VarSet((0x4037), (0));
               return FALSE;
           }
       }
       else
       {
-          VarSet(VAR_ABNORMAL_WEATHER_STEP_COUNTER, steps);
+          VarSet((0x4038), steps);
           return FALSE;
       }
 }
 
 /** void Unused_SetWeatherSunny(void) */
 export function Unused_SetWeatherSunny(): any {
-  SetCurrentAndNextWeather(WEATHER_SUNNY);
+  SetCurrentAndNextWeather((2));
 }
 
 /** u32 GetMartEmployeeObjectEventId(void) */
@@ -3032,7 +3026,7 @@ export function IsTrainerRegistered(): any {
   let index: any = GetRematchIdxByTrainerIdx(gSpecialVar_0x8004);
       if (index >= 0)
       {
-          if (FlagGet(TRAINER_REGISTERED_FLAGS_START + index) == TRUE)
+          if (FlagGet((0x15C) + index) == TRUE)
               return TRUE;
       }
       return FALSE;
@@ -3040,7 +3034,7 @@ export function IsTrainerRegistered(): any {
 
 /** bool32 ShouldDistributeEonTicket(void) */
 export function ShouldDistributeEonTicket(): any {
-  if (!VarGet(VAR_DISTRIBUTE_EON_TICKET))
+  if (!VarGet((0x403F)))
           return FALSE;
 
       return TRUE;
@@ -3095,17 +3089,17 @@ export function Task_LinkRetireStatusWithBattleTowerPartner(taskId: any): any {
                   gSpecialVar_0x8005 = gBlockRecvBuffer[1][0];
                   ResetBlockReceivedFlag(1);
 
-                  if (gSpecialVar_0x8004 == BATTLE_TOWER_LINK_RETIRE
-                   && gSpecialVar_0x8005 == BATTLE_TOWER_LINK_RETIRE)
-                      gSpecialVar_Result = BATTLE_TOWER_LINKSTAT_BOTH_RETIRE;
-                  else if (gSpecialVar_0x8004 == BATTLE_TOWER_LINK_CONTINUE
-                        && gSpecialVar_0x8005 == BATTLE_TOWER_LINK_RETIRE)
-                      gSpecialVar_Result = BATTLE_TOWER_LINKSTAT_MEMBER_RETIRE;
-                  else if (gSpecialVar_0x8004 == BATTLE_TOWER_LINK_RETIRE
-                        && gSpecialVar_0x8005 == BATTLE_TOWER_LINK_CONTINUE)
-                      gSpecialVar_Result = BATTLE_TOWER_LINKSTAT_LEADER_RETIRE;
+                  if (gSpecialVar_0x8004 == (1)
+                   && gSpecialVar_0x8005 == (1))
+                      gSpecialVar_Result = (1);
+                  else if (gSpecialVar_0x8004 == (0)
+                        && gSpecialVar_0x8005 == (1))
+                      gSpecialVar_Result = (2);
+                  else if (gSpecialVar_0x8004 == (1)
+                        && gSpecialVar_0x8005 == (0))
+                      gSpecialVar_Result = (3);
                   else
-                      gSpecialVar_Result = BATTLE_TOWER_LINKSTAT_CONTINUE;
+                      gSpecialVar_Result = (0);
               }
               gTasks[taskId].tState++;
           }
@@ -3146,12 +3140,12 @@ export function Task_LinkRetireStatusWithBattleTowerPartner(taskId: any): any {
            
           if (GetMultiplayerId() == 0)
           {
-              if (gSpecialVar_Result == BATTLE_TOWER_LINKSTAT_MEMBER_RETIRE)
+              if (gSpecialVar_Result == (2))
                   ShowFieldAutoScrollMessage(gText_YourPartnerHasRetired);
           }
           else
           {
-              if (gSpecialVar_Result == BATTLE_TOWER_LINKSTAT_LEADER_RETIRE)
+              if (gSpecialVar_Result == (3))
                   ShowFieldAutoScrollMessage(gText_YourPartnerHasRetired);
           }
           gTasks[taskId].tState++;
@@ -3199,7 +3193,7 @@ export function Script_DoRayquazaScene(): any {
 /** void LoopWingFlapSE(void) */
 export function LoopWingFlapSE(): any {
   CreateTask(Task_LoopWingFlapSE, 8);
-      PlaySE(SE_M_WING_ATTACK);
+      PlaySE((157));
 }
 
 /** static void Task_LoopWingFlapSE(u8 taskId) */
@@ -3211,7 +3205,7 @@ export function Task_LoopWingFlapSE(taskId: any): any {
       {
           playCount++;
           delay = 0;
-          PlaySE(SE_M_WING_ATTACK);
+          PlaySE((157));
       }
 
       if (playCount == gSpecialVar_0x8004 - 1)
@@ -3239,9 +3233,9 @@ export function Task_CloseBattlePikeCurtain(taskId: any): any {
           {
               for (x = 0; x < (3); x++)
               {
-                  MapGridSetMetatileIdAt(gSaveBlock1Ptr.pos.x + x + MAP_OFFSET - 1,
-                                         gSaveBlock1Ptr.pos.y + y + MAP_OFFSET - 3,
-                                         (x + METATILE_BattlePike_CurtainFrames_Start) + (y * METATILE_ROW_WIDTH) + (tCurrentFrame * (4) * METATILE_ROW_WIDTH));
+                  MapGridSetMetatileIdAt(gSaveBlock1Ptr.pos.x + x + (7) - 1,
+                                         gSaveBlock1Ptr.pos.y + y + (7) - 3,
+                                         (x + (0x201)) + (y * (8)) + (tCurrentFrame * (4) * (8)));
               }
           }
           DrawWholeMapView();
@@ -3256,8 +3250,8 @@ export function Task_CloseBattlePikeCurtain(taskId: any): any {
 
 /** void GetBattlePyramidHint(void) */
 export function GetBattlePyramidHint(): any {
-  gSpecialVar_Result = gSpecialVar_0x8004 / FRONTIER_STAGES_PER_CHALLENGE;
-      gSpecialVar_Result -= (gSpecialVar_Result / TOTAL_PYRAMID_ROUNDS) * TOTAL_PYRAMID_ROUNDS;
+  gSpecialVar_Result = gSpecialVar_0x8004 / (7);
+      gSpecialVar_Result -= (gSpecialVar_Result / (20)) * (20);
 }
 
 /** void ResetHealLocationFromDewford(void) */
@@ -3307,8 +3301,8 @@ export function InPokemonCenter(): any {
 
 /** void ResetFanClub(void) */
 export function ResetFanClub(): any {
-  gSaveBlock1Ptr.vars[VAR_FANCLUB_FAN_COUNTER - VARS_START] = 0;
-      gSaveBlock1Ptr.vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] = 0;
+  gSaveBlock1Ptr.vars[(0x4041) - (0x4000)] = 0;
+      gSaveBlock1Ptr.vars[(0x4042) - (0x4000)] = 0;
 }
 
 /** void TryLoseFansFromPlayTimeAfterLinkBattle(void) */
@@ -3316,23 +3310,23 @@ export function TryLoseFansFromPlayTimeAfterLinkBattle(): any {
   if (DidPlayerGetFirstFans())
       {
           TryLoseFansFromPlayTime();
-          gSaveBlock1Ptr.vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] = gSaveBlock2Ptr.playTimeHours;
+          gSaveBlock1Ptr.vars[(0x4042) - (0x4000)] = gSaveBlock2Ptr.playTimeHours;
       }
 }
 
 /** void UpdateTrainerFanClubGameClear(void) */
 export function UpdateTrainerFanClubGameClear(): any {
-  if (!(FANCLUB_BITFIELD >> ((FANCLUB_GOT_FIRST_FANS)) & 1))
+  if (!(FANCLUB_BITFIELD >> (((7))) & 1))
       {
           SetPlayerGotFirstFans();
           SetInitialFansOfPlayer();
-          gSaveBlock1Ptr.vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] = gSaveBlock2Ptr.playTimeHours;
-          FlagClear(FLAG_HIDE_FANCLUB_OLD_LADY);
-          FlagClear(FLAG_HIDE_FANCLUB_BOY);
-          FlagClear(FLAG_HIDE_FANCLUB_LITTLE_BOY);
-          FlagClear(FLAG_HIDE_FANCLUB_LADY);
-          FlagClear(FLAG_HIDE_LILYCOVE_FAN_CLUB_INTERVIEWER);
-          VarSet(VAR_LILYCOVE_FAN_CLUB_STATE, 1);
+          gSaveBlock1Ptr.vars[(0x4042) - (0x4000)] = gSaveBlock2Ptr.playTimeHours;
+          FlagClear((0x315));
+          FlagClear((0x316));
+          FlagClear((0x317));
+          FlagClear((0x318));
+          FlagClear((0x2DA));
+          VarSet((0x4095), 1);
       }
 }
 
@@ -3342,7 +3336,7 @@ export function TryGainNewFanFromCounter(incrementId: any): any {
       [ 2, 1, 2, 1
       ];
 
-      if (VarGet(VAR_LILYCOVE_FAN_CLUB_STATE) == 2)
+      if (VarGet((0x4095)) == 2)
       {
           if (((FANCLUB_BITFIELD & (0x007F))) + sCounterIncrements[incrementId] > 19)
           {
@@ -3369,14 +3363,14 @@ export function TryGainNewFanFromCounter(incrementId: any): any {
 export function PlayerGainRandomTrainerFan(): any {
   const sFanClubMemberIds: any =
       [
-          FANCLUB_MEMBER1,
-          FANCLUB_MEMBER2,
-          FANCLUB_MEMBER3,
-          FANCLUB_MEMBER4,
-          FANCLUB_MEMBER5,
-          FANCLUB_MEMBER6,
-          FANCLUB_MEMBER7,
-          FANCLUB_MEMBER8
+          (8),
+          (9),
+          (10),
+          (11),
+          (12),
+          (13),
+          (14),
+          (15)
       ];
 
       let i: any = null;
@@ -3402,14 +3396,14 @@ export function PlayerGainRandomTrainerFan(): any {
 export function PlayerLoseRandomTrainerFan(): any {
   const sFanClubMemberIds: any =
       [
-          FANCLUB_MEMBER1,
-          FANCLUB_MEMBER6,
-          FANCLUB_MEMBER7,
-          FANCLUB_MEMBER4,
-          FANCLUB_MEMBER3,
-          FANCLUB_MEMBER5,
-          FANCLUB_MEMBER8,
-          FANCLUB_MEMBER2
+          (8),
+          (13),
+          (14),
+          (11),
+          (10),
+          (12),
+          (15),
+          (9)
       ];
 
       let i: any = null;
@@ -3442,9 +3436,9 @@ export function GetNumFansOfPlayerInTrainerFanClub(): any {
   let i: any = null;
       let numFans: any = 0;
 
-      for (i = 0; i < NUM_TRAINER_FAN_CLUB_MEMBERS; i++)
+      for (i = 0; i < (8); i++)
       {
-          if ((FANCLUB_BITFIELD >> ((i + FANCLUB_MEMBER1)) & 1))
+          if ((FANCLUB_BITFIELD >> ((i + (8))) & 1))
               numFans++;
       }
 
@@ -3460,19 +3454,19 @@ export function TryLoseFansFromPlayTime(): any {
           {
               if (GetNumFansOfPlayerInTrainerFanClub() < 5)
               {
-                  gSaveBlock1Ptr.vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] = gSaveBlock2Ptr.playTimeHours;
+                  gSaveBlock1Ptr.vars[(0x4042) - (0x4000)] = gSaveBlock2Ptr.playTimeHours;
                   break;
               }
-              else if (i == NUM_TRAINER_FAN_CLUB_MEMBERS)
+              else if (i == (8))
               {
                   break;
               }
-              else if (gSaveBlock2Ptr.playTimeHours - gSaveBlock1Ptr.vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] < 12)
+              else if (gSaveBlock2Ptr.playTimeHours - gSaveBlock1Ptr.vars[(0x4042) - (0x4000)] < 12)
               {
                   return;
               }
               PlayerLoseRandomTrainerFan();
-              gSaveBlock1Ptr.vars[VAR_FANCLUB_LOSE_FAN_TIMER - VARS_START] += 12;
+              gSaveBlock1Ptr.vars[(0x4042) - (0x4000)] += 12;
               i++;
           }
       }
@@ -3485,9 +3479,9 @@ export function IsFanClubMemberFanOfPlayer(): any {
 
 /** static void SetInitialFansOfPlayer(void) */
 export function SetInitialFansOfPlayer(): any {
-  (FANCLUB_BITFIELD |= 1 << ((FANCLUB_MEMBER6)));
-      (FANCLUB_BITFIELD |= 1 << ((FANCLUB_MEMBER1)));
-      (FANCLUB_BITFIELD |= 1 << ((FANCLUB_MEMBER3)));
+  (FANCLUB_BITFIELD |= 1 << (((13))));
+      (FANCLUB_BITFIELD |= 1 << (((8))));
+      (FANCLUB_BITFIELD |= 1 << (((10))));
 }
 
 /** void BufferFanClubTrainerName(void) */
@@ -3496,31 +3490,31 @@ export function BufferFanClubTrainerName(): any {
       let whichNPCTrainer: any = 0;
       switch (gSpecialVar_0x8004)
       {
-      case FANCLUB_MEMBER1:
+      case (8):
           break;
-      case FANCLUB_MEMBER2:
+      case (9):
           break;
-      case FANCLUB_MEMBER3:
+      case (10):
           whichLinkTrainer = 0;
           whichNPCTrainer = 3;
           break;
-      case FANCLUB_MEMBER4:
+      case (11):
           whichLinkTrainer = 0;
           whichNPCTrainer = 1;
           break;
-      case FANCLUB_MEMBER5:
+      case (12):
           whichLinkTrainer = 1;
           whichNPCTrainer = 0;
           break;
-      case FANCLUB_MEMBER6:
+      case (13):
           whichLinkTrainer = 0;
           whichNPCTrainer = 4;
           break;
-      case FANCLUB_MEMBER7:
+      case (14):
           whichLinkTrainer = 1;
           whichNPCTrainer = 5;
           break;
-      case FANCLUB_MEMBER8:
+      case (15):
           break;
       }
       BufferFanClubTrainerName_(gSaveBlock1Ptr.linkBattleRecords, whichLinkTrainer, whichNPCTrainer);
@@ -3529,7 +3523,7 @@ export function BufferFanClubTrainerName(): any {
 /** static void BufferFanClubTrainerName_(struct LinkBattleRecords *linkRecords, u8 whichLinkTrainer, u8 whichNPCTrainer) */
 export function BufferFanClubTrainerName_(linkRecords: any, whichLinkTrainer: any, whichNPCTrainer: any): any {
   let record: any =linkRecords.entries[whichLinkTrainer];
-      if (record.name[0] == EOS)
+      if (record.name[0] == (0xFF))
       {
           switch (whichNPCTrainer)
           {
@@ -3558,18 +3552,18 @@ export function BufferFanClubTrainerName_(linkRecords: any, whichLinkTrainer: an
       }
       else
       {
-          StringCopyN(gStringVar1, record.name, PLAYER_NAME_LENGTH);
-          gStringVar1[PLAYER_NAME_LENGTH] = EOS;
+          StringCopyN(gStringVar1, record.name, (7));
+          gStringVar1[(7)] = (0xFF);
           ConvertInternationalString(gStringVar1, linkRecords.languages[whichLinkTrainer]);
       }
 }
 
 /** void UpdateTrainerFansAfterLinkBattle(void) */
 export function UpdateTrainerFansAfterLinkBattle(): any {
-  if (VarGet(VAR_LILYCOVE_FAN_CLUB_STATE) == 2)
+  if (VarGet((0x4095)) == 2)
       {
           TryLoseFansFromPlayTimeAfterLinkBattle();
-          if (gBattleOutcome == B_OUTCOME_WON)
+          if (gBattleOutcome == (1))
               PlayerGainRandomTrainerFan();
           else
               PlayerLoseRandomTrainerFan();
@@ -3578,12 +3572,12 @@ export function UpdateTrainerFansAfterLinkBattle(): any {
 
 /** static bool8 DidPlayerGetFirstFans(void) */
 export function DidPlayerGetFirstFans(): any {
-  return (FANCLUB_BITFIELD >> ((FANCLUB_GOT_FIRST_FANS)) & 1);
+  return (FANCLUB_BITFIELD >> (((7))) & 1);
 }
 
 /** void SetPlayerGotFirstFans(void) */
 export function SetPlayerGotFirstFans(): any {
-  (FANCLUB_BITFIELD |= 1 << ((FANCLUB_GOT_FIRST_FANS)));
+  (FANCLUB_BITFIELD |= 1 << (((7))));
 }
 
 /** u8 Script_TryGainNewFanFromCounter(void) */

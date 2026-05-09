@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gPostMenuFieldCallback: any = null;
 /** bool8 SetUpFieldMove_SweetScent(void) */
 export function SetUpFieldMove_SweetScent(): any {
   gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
@@ -24,7 +27,7 @@ export function SetUpFieldMove_SweetScent(): any {
 
 /** static void FieldCallback_SweetScent(void) */
 export function FieldCallback_SweetScent(): any {
-  FieldEffectStart(FLDEFF_SWEET_SCENT);
+  FieldEffectStart((51));
       gFieldEffectArguments[0] = GetCursorSelectionMonId();
 }
 
@@ -43,13 +46,13 @@ export function FldEff_SweetScent(): any {
 export function StartSweetScentFieldEffect(): any {
   let taskId: any = null;
 
-      PlaySE(SE_M_SWEET_SCENT);
+      PlaySE((236));
       CpuFastCopy(gPlttBufferUnfaded, gPaletteDecompressionBuffer, PLTT_SIZE);
       CpuFastCopy(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);
-      BeginNormalPaletteFade(~(1 << (gSprites[GetPlayerAvatarSpriteId()].oam.paletteNum + 16)), 4, 0, 8, RGB_RED);
+      BeginNormalPaletteFade(~(1 << (gSprites[GetPlayerAvatarSpriteId()].oam.paletteNum + 16)), 4, 0, 8, (RGB(31, 0, 0)));
       taskId = CreateTask(TrySweetScentEncounter, 0);
       gTasks[taskId].data[0] = 0;
-      FieldEffectActiveListRemove(FLDEFF_SWEET_SCENT);
+      FieldEffectActiveListRemove((51));
 }
 
 /** static void TrySweetScentEncounter(u8 taskId) */
@@ -57,7 +60,7 @@ export function TrySweetScentEncounter(taskId: any): any {
   if (!gPaletteFade.active)
       {
           ClearMirageTowerPulseBlendEffect();
-          BlendPalettes(0x00000040, 8, RGB_RED);
+          BlendPalettes(0x00000040, 8, (RGB(31, 0, 0)));
           if (gTasks[taskId].data[0] == 64)
           {
               gTasks[taskId].data[0] = 0;
@@ -68,7 +71,7 @@ export function TrySweetScentEncounter(taskId: any): any {
               else
               {
                   gTasks[taskId].func = FailSweetScentEncounter;
-                  BeginNormalPaletteFade(~(1 << (gSprites[GetPlayerAvatarSpriteId()].oam.paletteNum + 16)), 4, 8, 0, RGB_RED);
+                  BeginNormalPaletteFade(~(1 << (gSprites[GetPlayerAvatarSpriteId()].oam.paletteNum + 16)), 4, 8, 0, (RGB(31, 0, 0)));
                   TryStartMirageTowerPulseBlendEffect();
               }
           }

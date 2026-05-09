@@ -17,12 +17,32 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sFloatingBridgeMetatileOffsets: any = null;
-let sFullySubmergedBridgeMetatileOffsets: any = null;
-let sHalfSubmergedBridgeMetatileOffsets: any = null;
-let sMuddySlopeMetatiles: any = null;
-let sPerStepCallbacks: any = null;
-let sSootopolisGymIceRowVars: any = null;
+let cameraOffsetX: any = null;
+let cameraOffsetY: any = null;
+let onBridgeElevation: any = null;
+let prevX: any = null;
+let prevY: any = null;
+let tAmbientCryDelay: any = null;
+let tAmbientCryState: any = null;
+let tBounceTime: any = null;
+let tCallbackId: any = null;
+let tDelay: any = null;
+let tFloor1Delay: any = null;
+let tFloor1X: any = null;
+let tFloor1Y: any = null;
+let tFloor2Delay: any = null;
+let tFloor2X: any = null;
+let tFloor2Y: any = null;
+let tIceX: any = null;
+let tIceY: any = null;
+let tMapId: any = null;
+let tOldBridgeX: any = null;
+let tOldBridgeY: any = null;
+let tPrevX: any = null;
+let tPrevY: any = null;
+let tState: any = null;
+let tToRaiseX: any = null;
+let tToRaiseY: any = null;
 /** static void Task_RunPerStepCallback(u8 taskId) */
 export function Task_RunPerStepCallback(taskId: any): any {
   let idx: any = gTasks[taskId].tCallbackId;
@@ -63,7 +83,7 @@ export function SetUpFieldTasks(): any {
   if (!FuncIsActiveTask(Task_RunPerStepCallback))
       {
           let taskId: any = CreateTask(Task_RunPerStepCallback, 80);
-          gTasks[taskId].tCallbackId = STEP_CB_DUMMY;
+          gTasks[taskId].tCallbackId = (0);
       }
 
       if (!FuncIsActiveTask(Task_MuddySlope))
@@ -76,16 +96,16 @@ export function SetUpFieldTasks(): any {
 /** void ActivatePerStepCallback(u8 callbackId) */
 export function ActivatePerStepCallback(callbackId: any): any {
   let taskId: any = FindTaskIdByFunc(Task_RunPerStepCallback);
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
       {
           let i: any = null;
           let data: any = gTasks[taskId].data;
 
-          for (i = 0; i < NUM_TASK_DATA; i++)
+          for (i = 0; i < (16); i++)
               data[i] = 0;
 
           if (callbackId >= ARRAY_COUNT(sPerStepCallbacks))
-              tCallbackId = STEP_CB_DUMMY;
+              tCallbackId = (0);
           else
               tCallbackId = callbackId;
       }
@@ -97,11 +117,11 @@ export function ResetFieldTasksArgs(): any {
       let data: any = null;
 
       taskId = FindTaskIdByFunc(Task_RunPerStepCallback);
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
           data = gTasks[taskId].data;
 
       taskId = FindTaskIdByFunc(Task_RunTimeBasedEvents);
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
       {
           data = gTasks[taskId].data;
           tAmbientCryState = 0;
@@ -263,7 +283,7 @@ export function PacifidlogBridgePerStepCallback(taskId: any): any {
 
            
           if (MetatileBehavior_IsPacifidlogLog(MapGridGetMetatileBehaviorAt(x, y)))
-              PlaySE(SE_PUDDLE);
+              PlaySE((70));
           break;
       case 2:
           if (--tDelay == 0)
@@ -289,11 +309,11 @@ export function TryLowerFortreeBridge(x: any, y: any): any {
       {
           switch (MapGridGetMetatileIdAt(x, y))
           {
-          case METATILE_Fortree_BridgeOverGrass_Raised:
-              MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverGrass_Lowered);
+          case (0x24E):
+              MapGridSetMetatileIdAt(x, y, (0x24F));
               break;
-          case METATILE_Fortree_BridgeOverTrees_Raised:
-              MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverTrees_Lowered);
+          case (0x256):
+              MapGridSetMetatileIdAt(x, y, (0x257));
               break;
           }
       }
@@ -306,11 +326,11 @@ export function TryRaiseFortreeBridge(x: any, y: any): any {
       {
           switch (MapGridGetMetatileIdAt(x, y))
           {
-          case METATILE_Fortree_BridgeOverGrass_Lowered:
-              MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverGrass_Raised);
+          case (0x24F):
+              MapGridSetMetatileIdAt(x, y, (0x24E));
               break;
-          case METATILE_Fortree_BridgeOverTrees_Lowered:
-              MapGridSetMetatileIdAt(x, y, METATILE_Fortree_BridgeOverTrees_Raised);
+          case (0x257):
+              MapGridSetMetatileIdAt(x, y, (0x256));
               break;
           }
       }
@@ -358,7 +378,7 @@ export function FortreeBridgePerStepCallback(taskId: any): any {
               onBridgeElevation = TRUE;
 
           if (onBridgeElevation && (isFortreeBridgeCur == TRUE || isFortreeBridgePrev == TRUE))
-              PlaySE(SE_BRIDGE_WALK);
+              PlaySE((71));
           if (isFortreeBridgePrev || isFortreeBridgeCur)
           {
                
@@ -423,8 +443,7 @@ export function CoordInIcePuzzleRegion(x: any, y: any): any {
 
 /** static void MarkIcePuzzleCoordVisited(s16 x, s16 y) */
 export function MarkIcePuzzleCoordVisited(x: any, y: any): any {
-  if (CoordInIcePuzzleRegion(x, y))
-          VarSet(sSootopolisGymIceRowVars[y], VarGet(sSootopolisGymIceRowVars[y]) | ((1 << (x - (3)))));
+  if (CoordInIcePuzzleRegion(x, y))VarSet(sSootopolisGymIceRowVars[y], VarGet(sSootopolisGymIceRowVars[y]) | ((1 << (x - (3)))));
 }
 
 /** static bool32 IsIcePuzzleCoordVisited(s16 x, s16 y) */
@@ -450,7 +469,7 @@ export function SetSootopolisGymCrackedIceMetatiles(): any {
           for (y = 0; y < height; y++)
           {
               if (IsIcePuzzleCoordVisited(x, y) == TRUE)
-                  MapGridSetMetatileIdAt(x + MAP_OFFSET, y + MAP_OFFSET, METATILE_SootopolisGym_Ice_Cracked);
+                  MapGridSetMetatileIdAt(x + (7), y + (7), (0x20E));
           }
       }
 }
@@ -478,7 +497,7 @@ export function SootopolisGymIcePerStepCallback(taskId: any): any {
           tPrevX = x;
           tPrevY = y;
           tileBehavior = MapGridGetMetatileBehaviorAt(x, y);
-          iceStepCount = GetVarPointer(VAR_ICE_STEP_COUNT);
+          iceStepCount = GetVarPointer((0x4022));
           if (MetatileBehavior_IsThinIce(tileBehavior) == TRUE)
           {
                
@@ -508,10 +527,10 @@ export function SootopolisGymIcePerStepCallback(taskId: any): any {
                
               x = tIceX;
               y = tIceY;
-              PlaySE(SE_ICE_CRACK);
-              MapGridSetMetatileIdAt(x, y, METATILE_SootopolisGym_Ice_Cracked);
+              PlaySE((42));
+              MapGridSetMetatileIdAt(x, y, (0x20E));
               CurrentMapDrawMetatileAt(x, y);
-              MarkIcePuzzleCoordVisited(x - MAP_OFFSET, y - MAP_OFFSET);
+              MarkIcePuzzleCoordVisited(x - (7), y - (7));
               tState = 1;
           }
           break;
@@ -525,8 +544,8 @@ export function SootopolisGymIcePerStepCallback(taskId: any): any {
                
               x = tIceX;
               y = tIceY;
-              PlaySE(SE_ICE_BREAK);
-              MapGridSetMetatileIdAt(x, y, METATILE_SootopolisGym_Ice_Broken);
+              PlaySE((41));
+              MapGridSetMetatileIdAt(x, y, (0x206));
               CurrentMapDrawMetatileAt(x, y);
               tState = 1;
           }
@@ -550,15 +569,15 @@ export function AshGrassPerStepCallback(taskId: any): any {
       if (MetatileBehavior_IsAshGrass(MapGridGetMetatileBehaviorAt(x, y)))
       {
            
-          if (MapGridGetMetatileIdAt(x, y) == METATILE_Fallarbor_AshGrass)
-              StartAshFieldEffect(x, y, METATILE_Fallarbor_NormalGrass, 4);
+          if (MapGridGetMetatileIdAt(x, y) == (0x20A))
+              StartAshFieldEffect(x, y, (0x212), 4);
           else
-              StartAshFieldEffect(x, y, METATILE_Lavaridge_NormalGrass, 4);
+              StartAshFieldEffect(x, y, (0x206), 4);
 
            
-          if (CheckBagHasItem(ITEM_SOOT_SACK, 1))
+          if (CheckBagHasItem((270), 1))
           {
-              ashGatherCount = GetVarPointer(VAR_ASH_GATHER_COUNT);
+              ashGatherCount = GetVarPointer((0x4048));
               if (ashGatherCount < 9999)
                   ashGatherCount++;
           }
@@ -567,7 +586,7 @@ export function AshGrassPerStepCallback(taskId: any): any {
 
 /** static void SetCrackedFloorHoleMetatile(s16 x, s16 y) */
 export function SetCrackedFloorHoleMetatile(x: any, y: any): any {
-  let metatileId: any = MapGridGetMetatileIdAt(x, y) == METATILE_Cave_CrackedFloor ? METATILE_Cave_CrackedFloor_Hole : METATILE_Pacifidlog_SkyPillar_CrackedFloor_Hole;
+  let metatileId: any = MapGridGetMetatileIdAt(x, y) == (0x22F) ? (0x206) : (0x237);
       MapGridSetMetatileIdAt(x, y, metatileId);
       CurrentMapDrawMetatileAt(x, y);
 }
@@ -587,7 +606,7 @@ export function CrackedFloorPerStepCallback(taskId: any): any {
           SetCrackedFloorHoleMetatile(tFloor2X, tFloor2Y);
 
       if (MetatileBehavior_IsCrackedFloorHole(behavior))
-          VarSet(VAR_ICE_STEP_COUNT, 0);  
+          VarSet((0x4022), 0);  
 
        
       if (x == tPrevX && y == tPrevY)
@@ -598,7 +617,7 @@ export function CrackedFloorPerStepCallback(taskId: any): any {
       if (MetatileBehavior_IsCrackedFloor(behavior))
       {
           if (GetPlayerSpeed() != PLAYER_SPEED_FASTEST)
-              VarSet(VAR_ICE_STEP_COUNT, 0);  
+              VarSet((0x4022), 0);  
 
           if (tFloor1Delay == 0)
           {
@@ -619,13 +638,13 @@ export function CrackedFloorPerStepCallback(taskId: any): any {
 export function SetMuddySlopeMetatile(data: any, x: any, y: any): any {
   let metatileId: any = null;
       if ((--data[SLOPE_TIME]) == 0)
-          metatileId = METATILE_General_MuddySlope_Frame0;
+          metatileId = (0x0E8);
       else
           metatileId = sMuddySlopeMetatiles[data[SLOPE_TIME] / SLOPE_ANIM_STEP_TIME];
 
       MapGridSetMetatileIdAt(x, y, metatileId);
       CurrentMapDrawMetatileAt(x, y);
-      MapGridSetMetatileIdAt(x, y, METATILE_General_MuddySlope_Frame0);
+      MapGridSetMetatileIdAt(x, y, (0x0E8));
 }
 
 /** static void Task_MuddySlope(u8 taskId) */

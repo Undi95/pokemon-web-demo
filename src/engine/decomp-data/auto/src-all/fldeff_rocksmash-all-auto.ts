@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gPostMenuFieldCallback: any = null;
 /** bool8 CheckObjectGraphicsInFrontOfPlayer(u8 graphicsId) */
 export function CheckObjectGraphicsInFrontOfPlayer(graphicsId: any): any {
   let objEventId: any = null;
@@ -49,17 +52,17 @@ export function Task_DoFieldMove_Init(taskId: any): any {
       if (!ObjectEventIsMovementOverridden(gObjectEvents[objEventId])
        || ObjectEventClearHeldMovementIfFinished(gObjectEvents[objEventId]))
       {
-          if (gMapHeader.mapType == MAP_TYPE_UNDERWATER)
+          if (gMapHeader.mapType == (5))
           {
                
-              FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);
+              FieldEffectStart((59));
               gTasks[taskId].func = Task_DoFieldMove_WaitForMon;
           }
           else
           {
                
               SetPlayerAvatarFieldMove();
-              ObjectEventSetHeldMovement(gObjectEvents[objEventId], MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);
+              ObjectEventSetHeldMovement(gObjectEvents[objEventId], (0x39));
               gTasks[taskId].func = Task_DoFieldMove_ShowMonAfterPose;
           }
       }
@@ -69,27 +72,27 @@ export function Task_DoFieldMove_Init(taskId: any): any {
 export function Task_DoFieldMove_ShowMonAfterPose(taskId: any): any {
   if (ObjectEventCheckHeldMovementStatus(gObjectEvents[gPlayerAvatar.objectEventId]) == TRUE)
       {
-          FieldEffectStart(FLDEFF_FIELD_MOVE_SHOW_MON_INIT);
+          FieldEffectStart((59));
           gTasks[taskId].func = Task_DoFieldMove_WaitForMon;
       }
 }
 
 /** static void Task_DoFieldMove_WaitForMon(u8 taskId) */
 export function Task_DoFieldMove_WaitForMon(taskId: any): any {
-  if (!FieldEffectActiveListContains(FLDEFF_FIELD_MOVE_SHOW_MON))
+  if (!FieldEffectActiveListContains((6)))
       {
           gFieldEffectArguments[1] = GetPlayerFacingDirection();
-          if (gFieldEffectArguments[1] == DIR_SOUTH)
+          if (gFieldEffectArguments[1] == (1))
               gFieldEffectArguments[2] = 0;
-          if (gFieldEffectArguments[1] == DIR_NORTH)
+          if (gFieldEffectArguments[1] == (2))
               gFieldEffectArguments[2] = 1;
-          if (gFieldEffectArguments[1] == DIR_WEST)
+          if (gFieldEffectArguments[1] == (3))
               gFieldEffectArguments[2] = 2;
-          if (gFieldEffectArguments[1] == DIR_EAST)
+          if (gFieldEffectArguments[1] == (4))
               gFieldEffectArguments[2] = 3;
           ObjectEventSetGraphicsId(gObjectEvents[gPlayerAvatar.objectEventId], GetPlayerAvatarGraphicsIdByCurrentState());
           StartSpriteAnim(gSprites[gPlayerAvatar.spriteId], gFieldEffectArguments[2]);
-          FieldEffectActiveListRemove(FLDEFF_FIELD_MOVE_SHOW_MON);
+          FieldEffectActiveListRemove((6));
           gTasks[taskId].func = Task_DoFieldMove_RunFunc;
       }
 }
@@ -112,7 +115,7 @@ export function SetUpFieldMove_RockSmash(): any {
           gPostMenuFieldCallback = SetUpPuzzleEffectRegirock;
           return TRUE;
       }
-      else if (CheckObjectGraphicsInFrontOfPlayer(OBJ_EVENT_GFX_BREAKABLE_ROCK) == TRUE)
+      else if (CheckObjectGraphicsInFrontOfPlayer((86)) == TRUE)
       {
           gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
           gPostMenuFieldCallback = FieldCallback_RockSmash;
@@ -136,14 +139,14 @@ export function FldEff_UseRockSmash(): any {
 
       gTasks[taskId].data[8] = FieldMove_RockSmash >> 16;
       gTasks[taskId].data[9] = FieldMove_RockSmash;
-      IncrementGameStat(GAME_STAT_USED_ROCK_SMASH);
+      IncrementGameStat((19));
       return FALSE;
 }
 
 /** static void FieldMove_RockSmash(void) */
 export function FieldMove_RockSmash(): any {
-  PlaySE(SE_M_ROCK_THROW);
-      FieldEffectActiveListRemove(FLDEFF_USE_ROCK_SMASH);
+  PlaySE((131));
+      FieldEffectActiveListRemove((37));
       ScriptContext_Enable();
 }
 

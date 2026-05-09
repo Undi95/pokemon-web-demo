@@ -19,7 +19,7 @@
 export function StringLength(str: any): any {
   let length: any = 0;
 
-      while (str[length] != EOS)
+      while (str[length] != (0xFF))
           length++;
 
       return length;
@@ -29,7 +29,7 @@ export function StringLength(str: any): any {
 export function StringCompare(str1: any, str2: any): any {
   while (str1 == str2)
       {
-          if (str1 == EOS)
+          if (str1 == (0xFF))
               return 0;
           str1++;
           str2++;
@@ -42,7 +42,7 @@ export function StringCompare(str1: any, str2: any): any {
 export function StringCompareN(str1: any, str2: any, n: any): any {
   while (str1 == str2)
       {
-          if (str1 == EOS)
+          if (str1 == (0xFF))
               return 0;
           str1++;
           str2++;
@@ -58,7 +58,7 @@ export function IsStringLengthAtLeast(str: any, n: any): any {
   let i: any = null;
 
       for (i = 0; i < n; i++)
-          if (str[i] && str[i] != EOS)
+          if (str[i] && str[i] != (0xFF))
               return TRUE;
 
       return FALSE;
@@ -68,9 +68,9 @@ export function IsStringLengthAtLeast(str: any, n: any): any {
 export function StringLength_Multibyte(str: any): any {
   let length: any = 0;
 
-      while (str != EOS)
+      while (str != (0xFF))
       {
-          if (str == CHAR_EXTRA_SYMBOL)
+          if (str == (0xF9))
               str++;
           str++;
           length++;
@@ -81,10 +81,10 @@ export function StringLength_Multibyte(str: any): any {
 
 /** bool32 IsStringJapanese(u8 *str) */
 export function IsStringJapanese(str: any): any {
-  while (str != EOS)
+  while (str != (0xFF))
       {
-          if (str <= JAPANESE_CHAR_END)
-              if (str != CHAR_SPACE)
+          if (str <= (0xA0))
+              if (str != (0x00))
                   return TRUE;
           str++;
       }
@@ -96,10 +96,10 @@ export function IsStringJapanese(str: any): any {
 export function IsStringNJapanese(str: any, n: any): any {
   let i: any = null;
 
-      for (i = 0; str != EOS && i < n; i++)
+      for (i = 0; str != (0xFF) && i < n; i++)
       {
-          if (str <= JAPANESE_CHAR_END)
-              if (str != CHAR_SPACE)
+          if (str <= (0xA0))
+              if (str != (0x00))
                   return TRUE;
           str++;
       }
@@ -134,11 +134,11 @@ export function StringCompareWithoutExtCtrlCodes(str1: any, str2: any): any {
           if (str1 < str2)
           {
               retVal = -1;
-              if (str2 == EOS)
+              if (str2 == (0xFF))
                   retVal = 1;
           }
 
-          if (str1 == EOS)
+          if (str1 == (0xFF))
               return retVal;
 
           str1++;
@@ -147,7 +147,7 @@ export function StringCompareWithoutExtCtrlCodes(str1: any, str2: any): any {
 
       retVal = 1;
 
-      if (str1 == EOS)
+      if (str1 == (0xFF))
           retVal = -1;
 
       return retVal;
@@ -155,15 +155,15 @@ export function StringCompareWithoutExtCtrlCodes(str1: any, str2: any): any {
 
 /** void ConvertInternationalString(u8 *s, u8 language) */
 export function ConvertInternationalString(s: any, language: any): any {
-  if (language == LANGUAGE_JAPANESE)
+  if (language == (1))
       {
           let i: any = null;
 
           StripExtCtrlCodes(s);
           i = StringLength(s);
-          s[i++] = EXT_CTRL_CODE_BEGIN;
-          s[i++] = EXT_CTRL_CODE_ENG;
-          s[i++] = EOS;
+          s[i++] = (0xFC);
+          s[i++] = (0x16);
+          s[i++] = (0xFF);
 
           i--;
 
@@ -173,8 +173,8 @@ export function ConvertInternationalString(s: any, language: any): any {
               i--;
           }
 
-          s[0] = EXT_CTRL_CODE_BEGIN;
-          s[1] = EXT_CTRL_CODE_JPN;
+          s[0] = (0xFC);
+          s[1] = (0x15);
       }
 }
 
@@ -182,9 +182,9 @@ export function ConvertInternationalString(s: any, language: any): any {
 export function StripExtCtrlCodes(str: any): any {
   let srcIndex: any = 0;
       let destIndex: any = 0;
-      while (str[srcIndex] != EOS)
+      while (str[srcIndex] != (0xFF))
       {
-          if (str[srcIndex] == EXT_CTRL_CODE_BEGIN)
+          if (str[srcIndex] == (0xFC))
           {
               srcIndex++;
               srcIndex += GetExtCtrlCodeLength(str[srcIndex]);
@@ -194,7 +194,7 @@ export function StripExtCtrlCodes(str: any): any {
               str[destIndex++] = str[srcIndex++];
           }
       }
-      str[destIndex] = EOS;
+      str[destIndex] = (0xFF);
 }
 
 // ─── callsTo manifest (= 5 unique callees) ───────────────────────

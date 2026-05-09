@@ -17,21 +17,11 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sContestLadyCategoryNames: any = null;
-let sContestLadyMonGfxId: any = null;
-let sContestLadyMonNames: any = null;
-let sContestLadyMonSpecies: any = null;
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_0x8005: any = null;
 let sContestLadyPtr: any = null;
-let sContestNames: any = null;
-let sFavorLadyAcceptedItemLists: any = null;
-let sFavorLadyPrizes: any = null;
 let sFavorLadyPtr: any = null;
-let sFavorLadyRequests: any = null;
-let sLilycoveLadyGfxId: any = null;
-let sQuizLadyPrizes: any = null;
 let sQuizLadyPtr: any = null;
-let sQuizLadyQuizAnswers: any = null;
-let sQuizLadyQuizQuestions: any = null;
 /** u8 GetLilycoveLadyId(void) */
 export function GetLilycoveLadyId(): any {
   return gSaveBlock1Ptr.lilycoveLady.id;
@@ -41,11 +31,11 @@ export function GetLilycoveLadyId(): any {
 export function SetLilycoveLadyGfx(): any {
   let lilycoveLady: any = null;
 
-      VarSet(VAR_OBJ_GFX_ID_0, sLilycoveLadyGfxId[GetLilycoveLadyId()]);
-      if (GetLilycoveLadyId() == LILYCOVE_LADY_CONTEST)
+      VarSet((0x4010), sLilycoveLadyGfxId[GetLilycoveLadyId()]);
+      if (GetLilycoveLadyId() == (2))
       {
           lilycoveLady =gSaveBlock1Ptr.lilycoveLady;
-          VarSet(VAR_OBJ_GFX_ID_1, sContestLadyMonGfxId[lilycoveLady.contest.category]);
+          VarSet((0x4011), sContestLadyMonGfxId[lilycoveLady.contest.category]);
           gSpecialVar_Result = TRUE;
       }
       else
@@ -61,13 +51,13 @@ export function InitLilycoveLady(): any {
       id >>= 1;
       switch (id)
       {
-      case LILYCOVE_LADY_QUIZ:
+      case (0):
           InitLilycoveQuizLady();
           break;
-      case LILYCOVE_LADY_FAVOR:
+      case (1):
           InitLilycoveFavorLady();
           break;
-      case LILYCOVE_LADY_CONTEST:
+      case (2):
           InitLilycoveContestLady();
           break;
       }
@@ -77,13 +67,13 @@ export function InitLilycoveLady(): any {
 export function ResetLilycoveLadyForRecordMix(): any {
   switch (GetLilycoveLadyId())
       {
-      case LILYCOVE_LADY_QUIZ:
+      case (0):
           ResetQuizLadyForRecordMix();
           break;
-      case LILYCOVE_LADY_FAVOR:
+      case (1):
           ResetFavorLadyForRecordMix();
           break;
-      case LILYCOVE_LADY_CONTEST:
+      case (2):
           ResetContestLadyForRecordMix();
           break;
       }
@@ -91,17 +81,17 @@ export function ResetLilycoveLadyForRecordMix(): any {
 
 /** void InitLilycoveLadyRandomly(void) */
 export function InitLilycoveLadyRandomly(): any {
-  let lady: any = Random() % LILYCOVE_LADY_COUNT;
+  let lady: any = Random() % (3);
 
       switch (lady)
       {
-      case LILYCOVE_LADY_QUIZ:
+      case (0):
           InitLilycoveQuizLady();
           break;
-      case LILYCOVE_LADY_FAVOR:
+      case (1):
           InitLilycoveFavorLady();
           break;
-      case LILYCOVE_LADY_CONTEST:
+      case (2):
           InitLilycoveContestLady();
           break;
       }
@@ -116,7 +106,7 @@ export function Script_GetLilycoveLadyId(): any {
 export function GetNumAcceptedItems(itemsArray: any): any {
   let numItems: any = null;
 
-      for (numItems = 0; itemsArray != ITEM_NONE; numItems++, itemsArray++);
+      for (numItems = 0; itemsArray != (0); numItems++, itemsArray++);
       return numItems;
 }
 
@@ -134,12 +124,12 @@ export function FavorLadyPickFavorAndBestItem(): any {
 /** static void InitLilycoveFavorLady(void) */
 export function InitLilycoveFavorLady(): any {
   sFavorLadyPtr =gSaveBlock1Ptr.lilycoveLady.favor;
-      sFavorLadyPtr.id = LILYCOVE_LADY_FAVOR;
-      sFavorLadyPtr.state = LILYCOVE_LADY_STATE_READY;
-      sFavorLadyPtr.playerName[0] = EOS;
+      sFavorLadyPtr.id = (1);
+      sFavorLadyPtr.state = (0);
+      sFavorLadyPtr.playerName[0] = (0xFF);
       sFavorLadyPtr.likedItem = FALSE;
       sFavorLadyPtr.numItemsGiven = 0;
-      sFavorLadyPtr.itemId = ITEM_NONE;
+      sFavorLadyPtr.itemId = (0);
       sFavorLadyPtr.language = gGameLanguage;
       FavorLadyPickFavorAndBestItem();
 }
@@ -147,19 +137,19 @@ export function InitLilycoveFavorLady(): any {
 /** static void ResetFavorLadyForRecordMix(void) */
 export function ResetFavorLadyForRecordMix(): any {
   sFavorLadyPtr =gSaveBlock1Ptr.lilycoveLady.favor;
-      sFavorLadyPtr.id = LILYCOVE_LADY_FAVOR;
-      sFavorLadyPtr.state = LILYCOVE_LADY_STATE_READY;
+      sFavorLadyPtr.id = (1);
+      sFavorLadyPtr.state = (0);
 }
 
 /** u8 GetFavorLadyState(void) */
 export function GetFavorLadyState(): any {
   sFavorLadyPtr =gSaveBlock1Ptr.lilycoveLady.favor;
-      if (sFavorLadyPtr.state == LILYCOVE_LADY_STATE_PRIZE)
-          return LILYCOVE_LADY_STATE_PRIZE;
-      else if (sFavorLadyPtr.state == LILYCOVE_LADY_STATE_COMPLETED)
-          return LILYCOVE_LADY_STATE_COMPLETED;
+      if (sFavorLadyPtr.state == (2))
+          return (2);
+      else if (sFavorLadyPtr.state == (1))
+          return (1);
       else
-          return LILYCOVE_LADY_STATE_READY;
+          return (0);
 }
 
 /** void BufferFavorLadyRequest(void) */
@@ -171,7 +161,7 @@ export function BufferFavorLadyRequest(): any {
 /** bool8 HasAnotherPlayerGivenFavorLadyItem(void) */
 export function HasAnotherPlayerGivenFavorLadyItem(): any {
   sFavorLadyPtr =gSaveBlock1Ptr.lilycoveLady.favor;
-      if (sFavorLadyPtr.playerName[0] != EOS)
+      if (sFavorLadyPtr.playerName[0] != (0xFF))
       {
           StringCopy_PlayerName(gStringVar3, sFavorLadyPtr.playerName);
           ConvertInternationalString(gStringVar3, sFavorLadyPtr.language);
@@ -193,7 +183,7 @@ export function BufferFavorLadyItemName(): any {
 
 /** static void SetFavorLadyPlayerName(const u8 *src, u8 *dest) */
 export function SetFavorLadyPlayerName(src: any, dest: any): any {
-  memset(dest, EOS, PLAYER_NAME_LENGTH + 1);
+  memset(dest, (0xFF), (7) + 1);
       StringCopy_PlayerName(dest, src);
 }
 
@@ -223,7 +213,7 @@ export function DoesFavorLadyLikeItem(itemId: any): any {
 
       sFavorLadyPtr =gSaveBlock1Ptr.lilycoveLady.favor;
       numItems = GetNumAcceptedItems(sFavorLadyAcceptedItemLists[sFavorLadyPtr.favorId]);
-      sFavorLadyPtr.state = LILYCOVE_LADY_STATE_COMPLETED;
+      sFavorLadyPtr.state = (1);
       BufferItemName(gStringVar2, itemId);
       sFavorLadyPtr.itemId = itemId;
       SetFavorLadyPlayerName(gSaveBlock2Ptr.playerName, sFavorLadyPtr.playerName);
@@ -237,7 +227,7 @@ export function DoesFavorLadyLikeItem(itemId: any): any {
               sFavorLadyPtr.numItemsGiven++;
               sFavorLadyPtr.likedItem = TRUE;
               if (sFavorLadyPtr.bestItem == itemId)
-                  sFavorLadyPtr.numItemsGiven = LILYCOVE_LADY_GIFT_THRESHOLD;
+                  sFavorLadyPtr.numItemsGiven = (5);
               break;
           }
           sFavorLadyPtr.likedItem = FALSE;
@@ -256,7 +246,7 @@ export function IsFavorLadyThresholdMet(): any {
 
       sFavorLadyPtr =gSaveBlock1Ptr.lilycoveLady.favor;
       numItemsGiven = sFavorLadyPtr.numItemsGiven;
-      return numItemsGiven < LILYCOVE_LADY_GIFT_THRESHOLD ? FALSE : TRUE;
+      return numItemsGiven < (5) ? FALSE : TRUE;
 }
 
 /** static void FavorLadyBufferPrizeName(u16 prize) */
@@ -271,14 +261,14 @@ export function FavorLadyGetPrize(): any {
       sFavorLadyPtr =gSaveBlock1Ptr.lilycoveLady.favor;
       prize = sFavorLadyPrizes[sFavorLadyPtr.favorId];
       FavorLadyBufferPrizeName(prize);
-      sFavorLadyPtr.state = LILYCOVE_LADY_STATE_PRIZE;
+      sFavorLadyPtr.state = (2);
       return prize;
 }
 
 /** void SetFavorLadyState_Complete(void) */
 export function SetFavorLadyState_Complete(): any {
   InitLilycoveFavorLady();
-      sFavorLadyPtr.state = LILYCOVE_LADY_STATE_COMPLETED;
+      sFavorLadyPtr.state = (1);
 }
 
 /** void FieldCallback_FavorLadyEnableScriptContexts(void) */
@@ -292,12 +282,12 @@ export function QuizLadyPickQuestion(): any {
       let i: any = null;
 
       questionId = Random() % ARRAY_COUNT(sQuizLadyQuizQuestions);
-      for (i = 0; i < QUIZ_QUESTION_LEN; i ++)
+      for (i = 0; i < (9); i ++)
           sQuizLadyPtr.question[i] = sQuizLadyQuizQuestions[questionId][i];
       sQuizLadyPtr.correctAnswer = sQuizLadyQuizAnswers[questionId];
       sQuizLadyPtr.prize = sQuizLadyPrizes[questionId];
       sQuizLadyPtr.questionId = questionId;
-      sQuizLadyPtr.playerName[0] = EOS;
+      sQuizLadyPtr.playerName[0] = (0xFF);
 }
 
 /** static void InitLilycoveQuizLady(void) */
@@ -305,19 +295,19 @@ export function InitLilycoveQuizLady(): any {
   let i: any = null;
 
       sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
-      sQuizLadyPtr.id = LILYCOVE_LADY_QUIZ;
-      sQuizLadyPtr.state = LILYCOVE_LADY_STATE_READY;
+      sQuizLadyPtr.id = (0);
+      sQuizLadyPtr.state = (0);
 
-      for (i = 0; i < QUIZ_QUESTION_LEN; i ++)
-          sQuizLadyPtr.question[i] = EC_EMPTY_WORD;
+      for (i = 0; i < (9); i ++)
+          sQuizLadyPtr.question[i] = (0xFFFF);
 
-      sQuizLadyPtr.correctAnswer = EC_EMPTY_WORD;
-      sQuizLadyPtr.playerAnswer = EC_EMPTY_WORD;
+      sQuizLadyPtr.correctAnswer = (0xFFFF);
+      sQuizLadyPtr.playerAnswer = (0xFFFF);
 
-      for (i = 0; i < TRAINER_ID_LENGTH; i ++)
+      for (i = 0; i < (4); i ++)
           sQuizLadyPtr.playerTrainerId[i] = 0;
 
-      sQuizLadyPtr.prize = ITEM_NONE;
+      sQuizLadyPtr.prize = (0);
       sQuizLadyPtr.waitingForChallenger = FALSE;
       sQuizLadyPtr.prevQuestionId = ARRAY_COUNT(sQuizLadyQuizQuestions);
       sQuizLadyPtr.language = gGameLanguage;
@@ -327,21 +317,21 @@ export function InitLilycoveQuizLady(): any {
 /** static void ResetQuizLadyForRecordMix(void) */
 export function ResetQuizLadyForRecordMix(): any {
   sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
-      sQuizLadyPtr.id = LILYCOVE_LADY_QUIZ;
-      sQuizLadyPtr.state = LILYCOVE_LADY_STATE_READY;
+      sQuizLadyPtr.id = (0);
+      sQuizLadyPtr.state = (0);
       sQuizLadyPtr.waitingForChallenger = FALSE;
-      sQuizLadyPtr.playerAnswer = EC_EMPTY_WORD;
+      sQuizLadyPtr.playerAnswer = (0xFFFF);
 }
 
 /** u8 GetQuizLadyState(void) */
 export function GetQuizLadyState(): any {
   sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
-      if (sQuizLadyPtr.state == LILYCOVE_LADY_STATE_PRIZE)
-          return LILYCOVE_LADY_STATE_PRIZE;
-      else if (sQuizLadyPtr.state == LILYCOVE_LADY_STATE_COMPLETED)
-          return LILYCOVE_LADY_STATE_COMPLETED;
+      if (sQuizLadyPtr.state == (2))
+          return (2);
+      else if (sQuizLadyPtr.state == (1))
+          return (1);
       else
-          return LILYCOVE_LADY_STATE_READY;
+          return (0);
 }
 
 /** u8 GetQuizAuthor(void) */
@@ -359,20 +349,20 @@ export function GetQuizAuthor(): any {
                   i = 0;
           } while (IsEasyChatAnswerUnlocked(sQuizLadyQuizAnswers[i]) == FALSE);
 
-          for (j = 0; j < QUIZ_QUESTION_LEN; j++)
+          for (j = 0; j < (9); j++)
               quiz.question[j] = sQuizLadyQuizQuestions[i][j];
           quiz.correctAnswer = sQuizLadyQuizAnswers[i];
           quiz.prize = sQuizLadyPrizes[i];
           quiz.questionId = i;
-          quiz.playerName[0] = EOS;
+          quiz.playerName[0] = (0xFF);
       }
       authorNameId = BufferQuizAuthorName();
-      if (authorNameId == QUIZ_AUTHOR_NAME_LADY)
-          return QUIZ_AUTHOR_LADY;
-      else if (authorNameId == QUIZ_AUTHOR_NAME_OTHER_PLAYER || IsQuizTrainerIdNotPlayer())
-          return QUIZ_AUTHOR_OTHER_PLAYER;
+      if (authorNameId == (0))
+          return (2);
+      else if (authorNameId == (2) || IsQuizTrainerIdNotPlayer())
+          return (1);
       else
-          return QUIZ_AUTHOR_PLAYER;
+          return (0);
 }
 
 /** static u8 BufferQuizAuthorName(void) */
@@ -381,12 +371,12 @@ export function BufferQuizAuthorName(): any {
       let nameLen: any = null;
       let i: any = null;
 
-      authorNameId = QUIZ_AUTHOR_NAME_PLAYER;
+      authorNameId = (1);
       sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
-      if (sQuizLadyPtr.playerName[0] == EOS)
+      if (sQuizLadyPtr.playerName[0] == (0xFF))
       {
           StringCopy(gStringVar1, gText_QuizLady_Lady);  
-          authorNameId = QUIZ_AUTHOR_NAME_LADY;
+          authorNameId = (0);
       }
       else
       {
@@ -401,7 +391,7 @@ export function BufferQuizAuthorName(): any {
                   name = sQuizLadyPtr.playerName;
                   if (name[i] != gSaveBlock2Ptr.playerName[i])
                   {
-                      authorNameId = QUIZ_AUTHOR_NAME_OTHER_PLAYER;
+                      authorNameId = (2);
                       break;
                   }
               }
@@ -418,7 +408,7 @@ export function IsQuizTrainerIdNotPlayer(): any {
 
       sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
       notPlayer = FALSE;
-      for (i = 0; i < TRAINER_ID_LENGTH; i++)
+      for (i = 0; i < (4); i++)
       {
           if (sQuizLadyPtr.playerTrainerId[i] != gSaveBlock2Ptr.playerTrainerId[i])
           {
@@ -434,7 +424,7 @@ export function GetPlayerNameLength(playerName: any): any {
   let len: any = null;
       let ptr: any = null;
 
-      for (len = 0, ptr = playerName; ptr != EOS; len++, ptr++);
+      for (len = 0, ptr = playerName; ptr != (0xFF); len++, ptr++);
       return len;
 }
 
@@ -446,7 +436,7 @@ export function BufferQuizPrizeName(): any {
 /** bool8 BufferQuizAuthorNameAndCheckIfLady(void) */
 export function BufferQuizAuthorNameAndCheckIfLady(): any {
   sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
-      if (BufferQuizAuthorName() == QUIZ_AUTHOR_NAME_LADY)
+      if (BufferQuizAuthorName() == (0))
       {
           sQuizLadyPtr.language = gGameLanguage;
           return TRUE;
@@ -482,19 +472,19 @@ export function BufferQuizPrizeItem(): any {
 /** void SetQuizLadyState_Complete(void) */
 export function SetQuizLadyState_Complete(): any {
   sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
-      sQuizLadyPtr.state = LILYCOVE_LADY_STATE_COMPLETED;
+      sQuizLadyPtr.state = (1);
 }
 
 /** void SetQuizLadyState_GivePrize(void) */
 export function SetQuizLadyState_GivePrize(): any {
   sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
-      sQuizLadyPtr.state = LILYCOVE_LADY_STATE_PRIZE;
+      sQuizLadyPtr.state = (2);
 }
 
 /** void ClearQuizLadyPlayerAnswer(void) */
 export function ClearQuizLadyPlayerAnswer(): any {
   sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
-      sQuizLadyPtr.playerAnswer = EC_EMPTY_WORD;
+      sQuizLadyPtr.playerAnswer = (0xFFFF);
 }
 
 /** void Script_QuizLadyOpenBagMenu(void) */
@@ -517,14 +507,14 @@ export function ClearQuizLadyQuestionAndAnswer(): any {
   let i: any = null;
 
       sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
-      for (i = 0; i < QUIZ_QUESTION_LEN; i++)
-          sQuizLadyPtr.question[i] = EC_EMPTY_WORD;
-      sQuizLadyPtr.correctAnswer = EC_EMPTY_WORD;
+      for (i = 0; i < (9); i++)
+          sQuizLadyPtr.question[i] = (0xFFFF);
+      sQuizLadyPtr.correctAnswer = (0xFFFF);
 }
 
 /** void QuizLadySetCustomQuestion(void) */
 export function QuizLadySetCustomQuestion(): any {
-  gSpecialVar_0x8004 = EASY_CHAT_TYPE_QUIZ_SET_QUESTION;
+  gSpecialVar_0x8004 = (17);
       ShowEasyChatScreen();
 }
 
@@ -539,7 +529,7 @@ export function QuizLadyRecordCustomQuizData(): any {
 
       sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
       sQuizLadyPtr.prize = gSpecialVar_ItemId;
-      for (i = 0; i < TRAINER_ID_LENGTH; i++)
+      for (i = 0; i < (4); i++)
           sQuizLadyPtr.playerTrainerId[i] = gSaveBlock2Ptr.playerTrainerId[i];
       StringCopy_PlayerName(sQuizLadyPtr.playerName, gSaveBlock2Ptr.playerName);
       sQuizLadyPtr.language = gGameLanguage;
@@ -568,7 +558,7 @@ export function QuizLadyClearQuestionForRecordMix(lilycoveLady: any): any {
 
       sQuizLadyPtr =gSaveBlock1Ptr.lilycoveLady.quiz;
       if (lilycoveLady.quiz.prevQuestionId < ARRAY_COUNT(sQuizLadyQuizQuestions)
-          && sQuizLadyPtr.id == LILYCOVE_LADY_QUIZ)
+          && sQuizLadyPtr.id == (0))
       {
           for (i = 0; i < 4; i++)
           {
@@ -585,17 +575,17 @@ export function QuizLadyClearQuestionForRecordMix(lilycoveLady: any): any {
 
 /** static void ResetContestLadyContestData(void) */
 export function ResetContestLadyContestData(): any {
-  sContestLadyPtr.playerName[0] = EOS;
+  sContestLadyPtr.playerName[0] = (0xFF);
       sContestLadyPtr.numGoodPokeblocksGiven = 0;
       sContestLadyPtr.numOtherPokeblocksGiven = 0;
       sContestLadyPtr.maxSheen = 0;
-      sContestLadyPtr.category = Random() % CONTEST_CATEGORIES_COUNT;
+      sContestLadyPtr.category = Random() % (5);
 }
 
 /** static void InitLilycoveContestLady(void) */
 export function InitLilycoveContestLady(): any {
   sContestLadyPtr =gSaveBlock1Ptr.lilycoveLady.contest;
-      sContestLadyPtr.id = LILYCOVE_LADY_CONTEST;
+      sContestLadyPtr.id = (2);
       sContestLadyPtr.givenPokeblock = FALSE;
       ResetContestLadyContestData();
       sContestLadyPtr.language = gGameLanguage;
@@ -604,11 +594,11 @@ export function InitLilycoveContestLady(): any {
 /** static void ResetContestLadyForRecordMix(void) */
 export function ResetContestLadyForRecordMix(): any {
   sContestLadyPtr =gSaveBlock1Ptr.lilycoveLady.contest;
-      sContestLadyPtr.id = LILYCOVE_LADY_CONTEST;
+      sContestLadyPtr.id = (2);
       sContestLadyPtr.givenPokeblock = FALSE;
 
-      if (sContestLadyPtr.numGoodPokeblocksGiven == LILYCOVE_LADY_GIFT_THRESHOLD
-       || sContestLadyPtr.numOtherPokeblocksGiven == LILYCOVE_LADY_GIFT_THRESHOLD)
+      if (sContestLadyPtr.numGoodPokeblocksGiven == (5)
+       || sContestLadyPtr.numOtherPokeblocksGiven == (5))
           ResetContestLadyContestData();
 }
 
@@ -618,7 +608,7 @@ export function ContestLadySavePlayerNameIfHighSheen(sheen: any): any {
       if (sContestLadyPtr.maxSheen <= sheen)
       {
           sContestLadyPtr.maxSheen = sheen;
-          memset(sContestLadyPtr.playerName, EOS, sizeof(sContestLadyPtr.playerName));
+          memset(sContestLadyPtr.playerName, (0xFF), sizeof(sContestLadyPtr.playerName));
           memcpy(sContestLadyPtr.playerName, gSaveBlock2Ptr.playerName, sizeof(sContestLadyPtr.playerName));
           sContestLadyPtr.language = gGameLanguage;
       }
@@ -632,35 +622,35 @@ export function GivePokeblockToContestLady(pokeblock: any): any {
       sContestLadyPtr =gSaveBlock1Ptr.lilycoveLady.contest;
       switch (sContestLadyPtr.category)
       {
-      case CONTEST_CATEGORY_COOL:
+      case (0):
           if (pokeblock.spicy != 0)
           {
               sheen = pokeblock.spicy;
               correctFlavor = TRUE;
           }
           break;
-      case CONTEST_CATEGORY_BEAUTY:
+      case (1):
           if (pokeblock.dry != 0)
           {
               sheen = pokeblock.dry;
               correctFlavor = TRUE;
           }
           break;
-      case CONTEST_CATEGORY_CUTE:
+      case (2):
           if (pokeblock.sweet != 0)
           {
               sheen = pokeblock.sweet;
               correctFlavor = TRUE;
           }
           break;
-      case CONTEST_CATEGORY_SMART:
+      case (3):
           if (pokeblock.bitter != 0)
           {
               sheen = pokeblock.bitter;
               correctFlavor = TRUE;
           }
           break;
-      case CONTEST_CATEGORY_TOUGH:
+      case (4):
           if (pokeblock.sour != 0)
           {
               sheen = pokeblock.sour;
@@ -714,12 +704,12 @@ export function BufferContestName(dest: any, category: any): any {
 /** u8 GetContestLadyPokeblockState(void) */
 export function GetContestLadyPokeblockState(): any {
   sContestLadyPtr =gSaveBlock1Ptr.lilycoveLady.contest;
-      if (sContestLadyPtr.numGoodPokeblocksGiven >= LILYCOVE_LADY_GIFT_THRESHOLD)
-          return CONTEST_LADY_GOOD;
+      if (sContestLadyPtr.numGoodPokeblocksGiven >= (5))
+          return (1);
       else if (sContestLadyPtr.numGoodPokeblocksGiven == 0)
-          return CONTEST_LADY_BAD;
+          return (2);
       else
-          return CONTEST_LADY_NORMAL;
+          return (0);
 }
 
 /** bool8 HasPlayerGivenContestLadyPokeblock(void) */
@@ -735,8 +725,8 @@ export function ShouldContestLadyShowGoOnAir(): any {
   let putOnAir: any = FALSE;
 
       sContestLadyPtr =gSaveBlock1Ptr.lilycoveLady.contest;
-      if (sContestLadyPtr.numGoodPokeblocksGiven >= LILYCOVE_LADY_GIFT_THRESHOLD
-       || sContestLadyPtr.numOtherPokeblocksGiven >= LILYCOVE_LADY_GIFT_THRESHOLD)
+      if (sContestLadyPtr.numGoodPokeblocksGiven >= (5)
+       || sContestLadyPtr.numOtherPokeblocksGiven >= (5))
           putOnAir = TRUE;
 
       return putOnAir;

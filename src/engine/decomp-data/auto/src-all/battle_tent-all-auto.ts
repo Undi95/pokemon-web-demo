@@ -17,13 +17,10 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sFallarborTentFuncs: any = null;
-let sFallarborTentRewards: any = null;
+let gFacilityTrainerMons: any = null;
+let gFacilityTrainers: any = null;
+let gTrainerBattleOpponent_A: any = null;
 let sRandMonId: any = null;
-let sSlateportTentFuncs: any = null;
-let sSlateportTentRewards: any = null;
-let sVerdanturfTentFuncs: any = null;
-let sVerdanturfTentRewards: any = null;
 /** void CallVerdanturfTentFunction(void) */
 export function CallVerdanturfTentFunction(): any {
   sVerdanturfTentFuncs[gSpecialVar_0x8004]();
@@ -34,7 +31,7 @@ export function InitVerdanturfTentChallenge(): any {
   gSaveBlock2Ptr.frontier.challengeStatus = 0;
       gSaveBlock2Ptr.frontier.curChallengeBattleNum = 0;
       gSaveBlock2Ptr.frontier.challengePaused = FALSE;
-      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE);
+      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)));
 }
 
 /** static void GetVerdanturfTentPrize(void) */
@@ -55,14 +52,14 @@ export function SetVerdanturfTentTrainerGfx(): any {
 
 /** static void BufferVerdanturfTentTrainerIntro(void) */
 export function BufferVerdanturfTentTrainerIntro(): any {
-  if (gTrainerBattleOpponent_A < FRONTIER_TRAINERS_COUNT)
+  if (gTrainerBattleOpponent_A < (300))
           FrontierSpeechToString(gFacilityTrainers[gTrainerBattleOpponent_A].speechBefore);
 }
 
 /** static void SaveVerdanturfTentChallenge(void) */
 export function SaveVerdanturfTentChallenge(): any {
   gSaveBlock2Ptr.frontier.challengeStatus = gSpecialVar_0x8005;
-      VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);
+      VarSet(((((0x4000) + 0x0))), 0);
       gSaveBlock2Ptr.frontier.challengePaused = TRUE;
       SaveGameFrontier();
 }
@@ -77,7 +74,7 @@ export function GiveVerdanturfTentPrize(): any {
   if (AddBagItem(gSaveBlock2Ptr.frontier.verdanturfTentPrize, 1) == TRUE)
       {
           CopyItemName(gSaveBlock2Ptr.frontier.verdanturfTentPrize, gStringVar1);
-          gSaveBlock2Ptr.frontier.verdanturfTentPrize = ITEM_NONE;
+          gSaveBlock2Ptr.frontier.verdanturfTentPrize = (0);
           gSpecialVar_Result = TRUE;
       }
       else
@@ -96,7 +93,7 @@ export function InitFallarborTentChallenge(): any {
   gSaveBlock2Ptr.frontier.challengeStatus = 0;
       gSaveBlock2Ptr.frontier.curChallengeBattleNum = 0;
       gSaveBlock2Ptr.frontier.challengePaused = FALSE;
-      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE);
+      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)));
 }
 
 /** static void GetFallarborTentPrize(void) */
@@ -112,7 +109,7 @@ export function SetFallarborTentPrize(): any {
 /** static void SaveFallarborTentChallenge(void) */
 export function SaveFallarborTentChallenge(): any {
   gSaveBlock2Ptr.frontier.challengeStatus = gSpecialVar_0x8005;
-      VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);
+      VarSet(((((0x4000) + 0x0))), 0);
       gSaveBlock2Ptr.frontier.challengePaused = TRUE;
       SaveGameFrontier();
 }
@@ -127,7 +124,7 @@ export function GiveFallarborTentPrize(): any {
   if (AddBagItem(gSaveBlock2Ptr.frontier.fallarborTentPrize, 1) == TRUE)
       {
           CopyItemName(gSaveBlock2Ptr.frontier.fallarborTentPrize, gStringVar1);
-          gSaveBlock2Ptr.frontier.fallarborTentPrize = ITEM_NONE;
+          gSaveBlock2Ptr.frontier.fallarborTentPrize = (0);
           gSpecialVar_Result = TRUE;
       }
       else
@@ -151,7 +148,7 @@ export function InitSlateportTentChallenge(): any {
   gSaveBlock2Ptr.frontier.challengeStatus = 0;
       gSaveBlock2Ptr.frontier.curChallengeBattleNum = 0;
       gSaveBlock2Ptr.frontier.challengePaused = FALSE;
-      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE);
+      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)));
 }
 
 /** static void GetSlateportTentPrize(void) */
@@ -167,7 +164,7 @@ export function SetSlateportTentPrize(): any {
 /** static void SaveSlateportTentChallenge(void) */
 export function SaveSlateportTentChallenge(): any {
   gSaveBlock2Ptr.frontier.challengeStatus = gSpecialVar_0x8005;
-      VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);
+      VarSet(((((0x4000) + 0x0))), 0);
       gSaveBlock2Ptr.frontier.challengePaused = TRUE;
       SaveGameFrontier();
 }
@@ -182,7 +179,7 @@ export function GiveSlateportTentPrize(): any {
   if (AddBagItem(gSaveBlock2Ptr.frontier.slateportTentPrize, 1) == TRUE)
       {
           CopyItemName(gSaveBlock2Ptr.frontier.slateportTentPrize, gStringVar1);
-          gSaveBlock2Ptr.frontier.slateportTentPrize = ITEM_NONE;
+          gSaveBlock2Ptr.frontier.slateportTentPrize = (0);
           gSpecialVar_Result = TRUE;
       }
       else
@@ -220,19 +217,19 @@ export function GenerateInitialRentalMons(): any {
 
       firstMonId = 0;
       gFacilityTrainers = gSlateportBattleTentTrainers;
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           species[i] = 0;
           monIds[i] = 0;
           heldItems[i] = 0;
       }
       gFacilityTrainerMons = gSlateportBattleTentMons;
-      currSpecies = SPECIES_NONE;
+      currSpecies = (0);
       i = 0;
-      while (i != PARTY_SIZE)
+      while (i != (6))
       {
            
-          monSetId = Random() % NUM_SLATEPORT_TENT_MONS;
+          monSetId = Random() % (70);
           for (j = firstMonId; j < firstMonId + i; j++)
           {
                
@@ -241,7 +238,7 @@ export function GenerateInitialRentalMons(): any {
                   break;
               if (species[j] == gFacilityTrainerMons[monSetId].species)
               {
-                  if (currSpecies == SPECIES_NONE)
+                  if (currSpecies == (0))
                       currSpecies = gFacilityTrainerMons[monSetId].species;
                   else
                       break;
@@ -256,7 +253,7 @@ export function GenerateInitialRentalMons(): any {
               if (heldItems[j] != 0 && heldItems[j] == gBattleFrontierHeldItems[gFacilityTrainerMons[monSetId].itemTableId])
               {
                   if (gFacilityTrainerMons[monSetId].species == currSpecies)
-                      currSpecies = SPECIES_NONE;
+                      currSpecies = (0);
                   break;
               }
           }
@@ -288,7 +285,7 @@ export function GenerateOpponentMons(): any {
           do
           {
                
-              trainerId = Random() % NUM_BATTLE_TENT_TRAINERS;
+              trainerId = Random() % (30);
               for (i = 0; i < gSaveBlock2Ptr.frontier.curChallengeBattleNum; i++)
               {
                   if (gSaveBlock2Ptr.frontier.trainerIds[i] == trainerId)
@@ -305,12 +302,12 @@ export function GenerateOpponentMons(): any {
           numMons = 0;
       }
 
-      if (gSaveBlock2Ptr.frontier.curChallengeBattleNum < TENT_STAGES_PER_CHALLENGE - 1)
+      if (gSaveBlock2Ptr.frontier.curChallengeBattleNum < (3) - 1)
           gSaveBlock2Ptr.frontier.trainerIds[gSaveBlock2Ptr.frontier.curChallengeBattleNum] = gTrainerBattleOpponent_A;
 
       monSet = gFacilityTrainers[gTrainerBattleOpponent_A].monSet;
       i = 0;
-      while (i != FRONTIER_PARTY_SIZE)
+      while (i != (3))
       {
           sRandMonId = monSet[Random() % numMons];
 
@@ -335,7 +332,7 @@ export function GenerateOpponentMons(): any {
            
           for (k = 0; k < i; k++)
           {
-              if (heldItems[k] != ITEM_NONE && heldItems[k] == gBattleFrontierHeldItems[gFacilityTrainerMons[sRandMonId].itemTableId])
+              if (heldItems[k] != (0) && heldItems[k] == gBattleFrontierHeldItems[gFacilityTrainerMons[sRandMonId].itemTableId])
                   break;
           }
           if (k != i)

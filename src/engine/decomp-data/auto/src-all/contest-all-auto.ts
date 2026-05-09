@@ -17,37 +17,34 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAppealResultTexts: any = null;
+let eContest: any = null;
+let eContestAI: any = null;
+let eContestAppealResults: any = null;
+let eContestDebugMode: any = null;
+let gAnimFriendship: any = null;
+let gAnimMoveTurn: any = null;
+let gBattleAnimBgTileBuffer: any = null;
+let gBattleAnimBgTilemapBuffer: any = null;
+let gBattle_BG0_X: any = null;
+let gBattle_BG0_Y: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gBattle_BG2_X: any = null;
+let gBattle_BG2_Y: any = null;
+let gBattle_BG3_X: any = null;
+let gBattle_BG3_Y: any = null;
+let gBattle_WIN0H: any = null;
+let gBattle_WIN0V: any = null;
+let gBattle_WIN1H: any = null;
+let gBattle_WIN1V: any = null;
+let gContestPlayerMonIndex: any = null;
+let gContestResources: any = null;
+let gContestRngValue: any = null;
+let gLinkContestFlags: any = null;
+let gReservedSpritePaletteCount: any = null;
+let notLastInRound2: any = null;
+let round2Placing: any = null;
 let sContestBgCopyFlags: any = null;
-let sContestBgTemplates: any = null;
-let sContestConditions: any = null;
-let sContestExcitementTable: any = null;
-let sContestWindowTemplates: any = null;
-let sContestant: any = null;
-let sInvalidContestMoveNames: any = null;
-let sMoveX: any = null;
-let sNextTurnSpriteYPositions: any = null;
-let sRoundResultTexts: any = null;
-let sSliderHeartYPositions: any = null;
-let sSpritePalette_ApplauseMeter: any = null;
-let sSpritePalette_JudgeSymbols: any = null;
-let sSpritePalette_NextTurn: any = null;
-let sSpritePalettes_ContestantsTurnBlinkEffect: any = null;
-let sSpriteSheet_ApplauseMeter: any = null;
-let sSpriteSheet_Judge: any = null;
-let sSpriteSheet_JudgeSymbols: any = null;
-let sSpriteSheet_NextTurn: any = null;
-let sSpriteSheet_SliderHeart: any = null;
-let sSpriteSheets_ContestantsTurnBlinkEffect: any = null;
-let sSpriteTemplate_ApplauseMeter: any = null;
-let sSpriteTemplate_Judge: any = null;
-let sSpriteTemplate_JudgeSpeechBubble: any = null;
-let sSpriteTemplate_SliderHeart: any = null;
-let sSpriteTemplates_ContestantsTurnBlinkEffect: any = null;
-let sSpriteTemplates_NextTurn: any = null;
-let sSubspriteTable_NextTurn: any = null;
-let sTargetX: any = null;
-let sText_Pal: any = null;
 /** void ResetLinkContestBoolean(void) */
 export function ResetLinkContestBoolean(): any {
   gLinkContestFlags = 0;
@@ -85,9 +82,9 @@ export function LoadContestBgAfterMoveAnim(): any {
       LZDecompressVram(gContestAudienceGfx, (BG_SCREEN_ADDR(4)));
       CopyToBgTilemapBuffer(3, gContestAudienceTilemap, 0, 0);
       CopyBgTilemapBufferToVram(3);
-      LoadCompressedPalette(gContestInterfaceAudiencePalette, BG_PLTT_OFFSET, BG_PLTT_SIZE);
+      LoadCompressedPalette(gContestInterfaceAudiencePalette, (0x000), BG_PLTT_SIZE);
       LoadContestPalettes();
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           let contestantWindowId: any = 5 + i;
 
@@ -102,7 +99,7 @@ export function InitContestInfoBgs(): any {
       ResetBgsAndClearDma3BusyFlags(0);
       InitBgsFromTemplates(0, sContestBgTemplates, ARRAY_COUNT(sContestBgTemplates));
       SetBgAttribute(3, BG_ATTR_WRAPAROUND, 1);
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           SetBgTilemapBuffer(i, gContestResources.contestBgTilemaps[i]);
       }
@@ -112,7 +109,7 @@ export function InitContestInfoBgs(): any {
 export function InitContestWindows(): any {
   InitWindows(sContestWindowTemplates);
       DeactivateAllTextPrinters();
-      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+      if (gLinkContestFlags & ((1 << 0)))
       {
           gTextFlags.canABSpeedUpPrint = FALSE;
       }
@@ -127,7 +124,7 @@ export function LoadContestPalettes(): any {
   let i: any = null;
 
       LoadPalette(sText_Pal, BG_PLTT_ID(15), 0);
-      SetBackdropFromColor(RGB_BLACK);
+      SetBackdropFromColor((RGB(0, 0, 0)));
       for (i = 10; i < 14; i++)
           LoadPalette(gPlttBufferUnfaded[BG_PLTT_ID(15) + 1], BG_PLTT_ID(15) + i, PLTT_SIZEOF(1));
       FillPalette(RGB(31, 17, 31), BG_PLTT_ID(15) + 3, PLTT_SIZEOF(1));
@@ -138,15 +135,15 @@ export function InitContestResources(): any {
   let i: any = null;
 
       eContest = ({} as any);
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           eContest.unk[i] = 0xFF;
       }
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           eContestantStatus[i] = ({} as any);
       }
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           eContestantStatus[i].ranking = 0;
           eContestantStatus[i].effectStringId = CONTEST_STRING_NONE;
@@ -155,33 +152,33 @@ export function InitContestResources(): any {
       eContestAppealResults = ({} as any);
       eContestAI = ({} as any);
       gContestResources.excitement = ({} as any);
-      memset(eContestGfxState, 0, CONTESTANT_COUNT * 0);
+      memset(eContestGfxState, 0, (4) * 0);
 
-      if (!(gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK))
+      if (!(gLinkContestFlags & ((1 << 0))))
           SortContestants(FALSE);
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
-          eContestantStatus[i].nextTurnOrder = CONTESTANT_NONE;
+          eContestantStatus[i].nextTurnOrder = (0xFF);
           eContest.prevTurnOrder[i] = gContestantTurnOrder[i];
       }
        
        
       ApplyNextTurnOrder();
-      memset(gContestResources.tv, 0, sizeof(gContestResources.tv) * CONTESTANT_COUNT);
+      memset(gContestResources.tv, 0, sizeof(gContestResources.tv) * (4));
 }
 
 /** static void AllocContestResources(void) */
 export function AllocContestResources(): any {
   gContestResources = AllocZeroed(0);
       gContestResources.contest = AllocZeroed(0);
-      gContestResources.status = AllocZeroed(0 * CONTESTANT_COUNT);
+      gContestResources.status = AllocZeroed(0 * (4));
       gContestResources.appealResults = AllocZeroed(0);
       gContestResources.aiData = AllocZeroed(0);
-      gContestResources.excitement = AllocZeroed(0 * CONTESTANT_COUNT);
-      gContestResources.gfxState = AllocZeroed(0 * CONTESTANT_COUNT);
+      gContestResources.excitement = AllocZeroed(0 * (4));
+      gContestResources.gfxState = AllocZeroed(0 * (4));
       gContestResources.moveAnim = AllocZeroed(0);
-      gContestResources.tv = AllocZeroed(0 * CONTESTANT_COUNT);
+      gContestResources.tv = AllocZeroed(0 * (4));
       gContestResources.unused = AllocZeroed(0);
       gContestResources.contestBgTilemaps[0] = AllocZeroed(0x1000);
       gContestResources.contestBgTilemaps[1] = AllocZeroed(0x1000);
@@ -262,7 +259,7 @@ export function CB2_StartContest(): any {
           SetVBlankCallback(VBlankCB_Contest);
           eContest.mainTaskId = CreateTask(Task_StartContestWaitFade, 10);
           SetMainCallback2(CB2_ContestMain);
-          if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS)
+          if (gLinkContestFlags & ((1 << 1)))
           {
               LoadWirelessStatusIndicatorSpriteGfx();
               CreateWirelessStatusIndicatorSprite(8, 8);
@@ -282,9 +279,9 @@ export function Task_StartContestWaitFade(taskId: any): any {
 
 /** static void Task_TryStartLinkContest(u8 taskId) */
 export function Task_TryStartLinkContest(taskId: any): any {
-  if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+  if (gLinkContestFlags & ((1 << 0)))
       {
-          if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS)
+          if (gLinkContestFlags & ((1 << 1)))
           {
               switch (gTasks[taskId].data[0])
               {
@@ -310,7 +307,7 @@ export function Task_TryStartLinkContest(taskId: any): any {
           if (!gPaletteFade.active)
           {
               gPaletteFade.bufferTransferDisabled = FALSE;
-              if (!(gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS))
+              if (!(gLinkContestFlags & ((1 << 1))))
                   ContestPrintLinkStandby();
               CreateTask(Task_CommunicateMonIdxs, 0);
               gTasks[taskId].data[0] = 0;
@@ -377,7 +374,7 @@ export function SetupContestGraphics(stateVar: any): any {
           DmaCopy32Defvars(3, gContestResources.contestBgTilemaps[2], eContestTempSave.savedJunk, sizeof(eContestTempSave.savedJunk));
           break;
       case 5:
-          LoadCompressedPalette(gContestInterfaceAudiencePalette, BG_PLTT_OFFSET, BG_PLTT_SIZE);
+          LoadCompressedPalette(gContestInterfaceAudiencePalette, (0x000), BG_PLTT_SIZE);
           CpuCopy32(gPlttBufferUnfaded[BG_PLTT_ID(8)], tempPalette1, PLTT_SIZE_4BPP);
           CpuCopy32(gPlttBufferUnfaded[BG_PLTT_ID(5 + gContestPlayerMonIndex)], tempPalette2, PLTT_SIZE_4BPP);
           CpuCopy32(tempPalette2,gPlttBufferUnfaded[BG_PLTT_ID(8)], PLTT_SIZE_4BPP);
@@ -442,7 +439,7 @@ export function Task_RaiseCurtainAtStart(taskId: any): any {
           if (gTasks[taskId].data[1]++ <= 60)
               break;
           gTasks[taskId].data[1] = 0;
-          PlaySE12WithPanning(SE_CONTEST_CURTAIN_RISE, 0);
+          PlaySE12WithPanning((97), 0);
           gTasks[taskId].data[0]++;
           break;
       case 1:
@@ -547,7 +544,7 @@ export function Task_DisplayAppealNumberText(taskId: any): any {
 export function Task_TryShowMoveSelectScreen(taskId: any): any {
   if ((JOY_NEW(A_BUTTON)) || (gMain.newKeys == B_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           if (!Contest_IsMonsTurnDisabled(gContestPlayerMonIndex))
           {
               SetBottomSliderHeartsInvisibility(TRUE);
@@ -569,12 +566,12 @@ export function Task_ShowMoveSelectScreen(taskId: any): any {
       gBattle_BG0_Y = DISPLAY_HEIGHT;
       gBattle_BG2_Y = DISPLAY_HEIGHT;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           let move: any = gContestMons[gContestPlayerMonIndex].moves[i];
           let moveNameBuffer: any = moveName;
 
-          if (eContestantStatus[gContestPlayerMonIndex].prevMove != MOVE_NONE
+          if (eContestantStatus[gContestPlayerMonIndex].prevMove != (0)
               && IsContestantAllowedToCombo(gContestPlayerMonIndex)
               && AreMovesContestCombo(eContestantStatus[gContestPlayerMonIndex].prevMove, move)
               && eContestantStatus[gContestPlayerMonIndex].hasJudgesAttention)
@@ -582,9 +579,9 @@ export function Task_ShowMoveSelectScreen(taskId: any): any {
                
               moveNameBuffer = StringCopy(moveName, gText_ColorLightShadowDarkGray);
           }
-          else if (move != MOVE_NONE
+          else if (move != (0)
                    && eContestantStatus[gContestPlayerMonIndex].prevMove == move
-                   && gContestMoves[move].effect != CONTEST_EFFECT_REPETITION_NOT_BORING)
+                   && gContestMoves[move].effect != (3))
           {
                
               moveNameBuffer = StringCopy(moveName, gText_ColorBlue);
@@ -605,15 +602,15 @@ export function Task_HandleMoveSelectInput(taskId: any): any {
   let numMoves: any = 0;
       let i: any = null;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
-          if (gContestMons[gContestPlayerMonIndex].moves[i] != MOVE_NONE)
+          if (gContestMons[gContestPlayerMonIndex].moves[i] != (0))
               numMoves++;
       }
 
       if (JOY_NEW(A_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           gTasks[taskId].func = Task_SelectedMove;
       }
       else
@@ -622,7 +619,7 @@ export function Task_HandleMoveSelectInput(taskId: any): any {
           {
           case B_BUTTON:
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetBottomSliderHeartsInvisibility(FALSE);
               ConvertIntToDecimalStringN(gStringVar1, eContest.appealNumber + 1, STR_CONV_MODE_LEFT_ALIGN, 1);
               if (!Contest_IsMonsTurnDisabled(gContestPlayerMonIndex))
@@ -648,7 +645,7 @@ export function Task_HandleMoveSelectInput(taskId: any): any {
               DrawMoveSelectArrow(eContest.playerMoveChoice);
               PrintContestMoveDescription(gContestMons[gContestPlayerMonIndex].moves[eContest.playerMoveChoice]);
               if (numMoves > 1)
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
               break;
           case DPAD_DOWN:
               EraseMoveSelectArrow(eContest.playerMoveChoice);
@@ -659,7 +656,7 @@ export function Task_HandleMoveSelectInput(taskId: any): any {
               DrawMoveSelectArrow(eContest.playerMoveChoice);
               PrintContestMoveDescription(gContestMons[gContestPlayerMonIndex].moves[eContest.playerMoveChoice]);
               if (numMoves > 1)
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
               break;
           }
       }
@@ -678,7 +675,7 @@ export function EraseMoveSelectArrow(moveIndex: any): any {
 
 /** static void Task_SelectedMove(u8 taskId) */
 export function Task_SelectedMove(taskId: any): any {
-  if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+  if (gLinkContestFlags & ((1 << 0)))
       {
           let move: any = GetChosenMove(gContestPlayerMonIndex);
           let taskId2: any = null;
@@ -712,7 +709,7 @@ export function Task_HideMoveSelectScreen(taskId: any): any {
       gBattle_BG2_Y = 0;
       SetBottomSliderHeartsInvisibility(FALSE);
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           FillWindowPixelBuffer((WIN_MOVE0) + i, PIXEL_FILL(0));
           PutWindowTilemap((WIN_MOVE0) + i);
@@ -753,11 +750,11 @@ export function Task_AppealSetup(taskId: any): any {
       {
           eContest.turnNumber = 0;
           eContest.unusedRng = gRngValue;
-          if ((gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK) && IsPlayerLinkLeader())
+          if ((gLinkContestFlags & ((1 << 0))) && IsPlayerLinkLeader())
           {
               let i: any = null;
 
-              for (i = 0; i + gNumLinkContestPlayers < CONTESTANT_COUNT; i++)
+              for (i = 0; i + gNumLinkContestPlayers < (4); i++)
               {
                   eContestantStatus[gNumLinkContestPlayers + i].currMove = GetChosenMove(gNumLinkContestPlayers + i);
               }
@@ -782,7 +779,7 @@ export function Task_DoAppeals(taskId: any): any {
               ;
           eContest.currentContestant = i;
           contestant = eContest.currentContestant;
-          if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+          if (gLinkContestFlags & ((1 << 0)))
           {
               let taskId2: any = null;
 
@@ -820,7 +817,7 @@ export function Task_DoAppeals(taskId: any): any {
           }
           return;
       case APPEALSTATE_SLIDE_MON_IN:
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
               gBattleMonForms[i] = 0;
           memset(gContestResources.moveAnim, 0, sizeof(gContestResources.moveAnim));
           SetMoveAnimAttackerData(eContest.currentContestant);
@@ -854,7 +851,7 @@ export function Task_DoAppeals(taskId: any): any {
           {
               ContestClearGeneralTextWindow();
               StringCopy(gStringVar1, gContestMons[contestant].nickname);
-              if (eContestantStatus[contestant].currMove < MOVES_COUNT)
+              if (eContestantStatus[contestant].currMove < (355))
                   StringCopy(gStringVar2, gMoveNames[eContestantStatus[contestant].currMove]);
               else
                   StringCopy(gStringVar2, sInvalidContestMoveNames[eContestantStatus[contestant].moveCategory]);
@@ -918,12 +915,12 @@ export function Task_DoAppeals(taskId: any): any {
           {
               if (eContestantStatus[contestant].effectStringId2 != CONTEST_STRING_NONE)
               {
-                  for (i = 0; i < CONTESTANT_COUNT; i++)
+                  for (i = 0; i < (4); i++)
                   {
                       if (i != contestant && eContestantStatus[i].effectStringId != CONTEST_STRING_NONE)
                           break;
                   }
-                  if (i == CONTESTANT_COUNT)
+                  if (i == (4))
                   {
                       PrintAppealMoveResultText(contestant, eContestantStatus[contestant].effectStringId2);
                       eContestantStatus[contestant].effectStringId2 = CONTEST_STRING_NONE;
@@ -1009,7 +1006,7 @@ export function Task_DoAppeals(taskId: any): any {
           return;
       case APPEALSTATE_UPDATE_MOVE_USERS_STATUS:
           if (DrawStatusSymbol(contestant))
-              PlaySE(SE_CONTEST_ICON_CHANGE);
+              PlaySE((99));
           gTasks[taskId].tState = APPEALSTATE_UPDATE_OPPONENTS;
           return;
       case APPEALSTATE_UPDATE_OPPONENTS:
@@ -1022,10 +1019,10 @@ export function Task_DoAppeals(taskId: any): any {
               let j: any = 0;
 
               r3 = FALSE;  
-              for (i = gTasks[taskId].data[1]; i < CONTESTANT_COUNT; i++)
+              for (i = gTasks[taskId].data[1]; i < (4); i++)
               {
                   r3 = FALSE;
-                  for (j = 0; j < CONTESTANT_COUNT; j++)
+                  for (j = 0; j < (4); j++)
                   {
                       if (j != contestant && gContestantTurnOrder[j] == i
                           && eContestantStatus[j].effectStringId != CONTEST_STRING_NONE)
@@ -1094,15 +1091,15 @@ export function Task_DoAppeals(taskId: any): any {
           }
           return;
       case APPEALSTATE_UPDATE_OPPONENT_STATUS:
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               if (gContestantTurnOrder[i] == gTasks[taskId].data[1])
                   break;
           }
           if (DrawStatusSymbol(i))
-              PlaySE(SE_CONTEST_ICON_CHANGE);
+              PlaySE((99));
           else
-              PlaySE(SE_CONTEST_ICON_CLEAR);
+              PlaySE((100));
           if (eContestantStatus[i].judgesAttentionWasRemoved)
           {
               StopFlashJudgeAttentionEye(i);
@@ -1291,7 +1288,7 @@ export function Task_DoAppeals(taskId: any): any {
           {
           case 0:
               BlendAudienceBackground(-1, 1);
-              PlayFanfare(MUS_TOO_BAD);
+              PlayFanfare((391));
               gTasks[taskId].tCounter++;
               break;
           case 1:
@@ -1336,7 +1333,7 @@ export function Task_DoAppeals(taskId: any): any {
               if (!eContest.waitForAudienceBlend)
               {
                   AnimateAudience();
-                  PlaySE(SE_M_ENCORE2);
+                  PlaySE((223));
                   ShowAndUpdateApplauseMeter(1);
                   gTasks[taskId].tCounter++;
               }
@@ -1471,7 +1468,7 @@ export function Task_DoAppeals(taskId: any): any {
           }
           return;
       case APPEALSTATE_START_NEXT_TURN:
-          if (++eContest.turnNumber == CONTESTANT_COUNT)
+          if (++eContest.turnNumber == (4))
           {
               gTasks[taskId].tState = 0;
               gTasks[taskId].data[1] = 0;
@@ -1523,7 +1520,7 @@ export function Task_FinishRoundOfAppeals(taskId: any): any {
   switch (gTasks[taskId].data[0])
       {
       case 0:
-          if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+          if (gLinkContestFlags & ((1 << 0)))
           {
               let taskId2: any = null;
 
@@ -1682,7 +1679,7 @@ export function Task_TryStartNextRoundOfAppeals(taskId: any): any {
       SetGpuReg(REG_OFFSET_BG0CNT, sp0);
       SetGpuReg(REG_OFFSET_BG2CNT, sp2);
       eContest.appealNumber++;
-      if (eContest.appealNumber == CONTEST_NUM_APPEALS)
+      if (eContest.appealNumber == (5))
       {
           gTasks[taskId].func = Task_EndAppeals;
       }
@@ -1705,11 +1702,11 @@ export function Task_EndAppeals(taskId: any): any {
 
       gBattle_BG0_Y = 0;
       gBattle_BG2_Y = 0;
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           gContestMonAppealPointTotals[i] = eContestantStatus[i].pointTotal;
       CalculateFinalScores();
       ContestClearGeneralTextWindow();
-      if (!(gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK))
+      if (!(gLinkContestFlags & ((1 << 0))))
       {
           BravoTrainerPokemonProfile_BeforeInterview1(eContestantStatus[gContestPlayerMonIndex].prevMove);
       }
@@ -1733,7 +1730,7 @@ export function Task_WaitForOutOfTimeMsg(taskId: any): any {
           SetBgForCurtainDrop();
           gBattle_BG1_X = 0;
           gBattle_BG1_Y = DISPLAY_HEIGHT;
-          PlaySE12WithPanning(SE_CONTEST_CURTAIN_FALL, 0);
+          PlaySE12WithPanning((98), 0);
           gTasks[taskId].data[0] = 0;
           gTasks[taskId].func = Task_DropCurtainAtAppealsEnd;
       }
@@ -1756,13 +1753,13 @@ export function Task_TryCommunicateFinalStandings(taskId: any): any {
   if (gTasks[taskId].data[0]++ >= 50)
       {
           gTasks[taskId].data[0] = 0;
-          if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+          if (gLinkContestFlags & ((1 << 0)))
           {
               gTasks[taskId].func = Task_CommunicateFinalStandings;
           }
           else
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
               gTasks[taskId].func = Task_ContestReturnToField;
           }
       }
@@ -1781,7 +1778,7 @@ export function Task_CommunicateFinalStandings(taskId: any): any {
 /** static void Task_EndCommunicateFinalStandings(u8 taskId) */
 export function Task_EndCommunicateFinalStandings(taskId: any): any {
   DestroyTask(taskId);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       gTasks[eContest.mainTaskId].func = Task_ContestReturnToField;
 }
 
@@ -1806,8 +1803,8 @@ export function FieldCB_ContestReturnToField(): any {
 
 /** static void TryPutPlayerLast(void) */
 export function TryPutPlayerLast(): any {
-  if (!(gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK))
-          gContestPlayerMonIndex = CONTESTANT_COUNT - 1;
+  if (!(gLinkContestFlags & ((1 << 0))))
+          gContestPlayerMonIndex = (4) - 1;
 }
 
 /** static bool8 IsPlayerLinkLeader(void) */
@@ -1828,23 +1825,23 @@ export function CreateContestMonFromParty(partyIndex: any): any {
       let tough: any = null;
 
       StringCopy(name, gSaveBlock2Ptr.playerName);
-      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+      if (gLinkContestFlags & ((1 << 0)))
           StripPlayerNameForLinkContest(name);
-      memcpy(gContestMons[gContestPlayerMonIndex].trainerName, name, PLAYER_NAME_LENGTH + 1);
-      if (gSaveBlock2Ptr.playerGender == MALE)
-          gContestMons[gContestPlayerMonIndex].trainerGfxId = OBJ_EVENT_GFX_LINK_BRENDAN;
+      memcpy(gContestMons[gContestPlayerMonIndex].trainerName, name, (7) + 1);
+      if (gSaveBlock2Ptr.playerGender == (0))
+          gContestMons[gContestPlayerMonIndex].trainerGfxId = (216);
       else
-          gContestMons[gContestPlayerMonIndex].trainerGfxId = OBJ_EVENT_GFX_LINK_MAY;
+          gContestMons[gContestPlayerMonIndex].trainerGfxId = (217);
       gContestMons[gContestPlayerMonIndex].aiFlags = 0;
       gContestMons[gContestPlayerMonIndex].highestRank = 0;
       gContestMons[gContestPlayerMonIndex].species = GetMonData(gPlayerParty[partyIndex], MON_DATA_SPECIES);
       GetMonData(gPlayerParty[partyIndex], MON_DATA_NICKNAME, name);
       StringGet_Nickname(name);
-      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+      if (gLinkContestFlags & ((1 << 0)))
       {
           StripMonNameForLinkContest(name, GetMonData(gPlayerParty[partyIndex], MON_DATA_LANGUAGE));
       }
-      memcpy(gContestMons[gContestPlayerMonIndex].nickname, name, POKEMON_NAME_LENGTH + 1);
+      memcpy(gContestMons[gContestPlayerMonIndex].nickname, name, (10) + 1);
       StringCopy(gContestMons[gContestPlayerMonIndex].nickname, name);
       gContestMons[gContestPlayerMonIndex].cool = GetMonData(gPlayerParty[partyIndex], MON_DATA_COOL);
       gContestMons[gContestPlayerMonIndex].beauty = GetMonData(gPlayerParty[partyIndex], MON_DATA_BEAUTY);
@@ -1865,15 +1862,15 @@ export function CreateContestMonFromParty(partyIndex: any): any {
       cute   = gContestMons[gContestPlayerMonIndex].cute;
       smart  = gContestMons[gContestPlayerMonIndex].smart;
       tough  = gContestMons[gContestPlayerMonIndex].tough;
-      if      (heldItem == ITEM_RED_SCARF)
+      if      (heldItem == (254))
           cool += 20;
-      else if (heldItem == ITEM_BLUE_SCARF)
+      else if (heldItem == (255))
           beauty += 20;
-      else if (heldItem == ITEM_PINK_SCARF)
+      else if (heldItem == (256))
           cute += 20;
-      else if (heldItem == ITEM_GREEN_SCARF)
+      else if (heldItem == (257))
           smart += 20;
-      else if (heldItem == ITEM_YELLOW_SCARF)
+      else if (heldItem == (258))
           tough += 20;
       if (cool > 255)
           cool = 255;
@@ -1902,7 +1899,7 @@ export function SetContestants(contestType: any, rank: any): any {
 
       TryPutPlayerLast();
 
-      if (FlagGet(FLAG_SYS_GAME_CLEAR) && !(gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK))
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))) && !(gLinkContestFlags & ((1 << 0))))
           allowPostgameContestants = TRUE;
 
        
@@ -1921,28 +1918,28 @@ export function SetContestants(contestType: any, rank: any): any {
                   if (filter[i] == CONTEST_FILTER_ONLY_POSTGAME)
                       continue;
               }
-              if      (contestType == CONTEST_CATEGORY_COOL && gContestOpponents[i].aiPool_Cool)
+              if      (contestType == (0) && gContestOpponents[i].aiPool_Cool)
                   opponents[opponentsCount++] = i;
-              else if (contestType == CONTEST_CATEGORY_BEAUTY && gContestOpponents[i].aiPool_Beauty)
+              else if (contestType == (1) && gContestOpponents[i].aiPool_Beauty)
                   opponents[opponentsCount++] = i;
-              else if (contestType == CONTEST_CATEGORY_CUTE && gContestOpponents[i].aiPool_Cute)
+              else if (contestType == (2) && gContestOpponents[i].aiPool_Cute)
                   opponents[opponentsCount++] = i;
-              else if (contestType == CONTEST_CATEGORY_SMART && gContestOpponents[i].aiPool_Smart)
+              else if (contestType == (3) && gContestOpponents[i].aiPool_Smart)
                   opponents[opponentsCount++] = i;
-              else if (contestType == CONTEST_CATEGORY_TOUGH && gContestOpponents[i].aiPool_Tough)
+              else if (contestType == (4) && gContestOpponents[i].aiPool_Tough)
                   opponents[opponentsCount++] = i;
           }
       }
-      opponents[opponentsCount] = CONTESTANT_NONE;
+      opponents[opponentsCount] = (0xFF);
 
        
-      for (i = 0; i < CONTESTANT_COUNT - 1; i++)
+      for (i = 0; i < (4) - 1; i++)
       {
           let rnd: any = Random() % opponentsCount;
           let j: any = null;
 
           gContestMons[i] = gContestOpponents[opponents[rnd]];
-          for (j = rnd; opponents[j] != CONTESTANT_NONE; j++)
+          for (j = rnd; opponents[j] != (0xFF); j++)
               opponents[j] = opponents[j + 1];
           opponentsCount--;
       }
@@ -1956,7 +1953,7 @@ export function SetLinkAIContestants(contestType: any, rank: any, isPostgame: an
       let opponentsCount: any = 0;
       let opponents: any = [];
 
-      if (gNumLinkContestPlayers == CONTESTANT_COUNT)
+      if (gNumLinkContestPlayers == (4))
           return;
 
        
@@ -1975,24 +1972,24 @@ export function SetLinkAIContestants(contestType: any, rank: any, isPostgame: an
               if (gPostgameContestOpponentFilter[i] == CONTEST_FILTER_ONLY_POSTGAME)
                   continue;
           }
-          if ((contestType == CONTEST_CATEGORY_COOL && gContestOpponents[i].aiPool_Cool)
-              || (contestType == CONTEST_CATEGORY_BEAUTY && gContestOpponents[i].aiPool_Beauty)
-              || (contestType == CONTEST_CATEGORY_CUTE && gContestOpponents[i].aiPool_Cute)
-              || (contestType == CONTEST_CATEGORY_SMART && gContestOpponents[i].aiPool_Smart)
-              || (contestType == CONTEST_CATEGORY_TOUGH && gContestOpponents[i].aiPool_Tough))
+          if ((contestType == (0) && gContestOpponents[i].aiPool_Cool)
+              || (contestType == (1) && gContestOpponents[i].aiPool_Beauty)
+              || (contestType == (2) && gContestOpponents[i].aiPool_Cute)
+              || (contestType == (3) && gContestOpponents[i].aiPool_Smart)
+              || (contestType == (4) && gContestOpponents[i].aiPool_Tough))
               opponents[opponentsCount++] = i;
       }
-      opponents[opponentsCount] = CONTESTANT_NONE;
+      opponents[opponentsCount] = (0xFF);
 
        
-      for (i = 0; i < CONTESTANT_COUNT - gNumLinkContestPlayers; i++)
+      for (i = 0; i < (4) - gNumLinkContestPlayers; i++)
       {
           let rnd: any = GetContestRand() % opponentsCount;
 
           gContestMons[gNumLinkContestPlayers + i] = gContestOpponents[opponents[rnd]];
           StripPlayerNameForLinkContest(gContestMons[gNumLinkContestPlayers + i].trainerName);
-          StripMonNameForLinkContest(gContestMons[gNumLinkContestPlayers + i].nickname, GAME_LANGUAGE);
-          for (j = rnd; opponents[j] != CONTESTANT_NONE; j++)
+          StripMonNameForLinkContest(gContestMons[gNumLinkContestPlayers + i].nickname, (((3))));
+          for (j = rnd; opponents[j] != (0xFF); j++)
               opponents[j] = opponents[j + 1];
           opponentsCount--;
       }
@@ -2004,39 +2001,39 @@ export function GetContestEntryEligibility(pkmn: any): any {
       let eligibility: any = null;
 
       if (GetMonData(pkmn, MON_DATA_IS_EGG))
-          return CANT_ENTER_CONTEST_EGG;
+          return (3);
       if (GetMonData(pkmn, MON_DATA_HP) == 0)
-          return CANT_ENTER_CONTEST_FAINTED;
+          return (4);
       switch (gSpecialVar_ContestCategory)
       {
-      case CONTEST_CATEGORY_COOL:
+      case (0):
           ribbon = GetMonData(pkmn, MON_DATA_COOL_RIBBON);
           break;
-      case CONTEST_CATEGORY_BEAUTY:
+      case (1):
           ribbon = GetMonData(pkmn, MON_DATA_BEAUTY_RIBBON);
           break;
-      case CONTEST_CATEGORY_CUTE:
+      case (2):
           ribbon = GetMonData(pkmn, MON_DATA_CUTE_RIBBON);
           break;
-      case CONTEST_CATEGORY_SMART:
+      case (3):
           ribbon = GetMonData(pkmn, MON_DATA_SMART_RIBBON);
           break;
-      case CONTEST_CATEGORY_TOUGH:
+      case (4):
           ribbon = GetMonData(pkmn, MON_DATA_TOUGH_RIBBON);
           break;
       default:
-          return CANT_ENTER_CONTEST;
+          return (0);
       }
 
        
        
        
       if (ribbon > gSpecialVar_ContestRank)
-          eligibility = CAN_ENTER_CONTEST_HIGH_RANK;
+          eligibility = (2);
       else if (ribbon >= gSpecialVar_ContestRank)
-          eligibility = CAN_ENTER_CONTEST_EQUAL_RANK;
+          eligibility = (1);
       else
-          eligibility = CANT_ENTER_CONTEST;
+          eligibility = (0);
       return eligibility;
 }
 
@@ -2044,7 +2041,7 @@ export function GetContestEntryEligibility(pkmn: any): any {
 export function DrawContestantWindowText(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           FillWindowPixelBuffer(gContestantTurnOrder[i], PIXEL_FILL(0));
           PrintContestantTrainerName(i);
@@ -2090,27 +2087,27 @@ export function CalculateContestantRound1Points(who: any, contestCategory: any):
 
       switch (contestCategory)
       {
-      case CONTEST_CATEGORY_COOL:
+      case (0):
           statMain = gContestMons[who].cool;
           statSub1 = gContestMons[who].tough;
           statSub2 = gContestMons[who].beauty;
           break;
-      case CONTEST_CATEGORY_BEAUTY:
+      case (1):
           statMain = gContestMons[who].beauty;
           statSub1 = gContestMons[who].cool;
           statSub2 = gContestMons[who].cute;
           break;
-      case CONTEST_CATEGORY_CUTE:
+      case (2):
           statMain = gContestMons[who].cute;
           statSub1 = gContestMons[who].beauty;
           statSub2 = gContestMons[who].smart;
           break;
-      case CONTEST_CATEGORY_SMART:
+      case (3):
           statMain = gContestMons[who].smart;
           statSub1 = gContestMons[who].cute;
           statSub2 = gContestMons[who].tough;
           break;
-      case CONTEST_CATEGORY_TOUGH:
+      case (4):
       default:
           statMain = gContestMons[who].tough;
           statSub1 = gContestMons[who].smart;
@@ -2124,7 +2121,7 @@ export function CalculateContestantRound1Points(who: any, contestCategory: any):
 export function CalculateRound1Points(contestCategory: any): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           gContestMonRound1Points[i] = CalculateContestantRound1Points(i, contestCategory);
 }
 
@@ -2183,7 +2180,7 @@ export function CreateContestantSprite(species: any, otId: any, personality: any
 
 /** bool8 IsSpeciesNotUnown(u16 species) */
 export function IsSpeciesNotUnown(species: any): any {
-  if (species == SPECIES_UNOWN)
+  if (species == (201))
           return FALSE;
       else
           return TRUE;
@@ -2201,13 +2198,13 @@ export function GetMoveEffectSymbolTileOffset(move: any, contestant: any): any {
 
       switch (gContestEffects[gContestMoves[move].effect].effectType)
       {
-      case CONTEST_EFFECT_TYPE_APPEAL:
-      case CONTEST_EFFECT_TYPE_AVOID_STARTLE:
-      case CONTEST_EFFECT_TYPE_UNKNOWN:
+      case (0):
+      case (1):
+      case (8):
           offset = 0x9082;
           break;
-      case CONTEST_EFFECT_TYPE_STARTLE_MON:
-      case CONTEST_EFFECT_TYPE_STARTLE_MONS:
+      case (2):
+      case (3):
           offset = 0x9088;
           break;
       default:
@@ -2229,13 +2226,13 @@ export function PrintContestMoveDescription(move: any): any {
 
        
       category = gContestMoves[move].contestCategory;
-      if      (category == CONTEST_CATEGORY_COOL)
+      if      (category == (0))
           categoryTile = 0x4040;
-      else if (category == CONTEST_CATEGORY_BEAUTY)
+      else if (category == (1))
           categoryTile = 0x4045;
-      else if (category == CONTEST_CATEGORY_CUTE)
+      else if (category == (2))
           categoryTile = 0x404A;
-      else if (category == CONTEST_CATEGORY_SMART)
+      else if (category == (3))
           categoryTile = 0x406A;
       else
           categoryTile = 0x408A;
@@ -2248,9 +2245,9 @@ export function PrintContestMoveDescription(move: any): any {
           numHearts = 0;
       else
           numHearts = gContestEffects[gContestMoves[move].effect].appeal / 10;
-      if (numHearts > MAX_CONTEST_MOVE_HEARTS)
-          numHearts = MAX_CONTEST_MOVE_HEARTS;
-      ContestBG_FillBoxWithTile(0, (0x5035), 0x15, 0x1f, MAX_CONTEST_MOVE_HEARTS, 0x01, 0x11);
+      if (numHearts > (8))
+          numHearts = (8);
+      ContestBG_FillBoxWithTile(0, (0x5035), 0x15, 0x1f, (8), 0x01, 0x11);
       ContestBG_FillBoxWithTile(0, (0x5012), 0x15, 0x1f, numHearts, 0x01, 0x11);
 
        
@@ -2258,9 +2255,9 @@ export function PrintContestMoveDescription(move: any): any {
           numHearts = 0;
       else
           numHearts = gContestEffects[gContestMoves[move].effect].jam / 10;
-      if (numHearts > MAX_CONTEST_MOVE_HEARTS)
-          numHearts = MAX_CONTEST_MOVE_HEARTS;
-      ContestBG_FillBoxWithTile(0, (0x5036), 0x15, 0x20, MAX_CONTEST_MOVE_HEARTS, 0x01, 0x11);
+      if (numHearts > (8))
+          numHearts = (8);
+      ContestBG_FillBoxWithTile(0, (0x5036), 0x15, 0x20, (8), 0x01, 0x11);
       ContestBG_FillBoxWithTile(0, (0x5014), 0x15, 0x20, numHearts, 0x01, 0x11);
 
       FillWindowPixelBuffer(WIN_MOVE_DESCRIPTION, PIXEL_FILL(0));
@@ -2272,7 +2269,7 @@ export function PrintContestMoveDescription(move: any): any {
 export function DrawMoveEffectSymbol(move: any, contestant: any): any {
   let contestantOffset: any = gContestantTurnOrder[contestant] * 5 + 2;
 
-      if (!Contest_IsMonsTurnDisabled(contestant) && move != MOVE_NONE)
+      if (!Contest_IsMonsTurnDisabled(contestant) && move != (0))
       {
           let tile: any = GetMoveEffectSymbolTileOffset(move, contestant);
 
@@ -2304,7 +2301,7 @@ export function UpdateConditionStars(contestantIdx: any, resetMod: any): any {
           ContestBG_FillBoxWithTile(0, GetStarTileOffset(), 19, contestantOffset, 1, numStars, 17);
           if (resetMod)
           {
-              PlaySE(SE_EXP_MAX);
+              PlaySE((91));
               eContestantStatus[contestantIdx].conditionMod = CONDITION_NO_CHANGE;
           }
       }
@@ -2313,7 +2310,7 @@ export function UpdateConditionStars(contestantIdx: any, resetMod: any): any {
           ContestBG_FillBoxWithTile(0, 0, 19, contestantOffset + numStars, 1, 3 - numStars, 17);
           if (resetMod)
           {
-              PlaySE(SE_CONTEST_CONDITION_LOSE);
+              PlaySE((38));
               eContestantStatus[contestantIdx].conditionMod = CONDITION_NO_CHANGE;
           }
       }
@@ -2325,7 +2322,7 @@ export function DrawConditionStars(): any {
   let i: any = null;
       let numStars: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           let contestantOffset: any = gContestantTurnOrder[i] * 5 + 2;
           let starOffset: any = GetStarTileOffset();
@@ -2396,7 +2393,7 @@ export function DrawStatusSymbol(contestant: any): any {
 export function DrawStatusSymbols(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           DrawStatusSymbol(i);
 }
 
@@ -2410,7 +2407,7 @@ export function ContestClearGeneralTextWindow(): any {
 /** static u16 GetChosenMove(u8 contestant) */
 export function GetChosenMove(contestant: any): any {
   if (Contest_IsMonsTurnDisabled(contestant))
-          return MOVE_NONE;
+          return (0);
       if (contestant == gContestPlayerMonIndex)
       {
           return gContestMons[contestant].moves[eContest.playerMoveChoice];
@@ -2429,7 +2426,7 @@ export function GetChosenMove(contestant: any): any {
 export function GetAllChosenMoves(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           eContestantStatus[i].currMove = GetChosenMove(i);
 }
 
@@ -2439,16 +2436,16 @@ export function RankContestants(): any {
       let j: any = null;
       let arr: any = [];
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           eContestantStatus[i].pointTotal += eContestantStatus[i].appeal;
           arr[i] = eContestantStatus[i].pointTotal;
       }
 
        
-      for (i = 0; i < CONTESTANT_COUNT - 1; i++)
+      for (i = 0; i < (4) - 1; i++)
       {
-          for (j = CONTESTANT_COUNT - 1; j > i; j--)
+          for (j = (4) - 1; j > i; j--)
           {
               if (arr[j - 1] < arr[j])
               {
@@ -2467,9 +2464,9 @@ export function RankContestants(): any {
        
        
        
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
-          for (j = 0; j < CONTESTANT_COUNT; j++)
+          for (j = 0; j < (4); j++)
           {
               if (eContestantStatus[i].pointTotal == arr[j])
               {
@@ -2486,11 +2483,11 @@ export function RankContestants(): any {
 export function SetAttentionLevels(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           let attentionLevel: any = null;
 
-          if (eContestantStatus[i].currMove == MOVE_NONE)
+          if (eContestantStatus[i].currMove == (0))
               attentionLevel = 5;
           else if (eContestantStatus[i].appeal <= 0)
               attentionLevel = 0;
@@ -2519,7 +2516,7 @@ export function ContestantCanUseTurn(contestant: any): any {
 export function SetContestantStatusesForNextRound(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           eContestantStatus[i].appeal = 0;
           eContestantStatus[i].baseAppeal = 0;
@@ -2552,12 +2549,12 @@ export function SetContestantStatusesForNextRound(): any {
           }
           eContestantStatus[i].overrideCategoryExcitementMod = 0;
       }
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           eContestantStatus[i].prevMove = eContestantStatus[i].currMove;
           eContest.moveHistory[eContest.appealNumber][i] = eContestantStatus[i].currMove;
           eContest.excitementHistory[eContest.appealNumber][i] = Contest_GetMoveExcitement(eContestantStatus[i].currMove);
-          eContestantStatus[i].currMove = MOVE_NONE;
+          eContestantStatus[i].currMove = (0);
       }
       eContestExcitement.frozen = FALSE;
 }
@@ -2580,7 +2577,7 @@ export function CalculateTotalPointsForContestant(contestant: any): any {
 export function CalculateFinalScores(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           CalculateTotalPointsForContestant(i);
       DetermineFinalStandings();
 }
@@ -2597,7 +2594,7 @@ export function DetermineFinalStandings(): any {
       let i: any = null;
 
        
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           let j: any = null;
           randomOrdering[i] = Random();
@@ -2612,7 +2609,7 @@ export function DetermineFinalStandings(): any {
       }
 
        
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           standings[i].totalPoints = gContestMonTotalPoints[i];
           standings[i].round1Points = gContestMonRound1Points[i];
@@ -2621,10 +2618,10 @@ export function DetermineFinalStandings(): any {
       }
 
        
-      for (i = 0; i < CONTESTANT_COUNT - 1; i++)
+      for (i = 0; i < (4) - 1; i++)
       {
           let j: any = null;
-          for (j = CONTESTANT_COUNT - 1; j > i; j--)
+          for (j = (4) - 1; j > i; j--)
           {
               if (DidContestantPlaceHigher(j - 1, j, standings))
               {
@@ -2650,13 +2647,13 @@ export function DetermineFinalStandings(): any {
       }
 
        
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           gContestFinalStandings[standings[i].contestant] = i;
 }
 
 /** void SaveLinkContestResults(void) */
 export function SaveLinkContestResults(): any {
-  if ((gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK))
+  if ((gLinkContestFlags & ((1 << 0))))
       {
           gSaveBlock2Ptr.contestLinkResults[gSpecialVar_ContestCategory][gContestFinalStandings[gContestPlayerMonIndex]] =
           ((gSaveBlock2Ptr.contestLinkResults[gSpecialVar_ContestCategory][gContestFinalStandings[gContestPlayerMonIndex]] + 1) > 9999) ? 9999 :
@@ -2699,7 +2696,7 @@ export function ContestPrintLinkStandby(): any {
 export function FillContestantWindowBgs(): any {
   let i: any = null;
 
-      for(i = 0; i < CONTESTANT_COUNT; i++)
+      for(i = 0; i < (4); i++)
           ContestBG_FillBoxWithTile(0, 0, 0x16, 2 + i * 5, 8, 2, 0x11);
 }
 
@@ -2838,13 +2835,13 @@ export function Task_UpdateAppealHearts(taskId: any): any {
           ContestBG_FillBoxWithTile(0, heartOffset, newNumHearts + 22, gContestantTurnOrder[contestant] * 5 + 2 + onSecondLine,  1, 1, 17);
           if (heartsDelta > 0)
           {
-              PlaySE(SE_CONTEST_HEART);
+              PlaySE((96));
               m4aMPlayImmInit(gMPlayInfo_SE1);
               m4aMPlayPitchControl(gMPlayInfo_SE1, TRACKS_ALL, pitchMod * 256);
           }
           else
           {
-              PlaySE(SE_BOO);
+              PlaySE((22));
           }
 
           if (!onSecondLine && newNumHearts == 0 && heartOffset == 0)
@@ -2857,7 +2854,7 @@ export function CreateSliderHeartSprites(): any {
   let i: any = null;
 
       LoadSpriteSheet(sSpriteSheet_SliderHeart);
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           let y: any = sSliderHeartYPositions[gContestantTurnOrder[i]];
 
@@ -2891,7 +2888,7 @@ export function UpdateHeartSlider(contestant: any): any {
 export function UpdateHeartSliders(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           UpdateHeartSlider(i);
 }
 
@@ -2899,12 +2896,12 @@ export function UpdateHeartSliders(): any {
 export function SlidersDoneUpdating(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (eContestGfxState[i].sliderUpdating)
               break;
       }
-      if (i == CONTESTANT_COUNT)
+      if (i == (4))
           return TRUE;
       else
           return FALSE;
@@ -2927,7 +2924,7 @@ export function SpriteCB_UpdateHeartSlider(sprite: any): any {
 export function UpdateSliderHeartSpriteYPositions(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           gSprites[eContestGfxState[i].sliderHeartSpriteId].y = sSliderHeartYPositions[gContestantTurnOrder[i]];
 }
 
@@ -2935,7 +2932,7 @@ export function UpdateSliderHeartSpriteYPositions(): any {
 export function SetBottomSliderHeartsInvisibility(invisible: any): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
            
           if (gContestantTurnOrder[i] > 1)
@@ -2953,7 +2950,7 @@ export function CreateNextTurnSprites(): any {
   let i: any = null;
 
       LoadSpritePalette(sSpritePalette_NextTurn);
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           LoadCompressedSpriteSheet(sSpriteSheet_NextTurn[i]);
           eContestGfxState[i].nextTurnSpriteId = CreateSprite(sSpriteTemplates_NextTurn[i],
@@ -2982,7 +2979,7 @@ export function CreateJudgeAttentionEyeTask(): any {
       let taskId: any = CreateTask(Task_FlashJudgeAttentionEye, 30);
 
       eContest.judgeAttentionTaskId = taskId;
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           gTasks[taskId].data[i * 4] = 0xFF;
 }
 
@@ -3016,7 +3013,7 @@ export function Task_StopFlashJudgeAttentionEye(taskId: any): any {
 export function Task_FlashJudgeAttentionEye(taskId: any): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           let offset: any = i * 4;
 
@@ -3041,7 +3038,7 @@ export function CreateUnusedBlendTask(): any {
   let i: any = null;
 
       eContest.blendTaskId = CreateTask(Task_UnusedBlend, 30);
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           InitUnusedBlendTaskData(i);
 }
 
@@ -3055,7 +3052,7 @@ export function InitUnusedBlendTaskData(contestant: any): any {
 export function UpdateBlendTaskContestantsData(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           UpdateBlendTaskContestantData(i);
 }
 
@@ -3078,7 +3075,7 @@ export function UpdateBlendTaskContestantData(contestant: any): any {
 export function Task_UnusedBlend(taskId: any): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           let idx: any = i * 4;
 
@@ -3190,9 +3187,9 @@ export function BlinkContestantBox(spriteId: any, b: any): any {
       gSprites[spriteId].callback = SpriteCB_BlinkContestantBox;
       gSprites[spriteId2].callback = SpriteCallbackDummy;
       if (b == FALSE)
-          PlaySE(SE_CONTEST_MONS_TURN);
+          PlaySE((101));
       else
-          PlaySE(SE_PC_LOGIN);
+          PlaySE((2));
 }
 
 /** static void SpriteCB_BlinkContestantBox(struct Sprite *sprite) */
@@ -3239,9 +3236,9 @@ export function ContestDebugDoPrint(): any {
        
        
       default:
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
               FillWindowPixelBuffer(i, PIXEL_FILL(0));
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               value = eContestantStatus[i].pointTotal;
               txtPtr = text;
@@ -3253,7 +3250,7 @@ export function ContestDebugDoPrint(): any {
               ConvertIntToDecimalStringN(txtPtr, value, STR_CONV_MODE_LEFT_ALIGN, 4);
               Contest_PrintTextToBg0WindowAt(gContestantTurnOrder[i], text, 55, 1, FONT_NARROW);
           }
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               value = eContestantStatus[i].appeal;
               txtPtr = text;
@@ -3278,7 +3275,7 @@ export function SortContestants(useRanking: any): any {
       let v3: any = null;
 
        
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           let j: any = null;
           randomOrdering[i] = Random();
@@ -3299,7 +3296,7 @@ export function SortContestants(useRanking: any): any {
       {
            
            
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
                
               gContestantTurnOrder[i] = i;
@@ -3334,7 +3331,7 @@ export function SortContestants(useRanking: any): any {
            
            
           memcpy(scratch, gContestantTurnOrder, 0);
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
               gContestantTurnOrder[scratch[i]] = i;
       }
       else
@@ -3345,15 +3342,15 @@ export function SortContestants(useRanking: any): any {
            
            
            
-          memset(scratch, CONTESTANT_NONE, 0);
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          memset(scratch, (0xFF), 0);
+          for (i = 0; i < (4); i++)
           {
               let j: any = eContestantStatus[i].ranking;
 
               while (1)
               {
                   let ptr: any =scratch[j];
-                  if (ptr == CONTESTANT_NONE)
+                  if (ptr == (0xFF))
                   {
                       ptr = i;
                       gContestantTurnOrder[i] = j;
@@ -3368,9 +3365,9 @@ export function SortContestants(useRanking: any): any {
            
            
            
-          for (i = 0; i < CONTESTANT_COUNT - 1; i++)
+          for (i = 0; i < (4) - 1; i++)
           {
-              for (v3 = CONTESTANT_COUNT - 1; v3 > i; v3--)
+              for (v3 = (4) - 1; v3 > i; v3--)
               {
                   if (eContestantStatus[v3 - 1].ranking == eContestantStatus[v3].ranking
                    && gContestantTurnOrder[v3 - 1] < gContestantTurnOrder[v3]
@@ -3389,7 +3386,7 @@ export function SortContestants(useRanking: any): any {
 export function DrawContestantWindows(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           let windowId: any = i + 5;
           LoadPalette(eContestTempSave.cachedWindowPalettes[windowId], BG_PLTT_ID(5 + gContestantTurnOrder[i]), sizeof(eContestTempSave.cachedWindowPalettes[0]));
@@ -3413,7 +3410,7 @@ export function CalculateAppealMoveImpact(contestant: any): any {
       effect = gContestMoves[move].effect;
 
       eContestantStatus[contestant].moveCategory = gContestMoves[eContestantStatus[contestant].currMove].contestCategory;
-      if (eContestantStatus[contestant].currMove == eContestantStatus[contestant].prevMove && eContestantStatus[contestant].currMove != MOVE_NONE)
+      if (eContestantStatus[contestant].currMove == eContestantStatus[contestant].prevMove && eContestantStatus[contestant].currMove != (0))
       {
           eContestantStatus[contestant].repeatedMove = TRUE;
           eContestantStatus[contestant].moveRepeatCount++;
@@ -3428,7 +3425,7 @@ export function CalculateAppealMoveImpact(contestant: any): any {
       eContestAppealResults.jam2 = eContestAppealResults.jam;
 
       eContestAppealResults.contestant = contestant;
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           eContestantStatus[i].jam = 0;
           eContestAppealResults.unnervedPokes[i] = 0;
@@ -3501,8 +3498,8 @@ export function CalculateAppealMoveImpact(contestant: any): any {
 
        
        
-      rnd = Random() % (CONTESTANT_COUNT - 1);
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      rnd = Random() % ((4) - 1);
+      for (i = 0; i < (4); i++)
       {
            
           if (i != contestant)
@@ -3543,13 +3540,13 @@ export function SetStartledString(contestant: any, jam: any): any {
 export function PrintAppealMoveResultText(contestant: any, stringId: any): any {
   StringCopy(gStringVar1, gContestMons[contestant].nickname);
       StringCopy(gStringVar2, gMoveNames[eContestantStatus[contestant].currMove]);
-      if      (gContestMoves[eContestantStatus[eContestAppealResults.contestant].currMove].contestCategory == CONTEST_CATEGORY_COOL)
+      if      (gContestMoves[eContestantStatus[eContestAppealResults.contestant].currMove].contestCategory == (0))
           StringCopy(gStringVar3, gText_Contest_Shyness);
-      else if (gContestMoves[eContestantStatus[eContestAppealResults.contestant].currMove].contestCategory == CONTEST_CATEGORY_BEAUTY)
+      else if (gContestMoves[eContestantStatus[eContestAppealResults.contestant].currMove].contestCategory == (1))
           StringCopy(gStringVar3, gText_Contest_Anxiety);
-      else if (gContestMoves[eContestantStatus[eContestAppealResults.contestant].currMove].contestCategory == CONTEST_CATEGORY_CUTE)
+      else if (gContestMoves[eContestantStatus[eContestAppealResults.contestant].currMove].contestCategory == (2))
           StringCopy(gStringVar3, gText_Contest_Laziness);
-      else if (gContestMoves[eContestantStatus[eContestAppealResults.contestant].currMove].contestCategory == CONTEST_CATEGORY_SMART)
+      else if (gContestMoves[eContestantStatus[eContestAppealResults.contestant].currMove].contestCategory == (3))
           StringCopy(gStringVar3, gText_Contest_Hesitancy);
       else
           StringCopy(gStringVar3, gText_Contest_Fear);
@@ -3561,7 +3558,7 @@ export function PrintAppealMoveResultText(contestant: any, stringId: any): any {
 /** void MakeContestantNervous(u8 p) */
 export function MakeContestantNervous(p: any): any {
   eContestantStatus[p].nervous = TRUE;
-      eContestantStatus[p].currMove = MOVE_NONE;
+      eContestantStatus[p].currMove = (0);
 }
 
 /** static void ApplyNextTurnOrder(void) */
@@ -3573,17 +3570,17 @@ export function ApplyNextTurnOrder(): any {
       let isContestantOrdered: any = [];
 
        
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           newTurnOrder[i] = gContestantTurnOrder[i];
           isContestantOrdered[i] = FALSE;
       }
 
        
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
            
-          for (j = 0; j < CONTESTANT_COUNT; j++)
+          for (j = 0; j < (4); j++)
           {
               if (eContestantStatus[j].nextTurnOrder == i)
               {
@@ -3593,15 +3590,15 @@ export function ApplyNextTurnOrder(): any {
               }
           }
 
-          if (j == CONTESTANT_COUNT)
+          if (j == (4))
           {
                
                
                
                
-              for (j = 0; j < CONTESTANT_COUNT; j++)
+              for (j = 0; j < (4); j++)
               {
-                  if (!isContestantOrdered[j] && eContestantStatus[j].nextTurnOrder == CONTESTANT_NONE)
+                  if (!isContestantOrdered[j] && eContestantStatus[j].nextTurnOrder == (0xFF))
                   {
                       nextContestant = j;
                       j++;
@@ -3610,9 +3607,9 @@ export function ApplyNextTurnOrder(): any {
               }
 
                
-              for (; j < CONTESTANT_COUNT; j++)
+              for (; j < (4); j++)
               {
-                  if (!isContestantOrdered[j] && eContestantStatus[j].nextTurnOrder == CONTESTANT_NONE
+                  if (!isContestantOrdered[j] && eContestantStatus[j].nextTurnOrder == (0xFF)
                    && gContestantTurnOrder[nextContestant] > gContestantTurnOrder[j])
                       nextContestant = j;
               }
@@ -3623,10 +3620,10 @@ export function ApplyNextTurnOrder(): any {
           }
       }
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           eContestAppealResults.turnOrder[i] = newTurnOrder[i];
-          eContestantStatus[i].nextTurnOrder = CONTESTANT_NONE;
+          eContestantStatus[i].nextTurnOrder = (0xFF);
           eContestantStatus[i].turnOrderMod = 0;
           gContestantTurnOrder[i] = newTurnOrder[i];
       }
@@ -3652,36 +3649,36 @@ export function DoJudgeSpeechBubble(symbolId: any): any {
       case JUDGE_SYMBOL_SWIRL:
       case JUDGE_SYMBOL_SWIRL_UNUSED:
           gSprites[spriteId].oam.tileNum = gSprites[spriteId].data[0];
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           break;
       case JUDGE_SYMBOL_ONE_EXCLAMATION:
           gSprites[spriteId].oam.tileNum = gSprites[spriteId].data[0] + 4;
-          PlaySE(SE_SUCCESS);
+          PlaySE((31));
           break;
       case JUDGE_SYMBOL_TWO_EXCLAMATIONS:
           gSprites[spriteId].oam.tileNum = gSprites[spriteId].data[0] + 8;
-          PlaySE(SE_SUCCESS);
+          PlaySE((31));
           break;
       case JUDGE_SYMBOL_NUMBER_ONE_UNUSED:  
           gSprites[spriteId].oam.tileNum = gSprites[spriteId].data[0] + 12;
-          PlaySE(SE_WARP_IN);
+          PlaySE((45));
           break;
       case JUDGE_SYMBOL_NUMBER_ONE:
           gSprites[spriteId].oam.tileNum = gSprites[spriteId].data[0] + 12;
-          PlaySE(SE_WARP_IN);
+          PlaySE((45));
           break;
       case JUDGE_SYMBOL_NUMBER_FOUR:
           gSprites[spriteId].oam.tileNum = gSprites[spriteId].data[0] + 16;
-          PlaySE(SE_WARP_IN);
+          PlaySE((45));
           break;
       case JUDGE_SYMBOL_STAR:
           gSprites[spriteId].oam.tileNum = gSprites[spriteId].data[0] + 24;
-          PlaySE(SE_M_HEAL_BELL);
+          PlaySE((195));
           break;
       case JUDGE_SYMBOL_QUESTION_MARK:
       default:
           gSprites[spriteId].oam.tileNum = gSprites[spriteId].data[0] + 20;
-          PlaySE(SE_WARP_IN);
+          PlaySE((45));
           break;
       }
       gSprites[spriteId].data[1] = 0;
@@ -3694,7 +3691,7 @@ export function DoJudgeSpeechBubble(symbolId: any): any {
 export function UpdateApplauseMeter(): any {
   let i: any = null;
 
-      for (i = 0; i < APPLAUSE_METER_SIZE; i++)
+      for (i = 0; i < (5); i++)
       {
           let src: any = null;
 
@@ -3736,7 +3733,7 @@ export function Task_ApplauseOverflowAnimation(taskId: any): any {
           else
               gTasks[taskId].data[4]--;
 
-          BlendPalette(OBJ_PLTT_ID(gTasks[taskId].data[2]) + 8, 1, gTasks[taskId].data[4], RGB_WHITE);
+          BlendPalette(OBJ_PLTT_ID(gTasks[taskId].data[2]) + 8, 1, gTasks[taskId].data[4], (RGB(31, 31, 31)));
 
            
           if (gTasks[taskId].data[4] == 0 || gTasks[taskId].data[4] == 16)
@@ -3746,7 +3743,7 @@ export function Task_ApplauseOverflowAnimation(taskId: any): any {
                
               if (eContest.applauseLevel < 5)
               {
-                  BlendPalette(OBJ_PLTT_ID(gTasks[taskId].data[2]) + 8, 1, 0, RGB_RED);
+                  BlendPalette(OBJ_PLTT_ID(gTasks[taskId].data[2]) + 8, 1, 0, (RGB(31, 0, 0)));
                   DestroyTask(taskId);
               }
           }
@@ -3898,7 +3895,7 @@ export function BlendAudienceBackground(excitementDir: any, blendDir: any): any 
       }
       else
       {
-          blendColor = RGB_BLACK;
+          blendColor = (RGB(0, 0, 0));
           if (blendDir > 0)
           {
                
@@ -3946,7 +3943,7 @@ export function Task_BlendAudienceBackground(taskId: any): any {
 export function ShowHideNextTurnGfx(show: any): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (eContestantStatus[i].turnOrderMod != 0 && show)
           {
@@ -3964,7 +3961,7 @@ export function ShowHideNextTurnGfx(show: any): any {
 /** static void DrawUnnervedSymbols(void) */
 export function DrawUnnervedSymbols(): any {
   let i: any = 0;
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (eContestAppealResults.unnervedPokes[i] != 0 && !Contest_IsMonsTurnDisabled(i))
           {
@@ -3974,7 +3971,7 @@ export function DrawUnnervedSymbols(): any {
               ContestBG_FillBoxWithIncrementingTile(0, symbolOffset, 20, contestantOffset, 2, 1, 17, 1);
               symbolOffset += 16;
               ContestBG_FillBoxWithIncrementingTile(0, symbolOffset, 20, contestantOffset + 1, 2, 1, 17, 1);
-              PlaySE(SE_CONTEST_ICON_CHANGE);
+              PlaySE((99));
           }
       }
 }
@@ -4018,7 +4015,7 @@ export function SetBgForCurtainDrop(): any {
       CopyToBgTilemapBuffer(1, gContestCurtainTilemap, 0, 0);
       Contest_SetBgCopyFlags(1);
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           gSprites[eContestGfxState[i].sliderHeartSpriteId].oam.priority = 1;
           gSprites[eContestGfxState[i].nextTurnSpriteId].oam.priority = 1;
@@ -4044,7 +4041,7 @@ export function UpdateContestantBoxOrder(): any {
       gBattle_BG1_X = 0;
       gBattle_BG1_Y = 0;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           gSprites[eContestGfxState[i].sliderHeartSpriteId].oam.priority = 0;
           gSprites[eContestGfxState[i].nextTurnSpriteId].oam.priority = 0;
@@ -4055,7 +4052,7 @@ export function UpdateContestantBoxOrder(): any {
 export function Task_StartDropCurtainAtRoundEnd(taskId: any): any {
   gBattle_BG1_X = 0;
       gBattle_BG1_Y = DISPLAY_HEIGHT;
-      PlaySE12WithPanning(SE_CONTEST_CURTAIN_FALL, 0);
+      PlaySE12WithPanning((98), 0);
       gTasks[taskId].func = Task_UpdateCurtainDropAtRoundEnd;
 }
 
@@ -4079,7 +4076,7 @@ export function Task_ResetForNextRound(taskId: any): any {
       switch (gTasks[taskId].data[0])
       {
       case 0:
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
               eContest.prevTurnOrder[i] = gContestantTurnOrder[i];
           FillContestantWindowBgs();
           UpdateBlendTaskContestantsData();
@@ -4090,7 +4087,7 @@ export function Task_ResetForNextRound(taskId: any): any {
           gTasks[taskId].data[0] = 1;
           break;
       case 1:
-          if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+          if (gLinkContestFlags & ((1 << 0)))
           {
               let taskId2: any = null;
 
@@ -4167,7 +4164,7 @@ export function Task_StartRaiseCurtainAtRoundEnd(taskId: any): any {
       else
       {
           gTasks[taskId].data[2] = 0;
-          PlaySE12WithPanning(SE_CONTEST_CURTAIN_RISE, 0);
+          PlaySE12WithPanning((97), 0);
           gTasks[taskId].func = Task_UpdateRaiseCurtainAtRoundEnd;
       }
 }
@@ -4177,7 +4174,7 @@ export function AnimateSliderHearts(animId: any): any {
   let i: any = null;
       let taskId: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           gSprites[eContestGfxState[i].sliderHeartSpriteId].oam.matrixNum = AllocOamMatrix();
           gSprites[eContestGfxState[i].sliderHeartSpriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
@@ -4201,10 +4198,10 @@ export function Task_WaitForSliderHeartAnim(taskId: any): any {
       {
           if (gTasks[taskId].tAnimId == SLIDER_HEART_ANIM_DISAPPEAR)
           {
-              for (i = 0; i < CONTESTANT_COUNT; i++)
+              for (i = 0; i < (4); i++)
                   gSprites[eContestGfxState[i].sliderHeartSpriteId].invisible = TRUE;
           }
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
               FreeSpriteOamMatrix(gSprites[eContestGfxState[i].sliderHeartSpriteId]);
           eContest.sliderHeartsAnimating = FALSE;
           DestroyTask(taskId);
@@ -4213,15 +4210,15 @@ export function Task_WaitForSliderHeartAnim(taskId: any): any {
 
 /** static u16 SanitizeMove(u16 move) */
 export function SanitizeMove(move: any): any {
-  if (move >= MOVES_COUNT)
-          move = MOVE_POUND;
+  if (move >= (355))
+          move = (1);
       return move;
 }
 
 /** static u16 SanitizeSpecies(u16 species) */
 export function SanitizeSpecies(species: any): any {
-  if (species >= NUM_SPECIES)
-          species = SPECIES_NONE;
+  if (species >= ((412)))
+          species = (0);
       return species;
 }
 
@@ -4234,33 +4231,33 @@ export function SetMoveSpecificAnimData(contestant: any): any {
 
       memset(gContestResources.moveAnim.species, 0, 20);
       ClearBattleAnimationVars();
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           gBattleMonForms[i] = 0;
       switch (move)
       {
-      case MOVE_CURSE:
-          if (gSpeciesInfo[species].types[0] == TYPE_GHOST || gSpeciesInfo[species].types[1] == TYPE_GHOST)
+      case (174):
+          if (gSpeciesInfo[species].types[0] == (7) || gSpeciesInfo[species].types[1] == (7))
               gAnimMoveTurn = 0;
           else
               gAnimMoveTurn = 1;
           break;
-      case MOVE_TRANSFORM:
-      case MOVE_ROLE_PLAY:
+      case (144):
+      case (272):
           targetContestant = eContestantStatus[contestant].contestantAnimTarget;
           gContestResources.moveAnim.targetSpecies = SanitizeSpecies(gContestMons[targetContestant].species);
           gContestResources.moveAnim.targetPersonality = gContestMons[targetContestant].personality;
           gContestResources.moveAnim.hasTargetAnim = TRUE;
           break;
-      case MOVE_RETURN:
-          gAnimFriendship = MAX_FRIENDSHIP;
+      case (216):
+          gAnimFriendship = (255);
           break;
-      case MOVE_FRUSTRATION:
+      case (218):
           gAnimFriendship = 0;
           break;
-      case MOVE_SOLAR_BEAM:
-      case MOVE_RAZOR_WIND:
-      case MOVE_SKULL_BASH:
-      case MOVE_SKY_ATTACK:
+      case (76):
+      case (13):
+      case (130):
+      case (143):
           if (eContest.moveAnimTurnCount == 0)
           {
               eContest.moveAnimTurnCount = 2;
@@ -4312,14 +4309,14 @@ export function SetBattleTargetSpritePosition(): any {
 export function SetMoveTargetPosition(move: any): any {
   switch (gBattleMoves[move].target)
       {
-      case MOVE_TARGET_USER_OR_SELECTED:
-      case MOVE_TARGET_USER:
+      case ((1 << 1)):
+      case ((1 << 4)):
           gBattlerTarget = B_POSITION_PLAYER_RIGHT;
           break;
-      case MOVE_TARGET_SELECTED:
-      case MOVE_TARGET_RANDOM:
-      case MOVE_TARGET_BOTH:
-      case MOVE_TARGET_FOES_AND_ALLY:
+      case (0):
+      case ((1 << 2)):
+      case ((1 << 3)):
+      case ((1 << 5)):
       default:
           gBattlerTarget = B_POSITION_OPPONENT_RIGHT;
           break;
@@ -4397,7 +4394,7 @@ export function Contest_StartTextPrinter(currChar: any, b: any): any {
       }
       else
       {
-          if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+          if (gLinkContestFlags & ((1 << 0)))
               speed = 4;
           else
               speed = GetPlayerTextSpeedDelay();
@@ -4435,18 +4432,18 @@ export function ResetContestLinkResults(): any {
   let i: any = null;
       let j: any = null;
 
-      for(i = 0; i < CONTEST_CATEGORIES_COUNT; i++)
-          for(j = 0; j < CONTESTANT_COUNT; j++)
+      for(i = 0; i < (5); i++)
+          for(j = 0; j < (4); j++)
               gSaveBlock2Ptr.contestLinkResults[i][j] = 0;
 }
 
 /** bool8 SaveContestWinner(u8 rank) */
 export function SaveContestWinner(rank: any): any {
   let i: any = null;
-      let captionId: any = Random() % NUM_PAINTING_CAPTIONS;
+      let captionId: any = Random() % (3);
 
        
-      for (i = 0; i < CONTESTANT_COUNT - 1; i++)
+      for (i = 0; i < (4) - 1; i++)
           if (gContestFinalStandings[i] == 0)
               break;
 
@@ -4457,20 +4454,20 @@ export function SaveContestWinner(rank: any): any {
        
       switch (gSpecialVar_ContestCategory)
       {
-      case CONTEST_CATEGORY_COOL:
-          captionId += NUM_PAINTING_CAPTIONS * CONTEST_CATEGORY_COOL;
+      case (0):
+          captionId += (3) * (0);
           break;
-      case CONTEST_CATEGORY_BEAUTY:
-          captionId += NUM_PAINTING_CAPTIONS * CONTEST_CATEGORY_BEAUTY;
+      case (1):
+          captionId += (3) * (1);
           break;
-      case CONTEST_CATEGORY_CUTE:
-          captionId += NUM_PAINTING_CAPTIONS * CONTEST_CATEGORY_CUTE;
+      case (2):
+          captionId += (3) * (2);
           break;
-      case CONTEST_CATEGORY_SMART:
-          captionId += NUM_PAINTING_CAPTIONS * CONTEST_CATEGORY_SMART;
+      case (3):
+          captionId += (3) * (3);
           break;
-      case CONTEST_CATEGORY_TOUGH:
-          captionId += NUM_PAINTING_CAPTIONS * CONTEST_CATEGORY_TOUGH;
+      case (4):
+          captionId += (3) * (4);
           break;
       }
 
@@ -4485,8 +4482,8 @@ export function SaveContestWinner(rank: any): any {
           gSaveBlock1Ptr.contestWinners[id].trainerId = gContestMons[i].otId;
           StringCopy(gSaveBlock1Ptr.contestWinners[id].monName, gContestMons[i].nickname);
           StringCopy(gSaveBlock1Ptr.contestWinners[id].trainerName, gContestMons[i].trainerName);
-          if(gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
-              gSaveBlock1Ptr.contestWinners[id].contestRank = CONTEST_RANK_LINK;
+          if(gLinkContestFlags & ((1 << 0)))
+              gSaveBlock1Ptr.contestWinners[id].contestRank = (4);
           else
               gSaveBlock1Ptr.contestWinners[id].contestRank = gSpecialVar_ContestRank;
 
@@ -4514,32 +4511,32 @@ export function GetContestWinnerSaveIdx(rank: any, shift: any): any {
 
       switch (rank)
       {
-      case CONTEST_RANK_NORMAL:
-      case CONTEST_RANK_SUPER:
-      case CONTEST_RANK_HYPER:
-      case CONTEST_RANK_MASTER:
+      case (0):
+      case (1):
+      case (2):
+      case (3):
           if (shift)
           {
-              for (i = NUM_CONTEST_HALL_WINNERS - 1; i > 0; i--)
+              for (i = (6) - 1; i > 0; i--)
                   memcpy(gSaveBlock1Ptr.contestWinners[i],gSaveBlock1Ptr.contestWinners[i - 1], 0);
           }
-          return CONTEST_WINNER_HALL_1 - 1;
+          return (1) - 1;
       default:
    
    
           switch (gSpecialVar_ContestCategory)
           {
-          case CONTEST_CATEGORY_COOL:
-              return CONTEST_WINNER_MUSEUM_COOL - 1;
-          case CONTEST_CATEGORY_BEAUTY:
-              return CONTEST_WINNER_MUSEUM_BEAUTY - 1;
-          case CONTEST_CATEGORY_CUTE:
-              return CONTEST_WINNER_MUSEUM_CUTE - 1;
-          case CONTEST_CATEGORY_SMART:
-              return CONTEST_WINNER_MUSEUM_SMART - 1;
-          case CONTEST_CATEGORY_TOUGH:
+          case (0):
+              return (9) - 1;
+          case (1):
+              return (10) - 1;
+          case (2):
+              return (11) - 1;
+          case (3):
+              return (12) - 1;
+          case (4):
           default:
-              return CONTEST_WINNER_MUSEUM_TOUGH - 1;
+              return (13) - 1;
           }
       }
 }
@@ -4548,7 +4545,7 @@ export function GetContestWinnerSaveIdx(rank: any, shift: any): any {
 export function ClearContestWinnerPicsInContestHall(): any {
   let i: any = null;
 
-      for (i = 0; i < MUSEUM_CONTEST_WINNERS_START; i++)
+      for (i = 0; i < (((9) - 1)); i++)
           gSaveBlock1Ptr.contestWinners[i] = gDefaultContestWinners[i];
 }
 
@@ -4560,55 +4557,55 @@ export function SetContestLiveUpdateFlags(contestant: any): any {
           && eContestExcitement.moveExcitement > 0
           && !eContestantStatus[contestant].repeatedMove)
       {
-          gContestResources.tv[contestant].winnerFlags |= CONTESTLIVE_FLAG_EXCITING_APPEAL;
+          gContestResources.tv[contestant].winnerFlags |= ((1 << 0));
           gContestResources.tv[contestant].madeExcitingAppeal = TRUE;
       }
 
       if (eContestantStatus[contestant].nervous)
-          gContestResources.tv[contestant].winnerFlags |= CONTESTLIVE_FLAG_GOT_NERVOUS;
+          gContestResources.tv[contestant].winnerFlags |= ((1 << 1));
 
       if (!eContestExcitement.frozen
           && eContestExcitement.moveExcitement != 0
           && eContestExcitement.excitementAppealBonus == 60)
       {
-          gContestResources.tv[contestant].winnerFlags |= CONTESTLIVE_FLAG_MAXED_EXCITEMENT;
+          gContestResources.tv[contestant].winnerFlags |= ((1 << 2));
       }
 
       if (eContestantStatus[contestant].usedComboMove
           && eContestantStatus[contestant].completedCombo)
       {
-          gContestResources.tv[contestant].winnerFlags |= CONTESTLIVE_FLAG_USED_COMBO;
+          gContestResources.tv[contestant].winnerFlags |= ((1 << 3));
       }
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (i != contestant && eContestantStatus[i].jam != 0)
           {
-              gContestResources.tv[contestant].winnerFlags |= CONTESTLIVE_FLAG_STARTLED_OTHER;
-              gContestResources.tv[i].winnerFlags |= CONTESTLIVE_FLAG_GOT_STARTLED;
+              gContestResources.tv[contestant].winnerFlags |= ((1 << 4));
+              gContestResources.tv[i].winnerFlags |= ((1 << 6));
           }
       }
 
       if (eContestantStatus[contestant].numTurnsSkipped != 0
           || eContestantStatus[contestant].noMoreTurns)
       {
-          gContestResources.tv[contestant].winnerFlags |= CONTESTLIVE_FLAG_SKIPPED_TURN;
+          gContestResources.tv[contestant].winnerFlags |= ((1 << 5));
       }
       else if (!eContestantStatus[contestant].nervous)
       {
-          gContestResources.tv[contestant].winnerFlags |= CONTESTLIVE_FLAG_MADE_APPEAL;
+          gContestResources.tv[contestant].winnerFlags |= ((1 << 7));
           gContestResources.tv[contestant].madeAppeal = TRUE;
           gContestResources.tv[contestant].appeals[eContest.appealNumber] = eContestantStatus[contestant].currMove;
       }
 
       if (eContestantStatus[contestant].repeatedMove)
-          gContestResources.tv[contestant].loserFlags |= CONTESTLIVE_FLAG_REPEATED_MOVE;
+          gContestResources.tv[contestant].loserFlags |= ((1 << 1));
 
       if (eContest.applauseLevel == 4
           && !eContestExcitement.frozen
           && eContestExcitement.moveExcitement < 0)
       {
-          gContestResources.tv[contestant].loserFlags |= CONTESTLIVE_FLAG_MISSED_EXCITEMENT;
+          gContestResources.tv[contestant].loserFlags |= ((1 << 5));
       }
 }
 
@@ -4628,35 +4625,35 @@ export function CalculateContestLiveUpdateData(): any {
       winner = 0;
 
        
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gContestFinalStandings[i] == 0)
               winner = i;
-          else if (gContestFinalStandings[i] == CONTESTANT_COUNT - 1)
+          else if (gContestFinalStandings[i] == (4) - 1)
               loser = i;
       }
 
        
-      gContestResources.tv[loser].loserFlags |= CONTESTLIVE_FLAG_LOST;
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      gContestResources.tv[loser].loserFlags |= ((1 << 0));
+      for (i = 0; i < (4); i++)
       {
           if (i != winner && gContestMonTotalPoints[winner] - gContestMonTotalPoints[i] <= 50)
-              gContestResources.tv[i].loserFlags |= CONTESTLIVE_FLAG_LOST_SMALL_MARGIN;
+              gContestResources.tv[i].loserFlags |= ((1 << 2));
 
           if (!gContestResources.tv[i].madeExcitingAppeal)
-              gContestResources.tv[i].loserFlags |= CONTESTLIVE_FLAG_NO_EXCITEMENT;
+              gContestResources.tv[i].loserFlags |= ((1 << 3));
 
-          for (j = 0; j < CONTESTANT_COUNT; j++)
+          for (j = 0; j < (4); j++)
           {
               if (gContestMonRound1Points[i] < gContestMonRound1Points[j])
                   break;
           }
-          if (j == CONTESTANT_COUNT && gContestFinalStandings[i] != 0)
-              gContestResources.tv[i].loserFlags |= CONTESTLIVE_FLAG_BLEW_LEAD;
+          if (j == (4) && gContestFinalStandings[i] != 0)
+              gContestResources.tv[i].loserFlags |= ((1 << 4));
 
           notLastInRound1 = FALSE;
           notLastInRound2 = FALSE;
-          for (j = 0; j < CONTESTANT_COUNT; j++)
+          for (j = 0; j < (4); j++)
           {
               if (gContestMonRound1Points[i] > gContestMonRound1Points[j])
                   notLastInRound1 = TRUE;
@@ -4664,30 +4661,30 @@ export function CalculateContestLiveUpdateData(): any {
                   notLastInRound2 = TRUE;
           }
           if (!notLastInRound1 && !notLastInRound2)
-              gContestResources.tv[i].loserFlags |= CONTESTLIVE_FLAG_LAST_BOTH_ROUNDS;
+              gContestResources.tv[i].loserFlags |= ((1 << 6));
 
           if (!gContestResources.tv[i].madeAppeal)
-              gContestResources.tv[i].loserFlags |= CONTESTLIVE_FLAG_NO_APPEALS;
+              gContestResources.tv[i].loserFlags |= ((1 << 7));
       }
 
        
-      for (i = 0; i < CONTEST_NUM_APPEALS; i++)
+      for (i = 0; i < (5); i++)
       {
-          appealMoves[i] = MOVE_NONE;
+          appealMoves[i] = (0);
           numMoveUses[i] = 0;
       }
-      appealMoves[CONTEST_NUM_APPEALS] = (0xFFFF);
-      numMoveUses[CONTEST_NUM_APPEALS] = 0;
+      appealMoves[(5)] = (0xFFFF);
+      numMoveUses[(5)] = 0;
 
-      for (i = 0; i < CONTEST_NUM_APPEALS; i++)
+      for (i = 0; i < (5); i++)
       {
-          if (gContestResources.tv[winner].appeals[i] != MOVE_NONE)
+          if (gContestResources.tv[winner].appeals[i] != (0))
           {
-              for (j = 0; j < CONTEST_NUM_APPEALS; j++)
+              for (j = 0; j < (5); j++)
               {
                   if (gContestResources.tv[winner].appeals[i] != appealMoves[j])
                   {
-                      if (appealMoves[j] == MOVE_NONE)
+                      if (appealMoves[j] == (0))
                       {
                           appealMoves[j] = gContestResources.tv[winner].appeals[i];
                           numMoveUses[j]++;
@@ -4744,7 +4741,7 @@ export function SetConestLiveUpdateTVData(): any {
 
        
       winner = 0;
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gContestFinalStandings[i] == 0)
               winner = i;
@@ -4753,7 +4750,7 @@ export function SetConestLiveUpdateTVData(): any {
        
       round1Placing = 0;
       round2Placing = 0;
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gContestMonRound1Points[winner] < gContestMonRound1Points[i])
               round1Placing++;
@@ -4800,7 +4797,7 @@ export function SetConestLiveUpdateTVData(): any {
       }
 
       numLoserCandidates = 1;
-      for (; i < CONTESTANT_COUNT; i++)
+      for (; i < (4); i++)
       {
           if (i != winner)
           {
@@ -4822,7 +4819,7 @@ export function SetConestLiveUpdateTVData(): any {
       loser = loserCandidates[Random() % numLoserCandidates];
 
        
-      flagId = CONTESTLIVE_FLAG_NO_APPEALS;
+      flagId = ((1 << 7));
       for (i = 0; i < 8; flagId >>= 1, i++)
       {
           loserFlag = gContestResources.tv[loser].loserFlags & flagId;
@@ -4877,12 +4874,12 @@ export function ContestDebugPrintBitStrings(): any {
       if (eContestDebugMode != CONTEST_DEBUG_MODE_PRINT_WINNER_FLAGS && eContestDebugMode != CONTEST_DEBUG_MODE_PRINT_LOSER_FLAGS)
           return;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           FillWindowPixelBuffer(i, PIXEL_FILL(0));
 
       if (eContestDebugMode == CONTEST_DEBUG_MODE_PRINT_WINNER_FLAGS)
       {
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               txtPtr = StringCopy(text1, gText_CDot);
               Contest_PrintTextToBg0WindowAt(gContestantTurnOrder[i], text1, 5, 1, FONT_NARROW);
@@ -4896,14 +4893,14 @@ export function ContestDebugPrintBitStrings(): any {
               for (j = 0; j < 5; j++)
                   text2[j] = text1[j];
 
-              text2[j] = EOS;
+              text2[j] = (0xFF);
               Contest_PrintTextToBg0WindowAt(gContestantTurnOrder[i], text2, 5, 1, 7);
               Contest_PrintTextToBg0WindowAt(gContestantTurnOrder[i], text1 + j, 55, 1, FONT_NARROW);
           }
       }
       else  
       {
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               StringCopy(text1, gText_BDot);
               bits = gContestResources.tv[i].loserFlags;
@@ -4917,7 +4914,7 @@ export function ContestDebugPrintBitStrings(): any {
               for (j = 0; j < 5; j++)
                   text2[j] = text1[j];
 
-              text2[j] = EOS;
+              text2[j] = (0xFF);
               Contest_PrintTextToBg0WindowAt(gContestantTurnOrder[i], text2, 5, 1, FONT_NARROW);
               Contest_PrintTextToBg0WindowAt(gContestantTurnOrder[i], text1 + j, 55, 1, FONT_NARROW);
           }
@@ -4927,33 +4924,33 @@ export function ContestDebugPrintBitStrings(): any {
 
 /** static u8 GetMonNicknameLanguage(u8 *nickname) */
 export function GetMonNicknameLanguage(nickname: any): any {
-  let ret: any = GAME_LANGUAGE;
+  let ret: any = (((3)));
 
-      if (nickname[0] == EXT_CTRL_CODE_BEGIN && nickname[1] == EXT_CTRL_CODE_JPN)
-          return GAME_LANGUAGE;
+      if (nickname[0] == (0xFC) && nickname[1] == (0x15))
+          return (((3)));
 
       if (StringLength(nickname) <= 5)
       {
            
            
-          while (nickname != EOS)
+          while (nickname != (0xFF))
           {
-              if ((nickname >= CHAR_A && nickname <= CHAR_z)
-                  || (nickname >= CHAR_0 && nickname <= CHAR_9)
-                  || nickname == CHAR_SPACE
-                  || nickname == CHAR_PERIOD
-                  || nickname == CHAR_COMMA
-                  || nickname == CHAR_EXCL_MARK
-                  || nickname == CHAR_QUESTION_MARK
-                  || nickname == CHAR_MALE
-                  || nickname == CHAR_FEMALE
-                  || nickname == CHAR_SLASH
-                  || nickname == CHAR_HYPHEN
-                  || nickname == CHAR_ELLIPSIS
-                  || nickname == CHAR_DBL_QUOTE_LEFT
-                  || nickname == CHAR_DBL_QUOTE_RIGHT
-                  || nickname == CHAR_SGL_QUOTE_LEFT
-                  || nickname == CHAR_SGL_QUOTE_RIGHT
+              if ((nickname >= (0xBB) && nickname <= (0xEE))
+                  || (nickname >= (0xA1) && nickname <= (0xAA))
+                  || nickname == (0x00)
+                  || nickname == (0xAD)
+                  || nickname == (0xB8)
+                  || nickname == (0xAB)
+                  || nickname == (0xAC)
+                  || nickname == (0xB5)
+                  || nickname == (0xB6)
+                  || nickname == (0xBA)
+                  || nickname == (0xAE)
+                  || nickname == (0xB0)
+                  || nickname == (0xB1)
+                  || nickname == (0xB2)
+                  || nickname == (0xB3)
+                  || nickname == (0xB4)
                   )
               {
                   nickname++;
@@ -4961,7 +4958,7 @@ export function GetMonNicknameLanguage(nickname: any): any {
               else
               {
                    
-                  ret = LANGUAGE_JAPANESE;
+                  ret = (1);
                   break;
               }
           }
@@ -4974,8 +4971,8 @@ export function GetMonNicknameLanguage(nickname: any): any {
 export function StripPlayerNameForLinkContest(playerName: any): any {
   let chr: any = playerName[5];
 
-      playerName[5] = EOS;
-      playerName[PLAYER_NAME_LENGTH] = chr;
+      playerName[5] = (0xFF);
+      playerName[(7)] = chr;
 }
 
 /** static void StripMonNameForLinkContest(u8 *monName, s32 language) */
@@ -4983,16 +4980,16 @@ export function StripMonNameForLinkContest(monName: any, language: any): any {
   let chr: any = null;
 
       StripExtCtrlCodes(monName);
-      if (language == LANGUAGE_JAPANESE)
+      if (language == (1))
       {
-          monName[5] = EOS;
-          monName[POKEMON_NAME_LENGTH] = EXT_CTRL_CODE_BEGIN;
+          monName[5] = (0xFF);
+          monName[(10)] = (0xFC);
       }
       else
       {
           chr = monName[5];
-          monName[5] = EOS;
-          monName[POKEMON_NAME_LENGTH] = chr;
+          monName[5] = (0xFF);
+          monName[(10)] = chr;
       }
 }
 
@@ -5000,36 +4997,36 @@ export function StripMonNameForLinkContest(monName: any, language: any): any {
 export function StripPlayerAndMonNamesForLinkContest(mon: any, language: any): any {
   let name: any = mon.nickname;
 
-      if (language == LANGUAGE_JAPANESE)
+      if (language == (1))
       {
           ConvertInternationalString(name, GetMonNicknameLanguage(name));
       }
-      else if (name[POKEMON_NAME_LENGTH] == EXT_CTRL_CODE_BEGIN)
+      else if (name[(10)] == (0xFC))
       {
-          ConvertInternationalString(name, LANGUAGE_JAPANESE);
+          ConvertInternationalString(name, (1));
       }
       else
       {
-          name[5] = name[POKEMON_NAME_LENGTH];
-          name[POKEMON_NAME_LENGTH] = EOS;
+          name[5] = name[(10)];
+          name[(10)] = (0xFF);
       }
 
       name = mon.trainerName;
-      if (language == LANGUAGE_JAPANESE)
+      if (language == (1))
       {
-          name[7] = EOS;
+          name[7] = (0xFF);
           name[6] = name[4];
           name[5] = name[3];
           name[4] = name[2];
           name[3] = name[1];
           name[2] = mon.trainerName[0];
-          name[1] = EXT_CTRL_CODE_JPN;
-          name[0] = EXT_CTRL_CODE_BEGIN;
+          name[1] = (0x15);
+          name[0] = (0xFC);
       }
       else
       {
-          name[5] = name[PLAYER_NAME_LENGTH];
-          name[PLAYER_NAME_LENGTH] = EOS;
+          name[5] = name[(7)];
+          name[(7)] = (0xFF);
       }
 }
 

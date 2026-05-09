@@ -17,20 +17,17 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattlePikeFunctions: any = null;
-let sFrontierBrainStreakAppearances: any = null;
+let countDead: any = null;
+let gBattleOutcome: any = null;
+let gFacilityTrainers: any = null;
+let gTrainerBattleOpponent_A: any = null;
+let gTrainerBattleOpponent_B: any = null;
 let sInWildMonRoom: any = null;
-let sNPCSpeeches: any = null;
-let sNPCTable: any = null;
 let sNpcId: any = null;
-let sNumMonsToHealBeforePikeQueen: any = null;
 let sRoomType: any = null;
-let sRoomTypeHints: any = null;
 let sStatusFlags: any = null;
-let sStatusInflictionScreenFlashFuncs: any = null;
 let sStatusMon: any = null;
-let sWildMons: any = null;
-let sWinStreakFlags: any = null;
+let setObjGfx2: any = null;
 /** void CallBattlePikeFunction(void) */
 export function CallBattlePikeFunction(): any {
   sBattlePikeFunctions[gSpecialVar_0x8004]();
@@ -48,8 +45,8 @@ export function SetupRoomObjectEvents(): any {
       let objGfx1: any = null;
       let objGfx2: any = null;
 
-      VarSet(VAR_OBJ_GFX_ID_0, OBJ_EVENT_GFX_LINK_RECEPTIONIST);
-      VarSet(VAR_OBJ_GFX_ID_1, OBJ_EVENT_GFX_DUSCLOPS);
+      VarSet((0x4010), (28));
+      VarSet((0x4011), (226));
       setObjGfx1 = TRUE;
       setObjGfx2 = FALSE;
       objGfx1 = 0;
@@ -57,43 +54,43 @@ export function SetupRoomObjectEvents(): any {
 
       switch (sRoomType)
       {
-      case PIKE_ROOM_SINGLE_BATTLE:
+      case (0):
           PrepareOneTrainer(FALSE);
           setObjGfx1 = FALSE;
           break;
-      case PIKE_ROOM_HEAL_FULL:
-          objGfx1 = OBJ_EVENT_GFX_LINK_RECEPTIONIST;
+      case (1):
+          objGfx1 = (28);
           break;
-      case PIKE_ROOM_NPC:
+      case (2):
           objGfx1 = (GetNPCRoomGraphicsId());
           break;
-      case PIKE_ROOM_STATUS:
-          objGfx1 = OBJ_EVENT_GFX_GENTLEMAN;
-          if (sStatusMon == PIKE_STATUSMON_DUSCLOPS)
-              objGfx2 = OBJ_EVENT_GFX_DUSCLOPS;
+      case (3):
+          objGfx1 = (48);
+          if (sStatusMon == (1))
+              objGfx2 = (226);
           else
-              objGfx2 = OBJ_EVENT_GFX_KIRLIA;
+              objGfx2 = (225);
           setObjGfx2 = TRUE;
           break;
-      case PIKE_ROOM_HEAL_PART:
-          objGfx1 = OBJ_EVENT_GFX_GENTLEMAN;
+      case (4):
+          objGfx1 = (48);
           break;
-      case PIKE_ROOM_WILD_MONS:
+      case (5):
           setObjGfx1 = FALSE;
           break;
-      case PIKE_ROOM_HARD_BATTLE:
+      case (6):
           PrepareOneTrainer(TRUE);
-          objGfx2 = OBJ_EVENT_GFX_LINK_RECEPTIONIST;
+          objGfx2 = (28);
           setObjGfx1 = FALSE;
           setObjGfx2 = TRUE;
           break;
-      case PIKE_ROOM_DOUBLE_BATTLE:
+      case (7):
           PrepareTwoTrainers();
           setObjGfx1 = FALSE;
           break;
-      case PIKE_ROOM_BRAIN:
-          SetFrontierBrainObjEventGfx(FRONTIER_FACILITY_PIKE);
-          objGfx2 = OBJ_EVENT_GFX_LINK_RECEPTIONIST;
+      case (8):
+          SetFrontierBrainObjEventGfx((5));
+          objGfx2 = (28);
           setObjGfx1 = FALSE;
           setObjGfx2 = TRUE;
           break;
@@ -102,9 +99,9 @@ export function SetupRoomObjectEvents(): any {
       }
 
       if (setObjGfx1 == TRUE)
-          VarSet(VAR_OBJ_GFX_ID_0, objGfx1);
+          VarSet((0x4010), objGfx1);
       if (setObjGfx2 == TRUE)
-          VarSet(VAR_OBJ_GFX_ID_1, objGfx2);
+          VarSet((0x4011), objGfx2);
 }
 
 /** static void GetBattlePikeData(void) */
@@ -113,23 +110,23 @@ export function GetBattlePikeData(): any {
 
       switch (gSpecialVar_0x8005)
       {
-      case PIKE_DATA_PRIZE:
+      case (0):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.pikePrize;
           break;
-      case PIKE_DATA_WIN_STREAK:
+      case (1):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.pikeWinStreaks[gSaveBlock2Ptr.frontier.lvlMode];
           break;
-      case PIKE_DATA_RECORD_STREAK:
+      case (2):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.pikeRecordStreaks[gSaveBlock2Ptr.frontier.lvlMode];
           break;
-      case PIKE_DATA_TOTAL_STREAKS:
+      case (3):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.pikeTotalStreaks[gSaveBlock2Ptr.frontier.lvlMode];
           break;
-      case PIKE_DATA_WIN_STREAK_ACTIVE:
-          if (lvlMode != FRONTIER_LVL_50)
-              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_PIKE_OPEN;
+      case (4):
+          if (lvlMode != (0))
+              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 11));
           else
-              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_PIKE_50;
+              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 10));
           break;
       }
 }
@@ -140,35 +137,35 @@ export function SetBattlePikeData(): any {
 
       switch (gSpecialVar_0x8005)
       {
-      case PIKE_DATA_PRIZE:
+      case (0):
           gSaveBlock2Ptr.frontier.pikePrize = gSpecialVar_0x8006;
           break;
-      case PIKE_DATA_WIN_STREAK:
-          if (gSpecialVar_0x8006 <= MAX_STREAK)
+      case (1):
+          if (gSpecialVar_0x8006 <= (9999))
               gSaveBlock2Ptr.frontier.pikeWinStreaks[gSaveBlock2Ptr.frontier.lvlMode] = gSpecialVar_0x8006;
           break;
-      case PIKE_DATA_RECORD_STREAK:
-          if (gSpecialVar_0x8006 <= MAX_STREAK && gSaveBlock2Ptr.frontier.pikeRecordStreaks[gSaveBlock2Ptr.frontier.lvlMode] < gSpecialVar_0x8006)
+      case (2):
+          if (gSpecialVar_0x8006 <= (9999) && gSaveBlock2Ptr.frontier.pikeRecordStreaks[gSaveBlock2Ptr.frontier.lvlMode] < gSpecialVar_0x8006)
               gSaveBlock2Ptr.frontier.pikeRecordStreaks[gSaveBlock2Ptr.frontier.lvlMode] = gSpecialVar_0x8006;
           break;
-      case PIKE_DATA_TOTAL_STREAKS:
-          if (gSpecialVar_0x8006 <= MAX_STREAK)
+      case (3):
+          if (gSpecialVar_0x8006 <= (9999))
               gSaveBlock2Ptr.frontier.pikeTotalStreaks[gSaveBlock2Ptr.frontier.lvlMode] = gSpecialVar_0x8006;
           break;
-      case PIKE_DATA_WIN_STREAK_ACTIVE:
-          if (lvlMode != FRONTIER_LVL_50)
+      case (4):
+          if (lvlMode != (0))
           {
               if (gSpecialVar_0x8006)
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= STREAK_PIKE_OPEN;
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= ((1 << 11));
               else
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(STREAK_PIKE_OPEN);
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(((1 << 11)));
           }
           else
           {
               if (gSpecialVar_0x8006)
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= STREAK_PIKE_50;
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= ((1 << 10));
               else
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(STREAK_PIKE_50);
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(((1 << 10)));
           }
           break;
       }
@@ -176,7 +173,7 @@ export function SetBattlePikeData(): any {
 
 /** static void IsNextRoomFinal(void) */
 export function IsNextRoomFinal(): any {
-  if (gSaveBlock2Ptr.frontier.curChallengeBattleNum > NUM_PIKE_ROOMS)
+  if (gSaveBlock2Ptr.frontier.curChallengeBattleNum > (14))
           gSpecialVar_Result = TRUE;
       else
           gSpecialVar_Result = FALSE;
@@ -200,7 +197,7 @@ export function ClearInWildMonRoom(): any {
 /** static void SavePikeChallenge(void) */
 export function SavePikeChallenge(): any {
   gSaveBlock2Ptr.frontier.challengeStatus = gSpecialVar_0x8005;
-      VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);
+      VarSet(((((0x4000) + 0x0))), 0);
       gSaveBlock2Ptr.frontier.challengePaused = TRUE;
       SaveMapView();
       TrySavingData(SAVE_LINK);
@@ -210,20 +207,20 @@ export function SavePikeChallenge(): any {
 export function GetRoomInflictedStatus(): any {
   switch (sStatusFlags)
       {
-      case STATUS1_FREEZE:
-          gSpecialVar_Result = PIKE_STATUS_FREEZE;
+      case ((1 << 5)):
+          gSpecialVar_Result = (0);
           break;
-      case STATUS1_BURN:
-          gSpecialVar_Result = PIKE_STATUS_BURN;
+      case ((1 << 4)):
+          gSpecialVar_Result = (1);
           break;
-      case STATUS1_TOXIC_POISON:
-          gSpecialVar_Result = PIKE_STATUS_TOXIC;
+      case ((1 << 7)):
+          gSpecialVar_Result = (2);
           break;
-      case STATUS1_PARALYSIS:
-          gSpecialVar_Result = PIKE_STATUS_PARALYSIS;
+      case ((1 << 6)):
+          gSpecialVar_Result = (3);
           break;
-      case STATUS1_SLEEP:
-          gSpecialVar_Result = PIKE_STATUS_SLEEP;
+      case ((1 << 0 | 1 << 1 | 1 << 2)):
+          gSpecialVar_Result = (4);
           break;
       }
 }
@@ -275,7 +272,7 @@ export function HealMon(mon: any): any {
       SetMonData(mon, MON_DATA_HP, data);
 
       ppBonuses = GetMonData(mon, MON_DATA_PP_BONUSES);
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           let move: any = GetMonData(mon, MON_DATA_MOVE1 + i);
           data[0] = CalculatePPWithBonus(move, ppBonuses, i);
@@ -296,24 +293,24 @@ export function DoesAbilityPreventStatus(mon: any, status: any): any {
 
       switch (status)
       {
-      case STATUS1_FREEZE:
-          if (ability == ABILITY_MAGMA_ARMOR)
+      case ((1 << 5)):
+          if (ability == (40))
               ret = TRUE;
           break;
-      case STATUS1_BURN:
-          if (ability == ABILITY_WATER_VEIL)
+      case ((1 << 4)):
+          if (ability == (41))
               ret = TRUE;
           break;
-      case STATUS1_PARALYSIS:
-          if (ability == ABILITY_LIMBER)
+      case ((1 << 6)):
+          if (ability == (7))
               ret = TRUE;
           break;
-      case STATUS1_SLEEP:
-          if (ability == ABILITY_INSOMNIA || ability == ABILITY_VITAL_SPIRIT)
+      case ((1 << 0 | 1 << 1 | 1 << 2)):
+          if (ability == (15) || ability == (72))
               ret = TRUE;
           break;
-      case STATUS1_TOXIC_POISON:
-          if (ability == ABILITY_IMMUNITY)
+      case ((1 << 7)):
+          if (ability == (17))
               ret = TRUE;
           break;
       }
@@ -326,25 +323,25 @@ export function DoesTypePreventStatus(species: any, status: any): any {
 
       switch (status)
       {
-      case STATUS1_TOXIC_POISON:
-          if (gSpeciesInfo[species].types[0] == TYPE_STEEL || gSpeciesInfo[species].types[0] == TYPE_POISON
-              || gSpeciesInfo[species].types[1] == TYPE_STEEL || gSpeciesInfo[species].types[1] == TYPE_POISON)
+      case ((1 << 7)):
+          if (gSpeciesInfo[species].types[0] == (8) || gSpeciesInfo[species].types[0] == (3)
+              || gSpeciesInfo[species].types[1] == (8) || gSpeciesInfo[species].types[1] == (3))
               ret = TRUE;
           break;
-      case STATUS1_FREEZE:
-          if (gSpeciesInfo[species].types[0] == TYPE_ICE || gSpeciesInfo[species].types[1] == TYPE_ICE)
+      case ((1 << 5)):
+          if (gSpeciesInfo[species].types[0] == (15) || gSpeciesInfo[species].types[1] == (15))
               ret = TRUE;
           break;
-      case STATUS1_PARALYSIS:
-          if (gSpeciesInfo[species].types[0] == TYPE_GROUND || gSpeciesInfo[species].types[0] == TYPE_ELECTRIC
-              || gSpeciesInfo[species].types[1] == TYPE_GROUND || gSpeciesInfo[species].types[1] == TYPE_ELECTRIC)
+      case ((1 << 6)):
+          if (gSpeciesInfo[species].types[0] == (4) || gSpeciesInfo[species].types[0] == (13)
+              || gSpeciesInfo[species].types[1] == (4) || gSpeciesInfo[species].types[1] == (13))
               ret = TRUE;
           break;
-      case STATUS1_BURN:
-          if (gSpeciesInfo[species].types[0] == TYPE_FIRE || gSpeciesInfo[species].types[1] == TYPE_FIRE)
+      case ((1 << 4)):
+          if (gSpeciesInfo[species].types[0] == (10) || gSpeciesInfo[species].types[1] == (10))
               ret = TRUE;
           break;
-      case STATUS1_SLEEP:
+      case ((1 << 0 | 1 << 1 | 1 << 2)):
           break;
       }
       return ret;
@@ -360,14 +357,14 @@ export function TryInflictRandomStatus(): any {
       let statusChosen: any = null;
       let mon: any = null;
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
           indices[i] = i;
       for (j = 0; j < 10; j++)
       {
           let temp, id;
 
-          i = Random() % FRONTIER_PARTY_SIZE;
-          id = Random() % FRONTIER_PARTY_SIZE;
+          i = Random() % (3);
+          id = Random() % (3);
           SWAP(indices[i], indices[id], temp);
       }
 
@@ -387,24 +384,24 @@ export function TryInflictRandomStatus(): any {
           rand = Random() % 100;
 
           if (rand < 35)
-              sStatusFlags = STATUS1_TOXIC_POISON;
+              sStatusFlags = ((1 << 7));
           else if (rand < 60)
-              sStatusFlags = STATUS1_FREEZE;
+              sStatusFlags = ((1 << 5));
           else if (rand < 80)
-              sStatusFlags = STATUS1_PARALYSIS;
+              sStatusFlags = ((1 << 6));
           else if (rand < 90)
-              sStatusFlags = STATUS1_SLEEP;
+              sStatusFlags = ((1 << 0 | 1 << 1 | 1 << 2));
           else
-              sStatusFlags = STATUS1_BURN;
+              sStatusFlags = ((1 << 4));
 
           if (status != sStatusFlags)
           {
               status = sStatusFlags;
               j = 0;
-              for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+              for (i = 0; i < (3); i++)
               {
                   mon =gPlayerParty[indices[i]];
-                  if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == AILMENT_NONE
+                  if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == (0)
                       && GetMonData(mon, MON_DATA_HP) != 0)
                   {
                       j++;
@@ -425,28 +422,28 @@ export function TryInflictRandomStatus(): any {
 
       switch (sStatusFlags)
       {
-      case STATUS1_FREEZE:
-          sStatusMon = PIKE_STATUSMON_DUSCLOPS;
+      case ((1 << 5)):
+          sStatusMon = (1);
           break;
-      case STATUS1_BURN:
+      case ((1 << 4)):
           if (Random() % 2 != 0)
-              sStatusMon = PIKE_STATUSMON_DUSCLOPS;
+              sStatusMon = (1);
           else
-              sStatusMon = PIKE_STATUSMON_KIRLIA;
+              sStatusMon = (0);
           break;
-      case STATUS1_PARALYSIS:
-      case STATUS1_SLEEP:
-      case STATUS1_TOXIC_POISON:
+      case ((1 << 6)):
+      case ((1 << 0 | 1 << 1 | 1 << 2)):
+      case ((1 << 7)):
       default:
-          sStatusMon = PIKE_STATUSMON_KIRLIA;
+          sStatusMon = (0);
           break;
       }
 
       j = 0;
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           mon =gPlayerParty[indices[i]];
-          if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == AILMENT_NONE
+          if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == (0)
               && GetMonData(mon, MON_DATA_HP) != 0)
           {
               j++;
@@ -475,10 +472,10 @@ export function AtLeastOneHealthyMon(): any {
           count = 3;
 
       healthyMonsCount = 0;
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           let mon: any =gPlayerParty[i];
-          if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == AILMENT_NONE
+          if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == (0)
               && GetMonData(mon, MON_DATA_HP) != 0)
           {
               healthyMonsCount++;
@@ -503,13 +500,13 @@ export function GetNextRoomType(): any {
       let roomCandidates: any = null;
       let id: any = null;
 
-      if (gSaveBlock2Ptr.frontier.pikeHintedRoomType == PIKE_ROOM_BRAIN)
+      if (gSaveBlock2Ptr.frontier.pikeHintedRoomType == (8))
           return gSaveBlock2Ptr.frontier.pikeHintedRoomType;
 
        
       if (gSpecialVar_0x8007 == gSaveBlock2Ptr.frontier.pikeHintedRoomIndex)
       {
-          if (gSaveBlock2Ptr.frontier.pikeHintedRoomType == PIKE_ROOM_STATUS)
+          if (gSaveBlock2Ptr.frontier.pikeHintedRoomType == (3))
               TryInflictRandomStatus();
           return gSaveBlock2Ptr.frontier.pikeHintedRoomType;
       }
@@ -517,7 +514,7 @@ export function GetNextRoomType(): any {
       for (i = 0; i < ARRAY_COUNT(roomTypesDisabled); i++)
           roomTypesDisabled[i] = FALSE;
 
-      numRoomCandidates = NUM_PIKE_ROOM_TYPES - 1;
+      numRoomCandidates = (9) - 1;
 
        
       roomHint = sRoomTypeHints[gSaveBlock2Ptr.frontier.pikeHintedRoomType];
@@ -531,28 +528,28 @@ export function GetNextRoomType(): any {
       }
 
        
-      if (roomTypesDisabled[PIKE_ROOM_DOUBLE_BATTLE] != TRUE && !AtLeastTwoAliveMons())
+      if (roomTypesDisabled[(7)] != TRUE && !AtLeastTwoAliveMons())
       {
-          roomTypesDisabled[PIKE_ROOM_DOUBLE_BATTLE] = TRUE;
+          roomTypesDisabled[(7)] = TRUE;
           numRoomCandidates--;
       }
-      if (roomTypesDisabled[PIKE_ROOM_STATUS] != TRUE && !AtLeastOneHealthyMon())
+      if (roomTypesDisabled[(3)] != TRUE && !AtLeastOneHealthyMon())
       {
-          roomTypesDisabled[PIKE_ROOM_STATUS] = TRUE;
+          roomTypesDisabled[(3)] = TRUE;
           numRoomCandidates--;
       }
 
        
       if (gSaveBlock2Ptr.frontier.pikeHealingRoomsDisabled)
       {
-          if (roomTypesDisabled[PIKE_ROOM_HEAL_FULL] != TRUE)
+          if (roomTypesDisabled[(1)] != TRUE)
           {
-              roomTypesDisabled[PIKE_ROOM_HEAL_FULL] = TRUE;
+              roomTypesDisabled[(1)] = TRUE;
               numRoomCandidates--;
           }
-          if (roomTypesDisabled[PIKE_ROOM_HEAL_PART] != TRUE)
+          if (roomTypesDisabled[(4)] != TRUE)
           {
-              roomTypesDisabled[PIKE_ROOM_HEAL_PART] = TRUE;
+              roomTypesDisabled[(4)] = TRUE;
               numRoomCandidates--;
           }
       }
@@ -567,7 +564,7 @@ export function GetNextRoomType(): any {
 
       nextRoomType = roomCandidates[Random() % numRoomCandidates];
       Free(roomCandidates);
-      if (nextRoomType == PIKE_ROOM_STATUS)
+      if (nextRoomType == (3))
           TryInflictRandomStatus();
 
       return nextRoomType;
@@ -590,23 +587,23 @@ export function TryGenerateBattlePikeWildMon(checkKeenEyeIntimidate: any): any {
       let pikeMonId: any = GetMonData(gEnemyParty[0], MON_DATA_SPECIES, NULL);
       pikeMonId = SpeciesToPikeMonId(pikeMonId);
 
-      if (gSaveBlock2Ptr.frontier.lvlMode != FRONTIER_LVL_50)
+      if (gSaveBlock2Ptr.frontier.lvlMode != (0))
       {
           monLevel = GetHighestLevelInPlayerParty();
-          if (monLevel < FRONTIER_MIN_LEVEL_OPEN)
+          if (monLevel < (60))
           {
-              monLevel = FRONTIER_MIN_LEVEL_OPEN;
+              monLevel = (60);
           }
           else
           {
               monLevel -= wildMons[headerId][pikeMonId].levelDelta;
-              if (monLevel < FRONTIER_MIN_LEVEL_OPEN)
-                  monLevel = FRONTIER_MIN_LEVEL_OPEN;
+              if (monLevel < (60))
+                  monLevel = (60);
           }
       }
       else
       {
-          monLevel = FRONTIER_MAX_LEVEL_50 - wildMons[headerId][pikeMonId].levelDelta;
+          monLevel = (50) - wildMons[headerId][pikeMonId].levelDelta;
       }
 
       if (checkKeenEyeIntimidate == TRUE && !CanEncounterWildMon(monLevel))
@@ -620,7 +617,7 @@ export function TryGenerateBattlePikeWildMon(checkKeenEyeIntimidate: any): any {
       else
           abilityNum = 0;
       SetMonData(gEnemyParty[0], MON_DATA_ABILITY_NUM,abilityNum);
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           SetMonMoveSlot(gEnemyParty[0], wildMons[headerId][pikeMonId].moves[i], i);
 
       CalculateMonStats(gEnemyParty[0]);
@@ -633,11 +630,11 @@ export function GetBattlePikeWildMonHeaderId(): any {
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
       let winStreak: any = gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode];
 
-      if (winStreak <= 20 * NUM_PIKE_ROOMS)
+      if (winStreak <= 20 * (14))
           headerId = 0;
-      else if (winStreak <= 40 * NUM_PIKE_ROOMS)
+      else if (winStreak <= 40 * (14))
           headerId = 1;
-      else if (winStreak <= 60 * NUM_PIKE_ROOMS)
+      else if (winStreak <= 60 * (14))
           headerId = 2;
       else
           headerId = 3;
@@ -658,7 +655,7 @@ export function StatusInflictionFadeOut(task: any): any {
           task.data[7] += task.data[4];
           if (task.data[7] > 16)
               task.data[7] = 16;
-          BlendPalettes(PALETTES_ALL, task.data[7], RGB(11, 11, 11));
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), task.data[7], RGB(11, 11, 11));
       }
 
       if (task.data[7] >= 16)
@@ -677,7 +674,7 @@ export function StatusInflictionFadeIn(task: any): any {
           task.data[7] -= task.data[5];
           if (task.data[7] < 0)
               task.data[7] = 0;
-          BlendPalettes(PALETTES_ALL, task.data[7], RGB(11, 11, 11));
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), task.data[7], RGB(11, 11, 11));
       }
 
       if (task.data[7] == 0)
@@ -709,7 +706,7 @@ export function StartStatusInflictionScreenFlash(fadeOutDelay: any, fadeInDelay:
 
 /** static bool8 IsStatusInflictionScreenFlashTaskFinished(void) */
 export function IsStatusInflictionScreenFlashTaskFinished(): any {
-  if (FindTaskIdByFunc(DoStatusInflictionScreenFlash) == TASK_NONE)
+  if (FindTaskIdByFunc(DoStatusInflictionScreenFlash) == ((0xFF)))
           return TRUE;
       else
           return FALSE;
@@ -740,7 +737,7 @@ export function TryHealMons(healCount: any): any {
       if (healCount == 0)
           return;
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
           indices[i] = i;
 
        
@@ -750,12 +747,12 @@ export function TryHealMons(healCount: any): any {
       {
           let temp: any = null;
 
-          i = Random() % FRONTIER_PARTY_SIZE;
-          j = Random() % FRONTIER_PARTY_SIZE;
+          i = Random() % (3);
+          j = Random() % (3);
           SWAP(indices[i], indices[j], temp);
       }
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           let canBeHealed: any = FALSE;
           let mon: any =gPlayerParty[indices[i]];
@@ -765,14 +762,14 @@ export function TryHealMons(healCount: any): any {
           {
               canBeHealed = TRUE;
           }
-          else if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) != AILMENT_NONE)
+          else if (GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) != (0))
           {
               canBeHealed = TRUE;
           }
           else
           {
               let ppBonuses: any = GetMonData(mon, MON_DATA_PP_BONUSES);
-              for (j = 0; j < MAX_MON_MOVES; j++)
+              for (j = 0; j < (4); j++)
               {
                   let move: any = GetMonData(mon, MON_DATA_MOVE1 + j);
                   max = CalculatePPWithBonus(move, ppBonuses, j);
@@ -817,22 +814,22 @@ export function SetHintedRoom(): any {
       {
           gSpecialVar_Result = TRUE;
           gSaveBlock2Ptr.frontier.pikeHintedRoomIndex = Random() % 6;
-          gSaveBlock2Ptr.frontier.pikeHintedRoomType = PIKE_ROOM_BRAIN;
+          gSaveBlock2Ptr.frontier.pikeHintedRoomType = (8);
       }
       else
       {
           gSaveBlock2Ptr.frontier.pikeHintedRoomIndex = Random() % 3;
           if (gSaveBlock2Ptr.frontier.pikeHealingRoomsDisabled)
-              count = NUM_PIKE_ROOM_TYPES - 3;  
+              count = (9) - 3;  
           else
-              count = NUM_PIKE_ROOM_TYPES - 1;  
+              count = (9) - 1;  
 
           roomCandidates = AllocZeroed(count);
           for (i = 0, id = 0; i < count; i++)
           {
               if (gSaveBlock2Ptr.frontier.pikeHealingRoomsDisabled)
               {
-                  if (i != PIKE_ROOM_HEAL_FULL && i != PIKE_ROOM_HEAL_PART)
+                  if (i != (1) && i != (4))
                       roomCandidates[id++] = i;
               }
               else
@@ -843,10 +840,10 @@ export function SetHintedRoom(): any {
 
           gSaveBlock2Ptr.frontier.pikeHintedRoomType = roomCandidates[Random() % count];
           Free(roomCandidates);
-          if (gSaveBlock2Ptr.frontier.pikeHintedRoomType == PIKE_ROOM_STATUS && !AtLeastOneHealthyMon())
-              gSaveBlock2Ptr.frontier.pikeHintedRoomType = PIKE_ROOM_NPC;
-          if (gSaveBlock2Ptr.frontier.pikeHintedRoomType == PIKE_ROOM_DOUBLE_BATTLE && !AtLeastTwoAliveMons())
-              gSaveBlock2Ptr.frontier.pikeHintedRoomType = PIKE_ROOM_NPC;
+          if (gSaveBlock2Ptr.frontier.pikeHintedRoomType == (3) && !AtLeastOneHealthyMon())
+              gSaveBlock2Ptr.frontier.pikeHintedRoomType = (2);
+          if (gSaveBlock2Ptr.frontier.pikeHintedRoomType == (7) && !AtLeastTwoAliveMons())
+              gSaveBlock2Ptr.frontier.pikeHintedRoomType = (2);
       }
 }
 
@@ -871,10 +868,10 @@ export function PrepareOneTrainer(difficult: any): any {
       if (!difficult)
           battleNum = 1;
       else
-          battleNum = FRONTIER_STAGES_PER_CHALLENGE - 1;
+          battleNum = (7) - 1;
 
       lvlMode = gSaveBlock2Ptr.frontier.lvlMode;
-      challengeNum = gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] / NUM_PIKE_ROOMS;
+      challengeNum = gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] / (14);
       do
       {
           trainerId = GetRandomScaledFrontierTrainerId(challengeNum, battleNum);
@@ -888,7 +885,7 @@ export function PrepareOneTrainer(difficult: any): any {
       gTrainerBattleOpponent_A = trainerId;
       gFacilityTrainers = gBattleFrontierTrainers;
       SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_A, 0);
-      if (gSaveBlock2Ptr.frontier.curChallengeBattleNum < NUM_PIKE_ROOMS)
+      if (gSaveBlock2Ptr.frontier.curChallengeBattleNum < (14))
           gSaveBlock2Ptr.frontier.trainerIds[gSaveBlock2Ptr.frontier.curChallengeBattleNum - 1] = gTrainerBattleOpponent_A;
 }
 
@@ -897,7 +894,7 @@ export function PrepareTwoTrainers(): any {
   let i: any = null;
       let trainerId: any = null;
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let challengeNum: any = gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] / NUM_PIKE_ROOMS;
+      let challengeNum: any = gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] / (14);
 
       gFacilityTrainers = gBattleFrontierTrainers;
       do
@@ -913,7 +910,7 @@ export function PrepareTwoTrainers(): any {
 
       gTrainerBattleOpponent_A = trainerId;
       SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_A, 0);
-      if (gSaveBlock2Ptr.frontier.curChallengeBattleNum <= NUM_PIKE_ROOMS)
+      if (gSaveBlock2Ptr.frontier.curChallengeBattleNum <= (14))
           gSaveBlock2Ptr.frontier.trainerIds[gSaveBlock2Ptr.frontier.curChallengeBattleNum - 1] = gTrainerBattleOpponent_A;
 
       do
@@ -929,7 +926,7 @@ export function PrepareTwoTrainers(): any {
 
       gTrainerBattleOpponent_B = trainerId;
       SetBattleFacilityTrainerGfxId(gTrainerBattleOpponent_B, 1);
-      if (gSaveBlock2Ptr.frontier.curChallengeBattleNum < NUM_PIKE_ROOMS)
+      if (gSaveBlock2Ptr.frontier.curChallengeBattleNum < (14))
           gSaveBlock2Ptr.frontier.trainerIds[gSaveBlock2Ptr.frontier.curChallengeBattleNum - 2] = gTrainerBattleOpponent_B;
 }
 
@@ -937,7 +934,7 @@ export function PrepareTwoTrainers(): any {
 export function ClearPikeTrainerIds(): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_PIKE_ROOMS; i++)
+      for (i = 0; i < (14); i++)
           gSaveBlock2Ptr.frontier.trainerIds[i] = 0xFFFF;
 }
 
@@ -945,12 +942,12 @@ export function ClearPikeTrainerIds(): any {
 export function BufferTrainerIntro(): any {
   if (gSpecialVar_0x8005 == 0)
       {
-          if (gTrainerBattleOpponent_A < FRONTIER_TRAINERS_COUNT)
+          if (gTrainerBattleOpponent_A < (300))
               FrontierSpeechToString(gFacilityTrainers[gTrainerBattleOpponent_A].speechBefore);
       }
       else if (gSpecialVar_0x8005 == 1)
       {
-          if (gTrainerBattleOpponent_B < FRONTIER_TRAINERS_COUNT)
+          if (gTrainerBattleOpponent_B < (300))
               FrontierSpeechToString(gFacilityTrainers[gTrainerBattleOpponent_B].speechBefore);
       }
 }
@@ -962,7 +959,7 @@ export function AtLeastTwoAliveMons(): any {
 
       mon =gPlayerParty[0];
       countDead = 0;
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++, mon++)
+      for (i = 0; i < (3); i++, mon++)
       {
           if (GetMonData(mon, MON_DATA_HP) == 0)
               countDead++;
@@ -978,12 +975,12 @@ export function AtLeastTwoAliveMons(): any {
 export function GetPikeQueenFightType(nextRoom: any): any {
   let numPikeSymbols: any = null;
 
-      let facility: any = FRONTIER_FACILITY_PIKE;
-      let ret: any = FRONTIER_BRAIN_NOT_READY;
+      let facility: any = (5);
+      let ret: any = (0);
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
       let winStreak: any = gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode];
       winStreak += nextRoom;
-      numPikeSymbols = GetPlayerSymbolCountForFacility(FRONTIER_FACILITY_PIKE);
+      numPikeSymbols = GetPlayerSymbolCountForFacility((5));
 
       switch (numPikeSymbols)
       {
@@ -995,11 +992,11 @@ export function GetPikeQueenFightType(nextRoom: any): any {
       case 2:
       default:
           if (winStreak == sFrontierBrainStreakAppearances[facility][0] - sFrontierBrainStreakAppearances[facility][3])
-              ret = FRONTIER_BRAIN_STREAK;
+              ret = (3);
           else if (winStreak == sFrontierBrainStreakAppearances[facility][1] - sFrontierBrainStreakAppearances[facility][3]
                    || (winStreak > sFrontierBrainStreakAppearances[facility][1]
                        && (winStreak - sFrontierBrainStreakAppearances[facility][1] + sFrontierBrainStreakAppearances[facility][3]) % sFrontierBrainStreakAppearances[facility][2] == 0))
-              ret = FRONTIER_BRAIN_STREAK_LONG;
+              ret = (4);
           break;
       }
 
@@ -1029,16 +1026,16 @@ export function IsPartyFullHealed(): any {
   let i, j;
 
       gSpecialVar_Result = TRUE;
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           let canBeHealed: any = FALSE;
           let mon: any =gPlayerParty[i];
           let curr: any = GetMonData(mon, MON_DATA_HP);
           let max: any = GetMonData(mon, MON_DATA_MAX_HP);
-          if (curr >= max && GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == AILMENT_NONE)
+          if (curr >= max && GetAilmentFromStatus(GetMonData(mon, MON_DATA_STATUS)) == (0))
           {
               let ppBonuses: any = GetMonData(mon, MON_DATA_PP_BONUSES);
-              for (j = 0; j < MAX_MON_MOVES; j++)
+              for (j = 0; j < (4); j++)
               {
                   let move: any = GetMonData(mon, MON_DATA_MOVE1 + j);
                   max = CalculatePPWithBonus(move, ppBonuses, j);
@@ -1067,7 +1064,7 @@ export function IsPartyFullHealed(): any {
 export function SaveMonHeldItems(): any {
   let i: any = null;
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           let heldItem: any = GetMonData(gSaveBlock1Ptr.playerParty[gSaveBlock2Ptr.frontier.selectedPartyMons[i] - 1],
                                     MON_DATA_HELD_ITEM);
@@ -1079,7 +1076,7 @@ export function SaveMonHeldItems(): any {
 export function RestoreMonHeldItems(): any {
   let i: any = null;
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           SetMonData(gPlayerParty[gSaveBlock2Ptr.frontier.selectedPartyMons[i] - 1],
                      MON_DATA_HELD_ITEM,gSaveBlock2Ptr.frontier.pikeHeldItemsBackup[i]);
@@ -1105,7 +1102,7 @@ export function CanEncounterWildMon(enemyMonLevel: any): any {
   if (!GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG))
       {
           let monAbility: any = GetMonAbility(gPlayerParty[0]);
-          if (monAbility == ABILITY_KEEN_EYE || monAbility == ABILITY_INTIMIDATE)
+          if (monAbility == (51) || monAbility == (22))
           {
               let playerMonLevel: any = GetMonData(gPlayerParty[0], MON_DATA_LEVEL);
               if (playerMonLevel > 5 && enemyMonLevel <= playerMonLevel - 5 && Random() % 2 == 0)
@@ -1120,9 +1117,9 @@ export function CanEncounterWildMon(enemyMonLevel: any): any {
 export function SpeciesToPikeMonId(species: any): any {
   let ret: any = null;
 
-      if (species == SPECIES_SEVIPER)
+      if (species == (379))
           ret = 0;
-      else if (species == SPECIES_MILOTIC)
+      else if (species == (329))
           ret = 1;
       else
           ret = 2;

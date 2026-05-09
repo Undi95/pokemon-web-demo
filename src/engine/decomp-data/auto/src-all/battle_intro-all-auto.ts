@@ -17,7 +17,11 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattleIntroSlideFuncs: any = null;
+let gBattle_BG0_Y: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gBattle_BG2_X: any = null;
+let gBattle_BG2_Y: any = null;
 let sBgCnt: any = null;
 /** void SetAnimBgAttribute(u8 bgId, u8 attributeId, u8 value) */
 export function SetAnimBgAttribute(bgId: any, attributeId: any, value: any): any {
@@ -86,11 +90,11 @@ export function GetAnimBgAttribute(bgId: any, attributeId: any): any {
 export function HandleIntroSlide(environment: any): any {
   let taskId: any = null;
 
-      if ((gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) && gPartnerTrainerId != TRAINER_STEVEN_PARTNER)
+      if ((gBattleTypeFlags & ((1 << 22))) && gPartnerTrainerId != (3075))
       {
           taskId = CreateTask(BattleIntroSlidePartner, 0);
       }
-      else if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+      else if (gBattleTypeFlags & ((1 << 1)))
       {
           taskId = CreateTask(BattleIntroSlideLink, 0);
       }
@@ -98,9 +102,9 @@ export function HandleIntroSlide(environment: any): any {
       {
           taskId = CreateTask(BattleIntroSlide3, 0);
       }
-      else if ((gBattleTypeFlags & BATTLE_TYPE_KYOGRE_GROUDON) && gGameVersion != VERSION_RUBY)
+      else if ((gBattleTypeFlags & ((1 << 12))) && gGameVersion != (2))
       {
-          environment = BATTLE_ENVIRONMENT_UNDERWATER;
+          environment = (3);
           taskId = CreateTask(BattleIntroSlide2, 0);
       }
       else
@@ -139,7 +143,7 @@ export function BattleIntroSlide1(taskId: any): any {
       switch (gTasks[taskId].tState)
       {
       case 0:
-          if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+          if (gBattleTypeFlags & ((1 << 1)))
           {
               gTasks[taskId].data[2] = 16;
               gTasks[taskId].tState++;
@@ -174,7 +178,7 @@ export function BattleIntroSlide1(taskId: any): any {
           }
           else
           {
-              if (gTasks[taskId].tEnvironment == BATTLE_ENVIRONMENT_LONG_GRASS)
+              if (gTasks[taskId].tEnvironment == (1))
               {
                   if (gBattle_BG1_Y != (-80))
                       gBattle_BG1_Y -= 2;
@@ -222,16 +226,16 @@ export function BattleIntroSlide2(taskId: any): any {
 
       switch (gTasks[taskId].tEnvironment)
       {
-      case BATTLE_ENVIRONMENT_SAND:
-      case BATTLE_ENVIRONMENT_WATER:
+      case (2):
+      case (4):
           gBattle_BG1_X += 8;
           break;
-      case BATTLE_ENVIRONMENT_UNDERWATER:
+      case (3):
           gBattle_BG1_X += 6;
           break;
       }
 
-      if (gTasks[taskId].tEnvironment == BATTLE_ENVIRONMENT_WATER)
+      if (gTasks[taskId].tEnvironment == (4))
       {
           gBattle_BG1_Y = Cos2(gTasks[taskId].data[6]) / 512 - 8;
           if (gTasks[taskId].data[6] < 180)
@@ -247,7 +251,7 @@ export function BattleIntroSlide2(taskId: any): any {
       {
       case 0:
           gTasks[taskId].data[4] = 16;
-          if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+          if (gBattleTypeFlags & ((1 << 1)))
           {
               gTasks[taskId].data[2] = 16;
               gTasks[taskId].tState++;
@@ -340,7 +344,7 @@ export function BattleIntroSlide3(taskId: any): any {
           SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(8, 8));
           SetGpuReg(REG_OFFSET_BLDY, 0);
           gTasks[taskId].data[4] = BLDALPHA_BLEND(8, 8);
-          if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))
+          if (gBattleTypeFlags & (((1 << 1)) | ((1 << 25))))
           {
               gTasks[taskId].data[2] = 16;
               gTasks[taskId].tState++;

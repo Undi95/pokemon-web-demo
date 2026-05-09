@@ -15,6 +15,21 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let baseY: any = null;
+let battler1Y: any = null;
+let battler2Y: any = null;
+let bottom: any = null;
+let bottomDistance: any = null;
+let gBattle_WIN0H: any = null;
+let gBattle_WIN0V: any = null;
+let right: any = null;
+let rightDistance: any = null;
+let startY: any = null;
+let top: any = null;
+let topDistance: any = null;
+let y: any = null;
 /** static void AnimConfuseRayBallBounce(struct Sprite *sprite) */
 export function AnimConfuseRayBallBounce(sprite: any): any {
   InitSpritePosToAnimAttacker(sprite, TRUE);
@@ -50,7 +65,7 @@ export function AnimConfuseRayBallBounce_Step1(sprite: any): any {
           return;
       if (r0 <= 0)
           return;
-      PlaySE12WithPanning(SE_M_CONFUSE_RAY, gAnimCustomPanning);
+      PlaySE12WithPanning((196), gAnimCustomPanning);
 }
 
 /** static void AnimConfuseRayBallBounce_Step2(struct Sprite *sprite) */
@@ -69,7 +84,7 @@ export function AnimConfuseRayBallBounce_Step2(sprite: any): any {
       if (r2 == 0 || r2 > 196)
       {
           if (r0 > 0)
-              PlaySE(SE_M_CONFUSE_RAY);
+              PlaySE((196));
       }
 
       if (sprite.data[6] == 0)
@@ -138,7 +153,7 @@ export function AnimTask_NightShadeClone(taskId: any): any {
   let spriteId: any = null;
       SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));
       SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 0x10));
-      spriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      spriteId = GetAnimBattlerSpriteId((0));
       PrepareBattlerSpriteForRotScale(spriteId, ST_OAM_OBJ_BLEND);
       SetSpriteRotScale(spriteId, 128, 128, 0);
       gSprites[spriteId].invisible = FALSE;
@@ -174,7 +189,7 @@ export function AnimTask_NightShadeClone_Step2(taskId: any): any {
           return;
       }
 
-      spriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      spriteId = GetAnimBattlerSpriteId((0));
       gTasks[taskId].data[0] += 8;
       if (gTasks[taskId].data[0] <= 0xFF)
       {
@@ -309,7 +324,7 @@ export function AnimTask_NightmareClone(taskId: any): any {
   let task: any = null;
 
       task =gTasks[taskId];
-      task.data[0] = CloneBattlerSpriteWithBlend(ANIM_TARGET);
+      task.data[0] = CloneBattlerSpriteWithBlend((1));
       if (task.data[0] < 0)
       {
           DestroyAnimVisualTask(taskId);
@@ -322,7 +337,7 @@ export function AnimTask_NightmareClone(taskId: any): any {
       SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL));
       SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(task.data[2], task.data[3]));
       gSprites[task.data[0]].data[0] = 80;
-      if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) == (0))
       {
           gSprites[task.data[0]].data[1] = -144;
           gSprites[task.data[0]].data[2] = 112;
@@ -395,17 +410,17 @@ export function AnimTask_SpiteTargetShadow_Step1(taskId: any): any {
       switch (task.data[15])
       {
       case 0:
-          task.data[14] = AllocSpritePalette(ANIM_TAG_BENT_SPOON);
+          task.data[14] = AllocSpritePalette((((10000) + 97)));
           if (task.data[14] == 0xFF || task.data[14] == 0xF)
           {
               DestroyAnimVisualTask(taskId);
           }
           else
           {
-              task.data[0] = CloneBattlerSpriteWithBlend(ANIM_TARGET);
+              task.data[0] = CloneBattlerSpriteWithBlend((1));
               if (task.data[0] < 0)
               {
-                  FreeSpritePaletteByTag(ANIM_TAG_BENT_SPOON);
+                  FreeSpritePaletteByTag((((10000) + 97)));
                   DestroyAnimVisualTask(taskId);
               }
               else
@@ -418,7 +433,7 @@ export function AnimTask_SpiteTargetShadow_Step1(taskId: any): any {
                   task.data[1] = 0;
                   task.data[2] = 0;
                   task.data[3] = 16;
-                  task.data[13] = GetAnimBattlerSpriteId(ANIM_TARGET);
+                  task.data[13] = GetAnimBattlerSpriteId((1));
                   task.data[4] = OBJ_PLTT_ID2(gSprites[task.data[13]].oam.paletteNum);
                   if (position == 1)
                   {
@@ -447,9 +462,9 @@ export function AnimTask_SpiteTargetShadow_Step1(taskId: any): any {
               startLine = 0;
 
           if (position == 1)
-              task.data[10] = ScanlineEffect_InitWave(startLine, startLine + 64, 2, 6, 0, SCANLINE_EFFECT_REG_BG1HOFS, TRUE);
+              task.data[10] = ScanlineEffect_InitWave(startLine, startLine + 64, 2, 6, 0, ((REG_ADDR_BG1HOFS - REG_ADDR_BG0HOFS)), TRUE);
           else
-              task.data[10] = ScanlineEffect_InitWave(startLine, startLine + 64, 2, 6, 0, SCANLINE_EFFECT_REG_BG2HOFS, TRUE);
+              task.data[10] = ScanlineEffect_InitWave(startLine, startLine + 64, 2, 6, 0, ((REG_ADDR_BG2HOFS - REG_ADDR_BG0HOFS)), TRUE);
 
           task.data[15]++;
           break;
@@ -506,7 +521,7 @@ export function AnimTask_SpiteTargetShadow_Step3(taskId: any): any {
       {
       case 0:
           gScanlineEffect.state = 3;
-          task.data[14] = GetAnimBattlerSpriteId(ANIM_TARGET);
+          task.data[14] = GetAnimBattlerSpriteId((1));
           if (rank == 1)
               ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG1_ON);
           else
@@ -518,7 +533,7 @@ export function AnimTask_SpiteTargetShadow_Step3(taskId: any): any {
       case 2:
           gSprites[task.data[14]].invisible = TRUE;
           DestroySpriteWithActiveSheet(gSprites[task.data[0]]);
-          FreeSpritePaletteByTag(ANIM_TAG_BENT_SPOON);
+          FreeSpritePaletteByTag((((10000) + 97)));
           SetGpuReg(REG_OFFSET_BLDCNT, 0);
           SetGpuReg(REG_OFFSET_BLDALPHA, 0);
           if (rank == 1)
@@ -612,7 +627,7 @@ export function AnimTask_DestinyBondWhiteShadow(taskId: any): any {
                && IsBattlerSpriteVisible(battler))
               {
                   spriteId = CreateSprite(gDestinyBondWhiteShadowSpriteTemplate, baseX, baseY, 55);
-                  if (spriteId != MAX_SPRITES)
+                  if (spriteId != (64))
                   {
                       x = GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2);
                       y = GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_BOTTOM);
@@ -634,7 +649,7 @@ export function AnimTask_DestinyBondWhiteShadow(taskId: any): any {
       else
       {
           spriteId = CreateSprite(gDestinyBondWhiteShadowSpriteTemplate, baseX, baseY, 55);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               x = 48;
               y = 40;
@@ -746,7 +761,7 @@ export function AnimTask_CurseStretchingBlackBg(taskId: any): any {
       SetGpuReg(REG_OFFSET_BLDCNT, (BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_DARKEN));
       SetGpuReg(REG_OFFSET_BLDY, 16);
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER || IsContest())
+      if (GetBattlerSide(gBattleAnimAttacker) != (0) || IsContest())
           startX = 40;
       else
           startX = 200;
@@ -799,7 +814,7 @@ export function AnimTask_CurseStretchingBlackBg_Step1(taskId: any): any {
           top = 0;
           bottom = 112;
           selectedPalettes = GetBattlePalettesMask(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE);
-          BeginNormalPaletteFade(selectedPalettes, 0, 16, 16, RGB_BLACK);
+          BeginNormalPaletteFade(selectedPalettes, 0, 16, 16, (RGB(0, 0, 0)));
           gTasks[taskId].func = AnimTask_CurseStretchingBlackBg_Step2;
       }
 
@@ -829,7 +844,7 @@ export function AnimCurseNail(sprite: any): any {
       let xDelta2: any = null;
 
       InitSpritePosToAnimAttacker(sprite, TRUE);
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
       {
           xDelta = 24;
           xDelta2 = -2;
@@ -920,7 +935,7 @@ export function AnimGhostStatusSprite(sprite: any): any {
       let coeffA: any = null;
 
       sprite.x2 = Sin(sprite.data[0], 12);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.x2 = -sprite.x2;
 
       sprite.data[0] = (sprite.data[0] + 6) & 0xFF;
@@ -995,10 +1010,10 @@ export function AnimTask_GrudgeFlames_Step(taskId: any): any {
           for (i = 0; i < 6; i++)
           {
               spriteId = CreateSprite(gGrudgeFlameSpriteTemplate, task.data[9], task.data[10], task.data[6]);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   gSprites[spriteId].data[0] = taskId;
-                  gSprites[spriteId].data[1] = GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER;
+                  gSprites[spriteId].data[1] = GetBattlerSide(gBattleAnimAttacker) == (0);
 
                   gSprites[spriteId].data[2] = (i * 42) & 0xFF;
                   gSprites[spriteId].data[3] = task.data[11];

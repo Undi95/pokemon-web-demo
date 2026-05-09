@@ -17,21 +17,16 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCompatibilityMessages: any = null;
-let sDaycareLevelMenuWindowTemplate: any = null;
-let sDaycareListMenuLevelTemplate: any = null;
-let sHatchedEggEggMoves: any = null;
-let sHatchedEggFatherMoves: any = null;
-let sHatchedEggFinalMoves: any = null;
-let sHatchedEggLevelUpMoves: any = null;
-let sHatchedEggMotherMoves: any = null;
-let sJapaneseEggNickname: any = null;
+let count: any = null;
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_0x8005: any = null;
+let j: any = null;
 /** u8 CountPokemonInDaycare(struct DayCare *daycare) */
 export function CountPokemonInDaycare(daycare: any): any {
   let i, count;
       count = 0;
 
-      for (i = 0; i < DAYCARE_MON_COUNT; i++)
+      for (i = 0; i < (2); i++)
       {
           if (GetBoxMonData(daycare.mons[i].mon, MON_DATA_SPECIES) != 0)
               count++;
@@ -45,12 +40,12 @@ export function InitDaycareMailRecordMixing(daycare: any, mixMail: any): any {
   let i: any = null;
       let numDaycareMons: any = 0;
 
-      for (i = 0; i < DAYCARE_MON_COUNT; i++)
+      for (i = 0; i < (2); i++)
       {
-          if (GetBoxMonData(daycare.mons[i].mon, MON_DATA_SPECIES) != SPECIES_NONE)
+          if (GetBoxMonData(daycare.mons[i].mon, MON_DATA_SPECIES) != (0))
           {
               numDaycareMons++;
-              if (GetBoxMonData(daycare.mons[i].mon, MON_DATA_HELD_ITEM) == ITEM_NONE)
+              if (GetBoxMonData(daycare.mons[i].mon, MON_DATA_HELD_ITEM) == (0))
                   mixMail.cantHoldItem[i] = FALSE;
               else
                   mixMail.cantHoldItem[i] = TRUE;
@@ -69,9 +64,9 @@ export function InitDaycareMailRecordMixing(daycare: any, mixMail: any): any {
 export function Daycare_FindEmptySpot(daycare: any): any {
   let i: any = null;
 
-      for (i = 0; i < DAYCARE_MON_COUNT; i++)
+      for (i = 0; i < (2); i++)
       {
-          if (GetBoxMonData(daycare.mons[i].mon, MON_DATA_SPECIES) == SPECIES_NONE)
+          if (GetBoxMonData(daycare.mons[i].mon, MON_DATA_SPECIES) == (0))
               return i;
       }
 
@@ -87,7 +82,7 @@ export function StorePokemonInDaycare(mon: any, daycareMon: any): any {
           StringCopy(daycareMon.mail.otName, gSaveBlock2Ptr.playerName);
           GetMonNickname2(mon, daycareMon.mail.monName);
           StripExtCtrlCodes(daycareMon.mail.monName);
-          daycareMon.mail.gameLanguage = GAME_LANGUAGE;
+          daycareMon.mail.gameLanguage = (((3)));
           daycareMon.mail.monLanguage = GetMonData(mon, MON_DATA_LANGUAGE);
           mailId = GetMonData(mon, MON_DATA_MAIL);
           daycareMon.mail.message = gSaveBlock1Ptr.mail[mailId];
@@ -116,8 +111,8 @@ export function StoreSelectedPokemonInDaycare(): any {
 
 /** static void ShiftDaycareSlots(struct DayCare *daycare) */
 export function ShiftDaycareSlots(daycare: any): any {
-  if (GetBoxMonData(daycare.mons[1].mon, MON_DATA_SPECIES) != SPECIES_NONE
-          && GetBoxMonData(daycare.mons[0].mon, MON_DATA_SPECIES) == SPECIES_NONE)
+  if (GetBoxMonData(daycare.mons[1].mon, MON_DATA_SPECIES) != (0)
+          && GetBoxMonData(daycare.mons[0].mon, MON_DATA_SPECIES) == (0))
       {
           daycare.mons[0].mon = daycare.mons[1].mon;
           ZeroBoxMonData(daycare.mons[1].mon);
@@ -135,7 +130,7 @@ export function ApplyDaycareExperience(mon: any): any {
       let firstMove: any = null;
       let learnedMove: any = null;
 
-      for (i = 0; i < MAX_LEVEL; i++)
+      for (i = 0; i < (100); i++)
       {
            
           if (TryIncrementMonLevel(mon))
@@ -145,7 +140,7 @@ export function ApplyDaycareExperience(mon: any): any {
               while ((learnedMove = MonTryLearningNewMove(mon, firstMove)) != 0)
               {
                   firstMove = FALSE;
-                  if (learnedMove == MON_HAS_MAX_MOVES)
+                  if (learnedMove == (0xFFFF))
                       DeleteFirstMoveAndGiveMoveToMon(mon, gMoveToLearn);
               }
           }
@@ -169,17 +164,17 @@ export function TakeSelectedPokemonFromDaycare(daycareMon: any): any {
       species = GetBoxMonData(daycareMon.mon, MON_DATA_SPECIES);
       BoxMonToMon(daycareMon.mon,pokemon);
 
-      if (GetMonData(pokemon, MON_DATA_LEVEL) != MAX_LEVEL)
+      if (GetMonData(pokemon, MON_DATA_LEVEL) != (100))
       {
           experience = GetMonData(pokemon, MON_DATA_EXP) + daycareMon.steps;
           SetMonData(pokemon, MON_DATA_EXP,experience);
           ApplyDaycareExperience(pokemon);
       }
 
-      gPlayerParty[PARTY_SIZE - 1] = pokemon;
+      gPlayerParty[(6) - 1] = pokemon;
       if (daycareMon.mail.message.itemId)
       {
-          GiveMailToMon(gPlayerParty[PARTY_SIZE - 1],daycareMon.mail.message);
+          GiveMailToMon(gPlayerParty[(6) - 1],daycareMon.mail.message);
           ClearDaycareMonMail(daycareMon.mail);
       }
 
@@ -262,9 +257,9 @@ export function GetNumLevelsGainedFromDaycare(): any {
 export function ClearDaycareMonMail(mail: any): any {
   let i: any = null;
 
-      for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)
+      for (i = 0; i < (7) + 1; i++)
           mail.otName[i] = 0;
-      for (i = 0; i < POKEMON_NAME_LENGTH + 1; i++)
+      for (i = 0; i < (10) + 1; i++)
           mail.monName[i] = 0;
 
       ClearMail(mail.message);
@@ -284,12 +279,12 @@ export function GetEggSpecies(species: any): any {
 
        
        
-      for (i = 0; i < EVOS_PER_MON; i++)
+      for (i = 0; i < (5); i++)
       {
           found = FALSE;
-          for (j = 1; j < NUM_SPECIES; j++)
+          for (j = 1; j < ((412)); j++)
           {
-              for (k = 0; k < EVOS_PER_MON; k++)
+              for (k = 0; k < (5); k++)
               {
                   if (gEvolutionTable[j][k].targetSpecies == species)
                   {
@@ -303,7 +298,7 @@ export function GetEggSpecies(species: any): any {
                   break;
           }
 
-          if (j == NUM_SPECIES)
+          if (j == ((412)))
               break;
       }
 
@@ -318,22 +313,22 @@ export function GetParentToInheritNature(daycare: any): any {
       let parent: any = -1;
 
        
-      for (i = 0; i < DAYCARE_MON_COUNT; i++)
+      for (i = 0; i < (2); i++)
       {
-          if (GetBoxMonGender(daycare.mons[i].mon) == MON_FEMALE)
+          if (GetBoxMonGender(daycare.mons[i].mon) == (0xFE))
               parent = i;
       }
 
        
-      for (dittoCount = 0, i = 0; i < DAYCARE_MON_COUNT; i++)
+      for (dittoCount = 0, i = 0; i < (2); i++)
       {
           species[i] = GetBoxMonData(daycare.mons[i].mon, MON_DATA_SPECIES);
-          if (species[i] == SPECIES_DITTO)
+          if (species[i] == (132))
               dittoCount++, parent = i;
       }
 
        
-      if (dittoCount == DAYCARE_MON_COUNT)
+      if (dittoCount == (2))
       {
           if (Random() >= USHRT_MAX / 2)
               parent = 0;
@@ -342,7 +337,7 @@ export function GetParentToInheritNature(daycare: any): any {
       }
 
        
-      if (GetBoxMonData(daycare.mons[parent].mon, MON_DATA_HELD_ITEM) != ITEM_EVERSTONE
+      if (GetBoxMonData(daycare.mons[parent].mon, MON_DATA_HELD_ITEM) != (195)
           || Random() >= USHRT_MAX / 2)
       {
           return -1;
@@ -382,13 +377,13 @@ export function _TriggerPendingDaycareEgg(daycare: any): any {
           daycare.offspringPersonality = personality;
       }
 
-      FlagSet(FLAG_PENDING_DAYCARE_EGG);
+      FlagSet((0x86));
 }
 
 /** static void _TriggerPendingDaycareMaleEgg(struct DayCare *daycare) */
 export function _TriggerPendingDaycareMaleEgg(daycare: any): any {
-  daycare.offspringPersonality = (Random()) | (EGG_GENDER_MALE);
-      FlagSet(FLAG_PENDING_DAYCARE_EGG);
+  daycare.offspringPersonality = (Random()) | ((0x8000));
+      FlagSet((0x86));
 }
 
 /** void TriggerPendingDaycareEgg(void) */
@@ -402,13 +397,13 @@ export function RemoveIVIndexFromList(ivs: any, selectedIv: any): any {
       let temp: any = [];
 
       ivs[selectedIv] = 0xFF;
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
           temp[i] = ivs[i];
       }
 
       j = 0;
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
           if (temp[i] != 0xFF)
               ivs[j++] = temp[i];
@@ -424,26 +419,26 @@ export function InheritIVs(egg: any, daycare: any): any {
       let iv: any = null;
 
        
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
       {
           availableIVs[i] = i;
       }
 
        
-      for (i = 0; i < INHERITED_IV_COUNT; i++)
+      for (i = 0; i < (3); i++)
       {
-          selectedIvs[i] = availableIVs[Random() % (NUM_STATS - i)];
+          selectedIvs[i] = availableIVs[Random() % ((6) - i)];
           RemoveIVIndexFromList(availableIVs, i);
       }
 
        
-      for (i = 0; i < INHERITED_IV_COUNT; i++)
+      for (i = 0; i < (3); i++)
       {
-          whichParents[i] = Random() % DAYCARE_MON_COUNT;
+          whichParents[i] = Random() % (2);
       }
 
        
-      for (i = 0; i < INHERITED_IV_COUNT; i++)
+      for (i = 0; i < (3); i++)
       {
           switch (selectedIvs[i])
           {
@@ -494,7 +489,7 @@ export function GetEggMoves(pokemon: any, eggMoves: any): any {
           }
       }
 
-      for (i = 0; i < EGG_MOVES_ARRAY_COUNT; i++)
+      for (i = 0; i < (10); i++)
       {
           if (gEggMoves[eggMoveIdx + i] > EGG_MOVES_SPECIES_OFFSET)
               break;
@@ -514,19 +509,19 @@ export function BuildEggMoveset(egg: any, father: any, mother: any): any {
       let i, j;
 
       numSharedParentMoves = 0;
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
-          sHatchedEggMotherMoves[i] = MOVE_NONE;
-          sHatchedEggFatherMoves[i] = MOVE_NONE;
-          sHatchedEggFinalMoves[i] = MOVE_NONE;
+          sHatchedEggMotherMoves[i] = (0);
+          sHatchedEggFatherMoves[i] = (0);
+          sHatchedEggFinalMoves[i] = (0);
       }
-      for (i = 0; i < EGG_MOVES_ARRAY_COUNT; i++)
-          sHatchedEggEggMoves[i] = MOVE_NONE;
-      for (i = 0; i < EGG_LVL_UP_MOVES_ARRAY_COUNT; i++)
-          sHatchedEggLevelUpMoves[i] = MOVE_NONE;
+      for (i = 0; i < (10); i++)
+          sHatchedEggEggMoves[i] = (0);
+      for (i = 0; i < (((20) > 50 ? (20) : 50)); i++)
+          sHatchedEggLevelUpMoves[i] = (0);
 
       numLevelUpMoves = GetLevelUpMovesBySpecies(GetMonData(egg, MON_DATA_SPECIES), sHatchedEggLevelUpMoves);
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           sHatchedEggFatherMoves[i] = GetBoxMonData(father, MON_DATA_MOVE1 + i);
           sHatchedEggMotherMoves[i] = GetBoxMonData(mother, MON_DATA_MOVE1 + i);
@@ -534,15 +529,15 @@ export function BuildEggMoveset(egg: any, father: any, mother: any): any {
 
       numEggMoves = GetEggMoves(egg, sHatchedEggEggMoves);
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
-          if (sHatchedEggFatherMoves[i] != MOVE_NONE)
+          if (sHatchedEggFatherMoves[i] != (0))
           {
               for (j = 0; j < numEggMoves; j++)
               {
                   if (sHatchedEggFatherMoves[i] == sHatchedEggEggMoves[j])
                   {
-                      if (GiveMoveToMon(egg, sHatchedEggFatherMoves[i]) == MON_HAS_MAX_MOVES)
+                      if (GiveMoveToMon(egg, sHatchedEggFatherMoves[i]) == (0xFFFF))
                           DeleteFirstMoveAndGiveMoveToMon(egg, sHatchedEggFatherMoves[i]);
                       break;
                   }
@@ -553,40 +548,40 @@ export function BuildEggMoveset(egg: any, father: any, mother: any): any {
               break;
           }
       }
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
-          if (sHatchedEggFatherMoves[i] != MOVE_NONE)
+          if (sHatchedEggFatherMoves[i] != (0))
           {
-              for (j = 0; j < NUM_TECHNICAL_MACHINES + NUM_HIDDEN_MACHINES; j++)
+              for (j = 0; j < (50) + (8); j++)
               {
-                  if (sHatchedEggFatherMoves[i] == ItemIdToBattleMoveId(ITEM_TM01 + j) && CanMonLearnTMHM(egg, j))
+                  if (sHatchedEggFatherMoves[i] == ItemIdToBattleMoveId((289) + j) && CanMonLearnTMHM(egg, j))
                   {
-                      if (GiveMoveToMon(egg, sHatchedEggFatherMoves[i]) == MON_HAS_MAX_MOVES)
+                      if (GiveMoveToMon(egg, sHatchedEggFatherMoves[i]) == (0xFFFF))
                           DeleteFirstMoveAndGiveMoveToMon(egg, sHatchedEggFatherMoves[i]);
                   }
               }
           }
       }
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
-          if (sHatchedEggFatherMoves[i] == MOVE_NONE)
+          if (sHatchedEggFatherMoves[i] == (0))
               break;
-          for (j = 0; j < MAX_MON_MOVES; j++)
+          for (j = 0; j < (4); j++)
           {
-              if (sHatchedEggFatherMoves[i] == sHatchedEggMotherMoves[j] && sHatchedEggFatherMoves[i] != MOVE_NONE)
+              if (sHatchedEggFatherMoves[i] == sHatchedEggMotherMoves[j] && sHatchedEggFatherMoves[i] != (0))
                   sHatchedEggFinalMoves[numSharedParentMoves++] = sHatchedEggFatherMoves[i];
           }
       }
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
-          if (sHatchedEggFinalMoves[i] == MOVE_NONE)
+          if (sHatchedEggFinalMoves[i] == (0))
               break;
           for (j = 0; j < numLevelUpMoves; j++)
           {
-              if (sHatchedEggLevelUpMoves[j] != MOVE_NONE && sHatchedEggFinalMoves[i] == sHatchedEggLevelUpMoves[j])
+              if (sHatchedEggLevelUpMoves[j] != (0) && sHatchedEggFinalMoves[i] == sHatchedEggLevelUpMoves[j])
               {
-                  if (GiveMoveToMon(egg, sHatchedEggFinalMoves[i]) == MON_HAS_MAX_MOVES)
+                  if (GiveMoveToMon(egg, sHatchedEggFinalMoves[i]) == (0xFFFF))
                       DeleteFirstMoveAndGiveMoveToMon(egg, sHatchedEggFinalMoves[i]);
                   break;
               }
@@ -608,18 +603,18 @@ export function RejectEggFromDayCare(): any {
 /** static void AlterEggSpeciesWithIncenseItem(u16 *species, struct DayCare *daycare) */
 export function AlterEggSpeciesWithIncenseItem(species: any, daycare: any): any {
   let motherItem, fatherItem;
-      if (species == SPECIES_WYNAUT || species == SPECIES_AZURILL)
+      if (species == (360) || species == (350))
       {
           motherItem = GetBoxMonData(daycare.mons[0].mon, MON_DATA_HELD_ITEM);
           fatherItem = GetBoxMonData(daycare.mons[1].mon, MON_DATA_HELD_ITEM);
-          if (species == SPECIES_WYNAUT && motherItem != ITEM_LAX_INCENSE && fatherItem != ITEM_LAX_INCENSE)
+          if (species == (360) && motherItem != (221) && fatherItem != (221))
           {
-              species = SPECIES_WOBBUFFET;
+              species = (202);
           }
 
-          if (species == SPECIES_AZURILL && motherItem != ITEM_SEA_INCENSE && fatherItem != ITEM_SEA_INCENSE)
+          if (species == (350) && motherItem != (220) && fatherItem != (220))
           {
-              species = SPECIES_MARILL;
+              species = (183);
           }
       }
 }
@@ -629,10 +624,10 @@ export function GiveVoltTackleIfLightBall(mon: any, daycare: any): any {
   let motherItem: any = GetBoxMonData(daycare.mons[0].mon, MON_DATA_HELD_ITEM);
       let fatherItem: any = GetBoxMonData(daycare.mons[1].mon, MON_DATA_HELD_ITEM);
 
-      if (motherItem == ITEM_LIGHT_BALL || fatherItem == ITEM_LIGHT_BALL)
+      if (motherItem == (202) || fatherItem == (202))
       {
-          if (GiveMoveToMon(mon, MOVE_VOLT_TACKLE) == MON_HAS_MAX_MOVES)
-              DeleteFirstMoveAndGiveMoveToMon(mon, MOVE_VOLT_TACKLE);
+          if (GiveMoveToMon(mon, (344)) == (0xFFFF))
+              DeleteFirstMoveAndGiveMoveToMon(mon, (344));
       }
 }
 
@@ -642,15 +637,15 @@ export function DetermineEggSpeciesAndParentSlots(daycare: any, parentSlots: any
       let species: any = [];
       let eggSpecies: any = null;
 
-      for (i = 0; i < DAYCARE_MON_COUNT; i++)
+      for (i = 0; i < (2); i++)
       {
           species[i] = GetBoxMonData(daycare.mons[i].mon, MON_DATA_SPECIES);
-          if (species[i] == SPECIES_DITTO)
+          if (species[i] == (132))
           {
               parentSlots[0] = i ^ 1;
               parentSlots[1] = i;
           }
-          else if (GetBoxMonGender(daycare.mons[i].mon) == MON_FEMALE)
+          else if (GetBoxMonGender(daycare.mons[i].mon) == (0xFE))
           {
               parentSlots[0] = i;
               parentSlots[1] = i ^ 1;
@@ -658,17 +653,17 @@ export function DetermineEggSpeciesAndParentSlots(daycare: any, parentSlots: any
       }
 
       eggSpecies = GetEggSpecies(species[parentSlots[0]]);
-      if (eggSpecies == SPECIES_NIDORAN_F && daycare.offspringPersonality & EGG_GENDER_MALE)
+      if (eggSpecies == (29) && daycare.offspringPersonality & (0x8000))
       {
-          eggSpecies = SPECIES_NIDORAN_M;
+          eggSpecies = (32);
       }
-      if (eggSpecies == SPECIES_ILLUMISE && daycare.offspringPersonality & EGG_GENDER_MALE)
+      if (eggSpecies == (387) && daycare.offspringPersonality & (0x8000))
       {
-          eggSpecies = SPECIES_VOLBEAT;
+          eggSpecies = (386);
       }
 
        
-      if (species[parentSlots[1]] == SPECIES_DITTO && GetBoxMonGender(daycare.mons[parentSlots[0]].mon) != MON_FEMALE)
+      if (species[parentSlots[1]] == (132) && GetBoxMonGender(daycare.mons[parentSlots[0]].mon) != (0xFE))
       {
           let ditto: any = parentSlots[1];
           parentSlots[1] = parentSlots[0];
@@ -691,12 +686,12 @@ export function _GiveEggFromDaycare(daycare: any): any {
       InheritIVs(egg, daycare);
       BuildEggMoveset(egg,daycare.mons[parentSlots[1]].mon,daycare.mons[parentSlots[0]].mon);
 
-      if (species == SPECIES_PICHU)
+      if (species == (172))
           GiveVoltTackleIfLightBall(egg, daycare);
 
       isEgg = TRUE;
       SetMonData(egg, MON_DATA_IS_EGG,isEgg);
-      gPlayerParty[PARTY_SIZE - 1] = egg;
+      gPlayerParty[(6) - 1] = egg;
       CompactPartySlots();
       CalculatePlayerPartyCount();
       RemoveEggFromDayCare(daycare);
@@ -710,10 +705,10 @@ export function CreateEgg(mon: any, species: any, setHotSpringsLocation: any): a
       let metLocation;
       let isEgg: any = null;
 
-      CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
+      CreateMon(mon, species, (5), (((31) + 1)), FALSE, 0, (0), 0);
       metLevel = 0;
-      ball = ITEM_POKE_BALL;
-      language = LANGUAGE_JAPANESE;
+      ball = (4);
+      language = (1);
       SetMonData(mon, MON_DATA_POKEBALL,ball);
       SetMonData(mon, MON_DATA_NICKNAME, sJapaneseEggNickname);
       SetMonData(mon, MON_DATA_FRIENDSHIP,gSpeciesInfo[species].eggCycles);
@@ -737,10 +732,10 @@ export function SetInitialEggData(mon: any, species: any, daycare: any): any {
       let language: any = null;
 
       personality = daycare.offspringPersonality;
-      CreateMon(mon, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, TRUE, personality, OT_ID_PLAYER_ID, 0);
+      CreateMon(mon, species, (5), (((31) + 1)), TRUE, personality, (0), 0);
       metLevel = 0;
-      ball = ITEM_POKE_BALL;
-      language = LANGUAGE_JAPANESE;
+      ball = (4);
+      language = (1);
       SetMonData(mon, MON_DATA_POKEBALL,ball);
       SetMonData(mon, MON_DATA_NICKNAME, sJapaneseEggNickname);
       SetMonData(mon, MON_DATA_FRIENDSHIP,gSpeciesInfo[species].eggCycles);
@@ -757,14 +752,14 @@ export function GiveEggFromDaycare(): any {
 export function TryProduceOrHatchEgg(daycare: any): any {
   let i, validEggs = 0;
 
-      for (i = 0; i < DAYCARE_MON_COUNT; i++)
+      for (i = 0; i < (2); i++)
       {
           if (GetBoxMonData(daycare.mons[i].mon, MON_DATA_SANITY_HAS_SPECIES))
               daycare.mons[i].steps++, validEggs++;
       }
 
        
-      if (daycare.offspringPersonality == 0 && validEggs == DAYCARE_MON_COUNT && (daycare.mons[1].steps & 0xFF) == 0xFF)
+      if (daycare.offspringPersonality == 0 && validEggs == (2) && (daycare.mons[1].steps & 0xFF) == 0xFF)
       {
           let compatibility: any = GetDaycareCompatibilityScore(daycare);
           if (compatibility > (Random() * 100) / USHRT_MAX)
@@ -847,7 +842,7 @@ export function GetDaycareState(): any {
   let numMons: any = null;
       if (IsEggPending(gSaveBlock1Ptr.daycare))
       {
-          return DAYCARE_EGG_WAITING;
+          return (1);
       }
 
       numMons = CountPokemonInDaycare(gSaveBlock1Ptr.daycare);
@@ -856,16 +851,16 @@ export function GetDaycareState(): any {
           return numMons + 1;  
       }
 
-      return DAYCARE_NO_MONS;
+      return (0);
 }
 
 /** static bool8 EggGroupsOverlap(u16 *eggGroups1, u16 *eggGroups2) */
 export function EggGroupsOverlap(eggGroups1: any, eggGroups2: any): any {
   let i, j;
 
-      for (i = 0; i < EGG_GROUPS_PER_MON; i++)
+      for (i = 0; i < (2); i++)
       {
-          for (j = 0; j < EGG_GROUPS_PER_MON; j++)
+          for (j = 0; j < (2); j++)
           {
               if (eggGroups1[i] == eggGroups2[j])
                   return TRUE;
@@ -883,7 +878,7 @@ export function GetDaycareCompatibilityScore(daycare: any): any {
       let trainerIds: any = [];
       let genders: any = [];
 
-      for (i = 0; i < DAYCARE_MON_COUNT; i++)
+      for (i = 0; i < (2); i++)
       {
           let personality: any = null;
 
@@ -896,43 +891,43 @@ export function GetDaycareCompatibilityScore(daycare: any): any {
       }
 
        
-      if (eggGroups[0][0] == EGG_GROUP_NO_EGGS_DISCOVERED || eggGroups[1][0] == EGG_GROUP_NO_EGGS_DISCOVERED)
-          return PARENTS_INCOMPATIBLE;
+      if (eggGroups[0][0] == (15) || eggGroups[1][0] == (15))
+          return (0);
        
-      if (eggGroups[0][0] == EGG_GROUP_DITTO && eggGroups[1][0] == EGG_GROUP_DITTO)
-          return PARENTS_INCOMPATIBLE;
+      if (eggGroups[0][0] == (13) && eggGroups[1][0] == (13))
+          return (0);
 
        
-      if (eggGroups[0][0] == EGG_GROUP_DITTO || eggGroups[1][0] == EGG_GROUP_DITTO)
+      if (eggGroups[0][0] == (13) || eggGroups[1][0] == (13))
       {
           if (trainerIds[0] == trainerIds[1])
-              return PARENTS_LOW_COMPATIBILITY;
+              return (20);
 
-          return PARENTS_MED_COMPATIBILITY;
+          return (50);
       }
        
       else
       {
           if (genders[0] == genders[1])
-              return PARENTS_INCOMPATIBLE;
-          if (genders[0] == MON_GENDERLESS || genders[1] == MON_GENDERLESS)
-              return PARENTS_INCOMPATIBLE;
+              return (0);
+          if (genders[0] == (0xFF) || genders[1] == (0xFF))
+              return (0);
           if (!EggGroupsOverlap(eggGroups[0], eggGroups[1]))
-              return PARENTS_INCOMPATIBLE;
+              return (0);
 
           if (species[0] == species[1])
           {
               if (trainerIds[0] == trainerIds[1])
-                  return PARENTS_MED_COMPATIBILITY;  
+                  return (50);  
 
-              return PARENTS_MAX_COMPATIBILITY;  
+              return (70);  
           }
           else
           {
               if (trainerIds[0] != trainerIds[1])
-                  return PARENTS_MED_COMPATIBILITY;  
+                  return (50);  
 
-              return PARENTS_LOW_COMPATIBILITY;  
+              return (20);  
           }
       }
 }
@@ -949,13 +944,13 @@ export function SetDaycareCompatibilityString(): any {
 
       relationshipScore = GetDaycareCompatibilityScoreFromSave();
       whichString = 0;
-      if (relationshipScore == PARENTS_INCOMPATIBLE)
+      if (relationshipScore == (0))
           whichString = 3;
-      if (relationshipScore == PARENTS_LOW_COMPATIBILITY)
+      if (relationshipScore == (20))
           whichString = 2;
-      if (relationshipScore == PARENTS_MED_COMPATIBILITY)
+      if (relationshipScore == (50))
           whichString = 1;
-      if (relationshipScore == PARENTS_MAX_COMPATIBILITY)
+      if (relationshipScore == (70))
           whichString = 0;
 
       StringCopy(gStringVar4, sCompatibilityMessages[whichString]);
@@ -965,19 +960,19 @@ export function SetDaycareCompatibilityString(): any {
 export function NameHasGenderSymbol(name: any, genderRatio: any): any {
   let i: any = null;
       let symbolsCount: any = [];
-      symbolsCount[MALE] = symbolsCount[FEMALE] = 0;
+      symbolsCount[(0)] = symbolsCount[(1)] = 0;
 
-      for (i = 0; name[i] != EOS; i++)
+      for (i = 0; name[i] != (0xFF); i++)
       {
-          if (name[i] == CHAR_MALE)
-              symbolsCount[MALE]++;
-          if (name[i] == CHAR_FEMALE)
-              symbolsCount[FEMALE]++;
+          if (name[i] == (0xB5))
+              symbolsCount[(0)]++;
+          if (name[i] == (0xB6))
+              symbolsCount[(1)]++;
       }
 
-      if (genderRatio == MON_MALE   && symbolsCount[MALE] != 0 && symbolsCount[FEMALE] == 0)
+      if (genderRatio == (0x00)   && symbolsCount[(0)] != 0 && symbolsCount[(1)] == 0)
           return TRUE;
-      if (genderRatio == MON_FEMALE && symbolsCount[FEMALE] != 0 && symbolsCount[MALE] == 0)
+      if (genderRatio == (0xFE) && symbolsCount[(1)] != 0 && symbolsCount[(0)] == 0)
           return TRUE;
 
       return FALSE;
@@ -1002,7 +997,7 @@ export function DaycareAddTextPrinter(windowId: any, text: any, x: any, y: any):
       printer.bgColor = 1;
       printer.shadowColor = 3;
 
-      AddTextPrinter(printer, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinter(printer, (0xFF), NULL);
 }
 
 /** static void DaycarePrintMonNickname(struct DayCare *daycare, u8 windowId, u32 daycareSlotId, u32 y) */
@@ -1030,7 +1025,7 @@ export function DaycarePrintMonLvl(daycare: any, windowId: any, daycareSlotId: a
 
 /** static void DaycarePrintMonInfo(u8 windowId, u32 daycareSlotId, u8 y) */
 export function DaycarePrintMonInfo(windowId: any, daycareSlotId: any, y: any): any {
-  if (daycareSlotId < DAYCARE_MON_COUNT)
+  if (daycareSlotId < (2))
       {
           DaycarePrintMonNickname(gSaveBlock1Ptr.daycare, windowId, daycareSlotId, y);
           DaycarePrintMonLvl(gSaveBlock1Ptr.daycare, windowId, daycareSlotId, y);
@@ -1049,8 +1044,8 @@ export function Task_HandleDaycareLevelMenuInput(taskId: any): any {
           case 1:
               gSpecialVar_Result = input;
               break;
-          case DAYCARE_LEVEL_MENU_EXIT:
-              gSpecialVar_Result = DAYCARE_EXITED_LEVEL_MENU;
+          case (5):
+              gSpecialVar_Result = (2);
               break;
           }
           DestroyListMenuTask(gTasks[taskId].tMenuListTaskId, NULL, NULL);
@@ -1061,7 +1056,7 @@ export function Task_HandleDaycareLevelMenuInput(taskId: any): any {
       }
       else if (JOY_NEW(B_BUTTON))
       {
-          gSpecialVar_Result = DAYCARE_EXITED_LEVEL_MENU;
+          gSpecialVar_Result = (2);
           DestroyListMenuTask(gTasks[taskId].tMenuListTaskId, NULL, NULL);
           ClearStdWindowAndFrame(gTasks[taskId].tWindowId, TRUE);
           RemoveWindow(gTasks[taskId].tWindowId);

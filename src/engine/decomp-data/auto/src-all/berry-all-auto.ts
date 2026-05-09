@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_0x8005: any = null;
+let gSpecialVar_0x8006: any = null;
 /** void ClearEnigmaBerries(void) */
 export function ClearEnigmaBerries(): any {
   CpuFill16(0,gSaveBlock1Ptr.enigmaBerry, sizeof(gSaveBlock1Ptr.enigmaBerry));
@@ -60,16 +65,16 @@ export function ObjectEventInteractionWaterBerryTree(): any {
 
       switch (tree.stage)
       {
-      case BERRY_STAGE_PLANTED:
+      case (1):
           tree.watered1 = TRUE;
           break;
-      case BERRY_STAGE_SPROUTED:
+      case (2):
           tree.watered2 = TRUE;
           break;
-      case BERRY_STAGE_TALLER:
+      case (3):
           tree.watered3 = TRUE;
           break;
-      case BERRY_STAGE_FLOWERING:
+      case (4):
           tree.watered4 = TRUE;
           break;
       default:
@@ -81,7 +86,7 @@ export function ObjectEventInteractionWaterBerryTree(): any {
 /** bool8 IsPlayerFacingEmptyBerryTreePatch(void) */
 export function IsPlayerFacingEmptyBerryTreePatch(): any {
   if (GetObjectEventScriptPointerPlayerFacing() == BerryTreeScript
-       && GetStageByBerryTreeId(GetObjectEventBerryTreeId(gSelectedObjectEvent)) == BERRY_STAGE_NO_BERRY)
+       && GetStageByBerryTreeId(GetObjectEventBerryTreeId(gSelectedObjectEvent)) == (0))
           return TRUE;
       else
           return FALSE;
@@ -99,7 +104,7 @@ export function TryToWaterBerryTree(): any {
 export function ClearBerryTrees(): any {
   let i: any = null;
 
-      for (i = 0; i < BERRY_TREES_COUNT; i++)
+      for (i = 0; i < (128); i++)
           gSaveBlock1Ptr.berryTrees[i] = gBlankBerryTree;
 }
 
@@ -110,22 +115,22 @@ export function BerryTreeGrow(tree: any): any {
 
       switch (tree.stage)
       {
-      case BERRY_STAGE_NO_BERRY:
+      case (0):
           return FALSE;
-      case BERRY_STAGE_FLOWERING:
+      case (4):
           tree.berryYield = CalcBerryYield(tree);
-      case BERRY_STAGE_PLANTED:
-      case BERRY_STAGE_SPROUTED:
-      case BERRY_STAGE_TALLER:
+      case (1):
+      case (2):
+      case (3):
           tree.stage++;
           break;
-      case BERRY_STAGE_BERRIES:
+      case (5):
           tree.watered1 = 0;
           tree.watered2 = 0;
           tree.watered3 = 0;
           tree.watered4 = 0;
           tree.berryYield = 0;
-          tree.stage = BERRY_STAGE_SPROUTED;
+          tree.stage = (2);
           if (++tree.regrowthCount == 10)
               tree = gBlankBerryTree;
           break;
@@ -138,7 +143,7 @@ export function BerryTreeTimeUpdate(minutes: any): any {
   let i: any = null;
       let tree: any = null;
 
-      for (i = 0; i < BERRY_TREES_COUNT; i++)
+      for (i = 0; i < (128); i++)
       {
           tree =gSaveBlock1Ptr.berryTrees[i];
 
@@ -163,7 +168,7 @@ export function BerryTreeTimeUpdate(minutes: any): any {
                       tree.minutesUntilNextStage = GetStageDurationByBerryType(tree.berry);
                       if (!BerryTreeGrow(tree))
                           break;
-                      if (tree.stage == BERRY_STAGE_BERRIES)
+                      if (tree.stage == (5))
                           tree.minutesUntilNextStage *= 4;
                   }
               }
@@ -179,7 +184,7 @@ export function PlantBerryTree(id: any, berry: any, stage: any, allowGrowth: any
       tree.berry = berry;
       tree.minutesUntilNextStage = GetStageDurationByBerryType(berry);
       tree.stage = stage;
-      if (stage == BERRY_STAGE_BERRIES)
+      if (stage == (5))
       {
           tree.berryYield = CalcBerryYield(tree);
           tree.minutesUntilNextStage *= 4;
@@ -208,10 +213,10 @@ export function GetStageByBerryTreeId(id: any): any {
 
 /** u8 ItemIdToBerryType(u16 item) */
 export function ItemIdToBerryType(item: any): any {
-  let berry: any = item - FIRST_BERRY_INDEX;
+  let berry: any = item - ((133));
 
-      if (berry > LAST_BERRY_INDEX - FIRST_BERRY_INDEX)
-          return ITEM_TO_BERRY(FIRST_BERRY_INDEX);
+      if (berry > ((175)) - ((133)))
+          return ITEM_TO_BERRY(((133)));
       else
           return ITEM_TO_BERRY(item);
 }
@@ -220,16 +225,16 @@ export function ItemIdToBerryType(item: any): any {
 export function BerryTypeToItemId(berry: any): any {
   let item: any = berry - 1;
 
-      if (item > LAST_BERRY_INDEX - FIRST_BERRY_INDEX)
-          return FIRST_BERRY_INDEX;
+      if (item > ((175)) - ((133)))
+          return ((133));
       else
-          return berry + FIRST_BERRY_INDEX - 1;
+          return berry + ((133)) - 1;
 }
 
 /** void GetBerryNameByBerryType(u8 berry, u8 *string) */
 export function GetBerryNameByBerryType(berry: any, string: any): any {
-  memcpy(string, GetBerryInfo(berry).name, BERRY_NAME_LENGTH);
-      string[BERRY_NAME_LENGTH] = EOS;
+  memcpy(string, GetBerryInfo(berry).name, (6));
+      string[(6)] = (0xFF);
 }
 
 /** void GetBerryCountStringByBerryType(u8 berry, u8 *dest, u32 berryCount) */
@@ -278,10 +283,10 @@ export function CalcBerryYieldInternal(max: any, min: any, water: any): any {
           rand = randMin + Random() % (randMax - randMin + 1);
 
            
-          if ((rand % NUM_WATER_STAGES) >= NUM_WATER_STAGES / 2)
-              extraYield = rand / NUM_WATER_STAGES + 1;
+          if ((rand % (4)) >= (4) / 2)
+              extraYield = rand / (4) + 1;
           else
-              extraYield = rand / NUM_WATER_STAGES;
+              extraYield = rand / (4);
           return extraYield + min;
       }
 }
@@ -320,7 +325,7 @@ export function ObjectEventInteractionGetBerryTreeData(): any {
       num = gSaveBlock1Ptr.location.mapNum;
       group = gSaveBlock1Ptr.location.mapGroup;
       if (IsBerryTreeSparkling(localId, num, group))
-          gSpecialVar_0x8004 = BERRY_STAGE_SPARKLING;
+          gSpecialVar_0x8004 = (255);
       else
           gSpecialVar_0x8004 = GetStageByBerryTreeId(id);
       gSpecialVar_0x8005 = GetNumStagesWateredByBerryTreeId(id);
@@ -351,7 +356,7 @@ export function Bag_ChooseBerry(): any {
 export function ObjectEventInteractionPlantBerryTree(): any {
   let berry: any = ItemIdToBerryType(gSpecialVar_ItemId);
 
-      PlantBerryTree(GetObjectEventBerryTreeId(gSelectedObjectEvent), berry, BERRY_STAGE_PLANTED, TRUE);
+      PlantBerryTree(GetObjectEventBerryTreeId(gSelectedObjectEvent), berry, (1), TRUE);
       ObjectEventInteractionGetBerryTreeData();
 }
 
@@ -371,7 +376,7 @@ export function ObjectEventInteractionRemoveBerryTree(): any {
 
 /** bool8 PlayerHasBerries(void) */
 export function PlayerHasBerries(): any {
-  return IsBagPocketNonEmpty(POCKET_BERRIES);
+  return IsBagPocketNonEmpty((4));
 }
 
 /** void SetBerryTreesSeen(void) */
@@ -389,9 +394,9 @@ export function SetBerryTreesSeen(): any {
       top = cam_top + 3;
       right = cam_left + 14;
       bottom = top + 8;
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
-          if (gObjectEvents[i].active && gObjectEvents[i].movementType == MOVEMENT_TYPE_BERRY_TREE_GROWTH)
+          if (gObjectEvents[i].active && gObjectEvents[i].movementType == (0xC))
           {
               cam_left = gObjectEvents[i].currentCoords.x;
               cam_top = gObjectEvents[i].currentCoords.y;

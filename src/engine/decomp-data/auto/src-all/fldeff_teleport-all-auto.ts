@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gPostMenuFieldCallback: any = null;
 /** bool8 SetUpFieldMove_Teleport(void) */
 export function SetUpFieldMove_Teleport(): any {
   if (Overworld_MapTypeAllowsTeleportAndFly(gMapHeader.mapType) == TRUE)
@@ -29,7 +32,7 @@ export function SetUpFieldMove_Teleport(): any {
 /** static void FieldCallback_Teleport(void) */
 export function FieldCallback_Teleport(): any {
   Overworld_ResetStateAfterTeleport();
-      FieldEffectStart(FLDEFF_USE_TELEPORT);
+      FieldEffectStart((63));
       gFieldEffectArguments[0] = GetCursorSelectionMonId();
 }
 
@@ -38,13 +41,13 @@ export function FldEff_UseTeleport(): any {
   let taskId: any = CreateFieldMoveTask();
       gTasks[taskId].data[8] = StartTeleportFieldEffect >> 16;
       gTasks[taskId].data[9] = StartTeleportFieldEffect;
-      SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_ON_FOOT);
+      SetPlayerAvatarTransitionFlags(((1 << 0)));
       return FALSE;
 }
 
 /** static void StartTeleportFieldEffect(void) */
 export function StartTeleportFieldEffect(): any {
-  FieldEffectActiveListRemove(FLDEFF_USE_TELEPORT);
+  FieldEffectActiveListRemove((63));
       FldEff_TeleportWarpOut();
 }
 

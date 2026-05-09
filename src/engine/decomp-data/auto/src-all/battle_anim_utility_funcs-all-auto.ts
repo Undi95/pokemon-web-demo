@@ -17,8 +17,17 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gBattleAnimAttacker: any = null;
+let gBattleAnimTarget: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gBattle_BG3_X: any = null;
+let gBattle_BG3_Y: any = null;
+let gBattle_WIN0H: any = null;
+let gBattle_WIN0V: any = null;
+let newSpriteId: any = null;
 let sAnimStatsChangeData: any = null;
-let sCurseLinesPalette: any = null;
+let spriteId2: any = null;
 /** void AnimTask_BlendBattleAnimPal(u8 taskId) */
 export function AnimTask_BlendBattleAnimPal(taskId: any): any {
   let selectedPalettes: any = UnpackSelectedBattlePalettes(gBattleAnimArgs[0]);
@@ -36,20 +45,20 @@ export function AnimTask_BlendBattleAnimPalExclude(taskId: any): any {
       let animBattlers: any = [];
 
       animBattlers[1] = 0xFF;
-      selectedPalettes = UnpackSelectedBattlePalettes(F_PAL_BG);
+      selectedPalettes = UnpackSelectedBattlePalettes(((1 << 0)));
       switch (gBattleAnimArgs[0])
       {
       case 2:
           selectedPalettes = 0;
            
-      case ANIM_ATTACKER:
+      case (0):
       default:
           animBattlers[0] = gBattleAnimAttacker;
           break;
       case 3:
           selectedPalettes = 0;
            
-      case ANIM_TARGET:
+      case (1):
           animBattlers[0] = gBattleAnimTarget;
           break;
       case 4:
@@ -83,35 +92,35 @@ export function AnimTask_SetCamouflageBlend(taskId: any): any {
   let selectedPalettes: any = UnpackSelectedBattlePalettes(gBattleAnimArgs[0]);
       switch (gBattleEnvironment)
       {
-      case BATTLE_ENVIRONMENT_GRASS:
+      case (0):
           gBattleAnimArgs[4] = RGB(12, 24, 2);
           break;
-      case BATTLE_ENVIRONMENT_LONG_GRASS:
+      case (1):
           gBattleAnimArgs[4] = RGB(0, 15, 2);
           break;
-      case BATTLE_ENVIRONMENT_SAND:
+      case (2):
           gBattleAnimArgs[4] = RGB(30, 24, 11);
           break;
-      case BATTLE_ENVIRONMENT_UNDERWATER:
+      case (3):
           gBattleAnimArgs[4] = RGB(0, 0, 18);
           break;
-      case BATTLE_ENVIRONMENT_WATER:
+      case (4):
           gBattleAnimArgs[4] = RGB(11, 22, 31);
           break;
-      case BATTLE_ENVIRONMENT_POND:
+      case (5):
           gBattleAnimArgs[4] = RGB(11, 22, 31);
           break;
-      case BATTLE_ENVIRONMENT_MOUNTAIN:
+      case (6):
           gBattleAnimArgs[4] = RGB(22, 16, 10);
           break;
-      case BATTLE_ENVIRONMENT_CAVE:
+      case (7):
           gBattleAnimArgs[4] = RGB(14, 9, 3);
           break;
-      case BATTLE_ENVIRONMENT_BUILDING:
-          gBattleAnimArgs[4] = RGB_WHITE;
+      case (8):
+          gBattleAnimArgs[4] = (RGB(31, 31, 31));
           break;
-      case BATTLE_ENVIRONMENT_PLAIN:
-          gBattleAnimArgs[4] = RGB_WHITE;
+      case (9):
+          gBattleAnimArgs[4] = (RGB(31, 31, 31));
           break;
       }
 
@@ -295,13 +304,13 @@ export function AnimTask_DrawFallingWhiteLinesOnAttacker(taskId: any): any {
       }
       else
       {
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
               species = GetMonData(gEnemyParty[gBattlerPartyIndexes[gBattleAnimAttacker]], MON_DATA_SPECIES);
           else
               species = GetMonData(gPlayerParty[gBattlerPartyIndexes[gBattleAnimAttacker]], MON_DATA_SPECIES);
       }
 
-      spriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      spriteId = GetAnimBattlerSpriteId((0));
       newSpriteId = CreateInvisibleSpriteCopy(gBattleAnimAttacker, spriteId, species);
       GetBattleAnimBg1Data(animBgData);
       AnimLoadCompressedBgTilemapHandleContest(animBgData, gBattleAnimMaskTilemap_Curse, FALSE);
@@ -416,7 +425,7 @@ export function StatsChangeAnimation_Step1(taskId: any): any {
       }
       else
       {
-          if (GetBattlerSide(sAnimStatsChangeData.battler1) != B_SIDE_PLAYER)
+          if (GetBattlerSide(sAnimStatsChangeData.battler1) != (0))
               sAnimStatsChangeData.species = GetMonData(gEnemyParty[gBattlerPartyIndexes[sAnimStatsChangeData.battler1]], MON_DATA_SPECIES);
           else
               sAnimStatsChangeData.species = GetMonData(gPlayerParty[gBattlerPartyIndexes[sAnimStatsChangeData.battler1]], MON_DATA_SPECIES);
@@ -508,9 +517,9 @@ export function StatsChangeAnimation_Step2(taskId: any): any {
       gTasks[taskId].func = StatsChangeAnimation_Step3;
 
       if (!sAnimStatsChangeData.aDecrease)
-          PlaySE12WithPanning(SE_M_STAT_INCREASE, BattleAnimAdjustPanning2(SOUND_PAN_ATTACKER));
+          PlaySE12WithPanning((239), BattleAnimAdjustPanning2((-64)));
       else
-          PlaySE12WithPanning(SE_M_STAT_DECREASE, BattleAnimAdjustPanning2(SOUND_PAN_ATTACKER));
+          PlaySE12WithPanning((245), BattleAnimAdjustPanning2((-64)));
 }
 
 /** static void StatsChangeAnimation_Step3(u8 taskId) */
@@ -580,11 +589,11 @@ export function StatsChangeAnimation_Step3(taskId: any): any {
 /** void AnimTask_Flash(u8 taskId) */
 export function AnimTask_Flash(taskId: any): any {
   let selectedPalettes: any = GetBattleMonSpritePalettesMask(1, 1, 1, 1);
-      SetPalettesToColor(selectedPalettes, RGB_BLACK);
+      SetPalettesToColor(selectedPalettes, (RGB(0, 0, 0)));
       gTasks[taskId].data[14] = selectedPalettes >> 16;
 
       selectedPalettes = GetBattlePalettesMask(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE) & 0xFFFF;
-      SetPalettesToColor(selectedPalettes, RGB_WHITEALPHA);
+      SetPalettesToColor(selectedPalettes, (((RGB(31, 31, 31)) | ((1 << 15)))));
       gTasks[taskId].data[15] = selectedPalettes;
 
       gTasks[taskId].data[0] = 0;
@@ -677,7 +686,7 @@ export function AnimTask_StartSlidingBg(taskId: any): any {
 
       UpdateAnimBg3ScreenSize(FALSE);
       newTaskId = CreateTask(AnimTask_UpdateSlidingBg, 5);
-      if (gBattleAnimArgs[2] && GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (gBattleAnimArgs[2] && GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           gBattleAnimArgs[0] = -gBattleAnimArgs[0];
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
@@ -710,19 +719,19 @@ export function AnimTask_UpdateSlidingBg(taskId: any): any {
 
 /** void AnimTask_GetAttackerSide(u8 taskId) */
 export function AnimTask_GetAttackerSide(taskId: any): any {
-  gBattleAnimArgs[ARG_RET_ID] = GetBattlerSide(gBattleAnimAttacker);
+  gBattleAnimArgs[(7)] = GetBattlerSide(gBattleAnimAttacker);
       DestroyAnimVisualTask(taskId);
 }
 
 /** void AnimTask_GetTargetSide(u8 taskId) */
 export function AnimTask_GetTargetSide(taskId: any): any {
-  gBattleAnimArgs[ARG_RET_ID] = GetBattlerSide(gBattleAnimTarget);
+  gBattleAnimArgs[(7)] = GetBattlerSide(gBattleAnimTarget);
       DestroyAnimVisualTask(taskId);
 }
 
 /** void AnimTask_GetTargetIsAttackerPartner(u8 taskId) */
 export function AnimTask_GetTargetIsAttackerPartner(taskId: any): any {
-  gBattleAnimArgs[ARG_RET_ID] = BATTLE_PARTNER(gBattleAnimAttacker) == gBattleAnimTarget;
+  gBattleAnimArgs[(7)] = BATTLE_PARTNER(gBattleAnimAttacker) == gBattleAnimTarget;
       DestroyAnimVisualTask(taskId);
 }
 
@@ -779,7 +788,7 @@ export function StartMonScrollingBgMask(taskId: any, unused: any, scrollSpeed: a
       }
       else
       {
-          if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) != (0))
               species = GetMonData(gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES);
           else
               species = GetMonData(gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES);
@@ -875,7 +884,7 @@ export function AnimTask_GetBattleEnvironment(taskId: any): any {
 
 /** void AnimTask_AllocBackupPalBuffer(u8 taskId) */
 export function AnimTask_AllocBackupPalBuffer(taskId: any): any {
-  gMonSpritesGfxPtr.buffer = AllocZeroed(MON_PIC_SIZE * MAX_MON_PIC_FRAMES);
+  gMonSpritesGfxPtr.buffer = AllocZeroed((((64) * (64) / 2)) * (4));
       DestroyAnimVisualTask(taskId);
 }
 
@@ -969,9 +978,9 @@ export function AnimTask_CopyPalFadedToUnfaded(taskId: any): any {
 /** void AnimTask_IsContest(u8 taskId) */
 export function AnimTask_IsContest(taskId: any): any {
   if (IsContest())
-          gBattleAnimArgs[ARG_RET_ID] = TRUE;
+          gBattleAnimArgs[(7)] = TRUE;
       else
-          gBattleAnimArgs[ARG_RET_ID] = FALSE;
+          gBattleAnimArgs[(7)] = FALSE;
 
       DestroyAnimVisualTask(taskId);
 }
@@ -986,9 +995,9 @@ export function AnimTask_SetAnimAttackerAndTargetForEffectTgt(taskId: any): any 
 /** void AnimTask_IsTargetSameSide(u8 taskId) */
 export function AnimTask_IsTargetSameSide(taskId: any): any {
   if (GetBattlerSide(gBattleAnimAttacker) == GetBattlerSide(gBattleAnimTarget))
-          gBattleAnimArgs[ARG_RET_ID] = TRUE;
+          gBattleAnimArgs[(7)] = TRUE;
       else
-          gBattleAnimArgs[ARG_RET_ID] = FALSE;
+          gBattleAnimArgs[(7)] = FALSE;
 
       DestroyAnimVisualTask(taskId);
 }

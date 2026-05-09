@@ -27,11 +27,11 @@ export function WonderNews_SetReward(newsType: any): any {
       case WONDER_NEWS_RECV_FRIEND:
       case WONDER_NEWS_RECV_WIRELESS:
            
-          data.berry = (Random() % 15) + ITEM_TO_BERRY(ITEM_RAZZ_BERRY);
+          data.berry = (Random() % 15) + ITEM_TO_BERRY((148));
           break;
       case WONDER_NEWS_SENT:
            
-          data.berry = (Random() % 15) + ITEM_TO_BERRY(ITEM_CHERI_BERRY);
+          data.berry = (Random() % 15) + ITEM_TO_BERRY((133));
           break;
       }
 }
@@ -44,12 +44,12 @@ export function WonderNews_Reset(): any {
       data.sentRewardCounter = 0;
       data.rewardCounter = 0;
       data.berry = 0;
-      VarSet(VAR_WONDER_NEWS_STEP_COUNTER, 0);
+      VarSet((0x402E), 0);
 }
 
 /** void WonderNews_IncrementStepCounter(void) */
 export function WonderNews_IncrementStepCounter(): any {
-  let stepCounter: any = GetVarPointer(VAR_WONDER_NEWS_STEP_COUNTER);
+  let stepCounter: any = GetVarPointer((0x402E));
       let data: any = GetSavedWonderNewsMetadata();
 
        
@@ -70,27 +70,27 @@ export function WonderNews_GetRewardInfo(): any {
 
        
       if (!IsMysteryEventEnabled() || !ValidateSavedWonderNews())
-          return NEWS_REWARD_NONE;
+          return (0);
 
       rewardType = GetRewardType(data);
 
       switch (rewardType)
       {
-      case NEWS_REWARD_RECV_SMALL:
-      case NEWS_REWARD_RECV_BIG:
+      case (1):
+      case (2):
           result = GetRewardItem(data);
           break;
-      case NEWS_REWARD_SENT_SMALL:
+      case (4):
           result = GetRewardItem(data);
           IncrementSentRewardCounter(data);
           break;
-      case NEWS_REWARD_SENT_BIG:
+      case (5):
           result = GetRewardItem(data);
           ResetSentRewardCounter(data);
           break;
-      case NEWS_REWARD_NONE:
-      case NEWS_REWARD_WAITING:
-      case NEWS_REWARD_AT_MAX:
+      case (0):
+      case (3):
+      case (6):
           break;
       }
 
@@ -101,7 +101,7 @@ export function WonderNews_GetRewardInfo(): any {
 export function GetRewardItem(data: any): any {
   let itemId: any = null;
       data.newsType = WONDER_NEWS_NONE;
-      itemId = data.berry + FIRST_BERRY_INDEX - 1;
+      itemId = data.berry + ((133)) - 1;
       data.berry = 0;
       IncrementRewardCounter(data);
       return itemId;
@@ -129,23 +129,23 @@ export function IncrementRewardCounter(data: any): any {
 /** static u32 GetRewardType(struct WonderNewsMetadata *data) */
 export function GetRewardType(data: any): any {
   if (data.rewardCounter == (5))
-          return NEWS_REWARD_AT_MAX;
+          return (6);
 
       switch (data.newsType)
       {
       case WONDER_NEWS_NONE:
-          return NEWS_REWARD_WAITING;
+          return (3);
       case WONDER_NEWS_RECV_FRIEND:
-          return NEWS_REWARD_RECV_SMALL;
+          return (1);
       case WONDER_NEWS_RECV_WIRELESS:
-          return NEWS_REWARD_RECV_BIG;
+          return (2);
       case WONDER_NEWS_SENT:
           if (data.sentRewardCounter < (4) - 1)
-              return NEWS_REWARD_SENT_SMALL;
-          return NEWS_REWARD_SENT_BIG;
+              return (4);
+          return (5);
       default:
           AGB_ASSERT(0);
-          return NEWS_REWARD_NONE;
+          return (0);
       }
 }
 

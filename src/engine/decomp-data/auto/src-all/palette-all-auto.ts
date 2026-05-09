@@ -17,10 +17,13 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sDummyPaletteStructTemplate: any = null;
-let sPaletteStructs: any = null;
+let gPaletteFade_blendCnt: any = null;
+let gPaletteFade_delay: any = null;
+let gPaletteFade_selectedPalettes: any = null;
+let gPaletteFade_submode: any = null;
 let sPlttBufferTransferPending: any = null;
-let sRoundedDownGrayscaleMap: any = null;
+let tCoeff: any = null;
+let tDelayTimer: any = null;
 /** void LoadCompressedPalette(const u32 *src, u16 offset, u16 size) */
 export function LoadCompressedPalette(src: any, offset: any, size: any): any {
   LZDecompressWram(src, gPaletteDecompressionBuffer);
@@ -59,7 +62,7 @@ export function UpdatePaletteFade(): any {
       let dummy: any = 0;
 
       if (sPlttBufferTransferPending)
-          return PALETTE_FADE_STATUS_LOADING;
+          return (0xFF);
 
       if (gPaletteFade.mode == NORMAL_FADE)
           result = UpdateNormalPaletteFade();
@@ -303,11 +306,11 @@ export function UpdateNormalPaletteFade(): any {
       let selectedPalettes: any = null;
 
       if (!gPaletteFade.active)
-          return PALETTE_FADE_STATUS_DONE;
+          return (0);
 
       if (IsSoftwarePaletteFadeFinishing())
       {
-          return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;
+          return gPaletteFade.active ? (1) : (0);
       }
       else
       {
@@ -330,7 +333,7 @@ export function UpdateNormalPaletteFade(): any {
           else
           {
               selectedPalettes = gPaletteFade_selectedPalettes >> 16;
-              paletteOffset = OBJ_PLTT_OFFSET;
+              paletteOffset = (0x100);
           }
 
           while (selectedPalettes)
@@ -379,7 +382,7 @@ export function UpdateNormalPaletteFade(): any {
 
            
            
-          return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;
+          return gPaletteFade.active ? (1) : (0);
       }
 }
 
@@ -453,10 +456,10 @@ export function BeginFastPaletteFadeInternal(submode: any): any {
       gPaletteFade.mode = FAST_FADE;
 
       if (submode == FAST_FADE_IN_FROM_BLACK)
-          CpuFill16(RGB_BLACK, gPlttBufferFaded, PLTT_SIZE);
+          CpuFill16((RGB(0, 0, 0)), gPlttBufferFaded, PLTT_SIZE);
 
       if (submode == FAST_FADE_IN_FROM_WHITE)
-          CpuFill16(RGB_WHITE, gPlttBufferFaded, PLTT_SIZE);
+          CpuFill16((RGB(31, 31, 31)), gPlttBufferFaded, PLTT_SIZE);
 
       UpdatePaletteFade();
 }
@@ -474,21 +477,21 @@ export function UpdateFastPaletteFade(): any {
       let b: any = null;
 
       if (!gPaletteFade.active)
-          return PALETTE_FADE_STATUS_DONE;
+          return (0);
 
       if (IsSoftwarePaletteFadeFinishing())
-          return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;
+          return gPaletteFade.active ? (1) : (0);
 
 
       if (gPaletteFade.objPaletteToggle)
       {
-          paletteOffsetStart = OBJ_PLTT_OFFSET;
+          paletteOffsetStart = (0x100);
           paletteOffsetEnd = PLTT_BUFFER_SIZE;
       }
       else
       {
           paletteOffsetStart = 0;
-          paletteOffsetEnd = OBJ_PLTT_OFFSET;
+          paletteOffsetEnd = (0x100);
       }
 
       switch (gPaletteFade_submode)
@@ -587,7 +590,7 @@ export function UpdateFastPaletteFade(): any {
       if (gPaletteFade.objPaletteToggle)
            
            
-          return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;
+          return gPaletteFade.active ? (1) : (0);
 
       if (gPaletteFade.y - gPaletteFade.deltaY < 0)
           gPaletteFade.y = 0;
@@ -616,7 +619,7 @@ export function UpdateFastPaletteFade(): any {
 
        
        
-      return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;
+      return gPaletteFade.active ? (1) : (0);
 }
 
 /** void BeginHardwarePaletteFade(u8 blendCnt, u8 delay, u8 y, u8 targetY, u8 shouldResetBlendRegisters) */
@@ -640,12 +643,12 @@ export function BeginHardwarePaletteFade(blendCnt: any, delay: any, y: any, targ
 /** static u8 UpdateHardwarePaletteFade(void) */
 export function UpdateHardwarePaletteFade(): any {
   if (!gPaletteFade.active)
-          return PALETTE_FADE_STATUS_DONE;
+          return (0);
 
       if (gPaletteFade.delayCounter < gPaletteFade_delay)
       {
           gPaletteFade.delayCounter++;
-          return PALETTE_FADE_STATUS_DELAY;
+          return (2);
       }
 
       gPaletteFade.delayCounter = 0;
@@ -681,7 +684,7 @@ export function UpdateHardwarePaletteFade(): any {
 
        
        
-      return gPaletteFade.active ? PALETTE_FADE_STATUS_ACTIVE : PALETTE_FADE_STATUS_DONE;
+      return gPaletteFade.active ? (1) : (0);
 }
 
 /** static void UpdateBlendRegisters(void) */

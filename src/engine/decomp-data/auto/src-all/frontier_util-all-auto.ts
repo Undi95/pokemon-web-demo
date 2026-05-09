@@ -17,21 +17,15 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattlePointAwards: any = null;
-let sBattledBrainBitFlags: any = null;
-let sFrontierBrainObjEventGfx: any = null;
-let sFrontierBrainPlayerLostTexts: any = null;
-let sFrontierBrainPlayerWonTexts: any = null;
-let sFrontierBrainStreakAppearances: any = null;
-let sFrontierBrainTrainerIds: any = null;
-let sFrontierBrainsMons: any = null;
-let sFrontierResultsWindowTemplate: any = null;
-let sFrontierUtilFuncs: any = null;
-let sHallFacilityToRecordsText: any = null;
-let sLevelModeText: any = null;
-let sLinkContestResultsWindowTemplate: any = null;
-let sRankingHallRecordsWindowTemplate: any = null;
-let sRecordsWindowChallengeTexts: any = null;
+let gBattleOutcome: any = null;
+let gFacilityTrainers: any = null;
+let gPlayerPartyCount: any = null;
+let gRecordsWindowId: any = null;
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_0x8006: any = null;
+let gTrainerBattleOpponent_A: any = null;
+let j: any = null;
+let numEligibleMons: any = null;
 /** void CallFrontierUtilFunc(void) */
 export function CallFrontierUtilFunc(): any {
   sFrontierUtilFuncs[gSpecialVar_0x8004]();
@@ -39,58 +33,58 @@ export function CallFrontierUtilFunc(): any {
 
 /** static void GetChallengeStatus(void) */
 export function GetChallengeStatus(): any {
-  VarSet(VAR_TEMP_CHALLENGE_STATUS, 0xFF);
+  VarSet(((((0x4000) + 0x0))), 0xFF);
       switch (gSaveBlock2Ptr.frontier.challengeStatus)
       {
       case 0:
           break;
-      case CHALLENGE_STATUS_SAVING:
+      case (1):
           FrontierGamblerSetWonOrLost(FALSE);
-          VarSet(VAR_TEMP_CHALLENGE_STATUS, gSaveBlock2Ptr.frontier.challengeStatus);
+          VarSet(((((0x4000) + 0x0))), gSaveBlock2Ptr.frontier.challengeStatus);
           break;
-      case CHALLENGE_STATUS_LOST:
+      case (4):
           FrontierGamblerSetWonOrLost(FALSE);
-          VarSet(VAR_TEMP_CHALLENGE_STATUS, gSaveBlock2Ptr.frontier.challengeStatus);
+          VarSet(((((0x4000) + 0x0))), gSaveBlock2Ptr.frontier.challengeStatus);
           break;
-      case CHALLENGE_STATUS_WON:
+      case (3):
           FrontierGamblerSetWonOrLost(TRUE);
-          VarSet(VAR_TEMP_CHALLENGE_STATUS, gSaveBlock2Ptr.frontier.challengeStatus);
+          VarSet(((((0x4000) + 0x0))), gSaveBlock2Ptr.frontier.challengeStatus);
           break;
-      case CHALLENGE_STATUS_PAUSED:
-          VarSet(VAR_TEMP_CHALLENGE_STATUS, gSaveBlock2Ptr.frontier.challengeStatus);
+      case (2):
+          VarSet(((((0x4000) + 0x0))), gSaveBlock2Ptr.frontier.challengeStatus);
           break;
       }
 }
 
 /** static void GetFrontierData(void) */
 export function GetFrontierData(): any {
-  let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+  let facility: any = VarGet((0x40CF));
       let hasSymbol: any = GetPlayerSymbolCountForFacility(facility);
       if (hasSymbol == 2)
           hasSymbol = 1;
 
       switch (gSpecialVar_0x8005)
       {
-      case FRONTIER_DATA_CHALLENGE_STATUS:
+      case (0):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.challengeStatus;
           break;
-      case FRONTIER_DATA_LVL_MODE:
+      case (1):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.lvlMode;
           break;
-      case FRONTIER_DATA_BATTLE_NUM:
+      case (2):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.curChallengeBattleNum;
           break;
-      case FRONTIER_DATA_PAUSED:
+      case (3):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.challengePaused;
           break;
-      case FRONTIER_DATA_BATTLE_OUTCOME:
+      case (5):
           gSpecialVar_Result = gBattleOutcome;
           gBattleOutcome = 0;
           break;
-      case FRONTIER_DATA_RECORD_DISABLED:
+      case (6):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.disableRecordBattle;
           break;
-      case FRONTIER_DATA_HEARD_BRAIN_SPEECH:
+      case (7):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.battledBrainFlags & sBattledBrainBitFlags[facility][hasSymbol];
           break;
       }
@@ -99,33 +93,33 @@ export function GetFrontierData(): any {
 /** static void SetFrontierData(void) */
 export function SetFrontierData(): any {
   let i: any = null;
-      let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+      let facility: any = VarGet((0x40CF));
       let hasSymbol: any = GetPlayerSymbolCountForFacility(facility);
       if (hasSymbol == 2)
           hasSymbol = 1;
 
       switch (gSpecialVar_0x8005)
       {
-      case FRONTIER_DATA_CHALLENGE_STATUS:
+      case (0):
           gSaveBlock2Ptr.frontier.challengeStatus = gSpecialVar_0x8006;
           break;
-      case FRONTIER_DATA_LVL_MODE:
+      case (1):
           gSaveBlock2Ptr.frontier.lvlMode = gSpecialVar_0x8006;
           break;
-      case FRONTIER_DATA_BATTLE_NUM:
+      case (2):
           gSaveBlock2Ptr.frontier.curChallengeBattleNum = gSpecialVar_0x8006;
           break;
-      case FRONTIER_DATA_PAUSED:
+      case (3):
           gSaveBlock2Ptr.frontier.challengePaused = gSpecialVar_0x8006;
           break;
-      case FRONTIER_DATA_SELECTED_MON_ORDER:
+      case (4):
           for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)
               gSaveBlock2Ptr.frontier.selectedPartyMons[i] = gSelectedOrderFromParty[i];
           break;
-      case FRONTIER_DATA_RECORD_DISABLED:
+      case (6):
           gSaveBlock2Ptr.frontier.disableRecordBattle = gSpecialVar_0x8006;
           break;
-      case FRONTIER_DATA_HEARD_BRAIN_SPEECH:
+      case (7):
           gSaveBlock2Ptr.frontier.battledBrainFlags |= sBattledBrainBitFlags[facility][hasSymbol];
           break;
       }
@@ -158,39 +152,39 @@ export function SaveSelectedParty(): any {
       for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)
       {
           let monId: any = gSaveBlock2Ptr.frontier.selectedPartyMons[i] - 1;
-          if (monId < PARTY_SIZE)
+          if (monId < (6))
               gSaveBlock1Ptr.playerParty[gSaveBlock2Ptr.frontier.selectedPartyMons[i] - 1] = gPlayerParty[i];
       }
 }
 
 /** static void ShowFacilityResultsWindow(void) */
 export function ShowFacilityResultsWindow(): any {
-  if (gSpecialVar_0x8006 >= FRONTIER_MODE_COUNT)
+  if (gSpecialVar_0x8006 >= (4))
           gSpecialVar_0x8006 = 0;
       switch (gSpecialVar_0x8005)
       {
-      case FRONTIER_FACILITY_TOWER:
+      case (0):
           ShowTowerResultsWindow(gSpecialVar_0x8006);
           break;
-      case FRONTIER_FACILITY_DOME:
+      case (1):
           ShowDomeResultsWindow(gSpecialVar_0x8006);
           break;
-      case FRONTIER_FACILITY_PALACE:
+      case (2):
           ShowPalaceResultsWindow(gSpecialVar_0x8006);
           break;
-      case FRONTIER_FACILITY_PIKE:
+      case (5):
           ShowPikeResultsWindow();
           break;
-      case FRONTIER_FACILITY_FACTORY:
+      case (4):
           ShowFactoryResultsWindow(gSpecialVar_0x8006);
           break;
-      case FRONTIER_FACILITY_ARENA:
+      case (3):
           ShowArenaResultsWindow();
           break;
-      case FRONTIER_FACILITY_PYRAMID:
+      case (6):
           ShowPyramidResultsWindow();
           break;
-      case FACILITY_LINK_CONTEST:
+      case (7):
           ShowLinkContestResultsWindow();
           break;
       }
@@ -208,7 +202,7 @@ export function IsWinStreakActive(challenge: any): any {
 export function PrintAligned(str: any, y: any): any {
   let x: any = GetStringCenterAlignXOffset(FONT_NORMAL, str, DISPLAY_WIDTH - 16);
       y = (y * 8) + 1;
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, y, (0xFF), NULL);
 }
 
 /** static void PrintHyphens(s32 y) */
@@ -217,21 +211,21 @@ export function PrintHyphens(y: any): any {
       let text: any = [];
 
       for (i = 0; i < ARRAY_COUNT(text) - 1; i++)
-          text[i] = CHAR_HYPHEN;
-      text[i] = EOS;
+          text[i] = (0xAE);
+      text[i] = (0xFF);
 
       y = (y * 8) + 1;
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, 4, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, 4, y, (0xFF), NULL);
 }
 
 /** static void TowerPrintStreak(const u8 *str, u16 num, u8 x1, u8 x2, u8 y) */
 export function TowerPrintStreak(str: any, num: any, x1: any, x2: any, y: any): any {
-  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, TEXT_SKIP_DRAW, NULL);
-      if (num > MAX_STREAK)
-          num = MAX_STREAK;
+  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, (0xFF), NULL);
+      if (num > (9999))
+          num = (9999);
       ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);
       StringExpandPlaceholders(gStringVar4, gText_WinStreak);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, (0xFF), NULL);
 }
 
 /** static void TowerPrintRecordStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y) */
@@ -243,8 +237,8 @@ export function TowerPrintRecordStreak(battleMode: any, lvlMode: any, x1: any, x
 /** static u16 TowerGetWinStreak(u8 battleMode, u8 lvlMode) */
 export function TowerGetWinStreak(battleMode: any, lvlMode: any): any {
   let winStreak: any = gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode];
-      if (winStreak > MAX_STREAK)
-          return MAX_STREAK;
+      if (winStreak > (9999))
+          return (9999);
       else
           return winStreak;
 }
@@ -256,29 +250,29 @@ export function TowerPrintPrevOrCurrentStreak(battleMode: any, lvlMode: any, x1:
       switch (battleMode)
       {
       default:
-      case FRONTIER_MODE_SINGLES:
-          if (lvlMode != FRONTIER_LVL_50)
-              isCurrent = IsWinStreakActive(STREAK_TOWER_SINGLES_OPEN);
+      case (0):
+          if (lvlMode != (0))
+              isCurrent = IsWinStreakActive(((1 << 1)));
           else
-              isCurrent = IsWinStreakActive(STREAK_TOWER_SINGLES_50);
+              isCurrent = IsWinStreakActive(((1 << 0)));
           break;
-      case FRONTIER_MODE_DOUBLES:
-          if (lvlMode != FRONTIER_LVL_50)
-              isCurrent = IsWinStreakActive(STREAK_TOWER_DOUBLES_OPEN);
+      case (1):
+          if (lvlMode != (0))
+              isCurrent = IsWinStreakActive(((1 << 15)));
           else
-              isCurrent = IsWinStreakActive(STREAK_TOWER_DOUBLES_50);
+              isCurrent = IsWinStreakActive(((1 << 14)));
           break;
-      case FRONTIER_MODE_MULTIS:
-          if (lvlMode != FRONTIER_LVL_50)
-              isCurrent = IsWinStreakActive(STREAK_TOWER_MULTIS_OPEN);
+      case (2):
+          if (lvlMode != (0))
+              isCurrent = IsWinStreakActive(((1 << 17)));
           else
-              isCurrent = IsWinStreakActive(STREAK_TOWER_MULTIS_50);
+              isCurrent = IsWinStreakActive(((1 << 16)));
           break;
-      case FRONTIER_MODE_LINK_MULTIS:
-          if (lvlMode != FRONTIER_LVL_50)
-              isCurrent = IsWinStreakActive(STREAK_TOWER_LINK_MULTIS_OPEN);
+      case (3):
+          if (lvlMode != (0))
+              isCurrent = IsWinStreakActive(((1 << 19)));
           else
-              isCurrent = IsWinStreakActive(STREAK_TOWER_LINK_MULTIS_50);
+              isCurrent = IsWinStreakActive(((1 << 18)));
           break;
       }
 
@@ -293,23 +287,23 @@ export function ShowTowerResultsWindow(battleMode: any): any {
   gRecordsWindowId = AddWindow(sFrontierResultsWindowTemplate);
       DrawStdWindowFrame(gRecordsWindowId, FALSE);
       FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));
-      if (battleMode == FRONTIER_MODE_SINGLES)
+      if (battleMode == (0))
           StringExpandPlaceholders(gStringVar4, gText_SingleBattleRoomResults);
-      else if (battleMode == FRONTIER_MODE_DOUBLES)
+      else if (battleMode == (1))
           StringExpandPlaceholders(gStringVar4, gText_DoubleBattleRoomResults);
-      else if (battleMode == FRONTIER_MODE_MULTIS)
+      else if (battleMode == (2))
           StringExpandPlaceholders(gStringVar4, gText_MultiBattleRoomResults);
       else
           StringExpandPlaceholders(gStringVar4, gText_LinkMultiBattleRoomResults);
 
       PrintAligned(gStringVar4, 2);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 16, 49, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 16, 97, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 16, 49, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 16, 97, (0xFF), NULL);
       PrintHyphens(10);
-      TowerPrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_50, 72, 132, 49);
-      TowerPrintRecordStreak(battleMode, FRONTIER_LVL_50, 72, 132, 65);
-      TowerPrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_OPEN, 72, 132, 97);
-      TowerPrintRecordStreak(battleMode, FRONTIER_LVL_OPEN, 72, 132, 113);
+      TowerPrintPrevOrCurrentStreak(battleMode, (0), 72, 132, 49);
+      TowerPrintRecordStreak(battleMode, (0), 72, 132, 65);
+      TowerPrintPrevOrCurrentStreak(battleMode, (1), 72, 132, 97);
+      TowerPrintRecordStreak(battleMode, (1), 72, 132, 113);
       PutWindowTilemap(gRecordsWindowId);
       CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);
 }
@@ -317,18 +311,18 @@ export function ShowTowerResultsWindow(battleMode: any): any {
 /** static u16 DomeGetWinStreak(u8 battleMode, u8 lvlMode) */
 export function DomeGetWinStreak(battleMode: any, lvlMode: any): any {
   let winStreak: any = gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode];
-      if (winStreak > MAX_STREAK)
-          return MAX_STREAK;
+      if (winStreak > (9999))
+          return (9999);
       else
           return winStreak;
 }
 
 /** static void PrintTwoStrings(const u8 *str1, const u8 *str2, u16 num, u8 x1, u8 x2, u8 y) */
 export function PrintTwoStrings(str1: any, str2: any, num: any, x1: any, x2: any, y: any): any {
-  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str1, x1, y, TEXT_SKIP_DRAW, NULL);
+  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str1, x1, y, (0xFF), NULL);
       ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);
       StringExpandPlaceholders(gStringVar4, str2);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, (0xFF), NULL);
 }
 
 /** static void DomePrintPrevOrCurrentStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y) */
@@ -338,17 +332,17 @@ export function DomePrintPrevOrCurrentStreak(battleMode: any, lvlMode: any, x1: 
       switch (battleMode)
       {
       default:
-      case FRONTIER_MODE_SINGLES:
-          if (lvlMode != FRONTIER_LVL_50)
-              isCurrent = IsWinStreakActive(STREAK_DOME_SINGLES_OPEN);
+      case (0):
+          if (lvlMode != (0))
+              isCurrent = IsWinStreakActive(((1 << 3)));
           else
-              isCurrent = IsWinStreakActive(STREAK_DOME_SINGLES_50);
+              isCurrent = IsWinStreakActive(((1 << 2)));
           break;
-      case FRONTIER_MODE_DOUBLES:
-          if (lvlMode != FRONTIER_LVL_50)
-              isCurrent = IsWinStreakActive(STREAK_DOME_DOUBLES_OPEN);
+      case (1):
+          if (lvlMode != (0))
+              isCurrent = IsWinStreakActive(((1 << 21)));
           else
-              isCurrent = IsWinStreakActive(STREAK_DOME_DOUBLES_50);
+              isCurrent = IsWinStreakActive(((1 << 20)));
           break;
       }
 
@@ -363,35 +357,35 @@ export function ShowDomeResultsWindow(battleMode: any): any {
   gRecordsWindowId = AddWindow(sFrontierResultsWindowTemplate);
       DrawStdWindowFrame(gRecordsWindowId, FALSE);
       FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));
-      if (battleMode == FRONTIER_MODE_SINGLES)
+      if (battleMode == (0))
           StringExpandPlaceholders(gStringVar4, gText_SingleBattleTourneyResults);
       else
           StringExpandPlaceholders(gStringVar4, gText_DoubleBattleTourneyResults);
 
       PrintAligned(gStringVar4, 0);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 33, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 33, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, (0xFF), NULL);
       PrintHyphens(10);
        
        
-      DomePrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_50, 64, 153, 33);
-      PrintTwoStrings(gText_Record, gText_ClearStreak, gSaveBlock2Ptr.frontier.domeRecordWinStreaks[battleMode][FRONTIER_LVL_50], 64, 153, 49);
-      PrintTwoStrings(gText_Total, gText_Championships, gSaveBlock2Ptr.frontier.domeTotalChampionships[battleMode][FRONTIER_LVL_50], 64, 116, 65);
-      DomePrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_OPEN, 64, 153, 97);
-      PrintTwoStrings(gText_Record, gText_ClearStreak, gSaveBlock2Ptr.frontier.domeRecordWinStreaks[battleMode][FRONTIER_LVL_OPEN], 64, 153, 113);
-      PrintTwoStrings(gText_Total, gText_Championships, gSaveBlock2Ptr.frontier.domeTotalChampionships[battleMode][FRONTIER_LVL_OPEN], 64, 116, 129);
+      DomePrintPrevOrCurrentStreak(battleMode, (0), 64, 153, 33);
+      PrintTwoStrings(gText_Record, gText_ClearStreak, gSaveBlock2Ptr.frontier.domeRecordWinStreaks[battleMode][(0)], 64, 153, 49);
+      PrintTwoStrings(gText_Total, gText_Championships, gSaveBlock2Ptr.frontier.domeTotalChampionships[battleMode][(0)], 64, 116, 65);
+      DomePrintPrevOrCurrentStreak(battleMode, (1), 64, 153, 97);
+      PrintTwoStrings(gText_Record, gText_ClearStreak, gSaveBlock2Ptr.frontier.domeRecordWinStreaks[battleMode][(1)], 64, 153, 113);
+      PrintTwoStrings(gText_Total, gText_Championships, gSaveBlock2Ptr.frontier.domeTotalChampionships[battleMode][(1)], 64, 116, 129);
       PutWindowTilemap(gRecordsWindowId);
       CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);
 }
 
 /** static void PalacePrintStreak(const u8 *str, u16 num, u8 x1, u8 x2, u8 y) */
 export function PalacePrintStreak(str: any, num: any, x1: any, x2: any, y: any): any {
-  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, TEXT_SKIP_DRAW, NULL);
-      if (num > MAX_STREAK)
-          num = MAX_STREAK;
+  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, (0xFF), NULL);
+      if (num > (9999))
+          num = (9999);
       ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);
       StringExpandPlaceholders(gStringVar4, gText_WinStreak);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, (0xFF), NULL);
 }
 
 /** static void PalacePrintRecordStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 y) */
@@ -403,8 +397,8 @@ export function PalacePrintRecordStreak(battleMode: any, lvlMode: any, x1: any, 
 /** static u16 PalaceGetWinStreak(u8 battleMode, u8 lvlMode) */
 export function PalaceGetWinStreak(battleMode: any, lvlMode: any): any {
   let winStreak: any = gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode];
-      if (winStreak > MAX_STREAK)
-          return MAX_STREAK;
+      if (winStreak > (9999))
+          return (9999);
       else
           return winStreak;
 }
@@ -416,17 +410,17 @@ export function PalacePrintPrevOrCurrentStreak(battleMode: any, lvlMode: any, x1
       switch (battleMode)
       {
       default:
-      case FRONTIER_MODE_SINGLES:
-          if (lvlMode != FRONTIER_LVL_50)
-              isCurrent = IsWinStreakActive(STREAK_PALACE_SINGLES_OPEN);
+      case (0):
+          if (lvlMode != (0))
+              isCurrent = IsWinStreakActive(((1 << 5)));
           else
-              isCurrent = IsWinStreakActive(STREAK_PALACE_SINGLES_50);
+              isCurrent = IsWinStreakActive(((1 << 4)));
           break;
-      case FRONTIER_MODE_DOUBLES:
-          if (lvlMode != FRONTIER_LVL_50)
-              isCurrent = IsWinStreakActive(STREAK_PALACE_DOUBLES_OPEN);
+      case (1):
+          if (lvlMode != (0))
+              isCurrent = IsWinStreakActive(((1 << 23)));
           else
-              isCurrent = IsWinStreakActive(STREAK_PALACE_DOUBLES_50);
+              isCurrent = IsWinStreakActive(((1 << 22)));
       }
 
       if (isCurrent == TRUE)
@@ -440,19 +434,19 @@ export function ShowPalaceResultsWindow(battleMode: any): any {
   gRecordsWindowId = AddWindow(sFrontierResultsWindowTemplate);
       DrawStdWindowFrame(gRecordsWindowId, FALSE);
       FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));
-      if (battleMode == FRONTIER_MODE_SINGLES)
+      if (battleMode == (0))
           StringExpandPlaceholders(gStringVar4, gText_SingleBattleHallResults);
       else
           StringExpandPlaceholders(gStringVar4, gText_DoubleBattleHallResults);
 
       PrintAligned(gStringVar4, 2);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 16, 49, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 16, 97, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 16, 49, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 16, 97, (0xFF), NULL);
       PrintHyphens(10);
-      PalacePrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_50, 72, 131, 49);
-      PalacePrintRecordStreak(battleMode, FRONTIER_LVL_50, 72, 131, 65);
-      PalacePrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_OPEN, 72, 131, 97);
-      PalacePrintRecordStreak(battleMode, FRONTIER_LVL_OPEN, 72, 131, 113);
+      PalacePrintPrevOrCurrentStreak(battleMode, (0), 72, 131, 49);
+      PalacePrintRecordStreak(battleMode, (0), 72, 131, 65);
+      PalacePrintPrevOrCurrentStreak(battleMode, (1), 72, 131, 97);
+      PalacePrintRecordStreak(battleMode, (1), 72, 131, 113);
       PutWindowTilemap(gRecordsWindowId);
       CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);
 }
@@ -460,18 +454,18 @@ export function ShowPalaceResultsWindow(battleMode: any): any {
 /** static u16 PikeGetWinStreak(u8 lvlMode) */
 export function PikeGetWinStreak(lvlMode: any): any {
   let winStreak: any = gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode];
-      if (winStreak > MAX_STREAK)
-          return MAX_STREAK;
+      if (winStreak > (9999))
+          return (9999);
       else
           return winStreak;
 }
 
 /** static void PikePrintCleared(const u8 *str1, const u8 *str2, u16 num, u8 x1, u8 x2, u8 y) */
 export function PikePrintCleared(str1: any, str2: any, num: any, x1: any, x2: any, y: any): any {
-  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str1, x1, y, TEXT_SKIP_DRAW, NULL);
+  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str1, x1, y, (0xFF), NULL);
       ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);
       StringExpandPlaceholders(gStringVar4, str2);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, (0xFF), NULL);
 }
 
 /** static void PikePrintPrevOrCurrentStreak(u8 lvlMode, u8 x1, u8 x2, u8 y) */
@@ -479,10 +473,10 @@ export function PikePrintPrevOrCurrentStreak(lvlMode: any, x1: any, x2: any, y: 
   let isCurrent: any = null;
       let winStreak: any = PikeGetWinStreak(lvlMode);
 
-      if (lvlMode != FRONTIER_LVL_50)
-          isCurrent = IsWinStreakActive(STREAK_PIKE_OPEN);
+      if (lvlMode != (0))
+          isCurrent = IsWinStreakActive(((1 << 11)));
       else
-          isCurrent = IsWinStreakActive(STREAK_PIKE_50);
+          isCurrent = IsWinStreakActive(((1 << 10)));
 
       if (isCurrent == TRUE)
           PrintTwoStrings(gText_Current, gText_RoomsCleared, winStreak, x1, x2, y);
@@ -497,29 +491,29 @@ export function ShowPikeResultsWindow(): any {
       FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));
       StringExpandPlaceholders(gStringVar4, gText_BattleChoiceResults);
       PrintAligned(gStringVar4, 0);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 33, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 33, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, (0xFF), NULL);
       PrintHyphens(10);
        
        
-      PikePrintPrevOrCurrentStreak(FRONTIER_LVL_50, 64, 138, 33);
-      PikePrintCleared(gText_Record, gText_RoomsCleared, gSaveBlock2Ptr.frontier.pikeRecordStreaks[FRONTIER_LVL_50], 64, 138, 49);
-      PikePrintCleared(gText_Total, gText_TimesCleared, gSaveBlock2Ptr.frontier.pikeTotalStreaks[FRONTIER_LVL_50], 64, 118, 65);
-      PikePrintPrevOrCurrentStreak(FRONTIER_LVL_OPEN, 64, 138, 97);
-      PikePrintCleared(gText_Record, gText_RoomsCleared, gSaveBlock2Ptr.frontier.pikeRecordStreaks[FRONTIER_LVL_OPEN], 64, 138, 113);
-      PikePrintCleared(gText_Total, gText_TimesCleared, gSaveBlock2Ptr.frontier.pikeTotalStreaks[FRONTIER_LVL_OPEN], 64, 118, 129);
+      PikePrintPrevOrCurrentStreak((0), 64, 138, 33);
+      PikePrintCleared(gText_Record, gText_RoomsCleared, gSaveBlock2Ptr.frontier.pikeRecordStreaks[(0)], 64, 138, 49);
+      PikePrintCleared(gText_Total, gText_TimesCleared, gSaveBlock2Ptr.frontier.pikeTotalStreaks[(0)], 64, 118, 65);
+      PikePrintPrevOrCurrentStreak((1), 64, 138, 97);
+      PikePrintCleared(gText_Record, gText_RoomsCleared, gSaveBlock2Ptr.frontier.pikeRecordStreaks[(1)], 64, 138, 113);
+      PikePrintCleared(gText_Total, gText_TimesCleared, gSaveBlock2Ptr.frontier.pikeTotalStreaks[(1)], 64, 118, 129);
       PutWindowTilemap(gRecordsWindowId);
       CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);
 }
 
 /** static void ArenaPrintStreak(const u8 *str, u16 num, u8 x1, u8 x2, u8 y) */
 export function ArenaPrintStreak(str: any, num: any, x1: any, x2: any, y: any): any {
-  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, TEXT_SKIP_DRAW, NULL);
-      if (num > MAX_STREAK)
-          num = MAX_STREAK;
+  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, (0xFF), NULL);
+      if (num > (9999))
+          num = (9999);
       ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);
       StringExpandPlaceholders(gStringVar4, gText_KOsInARow);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, (0xFF), NULL);
 }
 
 /** static void ArenaPrintRecordStreak(u8 lvlMode, u8 x1, u8 x2, u8 y) */
@@ -531,8 +525,8 @@ export function ArenaPrintRecordStreak(lvlMode: any, x1: any, x2: any, y: any): 
 /** static u16 ArenaGetWinStreak(u8 lvlMode) */
 export function ArenaGetWinStreak(lvlMode: any): any {
   let winStreak: any = gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode];
-      if (winStreak > MAX_STREAK)
-          return MAX_STREAK;
+      if (winStreak > (9999))
+          return (9999);
       else
           return winStreak;
 }
@@ -542,10 +536,10 @@ export function ArenaPrintPrevOrCurrentStreak(lvlMode: any, x1: any, x2: any, y:
   let isCurrent: any = null;
       let winStreak: any = ArenaGetWinStreak(lvlMode);
 
-      if (lvlMode != FRONTIER_LVL_50)
-          isCurrent = IsWinStreakActive(STREAK_ARENA_OPEN);
+      if (lvlMode != (0))
+          isCurrent = IsWinStreakActive(((1 << 7)));
       else
-          isCurrent = IsWinStreakActive(STREAK_ARENA_50);
+          isCurrent = IsWinStreakActive(((1 << 6)));
 
       if (isCurrent == TRUE)
           ArenaPrintStreak(gText_Current, winStreak, x1, x2, y);
@@ -561,28 +555,28 @@ export function ShowArenaResultsWindow(): any {
       PrintHyphens(10);
       StringExpandPlaceholders(gStringVar4, gText_SetKOTourneyResults);
       PrintAligned(gStringVar4, 2);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 16, 49, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 16, 97, TEXT_SKIP_DRAW, NULL);
-      ArenaPrintPrevOrCurrentStreak(FRONTIER_LVL_50, 72, 126, 49);
-      ArenaPrintRecordStreak(FRONTIER_LVL_50, 72, 126, 65);
-      ArenaPrintPrevOrCurrentStreak(FRONTIER_LVL_OPEN, 72, 126, 97);
-      ArenaPrintRecordStreak(FRONTIER_LVL_OPEN, 72, 126, 113);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 16, 49, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 16, 97, (0xFF), NULL);
+      ArenaPrintPrevOrCurrentStreak((0), 72, 126, 49);
+      ArenaPrintRecordStreak((0), 72, 126, 65);
+      ArenaPrintPrevOrCurrentStreak((1), 72, 126, 97);
+      ArenaPrintRecordStreak((1), 72, 126, 113);
       PutWindowTilemap(gRecordsWindowId);
       CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);
 }
 
 /** static void FactoryPrintStreak(const u8 *str, u16 num1, u16 num2, u8 x1, u8 x2, u8 x3, u8 y) */
 export function FactoryPrintStreak(str: any, num1: any, num2: any, x1: any, x2: any, x3: any, y: any): any {
-  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, TEXT_SKIP_DRAW, NULL);
-      if (num1 > MAX_STREAK)
-          num1 = MAX_STREAK;
+  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, (0xFF), NULL);
+      if (num1 > (9999))
+          num1 = (9999);
       ConvertIntToDecimalStringN(gStringVar1, num1, STR_CONV_MODE_RIGHT_ALIGN, 4);
       StringExpandPlaceholders(gStringVar4, gText_WinStreak);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, (0xFF), NULL);
 
       ConvertIntToDecimalStringN(gStringVar1, num2, STR_CONV_MODE_RIGHT_ALIGN, 4);
       StringExpandPlaceholders(gStringVar4, gText_TimesVar1);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x3, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x3, y, (0xFF), NULL);
 }
 
 /** static void FactoryPrintRecordStreak(u8 battleMode, u8 lvlMode, u8 x1, u8 x2, u8 x3, u8 y) */
@@ -595,8 +589,8 @@ export function FactoryPrintRecordStreak(battleMode: any, lvlMode: any, x1: any,
 /** static u16 FactoryGetWinStreak(u8 battleMode, u8 lvlMode) */
 export function FactoryGetWinStreak(battleMode: any, lvlMode: any): any {
   let winStreak: any = gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode];
-      if (winStreak > MAX_STREAK)
-          return MAX_STREAK;
+      if (winStreak > (9999))
+          return (9999);
       else
           return winStreak;
 }
@@ -604,8 +598,8 @@ export function FactoryGetWinStreak(battleMode: any, lvlMode: any): any {
 /** static u16 FactoryGetRentsCount(u8 battleMode, u8 lvlMode) */
 export function FactoryGetRentsCount(battleMode: any, lvlMode: any): any {
   let rents: any = gSaveBlock2Ptr.frontier.factoryRentsCount[battleMode][lvlMode];
-      if (rents > MAX_STREAK)
-          return MAX_STREAK;
+      if (rents > (9999))
+          return (9999);
       else
           return rents;
 }
@@ -618,17 +612,17 @@ export function FactoryPrintPrevOrCurrentStreak(battleMode: any, lvlMode: any, x
       switch (battleMode)
       {
       default:
-      case FRONTIER_MODE_SINGLES:
-          if (lvlMode != FRONTIER_LVL_50)
-              isCurrent = IsWinStreakActive(STREAK_FACTORY_SINGLES_OPEN);
+      case (0):
+          if (lvlMode != (0))
+              isCurrent = IsWinStreakActive(((1 << 9)));
           else
-              isCurrent = IsWinStreakActive(STREAK_FACTORY_SINGLES_50);
+              isCurrent = IsWinStreakActive(((1 << 8)));
           break;
-      case FRONTIER_MODE_DOUBLES:
-          if (lvlMode != FRONTIER_LVL_50)
-              isCurrent = IsWinStreakActive(STREAK_FACTORY_DOUBLES_OPEN);
+      case (1):
+          if (lvlMode != (0))
+              isCurrent = IsWinStreakActive(((1 << 25)));
           else
-              isCurrent = IsWinStreakActive(STREAK_FACTORY_DOUBLES_50);
+              isCurrent = IsWinStreakActive(((1 << 24)));
           break;
       }
 
@@ -643,33 +637,33 @@ export function ShowFactoryResultsWindow(battleMode: any): any {
   gRecordsWindowId = AddWindow(sFrontierResultsWindowTemplate);
       DrawStdWindowFrame(gRecordsWindowId, FALSE);
       FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));
-      if (battleMode == FRONTIER_MODE_SINGLES)
+      if (battleMode == (0))
           StringExpandPlaceholders(gStringVar4, gText_BattleSwapSingleResults);
       else
           StringExpandPlaceholders(gStringVar4, gText_BattleSwapDoubleResults);
 
       PrintAligned(gStringVar4, 0);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 33, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 33, (0xFF), NULL);
        
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_RentalSwap, 158, 33, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_RentalSwap, 158, 33, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, (0xFF), NULL);
       PrintHyphens(10);
-      FactoryPrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_50, 8, 64, 158, 49);
-      FactoryPrintRecordStreak(battleMode, FRONTIER_LVL_50, 8, 64, 158, 65);
-      FactoryPrintPrevOrCurrentStreak(battleMode, FRONTIER_LVL_OPEN, 8, 64, 158, 113);
-      FactoryPrintRecordStreak(battleMode, FRONTIER_LVL_OPEN, 8, 64, 158, 129);
+      FactoryPrintPrevOrCurrentStreak(battleMode, (0), 8, 64, 158, 49);
+      FactoryPrintRecordStreak(battleMode, (0), 8, 64, 158, 65);
+      FactoryPrintPrevOrCurrentStreak(battleMode, (1), 8, 64, 158, 113);
+      FactoryPrintRecordStreak(battleMode, (1), 8, 64, 158, 129);
       PutWindowTilemap(gRecordsWindowId);
       CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);
 }
 
 /** static void PyramidPrintStreak(const u8 *str, u16 num, u8 x1, u8 x2, u8 y) */
 export function PyramidPrintStreak(str: any, num: any, x1: any, x2: any, y: any): any {
-  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, TEXT_SKIP_DRAW, NULL);
-      if (num > MAX_STREAK)
-          num = MAX_STREAK;
+  AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x1, y, (0xFF), NULL);
+      if (num > (9999))
+          num = (9999);
       ConvertIntToDecimalStringN(gStringVar1, num, STR_CONV_MODE_RIGHT_ALIGN, 4);
       StringExpandPlaceholders(gStringVar4, gText_FloorsCleared);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x2, y, (0xFF), NULL);
 }
 
 /** static void PyramidPrintRecordStreak(u8 lvlMode, u8 x1, u8 x2, u8 y) */
@@ -681,8 +675,8 @@ export function PyramidPrintRecordStreak(lvlMode: any, x1: any, x2: any, y: any)
 /** static u16 PyramidGetWinStreak(u8 lvlMode) */
 export function PyramidGetWinStreak(lvlMode: any): any {
   let winStreak: any = gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode];
-      if (winStreak > MAX_STREAK)
-          return MAX_STREAK;
+      if (winStreak > (9999))
+          return (9999);
       else
           return winStreak;
 }
@@ -692,10 +686,10 @@ export function PyramidPrintPrevOrCurrentStreak(lvlMode: any, x1: any, x2: any, 
   let isCurrent: any = null;
       let winStreak: any = PyramidGetWinStreak(lvlMode);
 
-      if (lvlMode != FRONTIER_LVL_50)
-          isCurrent = IsWinStreakActive(STREAK_PYRAMID_OPEN);
+      if (lvlMode != (0))
+          isCurrent = IsWinStreakActive(((1 << 13)));
       else
-          isCurrent = IsWinStreakActive(STREAK_PYRAMID_50);
+          isCurrent = IsWinStreakActive(((1 << 12)));
 
       if (isCurrent == TRUE)
           PyramidPrintStreak(gText_Current, winStreak, x1, x2, y);
@@ -710,13 +704,13 @@ export function ShowPyramidResultsWindow(): any {
       FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));
       StringExpandPlaceholders(gStringVar4, gText_BattleQuestResults);
       PrintAligned(gStringVar4, 2);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 49, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Lv502, 8, 49, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_OpenLv, 8, 97, (0xFF), NULL);
       PrintHyphens(10);
-      PyramidPrintPrevOrCurrentStreak(FRONTIER_LVL_50, 64, 111, 49);
-      PyramidPrintRecordStreak(FRONTIER_LVL_50, 64, 111, 65);
-      PyramidPrintPrevOrCurrentStreak(FRONTIER_LVL_OPEN, 64, 111, 97);
-      PyramidPrintRecordStreak(FRONTIER_LVL_OPEN, 64, 111, 113);
+      PyramidPrintPrevOrCurrentStreak((0), 64, 111, 49);
+      PyramidPrintRecordStreak((0), 64, 111, 65);
+      PyramidPrintPrevOrCurrentStreak((1), 64, 111, 97);
+      PyramidPrintRecordStreak((1), 64, 111, 113);
       PutWindowTilemap(gRecordsWindowId);
       CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);
 }
@@ -733,37 +727,37 @@ export function ShowLinkContestResultsWindow(): any {
 
       StringExpandPlaceholders(gStringVar4, gText_LinkContestResults);
       x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 208);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, x, 1, (0xFF), NULL);
 
       str = gText_1st;
       x = GetStringRightAlignXOffset(FONT_NORMAL, str, 38) + 50;
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, (0xFF), NULL);
 
       str = gText_2nd;
       x = GetStringRightAlignXOffset(FONT_NORMAL, str, 38) + 88;
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, (0xFF), NULL);
 
       str = gText_3rd;
       x = GetStringRightAlignXOffset(FONT_NORMAL, str, 38) + 126;
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, (0xFF), NULL);
 
       str = gText_4th;
       x = GetStringRightAlignXOffset(FONT_NORMAL, str, 38) + 164;
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, str, x, 25, (0xFF), NULL);
 
       x = 6;
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Cool, x, 41, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Beauty, x, 57, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Cute, x, 73, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Smart, x, 89, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Tough, x, 105, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Cool, x, 41, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Beauty, x, 57, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Cute, x, 73, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Smart, x, 89, (0xFF), NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_Tough, x, 105, (0xFF), NULL);
 
-      for (i = 0; i < CONTEST_CATEGORIES_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
-          for (j = 0; j < CONTESTANT_COUNT; j++)
+          for (j = 0; j < (4); j++)
           {
               ConvertIntToDecimalStringN(gStringVar4, gSaveBlock2Ptr.contestLinkResults[i][j], STR_CONV_MODE_RIGHT_ALIGN, 4);
-              AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, (j * 38) + 64, (i * 16) + 41, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, (j * 38) + 64, (i * 16) + 41, (0xFF), NULL);
           }
       }
 
@@ -775,16 +769,16 @@ export function ShowLinkContestResultsWindow(): any {
 export function CheckPutFrontierTVShowOnAir(): any {
   let name: any = [];
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let facility: any = VarGet(VAR_FRONTIER_FACILITY);
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+      let facility: any = VarGet((0x40CF));
+      let battleMode: any = VarGet((0x40CE));
 
       switch (facility)
       {
-      case FRONTIER_FACILITY_TOWER:
+      case (0):
           if (gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode] > gSaveBlock2Ptr.frontier.towerRecordWinStreaks[battleMode][lvlMode])
           {
               gSaveBlock2Ptr.frontier.towerRecordWinStreaks[battleMode][lvlMode] = gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode];
-              if (battleMode == FRONTIER_MODE_LINK_MULTIS)
+              if (battleMode == (3))
               {
                   StringCopy(name, gLinkPlayers[gBattleScripting.multiplayerId ^ 1].name);
                   StripExtCtrlCodes(name);
@@ -796,62 +790,62 @@ export function CheckPutFrontierTVShowOnAir(): any {
               {
                   switch (battleMode)
                   {
-                  case FRONTIER_MODE_SINGLES:
-                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_TOWER_SINGLES);
+                  case (0):
+                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode], (1));
                       break;
-                  case FRONTIER_MODE_DOUBLES:
-                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_TOWER_DOUBLES);
+                  case (1):
+                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode], (2));
                       break;
-                  case FRONTIER_MODE_MULTIS:
-                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_TOWER_MULTIS);
+                  case (2):
+                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode], (3));
                       break;
-                  case FRONTIER_MODE_LINK_MULTIS:
-                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_TOWER_LINK_MULTIS);
+                  case (3):
+                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode], (4));
                       break;
                   }
               }
           }
           break;
-      case FRONTIER_FACILITY_DOME:
+      case (1):
           if (gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode] > gSaveBlock2Ptr.frontier.domeRecordWinStreaks[battleMode][lvlMode])
           {
               gSaveBlock2Ptr.frontier.domeRecordWinStreaks[battleMode][lvlMode] = gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode];
               if (gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode] > 1
                   && ShouldAirFrontierTVShow())
               {
-                  if (battleMode == FRONTIER_MODE_SINGLES)
-                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_DOME_SINGLES);
+                  if (battleMode == (0))
+                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode], (5));
                   else
-                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_DOME_DOUBLES);
+                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode], (6));
               }
           }
           break;
-      case FRONTIER_FACILITY_PALACE:
+      case (2):
           if (gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] > gSaveBlock2Ptr.frontier.palaceRecordWinStreaks[battleMode][lvlMode])
           {
               gSaveBlock2Ptr.frontier.palaceRecordWinStreaks[battleMode][lvlMode] = gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode];
               if (gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] > 1
                   && ShouldAirFrontierTVShow())
               {
-                  if (battleMode == FRONTIER_MODE_SINGLES)
-                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_PALACE_SINGLES);
+                  if (battleMode == (0))
+                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode], (11));
                   else
-                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_PALACE_DOUBLES);
+                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode], (12));
               }
           }
           break;
-      case FRONTIER_FACILITY_ARENA:
+      case (3):
           if (gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode] > gSaveBlock2Ptr.frontier.arenaRecordStreaks[lvlMode])
           {
               gSaveBlock2Ptr.frontier.arenaRecordStreaks[lvlMode] = gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode];
               if (gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode] > 1
                   && ShouldAirFrontierTVShow())
               {
-                  TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode], FRONTIER_SHOW_ARENA);
+                  TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode], (10));
               }
           }
           break;
-      case FRONTIER_FACILITY_FACTORY:
+      case (4):
           if (gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode] > gSaveBlock2Ptr.frontier.factoryRecordWinStreaks[battleMode][lvlMode])
           {
               gSaveBlock2Ptr.frontier.factoryRecordWinStreaks[battleMode][lvlMode] = gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode];
@@ -859,32 +853,32 @@ export function CheckPutFrontierTVShowOnAir(): any {
               if (gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode] > 1
                   && ShouldAirFrontierTVShow())
               {
-                  if (battleMode == FRONTIER_MODE_SINGLES)
-                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_FACTORY_SINGLES);
+                  if (battleMode == (0))
+                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode], (7));
                   else
-                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode], FRONTIER_SHOW_FACTORY_DOUBLES);
+                      TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode], (8));
               }
           }
           break;
-      case FRONTIER_FACILITY_PIKE:
+      case (5):
           if (gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] > gSaveBlock2Ptr.frontier.pikeRecordStreaks[lvlMode])
           {
               gSaveBlock2Ptr.frontier.pikeRecordStreaks[lvlMode] = gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode];
               if (gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] > 1
                   && ShouldAirFrontierTVShow())
               {
-                  TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode], FRONTIER_SHOW_PIKE);
+                  TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode], (9));
               }
           }
           break;
-      case FRONTIER_FACILITY_PYRAMID:
+      case (6):
           if (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] > gSaveBlock2Ptr.frontier.pyramidRecordStreaks[lvlMode])
           {
               gSaveBlock2Ptr.frontier.pyramidRecordStreaks[lvlMode] = gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode];
               if (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] > 1
                   && ShouldAirFrontierTVShow())
               {
-                  TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode], FRONTIER_SHOW_PYRAMID);
+                  TryPutFrontierTVShowOnAir(gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode], (13));
               }
           }
           break;
@@ -893,21 +887,21 @@ export function CheckPutFrontierTVShowOnAir(): any {
 
 /** static void Script_GetFrontierBrainStatus(void) */
 export function Script_GetFrontierBrainStatus(): any {
-  VarGet(VAR_FRONTIER_FACILITY);  
+  VarGet((0x40CF));  
       gSpecialVar_Result = GetFrontierBrainStatus();
 }
 
 /** u8 GetFrontierBrainStatus(void) */
 export function GetFrontierBrainStatus(): any {
-  let status: any = FRONTIER_BRAIN_NOT_READY;
-      let facility: any = VarGet(VAR_FRONTIER_FACILITY);
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+  let status: any = (0);
+      let facility: any = VarGet((0x40CF));
+      let battleMode: any = VarGet((0x40CE));
       let winStreakNoModifier: any = GetCurrentFacilityWinStreak();
       let winStreak: any = winStreakNoModifier + sFrontierBrainStreakAppearances[facility][3];
       let symbolsCount: any = null;
 
-      if (battleMode != FRONTIER_MODE_SINGLES)
-          return FRONTIER_BRAIN_NOT_READY;
+      if (battleMode != (0))
+          return (0);
 
       symbolsCount = GetPlayerSymbolCountForFacility(facility);
       switch (symbolsCount)
@@ -923,13 +917,13 @@ export function GetFrontierBrainStatus(): any {
       default:
            
           if (winStreak == sFrontierBrainStreakAppearances[facility][0])
-              status = FRONTIER_BRAIN_STREAK;
+              status = (3);
            
           else if (winStreak == sFrontierBrainStreakAppearances[facility][1])
-              status = FRONTIER_BRAIN_STREAK_LONG;
+              status = (4);
            
           else if (winStreak > sFrontierBrainStreakAppearances[facility][1] && (winStreak - sFrontierBrainStreakAppearances[facility][1]) % sFrontierBrainStreakAppearances[facility][2] == 0)
-              status = FRONTIER_BRAIN_STREAK_LONG;
+              status = (4);
           break;
       }
 
@@ -940,76 +934,76 @@ export function GetFrontierBrainStatus(): any {
 export function CopyFrontierTrainerText(whichText: any, trainerId: any): any {
   switch (whichText)
       {
-      case FRONTIER_BEFORE_TEXT:
-          if (trainerId == TRAINER_EREADER)
+      case (0):
+          if (trainerId == (500))
               FrontierSpeechToString(gSaveBlock2Ptr.frontier.ereaderTrainer.greeting);
-          else if (trainerId == TRAINER_FRONTIER_BRAIN)
+          else if (trainerId == (1022))
               CopyFrontierBrainText(FALSE);
-          else if (trainerId < FRONTIER_TRAINERS_COUNT)
+          else if (trainerId < (300))
               FrontierSpeechToString(gFacilityTrainers[trainerId].speechBefore);
-          else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
-              FrontierSpeechToString(gSaveBlock2Ptr.frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].greeting);
+          else if (trainerId < (400))
+              FrontierSpeechToString(gSaveBlock2Ptr.frontier.towerRecords[trainerId - ((300))].greeting);
           else
-              BufferApprenticeChallengeText(trainerId - TRAINER_RECORD_MIXING_APPRENTICE);
+              BufferApprenticeChallengeText(trainerId - (400));
           break;
-      case FRONTIER_PLAYER_LOST_TEXT:
-          if (trainerId == TRAINER_EREADER)
+      case (1):
+          if (trainerId == (500))
           {
               FrontierSpeechToString(gSaveBlock2Ptr.frontier.ereaderTrainer.farewellPlayerLost);
           }
-          else if (trainerId == TRAINER_FRONTIER_BRAIN)
+          else if (trainerId == (1022))
           {
               CopyFrontierBrainText(FALSE);
           }
-          else if (trainerId < FRONTIER_TRAINERS_COUNT)
+          else if (trainerId < (300))
           {
               FrontierSpeechToString(gFacilityTrainers[trainerId].speechWin);
           }
-          else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
+          else if (trainerId < (400))
           {
-              if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+              if (gBattleTypeFlags & ((1 << 24)))
                   FrontierSpeechToString(GetRecordedBattleEasyChatSpeech());
               else
-                  FrontierSpeechToString(gSaveBlock2Ptr.frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].speechWon);
+                  FrontierSpeechToString(gSaveBlock2Ptr.frontier.towerRecords[trainerId - ((300))].speechWon);
           }
           else
           {
-              if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+              if (gBattleTypeFlags & ((1 << 24)))
                   FrontierSpeechToString(GetRecordedBattleEasyChatSpeech());
               else
-                  FrontierSpeechToString(gSaveBlock2Ptr.apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].speechWon);
+                  FrontierSpeechToString(gSaveBlock2Ptr.apprentices[trainerId - (400)].speechWon);
           }
           break;
-      case FRONTIER_PLAYER_WON_TEXT:
-          if (trainerId == TRAINER_EREADER)
+      case (2):
+          if (trainerId == (500))
           {
               FrontierSpeechToString(gSaveBlock2Ptr.frontier.ereaderTrainer.farewellPlayerWon);
           }
-          else if (trainerId == TRAINER_FRONTIER_BRAIN)
+          else if (trainerId == (1022))
           {
               CopyFrontierBrainText(TRUE);
           }
-          else if (trainerId < FRONTIER_TRAINERS_COUNT)
+          else if (trainerId < (300))
           {
               FrontierSpeechToString(gFacilityTrainers[trainerId].speechLose);
           }
-          else if (trainerId < TRAINER_RECORD_MIXING_APPRENTICE)
+          else if (trainerId < (400))
           {
-              if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+              if (gBattleTypeFlags & ((1 << 24)))
                   FrontierSpeechToString(GetRecordedBattleEasyChatSpeech());
               else
-                  FrontierSpeechToString(gSaveBlock2Ptr.frontier.towerRecords[trainerId - TRAINER_RECORD_MIXING_FRIEND].speechLost);
+                  FrontierSpeechToString(gSaveBlock2Ptr.frontier.towerRecords[trainerId - ((300))].speechLost);
           }
           else
           {
-              if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+              if (gBattleTypeFlags & ((1 << 24)))
               {
                   trainerId = GetRecordedBattleApprenticeId();
                   FrontierSpeechToString(gApprentices[trainerId].speechLost);
               }
               else
               {
-                  trainerId = gSaveBlock2Ptr.apprentices[trainerId - TRAINER_RECORD_MIXING_APPRENTICE].id;
+                  trainerId = gSaveBlock2Ptr.apprentices[trainerId - (400)].id;
                   FrontierSpeechToString(gApprentices[trainerId].speechLost);
               }
           }
@@ -1022,18 +1016,18 @@ export function ResetWinStreaks(): any {
   let battleMode, lvlMode;
 
       gSaveBlock2Ptr.frontier.winStreakActiveFlags = 0;
-      for (battleMode = 0; battleMode < FRONTIER_MODE_COUNT; battleMode++)
+      for (battleMode = 0; battleMode < (4); battleMode++)
       {
-          for (lvlMode = 0; lvlMode < FRONTIER_LVL_TENT; lvlMode++)
+          for (lvlMode = 0; lvlMode < ((2)); lvlMode++)
           {
               gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode] = 0;
-              if (battleMode < FRONTIER_MODE_MULTIS)
+              if (battleMode < (2))
               {
                   gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode] = 0;
                   gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] = 0;
                   gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode] = 0;
               }
-              if (battleMode == FRONTIER_MODE_SINGLES)
+              if (battleMode == (0))
               {
                   gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode] = 0;
                   gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] = 0;
@@ -1042,30 +1036,30 @@ export function ResetWinStreaks(): any {
           }
       }
       if (gSaveBlock2Ptr.frontier.challengeStatus != 0)
-          gSaveBlock2Ptr.frontier.challengeStatus = CHALLENGE_STATUS_SAVING;
+          gSaveBlock2Ptr.frontier.challengeStatus = (1);
 }
 
 /** u32 GetCurrentFacilityWinStreak(void) */
 export function GetCurrentFacilityWinStreak(): any {
   let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
-      let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+      let battleMode: any = VarGet((0x40CE));
+      let facility: any = VarGet((0x40CF));
 
       switch (facility)
       {
-      case FRONTIER_FACILITY_TOWER:
+      case (0):
           return gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode];
-      case FRONTIER_FACILITY_DOME:
+      case (1):
           return gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode];
-      case FRONTIER_FACILITY_PALACE:
+      case (2):
           return gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode];
-      case FRONTIER_FACILITY_ARENA:
+      case (3):
           return gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode];
-      case FRONTIER_FACILITY_FACTORY:
+      case (4):
           return gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode];
-      case FRONTIER_FACILITY_PIKE:
+      case (5):
           return gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode];
-      case FRONTIER_FACILITY_PYRAMID:
+      case (6):
           return gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode];
       default:
           return 0;
@@ -1082,7 +1076,7 @@ export function ResetFrontierTrainerIds(): any {
 
 /** static void IsTrainerFrontierBrain(void) */
 export function IsTrainerFrontierBrain(): any {
-  if (gTrainerBattleOpponent_A == TRAINER_FRONTIER_BRAIN)
+  if (gTrainerBattleOpponent_A == (1022))
           gSpecialVar_Result = TRUE;
       else
           gSpecialVar_Result = FALSE;
@@ -1090,40 +1084,40 @@ export function IsTrainerFrontierBrain(): any {
 
 /** u8 GetPlayerSymbolCountForFacility(u8 facility) */
 export function GetPlayerSymbolCountForFacility(facility: any): any {
-  return FlagGet(FLAG_SYS_TOWER_SILVER + facility * 2)
-           + FlagGet(FLAG_SYS_TOWER_GOLD + facility * 2);
+  return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x64)) + facility * 2)
+           + FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x65)) + facility * 2);
 }
 
 /** static void GiveBattlePoints(void) */
 export function GiveBattlePoints(): any {
   let challengeNum: any = 0;
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let facility: any = VarGet(VAR_FRONTIER_FACILITY);
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+      let facility: any = VarGet((0x40CF));
+      let battleMode: any = VarGet((0x40CE));
       let points: any = null;
 
       switch (facility)
       {
-      case FRONTIER_FACILITY_TOWER:
-          challengeNum = gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
+      case (0):
+          challengeNum = gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode] / (7);
           break;
-      case FRONTIER_FACILITY_DOME:
+      case (1):
           challengeNum = gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode];
           break;
-      case FRONTIER_FACILITY_PALACE:
-          challengeNum = gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
+      case (2):
+          challengeNum = gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] / (7);
           break;
-      case FRONTIER_FACILITY_ARENA:
-          challengeNum = gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
+      case (3):
+          challengeNum = gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode] / (7);
           break;
-      case FRONTIER_FACILITY_FACTORY:
-          challengeNum = gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
+      case (4):
+          challengeNum = gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode] / (7);
           break;
-      case FRONTIER_FACILITY_PIKE:
-          challengeNum = gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] / NUM_PIKE_ROOMS;
+      case (5):
+          challengeNum = gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] / (14);
           break;
-      case FRONTIER_FACILITY_PYRAMID:
-          challengeNum = gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
+      case (6):
+          challengeNum = gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] / (7);
           break;
       }
 
@@ -1133,17 +1127,17 @@ export function GiveBattlePoints(): any {
           challengeNum = ARRAY_COUNT(sBattlePointAwards) - 1;
 
       points = sBattlePointAwards[challengeNum][facility][battleMode];
-      if (gTrainerBattleOpponent_A == TRAINER_FRONTIER_BRAIN)
+      if (gTrainerBattleOpponent_A == (1022))
           points += 10;
       gSaveBlock2Ptr.frontier.battlePoints += points;
       ConvertIntToDecimalStringN(gStringVar1, points, STR_CONV_MODE_LEFT_ALIGN, 2);
-      if (gSaveBlock2Ptr.frontier.battlePoints > MAX_BATTLE_FRONTIER_POINTS)
-          gSaveBlock2Ptr.frontier.battlePoints = MAX_BATTLE_FRONTIER_POINTS;
+      if (gSaveBlock2Ptr.frontier.battlePoints > (9999))
+          gSaveBlock2Ptr.frontier.battlePoints = (9999);
 
       points = gSaveBlock2Ptr.frontier.cardBattlePoints;
       points += sBattlePointAwards[challengeNum][facility][battleMode];
       IncrementDailyBattlePoints(sBattlePointAwards[challengeNum][facility][battleMode]);
-      if (gTrainerBattleOpponent_A == TRAINER_FRONTIER_BRAIN)
+      if (gTrainerBattleOpponent_A == (1022))
       {
           points += 10;
           IncrementDailyBattlePoints(10);
@@ -1155,17 +1149,17 @@ export function GiveBattlePoints(): any {
 
 /** static void GetFacilitySymbolCount(void) */
 export function GetFacilitySymbolCount(): any {
-  let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+  let facility: any = VarGet((0x40CF));
       gSpecialVar_Result = GetPlayerSymbolCountForFacility(facility);
 }
 
 /** static void GiveFacilitySymbol(void) */
 export function GiveFacilitySymbol(): any {
-  let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+  let facility: any = VarGet((0x40CF));
       if (GetPlayerSymbolCountForFacility(facility) == 0)
-          FlagSet(FLAG_SYS_TOWER_SILVER + facility * 2);
+          FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x64)) + facility * 2);
       else
-          FlagSet(FLAG_SYS_TOWER_GOLD + facility * 2);
+          FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x65)) + facility * 2);
 }
 
 /** static void CheckBattleTypeFlag(void) */
@@ -1219,7 +1213,7 @@ export function AppendCaughtBannedMonSpeciesName(species: any, count: any, numBa
 export function AppendIfValid(species: any, heldItem: any, hp: any, lvlMode: any, monLevel: any, speciesArray: any, itemsArray: any, count: any): any {
   let i: any = 0;
 
-      if (species == SPECIES_EGG || species == SPECIES_NONE)
+      if (species == (412) || species == (0))
           return;
 
       for (i = 0; gFrontierBannedSpecies[i] != 0xFFFF && gFrontierBannedSpecies[i] != species; i++)
@@ -1227,7 +1221,7 @@ export function AppendIfValid(species: any, heldItem: any, hp: any, lvlMode: any
 
       if (gFrontierBannedSpecies[i] != 0xFFFF)
           return;
-      if (lvlMode == FRONTIER_LVL_50 && monLevel > FRONTIER_MAX_LEVEL_50)
+      if (lvlMode == (0) && monLevel > (50))
           return;
 
       for (i = 0; i < count && speciesArray[i] != species; i++)
@@ -1255,23 +1249,23 @@ export function CheckPartyIneligibility(): any {
       let monId: any = 0;
       let toChoose: any = 0;
       let count: any = 0;
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+      let battleMode: any = VarGet((0x40CE));
       let monIdLooper: any = null;
 
       switch (battleMode)
       {
-      case FRONTIER_MODE_SINGLES:
-          toChoose = FRONTIER_PARTY_SIZE;
+      case (0):
+          toChoose = (3);
           break;
-      case FRONTIER_MODE_MULTIS:
-      case FRONTIER_MODE_LINK_MULTIS:
-          toChoose = FRONTIER_MULTI_PARTY_SIZE;
+      case (2):
+      case (3):
+          toChoose = (2);
           break;
-      case FRONTIER_MODE_DOUBLES:
-          if (VarGet(VAR_FRONTIER_FACILITY) == FRONTIER_FACILITY_TOWER)
-              toChoose = FRONTIER_DOUBLES_PARTY_SIZE;
+      case (1):
+          if (VarGet((0x40CF)) == (0))
+              toChoose = (4);
           else
-              toChoose = FRONTIER_PARTY_SIZE;
+              toChoose = (3);
           break;
       }
 
@@ -1286,9 +1280,9 @@ export function CheckPartyIneligibility(): any {
               let heldItem: any = GetMonData(gPlayerParty[monId], MON_DATA_HELD_ITEM);
               let level: any = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL);
               let hp: any = GetMonData(gPlayerParty[monId], MON_DATA_HP);
-              if (VarGet(VAR_FRONTIER_FACILITY) == FRONTIER_FACILITY_PYRAMID)
+              if (VarGet((0x40CF)) == (6))
               {
-                  if (heldItem == ITEM_NONE)
+                  if (heldItem == (0))
                       AppendIfValid(species, heldItem, hp, gSpecialVar_Result, level, speciesArray, itemArray,numEligibleMons);
               }
               else
@@ -1296,12 +1290,12 @@ export function CheckPartyIneligibility(): any {
                   AppendIfValid(species, heldItem, hp, gSpecialVar_Result, level, speciesArray, itemArray,numEligibleMons);
               }
               monId++;
-              if (monId >= PARTY_SIZE)
+              if (monId >= (6))
                   monId = 0;
           } while (monId != monIdLooper);
 
           monIdLooper++;
-      } while (monIdLooper < PARTY_SIZE && numEligibleMons < toChoose);
+      } while (monIdLooper < (6) && numEligibleMons < toChoose);
 
       if (numEligibleMons < toChoose)
       {
@@ -1313,7 +1307,7 @@ export function CheckPartyIneligibility(): any {
               if (GetSetPokedexFlag(SpeciesToNationalPokedexNum(species), FLAG_GET_CAUGHT))
                   caughtBannedMons++;
           }
-          gStringVar1[0] = EOS;
+          gStringVar1[0] = (0xFF);
           gSpecialVar_0x8004 = TRUE;
           count = 0;
           for (i = 0; gFrontierBannedSpecies[i] != 0xFFFF; i++)
@@ -1349,46 +1343,46 @@ export function ValidateVisitingTrainer(): any {
 /** static void IncrementWinStreak(void) */
 export function IncrementWinStreak(): any {
   let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
-      let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+      let battleMode: any = VarGet((0x40CE));
+      let facility: any = VarGet((0x40CF));
 
       switch (facility)
       {
-      case FRONTIER_FACILITY_TOWER:
-          if (gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode] < MAX_STREAK)
+      case (0):
+          if (gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode] < (9999))
           {
               gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode]++;
-              if (battleMode == FRONTIER_MODE_SINGLES)
+              if (battleMode == (0))
               {
-                  SetGameStat(GAME_STAT_BATTLE_TOWER_SINGLES_STREAK, gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode]);
+                  SetGameStat((32), gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode]);
                   gSaveBlock2Ptr.frontier.towerSinglesStreak = gSaveBlock2Ptr.frontier.towerWinStreaks[battleMode][lvlMode];
               }
           }
           break;
-      case FRONTIER_FACILITY_DOME:
-          if (gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode] < MAX_STREAK)
+      case (1):
+          if (gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode] < (9999))
               gSaveBlock2Ptr.frontier.domeWinStreaks[battleMode][lvlMode]++;
-          if (gSaveBlock2Ptr.frontier.domeTotalChampionships[battleMode][lvlMode] < MAX_STREAK)
+          if (gSaveBlock2Ptr.frontier.domeTotalChampionships[battleMode][lvlMode] < (9999))
               gSaveBlock2Ptr.frontier.domeTotalChampionships[battleMode][lvlMode]++;
           break;
-      case FRONTIER_FACILITY_PALACE:
-          if (gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] < MAX_STREAK)
+      case (2):
+          if (gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] < (9999))
               gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode]++;
           break;
-      case FRONTIER_FACILITY_ARENA:
-          if (gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode] < MAX_STREAK)
+      case (3):
+          if (gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode] < (9999))
               gSaveBlock2Ptr.frontier.arenaWinStreaks[lvlMode]++;
           break;
-      case FRONTIER_FACILITY_FACTORY:
-          if (gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode] < MAX_STREAK)
+      case (4):
+          if (gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode] < (9999))
               gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode]++;
           break;
-      case FRONTIER_FACILITY_PIKE:
-          if (gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] < MAX_STREAK)
+      case (5):
+          if (gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode] < (9999))
               gSaveBlock2Ptr.frontier.pikeWinStreaks[lvlMode]++;
           break;
-      case FRONTIER_FACILITY_PYRAMID:
-          if (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] < MAX_STREAK)
+      case (6):
+          if (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] < (9999))
               gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode]++;
           break;
       }
@@ -1434,18 +1428,18 @@ export function ResetSketchedMoves(): any {
       for (i = 0; i < MAX_FRONTIER_PARTY_SIZE; i++)
       {
           let monId: any = gSaveBlock2Ptr.frontier.selectedPartyMons[i] - 1;
-          if (monId < PARTY_SIZE)
+          if (monId < (6))
           {
-              for (j = 0; j < MAX_MON_MOVES; j++)
+              for (j = 0; j < (4); j++)
               {
-                  for (k = 0; k < MAX_MON_MOVES; k++)
+                  for (k = 0; k < (4); k++)
                   {
                       if (GetMonData(gSaveBlock1Ptr.playerParty[gSaveBlock2Ptr.frontier.selectedPartyMons[i] - 1], MON_DATA_MOVE1 + k, NULL)
                           == GetMonData(gPlayerParty[i], MON_DATA_MOVE1 + j, NULL))
                           break;
                   }
-                  if (k == MAX_MON_MOVES)
-                      SetMonMoveSlot(gPlayerParty[i], MOVE_SKETCH, j);
+                  if (k == (4))
+                      SetMonMoveSlot(gPlayerParty[i], (166), j);
               }
               gSaveBlock1Ptr.playerParty[gSaveBlock2Ptr.frontier.selectedPartyMons[i] - 1] = gPlayerParty[i];
           }
@@ -1454,7 +1448,7 @@ export function ResetSketchedMoves(): any {
 
 /** static void SetFacilityBrainObjectEvent(void) */
 export function SetFacilityBrainObjectEvent(): any {
-  SetFrontierBrainObjEventGfx(VarGet(VAR_FRONTIER_FACILITY));
+  SetFrontierBrainObjEventGfx(VarGet((0x40CF)));
 }
 
 /** static void Print1PRecord(s32 position, s32 x, s32 y, struct RankingHall1P *hallRecord, s32 hallFacilityId) */
@@ -1462,18 +1456,18 @@ export function Print1PRecord(position: any, x: any, y: any, hallRecord: any, ha
   let text: any = [];
       let winStreak: any = null;
 
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_123Dot[position], x * 8, (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);
-      hallRecord.name[PLAYER_NAME_LENGTH] = EOS;
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_123Dot[position], x * 8, (8 * (y + 5 * position)) + 1, (0xFF), NULL);
+      hallRecord.name[(7)] = (0xFF);
       if (hallRecord.winStreak)
       {
           TVShowConvertInternationalString(text, hallRecord.name, hallRecord.language);
-          AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, (x + 2) * 8, (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, (x + 2) * 8, (8 * (y + 5 * position)) + 1, (0xFF), NULL);
           winStreak = hallRecord.winStreak;
-          if (winStreak > MAX_STREAK)
-              winStreak = MAX_STREAK;
+          if (winStreak > (9999))
+              winStreak = (9999);
           ConvertIntToDecimalStringN(gStringVar2, winStreak, STR_CONV_MODE_RIGHT_ALIGN, 4);
           StringExpandPlaceholders(gStringVar4, sHallFacilityToRecordsText[hallFacilityId]);
-          AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, sHallFacilityToRecordsText[hallFacilityId], 0xC8), (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, sHallFacilityToRecordsText[hallFacilityId], 0xC8), (8 * (y + 5 * position)) + 1, (0xFF), NULL);
       }
 }
 
@@ -1482,25 +1476,25 @@ export function Print2PRecord(position: any, x: any, y: any, hallRecord: any): a
   let text: any = [];
       let winStreak: any = null;
 
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_123Dot[position], x * 8, (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gText_123Dot[position], x * 8, (8 * (y + 5 * position)) + 1, (0xFF), NULL);
       if (hallRecord.winStreak)
       {
-          hallRecord.name1[PLAYER_NAME_LENGTH] = EOS;
-          hallRecord.name2[PLAYER_NAME_LENGTH] = EOS;
+          hallRecord.name1[(7)] = (0xFF);
+          hallRecord.name2[(7)] = (0xFF);
           TVShowConvertInternationalString(text, hallRecord.name1, hallRecord.language);
-          AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, (x + 2) * 8, (8 * (y + 5 * position - 1)) + 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, (x + 2) * 8, (8 * (y + 5 * position - 1)) + 1, (0xFF), NULL);
           if (IsStringJapanese(hallRecord.name2))
-              TVShowConvertInternationalString(text, hallRecord.name2, LANGUAGE_JAPANESE);
+              TVShowConvertInternationalString(text, hallRecord.name2, (1));
           else
               StringCopy(text, hallRecord.name2);
-          AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, (x + 4) * 8, (8 * (y + 5 * position + 1)) + 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, text, (x + 4) * 8, (8 * (y + 5 * position + 1)) + 1, (0xFF), NULL);
 
           winStreak = hallRecord.winStreak;
-          if (winStreak > MAX_STREAK)
-              winStreak = MAX_STREAK;
+          if (winStreak > (9999))
+              winStreak = (9999);
           ConvertIntToDecimalStringN(gStringVar2, winStreak, STR_CONV_MODE_RIGHT_ALIGN, 4);
-          StringExpandPlaceholders(gStringVar4, sHallFacilityToRecordsText[RANKING_HALL_TOWER_LINK]);
-          AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, sHallFacilityToRecordsText[RANKING_HALL_TOWER_LINK], 0xC8), (8 * (y + 5 * position)) + 1, TEXT_SKIP_DRAW, NULL);
+          StringExpandPlaceholders(gStringVar4, sHallFacilityToRecordsText[(9)]);
+          AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, GetStringRightAlignXOffset(FONT_NORMAL, sHallFacilityToRecordsText[(9)], 0xC8), (8 * (y + 5 * position)) + 1, (0xFF), NULL);
       }
 }
 
@@ -1511,16 +1505,16 @@ export function Fill1PRecords(dst: any, hallFacilityId: any, lvlMode: any): any 
       let playerHallRecords: any = AllocZeroed(0);
       GetPlayerHallRecords(playerHallRecords);
 
-      for (i = 0; i < HALL_RECORDS_COUNT; i++)
+      for (i = 0; i < (3); i++)
           record1P[i] = gSaveBlock2Ptr.hallRecords1P[hallFacilityId][lvlMode][i];
 
-      record1P[HALL_RECORDS_COUNT] = playerHallRecords.onePlayer[hallFacilityId][lvlMode];
+      record1P[(3)] = playerHallRecords.onePlayer[hallFacilityId][lvlMode];
 
-      for (i = 0; i < HALL_RECORDS_COUNT; i++)
+      for (i = 0; i < (3); i++)
       {
           let highestWinStreak: any = 0;
           let highestId: any = 0;
-          for (j = 0; j < HALL_RECORDS_COUNT + 1; j++)
+          for (j = 0; j < (3) + 1; j++)
           {
               if (record1P[j].winStreak > highestWinStreak)
               {
@@ -1528,8 +1522,8 @@ export function Fill1PRecords(dst: any, hallFacilityId: any, lvlMode: any): any 
                   highestWinStreak = record1P[j].winStreak;
               }
           }
-          if (record1P[HALL_RECORDS_COUNT].winStreak >= highestWinStreak)
-              highestId = HALL_RECORDS_COUNT;
+          if (record1P[(3)].winStreak >= highestWinStreak)
+              highestId = (3);
 
           dst[i] = record1P[highestId];
           record1P[highestId].winStreak = 0;
@@ -1545,16 +1539,16 @@ export function Fill2PRecords(dst: any, lvlMode: any): any {
       let playerHallRecords: any = AllocZeroed(0);
       GetPlayerHallRecords(playerHallRecords);
 
-      for (i = 0; i < HALL_RECORDS_COUNT; i++)
+      for (i = 0; i < (3); i++)
           record2P[i] = gSaveBlock2Ptr.hallRecords2P[lvlMode][i];
 
-      record2P[HALL_RECORDS_COUNT] = playerHallRecords.twoPlayers[lvlMode];
+      record2P[(3)] = playerHallRecords.twoPlayers[lvlMode];
 
-      for (i = 0; i < HALL_RECORDS_COUNT; i++)
+      for (i = 0; i < (3); i++)
       {
           let highestWinStreak: any = 0;
           let highestId: any = 0;
-          for (j = 0; j < HALL_RECORDS_COUNT; j++)
+          for (j = 0; j < (3); j++)
           {
               if (record2P[j].winStreak > highestWinStreak)
               {
@@ -1562,8 +1556,8 @@ export function Fill2PRecords(dst: any, lvlMode: any): any {
                   highestWinStreak = record2P[j].winStreak;
               }
           }
-          if (record2P[HALL_RECORDS_COUNT].winStreak >= highestWinStreak)
-              highestId = HALL_RECORDS_COUNT;
+          if (record2P[(3)].winStreak >= highestWinStreak)
+              highestId = (3);
 
           dst[i] = record2P[highestId];
           record2P[highestId].winStreak = 0;
@@ -1581,21 +1575,21 @@ export function PrintHallRecords(hallFacilityId: any, lvlMode: any): any {
 
       StringCopy(gStringVar1, sRecordsWindowChallengeTexts[hallFacilityId][0]);
       StringExpandPlaceholders(gStringVar4, sRecordsWindowChallengeTexts[hallFacilityId][1]);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, 0, 1, (0xFF), NULL);
       x = GetStringRightAlignXOffset(FONT_NORMAL, sLevelModeText[lvlMode], DISPLAY_WIDTH - 32);
-      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, sLevelModeText[lvlMode], x, 1, TEXT_SKIP_DRAW, NULL);
-      if (hallFacilityId == RANKING_HALL_TOWER_LINK)
+      AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, sLevelModeText[lvlMode], x, 1, (0xFF), NULL);
+      if (hallFacilityId == (9))
       {
-          gSaveBlock2Ptr.frontier.opponentNames[0][PLAYER_NAME_LENGTH] = EOS;
-          gSaveBlock2Ptr.frontier.opponentNames[1][PLAYER_NAME_LENGTH] = EOS;
+          gSaveBlock2Ptr.frontier.opponentNames[0][(7)] = (0xFF);
+          gSaveBlock2Ptr.frontier.opponentNames[1][(7)] = (0xFF);
           Fill2PRecords(records2P, lvlMode);
-          for (i = 0; i < HALL_RECORDS_COUNT; i++)
+          for (i = 0; i < (3); i++)
               Print2PRecord(i, 1, 4,records2P[i]);
       }
       else
       {
           Fill1PRecords(records1P, hallFacilityId, lvlMode);
-          for (i = 0; i < HALL_RECORDS_COUNT; i++)
+          for (i = 0; i < (3); i++)
               Print1PRecord(i, 1, 4,records1P[i], hallFacilityId);
       }
 }
@@ -1605,7 +1599,7 @@ export function ShowRankingHallRecordsWindow(): any {
   gRecordsWindowId = AddWindow(sRankingHallRecordsWindowTemplate);
       DrawStdWindowFrame(gRecordsWindowId, FALSE);
       FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));
-      PrintHallRecords(gSpecialVar_0x8005, FRONTIER_LVL_50);
+      PrintHallRecords(gSpecialVar_0x8005, (0));
       PutWindowTilemap(gRecordsWindowId);
       CopyWindowToVram(gRecordsWindowId, COPYWIN_FULL);
 }
@@ -1613,7 +1607,7 @@ export function ShowRankingHallRecordsWindow(): any {
 /** void ScrollRankingHallRecordsWindow(void) */
 export function ScrollRankingHallRecordsWindow(): any {
   FillWindowPixelBuffer(gRecordsWindowId, PIXEL_FILL(1));
-      PrintHallRecords(gSpecialVar_0x8005, FRONTIER_LVL_OPEN);
+      PrintHallRecords(gSpecialVar_0x8005, (1));
       CopyWindowToVram(gRecordsWindowId, COPYWIN_GFX);
 }
 
@@ -1622,27 +1616,27 @@ export function ClearRankingHallRecords(): any {
   let i, j, k;
       const emptyId: any = [0];
 
-      for (i = 0; i < HALL_FACILITIES_COUNT; i++)
+      for (i = 0; i < (9); i++)
       {
-          for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+          for (j = 0; j < (2); j++)
           {
-              for (k = 0; k < HALL_RECORDS_COUNT; k++)
+              for (k = 0; k < (3); k++)
               {
                   CopyTrainerId(gSaveBlock2Ptr.hallRecords1P[i][j][k].id, (0));
-                  gSaveBlock2Ptr.hallRecords1P[i][j][k].name[0] = EOS;
+                  gSaveBlock2Ptr.hallRecords1P[i][j][k].name[0] = (0xFF);
                   gSaveBlock2Ptr.hallRecords1P[i][j][k].winStreak = 0;
               }
           }
       }
 
-      for (j = 0; j < FRONTIER_LVL_MODE_COUNT; j++)
+      for (j = 0; j < (2); j++)
       {
-          for (k = 0; k < HALL_RECORDS_COUNT; k++)
+          for (k = 0; k < (3); k++)
           {
               CopyTrainerId(gSaveBlock2Ptr.hallRecords2P[j][k].id1, (0));
               CopyTrainerId(gSaveBlock2Ptr.hallRecords2P[j][k].id2, (0));
-              gSaveBlock2Ptr.hallRecords2P[j][k].name1[0] = EOS;
-              gSaveBlock2Ptr.hallRecords2P[j][k].name2[0] = EOS;
+              gSaveBlock2Ptr.hallRecords2P[j][k].name1[0] = (0xFF);
+              gSaveBlock2Ptr.hallRecords2P[j][k].name2[0] = (0xFF);
               gSaveBlock2Ptr.hallRecords2P[j][k].winStreak = 0;
           }
       }
@@ -1651,9 +1645,9 @@ export function ClearRankingHallRecords(): any {
 /** void SaveGameFrontier(void) */
 export function SaveGameFrontier(): any {
   let i: any = null;
-      let monsParty: any = AllocZeroed(0 * PARTY_SIZE);
+      let monsParty: any = AllocZeroed(0 * (6));
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
           monsParty[i] = gPlayerParty[i];
 
       i = gPlayerPartyCount;
@@ -1663,7 +1657,7 @@ export function SaveGameFrontier(): any {
       ClearContinueGameWarpStatus2();
       gPlayerPartyCount = i;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
           gPlayerParty[i] = monsParty[i];
 
       Free(monsParty);
@@ -1673,10 +1667,10 @@ export function SaveGameFrontier(): any {
 export function GetFrontierBrainTrainerPicIndex(): any {
   let facility: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+      if (gBattleTypeFlags & ((1 << 24)))
           facility = GetRecordedBattleFrontierFacility();
       else
-          facility = VarGet(VAR_FRONTIER_FACILITY);
+          facility = VarGet((0x40CF));
 
       return gTrainers[sFrontierBrainTrainerIds[facility]].trainerPic;
 }
@@ -1685,10 +1679,10 @@ export function GetFrontierBrainTrainerPicIndex(): any {
 export function GetFrontierBrainTrainerClass(): any {
   let facility: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+      if (gBattleTypeFlags & ((1 << 24)))
           facility = GetRecordedBattleFrontierFacility();
       else
-          facility = VarGet(VAR_FRONTIER_FACILITY);
+          facility = VarGet((0x40CF));
 
       return gTrainers[sFrontierBrainTrainerIds[facility]].trainerClass;
 }
@@ -1698,28 +1692,28 @@ export function CopyFrontierBrainTrainerName(dst: any): any {
   let i: any = null;
       let facility: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+      if (gBattleTypeFlags & ((1 << 24)))
           facility = GetRecordedBattleFrontierFacility();
       else
-          facility = VarGet(VAR_FRONTIER_FACILITY);
+          facility = VarGet((0x40CF));
 
        
-      for (i = 0; i < TRAINER_NAME_LENGTH + 1; i++)
+      for (i = 0; i < (10) + 1; i++)
           dst[i] = gTrainers[sFrontierBrainTrainerIds[facility]].trainerName[i];
 
-      dst[i] = EOS;
+      dst[i] = (0xFF);
 }
 
 /** bool8 IsFrontierBrainFemale(void) */
 export function IsFrontierBrainFemale(): any {
-  let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+  let facility: any = VarGet((0x40CF));
       return sFrontierBrainObjEventGfx[facility][1];
 }
 
 /** void SetFrontierBrainObjEventGfx_2(void) */
 export function SetFrontierBrainObjEventGfx_2(): any {
-  let facility: any = VarGet(VAR_FRONTIER_FACILITY);
-      VarSet(VAR_OBJ_GFX_ID_0, sFrontierBrainObjEventGfx[facility][0]);
+  let facility: any = VarGet((0x40CF));
+      VarSet((0x4010), sFrontierBrainObjEventGfx[facility][0]);
 }
 
 /** void CreateFrontierBrainPokemon(void) */
@@ -1729,18 +1723,18 @@ export function CreateFrontierBrainPokemon(): any {
       let monPartyId: any = null;
       let monLevel: any = 0;
       let friendship: any = null;
-      let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+      let facility: any = VarGet((0x40CF));
       let symbol: any = GetFronterBrainSymbol();
 
-      if (facility == FRONTIER_FACILITY_DOME)
-          selectedMonBits = GetDomeTrainerSelectedMons(TrainerIdToDomeTournamentId(TRAINER_FRONTIER_BRAIN));
+      if (facility == (1))
+          selectedMonBits = GetDomeTrainerSelectedMons(TrainerIdToDomeTournamentId((1022)));
       else
-          selectedMonBits = (1 << FRONTIER_PARTY_SIZE) - 1;  
+          selectedMonBits = (1 << (3)) - 1;  
 
       ZeroEnemyPartyMons();
       monPartyId = 0;
       monLevel = SetFacilityPtrsGetLevel();
-      for (i = 0; i < FRONTIER_PARTY_SIZE; selectedMonBits >>= 1, i++)
+      for (i = 0; i < (3); selectedMonBits >>= 1, i++)
       {
           if (!(selectedMonBits & 1))
               continue;
@@ -1757,15 +1751,15 @@ export function CreateFrontierBrainPokemon(): any {
                     monLevel,
                     sFrontierBrainsMons[facility][symbol][i].fixedIV,
                     TRUE, j,
-                    OT_ID_PRESET, (61226));
+                    (1), (61226));
           SetMonData(gEnemyParty[monPartyId], MON_DATA_HELD_ITEM,sFrontierBrainsMons[facility][symbol][i].heldItem);
-          for (j = 0; j < NUM_STATS; j++)
+          for (j = 0; j < (6); j++)
               SetMonData(gEnemyParty[monPartyId], MON_DATA_HP_EV + j,sFrontierBrainsMons[facility][symbol][i].evs[j]);
-          friendship = MAX_FRIENDSHIP;
-          for (j = 0; j < MAX_MON_MOVES; j++)
+          friendship = (255);
+          for (j = 0; j < (4); j++)
           {
               SetMonMoveSlot(gEnemyParty[monPartyId], sFrontierBrainsMons[facility][symbol][i].moves[j], j);
-              if (sFrontierBrainsMons[facility][symbol][i].moves[j] == MOVE_FRUSTRATION)
+              if (sFrontierBrainsMons[facility][symbol][i].moves[j] == (218))
                   friendship = 0;
           }
           SetMonData(gEnemyParty[monPartyId], MON_DATA_FRIENDSHIP,friendship);
@@ -1776,7 +1770,7 @@ export function CreateFrontierBrainPokemon(): any {
 
 /** u16 GetFrontierBrainMonSpecies(u8 monId) */
 export function GetFrontierBrainMonSpecies(monId: any): any {
-  let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+  let facility: any = VarGet((0x40CF));
       let symbol: any = GetFronterBrainSymbol();
 
       return sFrontierBrainsMons[facility][symbol][monId].species;
@@ -1784,13 +1778,13 @@ export function GetFrontierBrainMonSpecies(monId: any): any {
 
 /** void SetFrontierBrainObjEventGfx(u8 facility) */
 export function SetFrontierBrainObjEventGfx(facility: any): any {
-  gTrainerBattleOpponent_A = TRAINER_FRONTIER_BRAIN;
-      VarSet(VAR_OBJ_GFX_ID_0, sFrontierBrainObjEventGfx[facility][0]);
+  gTrainerBattleOpponent_A = (1022);
+      VarSet((0x4010), sFrontierBrainObjEventGfx[facility][0]);
 }
 
 /** u16 GetFrontierBrainMonMove(u8 monId, u8 moveSlotId) */
 export function GetFrontierBrainMonMove(monId: any, moveSlotId: any): any {
-  let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+  let facility: any = VarGet((0x40CF));
       let symbol: any = GetFronterBrainSymbol();
 
       return sFrontierBrainsMons[facility][symbol][monId].moves[moveSlotId];
@@ -1798,7 +1792,7 @@ export function GetFrontierBrainMonMove(monId: any, moveSlotId: any): any {
 
 /** u8 GetFrontierBrainMonNature(u8 monId) */
 export function GetFrontierBrainMonNature(monId: any): any {
-  let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+  let facility: any = VarGet((0x40CF));
       let symbol: any = GetFronterBrainSymbol();
 
       return sFrontierBrainsMons[facility][symbol][monId].nature;
@@ -1806,7 +1800,7 @@ export function GetFrontierBrainMonNature(monId: any): any {
 
 /** u8 GetFrontierBrainMonEvs(u8 monId, u8 evStatId) */
 export function GetFrontierBrainMonEvs(monId: any, evStatId: any): any {
-  let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+  let facility: any = VarGet((0x40CF));
       let symbol: any = GetFronterBrainSymbol();
 
       return sFrontierBrainsMons[facility][symbol][monId].evs[evStatId];
@@ -1814,7 +1808,7 @@ export function GetFrontierBrainMonEvs(monId: any, evStatId: any): any {
 
 /** s32 GetFronterBrainSymbol(void) */
 export function GetFronterBrainSymbol(): any {
-  let facility: any = VarGet(VAR_FRONTIER_FACILITY);
+  let facility: any = VarGet((0x40CF));
       let symbol: any = GetPlayerSymbolCountForFacility(facility);
 
       if (symbol == 2)
@@ -1836,14 +1830,14 @@ export function CopyFrontierBrainText(playerWonText: any): any {
   let facility: any = null;
       let symbol: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+      if (gBattleTypeFlags & ((1 << 24)))
       {
           facility = GetRecordedBattleFrontierFacility();
           symbol = GetRecordedBattleFronterBrainSymbol();
       }
       else
       {
-          facility = VarGet(VAR_FRONTIER_FACILITY);
+          facility = VarGet((0x40CF));
           symbol = GetFronterBrainSymbol();
       }
 

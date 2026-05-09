@@ -97,7 +97,7 @@ export function AnimSludgeBombHitParticle_Step(sprite: any): any {
 export function AnimAcidPoisonDroplet(sprite: any): any {
   SetAverageBattlerPositions(gBattleAnimTarget, TRUE,sprite.x,sprite.y);
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[0] = -gBattleAnimArgs[0];
 
       sprite.x += gBattleAnimArgs[0];
@@ -121,7 +121,7 @@ export function AnimBubbleEffect(sprite: any): any {
       {
           SetAverageBattlerPositions(gBattleAnimTarget, TRUE,sprite.x,sprite.y);
 
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
               gBattleAnimArgs[0] = -gBattleAnimArgs[0];
 
           sprite.x += gBattleAnimArgs[0];

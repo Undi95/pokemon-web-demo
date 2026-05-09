@@ -17,9 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sFieldRegionMapBgTemplates: any = null;
 let sFieldRegionMapHandler: any = null;
-let sFieldRegionMapWindowTemplates: any = null;
 /** void FieldInitRegionMap(MainCallback callback) */
 export function FieldInitRegionMap(callback: any): any {
   SetVBlankCallback(NULL);
@@ -87,7 +85,7 @@ export function FieldUpdateRegionMap(): any {
               ScheduleBgCopyTilemapToVram(0);
               DrawStdFrameWithCustomTileAndPalette(WIN_MAPSEC_NAME, FALSE, 0x27, 0xd);
               PrintRegionMapSecName();
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
               sFieldRegionMapHandler.state++;
               break;
           case 2:
@@ -115,7 +113,7 @@ export function FieldUpdateRegionMap(): any {
               }
               break;
           case 5:
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
               sFieldRegionMapHandler.state++;
               break;
           case 6:

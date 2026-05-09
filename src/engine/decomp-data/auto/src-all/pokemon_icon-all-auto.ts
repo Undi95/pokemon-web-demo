@@ -15,21 +15,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sMonIconAffineAnims: any = null;
-let sMonIconAnims: any = null;
-let sMonIconOamData: any = null;
-let sSpriteImageSizes: any = null;
 /** u8 CreateMonIcon(u16 species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority, u32 personality, bool32 handleDeoxys) */
 export function CreateMonIcon(species: any, callback: any, x: any, y: any, subpriority: any, personality: any, handleDeoxys: any): any {
   let spriteId: any = null;
       let iconTemplate: any =
-      [ sMonIconOamData, GetMonIconPtr(species, personality, handleDeoxys), sMonIconAnims, sMonIconAffineAnims, callback, POKE_ICON_BASE_PAL_TAG + gMonIconPaletteIndices[species],
+      [ sMonIconOamData, GetMonIconPtr(species, personality, handleDeoxys), sMonIconAnims, sMonIconAffineAnims, callback, (56000) + gMonIconPaletteIndices[species],
       ];
 
-      if (species > NUM_SPECIES)
-          iconTemplate.paletteTag = POKE_ICON_BASE_PAL_TAG;
+      if (species > ((412)))
+          iconTemplate.paletteTag = (56000);
 
       spriteId = CreateMonIconSprite(iconTemplate, x, y, subpriority);
 
@@ -42,7 +36,7 @@ export function CreateMonIcon(species: any, callback: any, x: any, y: any, subpr
 export function CreateMonIconNoPersonality(species: any, callback: any, x: any, y: any, subpriority: any, handleDeoxys: any): any {
   let spriteId: any = null;
       let iconTemplate: any =
-      [ sMonIconOamData, NULL, sMonIconAnims, sMonIconAffineAnims, callback, POKE_ICON_BASE_PAL_TAG + gMonIconPaletteIndices[species],
+      [ sMonIconOamData, NULL, sMonIconAnims, sMonIconAffineAnims, callback, (56000) + gMonIconPaletteIndices[species],
       ];
 
       iconTemplate.image = GetMonIconTiles(species, handleDeoxys);
@@ -57,19 +51,19 @@ export function CreateMonIconNoPersonality(species: any, callback: any, x: any, 
 export function GetIconSpecies(species: any, personality: any): any {
   let result: any = null;
 
-      if (species == SPECIES_UNOWN)
+      if (species == (201))
       {
           let letter: any = GetUnownLetterByPersonality(personality);
           if (letter == 0)
-              letter = SPECIES_UNOWN;
+              letter = (201);
           else
-              letter += (SPECIES_UNOWN_B - 1);
+              letter += (((((412)) + 1)) - 1);
           result = letter;
       }
       else
       {
-          if (species > NUM_SPECIES)
-              result = (SPECIES_OLD_UNOWN_J);
+          if (species > ((412)))
+              result = ((260));
           else
               result = species;
       }
@@ -89,18 +83,18 @@ export function GetUnownLetterByPersonality(personality: any): any {
 export function GetIconSpeciesNoPersonality(species: any): any {
   let value: any = null;
 
-      if (MailSpeciesToSpecies(species,value) == SPECIES_UNOWN)
+      if (MailSpeciesToSpecies(species,value) == (201))
       {
           if (value == 0)
-              value += SPECIES_UNOWN;
+              value += (201);
           else
-              value += (SPECIES_UNOWN_B - 1);
+              value += (((((412)) + 1)) - 1);
           return value;
       }
       else
       {
-          if (species > NUM_SPECIES)
-              species = (SPECIES_OLD_UNOWN_J);
+          if (species > ((412)))
+              species = ((260));
           return GetIconSpecies(species, 0);
       }
 }
@@ -120,8 +114,8 @@ export function LoadMonIconPalettes(): any {
 /** void SafeLoadMonIconPalette(u16 species) */
 export function SafeLoadMonIconPalette(species: any): any {
   let palIndex: any = null;
-      if (species > NUM_SPECIES)
-          species = (SPECIES_OLD_UNOWN_J);
+      if (species > ((412)))
+          species = ((260));
       palIndex = gMonIconPaletteIndices[species];
       if (IndexOfSpritePaletteTag(gMonIconPaletteTable[palIndex].tag) == 0xFF)
           LoadSpritePalette(gMonIconPaletteTable[palIndex]);
@@ -144,8 +138,8 @@ export function FreeMonIconPalettes(): any {
 /** void SafeFreeMonIconPalette(u16 species) */
 export function SafeFreeMonIconPalette(species: any): any {
   let palIndex: any = null;
-      if (species > NUM_SPECIES)
-          species = (SPECIES_OLD_UNOWN_J);
+      if (species > ((412)))
+          species = ((260));
       palIndex = gMonIconPaletteIndices[species];
       FreeSpritePaletteByTag(gMonIconPaletteTable[palIndex].tag);
 }
@@ -182,8 +176,8 @@ export function TryLoadAllMonIconPalettesAtOffset(offset: any): any {
 
 /** u8 GetValidMonIconPalIndex(u16 species) */
 export function GetValidMonIconPalIndex(species: any): any {
-  if (species > NUM_SPECIES)
-          species = (SPECIES_OLD_UNOWN_J);
+  if (species > ((412)))
+          species = ((260));
       return gMonIconPaletteIndices[species];
 }
 
@@ -235,7 +229,7 @@ export function CreateMonIconSprite(iconTemplate: any, x: any, y: any, subpriori
       let image: any = [ NULL, sSpriteImageSizes[iconTemplate.oam.shape][iconTemplate.oam.size] ];
 
       let spriteTemplate: any =
-      [ TAG_NONE, iconTemplate.paletteTag, iconTemplate.oam, iconTemplate.anims, image, iconTemplate.affineAnims, iconTemplate.callback,
+      [ (0xFFFF), iconTemplate.paletteTag, iconTemplate.oam, iconTemplate.anims, image, iconTemplate.affineAnims, iconTemplate.callback,
       ];
 
       spriteId = CreateSprite(spriteTemplate, x, y, subpriority);

@@ -33,6 +33,7 @@ import {
 import { GetSaveBlock1, GetSaveBlock2 } from './save-system';
 import { gObjectEvents, OBJECT_EVENTS_COUNT, type ObjectEvent } from './object-events';
 import { gPlayerAvatar } from './player-avatar';
+import { GetCameraTopLeftCoords } from './field-camera';
 
 // ─── ObjectEvent ↔ ObjectEventSnapshot mapping ──────────────────────────────
 
@@ -219,17 +220,22 @@ export function UseContinueGameWarp(): boolean {
 /** Helper web-port : sync la position courante du player vers `block1.pos`.
  *  À call avant le save pour que pos reflète où le player est *vraiment*.
  *
- *  Notre web port stocke la position player dans `gPlayerAvatar.x/y` (= map
- *  coords), pas dans `gObjectEvents[]`. Le décomp utilise les deux : pos est
- *  updated via `CameraMove()` à chaque step (= directly écrit `gSaveBlock1Ptr->pos`),
- *  et le player NPC est aussi dans `gObjectEvents[gPlayerAvatar.objectEventId]`
- *  pour rendering + collision.
+ *  ⚠️ Notre web port a 2 sources de pos : `gPlayerAvatar.x/y` (= updated
+ *  uniquement aux map transitions, donc STALE pendant le walk) et `_camPos`
+ *  dans field-camera.ts (= updated à chaque step via CameraMove). Le décomp
+ *  ROM update `gSaveBlock1Ptr->pos` directement à chaque step. Pour 1:1 le
+ *  ROM behavior, on lit `GetCameraTopLeftCoords()` (= source de vérité
+ *  courante au step).
  *
- *  Notre simplification : sync `gPlayerAvatar.x/y` → `block1.pos` au save.
  *  Préserve aussi le `__facing` pour spawn direction au resume. */
 export function SyncPlayerPositionToBlock(): void {
   const block1 = GetSaveBlock1();
-  block1.pos = { x: gPlayerAvatar.x, y: gPlayerAvatar.y };
+  // _camPos = source de vérité step-level. gPlayerAvatar fallback pour les
+  // edge cases (= avant le 1er map load).
+  const camPos = GetCameraTopLeftCoords();
+  const x = (camPos.x !== 0 || camPos.y !== 0) ? camPos.x : gPlayerAvatar.x;
+  const y = (camPos.x !== 0 || camPos.y !== 0) ? camPos.y : gPlayerAvatar.y;
+  block1.pos = { x, y };
   (block1 as { __facing?: number }).__facing = gPlayerAvatar.facing;
 }
 

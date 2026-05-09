@@ -15,9 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sWindowFrames: any = null;
 /** void LoadMessageBoxGfx(u8 windowId, u16 destOffset, u8 palOffset) */
 export function LoadMessageBoxGfx(windowId: any, destOffset: any, palOffset: any): any {
   LoadBgTiles(GetWindowAttribute(windowId, WINDOW_BG), gMessageBox_Gfx, 0x1C0, destOffset);

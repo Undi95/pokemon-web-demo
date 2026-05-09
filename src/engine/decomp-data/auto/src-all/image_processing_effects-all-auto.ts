@@ -17,7 +17,24 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sPointillismPoints: any = null;
+let curAvg: any = null;
+let dest: any = null;
+let dest_: any = null;
+let gCanvasColumnEnd: any = null;
+let gCanvasColumnStart: any = null;
+let gCanvasHeight: any = null;
+let gCanvasMonPersonality: any = null;
+let gCanvasPalette: any = null;
+let gCanvasPaletteStart: any = null;
+let gCanvasPixels: any = null;
+let gCanvasRowEnd: any = null;
+let gCanvasRowStart: any = null;
+let gCanvasWidth: any = null;
+let height: any = null;
+let j: any = null;
+let nextAvg: any = null;
+let nextDiff: any = null;
+let src_: any = null;
 /** void ApplyImageProcessingEffects(struct ImageProcessingContext *context) */
 export function ApplyImageProcessingEffects(context: any): any {
   gCanvasPixels = context.canvasPixels;
@@ -98,7 +115,7 @@ export function ApplyImageEffect_RedChannelGrayscale(delta: any): any {
               {
                    
                    
-                  let grayValue: any = (pixel & RGB_RED);
+                  let grayValue: any = (pixel & (RGB(31, 0, 0)));
                   grayValue += delta;
                   if (grayValue > 31)
                       grayValue = 31;
@@ -121,7 +138,7 @@ export function ApplyImageEffect_RedChannelGrayscaleHighlight(highlight: any): a
           {
               if (!IS_ALPHA(pixel))
               {
-                  let grayValue: any = (pixel & RGB_RED);
+                  let grayValue: any = (pixel & (RGB(31, 0, 0)));
                   if (grayValue > 31 - highlight)
                       grayValue = 31 - (highlight >> 1);
 
@@ -286,7 +303,7 @@ export function ApplyImageEffect_Shimmer(): any {
       {
           pixel =gCanvasPixels[j];
           prevPixel = pixel;
-          pixel = RGB_ALPHA;
+          pixel = ((1 << 15));
           for (i = 1, pixel += (64); i < (64) - 1; i++, pixel += (64))
           {
               if (!IS_ALPHA(pixel))
@@ -296,10 +313,10 @@ export function ApplyImageEffect_Shimmer(): any {
               }
           }
 
-          pixel = RGB_ALPHA;
+          pixel = ((1 << 15));
           pixel =gCanvasPixels[j];
           prevPixel = pixel;
-          pixel = RGB_ALPHA;
+          pixel = ((1 << 15));
           for (i = 1, pixel += (64); i < (64) - 1; i++, pixel += (64))
           {
               if (!IS_ALPHA(pixel))
@@ -309,7 +326,7 @@ export function ApplyImageEffect_Shimmer(): any {
               }
           }
 
-          pixel = RGB_ALPHA;
+          pixel = ((1 << 15));
       }
 
        
@@ -475,7 +492,7 @@ export function QuantizePixel_PersonalityColor(color: any, personality: any): an
       if (red < 17 && green < 17 && blue < 17)
           return GetColorFromPersonality(personality);
       else
-          return RGB_WHITE;
+          return (RGB(31, 31, 31));
 }
 
 /** static u16 GetColorFromPersonality(u8 personality) */
@@ -536,24 +553,24 @@ export function QuantizePixel_BlackAndWhite(color: any): any {
       let blue: any =  GET_B(color);
 
       if (red < 17 && green < 17 && blue < 17)
-          return RGB_BLACK;
+          return (RGB(0, 0, 0));
       else
-          return RGB_WHITE;
+          return (RGB(31, 31, 31));
 }
 
 /** static u16 QuantizePixel_BlackOutline(u16 *pixelA, u16 *pixelB) */
 export function QuantizePixel_BlackOutline(pixelA: any, pixelB: any): any {
-  if (pixelA != RGB_BLACK)
+  if (pixelA != (RGB(0, 0, 0)))
       {
           if (IS_ALPHA(pixelA))
-              return RGB_ALPHA;
+              return ((1 << 15));
           if (IS_ALPHA(pixelB))
-              return RGB_BLACK;
+              return (RGB(0, 0, 0));
 
           return pixelA;
       }
 
-      return RGB_BLACK;
+      return (RGB(0, 0, 0));
 }
 
 /** static u16 QuantizePixel_Invert(u16 *color) */
@@ -805,7 +822,7 @@ export function ApplyImageProcessingQuantization(context: any): any {
 
 /** static void SetPresetPalette_PrimaryColors(void) */
 export function SetPresetPalette_PrimaryColors(): any {
-  gCanvasPalette[0]  = RGB_BLACK;
+  gCanvasPalette[0]  = (RGB(0, 0, 0));
       gCanvasPalette[1]  = RGB(6, 6, 6);
       gCanvasPalette[2]  = RGB(29, 29, 29);
       gCanvasPalette[3]  = RGB(11, 11, 11);
@@ -825,17 +842,17 @@ export function SetPresetPalette_PrimaryColors(): any {
 
 /** static void SetPresetPalette_BlackAndWhite(void) */
 export function SetPresetPalette_BlackAndWhite(): any {
-  gCanvasPalette[0] = RGB_BLACK;
-      gCanvasPalette[1] = RGB_BLACK;
-      gCanvasPalette[2] = RGB_WHITE;
+  gCanvasPalette[0] = (RGB(0, 0, 0));
+      gCanvasPalette[1] = (RGB(0, 0, 0));
+      gCanvasPalette[2] = (RGB(31, 31, 31));
 }
 
 /** static void SetPresetPalette_GrayscaleSmall(void) */
 export function SetPresetPalette_GrayscaleSmall(): any {
   let i: any = null;
 
-      gCanvasPalette[0] = RGB_BLACK;
-      gCanvasPalette[1] = RGB_BLACK;
+      gCanvasPalette[0] = (RGB(0, 0, 0));
+      gCanvasPalette[1] = (RGB(0, 0, 0));
       for (i = 0; i < 14; i++)
           gCanvasPalette[i + 2] = RGB2(2 * (i + 2), 2 * (i + 2), 2 * (i + 2));
 }
@@ -844,7 +861,7 @@ export function SetPresetPalette_GrayscaleSmall(): any {
 export function SetPresetPalette_Grayscale(): any {
   let i: any = null;
 
-      gCanvasPalette[0] = RGB_BLACK;
+      gCanvasPalette[0] = (RGB(0, 0, 0));
       for (i = 0; i < 32; i++)
           gCanvasPalette[i + 1] = RGB2(i, i, i);
 }
@@ -859,7 +876,7 @@ export function QuantizePalette_Standard(useLimitedPalette: any): any {
           maxIndex = 0xFF;
 
       for (i = 0; i < maxIndex; i++)
-          gCanvasPalette[i] = RGB_BLACK;
+          gCanvasPalette[i] = (RGB(0, 0, 0));
 
       gCanvasPalette[maxIndex] = RGB2(15, 15, 15);
       for (j = 0; j < gCanvasRowEnd; j++)
@@ -878,7 +895,7 @@ export function QuantizePalette_Standard(useLimitedPalette: any): any {
                   let curIndex: any = 1;
                   if (curIndex < maxIndex)
                   {
-                      if (gCanvasPalette[curIndex] == RGB_BLACK)
+                      if (gCanvasPalette[curIndex] == (RGB(0, 0, 0)))
                       {
                            
                            
@@ -891,7 +908,7 @@ export function QuantizePalette_Standard(useLimitedPalette: any): any {
                       {
                           while (curIndex < maxIndex)
                           {
-                              if (gCanvasPalette[curIndex] == RGB_BLACK)
+                              if (gCanvasPalette[curIndex] == (RGB(0, 0, 0)))
                               {
                                    
                                    
@@ -942,7 +959,7 @@ export function QuantizePalette_BlackAndWhite(): any {
               }
               else
               {
-                  if (QuantizePixel_BlackAndWhite(pixel) == RGB_BLACK)
+                  if (QuantizePixel_BlackAndWhite(pixel) == (RGB(0, 0, 0)))
                   {
                        
                       pixel = gCanvasPaletteStart + 1;

@@ -38,7 +38,7 @@ export function SetPCItemQuantity(quantity: any, newValue: any): any {
 /** void ApplyNewEncryptionKeyToBagItems(u32 newKey) */
 export function ApplyNewEncryptionKeyToBagItems(newKey: any): any {
   let pocket, item;
-      for (pocket = 0; pocket < POCKETS_COUNT; pocket++)
+      for (pocket = 0; pocket < (5); pocket++)
       {
           for (item = 0; item < gBagPockets[pocket].capacity; item++)
               ApplyNewEncryptionKeyToHword((gBagPockets[pocket].itemSlots[item].quantity), newKey);
@@ -52,20 +52,20 @@ export function ApplyNewEncryptionKeyToBagItems_(newKey: any): any {
 
 /** void SetBagItemsPointers(void) */
 export function SetBagItemsPointers(): any {
-  gBagPockets[ITEMS_POCKET].itemSlots = gSaveBlock1Ptr.bagPocket_Items;
-      gBagPockets[ITEMS_POCKET].capacity = BAG_ITEMS_COUNT;
+  gBagPockets[(0)].itemSlots = gSaveBlock1Ptr.bagPocket_Items;
+      gBagPockets[(0)].capacity = (30);
 
-      gBagPockets[KEYITEMS_POCKET].itemSlots = gSaveBlock1Ptr.bagPocket_KeyItems;
-      gBagPockets[KEYITEMS_POCKET].capacity = BAG_KEYITEMS_COUNT;
+      gBagPockets[(4)].itemSlots = gSaveBlock1Ptr.bagPocket_KeyItems;
+      gBagPockets[(4)].capacity = (30);
 
-      gBagPockets[BALLS_POCKET].itemSlots = gSaveBlock1Ptr.bagPocket_PokeBalls;
-      gBagPockets[BALLS_POCKET].capacity = BAG_POKEBALLS_COUNT;
+      gBagPockets[(1)].itemSlots = gSaveBlock1Ptr.bagPocket_PokeBalls;
+      gBagPockets[(1)].capacity = (16);
 
-      gBagPockets[TMHM_POCKET].itemSlots = gSaveBlock1Ptr.bagPocket_TMHM;
-      gBagPockets[TMHM_POCKET].capacity = BAG_TMHM_COUNT;
+      gBagPockets[(2)].itemSlots = gSaveBlock1Ptr.bagPocket_TMHM;
+      gBagPockets[(2)].capacity = (64);
 
-      gBagPockets[BERRIES_POCKET].itemSlots = gSaveBlock1Ptr.bagPocket_Berries;
-      gBagPockets[BERRIES_POCKET].capacity = BAG_BERRIES_COUNT;
+      gBagPockets[(3)].itemSlots = gSaveBlock1Ptr.bagPocket_Berries;
+      gBagPockets[(3)].capacity = (46);
 }
 
 /** void CopyItemName(u16 itemId, u8 *dst) */
@@ -75,17 +75,17 @@ export function CopyItemName(itemId: any, dst: any): any {
 
 /** void CopyItemNameHandlePlural(u16 itemId, u8 *dst, u32 quantity) */
 export function CopyItemNameHandlePlural(itemId: any, dst: any, quantity: any): any {
-  if (itemId == ITEM_POKE_BALL)
+  if (itemId == (4))
       {
           if (quantity < 2)
-              StringCopy(dst, GetItemName(ITEM_POKE_BALL));
+              StringCopy(dst, GetItemName((4)));
           else
               StringCopy(dst, gText_PokeBalls);
       }
       else
       {
-          if (itemId >= FIRST_BERRY_INDEX && itemId <= LAST_BERRY_INDEX)
-              GetBerryCountString(dst, gBerries[itemId - FIRST_BERRY_INDEX].name, quantity);
+          if (itemId >= ((133)) && itemId <= ((175)))
+              GetBerryCountString(dst, gBerries[itemId - ((133))].name, quantity);
           else
               StringCopy(dst, GetItemName(itemId));
       }
@@ -102,7 +102,7 @@ export function GetBerryCountString(dst: any, berryName: any, quantity: any): an
           berryString = gText_Berries;
 
       txtPtr = StringCopy(dst, berryString);
-      txtPtr = CHAR_SPACE;
+      txtPtr = (0x00);
       StringCopy(txtPtr + 1, berryName);
 }
 
@@ -125,7 +125,7 @@ export function CheckBagHasItem(itemId: any, count: any): any {
 
       if (GetItemPocket(itemId) == 0)
           return FALSE;
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || FlagGet(FLAG_STORING_ITEMS_IN_PYRAMID_BAG) == TRUE)
+      if (CurrentBattlePyramidLocation() != (0) || FlagGet((((0x4000) + 0x4))) == TRUE)
           return CheckPyramidBagHasItem(itemId, count);
       pocket = GetItemPocket(itemId) - 1;
        
@@ -151,7 +151,7 @@ export function CheckBagHasItem(itemId: any, count: any): any {
 export function HasAtLeastOneBerry(): any {
   let i: any = null;
 
-      for (i = FIRST_BERRY_INDEX; i < ITEM_BRIGHT_POWDER; i++)
+      for (i = ((133)); i < (179); i++)
       {
           if (CheckBagHasItem(i, 1) == TRUE)
           {
@@ -170,19 +170,19 @@ export function CheckBagHasSpace(itemId: any, count: any): any {
       let slotCapacity: any = null;
       let ownedCount: any = null;
 
-      if (GetItemPocket(itemId) == POCKET_NONE)
+      if (GetItemPocket(itemId) == (0))
           return FALSE;
 
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || FlagGet(FLAG_STORING_ITEMS_IN_PYRAMID_BAG) == TRUE)
+      if (CurrentBattlePyramidLocation() != (0) || FlagGet((((0x4000) + 0x4))) == TRUE)
       {
           return CheckPyramidBagHasSpace(itemId, count);
       }
 
       pocket = GetItemPocket(itemId) - 1;
-      if (pocket != BERRIES_POCKET)
-          slotCapacity = MAX_BAG_ITEM_CAPACITY;
+      if (pocket != (3))
+          slotCapacity = (99);
       else
-          slotCapacity = MAX_BERRY_CAPACITY;
+          slotCapacity = (999);
 
        
       for (i = 0; i < gBagPockets[pocket].capacity; i++)
@@ -192,7 +192,7 @@ export function CheckBagHasSpace(itemId: any, count: any): any {
               ownedCount = GetBagItemQuantity(gBagPockets[pocket].itemSlots[i].quantity);
               if (ownedCount + count <= slotCapacity)
                   return TRUE;
-              if (pocket == TMHM_POCKET || pocket == BERRIES_POCKET)
+              if (pocket == (2) || pocket == (3))
                   return FALSE;
               count -= (slotCapacity - ownedCount);
               if (count == 0)
@@ -209,7 +209,7 @@ export function CheckBagHasSpace(itemId: any, count: any): any {
               {
                   if (count > slotCapacity)
                   {
-                      if (pocket == TMHM_POCKET || pocket == BERRIES_POCKET)
+                      if (pocket == (2) || pocket == (3))
                           return FALSE;
                       count -= slotCapacity;
                   }
@@ -231,11 +231,11 @@ export function CheckBagHasSpace(itemId: any, count: any): any {
 export function AddBagItem(itemId: any, count: any): any {
   let i: any = null;
 
-      if (GetItemPocket(itemId) == POCKET_NONE)
+      if (GetItemPocket(itemId) == (0))
           return FALSE;
 
        
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || FlagGet(FLAG_STORING_ITEMS_IN_PYRAMID_BAG) == TRUE)
+      if (CurrentBattlePyramidLocation() != (0) || FlagGet((((0x4000) + 0x4))) == TRUE)
       {
           return AddPyramidBagItem(itemId, count);
       }
@@ -251,10 +251,10 @@ export function AddBagItem(itemId: any, count: any): any {
           newItems = AllocZeroed(itemPocket.capacity * 0);
           memcpy(newItems, itemPocket.itemSlots, itemPocket.capacity * 0);
 
-          if (pocket != BERRIES_POCKET)
-              slotCapacity = MAX_BAG_ITEM_CAPACITY;
+          if (pocket != (3))
+              slotCapacity = (99);
           else
-              slotCapacity = MAX_BERRY_CAPACITY;
+              slotCapacity = (999);
 
           for (i = 0; i < itemPocket.capacity; i++)
           {
@@ -273,7 +273,7 @@ export function AddBagItem(itemId: any, count: any): any {
                   else
                   {
                        
-                      if (pocket == TMHM_POCKET || pocket == BERRIES_POCKET)
+                      if (pocket == (2) || pocket == (3))
                       {
                           Free(newItems);
                           return FALSE;
@@ -298,13 +298,13 @@ export function AddBagItem(itemId: any, count: any): any {
                
               for (i = 0; i < itemPocket.capacity; i++)
               {
-                  if (newItems[i].itemId == ITEM_NONE)
+                  if (newItems[i].itemId == (0))
                   {
                       newItems[i].itemId = itemId;
                       if (count > slotCapacity)
                       {
                            
-                          if (pocket == TMHM_POCKET || pocket == BERRIES_POCKET)
+                          if (pocket == (2) || pocket == (3))
                           {
                               Free(newItems);
                               return FALSE;
@@ -339,11 +339,11 @@ export function RemoveBagItem(itemId: any, count: any): any {
   let i: any = null;
       let totalQuantity: any = 0;
 
-      if (GetItemPocket(itemId) == POCKET_NONE || itemId == ITEM_NONE)
+      if (GetItemPocket(itemId) == (0) || itemId == (0))
           return FALSE;
 
        
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || FlagGet(FLAG_STORING_ITEMS_IN_PYRAMID_BAG) == TRUE)
+      if (CurrentBattlePyramidLocation() != (0) || FlagGet((((0x4000) + 0x4))) == TRUE)
       {
           return RemovePyramidBagItem(itemId, count);
       }
@@ -368,8 +368,8 @@ export function RemoveBagItem(itemId: any, count: any): any {
 
           if (CurMapIsSecretBase() == TRUE)
           {
-              VarSet(VAR_SECRET_BASE_LOW_TV_FLAGS, VarGet(VAR_SECRET_BASE_LOW_TV_FLAGS) | SECRET_BASE_USED_BAG);
-              VarSet(VAR_SECRET_BASE_LAST_ITEM_USED, itemId);
+              VarSet((0x40EE), VarGet((0x40EE)) | ((1 << 9)));
+              VarSet((0x40ED), itemId);
           }
 
           _var = GetItemListPosition(pocket);
@@ -389,7 +389,7 @@ export function RemoveBagItem(itemId: any, count: any): any {
               }
 
               if (GetBagItemQuantity(itemPocket.itemSlots[_var].quantity) == 0)
-                  itemPocket.itemSlots[_var].itemId = ITEM_NONE;
+                  itemPocket.itemSlots[_var].itemId = (0);
 
               if (count == 0)
                   return TRUE;
@@ -412,7 +412,7 @@ export function RemoveBagItem(itemId: any, count: any): any {
                   }
 
                   if (GetBagItemQuantity(itemPocket.itemSlots[i].quantity) == 0)
-                      itemPocket.itemSlots[i].itemId = ITEM_NONE;
+                      itemPocket.itemSlots[i].itemId = (0);
 
                   if (count == 0)
                       return TRUE;
@@ -433,7 +433,7 @@ export function ClearItemSlots(itemSlots: any, itemCount: any): any {
 
       for (i = 0; i < itemCount; i++)
       {
-          itemSlots[i].itemId = ITEM_NONE;
+          itemSlots[i].itemId = (0);
           SetBagItemQuantity(itemSlots[i].quantity, 0);
       }
 }
@@ -442,9 +442,9 @@ export function ClearItemSlots(itemSlots: any, itemCount: any): any {
 export function FindFreePCItemSlot(): any {
   let i: any = null;
 
-      for (i = 0; i < PC_ITEMS_COUNT; i++)
+      for (i = 0; i < (50); i++)
       {
-          if (gSaveBlock1Ptr.pcItems[i].itemId == ITEM_NONE)
+          if (gSaveBlock1Ptr.pcItems[i].itemId == (0))
               return i;
       }
       return -1;
@@ -455,9 +455,9 @@ export function CountUsedPCItemSlots(): any {
   let usedSlots: any = 0;
       let i: any = null;
 
-      for (i = 0; i < PC_ITEMS_COUNT; i++)
+      for (i = 0; i < (50); i++)
       {
-          if (gSaveBlock1Ptr.pcItems[i].itemId != ITEM_NONE)
+          if (gSaveBlock1Ptr.pcItems[i].itemId != (0))
               usedSlots++;
       }
       return usedSlots;
@@ -467,7 +467,7 @@ export function CountUsedPCItemSlots(): any {
 export function CheckPCHasItem(itemId: any, count: any): any {
   let i: any = null;
 
-      for (i = 0; i < PC_ITEMS_COUNT; i++)
+      for (i = 0; i < (50); i++)
       {
           if (gSaveBlock1Ptr.pcItems[i].itemId == itemId && GetPCItemQuantity(gSaveBlock1Ptr.pcItems[i].quantity) >= count)
               return TRUE;
@@ -487,20 +487,20 @@ export function AddPCItem(itemId: any, count: any): any {
       memcpy(newItems, gSaveBlock1Ptr.pcItems, sizeof(gSaveBlock1Ptr.pcItems));
 
        
-      for (i = 0; i < PC_ITEMS_COUNT; i++)
+      for (i = 0; i < (50); i++)
       {
           if (newItems[i].itemId == itemId)
           {
               ownedCount = GetPCItemQuantity(newItems[i].quantity);
-              if (ownedCount + count <= MAX_PC_ITEM_CAPACITY)
+              if (ownedCount + count <= (999))
               {
                   SetPCItemQuantity(newItems[i].quantity, ownedCount + count);
                   memcpy(gSaveBlock1Ptr.pcItems, newItems, sizeof(gSaveBlock1Ptr.pcItems));
                   Free(newItems);
                   return TRUE;
               }
-              count += ownedCount - MAX_PC_ITEM_CAPACITY;
-              SetPCItemQuantity(newItems[i].quantity, MAX_PC_ITEM_CAPACITY);
+              count += ownedCount - (999);
+              SetPCItemQuantity(newItems[i].quantity, (999));
               if (count == 0)
               {
                   memcpy(gSaveBlock1Ptr.pcItems, newItems, sizeof(gSaveBlock1Ptr.pcItems));
@@ -537,7 +537,7 @@ export function RemovePCItem(index: any, count: any): any {
   gSaveBlock1Ptr.pcItems[index].quantity -= count;
       if (gSaveBlock1Ptr.pcItems[index].quantity == 0)
       {
-          gSaveBlock1Ptr.pcItems[index].itemId = ITEM_NONE;
+          gSaveBlock1Ptr.pcItems[index].itemId = (0);
           CompactPCItems();
       }
 }
@@ -547,9 +547,9 @@ export function CompactPCItems(): any {
   let i: any = null;
       let j: any = null;
 
-      for (i = 0; i < PC_ITEMS_COUNT - 1; i++)
+      for (i = 0; i < (50) - 1; i++)
       {
-          for (j = i + 1; j < PC_ITEMS_COUNT; j++)
+          for (j = i + 1; j < (50); j++)
           {
               if (gSaveBlock1Ptr.pcItems[i].itemId == 0)
               {
@@ -565,11 +565,11 @@ export function CompactPCItems(): any {
 export function SwapRegisteredBike(): any {
   switch (gSaveBlock1Ptr.registeredItem)
       {
-      case ITEM_MACH_BIKE:
-          gSaveBlock1Ptr.registeredItem = ITEM_ACRO_BIKE;
+      case (259):
+          gSaveBlock1Ptr.registeredItem = (272);
           break;
-      case ITEM_ACRO_BIKE:
-          gSaveBlock1Ptr.registeredItem = ITEM_MACH_BIKE;
+      case (272):
+          gSaveBlock1Ptr.registeredItem = (259);
           break;
       }
 }
@@ -653,7 +653,7 @@ export function MoveItemSlotInList(itemSlots_: any, from: any, to_: any): any {
 export function ClearBag(): any {
   let i: any = null;
 
-      for (i = 0; i < POCKETS_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           ClearItemSlots(gBagPockets[i].itemSlots, gBagPockets[i].capacity);
       }
@@ -680,7 +680,7 @@ export function CheckPyramidBagHasItem(itemId: any, count: any): any {
       let items: any = gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode];
       let quantities: any = gSaveBlock2Ptr.frontier.pyramidBag.quantity[gSaveBlock2Ptr.frontier.lvlMode];
 
-      for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)
+      for (i = 0; i < (10); i++)
       {
           if (items[i] == itemId)
           {
@@ -702,14 +702,14 @@ export function CheckPyramidBagHasSpace(itemId: any, count: any): any {
       let items: any = gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode];
       let quantities: any = gSaveBlock2Ptr.frontier.pyramidBag.quantity[gSaveBlock2Ptr.frontier.lvlMode];
 
-      for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)
+      for (i = 0; i < (10); i++)
       {
-          if (items[i] == itemId || items[i] == ITEM_NONE)
+          if (items[i] == itemId || items[i] == (0))
           {
-              if (quantities[i] + count <= MAX_BAG_ITEM_CAPACITY)
+              if (quantities[i] + count <= (99))
                   return TRUE;
 
-              count = (quantities[i] + count) - MAX_BAG_ITEM_CAPACITY;
+              count = (quantities[i] + count) - (99);
               if (count == 0)
                   return TRUE;
           }
@@ -725,21 +725,21 @@ export function AddPyramidBagItem(itemId: any, count: any): any {
       let items: any = gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode];
       let quantities: any = gSaveBlock2Ptr.frontier.pyramidBag.quantity[gSaveBlock2Ptr.frontier.lvlMode];
 
-      let newItems: any = Alloc(PYRAMID_BAG_ITEMS_COUNT * 0);
-      let newQuantities: any = Alloc(PYRAMID_BAG_ITEMS_COUNT * 0);
+      let newItems: any = Alloc((10) * 0);
+      let newQuantities: any = Alloc((10) * 0);
 
-      memcpy(newItems, items, PYRAMID_BAG_ITEMS_COUNT * 0);
-      memcpy(newQuantities, quantities, PYRAMID_BAG_ITEMS_COUNT * 0);
+      memcpy(newItems, items, (10) * 0);
+      memcpy(newQuantities, quantities, (10) * 0);
 
-      for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)
+      for (i = 0; i < (10); i++)
       {
-          if (newItems[i] == itemId && newQuantities[i] < MAX_BAG_ITEM_CAPACITY)
+          if (newItems[i] == itemId && newQuantities[i] < (99))
           {
               newQuantities[i] += count;
-              if (newQuantities[i] > MAX_BAG_ITEM_CAPACITY)
+              if (newQuantities[i] > (99))
               {
-                  count = newQuantities[i] - MAX_BAG_ITEM_CAPACITY;
-                  newQuantities[i] = MAX_BAG_ITEM_CAPACITY;
+                  count = newQuantities[i] - (99);
+                  newQuantities[i] = (99);
               }
               else
               {
@@ -753,16 +753,16 @@ export function AddPyramidBagItem(itemId: any, count: any): any {
 
       if (count > 0)
       {
-          for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)
+          for (i = 0; i < (10); i++)
           {
-              if (newItems[i] == ITEM_NONE)
+              if (newItems[i] == (0))
               {
                   newItems[i] = itemId;
                   newQuantities[i] = count;
-                  if (newQuantities[i] > MAX_BAG_ITEM_CAPACITY)
+                  if (newQuantities[i] > (99))
                   {
-                      count = newQuantities[i] - MAX_BAG_ITEM_CAPACITY;
-                      newQuantities[i] = MAX_BAG_ITEM_CAPACITY;
+                      count = newQuantities[i] - (99);
+                      newQuantities[i] = (99);
                   }
                   else
                   {
@@ -777,8 +777,8 @@ export function AddPyramidBagItem(itemId: any, count: any): any {
 
       if (count == 0)
       {
-          memcpy(items, newItems, PYRAMID_BAG_ITEMS_COUNT * 0);
-          memcpy(quantities, newQuantities, PYRAMID_BAG_ITEMS_COUNT * 0);
+          memcpy(items, newItems, (10) * 0);
+          memcpy(quantities, newQuantities, (10) * 0);
           Free(newItems);
           Free(newQuantities);
           return TRUE;
@@ -803,18 +803,18 @@ export function RemovePyramidBagItem(itemId: any, count: any): any {
       {
           quantities[i] -= count;
           if (quantities[i] == 0)
-              items[i] = ITEM_NONE;
+              items[i] = (0);
           return TRUE;
       }
       else
       {
-          let newItems: any = Alloc(PYRAMID_BAG_ITEMS_COUNT * 0);
-          let newQuantities: any = Alloc(PYRAMID_BAG_ITEMS_COUNT * 0);
+          let newItems: any = Alloc((10) * 0);
+          let newQuantities: any = Alloc((10) * 0);
 
-          memcpy(newItems, items, PYRAMID_BAG_ITEMS_COUNT * 0);
-          memcpy(newQuantities, quantities, PYRAMID_BAG_ITEMS_COUNT * 0);
+          memcpy(newItems, items, (10) * 0);
+          memcpy(newQuantities, quantities, (10) * 0);
 
-          for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)
+          for (i = 0; i < (10); i++)
           {
               if (newItems[i] == itemId)
               {
@@ -823,13 +823,13 @@ export function RemovePyramidBagItem(itemId: any, count: any): any {
                       newQuantities[i] -= count;
                       count = 0;
                       if (newQuantities[i] == 0)
-                          newItems[i] = ITEM_NONE;
+                          newItems[i] = (0);
                   }
                   else
                   {
                       count -= newQuantities[i];
                       newQuantities[i] = 0;
-                      newItems[i] = ITEM_NONE;
+                      newItems[i] = (0);
                   }
 
                   if (count == 0)
@@ -839,8 +839,8 @@ export function RemovePyramidBagItem(itemId: any, count: any): any {
 
           if (count == 0)
           {
-              memcpy(items, newItems, PYRAMID_BAG_ITEMS_COUNT * 0);
-              memcpy(quantities, newQuantities, PYRAMID_BAG_ITEMS_COUNT * 0);
+              memcpy(items, newItems, (10) * 0);
+              memcpy(quantities, newQuantities, (10) * 0);
               Free(newItems);
               Free(newQuantities);
               return TRUE;
@@ -856,8 +856,8 @@ export function RemovePyramidBagItem(itemId: any, count: any): any {
 
 /** static u16 SanitizeItemId(u16 itemId) */
 export function SanitizeItemId(itemId: any): any {
-  if (itemId >= ITEMS_COUNT)
-          return ITEM_NONE;
+  if (itemId >= (377))
+          return (0);
       else
           return itemId;
 }

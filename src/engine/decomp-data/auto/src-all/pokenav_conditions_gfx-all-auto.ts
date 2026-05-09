@@ -17,16 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sConditionGraphData_Gfx: any = null;
-let sConditionGraphData_Tilemap: any = null;
 let sInitialLoadId: any = null;
-let sListIndexWindowTemplate: any = null;
-let sLoopedTaskFuncs: any = null;
-let sMenuBgTemplates: any = null;
-let sMonMarkings_Pal: any = null;
-let sMonNameGenderWindowTemplate: any = null;
-let sUnusedWindowTemplate1: any = null;
-let sUnusedWindowTemplate2: any = null;
 /** bool32 OpenConditionGraphMenu(void) */
 export function OpenConditionGraphMenu(): any {
   let menu: any = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX, 0);
@@ -34,7 +25,7 @@ export function OpenConditionGraphMenu(): any {
       if (menu == NULL)
           return FALSE;
 
-      menu.monPicSpriteId = SPRITE_NONE;
+      menu.monPicSpriteId = (0xFF);
       menu.loopedTaskId = CreateLoopedTask(LoopedTask_OpenConditionGraphMenu, 1);
       menu.callback = GetConditionGraphMenuLoopedTaskActive;
       menu.windowModeState = 0;
@@ -68,8 +59,8 @@ export function LoopedTask_OpenConditionGraphMenu(state: any): any {
       {
       case 0:
           if (LoadConditionGraphMenuGfx() != TRUE)
-              return LT_PAUSE;
-          return LT_INC_AND_PAUSE;
+              return (2);
+          return (0);
       case 1:
           InitBgTemplates(sMenuBgTemplates, ARRAY_COUNT(sMenuBgTemplates));
           ChangeBgX(1, 0, BG_COORD_SET);
@@ -82,15 +73,15 @@ export function LoopedTask_OpenConditionGraphMenu(state: any): any {
           SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG2 | BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_BG3);
           SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(11, 4));
           DecompressAndCopyTileDataToVram(3, gPokenavCondition_Gfx, 0, 0, 0);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
           DecompressAndCopyTileDataToVram(2, sConditionGraphData_Gfx, 0, 0, 0);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
            if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
 
           LZ77UnCompVram(gPokenavCondition_Tilemap, menu.tilemapBuffers[0]);
           SetBgTilemapBuffer(3, menu.tilemapBuffers[0]);
@@ -101,26 +92,26 @@ export function LoopedTask_OpenConditionGraphMenu(state: any): any {
           CopyPaletteIntoBufferUnfaded(gPokenavCondition_Pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
           CopyPaletteIntoBufferUnfaded(gConditionText_Pal, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
           menu.monTransitionX = -80;
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 4:
           if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
 
           LZ77UnCompVram(sConditionGraphData_Tilemap, menu.tilemapBuffers[2]);
           SetBgTilemapBuffer(2, menu.tilemapBuffers[2]);
           CopyBgTilemapBufferToVram(2);
           CopyPaletteIntoBufferUnfaded(gConditionGraphData_Pal, BG_PLTT_ID(3), PLTT_SIZE_4BPP);
           ConditionGraph_InitWindow(2);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 5:
           BgDmaFill(1, 0, 0, 1);
           BgDmaFill(1, 17, 1, 1);
           CpuFill32(0, menu.tilemapBuffers[1], BG_SCREEN_SIZE);
           SetBgTilemapBuffer(1, menu.tilemapBuffers[1]);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 6:
           if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
 
           menu.nameGenderWindowId = AddWindow(sMonNameGenderWindowTemplate);
           if (IsConditionMenuSearchMode() == TRUE)
@@ -130,29 +121,29 @@ export function LoopedTask_OpenConditionGraphMenu(state: any): any {
               menu.unusedWindowId2 = AddWindow(sUnusedWindowTemplate2);
           }
           DeactivateAllTextPrinters();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 7:
           CreateConditionMonPic(0);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 8:
           CreateMonMarkingsOrPokeballIndicators();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 9:
           if (IsConditionMenuSearchMode() == TRUE)
               CopyUnusedConditionWindowsToVram();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 10:
           UpdateConditionGraphMenuWindows(0, GetConditionGraphMenuCurrentLoadIndex(), TRUE);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 11:
           UpdateConditionGraphMenuWindows(1, GetConditionGraphMenuCurrentLoadIndex(), TRUE);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 12:
           UpdateConditionGraphMenuWindows(2, GetConditionGraphMenuCurrentLoadIndex(), TRUE);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 13:
           if (UpdateConditionGraphMenuWindows(3, GetConditionGraphMenuCurrentLoadIndex(), TRUE) != TRUE)
-              return LT_PAUSE;
+              return (2);
           PutWindowTilemap(menu.nameGenderWindowId);
           if (IsConditionMenuSearchMode() == TRUE)
           {
@@ -160,14 +151,14 @@ export function LoopedTask_OpenConditionGraphMenu(state: any): any {
               PutWindowTilemap(menu.unusedWindowId1);
               PutWindowTilemap(menu.unusedWindowId2);
           }
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 14:
           ShowBg(1);
           HideBg(2);
           ShowBg(3);
           if (IsConditionMenuSearchMode() == TRUE)
               PrintHelpBarText(HELPBAR_CONDITION_MON_STATUS);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 15:
           PokenavFadeScreen(POKENAV_FADE_FROM_BLACK);
           if (!IsConditionMenuSearchMode())
@@ -176,25 +167,25 @@ export function LoopedTask_OpenConditionGraphMenu(state: any): any {
               ShowLeftHeaderGfx(POKENAV_GFX_CONDITION_MENU, TRUE, FALSE);
               ShowLeftHeaderGfx(POKENAV_GFX_PARTY_MENU, TRUE, FALSE);
           }
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 16:
           if (IsPaletteFadeActive())
-              return LT_PAUSE;
+              return (2);
           if (!IsConditionMenuSearchMode() && AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           SetVBlankCallback_(VBlankCB_PokenavConditionGraph);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 17:
           DoConditionGraphEnterTransition();
           ConditionGraph_InitResetScanline(GetConditionGraphPtr());
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 18:
           if (ConditionGraph_ResetScanline(GetConditionGraphPtr()))
-              return LT_PAUSE;
-          return LT_INC_AND_PAUSE;
+              return (2);
+          return (0);
       case 19:
           ToggleGraphData(TRUE);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 20:
           if (!ConditionMenu_UpdateMonEnter(GetConditionGraphPtr(),menu.monTransitionX))
           {
@@ -202,12 +193,12 @@ export function LoopedTask_OpenConditionGraphMenu(state: any): any {
               if (IsConditionMenuSearchMode() == TRUE || GetConditionGraphCurrentListIndex() != GetMonListCount())
                   CreateConditionSparkleSprites(menu.conditionSparkleSprites, menu.monPicSpriteId, GetNumConditionMonSparkles());
 
-              return LT_FINISH;
+              return (4);
           }
-          return LT_PAUSE;
+          return (2);
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_ExitConditionGraphMenu(s32 state) */
@@ -219,28 +210,28 @@ export function LoopedTask_ExitConditionGraphMenu(state: any): any {
       case 0:
           DoConditionGraphExitTransition();
           DestroyConditionSparkleSprites(menu.conditionSparkleSprites);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 1:
           if (ConditionMenu_UpdateMonExit(GetConditionGraphPtr(),menu.monTransitionX))
               return 2;
           ToggleGraphData(FALSE);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 2:
           PokenavFadeScreen(POKENAV_FADE_TO_BLACK);
           if (!IsConditionMenuSearchMode())
               SlideMenuHeaderDown();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (IsPaletteFadeActive() || MainMenuLoopedTaskIsBusy())
-              return LT_PAUSE;
+              return (2);
           FreeConditionSparkles(menu.conditionSparkleSprites);
           HideBg(1);
           HideBg(2);
           HideBg(3);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_TransitionMons(s32 state) */
@@ -252,52 +243,52 @@ export function LoopedTask_TransitionMons(state: any): any {
       {
       case 0:
           LoadNextConditionMenuMonData(CONDITION_LOAD_MON_INFO);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 1:
           LoadNextConditionMenuMonData(CONDITION_LOAD_GRAPH);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 2:
           LoadNextConditionMenuMonData(CONDITION_LOAD_MON_PIC);
           DestroyConditionSparkleSprites(menu.conditionSparkleSprites);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 3:
           ConditionGraph_TryUpdate(graph);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 4:
           if (!MoveConditionMonOffscreen(menu.monTransitionX))
           {
               CreateConditionMonPic(GetConditionGraphMenuCurrentLoadIndex());
-              return LT_INC_AND_CONTINUE;
+              return (1);
           }
-          return LT_PAUSE;
+          return (2);
       case 5:
           UpdateConditionGraphMenuWindows(0, GetConditionGraphMenuCurrentLoadIndex(), FALSE);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 6:
           UpdateConditionGraphMenuWindows(1, GetConditionGraphMenuCurrentLoadIndex(), FALSE);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 7:
           UpdateConditionGraphMenuWindows(2, GetConditionGraphMenuCurrentLoadIndex(), FALSE);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 8:
           if (UpdateConditionGraphMenuWindows(3, GetConditionGraphMenuCurrentLoadIndex(), FALSE) == TRUE)
-              return LT_INC_AND_CONTINUE;
-          return LT_PAUSE;
+              return (1);
+          return (2);
       case 9:
           graph = GetConditionGraphPtr();
           if (!ConditionMenu_UpdateMonEnter(graph,menu.monTransitionX))
           {
               ResetConditionSparkleSprites(menu.conditionSparkleSprites);
               if (IsConditionMenuSearchMode() != TRUE && GetConditionGraphCurrentListIndex() == GetMonListCount())
-                  return LT_INC_AND_CONTINUE;
+                  return (1);
 
               CreateConditionSparkleSprites(menu.conditionSparkleSprites, menu.monPicSpriteId, GetNumConditionMonSparkles());
-              return LT_INC_AND_CONTINUE;
+              return (1);
           }
-          return LT_PAUSE;
+          return (2);
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_MoveCursorNoTransition(s32 state) */
@@ -308,40 +299,40 @@ export function LoopedTask_MoveCursorNoTransition(state: any): any {
       {
       case 0:
           LoadNextConditionMenuMonData(CONDITION_LOAD_MON_INFO);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 1:
           LoadNextConditionMenuMonData(CONDITION_LOAD_GRAPH);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 2:
           LoadNextConditionMenuMonData(CONDITION_LOAD_MON_PIC);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 3:
           CreateConditionMonPic(GetConditionGraphMenuCurrentLoadIndex());
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 4:
           UpdateConditionGraphMenuWindows(0, GetConditionGraphMenuCurrentLoadIndex(), FALSE);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 5:
           UpdateConditionGraphMenuWindows(1, GetConditionGraphMenuCurrentLoadIndex(), FALSE);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 6:
           UpdateConditionGraphMenuWindows(2, GetConditionGraphMenuCurrentLoadIndex(), FALSE);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 7:
           if (UpdateConditionGraphMenuWindows(3, GetConditionGraphMenuCurrentLoadIndex(), FALSE) == TRUE)
-              return LT_INC_AND_CONTINUE;
-          return LT_PAUSE;
+              return (1);
+          return (2);
       case 8:
           if (!ConditionMenu_UpdateMonEnter(GetConditionGraphPtr(),menu.monTransitionX))
           {
               ResetConditionSparkleSprites(menu.conditionSparkleSprites);
               CreateConditionSparkleSprites(menu.conditionSparkleSprites, menu.monPicSpriteId, GetNumConditionMonSparkles());
-              return LT_INC_AND_CONTINUE;
+              return (1);
           }
-          return LT_PAUSE;
+          return (2);
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_SlideMonOut(s32 state) */
@@ -352,34 +343,34 @@ export function LoopedTask_SlideMonOut(state: any): any {
       {
       case 0:
           LoadNextConditionMenuMonData(CONDITION_LOAD_MON_INFO);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 1:
           LoadNextConditionMenuMonData(CONDITION_LOAD_GRAPH);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 2:
           LoadNextConditionMenuMonData(CONDITION_LOAD_MON_PIC);
           DestroyConditionSparkleSprites(menu.conditionSparkleSprites);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 3:
           if (!ConditionMenu_UpdateMonExit(GetConditionGraphPtr(),menu.monTransitionX))
-              return LT_INC_AND_CONTINUE;
-          return LT_PAUSE;
+              return (1);
+          return (2);
       case 4:
           UpdateConditionGraphMenuWindows(0, GetConditionGraphMenuCurrentLoadIndex(), FALSE);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 5:
           UpdateConditionGraphMenuWindows(1, GetConditionGraphMenuCurrentLoadIndex(), FALSE);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 6:
           UpdateConditionGraphMenuWindows(2, GetConditionGraphMenuCurrentLoadIndex(), FALSE);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 7:
           if (UpdateConditionGraphMenuWindows(3, GetConditionGraphMenuCurrentLoadIndex(), FALSE) == TRUE)
-              return LT_INC_AND_CONTINUE;
-          return LT_PAUSE;
+              return (1);
+          return (2);
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_OpenMonMarkingsWindow(s32 state) */
@@ -388,17 +379,17 @@ export function LoopedTask_OpenMonMarkingsWindow(state: any): any {
       {
       case 0:
           OpenMonMarkingsMenu(TryGetMonMarkId(), 176, 32);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 1:
           PrintHelpBarText(HELPBAR_CONDITION_MARKINGS);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 2:
           if (WaitForHelpBar() == TRUE)
-              return LT_PAUSE;
-          return LT_INC_AND_CONTINUE;
+              return (2);
+          return (1);
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_CloseMonMarkingsWindow(s32 state) */
@@ -407,17 +398,17 @@ export function LoopedTask_CloseMonMarkingsWindow(state: any): any {
       {
       case 0:
           FreeMonMarkingsMenu();
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 1:
           PrintHelpBarText(HELPBAR_CONDITION_MON_STATUS);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 2:
           if (WaitForHelpBar() == TRUE)
-              return LT_PAUSE;
-          return LT_INC_AND_CONTINUE;
+              return (2);
+          return (1);
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static bool32 UpdateConditionGraphMenuWindows(u8 mode, u16 bufferIndex, bool8 winMode) */
@@ -445,11 +436,11 @@ export function UpdateConditionGraphMenuWindows(mode: any, bufferIndex: any, win
           {
               str = GetConditionMonLocationText(bufferIndex);
               AddTextPrinterParameterized(menu.nameGenderWindowId, FONT_NORMAL, str, 0, 17, 0, NULL);
-              text[0] = EXT_CTRL_CODE_BEGIN;
-              text[1] = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW;
-              text[2] = TEXT_COLOR_BLUE;
-              text[3] = TEXT_COLOR_TRANSPARENT;
-              text[4] = TEXT_COLOR_LIGHT_BLUE;
+              text[0] = (0xFC);
+              text[1] = (0x04);
+              text[2] = (0x8);
+              text[3] = (0x0);
+              text[4] = (0x9);
               StringCopy(text[5], gText_Number2);
               AddTextPrinterParameterized(menu.listIndexWindowId, FONT_NORMAL, text, 4, 1, 0, NULL);
               ConvertIntToDecimalStringN(text[5], GetConditionMonDataBuffer(), STR_CONV_MODE_RIGHT_ALIGN, 4);
@@ -554,7 +545,7 @@ export function CreateMonMarkingsOrPokeballIndicators(): any {
           for (i = 0; i < GetMonListCount() - 1; i++)
           {
               spriteId = CreateSprite(sprTemplate, 226, (i * 20) + 8, 0);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   menu.partyPokeballSpriteIds[i] = spriteId;
                   gSprites[spriteId].data[0] = i;
@@ -562,24 +553,24 @@ export function CreateMonMarkingsOrPokeballIndicators(): any {
               }
               else
               {
-                  menu.partyPokeballSpriteIds[i] = SPRITE_NONE;
+                  menu.partyPokeballSpriteIds[i] = (0xFF);
               }
           }
 
            
           sprTemplate.tileTag = TAG_CONDITION_BALL_PLACEHOLDER;
           sprTemplate.callback = SpriteCallbackDummy;
-          for (; i < PARTY_SIZE; i++)
+          for (; i < (6); i++)
           {
               spriteId = CreateSprite(sprTemplate, 230, (i * 20) + 8, 0);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   menu.partyPokeballSpriteIds[i] = spriteId;
                   gSprites[spriteId].oam.size = 0;
               }
               else
               {
-                  menu.partyPokeballSpriteIds[i] = SPRITE_NONE;
+                  menu.partyPokeballSpriteIds[i] = (0xFF);
               }
           }
 
@@ -587,7 +578,7 @@ export function CreateMonMarkingsOrPokeballIndicators(): any {
           sprTemplate.tileTag = TAG_CONDITION_CANCEL;
           sprTemplate.callback = HighlightCurrentPartyIndexPokeball;
           spriteId = CreateSprite(sprTemplate, 222, (i * 20) + 8, 0);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               menu.partyPokeballSpriteIds[i] = spriteId;
               gSprites[spriteId].oam.shape = SPRITE_SHAPE(_32x16);
@@ -595,7 +586,7 @@ export function CreateMonMarkingsOrPokeballIndicators(): any {
           }
           else
           {
-              menu.partyPokeballSpriteIds[i] = SPRITE_NONE;
+              menu.partyPokeballSpriteIds[i] = (0xFF);
           }
       }
 
@@ -619,7 +610,7 @@ export function FreeConditionMenuGfx(menu: any): any {
       }
       else
       {
-          for (i = 0; i < PARTY_SIZE + 1; i++)
+          for (i = 0; i < (6) + 1; i++)
               DestroySprite(gSprites[menu.partyPokeballSpriteIds[i]]);
 
           FreeSpriteTilesByTag(TAG_CONDITION_BALL);
@@ -629,7 +620,7 @@ export function FreeConditionMenuGfx(menu: any): any {
           FreeSpritePaletteByTag(TAG_CONDITION_CANCEL);
       }
 
-      if (menu.monPicSpriteId != SPRITE_NONE)
+      if (menu.monPicSpriteId != (0xFF))
       {
           DestroySprite(gSprites[menu.monPicSpriteId]);
           FreeSpriteTilesByTag(TAG_CONDITION_MON);
@@ -673,7 +664,7 @@ export function CreateConditionMonPic(id: any): any {
       let spriteId: any = null;
       let menu: any = GetSubstructPtr(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU_GFX);
 
-      if (menu.monPicSpriteId == SPRITE_NONE)
+      if (menu.monPicSpriteId == (0xFF))
       {
           LoadConditionMonPicTemplate(sprSheet,sprTemplate,sprPal);
           sprSheet.data = GetConditionMonPicGfx(id);
@@ -682,11 +673,11 @@ export function CreateConditionMonPic(id: any): any {
           menu.monGfxTileStart = LoadSpriteSheet(sprSheet);
           spriteId = CreateSprite(sprTemplate, 38, 104, 0);
           menu.monPicSpriteId = spriteId;
-          if (spriteId == MAX_SPRITES)
+          if (spriteId == (64))
           {
               FreeSpriteTilesByTag(TAG_CONDITION_MON);
               FreeSpritePaletteByTag(TAG_CONDITION_MON);
-              menu.monPicSpriteId = SPRITE_NONE;
+              menu.monPicSpriteId = (0xFF);
           }
           else
           {
@@ -698,7 +689,7 @@ export function CreateConditionMonPic(id: any): any {
       }
       else
       {
-          DmaCopy16Defvars(3, GetConditionMonPicGfx(id), menu.monGfxPtr, MON_PIC_SIZE);
+          DmaCopy16Defvars(3, GetConditionMonPicGfx(id), menu.monGfxPtr, (((64) * (64) / 2)));
           LoadPalette(GetConditionMonPal(id), menu.monPalIndex, PLTT_SIZE_4BPP);
       }
 }
@@ -732,7 +723,7 @@ export function DoConditionGraphEnterTransition(): any {
       let id: any = GetConditionGraphMenuCurrentLoadIndex();
 
       sInitialLoadId = id;
-      ConditionGraph_SetNewPositions(graph, graph.savedPositions[CONDITION_GRAPH_LOAD_MAX - 1], graph.savedPositions[id]);
+      ConditionGraph_SetNewPositions(graph, graph.savedPositions[(4) - 1], graph.savedPositions[id]);
       ConditionGraph_TryUpdate(graph);
 }
 
@@ -741,7 +732,7 @@ export function DoConditionGraphExitTransition(): any {
   let graph: any = GetConditionGraphPtr();
 
       if (IsConditionMenuSearchMode() || GetConditionGraphCurrentListIndex() != GetMonListCount() - 1)
-          ConditionGraph_SetNewPositions(graph, graph.savedPositions[GetConditionGraphMenuCurrentLoadIndex()], graph.savedPositions[CONDITION_GRAPH_LOAD_MAX - 1]);
+          ConditionGraph_SetNewPositions(graph, graph.savedPositions[GetConditionGraphMenuCurrentLoadIndex()], graph.savedPositions[(4) - 1]);
 }
 
 /** u8 GetMonMarkingsData(void) */

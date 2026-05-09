@@ -18,10 +18,9 @@
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sIsRegisteelPuzzle: any = null;
-let sRegicePathCoords: any = null;
 /** bool8 ShouldDoBrailleDigEffect(void) */
 export function ShouldDoBrailleDigEffect(): any {
-  if (!FlagGet(FLAG_SYS_BRAILLE_DIG)
+  if (!FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4F)))
        && (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_SEALED_CHAMBER_OUTER_ROOM)
        && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_SEALED_CHAMBER_OUTER_ROOM)))
       {
@@ -38,25 +37,25 @@ export function ShouldDoBrailleDigEffect(): any {
 
 /** void DoBrailleDigEffect(void) */
 export function DoBrailleDigEffect(): any {
-  MapGridSetMetatileIdAt( 9 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopLeft);
-      MapGridSetMetatileIdAt(10 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopMid);
-      MapGridSetMetatileIdAt(11 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopRight);
-      MapGridSetMetatileIdAt( 9 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomLeft | MAPGRID_IMPASSABLE);
-      MapGridSetMetatileIdAt(10 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomMid);
-      MapGridSetMetatileIdAt(11 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomRight | MAPGRID_IMPASSABLE);
+  MapGridSetMetatileIdAt( 9 + (7), 1 + (7), (0x22A));
+      MapGridSetMetatileIdAt(10 + (7), 1 + (7), (0x22B));
+      MapGridSetMetatileIdAt(11 + (7), 1 + (7), (0x22C));
+      MapGridSetMetatileIdAt( 9 + (7), 2 + (7), (0x232) | ((0x0C00)));
+      MapGridSetMetatileIdAt(10 + (7), 2 + (7), (0x233));
+      MapGridSetMetatileIdAt(11 + (7), 2 + (7), (0x234) | ((0x0C00)));
       DrawWholeMapView();
-      PlaySE(SE_BANG);
-      FlagSet(FLAG_SYS_BRAILLE_DIG);
+      PlaySE((20));
+      FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x4F)));
       UnlockPlayerFieldControls();
 }
 
 /** bool8 CheckRelicanthWailord(void) */
 export function CheckRelicanthWailord(): any {
-  if (GetMonData(gPlayerParty[0], MON_DATA_SPECIES_OR_EGG, 0) == SPECIES_WAILORD)
+  if (GetMonData(gPlayerParty[0], MON_DATA_SPECIES_OR_EGG, 0) == (314))
       {
           CalculatePlayerPartyCount();
            
-          if (GetMonData(gPlayerParty[gPlayerPartyCount - 1], MON_DATA_SPECIES_OR_EGG, 0) == SPECIES_RELICANTH)
+          if (GetMonData(gPlayerParty[gPlayerPartyCount - 1], MON_DATA_SPECIES_OR_EGG, 0) == (381))
               return TRUE;
       }
       return FALSE;
@@ -108,7 +107,7 @@ export function Task_SealedChamberShakingEffect(taskId: any): any {
 
 /** bool8 ShouldDoBrailleRegirockEffect(void) */
 export function ShouldDoBrailleRegirockEffect(): any {
-  if (!FlagGet(FLAG_SYS_REGIROCK_PUZZLE_COMPLETED)
+  if (!FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x50)))
           && gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_DESERT_RUINS)
           && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_DESERT_RUINS))
       {
@@ -135,32 +134,32 @@ export function ShouldDoBrailleRegirockEffect(): any {
 /** void SetUpPuzzleEffectRegirock(void) */
 export function SetUpPuzzleEffectRegirock(): any {
   gFieldEffectArguments[0] = GetCursorSelectionMonId();
-      FieldEffectStart(FLDEFF_USE_TOMB_PUZZLE_EFFECT);
+      FieldEffectStart((60));
 }
 
 /** void UseRegirockHm_Callback(void) */
 export function UseRegirockHm_Callback(): any {
-  FieldEffectActiveListRemove(FLDEFF_USE_TOMB_PUZZLE_EFFECT);
+  FieldEffectActiveListRemove((60));
       DoBrailleRegirockEffect();
 }
 
 /** static void DoBrailleRegirockEffect(void) */
 export function DoBrailleRegirockEffect(): any {
-  MapGridSetMetatileIdAt(7 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopLeft);
-      MapGridSetMetatileIdAt(8 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopMid);
-      MapGridSetMetatileIdAt(9 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopRight);
-      MapGridSetMetatileIdAt(7 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomLeft | MAPGRID_IMPASSABLE);
-      MapGridSetMetatileIdAt(8 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomMid);
-      MapGridSetMetatileIdAt(9 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomRight | MAPGRID_IMPASSABLE);
+  MapGridSetMetatileIdAt(7 + (7), 19 + (7), (0x22A));
+      MapGridSetMetatileIdAt(8 + (7), 19 + (7), (0x22B));
+      MapGridSetMetatileIdAt(9 + (7), 19 + (7), (0x22C));
+      MapGridSetMetatileIdAt(7 + (7), 20 + (7), (0x232) | ((0x0C00)));
+      MapGridSetMetatileIdAt(8 + (7), 20 + (7), (0x233));
+      MapGridSetMetatileIdAt(9 + (7), 20 + (7), (0x234) | ((0x0C00)));
       DrawWholeMapView();
-      PlaySE(SE_BANG);
-      FlagSet(FLAG_SYS_REGIROCK_PUZZLE_COMPLETED);
+      PlaySE((20));
+      FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x50)));
       UnlockPlayerFieldControls();
 }
 
 /** bool8 ShouldDoBrailleRegisteelEffect(void) */
 export function ShouldDoBrailleRegisteelEffect(): any {
-  if (!FlagGet(FLAG_SYS_REGISTEEL_PUZZLE_COMPLETED) && (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_ANCIENT_TOMB) && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_ANCIENT_TOMB)))
+  if (!FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x52))) && (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_ANCIENT_TOMB) && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_ANCIENT_TOMB)))
       {
           if (gSaveBlock1Ptr.pos.x == 8 && gSaveBlock1Ptr.pos.y == 25)
           {
@@ -174,26 +173,26 @@ export function ShouldDoBrailleRegisteelEffect(): any {
 /** void SetUpPuzzleEffectRegisteel(void) */
 export function SetUpPuzzleEffectRegisteel(): any {
   gFieldEffectArguments[0] = GetCursorSelectionMonId();
-      FieldEffectStart(FLDEFF_USE_TOMB_PUZZLE_EFFECT);
+      FieldEffectStart((60));
 }
 
 /** void UseRegisteelHm_Callback(void) */
 export function UseRegisteelHm_Callback(): any {
-  FieldEffectActiveListRemove(FLDEFF_USE_TOMB_PUZZLE_EFFECT);
+  FieldEffectActiveListRemove((60));
       DoBrailleRegisteelEffect();
 }
 
 /** static void DoBrailleRegisteelEffect(void) */
 export function DoBrailleRegisteelEffect(): any {
-  MapGridSetMetatileIdAt(7 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopLeft);
-      MapGridSetMetatileIdAt(8 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopMid);
-      MapGridSetMetatileIdAt(9 + MAP_OFFSET, 19 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_TopRight);
-      MapGridSetMetatileIdAt(7 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomLeft | MAPGRID_IMPASSABLE);
-      MapGridSetMetatileIdAt(8 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomMid);
-      MapGridSetMetatileIdAt(9 + MAP_OFFSET, 20 + MAP_OFFSET, METATILE_Cave_SealedChamberEntrance_BottomRight | MAPGRID_IMPASSABLE);
+  MapGridSetMetatileIdAt(7 + (7), 19 + (7), (0x22A));
+      MapGridSetMetatileIdAt(8 + (7), 19 + (7), (0x22B));
+      MapGridSetMetatileIdAt(9 + (7), 19 + (7), (0x22C));
+      MapGridSetMetatileIdAt(7 + (7), 20 + (7), (0x232) | ((0x0C00)));
+      MapGridSetMetatileIdAt(8 + (7), 20 + (7), (0x233));
+      MapGridSetMetatileIdAt(9 + (7), 20 + (7), (0x234) | ((0x0C00)));
       DrawWholeMapView();
-      PlaySE(SE_BANG);
-      FlagSet(FLAG_SYS_REGISTEEL_PUZZLE_COMPLETED);
+      PlaySE((20));
+      FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x52)));
       UnlockPlayerFieldControls();
 }
 
@@ -221,13 +220,13 @@ export function ShouldDoBrailleRegicePuzzle(): any {
       if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_ISLAND_CAVE)
           && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_ISLAND_CAVE))
       {
-          if (FlagGet(FLAG_SYS_BRAILLE_REGICE_COMPLETED))
+          if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x51))))
               return FALSE;
            
-          if (FlagGet(FLAG_TEMP_REGICE_PUZZLE_STARTED) == FALSE)
+          if (FlagGet(((((0x0) + 0x2)))) == FALSE)
               return FALSE;
            
-          if (FlagGet(FLAG_TEMP_REGICE_PUZZLE_FAILED) == TRUE)
+          if (FlagGet(((((0x0) + 0x3)))) == TRUE)
               return FALSE;
 
           for (i = 0; i < ARRAY_COUNT(sRegicePathCoords); i++)
@@ -239,25 +238,25 @@ export function ShouldDoBrailleRegicePuzzle(): any {
                    
                   if (i < 16)
                   {
-                      let val: any = VarGet(VAR_REGICE_STEPS_1);
+                      let val: any = VarGet((0x403B));
                       val |= 1 << i;
-                      VarSet(VAR_REGICE_STEPS_1, val);
+                      VarSet((0x403B), val);
                   }
                   else if (i < 32)
                   {
-                      let val: any = VarGet(VAR_REGICE_STEPS_2);
+                      let val: any = VarGet((0x403C));
                       val |= 1 << (i - 16);
-                      VarSet(VAR_REGICE_STEPS_2, val);
+                      VarSet((0x403C), val);
                   }
                   else
                   {
-                      let val: any = VarGet(VAR_REGICE_STEPS_3);
+                      let val: any = VarGet((0x403D));
                       val |= 1 << (i - 32);
-                      VarSet(VAR_REGICE_STEPS_3, val);
+                      VarSet((0x403D), val);
                   }
 
                    
-                  if (VarGet(VAR_REGICE_STEPS_1) != 0xFFFF || VarGet(VAR_REGICE_STEPS_2) != 0xFFFF || VarGet(VAR_REGICE_STEPS_3) != 0xF)
+                  if (VarGet((0x403B)) != 0xFFFF || VarGet((0x403C)) != 0xFFFF || VarGet((0x403D)) != 0xF)
                       return FALSE;
 
                    
@@ -269,8 +268,8 @@ export function ShouldDoBrailleRegicePuzzle(): any {
           }
 
            
-          FlagSet(FLAG_TEMP_REGICE_PUZZLE_FAILED);
-          FlagClear(FLAG_TEMP_REGICE_PUZZLE_STARTED);
+          FlagSet(((((0x0) + 0x3))));
+          FlagClear(((((0x0) + 0x2))));
       }
 
       return FALSE;

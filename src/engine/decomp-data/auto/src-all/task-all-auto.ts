@@ -19,7 +19,7 @@
 export function ResetTasks(): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_TASKS; i++)
+      for (i = 0; i < (16); i++)
       {
           gTasks[i].isActive = FALSE;
           gTasks[i].func = TaskDummy;
@@ -29,15 +29,15 @@ export function ResetTasks(): any {
           memset(gTasks[i].data, 0, sizeof(gTasks[i].data));
       }
 
-      gTasks[0].prev = HEAD_SENTINEL;
-      gTasks[NUM_TASKS - 1].next = TAIL_SENTINEL;
+      gTasks[0].prev = (0xFE);
+      gTasks[(16) - 1].next = (0xFF);
 }
 
 /** u8 CreateTask(TaskFunc func, u8 priority) */
 export function CreateTask(func: any, priority: any): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_TASKS; i++)
+      for (i = 0; i < (16); i++)
       {
           if (!gTasks[i].isActive)
           {
@@ -57,11 +57,11 @@ export function CreateTask(func: any, priority: any): any {
 export function InsertTask(newTaskId: any): any {
   let taskId: any = FindFirstActiveTask();
 
-      if (taskId == NUM_TASKS)
+      if (taskId == (16))
       {
            
-          gTasks[newTaskId].prev = HEAD_SENTINEL;
-          gTasks[newTaskId].next = TAIL_SENTINEL;
+          gTasks[newTaskId].prev = (0xFE);
+          gTasks[newTaskId].next = (0xFF);
           return;
       }
 
@@ -73,12 +73,12 @@ export function InsertTask(newTaskId: any): any {
                
               gTasks[newTaskId].prev = gTasks[taskId].prev;
               gTasks[newTaskId].next = taskId;
-              if (gTasks[taskId].prev != HEAD_SENTINEL)
+              if (gTasks[taskId].prev != (0xFE))
                   gTasks[gTasks[taskId].prev].next = newTaskId;
               gTasks[taskId].prev = newTaskId;
               return;
           }
-          if (gTasks[taskId].next == TAIL_SENTINEL)
+          if (gTasks[taskId].next == (0xFF))
           {
                
               gTasks[newTaskId].prev = taskId;
@@ -96,16 +96,16 @@ export function DestroyTask(taskId: any): any {
       {
           gTasks[taskId].isActive = FALSE;
 
-          if (gTasks[taskId].prev == HEAD_SENTINEL)
+          if (gTasks[taskId].prev == (0xFE))
           {
-              if (gTasks[taskId].next != TAIL_SENTINEL)
-                  gTasks[gTasks[taskId].next].prev = HEAD_SENTINEL;
+              if (gTasks[taskId].next != (0xFF))
+                  gTasks[gTasks[taskId].next].prev = (0xFE);
           }
           else
           {
-              if (gTasks[taskId].next == TAIL_SENTINEL)
+              if (gTasks[taskId].next == (0xFF))
               {
-                  gTasks[gTasks[taskId].prev].next = TAIL_SENTINEL;
+                  gTasks[gTasks[taskId].prev].next = (0xFF);
               }
               else
               {
@@ -120,13 +120,13 @@ export function DestroyTask(taskId: any): any {
 export function RunTasks(): any {
   let taskId: any = FindFirstActiveTask();
 
-      if (taskId != NUM_TASKS)
+      if (taskId != (16))
       {
           do
           {
               gTasks[taskId].func(taskId);
               taskId = gTasks[taskId].next;
-          } while (taskId != TAIL_SENTINEL);
+          } while (taskId != (0xFF));
       }
 }
 
@@ -134,8 +134,8 @@ export function RunTasks(): any {
 export function FindFirstActiveTask(): any {
   let taskId: any = null;
 
-      for (taskId = 0; taskId < NUM_TASKS; taskId++)
-          if (gTasks[taskId].isActive == TRUE && gTasks[taskId].prev == HEAD_SENTINEL)
+      for (taskId = 0; taskId < (16); taskId++)
+          if (gTasks[taskId].isActive == TRUE && gTasks[taskId].prev == (0xFE))
               break;
 
       return taskId;
@@ -143,7 +143,7 @@ export function FindFirstActiveTask(): any {
 
 /** void SetTaskFuncWithFollowupFunc(u8 taskId, TaskFunc func, TaskFunc followupFunc) */
 export function SetTaskFuncWithFollowupFunc(taskId: any, func: any, followupFunc: any): any {
-  let followupFuncIndex: any = NUM_TASK_DATA - 2;  
+  let followupFuncIndex: any = (16) - 2;  
 
       gTasks[taskId].data[followupFuncIndex] = (followupFunc);
       gTasks[taskId].data[followupFuncIndex + 1] = (followupFunc >> 16);  
@@ -152,7 +152,7 @@ export function SetTaskFuncWithFollowupFunc(taskId: any, func: any, followupFunc
 
 /** void SwitchTaskToFollowupFunc(u8 taskId) */
 export function SwitchTaskToFollowupFunc(taskId: any): any {
-  let followupFuncIndex: any = NUM_TASK_DATA - 2;  
+  let followupFuncIndex: any = (16) - 2;  
 
       gTasks[taskId].func = ((gTasks[taskId].data[followupFuncIndex]) | (gTasks[taskId].data[followupFuncIndex + 1] << 16));
 }
@@ -161,7 +161,7 @@ export function SwitchTaskToFollowupFunc(taskId: any): any {
 export function FuncIsActiveTask(func: any): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_TASKS; i++)
+      for (i = 0; i < (16); i++)
           if (gTasks[i].isActive == TRUE && gTasks[i].func == func)
               return TRUE;
 
@@ -172,11 +172,11 @@ export function FuncIsActiveTask(func: any): any {
 export function FindTaskIdByFunc(func: any): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_TASKS; i++)
+      for (i = 0; i < (16); i++)
           if (gTasks[i].isActive == TRUE && gTasks[i].func == func)
               return i;
 
-      return TASK_NONE;
+      return ((0xFF));
 }
 
 /** u8 GetTaskCount(void) */
@@ -184,7 +184,7 @@ export function GetTaskCount(): any {
   let i: any = null;
       let count: any = 0;
 
-      for (i = 0; i < NUM_TASKS; i++)
+      for (i = 0; i < (16); i++)
           if (gTasks[i].isActive == TRUE)
               count++;
 
@@ -193,7 +193,7 @@ export function GetTaskCount(): any {
 
 /** void SetWordTaskArg(u8 taskId, u8 dataElem, u32 value) */
 export function SetWordTaskArg(taskId: any, dataElem: any, value: any): any {
-  if (dataElem < NUM_TASK_DATA - 1)
+  if (dataElem < (16) - 1)
       {
           gTasks[taskId].data[dataElem] = value;
           gTasks[taskId].data[dataElem + 1] = value >> 16;
@@ -202,7 +202,7 @@ export function SetWordTaskArg(taskId: any, dataElem: any, value: any): any {
 
 /** u32 GetWordTaskArg(u8 taskId, u8 dataElem) */
 export function GetWordTaskArg(taskId: any, dataElem: any): any {
-  if (dataElem < NUM_TASK_DATA - 1)
+  if (dataElem < (16) - 1)
           return gTasks[taskId].data[dataElem] | (gTasks[taskId].data[dataElem + 1] << 16);
       else
           return 0;

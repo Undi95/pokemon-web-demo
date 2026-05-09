@@ -27,10 +27,10 @@ export function ReloadSave(): any {
       ResetMenuAndMonGlobals();
       Save_ResetSaveCounters();
       LoadGameSave(SAVE_NORMAL);
-      if (gSaveFileStatus == SAVE_STATUS_EMPTY || gSaveFileStatus == SAVE_STATUS_CORRUPT)
+      if (gSaveFileStatus == (0) || gSaveFileStatus == (2))
           Sav2_ClearSetDefault();
       SetPokemonCryStereo(gSaveBlock2Ptr.optionsSound);
-      InitHeap(gHeap, HEAP_SIZE);
+      InitHeap(gHeap, (0x1C000));
       SetMainCallback2(CB2_ContinueSavedGame);
 }
 

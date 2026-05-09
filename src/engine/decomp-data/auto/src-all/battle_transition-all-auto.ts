@@ -17,117 +17,33 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAngledWipes_EndDelays: any = null;
-let sAngledWipes_Funcs: any = null;
-let sAngledWipes_MoveData: any = null;
-let sAqua_Funcs: any = null;
-let sBigPokeball_Funcs: any = null;
-let sBigPokeball_Tilemap: any = null;
-let sBigPokeball_Tileset: any = null;
-let sBlackholePulsate_Funcs: any = null;
-let sBlackhole_Funcs: any = null;
-let sBlackhole_Vibrations: any = null;
-let sBlur_Funcs: any = null;
-let sClockwiseWipe_Funcs: any = null;
+let cosResult: any = null;
+let drawX: any = null;
+let drawYBott: any = null;
+let drawYBottNext: any = null;
+let drawYTop: any = null;
+let drawYTopNext: any = null;
+let gBattle_BG0_X: any = null;
+let gBattle_BG0_Y: any = null;
+let playerSprite: any = null;
+let ptr3: any = null;
 let sDebug_RectangularSpiralData: any = null;
-let sDelay: any = null;
-let sDestroyAttempts: any = null;
-let sDone: any = null;
-let sEliteFour_Tileset: any = null;
-let sEvilTeam_Palette: any = null;
-let sFade: any = null;
-let sFieldEffectPal_Pokeball: any = null;
-let sFinished: any = null;
-let sFrontierLogoWave_Funcs: any = null;
-let sFrontierLogoWiggle_Funcs: any = null;
-let sFrontierLogo_Palette: any = null;
-let sFrontierLogo_Tilemap: any = null;
-let sFrontierLogo_Tileset: any = null;
-let sFrontierSquaresScroll_Funcs: any = null;
-let sFrontierSquaresScroll_Positions: any = null;
-let sFrontierSquaresSpiral_Funcs: any = null;
-let sFrontierSquaresSpiral_Positions: any = null;
-let sFrontierSquares_EmptyBg_Tileset: any = null;
-let sFrontierSquares_FilledBg_Tileset: any = null;
-let sFrontierSquares_Funcs: any = null;
-let sFrontierSquares_Palette: any = null;
-let sFrontierSquares_Shrink1_Tileset: any = null;
-let sFrontierSquares_Shrink2_Tileset: any = null;
-let sFrontierSquares_Tilemap: any = null;
-let sGridSquares_Funcs: any = null;
-let sGroudon1_Palette: any = null;
-let sGroudon2_Palette: any = null;
-let sGroudon_Funcs: any = null;
-let sGroudon_Tilemap: any = null;
-let sGroudon_Tileset: any = null;
-let sIsMainSprite: any = null;
-let sKyogre1_Palette: any = null;
-let sKyogre2_Palette: any = null;
-let sKyogre_Funcs: any = null;
-let sKyogre_Tilemap: any = null;
-let sKyogre_Tileset: any = null;
-let sMagma_Funcs: any = null;
-let sMugshotTrainerPicFuncs: any = null;
-let sMugshot_Funcs: any = null;
-let sMugshotsOpponentCoords: any = null;
-let sMugshotsOpponentRotationScales: any = null;
-let sMugshotsTilemap: any = null;
-let sMugshotsTrainerPicIDsTable: any = null;
-let sOpponentMugshotsPals: any = null;
-let sPlayerMugshotsPals: any = null;
-let sPokeballTrail_Tileset: any = null;
-let sPokeballsTrail_Delays: any = null;
-let sPokeballsTrail_Funcs: any = null;
-let sPokeballsTrail_Speeds: any = null;
-let sPokeballsTrail_StartXCoords: any = null;
-let sPrevX: any = null;
-let sRayquaza_Funcs: any = null;
-let sRayquaza_Palette: any = null;
-let sRayquaza_Tilemap: any = null;
-let sRayquaza_Tileset: any = null;
-let sRectangularSpiralLines: any = null;
-let sRectangularSpiral_Funcs: any = null;
-let sRectangularSpiral_MoveDataTables: any = null;
-let sRegice_Funcs: any = null;
-let sRegice_Palette: any = null;
-let sRegice_Tilemap: any = null;
-let sRegirock_Funcs: any = null;
-let sRegirock_Palette: any = null;
-let sRegirock_Tilemap: any = null;
-let sRegis_Tileset: any = null;
-let sRegisteel_Funcs: any = null;
-let sRegisteel_Palette: any = null;
-let sRegisteel_Tilemap: any = null;
-let sRipple_Funcs: any = null;
-let sShredSplit_Funcs: any = null;
-let sShredSplit_SectionMoveDirs: any = null;
-let sShredSplit_SectionYCoords: any = null;
-let sShrinkingBoxTileset: any = null;
-let sShuffle_Funcs: any = null;
-let sSide: any = null;
-let sSlice_Funcs: any = null;
-let sSlideAccel: any = null;
-let sSlideDir: any = null;
-let sSlideSpeed: any = null;
-let sSpriteTemplate_Pokeball: any = null;
-let sState: any = null;
-let sSwirl_Funcs: any = null;
-let sTaskHandlers: any = null;
-let sTasks_Intro: any = null;
-let sTasks_Main: any = null;
-let sTeamAqua_Tilemap: any = null;
-let sTeamAqua_Tileset: any = null;
-let sTeamMagma_Tilemap: any = null;
-let sTeamMagma_Tileset: any = null;
-let sTestingTransitionId: any = null;
 let sTestingTransitionState: any = null;
-let sTrainerPicSlideAccels: any = null;
-let sTrainerPicSlideSpeeds: any = null;
 let sTransitionData: any = null;
-let sTransitionIntroFuncs: any = null;
-let sWave_Funcs: any = null;
-let sWhiteBarsFade_Funcs: any = null;
-let sWhiteBarsFade_StartDelays: any = null;
+let sinSpread: any = null;
+let speed: any = null;
+let tWipeCurrX: any = null;
+let tWipeCurrY: any = null;
+let tWipeEndX: any = null;
+let tWipeEndY: any = null;
+let tWipeStartX: any = null;
+let tWipeStartY: any = null;
+let tWipeTemp: any = null;
+let tWipeXDist: any = null;
+let tWipeXMove: any = null;
+let tWipeYDist: any = null;
+let tWipeYMove: any = null;
+let temp: any = null;
 /** static void CB2_TestBattleTransition(void) */
 export function CB2_TestBattleTransition(): any {
   switch (sTestingTransitionState)
@@ -208,7 +124,7 @@ export function Transition_StartIntro(task: any): any {
 
 /** static bool8 Transition_WaitForIntro(struct Task *task) */
 export function Transition_WaitForIntro(task: any): any {
-  if (FindTaskIdByFunc(sTasks_Intro[task.tTransitionId]) == TASK_NONE)
+  if (FindTaskIdByFunc(sTasks_Intro[task.tTransitionId]) == ((0xFF)))
       {
           task.tState++;
           return TRUE;
@@ -229,7 +145,7 @@ export function Transition_StartMain(task: any): any {
 /** static bool8 Transition_WaitForMain(struct Task *task) */
 export function Transition_WaitForMain(task: any): any {
   task.tTransitionDone = FALSE;
-      if (FindTaskIdByFunc(sTasks_Main[task.tTransitionId]) == TASK_NONE)
+      if (FindTaskIdByFunc(sTasks_Main[task.tTransitionId]) == ((0xFF)))
           task.tTransitionDone = TRUE;
       return FALSE;
 }
@@ -272,7 +188,7 @@ export function Blur_Main(task: any): any {
       {
           task.tDelay = 4;
           if (++task.tCounter == 10)
-              BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 0, 16, (RGB(0, 0, 0)));
           SetGpuReg(REG_OFFSET_MOSAIC, (task.tCounter & 15) * 17);
           if (task.tCounter > 14)
               task.tState++;
@@ -299,7 +215,7 @@ export function Task_Swirl(taskId: any): any {
 export function Swirl_Init(task: any): any {
   InitTransitionData();
       ScanlineEffect_Clear();
-      BeginNormalPaletteFade(PALETTES_ALL, 4, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 4, 0, 16, (RGB(0, 0, 0)));
       SetSinWave(gScanlineEffectRegBuffers[1], sTransitionData.cameraX, 0, 2, 0, DISPLAY_HEIGHT);
 
       SetVBlankCallback(VBlankCB_Swirl);
@@ -354,7 +270,7 @@ export function Shuffle_Init(task: any): any {
   InitTransitionData();
       ScanlineEffect_Clear();
 
-      BeginNormalPaletteFade(PALETTES_ALL, 4, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 4, 0, 16, (RGB(0, 0, 0)));
       memset(gScanlineEffectRegBuffers[1], sTransitionData.cameraY, DISPLAY_HEIGHT * 2);
 
       SetVBlankCallback(VBlankCB_Shuffle);
@@ -654,7 +570,7 @@ export function Kyogre_PaletteBrighten(task: any): any {
 
 /** static bool8 WeatherDuo_FadeOut(struct Task *task) */
 export function WeatherDuo_FadeOut(task: any): any {
-  BeginNormalPaletteFade(PALETTES_OBJECTS | (1 << 15), 1, 0, 16, RGB_BLACK);
+  BeginNormalPaletteFade((0xFFFF0000) | (1 << 15), 1, 0, 16, (RGB(0, 0, 0)));
       task.tState++;
       return FALSE;
 }
@@ -739,7 +655,7 @@ export function FramesCountdown(task: any): any {
 
 /** static bool8 WeatherTrio_BgFadeBlack(struct Task *task) */
 export function WeatherTrio_BgFadeBlack(task: any): any {
-  BeginNormalPaletteFade(PALETTES_BG, 1, 0, 16, RGB_BLACK);
+  BeginNormalPaletteFade((0x0000FFFF), 1, 0, 16, (RGB(0, 0, 0)));
       task.tState++;
       return FALSE;
 }
@@ -843,7 +759,7 @@ export function PokeballsTrail_Main(task: any): any {
           gFieldEffectArguments[1] = (i * 32) + 16;   
           gFieldEffectArguments[2] = side;
           gFieldEffectArguments[3] = delays[i];
-          FieldEffectStart(FLDEFF_POKEBALL_TRAIL);
+          FieldEffectStart((45));
       }
 
       task.tState++;
@@ -852,7 +768,7 @@ export function PokeballsTrail_Main(task: any): any {
 
 /** static bool8 PokeballsTrail_End(struct Task *task) */
 export function PokeballsTrail_End(task: any): any {
-  if (!FieldEffectActiveListContains(FLDEFF_POKEBALL_TRAIL))
+  if (!FieldEffectActiveListContains((45)))
       {
           FadeScreenBlack();
           DestroyTask(FindTaskIdByFunc(Task_PokeballsTrail));
@@ -908,7 +824,7 @@ export function SpriteCB_FldEffPokeballTrail(sprite: any): any {
           }
           sprite.x += speeds[sprite.sSide];
           if (sprite.x < -15 || sprite.x > DISPLAY_WIDTH + 15)
-              FieldEffectStop(sprite, FLDEFF_POKEBALL_TRAIL);
+              FieldEffectStop(sprite, (45));
       }
 }
 
@@ -1145,7 +1061,7 @@ export function Ripple_Main(task: any): any {
       if (++task.tTimer == 81)
       {
           task.tFadeStarted++;
-          BeginNormalPaletteFade(PALETTES_ALL, -2, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -2, 0, 16, (RGB(0, 0, 0)));
       }
 
       if (task.tFadeStarted && !gPaletteFade.active)
@@ -1410,7 +1326,7 @@ export function Mugshot_StartOpponentSlide(task: any): any {
        
       IncrementTrainerPicState(task.tOpponentSpriteId);
 
-      PlaySE(SE_MUGSHOT);
+      PlaySE((104));
 
       sTransitionData.VBlank_DMA++;
       return FALSE;
@@ -1499,7 +1415,7 @@ export function Mugshot_GradualWhiteFade(task: any): any {
 /** static bool8 Mugshot_InitFadeWhiteToBlack(struct Task *task) */
 export function Mugshot_InitFadeWhiteToBlack(task: any): any {
   sTransitionData.VBlank_DMA = FALSE;
-      BlendPalettes(PALETTES_ALL, 16, RGB_WHITE);
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(31, 31, 31)));
       sTransitionData.BLDCNT = 0xFF;
       task.tTimer = 0;
 
@@ -2385,7 +2301,7 @@ export function Rayquaza_FadeToBlack(task: any): any {
       {
           task.tState++;
           task.tTimer = 0;
-          BeginNormalPaletteFade(PALETTES_OBJECTS | (1 << 15), 2, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((0xFFFF0000) | (1 << 15), 2, 0, 16, (RGB(0, 0, 0)));
       }
 
       return FALSE;
@@ -2403,8 +2319,8 @@ export function Rayquaza_WaitFade(task: any): any {
 
 /** static bool8 Rayquaza_SetBlack(struct Task *task) */
 export function Rayquaza_SetBlack(task: any): any {
-  BlendPalettes(PALETTES_BG & ~(1 << 15), 8, RGB_BLACK);
-      BlendPalettes(PALETTES_OBJECTS | (1 << 15), 0, RGB_BLACK);
+  BlendPalettes((0x0000FFFF) & ~(1 << 15), 8, (RGB(0, 0, 0)));
+      BlendPalettes((0xFFFF0000) | (1 << 15), 0, (RGB(0, 0, 0)));
 
       task.tState++;
       return FALSE;
@@ -2517,7 +2433,7 @@ export function WhiteBarsFade_WaitBars(task: any): any {
   sTransitionData.VBlank_DMA = 0;
       if (sTransitionData.counter >= (8))
       {
-          BlendPalettes(PALETTES_ALL, 16, RGB_WHITE);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(31, 31, 31)));
           task.tState++;
       }
       return FALSE;
@@ -2811,7 +2727,7 @@ export function CreateIntroTask(fadeToGrayDelay: any, fadeFromGrayDelay: any, nu
 
 /** static bool8 IsIntroTaskDone(void) */
 export function IsIntroTaskDone(): any {
-  if (FindTaskIdByFunc(Task_BattleTransition_Intro) == TASK_NONE)
+  if (FindTaskIdByFunc(Task_BattleTransition_Intro) == ((0xFF)))
           return TRUE;
       else
           return FALSE;
@@ -2830,7 +2746,7 @@ export function TransitionIntro_FadeToGray(task: any): any {
           task.tBlend += task.tFadeToGrayIncrement;
           if (task.tBlend > 16)
               task.tBlend = 16;
-          BlendPalettes(PALETTES_ALL, task.tBlend, RGB(11, 11, 11));
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), task.tBlend, RGB(11, 11, 11));
       }
       if (task.tBlend >= 16)
       {
@@ -2849,7 +2765,7 @@ export function TransitionIntro_FadeFromGray(task: any): any {
           task.tBlend -= task.tFadeFromGrayIncrement;
           if (task.tBlend < 0)
               task.tBlend = 0;
-          BlendPalettes(PALETTES_ALL, task.tBlend, RGB(11, 11, 11));
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), task.tBlend, RGB(11, 11, 11));
       }
       if (task.tBlend == 0)
       {
@@ -2902,7 +2818,7 @@ export function GetBg0TilesDst(tilemap: any, tileset: any): any {
 
 /** static void FadeScreenBlack(void) */
 export function FadeScreenBlack(): any {
-  BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
+  BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
 }
 
 /** static void SetSinWave(s16 *array, s16 sinAdd, s16 index, s16 indexIncrementer, s16 amplitude, s16 arrSize) */
@@ -3183,7 +3099,7 @@ export function FrontierLogoWave_Main(task: any): any {
       if (++task.tTimer == 101)
       {
           task.tStartedFade++;
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       }
 
       if (task.tStartedFade && !gPaletteFade.active)
@@ -3282,12 +3198,12 @@ export function FrontierSquares_Shrink(task: any): any {
           case 0:
               for (i = BG_PLTT_ID(15) + 10; i < BG_PLTT_ID(15) + 15; i++)
               {
-                  gPlttBufferUnfaded[i] = RGB_BLACK;
-                  gPlttBufferFaded[i] = RGB_BLACK;
+                  gPlttBufferUnfaded[i] = (RGB(0, 0, 0));
+                  gPlttBufferFaded[i] = (RGB(0, 0, 0));
               }
               break;
           case 1:
-              BlendPalettes(PALETTES_ALL & ~(1 << 15), 16, RGB_BLACK);
+              BlendPalettes((((0x0000FFFF) | (0xFFFF0000))) & ~(1 << 15), 16, (RGB(0, 0, 0)));
               LZ77UnCompVram(sFrontierSquares_EmptyBg_Tileset, tileset);
               break;
           case 2:
@@ -3323,7 +3239,7 @@ export function FrontierSquaresSpiral_Init(task: any): any {
       CopyBgTilemapBufferToVram(0);
       LoadPalette(sFrontierSquares_Palette, BG_PLTT_ID(14), 0);
       LoadPalette(sFrontierSquares_Palette, BG_PLTT_ID(15), 0);
-      BlendPalette(BG_PLTT_ID(14), 16, 8, RGB_BLACK);
+      BlendPalette(BG_PLTT_ID(14), 16, 8, (RGB(0, 0, 0)));
 
       task.tSquareNum = ((NUM_SQUARES_PER_ROW * NUM_SQUARES_PER_COL)) - 1;
       task.tFadeFlag = 0;
@@ -3351,8 +3267,8 @@ export function FrontierSquaresSpiral_Outward(task: any): any {
 
 /** static bool8 FrontierSquaresSpiral_SetBlack(struct Task *task) */
 export function FrontierSquaresSpiral_SetBlack(task: any): any {
-  BlendPalette(BG_PLTT_ID(14), 16, 3, RGB_BLACK);
-      BlendPalettes(PALETTES_ALL & ~(1 << 15 | 1 << 14), 16, RGB_BLACK);
+  BlendPalette(BG_PLTT_ID(14), 16, 3, (RGB(0, 0, 0)));
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))) & ~(1 << 15 | 1 << 14), 16, (RGB(0, 0, 0)));
 
       task.tSquareNum = 0;
       task.tFadeFlag = 0;
@@ -3398,7 +3314,7 @@ export function FrontierSquaresSpiral_Inward(task: any): any {
 export function FrontierSquares_End(task: any): any {
   FillBgTilemapBufferRect_Palette0(0, 1, 0, 0, 32, 32);
       CopyBgTilemapBufferToVram(0);
-      BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
       DestroyTask(FindTaskIdByFunc(task.func));
       return FALSE;
 }
@@ -3478,7 +3394,7 @@ export function FrontierSquaresScroll_Draw(task: any): any {
 
 /** static bool8 FrontierSquaresScroll_SetBlack(struct Task *task) */
 export function FrontierSquaresScroll_SetBlack(task: any): any {
-  BlendPalettes(PALETTES_ALL & ~(1 << 15), 16, RGB_BLACK);
+  BlendPalettes((((0x0000FFFF) | (0xFFFF0000))) & ~(1 << 15), 16, (RGB(0, 0, 0)));
 
       task.tSquareNum = 0;
 
@@ -3516,7 +3432,7 @@ export function FrontierSquaresScroll_End(task: any): any {
 
       FillBgTilemapBufferRect_Palette0(0, 1, 0, 0, 32, 32);
       CopyBgTilemapBufferToVram(0);
-      BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
 
       DestroyTask(FindTaskIdByFunc(task.func));
       task.tState++;  

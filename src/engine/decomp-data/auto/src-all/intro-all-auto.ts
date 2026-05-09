@@ -17,73 +17,23 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAnims_PlayerBicycle: any = null;
-let sBaseY: any = null;
-let sBigDropSpriteId: any = null;
-let sColorDelay: any = null;
-let sCosIdx: any = null;
-let sCosYIdx: any = null;
-let sDelay: any = null;
-let sFig8Loops: any = null;
+let b: any = null;
+let gIntroCredits_MovingSceneryState: any = null;
+let gIntroCredits_MovingSceneryVBase: any = null;
+let gIntroCredits_MovingSceneryVOffset: any = null;
+let gIntroFrameCounter: any = null;
+let gReservedSpritePaletteCount: any = null;
 let sFlygonYOffset: any = null;
-let sGameFreakLetterData: any = null;
-let sGameFreakLetterStartDelays: any = null;
-let sGameFreakLettersMoveSpeed: any = null;
-let sGroudonRockData: any = null;
-let sIntro1Bg0_Tilemap: any = null;
-let sIntro1Bg1_Tilemap: any = null;
-let sIntro1Bg2_Tilemap: any = null;
-let sIntro1Bg3_Tilemap: any = null;
-let sIntro1Bg_Gfx: any = null;
-let sIntro1Bg_Pal: any = null;
 let sIntroCharacterGender: any = null;
-let sIntroPokeball_Gfx: any = null;
-let sIntroPokeball_Pal: any = null;
-let sIntroPokeball_Tilemap: any = null;
-let sKyogreBubbleData: any = null;
-let sLetterId: any = null;
-let sLetterX: any = null;
-let sMoveTimer: any = null;
-let sNextState: any = null;
-let sPalIdx: any = null;
-let sPos: any = null;
-let sRockId: any = null;
-let sRot: any = null;
-let sScale: any = null;
-let sSinIdx: any = null;
-let sSinXIdx: any = null;
-let sSinYIdx: any = null;
-let sSparkleCoords: any = null;
-let sSpeed: any = null;
-let sSpritePalette_Bubbles: any = null;
-let sSpritePalette_Lightning: any = null;
-let sSpritePalette_RayquazaOrb: any = null;
-let sSpritePalette_Sparkle: any = null;
-let sSpritePalettes_Intro1: any = null;
-let sSpritePalettes_RunningPokemon: any = null;
-let sSpriteSheet_Bubbles: any = null;
-let sSpriteSheet_FlygonSilhouette: any = null;
-let sSpriteSheet_Lightning: any = null;
-let sSpriteSheet_RayquazaOrb: any = null;
-let sSpriteSheet_RunningPokemon: any = null;
-let sSpriteSheet_Sparkle: any = null;
-let sSpriteSheet_WaterDropsAndLogo: any = null;
-let sSpriteTemplate_Bubbles: any = null;
-let sSpriteTemplate_FlygonSilhouette: any = null;
-let sSpriteTemplate_GameFreakLetter: any = null;
-let sSpriteTemplate_GameFreakLogo: any = null;
-let sSpriteTemplate_Lightning: any = null;
-let sSpriteTemplate_Manectric: any = null;
-let sSpriteTemplate_RayquazaOrb: any = null;
-let sSpriteTemplate_Sparkle: any = null;
-let sSpriteTemplate_Torchic: any = null;
-let sSpriteTemplate_Volbeat: any = null;
-let sSpriteTemplate_WaterDrop: any = null;
-let sState: any = null;
-let sStateDelay: any = null;
-let sTaskId: any = null;
-let sTimer: any = null;
-let sUnk: any = null;
+let tCloudPos: any = null;
+let tDelay: any = null;
+let tPalIdx: any = null;
+let tScreenX: any = null;
+let tScreenY: any = null;
+let tState: any = null;
+let tTrigIdx: any = null;
+let tYShake: any = null;
+let tZoom: any = null;
 /** static void VBlankCB_Intro(void) */
 export function VBlankCB_Intro(): any {
   LoadOam();
@@ -131,7 +81,7 @@ export function SetUpCopyrightScreen(): any {
           SetGpuReg(REG_OFFSET_BLDCNT, 0);
           SetGpuReg(REG_OFFSET_BLDALPHA, 0);
           SetGpuReg(REG_OFFSET_BLDY, 0);
-          PLTT = RGB_WHITE;
+          PLTT = (RGB(31, 31, 31));
           SetGpuReg(REG_OFFSET_DISPCNT, 0);
           SetGpuReg(REG_OFFSET_BG0HOFS, 0);
           SetGpuReg(REG_OFFSET_BG0VOFS, 0);
@@ -144,7 +94,7 @@ export function SetUpCopyrightScreen(): any {
           ResetTasks();
           ResetSpriteData();
           FreeAllSpritePalettes();
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_WHITEALPHA);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
           SetGpuReg(REG_OFFSET_BG0CNT, BGCNT_PRIORITY(0)
                                      | BGCNT_CHARBASE(0)
                                      | BGCNT_SCREENBASE(7)
@@ -164,7 +114,7 @@ export function SetUpCopyrightScreen(): any {
           GameCubeMultiBoot_Main(gMultibootProgramStruct);
           if (gMultibootProgramStruct.gcmb_field_2 != 1)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
               gMain.state++;
           }
           break;
@@ -205,10 +155,10 @@ export function CB2_InitCopyrightScreenAfterBootup(): any {
           ResetMenuAndMonGlobals();
           Save_ResetSaveCounters();
           LoadGameSave(SAVE_NORMAL);
-          if (gSaveFileStatus == SAVE_STATUS_EMPTY || gSaveFileStatus == SAVE_STATUS_CORRUPT)
+          if (gSaveFileStatus == (0) || gSaveFileStatus == (2))
               Sav2_ClearSetDefault();
           SetPokemonCryStereo(gSaveBlock2Ptr.optionsSound);
-          InitHeap(gHeap, HEAP_SIZE);
+          InitHeap(gHeap, (0x1C000));
       }
 }
 
@@ -220,7 +170,7 @@ export function CB2_InitCopyrightScreenAfterTitleScreen(): any {
 /** static void Task_Scene1_Load(u8 taskId) */
 export function Task_Scene1_Load(taskId: any): any {
   SetVBlankCallback(NULL);
-      sIntroCharacterGender = MOD(Random(), GENDER_COUNT);
+      sIntroCharacterGender = MOD(Random(), (2));
       IntroResetGpuRegs();
       SetGpuReg(REG_OFFSET_BG3VOFS, 0);
       SetGpuReg(REG_OFFSET_BG2VOFS, 80);
@@ -259,12 +209,12 @@ export function Task_Scene1_Load(taskId: any): any {
 
 /** static void Task_Scene1_FadeIn(u8 taskId) */
 export function Task_Scene1_FadeIn(taskId: any): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       SetVBlankCallback(VBlankCB_Intro);
       SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_0 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG_ALL_ON | DISPCNT_OBJ_ON);
       gTasks[taskId].func = Task_Scene1_WaterDrops;
       gIntroFrameCounter = 0;
-      m4aSongNumStart(MUS_INTRO);
+      m4aSongNumStart((414));
       ResetSerial();
 }
 
@@ -373,7 +323,7 @@ export function Task_Scene1_PanUp(taskId: any): any {
           if (gIntroFrameCounter > (1007))
           {
                
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITEALPHA);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (((RGB(31, 31, 31)) | ((1 << 15)))));
               gTasks[taskId].func = Task_Scene1_End;
           }
       }
@@ -403,7 +353,7 @@ export function Task_Scene2_CreateSprites(taskId: any): any {
   let spriteId: any = null;
 
        
-      if (sIntroCharacterGender == MALE)
+      if (sIntroCharacterGender == (0))
           LoadCompressedSpriteSheet(gSpriteSheet_IntroBrendan);
       else
           LoadCompressedSpriteSheet(gSpriteSheet_IntroMay);
@@ -422,7 +372,7 @@ export function Task_Scene2_CreateSprites(taskId: any): any {
       CreateSprite(sSpriteTemplate_Manectric, DISPLAY_WIDTH + 32, 128, 0);
       CreateSprite(sSpriteTemplate_Torchic, DISPLAY_WIDTH + 48, 110, 1);
 
-      if (sIntroCharacterGender == MALE)
+      if (sIntroCharacterGender == (0))
           spriteId = CreateIntroBrendanSprite(DISPLAY_WIDTH + 32, 100);
       else
           spriteId = CreateIntroMaySprite(DISPLAY_WIDTH + 32, 100);
@@ -436,7 +386,7 @@ export function Task_Scene2_CreateSprites(taskId: any): any {
       gTasks[taskId].tFlygonSpriteId = spriteId;
 
        
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_WHITEALPHA);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
       SetVBlankCallback(VBlankCB_Intro);
       gTasks[taskId].tBgAnimTaskId = CreateBicycleBgAnimationTask(1, 0x4000, 0x400, 0x10);
       SetIntroPart2BgCnt(1);
@@ -457,7 +407,7 @@ export function Task_Scene2_BikeRide(taskId: any): any {
       if (gIntroFrameCounter > (1946))
       {
            
-          BeginNormalPaletteFade(PALETTES_ALL, 8, 0, 16, RGB_WHITEALPHA);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 8, 0, 16, (((RGB(31, 31, 31)) | ((1 << 15)))));
           gTasks[taskId].func = Task_Scene2_End;
       }
 
@@ -715,12 +665,12 @@ export function Task_Scene3_Load(taskId: any): any {
       PanFadeAndZoomScreen(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, 0, 0);
       ResetSpriteData();
       FreeAllSpritePalettes();
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_WHITEALPHA);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
       SetGpuReg(REG_OFFSET_BG2CNT, BGCNT_PRIORITY(3) | BGCNT_CHARBASE(0) | BGCNT_SCREENBASE(8) | BGCNT_256COLOR | BGCNT_AFF256x256);
       SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_MODE_1 | DISPCNT_OBJ_1D_MAP | DISPCNT_BG2_ON | DISPCNT_OBJ_ON);
       gTasks[taskId].func = Task_Scene3_SpinPokeball;
       gIntroFrameCounter = 0;
-      m4aSongNumStart(MUS_INTRO_BATTLE);
+      m4aSongNumStart((442));
 }
 
 /** static void Task_Scene3_SpinPokeball(u8 taskId) */
@@ -740,7 +690,7 @@ export function Task_Scene3_SpinPokeball(taskId: any): any {
       PanFadeAndZoomScreen(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, SAFE_DIV(0x10000, gTasks[taskId].tZoomDiv), gTasks[taskId].tAlpha);
 
       if (gIntroFrameCounter == (28))
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITEALPHA);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (((RGB(31, 31, 31)) | ((1 << 15)))));
 }
 
 /** static void Task_Scene3_WaitGroudon(u8 taskId) */
@@ -761,8 +711,8 @@ export function Task_Scene3_LoadGroudon(taskId: any): any {
           LZDecompressVram(gIntroGroudon_Tilemap, (BG_CHAR_ADDR(3)));
           LZDecompressVram(gIntroLegendBg_Gfx, (BG_CHAR_ADDR(1)));
           LZDecompressVram(gIntroGroudonBg_Tilemap, (BG_SCREEN_ADDR(28)));
-          LoadCompressedSpriteSheetUsingHeap(gBattleAnimPicTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_ROCKS)]);
-          LoadCompressedSpritePaletteUsingHeap(gBattleAnimPaletteTable[GET_TRUE_SPRITE_INDEX(ANIM_TAG_ROCKS)]);
+          LoadCompressedSpriteSheetUsingHeap(gBattleAnimPicTable[GET_TRUE_SPRITE_INDEX((((10000) + 58)))]);
+          LoadCompressedSpritePaletteUsingHeap(gBattleAnimPaletteTable[GET_TRUE_SPRITE_INDEX((((10000) + 58)))]);
           CpuCopy16(gIntro3Bg_Pal, gPlttBufferUnfaded, 0);
           gTasks[taskId].func = Task_Scene3_InitGroudonBg;
       }
@@ -791,7 +741,7 @@ export function Task_Scene3_InitGroudonBg(taskId: any): any {
                                   | DISPCNT_BG2_ON
                                   | DISPCNT_OBJ_ON
                                   | DISPCNT_WIN0_ON);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_WHITEALPHA);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
       gTasks[taskId].tWinPos = 0;
       gTasks[taskId].tScreenX = 0xFFA0;
       gTasks[taskId].tScreenY = 0xFF51;
@@ -823,7 +773,7 @@ export function Task_Scene3_EndNarrowWindow(taskId: any): any {
 export function Task_Scene3_StartGroudon(taskId: any): any {
   gTasks[taskId].tState = 0;
       gTasks[taskId].func = Task_Scene3_Groudon;
-      ScanlineEffect_InitWave(0, DISPLAY_HEIGHT, 4, 4, 1, SCANLINE_EFFECT_REG_BG1HOFS, FALSE);
+      ScanlineEffect_InitWave(0, DISPLAY_HEIGHT, 4, 4, 1, ((REG_ADDR_BG1HOFS - REG_ADDR_BG0HOFS)), FALSE);
 }
 
 /** static void Task_Scene3_Groudon(u8 taskId) */
@@ -891,7 +841,7 @@ export function Task_Scene3_Groudon(taskId: any): any {
               tScreenX = 80;
               tScreenY = 41;
               tDelay = 16;
-              PlayCryInternal(SPECIES_GROUDON, 0, 100, CRY_PRIORITY_NORMAL, CRY_MODE_NORMAL);
+              PlayCryInternal((405), 0, 100, (10), (0));
               tState++;
           }
           break;
@@ -910,7 +860,7 @@ export function Task_Scene3_Groudon(taskId: any): any {
           tZoom = Sin((tTrigIdx & 0xFF00) >> 8, 64) + 256;
           if (tScreenX == 120)
           {
-              BeginNormalPaletteFade(PALETTES_ALL & ~1, 3, 0, 16, RGB_WHITE);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))) & ~1, 3, 0, 16, (RGB(31, 31, 31)));
               tZoom = 256;
               tYShake = 0;
               tState++;
@@ -989,7 +939,7 @@ export function Task_Scene3_LoadKyogre(taskId: any): any {
       LZDecompressVram(gIntroKyogreBg_Tilemap, (BG_SCREEN_ADDR(28)));
       LoadCompressedSpriteSheet(sSpriteSheet_Bubbles);
       LoadSpritePalette(sSpritePalette_Bubbles);
-      BeginNormalPaletteFade(PALETTES_ALL & ~1, 0, 16, 0, RGB_WHITEALPHA);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))) & ~1, 0, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
       gTasks[taskId].func = Task_Scene3_Kyogre;
       gTasks[taskId].tState = 0;
       gTasks[taskId].tScreenX = 336;
@@ -997,7 +947,7 @@ export function Task_Scene3_LoadKyogre(taskId: any): any {
       gTasks[taskId].tDelay = 16;
       gTasks[taskId].tZoom = 256;
       PanFadeAndZoomScreen(gTasks[taskId].tScreenX, gTasks[taskId].tScreenY, gTasks[taskId].tZoom, 0);
-      ScanlineEffect_InitWave(0, DISPLAY_HEIGHT, 4, 4, 1, SCANLINE_EFFECT_REG_BG1VOFS, FALSE);
+      ScanlineEffect_InitWave(0, DISPLAY_HEIGHT, 4, 4, 1, ((REG_ADDR_BG1VOFS - REG_ADDR_BG0HOFS)), FALSE);
 }
 
 /** static void Task_Scene3_Kyogre(u8 taskId) */
@@ -1066,7 +1016,7 @@ export function Task_Scene3_Kyogre(taskId: any): any {
               {
                   tDelay = 1;
                   tState++;
-                  PlayCryInternal(SPECIES_KYOGRE, 0, 120, CRY_PRIORITY_NORMAL, CRY_MODE_NORMAL);
+                  PlayCryInternal((404), 0, 120, (10), (0));
               }
           }
           break;
@@ -1123,7 +1073,7 @@ export function Task_Scene3_Kyogre(taskId: any): any {
           gTasks[taskId].tScreenX = Sin(tTrigIdx, 0x3C) + 88;
           if (tTrigIdx == 64)
           {
-              BeginNormalPaletteFade(PALETTES_ALL & ~1, 3, 0, 16, RGB_WHITE);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))) & ~1, 3, 0, 16, (RGB(31, 31, 31)));
               tState++;
           }
           break;
@@ -1299,7 +1249,7 @@ export function Task_Scene3_Clouds(taskId: any): any {
           if (--tCloudPos == 0)
           {
                
-              BeginNormalPaletteFade(PALETTES_ALL & ~1, 0, 16, 0, RGB_WHITEALPHA);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))) & ~1, 0, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
               tCloudPos = 80 << 8;
               tState++;
           }
@@ -1307,7 +1257,7 @@ export function Task_Scene3_Clouds(taskId: any): any {
       case 1:
            
           if (tCloudPos == 40 << 8)
-              BeginNormalPaletteFade(PALETTES_BG & ~1, 3, 0, 16, RGB(9, 10, 10));
+              BeginNormalPaletteFade((0x0000FFFF) & ~1, 3, 0, 16, RGB(9, 10, 10));
 
            
           if (tCloudPos != 0)
@@ -1422,7 +1372,7 @@ export function Task_Scene3_LoadRayquazaAttack(taskId: any): any {
                                   | DISPCNT_OBJ_ON
                                   | DISPCNT_WIN0_ON);
       gTasks[taskId].func = Task_Scene3_Rayquaza;
-      BeginNormalPaletteFade(PALETTES_BG & ~(0x21), 0, 16, 0, RGB(9, 10, 10));
+      BeginNormalPaletteFade((0x0000FFFF) & ~(0x21), 0, 16, 0, RGB(9, 10, 10));
       gTasks[taskId].tState = 0;
       gTasks[taskId].data[1] = 0xA8;
       gTasks[taskId].data[2] = -0x10;
@@ -1536,7 +1486,7 @@ export function Task_RayquazaAttack(taskId: any): any {
               if (data[1] == 6)
               {
                   spriteId = CreateSprite(sSpriteTemplate_RayquazaOrb, 120, 88, 15);
-                  PlaySE(SE_INTRO_BLAST);
+                  PlaySE((103));
                   gSprites[spriteId].invisible = TRUE;
                   gSprites[spriteId].data[3] = tRayquazaTaskId;
                   tState++;
@@ -1568,7 +1518,7 @@ export function Task_RayquazaAttack(taskId: any): any {
       case 4:
           if (--data[3] == 0)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITE);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(31, 31, 31)));
               tState++;
           }
           break;
@@ -1822,7 +1772,7 @@ export function SpriteCB_WaterDrop_ReachLeafEnd(sprite: any): any {
   SetOamMatrix(sprite.data[1], sprite.data[6] + 64, 0, 0, sprite.data[6] + 64);
       SetOamMatrix(sprite.data[1] + 1, sprite.data[6] + 64, 0, 0, sprite.data[6] + 64);
       SetOamMatrix(sprite.data[1] + 2, sprite.data[6] + 64, 0, 0, sprite.data[6] + 64);
-      if (sprite.data[4] != MAX_SPRITES)
+      if (sprite.data[4] != (64))
       {
           let sinIdx: any = null;
           sprite.data[4] -= 8;

@@ -17,20 +17,15 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gMultiuseListMenuTemplate: any = null;
 let sItemNames: any = null;
 let sListMenuItems: any = null;
-let sMartInfo: any = null;
 let sPurchaseHistoryId: any = null;
-let sShopBuyMenuBgTemplates: any = null;
-let sShopBuyMenuListTemplate: any = null;
-let sShopBuyMenuTextColors: any = null;
-let sShopBuyMenuWindowTemplates: any = null;
-let sShopBuyMenuYesNoWindowTemplates: any = null;
 let sShopData: any = null;
-let sShopMenuActions_BuyQuit: any = null;
-let sShopMenuActions_BuySellQuit: any = null;
-let sShopMenuWindowTemplates: any = null;
-let sShopPurchaseYesNoFuncs: any = null;
+let tCallbackHi: any = null;
+let tCallbackLo: any = null;
+let tItemCount: any = null;
+let tItemId: any = null;
 /** static u8 CreateShopMenu(u8 martType) */
 export function CreateShopMenu(martType: any): any {
   let numMenuItems: any = null;
@@ -89,10 +84,10 @@ export function Task_ShopMenu(taskId: any): any {
   let inputCode: any = Menu_ProcessInputNoWrap();
       switch (inputCode)
       {
-      case MENU_NOTHING_CHOSEN:
+      case (-2):
           break;
-      case MENU_B_PRESSED:
-          PlaySE(SE_SELECT);
+      case (-1):
+          PlaySE((5));
           Task_HandleShopMenuQuit(taskId);
           break;
       default:
@@ -107,7 +102,7 @@ export function Task_HandleShopMenuBuy(taskId: any): any {
       tCallbackHi = CB2_InitBuyMenu >> 16;
       tCallbackLo = CB2_InitBuyMenu;
       gTasks[taskId].func = Task_GoToBuyOrSellMenu;
-      FadeScreen(FADE_TO_BLACK, 0);
+      FadeScreen((1), 0);
 }
 
 /** static void Task_HandleShopMenuSell(u8 taskId) */
@@ -116,7 +111,7 @@ export function Task_HandleShopMenuSell(taskId: any): any {
       tCallbackHi = CB2_GoToSellMenu >> 16;
       tCallbackLo = CB2_GoToSellMenu;
       gTasks[taskId].func = Task_GoToBuyOrSellMenu;
-      FadeScreen(FADE_TO_BLACK, 0);
+      FadeScreen((1), 0);
 }
 
 /** void CB2_ExitSellMenu(void) */
@@ -203,9 +198,9 @@ export function CB2_InitBuyMenu(): any {
           ResetTasks();
           ClearScheduledBgCopiesToVram();
           sShopData = AllocZeroed(0);
-          sShopData.scrollIndicatorsTaskId = TASK_NONE;
-          sShopData.itemSpriteIds[0] = SPRITE_NONE;
-          sShopData.itemSpriteIds[1] = SPRITE_NONE;
+          sShopData.scrollIndicatorsTaskId = ((0xFF));
+          sShopData.itemSpriteIds[0] = (0xFF);
+          sShopData.itemSpriteIds[1] = (0xFF);
           BuyMenuBuildListMenuTemplate();
           BuyMenuInitBgs();
           FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 0x20, 0x20);
@@ -225,8 +220,8 @@ export function CB2_InitBuyMenu(): any {
           BuyMenuAddScrollIndicatorArrows();
           taskId = CreateTask(Task_BuyMenu, 8);
           gTasks[taskId].tListTaskId = ListMenuInit(gMultiuseListMenuTemplate, 0, 0);
-          BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           SetVBlankCallback(VBlankCB_BuyMenu);
           SetMainCallback2(CB2_BuyMenu);
           break;
@@ -252,7 +247,7 @@ export function BuyMenuBuildListMenuTemplate(): any {
 
       StringCopy(sItemNames[i], gText_Cancel2);
       sListMenuItems[i].name = sItemNames[i];
-      sListMenuItems[i].id = LIST_CANCEL;
+      sListMenuItems[i].id = (-2);
 
       gMultiuseListMenuTemplate = sShopBuyMenuListTemplate;
       gMultiuseListMenuTemplate.items = sListMenuItems;
@@ -280,16 +275,16 @@ export function BuyMenuSetListEntry(menuItem: any, item: any, name: any): any {
 export function BuyMenuPrintItemDescriptionAndShowItemIcon(item: any, onInit: any, list: any): any {
   let description: any = null;
       if (onInit != TRUE)
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 
-      if (item != LIST_CANCEL)
+      if (item != (-2))
           BuyMenuAddItemIcon(item, sShopData.iconSlot);
       else
-          BuyMenuAddItemIcon(ITEM_LIST_END, sShopData.iconSlot);
+          BuyMenuAddItemIcon((0xFFFF), sShopData.iconSlot);
 
       BuyMenuRemoveItemIcon(item, sShopData.iconSlot ^ 1);
       sShopData.iconSlot ^= 1;
-      if (item != LIST_CANCEL)
+      if (item != (-2))
       {
           if (sMartInfo.martType == MART_TYPE_NORMAL)
               description = GetItemDescription(item);
@@ -309,13 +304,13 @@ export function BuyMenuPrintItemDescriptionAndShowItemIcon(item: any, onInit: an
 export function BuyMenuPrintPriceInList(windowId: any, itemId: any, y: any): any {
   let x: any = null;
 
-      if (itemId != LIST_CANCEL)
+      if (itemId != (-2))
       {
           if (sMartInfo.martType == MART_TYPE_NORMAL)
           {
               ConvertIntToDecimalStringN(
                   gStringVar1,
-                  GetItemPrice(itemId) >> IsPokeNewsActive(POKENEWS_SLATEPORT),
+                  GetItemPrice(itemId) >> IsPokeNewsActive((1)),
                   STR_CONV_MODE_LEFT_ALIGN,
                   5);
           }
@@ -330,13 +325,13 @@ export function BuyMenuPrintPriceInList(windowId: any, itemId: any, y: any): any
 
           StringExpandPlaceholders(gStringVar4, gText_PokedollarVar1);
           x = GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 120);
-          AddTextPrinterParameterized4(windowId, FONT_NARROW, x, y, 0, 0, sShopBuyMenuTextColors[COLORID_ITEM_LIST], TEXT_SKIP_DRAW, gStringVar4);
+          AddTextPrinterParameterized4(windowId, FONT_NARROW, x, y, 0, 0, sShopBuyMenuTextColors[COLORID_ITEM_LIST], (0xFF), gStringVar4);
       }
 }
 
 /** static void BuyMenuAddScrollIndicatorArrows(void) */
 export function BuyMenuAddScrollIndicatorArrows(): any {
-  if (sShopData.scrollIndicatorsTaskId == TASK_NONE && sMartInfo.itemCount + 1 > (8))
+  if (sShopData.scrollIndicatorsTaskId == ((0xFF)) && sMartInfo.itemCount + 1 > (8))
       {
           sShopData.scrollIndicatorsTaskId = AddScrollIndicatorArrowPairParameterized(
               SCROLL_ARROW_UP,
@@ -351,10 +346,10 @@ export function BuyMenuAddScrollIndicatorArrows(): any {
 
 /** static void BuyMenuRemoveScrollIndicatorArrows(void) */
 export function BuyMenuRemoveScrollIndicatorArrows(): any {
-  if (sShopData.scrollIndicatorsTaskId != TASK_NONE)
+  if (sShopData.scrollIndicatorsTaskId != ((0xFF)))
       {
           RemoveScrollIndicatorArrowPair(sShopData.scrollIndicatorsTaskId);
-          sShopData.scrollIndicatorsTaskId = TASK_NONE;
+          sShopData.scrollIndicatorsTaskId = ((0xFF));
       }
 }
 
@@ -368,13 +363,13 @@ export function BuyMenuPrintCursor(scrollIndicatorsTaskId: any, colorSet: any): 
 export function BuyMenuAddItemIcon(item: any, iconSlot: any): any {
   let spriteId: any = null;
       let spriteIdPtr: any =sShopData.itemSpriteIds[iconSlot];
-      if (spriteIdPtr != SPRITE_NONE)
+      if (spriteIdPtr != (0xFF))
           return;
 
-      if (sMartInfo.martType == MART_TYPE_NORMAL || item == ITEM_LIST_END)
+      if (sMartInfo.martType == MART_TYPE_NORMAL || item == (0xFFFF))
       {
           spriteId = AddItemIconSprite(iconSlot + (2110), iconSlot + (2110), item);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               spriteIdPtr = spriteId;
               gSprites[spriteId].x2 = 24;
@@ -384,7 +379,7 @@ export function BuyMenuAddItemIcon(item: any, iconSlot: any): any {
       else
       {
           spriteId = AddDecorationIconObject(item, 20, 84, 1, iconSlot + (2110), iconSlot + (2110));
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
               spriteIdPtr = spriteId;
       }
 }
@@ -392,13 +387,13 @@ export function BuyMenuAddItemIcon(item: any, iconSlot: any): any {
 /** static void BuyMenuRemoveItemIcon(u16 item, u8 iconSlot) */
 export function BuyMenuRemoveItemIcon(item: any, iconSlot: any): any {
   let spriteIdPtr: any =sShopData.itemSpriteIds[iconSlot];
-      if (spriteIdPtr == SPRITE_NONE)
+      if (spriteIdPtr == (0xFF))
           return;
 
       FreeSpriteTilesByTag(iconSlot + (2110));
       FreeSpritePaletteByTag(iconSlot + (2110));
       DestroySprite(gSprites[spriteIdPtr]);
-      spriteIdPtr = SPRITE_NONE;
+      spriteIdPtr = (0xFF);
 }
 
 /** static void BuyMenuInitBgs(void) */
@@ -495,10 +490,10 @@ export function BuyMenuDrawMapBg(): any {
               else
                   metatileLayerType = METATILE_LAYER_TYPE_COVERED;
 
-              if (metatile < NUM_METATILES_IN_PRIMARY)
-                  BuyMenuDrawMapMetatile(i, j, mapLayout.primaryTileset.metatiles + metatile * NUM_TILES_PER_METATILE, metatileLayerType);
+              if (metatile < (512))
+                  BuyMenuDrawMapMetatile(i, j, mapLayout.primaryTileset.metatiles + metatile * (8), metatileLayerType);
               else
-                  BuyMenuDrawMapMetatile(i, j, mapLayout.secondaryTileset.metatiles + ((metatile - NUM_METATILES_IN_PRIMARY) * NUM_TILES_PER_METATILE), metatileLayerType);
+                  BuyMenuDrawMapMetatile(i, j, mapLayout.secondaryTileset.metatiles + ((metatile - (512)) * (8)), metatileLayerType);
           }
       }
 }
@@ -543,8 +538,8 @@ export function BuyMenuCollectObjectEventData(): any {
 
       GetXYCoordsOneStepInFrontOfPlayer(facingX,facingY);
 
-      for (y = 0; y < OBJECT_EVENTS_COUNT; y++)
-          sShopData.viewportObjects[y][OBJ_EVENT_ID] = OBJECT_EVENTS_COUNT;
+      for (y = 0; y < (16); y++)
+          sShopData.viewportObjects[y][OBJ_EVENT_ID] = (16);
 
       for (y = 0; y < 5; y++)
       {
@@ -552,7 +547,7 @@ export function BuyMenuCollectObjectEventData(): any {
           {
               let objEventId: any = GetObjectEventIdByXY(facingX - 4 + x, facingY - 2 + y);
 
-              if (objEventId != OBJECT_EVENTS_COUNT)
+              if (objEventId != (16))
               {
                   sShopData.viewportObjects[numObjects][OBJ_EVENT_ID] = objEventId;
                   sShopData.viewportObjects[numObjects][X_COORD] = x;
@@ -561,18 +556,18 @@ export function BuyMenuCollectObjectEventData(): any {
 
                   switch (gObjectEvents[objEventId].facingDirection)
                   {
-                  case DIR_SOUTH:
-                      sShopData.viewportObjects[numObjects][ANIM_NUM] = ANIM_STD_FACE_SOUTH;
+                  case (1):
+                      sShopData.viewportObjects[numObjects][ANIM_NUM] = (0);
                       break;
-                  case DIR_NORTH:
-                      sShopData.viewportObjects[numObjects][ANIM_NUM] = ANIM_STD_FACE_NORTH;
+                  case (2):
+                      sShopData.viewportObjects[numObjects][ANIM_NUM] = (1);
                       break;
-                  case DIR_WEST:
-                      sShopData.viewportObjects[numObjects][ANIM_NUM] = ANIM_STD_FACE_WEST;
+                  case (3):
+                      sShopData.viewportObjects[numObjects][ANIM_NUM] = (2);
                       break;
-                  case DIR_EAST:
+                  case (4):
                   default:
-                      sShopData.viewportObjects[numObjects][ANIM_NUM] = ANIM_STD_FACE_EAST;
+                      sShopData.viewportObjects[numObjects][ANIM_NUM] = (3);
                       break;
                   }
                   numObjects++;
@@ -587,9 +582,9 @@ export function BuyMenuDrawObjectEvents(): any {
       let spriteId: any = null;
       let graphicsInfo: any = null;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
-          if (sShopData.viewportObjects[i][OBJ_EVENT_ID] == OBJECT_EVENTS_COUNT)
+          if (sShopData.viewportObjects[i][OBJ_EVENT_ID] == (16))
               continue;
 
           graphicsInfo = GetObjectEventGraphicsInfo(gObjectEvents[sShopData.viewportObjects[i][OBJ_EVENT_ID]].graphicsId);
@@ -658,21 +653,21 @@ export function Task_BuyMenu(taskId: any): any {
 
           switch (itemId)
           {
-          case LIST_NOTHING_CHOSEN:
+          case (-1):
               break;
-          case LIST_CANCEL:
-              PlaySE(SE_SELECT);
+          case (-2):
+              PlaySE((5));
               ExitBuyMenu(taskId);
               break;
           default:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               tItemId = itemId;
               ClearWindowTilemap(WIN_ITEM_DESCRIPTION);
               BuyMenuRemoveScrollIndicatorArrows();
               BuyMenuPrintCursor(tListTaskId, COLORID_GRAY_CURSOR);
 
               if (sMartInfo.martType == MART_TYPE_NORMAL)
-                  sShopData.totalCost = (GetItemPrice(itemId) >> IsPokeNewsActive(POKENEWS_SLATEPORT));
+                  sShopData.totalCost = (GetItemPrice(itemId) >> IsPokeNewsActive((1)));
               else
                   sShopData.totalCost = gDecorations[itemId].price;
 
@@ -685,7 +680,7 @@ export function Task_BuyMenu(taskId: any): any {
                   if (sMartInfo.martType == MART_TYPE_NORMAL)
                   {
                       CopyItemName(itemId, gStringVar1);
-                      if (GetItemPocket(itemId) == POCKET_TM_HM)
+                      if (GetItemPocket(itemId) == (3))
                       {
                           StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(itemId)]);
                           BuyMenuDisplayMessage(taskId, gText_Var1CertainlyHowMany2, Task_BuyHowManyDialogueInit);
@@ -721,7 +716,7 @@ export function Task_BuyHowManyDialogueInit(taskId: any): any {
       let maxQuantity: any = null;
 
       DrawStdFrameWithCustomTileAndPalette(WIN_QUANTITY_IN_BAG, FALSE, 1, 13);
-      ConvertIntToDecimalStringN(gStringVar1, quantityInBag, STR_CONV_MODE_RIGHT_ALIGN, MAX_ITEM_DIGITS + 1);
+      ConvertIntToDecimalStringN(gStringVar1, quantityInBag, STR_CONV_MODE_RIGHT_ALIGN, ((3)) + 1);
       StringExpandPlaceholders(gStringVar4, gText_InBagVar1);
       BuyMenuPrint(WIN_QUANTITY_IN_BAG, gStringVar4, 0, 1, 0, COLORID_NORMAL);
       tItemCount = 1;
@@ -731,8 +726,8 @@ export function Task_BuyHowManyDialogueInit(taskId: any): any {
 
       maxQuantity = GetMoney(gSaveBlock1Ptr.money) / sShopData.totalCost;
 
-      if (maxQuantity > MAX_BAG_ITEM_CAPACITY)
-          sShopData.maxQuantity = MAX_BAG_ITEM_CAPACITY;
+      if (maxQuantity > (99))
+          sShopData.maxQuantity = (99);
       else
           sShopData.maxQuantity = maxQuantity;
 
@@ -745,27 +740,27 @@ export function Task_BuyHowManyDialogueHandleInput(taskId: any): any {
 
       if (AdjustQuantityAccordingToDPadInput(tItemCount, sShopData.maxQuantity) == TRUE)
       {
-          sShopData.totalCost = (GetItemPrice(tItemId) >> IsPokeNewsActive(POKENEWS_SLATEPORT)) * tItemCount;
+          sShopData.totalCost = (GetItemPrice(tItemId) >> IsPokeNewsActive((1))) * tItemCount;
           BuyMenuPrintItemQuantityAndPrice(taskId);
       }
       else
       {
           if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_PRICE, FALSE);
               ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_IN_BAG, FALSE);
               ClearWindowTilemap(WIN_QUANTITY_PRICE);
               ClearWindowTilemap(WIN_QUANTITY_IN_BAG);
               PutWindowTilemap(WIN_ITEM_LIST);
               CopyItemName(tItemId, gStringVar1);
-              ConvertIntToDecimalStringN(gStringVar2, tItemCount, STR_CONV_MODE_LEFT_ALIGN, BAG_ITEM_CAPACITY_DIGITS);
+              ConvertIntToDecimalStringN(gStringVar2, tItemCount, STR_CONV_MODE_LEFT_ALIGN, (2));
               ConvertIntToDecimalStringN(gStringVar3, sShopData.totalCost, STR_CONV_MODE_LEFT_ALIGN, 6);
               BuyMenuDisplayMessage(taskId, gText_Var1AndYouWantedVar2, BuyMenuConfirmPurchase);
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_PRICE, FALSE);
               ClearStdWindowAndFrameToTransparent(WIN_QUANTITY_IN_BAG, FALSE);
               ClearWindowTilemap(WIN_QUANTITY_PRICE);
@@ -816,9 +811,9 @@ export function BuyMenuTryMakePurchase(taskId: any): any {
 
 /** static void BuyMenuSubtractMoney(u8 taskId) */
 export function BuyMenuSubtractMoney(taskId: any): any {
-  IncrementGameStat(GAME_STAT_SHOPPED);
+  IncrementGameStat((38));
       RemoveMoney(gSaveBlock1Ptr.money, sShopData.totalCost);
-      PlaySE(SE_SHOP);
+      PlaySE((95));
       PrintMoneyAmountInMoneyBox(WIN_MONEY, GetMoney(gSaveBlock1Ptr.money), 0);
 
       if (sMartInfo.martType == MART_TYPE_NORMAL)
@@ -833,10 +828,10 @@ export function Task_ReturnToItemListAfterItemPurchase(taskId: any): any {
 
       if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 
            
-          if (tItemId == ITEM_POKE_BALL && tItemCount >= 10 && AddBagItem(ITEM_PREMIER_BALL, 1) == TRUE)
+          if (tItemId == (4) && tItemCount >= 10 && AddBagItem((12), 1) == TRUE)
               BuyMenuDisplayMessage(taskId, gText_ThrowInPremierBall, BuyMenuReturnToItemList);
           else
               BuyMenuReturnToItemList(taskId);
@@ -847,7 +842,7 @@ export function Task_ReturnToItemListAfterItemPurchase(taskId: any): any {
 export function Task_ReturnToItemListAfterDecorationPurchase(taskId: any): any {
   if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           BuyMenuReturnToItemList(taskId);
       }
 }
@@ -870,8 +865,8 @@ export function BuyMenuPrintItemQuantityAndPrice(taskId: any): any {
   let data: any = gTasks[taskId].data;
 
       FillWindowPixelBuffer(WIN_QUANTITY_PRICE, PIXEL_FILL(1));
-      PrintMoneyAmount(WIN_QUANTITY_PRICE, 38, 1, sShopData.totalCost, TEXT_SKIP_DRAW);
-      ConvertIntToDecimalStringN(gStringVar1, tItemCount, STR_CONV_MODE_LEADING_ZEROS, BAG_ITEM_CAPACITY_DIGITS);
+      PrintMoneyAmount(WIN_QUANTITY_PRICE, 38, 1, sShopData.totalCost, (0xFF));
+      ConvertIntToDecimalStringN(gStringVar1, tItemCount, STR_CONV_MODE_LEADING_ZEROS, (2));
       StringExpandPlaceholders(gStringVar4, gText_xVar1);
       BuyMenuPrint(WIN_QUANTITY_PRICE, gStringVar4, 0, 1, 0, COLORID_NORMAL);
 }
@@ -879,7 +874,7 @@ export function BuyMenuPrintItemQuantityAndPrice(taskId: any): any {
 /** static void ExitBuyMenu(u8 taskId) */
 export function ExitBuyMenu(taskId: any): any {
   gFieldCallback = MapPostLoadHook_ReturnToShopMenu;
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_ExitBuyMenu;
 }
 

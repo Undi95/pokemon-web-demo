@@ -17,26 +17,17 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAffineAnimCmdFuncs: any = null;
-let sAffineAnimFuncs: any = null;
-let sAffineAnimStates: any = null;
-let sAnchorX: any = null;
-let sAnchorY: any = null;
-let sAnimCmdFuncs: any = null;
-let sAnimFuncs: any = null;
-let sCenterToCornerVecTable: any = null;
-let sDummySprite: any = null;
-let sOamDimensions: any = null;
-let sOamDimensions32: any = null;
+let gAffineAnimsDisabled: any = null;
+let gOamLimit: any = null;
+let gOamMatrixAllocBitmap: any = null;
+let gReservedSpritePaletteCount: any = null;
+let gReservedSpriteTileCount: any = null;
+let gSpriteCoordOffsetX: any = null;
+let gSpriteCoordOffsetY: any = null;
 let sShouldProcessSpriteCopyRequests: any = null;
 let sSpriteCopyRequestCount: any = null;
-let sSpriteCopyRequests: any = null;
-let sSpriteOrder: any = null;
-let sSpritePaletteTags: any = null;
-let sSpritePriorities: any = null;
-let sSpriteTileAllocBitmap: any = null;
-let sSpriteTileRangeTags: any = null;
-let sSpriteTileRanges: any = null;
+let var1: any = null;
+let var2: any = null;
 /** void ResetSpriteData(void) */
 export function ResetSpriteData(): any {
   ResetOamRange(0, 128);
@@ -54,7 +45,7 @@ export function ResetSpriteData(): any {
 /** void AnimateSprites(void) */
 export function AnimateSprites(): any {
   let i: any = null;
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
           let sprite: any =gSprites[i];
 
@@ -85,7 +76,7 @@ export function BuildOamBuffer(): any {
 /** void UpdateOamCoords(void) */
 export function UpdateOamCoords(): any {
   let i: any = null;
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
           let sprite: any =gSprites[i];
           if (sprite.inUse && !sprite.invisible)
@@ -107,7 +98,7 @@ export function UpdateOamCoords(): any {
 /** void BuildSpritePriorities(void) */
 export function BuildSpritePriorities(): any {
   let i: any = null;
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
           let sprite: any =gSprites[i];
           let priority: any = sprite.subpriority | (sprite.oam.priority << 8);
@@ -118,7 +109,7 @@ export function BuildSpritePriorities(): any {
 /** void SortSprites(void) */
 export function SortSprites(): any {
   let i: any = null;
-      for (i = 1; i < MAX_SPRITES; i++)
+      for (i = 1; i < (64); i++)
       {
           let j: any = i;
           let sprite1: any =gSprites[sSpriteOrder[i - 1]];
@@ -213,7 +204,7 @@ export function SortSprites(): any {
 /** void CopyMatricesToOamBuffer(void) */
 export function CopyMatricesToOamBuffer(): any {
   let i: any = null;
-      for (i = 0; i < OAM_MATRIX_COUNT; i++)
+      for (i = 0; i < (32); i++)
       {
           let base: any = 4 * i;
           gMain.oamBuffer[base + 0].affineParam = gOamMatrices[i].a;
@@ -228,7 +219,7 @@ export function AddSpritesToOamBuffer(): any {
   let i: any = 0;
       let oamIndex: any = 0;
 
-      while (i < MAX_SPRITES)
+      while (i < (64))
       {
           let sprite: any =gSprites[sSpriteOrder[i]];
           if (sprite.inUse && !sprite.invisible && AddSpriteToOamBuffer(sprite,oamIndex))
@@ -247,31 +238,31 @@ export function AddSpritesToOamBuffer(): any {
 export function CreateSprite(template: any, x: any, y: any, subpriority: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
           if (!gSprites[i].inUse)
               return CreateSpriteAt(i, template, x, y, subpriority);
 
-      return MAX_SPRITES;
+      return (64);
 }
 
 /** u8 CreateSpriteAtEnd(const struct SpriteTemplate *template, s16 x, s16 y, u8 subpriority) */
 export function CreateSpriteAtEnd(template: any, x: any, y: any, subpriority: any): any {
   let i: any = null;
 
-      for (i = MAX_SPRITES - 1; i > -1; i--)
+      for (i = (64) - 1; i > -1; i--)
           if (!gSprites[i].inUse)
               return CreateSpriteAt(i, template, x, y, subpriority);
 
-      return MAX_SPRITES;
+      return (64);
 }
 
 /** u8 CreateInvisibleSprite(void (*callback)(struct Sprite *)) */
 export function CreateInvisibleSprite(callback: any): any {
   let index: any = CreateSprite(gDummySpriteTemplate, 0, 0, 31);
 
-      if (index == MAX_SPRITES)
+      if (index == (64))
       {
-          return MAX_SPRITES;
+          return (64);
       }
       else
       {
@@ -303,7 +294,7 @@ export function CreateSpriteAt(index: any, template: any, x: any, y: any, subpri
 
       CalcCenterToCornerVec(sprite, sprite.oam.shape, sprite.oam.size, sprite.oam.affineMode);
 
-      if (template.tileTag == TAG_NONE)
+      if (template.tileTag == (0xFFFF))
       {
           let tileNum: any = null;
           sprite.images = template.images;
@@ -311,7 +302,7 @@ export function CreateSpriteAt(index: any, template: any, x: any, y: any, subpri
           if (tileNum == -1)
           {
               ResetSprite(sprite);
-              return MAX_SPRITES;
+              return (64);
           }
           sprite.oam.tileNum = tileNum;
           sprite.usingSheet = FALSE;
@@ -326,7 +317,7 @@ export function CreateSpriteAt(index: any, template: any, x: any, y: any, subpri
       if (sprite.oam.affineMode & ST_OAM_AFFINE_ON_MASK)
           InitSpriteAffineAnim(sprite);
 
-      if (template.paletteTag != TAG_NONE)
+      if (template.paletteTag != (0xFFFF))
           sprite.oam.paletteNum = IndexOfSpritePaletteTag(template.paletteTag);
 
       return index;
@@ -336,7 +327,7 @@ export function CreateSpriteAt(index: any, template: any, x: any, y: any, subpri
 export function CreateSpriteAndAnimate(template: any, x: any, y: any, subpriority: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
           let sprite: any =gSprites[i];
 
@@ -344,8 +335,8 @@ export function CreateSpriteAndAnimate(template: any, x: any, y: any, subpriorit
           {
               let index: any = CreateSpriteAt(i, template, x, y, subpriority);
 
-              if (index == MAX_SPRITES)
-                  return MAX_SPRITES;
+              if (index == (64))
+                  return (64);
 
               gSprites[i].callback(sprite);
 
@@ -356,7 +347,7 @@ export function CreateSpriteAndAnimate(template: any, x: any, y: any, subpriorit
           }
       }
 
-      return MAX_SPRITES;
+      return (64);
 }
 
 /** void DestroySprite(struct Sprite *sprite) */
@@ -405,7 +396,7 @@ export function ClearSpriteCopyRequests(): any {
 /** void ResetOamMatrices(void) */
 export function ResetOamMatrices(): any {
   let i: any = null;
-      for (i = 0; i < OAM_MATRIX_COUNT; i++)
+      for (i = 0; i < (32); i++)
       {
            
           gOamMatrices[i].a = 0x0100;
@@ -563,7 +554,7 @@ export function RequestSpriteCopy(src: any, dest: any, size: any): any {
 export function CopyFromSprites(dest: any): any {
   let i: any = null;
       let src: any = gSprites;
-      for (i = 0; i < 0 * MAX_SPRITES; i++)
+      for (i = 0; i < 0 * (64); i++)
       {
           dest = src;
           dest++;
@@ -575,7 +566,7 @@ export function CopyFromSprites(dest: any): any {
 export function CopyToSprites(src: any): any {
   let i: any = null;
       let dest: any = gSprites;
-      for (i = 0; i < 0 * MAX_SPRITES; i++)
+      for (i = 0; i < 0 * (64); i++)
       {
           dest = src;
           src++;
@@ -587,7 +578,7 @@ export function CopyToSprites(src: any): any {
 export function ResetAllSprites(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
           ResetSprite(gSprites[i]);
           sSpriteOrder[i] = i;
@@ -601,7 +592,7 @@ export function FreeSpriteTiles(sprite: any): any {
       if (!sprite || !sprite.template)
           return;
 
-      if (sprite.template.tileTag != TAG_NONE)
+      if (sprite.template.tileTag != (0xFFFF))
           FreeSpriteTilesByTag(sprite.template.tileTag);
 }
 
@@ -957,14 +948,14 @@ export function UpdateSpriteMatrixAnchorPos(sprite: any, x: any, y: any): any {
   let dimension, var1, var2;
 
       let matrixNum: any = sprite.oam.matrixNum;
-      if (x != NO_ANCHOR)
+      if (x != (0x800))
       {
           dimension = sOamDimensions32[sprite.oam.shape][sprite.oam.size].width;
           var1 = dimension << 8;
           var2 = (dimension << 16) / gOamMatrices[matrixNum].a;
           sprite.x2 = GetAnchorCoord(var1, var2, x);
       }
-      if (y != NO_ANCHOR)
+      if (y != (0x800))
       {
           dimension = sOamDimensions32[sprite.oam.shape][sprite.oam.size].height;
           var1 = dimension << 8;
@@ -1150,7 +1141,7 @@ export function ResetAffineAnimData(): any {
 
       ResetOamMatrices();
 
-      for (i = 0; i < OAM_MATRIX_COUNT; i++)
+      for (i = 0; i < (32); i++)
           AffineAnimStateReset(i);
 }
 
@@ -1160,7 +1151,7 @@ export function AllocOamMatrix(): any {
       let bit: any = 1;
       let bitmap: any = gOamMatrixAllocBitmap;
 
-      while (i < OAM_MATRIX_COUNT)
+      while (i < (32))
       {
           if (!(bitmap & bit))
           {
@@ -1253,7 +1244,7 @@ export function FreeSpriteTilesByTag(tag: any): any {
 
           for (i = start; i < start + count; i++)
               ;
-          sSpriteTileRangeTags[index] = TAG_NONE;
+          sSpriteTileRangeTags[index] = (0xFFFF);
       }
 }
 
@@ -1261,9 +1252,9 @@ export function FreeSpriteTilesByTag(tag: any): any {
 export function FreeSpriteTileRanges(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
-          sSpriteTileRangeTags[i] = TAG_NONE;
+          sSpriteTileRangeTags[i] = (0xFFFF);
           SET_SPRITE_TILE_RANGE(i, 0, 0);
       }
 }
@@ -1280,7 +1271,7 @@ export function GetSpriteTileStartByTag(tag: any): any {
 export function IndexOfSpriteTileTag(tag: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
           if (sSpriteTileRangeTags[i] == tag)
               return i;
 
@@ -1291,18 +1282,18 @@ export function IndexOfSpriteTileTag(tag: any): any {
 export function GetSpriteTileTagByTileStart(start: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
-          if (sSpriteTileRangeTags[i] != TAG_NONE && sSpriteTileRanges[i * 2] == start)
+          if (sSpriteTileRangeTags[i] != (0xFFFF) && sSpriteTileRanges[i * 2] == start)
               return sSpriteTileRangeTags[i];
       }
 
-      return TAG_NONE;
+      return (0xFFFF);
 }
 
 /** void AllocSpriteTileRange(u16 tag, u16 start, u16 count) */
 export function AllocSpriteTileRange(tag: any, start: any, count: any): any {
-  let freeIndex: any = IndexOfSpriteTileTag(TAG_NONE);
+  let freeIndex: any = IndexOfSpriteTileTag((0xFFFF));
       sSpriteTileRangeTags[freeIndex] = tag;
       SET_SPRITE_TILE_RANGE(freeIndex, start, count);
 }
@@ -1312,7 +1303,7 @@ export function FreeAllSpritePalettes(): any {
   let i: any = null;
       gReservedSpritePaletteCount = 0;
       for (i = 0; i < 16; i++)
-          sSpritePaletteTags[i] = TAG_NONE;
+          sSpritePaletteTags[i] = (0xFFFF);
 }
 
 /** u8 LoadSpritePalette(const struct SpritePalette *palette) */
@@ -1322,7 +1313,7 @@ export function LoadSpritePalette(palette: any): any {
       if (index != 0xFF)
           return index;
 
-      index = IndexOfSpritePaletteTag(TAG_NONE);
+      index = IndexOfSpritePaletteTag((0xFFFF));
 
       if (index == 0xFF)
       {
@@ -1346,12 +1337,12 @@ export function LoadSpritePalettes(palettes: any): any {
 
 /** void DoLoadSpritePalette(const u16 *src, u16 paletteOffset) */
 export function DoLoadSpritePalette(src: any, paletteOffset: any): any {
-  LoadPalette(src, OBJ_PLTT_OFFSET + paletteOffset, PLTT_SIZE_4BPP);
+  LoadPalette(src, (0x100) + paletteOffset, PLTT_SIZE_4BPP);
 }
 
 /** u8 AllocSpritePalette(u16 tag) */
 export function AllocSpritePalette(tag: any): any {
-  let index: any = IndexOfSpritePaletteTag(TAG_NONE);
+  let index: any = IndexOfSpritePaletteTag((0xFFFF));
       if (index == 0xFF)
       {
           return 0xFF;
@@ -1382,7 +1373,7 @@ export function GetSpritePaletteTagByPaletteNum(paletteNum: any): any {
 export function FreeSpritePaletteByTag(tag: any): any {
   let index: any = IndexOfSpritePaletteTag(tag);
       if (index != 0xFF)
-          sSpritePaletteTags[index] = TAG_NONE;
+          sSpritePaletteTags[index] = (0xFFFF);
 }
 
 /** void SetSubspriteTables(struct Sprite *sprite, const struct SubspriteTable *subspriteTables) */

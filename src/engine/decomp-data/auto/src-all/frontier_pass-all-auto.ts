@@ -17,29 +17,15 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattleRecord_Tilemap: any = null;
-let sBgAffineCoords: any = null;
-let sCursorSpriteSheets: any = null;
-let sHeadsSpriteSheet: any = null;
-let sMapAndCard_ZoomedOut_Tilemap: any = null;
-let sMapAndCard_Zooming_Tilemap: any = null;
-let sMapBgTemplates: any = null;
 let sMapData: any = null;
-let sMapLandmarks: any = null;
-let sMapScreen_Tilemap: any = null;
-let sMapWindowTemplates: any = null;
-let sPassAreaDescriptions: any = null;
-let sPassAreasLayout: any = null;
-let sPassBgTemplates: any = null;
 let sPassData: any = null;
 let sPassGfx: any = null;
-let sPassWindowTemplates: any = null;
-let sSavedPassData: any = null;
-let sSpritePalettes: any = null;
-let sSpriteTemplate_Medal: any = null;
-let sSpriteTemplate_PlayerHead: any = null;
-let sSpriteTemplates_Cursors: any = null;
-let sTextColors: any = null;
+let tMoveSteps: any = null;
+let tScaleSpeedX: any = null;
+let tScaleSpeedY: any = null;
+let tScaleX: any = null;
+let tScaleY: any = null;
+let tState: any = null;
 /** static void ResetGpuRegsAndBgs(void) */
 export function ResetGpuRegsAndBgs(): any {
   SetGpuReg(REG_OFFSET_DISPCNT, 0);
@@ -112,11 +98,11 @@ export function AllocateFrontierPassData(callback: any): any {
       sPassData.hasBattleRecord = CanCopyRecordedBattleSaveData();
       sPassData.areaToShow = CURSOR_AREA_NOTHING;
       sPassData.trainerStars = CountPlayerTrainerStars();
-      for (i = 0; i < NUM_FRONTIER_FACILITIES; i++)
+      for (i = 0; i < (7); i++)
       {
-          if (FlagGet(FLAG_SYS_TOWER_SILVER + i * 2))
+          if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x64)) + i * 2))
               sPassData.facilitySymbols[i]++;
-          if (FlagGet(FLAG_SYS_TOWER_GOLD + i * 2))
+          if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x65)) + i * 2))
               sPassData.facilitySymbols[i]++;
       }
 
@@ -273,8 +259,8 @@ export function InitFrontierPass(): any {
           ShowBg(2);
           LoadCursorAndSymbolSprites();
           SetVBlankCallback(VBlankCB_FrontierPass);
-          BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           break;
       case 10:
           AnimateSprites();
@@ -297,7 +283,7 @@ export function HideFrontierPass(): any {
       case 0:
           if (sPassData.areaToShow != CURSOR_AREA_MAP && sPassData.areaToShow != CURSOR_AREA_CARD)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           }
           else
           {
@@ -392,11 +378,11 @@ export function CB2_ReturnFromRecord(): any {
       memset(sSavedPassData, 0, 0);
       switch (CurrentBattlePyramidLocation())
       {
-      case PYRAMID_LOCATION_FLOOR:
-          PlayBGM(MUS_B_PYRAMID);
+      case (1):
+          PlayBGM((461));
           break;
-      case PYRAMID_LOCATION_TOP:
-          PlayBGM(MUS_B_PYRAMID_TOP);
+      case (2):
+          PlayBGM((462));
           break;
       default:
           Overworld_PlaySpecialMapMusic();
@@ -495,13 +481,13 @@ export function Task_HandleFrontierPassInput(taskId: any): any {
           {
               if (sPassData.cursorArea <= CURSOR_AREA_RECORD)  
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   if (TryCallPassAreaFunction(taskId, sPassData.cursorArea))
                       return;
               }
               else if (sPassData.cursorArea == CURSOR_AREA_CANCEL)
               {
-                  PlaySE(SE_PC_OFF);
+                  PlaySE((3));
                   SetMainCallback2(CB2_HideFrontierPass);
                   DestroyTask(taskId);
                   return;
@@ -510,7 +496,7 @@ export function Task_HandleFrontierPassInput(taskId: any): any {
 
           if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_PC_OFF);
+              PlaySE((3));
               SetMainCallback2(CB2_HideFrontierPass);
               DestroyTask(taskId);
           }
@@ -544,7 +530,7 @@ export function Task_PassAreaZoom(taskId: any): any {
               tScaleY = Q_8_8(1);
               tScaleSpeedX = 0x15;
               tScaleSpeedY = 0x15;
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITE);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(31, 31, 31)));
           }
           else
           {
@@ -559,8 +545,8 @@ export function Task_PassAreaZoom(taskId: any): any {
               ShowBg(2);
               LoadCursorAndSymbolSprites();
               SetVBlankCallback(VBlankCB_FrontierPass);
-              BlendPalettes(PALETTES_ALL, 16, RGB_WHITE);
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_WHITE);
+              BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(31, 31, 31)));
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(31, 31, 31)));
           }
           sPassGfx.zooming = TRUE;
           sPassGfx.scaleX = MathUtil_Inv16(tScaleX);
@@ -618,7 +604,7 @@ export function ShowAndPrintWindows(): any {
   let x: any = null;
       let i: any = null;
 
-      for (i = 0; i < WINDOW_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           PutWindowTilemap(i);
           FillWindowPixelBuffer(i, PIXEL_FILL(0));
@@ -639,7 +625,7 @@ export function ShowAndPrintWindows(): any {
       sPassData.previousCursorArea = CURSOR_AREA_NOTHING;
       PrintAreaDescription(sPassData.cursorArea);
 
-      for (i = 0; i < WINDOW_COUNT; i++)
+      for (i = 0; i < (4); i++)
           CopyWindowToVram(i, COPYWIN_FULL);
 
       CopyBgTilemapBufferToVram(0);
@@ -779,7 +765,7 @@ export function LoadCursorAndSymbolSprites(): any {
       sPassGfx.cursorSprite =gSprites[spriteId];
       sPassGfx.cursorSprite.oam.priority = 0;
 
-      for (i = 0; i < NUM_FRONTIER_FACILITIES; i++)
+      for (i = 0; i < (7); i++)
       {
           if (sPassData.facilitySymbols[i] != 0)
           {
@@ -800,7 +786,7 @@ export function FreeCursorAndSymbolSprites(): any {
 
       DestroySprite(sPassGfx.cursorSprite);
       sPassGfx.cursorSprite = NULL;
-      for (i = 0; i < NUM_FRONTIER_FACILITIES; i++)
+      for (i = 0; i < (7); i++)
       {
           if (sPassGfx.symbolSprites[i] != NULL)
           {
@@ -887,8 +873,8 @@ export function InitFrontierMap(): any {
           ShowBg(2);
           InitFrontierMapSprites();
           SetVBlankCallback(VBlankCB_FrontierPass);
-          BlendPalettes(PALETTES_ALL, 16, RGB_WHITE);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_WHITE);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(31, 31, 31)));
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(31, 31, 31)));
           break;
       case 7:
           if (UpdatePaletteFade())
@@ -906,7 +892,7 @@ export function ExitFrontierMap(): any {
   switch (sPassData.state)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITE);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(31, 31, 31)));
           break;
       case 1:
           if (UpdatePaletteFade())
@@ -969,12 +955,12 @@ export function Task_HandleFrontierMap(taskId: any): any {
       case 1:
           if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_PC_OFF);
+              PlaySE((3));
               tState = 4;
           }
           else if (JOY_NEW(DPAD_DOWN))
           {
-              if (sMapData.cursorPos >= NUM_FRONTIER_FACILITIES - 1)
+              if (sMapData.cursorPos >= (7) - 1)
                   HandleFrontierMapCursorMove(0);
               else
                   tState = 2;
@@ -1030,32 +1016,32 @@ export function Task_HandleFrontierMap(taskId: any): any {
 export function MapNumToFrontierFacilityId(mapNum: any): any {
   if ((mapNum >= MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_TOWER_LOBBY) && mapNum <= MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_TOWER_BATTLE_ROOM))
        || (mapNum >= MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_PARTNER_ROOM) && mapNum <= MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_BATTLE_ROOM)))
-          return FRONTIER_FACILITY_TOWER + 1;
+          return (0) + 1;
 
        
       else if (mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_DOME_LOBBY)
                || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_DOME_CORRIDOR)
                || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_DOME_PRE_BATTLE_ROOM)
                || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_DOME_BATTLE_ROOM))
-          return FRONTIER_FACILITY_DOME + 1;
+          return (1) + 1;
 
        
       else if (mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_PALACE_LOBBY)
           || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_PALACE_CORRIDOR)
           || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_PALACE_BATTLE_ROOM))
-          return FRONTIER_FACILITY_PALACE + 1;
+          return (2) + 1;
 
        
       else if (mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_ARENA_LOBBY)
           || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_ARENA_CORRIDOR)
           || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_ARENA_BATTLE_ROOM))
-          return FRONTIER_FACILITY_ARENA + 1;
+          return (3) + 1;
 
        
       else if (mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_FACTORY_LOBBY)
           || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_FACTORY_PRE_BATTLE_ROOM)
           || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_FACTORY_BATTLE_ROOM))
-          return FRONTIER_FACILITY_FACTORY + 1;
+          return (4) + 1;
 
        
       else if (mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_PIKE_LOBBY)
@@ -1064,13 +1050,13 @@ export function MapNumToFrontierFacilityId(mapNum: any): any {
                || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_NORMAL)
                || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_FINAL)
                || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_PIKE_ROOM_WILD_MONS))
-          return FRONTIER_FACILITY_PIKE + 1;
+          return (5) + 1;
 
        
       else if (mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_PYRAMID_LOBBY)
           || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)
           || mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_PYRAMID_TOP))
-          return FRONTIER_FACILITY_PYRAMID + 1;
+          return (6) + 1;
 
       else
           return 0;
@@ -1155,7 +1141,7 @@ export function InitFrontierMapSprites(): any {
 
           sMapData.playerHeadSprite =gSprites[spriteId];
           sMapData.playerHeadSprite.oam.priority = 0;
-          if (gSaveBlock2Ptr.playerGender != MALE)
+          if (gSaveBlock2Ptr.playerGender != (0))
               StartSpriteAnim(sMapData.playerHeadSprite, 1);
       }
 }
@@ -1170,7 +1156,7 @@ export function PrintOnFrontierMap(): any {
           FillWindowPixelBuffer(i, PIXEL_FILL(0));
       }
 
-      for (i = 0; i < NUM_FRONTIER_FACILITIES; i++)
+      for (i = 0; i < (7); i++)
       {
           if (i == sMapData.cursorPos)
               AddTextPrinterParameterized3(MAP_WINDOW_NAME, FONT_NARROW, 4, (i * 16) + 1, sTextColors[2], 0, sMapLandmarks[i].name);
@@ -1193,12 +1179,12 @@ export function HandleFrontierMapCursorMove(direction: any): any {
       if (direction)
       {
           oldCursorPos = sMapData.cursorPos;
-          sMapData.cursorPos = (oldCursorPos + 6) % NUM_FRONTIER_FACILITIES;
+          sMapData.cursorPos = (oldCursorPos + 6) % (7);
       }
       else
       {
           oldCursorPos = sMapData.cursorPos;
-          sMapData.cursorPos = (oldCursorPos + 1) % NUM_FRONTIER_FACILITIES;
+          sMapData.cursorPos = (oldCursorPos + 1) % (7);
       }
 
       AddTextPrinterParameterized3(MAP_WINDOW_NAME, FONT_NARROW, 4, (oldCursorPos * 16) + 1, sTextColors[1], 0, sMapLandmarks[oldCursorPos].name);
@@ -1216,7 +1202,7 @@ export function HandleFrontierMapCursorMove(direction: any): any {
           CopyWindowToVram(i, COPYWIN_FULL);
 
       CopyBgTilemapBufferToVram(0);
-      PlaySE(SE_DEX_SCROLL);
+      PlaySE((108));
 }
 
 // ─── callsTo manifest (= 107 unique callees) ───────────────────────

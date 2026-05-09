@@ -17,15 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBlendCycleTime: any = null;
-let sBlendTableIdx: any = null;
-let sBlendTimer: any = null;
-let sFrenzyPlantRootData: any = null;
-let sMoveTimer: any = null;
-let sVelocX: any = null;
-let sVelocY: any = null;
-let sX: any = null;
-let sY: any = null;
+let id: any = null;
+let savedPal: any = null;
+let trigIdx: any = null;
 /** static void AnimMovePowderParticle(struct Sprite *sprite) */
 export function AnimMovePowderParticle(sprite: any): any {
   CMD_ARGS(x, y, duration, yVelocity, waveAmplitude, waveSpeed);
@@ -165,7 +159,7 @@ export function AnimHyperBeamOrb(sprite: any): any {
       StartSpriteAnim(sprite, animNum % 8);
       sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
       sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.x -= 20;
       else
           sprite.x += 20;
@@ -207,7 +201,7 @@ export function AnimLeechSeed(sprite: any): any {
   CMD_ARGS(initialX, initialY, targetX, targetY, duration, waveAmplitude);
 
       InitSpritePosToAnimAttacker(sprite, TRUE);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           cmd.targetX = -cmd.targetX;
 
       sprite.data[0] = cmd.duration;
@@ -421,7 +415,7 @@ export function AnimTranslateLinearSingleSineWave(sprite: any): any {
   CMD_ARGS(initialX, initialY, targetX, targetY, duration, waveAmplitude, targetBoth);
 
       InitSpritePosToAnimAttacker(sprite, TRUE);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           cmd.targetX = -cmd.targetX;
 
       sprite.data[0] = cmd.duration;
@@ -542,7 +536,7 @@ export function AnimConstrictBinding_Step1(sprite: any): any {
       if (gBattleAnimArgs[7] == 0xFFFF)
       {
           sprite.affineAnimPaused = 0;
-          spriteId = GetAnimBattlerSpriteId(ANIM_TARGET);
+          spriteId = GetAnimBattlerSpriteId((1));
           sprite.data[0] = 0x100;
           sprite.callback = AnimConstrictBinding_Step2;
       }
@@ -550,7 +544,7 @@ export function AnimConstrictBinding_Step1(sprite: any): any {
 
 /** static void AnimConstrictBinding_Step2(struct Sprite *sprite) */
 export function AnimConstrictBinding_Step2(sprite: any): any {
-  let spriteId: any = GetAnimBattlerSpriteId(ANIM_TARGET);
+  let spriteId: any = GetAnimBattlerSpriteId((1));
       if (!sprite.data[2])
           sprite.data[0] += 11;
       else
@@ -575,7 +569,7 @@ export function AnimConstrictBinding_Step2(sprite: any): any {
 export function AnimTask_ShrinkTargetCopy(taskId: any): any {
   CMD_ARGS(unk0, unk1);
 
-      let spriteId: any = GetAnimBattlerSpriteId(ANIM_TARGET);
+      let spriteId: any = GetAnimBattlerSpriteId((1));
       if (gSprites[spriteId].invisible)
       {
           DestroyAnimVisualTask(taskId);
@@ -585,7 +579,7 @@ export function AnimTask_ShrinkTargetCopy(taskId: any): any {
           PrepareBattlerSpriteForRotScale(spriteId, ST_OAM_OBJ_BLEND);
           gTasks[taskId].data[14] = gSprites[spriteId].oam.priority;
           gSprites[spriteId].oam.priority = GetBattlerSpriteBGPriority(gBattleAnimTarget);
-          spriteId = GetAnimBattlerSpriteId(ANIM_DEF_PARTNER);
+          spriteId = GetAnimBattlerSpriteId((3));
           gTasks[taskId].data[15] = gSprites[spriteId].oam.priority;
           gSprites[spriteId].oam.priority = GetBattlerSpriteBGPriority(BATTLE_PARTNER(gBattleAnimTarget));
           gTasks[taskId].data[0] = cmd.unk0;
@@ -597,10 +591,10 @@ export function AnimTask_ShrinkTargetCopy(taskId: any): any {
 
 /** static void AnimTask_DuplicateAndShrinkToPos_Step1(u8 taskId) */
 export function AnimTask_DuplicateAndShrinkToPos_Step1(taskId: any): any {
-  let spriteId: any = GetAnimBattlerSpriteId(ANIM_TARGET);
+  let spriteId: any = GetAnimBattlerSpriteId((1));
       gTasks[taskId].data[10] += gTasks[taskId].data[0];
       gSprites[spriteId].x2 = gTasks[taskId].data[10] >> 8;
-      if (GetBattlerSide(gBattleAnimTarget) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) != (0))
           gSprites[spriteId].x2 = -gSprites[spriteId].x2;
 
       gTasks[taskId].data[11] += 16;
@@ -619,12 +613,12 @@ export function AnimTask_DuplicateAndShrinkToPos_Step2(taskId: any): any {
       {
           if (gTasks[taskId].data[0] == 0)
           {
-              let spriteId: any = GetAnimBattlerSpriteId(ANIM_TARGET);
+              let spriteId: any = GetAnimBattlerSpriteId((1));
               ResetSpriteRotScale(spriteId);
               gSprites[spriteId].x2 = 0;
               gSprites[spriteId].y2 = 0;
               gSprites[spriteId].oam.priority = gTasks[taskId].data[14];
-              spriteId = GetAnimBattlerSpriteId(ANIM_DEF_PARTNER);
+              spriteId = GetAnimBattlerSpriteId((3));
               gSprites[spriteId].oam.priority = gTasks[taskId].data[15];
               gTasks[taskId].data[0]++;
               return;
@@ -648,7 +642,7 @@ export function AnimMimicOrb(sprite: any): any {
       switch (sprite.data[0])
       {
       case 0:
-          if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimTarget) == (0))
               cmd.initialX *= -1;
 
           sprite.x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X) + cmd.initialX;
@@ -863,7 +857,7 @@ export function AnimKnockOffOpponentsItem(sprite: any): any {
 /** static void AnimKnockOffItem(struct Sprite *sprite) */
 export function AnimKnockOffItem(sprite: any): any {
   let targetY: any = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y);
-      if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) == (0))
       {
           sprite.data[6] = 0;
           sprite.data[7] = targetY + 10;
@@ -941,14 +935,14 @@ export function AnimItemSteal_Step3(sprite: any): any {
 
       sprite.y2 = Sin(sprite.data[0] + 0x80, 30 - sprite.data[1] * 8);
       if (sprite.y2 == 0)
-          PlaySE12WithPanning(SE_M_BUBBLE2, BattleAnimAdjustPanning(SOUND_PAN_TARGET));
+          PlaySE12WithPanning((125), BattleAnimAdjustPanning((63)));
 
       if (moveAlongLinearPath(sprite))
       {
           sprite.y2 = 0;
           sprite.data[0] = 0;
           sprite.callback = AnimItemSteal_Step2;
-          PlaySE12WithPanning(SE_M_BUBBLE2, BattleAnimAdjustPanning(SOUND_PAN_ATTACKER));
+          PlaySE12WithPanning((125), BattleAnimAdjustPanning((-64)));
       }
 }
 
@@ -1060,11 +1054,11 @@ export function AnimTask_LeafBlade(taskId: any): any {
       task.data[7] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);
       task.data[10] = GetBattlerSpriteCoordAttr(gBattleAnimTarget, BATTLER_COORD_ATTR_WIDTH);
       task.data[11] = GetBattlerSpriteCoordAttr(gBattleAnimTarget, BATTLER_COORD_ATTR_HEIGHT);
-      task.data[5] = (GetBattlerSide(gBattleAnimTarget) == B_SIDE_OPPONENT) ? 1 : -1;
+      task.data[5] = (GetBattlerSide(gBattleAnimTarget) == (1)) ? 1 : -1;
       task.data[9] = 56 - (task.data[5] * 64);
       task.data[8] = task.data[7] - task.data[9] + task.data[6];
       task.data[2] = CreateSprite(gLeafBladeSpriteTemplate, task.data[8], task.data[9], task.data[4]);
-      if (task.data[2] == MAX_SPRITES)
+      if (task.data[2] == (64))
           DestroyAnimVisualTask(taskId);
 
       gSprites[task.data[2]].data[0] = 10;
@@ -1283,7 +1277,7 @@ export function AnimTask_LeafBlade_Step2(task: any, taskId: any): any {
           spriteX = gSprites[task.data[2]].x + gSprites[task.data[2]].x2;
           spriteY = gSprites[task.data[2]].y + gSprites[task.data[2]].y2;
           spriteId = CreateSprite(gLeafBladeSpriteTemplate, spriteX, spriteY, task.data[4]);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               gSprites[spriteId].data[6] = taskId;
               gSprites[spriteId].data[7] = 12;
@@ -1323,7 +1317,7 @@ export function AnimFlyingParticle(sprite: any): any {
       else
           battler = gBattleAnimTarget;
 
-      if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) != (0))
       {
           sprite.data[4] = 0;
           sprite.data[2] = cmd.unk3;
@@ -1355,7 +1349,7 @@ export function AnimFlyingParticle(sprite: any): any {
           break;
       case 3:
           sprite.y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET) + cmd.unk0;
-          GetAnimBattlerSpriteId(ANIM_TARGET);
+          GetAnimBattlerSpriteId((1));
           sprite.oam.priority = GetBattlerSpriteBGPriority(battler) + 1;
           break;
       }
@@ -1390,8 +1384,8 @@ export function AnimTask_CycleMagicalLeafPal(taskId: any): any {
       switch (task.data[0])
       {
       case 0:
-          task.data[8] = OBJ_PLTT_ID(IndexOfSpritePaletteTag(ANIM_TAG_LEAF));
-          task.data[12] = OBJ_PLTT_ID(IndexOfSpritePaletteTag(ANIM_TAG_RAZOR_LEAF));
+          task.data[8] = OBJ_PLTT_ID(IndexOfSpritePaletteTag((((10000) + 63))));
+          task.data[12] = OBJ_PLTT_ID(IndexOfSpritePaletteTag((((10000) + 160))));
           task.data[0]++;
           break;
       case 1:
@@ -1499,7 +1493,7 @@ export function AnimWhipHit_WaitEnd(sprite: any): any {
 export function AnimSlidingHit(sprite: any): any {
   CMD_ARGS(unk0, unk1);
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           sprite.x -= cmd.unk0;
           sprite.y += cmd.unk1;
@@ -1518,7 +1512,7 @@ export function AnimSlidingHit(sprite: any): any {
 export function AnimWhipHit(sprite: any): any {
   CMD_ARGS(unk0, unk1);
 
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
           StartSpriteAnim(sprite, 1);
 
       sprite.callback = AnimWhipHit_WaitEnd;
@@ -1547,7 +1541,7 @@ export function AnimCuttingSlice(sprite: any): any {
 
       sprite.x = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X);
       sprite.y = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y);
-      if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) == (0))
           sprite.y += 8;
 
       sprite.callback = AnimSlice_Step;
@@ -1598,7 +1592,7 @@ export function AnimAirCutterSlice(sprite: any): any {
 
       sprite.x = x;
       sprite.y = y;
-      if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) == (0))
           sprite.y += 8;
 
       sprite.callback = AnimSlice_Step;
@@ -1646,7 +1640,7 @@ export function AnimCirclingMusicNote(sprite: any): any {
   CMD_ARGS(unk0, unk1, unk2, unk3, unk4, unk5);
 
       sprite.data[0] = cmd.unk2;
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.x -= cmd.unk0;
       else
           sprite.x += cmd.unk0;
@@ -1685,13 +1679,13 @@ export function AnimProtect(sprite: any): any {
 
       sprite.x = GetBattlerSpriteCoord2(gBattleAnimAttacker, BATTLER_COORD_X) + cmd.unk0;
       sprite.y = GetBattlerSpriteCoord2(gBattleAnimAttacker, BATTLER_COORD_Y) + cmd.unk1;
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER || IsContest())
+      if (GetBattlerSide(gBattleAnimAttacker) == (0) || IsContest())
           sprite.oam.priority = GetBattlerSpriteBGPriority(gBattleAnimAttacker) + 1;
       else
           sprite.oam.priority = GetBattlerSpriteBGPriority(gBattleAnimAttacker);
 
       sprite.data[0] = cmd.unk2;
-      sprite.data[2] = OBJ_PLTT_ID(IndexOfSpritePaletteTag(ANIM_TAG_PROTECT));
+      sprite.data[2] = OBJ_PLTT_ID(IndexOfSpritePaletteTag((((10000) + 280))));
       sprite.data[7] = 16;
       SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND);
       SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16 - sprite.data[7], sprite.data[7]));
@@ -1913,7 +1907,7 @@ export function AnimBubbleBurst(sprite: any): any {
   CMD_ARGS(unk0, unk1);
 
       SetSpriteCoordsToAnimAttackerCoords(sprite);
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
       {
           sprite.x += cmd.unk0;
           sprite.y += cmd.unk1;
@@ -1946,7 +1940,7 @@ export function AnimSleepLetterZ(sprite: any): any {
   CMD_ARGS(unk0, unk1);
 
       SetSpriteCoordsToAnimAttackerCoords(sprite);
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
       {
           sprite.x += cmd.unk0;
           sprite.y += cmd.unk1;
@@ -2002,7 +1996,7 @@ export function AnimLockOnTarget_Step1(sprite: any): any {
           sprite.callback = StartAnimLinearTranslation;
           StoreSpriteCallbackInData6(sprite, AnimLockOnTarget_Step2);
           sprite.data[5] += 0x100;
-          PlaySE12WithPanning(SE_M_LOCK_ON, BattleAnimAdjustPanning(SOUND_PAN_TARGET));
+          PlaySE12WithPanning((210), BattleAnimAdjustPanning((63)));
           break;
       }
 
@@ -2081,14 +2075,14 @@ export function AnimLockOnTarget_Step4(sprite: any): any {
           sprite.data[1] = 0;
       }
 
-      BlendPalettes(GetBattlePalettesMask(TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE), sprite.data[1], RGB_WHITE);
+      BlendPalettes(GetBattlePalettesMask(TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE), sprite.data[1], (RGB(31, 31, 31)));
       if (sprite.data[1] == 16)
       {
           let pal: any = null;
           sprite.data[2]++;
           pal = sprite.oam.paletteNum;
           LoadPalette(gPlttBufferUnfaded[OBJ_PLTT_ID(pal) + 8], OBJ_PLTT_ID(pal) + 1, PLTT_SIZEOF(2));
-          PlaySE12WithPanning(SE_M_LEER, BattleAnimAdjustPanning(SOUND_PAN_TARGET));
+          PlaySE12WithPanning((192), BattleAnimAdjustPanning((63)));
       }
       else if (sprite.data[1] == 0)
       {
@@ -2231,7 +2225,7 @@ export function AnimBowMon_Step3_Callback(sprite: any): any {
       {
           sprite.data[3] = gBattlerSpriteIds[gBattleAnimAttacker];
           sprite.data[6] = GetBattlerSide(gBattleAnimAttacker);
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
           {
               sprite.data[4] = 0xFC00;
               sprite.data[5] = 0xC00;
@@ -2272,7 +2266,7 @@ export function AnimTipMon_Step(sprite: any): any {
           sprite.data[1] = 0;
           sprite.data[2] = gBattlerSpriteIds[gBattleAnimAttacker];
           sprite.data[3] = GetBattlerSide(gBattleAnimAttacker);
-          sprite.data[4] = (sprite.data[3] != B_SIDE_PLAYER) ? 0x200 : -0x200;
+          sprite.data[4] = (sprite.data[3] != (0)) ? 0x200 : -0x200;
           sprite.data[5] = 0;
           PrepareBattlerSpriteForRotScale(sprite.data[2], ST_OAM_OBJ_NORMAL);
           sprite.data[0]++;
@@ -2321,7 +2315,7 @@ export function AnimTask_SkullBashPosition(taskId: any): any {
           gTasks[taskId].data[3] = 8;
           gTasks[taskId].data[4] = 0;
           gTasks[taskId].data[5] = 3;
-          if (side == B_SIDE_PLAYER)
+          if (side == (0))
               gTasks[taskId].data[5] *= -1;
 
           gTasks[taskId].func = AnimTask_SkullBashPositionSet;
@@ -2330,7 +2324,7 @@ export function AnimTask_SkullBashPosition(taskId: any): any {
           gTasks[taskId].data[3] = 8;
           gTasks[taskId].data[4] = 0x600;
           gTasks[taskId].data[5] = 0xC0;
-          if (side == B_SIDE_PLAYER)
+          if (side == (0))
           {
               gTasks[taskId].data[4] = -gTasks[taskId].data[4];
               gTasks[taskId].data[5] = -gTasks[taskId].data[5];
@@ -2562,7 +2556,7 @@ export function AnimSharpenSphere(sprite: any): any {
       sprite.data[2] = 0;
       sprite.data[3] = 0;
       sprite.data[4] = 0;
-      sprite.data[5] = BattleAnimAdjustPanning(SOUND_PAN_ATTACKER);
+      sprite.data[5] = BattleAnimAdjustPanning((-64));
       sprite.callback = AnimSharpenSphere_Step;
 }
 
@@ -2575,7 +2569,7 @@ export function AnimSharpenSphere_Step(sprite: any): any {
           {
               sprite.data[4]++;
               if (!(sprite.data[4] & 1))
-                  PlaySE12WithPanning(SE_M_SWAGGER2, sprite.data[5]);
+                  PlaySE12WithPanning((194), sprite.data[5]);
           }
 
           sprite.data[0] = 0;
@@ -2750,8 +2744,8 @@ export function AnimTask_MoonlightEndFade(taskId: any): any {
       b = GetBattleMonSpritePalettesMask(1, 1, 1, 1);
       c = a | b;
       StorePointerInVars(gTasks[taskId].data[14],gTasks[taskId].data[15], c);
-      b = b | (0x10000 << IndexOfSpritePaletteTag(ANIM_TAG_MOON));
-      d = IndexOfSpritePaletteTag(ANIM_TAG_GREEN_SPARKLE);
+      b = b | (0x10000 << IndexOfSpritePaletteTag((((10000) + 194))));
+      d = IndexOfSpritePaletteTag((((10000) + 195)));
       BeginNormalPaletteFade((0x10000 << d) | b, 0, 0, 16, RGB(27, 29, 31));
       gTasks[taskId].func = AnimTask_MoonlightEndFade_Step;
       gTasks[taskId].func(taskId);
@@ -2811,7 +2805,7 @@ export function AnimTask_MoonlightEndFade_Step(taskId: any): any {
           if (!gPaletteFade.active)
           {
               let spriteId: any = null;
-              for (spriteId = 0; spriteId < MAX_SPRITES; spriteId++)
+              for (spriteId = 0; spriteId < (64); spriteId++)
               {
                   if (gSprites[spriteId].template ==gMoonSpriteTemplate || gSprites[spriteId].template ==gMoonlightSparkleSpriteTemplate)
                       gSprites[spriteId].data[0] = 1;
@@ -2861,7 +2855,7 @@ export function AnimHornHit(sprite: any): any {
           sprite.data[4] = sprite.y << 7;
           sprite.data[5] = -0xA00 / sprite.data[1];
       }
-      else if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      else if (GetBattlerSide(gBattleAnimAttacker) == (0))
       {
           sprite.x -= 40;
           sprite.y += 20;
@@ -2907,14 +2901,14 @@ export function AnimTask_DoubleTeam(taskId: any): any {
       let r3: any = null;
       let r4: any = null;
       let task: any =gTasks[taskId];
-      task.data[0] = GetAnimBattlerSpriteId(ANIM_ATTACKER);
-      task.data[1] = AllocSpritePalette(ANIM_TAG_BENT_SPOON);
+      task.data[0] = GetAnimBattlerSpriteId((0));
+      task.data[1] = AllocSpritePalette((((10000) + 97)));
       r3 = OBJ_PLTT_ID(task.data[1]);
       r4 = OBJ_PLTT_ID2(gSprites[task.data[0]].oam.paletteNum);
       for (i = 1; i < 16; i++)
           gPlttBufferUnfaded[r3 + i] = gPlttBufferUnfaded[r4 + i];
 
-      BlendPalette(r3, 16, 11, RGB_BLACK);
+      BlendPalette(r3, 16, 11, (RGB(0, 0, 0)));
       task.data[3] = 0;
       i = 0;
       while (i < 2 && (obj = CloneBattlerSpriteWithBlend(0)) >= 0)
@@ -2945,7 +2939,7 @@ export function AnimTask_DoubleTeam_Step(taskId: any): any {
           else
               SetGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);
 
-          FreeSpritePaletteByTag(ANIM_TAG_BENT_SPOON);
+          FreeSpritePaletteByTag((((10000) + 97)));
           DestroyAnimVisualTask(taskId);
       }
 }
@@ -3098,7 +3092,7 @@ export function AnimWavyMusicNotes_Step(sprite: any): any {
 export function AnimFlyingMusicNotes(sprite: any): any {
   CMD_ARGS(unk0, unk1, unk2);
 
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_OPPONENT)
+      if (GetBattlerSide(gBattleAnimAttacker) == (1))
           cmd.unk1 *= -1;
 
       sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2) + cmd.unk1;
@@ -3199,7 +3193,7 @@ export function AnimSlowFlyingMusicNotes_Step(sprite: any): any {
 
 /** void SetSpriteNextToMonHead(u8 battler, struct Sprite *sprite) */
 export function SetSpriteNextToMonHead(battler: any, sprite: any): any {
-  if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+  if (GetBattlerSide(battler) == (0))
           sprite.x = GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_RIGHT) + 8;
       else
           sprite.x = GetBattlerSpriteCoordAttr(battler, BATTLER_COORD_ATTR_LEFT) - 8;
@@ -3219,7 +3213,7 @@ export function AnimThoughtBubble(sprite: any): any {
           battler = gBattleAnimTarget;
 
       SetSpriteNextToMonHead(battler, sprite);
-      animNum = (GetBattlerSide(battler) == B_SIDE_PLAYER) ? 0 : 1;
+      animNum = (GetBattlerSide(battler) == (0)) ? 0 : 1;
       sprite.data[0] = cmd.unk1;
       sprite.data[1] = animNum + 2;
       StartSpriteAnim(sprite, animNum);
@@ -3334,7 +3328,7 @@ export function AnimTauntFinger(sprite: any): any {
           battler = gBattleAnimTarget;
 
       SetSpriteNextToMonHead(battler, sprite);
-      if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) == (0))
       {
           StartSpriteAnim(sprite, 0);
           sprite.data[0] = 2;

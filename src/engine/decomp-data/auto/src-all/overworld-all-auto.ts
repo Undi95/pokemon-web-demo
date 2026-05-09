@@ -17,20 +17,23 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let divBy: any = null;
+let gHeldKeyCodeToSend: any = null;
+let gLastUsedWarp: any = null;
+let gMapHeader: any = null;
+let gOverworldTilemapBuffer_Bg1: any = null;
+let gOverworldTilemapBuffer_Bg2: any = null;
+let gOverworldTilemapBuffer_Bg3: any = null;
+let gTotalCameraPixelOffsetX: any = null;
+let gTotalCameraPixelOffsetY: any = null;
+let monsCount: any = null;
 let sAmbientCrySpecies: any = null;
-let sDummyWarpData: any = null;
 let sFixedDiveWarp: any = null;
 let sFixedHoleWarp: any = null;
-let sFlashEffectParams: any = null;
-let sInitialPlayerAvatarState: any = null;
 let sIsAmbientCryWaterMon: any = null;
 let sLastMapSectionId: any = null;
-let sLinkPlayerFacingHandlers: any = null;
-let sMovementStatusHandler: any = null;
 let sObjectEventLoadFlag: any = null;
-let sOverworldBgTemplates: any = null;
 let sPlayerKeyInterceptCallback: any = null;
-let sPlayerLinkStates: any = null;
 let sReceivingFromLink: any = null;
 let sRfuKeepAliveTimer: any = null;
 let sUnusedOverworldCallback: any = null;
@@ -48,54 +51,54 @@ export function DoWhiteOut(): any {
 /** void Overworld_ResetStateAfterFly(void) */
 export function Overworld_ResetStateAfterFly(): any {
   ResetInitialPlayerAvatarState();
-      FlagClear(FLAG_SYS_CYCLING_ROAD);
-      FlagClear(FLAG_SYS_CRUISE_MODE);
-      FlagClear(FLAG_SYS_SAFARI_MODE);
-      FlagClear(FLAG_SYS_USE_STRENGTH);
-      FlagClear(FLAG_SYS_USE_FLASH);
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2B)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2D)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2C)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x29)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x28)));
 }
 
 /** void Overworld_ResetStateAfterTeleport(void) */
 export function Overworld_ResetStateAfterTeleport(): any {
   ResetInitialPlayerAvatarState();
-      FlagClear(FLAG_SYS_CYCLING_ROAD);
-      FlagClear(FLAG_SYS_CRUISE_MODE);
-      FlagClear(FLAG_SYS_SAFARI_MODE);
-      FlagClear(FLAG_SYS_USE_STRENGTH);
-      FlagClear(FLAG_SYS_USE_FLASH);
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2B)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2D)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2C)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x29)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x28)));
       RunScriptImmediately(EventScript_ResetMrBriney);
 }
 
 /** void Overworld_ResetStateAfterDigEscRope(void) */
 export function Overworld_ResetStateAfterDigEscRope(): any {
   ResetInitialPlayerAvatarState();
-      FlagClear(FLAG_SYS_CYCLING_ROAD);
-      FlagClear(FLAG_SYS_CRUISE_MODE);
-      FlagClear(FLAG_SYS_SAFARI_MODE);
-      FlagClear(FLAG_SYS_USE_STRENGTH);
-      FlagClear(FLAG_SYS_USE_FLASH);
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2B)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2D)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2C)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x29)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x28)));
 }
 
 /** static void Overworld_ResetStateAfterWhiteOut(void) */
 export function Overworld_ResetStateAfterWhiteOut(): any {
   ResetInitialPlayerAvatarState();
-      FlagClear(FLAG_SYS_CYCLING_ROAD);
-      FlagClear(FLAG_SYS_CRUISE_MODE);
-      FlagClear(FLAG_SYS_SAFARI_MODE);
-      FlagClear(FLAG_SYS_USE_STRENGTH);
-      FlagClear(FLAG_SYS_USE_FLASH);
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2B)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2D)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2C)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x29)));
+      FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x28)));
        
        
-      if (VarGet(VAR_SHOULD_END_ABNORMAL_WEATHER) == 1)
+      if (VarGet((0x4039)) == 1)
       {
-          VarSet(VAR_SHOULD_END_ABNORMAL_WEATHER, 0);
-          VarSet(VAR_ABNORMAL_WEATHER_LOCATION, ABNORMAL_WEATHER_NONE);
+          VarSet((0x4039), 0);
+          VarSet((0x4037), (0));
       }
 }
 
 /** static void UpdateMiscOverworldStates(void) */
 export function UpdateMiscOverworldStates(): any {
-  FlagClear(FLAG_SYS_SAFARI_MODE);
+  FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2C)));
       ChooseAmbientCrySpecies();
       ResetCyclingRoadChallengeData();
       UpdateLocationHistoryForRoamer();
@@ -106,13 +109,13 @@ export function UpdateMiscOverworldStates(): any {
 export function ResetGameStats(): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_GAME_STATS; i++)
+      for (i = 0; i < (64); i++)
           SetGameStat(i, 0);
 }
 
 /** void IncrementGameStat(u8 index) */
 export function IncrementGameStat(index: any): any {
-  if (index < NUM_USED_GAME_STATS)
+  if (index < (52))
       {
           let statVal: any = GetGameStat(index);
           if (statVal < 0xFFFFFF)
@@ -126,7 +129,7 @@ export function IncrementGameStat(index: any): any {
 
 /** u32 GetGameStat(u8 index) */
 export function GetGameStat(index: any): any {
-  if (index >= NUM_USED_GAME_STATS)
+  if (index >= (52))
           return 0;
 
       return gSaveBlock1Ptr.gameStats[index] ^ gSaveBlock2Ptr.encryptionKey;
@@ -134,7 +137,7 @@ export function GetGameStat(index: any): any {
 
 /** void SetGameStat(u8 index, u32 value) */
 export function SetGameStat(index: any, value: any): any {
-  if (index < NUM_USED_GAME_STATS)
+  if (index < (52))
           gSaveBlock1Ptr.gameStats[index] = value ^ gSaveBlock2Ptr.encryptionKey;
 }
 
@@ -142,7 +145,7 @@ export function SetGameStat(index: any, value: any): any {
 export function ApplyNewEncryptionKeyToGameStats(newKey: any): any {
   let i: any = null;
 
-      for (i = 0; i < NUM_GAME_STATS; i++)
+      for (i = 0; i < (64); i++)
           ApplyNewEncryptionKeyToWord(gSaveBlock1Ptr.gameStats[i], newKey);
 }
 
@@ -162,7 +165,7 @@ export function LoadSaveblockObjEventScripts(): any {
       let savObjTemplates: any = gSaveBlock1Ptr.objectEventTemplates;
       let i: any = null;
 
-      for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
+      for (i = 0; i < (64); i++)
           savObjTemplates[i].script = mapHeaderObjTemplates[i].script;
 }
 
@@ -171,7 +174,7 @@ export function SetObjEventTemplateCoords(localId: any, x: any, y: any): any {
   let i: any = null;
       let savObjTemplates: any = gSaveBlock1Ptr.objectEventTemplates;
 
-      for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
+      for (i = 0; i < (64); i++)
       {
           let objectEventTemplate: any =savObjTemplates[i];
           if (objectEventTemplate.localId == localId)
@@ -188,7 +191,7 @@ export function SetObjEventTemplateMovementType(localId: any, movementType: any)
   let i: any = null;
 
       let savObjTemplates: any = gSaveBlock1Ptr.objectEventTemplates;
-      for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
+      for (i = 0; i < (64); i++)
       {
           let objectEventTemplate: any =savObjTemplates[i];
           if (objectEventTemplate.localId == localId)
@@ -237,7 +240,7 @@ export function IsDummyWarp(warp: any): any {
           return FALSE;
       else if (warp.mapNum != MAP_NUM(MAP_UNDEFINED))
           return FALSE;
-      else if (warp.warpId != WARP_ID_NONE)
+      else if (warp.warpId != ((-1)))
           return FALSE;
       else if (warp.x != -1)
           return FALSE;
@@ -320,7 +323,7 @@ export function SetWarpDestinationToDynamicWarp(unusedWarpId: any): any {
 export function SetWarpDestinationToHealLocation(healLocationId: any): any {
   let healLocation: any = GetHealLocation(healLocationId);
       if (healLocation)
-          SetWarpDestination(healLocation.mapGroup, healLocation.mapNum, WARP_ID_NONE, healLocation.x, healLocation.y);
+          SetWarpDestination(healLocation.mapGroup, healLocation.mapNum, ((-1)), healLocation.x, healLocation.y);
 }
 
 /** void SetWarpDestinationToLastHealLocation(void) */
@@ -332,7 +335,7 @@ export function SetWarpDestinationToLastHealLocation(): any {
 export function SetLastHealLocationWarp(healLocationId: any): any {
   let healLocation: any = GetHealLocation(healLocationId);
       if (healLocation)
-          SetWarpData(gSaveBlock1Ptr.lastHealLocation, healLocation.mapGroup, healLocation.mapNum, WARP_ID_NONE, healLocation.x, healLocation.y);
+          SetWarpData(gSaveBlock1Ptr.lastHealLocation, healLocation.mapGroup, healLocation.mapNum, ((-1)), healLocation.x, healLocation.y);
 }
 
 /** void UpdateEscapeWarp(s16 x, s16 y) */
@@ -340,7 +343,7 @@ export function UpdateEscapeWarp(x: any, y: any): any {
   let currMapType: any = GetCurrentMapType();
       let destMapType: any = GetMapTypeByGroupAndId(sWarpDestination.mapGroup, sWarpDestination.mapNum);
       if (IsMapTypeOutdoors(currMapType) && IsMapTypeOutdoors(destMapType) != TRUE)
-          SetEscapeWarp(gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE, x - MAP_OFFSET, y - MAP_OFFSET + 1);
+          SetEscapeWarp(gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)), x - (7), y - (7) + 1);
 }
 
 /** void SetEscapeWarp(s8 mapGroup, s8 mapNum, s8 warpId, s8 x, s8 y) */
@@ -373,7 +376,7 @@ export function SetWarpDestinationToFixedHoleWarp(x: any, y: any): any {
   if (IsDummyWarp(sFixedHoleWarp) == TRUE)
           sWarpDestination = gLastUsedWarp;
       else
-          SetWarpDestination(sFixedHoleWarp.mapGroup, sFixedHoleWarp.mapNum, WARP_ID_NONE, x, y);
+          SetWarpDestination(sFixedHoleWarp.mapGroup, sFixedHoleWarp.mapNum, ((-1)), x, y);
 }
 
 /** static void SetWarpDestinationToContinueGameWarp(void) */
@@ -390,7 +393,7 @@ export function SetContinueGameWarp(mapGroup: any, mapNum: any, warpId: any, x: 
 export function SetContinueGameWarpToHealLocation(healLocationId: any): any {
   let healLocation: any = GetHealLocation(healLocationId);
       if (healLocation)
-          SetWarpData(gSaveBlock1Ptr.continueGameWarp, healLocation.mapGroup, healLocation.mapNum, WARP_ID_NONE, healLocation.x, healLocation.y);
+          SetWarpData(gSaveBlock1Ptr.continueGameWarp, healLocation.mapGroup, healLocation.mapNum, ((-1)), healLocation.x, healLocation.y);
 }
 
 /** void SetContinueGameWarpToDynamicWarp(int unused) */
@@ -404,7 +407,7 @@ export function SetDiveWarp(dir: any, x: any, y: any): any {
 
       if (connection != NULL)
       {
-          SetWarpDestination(connection.mapGroup, connection.mapNum, WARP_ID_NONE, x, y);
+          SetWarpDestination(connection.mapGroup, connection.mapNum, ((-1)), x, y);
       }
       else
       {
@@ -418,19 +421,19 @@ export function SetDiveWarp(dir: any, x: any, y: any): any {
 
 /** bool8 SetDiveWarpEmerge(u16 x, u16 y) */
 export function SetDiveWarpEmerge(x: any, y: any): any {
-  return SetDiveWarp(CONNECTION_EMERGE, x, y);
+  return SetDiveWarp((6), x, y);
 }
 
 /** bool8 SetDiveWarpDive(u16 x, u16 y) */
 export function SetDiveWarpDive(x: any, y: any): any {
-  return SetDiveWarp(CONNECTION_DIVE, x, y);
+  return SetDiveWarp((5), x, y);
 }
 
 /** void LoadMapFromCameraTransition(u8 mapGroup, u8 mapNum) */
 export function LoadMapFromCameraTransition(mapGroup: any, mapNum: any): any {
   let paletteIndex: any = null;
 
-      SetWarpDestination(mapGroup, mapNum, WARP_ID_NONE, -1, -1);
+      SetWarpDestination(mapGroup, mapNum, ((-1)), -1, -1);
 
        
       if (gMapHeader.regionMapSectionId != MAPSEC_BATTLE_FRONTIER)
@@ -454,7 +457,7 @@ export function LoadMapFromCameraTransition(mapGroup: any, mapNum: any): any {
       CopySecondaryTilesetToVramUsingHeap(gMapHeader.mapLayout);
       LoadSecondaryTilesetPalette(gMapHeader.mapLayout);
 
-      for (paletteIndex = NUM_PALS_IN_PRIMARY; paletteIndex < NUM_PALS_TOTAL; paletteIndex++)
+      for (paletteIndex = (6); paletteIndex < (13); paletteIndex++)
           ApplyWeatherColorMapToPal(paletteIndex);
 
       InitSecondaryTilesetAnimation();
@@ -475,7 +478,7 @@ export function LoadMapFromWarp(a1: any): any {
       let isIndoors: any = null;
 
       LoadCurrentMapData();
-      if (!(sObjectEventLoadFlag & SKIP_OBJECT_EVENT_LOAD))
+      if (!(sObjectEventLoadFlag & (1)))
       {
           if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)
               LoadBattlePyramidObjectEventTemplates();
@@ -499,7 +502,7 @@ export function LoadMapFromWarp(a1: any): any {
       SetSavedWeatherFromCurrMapHeader();
       ChooseAmbientCrySpecies();
       if (isOutdoors)
-          FlagClear(FLAG_SYS_USE_FLASH);
+          FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x28)));
       SetDefaultFlashLevel();
       Overworld_ClearSavedMusic();
       RunOnTransitionMapScript();
@@ -521,72 +524,72 @@ export function LoadMapFromWarp(a1: any): any {
 
 /** void ResetInitialPlayerAvatarState(void) */
 export function ResetInitialPlayerAvatarState(): any {
-  sInitialPlayerAvatarState.direction = DIR_SOUTH;
-      sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_ON_FOOT;
+  sInitialPlayerAvatarState.direction = (1);
+      sInitialPlayerAvatarState.transitionFlags = ((1 << 0));
 }
 
 /** void StoreInitialPlayerAvatarState(void) */
 export function StoreInitialPlayerAvatarState(): any {
   sInitialPlayerAvatarState.direction = GetPlayerFacingDirection();
 
-      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE))
-          sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_MACH_BIKE;
-      else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_ACRO_BIKE))
-          sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_ACRO_BIKE;
-      else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
-          sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_SURFING;
-      else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_UNDERWATER))
-          sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_UNDERWATER;
+      if (TestPlayerAvatarFlags(((1 << 1))))
+          sInitialPlayerAvatarState.transitionFlags = ((1 << 1));
+      else if (TestPlayerAvatarFlags(((1 << 2))))
+          sInitialPlayerAvatarState.transitionFlags = ((1 << 2));
+      else if (TestPlayerAvatarFlags(((1 << 3))))
+          sInitialPlayerAvatarState.transitionFlags = ((1 << 3));
+      else if (TestPlayerAvatarFlags(((1 << 4))))
+          sInitialPlayerAvatarState.transitionFlags = ((1 << 4));
       else
-          sInitialPlayerAvatarState.transitionFlags = PLAYER_AVATAR_FLAG_ON_FOOT;
+          sInitialPlayerAvatarState.transitionFlags = ((1 << 0));
 }
 
 /** static u8 GetAdjustedInitialTransitionFlags(struct InitialPlayerAvatarState *playerStruct, u16 metatileBehavior, u8 mapType) */
 export function GetAdjustedInitialTransitionFlags(playerStruct: any, metatileBehavior: any, mapType: any): any {
-  if (mapType != MAP_TYPE_INDOOR && FlagGet(FLAG_SYS_CRUISE_MODE))
-          return PLAYER_AVATAR_FLAG_ON_FOOT;
-      else if (mapType == MAP_TYPE_UNDERWATER)
-          return PLAYER_AVATAR_FLAG_UNDERWATER;
+  if (mapType != (8) && FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x2D))))
+          return ((1 << 0));
+      else if (mapType == (5))
+          return ((1 << 4));
       else if (MetatileBehavior_IsSurfableWaterOrUnderwater(metatileBehavior) == TRUE)
-          return PLAYER_AVATAR_FLAG_SURFING;
+          return ((1 << 3));
       else if (Overworld_IsBikingAllowed() != TRUE)
-          return PLAYER_AVATAR_FLAG_ON_FOOT;
-      else if (playerStruct.transitionFlags == PLAYER_AVATAR_FLAG_MACH_BIKE)
-          return PLAYER_AVATAR_FLAG_MACH_BIKE;
-      else if (playerStruct.transitionFlags != PLAYER_AVATAR_FLAG_ACRO_BIKE)
-          return PLAYER_AVATAR_FLAG_ON_FOOT;
+          return ((1 << 0));
+      else if (playerStruct.transitionFlags == ((1 << 1)))
+          return ((1 << 1));
+      else if (playerStruct.transitionFlags != ((1 << 2)))
+          return ((1 << 0));
       else
-          return PLAYER_AVATAR_FLAG_ACRO_BIKE;
+          return ((1 << 2));
 }
 
 /** static u8 GetAdjustedInitialDirection(struct InitialPlayerAvatarState *playerStruct, u8 transitionFlags, u16 metatileBehavior, u8 mapType) */
 export function GetAdjustedInitialDirection(playerStruct: any, transitionFlags: any, metatileBehavior: any, mapType: any): any {
-  if (FlagGet(FLAG_SYS_CRUISE_MODE) && mapType == MAP_TYPE_OCEAN_ROUTE)
-          return DIR_EAST;
+  if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x2D))) && mapType == (6))
+          return (4);
       else if (MetatileBehavior_IsDeepSouthWarp(metatileBehavior) == TRUE)
-          return DIR_NORTH;
+          return (2);
       else if (MetatileBehavior_IsNonAnimDoor(metatileBehavior) == TRUE || MetatileBehavior_IsDoor(metatileBehavior) == TRUE)
-          return DIR_SOUTH;
+          return (1);
       else if (MetatileBehavior_IsSouthArrowWarp(metatileBehavior) == TRUE)
-          return DIR_NORTH;
+          return (2);
       else if (MetatileBehavior_IsNorthArrowWarp(metatileBehavior) == TRUE)
-          return DIR_SOUTH;
+          return (1);
       else if (MetatileBehavior_IsWestArrowWarp(metatileBehavior) == TRUE)
-          return DIR_EAST;
+          return (4);
       else if (MetatileBehavior_IsEastArrowWarp(metatileBehavior) == TRUE)
-          return DIR_WEST;
-      else if ((playerStruct.transitionFlags == PLAYER_AVATAR_FLAG_UNDERWATER  && transitionFlags == PLAYER_AVATAR_FLAG_SURFING)
-            || (playerStruct.transitionFlags == PLAYER_AVATAR_FLAG_SURFING && transitionFlags == PLAYER_AVATAR_FLAG_UNDERWATER))
+          return (3);
+      else if ((playerStruct.transitionFlags == ((1 << 4))  && transitionFlags == ((1 << 3)))
+            || (playerStruct.transitionFlags == ((1 << 3)) && transitionFlags == ((1 << 4))))
           return playerStruct.direction;
       else if (MetatileBehavior_IsLadder(metatileBehavior) == TRUE)
           return playerStruct.direction;
       else
-          return DIR_SOUTH;
+          return (1);
 }
 
 /** static u16 GetCenterScreenMetatileBehavior(void) */
 export function GetCenterScreenMetatileBehavior(): any {
-  return MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr.pos.x + MAP_OFFSET, gSaveBlock1Ptr.pos.y + MAP_OFFSET);
+  return MapGridGetMetatileBehaviorAt(gSaveBlock1Ptr.pos.x + (7), gSaveBlock1Ptr.pos.y + (7));
 }
 
 /** bool32 Overworld_IsBikingAllowed(void) */
@@ -601,7 +604,7 @@ export function Overworld_IsBikingAllowed(): any {
 export function SetDefaultFlashLevel(): any {
   if (!gMapHeader.cave)
           gSaveBlock1Ptr.flashLevel = 0;
-      else if (FlagGet(FLAG_SYS_USE_FLASH))
+      else if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x28))))
           gSaveBlock1Ptr.flashLevel = 1;
       else
           gSaveBlock1Ptr.flashLevel = gMaxFlashLevel - 1;
@@ -632,7 +635,7 @@ export function SetObjectEventLoadFlag(flag: any): any {
 
 /** static bool16 ShouldLegendaryMusicPlayAtLocation(struct WarpData *warp) */
 export function ShouldLegendaryMusicPlayAtLocation(warp: any): any {
-  if (!FlagGet(FLAG_SYS_WEATHER_CTRL))
+  if (!FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x2A))))
           return FALSE;
       if (warp.mapGroup == 0)
       {
@@ -649,7 +652,7 @@ export function ShouldLegendaryMusicPlayAtLocation(warp: any): any {
           case MAP_NUM(MAP_ROUTE128):
               return TRUE;
           default:
-              if (VarGet(VAR_SOOTOPOLIS_CITY_STATE) < 4)
+              if (VarGet((0x405E)) < 4)
                   return FALSE;
               switch (warp.mapNum)
               {
@@ -665,7 +668,7 @@ export function ShouldLegendaryMusicPlayAtLocation(warp: any): any {
 
 /** static bool16 NoMusicInSootopolisWithLegendaries(struct WarpData *warp) */
 export function NoMusicInSootopolisWithLegendaries(warp: any): any {
-  if (VarGet(VAR_SKY_PILLAR_STATE) != 1)
+  if (VarGet((0x40CA)) != 1)
           return FALSE;
       else if (warp.mapGroup != MAP_GROUP(MAP_SOOTOPOLIS_CITY))
           return FALSE;
@@ -677,7 +680,7 @@ export function NoMusicInSootopolisWithLegendaries(warp: any): any {
 
 /** static bool16 IsInfiltratedWeatherInstitute(struct WarpData *warp) */
 export function IsInfiltratedWeatherInstitute(warp: any): any {
-  if (VarGet(VAR_WEATHER_INSTITUTE_STATE))
+  if (VarGet((0x40B3)))
           return FALSE;
       else if (warp.mapGroup != MAP_GROUP(MAP_ROUTE119_WEATHER_INSTITUTE_1F))
           return FALSE;
@@ -690,9 +693,9 @@ export function IsInfiltratedWeatherInstitute(warp: any): any {
 
 /** static bool16 IsInfiltratedSpaceCenter(struct WarpData *warp) */
 export function IsInfiltratedSpaceCenter(warp: any): any {
-  if (VarGet(VAR_MOSSDEEP_CITY_STATE) == 0)
+  if (VarGet((0x405D)) == 0)
           return FALSE;
-      else if (VarGet(VAR_MOSSDEEP_CITY_STATE) > 2)
+      else if (VarGet((0x405D)) > 2)
           return FALSE;
       else if (warp.mapGroup != MAP_GROUP(MAP_MOSSDEEP_CITY_SPACE_CENTER_1F))
           return FALSE;
@@ -705,13 +708,13 @@ export function IsInfiltratedSpaceCenter(warp: any): any {
 /** u16 GetLocationMusic(struct WarpData *warp) */
 export function GetLocationMusic(warp: any): any {
   if (NoMusicInSootopolisWithLegendaries(warp) == TRUE)
-          return MUS_NONE;
+          return (0xFFFF);
       else if (ShouldLegendaryMusicPlayAtLocation(warp) == TRUE)
-          return MUS_ABNORMAL_WEATHER;
+          return (443);
       else if (IsInfiltratedSpaceCenter(warp) == TRUE)
-          return MUS_ENCOUNTER_MAGMA;
+          return (441);
       else if (IsInfiltratedWeatherInstitute(warp) == TRUE)
-          return MUS_MT_CHIMNEY;
+          return (406);
       else
           return Overworld_GetMapHeaderByGroupAndId(warp.mapGroup, warp.mapNum).music;
 }
@@ -723,27 +726,27 @@ export function GetCurrLocationDefaultMusic(): any {
        
       if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_ROUTE111)
        && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_ROUTE111)
-       && GetSavedWeather() == WEATHER_SANDSTORM)
-          return MUS_DESERT;
+       && GetSavedWeather() == (8))
+          return (409);
 
       music = GetLocationMusic(gSaveBlock1Ptr.location);
-      if (music != MUS_ROUTE118)
+      if (music != (0x7FFF))
       {
           return music;
       }
       else
       {
           if (gSaveBlock1Ptr.pos.x < 24)
-              return MUS_ROUTE110;
+              return (360);
           else
-              return MUS_ROUTE119;
+              return (402);
       }
 }
 
 /** u16 GetWarpDestinationMusic(void) */
 export function GetWarpDestinationMusic(): any {
   let music: any = GetLocationMusic(sWarpDestination);
-      if (music != MUS_ROUTE118)
+      if (music != (0x7FFF))
       {
           return music;
       }
@@ -751,9 +754,9 @@ export function GetWarpDestinationMusic(): any {
       {
           if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_MAUVILLE_CITY)
            && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_MAUVILLE_CITY))
-              return MUS_ROUTE110;
+              return (360);
           else
-              return MUS_ROUTE119;
+              return (402);
       }
 }
 
@@ -766,14 +769,14 @@ export function Overworld_ResetMapMusic(): any {
 export function Overworld_PlaySpecialMapMusic(): any {
   let music: any = GetCurrLocationDefaultMusic();
 
-      if (music != MUS_ABNORMAL_WEATHER && music != MUS_NONE)
+      if (music != (443) && music != (0xFFFF))
       {
           if (gSaveBlock1Ptr.savedMusic)
               music = gSaveBlock1Ptr.savedMusic;
-          else if (GetCurrentMapType() == MAP_TYPE_UNDERWATER)
-              music = MUS_UNDERWATER;
-          else if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
-              music = MUS_SURF;
+          else if (GetCurrentMapType() == (5))
+              music = (411);
+          else if (TestPlayerAvatarFlags(((1 << 3))))
+              music = (365);
       }
 
       if (music != GetCurrentMapMusic())
@@ -787,25 +790,25 @@ export function Overworld_SetSavedMusic(songNum: any): any {
 
 /** void Overworld_ClearSavedMusic(void) */
 export function Overworld_ClearSavedMusic(): any {
-  gSaveBlock1Ptr.savedMusic = MUS_DUMMY;
+  gSaveBlock1Ptr.savedMusic = (0);
 }
 
 /** static void TransitionMapMusic(void) */
 export function TransitionMapMusic(): any {
-  if (FlagGet(FLAG_DONT_TRANSITION_MUSIC) != TRUE)
+  if (FlagGet((((0x4000) + 0x1))) != TRUE)
       {
           let newMusic: any = GetWarpDestinationMusic();
           let currentMusic: any = GetCurrentMapMusic();
-          if (newMusic != MUS_ABNORMAL_WEATHER && newMusic != MUS_NONE)
+          if (newMusic != (443) && newMusic != (0xFFFF))
           {
-              if (currentMusic == MUS_UNDERWATER || currentMusic == MUS_SURF)
+              if (currentMusic == (411) || currentMusic == (365))
                   return;
-              if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
-                  newMusic = MUS_SURF;
+              if (TestPlayerAvatarFlags(((1 << 3))))
+                  newMusic = (365);
           }
           if (newMusic != currentMusic)
           {
-              if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+              if (TestPlayerAvatarFlags(((1 << 1)) | ((1 << 2))))
                   FadeOutAndFadeInNewMapMusic(newMusic, 4, 4);
               else
                   FadeOutAndPlayNewMapMusic(newMusic, 8);
@@ -823,7 +826,7 @@ export function Overworld_ChangeMusicToDefault(): any {
 /** void Overworld_ChangeMusicTo(u16 newMusic) */
 export function Overworld_ChangeMusicTo(newMusic: any): any {
   let currentMusic: any = GetCurrentMapMusic();
-      if (currentMusic != newMusic && currentMusic != MUS_ABNORMAL_WEATHER)
+      if (currentMusic != newMusic && currentMusic != (443))
           FadeOutAndPlayNewMapMusic(newMusic, 8);
 }
 
@@ -840,10 +843,10 @@ export function GetMapMusicFadeoutSpeed(): any {
 export function TryFadeOutOldMapMusic(): any {
   let currentMusic: any = GetCurrentMapMusic();
       let warpMusic: any = GetWarpDestinationMusic();
-      if (FlagGet(FLAG_DONT_TRANSITION_MUSIC) != TRUE && warpMusic != GetCurrentMapMusic())
+      if (FlagGet((((0x4000) + 0x1))) != TRUE && warpMusic != GetCurrentMapMusic())
       {
-          if (currentMusic == MUS_SURF
-              && VarGet(VAR_SKY_PILLAR_STATE) == 2
+          if (currentMusic == (365)
+              && VarGet((0x40CA)) == 2
               && gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_SOOTOPOLIS_CITY)
               && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_SOOTOPOLIS_CITY)
               && sWarpDestination.mapGroup == MAP_GROUP(MAP_SOOTOPOLIS_CITY)
@@ -877,7 +880,7 @@ export function PlayAmbientCry(): any {
           return;
       pan = (Random() % 88) + 212;
       volume = (Random() % 30) + 50;
-      PlayCry_NormalNoDucking(sAmbientCrySpecies, pan, volume, CRY_PRIORITY_AMBIENT);
+      PlayCry_NormalNoDucking(sAmbientCrySpecies, pan, volume, (1));
 }
 
 /** void UpdateAmbientCry(s16 *state, u16 *delayCounter) */
@@ -888,7 +891,7 @@ export function UpdateAmbientCry(state: any, delayCounter: any): any {
       {
       case AMB_CRY_INIT:
            
-          if (sAmbientCrySpecies == SPECIES_NONE)
+          if (sAmbientCrySpecies == (0))
               state = AMB_CRY_IDLE;
           else
               state = AMB_CRY_FIRST;
@@ -904,7 +907,7 @@ export function UpdateAmbientCry(state: any, delayCounter: any): any {
           for (i = 0; i < monsCount; i++)
           {
               if (!GetMonData(gPlayerParty[i], MON_DATA_SANITY_IS_EGG)
-                  && GetMonAbility(gPlayerParty[0]) == ABILITY_SWARM)
+                  && GetMonAbility(gPlayerParty[0]) == (68))
               {
                   divBy = 2;
                   break;
@@ -967,11 +970,11 @@ export function GetLastUsedWarpMapType(): any {
 
 /** bool8 IsMapTypeOutdoors(u8 mapType) */
 export function IsMapTypeOutdoors(mapType: any): any {
-  if (mapType == MAP_TYPE_ROUTE
-       || mapType == MAP_TYPE_TOWN
-       || mapType == MAP_TYPE_UNDERWATER
-       || mapType == MAP_TYPE_CITY
-       || mapType == MAP_TYPE_OCEAN_ROUTE)
+  if (mapType == (3)
+       || mapType == (1)
+       || mapType == (5)
+       || mapType == (2)
+       || mapType == (6))
           return TRUE;
       else
           return FALSE;
@@ -979,10 +982,10 @@ export function IsMapTypeOutdoors(mapType: any): any {
 
 /** bool8 Overworld_MapTypeAllowsTeleportAndFly(u8 mapType) */
 export function Overworld_MapTypeAllowsTeleportAndFly(mapType: any): any {
-  if (mapType == MAP_TYPE_ROUTE
-       || mapType == MAP_TYPE_TOWN
-       || mapType == MAP_TYPE_OCEAN_ROUTE
-       || mapType == MAP_TYPE_CITY)
+  if (mapType == (3)
+       || mapType == (1)
+       || mapType == (6)
+       || mapType == (2))
           return TRUE;
       else
           return FALSE;
@@ -990,8 +993,8 @@ export function Overworld_MapTypeAllowsTeleportAndFly(mapType: any): any {
 
 /** bool8 IsMapTypeIndoors(u8 mapType) */
 export function IsMapTypeIndoors(mapType: any): any {
-  if (mapType == MAP_TYPE_INDOOR
-       || mapType == MAP_TYPE_SECRET_BASE)
+  if (mapType == (8)
+       || mapType == (9))
           return TRUE;
       else
           return FALSE;
@@ -1311,7 +1314,7 @@ export function CB2_ContinueSavedGame(): any {
       FieldClearVBlankHBlankCallbacks();
       StopMapMusic();
       ResetSafariZoneFlag_();
-      if (gSaveFileStatus == SAVE_STATUS_ERROR)
+      if (gSaveFileStatus == (0xFF))
           ResetWinStreaks();
 
       LoadSaveblockMapHeader();
@@ -1319,7 +1322,7 @@ export function CB2_ContinueSavedGame(): any {
       trainerHillMapId = GetCurrentTrainerHillMapId();
       if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)
           LoadBattlePyramidFloorObjectEventScripts();
-      else if (trainerHillMapId != 0 && trainerHillMapId != TRAINER_HILL_ENTRANCE)
+      else if (trainerHillMapId != 0 && trainerHillMapId != (6))
           LoadTrainerHillFloorObjectEventScripts();
       else
           LoadSaveblockObjEventScripts();
@@ -1885,7 +1888,7 @@ export function CheckRfuKeepAliveTimer(): any {
 /** static void ResetAllPlayerLinkStates(void) */
 export function ResetAllPlayerLinkStates(): any {
   let i: any = null;
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
           sPlayerLinkStates[i] = (0x80);
 }
 
@@ -1942,7 +1945,7 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
 
           switch (key)
           {
-          case LINK_KEY_CODE_START_BUTTON:
+          case (0x18):
               if (CanCableClubPlayerPressStart(trainer))
               {
                   sPlayerLinkStates[playerId] = (0x81);
@@ -1953,7 +1956,7 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
                   }
               }
               break;
-          case LINK_KEY_CODE_DPAD_DOWN:
+          case (0x12):
               if (PlayerIsAtSouthExit(trainer) == TRUE)
               {
                   sPlayerLinkStates[playerId] = (0x81);
@@ -1964,7 +1967,7 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
                   }
               }
               break;
-          case LINK_KEY_CODE_A_BUTTON:
+          case (0x19):
               script = TryInteractWithPlayer(trainer);
               if (script)
               {
@@ -1976,7 +1979,7 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
                   }
               }
               break;
-          case LINK_KEY_CODE_HANDLE_RECV_QUEUE:
+          case (0x1B):
               if (IsCableClubPlayerUnfrozen(trainer))
               {
                   sPlayerLinkStates[playerId] = (0x81);
@@ -1987,7 +1990,7 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
                   }
               }
               break;
-          case LINK_KEY_CODE_HANDLE_SEND_QUEUE:
+          case (0x1C):
               if (IsCableClubPlayerUnfrozen(trainer))
               {
                   sPlayerLinkStates[playerId] = (0x81);
@@ -2003,18 +2006,18 @@ export function HandleLinkPlayerKeyInput(playerId: any, key: any, trainer: any, 
 
       switch (key)
       {
-      case LINK_KEY_CODE_EXIT_ROOM:
+      case (0x17):
           sPlayerLinkStates[playerId] = (0x83);
           break;
-      case LINK_KEY_CODE_READY:
+      case (0x16):
           sPlayerLinkStates[playerId] = (0x82);
           break;
-      case LINK_KEY_CODE_IDLE:
+      case (0x1A):
           sPlayerLinkStates[playerId] = (0x80);
           if (trainer.isLocalPlayer)
               SetKeyInterceptCallback(KeyInterCB_SelfIdle);
           break;
-      case LINK_KEY_CODE_EXIT_SEAT:
+      case (0x1D):
           if (sPlayerLinkStates[playerId] == (0x82))
               sPlayerLinkStates[playerId] = (0x81);
           break;
@@ -2026,7 +2029,7 @@ export function UpdateAllLinkPlayers(keys: any, selfId: any): any {
   let trainer: any = null;
       let i: any = null;
 
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
       {
           let key: any = keys[i];
           let setFacing: any = (0);
@@ -2040,10 +2043,10 @@ export function UpdateAllLinkPlayers(keys: any, selfId: any): any {
 
 /** static void UpdateHeldKeyCode(u16 key) */
 export function UpdateHeldKeyCode(key: any): any {
-  if (key >= LINK_KEY_CODE_EMPTY && key < LINK_KEY_CODE_UNK_8)
+  if (key >= (0x11) && key < (0x1E))
           gHeldKeyCodeToSend = key;
       else
-          gHeldKeyCodeToSend = LINK_KEY_CODE_EMPTY;
+          gHeldKeyCodeToSend = (0x11);
 
       if (gWirelessCommType != 0
           && GetLinkSendQueueLength() > 1
@@ -2052,14 +2055,14 @@ export function UpdateHeldKeyCode(key: any): any {
       {
           switch (key)
           {
-          case LINK_KEY_CODE_EMPTY:
-          case LINK_KEY_CODE_DPAD_DOWN:
-          case LINK_KEY_CODE_DPAD_UP:
-          case LINK_KEY_CODE_DPAD_LEFT:
-          case LINK_KEY_CODE_DPAD_RIGHT:
-          case LINK_KEY_CODE_START_BUTTON:
-          case LINK_KEY_CODE_A_BUTTON:
-              gHeldKeyCodeToSend = LINK_KEY_CODE_NULL;
+          case (0x11):
+          case (0x12):
+          case (0x13):
+          case (0x14):
+          case (0x15):
+          case (0x18):
+          case (0x19):
+              gHeldKeyCodeToSend = (0x00);
               break;
           }
       }
@@ -2068,31 +2071,31 @@ export function UpdateHeldKeyCode(key: any): any {
 /** static u16 KeyInterCB_ReadButtons(u32 key) */
 export function KeyInterCB_ReadButtons(key: any): any {
   if (JOY_HELD(DPAD_UP))
-          return LINK_KEY_CODE_DPAD_UP;
+          return (0x13);
       if (JOY_HELD(DPAD_DOWN))
-          return LINK_KEY_CODE_DPAD_DOWN;
+          return (0x12);
       if (JOY_HELD(DPAD_LEFT))
-          return LINK_KEY_CODE_DPAD_LEFT;
+          return (0x14);
       if (JOY_HELD(DPAD_RIGHT))
-          return LINK_KEY_CODE_DPAD_RIGHT;
+          return (0x15);
       if (JOY_NEW(START_BUTTON))
-          return LINK_KEY_CODE_START_BUTTON;
+          return (0x18);
       if (JOY_NEW(A_BUTTON))
-          return LINK_KEY_CODE_A_BUTTON;
-      return LINK_KEY_CODE_EMPTY;
+          return (0x19);
+      return (0x11);
 }
 
 /** static u16 GetDirectionForDpadKey(u16 key) */
 export function GetDirectionForDpadKey(key: any): any {
   switch (key)
       {
-      case LINK_KEY_CODE_DPAD_RIGHT:
+      case (0x15):
           return (4);
-      case LINK_KEY_CODE_DPAD_LEFT:
+      case (0x14):
           return (3);
-      case LINK_KEY_CODE_DPAD_UP:
+      case (0x13):
           return (1);
-      case LINK_KEY_CODE_DPAD_DOWN:
+      case (0x12):
           return (2);
       default:
           return (0);
@@ -2103,24 +2106,24 @@ export function GetDirectionForDpadKey(key: any): any {
 export function ResetPlayerHeldKeys(keys: any): any {
   let i: any = null;
       for (i = 0; i < 4; i++)
-          keys[i] = LINK_KEY_CODE_EMPTY;
+          keys[i] = (0x11);
 }
 
 /** static u16 KeyInterCB_SelfIdle(u32 key) */
 export function KeyInterCB_SelfIdle(key: any): any {
   if (ArePlayerFieldControlsLocked() == TRUE)
-          return LINK_KEY_CODE_EMPTY;
+          return (0x11);
       if (GetLinkRecvQueueLength() > 4)
-          return LINK_KEY_CODE_HANDLE_RECV_QUEUE;
+          return (0x1B);
       if (GetLinkSendQueueLength() <= 4)
           return KeyInterCB_ReadButtons(key);
-      return LINK_KEY_CODE_HANDLE_SEND_QUEUE;
+      return (0x1C);
 }
 
 /** static u16 KeyInterCB_Idle(u32 key) */
 export function KeyInterCB_Idle(key: any): any {
   CheckRfuKeepAliveTimer();
-      return LINK_KEY_CODE_EMPTY;
+      return (0x11);
 }
 
 /** static u16 KeyInterCB_DeferToEventScript(u32 key) */
@@ -2128,11 +2131,11 @@ export function KeyInterCB_DeferToEventScript(key: any): any {
   let retVal: any = null;
       if (ArePlayerFieldControlsLocked() == TRUE)
       {
-          retVal = LINK_KEY_CODE_EMPTY;
+          retVal = (0x11);
       }
       else
       {
-          retVal = LINK_KEY_CODE_IDLE;
+          retVal = (0x1A);
           SetKeyInterceptCallback(KeyInterCB_Idle);
       }
       return retVal;
@@ -2141,13 +2144,13 @@ export function KeyInterCB_DeferToEventScript(key: any): any {
 /** static u16 KeyInterCB_DeferToRecvQueue(u32 key) */
 export function KeyInterCB_DeferToRecvQueue(key: any): any {
   let retVal: any = null;
-      if (GetLinkRecvQueueLength() >= OVERWORLD_RECV_QUEUE_MAX)
+      if (GetLinkRecvQueueLength() >= (3))
       {
-          retVal = LINK_KEY_CODE_EMPTY;
+          retVal = (0x11);
       }
       else
       {
-          retVal = LINK_KEY_CODE_IDLE;
+          retVal = (0x1A);
           UnlockPlayerFieldControls();
           SetKeyInterceptCallback(KeyInterCB_Idle);
       }
@@ -2159,11 +2162,11 @@ export function KeyInterCB_DeferToSendQueue(key: any): any {
   let retVal: any = null;
       if (GetLinkSendQueueLength() > 2)
       {
-          retVal = LINK_KEY_CODE_EMPTY;
+          retVal = (0x11);
       }
       else
       {
-          retVal = LINK_KEY_CODE_IDLE;
+          retVal = (0x1A);
           UnlockPlayerFieldControls();
           SetKeyInterceptCallback(KeyInterCB_Idle);
       }
@@ -2173,7 +2176,7 @@ export function KeyInterCB_DeferToSendQueue(key: any): any {
 /** static u16 KeyInterCB_ExitingSeat(u32 key) */
 export function KeyInterCB_ExitingSeat(key: any): any {
   CheckRfuKeepAliveTimer();
-      return LINK_KEY_CODE_EMPTY;
+      return (0x11);
 }
 
 /** static u16 KeyInterCB_Ready(u32 keyOrPlayerId) */
@@ -2183,29 +2186,29 @@ export function KeyInterCB_Ready(keyOrPlayerId: any): any {
           if (JOY_NEW(B_BUTTON))
           {
               SetKeyInterceptCallback(KeyInterCB_ExitingSeat);
-              return LINK_KEY_CODE_EXIT_SEAT;
+              return (0x1D);
           }
           else
           {
-              return LINK_KEY_CODE_EMPTY;
+              return (0x11);
           }
       }
       else
       {
           CheckRfuKeepAliveTimer();
-          return LINK_KEY_CODE_EMPTY;
+          return (0x11);
       }
 }
 
 /** static u16 KeyInterCB_SetReady(u32 key) */
 export function KeyInterCB_SetReady(key: any): any {
   SetKeyInterceptCallback(KeyInterCB_Ready);
-      return LINK_KEY_CODE_READY;
+      return (0x16);
 }
 
 /** static u16 KeyInterCB_SendNothing(u32 key) */
 export function KeyInterCB_SendNothing(key: any): any {
-  return LINK_KEY_CODE_EMPTY;
+  return (0x11);
 }
 
 /** static u16 KeyInterCB_WaitForPlayersToExit(u32 keyOrPlayerId) */
@@ -2217,31 +2220,31 @@ export function KeyInterCB_WaitForPlayersToExit(keyOrPlayerId: any): any {
           ScriptContext_SetupScript(EventScript_DoLinkRoomExit);
           SetKeyInterceptCallback(KeyInterCB_SendNothing);
       }
-      return LINK_KEY_CODE_EMPTY;
+      return (0x11);
 }
 
 /** static u16 KeyInterCB_SendExitRoomKey(u32 key) */
 export function KeyInterCB_SendExitRoomKey(key: any): any {
   SetKeyInterceptCallback(KeyInterCB_WaitForPlayersToExit);
-      return LINK_KEY_CODE_EXIT_ROOM;
+      return (0x17);
 }
 
 /** static u16 KeyInterCB_InLinkActivity(u32 key) */
 export function KeyInterCB_InLinkActivity(key: any): any {
-  return LINK_KEY_CODE_EMPTY;
+  return (0x11);
 }
 
 /** u32 GetCableClubPartnersReady(void) */
 export function GetCableClubPartnersReady(): any {
   if (IsAnyPlayerInLinkState((0x83)) == TRUE)
-          return CABLE_SEAT_FAILED;
+          return (2);
       if (sPlayerKeyInterceptCallback == KeyInterCB_Ready && sPlayerLinkStates[gLocalLinkPlayerId] != (0x82))
-          return CABLE_SEAT_WAITING;
+          return (0);
       if (sPlayerKeyInterceptCallback == KeyInterCB_ExitingSeat && sPlayerLinkStates[gLocalLinkPlayerId] == (0x81))
-          return CABLE_SEAT_FAILED;
+          return (2);
       if (AreAllPlayersInLinkState((0x82)))
-          return CABLE_SEAT_SUCCESS;
-      return CABLE_SEAT_WAITING;
+          return (1);
+      return (0);
 }
 
 /** u16 SetInCableClubSeat(void) */
@@ -2286,7 +2289,7 @@ export function LoadCableClubPlayer(linkPlayerId: any, myPlayerId: any, trainer:
 /** static bool32 IsCableClubPlayerUnfrozen(struct CableClubPlayer *player) */
 export function IsCableClubPlayerUnfrozen(player: any): any {
   let mode: any = player.movementMode;
-      if (mode == MOVEMENT_MODE_SCRIPTED || mode == MOVEMENT_MODE_FREE)
+      if (mode == (2) || mode == (0))
           return TRUE;
       else
           return FALSE;
@@ -2295,7 +2298,7 @@ export function IsCableClubPlayerUnfrozen(player: any): any {
 /** static bool32 CanCableClubPlayerPressStart(struct CableClubPlayer *player) */
 export function CanCableClubPlayerPressStart(player: any): any {
   let mode: any = player.movementMode;
-      if (mode == MOVEMENT_MODE_SCRIPTED || mode == MOVEMENT_MODE_FREE)
+      if (mode == (2) || mode == (0))
           return TRUE;
       else
           return FALSE;
@@ -2303,11 +2306,11 @@ export function CanCableClubPlayerPressStart(player: any): any {
 
 /** static bool32 PlayerIsAtSouthExit(struct CableClubPlayer *player) */
 export function PlayerIsAtSouthExit(player: any): any {
-  if (player.movementMode != MOVEMENT_MODE_SCRIPTED && player.movementMode != MOVEMENT_MODE_FREE)
+  if (player.movementMode != (2) && player.movementMode != (0))
           return FALSE;
       else if (!MetatileBehavior_IsSouthArrowWarp(player.metatileBehavior))
           return FALSE;
-      else if (player.facing != DIR_SOUTH)
+      else if (player.facing != (1))
           return FALSE;
       else
           return TRUE;
@@ -2350,28 +2353,28 @@ export function InitLinkPlayerQueueScript(): any {
 
 /** static void InitLinkRoomStartMenuScript(void) */
 export function InitLinkRoomStartMenuScript(): any {
-  PlaySE(SE_WIN_OPEN);
+  PlaySE((6));
       ShowStartMenu();
       LockPlayerFieldControls();
 }
 
 /** static void RunInteractLocalPlayerScript(const u8 *script) */
 export function RunInteractLocalPlayerScript(script: any): any {
-  PlaySE(SE_SELECT);
+  PlaySE((5));
       ScriptContext_SetupScript(script);
       LockPlayerFieldControls();
 }
 
 /** static void RunConfirmLeaveCableClubScript(void) */
 export function RunConfirmLeaveCableClubScript(): any {
-  PlaySE(SE_WIN_OPEN);
+  PlaySE((6));
       ScriptContext_SetupScript(EventScript_ConfirmLeaveCableClubRoom);
       LockPlayerFieldControls();
 }
 
 /** static void InitMenuBasedScript(const u8 *script) */
 export function InitMenuBasedScript(script: any): any {
-  PlaySE(SE_SELECT);
+  PlaySE((5));
       ScriptContext_SetupScript(script);
       LockPlayerFieldControls();
 }
@@ -2386,7 +2389,7 @@ export function RunTerminateLinkScript(): any {
 export function Overworld_IsRecvQueueAtMax(): any {
   if (!IsOverworldLinkActive())
           return FALSE;
-      if (GetLinkRecvQueueLength() >= OVERWORLD_RECV_QUEUE_MAX)
+      if (GetLinkRecvQueueLength() >= (3))
           sReceivingFromLink = TRUE;
       else
           sReceivingFromLink = FALSE;
@@ -2397,7 +2400,7 @@ export function Overworld_IsRecvQueueAtMax(): any {
 export function Overworld_RecvKeysFromLinkIsRunning(): any {
   let temp: any = null;
 
-      if (GetLinkRecvQueueLength() < OVERWORLD_RECV_QUEUE_MAX - 1)
+      if (GetLinkRecvQueueLength() < (3) - 1)
           return FALSE;
       else if (IsOverworldLinkActive() != TRUE)
           return FALSE;
@@ -2478,12 +2481,12 @@ export function SpawnLinkPlayerObjectEvent(linkPlayerId: any, x: any, y: any, ge
       linkPlayerObjEvent.active = TRUE;
       linkPlayerObjEvent.linkPlayerId = linkPlayerId;
       linkPlayerObjEvent.objEventId = objEventId;
-      linkPlayerObjEvent.movementMode = MOVEMENT_MODE_FREE;
+      linkPlayerObjEvent.movementMode = (0);
 
       objEvent.active = TRUE;
       (objEvent).singleMovementActive = gender;
-      ((objEvent))[offsetof(typeof((objEvent)), range)] = DIR_NORTH;
-      objEvent.spriteId = MAX_SPRITES;
+      ((objEvent))[offsetof(typeof((objEvent)), range)] = (2);
+      objEvent.spriteId = (64);
 
       InitLinkPlayerObjectEventPos(objEvent, x, y);
 }
@@ -2531,7 +2534,7 @@ export function GetLinkPlayerElevation(linkPlayerId: any): any {
 /** static u8 GetLinkPlayerIdAt(s16 x, s16 y) */
 export function GetLinkPlayerIdAt(x: any, y: any): any {
   let i: any = null;
-      for (i = 0; i < MAX_LINK_PLAYERS; i++)
+      for (i = 0; i < (4); i++)
       {
           if (gLinkPlayerObjectEvents[i].active
            && (gLinkPlayerObjectEvents[i].movementMode == 0 || gLinkPlayerObjectEvents[i].movementMode == 2))
@@ -2612,18 +2615,18 @@ export function FacingHandler_ForcedFacingChange(linkPlayerObjEvent: any, objEve
 
 /** static void MovementStatusHandler_EnterFreeMode(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent) */
 export function MovementStatusHandler_EnterFreeMode(linkPlayerObjEvent: any, objEvent: any): any {
-  linkPlayerObjEvent.movementMode = MOVEMENT_MODE_FREE;
+  linkPlayerObjEvent.movementMode = (0);
 }
 
 /** static void MovementStatusHandler_TryAdvanceScript(struct LinkPlayerObjectEvent *linkPlayerObjEvent, struct ObjectEvent *objEvent) */
 export function MovementStatusHandler_TryAdvanceScript(linkPlayerObjEvent: any, objEvent: any): any {
   objEvent.directionSequenceIndex--;
-      linkPlayerObjEvent.movementMode = MOVEMENT_MODE_FROZEN;
+      linkPlayerObjEvent.movementMode = (1);
       MoveCoords(((objEvent))[offsetof(typeof((objEvent)), range)],objEvent.initialCoords.x,objEvent.initialCoords.y);
       if (!objEvent.directionSequenceIndex)
       {
           ShiftStillObjectEventCoords(objEvent);
-          linkPlayerObjEvent.movementMode = MOVEMENT_MODE_SCRIPTED;
+          linkPlayerObjEvent.movementMode = (2);
       }
 }
 
@@ -2633,16 +2636,16 @@ export function FlipVerticalAndClearForced(newFacing: any, oldFacing: any): any 
       {
       case (1):
       case (7):
-          return DIR_NORTH;
+          return (2);
       case (2):
       case (8):
-          return DIR_SOUTH;
+          return (1);
       case (3):
       case (9):
-          return DIR_WEST;
+          return (3);
       case (4):
       case (10):
-          return DIR_EAST;
+          return (4);
       }
       return oldFacing;
 }
@@ -2650,7 +2653,7 @@ export function FlipVerticalAndClearForced(newFacing: any, oldFacing: any): any 
 /** static u8 LinkPlayerGetCollision(u8 selfObjEventId, u8 direction, s16 x, s16 y) */
 export function LinkPlayerGetCollision(selfObjEventId: any, direction: any, x: any, y: any): any {
   let i: any = null;
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (i != selfObjEventId)
           {
@@ -2675,15 +2678,15 @@ export function CreateLinkPlayerSprite(linkPlayerId: any, gameVersion: any): any
       {
           switch (gameVersion)
           {
-          case VERSION_FIRE_RED:
-          case VERSION_LEAF_GREEN:
+          case (4):
+          case (5):
               objEvent.spriteId = CreateObjectGraphicsSprite(GetFRLGAvatarGraphicsIdByGender((objEvent).singleMovementActive), SpriteCB_LinkPlayer, 0, 0, 0);
               break;
-          case VERSION_RUBY:
-          case VERSION_SAPPHIRE:
+          case (2):
+          case (1):
               objEvent.spriteId = CreateObjectGraphicsSprite(GetRSAvatarGraphicsIdByGender((objEvent).singleMovementActive), SpriteCB_LinkPlayer, 0, 0, 0);
               break;
-          case VERSION_EMERALD:
+          case (3):
               objEvent.spriteId = CreateObjectGraphicsSprite(GetRivalAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, (objEvent).singleMovementActive), SpriteCB_LinkPlayer, 0, 0, 0);
               break;
           }
@@ -2704,7 +2707,7 @@ export function SpriteCB_LinkPlayer(sprite: any): any {
       SetObjectSubpriorityByElevation(objEvent.previousElevation, sprite, 1);
       sprite.oam.priority = ElevationToPriority(objEvent.previousElevation);
 
-      if (linkPlayerObjEvent.movementMode == MOVEMENT_MODE_FREE)
+      if (linkPlayerObjEvent.movementMode == (0))
           StartSpriteAnim(sprite, GetFaceDirectionAnimNum(((objEvent))[offsetof(typeof((objEvent)), range)]));
       else
           StartSpriteAnimIfDifferent(sprite, GetMoveDirectionAnimNum(((objEvent))[offsetof(typeof((objEvent)), range)]));

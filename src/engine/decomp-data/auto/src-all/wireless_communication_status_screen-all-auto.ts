@@ -17,14 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sActivityGroupInfo: any = null;
-let sBgTemplates: any = null;
-let sBgTiles_Gfx: any = null;
-let sBgTiles_Tilemap: any = null;
-let sHeaderTexts: any = null;
-let sPalettes: any = null;
+let k: any = null;
 let sStatusScreen: any = null;
-let sWindowTemplates: any = null;
 /** static void CB2_RunWirelessCommunicationScreen(void) */
 export function CB2_RunWirelessCommunicationScreen(): any {
   if (!IsDma3ManagerBusyWithBgCopy())
@@ -147,7 +141,7 @@ export function Task_WirelessCommunicationScreen(taskId: any): any {
           gTasks[taskId].tState++;
           break;
       case 1:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           ShowBg(1);
           CopyBgTilemapBufferToVram(0);
           ShowBg(0);
@@ -174,14 +168,14 @@ export function Task_WirelessCommunicationScreen(taskId: any): any {
           }
           if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               gTasks[sStatusScreen.rfuTaskId].data[15] = 0xFF;
               gTasks[taskId].tState++;
           }
           CyclePalette(gTasks[taskId].data[7],gTasks[taskId].data[8]);
           break;
       case 4:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           gTasks[taskId].tState++;
           break;
       case 5:
@@ -201,33 +195,33 @@ export function WCSS_AddTextPrinterParameterized(windowId: any, fontId: any, str
       switch (mode)
       {
       case COLORMODE_NORMAL:
-          color[0] = TEXT_COLOR_TRANSPARENT;
-          color[1] = TEXT_COLOR_DARK_GRAY;
-          color[2] = TEXT_COLOR_LIGHT_GRAY;
+          color[0] = (0x0);
+          color[1] = (0x2);
+          color[2] = (0x3);
           break;
       case COLORMODE_WHITE_LGRAY:
-          color[0] = TEXT_COLOR_TRANSPARENT;
-          color[1] = TEXT_COLOR_WHITE;
-          color[2] = TEXT_COLOR_LIGHT_GRAY;
+          color[0] = (0x0);
+          color[1] = (0x1);
+          color[2] = (0x3);
           break;
       case COLORMODE_RED:
-          color[0] = TEXT_COLOR_TRANSPARENT;
-          color[1] = TEXT_COLOR_RED;
-          color[2] = TEXT_COLOR_LIGHT_RED;
+          color[0] = (0x0);
+          color[1] = (0x4);
+          color[2] = (0x5);
           break;
       case COLORMODE_GREEN:
-          color[0] = TEXT_COLOR_TRANSPARENT;
-          color[1] = TEXT_COLOR_LIGHT_GREEN;
-          color[2] = TEXT_COLOR_GREEN;
+          color[0] = (0x0);
+          color[1] = (0x7);
+          color[2] = (0x6);
           break;
       case COLORMODE_WHITE_DGRAY:
-          color[0] = TEXT_COLOR_TRANSPARENT;
-          color[1] = TEXT_COLOR_WHITE;
-          color[2] = TEXT_COLOR_DARK_GRAY;
+          color[0] = (0x0);
+          color[1] = (0x1);
+          color[2] = (0x2);
           break;
       }
 
-      AddTextPrinterParameterized4(windowId, fontId, x, y, 0, 0, color, TEXT_SKIP_DRAW, str);
+      AddTextPrinterParameterized4(windowId, fontId, x, y, 0, 0, color, (0xFF), str);
 }
 
 /** static u32 CountPlayersInGroupAndGetActivity(struct RfuPlayer *player, u32 *groupCounts) */
@@ -242,12 +236,12 @@ export function CountPlayersInGroupAndGetActivity(player: any, groupCounts: any)
            
           if ((sActivityGroupInfo[((i))][1]) == (0xFF))
               continue;
-          if (activity == (sActivityGroupInfo[((i))][0]) && player.groupScheduledAnim == UNION_ROOM_SPAWN_IN)
+          if (activity == (sActivityGroupInfo[((i))][0]) && player.groupScheduledAnim == (1))
           {
               if ((sActivityGroupInfo[((i))][2]) == 0)
               {
                   k = 0;
-                  for (j = 0; j < RFU_CHILD_MAX; j++)
+                  for (j = 0; j < (4); j++)
                       if (player.rfu.data.partnerInfo[j] != 0) k++;
                   k++;
                   groupCounts[(sActivityGroupInfo[((i))][1])] += k;
@@ -280,7 +274,7 @@ export function UpdateCommunicationCounts(groupCounts: any, prevGroupCounts: any
       let players: any = gTasks[taskId].data;
       let i: any = null;
 
-      for (i = 0; i < NUM_TASK_DATA; i++)
+      for (i = 0; i < (16); i++)
       {
           let activity: any = CountPlayersInGroupAndGetActivity(players[i], groupCountBuffer);
           if (activity != activities[i])

@@ -17,48 +17,11 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates: any = null;
-let sBg_Gfx: any = null;
-let sBg_Pal: any = null;
-let sBg_Tilemap: any = null;
-let sCompressedSpriteSheets: any = null;
-let sHopPos: any = null;
-let sInterface_Pal: any = null;
-let sJumpOffsets: any = null;
-let sMonXCoords: any = null;
-let sNumHops: any = null;
-let sNumShakes: any = null;
-let sOffset: any = null;
-let sPlayerNameWindowCoords: any = null;
-let sPokeJumpGfxFuncs: any = null;
-let sPokeJumpLeaderFuncs: any = null;
-let sPokeJumpMemberFuncs: any = null;
-let sPokeJumpMons: any = null;
+let palNum: any = null;
 let sPokemonJump: any = null;
 let sPokemonJumpGfx: any = null;
-let sPrizeItems: any = null;
-let sPrizeQuantityData: any = null;
-let sRecordsTexts: any = null;
-let sScoreBonuses: any = null;
-let sSoundEffects: any = null;
-let sSpritePalette_Digits: any = null;
-let sSpritePalettes: any = null;
-let sSpriteSheet_Digits: any = null;
-let sSpriteTemplate_JumpMon: any = null;
-let sSpriteTemplate_Star: any = null;
-let sSpriteTemplates_Vine: any = null;
-let sState: any = null;
-let sTimer: any = null;
-let sVenusaurStates: any = null;
-let sVenusaur_Gfx: any = null;
-let sVenusaur_Pal: any = null;
-let sVenusaur_Tilemap: any = null;
-let sVineBaseSpeeds: any = null;
-let sVineSpeedDelays: any = null;
-let sVineXCoords: any = null;
-let sVineYCoords: any = null;
-let sWindowTemplate_Records: any = null;
-let sWindowTemplates: any = null;
+let tWindowId: any = null;
+let widthCurr: any = null;
 /** void StartPokemonJump(u16 partyId, MainCallback exitCallback) */
 export function StartPokemonJump(partyId: any, exitCallback: any): any {
   let taskId: any = null;
@@ -99,7 +62,7 @@ export function InitGame(jump: any): any {
       jump.comm.data = 0;
       InitPlayerAndJumpTypes();
       ResetForNewGame(jump);
-      if (jump.numPlayers == MAX_RFU_PLAYERS)
+      if (jump.numPlayers == (5))
           IncrementGamesWithMaxPlayers();
 }
 
@@ -136,7 +99,7 @@ export function ResetForNewGame(jump: any): any {
       ResetPlayersForNewGame();
       ResetPlayersJumpStates();
 
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
       {
           jump.atJumpPeak[i] = FALSE;
           jump.jumpTimeStarts[i] = 0;
@@ -147,7 +110,7 @@ export function ResetForNewGame(jump: any): any {
 export function InitPlayerAndJumpTypes(): any {
   let i, index;
 
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
       {
           index = GetPokemonJumpSpeciesIdx(sPokemonJump.monInfo[i].species);
           sPokemonJump.players[i].monJumpType = sPokeJumpMons[index].jumpType;
@@ -160,7 +123,7 @@ export function InitPlayerAndJumpTypes(): any {
 export function ResetPlayersForNewGame(): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
       {
           sPokemonJump.players[i].jumpTimeStart = 0;
           sPokemonJump.players[i].monState = MONSTATE_NORMAL;
@@ -236,15 +199,15 @@ export function Task_StartPokemonJump(taskId: any): any {
       case 2:
           if (!IsPokeJumpGfxFuncFinished() && IsNotWaitingForBGMStop() == TRUE)
           {
-              FadeOutAndPlayNewMapMusic(MUS_RG_POKE_JUMP, 8);
+              FadeOutAndPlayNewMapMusic((538), 8);
               sPokemonJump.mainState++;
           }
           break;
       case 3:
           if (IsLinkTaskFinished())
           {
-              BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
-              BeginNormalPaletteFade(PALETTES_ALL, -1, 16, 0, RGB_BLACK);
+              BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 16, 0, (RGB(0, 0, 0)));
               SetVBlankCallback(VBlankCB_PokemonJump);
               sPokemonJump.mainState++;
           }
@@ -1035,7 +998,7 @@ export function DoPlayAgainPrompt(): any {
           input = HandlePlayAgainInput();
           switch (input)
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case 1:  
               sPokemonJump.playAgainState = (1);
               SetUpPokeJumpGfxFuncById(GFXFUNC_ERASE_MSG);
@@ -1095,7 +1058,7 @@ export function ClosePokeJumpLink(): any {
       case 3:
           if (++sPokemonJump.timer > 120)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 0, 16, (RGB(0, 0, 0)));
               sPokemonJump.helperState++;
           }
           break;
@@ -1147,14 +1110,14 @@ export function Task_CommunicateMonInfo(taskId: any): any {
       switch (tState)
       {
       case 0:
-          for (i = 0; i < MAX_RFU_PLAYERS; i++)
+          for (i = 0; i < (5); i++)
               data[((i)) + 2] = FALSE;
 
           tState++;
            
       case 1:
           SendPacket_MonInfo(jump.monInfo[jump.multiplayerId]);
-          for (i = 0; i < MAX_RFU_PLAYERS; i++)
+          for (i = 0; i < (5); i++)
           {
               if (!data[((i)) + 2] && RecvPacket_MonInfo(i,jump.monInfo[i]))
               {
@@ -1322,7 +1285,7 @@ export function IsGameOver(): any {
 /** static void ResetPlayersJumpStates(void) */
 export function ResetPlayersJumpStates(): any {
   let i: any = null;
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
           sPokemonJump.players[i].jumpState = JUMPSTATE_NONE;
 }
 
@@ -1437,9 +1400,9 @@ export function HandleMonState(): any {
       }
 
       if (soundFlags & ((1 << 1)))
-          PlaySE(SE_RG_POKE_JUMP_FAILURE);
+          PlaySE((262));
       else if (soundFlags & ((1 << 0)))
-          PlaySE(SE_LEDGE);
+          PlaySE((10));
 }
 
 /** static void UpdateJump(int multiplayerId) */
@@ -1501,7 +1464,7 @@ export function TryUpdateScore(): any {
           }
           else
           {
-              if (sPokemonJump.numPlayersAtPeak == MAX_RFU_PLAYERS)
+              if (sPokemonJump.numPlayersAtPeak == (5))
               {
                    
                   sPokemonJump.excellentsInRow++;
@@ -1516,7 +1479,7 @@ export function TryUpdateScore(): any {
               {
                   sPokemonJump.giveBonus = TRUE;
                    
-                  memcpy(sPokemonJump.atJumpPeak3, sPokemonJump.atJumpPeak2, 0 * MAX_RFU_PLAYERS);
+                  memcpy(sPokemonJump.atJumpPeak3, sPokemonJump.atJumpPeak2, 0 * (5));
               }
 
               ClearUnreadField();
@@ -1545,7 +1508,7 @@ export function TryUpdateScore(): any {
           if (numAtPeak > sPokemonJump.numPlayersAtPeak)
           {
               sPokemonJump.numPlayersAtPeak = numAtPeak;
-              memcpy(sPokemonJump.atJumpPeak2, sPokemonJump.atJumpPeak, 0 * MAX_RFU_PLAYERS);
+              memcpy(sPokemonJump.atJumpPeak2, sPokemonJump.atJumpPeak, 0 * (5));
           }
       }
 }
@@ -1671,7 +1634,7 @@ export function GetNumPlayersForBonus(atJumpPeak: any): any {
       let flags: any = 0;
       let count: any = 0;
 
-      for (; i < MAX_RFU_PLAYERS; i++)
+      for (; i < (5); i++)
       {
           if (atJumpPeak[i])
           {
@@ -1773,7 +1736,7 @@ export function IsSpeciesAllowedInPokemonJump(species: any): any {
 export function IsPokemonJumpSpeciesInParty(): any {
   let i: any = null;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (GetMonData(gPlayerParty[i], MON_DATA_SANITY_HAS_SPECIES))
           {
@@ -1821,8 +1784,8 @@ export function CreateJumpMonSprite(jumpGfx: any, monInfo: any, x: any, y: any, 
       let spriteId: any = null;
 
       spriteTemplate = sSpriteTemplate_JumpMon;
-      buffer = Alloc(MON_PIC_SIZE * MAX_MON_PIC_FRAMES);
-      unusedBuffer = Alloc(MON_PIC_SIZE);
+      buffer = Alloc((((64) * (64) / 2)) * (4));
+      unusedBuffer = Alloc((((64) * (64) / 2)));
       if (multiplayerId == GetPokeJumpMultiplayerId())
           subpriority = 3;
       else
@@ -1837,7 +1800,7 @@ export function CreateJumpMonSprite(jumpGfx: any, monInfo: any, x: any, y: any, 
 
           spriteSheet.data = buffer;
           spriteSheet.tag = multiplayerId;
-          spriteSheet.size = MON_PIC_SIZE;
+          spriteSheet.size = (((64) * (64) / 2));
           LoadSpriteSheet(spriteSheet);
 
           spritePalette.data = GetMonSpritePalFromSpeciesAndPersonality(monInfo.species, monInfo.otId, monInfo.personality);
@@ -1850,7 +1813,7 @@ export function CreateJumpMonSprite(jumpGfx: any, monInfo: any, x: any, y: any, 
           spriteTemplate.tileTag += multiplayerId;
           spriteTemplate.paletteTag += multiplayerId;
           spriteId = CreateSprite(spriteTemplate, x, y, subpriority);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               jumpGfx.monSprites[multiplayerId] =gSprites[spriteId];
               jumpGfx.monSpriteSubpriorities[multiplayerId] = subpriority;
@@ -1994,7 +1957,7 @@ export function SpriteCB_MonIntroBounce(sprite: any): any {
   switch (sprite.sState)
       {
       case 0:
-          PlaySE(SE_BIKE_HOP);
+          PlaySE((34));
           sprite.sHopPos = 0;
           sprite.sState++;
            
@@ -2018,7 +1981,7 @@ export function SpriteCB_MonIntroBounce(sprite: any): any {
 /** static void CreateStarSprite(struct PokemonJumpGfx *jumpGfx, s16 x, s16 y, u8 multiplayerId) */
 export function CreateStarSprite(jumpGfx: any, x: any, y: any, multiplayerId: any): any {
   let spriteId: any = CreateSprite(sSpriteTemplate_Star, x, y, 1);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].invisible = TRUE;
           jumpGfx.starSprites[multiplayerId] =gSprites[spriteId];
@@ -2120,7 +2083,7 @@ export function FreeWindowsAndDigitObj(): any {
 export function InitPokeJumpGfx(jumpGfx: any): any {
   jumpGfx.mainState = 0;
       jumpGfx.funcFinished = FALSE;
-      jumpGfx.msgWindowId = WINDOW_NONE;
+      jumpGfx.msgWindowId = (0xFF);
 }
 
 /** static void SetUpPokeJumpGfxFuncById(int id) */
@@ -2299,7 +2262,7 @@ export function Msg_WantToPlayAgain(): any {
       {
       case 0:
           sPokemonJumpGfx.msgWindowId = AddMessageWindow(1, 8, 20, 2);
-          AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, gText_WantToPlayAgain2, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, gText_WantToPlayAgain2, 0, 1, (0xFF), NULL);
           CopyWindowToVram(sPokemonJumpGfx.msgWindowId, COPYWIN_GFX);
           sPokemonJumpGfx.mainState++;
           break;
@@ -2326,7 +2289,7 @@ export function Msg_SavingDontTurnOff(): any {
       {
       case 0:
           sPokemonJumpGfx.msgWindowId = AddMessageWindow(2, 7, 26, 4);
-          AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, 1, (0xFF), NULL);
           CopyWindowToVram(sPokemonJumpGfx.msgWindowId, COPYWIN_GFX);
           sPokemonJumpGfx.mainState++;
           break;
@@ -2369,7 +2332,7 @@ export function Msg_SomeoneDroppedOut(): any {
       {
       case 0:
           sPokemonJumpGfx.msgWindowId = AddMessageWindow(2, 8, 22, 4);
-          AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, gText_SomeoneDroppedOut2, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, gText_SomeoneDroppedOut2, 0, 1, (0xFF), NULL);
           CopyWindowToVram(sPokemonJumpGfx.msgWindowId, COPYWIN_GFX);
           sPokemonJumpGfx.mainState++;
           break;
@@ -2395,7 +2358,7 @@ export function Msg_CommunicationStandby(): any {
       {
       case 0:
           sPokemonJumpGfx.msgWindowId = AddMessageWindow(7, 10, 16, 2);
-          AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, gText_CommunicationStandby4, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, gText_CommunicationStandby4, 0, 1, (0xFF), NULL);
           CopyWindowToVram(sPokemonJumpGfx.msgWindowId, COPYWIN_GFX);
           sPokemonJumpGfx.mainState++;
           break;
@@ -2473,9 +2436,9 @@ export function PrintPrizeMessage(itemId: any, quantity: any): any {
       DynamicPlaceholderTextUtil_SetPlaceholderPtr(1, sPokemonJumpGfx.itemQuantityStr);
       DynamicPlaceholderTextUtil_ExpandPlaceholders(sPokemonJumpGfx.prizeMsg, gText_AwesomeWonF701F700);
       sPokemonJumpGfx.msgWindowId = AddMessageWindow(4, 8, 22, 4);
-      AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, sPokemonJumpGfx.prizeMsg, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, sPokemonJumpGfx.prizeMsg, 0, 1, (0xFF), NULL);
       CopyWindowToVram(sPokemonJumpGfx.msgWindowId, COPYWIN_GFX);
-      sPokemonJumpGfx.fanfare = MUS_LEVEL_UP;
+      sPokemonJumpGfx.fanfare = (367);
       sPokemonJumpGfx.msgWindowState = 0;
 }
 
@@ -2486,9 +2449,9 @@ export function PrintPrizeFilledBagMessage(itemId: any): any {
       DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, sPokemonJumpGfx.itemName);
       DynamicPlaceholderTextUtil_ExpandPlaceholders(sPokemonJumpGfx.prizeMsg, gText_FilledStorageSpace2);
       sPokemonJumpGfx.msgWindowId = AddMessageWindow(4, 8, 22, 4);
-      AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, sPokemonJumpGfx.prizeMsg, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, sPokemonJumpGfx.prizeMsg, 0, 1, (0xFF), NULL);
       CopyWindowToVram(sPokemonJumpGfx.msgWindowId, COPYWIN_GFX);
-      sPokemonJumpGfx.fanfare = MUS_DUMMY;
+      sPokemonJumpGfx.fanfare = (0);
       sPokemonJumpGfx.msgWindowState = 0;
 }
 
@@ -2499,9 +2462,9 @@ export function PrintNoRoomForPrizeMessage(itemId: any): any {
       DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, sPokemonJumpGfx.itemName);
       DynamicPlaceholderTextUtil_ExpandPlaceholders(sPokemonJumpGfx.prizeMsg, gText_CantHoldMore);
       sPokemonJumpGfx.msgWindowId = AddMessageWindow(4, 9, 22, 2);
-      AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, sPokemonJumpGfx.prizeMsg, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sPokemonJumpGfx.msgWindowId, FONT_NORMAL, sPokemonJumpGfx.prizeMsg, 0, 1, (0xFF), NULL);
       CopyWindowToVram(sPokemonJumpGfx.msgWindowId, COPYWIN_GFX);
-      sPokemonJumpGfx.fanfare = MUS_DUMMY;
+      sPokemonJumpGfx.fanfare = (0);
       sPokemonJumpGfx.msgWindowState = 0;
 }
 
@@ -2521,7 +2484,7 @@ export function DoPrizeMessageAndFanfare(): any {
       case 1:
           if (IsDma3ManagerBusyWithBgCopy())
               break;
-          if (sPokemonJumpGfx.fanfare == MUS_DUMMY)
+          if (sPokemonJumpGfx.fanfare == (0))
           {
               sPokemonJumpGfx.msgWindowState += 2;
               return FALSE;
@@ -2541,7 +2504,7 @@ export function DoPrizeMessageAndFanfare(): any {
 
 /** static void ClearMessageWindow(void) */
 export function ClearMessageWindow(): any {
-  if (sPokemonJumpGfx.msgWindowId != WINDOW_NONE)
+  if (sPokemonJumpGfx.msgWindowId != (0xFF))
       {
           rbox_fill_rectangle(sPokemonJumpGfx.msgWindowId);
           CopyWindowToVram(sPokemonJumpGfx.msgWindowId, COPYWIN_MAP);
@@ -2551,7 +2514,7 @@ export function ClearMessageWindow(): any {
 
 /** static bool32 RemoveMessageWindow(void) */
 export function RemoveMessageWindow(): any {
-  if (sPokemonJumpGfx.msgWindowId == WINDOW_NONE)
+  if (sPokemonJumpGfx.msgWindowId == (0xFF))
           return FALSE;
 
       switch (sPokemonJumpGfx.msgWindowState)
@@ -2560,7 +2523,7 @@ export function RemoveMessageWindow(): any {
           if (!IsDma3ManagerBusyWithBgCopy())
           {
               RemoveWindow(sPokemonJumpGfx.msgWindowId);
-              sPokemonJumpGfx.msgWindowId = WINDOW_NONE;
+              sPokemonJumpGfx.msgWindowId = (0xFF);
               sPokemonJumpGfx.msgWindowState++;
           }
           else
@@ -2612,7 +2575,7 @@ export function CreatePokeJumpYesNoMenu(left: any, top: any, cursorPos: any): an
 
 /** static void PrintScoreSuffixes(void) */
 export function PrintScoreSuffixes(): any {
-  const color: any = [TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY];
+  const color: any = [(0x0), (0x2), (0x3)];
 
       PutWindowTilemap(WIN_POINTS);
       PutWindowTilemap(WIN_TIMES);
@@ -2653,7 +2616,7 @@ export function UpdateVineSwing(vineState: any): any {
 export function DoSameJumpTimeBonus(flags: any): any {
   let i, numPlayers;
 
-      for (i = 0, numPlayers = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0, numPlayers = 0; i < (5); i++)
       {
           if (flags & 1)
           {
@@ -2761,7 +2724,7 @@ export function PrintPokeJumpPlayerName(multiplayerId: any, bgColor: any, fgColo
       FillWindowPixelBuffer(sPokemonJumpGfx.nameWindowIds[multiplayerId], 0);
       x = 64 - GetStringWidth(FONT_NORMAL, GetPokeJumpPlayerName(multiplayerId), -1);
       x /= 2;
-      AddTextPrinterParameterized3(sPokemonJumpGfx.nameWindowIds[multiplayerId], FONT_NORMAL, x, 1, colors, TEXT_SKIP_DRAW, GetPokeJumpPlayerName(multiplayerId));
+      AddTextPrinterParameterized3(sPokemonJumpGfx.nameWindowIds[multiplayerId], FONT_NORMAL, x, 1, colors, (0xFF), GetPokeJumpPlayerName(multiplayerId));
       CopyWindowToVram(sPokemonJumpGfx.nameWindowIds[multiplayerId], COPYWIN_GFX);
 }
 
@@ -2772,7 +2735,7 @@ export function PrintPokeJumpPlayerNames(highlightSelf: any): any {
       if (!highlightSelf)
       {
           for (i = 0; i < playersCount; i++)
-              PrintPokeJumpPlayerName(i, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY);
+              PrintPokeJumpPlayerName(i, (0x0), (0x2), (0x3));
       }
       else
       {
@@ -2781,9 +2744,9 @@ export function PrintPokeJumpPlayerNames(highlightSelf: any): any {
           for (i = 0; i < playersCount; i++)
           {
               if (multiplayerId != i)
-                  PrintPokeJumpPlayerName(i, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY);
+                  PrintPokeJumpPlayerName(i, (0x0), (0x2), (0x3));
               else
-                  PrintPokeJumpPlayerName(i, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED);
+                  PrintPokeJumpPlayerName(i, (0x0), (0x4), (0x5));
           }
       }
 }
@@ -2841,7 +2804,7 @@ export function SendPacket_MonInfo(monInfo: any): any {
 export function RecvPacket_MonInfo(multiplayerId: any, monInfo: any): any {
   let packet: any = null;
 
-      if ((gRecvCmds[multiplayerId][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
+      if ((gRecvCmds[multiplayerId][0] & (0xFF00)) != (0x2F00))
           return FALSE;
 
       memcpy(packet,gRecvCmds[multiplayerId][1], 0);
@@ -2875,7 +2838,7 @@ export function SendPacket_LeaderState(player: any, comm: any): any {
 export function RecvPacket_LeaderState(player: any, comm: any): any {
   let packet: any = null;
 
-      if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
+      if ((gRecvCmds[0][0] & (0xFF00)) != (0x2F00))
           return FALSE;
 
       memcpy(packet,gRecvCmds[0][1], 0);
@@ -2910,7 +2873,7 @@ export function SendPacket_MemberState(player: any, funcId: any, playAgainState:
 export function RecvPacket_MemberStateToLeader(player: any, multiplayerId: any, funcId: any, playAgainState: any): any {
   let packet: any = null;
 
-      if ((gRecvCmds[multiplayerId][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
+      if ((gRecvCmds[multiplayerId][0] & (0xFF00)) != (0x2F00))
           return FALSE;
 
       memcpy(packet,gRecvCmds[multiplayerId][1], 0);
@@ -2930,7 +2893,7 @@ export function RecvPacket_MemberStateToLeader(player: any, multiplayerId: any, 
 export function RecvPacket_MemberStateToMember(player: any, multiplayerId: any): any {
   let packet: any = null;
 
-      if ((gRecvCmds[multiplayerId][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
+      if ((gRecvCmds[multiplayerId][0] & (0xFF00)) != (0x2F00))
           return FALSE;
 
       memcpy(packet,gRecvCmds[multiplayerId][1], 0);
@@ -3045,14 +3008,14 @@ export function PrintRecordsText(windowId: any, width: any): any {
       LoadUserWindowBorderGfx_(windowId, 0x21D, BG_PLTT_ID(13));
       DrawTextBorderOuter(windowId, 0x21D, 13);
       FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_PkmnJumpRecords, GetStringCenterAlignXOffset(FONT_NORMAL, gText_PkmnJumpRecords, width * 8), 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_PkmnJumpRecords, GetStringCenterAlignXOffset(FONT_NORMAL, gText_PkmnJumpRecords, width * 8), 1, (0xFF), NULL);
       for (i = 0; i < ARRAY_COUNT(sRecordsTexts); i++)
       {
-          AddTextPrinterParameterized(windowId, FONT_NORMAL, sRecordsTexts[i], 0, 25 + (i * 16), TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(windowId, FONT_NORMAL, sRecordsTexts[i], 0, 25 + (i * 16), (0xFF), NULL);
           ConvertIntToDecimalStringN(gStringVar1, recordNums[i], STR_CONV_MODE_LEFT_ALIGN, 5);
           TruncateToFirstWordOnly(gStringVar1);
           x = (width * 8) - GetStringWidth(FONT_NORMAL, gStringVar1, 0);
-          AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar1, x, 25 + (i * 16), TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar1, x, 25 + (i * 16), (0xFF), NULL);
       }
       PutWindowTilemap(windowId);
 }
@@ -3061,9 +3024,9 @@ export function PrintRecordsText(windowId: any, width: any): any {
 export function TruncateToFirstWordOnly(str: any): any {
   for (let __i__ = 0; __i__ < 0; __i__++) /* transpiler bug : C str iter */
       {
-          if (str == CHAR_SPACE)
+          if (str == (0x00))
           {
-              str = EOS;
+              str = (0xFF);
               break;
           }
       }

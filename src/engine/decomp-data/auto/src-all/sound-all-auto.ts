@@ -17,9 +17,11 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gDisableMusic: any = null;
+let gMPlay_PokemonCry: any = null;
+let gPokemonCryBGMDuckingCounter: any = null;
 let sCurrentMapMusic: any = null;
 let sFanfareCounter: any = null;
-let sFanfares: any = null;
 let sMapMusicFadeInSpeed: any = null;
 let sMapMusicState: any = null;
 let sNextMapMusic: any = null;
@@ -157,7 +159,7 @@ export function WaitFanfare(stop: any): any {
           if (!stop)
               m4aMPlayContinue(gMPlayInfo_BGM);
           else
-              m4aSongNumStart(MUS_DUMMY);
+              m4aSongNumStart((0));
 
           return TRUE;
       }
@@ -217,7 +219,7 @@ export function CreateFanfareTask(): any {
 export function FadeInNewBGM(songNum: any, speed: any): any {
   if (gDisableMusic)
           songNum = 0;
-      if (songNum == MUS_NONE)
+      if (songNum == (0xFFFF))
           songNum = 0;
       m4aSongNumStart(songNum);
       m4aMPlayImmInit(gMPlayInfo_BGM);
@@ -260,26 +262,26 @@ export function IsBGMStopped(): any {
 /** void PlayCry_Normal(u16 species, s8 pan) */
 export function PlayCry_Normal(species: any, pan: any): any {
   m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 85);
-      PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, CRY_MODE_NORMAL);
+      PlayCryInternal(species, pan, (120), (10), (0));
       gPokemonCryBGMDuckingCounter = 2;
       RestoreBGMVolumeAfterPokemonCry();
 }
 
 /** void PlayCry_NormalNoDucking(u16 species, s8 pan, s8 volume, u8 priority) */
 export function PlayCry_NormalNoDucking(species: any, pan: any, volume: any, priority: any): any {
-  PlayCryInternal(species, pan, volume, priority, CRY_MODE_NORMAL);
+  PlayCryInternal(species, pan, volume, priority, (0));
 }
 
 /** void PlayCry_ByMode(u16 species, s8 pan, u8 mode) */
 export function PlayCry_ByMode(species: any, pan: any, mode: any): any {
-  if (mode == CRY_MODE_DOUBLES)
+  if (mode == (1))
       {
-          PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);
+          PlayCryInternal(species, pan, (120), (10), mode);
       }
       else
       {
           m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 85);
-          PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);
+          PlayCryInternal(species, pan, (120), (10), mode);
           gPokemonCryBGMDuckingCounter = 2;
           RestoreBGMVolumeAfterPokemonCry();
       }
@@ -287,28 +289,28 @@ export function PlayCry_ByMode(species: any, pan: any, mode: any): any {
 
 /** void PlayCry_ReleaseDouble(u16 species, s8 pan, u8 mode) */
 export function PlayCry_ReleaseDouble(species: any, pan: any, mode: any): any {
-  if (mode == CRY_MODE_DOUBLES)
+  if (mode == (1))
       {
-          PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);
+          PlayCryInternal(species, pan, (120), (10), mode);
       }
       else
       {
-          if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI))
+          if (!(gBattleTypeFlags & ((1 << 6))))
               m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 85);
-          PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);
+          PlayCryInternal(species, pan, (120), (10), mode);
       }
 }
 
 /** void PlayCry_DuckNoRestore(u16 species, s8 pan, u8 mode) */
 export function PlayCry_DuckNoRestore(species: any, pan: any, mode: any): any {
-  if (mode == CRY_MODE_DOUBLES)
+  if (mode == (1))
       {
-          PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);
+          PlayCryInternal(species, pan, (120), (10), mode);
       }
       else
       {
           m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 85);
-          PlayCryInternal(species, pan, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);
+          PlayCryInternal(species, pan, (120), (10), mode);
           gPokemonCryBGMDuckingCounter = 2;
       }
 }
@@ -316,7 +318,7 @@ export function PlayCry_DuckNoRestore(species: any, pan: any, mode: any): any {
 /** void PlayCry_Script(u16 species, u8 mode) */
 export function PlayCry_Script(species: any, mode: any): any {
   m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 85);
-      PlayCryInternal(species, 0, CRY_VOLUME, CRY_PRIORITY_NORMAL, mode);
+      PlayCryInternal(species, 0, (120), (10), mode);
       gPokemonCryBGMDuckingCounter = 2;
       RestoreBGMVolumeAfterPokemonCry();
 }
@@ -343,26 +345,26 @@ export function PlayCryInternal(species: any, pan: any, volume: any, priority: a
 
       switch (mode)
       {
-      case CRY_MODE_NORMAL:
+      case (0):
           break;
-      case CRY_MODE_DOUBLES:
+      case (1):
           length = 20;
           release = 225;
           break;
-      case CRY_MODE_ENCOUNTER:
+      case (2):
           release = 225;
           pitch = 15600;
           chorus = 20;
           volume = 90;
           break;
-      case CRY_MODE_HIGH_PITCH:
+      case (3):
           length = 50;
           release = 200;
           pitch = 15800;
           chorus = 20;
           volume = 90;
           break;
-      case CRY_MODE_ECHO_START:
+      case (4):
           length = 25;
           reverse = TRUE;
           release = 100;
@@ -370,42 +372,42 @@ export function PlayCryInternal(species: any, pan: any, volume: any, priority: a
           chorus = 192;
           volume = 90;
           break;
-      case CRY_MODE_FAINT:
+      case (5):
           release = 200;
           pitch = 14440;
           break;
-      case CRY_MODE_ECHO_END:
+      case (6):
           release = 220;
           pitch = 15555;
           chorus = 192;
           volume = 70;
           break;
-      case CRY_MODE_ROAR_1:
+      case (7):
           length = 10;
           release = 100;
           pitch = 14848;
           break;
-      case CRY_MODE_ROAR_2:
+      case (8):
           length = 60;
           release = 225;
           pitch = 15616;
           break;
-      case CRY_MODE_GROWL_1:
+      case (9):
           length = 15;
           reverse = TRUE;
           release = 125;
           pitch = 15200;
           break;
-      case CRY_MODE_GROWL_2:
+      case (10):
           length = 100;
           release = 225;
           pitch = 15200;
           break;
-      case CRY_MODE_WEAK_DOUBLES:
+      case (12):
           length = 20;
           release = 225;
            
-      case CRY_MODE_WEAK:
+      case (11):
           pitch = 15000;
           break;
       }
@@ -516,7 +518,7 @@ export function RestoreBGMVolumeAfterPokemonCry(): any {
 export function PlayBGM(songNum: any): any {
   if (gDisableMusic)
           songNum = 0;
-      if (songNum == MUS_NONE)
+      if (songNum == (0xFFFF))
           songNum = 0;
       m4aSongNumStart(songNum);
 }

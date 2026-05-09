@@ -17,10 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gSpriteCoordOffsetX: any = null;
+let gSpriteCoordOffsetY: any = null;
 let sBikeCameraPanFlag: any = null;
-let sCamera_MoveX: any = null;
-let sCamera_MoveY: any = null;
-let sFieldCameraOffset: any = null;
 let sFieldCameraPanningCallback: any = null;
 let sHorizontalCameraPan: any = null;
 let sVerticalCameraPan: any = null;
@@ -209,18 +208,18 @@ export function DrawMetatileAt(mapLayout: any, offset: any, x: any, y: any): any
   let metatileId: any = MapGridGetMetatileIdAt(x, y);
       let metatiles: any = null;
 
-      if (metatileId > NUM_METATILES_TOTAL)
+      if (metatileId > (1024))
           metatileId = 0;
-      if (metatileId < NUM_METATILES_IN_PRIMARY)
+      if (metatileId < (512))
       {
           metatiles = mapLayout.primaryTileset.metatiles;
       }
       else
       {
           metatiles = mapLayout.secondaryTileset.metatiles;
-          metatileId -= NUM_METATILES_IN_PRIMARY;
+          metatileId -= (512);
       }
-      DrawMetatile(MapGridGetMetatileLayerTypeAt(x, y), metatiles + metatileId * NUM_TILES_PER_METATILE, offset);
+      DrawMetatile(MapGridGetMetatileLayerTypeAt(x, y), metatiles + metatileId * (8), offset);
 }
 
 /** static void DrawMetatile(s32 metatileLayerType, const u16 *tiles, u16 offset) */

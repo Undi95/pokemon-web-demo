@@ -17,12 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBackgroundTemplates: any = null;
-let sBerryFirmnessStrings: any = null;
 let sBerryTag: any = null;
-let sFontPalette: any = null;
-let sTextColors: any = null;
-let sWindowTemplates: any = null;
+let tBerryY: any = null;
+let tBgOp: any = null;
 /** void DoBerryTagScreen(void) */
 export function DoBerryTagScreen(): any {
   sBerryTag = AllocZeroed(0);
@@ -126,11 +123,11 @@ export function InitBerryTagScreen(): any {
           gMain.state++;
           break;
       case 14:
-          BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 0x10, (RGB(0, 0, 0)));
           gMain.state++;
           break;
       case 15:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
           gPaletteFade.bufferTransferDisabled = 0;
           gMain.state++;
           break;
@@ -184,7 +181,7 @@ export function LoadBerryTagGfx(): any {
           break;
       case 3:
            
-          if (gSaveBlock2Ptr.playerGender == MALE)
+          if (gSaveBlock2Ptr.playerGender == (0))
           {
               for (i = 0; i < ARRAY_COUNT(sBerryTag.tilemapBuffers[1]); i++)
                   sBerryTag.tilemapBuffers[1][i] = (4 << 12) | (0x42);
@@ -262,7 +259,7 @@ export function PrintBerryNumberAndName(): any {
 /** static void PrintBerrySize(void) */
 export function PrintBerrySize(): any {
   let berry: any = GetBerryInfo(sBerryTag.berryId);
-      AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_SizeSlash, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_SizeSlash, 0, 1, (0xFF), NULL);
       if (berry.size != 0)
       {
           ConvertIntToDecimalStringN(gStringVar1, berry.size / 10, STR_CONV_MODE_LEFT_ALIGN, 2);
@@ -279,7 +276,7 @@ export function PrintBerrySize(): any {
 /** static void PrintBerryFirmness(void) */
 export function PrintBerryFirmness(): any {
   let berry: any = GetBerryInfo(sBerryTag.berryId);
-      AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_FirmSlash, 0, 0x11, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, gText_FirmSlash, 0, 0x11, (0xFF), NULL);
       if (berry.firmness != 0)
           AddTextPrinterParameterized(WIN_SIZE_FIRM, FONT_NORMAL, sBerryFirmnessStrings[berry.firmness - 1], 0x28, 0x11, 0, NULL);
       else
@@ -311,11 +308,11 @@ export function DestroyBerrySprite(): any {
 
 /** static void CreateFlavorCircleSprites(void) */
 export function CreateFlavorCircleSprites(): any {
-  sBerryTag.flavorCircleIds[FLAVOR_SPICY] = CreateBerryFlavorCircleSprite(64);
-      sBerryTag.flavorCircleIds[FLAVOR_DRY] = CreateBerryFlavorCircleSprite(104);
-      sBerryTag.flavorCircleIds[FLAVOR_SWEET] = CreateBerryFlavorCircleSprite(144);
-      sBerryTag.flavorCircleIds[FLAVOR_BITTER] = CreateBerryFlavorCircleSprite(184);
-      sBerryTag.flavorCircleIds[FLAVOR_SOUR] = CreateBerryFlavorCircleSprite(224);
+  sBerryTag.flavorCircleIds[(0)] = CreateBerryFlavorCircleSprite(64);
+      sBerryTag.flavorCircleIds[(1)] = CreateBerryFlavorCircleSprite(104);
+      sBerryTag.flavorCircleIds[(2)] = CreateBerryFlavorCircleSprite(144);
+      sBerryTag.flavorCircleIds[(3)] = CreateBerryFlavorCircleSprite(184);
+      sBerryTag.flavorCircleIds[(4)] = CreateBerryFlavorCircleSprite(224);
 }
 
 /** static void SetFlavorCirclesVisiblity(void) */
@@ -323,43 +320,43 @@ export function SetFlavorCirclesVisiblity(): any {
   let berry: any = GetBerryInfo(sBerryTag.berryId);
 
       if (berry.spicy)
-          gSprites[sBerryTag.flavorCircleIds[FLAVOR_SPICY]].invisible = FALSE;
+          gSprites[sBerryTag.flavorCircleIds[(0)]].invisible = FALSE;
       else
-          gSprites[sBerryTag.flavorCircleIds[FLAVOR_SPICY]].invisible = TRUE;
+          gSprites[sBerryTag.flavorCircleIds[(0)]].invisible = TRUE;
 
       if (berry.dry)
-          gSprites[sBerryTag.flavorCircleIds[FLAVOR_DRY]].invisible = FALSE;
+          gSprites[sBerryTag.flavorCircleIds[(1)]].invisible = FALSE;
       else
-          gSprites[sBerryTag.flavorCircleIds[FLAVOR_DRY]].invisible = TRUE;
+          gSprites[sBerryTag.flavorCircleIds[(1)]].invisible = TRUE;
 
       if (berry.sweet)
-          gSprites[sBerryTag.flavorCircleIds[FLAVOR_SWEET]].invisible = FALSE;
+          gSprites[sBerryTag.flavorCircleIds[(2)]].invisible = FALSE;
       else
-          gSprites[sBerryTag.flavorCircleIds[FLAVOR_SWEET]].invisible = TRUE;
+          gSprites[sBerryTag.flavorCircleIds[(2)]].invisible = TRUE;
 
       if (berry.bitter)
-          gSprites[sBerryTag.flavorCircleIds[FLAVOR_BITTER]].invisible = FALSE;
+          gSprites[sBerryTag.flavorCircleIds[(3)]].invisible = FALSE;
       else
-          gSprites[sBerryTag.flavorCircleIds[FLAVOR_BITTER]].invisible = TRUE;
+          gSprites[sBerryTag.flavorCircleIds[(3)]].invisible = TRUE;
 
       if (berry.sour)
-          gSprites[sBerryTag.flavorCircleIds[FLAVOR_SOUR]].invisible = FALSE;
+          gSprites[sBerryTag.flavorCircleIds[(4)]].invisible = FALSE;
       else
-          gSprites[sBerryTag.flavorCircleIds[FLAVOR_SOUR]].invisible = TRUE;
+          gSprites[sBerryTag.flavorCircleIds[(4)]].invisible = TRUE;
 }
 
 /** static void DestroyFlavorCircleSprites(void) */
 export function DestroyFlavorCircleSprites(): any {
   let i: any = null;
 
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
           DestroySprite(gSprites[sBerryTag.flavorCircleIds[i]]);
 }
 
 /** static void PrepareToCloseBerryTagScreen(u8 taskId) */
 export function PrepareToCloseBerryTagScreen(taskId: any): any {
-  PlaySE(SE_SELECT);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+  PlaySE((5));
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_CloseBerryTagScreen;
 }
 
@@ -393,9 +390,9 @@ export function Task_HandleInput(taskId: any): any {
 /** static void TryChangeDisplayedBerry(u8 taskId, s8 toMove) */
 export function TryChangeDisplayedBerry(taskId: any, toMove: any): any {
   let data: any = gTasks[taskId].data;
-      let currPocketPosition: any = gBagPosition.scrollPosition[BERRIES_POCKET] + gBagPosition.cursorPosition[BERRIES_POCKET];
+      let currPocketPosition: any = gBagPosition.scrollPosition[(3)] + gBagPosition.cursorPosition[(3)];
       let newPocketPosition: any = currPocketPosition + toMove;
-      if (newPocketPosition < ITEM_TO_BERRY(MAX_BERRY_INDEX) && BagGetItemIdByPocketPosition(POCKET_BERRIES, newPocketPosition) != ITEM_NONE)
+      if (newPocketPosition < ITEM_TO_BERRY(((178))) && BagGetItemIdByPocketPosition((4), newPocketPosition) != (0))
       {
           if (toMove < 0)
               tBgOp = BG_COORD_SUB;
@@ -403,7 +400,7 @@ export function TryChangeDisplayedBerry(taskId: any, toMove: any): any {
               tBgOp = BG_COORD_ADD;
 
           tBerryY = 0;
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           HandleBagCursorPositionChange(toMove);
           gTasks[taskId].func = Task_DisplayAnotherBerry;
       }
@@ -411,11 +408,11 @@ export function TryChangeDisplayedBerry(taskId: any, toMove: any): any {
 
 /** static void HandleBagCursorPositionChange(s8 toMove) */
 export function HandleBagCursorPositionChange(toMove: any): any {
-  let scrollPos: any =gBagPosition.scrollPosition[BERRIES_POCKET];
-      let cursorPos: any =gBagPosition.cursorPosition[BERRIES_POCKET];
+  let scrollPos: any =gBagPosition.scrollPosition[(3)];
+      let cursorPos: any =gBagPosition.cursorPosition[(3)];
       if (toMove > 0)
       {
-          if (cursorPos < 4 || BagGetItemIdByPocketPosition(POCKET_BERRIES, scrollPos + 8) == 0)
+          if (cursorPos < 4 || BagGetItemIdByPocketPosition((4), scrollPos + 8) == 0)
               cursorPos += toMove;
           else
               scrollPos += toMove;
@@ -428,7 +425,7 @@ export function HandleBagCursorPositionChange(toMove: any): any {
               scrollPos += toMove;
       }
 
-      sBerryTag.berryId = ItemIdToBerryType(BagGetItemIdByPocketPosition(POCKET_BERRIES, scrollPos + cursorPos));
+      sBerryTag.berryId = ItemIdToBerryType(BagGetItemIdByPocketPosition((4), scrollPos + cursorPos));
 }
 
 /** static void Task_DisplayAnotherBerry(u8 taskId) */
@@ -520,7 +517,7 @@ export function Task_DisplayAnotherBerry(taskId: any): any {
           y = tBerryY;
 
       gSprites[sBerryTag.berrySpriteId].y2 = y;
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
           gSprites[sBerryTag.flavorCircleIds[i]].y2 = y;
 
       ChangeBgY(1, 0x1000, tBgOp);

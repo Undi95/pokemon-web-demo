@@ -17,12 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sActiveSprites: any = null;
-let sMainSpriteId: any = null;
-let sPersist: any = null;
-let sSmokescreenImpactSpritePalette: any = null;
-let sSmokescreenImpactSpriteSheet: any = null;
-let sSmokescreenImpactSpriteTemplate: any = null;
+let spriteId2: any = null;
+let spriteId3: any = null;
+let spriteId4: any = null;
 /** u8 SmokescreenImpact(s16 x, s16 y, bool8 persist) */
 export function SmokescreenImpact(x: any, y: any, persist: any): any {
   let mainSpriteId: any = null;

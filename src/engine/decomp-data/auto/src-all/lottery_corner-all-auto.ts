@@ -17,7 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sLotteryPrizes: any = null;
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_0x8005: any = null;
+let gSpecialVar_0x8006: any = null;
 let sOtIdDigit: any = null;
 let sWinNumberDigit: any = null;
 /** void ResetLotteryCorner(void) */
@@ -25,7 +27,7 @@ export function ResetLotteryCorner(): any {
   let rand: any = Random();
 
       SetLotteryNumber((Random() << 16) | rand);
-      VarSet(VAR_POKELOT_PRIZE_ITEM, 0);
+      VarSet((0x4045), 0);
 }
 
 /** void SetRandomLotteryNumber(u16 i) */
@@ -54,11 +56,11 @@ export function PickLotteryCornerTicket(): any {
       gSpecialVar_0x8004 = 0;
       slot = 0;
       box = 0;
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           let mon: any =gPlayerParty[i];
 
-          if (GetMonData(mon, MON_DATA_SPECIES) != SPECIES_NONE)
+          if (GetMonData(mon, MON_DATA_SPECIES) != (0))
           {
                
               if (!GetMonData(mon, MON_DATA_IS_EGG))
@@ -69,7 +71,7 @@ export function PickLotteryCornerTicket(): any {
                   if (numMatchingDigits > gSpecialVar_0x8004 && numMatchingDigits > 1)
                   {
                       gSpecialVar_0x8004 = numMatchingDigits - 1;
-                      box = TOTAL_BOXES_COUNT;
+                      box = (14);
                       slot = i;
                   }
               }
@@ -80,11 +82,11 @@ export function PickLotteryCornerTicket(): any {
           }
       }
 
-      for (i = 0; i < TOTAL_BOXES_COUNT; i++)
+      for (i = 0; i < (14); i++)
       {
-          for (j = 0; j < IN_BOX_COUNT; j++)
+          for (j = 0; j < (((5) * (6))); j++)
           {
-              if (GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_SPECIES) != SPECIES_NONE &&
+              if (GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_SPECIES) != (0) &&
               !GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_IS_EGG))
               {
                   let otId: any = GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_OT_ID);
@@ -104,7 +106,7 @@ export function PickLotteryCornerTicket(): any {
       {
           gSpecialVar_0x8005 = sLotteryPrizes[gSpecialVar_0x8004 - 1];
 
-          if (box == TOTAL_BOXES_COUNT)
+          if (box == (14))
           {
               gSpecialVar_0x8006 = 0;
               GetMonData(gPlayerParty[slot], MON_DATA_NICKNAME, gStringVar1);
@@ -147,14 +149,14 @@ export function SetLotteryNumber(lotteryNum: any): any {
   let lowNum: any = lotteryNum >> 16;
       let highNum: any = lotteryNum;
 
-      VarSet(VAR_POKELOT_RND1, highNum);
-      VarSet(VAR_POKELOT_RND2, lowNum);
+      VarSet((0x404B), highNum);
+      VarSet((0x404C), lowNum);
 }
 
 /** u32 GetLotteryNumber(void) */
 export function GetLotteryNumber(): any {
-  let highNum: any = VarGet(VAR_POKELOT_RND1);
-      let lowNum: any = VarGet(VAR_POKELOT_RND2);
+  let highNum: any = VarGet((0x404B));
+      let lowNum: any = VarGet((0x404C));
 
       return (lowNum << 16) | highNum;
 }

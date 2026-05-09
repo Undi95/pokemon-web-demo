@@ -17,32 +17,19 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates: any = null;
-let sConditionNames: any = null;
-let sConditionToFlavor: any = null;
-let sConditionToMonData: any = null;
+let direction: any = null;
+let endedOnMon: any = null;
+let flavor: any = null;
+let gKeyRepeatStartDelay: any = null;
+let gPokeblockMonId: any = null;
+let prevSelection: any = null;
 let sExitCallback: any = null;
-let sGraphData_Tilemap: any = null;
 let sGraph_Gfx: any = null;
 let sGraph_Tilemap: any = null;
 let sInfo: any = null;
 let sMenu: any = null;
-let sMonFrame_Gfx: any = null;
-let sMonFrame_Pal: any = null;
-let sMonFrame_Tilemap: any = null;
 let sMonFrame_TilemapPtr: any = null;
-let sNatureTextColors: any = null;
 let sPokeblock: any = null;
-let sSpeed: any = null;
-let sSpritePalette_Condition: any = null;
-let sSpritePalette_UpDown: any = null;
-let sSpriteSheet_UpDown: any = null;
-let sSpriteTemplate_Condition: any = null;
-let sSpriteTemplate_UpDown: any = null;
-let sTargetX: any = null;
-let sUpDownCoordsOnGraph: any = null;
-let sUsePokeblockYesNoWinTemplate: any = null;
-let sWindowTemplates: any = null;
 /** void ChooseMonToGivePokeblock(struct Pokeblock *pokeblock, void (*callback)(void)) */
 export function ChooseMonToGivePokeblock(pokeblock: any, callback: any): any {
   sMenu = AllocZeroed(0);
@@ -60,7 +47,7 @@ export function CB2_ReturnAndChooseMonToGivePokeblock(): any {
       sInfo.pokeblock = sPokeblock;
       sInfo.exitCallback = sExitCallback;
       gPokeblockMonId = GetSelectionIdFromPartyId(gPokeblockMonId);
-      sInfo.monInTopHalf = (gPokeblockMonId <= PARTY_SIZE / 2) ? FALSE : TRUE;
+      sInfo.monInTopHalf = (gPokeblockMonId <= (6) / 2) ? FALSE : TRUE;
       SetUsePokeblockCallback(LoadUsePokeblockMenu);
       SetMainCallback2(CB2_ReturnToUsePokeblockMenu);
 }
@@ -115,7 +102,7 @@ export function LoadUsePokeblockMenu(): any {
   switch (sInfo.mainState)
       {
       case 0:
-          sMenu.curMonSpriteId = SPRITE_NONE;
+          sMenu.curMonSpriteId = (0xFF);
           ConditionGraph_Init(sMenu.graph);
           sInfo.mainState++;
           break;
@@ -198,7 +185,7 @@ export function ShowUsePokeblockMenu(): any {
   switch (sInfo.mainState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           SetVBlankCallback(VBlankCB_UsePokeblockMenu);
           ShowBg(0);
           ShowBg(1);
@@ -231,26 +218,26 @@ export function UsePokeblockMenu(): any {
       case STATE_HANDLE_INPUT:
           if (JOY_HELD(DPAD_UP))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               UpdateSelection(TRUE);
               DestroyConditionSparkleSprites(sMenu.sparkles);
               sInfo.mainState = STATE_UPDATE_SELECTION;
           }
           else if (JOY_HELD(DPAD_DOWN))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               UpdateSelection(FALSE);
               DestroyConditionSparkleSprites(sMenu.sparkles);
               sInfo.mainState = STATE_UPDATE_SELECTION;
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sInfo.mainState = STATE_CLOSE;
           }
           else if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
 
                
               if (sMenu.info.curSelection == sMenu.info.numSelections - 1)
@@ -279,7 +266,7 @@ export function UsePokeblockMenu(): any {
           switch (HandleAskUsePokeblockInput())
           {
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               sInfo.mainState = STATE_HANDLE_INPUT;
               break;
           case 0:  
@@ -313,7 +300,7 @@ export function FeedPokeblockToMon(): any {
           gPokeblockMonId = GetPartyIdFromSelectionId(sMenu.info.curSelection);
           sExitCallback = sInfo.exitCallback;
           sPokeblock = sInfo.pokeblock;
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           sInfo.mainState++;
           break;
       case 1:
@@ -357,7 +344,7 @@ export function ShowUsePokeblockMenuForResults(): any {
       case 2:
           break;
       case 3:
-          BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
           sInfo.mainState++;
           break;
       case 4:
@@ -369,7 +356,7 @@ export function ShowUsePokeblockMenuForResults(): any {
           break;
       case 5:
           SetVBlankCallback(VBlankCB_UsePokeblockMenu);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           sInfo.mainState++;
           break;
       case 6:
@@ -399,8 +386,8 @@ export function ShowPokeblockResults(): any {
           break;
       case 2:
           CalculateConditionEnhancements();
-          ConditionGraph_CalcPositions(sInfo.conditionsAfterBlock, sMenu.graph.savedPositions[CONDITION_GRAPH_LOAD_MAX - 1]);
-          ConditionGraph_SetNewPositions(sMenu.graph, sMenu.graph.savedPositions[sMenu.curLoadId], sMenu.graph.savedPositions[CONDITION_GRAPH_LOAD_MAX - 1]);
+          ConditionGraph_CalcPositions(sInfo.conditionsAfterBlock, sMenu.graph.savedPositions[(4) - 1]);
+          ConditionGraph_SetNewPositions(sMenu.graph, sMenu.graph.savedPositions[sMenu.curLoadId], sMenu.graph.savedPositions[(4) - 1]);
           LoadAndCreateUpDownSprites();
           sInfo.mainState++;
           break;
@@ -442,7 +429,7 @@ export function CloseUsePokeblockMenu(): any {
       switch (sInfo.mainState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           sInfo.mainState++;
           break;
       case 1:
@@ -468,7 +455,7 @@ export function CloseUsePokeblockMenu(): any {
           for (i = 0; i < ARRAY_COUNT(sMenu.condition); i++)
               DestroySprite(sMenu.condition[i]);
 
-          if (sMenu.curMonSpriteId != SPRITE_NONE)
+          if (sMenu.curMonSpriteId != (0xFF))
               DestroySprite(gSprites[sMenu.curMonSpriteId]);
 
           SetVBlankCallback(NULL);
@@ -505,9 +492,9 @@ export function HandleAskUsePokeblockInput(): any {
       {
       case 0:  
           break;
-      case MENU_B_PRESSED:
+      case (-1):
       case 1:  
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           rbox_fill_rectangle(2);
           ClearWindowTilemap(2);
           break;
@@ -617,7 +604,7 @@ export function AddPokeblockToConditions(pokeblock: any, mon: any): any {
       let stat: any = null;
       let data: any = null;
 
-      if (GetMonData(mon, MON_DATA_SHEEN) != MAX_SHEEN)
+      if (GetMonData(mon, MON_DATA_SHEEN) != (255))
       {
           CalculatePokeblockEffectiveness(pokeblock, mon);
           for (i = 0; i < CONDITION_COUNT; i++)
@@ -626,15 +613,15 @@ export function AddPokeblockToConditions(pokeblock: any, mon: any): any {
               stat = data +  sInfo.pokeblockStatBoosts[i];
               if (stat < 0)
                   stat = 0;
-              if (stat > MAX_CONDITION)
-                  stat = MAX_CONDITION;
+              if (stat > (255))
+                  stat = (255);
               data = stat;
               SetMonData(mon, sConditionToMonData[i],data);
           }
 
           stat = (GetMonData(mon, MON_DATA_SHEEN)) + pokeblock.feel;
-          if (stat > MAX_SHEEN)
-              stat = MAX_SHEEN;
+          if (stat > (255))
+              stat = (255);
 
           data = stat;
           SetMonData(mon, MON_DATA_SHEEN,data);
@@ -690,7 +677,7 @@ export function IsSheenMaxed(): any {
   if (GetBoxOrPartyMonData(sMenu.party[sMenu.info.curSelection].boxId,
                                sMenu.party[sMenu.info.curSelection].monId,
                                MON_DATA_SHEEN,
-                               NULL) == MAX_SHEEN)
+                               NULL) == (255))
           return TRUE;
       else
           return FALSE;
@@ -700,7 +687,7 @@ export function IsSheenMaxed(): any {
 export function GetPartyIdFromSelectionId(selectionId: any): any {
   let i: any = null;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (!GetMonData(gPlayerParty[i], MON_DATA_IS_EGG))
           {
@@ -738,7 +725,7 @@ export function LoadAndCreateUpDownSprites(): any {
           if (sInfo.enhancements[i] != 0)
           {
               spriteId = CreateSprite(sSpriteTemplate_UpDown, sUpDownCoordsOnGraph[i][0], sUpDownCoordsOnGraph[i][1], 0);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   if (sInfo.enhancements[i] != 0)  
                       gSprites[spriteId].callback = SpriteCB_UpDown;
@@ -771,7 +758,7 @@ export function LoadPartyInfo(): any {
       {
           if (!GetMonData(gPlayerParty[i], MON_DATA_IS_EGG))
           {
-              sMenu.party[numMons].boxId = TOTAL_BOXES_COUNT;
+              sMenu.party[numMons].boxId = (14);
               sMenu.party[numMons].monId = i;
               sMenu.party[numMons].data = 0;
               numMons++;
@@ -823,7 +810,7 @@ export function UpdateMonPic(loadId: any): any {
       let spriteSheet: any = null;
       let spritePal: any = null;
 
-      if (sMenu.curMonSpriteId == SPRITE_NONE)
+      if (sMenu.curMonSpriteId == (0xFF))
       {
           LoadConditionMonPicTemplate(spriteSheet,spriteTemplate,spritePal);
           spriteSheet.data = sMenu.partySheets[loadId];
@@ -832,11 +819,11 @@ export function UpdateMonPic(loadId: any): any {
           sMenu.curMonSheet = LoadSpriteSheet(spriteSheet);
           spriteId = CreateSprite(spriteTemplate, 38, 104, 0);
           sMenu.curMonSpriteId = spriteId;
-          if (spriteId == MAX_SPRITES)
+          if (spriteId == (64))
           {
               FreeSpriteTilesByTag(TAG_CONDITION_MON);
               FreeSpritePaletteByTag(TAG_CONDITION_MON);
-              sMenu.curMonSpriteId = SPRITE_NONE;
+              sMenu.curMonSpriteId = (0xFF);
           }
           else
           {
@@ -849,7 +836,7 @@ export function UpdateMonPic(loadId: any): any {
       }
       else
       {
-          Dma3CopyLarge16_(sMenu.partySheets[loadId], sMenu.curMonTileStart, MON_PIC_SIZE);
+          Dma3CopyLarge16_(sMenu.partySheets[loadId], sMenu.curMonTileStart, (((64) * (64) / 2)));
           LoadPalette(sMenu.partyPalettes[loadId], sMenu.curMonPalette, PLTT_SIZE_4BPP);
       }
 }
@@ -871,7 +858,7 @@ export function LoadAndCreateSelectionIcons(): any {
       for (i = 0; i < sMenu.info.numSelections - 1; i++)
       {
           spriteId = CreateSprite(spriteTemplate, 226, (i * 20) + 8, 0);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               sMenu.selectionIconSpriteIds[i] = spriteId;
               gSprites[spriteId].data[0] = i;
@@ -885,10 +872,10 @@ export function LoadAndCreateSelectionIcons(): any {
 
        
       spriteTemplate.tileTag = TAG_CONDITION_BALL_PLACEHOLDER;
-      for (; i < PARTY_SIZE; i++)
+      for (; i < (6); i++)
       {
           spriteId = CreateSprite(spriteTemplate, 230, (i * 20) + 8, 0);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               sMenu.selectionIconSpriteIds[i] = spriteId;
               gSprites[spriteId].oam.size = 0;
@@ -903,7 +890,7 @@ export function LoadAndCreateSelectionIcons(): any {
       spriteTemplate.tileTag = TAG_CONDITION_CANCEL;
       spriteTemplate.callback = SpriteCB_SelectionIconCancel;
       spriteId = CreateSprite(spriteTemplate, 222, (i * 20) + 8, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           sMenu.selectionIconSpriteIds[i] = spriteId;
           gSprites[spriteId].oam.shape = SPRITE_SHAPE(_32x16);
@@ -1232,7 +1219,7 @@ export function CreateConditionSprite(): any {
       for (i = 0, xDiff = 64, xStart = -96; i < 2; i++)
       {
           let spriteId: any = CreateSprite(template, i * xDiff + xStart, yStart, 0);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               gSprites[spriteId].sSpeed = speed;
               gSprites[spriteId].sTargetX = (i * xDiff) | 0x20;

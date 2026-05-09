@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let trainerObjectId2: any = null;
 /** bool8 IsPlayerStandingStill(void) */
 export function IsPlayerStandingStill(): any {
   if (gPlayerAvatar.tileTransitionState == T_TILE_TRANSITION)
@@ -96,7 +99,7 @@ export function FreezeObjects_WaitForPlayerAndSelected(): any {
 
 /** void ScriptUnfreezeObjectEvents(void) */
 export function ScriptUnfreezeObjectEvents(): any {
-  let playerObjectId: any = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+  let playerObjectId: any = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
       ObjectEventClearHeldMovementIfFinished(gObjectEvents[playerObjectId]);
       ScriptMovement_UnfreezeObjectEvents();
       UnfreezeObjectEvents();
@@ -108,7 +111,7 @@ export function UnionRoom_UnlockPlayerAndChatPartner(): any {
 
       if (gObjectEvents[gSelectedObjectEvent].active)
           ObjectEventClearHeldMovementIfFinished(gObjectEvents[gSelectedObjectEvent]);
-      playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+      playerObjectId = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
       ObjectEventClearHeldMovementIfFinished(gObjectEvents[playerObjectId]);
       ScriptMovement_UnfreezeObjectEvents();
       UnfreezeObjectEvents();

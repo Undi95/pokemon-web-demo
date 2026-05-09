@@ -32,10 +32,10 @@ export function SetUpFieldMove_SoftBoiled(): any {
 
 /** void ChooseMonForSoftboiled(u8 taskId) */
 export function ChooseMonForSoftboiled(taskId: any): any {
-  gPartyMenu.action = PARTY_ACTION_SOFTBOILED;
+  gPartyMenu.action = (10);
       gPartyMenu.slotId2 =  gPartyMenu.slotId;
       AnimatePartySlot(GetCursorSelectionMonId(), 1);
-      DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON);
+      DisplayPartyMenuStdMessage((5));
       gTasks[taskId].func = Task_HandleChooseMonInput;
 }
 
@@ -45,10 +45,10 @@ export function Task_TryUseSoftboiledOnPartyMon(taskId: any): any {
 
       let userPartyId: any = gPartyMenu.slotId;
       let recipientPartyId: any = gPartyMenu.slotId2;
-      if(recipientPartyId > PARTY_SIZE)
+      if(recipientPartyId > (6))
       {
           gPartyMenu.action = 0;
-          DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON);
+          DisplayPartyMenuStdMessage((0));
           gTasks[taskId].func = Task_HandleChooseMonInput;
           return;
       }
@@ -61,13 +61,13 @@ export function Task_TryUseSoftboiledOnPartyMon(taskId: any): any {
       }
 
        
-      PlaySE(SE_USE_ITEM);
+      PlaySE((1));
       PartyMenuModifyHP(taskId, userPartyId, -1, GetMonData(gPlayerParty[userPartyId], MON_DATA_MAX_HP)/5, Task_SoftboiledRestoreHealth);
 }
 
 /** static void Task_SoftboiledRestoreHealth(u8 taskId) */
 export function Task_SoftboiledRestoreHealth(taskId: any): any {
-  PlaySE(SE_USE_ITEM);
+  PlaySE((1));
       PartyMenuModifyHP(taskId, gPartyMenu.slotId2, 1, GetMonData(gPlayerParty[gPartyMenu.slotId], MON_DATA_MAX_HP)/5, Task_DisplayHPRestoredMessage);
 }
 
@@ -90,7 +90,7 @@ export function Task_FinishSoftboiled(taskId: any): any {
       AnimatePartySlot(gPartyMenu.slotId2, 1);
       ClearStdWindowAndFrameToTransparent(6, FALSE);
       ClearWindowTilemap(6);
-      DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON);
+      DisplayPartyMenuStdMessage((0));
       gTasks[taskId].func = Task_HandleChooseMonInput;
 }
 
@@ -98,13 +98,13 @@ export function Task_FinishSoftboiled(taskId: any): any {
 export function Task_ChooseNewMonForSoftboiled(taskId: any): any {
   if(IsPartyMenuTextPrinterActive() == TRUE)
           return;
-      DisplayPartyMenuStdMessage(PARTY_MSG_USE_ON_WHICH_MON);
+      DisplayPartyMenuStdMessage((5));
       gTasks[taskId].func = Task_HandleChooseMonInput;
 }
 
 /** static void CantUseSoftboiledOnMon(u8 taskId) */
 export function CantUseSoftboiledOnMon(taskId: any): any {
-  PlaySE(SE_SELECT);
+  PlaySE((5));
       DisplayPartyMenuMessage(gText_CantBeUsedOnPkmn, FALSE);
       ScheduleBgCopyTilemapToVram(2);
       gTasks[taskId].func = Task_ChooseNewMonForSoftboiled;

@@ -17,24 +17,34 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates: any = null;
-let sContestLinkTextColors: any = null;
+let frameNum: any = null;
+let gBattle_BG0_X: any = null;
+let gBattle_BG0_Y: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gBattle_BG2_X: any = null;
+let gBattle_BG2_Y: any = null;
+let gBattle_BG3_X: any = null;
+let gBattle_BG3_Y: any = null;
+let gBattle_WIN0H: any = null;
+let gBattle_WIN0V: any = null;
+let gBattle_WIN1H: any = null;
+let gBattle_WIN1V: any = null;
+let gContestLinkLeaderIndex: any = null;
+let gContestRngValue: any = null;
+let gCurContestWinnerIsForArtist: any = null;
+let gCurContestWinnerSaveIdx: any = null;
+let gLinkContestFlags: any = null;
+let gReservedSpritePaletteCount: any = null;
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_0x8005: any = null;
+let gSpecialVar_0x8006: any = null;
+let nationalDexNum: any = null;
+let relativePoints: any = null;
 let sContestResults: any = null;
-let sDistance: any = null;
-let sResultsTextWindow_Gfx: any = null;
-let sResultsTextWindow_Pal: any = null;
-let sSlideIncrement: any = null;
-let sSlideOutTimer: any = null;
-let sSpritePalette_Confetti: any = null;
-let sSpritePalette_ResultsTextWindow: any = null;
-let sSpriteSheet_Confetti: any = null;
-let sSpriteSheet_WirelessIndicatorWindow: any = null;
-let sSpriteSheets_ResultsTextWindow: any = null;
-let sSpriteTemplate_Confetti: any = null;
-let sSpriteTemplate_ResultsTextWindow: any = null;
-let sSpriteTemplate_WirelessIndicatorWindow: any = null;
-let sTargetX: any = null;
-let sWindowTemplates: any = null;
+let tile2: any = null;
+let var1: any = null;
+let windowTilesPtr: any = null;
 /** static void InitContestResultsDisplay(void) */
 export function InitContestResultsDisplay(): any {
   let i: any = null;
@@ -91,10 +101,10 @@ export function LoadContestResultsBgGfx(): any {
       CopyToBgTilemapBuffer(2, gContestResults_Interface_Tilemap, 0, 0);
       CopyToBgTilemapBuffer(0, gContestResults_WinnerBanner_Tilemap, 0, 0);
       LoadContestResultsTitleBarTilemaps();
-      LoadCompressedPalette(gContestResults_Pal, BG_PLTT_OFFSET, BG_PLTT_SIZE);
+      LoadCompressedPalette(gContestResults_Pal, (0x000), BG_PLTT_SIZE);
       LoadPalette(sResultsTextWindow_Pal, BG_PLTT_ID(15), 0);
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           numStars = GetNumPreliminaryPoints(i, TRUE);
           round2Points = GetNumRound2Points(i, TRUE);
@@ -149,7 +159,7 @@ export function LoadContestMonName(monIndex: any): any {
 export function LoadAllContestMonNames(): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           LoadContestMonName(i);
 
       CopyBgTilemapBufferToVram(1);
@@ -174,7 +184,7 @@ export function CB2_StartShowContestResults(): any {
       memset(sContestResults.monResults, 0, sizeof(sContestResults.monResults));
       CreateResultsTextWindowSprites();
       TryCreateWirelessSprites();
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       gPaletteFade.bufferTransferDisabled = FALSE;
       sContestResults.data.showResultsTaskId = CreateTask(Task_ShowContestResults, 5);
       SetMainCallback2(CB2_ShowContestResults);
@@ -182,10 +192,10 @@ export function CB2_StartShowContestResults(): any {
       gBattle_WIN1V = WIN_RANGE(DISPLAY_HEIGHT - 32, DISPLAY_HEIGHT);
       CreateTask(Task_SlideContestResultsBg, 20);
       CalculateContestantsResultData();
-      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS)
+      if (gLinkContestFlags & ((1 << 1)))
           gPaletteFade.bufferTransferDisabled = TRUE;
       else
-          PlayBGM(MUS_CONTEST_RESULTS);
+          PlayBGM((446));
 
       SetVBlankCallback(VBlankCB_ShowContestResults);
 }
@@ -224,7 +234,7 @@ export function VBlankCB_ShowContestResults(): any {
 export function Task_ShowContestResults(taskId: any): any {
   let _var: any = null;
 
-      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+      if (gLinkContestFlags & ((1 << 0)))
       {
           switch (gTasks[taskId].tState)
           {
@@ -232,29 +242,29 @@ export function Task_ShowContestResults(taskId: any): any {
               SaveLinkContestResults();
               if (gContestFinalStandings[gContestPlayerMonIndex] == 0)
               {
-                  IncrementGameStat(GAME_STAT_WON_LINK_CONTEST);
-                  gSpecialVar_0x8005 = TVSHOW_CONTEST_LIVE_UPDATES;
+                  IncrementGameStat((35));
+                  gSpecialVar_0x8005 = (8);
                   InterviewBefore();
                   if (gSpecialVar_Result != TRUE)
                       InterviewAfter();
               }
 
-              TryGainNewFanFromCounter(FANCOUNTER_FINISHED_CONTEST);
+              TryGainNewFanFromCounter((2));
               SaveContestWinner(gSpecialVar_ContestRank);  
               SaveContestWinner(CONTEST_SAVE_FOR_ARTIST);
               gCurContestWinnerIsForArtist = TRUE;
               gCurContestWinnerSaveIdx = GetContestWinnerSaveIdx(CONTEST_SAVE_FOR_ARTIST, FALSE);
-              _var = VarGet(VAR_CONTEST_HALL_STATE);
-              VarSet(VAR_CONTEST_HALL_STATE, 0);
+              _var = VarGet((0x4086));
+              VarSet((0x4086), 0);
               SetContinueGameWarpStatusToDynamicWarp();
               TrySavingData(SAVE_LINK);
               ClearContinueGameWarpStatus2();
-              VarSet(VAR_CONTEST_HALL_STATE, _var);
+              VarSet((0x4086), _var);
               gTasks[taskId].tState++;
               break;
           case 1:
               gTasks[taskId].tState++;
-              if (!(gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS))
+              if (!(gLinkContestFlags & ((1 << 1))))
                   gTasks[taskId].tState = 100;
               break;
           case 2:
@@ -267,7 +277,7 @@ export function Task_ShowContestResults(taskId: any): any {
           case 3:
               if (IsLinkTaskFinished() == TRUE)
               {
-                  PlayBGM(MUS_CONTEST_RESULTS);
+                  PlayBGM((446));
                   gPaletteFade.bufferTransferDisabled = FALSE;
                   gTasks[taskId].tState++;
                   break;
@@ -279,22 +289,22 @@ export function Task_ShowContestResults(taskId: any): any {
       if (!gPaletteFade.active)
       {
           gTasks[taskId].tState = 0;
-          if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+          if (gLinkContestFlags & ((1 << 0)))
           {
               ShowLinkResultsTextBox(gText_CommunicationStandby);
               gTasks[taskId].func = Task_WaitForLinkPartnersBeforeResults;
           }
           else
           {
-              IncrementGameStat(GAME_STAT_ENTERED_CONTEST);
+              IncrementGameStat((36));
               if (gContestFinalStandings[gContestPlayerMonIndex] == 0)
-                  IncrementGameStat(GAME_STAT_WON_CONTEST);
+                  IncrementGameStat((37));
 
               SaveContestWinner(gSpecialVar_ContestRank);  
               SaveContestWinner(CONTEST_SAVE_FOR_ARTIST);
               gCurContestWinnerIsForArtist = TRUE;
               gCurContestWinnerSaveIdx = GetContestWinnerSaveIdx(CONTEST_SAVE_FOR_ARTIST, FALSE);
-              TryGainNewFanFromCounter(FANCOUNTER_FINISHED_CONTEST);
+              TryGainNewFanFromCounter((2));
               gTasks[taskId].func = Task_AnnouncePreliminaryResults;
           }
       }
@@ -457,7 +467,7 @@ export function Task_AnnounceWinner(taskId: any): any {
           }
           break;
       case 2:
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               let newTaskId: any = CreateTask(Task_DrawFinalStandingNumber, 10);
               gTasks[newTaskId].tFinalStanding = gContestFinalStandings[i];
@@ -466,14 +476,14 @@ export function Task_AnnounceWinner(taskId: any): any {
           gTasks[taskId].tState++;
           break;
       case 3:
-          if (sContestResults.data.numStandingsPrinted == CONTESTANT_COUNT)
+          if (sContestResults.data.numStandingsPrinted == (4))
           {
               if (++gTasks[taskId].tTimer == 31)
               {
                   gTasks[taskId].tTimer = 0;
                   CreateTask(Task_StartHighlightWinnersBox, 10);
                   gTasks[taskId].tState++;
-                  { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
+                  { for (((i)) = 0; ((i)) < (4) && gContestFinalStandings[((i))] != 0; ((i))++); };
                   BounceMonIconInBox(i, 14);
               }
           }
@@ -484,7 +494,7 @@ export function Task_AnnounceWinner(taskId: any): any {
               let winnerTextBuffer: any = [];
               let x: any = null;
               gTasks[taskId].tTimer = 0;
-              { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
+              { for (((i)) = 0; ((i)) < (4) && gContestFinalStandings[((i))] != 0; ((i))++); };
               StringCopy(gStringVar1, gContestMons[i].trainerName);
               ConvertInternationalContestantName(gStringVar1);
               StringCopy(gStringVar2, gContestMons[i].nickname);
@@ -516,7 +526,7 @@ export function Task_ShowWinnerMonBanner(taskId: any): any {
           gBattle_WIN0H = WIN_RANGE(0, DISPLAY_WIDTH);
           gBattle_WIN0V = WIN_RANGE(DISPLAY_HEIGHT / 2, DISPLAY_HEIGHT / 2);
 
-          { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
+          { for (((i)) = 0; ((i)) < (4) && gContestFinalStandings[((i))] != 0; ((i))++); };
           species = gContestMons[i].species;
           personality = gContestMons[i].personality;
           otId = gContestMons[i].otId;
@@ -606,9 +616,9 @@ export function Task_SetSeenWinnerMon(taskId: any): any {
 
       if (JOY_NEW(A_BUTTON))
       {
-          if (!(gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK))
+          if (!(gLinkContestFlags & ((1 << 0))))
           {
-              for (i = 0; i < CONTESTANT_COUNT; i++)
+              for (i = 0; i < (4); i++)
               {
                   nationalDexNum = SpeciesToNationalPokedexNum(gContestMons[i].species);
                   GetSetPokedexFlag(nationalDexNum, FLAG_SET_SEEN);
@@ -622,7 +632,7 @@ export function Task_SetSeenWinnerMon(taskId: any): any {
 
 /** static void Task_TryDisconnectLinkPartners(u8 taskId) */
 export function Task_TryDisconnectLinkPartners(taskId: any): any {
-  if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+  if (gLinkContestFlags & ((1 << 0)))
       {
           if (!gTasks[taskId].data[10])
           {
@@ -641,7 +651,7 @@ export function Task_TryDisconnectLinkPartners(taskId: any): any {
 export function Task_WaitForLinkPartnersDisconnect(taskId: any): any {
   if (!gReceivedRemoteLinkPlayers)
       {
-          if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS)
+          if (gLinkContestFlags & ((1 << 1)))
               DestroyWirelessStatusIndicatorSprite();
 
           HideLinkResultsTextBox();
@@ -651,7 +661,7 @@ export function Task_WaitForLinkPartnersDisconnect(taskId: any): any {
 
 /** static void Task_TrySetContestInterviewData(u8 taskId) */
 export function Task_TrySetContestInterviewData(taskId: any): any {
-  if (!(gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK))
+  if (!(gLinkContestFlags & ((1 << 0))))
           BravoTrainerPokemonProfile_BeforeInterview2(gContestFinalStandings[gContestPlayerMonIndex]);
 
       BeginHardwarePaletteFade(0xFF, 0, 0, 16, 0);
@@ -665,12 +675,12 @@ export function Task_EndShowContestResults(taskId: any): any {
           if (gTasks[taskId].tTimer == 0)
           {
               DestroyTask(sContestResults.data.highlightWinnerTaskId);
-              BlendPalettes(PALETTES_BG, 16, RGB_BLACK);
+              BlendPalettes((0x0000FFFF), 16, (RGB(0, 0, 0)));
               gTasks[taskId].tTimer++;
           }
           else if (gTasks[taskId].tTimer == 1)
           {
-              BlendPalettes(PALETTES_OBJECTS, 16, RGB_BLACK);
+              BlendPalettes((0xFFFF0000), 16, (RGB(0, 0, 0)));
               gTasks[taskId].tTimer++;
           }
           else
@@ -711,7 +721,7 @@ export function Task_FlashStarsAndHearts(taskId: any): any {
               gTasks[taskId].tDecreasing = FALSE;
 
           BlendPalette(BG_PLTT_ID(6) + 11, 1, gTasks[taskId].tCoeff, RGB(30, 22, 11));
-          BlendPalette(BG_PLTT_ID(6) + 8, 1, gTasks[taskId].tCoeff, RGB_WHITE);
+          BlendPalette(BG_PLTT_ID(6) + 8, 1, gTasks[taskId].tCoeff, (RGB(31, 31, 31)));
           BlendPalette(BG_PLTT_ID(6) + 14, 1, gTasks[taskId].tCoeff, RGB(30, 29, 29));
       }
 
@@ -750,7 +760,7 @@ export function LoadContestMonIcon(species: any, monIndex: any, srcOffset: any, 
 export function LoadAllContestMonIcons(srcOffset: any, useDmaNow: any): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           LoadContestMonIcon(gContestMons[i].species, i, srcOffset, useDmaNow, gContestMons[i].personality);
 }
 
@@ -758,7 +768,7 @@ export function LoadAllContestMonIcons(srcOffset: any, useDmaNow: any): any {
 export function LoadAllContestMonIconPalettes(): any {
   let i, species;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           species = gContestMons[i].species;
           LoadPalette(gMonIconPalettes[gMonIconPaletteIndices[GetIconSpecies(species, 0)]], BG_PLTT_ID(10 + i), PLTT_SIZE_4BPP);
@@ -770,7 +780,7 @@ export function TryCreateWirelessSprites(): any {
   let sheet: any = null;
       let spriteId: any = null;
 
-      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS)
+      if (gLinkContestFlags & ((1 << 1)))
       {
           LoadWirelessStatusIndicatorSpriteGfx();
           CreateWirelessStatusIndicatorSprite(8, 8);
@@ -802,7 +812,7 @@ export function DrawResultsTextWindow(text: any, spriteId: any): any {
       if (strWidth > 30)
        strWidth = 30;
 
-      AddTextPrinterParameterized3(windowId, FONT_NORMAL, (strWidth * 8 - origWidth) / 2, 1, sContestLinkTextColors, TEXT_SKIP_DRAW, text);
+      AddTextPrinterParameterized3(windowId, FONT_NORMAL, (strWidth * 8 - origWidth) / 2, 1, sContestLinkTextColors, (0xFF), text);
       {
           let i: any = null;
           let sprite: any = null;
@@ -1017,19 +1027,19 @@ export function HideLinkResultsTextBox(): any {
 export function LoadContestResultsTitleBarTilemaps(): any {
   let palette: any = null;
 
-      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+      if (gLinkContestFlags & ((1 << 0)))
       {
           CopyToBgTilemapBufferRect(2, gContestResultsTitle_Link_Tilemap, 17, 1, 6, 2);
       }
-      else if (gSpecialVar_ContestRank == CONTEST_RANK_NORMAL)
+      else if (gSpecialVar_ContestRank == (0))
       {
           CopyToBgTilemapBufferRect(2, gContestResultsTitle_Normal_Tilemap, 17, 1, 10, 2);
       }
-      else if (gSpecialVar_ContestRank == CONTEST_RANK_SUPER)
+      else if (gSpecialVar_ContestRank == (1))
       {
           CopyToBgTilemapBufferRect(2, gContestResultsTitle_Super_Tilemap, 17, 1, 10, 2);
       }
-      else if (gSpecialVar_ContestRank == CONTEST_RANK_HYPER)
+      else if (gSpecialVar_ContestRank == (2))
       {
           CopyToBgTilemapBufferRect(2, gContestResultsTitle_Hyper_Tilemap, 17, 1, 10, 2);
       }
@@ -1038,22 +1048,22 @@ export function LoadContestResultsTitleBarTilemaps(): any {
           CopyToBgTilemapBufferRect(2, gContestResultsTitle_Master_Tilemap, 17, 1, 10, 2);
       }
 
-      if (gSpecialVar_ContestCategory == CONTEST_CATEGORY_COOL)
+      if (gSpecialVar_ContestCategory == (0))
       {
           palette = 0;
           CopyToBgTilemapBufferRect(2, gContestResultsTitle_Cool_Tilemap, 10, 1, 7, 2);
       }
-      else if (gSpecialVar_ContestCategory == CONTEST_CATEGORY_BEAUTY)
+      else if (gSpecialVar_ContestCategory == (1))
       {
           palette = 1;
           CopyToBgTilemapBufferRect(2, gContestResultsTitle_Beauty_Tilemap, 10, 1, 7, 2);
       }
-      else if (gSpecialVar_ContestCategory == CONTEST_CATEGORY_CUTE)
+      else if (gSpecialVar_ContestCategory == (2))
       {
           palette = 2;
           CopyToBgTilemapBufferRect(2, gContestResultsTitle_Cute_Tilemap, 10, 1, 7, 2);
       }
-      else if (gSpecialVar_ContestCategory == CONTEST_CATEGORY_SMART)
+      else if (gSpecialVar_ContestCategory == (3))
       {
           palette = 3;
           CopyToBgTilemapBufferRect(2, gContestResultsTitle_Smart_Tilemap, 10, 1, 7, 2);
@@ -1135,7 +1145,7 @@ export function Task_DrawFinalStandingNumber(taskId: any): any {
               WriteSequenceToBgTilemapBuffer(2, firstTileNum + 0x10, 1, gTasks[taskId].tMonIndex * 3 + 6, 2, 1, 17, 1);
               sContestResults.data.numStandingsPrinted++;
               DestroyTask(taskId);
-              PlaySE(SE_CONTEST_PLACE);
+              PlaySE((24));
           }
       }
 }
@@ -1143,7 +1153,7 @@ export function Task_DrawFinalStandingNumber(taskId: any): any {
 /** static void Task_StartHighlightWinnersBox(u8 taskId) */
 export function Task_StartHighlightWinnersBox(taskId: any): any {
   let i: any = null;
-      { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
+      { for (((i)) = 0; ((i)) < (4) && gContestFinalStandings[((i))] != 0; ((i))++); };
       CopyToBgTilemapBufferRect_ChangePalette(2, i * 0xC0 + 0x100 + sContestResults.tilemapBuffers[2], 0, i * 3 + 4, 32, 3, 9);
       gTasks[taskId].data[10] = i;
       gTasks[taskId].data[12] = 1;
@@ -1281,7 +1291,7 @@ export function CalculateContestantsResultData(): any {
       let round2Points: any = null;
 
       highestPoints = gContestMonTotalPoints[0];
-      for (i = 1; i < CONTESTANT_COUNT; i++)
+      for (i = 1; i < (4); i++)
       {
           if (highestPoints < gContestMonTotalPoints[i])
               highestPoints = gContestMonTotalPoints[i];
@@ -1290,14 +1300,14 @@ export function CalculateContestantsResultData(): any {
       if (highestPoints < 0)
       {
           highestPoints = gContestMonTotalPoints[0];
-          for (i = 1; i < CONTESTANT_COUNT; i++)
+          for (i = 1; i < (4); i++)
           {
               if (highestPoints > gContestMonTotalPoints[i])
                   highestPoints = gContestMonTotalPoints[i];
           }
       }
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           relativePoints = (gContestMonRound1Points[i] * 1000) / abs(highestPoints);
           if (relativePoints % 10 > 4)
@@ -1353,7 +1363,7 @@ export function UpdateContestResultBars(isRound2: any, numUpdates: any): any {
 
       if (!isRound2)
       {
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               let numStars: any = sContestResults.monResults[i].numStars;
               if (numUpdates < numStars)
@@ -1374,7 +1384,7 @@ export function UpdateContestResultBars(isRound2: any, numUpdates: any): any {
       }
       else
       {
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               let numHearts: any = sContestResults.monResults[i].numHearts;
               let tile: any = sContestResults.monResults[i].lostPoints ? 0x60A5 : 0x60A3;
@@ -1409,9 +1419,9 @@ export function UpdateContestResultBars(isRound2: any, numUpdates: any): any {
       }
 
       if (numDecreasing)
-          PlaySE(SE_BOO);
+          PlaySE((22));
       if (numIncreasing)
-          PlaySE(SE_PIN);
+          PlaySE((21));
 }
 
 /** static void Task_UpdateContestResultBar(u8 taskId) */
@@ -1549,23 +1559,23 @@ export function HasMonWonThisContestBefore(): any {
       let mon: any =gPlayerParty[gContestMonPartyIndex];
       switch (gSpecialVar_ContestCategory)
       {
-      case CONTEST_CATEGORY_COOL:
+      case (0):
           if (GetMonData(mon, MON_DATA_COOL_RIBBON) > gSpecialVar_ContestRank)
               hasRankRibbon = TRUE;
           break;
-      case CONTEST_CATEGORY_BEAUTY:
+      case (1):
           if (GetMonData(mon, MON_DATA_BEAUTY_RIBBON) > gSpecialVar_ContestRank)
               hasRankRibbon = TRUE;
           break;
-      case CONTEST_CATEGORY_CUTE:
+      case (2):
           if (GetMonData(mon, MON_DATA_CUTE_RIBBON) > gSpecialVar_ContestRank)
               hasRankRibbon = TRUE;
           break;
-      case CONTEST_CATEGORY_SMART:
+      case (3):
           if (GetMonData(mon, MON_DATA_SMART_RIBBON) > gSpecialVar_ContestRank)
               hasRankRibbon = TRUE;
           break;
-      case CONTEST_CATEGORY_TOUGH:
+      case (4):
           if (GetMonData(mon, MON_DATA_TOUGH_RIBBON) > gSpecialVar_ContestRank)
               hasRankRibbon = TRUE;
           break;
@@ -1583,53 +1593,53 @@ export function GiveMonContestRibbon(): any {
 
       switch (gSpecialVar_ContestCategory)
       {
-      case CONTEST_CATEGORY_COOL:
+      case (0):
           ribbonData = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_COOL_RIBBON);
-          if (ribbonData <= gSpecialVar_ContestRank && ribbonData <= CONTEST_RANK_MASTER)
+          if (ribbonData <= gSpecialVar_ContestRank && ribbonData <= (3))
           {
               ribbonData++;
               SetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_COOL_RIBBON,ribbonData);
-              if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > NUM_CUTIES_RIBBONS)
+              if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > (4))
                   TryPutSpotTheCutiesOnAir(gPlayerParty[gContestMonPartyIndex], MON_DATA_COOL_RIBBON);
           }
           break;
-      case CONTEST_CATEGORY_BEAUTY:
+      case (1):
           ribbonData = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_BEAUTY_RIBBON);
-          if (ribbonData <= gSpecialVar_ContestRank && ribbonData <= CONTEST_RANK_MASTER)
+          if (ribbonData <= gSpecialVar_ContestRank && ribbonData <= (3))
           {
               ribbonData++;
               SetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_BEAUTY_RIBBON,ribbonData);
-              if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > NUM_CUTIES_RIBBONS)
+              if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > (4))
                   TryPutSpotTheCutiesOnAir(gPlayerParty[gContestMonPartyIndex], MON_DATA_BEAUTY_RIBBON);
           }
           break;
-      case CONTEST_CATEGORY_CUTE:
+      case (2):
           ribbonData = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_CUTE_RIBBON);
-          if (ribbonData <= gSpecialVar_ContestRank && ribbonData <= CONTEST_RANK_MASTER)
+          if (ribbonData <= gSpecialVar_ContestRank && ribbonData <= (3))
           {
               ribbonData++;
               SetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_CUTE_RIBBON,ribbonData);
-              if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > NUM_CUTIES_RIBBONS)
+              if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > (4))
                   TryPutSpotTheCutiesOnAir(gPlayerParty[gContestMonPartyIndex], MON_DATA_CUTE_RIBBON);
           }
           break;
-      case CONTEST_CATEGORY_SMART:
+      case (3):
           ribbonData = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_SMART_RIBBON);
-          if (ribbonData <= gSpecialVar_ContestRank && ribbonData <= CONTEST_RANK_MASTER)
+          if (ribbonData <= gSpecialVar_ContestRank && ribbonData <= (3))
           {
               ribbonData++;
               SetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_SMART_RIBBON,ribbonData);
-              if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > NUM_CUTIES_RIBBONS)
+              if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > (4))
                   TryPutSpotTheCutiesOnAir(gPlayerParty[gContestMonPartyIndex], MON_DATA_SMART_RIBBON);
           }
           break;
-      case CONTEST_CATEGORY_TOUGH:
+      case (4):
           ribbonData = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_TOUGH_RIBBON);
-          if (ribbonData <= gSpecialVar_ContestRank && ribbonData <= CONTEST_RANK_MASTER)
+          if (ribbonData <= gSpecialVar_ContestRank && ribbonData <= (3))
           {
               ribbonData++;
               SetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_TOUGH_RIBBON,ribbonData);
-              if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > NUM_CUTIES_RIBBONS)
+              if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > (4))
                   TryPutSpotTheCutiesOnAir(gPlayerParty[gContestMonPartyIndex], MON_DATA_TOUGH_RIBBON);
           }
           break;
@@ -1651,7 +1661,7 @@ export function BufferContestantMonNickname(): any {
 export function GetContestMonConditionRanking(): any {
   let i, rank;
 
-      for (i = 0, rank = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0, rank = 0; i < (4); i++)
       {
           if (gContestMonRound1Points[gSpecialVar_0x8006] < gContestMonRound1Points[i])
               rank++;
@@ -1668,14 +1678,14 @@ export function GetContestMonCondition(): any {
 /** void GetContestWinnerId(void) */
 export function GetContestWinnerId(): any {
   let i: any = null;
-      { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
+      { for (((i)) = 0; ((i)) < (4) && gContestFinalStandings[((i))] != 0; ((i))++); };
       gSpecialVar_0x8005 = i;
 }
 
 /** void BufferContestWinnerTrainerName(void) */
 export function BufferContestWinnerTrainerName(): any {
   let i: any = null;
-      { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
+      { for (((i)) = 0; ((i)) < (4) && gContestFinalStandings[((i))] != 0; ((i))++); };
       StringCopy(gStringVar3, gContestMons[i].trainerName);
       ConvertInternationalContestantName(gStringVar3);
 }
@@ -1683,7 +1693,7 @@ export function BufferContestWinnerTrainerName(): any {
 /** void BufferContestWinnerMonName(void) */
 export function BufferContestWinnerMonName(): any {
   let i: any = null;
-      { for (((i)) = 0; ((i)) < CONTESTANT_COUNT && gContestFinalStandings[((i))] != 0; ((i))++); };
+      { for (((i)) = 0; ((i)) < (4) && gContestFinalStandings[((i))] != 0; ((i))++); };
       StringCopy(gStringVar1, gContestMons[i].nickname);
 }
 
@@ -1705,7 +1715,7 @@ export function Task_StartContest(taskId: any): any {
 export function StartContest(): any {
   LockPlayerFieldControls();
       CreateTask(Task_StartContest, 10);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
 }
 
 /** void BufferContestantMonSpecies(void) */
@@ -1726,7 +1736,7 @@ export function Task_StartShowContestResults(taskId: any): any {
 export function ShowContestResults(): any {
   LockPlayerFieldControls();
       CreateTask(Task_StartShowContestResults, 10);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
 }
 
 /** void GetContestPlayerId(void) */
@@ -1745,7 +1755,7 @@ export function ContestLinkTransfer(category: any): any {
 
 /** static void Task_StartCommunication(u8 taskId) */
 export function Task_StartCommunication(taskId: any): any {
-  if (gLinkContestFlags & LINK_CONTEST_FLAG_HAS_RS_PLAYER)
+  if (gLinkContestFlags & ((1 << 2)))
       {
           CreateContestMonFromParty(gContestMonPartyIndex);
           SetTaskFuncWithFollowupFunc(taskId, Task_LinkContest_CommunicateMonsRS, Task_StartCommunicateRngRS);
@@ -1834,11 +1844,11 @@ export function Task_LinkContest_FinalizeConnection(taskId: any): any {
       else
       {
            
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
               StringGet_Nickname(gContestMons[i].nickname);
 
           DestroyTask(taskId);
-          SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE);
+          SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)));
           UnlockPlayerFieldControls();
           ScriptContext_Enable();
       }
@@ -1862,9 +1872,9 @@ export function Task_LinkContest_WaitDisconnect(taskId: any): any {
 
 /** void SetContestTrainerGfxIds(void) */
 export function SetContestTrainerGfxIds(): any {
-  gSaveBlock1Ptr.vars[VAR_OBJ_GFX_ID_0 - VARS_START] = gContestMons[0].trainerGfxId;
-      gSaveBlock1Ptr.vars[VAR_OBJ_GFX_ID_1 - VARS_START] = gContestMons[1].trainerGfxId;
-      gSaveBlock1Ptr.vars[VAR_OBJ_GFX_ID_2 - VARS_START] = gContestMons[2].trainerGfxId;
+  gSaveBlock1Ptr.vars[(0x4010) - (0x4000)] = gContestMons[0].trainerGfxId;
+      gSaveBlock1Ptr.vars[(0x4011) - (0x4000)] = gContestMons[1].trainerGfxId;
+      gSaveBlock1Ptr.vars[(0x4012) - (0x4000)] = gContestMons[2].trainerGfxId;
 }
 
 /** void GetNpcContestantLocalId(void) */
@@ -1902,25 +1912,25 @@ export function DoesContestCategoryHaveMuseumPainting(): any {
   let contestWinner: any = null;
       switch (gSpecialVar_ContestCategory)
       {
-      case CONTEST_CATEGORY_COOL:
-          contestWinner = CONTEST_WINNER_MUSEUM_COOL - 1;
+      case (0):
+          contestWinner = (9) - 1;
           break;
-      case CONTEST_CATEGORY_BEAUTY:
-          contestWinner = CONTEST_WINNER_MUSEUM_BEAUTY - 1;
+      case (1):
+          contestWinner = (10) - 1;
           break;
-      case CONTEST_CATEGORY_CUTE:
-          contestWinner = CONTEST_WINNER_MUSEUM_CUTE - 1;
+      case (2):
+          contestWinner = (11) - 1;
           break;
-      case CONTEST_CATEGORY_SMART:
-          contestWinner = CONTEST_WINNER_MUSEUM_SMART - 1;
+      case (3):
+          contestWinner = (12) - 1;
           break;
-      case CONTEST_CATEGORY_TOUGH:
+      case (4):
       default:
-          contestWinner = CONTEST_WINNER_MUSEUM_TOUGH - 1;
+          contestWinner = (13) - 1;
           break;
       }
 
-      if (gSaveBlock1Ptr.contestWinners[contestWinner].species == SPECIES_NONE)
+      if (gSaveBlock1Ptr.contestWinners[contestWinner].species == (0))
           gSpecialVar_0x8004 = FALSE;
       else
           gSpecialVar_0x8004 = TRUE;
@@ -1934,7 +1944,7 @@ export function SaveMuseumContestPainting(): any {
 /** void ShouldReadyContestArtist(void) */
 export function ShouldReadyContestArtist(): any {
   if (gContestFinalStandings[gContestPlayerMonIndex] == 0
-       && gSpecialVar_ContestRank == CONTEST_RANK_MASTER
+       && gSpecialVar_ContestRank == (3)
        && gContestMonTotalPoints[gContestPlayerMonIndex] >= 800)
       {
           gSpecialVar_0x8004 = TRUE;
@@ -1950,9 +1960,9 @@ export function CountPlayerMuseumPaintings(): any {
   let i: any = null;
       let count: any = 0;
 
-      for (i = 0; i < NUM_CONTEST_WINNERS - MUSEUM_CONTEST_WINNERS_START; i++)
+      for (i = 0; i < (13) - (((9) - 1)); i++)
       {
-          if (gSaveBlock1Ptr.contestWinners[MUSEUM_CONTEST_WINNERS_START + i].species)
+          if (gSaveBlock1Ptr.contestWinners[(((9) - 1)) + i].species)
               count++;
       }
 
@@ -1970,13 +1980,13 @@ export function GetContestantNamesAtRank(): any {
       let rank: any = null;
 
        
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           conditions[i] = gContestMonRound1Points[i];
 
        
-      for (i = 0; i < CONTESTANT_COUNT - 1; i++)
+      for (i = 0; i < (4) - 1; i++)
       {
-          for (j = CONTESTANT_COUNT - 1; j > i; j--)
+          for (j = (4) - 1; j > i; j--)
           {
               if (conditions[j - 1] < conditions[j])
               {
@@ -1992,7 +2002,7 @@ export function GetContestantNamesAtRank(): any {
        
       numAtCondition = 0;
       tieRank = 0;
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (conditions[i] == condition)
           {
@@ -2003,7 +2013,7 @@ export function GetContestantNamesAtRank(): any {
       }
 
        
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (conditions[i] == condition)
               break;
@@ -2012,7 +2022,7 @@ export function GetContestantNamesAtRank(): any {
 
        
       contestantOffset = tieRank;
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (condition == gContestMonRound1Points[i])
           {
@@ -2033,7 +2043,7 @@ export function GetContestantNamesAtRank(): any {
       else if (tieRank == numAtCondition)
           gSpecialVar_0x8006 = rank;
       else
-          gSpecialVar_0x8006 = rank + CONTESTANT_COUNT;
+          gSpecialVar_0x8006 = rank + (4);
 }
 
 /** static void ExitContestPainting(void) */
@@ -2051,24 +2061,24 @@ export function ShowContestPainting(): any {
 export function SetLinkContestPlayerGfx(): any {
   let i: any = null;
 
-      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+      if (gLinkContestFlags & ((1 << 0)))
       {
           for (i = 0; i < gNumLinkContestPlayers; i++)
           {
               let version: any = gLinkPlayers[i].version;
-              if (version == VERSION_RUBY || version == VERSION_SAPPHIRE)
+              if (version == (2) || version == (1))
               {
-                  if (gLinkPlayers[i].gender == MALE)
-                      gContestMons[i].trainerGfxId = OBJ_EVENT_GFX_LINK_RS_BRENDAN;
+                  if (gLinkPlayers[i].gender == (0))
+                      gContestMons[i].trainerGfxId = (235);
                   else
-                      gContestMons[i].trainerGfxId = OBJ_EVENT_GFX_LINK_RS_MAY;
+                      gContestMons[i].trainerGfxId = (236);
               }
           }
 
-          VarSet(VAR_OBJ_GFX_ID_0, gContestMons[0].trainerGfxId);
-          VarSet(VAR_OBJ_GFX_ID_1, gContestMons[1].trainerGfxId);
-          VarSet(VAR_OBJ_GFX_ID_2, gContestMons[2].trainerGfxId);
-          VarSet(VAR_OBJ_GFX_ID_3, gContestMons[3].trainerGfxId);
+          VarSet((0x4010), gContestMons[0].trainerGfxId);
+          VarSet((0x4011), gContestMons[1].trainerGfxId);
+          VarSet((0x4012), gContestMons[2].trainerGfxId);
+          VarSet((0x4013), gContestMons[3].trainerGfxId);
       }
 }
 
@@ -2086,7 +2096,7 @@ export function LoadLinkContestPlayerPalettes(): any {
       ];
 
       gReservedSpritePaletteCount = 12;
-      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+      if (gLinkContestFlags & ((1 << 0)))
       {
           for (i = 0; i < gNumLinkContestPlayers; i++)
           {
@@ -2094,16 +2104,16 @@ export function LoadLinkContestPlayerPalettes(): any {
               sprite =gSprites[gObjectEvents[objectEventId].spriteId];
               sprite.oam.paletteNum = 6 + i;
               version = gLinkPlayers[i].version;
-              if (version == VERSION_RUBY || version == VERSION_SAPPHIRE)
+              if (version == (2) || version == (1))
               {
-                  if (gLinkPlayers[i].gender == MALE)
+                  if (gLinkPlayers[i].gender == (0))
                       LoadPalette(gObjectEventPal_RubySapphireBrendan, OBJ_PLTT_ID(6 + i), PLTT_SIZE_4BPP);
                   else
                       LoadPalette(gObjectEventPal_RubySapphireMay, OBJ_PLTT_ID(6 + i), PLTT_SIZE_4BPP);
               }
               else
               {
-                  if (gLinkPlayers[i].gender == MALE)
+                  if (gLinkPlayers[i].gender == (0))
                       LoadPalette(gObjectEventPal_Brendan, OBJ_PLTT_ID(6 + i), PLTT_SIZE_4BPP);
                   else
                       LoadPalette(gObjectEventPal_May, OBJ_PLTT_ID(6 + i), PLTT_SIZE_4BPP);
@@ -2119,12 +2129,12 @@ export function GiveMonArtistRibbon(): any {
       hasArtistRibbon = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_ARTIST_RIBBON);
       if (!hasArtistRibbon
           && gContestFinalStandings[gContestPlayerMonIndex] == 0
-          && gSpecialVar_ContestRank == CONTEST_RANK_MASTER
+          && gSpecialVar_ContestRank == (3)
           && gContestMonTotalPoints[gContestPlayerMonIndex] >= 800)
       {
           hasArtistRibbon = 1;
           SetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_ARTIST_RIBBON,hasArtistRibbon);
-          if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > NUM_CUTIES_RIBBONS)
+          if (GetRibbonCount(gPlayerParty[gContestMonPartyIndex]) > (4))
               TryPutSpotTheCutiesOnAir(gPlayerParty[gContestMonPartyIndex], MON_DATA_ARTIST_RIBBON);
 
           return TRUE;
@@ -2149,7 +2159,7 @@ export function ShowContestEntryMonPic(): any {
       let taskId: any = null;
       let left, top;
 
-      if (FindTaskIdByFunc(Task_ShowContestEntryMonPic) == TASK_NONE)
+      if (FindTaskIdByFunc(Task_ShowContestEntryMonPic) == ((0xFF)))
       {
           AllocateMonSpritesGfx();
           left = 10;
@@ -2171,9 +2181,9 @@ export function ShowContestEntryMonPic(): any {
           gMultiuseSpriteTemplate.paletteTag = palette.tag;
           spriteId = CreateSprite(gMultiuseSpriteTemplate, (left + 1) * 8 + 32, (top * 8) + 40, 0);
 
-          if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+          if (gLinkContestFlags & ((1 << 0)))
           {
-              if (!(gLinkContestFlags & LINK_CONTEST_FLAG_HAS_RS_PLAYER))
+              if (!(gLinkContestFlags & ((1 << 2))))
                   DoMonFrontSpriteAnimation(gSprites[spriteId], species, FALSE, 0);
           }
           else
@@ -2192,7 +2202,7 @@ export function ShowContestEntryMonPic(): any {
 /** void HideContestEntryMonPic(void) */
 export function HideContestEntryMonPic(): any {
   let taskId: any = FindTaskIdByFunc(Task_ShowContestEntryMonPic);
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
       {
           gTasks[taskId].data[0]++;
           FreeMonSpritesGfx();
@@ -2235,12 +2245,12 @@ export function Task_ShowContestEntryMonPic(taskId: any): any {
 
 /** void GetContestMultiplayerId(void) */
 export function GetContestMultiplayerId(): any {
-  if ((gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
-          && gNumLinkContestPlayers == CONTESTANT_COUNT
-          && !(gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS))
+  if ((gLinkContestFlags & ((1 << 0)))
+          && gNumLinkContestPlayers == (4)
+          && !(gLinkContestFlags & ((1 << 1))))
           gSpecialVar_Result = GetMultiplayerId();
       else
-          gSpecialVar_Result = MAX_LINK_PLAYERS;
+          gSpecialVar_Result = (4);
 }
 
 /** void GenerateContestRand(void) */
@@ -2248,7 +2258,7 @@ export function GenerateContestRand(): any {
   let random: any = null;
       let result: any = null;
 
-      if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_LINK)
+      if (gLinkContestFlags & ((1 << 0)))
       {
           gContestRngValue = ISO_RANDOMIZE1(gContestRngValue);
           random = gContestRngValue >> 16;
@@ -2270,7 +2280,7 @@ export function GetContestRand(): any {
 
 /** bool8 LinkContestWaitForConnection(void) */
 export function LinkContestWaitForConnection(): any {
-  if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS)
+  if (gLinkContestFlags & ((1 << 1)))
       {
           CreateTask(Task_LinkContestWaitForConnection, 5);
           return TRUE;
@@ -2307,7 +2317,7 @@ export function Task_LinkContestWaitForConnection(taskId: any): any {
 
 /** void LinkContestTryShowWirelessIndicator(void) */
 export function LinkContestTryShowWirelessIndicator(): any {
-  if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS)
+  if (gLinkContestFlags & ((1 << 1)))
       {
           if (gReceivedRemoteLinkPlayers)
           {
@@ -2319,7 +2329,7 @@ export function LinkContestTryShowWirelessIndicator(): any {
 
 /** void LinkContestTryHideWirelessIndicator(void) */
 export function LinkContestTryHideWirelessIndicator(): any {
-  if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS)
+  if (gLinkContestFlags & ((1 << 1)))
       {
           if (gReceivedRemoteLinkPlayers)
               DestroyWirelessStatusIndicatorSprite();
@@ -2328,7 +2338,7 @@ export function LinkContestTryHideWirelessIndicator(): any {
 
 /** bool8 IsContestWithRSPlayer(void) */
 export function IsContestWithRSPlayer(): any {
-  if (gLinkContestFlags & LINK_CONTEST_FLAG_HAS_RS_PLAYER)
+  if (gLinkContestFlags & ((1 << 2)))
           return TRUE;
       else
           return FALSE;
@@ -2341,7 +2351,7 @@ export function ClearLinkContestFlags(): any {
 
 /** bool8 IsWirelessContest(void) */
 export function IsWirelessContest(): any {
-  if (gLinkContestFlags & LINK_CONTEST_FLAG_IS_WIRELESS)
+  if (gLinkContestFlags & ((1 << 1)))
           return TRUE;
       else
           return FALSE;

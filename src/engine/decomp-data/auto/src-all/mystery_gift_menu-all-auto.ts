@@ -17,28 +17,10 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBGTemplates: any = null;
-let sDownArrowCounterAndYCoordIdx: any = null;
-let sListMenuItems_CardsOrNews: any = null;
-let sListMenuItems_WirelessOrFriend: any = null;
-let sListMenuTemplate_ThreeOptions: any = null;
-let sListMenu_Receive: any = null;
-let sListMenu_ReceiveSend: any = null;
-let sListMenu_ReceiveSendToss: any = null;
-let sListMenu_ReceiveToss: any = null;
-let sMG_Ereader_TextColor_2: any = null;
-let sMainWindows: any = null;
-let sTextColors_Header: any = null;
-let sTextboxBorder_Gfx: any = null;
-let sTextboxBorder_Pal: any = null;
-let sWindowTemplate_GiftSelect: any = null;
-let sWindowTemplate_GiftSelect_1Option: any = null;
-let sWindowTemplate_GiftSelect_2Options: any = null;
-let sWindowTemplate_GiftSelect_3Options: any = null;
-let sWindowTemplate_ThreeOptions: any = null;
-let sWindowTemplate_YesNoBox: any = null;
-let sWindowTemplate_YesNoMsg: any = null;
-let sWindowTemplate_YesNoMsg_Wide: any = null;
+let gGiftIsFromEReader: any = null;
+let gStringVar1: any = null;
+let gStringVar2: any = null;
+let gStringVar3: any = null;
 /** static void VBlankCB_MysteryGiftEReader(void) */
 export function VBlankCB_MysteryGiftEReader(): any {
   ProcessSpriteCopyRequests();
@@ -114,7 +96,7 @@ export function HandleMysteryGiftOrEReaderSetup(isEReader: any): any {
       case 3:
           ShowBg(0);
           ShowBg(3);
-          PlayBGM(MUS_RG_MYSTERY_GIFT);
+          PlayBGM((541));
           SetVBlankCallback(VBlankCB_MysteryGiftEReader);
           EnableInterrupts(INTR_FLAG_VBLANK | INTR_FLAG_VCOUNT | INTR_FLAG_TIMER3 | INTR_FLAG_SERIAL);
           return TRUE;
@@ -171,8 +153,8 @@ export function PrintMysteryGiftOrEReaderHeader(isEReader: any, useCancel: any):
           options = gJPText_DecideStop;
       }
 
-      AddTextPrinterParameterized4(WIN_HEADER, FONT_NORMAL, 4, 1, 0, 0, sTextColors_Header, TEXT_SKIP_DRAW, title);
-      AddTextPrinterParameterized4(WIN_HEADER, FONT_SMALL, GetStringRightAlignXOffset(FONT_SMALL, options, 0xDE), 1, 0, 0, sTextColors_Header, TEXT_SKIP_DRAW, options);
+      AddTextPrinterParameterized4(WIN_HEADER, FONT_NORMAL, 4, 1, 0, 0, sTextColors_Header, (0xFF), title);
+      AddTextPrinterParameterized4(WIN_HEADER, FONT_SMALL, GetStringRightAlignXOffset(FONT_SMALL, options, 0xDE), 1, 0, 0, sTextColors_Header, (0xFF), options);
       CopyWindowToVram(WIN_HEADER, COPYWIN_GFX);
       PutWindowTilemap(WIN_HEADER);
 }
@@ -306,7 +288,7 @@ export function MysteryGift_HandleThreeOptionMenu(unused0: any, unused1: any, wh
           windowTemplate.tilemapLeft = 0;
 
       response = DoMysteryGiftListMenu(windowTemplate,listMenuTemplate, 1, (10), (BG_PLTT_ID(14)));
-      if (response != LIST_NOTHING_CHOSEN)
+      if (response != (-1))
       {
           ClearWindowTilemap(WIN_UNK);
           CopyWindowToVram(WIN_UNK, COPYWIN_MAP);
@@ -348,7 +330,7 @@ export function DoMysteryGiftYesNo(textState: any, windowId: any, yesNoBoxPlacem
       case 2:
            
           input = Menu_ProcessInputNoWrapClearOnChoose();
-          if (input == MENU_B_PRESSED || input == 0 || input == 1)
+          if (input == (-1) || input == 0 || input == 1)
           {
               textState = 0;
               rbox_fill_rectangle(windowId);
@@ -364,10 +346,10 @@ export function DoMysteryGiftYesNo(textState: any, windowId: any, yesNoBoxPlacem
           ClearWindowTilemap(windowId);
           CopyWindowToVram(windowId, COPYWIN_MAP);
           RemoveWindow(windowId);
-          return MENU_B_PRESSED;
+          return (-1);
       }
 
-      return MENU_NOTHING_CHOSEN;
+      return (-2);
 }
 
 /** static s32 HandleGiftSelectMenu(u8 *textState, u16 *windowId, bool32 cannotToss, bool32 cannotSend) */
@@ -407,7 +389,7 @@ export function HandleGiftSelectMenu(textState: any, windowId: any, cannotToss: 
               else
                   input = DoMysteryGiftListMenu(sWindowTemplate_GiftSelect_2Options,sListMenu_ReceiveSend, 1, (10), (BG_PLTT_ID(14)));
           }
-          if (input != LIST_NOTHING_CHOSEN)
+          if (input != (-1))
           {
               textState = 0;
               rbox_fill_rectangle(windowId);
@@ -423,10 +405,10 @@ export function HandleGiftSelectMenu(textState: any, windowId: any, cannotToss: 
           ClearWindowTilemap(windowId);
           CopyWindowToVram(windowId, COPYWIN_MAP);
           RemoveWindow(windowId);
-          return LIST_CANCEL;
+          return (-2);
       }
 
-      return LIST_NOTHING_CHOSEN;
+      return (-1);
 }
 
 /** static bool32 ValidateCardOrNews(bool32 isWonderNews) */
@@ -627,7 +609,7 @@ export function PrintSuccessMessage(state: any, msg: any, timer: any): any {
       case 0:
           if (msg != NULL)
               MG_AddMessageTextPrinter(msg);
-          PlayFanfare(MUS_OBTAIN_ITEM);
+          PlayFanfare((370));
           timer = 0;
           state++;
           break;
@@ -729,7 +711,7 @@ export function CreateMysteryGiftTask(): any {
       data.unused2 = 0;
       data.unused3 = 0;
       data.msgId = 0;
-      data.clientMsg = AllocZeroed(CLIENT_MAX_MSG_SIZE);
+      data.clientMsg = AllocZeroed((64));
 }
 
 /** static void Task_MysteryGift(u8 taskId) */
@@ -761,7 +743,7 @@ export function Task_MysteryGift(taskId: any): any {
               else
                   data.state = MG_STATE_DONT_HAVE_ANY;
               break;
-          case LIST_CANCEL:
+          case (-2):
               data.state = MG_STATE_EXIT;
               break;
           }
@@ -809,7 +791,7 @@ export function Task_MysteryGift(taskId: any): any {
               data.state = MG_STATE_CLIENT_LINK_START;
               data.sourceIsFriend = TRUE;
               break;
-          case LIST_CANCEL:
+          case (-2):
               ClearMessage();
               if (ValidateCardOrNews(data.isWonderNews))
               {
@@ -824,23 +806,23 @@ export function Task_MysteryGift(taskId: any): any {
           }
           break;
       case MG_STATE_CLIENT_LINK_START:
-          gStringVar1 = EOS;
-          gStringVar2 = EOS;
-          gStringVar3 = EOS;
+          gStringVar1 = (0xFF);
+          gStringVar2 = (0xFF);
+          gStringVar3 = (0xFF);
 
           switch (data.isWonderNews)
           {
           case FALSE:
               if (data.sourceIsFriend == TRUE)
-                  CreateTask_LinkMysteryGiftWithFriend(ACTIVITY_WONDER_CARD);
+                  CreateTask_LinkMysteryGiftWithFriend((21));
               else if (data.sourceIsFriend == FALSE)
-                  CreateTask_LinkMysteryGiftOverWireless(ACTIVITY_WONDER_CARD);
+                  CreateTask_LinkMysteryGiftOverWireless((21));
               break;
           case TRUE:
               if (data.sourceIsFriend == TRUE)
-                  CreateTask_LinkMysteryGiftWithFriend(ACTIVITY_WONDER_NEWS);
+                  CreateTask_LinkMysteryGiftWithFriend((22));
               else if (data.sourceIsFriend == FALSE)
-                  CreateTask_LinkMysteryGiftOverWireless(ACTIVITY_WONDER_NEWS);
+                  CreateTask_LinkMysteryGiftOverWireless((22));
               break;
           }
           data.state = MG_STATE_CLIENT_LINK_WAIT;
@@ -852,7 +834,7 @@ export function Task_MysteryGift(taskId: any): any {
               data.state = MG_STATE_CLIENT_COMMUNICATING;
               MysteryGiftClient_Create(data.isWonderNews);
           }
-          else if (gSpecialVar_Result == LINKUP_FAILED)
+          else if (gSpecialVar_Result == (5))
           {
                
               ClearScreenInBg0(TRUE);
@@ -872,7 +854,7 @@ export function Task_MysteryGift(taskId: any): any {
               data.state = MG_STATE_CLIENT_LINK_END;
               break;
           case CLI_RET_COPY_MSG:
-              memcpy(data.clientMsg, MysteryGiftClient_GetMsg(), CLIENT_MAX_MSG_SIZE);
+              memcpy(data.clientMsg, MysteryGiftClient_GetMsg(), (64));
               MysteryGiftClient_AdvanceState();
               break;
           case CLI_RET_PRINT_MSG:
@@ -897,7 +879,7 @@ export function Task_MysteryGift(taskId: any): any {
               data.state = MG_STATE_CLIENT_COMMUNICATING;
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               MysteryGiftClient_SetParam(TRUE);
               MysteryGiftClient_AdvanceState();
               data.state = MG_STATE_CLIENT_COMMUNICATING;
@@ -930,7 +912,7 @@ export function Task_MysteryGift(taskId: any): any {
               }
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               MysteryGiftClient_SetParam(TRUE);
               MysteryGiftClient_AdvanceState();
               data.state = MG_STATE_CLIENT_COMMUNICATING;
@@ -949,7 +931,7 @@ export function Task_MysteryGift(taskId: any): any {
               data.state = MG_STATE_CLIENT_COMMUNICATING;
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               MysteryGiftClient_SetParam(TRUE);
               MysteryGiftClient_AdvanceState();
               data.state = MG_STATE_CLIENT_COMMUNICATING;
@@ -1061,7 +1043,7 @@ export function Task_MysteryGift(taskId: any): any {
           case 2:  
               data.state = MG_STATE_ASK_TOSS;
               break;
-          case LIST_CANCEL:
+          case (-2):
               if (data.isWonderNews == TRUE)
                   WonderNews_AddScrollIndicatorArrowPair();
               data.state = MG_STATE_HANDLE_GIFT_INPUT;
@@ -1080,7 +1062,7 @@ export function Task_MysteryGift(taskId: any): any {
                   data.state = MG_STATE_TOSS;
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               data.state = MG_STATE_HANDLE_GIFT_SELECT;
               break;
           }
@@ -1094,7 +1076,7 @@ export function Task_MysteryGift(taskId: any): any {
               data.state = MG_STATE_TOSS;
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               data.state = MG_STATE_HANDLE_GIFT_SELECT;
               break;
           }
@@ -1131,10 +1113,10 @@ export function Task_MysteryGift(taskId: any): any {
               switch (data.isWonderNews)
               {
               case FALSE:
-                  CreateTask_SendMysteryGift(ACTIVITY_WONDER_CARD);
+                  CreateTask_SendMysteryGift((21));
                   break;
               case TRUE:
-                  CreateTask_SendMysteryGift(ACTIVITY_WONDER_NEWS);
+                  CreateTask_SendMysteryGift((22));
                   break;
               }
               data.sourceIsFriend = TRUE;
@@ -1147,16 +1129,16 @@ export function Task_MysteryGift(taskId: any): any {
               ClearScreenInBg0(TRUE);
               data.state = MG_STATE_SERVER_LINK_START;
           }
-          else if (gSpecialVar_Result == LINKUP_FAILED)
+          else if (gSpecialVar_Result == (5))
           {
               ClearScreenInBg0(TRUE);
               data.state = MG_STATE_LOAD_GIFT;
           }
           break;
       case MG_STATE_SERVER_LINK_START:
-          gStringVar1 = EOS;
-          gStringVar2 = EOS;
-          gStringVar3 = EOS;
+          gStringVar1 = (0xFF);
+          gStringVar2 = (0xFF);
+          gStringVar3 = (0xFF);
 
           if (!data.isWonderNews)
           {

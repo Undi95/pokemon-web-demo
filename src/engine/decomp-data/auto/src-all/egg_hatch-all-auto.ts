@@ -17,25 +17,14 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAccelY: any = null;
-let sBgTemplates_EggHatch: any = null;
-let sDelayTimer: any = null;
-let sDeltaX: any = null;
-let sDeltaY: any = null;
+let friendship: any = null;
+let gSpecialVar_0x8005: any = null;
+let gameMet: any = null;
+let isModernFatefulEncounter: any = null;
+let language: any = null;
+let markings: any = null;
+let pokerus: any = null;
 let sEggHatchData: any = null;
-let sEggHatch_Sheet: any = null;
-let sEggShardVelocities: any = null;
-let sEggShards_Sheet: any = null;
-let sEgg_SpritePalette: any = null;
-let sSinIdx: any = null;
-let sSpriteAnimTable_EggShard: any = null;
-let sSpriteTemplate_Egg: any = null;
-let sSpriteTemplate_EggShard: any = null;
-let sTimer: any = null;
-let sVelocX: any = null;
-let sVelocY: any = null;
-let sWinTemplates_EggHatch: any = null;
-let sYesNoWinTemplate: any = null;
 /** static void CreateHatchedMon(struct Pokemon *egg, struct Pokemon *temp) */
 export function CreateHatchedMon(egg: any, temp: any): any {
   let species: any = null;
@@ -46,12 +35,12 @@ export function CreateHatchedMon(egg: any, temp: any): any {
 
       species = GetMonData(egg, MON_DATA_SPECIES);
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           moves[i] = GetMonData(egg, MON_DATA_MOVE1 + i);
 
       personality = GetMonData(egg, MON_DATA_PERSONALITY);
 
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
           ivs[i] = GetMonData(egg, MON_DATA_HP_IV + i);
 
        
@@ -61,15 +50,15 @@ export function CreateHatchedMon(egg: any, temp: any): any {
       pokerus = GetMonData(egg, MON_DATA_POKERUS);
       isModernFatefulEncounter = GetMonData(egg, MON_DATA_MODERN_FATEFUL_ENCOUNTER);
 
-      CreateMon(temp, species, EGG_HATCH_LEVEL, USE_RANDOM_IVS, TRUE, personality, OT_ID_PLAYER_ID, 0);
+      CreateMon(temp, species, (5), (((31) + 1)), TRUE, personality, (0), 0);
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           SetMonData(temp, MON_DATA_MOVE1 + i,moves[i]);
 
-      for (i = 0; i < NUM_STATS; i++)
+      for (i = 0; i < (6); i++)
           SetMonData(temp, MON_DATA_HP_IV + i,ivs[i]);
 
-      language = GAME_LANGUAGE;
+      language = (((3)));
       SetMonData(temp, MON_DATA_LANGUAGE,language);
       SetMonData(temp, MON_DATA_MET_GAME,gameMet);
       SetMonData(temp, MON_DATA_MARKINGS,markings);
@@ -105,7 +94,7 @@ export function AddHatchedMonToParty(id: any): any {
 
       GetMonNickname2(mon, gStringVar1);
 
-      ball = ITEM_POKE_BALL;
+      ball = (4);
       SetMonData(mon, MON_DATA_POKEBALL,ball);
 
        
@@ -130,7 +119,7 @@ export function _CheckDaycareMonReceivedMail(daycare: any, daycareId: any): any 
       let daycareMon: any =daycare.mons[daycareId];
 
       GetBoxMonNickname(daycareMon.mon, nickname);
-      if (daycareMon.mail.message.itemId != ITEM_NONE
+      if (daycareMon.mail.message.itemId != (0)
           && (StringCompareWithoutExtCtrlCodes(nickname, daycareMon.mail.monName) != 0
            || StringCompareWithoutExtCtrlCodes(gSaveBlock2Ptr.playerName, daycareMon.mail.otName) != 0))
       {
@@ -200,7 +189,7 @@ export function VBlankCB_EggHatch(): any {
 export function EggHatch(): any {
   LockPlayerFieldControls();
       CreateTask(Task_EggHatch, 10);
-      FadeScreen(FADE_TO_BLACK, 0);
+      FadeScreen((1), 0);
 }
 
 /** static void Task_EggHatch(u8 taskId) */
@@ -318,11 +307,11 @@ export function Task_EggHatchPlayBGM(taskId: any): any {
       }
 
       if (gTasks[taskId].tTimer == 1)
-          PlayBGM(MUS_EVOLUTION_INTRO);
+          PlayBGM((376));
 
       if (gTasks[taskId].tTimer > 60)
       {
-          PlayBGM(MUS_EVOLUTION);
+          PlayBGM((377));
           DestroyTask(taskId);
       }
       gTasks[taskId].tTimer++;
@@ -337,7 +326,7 @@ export function CB2_EggHatch(): any {
       switch (sEggHatchData.state)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           sEggHatchData.eggSpriteId = CreateSprite(sSpriteTemplate_Egg, ((DISPLAY_WIDTH / 2)), ((DISPLAY_HEIGHT / 2 - 5)), 5);
           ShowBg(0);
           ShowBg(1);
@@ -378,8 +367,8 @@ export function CB2_EggHatch(): any {
            
           GetMonNickname2(gPlayerParty[sEggHatchData.eggPartyId], gStringVar1);
           StringExpandPlaceholders(gStringVar4, gText_HatchedFromEgg);
-          EggHatchPrintMessage(sEggHatchData.windowId, gStringVar4, 0, 3, TEXT_SKIP_DRAW);
-          PlayFanfare(MUS_EVOLVED);
+          EggHatchPrintMessage(sEggHatchData.windowId, gStringVar4, 0, 3, (0xFF));
+          PlayFanfare((371));
           sEggHatchData.state++;
           PutWindowTilemap(sEggHatchData.windowId);
           CopyWindowToVram(sEggHatchData.windowId, COPYWIN_FULL);
@@ -420,13 +409,13 @@ export function CB2_EggHatch(): any {
               DoNamingScreen(NAMING_SCREEN_NICKNAME, gStringVar3, species, gender, personality, EggHatchSetMonNickname);
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               sEggHatchData.state++;
               break;
           }
           break;
       case 11:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           sEggHatchData.state++;
           break;
       case 12:
@@ -464,7 +453,7 @@ export function SpriteCB_Egg_Shake1(sprite: any): any {
           if (sprite.sTimer == 15)
           {
                
-              PlaySE(SE_BALL);
+              PlaySE((23));
               StartSpriteAnim(sprite, EGG_ANIM_CRACKED_1);
               CreateRandomEggShardSprite();
           }
@@ -489,7 +478,7 @@ export function SpriteCB_Egg_Shake2(sprite: any): any {
               if (sprite.sTimer == 15)
               {
                    
-                  PlaySE(SE_BALL);
+                  PlaySE((23));
                   StartSpriteAnim(sprite, EGG_ANIM_CRACKED_2);
               }
           }
@@ -519,13 +508,13 @@ export function SpriteCB_Egg_Shake3(sprite: any): any {
                    
                    
                    
-                  PlaySE(SE_BALL);
+                  PlaySE((23));
                   StartSpriteAnim(sprite, EGG_ANIM_CRACKED_3);
                   CreateRandomEggShardSprite();
                   CreateRandomEggShardSprite();
               }
               if (sprite.sTimer == 30)
-                  PlaySE(SE_BALL);
+                  PlaySE((23));
           }
       }
 }
@@ -545,7 +534,7 @@ export function SpriteCB_Egg_Hatch(sprite: any): any {
 
        
       if (sprite.sTimer == 0)
-          BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_WHITEALPHA);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 0, 16, (((RGB(31, 31, 31)) | ((1 << 15)))));
 
        
       if (sprite.sTimer < 4)
@@ -559,7 +548,7 @@ export function SpriteCB_Egg_Hatch(sprite: any): any {
       if (!gPaletteFade.active)
       {
            
-          PlaySE(SE_EGG_HATCH);
+          PlaySE((113));
           sprite.invisible = TRUE;
           sprite.callback = SpriteCB_Egg_Reveal;
           sprite.sTimer = 0;
@@ -577,7 +566,7 @@ export function SpriteCB_Egg_Reveal(sprite: any): any {
 
        
       if (sprite.sTimer == 8)
-          BeginNormalPaletteFade(PALETTES_ALL, -1, 16, 0, RGB_WHITEALPHA);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
 
       if (sprite.sTimer <= 9)
           gSprites[sEggHatchData.monSpriteId].y--;
@@ -642,7 +631,7 @@ export function GetEggCyclesToSubtract(): any {
           if (!GetMonData(gPlayerParty[i], MON_DATA_SANITY_IS_EGG))
           {
               let ability: any = GetMonAbility(gPlayerParty[i]);
-              if (ability == ABILITY_MAGMA_ARMOR || ability == ABILITY_FLAME_BODY)
+              if (ability == (40) || ability == (49))
                   return 2;
           }
       }
@@ -652,7 +641,7 @@ export function GetEggCyclesToSubtract(): any {
 /** u16 CountPartyAliveNonEggMons(void) */
 export function CountPartyAliveNonEggMons(): any {
   let aliveNonEggMonsCount: any = CountStorageNonEggMons();
-      aliveNonEggMonsCount += CountPartyAliveNonEggMonsExcept(PARTY_SIZE);
+      aliveNonEggMonsCount += CountPartyAliveNonEggMonsExcept((6));
       return aliveNonEggMonsCount;
 }
 

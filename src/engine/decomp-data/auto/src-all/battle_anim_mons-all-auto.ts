@@ -17,31 +17,10 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sActiveTime: any = null;
-let sAmplitude: any = null;
-let sAmplitudeChange: any = null;
-let sAmplitudeSpeed: any = null;
-let sAmplitudeX: any = null;
-let sAmplitudeY: any = null;
+let battlerY: any = null;
+let partnerY: any = null;
 let sAnimTaskAffineAnim: any = null;
-let sBattlerCoords: any = null;
-let sCastformBackSpriteYCoords: any = null;
-let sCastformElevations: any = null;
-let sCirclePos: any = null;
-let sCircleSpeed: any = null;
-let sDuration: any = null;
-let sMoveSteps: any = null;
-let sSpeedX: any = null;
-let sSpeedY: any = null;
-let sSpriteId: any = null;
-let sSpriteSheets_MoveEffectMons: any = null;
-let sSpriteTemplates_MoveEffectMons: any = null;
-let sStartX: any = null;
-let sStartY: any = null;
-let sStepsX: any = null;
-let sTargetX: any = null;
-let sTargetY: any = null;
-let sTaskId: any = null;
+let yCoordType: any = null;
 /** u8 GetBattlerSpriteCoord(u8 battler, u8 coordType) */
 export function GetBattlerSpriteCoord(battler: any, coordType: any): any {
   let retVal: any = null;
@@ -75,7 +54,7 @@ export function GetBattlerSpriteCoord(battler: any, coordType: any): any {
           }
           else
           {
-              if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+              if (GetBattlerSide(battler) != (0))
               {
                   spriteInfo = gBattleSpritesDataPtr.battlerData;
                   if (!spriteInfo[battler].transformSpecies)
@@ -110,9 +89,9 @@ export function GetBattlerYDelta(battler: any, species: any): any {
       let ret: any = null;
       let coordSpecies: any = null;
 
-      if (GetBattlerSide(battler) == B_SIDE_PLAYER || IsContest())
+      if (GetBattlerSide(battler) == (0) || IsContest())
       {
-          if (species == SPECIES_UNOWN)
+          if (species == (201))
           {
               if (IsContest())
               {
@@ -133,14 +112,14 @@ export function GetBattlerYDelta(battler: any, species: any): any {
               if (!letter)
                   coordSpecies = species;
               else
-                  coordSpecies = letter + SPECIES_UNOWN_B - 1;
+                  coordSpecies = letter + ((((412)) + 1)) - 1;
               ret = gMonBackPicCoords[coordSpecies].y_offset;
           }
-          else if (species == SPECIES_CASTFORM)
+          else if (species == (385))
           {
               ret = sCastformBackSpriteYCoords[gBattleMonForms[battler]];
           }
-          else if (species > NUM_SPECIES)
+          else if (species > ((412)))
           {
               ret = gMonBackPicCoords[0].y_offset;
           }
@@ -151,7 +130,7 @@ export function GetBattlerYDelta(battler: any, species: any): any {
       }
       else
       {
-          if (species == SPECIES_UNOWN)
+          if (species == (201))
           {
               spriteInfo = gBattleSpritesDataPtr.battlerData;
               if (!spriteInfo[battler].transformSpecies)
@@ -162,14 +141,14 @@ export function GetBattlerYDelta(battler: any, species: any): any {
               if (!letter)
                   coordSpecies = species;
               else
-                  coordSpecies = letter + SPECIES_UNOWN_B - 1;
+                  coordSpecies = letter + ((((412)) + 1)) - 1;
               ret = gMonFrontPicCoords[coordSpecies].y_offset;
           }
-          else if (species == SPECIES_CASTFORM)
+          else if (species == (385))
           {
               ret = gCastformFrontSpriteCoords[gBattleMonForms[battler]].y_offset;
           }
-          else if (species > NUM_SPECIES)
+          else if (species > ((412)))
           {
               ret = gMonFrontPicCoords[0].y_offset;
           }
@@ -184,13 +163,13 @@ export function GetBattlerYDelta(battler: any, species: any): any {
 /** u8 GetBattlerElevation(u8 battler, u16 species) */
 export function GetBattlerElevation(battler: any, species: any): any {
   let ret: any = 0;
-      if (GetBattlerSide(battler) == B_SIDE_OPPONENT)
+      if (GetBattlerSide(battler) == (1))
       {
           if (!IsContest())
           {
-              if (species == SPECIES_CASTFORM)
+              if (species == (385))
                   ret = sCastformElevations[gBattleMonForms[battler]];
-              else if (species > NUM_SPECIES)
+              else if (species > ((412)))
                   ret = gEnemyMonElevation[0];
               else
                   ret = gEnemyMonElevation[species];
@@ -204,7 +183,7 @@ export function GetBattlerSpriteFinal_Y(battler: any, species: any, a3: any): an
   let offset: any = null;
       let y: any = null;
 
-      if (GetBattlerSide(battler) == B_SIDE_PLAYER || IsContest())
+      if (GetBattlerSide(battler) == (0) || IsContest())
       {
           offset = GetBattlerYDelta(battler, species);
       }
@@ -216,10 +195,10 @@ export function GetBattlerSpriteFinal_Y(battler: any, species: any, a3: any): an
       y = offset + sBattlerCoords[IS_DOUBLE_BATTLE()][GetBattlerPosition(battler)].y;
       if (a3)
       {
-          if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) == (0))
               y += 8;
-          if (y > DISPLAY_HEIGHT - MON_PIC_HEIGHT + 8)
-              y = DISPLAY_HEIGHT - MON_PIC_HEIGHT + 8;
+          if (y > DISPLAY_HEIGHT - (64) + 8)
+              y = DISPLAY_HEIGHT - (64) + 8;
       }
       return y;
 }
@@ -265,7 +244,7 @@ export function GetBattlerSpriteDefault_Y(battler: any): any {
 /** u8 GetSubstituteSpriteDefault_Y(u8 battler) */
 export function GetSubstituteSpriteDefault_Y(battler: any): any {
   let y: any = null;
-      if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) != (0))
           y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y) + 16;
       else
           y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y) + 17;
@@ -281,7 +260,7 @@ export function GetBattlerYCoordWithElevation(battler: any): any {
       y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y);
       if (!IsContest())
       {
-          if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) != (0))
           {
               spriteInfo = gBattleSpritesDataPtr.battlerData;
               if (!spriteInfo[battler].transformSpecies)
@@ -297,7 +276,7 @@ export function GetBattlerYCoordWithElevation(battler: any): any {
               else
                   species = spriteInfo[battler].transformSpecies;
           }
-          if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) != (0))
               y -= GetBattlerElevation(battler, species);
       }
       return y;
@@ -307,7 +286,7 @@ export function GetBattlerYCoordWithElevation(battler: any): any {
 export function GetAnimBattlerSpriteId(animBattler: any): any {
   let sprites: any = null;
 
-      if (animBattler == ANIM_ATTACKER)
+      if (animBattler == (0))
       {
           if (IsBattlerSpritePresent(gBattleAnimAttacker))
           {
@@ -316,10 +295,10 @@ export function GetAnimBattlerSpriteId(animBattler: any): any {
           }
           else
           {
-              return SPRITE_NONE;
+              return (0xFF);
           }
       }
-      else if (animBattler == ANIM_TARGET)
+      else if (animBattler == (1))
       {
           if (IsBattlerSpritePresent(gBattleAnimTarget))
           {
@@ -328,13 +307,13 @@ export function GetAnimBattlerSpriteId(animBattler: any): any {
           }
           else
           {
-              return SPRITE_NONE;
+              return (0xFF);
           }
       }
-      else if (animBattler == ANIM_ATK_PARTNER)
+      else if (animBattler == (2))
       {
           if (!IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimAttacker)))
-              return SPRITE_NONE;
+              return (0xFF);
           else
               return gBattlerSpriteIds[BATTLE_PARTNER(gBattleAnimAttacker)];
       }
@@ -343,7 +322,7 @@ export function GetAnimBattlerSpriteId(animBattler: any): any {
           if (IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimTarget)))
               return gBattlerSpriteIds[BATTLE_PARTNER(gBattleAnimTarget)];
           else
-              return SPRITE_NONE;
+              return (0xFF);
       }
 }
 
@@ -598,7 +577,7 @@ export function SetAnimSpriteInitialXOffset(sprite: any, xOffset: any): any {
       }
       else
       {
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
               sprite.x -= xOffset;
           else
               sprite.x += xOffset;
@@ -706,7 +685,7 @@ export function IsBattlerSpritePresent(battler: any): any {
           {
               return FALSE;
           }
-          else if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          else if (GetBattlerSide(battler) != (0))
           {
               if (GetMonData(gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_HP) != 0)
                   return TRUE;
@@ -1087,7 +1066,7 @@ export function SetSpriteRotScale(spriteId: any, xScale: any, yScale: any, rotat
 export function ShouldRotScaleSpeciesBeFlipped(): any {
   if (IsContest())
       {
-          if (gSprites[GetAnimBattlerSpriteId(ANIM_ATTACKER)].data[2] == SPECIES_UNOWN)
+          if (gSprites[GetAnimBattlerSpriteId((0))].data[2] == (201))
               return FALSE;
           else
               return TRUE;
@@ -1350,7 +1329,7 @@ export function TranslateAnimSpriteToTargetMonLocation(sprite: any): any {
           coordType = BATTLER_COORD_Y;
 
       InitSpritePosToAnimAttacker(sprite, respectMonPicOffsets);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
 
       sprite.data[0] = gBattleAnimArgs[4];
@@ -1394,7 +1373,7 @@ export function AnimTravelDiagonally(sprite: any): any {
           respectMonPicOffsets = FALSE;
           coordType = BATTLER_COORD_Y;
       }
-      if (gBattleAnimArgs[5] == ANIM_ATTACKER)
+      if (gBattleAnimArgs[5] == (0))
       {
           InitSpritePosToAnimAttacker(sprite, respectMonPicOffsets);
           battler = gBattleAnimAttacker;
@@ -1419,9 +1398,9 @@ export function CloneBattlerSpriteWithBlend(animBattler: any): any {
   let i: any = null;
       let spriteId: any = GetAnimBattlerSpriteId(animBattler);
 
-      if (spriteId != SPRITE_NONE)
+      if (spriteId != (0xFF))
       {
-          for (i = 0; i < MAX_SPRITES; i++)
+          for (i = 0; i < (64); i++)
           {
               if (!gSprites[i].inUse)
               {
@@ -1497,7 +1476,7 @@ export function AnimTask_AlphaFadeIn_Step(taskId: any): any {
 /** void AnimTask_BlendMonInAndOut(u8 task) */
 export function AnimTask_BlendMonInAndOut(task: any): any {
   let spriteId: any = GetAnimBattlerSpriteId(gBattleAnimArgs[0]);
-      if (spriteId == SPRITE_NONE)
+      if (spriteId == (0xFF))
       {
           DestroyAnimVisualTask(task);
           return;
@@ -1604,10 +1583,10 @@ export function RunAffineAnimFromTaskData(task: any): any {
               task.data[7]++;
           }
           break;
-      case AFFINEANIMCMDTYPE_JUMP:
+      case (0x7FFE):
           task.data[7] = sAnimTaskAffineAnim.jump.target;
           break;
-      case AFFINEANIMCMDTYPE_LOOP:
+      case (0x7FFD):
           if (sAnimTaskAffineAnim.loop.count)
           {
               if (task.data[9])
@@ -1630,7 +1609,7 @@ export function RunAffineAnimFromTaskData(task: any): any {
               {
                   task.data[7]--;
                   sAnimTaskAffineAnim--;
-                  if (sAnimTaskAffineAnim.type == AFFINEANIMCMDTYPE_LOOP)
+                  if (sAnimTaskAffineAnim.type == (0x7FFD))
                   {
                       task.data[7]++;
                       return TRUE;
@@ -1641,7 +1620,7 @@ export function RunAffineAnimFromTaskData(task: any): any {
           }
           task.data[7]++;
           break;
-      case AFFINEANIMCMDTYPE_END:
+      case (0x7FFF):
           gSprites[task.data[15]].y2 = 0;
           ResetSpriteRotScale(task.data[15]);
           return FALSE;
@@ -1652,23 +1631,23 @@ export function RunAffineAnimFromTaskData(task: any): any {
 
 /** void SetBattlerSpriteYOffsetFromYScale(u8 spriteId) */
 export function SetBattlerSpriteYOffsetFromYScale(spriteId: any): any {
-  let _var: any = MON_PIC_HEIGHT - GetBattlerYDeltaFromSpriteId(spriteId) * 2;
+  let _var: any = (64) - GetBattlerYDeltaFromSpriteId(spriteId) * 2;
       let matrix: any = gSprites[spriteId].oam.matrixNum;
       let var2: any = SAFE_DIV(_var << 8, gOamMatrices[matrix].d);
 
-      if (var2 > MON_PIC_HEIGHT * 2)
-          var2 = MON_PIC_HEIGHT * 2;
+      if (var2 > (64) * 2)
+          var2 = (64) * 2;
       gSprites[spriteId].y2 = (_var - var2) / 2;
 }
 
 /** void SetBattlerSpriteYOffsetFromOtherYScale(u8 spriteId, u8 otherSpriteId) */
 export function SetBattlerSpriteYOffsetFromOtherYScale(spriteId: any, otherSpriteId: any): any {
-  let _var: any = MON_PIC_HEIGHT - GetBattlerYDeltaFromSpriteId(otherSpriteId) * 2;
+  let _var: any = (64) - GetBattlerYDeltaFromSpriteId(otherSpriteId) * 2;
       let matrix: any = gSprites[spriteId].oam.matrixNum;
       let var2: any = SAFE_DIV(_var << 8, gOamMatrices[matrix].d);
 
-      if (var2 > MON_PIC_HEIGHT * 2)
-          var2 = MON_PIC_HEIGHT * 2;
+      if (var2 > (64) * 2)
+          var2 = (64) * 2;
       gSprites[spriteId].y2 = (_var - var2) / 2;
 }
 
@@ -1690,7 +1669,7 @@ export function GetBattlerYDeltaFromSpriteId(spriteId: any): any {
               }
               else
               {
-                  if (GetBattlerSide(i) == B_SIDE_PLAYER)
+                  if (GetBattlerSide(i) == (0))
                   {
                       spriteInfo = gBattleSpritesDataPtr.battlerData;
                       if (!spriteInfo[battler].transformSpecies)
@@ -1698,7 +1677,7 @@ export function GetBattlerYDeltaFromSpriteId(spriteId: any): any {
                       else
                           species = spriteInfo[battler].transformSpecies;
 
-                      if (species == SPECIES_CASTFORM)
+                      if (species == (385))
                           return sCastformBackSpriteYCoords[gBattleMonForms[battler]];
                       else
                           return gMonBackPicCoords[species].y_offset;
@@ -1711,7 +1690,7 @@ export function GetBattlerYDeltaFromSpriteId(spriteId: any): any {
                       else
                           species = spriteInfo[battler].transformSpecies;
 
-                      if (species == SPECIES_CASTFORM)
+                      if (species == (385))
                           return sCastformElevations[gBattleMonForms[battler]];
                       else
                           return gMonFrontPicCoords[species].y_offset;
@@ -1719,7 +1698,7 @@ export function GetBattlerYDeltaFromSpriteId(spriteId: any): any {
               }
           }
       }
-      return MON_PIC_HEIGHT;
+      return (64);
 }
 
 /** void StorePointerInVars(s16 *lo, s16 *hi, const void *ptr) */
@@ -1775,7 +1754,7 @@ export function AnimTask_GetFrustrationPowerLevel(taskId: any): any {
           powerLevel = 2;
       else
           powerLevel = 3;
-      gBattleAnimArgs[ARG_RET_ID] = powerLevel;
+      gBattleAnimArgs[(7)] = powerLevel;
       DestroyAnimVisualTask(taskId);
 }
 
@@ -1853,7 +1832,7 @@ export function CreateAdditionalMonSpriteForMoveAnim(species: any, isBackpic: an
       let palette: any = AllocSpritePalette(sSpriteTemplates_MoveEffectMons[id].paletteTag);
 
       if (gMonSpritesGfxPtr != NULL && gMonSpritesGfxPtr.buffer == NULL)
-          gMonSpritesGfxPtr.buffer = AllocZeroed(MON_PIC_SIZE * MAX_MON_PIC_FRAMES);
+          gMonSpritesGfxPtr.buffer = AllocZeroed((((64) * (64) / 2)) * (4));
       if (!isBackpic)
       {
           LoadCompressedPalette(GetMonSpritePalFromSpeciesAndPersonality(species, trainerId, personality), OBJ_PLTT_ID(palette), PLTT_SIZE_4BPP);
@@ -1887,7 +1866,7 @@ export function CreateAdditionalMonSpriteForMoveAnim(species: any, isBackpic: an
                                    FALSE);
       }
 
-      RequestDma3Copy(gMonSpritesGfxPtr.buffer, (OBJ_VRAM0 + (sheet * 0x20)), MON_PIC_SIZE, 1);
+      RequestDma3Copy(gMonSpritesGfxPtr.buffer, (OBJ_VRAM0 + (sheet * 0x20)), (((64) * (64) / 2)), 1);
       FREE_AND_SET_NULL(gMonSpritesGfxPtr.buffer);
 
       if (!isBackpic)
@@ -1930,20 +1909,20 @@ export function GetBattlerSpriteCoordAttr(battler: any, attr: any): any {
               species = gContestResources.moveAnim.species;
               personality = gContestResources.moveAnim.personality;
           }
-          if (species == SPECIES_UNOWN)
+          if (species == (201))
           {
               letter = GET_UNOWN_LETTER(personality);
               if (!letter)
-                  unownSpecies = SPECIES_UNOWN;
+                  unownSpecies = (201);
               else
-                  unownSpecies = letter + SPECIES_UNOWN_B - 1;
+                  unownSpecies = letter + ((((412)) + 1)) - 1;
               coords =gMonBackPicCoords[unownSpecies];
           }
-          else if (species == SPECIES_CASTFORM)
+          else if (species == (385))
           {
               coords =gCastformFrontSpriteCoords[gBattleMonForms[battler]];
           }
-          else if (species <= SPECIES_EGG)
+          else if (species <= (412))
           {
               coords =gMonBackPicCoords[species];
           }
@@ -1954,7 +1933,7 @@ export function GetBattlerSpriteCoordAttr(battler: any, attr: any): any {
       }
       else
       {
-          if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) == (0))
           {
               spriteInfo = gBattleSpritesDataPtr.battlerData;
               if (!spriteInfo[battler].transformSpecies)
@@ -1968,16 +1947,16 @@ export function GetBattlerSpriteCoordAttr(battler: any, attr: any): any {
                   personality = gTransformedPersonalities[battler];
               }
 
-              if (species == SPECIES_UNOWN)
+              if (species == (201))
               {
                   letter = GET_UNOWN_LETTER(personality);
                   if (!letter)
-                      unownSpecies = SPECIES_UNOWN;
+                      unownSpecies = (201);
                   else
-                      unownSpecies = letter + SPECIES_UNOWN_B - 1;
+                      unownSpecies = letter + ((((412)) + 1)) - 1;
                   coords =gMonBackPicCoords[unownSpecies];
               }
-              else if (species > NUM_SPECIES)
+              else if (species > ((412)))
               {
                   coords =gMonBackPicCoords[0];
               }
@@ -2000,20 +1979,20 @@ export function GetBattlerSpriteCoordAttr(battler: any, attr: any): any {
                   personality = gTransformedPersonalities[battler];
               }
 
-              if (species == SPECIES_UNOWN)
+              if (species == (201))
               {
                   letter = GET_UNOWN_LETTER(personality);
                   if (!letter)
-                      unownSpecies = SPECIES_UNOWN;
+                      unownSpecies = (201);
                   else
-                      unownSpecies = letter + SPECIES_UNOWN_B - 1;
+                      unownSpecies = letter + ((((412)) + 1)) - 1;
                   coords =gMonFrontPicCoords[unownSpecies];
               }
-              else if (species == SPECIES_CASTFORM)
+              else if (species == (385))
               {
                   coords =gCastformFrontSpriteCoords[gBattleMonForms[battler]];
               }
-              else if (species > NUM_SPECIES)
+              else if (species > ((412)))
               {
                   coords =gMonFrontPicCoords[0];
               }
@@ -2116,7 +2095,7 @@ export function AnimTranslateLinearAndFlicker_Flipped(sprite: any): any {
 
 /** void AnimTranslateLinearAndFlicker(struct Sprite *sprite) */
 export function AnimTranslateLinearAndFlicker(sprite: any): any {
-  if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+  if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           sprite.x -= gBattleAnimArgs[0];
           gBattleAnimArgs[3] *= -1;
@@ -2153,12 +2132,12 @@ export function AnimTask_AttackerPunchWithTrace(taskId: any): any {
       let dest: any = null;
       let task: any =gTasks[taskId];
 
-      task.tBattlerSpriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);
-      task.tMoveSpeed = (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER) ? -8 : 8;
+      task.tBattlerSpriteId = GetAnimBattlerSpriteId((0));
+      task.tMoveSpeed = (GetBattlerSide(gBattleAnimAttacker) != (0)) ? -8 : 8;
       task.tState = 0;
       task.tCounter = 0;
       gSprites[task.tBattlerSpriteId].x2 -= task.tBattlerSpriteId;
-      task.tPaletteNum = AllocSpritePalette(ANIM_TAG_BENT_SPOON);
+      task.tPaletteNum = AllocSpritePalette((((10000) + 97)));
       task.tNumTracesActive = 0;
 
       dest = OBJ_PLTT_ID2(task.tPaletteNum);
@@ -2204,7 +2183,7 @@ export function AnimTask_AttackerPunchWithTrace_Step(taskId: any): any {
       case 2:
           if (task.tNumTracesActive == 0)
           {
-              FreeSpritePaletteByTag(ANIM_TAG_BENT_SPOON);
+              FreeSpritePaletteByTag((((10000) + 97)));
               DestroyAnimVisualTask(taskId);
           }
           break;
@@ -2240,7 +2219,7 @@ export function AnimBattlerTrace(sprite: any): any {
 export function AnimWeatherBallUp(sprite: any): any {
   sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
       sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
           sprite.data[0] = 5;
       else
           sprite.data[0] = -10;
@@ -2266,7 +2245,7 @@ export function AnimWeatherBallDown(sprite: any): any {
       sprite.data[0] = gBattleAnimArgs[2];
       sprite.data[2] = sprite.x + gBattleAnimArgs[4];
       sprite.data[4] = sprite.y + gBattleAnimArgs[5];
-      if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) == (0))
       {
           x = gBattleAnimArgs[4] + 30;
           sprite.x += x;

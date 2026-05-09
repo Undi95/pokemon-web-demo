@@ -15,9 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sMovementScripts: any = null;
 /** bool8 ScriptMovement_StartObjectMovementScript(u8 localId, u8 mapNum, u8 mapGroup, const u8 *movementScript) */
 export function ScriptMovement_StartObjectMovementScript(localId: any, mapNum: any, mapGroup: any, movementScript: any): any {
   let objEventId: any = null;
@@ -39,7 +36,7 @@ export function ScriptMovement_IsObjectMovementFinished(localId: any, mapNum: an
           return TRUE;
       taskId = GetMoveObjectsTaskId();
       moveScrId = GetMovementScriptIdFromObjectEventId(taskId, objEventId);
-      if (moveScrId == OBJECT_EVENTS_COUNT)
+      if (moveScrId == (16))
           return TRUE;
       return IsMovementScriptFinished(taskId, moveScrId);
 }
@@ -49,7 +46,7 @@ export function ScriptMovement_UnfreezeObjectEvents(): any {
   let taskId: any = null;
 
       taskId = GetMoveObjectsTaskId();
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
       {
           ScriptMovement_UnfreezeActiveObjects(taskId);
           DestroyTask(taskId);
@@ -63,7 +60,7 @@ export function ScriptMovement_StartMoveObjects(priority: any): any {
 
       taskId = CreateTask(ScriptMovement_MoveObjects, priority);
 
-      for (i = 1; i < NUM_TASK_DATA; i++)
+      for (i = 1; i < (16); i++)
           gTasks[taskId].data[i] = 0xFFFF;
 }
 
@@ -77,7 +74,7 @@ export function ScriptMovement_TryAddNewMovement(taskId: any, objEventId: any, m
   let moveScrId: any = null;
 
       moveScrId = GetMovementScriptIdFromObjectEventId(taskId, objEventId);
-      if (moveScrId != OBJECT_EVENTS_COUNT)
+      if (moveScrId != (16))
       {
           if (IsMovementScriptFinished(taskId, moveScrId) == 0)
           {
@@ -89,8 +86,8 @@ export function ScriptMovement_TryAddNewMovement(taskId: any, objEventId: any, m
               return FALSE;
           }
       }
-      moveScrId = GetMovementScriptIdFromObjectEventId(taskId, LOCALID_PLAYER);
-      if (moveScrId == OBJECT_EVENTS_COUNT)
+      moveScrId = GetMovementScriptIdFromObjectEventId(taskId, (255));
+      if (moveScrId == (16))
       {
           return TRUE;
       }
@@ -107,12 +104,12 @@ export function GetMovementScriptIdFromObjectEventId(taskId: any, objEventId: an
       let i: any = null;
 
       moveScriptId =gTasks[taskId].data[1];
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++, moveScriptId++)
+      for (i = 0; i < (16); i++, moveScriptId++)
       {
           if (moveScriptId == objEventId)
               return i;
       }
-      return OBJECT_EVENTS_COUNT;
+      return (16);
 }
 
 /** static void LoadObjectEventIdPtrFromMovementScript(u8 taskId, u8 moveScrId, u8 **pObjEventId) */
@@ -180,7 +177,7 @@ export function ScriptMovement_UnfreezeActiveObjects(taskId: any): any {
       let i: any = null;
 
       pObjEventId =gTasks[taskId].data[1];
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++, pObjEventId++)
+      for (i = 0; i < (16); i++, pObjEventId++)
       {
           if (pObjEventId != 0xFF)
               UnfreezeObjectEvent(gObjectEvents[pObjEventId]);
@@ -192,7 +189,7 @@ export function ScriptMovement_MoveObjects(taskId: any): any {
   let i: any = null;
       let objEventId: any = null;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           LoadObjectEventIdFromMovementScript(taskId, i,objEventId);
           if (objEventId != 0xFF)
@@ -209,7 +206,7 @@ export function ScriptMovement_TakeStep(taskId: any, moveScrId: any, objEventId:
           return;
 
       nextMoveActionId = movementScript;
-      if (nextMoveActionId == MOVEMENT_ACTION_STEP_END)
+      if (nextMoveActionId == (0xFE))
       {
           SetMovementScriptFinished(taskId, moveScrId);
           FreezeObjectEvent(gObjectEvents[objEventId]);

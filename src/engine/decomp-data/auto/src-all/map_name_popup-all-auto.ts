@@ -17,16 +17,10 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattlePyramid_MapHeaderStrings: any = null;
-let sMapPopUp_OutlineTable: any = null;
-let sMapPopUp_PaletteTable: any = null;
-let sMapPopUp_Palette_Underwater: any = null;
-let sMapPopUp_Table: any = null;
-let sMapSectionToThemeId: any = null;
 let sPopupTaskId: any = null;
 /** void ShowMapNamePopup(void) */
 export function ShowMapNamePopup(): any {
-  if (FlagGet(FLAG_HIDE_MAP_NAME_POPUP) != TRUE)
+  if (FlagGet((((0x4000) + 0x0))) != TRUE)
       {
           if (!FuncIsActiveTask(Task_MapNamePopUpWindow))
           {
@@ -116,7 +110,7 @@ export function Task_MapNamePopUpWindow(taskId: any): any {
 export function HideMapNamePopUpWindow(): any {
   if (FuncIsActiveTask(Task_MapNamePopUpWindow))
       {
-          if (GetMapNamePopUpWindowId() != WINDOW_NONE)
+          if (GetMapNamePopUpWindowId() != (0xFF))
           {
               ClearStdWindowAndFrame(GetMapNamePopUpWindowId(), TRUE);
               RemoveMapNamePopUpWindow();
@@ -133,12 +127,12 @@ export function ShowMapNamePopUpWindow(): any {
       let x: any = null;
       let mapDisplayHeaderSource: any = null;
 
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+      if (CurrentBattlePyramidLocation() != (0))
       {
           if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_TOP)
           {
               withoutPrefixPtr =(mapDisplayHeader[3]);
-              mapDisplayHeaderSource = sBattlePyramid_MapHeaderStrings[FRONTIER_STAGES_PER_CHALLENGE];
+              mapDisplayHeaderSource = sBattlePyramid_MapHeaderStrings[(7)];
           }
           else
           {
@@ -155,10 +149,10 @@ export function ShowMapNamePopUpWindow(): any {
       AddMapNamePopUpWindow();
       LoadMapNamePopUpWindowBg();
       x = GetStringCenterAlignXOffset(FONT_NARROW, withoutPrefixPtr, 80);
-      mapDisplayHeader[0] = EXT_CTRL_CODE_BEGIN;
-      mapDisplayHeader[1] = EXT_CTRL_CODE_HIGHLIGHT;
-      mapDisplayHeader[2] = TEXT_COLOR_TRANSPARENT;
-      AddTextPrinterParameterized(GetMapNamePopUpWindowId(), FONT_NARROW, mapDisplayHeader, x, 3, TEXT_SKIP_DRAW, NULL);
+      mapDisplayHeader[0] = (0xFC);
+      mapDisplayHeader[1] = (0x02);
+      mapDisplayHeader[2] = (0x0);
+      AddTextPrinterParameterized(GetMapNamePopUpWindowId(), FONT_NARROW, mapDisplayHeader, x, 3, (0xFF), NULL);
       CopyWindowToVram(GetMapNamePopUpWindowId(), COPYWIN_FULL);
 }
 
@@ -201,7 +195,7 @@ export function LoadMapNamePopUpWindowBg(): any {
       LoadBgTiles(GetWindowAttribute(popupWindowId, WINDOW_BG), sMapPopUp_OutlineTable[popUpThemeId], 0x400, 0x21D);
       CallWindowFunction(popupWindowId, DrawMapNamePopUpFrame);
       PutWindowTilemap(popupWindowId);
-      if (gMapHeader.weather == WEATHER_UNDERWATER_BUBBLES)
+      if (gMapHeader.weather == (14))
           LoadPalette(sMapPopUp_Palette_Underwater, BG_PLTT_ID(14), 0);
       else
           LoadPalette(sMapPopUp_PaletteTable[popUpThemeId], BG_PLTT_ID(14), sizeof(sMapPopUp_PaletteTable[0]));

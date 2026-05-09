@@ -15,6 +15,32 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let REG_DMA1CNT: any = null;
+let REG_DMA1CNT_H: any = null;
+let REG_DMA1DAD: any = null;
+let REG_DMA1SAD: any = null;
+let REG_DMA2CNT: any = null;
+let REG_DMA2CNT_H: any = null;
+let REG_DMA2DAD: any = null;
+let REG_DMA2SAD: any = null;
+let REG_NR12: any = null;
+let REG_NR14: any = null;
+let REG_NR22: any = null;
+let REG_NR24: any = null;
+let REG_NR30: any = null;
+let REG_NR42: any = null;
+let REG_NR44: any = null;
+let REG_NR50: any = null;
+let REG_NR51: any = null;
+let REG_TM0CNT_H: any = null;
+let REG_TM0CNT_L: any = null;
+let REG_WAVE_RAM0: any = null;
+let REG_WAVE_RAM1: any = null;
+let REG_WAVE_RAM2: any = null;
+let REG_WAVE_RAM3: any = null;
+let sustainGoal: any = null;
 /** u32 MidiKeyToFreq(struct WaveData *wav, u8 key, u8 fineAdjust) */
 export function MidiKeyToFreq(wav: any, key: any, fineAdjust: any): any {
   let val1: any = null;

@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let REG_SIODATA8: any = null;
+let must_data: any = null;
+let send_data: any = null;
 /** void MultiBootInit(struct MultiBootParam *mp) */
 export function MultiBootInit(mp: any): any {
   mp.client_bit = 0;
@@ -111,7 +116,7 @@ export function MultiBootMain(mp: any): any {
               j = REG_SIOMULTI(i);
               if (mp.client_bit & (1 << i))
               {
-                  if (j != ((MULTIBOOT_CLIENT_INFO << 8) | (1 << i)))
+                  if (j != (((0x72) << 8) | (1 << i)))
                   {
                       k = 0;
                       break;
@@ -140,7 +145,7 @@ export function MultiBootMain(mp: any): any {
           }
 
       // LABEL: output_master_info:
-          return MultiBootSend(mp, (MULTIBOOT_MASTER_INFO << 8) | mp.client_bit);
+          return MultiBootSend(mp, ((0x62) << 8) | mp.client_bit);
 
       // LABEL: case_1:
       case 1:
@@ -148,7 +153,7 @@ export function MultiBootMain(mp: any): any {
           for (i = MULTIBOOT_NCHILD; i != 0; i--)
           {
               j = REG_SIOMULTI(i);
-              if ((j >> 8) == MULTIBOOT_CLIENT_INFO)
+              if ((j >> 8) == (0x72))
               {
                   MultiBoot_required_data[i - 1] = j;
                   j &= 0xff;
@@ -165,7 +170,7 @@ export function MultiBootMain(mp: any): any {
           }
 
           mp.probe_count = 2;
-          return MultiBootSend(mp, (MULTIBOOT_MASTER_START_PROBE << 8) | mp.probe_target_bit);
+          return MultiBootSend(mp, ((0x61) << 8) | mp.probe_target_bit);
 
       case 2:
           for (i = MULTIBOOT_NCHILD; i != 0; i--)
@@ -189,8 +194,8 @@ export function MultiBootMain(mp: any): any {
               mp.client_data[i - 1] = j;
               if (mp.probe_target_bit & (1 << i))
               {
-                  if ((j >> 8) != MULTIBOOT_CLIENT_INFO
-                   && (j >> 8) != MULTIBOOT_CLIENT_DLREADY)
+                  if ((j >> 8) != (0x72)
+                   && (j >> 8) != (0x73))
                   {
                       MultiBootInit(mp);
                       return MULTIBOOT_ERROR_NO_DLREADY;
@@ -204,7 +209,7 @@ export function MultiBootMain(mp: any): any {
 
           if (k == 0)
           {
-              return MultiBootSend(mp, (MULTIBOOT_MASTER_REQUEST_DLREADY << 8) | mp.palette_data);
+              return MultiBootSend(mp, ((0x63) << 8) | mp.palette_data);
           }
 
           mp.probe_count = 0xd1;
@@ -215,7 +220,7 @@ export function MultiBootMain(mp: any): any {
               k += mp.client_data[i - 1];
           }
           mp.handshake_data = k;
-          return MultiBootSend(mp, (MULTIBOOT_MASTER_START_DL << 8) | (k & 0xff));
+          return MultiBootSend(mp, ((0x64) << 8) | (k & 0xff));
 
       case 0xd1:
           for (i = MULTIBOOT_NCHILD; i != 0; i--)
@@ -223,7 +228,7 @@ export function MultiBootMain(mp: any): any {
               j = REG_SIOMULTI(i);
               if (mp.probe_target_bit & (1 << i))
               {
-                  if ((j >> 8) != MULTIBOOT_CLIENT_DLREADY)
+                  if ((j >> 8) != (0x73))
                   {
                       MultiBootInit(mp);
                       return MULTIBOOT_ERROR_NO_DLREADY;
@@ -249,7 +254,7 @@ export function MultiBootMain(mp: any): any {
               if (mp.probe_target_bit & (1 << i))
               {
                   j = REG_SIOMULTI(i);
-                  if ((j >> 8) != (MULTIBOOT_MASTER_START_PROBE + 1 - (mp.probe_count >> 1))
+                  if ((j >> 8) != ((0x61) + 1 - (mp.probe_count >> 1))
                    || ((j & 0xff) != (1 << i)))
                   {
                       mp.probe_target_bit ^= 1 << i;

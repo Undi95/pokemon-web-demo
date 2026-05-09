@@ -17,25 +17,21 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAnims_Confetti: any = null;
-let sDummyFameMon: any = null;
-let sExtraY: any = null;
-let sHallOfFame_Gfx: any = null;
-let sHallOfFame_MonFullTeamPositions: any = null;
-let sHallOfFame_MonHalfTeamPositions: any = null;
-let sHallOfFame_Pal: any = null;
+let destX: any = null;
+let destY: any = null;
+let gGameContinueCallback: any = null;
+let gReservedSpritePaletteCount: any = null;
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_0x8005: any = null;
+let oamOffset: any = null;
+let oamSize: any = null;
+let plttOffset: any = null;
+let plttSize: any = null;
 let sHofFadePalettes: any = null;
 let sHofGfxPtr: any = null;
 let sHofMonPtr: any = null;
-let sHof_BgTemplates: any = null;
-let sHof_WindowTemplate: any = null;
-let sMonInfoTextColors: any = null;
-let sOamData_Confetti: any = null;
-let sPlayerInfoTextColors: any = null;
-let sSineIdx: any = null;
-let sSpritePalette_Confetti: any = null;
-let sSpriteSheet_Confetti: any = null;
-let sSpriteTemplate_HofConfetti: any = null;
+let startY: any = null;
+let tState: any = null;
 /** static void VBlankCB_HallOfFame(void) */
 export function VBlankCB_HallOfFame(): any {
   LoadOam();
@@ -78,7 +74,7 @@ export function InitHallOfFameScreen(): any {
           if (!LoadHofBgs())
           {
               SetVBlankCallback(VBlankCB_HallOfFame);
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
               gMain.state++;
           }
           break;
@@ -87,7 +83,7 @@ export function InitHallOfFameScreen(): any {
           if (!gPaletteFade.active)
           {
               SetMainCallback2(CB2_HallOfFame);
-              PlayBGM(MUS_HALL_OF_FAME);
+              PlayBGM((436));
               return FALSE;
           }
           break;
@@ -121,7 +117,7 @@ export function Task_Hof_InitMonData(taskId: any): any {
 
       gTasks[taskId].tMonNumber = 0;  
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           let nickname: any = [];
           if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES))
@@ -131,27 +127,27 @@ export function Task_Hof_InitMonData(taskId: any): any {
               sHofMonPtr.mon[i].personality = GetMonData(gPlayerParty[i], MON_DATA_PERSONALITY);
               sHofMonPtr.mon[i].lvl = GetMonData(gPlayerParty[i], MON_DATA_LEVEL);
               GetMonData(gPlayerParty[i], MON_DATA_NICKNAME, nickname);
-              for (j = 0; j < POKEMON_NAME_LENGTH; j++)
+              for (j = 0; j < (10); j++)
                   sHofMonPtr.mon[i].nickname[j] = nickname[j];
               gTasks[taskId].tMonNumber++;
           }
           else
           {
-              sHofMonPtr.mon[i].species = SPECIES_NONE;
+              sHofMonPtr.mon[i].species = (0);
               sHofMonPtr.mon[i].tid = 0;
               sHofMonPtr.mon[i].personality = 0;
               sHofMonPtr.mon[i].lvl = 0;
-              sHofMonPtr.mon[i].nickname[0] = EOS;
+              sHofMonPtr.mon[i].nickname[0] = (0xFF);
           }
       }
 
       sHofFadePalettes = 0;
       gTasks[taskId].tDisplayedMonId = 0;
-      gTasks[taskId].tPlayerSpriteID = SPRITE_NONE;
+      gTasks[taskId].tPlayerSpriteID = (0xFF);
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
-          gTasks[taskId].data[(i) + 5] = SPRITE_NONE;
+          gTasks[taskId].data[(i) + 5] = (0xFF);
       }
 
       if (gTasks[taskId].tDontSaveData)
@@ -167,17 +163,17 @@ export function Task_Hof_InitTeamSaveData(taskId: any): any {
 
       if (!gHasHallOfFameRecords)
       {
-          memset(gDecompressionBuffer, 0, SECTOR_SIZE * NUM_HOF_SECTORS);
+          memset(gDecompressionBuffer, 0, (((3968) + (128))) * (2));
       }
       else
       {
-          if (LoadGameSave(SAVE_HALL_OF_FAME) != SAVE_STATUS_OK)
-              memset(gDecompressionBuffer, 0, SECTOR_SIZE * NUM_HOF_SECTORS);
+          if (LoadGameSave(SAVE_HALL_OF_FAME) != (1))
+              memset(gDecompressionBuffer, 0, (((3968) + (128))) * (2));
       }
 
       for (i = 0; i < (50); i++, lastSavedTeam++)
       {
-          if (lastSavedTeam.mon[0].species == SPECIES_NONE)
+          if (lastSavedTeam.mon[0].species == (0))
               break;
       }
       if (i >= (50))
@@ -194,7 +190,7 @@ export function Task_Hof_InitTeamSaveData(taskId: any): any {
       lastSavedTeam = sHofMonPtr;
 
       DrawDialogueFrame(0, FALSE);
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, NULL, (0x2), (0x1), (0x3));
       CopyWindowToVram(0, COPYWIN_FULL);
       gTasks[taskId].func = Task_Hof_TrySaveData;
 }
@@ -202,7 +198,7 @@ export function Task_Hof_InitTeamSaveData(taskId: any): any {
 /** static void Task_Hof_TrySaveData(u8 taskId) */
 export function Task_Hof_TrySaveData(taskId: any): any {
   gGameContinueCallback = CB2_DoHallOfFameScreenDontSaveData;
-      if (TrySavingData(SAVE_HALL_OF_FAME) == SAVE_STATUS_ERROR && gDamagedSaveSectors != 0)
+      if (TrySavingData(SAVE_HALL_OF_FAME) == (0xFF) && gDamagedSaveSectors != 0)
       {
           UnsetBgTilemapBuffer(1);
           UnsetBgTilemapBuffer(3);
@@ -215,7 +211,7 @@ export function Task_Hof_TrySaveData(taskId: any): any {
       }
       else
       {
-          PlaySE(SE_SAVE);
+          PlaySE((55));
           gTasks[taskId].func = Task_Hof_WaitToDisplayMon;
           gTasks[taskId].tFrameCount = 32;
       }
@@ -242,7 +238,7 @@ export function Task_Hof_DisplayMon(taskId: any): any {
       let currMonId: any = gTasks[taskId].tDisplayedMonId;
       let currMon: any =sHofMonPtr.mon[currMonId];
 
-      if (gTasks[taskId].tMonNumber > PARTY_SIZE / 2)
+      if (gTasks[taskId].tMonNumber > (6) / 2)
       {
           startX = sHallOfFame_MonFullTeamPositions[currMonId][0];
           startY = sHallOfFame_MonFullTeamPositions[currMonId][1];
@@ -257,10 +253,10 @@ export function Task_Hof_DisplayMon(taskId: any): any {
           destY = sHallOfFame_MonHalfTeamPositions[currMonId][3];
       }
 
-      if (currMon.species == SPECIES_EGG)
+      if (currMon.species == (412))
           destY += 10;
 
-      spriteId = CreateMonPicSprite_Affine(currMon.species, currMon.tid, currMon.personality, MON_PIC_AFFINE_FRONT, startX, startY, currMonId, TAG_NONE);
+      spriteId = CreateMonPicSprite_Affine(currMon.species, currMon.tid, currMon.personality, (1), startX, startY, currMonId, (0xFFFF));
       gSprites[spriteId].tDestinationX = destX;
       gSprites[spriteId].tDestinationY = destY;
       gSprites[spriteId].data[0] = 0;
@@ -298,7 +294,7 @@ export function Task_Hof_TryDisplayAnotherMon(taskId: any): any {
       else
       {
           sHofFadePalettes |= (0x10000 << gSprites[gTasks[taskId].data[(currPokeID) + 5]].oam.paletteNum);
-          if (gTasks[taskId].tDisplayedMonId < PARTY_SIZE - 1 && currMon[1].species != SPECIES_NONE)  
+          if (gTasks[taskId].tDisplayedMonId < (6) - 1 && currMon[1].species != (0))  
           {
               gTasks[taskId].tDisplayedMonId++;
               BeginNormalPaletteFade(sHofFadePalettes, 0, 12, 12, RGB(16, 29, 24));
@@ -316,15 +312,15 @@ export function Task_Hof_TryDisplayAnotherMon(taskId: any): any {
 export function Task_Hof_PaletteFadeAndPrintWelcomeText(taskId: any): any {
   let i: any = null;
 
-      BeginNormalPaletteFade(PALETTES_OBJECTS, 0, 0, 0, RGB_BLACK);
-      for (i = 0; i < PARTY_SIZE; i++)
+      BeginNormalPaletteFade((0xFFFF0000), 0, 0, 0, (RGB(0, 0, 0)));
+      for (i = 0; i < (6); i++)
       {
-          if (gTasks[taskId].data[(i) + 5] != SPRITE_NONE)
+          if (gTasks[taskId].data[(i) + 5] != (0xFF))
               gSprites[gTasks[taskId].data[(i) + 5]].oam.priority = 0;
       }
 
       HallOfFame_PrintWelcomeText(0, 15);
-      PlaySE(SE_APPLAUSE);
+      PlaySE((105));
       gTasks[taskId].tFrameCount = 400;
       gTasks[taskId].func = Task_Hof_DoConfetti;
 }
@@ -343,9 +339,9 @@ export function Task_Hof_DoConfetti(taskId: any): any {
       else
       {
           let i: any = null;
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
-              if (gTasks[taskId].data[(i) + 5] != SPRITE_NONE)
+              if (gTasks[taskId].data[(i) + 5] != (0xFF))
                   gSprites[gTasks[taskId].data[(i) + 5]].oam.priority = 1;
           }
           BeginNormalPaletteFade(sHofFadePalettes, 0, 12, 12, RGB(16, 29, 24));
@@ -375,7 +371,7 @@ export function Task_Hof_DisplayPlayer(taskId: any): any {
       ShowBg(0);
       ShowBg(1);
       ShowBg(3);
-      gTasks[taskId].tPlayerSpriteID = CreateTrainerPicSprite(PlayerGenderToFrontTrainerPicId_Debug(gSaveBlock2Ptr.playerGender, TRUE), TRUE, 120, 72, 6, TAG_NONE);
+      gTasks[taskId].tPlayerSpriteID = CreateTrainerPicSprite(PlayerGenderToFrontTrainerPicId_Debug(gSaveBlock2Ptr.playerGender, TRUE), TRUE, 120, 72, 6, (0xFFFF));
       AddWindow(sHof_WindowTemplate);
       LoadWindowGfx(1, gSaveBlock2Ptr.optionsWindowFrameType, 0x21D, BG_PLTT_ID(13));
       LoadPalette(GetTextWindowPalette(1), BG_PLTT_ID(14), PLTT_SIZE_4BPP);
@@ -398,7 +394,7 @@ export function Task_Hof_WaitAndPrintPlayerInfo(taskId: any): any {
           FillBgTilemapBufferRect_Palette0(0, 0, 0, 0, 0x20, 0x20);
           HallOfFame_PrintPlayerInfo(1, 2);
           DrawDialogueFrame(0, FALSE);
-          AddTextPrinterParameterized2(0, FONT_NORMAL, gText_LeagueChamp, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          AddTextPrinterParameterized2(0, FONT_NORMAL, gText_LeagueChamp, 0, NULL, (0x2), (0x1), (0x3));
           CopyWindowToVram(0, COPYWIN_FULL);
           gTasks[taskId].func = Task_Hof_ExitOnKeyPressed;
       }
@@ -416,7 +412,7 @@ export function Task_Hof_ExitOnKeyPressed(taskId: any): any {
 /** static void Task_Hof_HandlePaletteOnExit(u8 taskId) */
 export function Task_Hof_HandlePaletteOnExit(taskId: any): any {
   CpuCopy16(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);
-      BeginNormalPaletteFade(PALETTES_ALL, 8, 0, 0x10, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 8, 0, 0x10, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_Hof_HandleExit;
 }
 
@@ -426,10 +422,10 @@ export function Task_Hof_HandleExit(taskId: any): any {
       {
           let i: any = null;
 
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
               let spriteId: any = gTasks[taskId].data[(i) + 5];
-              if (spriteId != SPRITE_NONE)
+              if (spriteId != (0xFF))
               {
                   FreeOamMatrix(gSprites[spriteId].oam.matrixNum);
                   FreeAndDestroyMonPicSprite(spriteId);
@@ -507,12 +503,12 @@ export function CB2_DoHallOfFamePC(): any {
               SetGpuReg(REG_OFFSET_BLDY, 0);
               taskId = CreateTask(Task_HofPC_CopySaveData, 0);
 
-              for (i = 0; i < PARTY_SIZE; i++)
+              for (i = 0; i < (6); i++)
               {
-                  gTasks[taskId].data[(i) + 5] = SPRITE_NONE;
+                  gTasks[taskId].data[(i) + 5] = (0xFF);
               }
 
-              sHofMonPtr = AllocZeroed(SECTOR_SIZE * NUM_HOF_SECTORS);
+              sHofMonPtr = AllocZeroed((((3968) + (128))) * (2));
               SetMainCallback2(CB2_HallOfFame);
           }
           break;
@@ -522,7 +518,7 @@ export function CB2_DoHallOfFamePC(): any {
 /** static void Task_HofPC_CopySaveData(u8 taskId) */
 export function Task_HofPC_CopySaveData(taskId: any): any {
   HofPCTopBar_AddWindow(0, 30, 0, 12, 0x226);
-      if (LoadGameSave(SAVE_HALL_OF_FAME) != SAVE_STATUS_OK)
+      if (LoadGameSave(SAVE_HALL_OF_FAME) != (1))
       {
           gTasks[taskId].func = Task_HofPC_PrintDataIsCorrupted;
       }
@@ -531,11 +527,11 @@ export function Task_HofPC_CopySaveData(taskId: any): any {
           let i: any = null;
           let savedTeams: any = null;
 
-          CpuCopy16(gDecompressionBuffer, sHofMonPtr, SECTOR_SIZE * NUM_HOF_SECTORS);
+          CpuCopy16(gDecompressionBuffer, sHofMonPtr, (((3968) + (128))) * (2));
           savedTeams = sHofMonPtr;
           for (i = 0; i < (50); i++, savedTeams++)
           {
-              if (savedTeams.mon[0].species == SPECIES_NONE)
+              if (savedTeams.mon[0].species == (0))
                   break;
           }
 
@@ -544,7 +540,7 @@ export function Task_HofPC_CopySaveData(taskId: any): any {
           else
               gTasks[taskId].tCurrTeamNo = (50) - 1;
 
-          gTasks[taskId].tCurrPageNo = GetGameStat(GAME_STAT_ENTERED_HOF);
+          gTasks[taskId].tCurrPageNo = GetGameStat((10));
 
           gTasks[taskId].func = Task_HofPC_DrawSpritesPrintText;
       }
@@ -564,7 +560,7 @@ export function Task_HofPC_DrawSpritesPrintText(taskId: any): any {
       gTasks[taskId].tCurrMonId = 0;
       gTasks[taskId].tMonNo = 0;
 
-      for (i = 0; i < PARTY_SIZE; i++, currMon++)
+      for (i = 0; i < (6); i++, currMon++)
       {
           if (currMon.species != 0)
               gTasks[taskId].tMonNo++;
@@ -572,14 +568,14 @@ export function Task_HofPC_DrawSpritesPrintText(taskId: any): any {
 
       currMon =savedTeams.mon[0];
 
-      for (i = 0; i < PARTY_SIZE; i++, currMon++)
+      for (i = 0; i < (6); i++, currMon++)
       {
           if (currMon.species != 0)
           {
               let spriteId: any = null;
               let posX, posY;
 
-              if (gTasks[taskId].tMonNo > PARTY_SIZE / 2)
+              if (gTasks[taskId].tMonNo > (6) / 2)
               {
                   posX = sHallOfFame_MonFullTeamPositions[i][2];
                   posY = sHallOfFame_MonFullTeamPositions[i][3];
@@ -590,20 +586,20 @@ export function Task_HofPC_DrawSpritesPrintText(taskId: any): any {
                   posY = sHallOfFame_MonHalfTeamPositions[i][3];
               }
 
-              if (currMon.species == SPECIES_EGG)
+              if (currMon.species == (412))
                   posY += 10;
 
-              spriteId = CreateMonPicSprite_HandleDeoxys(currMon.species, currMon.tid, currMon.personality, TRUE, posX, posY, i, TAG_NONE);
+              spriteId = CreateMonPicSprite_HandleDeoxys(currMon.species, currMon.tid, currMon.personality, TRUE, posX, posY, i, (0xFFFF));
               gSprites[spriteId].oam.priority = 1;
               gTasks[taskId].data[(i) + 5] = spriteId;
           }
           else
           {
-              gTasks[taskId].data[(i) + 5] = SPRITE_NONE;
+              gTasks[taskId].data[(i) + 5] = (0xFF);
           }
       }
 
-      BlendPalettes(PALETTES_OBJECTS, 0xC, RGB(16, 29, 24));
+      BlendPalettes((0xFFFF0000), 0xC, RGB(16, 29, 24));
 
       ConvertIntToDecimalStringN(gStringVar1, gTasks[taskId].tCurrPageNo, STR_CONV_MODE_RIGHT_ALIGN, 3);
       StringExpandPlaceholders(gStringVar4, gText_HOFNumber);
@@ -626,20 +622,20 @@ export function Task_HofPC_PrintMonInfo(taskId: any): any {
       for (i = 0; i < gTasks[taskId].tCurrTeamNo; i++)
           savedTeams++;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           let spriteId: any = gTasks[taskId].data[(i) + 5];
-          if (spriteId != SPRITE_NONE)
+          if (spriteId != (0xFF))
               gSprites[spriteId].oam.priority = 1;
       }
 
       currMonID = gTasks[taskId].data[(gTasks[taskId].tCurrMonId) + 5];
       gSprites[currMonID].oam.priority = 0;
-      sHofFadePalettes = (0x10000 << gSprites[currMonID].oam.paletteNum) ^ PALETTES_OBJECTS;
+      sHofFadePalettes = (0x10000 << gSprites[currMonID].oam.paletteNum) ^ (0xFFFF0000);
       BlendPalettesUnfaded(sHofFadePalettes, 0xC, RGB(16, 29, 24));
 
       currMon =savedTeams.mon[gTasks[taskId].tCurrMonId];
-      if (currMon.species != SPECIES_EGG)
+      if (currMon.species != (412))
       {
           StopCryAndClearCrySongs();
           PlayCry_Normal(currMon.species, 0);
@@ -658,13 +654,13 @@ export function Task_HofPC_HandleInput(taskId: any): any {
           if (gTasks[taskId].tCurrTeamNo != 0)  
           {
               gTasks[taskId].tCurrTeamNo--;
-              for (i = 0; i < PARTY_SIZE; i++)
+              for (i = 0; i < (6); i++)
               {
                   let spriteId: any = gTasks[taskId].data[(i) + 5];
-                  if (spriteId != SPRITE_NONE)
+                  if (spriteId != (0xFF))
                   {
                       FreeAndDestroyMonPicSprite(spriteId);
-                      gTasks[taskId].data[(i) + 5] = SPRITE_NONE;
+                      gTasks[taskId].data[(i) + 5] = (0xFF);
                   }
               }
               if (gTasks[taskId].tCurrPageNo != 0)
@@ -719,13 +715,13 @@ export function Task_HofPC_HandleExit(taskId: any): any {
       {
           let i: any = null;
 
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
               let spriteId: any = gTasks[taskId].data[(i) + 5];
-              if (spriteId != SPRITE_NONE)
+              if (spriteId != (0xFF))
               {
                   FreeAndDestroyMonPicSprite(spriteId);
-                  gTasks[taskId].data[(i) + 5] = SPRITE_NONE;
+                  gTasks[taskId].data[(i) + 5] = (0xFF);
               }
           }
 
@@ -750,7 +746,7 @@ export function Task_HofPC_HandleExit(taskId: any): any {
 export function Task_HofPC_PrintDataIsCorrupted(taskId: any): any {
   HofPCTopBar_Print(gText_AButtonExit, 8, TRUE);
       DrawDialogueFrame(0, FALSE);
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_HOFCorrupted, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_HOFCorrupted, 0, NULL, (0x2), (0x1), (0x3));
       CopyWindowToVram(0, COPYWIN_FULL);
       gTasks[taskId].func = Task_HofPC_ExitOnButtonPress;
 }
@@ -780,72 +776,72 @@ export function HallOfFame_PrintMonInfo(currMon: any, unused1: any, unused2: any
       PutWindowTilemap(0);
 
        
-      if (currMon.species != SPECIES_EGG)
+      if (currMon.species != (412))
       {
           stringPtr = StringCopy(text, gText_Number);
           dexNumber = SpeciesToPokedexNum(currMon.species);
           if (dexNumber != 0xFFFF)
           {
-              stringPtr[0] = (dexNumber / 100) + CHAR_0;
+              stringPtr[0] = (dexNumber / 100) + (0xA1);
               stringPtr++;
               dexNumber %= 100;
-              stringPtr[0] = (dexNumber / 10) + CHAR_0;
+              stringPtr[0] = (dexNumber / 10) + (0xA1);
               stringPtr++;
-              stringPtr[0] = (dexNumber % 10) + CHAR_0;
+              stringPtr[0] = (dexNumber % 10) + (0xA1);
               stringPtr++;
           }
           else
           {
-              stringPtr =  CHAR_QUESTION_MARK;
-              stringPtr =  CHAR_QUESTION_MARK;
-              stringPtr =  CHAR_QUESTION_MARK;
+              stringPtr =  (0xAC);
+              stringPtr =  (0xAC);
+              stringPtr =  (0xAC);
           }
-          stringPtr[0] = EOS;
-          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x10, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+          stringPtr[0] = (0xFF);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x10, 1, sMonInfoTextColors, (0xFF), text);
       }
 
        
-      memcpy(text, currMon.nickname, POKEMON_NAME_LENGTH);
-      text[POKEMON_NAME_LENGTH] = EOS;
-      if (currMon.species == SPECIES_EGG)
+      memcpy(text, currMon.nickname, (10));
+      text[(10)] = (0xFF);
+      if (currMon.species == (412))
       {
           width = GetStringCenterAlignXOffset(FONT_NORMAL, text, 0xD0);
-          AddTextPrinterParameterized3(0, FONT_NORMAL, width, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, width, 1, sMonInfoTextColors, (0xFF), text);
           CopyWindowToVram(0, COPYWIN_FULL);
       }
       else
       {
           width = GetStringRightAlignXOffset(FONT_NORMAL, text, 0x80);
-          AddTextPrinterParameterized3(0, FONT_NORMAL, width, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, width, 1, sMonInfoTextColors, (0xFF), text);
 
-          text[0] = CHAR_SLASH;
+          text[0] = (0xBA);
           stringPtr = StringCopy(text + 1, gSpeciesNames[currMon.species]);
 
-          if (currMon.species != SPECIES_NIDORAN_M && currMon.species != SPECIES_NIDORAN_F)
+          if (currMon.species != (32) && currMon.species != (29))
           {
               switch (GetGenderFromSpeciesAndPersonality(currMon.species, currMon.personality))
               {
-              case MON_MALE:
-                  stringPtr[0] = CHAR_MALE;
+              case (0x00):
+                  stringPtr[0] = (0xB5);
                   stringPtr++;
                   break;
-              case MON_FEMALE:
-                  stringPtr[0] = CHAR_FEMALE;
+              case (0xFE):
+                  stringPtr[0] = (0xB6);
                   stringPtr++;
                   break;
               }
           }
 
-          stringPtr[0] = EOS;
-          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x80, 1, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+          stringPtr[0] = (0xFF);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x80, 1, sMonInfoTextColors, (0xFF), text);
 
           stringPtr = StringCopy(text, gText_Level);
           ConvertIntToDecimalStringN(stringPtr, currMon.lvl, STR_CONV_MODE_LEFT_ALIGN, 3);
-          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x24, 0x11, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x24, 0x11, sMonInfoTextColors, (0xFF), text);
 
           stringPtr = StringCopy(text, gText_IDNumber);
           ConvertIntToDecimalStringN(stringPtr, (currMon.tid), STR_CONV_MODE_LEADING_ZEROS, 5);
-          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x68, 0x11, sMonInfoTextColors, TEXT_SKIP_DRAW, text);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, 0x68, 0x11, sMonInfoTextColors, (0xFF), text);
 
           CopyWindowToVram(0, COPYWIN_FULL);
       }
@@ -860,39 +856,39 @@ export function HallOfFame_PrintPlayerInfo(unused1: any, unused2: any): any {
       FillWindowPixelBuffer(1, PIXEL_FILL(1));
       PutWindowTilemap(1);
       DrawStdFrameWithCustomTileAndPalette(1, FALSE, 0x21D, 0xD);
-      AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 1, sPlayerInfoTextColors, TEXT_SKIP_DRAW, gText_Name);
+      AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 1, sPlayerInfoTextColors, (0xFF), gText_Name);
 
       width = GetStringRightAlignXOffset(FONT_NORMAL, gSaveBlock2Ptr.playerName, 0x70);
-      AddTextPrinterParameterized3(1, FONT_NORMAL, width, 1, sPlayerInfoTextColors, TEXT_SKIP_DRAW, gSaveBlock2Ptr.playerName);
+      AddTextPrinterParameterized3(1, FONT_NORMAL, width, 1, sPlayerInfoTextColors, (0xFF), gSaveBlock2Ptr.playerName);
 
       trainerId = (gSaveBlock2Ptr.playerTrainerId[0]) | (gSaveBlock2Ptr.playerTrainerId[1] << 8);
       AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 0x11, sPlayerInfoTextColors, 0, gText_IDNumber);
-      text[0] = (trainerId % 100000) / 10000 + CHAR_0;
-      text[1] = (trainerId % 10000) / 1000 + CHAR_0;
-      text[2] = (trainerId % 1000) / 100 + CHAR_0;
-      text[3] = (trainerId % 100) / 10 + CHAR_0;
-      text[4] = (trainerId % 10) / 1 + CHAR_0;
-      text[5] = EOS;
+      text[0] = (trainerId % 100000) / 10000 + (0xA1);
+      text[1] = (trainerId % 10000) / 1000 + (0xA1);
+      text[2] = (trainerId % 1000) / 100 + (0xA1);
+      text[3] = (trainerId % 100) / 10 + (0xA1);
+      text[4] = (trainerId % 10) / 1 + (0xA1);
+      text[5] = (0xFF);
       width = GetStringRightAlignXOffset(FONT_NORMAL, text, 0x70);
-      AddTextPrinterParameterized3(1, FONT_NORMAL, width, 0x11, sPlayerInfoTextColors, TEXT_SKIP_DRAW, text);
+      AddTextPrinterParameterized3(1, FONT_NORMAL, width, 0x11, sPlayerInfoTextColors, (0xFF), text);
 
-      AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 0x21, sPlayerInfoTextColors, TEXT_SKIP_DRAW, gText_Time);
-      text[0] = (gSaveBlock2Ptr.playTimeHours / 100) + CHAR_0;
-      text[1] = (gSaveBlock2Ptr.playTimeHours % 100) / 10 + CHAR_0;
-      text[2] = (gSaveBlock2Ptr.playTimeHours % 10) + CHAR_0;
+      AddTextPrinterParameterized3(1, FONT_NORMAL, 0, 0x21, sPlayerInfoTextColors, (0xFF), gText_Time);
+      text[0] = (gSaveBlock2Ptr.playTimeHours / 100) + (0xA1);
+      text[1] = (gSaveBlock2Ptr.playTimeHours % 100) / 10 + (0xA1);
+      text[2] = (gSaveBlock2Ptr.playTimeHours % 10) + (0xA1);
 
-      if (text[0] == CHAR_0)
-          text[0] = CHAR_SPACE;
-      if (text[0] == CHAR_SPACE && text[1] == CHAR_0)
-          text[8] = CHAR_SPACE;
+      if (text[0] == (0xA1))
+          text[0] = (0x00);
+      if (text[0] == (0x00) && text[1] == (0xA1))
+          text[8] = (0x00);
 
-      text[3] = CHAR_COLON;
-      text[4] = (gSaveBlock2Ptr.playTimeMinutes % 100) / 10 + CHAR_0;
-      text[5] = (gSaveBlock2Ptr.playTimeMinutes % 10) + CHAR_0;
-      text[6] = EOS;
+      text[3] = (0xF0);
+      text[4] = (gSaveBlock2Ptr.playTimeMinutes % 100) / 10 + (0xA1);
+      text[5] = (gSaveBlock2Ptr.playTimeMinutes % 10) + (0xA1);
+      text[6] = (0xFF);
 
       width = GetStringRightAlignXOffset(FONT_NORMAL, text, 0x70);
-      AddTextPrinterParameterized3(1, FONT_NORMAL, width, 0x21, sPlayerInfoTextColors, TEXT_SKIP_DRAW, text);
+      AddTextPrinterParameterized3(1, FONT_NORMAL, width, 0x21, sPlayerInfoTextColors, (0xFF), text);
 
       CopyWindowToVram(1, COPYWIN_FULL);
 }
@@ -1011,7 +1007,7 @@ export function SpriteCB_GetOnScreenAndAnimate(sprite: any): any {
       {
           let species: any = sprite.tSpecies;
 
-          if (species == SPECIES_EGG)
+          if (species == (412))
               DoMonFrontSpriteAnimation(sprite, species, TRUE, 3);
           else
               DoMonFrontSpriteAnimation(sprite, species, FALSE, 3);
@@ -1068,7 +1064,7 @@ export function DoDomeConfetti(): any {
 
       gSpecialVar_0x8004 = 180;
       taskId = CreateTask(Task_DoDomeConfetti, 0);
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
       {
           gTasks[taskId].tTimer = gSpecialVar_0x8004;
           gSpecialVar_0x8005 = taskId;
@@ -1079,7 +1075,7 @@ export function DoDomeConfetti(): any {
 export function StopDomeConfetti(): any {
   let taskId: any = null;
 
-      if ((taskId = FindTaskIdByFunc(Task_DoDomeConfetti)) != TASK_NONE)
+      if ((taskId = FindTaskIdByFunc(Task_DoDomeConfetti)) != ((0xFF)))
           DestroyTask(taskId);
 
       ConfettiUtil_Free();

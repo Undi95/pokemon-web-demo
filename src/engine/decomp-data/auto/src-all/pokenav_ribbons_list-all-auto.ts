@@ -15,16 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sMonRibbonListBgTemplates: any = null;
-let sMonRibbonListLoopTaskFuncs: any = null;
-let sMonRibbonListUi_Pal: any = null;
-let sRibbonsMonListWindowTemplate: any = null;
-let sRibbonsMonMenuLoopTaskFuncs: any = null;
-let sText_FemaleSymbol: any = null;
-let sText_MaleSymbol: any = null;
-let sText_NoGenderSymbol: any = null;
 /** bool32 PokenavCallback_Init_MonRibbonList(void) */
 export function PokenavCallback_Init_MonRibbonList(): any {
   let list: any = AllocSubstruct(POKENAV_SUBSTRUCT_RIBBONS_MON_LIST, 0);
@@ -141,12 +131,12 @@ export function BuildPartyMonRibbonList(state: any): any {
 
       list.monList.listCount = 0;
       list.monList.currIndex = 0;
-      item.boxId = TOTAL_BOXES_COUNT;
-      for (i = 0; i < PARTY_SIZE; i++)
+      item.boxId = (14);
+      for (i = 0; i < (6); i++)
       {
           let pokemon: any =gPlayerParty[i];
           if (!GetMonData(pokemon, MON_DATA_SANITY_HAS_SPECIES))
-              return LT_INC_AND_CONTINUE;
+              return (1);
           if (!GetMonData(pokemon, MON_DATA_SANITY_IS_EGG) && !GetMonData(pokemon, MON_DATA_SANITY_IS_BAD_EGG))
           {
               let ribbonCount: any = GetMonData(pokemon, MON_DATA_RIBBON_COUNT);
@@ -159,7 +149,7 @@ export function BuildPartyMonRibbonList(state: any): any {
           }
       }
 
-      return LT_INC_AND_CONTINUE;
+      return (1);
 }
 
 /** static u32 InitBoxMonRibbonList(s32 state) */
@@ -167,7 +157,7 @@ export function InitBoxMonRibbonList(state: any): any {
   let list: any = GetSubstructPtr(POKENAV_SUBSTRUCT_RIBBONS_MON_LIST);
       list.monId = 0;
       list.boxId = 0;
-      return LT_INC_AND_CONTINUE;
+      return (1);
 }
 
 /** static u32 BuildBoxMonRibbonList(s32 state) */
@@ -178,9 +168,9 @@ export function BuildBoxMonRibbonList(state: any): any {
       let boxCount: any = 0;
       let item: any = null;
 
-      while (boxId < TOTAL_BOXES_COUNT)
+      while (boxId < (14))
       {
-          while (monId < IN_BOX_COUNT)
+          while (monId < (((5) * (6))))
           {
               if (CheckBoxMonSanityAt(boxId, monId))
               {
@@ -195,11 +185,11 @@ export function BuildBoxMonRibbonList(state: any): any {
               }
               boxCount++;
               monId++;
-              if (boxCount > TOTAL_BOXES_COUNT)
+              if (boxCount > (14))
               {
                   list.boxId = boxId;
                   list.monId = monId;
-                  return LT_CONTINUE;
+                  return (3);
               }
           }
           monId = 0;
@@ -207,7 +197,7 @@ export function BuildBoxMonRibbonList(state: any): any {
       }
 
       list.changeBgs = 1;
-      return LT_FINISH;
+      return (4);
 }
 
 /** static void InsertMonListItem(struct Pokenav_RibbonsMonList *list, struct PokenavMonListItem *item) */
@@ -292,30 +282,30 @@ export function LoopedTask_OpenRibbonsMonList(state: any): any {
           CopyToBgTilemapBuffer(1, gMonRibbonListFrameTilemap, 0, 0);
           CopyPaletteIntoBufferUnfaded(gMonRibbonListFramePal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
           CopyBgTilemapBufferToVram(1);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
           if (!UpdateMonListBgs())
-              return LT_PAUSE;
+              return (2);
           ChangeBgX(1, 0, BG_COORD_SET);
           ChangeBgY(1, 0, BG_COORD_SET);
           ShowBg(1);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
           CopyPaletteIntoBufferUnfaded(sMonRibbonListUi_Pal, BG_PLTT_ID(2), 0);
           CreateRibbonMonsList();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (IsCreatePokenavListTaskActive())
-              return LT_PAUSE;
+              return (2);
           AddRibbonsMonListWindow(menu);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 4:
           if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
           ShowBg(2);
           HideBg(3);
           PrintHelpBarText(HELPBAR_RIBBONS_MON_LIST);
@@ -325,15 +315,15 @@ export function LoopedTask_OpenRibbonsMonList(state: any): any {
               LoadLeftHeaderGfxForIndex(POKENAV_GFX_RIBBONS_MENU);
               ShowLeftHeaderGfx(POKENAV_GFX_RIBBONS_MENU, TRUE, FALSE);
           }
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 5:
           if (IsPaletteFadeActive())
-              return LT_PAUSE;
+              return (2);
           if (AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_RibbonsListMoveCursorUp(s32 state) */
@@ -345,28 +335,28 @@ export function LoopedTask_RibbonsListMoveCursorUp(state: any): any {
           switch (PokenavList_MoveCursorUp())
           {
           case 0:
-              return LT_FINISH;
+              return (4);
           case 1:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               return LT_SET_STATE(2);
           case 2:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               break;
           }
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (PokenavList_IsMoveWindowTaskActive())
-              return LT_PAUSE;
+              return (2);
            
       case 2:
           UpdateIndexNumberDisplay(menu);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_RibbonsListMoveCursorDown(s32 state) */
@@ -378,28 +368,28 @@ export function LoopedTask_RibbonsListMoveCursorDown(state: any): any {
           switch (PokenavList_MoveCursorDown())
           {
           case 0:
-              return LT_FINISH;
+              return (4);
           case 1:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               return LT_SET_STATE(2);
           case 2:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               break;
           }
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (PokenavList_IsMoveWindowTaskActive())
-              return LT_PAUSE;
+              return (2);
            
       case 2:
           UpdateIndexNumberDisplay(menu);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_RibbonsListMovePageUp(s32 state) */
@@ -411,28 +401,28 @@ export function LoopedTask_RibbonsListMovePageUp(state: any): any {
           switch (PokenavList_PageUp())
           {
           case 0:
-              return LT_FINISH;
+              return (4);
           case 1:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               return LT_SET_STATE(2);
           case 2:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               break;
           }
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (PokenavList_IsMoveWindowTaskActive())
-              return LT_PAUSE;
+              return (2);
            
       case 2:
           UpdateIndexNumberDisplay(menu);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_RibbonsListMovePageDown(s32 state) */
@@ -444,28 +434,28 @@ export function LoopedTask_RibbonsListMovePageDown(state: any): any {
           switch (PokenavList_PageDown())
           {
           case 0:
-              return LT_FINISH;
+              return (4);
           case 1:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               return LT_SET_STATE(2);
           case 2:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               break;
           }
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (PokenavList_IsMoveWindowTaskActive())
-              return LT_PAUSE;
+              return (2);
            
       case 2:
           UpdateIndexNumberDisplay(menu);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_RibbonsListReturnToMainMenu(s32 state) */
@@ -473,19 +463,19 @@ export function LoopedTask_RibbonsListReturnToMainMenu(state: any): any {
   switch (state)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           PokenavFadeScreen(POKENAV_FADE_TO_BLACK);
           SlideMenuHeaderDown();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (IsPaletteFadeActive())
-              return LT_PAUSE;
+              return (2);
           if (MainMenuLoopedTaskIsBusy())
-              return LT_PAUSE;
+              return (2);
           SetLeftHeaderSpritesInvisibility();
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_RibbonsListOpenSummary(s32 state) */
@@ -493,15 +483,15 @@ export function LoopedTask_RibbonsListOpenSummary(state: any): any {
   switch (state)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           PokenavFadeScreen(POKENAV_FADE_TO_BLACK);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (IsPaletteFadeActive())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static void AddRibbonsMonListWindow(struct Pokenav_RibbonsMonMenu *menu) */
@@ -530,10 +520,10 @@ export function DrawListIndexNumber(windowId: any, index: any, max: any): any {
 
       let ptr: any = strbuf;
       ptr = ConvertIntToDecimalStringN(ptr, index, STR_CONV_MODE_RIGHT_ALIGN, 3);
-      ptr =  CHAR_SLASH;
+      ptr =  (0xBA);
       ConvertIntToDecimalStringN(ptr, max, STR_CONV_MODE_RIGHT_ALIGN, 3);
       x = GetStringCenterAlignXOffset(FONT_NORMAL, strbuf, 56);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, strbuf, x, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, strbuf, x, 1, (0xFF), NULL);
 }
 
 /** static void CreateRibbonMonsList(void) */
@@ -563,7 +553,7 @@ export function BufferRibbonMonInfoText(listItem: any, dest: any): any {
       let item: any = listItem;
 
        
-      if (item.boxId == TOTAL_BOXES_COUNT)
+      if (item.boxId == (14))
       {
           let mon: any =gPlayerParty[item.monId];
           gender = GetMonGender(mon);
@@ -586,18 +576,18 @@ export function BufferRibbonMonInfoText(listItem: any, dest: any): any {
       default:
           genderStr = sText_NoGenderSymbol;
           break;
-      case MON_MALE:
+      case (0x00):
           genderStr = sText_MaleSymbol;
           break;
-      case MON_FEMALE:
+      case (0xFE):
           genderStr = sText_FemaleSymbol;
           break;
       }
 
       s = StringCopy(gStringVar1, genderStr);
-      s =  CHAR_SLASH;
-      s =  CHAR_EXTRA_SYMBOL;
-      s =  CHAR_LV_2;
+      s =  (0xBA);
+      s =  (0xF9);
+      s =  (0x05);
       ConvertIntToDecimalStringN(s, level, STR_CONV_MODE_LEFT_ALIGN, 3);
       dest = GetStringClearToWidth(dest, FONT_NORMAL, gStringVar1, 54);
       ConvertIntToDecimalStringN(dest, item.data, STR_CONV_MODE_RIGHT_ALIGN, 2);

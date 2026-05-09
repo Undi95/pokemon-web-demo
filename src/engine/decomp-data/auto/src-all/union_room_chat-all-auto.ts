@@ -17,29 +17,16 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates: any = null;
-let sCaseToggleTable: any = null;
+let cursorBlinkActive: any = null;
+let gKeyRepeatStartDelay: any = null;
 let sChat: any = null;
-let sChatMainFunctions: any = null;
-let sChatMessagesWindow_Pal: any = null;
 let sDisplay: any = null;
-let sDisplayStdMessages: any = null;
-let sDisplaySubtasks: any = null;
-let sKeyboardPageMaxRow: any = null;
-let sKeyboardPageTitleTexts: any = null;
-let sSpritePalette: any = null;
-let sSpriteSheets: any = null;
-let sSpriteTemplate_KeyboardCursor: any = null;
-let sSpriteTemplate_RButtonIcon: any = null;
-let sSpriteTemplate_RButtonLabels: any = null;
-let sSpriteTemplate_TextEntryArrow: any = null;
-let sSpriteTemplate_TextEntryCursor: any = null;
 let sSprites: any = null;
-let sText_Ellipsis: any = null;
-let sUnionRoomChatInterfacePal: any = null;
-let sUnionRoomKeyboardText: any = null;
-let sUnusedPalette: any = null;
-let sWinTemplates: any = null;
+let tBlockReceivedStatus: any = null;
+let tCurrLinkPlayer: any = null;
+let tI: any = null;
+let tLinkPlayerCount: any = null;
+let tState: any = null;
 /** void EnterUnionRoomChat(void) */
 export function EnterUnionRoomChat(): any {
   sChat = Alloc(0);
@@ -61,13 +48,13 @@ export function InitUnionRoomChat(chat: any): any {
       chat.lastBufferCursorPos = 0;
       chat.bufferCursorPos = 0;
       chat.receivedPlayerIndex = 0;
-      chat.messageEntryBuffer[0] = EOS;
+      chat.messageEntryBuffer[0] = (0xFF);
       chat.linkPlayerCount = GetLinkPlayerCount();
       chat.multiplayerId = GetMultiplayerId();
       chat.exitType = CHAT_EXIT_NONE;
       chat.changedRegisteredTexts = FALSE;
       PrepareSendBuffer_Null(chat.sendMessageBuffer);
-      for (i = 0; i < UNION_ROOM_KB_ROW_COUNT; i++)
+      for (i = 0; i < (10); i++)
           StringCopy(chat.registeredTexts[i], gSaveBlock1Ptr.registeredTexts[i]);
 }
 
@@ -93,8 +80,8 @@ export function CB2_LoadInterface(): any {
           RunDisplaySubtasks();
           if (!IsDisplaySubtask0Active())
           {
-              BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
-              BeginNormalPaletteFade(PALETTES_ALL, -1, 16, 0, RGB_BLACK);
+              BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 16, 0, (RGB(0, 0, 0)));
               SetVBlankCallback(VBlankCB_UnionRoomChatMain);
               gMain.state++;
           }
@@ -262,14 +249,14 @@ export function Chat_Switch(): any {
               if (sChat.currentPage == input || input > UNION_ROOM_KB_PAGE_REGISTER)
                   shouldSwitchPages = FALSE;
               break;
-          case MENU_NOTHING_CHOSEN:
+          case (-2):
               if (JOY_NEW(SELECT_BUTTON))
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   Menu_MoveCursor(1);
               }
               return;
-          case MENU_B_PRESSED:
+          case (-1):
               StartDisplaySubtask(CHATDISPLAY_FUNC_HIDE_KB_SWAP_MENU, 0);
               sChat.funcState = 3;
               return;
@@ -316,7 +303,7 @@ export function Chat_AskQuitChatting(): any {
           input = ProcessMenuInput();
           switch (input)
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case 1:
               StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);
               sChat.funcState = 3;
@@ -355,7 +342,7 @@ export function Chat_AskQuitChatting(): any {
           input = ProcessMenuInput();
           switch (input)
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case 1:
               StartDisplaySubtask(CHATDISPLAY_FUNC_DESTROY_YESNO, 0);
               sChat.funcState = 3;
@@ -657,7 +644,7 @@ export function Chat_SaveAndExit(): any {
           input = ProcessMenuInput();
           switch (input)
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case 1:
               sChat.funcState = 12;
               break;
@@ -682,7 +669,7 @@ export function Chat_SaveAndExit(): any {
           input = ProcessMenuInput();
           switch (input)
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case 1:
               sChat.funcState = 12;
               break;
@@ -715,7 +702,7 @@ export function Chat_SaveAndExit(): any {
       case 9:
           if (!IsDisplaySubtaskActive(0))
           {
-              PlaySE(SE_SAVE);
+              PlaySE((55));
               ClearContinueGameWarpStatus2();
               sChat.funcState = 10;
           }
@@ -730,7 +717,7 @@ export function Chat_SaveAndExit(): any {
               sChat.funcState = 12;
           break;
       case 12:
-          BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 0, 16, (RGB(0, 0, 0)));
           sChat.funcState = 13;
           break;
       case 13:
@@ -809,7 +796,7 @@ export function AppendTextToMessage(): any {
           charsStr = sUnionRoomKeyboardText[sChat.currentPage][sChat.currentRow];
           for (i = 0; i < sChat.currentCol; i++)
           {
-              if (charsStr == CHAR_EXTRA_SYMBOL)
+              if (charsStr == (0xF9))
                   charsStr++;
               charsStr++;
           }
@@ -820,8 +807,8 @@ export function AppendTextToMessage(): any {
       {
            
           let tempStr: any = StringCopy(buffer, sChat.registeredTexts[sChat.currentRow]);
-          tempStr[0] = CHAR_SPACE;
-          tempStr[1] = EOS;
+          tempStr[0] = (0x00);
+          tempStr[1] = (0xFF);
           charsStr = buffer;
           strLength = StringLength_Multibyte(buffer);
       }
@@ -833,7 +820,7 @@ export function AppendTextToMessage(): any {
       str = GetEndOfMessagePtr();
       while (--strLength != -1 && sChat.bufferCursorPos < (15))
       {
-          if (charsStr == CHAR_EXTRA_SYMBOL)
+          if (charsStr == (0xF9))
           {
               str = charsStr;
               charsStr++;
@@ -847,7 +834,7 @@ export function AppendTextToMessage(): any {
           sChat.bufferCursorPos++;
       }
 
-      str = EOS;
+      str = (0xFF);
 }
 
 /** static void DeleteLastMessageCharacter(void) */
@@ -856,7 +843,7 @@ export function DeleteLastMessageCharacter(): any {
       if (sChat.bufferCursorPos)
       {
           let str: any = GetLastCharOfMessagePtr();
-          str = EOS;
+          str = (0xFF);
           sChat.bufferCursorPos--;
       }
 }
@@ -868,7 +855,7 @@ export function SwitchCaseOfLastMessageCharacter(): any {
 
       sChat.lastBufferCursorPos = sChat.bufferCursorPos - 1;
       str = GetLastCharOfMessagePtr();
-      if (str != CHAR_EXTRA_SYMBOL)
+      if (str != (0xF9))
       {
           character = sCaseToggleTable[str];
           if (character)
@@ -893,7 +880,7 @@ export function RegisterTextAtRow(): any {
 
 /** static void ResetMessageEntryBuffer(void) */
 export function ResetMessageEntryBuffer(): any {
-  sChat.messageEntryBuffer[0] = EOS;
+  sChat.messageEntryBuffer[0] = (0xFF);
       sChat.lastBufferCursorPos = (15);
       sChat.bufferCursorPos = 0;
 }
@@ -901,7 +888,7 @@ export function ResetMessageEntryBuffer(): any {
 /** static void SaveRegisteredTexts(void) */
 export function SaveRegisteredTexts(): any {
   let i: any = null;
-      for (i = 0; i < UNION_ROOM_KB_ROW_COUNT; i++)
+      for (i = 0; i < (10); i++)
           StringCopy(gSaveBlock1Ptr.registeredTexts[i], sChat.registeredTexts[i]);
 }
 
@@ -918,7 +905,7 @@ export function GetNumOverflowCharsInMessage(): any {
           strLength -= 10;
           for (i = 0; i < strLength; i++)
           {
-              if (str == CHAR_EXTRA_SYMBOL)
+              if (str == (0xF9))
                   str++;
 
               str++;
@@ -938,21 +925,21 @@ export function PrepareSendBuffer_Null(buffer: any): any {
 export function PrepareSendBuffer_Join(buffer: any): any {
   buffer[0] = CHAT_MESSAGE_JOIN;
       StringCopy(buffer[1], gSaveBlock2Ptr.playerName);
-      buffer[1 + (PLAYER_NAME_LENGTH + 1)] = sChat.multiplayerId;
+      buffer[1 + ((7) + 1)] = sChat.multiplayerId;
 }
 
 /** static void PrepareSendBuffer_Chat(u8 *buffer) */
 export function PrepareSendBuffer_Chat(buffer: any): any {
   buffer[0] = CHAT_MESSAGE_CHAT;
       StringCopy(buffer[1], gSaveBlock2Ptr.playerName);
-      StringCopy(buffer[1 + (PLAYER_NAME_LENGTH + 1)], sChat.messageEntryBuffer);
+      StringCopy(buffer[1 + ((7) + 1)], sChat.messageEntryBuffer);
 }
 
 /** static void PrepareSendBuffer_Leave(u8 *buffer) */
 export function PrepareSendBuffer_Leave(buffer: any): any {
   buffer[0] = CHAT_MESSAGE_LEAVE;
       StringCopy(buffer[1], gSaveBlock2Ptr.playerName);
-      buffer[1 + (PLAYER_NAME_LENGTH + 1)] = sChat.multiplayerId;
+      buffer[1 + ((7) + 1)] = sChat.multiplayerId;
       RfuSetNormalDisconnectMode();
 }
 
@@ -960,14 +947,14 @@ export function PrepareSendBuffer_Leave(buffer: any): any {
 export function PrepareSendBuffer_Drop(buffer: any): any {
   buffer[0] = CHAT_MESSAGE_DROP;
       StringCopy(buffer[1], gSaveBlock2Ptr.playerName);
-      buffer[1 + (PLAYER_NAME_LENGTH + 1)] = sChat.multiplayerId;
+      buffer[1 + ((7) + 1)] = sChat.multiplayerId;
 }
 
 /** static void PrepareSendBuffer_Disband(u8 *buffer) */
 export function PrepareSendBuffer_Disband(buffer: any): any {
   buffer[0] = CHAT_MESSAGE_DISBAND;
       StringCopy(buffer[1], gSaveBlock2Ptr.playerName);
-      buffer[1 + (PLAYER_NAME_LENGTH + 1)] = sChat.multiplayerId;
+      buffer[1 + ((7) + 1)] = sChat.multiplayerId;
 }
 
 /** static bool32 ProcessReceivedChatMessage(u8 *dest, u8 *recvMessage) */
@@ -976,12 +963,12 @@ export function ProcessReceivedChatMessage(dest: any, recvMessage: any): any {
       let cmd: any = recvMessage;
       let name: any = recvMessage + 1;
       recvMessage = name;
-      recvMessage += PLAYER_NAME_LENGTH + 1;
+      recvMessage += (7) + 1;
 
       switch (cmd)
       {
       case CHAT_MESSAGE_JOIN:
-          if (sChat.multiplayerId != name[PLAYER_NAME_LENGTH + 1])
+          if (sChat.multiplayerId != name[(7) + 1])
           {
               DynamicPlaceholderTextUtil_Reset();
               DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, name);
@@ -991,10 +978,10 @@ export function ProcessReceivedChatMessage(dest: any, recvMessage: any): any {
           break;
       case CHAT_MESSAGE_CHAT:
           tempStr = StringCopy(dest, name);
-          tempStr =  EXT_CTRL_CODE_BEGIN;
-          tempStr =  EXT_CTRL_CODE_CLEAR_TO;
+          tempStr =  (0xFC);
+          tempStr =  (0x13);
           tempStr =  42;
-          tempStr =  CHAR_COLON;
+          tempStr =  (0xF0);
           StringCopy(tempStr, recvMessage);
           return TRUE;
       case CHAT_MESSAGE_DISBAND:
@@ -1055,7 +1042,7 @@ export function GetLimitedMessageStartPos(): any {
       let str: any = sChat.messageEntryBuffer;
       for (count = 0, i = 0; i < numChars; count++, i++)
       {
-          if (str == CHAR_EXTRA_SYMBOL)
+          if (str == (0xF9))
               str++;
 
           str++;
@@ -1078,7 +1065,7 @@ export function GetTextEntryCursorPosition(): any {
 export function GetShouldShowCaseToggleIcon(): any {
   let str: any = GetLastCharOfMessagePtr();
       let character: any = str;
-      if (character > EOS || sCaseToggleTable[character] == character || sCaseToggleTable[character] == CHAR_SPACE)
+      if (character > (0xFF) || sCaseToggleTable[character] == character || sCaseToggleTable[character] == (0x00))
           return 3;  
       else
           return 0;
@@ -1131,10 +1118,10 @@ export function Task_ReceiveChatMessage(taskId: any): any {
           tState = 3;
            
       case 3:
-          for (; tI < MAX_RFU_PLAYERS && ((tBlockReceivedStatus >> tI) & 1) == 0; tI++)
+          for (; tI < (5) && ((tBlockReceivedStatus >> tI) & 1) == 0; tI++)
               ;
 
-          if (tI == MAX_RFU_PLAYERS)
+          if (tI == (5))
           {
               tState = 1;
               return;
@@ -1244,8 +1231,8 @@ export function FreeDisplay(): any {
 
 /** static void InitDisplay(struct UnionRoomChatDisplay *display) */
 export function InitDisplay(display: any): any {
-  display.yesNoMenuWindowId = WINDOW_NONE;
-      display.messageWindowId = WINDOW_NONE;
+  display.yesNoMenuWindowId = (0xFF);
+      display.messageWindowId = (0xFF);
       display.currLine = 0;
 }
 
@@ -1811,12 +1798,12 @@ export function AddYesNoMenuAt(left: any, top: any, initialCursorPos: any): any 
       template.paletteNum = 14;
       template.baseBlock = 0x52;
       sDisplay.yesNoMenuWindowId = AddWindow(template);
-      if (sDisplay.yesNoMenuWindowId != WINDOW_NONE)
+      if (sDisplay.yesNoMenuWindowId != (0xFF))
       {
           FillWindowPixelBuffer(sDisplay.yesNoMenuWindowId, PIXEL_FILL(1));
           PutWindowTilemap(sDisplay.yesNoMenuWindowId);
-          AddTextPrinterParameterized(sDisplay.yesNoMenuWindowId, FONT_NORMAL, gText_Yes, 8, 1, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(sDisplay.yesNoMenuWindowId, FONT_NORMAL, gText_No, 8, 17, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sDisplay.yesNoMenuWindowId, FONT_NORMAL, gText_Yes, 8, 1, (0xFF), NULL);
+          AddTextPrinterParameterized(sDisplay.yesNoMenuWindowId, FONT_NORMAL, gText_No, 8, 17, (0xFF), NULL);
           DrawTextBorderOuter(sDisplay.yesNoMenuWindowId, 1, 13);
           InitMenuInUpperLeftCornerNormal(sDisplay.yesNoMenuWindowId, 2, initialCursorPos);
       }
@@ -1824,7 +1811,7 @@ export function AddYesNoMenuAt(left: any, top: any, initialCursorPos: any): any 
 
 /** static void HideYesNoMenuWindow(void) */
 export function HideYesNoMenuWindow(): any {
-  if (sDisplay.yesNoMenuWindowId != WINDOW_NONE)
+  if (sDisplay.yesNoMenuWindowId != (0xFF))
       {
           ClearStdWindowAndFrameToTransparent(sDisplay.yesNoMenuWindowId, FALSE);
           ClearWindowTilemap(sDisplay.yesNoMenuWindowId);
@@ -1833,10 +1820,10 @@ export function HideYesNoMenuWindow(): any {
 
 /** static void DestroyYesNoMenuWindow(void) */
 export function DestroyYesNoMenuWindow(): any {
-  if (sDisplay.yesNoMenuWindowId != WINDOW_NONE)
+  if (sDisplay.yesNoMenuWindowId != (0xFF))
       {
           RemoveWindow(sDisplay.yesNoMenuWindowId);
-          sDisplay.yesNoMenuWindowId = WINDOW_NONE;
+          sDisplay.yesNoMenuWindowId = (0xFF);
       }
 }
 
@@ -1865,7 +1852,7 @@ export function AddStdMessageWindow(msgId: any, bg0vofs: any): any {
 
       sDisplay.messageWindowId = AddWindow(template);
       windowId = sDisplay.messageWindowId;
-      if (sDisplay.messageWindowId == WINDOW_NONE)
+      if (sDisplay.messageWindowId == (0xFF))
           return;
 
       if (sDisplayStdMessages[msgId].hasPlaceholders)
@@ -1890,7 +1877,7 @@ export function AddStdMessageWindow(msgId: any, bg0vofs: any): any {
               str,
               sDisplayStdMessages[msgId].x + 8,
               sDisplayStdMessages[msgId].y + 8,
-              TEXT_SKIP_DRAW,
+              (0xFF),
               NULL,
               sDisplayStdMessages[msgId].letterSpacing,
               sDisplayStdMessages[msgId].lineSpacing);
@@ -1904,7 +1891,7 @@ export function AddStdMessageWindow(msgId: any, bg0vofs: any): any {
               str,
               sDisplayStdMessages[msgId].x,
               sDisplayStdMessages[msgId].y,
-              TEXT_SKIP_DRAW,
+              (0xFF),
               NULL,
               sDisplayStdMessages[msgId].letterSpacing,
               sDisplayStdMessages[msgId].lineSpacing);
@@ -1915,7 +1902,7 @@ export function AddStdMessageWindow(msgId: any, bg0vofs: any): any {
 
 /** static void HideStdMessageWindow(void) */
 export function HideStdMessageWindow(): any {
-  if (sDisplay.messageWindowId != WINDOW_NONE)
+  if (sDisplay.messageWindowId != (0xFF))
       {
           ClearStdWindowAndFrameToTransparent(sDisplay.messageWindowId, FALSE);
           ClearWindowTilemap(sDisplay.messageWindowId);
@@ -1926,10 +1913,10 @@ export function HideStdMessageWindow(): any {
 
 /** static void DestroyStdMessageWindow(void) */
 export function DestroyStdMessageWindow(): any {
-  if (sDisplay.messageWindowId != WINDOW_NONE)
+  if (sDisplay.messageWindowId != (0xFF))
       {
           RemoveWindow(sDisplay.messageWindowId);
-          sDisplay.messageWindowId = WINDOW_NONE;
+          sDisplay.messageWindowId = (0xFF);
       }
 }
 
@@ -1942,17 +1929,17 @@ export function FillTextEntryWindow(x: any, width: any, fillValue: any): any {
 export function DrawTextEntryMessage(x: any, str: any, bgColor: any, fgColor: any, shadowColor: any): any {
   let color: any = [];
       let strBuffer: any = [];
-      if (bgColor != TEXT_COLOR_TRANSPARENT)
+      if (bgColor != (0x0))
           FillTextEntryWindow(x, GetTextEntryCursorPosition() - x, bgColor);
 
       color[0] = bgColor;
       color[1] = fgColor;
       color[2] = shadowColor;
-      strBuffer[0] = EXT_CTRL_CODE_BEGIN;
-      strBuffer[1] = EXT_CTRL_CODE_MIN_LETTER_SPACING;
+      strBuffer[0] = (0xFC);
+      strBuffer[1] = (0x14);
       strBuffer[2] = 8;
       StringCopy(strBuffer[3], str);
-      AddTextPrinterParameterized3(WIN_TEXT_ENTRY, FONT_SHORT, x * 8, 1, color, TEXT_SKIP_DRAW, strBuffer);
+      AddTextPrinterParameterized3(WIN_TEXT_ENTRY, FONT_SHORT, x * 8, 1, color, (0xFF), strBuffer);
 }
 
 /** static void PrintCurrentKeyboardPage(void) */
@@ -1967,13 +1954,13 @@ export function PrintCurrentKeyboardPage(): any {
 
       FillWindowPixelBuffer(WIN_KEYBOARD, PIXEL_FILL(15));
       page = GetCurrentKeyboardPage();
-      color[0] = TEXT_COLOR_TRANSPARENT;
-      color[1] = TEXT_DYNAMIC_COLOR_5;
-      color[2] = TEXT_DYNAMIC_COLOR_4;
+      color[0] = (0x0);
+      color[1] = (0xE);
+      color[2] = (0xD);
       if (page != UNION_ROOM_KB_PAGE_REGISTER)
       {
-          str[0] = EXT_CTRL_CODE_BEGIN;
-          str[1] = EXT_CTRL_CODE_MIN_LETTER_SPACING;
+          str[0] = (0xFC);
+          str[1] = (0x14);
           str[2] = 8;
 
           if (page == UNION_ROOM_KB_PAGE_EMOJI)
@@ -1981,24 +1968,24 @@ export function PrintCurrentKeyboardPage(): any {
           else
               left = 8;
 
-          for (i = 0, top = 0; i < UNION_ROOM_KB_ROW_COUNT; i++, top += 12)
+          for (i = 0, top = 0; i < (10); i++, top += 12)
           {
               if (!sUnionRoomKeyboardText[page][i])
                   return;
 
               StringCopy(str[3], sUnionRoomKeyboardText[page][i]);
-              AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left, top, color, TEXT_SKIP_DRAW, str);
+              AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left, top, color, (0xFF), str);
           }
       }
       else
       {
           left = 4;
-          for (i = 0, top = 0; i < UNION_ROOM_KB_ROW_COUNT; i++, top += 12)
+          for (i = 0, top = 0; i < (10); i++, top += 12)
           {
               str2 = GetRegisteredTextByRow(i);
               if (GetStringWidth(FONT_SMALL, str2, 0) <= 40)
               {
-                  AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left, top, color, TEXT_SKIP_DRAW, str2);
+                  AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left, top, color, (0xFF), str2);
               }
               else
               {
@@ -2009,8 +1996,8 @@ export function PrintCurrentKeyboardPage(): any {
                       StringCopyN_Multibyte(str, str2, length);
                   } while (GetStringWidth(FONT_SMALL, str, 0) > 35);
 
-                  AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left, top, color, TEXT_SKIP_DRAW, str);
-                  AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left + 35, top, color, TEXT_SKIP_DRAW, sText_Ellipsis);
+                  AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left, top, color, (0xFF), str);
+                  AddTextPrinterParameterized3(WIN_KEYBOARD, FONT_SMALL, left + 35, top, color, (0xFF), sText_Ellipsis);
               }
           }
       }
@@ -2074,11 +2061,11 @@ export function HideKeyboardSwapMenu(): any {
 /** static void PrintChatMessage(u16 row, u8 *str, u8 colorIdx) */
 export function PrintChatMessage(row: any, str: any, colorIdx: any): any {
   let color: any = [];
-      color[0] = TEXT_COLOR_WHITE;
+      color[0] = (0x1);
       color[1] = colorIdx * 2 + 2;
       color[2] = colorIdx * 2 + 3;
       FillWindowPixelRect(WIN_CHAT_HISTORY, PIXEL_FILL(1), 0, row * 15, 168, 15);
-      AddTextPrinterParameterized3(WIN_CHAT_HISTORY, FONT_SHORT, 0, row * 15 + 1, color, TEXT_SKIP_DRAW, str);
+      AddTextPrinterParameterized3(WIN_CHAT_HISTORY, FONT_SHORT, 0, row * 15 + 1, color, (0xFF), str);
 }
 
 /** static void ResetGpuBgState(void) */

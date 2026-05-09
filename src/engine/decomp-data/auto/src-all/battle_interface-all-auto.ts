@@ -17,22 +17,17 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sEmptyWhiteText_GrayHighlight: any = null;
-let sEmptyWhiteText_TransparentHighlight: any = null;
-let sHealthBar_SubspriteTables: any = null;
-let sHealthbarSpriteTemplates: any = null;
-let sHealthboxOpponentSpriteTemplates: any = null;
-let sHealthboxPlayerSpriteTemplates: any = null;
-let sHealthboxSafariSpriteTemplate: any = null;
-let sStatusIconColors: any = null;
-let sStatusSummaryBallsSpritePal: any = null;
-let sStatusSummaryBallsSpriteSheet: any = null;
-let sStatusSummaryBallsSpriteTemplates: any = null;
-let sStatusSummaryBarSpritePal: any = null;
-let sStatusSummaryBarSpriteSheet: any = null;
-let sStatusSummaryBarSpriteTemplates: any = null;
-let sStatusSummaryBar_SubspriteTable_Enter: any = null;
-let sStatusSummaryBar_SubspriteTable_Exit: any = null;
+let bar_data0: any = null;
+let bar_pos2_X: any = null;
+let currHp: any = null;
+let currLevelExp: any = null;
+let filledPixels: any = null;
+let maxExpBarValue: any = null;
+let nature: any = null;
+let newToMax: any = null;
+let pltAdder: any = null;
+let spriteTileNum: any = null;
+let totalPixels: any = null;
 /** static s32 DummiedOutFunction(s16 unused1, s16 unused2, s32 unused3) */
 export function DummiedOutFunction(unused1: any, unused2: any, unused3: any): any {
   return 9;
@@ -116,7 +111,7 @@ export function CreateBattlerHealthboxSprites(battler: any): any {
 
       if (!IsDoubleBattle())
       {
-          if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) == (0))
           {
               healthboxLeftSpriteId = CreateSprite(sHealthboxPlayerSpriteTemplates[0], DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
               healthboxRightSpriteId = CreateSpriteAtEnd(sHealthboxPlayerSpriteTemplates[0], DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
@@ -142,7 +137,7 @@ export function CreateBattlerHealthboxSprites(battler: any): any {
       }
       else
       {
-          if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) == (0))
           {
               healthboxLeftSpriteId = CreateSprite(sHealthboxPlayerSpriteTemplates[GetBattlerPosition(battler) / 2], DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
               healthboxRightSpriteId = CreateSpriteAtEnd(sHealthboxPlayerSpriteTemplates[GetBattlerPosition(battler) / 2], DISPLAY_WIDTH, DISPLAY_HEIGHT, 1);
@@ -305,7 +300,7 @@ export function InitBattlerHealthboxCoords(battler: any): any {
 
       if (!IsDoubleBattle())
       {
-          if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) != (0))
               x = 44, y = 30;
           else
               x = 158, y = 88;
@@ -340,8 +335,8 @@ export function UpdateLvlInHealthbox(healthboxSpriteId: any, lvl: any): any {
       let xPos: any = null;
       let objVram: any = null;
 
-      text[0] = CHAR_EXTRA_SYMBOL;
-      text[1] = CHAR_LV_2;
+      text[0] = (0xF9);
+      text[1] = (0x05);
 
       objVram = ConvertIntToDecimalStringN(text + 2, lvl, STR_CONV_MODE_LEFT_ALIGN, 3);
       xPos = 5 * (3 - (objVram - (text + 2)));
@@ -349,7 +344,7 @@ export function UpdateLvlInHealthbox(healthboxSpriteId: any, lvl: any): any {
       windowTileData = AddTextPrinterAndCreateWindowOnHealthbox(text, xPos, 3, 2,windowId);
       spriteTileNum = gSprites[healthboxSpriteId].oam.tileNum * TILE_SIZE_4BPP;
 
-      if (GetBattlerSide(gSprites[healthboxSpriteId].hMain_Battler) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gSprites[healthboxSpriteId].hMain_Battler) == (0))
       {
           objVram = (OBJ_VRAM0);
           if (!IsDoubleBattle())
@@ -373,7 +368,7 @@ export function UpdateHpTextInHealthbox(healthboxSpriteId: any, value: any, maxO
       let text: any = [];
       let objVram: any = null;
 
-      if (GetBattlerSide(gSprites[healthboxSpriteId].hMain_Battler) == B_SIDE_PLAYER && !IsDoubleBattle())
+      if (GetBattlerSide(gSprites[healthboxSpriteId].hMain_Battler) == (0) && !IsDoubleBattle())
       {
           spriteTileNum = gSprites[healthboxSpriteId].oam.tileNum * TILE_SIZE_4BPP;
           if (maxOrCurrent != HP_CURRENT)  
@@ -388,8 +383,8 @@ export function UpdateHpTextInHealthbox(healthboxSpriteId: any, value: any, maxO
           else  
           {
               ConvertIntToDecimalStringN(text, value, STR_CONV_MODE_RIGHT_ALIGN, 3);
-              text[3] = CHAR_SLASH;
-              text[4] = EOS;
+              text[3] = (0xBA);
+              text[4] = (0xFF);
               windowTileData = AddTextPrinterAndCreateWindowOnHealthbox(text, 4, 5, 2,windowId);
               objVram = (OBJ_VRAM0);
               objVram += spriteTileNum + 0x3E0;
@@ -406,7 +401,7 @@ export function UpdateHpTextInHealthbox(healthboxSpriteId: any, value: any, maxO
 
           memcpy(text, sEmptyWhiteText_GrayHighlight, 0);
           battler = gSprites[healthboxSpriteId].hMain_Battler;
-          if (IsDoubleBattle() == TRUE || GetBattlerSide(battler) == B_SIDE_OPPONENT)
+          if (IsDoubleBattle() == TRUE || GetBattlerSide(battler) == (1))
           {
               UpdateHpTextInHealthboxInDoubles(healthboxSpriteId, value, maxOrCurrent);
           }
@@ -415,7 +410,7 @@ export function UpdateHpTextInHealthbox(healthboxSpriteId: any, value: any, maxO
               let _var: any = null;
               let i: any = null;
 
-              if (GetBattlerSide(gSprites[healthboxSpriteId].data[6]) == B_SIDE_PLAYER)
+              if (GetBattlerSide(gSprites[healthboxSpriteId].data[6]) == (0))
               {
                   if (maxOrCurrent == HP_CURRENT)
                       _var = 29;
@@ -450,7 +445,7 @@ export function UpdateHpTextInHealthboxInDoubles(healthboxSpriteId: any, value: 
       let text: any = [];
       let objVram: any = null;
 
-      if (GetBattlerSide(gSprites[healthboxSpriteId].hMain_Battler) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gSprites[healthboxSpriteId].hMain_Battler) == (0))
       {
           if (gBattleSpritesDataPtr.battlerData[gSprites[healthboxSpriteId].data[6]].hpNumbersNoBars)  
           {
@@ -470,8 +465,8 @@ export function UpdateHpTextInHealthboxInDoubles(healthboxSpriteId: any, value: 
               else
               {
                   ConvertIntToDecimalStringN(text, value, STR_CONV_MODE_RIGHT_ALIGN, 3);
-                  text[3] = CHAR_SLASH;
-                  text[4] = EOS;
+                  text[3] = (0xBA);
+                  text[4] = (0xFF);
                   windowTileData = AddTextPrinterAndCreateWindowOnHealthbox(text, 4, 5, 0,windowId);
                   FillHealthboxObject(objVram, 0, 3);  
                   HpTextIntoHealthboxObject((OBJ_VRAM0 + 0x60) + spriteTileNum, windowTileData, 3);
@@ -527,7 +522,7 @@ export function UpdateHpTextInHealthboxInDoubles(healthboxSpriteId: any, value: 
               }
               else
               {
-                  if (GetBattlerSide(battler) == B_SIDE_PLAYER)  
+                  if (GetBattlerSide(battler) == (0))  
                   {
                       CpuCopy32(GetHealthboxElementGfxPtr(HEALTHBOX_GFX_FRAME_END),
                             (OBJ_VRAM0) + ((gSprites[healthboxSpriteId].oam.tileNum + 52) * TILE_SIZE_4BPP),
@@ -580,8 +575,8 @@ export function PrintSafariMonInfo(healthboxSpriteId: any, mon: any): any {
       healthBarSpriteId = gSprites[healthboxSpriteId].hMain_HealthBarSpriteId;
       ConvertIntToDecimalStringN(text[6], gBattleStruct.safariCatchFactor, STR_CONV_MODE_RIGHT_ALIGN, 2);
       ConvertIntToDecimalStringN(text[9], gBattleStruct.safariEscapeFactor, STR_CONV_MODE_RIGHT_ALIGN, 2);
-      text[5] = CHAR_SPACE;
-      text[8] = CHAR_SLASH;
+      text[5] = (0x00);
+      text[8] = (0xBA);
       RenderTextHandleBold(gMonSpritesGfxPtr.barFontGfx, FONT_BOLD, text);
 
       j = healthBarSpriteId;  
@@ -610,18 +605,18 @@ export function SwapHpBarsWithHpText(): any {
       for (i = 0; i < gBattlersCount; i++)
       {
           if (gSprites[gHealthboxSpriteIds[i]].callback == SpriteCallbackDummy
-           && GetBattlerSide(i) != B_SIDE_OPPONENT
-           && (IsDoubleBattle() || GetBattlerSide(i) != B_SIDE_PLAYER))
+           && GetBattlerSide(i) != (1)
+           && (IsDoubleBattle() || GetBattlerSide(i) != (0)))
           {
               let noBars: any = null;
 
               gBattleSpritesDataPtr.battlerData[i].hpNumbersNoBars ^= 1;
               noBars = gBattleSpritesDataPtr.battlerData[i].hpNumbersNoBars;
-              if (GetBattlerSide(i) == B_SIDE_PLAYER)
+              if (GetBattlerSide(i) == (0))
               {
                   if (!IsDoubleBattle())
                       continue;
-                  if (gBattleTypeFlags & BATTLE_TYPE_SAFARI)
+                  if (gBattleTypeFlags & ((1 << 7)))
                       continue;
 
                   if (noBars == TRUE)  
@@ -643,7 +638,7 @@ export function SwapHpBarsWithHpText(): any {
               {
                   if (noBars == TRUE)  
                   {
-                      if (gBattleTypeFlags & BATTLE_TYPE_SAFARI)
+                      if (gBattleTypeFlags & ((1 << 7)))
                       {
                            
                           PrintSafariMonInfo(gHealthboxSpriteIds[i],gEnemyParty[gBattlerPartyIndexes[i]]);
@@ -661,7 +656,7 @@ export function SwapHpBarsWithHpText(): any {
                   {
                       UpdateStatusIconInHealthbox(gHealthboxSpriteIds[i]);
                       UpdateHealthboxAttribute(gHealthboxSpriteIds[i],gEnemyParty[gBattlerPartyIndexes[i]], HEALTHBOX_HEALTH_BAR);
-                      if (gBattleTypeFlags & BATTLE_TYPE_SAFARI)
+                      if (gBattleTypeFlags & ((1 << 7)))
                           UpdateHealthboxAttribute(gHealthboxSpriteIds[i],gEnemyParty[gBattlerPartyIndexes[i]], HEALTHBOX_NICK);
                   }
               }
@@ -681,7 +676,7 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
 
       if (!skipPlayer || GetBattlerPosition(battler) != B_POSITION_OPPONENT_RIGHT)
       {
-          if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) == (0))
           {
               isOpponent = FALSE;
               bar_X = 136, bar_Y = 96;
@@ -729,7 +724,7 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
           gSprites[summaryBarSpriteId].x += 96;
       }
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           ballIconSpritesIds[i] = CreateSpriteAtEnd(sStatusSummaryBallsSpriteTemplates[isOpponent], bar_X, bar_Y - 4, 9);
 
@@ -760,13 +755,13 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
           gSprites[ballIconSpritesIds[i]].data[2] = isOpponent;
       }
 
-      if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) == (0))
       {
-          if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
+          if (gBattleTypeFlags & ((1 << 6)))
           {
-              for (i = 0; i < PARTY_SIZE; i++)
+              for (i = 0; i < (6); i++)
               {
-                  if (partyInfo[i].hp == HP_EMPTY_SLOT)
+                  if (partyInfo[i].hp == (0xFFFF))
                   {
                        
                       gSprites[ballIconSpritesIds[i]].oam.tileNum += 1;
@@ -786,9 +781,9 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
           }
           else
           {
-              for (i = 0, _var = PARTY_SIZE - 1, j = 0; j < PARTY_SIZE; j++)
+              for (i = 0, _var = (6) - 1, j = 0; j < (6); j++)
               {
-                  if (partyInfo[j].hp == HP_EMPTY_SLOT)
+                  if (partyInfo[j].hp == (0xFFFF))
                   {
                         
                       gSprites[ballIconSpritesIds[_var]].oam.tileNum += 1;
@@ -801,7 +796,7 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
                        
                       gSprites[ballIconSpritesIds[i]].oam.tileNum += 3;
                   }
-                  else if (gBattleTypeFlags & BATTLE_TYPE_ARENA && gBattleStruct.arenaLostPlayerMons & gBitTable[j])
+                  else if (gBattleTypeFlags & ((1 << 18)) && gBattleStruct.arenaLostPlayerMons & gBitTable[j])
                   {
                        
                       gSprites[ballIconSpritesIds[i]].oam.tileNum += 3;
@@ -817,11 +812,11 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
       }
       else
       {
-          if (gBattleTypeFlags & (BATTLE_TYPE_MULTI | BATTLE_TYPE_TWO_OPPONENTS))
+          if (gBattleTypeFlags & (((1 << 6)) | ((1 << 15))))
           {
-              for (_var = PARTY_SIZE - 1, i = 0; i < PARTY_SIZE; i++)
+              for (_var = (6) - 1, i = 0; i < (6); i++)
               {
-                  if (partyInfo[i].hp == HP_EMPTY_SLOT)
+                  if (partyInfo[i].hp == (0xFFFF))
                   {
                        
                       gSprites[ballIconSpritesIds[_var]].oam.tileNum += 1;
@@ -842,9 +837,9 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
           }
           else
           {
-              for (_var = 0, i = 0, j = 0; j < PARTY_SIZE; j++)
+              for (_var = 0, i = 0, j = 0; j < (6); j++)
               {
-                  if (partyInfo[j].hp == HP_EMPTY_SLOT)
+                  if (partyInfo[j].hp == (0xFFFF))
                   {
                        
                       gSprites[ballIconSpritesIds[i]].oam.tileNum += 1;
@@ -855,17 +850,17 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
                   else if (partyInfo[j].hp == 0)
                   {
                         
-                      gSprites[ballIconSpritesIds[PARTY_SIZE - 1 - _var]].oam.tileNum += 3;
+                      gSprites[ballIconSpritesIds[(6) - 1 - _var]].oam.tileNum += 3;
                   }
-                  else if (gBattleTypeFlags & BATTLE_TYPE_ARENA && gBattleStruct.arenaLostOpponentMons & gBitTable[j])
+                  else if (gBattleTypeFlags & ((1 << 18)) && gBattleStruct.arenaLostOpponentMons & gBitTable[j])
                   {
                         
-                      gSprites[ballIconSpritesIds[PARTY_SIZE - 1 - _var]].oam.tileNum += 3;
+                      gSprites[ballIconSpritesIds[(6) - 1 - _var]].oam.tileNum += 3;
                   }
                   else if (partyInfo[j].status != 0)
                   {
                         
-                      gSprites[ballIconSpritesIds[PARTY_SIZE - 1 - _var]].oam.tileNum += 2;
+                      gSprites[ballIconSpritesIds[(6) - 1 - _var]].oam.tileNum += 2;
                   }
                   _var++;
               }
@@ -876,7 +871,7 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
       gTasks[taskId].tBattler = battler;
       gTasks[taskId].tSummaryBarSpriteId = summaryBarSpriteId;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
           gTasks[taskId].data[3 + (i)] = ballIconSpritesIds[i];
 
       gTasks[taskId].tIsBattleStart = isBattleStart;
@@ -886,7 +881,7 @@ export function CreatePartyStatusSummarySprites(battler: any, partyInfo: any, sk
           gBattleSpritesDataPtr.animationData.field_9_x1C++;
       }
 
-      PlaySE12WithPanning(SE_BALL_TRAY_ENTER, 0);
+      PlaySE12WithPanning((114), 0);
       return taskId;
 }
 
@@ -902,7 +897,7 @@ export function Task_HidePartyStatusSummary(taskId: any): any {
       summaryBarSpriteId = gTasks[taskId].tSummaryBarSpriteId;
       battler = gTasks[taskId].tBattler;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
           ballIconSpriteIds[i] = gTasks[taskId].data[3 + (i)];
 
       SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND);
@@ -910,21 +905,21 @@ export function Task_HidePartyStatusSummary(taskId: any): any {
 
       gTasks[taskId].tBlend = 16;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
           gSprites[ballIconSpriteIds[i]].oam.objMode = ST_OAM_OBJ_BLEND;
 
       gSprites[summaryBarSpriteId].oam.objMode = ST_OAM_OBJ_BLEND;
 
       if (isBattleStart)
       {
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
-              if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+              if (GetBattlerSide(battler) != (0))
               {
-                  gSprites[ballIconSpriteIds[PARTY_SIZE - 1 - i]].data[1] = 7 * i;
-                  gSprites[ballIconSpriteIds[PARTY_SIZE - 1 - i]].data[3] = 0;
-                  gSprites[ballIconSpriteIds[PARTY_SIZE - 1 - i]].data[4] = 0;
-                  gSprites[ballIconSpriteIds[PARTY_SIZE - 1 - i]].callback = SpriteCB_StatusSummaryBalls_Exit;
+                  gSprites[ballIconSpriteIds[(6) - 1 - i]].data[1] = 7 * i;
+                  gSprites[ballIconSpriteIds[(6) - 1 - i]].data[3] = 0;
+                  gSprites[ballIconSpriteIds[(6) - 1 - i]].data[4] = 0;
+                  gSprites[ballIconSpriteIds[(6) - 1 - i]].callback = SpriteCB_StatusSummaryBalls_Exit;
               }
               else
               {
@@ -969,7 +964,7 @@ export function Task_HidePartyStatusSummary_BattleStart_2(taskId: any): any {
       {
           let summaryBarSpriteId: any = gTasks[taskId].tSummaryBarSpriteId;
 
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
               ballIconSpriteIds[i] = gTasks[taskId].data[3 + (i)];
 
           gBattleSpritesDataPtr.animationData.field_9_x1C--;
@@ -986,7 +981,7 @@ export function Task_HidePartyStatusSummary_BattleStart_2(taskId: any): any {
               DestroySprite(gSprites[ballIconSpriteIds[0]]);
           }
 
-          for (i = 1; i < PARTY_SIZE; i++)
+          for (i = 1; i < (6); i++)
               DestroySprite(gSprites[ballIconSpriteIds[i]]);
       }
       else if (gTasks[taskId].tBlend == -3)
@@ -1012,13 +1007,13 @@ export function Task_HidePartyStatusSummary_DuringBattle(taskId: any): any {
       {
           let summaryBarSpriteId: any = gTasks[taskId].tSummaryBarSpriteId;
 
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
               ballIconSpriteIds[i] = gTasks[taskId].data[3 + (i)];
 
           DestroySpriteAndFreeResources(gSprites[summaryBarSpriteId]);
           DestroySpriteAndFreeResources(gSprites[ballIconSpriteIds[0]]);
 
-          for (i = 1; i < PARTY_SIZE; i++)
+          for (i = 1; i < (6); i++)
               DestroySprite(gSprites[ballIconSpriteIds[i]]);
       }
       else if (gTasks[taskId].tBlend == -3)
@@ -1078,14 +1073,14 @@ export function SpriteCB_StatusSummaryBalls_Enter(sprite: any): any {
 
       if (sprite.x2 == 0)
       {
-          pan = SOUND_PAN_TARGET;
+          pan = (63);
           if (var1 != 0)
-              pan = SOUND_PAN_ATTACKER;
+              pan = (-64);
 
           if (sprite.data[7] != 0)
-              PlaySE2WithPanning(SE_BALL_TRAY_EXIT, pan);
+              PlaySE2WithPanning((116), pan);
           else
-              PlaySE1WithPanning(SE_BALL_TRAY_BALL, pan);
+              PlaySE1WithPanning((115), pan);
 
           sprite.callback = SpriteCallbackDummy;
       }
@@ -1142,7 +1137,7 @@ export function UpdateNickInHealthbox(healthboxSpriteId: any, mon: any): any {
       gender = GetMonGender(mon);
       species = GetMonData(mon, MON_DATA_SPECIES);
 
-      if ((species == SPECIES_NIDORAN_F || species == SPECIES_NIDORAN_M) && StringCompare(nickname, gSpeciesNames[species]) == 0)
+      if ((species == (29) || species == (32)) && StringCompare(nickname, gSpeciesNames[species]) == 0)
           gender = 100;
 
        
@@ -1153,11 +1148,11 @@ export function UpdateNickInHealthbox(healthboxSpriteId: any, mon: any): any {
           StringCopy(ptr, gText_HealthboxGender_None);
           windowTileData = AddTextPrinterAndCreateWindowOnHealthbox(gDisplayedStringBattle, 0, 3, 2,windowId);
           break;
-      case MON_MALE:
+      case (0x00):
           StringCopy(ptr, gText_HealthboxGender_Male);
           windowTileData = AddTextPrinterAndCreateWindowOnHealthbox(gDisplayedStringBattle, 0, 3, 2,windowId);
           break;
-      case MON_FEMALE:
+      case (0xFE):
           StringCopy(ptr, gText_HealthboxGender_Female);
           windowTileData = AddTextPrinterAndCreateWindowOnHealthbox(gDisplayedStringBattle, 0, 3, 2,windowId);
           break;
@@ -1165,7 +1160,7 @@ export function UpdateNickInHealthbox(healthboxSpriteId: any, mon: any): any {
 
       spriteTileNum = gSprites[healthboxSpriteId].oam.tileNum * TILE_SIZE_4BPP;
 
-      if (GetBattlerSide(gSprites[healthboxSpriteId].data[6]) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gSprites[healthboxSpriteId].data[6]) == (0))
       {
           TextIntoHealthboxObject((OBJ_VRAM0 + 0x40 + spriteTileNum), windowTileData, 6);
           ptr = (OBJ_VRAM0);
@@ -1187,13 +1182,13 @@ export function UpdateNickInHealthbox(healthboxSpriteId: any, mon: any): any {
 export function TryAddPokeballIconToHealthbox(healthboxSpriteId: any, noStatus: any): any {
   let battler, healthBarSpriteId;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL)
+      if (gBattleTypeFlags & ((1 << 9)))
           return;
-      if (gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+      if (gBattleTypeFlags & ((1 << 3)))
           return;
 
       battler = gSprites[healthboxSpriteId].hMain_Battler;
-      if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) == (0))
           return;
       if (!GetSetPokedexFlag(SpeciesToNationalPokedexNum(GetMonData(gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_SPECIES)), FLAG_GET_CAUGHT))
           return;
@@ -1217,7 +1212,7 @@ export function UpdateStatusIconInHealthbox(healthboxSpriteId: any): any {
 
       battler = gSprites[healthboxSpriteId].hMain_Battler;
       healthBarSpriteId = gSprites[healthboxSpriteId].hMain_HealthBarSpriteId;
-      if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) == (0))
       {
           status = GetMonData(gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_STATUS);
           if (!IsDoubleBattle())
@@ -1231,27 +1226,27 @@ export function UpdateStatusIconInHealthbox(healthboxSpriteId: any): any {
           tileNumAdder = 0x11;
       }
 
-      if (status & STATUS1_SLEEP)
+      if (status & ((1 << 0 | 1 << 1 | 1 << 2)))
       {
           statusGfxPtr = GetHealthboxElementGfxPtr(GetStatusIconForBattlerId(HEALTHBOX_GFX_STATUS_SLP_BATTLER0, battler));
           statusPalId = PAL_STATUS_SLP;
       }
-      else if (status & STATUS1_PSN_ANY)
+      else if (status & ((((1 << 3)) | ((1 << 7)))))
       {
           statusGfxPtr = GetHealthboxElementGfxPtr(GetStatusIconForBattlerId(HEALTHBOX_GFX_STATUS_PSN_BATTLER0, battler));
           statusPalId = PAL_STATUS_PSN;
       }
-      else if (status & STATUS1_BURN)
+      else if (status & ((1 << 4)))
       {
           statusGfxPtr = GetHealthboxElementGfxPtr(GetStatusIconForBattlerId(HEALTHBOX_GFX_STATUS_BRN_BATTLER0, battler));
           statusPalId = PAL_STATUS_BRN;
       }
-      else if (status & STATUS1_FREEZE)
+      else if (status & ((1 << 5)))
       {
           statusGfxPtr = GetHealthboxElementGfxPtr(GetStatusIconForBattlerId(HEALTHBOX_GFX_STATUS_FRZ_BATTLER0, battler));
           statusPalId = PAL_STATUS_FRZ;
       }
-      else if (status & STATUS1_PARALYSIS)
+      else if (status & ((1 << 6)))
       {
           statusGfxPtr = GetHealthboxElementGfxPtr(GetStatusIconForBattlerId(HEALTHBOX_GFX_STATUS_PRZ_BATTLER0, battler));
           statusPalId = PAL_STATUS_PAR;
@@ -1273,10 +1268,10 @@ export function UpdateStatusIconInHealthbox(healthboxSpriteId: any): any {
       pltAdder = PLTT_ID(gSprites[healthboxSpriteId].oam.paletteNum);
       pltAdder += battler + 12;
 
-      FillPalette(sStatusIconColors[statusPalId], OBJ_PLTT_OFFSET + pltAdder, PLTT_SIZEOF(1));
-      CpuCopy16(gPlttBufferUnfaded[OBJ_PLTT_OFFSET + pltAdder], OBJ_PLTT + pltAdder, PLTT_SIZEOF(1));
+      FillPalette(sStatusIconColors[statusPalId], (0x100) + pltAdder, PLTT_SIZEOF(1));
+      CpuCopy16(gPlttBufferUnfaded[(0x100) + pltAdder], OBJ_PLTT + pltAdder, PLTT_SIZEOF(1));
       CpuCopy32(statusGfxPtr, (OBJ_VRAM0 + (gSprites[healthboxSpriteId].oam.tileNum + tileNumAdder) * TILE_SIZE_4BPP), 96);
-      if (IsDoubleBattle() == TRUE || GetBattlerSide(battler) == B_SIDE_OPPONENT)
+      if (IsDoubleBattle() == TRUE || GetBattlerSide(battler) == (1))
       {
           if (!gBattleSpritesDataPtr.battlerData[battler].hpNumbersNoBars)
           {
@@ -1384,7 +1379,7 @@ export function UpdateHealthboxAttribute(healthboxSpriteId: any, mon: any, eleme
       if (elementId == HEALTHBOX_ALL && !IsDoubleBattle())
           GetBattlerSide(battler);  
 
-      if (GetBattlerSide(gSprites[healthboxSpriteId].hMain_Battler) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gSprites[healthboxSpriteId].hMain_Battler) == (0))
       {
           let isDoubles: any = null;
 
@@ -1522,7 +1517,7 @@ export function MoveBattleBarGraphically(battler: any, whichBar: any): any {
                       gBattleSpritesDataPtr.battleBars[battler].receivedValue,gBattleSpritesDataPtr.battleBars[battler].currValue,
                       array, (64) / 8);
           level = GetMonData(gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_LEVEL);
-          if (level == MAX_LEVEL)
+          if (level == (100))
           {
               for (i = 0; i < 8; i++)
                   array[i] = 0;

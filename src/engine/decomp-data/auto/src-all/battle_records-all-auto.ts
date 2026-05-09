@@ -17,19 +17,12 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sLinkBattleRecordsWindow: any = null;
-let sText_DashesNoPlayer: any = null;
-let sText_DashesNoScore: any = null;
+let gRecordsWindowId: any = null;
 let sTilemapBuffer: any = null;
-let sTrainerHillRecordsBgTemplates: any = null;
-let sTrainerHillRecordsWindowTemplates: any = null;
-let sTrainerHillWindowPalette: any = null;
-let sTrainerHillWindowTilemap: any = null;
-let sTrainerHillWindowTileset: any = null;
 /** static void ClearLinkBattleRecord(struct LinkBattleRecord *record) */
 export function ClearLinkBattleRecord(record: any): any {
   CpuFill16(0, record, 0);
-      record.name[0] = EOS;
+      record.name[0] = (0xFF);
       record.trainerId = 0;
       record.wins = 0;
       record.losses = 0;
@@ -39,13 +32,13 @@ export function ClearLinkBattleRecord(record: any): any {
 /** static void ClearLinkBattleRecords(struct LinkBattleRecord *records) */
 export function ClearLinkBattleRecords(records: any): any {
   let i: any = null;
-      for (i = 0; i < LINK_B_RECORDS_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           ClearLinkBattleRecord(records + i);
       }
-      SetGameStat(GAME_STAT_LINK_BATTLE_WINS, 0);
-      SetGameStat(GAME_STAT_LINK_BATTLE_LOSSES, 0);
-      SetGameStat(GAME_STAT_LINK_BATTLE_DRAWS, 0);
+      SetGameStat((23), 0);
+      SetGameStat((24), 0);
+      SetGameStat((25), 0);
 }
 
 /** static s32 GetLinkBattleRecordTotalBattles(struct LinkBattleRecord *record) */
@@ -57,20 +50,20 @@ export function GetLinkBattleRecordTotalBattles(record: any): any {
 export function FindLinkBattleRecord(records: any, name: any, trainerId: any): any {
   let i: any = null;
 
-      for (i = 0; i < LINK_B_RECORDS_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
-          if (!StringCompareN(records[i].name, name, PLAYER_NAME_LENGTH) && records[i].trainerId == trainerId)
+          if (!StringCompareN(records[i].name, name, (7)) && records[i].trainerId == trainerId)
               return i;
       }
 
-      return LINK_B_RECORDS_COUNT;
+      return (5);
 }
 
 /** static void SortLinkBattleRecords(struct LinkBattleRecords *records) */
 export function SortLinkBattleRecords(records: any): any {
   let i, j;
 
-      for (i = LINK_B_RECORDS_COUNT - 1; i > 0; i--)
+      for (i = (5) - 1; i > 0; i--)
       {
           for (j = i - 1; j >= 0; j--)
           {
@@ -98,17 +91,17 @@ export function SortLinkBattleRecords(records: any): any {
 export function UpdateLinkBattleRecord(record: any, battleOutcome: any): any {
   switch (battleOutcome)
       {
-      case B_OUTCOME_WON:
+      case (1):
           record.wins++;
           if (record.wins > 9999)
               record.wins = 9999;
           break;
-      case B_OUTCOME_LOST:
+      case (2):
           record.losses++;
           if (record.losses > 9999)
               record.losses = 9999;
           break;
-      case B_OUTCOME_DREW:
+      case (3):
           record.draws++;
           if (record.draws > 9999)
               record.draws = 9999;
@@ -122,14 +115,14 @@ export function UpdateLinkBattleGameStats(battleOutcome: any): any {
 
       switch (battleOutcome)
       {
-      case B_OUTCOME_WON:
-          stat = GAME_STAT_LINK_BATTLE_WINS;
+      case (1):
+          stat = (23);
           break;
-      case B_OUTCOME_LOST:
-          stat = GAME_STAT_LINK_BATTLE_LOSSES;
+      case (2):
+          stat = (24);
           break;
-      case B_OUTCOME_DREW:
-          stat = GAME_STAT_LINK_BATTLE_DRAWS;
+      case (3):
+          stat = (25);
           break;
       default:
           return;
@@ -146,11 +139,11 @@ export function UpdateLinkBattleRecords(records: any, name: any, trainerId: any,
       UpdateLinkBattleGameStats(battleOutcome);
       SortLinkBattleRecords(records);
       index = FindLinkBattleRecord(records.entries, name, trainerId);
-      if (index == LINK_B_RECORDS_COUNT)
+      if (index == (5))
       {
-          index = LINK_B_RECORDS_COUNT - 1;
+          index = (5) - 1;
           ClearLinkBattleRecord(records.entries[index]);
-          StringCopyN(records.entries[index].name, name, PLAYER_NAME_LENGTH);
+          StringCopyN(records.entries[index].name, name, (7));
           records.entries[index].trainerId = trainerId;
           records.languages[index] = gLinkPlayers[battler].language;
       }
@@ -183,11 +176,11 @@ export function IncTrainerCardLosses(battler: any): any {
 export function UpdateTrainerCardWinsLosses(battler: any): any {
   switch (gBattleOutcome)
       {
-      case B_OUTCOME_WON:
+      case (1):
           IncTrainerCardWins(BATTLE_OPPOSITE(battler));
           IncTrainerCardLosses(battler);
           break;
-      case B_OUTCOME_LOST:
+      case (2):
           IncTrainerCardLosses(BATTLE_OPPOSITE(battler));
           IncTrainerCardWins(battler);
           break;
@@ -211,9 +204,9 @@ export function UpdatePlayerLinkBattleRecords(battler: any): any {
 export function PrintLinkBattleWinsLossesDraws(records: any): any {
   let x: any = null;
 
-      ConvertIntToDecimalStringN(gStringVar1, GetGameStat(GAME_STAT_LINK_BATTLE_WINS), STR_CONV_MODE_LEFT_ALIGN, 4);
-      ConvertIntToDecimalStringN(gStringVar2, GetGameStat(GAME_STAT_LINK_BATTLE_LOSSES), STR_CONV_MODE_LEFT_ALIGN, 4);
-      ConvertIntToDecimalStringN(gStringVar3, GetGameStat(GAME_STAT_LINK_BATTLE_DRAWS), STR_CONV_MODE_LEFT_ALIGN, 4);
+      ConvertIntToDecimalStringN(gStringVar1, GetGameStat((23)), STR_CONV_MODE_LEFT_ALIGN, 4);
+      ConvertIntToDecimalStringN(gStringVar2, GetGameStat((24)), STR_CONV_MODE_LEFT_ALIGN, 4);
+      ConvertIntToDecimalStringN(gStringVar3, GetGameStat((25)), STR_CONV_MODE_LEFT_ALIGN, 4);
       StringExpandPlaceholders(gStringVar4, gText_TotalRecordWLD);
 
       x = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0xD0);
@@ -265,7 +258,7 @@ export function ShowLinkBattleRecords(): any {
       StringExpandPlaceholders(gStringVar4, gText_WinLoseDraw);
       AddTextPrinterParameterized(gRecordsWindowId, FONT_NORMAL, gStringVar4, 0, 41, 0, NULL);
 
-      for (i = 0; i < LINK_B_RECORDS_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           PrintLinkBattleRecord(gSaveBlock1Ptr.linkBattleRecords.entries[i], 7 + (i * 2), gSaveBlock1Ptr.linkBattleRecords.languages[i]);
       }
@@ -292,14 +285,14 @@ export function Task_CloseTrainerHillRecordsOnButton(taskId: any): any {
 
       if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           task.func = Task_BeginPaletteFade;
       }
 }
 
 /** static void Task_BeginPaletteFade(u8 taskId) */
 export function Task_BeginPaletteFade(taskId: any): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_ExitTrainerHillRecords;
 }
 
@@ -446,7 +439,7 @@ export function CB2_ShowTrainerHillRecords(): any {
           gMain.state++;
           break;
       case 6:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
           gMain.state++;
           break;
       case 7:

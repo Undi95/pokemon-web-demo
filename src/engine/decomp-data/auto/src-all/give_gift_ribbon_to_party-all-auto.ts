@@ -15,9 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sGiftRibbonsMonDataIds: any = null;
 /** void GiveGiftRibbonToParty(u8 index, u8 ribbonId) */
 export function GiveGiftRibbonToParty(index: any, ribbonId: any): any {
   let i: any = null;
@@ -26,10 +23,10 @@ export function GiveGiftRibbonToParty(index: any, ribbonId: any): any {
       let array: any = [];
       memcpy(array, sGiftRibbonsMonDataIds, 0);
 
-      if (index < GIFT_RIBBONS_COUNT && ribbonId <= MAX_GIFT_RIBBON)
+      if (index < (11) && ribbonId <= (64))
       {
           gSaveBlock1Ptr.giftRibbons[index] = ribbonId;
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
               let mon: any =gPlayerParty[i];
 
@@ -40,7 +37,7 @@ export function GiveGiftRibbonToParty(index: any, ribbonId: any): any {
               }
           }
           if (gotRibbon)
-              FlagSet(FLAG_SYS_RIBBON_GET);
+              FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x3B)));
       }
 }
 

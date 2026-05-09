@@ -17,21 +17,14 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgColors: any = null;
-let sBgTemplates: any = null;
-let sMailGraphics: any = null;
-let sMailLayouts_Tall: any = null;
-let sMailLayouts_Wide: any = null;
 let sMailRead: any = null;
-let sTextColors: any = null;
-let sWindowTemplates: any = null;
 /** void ReadMail(struct Mail *mail, MainCallback exitCallback, bool8 hasText) */
 export function ReadMail(mail: any, exitCallback: any, hasText: any): any {
   let buffer: any = [];
       let species: any = null;
 
       sMailRead = AllocZeroed(0);
-      sMailRead.language = GAME_LANGUAGE;
+      sMailRead.language = (((3)));
       sMailRead.international = TRUE;
       sMailRead.parserSingle = CopyEasyChatWord;
       sMailRead.parserMultiple = ConvertEasyChatWordsToString;
@@ -41,7 +34,7 @@ export function ReadMail(mail: any, exitCallback: any, hasText: any): any {
       }
       else
       {
-          sMailRead.mailType = ITEM_TO_MAIL(FIRST_MAIL_INDEX);
+          sMailRead.mailType = ITEM_TO_MAIL(((121)));
           hasText = FALSE;
       }
       switch (sMailRead.international)
@@ -56,17 +49,17 @@ export function ReadMail(mail: any, exitCallback: any, hasText: any): any {
           break;
       }
       species = MailSpeciesToSpecies(mail.species, buffer);
-      if (species > SPECIES_NONE && species < NUM_SPECIES)
+      if (species > (0) && species < ((412)))
       {
           switch (sMailRead.mailType)
           {
           default:
               sMailRead.iconType = ICON_TYPE_NONE;
               break;
-          case ITEM_TO_MAIL(ITEM_BEAD_MAIL):
+          case ITEM_TO_MAIL((127)):
               sMailRead.iconType = ICON_TYPE_BEAD;
               break;
-          case ITEM_TO_MAIL(ITEM_DREAM_MAIL):
+          case ITEM_TO_MAIL((130)):
               sMailRead.iconType = ICON_TYPE_DREAM;
               break;
           }
@@ -196,7 +189,7 @@ export function MailReadBuildGraphics(): any {
               ShowBg(0);
               ShowBg(1);
               ShowBg(2);
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
               gPaletteFade.bufferTransferDisabled = FALSE;
               sMailRead.callback = CB2_WaitForPaletteExitOnKeyPress;
               return TRUE;
@@ -264,7 +257,7 @@ export function PrintMailText(): any {
       FillWindowPixelBuffer(1, PIXEL_FILL(0));
       for (i = 0; i < sMailRead.layout.numLines; i ++)
       {
-          if (sMailRead.message[i][0] == EOS || sMailRead.message[i][0] == CHAR_SPACE)
+          if (sMailRead.message[i][0] == (0xFF) || sMailRead.message[i][0] == (0x00))
               continue;
 
           AddTextPrinterParameterized3(0, FONT_NORMAL, sMailRead.layout.lines[i].xOffset + sMailRead.layout.wordsXPos, y + sMailRead.layout.wordsYPos, sTextColors, 0, sMailRead.message[i]);
@@ -308,7 +301,7 @@ export function CB2_WaitForPaletteExitOnKeyPress(): any {
 export function CB2_ExitOnKeyPress(): any {
   if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           sMailRead.callback = CB2_ExitMailReadFreeVars;
       }
 }

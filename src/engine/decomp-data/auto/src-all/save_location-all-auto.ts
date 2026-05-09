@@ -15,11 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sEmptyMapList: any = null;
-let sSaveLocationPokeCenterList: any = null;
-let sSaveLocationReloadLocList: any = null;
 /** static bool32 IsCurMapInLocationList(const u16 *list) */
 export function IsCurMapInLocationList(list: any): any {
   let i: any = null;
@@ -52,25 +47,25 @@ export function IsCurMapInEmptyList(): any {
 /** static void TrySetPokeCenterWarpStatus(void) */
 export function TrySetPokeCenterWarpStatus(): any {
   if (!IsCurMapPokeCenter())
-          gSaveBlock2Ptr.specialSaveWarpFlags &= ~POKECENTER_SAVEWARP;
+          gSaveBlock2Ptr.specialSaveWarpFlags &= ~((1 << 1));
       else
-          gSaveBlock2Ptr.specialSaveWarpFlags |= POKECENTER_SAVEWARP;
+          gSaveBlock2Ptr.specialSaveWarpFlags |= ((1 << 1));
 }
 
 /** static void TrySetReloadWarpStatus(void) */
 export function TrySetReloadWarpStatus(): any {
   if (!IsCurMapReloadLocation())
-          gSaveBlock2Ptr.specialSaveWarpFlags &= ~LOBBY_SAVEWARP;
+          gSaveBlock2Ptr.specialSaveWarpFlags &= ~((1 << 2));
       else
-          gSaveBlock2Ptr.specialSaveWarpFlags |= LOBBY_SAVEWARP;
+          gSaveBlock2Ptr.specialSaveWarpFlags |= ((1 << 2));
 }
 
 /** static void TrySetUnknownWarpStatus(void) */
 export function TrySetUnknownWarpStatus(): any {
   if (!IsCurMapInEmptyList())
-          gSaveBlock2Ptr.specialSaveWarpFlags &= ~UNK_SPECIAL_SAVE_WARP_FLAG_3;
+          gSaveBlock2Ptr.specialSaveWarpFlags &= ~((1 << 3));
       else
-          gSaveBlock2Ptr.specialSaveWarpFlags |= UNK_SPECIAL_SAVE_WARP_FLAG_3;
+          gSaveBlock2Ptr.specialSaveWarpFlags |= ((1 << 3));
 }
 
 /** void TrySetMapSaveWarpStatus(void) */
@@ -93,7 +88,7 @@ export function SetUnlockedPokedexFlags(): any {
 
 /** void SetChampionSaveWarp(void) */
 export function SetChampionSaveWarp(): any {
-  gSaveBlock2Ptr.specialSaveWarpFlags |= CHAMPION_SAVEWARP;
+  gSaveBlock2Ptr.specialSaveWarpFlags |= ((1 << 7));
 }
 
 // ─── callsTo manifest (= 7 unique callees) ───────────────────────

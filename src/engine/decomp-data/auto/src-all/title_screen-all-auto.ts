@@ -17,23 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAlphaBlendIdx: any = null;
-let sAnimate: any = null;
-let sBgColor: any = null;
-let sMode: any = null;
-let sParentTaskId: any = null;
-let sPokemonLogoShineSpriteSheet: any = null;
-let sPokemonLogoShineSpriteTemplate: any = null;
-let sSpritePalette_PressStart: any = null;
-let sSpriteSheet_EmeraldVersion: any = null;
-let sSpriteSheet_PressStart: any = null;
-let sStartCopyrightBannerSpriteTemplate: any = null;
-let sTimer: any = null;
-let sTitleScreenCloudsGfx: any = null;
-let sTitleScreenRayquazaGfx: any = null;
-let sTitleScreenRayquazaTilemap: any = null;
-let sVersionBannerLeftSpriteTemplate: any = null;
-let sVersionBannerRightSpriteTemplate: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gReservedSpritePaletteCount: any = null;
 /** static void SpriteCB_VersionBannerLeft(struct Sprite *sprite) */
 export function SpriteCB_VersionBannerLeft(sprite: any): any {
   if (gTasks[sprite.sParentTaskId].tSkipToNext)
@@ -153,7 +139,7 @@ export function SpriteCB_PokemonLogoShine(sprite: any): any {
       else
       {
            
-          gPlttBufferFaded[0] = RGB_BLACK;
+          gPlttBufferFaded[0] = (RGB(0, 0, 0));
           DestroySprite(sprite);
       }
 }
@@ -218,7 +204,7 @@ export function CB2_InitTitleScreen(): any {
           SetGpuReg(REG_OFFSET_BLDCNT, 0);
           SetGpuReg(REG_OFFSET_BLDALPHA, 0);
           SetGpuReg(REG_OFFSET_BLDY, 0);
-          MEM_WRITE((PLTT), RGB_WHITE);
+          MEM_WRITE((PLTT), (RGB(31, 31, 31)));
           SetGpuReg(REG_OFFSET_DISPCNT, 0);
           SetGpuReg(REG_OFFSET_BG2CNT, 0);
           SetGpuReg(REG_OFFSET_BG1CNT, 0);
@@ -270,7 +256,7 @@ export function CB2_InitTitleScreen(): any {
           break;
       }
       case 3:
-          BeginNormalPaletteFade(PALETTES_ALL, 1, 16, 0, RGB_WHITEALPHA);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 1, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
           SetVBlankCallback(VBlankCB);
           gMain.state = 4;
           break;
@@ -299,14 +285,14 @@ export function CB2_InitTitleScreen(): any {
                                       | DISPCNT_OBJ_ON
                                       | DISPCNT_WIN0_ON
                                       | DISPCNT_OBJWIN_ON);
-          m4aSongNumStart(MUS_TITLE);
+          m4aSongNumStart((413));
           gMain.state = 5;
           break;
       case 5:
           if (!UpdatePaletteFade())
           {
               StartPokemonLogoShine(SHINE_MODE_SINGLE_NO_BG_COLOR);
-              ScanlineEffect_InitWave(0, DISPLAY_HEIGHT, 4, 4, 0, SCANLINE_EFFECT_REG_BG1HOFS, TRUE);
+              ScanlineEffect_InitWave(0, DISPLAY_HEIGHT, 4, 4, 0, ((REG_ADDR_BG1HOFS - REG_ADDR_BG0HOFS)), TRUE);
               SetMainCallback2(MainCB2);
           }
           break;
@@ -416,7 +402,7 @@ export function Task_TitleScreenPhase3(taskId: any): any {
   if ((JOY_NEW(A_BUTTON)) || (JOY_NEW(START_BUTTON)))
       {
           FadeOutBGM(4);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITEALPHA);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (((RGB(31, 31, 31)) | ((1 << 15)))));
           SetMainCallback2(CB2_GoToMainMenu);
       }
       else if (JOY_HELD(((B_BUTTON | SELECT_BUTTON | DPAD_UP))) == ((B_BUTTON | SELECT_BUTTON | DPAD_UP)))
@@ -427,13 +413,13 @@ export function Task_TitleScreenPhase3(taskId: any): any {
         && CanResetRTC() == TRUE)
       {
           FadeOutBGM(4);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           SetMainCallback2(CB2_GoToResetRtcScreen);
       }
       else if (JOY_HELD(((B_BUTTON | SELECT_BUTTON))) == ((B_BUTTON | SELECT_BUTTON)))
       {
           FadeOutBGM(4);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           SetMainCallback2(CB2_GoToBerryFixScreen);
       }
       else
@@ -449,7 +435,7 @@ export function Task_TitleScreenPhase3(taskId: any): any {
           UpdateLegendaryMarkingColor(gTasks[taskId].tCounter);
           if ((gMPlayInfo_BGM.status & 0xFFFF) == 0)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_WHITEALPHA);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (((RGB(31, 31, 31)) | ((1 << 15)))));
               SetMainCallback2(CB2_GoToCopyrightScreen);
           }
       }

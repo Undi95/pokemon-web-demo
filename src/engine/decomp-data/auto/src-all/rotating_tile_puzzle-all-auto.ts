@@ -17,14 +17,6 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sMovement_FaceDown: any = null;
-let sMovement_FaceLeft: any = null;
-let sMovement_FaceRight: any = null;
-let sMovement_FaceUp: any = null;
-let sMovement_ShiftDown: any = null;
-let sMovement_ShiftLeft: any = null;
-let sMovement_ShiftRight: any = null;
-let sMovement_ShiftUp: any = null;
 let sRotatingTilePuzzle: any = null;
 /** void InitRotatingTilePuzzle(bool8 isTrickHouse) */
 export function InitRotatingTilePuzzle(isTrickHouse: any): any {
@@ -40,7 +32,7 @@ export function FreeRotatingTilePuzzle(): any {
 
       TRY_FREE_AND_SET_NULL(sRotatingTilePuzzle);
 
-      id = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+      id = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
       ObjectEventClearHeldMovementIfFinished(gObjectEvents[id]);
       ScriptMovement_UnfreezeObjectEvents();
 }
@@ -49,35 +41,35 @@ export function FreeRotatingTilePuzzle(): any {
 export function MoveRotatingTileObjects(puzzleNumber: any): any {
   let i: any = null;
       let objectEvents: any = gSaveBlock1Ptr.objectEventTemplates;
-      let localId: any = LOCALID_NONE;
+      let localId: any = (0);
 
-      for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
+      for (i = 0; i < (64); i++)
       {
           let puzzleTileStart: any = null;
           let puzzleTileNum: any = null;
-          let x: any = objectEvents[i].x + MAP_OFFSET;
-          let y: any = objectEvents[i].y + MAP_OFFSET;
+          let x: any = objectEvents[i].x + (7);
+          let y: any = objectEvents[i].y + (7);
           let metatile: any = MapGridGetMetatileIdAt(x, y);
 
           if (!sRotatingTilePuzzle.isTrickHouse)
-              puzzleTileStart = METATILE_MossdeepGym_YellowArrow_Right;
+              puzzleTileStart = (0x250);
           else
-              puzzleTileStart = METATILE_TrickHousePuzzle_Arrow_YellowOnWhite_Right;
+              puzzleTileStart = (0x298);
 
            
            
-          if (metatile < METATILE_MossdeepGym_YellowArrow_Right)
+          if (metatile < (0x250))
               continue;
 
            
-          if (((metatile - puzzleTileStart) / METATILE_ROW_WIDTH) >= 5)
+          if (((metatile - puzzleTileStart) / (8)) >= 5)
               continue;
 
            
-          if (((metatile - puzzleTileStart) / METATILE_ROW_WIDTH) != puzzleNumber)
+          if (((metatile - puzzleTileStart) / (8)) != puzzleNumber)
               continue;
 
-          puzzleTileNum = ((metatile - puzzleTileStart) % METATILE_ROW_WIDTH);
+          puzzleTileNum = ((metatile - puzzleTileStart) % (8));
 
            
           if (puzzleTileNum < 4)
@@ -110,7 +102,7 @@ export function MoveRotatingTileObjects(puzzleNumber: any): any {
 
               objectEvents[i].x += x;
               objectEvents[i].y += y;
-              if (GetObjectEventIdByLocalIdAndMap(objectEvents[i].localId, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup) != OBJECT_EVENTS_COUNT)
+              if (GetObjectEventIdByLocalIdAndMap(objectEvents[i].localId, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup) != (16))
               {
                   SaveRotatingTileObject(i, puzzleTileNum);
                   localId = objectEvents[i].localId;
@@ -137,9 +129,9 @@ export function TurnRotatingTileObjects(): any {
           return;
 
       if (!sRotatingTilePuzzle.isTrickHouse)
-          puzzleTileStart = METATILE_MossdeepGym_YellowArrow_Right;
+          puzzleTileStart = (0x250);
       else
-          puzzleTileStart = METATILE_TrickHousePuzzle_Arrow_YellowOnWhite_Right;
+          puzzleTileStart = (0x298);
 
       objectEvents = gSaveBlock1Ptr.objectEventTemplates;
       for (i = 0; i < sRotatingTilePuzzle.numObjects; i++)
@@ -147,8 +139,8 @@ export function TurnRotatingTileObjects(): any {
           let rotation: any = null;
           let tileDifference: any = null;
           let objectEventId: any = null;
-          let x: any = objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].x + MAP_OFFSET;
-          let y: any = objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].y + MAP_OFFSET;
+          let x: any = objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].x + (7);
+          let y: any = objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].y + (7);
           let metatile: any = MapGridGetMetatileIdAt(x, y);
 
            
@@ -157,7 +149,7 @@ export function TurnRotatingTileObjects(): any {
            
            
            
-          tileDifference = ((metatile - puzzleTileStart) % METATILE_ROW_WIDTH);
+          tileDifference = ((metatile - puzzleTileStart) % (8));
           tileDifference -= (sRotatingTilePuzzle.objects[i].prevPuzzleTileNum);
 
            
@@ -178,7 +170,7 @@ export function TurnRotatingTileObjects(): any {
           }
 
           objectEventId = GetObjectEventIdByLocalIdAndMap(objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].localId, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup);
-          if (objectEventId != OBJECT_EVENTS_COUNT)
+          if (objectEventId != (16))
           {
               let movementScript: any = null;
               let direction: any = gObjectEvents[objectEventId].facingDirection;
@@ -186,21 +178,21 @@ export function TurnRotatingTileObjects(): any {
               {
                   switch (direction)
                   {
-                  case DIR_EAST:
+                  case (4):
                       movementScript = sMovement_FaceUp;
-                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = MOVEMENT_TYPE_FACE_UP;
+                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = (0x7);
                       break;
-                  case DIR_SOUTH:
+                  case (1):
                       movementScript = sMovement_FaceRight;
-                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = MOVEMENT_TYPE_FACE_RIGHT;
+                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = (0xA);
                       break;
-                  case DIR_WEST:
+                  case (3):
                       movementScript = sMovement_FaceDown;
-                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = MOVEMENT_TYPE_FACE_DOWN;
+                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = (0x8);
                       break;
-                  case DIR_NORTH:
+                  case (2):
                       movementScript = sMovement_FaceLeft;
-                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = MOVEMENT_TYPE_FACE_LEFT;
+                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = (0x9);
                       break;
                   default:
                       continue;
@@ -215,21 +207,21 @@ export function TurnRotatingTileObjects(): any {
               {
                   switch (direction)
                   {
-                  case DIR_EAST:
+                  case (4):
                       movementScript = sMovement_FaceDown;
-                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = MOVEMENT_TYPE_FACE_DOWN;
+                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = (0x8);
                       break;
-                  case DIR_SOUTH:
+                  case (1):
                       movementScript = sMovement_FaceLeft;
-                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = MOVEMENT_TYPE_FACE_LEFT;
+                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = (0x9);
                       break;
-                  case DIR_WEST:
+                  case (3):
                       movementScript = sMovement_FaceUp;
-                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = MOVEMENT_TYPE_FACE_UP;
+                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = (0x7);
                       break;
-                  case DIR_NORTH:
+                  case (2):
                       movementScript = sMovement_FaceRight;
-                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = MOVEMENT_TYPE_FACE_RIGHT;
+                      objectEvents[sRotatingTilePuzzle.objects[i].eventTemplateId].movementType = (0xA);
                       break;
                   default:
                       continue;
@@ -257,16 +249,16 @@ export function TurnUnsavedRotatingTileObject(eventTemplateId: any, puzzleTileNu
       let puzzleTileStart: any = null;
       let movementType: any = null;
       let objectEvents: any = gSaveBlock1Ptr.objectEventTemplates;
-      let x: any = objectEvents[eventTemplateId].x + MAP_OFFSET;
-      let y: any = objectEvents[eventTemplateId].y + MAP_OFFSET;
+      let x: any = objectEvents[eventTemplateId].x + (7);
+      let y: any = objectEvents[eventTemplateId].y + (7);
       let metatile: any = MapGridGetMetatileIdAt(x, y);
 
       if (!sRotatingTilePuzzle.isTrickHouse)
-          puzzleTileStart = METATILE_MossdeepGym_YellowArrow_Right;
+          puzzleTileStart = (0x250);
       else
-          puzzleTileStart = METATILE_TrickHousePuzzle_Arrow_YellowOnWhite_Right;
+          puzzleTileStart = (0x298);
 
-      tileDifference = ((metatile - puzzleTileStart) % METATILE_ROW_WIDTH);
+      tileDifference = ((metatile - puzzleTileStart) % (8));
       tileDifference -= puzzleTileNum;
 
       if (tileDifference < 0 || tileDifference == 3)
@@ -281,17 +273,17 @@ export function TurnUnsavedRotatingTileObject(eventTemplateId: any, puzzleTileNu
       {
           switch (movementType)
           {
-          case MOVEMENT_TYPE_FACE_RIGHT:
-              objectEvents[eventTemplateId].movementType = MOVEMENT_TYPE_FACE_UP;
+          case (0xA):
+              objectEvents[eventTemplateId].movementType = (0x7);
               break;
-          case MOVEMENT_TYPE_FACE_DOWN:
-              objectEvents[eventTemplateId].movementType = MOVEMENT_TYPE_FACE_RIGHT;
+          case (0x8):
+              objectEvents[eventTemplateId].movementType = (0xA);
               break;
-          case MOVEMENT_TYPE_FACE_LEFT:
-              objectEvents[eventTemplateId].movementType = MOVEMENT_TYPE_FACE_DOWN;
+          case (0x9):
+              objectEvents[eventTemplateId].movementType = (0x8);
               break;
-          case MOVEMENT_TYPE_FACE_UP:
-              objectEvents[eventTemplateId].movementType = MOVEMENT_TYPE_FACE_LEFT;
+          case (0x7):
+              objectEvents[eventTemplateId].movementType = (0x9);
               break;
           default:
               break;
@@ -301,17 +293,17 @@ export function TurnUnsavedRotatingTileObject(eventTemplateId: any, puzzleTileNu
       {
           switch (movementType)
           {
-          case MOVEMENT_TYPE_FACE_RIGHT:
-              objectEvents[eventTemplateId].movementType = MOVEMENT_TYPE_FACE_DOWN;
+          case (0xA):
+              objectEvents[eventTemplateId].movementType = (0x8);
               break;
-          case MOVEMENT_TYPE_FACE_DOWN:
-              objectEvents[eventTemplateId].movementType = MOVEMENT_TYPE_FACE_LEFT;
+          case (0x8):
+              objectEvents[eventTemplateId].movementType = (0x9);
               break;
-          case MOVEMENT_TYPE_FACE_LEFT:
-              objectEvents[eventTemplateId].movementType = MOVEMENT_TYPE_FACE_UP;
+          case (0x9):
+              objectEvents[eventTemplateId].movementType = (0x7);
               break;
-          case MOVEMENT_TYPE_FACE_UP:
-              objectEvents[eventTemplateId].movementType = MOVEMENT_TYPE_FACE_RIGHT;
+          case (0x7):
+              objectEvents[eventTemplateId].movementType = (0xA);
               break;
           default:
               break;

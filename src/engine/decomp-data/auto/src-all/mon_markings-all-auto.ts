@@ -17,14 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAnims_MenuSprite: any = null;
-let sAnims_MenuWindow: any = null;
-let sCursorYOffset: any = null;
-let sMarkingId: any = null;
 let sMenu: any = null;
-let sMonMarkings_Gfx: any = null;
-let sOamData_8x8: any = null;
-let sOamData_MenuWindow: any = null;
 /** void InitMonMarkingsMenu(struct MonMarkingsMenu *ptr) */
 export function InitMonMarkingsMenu(ptr: any): any {
   sMenu = ptr;
@@ -88,7 +81,7 @@ export function OpenMonMarkingsMenu(markings: any, x: any, y: any): any {
   let i: any = null;
       sMenu.cursorPos = 0;
       sMenu.markings = markings;
-      for (i = 0; i < NUM_MON_MARKINGS; i++)
+      for (i = 0; i < (4); i++)
           sMenu.markingsArray[i] = (sMenu.markings >> i) & 1;
       CreateMonMarkingsMenuSprites(x, y, sMenu.baseTileTag, sMenu.basePaletteTag);
 }
@@ -109,7 +102,7 @@ export function FreeMonMarkingsMenu(): any {
           DestroySprite(sMenu.windowSprites[i]);
           sMenu.windowSprites[i] = NULL;
       }
-      for (i = 0; i < NUM_MON_MARKINGS; i++)
+      for (i = 0; i < (4); i++)
       {
           if (!sMenu.markingSprites[i])
               return;
@@ -134,7 +127,7 @@ export function HandleMonMarkingsMenuInput(): any {
 
       if (JOY_NEW(DPAD_UP))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           if (--sMenu.cursorPos < 0)
               sMenu.cursorPos = (((NUM_MON_MARKINGS) + 1));
           return TRUE;
@@ -142,7 +135,7 @@ export function HandleMonMarkingsMenuInput(): any {
 
       if (JOY_NEW(DPAD_DOWN))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           if (++sMenu.cursorPos > (((NUM_MON_MARKINGS) + 1)))
               sMenu.cursorPos = 0;
           return TRUE;
@@ -150,13 +143,13 @@ export function HandleMonMarkingsMenuInput(): any {
 
       if (JOY_NEW(A_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 
           switch (sMenu.cursorPos)
           {
           case (NUM_MON_MARKINGS):
               sMenu.markings = 0;
-              for (i = 0; i < NUM_MON_MARKINGS; i++)
+              for (i = 0; i < (4); i++)
                   sMenu.markings |= sMenu.markingsArray[i] << i;
               return FALSE;
           case (((NUM_MON_MARKINGS) + 1)):
@@ -169,7 +162,7 @@ export function HandleMonMarkingsMenuInput(): any {
 
       if (JOY_NEW(B_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           return FALSE;
       }
 
@@ -206,7 +199,7 @@ export function CreateMonMarkingsMenuSprites(x: any, y: any, baseTileTag: any, b
       for (i = 0; i < ARRAY_COUNT(sMenu.windowSprites); i++)
       {
           spriteId = CreateSprite(template, x + 32, y + 32, 1);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               sMenu.windowSprites[i] =gSprites[spriteId];
               StartSpriteAnim(gSprites[spriteId], i);
@@ -225,10 +218,10 @@ export function CreateMonMarkingsMenuSprites(x: any, y: any, baseTileTag: any, b
       template.anims = sAnims_MenuSprite;
       template.callback = SpriteCB_Marking;
       template.oam =sOamData_8x8;
-      for (i = 0; i < NUM_MON_MARKINGS; i++)
+      for (i = 0; i < (4); i++)
       {
           spriteId = CreateSprite(template, x + 32, y + 16 + 16 * i, 0);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               sMenu.markingSprites[i] =gSprites[spriteId];
               gSprites[spriteId].sMarkingId = i;
@@ -243,7 +236,7 @@ export function CreateMonMarkingsMenuSprites(x: any, y: any, baseTileTag: any, b
        
       template.callback = SpriteCallbackDummy;
       spriteId = CreateSprite(template, 0, 0, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           sMenu.textSprite =gSprites[spriteId];
           sMenu.textSprite.oam.shape = SPRITE_SHAPE(_32x32);
@@ -261,7 +254,7 @@ export function CreateMonMarkingsMenuSprites(x: any, y: any, baseTileTag: any, b
        
       template.callback = SpriteCB_Cursor;
       spriteId = CreateSprite(template, x + 12, 0, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           sMenu.cursorSprite =gSprites[spriteId];
           sMenu.cursorSprite.sCursorYOffset = y + 16;

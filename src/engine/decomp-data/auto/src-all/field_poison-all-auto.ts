@@ -15,10 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let tState: any = null;
 /** static bool32 IsMonValidSpecies(struct Pokemon *pokemon) */
 export function IsMonValidSpecies(pokemon: any): any {
   let species: any = GetMonData(pokemon, MON_DATA_SPECIES_OR_EGG);
-      if (species == SPECIES_NONE || species == SPECIES_EGG)
+      if (species == (0) || species == (412))
           return FALSE;
 
       return TRUE;
@@ -29,7 +32,7 @@ export function AllMonsFainted(): any {
   let i: any = null;
       let pokemon: any = gPlayerParty;
 
-      for (i = 0; i < PARTY_SIZE; i++, pokemon++)
+      for (i = 0; i < (6); i++, pokemon++)
       {
           if (IsMonValidSpecies(pokemon) && GetMonData(pokemon, MON_DATA_HP) != 0)
               return FALSE;
@@ -40,9 +43,9 @@ export function AllMonsFainted(): any {
 /** static void FaintFromFieldPoison(u8 partyIdx) */
 export function FaintFromFieldPoison(partyIdx: any): any {
   let pokemon: any =gPlayerParty[partyIdx];
-      let status: any = STATUS1_NONE;
+      let status: any = (0);
 
-      AdjustFriendship(pokemon, FRIENDSHIP_EVENT_FAINT_FIELD_PSN);
+      AdjustFriendship(pokemon, (7));
       SetMonData(pokemon, MON_DATA_STATUS,status);
       GetMonData(pokemon, MON_DATA_NICKNAME, gStringVar1);
       StringGet_Nickname(gStringVar1);
@@ -51,7 +54,7 @@ export function FaintFromFieldPoison(partyIdx: any): any {
 /** static bool32 MonFaintedFromPoison(u8 partyIdx) */
 export function MonFaintedFromPoison(partyIdx: any): any {
   let pokemon: any =gPlayerParty[partyIdx];
-      if (IsMonValidSpecies(pokemon) && GetMonData(pokemon, MON_DATA_HP) == 0 && GetAilmentFromStatus(GetMonData(pokemon, MON_DATA_STATUS)) == AILMENT_PSN)
+      if (IsMonValidSpecies(pokemon) && GetMonData(pokemon, MON_DATA_HP) == 0 && GetAilmentFromStatus(GetMonData(pokemon, MON_DATA_STATUS)) == (1))
           return TRUE;
 
       return FALSE;
@@ -63,7 +66,7 @@ export function Task_TryFieldPoisonWhiteOut(taskId: any): any {
       switch (tState)
       {
       case 0:
-          for (; tPartyIdx < PARTY_SIZE; tPartyIdx++)
+          for (; tPartyIdx < (6); tPartyIdx++)
           {
               if (MonFaintedFromPoison(tPartyIdx))
               {
@@ -84,13 +87,13 @@ export function Task_TryFieldPoisonWhiteOut(taskId: any): any {
           if (AllMonsFainted())
           {
               if (CurrentBattlePyramidLocation() || InBattlePike() || InTrainerHillChallenge())
-                  gSpecialVar_Result = FLDPSN_FRONTIER_WHITEOUT;
+                  gSpecialVar_Result = (2);
               else
-                  gSpecialVar_Result = FLDPSN_WHITEOUT;
+                  gSpecialVar_Result = (1);
           }
           else
           {
-              gSpecialVar_Result = FLDPSN_NO_WHITEOUT;
+              gSpecialVar_Result = (0);
           }
           ScriptContext_Enable();
           DestroyTask(taskId);
@@ -112,9 +115,9 @@ export function DoPoisonFieldEffect(): any {
       let numPoisoned: any = 0;
       let numFainted: any = 0;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
-          if (GetMonData(pokemon, MON_DATA_SANITY_HAS_SPECIES) && GetAilmentFromStatus(GetMonData(pokemon, MON_DATA_STATUS)) == AILMENT_PSN)
+          if (GetMonData(pokemon, MON_DATA_SANITY_HAS_SPECIES) && GetAilmentFromStatus(GetMonData(pokemon, MON_DATA_STATUS)) == (1))
           {
                
               hp = GetMonData(pokemon, MON_DATA_HP);
@@ -132,12 +135,12 @@ export function DoPoisonFieldEffect(): any {
           FldEffPoison_Start();
 
       if (numFainted != 0)
-          return FLDPSN_FNT;
+          return (2);
 
       if (numPoisoned != 0)
-          return FLDPSN_PSN;
+          return (1);
 
-      return FLDPSN_NONE;
+      return (0);
 }
 
 // ─── callsTo manifest (= 19 unique callees) ───────────────────────

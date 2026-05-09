@@ -15,10 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sMatchCallOptionsHasCheckPage: any = null;
-let sMatchCallOptionsNoCheckPage: any = null;
 /** bool32 PokenavCallback_Init_MatchCall(void) */
 export function PokenavCallback_Init_MatchCall(): any {
   let state: any = AllocSubstruct(POKENAV_SUBSTRUCT_MATCH_CALL_MAIN, 0);
@@ -86,7 +82,7 @@ export function CB2_HandleMatchCallInput(state: any): any {
           else
           {
                
-              PlaySE(SE_FAILURE);
+              PlaySE((32));
           }
       }
 
@@ -179,7 +175,7 @@ export function LoopedTask_BuildMatchCallList(taskState: any): any {
       case 0:
           state.headerId = 0;
           state.numRegistered = 0;
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 1:
            
           for (i = 0, j = state.headerId; i < 30; i++, j++)
@@ -196,11 +192,11 @@ export function LoopedTask_BuildMatchCallList(taskState: any): any {
               {
                   state.numSpecialTrainers = state.headerId;
                   state.headerId = 0;
-                  return LT_INC_AND_CONTINUE;
+                  return (1);
               }
           }
 
-          return LT_CONTINUE;
+          return (3);
       case 2:
            
           for (i = 0, j = state.headerId; i < 30; i++, j++)
@@ -214,22 +210,22 @@ export function LoopedTask_BuildMatchCallList(taskState: any): any {
               }
 
               if (++state.headerId > REMATCH_TABLE_ENTRIES - 1)
-                  return LT_INC_AND_CONTINUE;
+                  return (1);
           }
 
-          return LT_CONTINUE;
+          return (3);
       case 3:
           state.initFinished = TRUE;
           break;
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** bool32 IsRematchEntryRegistered(int rematchIndex) */
 export function IsRematchEntryRegistered(rematchIndex: any): any {
   if (rematchIndex < REMATCH_TABLE_ENTRIES)
-          return FlagGet(TRAINER_REGISTERED_FLAGS_START + rematchIndex);
+          return FlagGet((0x15C) + rematchIndex);
 
       return FALSE;
 }
@@ -376,9 +372,9 @@ export function ShouldDoNearbyMessage(): any {
           if (state.matchCallEntries[selection].headerId == MC_HEADER_WATTSON)
           {
               if (GetMatchCallMapSec(selection) == gMapHeader.regionMapSectionId
-               && FlagGet(FLAG_BADGE05_GET) == TRUE)
+               && FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0xB))) == TRUE)
               {
-                  if (!FlagGet(FLAG_WATTSON_REMATCH_AVAILABLE))
+                  if (!FlagGet((0x5B)))
                       return TRUE;
               }
           }

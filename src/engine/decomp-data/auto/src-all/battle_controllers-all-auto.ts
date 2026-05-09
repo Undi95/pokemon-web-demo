@@ -17,13 +17,19 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattleBuffersTransferData: any = null;
+let gAbsentBattlerFlags: any = null;
+let gBattleControllerExecFlags: any = null;
+let gBattleMainFunc: any = null;
+let gEffectBattler: any = null;
+let gUnusedFirstBattleVar1: any = null;
+let gUnusedFirstBattleVar2: any = null;
 let sLinkReceiveTaskId: any = null;
 let sLinkSendTaskId: any = null;
 let sUnused: any = null;
+let src: any = null;
 /** void HandleLinkBattleSetup(void) */
 export function HandleLinkBattleSetup(): any {
-  if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+  if (gBattleTypeFlags & ((1 << 1)))
       {
           if (gWirelessCommType)
               SetWirelessCommType1();
@@ -55,10 +61,10 @@ export function SetUpBattleVarsAndBirchZigzagoon(): any {
       gActiveBattler = 0;
       BattleAI_HandleItemUseBeforeAISetup(0xF);
 
-      if (gBattleTypeFlags & BATTLE_TYPE_FIRST_BATTLE)
+      if (gBattleTypeFlags & ((1 << 4)))
       {
           ZeroEnemyPartyMons();
-          CreateMon(gEnemyParty[0], SPECIES_ZIGZAGOON, 2, USE_RANDOM_IVS, 0, 0, OT_ID_PLAYER_ID, 0);
+          CreateMon(gEnemyParty[0], (288), 2, (((31) + 1)), 0, 0, (0), 0);
           i = 0;
           SetMonData(gEnemyParty[0], MON_DATA_HELD_ITEM,i);
       }
@@ -72,22 +78,22 @@ export function SetUpBattleVarsAndBirchZigzagoon(): any {
 export function InitBattleControllers(): any {
   let i: any = null;
 
-      if (!(gBattleTypeFlags & BATTLE_TYPE_RECORDED))
-          RecordedBattle_Init(B_RECORD_MODE_RECORDING);
+      if (!(gBattleTypeFlags & ((1 << 24))))
+          RecordedBattle_Init((1));
       else
-          RecordedBattle_Init(B_RECORD_MODE_PLAYBACK);
+          RecordedBattle_Init((2));
 
-      if (!(gBattleTypeFlags & BATTLE_TYPE_RECORDED))
+      if (!(gBattleTypeFlags & ((1 << 24))))
           RecordedBattle_SaveParties();
 
-      if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+      if (gBattleTypeFlags & ((1 << 1)))
           InitLinkBtlControllers();
       else
           InitSinglePlayerBtlControllers();
 
       SetBattlePartyIds();
 
-      if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI))
+      if (!(gBattleTypeFlags & ((1 << 6))))
       {
           for (i = 0; i < gBattlersCount; i++)
               BufferBattlePartyCurrentOrderBySide(i, 0);
@@ -104,11 +110,11 @@ export function InitBattleControllers(): any {
 export function InitSinglePlayerBtlControllers(): any {
   let i: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER)
+      if (gBattleTypeFlags & ((1 << 22)))
       {
           gBattleMainFunc = BeginBattleIntro;
 
-          if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+          if (gBattleTypeFlags & ((1 << 24)))
           {
               gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToRecordedPlayer;
               gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;
@@ -149,13 +155,13 @@ export function InitSinglePlayerBtlControllers(): any {
           gBattlerPartyIndexes[2] = 3;
           gBattlerPartyIndexes[3] = 3;
       }
-      else if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
+      else if (!(gBattleTypeFlags & ((1 << 0))))
       {
           gBattleMainFunc = BeginBattleIntro;
 
-          if (gBattleTypeFlags & BATTLE_TYPE_SAFARI)
+          if (gBattleTypeFlags & ((1 << 7)))
               gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToSafari;
-          else if (gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL)
+          else if (gBattleTypeFlags & ((1 << 9)))
               gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToWally;
           else
               gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToPlayer;
@@ -167,11 +173,11 @@ export function InitSinglePlayerBtlControllers(): any {
 
           gBattlersCount = 2;
 
-          if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+          if (gBattleTypeFlags & ((1 << 24)))
           {
-              if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK)
+              if (gBattleTypeFlags & ((1 << 25)))
               {
-                  if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_IS_MASTER)
+                  if (gBattleTypeFlags & ((1 << 31)))
                   {
                       gBattleMainFunc = BeginBattleIntro;
 
@@ -222,9 +228,9 @@ export function InitSinglePlayerBtlControllers(): any {
 
           gBattlersCount = MAX_BATTLERS_COUNT;
 
-          if (gBattleTypeFlags & BATTLE_TYPE_RECORDED)
+          if (gBattleTypeFlags & ((1 << 24)))
           {
-              if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER)
+              if (gBattleTypeFlags & ((1 << 6)) && gBattleTypeFlags & ((1 << 8)))
               {
                   gBattleMainFunc = BeginBattleIntro;
 
@@ -252,11 +258,11 @@ export function InitSinglePlayerBtlControllers(): any {
                   gBattlerPartyIndexes[2] = 3;
                   gBattlerPartyIndexes[3] = 3;
               }
-              else if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
+              else if (gBattleTypeFlags & ((1 << 6)))
               {
                   let multiplayerId: any = null;
 
-                  for (multiplayerId = gRecordedBattleMultiplayerId, i = 0; i < MAX_LINK_PLAYERS; i++)
+                  for (multiplayerId = gRecordedBattleMultiplayerId, i = 0; i < (4); i++)
                   {
                       switch (gLinkPlayers[i].id)
                       {
@@ -324,7 +330,7 @@ export function InitSinglePlayerBtlControllers(): any {
                       }
                   }
               }
-              else if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER)
+              else if (gBattleTypeFlags & ((1 << 2)))
               {
                   gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToRecordedPlayer;
                   gBattlerPositions[B_BATTLER_0] = B_POSITION_PLAYER_LEFT;
@@ -332,7 +338,7 @@ export function InitSinglePlayerBtlControllers(): any {
                   gBattlerControllerFuncs[B_BATTLER_2] = SetControllerToRecordedPlayer;
                   gBattlerPositions[B_BATTLER_2] = B_POSITION_PLAYER_RIGHT;
 
-                  if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK)
+                  if (gBattleTypeFlags & ((1 << 25)))
                   {
                     gBattlerControllerFuncs[B_BATTLER_1] = SetControllerToRecordedOpponent;
                     gBattlerPositions[B_BATTLER_1] = B_POSITION_OPPONENT_LEFT;
@@ -357,7 +363,7 @@ export function InitSinglePlayerBtlControllers(): any {
                   gBattlerControllerFuncs[B_BATTLER_3] = SetControllerToRecordedPlayer;
                   gBattlerPositions[B_BATTLER_3] = B_POSITION_PLAYER_RIGHT;
 
-                  if (gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK)
+                  if (gBattleTypeFlags & ((1 << 25)))
                   {
                       gBattlerControllerFuncs[B_BATTLER_0] = SetControllerToRecordedOpponent;
                       gBattlerPositions[B_BATTLER_0] = B_POSITION_OPPONENT_LEFT;
@@ -383,9 +389,9 @@ export function InitLinkBtlControllers(): any {
   let i: any = null;
       let multiplayerId: any = null;
 
-      if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE))
+      if (!(gBattleTypeFlags & ((1 << 0))))
       {
-          if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER)
+          if (gBattleTypeFlags & ((1 << 2)))
           {
               gBattleMainFunc = BeginBattleIntro;
 
@@ -408,9 +414,9 @@ export function InitLinkBtlControllers(): any {
               gBattlersCount = 2;
           }
       }
-      else if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI) && gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+      else if (!(gBattleTypeFlags & ((1 << 6))) && gBattleTypeFlags & ((1 << 0)))
       {
-          if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER)
+          if (gBattleTypeFlags & ((1 << 2)))
           {
               gBattleMainFunc = BeginBattleIntro;
 
@@ -445,9 +451,9 @@ export function InitLinkBtlControllers(): any {
               gBattlersCount = MAX_BATTLERS_COUNT;
           }
       }
-      else if (gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER)
+      else if (gBattleTypeFlags & ((1 << 8)))
       {
-          if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER)
+          if (gBattleTypeFlags & ((1 << 2)))
           {
               gBattleMainFunc = BeginBattleIntro;
 
@@ -495,10 +501,10 @@ export function InitLinkBtlControllers(): any {
       {
           multiplayerId = GetMultiplayerId();
 
-          if (gBattleTypeFlags & BATTLE_TYPE_IS_MASTER)
+          if (gBattleTypeFlags & ((1 << 2)))
               gBattleMainFunc = BeginBattleIntro;
 
-          for (i = 0; i < MAX_LINK_PLAYERS; i++)
+          for (i = 0; i < (4); i++)
           {
               switch (gLinkPlayers[i].id)
               {
@@ -577,19 +583,19 @@ export function InitLinkBtlControllers(): any {
 export function SetBattlePartyIds(): any {
   let i, j;
 
-      if (!(gBattleTypeFlags & BATTLE_TYPE_MULTI))
+      if (!(gBattleTypeFlags & ((1 << 6))))
       {
           for (i = 0; i < gBattlersCount; i++)
           {
-              for (j = 0; j < PARTY_SIZE; j++)
+              for (j = 0; j < (6); j++)
               {
                   if (i < 2)
                   {
-                      if (GET_BATTLER_SIDE2(i) == B_SIDE_PLAYER)
+                      if (GET_BATTLER_SIDE2(i) == (0))
                       {
                           if (GetMonData(gPlayerParty[j], MON_DATA_HP) != 0
-                           && GetMonData(gPlayerParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_NONE
-                           && GetMonData(gPlayerParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG
+                           && GetMonData(gPlayerParty[j], MON_DATA_SPECIES_OR_EGG) != (0)
+                           && GetMonData(gPlayerParty[j], MON_DATA_SPECIES_OR_EGG) != (412)
                            && !GetMonData(gPlayerParty[j], MON_DATA_IS_EGG))
                           {
                               gBattlerPartyIndexes[i] = j;
@@ -599,8 +605,8 @@ export function SetBattlePartyIds(): any {
                       else
                       {
                           if (GetMonData(gEnemyParty[j], MON_DATA_HP) != 0
-                           && GetMonData(gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_NONE
-                           && GetMonData(gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG
+                           && GetMonData(gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != (0)
+                           && GetMonData(gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != (412)
                            && !GetMonData(gEnemyParty[j], MON_DATA_IS_EGG))
                           {
                               gBattlerPartyIndexes[i] = j;
@@ -610,11 +616,11 @@ export function SetBattlePartyIds(): any {
                   }
                   else
                   {
-                      if (GET_BATTLER_SIDE2(i) == B_SIDE_PLAYER)
+                      if (GET_BATTLER_SIDE2(i) == (0))
                       {
                           if (GetMonData(gPlayerParty[j], MON_DATA_HP) != 0
-                           && GetMonData(gPlayerParty[j], MON_DATA_SPECIES) != SPECIES_NONE   
-                           && GetMonData(gPlayerParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG
+                           && GetMonData(gPlayerParty[j], MON_DATA_SPECIES) != (0)   
+                           && GetMonData(gPlayerParty[j], MON_DATA_SPECIES_OR_EGG) != (412)
                            && !GetMonData(gPlayerParty[j], MON_DATA_IS_EGG)
                            && gBattlerPartyIndexes[i - 2] != j)
                           {
@@ -625,8 +631,8 @@ export function SetBattlePartyIds(): any {
                       else
                       {
                           if (GetMonData(gEnemyParty[j], MON_DATA_HP) != 0
-                           && GetMonData(gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_NONE
-                           && GetMonData(gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG
+                           && GetMonData(gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != (0)
+                           && GetMonData(gEnemyParty[j], MON_DATA_SPECIES_OR_EGG) != (412)
                            && !GetMonData(gEnemyParty[j], MON_DATA_IS_EGG)
                            && gBattlerPartyIndexes[i - 2] != j)
                           {
@@ -638,7 +644,7 @@ export function SetBattlePartyIds(): any {
               }
           }
 
-          if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
+          if (gBattleTypeFlags & ((1 << 15)))
               gBattlerPartyIndexes[1] = 0, gBattlerPartyIndexes[3] = 3;
       }
 }
@@ -647,7 +653,7 @@ export function SetBattlePartyIds(): any {
 export function PrepareBufferDataTransfer(bufferId: any, data: any, size: any): any {
   let i: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+      if (gBattleTypeFlags & ((1 << 1)))
       {
           PrepareBufferDataTransferLink(bufferId, size, data);
       }
@@ -691,7 +697,7 @@ export function PrepareBufferDataTransferLink(bufferId: any, size: any, data: an
       let i: any = null;
 
       alignedSize = size - size % 4 + 4;
-      if (gTasks[sLinkSendTaskId].tCurrentBlock_End + alignedSize + LINK_BUFF_DATA + 1 > BATTLE_BUFFER_LINK_SIZE)
+      if (gTasks[sLinkSendTaskId].tCurrentBlock_End + alignedSize + LINK_BUFF_DATA + 1 > (0x1000))
       {
           gTasks[sLinkSendTaskId].tCurrentBlock_WrapFrom = gTasks[sLinkSendTaskId].tCurrentBlock_End;
           gTasks[sLinkSendTaskId].tCurrentBlock_End      = 0;
@@ -737,10 +743,10 @@ export function Task_HandleSendLinkBuffersData(taskId: any): any {
           }
           else
           {
-              if (gBattleTypeFlags & BATTLE_TYPE_BATTLE_TOWER)
+              if (gBattleTypeFlags & ((1 << 8)))
                   numPlayers = 2;
               else
-                  numPlayers = (gBattleTypeFlags & BATTLE_TYPE_MULTI) ? 4 : 2;
+                  numPlayers = (gBattleTypeFlags & ((1 << 6))) ? 4 : 2;
 
               if (GetLinkPlayerCount_2() >= numPlayers)
               {
@@ -804,7 +810,7 @@ export function TryReceiveLinkBattleData(): any {
       let j: any = null;
       let recvBuffer: any = null;
 
-      if (gReceivedRemoteLinkPlayers && (gBattleTypeFlags & BATTLE_TYPE_LINK_IN_BATTLE))
+      if (gReceivedRemoteLinkPlayers && (gBattleTypeFlags & ((1 << 5))))
       {
           DestroyTask_RfuIdle();
           for (i = 0; i < GetLinkPlayerCount(); i++)
@@ -863,7 +869,7 @@ export function Task_HandleCopyReceivedLinkBuffersData(taskId: any): any {
               memcpy(gBattleBufferA[battler], 0, blockSize);
               MarkBattlerReceivedLinkData(battler);
 
-              if (!(gBattleTypeFlags & BATTLE_TYPE_IS_MASTER))
+              if (!(gBattleTypeFlags & ((1 << 2))))
               {
                   gBattlerAttacker = 0; /* transpiler bug : RHS=0 */
                   gBattlerTarget = 0; /* transpiler bug : RHS=0 */
@@ -1101,7 +1107,7 @@ export function BtlController_EmitChooseItem(bufferId: any, battlePartyOrder: an
   let i: any = null;
 
       sBattleBuffersTransferData[0] = CONTROLLER_OPENBAG;
-      for (i = 0; i < PARTY_SIZE / 2; i++)
+      for (i = 0; i < (6) / 2; i++)
           sBattleBuffersTransferData[1 + i] = battlePartyOrder[i];
       PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 4);
 }
@@ -1279,12 +1285,12 @@ export function BtlController_EmitDrawPartyStatusSummary(bufferId: any, hpAndSta
   let i: any = null;
 
       sBattleBuffersTransferData[0] = CONTROLLER_DRAWPARTYSTATUSSUMMARY;
-      sBattleBuffersTransferData[1] = flags & ~PARTY_SUMM_SKIP_DRAW_DELAY;  
-      sBattleBuffersTransferData[2] = (flags & PARTY_SUMM_SKIP_DRAW_DELAY) >> 7;  
+      sBattleBuffersTransferData[1] = flags & ~((1 << 7));  
+      sBattleBuffersTransferData[2] = (flags & ((1 << 7))) >> 7;  
       sBattleBuffersTransferData[3] = CONTROLLER_DRAWPARTYSTATUSSUMMARY;
-      for (i = 0; i < (0 * PARTY_SIZE); i++)
+      for (i = 0; i < (0 * (6)); i++)
           sBattleBuffersTransferData[4 + i] = (i + (hpAndStatus));
-      PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 0 * PARTY_SIZE + 4);
+      PrepareBufferDataTransfer(bufferId, sBattleBuffersTransferData, 0 * (6) + 4);
 }
 
 /** void BtlController_EmitHidePartyStatusSummary(u8 bufferId) */

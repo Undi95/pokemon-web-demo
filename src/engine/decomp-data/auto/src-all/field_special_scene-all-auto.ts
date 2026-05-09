@@ -17,9 +17,13 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sSSTidalSailEastMovementScript: any = null;
-let sSSTidalSailWestMovementScript: any = null;
-let sTruckCamera_HorizontalTable: any = null;
+let tState: any = null;
+let tTaskId1: any = null;
+let tTaskId2: any = null;
+let tTimer: any = null;
+let tTimerHorizontal: any = null;
+let yBox2: any = null;
+let yBox3: any = null;
 /** static s16 GetTruckCameraBobbingY(int time) */
 export function GetTruckCameraBobbingY(time: any): any {
   if (!(time % 120))
@@ -137,7 +141,7 @@ export function Task_HandleTruckSequence(taskId: any): any {
               tTimer = 0;
               tTaskId1 = CreateTask(Task_Truck1, 0xA);
               tState = 1;
-              PlaySE(SE_TRUCK_MOVE);
+              PlaySE((49));
           }
           break;
       case 1:
@@ -157,7 +161,7 @@ export function Task_HandleTruckSequence(taskId: any): any {
               DestroyTask(tTaskId1);
               tTaskId2 = CreateTask(Task_Truck2, 0xA);
               tState = 3;
-              PlaySE(SE_TRUCK_STOP);
+              PlaySE((50));
           }
           break;
       case 3:
@@ -173,7 +177,7 @@ export function Task_HandleTruckSequence(taskId: any): any {
           tTimer++;
           if (tTimer == 90)
           {
-              PlaySE(SE_TRUCK_UNLOAD);
+              PlaySE((51));
               tTimer = 0;
               tState = 5;
           }
@@ -182,11 +186,11 @@ export function Task_HandleTruckSequence(taskId: any): any {
           tTimer++;
           if (tTimer == 120)
           {
-              MapGridSetMetatileIdAt(4 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_InsideOfTruck_ExitLight_Top);
-              MapGridSetMetatileIdAt(4 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_InsideOfTruck_ExitLight_Mid);
-              MapGridSetMetatileIdAt(4 + MAP_OFFSET, 3 + MAP_OFFSET, METATILE_InsideOfTruck_ExitLight_Bottom);
+              MapGridSetMetatileIdAt(4 + (7), 1 + (7), (0x208));
+              MapGridSetMetatileIdAt(4 + (7), 2 + (7), (0x210));
+              MapGridSetMetatileIdAt(4 + (7), 3 + (7), (0x218));
               DrawWholeMapView();
-              PlaySE(SE_TRUCK_DOOR);
+              PlaySE((52));
               DestroyTask(taskId);
               UnlockPlayerFieldControls();
           }
@@ -196,9 +200,9 @@ export function Task_HandleTruckSequence(taskId: any): any {
 
 /** void ExecuteTruckSequence(void) */
 export function ExecuteTruckSequence(): any {
-  MapGridSetMetatileIdAt(4 + MAP_OFFSET, 1 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Top);
-      MapGridSetMetatileIdAt(4 + MAP_OFFSET, 2 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Mid);
-      MapGridSetMetatileIdAt(4 + MAP_OFFSET, 3 + MAP_OFFSET, METATILE_InsideOfTruck_DoorClosedFloor_Bottom);
+  MapGridSetMetatileIdAt(4 + (7), 1 + (7), (0x20D));
+      MapGridSetMetatileIdAt(4 + (7), 2 + (7), (0x215));
+      MapGridSetMetatileIdAt(4 + (7), 3 + (7), (0x21D));
       DrawWholeMapView();
       LockPlayerFieldControls();
       CpuFastFill(0, gPlttBufferFaded, PLTT_SIZE);
@@ -220,13 +224,13 @@ export function TrySetPortholeWarpDestination(): any {
   let mapGroup, mapNum;
       let x, y;
 
-      if (GetSSTidalLocation(mapGroup,mapNum,x,y) != SS_TIDAL_LOCATION_CURRENTS)
+      if (GetSSTidalLocation(mapGroup,mapNum,x,y) != (0))
       {
           return FALSE;
       }
       else
       {
-          SetWarpDestination(mapGroup, mapNum, WARP_ID_NONE, x, y);
+          SetWarpDestination(mapGroup, mapNum, ((-1)), x, y);
           return TRUE;
       }
 }
@@ -234,7 +238,7 @@ export function TrySetPortholeWarpDestination(): any {
 /** void Task_HandlePorthole(u8 taskId) */
 export function Task_HandlePorthole(taskId: any): any {
   let data: any = gTasks[taskId].data;
-      let cruiseState: any = GetVarPointer(VAR_SS_TIDAL_STATE);
+      let cruiseState: any = GetVarPointer((0x40B4));
       let location: any =gSaveBlock1Ptr.location;
 
       switch (data[0])
@@ -249,14 +253,14 @@ export function Task_HandlePorthole(taskId: any): any {
       case IDLE_CHECK:
           if (JOY_NEW(A_BUTTON))
               data[1] = 1;
-          if (!ScriptMovement_IsObjectMovementFinished(LOCALID_PLAYER, location.mapNum, location.mapGroup))
+          if (!ScriptMovement_IsObjectMovementFinished((255), location.mapNum, location.mapGroup))
               return;
           if (CountSSTidalStep(1) == TRUE)
           {
-              if (cruiseState == SS_TIDAL_DEPART_SLATEPORT)
-                  cruiseState = SS_TIDAL_EXIT_CURRENTS_RIGHT;
+              if (cruiseState == (2))
+                  cruiseState = (9);
               else
-                  cruiseState = SS_TIDAL_EXIT_CURRENTS_LEFT;
+                  cruiseState = (10);
               data[0] = EXIT_PORTHOLE;
               return;
           }
@@ -269,20 +273,20 @@ export function Task_HandlePorthole(taskId: any): any {
               return;
           }
 
-          if (cruiseState == SS_TIDAL_DEPART_SLATEPORT)
+          if (cruiseState == (2))
           {
-              ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, location.mapNum, location.mapGroup, sSSTidalSailEastMovementScript);
+              ScriptMovement_StartObjectMovementScript((255), location.mapNum, location.mapGroup, sSSTidalSailEastMovementScript);
               data[0] = IDLE_CHECK;
           }
           else
           {
-              ScriptMovement_StartObjectMovementScript(LOCALID_PLAYER, location.mapNum, location.mapGroup, sSSTidalSailWestMovementScript);
+              ScriptMovement_StartObjectMovementScript((255), location.mapNum, location.mapGroup, sSSTidalSailWestMovementScript);
               data[0] = IDLE_CHECK;
           }
           break;
       case EXIT_PORTHOLE:
-          FlagClear(FLAG_DONT_TRANSITION_MUSIC);
-          FlagClear(FLAG_HIDE_MAP_NAME_POPUP);
+          FlagClear((((0x4000) + 0x1)));
+          FlagClear((((0x4000) + 0x0)));
           SetWarpDestinationToDynamicWarp(0);
           DoDiveWarp();
           DestroyTask(taskId);
@@ -292,14 +296,14 @@ export function Task_HandlePorthole(taskId: any): any {
 
 /** static void ShowSSTidalWhileSailing(void) */
 export function ShowSSTidalWhileSailing(): any {
-  let spriteId: any = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_SS_TIDAL, SpriteCallbackDummy, 112, 80, 0);
+  let spriteId: any = CreateObjectGraphicsSprite((140), SpriteCallbackDummy, 112, 80, 0);
 
       gSprites[spriteId].coordOffsetEnabled = FALSE;
 
-      if (VarGet(VAR_SS_TIDAL_STATE) == SS_TIDAL_DEPART_SLATEPORT)
-          StartSpriteAnim(gSprites[spriteId], GetFaceDirectionAnimNum(DIR_EAST));
+      if (VarGet((0x40B4)) == (2))
+          StartSpriteAnim(gSprites[spriteId], GetFaceDirectionAnimNum((4)));
       else
-          StartSpriteAnim(gSprites[spriteId], GetFaceDirectionAnimNum(DIR_WEST));
+          StartSpriteAnim(gSprites[spriteId], GetFaceDirectionAnimNum((3)));
 }
 
 /** void FieldCB_ShowPortholeView(void) */
@@ -313,10 +317,10 @@ export function FieldCB_ShowPortholeView(): any {
 
 /** void LookThroughPorthole(void) */
 export function LookThroughPorthole(): any {
-  FlagSet(FLAG_SYS_CRUISE_MODE);
-      FlagSet(FLAG_DONT_TRANSITION_MUSIC);
-      FlagSet(FLAG_HIDE_MAP_NAME_POPUP);
-      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE);
+  FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x2D)));
+      FlagSet((((0x4000) + 0x1)));
+      FlagSet((((0x4000) + 0x0)));
+      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)));
       TrySetPortholeWarpDestination();
       DoPortholeWarp();
 }

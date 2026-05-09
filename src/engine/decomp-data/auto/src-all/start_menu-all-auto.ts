@@ -17,29 +17,22 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gDifferentSaveFile: any = null;
+let gMenuCallback: any = null;
+let gSoftResetDisabled: any = null;
 let sBattlePyramidFloorWindowId: any = null;
-let sBgTemplates_LinkBattleSave: any = null;
-let sCurrentStartMenuActions: any = null;
-let sInitStartMenuData: any = null;
 let sNumStartMenuActions: any = null;
-let sPyramidFloorNames: any = null;
 let sSafariBallsWindowId: any = null;
 let sSaveDialogCallback: any = null;
 let sSaveDialogTimer: any = null;
 let sSaveInfoWindowId: any = null;
-let sSaveInfoWindowTemplate: any = null;
 let sSavingComplete: any = null;
 let sStartMenuCursorPos: any = null;
-let sStartMenuItems: any = null;
-let sWindowTemplate_PyramidFloor: any = null;
-let sWindowTemplate_PyramidPeak: any = null;
-let sWindowTemplate_SafariBalls: any = null;
-let sWindowTemplates_LinkBattleSave: any = null;
 /** void SetDexPokemonPokenavFlags(void) */
 export function SetDexPokemonPokenavFlags(): any {
-  FlagSet(FLAG_SYS_POKEDEX_GET);
-      FlagSet(FLAG_SYS_POKEMON_GET);
-      FlagSet(FLAG_SYS_POKENAV_GET);
+  FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x1)));
+      FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x0)));
+      FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x2)));
 }
 
 /** static void BuildStartMenuActions(void) */
@@ -62,7 +55,7 @@ export function BuildStartMenuActions(): any {
       {
           BuildBattlePikeStartMenu();
       }
-      else if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+      else if (CurrentBattlePyramidLocation() != (0))
       {
           BuildBattlePyramidStartMenu();
       }
@@ -83,18 +76,18 @@ export function AddStartMenuAction(action: any): any {
 
 /** static void BuildNormalStartMenu(void) */
 export function BuildNormalStartMenu(): any {
-  if (FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE)
+  if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1))) == TRUE)
       {
           AddStartMenuAction(MENU_ACTION_POKEDEX);
       }
-      if (FlagGet(FLAG_SYS_POKEMON_GET) == TRUE)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x0))) == TRUE)
       {
           AddStartMenuAction(MENU_ACTION_POKEMON);
       }
 
       AddStartMenuAction(MENU_ACTION_BAG);
 
-      if (FlagGet(FLAG_SYS_POKENAV_GET) == TRUE)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x2))) == TRUE)
       {
           AddStartMenuAction(MENU_ACTION_POKENAV);
       }
@@ -121,7 +114,7 @@ export function BuildLinkModeStartMenu(): any {
   AddStartMenuAction(MENU_ACTION_POKEMON);
       AddStartMenuAction(MENU_ACTION_BAG);
 
-      if (FlagGet(FLAG_SYS_POKENAV_GET) == TRUE)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x2))) == TRUE)
       {
           AddStartMenuAction(MENU_ACTION_POKENAV);
       }
@@ -136,7 +129,7 @@ export function BuildUnionRoomStartMenu(): any {
   AddStartMenuAction(MENU_ACTION_POKEMON);
       AddStartMenuAction(MENU_ACTION_BAG);
 
-      if (FlagGet(FLAG_SYS_POKENAV_GET) == TRUE)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x2))) == TRUE)
       {
           AddStartMenuAction(MENU_ACTION_POKENAV);
       }
@@ -181,13 +174,13 @@ export function ShowSafariBallsWindow(): any {
       DrawStdWindowFrame(sSafariBallsWindowId, FALSE);
       ConvertIntToDecimalStringN(gStringVar1, gNumSafariBalls, STR_CONV_MODE_RIGHT_ALIGN, 2);
       StringExpandPlaceholders(gStringVar4, gText_SafariBallStock);
-      AddTextPrinterParameterized(sSafariBallsWindowId, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sSafariBallsWindowId, FONT_NORMAL, gStringVar4, 0, 1, (0xFF), NULL);
       CopyWindowToVram(sSafariBallsWindowId, COPYWIN_GFX);
 }
 
 /** static void ShowPyramidFloorWindow(void) */
 export function ShowPyramidFloorWindow(): any {
-  if (gSaveBlock2Ptr.frontier.curChallengeBattleNum == FRONTIER_STAGES_PER_CHALLENGE)
+  if (gSaveBlock2Ptr.frontier.curChallengeBattleNum == (7))
           sBattlePyramidFloorWindowId = AddWindow(sWindowTemplate_PyramidPeak);
       else
           sBattlePyramidFloorWindowId = AddWindow(sWindowTemplate_PyramidFloor);
@@ -196,7 +189,7 @@ export function ShowPyramidFloorWindow(): any {
       DrawStdWindowFrame(sBattlePyramidFloorWindowId, FALSE);
       StringCopy(gStringVar1, sPyramidFloorNames[gSaveBlock2Ptr.frontier.curChallengeBattleNum]);
       StringExpandPlaceholders(gStringVar4, gText_BattlePyramidFloor);
-      AddTextPrinterParameterized(sBattlePyramidFloorWindowId, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sBattlePyramidFloorWindowId, FONT_NORMAL, gStringVar4, 0, 1, (0xFF), NULL);
       CopyWindowToVram(sBattlePyramidFloorWindowId, COPYWIN_GFX);
 }
 
@@ -208,7 +201,7 @@ export function RemoveExtraStartMenuWindows(): any {
           CopyWindowToVram(sSafariBallsWindowId, COPYWIN_GFX);
           RemoveWindow(sSafariBallsWindowId);
       }
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+      if (CurrentBattlePyramidLocation() != (0))
       {
           ClearStdWindowAndFrameToTransparent(sBattlePyramidFloorWindowId, FALSE);
           RemoveWindow(sBattlePyramidFloorWindowId);
@@ -228,7 +221,7 @@ export function PrintStartMenuActions(pIndex: any, count: any): any {
           else
           {
               StringExpandPlaceholders(gStringVar4, sStartMenuItems[sCurrentStartMenuActions[index]].text);
-              AddTextPrinterParameterized(GetStartMenuWindowId(), FONT_NORMAL, gStringVar4, 8, (index << 4) + 9, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(GetStartMenuWindowId(), FONT_NORMAL, gStringVar4, 8, (index << 4) + 9, (0xFF), NULL);
           }
 
           index++;
@@ -268,7 +261,7 @@ export function InitStartMenuStep(): any {
       case 3:
           if (GetSafariZoneFlag())
               ShowSafariBallsWindow();
-          if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() != (0))
               ShowPyramidFloorWindow();
           sInitStartMenuData[0]++;
           break;
@@ -363,19 +356,19 @@ export function ShowStartMenu(): any {
 export function HandleStartMenuInput(): any {
   if (JOY_NEW(DPAD_UP))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           sStartMenuCursorPos = Menu_MoveCursor(-1);
       }
 
       if (JOY_NEW(DPAD_DOWN))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           sStartMenuCursorPos = Menu_MoveCursor(1);
       }
 
       if (JOY_NEW(A_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           if (sStartMenuItems[sCurrentStartMenuActions[sStartMenuCursorPos]].func.u8_void == StartMenuPokedexCallback)
           {
               if (GetNationalPokedexCount(FLAG_GET_SEEN) == 0)
@@ -389,7 +382,7 @@ export function HandleStartMenuInput(): any {
               && gMenuCallback != StartMenuSafariZoneRetireCallback
               && gMenuCallback != StartMenuBattlePyramidRetireCallback)
           {
-             FadeScreen(FADE_TO_BLACK, 0);
+             FadeScreen((1), 0);
           }
 
           return FALSE;
@@ -409,7 +402,7 @@ export function HandleStartMenuInput(): any {
 export function StartMenuPokedexCallback(): any {
   if (!gPaletteFade.active)
       {
-          IncrementGameStat(GAME_STAT_CHECKED_POKEDEX);
+          IncrementGameStat((41));
           PlayRainStoppingSoundEffect();
           RemoveExtraStartMenuWindows();
           CleanupOverworldWindowsAndTilemaps();
@@ -476,7 +469,7 @@ export function StartMenuPlayerNameCallback(): any {
 
           if (IsOverworldLinkActive() || InUnionRoom())
               ShowPlayerTrainerCard(CB2_ReturnToFieldWithOpenMenu);  
-          else if (FlagGet(FLAG_SYS_FRONTIER_PASS))
+          else if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x72))))
               ShowFrontierPass(CB2_ReturnToFieldWithOpenMenu);  
           else
               ShowPlayerTrainerCard(CB2_ReturnToFieldWithOpenMenu);  
@@ -489,7 +482,7 @@ export function StartMenuPlayerNameCallback(): any {
 
 /** static bool8 StartMenuSaveCallback(void) */
 export function StartMenuSaveCallback(): any {
-  if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+  if (CurrentBattlePyramidLocation() != (0))
           RemoveExtraStartMenuWindows();
 
       gMenuCallback = SaveStartCallback;  
@@ -717,7 +710,7 @@ export function SaveSuccesTimer(): any {
 
       if (JOY_HELD(A_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           return TRUE;
       }
       if (sSaveDialogTimer == 0)
@@ -748,7 +741,7 @@ export function SaveConfirmSaveCallback(): any {
       RemoveStartMenuWindow();
       ShowSaveInfoWindow();
 
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+      if (CurrentBattlePyramidLocation() != (0))
       {
           ShowSaveMessage(gText_BattlePyramidConfirmRest, SaveYesNoCallback);
       }
@@ -774,8 +767,8 @@ export function SaveConfirmInputCallback(): any {
       case 0:  
           switch (gSaveFileStatus)
           {
-          case SAVE_STATUS_EMPTY:
-          case SAVE_STATUS_CORRUPT:
+          case (0):
+          case (2):
               if (gDifferentSaveFile == FALSE)
               {
                   sSaveDialogCallback = SaveFileExistsCallback;
@@ -788,7 +781,7 @@ export function SaveConfirmInputCallback(): any {
               sSaveDialogCallback = SaveFileExistsCallback;
               return SAVE_IN_PROGRESS;
           }
-      case MENU_B_PRESSED:
+      case (-1):
       case 1:  
           HideSaveInfoWindow();
           HideSaveMessageWindow();
@@ -833,7 +826,7 @@ export function SaveOverwriteInputCallback(): any {
       case 0:  
           sSaveDialogCallback = SaveSavingMessageCallback;
           return SAVE_IN_PROGRESS;
-      case MENU_B_PRESSED:
+      case (-1):
       case 1:  
           HideSaveInfoWindow();
           HideSaveMessageWindow();
@@ -853,7 +846,7 @@ export function SaveSavingMessageCallback(): any {
 export function SaveDoSaveCallback(): any {
   let saveStatus: any = null;
 
-      IncrementGameStat(GAME_STAT_SAVED_GAME);
+      IncrementGameStat((0));
       PausePyramidChallenge();
 
       if (gDifferentSaveFile == TRUE)
@@ -866,7 +859,7 @@ export function SaveDoSaveCallback(): any {
           saveStatus = TrySavingData(SAVE_NORMAL);
       }
 
-      if (saveStatus == SAVE_STATUS_OK)
+      if (saveStatus == (1))
           ShowSaveMessage(gText_PlayerSavedGame, SaveSuccessCallback);
       else
           ShowSaveMessage(gText_SaveError, SaveErrorCallback);
@@ -879,7 +872,7 @@ export function SaveDoSaveCallback(): any {
 export function SaveSuccessCallback(): any {
   if (!IsTextPrinterActive(0))
       {
-          PlaySE(SE_SAVE);
+          PlaySE((55));
           sSaveDialogCallback = SaveReturnSuccessCallback;
       }
 
@@ -903,7 +896,7 @@ export function SaveReturnSuccessCallback(): any {
 export function SaveErrorCallback(): any {
   if (!IsTextPrinterActive(0))
       {
-          PlaySE(SE_BOO);
+          PlaySE((22));
           sSaveDialogCallback = SaveReturnErrorCallback;
       }
 
@@ -952,7 +945,7 @@ export function BattlePyramidRetireInputCallback(): any {
       {
       case 0:  
           return SAVE_CANCELED;
-      case MENU_B_PRESSED:
+      case (-1):
       case 1:  
           HideSaveMessageWindow();
           return SAVE_SUCCESS;
@@ -992,7 +985,7 @@ export function InitSaveWindowAfterLinkBattle(state: any): any {
           break;
       case 3:
           ShowBg(0);
-          BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
           SetVBlankCallback(VBlankCB_LinkBattleSave);
           EnableInterrupts(1);
           break;
@@ -1032,15 +1025,15 @@ export function Task_SaveAfterLinkBattle(taskId: any): any {
               AddTextPrinterParameterized2(0,
                                           FONT_NORMAL,
                                           gText_SavingDontTurnOffPower,
-                                          TEXT_SKIP_DRAW,
+                                          (0xFF),
                                           NULL,
-                                          TEXT_COLOR_DARK_GRAY,
-                                          TEXT_COLOR_WHITE,
-                                          TEXT_COLOR_LIGHT_GRAY);
+                                          (0x2),
+                                          (0x1),
+                                          (0x3));
               DrawTextBorderOuter(0, 8, 14);
               PutWindowTilemap(0);
               CopyWindowToVram(0, COPYWIN_FULL);
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
 
               if (gWirelessCommType != 0 && InUnionRoom())
               {
@@ -1073,7 +1066,7 @@ export function Task_SaveAfterLinkBattle(taskId: any): any {
               }
               break;
           case 3:
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
               state = 4;
               break;
           case 4:
@@ -1103,7 +1096,7 @@ export function ShowSaveInfoWindow(): any {
       let xOffset: any = null;
       let yOffset: any = null;
 
-      if (!FlagGet(FLAG_SYS_POKEDEX_GET))
+      if (!FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1))))
       {
           saveInfoWindow.height -= 2;
       }
@@ -1112,48 +1105,48 @@ export function ShowSaveInfoWindow(): any {
       DrawStdWindowFrame(sSaveInfoWindowId, FALSE);
 
       gender = gSaveBlock2Ptr.playerGender;
-      color = TEXT_COLOR_RED;   
+      color = (0x4);   
 
-      if (gender == MALE)
+      if (gender == (0))
       {
-          color = TEXT_COLOR_BLUE;
+          color = (0x8);
       }
 
        
       yOffset = 1;
-      BufferSaveMenuText(SAVE_MENU_LOCATION, gStringVar4, TEXT_COLOR_GREEN);
-      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+      BufferSaveMenuText(SAVE_MENU_LOCATION, gStringVar4, (0x6));
+      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, 0, yOffset, (0xFF), NULL);
 
        
       yOffset += 16;
-      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingPlayer, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingPlayer, 0, yOffset, (0xFF), NULL);
       BufferSaveMenuText(SAVE_MENU_NAME, gStringVar4, color);
       xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
       PrintPlayerNameOnWindow(sSaveInfoWindowId, gStringVar4, xOffset, yOffset);
 
        
       yOffset += 16;
-      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingBadges, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingBadges, 0, yOffset, (0xFF), NULL);
       BufferSaveMenuText(SAVE_MENU_BADGES, gStringVar4, color);
       xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
-      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, (0xFF), NULL);
 
-      if (FlagGet(FLAG_SYS_POKEDEX_GET) == TRUE)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1))) == TRUE)
       {
            
           yOffset += 16;
-          AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingPokedex, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingPokedex, 0, yOffset, (0xFF), NULL);
           BufferSaveMenuText(SAVE_MENU_CAUGHT, gStringVar4, color);
           xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
-          AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, (0xFF), NULL);
       }
 
        
       yOffset += 16;
-      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingTime, 0, yOffset, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gText_SavingTime, 0, yOffset, (0xFF), NULL);
       BufferSaveMenuText(SAVE_MENU_PLAY_TIME, gStringVar4, color);
       xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0x70);
-      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sSaveInfoWindowId, FONT_NORMAL, gStringVar4, xOffset, yOffset, (0xFF), NULL);
 
       CopyWindowToVram(sSaveInfoWindowId, COPYWIN_GFX);
 }
@@ -1190,7 +1183,7 @@ export function HideStartMenuWindow(): any {
 
 /** void HideStartMenu(void) */
 export function HideStartMenu(): any {
-  PlaySE(SE_SELECT);
+  PlaySE((5));
       HideStartMenuWindow();
 }
 

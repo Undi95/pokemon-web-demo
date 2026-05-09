@@ -17,11 +17,19 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sTrainerCardColorNames: any = null;
-let sWindowTemplate_LinkPlayerCount: any = null;
+let gFieldLinkPlayerCount: any = null;
+let gLinkType: any = null;
+let gLocalLinkPlayerId: any = null;
+let gSpecialVar_0x8005: any = null;
+let gSpecialVar_0x8006: any = null;
+let gTrainerBattleOpponent_A: any = null;
+let tNumPlayers: any = null;
+let tState: any = null;
+let tTimer: any = null;
+let tWindowId: any = null;
 /** static void CreateLinkupTask(u8 minPlayers, u8 maxPlayers) */
 export function CreateLinkupTask(minPlayers: any, maxPlayers: any): any {
-  if (FindTaskIdByFunc(Task_LinkupStart) == TASK_NONE)
+  if (FindTaskIdByFunc(Task_LinkupStart) == ((0xFF)))
       {
           let taskId1: any = null;
 
@@ -39,7 +47,7 @@ export function PrintNumPlayersInLink(windowId: any, numPlayers: any): any {
       SetStandardWindowBorderStyle(windowId, FALSE);
       StringExpandPlaceholders(gStringVar4, gText_NumPlayerLink);
       xPos = GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 88);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, xPos, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4, xPos, 1, (0xFF), NULL);
       CopyWindowToVram(windowId, COPYWIN_FULL);
 }
 
@@ -68,21 +76,21 @@ export function ExchangeDataAndGetLinkupStatus(minPlayers: any, maxPlayers: any)
   switch (GetLinkPlayerDataExchangeStatusTimed(minPlayers, maxPlayers))
       {
       case EXCHANGE_COMPLETE:
-          return LINKUP_SUCCESS;
+          return (1);
       case EXCHANGE_DIFF_SELECTIONS:
-          return LINKUP_DIFF_SELECTIONS;
+          return (3);
       case EXCHANGE_PLAYER_NOT_READY:
-          return LINKUP_PLAYER_NOT_READY;
+          return (7);
       case EXCHANGE_PARTNER_NOT_READY:
-          return LINKUP_PARTNER_NOT_READY;
+          return (9);
       case EXCHANGE_WRONG_NUM_PLAYERS:
           ConvertIntToDecimalStringN(gStringVar1, GetLinkPlayerCount_2(), STR_CONV_MODE_LEFT_ALIGN, 1);
-          return LINKUP_WRONG_NUM_PLAYERS;
+          return (4);
       case EXCHANGE_STAT_7:
-          return LINKUP_FAILED_CONTEST_GMODE;
+          return (10);
       case EXCHANGE_TIMED_OUT:
       default:
-          return LINKUP_ONGOING;
+          return (0);
       }
 }
 
@@ -163,13 +171,13 @@ export function Task_LinkupAwaitConnection(taskId: any): any {
       gTasks[taskId].data[3] = 0;
       if (IsLinkMaster() == TRUE)
       {
-          PlaySE(SE_PIN);
+          PlaySE((21));
           ShowFieldAutoScrollMessage(gText_ConfirmLinkWhenPlayersReady);
           gTasks[taskId].func = Task_LinkupConfirmWhenReady;
       }
       else
       {
-          PlaySE(SE_BOO);
+          PlaySE((22));
           ShowFieldAutoScrollMessage(gText_AwaitingLinkup);
           gTasks[taskId].func = Task_LinkupExchangeDataWithLeader;
       }
@@ -235,7 +243,7 @@ export function Task_LinkupTryConfirmation(taskId: any): any {
           }
           else if (JOY_HELD(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               CheckShouldAdvanceLinkState();
               gTasks[taskId].func = Task_LinkupConfirm;
           }
@@ -258,7 +266,7 @@ export function Task_LinkupConfirm(taskId: any): any {
       else
       {
           gSpecialVar_Result = ExchangeDataAndGetLinkupStatus(minPlayers, maxPlayers);
-          if (gSpecialVar_Result != LINKUP_ONGOING)
+          if (gSpecialVar_Result != (0))
               gTasks[taskId].func = Task_LinkupCheckStatusAfterConfirm;
       }
 }
@@ -276,17 +284,17 @@ export function Task_LinkupExchangeDataWithLeader(taskId: any): any {
           return;
 
       gSpecialVar_Result = ExchangeDataAndGetLinkupStatus(minPlayers, maxPlayers);
-      if (gSpecialVar_Result == LINKUP_ONGOING)
+      if (gSpecialVar_Result == (0))
           return;
-      if (gSpecialVar_Result == LINKUP_DIFF_SELECTIONS
-       || gSpecialVar_Result == LINKUP_WRONG_NUM_PLAYERS)
+      if (gSpecialVar_Result == (3)
+       || gSpecialVar_Result == (4))
       {
           SetCloseLinkCallback();
           HideFieldMessageBox();
           gTasks[taskId].func = Task_StopLinkup;
       }
-      else if (gSpecialVar_Result == LINKUP_PLAYER_NOT_READY
-            || gSpecialVar_Result == LINKUP_PARTNER_NOT_READY)
+      else if (gSpecialVar_Result == (7)
+            || gSpecialVar_Result == (9))
       {
           CloseLink();
           HideFieldMessageBox();
@@ -312,7 +320,7 @@ export function Task_LinkupCheckStatusAfterConfirm(taskId: any): any {
       if (CheckLinkErrored(taskId) == TRUE)
           return;
 
-      if (gSpecialVar_Result == LINKUP_WRONG_NUM_PLAYERS)
+      if (gSpecialVar_Result == (4))
       {
           if (!Link_AnyPartnersPlayingRubyOrSapphire())
           {
@@ -327,14 +335,14 @@ export function Task_LinkupCheckStatusAfterConfirm(taskId: any): any {
               gTasks[taskId].func = Task_StopLinkup;
           }
       }
-      else if (gSpecialVar_Result == LINKUP_DIFF_SELECTIONS)
+      else if (gSpecialVar_Result == (3))
       {
           SetCloseLinkCallback();
           HideFieldMessageBox();
           gTasks[taskId].func = Task_StopLinkup;
       }
-      else if (gSpecialVar_Result == LINKUP_PLAYER_NOT_READY
-            || gSpecialVar_Result == LINKUP_PARTNER_NOT_READY)
+      else if (gSpecialVar_Result == (7)
+            || gSpecialVar_Result == (9))
       {
           CloseLink();
           HideFieldMessageBox();
@@ -361,12 +369,12 @@ export function AreBattleTowerLinkSpeciesSame(speciesList1: any, speciesList2: a
       let haveSameSpecies: any = FALSE;
       let numSameSpecies: any = 0;
 
-      gStringVar1[0] = EOS;
-      gStringVar2[0] = EOS;
+      gStringVar1[0] = (0xFF);
+      gStringVar2[0] = (0xFF);
 
-      for (i = 0; i < FRONTIER_MULTI_PARTY_SIZE; i++)
+      for (i = 0; i < (2); i++)
       {
-          for (j = 0; j < FRONTIER_MULTI_PARTY_SIZE; j++)
+          for (j = 0; j < (2); j++)
           {
               if (speciesList1[i] == speciesList2[j])
               {
@@ -397,14 +405,14 @@ export function AreBattleTowerLinkSpeciesSame(speciesList1: any, speciesList2: a
 export function FinishLinkup(linkupStatus: any, taskId: any): any {
   let trainerCards: any = gTrainerCards;
 
-      if (linkupStatus == LINKUP_SUCCESS)
+      if (linkupStatus == (1))
       {
-          if (gLinkType == LINKTYPE_BATTLE_TOWER_50 || gLinkType == LINKTYPE_BATTLE_TOWER_OPEN)
+          if (gLinkType == (0x2266) || gLinkType == (0x2277))
           {
               if (AreBattleTowerLinkSpeciesSame(trainerCards[0].monSpecies, trainerCards[1].monSpecies))
               {
                    
-                  linkupStatus = LINKUP_FAILED_BATTLE_TOWER;
+                  linkupStatus = (11);
                   SetCloseLinkCallback();
                   gTasks[taskId].func = Task_StopLinkup;
               }
@@ -465,7 +473,7 @@ export function Task_StopLinkup(taskId: any): any {
 
 /** static void Task_LinkupFailed(u8 taskId) */
 export function Task_LinkupFailed(taskId: any): any {
-  gSpecialVar_Result = LINKUP_FAILED;
+  gSpecialVar_Result = (5);
       ClearLinkPlayerCountWindow(gTasks[taskId].tWindowId);
       StopFieldMessage();
       RemoveWindow(gTasks[taskId].tWindowId);
@@ -475,7 +483,7 @@ export function Task_LinkupFailed(taskId: any): any {
 
 /** static void Task_LinkupConnectionError(u8 taskId) */
 export function Task_LinkupConnectionError(taskId: any): any {
-  gSpecialVar_Result = LINKUP_CONNECTION_ERROR;
+  gSpecialVar_Result = (6);
       ClearLinkPlayerCountWindow(gTasks[taskId].tWindowId);
       RemoveWindow(gTasks[taskId].tWindowId);
       HideFieldMessageBox();
@@ -502,25 +510,25 @@ export function TryBattleLinkup(): any {
 
       switch (gSpecialVar_0x8004)
       {
-      case USING_SINGLE_BATTLE:
+      case (1):
           minPlayers = 2;
-          gLinkType = LINKTYPE_SINGLE_BATTLE;
+          gLinkType = (0x2233);
           break;
-      case USING_DOUBLE_BATTLE:
+      case (2):
           minPlayers = 2;
-          gLinkType = LINKTYPE_DOUBLE_BATTLE;
+          gLinkType = (0x2244);
           break;
-      case USING_MULTI_BATTLE:
+      case (5):
           minPlayers = 4;
           maxPlayers = 4;
-          gLinkType = LINKTYPE_MULTI_BATTLE;
+          gLinkType = (0x2255);
           break;
-      case USING_BATTLE_TOWER:
+      case (9):
           minPlayers = 2;
-          if (gSaveBlock2Ptr.frontier.lvlMode == FRONTIER_LVL_50)
-              gLinkType = LINKTYPE_BATTLE_TOWER_50;
+          if (gSaveBlock2Ptr.frontier.lvlMode == (0))
+              gLinkType = (0x2266);
           else
-              gLinkType = LINKTYPE_BATTLE_TOWER_OPEN;
+              gLinkType = (0x2277);
 
           break;
       }
@@ -530,15 +538,15 @@ export function TryBattleLinkup(): any {
 
 /** void TryTradeLinkup(void) */
 export function TryTradeLinkup(): any {
-  gLinkType = LINKTYPE_TRADE_SETUP;
+  gLinkType = (0x1133);
       gBattleTypeFlags = 0;
       CreateLinkupTask(2, 2);
 }
 
 /** void TryRecordMixLinkup(void) */
 export function TryRecordMixLinkup(): any {
-  gSpecialVar_Result = LINKUP_ONGOING;
-      gLinkType = LINKTYPE_RECORD_MIX_BEFORE;
+  gSpecialVar_Result = (0);
+      gLinkType = (0x3311);
       gBattleTypeFlags = 0;
       CreateLinkupTask(2, 4);
 }
@@ -547,7 +555,7 @@ export function TryRecordMixLinkup(): any {
 export function ValidateMixingGameLanguage(): any {
   let taskId: any = FindTaskIdByFunc(Task_ValidateMixingGameLanguage);
 
-      if (taskId == TASK_NONE)
+      if (taskId == ((0xFF)))
       {
           taskId = CreateTask(Task_ValidateMixingGameLanguage, 80);
           gTasks[taskId].tState = 0;
@@ -562,7 +570,7 @@ export function Task_ValidateMixingGameLanguage(taskId: any): any {
       switch (gTasks[taskId].tState)
       {
       case 0:
-          if (gSpecialVar_Result == LINKUP_SUCCESS)
+          if (gSpecialVar_Result == (1))
           {
               let mixingForeignGames: any = FALSE;
               let isEnglishRSLinked: any = FALSE;
@@ -574,9 +582,9 @@ export function Task_ValidateMixingGameLanguage(taskId: any): any {
                   let version: any = gLinkPlayers[i].version;
                   let language: any = gLinkPlayers[i].language;
 
-                  if (version == VERSION_RUBY || version == VERSION_SAPPHIRE)
+                  if (version == (2) || version == (1))
                   {
-                      if (language == LANGUAGE_JAPANESE)
+                      if (language == (1))
                       {
                           mixingForeignGames = TRUE;
                           break;
@@ -586,9 +594,9 @@ export function Task_ValidateMixingGameLanguage(taskId: any): any {
                           isEnglishRSLinked = TRUE;
                       }
                   }
-                  else if (version == VERSION_EMERALD)
+                  else if (version == (3))
                   {
-                      if (language == LANGUAGE_JAPANESE)
+                      if (language == (1))
                       {
                           isJapaneseEmeraldLinked = TRUE;
                       }
@@ -602,7 +610,7 @@ export function Task_ValidateMixingGameLanguage(taskId: any): any {
 
               if (mixingForeignGames)
               {
-                  gSpecialVar_Result = LINKUP_FOREIGN_GAME;
+                  gSpecialVar_Result = (12);
                   SetCloseLinkCallbackHandleJP();
                   gTasks[taskId].tState = 1;
                   return;
@@ -623,21 +631,21 @@ export function Task_ValidateMixingGameLanguage(taskId: any): any {
 
 /** void TryBerryBlenderLinkup(void) */
 export function TryBerryBlenderLinkup(): any {
-  gLinkType = LINKTYPE_BERRY_BLENDER_SETUP;
+  gLinkType = (0x4411);
       gBattleTypeFlags = 0;
       CreateLinkupTask(2, 4);
 }
 
 /** void TryContestGModeLinkup(void) */
 export function TryContestGModeLinkup(): any {
-  gLinkType = LINKTYPE_CONTEST_GMODE;
+  gLinkType = (0x6601);
       gBattleTypeFlags = 0;
       CreateLinkupTask(4, 4);
 }
 
 /** void TryContestEModeLinkup(void) */
 export function TryContestEModeLinkup(): any {
-  gLinkType = LINKTYPE_CONTEST_EMODE;
+  gLinkType = (0x6602);
       gBattleTypeFlags = 0;
       CreateLinkupTask(2, 4);
 }
@@ -645,30 +653,30 @@ export function TryContestEModeLinkup(): any {
 /** u8 CreateTask_ReestablishCableClubLink(void) */
 export function CreateTask_ReestablishCableClubLink(): any {
   if (FuncIsActiveTask(Task_ReestablishLink) != FALSE)
-          return TASK_NONE;
+          return ((0xFF));
 
       switch (gSpecialVar_0x8004)
       {
-      case USING_SINGLE_BATTLE:
-          gLinkType = LINKTYPE_SINGLE_BATTLE;
+      case (1):
+          gLinkType = (0x2233);
           break;
-      case USING_DOUBLE_BATTLE:
-          gLinkType = LINKTYPE_DOUBLE_BATTLE;
+      case (2):
+          gLinkType = (0x2244);
           break;
-      case USING_MULTI_BATTLE:
-          gLinkType = LINKTYPE_MULTI_BATTLE;
+      case (5):
+          gLinkType = (0x2255);
           break;
-      case USING_BATTLE_TOWER:
-          if (gSaveBlock2Ptr.frontier.lvlMode == FRONTIER_LVL_50)
-              gLinkType = LINKTYPE_BATTLE_TOWER_50;
+      case (9):
+          if (gSaveBlock2Ptr.frontier.lvlMode == (0))
+              gLinkType = (0x2266);
           else
-              gLinkType = LINKTYPE_BATTLE_TOWER_OPEN;
+              gLinkType = (0x2277);
           break;
-      case USING_TRADE_CENTER:
-          gLinkType = LINKTYPE_TRADE;
+      case (3):
+          gLinkType = (0x1111);
           break;
-      case USING_RECORD_CORNER:
-          gLinkType = LINKTYPE_RECORD_MIX_AFTER;
+      case (4):
+          gLinkType = (0x3322);
           break;
       }
 
@@ -732,18 +740,18 @@ export function CableClubSaveGame(): any {
 export function SetLinkBattleTypeFlags(linkService: any): any {
   switch (linkService)
       {
-      case USING_SINGLE_BATTLE:
-          gBattleTypeFlags = BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER;
+      case (1):
+          gBattleTypeFlags = ((1 << 1)) | ((1 << 3));
           break;
-      case USING_DOUBLE_BATTLE:
-          gBattleTypeFlags = BATTLE_TYPE_DOUBLE | BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER;
+      case (2):
+          gBattleTypeFlags = ((1 << 0)) | ((1 << 1)) | ((1 << 3));
           break;
-      case USING_MULTI_BATTLE:
+      case (5):
           ReducePlayerPartyToSelectedMons();
-          gBattleTypeFlags = BATTLE_TYPE_DOUBLE | BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER | BATTLE_TYPE_MULTI;
+          gBattleTypeFlags = ((1 << 0)) | ((1 << 1)) | ((1 << 3)) | ((1 << 6));
           break;
-      case USING_BATTLE_TOWER:
-          gBattleTypeFlags = BATTLE_TYPE_BATTLE_TOWER | BATTLE_TYPE_DOUBLE | BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER | BATTLE_TYPE_MULTI;
+      case (9):
+          gBattleTypeFlags = ((1 << 8)) | ((1 << 0)) | ((1 << 1)) | ((1 << 3)) | ((1 << 6));
           break;
       }
 }
@@ -755,8 +763,8 @@ export function Task_StartWiredCableClubBattle(taskId: any): any {
       switch (task.tState)
       {
       case 0:
-          FadeScreen(FADE_TO_BLACK, 0);
-          gLinkType = LINKTYPE_BATTLE;
+          FadeScreen((1), 0);
+          gLinkType = (0x2211);
           ClearLinkCallback_2();
           task.tState++;
           break;
@@ -779,13 +787,13 @@ export function Task_StartWiredCableClubBattle(taskId: any): any {
           break;
       case 5:
           if (gLinkPlayers[0].trainerId & 1)
-              PlayMapChosenOrBattleBGM(MUS_VS_GYM_LEADER);
+              PlayMapChosenOrBattleBGM((477));
           else
-              PlayMapChosenOrBattleBGM(MUS_VS_TRAINER);
+              PlayMapChosenOrBattleBGM((476));
 
           SetLinkBattleTypeFlags(gSpecialVar_0x8004);
           CleanupOverworldWindowsAndTilemaps();
-          gTrainerBattleOpponent_A = TRAINER_LINK_OPPONENT;
+          gTrainerBattleOpponent_A = (2048);
           SetMainCallback2(CB2_InitBattle);
           gMain.savedCallback = CB2_ReturnFromCableClubBattle;
           DestroyTask(taskId);
@@ -801,8 +809,8 @@ export function Task_StartWirelessCableClubBattle(taskId: any): any {
       switch (tState)
       {
       case 0:
-          FadeScreen(FADE_TO_BLACK, 0);
-          gLinkType = LINKTYPE_BATTLE;
+          FadeScreen((1), 0);
+          gLinkType = (0x2211);
           ClearLinkCallback_2();
           tState = 1;
           break;
@@ -844,14 +852,14 @@ export function Task_StartWirelessCableClubBattle(taskId: any): any {
           break;
       case 7:
           if (gLinkPlayers[0].trainerId & 1)
-              PlayMapChosenOrBattleBGM(MUS_VS_GYM_LEADER);
+              PlayMapChosenOrBattleBGM((477));
           else
-              PlayMapChosenOrBattleBGM(MUS_VS_TRAINER);
+              PlayMapChosenOrBattleBGM((476));
 
-          gLinkPlayers[0].linkType = LINKTYPE_BATTLE;
+          gLinkPlayers[0].linkType = (0x2211);
           SetLinkBattleTypeFlags(gSpecialVar_0x8004);
           CleanupOverworldWindowsAndTilemaps();
-          gTrainerBattleOpponent_A = TRAINER_LINK_OPPONENT;
+          gTrainerBattleOpponent_A = (2048);
           SetMainCallback2(CB2_InitBattle);
           gMain.savedCallback = CB2_ReturnFromCableClubBattle;
           DestroyTask(taskId);
@@ -873,7 +881,7 @@ export function CB2_ReturnFromUnionRoomBattle(): any {
           for (i = 0; i < playerCount; i++)
           {
               let version: any = gLinkPlayers[i].version;
-              if (version == VERSION_FIRE_RED || version == VERSION_LEAF_GREEN)
+              if (version == (4) || version == (5))
               {
                   linkedWithFRLG = TRUE;
                   break;
@@ -905,24 +913,24 @@ export function CB2_ReturnFromUnionRoomBattle(): any {
 
 /** void CB2_ReturnFromCableClubBattle(void) */
 export function CB2_ReturnFromCableClubBattle(): any {
-  gBattleTypeFlags &= ~BATTLE_TYPE_LINK_IN_BATTLE;
+  gBattleTypeFlags &= ~((1 << 5));
       Overworld_ResetMapMusic();
       LoadPlayerParty();
       SavePlayerBag();
       UpdateTrainerFansAfterLinkBattle();
 
-      if (gSpecialVar_0x8004 == USING_SINGLE_BATTLE || gSpecialVar_0x8004 == USING_DOUBLE_BATTLE)
+      if (gSpecialVar_0x8004 == (1) || gSpecialVar_0x8004 == (2))
       {
           UpdatePlayerLinkBattleRecords(gLocalLinkPlayerId ^ 1);
           if (gWirelessCommType)
           {
               switch (gBattleOutcome)
               {
-              case B_OUTCOME_WON:
-                  MysteryGift_TryIncrementStat(CARD_STAT_BATTLES_WON, gLinkPlayers[GetMultiplayerId() ^ 1].trainerId);
+              case (1):
+                  MysteryGift_TryIncrementStat((0), gLinkPlayers[GetMultiplayerId() ^ 1].trainerId);
                   break;
-              case B_OUTCOME_LOST:
-                  MysteryGift_TryIncrementStat(CARD_STAT_BATTLES_LOST, gLinkPlayers[GetMultiplayerId() ^ 1].trainerId);
+              case (2):
+                  MysteryGift_TryIncrementStat((1), gLinkPlayers[GetMultiplayerId() ^ 1].trainerId);
                   break;
               }
           }
@@ -938,15 +946,15 @@ export function CB2_ReturnFromCableClubBattle(): any {
 
 /** void CleanupLinkRoomState(void) */
 export function CleanupLinkRoomState(): any {
-  if (gSpecialVar_0x8004 == USING_SINGLE_BATTLE
-       || gSpecialVar_0x8004 == USING_DOUBLE_BATTLE
-       || gSpecialVar_0x8004 == USING_MULTI_BATTLE
-       || gSpecialVar_0x8004 == USING_BATTLE_TOWER)
+  if (gSpecialVar_0x8004 == (1)
+       || gSpecialVar_0x8004 == (2)
+       || gSpecialVar_0x8004 == (5)
+       || gSpecialVar_0x8004 == (9))
       {
           LoadPlayerParty();
           SavePlayerBag();
       }
-      SetWarpDestinationToDynamicWarp(WARP_ID_DYNAMIC);
+      SetWarpDestinationToDynamicWarp((0x7F));
 }
 
 /** void ExitLinkRoom(void) */
@@ -975,16 +983,16 @@ export function Task_EnterCableClubSeat(taskId: any): any {
       case 2:
           switch (GetCableClubPartnersReady())
           {
-          case CABLE_SEAT_WAITING:
+          case (0):
               break;
-          case CABLE_SEAT_SUCCESS:
+          case (1):
                
               HideFieldMessageBox();
               task.tState = 0;
               SetStartedCableClubActivity();
               SwitchTaskToFollowupFunc(taskId);
               break;
-          case CABLE_SEAT_FAILED:
+          case (2):
               task.tState = 3;
               break;
           }
@@ -1014,7 +1022,7 @@ export function Task_StartWiredTrade(taskId: any): any {
       {
       case 0:
           LockPlayerFieldControls();
-          FadeScreen(FADE_TO_BLACK, 0);
+          FadeScreen((1), 0);
           ClearLinkCallback_2();
           task.tState++;
           break;
@@ -1023,8 +1031,8 @@ export function Task_StartWiredTrade(taskId: any): any {
               task.tState++;
           break;
       case 2:
-          gSelectedTradeMonPositions[TRADE_PLAYER] = 0;
-          gSelectedTradeMonPositions[TRADE_PARTNER] = 0;
+          gSelectedTradeMonPositions[(0)] = 0;
+          gSelectedTradeMonPositions[(1)] = 0;
           m4aMPlayAllStop();
           SetCloseLinkCallback();
           task.tState++;
@@ -1047,7 +1055,7 @@ export function Task_StartWirelessTrade(taskId: any): any {
       {
       case 0:
           LockPlayerFieldControls();
-          FadeScreen(FADE_TO_BLACK, 0);
+          FadeScreen((1), 0);
           ClearLinkRfuCallback();
           tState++;
           break;
@@ -1056,8 +1064,8 @@ export function Task_StartWirelessTrade(taskId: any): any {
               tState++;
           break;
       case 2:
-          gSelectedTradeMonPositions[TRADE_PLAYER] = 0;
-          gSelectedTradeMonPositions[TRADE_PARTNER] = 0;
+          gSelectedTradeMonPositions[(0)] = 0;
+          gSelectedTradeMonPositions[(1)] = 0;
           m4aMPlayAllStop();
           SetLinkStandbyCallback();
           tState++;
@@ -1082,7 +1090,7 @@ export function PlayerEnteredTradeSeat(): any {
 
 /** void ColosseumPlayerSpotTriggered(void) */
 export function ColosseumPlayerSpotTriggered(): any {
-  gLinkType = LINKTYPE_BATTLE;
+  gLinkType = (0x2211);
 
       if (gWirelessCommType)
           CreateTask_EnterCableClubSeat(Task_StartWirelessCableClubBattle);
@@ -1210,7 +1218,7 @@ export function Task_ReconnectWithLinkPlayers(taskId: any): any {
 /** void TrySetBattleTowerLinkType(void) */
 export function TrySetBattleTowerLinkType(): any {
   if (gWirelessCommType == 0)
-          gLinkType = LINKTYPE_BATTLE_TOWER;
+          gLinkType = (0x2288);
 }
 
 // ─── callsTo manifest (= 106 unique callees) ───────────────────────

@@ -15,6 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gKeyRepeatStartDelay: any = null;
+let isNotLastMon: any = null;
+let monId: any = null;
+let species: any = null;
+let tid: any = null;
 /** bool32 PokenavCallback_Init_ConditionGraph_Party(void) */
 export function PokenavCallback_Init_ConditionGraph_Party(): any {
   let menu: any = AllocSubstruct(POKENAV_SUBSTRUCT_CONDITION_GRAPH_MENU, 0);
@@ -59,7 +66,7 @@ export function HandleConditionMenuInput(menu: any): any {
       {
           if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               menu.callback = GetConditionReturnCallback;
               ret = CONDITION_FUNC_RETURN;
           }
@@ -71,7 +78,7 @@ export function HandleConditionMenuInput(menu: any): any {
                   if (monListPtr.currIndex == monListPtr.listCount - 1)
                   {
                        
-                      PlaySE(SE_SELECT);
+                      PlaySE((5));
                       menu.callback = GetConditionReturnCallback;
                       ret = CONDITION_FUNC_RETURN;
                   }
@@ -79,7 +86,7 @@ export function HandleConditionMenuInput(menu: any): any {
               else
               {
                    
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   ret = CONDITION_FUNC_ADD_MARKINGS;
                   menu.callback = OpenMarkingsMenu;
               }
@@ -103,7 +110,7 @@ export function OpenMarkingsMenu(menu: any): any {
           monId = monListPtr.monData[monListPtr.currIndex].monId;
           markings = menu.monMarks[menu.loadId];
 
-          if (boxId == TOTAL_BOXES_COUNT)
+          if (boxId == (14))
               SetMonData(gPlayerParty[monId], MON_DATA_MARKINGS,markings);
           else
               SetBoxMonDataAt(boxId, monId, MON_DATA_MARKINGS,markings);
@@ -142,7 +149,7 @@ export function ConditionGraphHandleDpadInput(menu: any): any {
            
           if (!menu.inSearchMode || monListPtr.currIndex != 0)
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ret = SwitchConditionSummaryIndex(TRUE);
           }
       }
@@ -151,7 +158,7 @@ export function ConditionGraphHandleDpadInput(menu: any): any {
            
           if (!menu.inSearchMode || monListPtr.currIndex < monListPtr.listCount - 1)
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ret = SwitchConditionSummaryIndex(FALSE);
           }
       }
@@ -298,25 +305,25 @@ export function CopyMonNameGenderLocation(listId: any, loadId: any): any {
       {
           CopyConditionMonNameGender(menu.nameText[loadId], listId, FALSE);
           boxId = monListPtr.monData[listId].boxId;
-          menu.locationText[loadId][0] = EXT_CTRL_CODE_BEGIN;
-          menu.locationText[loadId][1] = EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW;
-          menu.locationText[loadId][2] = TEXT_COLOR_BLUE;
-          menu.locationText[loadId][3] = TEXT_COLOR_TRANSPARENT;
-          menu.locationText[loadId][4] = TEXT_COLOR_LIGHT_BLUE;
-          if (boxId == TOTAL_BOXES_COUNT)
-              CopyStringLeftAlignedToConditionData(menu.locationText[loadId][5], gText_InParty, BOX_NAME_LENGTH);
+          menu.locationText[loadId][0] = (0xFC);
+          menu.locationText[loadId][1] = (0x04);
+          menu.locationText[loadId][2] = (0x8);
+          menu.locationText[loadId][3] = (0x0);
+          menu.locationText[loadId][4] = (0x9);
+          if (boxId == (14))
+              CopyStringLeftAlignedToConditionData(menu.locationText[loadId][5], gText_InParty, (8));
           else
-              CopyStringLeftAlignedToConditionData(menu.locationText[loadId][5], GetBoxNamePtr(boxId), BOX_NAME_LENGTH);
+              CopyStringLeftAlignedToConditionData(menu.locationText[loadId][5], GetBoxNamePtr(boxId), (8));
       }
       else
       {
-          for (i = 0; i < POKEMON_NAME_LENGTH + 2; i++)
-              menu.nameText[loadId][i] = CHAR_SPACE;
-          menu.nameText[loadId][i] = EOS;
+          for (i = 0; i < (10) + 2; i++)
+              menu.nameText[loadId][i] = (0x00);
+          menu.nameText[loadId][i] = (0xFF);
 
-          for (i = 0; i < BOX_NAME_LENGTH; i++)
-              menu.locationText[loadId][i] = CHAR_SPACE;
-          menu.locationText[loadId][i] = EOS;
+          for (i = 0; i < (8); i++)
+              menu.locationText[loadId][i] = (0x00);
+          menu.locationText[loadId][i] = (0xFF);
       }
 }
 
@@ -331,7 +338,7 @@ export function InitPartyConditionListParameters(): any {
       {
           if (!GetMonData(gPlayerParty[i], MON_DATA_IS_EGG))
           {
-              monListPtr.monData[count].boxId = TOTAL_BOXES_COUNT;
+              monListPtr.monData[count].boxId = (14);
               monListPtr.monData[count].monId = i;
               monListPtr.monData[count].data = 0;
               count++;
@@ -378,7 +385,7 @@ export function GetMonConditionGraphData(listId: any, loadId: any): any {
           for (i = 0; i < CONDITION_COUNT; i++)
           {
               menu.graph.conditions[loadId][i] = 0;
-              menu.graph.savedPositions[loadId][i].x = CONDITION_GRAPH_CENTER_X;
+              menu.graph.savedPositions[loadId][i].x = (155);
               menu.graph.savedPositions[loadId][i].y = CONDITION_GRAPH_CENTER_Y;
           }
       }

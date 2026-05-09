@@ -18,26 +18,17 @@
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sHofPCTopBarWindowId: any = null;
-let sHofPC_TopBar_Pal: any = null;
 let sMapNamePopupWindowId: any = null;
-let sMenu: any = null;
-let sMenuInfoIcons: any = null;
 let sPaletteNum: any = null;
-let sScheduledBgCopiesToVram: any = null;
-let sStandardTextBox_WindowTemplates: any = null;
 let sStartMenuWindowId: any = null;
-let sTempTileDataBuffer: any = null;
 let sTempTileDataBufferIdx: any = null;
-let sTextColors: any = null;
-let sTextSpeedFrameDelays: any = null;
 let sTileNum: any = null;
 let sYesNoWindowId: any = null;
-let sYesNo_WindowTemplates: any = null;
 /** void InitStandardTextBoxWindows(void) */
 export function InitStandardTextBoxWindows(): any {
   InitWindows(sStandardTextBox_WindowTemplates);
-      sStartMenuWindowId = WINDOW_NONE;
-      sMapNamePopupWindowId = WINDOW_NONE;
+      sStartMenuWindowId = (0xFF);
+      sMapNamePopupWindowId = (0xFF);
 }
 
 /** void FreeAllOverworldWindowBuffers(void) */
@@ -85,19 +76,19 @@ export function AddTextPrinterParameterized2(windowId: any, fontId: any, str: an
 export function AddTextPrinterForMessage(allowSkippingDelayWithButtonPress: any): any {
   let callback: any = NULL;
       gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress;
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), callback, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), callback, (0x2), (0x1), (0x3));
 }
 
 /** void AddTextPrinterForMessage_2(bool8 allowSkippingDelayWithButtonPress) */
 export function AddTextPrinterForMessage_2(allowSkippingDelayWithButtonPress: any): any {
   gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress;
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), NULL, (0x2), (0x1), (0x3));
 }
 
 /** void AddTextPrinterWithCustomSpeedForMessage(bool8 allowSkippingDelayWithButtonPress, u8 speed) */
 export function AddTextPrinterWithCustomSpeedForMessage(allowSkippingDelayWithButtonPress: any, speed: any): any {
   gTextFlags.canABSpeedUpPrint = allowSkippingDelayWithButtonPress;
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, speed, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, speed, NULL, (0x2), (0x1), (0x3));
 }
 
 /** void LoadMessageBoxAndBorderGfx(void) */
@@ -360,22 +351,22 @@ export function DisplayYesNoMenuWithDefault(initialCursorPos: any): any {
 /** u32 GetPlayerTextSpeed(void) */
 export function GetPlayerTextSpeed(): any {
   if (gTextFlags.forceMidTextSpeed)
-          return OPTIONS_TEXT_SPEED_MID;
+          return (1);
       return gSaveBlock2Ptr.optionsTextSpeed;
 }
 
 /** u8 GetPlayerTextSpeedDelay(void) */
 export function GetPlayerTextSpeedDelay(): any {
   let speed: any = null;
-      if (gSaveBlock2Ptr.optionsTextSpeed > OPTIONS_TEXT_SPEED_FAST)
-          gSaveBlock2Ptr.optionsTextSpeed = OPTIONS_TEXT_SPEED_MID;
+      if (gSaveBlock2Ptr.optionsTextSpeed > (2))
+          gSaveBlock2Ptr.optionsTextSpeed = (1);
       speed = GetPlayerTextSpeed();
       return sTextSpeedFrameDelays[speed];
 }
 
 /** u8 AddStartMenuWindow(u8 numActions) */
 export function AddStartMenuWindow(numActions: any): any {
-  if (sStartMenuWindowId == WINDOW_NONE)
+  if (sStartMenuWindowId == (0xFF))
           sStartMenuWindowId = AddWindowParameterized(0, 22, 1, 7, (numActions * 2) + 2, 15, 0x139);
       return sStartMenuWindowId;
 }
@@ -387,16 +378,16 @@ export function GetStartMenuWindowId(): any {
 
 /** void RemoveStartMenuWindow(void) */
 export function RemoveStartMenuWindow(): any {
-  if (sStartMenuWindowId != WINDOW_NONE)
+  if (sStartMenuWindowId != (0xFF))
       {
           RemoveWindow(sStartMenuWindowId);
-          sStartMenuWindowId = WINDOW_NONE;
+          sStartMenuWindowId = (0xFF);
       }
 }
 
 /** u8 AddMapNamePopUpWindow(void) */
 export function AddMapNamePopUpWindow(): any {
-  if (sMapNamePopupWindowId == WINDOW_NONE)
+  if (sMapNamePopupWindowId == (0xFF))
           sMapNamePopupWindowId = AddWindowParameterized(0, 1, 1, 10, 3, 14, 0x107);
       return sMapNamePopupWindowId;
 }
@@ -408,17 +399,17 @@ export function GetMapNamePopUpWindowId(): any {
 
 /** void RemoveMapNamePopUpWindow(void) */
 export function RemoveMapNamePopUpWindow(): any {
-  if (sMapNamePopupWindowId != WINDOW_NONE)
+  if (sMapNamePopupWindowId != (0xFF))
       {
           RemoveWindow(sMapNamePopupWindowId);
-          sMapNamePopupWindowId = WINDOW_NONE;
+          sMapNamePopupWindowId = (0xFF);
       }
 }
 
 /** void AddTextPrinterWithCallbackForMessage(bool8 canSpeedUp, void (*callback)(struct TextPrinterTemplate *, u16)) */
 export function AddTextPrinterWithCallbackForMessage(canSpeedUp: any, callback: any): any {
   gTextFlags.canABSpeedUpPrint = canSpeedUp;
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), callback, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, GetPlayerTextSpeedDelay(), callback, (0x2), (0x1), (0x3));
 }
 
 /** void EraseFieldMessageBox(bool8 copyToVram) */
@@ -676,7 +667,7 @@ export function HofPCTopBar_AddWindow(bg: any, xPos: any, yPos: any, palette: an
 export function HofPCTopBar_Print(string: any, left: any, copyToVram: any): any {
   let width: any = 0;
 
-      if (sHofPCTopBarWindowId != WINDOW_NONE)
+      if (sHofPCTopBarWindowId != (0xFF))
       {
           PutWindowTilemap(sHofPCTopBarWindowId);
           FillWindowPixelBuffer(sHofPCTopBarWindowId, PIXEL_FILL(15));
@@ -698,19 +689,19 @@ export function HofPCTopBar_PrintPair(string: any, string2: any, noBg: any, left
   let color: any = [];
       let width: any = 0;
 
-      if (sHofPCTopBarWindowId != WINDOW_NONE)
+      if (sHofPCTopBarWindowId != (0xFF))
       {
           if (noBg)
           {
-              color[0] = TEXT_COLOR_TRANSPARENT;
-              color[1] = TEXT_COLOR_WHITE;
-              color[2] = TEXT_COLOR_DARK_GRAY;
+              color[0] = (0x0);
+              color[1] = (0x1);
+              color[2] = (0x2);
           }
           else
           {
-              color[0] = TEXT_DYNAMIC_COLOR_6;
-              color[1] = TEXT_COLOR_WHITE;
-              color[2] = TEXT_COLOR_DARK_GRAY;
+              color[0] = (0xF);
+              color[1] = (0x1);
+              color[2] = (0x2);
           }
           PutWindowTilemap(sHofPCTopBarWindowId);
           FillWindowPixelBuffer(sHofPCTopBarWindowId, PIXEL_FILL(15));
@@ -733,13 +724,13 @@ export function HofPCTopBar_PrintPair(string: any, string2: any, noBg: any, left
 
 /** void HofPCTopBar_RemoveWindow(void) */
 export function HofPCTopBar_RemoveWindow(): any {
-  if (sHofPCTopBarWindowId != WINDOW_NONE)
+  if (sHofPCTopBarWindowId != (0xFF))
       {
           FillWindowPixelBuffer(sHofPCTopBarWindowId, PIXEL_FILL(0));
           ClearWindowTilemap(sHofPCTopBarWindowId);
           CopyWindowToVram(sHofPCTopBarWindowId, COPYWIN_FULL);
           RemoveWindow(sHofPCTopBarWindowId);
-          sHofPCTopBarWindowId = WINDOW_NONE;
+          sHofPCTopBarWindowId = (0xFF);
       }
 }
 
@@ -824,27 +815,27 @@ export function Menu_ProcessInput(): any {
   if (JOY_NEW(A_BUTTON))
       {
           if (!sMenu.APressMuted)
-              PlaySE(SE_SELECT);
+              PlaySE((5));
           return sMenu.cursorPos;
       }
       else if (JOY_NEW(B_BUTTON))
       {
-          return MENU_B_PRESSED;
+          return (-1);
       }
       else if (JOY_NEW(DPAD_UP))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           Menu_MoveCursor(-1);
-          return MENU_NOTHING_CHOSEN;
+          return (-2);
       }
       else if (JOY_NEW(DPAD_DOWN))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           Menu_MoveCursor(1);
-          return MENU_NOTHING_CHOSEN;
+          return (-2);
       }
 
-      return MENU_NOTHING_CHOSEN;
+      return (-2);
 }
 
 /** s8 Menu_ProcessInputNoWrap(void) */
@@ -854,27 +845,27 @@ export function Menu_ProcessInputNoWrap(): any {
       if (JOY_NEW(A_BUTTON))
       {
           if (!sMenu.APressMuted)
-              PlaySE(SE_SELECT);
+              PlaySE((5));
           return sMenu.cursorPos;
       }
       else if (JOY_NEW(B_BUTTON))
       {
-          return MENU_B_PRESSED;
+          return (-1);
       }
       else if (JOY_NEW(DPAD_UP))
       {
           if (oldPos != Menu_MoveCursorNoWrapAround(-1))
-              PlaySE(SE_SELECT);
-          return MENU_NOTHING_CHOSEN;
+              PlaySE((5));
+          return (-2);
       }
       else if (JOY_NEW(DPAD_DOWN))
       {
           if (oldPos != Menu_MoveCursorNoWrapAround(1))
-              PlaySE(SE_SELECT);
-          return MENU_NOTHING_CHOSEN;
+              PlaySE((5));
+          return (-2);
       }
 
-      return MENU_NOTHING_CHOSEN;
+      return (-2);
 }
 
 /** s8 ProcessMenuInput_other(void) */
@@ -882,27 +873,27 @@ export function ProcessMenuInput_other(): any {
   if (JOY_NEW(A_BUTTON))
       {
           if (!sMenu.APressMuted)
-              PlaySE(SE_SELECT);
+              PlaySE((5));
           return sMenu.cursorPos;
       }
       else if (JOY_NEW(B_BUTTON))
       {
-          return MENU_B_PRESSED;
+          return (-1);
       }
       else if ((JOY_REPEAT(DPAD_ANY)) == DPAD_UP)
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           Menu_MoveCursor(-1);
-          return MENU_NOTHING_CHOSEN;
+          return (-2);
       }
       else if ((JOY_REPEAT(DPAD_ANY)) == DPAD_DOWN)
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           Menu_MoveCursor(1);
-          return MENU_NOTHING_CHOSEN;
+          return (-2);
       }
 
-      return MENU_NOTHING_CHOSEN;
+      return (-2);
 }
 
 /** s8 Menu_ProcessInputNoWrapAround_other(void) */
@@ -912,34 +903,34 @@ export function Menu_ProcessInputNoWrapAround_other(): any {
       if (JOY_NEW(A_BUTTON))
       {
           if (!sMenu.APressMuted)
-              PlaySE(SE_SELECT);
+              PlaySE((5));
           return sMenu.cursorPos;
       }
       else if (JOY_NEW(B_BUTTON))
       {
-          return MENU_B_PRESSED;
+          return (-1);
       }
       else if (JOY_REPEAT(DPAD_ANY) == DPAD_UP)
       {
           if (oldPos != Menu_MoveCursorNoWrapAround(-1))
-              PlaySE(SE_SELECT);
-          return MENU_NOTHING_CHOSEN;
+              PlaySE((5));
+          return (-2);
       }
       else if (JOY_REPEAT(DPAD_ANY) == DPAD_DOWN)
       {
           if (oldPos != Menu_MoveCursorNoWrapAround(1))
-              PlaySE(SE_SELECT);
-          return MENU_NOTHING_CHOSEN;
+              PlaySE((5));
+          return (-2);
       }
 
-      return MENU_NOTHING_CHOSEN;
+      return (-2);
 }
 
 /** void PrintMenuActionTextsAtPos(u8 windowId, u8 fontId, u8 left, u8 top, u8 lineHeight, u8 itemCount, const struct MenuAction *menuActions) */
 export function PrintMenuActionTextsAtPos(windowId: any, fontId: any, left: any, top: any, lineHeight: any, itemCount: any, menuActions: any): any {
   let i: any = null;
       for (i = 0; i < itemCount; i++)
-          AddTextPrinterParameterized(windowId, fontId, menuActions[i].text, left, (lineHeight * i) + top, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(windowId, fontId, menuActions[i].text, left, (lineHeight * i) + top, (0xFF), NULL);
       CopyWindowToVram(windowId, COPYWIN_GFX);
 }
 
@@ -964,7 +955,7 @@ export function PrintMenuActionTexts(windowId: any, fontId: any, left: any, top:
           printer.currentChar = menuActions[actionIds[i]].text;
           printer.y = (lineHeight * i) + top;
           printer.currentY = printer.y;
-          AddTextPrinter(printer, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinter(printer, (0xFF), NULL);
       }
 
       CopyWindowToVram(windowId, COPYWIN_GFX);
@@ -1016,7 +1007,7 @@ export function CreateYesNoMenuAtPos(window: any, fontId: any, left: any, top: a
       printer.letterSpacing = GetFontAttribute(fontId, FONTATTR_LETTER_SPACING);
       printer.lineSpacing = GetFontAttribute(fontId, FONTATTR_LINE_SPACING);
 
-      AddTextPrinter(printer, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinter(printer, (0xFF), NULL);
 
       InitMenuNormal(sYesNoWindowId, fontId, left, top, GetFontAttribute(fontId, FONTATTR_MAX_LETTER_HEIGHT), 2, initialCursorPos);
 }
@@ -1024,7 +1015,7 @@ export function CreateYesNoMenuAtPos(window: any, fontId: any, left: any, top: a
 /** s8 Menu_ProcessInputNoWrapClearOnChoose(void) */
 export function Menu_ProcessInputNoWrapClearOnChoose(): any {
   let result: any = Menu_ProcessInputNoWrap();
-      if (result != MENU_NOTHING_CHOSEN)
+      if (result != (-2))
           EraseYesNoWindow();
       return result;
 }
@@ -1042,7 +1033,7 @@ export function PrintMenuActionGridText(windowId: any, fontId: any, left: any, t
       for (i = 0; i < rows; i++)
       {
           for (j = 0; j < columns; j++)
-              AddTextPrinterParameterized(windowId, fontId, menuActions[(i * columns) + j].text, (width * j) + left, (height * i) + top, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(windowId, fontId, menuActions[(i * columns) + j].text, (width * j) + left, (height * i) + top, (0xFF), NULL);
       }
       CopyWindowToVram(windowId, COPYWIN_GFX);
 }
@@ -1071,7 +1062,7 @@ export function PrintMenuActionGrid(windowId: any, fontId: any, left: any, top: 
               printer.y = (GetFontAttribute(fontId, FONTATTR_MAX_LETTER_HEIGHT) * i) + top;
               printer.currentX = printer.x;
               printer.currentY = printer.y;
-              AddTextPrinter(printer, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinter(printer, (0xFF), NULL);
           }
       }
 
@@ -1101,7 +1092,7 @@ export function InitMenuGrid(windowId: any, fontId: any, left: any, top: any, op
           sMenu.cursorPos = pos;
 
        
-      ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_NONE);
+      ChangeMenuGridCursorPosition((0), (0));
       return sMenu.cursorPos;
 }
 
@@ -1195,39 +1186,39 @@ export function Menu_ProcessGridInput(): any {
 
       if (JOY_NEW(A_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           return sMenu.cursorPos;
       }
       else if (JOY_NEW(B_BUTTON))
       {
-          return MENU_B_PRESSED;
+          return (-1);
       }
       else if (JOY_NEW(DPAD_UP))
       {
           if (oldPos != ChangeGridMenuCursorPosition(0, -1))
-              PlaySE(SE_SELECT);
-          return MENU_NOTHING_CHOSEN;
+              PlaySE((5));
+          return (-2);
       }
       else if (JOY_NEW(DPAD_DOWN))
       {
           if (oldPos != ChangeGridMenuCursorPosition(0, 1))
-              PlaySE(SE_SELECT);
-          return MENU_NOTHING_CHOSEN;
+              PlaySE((5));
+          return (-2);
       }
-      else if (JOY_NEW(DPAD_LEFT) || GetLRKeysPressed() == MENU_L_PRESSED)
+      else if (JOY_NEW(DPAD_LEFT) || GetLRKeysPressed() == (1))
       {
           if (oldPos != ChangeGridMenuCursorPosition(-1, 0))
-              PlaySE(SE_SELECT);
-          return MENU_NOTHING_CHOSEN;
+              PlaySE((5));
+          return (-2);
       }
-      else if (JOY_NEW(DPAD_RIGHT) || GetLRKeysPressed() == MENU_R_PRESSED)
+      else if (JOY_NEW(DPAD_RIGHT) || GetLRKeysPressed() == (2))
       {
           if (oldPos != ChangeGridMenuCursorPosition(1, 0))
-              PlaySE(SE_SELECT);
-          return MENU_NOTHING_CHOSEN;
+              PlaySE((5));
+          return (-2);
       }
 
-      return MENU_NOTHING_CHOSEN;
+      return (-2);
 }
 
 /** u8 InitMenuInUpperLeftCorner(u8 windowId, u8 itemCount, u8 initialCursorPos, bool8 APressMuted) */
@@ -1263,7 +1254,7 @@ export function PrintMenuTable(windowId: any, itemCount: any, menuActions: any):
   let i: any = null;
 
       for (i = 0; i < itemCount; i++)
-          AddTextPrinterParameterized(windowId, 1, menuActions[i].text, 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(windowId, 1, menuActions[i].text, 8, (i * 16) + 1, (0xFF), NULL);
 
       CopyWindowToVram(windowId, COPYWIN_GFX);
 }
@@ -1289,7 +1280,7 @@ export function PrintMenuActionTextsInUpperLeftCorner(windowId: any, itemCount: 
           printer.currentChar = menuActions[actionIds[i]].text;
           printer.y = (i * 16) + 1;
           printer.currentY = (i * 16) + 1;
-          AddTextPrinter(printer, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinter(printer, (0xFF), NULL);
       }
 
       CopyWindowToVram(windowId, COPYWIN_GFX);
@@ -1316,7 +1307,7 @@ export function CreateYesNoMenu(window: any, baseTileNum: any, paletteNum: any, 
       printer.letterSpacing = 0;
       printer.lineSpacing = 0;
 
-      AddTextPrinter(printer, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinter(printer, (0xFF), NULL);
       InitMenuInUpperLeftCornerNormal(sYesNoWindowId, 2, initialCursorPos);
 }
 
@@ -1327,7 +1318,7 @@ export function PrintMenuGridTable(windowId: any, optionWidth: any, columns: any
       for (i = 0; i < rows; i++)
       {
           for (j = 0; j < columns; j++)
-              AddTextPrinterParameterized(windowId, 1, menuActions[(i * columns) + j].text, (optionWidth * j) + 8, (i * 16) + 1, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(windowId, 1, menuActions[(i * columns) + j].text, (optionWidth * j) + 8, (i * 16) + 1, (0xFF), NULL);
       }
       CopyWindowToVram(windowId, COPYWIN_GFX);
 }
@@ -1355,7 +1346,7 @@ export function InitMenuActionGrid(windowId: any, optionWidth: any, columns: any
           sMenu.cursorPos = pos;
 
        
-      ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_NONE);
+      ChangeMenuGridCursorPosition((0), (0));
       return sMenu.cursorPos;
 }
 
@@ -1590,12 +1581,12 @@ export function AddTextPrinterParameterized5(windowId: any, fontId: any, str: an
 /** void PrintPlayerNameOnWindow(u8 windowId, const u8 *src, u16 x, u16 y) */
 export function PrintPlayerNameOnWindow(windowId: any, src: any, x: any, y: any): any {
   let count: any = 0;
-      while (gSaveBlock2Ptr.playerName[count] != EOS)
+      while (gSaveBlock2Ptr.playerName[count] != (0xFF))
           count++;
 
       StringExpandPlaceholders(gStringVar4, src);
 
-      AddTextPrinterParameterized(windowId, 1, gStringVar4, x, y, TEXT_SKIP_DRAW, 0);
+      AddTextPrinterParameterized(windowId, 1, gStringVar4, x, y, (0xFF), 0);
 }
 
 /** void ListMenuLoadStdPalAt(u8 palOffset, u8 palId) */
@@ -1631,11 +1622,11 @@ export function BufferSaveMenuText(textId: any, dest: any, color: any): any {
       let endOfString: any = null;
       let string: any = dest;
 
-      string =  EXT_CTRL_CODE_BEGIN;
-      string =  EXT_CTRL_CODE_COLOR;
+      string =  (0xFC);
+      string =  (0x01);
       string =  color;
-      string =  EXT_CTRL_CODE_BEGIN;
-      string =  EXT_CTRL_CODE_SHADOW;
+      string =  (0xFC);
+      string =  (0x03);
       string =  color + 1;
 
       switch (textId)
@@ -1648,24 +1639,24 @@ export function BufferSaveMenuText(textId: any, dest: any, color: any): any {
                   string = ConvertIntToDecimalStringN(string, GetNationalPokedexCount(FLAG_GET_CAUGHT), STR_CONV_MODE_LEFT_ALIGN, 3);
               else
                   string = ConvertIntToDecimalStringN(string, GetHoennPokedexCount(FLAG_GET_CAUGHT), STR_CONV_MODE_LEFT_ALIGN, 3);
-              string = EOS;
+              string = (0xFF);
               break;
           case SAVE_MENU_PLAY_TIME:
               string = ConvertIntToDecimalStringN(string, gSaveBlock2Ptr.playTimeHours, STR_CONV_MODE_LEFT_ALIGN, 3);
-              string =  CHAR_COLON;
+              string =  (0xF0);
               ConvertIntToDecimalStringN(string, gSaveBlock2Ptr.playTimeMinutes, STR_CONV_MODE_LEADING_ZEROS, 2);
               break;
           case SAVE_MENU_LOCATION:
               GetMapNameGeneric(string, gMapHeader.regionMapSectionId);
               break;
           case SAVE_MENU_BADGES:
-              for (curFlag = FLAG_BADGE01_GET, flagCount = 0, endOfString = string + 1; curFlag < FLAG_BADGE01_GET + NUM_BADGES; curFlag++)
+              for (curFlag = (((((((0x500) + (864) - 1)) + 1)) + 0x7)), flagCount = 0, endOfString = string + 1; curFlag < (((((((0x500) + (864) - 1)) + 1)) + 0x7)) + ((1 + (((((((0x500) + (864) - 1)) + 1)) + 0xE)) - (((((((0x500) + (864) - 1)) + 1)) + 0x7)))); curFlag++)
               {
                   if (FlagGet(curFlag))
                       flagCount++;
               }
-              string = flagCount + CHAR_0;
-              endOfString = EOS;
+              string = flagCount + (0xA1);
+              endOfString = (0xFF);
               break;
       }
 }

@@ -87,13 +87,13 @@ export function ContestEffect_StartleFrontMon(): any {
       {
           let i: any = null;
 
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               if (eContestAppealResults.turnOrder[a] - 1 == eContestAppealResults.turnOrder[i])
                   break;
           }
           eContestAppealResults.jamQueue[0] = i;
-          eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;
+          eContestAppealResults.jamQueue[1] = (0xFF);
           idx = WasAtLeastOneOpponentJammed();
       }
       if (idx == 0)
@@ -110,13 +110,13 @@ export function ContestEffect_StartlePrevMons(): any {
       {
           let i, j;
 
-          for (i = 0, j = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0, j = 0; i < (4); i++)
           {
               if (eContestAppealResults.turnOrder[contestant] > eContestAppealResults.turnOrder[i])
                   eContestAppealResults.jamQueue[j++] = i;
           }
 
-          eContestAppealResults.jamQueue[j] = CONTESTANT_NONE;
+          eContestAppealResults.jamQueue[j] = (0xFF);
           idx = WasAtLeastOneOpponentJammed();
       }
       if (idx == 0)
@@ -157,7 +157,7 @@ export function ContestEffect_StartlePrevMons2(): any {
                   let rval, jam;
 
                   eContestAppealResults.jamQueue[0] = i;
-                  eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;
+                  eContestAppealResults.jamQueue[1] = (0xFF);
                   rval = Random() % 10;
 
                   if (rval == 0)
@@ -232,7 +232,7 @@ export function ContestEffect_StartleMonWithJudgesAttention(): any {
                   else
                       eContestAppealResults.jam = 10;
                   eContestAppealResults.jamQueue[0] = i;
-                  eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;
+                  eContestAppealResults.jamQueue[1] = (0xFF);
                   if (WasAtLeastOneOpponentJammed())
                       numStartled++;
               }
@@ -259,31 +259,31 @@ export function ContestEffect_StartleMonsSameTypeAppeal(): any {
 
 /** static void ContestEffect_StartleMonsCoolAppeal(void) */
 export function ContestEffect_StartleMonsCoolAppeal(): any {
-  JamByMoveCategory(CONTEST_CATEGORY_COOL);
+  JamByMoveCategory((0));
       SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);
 }
 
 /** static void ContestEffect_StartleMonsBeautyAppeal(void) */
 export function ContestEffect_StartleMonsBeautyAppeal(): any {
-  JamByMoveCategory(CONTEST_CATEGORY_BEAUTY);
+  JamByMoveCategory((1));
       SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);
 }
 
 /** static void ContestEffect_StartleMonsCuteAppeal(void) */
 export function ContestEffect_StartleMonsCuteAppeal(): any {
-  JamByMoveCategory(CONTEST_CATEGORY_CUTE);
+  JamByMoveCategory((2));
       SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);
 }
 
 /** static void ContestEffect_StartleMonsSmartAppeal(void) */
 export function ContestEffect_StartleMonsSmartAppeal(): any {
-  JamByMoveCategory(CONTEST_CATEGORY_SMART);
+  JamByMoveCategory((3));
       SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);
 }
 
 /** static void ContestEffect_StartleMonsToughAppeal(void) */
 export function ContestEffect_StartleMonsToughAppeal(): any {
-  JamByMoveCategory(CONTEST_CATEGORY_TOUGH);
+  JamByMoveCategory((4));
       SetContestantEffectStringID(eContestAppealResults.contestant, CONTEST_STRING_ATTEMPT_STARTLE);
 }
 
@@ -328,8 +328,8 @@ export function ContestEffect_MakeFollowingMonsNervous(): any {
       let oddsMod: any = [];
       let odds: any = [];
 
-      memset(contestantIds, CONTESTANT_NONE, ARRAY_COUNT(contestantIds));
-      for (i = 0, numAfter = 0; i < CONTESTANT_COUNT; i++)
+      memset(contestantIds, (0xFF), ARRAY_COUNT(contestantIds));
+      for (i = 0, numAfter = 0; i < (4); i++)
       {
           if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] < eContestAppealResults.turnOrder[i] &&
               !eContestantStatus[i].nervous && !Contest_IsMonsTurnDisabled(i))
@@ -353,10 +353,10 @@ export function ContestEffect_MakeFollowingMonsNervous(): any {
       }
       else
       {
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
               odds[i] = 0;
       }
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (eContestantStatus[i].hasJudgesAttention && IsContestantAllowedToCombo(i))
               oddsMod[i] = gComboStarterLookupTable[gContestMoves[eContestantStatus[i].prevMove].comboStarterId] * 10;
@@ -366,7 +366,7 @@ export function ContestEffect_MakeFollowingMonsNervous(): any {
       }
       if (odds[0] != 0)
       {
-          for (i = 0; contestantIds[i] != CONTESTANT_NONE; i++)
+          for (i = 0; contestantIds[i] != (0xFF); i++)
           {
               if (Random() % 100 < odds[i] + oddsMod[contestantIds[i]])
               {
@@ -405,7 +405,7 @@ export function ContestEffect_WorsenConditionOfPrevMons(): any {
   let numHit: any = 0;
       let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] > eContestAppealResults.turnOrder[i] &&
               eContestantStatus[i].condition > 0 &&
@@ -428,7 +428,7 @@ export function ContestEffect_BadlyStartlesMonsInGoodCondition(): any {
   let numHit: any = 0;
       let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] > eContestAppealResults.turnOrder[i])
           {
@@ -437,7 +437,7 @@ export function ContestEffect_BadlyStartlesMonsInGoodCondition(): any {
               else
                   eContestAppealResults.jam = 10;
               eContestAppealResults.jamQueue[0] = i;
-              eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;
+              eContestAppealResults.jamQueue[1] = (0xFF);
               if (WasAtLeastOneOpponentJammed())
                   numHit++;
           }
@@ -472,7 +472,7 @@ export function ContestEffect_AppealAsGoodAsPrevOnes(): any {
   let i: any = null;
       let appealSum: any = null;
 
-      for (i = 0, appealSum = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0, appealSum = 0; i < (4); i++)
       {
           if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] > eContestAppealResults.turnOrder[i])
               appealSum += eContestantStatus[i].appeal;
@@ -499,7 +499,7 @@ export function ContestEffect_AppealAsGoodAsPrevOne(): any {
       if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] != 0)
       {
           let i: any = null;
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] - 1 == eContestAppealResults.turnOrder[i])
                   appeal = eContestantStatus[i].appeal;
@@ -577,7 +577,7 @@ export function ContestEffect_BetterIfSameType(): any {
 
       while (1)
       {
-          for (j = 0; j < CONTESTANT_COUNT; j++)
+          for (j = 0; j < (4); j++)
           {
               if (eContestAppealResults.turnOrder[j] == i)
                   break;
@@ -608,7 +608,7 @@ export function ContestEffect_BetterIfDiffType(): any {
           let move: any = eContestantStatus[eContestAppealResults.contestant].currMove;
           let i: any = null;
 
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] - 1 == eContestAppealResults.turnOrder[i] &&
                   gContestMoves[move].contestCategory != gContestMoves[eContestantStatus[i].currMove].contestCategory)
@@ -627,7 +627,7 @@ export function ContestEffect_AffectedByPrevAppeal(): any {
       {
           let i: any = null;
 
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] - 1 == eContestAppealResults.turnOrder[i])
               {
@@ -675,16 +675,16 @@ export function ContestEffect_NextAppealEarlier(): any {
       let j: any = null;
       let turnOrder: any = [];
 
-      if (eContest.appealNumber != CONTEST_LAST_APPEAL)
+      if (eContest.appealNumber != (((5) - 1)))
       {
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
               turnOrder[i] = eContestantStatus[i].nextTurnOrder;
 
-          turnOrder[eContestAppealResults.contestant] = CONTESTANT_NONE;
+          turnOrder[eContestAppealResults.contestant] = (0xFF);
 
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
-              for (j = 0; j < CONTESTANT_COUNT; j++)
+              for (j = 0; j < (4); j++)
               {
                   if (j != eContestAppealResults.contestant &&
                       i == turnOrder[j] &&
@@ -694,14 +694,14 @@ export function ContestEffect_NextAppealEarlier(): any {
                       break;
                   }
               }
-              if (j == CONTESTANT_COUNT)
+              if (j == (4))
                   break;
           }
 
           turnOrder[eContestAppealResults.contestant] = 0;
           eContestantStatus[eContestAppealResults.contestant].turnOrderMod = 1;
 
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               eContestantStatus[i].nextTurnOrder = turnOrder[i];
           }
@@ -716,16 +716,16 @@ export function ContestEffect_NextAppealLater(): any {
       let j: any = null;
       let turnOrder: any = [];
 
-      if (eContest.appealNumber != CONTEST_LAST_APPEAL)
+      if (eContest.appealNumber != (((5) - 1)))
       {
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
               turnOrder[i] = eContestantStatus[i].nextTurnOrder;
 
-          turnOrder[eContestAppealResults.contestant] = CONTESTANT_NONE;
+          turnOrder[eContestAppealResults.contestant] = (0xFF);
 
-          for (i = CONTESTANT_COUNT - 1; i > -1; i--)
+          for (i = (4) - 1; i > -1; i--)
           {
-              for (j = 0; j < CONTESTANT_COUNT; j++)
+              for (j = 0; j < (4); j++)
               {
                   if (j != eContestAppealResults.contestant &&
                       i == turnOrder[j] &&
@@ -735,14 +735,14 @@ export function ContestEffect_NextAppealLater(): any {
                       break;
                   }
               }
-              if (j == CONTESTANT_COUNT)
+              if (j == (4))
                   break;
           }
 
-          turnOrder[eContestAppealResults.contestant] = CONTESTANT_COUNT - 1;
+          turnOrder[eContestAppealResults.contestant] = (4) - 1;
           eContestantStatus[eContestAppealResults.contestant].turnOrderMod = 1;
 
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               eContestantStatus[i].nextTurnOrder = turnOrder[i];
           }
@@ -758,26 +758,26 @@ export function ContestEffect_ScrambleNextTurnOrder(): any {
       let turnOrder: any = [];
       let unselectedContestants: any = [];
 
-      if (eContest.appealNumber != CONTEST_LAST_APPEAL)
+      if (eContest.appealNumber != (((5) - 1)))
       {
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               turnOrder[i] = eContestantStatus[i].nextTurnOrder;
               unselectedContestants[i] = i;
           }
 
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
-              let rval: any = Random() % (CONTESTANT_COUNT - i);
+              let rval: any = Random() % ((4) - i);
 
-              for (j = 0; j < CONTESTANT_COUNT; j++)
+              for (j = 0; j < (4); j++)
               {
-                  if (unselectedContestants[j] != CONTESTANT_NONE)
+                  if (unselectedContestants[j] != (0xFF))
                   {
                       if (rval == 0)
                       {
                           turnOrder[j] = i;
-                          unselectedContestants[j] = CONTESTANT_NONE;
+                          unselectedContestants[j] = (0xFF);
                           break;
                       }
                       else
@@ -788,7 +788,7 @@ export function ContestEffect_ScrambleNextTurnOrder(): any {
               }
           }
 
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
           {
               eContestantStatus[i].nextTurnOrder = turnOrder[i];
               eContestantStatus[i].turnOrderMod = 2;
@@ -811,7 +811,7 @@ export function ContestEffect_BadlyStartleMonsWithGoodAppeals(): any {
   let i: any = null;
       let numJammed: any = 0;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] > eContestAppealResults.turnOrder[i])
           {
@@ -825,7 +825,7 @@ export function ContestEffect_BadlyStartleMonsWithGoodAppeals(): any {
                   eContestAppealResults.jam = 10;
               }
               eContestAppealResults.jamQueue[0] = i;
-              eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;
+              eContestAppealResults.jamQueue[1] = (0xFF);
               if (WasAtLeastOneOpponentJammed())
                   numJammed++;
           }
@@ -882,7 +882,7 @@ export function JamByMoveCategory(category: any): any {
   let i: any = null;
       let numJammed: any = 0;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (eContestAppealResults.turnOrder[eContestAppealResults.contestant] > eContestAppealResults.turnOrder[i])
           {
@@ -891,7 +891,7 @@ export function JamByMoveCategory(category: any): any {
               else
                   eContestAppealResults.jam = 10;
               eContestAppealResults.jamQueue[0] = i;
-              eContestAppealResults.jamQueue[1] = CONTESTANT_NONE;
+              eContestAppealResults.jamQueue[1] = (0xFF);
               if (WasAtLeastOneOpponentJammed())
                   numJammed++;
           }
@@ -930,7 +930,7 @@ export function WasAtLeastOneOpponentJammed(): any {
   const jamBuffer: any = [0];
       let i: any = null;
 
-      for (i = 0; eContestAppealResults.jamQueue[i] != CONTESTANT_NONE; i++)
+      for (i = 0; eContestAppealResults.jamQueue[i] != (0xFF); i++)
       {
           let contestant: any = eContestAppealResults.jamQueue[i];
           if (CanUnnerveContestant(contestant))
@@ -961,7 +961,7 @@ export function WasAtLeastOneOpponentJammed(): any {
           }
       }
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
       {
           if (jamBuffer[i] != 0)
               return TRUE;

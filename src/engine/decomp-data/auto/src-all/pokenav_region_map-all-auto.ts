@@ -15,17 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCityZoomTextSpriteSheet: any = null;
-let sCityZoomTextSpriteTemplate: any = null;
-let sCityZoomTilesSpritePalette: any = null;
-let sMapSecInfoWindowTemplate: any = null;
-let sMapSecInfoWindow_Pal: any = null;
-let sPokenavCityMaps: any = null;
-let sRegionMapBgTemplates: any = null;
-let sRegionMapCityZoomTiles_Gfx: any = null;
-let sRegionMapLoopTaskFuncs: any = null;
 /** u32 PokenavCallback_Init_RegionMap(void) */
 export function PokenavCallback_Init_RegionMap(): any {
   let state: any = AllocSubstruct(POKENAV_SUBSTRUCT_REGION_MAP_STATE, 0);
@@ -172,10 +161,10 @@ export function LoopedTask_OpenRegionMap(taskState: any): any {
           regionMap = GetSubstructPtr(POKENAV_SUBSTRUCT_REGION_MAP);
           InitRegionMapData(regionMap,sRegionMapBgTemplates[1], ShouldOpenRegionMapZoomed());
           LoadCityZoomViewGfx();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (LoadRegionMapGfx())
-              return LT_PAUSE;
+              return (2);
 
           if (!GetZoomDisabled())
           {
@@ -187,33 +176,33 @@ export function LoopedTask_OpenRegionMap(taskState: any): any {
           {
                
                
-              BlendRegionMap(RGB_BLACK, 6);
+              BlendRegionMap((RGB(0, 0, 0)), 6);
           }
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           DecompressCityMaps();
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 3:
           if (IsDecompressCityMapsActive())
-              return LT_PAUSE;
+              return (2);
 
           LoadPokenavRegionMapGfx(state);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 4:
           if (TryFreeTempTileDataBuffers())
-              return LT_PAUSE;
+              return (2);
 
           UpdateMapSecInfoWindow(state);
           FadeToBlackExceptPrimary();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 5:
           if (IsDma3ManagerBusyWithBgCopy_(state))
-              return LT_PAUSE;
+              return (2);
 
           ShowBg(1);
           ShowBg(2);
           SetVBlankCallback_(VBlankCB_RegionMap);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 6:
           if (!ShouldOpenRegionMapZoomed())
               menuGfxId = POKENAV_GFX_MAP_MENU_ZOOMED_OUT;
@@ -223,13 +212,13 @@ export function LoopedTask_OpenRegionMap(taskState: any): any {
           LoadLeftHeaderGfxForIndex(menuGfxId);
           ShowLeftHeaderGfx(menuGfxId, TRUE, TRUE);
           PokenavFadeScreen(POKENAV_FADE_FROM_BLACK);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 7:
           if (IsPaletteFadeActive() || AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
-          return LT_INC_AND_CONTINUE;
+              return (2);
+          return (1);
       default:
-          return LT_FINISH;
+          return (4);
       }
 }
 
@@ -240,14 +229,14 @@ export function LoopedTask_UpdateInfoAfterCursorMove(taskState: any): any {
       {
       case 0:
           UpdateMapSecInfoWindow(state);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (IsDma3ManagerBusyWithBgCopy_(state))
-              return LT_PAUSE;
+              return (2);
           break;
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_RegionMapZoomOut(s32 taskState) */
@@ -255,25 +244,25 @@ export function LoopedTask_RegionMapZoomOut(taskState: any): any {
   switch (taskState)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           ChangeBgYForZoom(FALSE);
           SetRegionMapDataForZoom();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (UpdateRegionMapZoom() || IsChangeBgYForZoomActive())
-              return LT_PAUSE;
+              return (2);
 
           PrintHelpBarText(HELPBAR_MAP_ZOOMED_OUT);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           if (WaitForHelpBar())
-              return LT_PAUSE;
+              return (2);
 
           UpdateRegionMapRightHeaderTiles(POKENAV_GFX_MAP_MENU_ZOOMED_OUT);
           break;
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_RegionMapZoomIn(s32 taskState) */
@@ -282,31 +271,31 @@ export function LoopedTask_RegionMapZoomIn(taskState: any): any {
       switch (taskState)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           UpdateMapSecInfoWindow(state);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (IsDma3ManagerBusyWithBgCopy_(state))
-              return LT_PAUSE;
+              return (2);
 
           ChangeBgYForZoom(TRUE);
           SetRegionMapDataForZoom();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           if (UpdateRegionMapZoom() || IsChangeBgYForZoomActive())
-              return LT_PAUSE;
+              return (2);
 
           PrintHelpBarText(HELPBAR_MAP_ZOOMED_IN);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (WaitForHelpBar())
-              return LT_PAUSE;
+              return (2);
 
           UpdateRegionMapRightHeaderTiles(POKENAV_GFX_MAP_MENU_ZOOMED_IN);
           break;
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_ExitRegionMap(s32 taskState) */
@@ -314,27 +303,27 @@ export function LoopedTask_ExitRegionMap(taskState: any): any {
   switch (taskState)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           PokenavFadeScreen(POKENAV_FADE_TO_BLACK);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (IsPaletteFadeActive())
-              return LT_PAUSE;
+              return (2);
 
           SetLeftHeaderSpritesInvisibility();
           SlideMenuHeaderDown();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           if (MainMenuLoopedTaskIsBusy())
-              return LT_PAUSE;
+              return (2);
 
           HideBg(1);
           HideBg(2);
           HideBg(3);
-          return LT_INC_AND_PAUSE;
+          return (0);
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static void LoadCityZoomViewGfx(void) */
@@ -393,7 +382,7 @@ export function UpdateMapSecInfoWindow(state: any): any {
       case MAPSECTYPE_CITY_CANFLY:
           FillWindowPixelBuffer(state.infoWindowId, PIXEL_FILL(1));
           PutWindowRectTilemap(state.infoWindowId, 0, 0, 13, 2);  
-          AddTextPrinterParameterized(state.infoWindowId, FONT_NARROW, regionMap.mapSecName, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(state.infoWindowId, FONT_NARROW, regionMap.mapSecName, 0, 1, (0xFF), NULL);
           DrawCityMap(state, regionMap.mapSecId, regionMap.posWithinMapSec);
           CopyWindowToVram(state.infoWindowId, COPYWIN_FULL);
           SetCityZoomTextInvisibility(FALSE);
@@ -401,7 +390,7 @@ export function UpdateMapSecInfoWindow(state: any): any {
       case MAPSECTYPE_CITY_CANTFLY:
           FillWindowPixelBuffer(state.infoWindowId, PIXEL_FILL(1));
           PutWindowRectTilemap(state.infoWindowId, 0, 0, 13, 2);  
-          AddTextPrinterParameterized(state.infoWindowId, FONT_NARROW, regionMap.mapSecName, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(state.infoWindowId, FONT_NARROW, regionMap.mapSecName, 0, 1, (0xFF), NULL);
           FillBgTilemapBufferRect(1, 0x1041, 17, 6, 13, 11, 17);  
           CopyWindowToVram(state.infoWindowId, COPYWIN_FULL);
           SetCityZoomTextInvisibility(TRUE);
@@ -410,7 +399,7 @@ export function UpdateMapSecInfoWindow(state: any): any {
       case MAPSECTYPE_BATTLE_FRONTIER:
           FillWindowPixelBuffer(state.infoWindowId, PIXEL_FILL(1));
           PutWindowTilemap(state.infoWindowId);
-          AddTextPrinterParameterized(state.infoWindowId, FONT_NARROW, regionMap.mapSecName, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(state.infoWindowId, FONT_NARROW, regionMap.mapSecName, 0, 1, (0xFF), NULL);
           PrintLandmarkNames(state, regionMap.mapSecId, regionMap.posWithinMapSec);
           CopyWindowToVram(state.infoWindowId, COPYWIN_FULL);
           SetCityZoomTextInvisibility(TRUE);
@@ -479,10 +468,10 @@ export function LoopedTask_DecompressCityMaps(taskState: any): any {
       if (taskState < (22))
       {
           LZ77UnCompWram(sPokenavCityMaps[taskState].tilemap, state.cityZoomPics[taskState]);
-          return LT_INC_AND_CONTINUE;
+          return (1);
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static void DrawCityMap(struct Pokenav_RegionMapGfx *state, mapsec_s32_t mapSecId, int pos) */
@@ -507,8 +496,8 @@ export function PrintLandmarkNames(state: any, mapSecId: any, pos: any): any {
           if (!landmarkName)
               break;
 
-          StringCopyPadded(gStringVar1, landmarkName, CHAR_SPACE, 13);  
-          AddTextPrinterParameterized(state.infoWindowId, FONT_NARROW, gStringVar1, 0, i * 16 + 17, TEXT_SKIP_DRAW, NULL);
+          StringCopyPadded(gStringVar1, landmarkName, (0x00), 13);  
+          AddTextPrinterParameterized(state.infoWindowId, FONT_NARROW, gStringVar1, 0, i * 16 + 17, (0xFF), NULL);
           i++;
       }
 }

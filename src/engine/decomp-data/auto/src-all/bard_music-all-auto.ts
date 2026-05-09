@@ -15,10 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sPhonemeLengths: any = null;
-let sPitchTables: any = null;
 /** static s16 GetWordPitch(int tableIndex, int pitchIndex) */
 export function GetWordPitch(tableIndex: any, pitchIndex: any): any {
   return sPitchTables[tableIndex][pitchIndex];
@@ -31,10 +27,10 @@ export function CalcWordSounds(song: any, pitchTableIndex: any): any {
 
       song.length = 0;
 
-      for (i = 0; i < MAX_BARD_SOUNDS_PER_WORD; i ++)
+      for (i = 0; i < (6); i ++)
       {
           template =song.soundTemplates[i];
-          if (template.songId != PHONEME_ID_NONE)
+          if (template.songId != (0xFF))
           {
                
                

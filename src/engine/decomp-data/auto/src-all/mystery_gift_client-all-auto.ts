@@ -60,10 +60,10 @@ export function MysteryGiftClient_Init(client: any, sendPlayerId: any, recvPlaye
   client.unused = 0;
       client.funcId = FUNC_INIT;
       client.funcState = 0;
-      client.sendBuffer = AllocZeroed(MG_LINK_BUFFER_SIZE);
-      client.recvBuffer = AllocZeroed(MG_LINK_BUFFER_SIZE);
-      client.script = AllocZeroed(MG_LINK_BUFFER_SIZE);
-      client.msg = AllocZeroed(CLIENT_MAX_MSG_SIZE);
+      client.sendBuffer = AllocZeroed((0x400));
+      client.recvBuffer = AllocZeroed((0x400));
+      client.script = AllocZeroed((0x400));
+      client.msg = AllocZeroed((64));
       MysteryGiftLink_Init(client.link, sendPlayerId, recvPlayerId);
 }
 
@@ -77,20 +77,20 @@ export function MysteryGiftClient_Free(client: any): any {
 
 /** static void MysteryGiftClient_CopyRecvScript(struct MysteryGiftClient *client) */
 export function MysteryGiftClient_CopyRecvScript(client: any): any {
-  memcpy(client.script, client.recvBuffer, MG_LINK_BUFFER_SIZE);
+  memcpy(client.script, client.recvBuffer, (0x400));
       client.cmdidx = 0;
 }
 
 /** static void MysteryGiftClient_InitSendWord(struct MysteryGiftClient *client, u32 ident, u32 word) */
 export function MysteryGiftClient_InitSendWord(client: any, ident: any, word: any): any {
-  CpuFill32(0, client.sendBuffer, MG_LINK_BUFFER_SIZE);
+  CpuFill32(0, client.sendBuffer, (0x400));
       client.sendBuffer = word;
       MysteryGiftLink_InitSend(client.link, ident, client.sendBuffer, 0);
 }
 
 /** static u32 Client_Init(struct MysteryGiftClient *client) */
 export function Client_Init(client: any): any {
-  memcpy(client.script, gMysteryGiftClientScript_Init, MG_LINK_BUFFER_SIZE);
+  memcpy(client.script, gMysteryGiftClientScript_Init, (0x400));
       client.cmdidx = 0;
       client.funcId = FUNC_RUN;
       client.funcState = 0;
@@ -168,17 +168,17 @@ export function Client_Run(client: any): any {
           MysteryGiftClient_CopyRecvScript(client);
           break;
       case CLI_YES_NO:
-          memcpy(client.msg, client.recvBuffer, CLIENT_MAX_MSG_SIZE);
+          memcpy(client.msg, client.recvBuffer, (64));
           client.funcId = FUNC_WAIT;
           client.funcState = 0;
           return CLI_RET_YES_NO;
       case CLI_PRINT_MSG:
-          memcpy(client.msg, client.recvBuffer, CLIENT_MAX_MSG_SIZE);
+          memcpy(client.msg, client.recvBuffer, (64));
           client.funcId = FUNC_WAIT;
           client.funcState = 0;
           return CLI_RET_PRINT_MSG;
       case CLI_COPY_MSG:
-          memcpy(client.msg, client.recvBuffer, CLIENT_MAX_MSG_SIZE);
+          memcpy(client.msg, client.recvBuffer, (64));
           client.funcId = FUNC_WAIT;
           client.funcState = 0;
           return CLI_RET_COPY_MSG;
@@ -225,7 +225,7 @@ export function Client_Run(client: any): any {
           ValidateEReaderTrainer();
           break;
       case CLI_RUN_BUFFER_SCRIPT:
-          memcpy(gDecompressionBuffer, client.recvBuffer, MG_LINK_BUFFER_SIZE);
+          memcpy(gDecompressionBuffer, client.recvBuffer, (0x400));
           client.funcId = FUNC_RUN_BUFFER;
           client.funcState = 0;
           break;

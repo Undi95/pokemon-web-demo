@@ -15,6 +15,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gBattle_BG1_Y: any = null;
+let gBattle_BG2_Y: any = null;
+let gBattle_BG3_X: any = null;
+let gBattle_BG3_Y: any = null;
+let targetYPos: any = null;
+let yOffset: any = null;
 /** static void AnimBonemerangProjectile(struct Sprite *sprite) */
 export function AnimBonemerangProjectile(sprite: any): any {
   sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
@@ -53,7 +61,7 @@ export function AnimBonemerangProjectile_End(sprite: any): any {
 /** static void AnimBoneHitProjectile(struct Sprite *sprite) */
 export function AnimBoneHitProjectile(sprite: any): any {
   InitSpritePosToAnimTarget(sprite, TRUE);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
 
       sprite.data[0] = gBattleAnimArgs[4];
@@ -163,7 +171,7 @@ export function AnimTask_DigBounceMovement(taskId: any): any {
       switch (task.data[0])
       {
       case 0:
-          task.data[10] = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+          task.data[10] = GetAnimBattlerSpriteId((0));
           task.data[11] = GetBattlerSpriteBGPriorityRank(gBattleAnimAttacker);
           if (task.data[11] == 1)
           {
@@ -228,7 +236,7 @@ export function AnimTask_DigBounceMovement(taskId: any): any {
 
 /** static void AnimTask_DigEndBounceMovementSetInvisible(u8 taskId) */
 export function AnimTask_DigEndBounceMovementSetInvisible(taskId: any): any {
-  let spriteId: any = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+  let spriteId: any = GetAnimBattlerSpriteId((0));
       gSprites[spriteId].invisible = TRUE;
       gSprites[spriteId].x2 = 0;
       gSprites[spriteId].y2 = 0;
@@ -260,7 +268,7 @@ export function AnimTask_DigSetVisibleUnderground(taskId: any): any {
       switch (task.data[0])
       {
       case 0:
-          task.data[10] = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+          task.data[10] = GetAnimBattlerSpriteId((0));
           gSprites[task.data[10]].invisible = FALSE;
           gSprites[task.data[10]].x2 = 0;
           gSprites[task.data[10]].y2 = DISPLAY_HEIGHT - gSprites[task.data[10]].y;
@@ -279,7 +287,7 @@ export function AnimTask_DigRiseUpFromHole(taskId: any): any {
       switch (task.data[0])
       {
       case 0:
-          task.data[10] = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+          task.data[10] = GetAnimBattlerSpriteId((0));
           task.data[11] = GetBattlerSpriteBGPriorityRank(gBattleAnimAttacker);
           if (task.data[11] == 1)
               task.data[12] = gBattle_BG1_X;
@@ -433,7 +441,7 @@ export function AnimTask_HorizontalShake(taskId: any): any {
           break;
       default:  
           task.data[9 + ((0))] = GetAnimBattlerSpriteId(gBattleAnimArgs[0]);
-          if (task.data[9 + ((0))] == SPRITE_NONE)
+          if (task.data[9 + ((0))] == (0xFF))
           {
               DestroyAnimVisualTask(taskId);
           }
@@ -560,9 +568,9 @@ export function AnimTask_IsPowerOver99(taskId: any): any {
 /** void AnimTask_PositionFissureBgOnBattler(u8 taskId) */
 export function AnimTask_PositionFissureBgOnBattler(taskId: any): any {
   let newTask: any = null;
-      let battler: any = (gBattleAnimArgs[0] & ANIM_TARGET) ? gBattleAnimTarget : gBattleAnimAttacker;
+      let battler: any = (gBattleAnimArgs[0] & (1)) ? gBattleAnimTarget : gBattleAnimAttacker;
 
-      if (gBattleAnimArgs[0] > ANIM_TARGET)
+      if (gBattleAnimArgs[0] > (1))
           battler = BATTLE_PARTNER(battler);
 
       newTask =gTasks[CreateTask(WaitForFissureCompletion, gBattleAnimArgs[1])];

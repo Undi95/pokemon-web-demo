@@ -17,28 +17,28 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sPokeblockFeeders: any = null;
+let gNumSafariBalls: any = null;
 let sSafariZoneCaughtMons: any = null;
 let sSafariZonePkblkUses: any = null;
 let sSafariZoneStepCounter: any = null;
 /** bool32 GetSafariZoneFlag(void) */
 export function GetSafariZoneFlag(): any {
-  return FlagGet(FLAG_SYS_SAFARI_MODE);
+  return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x2C)));
 }
 
 /** void SetSafariZoneFlag(void) */
 export function SetSafariZoneFlag(): any {
-  FlagSet(FLAG_SYS_SAFARI_MODE);
+  FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x2C)));
 }
 
 /** void ResetSafariZoneFlag(void) */
 export function ResetSafariZoneFlag(): any {
-  FlagClear(FLAG_SYS_SAFARI_MODE);
+  FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x2C)));
 }
 
 /** void EnterSafariMode(void) */
 export function EnterSafariMode(): any {
-  IncrementGameStat(GAME_STAT_ENTERED_SAFARI_ZONE);
+  IncrementGameStat((17));
       SetSafariZoneFlag();
       ClearAllPokeblockFeeders();
       gNumSafariBalls = 30;
@@ -81,20 +81,20 @@ export function SafariZoneRetirePrompt(): any {
 /** void CB2_EndSafariBattle(void) */
 export function CB2_EndSafariBattle(): any {
   sSafariZonePkblkUses += gBattleResults.pokeblockThrows;
-      if (gBattleOutcome == B_OUTCOME_CAUGHT)
+      if (gBattleOutcome == (7))
           sSafariZoneCaughtMons++;
       if (gNumSafariBalls != 0)
       {
           SetMainCallback2(CB2_ReturnToField);
       }
-      else if (gBattleOutcome == B_OUTCOME_NO_SAFARI_BALLS)
+      else if (gBattleOutcome == (8))
       {
           RunScriptImmediately(SafariZone_EventScript_OutOfBallsMidBattle);
           WarpIntoMap();
           gFieldCallback = FieldCB_ReturnToFieldNoScriptCheckMusic;
           SetMainCallback2(CB2_LoadMap);
       }
-      else if (gBattleOutcome == B_OUTCOME_CAUGHT)
+      else if (gBattleOutcome == (7))
       {
           ScriptContext_SetupScript(SafariZone_EventScript_OutOfBalls);
           ScriptContext_Stop();

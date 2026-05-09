@@ -17,27 +17,23 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBedroomPC_OptionOrder: any = null;
+let gMultiuseListMenuTemplate: any = null;
 let sItemStorageMenu: any = null;
-let sItemStorage_MenuActions: any = null;
-let sItemStorage_OptionDescriptions: any = null;
-let sListMenuTemplate_ItemStorage: any = null;
-let sNewGamePCItems: any = null;
-let sPlayerPCMenuActions: any = null;
-let sPlayerPC_OptionOrder: any = null;
-let sSwapArrowTextColors: any = null;
 let sTopMenuNumOptions: any = null;
 let sTopMenuOptionOrder: any = null;
-let sWindowTemplates_ItemStorage: any = null;
-let sWindowTemplates_MainMenus: any = null;
+let tInTossMenu: any = null;
+let tListTaskId: any = null;
+let tQuantity: any = null;
+let tUsedSlots: any = null;
+let tWindowId: any = null;
 /** void NewGameInitPCItems(void) */
 export function NewGameInitPCItems(): any {
   let i: any = 0;
-      ClearItemSlots(gSaveBlock1Ptr.pcItems, PC_ITEMS_COUNT);
+      ClearItemSlots(gSaveBlock1Ptr.pcItems, (50));
 
       while (TRUE)
       {
-          if (sNewGamePCItems[i][0] == ITEM_NONE || sNewGamePCItems[i][1] == 0)
+          if (sNewGamePCItems[i][0] == (0) || sNewGamePCItems[i][1] == 0)
               break;
           if (AddPCItem(sNewGamePCItems[i][0], sNewGamePCItems[i][1]) != TRUE)
               break;
@@ -92,10 +88,10 @@ export function PlayerPCProcessMenuInput(taskId: any): any {
 
       switch (inputOptionId)
       {
-      case MENU_NOTHING_CHOSEN:
+      case (-2):
           break;
-      case MENU_B_PRESSED:
-          PlaySE(SE_SELECT);
+      case (-1):
+          PlaySE((5));
           ClearStdWindowAndFrameToTransparent(tWindowId, FALSE);
           ClearWindowTilemap(tWindowId);
           RemoveWindow(tWindowId);
@@ -136,7 +132,7 @@ export function PlayerPC_Mailbox(taskId: any): any {
       {
           gPlayerPCItemPageInfo.cursorPos = 0;
           gPlayerPCItemPageInfo.itemsAbove = 0;
-          gPlayerPCItemPageInfo.scrollIndicatorTaskId = TASK_NONE;
+          gPlayerPCItemPageInfo.scrollIndicatorTaskId = ((0xFF));
           Mailbox_CompactMailList();
           SetPlayerPCListCount(taskId);
           if (MailboxMenu_Alloc(gPlayerPCItemPageInfo.count) == TRUE)
@@ -162,7 +158,7 @@ export function PlayerPC_Decoration(taskId: any): any {
 export function PlayerPC_TurnOff(taskId: any): any {
   if (sTopMenuNumOptions == (ARRAY_COUNT(sBedroomPC_OptionOrder)))  
       {
-          if (gSaveBlock2Ptr.playerGender == MALE)
+          if (gSaveBlock2Ptr.playerGender == (0))
               ScriptContext_SetupScript(LittlerootTown_BrendansHouse_2F_EventScript_TurnOffPlayerPC);
           else
               ScriptContext_SetupScript(LittlerootTown_MaysHouse_2F_EventScript_TurnOffPlayerPC);
@@ -206,16 +202,16 @@ export function ItemStorageMenuProcessInput(taskId: any): any {
       newPos = Menu_GetCursorPos();
       switch (inputOptionId)
       {
-      case MENU_NOTHING_CHOSEN:
+      case (-2):
           if (oldPos != newPos)
               ItemStorageMenuPrint(sItemStorage_OptionDescriptions[newPos]);
           break;
-      case MENU_B_PRESSED:
-          PlaySE(SE_SELECT);
+      case (-1):
+          PlaySE((5));
           ItemStorage_Exit(taskId);
           break;
       default:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           sItemStorage_MenuActions[inputOptionId].func.void_u8(taskId);
           break;
       }
@@ -224,7 +220,7 @@ export function ItemStorageMenuProcessInput(taskId: any): any {
 /** static void ItemStorage_Deposit(u8 taskId) */
 export function ItemStorage_Deposit(taskId: any): any {
   gTasks[taskId].func = Task_ItemStorage_Deposit;
-      FadeScreen(FADE_TO_BLACK, 0);
+      FadeScreen((1), 0);
 }
 
 /** static void Task_ItemStorage_Deposit(u8 taskId) */
@@ -299,7 +295,7 @@ export function ItemStorage_Enter(taskId: any, toss: any): any {
       ItemStorage_EraseMainMenu(taskId);
       gPlayerPCItemPageInfo.cursorPos = 0;
       gPlayerPCItemPageInfo.itemsAbove = 0;
-      gPlayerPCItemPageInfo.scrollIndicatorTaskId = TASK_NONE;
+      gPlayerPCItemPageInfo.scrollIndicatorTaskId = ((0xFF));
       SetPlayerPCListCount(taskId);
       ItemStorage_Init();
       FreeAndReserveObjectSpritePalettes();
@@ -337,8 +333,8 @@ export function GetMailboxMailCount(): any {
   let mailInPC, i;
 
        
-      for (mailInPC = 0, i = PARTY_SIZE; i < MAIL_COUNT; i++)
-          if (gSaveBlock1Ptr.mail[i].itemId != ITEM_NONE)
+      for (mailInPC = 0, i = (6); i < ((10 + (6))); i++)
+          if (gSaveBlock1Ptr.mail[i].itemId != (0))
               mailInPC++;
 
       return mailInPC;
@@ -349,11 +345,11 @@ export function Mailbox_CompactMailList(): any {
   let temp: any = null;
       let i, j;
 
-      for (i = PARTY_SIZE; i < MAIL_COUNT - 1; i++)
+      for (i = (6); i < ((10 + (6))) - 1; i++)
       {
-          for (j = i + 1; j < MAIL_COUNT; j++)
+          for (j = i + 1; j < ((10 + (6))); j++)
           {
-              if (gSaveBlock1Ptr.mail[i].itemId == ITEM_NONE)
+              if (gSaveBlock1Ptr.mail[i].itemId == (0))
                   SWAP(gSaveBlock1Ptr.mail[i], gSaveBlock1Ptr.mail[j], temp);
           }
       }
@@ -381,16 +377,16 @@ export function Mailbox_ProcessInput(taskId: any): any {
 
           switch (inputOptionId)
           {
-          case LIST_NOTHING_CHOSEN:
+          case (-1):
               break;
-          case LIST_CANCEL:
-              PlaySE(SE_SELECT);
+          case (-2):
+              PlaySE((5));
               RemoveScrollIndicatorArrowPair(gPlayerPCItemPageInfo.scrollIndicatorTaskId);
               Mailbox_ReturnToPlayerPC(taskId);
               break;
           default:
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               MailboxMenu_RemoveWindow(MAILBOXWIN_TITLE);
               MailboxMenu_RemoveWindow(MAILBOXWIN_LIST);
               DestroyListMenuTask(tListTaskId,gPlayerPCItemPageInfo.itemsAbove,gPlayerPCItemPageInfo.cursorPos);
@@ -404,8 +400,8 @@ export function Mailbox_ProcessInput(taskId: any): any {
 
 /** static void Mailbox_PrintWhatToDoWithPlayerMailText(u8 taskId) */
 export function Mailbox_PrintWhatToDoWithPlayerMailText(taskId: any): any {
-  StringCopy(gStringVar1, gSaveBlock1Ptr.mail[gPlayerPCItemPageInfo.itemsAbove + PARTY_SIZE + gPlayerPCItemPageInfo.cursorPos].playerName);
-      ConvertInternationalPlayerNameStripChar(gStringVar1, CHAR_SPACE);
+  StringCopy(gStringVar1, gSaveBlock1Ptr.mail[gPlayerPCItemPageInfo.itemsAbove + (6) + gPlayerPCItemPageInfo.cursorPos].playerName);
+      ConvertInternationalPlayerNameStripChar(gStringVar1, (0x00));
       StringExpandPlaceholders(gStringVar4, gText_WhatToDoWithVar1sMail);
       DisplayItemMessageOnField(taskId, gStringVar4, Mailbox_PrintMailOptions);
 }
@@ -437,14 +433,14 @@ export function Mailbox_MailOptionsProcessInput(taskId: any): any {
 
       switch (inputOptionId)
       {
-      case MENU_NOTHING_CHOSEN:
+      case (-2):
           break;
-      case MENU_B_PRESSED:
-          PlaySE(SE_SELECT);
+      case (-1):
+          PlaySE((5));
           Mailbox_Cancel(taskId);
           break;
       default:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           gMailboxMailOptions[inputOptionId].func.void_u8(taskId);
           break;
       }
@@ -452,7 +448,7 @@ export function Mailbox_MailOptionsProcessInput(taskId: any): any {
 
 /** static void Mailbox_DoMailRead(u8 taskId) */
 export function Mailbox_DoMailRead(taskId: any): any {
-  FadeScreen(FADE_TO_BLACK, 0);
+  FadeScreen((1), 0);
       gTasks[taskId].func = Mailbox_FadeAndReadMail;
 }
 
@@ -462,7 +458,7 @@ export function Mailbox_FadeAndReadMail(taskId: any): any {
       {
           MailboxMenu_Free();
           CleanupOverworldWindowsAndTilemaps();
-          ReadMail(gSaveBlock1Ptr.mail[gPlayerPCItemPageInfo.itemsAbove + PARTY_SIZE + gPlayerPCItemPageInfo.cursorPos], Mailbox_ReturnToFieldFromReadMail, TRUE);
+          ReadMail(gSaveBlock1Ptr.mail[gPlayerPCItemPageInfo.itemsAbove + (6) + gPlayerPCItemPageInfo.cursorPos], Mailbox_ReturnToFieldFromReadMail, TRUE);
           DestroyTask(taskId);
       }
 }
@@ -510,12 +506,12 @@ export function Mailbox_HandleConfirmMoveToBag(taskId: any): any {
       case 0:  
           Mailbox_DoMailMoveToBag(taskId);
           break;
-      case MENU_B_PRESSED:
-          PlaySE(SE_SELECT);
+      case (-1):
+          PlaySE((5));
       case 1:  
           Mailbox_CancelMoveToBag(taskId);
           break;
-      case MENU_NOTHING_CHOSEN:
+      case (-2):
       default:
           break;
       }
@@ -523,7 +519,7 @@ export function Mailbox_HandleConfirmMoveToBag(taskId: any): any {
 
 /** static void Mailbox_DoMailMoveToBag(u8 taskId) */
 export function Mailbox_DoMailMoveToBag(taskId: any): any {
-  let mail: any =gSaveBlock1Ptr.mail[gPlayerPCItemPageInfo.itemsAbove + PARTY_SIZE + gPlayerPCItemPageInfo.cursorPos];
+  let mail: any =gSaveBlock1Ptr.mail[gPlayerPCItemPageInfo.itemsAbove + (6) + gPlayerPCItemPageInfo.cursorPos];
       if (!AddBagItem(mail.itemId, 1))
       {
           DisplayItemMessageOnField(taskId, gText_BagIsFull, Mailbox_Cancel);
@@ -553,7 +549,7 @@ export function Mailbox_Give(taskId: any): any {
       }
       else
       {
-          FadeScreen(FADE_TO_BLACK, 0);
+          FadeScreen((1), 0);
           gTasks[taskId].func = Mailbox_DoGiveMailPokeMenu;
       }
 }
@@ -612,9 +608,9 @@ export function Mailbox_Cancel(taskId: any): any {
 /** static void ItemStorage_Init(void) */
 export function ItemStorage_Init(): any {
   sItemStorageMenu = AllocZeroed(0);
-      memset(sItemStorageMenu.windowIds, WINDOW_NONE, ITEMPC_WIN_COUNT);
+      memset(sItemStorageMenu.windowIds, (0xFF), ITEMPC_WIN_COUNT);
       sItemStorageMenu.toSwapPos = (0xFF);
-      sItemStorageMenu.spriteId = SPRITE_NONE;
+      sItemStorageMenu.spriteId = (0xFF);
 }
 
 /** static void ItemStorage_Free(void) */
@@ -628,7 +624,7 @@ export function ItemStorage_Free(): any {
 /** static u8 ItemStorage_AddWindow(u8 i) */
 export function ItemStorage_AddWindow(i: any): any {
   let windowIdLoc: any =sItemStorageMenu.windowIds[i];
-      if (windowIdLoc == WINDOW_NONE)
+      if (windowIdLoc == (0xFF))
       {
           windowIdLoc = AddWindow(sWindowTemplates_ItemStorage[i]);
           DrawStdFrameWithCustomTileAndPalette(windowIdLoc, FALSE, 0x214, 0xE);
@@ -640,13 +636,13 @@ export function ItemStorage_AddWindow(i: any): any {
 /** static void ItemStorage_RemoveWindow(u8 i) */
 export function ItemStorage_RemoveWindow(i: any): any {
   let windowIdLoc: any =sItemStorageMenu.windowIds[i];
-      if (windowIdLoc != WINDOW_NONE)
+      if (windowIdLoc != (0xFF))
       {
           ClearStdWindowAndFrameToTransparent(windowIdLoc, FALSE);
           ClearWindowTilemap(windowIdLoc);
           ScheduleBgCopyTilemapToVram(0);
           RemoveWindow(windowIdLoc);
-          windowIdLoc = WINDOW_NONE;
+          windowIdLoc = (0xFF);
       }
 }
 
@@ -665,7 +661,7 @@ export function ItemStorage_RefreshListMenu(): any {
        
       StringCopy(sItemStorageMenu.itemNames[i][0], gText_Cancel2);
       sItemStorageMenu.listItems[i].name =sItemStorageMenu.itemNames[i][0];
-      sItemStorageMenu.listItems[i].id = LIST_CANCEL;
+      sItemStorageMenu.listItems[i].id = (-2);
 
        
       gMultiuseListMenuTemplate = sListMenuTemplate_ItemStorage;
@@ -683,32 +679,32 @@ export function CopyItemName_PlayerPC(string: any, itemId: any): any {
 /** static void ItemStorage_MoveCursor(s32 id, bool8 onInit, struct ListMenu *list) */
 export function ItemStorage_MoveCursor(id: any, onInit: any, list: any): any {
   if (onInit != TRUE)
-          PlaySE(SE_SELECT);
+          PlaySE((5));
       if (sItemStorageMenu.toSwapPos == (0xFF))
       {
           ItemStorage_EraseItemIcon();
-          if (id != LIST_CANCEL)
+          if (id != (-2))
               ItemStorage_DrawItemIcon(gSaveBlock1Ptr.pcItems[id].itemId);
           else
-              ItemStorage_DrawItemIcon(ITEM_LIST_END);
+              ItemStorage_DrawItemIcon((0xFFFF));
           ItemStorage_PrintDescription(id);
       }
 }
 
 /** static void ItemStorage_PrintMenuItem(u8 windowId, u32 id, u8 yOffset) */
 export function ItemStorage_PrintMenuItem(windowId: any, id: any, yOffset: any): any {
-  if (id != LIST_CANCEL)
+  if (id != (-2))
       {
           if (sItemStorageMenu.toSwapPos != (0xFF))
           {
               if (sItemStorageMenu.toSwapPos == id)
-                  ItemStorage_DrawSwapArrow(yOffset, 0, TEXT_SKIP_DRAW);
+                  ItemStorage_DrawSwapArrow(yOffset, 0, (0xFF));
               else
-                  ItemStorage_DrawSwapArrow(yOffset, 0xFF, TEXT_SKIP_DRAW);
+                  ItemStorage_DrawSwapArrow(yOffset, 0xFF, (0xFF));
           }
           ConvertIntToDecimalStringN(gStringVar1, gSaveBlock1Ptr.pcItems[id].quantity, STR_CONV_MODE_RIGHT_ALIGN, 3);
           StringExpandPlaceholders(gStringVar4, gText_xVar1);
-          AddTextPrinterParameterized(windowId, FONT_NARROW, gStringVar4, GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 104), yOffset, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(windowId, FONT_NARROW, gStringVar4, GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 104), yOffset, (0xFF), NULL);
       }
 }
 
@@ -718,7 +714,7 @@ export function ItemStorage_PrintDescription(id: any): any {
       let windowId: any = sItemStorageMenu.windowIds[ITEMPC_WIN_MESSAGE];
 
        
-      if (id != LIST_CANCEL)
+      if (id != (-2))
           description = GetItemDescription(gSaveBlock1Ptr.pcItems[id].itemId);
       else
           description = ItemStorage_GetMessage(MSG_GO_BACK_TO_PREV);
@@ -729,7 +725,7 @@ export function ItemStorage_PrintDescription(id: any): any {
 
 /** static void ItemStorage_AddScrollIndicator(void) */
 export function ItemStorage_AddScrollIndicator(): any {
-  if (gPlayerPCItemPageInfo.scrollIndicatorTaskId == TASK_NONE)
+  if (gPlayerPCItemPageInfo.scrollIndicatorTaskId == ((0xFF)))
           gPlayerPCItemPageInfo.scrollIndicatorTaskId = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 176, 12, 148,
                                                                                                   gPlayerPCItemPageInfo.count - gPlayerPCItemPageInfo.pageItems,
                                                                                                   (5112),
@@ -738,10 +734,10 @@ export function ItemStorage_AddScrollIndicator(): any {
 
 /** static void ItemStorage_RemoveScrollIndicator(void) */
 export function ItemStorage_RemoveScrollIndicator(): any {
-  if (gPlayerPCItemPageInfo.scrollIndicatorTaskId != TASK_NONE)
+  if (gPlayerPCItemPageInfo.scrollIndicatorTaskId != ((0xFF)))
       {
           RemoveScrollIndicatorArrowPair(gPlayerPCItemPageInfo.scrollIndicatorTaskId);
-          gPlayerPCItemPageInfo.scrollIndicatorTaskId = TASK_NONE;
+          gPlayerPCItemPageInfo.scrollIndicatorTaskId = ((0xFF));
       }
 }
 
@@ -764,12 +760,12 @@ export function ItemStorage_DrawItemIcon(itemId: any): any {
   let spriteId: any = null;
       let spriteIdLoc: any =sItemStorageMenu.spriteId;
 
-      if (spriteIdLoc == SPRITE_NONE)
+      if (spriteIdLoc == (0xFF))
       {
           FreeSpriteTilesByTag((5110));
           FreeSpritePaletteByTag((5110));
           spriteId = AddItemIconSprite((5110), (5110), itemId);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               spriteIdLoc = spriteId;
               gSprites[spriteId].oam.priority = 0;
@@ -782,19 +778,19 @@ export function ItemStorage_DrawItemIcon(itemId: any): any {
 /** static void ItemStorage_EraseItemIcon(void) */
 export function ItemStorage_EraseItemIcon(): any {
   let spriteIdLoc: any =sItemStorageMenu.spriteId;
-      if (spriteIdLoc != SPRITE_NONE)
+      if (spriteIdLoc != (0xFF))
       {
           FreeSpriteTilesByTag((5110));
           FreeSpritePaletteByTag((5110));
           DestroySprite(gSprites[spriteIdLoc]);
-          spriteIdLoc = SPRITE_NONE;
+          spriteIdLoc = (0xFF);
       }
 }
 
 /** static void ItemStorage_CompactList(void) */
 export function ItemStorage_CompactList(): any {
   CompactPCItems();
-      SetItemListPerPageCount(gSaveBlock1Ptr.pcItems, PC_ITEMS_COUNT,gPlayerPCItemPageInfo.pageItems,gPlayerPCItemPageInfo.count, 8);
+      SetItemListPerPageCount(gSaveBlock1Ptr.pcItems, (50),gPlayerPCItemPageInfo.pageItems,gPlayerPCItemPageInfo.count, 8);
 }
 
 /** static void ItemStorage_CompactCursor(void) */
@@ -845,7 +841,7 @@ export function ItemStorage_ProcessInput(taskId: any): any {
           ListMenuGetScrollAndRow(tListTaskId,gPlayerPCItemPageInfo.itemsAbove,gPlayerPCItemPageInfo.cursorPos);
           if (gPlayerPCItemPageInfo.itemsAbove + gPlayerPCItemPageInfo.cursorPos != gPlayerPCItemPageInfo.count - 1)
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ItemStorage_StartItemSwap(taskId);
           }
       }
@@ -855,14 +851,14 @@ export function ItemStorage_ProcessInput(taskId: any): any {
           ListMenuGetScrollAndRow(tListTaskId,gPlayerPCItemPageInfo.itemsAbove,gPlayerPCItemPageInfo.cursorPos);
           switch (id)
           {
-          case LIST_NOTHING_CHOSEN:
+          case (-1):
               break;
-          case LIST_CANCEL:
-              PlaySE(SE_SELECT);
+          case (-2):
+              PlaySE((5));
               ItemStorage_ExitItemList(taskId);
               break;
           default:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ItemStorage_DoItemAction(taskId);
               break;
           }
@@ -926,9 +922,9 @@ export function ItemStorage_ProcessItemSwapInput(taskId: any): any {
       ItemStorage_UpdateSwapLinePos(gPlayerPCItemPageInfo.cursorPos);
       switch (id)
       {
-      case LIST_NOTHING_CHOSEN:
+      case (-1):
           break;
-      case LIST_CANCEL:
+      case (-2):
           if (JOY_NEW(A_BUTTON))
               ItemStorage_FinishItemSwap(taskId, FALSE);
           else
@@ -944,7 +940,7 @@ export function ItemStorage_ProcessItemSwapInput(taskId: any): any {
 export function ItemStorage_FinishItemSwap(taskId: any, canceled: any): any {
   let data: any = gTasks[taskId].data;
       let newPos: any = gPlayerPCItemPageInfo.itemsAbove + gPlayerPCItemPageInfo.cursorPos;
-      PlaySE(SE_SELECT);
+      PlaySE((5));
       DestroyListMenuTask(tListTaskId,gPlayerPCItemPageInfo.itemsAbove,gPlayerPCItemPageInfo.cursorPos);
 
       if (!canceled && sItemStorageMenu.toSwapPos != newPos && sItemStorageMenu.toSwapPos != newPos - 1)
@@ -1027,7 +1023,7 @@ export function ItemStorage_HandleQuantityRolling(taskId: any): any {
           if (JOY_NEW(A_BUTTON))
           {
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ItemStorage_RemoveWindow(ITEMPC_WIN_QUANTITY);
               if (!tInTossMenu)
                   ItemStorage_DoItemWithdraw(taskId);
@@ -1037,7 +1033,7 @@ export function ItemStorage_HandleQuantityRolling(taskId: any): any {
           else if (JOY_NEW(B_BUTTON))
           {
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ItemStorage_RemoveWindow(ITEMPC_WIN_QUANTITY);
               ItemStorage_PrintMessage(ItemStorage_GetMessage(gSaveBlock1Ptr.pcItems[pos].itemId));
               ItemStorage_ReturnToListInput(taskId);

@@ -17,14 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sInvisible: any = null;
-let sListArrowPalettes: any = null;
-let sListArrowSpriteSheets: any = null;
-let sMoveWindowDownIndex: any = null;
-let sOffset: any = null;
-let sSpriteTemplate_RightArrow: any = null;
-let sSpriteTemplate_UpDownArrow: any = null;
-let sTimer: any = null;
+let lastVisibleIndex: any = null;
+let newY: any = null;
 /** bool32 CreatePokenavList(const struct BgTemplate *bgTemplate, struct PokenavListTemplate *listTemplate, s32 tileOffset) */
 export function CreatePokenavList(bgTemplate: any, listTemplate: any, tileOffset: any): any {
   let list: any = AllocSubstruct(POKENAV_SUBSTRUCT_LIST, 0);
@@ -57,7 +51,7 @@ export function LoopedTask_CreatePokenavList(state: any): any {
   let list: any = null;
 
       if (IsDma3ManagerBusyWithBgCopy())
-          return LT_PAUSE;
+          return (2);
 
       list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);
 
@@ -65,28 +59,28 @@ export function LoopedTask_CreatePokenavList(state: any): any {
       {
       case 0:
           InitPokenavListBg(list);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           InitPokenavListWindow(list.sub.listWindow);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           InitListItems(list.windowState,list.sub);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (IsPrintListItemsTaskActive())
           {
-              return LT_PAUSE;
+              return (2);
           }
           else
           {
               LoadListArrowGfx();
-              return LT_INC_AND_CONTINUE;
+              return (1);
           }
       case 4:
           CreateListArrowSprites(list.windowState,list.sub);
-          return LT_FINISH;
+          return (4);
       default:
-          return LT_FINISH;
+          return (4);
       }
 }
 
@@ -152,7 +146,7 @@ export function LoopedTask_PrintListItems(state: any): any {
               listSub.iconDrawFunc(listSub.listWindow.windowId, listSub.printIndex, row);
 
            
-          AddTextPrinterParameterized(listSub.listWindow.windowId, listSub.listWindow.fontId, listSub.itemTextBuffer, 10, (row << 4) + 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(listSub.listWindow.windowId, listSub.listWindow.fontId, listSub.itemTextBuffer, 10, (row << 4) + 1, (0xFF), NULL);
           if (++listSub.listWindow.numPrinted >= listSub.listWindow.numToPrint)
           {
                
@@ -161,20 +155,20 @@ export function LoopedTask_PrintListItems(state: any): any {
                   CopyWindowToVram(listSub.listWindow.windowId, COPYWIN_FULL);
               else
                   CopyWindowToVram(listSub.listWindow.windowId, COPYWIN_GFX);
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
           else
           {
               listSub.listPtr += listSub.itemSize;
               listSub.printIndex++;
-              return LT_CONTINUE;
+              return (3);
           }
       case 1:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
-          return LT_FINISH;
+              return (2);
+          return (4);
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static bool32 ShouldShowUpArrow(void) */
@@ -240,8 +234,8 @@ export function LoopedTask_MoveListWindow(state: any): any {
       {
       case 0:
           if (!IsPrintListItemsTaskActive())
-              return LT_INC_AND_CONTINUE;
-          return LT_PAUSE;
+              return (1);
+          return (2);
       case 1:
           finished = FALSE;
           oldY = GetBgY(subPtr.listWindow.bg);
@@ -261,11 +255,11 @@ export function LoopedTask_MoveListWindow(state: any): any {
           {
               subPtr.listWindow.unkA = (subPtr.listWindow.unkA + subPtr.moveDelta) & 0xF;
               ChangeBgY(subPtr.listWindow.bg, subPtr.endBgY, BG_COORD_SET);
-              return LT_FINISH;
+              return (4);
           }
-          return LT_PAUSE;
+          return (2);
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** bool32 PokenavList_IsMoveWindowTaskActive(void) */
@@ -432,7 +426,7 @@ export function LoopedTask_EraseListForCheckPage(state: any): any {
               EraseListEntry(list.sub.listWindow, list.eraseIndex, 1);
 
           list.eraseIndex++;
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           if (!IsDma3ManagerBusyWithBgCopy())
           {
@@ -441,35 +435,35 @@ export function LoopedTask_EraseListForCheckPage(state: any): any {
               if (list.windowState.selectedIndexOffset != 0)
                   EraseListEntry(list.sub.listWindow, list.eraseIndex, list.windowState.selectedIndexOffset);
 
-              return LT_INC_AND_PAUSE;
+              return (0);
           }
-          return LT_PAUSE;
+          return (2);
       case 3:
           if (!IsDma3ManagerBusyWithBgCopy())
           {
               if (list.windowState.selectedIndexOffset != 0)
               {
                   MoveListWindow(list.windowState.selectedIndexOffset, FALSE);
-                  return LT_INC_AND_PAUSE;
+                  return (0);
               }
-              return LT_FINISH;
+              return (4);
           }
-          return LT_PAUSE;
+          return (2);
       case 4:
            if (PokenavList_IsMoveWindowTaskActive())
-              return LT_PAUSE;
+              return (2);
 
           list.windowState.selectedIndexOffset = 0;
-          return LT_FINISH;
+          return (4);
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_PrintCheckPageInfo(s32 state) */
 export function LoopedTask_PrintCheckPageInfo(state: any): any {
   let list: any = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);
       if (IsDma3ManagerBusyWithBgCopy())
-          return LT_PAUSE;
+          return (2);
 
       switch (state)
       {
@@ -498,9 +492,9 @@ export function LoopedTask_PrintCheckPageInfo(state: any): any {
           PrintMatchCallFlavorText(list.windowState,list.sub, CHECK_PAGE_INTRO_2);
           break;
       default:
-          return LT_FINISH;
+          return (4);
       }
-      return LT_INC_AND_PAUSE;
+      return (0);
 }
 
 /** static u32 LoopedTask_ReshowListFromCheckPage(s32 state) */
@@ -511,7 +505,7 @@ export function LoopedTask_ReshowListFromCheckPage(state: any): any {
       let r5, ptr;
 
       if (IsDma3ManagerBusyWithBgCopy())
-          return LT_PAUSE;
+          return (2);
 
       list = GetSubstructPtr(POKENAV_SUBSTRUCT_LIST);
       windowState =list.windowState;
@@ -523,13 +517,13 @@ export function LoopedTask_ReshowListFromCheckPage(state: any): any {
            
            
           PrintMatchCallListTrainerName(windowState, subPtr);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           ptr =list.eraseIndex;
           if (++(ptr) < list.windowState.entriesOnscreen)
           {
               EraseListEntry(subPtr.listWindow, ptr, 1);
-              return LT_PAUSE;
+              return (2);
           }
 
           ptr = 0;
@@ -542,7 +536,7 @@ export function LoopedTask_ReshowListFromCheckPage(state: any): any {
                   EraseListEntry(subPtr.listWindow, r5, r4);
                   windowState.selectedIndexOffset = r4;
                   ptr = r5;
-                  return LT_INC_AND_PAUSE;
+                  return (0);
               }
           }
           else
@@ -554,35 +548,35 @@ export function LoopedTask_ReshowListFromCheckPage(state: any): any {
                   EraseListEntry(subPtr.listWindow, r5, r4);
                   windowState.selectedIndexOffset = r4;
                   ptr = r5;
-                  return LT_INC_AND_PAUSE;
+                  return (0);
               }
           }
           return LT_SET_STATE(4);
       case 2:
           MoveListWindow(list.eraseIndex, FALSE);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (!PokenavList_IsMoveWindowTaskActive())
           {
               list.eraseIndex = 0;
-              return LT_INC_AND_CONTINUE;
+              return (1);
           }
-          return LT_PAUSE;
+          return (2);
       case 4:
           PrintListItems(windowState.listPtr, windowState.windowTopIndex + list.eraseIndex, 1, windowState.listItemSize, list.eraseIndex,list.sub);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 5:
           if (IsPrintListItemsTaskActive())
-              return LT_PAUSE;
+              return (2);
           if (++list.eraseIndex >= windowState.listLength || list.eraseIndex >= windowState.entriesOnscreen)
-              return LT_INC_AND_CONTINUE;
+              return (1);
           return LT_SET_STATE(4);
       case 6:
           ToggleListArrows(subPtr, FALSE);
-          return LT_FINISH;
+          return (4);
       }
 
-      return LT_FINISH;
+      return (4);
 }
 
 /** static void EraseListEntry(struct PokenavListMenuWindow *listWindow, s32 offset, s32 entries) */
@@ -629,13 +623,13 @@ export function SetListMarginTile(listWindow: any, draw: any): any {
 
 /** static void PrintCheckPageTrainerName(struct PokenavListWindowState *state, struct PokenavListSub *list) */
 export function PrintCheckPageTrainerName(state: any, list: any): any {
-  const colors: any = [TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_RED];
+  const colors: any = [(0x0), (0x2), (0x5)];
 
       list.bufferItemFunc(state.listPtr + state.listItemSize * state.windowTopIndex, list.itemTextBuffer);
       list.iconDrawFunc(list.listWindow.windowId, state.windowTopIndex, list.listWindow.unkA);
       FillWindowPixelRect(list.listWindow.windowId, PIXEL_FILL(4), 0, list.listWindow.unkA * 16, list.listWindow.width * 8, 16);
        
-      AddTextPrinterParameterized3(list.listWindow.windowId, list.listWindow.fontId, 10, (list.listWindow.unkA * 16) + 1, colors, TEXT_SKIP_DRAW, list.itemTextBuffer);
+      AddTextPrinterParameterized3(list.listWindow.windowId, list.listWindow.fontId, 10, (list.listWindow.unkA * 16) + 1, colors, (0xFF), list.itemTextBuffer);
       SetListMarginTile(list.listWindow, TRUE);
       CopyWindowRectToVram(list.listWindow.windowId, COPYWIN_FULL, 0, list.listWindow.unkA * 2, list.listWindow.width, 2);
 }
@@ -645,7 +639,7 @@ export function PrintMatchCallListTrainerName(state: any, list: any): any {
   list.bufferItemFunc(state.listPtr + state.listItemSize * state.windowTopIndex, list.itemTextBuffer);
       FillWindowPixelRect(list.listWindow.windowId, PIXEL_FILL(1), 0, list.listWindow.unkA * 16, list.listWindow.width * 8, 16);
        
-      AddTextPrinterParameterized(list.listWindow.windowId, list.listWindow.fontId, list.itemTextBuffer, 10, list.listWindow.unkA * 16 + 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(list.listWindow.windowId, list.listWindow.fontId, list.itemTextBuffer, 10, list.listWindow.unkA * 16 + 1, (0xFF), NULL);
       SetListMarginTile(list.listWindow, FALSE);
       CopyWindowToVram(list.listWindow.windowId, COPYWIN_FULL);
 }
@@ -657,12 +651,12 @@ export function PrintMatchCallFieldNames(list: any, fieldId: any): any {
           gText_PokenavMatchCall_TrainerPokemon,
           gText_PokenavMatchCall_SelfIntroduction
       ];
-      const colors: any = [TEXT_COLOR_WHITE, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED];
+      const colors: any = [(0x1), (0x4), (0x5)];
       let top: any = (list.listWindow.unkA + 1 + (fieldId * 2)) & 0xF;
 
       FillWindowPixelRect(list.listWindow.windowId, PIXEL_FILL(1), 0, top << 4, list.listWindow.width, 16);
        
-      AddTextPrinterParameterized3(list.listWindow.windowId, FONT_NARROW, 4, (top << 4) + 1, colors, TEXT_SKIP_DRAW, fieldNames[fieldId]);
+      AddTextPrinterParameterized3(list.listWindow.windowId, FONT_NARROW, 4, (top << 4) + 1, colors, (0xFF), fieldNames[fieldId]);
       CopyWindowRectToVram(list.listWindow.windowId, COPYWIN_GFX, 0, top << 1, list.listWindow.width, 2);
 }
 
@@ -678,7 +672,7 @@ export function PrintMatchCallFlavorText(windowState: any, list: any, checkPageE
       {
           FillWindowTilesByRow(list.listWindow.windowId, 1, r6 * 2, list.listWindow.width - 1, 2);
            
-          AddTextPrinterParameterized(list.listWindow.windowId, FONT_NARROW, str, 4, (r6 << 4) + 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(list.listWindow.windowId, FONT_NARROW, str, 4, (r6 << 4) + 1, (0xFF), NULL);
           CopyWindowRectToVram(list.listWindow.windowId, COPYWIN_GFX, 0, r6 * 2, list.listWindow.width, 2);
       }
 }
@@ -843,7 +837,7 @@ export function CopyPokenavListMenuTemplate(dest: any, bgTemplate: any, template
       window.baseBlock = tileOffset + 2;
 
       dest.listWindow.windowId = AddWindow(window);
-      if (dest.listWindow.windowId == WINDOW_NONE)
+      if (dest.listWindow.windowId == (0xFF))
           return FALSE;
 
       dest.listWindow.unkA = 0;

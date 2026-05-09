@@ -17,9 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sGpuRegBuffer: any = null;
 let sGpuRegBufferLocked: any = null;
-let sGpuRegWaitingList: any = null;
 let sRegIE: any = null;
 let sShouldSyncRegIE: any = null;
 /** void InitGpuRegManager(void) */

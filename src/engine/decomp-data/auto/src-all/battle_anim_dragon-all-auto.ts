@@ -15,16 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sUnusedOverheatData: any = null;
 /** static void AnimOutrageFlame(struct Sprite *sprite) */
 export function AnimOutrageFlame(sprite: any): any {
   CMD_ARGS(x, y, duration, xVelocity, yVelocity, flickerDuration);
 
       sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
       sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           sprite.x -= cmd.x;
           cmd.xVelocity = -cmd.xVelocity;
@@ -52,7 +49,7 @@ export function StartDragonFireTranslation(sprite: any): any {
       SetSpriteCoordsToAnimAttackerCoords(sprite);
       sprite.data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);
       sprite.data[4] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           sprite.x -= cmd.initialY;
           sprite.y += cmd.initialY;
@@ -77,7 +74,7 @@ export function StartDragonFireTranslation(sprite: any): any {
 export function AnimDragonRageFirePlume(sprite: any): any {
   CMD_ARGS(relativeTo, x, y);
 
-      if (cmd.relativeTo == ANIM_ATTACKER)
+      if (cmd.relativeTo == (0))
       {
           sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X);
           sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y);
@@ -96,7 +93,7 @@ export function AnimDragonRageFirePlume(sprite: any): any {
 
 /** static void AnimDragonFireToTarget(struct Sprite *sprite) */
 export function AnimDragonFireToTarget(sprite: any): any {
-  if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+  if (GetBattlerSide(gBattleAnimAttacker) != (0))
           StartSpriteAffineAnim(sprite, 1);
 
       StartDragonFireTranslation(sprite);

@@ -17,32 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sMatchCallBlueLightSpriteTemplate: any = null;
-let sMenuHandlerLoopTaskFuncs: any = null;
-let sMenuOptionSpriteTemplate: any = null;
-let sOptionDescTextColors: any = null;
-let sOptionDescTextColors2: any = null;
-let sOptionDescWindowTemplate: any = null;
-let sPageDescriptions: any = null;
-let sPokenavBgDotsPal: any = null;
-let sPokenavBgDotsTilemap: any = null;
-let sPokenavBgDotsTiles: any = null;
-let sPokenavDeviceBgPal: any = null;
-let sPokenavDeviceBgTilemap: any = null;
-let sPokenavDeviceBgTiles: any = null;
-let sPokenavMainMenuBgTemplates: any = null;
-let sPokenavMainMenuScanlineEffectParams: any = null;
-let sPokenavMenuOptionLabelGfx: any = null;
-let sPokenavOptionsSpritePalettes: any = null;
-let sPokenavOptionsSpriteSheets: any = null;
-let sSlideAccel: any = null;
-let sSlideEndX: any = null;
-let sSlideSpeed: any = null;
-let sSlideTime: any = null;
-let sZoomDelay: any = null;
-let sZoomSetAffine: any = null;
-let sZoomSpeed: any = null;
-let sZoomSubspriteId: any = null;
+let tBlendTarget1: any = null;
+let tBlendTarget2: any = null;
 /** static bool32 AreAnyTrainerRematchesNearby(void) */
 export function AreAnyTrainerRematchesNearby(): any {
   let i: any = null;
@@ -144,42 +120,42 @@ export function LoopedTask_OpenMenu(state: any): any {
           ChangeBgY(2, 0, BG_COORD_SET);
           ChangeBgX(3, 0, BG_COORD_SET);
           ChangeBgY(3, 0, BG_COORD_SET);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
           DecompressAndCopyTileDataToVram(2, sPokenavDeviceBgTiles, 0, 0, 0);
           DecompressAndCopyTileDataToVram(2, sPokenavDeviceBgTilemap, 0, 0, 1);
           CopyPaletteIntoBufferUnfaded(sPokenavDeviceBgPal, BG_PLTT_ID(2), 0);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
           DecompressAndCopyTileDataToVram(3, sPokenavBgDotsTiles, 0, 0, 0);
           DecompressAndCopyTileDataToVram(3, sPokenavBgDotsTilemap, 0, 0, 1);
           CopyPaletteIntoBufferUnfaded(sPokenavBgDotsPal, BG_PLTT_ID(3), 0);
           if (GetPokenavMenuType() == POKENAV_MENU_TYPE_CONDITION || GetPokenavMenuType() == POKENAV_MENU_TYPE_CONDITION_SEARCH)
               ChangeBgDotsColorToPurple();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (FreeTempTileDataBuffersIfPossible())
-              return LT_PAUSE;
+              return (2);
           AddOptionDescriptionWindow();
           CreateMovingBgDotsTask();
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 4:
           LoadPokenavOptionPalettes();
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 5:
           PrintCurrentOptionDescription();
           CreateMenuOptionSprites();
           CreateMatchCallBlueLightSprite();
           DrawCurrentMenuOptionLabels();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 6:
           if (IsDma3ManagerBusyWithBgCopy_())
-              return LT_PAUSE;
-          return LT_INC_AND_CONTINUE;
+              return (2);
+          return (1);
       case 7:
           ShowBg(1);
           ShowBg(2);
@@ -190,7 +166,7 @@ export function LoopedTask_OpenMenu(state: any): any {
           }
           else
           {
-              PlaySE(SE_POKENAV_ON);
+              PlaySE((110));
               PokenavFadeScreen(POKENAV_FADE_FROM_BLACK_ALL);
           }
           switch (GetPokenavMenuType())
@@ -205,10 +181,10 @@ export function LoopedTask_OpenMenu(state: any): any {
               LoadLeftHeaderGfxForIndex(0);
               break;
           }
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 8:
           if (IsPaletteFadeActive())
-              return LT_PAUSE;
+              return (2);
           switch (GetPokenavMenuType())
           {
           case POKENAV_MENU_TYPE_CONDITION_SEARCH:
@@ -223,15 +199,15 @@ export function LoopedTask_OpenMenu(state: any): any {
           }
           StartOptionAnimations_Enter();
           SetupPokenavMenuScanlineEffects();
-          return LT_INC_AND_CONTINUE;
+          return (1);
       case 9:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_MoveMenuCursor(s32 state) */
@@ -242,16 +218,16 @@ export function LoopedTask_MoveMenuCursor(state: any): any {
           SetMenuOptionGlow();
           StartOptionAnimations_CursorMoved();
           PrintCurrentOptionDescription();
-          PlaySE(SE_SELECT);
-          return LT_INC_AND_PAUSE;
+          PlaySE((5));
+          return (0);
       case 1:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (IsDma3ManagerBusyWithBgCopy_())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_OpenConditionMenu(s32 state) */
@@ -262,35 +238,35 @@ export function LoopedTask_OpenConditionMenu(state: any): any {
           ResetBldCnt();
           StartOptionAnimations_Exit();
           HideMainOrSubMenuLeftHeader(POKENAV_GFX_MAIN_MENU, FALSE);
-          PlaySE(SE_SELECT);
-          return LT_INC_AND_PAUSE;
+          PlaySE((5));
+          return (0);
       case 1:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           DrawCurrentMenuOptionLabels();
           LoadLeftHeaderGfxForIndex(1);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           StartOptionAnimations_Enter();
           ShowLeftHeaderGfx(1, FALSE, FALSE);
           CreateBgDotPurplePalTask();
           PrintCurrentOptionDescription();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (IsTaskActive_UpdateBgDotsPalette())
-              return LT_PAUSE;
+              return (2);
           if (IsDma3ManagerBusyWithBgCopy_())
-              return LT_PAUSE;
+              return (2);
           InitMenuOptionGlow();
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_ReturnToMainMenu(s32 state) */
@@ -301,34 +277,34 @@ export function LoopedTask_ReturnToMainMenu(state: any): any {
           ResetBldCnt();
           StartOptionAnimations_Exit();
           HideMainOrSubMenuLeftHeader(POKENAV_GFX_CONDITION_MENU, FALSE);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           DrawCurrentMenuOptionLabels();
           LoadLeftHeaderGfxForIndex(0);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           StartOptionAnimations_Enter();
           ShowLeftHeaderGfx(0, FALSE, FALSE);
           CreateBgDotLightBluePalTask();
           PrintCurrentOptionDescription();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (IsTaskActive_UpdateBgDotsPalette())
-              return LT_PAUSE;
+              return (2);
           if (IsDma3ManagerBusyWithBgCopy_())
-              return LT_PAUSE;
+              return (2);
           InitMenuOptionGlow();
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_OpenConditionSearchMenu(s32 state) */
@@ -338,30 +314,30 @@ export function LoopedTask_OpenConditionSearchMenu(state: any): any {
       case 0:
           ResetBldCnt();
           StartOptionAnimations_Exit();
-          PlaySE(SE_SELECT);
-          return LT_INC_AND_PAUSE;
+          PlaySE((5));
+          return (0);
       case 1:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           LoadLeftHeaderGfxForIndex(7);
           DrawCurrentMenuOptionLabels();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           StartOptionAnimations_Enter();
           ShowLeftHeaderGfx(7, FALSE, FALSE);
           PrintCurrentOptionDescription();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (IsTaskActive_UpdateBgDotsPalette())
-              return LT_PAUSE;
+              return (2);
           InitMenuOptionGlow();
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_ReturnToConditionMenu(s32 state) */
@@ -372,27 +348,27 @@ export function LoopedTask_ReturnToConditionMenu(state: any): any {
           ResetBldCnt();
           StartOptionAnimations_Exit();
           HideMainOrSubMenuLeftHeader(POKENAV_GFX_SEARCH_MENU, FALSE);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           DrawCurrentMenuOptionLabels();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 2:
           StartOptionAnimations_Enter();
           PrintCurrentOptionDescription();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (IsTaskActive_UpdateBgDotsPalette())
-              return LT_PAUSE;
+              return (2);
           InitMenuOptionGlow();
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_SelectRibbonsNoWinners(s32 state) */
@@ -400,15 +376,15 @@ export function LoopedTask_SelectRibbonsNoWinners(state: any): any {
   switch (state)
       {
       case 0:
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           PrintNoRibbonWinners();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_ReShowDescription(s32 state) */
@@ -416,15 +392,15 @@ export function LoopedTask_ReShowDescription(state: any): any {
   switch (state)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           PrintCurrentOptionDescription();
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (IsDma3ManagerBusyWithBgCopy())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static u32 LoopedTask_OpenPokenavFeature(s32 state) */
@@ -433,10 +409,10 @@ export function LoopedTask_OpenPokenavFeature(state: any): any {
       {
       case 0:
           PrintHelpBarText(GetHelpBarTextId());
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 1:
           if (WaitForHelpBar())
-              return LT_PAUSE;
+              return (2);
           SlideMenuHeaderUp();
           ResetBldCnt();
           StartOptionAnimations_Exit();
@@ -452,21 +428,21 @@ export function LoopedTask_OpenPokenavFeature(state: any): any {
               HideMainOrSubMenuLeftHeader(POKENAV_GFX_MAIN_MENU, FALSE);
               break;
           }
-          PlaySE(SE_SELECT);
-          return LT_INC_AND_PAUSE;
+          PlaySE((5));
+          return (0);
       case 2:
           if (AreMenuOptionSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           if (AreLeftHeaderSpritesMoving())
-              return LT_PAUSE;
+              return (2);
           PokenavFadeScreen(POKENAV_FADE_TO_BLACK);
-          return LT_INC_AND_PAUSE;
+          return (0);
       case 3:
           if (IsPaletteFadeActive())
-              return LT_PAUSE;
+              return (2);
           break;
       }
-      return LT_FINISH;
+      return (4);
 }
 
 /** static void LoadPokenavOptionPalettes(void) */
@@ -497,7 +473,7 @@ export function CreateMenuOptionSprites(): any {
   let i, j;
       let gfx: any = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
 
-      for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
+      for (i = 0; i < (6); i++)
       {
           for (j = 0; j < (4); j++)
           {
@@ -513,7 +489,7 @@ export function DestroyMenuOptionSprites(): any {
   let i, j;
       let gfx: any = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
 
-      for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
+      for (i = 0; i < (6); i++)
       {
           for (j = 0; j < (4); j++)
           {
@@ -535,7 +511,7 @@ export function DrawOptionLabelGfx(optionGfx: any, yPos: any, deltaY: any): any 
       let gfx: any = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
       let baseTile: any = GetSpriteTileStartByTag((3));
 
-      for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
+      for (i = 0; i < (6); i++)
       {
           if (optionGfx != NULL)
           {
@@ -570,7 +546,7 @@ export function StartOptionAnimations_Enter(): any {
       let iconCount: any = 0;
       let x: any = null;
 
-      for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
+      for (i = 0; i < (6); i++)
       {
           if (gfx.iconVisible[i])
           {
@@ -604,7 +580,7 @@ export function StartOptionAnimations_CursorMoved(): any {
       let newPos: any = null;
 
        
-      for (i = 0, newPos = 0; i < MAX_POKENAV_MENUITEMS; i++)
+      for (i = 0, newPos = 0; i < (6); i++)
       {
           if (gfx.iconVisible[i])
           {
@@ -629,7 +605,7 @@ export function StartOptionAnimations_Exit(): any {
   let i: any = null;
       let gfx: any = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
 
-      for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
+      for (i = 0; i < (6); i++)
       {
           if (gfx.iconVisible[i])
           {
@@ -648,7 +624,7 @@ export function AreMenuOptionSpritesMoving(): any {
   let i: any = null;
       let gfx: any = GetSubstructPtr(POKENAV_SUBSTRUCT_MENU_GFX);
 
-      for (i = 0; i < MAX_POKENAV_MENUITEMS; i++)
+      for (i = 0; i < (6); i++)
       {
           if (gfx.iconSprites[i][0].callback != SpriteCallbackDummy)
               return TRUE;

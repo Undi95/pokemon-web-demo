@@ -17,28 +17,23 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAmplitude: any = null;
-let sBallParticleAnimNums: any = null;
-let sBallParticleAnimationFuncs: any = null;
-let sBallParticlePalettes: any = null;
-let sBallParticleSpriteSheets: any = null;
-let sBallParticleSpriteTemplates: any = null;
-let sCaptureStars: any = null;
-let sDirection: any = null;
-let sDuration: any = null;
-let sDx: any = null;
-let sDy: any = null;
-let sFrame: any = null;
-let sOffsetX: any = null;
-let sOffsetY: any = null;
-let sPhase: any = null;
-let sState: any = null;
-let sTargetX: any = null;
-let sTargetXArg: any = null;
-let sTargetY: any = null;
-let sTargetYArg: any = null;
-let sTaskId: any = null;
-let sTimer: any = null;
+let colorOffset: any = null;
+let gBattleAnimAttacker: any = null;
+let gBattleAnimTarget: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gBattle_WIN0H: any = null;
+let gBattle_WIN0V: any = null;
+let gDoingBattleAnim: any = null;
+let gMonShrinkDelta: any = null;
+let gMonShrinkDistance: any = null;
+let gMonShrinkDuration: any = null;
+let offset2: any = null;
+let personality: any = null;
+let spriteId2: any = null;
+let spriteId3: any = null;
+let spriteId4: any = null;
+let taskDgnl: any = null;
 /** void AnimTask_UnusedLevelUpHealthBox(u8 taskId) */
 export function AnimTask_UnusedLevelUpHealthBox(taskId: any): any {
   let animBgData: any = null;
@@ -156,8 +151,8 @@ export function LoadHealthboxPalsForLevelUp(paletteId1: any, paletteId2: any, ba
       healthBoxSpriteId = gHealthboxSpriteIds[battler];
       spriteId1 = gSprites[healthBoxSpriteId].oam.affineParam;
       spriteId2 = gSprites[healthBoxSpriteId].data[5];
-      paletteId1 = AllocSpritePalette(TAG_HEALTHBOX_PALS_1);
-      paletteId2 = AllocSpritePalette(TAG_HEALTHBOX_PALS_2);
+      paletteId1 = AllocSpritePalette((0xD709));
+      paletteId2 = AllocSpritePalette((0xD70A));
 
       offset1 = OBJ_PLTT_ID(gSprites[healthBoxSpriteId].oam.paletteNum);
       offset2 = OBJ_PLTT_ID(gSprites[spriteId2].oam.paletteNum);
@@ -186,10 +181,10 @@ export function FreeHealthboxPalsForLevelUp(battler: any): any {
       spriteId1 = gSprites[healthBoxSpriteId].oam.affineParam;
       spriteId2 = gSprites[healthBoxSpriteId].data[5];
 
-      FreeSpritePaletteByTag(TAG_HEALTHBOX_PALS_1);
-      FreeSpritePaletteByTag(TAG_HEALTHBOX_PALS_2);
-      paletteId1 = IndexOfSpritePaletteTag(TAG_HEALTHBOX_PAL);
-      paletteId2 = IndexOfSpritePaletteTag(TAG_HEALTHBAR_PAL);
+      FreeSpritePaletteByTag((0xD709));
+      FreeSpritePaletteByTag((0xD70A));
+      paletteId1 = IndexOfSpritePaletteTag(((0xD6FF)));
+      paletteId2 = IndexOfSpritePaletteTag(((0xD704)));
       gSprites[healthBoxSpriteId].oam.paletteNum = paletteId1;
       gSprites[spriteId1].oam.paletteNum = paletteId1;
       gSprites[spriteId2].oam.paletteNum = paletteId2;
@@ -217,7 +212,7 @@ export function AnimTask_FlashHealthboxOnLevelUp_Step(taskId: any): any {
       if (gTasks[taskId].data[0]++ >= gTasks[taskId].data[11])
       {
           gTasks[taskId].data[0] = 0;
-          paletteNum = IndexOfSpritePaletteTag(TAG_HEALTHBOX_PALS_1);
+          paletteNum = IndexOfSpritePaletteTag((0xD709));
           colorOffset = gTasks[taskId].data[10] == 0 ? 6 : 2;
           switch (gTasks[taskId].data[1])
           {
@@ -282,7 +277,7 @@ export function AnimTask_SwitchOutBallEffect(taskId: any): any {
       let selectedPalettes: any = null;
 
       spriteId = gBattlerSpriteIds[gBattleAnimAttacker];
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
           ball = GetMonData(gPlayerParty[gBattlerPartyIndexes[gBattleAnimAttacker]], MON_DATA_POKEBALL);
       else
           ball = GetMonData(gEnemyParty[gBattlerPartyIndexes[gBattleAnimAttacker]], MON_DATA_POKEBALL);
@@ -324,9 +319,9 @@ export function AnimTask_FreeBallGfx(taskId: any): any {
 /** void AnimTask_IsBallBlockedByTrainer(u8 taskId) */
 export function AnimTask_IsBallBlockedByTrainer(taskId: any): any {
   if (gBattleSpritesDataPtr.animationData.ballThrowCaseId == BALL_TRAINER_BLOCK)
-          gBattleAnimArgs[ARG_RET_ID] = -1;
+          gBattleAnimArgs[(7)] = -1;
       else
-          gBattleAnimArgs[ARG_RET_ID] = 0;
+          gBattleAnimArgs[(7)] = 0;
 
       DestroyAnimVisualTask(taskId);
 }
@@ -335,29 +330,29 @@ export function AnimTask_IsBallBlockedByTrainer(taskId: any): any {
 export function ItemIdToBallId(ballItem: any): any {
   switch (ballItem)
       {
-      case ITEM_MASTER_BALL:
+      case (1):
           return BALL_MASTER;
-      case ITEM_ULTRA_BALL:
+      case (2):
           return BALL_ULTRA;
-      case ITEM_GREAT_BALL:
+      case (3):
           return BALL_GREAT;
-      case ITEM_SAFARI_BALL:
+      case (5):
           return BALL_SAFARI;
-      case ITEM_NET_BALL:
+      case (6):
           return BALL_NET;
-      case ITEM_DIVE_BALL:
+      case (7):
           return BALL_DIVE;
-      case ITEM_NEST_BALL:
+      case (8):
           return BALL_NEST;
-      case ITEM_REPEAT_BALL:
+      case (9):
           return BALL_REPEAT;
-      case ITEM_TIMER_BALL:
+      case (10):
           return BALL_TIMER;
-      case ITEM_LUXURY_BALL:
+      case (11):
           return BALL_LUXURY;
-      case ITEM_PREMIER_BALL:
+      case (12):
           return BALL_PREMIER;
-      case ITEM_POKE_BALL:
+      case (4):
       default:
           return BALL_POKE;
       }
@@ -393,7 +388,7 @@ export function AnimTask_ThrowBall_StandingTrainer(taskId: any): any {
       let subpriority: any = null;
       let spriteId: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL)
+      if (gBattleTypeFlags & ((1 << 9)))
       {
           x = 32;
           y = 11;
@@ -420,7 +415,7 @@ export function AnimTask_ThrowBall_StandingTrainer(taskId: any): any {
 export function AnimTask_ThrowBall_StandingTrainer_Step(taskId: any): any {
   if (gSprites[gBattlerSpriteIds[GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)]].animCmdIndex == 1)
       {
-          PlaySE12WithPanning(SE_BALL_THROW, 0);
+          PlaySE12WithPanning((61), 0);
           gSprites[gTasks[taskId].tSpriteId].callback = SpriteCB_Ball_Throw;
           CreateTask(Task_PlayerThrow_Wait, 10);
           gTasks[taskId].func = AnimTask_ThrowBall_Step;
@@ -506,7 +501,7 @@ export function SpriteCB_Ball_MonShrink_Step(sprite: any): any {
       taskId = sprite.sTaskId;
 
       if (++gTasks[taskId].sTimer == 11)
-          PlaySE(SE_BALL_TRADE);
+          PlaySE((60));
 
       switch (gTasks[taskId].tState)
       {
@@ -586,16 +581,16 @@ export function SpriteCB_Ball_Bounce_Step(sprite: any): any {
               switch (bounceCount)
               {
               case 1:
-                  PlaySE(SE_BALL_BOUNCE_1);
+                  PlaySE((56));
                   break;
               case 2:
-                  PlaySE(SE_BALL_BOUNCE_2);
+                  PlaySE((57));
                   break;
               case 3:
-                  PlaySE(SE_BALL_BOUNCE_3);
+                  PlaySE((58));
                   break;
               default:
-                  PlaySE(SE_BALL_BOUNCE_4);
+                  PlaySE((59));
                   break;
               }
           }
@@ -641,7 +636,7 @@ export function SpriteCB_Ball_Wobble(sprite: any): any {
           StartSpriteAffineAnim(sprite, BALL_ROTATE_RIGHT);
           gBattleSpritesDataPtr.animationData.ballSubpx = 0;
           sprite.callback = SpriteCB_Ball_Wobble_Step;
-          PlaySE(SE_BALL);
+          PlaySE((23));
       }
 }
 
@@ -784,7 +779,7 @@ export function SpriteCB_Ball_Wobble_Step(sprite: any): any {
               else
                   StartSpriteAffineAnim(sprite, BALL_ROTATE_RIGHT);
 
-              PlaySE(SE_BALL);
+              PlaySE((23));
           }
           break;
       }
@@ -815,20 +810,20 @@ export function SpriteCB_Ball_Capture_Step(sprite: any): any {
       sprite.sTimer++;
       if (sprite.sTimer == 40)
       {
-          PlaySE(SE_RG_BALL_CLICK);
-          BlendPalettes(0x10000 << sprite.oam.paletteNum, 6, RGB_BLACK);
+          PlaySE((254));
+          BlendPalettes(0x10000 << sprite.oam.paletteNum, 6, (RGB(0, 0, 0)));
           MakeCaptureStars(sprite);
       }
       else if (sprite.sTimer == 60)
       {
-          BeginNormalPaletteFade(0x10000 << sprite.oam.paletteNum, 2, 6, 0, RGB_BLACK);
+          BeginNormalPaletteFade(0x10000 << sprite.oam.paletteNum, 2, 6, 0, (RGB(0, 0, 0)));
       }
       else if (sprite.sTimer == 95)
       {
           gDoingBattleAnim = FALSE;
           UpdateOamPriorityInAllHealthboxes(1);
           m4aMPlayAllStop();
-          PlaySE(MUS_RG_CAUGHT_INTRO);
+          PlaySE((531));
       }
       else if (sprite.sTimer == 315)
       {
@@ -853,7 +848,7 @@ export function SpriteCB_Ball_FadeOut(sprite: any): any {
           SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL);
           SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(16, 0));
           paletteIndex = IndexOfSpritePaletteTag(sprite.template.paletteTag);
-          BeginNormalPaletteFade(1 << (paletteIndex + 0x10), 0, 0, 16, RGB_WHITE);
+          BeginNormalPaletteFade(1 << (paletteIndex + 0x10), 0, 0, 16, (RGB(31, 31, 31)));
           sprite.sState++;
           break;
       case 1:
@@ -915,7 +910,7 @@ export function MakeCaptureStars(sprite: any): any {
       for (i = 0; i < ARRAY_COUNT(sCaptureStars); i++)
       {
           let spriteId: any = CreateSprite(sBallParticleSpriteTemplates[BALL_MASTER], sprite.x, sprite.y, subpriority);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               gSprites[spriteId].sDuration = 24;
               gSprites[spriteId].sTargetX = sprite.x + sCaptureStars[i].xOffset;
@@ -1041,7 +1036,7 @@ export function AnimateBallOpenParticles(x: any, y: any, priority: any, subprior
       gTasks[taskId].data[3] = priority;
       gTasks[taskId].data[4] = subpriority;
       gTasks[taskId].data[15] = ballId;
-      PlaySE(SE_BALL_OPEN);
+      PlaySE((15));
 
       return taskId;
 }
@@ -1069,7 +1064,7 @@ export function PokeBallOpenParticleAnimation(taskId: any): any {
           subpriority = gTasks[taskId].data[4];
 
           spriteId = CreateSprite(sBallParticleSpriteTemplates[ballId], x, y, subpriority);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               IncrBallParticleCount();
               StartSpriteAnim(gSprites[spriteId], sBallParticleAnimNums[ballId]);
@@ -1128,7 +1123,7 @@ export function TimerBallOpenParticleAnimation(taskId: any): any {
       for (i = 0; i < 8; i++)
       {
           spriteId = CreateSprite(sBallParticleSpriteTemplates[ballId], x, y, subpriority);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               IncrBallParticleCount();
               StartSpriteAnim(gSprites[spriteId], sBallParticleAnimNums[ballId]);
@@ -1162,7 +1157,7 @@ export function DiveBallOpenParticleAnimation(taskId: any): any {
       for (i = 0; i < 8; i++)
       {
           spriteId = CreateSprite(sBallParticleSpriteTemplates[ballId], x, y, subpriority);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               IncrBallParticleCount();
               StartSpriteAnim(gSprites[spriteId], sBallParticleAnimNums[ballId]);
@@ -1196,7 +1191,7 @@ export function SafariBallOpenParticleAnimation(taskId: any): any {
       for (i = 0; i < 8; i++)
       {
           spriteId = CreateSprite(sBallParticleSpriteTemplates[ballId], x, y, subpriority);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               IncrBallParticleCount();
               StartSpriteAnim(gSprites[spriteId], sBallParticleAnimNums[ballId]);
@@ -1230,7 +1225,7 @@ export function UltraBallOpenParticleAnimation(taskId: any): any {
       for (i = 0; i < 10; i++)
       {
           spriteId = CreateSprite(sBallParticleSpriteTemplates[ballId], x, y, subpriority);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               IncrBallParticleCount();
               StartSpriteAnim(gSprites[spriteId], sBallParticleAnimNums[ballId]);
@@ -1270,7 +1265,7 @@ export function GreatBallOpenParticleAnimation(taskId: any): any {
           for (i = 0; i < 8; i++)
           {
               spriteId = CreateSprite(sBallParticleSpriteTemplates[ballId], x, y, subpriority);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   IncrBallParticleCount();
                   StartSpriteAnim(gSprites[spriteId], sBallParticleAnimNums[ballId]);
@@ -1320,7 +1315,7 @@ export function RepeatBallOpenParticleAnimation(taskId: any): any {
       for (i = 0; i < POKEBALL_COUNT; i++)
       {
           spriteId = CreateSprite(sBallParticleSpriteTemplates[ballId], x, y, subpriority);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               IncrBallParticleCount();
               StartSpriteAnim(gSprites[spriteId], sBallParticleAnimNums[ballId]);
@@ -1364,7 +1359,7 @@ export function MasterBallOpenParticleAnimation(taskId: any): any {
           for (i = 0; i < 8; i++)
           {
               spriteId = CreateSprite(sBallParticleSpriteTemplates[ballId], x, y, subpriority);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   IncrBallParticleCount();
                   StartSpriteAnim(gSprites[spriteId], sBallParticleAnimNums[ballId]);
@@ -1408,7 +1403,7 @@ export function PremierBallOpenParticleAnimation(taskId: any): any {
       for (i = 0; i < 8; i++)
       {
           spriteId = CreateSprite(sBallParticleSpriteTemplates[ballId], x, y, subpriority);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               IncrBallParticleCount();
               StartSpriteAnim(gSprites[spriteId], sBallParticleAnimNums[ballId]);
@@ -1498,7 +1493,7 @@ export function LaunchBallFadeMonTask(unfadeLater: any, spritePalNum: any, selec
           gTasks[taskId].func = Task_FadeMon_ToNormal;
       }
 
-      BeginNormalPaletteFade(selectedPalettes, 0, 0, 16, RGB_WHITE);
+      BeginNormalPaletteFade(selectedPalettes, 0, 0, 16, (RGB(31, 31, 31)));
       return taskId;
 }
 
@@ -1515,7 +1510,7 @@ export function Task_FadeMon_ToBallColor(taskId: any): any {
       else if (!gPaletteFade.active)
       {
           let selectedPalettes: any = gTasks[taskId].tPaletteLo | (gTasks[taskId].tPaletteHi << 16);
-          BeginNormalPaletteFade(selectedPalettes, 0, 16, 0, RGB_WHITE);
+          BeginNormalPaletteFade(selectedPalettes, 0, 16, 0, (RGB(31, 31, 31)));
           DestroyTask(taskId);
       }
 }
@@ -1525,7 +1520,7 @@ export function Task_FadeMon_ToNormal(taskId: any): any {
   if (!gPaletteFade.active)
       {
           let selectedPalettes: any = gTasks[taskId].tPaletteLo | (gTasks[taskId].tPaletteHi << 16);
-          BeginNormalPaletteFade(selectedPalettes, 0, 16, 0, RGB_WHITE);
+          BeginNormalPaletteFade(selectedPalettes, 0, 16, 0, (RGB(31, 31, 31)));
           gTasks[taskId].func = Task_FadeMon_ToNormal_Step;
       }
 }
@@ -1558,7 +1553,7 @@ export function AnimTask_SwapMonSpriteToFromSubstitute(taskId: any): any {
       case 0:
           gTasks[taskId].data[11] = gBattleAnimArgs[0];
           gTasks[taskId].data[0] += 0x500;
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
               gSprites[spriteId].x2 += gTasks[taskId].data[0] >> 8;
           else
               gSprites[spriteId].x2 -= gTasks[taskId].data[0] >> 8;
@@ -1574,13 +1569,13 @@ export function AnimTask_SwapMonSpriteToFromSubstitute(taskId: any): any {
           break;
       case 2:
           gTasks[taskId].data[0] += 0x500;
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
               gSprites[spriteId].x2 -= gTasks[taskId].data[0] >> 8;
           else
               gSprites[spriteId].x2 += gTasks[taskId].data[0] >> 8;
 
           gTasks[taskId].data[0] &= 0xFF;
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
           {
               if (gSprites[spriteId].x2 <= 0)
               {
@@ -1631,7 +1626,7 @@ export function AnimTask_SubstituteFadeToInvisible(taskId: any): any {
           break;
       case 2:
           spriteId = gBattlerSpriteIds[gBattleAnimAttacker];
-          RequestDma3Fill(0, OBJ_VRAM0 + gSprites[spriteId].oam.tileNum * TILE_SIZE_4BPP, MON_PIC_SIZE, 1);
+          RequestDma3Fill(0, OBJ_VRAM0 + gSprites[spriteId].oam.tileNum * TILE_SIZE_4BPP, (((64) * (64) / 2)), 1);
           ClearBehindSubstituteBit(gBattleAnimAttacker);
           DestroyAnimVisualTask(taskId);
           break;
@@ -1640,7 +1635,7 @@ export function AnimTask_SubstituteFadeToInvisible(taskId: any): any {
 
 /** void AnimTask_IsAttackerBehindSubstitute(u8 taskId) */
 export function AnimTask_IsAttackerBehindSubstitute(taskId: any): any {
-  gBattleAnimArgs[ARG_RET_ID] = gBattleSpritesDataPtr.battlerData[gBattleAnimAttacker].behindSubstitute;
+  gBattleAnimArgs[(7)] = gBattleSpritesDataPtr.battlerData[gBattleAnimAttacker].behindSubstitute;
       DestroyAnimVisualTask(taskId);
 }
 
@@ -1665,15 +1660,15 @@ export function TryShinyAnimation(battler: any, mon: any): any {
       if (IsBattlerSpriteVisible(battler))
       {
           shinyValue = GET_SHINY_VALUE(otId, personality);
-          if (shinyValue < SHINY_ODDS)
+          if (shinyValue < (8))
               isShiny = TRUE;
 
           if (isShiny)
           {
-              if (GetSpriteTileStartByTag(ANIM_TAG_GOLD_STARS) == 0xFFFF)
+              if (GetSpriteTileStartByTag((((10000) + 233))) == 0xFFFF)
               {
-                  LoadCompressedSpriteSheetUsingHeap(gBattleAnimPicTable[ANIM_TAG_GOLD_STARS - ANIM_SPRITES_START]);
-                  LoadCompressedSpritePaletteUsingHeap(gBattleAnimPaletteTable[ANIM_TAG_GOLD_STARS - ANIM_SPRITES_START]);
+                  LoadCompressedSpriteSheetUsingHeap(gBattleAnimPicTable[(((10000) + 233)) - (10000)]);
+                  LoadCompressedSpritePaletteUsingHeap(gBattleAnimPaletteTable[(((10000) + 233)) - (10000)]);
               }
 
               taskCirc = CreateTask(Task_ShinyStars, 10);
@@ -1744,18 +1739,18 @@ export function Task_ShinyStars(taskId: any): any {
           gSprites[spriteId].invisible = TRUE;
           if (gTasks[taskId].tStarIdx == 0)
           {
-              if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+              if (GetBattlerSide(battler) == (0))
                   pan = -64;
               else
                   pan = 63;
 
-              PlaySE12WithPanning(SE_SHINY, pan);
+              PlaySE12WithPanning((102), pan);
           }
       }
 
       gSprites[spriteId].sTaskId = taskId;
       gTasks[taskId].tStarIdx++;
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
           gTasks[taskId].tNumStars++;
 
       if (gTasks[taskId].tStarIdx == 5)
@@ -1815,16 +1810,16 @@ export function SpriteCB_ShinyStars_Diagonal(sprite: any): any {
 export function AnimTask_LoadPokeblockGfx(taskId: any): any {
   let paletteIndex: any = null;
 
-      LoadCompressedSpriteSheetUsingHeap(gBattleAnimPicTable[ANIM_TAG_POKEBLOCK - ANIM_SPRITES_START]);
-      LoadCompressedSpritePaletteUsingHeap(gBattleAnimPaletteTable[ANIM_TAG_POKEBLOCK - ANIM_SPRITES_START]);
-      paletteIndex = IndexOfSpritePaletteTag(ANIM_TAG_POKEBLOCK);
+      LoadCompressedSpriteSheetUsingHeap(gBattleAnimPicTable[(((10000) + 269)) - (10000)]);
+      LoadCompressedSpritePaletteUsingHeap(gBattleAnimPaletteTable[(((10000) + 269)) - (10000)]);
+      paletteIndex = IndexOfSpritePaletteTag((((10000) + 269)));
       DestroyAnimVisualTask(taskId);
 }
 
 /** void AnimTask_FreePokeblockGfx(u8 taskId) */
 export function AnimTask_FreePokeblockGfx(taskId: any): any {
-  FreeSpriteTilesByTag(ANIM_TAG_POKEBLOCK);
-      FreeSpritePaletteByTag(ANIM_TAG_POKEBLOCK);
+  FreeSpriteTilesByTag((((10000) + 269)));
+      FreeSpritePaletteByTag((((10000) + 269)));
       DestroyAnimVisualTask(taskId);
 }
 
@@ -1887,16 +1882,16 @@ export function AnimTask_SetAttackerTargetLeftPos(taskId: any): any {
 
 /** void AnimTask_GetTrappedMoveAnimId(u8 taskId) */
 export function AnimTask_GetTrappedMoveAnimId(taskId: any): any {
-  if (gBattleSpritesDataPtr.animationData.animArg == MOVE_FIRE_SPIN)
-          gBattleAnimArgs[0] = TRAP_ANIM_FIRE_SPIN;
-      else if (gBattleSpritesDataPtr.animationData.animArg == MOVE_WHIRLPOOL)
-          gBattleAnimArgs[0] = TRAP_ANIM_WHIRLPOOL;
-      else if (gBattleSpritesDataPtr.animationData.animArg == MOVE_CLAMP)
-          gBattleAnimArgs[0] = TRAP_ANIM_CLAMP;
-      else if (gBattleSpritesDataPtr.animationData.animArg == MOVE_SAND_TOMB)
-          gBattleAnimArgs[0] = TRAP_ANIM_SAND_TOMB;
+  if (gBattleSpritesDataPtr.animationData.animArg == (83))
+          gBattleAnimArgs[0] = (1);
+      else if (gBattleSpritesDataPtr.animationData.animArg == (250))
+          gBattleAnimArgs[0] = (2);
+      else if (gBattleSpritesDataPtr.animationData.animArg == (128))
+          gBattleAnimArgs[0] = (3);
+      else if (gBattleSpritesDataPtr.animationData.animArg == (328))
+          gBattleAnimArgs[0] = (4);
       else
-          gBattleAnimArgs[0] = TRAP_ANIM_BIND;
+          gBattleAnimArgs[0] = (0);
 
       DestroyAnimVisualTask(taskId);
 }

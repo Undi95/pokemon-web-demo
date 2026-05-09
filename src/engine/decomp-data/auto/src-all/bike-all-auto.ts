@@ -17,15 +17,10 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAcroBikeInputHandlers: any = null;
-let sAcroBikeTransitions: any = null;
-let sAcroBikeTricksList: any = null;
-let sMachBikeSpeedCallbacks: any = null;
-let sMachBikeSpeeds: any = null;
-let sMachBikeTransitions: any = null;
+let gUnusedBikeCameraAheadPanback: any = null;
 /** void MovePlayerOnBike(u8 direction, u16 newKeys, u16 heldKeys) */
 export function MovePlayerOnBike(direction: any, newKeys: any, heldKeys: any): any {
-  if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_MACH_BIKE)
+  if (gPlayerAvatar.flags & ((1 << 1)))
           MovePlayerOnMachBike(direction, newKeys, heldKeys);
       else
           MovePlayerOnAcroBike(direction, newKeys, heldKeys);
@@ -183,7 +178,7 @@ export function AcroBikeHandleInputNormal(newDirection: any, newKeys: any, heldK
   let direction: any = GetPlayerMovementDirection();
 
       gPlayerAvatar.bikeFrameCounter = 0;
-      if (newDirection == DIR_NONE)
+      if (newDirection == (0))
       {
           if (newKeys & B_BUTTON)
           {
@@ -335,7 +330,7 @@ export function AcroBikeHandleInputBunnyHop(newDirection: any, newKeys: any, hel
 
        
 
-      if (newDirection == DIR_NONE)
+      if (newDirection == (0))
       {
            
           newDirection = direction;
@@ -368,7 +363,7 @@ export function AcroBikeHandleInputWheelieMoving(newDirection: any, newKeys: any
           {
                
               gPlayerAvatar.acroBikeState = ACRO_STATE_NORMAL;
-              if (newDirection == DIR_NONE)
+              if (newDirection == (0))
               {
                    
                   newDirection = direction;
@@ -390,7 +385,7 @@ export function AcroBikeHandleInputWheelieMoving(newDirection: any, newKeys: any
           return CheckMovementInputAcroBike(newDirection, newKeys, heldKeys);
       }
        
-      if (newDirection == DIR_NONE)
+      if (newDirection == (0))
       {
            
           newDirection = direction;
@@ -553,9 +548,9 @@ export function AcroBikeTransition_SideJump(direction: any): any {
           }
       }
       playerObjEvent =gObjectEvents[gPlayerAvatar.objectEventId];
-      PlaySE(SE_BIKE_HOP);
+      PlaySE((34));
       playerObjEvent.facingDirectionLocked = 1;
-      PlayerSetAnimId(GetJumpMovementAction(direction), COPY_MOVE_WALK);
+      PlayerSetAnimId(GetJumpMovementAction(direction), (2));
 }
 
 /** static void AcroBikeTransition_TurnJump(u8 direction) */
@@ -655,7 +650,7 @@ export function AcroBikeTransition_WheelieLoweringMoving(direction: any): any {
 
 /** void Bike_TryAcroBikeHistoryUpdate(u16 newKeys, u16 heldKeys) */
 export function Bike_TryAcroBikeHistoryUpdate(newKeys: any, heldKeys: any): any {
-  if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_ACRO_BIKE)
+  if (gPlayerAvatar.flags & ((1 << 2)))
           AcroBike_TryHistoryUpdate(newKeys, heldKeys);
 }
 
@@ -748,14 +743,14 @@ export function Bike_UpdateABStartSelectHistory(input: any): any {
 /** static u8 Bike_DPadToDirection(u16 heldKeys) */
 export function Bike_DPadToDirection(heldKeys: any): any {
   if (heldKeys & DPAD_UP)
-          return DIR_NORTH;
+          return (2);
       if (heldKeys & DPAD_DOWN)
-          return DIR_SOUTH;
+          return (1);
       if (heldKeys & DPAD_LEFT)
-          return DIR_WEST;
+          return (3);
       if (heldKeys & DPAD_RIGHT)
-          return DIR_EAST;
-      return DIR_NONE;
+          return (4);
+      return (0);
 }
 
 /** static u8 GetBikeCollision(u8 direction) */
@@ -787,7 +782,7 @@ export function GetBikeCollisionAt(objectEvent: any, x: any, y: any, direction: 
 
 /** bool8 RS_IsRunningDisallowed(u8 tile) */
 export function RS_IsRunningDisallowed(tile: any): any {
-  if (IsRunningDisallowedByMetatile(tile) != FALSE || gMapHeader.mapType == MAP_TYPE_INDOOR)
+  if (IsRunningDisallowedByMetatile(tile) != FALSE || gMapHeader.mapType == (8))
           return TRUE;
       else
           return FALSE;
@@ -810,7 +805,7 @@ export function Bike_TryAdvanceCyclingRoadCollisions(): any {
 
 /** static bool8 CanBikeFaceDirOnMetatile(u8 direction, u8 tile) */
 export function CanBikeFaceDirOnMetatile(direction: any, tile: any): any {
-  if (direction == DIR_EAST || direction == DIR_WEST)
+  if (direction == (4) || direction == (3))
       {
            
           if (MetatileBehavior_IsIsolatedVerticalRail(tile)
@@ -829,7 +824,7 @@ export function CanBikeFaceDirOnMetatile(direction: any, tile: any): any {
 
 /** static bool8 WillPlayerCollideWithCollision(u8 newTileCollision, u8 direction) */
 export function WillPlayerCollideWithCollision(newTileCollision: any, direction: any): any {
-  if (direction == DIR_NORTH || direction == DIR_SOUTH)
+  if (direction == (2) || direction == (1))
       {
           if (newTileCollision == COLLISION_ISOLATED_VERTICAL_RAIL || newTileCollision == COLLISION_VERTICAL_RAIL)
               return FALSE;
@@ -847,7 +842,7 @@ export function IsBikingDisallowedByPlayer(): any {
   let x, y;
       let tileBehavior: any = null;
 
-      if (!(gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_SURFING | PLAYER_AVATAR_FLAG_UNDERWATER)))
+      if (!(gPlayerAvatar.flags & (((1 << 3)) | ((1 << 4)))))
       {
           PlayerGetDestCoords(x,y);
           tileBehavior = MapGridGetMetatileBehaviorAt(x, y);
@@ -859,7 +854,7 @@ export function IsBikingDisallowedByPlayer(): any {
 
 /** bool8 IsPlayerNotUsingAcroBikeOnBumpySlope(void) */
 export function IsPlayerNotUsingAcroBikeOnBumpySlope(): any {
-  if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_ACRO_BIKE)
+  if (TestPlayerAvatarFlags(((1 << 2)))
           && MetatileBehavior_IsBumpySlope(gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior))
           return FALSE;
       else
@@ -870,17 +865,17 @@ export function IsPlayerNotUsingAcroBikeOnBumpySlope(): any {
 export function GetOnOffBike(transitionFlags: any): any {
   gUnusedBikeCameraAheadPanback = FALSE;
 
-      if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+      if (gPlayerAvatar.flags & (((1 << 1)) | ((1 << 2))))
       {
-          SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_ON_FOOT);
+          SetPlayerAvatarTransitionFlags(((1 << 0)));
           Overworld_ClearSavedMusic();
           Overworld_PlaySpecialMapMusic();
       }
       else
       {
           SetPlayerAvatarTransitionFlags(transitionFlags);
-          Overworld_SetSavedMusic(MUS_CYCLING);
-          Overworld_ChangeMusicTo(MUS_CYCLING);
+          Overworld_SetSavedMusic((403));
+          Overworld_ChangeMusicTo((403));
       }
 }
 
@@ -889,7 +884,7 @@ export function BikeClearState(newDirHistory: any, newAbStartHistory: any): any 
   let i: any = null;
 
       gPlayerAvatar.acroBikeState = ACRO_STATE_NORMAL;
-      gPlayerAvatar.newDirBackup = DIR_NONE;
+      gPlayerAvatar.newDirBackup = (0);
       gPlayerAvatar.bikeFrameCounter = 0;
       gPlayerAvatar.bikeSpeed = PLAYER_SPEED_STANDING;
       gPlayerAvatar.directionHistory = newDirHistory;
@@ -920,11 +915,11 @@ export function GetPlayerSpeed(): any {
 
       memcpy(machSpeeds, sMachBikeSpeeds, 0);
 
-      if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_MACH_BIKE)
+      if (gPlayerAvatar.flags & ((1 << 1)))
           return machSpeeds[gPlayerAvatar.bikeFrameCounter];
-      else if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_ACRO_BIKE)
+      else if (gPlayerAvatar.flags & ((1 << 2)))
           return PLAYER_SPEED_FASTER;
-      else if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_SURFING | PLAYER_AVATAR_FLAG_DASH))
+      else if (gPlayerAvatar.flags & (((1 << 3)) | ((1 << 7))))
           return PLAYER_SPEED_FAST;
       else
           return PLAYER_SPEED_NORMAL;
@@ -935,7 +930,7 @@ export function Bike_HandleBumpySlopeJump(): any {
   let x, y;
       let tileBehavior: any = null;
 
-      if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_ACRO_BIKE)
+      if (gPlayerAvatar.flags & ((1 << 2)))
       {
           PlayerGetDestCoords(x,y);
           tileBehavior = MapGridGetMetatileBehaviorAt(x, y);

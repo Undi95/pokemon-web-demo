@@ -18,41 +18,8 @@
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sDrawFlyDestTextWindow: any = null;
-let sFlickerTimer: any = null;
-let sFlyDestIconSpriteTemplate: any = null;
 let sFlyMap: any = null;
-let sFlyMapBgTemplates: any = null;
-let sFlyMapWindowTemplates: any = null;
-let sFlyTargetIconsSpritePalette: any = null;
-let sFlyTargetIcons_Gfx: any = null;
-let sIconMapSec: any = null;
-let sMapHealLocations: any = null;
-let sMapSecAquaHideoutOld: any = null;
-let sMapSecIdsOffMap: any = null;
-let sMarineCaveLocationCoords: any = null;
-let sMultiNameFlyDestinations: any = null;
-let sRedOutlineFlyDestinations: any = null;
 let sRegionMap: any = null;
-let sRegionMapBg_GfxLZ: any = null;
-let sRegionMapBg_Pal: any = null;
-let sRegionMapBg_TilemapLZ: any = null;
-let sRegionMapCursorLargeGfxLZ: any = null;
-let sRegionMapCursorSmallGfxLZ: any = null;
-let sRegionMapCursorSpritePalette: any = null;
-let sRegionMapCursorSpriteTemplate: any = null;
-let sRegionMapFrameGfxLZ: any = null;
-let sRegionMapFramePal: any = null;
-let sRegionMapFrameTilemapLZ: any = null;
-let sRegionMapPlayerIconAnimTable: any = null;
-let sRegionMapPlayerIconOam: any = null;
-let sRegionMapPlayerIcon_BrendanGfx: any = null;
-let sRegionMapPlayerIcon_BrendanPal: any = null;
-let sRegionMapPlayerIcon_MayGfx: any = null;
-let sRegionMapPlayerIcon_MayPal: any = null;
-let sTimer: any = null;
-let sVisible: any = null;
-let sX: any = null;
-let sY: any = null;
 /** void InitRegionMap(struct RegionMap *regionMap, bool8 zoomed) */
 export function InitRegionMap(regionMap: any, zoomed: any): any {
   InitRegionMapData(regionMap, NULL, zoomed);
@@ -126,7 +93,7 @@ export function LoadRegionMapGfx(): any {
           sRegionMap.playerIconSpritePosY = sRegionMap.cursorPosY;
           sRegionMap.mapSecId = CorrectSpecialMapSecId_Internal(sRegionMap.mapSecId);
           sRegionMap.mapSecType = GetMapsecType(sRegionMap.mapSecId);
-          GetMapName(sRegionMap.mapSecName, sRegionMap.mapSecId, MAP_NAME_LENGTH);
+          GetMapName(sRegionMap.mapSecName, sRegionMap.mapSecId, (16));
           break;
       case 6:
           if (sRegionMap.zoomed == FALSE)
@@ -265,7 +232,7 @@ export function MoveRegionMapCursor_Full(): any {
       if (mapSecId != sRegionMap.mapSecId)
       {
           sRegionMap.mapSecId = mapSecId;
-          GetMapName(sRegionMap.mapSecName, sRegionMap.mapSecId, MAP_NAME_LENGTH);
+          GetMapName(sRegionMap.mapSecName, sRegionMap.mapSecId, (16));
       }
       GetPositionOfCursorWithinMapSec();
       sRegionMap.inputCallback = ProcessRegionMapInput_Full;
@@ -338,7 +305,7 @@ export function MoveRegionMapCursor_Zoomed(): any {
               if (mapSecId != sRegionMap.mapSecId)
               {
                   sRegionMap.mapSecId = mapSecId;
-                  GetMapName(sRegionMap.mapSecName, sRegionMap.mapSecId, MAP_NAME_LENGTH);
+                  GetMapName(sRegionMap.mapSecName, sRegionMap.mapSecId, (16));
               }
               GetPositionOfCursorWithinMapSec();
           }
@@ -525,11 +492,11 @@ export function InitMapBasedOnPlayerLocation(): any {
       switch (GetMapTypeByGroupAndId(gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum))
       {
       default:
-      case MAP_TYPE_TOWN:
-      case MAP_TYPE_CITY:
-      case MAP_TYPE_ROUTE:
-      case MAP_TYPE_UNDERWATER:
-      case MAP_TYPE_OCEAN_ROUTE:
+      case (1):
+      case (2):
+      case (3):
+      case (5):
+      case (6):
           sRegionMap.mapSecId = gMapHeader.regionMapSectionId;
           sRegionMap.playerIsInCave = FALSE;
           mapWidth = gMapHeader.mapLayout.width;
@@ -539,8 +506,8 @@ export function InitMapBasedOnPlayerLocation(): any {
           if (sRegionMap.mapSecId == MAPSEC_UNDERWATER_SEAFLOOR_CAVERN || sRegionMap.mapSecId == MAPSEC_UNDERWATER_MARINE_CAVE)
               sRegionMap.playerIsInCave = TRUE;
           break;
-      case MAP_TYPE_UNDERGROUND:
-      case MAP_TYPE_UNKNOWN:
+      case (4):
+      case (7):
           if (gMapHeader.allowEscaping)
           {
               mapHeader = Overworld_GetMapHeaderByGroupAndId(gSaveBlock1Ptr.escapeWarp.mapGroup, gSaveBlock1Ptr.escapeWarp.mapNum);
@@ -561,7 +528,7 @@ export function InitMapBasedOnPlayerLocation(): any {
               y = 1;
           }
           break;
-      case MAP_TYPE_SECRET_BASE:
+      case (9):
           mapHeader = Overworld_GetMapHeaderByGroupAndId(gSaveBlock1Ptr.dynamicWarp.mapGroup, gSaveBlock1Ptr.dynamicWarp.mapNum);
           sRegionMap.mapSecId = mapHeader.regionMapSectionId;
           sRegionMap.playerIsInCave = TRUE;
@@ -570,7 +537,7 @@ export function InitMapBasedOnPlayerLocation(): any {
           x = gSaveBlock1Ptr.dynamicWarp.x;
           y = gSaveBlock1Ptr.dynamicWarp.y;
           break;
-      case MAP_TYPE_INDOOR:
+      case (8):
           sRegionMap.mapSecId = gMapHeader.regionMapSectionId;
           if (sRegionMap.mapSecId != MAPSEC_DYNAMIC)
           {
@@ -672,20 +639,20 @@ export function RegionMap_InitializeStateBasedOnSSTidalLocation(): any {
       x = 0;
       switch (GetSSTidalLocation(mapGroup,mapNum,xOnMap,yOnMap))
       {
-      case SS_TIDAL_LOCATION_SLATEPORT:
+      case (1):
           sRegionMap.mapSecId = MAPSEC_SLATEPORT_CITY;
           break;
-      case SS_TIDAL_LOCATION_LILYCOVE:
+      case (2):
           sRegionMap.mapSecId = MAPSEC_LILYCOVE_CITY;
           break;
-      case SS_TIDAL_LOCATION_ROUTE124:
+      case (3):
           sRegionMap.mapSecId = MAPSEC_ROUTE_124;
           break;
-      case SS_TIDAL_LOCATION_ROUTE131:
+      case (4):
           sRegionMap.mapSecId = MAPSEC_ROUTE_131;
           break;
       default:
-      case SS_TIDAL_LOCATION_CURRENTS:
+      case (0):
           mapHeader = Overworld_GetMapHeaderByGroupAndId(mapGroup, mapNum);
 
           sRegionMap.mapSecId = mapHeader.regionMapSectionId;
@@ -716,41 +683,41 @@ export function GetMapsecType(mapSecId: any): any {
       case MAPSEC_NONE:
           return MAPSECTYPE_NONE;
       case MAPSEC_LITTLEROOT_TOWN:
-          return FlagGet(FLAG_VISITED_LITTLEROOT_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0xF))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_OLDALE_TOWN:
-          return FlagGet(FLAG_VISITED_OLDALE_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x10))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_DEWFORD_TOWN:
-          return FlagGet(FLAG_VISITED_DEWFORD_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x11))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_LAVARIDGE_TOWN:
-          return FlagGet(FLAG_VISITED_LAVARIDGE_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x12))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_FALLARBOR_TOWN:
-          return FlagGet(FLAG_VISITED_FALLARBOR_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x13))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_VERDANTURF_TOWN:
-          return FlagGet(FLAG_VISITED_VERDANTURF_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x14))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_PACIFIDLOG_TOWN:
-          return FlagGet(FLAG_VISITED_PACIFIDLOG_TOWN) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x15))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_PETALBURG_CITY:
-          return FlagGet(FLAG_VISITED_PETALBURG_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x16))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_SLATEPORT_CITY:
-          return FlagGet(FLAG_VISITED_SLATEPORT_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x17))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_MAUVILLE_CITY:
-          return FlagGet(FLAG_VISITED_MAUVILLE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x18))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_RUSTBORO_CITY:
-          return FlagGet(FLAG_VISITED_RUSTBORO_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x19))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_FORTREE_CITY:
-          return FlagGet(FLAG_VISITED_FORTREE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1A))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_LILYCOVE_CITY:
-          return FlagGet(FLAG_VISITED_LILYCOVE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1B))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_MOSSDEEP_CITY:
-          return FlagGet(FLAG_VISITED_MOSSDEEP_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1C))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_SOOTOPOLIS_CITY:
-          return FlagGet(FLAG_VISITED_SOOTOPOLIS_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1D))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_EVER_GRANDE_CITY:
-          return FlagGet(FLAG_VISITED_EVER_GRANDE_CITY) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1E))) ? MAPSECTYPE_CITY_CANFLY : MAPSECTYPE_CITY_CANTFLY;
       case MAPSEC_BATTLE_FRONTIER:
-          return FlagGet(FLAG_LANDMARK_BATTLE_FRONTIER) ? MAPSECTYPE_BATTLE_FRONTIER : MAPSECTYPE_NONE;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x48))) ? MAPSECTYPE_BATTLE_FRONTIER : MAPSECTYPE_NONE;
       case MAPSEC_SOUTHERN_ISLAND:
-          return FlagGet(FLAG_LANDMARK_SOUTHERN_ISLAND) ? MAPSECTYPE_ROUTE : MAPSECTYPE_NONE;
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x49))) ? MAPSECTYPE_ROUTE : MAPSECTYPE_NONE;
       default:
           return MAPSECTYPE_ROUTE;
       }
@@ -760,12 +727,12 @@ export function GetMapsecType(mapSecId: any): any {
 export function GetMarineCaveCoords(x: any, y: any): any {
   let idx: any = null;
 
-      idx = VarGet(VAR_ABNORMAL_WEATHER_LOCATION);
-      if (idx < MARINE_CAVE_LOCATIONS_START || idx > ABNORMAL_WEATHER_LOCATIONS)
+      idx = VarGet((0x4037));
+      if (idx < (((1) + (8))) || idx > (((8) + (8))))
       {
-          idx = MARINE_CAVE_LOCATIONS_START;
+          idx = (((1) + (8)));
       }
-      idx -= MARINE_CAVE_LOCATIONS_START;
+      idx -= (((1) + (8)));
 
       x = sMarineCaveLocationCoords[idx].x + (1);
       y = sMarineCaveLocationCoords[idx].y + (2);
@@ -889,7 +856,7 @@ export function CreateRegionMapCursor(tileTag: any, paletteTag: any): any {
       LoadSpriteSheet(sheet);
       LoadSpritePalette(palette);
       spriteId = CreateSprite(template, 56, 72, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           sRegionMap.cursorSprite =gSprites[spriteId];
           if (sRegionMap.zoomed == TRUE)
@@ -933,7 +900,7 @@ export function CreateRegionMapPlayerIcon(tileTag: any, paletteTag: any): any {
           sRegionMap.playerIconSprite = NULL;
           return;
       }
-      if (gSaveBlock2Ptr.playerGender == FEMALE)
+      if (gSaveBlock2Ptr.playerGender == (1))
       {
           sheet.data = sRegionMapPlayerIcon_MayGfx;
           palette.data = sRegionMapPlayerIcon_MayPal;
@@ -1106,7 +1073,7 @@ export function CB2_OpenFlyMap(): any {
           CreateRegionMapCursor(TAG_CURSOR, TAG_CURSOR);
           CreateRegionMapPlayerIcon(TAG_PLAYER_ICON, TAG_PLAYER_ICON);
           sFlyMap.mapSecId = sFlyMap.regionMap.mapSecId;
-          StringFill(sFlyMap.nameBuffer, CHAR_SPACE, MAP_NAME_LENGTH);
+          StringFill(sFlyMap.nameBuffer, (0x00), (16));
           sDrawFlyDestTextWindow = TRUE;
           DrawFlyDestTextWindow();
           gMain.state++;
@@ -1132,7 +1099,7 @@ export function CB2_OpenFlyMap(): any {
           gMain.state++;
           break;
       case 9:
-          BlendPalettes(PALETTES_ALL, 16, 0);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, 0);
           SetVBlankCallback(VBlankCB_FlyMap);
           gMain.state++;
           break;
@@ -1255,7 +1222,7 @@ export function CreateFlyDestIcons(): any {
       let shape: any = null;
       let spriteId: any = null;
 
-      canFlyFlag = FLAG_VISITED_LITTLEROOT_TOWN;
+      canFlyFlag = (((((((0x500) + (864) - 1)) + 1)) + 0xF));
       for (mapSecId = MAPSEC_LITTLEROOT_TOWN; mapSecId <= MAPSEC_EVER_GRANDE_CITY; mapSecId++)
       {
           GetMapSecDimensions(mapSecId,x,y,width,height);
@@ -1270,7 +1237,7 @@ export function CreateFlyDestIcons(): any {
               shape = SPRITE_SHAPE(_8x8);
 
           spriteId = CreateSprite(sFlyDestIconSpriteTemplate, x, y, 10);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               gSprites[spriteId].oam.shape = shape;
 
@@ -1305,7 +1272,7 @@ export function TryCreateRedOutlineFlyDestIcons(): any {
               x = (x + (1)) * 8;
               y = (y + (2)) * 8;
               spriteId = CreateSprite(sFlyDestIconSpriteTemplate, x, y, 10);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   gSprites[spriteId].oam.size = SPRITE_SIZE(_16x16);
                   gSprites[spriteId].callback = SpriteCB_FlyDestIcon;
@@ -1338,7 +1305,7 @@ export function CB_FadeInFlyMap(): any {
   switch (sFlyMap.state)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           sFlyMap.state++;
           break;
       case 1:
@@ -1366,13 +1333,13 @@ export function CB_HandleFlyMapInput(): any {
           case MAP_INPUT_A_BUTTON:
               if (sFlyMap.regionMap.mapSecType == MAPSECTYPE_CITY_CANFLY || sFlyMap.regionMap.mapSecType == MAPSECTYPE_BATTLE_FRONTIER)
               {
-                  m4aSongNumStart(SE_SELECT);
+                  m4aSongNumStart((5));
                   sFlyMap.choseFlyLocation = TRUE;
                   SetFlyMapCallback(CB_ExitFlyMap);
               }
               break;
           case MAP_INPUT_B_BUTTON:
-              m4aSongNumStart(SE_SELECT);
+              m4aSongNumStart((5));
               sFlyMap.choseFlyLocation = FALSE;
               SetFlyMapCallback(CB_ExitFlyMap);
               break;
@@ -1385,7 +1352,7 @@ export function CB_ExitFlyMap(): any {
   switch (sFlyMap.state)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           sFlyMap.state++;
           break;
       case 1:
@@ -1403,16 +1370,16 @@ export function CB_ExitFlyMap(): any {
                       SetWarpDestinationToHealLocation(HEAL_LOCATION_BATTLE_FRONTIER_OUTSIDE_EAST);
                       break;
                   case MAPSEC_LITTLEROOT_TOWN:
-                      SetWarpDestinationToHealLocation(gSaveBlock2Ptr.playerGender == MALE ? HEAL_LOCATION_LITTLEROOT_TOWN_BRENDANS_HOUSE : HEAL_LOCATION_LITTLEROOT_TOWN_MAYS_HOUSE);
+                      SetWarpDestinationToHealLocation(gSaveBlock2Ptr.playerGender == (0) ? HEAL_LOCATION_LITTLEROOT_TOWN_BRENDANS_HOUSE : HEAL_LOCATION_LITTLEROOT_TOWN_MAYS_HOUSE);
                       break;
                   case MAPSEC_EVER_GRANDE_CITY:
-                      SetWarpDestinationToHealLocation(FlagGet(FLAG_LANDMARK_POKEMON_LEAGUE) && sFlyMap.regionMap.posWithinMapSec == 0 ? HEAL_LOCATION_EVER_GRANDE_CITY_POKEMON_LEAGUE : HEAL_LOCATION_EVER_GRANDE_CITY);
+                      SetWarpDestinationToHealLocation(FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x54))) && sFlyMap.regionMap.posWithinMapSec == 0 ? HEAL_LOCATION_EVER_GRANDE_CITY_POKEMON_LEAGUE : HEAL_LOCATION_EVER_GRANDE_CITY);
                       break;
                   default:
                       if (sMapHealLocations[sFlyMap.regionMap.mapSecId][2] != HEAL_LOCATION_NONE)
                           SetWarpDestinationToHealLocation(sMapHealLocations[sFlyMap.regionMap.mapSecId][2]);
                       else
-                          SetWarpDestinationToMapWarp(sMapHealLocations[sFlyMap.regionMap.mapSecId][0], sMapHealLocations[sFlyMap.regionMap.mapSecId][1], WARP_ID_NONE);
+                          SetWarpDestinationToMapWarp(sMapHealLocations[sFlyMap.regionMap.mapSecId][0], sMapHealLocations[sFlyMap.regionMap.mapSecId][1], ((-1)));
                       break;
                   }
                   ReturnToFieldFromFlyMapSelect();

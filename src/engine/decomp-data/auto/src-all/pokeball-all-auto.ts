@@ -17,20 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattler: any = null;
-let sDelay: any = null;
-let sDelayTimer: any = null;
-let sFadePalsHi: any = null;
-let sFadePalsLo: any = null;
-let sFinalMonX: any = null;
-let sFinalMonY: any = null;
-let sMonPalNum: any = null;
-let sMonSpriteId: any = null;
-let sSpecies: any = null;
-let sSpeedX: any = null;
-let sSpeedY: any = null;
-let sTimer: any = null;
-let sTrigIdx: any = null;
+let gDoingBattleAnim: any = null;
 /** u8 DoPokeballSendOutAnimation(s16 pan, u8 kindOfThrow) */
 export function DoPokeballSendOutAnimation(pan: any, kindOfThrow: any): any {
   let taskId: any = null;
@@ -63,7 +50,7 @@ export function Task_DoPokeballSendOutAnim(taskId: any): any {
       throwCaseId = gTasks[taskId].tThrowId;
       battler = gTasks[taskId].tBattler;
 
-      if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) != (0))
           itemId = GetMonData(gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_POKEBALL);
       else
           itemId = GetMonData(gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_POKEBALL);
@@ -77,13 +64,13 @@ export function Task_DoPokeballSendOutAnim(taskId: any): any {
 
       switch (throwCaseId)
       {
-      case POKEBALL_PLAYER_SENDOUT:
+      case (0xFF):
           gBattlerTarget = battler;
           gSprites[ballSpriteId].x = 24;
           gSprites[ballSpriteId].y = 68;
           gSprites[ballSpriteId].callback = SpriteCB_PlayerMonSendOut_1;
           break;
-      case POKEBALL_OPPONENT_SENDOUT:
+      case (0xFE):
           gSprites[ballSpriteId].x = GetBattlerSpriteCoord(battler, BATTLER_COORD_X);
           gSprites[ballSpriteId].y = GetBattlerSpriteCoord(battler, BATTLER_COORD_Y) + 24;
           gBattlerTarget = battler;
@@ -112,7 +99,7 @@ export function Task_DoPokeballSendOutAnim(taskId: any): any {
       gSprites[ballSpriteId].oam.affineParam = taskId;
       gTasks[taskId].tOpponentBattler = gBattlerTarget;
       gTasks[taskId].func = TaskDummy;
-      PlaySE(SE_BALL_THROW);
+      PlaySE((61));
 }
 
 /** static void SpriteCB_BallThrow(struct Sprite *sprite) */
@@ -162,7 +149,7 @@ export function SpriteCB_BallThrow_StartShrinkMon(sprite: any): any {
 export function SpriteCB_BallThrow_ShrinkMon(sprite: any): any {
   sprite.data[5]++;
       if (sprite.data[5] == 11)
-          PlaySE(SE_BALL_TRADE);
+          PlaySE((60));
 
       if (gSprites[gBattlerSpriteIds[sprite.sBattler]].affineAnimEnded)
       {
@@ -213,16 +200,16 @@ export function SpriteCB_BallThrow_FallToGround(sprite: any): any {
               switch (sprite.data[3] >> 8)
               {
               case 1:
-                  PlaySE(SE_BALL_BOUNCE_1);
+                  PlaySE((56));
                   break;
               case 2:
-                  PlaySE(SE_BALL_BOUNCE_2);
+                  PlaySE((57));
                   break;
               case 3:
-                  PlaySE(SE_BALL_BOUNCE_3);
+                  PlaySE((58));
                   break;
               default:
-                  PlaySE(SE_BALL_BOUNCE_4);
+                  PlaySE((59));
                   break;
               }
           }
@@ -264,7 +251,7 @@ export function SpriteCB_BallThrow_StartShakes(sprite: any): any {
           sprite.affineAnimPaused = TRUE;
           StartSpriteAffineAnim(sprite, 1);
           sprite.callback = SpriteCB_BallThrow_Shake;
-          PlaySE(SE_BALL);
+          PlaySE((23));
       }
 }
 
@@ -334,7 +321,7 @@ export function SpriteCB_BallThrow_Shake(sprite: any): any {
               else
                   StartSpriteAffineAnim(sprite, 1);
 
-              PlaySE(SE_BALL);
+              PlaySE((23));
           }
           break;
       }
@@ -359,9 +346,9 @@ export function Task_PlayCryWhenReleasedFromBall(taskId: any): any {
       case 1:
            
           if (ShouldPlayNormalMonCry(mon) == TRUE)
-              PlayCry_ByMode(species, pan, CRY_MODE_NORMAL);
+              PlayCry_ByMode(species, pan, (0));
           else
-              PlayCry_ByMode(species, pan, CRY_MODE_WEAK);
+              PlayCry_ByMode(species, pan, (11));
           gBattleSpritesDataPtr.healthBoxesData[battler].waitForCry = FALSE;
           DestroyTask(taskId);
           break;
@@ -375,9 +362,9 @@ export function Task_PlayCryWhenReleasedFromBall(taskId: any): any {
           {
                
               if (ShouldPlayNormalMonCry(mon) == TRUE)
-                  PlayCry_ReleaseDouble(species, pan, CRY_MODE_DOUBLES);
+                  PlayCry_ReleaseDouble(species, pan, (1));
               else
-                  PlayCry_ReleaseDouble(species, pan, CRY_MODE_WEAK_DOUBLES);
+                  PlayCry_ReleaseDouble(species, pan, (12));
 
               gBattleSpritesDataPtr.healthBoxesData[battler].waitForCry = FALSE;
               DestroyTask(taskId);
@@ -415,9 +402,9 @@ export function Task_PlayCryWhenReleasedFromBall(taskId: any): any {
           }
            
           if (ShouldPlayNormalMonCry(mon) == TRUE)
-              PlayCry_ReleaseDouble(species, pan, CRY_MODE_NORMAL);
+              PlayCry_ReleaseDouble(species, pan, (0));
           else
-              PlayCry_ReleaseDouble(species, pan, CRY_MODE_WEAK);
+              PlayCry_ReleaseDouble(species, pan, (11));
 
           gBattleSpritesDataPtr.healthBoxesData[battler].waitForCry = FALSE;
           DestroyTask(taskId);
@@ -444,7 +431,7 @@ export function SpriteCB_ReleaseMonFromBall(sprite: any): any {
           let wantedCryCase: any = null;
           let taskId: any = null;
 
-          if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) != (0))
           {
               mon =gEnemyParty[gBattlerPartyIndexes[battler]];
               pan = 25;
@@ -459,7 +446,7 @@ export function SpriteCB_ReleaseMonFromBall(sprite: any): any {
           if ((battler == GetBattlerAtPosition(B_POSITION_PLAYER_LEFT) || battler == GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT))
            && IsDoubleBattle() && gBattleSpritesDataPtr.animationData.introAnimActive)
           {
-              if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_LINK)
+              if (gBattleTypeFlags & ((1 << 6)) && gBattleTypeFlags & ((1 << 1)))
               {
                   if (IsBGMPlaying())
                       m4aMPlayStop(gMPlayInfo_BGM);
@@ -492,7 +479,7 @@ export function SpriteCB_ReleaseMonFromBall(sprite: any): any {
 
       StartSpriteAffineAnim(gSprites[gBattlerSpriteIds[sprite.sBattler]], BATTLER_AFFINE_EMERGE);
 
-      if (GetBattlerSide(sprite.sBattler) == B_SIDE_OPPONENT)
+      if (GetBattlerSide(sprite.sBattler) == (1))
           gSprites[gBattlerSpriteIds[sprite.sBattler]].callback = SpriteCB_OpponentMonFromBall;
       else
           gSprites[gBattlerSpriteIds[sprite.sBattler]].callback = SpriteCB_PlayerMonFromBall;
@@ -564,7 +551,7 @@ export function SpriteCB_BallThrow_CaptureMon(sprite: any): any {
       {
           gDoingBattleAnim = FALSE;
           m4aMPlayAllStop();
-          PlaySE(MUS_EVOLVED);
+          PlaySE((371));
       }
       else if (sprite.data[4] == 315)
       {
@@ -772,7 +759,7 @@ export function SpriteCB_ReleasedMonFlyOut(sprite: any): any {
       }
       if (sprite.animEnded && emergeAnimFinished && atFinalPosition)
       {
-          if (gSprites[monSpriteId].sSpecies == SPECIES_EGG)
+          if (gSprites[monSpriteId].sSpecies == (412))
               DoMonFrontSpriteAnimation(gSprites[monSpriteId], gSprites[monSpriteId].sSpecies, TRUE, 0);
           else
               DoMonFrontSpriteAnimation(gSprites[monSpriteId], gSprites[monSpriteId].sSpecies, FALSE, 0);
@@ -836,7 +823,7 @@ export function SpriteCB_TradePokeballSendOff(sprite: any): any {
 
       sprite.sTimer++;
       if (sprite.sTimer == 11)
-          PlaySE(SE_BALL_TRADE);
+          PlaySE((60));
 
       monSpriteId = sprite.sMonSpriteId;
       if (gSprites[monSpriteId].affineAnimEnded)
@@ -868,7 +855,7 @@ export function StartHealthboxSlideIn(battler: any): any {
       healthboxSprite.x2 = 0x73;
       healthboxSprite.y2 = 0;
       healthboxSprite.callback = SpriteCB_HealthboxSlideIn;
-      if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+      if (GetBattlerSide(battler) != (0))
       {
           healthboxSprite.sSpeedX = -healthboxSprite.sSpeedX;
           healthboxSprite.sSpeedY = -healthboxSprite.sSpeedY;
@@ -954,7 +941,7 @@ export function FreeBallGfx(ballId: any): any {
 
 /** static u16 GetBattlerPokeballItemId(u8 battler) */
 export function GetBattlerPokeballItemId(battler: any): any {
-  if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+  if (GetBattlerSide(battler) == (0))
           return GetMonData(gPlayerParty[gBattlerPartyIndexes[battler]], MON_DATA_POKEBALL);
       else
           return GetMonData(gEnemyParty[gBattlerPartyIndexes[battler]], MON_DATA_POKEBALL);

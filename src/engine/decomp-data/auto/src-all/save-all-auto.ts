@@ -17,16 +17,29 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sSaveSlotLayout: any = null;
+let gDamagedSaveSectors: any = null;
+let gGameContinueCallback: any = null;
+let gIncrementalSectorId: any = null;
+let gLastKnownGoodSector: any = null;
+let gLastSaveCounter: any = null;
+let gLastWrittenSector: any = null;
+let gReadWriteSector: any = null;
+let gSaveAttemptStatus: any = null;
+let gSaveCounter: any = null;
+let gSaveFileStatus: any = null;
+let gSoftResetDisabled: any = null;
+let gTrainerHillVBlankCounter: any = null;
+let tState: any = null;
+let tTimer: any = null;
 /** void ClearSaveData(void) */
 export function ClearSaveData(): any {
   let i: any = null;
 
        
-      for (i = 0; i < SECTORS_COUNT / 2; i++)
+      for (i = 0; i < (32) / 2; i++)
       {
           EraseFlashSector(i);
-          EraseFlashSector(i + SECTORS_COUNT / 2);
+          EraseFlashSector(i + (32) / 2);
       }
 }
 
@@ -65,7 +78,7 @@ export function WriteSaveSectorOrSlot(sectorId: any, locations: any): any {
 
       gReadWriteSector =gSaveDataBuffer;
 
-      if (sectorId != FULL_SAVE_SLOT)
+      if (sectorId != (0xFFFF))
       {
            
            
@@ -77,17 +90,17 @@ export function WriteSaveSectorOrSlot(sectorId: any, locations: any): any {
           gLastKnownGoodSector = gLastWrittenSector;  
           gLastSaveCounter = gSaveCounter;
           gLastWrittenSector++;
-          gLastWrittenSector = gLastWrittenSector % NUM_SECTORS_PER_SLOT;
+          gLastWrittenSector = gLastWrittenSector % (14);
           gSaveCounter++;
-          status = SAVE_STATUS_OK;
+          status = (1);
 
-          for (i = 0; i < NUM_SECTORS_PER_SLOT; i++)
+          for (i = 0; i < (14); i++)
               HandleWriteSector(i, locations);
 
           if (gDamagedSaveSectors)
           {
                
-              status = SAVE_STATUS_ERROR;
+              status = (0xFF);
               gLastWrittenSector = gLastKnownGoodSector;
               gSaveCounter = gLastSaveCounter;
           }
@@ -105,20 +118,20 @@ export function HandleWriteSector(sectorId: any, locations: any): any {
 
        
       sector = sectorId + gLastWrittenSector;
-      sector %= NUM_SECTORS_PER_SLOT;
-      sector += NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
+      sector %= (14);
+      sector += (14) * (gSaveCounter % (2));
 
        
       data = locations[sectorId].data;
       size = locations[sectorId].size;
 
        
-      for (i = 0; i < SECTOR_SIZE; i++)
+      for (i = 0; i < (((3968) + (128))); i++)
           (gReadWriteSector)[i] = 0;
 
        
       gReadWriteSector.id = sectorId;
-      gReadWriteSector.signature = SECTOR_SIGNATURE;
+      gReadWriteSector.signature = (0x8012025);
       gReadWriteSector.counter = gSaveCounter;
 
        
@@ -136,10 +149,10 @@ export function HandleWriteSectorNBytes(sectorId: any, data: any, size: any): an
       let sector: any =gSaveDataBuffer;
 
        
-      for (i = 0; i < SECTOR_SIZE; i++)
+      for (i = 0; i < (((3968) + (128))); i++)
           (sector)[i] = 0;
 
-      sector.signature = SECTOR_SIGNATURE;
+      sector.signature = (0x8012025);
 
        
       for (i = 0; i < size; i++)
@@ -155,13 +168,13 @@ export function TryWriteSector(sector: any, data: any): any {
       {
            
           SetDamagedSectorBits(ENABLE, sector);
-          return SAVE_STATUS_ERROR;
+          return (0xFF);
       }
       else
       {
            
           SetDamagedSectorBits(DISABLE, sector);
-          return SAVE_STATUS_OK;
+          return (1);
       }
 }
 
@@ -171,7 +184,7 @@ export function RestoreSaveBackupVarsAndIncrement(locations: any): any {
       gLastKnownGoodSector = gLastWrittenSector;
       gLastSaveCounter = gSaveCounter;
       gLastWrittenSector++;
-      gLastWrittenSector %= NUM_SECTORS_PER_SLOT;
+      gLastWrittenSector %= (14);
       gSaveCounter++;
       gIncrementalSectorId = 0;
       gDamagedSaveSectors = 0;
@@ -194,12 +207,12 @@ export function HandleWriteIncrementalSector(numSectors: any, locations: any): a
 
       if (gIncrementalSectorId < numSectors - 1)
       {
-          status = SAVE_STATUS_OK;
+          status = (1);
           HandleWriteSector(gIncrementalSectorId, locations);
           gIncrementalSectorId++;
           if (gDamagedSaveSectors)
           {
-              status = SAVE_STATUS_ERROR;
+              status = (0xFF);
               gLastWrittenSector = gLastKnownGoodSector;
               gSaveCounter = gLastSaveCounter;
           }
@@ -207,7 +220,7 @@ export function HandleWriteIncrementalSector(numSectors: any, locations: any): a
       else
       {
            
-          status = SAVE_STATUS_ERROR;
+          status = (0xFF);
       }
 
       return status;
@@ -215,13 +228,13 @@ export function HandleWriteIncrementalSector(numSectors: any, locations: any): a
 
 /** static u8 HandleReplaceSectorAndVerify(u16 sectorId, const struct SaveSectorLocation *locations) */
 export function HandleReplaceSectorAndVerify(sectorId: any, locations: any): any {
-  let status: any = SAVE_STATUS_OK;
+  let status: any = (1);
 
       HandleReplaceSector(sectorId - 1, locations);
 
       if (gDamagedSaveSectors)
       {
-          status = SAVE_STATUS_ERROR;
+          status = (0xFF);
           gLastWrittenSector = gLastKnownGoodSector;
           gSaveCounter = gLastSaveCounter;
       }
@@ -238,20 +251,20 @@ export function HandleReplaceSector(sectorId: any, locations: any): any {
 
        
       sector = sectorId + gLastWrittenSector;
-      sector %= NUM_SECTORS_PER_SLOT;
-      sector += NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
+      sector %= (14);
+      sector += (14) * (gSaveCounter % (2));
 
        
       data = locations[sectorId].data;
       size = locations[sectorId].size;
 
        
-      for (i = 0; i < SECTOR_SIZE; i++)
+      for (i = 0; i < (((3968) + (128))); i++)
           (gReadWriteSector)[i] = 0;
 
        
       gReadWriteSector.id = sectorId;
-      gReadWriteSector.signature = SECTOR_SIGNATURE;
+      gReadWriteSector.signature = (0x8012025);
       gReadWriteSector.counter = gSaveCounter;
 
        
@@ -263,51 +276,51 @@ export function HandleReplaceSector(sectorId: any, locations: any): any {
        
       EraseFlashSector(sector);
 
-      status = SAVE_STATUS_OK;
+      status = (1);
 
        
-      for (i = 0; i < SECTOR_SIGNATURE_OFFSET; i++)
+      for (i = 0; i < (0); i++)
       {
           if (ProgramFlashByte(sector, i, (gReadWriteSector)[i]))
           {
-              status = SAVE_STATUS_ERROR;
+              status = (0xFF);
               break;
           }
       }
 
-      if (status == SAVE_STATUS_ERROR)
+      if (status == (0xFF))
       {
            
           SetDamagedSectorBits(ENABLE, sector);
-          return SAVE_STATUS_ERROR;
+          return (0xFF);
       }
       else
       {
            
-          status = SAVE_STATUS_OK;
+          status = (1);
 
            
            
-          for (i = 0; i < SECTOR_SIZE - (SECTOR_SIGNATURE_OFFSET + 1); i++)
+          for (i = 0; i < (((3968) + (128))) - ((0) + 1); i++)
           {
-              if (ProgramFlashByte(sector, SECTOR_SIGNATURE_OFFSET + 1 + i, (gReadWriteSector)[SECTOR_SIGNATURE_OFFSET + 1 + i]))
+              if (ProgramFlashByte(sector, (0) + 1 + i, (gReadWriteSector)[(0) + 1 + i]))
               {
-                  status = SAVE_STATUS_ERROR;
+                  status = (0xFF);
                   break;
               }
           }
 
-          if (status == SAVE_STATUS_ERROR)
+          if (status == (0xFF))
           {
                
               SetDamagedSectorBits(ENABLE, sector);
-              return SAVE_STATUS_ERROR;
+              return (0xFF);
           }
           else
           {
                
               SetDamagedSectorBits(DISABLE, sector);
-              return SAVE_STATUS_OK;
+              return (1);
           }
       }
 }
@@ -315,69 +328,69 @@ export function HandleReplaceSector(sectorId: any, locations: any): any {
 /** static u8 WriteSectorSignatureByte_NoOffset(u16 sectorId, const struct SaveSectorLocation *locations) */
 export function WriteSectorSignatureByte_NoOffset(sectorId: any, locations: any): any {
   let sector: any = sectorId + gLastWrittenSector;
-      sector %= NUM_SECTORS_PER_SLOT;
-      sector += NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
+      sector %= (14);
+      sector += (14) * (gSaveCounter % (2));
 
        
-      if (ProgramFlashByte(sector, SECTOR_SIGNATURE_OFFSET, SECTOR_SIGNATURE & 0xFF))
+      if (ProgramFlashByte(sector, (0), (0x8012025) & 0xFF))
       {
            
           SetDamagedSectorBits(ENABLE, sector);
           gLastWrittenSector = gLastKnownGoodSector;
           gSaveCounter = gLastSaveCounter;
-          return SAVE_STATUS_ERROR;
+          return (0xFF);
       }
       else
       {
            
           SetDamagedSectorBits(DISABLE, sector);
-          return SAVE_STATUS_OK;
+          return (1);
       }
 }
 
 /** static u8 CopySectorSignatureByte(u16 sectorId, const struct SaveSectorLocation *locations) */
 export function CopySectorSignatureByte(sectorId: any, locations: any): any {
   let sector: any = sectorId + gLastWrittenSector - 1;
-      sector %= NUM_SECTORS_PER_SLOT;
-      sector += NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
+      sector %= (14);
+      sector += (14) * (gSaveCounter % (2));
 
        
-      if (ProgramFlashByte(sector, SECTOR_SIGNATURE_OFFSET, (gReadWriteSector)[SECTOR_SIGNATURE_OFFSET]))
+      if (ProgramFlashByte(sector, (0), (gReadWriteSector)[(0)]))
       {
            
           SetDamagedSectorBits(ENABLE, sector);
           gLastWrittenSector = gLastKnownGoodSector;
           gSaveCounter = gLastSaveCounter;
-          return SAVE_STATUS_ERROR;
+          return (0xFF);
       }
       else
       {
            
           SetDamagedSectorBits(DISABLE, sector);
-          return SAVE_STATUS_OK;
+          return (1);
       }
 }
 
 /** static u8 WriteSectorSignatureByte(u16 sectorId, const struct SaveSectorLocation *locations) */
 export function WriteSectorSignatureByte(sectorId: any, locations: any): any {
   let sector: any = sectorId + gLastWrittenSector - 1;
-      sector %= NUM_SECTORS_PER_SLOT;
-      sector += NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
+      sector %= (14);
+      sector += (14) * (gSaveCounter % (2));
 
        
-      if (ProgramFlashByte(sector, SECTOR_SIGNATURE_OFFSET, SECTOR_SIGNATURE & 0xFF))
+      if (ProgramFlashByte(sector, (0), (0x8012025) & 0xFF))
       {
            
           SetDamagedSectorBits(ENABLE, sector);
           gLastWrittenSector = gLastKnownGoodSector;
           gSaveCounter = gLastSaveCounter;
-          return SAVE_STATUS_ERROR;
+          return (0xFF);
       }
       else
       {
            
           SetDamagedSectorBits(DISABLE, sector);
-          return SAVE_STATUS_OK;
+          return (1);
       }
 }
 
@@ -385,15 +398,15 @@ export function WriteSectorSignatureByte(sectorId: any, locations: any): any {
 export function TryLoadSaveSlot(sectorId: any, locations: any): any {
   let status: any = null;
       gReadWriteSector =gSaveDataBuffer;
-      if (sectorId != FULL_SAVE_SLOT)
+      if (sectorId != (0xFFFF))
       {
            
-          status = SAVE_STATUS_ERROR;
+          status = (0xFF);
       }
       else
       {
           status = GetSaveValidStatus(locations);
-          CopySaveSlotData(FULL_SAVE_SLOT, locations);
+          CopySaveSlotData((0xFFFF), locations);
       }
 
       return status;
@@ -403,10 +416,10 @@ export function TryLoadSaveSlot(sectorId: any, locations: any): any {
 export function CopySaveSlotData(sectorId: any, locations: any): any {
   let i: any = null;
       let checksum: any = null;
-      let slotOffset: any = NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
+      let slotOffset: any = (14) * (gSaveCounter % (2));
       let id: any = null;
 
-      for (i = 0; i < NUM_SECTORS_PER_SLOT; i++)
+      for (i = 0; i < (14); i++)
       {
           ReadFlashSector(i + slotOffset, gReadWriteSector);
 
@@ -417,7 +430,7 @@ export function CopySaveSlotData(sectorId: any, locations: any): any {
           checksum = CalculateChecksum(gReadWriteSector.data, locations[id].size);
 
            
-          if (gReadWriteSector.signature == SECTOR_SIGNATURE && gReadWriteSector.checksum == checksum)
+          if (gReadWriteSector.signature == (0x8012025) && gReadWriteSector.checksum == checksum)
           {
               let j: any = null;
               for (j = 0; j < locations[id].size; j++)
@@ -425,7 +438,7 @@ export function CopySaveSlotData(sectorId: any, locations: any): any {
           }
       }
 
-      return SAVE_STATUS_OK;
+      return (1);
 }
 
 /** static u8 GetSaveValidStatus(const struct SaveSectorLocation *locations) */
@@ -440,10 +453,10 @@ export function GetSaveValidStatus(locations: any): any {
       let saveSlot2Status: any = null;
 
        
-      for (i = 0; i < NUM_SECTORS_PER_SLOT; i++)
+      for (i = 0; i < (14); i++)
       {
           ReadFlashSector(i, gReadWriteSector);
-          if (gReadWriteSector.signature == SECTOR_SIGNATURE)
+          if (gReadWriteSector.signature == (0x8012025))
           {
               signatureValid = TRUE;
               checksum = CalculateChecksum(gReadWriteSector.data, locations[gReadWriteSector.id].size);
@@ -457,25 +470,25 @@ export function GetSaveValidStatus(locations: any): any {
 
       if (signatureValid)
       {
-          if (validSectorFlags == (1 << NUM_SECTORS_PER_SLOT) - 1)
-              saveSlot1Status = SAVE_STATUS_OK;
+          if (validSectorFlags == (1 << (14)) - 1)
+              saveSlot1Status = (1);
           else
-              saveSlot1Status = SAVE_STATUS_ERROR;
+              saveSlot1Status = (0xFF);
       }
       else
       {
            
-          saveSlot1Status = SAVE_STATUS_EMPTY;
+          saveSlot1Status = (0);
       }
 
       validSectorFlags = 0;
       signatureValid = FALSE;
 
        
-      for (i = 0; i < NUM_SECTORS_PER_SLOT; i++)
+      for (i = 0; i < (14); i++)
       {
-          ReadFlashSector(i + NUM_SECTORS_PER_SLOT, gReadWriteSector);
-          if (gReadWriteSector.signature == SECTOR_SIGNATURE)
+          ReadFlashSector(i + (14), gReadWriteSector);
+          if (gReadWriteSector.signature == (0x8012025))
           {
               signatureValid = TRUE;
               checksum = CalculateChecksum(gReadWriteSector.data, locations[gReadWriteSector.id].size);
@@ -489,18 +502,18 @@ export function GetSaveValidStatus(locations: any): any {
 
       if (signatureValid)
       {
-          if (validSectorFlags == (1 << NUM_SECTORS_PER_SLOT) - 1)
-              saveSlot2Status = SAVE_STATUS_OK;
+          if (validSectorFlags == (1 << (14)) - 1)
+              saveSlot2Status = (1);
           else
-              saveSlot2Status = SAVE_STATUS_ERROR;
+              saveSlot2Status = (0xFF);
       }
       else
       {
            
-          saveSlot2Status = SAVE_STATUS_EMPTY;
+          saveSlot2Status = (0);
       }
 
-      if (saveSlot1Status == SAVE_STATUS_OK && saveSlot2Status == SAVE_STATUS_OK)
+      if (saveSlot1Status == (1) && saveSlot2Status == (1))
       {
           if ((saveSlot1Counter == -1 && saveSlot2Counter ==  0)
            || (saveSlot1Counter ==  0 && saveSlot2Counter == -1))
@@ -517,40 +530,40 @@ export function GetSaveValidStatus(locations: any): any {
               else
                   gSaveCounter = saveSlot1Counter;
           }
-          return SAVE_STATUS_OK;
+          return (1);
       }
 
        
 
-      if (saveSlot1Status == SAVE_STATUS_OK)
+      if (saveSlot1Status == (1))
       {
           gSaveCounter = saveSlot1Counter;
-          if (saveSlot2Status == SAVE_STATUS_ERROR)
-              return SAVE_STATUS_ERROR;  
-          return SAVE_STATUS_OK;  
+          if (saveSlot2Status == (0xFF))
+              return (0xFF);  
+          return (1);  
       }
 
-      if (saveSlot2Status == SAVE_STATUS_OK)
+      if (saveSlot2Status == (1))
       {
           gSaveCounter = saveSlot2Counter;
-          if (saveSlot1Status == SAVE_STATUS_ERROR)
-              return SAVE_STATUS_ERROR;  
-          return SAVE_STATUS_OK;  
+          if (saveSlot1Status == (0xFF))
+              return (0xFF);  
+          return (1);  
       }
 
        
-      if (saveSlot1Status == SAVE_STATUS_EMPTY
-       && saveSlot2Status == SAVE_STATUS_EMPTY)
+      if (saveSlot1Status == (0)
+       && saveSlot2Status == (0))
       {
           gSaveCounter = 0;
           gLastWrittenSector = 0;
-          return SAVE_STATUS_EMPTY;
+          return (0);
       }
 
        
       gSaveCounter = 0;
       gLastWrittenSector = 0;
-      return SAVE_STATUS_CORRUPT;
+      return (2);
 }
 
 /** static u8 TryLoadSaveSector(u8 sectorId, u8 *data, u16 size) */
@@ -558,7 +571,7 @@ export function TryLoadSaveSector(sectorId: any, data: any, size: any): any {
   let i: any = null;
       let sector: any =gSaveDataBuffer;
       ReadFlashSector(sectorId, sector);
-      if (sector.signature == SECTOR_SIGNATURE)
+      if (sector.signature == (0x8012025))
       {
           let checksum: any = CalculateChecksum(sector.data, size);
           if (sector.id == checksum)
@@ -566,24 +579,24 @@ export function TryLoadSaveSector(sectorId: any, data: any, size: any): any {
                
               for (i = 0; i < size; i++)
                   data[i] = sector.data[i];
-              return SAVE_STATUS_OK;
+              return (1);
           }
           else
           {
                
-              return SAVE_STATUS_CORRUPT;
+              return (2);
           }
       }
       else
       {
            
-          return SAVE_STATUS_EMPTY;
+          return (0);
       }
 }
 
 /** static bool8 ReadFlashSector(u8 sectorId, struct SaveSector *sector) */
 export function ReadFlashSector(sectorId: any, sector: any): any {
-  ReadFlash(sectorId, 0, sector.data, SECTOR_SIZE);
+  ReadFlash(sectorId, 0, sector.data, (((3968) + (128))));
       return TRUE;
 }
 
@@ -603,17 +616,17 @@ export function CalculateChecksum(data: any, size: any): any {
 
 /** static void UpdateSaveAddresses(void) */
 export function UpdateSaveAddresses(): any {
-  let i: any = SECTOR_ID_SAVEBLOCK2;
+  let i: any = (0);
       gRamSaveSectorLocations[i].data = (gSaveBlock2Ptr) + sSaveSlotLayout[i].offset;
       gRamSaveSectorLocations[i].size = sSaveSlotLayout[i].size;
 
-      for (i = SECTOR_ID_SAVEBLOCK1_START; i <= SECTOR_ID_SAVEBLOCK1_END; i++)
+      for (i = (1); i <= (4); i++)
       {
           gRamSaveSectorLocations[i].data = (gSaveBlock1Ptr) + sSaveSlotLayout[i].offset;
           gRamSaveSectorLocations[i].size = sSaveSlotLayout[i].size;
       }
 
-      for (; i <= SECTOR_ID_PKMN_STORAGE_END; i++)  
+      for (; i <= (13); i++)  
       {
           gRamSaveSectorLocations[i].data = (gPokemonStoragePtr) + sSaveSlotLayout[i].offset;
           gRamSaveSectorLocations[i].size = sSaveSlotLayout[i].size;
@@ -633,45 +646,45 @@ export function HandleSavingData(saveType: any): any {
       case SAVE_HALL_OF_FAME_ERASE_BEFORE:
            
            
-          for (i = SECTOR_ID_HOF_1; i < SECTORS_COUNT; i++)
+          for (i = (28); i < (32); i++)
               EraseFlashSector(i);
            
       case SAVE_HALL_OF_FAME:
-          if (GetGameStat(GAME_STAT_ENTERED_HOF) < 999)
-              IncrementGameStat(GAME_STAT_ENTERED_HOF);
+          if (GetGameStat((10)) < 999)
+              IncrementGameStat((10));
 
            
           CopyPartyAndObjectsToSave();
-          WriteSaveSectorOrSlot(FULL_SAVE_SLOT, gRamSaveSectorLocations);
+          WriteSaveSectorOrSlot((0xFFFF), gRamSaveSectorLocations);
 
            
           tempAddr = gDecompressionBuffer;
-          HandleWriteSectorNBytes(SECTOR_ID_HOF_1, tempAddr, SECTOR_DATA_SIZE);
-          HandleWriteSectorNBytes(SECTOR_ID_HOF_2, tempAddr + SECTOR_DATA_SIZE, SECTOR_DATA_SIZE);
+          HandleWriteSectorNBytes((28), tempAddr, (3968));
+          HandleWriteSectorNBytes((29), tempAddr + (3968), (3968));
           break;
       case SAVE_NORMAL:
       default:
           CopyPartyAndObjectsToSave();
-          WriteSaveSectorOrSlot(FULL_SAVE_SLOT, gRamSaveSectorLocations);
+          WriteSaveSectorOrSlot((0xFFFF), gRamSaveSectorLocations);
           break;
       case SAVE_LINK:
       case SAVE_EREADER:  
            
            
           CopyPartyAndObjectsToSave();
-          for(i = SECTOR_ID_SAVEBLOCK2; i <= SECTOR_ID_SAVEBLOCK1_END; i++)
+          for(i = (0); i <= (4); i++)
               HandleReplaceSector(i, gRamSaveSectorLocations);
-          for(i = SECTOR_ID_SAVEBLOCK2; i <= SECTOR_ID_SAVEBLOCK1_END; i++)
+          for(i = (0); i <= (4); i++)
               WriteSectorSignatureByte_NoOffset(i, gRamSaveSectorLocations);
           break;
       case SAVE_OVERWRITE_DIFFERENT_FILE:
            
-          for (i = SECTOR_ID_HOF_1; i < SECTORS_COUNT; i++)
+          for (i = (28); i < (32); i++)
               EraseFlashSector(i);
 
            
           CopyPartyAndObjectsToSave();
-          WriteSaveSectorOrSlot(FULL_SAVE_SLOT, gRamSaveSectorLocations);
+          WriteSaveSectorOrSlot((0xFFFF), gRamSaveSectorLocations);
           break;
       }
       gTrainerHillVBlankCounter = backupVar;
@@ -682,21 +695,21 @@ export function HandleSavingData(saveType: any): any {
 export function TrySavingData(saveType: any): any {
   if (gFlashMemoryPresent != TRUE)
       {
-          gSaveAttemptStatus = SAVE_STATUS_ERROR;
-          return SAVE_STATUS_ERROR;
+          gSaveAttemptStatus = (0xFF);
+          return (0xFF);
       }
 
       HandleSavingData(saveType);
       if (!gDamagedSaveSectors)
       {
-          gSaveAttemptStatus = SAVE_STATUS_OK;
-          return SAVE_STATUS_OK;
+          gSaveAttemptStatus = (1);
+          return (1);
       }
       else
       {
           DoSaveFailedScreen(saveType);
-          gSaveAttemptStatus = SAVE_STATUS_ERROR;
-          return SAVE_STATUS_ERROR;
+          gSaveAttemptStatus = (0xFF);
+          return (0xFF);
       }
 }
 
@@ -712,14 +725,14 @@ export function LinkFullSave_Init(): any {
 
 /** bool8 LinkFullSave_WriteSector(void) */
 export function LinkFullSave_WriteSector(): any {
-  let status: any = HandleWriteIncrementalSector(NUM_SECTORS_PER_SLOT, gRamSaveSectorLocations);
+  let status: any = HandleWriteIncrementalSector((14), gRamSaveSectorLocations);
       if (gDamagedSaveSectors)
           DoSaveFailedScreen(SAVE_NORMAL);
 
        
        
        
-      if (status == SAVE_STATUS_ERROR)
+      if (status == (0xFF))
           return TRUE;
       else
           return FALSE;
@@ -727,7 +740,7 @@ export function LinkFullSave_WriteSector(): any {
 
 /** bool8 LinkFullSave_ReplaceLastSector(void) */
 export function LinkFullSave_ReplaceLastSector(): any {
-  HandleReplaceSectorAndVerify(NUM_SECTORS_PER_SLOT, gRamSaveSectorLocations);
+  HandleReplaceSectorAndVerify((14), gRamSaveSectorLocations);
       if (gDamagedSaveSectors)
           DoSaveFailedScreen(SAVE_NORMAL);
       return FALSE;
@@ -735,7 +748,7 @@ export function LinkFullSave_ReplaceLastSector(): any {
 
 /** bool8 LinkFullSave_SetLastSectorSignature(void) */
 export function LinkFullSave_SetLastSectorSignature(): any {
-  CopySectorSignatureByte(NUM_SECTORS_PER_SLOT, gRamSaveSectorLocations);
+  CopySectorSignatureByte((14), gRamSaveSectorLocations);
       if (gDamagedSaveSectors)
           DoSaveFailedScreen(SAVE_NORMAL);
       return FALSE;
@@ -760,7 +773,7 @@ export function WriteSaveBlock2(): any {
 export function WriteSaveBlock1Sector(): any {
   let finished: any = FALSE;
       let sectorId: any = ++gIncrementalSectorId;  
-      if (sectorId <= SECTOR_ID_SAVEBLOCK1_END)
+      if (sectorId <= (4))
       {
            
           HandleReplaceSectorAndVerify(gIncrementalSectorId + 1, gRamSaveSectorLocations);
@@ -787,8 +800,8 @@ export function LoadGameSave(saveType: any): any {
 
       if (gFlashMemoryPresent != TRUE)
       {
-          gSaveFileStatus = SAVE_STATUS_NO_FLASH;
-          return SAVE_STATUS_ERROR;
+          gSaveFileStatus = (4);
+          return (0xFF);
       }
 
       UpdateSaveAddresses();
@@ -796,15 +809,15 @@ export function LoadGameSave(saveType: any): any {
       {
       case SAVE_NORMAL:
       default:
-          status = TryLoadSaveSlot(FULL_SAVE_SLOT, gRamSaveSectorLocations);
+          status = TryLoadSaveSlot((0xFFFF), gRamSaveSectorLocations);
           CopyPartyAndObjectsFromSave();
           gSaveFileStatus = status;
           gGameContinueCallback = NULL;
           break;
       case SAVE_HALL_OF_FAME:
-          status = TryLoadSaveSector(SECTOR_ID_HOF_1, gDecompressionBuffer, SECTOR_DATA_SIZE);
-          if (status == SAVE_STATUS_OK)
-              status = TryLoadSaveSector(SECTOR_ID_HOF_2,gDecompressionBuffer[SECTOR_DATA_SIZE], SECTOR_DATA_SIZE);
+          status = TryLoadSaveSector((28), gDecompressionBuffer, (3968));
+          if (status == (1))
+              status = TryLoadSaveSector((29),gDecompressionBuffer[(3968)], (3968));
           break;
       }
 
@@ -821,13 +834,13 @@ export function GetSaveBlocksPointersBaseOffset(): any {
           return 0;
       UpdateSaveAddresses();
       GetSaveValidStatus(gRamSaveSectorLocations);
-      slotOffset = NUM_SECTORS_PER_SLOT * (gSaveCounter % NUM_SAVE_SLOTS);
-      for (i = 0; i < NUM_SECTORS_PER_SLOT; i++)
+      slotOffset = (14) * (gSaveCounter % (2));
+      for (i = 0; i < (14); i++)
       {
           ReadFlashSector(i + slotOffset, gReadWriteSector);
 
            
-          if (gReadWriteSector.id == SECTOR_ID_SAVEBLOCK2)
+          if (gReadWriteSector.id == (0))
               return sector.data[0] +
                      sector.data[0] +
                      sector.data[0] +
@@ -842,20 +855,20 @@ export function TryReadSpecialSaveSector(sector: any, dst: any): any {
       let size: any = null;
       let savData: any = null;
 
-      if (sector != SECTOR_ID_TRAINER_HILL && sector != SECTOR_ID_RECORDED_BATTLE)
-          return SAVE_STATUS_ERROR;
+      if (sector != (30) && sector != (31))
+          return (0xFF);
 
-      ReadFlash(sector, 0,gSaveDataBuffer, SECTOR_SIZE);
-      if ((gSaveDataBuffer.data[0]) != SPECIAL_SECTOR_SENTINEL)
-          return SAVE_STATUS_ERROR;
+      ReadFlash(sector, 0,gSaveDataBuffer, (((3968) + (128))));
+      if ((gSaveDataBuffer.data[0]) != (0xB39D))
+          return (0xFF);
 
        
       i = 0;
-      size = SECTOR_COUNTER_OFFSET - 1;
+      size = (0) - 1;
       savData =gSaveDataBuffer.data[4];  
       for (; i <= size; i++)
           dst[i] = savData[i];
-      return SAVE_STATUS_OK;
+      return (1);
 }
 
 /** u32 TryWriteSpecialSaveSector(u8 sector, u8 *src) */
@@ -865,21 +878,21 @@ export function TryWriteSpecialSaveSector(sector: any, src: any): any {
       let savData: any = null;
       let savDataBuffer: any = null;
 
-      if (sector != SECTOR_ID_TRAINER_HILL && sector != SECTOR_ID_RECORDED_BATTLE)
-          return SAVE_STATUS_ERROR;
+      if (sector != (30) && sector != (31))
+          return (0xFF);
 
       savDataBuffer =gSaveDataBuffer;
-      MEM_WRITE(savDataBuffer, SPECIAL_SECTOR_SENTINEL);
+      MEM_WRITE(savDataBuffer, (0xB39D));
 
        
       i = 0;
-      size = SECTOR_COUNTER_OFFSET - 1;
+      size = (0) - 1;
       savData =gSaveDataBuffer.data[4];  
       for (; i <= size; i++)
           savData[i] = src[i];
       if (ProgramFlashSectorAndVerify(sector, savDataBuffer) != 0)
-          return SAVE_STATUS_ERROR;
-      return SAVE_STATUS_OK;
+          return (0xFF);
+      return (1);
 }
 
 /** void Task_LinkFullSave(u8 taskId) */

@@ -17,15 +17,15 @@
 
 /** static void InitTimeBasedEvents(void) */
 export function InitTimeBasedEvents(): any {
-  FlagSet(FLAG_SYS_CLOCK_SET);
+  FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x35)));
       RtcCalcLocalTime();
       gSaveBlock2Ptr.lastBerryTreeUpdate = gLocalTime;
-      VarSet(VAR_DAYS, gLocalTime.days);
+      VarSet((0x4040), gLocalTime.days);
 }
 
 /** void DoTimeBasedEvents(void) */
 export function DoTimeBasedEvents(): any {
-  if (FlagGet(FLAG_SYS_CLOCK_SET) && !InPokemonCenter())
+  if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x35))) && !InPokemonCenter())
       {
           RtcCalcLocalTime();
           UpdatePerDay(gLocalTime);
@@ -35,7 +35,7 @@ export function DoTimeBasedEvents(): any {
 
 /** static void UpdatePerDay(struct Time *localTime) */
 export function UpdatePerDay(localTime: any): any {
-  let days: any = GetVarPointer(VAR_DAYS);
+  let days: any = GetVarPointer((0x4040));
       let daysSince: any = null;
 
       if (days != localTime.days && days <= localTime.days)

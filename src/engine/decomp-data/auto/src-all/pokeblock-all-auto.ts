@@ -17,30 +17,20 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sActionsInBattle: any = null;
-let sActionsOnField: any = null;
-let sActionsOnPokeblockFeeder: any = null;
-let sActionsWhenGivingToLady: any = null;
-let sAffineAnims_PokeblockCaseShake: any = null;
-let sBgTemplatesForPokeblockMenu: any = null;
-let sFavoritePokeblocksTable: any = null;
-let sPokeblockListMenuTemplate: any = null;
+let gMultiuseListMenuTemplate: any = null;
+let gSpecialVar_0x8004: any = null;
+let gSpecialVar_ItemId: any = null;
 let sPokeblockMenu: any = null;
-let sPokeblockMenuActions: any = null;
-let sSavedPokeblockData: any = null;
-let sSpriteTemplate_PokeblockCase: any = null;
-let sState: any = null;
-let sTextColor: any = null;
-let sTimer: any = null;
-let sTossPkblockWindowTemplate: any = null;
-let sTossYesNoFuncTable: any = null;
-let sWindowTemplates: any = null;
+let selectedRow: any = null;
+let tListTaskId: any = null;
+let tToSwapId: any = null;
+let tWindowId: any = null;
 /** void OpenPokeblockCase(u8 caseId, void (*callback)(void)) */
 export function OpenPokeblockCase(caseId: any, callback: any): any {
   sPokeblockMenu = Alloc(0);
       sPokeblockMenu.caseId = caseId;
       sPokeblockMenu.callbackOnUse = NULL;
-      sPokeblockMenu.arrowTaskId = TASK_NONE;
+      sPokeblockMenu.arrowTaskId = ((0xFF));
       sPokeblockMenu.isSwapping = FALSE;
       sSavedPokeblockData.callback = callback;
 
@@ -189,11 +179,11 @@ export function InitPokeblockMenu(): any {
           gMain.state++;
           break;
       case 17:
-          BlendPalettes(PALETTES_ALL, 16, 0);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, 0);
           gMain.state++;
           break;
       case 18:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           gPaletteFade.bufferTransferDisabled = FALSE;
           gMain.state++;
           break;
@@ -287,7 +277,7 @@ export function PrintOnPokeblockWindow(windowId: any, string: any, x: any): any 
 export function DrawPokeblockMenuTitleText(): any {
   let i: any = null;
 
-      let itemName: any = GetItemName(ITEM_POKEBLOCK_CASE);
+      let itemName: any = GetItemName((273));
       PrintOnPokeblockWindow(WIN_TITLE, itemName, GetStringCenterAlignXOffset(FONT_NORMAL, itemName, 0x50));  
 
       PrintOnPokeblockWindow(WIN_SPICY,  gText_Spicy, 0);
@@ -313,7 +303,7 @@ export function UpdatePokeblockList(): any {
 
       StringCopy(sPokeblockMenu.menuItemsStrings[i], gText_StowCase);
       sPokeblockMenu.items[i].name = sPokeblockMenu.menuItemsStrings[i];
-      sPokeblockMenu.items[i].id = LIST_CANCEL;
+      sPokeblockMenu.items[i].id = (-2);
 
       gMultiuseListMenuTemplate = sPokeblockListMenuTemplate;
       gMultiuseListMenuTemplate.fontId = FONT_NARROW;
@@ -327,9 +317,9 @@ export function PutPokeblockListMenuString(dst: any, pkblId: any): any {
   let pkblock: any =gSaveBlock1Ptr.pokeblocks[pkblId];
       let txtPtr: any = StringCopy(dst, gPokeblockNames[pkblock.color]);
 
-      txtPtr =  EXT_CTRL_CODE_BEGIN;
-      txtPtr =  EXT_CTRL_CODE_SKIP;
-      txtPtr =  CHAR_BLOCK_1;
+      txtPtr =  (0xFC);
+      txtPtr =  (0x12);
+      txtPtr =  (0x57);
 
       ConvertIntToDecimalStringN(gStringVar1, GetHighestPokeblocksFlavorLevel(pkblock), STR_CONV_MODE_LEFT_ALIGN, 3);
       StringExpandPlaceholders(txtPtr, gText_LvVar1);
@@ -339,7 +329,7 @@ export function PutPokeblockListMenuString(dst: any, pkblId: any): any {
 export function MovePokeblockMenuCursor(pkblId: any, onInit: any, list: any): any {
   if (onInit != TRUE)
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           gSprites[sPokeblockMenu.pokeblockCaseSpriteId].callback = SpriteCB_ShakePokeblockCase;
       }
 
@@ -355,12 +345,12 @@ export function DrawPokeblockInfo(pkblId: any): any {
 
       FillWindowPixelBuffer(WIN_FEEL, PIXEL_FILL(0));
 
-      if (pkblId != LIST_CANCEL)
+      if (pkblId != (-2))
       {
           pokeblock =gSaveBlock1Ptr.pokeblocks[pkblId];
           rectTilemapSrc[0] = 0x17;
           rectTilemapSrc[1] = 0x18;
-          for (i = 0; i < FLAVOR_COUNT; i++)
+          for (i = 0; i < (5); i++)
           {
               if (GetPokeblockData(pokeblock, PBLOCK_SPICY + i) > 0)
               {
@@ -387,7 +377,7 @@ export function DrawPokeblockInfo(pkblId: any): any {
           rectTilemapSrc[0] = 0xF;
           rectTilemapSrc[1] = 0xF;
 
-          for (i = 0; i < FLAVOR_COUNT; i++)
+          for (i = 0; i < (5); i++)
               CopyToBgTilemapBufferRect(2, rectTilemapSrc, (i / 3 * 6) + 1, (i % 3 * 2) + 13, 1, 2);
 
           CopyWindowToVram(WIN_FEEL, COPYWIN_GFX);
@@ -407,9 +397,9 @@ export function DrawPokeblockMenuHighlight(cursorPos: any, tileNum: any): any {
 export function CompactPokeblockSlots(): any {
   let i, j;
 
-      for (i = 0; i < POKEBLOCKS_COUNT - 1; i++)
+      for (i = 0; i < (40) - 1; i++)
       {
-          for (j = i + 1; j < POKEBLOCKS_COUNT; j++)
+          for (j = i + 1; j < (40); j++)
           {
               if (gSaveBlock1Ptr.pokeblocks[i].color == PBLOCK_CLR_NONE)
               {
@@ -461,7 +451,7 @@ export function SetMenuItemsCountAndMaxShowed(): any {
 
       CompactPokeblockSlots();
 
-      for (sPokeblockMenu.itemsNo = 0, i = 0; i < POKEBLOCKS_COUNT; i++)
+      for (sPokeblockMenu.itemsNo = 0, i = 0; i < (40); i++)
       {
           if (gSaveBlock1Ptr.pokeblocks[i].color != PBLOCK_CLR_NONE)
               sPokeblockMenu.itemsNo++;
@@ -506,7 +496,7 @@ export function SetInitialScroll(): any {
 
 /** static void CreateScrollArrows(void) */
 export function CreateScrollArrows(): any {
-  if (sPokeblockMenu.arrowTaskId == TASK_NONE)
+  if (sPokeblockMenu.arrowTaskId == ((0xFF)))
       {
           sPokeblockMenu.arrowTaskId = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 0xB0, 8, 0x98, sPokeblockMenu.itemsNo - sPokeblockMenu.maxShowed,
                                                                                  (1110), (1110),sSavedPokeblockData.scrollOffset);
@@ -515,10 +505,10 @@ export function CreateScrollArrows(): any {
 
 /** static void DestroyScrollArrows(void) */
 export function DestroyScrollArrows(): any {
-  if (sPokeblockMenu.arrowTaskId != TASK_NONE)
+  if (sPokeblockMenu.arrowTaskId != ((0xFF)))
       {
           RemoveScrollIndicatorArrowPair(sPokeblockMenu.arrowTaskId);
-          sPokeblockMenu.arrowTaskId = TASK_NONE;
+          sPokeblockMenu.arrowTaskId = ((0xFF));
       }
 }
 
@@ -556,7 +546,7 @@ export function SpriteCB_ShakePokeblockCase(sprite: any): any {
 
 /** static void FadePaletteAndSetTaskToClosePokeblockCase(u8 taskId) */
 export function FadePaletteAndSetTaskToClosePokeblockCase(taskId: any): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_FreeDataAndExitPokeblockCase;
 }
 
@@ -597,7 +587,7 @@ export function Task_HandlePokeblockMenuInput(taskId: any): any {
               if (sSavedPokeblockData.scrollOffset + sSavedPokeblockData.selectedRow != sPokeblockMenu.itemsNo - 1)
               {
                    
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   DrawPokeblockMenuHighlight(sSavedPokeblockData.selectedRow, (0x2005));
                   tToSwapId = sSavedPokeblockData.scrollOffset + sSavedPokeblockData.selectedRow;
                   sPokeblockMenu.isSwapping = TRUE;
@@ -619,17 +609,17 @@ export function Task_HandlePokeblockMenuInput(taskId: any): any {
 
               switch (input)
               {
-              case LIST_NOTHING_CHOSEN:
+              case (-1):
                   break;
-              case LIST_CANCEL:
-                  PlaySE(SE_SELECT);
+              case (-2):
+                  PlaySE((5));
                   gSpecialVar_Result = 0xFFFF;
                   gSpecialVar_ItemId = 0;
                   FadePaletteAndSetTaskToClosePokeblockCase(taskId);
                   break;
               default:
                    
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   gSpecialVar_ItemId = input;
                   ShowPokeblockActionsWindow(taskId);
                   break;
@@ -648,7 +638,7 @@ export function Task_HandlePokeblocksSwapInput(taskId: any): any {
       if (JOY_NEW(SELECT_BUTTON))
       {
            
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           ListMenuGetScrollAndRow(tListTaskId,sSavedPokeblockData.scrollOffset,sSavedPokeblockData.selectedRow);
           UpdatePokeblockSwapMenu(taskId, FALSE);
       }
@@ -676,10 +666,10 @@ export function Task_HandlePokeblocksSwapInput(taskId: any): any {
 
           switch (input)
           {
-          case LIST_NOTHING_CHOSEN:
+          case (-1):
               break;
-          case LIST_CANCEL:
-              PlaySE(SE_SELECT);
+          case (-2):
+              PlaySE((5));
               if (JOY_NEW(A_BUTTON))  
                   UpdatePokeblockSwapMenu(taskId, FALSE);
               else
@@ -687,7 +677,7 @@ export function Task_HandlePokeblocksSwapInput(taskId: any): any {
               break;
           default:
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               UpdatePokeblockSwapMenu(taskId, FALSE);
               break;
           }
@@ -750,18 +740,18 @@ export function Task_HandlePokeblockActionsInput(taskId: any): any {
           return;
 
       itemId = Menu_ProcessInputNoWrap();
-      if (itemId == MENU_NOTHING_CHOSEN)
+      if (itemId == (-2))
       {
           return;
       }
-      else if (itemId == MENU_B_PRESSED)
+      else if (itemId == (-1))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           PokeblockAction_Cancel(taskId);
       }
       else
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           sPokeblockMenuActions[sPokeblockMenu.pokeblockActionIds[itemId]].func.void_u8(taskId);
       }
 }
@@ -811,7 +801,7 @@ export function TossPokeblock(taskId: any): any {
           let scrollOffset, selectedRow;
 
           TryClearPokeblock(gSpecialVar_ItemId);
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 
           scrollOffset =sSavedPokeblockData.scrollOffset;
           selectedRow =sSavedPokeblockData.selectedRow;
@@ -900,7 +890,7 @@ export function ClearPokeblock(pkblId: any): any {
 export function ClearPokeblocks(): any {
   let i: any = null;
 
-      for (i = 0; i < POKEBLOCKS_COUNT; i++)
+      for (i = 0; i < (40); i++)
           ClearPokeblock(i);
 }
 
@@ -909,7 +899,7 @@ export function GetHighestPokeblocksFlavorLevel(pokeblock: any): any {
   let i: any = null;
       let maxFlavor: any = GetPokeblockData(pokeblock, PBLOCK_SPICY);
 
-      for (i = PBLOCK_SPICY; i < FLAVOR_COUNT; i++)
+      for (i = PBLOCK_SPICY; i < (5); i++)
       {
           let currFlavor: any = GetPokeblockData(pokeblock, PBLOCK_SPICY + i);
           if (maxFlavor < currFlavor)
@@ -932,7 +922,7 @@ export function GetPokeblocksFeel(pokeblock: any): any {
 export function GetFirstFreePokeblockSlot(): any {
   let i: any = null;
 
-      for (i = 0; i < POKEBLOCKS_COUNT; i++)
+      for (i = 0; i < (40); i++)
       {
           if (gSaveBlock1Ptr.pokeblocks[i].color == PBLOCK_CLR_NONE)
               return i;
@@ -994,11 +984,11 @@ export function PokeblockGetGain(nature: any, pokeblock: any): any {
   let flavor: any = null;
       let curGain, totalGain = 0;
 
-      for (flavor = 0; flavor < FLAVOR_COUNT; flavor++)
+      for (flavor = 0; flavor < (5); flavor++)
       {
           curGain = GetPokeblockData(pokeblock, flavor + PBLOCK_SPICY);
           if (curGain > 0)
-              totalGain += curGain * gPokeblockFlavorCompatibilityTable[FLAVOR_COUNT * nature + flavor];
+              totalGain += curGain * gPokeblockFlavorCompatibilityTable[(5) * nature + flavor];
       }
 
       return totalGain;
@@ -1014,7 +1004,7 @@ export function PokeblockCopyName(pokeblock: any, dest: any): any {
 export function CopyMonFavoritePokeblockName(nature: any, dest: any): any {
   let i: any = null;
 
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           if (PokeblockGetGain(nature,sFavoritePokeblocksTable[i]) > 0)
           {
@@ -1031,7 +1021,7 @@ export function GetPokeblocksFlavor(pokeblock: any): any {
   let bestFlavor: any = 0;
       let i: any = null;
 
-      for (i = 0; i < FLAVOR_COUNT; i++)
+      for (i = 0; i < (5); i++)
       {
           if (GetPokeblockData(pokeblock, bestFlavor + 1) < GetPokeblockData(pokeblock, i + 1))
               bestFlavor = i;

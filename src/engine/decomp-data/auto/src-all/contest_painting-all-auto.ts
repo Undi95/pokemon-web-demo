@@ -17,30 +17,12 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgPalette: any = null;
-let sBgTemplates: any = null;
-let sContestPaintingMonOamData: any = null;
-let sContestRankNames: any = null;
+let gCurContestWinner: any = null;
 let sFadeCounter: any = null;
 let sHoldState: any = null;
 let sMosaicVal: any = null;
-let sMuseumCaptions: any = null;
-let sPictureFramePalettes: any = null;
-let sPictureFrameTilemap_Beauty: any = null;
-let sPictureFrameTilemap_Cool: any = null;
-let sPictureFrameTilemap_Cute: any = null;
-let sPictureFrameTilemap_HallLobby: any = null;
-let sPictureFrameTilemap_Smart: any = null;
-let sPictureFrameTilemap_Tough: any = null;
-let sPictureFrameTiles_Beauty: any = null;
-let sPictureFrameTiles_Cool: any = null;
-let sPictureFrameTiles_Cute: any = null;
-let sPictureFrameTiles_HallLobby: any = null;
-let sPictureFrameTiles_Smart: any = null;
-let sPictureFrameTiles_Tough: any = null;
 let sVarsInitialized: any = null;
 let sWindowId: any = null;
-let sWindowTemplate: any = null;
 /** void SetContestWinnerForPainting(int contestWinnerId) */
 export function SetContestWinnerForPainting(contestWinnerId: any): any {
   let saveIdx: any =gCurContestWinnerSaveIdx;
@@ -128,7 +110,7 @@ export function HoldContestPainting(): any {
           if ((JOY_NEW(A_BUTTON)) || (JOY_NEW(B_BUTTON)))
           {
               sHoldState++;
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           }
 
           if (sVarsInitialized)
@@ -168,7 +150,7 @@ export function PrintContestPaintingCaption(contestType: any, isForArtist: any):
           return;
 
       category = gContestPaintingWinner.contestCategory;
-      if (contestType < MUSEUM_CONTEST_WINNERS_START)
+      if (contestType < (((9) - 1)))
       {
            
           BufferContestName(gStringVar1, category);
@@ -299,25 +281,25 @@ export function LoadContestPaintingFrame(contestWinnerId: any, isForArtist: any)
       if (isForArtist == TRUE)
       {
            
-          switch (gContestPaintingWinner.contestCategory / NUM_PAINTING_CAPTIONS)
+          switch (gContestPaintingWinner.contestCategory / (3))
           {
-          case CONTEST_CATEGORY_COOL:
+          case (0):
               RLUnCompVram(sPictureFrameTiles_Cool, VRAM);
               RLUnCompWram(sPictureFrameTilemap_Cool, gContestMonPixels);
               break;
-          case CONTEST_CATEGORY_BEAUTY:
+          case (1):
               RLUnCompVram(sPictureFrameTiles_Beauty, VRAM);
               RLUnCompWram(sPictureFrameTilemap_Beauty, gContestMonPixels);
               break;
-          case CONTEST_CATEGORY_CUTE:
+          case (2):
               RLUnCompVram(sPictureFrameTiles_Cute, VRAM);
               RLUnCompWram(sPictureFrameTilemap_Cute, gContestMonPixels);
               break;
-          case CONTEST_CATEGORY_SMART:
+          case (3):
               RLUnCompVram(sPictureFrameTiles_Smart, VRAM);
               RLUnCompWram(sPictureFrameTilemap_Smart, gContestMonPixels);
               break;
-          case CONTEST_CATEGORY_TOUGH:
+          case (4):
               RLUnCompVram(sPictureFrameTiles_Tough, VRAM);
               RLUnCompWram(sPictureFrameTilemap_Tough, gContestMonPixels);
               break;
@@ -341,7 +323,7 @@ export function LoadContestPaintingFrame(contestWinnerId: any, isForArtist: any)
           for (x = 0; x < 16; x++)
               /* transpiler bug : VRAM_PICTURE_DATA(x + 7, 2) = gContestMonPixels[2][7]; */ ;
       }
-      else if (contestWinnerId < MUSEUM_CONTEST_WINNERS_START)
+      else if (contestWinnerId < (((9) - 1)))
       {
            
           RLUnCompVram(sPictureFrameTiles_HallLobby, VRAM);
@@ -350,25 +332,25 @@ export function LoadContestPaintingFrame(contestWinnerId: any, isForArtist: any)
       else
       {
            
-          switch (gContestPaintingWinner.contestCategory / NUM_PAINTING_CAPTIONS)
+          switch (gContestPaintingWinner.contestCategory / (3))
           {
-          case CONTEST_CATEGORY_COOL:
+          case (0):
               RLUnCompVram(sPictureFrameTiles_Cool, VRAM);
               RLUnCompVram(sPictureFrameTilemap_Cool, (BG_SCREEN_ADDR(12)));
               break;
-          case CONTEST_CATEGORY_BEAUTY:
+          case (1):
               RLUnCompVram(sPictureFrameTiles_Beauty, VRAM);
               RLUnCompVram(sPictureFrameTilemap_Beauty, (BG_SCREEN_ADDR(12)));
               break;
-          case CONTEST_CATEGORY_CUTE:
+          case (2):
               RLUnCompVram(sPictureFrameTiles_Cute, VRAM);
               RLUnCompVram(sPictureFrameTilemap_Cute, (BG_SCREEN_ADDR(12)));
               break;
-          case CONTEST_CATEGORY_SMART:
+          case (3):
               RLUnCompVram(sPictureFrameTiles_Smart, VRAM);
               RLUnCompVram(sPictureFrameTilemap_Smart, (BG_SCREEN_ADDR(12)));
               break;
-          case CONTEST_CATEGORY_TOUGH:
+          case (4):
               RLUnCompVram(sPictureFrameTiles_Tough, VRAM);
               RLUnCompVram(sPictureFrameTilemap_Tough, (BG_SCREEN_ADDR(12)));
               break;
@@ -397,22 +379,22 @@ export function InitPaintingMonOamData(contestWinnerId: any): any {
 export function GetImageEffectForContestWinner(contestWinnerId: any): any {
   let contestCategory: any = null;
 
-      if (contestWinnerId < MUSEUM_CONTEST_WINNERS_START)
+      if (contestWinnerId < (((9) - 1)))
           contestCategory = gContestPaintingWinner.contestCategory;
       else
-          contestCategory = gContestPaintingWinner.contestCategory / NUM_PAINTING_CAPTIONS;
+          contestCategory = gContestPaintingWinner.contestCategory / (3);
 
       switch (contestCategory)
       {
-      case CONTEST_CATEGORY_COOL:
+      case (0):
           return IMAGE_EFFECT_OUTLINE_COLORED;
-      case CONTEST_CATEGORY_BEAUTY:
+      case (1):
           return IMAGE_EFFECT_SHIMMER;
-      case CONTEST_CATEGORY_CUTE:
+      case (2):
           return IMAGE_EFFECT_POINTILLISM;
-      case CONTEST_CATEGORY_SMART:
+      case (3):
           return IMAGE_EFFECT_CHARCOAL;
-      case CONTEST_CATEGORY_TOUGH:
+      case (4):
           return IMAGE_EFFECT_GRAYSCALE_LIGHT;
       }
 

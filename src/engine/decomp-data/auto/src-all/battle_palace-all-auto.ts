@@ -17,11 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattlePalaceEarlyPrizes: any = null;
-let sBattlePalaceFunctions: any = null;
-let sBattlePalaceLatePrizes: any = null;
-let sWinStreakFlags: any = null;
-let sWinStreakMasks: any = null;
+let gTrainerBattleOpponent_A: any = null;
 /** void CallBattlePalaceFunction(void) */
 export function CallBattlePalaceFunction(): any {
   sBattlePalaceFunctions[gSpecialVar_0x8004]();
@@ -30,7 +26,7 @@ export function CallBattlePalaceFunction(): any {
 /** static void InitPalaceChallenge(void) */
 export function InitPalaceChallenge(): any {
   let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+      let battleMode: any = VarGet((0x40CE));
 
       gSaveBlock2Ptr.frontier.challengeStatus = 0;
       gSaveBlock2Ptr.frontier.curChallengeBattleNum = 0;
@@ -39,24 +35,24 @@ export function InitPalaceChallenge(): any {
       if (!(gSaveBlock2Ptr.frontier.winStreakActiveFlags & sWinStreakFlags[battleMode][lvlMode]))
           gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] = 0;
 
-      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE);
+      SetDynamicWarp(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)));
       gTrainerBattleOpponent_A = 0;
 }
 
 /** static void GetPalaceData(void) */
 export function GetPalaceData(): any {
   let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+      let battleMode: any = VarGet((0x40CE));
 
       switch (gSpecialVar_0x8005)
       {
-      case PALACE_DATA_PRIZE:
+      case (0):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.palacePrize;
           break;
-      case PALACE_DATA_WIN_STREAK:
+      case (1):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode];
           break;
-      case PALACE_DATA_WIN_STREAK_ACTIVE:
+      case (2):
           gSpecialVar_Result = ((gSaveBlock2Ptr.frontier.winStreakActiveFlags & sWinStreakFlags[battleMode][lvlMode]) != 0);
           break;
       }
@@ -65,17 +61,17 @@ export function GetPalaceData(): any {
 /** static void SetPalaceData(void) */
 export function SetPalaceData(): any {
   let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+      let battleMode: any = VarGet((0x40CE));
 
       switch (gSpecialVar_0x8005)
       {
-      case PALACE_DATA_PRIZE:
+      case (0):
           gSaveBlock2Ptr.frontier.palacePrize = gSpecialVar_0x8006;
           break;
-      case PALACE_DATA_WIN_STREAK:
+      case (1):
           gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] = gSpecialVar_0x8006;
           break;
-      case PALACE_DATA_WIN_STREAK_ACTIVE:
+      case (2):
           if (gSpecialVar_0x8006)
               gSaveBlock2Ptr.frontier.winStreakActiveFlags |= sWinStreakFlags[battleMode][lvlMode];
           else
@@ -86,7 +82,7 @@ export function SetPalaceData(): any {
 
 /** static void GetPalaceCommentId(void) */
 export function GetPalaceCommentId(): any {
-  let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+  let battleMode: any = VarGet((0x40CE));
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
 
       if (gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] < 50)
@@ -105,16 +101,16 @@ export function SetPalaceOpponent(): any {
 
 /** static void BufferOpponentIntroSpeech(void) */
 export function BufferOpponentIntroSpeech(): any {
-  if (gTrainerBattleOpponent_A < FRONTIER_TRAINERS_COUNT)
+  if (gTrainerBattleOpponent_A < (300))
           FrontierSpeechToString(gFacilityTrainers[gTrainerBattleOpponent_A].speechBefore);
 }
 
 /** static void IncrementPalaceStreak(void) */
 export function IncrementPalaceStreak(): any {
   let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+      let battleMode: any = VarGet((0x40CE));
 
-      if (gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] < MAX_STREAK)
+      if (gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] < (9999))
       {
           gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode]++;
 
@@ -127,14 +123,14 @@ export function IncrementPalaceStreak(): any {
 /** static void SavePalaceChallenge(void) */
 export function SavePalaceChallenge(): any {
   gSaveBlock2Ptr.frontier.challengeStatus = gSpecialVar_0x8005;
-      VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);
+      VarSet(((((0x4000) + 0x0))), 0);
       gSaveBlock2Ptr.frontier.challengePaused = TRUE;
       SaveGameFrontier();
 }
 
 /** static void SetRandomPalacePrize(void) */
 export function SetRandomPalacePrize(): any {
-  let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+  let battleMode: any = VarGet((0x40CE));
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
 
       if (gSaveBlock2Ptr.frontier.palaceWinStreaks[battleMode][lvlMode] > 41)

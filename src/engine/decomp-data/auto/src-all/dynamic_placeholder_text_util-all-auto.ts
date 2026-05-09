@@ -15,9 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sStringPointers: any = null;
 /** void DynamicPlaceholderTextUtil_Reset(void) */
 export function DynamicPlaceholderTextUtil_Reset(): any {
   let i: any = null;

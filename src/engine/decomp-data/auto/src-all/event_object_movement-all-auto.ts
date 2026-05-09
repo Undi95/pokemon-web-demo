@@ -17,84 +17,25 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAcroEndWheelieDirectionAnimNums: any = null;
-let sAcroUnusedActionDirectionAnimNums: any = null;
-let sAcroUnusedDirectionAnimNums: any = null;
-let sAcroWheelieDirectionAnimNums: any = null;
-let sAcroWheeliePedalDirectionAnimNums: any = null;
-let sActionFuncId: any = null;
-let sAnimNum: any = null;
-let sAnimState: any = null;
-let sBerryTreeFlags: any = null;
-let sCameraObjectFuncs: any = null;
-let sCameraSpriteTemplate: any = null;
-let sCamera_FollowSpriteId: any = null;
-let sCamera_MoveX: any = null;
-let sCamera_MoveY: any = null;
-let sCamera_State: any = null;
+let gReservedSpritePaletteCount: any = null;
 let sCurrentReflectionType: any = null;
 let sCurrentSpecialObjectPaletteTag: any = null;
-let sDirection: any = null;
-let sDirectionAnimFuncsBySpeed: any = null;
-let sDirectionToVectors: any = null;
-let sDistance: any = null;
-let sElevationToPriority: any = null;
-let sElevationToSubpriority: any = null;
-let sElevationToSubspriteTableNum: any = null;
-let sFaceDirectionAnimNums: any = null;
-let sFigure8XOffsets: any = null;
-let sFigure8YOffsets: any = null;
-let sFishingBiteDirectionAnimNums: any = null;
-let sFishingDirectionAnimNums: any = null;
-let sFishingNoCatchDirectionAnimNums: any = null;
-let sGroundEffectFuncs: any = null;
-let sGroundEffectTracksFuncs: any = null;
-let sInvisible: any = null;
-let sJumpDisplacements: any = null;
-let sJumpInitDisplacements: any = null;
-let sJumpSpecialDirectionAnimNums: any = null;
-let sJumpType: any = null;
-let sJumpYTable: any = null;
 let sLockedAnimObjectEvents: any = null;
-let sMoveDirectionAnimNums: any = null;
-let sMoveDirectionFastAnimNums: any = null;
-let sMoveDirectionFasterAnimNums: any = null;
-let sMoveDirectionFastestAnimNums: any = null;
-let sMovementDelaysMedium: any = null;
-let sMovementDelaysShort: any = null;
-let sMovementTypeCallbacks: any = null;
-let sMovementTypeHasRange: any = null;
-let sNpcStepFuncTables: any = null;
-let sNumSteps: any = null;
-let sObjEventId: any = null;
-let sObjectEventSpritePalettes: any = null;
-let sObjectPaletteTagSets: any = null;
-let sOppositeDirections: any = null;
-let sPlayerDirectionToCopyDirection: any = null;
-let sPlayerDirectionsForCopy: any = null;
-let sPlayerReflectionPaletteSets: any = null;
-let sRunningDirectionAnimNums: any = null;
-let sSpecialObjectReflectionPaletteSets: any = null;
-let sSpeed: any = null;
-let sStepTimes: any = null;
-let sTimer: any = null;
-let sTypeFuncId: any = null;
-let sVirtualObjElev: any = null;
-let sVirtualObjId: any = null;
+let y2: any = null;
 /** static void ClearObjectEvent(struct ObjectEvent *objectEvent) */
 export function ClearObjectEvent(objectEvent: any): any {
   objectEvent = ({} as any);
-      objectEvent.localId = LOCALID_PLAYER;
+      objectEvent.localId = (255);
       objectEvent.mapNum = MAP_NUM(MAP_UNDEFINED);
       objectEvent.mapGroup = MAP_GROUP(MAP_UNDEFINED);
-      objectEvent.movementActionId = MOVEMENT_ACTION_NONE;
+      objectEvent.movementActionId = (0xFF);
 }
 
 /** static void ClearAllObjectEvents(void) */
 export function ClearAllObjectEvents(): any {
   let i: any = null;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
           ClearObjectEvent(gObjectEvents[i]);
 }
 
@@ -108,13 +49,13 @@ export function ResetObjectEvents(): any {
 
 /** static void CreateReflectionEffectSprites(void) */
 export function CreateReflectionEffectSprites(): any {
-  let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_REFLECTION_DISTORTION], 0, 0, 31);
+  let spriteId: any = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(21)], 0, 0, 31);
       gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
       InitSpriteAffineAnim(gSprites[spriteId]);
       StartSpriteAffineAnim(gSprites[spriteId], 0);
       gSprites[spriteId].invisible = TRUE;
 
-      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[FLDEFFOBJ_REFLECTION_DISTORTION], 0, 0, 31);
+      spriteId = CreateSpriteAtEnd(gFieldEffectObjectTemplatePointers[(21)], 0, 0, 31);
       gSprites[spriteId].oam.affineMode = ST_OAM_AFFINE_NORMAL;
       InitSpriteAffineAnim(gSprites[spriteId]);
       StartSpriteAffineAnim(gSprites[spriteId], 1);
@@ -124,7 +65,7 @@ export function CreateReflectionEffectSprites(): any {
 /** u8 GetFirstInactiveObjectEventId(void) */
 export function GetFirstInactiveObjectEventId(): any {
   let i: any = null;
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (!gObjectEvents[i].active)
               break;
@@ -135,7 +76,7 @@ export function GetFirstInactiveObjectEventId(): any {
 
 /** u8 GetObjectEventIdByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroupId) */
 export function GetObjectEventIdByLocalIdAndMap(localId: any, mapNum: any, mapGroupId: any): any {
-  if (localId < LOCALID_PLAYER)
+  if (localId < (255))
           return GetObjectEventIdByLocalIdAndMapInternal(localId, mapNum, mapGroupId);
 
       return GetObjectEventIdByLocalId(localId);
@@ -144,7 +85,7 @@ export function GetObjectEventIdByLocalIdAndMap(localId: any, mapNum: any, mapGr
 /** bool8 TryGetObjectEventIdByLocalIdAndMap(u8 localId, u8 mapNum, u8 mapGroupId, u8 *objectEventId) */
 export function TryGetObjectEventIdByLocalIdAndMap(localId: any, mapNum: any, mapGroupId: any, objectEventId: any): any {
   objectEventId = GetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroupId);
-      if (objectEventId == OBJECT_EVENTS_COUNT)
+      if (objectEventId == (16))
           return TRUE;
       else
           return FALSE;
@@ -153,7 +94,7 @@ export function TryGetObjectEventIdByLocalIdAndMap(localId: any, mapNum: any, ma
 /** u8 GetObjectEventIdByXY(s16 x, s16 y) */
 export function GetObjectEventIdByXY(x: any, y: any): any {
   let i: any = null;
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (gObjectEvents[i].active && gObjectEvents[i].currentCoords.x == x && gObjectEvents[i].currentCoords.y == y)
               break;
@@ -165,25 +106,25 @@ export function GetObjectEventIdByXY(x: any, y: any): any {
 /** static u8 GetObjectEventIdByLocalIdAndMapInternal(u8 localId, u8 mapNum, u8 mapGroupId) */
 export function GetObjectEventIdByLocalIdAndMapInternal(localId: any, mapNum: any, mapGroupId: any): any {
   let i: any = null;
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (gObjectEvents[i].active && gObjectEvents[i].localId == localId && gObjectEvents[i].mapNum == mapNum && gObjectEvents[i].mapGroup == mapGroupId)
               return i;
       }
 
-      return OBJECT_EVENTS_COUNT;
+      return (16);
 }
 
 /** static u8 GetObjectEventIdByLocalId(u8 localId) */
 export function GetObjectEventIdByLocalId(localId: any): any {
   let i: any = null;
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (gObjectEvents[i].active && gObjectEvents[i].localId == localId)
               return i;
       }
 
-      return OBJECT_EVENTS_COUNT;
+      return (16);
 }
 
 /** static u8 InitObjectEventStateFromTemplate(const struct ObjectEventTemplate *template, u8 mapNum, u8 mapGroup) */
@@ -194,11 +135,11 @@ export function InitObjectEventStateFromTemplate(template: any, mapNum: any, map
       let y: any = null;
 
       if (GetAvailableObjectEventId(template.localId, mapNum, mapGroup,objectEventId))
-          return OBJECT_EVENTS_COUNT;
+          return (16);
       objectEvent =gObjectEvents[objectEventId];
       ClearObjectEvent(objectEvent);
-      x = template.x + MAP_OFFSET;
-      y = template.y + MAP_OFFSET;
+      x = template.x + (7);
+      y = template.y + (7);
       objectEvent.active = TRUE;
       objectEvent.triggerGroundEffectsOnMove = TRUE;
       objectEvent.graphicsId = template.graphicsId;
@@ -240,10 +181,10 @@ export function Unref_TryInitLocalObjectEvent(localId: any): any {
 
       if (gMapHeader.events != NULL)
       {
-          if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() != (0))
               objectEventCount = GetNumBattlePyramidObjectEvents();
           else if (InTrainerHill())
-              objectEventCount = HILL_TRAINERS_PER_FLOOR;
+              objectEventCount = (2);
           else
               objectEventCount = gMapHeader.events.objectEventCount;
 
@@ -254,22 +195,22 @@ export function Unref_TryInitLocalObjectEvent(localId: any): any {
                   return InitObjectEventStateFromTemplate(template, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup);
           }
       }
-      return OBJECT_EVENTS_COUNT;
+      return (16);
 }
 
 /** static bool8 GetAvailableObjectEventId(u16 localId, u8 mapNum, u8 mapGroup, u8 *objectEventId) */
 export function GetAvailableObjectEventId(localId: any, mapNum: any, mapGroup: any, objectEventId: any): any {
   let i: any = 0;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT && gObjectEvents[i].active; i++)
+      for (i = 0; i < (16) && gObjectEvents[i].active; i++)
       {
           if (gObjectEvents[i].localId == localId && gObjectEvents[i].mapNum == mapNum && gObjectEvents[i].mapGroup == mapGroup)
               return TRUE;
       }
-      if (i >= OBJECT_EVENTS_COUNT)
+      if (i >= (16))
           return TRUE;
       objectEventId = i;
-      for (; i < OBJECT_EVENTS_COUNT; i++)
+      for (; i < (16); i++)
       {
           if (gObjectEvents[i].active && gObjectEvents[i].localId == localId && gObjectEvents[i].mapNum == mapNum && gObjectEvents[i].mapGroup == mapGroup)
               return TRUE;
@@ -305,7 +246,7 @@ export function RemoveObjectEventInternal(objectEvent: any): any {
 export function RemoveAllObjectEventsExceptPlayer(): any {
   let i: any = null;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (i != gPlayerAvatar.objectEventId)
               RemoveObjectEvent(gObjectEvents[i]);
@@ -322,8 +263,8 @@ export function TrySetupObjectEventSprite(objectEventTemplate: any, spriteTempla
       let graphicsInfo: any = null;
 
       objectEventId = InitObjectEventStateFromTemplate(objectEventTemplate, mapNum, mapGroup);
-      if (objectEventId == OBJECT_EVENTS_COUNT)
-          return OBJECT_EVENTS_COUNT;
+      if (objectEventId == (16))
+          return (16);
 
       objectEvent =gObjectEvents[objectEventId];
       graphicsInfo = GetObjectEventGraphicsInfo(objectEvent.graphicsId);
@@ -342,15 +283,15 @@ export function TrySetupObjectEventSprite(objectEventTemplate: any, spriteTempla
           _PatchObjectPalette(graphicsInfo.paletteTag, paletteSlot);
       }
 
-      if (objectEvent.movementType == MOVEMENT_TYPE_INVISIBLE)
+      if (objectEvent.movementType == (0x4C))
           objectEvent.invisible = TRUE;
 
-      spriteTemplate.paletteTag = TAG_NONE;
+      spriteTemplate.paletteTag = (0xFFFF);
       spriteId = CreateSprite(spriteTemplate, 0, 0, 0);
-      if (spriteId == MAX_SPRITES)
+      if (spriteId == (64))
       {
           gObjectEvents[objectEventId].active = FALSE;
-          return OBJECT_EVENTS_COUNT;
+          return (16);
       }
 
       sprite =gSprites[spriteId];
@@ -385,8 +326,8 @@ export function TrySpawnObjectEventTemplate(objectEventTemplate: any, mapNum: an
       spriteFrameImage.size = graphicsInfo.size;
       spriteTemplate.images =spriteFrameImage;
       objectEventId = TrySetupObjectEventSprite(objectEventTemplate,spriteTemplate, mapNum, mapGroup, cameraX, cameraY);
-      if (objectEventId == OBJECT_EVENTS_COUNT)
-          return OBJECT_EVENTS_COUNT;
+      if (objectEventId == (16))
+          return (16);
 
       gSprites[gObjectEvents[objectEventId].spriteId].images = graphicsInfo.images;
       if (subspriteTables)
@@ -408,18 +349,18 @@ export function SpawnSpecialObjectEvent(objectEventTemplate: any): any {
 export function SpawnSpecialObjectEventParameterized(graphicsId: any, movementBehavior: any, localId: any, x: any, y: any, elevation: any): any {
   let objectEventTemplate: any = null;
 
-      x -= MAP_OFFSET;
-      y -= MAP_OFFSET;
+      x -= (7);
+      y -= (7);
       objectEventTemplate.localId = localId;
       objectEventTemplate.graphicsId = graphicsId;
-      objectEventTemplate.kind = OBJ_KIND_NORMAL;
+      objectEventTemplate.kind = (0);
       objectEventTemplate.x = x;
       objectEventTemplate.y = y;
       objectEventTemplate.elevation = elevation;
       objectEventTemplate.movementType = movementBehavior;
       objectEventTemplate.movementRangeX = 0;
       objectEventTemplate.movementRangeY = 0;
-      objectEventTemplate.trainerType = TRAINER_TYPE_NONE;
+      objectEventTemplate.trainerType = (0);
       objectEventTemplate.trainerRange_berryTreeId = 0;
       return SpawnSpecialObjectEvent(objectEventTemplate);
 }
@@ -431,7 +372,7 @@ export function TrySpawnObjectEvent(localId: any, mapNum: any, mapGroup: any): a
 
       objectEventTemplate = GetObjectEventTemplateByLocalIdAndMap(localId, mapNum, mapGroup);
       if (!objectEventTemplate)
-          return OBJECT_EVENTS_COUNT;
+          return (16);
 
       GetObjectEventMovingCameraOffset(cameraX,cameraY);
       return TrySpawnObjectEventTemplate(objectEventTemplate, mapNum, mapGroup, cameraX, cameraY);
@@ -470,13 +411,13 @@ export function CreateObjectGraphicsSprite(graphicsId: any, callback: any, x: an
 
       spriteTemplate = Alloc(0);
       CopyObjectGraphicsInfoToSpriteTemplate(graphicsId, callback, spriteTemplate,subspriteTables);
-      if (spriteTemplate.paletteTag != TAG_NONE)
+      if (spriteTemplate.paletteTag != (0xFFFF))
           LoadObjectEventPalette(spriteTemplate.paletteTag);
 
       spriteId = CreateSprite(spriteTemplate, x, y, subpriority);
       Free(spriteTemplate);
 
-      if (spriteId != MAX_SPRITES && subspriteTables != NULL)
+      if (spriteId != (64) && subspriteTables != NULL)
       {
           sprite =gSprites[spriteId];
           SetSubspriteTables(sprite, subspriteTables);
@@ -495,12 +436,12 @@ export function CreateVirtualObject(graphicsId: any, virtualObjId: any, x: any, 
 
       graphicsInfo = GetObjectEventGraphicsInfo(graphicsId);
       CopyObjectGraphicsInfoToSpriteTemplate(graphicsId, SpriteCB_VirtualObject,spriteTemplate,subspriteTables);
-      spriteTemplate.paletteTag = TAG_NONE;
-      x += MAP_OFFSET;
-      y += MAP_OFFSET;
+      spriteTemplate.paletteTag = (0xFFFF);
+      x += (7);
+      y += (7);
       SetSpritePosToOffsetMapCoords(x,y, 8, 16);
       spriteId = CreateSpriteAtEnd(spriteTemplate, x, y, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           sprite =gSprites[spriteId];
           sprite.centerToCornerVecX = -(graphicsInfo.width >> 1);
@@ -538,22 +479,22 @@ export function TrySpawnObjectEvents(cameraX: any, cameraY: any): any {
       if (gMapHeader.events != NULL)
       {
           let left: any = gSaveBlock1Ptr.pos.x - 2;
-          let right: any = gSaveBlock1Ptr.pos.x + MAP_OFFSET_W + 2;
+          let right: any = gSaveBlock1Ptr.pos.x + (((7) * 2 + 1)) + 2;
           let top: any = gSaveBlock1Ptr.pos.y;
-          let bottom: any = gSaveBlock1Ptr.pos.y + MAP_OFFSET_H + 2;
+          let bottom: any = gSaveBlock1Ptr.pos.y + (((7) * 2)) + 2;
 
-          if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() != (0))
               objectCount = GetNumBattlePyramidObjectEvents();
           else if (InTrainerHill())
-              objectCount = HILL_TRAINERS_PER_FLOOR;
+              objectCount = (2);
           else
               objectCount = gMapHeader.events.objectEventCount;
 
           for (i = 0; i < objectCount; i++)
           {
               let template: any =gSaveBlock1Ptr.objectEventTemplates[i];
-              let npcX: any = template.x + MAP_OFFSET;
-              let npcY: any = template.y + MAP_OFFSET;
+              let npcX: any = template.x + (7);
+              let npcY: any = template.y + (7);
 
               if (top <= npcY && bottom >= npcY && left <= npcX && right >= npcX
                   && !FlagGet(template.flagId))
@@ -567,7 +508,7 @@ export function RemoveObjectEventsOutsideView(): any {
   let i, j;
       let isActiveLinkPlayer: any = null;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           for (j = 0, isActiveLinkPlayer = FALSE; j < ARRAY_COUNT(gLinkPlayerObjectEvents); j++)
           {
@@ -605,7 +546,7 @@ export function SpawnObjectEventsOnReturnToField(x: any, y: any): any {
   let i: any = null;
 
       ClearPlayerAvatarInfo();
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (gObjectEvents[i].active)
               SpawnObjectEventOnReturnToField(i, x, y);
@@ -637,7 +578,7 @@ export function SpawnObjectEventOnReturnToField(objectEventId: any, x: any, y: a
       CopyObjectGraphicsInfoToSpriteTemplate_WithMovementType(objectEvent.graphicsId, objectEvent.movementType,spriteTemplate,subspriteTables);
       spriteTemplate.images =spriteFrameImage;
 
-      spriteTemplate.paletteTag = TAG_NONE;
+      spriteTemplate.paletteTag = (0xFFFF);
       paletteSlot = graphicsInfo.paletteSlot;
       if (paletteSlot == PALSLOT_PLAYER)
       {
@@ -652,10 +593,10 @@ export function SpawnObjectEventOnReturnToField(objectEventId: any, x: any, y: a
           paletteSlot -= 16;
           _PatchObjectPalette(graphicsInfo.paletteTag, paletteSlot);
       }
-      spriteTemplate.paletteTag = TAG_NONE;
+      spriteTemplate.paletteTag = (0xFFFF);
 
       i = CreateSprite(spriteTemplate, 0, 0, 0);
-      if (i != MAX_SPRITES)
+      if (i != (64))
       {
           sprite =gSprites[i];
           GetMapCoordsFromSpritePos(x + objectEvent.currentCoords.x, y + objectEvent.currentCoords.y,sprite.x,sprite.y);
@@ -664,7 +605,7 @@ export function SpawnObjectEventOnReturnToField(objectEventId: any, x: any, y: a
           sprite.x += 8;
           sprite.y += 16 + sprite.centerToCornerVecY;
           sprite.images = graphicsInfo.images;
-          if (objectEvent.movementType == MOVEMENT_TYPE_PLAYER)
+          if (objectEvent.movementType == (0xB))
           {
               SetPlayerAvatarObjectEventIdAndObjectId(objectEventId, i);
               objectEvent.warpArrowSpriteId = CreateWarpArrowSprite();
@@ -676,7 +617,7 @@ export function SpawnObjectEventOnReturnToField(objectEventId: any, x: any, y: a
           sprite.coordOffsetEnabled = TRUE;
           sprite.sObjEventId = objectEventId;
           objectEvent.spriteId = i;
-          if (!objectEvent.inanimate && objectEvent.movementType != MOVEMENT_TYPE_PLAYER)
+          if (!objectEvent.inanimate && objectEvent.movementType != (0xB))
               StartSpriteAnim(sprite, GetFaceDirectionAnimNum(objectEvent.facingDirection));
 
           ResetObjectEventFldEffData(objectEvent);
@@ -702,7 +643,7 @@ export function SetPlayerAvatarObjectEventIdAndObjectId(objectEventId: any, spri
   gPlayerAvatar.objectEventId = objectEventId;
       gPlayerAvatar.spriteId = spriteId;
       gPlayerAvatar.gender = GetPlayerAvatarGenderByGraphicsId(gObjectEvents[objectEventId].graphicsId);
-      SetPlayerAvatarExtraStateTransition(gObjectEvents[objectEventId].graphicsId, PLAYER_AVATAR_FLAG_CONTROLLABLE);
+      SetPlayerAvatarExtraStateTransition(gObjectEvents[objectEventId].graphicsId, ((1 << 5)));
 }
 
 /** void ObjectEventSetGraphicsId(struct ObjectEvent *objectEvent, u8 graphicsId) */
@@ -783,13 +724,13 @@ export function SetBerryTreeGraphics(objectEvent: any, sprite: any): any {
       objectEvent.invisible = TRUE;
       sprite.invisible = TRUE;
       berryStage = GetStageByBerryTreeId(objectEvent.trainerRange_berryTreeId);
-      if (berryStage != BERRY_STAGE_NO_BERRY)
+      if (berryStage != (0))
       {
           objectEvent.invisible = FALSE;
           sprite.invisible = FALSE;
           berryId = GetBerryTypeByBerryTreeId(objectEvent.trainerRange_berryTreeId) - 1;
           berryStage--;
-          if (berryId > ITEM_TO_BERRY(LAST_BERRY_INDEX))
+          if (berryId > ITEM_TO_BERRY(((175))))
               berryId = 0;
 
           ObjectEventSetGraphicsId(objectEvent, gBerryTreeObjectEventGraphicsIdTablePointers[berryId][berryStage]);
@@ -801,8 +742,8 @@ export function SetBerryTreeGraphics(objectEvent: any, sprite: any): any {
 
 /** static void SetObjectEventDynamicGraphicsId(struct ObjectEvent *objectEvent) */
 export function SetObjectEventDynamicGraphicsId(objectEvent: any): any {
-  if (objectEvent.graphicsId >= OBJ_EVENT_GFX_VARS)
-          objectEvent.graphicsId = VarGetObjectEventGraphicsId(objectEvent.graphicsId - OBJ_EVENT_GFX_VARS);
+  if (objectEvent.graphicsId >= (((239) + 1)))
+          objectEvent.graphicsId = VarGetObjectEventGraphicsId(objectEvent.graphicsId - (((239) + 1)));
 }
 
 /** void SetObjectInvisibility(u8 localId, u8 mapNum, u8 mapGroup, bool8 invisible) */
@@ -826,7 +767,7 @@ export function AllowObjectAtPosTriggerGroundEffects(x: any, y: any): any {
       let objectEvent: any = null;
 
       objectEventId = GetObjectEventIdByXY(x, y);
-      if (objectEventId != OBJECT_EVENTS_COUNT)
+      if (objectEventId != (16))
       {
           objectEvent =gObjectEvents[objectEventId];
           objectEvent.triggerGroundEffectsOnMove = TRUE;
@@ -999,8 +940,8 @@ export function TryMoveObjectEventToMapCoords(localId: any, mapNum: any, mapGrou
   let objectEventId: any = null;
       if (!TryGetObjectEventIdByLocalIdAndMap(localId, mapNum, mapGroup,objectEventId))
       {
-          x += MAP_OFFSET;
-          y += MAP_OFFSET;
+          x += (7);
+          y += (7);
           MoveObjectEventToMapCoords(gObjectEvents[objectEventId], x, y);
       }
 }
@@ -1020,7 +961,7 @@ export function UpdateObjectEventCoordsForCameraUpdate(): any {
       {
           dx = gCamera.x;
           dy = gCamera.y;
-          for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+          for (i = 0; i < (16); i++)
           {
               if (gObjectEvents[i].active)
               {
@@ -1039,7 +980,7 @@ export function UpdateObjectEventCoordsForCameraUpdate(): any {
 export function GetObjectEventIdByPosition(x: any, y: any, elevation: any): any {
   let i: any = null;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (gObjectEvents[i].active)
           {
@@ -1049,7 +990,7 @@ export function GetObjectEventIdByPosition(x: any, y: any, elevation: any): any 
                   return i;
           }
       }
-      return OBJECT_EVENTS_COUNT;
+      return (16);
 }
 
 /** static bool8 ObjectEventDoesElevationMatch(struct ObjectEvent *objectEvent, u8 elevation) */
@@ -1144,7 +1085,7 @@ export function CameraObjectFreeze(): any {
 export function CopySprite(sprite: any, x: any, y: any, subpriority: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
           if (!gSprites[i].inUse)
           {
@@ -1162,7 +1103,7 @@ export function CopySprite(sprite: any, x: any, y: any, subpriority: any): any {
 export function CreateCopySpriteAt(sprite: any, x: any, y: any, subpriority: any): any {
   let i: any = null;
 
-      for (i = MAX_SPRITES - 1; i > -1; i--)
+      for (i = (64) - 1; i > -1; i--)
       {
           if (!gSprites[i].inUse)
           {
@@ -1173,7 +1114,7 @@ export function CreateCopySpriteAt(sprite: any, x: any, y: any, subpriority: any
               return i;
           }
       }
-      return MAX_SPRITES;
+      return (64);
 }
 
 /** void SetObjectEventDirection(struct ObjectEvent *objectEvent, u8 direction) */
@@ -1224,8 +1165,8 @@ export function OverrideTemplateCoordsForObjectEvent(objectEvent: any): any {
       objectEventTemplate = GetBaseTemplateForObjectEvent(objectEvent);
       if (objectEventTemplate != NULL)
       {
-          objectEventTemplate.x = objectEvent.currentCoords.x - MAP_OFFSET;
-          objectEventTemplate.y = objectEvent.currentCoords.y - MAP_OFFSET;
+          objectEventTemplate.x = objectEvent.currentCoords.x - (7);
+          objectEventTemplate.y = objectEvent.currentCoords.y - (7);
       }
 }
 
@@ -1379,10 +1320,10 @@ export function ObjectEventIsTrainerAndCloseToPlayer(objectEvent: any): any {
       let minY: any = null;
       let maxY: any = null;
 
-      if (!TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_DASH))
+      if (!TestPlayerAvatarFlags(((1 << 7))))
           return FALSE;
 
-      if (objectEvent.trainerType != TRAINER_TYPE_NORMAL && objectEvent.trainerType != TRAINER_TYPE_BURIED)
+      if (objectEvent.trainerType != (1) && objectEvent.trainerType != (3))
           return FALSE;
 
       PlayerGetDestCoords(playerX,playerY);
@@ -1405,15 +1346,15 @@ export function GetVectorDirection(dx: any, dy: any, absdx: any, absdy: any): an
 
       if (absdx > absdy)
       {
-          direction = DIR_EAST;
+          direction = (4);
           if (dx < 0)
-              direction = DIR_WEST;
+              direction = (3);
       }
       else
       {
-          direction = DIR_SOUTH;
+          direction = (1);
           if (dy < 0)
-              direction = DIR_NORTH;
+              direction = (2);
       }
       return direction;
 }
@@ -1422,9 +1363,9 @@ export function GetVectorDirection(dx: any, dy: any, absdx: any, absdy: any): an
 export function GetLimitedVectorDirection_SouthNorth(dx: any, dy: any, absdx: any, absdy: any): any {
   let direction: any = null;
 
-      direction = DIR_SOUTH;
+      direction = (1);
       if (dy < 0)
-          direction = DIR_NORTH;
+          direction = (2);
       return direction;
 }
 
@@ -1432,9 +1373,9 @@ export function GetLimitedVectorDirection_SouthNorth(dx: any, dy: any, absdx: an
 export function GetLimitedVectorDirection_WestEast(dx: any, dy: any, absdx: any, absdy: any): any {
   let direction: any = null;
 
-      direction = DIR_EAST;
+      direction = (4);
       if (dx < 0)
-          direction = DIR_WEST;
+          direction = (3);
       return direction;
 }
 
@@ -1443,17 +1384,17 @@ export function GetLimitedVectorDirection_WestNorth(dx: any, dy: any, absdx: any
   let direction: any = null;
 
       direction = GetVectorDirection(dx, dy, absdx, absdy);
-      if (direction == DIR_SOUTH)
+      if (direction == (1))
       {
           direction = GetLimitedVectorDirection_WestEast(dx, dy, absdx, absdy);
-          if (direction == DIR_EAST)
-              direction = DIR_NORTH;
+          if (direction == (4))
+              direction = (2);
       }
-      else if (direction == DIR_EAST)
+      else if (direction == (4))
       {
           direction = GetLimitedVectorDirection_SouthNorth(dx, dy, absdx, absdy);
-          if (direction == DIR_SOUTH)
-              direction = DIR_NORTH;
+          if (direction == (1))
+              direction = (2);
       }
       return direction;
 }
@@ -1463,17 +1404,17 @@ export function GetLimitedVectorDirection_EastNorth(dx: any, dy: any, absdx: any
   let direction: any = null;
 
       direction = GetVectorDirection(dx, dy, absdx, absdy);
-      if (direction == DIR_SOUTH)
+      if (direction == (1))
       {
           direction = GetLimitedVectorDirection_WestEast(dx, dy, absdx, absdy);
-          if (direction == DIR_WEST)
-              direction = DIR_NORTH;
+          if (direction == (3))
+              direction = (2);
       }
-      else if (direction == DIR_WEST)
+      else if (direction == (3))
       {
           direction = GetLimitedVectorDirection_SouthNorth(dx, dy, absdx, absdy);
-          if (direction == DIR_SOUTH)
-              direction = DIR_NORTH;
+          if (direction == (1))
+              direction = (2);
       }
       return direction;
 }
@@ -1483,17 +1424,17 @@ export function GetLimitedVectorDirection_WestSouth(dx: any, dy: any, absdx: any
   let direction: any = null;
 
       direction = GetVectorDirection(dx, dy, absdx, absdy);
-      if (direction == DIR_NORTH)
+      if (direction == (2))
       {
           direction = GetLimitedVectorDirection_WestEast(dx, dy, absdx, absdy);
-          if (direction == DIR_EAST)
-              direction = DIR_SOUTH;
+          if (direction == (4))
+              direction = (1);
       }
-      else if (direction == DIR_EAST)
+      else if (direction == (4))
       {
           direction = GetLimitedVectorDirection_SouthNorth(dx, dy, absdx, absdy);
-          if (direction == DIR_NORTH)
-              direction = DIR_SOUTH;
+          if (direction == (2))
+              direction = (1);
       }
       return direction;
 }
@@ -1503,17 +1444,17 @@ export function GetLimitedVectorDirection_EastSouth(dx: any, dy: any, absdx: any
   let direction: any = null;
 
       direction = GetVectorDirection(dx, dy, absdx, absdy);
-      if (direction == DIR_NORTH)
+      if (direction == (2))
       {
           direction = GetLimitedVectorDirection_WestEast(dx, dy, absdx, absdy);
-          if (direction == DIR_WEST)
-              direction = DIR_SOUTH;
+          if (direction == (3))
+              direction = (1);
       }
-      else if (direction == DIR_WEST)
+      else if (direction == (3))
       {
           direction = GetLimitedVectorDirection_SouthNorth(dx, dy, absdx, absdy);
-          if (direction == DIR_NORTH)
-              direction = DIR_SOUTH;
+          if (direction == (2))
+              direction = (1);
       }
       return direction;
 }
@@ -1523,7 +1464,7 @@ export function GetLimitedVectorDirection_SouthNorthWest(dx: any, dy: any, absdx
   let direction: any = null;
 
       direction = GetVectorDirection(dx, dy, absdx, absdy);
-      if (direction == DIR_EAST)
+      if (direction == (4))
           direction = GetLimitedVectorDirection_SouthNorth(dx, dy, absdx, absdy);
       return direction;
 }
@@ -1533,7 +1474,7 @@ export function GetLimitedVectorDirection_SouthNorthEast(dx: any, dy: any, absdx
   let direction: any = null;
 
       direction = GetVectorDirection(dx, dy, absdx, absdy);
-      if (direction == DIR_WEST)
+      if (direction == (3))
           direction = GetLimitedVectorDirection_SouthNorth(dx, dy, absdx, absdy);
       return direction;
 }
@@ -1543,7 +1484,7 @@ export function GetLimitedVectorDirection_NorthWestEast(dx: any, dy: any, absdx:
   let direction: any = null;
 
       direction = GetVectorDirection(dx, dy, absdx, absdy);
-      if (direction == DIR_SOUTH)
+      if (direction == (1))
           direction = GetLimitedVectorDirection_WestEast(dx, dy, absdx, absdy);
       return direction;
 }
@@ -1553,7 +1494,7 @@ export function GetLimitedVectorDirection_SouthWestEast(dx: any, dy: any, absdx:
   let direction: any = null;
 
       direction = GetVectorDirection(dx, dy, absdx, absdy);
-      if (direction == DIR_NORTH)
+      if (direction == (2))
           direction = GetLimitedVectorDirection_WestEast(dx, dy, absdx, absdy);
       return direction;
 }
@@ -1564,7 +1505,7 @@ export function TryGetTrainerEncounterDirection(objectEvent: any, movementType: 
       let absdx, absdy;
 
       if (!ObjectEventIsTrainerAndCloseToPlayer(objectEvent))
-          return DIR_NONE;
+          return (0);
 
       PlayerGetDestCoords(dx,dy);
       dx -= objectEvent.currentCoords.x;
@@ -1621,7 +1562,7 @@ export function MovementType_LookAround_Step4(objectEvent: any, sprite: any): an
       let directions: any = [];
       memcpy(directions, gStandardDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_ANY);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 3];
 
       SetObjectEventDirection(objectEvent, direction);
@@ -1810,15 +1751,15 @@ export function MovementType_BerryTreeGrowth_Normal(objectEvent: any, sprite: an
       objectEvent.invisible = TRUE;
       sprite.invisible = TRUE;
       berryStage = GetStageByBerryTreeId(objectEvent.trainerRange_berryTreeId);
-      if (berryStage == BERRY_STAGE_NO_BERRY)
+      if (berryStage == (0))
       {
-          if (!(sprite.sBerryTreeFlags & ((1 << 2))) && sprite.animNum == BERRY_STAGE_FLOWERING)
+          if (!(sprite.sBerryTreeFlags & ((1 << 2))) && sprite.animNum == (4))
           {
               gFieldEffectArguments[0] = objectEvent.currentCoords.x;
               gFieldEffectArguments[1] = objectEvent.currentCoords.y;
               gFieldEffectArguments[2] = sprite.subpriority - 1;
               gFieldEffectArguments[3] = sprite.oam.priority;
-              FieldEffectStart(FLDEFF_BERRY_TREE_GROWTH_SPARKLE);
+              FieldEffectStart((23));
               sprite.animNum = berryStage;
           }
           return FALSE;
@@ -1832,7 +1773,7 @@ export function MovementType_BerryTreeGrowth_Normal(objectEvent: any, sprite: an
           return TRUE;
       }
       SetBerryTreeGraphics(objectEvent, sprite);
-      ObjectEventSetSingleMovement(objectEvent, sprite, MOVEMENT_ACTION_START_ANIM_IN_DIRECTION);
+      ObjectEventSetSingleMovement(objectEvent, sprite, (0x39));
       sprite.sTypeFuncId = BERRYTREEFUNC_MOVE;
       return TRUE;
 }
@@ -1857,7 +1798,7 @@ export function MovementType_BerryTreeGrowth_SparkleStart(objectEvent: any, spri
       gFieldEffectArguments[1] = objectEvent.currentCoords.y;
       gFieldEffectArguments[2] = sprite.subpriority - 1;
       gFieldEffectArguments[3] = sprite.oam.priority;
-      FieldEffectStart(FLDEFF_BERRY_TREE_GROWTH_SPARKLE);
+      FieldEffectStart((23));
       return TRUE;
 }
 
@@ -1931,7 +1872,7 @@ export function MovementType_FaceDownAndUp_Step4(objectEvent: any, sprite: any):
       let directions: any = [];
       memcpy(directions, gUpAndDownDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_SOUTH);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 1];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 1;
@@ -1979,7 +1920,7 @@ export function MovementType_FaceLeftAndRight_Step4(objectEvent: any, sprite: an
       let directions: any = [];
       memcpy(directions, gLeftAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_EAST_WEST);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 1];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 1;
@@ -2027,7 +1968,7 @@ export function MovementType_FaceUpAndLeft_Step4(objectEvent: any, sprite: any):
       let directions: any = [];
       memcpy(directions, gUpAndLeftDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_WEST);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 1];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 1;
@@ -2075,7 +2016,7 @@ export function MovementType_FaceUpAndRight_Step4(objectEvent: any, sprite: any)
       let directions: any = [];
       memcpy(directions, gUpAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_EAST);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 1];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 1;
@@ -2123,7 +2064,7 @@ export function MovementType_FaceDownAndLeft_Step4(objectEvent: any, sprite: any
       let directions: any = [];
       memcpy(directions, gDownAndLeftDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_SOUTH_WEST);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 1];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 1;
@@ -2171,7 +2112,7 @@ export function MovementType_FaceDownAndRight_Step4(objectEvent: any, sprite: an
       let directions: any = [];
       memcpy(directions, gDownAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_SOUTH_EAST);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 1];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 1;
@@ -2219,7 +2160,7 @@ export function MovementType_FaceDownUpAndLeft_Step4(objectEvent: any, sprite: a
       let directions: any = [];
       memcpy(directions, gDownUpAndLeftDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_SOUTH_WEST);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 3];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 1;
@@ -2267,7 +2208,7 @@ export function MovementType_FaceDownUpAndRight_Step4(objectEvent: any, sprite: 
       let directions: any = [];
       memcpy(directions, gDownUpAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_SOUTH_EAST);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 3];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 1;
@@ -2315,7 +2256,7 @@ export function MovementType_FaceUpLeftAndRight_Step4(objectEvent: any, sprite: 
       let directions: any = [];
       memcpy(directions, gUpLeftAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_NORTH_EAST_WEST);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 3];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 1;
@@ -2363,7 +2304,7 @@ export function MovementType_FaceDownLeftAndRight_Step4(objectEvent: any, sprite
       let directions: any = [];
       memcpy(directions, gDownLeftAndRightDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_SOUTH_EAST_WEST);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[Random() & 3];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 1;
@@ -2401,7 +2342,7 @@ export function MovementType_RotateCounterclockwise_Step3(objectEvent: any, spri
       let directions: any = [];
       memcpy(directions, gCounterclockwiseDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_ANY);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[objectEvent.facingDirection];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 0;
@@ -2439,7 +2380,7 @@ export function MovementType_RotateClockwise_Step3(objectEvent: any, sprite: any
       let directions: any = [];
       memcpy(directions, gClockwiseDirections, 0);
       direction = TryGetTrainerEncounterDirection(objectEvent, RUNFOLLOW_ANY);
-      if (direction == DIR_NONE)
+      if (direction == (0))
           direction = directions[objectEvent.facingDirection];
       SetObjectEventDirection(objectEvent, direction);
       sprite.sTypeFuncId = 0;
@@ -2800,7 +2741,7 @@ export function MovementType_CopyPlayer_Step0(objectEvent: any, sprite: any): an
 
 /** bool8 MovementType_CopyPlayer_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_CopyPlayer_Step1(objectEvent: any, sprite: any): any {
-  if (gObjectEvents[gPlayerAvatar.objectEventId].movementActionId == MOVEMENT_ACTION_NONE || gPlayerAvatar.tileTransitionState == T_TILE_CENTER)
+  if (gObjectEvents[gPlayerAvatar.objectEventId].movementActionId == (0xFF) || gPlayerAvatar.tileTransitionState == T_TILE_CENTER)
           return FALSE;
 
       return gCopyPlayerMovementFuncs[PlayerGetCopyableMovement()](objectEvent, sprite, GetPlayerMovementDirection(), NULL);
@@ -2839,7 +2780,7 @@ export function CopyablePlayerMovement_WalkNormal(objectEvent: any, sprite: any,
       if (ObjectEventIsFarawayIslandMew(objectEvent))
       {
           direction = GetMewMoveDirection();
-          if (direction == DIR_NONE)
+          if (direction == (0))
           {
               direction = playerDirection;
               direction = GetCopyDirection(gInitialMovementTypeFacingDirections[objectEvent.movementType], objectEvent.directionSequenceIndex, direction);
@@ -2976,7 +2917,7 @@ export function CopyablePlayerMovement_Jump2(objectEvent: any, sprite: any, play
 
 /** bool8 MovementType_CopyPlayerInGrass_Step1(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementType_CopyPlayerInGrass_Step1(objectEvent: any, sprite: any): any {
-  if (gObjectEvents[gPlayerAvatar.objectEventId].movementActionId == MOVEMENT_ACTION_NONE || gPlayerAvatar.tileTransitionState == T_TILE_CENTER)
+  if (gObjectEvents[gPlayerAvatar.objectEventId].movementActionId == (0xFF) || gPlayerAvatar.tileTransitionState == T_TILE_CENTER)
           return FALSE;
 
       return gCopyPlayerMovementFuncs[PlayerGetCopyableMovement()](objectEvent, sprite, GetPlayerMovementDirection(), MetatileBehavior_IsPokeGrass);
@@ -2990,7 +2931,7 @@ export function MovementType_TreeDisguise(sprite: any): any {
       if (objectEvent.directionSequenceIndex == 0 || (objectEvent.directionSequenceIndex == 1 && !sprite.data[7]))
       {
           ObjectEventGetLocalIdAndMap(objectEvent,gFieldEffectArguments[0],gFieldEffectArguments[1],gFieldEffectArguments[2]);
-          objectEvent.fieldEffectSpriteId = FieldEffectStart(FLDEFF_TREE_DISGUISE);
+          objectEvent.fieldEffectSpriteId = FieldEffectStart((28));
           objectEvent.directionSequenceIndex = 1;
           sprite.data[7]++;
       }
@@ -3011,7 +2952,7 @@ export function MovementType_MountainDisguise(sprite: any): any {
       if (objectEvent.directionSequenceIndex == 0 || (objectEvent.directionSequenceIndex == 1 && !sprite.data[7]))
       {
           ObjectEventGetLocalIdAndMap(objectEvent,gFieldEffectArguments[0],gFieldEffectArguments[1],gFieldEffectArguments[2]);
-          objectEvent.fieldEffectSpriteId = FieldEffectStart(FLDEFF_MOUNTAIN_DISGUISE);
+          objectEvent.fieldEffectSpriteId = FieldEffectStart((29));
           objectEvent.directionSequenceIndex = 1;
           sprite.data[7]++;
       }
@@ -3110,7 +3051,7 @@ export function ClearObjectEventMovement(objectEvent: any, sprite: any): any {
   objectEvent.singleMovementActive = FALSE;
       objectEvent.heldMovementActive = FALSE;
       objectEvent.heldMovementFinished = FALSE;
-      objectEvent.movementActionId = MOVEMENT_ACTION_NONE;
+      objectEvent.movementActionId = (0xFF);
       sprite.sTypeFuncId = 0;
 }
 
@@ -3232,15 +3173,15 @@ export function SetStepAnim(objectEvent: any, sprite: any, animNum: any): any {
 /** u8 GetDirectionToFace(s16 x, s16 y, s16 targetX, s16 targetY) */
 export function GetDirectionToFace(x: any, y: any, targetX: any, targetY: any): any {
   if (x > targetX)
-          return DIR_WEST;
+          return (3);
 
       if (x < targetX)
-          return DIR_EAST;
+          return (4);
 
       if (y > targetY)
-          return DIR_NORTH;
+          return (2);
 
-      return DIR_SOUTH;
+      return (1);
 }
 
 /** void SetTrainerMovementType(struct ObjectEvent *objectEvent, u8 movementType) */
@@ -3270,7 +3211,7 @@ export function GetCollisionAtCoords(objectEvent: any, x: any, y: any, dir: any)
   let direction: any = dir;
       if (IsCoordOutsideObjectEventMovementRange(objectEvent, x, y))
           return COLLISION_OUTSIDE_RANGE;
-      else if (MapGridGetCollisionAt(x, y) || GetMapBorderIdAt(x, y) == CONNECTION_INVALID || IsMetatileDirectionallyImpassable(objectEvent, x, y, direction))
+      else if (MapGridGetCollisionAt(x, y) || GetMapBorderIdAt(x, y) == (-1) || IsMetatileDirectionallyImpassable(objectEvent, x, y, direction))
           return COLLISION_IMPASSABLE;
       else if (objectEvent.trackedByCamera && !CanCameraMoveInDirection(direction))
           return COLLISION_IMPASSABLE;
@@ -3287,7 +3228,7 @@ export function GetCollisionFlagsAtCoords(objectEvent: any, x: any, y: any, dire
 
       if (IsCoordOutsideObjectEventMovementRange(objectEvent, x, y))
           flags |= 1 << (COLLISION_OUTSIDE_RANGE - 1);
-      if (MapGridGetCollisionAt(x, y) || GetMapBorderIdAt(x, y) == CONNECTION_INVALID || IsMetatileDirectionallyImpassable(objectEvent, x, y, direction) || (objectEvent.trackedByCamera && !CanCameraMoveInDirection(direction)))
+      if (MapGridGetCollisionAt(x, y) || GetMapBorderIdAt(x, y) == (-1) || IsMetatileDirectionallyImpassable(objectEvent, x, y, direction) || (objectEvent.trackedByCamera && !CanCameraMoveInDirection(direction)))
           flags |= 1 << (COLLISION_IMPASSABLE - 1);
       if (IsElevationMismatchAt(objectEvent.currentElevation, x, y))
           flags |= 1 << (COLLISION_ELEVATION_MISMATCH - 1);
@@ -3336,7 +3277,7 @@ export function DoesObjectCollideWithObjectAt(objectEvent: any, x: any, y: any):
   let i: any = null;
       let curObject: any = null;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           curObject =gObjectEvents[i];
           if (curObject.active && curObject != objectEvent)
@@ -3462,7 +3403,7 @@ export function ObjectEventIsMovementOverridden(objectEvent: any): any {
 
 /** bool8 ObjectEventIsHeldMovementActive(struct ObjectEvent *objectEvent) */
 export function ObjectEventIsHeldMovementActive(objectEvent: any): any {
-  if (objectEvent.heldMovementActive && objectEvent.movementActionId != MOVEMENT_ACTION_NONE)
+  if (objectEvent.heldMovementActive && objectEvent.movementActionId != (0xFF))
           return TRUE;
 
       return FALSE;
@@ -3495,7 +3436,7 @@ export function ObjectEventClearHeldMovementIfActive(objectEvent: any): any {
 
 /** void ObjectEventClearHeldMovement(struct ObjectEvent *objectEvent) */
 export function ObjectEventClearHeldMovement(objectEvent: any): any {
-  objectEvent.movementActionId = MOVEMENT_ACTION_NONE;
+  objectEvent.movementActionId = (0xFF);
       objectEvent.heldMovementActive = FALSE;
       objectEvent.heldMovementFinished = FALSE;
       gSprites[objectEvent.spriteId].sTypeFuncId = 0;
@@ -3524,7 +3465,7 @@ export function ObjectEventGetHeldMovementActionId(objectEvent: any): any {
   if (objectEvent.heldMovementActive)
           return objectEvent.movementActionId;
 
-      return MOVEMENT_ACTION_NONE;
+      return (0xFF);
 }
 
 /** void UpdateObjectEventCurrentMovement(struct ObjectEvent *objectEvent, struct Sprite *sprite, bool8 (*callback)(struct ObjectEvent *, struct Sprite *)) */
@@ -3554,7 +3495,7 @@ export function GetOppositeDirection(direction: any): any {
   let directions: any = [];
 
       memcpy(directions, sOppositeDirections, 0);
-      if (direction <= DIR_NONE || direction > (0))
+      if (direction <= (0) || direction > (0))
           return direction;
 
       return directions[direction - 1];
@@ -3570,9 +3511,9 @@ export function GetCopyDirection(copyInitDir: any, playerInitDir: any, playerMov
   let dir: any = null;
       let _playerInitDir: any = playerInitDir;
       let _playerMoveDir: any = playerMoveDir;
-      if (_playerInitDir == DIR_NONE || _playerMoveDir == DIR_NONE
-        || _playerInitDir > DIR_EAST || _playerMoveDir > DIR_EAST)
-          return DIR_NONE;
+      if (_playerInitDir == (0) || _playerMoveDir == (0)
+        || _playerInitDir > (4) || _playerMoveDir > (4))
+          return (0);
 
       dir = GetPlayerDirectionForCopy(_playerInitDir, playerMoveDir);
       return sPlayerDirectionToCopyDirection[copyInitDir - 1][dir - 1];
@@ -3588,7 +3529,7 @@ export function ObjectEventExecHeldMovementAction(objectEvent: any, sprite: any)
 export function ObjectEventExecSingleMovementAction(objectEvent: any, sprite: any): any {
   if (gMovementActionFuncs[objectEvent.movementActionId][sprite.sActionFuncId](objectEvent, sprite))
       {
-          objectEvent.movementActionId = MOVEMENT_ACTION_NONE;
+          objectEvent.movementActionId = (0xFF);
           sprite.sActionFuncId = 0;
           return TRUE;
       }
@@ -3612,25 +3553,25 @@ export function FaceDirection(objectEvent: any, sprite: any, direction: any): an
 
 /** bool8 MovementAction_FaceDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_FaceDown_Step0(objectEvent: any, sprite: any): any {
-  FaceDirection(objectEvent, sprite, DIR_SOUTH);
+  FaceDirection(objectEvent, sprite, (1));
       return TRUE;
 }
 
 /** bool8 MovementAction_FaceUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_FaceUp_Step0(objectEvent: any, sprite: any): any {
-  FaceDirection(objectEvent, sprite, DIR_NORTH);
+  FaceDirection(objectEvent, sprite, (2));
       return TRUE;
 }
 
 /** bool8 MovementAction_FaceLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_FaceLeft_Step0(objectEvent: any, sprite: any): any {
-  FaceDirection(objectEvent, sprite, DIR_WEST);
+  FaceDirection(objectEvent, sprite, (3));
       return TRUE;
 }
 
 /** bool8 MovementAction_FaceRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_FaceRight_Step0(objectEvent: any, sprite: any): any {
-  FaceDirection(objectEvent, sprite, DIR_EAST);
+  FaceDirection(objectEvent, sprite, (4));
       return TRUE;
 }
 
@@ -3647,7 +3588,7 @@ export function InitNpcForMovement(objectEvent: any, sprite: any, direction: any
       SetSpriteDataForNormalStep(sprite, direction, speed);
       sprite.animPaused = FALSE;
 
-      if (sLockedAnimObjectEvents != NULL && FindLockedObjectEventIndex(objectEvent) != OBJECT_EVENTS_COUNT)
+      if (sLockedAnimObjectEvents != NULL && FindLockedObjectEventIndex(objectEvent) != (16))
           sprite.animPaused = TRUE;
 
       objectEvent.triggerGroundEffectsOnMove = TRUE;
@@ -3717,7 +3658,7 @@ export function UpdateWalkSlow(objectEvent: any, sprite: any): any {
 
 /** bool8 MovementAction_WalkSlowDiagonalUpLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkSlowDiagonalUpLeft_Step0(objectEvent: any, sprite: any): any {
-  InitWalkSlow(objectEvent, sprite, DIR_NORTHWEST);
+  InitWalkSlow(objectEvent, sprite, (7));
       return MovementAction_WalkSlowDiagonalUpLeft_Step1(objectEvent, sprite);
 }
 
@@ -3733,7 +3674,7 @@ export function MovementAction_WalkSlowDiagonalUpLeft_Step1(objectEvent: any, sp
 
 /** bool8 MovementAction_WalkSlowDiagonalUpRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkSlowDiagonalUpRight_Step0(objectEvent: any, sprite: any): any {
-  InitWalkSlow(objectEvent, sprite, DIR_NORTHEAST);
+  InitWalkSlow(objectEvent, sprite, (8));
       return MovementAction_WalkSlowDiagonalUpRight_Step1(objectEvent, sprite);
 }
 
@@ -3749,7 +3690,7 @@ export function MovementAction_WalkSlowDiagonalUpRight_Step1(objectEvent: any, s
 
 /** bool8 MovementAction_WalkSlowDiagonalDownLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkSlowDiagonalDownLeft_Step0(objectEvent: any, sprite: any): any {
-  InitWalkSlow(objectEvent, sprite, DIR_SOUTHWEST);
+  InitWalkSlow(objectEvent, sprite, (5));
       return MovementAction_WalkSlowDiagonalDownLeft_Step1(objectEvent, sprite);
 }
 
@@ -3765,7 +3706,7 @@ export function MovementAction_WalkSlowDiagonalDownLeft_Step1(objectEvent: any, 
 
 /** bool8 MovementAction_WalkSlowDiagonalDownRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkSlowDiagonalDownRight_Step0(objectEvent: any, sprite: any): any {
-  InitWalkSlow(objectEvent, sprite, DIR_SOUTHEAST);
+  InitWalkSlow(objectEvent, sprite, (6));
       return MovementAction_WalkSlowDiagonalDownRight_Step1(objectEvent, sprite);
 }
 
@@ -3781,7 +3722,7 @@ export function MovementAction_WalkSlowDiagonalDownRight_Step1(objectEvent: any,
 
 /** bool8 MovementAction_WalkSlowDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkSlowDown_Step0(objectEvent: any, sprite: any): any {
-  InitWalkSlow(objectEvent, sprite, DIR_SOUTH);
+  InitWalkSlow(objectEvent, sprite, (1));
       return MovementAction_WalkSlowDown_Step1(objectEvent, sprite);
 }
 
@@ -3797,7 +3738,7 @@ export function MovementAction_WalkSlowDown_Step1(objectEvent: any, sprite: any)
 
 /** bool8 MovementAction_WalkSlowUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkSlowUp_Step0(objectEvent: any, sprite: any): any {
-  InitWalkSlow(objectEvent, sprite, DIR_NORTH);
+  InitWalkSlow(objectEvent, sprite, (2));
       return MovementAction_WalkSlowUp_Step1(objectEvent, sprite);
 }
 
@@ -3813,7 +3754,7 @@ export function MovementAction_WalkSlowUp_Step1(objectEvent: any, sprite: any): 
 
 /** bool8 MovementAction_WalkSlowLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkSlowLeft_Step0(objectEvent: any, sprite: any): any {
-  InitWalkSlow(objectEvent, sprite, DIR_WEST);
+  InitWalkSlow(objectEvent, sprite, (3));
       return MovementAction_WalkSlowLeft_Step1(objectEvent, sprite);
 }
 
@@ -3829,7 +3770,7 @@ export function MovementAction_WalkSlowLeft_Step1(objectEvent: any, sprite: any)
 
 /** bool8 MovementAction_WalkSlowRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkSlowRight_Step0(objectEvent: any, sprite: any): any {
-  InitWalkSlow(objectEvent, sprite, DIR_EAST);
+  InitWalkSlow(objectEvent, sprite, (4));
       return MovementAction_WalkSlowRight_Step1(objectEvent, sprite);
 }
 
@@ -3845,7 +3786,7 @@ export function MovementAction_WalkSlowRight_Step1(objectEvent: any, sprite: any
 
 /** bool8 MovementAction_WalkNormalDiagonalUpLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkNormalDiagonalUpLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_NORTHWEST, MOVE_SPEED_NORMAL);
+  InitMovementNormal(objectEvent, sprite, (7), MOVE_SPEED_NORMAL);
       return MovementAction_WalkNormalDiagonalUpLeft_Step1(objectEvent, sprite);
 }
 
@@ -3861,7 +3802,7 @@ export function MovementAction_WalkNormalDiagonalUpLeft_Step1(objectEvent: any, 
 
 /** bool8 MovementAction_WalkNormalDiagonalUpRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkNormalDiagonalUpRight_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_NORTHEAST, MOVE_SPEED_NORMAL);
+  InitMovementNormal(objectEvent, sprite, (8), MOVE_SPEED_NORMAL);
       return MovementAction_WalkNormalDiagonalUpRight_Step1(objectEvent, sprite);
 }
 
@@ -3877,7 +3818,7 @@ export function MovementAction_WalkNormalDiagonalUpRight_Step1(objectEvent: any,
 
 /** bool8 MovementAction_WalkNormalDiagonalDownLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkNormalDiagonalDownLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_SOUTHWEST, MOVE_SPEED_NORMAL);
+  InitMovementNormal(objectEvent, sprite, (5), MOVE_SPEED_NORMAL);
       return MovementAction_WalkNormalDiagonalDownLeft_Step1(objectEvent, sprite);
 }
 
@@ -3893,7 +3834,7 @@ export function MovementAction_WalkNormalDiagonalDownLeft_Step1(objectEvent: any
 
 /** bool8 MovementAction_WalkNormalDiagonalDownRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkNormalDiagonalDownRight_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_SOUTHEAST, MOVE_SPEED_NORMAL);
+  InitMovementNormal(objectEvent, sprite, (6), MOVE_SPEED_NORMAL);
       return MovementAction_WalkNormalDiagonalDownRight_Step1(objectEvent, sprite);
 }
 
@@ -3909,7 +3850,7 @@ export function MovementAction_WalkNormalDiagonalDownRight_Step1(objectEvent: an
 
 /** bool8 MovementAction_WalkNormalDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkNormalDown_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_SOUTH, MOVE_SPEED_NORMAL);
+  InitMovementNormal(objectEvent, sprite, (1), MOVE_SPEED_NORMAL);
       return MovementAction_WalkNormalDown_Step1(objectEvent, sprite);
 }
 
@@ -3925,7 +3866,7 @@ export function MovementAction_WalkNormalDown_Step1(objectEvent: any, sprite: an
 
 /** bool8 MovementAction_WalkNormalUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkNormalUp_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_NORTH, MOVE_SPEED_NORMAL);
+  InitMovementNormal(objectEvent, sprite, (2), MOVE_SPEED_NORMAL);
       return MovementAction_WalkNormalUp_Step1(objectEvent, sprite);
 }
 
@@ -3941,7 +3882,7 @@ export function MovementAction_WalkNormalUp_Step1(objectEvent: any, sprite: any)
 
 /** bool8 MovementAction_WalkNormalLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkNormalLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_WEST, MOVE_SPEED_NORMAL);
+  InitMovementNormal(objectEvent, sprite, (3), MOVE_SPEED_NORMAL);
       return MovementAction_WalkNormalLeft_Step1(objectEvent, sprite);
 }
 
@@ -3957,7 +3898,7 @@ export function MovementAction_WalkNormalLeft_Step1(objectEvent: any, sprite: an
 
 /** bool8 MovementAction_WalkNormalRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkNormalRight_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_EAST, MOVE_SPEED_NORMAL);
+  InitMovementNormal(objectEvent, sprite, (4), MOVE_SPEED_NORMAL);
       return MovementAction_WalkNormalRight_Step1(objectEvent, sprite);
 }
 
@@ -4067,7 +4008,7 @@ export function DoJumpInPlaceAnim(objectEvent: any, sprite: any): any {
 
 /** bool8 MovementAction_Jump2Down_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_Jump2Down_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_SOUTH, JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+  InitJumpRegular(objectEvent, sprite, (1), JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
       return MovementAction_Jump2Down_Step1(objectEvent, sprite);
 }
 
@@ -4084,7 +4025,7 @@ export function MovementAction_Jump2Down_Step1(objectEvent: any, sprite: any): a
 
 /** bool8 MovementAction_Jump2Up_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_Jump2Up_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_NORTH, JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+  InitJumpRegular(objectEvent, sprite, (2), JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
       return MovementAction_Jump2Up_Step1(objectEvent, sprite);
 }
 
@@ -4101,7 +4042,7 @@ export function MovementAction_Jump2Up_Step1(objectEvent: any, sprite: any): any
 
 /** bool8 MovementAction_Jump2Left_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_Jump2Left_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_WEST, JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+  InitJumpRegular(objectEvent, sprite, (3), JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
       return MovementAction_Jump2Left_Step1(objectEvent, sprite);
 }
 
@@ -4118,7 +4059,7 @@ export function MovementAction_Jump2Left_Step1(objectEvent: any, sprite: any): a
 
 /** bool8 MovementAction_Jump2Right_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_Jump2Right_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_EAST, JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+  InitJumpRegular(objectEvent, sprite, (4), JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
       return MovementAction_Jump2Right_Step1(objectEvent, sprite);
 }
 
@@ -4181,7 +4122,7 @@ export function MovementAction_Delay16_Step0(objectEvent: any, sprite: any): any
 
 /** bool8 MovementAction_WalkFastDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkFastDown_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_SOUTH, MOVE_SPEED_FAST_1);
+  InitMovementNormal(objectEvent, sprite, (1), MOVE_SPEED_FAST_1);
       return MovementAction_WalkFastDown_Step1(objectEvent, sprite);
 }
 
@@ -4197,7 +4138,7 @@ export function MovementAction_WalkFastDown_Step1(objectEvent: any, sprite: any)
 
 /** bool8 MovementAction_WalkFastUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkFastUp_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_NORTH, MOVE_SPEED_FAST_1);
+  InitMovementNormal(objectEvent, sprite, (2), MOVE_SPEED_FAST_1);
       return MovementAction_WalkFastUp_Step1(objectEvent, sprite);
 }
 
@@ -4213,7 +4154,7 @@ export function MovementAction_WalkFastUp_Step1(objectEvent: any, sprite: any): 
 
 /** bool8 MovementAction_WalkFastLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkFastLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_WEST, MOVE_SPEED_FAST_1);
+  InitMovementNormal(objectEvent, sprite, (3), MOVE_SPEED_FAST_1);
       return MovementAction_WalkFastLeft_Step1(objectEvent, sprite);
 }
 
@@ -4229,7 +4170,7 @@ export function MovementAction_WalkFastLeft_Step1(objectEvent: any, sprite: any)
 
 /** bool8 MovementAction_WalkFastRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkFastRight_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_EAST, MOVE_SPEED_FAST_1);
+  InitMovementNormal(objectEvent, sprite, (4), MOVE_SPEED_FAST_1);
       return MovementAction_WalkFastRight_Step1(objectEvent, sprite);
 }
 
@@ -4273,103 +4214,103 @@ export function MovementAction_WalkInPlaceSlow_Step1(objectEvent: any, sprite: a
 
 /** bool8 MovementAction_WalkInPlaceSlowDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceSlowDown_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_SOUTH, GetMoveDirectionAnimNum(DIR_SOUTH), 32);
+  InitMoveInPlace(objectEvent, sprite, (1), GetMoveDirectionAnimNum((1)), 32);
       return MovementAction_WalkInPlaceSlow_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceSlowUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceSlowUp_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_NORTH, GetMoveDirectionAnimNum(DIR_NORTH), 32);
+  InitMoveInPlace(objectEvent, sprite, (2), GetMoveDirectionAnimNum((2)), 32);
       return MovementAction_WalkInPlaceSlow_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceSlowLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceSlowLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_WEST, GetMoveDirectionAnimNum(DIR_WEST), 32);
+  InitMoveInPlace(objectEvent, sprite, (3), GetMoveDirectionAnimNum((3)), 32);
       return MovementAction_WalkInPlaceSlow_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceSlowRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceSlowRight_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_EAST, GetMoveDirectionAnimNum(DIR_EAST), 32);
+  InitMoveInPlace(objectEvent, sprite, (4), GetMoveDirectionAnimNum((4)), 32);
       return MovementAction_WalkInPlaceSlow_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceNormalDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceNormalDown_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_SOUTH, GetMoveDirectionAnimNum(DIR_SOUTH), 16);
+  InitMoveInPlace(objectEvent, sprite, (1), GetMoveDirectionAnimNum((1)), 16);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceNormalUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceNormalUp_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_NORTH, GetMoveDirectionAnimNum(DIR_NORTH), 16);
+  InitMoveInPlace(objectEvent, sprite, (2), GetMoveDirectionAnimNum((2)), 16);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceNormalLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceNormalLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_WEST, GetMoveDirectionAnimNum(DIR_WEST), 16);
+  InitMoveInPlace(objectEvent, sprite, (3), GetMoveDirectionAnimNum((3)), 16);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceNormalRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceNormalRight_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_EAST, GetMoveDirectionAnimNum(DIR_EAST), 16);
+  InitMoveInPlace(objectEvent, sprite, (4), GetMoveDirectionAnimNum((4)), 16);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceFastDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceFastDown_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_SOUTH, GetMoveDirectionFastAnimNum(DIR_SOUTH), 8);
+  InitMoveInPlace(objectEvent, sprite, (1), GetMoveDirectionFastAnimNum((1)), 8);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceFastUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceFastUp_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_NORTH, GetMoveDirectionFastAnimNum(DIR_NORTH), 8);
+  InitMoveInPlace(objectEvent, sprite, (2), GetMoveDirectionFastAnimNum((2)), 8);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceFastLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceFastLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_WEST, GetMoveDirectionFastAnimNum(DIR_WEST), 8);
+  InitMoveInPlace(objectEvent, sprite, (3), GetMoveDirectionFastAnimNum((3)), 8);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceFastRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceFastRight_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_EAST, GetMoveDirectionFastAnimNum(DIR_EAST), 8);
+  InitMoveInPlace(objectEvent, sprite, (4), GetMoveDirectionFastAnimNum((4)), 8);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceFasterDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceFasterDown_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_SOUTH, GetMoveDirectionFasterAnimNum(DIR_SOUTH), 4);
+  InitMoveInPlace(objectEvent, sprite, (1), GetMoveDirectionFasterAnimNum((1)), 4);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceFasterUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceFasterUp_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_NORTH, GetMoveDirectionFasterAnimNum(DIR_NORTH), 4);
+  InitMoveInPlace(objectEvent, sprite, (2), GetMoveDirectionFasterAnimNum((2)), 4);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceFasterLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceFasterLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_WEST, GetMoveDirectionFasterAnimNum(DIR_WEST), 4);
+  InitMoveInPlace(objectEvent, sprite, (3), GetMoveDirectionFasterAnimNum((3)), 4);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_WalkInPlaceFasterRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkInPlaceFasterRight_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_EAST, GetMoveDirectionFasterAnimNum(DIR_EAST), 4);
+  InitMoveInPlace(objectEvent, sprite, (4), GetMoveDirectionFasterAnimNum((4)), 4);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_RideWaterCurrentDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_RideWaterCurrentDown_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_SOUTH, MOVE_SPEED_FAST_2);
+  InitMovementNormal(objectEvent, sprite, (1), MOVE_SPEED_FAST_2);
       return MovementAction_RideWaterCurrentDown_Step1(objectEvent, sprite);
 }
 
@@ -4385,7 +4326,7 @@ export function MovementAction_RideWaterCurrentDown_Step1(objectEvent: any, spri
 
 /** bool8 MovementAction_RideWaterCurrentUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_RideWaterCurrentUp_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_NORTH, MOVE_SPEED_FAST_2);
+  InitMovementNormal(objectEvent, sprite, (2), MOVE_SPEED_FAST_2);
       return MovementAction_RideWaterCurrentUp_Step1(objectEvent, sprite);
 }
 
@@ -4401,7 +4342,7 @@ export function MovementAction_RideWaterCurrentUp_Step1(objectEvent: any, sprite
 
 /** bool8 MovementAction_RideWaterCurrentLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_RideWaterCurrentLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_WEST, MOVE_SPEED_FAST_2);
+  InitMovementNormal(objectEvent, sprite, (3), MOVE_SPEED_FAST_2);
       return MovementAction_RideWaterCurrentLeft_Step1(objectEvent, sprite);
 }
 
@@ -4417,7 +4358,7 @@ export function MovementAction_RideWaterCurrentLeft_Step1(objectEvent: any, spri
 
 /** bool8 MovementAction_RideWaterCurrentRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_RideWaterCurrentRight_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_EAST, MOVE_SPEED_FAST_2);
+  InitMovementNormal(objectEvent, sprite, (4), MOVE_SPEED_FAST_2);
       return MovementAction_RideWaterCurrentRight_Step1(objectEvent, sprite);
 }
 
@@ -4433,7 +4374,7 @@ export function MovementAction_RideWaterCurrentRight_Step1(objectEvent: any, spr
 
 /** bool8 MovementAction_WalkFasterDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkFasterDown_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_SOUTH, MOVE_SPEED_FASTER);
+  InitMovementNormal(objectEvent, sprite, (1), MOVE_SPEED_FASTER);
       return MovementAction_WalkFasterDown_Step1(objectEvent, sprite);
 }
 
@@ -4449,7 +4390,7 @@ export function MovementAction_WalkFasterDown_Step1(objectEvent: any, sprite: an
 
 /** bool8 MovementAction_WalkFasterUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkFasterUp_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_NORTH, MOVE_SPEED_FASTER);
+  InitMovementNormal(objectEvent, sprite, (2), MOVE_SPEED_FASTER);
       return MovementAction_WalkFasterUp_Step1(objectEvent, sprite);
 }
 
@@ -4465,7 +4406,7 @@ export function MovementAction_WalkFasterUp_Step1(objectEvent: any, sprite: any)
 
 /** bool8 MovementAction_WalkFasterLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkFasterLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_WEST, MOVE_SPEED_FASTER);
+  InitMovementNormal(objectEvent, sprite, (3), MOVE_SPEED_FASTER);
       return MovementAction_WalkFasterLeft_Step1(objectEvent, sprite);
 }
 
@@ -4481,7 +4422,7 @@ export function MovementAction_WalkFasterLeft_Step1(objectEvent: any, sprite: an
 
 /** bool8 MovementAction_WalkFasterRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkFasterRight_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_EAST, MOVE_SPEED_FASTER);
+  InitMovementNormal(objectEvent, sprite, (4), MOVE_SPEED_FASTER);
       return MovementAction_WalkFasterRight_Step1(objectEvent, sprite);
 }
 
@@ -4497,7 +4438,7 @@ export function MovementAction_WalkFasterRight_Step1(objectEvent: any, sprite: a
 
 /** bool8 MovementAction_SlideDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_SlideDown_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_SOUTH, MOVE_SPEED_FASTEST);
+  InitMovementNormal(objectEvent, sprite, (1), MOVE_SPEED_FASTEST);
       return MovementAction_SlideDown_Step1(objectEvent, sprite);
 }
 
@@ -4513,7 +4454,7 @@ export function MovementAction_SlideDown_Step1(objectEvent: any, sprite: any): a
 
 /** bool8 MovementAction_SlideUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_SlideUp_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_NORTH, MOVE_SPEED_FASTEST);
+  InitMovementNormal(objectEvent, sprite, (2), MOVE_SPEED_FASTEST);
       return MovementAction_SlideUp_Step1(objectEvent, sprite);
 }
 
@@ -4529,7 +4470,7 @@ export function MovementAction_SlideUp_Step1(objectEvent: any, sprite: any): any
 
 /** bool8 MovementAction_SlideLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_SlideLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_WEST, MOVE_SPEED_FASTEST);
+  InitMovementNormal(objectEvent, sprite, (3), MOVE_SPEED_FASTEST);
       return MovementAction_SlideLeft_Step1(objectEvent, sprite);
 }
 
@@ -4545,7 +4486,7 @@ export function MovementAction_SlideLeft_Step1(objectEvent: any, sprite: any): a
 
 /** bool8 MovementAction_SlideRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_SlideRight_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_EAST, MOVE_SPEED_FASTEST);
+  InitMovementNormal(objectEvent, sprite, (4), MOVE_SPEED_FASTEST);
       return MovementAction_SlideRight_Step1(objectEvent, sprite);
 }
 
@@ -4561,7 +4502,7 @@ export function MovementAction_SlideRight_Step1(objectEvent: any, sprite: any): 
 
 /** bool8 MovementAction_PlayerRunDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_PlayerRunDown_Step0(objectEvent: any, sprite: any): any {
-  StartRunningAnim(objectEvent, sprite, DIR_SOUTH);
+  StartRunningAnim(objectEvent, sprite, (1));
       return MovementAction_PlayerRunDown_Step1(objectEvent, sprite);
 }
 
@@ -4577,7 +4518,7 @@ export function MovementAction_PlayerRunDown_Step1(objectEvent: any, sprite: any
 
 /** bool8 MovementAction_PlayerRunUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_PlayerRunUp_Step0(objectEvent: any, sprite: any): any {
-  StartRunningAnim(objectEvent, sprite, DIR_NORTH);
+  StartRunningAnim(objectEvent, sprite, (2));
       return MovementAction_PlayerRunUp_Step1(objectEvent, sprite);
 }
 
@@ -4593,7 +4534,7 @@ export function MovementAction_PlayerRunUp_Step1(objectEvent: any, sprite: any):
 
 /** bool8 MovementAction_PlayerRunLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_PlayerRunLeft_Step0(objectEvent: any, sprite: any): any {
-  StartRunningAnim(objectEvent, sprite, DIR_WEST);
+  StartRunningAnim(objectEvent, sprite, (3));
       return MovementAction_PlayerRunLeft_Step1(objectEvent, sprite);
 }
 
@@ -4609,7 +4550,7 @@ export function MovementAction_PlayerRunLeft_Step1(objectEvent: any, sprite: any
 
 /** bool8 MovementAction_PlayerRunRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_PlayerRunRight_Step0(objectEvent: any, sprite: any): any {
-  StartRunningAnim(objectEvent, sprite, DIR_EAST);
+  StartRunningAnim(objectEvent, sprite, (4));
       return MovementAction_PlayerRunRight_Step1(objectEvent, sprite);
 }
 
@@ -4654,7 +4595,7 @@ export function InitJumpSpecial(objectEvent: any, sprite: any, direction: any): 
 
 /** bool8 MovementAction_JumpSpecialDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpSpecialDown_Step0(objectEvent: any, sprite: any): any {
-  InitJumpSpecial(objectEvent, sprite, DIR_SOUTH);
+  InitJumpSpecial(objectEvent, sprite, (1));
       return MovementAction_JumpSpecialDown_Step1(objectEvent, sprite);
 }
 
@@ -4671,7 +4612,7 @@ export function MovementAction_JumpSpecialDown_Step1(objectEvent: any, sprite: a
 
 /** bool8 MovementAction_JumpSpecialUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpSpecialUp_Step0(objectEvent: any, sprite: any): any {
-  InitJumpSpecial(objectEvent, sprite, DIR_NORTH);
+  InitJumpSpecial(objectEvent, sprite, (2));
       return MovementAction_JumpSpecialUp_Step1(objectEvent, sprite);
 }
 
@@ -4688,7 +4629,7 @@ export function MovementAction_JumpSpecialUp_Step1(objectEvent: any, sprite: any
 
 /** bool8 MovementAction_JumpSpecialLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpSpecialLeft_Step0(objectEvent: any, sprite: any): any {
-  InitJumpSpecial(objectEvent, sprite, DIR_WEST);
+  InitJumpSpecial(objectEvent, sprite, (3));
       return MovementAction_JumpSpecialLeft_Step1(objectEvent, sprite);
 }
 
@@ -4705,7 +4646,7 @@ export function MovementAction_JumpSpecialLeft_Step1(objectEvent: any, sprite: a
 
 /** bool8 MovementAction_JumpSpecialRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpSpecialRight_Step0(objectEvent: any, sprite: any): any {
-  InitJumpSpecial(objectEvent, sprite, DIR_EAST);
+  InitJumpSpecial(objectEvent, sprite, (4));
       return MovementAction_JumpSpecialRight_Step1(objectEvent, sprite);
 }
 
@@ -4724,7 +4665,7 @@ export function MovementAction_JumpSpecialRight_Step1(objectEvent: any, sprite: 
 export function MovementAction_FacePlayer_Step0(objectEvent: any, sprite: any): any {
   let playerObjectId: any = null;
 
-      if (!TryGetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0,playerObjectId))
+      if (!TryGetObjectEventIdByLocalIdAndMap((255), 0, 0,playerObjectId))
           FaceDirection(objectEvent, sprite, GetDirectionToFace(objectEvent.currentCoords.x,
                                                                 objectEvent.currentCoords.y,
                                                                 gObjectEvents[playerObjectId].currentCoords.x,
@@ -4737,7 +4678,7 @@ export function MovementAction_FacePlayer_Step0(objectEvent: any, sprite: any): 
 export function MovementAction_FaceAwayPlayer_Step0(objectEvent: any, sprite: any): any {
   let playerObjectId: any = null;
 
-      if (!TryGetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0,playerObjectId))
+      if (!TryGetObjectEventIdByLocalIdAndMap((255), 0, 0,playerObjectId))
           FaceDirection(objectEvent, sprite, GetOppositeDirection(GetDirectionToFace(objectEvent.currentCoords.x,
                                                                                      objectEvent.currentCoords.y,
                                                                                      gObjectEvents[playerObjectId].currentCoords.x,
@@ -4762,7 +4703,7 @@ export function MovementAction_UnlockFacingDirection_Step0(objectEvent: any, spr
 
 /** bool8 MovementAction_JumpDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpDown_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_SOUTH, JUMP_DISTANCE_NORMAL, JUMP_TYPE_NORMAL);
+  InitJumpRegular(objectEvent, sprite, (1), JUMP_DISTANCE_NORMAL, JUMP_TYPE_NORMAL);
       return MovementAction_JumpDown_Step1(objectEvent, sprite);
 }
 
@@ -4779,7 +4720,7 @@ export function MovementAction_JumpDown_Step1(objectEvent: any, sprite: any): an
 
 /** bool8 MovementAction_JumpUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpUp_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_NORTH, JUMP_DISTANCE_NORMAL, JUMP_TYPE_NORMAL);
+  InitJumpRegular(objectEvent, sprite, (2), JUMP_DISTANCE_NORMAL, JUMP_TYPE_NORMAL);
       return MovementAction_JumpUp_Step1(objectEvent, sprite);
 }
 
@@ -4796,7 +4737,7 @@ export function MovementAction_JumpUp_Step1(objectEvent: any, sprite: any): any 
 
 /** bool8 MovementAction_JumpLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpLeft_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_WEST, JUMP_DISTANCE_NORMAL, JUMP_TYPE_NORMAL);
+  InitJumpRegular(objectEvent, sprite, (3), JUMP_DISTANCE_NORMAL, JUMP_TYPE_NORMAL);
       return MovementAction_JumpLeft_Step1(objectEvent, sprite);
 }
 
@@ -4813,7 +4754,7 @@ export function MovementAction_JumpLeft_Step1(objectEvent: any, sprite: any): an
 
 /** bool8 MovementAction_JumpRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpRight_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_EAST, JUMP_DISTANCE_NORMAL, JUMP_TYPE_NORMAL);
+  InitJumpRegular(objectEvent, sprite, (4), JUMP_DISTANCE_NORMAL, JUMP_TYPE_NORMAL);
       return MovementAction_JumpRight_Step1(objectEvent, sprite);
 }
 
@@ -4830,7 +4771,7 @@ export function MovementAction_JumpRight_Step1(objectEvent: any, sprite: any): a
 
 /** bool8 MovementAction_JumpInPlaceDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpInPlaceDown_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_SOUTH, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_HIGH);
+  InitJumpRegular(objectEvent, sprite, (1), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_HIGH);
       return MovementAction_JumpInPlaceDown_Step1(objectEvent, sprite);
 }
 
@@ -4847,7 +4788,7 @@ export function MovementAction_JumpInPlaceDown_Step1(objectEvent: any, sprite: a
 
 /** bool8 MovementAction_JumpInPlaceUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpInPlaceUp_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_NORTH, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_HIGH);
+  InitJumpRegular(objectEvent, sprite, (2), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_HIGH);
       return MovementAction_JumpInPlaceUp_Step1(objectEvent, sprite);
 }
 
@@ -4864,7 +4805,7 @@ export function MovementAction_JumpInPlaceUp_Step1(objectEvent: any, sprite: any
 
 /** bool8 MovementAction_JumpInPlaceLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpInPlaceLeft_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_WEST, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_HIGH);
+  InitJumpRegular(objectEvent, sprite, (3), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_HIGH);
       return MovementAction_JumpInPlaceLeft_Step1(objectEvent, sprite);
 }
 
@@ -4881,7 +4822,7 @@ export function MovementAction_JumpInPlaceLeft_Step1(objectEvent: any, sprite: a
 
 /** bool8 MovementAction_JumpInPlaceRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpInPlaceRight_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_EAST, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_HIGH);
+  InitJumpRegular(objectEvent, sprite, (4), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_HIGH);
       return MovementAction_JumpInPlaceRight_Step1(objectEvent, sprite);
 }
 
@@ -4898,7 +4839,7 @@ export function MovementAction_JumpInPlaceRight_Step1(objectEvent: any, sprite: 
 
 /** bool8 MovementAction_JumpInPlaceDownUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpInPlaceDownUp_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_SOUTH, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
+  InitJumpRegular(objectEvent, sprite, (1), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
       return MovementAction_JumpInPlaceDownUp_Step1(objectEvent, sprite);
 }
 
@@ -4915,7 +4856,7 @@ export function MovementAction_JumpInPlaceDownUp_Step1(objectEvent: any, sprite:
 
 /** bool8 MovementAction_JumpInPlaceUpDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpInPlaceUpDown_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_NORTH, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
+  InitJumpRegular(objectEvent, sprite, (2), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
       return MovementAction_JumpInPlaceUpDown_Step1(objectEvent, sprite);
 }
 
@@ -4932,7 +4873,7 @@ export function MovementAction_JumpInPlaceUpDown_Step1(objectEvent: any, sprite:
 
 /** bool8 MovementAction_JumpInPlaceLeftRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpInPlaceLeftRight_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_WEST, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
+  InitJumpRegular(objectEvent, sprite, (3), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
       return MovementAction_JumpInPlaceLeftRight_Step1(objectEvent, sprite);
 }
 
@@ -4949,7 +4890,7 @@ export function MovementAction_JumpInPlaceLeftRight_Step1(objectEvent: any, spri
 
 /** bool8 MovementAction_JumpInPlaceRightLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_JumpInPlaceRightLeft_Step0(objectEvent: any, sprite: any): any {
-  InitJumpRegular(objectEvent, sprite, DIR_EAST, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
+  InitJumpRegular(objectEvent, sprite, (4), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_NORMAL);
       return MovementAction_JumpInPlaceRightLeft_Step1(objectEvent, sprite);
 }
 
@@ -4972,7 +4913,7 @@ export function MovementAction_FaceOriginalDirection_Step0(objectEvent: any, spr
 
 /** bool8 MovementAction_NurseJoyBowDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_NurseJoyBowDown_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_SOUTH, ANIM_NURSE_BOW);
+  StartSpriteAnimInDirection(objectEvent, sprite, (1), (((20) + 0)));
       return FALSE;
 }
 
@@ -5021,7 +4962,7 @@ export function MovementAction_SetVisible_Step0(objectEvent: any, sprite: any): 
 /** bool8 MovementAction_EmoteExclamationMark_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_EmoteExclamationMark_Step0(objectEvent: any, sprite: any): any {
   ObjectEventGetLocalIdAndMap(objectEvent,gFieldEffectArguments[0],gFieldEffectArguments[1],gFieldEffectArguments[2]);
-      FieldEffectStart(FLDEFF_EXCLAMATION_MARK_ICON);
+      FieldEffectStart((0));
       sprite.sActionFuncId = 1;
       return TRUE;
 }
@@ -5029,7 +4970,7 @@ export function MovementAction_EmoteExclamationMark_Step0(objectEvent: any, spri
 /** bool8 MovementAction_EmoteQuestionMark_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_EmoteQuestionMark_Step0(objectEvent: any, sprite: any): any {
   ObjectEventGetLocalIdAndMap(objectEvent,gFieldEffectArguments[0],gFieldEffectArguments[1],gFieldEffectArguments[2]);
-      FieldEffectStart(FLDEFF_QUESTION_MARK_ICON);
+      FieldEffectStart((33));
       sprite.sActionFuncId = 1;
       return TRUE;
 }
@@ -5037,19 +4978,19 @@ export function MovementAction_EmoteQuestionMark_Step0(objectEvent: any, sprite:
 /** bool8 MovementAction_EmoteHeart_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_EmoteHeart_Step0(objectEvent: any, sprite: any): any {
   ObjectEventGetLocalIdAndMap(objectEvent,gFieldEffectArguments[0],gFieldEffectArguments[1],gFieldEffectArguments[2]);
-      FieldEffectStart(FLDEFF_HEART_ICON);
+      FieldEffectStart((46));
       sprite.sActionFuncId = 1;
       return TRUE;
 }
 
 /** bool8 MovementAction_RevealTrainer_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_RevealTrainer_Step0(objectEvent: any, sprite: any): any {
-  if (objectEvent.movementType == MOVEMENT_TYPE_BURIED)
+  if (objectEvent.movementType == (0x3F))
       {
           SetBuriedTrainerMovement(objectEvent);
           return FALSE;
       }
-      if (objectEvent.movementType != MOVEMENT_TYPE_TREE_DISGUISE && objectEvent.movementType != MOVEMENT_TYPE_MOUNTAIN_DISGUISE)
+      if (objectEvent.movementType != (0x39) && objectEvent.movementType != (0x3A))
       {
           sprite.sActionFuncId = 2;
           return TRUE;
@@ -5071,7 +5012,7 @@ export function MovementAction_RevealTrainer_Step1(objectEvent: any, sprite: any
 
 /** bool8 MovementAction_RockSmashBreak_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_RockSmashBreak_Step0(objectEvent: any, sprite: any): any {
-  SetAndStartSpriteAnim(sprite, ANIM_REMOVE_OBSTACLE, 0);
+  SetAndStartSpriteAnim(sprite, (1), 0);
       sprite.sActionFuncId = 1;
       return FALSE;
 }
@@ -5099,7 +5040,7 @@ export function MovementAction_RockSmashBreak_Step2(objectEvent: any, sprite: an
 
 /** bool8 MovementAction_CutTree_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_CutTree_Step0(objectEvent: any, sprite: any): any {
-  SetAndStartSpriteAnim(sprite, ANIM_REMOVE_OBSTACLE, 0);
+  SetAndStartSpriteAnim(sprite, (1), 0);
       sprite.sActionFuncId = 1;
       return FALSE;
 }
@@ -5170,7 +5111,7 @@ export function MovementAction_ShowReflection_Step0(objectEvent: any, sprite: an
 
 /** bool8 MovementAction_WalkDownStartAffine_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkDownStartAffine_Step0(objectEvent: any, sprite: any): any {
-  InitWalkSlow(objectEvent, sprite, DIR_SOUTH);
+  InitWalkSlow(objectEvent, sprite, (1));
       sprite.affineAnimPaused = FALSE;
       StartSpriteAffineAnimIfDifferent(sprite, 0);
       return MovementAction_WalkDownStartAffine_Step1(objectEvent, sprite);
@@ -5189,7 +5130,7 @@ export function MovementAction_WalkDownStartAffine_Step1(objectEvent: any, sprit
 
 /** bool8 MovementAction_WalkDownAffine_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkDownAffine_Step0(objectEvent: any, sprite: any): any {
-  InitWalkSlow(objectEvent, sprite, DIR_SOUTH);
+  InitWalkSlow(objectEvent, sprite, (1));
       sprite.affineAnimPaused = FALSE;
       ChangeSpriteAffineAnimIfDifferent(sprite, 1);
       return MovementAction_WalkDownAffine_Step1(objectEvent, sprite);
@@ -5208,7 +5149,7 @@ export function MovementAction_WalkDownAffine_Step1(objectEvent: any, sprite: an
 
 /** bool8 MovementAction_WalkLeftAffine_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkLeftAffine_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_WEST, MOVE_SPEED_FAST_1);
+  InitMovementNormal(objectEvent, sprite, (3), MOVE_SPEED_FAST_1);
       sprite.affineAnimPaused = FALSE;
       ChangeSpriteAffineAnimIfDifferent(sprite, 2);
       return MovementAction_WalkLeftAffine_Step1(objectEvent, sprite);
@@ -5227,7 +5168,7 @@ export function MovementAction_WalkLeftAffine_Step1(objectEvent: any, sprite: an
 
 /** bool8 MovementAction_WalkRightAffine_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_WalkRightAffine_Step0(objectEvent: any, sprite: any): any {
-  InitMovementNormal(objectEvent, sprite, DIR_EAST, MOVE_SPEED_FAST_1);
+  InitMovementNormal(objectEvent, sprite, (4), MOVE_SPEED_FAST_1);
       sprite.affineAnimPaused = FALSE;
       ChangeSpriteAffineAnimIfDifferent(sprite, 3);
       return MovementAction_WalkRightAffine_Step1(objectEvent, sprite);
@@ -5255,97 +5196,97 @@ export function AcroWheelieFaceDirection(objectEvent: any, sprite: any, directio
 
 /** bool8 MovementAction_AcroWheelieFaceDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieFaceDown_Step0(objectEvent: any, sprite: any): any {
-  AcroWheelieFaceDirection(objectEvent, sprite, DIR_SOUTH);
+  AcroWheelieFaceDirection(objectEvent, sprite, (1));
       return TRUE;
 }
 
 /** bool8 MovementAction_AcroWheelieFaceUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieFaceUp_Step0(objectEvent: any, sprite: any): any {
-  AcroWheelieFaceDirection(objectEvent, sprite, DIR_NORTH);
+  AcroWheelieFaceDirection(objectEvent, sprite, (2));
       return TRUE;
 }
 
 /** bool8 MovementAction_AcroWheelieFaceLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieFaceLeft_Step0(objectEvent: any, sprite: any): any {
-  AcroWheelieFaceDirection(objectEvent, sprite, DIR_WEST);
+  AcroWheelieFaceDirection(objectEvent, sprite, (3));
       return TRUE;
 }
 
 /** bool8 MovementAction_AcroWheelieFaceRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieFaceRight_Step0(objectEvent: any, sprite: any): any {
-  AcroWheelieFaceDirection(objectEvent, sprite, DIR_EAST);
+  AcroWheelieFaceDirection(objectEvent, sprite, (4));
       return TRUE;
 }
 
 /** bool8 MovementAction_AcroPopWheelieDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroPopWheelieDown_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_SOUTH, GetAcroWheelieDirectionAnimNum(DIR_SOUTH));
+  StartSpriteAnimInDirection(objectEvent, sprite, (1), GetAcroWheelieDirectionAnimNum((1)));
       return FALSE;
 }
 
 /** bool8 MovementAction_AcroPopWheelieUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroPopWheelieUp_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_NORTH, GetAcroWheelieDirectionAnimNum(DIR_NORTH));
+  StartSpriteAnimInDirection(objectEvent, sprite, (2), GetAcroWheelieDirectionAnimNum((2)));
       return FALSE;
 }
 
 /** bool8 MovementAction_AcroPopWheelieLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroPopWheelieLeft_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_WEST, GetAcroWheelieDirectionAnimNum(DIR_WEST));
+  StartSpriteAnimInDirection(objectEvent, sprite, (3), GetAcroWheelieDirectionAnimNum((3)));
       return FALSE;
 }
 
 /** bool8 MovementAction_AcroPopWheelieRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroPopWheelieRight_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_EAST, GetAcroWheelieDirectionAnimNum(DIR_EAST));
+  StartSpriteAnimInDirection(objectEvent, sprite, (4), GetAcroWheelieDirectionAnimNum((4)));
       return FALSE;
 }
 
 /** bool8 MovementAction_AcroEndWheelieFaceDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroEndWheelieFaceDown_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_SOUTH, GetAcroEndWheelieDirectionAnimNum(DIR_SOUTH));
+  StartSpriteAnimInDirection(objectEvent, sprite, (1), GetAcroEndWheelieDirectionAnimNum((1)));
       return FALSE;
 }
 
 /** bool8 MovementAction_AcroEndWheelieFaceUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroEndWheelieFaceUp_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_NORTH, GetAcroEndWheelieDirectionAnimNum(DIR_NORTH));
+  StartSpriteAnimInDirection(objectEvent, sprite, (2), GetAcroEndWheelieDirectionAnimNum((2)));
       return FALSE;
 }
 
 /** bool8 MovementAction_AcroEndWheelieFaceLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroEndWheelieFaceLeft_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_WEST, GetAcroEndWheelieDirectionAnimNum(DIR_WEST));
+  StartSpriteAnimInDirection(objectEvent, sprite, (3), GetAcroEndWheelieDirectionAnimNum((3)));
       return FALSE;
 }
 
 /** bool8 MovementAction_AcroEndWheelieFaceRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroEndWheelieFaceRight_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_EAST, GetAcroEndWheelieDirectionAnimNum(DIR_EAST));
+  StartSpriteAnimInDirection(objectEvent, sprite, (4), GetAcroEndWheelieDirectionAnimNum((4)));
       return FALSE;
 }
 
 /** bool8 MovementAction_UnusedAcroActionDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_UnusedAcroActionDown_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_SOUTH, GetAcroUnusedActionDirectionAnimNum(DIR_SOUTH));
+  StartSpriteAnimInDirection(objectEvent, sprite, (1), GetAcroUnusedActionDirectionAnimNum((1)));
       return FALSE;
 }
 
 /** bool8 MovementAction_UnusedAcroActionUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_UnusedAcroActionUp_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_NORTH, GetAcroUnusedActionDirectionAnimNum(DIR_NORTH));
+  StartSpriteAnimInDirection(objectEvent, sprite, (2), GetAcroUnusedActionDirectionAnimNum((2)));
       return FALSE;
 }
 
 /** bool8 MovementAction_UnusedAcroActionLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_UnusedAcroActionLeft_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_WEST, GetAcroUnusedActionDirectionAnimNum(DIR_WEST));
+  StartSpriteAnimInDirection(objectEvent, sprite, (3), GetAcroUnusedActionDirectionAnimNum((3)));
       return FALSE;
 }
 
 /** bool8 MovementAction_UnusedAcroActionRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_UnusedAcroActionRight_Step0(objectEvent: any, sprite: any): any {
-  StartSpriteAnimInDirection(objectEvent, sprite, DIR_EAST, GetAcroUnusedActionDirectionAnimNum(DIR_EAST));
+  StartSpriteAnimInDirection(objectEvent, sprite, (4), GetAcroUnusedActionDirectionAnimNum((4)));
       return FALSE;
 }
 
@@ -5393,7 +5334,7 @@ export function InitAcroWheelieJump(objectEvent: any, sprite: any, direction: an
 
 /** bool8 MovementAction_AcroWheelieHopFaceDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieHopFaceDown_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_SOUTH, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
+  InitAcroWheelieJump(objectEvent, sprite, (1), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
       return MovementAction_AcroWheelieHopFaceDown_Step1(objectEvent, sprite);
 }
 
@@ -5410,7 +5351,7 @@ export function MovementAction_AcroWheelieHopFaceDown_Step1(objectEvent: any, sp
 
 /** bool8 MovementAction_AcroWheelieHopFaceUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieHopFaceUp_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_NORTH, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
+  InitAcroWheelieJump(objectEvent, sprite, (2), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
       return MovementAction_AcroWheelieHopFaceUp_Step1(objectEvent, sprite);
 }
 
@@ -5427,7 +5368,7 @@ export function MovementAction_AcroWheelieHopFaceUp_Step1(objectEvent: any, spri
 
 /** bool8 MovementAction_AcroWheelieHopFaceLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieHopFaceLeft_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_WEST, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
+  InitAcroWheelieJump(objectEvent, sprite, (3), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
       return MovementAction_AcroWheelieHopFaceLeft_Step1(objectEvent, sprite);
 }
 
@@ -5444,7 +5385,7 @@ export function MovementAction_AcroWheelieHopFaceLeft_Step1(objectEvent: any, sp
 
 /** bool8 MovementAction_AcroWheelieHopFaceRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieHopFaceRight_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_EAST, JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
+  InitAcroWheelieJump(objectEvent, sprite, (4), JUMP_DISTANCE_IN_PLACE, JUMP_TYPE_LOW);
       return MovementAction_AcroWheelieHopFaceRight_Step1(objectEvent, sprite);
 }
 
@@ -5461,7 +5402,7 @@ export function MovementAction_AcroWheelieHopFaceRight_Step1(objectEvent: any, s
 
 /** bool8 MovementAction_AcroWheelieHopDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieHopDown_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_SOUTH, JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
+  InitAcroWheelieJump(objectEvent, sprite, (1), JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
       return MovementAction_AcroWheelieHopDown_Step1(objectEvent, sprite);
 }
 
@@ -5478,7 +5419,7 @@ export function MovementAction_AcroWheelieHopDown_Step1(objectEvent: any, sprite
 
 /** bool8 MovementAction_AcroWheelieHopUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieHopUp_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_NORTH, JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
+  InitAcroWheelieJump(objectEvent, sprite, (2), JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
       return MovementAction_AcroWheelieHopUp_Step1(objectEvent, sprite);
 }
 
@@ -5495,7 +5436,7 @@ export function MovementAction_AcroWheelieHopUp_Step1(objectEvent: any, sprite: 
 
 /** bool8 MovementAction_AcroWheelieHopLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieHopLeft_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_WEST, JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
+  InitAcroWheelieJump(objectEvent, sprite, (3), JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
       return MovementAction_AcroWheelieHopLeft_Step1(objectEvent, sprite);
 }
 
@@ -5512,7 +5453,7 @@ export function MovementAction_AcroWheelieHopLeft_Step1(objectEvent: any, sprite
 
 /** bool8 MovementAction_AcroWheelieHopRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieHopRight_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_EAST, JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
+  InitAcroWheelieJump(objectEvent, sprite, (4), JUMP_DISTANCE_NORMAL, JUMP_TYPE_LOW);
       return MovementAction_AcroWheelieHopRight_Step1(objectEvent, sprite);
 }
 
@@ -5529,7 +5470,7 @@ export function MovementAction_AcroWheelieHopRight_Step1(objectEvent: any, sprit
 
 /** bool8 MovementAction_AcroWheelieJumpDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieJumpDown_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_SOUTH, JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+  InitAcroWheelieJump(objectEvent, sprite, (1), JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
       return MovementAction_AcroWheelieJumpDown_Step1(objectEvent, sprite);
 }
 
@@ -5546,7 +5487,7 @@ export function MovementAction_AcroWheelieJumpDown_Step1(objectEvent: any, sprit
 
 /** bool8 MovementAction_AcroWheelieJumpUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieJumpUp_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_NORTH, JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+  InitAcroWheelieJump(objectEvent, sprite, (2), JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
       return MovementAction_AcroWheelieJumpUp_Step1(objectEvent, sprite);
 }
 
@@ -5563,7 +5504,7 @@ export function MovementAction_AcroWheelieJumpUp_Step1(objectEvent: any, sprite:
 
 /** bool8 MovementAction_AcroWheelieJumpLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieJumpLeft_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_WEST, JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+  InitAcroWheelieJump(objectEvent, sprite, (3), JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
       return MovementAction_AcroWheelieJumpLeft_Step1(objectEvent, sprite);
 }
 
@@ -5580,7 +5521,7 @@ export function MovementAction_AcroWheelieJumpLeft_Step1(objectEvent: any, sprit
 
 /** bool8 MovementAction_AcroWheelieJumpRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieJumpRight_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieJump(objectEvent, sprite, DIR_EAST, JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
+  InitAcroWheelieJump(objectEvent, sprite, (4), JUMP_DISTANCE_FAR, JUMP_TYPE_HIGH);
       return MovementAction_AcroWheelieJumpRight_Step1(objectEvent, sprite);
 }
 
@@ -5597,25 +5538,25 @@ export function MovementAction_AcroWheelieJumpRight_Step1(objectEvent: any, spri
 
 /** bool8 MovementAction_AcroWheelieInPlaceDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieInPlaceDown_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_SOUTH, GetAcroWheeliePedalDirectionAnimNum(DIR_SOUTH), 8);
+  InitMoveInPlace(objectEvent, sprite, (1), GetAcroWheeliePedalDirectionAnimNum((1)), 8);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_AcroWheelieInPlaceUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieInPlaceUp_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_NORTH, GetAcroWheeliePedalDirectionAnimNum(DIR_NORTH), 8);
+  InitMoveInPlace(objectEvent, sprite, (2), GetAcroWheeliePedalDirectionAnimNum((2)), 8);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_AcroWheelieInPlaceLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieInPlaceLeft_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_WEST, GetAcroWheeliePedalDirectionAnimNum(DIR_WEST), 8);
+  InitMoveInPlace(objectEvent, sprite, (3), GetAcroWheeliePedalDirectionAnimNum((3)), 8);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
 /** bool8 MovementAction_AcroWheelieInPlaceRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieInPlaceRight_Step0(objectEvent: any, sprite: any): any {
-  InitMoveInPlace(objectEvent, sprite, DIR_EAST, GetAcroWheeliePedalDirectionAnimNum(DIR_EAST), 8);
+  InitMoveInPlace(objectEvent, sprite, (4), GetAcroWheeliePedalDirectionAnimNum((4)), 8);
       return MovementAction_WalkInPlace_Step1(objectEvent, sprite);
 }
 
@@ -5628,7 +5569,7 @@ export function InitAcroPopWheelie(objectEvent: any, sprite: any, direction: any
 
 /** bool8 MovementAction_AcroPopWheelieMoveDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroPopWheelieMoveDown_Step0(objectEvent: any, sprite: any): any {
-  InitAcroPopWheelie(objectEvent, sprite, DIR_SOUTH, 1);
+  InitAcroPopWheelie(objectEvent, sprite, (1), 1);
       return MovementAction_AcroPopWheelieMoveDown_Step1(objectEvent, sprite);
 }
 
@@ -5644,7 +5585,7 @@ export function MovementAction_AcroPopWheelieMoveDown_Step1(objectEvent: any, sp
 
 /** bool8 MovementAction_AcroPopWheelieMoveUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroPopWheelieMoveUp_Step0(objectEvent: any, sprite: any): any {
-  InitAcroPopWheelie(objectEvent, sprite, DIR_NORTH, 1);
+  InitAcroPopWheelie(objectEvent, sprite, (2), 1);
       return MovementAction_AcroPopWheelieMoveUp_Step1(objectEvent, sprite);
 }
 
@@ -5660,7 +5601,7 @@ export function MovementAction_AcroPopWheelieMoveUp_Step1(objectEvent: any, spri
 
 /** bool8 MovementAction_AcroPopWheelieMoveLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroPopWheelieMoveLeft_Step0(objectEvent: any, sprite: any): any {
-  InitAcroPopWheelie(objectEvent, sprite, DIR_WEST,  1);
+  InitAcroPopWheelie(objectEvent, sprite, (3),  1);
       return MovementAction_AcroPopWheelieMoveLeft_Step1(objectEvent, sprite);
 }
 
@@ -5676,7 +5617,7 @@ export function MovementAction_AcroPopWheelieMoveLeft_Step1(objectEvent: any, sp
 
 /** bool8 MovementAction_AcroPopWheelieMoveRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroPopWheelieMoveRight_Step0(objectEvent: any, sprite: any): any {
-  InitAcroPopWheelie(objectEvent, sprite, DIR_EAST,  1);
+  InitAcroPopWheelie(objectEvent, sprite, (4),  1);
       return MovementAction_AcroPopWheelieMoveRight_Step1(objectEvent, sprite);
 }
 
@@ -5698,7 +5639,7 @@ export function InitAcroWheelieMove(objectEvent: any, sprite: any, direction: an
 
 /** bool8 MovementAction_AcroWheelieMoveDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieMoveDown_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieMove(objectEvent, sprite, DIR_SOUTH, 1);
+  InitAcroWheelieMove(objectEvent, sprite, (1), 1);
       return MovementAction_AcroWheelieMoveDown_Step1(objectEvent, sprite);
 }
 
@@ -5714,7 +5655,7 @@ export function MovementAction_AcroWheelieMoveDown_Step1(objectEvent: any, sprit
 
 /** bool8 MovementAction_AcroWheelieMoveUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieMoveUp_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieMove(objectEvent, sprite, DIR_NORTH, 1);
+  InitAcroWheelieMove(objectEvent, sprite, (2), 1);
       return MovementAction_AcroWheelieMoveUp_Step1(objectEvent, sprite);
 }
 
@@ -5730,7 +5671,7 @@ export function MovementAction_AcroWheelieMoveUp_Step1(objectEvent: any, sprite:
 
 /** bool8 MovementAction_AcroWheelieMoveLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieMoveLeft_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieMove(objectEvent, sprite, DIR_WEST,  1);
+  InitAcroWheelieMove(objectEvent, sprite, (3),  1);
       return MovementAction_AcroWheelieMoveLeft_Step1(objectEvent, sprite);
 }
 
@@ -5746,7 +5687,7 @@ export function MovementAction_AcroWheelieMoveLeft_Step1(objectEvent: any, sprit
 
 /** bool8 MovementAction_AcroWheelieMoveRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroWheelieMoveRight_Step0(objectEvent: any, sprite: any): any {
-  InitAcroWheelieMove(objectEvent, sprite, DIR_EAST, 1);
+  InitAcroWheelieMove(objectEvent, sprite, (4), 1);
       return MovementAction_AcroWheelieMoveRight_Step1(objectEvent, sprite);
 }
 
@@ -5769,7 +5710,7 @@ export function InitAcroEndWheelie(objectEvent: any, sprite: any, direction: any
 
 /** bool8 MovementAction_AcroEndWheelieMoveDown_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroEndWheelieMoveDown_Step0(objectEvent: any, sprite: any): any {
-  InitAcroEndWheelie(objectEvent, sprite, DIR_SOUTH, 1);
+  InitAcroEndWheelie(objectEvent, sprite, (1), 1);
       return MovementAction_AcroEndWheelieMoveDown_Step1(objectEvent, sprite);
 }
 
@@ -5785,7 +5726,7 @@ export function MovementAction_AcroEndWheelieMoveDown_Step1(objectEvent: any, sp
 
 /** bool8 MovementAction_AcroEndWheelieMoveUp_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroEndWheelieMoveUp_Step0(objectEvent: any, sprite: any): any {
-  InitAcroEndWheelie(objectEvent, sprite, DIR_NORTH, 1);
+  InitAcroEndWheelie(objectEvent, sprite, (2), 1);
       return MovementAction_AcroEndWheelieMoveUp_Step1(objectEvent, sprite);
 }
 
@@ -5801,7 +5742,7 @@ export function MovementAction_AcroEndWheelieMoveUp_Step1(objectEvent: any, spri
 
 /** bool8 MovementAction_AcroEndWheelieMoveLeft_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroEndWheelieMoveLeft_Step0(objectEvent: any, sprite: any): any {
-  InitAcroEndWheelie(objectEvent, sprite, DIR_WEST, 1);
+  InitAcroEndWheelie(objectEvent, sprite, (3), 1);
       return MovementAction_AcroEndWheelieMoveLeft_Step1(objectEvent, sprite);
 }
 
@@ -5817,7 +5758,7 @@ export function MovementAction_AcroEndWheelieMoveLeft_Step1(objectEvent: any, sp
 
 /** bool8 MovementAction_AcroEndWheelieMoveRight_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
 export function MovementAction_AcroEndWheelieMoveRight_Step0(objectEvent: any, sprite: any): any {
-  InitAcroEndWheelie(objectEvent, sprite, DIR_EAST, 1);
+  InitAcroEndWheelie(objectEvent, sprite, (4), 1);
       return MovementAction_AcroEndWheelieMoveRight_Step1(objectEvent, sprite);
 }
 
@@ -5975,7 +5916,7 @@ export function ObjectEventUpdateMetatileBehaviors(objEvent: any): any {
 
 /** static void GetGroundEffectFlags_Reflection(struct ObjectEvent *objEvent, u32 *flags) */
 export function GetGroundEffectFlags_Reflection(objEvent: any, flags: any): any {
-  const reflectionFlags: any = [ GROUND_EFFECT_FLAG_ICE_REFLECTION, GROUND_EFFECT_FLAG_WATER_REFLECTION
+  const reflectionFlags: any = [ ((1 << 5)), ((1 << 4))
       ];
       let reflType: any = ObjectEventGetNearbyReflectionType(objEvent);
 
@@ -5996,34 +5937,34 @@ export function GetGroundEffectFlags_Reflection(objEvent: any, flags: any): any 
 /** static void GetGroundEffectFlags_TallGrassOnSpawn(struct ObjectEvent *objEvent, u32 *flags) */
 export function GetGroundEffectFlags_TallGrassOnSpawn(objEvent: any, flags: any): any {
   if (MetatileBehavior_IsTallGrass(objEvent.currentMetatileBehavior))
-          flags |= GROUND_EFFECT_FLAG_TALL_GRASS_ON_SPAWN;
+          flags |= ((1 << 0));
 }
 
 /** static void GetGroundEffectFlags_TallGrassOnBeginStep(struct ObjectEvent *objEvent, u32 *flags) */
 export function GetGroundEffectFlags_TallGrassOnBeginStep(objEvent: any, flags: any): any {
   if (MetatileBehavior_IsTallGrass(objEvent.currentMetatileBehavior))
-          flags |= GROUND_EFFECT_FLAG_TALL_GRASS_ON_MOVE;
+          flags |= ((1 << 1));
 }
 
 /** static void GetGroundEffectFlags_LongGrassOnSpawn(struct ObjectEvent *objEvent, u32 *flags) */
 export function GetGroundEffectFlags_LongGrassOnSpawn(objEvent: any, flags: any): any {
   if (MetatileBehavior_IsLongGrass(objEvent.currentMetatileBehavior))
-          flags |= GROUND_EFFECT_FLAG_LONG_GRASS_ON_SPAWN;
+          flags |= ((1 << 2));
 }
 
 /** static void GetGroundEffectFlags_LongGrassOnBeginStep(struct ObjectEvent *objEvent, u32 *flags) */
 export function GetGroundEffectFlags_LongGrassOnBeginStep(objEvent: any, flags: any): any {
   if (MetatileBehavior_IsLongGrass(objEvent.currentMetatileBehavior))
-          flags |= GROUND_EFFECT_FLAG_LONG_GRASS_ON_MOVE;
+          flags |= ((1 << 3));
 }
 
 /** static void GetGroundEffectFlags_Tracks(struct ObjectEvent *objEvent, u32 *flags) */
 export function GetGroundEffectFlags_Tracks(objEvent: any, flags: any): any {
   if (MetatileBehavior_IsDeepSand(objEvent.previousMetatileBehavior))
-          flags |= GROUND_EFFECT_FLAG_DEEP_SAND;
+          flags |= ((1 << 8));
       else if (MetatileBehavior_IsSandOrDeepSand(objEvent.previousMetatileBehavior)
                || MetatileBehavior_IsFootprints(objEvent.previousMetatileBehavior))
-          flags |= GROUND_EFFECT_FLAG_SAND;
+          flags |= ((1 << 7));
 }
 
 /** static void GetGroundEffectFlags_SandHeap(struct ObjectEvent *objEvent, u32 *flags) */
@@ -6035,7 +5976,7 @@ export function GetGroundEffectFlags_SandHeap(objEvent: any, flags: any): any {
           {
               objEvent.inSandPile = FALSE;
               objEvent.inSandPile = TRUE;
-              flags |= GROUND_EFFECT_FLAG_SAND_PILE;
+              flags |= ((1 << 11));
           }
       }
       else
@@ -6055,7 +5996,7 @@ export function GetGroundEffectFlags_ShallowFlowingWater(objEvent: any, flags: a
           {
               objEvent.inShallowFlowingWater = FALSE;
               objEvent.inShallowFlowingWater = TRUE;
-              flags |= GROUND_EFFECT_FLAG_SHALLOW_FLOWING_WATER;
+              flags |= ((1 << 6));
           }
       }
       else
@@ -6068,13 +6009,13 @@ export function GetGroundEffectFlags_ShallowFlowingWater(objEvent: any, flags: a
 export function GetGroundEffectFlags_Puddle(objEvent: any, flags: any): any {
   if (MetatileBehavior_IsPuddle(objEvent.currentMetatileBehavior)
           && MetatileBehavior_IsPuddle(objEvent.previousMetatileBehavior))
-          flags |= GROUND_EFFECT_FLAG_PUDDLE;
+          flags |= ((1 << 10));
 }
 
 /** static void GetGroundEffectFlags_Ripple(struct ObjectEvent *objEvent, u32 *flags) */
 export function GetGroundEffectFlags_Ripple(objEvent: any, flags: any): any {
   if (MetatileBehavior_HasRipples(objEvent.currentMetatileBehavior))
-          flags |= GROUND_EFFECT_FLAG_RIPPLES;
+          flags |= ((1 << 9));
 }
 
 /** static void GetGroundEffectFlags_ShortGrass(struct ObjectEvent *objEvent, u32 *flags) */
@@ -6086,7 +6027,7 @@ export function GetGroundEffectFlags_ShortGrass(objEvent: any, flags: any): any 
           {
               objEvent.inShortGrass = FALSE;
               objEvent.inShortGrass = TRUE;
-              flags |= GROUND_EFFECT_FLAG_SHORT_GRASS;
+              flags |= ((1 << 17));
           }
       }
       else
@@ -6104,7 +6045,7 @@ export function GetGroundEffectFlags_HotSprings(objEvent: any, flags: any): any 
           {
               objEvent.inHotSprings = FALSE;
               objEvent.inHotSprings = TRUE;
-              flags |= GROUND_EFFECT_FLAG_HOT_SPRINGS;
+              flags |= ((1 << 18));
           }
       }
       else
@@ -6116,7 +6057,7 @@ export function GetGroundEffectFlags_HotSprings(objEvent: any, flags: any): any 
 /** static void GetGroundEffectFlags_Seaweed(struct ObjectEvent *objEvent, u32 *flags) */
 export function GetGroundEffectFlags_Seaweed(objEvent: any, flags: any): any {
   if (MetatileBehavior_IsSeaweed(objEvent.currentMetatileBehavior))
-          flags |= GROUND_EFFECT_FLAG_SEAWEED;
+          flags |= ((1 << 19));
 }
 
 /** static void GetGroundEffectFlags_JumpLanding(struct ObjectEvent *objEvent, u32 *flags) */
@@ -6133,12 +6074,12 @@ export function GetGroundEffectFlags_JumpLanding(objEvent: any, flags: any): any
       ];
 
       const jumpLandingFlags: any = [
-          GROUND_EFFECT_FLAG_LAND_IN_TALL_GRASS,
-          GROUND_EFFECT_FLAG_LAND_IN_LONG_GRASS,
-          GROUND_EFFECT_FLAG_LAND_IN_SHALLOW_WATER,
-          GROUND_EFFECT_FLAG_LAND_IN_DEEP_WATER,
-          GROUND_EFFECT_FLAG_LAND_IN_SHALLOW_WATER,
-          GROUND_EFFECT_FLAG_LAND_ON_NORMAL_GROUND,
+          ((1 << 12)),
+          ((1 << 13)),
+          ((1 << 14)),
+          ((1 << 15)),
+          ((1 << 14)),
+          ((1 << 16)),
       ];
 
       if (objEvent.landingJump && !objEvent.disableJumpLandingGroundEffect)
@@ -6201,10 +6142,10 @@ export function GetLedgeJumpDirection(x: any, y: any, direction: any): any {
       let behavior: any = null;
       let index: any = direction;
 
-      if (index == DIR_NONE)
-          return DIR_NONE;
-      else if (index > DIR_EAST)
-          index -= DIR_EAST;
+      if (index == (0))
+          return (0);
+      else if (index > (4))
+          index -= (4);
 
       index--;
       behavior = MapGridGetMetatileBehaviorAt(x, y);
@@ -6212,7 +6153,7 @@ export function GetLedgeJumpDirection(x: any, y: any, direction: any): any {
       if (ledgeBehaviorFuncs[index](behavior) == TRUE)
           return index + 1;
 
-      return DIR_NONE;
+      return (0);
 }
 
 /** static void SetObjectEventSpriteOamTableForLongGrass(struct ObjectEvent *objEvent, struct Sprite *sprite) */
@@ -6325,7 +6266,7 @@ export function GroundEffect_SpawnOnTallGrass(objEvent: any, sprite: any): any {
       gFieldEffectArguments[5] = objEvent.mapGroup;
       gFieldEffectArguments[6] = gSaveBlock1Ptr.location.mapNum << 8 | gSaveBlock1Ptr.location.mapGroup;
       gFieldEffectArguments[7] = TRUE;  
-      FieldEffectStart(FLDEFF_TALL_GRASS);
+      FieldEffectStart((4));
 }
 
 /** void GroundEffect_StepOnTallGrass(struct ObjectEvent *objEvent, struct Sprite *sprite) */
@@ -6338,7 +6279,7 @@ export function GroundEffect_StepOnTallGrass(objEvent: any, sprite: any): any {
       gFieldEffectArguments[5] = objEvent.mapGroup;
       gFieldEffectArguments[6] = gSaveBlock1Ptr.location.mapNum << 8 | gSaveBlock1Ptr.location.mapGroup;
       gFieldEffectArguments[7] = FALSE;  
-      FieldEffectStart(FLDEFF_TALL_GRASS);
+      FieldEffectStart((4));
 }
 
 /** void GroundEffect_SpawnOnLongGrass(struct ObjectEvent *objEvent, struct Sprite *sprite) */
@@ -6351,7 +6292,7 @@ export function GroundEffect_SpawnOnLongGrass(objEvent: any, sprite: any): any {
       gFieldEffectArguments[5] = objEvent.mapGroup;
       gFieldEffectArguments[6] = gSaveBlock1Ptr.location.mapNum << 8 | gSaveBlock1Ptr.location.mapGroup;
       gFieldEffectArguments[7] = 1;
-      FieldEffectStart(FLDEFF_LONG_GRASS);
+      FieldEffectStart((17));
 }
 
 /** void GroundEffect_StepOnLongGrass(struct ObjectEvent *objEvent, struct Sprite *sprite) */
@@ -6364,7 +6305,7 @@ export function GroundEffect_StepOnLongGrass(objEvent: any, sprite: any): any {
       gFieldEffectArguments[5] = objEvent.mapGroup;
       gFieldEffectArguments[6] = gSaveBlock1Ptr.location.mapNum << 8 | gSaveBlock1Ptr.location.mapGroup;
       gFieldEffectArguments[7] = 0;
-      FieldEffectStart(FLDEFF_LONG_GRASS);
+      FieldEffectStart((17));
 }
 
 /** void GroundEffect_WaterReflection(struct ObjectEvent *objEvent, struct Sprite *sprite) */
@@ -6379,7 +6320,7 @@ export function GroundEffect_IceReflection(objEvent: any, sprite: any): any {
 
 /** void GroundEffect_FlowingWater(struct ObjectEvent *objEvent, struct Sprite *sprite) */
 export function GroundEffect_FlowingWater(objEvent: any, sprite: any): any {
-  StartFieldEffectForObjectEvent(FLDEFF_FEET_IN_FLOWING_WATER, objEvent);
+  StartFieldEffectForObjectEvent((34), objEvent);
 }
 
 /** void GroundEffect_SandTracks(struct ObjectEvent *objEvent, struct Sprite *sprite) */
@@ -6397,8 +6338,8 @@ export function GroundEffect_DeepSandTracks(objEvent: any, sprite: any): any {
 /** static void DoTracksGroundEffect_Footprints(struct ObjectEvent *objEvent, struct Sprite *sprite, bool8 isDeepSand) */
 export function DoTracksGroundEffect_Footprints(objEvent: any, sprite: any, isDeepSand: any): any {
   const sandFootprints_FieldEffectData: any = [
-          FLDEFF_SAND_FOOTPRINTS,
-          FLDEFF_DEEP_SAND_FOOTPRINTS
+          (13),
+          (24)
       ];
 
       gFieldEffectArguments[0] = objEvent.previousCoords.x;
@@ -6426,7 +6367,7 @@ export function DoTracksGroundEffect_BikeTireTracks(objEvent: any, sprite: any, 
           gFieldEffectArguments[3] = 2;
           gFieldEffectArguments[4] =
               bikeTireTracks_Transitions[objEvent.previousMovementDirection][objEvent.facingDirection - 5];
-          FieldEffectStart(FLDEFF_BIKE_TIRE_TRACKS);
+          FieldEffectStart((35));
       }
 }
 
@@ -6437,12 +6378,12 @@ export function GroundEffect_Ripple(objEvent: any, sprite: any): any {
 
 /** void GroundEffect_StepOnPuddle(struct ObjectEvent *objEvent, struct Sprite *sprite) */
 export function GroundEffect_StepOnPuddle(objEvent: any, sprite: any): any {
-  StartFieldEffectForObjectEvent(FLDEFF_SPLASH, objEvent);
+  StartFieldEffectForObjectEvent((15), objEvent);
 }
 
 /** void GroundEffect_SandHeap(struct ObjectEvent *objEvent, struct Sprite *sprite) */
 export function GroundEffect_SandHeap(objEvent: any, sprite: any): any {
-  StartFieldEffectForObjectEvent(FLDEFF_SAND_PILE, objEvent);
+  StartFieldEffectForObjectEvent((39), objEvent);
 }
 
 /** void GroundEffect_JumpOnTallGrass(struct ObjectEvent *objEvent, struct Sprite *sprite) */
@@ -6453,7 +6394,7 @@ export function GroundEffect_JumpOnTallGrass(objEvent: any, sprite: any): any {
       gFieldEffectArguments[1] = objEvent.currentCoords.y;
       gFieldEffectArguments[2] = objEvent.previousElevation;
       gFieldEffectArguments[3] = 2;
-      FieldEffectStart(FLDEFF_JUMP_TALL_GRASS);
+      FieldEffectStart((12));
 
       spriteId = FindTallGrassFieldEffectSpriteId(
           objEvent.localId,
@@ -6462,7 +6403,7 @@ export function GroundEffect_JumpOnTallGrass(objEvent: any, sprite: any): any {
           objEvent.currentCoords.x,
           objEvent.currentCoords.y);
 
-      if (spriteId == MAX_SPRITES)
+      if (spriteId == (64))
           GroundEffect_SpawnOnTallGrass(objEvent, sprite);
 }
 
@@ -6472,7 +6413,7 @@ export function GroundEffect_JumpOnLongGrass(objEvent: any, sprite: any): any {
       gFieldEffectArguments[1] = objEvent.currentCoords.y;
       gFieldEffectArguments[2] = objEvent.previousElevation;
       gFieldEffectArguments[3] = 2;
-      FieldEffectStart(FLDEFF_JUMP_LONG_GRASS);
+      FieldEffectStart((18));
 }
 
 /** void GroundEffect_JumpOnShallowWater(struct ObjectEvent *objEvent, struct Sprite *sprite) */
@@ -6481,7 +6422,7 @@ export function GroundEffect_JumpOnShallowWater(objEvent: any, sprite: any): any
       gFieldEffectArguments[1] = objEvent.currentCoords.y;
       gFieldEffectArguments[2] = objEvent.previousElevation;
       gFieldEffectArguments[3] = sprite.oam.priority;
-      FieldEffectStart(FLDEFF_JUMP_SMALL_SPLASH);
+      FieldEffectStart((16));
 }
 
 /** void GroundEffect_JumpOnWater(struct ObjectEvent *objEvent, struct Sprite *sprite) */
@@ -6490,7 +6431,7 @@ export function GroundEffect_JumpOnWater(objEvent: any, sprite: any): any {
       gFieldEffectArguments[1] = objEvent.currentCoords.y;
       gFieldEffectArguments[2] = objEvent.previousElevation;
       gFieldEffectArguments[3] = sprite.oam.priority;
-      FieldEffectStart(FLDEFF_JUMP_BIG_SPLASH);
+      FieldEffectStart((14));
 }
 
 /** void GroundEffect_JumpLandingDust(struct ObjectEvent *objEvent, struct Sprite *sprite) */
@@ -6499,24 +6440,24 @@ export function GroundEffect_JumpLandingDust(objEvent: any, sprite: any): any {
       gFieldEffectArguments[1] = objEvent.currentCoords.y;
       gFieldEffectArguments[2] = objEvent.previousElevation;
       gFieldEffectArguments[3] = sprite.oam.priority;
-      FieldEffectStart(FLDEFF_DUST);
+      FieldEffectStart((10));
 }
 
 /** void GroundEffect_ShortGrass(struct ObjectEvent *objEvent, struct Sprite *sprite) */
 export function GroundEffect_ShortGrass(objEvent: any, sprite: any): any {
-  StartFieldEffectForObjectEvent(FLDEFF_SHORT_GRASS, objEvent);
+  StartFieldEffectForObjectEvent((41), objEvent);
 }
 
 /** void GroundEffect_HotSprings(struct ObjectEvent *objEvent, struct Sprite *sprite) */
 export function GroundEffect_HotSprings(objEvent: any, sprite: any): any {
-  StartFieldEffectForObjectEvent(FLDEFF_HOT_SPRINGS_WATER, objEvent);
+  StartFieldEffectForObjectEvent((42), objEvent);
 }
 
 /** void GroundEffect_Seaweed(struct ObjectEvent *objEvent, struct Sprite *sprite) */
 export function GroundEffect_Seaweed(objEvent: any, sprite: any): any {
   gFieldEffectArguments[0] = objEvent.currentCoords.x;
       gFieldEffectArguments[1] = objEvent.currentCoords.y;
-      FieldEffectStart(FLDEFF_BUBBLES);
+      FieldEffectStart((53));
 }
 
 /** static void DoFlaggedGroundEffects(struct ObjectEvent *objEvent, struct Sprite *sprite, u32 flags) */
@@ -6539,24 +6480,24 @@ export function filters_out_some_ground_effects(objEvent: any, flags: any): any 
           objEvent.inSandPile = 0;
           objEvent.inShallowFlowingWater = 0;
           objEvent.inHotSprings = 0;
-          flags &= ~(GROUND_EFFECT_FLAG_HOT_SPRINGS
-                    | GROUND_EFFECT_FLAG_SHORT_GRASS
-                    | GROUND_EFFECT_FLAG_SAND_PILE
-                    | GROUND_EFFECT_FLAG_SHALLOW_FLOWING_WATER
-                    | GROUND_EFFECT_FLAG_TALL_GRASS_ON_MOVE);
+          flags &= ~(((1 << 18))
+                    | ((1 << 17))
+                    | ((1 << 11))
+                    | ((1 << 6))
+                    | ((1 << 1)));
       }
 }
 
 /** void FilterOutStepOnPuddleGroundEffectIfJumping(struct ObjectEvent *objEvent, u32 *flags) */
 export function FilterOutStepOnPuddleGroundEffectIfJumping(objEvent: any, flags: any): any {
   if (objEvent.landingJump)
-          flags &= ~GROUND_EFFECT_FLAG_PUDDLE;
+          flags &= ~((1 << 10));
 }
 
 /** static void DoGroundEffects_OnSpawn(struct ObjectEvent *objEvent, struct Sprite *sprite) */
 export function DoGroundEffects_OnSpawn(objEvent: any, sprite: any): any {
   let flags: any = null;
-      if (objEvent.triggerGroundEffectsOnMove && objEvent.localId != OBJ_EVENT_ID_CAMERA)
+      if (objEvent.triggerGroundEffectsOnMove && objEvent.localId != ((127)))
       {
           flags = 0;
           UpdateObjectEventElevationAndPriority(objEvent, sprite);
@@ -6571,7 +6512,7 @@ export function DoGroundEffects_OnSpawn(objEvent: any, sprite: any): any {
 /** static void DoGroundEffects_OnBeginStep(struct ObjectEvent *objEvent, struct Sprite *sprite) */
 export function DoGroundEffects_OnBeginStep(objEvent: any, sprite: any): any {
   let flags: any = null;
-      if (objEvent.triggerGroundEffectsOnMove && objEvent.localId != OBJ_EVENT_ID_CAMERA)
+      if (objEvent.triggerGroundEffectsOnMove && objEvent.localId != ((127)))
       {
           flags = 0;
           UpdateObjectEventElevationAndPriority(objEvent, sprite);
@@ -6587,7 +6528,7 @@ export function DoGroundEffects_OnBeginStep(objEvent: any, sprite: any): any {
 /** static void DoGroundEffects_OnFinishStep(struct ObjectEvent *objEvent, struct Sprite *sprite) */
 export function DoGroundEffects_OnFinishStep(objEvent: any, sprite: any): any {
   let flags: any = null;
-      if (objEvent.triggerGroundEffectsOnStop && objEvent.localId != OBJ_EVENT_ID_CAMERA)
+      if (objEvent.triggerGroundEffectsOnStop && objEvent.localId != ((127)))
       {
           flags = 0;
           UpdateObjectEventElevationAndPriority(objEvent, sprite);
@@ -6620,7 +6561,7 @@ export function FreezeObjectEvent(objectEvent: any): any {
 /** void FreezeObjectEvents(void) */
 export function FreezeObjectEvents(): any {
   let i: any = null;
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
           if (gObjectEvents[i].active && i != gPlayerAvatar.objectEventId)
               FreezeObjectEvent(gObjectEvents[i]);
 }
@@ -6628,7 +6569,7 @@ export function FreezeObjectEvents(): any {
 /** void FreezeObjectEventsExceptOne(u8 objectEventId) */
 export function FreezeObjectEventsExceptOne(objectEventId: any): any {
   let i: any = null;
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
           if (i != objectEventId && gObjectEvents[i].active && i != gPlayerAvatar.objectEventId)
               FreezeObjectEvent(gObjectEvents[i]);
 }
@@ -6646,7 +6587,7 @@ export function UnfreezeObjectEvent(objectEvent: any): any {
 /** void UnfreezeObjectEvents(void) */
 export function UnfreezeObjectEvents(): any {
   let i: any = null;
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
           if (gObjectEvents[i].active)
               UnfreezeObjectEvent(gObjectEvents[i]);
 }
@@ -6753,19 +6694,19 @@ export function AnimateSpriteInFigure8(sprite: any): any {
           sprite.y2 += GetFigure8YOffset(sprite.data[6]);
           break;
       case 1:
-          sprite.x2 -= GetFigure8XOffset((FIGURE_8_LENGTH - 1) - sprite.data[6]);
-          sprite.y2 += GetFigure8YOffset((FIGURE_8_LENGTH - 1) - sprite.data[6]);
+          sprite.x2 -= GetFigure8XOffset(((72) - 1) - sprite.data[6]);
+          sprite.y2 += GetFigure8YOffset(((72) - 1) - sprite.data[6]);
           break;
       case 2:
           sprite.x2 -= GetFigure8XOffset(sprite.data[6]);
           sprite.y2 += GetFigure8YOffset(sprite.data[6]);
           break;
       case 3:
-          sprite.x2 += GetFigure8XOffset((FIGURE_8_LENGTH - 1) - sprite.data[6]);
-          sprite.y2 += GetFigure8YOffset((FIGURE_8_LENGTH - 1) - sprite.data[6]);
+          sprite.x2 += GetFigure8XOffset(((72) - 1) - sprite.data[6]);
+          sprite.y2 += GetFigure8YOffset(((72) - 1) - sprite.data[6]);
           break;
       }
-      if (++sprite.data[6] == FIGURE_8_LENGTH)
+      if (++sprite.data[6] == (72))
       {
           sprite.data[6] = 0;
           sprite.data[7]++;
@@ -6912,20 +6853,20 @@ export function SpriteCB_VirtualObject(sprite: any): any {
 export function GetVirtualObjectSpriteId(virtualObjId: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_SPRITES; i++)
+      for (i = 0; i < (64); i++)
       {
           let sprite: any =gSprites[i];
           if (sprite.inUse && sprite.callback == SpriteCB_VirtualObject && sprite.sVirtualObjId == virtualObjId)
               return i;
       }
-      return MAX_SPRITES;
+      return (64);
 }
 
 /** void TurnVirtualObject(u8 virtualObjId, u8 direction) */
 export function TurnVirtualObject(virtualObjId: any, direction: any): any {
   let spriteId: any = GetVirtualObjectSpriteId(virtualObjId);
 
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
           StartSpriteAnim(gSprites[spriteId], GetFaceDirectionAnimNum(direction));
 }
 
@@ -6933,7 +6874,7 @@ export function TurnVirtualObject(virtualObjId: any, direction: any): any {
 export function SetVirtualObjectGraphics(virtualObjId: any, graphicsId: any): any {
   let spriteId: any = GetVirtualObjectSpriteId(virtualObjId);
 
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           let sprite: any =gSprites[spriteId];
           let graphicsInfo: any = GetObjectEventGraphicsInfo(graphicsId);
@@ -6963,7 +6904,7 @@ export function SetVirtualObjectGraphics(virtualObjId: any, graphicsId: any): an
 export function SetVirtualObjectInvisibility(virtualObjId: any, invisible: any): any {
   let spriteId: any = GetVirtualObjectSpriteId(virtualObjId);
 
-      if (spriteId == MAX_SPRITES)
+      if (spriteId == (64))
           return;
 
       if (invisible)
@@ -6976,7 +6917,7 @@ export function SetVirtualObjectInvisibility(virtualObjId: any, invisible: any):
 export function IsVirtualObjectInvisible(virtualObjId: any): any {
   let spriteId: any = GetVirtualObjectSpriteId(virtualObjId);
 
-      if (spriteId == MAX_SPRITES)
+      if (spriteId == (64))
           return FALSE;
 
       return (gSprites[spriteId].sInvisible == TRUE);
@@ -6986,7 +6927,7 @@ export function IsVirtualObjectInvisible(virtualObjId: any): any {
 export function SetVirtualObjectSpriteAnim(virtualObjId: any, animNum: any): any {
   let spriteId: any = GetVirtualObjectSpriteId(virtualObjId);
 
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].sAnimNum = animNum;
           gSprites[spriteId].sAnimState = 0;
@@ -7033,10 +6974,10 @@ export function MoveUnionRoomObjectDown(sprite: any): any {
 export function VirtualObject_UpdateAnim(sprite: any): any {
   switch(sprite.sAnimNum)
       {
-      case UNION_ROOM_SPAWN_IN:
+      case (1):
           MoveUnionRoomObjectDown(sprite);
           break;
-      case UNION_ROOM_SPAWN_OUT:
+      case (2):
           MoveUnionRoomObjectUp(sprite);
           break;
       case 0:
@@ -7051,7 +6992,7 @@ export function VirtualObject_UpdateAnim(sprite: any): any {
 export function IsVirtualObjectAnimating(virtualObjId: any): any {
   let spriteId: any = GetVirtualObjectSpriteId(virtualObjId);
 
-      if (spriteId == MAX_SPRITES)
+      if (spriteId == (64))
           return FALSE;
 
       if (gSprites[spriteId].sAnimNum != 0)
@@ -7071,7 +7012,7 @@ export function DoShadowFieldEffect(objectEvent: any): any {
   if (!objectEvent.hasShadow)
       {
           objectEvent.hasShadow = TRUE;
-          StartFieldEffectForObjectEvent(FLDEFF_SHADOW, objectEvent);
+          StartFieldEffectForObjectEvent((3), objectEvent);
       }
 }
 
@@ -7082,7 +7023,7 @@ export function DoRippleFieldEffect(objectEvent: any, sprite: any): any {
       gFieldEffectArguments[1] = sprite.y + (graphicsInfo.height >> 1) - 2;
       gFieldEffectArguments[2] = 151;
       gFieldEffectArguments[3] = 3;
-      FieldEffectStart(FLDEFF_RIPPLE);
+      FieldEffectStart((5));
 }
 
 /** u8 MovementAction_LockAnim_Step0(struct ObjectEvent *objectEvent, struct Sprite *sprite) */
@@ -7098,11 +7039,11 @@ export function MovementAction_LockAnim_Step0(objectEvent: any, sprite: any): an
       else
       {
           let i: any = null;
-          let firstFreeSlot: any = OBJECT_EVENTS_COUNT;
+          let firstFreeSlot: any = (16);
           let found: any = FALSE;
-          for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+          for (i = 0; i < (16); i++)
           {
-              if (firstFreeSlot == OBJECT_EVENTS_COUNT && sLockedAnimObjectEvents.localIds[i] == LOCALID_NONE)
+              if (firstFreeSlot == (16) && sLockedAnimObjectEvents.localIds[i] == (0))
                   firstFreeSlot = i;
 
               if (sLockedAnimObjectEvents.localIds[i] == objectEvent.localId)
@@ -7112,7 +7053,7 @@ export function MovementAction_LockAnim_Step0(objectEvent: any, sprite: any): an
               }
           }
 
-          if (!found && firstFreeSlot != OBJECT_EVENTS_COUNT)
+          if (!found && firstFreeSlot != (16))
           {
               sLockedAnimObjectEvents.localIds[firstFreeSlot] = objectEvent.localId;
               sLockedAnimObjectEvents.count++;
@@ -7140,9 +7081,9 @@ export function MovementAction_UnlockAnim_Step0(objectEvent: any, sprite: any): 
       {
           ableToStore = FALSE;
           index = FindLockedObjectEventIndex(objectEvent);
-          if (index != OBJECT_EVENTS_COUNT)
+          if (index != (16))
           {
-              sLockedAnimObjectEvents.localIds[index] = LOCALID_NONE;
+              sLockedAnimObjectEvents.localIds[index] = (0);
               sLockedAnimObjectEvents.count--;
               ableToStore = TRUE;
           }
@@ -7163,12 +7104,12 @@ export function MovementAction_UnlockAnim_Step0(objectEvent: any, sprite: any): 
 export function FindLockedObjectEventIndex(objectEvent: any): any {
   let i: any = null;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
           if (sLockedAnimObjectEvents.localIds[i] == objectEvent.localId)
               return i;
       }
-      return OBJECT_EVENTS_COUNT;
+      return (16);
 }
 
 /** static void CreateLevitateMovementTask(struct ObjectEvent *objectEvent) */
@@ -7212,7 +7153,7 @@ export function DestroyLevitateMovementTask(taskId: any): any {
 export function FreezeObjectEventsExceptTwo(objectEventId1: any, objectEventId2: any): any {
   let i: any = null;
 
-      for(i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for(i = 0; i < (16); i++)
       {
           if(i != objectEventId1 && i != objectEventId2 &&
               gObjectEvents[i].active && i != gPlayerAvatar.objectEventId)

@@ -17,24 +17,15 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates: any = null;
-let sClockFrames: any = null;
-let sClockInfo: any = null;
-let sClockOamData: any = null;
-let sDummyWindowTemplate: any = null;
-let sSaveFailedClockGfx: any = null;
-let sSaveFailedClockPal: any = null;
+let gGameContinueCallback: any = null;
 let sSaveFailedType: any = null;
-let sWindowIds: any = null;
-let sWindowTemplate_Clock: any = null;
-let sWindowTemplate_Text: any = null;
 /** static void SaveFailedScreenTextPrint(const u8 *text, u8 x, u8 y) */
 export function SaveFailedScreenTextPrint(text: any, x: any, y: any): any {
   let color: any = [];
 
-      color[0] = TEXT_COLOR_TRANSPARENT;
-      color[1] = TEXT_DYNAMIC_COLOR_6;
-      color[2] = TEXT_COLOR_LIGHT_GRAY;
+      color[0] = (0x0);
+      color[1] = (0xF);
+      color[2] = (0x3);
       AddTextPrinterParameterized4(sWindowIds[TEXT_WIN_ID], FONT_NORMAL, x * 8, y * 8 + 1, 0, 0, color, 0, text);
 }
 
@@ -107,7 +98,7 @@ export function CB2_SaveFailedScreen(): any {
           CopyWindowToVram(sWindowIds[CLOCK_WIN_ID], COPYWIN_GFX);  
           CopyWindowToVram(sWindowIds[TEXT_WIN_ID], COPYWIN_MAP);
           SaveFailedScreenTextPrint(gText_SaveFailedCheckingBackup, 1, 0);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           EnableInterrupts(1);
           SetVBlankCallback(VBlankCB);
           SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
@@ -192,7 +183,7 @@ export function CB2_FadeAndReturnToTitleScreen(): any {
 
       if (JOY_NEW(A_BUTTON))
       {
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           SetVBlankCallback(VBlankCB);
           SetMainCallback2(CB2_ReturnToTitleScreen);
       }
@@ -243,10 +234,10 @@ export function VerifySectorWipe(sector: any): any {
   let ptr: any =gSaveDataBuffer;
       let i: any = null;
 
-      ReadFlash(sector, 0, ptr, SECTOR_SIZE);
+      ReadFlash(sector, 0, ptr, (((3968) + (128))));
 
        
-      for (i = 0; i < SECTOR_SIZE / 4; i++, ptr++)
+      for (i = 0; i < (((3968) + (128))) / 4; i++, ptr++)
           if (ptr)
               return TRUE;  
 
@@ -261,7 +252,7 @@ export function WipeSector(sector: any): any {
        
       for (i = 0; failed && i < 130; i++)
       {
-          for (j = 0; j < SECTOR_SIZE; j++)
+          for (j = 0; j < (((3968) + (128))); j++)
               ProgramFlashByte(sector, j, 0);
 
           failed = VerifySectorWipe(sector);
@@ -274,7 +265,7 @@ export function WipeSector(sector: any): any {
 export function WipeSectors(sectorBits: any): any {
   let i: any = null;
 
-      for (i = 0; i < SECTORS_COUNT; i++)
+      for (i = 0; i < (32); i++)
           if ((sectorBits & (1 << i)) && !WipeSector(i))
               sectorBits &= ~(1 << i);
 

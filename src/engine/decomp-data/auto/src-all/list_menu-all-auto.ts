@@ -17,22 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sArrowCursor_Gfx: any = null;
-let sMysteryGiftLinkMenu: any = null;
-let sOutlineCursor_Gfx: any = null;
-let sRedInterface_Pal: any = null;
-let sScrollIndicatorTemplates: any = null;
-let sScrollIndicator_Gfx: any = null;
-let sSpriteTemplate_RedArrowCursor: any = null;
-let sSpriteTemplate_ScrollArrowIndicator: any = null;
-let sSubsprite_RedOutline1: any = null;
-let sSubsprite_RedOutline2: any = null;
-let sSubsprite_RedOutline3: any = null;
-let sSubsprite_RedOutline4: any = null;
-let sSubsprite_RedOutline5: any = null;
-let sSubsprite_RedOutline6: any = null;
-let sSubsprite_RedOutline7: any = null;
-let sSubsprite_RedOutline8: any = null;
+let cursorCount: any = null;
+let gMultiuseListMenuTemplate: any = null;
+let leftButton: any = null;
 /** s32 DoMysteryGiftListMenu(const struct WindowTemplate *windowTemplate, const struct ListMenuTemplate *listMenuTemplate, u8 drawMode, u16 tileNum, u16 palOffset) */
 export function DoMysteryGiftListMenu(windowTemplate: any, listMenuTemplate: any, drawMode: any, tileNum: any, palOffset: any): any {
   switch (sMysteryGiftLinkMenu.state)
@@ -62,7 +49,7 @@ export function DoMysteryGiftListMenu(windowTemplate: any, listMenuTemplate: any
           }
           if (JOY_NEW(B_BUTTON))
           {
-              sMysteryGiftLinkMenu.currItemId = LIST_CANCEL;
+              sMysteryGiftLinkMenu.currItemId = (-2);
               sMysteryGiftLinkMenu.state = 2;
           }
           if (sMysteryGiftLinkMenu.state == 2)
@@ -95,7 +82,7 @@ export function DoMysteryGiftListMenu(windowTemplate: any, listMenuTemplate: any
           return sMysteryGiftLinkMenu.currItemId;
       }
 
-      return LIST_NOTHING_CHOSEN;
+      return (-1);
 }
 
 /** u8 ListMenuInit(struct ListMenuTemplate *listMenuTemplate, u16 scrollOffset, u16 selectedRow) */
@@ -136,17 +123,17 @@ export function ListMenu_ProcessInput(listTaskId: any): any {
       }
       else if (JOY_NEW(B_BUTTON))
       {
-          return LIST_CANCEL;
+          return (-2);
       }
       else if (JOY_REPEAT(DPAD_UP))
       {
           ListMenuChangeSelection(list, TRUE, 1, FALSE);
-          return LIST_NOTHING_CHOSEN;
+          return (-1);
       }
       else if (JOY_REPEAT(DPAD_DOWN))
       {
           ListMenuChangeSelection(list, TRUE, 1, TRUE);
-          return LIST_NOTHING_CHOSEN;
+          return (-1);
       }
       else  
       {
@@ -173,16 +160,16 @@ export function ListMenu_ProcessInput(listTaskId: any): any {
           if (leftButton)
           {
               ListMenuChangeSelection(list, TRUE, list.template.maxShowed, FALSE);
-              return LIST_NOTHING_CHOSEN;
+              return (-1);
           }
           else if (rightButton)
           {
               ListMenuChangeSelection(list, TRUE, list.template.maxShowed, TRUE);
-              return LIST_NOTHING_CHOSEN;
+              return (-1);
           }
           else
           {
-              return LIST_NOTHING_CHOSEN;
+              return (-1);
           }
       }
 }
@@ -196,7 +183,7 @@ export function DestroyListMenuTask(listTaskId: any, scrollOffset: any, selected
       if (selectedRow != NULL)
           selectedRow = list.selectedRow;
 
-      if (list.taskId != TASK_NONE)
+      if (list.taskId != ((0xFF)))
           ListMenuRemoveCursorObject(list.taskId, list.template.cursorKind - (CURSOR_RED_OUTLINE));
 
       DestroyTask(listTaskId);
@@ -249,7 +236,7 @@ export function ListMenuTestInput(template: any, scrollOffset: any, selectedRow:
       if (newSelectedRow != NULL)
           newSelectedRow = list.selectedRow;
 
-      return LIST_NOTHING_CHOSEN;
+      return (-1);
 }
 
 /** void ListMenuGetCurrentItemArrayId(u8 listTaskId, u16 *arrayId) */
@@ -288,7 +275,7 @@ export function ListMenuInitInternal(listMenuTemplate: any, scrollOffset: any, s
       list.selectedRow = selectedRow;
       list.unk_1C = 0;
       list.unk_1D = 0;
-      list.taskId = TASK_NONE;
+      list.taskId = ((0xFF));
       list.unk_1F = 0;
 
       gListMenuOverride.cursorPal = list.template.cursorPal;
@@ -321,7 +308,7 @@ export function ListMenuPrint(list: any, str: any, x: any, y: any): any {
                                        gListMenuOverride.fontId,
                                        x, y,
                                        gListMenuOverride.lettersSpacing,
-                                       0, colors, TEXT_SKIP_DRAW, str);
+                                       0, colors, (0xFF), str);
 
           gListMenuOverride.enabled = FALSE;
       }
@@ -334,7 +321,7 @@ export function ListMenuPrint(list: any, str: any, x: any, y: any): any {
                                        list.template.fontId,
                                        x, y,
                                        list.template.lettersSpacing,
-                                       0, colors, TEXT_SKIP_DRAW, str);
+                                       0, colors, (0xFF), str);
       }
 }
 
@@ -346,7 +333,7 @@ export function ListMenuPrintEntries(list: any, startIndex: any, yOffset: any, c
 
       for (i = 0; i < count; i++)
       {
-          if (list.template.items[startIndex].id != LIST_HEADER)
+          if (list.template.items[startIndex].id != (-3))
               x = list.template.item_X;
           else
               x = list.template.header_X;
@@ -373,7 +360,7 @@ export function ListMenuDrawCursor(list: any): any {
       case CURSOR_INVISIBLE:
           break;
       case CURSOR_RED_OUTLINE:
-          if (list.taskId == TASK_NONE)
+          if (list.taskId == ((0xFF)))
               list.taskId = ListMenuAddCursorObject(list, CURSOR_RED_OUTLINE - (CURSOR_RED_OUTLINE));
           ListMenuUpdateCursorObject(list.taskId,
                                      GetWindowAttribute(list.template.windowId, WINDOW_TILEMAP_LEFT) * 8 - 1,
@@ -381,7 +368,7 @@ export function ListMenuDrawCursor(list: any): any {
                                      CURSOR_RED_OUTLINE - (CURSOR_RED_OUTLINE));
           break;
       case CURSOR_RED_ARROW:
-          if (list.taskId == TASK_NONE)
+          if (list.taskId == ((0xFF)))
               list.taskId = ListMenuAddCursorObject(list, CURSOR_RED_ARROW - (CURSOR_RED_OUTLINE));
           ListMenuUpdateCursorObject(list.taskId,
                                      GetWindowAttribute(list.template.windowId, WINDOW_TILEMAP_LEFT) * 8 + x,
@@ -400,7 +387,7 @@ export function ListMenuAddCursorObject(list: any, cursorObjId: any): any {
       cursor.rowWidth = GetWindowAttribute(list.template.windowId, WINDOW_WIDTH) * 8 + 2;
       cursor.rowHeight = GetFontAttribute(list.template.fontId, FONTATTR_MAX_LETTER_HEIGHT) + 2;
       cursor.tileTag = 0x4000;
-      cursor.palTag = TAG_NONE;
+      cursor.palTag = (0xFFFF);
       cursor.palNum = 15;
 
       return ListMenuAddCursorObjectInternal(cursor, cursorObjId);
@@ -442,7 +429,7 @@ export function ListMenuUpdateSelectedRowIndexAndScrollOffset(list: any, movingD
               while (selectedRow != 0)
               {
                   selectedRow--;
-                  if (list.template.items[scrollOffset + selectedRow].id != LIST_HEADER)
+                  if (list.template.items[scrollOffset + selectedRow].id != (-3))
                   {
                       list.selectedRow = selectedRow;
                       return 1;
@@ -456,7 +443,7 @@ export function ListMenuUpdateSelectedRowIndexAndScrollOffset(list: any, movingD
               while (selectedRow > newRow)
               {
                   selectedRow--;
-                  if (list.template.items[scrollOffset + selectedRow].id != LIST_HEADER)
+                  if (list.template.items[scrollOffset + selectedRow].id != (-3))
                   {
                       list.selectedRow = selectedRow;
                       return 1;
@@ -478,7 +465,7 @@ export function ListMenuUpdateSelectedRowIndexAndScrollOffset(list: any, movingD
               while (selectedRow < list.template.maxShowed - 1)
               {
                   selectedRow++;
-                  if (list.template.items[scrollOffset + selectedRow].id != LIST_HEADER)
+                  if (list.template.items[scrollOffset + selectedRow].id != (-3))
                   {
                       list.selectedRow = selectedRow;
                       return 1;
@@ -492,7 +479,7 @@ export function ListMenuUpdateSelectedRowIndexAndScrollOffset(list: any, movingD
               while (selectedRow < newRow)
               {
                   selectedRow++;
-                  if (list.template.items[scrollOffset + selectedRow].id != LIST_HEADER)
+                  if (list.template.items[scrollOffset + selectedRow].id != (-3))
                   {
                       list.selectedRow = selectedRow;
                       return 1;
@@ -565,7 +552,7 @@ export function ListMenuChangeSelection(list: any, updateCursorAndCallCallback: 
               if (ret != 2)
                   break;
               cursorCount++;
-          } while (list.template.items[list.scrollOffset + list.selectedRow].id == LIST_HEADER);
+          } while (list.template.items[list.scrollOffset + list.selectedRow].id == (-3));
       }
 
       if (updateCursorAndCallCallback)
@@ -612,7 +599,7 @@ export function ListMenuOverrideSetColors(cursorPal: any, fillValue: any, cursor
 /** void ListMenuDefaultCursorMoveFunc(s32 itemIndex, bool8 onInit, struct ListMenu *list) */
 export function ListMenuDefaultCursorMoveFunc(itemIndex: any, onInit: any, list: any): any {
   if (!onInit)
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 }
 
 /** s32 ListMenuGetTemplateField(u8 taskId, u8 field) */
@@ -777,7 +764,7 @@ export function AddScrollIndicatorArrowPair(arrowInfo: any, scrollOffset: any): 
       spriteSheet.tag = arrowInfo.tileTag;
       LoadCompressedSpriteSheet(spriteSheet);
 
-      if (arrowInfo.palTag == TAG_NONE)
+      if (arrowInfo.palTag == (0xFFFF))
       {
           LoadPalette(sRedInterface_Pal, OBJ_PLTT_ID(arrowInfo.palNum), PLTT_SIZE_4BPP);
       }
@@ -800,7 +787,7 @@ export function AddScrollIndicatorArrowPair(arrowInfo: any, scrollOffset: any): 
       data.topSpriteId = AddScrollIndicatorArrowObject(arrowInfo.firstArrowType, arrowInfo.firstX, arrowInfo.firstY, arrowInfo.tileTag, arrowInfo.palTag);
       data.bottomSpriteId = AddScrollIndicatorArrowObject(arrowInfo.secondArrowType, arrowInfo.secondX, arrowInfo.secondY, arrowInfo.tileTag, arrowInfo.palTag);
 
-      if (arrowInfo.palTag == TAG_NONE)
+      if (arrowInfo.palTag == (0xFFFF))
       {
           gSprites[data.topSpriteId].oam.paletteNum = arrowInfo.palNum;
           gSprites[data.bottomSpriteId].oam.paletteNum = arrowInfo.palNum;
@@ -876,9 +863,9 @@ export function Task_ScrollIndicatorArrowPairOnMainMenu(taskId: any): any {
 export function RemoveScrollIndicatorArrowPair(taskId: any): any {
   let data: any = gTasks[taskId].data;
 
-      if (data.tileTag != TAG_NONE)
+      if (data.tileTag != (0xFFFF))
           FreeSpriteTilesByTag(data.tileTag);
-      if (data.palTag != TAG_NONE)
+      if (data.palTag != (0xFFFF))
           FreeSpritePaletteByTag(data.palTag);
 
       DestroySprite(gSprites[data.topSpriteId]);
@@ -1014,7 +1001,7 @@ export function ListMenuAddRedOutlineCursorObject(cursor: any): any {
       spriteSheet.tag = cursor.tileTag;
       LoadCompressedSpriteSheet(spriteSheet);
 
-      if (cursor.palTag == TAG_NONE)
+      if (cursor.palTag == (0xFFFF))
       {
           LoadPalette(sRedInterface_Pal, OBJ_PLTT_ID(cursor.palNum), PLTT_SIZE_4BPP);
       }
@@ -1044,7 +1031,7 @@ export function ListMenuAddRedOutlineCursorObject(cursor: any): any {
       gSprites[data.spriteId].subpriority = 0;
       gSprites[data.spriteId].subspriteTableNum = 0;
 
-      if (cursor.palTag == TAG_NONE)
+      if (cursor.palTag == (0xFFFF))
       {
           gSprites[data.spriteId].oam.paletteNum = cursor.palNum;
       }
@@ -1066,9 +1053,9 @@ export function ListMenuRemoveRedOutlineCursorObject(taskId: any): any {
 
       Free(data.subspritesPtr);
 
-      if (data.tileTag != TAG_NONE)
+      if (data.tileTag != (0xFFFF))
           FreeSpriteTilesByTag(data.tileTag);
-      if (data.palTag != TAG_NONE)
+      if (data.palTag != (0xFFFF))
           FreeSpritePaletteByTag(data.palTag);
 
       DestroySprite(gSprites[data.spriteId]);
@@ -1094,7 +1081,7 @@ export function ListMenuAddRedArrowCursorObject(cursor: any): any {
       spriteSheet.tag = cursor.tileTag;
       LoadCompressedSpriteSheet(spriteSheet);
 
-      if (cursor.palTag == TAG_NONE)
+      if (cursor.palTag == (0xFFFF))
       {
           LoadPalette(sRedInterface_Pal, OBJ_PLTT_ID(cursor.palNum), PLTT_SIZE_4BPP);
       }
@@ -1119,7 +1106,7 @@ export function ListMenuAddRedArrowCursorObject(cursor: any): any {
       gSprites[data.spriteId].x2 = 8;
       gSprites[data.spriteId].y2 = 8;
 
-      if (cursor.palTag == TAG_NONE)
+      if (cursor.palTag == (0xFFFF))
       {
           gSprites[data.spriteId].oam.paletteNum = cursor.palNum;
       }
@@ -1139,9 +1126,9 @@ export function ListMenuUpdateRedArrowCursorObject(taskId: any, x: any, y: any):
 export function ListMenuRemoveRedArrowCursorObject(taskId: any): any {
   let data: any = gTasks[taskId].data;
 
-      if (data.tileTag != TAG_NONE)
+      if (data.tileTag != (0xFFFF))
           FreeSpriteTilesByTag(data.tileTag);
-      if (data.palTag != TAG_NONE)
+      if (data.palTag != (0xFFFF))
           FreeSpritePaletteByTag(data.palTag);
 
       DestroySprite(gSprites[data.spriteId]);

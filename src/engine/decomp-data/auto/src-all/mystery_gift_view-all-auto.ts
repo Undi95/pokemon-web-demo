@@ -17,17 +17,6 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCardGraphics: any = null;
-let sCard_FooterTextOffsets: any = null;
-let sCard_TextColorTable: any = null;
-let sCard_WindowTemplates: any = null;
-let sNewsGraphics: any = null;
-let sNews_ArrowsTemplate: any = null;
-let sNews_TextColorTable: any = null;
-let sNews_WindowTemplates: any = null;
-let sSpritePalettes_StampShadow: any = null;
-let sSpriteSheet_StampShadow: any = null;
-let sSpriteTemplate_StampShadow: any = null;
 let sWonderCardData: any = null;
 let sWonderNewsData: any = null;
 /** bool32 WonderCard_Init(struct WonderCard *card, struct WonderCardMetadata *metadata) */
@@ -39,11 +28,11 @@ export function WonderCard_Init(card: any, metadata: any): any {
           return FALSE;
       sWonderCardData.card = card;
       sWonderCardData.cardMetadata = metadata;
-      if (sWonderCardData.card.bgType >= NUM_WONDER_BGS)
+      if (sWonderCardData.card.bgType >= (8))
           sWonderCardData.card.bgType = 0;
-      if (sWonderCardData.card.type >= CARD_TYPE_COUNT)
+      if (sWonderCardData.card.type >= (3))
           sWonderCardData.card.type = 0;
-      if (sWonderCardData.card.maxStamps > MAX_STAMP_CARD_STAMPS)
+      if (sWonderCardData.card.maxStamps > (7))
           sWonderCardData.card.maxStamps = 0;
       sWonderCardData.gfx =sCardGraphics[sWonderCardData.card.bgType];
       return TRUE;
@@ -65,7 +54,7 @@ export function WonderCard_Enter(): any {
       switch(sWonderCardData.enterExitState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           break;
       case 1:
           if (UpdatePaletteFade())
@@ -110,7 +99,7 @@ export function WonderCard_Enter(): any {
           ShowBg(2);
           gPaletteFade.bufferTransferDisabled = FALSE;
           CreateCardSprites();
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           UpdatePaletteFade();
           break;
       default:
@@ -130,7 +119,7 @@ export function WonderCard_Exit(useCancel: any): any {
       switch (sWonderCardData.enterExitState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           break;
       case 1:
           if (UpdatePaletteFade())
@@ -158,7 +147,7 @@ export function WonderCard_Exit(useCancel: any): any {
       case 5:
           PrintMysteryGiftOrEReaderHeader(gGiftIsFromEReader, useCancel);
           CopyBgTilemapBufferToVram(0);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           break;
       default:
           if (UpdatePaletteFade())
@@ -177,10 +166,10 @@ export function BufferCardText(): any {
       const stats: any = [0, 0, 0];
 
        
-      memcpy(sWonderCardData.titleText, sWonderCardData.card.titleText, WONDER_CARD_TEXT_LENGTH);
-      sWonderCardData.titleText[WONDER_CARD_TEXT_LENGTH] = EOS;
-      memcpy(sWonderCardData.subtitleText, sWonderCardData.card.subtitleText, WONDER_CARD_TEXT_LENGTH);
-      sWonderCardData.subtitleText[WONDER_CARD_TEXT_LENGTH] = EOS;
+      memcpy(sWonderCardData.titleText, sWonderCardData.card.titleText, (40));
+      sWonderCardData.titleText[(40)] = (0xFF);
+      memcpy(sWonderCardData.subtitleText, sWonderCardData.card.subtitleText, (40));
+      sWonderCardData.subtitleText[(40)] = (0xFF);
 
        
       if (sWonderCardData.card.idNumber > 999999)
@@ -188,45 +177,45 @@ export function BufferCardText(): any {
       ConvertIntToDecimalStringN(sWonderCardData.idNumberText, sWonderCardData.card.idNumber, STR_CONV_MODE_LEFT_ALIGN, 6);
 
        
-      for (i = 0; i < WONDER_CARD_BODY_TEXT_LINES; i++)
+      for (i = 0; i < (4); i++)
       {
-          memcpy(sWonderCardData.bodyText[i], sWonderCardData.card.bodyText[i], WONDER_CARD_TEXT_LENGTH);
-          sWonderCardData.bodyText[i][WONDER_CARD_TEXT_LENGTH] = EOS;
+          memcpy(sWonderCardData.bodyText[i], sWonderCardData.card.bodyText[i], (40));
+          sWonderCardData.bodyText[i][(40)] = (0xFF);
       }
 
        
-      memcpy(sWonderCardData.footerLine1Text, sWonderCardData.card.footerLine1Text, WONDER_CARD_TEXT_LENGTH);
-      sWonderCardData.footerLine1Text[WONDER_CARD_TEXT_LENGTH] = EOS;
+      memcpy(sWonderCardData.footerLine1Text, sWonderCardData.card.footerLine1Text, (40));
+      sWonderCardData.footerLine1Text[(40)] = (0xFF);
 
        
       switch (sWonderCardData.card.type)
       {
-      case CARD_TYPE_GIFT:
-          memcpy(sWonderCardData.giftText, sWonderCardData.card.footerLine2Text, WONDER_CARD_TEXT_LENGTH);
-          sWonderCardData.giftText[WONDER_CARD_TEXT_LENGTH] = EOS;
+      case (0):
+          memcpy(sWonderCardData.giftText, sWonderCardData.card.footerLine2Text, (40));
+          sWonderCardData.giftText[(40)] = (0xFF);
           break;
-      case CARD_TYPE_STAMP:
-          sWonderCardData.giftText[0] = EOS;
+      case (1):
+          sWonderCardData.giftText[0] = (0xFF);
           break;
-      case CARD_TYPE_LINK_STAT:
-          sWonderCardData.giftText[0] = EOS;
+      case (2):
+          sWonderCardData.giftText[0] = (0xFF);
 
            
-          stats[0] = sWonderCardData.cardMetadata.battlesWon < MAX_WONDER_CARD_STAT ? sWonderCardData.cardMetadata.battlesWon : MAX_WONDER_CARD_STAT;
-          stats[1] = sWonderCardData.cardMetadata.battlesLost < MAX_WONDER_CARD_STAT ? sWonderCardData.cardMetadata.battlesLost : MAX_WONDER_CARD_STAT;
-          stats[2] = sWonderCardData.cardMetadata.numTrades < MAX_WONDER_CARD_STAT ? sWonderCardData.cardMetadata.numTrades : MAX_WONDER_CARD_STAT;
+          stats[0] = sWonderCardData.cardMetadata.battlesWon < (999) ? sWonderCardData.cardMetadata.battlesWon : (999);
+          stats[1] = sWonderCardData.cardMetadata.battlesLost < (999) ? sWonderCardData.cardMetadata.battlesLost : (999);
+          stats[2] = sWonderCardData.cardMetadata.numTrades < (999) ? sWonderCardData.cardMetadata.numTrades : (999);
 
            
           for (i = 0; i < ARRAY_COUNT(sWonderCardData.statTextData); i++)
           {
-              memset(sWonderCardData.statTextData[i].statNumberText, EOS, sizeof(sWonderCardData.statTextData[i].statNumberText));
-              memset(sWonderCardData.statTextData[i].statText,       EOS, sizeof(sWonderCardData.statTextData[i].statText));
+              memset(sWonderCardData.statTextData[i].statNumberText, (0xFF), sizeof(sWonderCardData.statTextData[i].statNumberText));
+              memset(sWonderCardData.statTextData[i].statText,       (0xFF), sizeof(sWonderCardData.statTextData[i].statText));
           }
 
            
-          for (i = 0, charsUntilStat = 0; i < WONDER_CARD_TEXT_LENGTH; i++)
+          for (i = 0, charsUntilStat = 0; i < (40); i++)
           {
-              if (sWonderCardData.card.footerLine2Text[i] != CHAR_DYNAMIC)
+              if (sWonderCardData.card.footerLine2Text[i] != (0xF7))
               {
                    
                   sWonderCardData.statTextData[sWonderCardData.statFooterWidth].statText[charsUntilStat] = sWonderCardData.card.footerLine2Text[i];
@@ -283,7 +272,7 @@ export function DrawCardWindow(whichWindow: any): any {
       }
       case CARD_WIN_BODY:
            
-          for (; i < WONDER_CARD_BODY_TEXT_LINES; i++)
+          for (; i < (4); i++)
               AddTextPrinterParameterized3(windowId, FONT_SHORT_COPY_1, 0, 16 * i + 2, sCard_TextColorTable[sWonderCardData.gfx.bodyTextPal], 0, sWonderCardData.bodyText[i]);
           break;
       case CARD_WIN_FOOTER:
@@ -294,7 +283,7 @@ export function DrawCardWindow(whichWindow: any): any {
                                        0, sWonderCardData.footerLine1Text);
 
            
-          if (sWonderCardData.card.type != CARD_TYPE_LINK_STAT)
+          if (sWonderCardData.card.type != (2))
           {
                
                
@@ -312,7 +301,7 @@ export function DrawCardWindow(whichWindow: any): any {
               {
                    
                   AddTextPrinterParameterized3(windowId, FONT_SHORT_COPY_1, x, y, sCard_TextColorTable[sWonderCardData.gfx.footerTextPal], 0, sWonderCardData.statTextData[i].statText);
-                  if (sWonderCardData.statTextData[i].statNumberText[0] != EOS)
+                  if (sWonderCardData.statTextData[i].statNumberText[0] != (0xFF))
                   {
                        
                       x += GetStringWidth(FONT_SHORT_COPY_1, sWonderCardData.statTextData[i].statText, spacing);
@@ -331,27 +320,27 @@ export function DrawCardWindow(whichWindow: any): any {
 /** static void CreateCardSprites(void) */
 export function CreateCardSprites(): any {
   let i: any = 0;
-      sWonderCardData.monIconSpriteId = SPRITE_NONE;
+      sWonderCardData.monIconSpriteId = (0xFF);
 
        
-      if (sWonderCardData.cardMetadata.iconSpecies != SPECIES_NONE)
+      if (sWonderCardData.cardMetadata.iconSpecies != (0))
       {
           sWonderCardData.monIconSpriteId = CreateMonIconNoPersonality(GetIconSpeciesNoPersonality(sWonderCardData.cardMetadata.iconSpecies), SpriteCallbackDummy, 220, 20, 0, FALSE);
           gSprites[sWonderCardData.monIconSpriteId].oam.priority = 2;
       }
 
        
-      if (sWonderCardData.card.maxStamps != 0 && sWonderCardData.card.type == CARD_TYPE_STAMP)
+      if (sWonderCardData.card.maxStamps != 0 && sWonderCardData.card.type == (1))
       {
           LoadCompressedSpriteSheetUsingHeap(sSpriteSheet_StampShadow);
           LoadSpritePalette(sSpritePalettes_StampShadow[sWonderCardData.gfx.stampShadowPal]);
           for (; i < sWonderCardData.card.maxStamps; i++)
           {
-              sWonderCardData.stampSpriteIds[i][0] = SPRITE_NONE;
-              sWonderCardData.stampSpriteIds[i][1] = SPRITE_NONE;
+              sWonderCardData.stampSpriteIds[i][0] = (0xFF);
+              sWonderCardData.stampSpriteIds[i][1] = (0xFF);
               sWonderCardData.stampSpriteIds[i][0] = CreateSprite(sSpriteTemplate_StampShadow, 216 - 32 * i, 144, 8);
-              if (sWonderCardData.cardMetadata.stampData[STAMP_SPECIES][i] != SPECIES_NONE)
-                  sWonderCardData.stampSpriteIds[i][1] = CreateMonIconNoPersonality(GetIconSpeciesNoPersonality(sWonderCardData.cardMetadata.stampData[STAMP_SPECIES][i]),
+              if (sWonderCardData.cardMetadata.stampData[(0)][i] != (0))
+                  sWonderCardData.stampSpriteIds[i][1] = CreateMonIconNoPersonality(GetIconSpeciesNoPersonality(sWonderCardData.cardMetadata.stampData[(0)][i]),
                                                                                  SpriteCallbackDummy,
                                                                                  216 - 32 * i,
                                                                                  136, 0, 0);
@@ -364,17 +353,17 @@ export function DestroyCardSprites(): any {
   let i: any = 0;
 
        
-      if (sWonderCardData.monIconSpriteId != SPRITE_NONE)
+      if (sWonderCardData.monIconSpriteId != (0xFF))
           FreeAndDestroyMonIconSprite(gSprites[sWonderCardData.monIconSpriteId]);
 
        
-      if (sWonderCardData.card.maxStamps != 0 && sWonderCardData.card.type == CARD_TYPE_STAMP)
+      if (sWonderCardData.card.maxStamps != 0 && sWonderCardData.card.type == (1))
       {
           for (; i < sWonderCardData.card.maxStamps; i++)
           {
-              if (sWonderCardData.stampSpriteIds[i][0] != SPRITE_NONE)
+              if (sWonderCardData.stampSpriteIds[i][0] != (0xFF))
                   DestroySprite(gSprites[sWonderCardData.stampSpriteIds[i][0]]);
-              if (sWonderCardData.stampSpriteIds[i][1] != SPRITE_NONE)
+              if (sWonderCardData.stampSpriteIds[i][1] != (0xFF))
                   FreeAndDestroyMonIconSprite(gSprites[sWonderCardData.stampSpriteIds[i][1]]);
           }
           FreeSpriteTilesByTag((0x8000));
@@ -390,10 +379,10 @@ export function WonderNews_Init(news: any): any {
       if (sWonderNewsData == NULL)
           return FALSE;
       sWonderNewsData.news = news;
-      if (sWonderNewsData.news.bgType >= NUM_WONDER_BGS)
+      if (sWonderNewsData.news.bgType >= (8))
           sWonderNewsData.news.bgType = 0;
       sWonderNewsData.gfx =sNewsGraphics[sWonderNewsData.news.bgType];
-      sWonderNewsData.arrowTaskId = TASK_NONE;
+      sWonderNewsData.arrowTaskId = ((0xFF));
       return TRUE;
 }
 
@@ -414,7 +403,7 @@ export function WonderNews_Enter(): any {
       switch (sWonderNewsData.enterExitState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           break;
       case 1:
           if (UpdatePaletteFade())
@@ -468,7 +457,7 @@ export function WonderNews_Enter(): any {
           ShowBg(3);
           gPaletteFade.bufferTransferDisabled = FALSE;
           sWonderNewsData.arrowTaskId = AddScrollIndicatorArrowPair(sWonderNewsData.arrowsTemplate,sWonderNewsData.scrollOffset);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           UpdatePaletteFade();
           break;
       default:
@@ -489,7 +478,7 @@ export function WonderNews_Exit(useCancel: any): any {
       switch (sWonderNewsData.enterExitState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           break;
       case 1:
           if (UpdatePaletteFade())
@@ -520,10 +509,10 @@ export function WonderNews_Exit(useCancel: any): any {
       case 4:
           ChangeBgY(2, 0, BG_COORD_SET);
           ChangeBgY(3, 0, BG_COORD_SET);
-          if (sWonderNewsData.arrowTaskId != TASK_NONE)
+          if (sWonderNewsData.arrowTaskId != ((0xFF)))
           {
               RemoveScrollIndicatorArrowPair(sWonderNewsData.arrowTaskId);
-              sWonderNewsData.arrowTaskId = TASK_NONE;
+              sWonderNewsData.arrowTaskId = ((0xFF));
           }
           break;
       case 5:
@@ -531,7 +520,7 @@ export function WonderNews_Exit(useCancel: any): any {
           MG_DrawCheckerboardPattern(3);
           CopyBgTilemapBufferToVram(0);
           CopyBgTilemapBufferToVram(3);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           break;
       default:
           if (UpdatePaletteFade())
@@ -545,10 +534,10 @@ export function WonderNews_Exit(useCancel: any): any {
 
 /** void WonderNews_RemoveScrollIndicatorArrowPair(void) */
 export function WonderNews_RemoveScrollIndicatorArrowPair(): any {
-  if (!sWonderNewsData.arrowsRemoved && sWonderNewsData.arrowTaskId != TASK_NONE)
+  if (!sWonderNewsData.arrowsRemoved && sWonderNewsData.arrowTaskId != ((0xFF)))
       {
           RemoveScrollIndicatorArrowPair(sWonderNewsData.arrowTaskId);
-          sWonderNewsData.arrowTaskId = TASK_NONE;
+          sWonderNewsData.arrowTaskId = ((0xFF));
           sWonderNewsData.arrowsRemoved = TRUE;
       }
 }
@@ -608,15 +597,15 @@ export function BufferNewsText(): any {
   let i: any = 0;
 
        
-      memcpy(sWonderNewsData.titleText, sWonderNewsData.news.titleText, WONDER_NEWS_TEXT_LENGTH);
-      sWonderNewsData.titleText[WONDER_NEWS_TEXT_LENGTH] = EOS;
+      memcpy(sWonderNewsData.titleText, sWonderNewsData.news.titleText, (40));
+      sWonderNewsData.titleText[(40)] = (0xFF);
 
        
-      for (; i < WONDER_NEWS_BODY_TEXT_LINES; i++)
+      for (; i < (10); i++)
       {
-          memcpy(sWonderNewsData.bodyText[i], sWonderNewsData.news.bodyText[i], WONDER_NEWS_TEXT_LENGTH);
-          sWonderNewsData.bodyText[i][WONDER_NEWS_TEXT_LENGTH] = EOS;
-          if (i > 7 && sWonderNewsData.bodyText[i][0] != EOS)
+          memcpy(sWonderNewsData.bodyText[i], sWonderNewsData.news.bodyText[i], (40));
+          sWonderNewsData.bodyText[i][(40)] = (0xFF);
+          if (i > 7 && sWonderNewsData.bodyText[i][0] != (0xFF))
               sWonderNewsData.scrollEnd++;
       }
       sWonderNewsData.arrowsTemplate = sNews_ArrowsTemplate;
@@ -639,7 +628,7 @@ export function DrawNewsWindows(): any {
       AddTextPrinterParameterized3(sWonderNewsData.windowIds[NEWS_WIN_TITLE], FONT_SHORT_COPY_1, x, 6, sNews_TextColorTable[sWonderNewsData.gfx.titleTextPal], 0, sWonderNewsData.titleText);
 
        
-      for (; i < WONDER_NEWS_BODY_TEXT_LINES; i++)
+      for (; i < (10); i++)
           AddTextPrinterParameterized3(sWonderNewsData.windowIds[NEWS_WIN_BODY], FONT_SHORT_COPY_1, 0,
                                        16 * i + 2,
                                        sNews_TextColorTable[sWonderNewsData.gfx.bodyTextPal],

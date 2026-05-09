@@ -17,14 +17,12 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAffineAnim_MeditateStretchAttacker: any = null;
-let sAffineAnim_Teleport: any = null;
-let sAffineAnims_QuestionMark: any = null;
+let var1: any = null;
 /** static void AnimDefensiveWall(struct Sprite *sprite) */
 export function AnimDefensiveWall(sprite: any): any {
   let isContest: any = IsContest();
 
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER || isContest)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0) || isContest)
       {
           sprite.oam.priority = 2;
           sprite.subpriority = 200;
@@ -48,7 +46,7 @@ export function AnimDefensiveWall(sprite: any): any {
 
       if (!isContest && IsDoubleBattle())
       {
-          if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) == (0))
           {
               sprite.x = 72;
               sprite.y = 80;
@@ -61,7 +59,7 @@ export function AnimDefensiveWall(sprite: any): any {
       }
       else
       {
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
               gBattleAnimArgs[0] = -gBattleAnimArgs[0];
 
           sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X) + gBattleAnimArgs[0];
@@ -189,7 +187,7 @@ export function AnimWallSparkle(sprite: any): any {
 
           if (!IsContest() && IsDoubleBattle())
           {
-              if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+              if (GetBattlerSide(gBattleAnimAttacker) == (0))
               {
                   sprite.x = 72 - gBattleAnimArgs[0];
                   sprite.y = gBattleAnimArgs[1] + 80;
@@ -202,7 +200,7 @@ export function AnimWallSparkle(sprite: any): any {
           }
           else
           {
-              if (gBattleAnimArgs[2] == ANIM_ATTACKER)
+              if (gBattleAnimArgs[2] == (0))
                   InitSpritePosToAnimAttacker(sprite, respectMonPicOffsets);
               else
                   InitSpritePosToAnimTarget(sprite, respectMonPicOffsets);
@@ -222,7 +220,7 @@ export function AnimBentSpoon(sprite: any): any {
   sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
       sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           StartSpriteAnim(sprite, 1);
           sprite.x -= 40;
@@ -245,7 +243,7 @@ export function AnimQuestionMark(sprite: any): any {
   let x: any = GetBattlerSpriteCoordAttr(gBattleAnimAttacker, BATTLER_COORD_ATTR_WIDTH) /  2;
       let y: any = GetBattlerSpriteCoordAttr(gBattleAnimAttacker, BATTLER_COORD_ATTR_HEIGHT) / -2;
 
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_OPPONENT)
+      if (GetBattlerSide(gBattleAnimAttacker) == (1))
           x = -x;
 
       sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2) + x;
@@ -290,7 +288,7 @@ export function AnimQuestionMark_Step2(sprite: any): any {
 /** void AnimTask_MeditateStretchAttacker(u8 taskId) */
 export function AnimTask_MeditateStretchAttacker(taskId: any): any {
   let task: any =gTasks[taskId];
-      let spriteId: any = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      let spriteId: any = GetAnimBattlerSpriteId((0));
       task.data[0] = spriteId;
       PrepareAffineAnimInTaskData(task, spriteId, sAffineAnim_MeditateStretchAttacker);
       task.func = AnimTask_MeditateStretchAttacker_Step;
@@ -305,11 +303,11 @@ export function AnimTask_MeditateStretchAttacker_Step(taskId: any): any {
 /** void AnimTask_Teleport(u8 taskId) */
 export function AnimTask_Teleport(taskId: any): any {
   let task: any =gTasks[taskId];
-      let spriteId: any = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      let spriteId: any = GetAnimBattlerSpriteId((0));
       task.data[0] = spriteId;
       task.data[1] = 0;
       task.data[2] = 0;
-      task.data[3] = GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER ? 4 : 8;
+      task.data[3] = GetBattlerSide(gBattleAnimAttacker) != (0) ? 4 : 8;
 
       PrepareAffineAnimInTaskData(task, task.data[0], sAffineAnim_Teleport);
       task.func = AnimTask_Teleport_Step;
@@ -378,7 +376,7 @@ export function AnimTask_ImprisonOrbs_Step(taskId: any): any {
               task.data[1] = 0;
               spriteId = CreateSprite(gImprisonOrbSpriteTemplate, task.data[13], task.data[14], 0);
               task.data[task.data[2] + 8] = spriteId;
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   switch (task.data[2])
                   {
@@ -416,7 +414,7 @@ export function AnimTask_ImprisonOrbs_Step(taskId: any): any {
           {
               for (i = 8; i < 13; i++)
               {
-                  if (task.data[i] != MAX_SPRITES)
+                  if (task.data[i] != (64))
                       DestroySprite(gSprites[task.data[i]]);
               }
 
@@ -447,7 +445,7 @@ export function AnimRedX_Step(sprite: any): any {
 
 /** static void AnimRedX(struct Sprite *sprite) */
 export function AnimRedX(sprite: any): any {
-  if (gBattleAnimArgs[0] == ANIM_ATTACKER)
+  if (gBattleAnimArgs[0] == (0))
       {
           sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
           sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
@@ -463,7 +461,7 @@ export function AnimTask_SkillSwap(taskId: any): any {
 
       if (IsContest())
       {
-          if (gBattleAnimArgs[0] == ANIM_TARGET)
+          if (gBattleAnimArgs[0] == (1))
           {
               task.data[10] = -10;
               task.data[11] = GetBattlerSpriteCoordAttr(gBattleAnimTarget, BATTLER_COORD_ATTR_RIGHT) - 8;
@@ -516,7 +514,7 @@ export function AnimTask_SkillSwap_Step(taskId: any): any {
           {
               task.data[1] = 0;
               spriteId = CreateSprite(gSkillSwapOrbSpriteTemplate, task.data[11], task.data[12], 0);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   gSprites[spriteId].data[0] = 16;
                   gSprites[spriteId].data[2] = task.data[13];
@@ -729,7 +727,7 @@ export function AnimPsychoBoost(sprite: any): any {
       case 1:
           if (sprite.affineAnimEnded)
           {
-              PlaySE12WithPanning(SE_M_TELEPORT, BattleAnimAdjustPanning(SOUND_PAN_ATTACKER));
+              PlaySE12WithPanning((203), BattleAnimAdjustPanning((-64)));
               ChangeSpriteAffineAnim(sprite, 1);
               sprite.data[0]++;
           }

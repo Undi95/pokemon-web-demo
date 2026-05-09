@@ -15,19 +15,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sLastCursorPositions: any = null;
-let sMenuItems: any = null;
 /** static u8 GetPokenavMainMenuType(void) */
 export function GetPokenavMainMenuType(): any {
   let menuType: any = POKENAV_MENU_TYPE_DEFAULT;
 
-      if (FlagGet(FLAG_ADDED_MATCH_CALL_TO_POKENAV))
+      if (FlagGet((0x130)))
       {
           menuType = POKENAV_MENU_TYPE_UNLOCK_MC;
 
-          if (FlagGet(FLAG_SYS_RIBBON_GET))
+          if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x3B))))
               menuType = POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS;
       }
 
@@ -170,12 +166,12 @@ export function HandleMainMenuInput(menu: any): any {
                   return POKENAV_MENU_FUNC_NO_RIBBON_WINNERS;
               }
           case POKENAV_MENUITEM_SWITCH_OFF:
-              return POKENAV_MENU_FUNC_EXIT;
+              return (-1);
           }
       }
 
       if (JOY_NEW(B_BUTTON))
-          return POKENAV_MENU_FUNC_EXIT;
+          return (-1);
 
       return POKENAV_MENU_FUNC_NONE;
 }
@@ -195,14 +191,14 @@ export function HandleMainMenuInputTutorial(menu: any): any {
           }
           else
           {
-              PlaySE(SE_FAILURE);
+              PlaySE((32));
               return POKENAV_MENU_FUNC_NONE;
           }
       }
 
       if (JOY_NEW(B_BUTTON))
       {
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           return POKENAV_MENU_FUNC_NONE;
       }
 
@@ -219,7 +215,7 @@ export function HandleMainMenuInputEndTutorial(menu: any): any {
           let menuItem: any = sMenuItems[menu.menuType][menu.cursorPos];
           if (menuItem != POKENAV_MENUITEM_MATCH_CALL && menuItem != POKENAV_MENUITEM_SWITCH_OFF)
           {
-              PlaySE(SE_FAILURE);
+              PlaySE((32));
               return POKENAV_MENU_FUNC_NONE;
           }
           else if (menuItem == POKENAV_MENUITEM_MATCH_CALL)
@@ -277,7 +273,7 @@ export function HandleConditionMenuInput(menu: any): any {
               SetMenuIdAndCB(menu, POKENAV_CONDITION_GRAPH_PARTY);
               return POKENAV_MENU_FUNC_OPEN_FEATURE;
           case POKENAV_MENUITEM_CONDITION_CANCEL:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ReturnToMainMenu(menu);
               return POKENAV_MENU_FUNC_RETURN_TO_MAIN;
           }
@@ -292,7 +288,7 @@ export function HandleConditionMenuInput(menu: any): any {
           }
           else
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ReturnToMainMenu(menu);
               return POKENAV_MENU_FUNC_RETURN_TO_MAIN;
           }
@@ -318,7 +314,7 @@ export function HandleConditionSearchMenuInput(menu: any): any {
           }
           else
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ReturnToConditionMenu(menu);
               return POKENAV_MENU_FUNC_RETURN_TO_CONDITION;
           }
@@ -333,7 +329,7 @@ export function HandleConditionSearchMenuInput(menu: any): any {
           }
           else
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ReturnToConditionMenu(menu);
               return POKENAV_MENU_FUNC_RETURN_TO_CONDITION;
           }

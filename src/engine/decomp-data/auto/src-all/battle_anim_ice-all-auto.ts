@@ -17,17 +17,13 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAffineAnimNum: any = null;
-let sAffineAnims_HailParticle: any = null;
-let sHailCoordData: any = null;
-let sHazeBlendAmounts: any = null;
-let sMistBlendAmounts: any = null;
-let sOwnerTaskId: any = null;
-let sOwnerTaskSpriteCountField: any = null;
-let sSpawnImpactEffect: any = null;
-let sTargetX: any = null;
-let sTargetY: any = null;
-let sTimer: any = null;
+let attackerX: any = null;
+let attackerY: any = null;
+let battlerY: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let randB: any = null;
+let targetY: any = null;
 /** static void AnimUnusedIceCrystalThrow(struct Sprite *sprite) */
 export function AnimUnusedIceCrystalThrow(sprite: any): any {
   let targetX, targetY, attackerX, attackerY;
@@ -103,7 +99,7 @@ export function AnimIceBeamParticle(sprite: any): any {
   InitSpritePosToAnimAttacker(sprite, TRUE);
       sprite.data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.data[2] -= gBattleAnimArgs[2];
       else
           sprite.data[2] += gBattleAnimArgs[2];
@@ -123,7 +119,7 @@ export function AnimIceEffectParticle(sprite: any): any {
       else
       {
           SetAverageBattlerPositions(gBattleAnimTarget, TRUE,sprite.x,sprite.y);
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
               gBattleAnimArgs[0] = -gBattleAnimArgs[0];
 
           sprite.x += gBattleAnimArgs[0];
@@ -163,7 +159,7 @@ export function AnimSwirlingSnowball(sprite: any): any {
           SetAverageBattlerPositions(gBattleAnimTarget, TRUE,sprite.data[2],sprite.data[4]);
       }
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.data[2] -= gBattleAnimArgs[2];
       else
           sprite.data[2] += gBattleAnimArgs[2];
@@ -209,7 +205,7 @@ export function AnimSwirlingSnowball_Step1(sprite: any): any {
       sprite.x2 = 0;
       sprite.data[0] = 128;
 
-      tempVar = GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER ? 20 : -20;
+      tempVar = GetBattlerSide(gBattleAnimAttacker) != (0) ? 20 : -20;
 
       sprite.data[3] = Sin(sprite.data[0], tempVar);
       sprite.data[4] = Cos(sprite.data[0], 0xF);
@@ -221,7 +217,7 @@ export function AnimSwirlingSnowball_Step1(sprite: any): any {
 /** static void AnimSwirlingSnowball_Step2(struct Sprite *sprite) */
 export function AnimSwirlingSnowball_Step2(sprite: any): any {
   let tempVar: any = null;
-      tempVar = GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER ? 20 : -20;
+      tempVar = GetBattlerSide(gBattleAnimAttacker) != (0) ? 20 : -20;
 
       if (sprite.data[5] <= 31)
       {
@@ -275,7 +271,7 @@ export function AnimMoveParticleBeyondTarget(sprite: any): any {
           SetAverageBattlerPositions(gBattleAnimTarget, TRUE,sprite.data[2],sprite.data[4]);
       }
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.data[2] -= gBattleAnimArgs[2];
       else
           sprite.data[2] += gBattleAnimArgs[2];
@@ -342,7 +338,7 @@ export function AnimWaveFromCenterOfTarget(sprite: any): any {
           {
               SetAverageBattlerPositions(gBattleAnimTarget, FALSE,sprite.x,sprite.y);
 
-              if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+              if (GetBattlerSide(gBattleAnimAttacker) != (0))
                   gBattleAnimArgs[0] = -gBattleAnimArgs[0];
 
               sprite.x += gBattleAnimArgs[0];
@@ -372,7 +368,7 @@ export function InitSwirlingFogAnim(sprite: any): any {
           else
           {
               SetAverageBattlerPositions(gBattleAnimAttacker, FALSE,sprite.x,sprite.y);
-              if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+              if (GetBattlerSide(gBattleAnimAttacker) != (0))
                   sprite.x -= gBattleAnimArgs[0];
               else
                   sprite.x += gBattleAnimArgs[0];
@@ -391,7 +387,7 @@ export function InitSwirlingFogAnim(sprite: any): any {
           else
           {
               SetAverageBattlerPositions(gBattleAnimTarget, FALSE,sprite.x,sprite.y);
-              if (GetBattlerSide(gBattleAnimTarget) != B_SIDE_PLAYER)
+              if (GetBattlerSide(gBattleAnimTarget) != (0))
                   sprite.x -= gBattleAnimArgs[0];
               else
                   sprite.x += gBattleAnimArgs[0];
@@ -409,7 +405,7 @@ export function InitSwirlingFogAnim(sprite: any): any {
           tempVar = 0x40;
 
       sprite.data[6] = tempVar;
-      if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) == (0))
           sprite.y += 8;
 
       sprite.data[0] = gBattleAnimArgs[3];
@@ -636,13 +632,13 @@ export function InitPoisonGasCloudAnim(sprite: any): any {
       if (GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2) < GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2))
           sprite.data[7] = 0x8000;
 
-      if (GET_BATTLER_SIDE2(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GET_BATTLER_SIDE2(gBattleAnimTarget) == (0))
       {
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
           gBattleAnimArgs[3] = -gBattleAnimArgs[3];
 
-          if ((sprite.data[7] & 0x8000) && GET_BATTLER_SIDE2(gBattleAnimAttacker) == B_SIDE_PLAYER)
-              sprite.subpriority = gSprites[GetAnimBattlerSpriteId(ANIM_TARGET)].subpriority + 1;
+          if ((sprite.data[7] & 0x8000) && GET_BATTLER_SIDE2(gBattleAnimAttacker) == (0))
+              sprite.subpriority = gSprites[GetAnimBattlerSpriteId((1))].subpriority + 1;
 
           sprite.data[6] = 1;
       }
@@ -703,7 +699,7 @@ export function MovePoisonGasCloud(sprite: any): any {
               sprite.data[7]++;
               if (IsContest())
                   sprite.data[5] = 80;
-              else if (GET_BATTLER_SIDE2(gBattleAnimTarget) != B_SIDE_PLAYER)
+              else if (GET_BATTLER_SIDE2(gBattleAnimTarget) != (0))
                   sprite.data[5] = 204;
               else
                   sprite.data[5] = 80;
@@ -749,7 +745,7 @@ export function MovePoisonGasCloud(sprite: any): any {
               sprite.data[4] = sprite.y + 4;
               if (IsContest())
                   sprite.data[2] = -16;
-              else if (GET_BATTLER_SIDE2(gBattleAnimTarget) != B_SIDE_PLAYER)
+              else if (GET_BATTLER_SIDE2(gBattleAnimTarget) != (0))
                   sprite.data[2] = DISPLAY_WIDTH + 16;
               else
                   sprite.data[2] = -16;
@@ -868,7 +864,7 @@ export function GenerateHailParticle(hailStructId: any, affineAnimNum: any, task
       }
       spriteX = battlerX - ((battlerY + 8) / 2);
       id = CreateSprite(gHailParticleSpriteTemplate, spriteX, -8, 18);
-      if (id == MAX_SPRITES)
+      if (id == (64))
       {
           return FALSE;
       }
@@ -901,7 +897,7 @@ export function AnimHailBegin(sprite: any): any {
                                   sprite.sTargetX, sprite.sTargetY, sprite.subpriority);
 
           sprite.data[0] = spriteId;
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
                
                
@@ -944,7 +940,7 @@ export function InitIceBallAnim(sprite: any): any {
 
       sprite.data[0] = gBattleAnimArgs[4];
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
 
       sprite.data[2] = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2) + gBattleAnimArgs[2];

@@ -17,19 +17,13 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates: any = null;
-let sListMenuTemplate: any = null;
-let sMenuActionIds_Battle: any = null;
-let sMenuActionIds_BattleCannotUse: any = null;
-let sMenuActionIds_ChooseToss: any = null;
-let sMenuActionIds_Field: any = null;
-let sMenuActions: any = null;
-let sSpriteSheet_PyramidBag: any = null;
-let sSpriteTemplate_PyramidBag: any = null;
-let sTextColors: any = null;
-let sWindowTemplates: any = null;
-let sWindowTemplates_MenuActions: any = null;
-let sYesNoTossFuncions: any = null;
+let gMultiuseListMenuTemplate: any = null;
+let gPyramidBagMenu: any = null;
+let gSpecialVar_ItemId: any = null;
+let tListPos: any = null;
+let tListTaskId: any = null;
+let tNumToToss: any = null;
+let tQuantity: any = null;
 /** void InitBattlePyramidBagCursorPosition(void) */
 export function InitBattlePyramidBagCursorPosition(): any {
   gPyramidBagMenuState.cursorPosition = 0;
@@ -44,7 +38,7 @@ export function CB2_PyramidBagMenuFromStartMenu(): any {
 /** void ChooseItemsToTossFromPyramidBag(void) */
 export function ChooseItemsToTossFromPyramidBag(): any {
   LockPlayerFieldControls();
-      FadeScreen(FADE_TO_BLACK, 0);
+      FadeScreen((1), 0);
       CreateTask(Task_ChooseItemsToTossFromPyramidBag, 10);
 }
 
@@ -76,10 +70,10 @@ export function GoToBattlePyramidBagMenu(location: any, exitCallback: any): any 
 
       gPyramidBagMenu.newScreenCallback = NULL;
       gPyramidBagMenu.toSwapPos = POS_NONE;
-      gPyramidBagMenu.scrollIndicatorsTaskId = TASK_NONE;
+      gPyramidBagMenu.scrollIndicatorsTaskId = ((0xFF));
 
-      memset(gPyramidBagMenu.spriteIds, SPRITE_NONE, sizeof(gPyramidBagMenu.spriteIds));
-      memset(gPyramidBagMenu.windowIds, WINDOW_NONE, sizeof(gPyramidBagMenu.windowIds));
+      memset(gPyramidBagMenu.spriteIds, (0xFF), sizeof(gPyramidBagMenu.spriteIds));
+      memset(gPyramidBagMenu.windowIds, (0xFF), sizeof(gPyramidBagMenu.windowIds));
 
       SetMainCallback2(CB2_LoadPyramidBagMenu);
 }
@@ -178,11 +172,11 @@ export function LoadPyramidBagMenu(): any {
               gMain.state++;
               break;
           case 15:
-              BlendPalettes(PALETTES_ALL, 16, 0);
+              BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, 0);
               gMain.state++;
               break;
           case 16:
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
               gPaletteFade.bufferTransferDisabled = FALSE;
               gMain.state++;
               break;
@@ -261,7 +255,7 @@ export function SetBagItemsListTemplate(): any {
       }
       StringCopy(gPyramidBagMenu.itemStrings[i], gText_CloseBag);
       gPyramidBagMenu.bagListItems[i].name = gPyramidBagMenu.itemStrings[i];
-      gPyramidBagMenu.bagListItems[i].id = LIST_CANCEL;
+      gPyramidBagMenu.bagListItems[i].id = (-2);
       gMultiuseListMenuTemplate = sListMenuTemplate;
       gMultiuseListMenuTemplate.totalItems = gPyramidBagMenu.listMenuCount;
       gMultiuseListMenuTemplate.items = gPyramidBagMenu.bagListItems;
@@ -270,7 +264,7 @@ export function SetBagItemsListTemplate(): any {
 
 /** static void CopyBagItemName(u8 *dst, u16 itemId) */
 export function CopyBagItemName(dst: any, itemId: any): any {
-  if (GetItemPocket(itemId) == POCKET_BERRIES)
+  if (GetItemPocket(itemId) == (4))
       {
           ConvertIntToDecimalStringN(gStringVar1, ITEM_TO_BERRY(itemId), STR_CONV_MODE_LEADING_ZEROS, 2);
           CopyItemName(itemId, gStringVar2);
@@ -286,16 +280,16 @@ export function CopyBagItemName(dst: any, itemId: any): any {
 export function BagCursorMoved(itemIndex: any, onInit: any, list: any): any {
   if (onInit != TRUE)
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           ShakePyramidBag();
       }
       if (gPyramidBagMenu.toSwapPos == POS_NONE)
       {
           FreeItemIconSpriteByAltId(gPyramidBagMenu.isAltIcon ^ 1);
-          if (itemIndex != LIST_CANCEL)
+          if (itemIndex != (-2))
               ShowItemIcon(gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode][itemIndex], gPyramidBagMenu.isAltIcon);
           else
-              ShowItemIcon(ITEM_LIST_END, gPyramidBagMenu.isAltIcon);  
+              ShowItemIcon((0xFFFF), gPyramidBagMenu.isAltIcon);  
           gPyramidBagMenu.isAltIcon ^= 1;
           PrintItemDescription(itemIndex);
       }
@@ -304,7 +298,7 @@ export function BagCursorMoved(itemIndex: any, onInit: any, list: any): any {
 /** static void PrintItemQuantity(u8 windowId, u32 itemIndex, u8 y) */
 export function PrintItemQuantity(windowId: any, itemIndex: any, y: any): any {
   let xAlign: any = null;
-      if (itemIndex == LIST_CANCEL)
+      if (itemIndex == (-2))
           return;
 
       if (gPyramidBagMenu.toSwapPos != POS_NONE)
@@ -323,13 +317,13 @@ export function PrintItemQuantity(windowId: any, itemIndex: any, y: any): any {
                                  2);
       StringExpandPlaceholders(gStringVar4, gText_xVar1);
       xAlign = GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 119);
-      PyramidBagPrint_Quantity(windowId, gStringVar4, xAlign, y, 0, 0, TEXT_SKIP_DRAW, COLORID_DARK_GRAY);
+      PyramidBagPrint_Quantity(windowId, gStringVar4, xAlign, y, 0, 0, (0xFF), COLORID_DARK_GRAY);
 }
 
 /** static void PrintItemDescription(s32 listMenuId) */
 export function PrintItemDescription(listMenuId: any): any {
   let desc: any = null;
-      if (listMenuId != LIST_CANCEL)
+      if (listMenuId != (-2))
       {
           desc = GetItemDescription(gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode][listMenuId]);
       }
@@ -345,7 +339,7 @@ export function PrintItemDescription(listMenuId: any): any {
 
 /** static void AddScrollArrows(void) */
 export function AddScrollArrows(): any {
-  if (gPyramidBagMenu.scrollIndicatorsTaskId == TASK_NONE)
+  if (gPyramidBagMenu.scrollIndicatorsTaskId == ((0xFF)))
           gPyramidBagMenu.scrollIndicatorsTaskId = AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 172, 12, 148,
                                                                                               gPyramidBagMenu.listMenuCount - gPyramidBagMenu.listMenuMaxShown,
                                                                                               (2910), (2910),gPyramidBagMenuState.scrollPosition);
@@ -353,10 +347,10 @@ export function AddScrollArrows(): any {
 
 /** static void RemoveScrollArrow(void) */
 export function RemoveScrollArrow(): any {
-  if (gPyramidBagMenu.scrollIndicatorsTaskId != TASK_NONE)
+  if (gPyramidBagMenu.scrollIndicatorsTaskId != ((0xFF)))
       {
           RemoveScrollIndicatorArrowPair(gPyramidBagMenu.scrollIndicatorsTaskId);
-          gPyramidBagMenu.scrollIndicatorsTaskId = TASK_NONE;
+          gPyramidBagMenu.scrollIndicatorsTaskId = ((0xFF));
       }
 }
 
@@ -416,19 +410,19 @@ export function CompactItems(): any {
       let itemIds: any = gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode];
       let quantities: any = gSaveBlock2Ptr.frontier.pyramidBag.quantity[gSaveBlock2Ptr.frontier.lvlMode];
 
-      for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)
+      for (i = 0; i < (10); i++)
       {
-          if (itemIds[i] == ITEM_NONE || quantities[i] == 0)
+          if (itemIds[i] == (0) || quantities[i] == 0)
           {
-              itemIds[i] = ITEM_NONE;
+              itemIds[i] = (0);
               quantities[i] = 0;
           }
       }
-      for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT - 1; i++)
+      for (i = 0; i < (10) - 1; i++)
       {
-          for (j = i + 1; j < PYRAMID_BAG_ITEMS_COUNT; j++)
+          for (j = i + 1; j < (10); j++)
           {
-              if (itemIds[i] == ITEM_NONE || quantities[i] == 0)
+              if (itemIds[i] == (0) || quantities[i] == 0)
                   SwapItems(i, j);
           }
       }
@@ -441,9 +435,9 @@ export function UpdatePyramidBagList(): any {
 
       CompactItems();
       gPyramidBagMenu.listMenuCount = 0;
-      for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)
+      for (i = 0; i < (10); i++)
       {
-          if (itemIds[i] != ITEM_NONE)
+          if (itemIds[i] != (0))
               gPyramidBagMenu.listMenuCount++;
       }
       gPyramidBagMenu.listMenuCount++;
@@ -500,7 +494,7 @@ export function PrintSelectorArrowAtPos(y: any, colorId: any): any {
 
 /** void CloseBattlePyramidBag(u8 taskId) */
 export function CloseBattlePyramidBag(taskId: any): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_ClosePyramidBag;
 }
 
@@ -539,7 +533,7 @@ export function Task_HandlePyramidBagInput(taskId: any): any {
               ListMenuGetScrollAndRow(tListTaskId,gPyramidBagMenuState.scrollPosition,gPyramidBagMenuState.cursorPosition);
               if (gPyramidBagMenuState.scrollPosition + gPyramidBagMenuState.cursorPosition != gPyramidBagMenu.listMenuCount - 1)
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   Task_BeginItemSwap(taskId);
               }
           }
@@ -550,15 +544,15 @@ export function Task_HandlePyramidBagInput(taskId: any): any {
           ListMenuGetScrollAndRow(tListTaskId,gPyramidBagMenuState.scrollPosition,gPyramidBagMenuState.cursorPosition);
           switch (listId)
           {
-          case LIST_NOTHING_CHOSEN:
+          case (-1):
               break;
-          case LIST_CANCEL:
-              PlaySE(SE_SELECT);
-              gSpecialVar_ItemId = ITEM_NONE;
+          case (-2):
+              PlaySE((5));
+              gSpecialVar_ItemId = (0);
               CloseBattlePyramidBag(taskId);
               break;
           default:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               gSpecialVar_ItemId = gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode][listId];
               tListPos = listId;
               tQuantity = gSaveBlock2Ptr.frontier.pyramidBag.quantity[gSaveBlock2Ptr.frontier.lvlMode][listId];
@@ -639,14 +633,14 @@ export function HandleMenuActionInput_SingleRow(taskId: any): any {
           let id: any = Menu_ProcessInputNoWrap();
           switch (id)
           {
-          case MENU_NOTHING_CHOSEN:
+          case (-2):
               break;
-          case MENU_B_PRESSED:
-              PlaySE(SE_SELECT);
+          case (-1):
+              PlaySE((5));
               sMenuActions[ACTION_CANCEL].func.void_u8(taskId);
               break;
           default:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               if (sMenuActions[gPyramidBagMenu.menuActionIds[id]].func.void_u8 != NULL)
                   sMenuActions[gPyramidBagMenu.menuActionIds[id]].func.void_u8(taskId);
               break;
@@ -663,43 +657,43 @@ export function HandleMenuActionInput_2x2(taskId: any): any {
           {
               if (id > 0 && IsValidMenuAction(id - 2))
               {
-                  PlaySE(SE_SELECT);
-                  ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_UP);
+                  PlaySE((5));
+                  ChangeMenuGridCursorPosition((0), (-1));
               }
           }
           else if (JOY_NEW(DPAD_DOWN))
           {
               if (id < gPyramidBagMenu.menuActionsCount - 2 && IsValidMenuAction(id + 2))
               {
-                  PlaySE(SE_SELECT);
-                  ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_NONE, MENU_CURSOR_DELTA_DOWN);
+                  PlaySE((5));
+                  ChangeMenuGridCursorPosition((0), (1));
               }
           }
-          else if (JOY_NEW(DPAD_LEFT) || GetLRKeysPressed() == MENU_L_PRESSED)
+          else if (JOY_NEW(DPAD_LEFT) || GetLRKeysPressed() == (1))
           {
               if (id & 1 && IsValidMenuAction(id - 1))
               {
-                  PlaySE(SE_SELECT);
-                  ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_LEFT, MENU_CURSOR_DELTA_NONE);
+                  PlaySE((5));
+                  ChangeMenuGridCursorPosition((-1), (0));
               }
           }
-          else if (JOY_NEW(DPAD_RIGHT) || GetLRKeysPressed() == MENU_R_PRESSED)
+          else if (JOY_NEW(DPAD_RIGHT) || GetLRKeysPressed() == (2))
           {
               if (!(id & 1) && IsValidMenuAction(id + 1))
               {
-                  PlaySE(SE_SELECT);
-                  ChangeMenuGridCursorPosition(MENU_CURSOR_DELTA_RIGHT, MENU_CURSOR_DELTA_NONE);
+                  PlaySE((5));
+                  ChangeMenuGridCursorPosition((1), (0));
               }
           }
           else if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               if (sMenuActions[gPyramidBagMenu.menuActionIds[id]].func.void_u8 != NULL)
                   sMenuActions[gPyramidBagMenu.menuActionIds[id]].func.void_u8(taskId);
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sMenuActions[ACTION_CANCEL].func.void_u8(taskId);
           }
       }
@@ -731,9 +725,9 @@ export function CloseMenuActionWindow(): any {
 export function BagAction_UseOnField(taskId: any): any {
   let pocketId: any = GetItemPocket(gSpecialVar_ItemId);
 
-      if (pocketId == POCKET_KEY_ITEMS
-          || pocketId == POCKET_POKE_BALLS
-          || pocketId == POCKET_TM_HM
+      if (pocketId == (5)
+          || pocketId == (2)
+          || pocketId == (3)
           || ItemIsMail(gSpecialVar_ItemId) == TRUE)
       {
           CloseMenuActionWindow();
@@ -838,7 +832,7 @@ export function Task_ChooseHowManyToToss(taskId: any): any {
       else if (JOY_NEW(A_BUTTON))
       {
            
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           ClearStdWindowAndFrameToTransparent(WIN_TOSS_NUM, FALSE);
           ClearWindowTilemap(WIN_TOSS_NUM);
           ScheduleBgCopyTilemapToVram(1);
@@ -847,7 +841,7 @@ export function Task_ChooseHowManyToToss(taskId: any): any {
       else if (JOY_NEW(B_BUTTON))
       {
            
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           ClearStdWindowAndFrameToTransparent(WIN_TOSS_NUM, FALSE);
           ClearWindowTilemap(WIN_TOSS_NUM);
           ScheduleBgCopyTilemapToVram(1);
@@ -875,7 +869,7 @@ export function Task_TossItem(taskId: any): any {
 
       if (JOY_NEW(A_BUTTON | B_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           RemovePyramidBagItem(gSpecialVar_ItemId, tNumToToss);
           DestroyListMenuTask(tListTaskId, scrollOffset, selectedRow);
           UpdatePyramidBagList();
@@ -916,7 +910,7 @@ export function ShowCantHoldMessage(taskId: any): any {
 export function Task_WaitCloseErrorMessage(taskId: any): any {
   if (JOY_NEW(A_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           Task_CloseBattlePyramidBagMessage(taskId);
       }
 }
@@ -973,7 +967,7 @@ export function Task_ItemSwapHandleInput(taskId: any): any {
       {
           if (JOY_NEW(SELECT_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ListMenuGetScrollAndRow(tListTaskId,gPyramidBagMenuState.scrollPosition,gPyramidBagMenuState.cursorPosition);
               PerformItemSwap(taskId);
           }
@@ -985,17 +979,17 @@ export function Task_ItemSwapHandleInput(taskId: any): any {
               UpdateSwapLinePos(gPyramidBagMenuState.cursorPosition);
               switch (id)
               {
-              case LIST_NOTHING_CHOSEN:
+              case (-1):
                   break;
-              case LIST_CANCEL:
-                  PlaySE(SE_SELECT);
+              case (-2):
+                  PlaySE((5));
                   if (JOY_NEW(A_BUTTON))
                       PerformItemSwap(taskId);
                   else
                       CancelItemSwap(taskId);
                   break;
               default:
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   PerformItemSwap(taskId);
                   break;
               }
@@ -1048,20 +1042,20 @@ export function CancelItemSwap(taskId: any): any {
 export function TryStoreHeldItemsInPyramidBag(): any {
   let i: any = null;
       let party: any = gPlayerParty;
-      let newItems: any = Alloc(PYRAMID_BAG_ITEMS_COUNT * 0);
-      let newQuantities: any = Alloc(PYRAMID_BAG_ITEMS_COUNT * 0);
+      let newItems: any = Alloc((10) * 0);
+      let newQuantities: any = Alloc((10) * 0);
       let heldItem: any = null;
 
-      memcpy(newItems, gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode], PYRAMID_BAG_ITEMS_COUNT * 0);
-      memcpy(newQuantities, gSaveBlock2Ptr.frontier.pyramidBag.quantity[gSaveBlock2Ptr.frontier.lvlMode], PYRAMID_BAG_ITEMS_COUNT * 0);
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      memcpy(newItems, gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode], (10) * 0);
+      memcpy(newQuantities, gSaveBlock2Ptr.frontier.pyramidBag.quantity[gSaveBlock2Ptr.frontier.lvlMode], (10) * 0);
+      for (i = 0; i < (3); i++)
       {
           heldItem = GetMonData(party[i], MON_DATA_HELD_ITEM);
-          if (heldItem != ITEM_NONE && !AddBagItem(heldItem, 1))
+          if (heldItem != (0) && !AddBagItem(heldItem, 1))
           {
                
-              memcpy(gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode], newItems, PYRAMID_BAG_ITEMS_COUNT * 0);
-              memcpy(gSaveBlock2Ptr.frontier.pyramidBag.quantity[gSaveBlock2Ptr.frontier.lvlMode], newQuantities, PYRAMID_BAG_ITEMS_COUNT * 0);
+              memcpy(gSaveBlock2Ptr.frontier.pyramidBag.itemId[gSaveBlock2Ptr.frontier.lvlMode], newItems, (10) * 0);
+              memcpy(gSaveBlock2Ptr.frontier.pyramidBag.quantity[gSaveBlock2Ptr.frontier.lvlMode], newQuantities, (10) * 0);
               Free(newItems);
               Free(newQuantities);
               gSpecialVar_Result = 1;
@@ -1069,8 +1063,8 @@ export function TryStoreHeldItemsInPyramidBag(): any {
           }
       }
 
-      heldItem = ITEM_NONE;
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      heldItem = (0);
+      for (i = 0; i < (3); i++)
           SetMonData(party[i], MON_DATA_HELD_ITEM,heldItem);
       gSpecialVar_Result = 0;
       Free(newItems);
@@ -1115,7 +1109,7 @@ export function DrawTossNumberWindow(windowId: any): any {
 /** static u8 OpenMenuActionWindowById(u8 windowArrayId) */
 export function OpenMenuActionWindowById(windowArrayId: any): any {
   let windowId: any =gPyramidBagMenu.windowIds[windowArrayId];
-      if (windowId == WINDOW_NONE)
+      if (windowId == (0xFF))
       {
           windowId = AddWindow(sWindowTemplates_MenuActions[windowArrayId]);
           DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, 1, 0xE);
@@ -1127,13 +1121,13 @@ export function OpenMenuActionWindowById(windowArrayId: any): any {
 /** static void CloseMenuActionWindowById(u8 windowArrayId) */
 export function CloseMenuActionWindowById(windowArrayId: any): any {
   let windowId: any =gPyramidBagMenu.windowIds[windowArrayId];
-      if (windowId != WINDOW_NONE)
+      if (windowId != (0xFF))
       {
           ClearStdWindowAndFrameToTransparent(windowId, FALSE);
           ClearWindowTilemap(windowId);
           RemoveWindow(windowId);
           ScheduleBgCopyTilemapToVram(1);
-          windowId = WINDOW_NONE;
+          windowId = (0xFF);
       }
 }
 
@@ -1160,7 +1154,7 @@ export function CloseBattlePyramidBagTextWindow(): any {
 /** static void FreeItemIconSprite(u8 spriteArrId) */
 export function FreeItemIconSprite(spriteArrId: any): any {
   let spriteId: any =gPyramidBagMenu.spriteIds[spriteArrId];
-      if (spriteId != SPRITE_NONE)
+      if (spriteId != (0xFF))
       {
            
            
@@ -1168,7 +1162,7 @@ export function FreeItemIconSprite(spriteArrId: any): any {
           FreeSpritePaletteByTag((4133) - 1 + spriteArrId);
           FreeSpriteOamMatrix(gSprites[spriteId]);
           DestroySprite(gSprites[spriteId]);
-          spriteId = SPRITE_NONE;
+          spriteId = (0xFF);
       }
 }
 
@@ -1213,12 +1207,12 @@ export function SpriteCB_BagWaitForShake(sprite: any): any {
 export function ShowItemIcon(itemId: any, isAlt: any): any {
   let itemSpriteId: any = null;
       let spriteId: any =gPyramidBagMenu.spriteIds[isAlt + PBAG_SPRITE_ITEM_ICON];
-      if (spriteId == SPRITE_NONE)
+      if (spriteId == (0xFF))
       {
           FreeSpriteTilesByTag((4133) + isAlt);
           FreeSpritePaletteByTag((4133) + isAlt);
           itemSpriteId = AddItemIconSprite((4133) + isAlt, (4133) + isAlt, itemId);
-          if (itemSpriteId != MAX_SPRITES)
+          if (itemSpriteId != (64))
           {
               spriteId = itemSpriteId;
               gSprites[itemSpriteId].x2 = 24;
@@ -1234,17 +1228,17 @@ export function FreeItemIconSpriteByAltId(isAlt: any): any {
 
 /** static void CreateSwapLine(void) */
 export function CreateSwapLine(): any {
-  CreateSwapLineSprites(gPyramidBagMenu.spriteIds[PBAG_SPRITE_SWAP_LINE_START], NUM_SWAP_LINE_SPRITES);
+  CreateSwapLineSprites(gPyramidBagMenu.spriteIds[PBAG_SPRITE_SWAP_LINE_START], ((1 + PBAG_SPRITE_SWAP_LINE_END - PBAG_SPRITE_SWAP_LINE_START)));
 }
 
 /** static void SetSwapLineInvisibility(bool8 invisible) */
 export function SetSwapLineInvisibility(invisible: any): any {
-  SetSwapLineSpritesInvisibility(gPyramidBagMenu.spriteIds[PBAG_SPRITE_SWAP_LINE_START], NUM_SWAP_LINE_SPRITES, invisible);
+  SetSwapLineSpritesInvisibility(gPyramidBagMenu.spriteIds[PBAG_SPRITE_SWAP_LINE_START], ((1 + PBAG_SPRITE_SWAP_LINE_END - PBAG_SPRITE_SWAP_LINE_START)), invisible);
 }
 
 /** static void UpdateSwapLinePos(u8 y) */
 export function UpdateSwapLinePos(y: any): any {
-  UpdateSwapLineSpritesPos(gPyramidBagMenu.spriteIds[PBAG_SPRITE_SWAP_LINE_START], NUM_SWAP_LINE_SPRITES | SWAP_LINE_HAS_MARGIN, 120, (y + 1) * 16);
+  UpdateSwapLineSpritesPos(gPyramidBagMenu.spriteIds[PBAG_SPRITE_SWAP_LINE_START], ((1 + PBAG_SPRITE_SWAP_LINE_END - PBAG_SPRITE_SWAP_LINE_START)) | ((1 << 7)), 120, (y + 1) * 16);
 }
 
 // ─── callsTo manifest (= 172 unique callees) ───────────────────────

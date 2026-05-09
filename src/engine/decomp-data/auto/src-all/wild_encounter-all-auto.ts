@@ -18,9 +18,7 @@
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sFeebasRngValue: any = null;
-let sRoute119WaterTileData: any = null;
 let sWildEncountersDisabled: any = null;
-let sWildFeebas: any = null;
 /** void DisableWildEncounters(bool8 disabled) */
 export function DisableWildEncounters(disabled: any): any {
   sWildEncountersDisabled = disabled;
@@ -37,7 +35,7 @@ export function GetFeebasFishingSpotId(targetX: any, targetY: any, section: any)
       {
           for (x = 0; x < gMapHeader.mapLayout.width; x++)
           {
-              let behavior: any = MapGridGetMetatileBehaviorAt(x + MAP_OFFSET, y + MAP_OFFSET);
+              let behavior: any = MapGridGetMetatileBehaviorAt(x + (7), y + (7));
               if (MetatileBehavior_IsSurfableAndNotWaterfall(behavior) == TRUE)
               {
                   spotId++;
@@ -61,8 +59,8 @@ export function CheckFeebas(): any {
        && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_ROUTE119))
       {
           GetXYCoordsOneStepInFrontOfPlayer(x,y);
-          x -= MAP_OFFSET;
-          y -= MAP_OFFSET;
+          x -= (7);
+          y -= (7);
 
            
           if (y >= sRoute119WaterTileData[3 * 0 + 0] && y <= sRoute119WaterTileData[3 * 0 + 1])
@@ -171,13 +169,13 @@ export function ChooseWildMonIndex_Fishing(rod: any): any {
 
       switch (rod)
       {
-      case OLD_ROD:
+      case (0):
           if (rand < ENCOUNTER_CHANCE_FISHING_MONS_OLD_ROD_SLOT_0)
               wildMonIndex = 0;
           else
               wildMonIndex = 1;
           break;
-      case GOOD_ROD:
+      case (1):
           if (rand < ENCOUNTER_CHANCE_FISHING_MONS_GOOD_ROD_SLOT_2)
               wildMonIndex = 2;
           if (rand >= ENCOUNTER_CHANCE_FISHING_MONS_GOOD_ROD_SLOT_2 && rand < ENCOUNTER_CHANCE_FISHING_MONS_GOOD_ROD_SLOT_3)
@@ -185,7 +183,7 @@ export function ChooseWildMonIndex_Fishing(rod: any): any {
           if (rand >= ENCOUNTER_CHANCE_FISHING_MONS_GOOD_ROD_SLOT_3 && rand < ENCOUNTER_CHANCE_FISHING_MONS_GOOD_ROD_SLOT_4)
               wildMonIndex = 4;
           break;
-      case SUPER_ROD:
+      case (2):
           if (rand < ENCOUNTER_CHANCE_FISHING_MONS_SUPER_ROD_SLOT_5)
               wildMonIndex = 5;
           if (rand >= ENCOUNTER_CHANCE_FISHING_MONS_SUPER_ROD_SLOT_5 && rand < ENCOUNTER_CHANCE_FISHING_MONS_SUPER_ROD_SLOT_6)
@@ -226,7 +224,7 @@ export function ChooseWildMonLevel(wildPokemon: any): any {
       if (!GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG))
       {
           let ability: any = GetMonAbility(gPlayerParty[0]);
-          if (ability == ABILITY_HUSTLE || ability == ABILITY_VITAL_SPIRIT || ability == ABILITY_PRESSURE)
+          if (ability == (55) || ability == (72) || ability == (46))
           {
               if (Random() % 2 == 0)
                   return max;
@@ -254,8 +252,8 @@ export function GetCurrentMapWildMonHeaderId(): any {
               if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_ALTERING_CAVE) &&
                   gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_ALTERING_CAVE))
               {
-                  let alteringCaveId: any = VarGet(VAR_ALTERING_CAVE_WILD_SET);
-                  if (alteringCaveId >= NUM_ALTERING_CAVE_TABLES)
+                  let alteringCaveId: any = VarGet((0x403E));
+                  if (alteringCaveId >= (9))
                       alteringCaveId = 0;
 
                   i += alteringCaveId;
@@ -280,11 +278,11 @@ export function PickWildMonNature(): any {
           safariPokeblock = SafariZoneGetActivePokeblock();
           if (safariPokeblock != NULL)
           {
-              for (i = 0; i < NUM_NATURES; i++)
+              for (i = 0; i < (25); i++)
                   natures[i] = i;
-              for (i = 0; i < NUM_NATURES - 1; i++)
+              for (i = 0; i < (25) - 1; i++)
               {
-                  for (j = i + 1; j < NUM_NATURES; j++)
+                  for (j = i + 1; j < (25); j++)
                   {
                       if (Random() & 1)
                       {
@@ -293,7 +291,7 @@ export function PickWildMonNature(): any {
                       }
                   }
               }
-              for (i = 0; i < NUM_NATURES; i++)
+              for (i = 0; i < (25); i++)
               {
                   if (PokeblockGetGain(natures[i], safariPokeblock) > 0)
                       return natures[i];
@@ -302,14 +300,14 @@ export function PickWildMonNature(): any {
       }
        
       if (!GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG)
-          && GetMonAbility(gPlayerParty[0]) == ABILITY_SYNCHRONIZE
+          && GetMonAbility(gPlayerParty[0]) == (28)
           && Random() % 2 == 0)
       {
-          return GetMonData(gPlayerParty[0], MON_DATA_PERSONALITY) % NUM_NATURES;
+          return GetMonData(gPlayerParty[0], MON_DATA_PERSONALITY) % (25);
       }
 
        
-      return Random() % NUM_NATURES;
+      return Random() % (25);
 }
 
 /** static void CreateWildMon(u16 species, u8 level) */
@@ -321,16 +319,16 @@ export function CreateWildMon(species: any, level: any): any {
 
       switch (gSpeciesInfo[species].genderRatio)
       {
-      case MON_MALE:
-      case MON_FEMALE:
-      case MON_GENDERLESS:
+      case (0x00):
+      case (0xFE):
+      case (0xFF):
           checkCuteCharm = FALSE;
           break;
       }
 
       if (checkCuteCharm
           && !GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG)
-          && GetMonAbility(gPlayerParty[0]) == ABILITY_CUTE_CHARM
+          && GetMonAbility(gPlayerParty[0]) == (56)
           && Random() % 3 != 0)
       {
           let leadingMonSpecies: any = GetMonData(gPlayerParty[0], MON_DATA_SPECIES);
@@ -338,16 +336,16 @@ export function CreateWildMon(species: any, level: any): any {
           let gender: any = GetGenderFromSpeciesAndPersonality(leadingMonSpecies, leadingMonPersonality);
 
            
-          if (gender == MON_FEMALE)
-              gender = MON_MALE;
+          if (gender == (0xFE))
+              gender = (0x00);
           else
-              gender = MON_FEMALE;
+              gender = (0xFE);
 
-          CreateMonWithGenderNatureLetter(gEnemyParty[0], species, level, USE_RANDOM_IVS, gender, PickWildMonNature(), 0);
+          CreateMonWithGenderNatureLetter(gEnemyParty[0], species, level, (((31) + 1)), gender, PickWildMonNature(), 0);
           return;
       }
 
-      CreateMonWithNature(gEnemyParty[0], species, level, USE_RANDOM_IVS, PickWildMonNature());
+      CreateMonWithNature(gEnemyParty[0], species, level, (((31) + 1)), PickWildMonNature());
 }
 
 /** static bool8 TryGenerateWildMon(const struct WildPokemonInfo *wildMonInfo, u8 area, u8 flags) */
@@ -358,15 +356,15 @@ export function TryGenerateWildMon(wildMonInfo: any, area: any, flags: any): any
       switch (area)
       {
       case WILD_AREA_LAND:
-          if (TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX(wildMonInfo.wildPokemon, TYPE_STEEL, ABILITY_MAGNET_PULL,wildMonIndex, LAND_WILD_COUNT))
+          if (TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX(wildMonInfo.wildPokemon, (8), (42),wildMonIndex, (12)))
               break;
-          if (TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX(wildMonInfo.wildPokemon, TYPE_ELECTRIC, ABILITY_STATIC,wildMonIndex, LAND_WILD_COUNT))
+          if (TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX(wildMonInfo.wildPokemon, (13), (9),wildMonIndex, (12)))
               break;
 
           wildMonIndex = ChooseWildMonIndex_Land();
           break;
       case WILD_AREA_WATER:
-          if (TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX(wildMonInfo.wildPokemon, TYPE_ELECTRIC, ABILITY_STATIC,wildMonIndex, WATER_WILD_COUNT))
+          if (TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX(wildMonInfo.wildPokemon, (13), (9),wildMonIndex, (5)))
               break;
 
           wildMonIndex = ChooseWildMonIndex_WaterRock();
@@ -403,7 +401,7 @@ export function SetUpMassOutbreakEncounter(flags: any): any {
           return FALSE;
 
       CreateWildMon(gSaveBlock1Ptr.outbreakPokemonSpecies, gSaveBlock1Ptr.outbreakPokemonLevel);
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           SetMonMoveSlot(gEnemyParty[0], gSaveBlock1Ptr.outbreakPokemonMoves[i], i);
 
       return TRUE;
@@ -411,7 +409,7 @@ export function SetUpMassOutbreakEncounter(flags: any): any {
 
 /** static bool8 DoMassOutbreakEncounterTest(void) */
 export function DoMassOutbreakEncounterTest(): any {
-  if (gSaveBlock1Ptr.outbreakPokemonSpecies != SPECIES_NONE
+  if (gSaveBlock1Ptr.outbreakPokemonSpecies != (0)
        && gSaveBlock1Ptr.location.mapNum == gSaveBlock1Ptr.outbreakLocationMapNum
        && gSaveBlock1Ptr.location.mapGroup == gSaveBlock1Ptr.outbreakLocationMapGroup)
       {
@@ -432,7 +430,7 @@ export function EncounterOddsCheck(encounterRate: any): any {
 /** static bool8 WildEncounterCheck(u32 encounterRate, bool8 ignoreAbility) */
 export function WildEncounterCheck(encounterRate: any, ignoreAbility: any): any {
   encounterRate *= 16;
-      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+      if (TestPlayerAvatarFlags(((1 << 1)) | ((1 << 2))))
           encounterRate = encounterRate * 80 / 100;
       ApplyFluteEncounterRateMod(encounterRate);
       ApplyCleanseTagEncounterRateMod(encounterRate);
@@ -440,17 +438,17 @@ export function WildEncounterCheck(encounterRate: any, ignoreAbility: any): any 
       {
           let ability: any = GetMonAbility(gPlayerParty[0]);
 
-          if (ability == ABILITY_STENCH && gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)
+          if (ability == (1) && gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)
               encounterRate = encounterRate * 3 / 4;
-          else if (ability == ABILITY_STENCH)
+          else if (ability == (1))
               encounterRate /= 2;
-          else if (ability == ABILITY_ILLUMINATE)
+          else if (ability == (35))
               encounterRate *= 2;
-          else if (ability == ABILITY_WHITE_SMOKE)
+          else if (ability == (73))
               encounterRate /= 2;
-          else if (ability == ABILITY_ARENA_TRAP)
+          else if (ability == (71))
               encounterRate *= 2;
-          else if (ability == ABILITY_SAND_VEIL && gSaveBlock1Ptr.weather == WEATHER_SANDSTORM)
+          else if (ability == (8) && gSaveBlock1Ptr.weather == (8))
               encounterRate /= 2;
       }
       if (encounterRate > (2880))
@@ -474,7 +472,7 @@ export function AreLegendariesInSootopolisPreventingEncounters(): any {
           return FALSE;
       }
 
-      return FlagGet(FLAG_LEGENDARIES_IN_SOOTOPOLIS);
+      return FlagGet((0x53));
 }
 
 /** bool8 StandardWildEncounter(u16 curMetatileBehavior, u16 prevMetatileBehavior) */
@@ -557,7 +555,7 @@ export function StandardWildEncounter(curMetatileBehavior: any, prevMetatileBeha
               }
           }
           else if (MetatileBehavior_IsWaterWildEncounter(curMetatileBehavior) == TRUE
-                   || (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING) && MetatileBehavior_IsBridgeOverWater(curMetatileBehavior) == TRUE))
+                   || (TestPlayerAvatarFlags(((1 << 3))) && MetatileBehavior_IsBridgeOverWater(curMetatileBehavior) == TRUE))
           {
               if (AreLegendariesInSootopolisPreventingEncounters() == TRUE)
                   return FALSE;
@@ -720,7 +718,7 @@ export function FishingWildEncounter(rod: any): any {
       {
           species = GenerateFishingWildMon(gWildMonHeaders[GetCurrentMapWildMonHeaderId()].fishingMonsInfo, rod);
       }
-      IncrementGameStat(GAME_STAT_FISHING_ENCOUNTERS);
+      IncrementGameStat((12));
       SetPokemonAnglerSpecies(species);
       BattleSetup_StartWildBattle();
 }
@@ -734,12 +732,12 @@ export function GetLocalWildMon(isWaterMon: any): any {
       isWaterMon = FALSE;
       headerId = GetCurrentMapWildMonHeaderId();
       if (headerId == (0xFFFF))
-          return SPECIES_NONE;
+          return (0);
       landMonsInfo = gWildMonHeaders[headerId].landMonsInfo;
       waterMonsInfo = gWildMonHeaders[headerId].waterMonsInfo;
        
       if (landMonsInfo == NULL && waterMonsInfo == NULL)
-          return SPECIES_NONE;
+          return (0);
        
       else if (landMonsInfo != NULL && waterMonsInfo == NULL)
           return landMonsInfo.wildPokemon[ChooseWildMonIndex_Land()].species;
@@ -772,24 +770,24 @@ export function GetLocalWaterMon(): any {
           if (waterMonsInfo)
               return waterMonsInfo.wildPokemon[ChooseWildMonIndex_WaterRock()].species;
       }
-      return SPECIES_NONE;
+      return (0);
 }
 
 /** bool8 UpdateRepelCounter(void) */
 export function UpdateRepelCounter(): any {
   let steps: any = null;
 
-      if (InBattlePike() || CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+      if (InBattlePike() || CurrentBattlePyramidLocation() != (0))
           return FALSE;
       if (InUnionRoom() == TRUE)
           return FALSE;
 
-      steps = VarGet(VAR_REPEL_STEP_COUNT);
+      steps = VarGet((0x4021));
 
       if (steps != 0)
       {
           steps--;
-          VarSet(VAR_REPEL_STEP_COUNT, steps);
+          VarSet((0x4021), steps);
           if (steps == 0)
           {
               ScriptContext_SetupScript(EventScript_RepelWoreOff);
@@ -803,10 +801,10 @@ export function UpdateRepelCounter(): any {
 export function IsWildLevelAllowedByRepel(wildLevel: any): any {
   let i: any = null;
 
-      if (!VarGet(VAR_REPEL_STEP_COUNT))
+      if (!VarGet((0x4021)))
           return TRUE;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (GetMonData(gPlayerParty[i], MON_DATA_HP) && !GetMonData(gPlayerParty[i], MON_DATA_IS_EGG))
           {
@@ -830,7 +828,7 @@ export function IsAbilityAllowingEncounter(level: any): any {
           return TRUE;
 
       ability = GetMonAbility(gPlayerParty[0]);
-      if (ability == ABILITY_KEEN_EYE || ability == ABILITY_INTIMIDATE)
+      if (ability == (51) || ability == (22))
       {
           let playerMonLevel: any = GetMonData(gPlayerParty[0], MON_DATA_LEVEL);
           if (playerMonLevel > 5 && level <= playerMonLevel - 5 && !(Random() % 2))
@@ -863,15 +861,15 @@ export function TryGetRandomWildMonIndexByType(wildMon: any, _type: any, numMon:
 
 /** static void ApplyFluteEncounterRateMod(u32 *encRate) */
 export function ApplyFluteEncounterRateMod(encRate: any): any {
-  if (FlagGet(FLAG_SYS_ENC_UP_ITEM) == TRUE)
+  if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4D))) == TRUE)
           encRate += encRate / 2;
-      else if (FlagGet(FLAG_SYS_ENC_DOWN_ITEM) == TRUE)
+      else if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4E))) == TRUE)
           encRate = encRate / 2;
 }
 
 /** static void ApplyCleanseTagEncounterRateMod(u32 *encRate) */
 export function ApplyCleanseTagEncounterRateMod(encRate: any): any {
-  if (GetMonData(gPlayerParty[0], MON_DATA_HELD_ITEM) == ITEM_CLEANSE_TAG)
+  if (GetMonData(gPlayerParty[0], MON_DATA_HELD_ITEM) == (190))
           encRate = encRate * 2 / 3;
 }
 

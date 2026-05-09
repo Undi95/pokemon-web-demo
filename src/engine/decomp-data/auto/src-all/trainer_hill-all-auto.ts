@@ -17,18 +17,15 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sChallengeData: any = null;
-let sEReader_Pal: any = null;
+let facilityClass: any = null;
+let gBattleOutcome: any = null;
+let minutes: any = null;
+let modBy: any = null;
+let prizeListSetId: any = null;
 let sFloorTrainers: any = null;
 let sHillData: any = null;
-let sHillFunctions: any = null;
-let sModeStrings: any = null;
-let sNextFloorMapNum: any = null;
-let sPrizeListSets: any = null;
-let sRecordWinColors: any = null;
-let sTrainerClassesAndMusic: any = null;
-let sTrainerObjectEventTemplate: any = null;
-let sTrainerPartySlots: any = null;
+let secondsFraction: any = null;
+let secondsWhole: any = null;
 /** void CallTrainerHillFunction(void) */
 export function CallTrainerHillFunction(): any {
   SetUpDataStruct();
@@ -43,7 +40,7 @@ export function ResetTrainerHillResults(): any {
       gSaveBlock2Ptr.frontier.savedGame = 0;
       gSaveBlock2Ptr.frontier.unk_EF9 = 0;
       gSaveBlock1Ptr.trainerHill.bestTime = 0;
-      for (i = 0; i < NUM_TRAINER_HILL_MODES; i++)
+      for (i = 0; i < (4); i++)
           SetTimerValue(gSaveBlock1Ptr.trainerHillTimes[i], (215999));
 }
 
@@ -64,7 +61,7 @@ export function GetTrainerHillTrainerName(dst: any, trainerId: any): any {
   let i: any = null;
       let id: any = trainerId - 1;
 
-      for (i = 0; i < TRAINER_NAME_LENGTH + 1; i++)
+      for (i = 0; i < (10) + 1; i++)
           dst[i] = sFloorTrainers.name[id][i];
 }
 
@@ -87,9 +84,9 @@ export function InitTrainerHillBattleStruct(): any {
       SetUpDataStruct();
       sFloorTrainers = AllocZeroed(0);
 
-      for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
+      for (i = 0; i < (2); i++)
       {
-          for (j = 0; j < TRAINER_NAME_LENGTH + 1; j++)
+          for (j = 0; j < (10) + 1; j++)
               sFloorTrainers.name[i][j] = sHillData.floors[sHillData.floorId].trainers[i].name[j];
 
           sFloorTrainers.facilityClass[i] = sHillData.floors[sHillData.floorId].trainers[i].facilityClass;
@@ -135,16 +132,16 @@ export function CopyTrainerHillTrainerText(which: any, localId: any): any {
 
       switch (which)
       {
-      case TRAINER_HILL_TEXT_INTRO:
+      case (2):
           FrontierSpeechToString(sHillData.floors[floorId].trainers[id].speechBefore);
           break;
-      case TRAINER_HILL_TEXT_PLAYER_LOST:
+      case (3):
           FrontierSpeechToString(sHillData.floors[floorId].trainers[id].speechWin);
           break;
-      case TRAINER_HILL_TEXT_PLAYER_WON:
+      case (4):
           FrontierSpeechToString(sHillData.floors[floorId].trainers[id].speechLose);
           break;
-      case TRAINER_HILL_TEXT_AFTER:
+      case (5):
           FrontierSpeechToString(sHillData.floors[floorId].trainers[id].speechAfter);
           break;
       }
@@ -187,7 +184,7 @@ export function GetOwnerState(): any {
 export function GiveChallengePrize(): any {
   let itemId: any = GetPrizeItemId();
 
-      if (sHillData.challenge.numFloors != NUM_TRAINER_HILL_FLOORS || gSaveBlock1Ptr.trainerHill.receivedPrize)
+      if (sHillData.challenge.numFloors != (4) || gSaveBlock1Ptr.trainerHill.receivedPrize)
       {
           gSpecialVar_Result = 2;
       }
@@ -246,18 +243,18 @@ export function TrainerHillGetChallengeStatus(): any {
       {
            
           gSaveBlock1Ptr.trainerHill.hasLost = FALSE;
-          gSpecialVar_Result = TRAINER_HILL_PLAYER_STATUS_LOST;
+          gSpecialVar_Result = (0);
       }
       else if (gSaveBlock1Ptr.trainerHill.maybeECardScanDuringChallenge)
       {
            
           gSaveBlock1Ptr.trainerHill.maybeECardScanDuringChallenge = 0;
-          gSpecialVar_Result = TRAINER_HILL_PLAYER_STATUS_ECARD_SCANNED;
+          gSpecialVar_Result = (1);
       }
       else
       {
            
-          gSpecialVar_Result = TRAINER_HILL_PLAYER_STATUS_NORMAL;
+          gSpecialVar_Result = (2);
       }
 }
 
@@ -283,7 +280,7 @@ export function BufferChallengeTime(): any {
 /** static void GetAllFloorsUsed(void) */
 export function GetAllFloorsUsed(): any {
   SetUpDataStruct();
-      if (sHillData.challenge.numFloors != NUM_TRAINER_HILL_FLOORS)
+      if (sHillData.challenge.numFloors != (4))
       {
           ConvertIntToDecimalStringN(gStringVar1, sHillData.challenge.numFloors, STR_CONV_MODE_LEFT_ALIGN, 1);
           gSpecialVar_Result = FALSE;
@@ -305,7 +302,7 @@ export function GetInEReaderMode(): any {
 
 /** bool8 InTrainerHillChallenge(void) */
 export function InTrainerHillChallenge(): any {
-  if (VarGet(VAR_TRAINER_HILL_IS_ACTIVE) == 0)
+  if (VarGet((0x40D6)) == 0)
           return FALSE;
       else if (gSaveBlock1Ptr.trainerHill.spokeToOwner)
           return FALSE;
@@ -331,12 +328,12 @@ export function PrintOnTrainerHillRecordsWindow(): any {
       SetUpDataStruct();
       FillWindowPixelBuffer(0, PIXEL_FILL(0));
       x = GetStringCenterAlignXOffset(FONT_NORMAL, gText_TimeBoard, 0xD0);
-      AddTextPrinterParameterized3(0, FONT_NORMAL, x, 2, sRecordWinColors, TEXT_SKIP_DRAW, gText_TimeBoard);
+      AddTextPrinterParameterized3(0, FONT_NORMAL, x, 2, sRecordWinColors, (0xFF), gText_TimeBoard);
 
       y = 18;
-      for (i = 0; i < NUM_TRAINER_HILL_MODES; i++)
+      for (i = 0; i < (4); i++)
       {
-          AddTextPrinterParameterized3(0, FONT_NORMAL, 0, y, sRecordWinColors, TEXT_SKIP_DRAW, sModeStrings[i]);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, 0, y, sRecordWinColors, (0xFF), sModeStrings[i]);
           y += 15;
           total = GetTimerValue(gSaveBlock1Ptr.trainerHillTimes[i]);
           minutes = total / (60 * 60);
@@ -349,7 +346,7 @@ export function PrintOnTrainerHillRecordsWindow(): any {
           ConvertIntToDecimalStringN(gStringVar3, secondsFraction, STR_CONV_MODE_LEADING_ZEROS, 2);
           StringExpandPlaceholders(StringCopy(gStringVar4, gText_TimeCleared), gText_XMinYDotZSec);
           x = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 0xD0);
-          AddTextPrinterParameterized3(0, FONT_NORMAL, x, y, sRecordWinColors, TEXT_SKIP_DRAW, gStringVar4);
+          AddTextPrinterParameterized3(0, FONT_NORMAL, x, y, sRecordWinColors, (0xFF), gStringVar4);
           y += 17;
       }
 
@@ -377,12 +374,12 @@ export function LoadTrainerHillObjectEventTemplates(): any {
           return;
 
       SetUpDataStruct();
-      for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
+      for (i = 0; i < (2); i++)
           gSaveBlock2Ptr.frontier.trainerIds[i] = 0xFFFF;
       CpuFill32(0, gSaveBlock1Ptr.objectEventTemplates, sizeof(gSaveBlock1Ptr.objectEventTemplates));
 
       floorId = GetFloorId();
-      for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
+      for (i = 0; i < (2); i++)
       {
           let bits: any = null;
 
@@ -390,9 +387,9 @@ export function LoadTrainerHillObjectEventTemplates(): any {
           eventTemplates[i].localId = i + 1;
           eventTemplates[i].graphicsId = FacilityClassToGraphicsId(sHillData.floors[floorId].trainers[i].facilityClass);
           eventTemplates[i].x = sHillData.floors[floorId].map.trainerCoords[i] & 0xF;
-          eventTemplates[i].y = ((sHillData.floors[floorId].map.trainerCoords[i] >> 4) & 0xF) + HILL_FLOOR_HEIGHT_MARGIN;
+          eventTemplates[i].y = ((sHillData.floors[floorId].map.trainerCoords[i] >> 4) & 0xF) + (5);
           bits = i << 2;
-          eventTemplates[i].movementType = ((sHillData.floors[floorId].map.trainerDirections >> bits) & 0xF) + MOVEMENT_TYPE_FACE_UP;
+          eventTemplates[i].movementType = ((sHillData.floors[floorId].map.trainerDirections >> bits) & 0xF) + (0x7);
           eventTemplates[i].trainerRange_berryTreeId = (sHillData.floors[floorId].map.trainerRanges >> bits) & 0xF;
           eventTemplates[i].script = TrainerHill_EventScript_TrainerBattle;
           gSaveBlock2Ptr.frontier.trainerIds[i] = i + 1;
@@ -416,7 +413,7 @@ export function GetMapDataForFloor(floorId: any, x: any, y: any, floorWidth: any
       let elevation: any = null;
 
       impassable = (sHillData.floors[floorId].map.collisionData[y] >> (15 - x) & 1);
-      metatileId = sHillData.floors[floorId].map.metatileData[floorWidth * y + x] + NUM_METATILES_IN_PRIMARY;
+      metatileId = sHillData.floors[floorId].map.metatileData[floorWidth * y + x] + (512);
       elevation = PACK_ELEVATION(ELEVATION_DEFAULT);
 
       return PACK_COLLISION(impassable) | elevation | PACK_METATILE(metatileId);
@@ -429,14 +426,14 @@ export function GenerateTrainerHillFloorLayout(mapArg: any): any {
       let dst: any = null;
       let mapId: any = GetCurrentTrainerHillMapId();
 
-      if (mapId == TRAINER_HILL_ENTRANCE)
+      if (mapId == (6))
       {
           InitMapFromSavedGame();
           return;
       }
 
       SetUpDataStruct();
-      if (mapId == TRAINER_HILL_ROOF)
+      if (mapId == (5))
       {
           InitMapFromSavedGame();
           FreeDataStruct();
@@ -447,24 +444,24 @@ export function GenerateTrainerHillFloorLayout(mapArg: any): any {
       src = gMapHeader.mapLayout.map;
       gBackupMapLayout.map = mapArg;
        
-      gBackupMapLayout.width = HILL_FLOOR_WIDTH + 15;
-      gBackupMapLayout.height = HILL_FLOOR_HEIGHT + 14;
+      gBackupMapLayout.width = (16) + 15;
+      gBackupMapLayout.height = (((16) + (5))) + 14;
       dst = mapArg + 224;
 
        
-      for (y = 0; y < HILL_FLOOR_HEIGHT_MARGIN; y++)
+      for (y = 0; y < (5); y++)
       {
-          for (x = 0; x < HILL_FLOOR_WIDTH; x++)
+          for (x = 0; x < (16); x++)
               dst[x] = src[x];
           dst += 31;
           src += 16;
       }
 
        
-      for (y = 0; y < HILL_FLOOR_HEIGHT_MAIN; y++)
+      for (y = 0; y < (16); y++)
       {
-          for (x = 0; x < HILL_FLOOR_WIDTH; x++)
-              dst[x] = GetMapDataForFloor(mapId, x, y, HILL_FLOOR_WIDTH);
+          for (x = 0; x < (16); x++)
+              dst[x] = GetMapDataForFloor(mapId, x, y, (16));
           dst += 31;
       }
 
@@ -492,17 +489,17 @@ export function GetCurrentTrainerHillMapId(): any {
   let mapId: any = null;
 
       if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_1F)
-          mapId = TRAINER_HILL_1F;
+          mapId = (1);
       else if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_2F)
-          mapId = TRAINER_HILL_2F;
+          mapId = (2);
       else if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_3F)
-          mapId = TRAINER_HILL_3F;
+          mapId = (3);
       else if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_4F)
-          mapId = TRAINER_HILL_4F;
+          mapId = (4);
       else if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_ROOF)
-          mapId = TRAINER_HILL_ROOF;
+          mapId = (5);
       else if (gMapHeader.mapLayoutId == LAYOUT_TRAINER_HILL_ENTRANCE)
-          mapId = TRAINER_HILL_ENTRANCE;
+          mapId = (6);
       else
           mapId = 0;
 
@@ -525,8 +522,8 @@ export function SetWarpDestinationTrainerHillFinalFloor(warpEventId: any): any {
           return gMapHeader.events.warps[1];
 
       numFloors = GetNumFloorsInTrainerHillChallenge();
-      if (numFloors == 0 || numFloors > NUM_TRAINER_HILL_FLOORS)
-          numFloors = NUM_TRAINER_HILL_FLOORS;
+      if (numFloors == 0 || numFloors > (4))
+          numFloors = (4);
 
       header = Overworld_GetMapHeaderByGroupAndId(MAP_GROUP(MAP_TRAINER_HILL_4F), sNextFloorMapNum[numFloors - 1]);
       return header.events.warps[0];
@@ -539,7 +536,7 @@ export function LocalIdToHillTrainerId(localId: any): any {
 
 /** bool8 GetHillTrainerFlag(u8 objectEventId) */
 export function GetHillTrainerFlag(objectEventId: any): any {
-  let trainerIndexStart: any = GetFloorId() * HILL_TRAINERS_PER_FLOOR;
+  let trainerIndexStart: any = GetFloorId() * (2);
       let bitId: any = gObjectEvents[objectEventId].localId - 1 + trainerIndexStart;
 
       return gSaveBlock2Ptr.frontier.trainerFlags & gBitTable[bitId];
@@ -548,9 +545,9 @@ export function GetHillTrainerFlag(objectEventId: any): any {
 /** void SetHillTrainerFlag(void) */
 export function SetHillTrainerFlag(): any {
   let i: any = null;
-      let trainerIndexStart: any = GetFloorId() * HILL_TRAINERS_PER_FLOOR;
+      let trainerIndexStart: any = GetFloorId() * (2);
 
-      for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
+      for (i = 0; i < (2); i++)
       {
           if (gSaveBlock2Ptr.frontier.trainerIds[i] == gTrainerBattleOpponent_A)
           {
@@ -559,9 +556,9 @@ export function SetHillTrainerFlag(): any {
           }
       }
 
-      if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
+      if (gBattleTypeFlags & ((1 << 15)))
       {
-          for (i = 0; i < HILL_TRAINERS_PER_FLOOR; i++)
+          for (i = 0; i < (2); i++)
           {
               if (gSaveBlock2Ptr.frontier.trainerIds[i] == gTrainerBattleOpponent_B)
               {
@@ -574,7 +571,7 @@ export function SetHillTrainerFlag(): any {
 
 /** static void ShowTrainerHillPostBattleText(void) */
 export function ShowTrainerHillPostBattleText(): any {
-  CopyTrainerHillTrainerText(TRAINER_HILL_TEXT_AFTER, gSpecialVar_LastTalked);
+  CopyTrainerHillTrainerText((5), gSpecialVar_LastTalked);
       ShowFieldMessageFromBuffer();
 }
 
@@ -583,14 +580,14 @@ export function CreateNPCTrainerHillParty(trainerId: any, firstMonId: any): any 
   let trId, level;
       let i, floorId, partySlot;
 
-      if (trainerId == 0 || trainerId > HILL_TRAINERS_PER_FLOOR)
+      if (trainerId == 0 || trainerId > (2))
           return;
 
       trId = trainerId - 1;
       SetUpDataStruct();
       level = GetHighestLevelInPlayerParty();
       floorId = GetFloorId();
-      for (i = firstMonId, partySlot = 0; i < firstMonId + PARTY_SIZE / 2; i++, partySlot++)
+      for (i = firstMonId, partySlot = 0; i < firstMonId + (6) / 2; i++, partySlot++)
       {
           let id: any = sTrainerPartySlots[trId][partySlot];
           let mon: any =gEnemyParty[i];
@@ -612,12 +609,12 @@ export function FillHillTrainerParty(): any {
 export function FillHillTrainersParties(): any {
   ZeroEnemyPartyMons();
       CreateNPCTrainerHillParty(gTrainerBattleOpponent_A, 0);
-      CreateNPCTrainerHillParty(gTrainerBattleOpponent_B, PARTY_SIZE / 2);
+      CreateNPCTrainerHillParty(gTrainerBattleOpponent_B, (6) / 2);
 }
 
 /** u32 GetTrainerHillAIFlags(void) */
 export function GetTrainerHillAIFlags(): any {
-  return (AI_SCRIPT_CHECK_BAD_MOVE | AI_SCRIPT_TRY_TO_FAINT | AI_SCRIPT_CHECK_VIABILITY);
+  return (((1 << 0)) | ((1 << 1)) | ((1 << 2)));
 }
 
 /** u8 GetTrainerEncounterMusicIdInTrainerHill(u16 trainerId) */
@@ -688,7 +685,7 @@ export function ClearGameSaved(): any {
 
 /** bool32 OnTrainerHillEReaderChallengeFloor(void) */
 export function OnTrainerHillEReaderChallengeFloor(): any {
-  if (!InTrainerHillChallenge() || GetCurrentTrainerHillMapId() == TRAINER_HILL_ENTRANCE)
+  if (!InTrainerHillChallenge() || GetCurrentTrainerHillMapId() == (6))
           return FALSE;
 
       GetInEReaderMode();
@@ -720,7 +717,7 @@ export function GetPrizeListId(allowTMs: any): any {
        
        
       prizeListId = 0;
-      for (i = 0; i < NUM_TRAINER_HILL_FLOORS; i++)
+      for (i = 0; i < (4); i++)
       {
           prizeListId ^= sHillData.floors[i].trainerNum1 & 0x1F;
           prizeListId ^= sHillData.floors[i].trainerNum2 & 0x1F;
@@ -730,9 +727,9 @@ export function GetPrizeListId(allowTMs: any): any {
        
        
       if (allowTMs)
-          modBy = NUM_TRAINER_HILL_PRIZE_LISTS;
+          modBy = (10);
       else
-          modBy = NUM_TRAINER_HILL_PRIZE_LISTS / 2;
+          modBy = (10) / 2;
 
       prizeListId %= modBy;
       return prizeListId;
@@ -749,7 +746,7 @@ export function GetPrizeItemId(): any {
        
        
        
-      for (i = 0; i < NUM_TRAINER_HILL_FLOORS; i++)
+      for (i = 0; i < (4); i++)
       {
           trainerNumSum += sHillData.floors[i].trainerNum1;
           trainerNumSum += sHillData.floors[i].trainerNum2;
@@ -761,14 +758,14 @@ export function GetPrizeItemId(): any {
        
        
        
-      if (FlagGet(FLAG_SYS_GAME_CLEAR) && sHillData.challenge.numTrainers == NUM_TRAINER_HILL_TRAINERS)
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))) && sHillData.challenge.numTrainers == (((4) * (2))))
           i = GetPrizeListId(TRUE);
       else
           i = GetPrizeListId(FALSE);
 
        
-      if (gSaveBlock1Ptr.trainerHill.mode == HILL_MODE_EXPERT)
-          i = (i + 1) % NUM_TRAINER_HILL_PRIZE_LISTS;
+      if (gSaveBlock1Ptr.trainerHill.mode == (3))
+          i = (i + 1) % (10);
 
        
        

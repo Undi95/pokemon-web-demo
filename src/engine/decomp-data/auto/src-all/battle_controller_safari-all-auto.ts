@@ -17,8 +17,11 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sSafariBufferCommands: any = null;
-let sSpeedX: any = null;
+let gBattleOutcome: any = null;
+let gBattle_BG0_X: any = null;
+let gBattle_BG0_Y: any = null;
+let gBattlerInMenuId: any = null;
+let gDoingBattleAnim: any = null;
 /** void SetControllerToSafari(void) */
 export function SetControllerToSafari(): any {
   gBattlerControllerFuncs[gActiveBattler] = SafariBufferRunCommand;
@@ -39,21 +42,21 @@ export function SafariBufferRunCommand(): any {
 export function HandleInputChooseAction(): any {
   if (JOY_NEW(A_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 
           switch (gActionSelectionCursor[gActiveBattler])
           {
           case 0:
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SAFARI_BALL, 0);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (5), 0);
               break;
           case 1:
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SAFARI_POKEBLOCK, 0);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (6), 0);
               break;
           case 2:
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SAFARI_GO_NEAR, 0);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (7), 0);
               break;
           case 3:
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SAFARI_RUN, 0);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (8), 0);
               break;
           }
           SafariBufferExecCompleted();
@@ -62,7 +65,7 @@ export function HandleInputChooseAction(): any {
       {
           if (gActionSelectionCursor[gActiveBattler] & 1)
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
               gActionSelectionCursor[gActiveBattler] ^= 1;
               ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
@@ -72,7 +75,7 @@ export function HandleInputChooseAction(): any {
       {
           if (!(gActionSelectionCursor[gActiveBattler] & 1))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
               gActionSelectionCursor[gActiveBattler] ^= 1;
               ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
@@ -82,7 +85,7 @@ export function HandleInputChooseAction(): any {
       {
           if (gActionSelectionCursor[gActiveBattler] & 2)
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
               gActionSelectionCursor[gActiveBattler] ^= 2;
               ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
@@ -92,7 +95,7 @@ export function HandleInputChooseAction(): any {
       {
           if (!(gActionSelectionCursor[gActiveBattler] & 2))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
               gActionSelectionCursor[gActiveBattler] ^= 2;
               ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
@@ -108,7 +111,7 @@ export function CompleteOnBattlerSpriteCallbackDummy(): any {
 
 /** static void CompleteOnInactiveTextPrinter(void) */
 export function CompleteOnInactiveTextPrinter(): any {
-  if (!IsTextPrinterActive(B_WIN_MSG))
+  if (!IsTextPrinterActive((0)))
           SafariBufferExecCompleted();
 }
 
@@ -162,7 +165,7 @@ export function CompleteOnFinishedBattleAnimation(): any {
 /** static void SafariBufferExecCompleted(void) */
 export function SafariBufferExecCompleted(): any {
   gBattlerControllerFuncs[gActiveBattler] = SafariBufferRunCommand;
-      if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+      if (gBattleTypeFlags & ((1 << 1)))
       {
           let playerId: any = GetMultiplayerId();
 
@@ -249,7 +252,7 @@ export function SafariHandlePaletteFade(): any {
 export function SafariHandleSuccessBallThrowAnim(): any {
   gBattleSpritesDataPtr.animationData.ballThrowCaseId = BALL_3_SHAKES_SUCCESS;
       gDoingBattleAnim = TRUE;
-      InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), B_ANIM_BALL_THROW_WITH_TRAINER);
+      InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), (4));
       gBattlerControllerFuncs[gActiveBattler] = CompleteOnSpecialAnimDone;
 }
 
@@ -259,7 +262,7 @@ export function SafariHandleBallThrowAnim(): any {
 
       gBattleSpritesDataPtr.animationData.ballThrowCaseId = ballThrowCaseId;
       gDoingBattleAnim = TRUE;
-      InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), B_ANIM_BALL_THROW_WITH_TRAINER);
+      InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), (4));
       gBattlerControllerFuncs[gActiveBattler] = CompleteOnSpecialAnimDone;
 }
 
@@ -281,13 +284,13 @@ export function SafariHandlePrintString(): any {
       gBattle_BG0_Y = 0;
       stringId = (gBattleBufferA[gActiveBattler][2]);
       BufferStringBattle(stringId);
-      BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MSG);
+      BattlePutTextOnWindow(gDisplayedStringBattle, (0));
       gBattlerControllerFuncs[gActiveBattler] = CompleteOnInactiveTextPrinter;
 }
 
 /** static void SafariHandlePrintSelectionString(void) */
 export function SafariHandlePrintSelectionString(): any {
-  if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)
+  if (GetBattlerSide(gActiveBattler) == (0))
           SafariHandlePrintString();
       else
           SafariBufferExecCompleted();
@@ -308,14 +311,14 @@ export function SafariHandleChooseAction(): any {
   let i: any = null;
 
       gBattlerControllerFuncs[gActiveBattler] = HandleChooseActionAfterDma3;
-      BattlePutTextOnWindow(gText_SafariZoneMenu, B_WIN_ACTION_MENU);
+      BattlePutTextOnWindow(gText_SafariZoneMenu, (2));
 
       for (i = 0; i < 4; i++)
           ActionSelectionDestroyCursorAt(i);
 
       ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
       BattleStringExpandPlaceholdersToDisplayedString(gText_WhatWillPkmnDo2);
-      BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_ACTION_PROMPT);
+      BattlePutTextOnWindow(gDisplayedStringBattle, (1));
 }
 
 /** static void SafariHandleYesNoBox(void) */
@@ -330,7 +333,7 @@ export function SafariHandleChooseMove(): any {
 
 /** static void SafariHandleChooseItem(void) */
 export function SafariHandleChooseItem(): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
       gBattlerControllerFuncs[gActiveBattler] = SafariOpenPokeblockCase;
       gBattlerInMenuId = gActiveBattler;
 }
@@ -445,10 +448,10 @@ export function SafariHandleCantSwitch(): any {
 export function SafariHandlePlaySE(): any {
   let pan: any = null;
 
-      if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)
-          pan = SOUND_PAN_ATTACKER;
+      if (GetBattlerSide(gActiveBattler) == (0))
+          pan = (-64);
       else
-          pan = SOUND_PAN_TARGET;
+          pan = (63);
 
       PlaySE12WithPanning(gBattleBufferA[gActiveBattler][1] | (gBattleBufferA[gActiveBattler][2] << 8), pan);
       SafariBufferExecCompleted();
@@ -539,7 +542,7 @@ export function SafariHandleEndLinkBattle(): any {
       FadeOutMapMusic(5);
       BeginFastPaletteFade(3);
       SafariBufferExecCompleted();
-      if ((gBattleTypeFlags & BATTLE_TYPE_LINK) && !(gBattleTypeFlags & BATTLE_TYPE_IS_MASTER))
+      if ((gBattleTypeFlags & ((1 << 1))) && !(gBattleTypeFlags & ((1 << 2))))
           gBattlerControllerFuncs[gActiveBattler] = SafariSetBattleEndCallbacks;
 }
 

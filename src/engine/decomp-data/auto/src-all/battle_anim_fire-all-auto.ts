@@ -17,23 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sActiveSpritesIdx: any = null;
-let sBounceDir: any = null;
-let sBounceTimer: any = null;
-let sEndTimer: any = null;
-let sEruptionLaunchRockSpeeds: any = null;
-let sFallDelay: any = null;
-let sLaunchStage: any = null;
-let sShakeDirsPattern0: any = null;
-let sShakeDirsPattern1: any = null;
-let sSpeedDelay: any = null;
-let sSpeedX: any = null;
-let sSpeedY: any = null;
-let sState: any = null;
-let sTargetY: any = null;
-let sTaskId: any = null;
-let sX: any = null;
-let sY: any = null;
+let j: any = null;
 /** static void AnimFireSpiralInward(struct Sprite *sprite) */
 export function AnimFireSpiralInward(sprite: any): any {
   sprite.data[0] = gBattleAnimArgs[0];
@@ -321,7 +305,7 @@ export function AnimFireSpiralOutward_Step2(sprite: any): any {
 export function AnimTask_EruptionLaunchRocks(taskId: any): any {
   let task: any =gTasks[taskId];
 
-      task.tAttackerSpriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      task.tAttackerSpriteId = GetAnimBattlerSpriteId((0));
 
       task.tState = 0;
       task.tTimer1 = 0;
@@ -356,7 +340,7 @@ export function AnimTask_EruptionLaunchRocks_Step(taskId: any): any {
                   gSprites[task.tAttackerSpriteId].x2 = -3;
           }
 
-          if (task.tAttackerSide != B_SIDE_PLAYER)
+          if (task.tAttackerSide != (0))
           {
               if (++task.tTimer3 > 4)
               {
@@ -379,7 +363,7 @@ export function AnimTask_EruptionLaunchRocks_Step(taskId: any): any {
       case 2:
           if (++task.tTimer1 > 4)
           {
-              if (task.tAttackerSide != B_SIDE_PLAYER)
+              if (task.tAttackerSide != (0))
                   PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0xE0, 0x200, 0x180, 0xF0, 6);
               else
                   PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0xE0, 0x200, 0x180, 0xC0, 6);
@@ -408,7 +392,7 @@ export function AnimTask_EruptionLaunchRocks_Step(taskId: any): any {
 
           if (++task.tTimer3 > 24)
           {
-              if (task.tAttackerSide != B_SIDE_PLAYER)
+              if (task.tAttackerSide != (0))
                   PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0x180, 0xF0, 0x100, 0x100, 8);
               else
                   PrepareEruptAnimTaskData(task, task.tAttackerSpriteId, 0x180, 0xC0, 0x100, 0x100, 8);
@@ -423,7 +407,7 @@ export function AnimTask_EruptionLaunchRocks_Step(taskId: any): any {
           }
           break;
       case 5:
-          if (task.tAttackerSide != B_SIDE_PLAYER)
+          if (task.tAttackerSide != (0))
               gSprites[task.tAttackerSpriteId].y--;
 
           if (!UpdateEruptAnimTask(task))
@@ -451,7 +435,7 @@ export function CreateEruptionLaunchRocks(spriteId: any, taskId: any, activeSpri
       let y: any = GetEruptionLaunchRockInitialYPos(spriteId);
       let x: any = gSprites[spriteId].x;
 
-      if(GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if(GetBattlerSide(gBattleAnimAttacker) == (0))
       {
           x -= 12;
           sign = 1;
@@ -466,7 +450,7 @@ export function CreateEruptionLaunchRocks(spriteId: any, taskId: any, activeSpri
       {
           let spriteId: any = CreateSprite(gEruptionLaunchRockSpriteTemplate, x, y, 2);
 
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               gSprites[spriteId].oam.tileNum += j * 4 + 0x40;
 
@@ -497,7 +481,7 @@ export function AnimEruptionLaunchRock(sprite: any): any {
 export function GetEruptionLaunchRockInitialYPos(spriteId: any): any {
   let y: any = gSprites[spriteId].y + gSprites[spriteId].y2 + gSprites[spriteId].centerToCornerVecY;
 
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
           y += 74;
       else
           y += 44;
@@ -599,7 +583,7 @@ export function AnimWillOWispOrb(sprite: any): any {
           StartSpriteAnim(sprite, gBattleAnimArgs[2]);
           sprite.data[7] = gBattleAnimArgs[2];
 
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
           {
               sprite.data[4] = 4;
           }
@@ -613,7 +597,7 @@ export function AnimWillOWispOrb(sprite: any): any {
           break;
       case 1:
           sprite.data[1] += 192;
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
           {
               sprite.y2 = -(sprite.data[1] >> 8);
           }
@@ -669,7 +653,7 @@ export function AnimWillOWispOrb_Step(sprite: any): any {
 
           if ((initialData5 == 0 || initialData5 > 196) && newData5 > 0 && sprite.data[7] == 0)
           {
-              PlaySE12WithPanning(SE_M_FLAME_WHEEL, gAnimCustomPanning);
+              PlaySE12WithPanning((144), gAnimCustomPanning);
           }
       }
       else
@@ -720,10 +704,10 @@ export function AnimWillOWispFire(sprite: any): any {
 export function AnimTask_MoveHeatWaveTargets(taskId: any): any {
   let task: any =gTasks[taskId];
 
-      task.data[12] = GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER ? 1 : -1;
+      task.data[12] = GetBattlerSide(gBattleAnimAttacker) == (0) ? 1 : -1;
       task.data[13] = IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimTarget)) + 1;
-      task.data[14] = GetAnimBattlerSpriteId(ANIM_TARGET);
-      task.data[15] = GetAnimBattlerSpriteId(ANIM_DEF_PARTNER);
+      task.data[14] = GetAnimBattlerSpriteId((1));
+      task.data[15] = GetAnimBattlerSpriteId((3));
 
       task.func = AnimTask_MoveHeatWaveTargets_Step;
 }

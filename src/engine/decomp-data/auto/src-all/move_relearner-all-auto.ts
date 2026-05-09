@@ -17,13 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sConstestMoveHeartSprite: any = null;
-let sDisplayModeArrowsTemplate: any = null;
-let sMoveListScrollArrowsTemplate: any = null;
-let sMoveRelearnerMenuBackgroundTemplates: any = null;
-let sMoveRelearnerMenuState: any = null;
-let sMoveRelearnerPalette: any = null;
-let sMoveRelearnerSpriteSheet: any = null;
+let gSpecialVar_0x8004: any = null;
+let gTempScrollArrowTemplate: any = null;
 let sMoveRelearnerStruct: any = null;
 /** static void VBlankCB_MoveRelearner(void) */
 export function VBlankCB_MoveRelearner(): any {
@@ -37,7 +32,7 @@ export function TeachMoveRelearnerMove(): any {
   LockPlayerFieldControls();
       CreateTask(Task_WaitForFadeOut, 10);
        
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
 }
 
 /** static void Task_WaitForFadeOut(u8 taskId) */
@@ -74,7 +69,7 @@ export function CB2_InitLearnMove(): any {
       CreateUISprites();
 
       sMoveRelearnerStruct.moveListMenuTask = ListMenuInit(gMultiuseListMenuTemplate, sMoveRelearnerMenuState.listOffset, sMoveRelearnerMenuState.listRow);
-      SetBackdropFromColor(RGB_BLACK);
+      SetBackdropFromColor((RGB(0, 0, 0)));
       SetMainCallback2(CB2_MoveRelearnerMain);
 }
 
@@ -99,7 +94,7 @@ export function CB2_InitLearnMoveReturnFromSelectMove(): any {
       CreateUISprites();
 
       sMoveRelearnerStruct.moveListMenuTask = ListMenuInit(gMultiuseListMenuTemplate, sMoveRelearnerMenuState.listOffset, sMoveRelearnerMenuState.listRow);
-      SetBackdropFromColor(RGB_BLACK);
+      SetBackdropFromColor((RGB(0, 0, 0)));
       SetMainCallback2(CB2_MoveRelearnerMain);
 }
 
@@ -140,7 +135,7 @@ export function DoMoveRelearnerMain(): any {
       case (0):
           sMoveRelearnerStruct.state++;
           HideHeartSpritesAndShowTeachMoveText(FALSE);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           break;
       case (1):
           if (!gPaletteFade.active)
@@ -181,7 +176,7 @@ export function DoMoveRelearnerMain(): any {
 
               if (selection == 0)
               {
-                  if (GiveMoveToMon(gPlayerParty[sMoveRelearnerStruct.partyMon], GetCurrentSelectedMove()) != MON_HAS_MAX_MOVES)
+                  if (GiveMoveToMon(gPlayerParty[sMoveRelearnerStruct.partyMon], GetCurrentSelectedMove()) != (0xFFFF))
                   {
                       PrintMessageWithPlaceholders(gText_MoveRelearnerPkmnLearnedMove);
                       gSpecialVar_0x8004 = TRUE;
@@ -192,7 +187,7 @@ export function DoMoveRelearnerMain(): any {
                       sMoveRelearnerStruct.state = (16);
                   }
               }
-              else if (selection == MENU_B_PRESSED || selection == 1)
+              else if (selection == (-1) || selection == 1)
               {
                   if (sMoveRelearnerMenuState.showContestInfo == FALSE)
                   {
@@ -221,7 +216,7 @@ export function DoMoveRelearnerMain(): any {
                   gSpecialVar_0x8004 = FALSE;
                   sMoveRelearnerStruct.state = (14);
               }
-              else if (selection == MENU_B_PRESSED || selection == 1)
+              else if (selection == (-1) || selection == 1)
               {
                   if (sMoveRelearnerMenuState.showContestInfo == FALSE)
                   {
@@ -254,7 +249,7 @@ export function DoMoveRelearnerMain(): any {
                   PrintMessageWithPlaceholders(gText_MoveRelearnerWhichMoveToForget);
                   sMoveRelearnerStruct.state = (19);
               }
-              else if (selection == MENU_B_PRESSED || selection == 1)
+              else if (selection == (-1) || selection == 1)
               {
                   sMoveRelearnerStruct.state = (24);
               }
@@ -280,7 +275,7 @@ export function DoMoveRelearnerMain(): any {
               {
                   sMoveRelearnerStruct.state = (27);
               }
-              else if (selection == MENU_B_PRESSED || selection == 1)
+              else if (selection == (-1) || selection == 1)
               {
                    
                   if (sMoveRelearnerMenuState.showContestInfo == FALSE)
@@ -313,7 +308,7 @@ export function DoMoveRelearnerMain(): any {
           if (!MoveRelearnerRunTextPrinters())
           {
               sMoveRelearnerStruct.state = (20);
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           }
           break;
       case (20):
@@ -330,10 +325,10 @@ export function DoMoveRelearnerMain(): any {
           }
           break;
       case 22:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           break;
       case (14):
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           sMoveRelearnerStruct.state++;
           break;
       case (15):
@@ -344,7 +339,7 @@ export function DoMoveRelearnerMain(): any {
           }
           break;
       case (28):
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           sMoveRelearnerStruct.state++;
           if (sMoveRelearnerMenuState.showContestInfo == FALSE)
           {
@@ -360,7 +355,7 @@ export function DoMoveRelearnerMain(): any {
       case (29):
           if (!gPaletteFade.active)
           {
-              if (sMoveRelearnerStruct.moveSlot == MAX_MON_MOVES)
+              if (sMoveRelearnerStruct.moveSlot == (4))
               {
                   sMoveRelearnerStruct.state = (24);
               }
@@ -383,13 +378,13 @@ export function DoMoveRelearnerMain(): any {
           {
               PrintMessageWithPlaceholders(gText_MoveRelearnerPkmnForgotMoveAndLearnedNew);
               sMoveRelearnerStruct.state = (31);
-              PlayFanfare(MUS_LEVEL_UP);
+              PlayFanfare((367));
           }
           break;
       case (31):
           if (!MoveRelearnerRunTextPrinters())
           {
-              PlayFanfare(MUS_LEVEL_UP);
+              PlayFanfare((367));
               sMoveRelearnerStruct.state = (32);
           }
           break;
@@ -402,7 +397,7 @@ export function DoMoveRelearnerMain(): any {
       case (33):
           if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sMoveRelearnerStruct.state = (14);
           }
           break;
@@ -441,11 +436,11 @@ export function HandleInput(showContest: any): any {
 
       switch (itemId)
       {
-      case LIST_NOTHING_CHOSEN:
+      case (-1):
           if (!(JOY_NEW(DPAD_LEFT | DPAD_RIGHT)) && !GetLRKeysPressed())
               break;
 
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 
           if (showContest == FALSE)
           {
@@ -463,15 +458,15 @@ export function HandleInput(showContest: any): any {
           ScheduleBgCopyTilemapToVram(1);
           MoveRelearnerShowHideHearts(GetCurrentSelectedMove());
           break;
-      case LIST_CANCEL:
-          PlaySE(SE_SELECT);
+      case (-2):
+          PlaySE((5));
           RemoveScrollArrows();
           sMoveRelearnerStruct.state = (12);
           StringExpandPlaceholders(gStringVar4, gText_MoveRelearnerGiveUp);
           MoveRelearnerPrintMessage(gStringVar4);
           break;
       default:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           RemoveScrollArrows();
           sMoveRelearnerStruct.state = (8);
           StringCopy(gStringVar2, gMoveNames[itemId]);
@@ -500,8 +495,8 @@ export function ShowTeachMoveText(shouldDoNothingInstead: any): any {
 export function CreateUISprites(): any {
   let i: any = null;
 
-      sMoveRelearnerStruct.moveDisplayArrowTask = TASK_NONE;
-      sMoveRelearnerStruct.moveListScrollArrowTask = TASK_NONE;
+      sMoveRelearnerStruct.moveDisplayArrowTask = ((0xFF));
+      sMoveRelearnerStruct.moveListScrollArrowTask = ((0xFF));
       AddScrollArrows();
 
        
@@ -522,10 +517,10 @@ export function CreateUISprites(): any {
 
 /** static void AddScrollArrows(void) */
 export function AddScrollArrows(): any {
-  if (sMoveRelearnerStruct.moveDisplayArrowTask == TASK_NONE)
+  if (sMoveRelearnerStruct.moveDisplayArrowTask == ((0xFF)))
           sMoveRelearnerStruct.moveDisplayArrowTask = AddScrollIndicatorArrowPair(sDisplayModeArrowsTemplate,sMoveRelearnerStruct.scrollOffset);
 
-      if (sMoveRelearnerStruct.moveListScrollArrowTask == TASK_NONE)
+      if (sMoveRelearnerStruct.moveListScrollArrowTask == ((0xFF)))
       {
           gTempScrollArrowTemplate = sMoveListScrollArrowsTemplate;
           gTempScrollArrowTemplate.fullyDownThreshold = sMoveRelearnerStruct.numMenuChoices - sMoveRelearnerStruct.numToShowAtOnce;
@@ -535,16 +530,16 @@ export function AddScrollArrows(): any {
 
 /** static void RemoveScrollArrows(void) */
 export function RemoveScrollArrows(): any {
-  if (sMoveRelearnerStruct.moveDisplayArrowTask != TASK_NONE)
+  if (sMoveRelearnerStruct.moveDisplayArrowTask != ((0xFF)))
       {
           RemoveScrollIndicatorArrowPair(sMoveRelearnerStruct.moveDisplayArrowTask);
-          sMoveRelearnerStruct.moveDisplayArrowTask = TASK_NONE;
+          sMoveRelearnerStruct.moveDisplayArrowTask = ((0xFF));
       }
 
-      if (sMoveRelearnerStruct.moveListScrollArrowTask != TASK_NONE)
+      if (sMoveRelearnerStruct.moveListScrollArrowTask != ((0xFF)))
       {
           RemoveScrollIndicatorArrowPair(sMoveRelearnerStruct.moveListScrollArrowTask);
-          sMoveRelearnerStruct.moveListScrollArrowTask = TASK_NONE;
+          sMoveRelearnerStruct.moveListScrollArrowTask = ((0xFF));
       }
 }
 
@@ -564,7 +559,7 @@ export function CreateLearnableMovesList(): any {
       GetMonData(gPlayerParty[sMoveRelearnerStruct.partyMon], MON_DATA_NICKNAME, nickname);
       StringCopy_Nickname(gStringVar1, nickname);
       sMoveRelearnerStruct.menuItems[sMoveRelearnerStruct.numMenuChoices].name = gText_Cancel;
-      sMoveRelearnerStruct.menuItems[sMoveRelearnerStruct.numMenuChoices].id = LIST_CANCEL;
+      sMoveRelearnerStruct.menuItems[sMoveRelearnerStruct.numMenuChoices].id = (-2);
       sMoveRelearnerStruct.numMenuChoices++;
       sMoveRelearnerStruct.numToShowAtOnce = LoadMoveRelearnerMovesList(sMoveRelearnerStruct.menuItems, sMoveRelearnerStruct.numMenuChoices);
 }
@@ -574,7 +569,7 @@ export function MoveRelearnerShowHideHearts(move: any): any {
   let numHearts: any = null;
       let i: any = null;
 
-      if (!sMoveRelearnerMenuState.showContestInfo || move == LIST_CANCEL)
+      if (!sMoveRelearnerMenuState.showContestInfo || move == (-2))
       {
           for (i = 0; i < 16; i++)
               gSprites[sMoveRelearnerStruct.heartSpriteIds[i]].invisible = TRUE;

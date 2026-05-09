@@ -17,53 +17,21 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gFacilityTrainerMons: any = null;
+let gFactorySelect_CurrentOptionFunc: any = null;
+let paletteNum: any = null;
 let sFactorySelectMons: any = null;
 let sFactorySelectScreen: any = null;
 let sFactorySwapScreen: any = null;
-let sIsSwapScreen: any = null;
-let sMenuOptionTextColors: any = null;
-let sMonPicBg_Gfx: any = null;
-let sMonPicBg_Pal: any = null;
-let sMonPicBg_Tilemap: any = null;
-let sPokeballGray_Pal: any = null;
 let sSelectMenuTilemapBuffer: any = null;
 let sSelectMenuTilesetBuffer: any = null;
 let sSelectMonPicBgTilemapBuffer: any = null;
 let sSelectMonPicBgTilesetBuffer: any = null;
-let sSelectText_Pal: any = null;
-let sSelect_BallGfx: any = null;
-let sSelect_BgTemplates: any = null;
-let sSelect_MenuOptionFuncs: any = null;
-let sSelect_SpritePalettes: any = null;
-let sSelect_SpriteSheets: any = null;
-let sSelect_WindowTemplates: any = null;
-let sSpeciesNameTextColors: any = null;
-let sSpriteTemplate_Select_Arrow: any = null;
-let sSpriteTemplate_Select_MenuHighlightLeft: any = null;
-let sSpriteTemplate_Select_MenuHighlightRight: any = null;
-let sSpriteTemplate_Select_MonPicBgAnim: any = null;
-let sSpriteTemplate_Select_Pokeball: any = null;
-let sSpriteTemplate_Swap_Arrow: any = null;
-let sSpriteTemplate_Swap_MenuHighlightLeft: any = null;
-let sSpriteTemplate_Swap_MenuHighlightRight: any = null;
-let sSpriteTemplate_Swap_MonPicBgAnim: any = null;
-let sSpriteTemplate_Swap_Pokeball: any = null;
-let sSwapMenuOptionsTextColors: any = null;
 let sSwapMenuTilemapBuffer: any = null;
 let sSwapMenuTilesetBuffer: any = null;
 let sSwapMonPicBgTilemapBuffer: any = null;
 let sSwapMonPicBgTilesetBuffer: any = null;
-let sSwapSpeciesNameTextColors: any = null;
-let sSwapText_Pal: any = null;
-let sSwap_BallGfx: any = null;
-let sSwap_BgTemplates: any = null;
 let sSwap_CurrentOptionFunc: any = null;
-let sSwap_EnemyScreenActions: any = null;
-let sSwap_MenuOptionFuncs: any = null;
-let sSwap_PlayerScreenActions: any = null;
-let sSwap_SpritePalettes: any = null;
-let sSwap_SpriteSheets: any = null;
-let sSwap_WindowTemplates: any = null;
 /** static void SpriteCB_Pokeball(struct Sprite *sprite) */
 export function SpriteCB_Pokeball(sprite: any): any {
   if (sprite.oam.paletteNum == IndexOfSpritePaletteTag(PALTAG_BALL_SELECTED))
@@ -193,7 +161,7 @@ export function CB2_InitSelectScreen(): any {
           ShowBg(0);
           ShowBg(1);
           SetVBlankCallback(VBlankCB_SelectScreen);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_BG0_ON | DISPCNT_BG1_ON | DISPCNT_OBJ_1D_MAP);
           if (sFactorySelectScreen && sFactorySelectScreen.fromSummaryScreen)
           {
@@ -271,7 +239,7 @@ export function Select_InitMonsData(): any {
       for (i = 0; i < (6); i++)
           sFactorySelectScreen.mons[i].selectedId = 0;
 
-      if (gSaveBlock2Ptr.frontier.lvlMode != FRONTIER_LVL_TENT)
+      if (gSaveBlock2Ptr.frontier.lvlMode != ((2)))
           CreateFrontierFactorySelectableMons(0);
       else
           CreateSlateportTentSelectableMons(0);
@@ -386,12 +354,12 @@ export function Select_HandleMonSelectionChange(): any {
       if (sFactorySelectScreen.mons[cursorPos].selectedId)  
       {
           paletteNum = IndexOfSpritePaletteTag(PALTAG_BALL_GRAY);
-          if (sFactorySelectScreen.selectingMonsState == FRONTIER_PARTY_SIZE
+          if (sFactorySelectScreen.selectingMonsState == (3)
            && sFactorySelectScreen.mons[cursorPos].selectedId == 1)
           {
               for (i = 0; i < (6); i++)
               {
-                  if (sFactorySelectScreen.mons[i].selectedId == FRONTIER_PARTY_SIZE - 1)
+                  if (sFactorySelectScreen.mons[i].selectedId == (3) - 1)
                       break;
               }
               if (i == (6))
@@ -433,7 +401,7 @@ export function Select_Task_OpenSummaryScreen(taskId: any): any {
       {
       case (6):
           gPlttBufferUnfaded[BG_PLTT_ID((14)) + 4] = gPlttBufferFaded[BG_PLTT_ID((14)) + 4];
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           gTasks[taskId].tState = (7);
           break;
       case (7):
@@ -471,7 +439,7 @@ export function Select_Task_Exit(taskId: any): any {
       switch (gTasks[taskId].tState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           gTasks[taskId].tState++;
           break;
       case 1:
@@ -510,7 +478,7 @@ export function Select_Task_HandleYesNo(taskId: any): any {
       case (5):
           if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               if (sFactorySelectScreen.yesNoCursorPos == 0)
               {
                    
@@ -531,7 +499,7 @@ export function Select_Task_HandleYesNo(taskId: any): any {
           else if (JOY_NEW(B_BUTTON))
           {
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Select_ErasePopupMenu(SELECT_WIN_YES_NO);
               Select_DeclineChosenMons();
               sFactorySelectScreen.fadeSpeciesNameActive = TRUE;
@@ -540,12 +508,12 @@ export function Select_Task_HandleYesNo(taskId: any): any {
           }
           else if (JOY_REPEAT(DPAD_UP))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Select_UpdateYesNoCursorPosition(-1);
           }
           else if (JOY_REPEAT(DPAD_DOWN))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Select_UpdateYesNoCursorPosition(1);
           }
           break;
@@ -573,7 +541,7 @@ export function Select_Task_HandleMenu(taskId: any): any {
           if (JOY_NEW(A_BUTTON))
           {
               let retVal: any = null;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               retVal = Select_RunMenuOptionFunc();
               if (retVal == SELECT_CONTINUE_CHOOSING)
               {
@@ -599,7 +567,7 @@ export function Select_Task_HandleMenu(taskId: any): any {
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               CloseMonPic(sFactorySelectScreen.monPics[1],sFactorySelectScreen.monPicAnimating, FALSE);
               Select_ErasePopupMenu(SELECT_WIN_OPTIONS);
               sFactorySelectScreen.fadeSpeciesNameActive = TRUE;
@@ -608,12 +576,12 @@ export function Select_Task_HandleMenu(taskId: any): any {
           }
           else if (JOY_REPEAT(DPAD_UP))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Select_UpdateMenuCursorPosition(-1);
           }
           else if (JOY_REPEAT(DPAD_DOWN))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Select_UpdateMenuCursorPosition(1);
           }
           break;
@@ -653,21 +621,21 @@ export function Select_Task_HandleChooseMons(taskId: any): any {
       case (1):
           if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sFactorySelectScreen.fadeSpeciesNameActive = FALSE;
               gTasks[taskId].tState = (2);
               gTasks[taskId].func = Select_Task_HandleMenu;
           }
           else if (JOY_REPEAT(DPAD_LEFT))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Select_UpdateBallCursorPosition(-1);
               Select_PrintMonCategory();
               Select_PrintMonSpecies();
           }
           else if (JOY_REPEAT(DPAD_RIGHT))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Select_UpdateBallCursorPosition(1);
               Select_PrintMonCategory();
               Select_PrintMonSpecies();
@@ -676,7 +644,7 @@ export function Select_Task_HandleChooseMons(taskId: any): any {
       case (11):
           if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               CloseMonPic(sFactorySelectScreen.monPics[1],sFactorySelectScreen.monPicAnimating, FALSE);
               Select_PrintSelectMonString();
               sFactorySelectScreen.fadeSpeciesNameActive = TRUE;
@@ -693,16 +661,16 @@ export function CreateFrontierFactorySelectableMons(firstMonId: any): any {
       let level: any = 0;
       let friendship: any = 0;
       let otId: any = 0;
-      let battleMode: any = VarGet(VAR_FRONTIER_BATTLE_MODE);
+      let battleMode: any = VarGet((0x40CE));
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
       let challengeNum: any = gSaveBlock2Ptr.frontier.factoryWinStreaks[battleMode][lvlMode] / 7;
       let rentalRank: any = 0;
 
       gFacilityTrainerMons = gBattleFrontierMons;
-      if (gSaveBlock2Ptr.frontier.lvlMode != FRONTIER_LVL_50)
-          level = FRONTIER_MAX_LEVEL_OPEN;
+      if (gSaveBlock2Ptr.frontier.lvlMode != (0))
+          level = ((100));
       else
-          level = FRONTIER_MAX_LEVEL_50;
+          level = (50);
 
       rentalRank = GetNumPastRentalsRank(battleMode, lvlMode);
       otId = T1_READ_32(gSaveBlock2Ptr.playerTrainerId);
@@ -723,7 +691,7 @@ export function CreateFrontierFactorySelectableMons(firstMonId: any): any {
                                                gFacilityTrainerMons[monId].evSpread,
                                                otId);
           friendship = 0;
-          for (j = 0; j < MAX_MON_MOVES; j++)
+          for (j = 0; j < (4); j++)
               SetMonMoveAvoidReturn(sFactorySelectScreen.mons[i + firstMonId].monData, gFacilityTrainerMons[monId].moves[j], j);
           SetMonData(sFactorySelectScreen.mons[i + firstMonId].monData, MON_DATA_FRIENDSHIP,friendship);
           SetMonData(sFactorySelectScreen.mons[i + firstMonId].monData, MON_DATA_HELD_ITEM,gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId]);
@@ -734,7 +702,7 @@ export function CreateFrontierFactorySelectableMons(firstMonId: any): any {
 export function CreateSlateportTentSelectableMons(firstMonId: any): any {
   let i, j;
       let ivs: any = 0;
-      let level: any = TENT_MIN_LEVEL;
+      let level: any = (30);
       let friendship: any = 0;
       let otId: any = 0;
 
@@ -753,7 +721,7 @@ export function CreateSlateportTentSelectableMons(firstMonId: any): any {
                                                gFacilityTrainerMons[monId].evSpread,
                                                otId);
           friendship = 0;
-          for (j = 0; j < MAX_MON_MOVES; j++)
+          for (j = 0; j < (4); j++)
               SetMonMoveAvoidReturn(sFactorySelectScreen.mons[i + firstMonId].monData, gFacilityTrainerMons[monId].moves[j], j);
           SetMonData(sFactorySelectScreen.mons[i + firstMonId].monData, MON_DATA_FRIENDSHIP,friendship);
           SetMonData(sFactorySelectScreen.mons[i + firstMonId].monData, MON_DATA_HELD_ITEM,gBattleFrontierHeldItems[gFacilityTrainerMons[monId].itemTableId]);
@@ -764,7 +732,7 @@ export function CreateSlateportTentSelectableMons(firstMonId: any): any {
 export function Select_CopyMonsToPlayerParty(): any {
   let i, j;
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           for (j = 0; j < (6); j++)
           {
@@ -915,7 +883,7 @@ export function Select_OptionRentDeselect(): any {
           Select_HandleMonSelectionChange();
           Select_PrintSelectMonString();
           Select_ErasePopupMenu(SELECT_WIN_OPTIONS);
-          if (sFactorySelectScreen.selectingMonsState > FRONTIER_PARTY_SIZE)
+          if (sFactorySelectScreen.selectingMonsState > (3))
               return SELECT_CONFIRM_MONS;
           else
               return SELECT_CONTINUE_CHOOSING;
@@ -928,7 +896,7 @@ export function Select_DeclineChosenMons(): any {
       Select_HandleMonSelectionChange();
       Select_PrintSelectMonString();
       Select_ErasePopupMenu(SELECT_WIN_OPTIONS);
-      if (sFactorySelectScreen.selectingMonsState > FRONTIER_PARTY_SIZE)
+      if (sFactorySelectScreen.selectingMonsState > (3))
           return 2;
       else
           return 1;
@@ -972,7 +940,7 @@ export function Select_CreateMonSprite(): any {
       let personality: any = GetMonData(mon, MON_DATA_PERSONALITY, NULL);
       let otId: any = GetMonData(mon, MON_DATA_OT_ID, NULL);
 
-      sFactorySelectScreen.monPics[1].monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, TAG_NONE);
+      sFactorySelectScreen.monPics[1].monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, (0xFFFF));
       gSprites[sFactorySelectScreen.monPics[1].monSpriteId].centerToCornerVecX = 0;
       gSprites[sFactorySelectScreen.monPics[1].monSpriteId].centerToCornerVecY = 0;
 
@@ -998,7 +966,7 @@ export function Select_ReshowMonSprite(): any {
       personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);
       otId = GetMonData(mon, MON_DATA_OT_ID, NULL);
 
-      sFactorySelectScreen.monPics[1].monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, TAG_NONE);
+      sFactorySelectScreen.monPics[1].monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, (0xFFFF));
       gSprites[sFactorySelectScreen.monPics[1].monSpriteId].centerToCornerVecX = 0;
       gSprites[sFactorySelectScreen.monPics[1].monSpriteId].centerToCornerVecY = 0;
 
@@ -1009,7 +977,7 @@ export function Select_ReshowMonSprite(): any {
 export function Select_CreateChosenMonsSprites(): any {
   let i, j;
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           for (j = 0; j < (6); j++)
           {
@@ -1020,7 +988,7 @@ export function Select_CreateChosenMonsSprites(): any {
                   let personality: any = GetMonData(mon, MON_DATA_PERSONALITY, NULL);
                   let otId: any = GetMonData(mon, MON_DATA_OT_ID, NULL);
 
-                  sFactorySelectScreen.monPics[i].monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, (i * 72) + 16, 32, i + 13, TAG_NONE);
+                  sFactorySelectScreen.monPics[i].monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, (i * 72) + 16, 32, i + 13, (0xFFFF));
                   gSprites[sFactorySelectScreen.monPics[i].monSpriteId].centerToCornerVecX = 0;
                   gSprites[sFactorySelectScreen.monPics[i].monSpriteId].centerToCornerVecY = 0;
                   break;
@@ -1292,8 +1260,8 @@ export function CopySwappedMonData(): any {
       gPlayerParty[sFactorySwapScreen.playerMonId] = gEnemyParty[sFactorySwapScreen.enemyMonId];
       friendship = 0;
       SetMonData(gPlayerParty[sFactorySwapScreen.playerMonId], MON_DATA_FRIENDSHIP,friendship);
-      gSaveBlock2Ptr.frontier.rentalMons[sFactorySwapScreen.playerMonId].monId = gSaveBlock2Ptr.frontier.rentalMons[sFactorySwapScreen.enemyMonId + FRONTIER_PARTY_SIZE].monId;
-      gSaveBlock2Ptr.frontier.rentalMons[sFactorySwapScreen.playerMonId].ivs = gSaveBlock2Ptr.frontier.rentalMons[sFactorySwapScreen.enemyMonId + FRONTIER_PARTY_SIZE].ivs;
+      gSaveBlock2Ptr.frontier.rentalMons[sFactorySwapScreen.playerMonId].monId = gSaveBlock2Ptr.frontier.rentalMons[sFactorySwapScreen.enemyMonId + (3)].monId;
+      gSaveBlock2Ptr.frontier.rentalMons[sFactorySwapScreen.playerMonId].ivs = gSaveBlock2Ptr.frontier.rentalMons[sFactorySwapScreen.enemyMonId + (3)].ivs;
       gSaveBlock2Ptr.frontier.rentalMons[sFactorySwapScreen.playerMonId].personality = GetMonData(gEnemyParty[sFactorySwapScreen.enemyMonId], MON_DATA_PERSONALITY, NULL);
       gSaveBlock2Ptr.frontier.rentalMons[sFactorySwapScreen.playerMonId].abilityNum = GetBoxMonData(gEnemyParty[sFactorySwapScreen.enemyMonId].box, MON_DATA_ABILITY_NUM, NULL);
 }
@@ -1303,7 +1271,7 @@ export function Swap_Task_OpenSummaryScreen(taskId: any): any {
   switch (gTasks[taskId].tState)
       {
       case (6):
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           gTasks[taskId].tState = (7);
           break;
       case (7):
@@ -1324,7 +1292,7 @@ export function Swap_Task_OpenSummaryScreen(taskId: any): any {
           DestroyTask(taskId);
           sFactorySwapScreen.fromSummaryScreen = TRUE;
           sFactorySwapScreen.speciesNameColorBackup = gPlttBufferUnfaded[BG_PLTT_ID((15)) + 4];
-          ShowPokemonSummaryScreen(SUMMARY_MODE_NORMAL, gPlayerParty, sFactorySwapScreen.cursorPos, FRONTIER_PARTY_SIZE - 1, CB2_InitSwapScreen);
+          ShowPokemonSummaryScreen(SUMMARY_MODE_NORMAL, gPlayerParty, sFactorySwapScreen.cursorPos, (3) - 1, CB2_InitSwapScreen);
           break;
       }
 }
@@ -1359,7 +1327,7 @@ export function Swap_Task_Exit(taskId: any): any {
           gTasks[taskId].tState++;
           break;
       case 2:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           gTasks[taskId].tState++;
           break;
       case 3:
@@ -1396,7 +1364,7 @@ export function Swap_Task_HandleYesNo(taskId: any): any {
       case (5):
           if (JOY_NEW(A_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               if (sFactorySwapScreen.yesNoCursorPos == 0)
               {
                    
@@ -1417,7 +1385,7 @@ export function Swap_Task_HandleYesNo(taskId: any): any {
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               gTasks[taskId].tSaidYes = FALSE;
               Swap_ErasePopupMenu(SWAP_WIN_YES_NO);
               hiPtr = gTasks[taskId].tFollowUpTaskPtrHi;
@@ -1426,12 +1394,12 @@ export function Swap_Task_HandleYesNo(taskId: any): any {
           }
           else if (JOY_REPEAT(DPAD_UP))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Swap_UpdateYesNoCursorPosition(-1);
           }
           else if (JOY_REPEAT(DPAD_DOWN))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Swap_UpdateYesNoCursorPosition(1);
           }
           break;
@@ -1521,12 +1489,12 @@ export function Swap_Task_HandleMenu(taskId: any): any {
           {
               if (JOY_NEW(A_BUTTON))
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   Swap_RunMenuOptionFunc(taskId);
               }
               else if (JOY_NEW(B_BUTTON))
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   CloseMonPic(sFactorySwapScreen.monPic,sFactorySwapScreen.monPicAnimating, TRUE);
                   Swap_ErasePopupMenu(SWAP_WIN_OPTIONS);
                   gTasks[taskId].tState = 0;
@@ -1563,7 +1531,7 @@ export function Swap_Task_HandleChooseMons(taskId: any): any {
           if (JOY_NEW(A_BUTTON))
           {
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sFactorySwapScreen.fadeSpeciesNameActive = FALSE;
               Swap_PrintMonSpeciesAtFade();
               Swap_EraseSpeciesWindow();
@@ -1572,7 +1540,7 @@ export function Swap_Task_HandleChooseMons(taskId: any): any {
           else if (JOY_NEW(B_BUTTON))
           {
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sFactorySwapScreen.fadeSpeciesNameActive = FALSE;
               Swap_PrintMonSpeciesAtFade();
               Swap_EraseSpeciesWindow();
@@ -1712,9 +1680,9 @@ export function Swap_Task_SlideCycleBalls(taskId: any): any {
           break;
       case 1:
           lastX = 0;
-          for (i = FRONTIER_PARTY_SIZE - 1; i >= 0; i--)
+          for (i = (3) - 1; i >= 0; i--)
           {
-              if (i != FRONTIER_PARTY_SIZE - 1)
+              if (i != (3) - 1)
               {
                   let posX: any = lastX - gSprites[sFactorySwapScreen.ballSpriteIds[i]].x;
                   if (posX == 16 || gTasks[taskId].data[((i + 1)) + 1] == TRUE)
@@ -2065,7 +2033,7 @@ export function Swap_Task_ScreenInfoTransitionIn(taskId: any): any {
               Swap_PrintOnInfoWindow(gText_SelectPkmnToSwap);
           else
               Swap_PrintOnInfoWindow(gText_SelectPkmnToAccept);
-          if (sFactorySwapScreen.cursorPos < FRONTIER_PARTY_SIZE)
+          if (sFactorySwapScreen.cursorPos < (3))
               gSprites[sFactorySwapScreen.cursorSpriteId].invisible = FALSE;
           Swap_PrintMonCategory();
           gTasks[taskId].tState++;
@@ -2275,7 +2243,7 @@ export function CB2_InitSwapScreen(): any {
           gMain.state++;
           break;
       case 14:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           SetGpuReg(REG_OFFSET_DISPCNT, DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP);
           ShowBg(0);
           ShowBg(1);
@@ -2322,7 +2290,7 @@ export function Swap_InitAllSprites(): any {
       spriteTemplate = sSpriteTemplate_Swap_Pokeball;
       spriteTemplate.paletteTag = PALTAG_BALL_SELECTED;
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           sFactorySwapScreen.ballSpriteIds[i] = CreateSprite(spriteTemplate, (48 * i) + 72, 64, 1);
           gSprites[sFactorySwapScreen.ballSpriteIds[i]].data[0] = 0;
@@ -2411,7 +2379,7 @@ export function Swap_InitAllSprites(): any {
 export function Swap_DestroyAllSprites(): any {
   let i, j;
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
           DestroySprite(gSprites[sFactorySwapScreen.ballSpriteIds[i]]);
       DestroySprite(gSprites[sFactorySwapScreen.cursorSpriteId]);
       DestroySprite(gSprites[sFactorySwapScreen.menuCursor1SpriteId]);
@@ -2430,7 +2398,7 @@ export function Swap_DestroyAllSprites(): any {
 
 /** static void Swap_HandleActionCursorChange(u8 cursorId) */
 export function Swap_HandleActionCursorChange(cursorId: any): any {
-  if (cursorId < FRONTIER_PARTY_SIZE)
+  if (cursorId < (3))
       {
            
           gSprites[sFactorySwapScreen.cursorSpriteId].invisible = FALSE;
@@ -2448,7 +2416,7 @@ export function Swap_HandleActionCursorChange(cursorId: any): any {
 /** static void Swap_UpdateBallCursorPosition(s8 direction) */
 export function Swap_UpdateBallCursorPosition(direction: any): any {
   let cursorPos: any = null;
-      PlaySE(SE_SELECT);
+      PlaySE((5));
       if (direction > 0)  
       {
           if (sFactorySwapScreen.cursorPos + 1 != sFactorySwapScreen.actionsCount)
@@ -2471,11 +2439,11 @@ export function Swap_UpdateBallCursorPosition(direction: any): any {
 /** static void Swap_UpdateActionCursorPosition(s8 direction) */
 export function Swap_UpdateActionCursorPosition(direction: any): any {
   let cursorPos: any = null;
-      PlaySE(SE_SELECT);
+      PlaySE((5));
       if (direction > 0)  
       {
-          if (sFactorySwapScreen.cursorPos < FRONTIER_PARTY_SIZE)
-              sFactorySwapScreen.cursorPos = FRONTIER_PARTY_SIZE;
+          if (sFactorySwapScreen.cursorPos < (3))
+              sFactorySwapScreen.cursorPos = (3);
           else if (sFactorySwapScreen.cursorPos + 1 != sFactorySwapScreen.actionsCount)
               sFactorySwapScreen.cursorPos++;
           else
@@ -2483,7 +2451,7 @@ export function Swap_UpdateActionCursorPosition(direction: any): any {
       }
       else  
       {
-          if (sFactorySwapScreen.cursorPos < FRONTIER_PARTY_SIZE)
+          if (sFactorySwapScreen.cursorPos < (3))
               sFactorySwapScreen.cursorPos = sFactorySwapScreen.actionsCount - 1;
           else if (sFactorySwapScreen.cursorPos != 0)
               sFactorySwapScreen.cursorPos--;
@@ -2518,7 +2486,7 @@ export function Swap_UpdateYesNoCursorPosition(direction: any): any {
 
 /** static void Swap_UpdateMenuCursorPosition(s8 direction) */
 export function Swap_UpdateMenuCursorPosition(direction: any): any {
-  PlaySE(SE_SELECT);
+  PlaySE((5));
       if (direction > 0)  
       {
           if (sFactorySwapScreen.menuCursorPos != ARRAY_COUNT(sSwap_MenuOptionFuncs) - 1)
@@ -2657,7 +2625,7 @@ export function Swap_PrintMonSpecies(): any {
       let x: any = null;
 
       FillWindowPixelBuffer(SWAP_WIN_SPECIES, PIXEL_FILL(0));
-      if (sFactorySwapScreen.cursorPos >= FRONTIER_PARTY_SIZE)
+      if (sFactorySwapScreen.cursorPos >= (3))
       {
           CopyWindowToVram(SWAP_WIN_SPECIES, COPYWIN_GFX);
       }
@@ -2765,7 +2733,7 @@ export function Swap_PrintMonSpeciesAtFade(): any {
 
       PutWindowTilemap(SWAP_WIN_SPECIES_AT_FADE);
       FillWindowPixelBuffer(SWAP_WIN_SPECIES_AT_FADE, PIXEL_FILL(0));
-      if (sFactorySwapScreen.cursorPos >= FRONTIER_PARTY_SIZE)
+      if (sFactorySwapScreen.cursorPos >= (3))
       {
           CopyWindowToVram(SWAP_WIN_SPECIES_AT_FADE, COPYWIN_FULL);
       }
@@ -2791,7 +2759,7 @@ export function Swap_PrintMonSpeciesForTransition(): any {
       LoadPalette(sSwapText_Pal, BG_PLTT_ID((14)), 0);
       CpuCopy16(gPlttBufferUnfaded[BG_PLTT_ID((15))],gPlttBufferFaded[BG_PLTT_ID((14))], PLTT_SIZEOF(5));
 
-      if (sFactorySwapScreen.cursorPos >= FRONTIER_PARTY_SIZE)
+      if (sFactorySwapScreen.cursorPos >= (3))
       {
           CopyWindowToVram(SWAP_WIN_SPECIES, COPYWIN_GFX);
       }
@@ -2817,7 +2785,7 @@ export function Swap_PrintMonCategory(): any {
       let monId: any = sFactorySwapScreen.cursorPos;
 
       FillWindowPixelBuffer(SWAP_WIN_MON_CATEGORY, PIXEL_FILL(0));
-      if (monId >= FRONTIER_PARTY_SIZE)
+      if (monId >= (3))
       {
           CopyWindowToVram(SWAP_WIN_MON_CATEGORY, COPYWIN_GFX);
       }
@@ -2960,7 +2928,7 @@ export function Swap_ShowSummaryMonSprite(): any {
       species = GetMonData(mon, MON_DATA_SPECIES, NULL);
       personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);
       otId = GetMonData(mon, MON_DATA_OT_ID, NULL);
-      sFactorySwapScreen.monPic.monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, TAG_NONE);
+      sFactorySwapScreen.monPic.monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, (0xFFFF));
       gSprites[sFactorySwapScreen.monPic.monSpriteId].centerToCornerVecX = 0;
       gSprites[sFactorySwapScreen.monPic.monSpriteId].centerToCornerVecY = 0;
 
@@ -3002,7 +2970,7 @@ export function Swap_TaskCantHaveSameMons(taskId: any): any {
       case 1:
           if (JOY_NEW(A_BUTTON) || JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               CloseMonPic(sFactorySwapScreen.monPic,sFactorySwapScreen.monPicAnimating, TRUE);
               gTasks[taskId].tState++;
           }
@@ -3034,7 +3002,7 @@ export function Swap_AlreadyHasSameSpecies(monId: any): any {
   let i: any = null;
       let species: any = GetMonData(gEnemyParty[monId], MON_DATA_SPECIES, NULL);
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           if (i != sFactorySwapScreen.playerMonId && (GetMonData(gPlayerParty[i], MON_DATA_SPECIES, NULL)) == species)
               return TRUE;
@@ -3176,7 +3144,7 @@ export function Swap_CreateMonSprite(): any {
       personality = GetMonData(mon, MON_DATA_PERSONALITY, NULL);
       otId = GetMonData(mon, MON_DATA_OT_ID, NULL);
 
-      sFactorySwapScreen.monPic.monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, TAG_NONE);
+      sFactorySwapScreen.monPic.monSpriteId = CreateMonPicSprite_HandleDeoxys(species, otId, personality, TRUE, 88, 32, 15, (0xFFFF));
       gSprites[sFactorySwapScreen.monPic.monSpriteId].centerToCornerVecX = 0;
       gSprites[sFactorySwapScreen.monPic.monSpriteId].centerToCornerVecY = 0;
 

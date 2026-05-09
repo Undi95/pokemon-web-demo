@@ -17,31 +17,15 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let _var: any = null;
+let cardBottom: any = null;
+let r10: any = null;
+let r5: any = null;
+let r6: any = null;
 let sData: any = null;
-let sHoennTrainerCardBadges_Gfx: any = null;
-let sHoennTrainerCardBadges_Pal: any = null;
-let sHoennTrainerCardFemaleBg_Pal: any = null;
-let sHoennTrainerCardPals: any = null;
-let sKantoTrainerCardBadges_Gfx: any = null;
-let sKantoTrainerCardBadges_Pal: any = null;
-let sKantoTrainerCardFemaleBg_Pal: any = null;
-let sKantoTrainerCardPals: any = null;
-let sLinkBattleTexts: any = null;
-let sText_HofTime: any = null;
-let sTimeColonTextColors: any = null;
-let sTrainerCardBgTemplates: any = null;
-let sTrainerCardFlipTasks: any = null;
-let sTrainerCardStar_Pal: any = null;
-let sTrainerCardStatColors: any = null;
-let sTrainerCardSticker1_Pal: any = null;
-let sTrainerCardSticker2_Pal: any = null;
-let sTrainerCardSticker3_Pal: any = null;
-let sTrainerCardSticker4_Pal: any = null;
-let sTrainerCardStickers_Gfx: any = null;
-let sTrainerCardTextColors: any = null;
-let sTrainerCardWindowTemplates: any = null;
-let sTrainerPicFacilityClass: any = null;
-let sTrainerPicOffset: any = null;
+let totalWidth: any = null;
+let var_24: any = null;
+let y: any = null;
 /** static void VblankCb_TrainerCard(void) */
 export function VblankCb_TrainerCard(): any {
   LoadOam();
@@ -125,15 +109,15 @@ export function Task_TrainerCard(taskId: any): any {
               LoadWirelessStatusIndicatorSpriteGfx();
               CreateWirelessStatusIndicatorSprite(DISPLAY_WIDTH - 10, DISPLAY_HEIGHT - 10);
           }
-          BlendPalettes(PALETTES_ALL, 16, sData.blendColor);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, sData.blendColor);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, sData.blendColor);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, sData.blendColor);
           SetVBlankCallback(VblankCb_TrainerCard);
           sData.mainState++;
           break;
       case 8:
           if (!UpdatePaletteFade() && !IsDma3ManagerBusyWithBgCopy())
           {
-              PlaySE(SE_RG_CARD_OPEN);
+              PlaySE((251));
               sData.mainState = (10);
           }
           break;
@@ -152,7 +136,7 @@ export function Task_TrainerCard(taskId: any): any {
           if (JOY_NEW(A_BUTTON))
           {
               FlipTrainerCard();
-              PlaySE(SE_RG_CARD_FLIP);
+              PlaySE((249));
               sData.mainState = (12);
           }
           else if (JOY_NEW(B_BUTTON))
@@ -163,7 +147,7 @@ export function Task_TrainerCard(taskId: any): any {
               }
               else
               {
-                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, sData.blendColor);
+                  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, sData.blendColor);
                   sData.mainState = (14);
               }
           }
@@ -171,7 +155,7 @@ export function Task_TrainerCard(taskId: any): any {
       case (12):
           if (IsCardFlipTaskActive() && Overworld_IsRecvQueueAtMax() != TRUE)
           {
-              PlaySE(SE_RG_CARD_OPEN);
+              PlaySE((251));
               sData.mainState = (11);
           }
           break;
@@ -184,14 +168,14 @@ export function Task_TrainerCard(taskId: any): any {
               }
               else if (gReceivedRemoteLinkPlayers)
               {
-                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, sData.blendColor);
+                  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, sData.blendColor);
                   sData.mainState = (14);
               }
               else
               {
                   FlipTrainerCard();
                   sData.mainState = (13);
-                  PlaySE(SE_RG_CARD_FLIP);
+                  PlaySE((249));
               }
           }
           else if (JOY_NEW(A_BUTTON))
@@ -202,7 +186,7 @@ export function Task_TrainerCard(taskId: any): any {
              }
              else
              {
-                 BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, sData.blendColor);
+                 BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, sData.blendColor);
                  sData.mainState = (14);
              }
           }
@@ -217,7 +201,7 @@ export function Task_TrainerCard(taskId: any): any {
       case (16):
           if (!gReceivedRemoteLinkPlayers)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, sData.blendColor);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, sData.blendColor);
               sData.mainState = (14);
           }
           break;
@@ -229,7 +213,7 @@ export function Task_TrainerCard(taskId: any): any {
           if (IsCardFlipTaskActive() && Overworld_IsRecvQueueAtMax() != TRUE)
           {
               sData.mainState = (10);
-              PlaySE(SE_RG_CARD_OPEN);
+              PlaySE((251));
           }
           break;
      }
@@ -358,9 +342,9 @@ export function GetCappedGameStat(statId: any, maxValue: any): any {
 /** static bool8 HasAllFrontierSymbols(void) */
 export function HasAllFrontierSymbols(): any {
   let i: any = null;
-      for (i = 0; i < NUM_FRONTIER_FACILITIES; i++)
+      for (i = 0; i < (7); i++)
       {
-          if (!FlagGet(FLAG_SYS_TOWER_SILVER + 2 * i) || !FlagGet(FLAG_SYS_TOWER_GOLD + 2 * i))
+          if (!FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x64)) + 2 * i) || !FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x65)) + 2 * i))
               return FALSE;
       }
       return TRUE;
@@ -370,11 +354,11 @@ export function HasAllFrontierSymbols(): any {
 export function CountPlayerTrainerStars(): any {
   let stars: any = 0;
 
-      if (GetGameStat(GAME_STAT_ENTERED_HOF))
+      if (GetGameStat((10)))
           stars++;
       if (HasAllHoennMons())
           stars++;
-      if (CountPlayerMuseumPaintings() >= CONTEST_CATEGORIES_COUNT)
+      if (CountPlayerMuseumPaintings() >= (5))
           stars++;
       if (HasAllFrontierSymbols())
           stars++;
@@ -407,8 +391,8 @@ export function SetPlayerCardData(trainerCard: any, cardType: any): any {
       trainerCard.playTimeHours = gSaveBlock2Ptr.playTimeHours;
       trainerCard.playTimeMinutes = gSaveBlock2Ptr.playTimeMinutes;
 
-      playTime = GetGameStat(GAME_STAT_FIRST_HOF_PLAY_TIME);
-      if (!GetGameStat(GAME_STAT_ENTERED_HOF))
+      playTime = GetGameStat((1));
+      if (!GetGameStat((10)))
           playTime = 0;
 
       trainerCard.hofDebutHours = playTime >> 16;
@@ -421,20 +405,20 @@ export function SetPlayerCardData(trainerCard: any, cardType: any): any {
           trainerCard.hofDebutSeconds = 59;
       }
 
-      trainerCard.hasPokedex = FlagGet(FLAG_SYS_POKEDEX_GET);
+      trainerCard.hasPokedex = FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1)));
       trainerCard.caughtAllHoenn = HasAllHoennMons();
       trainerCard.caughtMonsCount = GetCaughtMonsCount();
 
       trainerCard.trainerId = (gSaveBlock2Ptr.playerTrainerId[1] << 8) | gSaveBlock2Ptr.playerTrainerId[0];
 
-      trainerCard.linkBattleWins = GetCappedGameStat(GAME_STAT_LINK_BATTLE_WINS, 9999);
-      trainerCard.linkBattleLosses = GetCappedGameStat(GAME_STAT_LINK_BATTLE_LOSSES, 9999);
+      trainerCard.linkBattleWins = GetCappedGameStat((23), 9999);
+      trainerCard.linkBattleLosses = GetCappedGameStat((24), 9999);
 
-      trainerCard.pokemonTrades = GetCappedGameStat(GAME_STAT_POKEMON_TRADES, 0xFFFF);
+      trainerCard.pokemonTrades = GetCappedGameStat((21), 0xFFFF);
 
       trainerCard.money = GetMoney(gSaveBlock1Ptr.money);
 
-      for (i = 0; i < TRAINER_CARD_PROFILE_LENGTH; i++)
+      for (i = 0; i < (4); i++)
           trainerCard.easyChatProfile[i] = gSaveBlock1Ptr.easyChatProfile[i];
 
       StringCopy(trainerCard.playerName, gSaveBlock2Ptr.playerName);
@@ -446,9 +430,9 @@ export function SetPlayerCardData(trainerCard: any, cardType: any): any {
           trainerCard.battleTowerStraightWins = 0;
        
       case CARD_TYPE_FRLG:
-          trainerCard.contestsWithFriends = GetCappedGameStat(GAME_STAT_WON_LINK_CONTEST, 999);
-          trainerCard.pokeblocksWithFriends = GetCappedGameStat(GAME_STAT_POKEBLOCKS_WITH_FRIENDS, 0xFFFF);
-          if (CountPlayerMuseumPaintings() >= CONTEST_CATEGORIES_COUNT)
+          trainerCard.contestsWithFriends = GetCappedGameStat((35), 999);
+          trainerCard.pokeblocksWithFriends = GetCappedGameStat((34), 0xFFFF);
+          if (CountPlayerMuseumPaintings() >= (5))
               trainerCard.hasAllPaintings = TRUE;
           trainerCard.stars = GetRubyTrainerStars(trainerCard);
           break;
@@ -466,33 +450,33 @@ export function SetPlayerCardData(trainerCard: any, cardType: any): any {
 /** static void TrainerCard_GenerateCardForPlayer(struct TrainerCard *trainerCard) */
 export function TrainerCard_GenerateCardForPlayer(trainerCard: any): any {
   memset(trainerCard, 0, 0);
-      trainerCard.version = GAME_VERSION;
+      trainerCard.version = (((3)));
       SetPlayerCardData(trainerCard, CARD_TYPE_EMERALD);
       trainerCard.hasAllFrontierSymbols = HasAllFrontierSymbols();
       trainerCard.frontierBP = gSaveBlock2Ptr.frontier.cardBattlePoints;
       if (trainerCard.hasAllFrontierSymbols)
           trainerCard.stars++;
 
-      if (trainerCard.gender == FEMALE)
-          trainerCard.unionRoomClass = gUnionRoomFacilityClasses[(trainerCard.trainerId % NUM_UNION_ROOM_CLASSES) + NUM_UNION_ROOM_CLASSES];
+      if (trainerCard.gender == (1))
+          trainerCard.unionRoomClass = gUnionRoomFacilityClasses[(trainerCard.trainerId % ((1 << 3))) + ((1 << 3))];
       else
-          trainerCard.unionRoomClass = gUnionRoomFacilityClasses[trainerCard.trainerId % NUM_UNION_ROOM_CLASSES];
+          trainerCard.unionRoomClass = gUnionRoomFacilityClasses[trainerCard.trainerId % ((1 << 3))];
 }
 
 /** void TrainerCard_GenerateCardForLinkPlayer(struct TrainerCard *trainerCard) */
 export function TrainerCard_GenerateCardForLinkPlayer(trainerCard: any): any {
   memset(trainerCard, 0, 0x60);
-      trainerCard.version = GAME_VERSION;
+      trainerCard.version = (((3)));
       SetPlayerCardData(trainerCard, CARD_TYPE_EMERALD);
       trainerCard.linkHasAllFrontierSymbols = HasAllFrontierSymbols();
       MEM_WRITE((trainerCard.linkPoints.frontier), gSaveBlock2Ptr.frontier.cardBattlePoints);
       if (trainerCard.linkHasAllFrontierSymbols)
           trainerCard.stars++;
 
-      if (trainerCard.gender == FEMALE)
-          trainerCard.unionRoomClass = gUnionRoomFacilityClasses[(trainerCard.trainerId % NUM_UNION_ROOM_CLASSES) + NUM_UNION_ROOM_CLASSES];
+      if (trainerCard.gender == (1))
+          trainerCard.unionRoomClass = gUnionRoomFacilityClasses[(trainerCard.trainerId % ((1 << 3))) + ((1 << 3))];
       else
-          trainerCard.unionRoomClass = gUnionRoomFacilityClasses[trainerCard.trainerId % NUM_UNION_ROOM_CLASSES];
+          trainerCard.unionRoomClass = gUnionRoomFacilityClasses[trainerCard.trainerId % ((1 << 3))];
 }
 
 /** void CopyTrainerCardData(struct TrainerCard *dst, struct TrainerCard *src, u8 gameVersion) */
@@ -545,7 +529,7 @@ export function SetDataFromTrainerCard(): any {
       if (sData.trainerCard.battleTowerWins || sData.trainerCard.battleTowerStraightWins)
           sData.hasBattleTowerWins++;
 
-      for (i = 0, badgeFlag = FLAG_BADGE01_GET; badgeFlag < FLAG_BADGE01_GET + NUM_BADGES; badgeFlag++, i++)
+      for (i = 0, badgeFlag = (((((((0x500) + (864) - 1)) + 1)) + 0x7)); badgeFlag < (((((((0x500) + (864) - 1)) + 1)) + 0x7)) + ((1 + (((((((0x500) + (864) - 1)) + 1)) + 0xE)) - (((((((0x500) + (864) - 1)) + 1)) + 0x7)))); badgeFlag++, i++)
       {
           if (FlagGet(badgeFlag))
               sData.badgeCount[i]++;
@@ -714,9 +698,9 @@ export function PrintNameOnCardFront(): any {
       StringCopy(txtPtr, sData.trainerCard.playerName);
       ConvertInternationalString(txtPtr, sData.language);
       if (sData.cardType == CARD_TYPE_FRLG)
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 20, 28, sTrainerCardTextColors, TEXT_SKIP_DRAW, buffer);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 20, 28, sTrainerCardTextColors, (0xFF), buffer);
       else
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 16, 33, sTrainerCardTextColors, TEXT_SKIP_DRAW, buffer);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 16, 33, sTrainerCardTextColors, (0xFF), buffer);
 }
 
 /** static void PrintIdOnCard(void) */
@@ -738,7 +722,7 @@ export function PrintIdOnCard(): any {
           top = 9;
       }
 
-      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, xPos, top, sTrainerCardTextColors, TEXT_SKIP_DRAW, buffer);
+      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, xPos, top, sTrainerCardTextColors, (0xFF), buffer);
 }
 
 /** static void PrintMoneyOnCard(void) */
@@ -747,9 +731,9 @@ export function PrintMoneyOnCard(): any {
       let top: any = null;
 
       if (!sData.isHoenn)
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 20, 56, sTrainerCardTextColors, TEXT_SKIP_DRAW, gText_TrainerCardMoney);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 20, 56, sTrainerCardTextColors, (0xFF), gText_TrainerCardMoney);
       else
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 16, 57, sTrainerCardTextColors, TEXT_SKIP_DRAW, gText_TrainerCardMoney);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 16, 57, sTrainerCardTextColors, (0xFF), gText_TrainerCardMoney);
 
       ConvertIntToDecimalStringN(gStringVar1, sData.trainerCard.money, STR_CONV_MODE_LEFT_ALIGN, 6);
       StringExpandPlaceholders(gStringVar4, gText_PokedollarVar1);
@@ -763,7 +747,7 @@ export function PrintMoneyOnCard(): any {
           xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 128);
           top = 57;
       }
-      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, xOffset, top, sTrainerCardTextColors, TEXT_SKIP_DRAW, gStringVar4);
+      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, xOffset, top, sTrainerCardTextColors, (0xFF), gStringVar4);
 }
 
 /** static u16 GetCaughtMonsCount(void) */
@@ -778,12 +762,12 @@ export function GetCaughtMonsCount(): any {
 export function PrintPokedexOnCard(): any {
   let xOffset: any = null;
       let top: any = null;
-      if (FlagGet(FLAG_SYS_POKEDEX_GET))
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1))))
       {
           if (!sData.isHoenn)
-              AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 20, 72, sTrainerCardTextColors, TEXT_SKIP_DRAW, gText_TrainerCardPokedex);
+              AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 20, 72, sTrainerCardTextColors, (0xFF), gText_TrainerCardPokedex);
           else
-              AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 16, 73, sTrainerCardTextColors, TEXT_SKIP_DRAW, gText_TrainerCardPokedex);
+              AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 16, 73, sTrainerCardTextColors, (0xFF), gText_TrainerCardPokedex);
           StringCopy(ConvertIntToDecimalStringN(gStringVar4, sData.trainerCard.caughtMonsCount, STR_CONV_MODE_LEFT_ALIGN, 3), gText_EmptyString6);
           if (!sData.isHoenn)
           {
@@ -795,7 +779,7 @@ export function PrintPokedexOnCard(): any {
               xOffset = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, 128);
               top = 73;
           }
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, xOffset, top, sTrainerCardTextColors, TEXT_SKIP_DRAW, gStringVar4);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, xOffset, top, sTrainerCardTextColors, (0xFF), gStringVar4);
       }
 }
 
@@ -807,9 +791,9 @@ export function PrintTimeOnCard(): any {
       let x, y, totalWidth;
 
       if (!sData.isHoenn)
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 20, 88, sTrainerCardTextColors, TEXT_SKIP_DRAW, gText_TrainerCardTime);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 20, 88, sTrainerCardTextColors, (0xFF), gText_TrainerCardTime);
       else
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 16, 89, sTrainerCardTextColors, TEXT_SKIP_DRAW, gText_TrainerCardTime);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 16, 89, sTrainerCardTextColors, (0xFF), gText_TrainerCardTime);
 
       if (sData.isLink)
       {
@@ -843,12 +827,12 @@ export function PrintTimeOnCard(): any {
 
       FillWindowPixelRect(WIN_CARD_TEXT, PIXEL_FILL(0), x, y, totalWidth, 15);
       ConvertIntToDecimalStringN(gStringVar4, hours, STR_CONV_MODE_RIGHT_ALIGN, 3);
-      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, x, y, sTrainerCardTextColors, TEXT_SKIP_DRAW, gStringVar4);
+      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, x, y, sTrainerCardTextColors, (0xFF), gStringVar4);
       x += 18;
-      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, x, y, sTimeColonTextColors[sData.timeColonInvisible], TEXT_SKIP_DRAW, gText_Colon2);
+      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, x, y, sTimeColonTextColors[sData.timeColonInvisible], (0xFF), gText_Colon2);
       x += width;
       ConvertIntToDecimalStringN(gStringVar4, minutes, STR_CONV_MODE_LEADING_ZEROS, 2);
-      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, x, y, sTrainerCardTextColors, TEXT_SKIP_DRAW, gStringVar4);
+      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, x, y, sTrainerCardTextColors, (0xFF), gStringVar4);
 }
 
 /** static void PrintProfilePhraseOnCard(void) */
@@ -858,10 +842,10 @@ export function PrintProfilePhraseOnCard(): any {
 
       if (sData.isLink)
       {
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 8, yOffsetsLine1[sData.isHoenn], sTrainerCardTextColors, TEXT_SKIP_DRAW, sData.easyChatProfile[0]);
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, GetStringWidth(FONT_NORMAL, sData.easyChatProfile[0], 0) + 14, yOffsetsLine1[sData.isHoenn], sTrainerCardTextColors, TEXT_SKIP_DRAW, sData.easyChatProfile[1]);
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 8, yOffsetsLine2[sData.isHoenn], sTrainerCardTextColors, TEXT_SKIP_DRAW, sData.easyChatProfile[2]);
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, GetStringWidth(FONT_NORMAL, sData.easyChatProfile[2], 0) + 14, yOffsetsLine2[sData.isHoenn], sTrainerCardTextColors, TEXT_SKIP_DRAW, sData.easyChatProfile[3]);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 8, yOffsetsLine1[sData.isHoenn], sTrainerCardTextColors, (0xFF), sData.easyChatProfile[0]);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, GetStringWidth(FONT_NORMAL, sData.easyChatProfile[0], 0) + 14, yOffsetsLine1[sData.isHoenn], sTrainerCardTextColors, (0xFF), sData.easyChatProfile[1]);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 8, yOffsetsLine2[sData.isHoenn], sTrainerCardTextColors, (0xFF), sData.easyChatProfile[2]);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, GetStringWidth(FONT_NORMAL, sData.easyChatProfile[2], 0) + 14, yOffsetsLine2[sData.isHoenn], sTrainerCardTextColors, (0xFF), sData.easyChatProfile[3]);
       }
 }
 
@@ -879,9 +863,9 @@ export function BufferNameForCardBack(): any {
 /** static void PrintNameOnCardBack(void) */
 export function PrintNameOnCardBack(): any {
   if (!sData.isHoenn)
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 136, 9, sTrainerCardTextColors, TEXT_SKIP_DRAW, sData.textPlayersCard);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 136, 9, sTrainerCardTextColors, (0xFF), sData.textPlayersCard);
       else
-          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, GetStringRightAlignXOffset(FONT_NORMAL, sData.textPlayersCard, 216), 9, sTrainerCardTextColors, TEXT_SKIP_DRAW, sData.textPlayersCard);
+          AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, GetStringRightAlignXOffset(FONT_NORMAL, sData.textPlayersCard, 216), 9, sTrainerCardTextColors, (0xFF), sData.textPlayersCard);
 }
 
 /** static void BufferHofDebutTime(void) */
@@ -900,8 +884,8 @@ export function PrintStatOnBackOfCard(top: any, statName: any, stat: any, color:
   const xOffsets: any = [8, 16];
       const widths: any = [216, 216];
 
-      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, xOffsets[sData.isHoenn], top * 16 + 33, sTrainerCardTextColors, TEXT_SKIP_DRAW, statName);
-      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, GetStringRightAlignXOffset(FONT_NORMAL, stat, widths[sData.isHoenn]), top * 16 + 33, color, TEXT_SKIP_DRAW, stat);
+      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, xOffsets[sData.isHoenn], top * 16 + 33, sTrainerCardTextColors, (0xFF), statName);
+      AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, GetStringRightAlignXOffset(FONT_NORMAL, stat, widths[sData.isHoenn]), top * 16 + 33, color, (0xFF), stat);
 }
 
 /** static void PrintHofDebutTimeOnCard(void) */
@@ -1043,7 +1027,7 @@ export function PrintPokemonIconsOnCard(): any {
 
       if (sData.cardType == CARD_TYPE_FRLG)
       {
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
               if (sData.trainerCard.monSpecies[i])
               {
@@ -1075,7 +1059,7 @@ export function LoadMonIconGfx(): any {
       }
       LoadPalette(sData.monIconPal, BG_PLTT_ID(5), 6 * PLTT_SIZE_4BPP);
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (sData.trainerCard.monSpecies[i])
               LoadBgTiles(3, GetMonIconTiles(sData.trainerCard.monSpecies[i], 0), 512, 16 * i + 32);
@@ -1089,7 +1073,7 @@ export function PrintStickersOnCard(): any {
 
       if (sData.cardType == CARD_TYPE_FRLG && sData.trainerCard.shouldDrawStickers == TRUE)
       {
-          for (i = 0; i < TRAINER_CARD_STICKER_TYPES; i++)
+          for (i = 0; i < (3); i++)
           {
               let sticker: any = sData.trainerCard.stickers[i];
               if (sData.trainerCard.stickers[i])
@@ -1128,14 +1112,14 @@ export function SetCardBgsAndPals(): any {
           {
               LoadPalette(sHoennTrainerCardPals[sData.trainerCard.stars], BG_PLTT_ID(0), 3 * PLTT_SIZE_4BPP);
               LoadPalette(sHoennTrainerCardBadges_Pal, BG_PLTT_ID(3), PLTT_SIZE_4BPP);
-              if (sData.trainerCard.gender != MALE)
+              if (sData.trainerCard.gender != (0))
                   LoadPalette(sHoennTrainerCardFemaleBg_Pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
           }
           else
           {
               LoadPalette(sKantoTrainerCardPals[sData.trainerCard.stars], BG_PLTT_ID(0), 3 * PLTT_SIZE_4BPP);
               LoadPalette(sKantoTrainerCardBadges_Pal, BG_PLTT_ID(3), PLTT_SIZE_4BPP);
-              if (sData.trainerCard.gender != MALE)
+              if (sData.trainerCard.gender != (0))
                   LoadPalette(sKantoTrainerCardFemaleBg_Pal, BG_PLTT_ID(1), PLTT_SIZE_4BPP);
           }
           LoadPalette(sTrainerCardStar_Pal, BG_PLTT_ID(4), PLTT_SIZE_4BPP);
@@ -1203,7 +1187,7 @@ export function DrawStarsAndBadgesOnCard(): any {
       if (!sData.isLink)
       {
           x = 4;
-          for (i = 0; i < NUM_BADGES; i++, tileNum += 2, x += 3)
+          for (i = 0; i < ((1 + (((((((0x500) + (864) - 1)) + 1)) + 0xE)) - (((((((0x500) + (864) - 1)) + 1)) + 0x7)))); i++, tileNum += 2, x += 3)
           {
               if (sData.badgeCount[i])
               {
@@ -1247,7 +1231,7 @@ export function FlipTrainerCard(): any {
 
 /** static bool8 IsCardFlipTaskActive(void) */
 export function IsCardFlipTaskActive(): any {
-  if (FindTaskIdByFunc(Task_DoCardFlipTask) == TASK_NONE)
+  if (FindTaskIdByFunc(Task_DoCardFlipTask) == ((0xFF)))
           return TRUE;
       else
           return FALSE;
@@ -1388,7 +1372,7 @@ export function Task_SetCardFlipped(task: any): any {
       sData.onBack ^= 1;
       task.tFlipState++;
       sData.allowDMACopy = TRUE;
-      PlaySE(SE_RG_CARD_FLIPPING);
+      PlaySE((250));
       return FALSE;
 }
 
@@ -1451,16 +1435,16 @@ export function ShowPlayerTrainerCard(callback: any): any {
   sData = AllocZeroed(0);
       sData.callback2 = callback;
       if (callback == CB2_ReshowFrontierPass)
-          sData.blendColor = RGB_WHITE;
+          sData.blendColor = (RGB(31, 31, 31));
       else
-          sData.blendColor = RGB_BLACK;
+          sData.blendColor = (RGB(0, 0, 0));
 
       if (InUnionRoom() == TRUE)
           sData.isLink = TRUE;
       else
           sData.isLink = FALSE;
 
-      sData.language = GAME_LANGUAGE;
+      sData.language = (((3)));
       TrainerCard_GenerateCardForPlayer(sData.trainerCard);
       SetMainCallback2(CB2_InitTrainerCard);
 }
@@ -1485,7 +1469,7 @@ export function InitTrainerCardData(): any {
       sData.onBack = FALSE;
       sData.flipBlendY = 0;
       sData.cardType = GetSetCardType();
-      for (i = 0; i < TRAINER_CARD_PROFILE_LENGTH; i++)
+      for (i = 0; i < (4); i++)
           CopyEasyChatWord(sData.easyChatProfile[i], sData.trainerCard.easyChatProfile[i]);
 }
 
@@ -1493,21 +1477,21 @@ export function InitTrainerCardData(): any {
 export function GetSetCardType(): any {
   if (sData == NULL)
       {
-          if (gGameVersion == VERSION_FIRE_RED || gGameVersion == VERSION_LEAF_GREEN)
+          if (gGameVersion == (4) || gGameVersion == (5))
               return CARD_TYPE_FRLG;
-          else if (gGameVersion == VERSION_EMERALD)
+          else if (gGameVersion == (3))
               return CARD_TYPE_EMERALD;
           else
               return CARD_TYPE_RS;
       }
       else
       {
-          if (sData.trainerCard.version == VERSION_FIRE_RED || sData.trainerCard.version == VERSION_LEAF_GREEN)
+          if (sData.trainerCard.version == (4) || sData.trainerCard.version == (5))
           {
               sData.isHoenn = FALSE;
               return CARD_TYPE_FRLG;
           }
-          else if (sData.trainerCard.version == VERSION_EMERALD)
+          else if (sData.trainerCard.version == (3))
           {
               sData.isHoenn = TRUE;
               return CARD_TYPE_EMERALD;
@@ -1522,9 +1506,9 @@ export function GetSetCardType(): any {
 
 /** static u8 VersionToCardType(u8 version) */
 export function VersionToCardType(version: any): any {
-  if (version == VERSION_FIRE_RED || version == VERSION_LEAF_GREEN)
+  if (version == (4) || version == (5))
           return CARD_TYPE_FRLG;
-      else if (version == VERSION_EMERALD)
+      else if (version == (3))
           return CARD_TYPE_EMERALD;
       else
           return CARD_TYPE_RS;

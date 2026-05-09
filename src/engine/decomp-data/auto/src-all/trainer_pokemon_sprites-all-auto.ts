@@ -15,13 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCreatingSpriteTemplate: any = null;
-let sDummyPicData: any = null;
-let sOamData_Affine: any = null;
-let sOamData_Normal: any = null;
-let sSpritePics: any = null;
 /** bool16 ResetAllPicSprites(void) */
 export function ResetAllPicSprites(): any {
   let i: any = null;
@@ -76,9 +69,9 @@ export function DecompressPic_HandleDeoxys(species: any, personality: any, isFro
 export function LoadPicPaletteByTagOrSlot(species: any, otId: any, personality: any, paletteSlot: any, paletteTag: any, isTrainer: any): any {
   if (!isTrainer)
       {
-          if (paletteTag == TAG_NONE)
+          if (paletteTag == (0xFFFF))
           {
-              sCreatingSpriteTemplate.paletteTag = TAG_NONE;
+              sCreatingSpriteTemplate.paletteTag = (0xFFFF);
               LoadCompressedPalette(GetMonSpritePalFromSpeciesAndPersonality(species, otId, personality), OBJ_PLTT_ID(paletteSlot), PLTT_SIZE_4BPP);
           }
           else
@@ -89,9 +82,9 @@ export function LoadPicPaletteByTagOrSlot(species: any, otId: any, personality: 
       }
       else
       {
-          if (paletteTag == TAG_NONE)
+          if (paletteTag == (0xFFFF))
           {
-              sCreatingSpriteTemplate.paletteTag = TAG_NONE;
+              sCreatingSpriteTemplate.paletteTag = (0xFFFF);
               LoadCompressedPalette(gTrainerFrontPicPaletteTable[species].data, OBJ_PLTT_ID(paletteSlot), PLTT_SIZE_4BPP);
           }
           else
@@ -134,7 +127,7 @@ export function CreatePicSprite(species: any, otId: any, personality: any, isFro
       if (i == (8))
           return 0xFFFF;
 
-      framePics = Alloc((max(MON_PIC_SIZE, TRAINER_PIC_SIZE)) * (max(MAX_MON_PIC_FRAMES, MAX_TRAINER_PIC_FRAMES)));
+      framePics = Alloc((max((((64) * (64) / 2)), TRAINER_PIC_SIZE)) * (max(MAX_MON_PIC_FRAMES, MAX_TRAINER_PIC_FRAMES)));
       if (!framePics)
           return 0xFFFF;
 
@@ -151,10 +144,10 @@ export function CreatePicSprite(species: any, otId: any, personality: any, isFro
       }
       for (j = 0; j < (max(MAX_MON_PIC_FRAMES, MAX_TRAINER_PIC_FRAMES)); j ++)
       {
-          images[j].data = framePics + (max(MON_PIC_SIZE, TRAINER_PIC_SIZE)) * j;
-          images[j].size = (max(MON_PIC_SIZE, TRAINER_PIC_SIZE));
+          images[j].data = framePics + (max((((64) * (64) / 2)), TRAINER_PIC_SIZE)) * j;
+          images[j].size = (max((((64) * (64) / 2)), TRAINER_PIC_SIZE));
       }
-      sCreatingSpriteTemplate.tileTag = TAG_NONE;
+      sCreatingSpriteTemplate.tileTag = (0xFFFF);
       sCreatingSpriteTemplate.oam =sOamData_Normal;
       AssignSpriteAnimsTable(isTrainer);
       sCreatingSpriteTemplate.images = images;
@@ -162,7 +155,7 @@ export function CreatePicSprite(species: any, otId: any, personality: any, isFro
       sCreatingSpriteTemplate.callback = DummyPicSpriteCallback;
       LoadPicPaletteByTagOrSlot(species, otId, personality, paletteSlot, paletteTag, isTrainer);
       spriteId = CreateSprite(sCreatingSpriteTemplate, x, y, 0);
-      if (paletteTag == TAG_NONE)
+      if (paletteTag == (0xFFFF))
           gSprites[spriteId].oam.paletteNum = paletteSlot;
       sSpritePics[i].frames = framePics;
       sSpritePics[i].images = images;
@@ -194,20 +187,20 @@ export function CreateMonPicSprite_Affine(species: any, otId: any, personality: 
       if (i == (8))
           return 0xFFFF;
 
-      framePics = Alloc(MON_PIC_SIZE * MAX_MON_PIC_FRAMES);
+      framePics = Alloc((((64) * (64) / 2)) * (4));
       if (!framePics)
           return 0xFFFF;
 
-      if (flags & F_MON_PIC_NO_AFFINE)
+      if (flags & ((1 << 7)))
       {
-          flags &= ~F_MON_PIC_NO_AFFINE;
-          type = MON_PIC_AFFINE_NONE;
+          flags &= ~((1 << 7));
+          type = (3);
       }
       else
       {
           type = flags;
       }
-      images = Alloc(0 * MAX_MON_PIC_FRAMES);
+      images = Alloc(0 * (4));
       if (!images)
       {
           Free(framePics);
@@ -218,20 +211,20 @@ export function CreateMonPicSprite_Affine(species: any, otId: any, personality: 
            
           return 0xFFFF;
       }
-      for (j = 0; j < MAX_MON_PIC_FRAMES; j ++)
+      for (j = 0; j < (4); j ++)
       {
-          images[j].data = framePics + MON_PIC_SIZE * j;
-          images[j].size = MON_PIC_SIZE;
+          images[j].data = framePics + (((64) * (64) / 2)) * j;
+          images[j].size = (((64) * (64) / 2));
       }
-      sCreatingSpriteTemplate.tileTag = TAG_NONE;
+      sCreatingSpriteTemplate.tileTag = (0xFFFF);
       sCreatingSpriteTemplate.anims = gMonFrontAnimsPtrTable[species];
       sCreatingSpriteTemplate.images = images;
-      if (type == MON_PIC_AFFINE_FRONT)
+      if (type == (1))
       {
           sCreatingSpriteTemplate.affineAnims = gAffineAnims_BattleSpriteOpponentSide;
           sCreatingSpriteTemplate.oam =sOamData_Affine;
       }
-      else if (type == MON_PIC_AFFINE_BACK)
+      else if (type == (0))
       {
           sCreatingSpriteTemplate.affineAnims = gAffineAnims_BattleSpritePlayerSide;
           sCreatingSpriteTemplate.oam =sOamData_Affine;
@@ -244,7 +237,7 @@ export function CreateMonPicSprite_Affine(species: any, otId: any, personality: 
       sCreatingSpriteTemplate.callback = DummyPicSpriteCallback;
       LoadPicPaletteByTagOrSlot(species, otId, personality, paletteSlot, paletteTag, FALSE);
       spriteId = CreateSprite(sCreatingSpriteTemplate, x, y, 0);
-      if (paletteTag == TAG_NONE)
+      if (paletteTag == (0xFFFF))
           gSprites[spriteId].oam.paletteNum = paletteSlot;
       sSpritePics[i].frames = framePics;
       sSpritePics[i].images = images;
@@ -270,7 +263,7 @@ export function FreeAndDestroyPicSpriteInternal(spriteId: any): any {
 
       framePics = sSpritePics[i].frames;
       images = sSpritePics[i].images;
-      if (sSpritePics[i].paletteTag != TAG_NONE)
+      if (sSpritePics[i].paletteTag != (0xFFFF))
           FreeSpritePaletteByTag(GetSpritePaletteTagByPaletteNum(gSprites[spriteId].oam.paletteNum));
       DestroySprite(gSprites[spriteId]);
       Free(framePics);
@@ -292,10 +285,10 @@ export function LoadPicSpriteInWindow(species: any, otId: any, personality: any,
 export function CreateTrainerCardSprite(species: any, otId: any, personality: any, isFrontPic: any, destX: any, destY: any, paletteSlot: any, windowId: any, isTrainer: any): any {
   let framePics: any = null;
 
-      framePics = Alloc(TRAINER_PIC_SIZE * MAX_TRAINER_PIC_FRAMES);
+      framePics = Alloc((((64) * (64) / 2)) * (4));
       if (framePics && !DecompressPic_HandleDeoxys(species, personality, isFrontPic, framePics, isTrainer))
       {
-          BlitBitmapRectToWindow(windowId, framePics, 0, 0, TRAINER_PIC_WIDTH, TRAINER_PIC_HEIGHT, destX, destY, TRAINER_PIC_WIDTH, TRAINER_PIC_HEIGHT);
+          BlitBitmapRectToWindow(windowId, framePics, 0, 0, (64), (64), destX, destY, (64), (64));
           LoadPicPaletteBySlot(species, otId, personality, paletteSlot, isTrainer);
           Free(framePics);
           return 0;
@@ -342,10 +335,10 @@ export function CreateTrainerCardTrainerPicSprite(species: any, isFrontPic: any,
 export function PlayerGenderToFrontTrainerPicId_Debug(gender: any, getClass: any): any {
   if (getClass == TRUE)
       {
-          if (gender != MALE)
-              return gFacilityClassToPicIndex[FACILITY_CLASS_MAY];
+          if (gender != (0))
+              return gFacilityClassToPicIndex[(0x3f)];
           else
-              return gFacilityClassToPicIndex[FACILITY_CLASS_BRENDAN];
+              return gFacilityClassToPicIndex[(0x3c)];
       }
       return gender;
 }

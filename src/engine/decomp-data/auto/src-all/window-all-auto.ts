@@ -17,7 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sDummyWindowTemplate: any = null;
+let gTransparentTileNumber: any = null;
 let sWindowPtr: any = null;
 let sWindowSize: any = null;
 /** bool16 InitWindows(const struct WindowTemplate *templates) */
@@ -39,13 +39,13 @@ export function InitWindows(templates: any): any {
               gWindowBgTilemapBuffers[i] = bgTilemapBuffer;
       }
 
-      for (i = 0; i < WINDOWS_MAX; ++i)
+      for (i = 0; i < (32); ++i)
       {
           gWindows[i].window = sDummyWindowTemplate;
           gWindows[i].tileData = NULL;
       }
 
-      for (i = 0, allocatedBaseBlock = 0, bgLayer = templates[i].bg; bgLayer != 0xFF && i < WINDOWS_MAX; ++i, bgLayer = templates[i].bg)
+      for (i = 0, allocatedBaseBlock = 0, bgLayer = templates[i].bg; bgLayer != 0xFF && i < (32); ++i, bgLayer = templates[i].bg)
       {
           if (gWindowTileAutoAllocEnabled == TRUE)
           {
@@ -112,14 +112,14 @@ export function AddWindow(template: any): any {
       let allocatedTilemapBuffer: any = null;
       let i: any = null;
 
-      for (win = 0; win < WINDOWS_MAX; ++win)
+      for (win = 0; win < (32); ++win)
       {
           if ((bgLayer = gWindows[win].window.bg) == 0xFF)
               break;
       }
 
-      if (win == WINDOWS_MAX)
-          return WINDOW_NONE;
+      if (win == (32))
+          return (0xFF);
 
       bgLayer = template.bg;
       allocatedBaseBlock = 0;
@@ -129,7 +129,7 @@ export function AddWindow(template: any): any {
           allocatedBaseBlock = BgTileAllocOp(bgLayer, 0, template.width * template.height, 0);
 
           if (allocatedBaseBlock == -1)
-              return WINDOW_NONE;
+              return (0xFF);
       }
 
       if (gWindowBgTilemapBuffers[bgLayer] == NULL)
@@ -141,7 +141,7 @@ export function AddWindow(template: any): any {
               allocatedTilemapBuffer = AllocZeroed(attrib);
 
               if (allocatedTilemapBuffer == NULL)
-                  return WINDOW_NONE;
+                  return (0xFF);
 
               for (i = 0; i < attrib; ++i)
                   allocatedTilemapBuffer[i] = 0;
@@ -160,7 +160,7 @@ export function AddWindow(template: any): any {
               Free(gWindowBgTilemapBuffers[bgLayer]);
               gWindowBgTilemapBuffers[bgLayer] = allocatedTilemapBuffer;
           }
-          return WINDOW_NONE;
+          return (0xFF);
       }
 
       gWindows[win].tileData = allocatedTilemapBuffer;
@@ -181,14 +181,14 @@ export function AddWindowWithoutTileMap(template: any): any {
       let bgLayer: any = null;
       let allocatedBaseBlock: any = null;
 
-      for (win = 0; win < WINDOWS_MAX; ++win)
+      for (win = 0; win < (32); ++win)
       {
           if (gWindows[win].window.bg == 0xFF)
               break;
       }
 
-      if (win == WINDOWS_MAX)
-          return WINDOW_NONE;
+      if (win == (32))
+          return (0xFF);
 
       bgLayer = template.bg;
       allocatedBaseBlock = 0;
@@ -198,7 +198,7 @@ export function AddWindowWithoutTileMap(template: any): any {
           allocatedBaseBlock = BgTileAllocOp(bgLayer, 0, template.width * template.height, 0);
 
           if (allocatedBaseBlock == -1)
-              return WINDOW_NONE;
+              return (0xFF);
       }
 
       gWindows[win].window = template;
@@ -250,7 +250,7 @@ export function FreeAllWindowBuffers(): any {
           }
       }
 
-      for (i = 0; i < WINDOWS_MAX; ++i)
+      for (i = 0; i < (32); ++i)
       {
           if (gWindows[i].tileData != NULL)
           {
@@ -541,7 +541,7 @@ export function GetWindowAttribute(windowId: any, attributeId: any): any {
 export function GetNumActiveWindowsOnBg(bgId: any): any {
   let windowsNum: any = 0;
       let i: any = null;
-      for (i = 0; i < WINDOWS_MAX; i++)
+      for (i = 0; i < (32); i++)
       {
           if (gWindows[i].window.bg == bgId)
               windowsNum++;
@@ -555,13 +555,13 @@ export function AddWindow8Bit(template: any): any {
       let memAddress: any = null;
       let bgLayer: any = null;
 
-      for (windowId = 0; windowId < WINDOWS_MAX; windowId++)
+      for (windowId = 0; windowId < (32); windowId++)
       {
           if (gWindows[windowId].window.bg == 0xFF)
               break;
       }
-      if (windowId == WINDOWS_MAX)
-          return WINDOW_NONE;
+      if (windowId == (32))
+          return (0xFF);
       bgLayer = template.bg;
       if (gWindowBgTilemapBuffers[bgLayer] == NULL)
       {
@@ -571,7 +571,7 @@ export function AddWindow8Bit(template: any): any {
               let i: any = null;
               memAddress = Alloc(attribute);
               if (memAddress == NULL)
-                  return WINDOW_NONE;
+                  return (0xFF);
               for (i = 0; i < attribute; i++)  
                   memAddress[i] = 0;
               gWindowBgTilemapBuffers[bgLayer] = memAddress;
@@ -586,7 +586,7 @@ export function AddWindow8Bit(template: any): any {
               Free(gWindowBgTilemapBuffers[bgLayer]);
               gWindowBgTilemapBuffers[bgLayer] = NULL;
           }
-          return WINDOW_NONE;
+          return (0xFF);
       }
       else
       {
@@ -657,7 +657,7 @@ export function CopyWindowToVram8Bit(windowId: any, mode: any): any {
 export function GetNumActiveWindowsOnBg8Bit(bgId: any): any {
   let windowsNum: any = 0;
       let i: any = null;
-      for (i = 0; i < WINDOWS_MAX; i++)
+      for (i = 0; i < (32); i++)
       {
           if (gWindows[i].window.bg == bgId)
               windowsNum++;

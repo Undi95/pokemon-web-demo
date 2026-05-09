@@ -17,11 +17,11 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBasePaletteColorMapTypes: any = null;
-let sDroughtWeatherColors: any = null;
-let sFieldEffectPaletteColorMapTypes: any = null;
+let b1: any = null;
+let b2: any = null;
+let g1: any = null;
+let g2: any = null;
 let sPaletteColorMapTypes: any = null;
-let sWeatherFuncs: any = null;
 /** void StartWeather(void) */
 export function StartWeather(): any {
   if (!FuncIsActiveTask(Task_WeatherMain))
@@ -44,7 +44,7 @@ export function StartWeather(): any {
           gWeatherPtr.lightenedFogSpritePalsCount = 0;
           Weather_SetBlendCoeffs(16, 0);
           gWeatherPtr.currWeather = 0;
-          gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_IDLE;
+          gWeatherPtr.palProcessingState = (3);
           gWeatherPtr.readyForInit = FALSE;
           gWeatherPtr.weatherChangeComplete = TRUE;
           gWeatherPtr.taskId = CreateTask(Task_WeatherInit, 80);
@@ -53,7 +53,7 @@ export function StartWeather(): any {
 
 /** void SetNextWeather(u8 weather) */
 export function SetNextWeather(weather: any): any {
-  if (weather != WEATHER_RAIN && weather != WEATHER_RAIN_THUNDERSTORM && weather != WEATHER_DOWNPOUR)
+  if (weather != (3) && weather != (5) && weather != (13))
       {
           PlayRainStoppingSoundEffect();
       }
@@ -98,12 +98,12 @@ export function Task_WeatherMain(taskId: any): any {
   if (gWeatherPtr.currWeather != gWeatherPtr.nextWeather)
       {
           if (!sWeatherFuncs[gWeatherPtr.currWeather].finish()
-              && gWeatherPtr.palProcessingState != WEATHER_PAL_STATE_SCREEN_FADING_OUT)
+              && gWeatherPtr.palProcessingState != (2))
           {
                
               sWeatherFuncs[gWeatherPtr.nextWeather].initVars();
               gWeatherPtr.colorMapStepCounter = 0;
-              gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_CHANGING_WEATHER;
+              gWeatherPtr.palProcessingState = (0);
               gWeatherPtr.currWeather = gWeatherPtr.nextWeather;
               gWeatherPtr.weatherChangeComplete = TRUE;
           }
@@ -163,14 +163,14 @@ export function BuildColorMaps(): any {
               }
 
               baseBrightness = curBrightness;
-              brightnessDelta = (0x1f00 - curBrightness) / (NUM_WEATHER_COLOR_MAPS - 3);
+              brightnessDelta = (0x1f00 - curBrightness) / ((19) - 3);
               if (colorVal < 12)
               {
                    
                    
                    
                    
-                  for (; colorMapIndex < NUM_WEATHER_COLOR_MAPS; colorMapIndex++)
+                  for (; colorMapIndex < (19); colorMapIndex++)
                   {
                       curBrightness += brightnessDelta;
                       diff = curBrightness - baseBrightness;
@@ -186,7 +186,7 @@ export function BuildColorMaps(): any {
                    
                    
                    
-                  for (; colorMapIndex < NUM_WEATHER_COLOR_MAPS; colorMapIndex++)
+                  for (; colorMapIndex < (19); colorMapIndex++)
                   {
                       curBrightness += brightnessDelta;
                       colorMaps[colorMapIndex][colorVal] = curBrightness >> 8;
@@ -200,11 +200,11 @@ export function BuildColorMaps(): any {
 
 /** static void UpdateWeatherColorMap(void) */
 export function UpdateWeatherColorMap(): any {
-  if (gWeatherPtr.palProcessingState != WEATHER_PAL_STATE_SCREEN_FADING_OUT)
+  if (gWeatherPtr.palProcessingState != (2))
       {
           if (gWeatherPtr.colorMapIndex == gWeatherPtr.targetColorMapIndex)
           {
-              gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_IDLE;
+              gWeatherPtr.palProcessingState = (3);
           }
           else
           {
@@ -229,40 +229,40 @@ export function FadeInScreenWithWeather(): any {
 
       switch (gWeatherPtr.currWeather)
       {
-      case WEATHER_RAIN:
-      case WEATHER_RAIN_THUNDERSTORM:
-      case WEATHER_DOWNPOUR:
-      case WEATHER_SNOW:
-      case WEATHER_SHADE:
+      case (3):
+      case (5):
+      case (13):
+      case (4):
+      case (11):
           if (FadeInScreen_RainShowShade() == FALSE)
           {
               gWeatherPtr.colorMapIndex = 3;
-              gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_IDLE;
+              gWeatherPtr.palProcessingState = (3);
           }
           break;
-      case WEATHER_DROUGHT:
+      case (12):
           if (FadeInScreen_Drought() == FALSE)
           {
               gWeatherPtr.colorMapIndex = -6;
-              gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_IDLE;
+              gWeatherPtr.palProcessingState = (3);
           }
           break;
-      case WEATHER_FOG_HORIZONTAL:
+      case (6):
           if (FadeInScreen_FogHorizontal() == FALSE)
           {
               gWeatherPtr.colorMapIndex = 0;
-              gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_IDLE;
+              gWeatherPtr.palProcessingState = (3);
           }
           break;
-      case WEATHER_VOLCANIC_ASH:
-      case WEATHER_SANDSTORM:
-      case WEATHER_FOG_DIAGONAL:
-      case WEATHER_UNDERWATER:
+      case (7):
+      case (8):
+      case (9):
+      case (10):
       default:
           if (!gPaletteFade.active)
           {
               gWeatherPtr.colorMapIndex = gWeatherPtr.targetColorMapIndex;
-              gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_IDLE;
+              gWeatherPtr.palProcessingState = (3);
           }
           break;
       }
@@ -568,7 +568,7 @@ export function LightenSpritePaletteInFog(paletteIndex: any): any {
 
 /** void ApplyWeatherColorMapIfIdle(s8 colorMapIndex) */
 export function ApplyWeatherColorMapIfIdle(colorMapIndex: any): any {
-  if (gWeatherPtr.palProcessingState == WEATHER_PAL_STATE_IDLE)
+  if (gWeatherPtr.palProcessingState == (3))
       {
           ApplyColorMap(0, 32, colorMapIndex);
           gWeatherPtr.colorMapIndex = colorMapIndex;
@@ -577,9 +577,9 @@ export function ApplyWeatherColorMapIfIdle(colorMapIndex: any): any {
 
 /** void ApplyWeatherColorMapIfIdle_Gradual(u8 colorMapIndex, u8 targetColorMapIndex, u8 colorMapStepDelay) */
 export function ApplyWeatherColorMapIfIdle_Gradual(colorMapIndex: any, targetColorMapIndex: any, colorMapStepDelay: any): any {
-  if (gWeatherPtr.palProcessingState == WEATHER_PAL_STATE_IDLE)
+  if (gWeatherPtr.palProcessingState == (3))
       {
-          gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_CHANGING_WEATHER;
+          gWeatherPtr.palProcessingState = (0);
           gWeatherPtr.colorMapIndex = colorMapIndex;
           gWeatherPtr.targetColorMapIndex = targetColorMapIndex;
           gWeatherPtr.colorMapStepCounter = 0;
@@ -596,20 +596,20 @@ export function FadeScreen(mode: any, delay: any): any {
 
       switch (mode)
       {
-      case FADE_FROM_BLACK:
-          fadeColor = RGB_BLACK;
+      case (0):
+          fadeColor = (RGB(0, 0, 0));
           fadeOut = FALSE;
           break;
-      case FADE_FROM_WHITE:
-          fadeColor = RGB_WHITEALPHA;
+      case (2):
+          fadeColor = (((RGB(31, 31, 31)) | ((1 << 15))));
           fadeOut = FALSE;
           break;
-      case FADE_TO_BLACK:
-          fadeColor = RGB_BLACK;
+      case (1):
+          fadeColor = (RGB(0, 0, 0));
           fadeOut = TRUE;
           break;
-      case FADE_TO_WHITE:
-          fadeColor = RGB_WHITEALPHA;
+      case (3):
+          fadeColor = (((RGB(31, 31, 31)) | ((1 << 15))));
           fadeOut = TRUE;
           break;
       default:
@@ -618,13 +618,13 @@ export function FadeScreen(mode: any, delay: any): any {
 
       switch (gWeatherPtr.currWeather)
       {
-      case WEATHER_RAIN:
-      case WEATHER_RAIN_THUNDERSTORM:
-      case WEATHER_DOWNPOUR:
-      case WEATHER_SNOW:
-      case WEATHER_FOG_HORIZONTAL:
-      case WEATHER_SHADE:
-      case WEATHER_DROUGHT:
+      case (3):
+      case (5):
+      case (13):
+      case (4):
+      case (6):
+      case (11):
+      case (12):
           useWeatherPal = TRUE;
           break;
       default:
@@ -637,8 +637,8 @@ export function FadeScreen(mode: any, delay: any): any {
           if (useWeatherPal)
               CpuFastCopy(gPlttBufferFaded, gPlttBufferUnfaded, PLTT_SIZE);
 
-          BeginNormalPaletteFade(PALETTES_ALL, delay, 0, 16, fadeColor);
-          gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_SCREEN_FADING_OUT;
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), delay, 0, 16, fadeColor);
+          gWeatherPtr.palProcessingState = (2);
       }
       else
       {
@@ -646,9 +646,9 @@ export function FadeScreen(mode: any, delay: any): any {
           if (useWeatherPal)
               gWeatherPtr.fadeScreenCounter = 0;
           else
-              BeginNormalPaletteFade(PALETTES_ALL, delay, 16, 0, fadeColor);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), delay, 16, 0, fadeColor);
 
-          gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_SCREEN_FADING_IN;
+          gWeatherPtr.palProcessingState = (1);
           gWeatherPtr.fadeInFirstFrame = TRUE;
           gWeatherPtr.fadeInTimer = 0;
           Weather_SetBlendCoeffs(gWeatherPtr.currBlendEVA, gWeatherPtr.currBlendEVB);
@@ -658,7 +658,7 @@ export function FadeScreen(mode: any, delay: any): any {
 
 /** bool8 IsWeatherNotFadingIn(void) */
 export function IsWeatherNotFadingIn(): any {
-  return (gWeatherPtr.palProcessingState != WEATHER_PAL_STATE_SCREEN_FADING_IN);
+  return (gWeatherPtr.palProcessingState != (1));
 }
 
 /** void UpdateSpritePaletteWithWeather(u8 spritePaletteIndex) */
@@ -668,17 +668,17 @@ export function UpdateSpritePaletteWithWeather(spritePaletteIndex: any): any {
 
       switch (gWeatherPtr.palProcessingState)
       {
-      case WEATHER_PAL_STATE_SCREEN_FADING_IN:
+      case (1):
           if (gWeatherPtr.fadeInFirstFrame)
           {
-              if (gWeatherPtr.currWeather == WEATHER_FOG_HORIZONTAL)
+              if (gWeatherPtr.currWeather == (6))
                   MarkFogSpritePalToLighten(paletteIndex);
               paletteIndex = PLTT_ID(paletteIndex);
               for (i = 0; i < 16; i++)
                   gPlttBufferFaded[paletteIndex + i] = gWeatherPtr.fadeDestColor;
           }
           break;
-      case WEATHER_PAL_STATE_SCREEN_FADING_OUT:
+      case (2):
           paletteIndex = PLTT_ID(paletteIndex);
           CpuFastCopy(gPlttBufferFaded[paletteIndex],gPlttBufferUnfaded[paletteIndex], PLTT_SIZE_4BPP);
           BlendPalette(paletteIndex, 16, gPaletteFade.y, gPaletteFade.blendColor);
@@ -686,7 +686,7 @@ export function UpdateSpritePaletteWithWeather(spritePaletteIndex: any): any {
        
        
       default:
-          if (gWeatherPtr.currWeather != WEATHER_FOG_HORIZONTAL)
+          if (gWeatherPtr.currWeather != (6))
           {
               ApplyColorMap(paletteIndex, 1, gWeatherPtr.colorMapIndex);
           }
@@ -844,17 +844,17 @@ export function GetCurrentWeather(): any {
 
 /** void SetRainStrengthFromSoundEffect(u16 soundEffect) */
 export function SetRainStrengthFromSoundEffect(soundEffect: any): any {
-  if (gWeatherPtr.palProcessingState != WEATHER_PAL_STATE_SCREEN_FADING_OUT)
+  if (gWeatherPtr.palProcessingState != (2))
       {
           switch (soundEffect)
           {
-          case SE_RAIN:
+          case (85):
               gWeatherPtr.rainStrength = 0;
               break;
-          case SE_DOWNPOUR:
+          case (83):
               gWeatherPtr.rainStrength = 1;
               break;
-          case SE_THUNDERSTORM:
+          case (81):
               gWeatherPtr.rainStrength = 2;
               break;
           default:
@@ -872,14 +872,14 @@ export function PlayRainStoppingSoundEffect(): any {
           switch (gWeatherPtr.rainStrength)
           {
           case 0:
-              PlaySE(SE_RAIN_STOP);
+              PlaySE((86));
               break;
           case 1:
-              PlaySE(SE_DOWNPOUR_STOP);
+              PlaySE((84));
               break;
           case 2:
           default:
-              PlaySE(SE_THUNDERSTORM_STOP);
+              PlaySE((82));
               break;
           }
       }
@@ -892,12 +892,12 @@ export function IsWeatherChangeComplete(): any {
 
 /** void SetWeatherScreenFadeOut(void) */
 export function SetWeatherScreenFadeOut(): any {
-  gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_SCREEN_FADING_OUT;
+  gWeatherPtr.palProcessingState = (2);
 }
 
 /** void SetWeatherPalStateIdle(void) */
 export function SetWeatherPalStateIdle(): any {
-  gWeatherPtr.palProcessingState = WEATHER_PAL_STATE_IDLE;
+  gWeatherPtr.palProcessingState = (3);
 }
 
 /** void PreservePaletteInWeather(u8 preservedPalIndex) */

@@ -17,56 +17,13 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBallAngle: any = null;
-let sBallDistToCenter: any = null;
-let sBallShadowSpriteId: any = null;
-let sBallWheelAngle: any = null;
-let sBgTemplates: any = null;
-let sFlashData_Colors: any = null;
-let sFlashData_PokeIcons: any = null;
-let sGridSelections: any = null;
-let sGrid_Tilemap: any = null;
-let sMonShadowSpriteId: any = null;
-let sMonSpriteId: any = null;
+let ballFallDist: any = null;
+let ballFallSpeed: any = null;
+let gSpecialVar_0x8004: any = null;
+let gSpriteCoordOffsetX: any = null;
+let gSpriteCoordOffsetY: any = null;
 let sRoulette: any = null;
-let sRouletteSlots: any = null;
-let sRouletteTables: any = null;
-let sShroomishShadowAlphas: any = null;
-let sSlotMidpointDist: any = null;
-let sSpritePalettes: any = null;
-let sSpriteSheet_Ball: any = null;
-let sSpriteSheet_GridIcons: any = null;
-let sSpriteSheet_Headers: any = null;
-let sSpriteSheet_Shadow: any = null;
-let sSpriteSheet_ShroomishTaillow: any = null;
-let sSpriteSheet_WheelCenter: any = null;
-let sSpriteSheet_WheelIcons: any = null;
-let sSpriteSheets_Interface: any = null;
-let sSpriteTemplate_Ball: any = null;
-let sSpriteTemplate_BallCounter: any = null;
-let sSpriteTemplate_Credit: any = null;
-let sSpriteTemplate_CreditDigit: any = null;
-let sSpriteTemplate_Cursor: any = null;
-let sSpriteTemplate_Multiplier: any = null;
-let sSpriteTemplate_Shroomish: any = null;
-let sSpriteTemplate_ShroomishShadow: any = null;
-let sSpriteTemplate_Taillow: any = null;
-let sSpriteTemplate_TaillowShadow: any = null;
-let sSpriteTemplate_WheelCenter: any = null;
-let sSpriteTemplates_ColorHeaders: any = null;
-let sSpriteTemplates_GridIcons: any = null;
-let sSpriteTemplates_PokeHeaders: any = null;
-let sSpriteTemplates_WheelIcons: any = null;
-let sState: any = null;
-let sStillStuck: any = null;
-let sStuckOnWheelLeft: any = null;
-let sTableMinBets: any = null;
 let sTextWindowId: any = null;
-let sWheel_Pal: any = null;
-let sWheel_Tilemap: any = null;
-let sWindowTemplates: any = null;
-let sYesNoTable_AcceptMinBet: any = null;
-let sYesNoTable_KeepPlaying: any = null;
 /** static void CB2_Roulette(void) */
 export function CB2_Roulette(): any {
   RunTasks();
@@ -148,7 +105,7 @@ export function InitRouletteTableData(): any {
 
       sRoulette.tableId = (gSpecialVar_0x8004 & 1);
 
-      if (gSpecialVar_0x8004 & ROULETTE_SPECIAL_RATE)
+      if (gSpecialVar_0x8004 & ((1 << 7)))
           sRoulette.isSpecialRate = TRUE;
 
       sRoulette.wheelSpeed = sRouletteTables[sRoulette.tableId].wheelSpeed;
@@ -171,14 +128,14 @@ export function InitRouletteTableData(): any {
           RouletteFlash_Add(sRoulette.flashUtil, i,sFlashData_Colors[i]);
       }
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           switch (GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG))
           {
-          case SPECIES_SHROOMISH:
+          case (306):
               sRoulette.partySpeciesFlags |= ((1 << 0));
               break;
-          case SPECIES_TAILLOW:
+          case (304):
               sRoulette.partySpeciesFlags |= ((1 << 1));
               break;
           }
@@ -242,7 +199,7 @@ export function CB2_LoadRoulette(): any {
           SetMultiplierSprite((0));
           DrawGridBackground((0));
           DrawStdWindowFrame(sTextWindowId, FALSE);
-          AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_ControlsInstruction, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_ControlsInstruction, 0, 1, (0xFF), NULL);
           CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
           gSpriteCoordOffsetX = -60;
           gSpriteCoordOffsetY = 0;
@@ -313,7 +270,7 @@ export function Task_StartPlaying(taskId: any): any {
 export function Task_AskKeepPlaying(taskId: any): any {
   DisplayYesNoMenuDefaultYes();
       DrawStdWindowFrame(sTextWindowId, FALSE);
-      AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_KeepPlaying, 0, 1, TEXT_SKIP_DRAW, 0);
+      AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_KeepPlaying, 0, 1, (0xFF), 0);
       CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
       DoYesNoFuncWithChoice(taskId,sYesNoTable_KeepPlaying);
 }
@@ -463,7 +420,7 @@ export function ProcessBetGridInput(taskId: any): any {
           DrawGridBackground(gTasks[taskId].tSelectionId);
           UpdateGridSelection(taskId);
           gTasks[taskId].data[1] = 0;
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           RouletteFlash_Stop(sRoulette.flashUtil, 0xFFFF);
           sRoulette.flashUtil.palettes[((NUM_ROULETTE_SLOTS + 1))].available = sRoulette.flashUtil.palettes[((((NUM_ROULETTE_SLOTS + 1)) + 1))].available = sRoulette.flashUtil.palettes[((((NUM_ROULETTE_SLOTS + 1)) + 2))].available = FALSE;
           FlashSelectionOnWheel(gTasks[taskId].tSelectionId);
@@ -537,11 +494,11 @@ export function Task_HandleBetGridInput(taskId: any): any {
           if (sRoulette.hitFlags & sGridSelections[gTasks[taskId].tSelectionId].flag)
           {
                
-              PlaySE(SE_BOO);
+              PlaySE((22));
           }
           else
           {
-              m4aSongNumStart(SE_SHOP);
+              m4aSongNumStart((95));
               gTasks[taskId].func = Task_PlaceBet;
           }
       }
@@ -693,7 +650,7 @@ export function Task_RollBall(taskId: any): any {
       gTasks[taskId].tBallNum++;
       gTasks[taskId].tTotalBallNum++;
       SetBallCounterNumLeft((6) - gTasks[taskId].tBallNum);
-      m4aSongNumStart(SE_ROULETTE_BALL);
+      m4aSongNumStart((92));
       gTasks[taskId].func = Task_RecordBallHit;
 }
 
@@ -792,9 +749,9 @@ export function Task_TryIncrementWins(taskId: any): any {
       case 2:  
           if (IsFanfareTaskInactive())
           {
-              let wins: any = GetGameStat(GAME_STAT_CONSECUTIVE_ROULETTE_WINS);
+              let wins: any = GetGameStat((29));
               if (wins < ++gTasks[taskId].tConsecutiveWins)
-                  SetGameStat(GAME_STAT_CONSECUTIVE_ROULETTE_WINS, gTasks[taskId].tConsecutiveWins);
+                  SetGameStat((29), gTasks[taskId].tConsecutiveWins);
               StartTaskAfterDelayOrInput(taskId, Task_PrintPayout, (0xFFFF), A_BUTTON | B_BUTTON);
           }
           break;
@@ -817,24 +774,24 @@ export function Task_PrintSpinResult(taskId: any): any {
       case 2:  
           if (gTasks[taskId].tMultiplier == (12))
           {
-              PlayFanfare(MUS_SLOTS_JACKPOT);
+              PlayFanfare((389));
               DrawStdWindowFrame(sTextWindowId, FALSE);
-              AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_Jackpot, 0, 1, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_Jackpot, 0, 1, (0xFF), NULL);
               CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
           }
           else
           {
-              PlayFanfare(MUS_SLOTS_WIN);
+              PlayFanfare((390));
               DrawStdWindowFrame(sTextWindowId, FALSE);
-              AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_ItsAHit, 0, 1, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_ItsAHit, 0, 1, (0xFF), NULL);
               CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
           }
           break;
       case FALSE:
       default:
-          m4aSongNumStart(SE_FAILURE);
+          m4aSongNumStart((32));
           DrawStdWindowFrame(sTextWindowId, FALSE);
-          AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_NothingDoing, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_NothingDoing, 0, 1, (0xFF), NULL);
           CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
           break;
       }
@@ -848,9 +805,9 @@ export function Task_GivePayout(taskId: any): any {
       {
       case 0:
           gTasks[taskId].tCoins++;
-          m4aSongNumStart(SE_PIN);
+          m4aSongNumStart((21));
           SetCreditDigits(gTasks[taskId].tCoins);
-          if (gTasks[taskId].tCoins >= MAX_COINS)
+          if (gTasks[taskId].tCoins >= (9999))
           {
               gTasks[taskId].tPayout = 0;
           }
@@ -861,7 +818,7 @@ export function Task_GivePayout(taskId: any): any {
           }
           break;
       case 3:
-          m4aSongNumStop(SE_PIN);
+          m4aSongNumStop((21));
           gTasks[taskId].data[7] = 0;
           break;
       default:
@@ -877,7 +834,7 @@ export function Task_PrintPayout(taskId: any): any {
   ConvertIntToDecimalStringN(gStringVar1, (sRoulette.minBet * gTasks[taskId].tMultiplier), STR_CONV_MODE_LEFT_ALIGN, 2);
       StringExpandPlaceholders(gStringVar4, Roulette_Text_YouveWonXCoins);
       DrawStdWindowFrame(sTextWindowId, FALSE);
-      AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, gStringVar4, 0, 1, (0xFF), NULL);
       CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
       gTasks[taskId].tPayout = (sRoulette.minBet * gTasks[taskId].tMultiplier);
       gTasks[taskId].data[7] = 0;
@@ -911,15 +868,15 @@ export function Task_TryPrintEndTurnMsg(taskId: any): any {
           {
                
               DrawStdWindowFrame(sTextWindowId, FALSE);
-              AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_BoardWillBeCleared, 0, 1, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_BoardWillBeCleared, 0, 1, (0xFF), NULL);
               CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
               StartTaskAfterDelayOrInput(taskId, Task_ClearBoard, (0xFFFF), A_BUTTON | B_BUTTON);
           }
-          else if (gTasks[taskId].tCoins == MAX_COINS)
+          else if (gTasks[taskId].tCoins == (9999))
           {
                
               DrawStdWindowFrame(sTextWindowId, FALSE);
-              AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_CoinCaseIsFull, 0, 1, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_CoinCaseIsFull, 0, 1, (0xFF), NULL);
               CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
               StartTaskAfterDelayOrInput(taskId, Task_AskKeepPlaying, (0xFFFF), A_BUTTON | B_BUTTON);
           }
@@ -933,7 +890,7 @@ export function Task_TryPrintEndTurnMsg(taskId: any): any {
       {
            
           DrawStdWindowFrame(sTextWindowId, FALSE);
-          AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_NoCoinsLeft, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_NoCoinsLeft, 0, 1, (0xFF), NULL);
           CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
           StartTaskAfterDelayOrInput(taskId, Task_StopPlaying, 60, A_BUTTON | B_BUTTON);
       }
@@ -955,10 +912,10 @@ export function Task_ClearBoard(taskId: any): any {
           gSprites[sRoulette.spriteIds[i + (SPR_WHEEL_ICON_ORANGE_WYNAUT)]].invisible = FALSE;
       }
 
-      if (gTasks[taskId].tCoins == MAX_COINS)
+      if (gTasks[taskId].tCoins == (9999))
       {
           DrawStdWindowFrame(sTextWindowId, FALSE);
-          AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_CoinCaseIsFull, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(sTextWindowId, FONT_NORMAL, Roulette_Text_CoinCaseIsFull, 0, 1, (0xFF), NULL);
           CopyWindowToVram(sTextWindowId, COPYWIN_FULL);
           StartTaskAfterDelayOrInput(taskId, Task_AskKeepPlaying, (0xFFFF), A_BUTTON | B_BUTTON);
       }
@@ -1009,7 +966,7 @@ export function Task_WaitForNextTask(taskId: any): any {
       {
           gTasks[taskId].func = sRoulette.nextTask;
           if (sRoulette.taskWaitKey > 0)
-              PlaySE(SE_SELECT);
+              PlaySE((5));
           sRoulette.nextTask = NULL;
           sRoulette.taskWaitKey = 0;
           sRoulette.taskWaitDelay = 0;
@@ -1352,7 +1309,7 @@ export function Task_AcceptMinBet(taskId: any): any {
   ClearStdWindowAndFrame(0, TRUE);
       HideCoinsWindow();
       FreeAllWindowBuffers();
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       gPaletteFade.delayCounter = gPaletteFade.multipurpose2;
       UpdatePaletteFade();
       gTasks[taskId].func = Task_FadeToRouletteGame;
@@ -1387,7 +1344,7 @@ export function Task_PrintMinBet(taskId: any): any {
           ConvertIntToDecimalStringN(gStringVar1, minBet, STR_CONV_MODE_LEADING_ZEROS, 1);
           StringExpandPlaceholders(gStringVar4, Roulette_Text_PlayMinimumWagerIsX);
           DrawStdWindowFrame(0, FALSE);
-          AddTextPrinterParameterized(0, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(0, FONT_NORMAL, gStringVar4, 0, 1, (0xFF), NULL);
           CopyWindowToVram(0, COPYWIN_FULL);
           gTasks[taskId].func = Task_ShowMinBetYesNo;
       }
@@ -1402,11 +1359,11 @@ export function Task_PrintRouletteEntryMsg(taskId: any): any {
 
       if (gTasks[taskId].tCoins >= minBet)
       {
-          if ((gSpecialVar_0x8004 & ROULETTE_SPECIAL_RATE) && (gSpecialVar_0x8004 & 1))
+          if ((gSpecialVar_0x8004 & ((1 << 7))) && (gSpecialVar_0x8004 & 1))
           {
                
               DrawStdWindowFrame(0, FALSE);
-              AddTextPrinterParameterized(0, FONT_NORMAL, Roulette_Text_SpecialRateTable, 0, 1, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(0, FONT_NORMAL, Roulette_Text_SpecialRateTable, 0, 1, (0xFF), NULL);
               CopyWindowToVram(0, COPYWIN_FULL);
               gTasks[taskId].func = Task_PrintMinBet;
           }
@@ -1415,7 +1372,7 @@ export function Task_PrintRouletteEntryMsg(taskId: any): any {
                
               StringExpandPlaceholders(gStringVar4, Roulette_Text_PlayMinimumWagerIsX);
               DrawStdWindowFrame(0, FALSE);
-              AddTextPrinterParameterized(0, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
+              AddTextPrinterParameterized(0, FONT_NORMAL, gStringVar4, 0, 1, (0xFF), NULL);
               CopyWindowToVram(0, COPYWIN_FULL);
               gTasks[taskId].func = Task_ShowMinBetYesNo;
           }
@@ -1425,7 +1382,7 @@ export function Task_PrintRouletteEntryMsg(taskId: any): any {
            
           StringExpandPlaceholders(gStringVar4, Roulette_Text_NotEnoughCoins);
           DrawStdWindowFrame(0, FALSE);
-          AddTextPrinterParameterized(0, FONT_NORMAL, gStringVar4, 0, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(0, FONT_NORMAL, gStringVar4, 0, 1, (0xFF), NULL);
           CopyWindowToVram(0, COPYWIN_FULL);
           gTasks[taskId].func = Task_NotEnoughForMinBet;
           gTasks[taskId].tCoins = 0;
@@ -1663,7 +1620,7 @@ export function CreateInterfaceSprites(): any {
       }
       sRoulette.spriteIds[SPR_CREDIT] = CreateSprite(sSpriteTemplate_Credit, 208, 16, 4);
       gSprites[sRoulette.spriteIds[SPR_CREDIT]].animPaused = TRUE;
-      for (i = 0; i < MAX_COIN_DIGITS; i++)
+      for (i = 0; i < (4); i++)
       {
           sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)] = CreateSprite(sSpriteTemplate_CreditDigit, i * 8 + 196, 24, 0);
           gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].invisible = TRUE;
@@ -1689,11 +1646,11 @@ export function SetCreditDigits(num: any): any {
   let i: any = null;
       let d: any = 1000;
       let printZero: any = FALSE;
-      for (i = 0; i < MAX_COIN_DIGITS; i++)
+      for (i = 0; i < (4); i++)
       {
           let digit: any = num / d;
           gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].invisible = TRUE;
-          if (digit > 0 || printZero || i == MAX_COIN_DIGITS - 1)
+          if (digit > 0 || printZero || i == (4) - 1)
           {
               gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].invisible = FALSE;
               gSprites[sRoulette.spriteIds[i + (SPR_CREDIT_DIG_1)]].oam.tileNum =
@@ -1833,7 +1790,7 @@ export function CreateWheelBallSprites(): any {
       for (i = 0; i < (6); i++)
       {
           sRoulette.spriteIds[i] = CreateSprite(sSpriteTemplate_Ball, 116, 80, 57 - i);
-          if (sRoulette.spriteIds[i] != MAX_SPRITES)
+          if (sRoulette.spriteIds[i] != (64))
           {
               gSprites[sRoulette.spriteIds[i]].invisible = TRUE;
               gSprites[sRoulette.spriteIds[i]].coordOffsetEnabled = TRUE;
@@ -2060,7 +2017,7 @@ export function SpriteCB_UnstickBall_TaillowPickUp(sprite: any): any {
               sprite.animEnded = FALSE;
               sprite.data[2] = 0;
               sprite.callback = SpriteCB_UnstickBall_TaillowDrop;
-              m4aSongNumStart(SE_BALL_THROW);
+              m4aSongNumStart((61));
           }
       }
 }
@@ -2123,7 +2080,7 @@ export function SpriteCB_RollBall_TryLandAdjacent(sprite: any): any {
           {
                
               sprite.animPaused = TRUE;
-              m4aSongNumStart(SE_BALL_BOUNCE_1);
+              m4aSongNumStart((56));
               SetBallStuck(sprite);
           }
       }
@@ -2144,7 +2101,7 @@ export function SpriteCB_RollBall_TryLand(sprite: any): any {
            
           let slotId: any = null;
           let fallRight: any = null;
-          m4aSongNumStart(SE_BALL_BOUNCE_1);
+          m4aSongNumStart((56));
           fallRight = Random() & 1;
           if (fallRight)
           {
@@ -2237,7 +2194,7 @@ export function SpriteCB_RollBall_Fast(sprite: any): any {
       if (sRoulette.ballDistToCenter > 60.0)
           return;
 
-      m4aSongNumStartOrChange(SE_ROULETTE_BALL2);
+      m4aSongNumStartOrChange((93));
       sRoulette.ballFallSpeed = -(20.0 / (sRoulette.ballTravelDistMed));
       sRoulette.ballAngleAccel = ((1.0 - sRoulette.ballAngleSpeed) / (sRoulette.ballTravelDistMed));
       sprite.animNum = 1;
@@ -2360,13 +2317,13 @@ export function SetBallStuck(sprite: any): any {
       if (sRoulette.useTaillow)
       {
           if (sprite.sStuckOnWheelLeft)
-              PlayCry_Normal(SPECIES_TAILLOW, -63);
+              PlayCry_Normal((304), -63);
           else
-              PlayCry_Normal(SPECIES_TAILLOW, 63);
+              PlayCry_Normal((304), 63);
       }
       else
       {
-          PlayCry_Normal(SPECIES_SHROOMISH, -63);
+          PlayCry_Normal((306), -63);
       }
 
       slotsToSkip = 2;
@@ -2471,7 +2428,7 @@ export function SpriteCB_ShroomishFall(sprite: any): any {
           gSprites[sprite.sMonShadowSpriteId].data[1] = -2;
           gSprites[sprite.sBallShadowSpriteId].invisible = FALSE;
           gSprites[sprite.sBallShadowSpriteId].callback  = SpriteCB_ShroomishShakeScreen;
-          m4aSongNumStart(SE_M_STRENGTH);
+          m4aSongNumStart((214));
       }
 }
 
@@ -2494,7 +2451,7 @@ export function SpriteCB_Shroomish(sprite: any): any {
 
           sprite.invisible = FALSE;
           sprite.data[7]++;
-          m4aSongNumStart(SE_FALL);
+          m4aSongNumStart((43));
           sRoulette.shroomishShadowTimer = 1;
           sRoulette.shroomishShadowAlpha = sShroomishShadowAlphas[0];
       }
@@ -2541,7 +2498,7 @@ export function SpriteCB_Taillow_FlyAway(sprite: any): any {
           sprite.callback = SpriteCallbackDummy;
           sprite.invisible = TRUE;
           sprite.animPaused = TRUE;
-          m4aSongNumStop(SE_TAILLOW_WING_FLAP);
+          m4aSongNumStop((94));
           DestroySprite(sprite);
           FreeOamMatrix(gSprites[sRoulette.spriteIds[SPR_CLEAR_MON_SHADOW_1]].oam.matrixNum);
           DestroySprite(gSprites[sRoulette.spriteIds[SPR_CLEAR_MON_SHADOW_1]]);
@@ -2572,7 +2529,7 @@ export function SpriteCB_Taillow_PickUpBall(sprite: any): any {
           }
           else
           {
-              m4aSongNumStart(SE_FALL);
+              m4aSongNumStart((43));
               StartSpriteAnim(sprite, sRoulette.ball.sStuckOnWheelLeft + 4);
               sprite.callback = SpriteCB_Taillow_FlyAway;
               gSprites[sprite.sMonShadowSpriteId].affineAnimPaused = FALSE;
@@ -2613,11 +2570,11 @@ export function SpriteCB_Taillow_FlyIn(sprite: any): any {
           }
           else
           {
-              m4aSongNumStartOrChange(SE_TAILLOW_WING_FLAP);
+              m4aSongNumStartOrChange((94));
               if (sRoulette.ball.sStuckOnWheelLeft == 0)
-                  PlayCry_Normal(SPECIES_TAILLOW, 63);
+                  PlayCry_Normal((304), 63);
               else
-                  PlayCry_Normal(SPECIES_TAILLOW, -63);
+                  PlayCry_Normal((304), -63);
               StartSpriteAnim(sprite, sRoulette.ball.sStuckOnWheelLeft + 2);
               sprite.data[1] = 45;
               sprite.callback = SpriteCB_Taillow_PickUpBall;
@@ -2668,7 +2625,7 @@ export function SpriteCB_Taillow(sprite: any): any {
       }
       gSprites[sprite.sMonShadowSpriteId].callback = SpriteCB_TaillowShadow_FlyIn;
       gSprites[sprite.sMonSpriteId].callback = SpriteCB_Taillow_FlyIn;
-      m4aSongNumStart(SE_FALL);
+      m4aSongNumStart((43));
 }
 
 // ─── callsTo manifest (= 143 unique callees) ───────────────────────

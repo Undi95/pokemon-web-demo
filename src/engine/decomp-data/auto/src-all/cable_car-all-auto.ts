@@ -17,29 +17,14 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgMountains_Tilemap: any = null;
-let sBgTemplates: any = null;
+let gSpriteCoordOffsetX: any = null;
 let sCableCar: any = null;
-let sDelay: any = null;
 let sGroundSegmentY_Down: any = null;
 let sGroundSegmentY_Up: any = null;
 let sGroundX_Down: any = null;
 let sGroundX_Up: any = null;
 let sGroundY_Down: any = null;
 let sGroundY_Up: any = null;
-let sGround_Tilemap: any = null;
-let sPylonPole_Tilemap: any = null;
-let sPylonTop_Tilemap: any = null;
-let sSameDir: any = null;
-let sSpritePalettes: any = null;
-let sSpriteSheets: any = null;
-let sSpriteTemplate_Cable: any = null;
-let sSpriteTemplates_CableCar: any = null;
-let sState: any = null;
-let sTimer: any = null;
-let sTrees_Tilemap: any = null;
-let sXPos: any = null;
-let sYPos: any = null;
 /** static void Task_LoadCableCar(u8 taskId) */
 export function Task_LoadCableCar(taskId: any): any {
   if (!gPaletteFade.active)
@@ -53,7 +38,7 @@ export function Task_LoadCableCar(taskId: any): any {
 export function CableCar(): any {
   LockPlayerFieldControls();
       CreateTask(Task_LoadCableCar, 1);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
 }
 
 /** static void CB2_LoadCableCar(void) */
@@ -82,7 +67,7 @@ export function CB2_LoadCableCar(): any {
           ResetPaletteFade();
           ResetTempTileDataBuffers();
           StartWeather();
-          for (i = 0; i < NUM_ASH_SPRITES; i++)
+          for (i = 0; i < (20); i++)
               gWeatherPtr.sprites.s2.ashSprites[i] = NULL;
 
           InitMapMusic();
@@ -122,13 +107,13 @@ export function CB2_LoadCableCar(): any {
           gMain.state++;
           break;
       case 5:
-          if (sCableCar.weather == WEATHER_VOLCANIC_ASH)
+          if (sCableCar.weather == (7))
           {
               gMain.state++;
           }
           else if (gWeatherPtr.sprites.s2.ashSprites[0])
           {
-              for (i = 0; i < NUM_ASH_SPRITES; i++)
+              for (i = 0; i < (20); i++)
               {
                   if (gWeatherPtr.sprites.s2.ashSprites[i])
                       gWeatherPtr.sprites.s2.ashSprites[i].oam.priority = 0;
@@ -157,8 +142,8 @@ export function CB2_LoadCableCar(): any {
           gMain.state++;
           break;
       case 8:
-          BeginNormalPaletteFade(PALETTES_ALL, 3, 16, 0, RGB_BLACK);
-          FadeInNewBGM(MUS_CABLE_CAR, 1);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 3, 16, 0, (RGB(0, 0, 0)));
+          FadeInNewBGM((425), 1);
           SetBgRegs(TRUE);
           gMain.state++;
           break;
@@ -197,8 +182,8 @@ export function CB2_EndCableCar(): any {
       HideBg(3);
       SetBgRegs(FALSE);
       gSpriteCoordOffsetX = 0;
-      SetCurrentAndNextWeatherNoDelay(WEATHER_NONE);
-      for (i = 0; i < NUM_ASH_SPRITES; i++)
+      SetCurrentAndNextWeatherNoDelay((0));
+      for (i = 0; i < (20); i++)
           gWeatherPtr.sprites.s2.ashSprites[i] = NULL;
 
       ResetTasks();
@@ -242,10 +227,10 @@ export function Task_CableCar(taskId: any): any {
            
           switch (sCableCar.weather)
           {
-          case WEATHER_VOLCANIC_ASH:
+          case (7):
               if (gWeatherPtr.sprites.s2.ashSprites[0] != NULL && gWeatherPtr.sprites.s2.ashSprites[0].oam.priority != 0)
               {
-                  for (; i < NUM_ASH_SPRITES; i++)
+                  for (; i < (20); i++)
                   {
                       if (gWeatherPtr.sprites.s2.ashSprites[i])
                           gWeatherPtr.sprites.s2.ashSprites[i].oam.priority = 0;
@@ -254,14 +239,14 @@ export function Task_CableCar(taskId: any): any {
                   sCableCar.state = 2;
               }
               break;
-          case WEATHER_SUNNY:
-              if (gWeatherPtr.currWeather == WEATHER_SUNNY)
+          case (2):
+              if (gWeatherPtr.currWeather == (2))
               {
                   sCableCar.state = 2;
               }
               else if (sCableCar.timer >= sCableCar.weatherDelay + 8)
               {
-                  for (; i < NUM_ASH_SPRITES; i++)
+                  for (; i < (20); i++)
                   {
                       if (gWeatherPtr.sprites.s2.ashSprites[i])
                           gWeatherPtr.sprites.s2.ashSprites[i].invisible ^= 1;
@@ -275,7 +260,7 @@ export function Task_CableCar(taskId: any): any {
           if (sCableCar.timer == 570)
           {
               sCableCar.state = 3;
-              BeginNormalPaletteFade(PALETTES_ALL, 3, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 3, 0, 16, (RGB(0, 0, 0)));
               FadeOutBGM(4);
           }
           break;
@@ -586,14 +571,14 @@ export function CreateCableCarSprites(): any {
   let spriteId: any = null;
       let i: any = null;
 
-      const playerGraphicsIds: any = [ OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL, OBJ_EVENT_GFX_RIVAL_MAY_NORMAL
+      const playerGraphicsIds: any = [ (100), (105)
       ];
       let rval: any = Random();
       const hikerGraphicsIds: any = [
-          OBJ_EVENT_GFX_HIKER,
-          OBJ_EVENT_GFX_CAMPER,
-          OBJ_EVENT_GFX_PICNICKER,
-          OBJ_EVENT_GFX_ZIGZAGOON_1
+          (55),
+          (31),
+          (32),
+          (98)
       ];
       const hikerCoords: any = [
           [   0,  80 ],  
@@ -611,7 +596,7 @@ export function CreateCableCarSprites(): any {
           default:
                
               spriteId = CreateObjectGraphicsSprite(playerGraphicsIds[gSaveBlock2Ptr.playerGender], SpriteCB_Player, 200, 73, 102);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   gSprites[spriteId].oam.priority = 2;
                   gSprites[spriteId].x2 = 8;
@@ -631,15 +616,15 @@ export function CreateCableCarSprites(): any {
               gSprites[spriteId].sXPos = 200;
               gSprites[spriteId].sYPos = 99;
                
-              sCableCar.weather = WEATHER_VOLCANIC_ASH;
+              sCableCar.weather = (7);
               sCableCar.weatherDelay = 350;
-              SetCurrentAndNextWeatherNoDelay(WEATHER_SUNNY);
+              SetCurrentAndNextWeatherNoDelay((2));
               break;
           case TRUE:
               CopyToBgTilemapBufferRect_ChangePalette(0, sCableCar.groundTilemap + 0x24, 24, 26, 12, 3, 17);
                
               spriteId = CreateObjectGraphicsSprite(playerGraphicsIds[gSaveBlock2Ptr.playerGender], SpriteCB_Player, 128, 39, 102);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   gSprites[spriteId].oam.priority = 2;
                   gSprites[spriteId].x2 = 8;
@@ -659,9 +644,9 @@ export function CreateCableCarSprites(): any {
               gSprites[spriteId].sXPos = 128;
               gSprites[spriteId].sYPos = 65;
                
-              sCableCar.weather = WEATHER_SUNNY;
+              sCableCar.weather = (2);
               sCableCar.weatherDelay = 265;
-              SetCurrentAndNextWeatherNoDelay(WEATHER_VOLCANIC_ASH);
+              SetCurrentAndNextWeatherNoDelay((7));
               break;
       }
       for (i = 0; i < 9; i++)
@@ -675,7 +660,7 @@ export function CreateCableCarSprites(): any {
       if ((rval % 64) == 0)
       {
           spriteId = CreateObjectGraphicsSprite(hikerGraphicsIds[rval % ARRAY_COUNT(hikerGraphicsIds)], hikerCallbacks[(gSpecialVar_0x8004)], hikerCoords[(gSpecialVar_0x8004)][0], hikerCoords[(gSpecialVar_0x8004)][1], 106);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               gSprites[spriteId].oam.priority = 2;
               gSprites[spriteId].x2 = -gSprites[spriteId].centerToCornerVecX;
@@ -686,13 +671,13 @@ export function CreateCableCarSprites(): any {
               {
                   if (rval % 2)
                   {
-                      StartSpriteAnim(gSprites[spriteId], ANIM_STD_GO_WEST);
+                      StartSpriteAnim(gSprites[spriteId], (6));
                       gSprites[spriteId].sSameDir = TRUE;
                       gSprites[spriteId].y += 2;
                   }
                   else
                   {
-                      StartSpriteAnim(gSprites[spriteId], ANIM_STD_GO_EAST);
+                      StartSpriteAnim(gSprites[spriteId], (7));
                       gSprites[spriteId].sSameDir = FALSE;
                   }
               }
@@ -700,13 +685,13 @@ export function CreateCableCarSprites(): any {
               {
                   if (rval % 2)
                   {
-                      StartSpriteAnim(gSprites[spriteId], ANIM_STD_GO_EAST);
+                      StartSpriteAnim(gSprites[spriteId], (7));
                       gSprites[spriteId].sSameDir = TRUE;
                       gSprites[spriteId].y += 2;
                   }
                   else
                   {
-                      StartSpriteAnim(gSprites[spriteId], ANIM_STD_GO_WEST);
+                      StartSpriteAnim(gSprites[spriteId], (6));
                       gSprites[spriteId].sSameDir = FALSE;
                   }
               }

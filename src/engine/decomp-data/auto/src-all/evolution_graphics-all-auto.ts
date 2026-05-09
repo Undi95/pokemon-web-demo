@@ -15,16 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAmplitude: any = null;
-let sEvoSparkleMatrices: any = null;
-let sEvoSparkleSpritePals: any = null;
-let sEvoSparkleSpriteSheets: any = null;
-let sEvoSparkleSpriteTemplate: any = null;
-let sSpeed: any = null;
-let sTimer: any = null;
-let sTrigIdx: any = null;
 /** static void SetEvoSparklesMatrices(void) */
 export function SetEvoSparklesMatrices(): any {
   let i: any = null;
@@ -63,7 +53,7 @@ export function SpriteCB_Sparkle_SpiralUpward(sprite: any): any {
 /** static void CreateSparkle_SpiralUpward(u8 trigIdx) */
 export function CreateSparkle_SpiralUpward(trigIdx: any): any {
   let spriteId: any = CreateSprite(sEvoSparkleSpriteTemplate, DISPLAY_WIDTH / 2, 88, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].sAmplitude = 48;
           gSprites[spriteId].sTrigIdx = trigIdx;
@@ -93,7 +83,7 @@ export function SpriteCB_Sparkle_ArcDown(sprite: any): any {
 /** static void CreateSparkle_ArcDown(u8 trigIdx) */
 export function CreateSparkle_ArcDown(trigIdx: any): any {
   let spriteId: any = CreateSprite(sEvoSparkleSpriteTemplate, DISPLAY_WIDTH / 2, 8, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].sAmplitude = 8;
           gSprites[spriteId].sTrigIdx = trigIdx;
@@ -123,7 +113,7 @@ export function SpriteCB_Sparkle_CircleInward(sprite: any): any {
 /** static void CreateSparkle_CircleInward(u8 trigIdx, u8 speed) */
 export function CreateSparkle_CircleInward(trigIdx: any, speed: any): any {
   let spriteId: any = CreateSprite(sEvoSparkleSpriteTemplate, DISPLAY_WIDTH / 2, 56, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].sSpeed = speed;
           gSprites[spriteId].sAmplitude = 120;
@@ -173,7 +163,7 @@ export function SpriteCB_Sparkle_Spray(sprite: any): any {
 /** static void CreateSparkle_Spray(u8 id) */
 export function CreateSparkle_Spray(id: any): any {
   let spriteId: any = CreateSprite(sEvoSparkleSpriteTemplate, DISPLAY_WIDTH / 2, 56, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].sSpeed = 3 - (Random() % 7);
           gSprites[spriteId].sAmplitude = 48 + (Random() & 0x3F);
@@ -202,9 +192,9 @@ export function EvolutionSparkles_SpiralUpward(palNum: any): any {
 export function Task_Sparkles_SpiralUpward_Init(taskId: any): any {
   SetEvoSparklesMatrices();
       gTasks[taskId].tTimer = 0;
-      BeginNormalPaletteFade(3 << gTasks[taskId].tPalNum, 0xA, 0, 0x10, RGB_WHITE);
+      BeginNormalPaletteFade(3 << gTasks[taskId].tPalNum, 0xA, 0, 0x10, (RGB(31, 31, 31)));
       gTasks[taskId].func = Task_Sparkles_SpiralUpward;
-      PlaySE(SE_M_MEGA_KICK);
+      PlaySE((140));
 }
 
 /** static void Task_Sparkles_SpiralUpward(u8 taskId) */
@@ -244,7 +234,7 @@ export function Task_Sparkles_ArcDown_Init(taskId: any): any {
   SetEvoSparklesMatrices();
       gTasks[taskId].tTimer = 0;
       gTasks[taskId].func = Task_Sparkles_ArcDown;
-      PlaySE(SE_M_BUBBLE_BEAM2);
+      PlaySE((183));
 }
 
 /** static void Task_Sparkles_ArcDown(u8 taskId) */
@@ -280,7 +270,7 @@ export function Task_Sparkles_CircleInward_Init(taskId: any): any {
   SetEvoSparklesMatrices();
       gTasks[taskId].tTimer = 0;
       gTasks[taskId].func = Task_Sparkles_CircleInward;
-      PlaySE(SE_SHINY);
+      PlaySE((102));
 }
 
 /** static void Task_Sparkles_CircleInward(u8 taskId) */
@@ -324,9 +314,9 @@ export function Task_Sparkles_SprayAndFlash_Init(taskId: any): any {
   SetEvoSparklesMatrices();
       gTasks[taskId].tTimer = 0;
       CpuCopy16(gPlttBufferFaded[BG_PLTT_ID(2)],gPlttBufferUnfaded[BG_PLTT_ID(2)], 3 * PLTT_SIZE_4BPP);
-      BeginNormalPaletteFade(0xFFF9041C, 0, 0, 0x10, RGB_WHITE);  
+      BeginNormalPaletteFade(0xFFF9041C, 0, 0, 0x10, (RGB(31, 31, 31)));  
       gTasks[taskId].func = Task_Sparkles_SprayAndFlash;
-      PlaySE(SE_M_PETAL_DANCE);
+      PlaySE((202));
 }
 
 /** static void Task_Sparkles_SprayAndFlash(u8 taskId) */
@@ -345,7 +335,7 @@ export function Task_Sparkles_SprayAndFlash(taskId: any): any {
                   CreateSparkle_Spray(i);
               break;
           case 32:
-              BeginNormalPaletteFade(0xFFFF041C, 0x10, 0x10, 0, RGB_WHITE);  
+              BeginNormalPaletteFade(0xFFFF041C, 0x10, 0x10, 0, (RGB(31, 31, 31)));  
               break;
           }
           gTasks[taskId].tTimer++;
@@ -374,9 +364,9 @@ export function Task_Sparkles_SprayAndFlashTrade_Init(taskId: any): any {
   SetEvoSparklesMatrices();
       gTasks[taskId].tTimer = 0;
       CpuCopy16(gPlttBufferFaded[BG_PLTT_ID(2)],gPlttBufferUnfaded[BG_PLTT_ID(2)], 3 * PLTT_SIZE_4BPP);
-      BeginNormalPaletteFade(0xFFF90400, 0, 0, 0x10, RGB_WHITE);  
+      BeginNormalPaletteFade(0xFFF90400, 0, 0, 0x10, (RGB(31, 31, 31)));  
       gTasks[taskId].func = Task_Sparkles_SprayAndFlashTrade;
-      PlaySE(SE_M_PETAL_DANCE);
+      PlaySE((202));
 }
 
 /** static void Task_Sparkles_SprayAndFlashTrade(u8 taskId) */
@@ -395,7 +385,7 @@ export function Task_Sparkles_SprayAndFlashTrade(taskId: any): any {
                   CreateSparkle_Spray(i);
               break;
           case 32:
-              BeginNormalPaletteFade(0xFFFF0400, 0x10, 0x10, 0, RGB_WHITE);  
+              BeginNormalPaletteFade(0xFFFF0400, 0x10, 0x10, 0, (RGB(31, 31, 31)));  
               break;
           }
           gTasks[taskId].tTimer++;
@@ -414,7 +404,7 @@ export function CycleEvolutionMonSprite(preEvoSpriteId: any, postEvoSpriteId: an
       let toDiv: any = null;
 
       for (i = 0; i < ARRAY_COUNT(monPalette); i++)
-          monPalette[i] = RGB_WHITE;
+          monPalette[i] = (RGB(31, 31, 31));
 
       taskId = CreateTask(Task_CycleEvolutionMonSprite_Init, 0);
       gTasks[taskId].tPreEvoSpriteId = preEvoSpriteId;

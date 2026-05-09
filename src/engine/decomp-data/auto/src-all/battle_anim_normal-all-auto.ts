@@ -17,21 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBlendY1: any = null;
-let sBlendY2: any = null;
-let sColor1: any = null;
-let sColor2: any = null;
-let sDelay: any = null;
-let sNumBlends: any = null;
-let sOriginalValue: any = null;
-let sPaletteSelector: any = null;
-let sShakeDuration: any = null;
-let sShakePtrHi: any = null;
-let sShakePtrLo: any = null;
-let sShakeTimer: any = null;
-let sShakeVelocity: any = null;
-let sTimer: any = null;
-let sType: any = null;
+let gBattle_BG3_X: any = null;
+let gBattle_BG3_Y: any = null;
 /** static void AnimConfusionDuck(struct Sprite *sprite) */
 export function AnimConfusionDuck(sprite: any): any {
   CMD_ARGS(x, y, waveOffset, wavePeriod, duration);
@@ -39,7 +26,7 @@ export function AnimConfusionDuck(sprite: any): any {
       sprite.x += cmd.x;
       sprite.y += cmd.y;
       sprite.data[0] = cmd.waveOffset;
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           sprite.data[1] = -cmd.wavePeriod;
           sprite.data[4] = 1;
@@ -455,7 +442,7 @@ export function AnimTask_FlashAnimTagWithColor_Step2(taskId: any): any {
       if (!gPaletteFade.active)
       {
           selectedPalettes = 1 << (IndexOfSpritePaletteTag(gTasks[taskId].tAnimTag) + 16);
-          BeginNormalPaletteFade(selectedPalettes, 0, 0, 0, RGB_BLACK);
+          BeginNormalPaletteFade(selectedPalettes, 0, 0, 0, (RGB(0, 0, 0)));
           DestroyAnimVisualTask(taskId);
       }
 }
@@ -506,7 +493,7 @@ export function AnimTask_TintPalettes(taskId: any): any {
       targetBattler = gBattleAnimTarget;
 
       if (gTasks[taskId].tFlagsScenery & (1 << 8))
-          selectedPalettes = PALETTES_BG;
+          selectedPalettes = (0x0000FFFF);
 
       if (gTasks[taskId].tFlagsScenery & 1)
       {
@@ -662,7 +649,7 @@ export function AnimHitSplatBasic(sprite: any): any {
   CMD_ARGS(x, y, relativeTo, animation);
 
       StartSpriteAffineAnim(sprite, cmd.animation);
-      if (cmd.relativeTo == ANIM_ATTACKER)
+      if (cmd.relativeTo == (0))
           InitSpritePosToAnimAttacker(sprite, TRUE);
       else
           InitSpritePosToAnimTarget(sprite, TRUE);
@@ -676,7 +663,7 @@ export function AnimHitSplatPersistent(sprite: any): any {
   CMD_ARGS(x, y, relativeTo, animation, duration);
 
       StartSpriteAffineAnim(sprite, cmd.animation);
-      if (cmd.relativeTo == ANIM_ATTACKER)
+      if (cmd.relativeTo == (0))
           InitSpritePosToAnimAttacker(sprite, TRUE);
       else
           InitSpritePosToAnimTarget(sprite, TRUE);
@@ -690,7 +677,7 @@ export function AnimHitSplatPersistent(sprite: any): any {
 export function AnimHitSplatHandleInvert(sprite: any): any {
   CMD_ARGS(x, y, relativeTo, animation);
 
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER && !IsContest())
+      if (GetBattlerSide(gBattleAnimAttacker) != (0) && !IsContest())
           cmd.y = -cmd.y;
 
       AnimHitSplatBasic(sprite);
@@ -704,7 +691,7 @@ export function AnimHitSplatRandom(sprite: any): any {
           cmd.animation = Random2() & 3;
 
       StartSpriteAffineAnim(sprite, cmd.animation);
-      if (cmd.relativeTo == ANIM_ATTACKER)
+      if (cmd.relativeTo == (0))
           InitSpritePosToAnimAttacker(sprite, FALSE);
       else
           InitSpritePosToAnimTarget(sprite, FALSE);
@@ -734,7 +721,7 @@ export function AnimHitSplatOnMonEdge(sprite: any): any {
 export function AnimCrossImpact(sprite: any): any {
   CMD_ARGS(x, y, relativeTo, duration);
 
-      if (cmd.relativeTo == ANIM_ATTACKER)
+      if (cmd.relativeTo == (0))
           InitSpritePosToAnimAttacker(sprite, TRUE);
       else
           InitSpritePosToAnimTarget(sprite, TRUE);
@@ -749,7 +736,7 @@ export function AnimFlashingHitSplat(sprite: any): any {
   CMD_ARGS(x, y, relativeTo, animation);
 
       StartSpriteAffineAnim(sprite, cmd.animation);
-      if (cmd.relativeTo == ANIM_ATTACKER)
+      if (cmd.relativeTo == (0))
           InitSpritePosToAnimAttacker(sprite, TRUE);
       else
           InitSpritePosToAnimTarget(sprite, TRUE);

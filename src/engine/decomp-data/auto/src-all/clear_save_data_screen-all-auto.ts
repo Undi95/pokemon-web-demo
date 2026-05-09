@@ -15,11 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sClearSaveBgTemplates: any = null;
-let sClearSaveTextWindow: any = null;
-let sClearSaveYesNo: any = null;
 /** void CB2_InitClearSaveDataScreen(void) */
 export function CB2_InitClearSaveDataScreen(): any {
   if (SetupClearSaveDataScreen())
@@ -44,8 +39,8 @@ export function Task_ClearSaveDataScreenYesNoChoice(taskId: any): any {
           gTasks[taskId].func = Task_ClearSaveData;
           break;
       case 1:
-      case MENU_B_PRESSED:
-          PlaySE(SE_SELECT);
+      case (-1):
+          PlaySE((5));
           DestroyTask(taskId);
           SetMainCallback2(CB2_FadeAndDoReset);
       }
@@ -94,8 +89,8 @@ export function SetupClearSaveDataScreen(): any {
           DmaFill32(3, 0, OAM, OAM_SIZE);
           DmaFill16(3, 0, (PLTT + 2), PLTT_SIZE - 2);
           ResetPaletteFade();
-          gPlttBufferUnfaded[0] = RGB_WHITE;
-          gPlttBufferFaded[0] = RGB_WHITE;
+          gPlttBufferUnfaded[0] = (RGB(31, 31, 31));
+          gPlttBufferFaded[0] = (RGB(31, 31, 31));
           gPlttBufferUnfaded[1] = RGB(5, 10, 14);
           gPlttBufferFaded[1] = RGB(5, 10, 14);
           for (i = 0; i < 0x10; i++)
@@ -112,7 +107,7 @@ export function SetupClearSaveDataScreen(): any {
           ShowBg(3);
           SetGpuReg(REG_OFFSET_BLDCNT, 0);
           InitClearSaveDataScreenWindows();
-          BeginNormalPaletteFade(PALETTES_BG, 0, 0x10, 0, RGB_WHITEALPHA);
+          BeginNormalPaletteFade((0x0000FFFF), 0, 0x10, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
           EnableInterrupts(INTR_FLAG_VBLANK);
           SetVBlankCallback(VBlankCB);
           gMain.state = 1;
@@ -134,7 +129,7 @@ export function CB2_FadeAndDoReset(): any {
       {
       case 0:
       default:
-          BeginNormalPaletteFade(PALETTES_BG, 0, 0, 0x10, RGB_WHITEALPHA);
+          BeginNormalPaletteFade((0x0000FFFF), 0, 0, 0x10, (((RGB(31, 31, 31)) | ((1 << 15)))));
           gMain.state = 1;
           break;
       case 1:

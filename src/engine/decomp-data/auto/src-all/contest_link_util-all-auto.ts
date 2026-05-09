@@ -15,32 +15,37 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gContestLinkLeaderIndex: any = null;
+let gHighestRibbonRank: any = null;
+let gSpecialVar_0x8004: any = null;
 /** void Task_LinkContest_StartCommunicationEm(u8 taskId) */
 export function Task_LinkContest_StartCommunicationEm(taskId: any): any {
   let gameCleared: any = null;
 
       switch (gTasks[taskId].tCategory)
       {
-      case CONTEST_CATEGORY_COOL:
+      case (0):
           gHighestRibbonRank = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_COOL_RIBBON);
           break;
-      case CONTEST_CATEGORY_BEAUTY:
+      case (1):
           gHighestRibbonRank = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_BEAUTY_RIBBON);
           break;
-      case CONTEST_CATEGORY_CUTE:
+      case (2):
           gHighestRibbonRank = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_CUTE_RIBBON);
           break;
-      case CONTEST_CATEGORY_SMART:
+      case (3):
           gHighestRibbonRank = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_SMART_RIBBON);
           break;
-      case CONTEST_CATEGORY_TOUGH:
+      case (4):
       default:
           gHighestRibbonRank = GetMonData(gPlayerParty[gContestMonPartyIndex], MON_DATA_TOUGH_RIBBON);
           break;
       }
 
       gContestMons[gContestPlayerMonIndex].highestRank = gHighestRibbonRank;
-      gameCleared = FlagGet(FLAG_SYS_GAME_CLEAR) > 0;
+      gameCleared = FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))) > 0;
       gContestMons[gContestPlayerMonIndex].gameCleared = gameCleared;
       SetTaskFuncWithFollowupFunc(taskId, Task_LinkContest_CommunicateMonsEm, Task_LinkContest_StartCommunicateRngEm);
 }
@@ -87,7 +92,7 @@ export function Task_LinkContest_SetUpContestEm(taskId: any): any {
           leaderIds[i] = gTasks[taskId].data[i + 5];
 
        
-      if (gNumLinkContestPlayers != CONTESTANT_COUNT && GetMultiplayerId() == 0)
+      if (gNumLinkContestPlayers != (4) && GetMultiplayerId() == 0)
       {
           rank = gContestMons[0].highestRank;
           for (i = 1; i < gNumLinkContestPlayers; i++)
@@ -115,7 +120,7 @@ export function Task_LinkContest_SetUpContestEm(taskId: any): any {
        
       gContestLinkLeaderIndex = LinkContest_GetLeaderIndex(leaderIds);
 
-      if (gNumLinkContestPlayers < CONTESTANT_COUNT)
+      if (gNumLinkContestPlayers < (4))
           SetTaskFuncWithFollowupFunc(taskId, Task_LinkContest_CommunicateAIMonsEm, Task_LinkContest_CalculateRound1Em);
       else
           gTasks[taskId].func = Task_LinkContest_CalculateRound1Em;
@@ -307,7 +312,7 @@ export function Task_LinkContest_CommunicateAIMonsEm(taskId: any): any {
               if (!IsLinkTaskFinished())
                   return;
 
-              if (LinkContest_SendBlock(gContestMons[gNumLinkContestPlayers], (CONTESTANT_COUNT - gNumLinkContestPlayers) * 0) == 1)
+              if (LinkContest_SendBlock(gContestMons[gNumLinkContestPlayers], ((4) - gNumLinkContestPlayers) * 0) == 1)
                   gTasks[taskId].data[0]++;
           }
           else
@@ -318,8 +323,8 @@ export function Task_LinkContest_CommunicateAIMonsEm(taskId: any): any {
       case 1:
           if (LinkContest_GetBlockReceived(0))
           {
-              memcpy(gContestMons[gNumLinkContestPlayers], gBlockRecvBuffer[0], (CONTESTANT_COUNT - gNumLinkContestPlayers) * 0);
-              for (i = gNumLinkContestPlayers; i < CONTESTANT_COUNT; i++)
+              memcpy(gContestMons[gNumLinkContestPlayers], gBlockRecvBuffer[0], ((4) - gNumLinkContestPlayers) * 0);
+              for (i = gNumLinkContestPlayers; i < (4); i++)
                   StripPlayerAndMonNamesForLinkContest(gContestMons[i], gLinkPlayers[0].language);
 
               gTasks[taskId].data[0]++;

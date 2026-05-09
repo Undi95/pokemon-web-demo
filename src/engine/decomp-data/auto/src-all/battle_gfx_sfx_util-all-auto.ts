@@ -17,14 +17,18 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sSpeedX: any = null;
-let sSpritePalettes_HealthBoxHealthBar: any = null;
-let sSpriteSheet_SafariHealthbox: any = null;
-let sSpriteSheet_SinglesOpponentHealthbox: any = null;
-let sSpriteSheet_SinglesPlayerHealthbox: any = null;
-let sSpriteSheets_DoublesOpponentHealthbox: any = null;
-let sSpriteSheets_DoublesPlayerHealthbox: any = null;
-let sSpriteSheets_HealthBar: any = null;
+let currentPersonality: any = null;
+let gBattleAnimAttacker: any = null;
+let gBattleAnimTarget: any = null;
+let gBattleSpritesDataPtr: any = null;
+let maxGroupNum: any = null;
+let minGroupNum: any = null;
+let moveTarget: any = null;
+let numMovesPerGroup: any = null;
+let opposing2: any = null;
+let palOffset: any = null;
+let randSelectGroup: any = null;
+let selectedGroup: any = null;
 /** void AllocateBattleSpritesData(void) */
 export function AllocateBattleSpritesData(): any {
   gBattleSpritesDataPtr = AllocZeroed(0);
@@ -51,7 +55,7 @@ export function ChooseMoveAndTargetInBattlePalace(): any {
   let i, var1, var2;
       let chosenMoveId: any = -1;
       let moveInfo: any = (gBattleBufferA[gActiveBattler][4]);
-      let unusableMovesBits: any = CheckMoveLimitations(gActiveBattler, 0, MOVE_LIMITATIONS_ALL);
+      let unusableMovesBits: any = CheckMoveLimitations(gActiveBattler, 0, (0xFF));
       let percent: any = Random() % 100;
 
        
@@ -72,12 +76,12 @@ export function ChooseMoveAndTargetInBattlePalace(): any {
       }
       selectedGroup = i - minGroupNum;
       if (i == maxGroupNum)
-          selectedGroup = PALACE_MOVE_GROUP_SUPPORT;
+          selectedGroup = (2);
 
        
-      for (selectedMoves = 0, i = 0; i < MAX_MON_MOVES; i++)
+      for (selectedMoves = 0, i = 0; i < (4); i++)
       {
-          if (moveInfo.moves[i] == MOVE_NONE)
+          if (moveInfo.moves[i] == (0))
               break;
           if (selectedGroup == GetBattlePalaceMoveGroup(moveInfo.moves[i]) && moveInfo.currentPp[i] != 0)
               selectedMoves |= gBitTable[i];
@@ -103,15 +107,15 @@ export function ChooseMoveAndTargetInBattlePalace(): any {
           {
               numMovesPerGroup = 0, numMultipleMoveGroups = 0;
 
-              for (i = 0; i < MAX_MON_MOVES; i++)
+              for (i = 0; i < (4); i++)
               {
                    
                    
-                  if (GetBattlePalaceMoveGroup(moveInfo.moves[i]) == PALACE_MOVE_GROUP_ATTACK && !(gBitTable[i] & unusableMovesBits))
+                  if (GetBattlePalaceMoveGroup(moveInfo.moves[i]) == (0) && !(gBitTable[i] & unusableMovesBits))
                       numMovesPerGroup += (1 << 0);
-                  if (GetBattlePalaceMoveGroup(moveInfo.moves[i]) == PALACE_MOVE_GROUP_DEFENSE && !(gBitTable[i] & unusableMovesBits))
+                  if (GetBattlePalaceMoveGroup(moveInfo.moves[i]) == (1) && !(gBitTable[i] & unusableMovesBits))
                       numMovesPerGroup += (1 << 4);
-                  if (GetBattlePalaceMoveGroup(moveInfo.moves[i]) == PALACE_MOVE_GROUP_SUPPORT && !(gBitTable[i] & unusableMovesBits))
+                  if (GetBattlePalaceMoveGroup(moveInfo.moves[i]) == (2) && !(gBitTable[i] & unusableMovesBits))
                       numMovesPerGroup += (1 << 8);
               }
 
@@ -139,7 +143,7 @@ export function ChooseMoveAndTargetInBattlePalace(): any {
               {
                   do
                   {
-                      i = Random() % MAX_MON_MOVES;
+                      i = Random() % (4);
                       if (!(gBitTable[i] & unusableMovesBits))
                           chosenMoveId = i;
                   } while (chosenMoveId == -1);
@@ -153,15 +157,15 @@ export function ChooseMoveAndTargetInBattlePalace(): any {
                    
                    
                   if ((numMovesPerGroup & 0xF) >= 2)
-                      randSelectGroup = PALACE_MOVE_GROUP_ATTACK;
+                      randSelectGroup = (0);
                   if ((numMovesPerGroup & (0xF << 4)) >= (2 << 4))
-                      randSelectGroup = PALACE_MOVE_GROUP_DEFENSE;
+                      randSelectGroup = (1);
                   if ((numMovesPerGroup & (0xF << 8)) >= (2 << 8))
-                      randSelectGroup = PALACE_MOVE_GROUP_SUPPORT;
+                      randSelectGroup = (2);
 
                   do
                   {
-                      i = Random() % MAX_MON_MOVES;
+                      i = Random() % (4);
                       if (!(gBitTable[i] & unusableMovesBits) && randSelectGroup == GetBattlePalaceMoveGroup(moveInfo.moves[i]))
                           chosenMoveId = i;
                   } while (chosenMoveId == -1);
@@ -183,21 +187,21 @@ export function ChooseMoveAndTargetInBattlePalace(): any {
           }
       }
 
-      if (moveInfo.moves[chosenMoveId] == MOVE_CURSE)
+      if (moveInfo.moves[chosenMoveId] == (174))
       {
-          if (moveInfo.monTypes[0] != TYPE_GHOST && moveInfo.monTypes[1] != TYPE_GHOST)
-              moveTarget = MOVE_TARGET_USER;
+          if (moveInfo.monTypes[0] != (7) && moveInfo.monTypes[1] != (7))
+              moveTarget = ((1 << 4));
           else
-              moveTarget = MOVE_TARGET_SELECTED;
+              moveTarget = (0);
       }
       else
       {
           moveTarget = gBattleMoves[moveInfo.moves[chosenMoveId]].target;
       }
 
-      if (moveTarget & MOVE_TARGET_USER)
+      if (moveTarget & ((1 << 4)))
           chosenMoveId |= (gActiveBattler << 8);
-      else if (moveTarget == MOVE_TARGET_SELECTED)
+      else if (moveTarget == (0))
           chosenMoveId |= GetBattlePalaceTarget();
       else
           chosenMoveId |= (GetBattlerAtPosition(BATTLE_OPPOSITE(GET_BATTLER_SIDE(gActiveBattler))) << 8);
@@ -209,33 +213,33 @@ export function ChooseMoveAndTargetInBattlePalace(): any {
 export function GetBattlePalaceMoveGroup(move: any): any {
   switch (gBattleMoves[move].target)
       {
-      case MOVE_TARGET_SELECTED:
-      case MOVE_TARGET_USER_OR_SELECTED:
-      case MOVE_TARGET_RANDOM:
-      case MOVE_TARGET_BOTH:
-      case MOVE_TARGET_FOES_AND_ALLY:
+      case (0):
+      case ((1 << 1)):
+      case ((1 << 2)):
+      case ((1 << 3)):
+      case ((1 << 5)):
           if (gBattleMoves[move].power == 0)
-              return PALACE_MOVE_GROUP_SUPPORT;
+              return (2);
           else
-              return PALACE_MOVE_GROUP_ATTACK;
+              return (0);
           break;
-      case MOVE_TARGET_DEPENDS:
-      case MOVE_TARGET_OPPONENTS_FIELD:
-          return PALACE_MOVE_GROUP_SUPPORT;
-      case MOVE_TARGET_USER:
-          return PALACE_MOVE_GROUP_DEFENSE;
+      case ((1 << 0)):
+      case ((1 << 6)):
+          return (2);
+      case ((1 << 4)):
+          return (1);
       default:
-          return PALACE_MOVE_GROUP_ATTACK;
+          return (0);
       }
 }
 
 /** static u16 GetBattlePalaceTarget(void) */
 export function GetBattlePalaceTarget(): any {
-  if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+  if (gBattleTypeFlags & ((1 << 0)))
       {
           let opposing1, opposing2;
 
-          if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)
+          if (GetBattlerSide(gActiveBattler) == (0))
           {
               opposing1 = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
               opposing2 = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
@@ -247,22 +251,22 @@ export function GetBattlePalaceTarget(): any {
           }
 
           if (gBattleMons[opposing1].hp == gBattleMons[opposing2].hp)
-              return (BATTLE_OPPOSITE(gActiveBattler & BIT_SIDE) + (Random() & 2)) << 8;
+              return (BATTLE_OPPOSITE(gActiveBattler & (1)) + (Random() & 2)) << 8;
 
           switch (gBattlePalaceNatureToMoveTarget[GetNatureFromPersonality(gBattleMons[gActiveBattler].personality)])
           {
-          case PALACE_TARGET_STRONGER:
+          case (0):
               if (gBattleMons[opposing1].hp > gBattleMons[opposing2].hp)
                   return opposing1 << 8;
               else
                   return opposing2 << 8;
-          case PALACE_TARGET_WEAKER:
+          case (1):
               if (gBattleMons[opposing1].hp < gBattleMons[opposing2].hp)
                   return opposing1 << 8;
               else
                   return opposing2 << 8;
-          case PALACE_TARGET_RANDOM:
-              return (BATTLE_OPPOSITE(gActiveBattler & BIT_SIDE) + (Random() & 2)) << 8;
+          case (2):
+              return (BATTLE_OPPOSITE(gActiveBattler & (1)) + (Random() & 2)) << 8;
           }
       }
 
@@ -316,31 +320,31 @@ export function InitAndLaunchChosenStatusAnimation(isStatus2: any, status: any):
   gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].statusAnimActive = 1;
       if (!isStatus2)
       {
-          if (status == STATUS1_FREEZE)
-              LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_FRZ);
-          else if (status == STATUS1_POISON || status & STATUS1_TOXIC_POISON)
-              LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_PSN);
-          else if (status == STATUS1_BURN)
-              LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_BRN);
-          else if (status & STATUS1_SLEEP)
-              LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_SLP);
-          else if (status == STATUS1_PARALYSIS)
-              LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_PRZ);
+          if (status == ((1 << 5)))
+              LaunchStatusAnimation(gActiveBattler, (6));
+          else if (status == ((1 << 3)) || status & ((1 << 7)))
+              LaunchStatusAnimation(gActiveBattler, (0));
+          else if (status == ((1 << 4)))
+              LaunchStatusAnimation(gActiveBattler, (2));
+          else if (status & ((1 << 0 | 1 << 1 | 1 << 2)))
+              LaunchStatusAnimation(gActiveBattler, (4));
+          else if (status == ((1 << 6)))
+              LaunchStatusAnimation(gActiveBattler, (5));
           else  
               gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].statusAnimActive = 0;
       }
       else
       {
-          if (status & STATUS2_INFATUATION)
-              LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_INFATUATION);
-          else if (status & STATUS2_CONFUSION)
-              LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_CONFUSION);
-          else if (status & STATUS2_CURSED)
-              LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_CURSED);
-          else if (status & STATUS2_NIGHTMARE)
-              LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_NIGHTMARE);
-          else if (status & STATUS2_WRAPPED)
-              LaunchStatusAnimation(gActiveBattler, B_ANIM_STATUS_WRAPPED);  
+          if (status & ((1 << 16 | 1 << 17 | 1 << 18 | 1 << 19)))
+              LaunchStatusAnimation(gActiveBattler, (3));
+          else if (status & ((1 << 0 | 1 << 1 | 1 << 2)))
+              LaunchStatusAnimation(gActiveBattler, (1));
+          else if (status & ((1 << 28)))
+              LaunchStatusAnimation(gActiveBattler, (7));
+          else if (status & ((1 << 27)))
+              LaunchStatusAnimation(gActiveBattler, (8));
+          else if (status & ((1 << 13 | 1 << 14 | 1 << 15)))
+              LaunchStatusAnimation(gActiveBattler, (9));  
           else  
               gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].statusAnimActive = 0;
       }
@@ -350,10 +354,10 @@ export function InitAndLaunchChosenStatusAnimation(isStatus2: any, status: any):
 export function TryHandleLaunchBattleTableAnimation(activeBattler: any, atkBattler: any, defBattler: any, tableId: any, argument: any): any {
   let taskId: any = null;
 
-      if (tableId == B_ANIM_CASTFORM_CHANGE && (argument & CASTFORM_SUBSTITUTE))
+      if (tableId == (0) && (argument & ((1 << 7))))
       {
            
-          gBattleMonForms[activeBattler] = (argument & ~CASTFORM_SUBSTITUTE);
+          gBattleMonForms[activeBattler] = (argument & ~((1 << 7)));
           return TRUE;
       }
       if (gBattleSpritesDataPtr.battlerData[activeBattler].behindSubstitute
@@ -362,7 +366,7 @@ export function TryHandleLaunchBattleTableAnimation(activeBattler: any, atkBattl
           return TRUE;
       }
       if (gBattleSpritesDataPtr.battlerData[activeBattler].behindSubstitute
-          && tableId == B_ANIM_SUBSTITUTE_FADE
+          && tableId == (2)
           && gSprites[gBattlerSpriteIds[activeBattler]].invisible)
       {
           LoadBattleMonGfxAndAnimate(activeBattler, TRUE, gBattlerSpriteIds[activeBattler]);
@@ -395,12 +399,12 @@ export function Task_ClearBitWhenBattleTableAnimDone(taskId: any): any {
 export function ShouldAnimBeDoneRegardlessOfSubstitute(animId: any): any {
   switch (animId)
       {
-      case B_ANIM_SUBSTITUTE_FADE:
-      case B_ANIM_RAIN_CONTINUES:
-      case B_ANIM_SUN_CONTINUES:
-      case B_ANIM_SANDSTORM_CONTINUES:
-      case B_ANIM_HAIL_CONTINUES:
-      case B_ANIM_SNATCH_MOVE:
+      case (2):
+      case (10):
+      case (11):
+      case (12):
+      case (13):
+      case (17):
           return TRUE;
       default:
           return FALSE;
@@ -467,7 +471,7 @@ export function BattleLoadOpponentMonSpriteGfx(mon: any, battler: any): any {
 
       monsPersonality = GetMonData(mon, MON_DATA_PERSONALITY);
 
-      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == SPECIES_NONE)
+      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == (0))
       {
           species = GetMonData(mon, MON_DATA_SPECIES);
           currentPersonality = monsPersonality;
@@ -486,7 +490,7 @@ export function BattleLoadOpponentMonSpriteGfx(mon: any, battler: any): any {
 
       paletteOffset = OBJ_PLTT_ID(battler);
 
-      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == SPECIES_NONE)
+      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == (0))
           lzPaletteData = GetMonFrontSpritePal(mon);
       else
           lzPaletteData = GetMonSpritePalFromSpeciesAndPersonality(species, otId, monsPersonality);
@@ -495,7 +499,7 @@ export function BattleLoadOpponentMonSpriteGfx(mon: any, battler: any): any {
       LoadPalette(gDecompressionBuffer, paletteOffset, PLTT_SIZE_4BPP);
       LoadPalette(gDecompressionBuffer, BG_PLTT_ID(8) + BG_PLTT_ID(battler), PLTT_SIZE_4BPP);
 
-      if (species == SPECIES_CASTFORM)
+      if (species == (385))
       {
           paletteOffset = OBJ_PLTT_ID(battler);
           LZDecompressWram(lzPaletteData, gBattleStruct.castformPalette);
@@ -503,9 +507,9 @@ export function BattleLoadOpponentMonSpriteGfx(mon: any, battler: any): any {
       }
 
        
-      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies != SPECIES_NONE)
+      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies != (0))
       {
-          BlendPalette(paletteOffset, 16, 6, RGB_WHITE);
+          BlendPalette(paletteOffset, 16, 6, (RGB(31, 31, 31)));
           CpuCopy32(gPlttBufferFaded[paletteOffset],gPlttBufferUnfaded[paletteOffset], PLTT_SIZEOF(16));
       }
 }
@@ -520,7 +524,7 @@ export function BattleLoadPlayerMonSpriteGfx(mon: any, battler: any): any {
 
       monsPersonality = GetMonData(mon, MON_DATA_PERSONALITY);
 
-      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == SPECIES_NONE)
+      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == (0))
       {
           species = GetMonData(mon, MON_DATA_SPECIES);
           currentPersonality = monsPersonality;
@@ -534,7 +538,7 @@ export function BattleLoadPlayerMonSpriteGfx(mon: any, battler: any): any {
       otId = GetMonData(mon, MON_DATA_OT_ID);
       position = GetBattlerPosition(battler);
 
-      if (ShouldIgnoreDeoxysForm(1, battler) == TRUE || gBattleSpritesDataPtr.battlerData[battler].transformSpecies != SPECIES_NONE)
+      if (ShouldIgnoreDeoxysForm(1, battler) == TRUE || gBattleSpritesDataPtr.battlerData[battler].transformSpecies != (0))
       {
           HandleLoadSpecialPokePic_DontHandleDeoxys(gMonBackPicTable[species],
                                                     gMonSpritesGfxPtr.sprites.ptr[position],
@@ -549,7 +553,7 @@ export function BattleLoadPlayerMonSpriteGfx(mon: any, battler: any): any {
 
       paletteOffset = OBJ_PLTT_ID(battler);
 
-      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == SPECIES_NONE)
+      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies == (0))
           lzPaletteData = GetMonFrontSpritePal(mon);
       else
           lzPaletteData = GetMonSpritePalFromSpeciesAndPersonality(species, otId, monsPersonality);
@@ -558,7 +562,7 @@ export function BattleLoadPlayerMonSpriteGfx(mon: any, battler: any): any {
       LoadPalette(gDecompressionBuffer, paletteOffset, PLTT_SIZE_4BPP);
       LoadPalette(gDecompressionBuffer, BG_PLTT_ID(8) + BG_PLTT_ID(battler), PLTT_SIZE_4BPP);
 
-      if (species == SPECIES_CASTFORM)
+      if (species == (385))
       {
           paletteOffset = OBJ_PLTT_ID(battler);
           LZDecompressWram(lzPaletteData, gBattleStruct.castformPalette);
@@ -566,9 +570,9 @@ export function BattleLoadPlayerMonSpriteGfx(mon: any, battler: any): any {
       }
 
        
-      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies != SPECIES_NONE)
+      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies != (0))
       {
-          BlendPalette(paletteOffset, 16, 6, RGB_WHITE);
+          BlendPalette(paletteOffset, 16, 6, (RGB(31, 31, 31)));
           CpuCopy32(gPlttBufferFaded[paletteOffset],gPlttBufferUnfaded[paletteOffset], PLTT_SIZEOF(16));
       }
 }
@@ -578,7 +582,7 @@ export function DecompressTrainerFrontPic(frontPicId: any, battler: any): any {
   let position: any = GetBattlerPosition(battler);
       DecompressPicFromTable_2(gTrainerFrontPicTable[frontPicId],
                                gMonSpritesGfxPtr.sprites.ptr[position],
-                               SPECIES_NONE);
+                               (0));
       LoadCompressedSpritePalette(gTrainerFrontPicPaletteTable[frontPicId]);
 }
 
@@ -635,7 +639,7 @@ export function BattleLoadAllHealthBoxesGfx(state: any): any {
           {
               if (state == 2)
               {
-                  if (gBattleTypeFlags & BATTLE_TYPE_SAFARI)
+                  if (gBattleTypeFlags & ((1 << 7)))
                       LoadCompressedSpriteSheet(sSpriteSheet_SafariHealthbox);
                   else
                       LoadCompressedSpriteSheet(sSpriteSheet_SinglesPlayerHealthbox);
@@ -713,7 +717,7 @@ export function BattleInitAllSprites(state1: any, battler: any): any {
           state1++;
           break;
       case 3:
-          if ((gBattleTypeFlags & BATTLE_TYPE_SAFARI) && battler == 0)
+          if ((gBattleTypeFlags & ((1 << 7))) && battler == 0)
               gHealthboxSpriteIds[battler] = CreateSafariPlayerHealthboxSprites();
           else
               gHealthboxSpriteIds[battler] = CreateBattlerHealthboxSprites(battler);
@@ -740,9 +744,9 @@ export function BattleInitAllSprites(state1: any, battler: any): any {
           }
           break;
       case 5:
-          if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) == (0))
           {
-              if (!(gBattleTypeFlags & BATTLE_TYPE_SAFARI))
+              if (!(gBattleTypeFlags & ((1 << 7))))
                   UpdateHealthboxAttribute(gHealthboxSpriteIds[battler],gPlayerParty[gBattlerPartyIndexes[battler]], HEALTHBOX_ALL);
           }
           else
@@ -806,9 +810,9 @@ export function HandleSpeciesGfxDataChange(battlerAtk: any, battlerDef: any, cas
           paletteOffset = OBJ_PLTT_ID(battlerAtk);
           LoadPalette(gBattleStruct.castformPalette[gBattleSpritesDataPtr.animationData.animArg], paletteOffset, PLTT_SIZE_4BPP);
           gBattleMonForms[battlerAtk] = gBattleSpritesDataPtr.animationData.animArg;
-          if (gBattleSpritesDataPtr.battlerData[battlerAtk].transformSpecies != SPECIES_NONE)
+          if (gBattleSpritesDataPtr.battlerData[battlerAtk].transformSpecies != (0))
           {
-              BlendPalette(paletteOffset, 16, 6, RGB_WHITE);
+              BlendPalette(paletteOffset, 16, 6, (RGB(31, 31, 31)));
               CpuCopy32(gPlttBufferFaded[paletteOffset],gPlttBufferUnfaded[paletteOffset], PLTT_SIZEOF(16));
           }
           gSprites[gBattlerSpriteIds[battlerAtk]].y = GetBattlerSpriteDefault_Y(battlerAtk);
@@ -835,12 +839,12 @@ export function HandleSpeciesGfxDataChange(battlerAtk: any, battlerDef: any, cas
           {
               position = GetBattlerPosition(battlerAtk);
 
-              if (GetBattlerSide(battlerDef) == B_SIDE_OPPONENT)
+              if (GetBattlerSide(battlerDef) == (1))
                   targetSpecies = GetMonData(gEnemyParty[gBattlerPartyIndexes[battlerDef]], MON_DATA_SPECIES);
               else
                   targetSpecies = GetMonData(gPlayerParty[gBattlerPartyIndexes[battlerDef]], MON_DATA_SPECIES);
 
-              if (GetBattlerSide(battlerAtk) == B_SIDE_PLAYER)
+              if (GetBattlerSide(battlerAtk) == (0))
               {
                   personalityValue = GetMonData(gPlayerParty[gBattlerPartyIndexes[battlerAtk]], MON_DATA_PERSONALITY);
                   otId = GetMonData(gPlayerParty[gBattlerPartyIndexes[battlerAtk]], MON_DATA_OT_ID);
@@ -864,20 +868,20 @@ export function HandleSpeciesGfxDataChange(battlerAtk: any, battlerDef: any, cas
 
           src = gMonSpritesGfxPtr.sprites.ptr[position];
           dst = (OBJ_VRAM0 + gSprites[gBattlerSpriteIds[battlerAtk]].oam.tileNum * 32);
-          DmaCopy32(3, src, dst, MON_PIC_SIZE);
+          DmaCopy32(3, src, dst, (((64) * (64) / 2)));
           paletteOffset = OBJ_PLTT_ID(battlerAtk);
           lzPaletteData = GetMonSpritePalFromSpeciesAndPersonality(targetSpecies, otId, personalityValue);
           LZDecompressWram(lzPaletteData, gDecompressionBuffer);
           LoadPalette(gDecompressionBuffer, paletteOffset, PLTT_SIZE_4BPP);
 
-          if (targetSpecies == SPECIES_CASTFORM)
+          if (targetSpecies == (385))
           {
               gSprites[gBattlerSpriteIds[battlerAtk]].anims = gMonFrontAnimsPtrTable[targetSpecies];
               LZDecompressWram(lzPaletteData, gBattleStruct.castformPalette);
               LoadPalette(gBattleStruct.castformPalette[gBattleMonForms[battlerDef]], paletteOffset, PLTT_SIZE_4BPP);
           }
 
-          BlendPalette(paletteOffset, 16, 6, RGB_WHITE);
+          BlendPalette(paletteOffset, 16, 6, (RGB(31, 31, 31)));
           CpuCopy32(gPlttBufferFaded[paletteOffset],gPlttBufferUnfaded[paletteOffset], PLTT_SIZEOF(16));
 
           if (!IsContest())
@@ -904,14 +908,14 @@ export function BattleLoadSubstituteOrMonSpriteGfx(battler: any, loadMonSprite: 
 
           if (IsContest())
               LZDecompressVram(gSubstituteDollBackGfx, gMonSpritesGfxPtr.sprites.ptr[position]);
-          else if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          else if (GetBattlerSide(battler) != (0))
               LZDecompressVram(gSubstituteDollFrontGfx, gMonSpritesGfxPtr.sprites.ptr[position]);
           else
               LZDecompressVram(gSubstituteDollBackGfx, gMonSpritesGfxPtr.sprites.ptr[position]);
 
           for (i = 1; i < 4; i++)
           {
-              Dma3CopyLarge32_(gMonSpritesGfxPtr.sprites.ptr[position],gMonSpritesGfxPtr.sprites.byte[position][MON_PIC_SIZE * i], MON_PIC_SIZE);
+              Dma3CopyLarge32_(gMonSpritesGfxPtr.sprites.ptr[position],gMonSpritesGfxPtr.sprites.byte[position][(((64) * (64) / 2)) * i], (((64) * (64) / 2)));
           }
 
           palOffset = OBJ_PLTT_ID(battler);
@@ -921,7 +925,7 @@ export function BattleLoadSubstituteOrMonSpriteGfx(battler: any, loadMonSprite: 
       {
           if (!IsContest())
           {
-              if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+              if (GetBattlerSide(battler) != (0))
                   BattleLoadOpponentMonSpriteGfx(gEnemyParty[gBattlerPartyIndexes[battler]], battler);
               else
                   BattleLoadPlayerMonSpriteGfx(gPlayerParty[gBattlerPartyIndexes[battler]], battler);
@@ -942,7 +946,7 @@ export function LoadBattleMonGfxAndAnimate(battler: any, loadMonSprite: any, spr
 
 /** void TrySetBehindSubstituteSpriteBit(u8 battler, u16 move) */
 export function TrySetBehindSubstituteSpriteBit(battler: any, move: any): any {
-  if (move == MOVE_SUBSTITUTE)
+  if (move == (164))
           gBattleSpritesDataPtr.battlerData[battler].behindSubstitute = 1;
 }
 
@@ -961,7 +965,7 @@ export function HandleLowHpMusicChange(mon: any, battler: any): any {
           if (!gBattleSpritesDataPtr.battlerData[battler].lowHpSong)
           {
               if (!gBattleSpritesDataPtr.battlerData[BATTLE_PARTNER(battler)].lowHpSong)
-                  PlaySE(SE_LOW_HEALTH);
+                  PlaySE((90));
               gBattleSpritesDataPtr.battlerData[battler].lowHpSong = 1;
           }
       }
@@ -970,12 +974,12 @@ export function HandleLowHpMusicChange(mon: any, battler: any): any {
           gBattleSpritesDataPtr.battlerData[battler].lowHpSong = 0;
           if (!IsDoubleBattle())
           {
-              m4aSongNumStop(SE_LOW_HEALTH);
+              m4aSongNumStop((90));
               return;
           }
           if (IsDoubleBattle() && !gBattleSpritesDataPtr.battlerData[BATTLE_PARTNER(battler)].lowHpSong)
           {
-              m4aSongNumStop(SE_LOW_HEALTH);
+              m4aSongNumStop((90));
               return;
           }
       }
@@ -989,7 +993,7 @@ export function BattleStopLowHpSound(): any {
       if (IsDoubleBattle())
           gBattleSpritesDataPtr.battlerData[BATTLE_PARTNER(playerBattler)].lowHpSong = 0;
 
-      m4aSongNumStop(SE_LOW_HEALTH);
+      m4aSongNumStop((90));
 }
 
 /** u8 GetMonHPBarLevel(struct Pokemon *mon) */
@@ -1075,7 +1079,7 @@ export function SpriteCB_EnemyShadow(shadowSprite: any): any {
       }
       if (gAnimScriptActive || battlerSprite.invisible)
           invisible = TRUE;
-      else if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies != SPECIES_NONE
+      else if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies != (0)
                && gEnemyMonElevation[gBattleSpritesDataPtr.battlerData[battler].transformSpecies] == 0)
           invisible = TRUE;
 
@@ -1094,10 +1098,10 @@ export function SpriteCB_SetInvisible(sprite: any): any {
 
 /** void SetBattlerShadowSpriteCallback(u8 battler, u16 species) */
 export function SetBattlerShadowSpriteCallback(battler: any, species: any): any {
-  if (GetBattlerSide(battler) == B_SIDE_PLAYER)
+  if (GetBattlerSide(battler) == (0))
           return;
 
-      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies != SPECIES_NONE)
+      if (gBattleSpritesDataPtr.battlerData[battler].transformSpecies != (0))
           species = gBattleSpritesDataPtr.battlerData[battler].transformSpecies;
 
       if (gEnemyMonElevation[species] != 0)
@@ -1136,7 +1140,7 @@ export function FillAroundBattleWindows(): any {
 
 /** void ClearTemporarySpeciesSpriteData(u8 battler, bool8 dontClearSubstitute) */
 export function ClearTemporarySpeciesSpriteData(battler: any, dontClearSubstitute: any): any {
-  gBattleSpritesDataPtr.battlerData[battler].transformSpecies = SPECIES_NONE;
+  gBattleSpritesDataPtr.battlerData[battler].transformSpecies = (0);
       gBattleMonForms[battler] = 0;
       if (!dontClearSubstitute)
           ClearBehindSubstituteBit(battler);
@@ -1148,17 +1152,17 @@ export function AllocateMonSpritesGfx(): any {
 
       gMonSpritesGfxPtr = NULL;
       gMonSpritesGfxPtr = AllocZeroed(0);
-      gMonSpritesGfxPtr.firstDecompressed = AllocZeroed(MON_PIC_SIZE * 4 * MAX_BATTLERS_COUNT);
+      gMonSpritesGfxPtr.firstDecompressed = AllocZeroed((((64) * (64) / 2)) * 4 * MAX_BATTLERS_COUNT);
 
       for (i = 0; i < MAX_BATTLERS_COUNT; i++)
       {
-          gMonSpritesGfxPtr.sprites.ptr[i] = gMonSpritesGfxPtr.firstDecompressed + (i * MON_PIC_SIZE * 4);
+          gMonSpritesGfxPtr.sprites.ptr[i] = gMonSpritesGfxPtr.firstDecompressed + (i * (((64) * (64) / 2)) * 4);
           MEM_WRITE((gMonSpritesGfxPtr.templates + i), gBattlerSpriteTemplates[i]);
 
           for (j = 0; j < 4; j++)
           {
-              gMonSpritesGfxPtr.frameImages[i][j].data = gMonSpritesGfxPtr.sprites.ptr[i] + (j * MON_PIC_SIZE);
-              gMonSpritesGfxPtr.frameImages[i][j].size = MON_PIC_SIZE;
+              gMonSpritesGfxPtr.frameImages[i][j].data = gMonSpritesGfxPtr.sprites.ptr[i] + (j * (((64) * (64) / 2)));
+              gMonSpritesGfxPtr.frameImages[i][j].size = (((64) * (64) / 2));
           }
 
           gMonSpritesGfxPtr.templates[i].images = gMonSpritesGfxPtr.frameImages[i];
@@ -1188,7 +1192,7 @@ export function ShouldPlayNormalMonCry(mon: any): any {
   let hp, maxHP;
       let barLevel: any = null;
 
-      if (GetMonData(mon, MON_DATA_STATUS) & (STATUS1_ANY | STATUS1_TOXIC_COUNTER))
+      if (GetMonData(mon, MON_DATA_STATUS) & (STATUS1_ANY | ((1 << 8 | 1 << 9 | 1 << 10 | 1 << 11))))
           return FALSE;
 
       hp = GetMonData(mon, MON_DATA_HP);

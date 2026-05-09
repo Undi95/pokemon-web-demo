@@ -17,7 +17,6 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sReceivedGiftFlags: any = null;
 let sStatsEnabled: any = null;
 /** void ClearMysteryGift(void) */
 export function ClearMysteryGift(): any {
@@ -63,7 +62,7 @@ export function ValidateWonderNews(news: any): any {
 /** bool32 IsSendingSavedWonderNewsAllowed(void) */
 export function IsSendingSavedWonderNewsAllowed(): any {
   let news: any =gSaveBlock1Ptr.mysteryGift.news;
-      if (news.sendType == SEND_TYPE_DISALLOWED)
+      if (news.sendType == (0))
           return FALSE;
 
       return TRUE;
@@ -138,15 +137,15 @@ export function ValidateSavedWonderCard(): any {
 export function ValidateWonderCard(card: any): any {
   if (card.flagId == 0)
           return FALSE;
-      if (card.type >= CARD_TYPE_COUNT)
+      if (card.type >= (3))
           return FALSE;
-      if (!(card.sendType == SEND_TYPE_DISALLOWED
-         || card.sendType == SEND_TYPE_ALLOWED
-         || card.sendType == SEND_TYPE_ALLOWED_ALWAYS))
+      if (!(card.sendType == (0)
+         || card.sendType == (1)
+         || card.sendType == (2)))
           return FALSE;
-      if (card.bgType >= NUM_WONDER_BGS)
+      if (card.bgType >= (8))
           return FALSE;
-      if (card.maxStamps > MAX_STAMP_CARD_STAMPS)
+      if (card.maxStamps > (7))
           return FALSE;
 
       return TRUE;
@@ -155,7 +154,7 @@ export function ValidateWonderCard(card: any): any {
 /** bool32 IsSendingSavedWonderCardAllowed(void) */
 export function IsSendingSavedWonderCardAllowed(): any {
   let card: any =gSaveBlock1Ptr.mysteryGift.card;
-      if (card.sendType == SEND_TYPE_DISALLOWED)
+      if (card.sendType == (0))
           return FALSE;
 
       return TRUE;
@@ -183,13 +182,13 @@ export function GetWonderCardFlagID(): any {
 
 /** void DisableWonderCardSending(struct WonderCard *card) */
 export function DisableWonderCardSending(card: any): any {
-  if (card.sendType == SEND_TYPE_ALLOWED)
-          card.sendType = SEND_TYPE_DISALLOWED;
+  if (card.sendType == (1))
+          card.sendType = (0);
 }
 
 /** static bool32 IsWonderCardFlagIDInValidRange(u16 flagId) */
 export function IsWonderCardFlagIDInValidRange(flagId: any): any {
-  if (flagId >= WONDER_CARD_FLAG_OFFSET && flagId < WONDER_CARD_FLAG_OFFSET + NUM_WONDER_CARD_FLAGS)
+  if (flagId >= (1000) && flagId < (1000) + ((1 + (0x14D) - (0x13A))))
           return TRUE;
 
       return FALSE;
@@ -202,7 +201,7 @@ export function IsSavedWonderCardGiftNotReceived(): any {
           return FALSE;
 
        
-      if (FlagGet(sReceivedGiftFlags[value - WONDER_CARD_FLAG_OFFSET]) == TRUE)
+      if (FlagGet(sReceivedGiftFlags[value - (1000)]) == TRUE)
           return FALSE;
 
       return TRUE;
@@ -214,7 +213,7 @@ export function GetNumStampsInMetadata(data: any, size: any): any {
       let i: any = null;
       for (i = 0; i < size; i++)
       {
-          if (data.stampData[STAMP_ID][i] && data.stampData[STAMP_SPECIES][i] != SPECIES_NONE)
+          if (data.stampData[(1)][i] && data.stampData[(0)][i] != (0))
               numStamps++;
       }
 
@@ -226,9 +225,9 @@ export function IsStampInMetadata(metadata: any, stamp: any, maxStamps: any): an
   let i: any = null;
       for (i = 0; i < maxStamps; i++)
       {
-          if (metadata.stampData[STAMP_ID][i] == stamp[STAMP_ID])
+          if (metadata.stampData[(1)][i] == stamp[(1)])
               return TRUE;
-          if (metadata.stampData[STAMP_SPECIES][i] == stamp[STAMP_SPECIES])
+          if (metadata.stampData[(0)][i] == stamp[(0)])
               return TRUE;
       }
 
@@ -237,11 +236,11 @@ export function IsStampInMetadata(metadata: any, stamp: any, maxStamps: any): an
 
 /** static bool32 ValidateStamp(const u16 *stamp) */
 export function ValidateStamp(stamp: any): any {
-  if (stamp[STAMP_ID] == 0)
+  if (stamp[(1)] == 0)
           return FALSE;
-      if (stamp[STAMP_SPECIES] == SPECIES_NONE)
+      if (stamp[(0)] == (0))
           return FALSE;
-      if (stamp[STAMP_SPECIES] >= NUM_SPECIES)
+      if (stamp[(0)] >= ((412)))
           return FALSE;
       return TRUE;
 }
@@ -253,7 +252,7 @@ export function GetNumStampsInSavedCard(): any {
           return 0;
 
       card =gSaveBlock1Ptr.mysteryGift.card;
-      if (card.type != CARD_TYPE_STAMP)
+      if (card.type != (1))
           return 0;
 
       return GetNumStampsInMetadata(gSaveBlock1Ptr.mysteryGift.cardMetadata, card.maxStamps);
@@ -272,11 +271,11 @@ export function MysteryGift_TrySaveStamp(stamp: any): any {
 
       for (i = 0; i < maxStamps; i++)
       {
-          if (gSaveBlock1Ptr.mysteryGift.cardMetadata.stampData[STAMP_ID][i] == 0
-           && gSaveBlock1Ptr.mysteryGift.cardMetadata.stampData[STAMP_SPECIES][i] == SPECIES_NONE)
+          if (gSaveBlock1Ptr.mysteryGift.cardMetadata.stampData[(1)][i] == 0
+           && gSaveBlock1Ptr.mysteryGift.cardMetadata.stampData[(0)][i] == (0))
           {
-              gSaveBlock1Ptr.mysteryGift.cardMetadata.stampData[STAMP_ID][i] = stamp[STAMP_ID];
-              gSaveBlock1Ptr.mysteryGift.cardMetadata.stampData[STAMP_SPECIES][i] = stamp[STAMP_SPECIES];
+              gSaveBlock1Ptr.mysteryGift.cardMetadata.stampData[(1)][i] = stamp[(1)];
+              gSaveBlock1Ptr.mysteryGift.cardMetadata.stampData[(0)][i] = stamp[(0)];
               return TRUE;
           }
       }
@@ -316,15 +315,15 @@ export function MysteryGift_LoadLinkGameData(data: any, isWonderNews: any): any 
           data.flagId = 0;
       }
 
-      for (i = 0; i < NUM_QUESTIONNAIRE_WORDS; i++)
+      for (i = 0; i < (4); i++)
           data.questionnaireWords[i] = gSaveBlock1Ptr.mysteryGift.questionnaireWords[i];
 
       CopyTrainerId(data.playerTrainerId, gSaveBlock2Ptr.playerTrainerId);
       StringCopy(data.playerName, gSaveBlock2Ptr.playerName);
-      for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)
+      for (i = 0; i < (6); i++)
           data.easyChatProfile[i] = gSaveBlock1Ptr.easyChatProfile[i];
 
-      memcpy(data.romHeaderGameCode, RomHeaderGameCode, GAME_CODE_LENGTH);
+      memcpy(data.romHeaderGameCode, RomHeaderGameCode, (4));
       data.romHeaderSoftwareVersion = RomHeaderSoftwareVersion;
 }
 
@@ -354,14 +353,14 @@ export function MysteryGift_ValidateLinkGameData(data: any, isWonderNews: any): 
 /** u32 MysteryGift_CompareCardFlags(const u16 *flagId, const struct MysteryGiftLinkGameData *data, const void *unused) */
 export function MysteryGift_CompareCardFlags(flagId: any, data: any, unused: any): any {
   if (data.flagId == 0)
-          return HAS_NO_CARD;
+          return (0);
 
        
       if (flagId == data.flagId)
-          return HAS_SAME_CARD;
+          return (1);
 
        
-      return HAS_DIFF_CARD;
+      return (2);
 }
 
 /** u32 MysteryGift_CheckStamps(const u16 *stamp, const struct MysteryGiftLinkGameData *data, const void *unused) */
@@ -387,7 +386,7 @@ export function MysteryGift_CheckStamps(stamp: any, data: any, unused: any): any
 /** bool32 MysteryGift_DoesQuestionnaireMatch(const struct MysteryGiftLinkGameData *data, const u16 *words) */
 export function MysteryGift_DoesQuestionnaireMatch(data: any, words: any): any {
   let i: any = null;
-      for (i = 0; i < NUM_QUESTIONNAIRE_WORDS; i++)
+      for (i = 0; i < (4); i++)
       {
           if (data.questionnaireWords[i] != words[i])
               return FALSE;
@@ -405,15 +404,15 @@ export function GetNumStampsInLinkData(data: any): any {
 export function MysteryGift_GetCardStatFromLinkData(data: any, stat: any): any {
   switch (stat)
       {
-      case CARD_STAT_BATTLES_WON:
+      case (0):
           return data.cardMetadata.battlesWon;
-      case CARD_STAT_BATTLES_LOST:
+      case (1):
           return data.cardMetadata.battlesLost;
-      case CARD_STAT_NUM_TRADES:
+      case (2):
           return data.cardMetadata.numTrades;
-      case CARD_STAT_NUM_STAMPS:
+      case (3):
           return GetNumStampsInLinkData(data);
-      case CARD_STAT_MAX_STAMPS:
+      case (4):
           return data.maxStamps;
       default:
           AGB_ASSERT(0);
@@ -424,22 +423,22 @@ export function MysteryGift_GetCardStatFromLinkData(data: any, stat: any): any {
 /** static void IncrementCardStat(u32 statType) */
 export function IncrementCardStat(statType: any): any {
   let card: any =gSaveBlock1Ptr.mysteryGift.card;
-      if (card.type == CARD_TYPE_LINK_STAT)
+      if (card.type == (2))
       {
           let stat: any = NULL;
           switch (statType)
           {
-          case CARD_STAT_BATTLES_WON:
+          case (0):
               stat =gSaveBlock1Ptr.mysteryGift.cardMetadata.battlesWon;
               break;
-          case CARD_STAT_BATTLES_LOST:
+          case (1):
               stat =gSaveBlock1Ptr.mysteryGift.cardMetadata.battlesLost;
               break;
-          case CARD_STAT_NUM_TRADES:
+          case (2):
               stat =gSaveBlock1Ptr.mysteryGift.cardMetadata.numTrades;
               break;
-          case CARD_STAT_NUM_STAMPS:  
-          case CARD_STAT_MAX_STAMPS:  
+          case (3):  
+          case (4):  
               break;
           }
 
@@ -447,9 +446,9 @@ export function IncrementCardStat(statType: any): any {
           {
               AGB_ASSERT(0);
           }
-          else if (++(stat) > MAX_WONDER_CARD_STAT)
+          else if (++(stat) > (999))
           {
-              stat = MAX_WONDER_CARD_STAT;
+              stat = (999);
           }
       }
 }
@@ -458,47 +457,47 @@ export function IncrementCardStat(statType: any): any {
 export function MysteryGift_GetCardStat(stat: any): any {
   switch (stat)
       {
-      case CARD_STAT_BATTLES_WON:
+      case (0):
       {
           let card: any =gSaveBlock1Ptr.mysteryGift.card;
-          if (card.type == CARD_TYPE_LINK_STAT)
+          if (card.type == (2))
           {
               let metadata: any =gSaveBlock1Ptr.mysteryGift.cardMetadata;
               return metadata.battlesWon;
           }
           break;
       }
-      case CARD_STAT_BATTLES_LOST:
+      case (1):
       {
           let card: any =gSaveBlock1Ptr.mysteryGift.card;
-          if (card.type == CARD_TYPE_LINK_STAT)
+          if (card.type == (2))
           {
               let metadata: any =gSaveBlock1Ptr.mysteryGift.cardMetadata;
               return metadata.battlesLost;
           }
           break;
       }
-      case CARD_STAT_NUM_TRADES:
+      case (2):
       {
           let card: any =gSaveBlock1Ptr.mysteryGift.card;
-          if (card.type == CARD_TYPE_LINK_STAT)
+          if (card.type == (2))
           {
               let metadata: any =gSaveBlock1Ptr.mysteryGift.cardMetadata;
               return metadata.numTrades;
           }
           break;
       }
-      case CARD_STAT_NUM_STAMPS:
+      case (3):
       {
           let card: any =gSaveBlock1Ptr.mysteryGift.card;
-          if (card.type == CARD_TYPE_STAMP)
+          if (card.type == (1))
               return GetNumStampsInSavedCard();
           break;
       }
-      case CARD_STAT_MAX_STAMPS:
+      case (4):
       {
           let card: any =gSaveBlock1Ptr.mysteryGift.card;
-          if (card.type == CARD_TYPE_STAMP)
+          if (card.type == (1))
               return card.maxStamps;
           break;
       }
@@ -535,20 +534,20 @@ export function MysteryGift_TryIncrementStat(stat: any, trainerId: any): any {
       {
           switch (stat)
           {
-          case CARD_STAT_NUM_TRADES:
-              IncrementCardStatForNewTrainer(CARD_STAT_NUM_TRADES,
+          case (2):
+              IncrementCardStatForNewTrainer((2),
                                               trainerId,
                                               gSaveBlock1Ptr.mysteryGift.trainerIds[1],
                                               ARRAY_COUNT(gSaveBlock1Ptr.mysteryGift.trainerIds[1]));
               break;
-          case CARD_STAT_BATTLES_WON:
-              IncrementCardStatForNewTrainer(CARD_STAT_BATTLES_WON,
+          case (0):
+              IncrementCardStatForNewTrainer((0),
                                               trainerId,
                                               gSaveBlock1Ptr.mysteryGift.trainerIds[0],
                                               ARRAY_COUNT(gSaveBlock1Ptr.mysteryGift.trainerIds[0]));
               break;
-          case CARD_STAT_BATTLES_LOST:
-              IncrementCardStatForNewTrainer(CARD_STAT_BATTLES_LOST,
+          case (1):
+              IncrementCardStatForNewTrainer((1),
                                               trainerId,
                                               gSaveBlock1Ptr.mysteryGift.trainerIds[0],
                                               ARRAY_COUNT(gSaveBlock1Ptr.mysteryGift.trainerIds[0]));

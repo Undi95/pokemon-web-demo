@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gFlashNumRemainingBytes: any = null;
 /** u16 EraseFlashChip_MX(void) */
 export function EraseFlashChip_MX(): any {
   let result: any = null;

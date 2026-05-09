@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gPostMenuFieldCallback: any = null;
 /** bool8 SetUpFieldMove_Dig(void) */
 export function SetUpFieldMove_Dig(): any {
   if (CanUseDigOrEscapeRopeOnCurMap() == TRUE)
@@ -32,7 +35,7 @@ export function SetUpFieldMove_Dig(): any {
 /** static void FieldCallback_Dig(void) */
 export function FieldCallback_Dig(): any {
   Overworld_ResetStateAfterDigEscRope();
-      FieldEffectStart(FLDEFF_USE_DIG);
+      FieldEffectStart((38));
       gFieldEffectArguments[0] = GetCursorSelectionMonId();
 }
 
@@ -43,7 +46,7 @@ export function FldEff_UseDig(): any {
       gTasks[taskId].data[8] = StartDigFieldEffect >> 16;
       gTasks[taskId].data[9] = StartDigFieldEffect;
       if (!ShouldDoBrailleDigEffect())
-          SetPlayerAvatarTransitionFlags(PLAYER_AVATAR_FLAG_ON_FOOT);
+          SetPlayerAvatarTransitionFlags(((1 << 0)));
       return FALSE;
 }
 
@@ -51,7 +54,7 @@ export function FldEff_UseDig(): any {
 export function StartDigFieldEffect(): any {
   let taskId: any = null;
 
-      FieldEffectActiveListRemove(FLDEFF_USE_DIG);
+      FieldEffectActiveListRemove((38));
       if (ShouldDoBrailleDigEffect())
       {
           DoBrailleDigEffect();

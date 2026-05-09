@@ -17,25 +17,15 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAcroBikeTrickCollisionTypes: any = null;
-let sAcroBikeTrickMetatiles: any = null;
-let sArrowWarpMetatileBehaviorChecks: any = null;
-let sArrowWarpMetatileBehaviorChecks2: any = null;
-let sFRLGAvatarGfxIds: any = null;
-let sFishingStateFuncs: any = null;
-let sForcedMovementFuncs: any = null;
-let sForcedMovementTestFuncs: any = null;
-let sPlayerAvatarGfxIds: any = null;
-let sPlayerAvatarGfxToStateFlag: any = null;
-let sPlayerAvatarSecretBaseMatJump: any = null;
-let sPlayerAvatarSecretBaseMatSpin: any = null;
-let sPlayerAvatarTransitionFuncs: any = null;
-let sPlayerNotOnBikeFuncs: any = null;
-let sPushBoulderFuncs: any = null;
-let sRSAvatarGfxIds: any = null;
-let sRivalAvatarGfxIds: any = null;
-let sSpinDirections: any = null;
 let sSpinStartFacingDir: any = null;
+let tCurY: any = null;
+let tDestY: any = null;
+let tGroundTimer: any = null;
+let tPriority: any = null;
+let tSpeed: any = null;
+let tSpinDelayTimer: any = null;
+let tStartDir: any = null;
+let tSubpriority: any = null;
 /** void MovementType_Player(struct Sprite *sprite) */
 export function MovementType_Player(sprite: any): any {
   UpdateObjectEventCurrentMovement(gObjectEvents[sprite.data[0]], sprite, ObjectEventCB2_NoMovement2);
@@ -73,9 +63,9 @@ export function TryInterruptObjectEventSpecialAnim(playerObjEvent: any, directio
        && !ObjectEventClearHeldMovementIfFinished(playerObjEvent))
       {
           let heldMovementActionId: any = ObjectEventGetHeldMovementActionId(playerObjEvent);
-          if (heldMovementActionId > MOVEMENT_ACTION_WALK_FAST_RIGHT && heldMovementActionId < MOVEMENT_ACTION_WALK_IN_PLACE_NORMAL_DOWN)
+          if (heldMovementActionId > (0x18) && heldMovementActionId < (0x1D))
           {
-              if (direction == DIR_NONE)
+              if (direction == (0))
               {
                   return TRUE;
               }
@@ -104,12 +94,12 @@ export function npc_clear_strange_bits(objEvent: any): any {
   objEvent.inanimate = FALSE;
       objEvent.disableAnim = FALSE;
       objEvent.facingDirectionLocked = FALSE;
-      gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_DASH;
+      gPlayerAvatar.flags &= ~((1 << 7));
 }
 
 /** static void MovePlayerAvatarUsingKeypadInput(u8 direction, u16 newKeys, u16 heldKeys) */
 export function MovePlayerAvatarUsingKeypadInput(direction: any, newKeys: any, heldKeys: any): any {
-  if (gPlayerAvatar.flags & (PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+  if (gPlayerAvatar.flags & (((1 << 1)) | ((1 << 2))))
           MovePlayerOnBike(direction, newKeys, heldKeys);
       else
           MovePlayerNotOnBike(direction, heldKeys);
@@ -118,7 +108,7 @@ export function MovePlayerAvatarUsingKeypadInput(direction: any, newKeys: any, h
 /** static void PlayerAllowForcedMovementIfMovingSameDirection(void) */
 export function PlayerAllowForcedMovementIfMovingSameDirection(): any {
   if (gPlayerAvatar.runningState == MOVING)
-          gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_CONTROLLABLE;
+          gPlayerAvatar.flags &= ~((1 << 5));
 }
 
 /** static bool8 TryDoMetatileBehaviorForcedMovement(void) */
@@ -130,7 +120,7 @@ export function TryDoMetatileBehaviorForcedMovement(): any {
 export function GetForcedMovementByMetatileBehavior(): any {
   let i: any = null;
 
-      if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_CONTROLLABLE))
+      if (!(gPlayerAvatar.flags & ((1 << 5))))
       {
           let metatileBehavior: any = gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior;
 
@@ -145,14 +135,14 @@ export function GetForcedMovementByMetatileBehavior(): any {
 
 /** static bool8 ForcedMovement_None(void) */
 export function ForcedMovement_None(): any {
-  if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_FORCED_MOVE)
+  if (gPlayerAvatar.flags & ((1 << 6)))
       {
           let playerObjEvent: any =gObjectEvents[gPlayerAvatar.objectEventId];
 
           playerObjEvent.facingDirectionLocked = FALSE;
           playerObjEvent.enableAnim = TRUE;
           SetObjectEventDirection(playerObjEvent, playerObjEvent.facingDirection);
-          gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_FORCED_MOVE;
+          gPlayerAvatar.flags &= ~((1 << 6));
       }
       return FALSE;
 }
@@ -162,7 +152,7 @@ export function DoForcedMovement(direction: any, moveFunc: any): any {
   let playerAvatar: any =gPlayerAvatar;
       let collision: any = CheckForPlayerAvatarCollision(direction);
 
-      playerAvatar.flags |= PLAYER_AVATAR_FLAG_FORCED_MOVE;
+      playerAvatar.flags |= ((1 << 6));
       if (collision)
       {
           ForcedMovement_None();
@@ -174,7 +164,7 @@ export function DoForcedMovement(direction: any, moveFunc: any): any {
           {
               if (collision == COLLISION_LEDGE_JUMP)
                   PlayerJumpLedge(direction);
-              playerAvatar.flags |= PLAYER_AVATAR_FLAG_FORCED_MOVE;
+              playerAvatar.flags |= ((1 << 6));
               playerAvatar.runningState = MOVING;
               return TRUE;
           }
@@ -202,42 +192,42 @@ export function ForcedMovement_Slip(): any {
 
 /** static bool8 ForcedMovement_WalkSouth(void) */
 export function ForcedMovement_WalkSouth(): any {
-  return DoForcedMovement(DIR_SOUTH, PlayerWalkNormal);
+  return DoForcedMovement((1), PlayerWalkNormal);
 }
 
 /** static bool8 ForcedMovement_WalkNorth(void) */
 export function ForcedMovement_WalkNorth(): any {
-  return DoForcedMovement(DIR_NORTH, PlayerWalkNormal);
+  return DoForcedMovement((2), PlayerWalkNormal);
 }
 
 /** static bool8 ForcedMovement_WalkWest(void) */
 export function ForcedMovement_WalkWest(): any {
-  return DoForcedMovement(DIR_WEST, PlayerWalkNormal);
+  return DoForcedMovement((3), PlayerWalkNormal);
 }
 
 /** static bool8 ForcedMovement_WalkEast(void) */
 export function ForcedMovement_WalkEast(): any {
-  return DoForcedMovement(DIR_EAST, PlayerWalkNormal);
+  return DoForcedMovement((4), PlayerWalkNormal);
 }
 
 /** static bool8 ForcedMovement_PushedSouthByCurrent(void) */
 export function ForcedMovement_PushedSouthByCurrent(): any {
-  return DoForcedMovement(DIR_SOUTH, PlayerRideWaterCurrent);
+  return DoForcedMovement((1), PlayerRideWaterCurrent);
 }
 
 /** static bool8 ForcedMovement_PushedNorthByCurrent(void) */
 export function ForcedMovement_PushedNorthByCurrent(): any {
-  return DoForcedMovement(DIR_NORTH, PlayerRideWaterCurrent);
+  return DoForcedMovement((2), PlayerRideWaterCurrent);
 }
 
 /** static bool8 ForcedMovement_PushedWestByCurrent(void) */
 export function ForcedMovement_PushedWestByCurrent(): any {
-  return DoForcedMovement(DIR_WEST, PlayerRideWaterCurrent);
+  return DoForcedMovement((3), PlayerRideWaterCurrent);
 }
 
 /** static bool8 ForcedMovement_PushedEastByCurrent(void) */
 export function ForcedMovement_PushedEastByCurrent(): any {
-  return DoForcedMovement(DIR_EAST, PlayerRideWaterCurrent);
+  return DoForcedMovement((4), PlayerRideWaterCurrent);
 }
 
 /** static bool8 ForcedMovement_Slide(u8 direction, void (*moveFunc)(u8)) */
@@ -251,22 +241,22 @@ export function ForcedMovement_Slide(direction: any, moveFunc: any): any {
 
 /** static bool8 ForcedMovement_SlideSouth(void) */
 export function ForcedMovement_SlideSouth(): any {
-  return ForcedMovement_Slide(DIR_SOUTH, PlayerWalkFast);
+  return ForcedMovement_Slide((1), PlayerWalkFast);
 }
 
 /** static bool8 ForcedMovement_SlideNorth(void) */
 export function ForcedMovement_SlideNorth(): any {
-  return ForcedMovement_Slide(DIR_NORTH, PlayerWalkFast);
+  return ForcedMovement_Slide((2), PlayerWalkFast);
 }
 
 /** static bool8 ForcedMovement_SlideWest(void) */
 export function ForcedMovement_SlideWest(): any {
-  return ForcedMovement_Slide(DIR_WEST, PlayerWalkFast);
+  return ForcedMovement_Slide((3), PlayerWalkFast);
 }
 
 /** static bool8 ForcedMovement_SlideEast(void) */
 export function ForcedMovement_SlideEast(): any {
-  return ForcedMovement_Slide(DIR_EAST, PlayerWalkFast);
+  return ForcedMovement_Slide((4), PlayerWalkFast);
 }
 
 /** static bool8 ForcedMovement_MatJump(void) */
@@ -285,11 +275,11 @@ export function ForcedMovement_MatSpin(): any {
 export function ForcedMovement_MuddySlope(): any {
   let playerObjEvent: any =gObjectEvents[gPlayerAvatar.objectEventId];
 
-      if (playerObjEvent.movementDirection != DIR_NORTH || GetPlayerSpeed() < PLAYER_SPEED_FASTEST)
+      if (playerObjEvent.movementDirection != (2) || GetPlayerSpeed() < PLAYER_SPEED_FASTEST)
       {
           Bike_UpdateBikeCounterSpeed(0);
           playerObjEvent.facingDirectionLocked = TRUE;
-          return DoForcedMovement(DIR_SOUTH, PlayerWalkFast);
+          return DoForcedMovement((1), PlayerWalkFast);
       }
       else
       {
@@ -304,7 +294,7 @@ export function MovePlayerNotOnBike(direction: any, heldKeys: any): any {
 
 /** static u8 CheckMovementInputNotOnBike(u8 direction) */
 export function CheckMovementInputNotOnBike(direction: any): any {
-  if (direction == DIR_NONE)
+  if (direction == (0))
           return gPlayerAvatar.runningState = NOT_MOVING;
       else if (direction != GetPlayerMovementDirection() && gPlayerAvatar.runningState != MOVING)
           return gPlayerAvatar.runningState = TURN_DIRECTION;
@@ -348,18 +338,18 @@ export function PlayerNotOnBikeMoving(direction: any, heldKeys: any): any {
           }
       }
 
-      if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+      if (gPlayerAvatar.flags & ((1 << 3)))
       {
            
           PlayerWalkFast(direction);
           return;
       }
 
-      if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_UNDERWATER) && (heldKeys & B_BUTTON) && FlagGet(FLAG_SYS_B_DASH)
+      if (!(gPlayerAvatar.flags & ((1 << 4))) && (heldKeys & B_BUTTON) && FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x60)))
        && IsRunningDisallowed(gObjectEvents[gPlayerAvatar.objectEventId].currentMetatileBehavior) == 0)
       {
           PlayerRun(direction);
-          gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_DASH;
+          gPlayerAvatar.flags |= ((1 << 7));
           return;
       }
       else
@@ -398,7 +388,7 @@ export function CheckForObjectEventCollision(objectEvent: any, x: any, y: any, d
 
       if (ShouldJumpLedge(x, y, direction))
       {
-          IncrementGameStat(GAME_STAT_JUMPED_DOWN_LEDGES);
+          IncrementGameStat((43));
           return COLLISION_LEDGE_JUMP;
       }
       if (collision == COLLISION_OBJECT_EVENT && TryPushBoulder(x, y, direction))
@@ -428,9 +418,9 @@ export function CheckForObjectEventStaticCollision(objectEvent: any, x: any, y: 
 
 /** static bool8 CanStopSurfing(s16 x, s16 y, u8 direction) */
 export function CanStopSurfing(x: any, y: any, direction: any): any {
-  if ((gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+  if ((gPlayerAvatar.flags & ((1 << 3)))
        && MapGridGetElevationAt(x, y) == ELEVATION_DEFAULT
-       && GetObjectEventIdByPosition(x, y, ELEVATION_DEFAULT) == OBJECT_EVENTS_COUNT)
+       && GetObjectEventIdByPosition(x, y, ELEVATION_DEFAULT) == (16))
       {
           CreateStopSurfingTask(direction);
           return TRUE;
@@ -443,7 +433,7 @@ export function CanStopSurfing(x: any, y: any, direction: any): any {
 
 /** static bool8 ShouldJumpLedge(s16 x, s16 y, u8 direction) */
 export function ShouldJumpLedge(x: any, y: any, direction: any): any {
-  if (GetLedgeJumpDirection(x, y, direction) != DIR_NONE)
+  if (GetLedgeJumpDirection(x, y, direction) != (0))
           return TRUE;
       else
           return FALSE;
@@ -451,11 +441,11 @@ export function ShouldJumpLedge(x: any, y: any, direction: any): any {
 
 /** static bool8 TryPushBoulder(s16 x, s16 y, u8 direction) */
 export function TryPushBoulder(x: any, y: any, direction: any): any {
-  if (FlagGet(FLAG_SYS_USE_STRENGTH))
+  if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x29))))
       {
           let objectEventId: any = GetObjectEventIdByXY(x, y);
 
-          if (objectEventId != OBJECT_EVENTS_COUNT && gObjectEvents[objectEventId].graphicsId == OBJ_EVENT_GFX_PUSHABLE_BOULDER)
+          if (objectEventId != (16) && gObjectEvents[objectEventId].graphicsId == (87))
           {
               x = gObjectEvents[objectEventId].currentCoords.x;
               y = gObjectEvents[objectEventId].currentCoords.y;
@@ -499,7 +489,7 @@ export function IsPlayerCollidingWithFarawayIslandMew(direction: any): any {
 
       MoveCoords(direction,playerX,playerY);
       mewObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_FARAWAY_ISLAND_MEW, MAP_NUM(MAP_FARAWAY_ISLAND_INTERIOR), MAP_GROUP(MAP_FARAWAY_ISLAND_INTERIOR));
-      if (mewObjectId == OBJECT_EVENTS_COUNT)
+      if (mewObjectId == (16))
           return FALSE;
 
       object =gObjectEvents[mewObjectId];
@@ -545,14 +535,14 @@ export function DoPlayerAvatarTransition(): any {
 export function PlayerAvatarTransition_Normal(objEvent: any): any {
   ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_NORMAL));
       ObjectEventTurn(objEvent, objEvent.movementDirection);
-      SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ON_FOOT);
+      SetPlayerAvatarStateMask(((1 << 0)));
 }
 
 /** static void PlayerAvatarTransition_MachBike(struct ObjectEvent *objEvent) */
 export function PlayerAvatarTransition_MachBike(objEvent: any): any {
   ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_MACH_BIKE));
       ObjectEventTurn(objEvent, objEvent.movementDirection);
-      SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_MACH_BIKE);
+      SetPlayerAvatarStateMask(((1 << 1)));
       BikeClearState(0, 0);
 }
 
@@ -560,7 +550,7 @@ export function PlayerAvatarTransition_MachBike(objEvent: any): any {
 export function PlayerAvatarTransition_AcroBike(objEvent: any): any {
   ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_ACRO_BIKE));
       ObjectEventTurn(objEvent, objEvent.movementDirection);
-      SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_ACRO_BIKE);
+      SetPlayerAvatarStateMask(((1 << 2)));
       BikeClearState(0, 0);
       Bike_HandleBumpySlopeJump();
 }
@@ -571,11 +561,11 @@ export function PlayerAvatarTransition_Surfing(objEvent: any): any {
 
       ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_SURFING));
       ObjectEventTurn(objEvent, objEvent.movementDirection);
-      SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_SURFING);
+      SetPlayerAvatarStateMask(((1 << 3)));
       gFieldEffectArguments[0] = objEvent.currentCoords.x;
       gFieldEffectArguments[1] = objEvent.currentCoords.y;
       gFieldEffectArguments[2] = gPlayerAvatar.objectEventId;
-      spriteId = FieldEffectStart(FLDEFF_SURF_BLOB);
+      spriteId = FieldEffectStart((8));
       objEvent.fieldEffectSpriteId = spriteId;
       SetSurfBlob_BobState(spriteId, BOB_PLAYER_AND_MON);
 }
@@ -584,13 +574,13 @@ export function PlayerAvatarTransition_Surfing(objEvent: any): any {
 export function PlayerAvatarTransition_Underwater(objEvent: any): any {
   ObjectEventSetGraphicsId(objEvent, GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_UNDERWATER));
       ObjectEventTurn(objEvent, objEvent.movementDirection);
-      SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_UNDERWATER);
+      SetPlayerAvatarStateMask(((1 << 4)));
       objEvent.fieldEffectSpriteId = StartUnderwaterSurfBlobBobbing(objEvent.spriteId);
 }
 
 /** static void PlayerAvatarTransition_ReturnToField(struct ObjectEvent *objEvent) */
 export function PlayerAvatarTransition_ReturnToField(objEvent: any): any {
-  gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_CONTROLLABLE;
+  gPlayerAvatar.flags |= ((1 << 5));
 }
 
 /** void UpdatePlayerAvatarTransitionState(void) */
@@ -615,11 +605,11 @@ export function UpdatePlayerAvatarTransitionState(): any {
 export function PlayerAnimIsMultiFrameStationary(): any {
   let movementActionId: any = gObjectEvents[gPlayerAvatar.objectEventId].movementActionId;
 
-      if (movementActionId <= MOVEMENT_ACTION_FACE_RIGHT
-       || (movementActionId >= MOVEMENT_ACTION_DELAY_1 && movementActionId <= MOVEMENT_ACTION_DELAY_16)
-       || (movementActionId >= MOVEMENT_ACTION_WALK_IN_PLACE_SLOW_DOWN && movementActionId <= MOVEMENT_ACTION_WALK_IN_PLACE_FASTER_RIGHT)
-       || (movementActionId >= MOVEMENT_ACTION_ACRO_WHEELIE_FACE_DOWN && movementActionId <= MOVEMENT_ACTION_ACRO_END_WHEELIE_FACE_RIGHT)
-       || (movementActionId >= MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_DOWN && movementActionId <= MOVEMENT_ACTION_ACRO_WHEELIE_IN_PLACE_RIGHT))
+      if (movementActionId <= (0x3)
+       || (movementActionId >= (0x10) && movementActionId <= (0x14))
+       || (movementActionId >= (0x19) && movementActionId <= (0x28))
+       || (movementActionId >= (0x64) && movementActionId <= (0x6F))
+       || (movementActionId >= (0x7C) && movementActionId <= (0x7F)))
           return TRUE;
       else
           return FALSE;
@@ -669,65 +659,65 @@ export function PlayerSetAnimId(movementActionId: any, copyableMovement: any): a
 
 /** void PlayerWalkNormal(u8 direction) */
 export function PlayerWalkNormal(direction: any): any {
-  PlayerSetAnimId(GetWalkNormalMovementAction(direction), COPY_MOVE_WALK);
+  PlayerSetAnimId(GetWalkNormalMovementAction(direction), (2));
 }
 
 /** void PlayerWalkFast(u8 direction) */
 export function PlayerWalkFast(direction: any): any {
-  PlayerSetAnimId(GetWalkFastMovementAction(direction), COPY_MOVE_WALK);
+  PlayerSetAnimId(GetWalkFastMovementAction(direction), (2));
 }
 
 /** void PlayerRideWaterCurrent(u8 direction) */
 export function PlayerRideWaterCurrent(direction: any): any {
-  PlayerSetAnimId(GetRideWaterCurrentMovementAction(direction), COPY_MOVE_WALK);
+  PlayerSetAnimId(GetRideWaterCurrentMovementAction(direction), (2));
 }
 
 /** void PlayerWalkFaster(u8 direction) */
 export function PlayerWalkFaster(direction: any): any {
-  PlayerSetAnimId(GetWalkFasterMovementAction(direction), COPY_MOVE_WALK);
+  PlayerSetAnimId(GetWalkFasterMovementAction(direction), (2));
 }
 
 /** static void PlayerRun(u8 direction) */
 export function PlayerRun(direction: any): any {
-  PlayerSetAnimId(GetPlayerRunMovementAction(direction), COPY_MOVE_WALK);
+  PlayerSetAnimId(GetPlayerRunMovementAction(direction), (2));
 }
 
 /** void PlayerOnBikeCollide(u8 direction) */
 export function PlayerOnBikeCollide(direction: any): any {
   PlayCollisionSoundIfNotFacingWarp(direction);
-      PlayerSetAnimId(GetWalkInPlaceNormalMovementAction(direction), COPY_MOVE_WALK);
+      PlayerSetAnimId(GetWalkInPlaceNormalMovementAction(direction), (2));
 }
 
 /** void PlayerOnBikeCollideWithFarawayIslandMew(u8 direction) */
 export function PlayerOnBikeCollideWithFarawayIslandMew(direction: any): any {
-  PlayerSetAnimId(GetWalkInPlaceNormalMovementAction(direction), COPY_MOVE_WALK);
+  PlayerSetAnimId(GetWalkInPlaceNormalMovementAction(direction), (2));
 }
 
 /** static void PlayerNotOnBikeCollide(u8 direction) */
 export function PlayerNotOnBikeCollide(direction: any): any {
   PlayCollisionSoundIfNotFacingWarp(direction);
-      PlayerSetAnimId(GetWalkInPlaceSlowMovementAction(direction), COPY_MOVE_WALK);
+      PlayerSetAnimId(GetWalkInPlaceSlowMovementAction(direction), (2));
 }
 
 /** static void PlayerNotOnBikeCollideWithFarawayIslandMew(u8 direction) */
 export function PlayerNotOnBikeCollideWithFarawayIslandMew(direction: any): any {
-  PlayerSetAnimId(GetWalkInPlaceSlowMovementAction(direction), COPY_MOVE_WALK);
+  PlayerSetAnimId(GetWalkInPlaceSlowMovementAction(direction), (2));
 }
 
 /** void PlayerFaceDirection(u8 direction) */
 export function PlayerFaceDirection(direction: any): any {
-  PlayerSetAnimId(GetFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
+  PlayerSetAnimId(GetFaceDirectionMovementAction(direction), (1));
 }
 
 /** void PlayerTurnInPlace(u8 direction) */
 export function PlayerTurnInPlace(direction: any): any {
-  PlayerSetAnimId(GetWalkInPlaceFastMovementAction(direction), COPY_MOVE_FACE);
+  PlayerSetAnimId(GetWalkInPlaceFastMovementAction(direction), (1));
 }
 
 /** void PlayerJumpLedge(u8 direction) */
 export function PlayerJumpLedge(direction: any): any {
-  PlaySE(SE_LEDGE);
-      PlayerSetAnimId(GetJump2MovementAction(direction), COPY_MOVE_JUMP2);
+  PlaySE((10));
+      PlayerSetAnimId(GetJump2MovementAction(direction), (8));
 }
 
 /** void PlayerFreeze(void) */
@@ -741,62 +731,62 @@ export function PlayerFreeze(): any {
 
 /** void PlayerIdleWheelie(u8 direction) */
 export function PlayerIdleWheelie(direction: any): any {
-  PlayerSetAnimId(GetAcroWheelieFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
+  PlayerSetAnimId(GetAcroWheelieFaceDirectionMovementAction(direction), (1));
 }
 
 /** void PlayerStartWheelie(u8 direction) */
 export function PlayerStartWheelie(direction: any): any {
-  PlayerSetAnimId(GetAcroPopWheelieFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
+  PlayerSetAnimId(GetAcroPopWheelieFaceDirectionMovementAction(direction), (1));
 }
 
 /** void PlayerEndWheelie(u8 direction) */
 export function PlayerEndWheelie(direction: any): any {
-  PlayerSetAnimId(GetAcroEndWheelieFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
+  PlayerSetAnimId(GetAcroEndWheelieFaceDirectionMovementAction(direction), (1));
 }
 
 /** void PlayerStandingHoppingWheelie(u8 direction) */
 export function PlayerStandingHoppingWheelie(direction: any): any {
-  PlaySE(SE_BIKE_HOP);
-      PlayerSetAnimId(GetAcroWheelieHopFaceDirectionMovementAction(direction), COPY_MOVE_FACE);
+  PlaySE((34));
+      PlayerSetAnimId(GetAcroWheelieHopFaceDirectionMovementAction(direction), (1));
 }
 
 /** void PlayerMovingHoppingWheelie(u8 direction) */
 export function PlayerMovingHoppingWheelie(direction: any): any {
-  PlaySE(SE_BIKE_HOP);
-      PlayerSetAnimId(GetAcroWheelieHopDirectionMovementAction(direction), COPY_MOVE_WALK);
+  PlaySE((34));
+      PlayerSetAnimId(GetAcroWheelieHopDirectionMovementAction(direction), (2));
 }
 
 /** void PlayerLedgeHoppingWheelie(u8 direction) */
 export function PlayerLedgeHoppingWheelie(direction: any): any {
-  PlaySE(SE_BIKE_HOP);
-      PlayerSetAnimId(GetAcroWheelieJumpDirectionMovementAction(direction), COPY_MOVE_JUMP2);
+  PlaySE((34));
+      PlayerSetAnimId(GetAcroWheelieJumpDirectionMovementAction(direction), (8));
 }
 
 /** void PlayerAcroTurnJump(u8 direction) */
 export function PlayerAcroTurnJump(direction: any): any {
-  PlaySE(SE_BIKE_HOP);
-      PlayerSetAnimId(GetJumpInPlaceTurnAroundMovementAction(direction), COPY_MOVE_FACE);
+  PlaySE((34));
+      PlayerSetAnimId(GetJumpInPlaceTurnAroundMovementAction(direction), (1));
 }
 
 /** void PlayerWheelieInPlace(u8 direction) */
 export function PlayerWheelieInPlace(direction: any): any {
-  PlaySE(SE_WALL_HIT);
-      PlayerSetAnimId(GetAcroWheelieInPlaceDirectionMovementAction(direction), COPY_MOVE_WALK);
+  PlaySE((7));
+      PlayerSetAnimId(GetAcroWheelieInPlaceDirectionMovementAction(direction), (2));
 }
 
 /** void PlayerPopWheelieWhileMoving(u8 direction) */
 export function PlayerPopWheelieWhileMoving(direction: any): any {
-  PlayerSetAnimId(GetAcroPopWheelieMoveDirectionMovementAction(direction), COPY_MOVE_WALK);
+  PlayerSetAnimId(GetAcroPopWheelieMoveDirectionMovementAction(direction), (2));
 }
 
 /** void PlayerWheelieMove(u8 direction) */
 export function PlayerWheelieMove(direction: any): any {
-  PlayerSetAnimId(GetAcroWheelieMoveDirectionMovementAction(direction), COPY_MOVE_WALK);
+  PlayerSetAnimId(GetAcroWheelieMoveDirectionMovementAction(direction), (2));
 }
 
 /** void PlayerEndWheelieWhileMoving(u8 direction) */
 export function PlayerEndWheelieWhileMoving(direction: any): any {
-  PlayerSetAnimId(GetAcroEndWheelieMoveDirectionMovementAction(direction), COPY_MOVE_WALK);
+  PlayerSetAnimId(GetAcroEndWheelieMoveDirectionMovementAction(direction), (2));
 }
 
 /** static void PlayCollisionSoundIfNotFacingWarp(u8 direction) */
@@ -807,14 +797,14 @@ export function PlayCollisionSoundIfNotFacingWarp(direction: any): any {
       if (!sArrowWarpMetatileBehaviorChecks[direction - 1](metatileBehavior))
       {
            
-          if (direction == DIR_NORTH)
+          if (direction == (2))
           {
               PlayerGetDestCoords(x,y);
               MoveCoords(direction,x,y);
               if (MetatileBehavior_IsWarpDoor(MapGridGetMetatileBehaviorAt(x, y)))
                   return;
           }
-          PlaySE(SE_WALL_HIT);
+          PlaySE((7));
       }
 }
 
@@ -842,20 +832,20 @@ export function player_get_pos_including_state_based_drift(x: any, y: any): any 
 
           switch (object.movementActionId)
           {
-          case MOVEMENT_ACTION_WALK_NORMAL_DOWN:
-          case MOVEMENT_ACTION_PLAYER_RUN_DOWN:
+          case (0x8):
+          case (0x35):
               y++;
               return TRUE;
-          case MOVEMENT_ACTION_WALK_NORMAL_UP:
-          case MOVEMENT_ACTION_PLAYER_RUN_UP:
+          case (0x9):
+          case (0x36):
               y--;
               return TRUE;
-          case MOVEMENT_ACTION_WALK_NORMAL_LEFT:
-          case MOVEMENT_ACTION_PLAYER_RUN_LEFT:
+          case (0xA):
+          case (0x37):
               x--;
               return TRUE;
-          case MOVEMENT_ACTION_WALK_NORMAL_RIGHT:
-          case MOVEMENT_ACTION_PLAYER_RUN_RIGHT:
+          case (0xB):
+          case (0x38):
               x++;
               return TRUE;
           }
@@ -912,7 +902,7 @@ export function StopPlayerAvatar(): any {
 
       npc_clear_strange_bits(playerObjEvent);
       SetObjectEventDirection(playerObjEvent, playerObjEvent.facingDirection);
-      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_MACH_BIKE | PLAYER_AVATAR_FLAG_ACRO_BIKE))
+      if (TestPlayerAvatarFlags(((1 << 1)) | ((1 << 2))))
       {
           Bike_HandleBumpySlopeJump();
           Bike_UpdateBikeCounterSpeed(0);
@@ -948,17 +938,17 @@ export function GetPlayerAvatarGraphicsIdByStateId(state: any): any {
 export function unref_GetRivalAvatarGenderByGraphicsId(gfxId: any): any {
   switch (gfxId)
       {
-      case OBJ_EVENT_GFX_RIVAL_MAY_NORMAL:
-      case OBJ_EVENT_GFX_RIVAL_MAY_MACH_BIKE:
-      case OBJ_EVENT_GFX_RIVAL_MAY_ACRO_BIKE:
-      case OBJ_EVENT_GFX_RIVAL_MAY_SURFING:
-      case OBJ_EVENT_GFX_RIVAL_MAY_FIELD_MOVE:
-      case OBJ_EVENT_GFX_MAY_UNDERWATER:
-      case OBJ_EVENT_GFX_MAY_FISHING:
-      case OBJ_EVENT_GFX_MAY_WATERING:
-          return FEMALE;
+      case (105):
+      case (106):
+      case (107):
+      case (108):
+      case (109):
+      case (112):
+      case (138):
+      case (192):
+          return (1);
       default:
-          return MALE;
+          return (0);
       }
 }
 
@@ -966,17 +956,17 @@ export function unref_GetRivalAvatarGenderByGraphicsId(gfxId: any): any {
 export function GetPlayerAvatarGenderByGraphicsId(gfxId: any): any {
   switch (gfxId)
       {
-      case OBJ_EVENT_GFX_MAY_NORMAL:
-      case OBJ_EVENT_GFX_MAY_MACH_BIKE:
-      case OBJ_EVENT_GFX_MAY_ACRO_BIKE:
-      case OBJ_EVENT_GFX_MAY_SURFING:
-      case OBJ_EVENT_GFX_MAY_FIELD_MOVE:
-      case OBJ_EVENT_GFX_MAY_UNDERWATER:
-      case OBJ_EVENT_GFX_MAY_FISHING:
-      case OBJ_EVENT_GFX_MAY_WATERING:
-          return FEMALE;
+      case (89):
+      case (90):
+      case (91):
+      case (92):
+      case (93):
+      case (112):
+      case (138):
+      case (192):
+          return (1);
       default:
-          return MALE;
+          return (0);
       }
 }
 
@@ -984,13 +974,13 @@ export function GetPlayerAvatarGenderByGraphicsId(gfxId: any): any {
 export function PartyHasMonWithSurf(): any {
   let i: any = null;
 
-      if (!TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
+      if (!TestPlayerAvatarFlags(((1 << 3))))
       {
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
-              if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) == SPECIES_NONE)
+              if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) == (0))
                   break;
-              if (MonKnowsMove(gPlayerParty[i], MOVE_SURF))
+              if (MonKnowsMove(gPlayerParty[i], (57)))
                   return TRUE;
           }
       }
@@ -999,7 +989,7 @@ export function PartyHasMonWithSurf(): any {
 
 /** bool8 IsPlayerSurfingNorth(void) */
 export function IsPlayerSurfingNorth(): any {
-  if (GetPlayerMovementDirection() == DIR_NORTH && TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
+  if (GetPlayerMovementDirection() == (2) && TestPlayerAvatarFlags(((1 << 3))))
           return TRUE;
       else
           return FALSE;
@@ -1027,7 +1017,7 @@ export function ClearPlayerAvatarInfo(): any {
 
 /** void SetPlayerAvatarStateMask(u8 flags) */
 export function SetPlayerAvatarStateMask(flags: any): any {
-  gPlayerAvatar.flags &= (PLAYER_AVATAR_FLAG_DASH | PLAYER_AVATAR_FLAG_FORCED_MOVE | PLAYER_AVATAR_FLAG_CONTROLLABLE);
+  gPlayerAvatar.flags &= (((1 << 7)) | ((1 << 6)) | ((1 << 5)));
       gPlayerAvatar.flags |= flags;
 }
 
@@ -1040,7 +1030,7 @@ export function GetPlayerAvatarStateTransitionByGraphicsId(graphicsId: any, gend
           if (sPlayerAvatarGfxToStateFlag[gender][i].graphicsId == graphicsId)
               return sPlayerAvatarGfxToStateFlag[gender][i].playerFlag;
       }
-      return PLAYER_AVATAR_FLAG_ON_FOOT;
+      return ((1 << 0));
 }
 
 /** u8 GetPlayerAvatarGraphicsIdByCurrentState(void) */
@@ -1070,15 +1060,15 @@ export function InitPlayerAvatar(x: any, y: any, direction: any, gender: any): a
       let objectEventId: any = null;
       let objectEvent: any = null;
 
-      playerObjEventTemplate.localId = LOCALID_PLAYER;
+      playerObjEventTemplate.localId = (255);
       playerObjEventTemplate.graphicsId = GetPlayerAvatarGraphicsIdByStateIdAndGender(PLAYER_AVATAR_STATE_NORMAL, gender);
-      playerObjEventTemplate.x = x - MAP_OFFSET;
-      playerObjEventTemplate.y = y - MAP_OFFSET;
+      playerObjEventTemplate.x = x - (7);
+      playerObjEventTemplate.y = y - (7);
       playerObjEventTemplate.elevation = ELEVATION_TRANSITION;
-      playerObjEventTemplate.movementType = MOVEMENT_TYPE_PLAYER;
+      playerObjEventTemplate.movementType = (0xB);
       playerObjEventTemplate.movementRangeX = 0;
       playerObjEventTemplate.movementRangeY = 0;
-      playerObjEventTemplate.trainerType = TRAINER_TYPE_NONE;
+      playerObjEventTemplate.trainerType = (0);
       playerObjEventTemplate.trainerRange_berryTreeId = 0;
       playerObjEventTemplate.script = NULL;
       playerObjEventTemplate.flagId = 0;
@@ -1093,20 +1083,20 @@ export function InitPlayerAvatar(x: any, y: any, direction: any, gender: any): a
       gPlayerAvatar.objectEventId = objectEventId;
       gPlayerAvatar.spriteId = objectEvent.spriteId;
       gPlayerAvatar.gender = gender;
-      SetPlayerAvatarStateMask(PLAYER_AVATAR_FLAG_CONTROLLABLE | PLAYER_AVATAR_FLAG_ON_FOOT);
+      SetPlayerAvatarStateMask(((1 << 5)) | ((1 << 0)));
 }
 
 /** void SetPlayerInvisibility(bool8 invisible) */
 export function SetPlayerInvisibility(invisible: any): any {
   gObjectEvents[gPlayerAvatar.objectEventId].invisible = invisible;
-      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
+      if (TestPlayerAvatarFlags(((1 << 3))))
           gSprites[gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId].invisible = invisible;
 }
 
 /** void SetPlayerAvatarFieldMove(void) */
 export function SetPlayerAvatarFieldMove(): any {
   ObjectEventSetGraphicsId(gObjectEvents[gPlayerAvatar.objectEventId], GetPlayerAvatarGraphicsIdByStateId(PLAYER_AVATAR_STATE_FIELD_MOVE));
-      StartSpriteAnim(gSprites[gPlayerAvatar.spriteId], ANIM_FIELD_MOVE);
+      StartSpriteAnim(gSprites[gPlayerAvatar.spriteId], (0));
 }
 
 /** static void SetPlayerAvatarFishing(u8 direction) */
@@ -1135,7 +1125,7 @@ export function HideShowWarpArrow(objectEvent: any): any {
       let direction: any = null;
       let metatileBehavior: any = objectEvent.currentMetatileBehavior;
 
-      for (x = 0, direction = DIR_SOUTH; x < 4; x++, direction++)
+      for (x = 0, direction = (1); x < 4; x++, direction++)
       {
           if (sArrowWarpMetatileBehaviorChecks2[x](metatileBehavior) && direction == objectEvent.movementDirection)
           {
@@ -1192,8 +1182,8 @@ export function PushBoulder_Move(task: any, player: any, boulder: any): any {
           gFieldEffectArguments[1] = boulder.currentCoords.y;
           gFieldEffectArguments[2] = boulder.previousElevation;
           gFieldEffectArguments[3] = gSprites[boulder.spriteId].oam.priority;
-          FieldEffectStart(FLDEFF_DUST);
-          PlaySE(SE_M_STRENGTH);
+          FieldEffectStart((10));
+          PlaySE((214));
           task.tState++;
       }
       return FALSE;
@@ -1229,13 +1219,13 @@ export function PlayerAvatar_DoSecretBaseMatJump(task: any, objectEvent: any): a
   gPlayerAvatar.preventStep = TRUE;
       if (ObjectEventClearHeldMovementIfFinished(objectEvent))
       {
-          PlaySE(SE_LEDGE);
+          PlaySE((10));
           ObjectEventSetHeldMovement(objectEvent, GetJumpInPlaceMovementAction(objectEvent.facingDirection));
           task.data[1]++;
           if (task.data[1] > 1)
           {
               gPlayerAvatar.preventStep = FALSE;
-              gPlayerAvatar.transitionFlags |= PLAYER_AVATAR_FLAG_CONTROLLABLE;
+              gPlayerAvatar.transitionFlags |= ((1 << 5));
               DestroyTask(FindTaskIdByFunc(DoPlayerAvatarSecretBaseMatJump));
           }
       }
@@ -1261,13 +1251,13 @@ export function PlayerAvatar_SecretBaseMatSpinStep0(task: any, objectEvent: any)
       task.data[1] = objectEvent.movementDirection;
       gPlayerAvatar.preventStep = TRUE;
       LockPlayerFieldControls();
-      PlaySE(SE_WARP_IN);
+      PlaySE((45));
       return TRUE;
 }
 
 /** static bool8 PlayerAvatar_SecretBaseMatSpinStep1(struct Task *task, struct ObjectEvent *objectEvent) */
 export function PlayerAvatar_SecretBaseMatSpinStep1(task: any, objectEvent: any): any {
-  const directions: any = [DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH];
+  const directions: any = [(3), (4), (2), (1)];
 
       if (ObjectEventClearHeldMovementIfFinished(objectEvent))
       {
@@ -1286,11 +1276,11 @@ export function PlayerAvatar_SecretBaseMatSpinStep1(task: any, objectEvent: any)
 /** static bool8 PlayerAvatar_SecretBaseMatSpinStep2(struct Task *task, struct ObjectEvent *objectEvent) */
 export function PlayerAvatar_SecretBaseMatSpinStep2(task: any, objectEvent: any): any {
   const actions: any = [
-          MOVEMENT_ACTION_DELAY_1,
-          MOVEMENT_ACTION_DELAY_1,
-          MOVEMENT_ACTION_DELAY_2,
-          MOVEMENT_ACTION_DELAY_4,
-          MOVEMENT_ACTION_DELAY_8,
+          (0x10),
+          (0x10),
+          (0x11),
+          (0x12),
+          (0x13),
       ];
 
       if (ObjectEventClearHeldMovementIfFinished(objectEvent))
@@ -1320,8 +1310,8 @@ export function CreateStopSurfingTask(direction: any): any {
       LockPlayerFieldControls();
       Overworld_ClearSavedMusic();
       Overworld_ChangeMusicToDefault();
-      gPlayerAvatar.flags &= ~PLAYER_AVATAR_FLAG_SURFING;
-      gPlayerAvatar.flags |= PLAYER_AVATAR_FLAG_ON_FOOT;
+      gPlayerAvatar.flags &= ~((1 << 3));
+      gPlayerAvatar.flags |= ((1 << 0));
       gPlayerAvatar.preventStep = TRUE;
       taskId = CreateTask(Task_StopSurfingInit, 0xFF);
       gTasks[taskId].data[0] = direction;
@@ -1481,7 +1471,7 @@ export function Fishing_CheckForBite(task: any): any {
           if (!GetMonData(gPlayerParty[0], MON_DATA_SANITY_IS_EGG))
           {
               let ability: any = GetMonAbility(gPlayerParty[0]);
-              if (ability == ABILITY_SUCTION_CUPS || ability  == ABILITY_STICKY_HOLD)
+              if (ability == (21) || ability  == (60))
               {
                   if (Random() % 100 > 14)
                       bite = TRUE;
@@ -1552,7 +1542,7 @@ export function Fishing_CheckMoreDots(task: any): any {
 export function Fishing_MonOnHook(task: any): any {
   AlignFishingAnimationFrames();
       FillWindowPixelBuffer(0, PIXEL_FILL(1));
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_PokemonOnHook, 1, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_PokemonOnHook, 1, 0, (0x2), (0x1), (0x3));
       task.tStep++;
       task.tFrameCounter = 0;
       return FALSE;
@@ -1573,7 +1563,7 @@ export function Fishing_StartEncounter(task: any): any {
 
               ObjectEventSetGraphicsId(playerObjEvent, task.tPlayerGfxId);
               ObjectEventTurn(playerObjEvent, playerObjEvent.movementDirection);
-              if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+              if (gPlayerAvatar.flags & ((1 << 3)))
                   SetSurfBlob_PlayerOffset(gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId, FALSE, 0);
               gSprites[gPlayerAvatar.spriteId].x2 = 0;
               gSprites[gPlayerAvatar.spriteId].y2 = 0;
@@ -1599,7 +1589,7 @@ export function Fishing_NotEvenNibble(task: any): any {
   AlignFishingAnimationFrames();
       StartSpriteAnim(gSprites[gPlayerAvatar.spriteId], GetFishingNoCatchDirectionAnimNum(GetPlayerFacingDirection()));
       FillWindowPixelBuffer(0, PIXEL_FILL(1));
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_NotEvenANibble, 1, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_NotEvenANibble, 1, 0, (0x2), (0x1), (0x3));
       task.tStep = (13);
       return TRUE;
 }
@@ -1609,7 +1599,7 @@ export function Fishing_GotAway(task: any): any {
   AlignFishingAnimationFrames();
       StartSpriteAnim(gSprites[gPlayerAvatar.spriteId], GetFishingNoCatchDirectionAnimNum(GetPlayerFacingDirection()));
       FillWindowPixelBuffer(0, PIXEL_FILL(1));
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_ItGotAway, 1, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_ItGotAway, 1, 0, (0x2), (0x1), (0x3));
       task.tStep++;
       return TRUE;
 }
@@ -1630,7 +1620,7 @@ export function Fishing_PutRodAway(task: any): any {
 
           ObjectEventSetGraphicsId(playerObjEvent, task.tPlayerGfxId);
           ObjectEventTurn(playerObjEvent, playerObjEvent.movementDirection);
-          if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+          if (gPlayerAvatar.flags & ((1 << 3)))
               SetSurfBlob_PlayerOffset(gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId, FALSE, 0);
           gSprites[gPlayerAvatar.spriteId].x2 = 0;
           gSprites[gPlayerAvatar.spriteId].y2 = 0;
@@ -1685,7 +1675,7 @@ export function AlignFishingAnimationFrames(): any {
           playerSprite.y2 = -8;
       if (animType == 10 || animType == 11)
           playerSprite.y2 = 8;
-      if (gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_SURFING)
+      if (gPlayerAvatar.flags & ((1 << 3)))
           SetSurfBlob_PlayerOffset(gObjectEvents[gPlayerAvatar.objectEventId].fieldEffectSpriteId, TRUE, playerSprite.y2);
 }
 
@@ -1696,8 +1686,8 @@ export function SetSpinStartFacingDir(direction: any): any {
 
 /** static u8 GetSpinStartFacingDir(void) */
 export function GetSpinStartFacingDir(): any {
-  if (sSpinStartFacingDir == DIR_NONE)
-          return DIR_SOUTH;
+  if (sSpinStartFacingDir == (0))
+          return (1);
 
       return sSpinStartFacingDir;
 }

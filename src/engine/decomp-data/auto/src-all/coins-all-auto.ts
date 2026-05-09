@@ -22,7 +22,7 @@ let sCoinsWindowId: any = null;
 export function PrintCoinsString(coinAmount: any): any {
   let xAlign: any = null;
 
-      ConvertIntToDecimalStringN(gStringVar1, coinAmount, STR_CONV_MODE_RIGHT_ALIGN, MAX_COIN_DIGITS);
+      ConvertIntToDecimalStringN(gStringVar1, coinAmount, STR_CONV_MODE_RIGHT_ALIGN, (4));
       StringExpandPlaceholders(gStringVar4, gText_Coins);
 
       xAlign = GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 56);
@@ -60,18 +60,18 @@ export function SetCoins(coinAmount: any): any {
 export function AddCoins(toAdd: any): any {
   let newAmount: any = null;
       let ownedCoins: any = GetCoins();
-      if (ownedCoins >= MAX_COINS)
+      if (ownedCoins >= (9999))
           return FALSE;
        
       if (ownedCoins > ownedCoins + toAdd)
       {
-          newAmount = MAX_COINS;
+          newAmount = (9999);
       }
       else
       {
           ownedCoins += toAdd;
-          if (ownedCoins > MAX_COINS)
-              ownedCoins = MAX_COINS;
+          if (ownedCoins > (9999))
+              ownedCoins = (9999);
           newAmount = ownedCoins;
       }
       SetCoins(newAmount);

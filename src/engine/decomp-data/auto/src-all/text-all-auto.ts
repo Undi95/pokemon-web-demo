@@ -17,22 +17,18 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sDarkDownArrowTiles: any = null;
-let sDownArrowTiles: any = null;
-let sDownArrowYCoords: any = null;
-let sFontBoldJapaneseGlyphs: any = null;
-let sFontHalfRowLookupTable: any = null;
-let sFontHalfRowOffsets: any = null;
-let sFontInfos: any = null;
-let sKeypadIconTiles: any = null;
-let sKeypadIcons: any = null;
+let bg12: any = null;
+let bits: any = null;
+let currY: any = null;
+let dummyX: any = null;
+let gDisableTextPrinters: any = null;
+let gFonts: any = null;
+let pixelData: any = null;
 let sLastTextBgColor: any = null;
 let sLastTextFgColor: any = null;
 let sLastTextShadowColor: any = null;
-let sMenuCursorDimensions: any = null;
-let sTempTextPrinter: any = null;
-let sTextPrinters: any = null;
-let sWindowVerticalScrollSpeeds: any = null;
+let shadow12: any = null;
+let yAdd: any = null;
 /** static void SetFontsPointer(const struct FontInfo *fonts) */
 export function SetFontsPointer(fonts: any): any {
   gFonts = fonts;
@@ -41,7 +37,7 @@ export function SetFontsPointer(fonts: any): any {
 /** void DeactivateAllTextPrinters(void) */
 export function DeactivateAllTextPrinters(): any {
   let printer: any = null;
-      for (printer = 0; printer < WINDOWS_MAX; ++printer)
+      for (printer = 0; printer < (32); ++printer)
           sTextPrinters[printer].active = FALSE;
 }
 
@@ -88,7 +84,7 @@ export function AddTextPrinter(printerTemplate: any, speed: any, callback: any):
       sTempTextPrinter.japanese = 0;
 
       GenerateFontHalfRowLookupTable(printerTemplate.fgColor, printerTemplate.bgColor, printerTemplate.shadowColor);
-      if (speed != TEXT_SKIP_DRAW && speed != 0)
+      if (speed != (0xFF) && speed != 0)
       {
           --sTempTextPrinter.textSpeed;
           sTextPrinters[printerTemplate.windowId] = sTempTextPrinter;
@@ -105,7 +101,7 @@ export function AddTextPrinter(printerTemplate: any, speed: any, callback: any):
           }
 
            
-          if (speed != TEXT_SKIP_DRAW)
+          if (speed != (0xFF))
               CopyWindowToVram(sTempTextPrinter.printerTemplate.windowId, COPYWIN_GFX);
           sTextPrinters[printerTemplate.windowId].active = FALSE;
       }
@@ -119,7 +115,7 @@ export function RunTextPrinters(): any {
 
       if (!gDisableTextPrinters)
       {
-          for (i = 0; i < WINDOWS_MAX; ++i)
+          for (i = 0; i < (32); ++i)
           {
               if (sTextPrinters[i].active)
               {
@@ -435,7 +431,7 @@ export function ClearTextSpan(textPrinter: any, width: any): any {
       let glyph: any = null;
       let glyphHeight: any = null;
 
-      if (sLastTextBgColor != TEXT_COLOR_TRANSPARENT)
+      if (sLastTextBgColor != (0x0))
       {
           window =gWindows[textPrinter.printerTemplate.windowId];
           pixels_data.pixels = window.tileData;
@@ -656,7 +652,7 @@ export function TextPrinterWaitWithDownArrow(textPrinter: any): any {
           if (JOY_NEW(A_BUTTON | B_BUTTON))
           {
               result = TRUE;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
           }
       }
       return result;
@@ -674,7 +670,7 @@ export function TextPrinterWait(textPrinter: any): any {
           if (JOY_NEW(A_BUTTON | B_BUTTON))
           {
               result = TRUE;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
           }
       }
       return result;
@@ -736,7 +732,7 @@ export function RenderText(textPrinter: any): any {
               return RENDER_UPDATE;
           }
 
-          if (!(gBattleTypeFlags & BATTLE_TYPE_RECORDED) && gTextFlags.autoScroll)
+          if (!(gBattleTypeFlags & ((1 << 24))) && gTextFlags.autoScroll)
               textPrinter.delayCounter = 3;
           else
               textPrinter.delayCounter = textPrinter.textSpeed;
@@ -746,34 +742,34 @@ export function RenderText(textPrinter: any): any {
 
           switch (currChar)
           {
-          case CHAR_NEWLINE:
+          case (0xFE):
               textPrinter.printerTemplate.currentX = textPrinter.printerTemplate.x;
               textPrinter.printerTemplate.currentY += (gFonts[textPrinter.printerTemplate.fontId].maxLetterHeight + textPrinter.printerTemplate.lineSpacing);
               return RENDER_REPEAT;
-          case PLACEHOLDER_BEGIN:
+          case (0xFD):
               textPrinter.printerTemplate.currentChar++;
               return RENDER_REPEAT;
-          case EXT_CTRL_CODE_BEGIN:
+          case (0xFC):
               currChar = textPrinter.printerTemplate.currentChar;
               textPrinter.printerTemplate.currentChar++;
               switch (currChar)
               {
-              case EXT_CTRL_CODE_COLOR:
+              case (0x01):
                   textPrinter.printerTemplate.fgColor = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   GenerateFontHalfRowLookupTable(textPrinter.printerTemplate.fgColor, textPrinter.printerTemplate.bgColor, textPrinter.printerTemplate.shadowColor);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_HIGHLIGHT:
+              case (0x02):
                   textPrinter.printerTemplate.bgColor = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   GenerateFontHalfRowLookupTable(textPrinter.printerTemplate.fgColor, textPrinter.printerTemplate.bgColor, textPrinter.printerTemplate.shadowColor);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_SHADOW:
+              case (0x03):
                   textPrinter.printerTemplate.shadowColor = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   GenerateFontHalfRowLookupTable(textPrinter.printerTemplate.fgColor, textPrinter.printerTemplate.bgColor, textPrinter.printerTemplate.shadowColor);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW:
+              case (0x04):
                   textPrinter.printerTemplate.fgColor = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   textPrinter.printerTemplate.bgColor = textPrinter.printerTemplate.currentChar;
@@ -782,66 +778,66 @@ export function RenderText(textPrinter: any): any {
                   textPrinter.printerTemplate.currentChar++;
                   GenerateFontHalfRowLookupTable(textPrinter.printerTemplate.fgColor, textPrinter.printerTemplate.bgColor, textPrinter.printerTemplate.shadowColor);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_PALETTE:
+              case (0x05):
                   textPrinter.printerTemplate.currentChar++;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_FONT:
+              case (0x06):
                   subStruct.fontId = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_RESET_FONT:
+              case (0x07):
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_PAUSE:
+              case (0x08):
                   textPrinter.delayCounter = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   textPrinter.state = RENDER_STATE_PAUSE;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_PAUSE_UNTIL_PRESS:
+              case (0x09):
                   textPrinter.state = RENDER_STATE_WAIT;
                   if (gTextFlags.autoScroll)
                       subStruct.autoScrollDelay = 0;
                   return RENDER_UPDATE;
-              case EXT_CTRL_CODE_WAIT_SE:
+              case (0x0A):
                   textPrinter.state = RENDER_STATE_WAIT_SE;
                   return RENDER_UPDATE;
-              case EXT_CTRL_CODE_PLAY_BGM:
+              case (0x0B):
                   currChar = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   currChar |= textPrinter.printerTemplate.currentChar << 8;
                   textPrinter.printerTemplate.currentChar++;
                   PlayBGM(currChar);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_ESCAPE:
+              case (0x0C):
                   currChar = textPrinter.printerTemplate.currentChar | 0x100;
                   textPrinter.printerTemplate.currentChar++;
                   break;
-              case EXT_CTRL_CODE_PLAY_SE:
+              case (0x10):
                   currChar = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   currChar |= (textPrinter.printerTemplate.currentChar << 8);
                   textPrinter.printerTemplate.currentChar++;
                   PlaySE(currChar);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_SHIFT_RIGHT:
+              case (0x0D):
                   textPrinter.printerTemplate.currentX = textPrinter.printerTemplate.x + textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_SHIFT_DOWN:
+              case (0x0E):
                   textPrinter.printerTemplate.currentY = textPrinter.printerTemplate.y + textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_FILL_WINDOW:
+              case (0x0F):
                   FillWindowPixelBuffer(textPrinter.printerTemplate.windowId, PIXEL_FILL(textPrinter.printerTemplate.bgColor));
                   textPrinter.printerTemplate.currentX = textPrinter.printerTemplate.x;
                   textPrinter.printerTemplate.currentY = textPrinter.printerTemplate.y;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_PAUSE_MUSIC:
+              case (0x17):
                   m4aMPlayStop(gMPlayInfo_BGM);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_RESUME_MUSIC:
+              case (0x18):
                   m4aMPlayContinue(gMPlayInfo_BGM);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_CLEAR:
+              case (0x11):
                   width = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   if (width > 0)
@@ -851,11 +847,11 @@ export function RenderText(textPrinter: any): any {
                       return RENDER_PRINT;
                   }
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_SKIP:
+              case (0x12):
                   textPrinter.printerTemplate.currentX = textPrinter.printerTemplate.currentChar + textPrinter.printerTemplate.x;
                   textPrinter.printerTemplate.currentChar++;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_CLEAR_TO:
+              case (0x13):
                   {
                       widthHelper = textPrinter.printerTemplate.currentChar;
                       widthHelper += textPrinter.printerTemplate.x;
@@ -869,35 +865,35 @@ export function RenderText(textPrinter: any): any {
                       }
                   }
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_MIN_LETTER_SPACING:
+              case (0x14):
                   textPrinter.minLetterSpacing = textPrinter.printerTemplate.currentChar++;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_JPN:
+              case (0x15):
                   textPrinter.japanese = TRUE;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_ENG:
+              case (0x16):
                   textPrinter.japanese = FALSE;
                   return RENDER_REPEAT;
               }
               break;
-          case CHAR_PROMPT_CLEAR:
+          case (0xFB):
               textPrinter.state = RENDER_STATE_CLEAR;
               TextPrinterInitDownArrowCounters(textPrinter);
               return RENDER_UPDATE;
-          case CHAR_PROMPT_SCROLL:
+          case (0xFA):
               textPrinter.state = RENDER_STATE_SCROLL_START;
               TextPrinterInitDownArrowCounters(textPrinter);
               return RENDER_UPDATE;
-          case CHAR_EXTRA_SYMBOL:
+          case (0xF9):
               currChar = textPrinter.printerTemplate.currentChar | 0x100;
               textPrinter.printerTemplate.currentChar++;
               break;
-          case CHAR_KEYPAD_ICON:
+          case (0xF8):
               currChar = textPrinter.printerTemplate.currentChar++;
               gCurGlyph.width = DrawKeypadIcon(textPrinter.printerTemplate.windowId, currChar, textPrinter.printerTemplate.currentX, textPrinter.printerTemplate.currentY);
               textPrinter.printerTemplate.currentX += gCurGlyph.width + textPrinter.printerTemplate.letterSpacing;
               return RENDER_PRINT;
-          case EOS:
+          case (0xFF):
               return RENDER_FINISH;
           }
 
@@ -1031,34 +1027,34 @@ export function GetStringWidth(fontId: any, str: any, letterSpacing: any): any {
       lineWidth = 0;
       bufferPointer = 0;
 
-      while (str != EOS)
+      while (str != (0xFF))
       {
           switch (str)
           {
-          case CHAR_NEWLINE:
+          case (0xFE):
               if (lineWidth > width)
                   width = lineWidth;
               lineWidth = 0;
               break;
-          case PLACEHOLDER_BEGIN:
+          case (0xFD):
               switch (++str)
               {
-              case PLACEHOLDER_ID_STRING_VAR_1:
+              case (0x2):
                   bufferPointer = gStringVar1;
                   break;
-              case PLACEHOLDER_ID_STRING_VAR_2:
+              case (0x3):
                   bufferPointer = gStringVar2;
                   break;
-              case PLACEHOLDER_ID_STRING_VAR_3:
+              case (0x4):
                   bufferPointer = gStringVar3;
                   break;
               default:
                   return 0;
               }
-          case CHAR_DYNAMIC:
+          case (0xF7):
               if (bufferPointer == NULL)
                   bufferPointer = DynamicPlaceholderTextUtil_GetPlaceholderPtr(++str);
-              while (bufferPointer != EOS)
+              while (bufferPointer != (0xFF))
               {
                   glyphWidth = func(bufferPointer++, isJapanese);
                   if (minGlyphWidth > 0)
@@ -1070,68 +1066,68 @@ export function GetStringWidth(fontId: any, str: any, letterSpacing: any): any {
                   else
                   {
                       lineWidth += glyphWidth;
-                      if (isJapanese && str[1] != EOS)
+                      if (isJapanese && str[1] != (0xFF))
                           lineWidth += localLetterSpacing;
                   }
               }
               bufferPointer = 0;
               break;
-          case EXT_CTRL_CODE_BEGIN:
+          case (0xFC):
               switch (++str)
               {
-              case EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW:
+              case (0x04):
                   ++str;
-              case EXT_CTRL_CODE_PLAY_BGM:
-              case EXT_CTRL_CODE_PLAY_SE:
+              case (0x0B):
+              case (0x10):
                   ++str;
-              case EXT_CTRL_CODE_COLOR:
-              case EXT_CTRL_CODE_HIGHLIGHT:
-              case EXT_CTRL_CODE_SHADOW:
-              case EXT_CTRL_CODE_PALETTE:
-              case EXT_CTRL_CODE_PAUSE:
-              case EXT_CTRL_CODE_ESCAPE:
-              case EXT_CTRL_CODE_SHIFT_RIGHT:
-              case EXT_CTRL_CODE_SHIFT_DOWN:
+              case (0x01):
+              case (0x02):
+              case (0x03):
+              case (0x05):
+              case (0x08):
+              case (0x0C):
+              case (0x0D):
+              case (0x0E):
                   ++str;
                   break;
-              case EXT_CTRL_CODE_FONT:
+              case (0x06):
                   func = GetFontWidthFunc(++str);
                   if (func == NULL)
                       return 0;
                   if (letterSpacing == -1)
                       localLetterSpacing = GetFontAttribute(str, FONTATTR_LETTER_SPACING);
                   break;
-              case EXT_CTRL_CODE_CLEAR:
+              case (0x11):
                   glyphWidth = ++str;
                   lineWidth += glyphWidth;
                   break;
-              case EXT_CTRL_CODE_SKIP:
+              case (0x12):
                   lineWidth = ++str;
                   break;
-              case EXT_CTRL_CODE_CLEAR_TO:
+              case (0x13):
                   if (++str > lineWidth)
                       lineWidth = str;
                   break;
-              case EXT_CTRL_CODE_MIN_LETTER_SPACING:
+              case (0x14):
                   minGlyphWidth = ++str;
                   break;
-              case EXT_CTRL_CODE_JPN:
+              case (0x15):
                   isJapanese = 1;
                   break;
-              case EXT_CTRL_CODE_ENG:
+              case (0x16):
                   isJapanese = 0;
                   break;
-              case EXT_CTRL_CODE_RESET_FONT:
-              case EXT_CTRL_CODE_PAUSE_UNTIL_PRESS:
-              case EXT_CTRL_CODE_WAIT_SE:
-              case EXT_CTRL_CODE_FILL_WINDOW:
+              case (0x07):
+              case (0x09):
+              case (0x0A):
+              case (0x0F):
               default:
                   break;
               }
               break;
-          case CHAR_KEYPAD_ICON:
-          case CHAR_EXTRA_SYMBOL:
-              if (str == CHAR_EXTRA_SYMBOL)
+          case (0xF8):
+          case (0xF9):
+              if (str == (0xF9))
                   glyphWidth = func(++str | 0x100, isJapanese);
               else
                   glyphWidth = GetKeypadIconWidth(++str);
@@ -1145,12 +1141,12 @@ export function GetStringWidth(fontId: any, str: any, letterSpacing: any): any {
               else
               {
                   lineWidth += glyphWidth;
-                  if (isJapanese && str[1] != EOS)
+                  if (isJapanese && str[1] != (0xFF))
                       lineWidth += localLetterSpacing;
               }
               break;
-          case CHAR_PROMPT_SCROLL:
-          case CHAR_PROMPT_CLEAR:
+          case (0xFA):
+          case (0xFB):
               break;
           default:
               glyphWidth = func(str, isJapanese);
@@ -1163,7 +1159,7 @@ export function GetStringWidth(fontId: any, str: any, letterSpacing: any): any {
               else
               {
                   lineWidth += glyphWidth;
-                  if (isJapanese && str[1] != EOS)
+                  if (isJapanese && str[1] != (0xFF))
                       lineWidth += localLetterSpacing;
               }
               break;
@@ -1189,11 +1185,11 @@ export function RenderTextHandleBold(pixels: any, fontId: any, str: any): any {
 
       SaveTextColors(colorBackup[0],colorBackup[1],colorBackup[2]);
 
-      fgColor = TEXT_COLOR_WHITE;
-      bgColor = TEXT_COLOR_TRANSPARENT;
-      shadowColor = TEXT_COLOR_LIGHT_GRAY;
+      fgColor = (0x1);
+      bgColor = (0x0);
+      shadowColor = (0x3);
 
-      GenerateFontHalfRowLookupTable(TEXT_COLOR_WHITE, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY);
+      GenerateFontHalfRowLookupTable((0x1), (0x0), (0x3));
       strLocal = str;
       strPos = 0;
 
@@ -1202,65 +1198,65 @@ export function RenderTextHandleBold(pixels: any, fontId: any, str: any): any {
           temp = strLocal[strPos++];
           switch (temp)
           {
-          case EXT_CTRL_CODE_BEGIN:
+          case (0xFC):
               temp2 = strLocal[strPos++];
               switch (temp2)
               {
-              case EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW:
+              case (0x04):
                   fgColor = strLocal[strPos++];
                   bgColor = strLocal[strPos++];
                   shadowColor = strLocal[strPos++];
                   GenerateFontHalfRowLookupTable(fgColor, bgColor, shadowColor);
                   continue;
-              case EXT_CTRL_CODE_COLOR:
+              case (0x01):
                   fgColor = strLocal[strPos++];
                   GenerateFontHalfRowLookupTable(fgColor, bgColor, shadowColor);
                   continue;
-              case EXT_CTRL_CODE_HIGHLIGHT:
+              case (0x02):
                   bgColor = strLocal[strPos++];
                   GenerateFontHalfRowLookupTable(fgColor, bgColor, shadowColor);
                   continue;
-              case EXT_CTRL_CODE_SHADOW:
+              case (0x03):
                   shadowColor = strLocal[strPos++];
                   GenerateFontHalfRowLookupTable(fgColor, bgColor, shadowColor);
                   continue;
-              case EXT_CTRL_CODE_FONT:
+              case (0x06):
                   fontId = strLocal[strPos++];
                   break;
-              case EXT_CTRL_CODE_PLAY_BGM:
-              case EXT_CTRL_CODE_PLAY_SE:
+              case (0x0B):
+              case (0x10):
                   ++strPos;
-              case EXT_CTRL_CODE_PALETTE:
-              case EXT_CTRL_CODE_PAUSE:
-              case EXT_CTRL_CODE_ESCAPE:
-              case EXT_CTRL_CODE_SHIFT_RIGHT:
-              case EXT_CTRL_CODE_SHIFT_DOWN:
-              case EXT_CTRL_CODE_CLEAR:
-              case EXT_CTRL_CODE_SKIP:
-              case EXT_CTRL_CODE_CLEAR_TO:
-              case EXT_CTRL_CODE_MIN_LETTER_SPACING:
+              case (0x05):
+              case (0x08):
+              case (0x0C):
+              case (0x0D):
+              case (0x0E):
+              case (0x11):
+              case (0x12):
+              case (0x13):
+              case (0x14):
                   ++strPos;
                   break;
-              case EXT_CTRL_CODE_RESET_FONT:
-              case EXT_CTRL_CODE_PAUSE_UNTIL_PRESS:
-              case EXT_CTRL_CODE_WAIT_SE:
-              case EXT_CTRL_CODE_FILL_WINDOW:
-              case EXT_CTRL_CODE_JPN:
-              case EXT_CTRL_CODE_ENG:
+              case (0x07):
+              case (0x09):
+              case (0x0A):
+              case (0x0F):
+              case (0x15):
+              case (0x16):
               default:
                   continue;
               }
               break;
-          case CHAR_DYNAMIC:
-          case CHAR_KEYPAD_ICON:
-          case CHAR_EXTRA_SYMBOL:
-          case PLACEHOLDER_BEGIN:
+          case (0xF7):
+          case (0xF8):
+          case (0xF9):
+          case (0xFD):
               ++strPos;
               break;
-          case CHAR_PROMPT_SCROLL:
-          case CHAR_PROMPT_CLEAR:
-          case CHAR_NEWLINE:
-          case EOS:
+          case (0xFA):
+          case (0xFB):
+          case (0xFE):
+          case (0xFF):
               break;
           default:
               switch (fontId)
@@ -1279,7 +1275,7 @@ export function RenderTextHandleBold(pixels: any, fontId: any, str: any): any {
               break;
           }
       }
-      while (temp != EOS);
+      while (temp != (0xFF));
 
       RestoreTextColors(colorBackup[0],colorBackup[1],colorBackup[2]);
       return 1;

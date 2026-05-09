@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gItemIcon4x4Buffer: any = null;
+let gItemIconDecompressionBuffer: any = null;
 /** bool8 AllocItemIconTemporaryBuffers(void) */
 export function AllocItemIconTemporaryBuffers(): any {
   gItemIconDecompressionBuffer = Alloc(0x120);
@@ -49,7 +53,7 @@ export function CopyItemIconPicTo4x4Buffer(src: any, dest: any): any {
 export function AddItemIconSprite(tilesTag: any, paletteTag: any, itemId: any): any {
   if (!AllocItemIconTemporaryBuffers())
       {
-          return MAX_SPRITES;
+          return (64);
       }
       else
       {
@@ -86,7 +90,7 @@ export function AddItemIconSprite(tilesTag: any, paletteTag: any, itemId: any): 
 export function AddCustomItemIconSprite(customSpriteTemplate: any, tilesTag: any, paletteTag: any, itemId: any): any {
   if (!AllocItemIconTemporaryBuffers())
       {
-          return MAX_SPRITES;
+          return (64);
       }
       else
       {

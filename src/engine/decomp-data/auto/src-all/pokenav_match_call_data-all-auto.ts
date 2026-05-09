@@ -15,16 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCheckPageOverrides: any = null;
-let sMatchCallGetEnabledFuncs: any = null;
-let sMatchCallHeaders: any = null;
-let sMatchCall_GetMessageFunctions: any = null;
-let sMatchCall_GetNameAndDescFunctions: any = null;
-let sMatchCall_GetRematchTableIdxFunctions: any = null;
-let sMatchCall_HasCheckPageFunctions: any = null;
-let sMatchCall_IsRematchableFunctions: any = null;
 /** static u32 MatchCallGetFunctionIndex(match_call_t matchCall) */
 export function MatchCallGetFunctionIndex(matchCall: any): any {
   switch (matchCall.common.type)
@@ -127,7 +117,7 @@ export function MatchCall_IsRematchable_NPC(matchCall: any): any {
 
 /** static bool32 MatchCall_IsRematchable_Trainer(match_call_t matchCall) */
 export function MatchCall_IsRematchable_Trainer(matchCall: any): any {
-  if (matchCall.trainer.rematchTableIdx >= REMATCH_ELITE_FOUR_ENTRIES)
+  if (matchCall.trainer.rematchTableIdx >= (REMATCH_SIDNEY))
           return FALSE;
       return gSaveBlock1Ptr.trainerRematches[matchCall.trainer.rematchTableIdx] ? TRUE : FALSE;
 }
@@ -306,7 +296,7 @@ export function MatchCall_BufferCallMessageTextByRematchTeam(textData: any, idx:
       }
       else
       {
-          if (FlagGet(FLAG_SYS_GAME_CLEAR))
+          if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))))
           {
               do
               {
@@ -407,7 +397,7 @@ export function MatchCall_HasRematchId(idx: any): any {
 export function SetMatchCallRegisteredFlag(): any {
   let index: any = GetRematchIdxByTrainerIdx(gSpecialVar_0x8004);
       if (index >= 0)
-          FlagSet(TRAINER_REGISTERED_FLAGS_START + index);
+          FlagSet((0x15C) + index);
 }
 
 // ─── callsTo manifest (= 14 unique callees) ───────────────────────

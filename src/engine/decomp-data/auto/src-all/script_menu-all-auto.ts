@@ -17,18 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCableClubOptions_NoRecordMix: any = null;
-let sCableClubOptions_WithRecordMix: any = null;
-let sLilycoveSSTidalDestinations: any = null;
-let sLilycoveSSTidalSelections: any = null;
-let sLinkServicesMultichoiceIds: any = null;
-let sMultichoiceLists: any = null;
-let sPCNameStrings: any = null;
+let gSpecialVar_0x8004: any = null;
 let sProcessInputDelay: any = null;
-let sWirelessOptionsNoBerryCrush: any = null;
-let sWirelessOptions_AllServices: any = null;
-let sWirelessOptions_NoRecordMix: any = null;
-let sWirelessOptions_NoRecordMixBerryCrush: any = null;
 /** bool8 ScriptMenu_Multichoice(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress) */
 export function ScriptMenu_Multichoice(left: any, top: any, multichoiceId: any, ignoreBPress: any): any {
   if (FuncIsActiveTask(Task_HandleMultichoiceInput) == TRUE)
@@ -133,14 +123,14 @@ export function Task_HandleMultichoiceInput(taskId: any): any {
                   DrawLinkServicesMultichoiceMenu(tMultichoiceId);
               }
 
-              if (selection != MENU_NOTHING_CHOSEN)
+              if (selection != (-2))
               {
-                  if (selection == MENU_B_PRESSED)
+                  if (selection == (-1))
                   {
                       if (tIgnoreBPress)
                           return;
-                      PlaySE(SE_SELECT);
-                      gSpecialVar_Result = MULTI_B_PRESSED;
+                      PlaySE((5));
+                      gSpecialVar_Result = (127);
                   }
                   else
                   {
@@ -189,11 +179,11 @@ export function Task_HandleYesNoInput(taskId: any): any {
 
       switch (Menu_ProcessInputNoWrapClearOnChoose())
       {
-      case MENU_NOTHING_CHOSEN:
+      case (-2):
           return;
-      case MENU_B_PRESSED:
+      case (-1):
       case 1:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           gSpecialVar_Result = 0;
           break;
       case 0:
@@ -249,13 +239,13 @@ export function Task_HandleMultichoiceGridInput(taskId: any): any {
 
       switch (selection)
       {
-      case MENU_NOTHING_CHOSEN:
+      case (-2):
           return;
-      case MENU_B_PRESSED:
+      case (-1):
           if (tIgnoreBPress)
               return;
-          PlaySE(SE_SELECT);
-          gSpecialVar_Result = MULTI_B_PRESSED;
+          PlaySE((5));
+          gSpecialVar_Result = (127);
           break;
       default:
           gSpecialVar_Result = selection;
@@ -295,7 +285,7 @@ export function CreatePCMultichoice(): any {
           pixelWidth = DisplayTextAndGetWidth(sPCNameStrings[i], pixelWidth);
       }
 
-      if (FlagGet(FLAG_SYS_GAME_CLEAR))
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))))
       {
           pixelWidth = DisplayTextAndGetWidth(gText_HallOfFame, pixelWidth);
       }
@@ -303,39 +293,39 @@ export function CreatePCMultichoice(): any {
       width = ConvertPixelWidthToTileWidth(pixelWidth);
 
        
-      if (FlagGet(FLAG_SYS_GAME_CLEAR))
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))))
       {
           numChoices = 4;
           windowId = CreateWindowFromRect(0, 0, width, 8);
           SetStandardWindowBorderStyle(windowId, FALSE);
-          AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_HallOfFame, x, 33, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_LogOff, x, 49, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_HallOfFame, x, 33, (0xFF), NULL);
+          AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_LogOff, x, 49, (0xFF), NULL);
       }
       else
       {
           numChoices = 3;
           windowId = CreateWindowFromRect(0, 0, width, 6);
           SetStandardWindowBorderStyle(windowId, FALSE);
-          AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_LogOff, x, 33, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_LogOff, x, 33, (0xFF), NULL);
       }
 
        
-      if (FlagGet(FLAG_SYS_PC_LANETTE))
-          AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_LanettesPC, x, 1, TEXT_SKIP_DRAW, NULL);
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4B))))
+          AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_LanettesPC, x, 1, (0xFF), NULL);
       else
-          AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_SomeonesPC, x, 1, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_SomeonesPC, x, 1, (0xFF), NULL);
 
       StringExpandPlaceholders(gStringVar4, gText_PlayersPC);
       PrintPlayerNameOnWindow(windowId, gStringVar4, x, 17);
       InitMenuInUpperLeftCornerNormal(windowId, numChoices, 0);
       CopyWindowToVram(windowId, COPYWIN_FULL);
-      InitMultichoiceCheckWrap(FALSE, numChoices, windowId, MULTI_PC);
+      InitMultichoiceCheckWrap(FALSE, numChoices, windowId, (1));
 }
 
 /** void ScriptMenu_DisplayPCStartupPrompt(void) */
 export function ScriptMenu_DisplayPCStartupPrompt(): any {
   LoadMessageBoxAndFrameGfx(0, TRUE);
-      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_WhichPCShouldBeAccessed, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, gText_WhichPCShouldBeAccessed, 0, NULL, (0x2), (0x1), (0x3));
 }
 
 /** bool8 ScriptMenu_CreateLilycoveSSTidalMultichoice(void) */
@@ -362,7 +352,7 @@ export function CreateLilycoveSSTidalMultichoice(): any {
       let i: any = null;
       let j: any = null;
 
-      for (i = 0; i < SSTIDAL_SELECTION_COUNT; i++)
+      for (i = 0; i < (7); i++)
       {
           sLilycoveSSTidalSelections[i] = 0xFF;
       }
@@ -371,99 +361,99 @@ export function CreateLilycoveSSTidalMultichoice(): any {
 
       if (gSpecialVar_0x8004 == 0)
       {
-          sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_SLATEPORT;
+          sLilycoveSSTidalSelections[selectionCount] = (0);
           selectionCount++;
 
-          if (FlagGet(FLAG_MET_SCOTT_ON_SS_TIDAL) == TRUE)
+          if (FlagGet((0x1D0)) == TRUE)
           {
-              sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_BATTLE_FRONTIER;
+              sLilycoveSSTidalSelections[selectionCount] = (1);
               selectionCount++;
           }
       }
 
-      if (CheckBagHasItem(ITEM_EON_TICKET, 1) == TRUE && FlagGet(FLAG_ENABLE_SHIP_SOUTHERN_ISLAND) == TRUE)
+      if (CheckBagHasItem((275), 1) == TRUE && FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x53))) == TRUE)
       {
           if (gSpecialVar_0x8004 == 0)
           {
-              sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_SOUTHERN_ISLAND;
+              sLilycoveSSTidalSelections[selectionCount] = (2);
               selectionCount++;
           }
 
-          if (gSpecialVar_0x8004 == 1 && FlagGet(FLAG_SHOWN_EON_TICKET) == FALSE)
+          if (gSpecialVar_0x8004 == 1 && FlagGet((0x1AE)) == FALSE)
           {
-              sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_SOUTHERN_ISLAND;
+              sLilycoveSSTidalSelections[selectionCount] = (2);
               selectionCount++;
-              FlagSet(FLAG_SHOWN_EON_TICKET);
+              FlagSet((0x1AE));
           }
       }
 
-      if (CheckBagHasItem(ITEM_MYSTIC_TICKET, 1) == TRUE && FlagGet(FLAG_ENABLE_SHIP_NAVEL_ROCK) == TRUE)
+      if (CheckBagHasItem((370), 1) == TRUE && FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x80))) == TRUE)
       {
           if (gSpecialVar_0x8004 == 0)
           {
-              sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_NAVEL_ROCK;
+              sLilycoveSSTidalSelections[selectionCount] = (3);
               selectionCount++;
           }
 
-          if (gSpecialVar_0x8004 == 1 && FlagGet(FLAG_SHOWN_MYSTIC_TICKET) == FALSE)
+          if (gSpecialVar_0x8004 == 1 && FlagGet((0x1DB)) == FALSE)
           {
-              sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_NAVEL_ROCK;
+              sLilycoveSSTidalSelections[selectionCount] = (3);
               selectionCount++;
-              FlagSet(FLAG_SHOWN_MYSTIC_TICKET);
+              FlagSet((0x1DB));
           }
       }
 
-      if (CheckBagHasItem(ITEM_AURORA_TICKET, 1) == TRUE && FlagGet(FLAG_ENABLE_SHIP_BIRTH_ISLAND) == TRUE)
+      if (CheckBagHasItem((371), 1) == TRUE && FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x75))) == TRUE)
       {
           if (gSpecialVar_0x8004 == 0)
           {
-              sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_BIRTH_ISLAND;
+              sLilycoveSSTidalSelections[selectionCount] = (4);
               selectionCount++;
           }
 
-          if (gSpecialVar_0x8004 == 1 && FlagGet(FLAG_SHOWN_AURORA_TICKET) == FALSE)
+          if (gSpecialVar_0x8004 == 1 && FlagGet((0x1AF)) == FALSE)
           {
-              sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_BIRTH_ISLAND;
+              sLilycoveSSTidalSelections[selectionCount] = (4);
               selectionCount++;
-              FlagSet(FLAG_SHOWN_AURORA_TICKET);
+              FlagSet((0x1AF));
           }
       }
 
-      if (CheckBagHasItem(ITEM_OLD_SEA_MAP, 1) == TRUE && FlagGet(FLAG_ENABLE_SHIP_FARAWAY_ISLAND) == TRUE)
+      if (CheckBagHasItem((376), 1) == TRUE && FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x76))) == TRUE)
       {
           if (gSpecialVar_0x8004 == 0)
           {
-              sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_FARAWAY_ISLAND;
+              sLilycoveSSTidalSelections[selectionCount] = (5);
               selectionCount++;
           }
 
-          if (gSpecialVar_0x8004 == 1 && FlagGet(FLAG_SHOWN_OLD_SEA_MAP) == FALSE)
+          if (gSpecialVar_0x8004 == 1 && FlagGet((0x1B0)) == FALSE)
           {
-              sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_FARAWAY_ISLAND;
+              sLilycoveSSTidalSelections[selectionCount] = (5);
               selectionCount++;
-              FlagSet(FLAG_SHOWN_OLD_SEA_MAP);
+              FlagSet((0x1B0));
           }
       }
 
-      sLilycoveSSTidalSelections[selectionCount] = SSTIDAL_SELECTION_EXIT;
+      sLilycoveSSTidalSelections[selectionCount] = (6);
       selectionCount++;
 
-      if (gSpecialVar_0x8004 == 0 && FlagGet(FLAG_MET_SCOTT_ON_SS_TIDAL) == TRUE)
+      if (gSpecialVar_0x8004 == 0 && FlagGet((0x1D0)) == TRUE)
       {
           count = selectionCount;
       }
 
       count = selectionCount;
-      if (count == SSTIDAL_SELECTION_COUNT)
+      if (count == (7))
       {
-          gSpecialVar_0x8004 = SCROLL_MULTI_SS_TIDAL_DESTINATION;
+          gSpecialVar_0x8004 = (11);
           ShowScrollableMultichoice();
       }
       else
       {
           pixelWidth = 0;
 
-          for (j = 0; j < SSTIDAL_SELECTION_COUNT; j++)
+          for (j = 0; j < (7); j++)
           {
               let selection: any = sLilycoveSSTidalSelections[j];
               if (selection != 0xFF)
@@ -473,27 +463,27 @@ export function CreateLilycoveSSTidalMultichoice(): any {
           }
 
           width = ConvertPixelWidthToTileWidth(pixelWidth);
-          windowId = CreateWindowFromRect(MAX_MULTICHOICE_WIDTH - width, (6 - count) * 2, width, count * 2);
+          windowId = CreateWindowFromRect((28) - width, (6 - count) * 2, width, count * 2);
           SetStandardWindowBorderStyle(windowId, FALSE);
 
-          for (selectionCount = 0, i = 0; i < SSTIDAL_SELECTION_COUNT; i++)
+          for (selectionCount = 0, i = 0; i < (7); i++)
           {
               if (sLilycoveSSTidalSelections[i] != 0xFF)
               {
-                  AddTextPrinterParameterized(windowId, FONT_NORMAL, sLilycoveSSTidalDestinations[sLilycoveSSTidalSelections[i]], 8, selectionCount * 16 + 1, TEXT_SKIP_DRAW, NULL);
+                  AddTextPrinterParameterized(windowId, FONT_NORMAL, sLilycoveSSTidalDestinations[sLilycoveSSTidalSelections[i]], 8, selectionCount * 16 + 1, (0xFF), NULL);
                   selectionCount++;
               }
           }
 
           InitMenuInUpperLeftCornerNormal(windowId, count, count - 1);
           CopyWindowToVram(windowId, COPYWIN_FULL);
-          InitMultichoiceCheckWrap(FALSE, count, windowId, MULTI_SSTIDAL_LILYCOVE);
+          InitMultichoiceCheckWrap(FALSE, count, windowId, (8));
       }
 }
 
 /** void GetLilycoveSSTidalSelection(void) */
 export function GetLilycoveSSTidalSelection(): any {
-  if (gSpecialVar_Result != MULTI_B_PRESSED)
+  if (gSpecialVar_Result != (127))
       {
           gSpecialVar_Result = sLilycoveSSTidalSelections[gSpecialVar_Result];
       }
@@ -527,7 +517,7 @@ export function ScriptMenu_ShowPokemonPic(species: any, x: any, y: any): any {
   let taskId: any = null;
       let spriteId: any = null;
 
-      if (FindTaskIdByFunc(Task_PokemonPicWindow) != TASK_NONE)
+      if (FindTaskIdByFunc(Task_PokemonPicWindow) != ((0xFF)))
       {
           return FALSE;
       }
@@ -549,7 +539,7 @@ export function ScriptMenu_ShowPokemonPic(species: any, x: any, y: any): any {
 
 /** static bool8 IsPicboxClosed(void) */
 export function IsPicboxClosed(): any {
-  if (FindTaskIdByFunc(Task_PokemonPicWindow) == TASK_NONE)
+  if (FindTaskIdByFunc(Task_PokemonPicWindow) == ((0xFF)))
           return TRUE;
       else
           return FALSE;
@@ -573,29 +563,29 @@ export function ClearToTransparentAndRemoveWindow(windowId: any): any {
 export function DrawLinkServicesMultichoiceMenu(multichoiceId: any): any {
   switch (multichoiceId)
       {
-      case MULTI_WIRELESS_NO_BERRY:
+      case (77):
           FillWindowPixelBuffer(0, PIXEL_FILL(1));
-          AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptionsNoBerryCrush[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptionsNoBerryCrush[Menu_GetCursorPos()], 0, NULL, (0x2), (0x1), (0x3));
           break;
-      case MULTI_CABLE_CLUB_WITH_RECORD_MIX:
+      case (76):
           FillWindowPixelBuffer(0, PIXEL_FILL(1));
-          AddTextPrinterParameterized2(0, FONT_NORMAL, sCableClubOptions_WithRecordMix[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          AddTextPrinterParameterized2(0, FONT_NORMAL, sCableClubOptions_WithRecordMix[Menu_GetCursorPos()], 0, NULL, (0x2), (0x1), (0x3));
           break;
-      case MULTI_WIRELESS_NO_RECORD:
+      case (78):
           FillWindowPixelBuffer(0, PIXEL_FILL(1));
-          AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptions_NoRecordMix[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptions_NoRecordMix[Menu_GetCursorPos()], 0, NULL, (0x2), (0x1), (0x3));
           break;
-      case MULTI_WIRELESS_ALL_SERVICES:
+      case (79):
           FillWindowPixelBuffer(0, PIXEL_FILL(1));
-          AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptions_AllServices[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptions_AllServices[Menu_GetCursorPos()], 0, NULL, (0x2), (0x1), (0x3));
           break;
-      case MULTI_WIRELESS_NO_RECORD_BERRY:
+      case (75):
           FillWindowPixelBuffer(0, PIXEL_FILL(1));
-          AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptions_NoRecordMixBerryCrush[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          AddTextPrinterParameterized2(0, FONT_NORMAL, sWirelessOptions_NoRecordMixBerryCrush[Menu_GetCursorPos()], 0, NULL, (0x2), (0x1), (0x3));
           break;
-      case MULTI_CABLE_CLUB_NO_RECORD_MIX:
+      case (74):
           FillWindowPixelBuffer(0, PIXEL_FILL(1));
-          AddTextPrinterParameterized2(0, FONT_NORMAL, sCableClubOptions_NoRecordMix[Menu_GetCursorPos()], 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          AddTextPrinterParameterized2(0, FONT_NORMAL, sCableClubOptions_NoRecordMix[Menu_GetCursorPos()], 0, NULL, (0x2), (0x1), (0x3));
           break;
       }
 }
@@ -618,16 +608,16 @@ export function ScriptMenu_CreateStartMenuForPokenavTutorial(): any {
 export function CreateStartMenuForPokenavTutorial(): any {
   let windowId: any = CreateWindowFromRect(21, 0, 7, 18);
       SetStandardWindowBorderStyle(windowId, FALSE);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionPokedex, 8, 9, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionPokemon, 8, 25, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionBag, 8, 41, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionPokenav, 8, 57, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gSaveBlock2Ptr.playerName, 8, 73, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionSave, 8, 89, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionOption, 8, 105, TEXT_SKIP_DRAW, NULL);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionExit, 8, 121, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionPokedex, 8, 9, (0xFF), NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionPokemon, 8, 25, (0xFF), NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionBag, 8, 41, (0xFF), NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionPokenav, 8, 57, (0xFF), NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gSaveBlock2Ptr.playerName, 8, 73, (0xFF), NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionSave, 8, 89, (0xFF), NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionOption, 8, 105, (0xFF), NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_MenuOptionExit, 8, 121, (0xFF), NULL);
       InitMenuNormal(windowId, FONT_NORMAL, 0, 9, 16, ARRAY_COUNT(MultichoiceList_ForcedStartMenu), 0);
-      InitMultichoiceNoWrap(FALSE, ARRAY_COUNT(MultichoiceList_ForcedStartMenu), windowId, MULTI_FORCED_START_MENU);
+      InitMultichoiceNoWrap(FALSE, ARRAY_COUNT(MultichoiceList_ForcedStartMenu), windowId, (86));
       CopyWindowToVram(windowId, COPYWIN_FULL);
 }
 
@@ -661,22 +651,22 @@ export function DisplayTextAndGetWidth(str: any, prevWidth: any): any {
 
 /** int ConvertPixelWidthToTileWidth(int width) */
 export function ConvertPixelWidthToTileWidth(width: any): any {
-  return (((width + 9) / 8) + 1) > MAX_MULTICHOICE_WIDTH ? MAX_MULTICHOICE_WIDTH : (((width + 9) / 8) + 1);
+  return (((width + 9) / 8) + 1) > (28) ? (28) : (((width + 9) / 8) + 1);
 }
 
 /** int ScriptMenu_AdjustLeftCoordFromWidth(int left, int width) */
 export function ScriptMenu_AdjustLeftCoordFromWidth(left: any, width: any): any {
   let adjustedLeft: any = left;
 
-      if (left + width > MAX_MULTICHOICE_WIDTH)
+      if (left + width > (28))
       {
-          if (MAX_MULTICHOICE_WIDTH - width < 0)
+          if ((28) - width < 0)
           {
               adjustedLeft = 0;
           }
           else
           {
-              adjustedLeft = MAX_MULTICHOICE_WIDTH - width;
+              adjustedLeft = (28) - width;
           }
       }
 

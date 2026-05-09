@@ -141,7 +141,7 @@ export function RouletteFlash_Run(flash: any): any {
               {
                   if (--flash.palettes[i].delayCounter == -1)
                   {
-                      if (flash.palettes[i].settings.color & FLASHUTIL_USE_EXISTING_COLOR)
+                      if (flash.palettes[i].settings.color & ((1 << 15)))
                           RouletteFlash_FadePalette(flash.palettes[i]);
                       else
                           RouletteFlash_FlashPalette(flash.palettes[i]);

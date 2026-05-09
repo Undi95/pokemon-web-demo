@@ -17,25 +17,15 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCurrAnimNum: any = null;
-let sFrameDelay: any = null;
-let sFrameIdx: any = null;
-let sNextAnimNum: any = null;
-let sSavedAnimNum: any = null;
-let sTileStart: any = null;
-let sValidator: any = null;
-let sWirelessStatusIndicatorOamData: any = null;
-let sWirelessStatusIndicatorSpritePalette: any = null;
-let sWirelessStatusIndicatorSpriteSheet: any = null;
-let sWirelessStatusIndicatorSpriteTemplate: any = null;
+let gWirelessStatusIndicatorSpriteId: any = null;
 /** void RfuRecvQueue_Reset(struct RfuRecvQueue *queue) */
 export function RfuRecvQueue_Reset(queue: any): any {
   let i: any = null;
       let j: any = null;
 
-      for (i = 0; i < RECV_QUEUE_NUM_SLOTS; i++)
+      for (i = 0; i < (32); i++)
       {
-          for (j = 0; j < COMM_SLOT_LENGTH * MAX_RFU_PLAYERS; j++)
+          for (j = 0; j < (14) * (5); j++)
               queue.slots[i][j] = 0;
       }
       queue.sendSlot = 0;
@@ -49,9 +39,9 @@ export function RfuSendQueue_Reset(queue: any): any {
   let i: any = null;
       let j: any = null;
 
-      for (i = 0; i < SEND_QUEUE_NUM_SLOTS; i++)
+      for (i = 0; i < (40); i++)
       {
-          for (j = 0; j < COMM_SLOT_LENGTH; j++)
+          for (j = 0; j < (14); j++)
               queue.slots[i][j] = 0;
       }
       queue.sendSlot = 0;
@@ -66,26 +56,26 @@ export function RfuRecvQueue_Enqueue(queue: any, data: any): any {
       let imeBak: any = null;
       let count: any = null;
 
-      if (queue.count < RECV_QUEUE_NUM_SLOTS)
+      if (queue.count < (32))
       {
           imeBak = REG_IME;
           REG_IME = 0;
           count = 0;
-          for (i = 0; i < COMM_SLOT_LENGTH * MAX_RFU_PLAYERS; i += COMM_SLOT_LENGTH)
+          for (i = 0; i < (14) * (5); i += (14))
           {
               if (data[i] == 0 && data[i + 1] == 0)
                   count++;
           }
-          if (count != MAX_RFU_PLAYERS)
+          if (count != (5))
           {
-              for (i = 0; i < COMM_SLOT_LENGTH * MAX_RFU_PLAYERS; i++)
+              for (i = 0; i < (14) * (5); i++)
                   queue.slots[queue.recvSlot][i] = data[i];
 
               queue.recvSlot++;
-              queue.recvSlot %= RECV_QUEUE_NUM_SLOTS;
+              queue.recvSlot %= (32);
               queue.count++;
 
-              for (i = 0; i < COMM_SLOT_LENGTH * MAX_RFU_PLAYERS; i++)
+              for (i = 0; i < (14) * (5); i++)
                   data[i] = 0;
           }
           REG_IME = imeBak;
@@ -101,24 +91,24 @@ export function RfuSendQueue_Enqueue(queue: any, data: any): any {
   let i: any = null;
       let imeBak: any = null;
 
-      if (queue.count < SEND_QUEUE_NUM_SLOTS)
+      if (queue.count < (40))
       {
           imeBak = REG_IME;
           REG_IME = 0;
-          for (i = 0; i < COMM_SLOT_LENGTH; i++)
+          for (i = 0; i < (14); i++)
           {
               if (data[i] != 0)
                   break;
           }
-          if (i != COMM_SLOT_LENGTH)
+          if (i != (14))
           {
-              for (i = 0; i < COMM_SLOT_LENGTH; i++)
+              for (i = 0; i < (14); i++)
                   queue.slots[queue.recvSlot][i] = data[i];
               queue.recvSlot++;
-              queue.recvSlot %= SEND_QUEUE_NUM_SLOTS;
+              queue.recvSlot %= (40);
               queue.count++;
 
-              for (i = 0; i < COMM_SLOT_LENGTH; i++)
+              for (i = 0; i < (14); i++)
                   data[i] = 0;
           }
           REG_IME = imeBak;
@@ -138,18 +128,18 @@ export function RfuRecvQueue_Dequeue(queue: any, src: any): any {
       REG_IME = 0;
       if (queue.recvSlot == queue.sendSlot || queue.full)
       {
-          for (i = 0; i < COMM_SLOT_LENGTH * MAX_RFU_PLAYERS; i++)
+          for (i = 0; i < (14) * (5); i++)
               src[i] = 0;
 
           REG_IME = imeBak;
           return FALSE;
       }
-      for (i = 0; i < COMM_SLOT_LENGTH * MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (14) * (5); i++)
       {
           src[i] = queue.slots[queue.sendSlot][i];
       }
       queue.sendSlot++;
-      queue.sendSlot %= RECV_QUEUE_NUM_SLOTS;
+      queue.sendSlot %= (32);
       queue.count--;
       REG_IME = imeBak;
       return TRUE;
@@ -165,11 +155,11 @@ export function RfuSendQueue_Dequeue(queue: any, src: any): any {
 
       imeBak = REG_IME;
       REG_IME = 0;
-      for (i = 0; i < COMM_SLOT_LENGTH; i++)
+      for (i = 0; i < (14); i++)
           src[i] = queue.slots[queue.sendSlot][i];
 
       queue.sendSlot++;
-      queue.sendSlot %= SEND_QUEUE_NUM_SLOTS;
+      queue.sendSlot %= (40);
       queue.count--;
       REG_IME = imeBak;
       return TRUE;
@@ -185,13 +175,13 @@ export function RfuBackupQueue_Enqueue(queue: any, data: any): any {
       }
       else
       {
-          for (i = 0; i < COMM_SLOT_LENGTH; i++)
+          for (i = 0; i < (14); i++)
               queue.slots[queue.recvSlot][i] = data[i];
 
           queue.recvSlot++;
-          queue.recvSlot %= BACKUP_QUEUE_NUM_SLOTS;
+          queue.recvSlot %= (2);
 
-          if (queue.count < BACKUP_QUEUE_NUM_SLOTS)
+          if (queue.count < (2))
               queue.count++;
           else
               queue.sendSlot = queue.recvSlot;
@@ -207,11 +197,11 @@ export function RfuBackupQueue_Dequeue(queue: any, src: any): any {
 
       if (src != NULL)
       {
-          for (i = 0; i < COMM_SLOT_LENGTH; i++)
+          for (i = 0; i < (14); i++)
               src[i] = queue.slots[queue.sendSlot][i];
       }
       queue.sendSlot++;
-      queue.sendSlot %= BACKUP_QUEUE_NUM_SLOTS;
+      queue.sendSlot %= (2);
       queue.count--;
       return TRUE;
 }
@@ -222,7 +212,7 @@ export function GetConnectedChildStrength(maxFlags: any): any {
       let flags: any = gRfuLinkStatus.connSlotFlag;
       let i: any = null;
 
-      if (gRfuLinkStatus.parentChild == MODE_PARENT)
+      if (gRfuLinkStatus.parentChild == (0x01))
       {
           for (i = 0; i < 4; flags >>= 1, i++)
           {
@@ -255,7 +245,7 @@ export function InitHostRfuGameData(data: any, activity: any, startedActivity: a
       for (i = 0; i < ARRAY_COUNT(data.compatibility.playerTrainerId); i++)
           data.compatibility.playerTrainerId[i] = gSaveBlock2Ptr.playerTrainerId[i];
 
-      for (i = 0; i < RFU_CHILD_MAX; i++)
+      for (i = 0; i < (4); i++)
       {
           data.partnerInfo[i] = partnerInfo;
           partnerInfo >>= 8;  
@@ -263,32 +253,32 @@ export function InitHostRfuGameData(data: any, activity: any, startedActivity: a
       data.playerGender = gSaveBlock2Ptr.playerGender;
       data.activity = activity;
       data.startedActivity = startedActivity;
-      data.compatibility.language = GAME_LANGUAGE;
-      data.compatibility.version = GAME_VERSION;
+      data.compatibility.language = (((3)));
+      data.compatibility.version = (((3)));
       data.compatibility.hasNews = FALSE;
       data.compatibility.hasCard = FALSE;
       data.compatibility.unknown = FALSE;
-      data.compatibility.canLinkNationally = FlagGet(FLAG_IS_CHAMPION);
+      data.compatibility.canLinkNationally = FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x1F)));
       data.compatibility.hasNationalDex = IsNationalPokedexEnabled();
-      data.compatibility.gameClear = FlagGet(FLAG_SYS_GAME_CLEAR);
+      data.compatibility.gameClear = FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4)));
 }
 
 /** bool8 Rfu_GetCompatiblePlayerData(struct RfuGameData *gameData, u8 *username, u8 idx) */
 export function Rfu_GetCompatiblePlayerData(gameData: any, username: any, idx: any): any {
   let retVal: any = null;
 
-      if (lman.parent_child == MODE_PARENT)
+      if (lman.parent_child == (0x01))
       {
           retVal = TRUE;
           if (IsRfuSerialNumberValid(gRfuLinkStatus.partner[idx].serialNo) && ((gRfuLinkStatus.getNameFlag >> idx) & 1))
           {
-              memcpy(gameData, gRfuLinkStatus.partner[idx].gname, RFU_GAME_NAME_LENGTH);
-              memcpy(username, gRfuLinkStatus.partner[idx].uname, RFU_USER_NAME_LENGTH);
+              memcpy(gameData, gRfuLinkStatus.partner[idx].gname, (13));
+              memcpy(username, gRfuLinkStatus.partner[idx].uname, (8));
           }
           else
           {
-              memset(gameData, 0, RFU_GAME_NAME_LENGTH);
-              memset(username, 0, RFU_USER_NAME_LENGTH);
+              memset(gameData, 0, (13));
+              memset(username, 0, (8));
           }
       }
       else
@@ -296,13 +286,13 @@ export function Rfu_GetCompatiblePlayerData(gameData: any, username: any, idx: a
           retVal = FALSE;
           if (IsRfuSerialNumberValid(gRfuLinkStatus.partner[idx].serialNo))
           {
-              memcpy(gameData, gRfuLinkStatus.partner[idx].gname, RFU_GAME_NAME_LENGTH);
-              memcpy(username, gRfuLinkStatus.partner[idx].uname, RFU_USER_NAME_LENGTH);
+              memcpy(gameData, gRfuLinkStatus.partner[idx].gname, (13));
+              memcpy(username, gRfuLinkStatus.partner[idx].uname, (8));
           }
           else
           {
-              memset(gameData, 0, RFU_GAME_NAME_LENGTH);
-              memset(username, 0, RFU_USER_NAME_LENGTH);
+              memset(gameData, 0, (13));
+              memset(username, 0, (8));
           }
       }
       return retVal;
@@ -311,24 +301,24 @@ export function Rfu_GetCompatiblePlayerData(gameData: any, username: any, idx: a
 /** bool8 Rfu_GetWonderDistributorPlayerData(struct RfuGameData *gameData, u8 *username, u8 idx) */
 export function Rfu_GetWonderDistributorPlayerData(gameData: any, username: any, idx: any): any {
   let retVal: any = FALSE;
-      if (gRfuLinkStatus.partner[idx].serialNo == RFU_SERIAL_WONDER_DISTRIBUTOR)
+      if (gRfuLinkStatus.partner[idx].serialNo == (0x7F7D))
       {
-          memcpy(gameData, gRfuLinkStatus.partner[idx].gname, RFU_GAME_NAME_LENGTH);
-          memcpy(username, gRfuLinkStatus.partner[idx].uname, RFU_USER_NAME_LENGTH);
+          memcpy(gameData, gRfuLinkStatus.partner[idx].gname, (13));
+          memcpy(username, gRfuLinkStatus.partner[idx].uname, (8));
           retVal = TRUE;
       }
       else
       {
-          memset(gameData, 0, RFU_GAME_NAME_LENGTH);
-          memset(username, 0, RFU_USER_NAME_LENGTH);
+          memset(gameData, 0, (13));
+          memset(username, 0, (8));
       }
       return retVal;
 }
 
 /** void CopyHostRfuGameDataAndUsername(struct RfuGameData *gameData, u8 *username) */
 export function CopyHostRfuGameDataAndUsername(gameData: any, username: any): any {
-  memcpy(gameData,gHostRfuGameData, RFU_GAME_NAME_LENGTH);
-      memcpy(username, gHostRfuUsername, RFU_USER_NAME_LENGTH);
+  memcpy(gameData,gHostRfuGameData, (13));
+      memcpy(username, gHostRfuUsername, (8));
 }
 
 /** void CreateWirelessStatusIndicatorSprite(u8 x, u8 y) */
@@ -340,7 +330,7 @@ export function CreateWirelessStatusIndicatorSprite(x: any, y: any): any {
           x = 231;
           y = 8;
       }
-      if (gRfuLinkStatus.parentChild == MODE_PARENT)
+      if (gRfuLinkStatus.parentChild == (0x01))
       {
           sprId = CreateSprite(sWirelessStatusIndicatorSpriteTemplate, x, y, 0);
           gSprites[sprId].sValidator = (0x1234);
@@ -373,14 +363,14 @@ export function LoadWirelessStatusIndicatorSpriteGfx(): any {
   if (GetSpriteTileStartByTag(sWirelessStatusIndicatorSpriteSheet.tag) == 0xFFFF)
           LoadCompressedSpriteSheet(sWirelessStatusIndicatorSpriteSheet);
       LoadSpritePalette(sWirelessStatusIndicatorSpritePalette);
-      gWirelessStatusIndicatorSpriteId = SPRITE_NONE;
+      gWirelessStatusIndicatorSpriteId = (0xFF);
 }
 
 /** static u8 GetParentSignalStrength(void) */
 export function GetParentSignalStrength(): any {
   let i: any = null;
       let flags: any = gRfuLinkStatus.connSlotFlag;
-      for (i = 0; i < RFU_CHILD_MAX; i++)
+      for (i = 0; i < (4); i++)
       {
           if (flags & 1)
               return gRfuLinkStatus.strength[i];
@@ -401,14 +391,14 @@ export function SetWirelessStatusIndicatorAnim(sprite: any, animNum: any): any {
 
 /** void UpdateWirelessStatusIndicatorSprite(void) */
 export function UpdateWirelessStatusIndicatorSprite(): any {
-  if (gWirelessStatusIndicatorSpriteId != SPRITE_NONE && gSprites[gWirelessStatusIndicatorSpriteId].sValidator == (0x1234))
+  if (gWirelessStatusIndicatorSpriteId != (0xFF) && gSprites[gWirelessStatusIndicatorSpriteId].sValidator == (0x1234))
       {
           let sprite: any =gSprites[gWirelessStatusIndicatorSpriteId];
-          let signalStrength: any = RFU_LINK_ICON_LEVEL4_MAX;
+          let signalStrength: any = (255);
           let i: any = 0;
 
            
-          if (gRfuLinkStatus.parentChild == MODE_PARENT)
+          if (gRfuLinkStatus.parentChild == (0x01))
           {
               for (i = 0; i < GetLinkPlayerCount() - 1; i++)
               {
@@ -424,13 +414,13 @@ export function UpdateWirelessStatusIndicatorSprite(): any {
            
           if (IsRfuRecoveringFromLinkLoss() == TRUE)
               sprite.sNextAnimNum = WIRELESS_STATUS_ANIM_ERROR;
-          else if (signalStrength <= RFU_LINK_ICON_LEVEL1_MAX)
+          else if (signalStrength <= (24))
               sprite.sNextAnimNum = WIRELESS_STATUS_ANIM_SEARCHING;
-          else if (signalStrength >= RFU_LINK_ICON_LEVEL2_MIN && signalStrength <= RFU_LINK_ICON_LEVEL2_MAX)
+          else if (signalStrength >= (25) && signalStrength <= (126))
               sprite.sNextAnimNum = WIRELESS_STATUS_ANIM_1_BAR;
-          else if (signalStrength >= RFU_LINK_ICON_LEVEL3_MIN && signalStrength <= RFU_LINK_ICON_LEVEL3_MAX)
+          else if (signalStrength >= (127) && signalStrength <= (228))
               sprite.sNextAnimNum = WIRELESS_STATUS_ANIM_2_BARS;
-          else if (signalStrength >= RFU_LINK_ICON_LEVEL4_MIN)
+          else if (signalStrength >= (229))
               sprite.sNextAnimNum = WIRELESS_STATUS_ANIM_3_BARS;
 
           if (sprite.sNextAnimNum != sprite.sSavedAnimNum)
@@ -455,7 +445,7 @@ export function UpdateWirelessStatusIndicatorSprite(): any {
           gMain.oamBuffer[125].paletteNum = sprite.oam.paletteNum;
           gMain.oamBuffer[125].tileNum = sprite.sTileStart + sprite.anims[sprite.sCurrAnimNum][sprite.sFrameIdx].frame.imageValue;
           CpuCopy16(gMain.oamBuffer[125], OAM + 125, 0);
-          if (RfuGetStatus() == RFU_STATUS_FATAL_ERROR)
+          if (RfuGetStatus() == (1))
               DestroyWirelessStatusIndicatorSprite();
       }
 }
@@ -470,7 +460,7 @@ export function CopyTrainerRecord(dest: any, trainerId: any, name: any): any {
 export function NameIsNotEmpty(name: any): any {
   let i: any = null;
 
-      for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)
+      for (i = 0; i < (7) + 1; i++)
       {
           if (name[i] != 0)
               return TRUE;
@@ -503,13 +493,13 @@ export function SaveLinkTrainerNames(): any {
           nextSpace = 0;
           for (i = 0; i < GetLinkPlayerCount(); i++)
           {
-              if (i != GetMultiplayerId() && gLinkPlayers[i].language != LANGUAGE_JAPANESE)
+              if (i != GetMultiplayerId() && gLinkPlayers[i].language != (1))
               {
                   CopyTrainerRecord(newRecords[nextSpace], gLinkPlayers[i].trainerId, gLinkPlayers[i].name);
 
                    
                   if (connectedTrainerRecordIndices[i] >= 0)
-                      memset(gSaveBlock1Ptr.trainerNameRecords[connectedTrainerRecordIndices[i]].trainerName, 0, PLAYER_NAME_LENGTH + 1);
+                      memset(gSaveBlock1Ptr.trainerNameRecords[connectedTrainerRecordIndices[i]].trainerName, 0, (7) + 1);
                   nextSpace++;
               }
           }
@@ -554,7 +544,7 @@ export function WipeTrainerNameRecords(): any {
       for (i = 0; i < ARRAY_COUNT(gSaveBlock1Ptr.trainerNameRecords); i++)
       {
           gSaveBlock1Ptr.trainerNameRecords[i].trainerId = 0;
-          CpuFill16(0, gSaveBlock1Ptr.trainerNameRecords[i].trainerName, PLAYER_NAME_LENGTH + 1);
+          CpuFill16(0, gSaveBlock1Ptr.trainerNameRecords[i].trainerName, (7) + 1);
       }
 }
 

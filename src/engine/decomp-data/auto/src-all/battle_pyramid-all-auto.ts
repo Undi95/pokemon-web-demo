@@ -17,24 +17,13 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattlePyramidFunctions: any = null;
-let sBorderedSquareIds: any = null;
-let sFloorTemplateOffsets: any = null;
-let sHintTextTypes: any = null;
-let sLevel50WildMonPointers: any = null;
-let sLongStreakRewardItems: any = null;
-let sOpenLevelWildMonPointers: any = null;
-let sPickupItemOffsets: any = null;
-let sPickupItemSlots: any = null;
-let sPickupItemsLvl50: any = null;
-let sPickupItemsLvlOpen: any = null;
-let sPickupPercentages: any = null;
-let sPostBattleTexts: any = null;
-let sPyramidFloorTemplateOptions: any = null;
-let sPyramidFloorTemplates: any = null;
-let sShortStreakRewardItems: any = null;
-let sTrainerClassEncounterMusic: any = null;
-let sTrainerTextGroups: any = null;
+let gBattleOutcome: any = null;
+let gFacilityTrainers: any = null;
+let gSelectedObjectEvent: any = null;
+let gSpecialVar_0x8000: any = null;
+let gSpecialVar_0x8001: any = null;
+let gTrainerBattleOpponent_A: any = null;
+let xOffset: any = null;
 /** void CallBattlePyramidFunction(void) */
 export function CallBattlePyramidFunction(): any {
   sBattlePyramidFunctions[gSpecialVar_0x8004]();
@@ -48,10 +37,10 @@ export function InitPyramidChallenge(): any {
       gSaveBlock2Ptr.frontier.challengeStatus = 0;
       gSaveBlock2Ptr.frontier.curChallengeBattleNum = 0;
       gSaveBlock2Ptr.frontier.challengePaused = FALSE;
-      if (lvlMode != FRONTIER_LVL_50)
-          isCurrent = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_PYRAMID_OPEN;
+      if (lvlMode != (0))
+          isCurrent = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 13));
       else
-          isCurrent = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_PYRAMID_50;
+          isCurrent = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 12));
 
       if (!isCurrent)
       {
@@ -70,29 +59,29 @@ export function GetBattlePyramidData(): any {
 
       switch (gSpecialVar_0x8005)
       {
-      case PYRAMID_DATA_PRIZE:
+      case (0):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.pyramidPrize;
           break;
-      case PYRAMID_DATA_WIN_STREAK:
+      case (1):
           gSpecialVar_Result = gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode];
           break;
-      case PYRAMID_DATA_WIN_STREAK_ACTIVE:
-          if (lvlMode != FRONTIER_LVL_50)
-              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_PYRAMID_OPEN;
+      case (2):
+          if (lvlMode != (0))
+              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 13));
           else
-              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_PYRAMID_50;
+              gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 12));
           break;
-      case PYRAMID_DATA_WIN_STREAK_50:
-          gSpecialVar_Result = gSaveBlock2Ptr.frontier.pyramidWinStreaks[FRONTIER_LVL_50];
+      case (3):
+          gSpecialVar_Result = gSaveBlock2Ptr.frontier.pyramidWinStreaks[(0)];
           break;
-      case PYRAMID_DATA_WIN_STREAK_OPEN:
-          gSpecialVar_Result = gSaveBlock2Ptr.frontier.pyramidWinStreaks[FRONTIER_LVL_OPEN];
+      case (4):
+          gSpecialVar_Result = gSaveBlock2Ptr.frontier.pyramidWinStreaks[(1)];
           break;
-      case PYRAMID_DATA_WIN_STREAK_ACTIVE_50:
-          gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_PYRAMID_50;
+      case (5):
+          gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 12));
           break;
-      case PYRAMID_DATA_WIN_STREAK_ACTIVE_OPEN:
-          gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & STREAK_PYRAMID_OPEN;
+      case (6):
+          gSpecialVar_Result = gSaveBlock2Ptr.frontier.winStreakActiveFlags & ((1 << 13));
           break;
       }
 }
@@ -103,29 +92,29 @@ export function SetBattlePyramidData(): any {
 
       switch (gSpecialVar_0x8005)
       {
-      case PYRAMID_DATA_PRIZE:
+      case (0):
           gSaveBlock2Ptr.frontier.pyramidPrize = gSpecialVar_0x8006;
           break;
-      case PYRAMID_DATA_WIN_STREAK:
+      case (1):
           gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] = gSpecialVar_0x8006;
           break;
-      case PYRAMID_DATA_WIN_STREAK_ACTIVE:
-          if (lvlMode != FRONTIER_LVL_50)
+      case (2):
+          if (lvlMode != (0))
           {
               if (gSpecialVar_0x8006)
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= STREAK_PYRAMID_OPEN;
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= ((1 << 13));
               else
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(STREAK_PYRAMID_OPEN);
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(((1 << 13)));
           }
           else
           {
               if (gSpecialVar_0x8006)
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= STREAK_PYRAMID_50;
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags |= ((1 << 12));
               else
-                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(STREAK_PYRAMID_50);
+                  gSaveBlock2Ptr.frontier.winStreakActiveFlags &= ~(((1 << 12)));
           }
           break;
-      case PYRAMID_DATA_TRAINER_FLAGS:
+      case (7):
           gSaveBlock2Ptr.frontier.pyramidTrainerFlags = gSpecialVar_0x8006;
           break;
       }
@@ -134,7 +123,7 @@ export function SetBattlePyramidData(): any {
 /** static void SavePyramidChallenge(void) */
 export function SavePyramidChallenge(): any {
   gSaveBlock2Ptr.frontier.challengeStatus = gSpecialVar_0x8005;
-      VarSet(VAR_TEMP_CHALLENGE_STATUS, 0);
+      VarSet(((((0x4000) + 0x0))), 0);
       gSaveBlock2Ptr.frontier.challengePaused = TRUE;
       SaveMapView();
       TrySavingData(SAVE_LINK);
@@ -182,10 +171,10 @@ export function SetPickupItem(): any {
       let id: any = null;
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
       let floor: any = gSaveBlock2Ptr.frontier.curChallengeBattleNum;
-      let round: any = (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE) % TOTAL_PYRAMID_ROUNDS;
+      let round: any = (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] / (7)) % (20);
 
-      if (round >= TOTAL_PYRAMID_ROUNDS)
-          round = TOTAL_PYRAMID_ROUNDS - 1;
+      if (round >= (20))
+          round = (20) - 1;
 
       id = GetPyramidFloorTemplateId();
       itemIndex = (gSpecialVar_LastTalked - sPyramidFloorTemplates[id].numTrainers) - 1;
@@ -201,7 +190,7 @@ export function SetPickupItem(): any {
               break;
       }
 
-      if (lvlMode != FRONTIER_LVL_50)
+      if (lvlMode != (0))
           gSpecialVar_0x8000 = sPickupItemsLvlOpen[round][sPickupItemSlots[i][1]];
       else
           gSpecialVar_0x8000 = sPickupItemsLvl50[round][sPickupItemSlots[i][1]];
@@ -226,7 +215,7 @@ export function HidePyramidItem(): any {
               break;
           }
           i++;
-          if (events[i].localId == LOCALID_NONE)
+          if (events[i].localId == (0))
               break;
       }
 }
@@ -261,45 +250,45 @@ export function ShowPostBattleHintText(): any {
       {
           switch (hintType)
           {
-          case HINT_EXIT_DIRECTION:
-              textIndex = GetPostBattleDirectionHintTextIndex(hintType, 8, HINT_EXIT_DIRECTION);
+          case (0):
+              textIndex = GetPostBattleDirectionHintTextIndex(hintType, 8, (0));
               i = 1;
               break;
-          case HINT_REMAINING_ITEMS:
+          case (1):
               for (i = 0; i < GetNumBattlePyramidObjectEvents(); i++)
               {
-                  if (events[i].graphicsId == OBJ_EVENT_GFX_ITEM_BALL && events[i].x != SHRT_MAX && events[i].y != SHRT_MAX)
+                  if (events[i].graphicsId == (59) && events[i].x != SHRT_MAX && events[i].y != SHRT_MAX)
                       textIndex++;
               }
               i = 1;
               break;
-          case HINT_REMAINING_TRAINERS:
+          case (2):
               id = GetPyramidFloorTemplateId();
               textIndex = sPyramidFloorTemplates[id].numTrainers;
-              for (i = 0; i < MAX_PYRAMID_TRAINERS; i++)
+              for (i = 0; i < (8); i++)
               {
                   if (gBitTable[i] & gSaveBlock2Ptr.frontier.pyramidTrainerFlags)
                       textIndex--;
               }
               i = 1;
               break;
-          case HINT_EXIT_SHORT_REMAINING_TRAINERS:
-              GetPostBattleDirectionHintTextIndex(hintType, 8, HINT_REMAINING_TRAINERS);
+          case (3):
+              GetPostBattleDirectionHintTextIndex(hintType, 8, (2));
               break;
-          case HINT_EXIT_SHORT_REMAINING_ITEMS:
-              GetPostBattleDirectionHintTextIndex(hintType, 8, HINT_REMAINING_ITEMS);
+          case (4):
+              GetPostBattleDirectionHintTextIndex(hintType, 8, (1));
               break;
-          case HINT_EXIT_MEDIUM_REMAINING_TRAINERS:
-              GetPostBattleDirectionHintTextIndex(hintType, 16, HINT_REMAINING_TRAINERS);
+          case (5):
+              GetPostBattleDirectionHintTextIndex(hintType, 16, (2));
               break;
-          case HINT_EXIT_MEDIUM_REMAINING_ITEMS:
-              GetPostBattleDirectionHintTextIndex(hintType, 16, HINT_REMAINING_ITEMS);
+          case (6):
+              GetPostBattleDirectionHintTextIndex(hintType, 16, (1));
               break;
-          case HINT_EXIT_FAR_REMAINING_TRAINERS:
-              GetPostBattleDirectionHintTextIndex(hintType, 24, HINT_REMAINING_TRAINERS);
+          case (7):
+              GetPostBattleDirectionHintTextIndex(hintType, 24, (2));
               break;
-          case HINT_EXIT_FAR_REMAINING_ITEMS:
-              GetPostBattleDirectionHintTextIndex(hintType, 24, HINT_REMAINING_ITEMS);
+          case (8):
+              GetPostBattleDirectionHintTextIndex(hintType, 24, (1));
               break;
           }
       }
@@ -325,10 +314,10 @@ export function GetCurrentBattlePyramidLocation(): any {
 export function UpdatePyramidLightRadius(): any {
   switch (gSpecialVar_0x8006)
       {
-      case PYRAMID_LIGHT_SET_RADIUS:
+      case (0):
           gSaveBlock2Ptr.frontier.pyramidLightRadius = gSpecialVar_0x8005;
           break;
-      case PYRAMID_LIGHT_INCR_RADIUS:
+      case (1):
           switch (gSpecialVar_Result)
           {
           case 0:
@@ -371,7 +360,7 @@ export function ClearPyramidPartyHeldItems(): any {
   let i, j;
       let item: any = 0;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           for (j = 0; j < MAX_FRONTIER_PARTY_SIZE; j++)
           {
@@ -404,22 +393,22 @@ export function BattlePyramidStartMenu(): any {
 export function RestorePyramidPlayerParty(): any {
   let i, j, k, l;
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
       {
           let partyIndex: any = gSaveBlock2Ptr.frontier.selectedPartyMons[i] - 1;
-          for (j = 0; j < FRONTIER_PARTY_SIZE; j++)
+          for (j = 0; j < (3); j++)
           {
               if (GetMonData(gSaveBlock1Ptr.playerParty[partyIndex], MON_DATA_SPECIES, NULL) == GetMonData(gPlayerParty[j], MON_DATA_SPECIES, NULL))
               {
-                  for (k = 0; k < MAX_MON_MOVES; k++)
+                  for (k = 0; k < (4); k++)
                   {
-                      for (l = 0; l < MAX_MON_MOVES; l++)
+                      for (l = 0; l < (4); l++)
                       {
                           if (GetMonData(gSaveBlock1Ptr.playerParty[partyIndex], MON_DATA_MOVE1 + l, NULL) == GetMonData(gPlayerParty[j], MON_DATA_MOVE1 + k, NULL))
                               break;
                       }
-                      if (l == MAX_MON_MOVES)
-                          SetMonMoveSlot(gPlayerParty[j], MOVE_SKETCH, k);
+                      if (l == (4))
+                          SetMonMoveSlot(gPlayerParty[j], (166), k);
                   }
                   gSaveBlock1Ptr.playerParty[partyIndex] = gPlayerParty[j];
                   gSelectedOrderFromParty[j] = partyIndex + 1;
@@ -428,7 +417,7 @@ export function RestorePyramidPlayerParty(): any {
           }
       }
 
-      for (i = 0; i < FRONTIER_PARTY_SIZE; i++)
+      for (i = 0; i < (3); i++)
           gSaveBlock2Ptr.frontier.selectedPartyMons[i] = gSelectedOrderFromParty[i];
 }
 
@@ -437,21 +426,21 @@ export function GetPostBattleDirectionHintTextIndex(hintType: any, minDistanceFo
   let x, y;
       let textIndex: any = 0;
       let map: any = gBackupMapLayout.map;
-      map += gBackupMapLayout.width * 7 + MAP_OFFSET;
+      map += gBackupMapLayout.width * 7 + (7);
 
       for (y = 0; y < 32; map += 47, y++)
       {
           for (x = 0; x < 32; x++)
           {
-              if ((map[x] & MAPGRID_METATILE_ID_MASK) == METATILE_BattlePyramid_Exit)
+              if ((map[x] & (0x03FF)) == (0x28E))
               {
-                  x += MAP_OFFSET - gObjectEvents[gSelectedObjectEvent].initialCoords.x;
-                  y += MAP_OFFSET - gObjectEvents[gSelectedObjectEvent].initialCoords.y;
+                  x += (7) - gObjectEvents[gSelectedObjectEvent].initialCoords.x;
+                  y += (7) - gObjectEvents[gSelectedObjectEvent].initialCoords.y;
                   if (x >= minDistanceForExitHint
                    || x <= -minDistanceForExitHint
                    || y >= minDistanceForExitHint
                    || y <= -minDistanceForExitHint
-                   || defaultHintType == HINT_EXIT_DIRECTION)
+                   || defaultHintType == (0))
                   {
                       if (x > 0 && y > 0)
                       {
@@ -492,7 +481,7 @@ export function GetPostBattleDirectionHintTextIndex(hintType: any, minDistanceFo
                       {
                           textIndex = (~(x + y) >= 0) ? 0 : 2;
                       }
-                      hintType = HINT_EXIT_DIRECTION;
+                      hintType = (0);
                   }
                   else
                   {
@@ -519,7 +508,7 @@ export function GetBattlePyramidTrainerFlag(eventId: any): any {
 /** void MarkApproachingPyramidTrainersAsBattled(void) */
 export function MarkApproachingPyramidTrainersAsBattled(): any {
   MarkPyramidTrainerAsBattled(gTrainerBattleOpponent_A);
-      if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS)
+      if (gBattleTypeFlags & ((1 << 15)))
       {
           gSelectedObjectEvent = GetChosenApproachingTrainerObjectEventId(1);
           MarkPyramidTrainerAsBattled(gTrainerBattleOpponent_B);
@@ -530,14 +519,14 @@ export function MarkApproachingPyramidTrainersAsBattled(): any {
 export function MarkPyramidTrainerAsBattled(trainerId: any): any {
   let i: any = null;
 
-      for (i = 0; i < MAX_PYRAMID_TRAINERS; i++)
+      for (i = 0; i < (8); i++)
       {
           if (gSaveBlock2Ptr.frontier.trainerIds[i] == trainerId)
               gSaveBlock2Ptr.frontier.pyramidTrainerFlags |= gBitTable[i];
       }
 
-      gObjectEvents[gSelectedObjectEvent].movementType = MOVEMENT_TYPE_WANDER_AROUND;
-      gSaveBlock1Ptr.objectEventTemplates[gSpecialVar_LastTalked - 1].movementType = MOVEMENT_TYPE_WANDER_AROUND;
+      gObjectEvents[gSelectedObjectEvent].movementType = (0x2);
+      gSaveBlock1Ptr.objectEventTemplates[gSpecialVar_LastTalked - 1].movementType = (0x2);
       gObjectEvents[gSelectedObjectEvent].initialCoords.x = gObjectEvents[gSelectedObjectEvent].currentCoords.x;
       gObjectEvents[gSelectedObjectEvent].initialCoords.y = gObjectEvents[gSelectedObjectEvent].currentCoords.y;
 }
@@ -549,12 +538,12 @@ export function GenerateBattlePyramidWildMon(): any {
       let wildMons: any = null;
       let id: any = null;
       let lvl: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let round: any = (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvl] / FRONTIER_STAGES_PER_CHALLENGE) % TOTAL_PYRAMID_ROUNDS;
+      let round: any = (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvl] / (7)) % (20);
 
-      if (round >= TOTAL_PYRAMID_ROUNDS)
-          round = TOTAL_PYRAMID_ROUNDS - 1;
+      if (round >= (20))
+          round = (20) - 1;
 
-      if (lvl != FRONTIER_LVL_50)
+      if (lvl != (0))
           wildMons = sOpenLevelWildMonPointers[round];
       else
           wildMons = sLevel50WildMonPointers[round];
@@ -563,7 +552,7 @@ export function GenerateBattlePyramidWildMon(): any {
       SetMonData(gEnemyParty[0], MON_DATA_SPECIES,wildMons[id].species);
       GetSpeciesName(name, wildMons[id].species);
       SetMonData(gEnemyParty[0], MON_DATA_NICKNAME,name);
-      if (lvl != FRONTIER_LVL_50)
+      if (lvl != (0))
       {
           lvl = SetFacilityPtrsGetLevel();
           lvl -= wildMons[id].lvl;
@@ -597,12 +586,12 @@ export function GenerateBattlePyramidWildMon(): any {
           break;
       }
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
           SetMonMoveSlot(gEnemyParty[0], wildMons[id].moves[i], i);
       if (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvl] >= 140)
       {
           id = (Random() % 17) + 15;
-          for (i = 0; i < NUM_STATS; i++)
+          for (i = 0; i < (6); i++)
               SetMonData(gEnemyParty[0], MON_DATA_HP_IV + i,id);
       }
       CalculateMonStats(gEnemyParty[0]);
@@ -617,11 +606,11 @@ export function GetPyramidRunMultiplier(): any {
 /** u8 CurrentBattlePyramidLocation(void) */
 export function CurrentBattlePyramidLocation(): any {
   if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_FLOOR)
-          return PYRAMID_LOCATION_FLOOR;
+          return (1);
       else if (gMapHeader.mapLayoutId == LAYOUT_BATTLE_FRONTIER_BATTLE_PYRAMID_TOP)
-          return PYRAMID_LOCATION_TOP;
+          return (2);
       else
-          return PYRAMID_LOCATION_NONE;
+          return (0);
 }
 
 /** bool8 InBattlePyramid_(void) */
@@ -632,18 +621,18 @@ export function InBattlePyramid_(): any {
 
 /** void PausePyramidChallenge(void) */
 export function PausePyramidChallenge(): any {
-  if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+  if (CurrentBattlePyramidLocation() != (0))
       {
           RestorePyramidPlayerParty();
-          gSaveBlock2Ptr.frontier.challengeStatus = CHALLENGE_STATUS_PAUSED;
-          VarSet(VAR_TEMP_PLAYING_PYRAMID_MUSIC, 0);
+          gSaveBlock2Ptr.frontier.challengeStatus = (2);
+          VarSet(((((0x4000) + 0xE))), 0);
           LoadPlayerParty();
       }
 }
 
 /** void SoftResetInBattlePyramid(void) */
 export function SoftResetInBattlePyramid(): any {
-  if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+  if (CurrentBattlePyramidLocation() != (0))
           DoSoftReset();
 }
 
@@ -671,7 +660,7 @@ export function GetTrainerEncounterMusicIdInBattlePyramid(trainerId: any): any {
           if (sTrainerClassEncounterMusic[i].trainerClass == gFacilityClassToTrainerClass[gFacilityTrainers[trainerId].facilityClass])
               return sTrainerClassEncounterMusic[i].trainerEncounterMusic;
       }
-      return TRAINER_ENCOUNTER_MUSIC_MALE;
+      return (0);
 }
 
 /** static u16 GetUniqueTrainerId(u8 objectEventId) */
@@ -679,9 +668,9 @@ export function GetUniqueTrainerId(objectEventId: any): any {
   let i: any = null;
       let trainerId: any = null;
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let challengeNum: any = gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE;
+      let challengeNum: any = gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] / (7);
       let floor: any = gSaveBlock2Ptr.frontier.curChallengeBattleNum;
-      if (floor == FRONTIER_STAGES_PER_CHALLENGE)
+      if (floor == (7))
       {
           do
           {
@@ -714,11 +703,11 @@ export function GenerateBattlePyramidFloorLayout(backupMapData: any, setPlayerPo
   let y, x;
       let i: any = null;
       let entranceSquareId, exitSquareId;
-      let floorLayoutOffsets: any = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);
+      let floorLayoutOffsets: any = AllocZeroed((((4) * (4))));
 
       GetPyramidFloorLayoutOffsets(floorLayoutOffsets);
       GetPyramidEntranceAndExitSquareIds(entranceSquareId,exitSquareId);
-      for (i = 0; i < NUM_PYRAMID_FLOOR_SQUARES; i++)
+      for (i = 0; i < (((4) * (4))); i++)
       {
           let map: any = null;
           let yOffset, xOffset;
@@ -726,17 +715,17 @@ export function GenerateBattlePyramidFloorLayout(backupMapData: any, setPlayerPo
           let layoutMap: any = mapLayout.map;
 
           gBackupMapLayout.map = backupMapData;
-          gBackupMapLayout.width = mapLayout.width * PYRAMID_FLOOR_SQUARES_WIDE + MAP_OFFSET_W;
-          gBackupMapLayout.height = mapLayout.height * PYRAMID_FLOOR_SQUARES_HIGH + MAP_OFFSET_H;
+          gBackupMapLayout.width = mapLayout.width * (4) + (((7) * 2 + 1));
+          gBackupMapLayout.height = mapLayout.height * (4) + (((7) * 2));
           map = backupMapData;
-          yOffset = ((i / PYRAMID_FLOOR_SQUARES_WIDE * mapLayout.height) + MAP_OFFSET) * gBackupMapLayout.width;
-          xOffset = (i % PYRAMID_FLOOR_SQUARES_WIDE * mapLayout.width) + MAP_OFFSET;
+          yOffset = ((i / (4) * mapLayout.height) + (7)) * gBackupMapLayout.width;
+          xOffset = (i % (4) * mapLayout.width) + (7);
           map += yOffset + xOffset;
           for (y = 0; y < mapLayout.height; y++)
           {
               for (x = 0; x < mapLayout.width; x++)
               {
-                  if ((layoutMap[x] & MAPGRID_METATILE_ID_MASK) != METATILE_BattlePyramid_Exit)
+                  if ((layoutMap[x] & (0x03FF)) != (0x28E))
                   {
                       map[x] = layoutMap[x];
                   }
@@ -744,18 +733,18 @@ export function GenerateBattlePyramidFloorLayout(backupMapData: any, setPlayerPo
                   {
                       if (i == entranceSquareId && setPlayerPosition == FALSE)
                       {
-                          gSaveBlock1Ptr.pos.x = (mapLayout.width * (i % PYRAMID_FLOOR_SQUARES_WIDE)) + x;
-                          gSaveBlock1Ptr.pos.y = (mapLayout.height * (i / PYRAMID_FLOOR_SQUARES_WIDE)) + y;
+                          gSaveBlock1Ptr.pos.x = (mapLayout.width * (i % (4))) + x;
+                          gSaveBlock1Ptr.pos.y = (mapLayout.height * (i / (4))) + y;
                       }
                        
-                      map[x] = (layoutMap[x] & (MAPGRID_ELEVATION_MASK | MAPGRID_COLLISION_MASK)) | METATILE_BattlePyramid_Floor;
+                      map[x] = (layoutMap[x] & ((0xF000) | (0x0C00))) | (0x28D);
                   }
                   else
                   {
                       map[x] = layoutMap[x];
                   }
               }
-              map += MAP_OFFSET_W + (mapLayout.width * PYRAMID_FLOOR_SQUARES_WIDE);
+              map += (((7) * 2 + 1)) + (mapLayout.width * (4));
               layoutMap += mapLayout.width;
           }
       }
@@ -769,7 +758,7 @@ export function LoadBattlePyramidObjectEventTemplates(): any {
       let id: any = null;
       let entranceSquareId, exitSquareId;
 
-      for (i = 0; i < MAX_PYRAMID_TRAINERS; i++)
+      for (i = 0; i < (8); i++)
           gSaveBlock2Ptr.frontier.trainerIds[i] = 0xFFFF;
 
       id = GetPyramidFloorTemplateId();
@@ -779,29 +768,29 @@ export function LoadBattlePyramidObjectEventTemplates(): any {
       {
           let objectPositionsType: any = null;
 
-          if (i == OBJ_TRAINERS)
+          if (i == (0))
               objectPositionsType = sPyramidFloorTemplates[id].trainerPositions;
           else   
               objectPositionsType = sPyramidFloorTemplates[id].itemPositions;
 
           switch (objectPositionsType)
           {
-          case OBJ_POSITIONS_UNIFORM:
+          case (0):
               SetPyramidObjectPositionsUniformly(i);
               break;
-          case OBJ_POSITIONS_IN_AND_NEAR_ENTRANCE:
+          case (1):
               if (SetPyramidObjectPositionsInAndNearSquare(i, entranceSquareId))
                   SetPyramidObjectPositionsUniformly(i);
               break;
-          case OBJ_POSITIONS_IN_AND_NEAR_EXIT:
+          case (2):
               if (SetPyramidObjectPositionsInAndNearSquare(i, exitSquareId))
                   SetPyramidObjectPositionsUniformly(i);
               break;
-          case OBJ_POSITIONS_NEAR_ENTRANCE:
+          case (3):
               if (SetPyramidObjectPositionsNearSquare(i, entranceSquareId))
                   SetPyramidObjectPositionsUniformly(i);
               break;
-          case OBJ_POSITIONS_NEAR_EXIT:
+          case (4):
               if (SetPyramidObjectPositionsNearSquare(i, exitSquareId))
                   SetPyramidObjectPositionsUniformly(i);
               break;
@@ -814,9 +803,9 @@ export function LoadBattlePyramidFloorObjectEventScripts(): any {
   let i: any = null;
       let events: any = gSaveBlock1Ptr.objectEventTemplates;
 
-      for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
+      for (i = 0; i < (64); i++)
       {
-          if (events[i].graphicsId != OBJ_EVENT_GFX_ITEM_BALL)
+          if (events[i].graphicsId != (59))
               events[i].script = BattlePyramid_TrainerBattle;
           else
               events[i].script = BattlePyramid_FindItemBall;
@@ -825,13 +814,13 @@ export function LoadBattlePyramidFloorObjectEventScripts(): any {
 
 /** static void GetPyramidEntranceAndExitSquareIds(u8 *entranceSquareId, u8 *exitSquareId) */
 export function GetPyramidEntranceAndExitSquareIds(entranceSquareId: any, exitSquareId: any): any {
-  entranceSquareId = gSaveBlock2Ptr.frontier.pyramidRandoms[3] % NUM_PYRAMID_FLOOR_SQUARES;
-      exitSquareId = gSaveBlock2Ptr.frontier.pyramidRandoms[0] % NUM_PYRAMID_FLOOR_SQUARES;
+  entranceSquareId = gSaveBlock2Ptr.frontier.pyramidRandoms[3] % (((4) * (4)));
+      exitSquareId = gSaveBlock2Ptr.frontier.pyramidRandoms[0] % (((4) * (4)));
 
       if (entranceSquareId == exitSquareId)
       {
-          entranceSquareId = (gSaveBlock2Ptr.frontier.pyramidRandoms[3] + 1 ) % NUM_PYRAMID_FLOOR_SQUARES;
-          exitSquareId = (gSaveBlock2Ptr.frontier.pyramidRandoms[0] + NUM_PYRAMID_FLOOR_SQUARES - 1) % NUM_PYRAMID_FLOOR_SQUARES;
+          entranceSquareId = (gSaveBlock2Ptr.frontier.pyramidRandoms[3] + 1 ) % (((4) * (4)));
+          exitSquareId = (gSaveBlock2Ptr.frontier.pyramidRandoms[0] + (((4) * (4))) - 1) % (((4) * (4)));
       }
 }
 
@@ -843,11 +832,11 @@ export function SetPyramidObjectPositionsUniformly(objType: any): any {
       let squareId: any = null;
       let bits: any = 0;
       let id: any = GetPyramidFloorTemplateId();
-      let floorLayoutOffsets: any = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);
+      let floorLayoutOffsets: any = AllocZeroed((((4) * (4))));
 
       GetPyramidFloorLayoutOffsets(floorLayoutOffsets);
-      squareId = gSaveBlock2Ptr.frontier.pyramidRandoms[2] % NUM_PYRAMID_FLOOR_SQUARES;
-      if (objType == OBJ_TRAINERS)
+      squareId = gSaveBlock2Ptr.frontier.pyramidRandoms[2] % (((4) * (4)));
+      if (objType == (0))
       {
           numObjects = sPyramidFloorTemplates[id].numTrainers;
           objectStartIndex = 0;
@@ -874,10 +863,10 @@ export function SetPyramidObjectPositionsUniformly(objType: any): any {
                       if (gBitTable[squareId] & gSaveBlock2Ptr.frontier.pyramidRandoms[3])
                           bits |= 2;
                   }
-                  if (++squareId >= NUM_PYRAMID_FLOOR_SQUARES)
+                  if (++squareId >= (((4) * (4))))
                       squareId = 0;
 
-                  if (squareId == gSaveBlock2Ptr.frontier.pyramidRandoms[2] % NUM_PYRAMID_FLOOR_SQUARES)
+                  if (squareId == gSaveBlock2Ptr.frontier.pyramidRandoms[2] % (((4) * (4))))
                   {
                       if (bits & 1)
                           bits |= 6;
@@ -901,10 +890,10 @@ export function SetPyramidObjectPositionsInAndNearSquare(objType: any, squareId:
       let numPlacedObjects: any = 0;
       let numObjects: any = null;
       let id: any = GetPyramidFloorTemplateId();
-      let floorLayoutOffsets: any = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);
+      let floorLayoutOffsets: any = AllocZeroed((((4) * (4))));
 
       GetPyramidFloorLayoutOffsets(floorLayoutOffsets);
-      if (objType == OBJ_TRAINERS)
+      if (objType == (0))
       {
           numObjects = sPyramidFloorTemplates[id].numTrainers;
           objectStartIndex = 0;
@@ -965,10 +954,10 @@ export function SetPyramidObjectPositionsNearSquare(objType: any, squareId: any)
       let r8: any = 0;
       let numObjects: any = null;
       let id: any = GetPyramidFloorTemplateId();
-      let floorLayoutOffsets: any = AllocZeroed(NUM_PYRAMID_FLOOR_SQUARES);
+      let floorLayoutOffsets: any = AllocZeroed((((4) * (4))));
 
       GetPyramidFloorLayoutOffsets(floorLayoutOffsets);
-      if (objType == OBJ_TRAINERS)
+      if (objType == (0))
       {
           numObjects = sPyramidFloorTemplates[id].numTrainers;
           objectStartIndex = 0;
@@ -1050,9 +1039,9 @@ export function TrySetPyramidObjectEventPositionAtCoords(objType: any, x: any, y
           if (mapHeader.events.objectEvents[i].x != x || mapHeader.events.objectEvents[i].y != y)
               continue;
 
-          if (objType != OBJ_TRAINERS || mapHeader.events.objectEvents[i].graphicsId == OBJ_EVENT_GFX_ITEM_BALL)
+          if (objType != (0) || mapHeader.events.objectEvents[i].graphicsId == (59))
           {
-              if (objType != OBJ_ITEMS || mapHeader.events.objectEvents[i].graphicsId != OBJ_EVENT_GFX_ITEM_BALL)
+              if (objType != (1) || mapHeader.events.objectEvents[i].graphicsId != (59))
                   continue;
           }
 
@@ -1069,7 +1058,7 @@ export function TrySetPyramidObjectEventPositionAtCoords(objType: any, x: any, y
               floorEvents[objectEventId].x += (squareId % 4) * 8;
               floorEvents[objectEventId].y += (squareId / 4) * 8;
               floorEvents[objectEventId].localId = objectEventId + 1;
-              if (floorEvents[objectEventId].graphicsId != OBJ_EVENT_GFX_ITEM_BALL)
+              if (floorEvents[objectEventId].graphicsId != (59))
               {
                   i = GetUniqueTrainerId(objectEventId);
                   floorEvents[objectEventId].graphicsId = GetBattleFacilityTrainerGfxId(i);
@@ -1088,7 +1077,7 @@ export function GetPyramidFloorLayoutOffsets(layoutOffsets: any): any {
       let rand: any = (gSaveBlock2Ptr.frontier.pyramidRandoms[0]) | (gSaveBlock2Ptr.frontier.pyramidRandoms[1] << 16);
       let id: any = GetPyramidFloorTemplateId();
 
-      for (i = 0; i < NUM_PYRAMID_FLOOR_SQUARES; i++)
+      for (i = 0; i < (((4) * (4))); i++)
       {
           layoutOffsets[i] = sPyramidFloorTemplates[id].layoutOffsets[MOD(rand, (8))];
           rand >>= 3;
@@ -1119,9 +1108,9 @@ export function GetNumBattlePyramidObjectEvents(): any {
   let i: any = null;
       let events: any = gSaveBlock1Ptr.objectEventTemplates;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
       {
-          if (events[i].localId == LOCALID_NONE)
+          if (events[i].localId == (0))
               break;
       }
 
@@ -1132,14 +1121,14 @@ export function GetNumBattlePyramidObjectEvents(): any {
 export function InitPyramidBagItems(lvlMode: any): any {
   let i: any = null;
 
-      for (i = 0; i < PYRAMID_BAG_ITEMS_COUNT; i++)
+      for (i = 0; i < (10); i++)
       {
-          gSaveBlock2Ptr.frontier.pyramidBag.itemId[lvlMode][i] = ITEM_NONE;
-          gSaveBlock2Ptr.frontier.pyramidBag.quantity[lvlMode][i] = ITEM_NONE;
+          gSaveBlock2Ptr.frontier.pyramidBag.itemId[lvlMode][i] = (0);
+          gSaveBlock2Ptr.frontier.pyramidBag.quantity[lvlMode][i] = (0);
       }
 
-      AddPyramidBagItem(ITEM_HYPER_POTION, 1);
-      AddPyramidBagItem(ITEM_ETHER, 1);
+      AddPyramidBagItem((21), 1);
+      AddPyramidBagItem((34), 1);
 }
 
 /** u16 GetBattlePyramidPickupItemId(void) */
@@ -1147,10 +1136,10 @@ export function GetBattlePyramidPickupItemId(): any {
   let rand: any = null;
       let i: any = null;
       let lvlMode: any = gSaveBlock2Ptr.frontier.lvlMode;
-      let round: any = (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] / FRONTIER_STAGES_PER_CHALLENGE);
+      let round: any = (gSaveBlock2Ptr.frontier.pyramidWinStreaks[lvlMode] / (7));
 
-      if (round >= TOTAL_PYRAMID_ROUNDS)
-          round = TOTAL_PYRAMID_ROUNDS - 1;
+      if (round >= (20))
+          round = (20) - 1;
 
       rand = Random() % 100;
 
@@ -1160,10 +1149,10 @@ export function GetBattlePyramidPickupItemId(): any {
               break;
       }
 
-      if (i >= PICKUP_ITEMS_PER_ROUND)
-          i = PICKUP_ITEMS_PER_ROUND - 1;
+      if (i >= (10))
+          i = (10) - 1;
 
-      if (lvlMode != FRONTIER_LVL_50)
+      if (lvlMode != (0))
           return sPickupItemsLvlOpen[round][i];
       else
           return sPickupItemsLvl50[round][i];

@@ -15,15 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sLocationHistory: any = null;
-let sRoamerLocation: any = null;
-let sRoamerLocations: any = null;
 /** void ClearRoamerData(void) */
 export function ClearRoamerData(): any {
   memset(((gSaveBlock1Ptr.roamer)), 0, sizeof(((gSaveBlock1Ptr.roamer))));
-      ((gSaveBlock1Ptr.roamer)).species = SPECIES_LATIAS;
+      ((gSaveBlock1Ptr.roamer)).species = (407);
 }
 
 /** void ClearRoamerLocationData(void) */
@@ -43,11 +38,11 @@ export function ClearRoamerLocationData(): any {
 /** static void CreateInitialRoamerMon(bool16 createLatios) */
 export function CreateInitialRoamerMon(createLatios: any): any {
   if (!createLatios)
-          ((gSaveBlock1Ptr.roamer)).species = SPECIES_LATIAS;
+          ((gSaveBlock1Ptr.roamer)).species = (407);
       else
-          ((gSaveBlock1Ptr.roamer)).species = SPECIES_LATIOS;
+          ((gSaveBlock1Ptr.roamer)).species = (408);
 
-      CreateMon(gEnemyParty[0], ((gSaveBlock1Ptr.roamer)).species, 40, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
+      CreateMon(gEnemyParty[0], ((gSaveBlock1Ptr.roamer)).species, 40, (((31) + 1)), FALSE, 0, (0), 0);
       ((gSaveBlock1Ptr.roamer)).level = 40;
       ((gSaveBlock1Ptr.roamer)).status = 0;
       ((gSaveBlock1Ptr.roamer)).active = TRUE;

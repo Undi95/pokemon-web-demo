@@ -17,15 +17,15 @@
 
 /** static u32 GetMirageRnd(void) */
 export function GetMirageRnd(): any {
-  let hi: any = VarGet(VAR_MIRAGE_RND_H);
-      let lo: any = VarGet(VAR_MIRAGE_RND_L);
+  let hi: any = VarGet((0x4024));
+      let lo: any = VarGet((0x4025));
       return (hi << 16) | lo;
 }
 
 /** static void SetMirageRnd(u32 rnd) */
 export function SetMirageRnd(rnd: any): any {
-  VarSet(VAR_MIRAGE_RND_H, rnd >> 16);
-      VarSet(VAR_MIRAGE_RND_L, rnd);
+  VarSet((0x4024), rnd >> 16);
+      VarSet((0x4025), rnd);
 }
 
 /** void InitMirageRnd(void) */
@@ -49,7 +49,7 @@ export function IsMirageIslandPresent(): any {
   let rnd: any = GetMirageRnd() >> 16;
       let i: any = null;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
           if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) && (GetMonData(gPlayerParty[i], MON_DATA_PERSONALITY) & 0xFFFF) == rnd)
               return TRUE;
 
@@ -90,9 +90,9 @@ export function UpdateShoalTideFlag(): any {
       {
           RtcCalcLocalTime();
           if (tide[gLocalTime.hours])
-              FlagSet(FLAG_SYS_SHOAL_TIDE);
+              FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x3A)));
           else
-              FlagClear(FLAG_SYS_SHOAL_TIDE);
+              FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x3A)));
       }
 }
 
@@ -112,12 +112,12 @@ export function WaitWeather(): any {
 
 /** void InitBirchState(void) */
 export function InitBirchState(): any {
-  VarSet(VAR_BIRCH_STATE, 0);
+  VarSet(0x4049, 0);
 }
 
 /** void UpdateBirchState(u16 days) */
 export function UpdateBirchState(days: any): any {
-  let state: any = GetVarPointer(VAR_BIRCH_STATE);
+  let state: any = GetVarPointer((0x4049));
       state += days;
       state %= 7;
 }

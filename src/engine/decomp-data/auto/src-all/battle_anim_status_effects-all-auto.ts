@@ -17,8 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sFrozenIceCubeSpriteTemplate: any = null;
-let sFrozenIceCubeSubspriteTable: any = null;
+let gBattleAnimAttacker: any = null;
+let gBattleAnimTarget: any = null;
 /** static void Task_UpdateFlashingCircleImpacts(u8 taskId) */
 export function Task_UpdateFlashingCircleImpacts(taskId: any): any {
   if (gTasks[taskId].data[2] == 2)
@@ -98,7 +98,7 @@ export function AnimTask_FrozenIceCube(taskId: any): any {
       SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_EFFECT_BLEND | BLDCNT_TGT2_ALL);
       SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));
       spriteId = CreateSprite(sFrozenIceCubeSpriteTemplate, x, y, 4);
-      if (GetSpriteTileStartByTag(ANIM_TAG_ICE_CUBE) == 0xFFFF)
+      if (GetSpriteTileStartByTag((((10000) + 10))) == 0xFFFF)
           gSprites[spriteId].invisible = TRUE;
       SetSubspriteTables(gSprites[spriteId], sFrozenIceCubeSubspriteTable);
       gTasks[taskId].data[15] = spriteId;
@@ -123,7 +123,7 @@ export function AnimTask_FrozenIceCube_Step1(taskId: any): any {
 
 /** static void AnimTask_FrozenIceCube_Step2(u8 taskId) */
 export function AnimTask_FrozenIceCube_Step2(taskId: any): any {
-  let palIndex: any = IndexOfSpritePaletteTag(ANIM_TAG_ICE_CUBE);
+  let palIndex: any = IndexOfSpritePaletteTag((((10000) + 10)));
 
       if (gTasks[taskId].data[1]++ > 13)
       {
@@ -196,42 +196,42 @@ export function AnimTask_StatsChange(taskId: any): any {
 
       switch (gBattleSpritesDataPtr.animationData.animArg)
       {
-      case STAT_ANIM_PLUS1 + STAT_ATK:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ATK;      break;
-      case STAT_ANIM_PLUS1 + STAT_DEF:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_DEF;      break;
-      case STAT_ANIM_PLUS1 + STAT_SPEED:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPEED;    break;
-      case STAT_ANIM_PLUS1 + STAT_SPATK:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPATK;    break;
-      case STAT_ANIM_PLUS1 + STAT_SPDEF:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPDEF;    break;
-      case STAT_ANIM_PLUS1 + STAT_ACC:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ACC;      break;
-      case STAT_ANIM_PLUS1 + STAT_EVASION: goesDown = FALSE;  animStatId = STAT_ANIM_PAL_EVASION;  break;
+      case (14) + (1):     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ATK;      break;
+      case (14) + (2):     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_DEF;      break;
+      case (14) + (3):   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPEED;    break;
+      case (14) + (4):   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPATK;    break;
+      case (14) + (5):   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPDEF;    break;
+      case (14) + (6):     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ACC;      break;
+      case (14) + (7): goesDown = FALSE;  animStatId = STAT_ANIM_PAL_EVASION;  break;
 
-      case STAT_ANIM_MINUS1 + STAT_ATK:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ATK;      break;
-      case STAT_ANIM_MINUS1 + STAT_DEF:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_DEF;      break;
-      case STAT_ANIM_MINUS1 + STAT_SPEED:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPEED;    break;
-      case STAT_ANIM_MINUS1 + STAT_SPATK:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPATK;    break;
-      case STAT_ANIM_MINUS1 + STAT_SPDEF:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPDEF;    break;
-      case STAT_ANIM_MINUS1 + STAT_ACC:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ACC;      break;
-      case STAT_ANIM_MINUS1 + STAT_EVASION: goesDown = TRUE;  animStatId = STAT_ANIM_PAL_EVASION;  break;
+      case (21) + (1):     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ATK;      break;
+      case (21) + (2):     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_DEF;      break;
+      case (21) + (3):   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPEED;    break;
+      case (21) + (4):   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPATK;    break;
+      case (21) + (5):   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPDEF;    break;
+      case (21) + (6):     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ACC;      break;
+      case (21) + (7): goesDown = TRUE;  animStatId = STAT_ANIM_PAL_EVASION;  break;
 
-      case STAT_ANIM_PLUS2 + STAT_ATK:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ATK;      sharply = TRUE;  break;
-      case STAT_ANIM_PLUS2 + STAT_DEF:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_DEF;      sharply = TRUE;  break;
-      case STAT_ANIM_PLUS2 + STAT_SPEED:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPEED;    sharply = TRUE;  break;
-      case STAT_ANIM_PLUS2 + STAT_SPATK:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPATK;    sharply = TRUE;  break;
-      case STAT_ANIM_PLUS2 + STAT_SPDEF:   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPDEF;    sharply = TRUE;  break;
-      case STAT_ANIM_PLUS2 + STAT_ACC:     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ACC;      sharply = TRUE;  break;
-      case STAT_ANIM_PLUS2 + STAT_EVASION: goesDown = FALSE;  animStatId = STAT_ANIM_PAL_EVASION;  sharply = TRUE;  break;
+      case (38) + (1):     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ATK;      sharply = TRUE;  break;
+      case (38) + (2):     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_DEF;      sharply = TRUE;  break;
+      case (38) + (3):   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPEED;    sharply = TRUE;  break;
+      case (38) + (4):   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPATK;    sharply = TRUE;  break;
+      case (38) + (5):   goesDown = FALSE;  animStatId = STAT_ANIM_PAL_SPDEF;    sharply = TRUE;  break;
+      case (38) + (6):     goesDown = FALSE;  animStatId = STAT_ANIM_PAL_ACC;      sharply = TRUE;  break;
+      case (38) + (7): goesDown = FALSE;  animStatId = STAT_ANIM_PAL_EVASION;  sharply = TRUE;  break;
 
-      case STAT_ANIM_MINUS2 + STAT_ATK:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ATK;      sharply = TRUE;  break;
-      case STAT_ANIM_MINUS2 + STAT_DEF:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_DEF;      sharply = TRUE;  break;
-      case STAT_ANIM_MINUS2 + STAT_SPEED:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPEED;    sharply = TRUE;  break;
-      case STAT_ANIM_MINUS2 + STAT_SPATK:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPATK;    sharply = TRUE;  break;
-      case STAT_ANIM_MINUS2 + STAT_SPDEF:   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPDEF;    sharply = TRUE;  break;
-      case STAT_ANIM_MINUS2 + STAT_ACC:     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ACC;      sharply = TRUE;  break;
-      case STAT_ANIM_MINUS2 + STAT_EVASION: goesDown = TRUE;  animStatId = STAT_ANIM_PAL_EVASION;  sharply = TRUE;  break;
+      case (45) + (1):     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ATK;      sharply = TRUE;  break;
+      case (45) + (2):     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_DEF;      sharply = TRUE;  break;
+      case (45) + (3):   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPEED;    sharply = TRUE;  break;
+      case (45) + (4):   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPATK;    sharply = TRUE;  break;
+      case (45) + (5):   goesDown = TRUE;  animStatId = STAT_ANIM_PAL_SPDEF;    sharply = TRUE;  break;
+      case (45) + (6):     goesDown = TRUE;  animStatId = STAT_ANIM_PAL_ACC;      sharply = TRUE;  break;
+      case (45) + (7): goesDown = TRUE;  animStatId = STAT_ANIM_PAL_EVASION;  sharply = TRUE;  break;
 
-      case STAT_ANIM_MULTIPLE_PLUS1:  goesDown = FALSE;  animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = FALSE;  break;
-      case STAT_ANIM_MULTIPLE_PLUS2:  goesDown = FALSE;  animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = TRUE;   break;
-      case STAT_ANIM_MULTIPLE_MINUS1: goesDown = TRUE;   animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = FALSE;  break;
-      case STAT_ANIM_MULTIPLE_MINUS2: goesDown = TRUE;   animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = TRUE;   break;
+      case (55):  goesDown = FALSE;  animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = FALSE;  break;
+      case (56):  goesDown = FALSE;  animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = TRUE;   break;
+      case (57): goesDown = TRUE;   animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = FALSE;  break;
+      case (58): goesDown = TRUE;   animStatId = STAT_ANIM_PAL_MULTIPLE;  sharply = TRUE;   break;
 
       default:
           DestroyAnimVisualTask(taskId);

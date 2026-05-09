@@ -17,7 +17,6 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sFuncTable: any = null;
 let sServer: any = null;
 /** void MysterGiftServer_CreateForNews(void) */
 export function MysterGiftServer_CreateForNews(): any {
@@ -52,7 +51,7 @@ export function MysteryGiftServer_Init(svr: any, script: any, sendPlayerId: any,
       svr.funcId = FUNC_INIT;
       svr.card = AllocZeroed(sizeof(svr.card));
       svr.news = AllocZeroed(sizeof(svr.news));
-      svr.recvBuffer = AllocZeroed(MG_LINK_BUFFER_SIZE);
+      svr.recvBuffer = AllocZeroed((0x400));
       svr.linkGameData = AllocZeroed(sizeof(svr.linkGameData));
       svr.script = script;
       svr.cmdidx = 0;
@@ -69,7 +68,7 @@ export function MysteryGiftServer_Free(svr: any): any {
 
 /** static void MysteryGiftServer_InitSend(struct MysteryGiftServer *svr, u32 ident, const void *src, u32 size) */
 export function MysteryGiftServer_InitSend(svr: any, ident: any, src: any, size: any): any {
-  AGB_ASSERT(size <= MG_LINK_BUFFER_SIZE);
+  AGB_ASSERT(size <= (0x400));
       MysteryGiftLink_InitSend(svr.link, ident, src, size);
 }
 

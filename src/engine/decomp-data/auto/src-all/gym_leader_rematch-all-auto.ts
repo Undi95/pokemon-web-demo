@@ -17,9 +17,9 @@
 
 /** void UpdateGymLeaderRematch(void) */
 export function UpdateGymLeaderRematch(): any {
-  if (FlagGet(FLAG_SYS_GAME_CLEAR) && (Random() % 100) <= 30)
+  if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))) && (Random() % 100) <= 30)
       {
-          if (FlagGet(FLAG_WATTSON_REMATCH_AVAILABLE))
+          if (FlagGet((0x5B)))
               UpdateGymLeaderRematchFromArray(GymLeaderRematches_AfterNewMauville, ARRAY_COUNT(GymLeaderRematches_AfterNewMauville), 5);
           else
               UpdateGymLeaderRematchFromArray(GymLeaderRematches_BeforeNewMauville, ARRAY_COUNT(GymLeaderRematches_BeforeNewMauville), 1);

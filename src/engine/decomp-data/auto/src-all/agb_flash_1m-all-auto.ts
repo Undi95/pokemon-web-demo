@@ -17,7 +17,13 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sSetupInfos: any = null;
+let EraseFlashChip: any = null;
+let EraseFlashSector: any = null;
+let ProgramFlashByte: any = null;
+let ProgramFlashSector: any = null;
+let WaitForFlashWrite: any = null;
+let gFlash: any = null;
+let gFlashMaxTime: any = null;
 /** u16 IdentifyFlash(void) */
 export function IdentifyFlash(): any {
   let result: any = null;

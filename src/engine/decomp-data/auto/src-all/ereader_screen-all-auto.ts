@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gLinkType: any = null;
+let gShouldAdvanceLinkState: any = null;
 /** static void EReader_Load(struct EReaderData *eReader, int size, u32 *data) */
 export function EReader_Load(eReader: any, size: any, data: any): any {
    let backupIME: any = REG_IME;
@@ -45,13 +49,13 @@ export function EReader_Transfer(eReader: any): any {
   let transferStatus: any = TRANSFER_ACTIVE;
       eReader.status = EReaderHandleTransfer(TRUE, eReader.size, eReader.data, NULL);
 
-      if ((eReader.status & EREADER_XFER_MASK) == 0 && eReader.status & EREADER_CHECKSUM_OK_MASK)
+      if ((eReader.status & EREADER_XFER_MASK) == 0 && eReader.status & (((1) << (4))))
           transferStatus = TRANSFER_SUCCESS;
 
-      if (eReader.status & EREADER_CANCEL_KEY_MASK)
+      if (eReader.status & (((2) << (2))))
           transferStatus = TRANSFER_CANCELED;
 
-      if (eReader.status & EREADER_CANCEL_TIMEOUT_MASK)
+      if (eReader.status & (((1) << (2))))
           transferStatus = TRANSFER_TIMEOUT;
 
       gShouldAdvanceLinkState = 0;
@@ -61,7 +65,7 @@ export function EReader_Transfer(eReader: any): any {
 /** static void OpenEReaderLink(void) */
 export function OpenEReaderLink(): any {
   memset(gDecompressionBuffer, 0, 0x2000);
-      gLinkType = LINKTYPE_EREADER_EM;
+      gLinkType = (0x5503);
       OpenLink();
       SetSuppressLinkErrorMessage(TRUE);
 }
@@ -78,7 +82,7 @@ export function ValidateEReaderConnection(): any {
 
        
        
-      if (handshakes[0] == SLAVE_HANDSHAKE && handshakes[1] == EREADER_HANDSHAKE
+      if (handshakes[0] == (0xB9A0) && handshakes[1] == (0xCCD0)
        && handshakes[2] == 0xFFFF && handshakes[3] == 0xFFFF)
       {
           return TRUE;
@@ -130,7 +134,7 @@ export function TryReceiveCard(state: any, timer: any): any {
       case RECV_STATE_START:
           if (GetLinkPlayerCount_2() == 2)
           {
-              PlaySE(SE_DING_DONG);
+              PlaySE((73));
               CheckShouldAdvanceLinkState();
               timer = 0;
               state = RECV_STATE_EXCHANGE;
@@ -202,7 +206,7 @@ export function CreateEReaderTask(): any {
       data.unused2 = 0;
       data.unused3 = 0;
       data.status = 0;
-      data.unusedBuffer = AllocZeroed(CLIENT_MAX_MSG_SIZE);
+      data.unusedBuffer = AllocZeroed((64));
 }
 
 /** static void ResetTimer(u16 *timer) */
@@ -268,7 +272,7 @@ export function Task_EReader(taskId: any): any {
           else if (JOY_NEW(B_BUTTON))
           {
               ResetTimer(data.timer);
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               data.state = ER_STATE_CANCELED_CARD_READ;
           }
           break;
@@ -276,7 +280,7 @@ export function Task_EReader(taskId: any): any {
           if (JOY_NEW(B_BUTTON))
           {
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               CloseLink();
               ResetTimer(data.timer);
               data.state = ER_STATE_CANCELED_CARD_READ;
@@ -290,7 +294,7 @@ export function Task_EReader(taskId: any): any {
           else if (ValidateEReaderConnection())
           {
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               CloseLink();
               ResetTimer(data.timer);
               data.state = ER_STATE_CONNECTING;
@@ -354,7 +358,7 @@ export function Task_EReader(taskId: any): any {
               data.state = ER_STATE_WAIT_RECV_CARD;
               break;
           case RECV_CANCELED:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               CloseLink();
               data.state = ER_STATE_CANCELED_CARD_READ;
               break;
@@ -411,7 +415,7 @@ export function Task_EReader(taskId: any): any {
           if (UpdateTimer(data.timer, 120))
           {
               MG_AddMessageTextPrinter(gJPText_NewTrainerHasComeToHoenn);
-              PlayFanfare(MUS_OBTAIN_ITEM);
+              PlayFanfare((370));
               data.state = ER_STATE_SUCCESS_END;
           }
           break;

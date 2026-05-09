@@ -17,7 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sRandCount: any = null;
+let gRng2Value: any = null;
 let sUnknown: any = null;
 /** u16 Random(void) */
 export function Random(): any {

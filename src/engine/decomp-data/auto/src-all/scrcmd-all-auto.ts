@@ -17,6 +17,13 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gRamScriptRetAddr: any = null;
+let gSelectedObjectEvent: any = null;
+let gSpecialVar_0x8000: any = null;
+let gSpecialVar_0x8001: any = null;
+let gSpecialVar_0x8002: any = null;
+let gSpecialVar_0x8004: any = null;
+let height: any = null;
 let sAddressOffset: any = null;
 let sBrailleWindowId: any = null;
 let sFieldEffectScriptId: any = null;
@@ -24,8 +31,9 @@ let sMovingNpcId: any = null;
 let sMovingNpcMapGroup: any = null;
 let sMovingNpcMapNum: any = null;
 let sPauseCounter: any = null;
-let sScriptConditionTable: any = null;
-let sScriptStringVars: any = null;
+let xText: any = null;
+let yText: any = null;
+let yWindow: any = null;
 /** bool8 ScrCmd_nop(struct ScriptContext *ctx) */
 export function ScrCmd_nop(ctx: any): any {
   return FALSE;
@@ -578,14 +586,14 @@ export function ScrCmd_fadescreenswapbuffers(ctx: any): any {
 
       switch (mode)
       {
-      case FADE_TO_BLACK:
-      case FADE_TO_WHITE:
+      case (1):
+      case (3):
       default:
           CpuCopy32(gPlttBufferUnfaded, gPaletteDecompressionBuffer, PLTT_SIZE);
           FadeScreen(mode, 0);
           break;
-      case FADE_FROM_BLACK:
-      case FADE_FROM_WHITE:
+      case (0):
+      case (2):
           CpuCopy32(gPaletteDecompressionBuffer, gPlttBufferUnfaded, PLTT_SIZE);
           FadeScreen(mode, 0);
           break;
@@ -719,9 +727,9 @@ export function ScrCmd_warphole(ctx: any): any {
 
       PlayerGetDestCoords(x,y);
       if (mapGroup == MAP_GROUP(MAP_UNDEFINED) && mapNum == MAP_NUM(MAP_UNDEFINED))
-          SetWarpDestinationToFixedHoleWarp(x - MAP_OFFSET, y - MAP_OFFSET);
+          SetWarpDestinationToFixedHoleWarp(x - (7), y - (7));
       else
-          SetWarpDestination(mapGroup, mapNum, WARP_ID_NONE, x - MAP_OFFSET, y - MAP_OFFSET);
+          SetWarpDestination(mapGroup, mapNum, ((-1)), x - (7), y - (7));
       DoFallWarp();
       ResetInitialPlayerAvatarState();
       return TRUE;
@@ -951,7 +959,7 @@ export function WaitForMovementFinish(): any {
 export function ScrCmd_waitmovement(ctx: any): any {
   let localId: any = VarGet(ScriptReadHalfword(ctx));
 
-      if (localId != LOCALID_NONE)
+      if (localId != (0))
           sMovingNpcId = localId;
       sMovingNpcMapGroup = gSaveBlock1Ptr.location.mapGroup;
       sMovingNpcMapNum = gSaveBlock1Ptr.location.mapNum;
@@ -965,7 +973,7 @@ export function ScrCmd_waitmovementat(ctx: any): any {
       let mapGroup: any = null;
       let mapNum: any = null;
 
-      if (localId != LOCALID_NONE)
+      if (localId != (0))
           sMovingNpcId = localId;
       mapGroup = ScriptReadByte(ctx);
       mapNum = ScriptReadByte(ctx);
@@ -1168,7 +1176,7 @@ export function ScrCmd_releaseall(ctx: any): any {
   let playerObjectId: any = null;
 
       HideFieldMessageBox();
-      playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+      playerObjectId = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
       ObjectEventClearHeldMovementIfFinished(gObjectEvents[playerObjectId]);
       ScriptMovement_UnfreezeObjectEvents();
       UnfreezeObjectEvents();
@@ -1182,7 +1190,7 @@ export function ScrCmd_release(ctx: any): any {
       HideFieldMessageBox();
       if (gObjectEvents[gSelectedObjectEvent].active)
           ObjectEventClearHeldMovementIfFinished(gObjectEvents[gSelectedObjectEvent]);
-      playerObjectId = GetObjectEventIdByLocalIdAndMap(LOCALID_PLAYER, 0, 0);
+      playerObjectId = GetObjectEventIdByLocalIdAndMap((255), 0, 0);
       ObjectEventClearHeldMovementIfFinished(gObjectEvents[playerObjectId]);
       ScriptMovement_UnfreezeObjectEvents();
       UnfreezeObjectEvents();
@@ -1384,7 +1392,7 @@ export function ScrCmd_showcontestpainting(ctx: any): any {
   let contestWinnerId: any = ScriptReadByte(ctx);
 
        
-      if (contestWinnerId != CONTEST_WINNER_ARTIST)
+      if (contestWinnerId != (0))
           SetContestWinnerForPainting(contestWinnerId);
 
       ShowContestPainting();
@@ -1411,9 +1419,9 @@ export function ScrCmd_braillemessage(ctx: any): any {
       if (width > 28)
           width = 28;
 
-      for (i = 0, height = 4; gStringVar4[i] != EOS;)
+      for (i = 0, height = 4; gStringVar4[i] != (0xFF);)
       {
-          if (gStringVar4[i++] == CHAR_NEWLINE)
+          if (gStringVar4[i++] == (0xFE))
               height += 3;
       }
 
@@ -1441,7 +1449,7 @@ export function ScrCmd_braillemessage(ctx: any): any {
       DrawStdWindowFrame(sBrailleWindowId, FALSE);
       PutWindowTilemap(sBrailleWindowId);
       FillWindowPixelBuffer(sBrailleWindowId, PIXEL_FILL(1));
-      AddTextPrinterParameterized(sBrailleWindowId, FONT_BRAILLE, gStringVar4, xText, yText, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(sBrailleWindowId, FONT_BRAILLE, gStringVar4, xText, yText, (0xFF), NULL);
       CopyWindowToVram(sBrailleWindowId, COPYWIN_FULL);
       return FALSE;
 }
@@ -1628,8 +1636,8 @@ export function ScrCmd_checkpartymove(ctx: any): any {
   let i: any = null;
       let move: any = ScriptReadHalfword(ctx);
 
-      gSpecialVar_Result = PARTY_SIZE;
-      for (i = 0; i < PARTY_SIZE; i++)
+      gSpecialVar_Result = (6);
+      for (i = 0; i < (6); i++)
       {
           let species: any = GetMonData(gPlayerParty[i], MON_DATA_SPECIES, NULL);
           if (!species)
@@ -1947,12 +1955,12 @@ export function ScrCmd_setmetatile(ctx: any): any {
       let metatileId: any = VarGet(ScriptReadHalfword(ctx));
       let isImpassable: any = VarGet(ScriptReadHalfword(ctx));
 
-      x += MAP_OFFSET;
-      y += MAP_OFFSET;
+      x += (7);
+      y += (7);
       if (!isImpassable)
           MapGridSetMetatileIdAt(x, y, metatileId);
       else
-          MapGridSetMetatileIdAt(x, y, metatileId | MAPGRID_IMPASSABLE);
+          MapGridSetMetatileIdAt(x, y, metatileId | ((0x0C00)));
       return FALSE;
 }
 
@@ -1961,8 +1969,8 @@ export function ScrCmd_opendoor(ctx: any): any {
   let x: any = VarGet(ScriptReadHalfword(ctx));
       let y: any = VarGet(ScriptReadHalfword(ctx));
 
-      x += MAP_OFFSET;
-      y += MAP_OFFSET;
+      x += (7);
+      y += (7);
       PlaySE(GetDoorSoundEffect(x, y));
       FieldAnimateDoorOpen(x, y);
       return FALSE;
@@ -1973,8 +1981,8 @@ export function ScrCmd_closedoor(ctx: any): any {
   let x: any = VarGet(ScriptReadHalfword(ctx));
       let y: any = VarGet(ScriptReadHalfword(ctx));
 
-      x += MAP_OFFSET;
-      y += MAP_OFFSET;
+      x += (7);
+      y += (7);
       FieldAnimateDoorClose(x, y);
       return FALSE;
 }
@@ -1998,8 +2006,8 @@ export function ScrCmd_setdooropen(ctx: any): any {
   let x: any = VarGet(ScriptReadHalfword(ctx));
       let y: any = VarGet(ScriptReadHalfword(ctx));
 
-      x += MAP_OFFSET;
-      y += MAP_OFFSET;
+      x += (7);
+      y += (7);
       FieldSetDoorOpened(x, y);
       return FALSE;
 }
@@ -2009,8 +2017,8 @@ export function ScrCmd_setdoorclosed(ctx: any): any {
   let x: any = VarGet(ScriptReadHalfword(ctx));
       let y: any = VarGet(ScriptReadHalfword(ctx));
 
-      x += MAP_OFFSET;
-      y += MAP_OFFSET;
+      x += (7);
+      y += (7);
       FieldSetDoorClosed(x, y);
       return FALSE;
 }
@@ -2160,7 +2168,7 @@ export function ScrCmd_setmonmetlocation(ctx: any): any {
   let partyIndex: any = VarGet(ScriptReadHalfword(ctx));
       let location: any = ScriptReadByte(ctx);
 
-      if (partyIndex < PARTY_SIZE)
+      if (partyIndex < (6))
           SetMonData(gPlayerParty[partyIndex], MON_DATA_MET_LOCATION,location);
       return FALSE;
 }

@@ -17,6 +17,8 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let REG_TM3CNT_L: any = null;
+let gShouldAdvanceLinkState: any = null;
 let sCounter1: any = null;
 let sCounter2: any = null;
 let sJoyNew: any = null;
@@ -26,9 +28,7 @@ let sSavedIme: any = null;
 let sSavedRCnt: any = null;
 let sSavedSioCnt: any = null;
 let sSavedTm3Cnt: any = null;
-let sSendRecvMgr: any = null;
 let sSendRecvStatus: any = null;
-let sTrainerHillTrainerTemplates_JP: any = null;
 /** static u8 GetTrainerHillUnkVal(void) */
 export function GetTrainerHillUnkVal(): any {
   return (gSaveBlock1Ptr.trainerHill.unused + 1) % 256;
@@ -50,7 +50,7 @@ export function ValidateTrainerHillData(hillSet: any): any {
       let numTrainers: any = hillSet.numTrainers;
 
        
-      if (numTrainers < 1 || numTrainers > NUM_TRAINER_HILL_TRAINERS)
+      if (numTrainers < 1 || numTrainers > (((4) * (2))))
           return FALSE;
 
        
@@ -72,7 +72,7 @@ export function ValidateTrainerHillData(hillSet: any): any {
 export function ValidateTrainerHillChecksum(hillSet: any): any {
   let checksum: any = null;
       let numTrainers: any = hillSet.numTrainers;
-      if (numTrainers < 1 || numTrainers > NUM_TRAINER_HILL_TRAINERS)
+      if (numTrainers < 1 || numTrainers > (((4) * (2))))
           return FALSE;
 
       checksum = CalcByteArraySum(hillSet.trainers, 0 - 0);
@@ -89,33 +89,33 @@ export function TryWriteTrainerHill_Internal(hillSet: any, challenge: any): any 
       AGB_ASSERT_EX(hillSet.dummy == 0, "cereader_tool.c", 450);
       AGB_ASSERT_EX(hillSet.id == 0, "cereader_tool.c", 452);
 
-      memset(challenge, 0, SECTOR_SIZE);
+      memset(challenge, 0, (((3968) + (128))));
       challenge.numTrainers = hillSet.numTrainers;
       challenge.unused1 = GetTrainerHillUnkVal();
-      challenge.numFloors = (hillSet.numTrainers + 1) / HILL_TRAINERS_PER_FLOOR;
+      challenge.numFloors = (hillSet.numTrainers + 1) / (2);
 
       for (i = 0; i < hillSet.numTrainers; i++)
       {
           if (!(i & 1))
           {
-              challenge.floors[i / HILL_TRAINERS_PER_FLOOR].trainerNum1 = hillSet.trainers[i].trainerNum;
-              challenge.floors[i / HILL_TRAINERS_PER_FLOOR].map = hillSet.trainers[i].map;
-              challenge.floors[i / HILL_TRAINERS_PER_FLOOR].trainers[0] = hillSet.trainers[i].trainer;
+              challenge.floors[i / (2)].trainerNum1 = hillSet.trainers[i].trainerNum;
+              challenge.floors[i / (2)].map = hillSet.trainers[i].map;
+              challenge.floors[i / (2)].trainers[0] = hillSet.trainers[i].trainer;
           }
           else
           {
-              challenge.floors[i / HILL_TRAINERS_PER_FLOOR].trainerNum2 = hillSet.trainers[i].trainerNum;
-              challenge.floors[i / HILL_TRAINERS_PER_FLOOR].trainers[1] = hillSet.trainers[i].trainer;
+              challenge.floors[i / (2)].trainerNum2 = hillSet.trainers[i].trainerNum;
+              challenge.floors[i / (2)].trainers[1] = hillSet.trainers[i].trainer;
           }
       }
 
       if (i & 1)
       {
-          challenge.floors[i / HILL_TRAINERS_PER_FLOOR].trainers[1] = sTrainerHillTrainerTemplates_JP[i / HILL_TRAINERS_PER_FLOOR];
+          challenge.floors[i / (2)].trainers[1] = sTrainerHillTrainerTemplates_JP[i / (2)];
       }
 
-      challenge.checksum = CalcByteArraySum(challenge.floors, NUM_TRAINER_HILL_FLOORS * 0);
-      if (TryWriteSpecialSaveSector(SECTOR_ID_TRAINER_HILL, challenge) != SAVE_STATUS_OK)
+      challenge.checksum = CalcByteArraySum(challenge.floors, (4) * 0);
+      if (TryWriteSpecialSaveSector((30), challenge) != (1))
           return FALSE;
 
       return TRUE;
@@ -123,7 +123,7 @@ export function TryWriteTrainerHill_Internal(hillSet: any, challenge: any): any 
 
 /** bool32 TryWriteTrainerHill(struct EReaderTrainerHillSet *hillSet) */
 export function TryWriteTrainerHill(hillSet: any): any {
-  let buffer: any = AllocZeroed(SECTOR_SIZE);
+  let buffer: any = AllocZeroed((((3968) + (128))));
       let result: any = TryWriteTrainerHill_Internal(hillSet, buffer);
       Free(buffer);
       return result;
@@ -131,7 +131,7 @@ export function TryWriteTrainerHill(hillSet: any): any {
 
 /** static bool32 TryReadTrainerHill_Internal(struct EReaderTrainerHillSet *dest, u8 *buffer) */
 export function TryReadTrainerHill_Internal(dest: any, buffer: any): any {
-  if (TryReadSpecialSaveSector(SECTOR_ID_TRAINER_HILL, buffer) != SAVE_STATUS_OK)
+  if (TryReadSpecialSaveSector((30), buffer) != (1))
           return FALSE;
 
       memcpy(dest, buffer, 0);
@@ -143,7 +143,7 @@ export function TryReadTrainerHill_Internal(dest: any, buffer: any): any {
 
 /** static bool32 TryReadTrainerHill(struct EReaderTrainerHillSet *hillSet) */
 export function TryReadTrainerHill(hillSet: any): any {
-  let buffer: any = AllocZeroed(SECTOR_SIZE);
+  let buffer: any = AllocZeroed((((3968) + (128))));
       let result: any = TryReadTrainerHill_Internal(hillSet, buffer);
       Free(buffer);
       return result;
@@ -151,7 +151,7 @@ export function TryReadTrainerHill(hillSet: any): any {
 
 /** bool32 ReadTrainerHillAndValidate(void) */
 export function ReadTrainerHillAndValidate(): any {
-  let hillSet: any = AllocZeroed(SECTOR_SIZE);
+  let hillSet: any = AllocZeroed((((3968) + (128))));
       let result: any = TryReadTrainerHill(hillSet);
       Free(hillSet);
       return result;
@@ -171,17 +171,17 @@ export function EReader_Send(size: any, src: any): any {
 
           sendStatus = EReaderHandleTransfer(1, size, src, NULL);
           sSendRecvStatus = sendStatus;
-          if ((sSendRecvStatus & EREADER_XFER_MASK) == 0 && sSendRecvStatus & EREADER_CHECKSUM_OK_MASK)
+          if ((sSendRecvStatus & EREADER_XFER_MASK) == 0 && sSendRecvStatus & (((1) << (4))))
           {
               result = 0;
               break;
           }
-          else if (sSendRecvStatus & EREADER_CANCEL_KEY_MASK)
+          else if (sSendRecvStatus & (((2) << (2))))
           {
               result = 1;
               break;
           }
-          else if (sSendRecvStatus & EREADER_CANCEL_TIMEOUT_MASK)
+          else if (sSendRecvStatus & (((1) << (2))))
           {
               result = 2;
               break;
@@ -212,17 +212,17 @@ export function EReader_Recv(dest: any): any {
 
           recvStatus = EReaderHandleTransfer(0, 0, NULL, dest);
           sSendRecvStatus = recvStatus;
-          if ((sSendRecvStatus & EREADER_XFER_MASK) == 0 && sSendRecvStatus & EREADER_CHECKSUM_OK_MASK)
+          if ((sSendRecvStatus & EREADER_XFER_MASK) == 0 && sSendRecvStatus & (((1) << (4))))
           {
               result = 0;
               break;
           }
-          else if (sSendRecvStatus & EREADER_CANCEL_KEY_MASK)
+          else if (sSendRecvStatus & (((2) << (2))))
           {
               result = 1;
               break;
           }
-          else if (sSendRecvStatus & EREADER_CANCEL_TIMEOUT_MASK)
+          else if (sSendRecvStatus & (((1) << (2))))
           {
               result = 2;
               break;
@@ -281,7 +281,7 @@ export function EReaderHandleTransfer(mode: any, size: any, data: any, recvBuffe
       {
       case EREADER_XFR_STATE_INIT:
           OpenSerialMulti();
-          sSendRecvMgr.xferState = EREADER_XFER_EXE;
+          sSendRecvMgr.xferState = (1);
           sSendRecvMgr.state = EREADER_XFR_STATE_HANDSHAKE;
           break;
       case EREADER_XFR_STATE_HANDSHAKE:
@@ -290,7 +290,7 @@ export function EReaderHandleTransfer(mode: any, size: any, data: any, recvBuffe
 
           if (gShouldAdvanceLinkState == 2)
           {
-              sSendRecvMgr.cancellationReason = EREADER_CANCEL_KEY;
+              sSendRecvMgr.cancellationReason = (2);
               sSendRecvMgr.state = EREADER_XFR_STATE_DONE;
           }
           break;
@@ -302,7 +302,7 @@ export function EReaderHandleTransfer(mode: any, size: any, data: any, recvBuffe
       case EREADER_XFR_STATE_TRANSFER:
           if (gShouldAdvanceLinkState == 2)
           {
-              sSendRecvMgr.cancellationReason = EREADER_CANCEL_KEY;
+              sSendRecvMgr.cancellationReason = (2);
               sSendRecvMgr.state = EREADER_XFR_STATE_DONE;
           }
           else
@@ -311,21 +311,21 @@ export function EReaderHandleTransfer(mode: any, size: any, data: any, recvBuffe
               sCounter2++;
               if (!sSendRecvMgr.isParent && sCounter2 > 60)
               {
-                  sSendRecvMgr.cancellationReason = EREADER_CANCEL_TIMEOUT;
+                  sSendRecvMgr.cancellationReason = (1);
                   sSendRecvMgr.state = EREADER_XFR_STATE_DONE;
               }
 
-              if (sSendRecvMgr.xferState != EREADER_XFER_CHK)
+              if (sSendRecvMgr.xferState != (2))
               {
                   if (sSendRecvMgr.isParent && sCounter1 > 2)
                   {
                       EnableSio();
-                      sSendRecvMgr.xferState = EREADER_XFER_CHK;
+                      sSendRecvMgr.xferState = (2);
                   }
                   else
                   {
                       EnableSio();
-                      sSendRecvMgr.xferState = EREADER_XFER_CHK;
+                      sSendRecvMgr.xferState = (2);
                   }
               }
           }
@@ -340,7 +340,7 @@ export function EReaderHandleTransfer(mode: any, size: any, data: any, recvBuffe
 
           if (++sCounter1 > 60)
           {
-              sSendRecvMgr.cancellationReason = EREADER_CANCEL_TIMEOUT;
+              sSendRecvMgr.cancellationReason = (1);
               sSendRecvMgr.state = EREADER_XFR_STATE_DONE;
           }
           break;
@@ -353,9 +353,9 @@ export function EReaderHandleTransfer(mode: any, size: any, data: any, recvBuffe
           break;
       }
 
-      return (sSendRecvMgr.xferState << EREADER_XFER_SHIFT)
-           | (sSendRecvMgr.cancellationReason << EREADER_CANCEL_SHIFT)
-           | (sSendRecvMgr.checksumResult << EREADER_CHECKSUM_SHIFT);
+      return (sSendRecvMgr.xferState << (0))
+           | (sSendRecvMgr.cancellationReason << (2))
+           | (sSendRecvMgr.checksumResult << (4));
 }
 
 /** static u16 DetermineSendRecvState(u8 mode) */
@@ -409,11 +409,11 @@ export function EReaderHelper_SerialCallback(): any {
       switch (sSendRecvMgr.state)
       {
       case EREADER_XFR_STATE_HANDSHAKE:
-          REG_SIOMLT_SEND = EREADER_HANDSHAKE;
+          REG_SIOMLT_SEND = (0xCCD0);
           recv = REG_SIOMLT_RECV;
           for (i = 0, cnt1 = 0, cnt2 = 0; i < 4; i++)
           {
-              if (recv[i] == EREADER_HANDSHAKE)
+              if (recv[i] == (0xCCD0))
                   cnt1++;
               else if (recv[i] != 0xFFFF)
                   cnt2++;
@@ -452,9 +452,9 @@ export function EReaderHelper_SerialCallback(): any {
               else if (sSendRecvMgr.cursor)
               {
                   if (sSendRecvMgr.checksum == recv32)
-                      sSendRecvMgr.checksumResult = EREADER_CHECKSUM_OK;
+                      sSendRecvMgr.checksumResult = (1);
                   else
-                      sSendRecvMgr.checksumResult = EREADER_CHECKSUM_ERR;
+                      sSendRecvMgr.checksumResult = (2);
               }
 
               sCounter2 = 0;
@@ -478,7 +478,7 @@ export function EReaderHelper_SerialCallback(): any {
               REG_SIOMLT_SEND = sSendRecvMgr.checksumResult;
 
           recv = REG_SIOMLT_RECV;
-          if (recv[1] == EREADER_CHECKSUM_OK || recv[1] == EREADER_CHECKSUM_ERR)
+          if (recv[1] == (1) || recv[1] == (2))
           {
               if (sSendRecvMgr.isParent == TRUE)
                   sSendRecvMgr.checksumResult = recv[1];  

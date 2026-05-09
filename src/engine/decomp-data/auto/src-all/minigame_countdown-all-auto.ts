@@ -17,24 +17,22 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAffineAnimTable_Numbers: any = null;
-let sAnimNum: any = null;
-let sAnimTable_Numbers: any = null;
-let sAnimTable_Start: any = null;
-let sId: any = null;
-let sInterval: any = null;
-let sNumberSpriteId: any = null;
-let sOamData_Numbers: any = null;
-let sOamData_Start: any = null;
-let sSpritePalette_321Start_Static: any = null;
-let sSpriteSheet_321Start_Static: any = null;
-let sSpriteTemplate_StaticCountdown: any = null;
-let sState: any = null;
-let sStaticCountdownFuncs: any = null;
-let sTaskId: any = null;
 let sTimer: any = null;
 let sY: any = null;
 let sYSpeed: any = null;
+let tInterval: any = null;
+let tNumSprites: any = null;
+let tPrevTime: any = null;
+let tPriority: any = null;
+let tSpriteId1: any = null;
+let tSpritePalId: any = null;
+let tSpriteSheetId: any = null;
+let tSpriteTemplateId: any = null;
+let tState: any = null;
+let tSubpriority: any = null;
+let tTimer: any = null;
+let tX: any = null;
+let tY: any = null;
 /** static void Task_StaticCountdown(u8 taskId) */
 export function Task_StaticCountdown(taskId: any): any {
   let data: any = gTasks[taskId].data;
@@ -126,12 +124,12 @@ export function SpriteCB_StaticCountdown(sprite: any): any {
       case ANIM_TWO:
       case ANIM_ONE:
            
-          PlaySE(SE_BALL_BOUNCE_1);
+          PlaySE((56));
           StartSpriteAnim(sprite, sprite.sAnimNum);
           break;
       case ANIM_START_LEFT:
            
-          PlaySE(SE_PIN);
+          PlaySE((21));
           StartSpriteAnim(sprite, sprite.sAnimNum);
           gSprites[data[13 + (1)]].invisible = FALSE;
           gSprites[data[13 + (2)]].invisible = FALSE;
@@ -150,7 +148,7 @@ export function SpriteCB_StaticCountdown(sprite: any): any {
 /** static void Task_StaticCountdown_Start(u8 taskId) */
 export function Task_StaticCountdown_Start(taskId: any): any {
   let data: any = gTasks[taskId].data;
-      PlaySE(SE_BALL_BOUNCE_1);
+      PlaySE((56));
       gSprites[data[13 + (0)]].callback = SpriteCB_StaticCountdown;
       gSprites[data[13 + (0)]].invisible = FALSE;
       gTasks[taskId].tState = STATE_RUN;
@@ -164,7 +162,7 @@ export function Task_StaticCountdown_Run(taskId: any): any {
       if (gReceivedRemoteLinkPlayers)
       {
            
-          if (gRecvCmds[0][1] == LINKCMD_COUNTDOWN)
+          if (gRecvCmds[0][1] == (0x7FFF))
               tTimer = gRecvCmds[0][2];
 
           if (GetMultiplayerId() == 0)
@@ -173,7 +171,7 @@ export function Task_StaticCountdown_Run(taskId: any): any {
                
               tLinkTimer++;
               memset(packet, 0, 0);
-              packet[0] = LINKCMD_COUNTDOWN;
+              packet[0] = (0x7FFF);
               packet[1] = tLinkTimer;
               Rfu_SendPacket(packet);
           }
@@ -241,12 +239,12 @@ export function RunMinigameCountdownDigitsAnim(spriteId: any): any {
       switch (sprite.sState)
       {
       case 0:
-          SetSpriteMatrixAnchor(sprite, NO_ANCHOR, 26);
+          SetSpriteMatrixAnchor(sprite, (0x800), 26);
           sprite.sState++;
            
       case 1:
           if (sprite.sTimer == 0)
-              PlaySE(SE_BALL_BOUNCE_2);
+              PlaySE((57));
 
           if (++sprite.sTimer >= 20)
           {
@@ -347,7 +345,7 @@ export function SpriteCB_Start(sprite: any): any {
           sprite.y2 = sY >> 4;
           if (sprite.y2 >= 0)
           {
-              PlaySE(SE_BALL_BOUNCE_2);
+              PlaySE((57));
               sprite.y2 = 0;
               sState++;
           }
@@ -356,7 +354,7 @@ export function SpriteCB_Start(sprite: any): any {
           sTimer += 12;
           if (sTimer >= 128)
           {
-              PlaySE(SE_BALL_BOUNCE_2);
+              PlaySE((57));
               sTimer = 0;
               sState++;
           }
@@ -367,7 +365,7 @@ export function SpriteCB_Start(sprite: any): any {
           sTimer += 16;
           if (sTimer >= 128)
           {
-              PlaySE(SE_BALL_BOUNCE_2);
+              PlaySE((57));
               sTimer = 0;
               sState++;
           }

@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let lVarY: any = null;
 /** static void AnimMegahornHorn(struct Sprite *sprite) */
 export function AnimMegahornHorn(sprite: any): any {
   CMD_ARGS(x1, y1, x2, y2, duration);
@@ -25,7 +28,7 @@ export function AnimMegahornHorn(sprite: any): any {
           cmd.x2 = -cmd.x2;
           cmd.x1 = -cmd.x1;
       }
-      else if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      else if (GetBattlerSide(gBattleAnimTarget) == (0))
       {
           StartSpriteAffineAnim(sprite, 1);
           cmd.y1 = -cmd.y1;
@@ -54,7 +57,7 @@ export function AnimLeechLifeNeedle(sprite: any): any {
           cmd.x = -cmd.x;
           StartSpriteAffineAnim(sprite, 2);
       }
-      else if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      else if (GetBattlerSide(gBattleAnimTarget) == (0))
       {
           cmd.y = -cmd.y;
           cmd.x = -cmd.x;
@@ -121,7 +124,7 @@ export function AnimStringWrap(sprite: any): any {
           sprite.x += cmd.x;
 
       sprite.y += cmd.y;
-      if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) == (0))
           sprite.y += 8;
 
       sprite.callback = AnimStringWrap_Step;
@@ -283,7 +286,7 @@ export function AnimMissileArc_Step(sprite: any): any {
 export function AnimTailGlowOrb(sprite: any): any {
   CMD_ARGS(relativeTo);
 
-      if (cmd.relativeTo == ANIM_ATTACKER)
+      if (cmd.relativeTo == (0))
       {
           sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
           sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET) + 18;

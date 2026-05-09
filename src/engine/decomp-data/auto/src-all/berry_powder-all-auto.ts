@@ -93,7 +93,7 @@ export function PrintBerryPowderAmount(windowId: any, amount: any, x: any, y: an
 /** static void DrawPlayerPowderAmount(u8 windowId, u16 baseTileOffset, u8 paletteNum, u32 amount) */
 export function DrawPlayerPowderAmount(windowId: any, baseTileOffset: any, paletteNum: any, amount: any): any {
   DrawStdFrameWithCustomTileAndPalette(windowId, FALSE, baseTileOffset, paletteNum);
-      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_Powder, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(windowId, FONT_NORMAL, gText_Powder, 0, 1, (0xFF), NULL);
       PrintBerryPowderAmount(windowId, amount, 26, 17, 0);
 }
 

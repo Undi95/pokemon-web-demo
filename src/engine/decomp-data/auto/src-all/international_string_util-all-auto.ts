@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let finalWidth: any = null;
+let maxWidth: any = null;
+let windowRowSize: any = null;
 /** int GetStringCenterAlignXOffset(int fontId, const u8 *str, int totalWidth) */
 export function GetStringCenterAlignXOffset(fontId: any, str: any, totalWidth: any): any {
   return GetStringCenterAlignXOffsetWithLetterSpacing(fontId, str, totalWidth, 0);
@@ -99,31 +104,31 @@ export function PadNameString(dest: any, padChar: any): any {
 
       StripExtCtrlCodes(dest);
       length = StringLength(dest);
-      if (padChar == EXT_CTRL_CODE_BEGIN)
+      if (padChar == (0xFC))
       {
-          while (length < PLAYER_NAME_LENGTH - 1)
+          while (length < (7) - 1)
           {
-              dest[length] = EXT_CTRL_CODE_BEGIN;
-              dest[length + 1] = EXT_CTRL_CODE_RESET_FONT;
+              dest[length] = (0xFC);
+              dest[length + 1] = (0x07);
               length += 2;
           }
       }
       else
       {
-          while (length < PLAYER_NAME_LENGTH - 1)
+          while (length < (7) - 1)
           {
               dest[length] = padChar;
               length++;
           }
       }
 
-      dest[length] = EOS;
+      dest[length] = (0xFF);
 }
 
 /** void ConvertInternationalPlayerName(u8 *str) */
 export function ConvertInternationalPlayerName(str: any): any {
-  if (StringLength(str) < PLAYER_NAME_LENGTH - 1)
-          ConvertInternationalString(str, LANGUAGE_JAPANESE);
+  if (StringLength(str) < (7) - 1)
+          ConvertInternationalString(str, (1));
       else
           StripExtCtrlCodes(str);
 }
@@ -131,23 +136,23 @@ export function ConvertInternationalPlayerName(str: any): any {
 /** void ConvertInternationalPlayerNameStripChar(u8 *str, u8 removeChar) */
 export function ConvertInternationalPlayerNameStripChar(str: any, removeChar: any): any {
   let buffer: any = null;
-      if (StringLength(str) < PLAYER_NAME_LENGTH - 1)
+      if (StringLength(str) < (7) - 1)
       {
-          ConvertInternationalString(str, LANGUAGE_JAPANESE);
+          ConvertInternationalString(str, (1));
       }
-      else if (removeChar == EXT_CTRL_CODE_BEGIN)
+      else if (removeChar == (0xFC))
       {
           StripExtCtrlCodes(str);
       }
       else
       {
           buffer = str;
-          while (buffer[1] != EOS)
+          while (buffer[1] != (0xFF))
               buffer++;
 
           while (buffer >= str && buffer[0] == removeChar)
           {
-              buffer[0] = EOS;
+              buffer[0] = (0xFF);
               buffer--;
           }
       }
@@ -155,19 +160,19 @@ export function ConvertInternationalPlayerNameStripChar(str: any, removeChar: an
 
 /** void ConvertInternationalContestantName(u8 *str) */
 export function ConvertInternationalContestantName(str: any): any {
-  if (str++ == EXT_CTRL_CODE_BEGIN && str++ == EXT_CTRL_CODE_JPN)
+  if (str++ == (0xFC) && str++ == (0x15))
       {
-          while (str != EOS)
+          while (str != (0xFF))
           {
-              if (str[0] == EXT_CTRL_CODE_BEGIN && str[1] == EXT_CTRL_CODE_ENG)
+              if (str[0] == (0xFC) && str[1] == (0x16))
                   return;
 
               str++;
           }
 
-          str =  EXT_CTRL_CODE_BEGIN;
-          str =  EXT_CTRL_CODE_ENG;
-          str = EOS;
+          str =  (0xFC);
+          str =  (0x16);
+          str = (0xFF);
       }
 }
 
@@ -179,10 +184,10 @@ export function TVShowConvertInternationalString(dest: any, src: any, language: 
 
 /** int GetNicknameLanguage(u8 *str) */
 export function GetNicknameLanguage(str: any): any {
-  if (str[0] == EXT_CTRL_CODE_BEGIN && str[1] == EXT_CTRL_CODE_JPN)
-          return LANGUAGE_JAPANESE;
+  if (str[0] == (0xFC) && str[1] == (0x15))
+          return (1);
       else
-          return LANGUAGE_ENGLISH;
+          return (2);
 }
 
 /** void FillWindowTilesByRow(int windowId, int columnStart, int rowStart, int numFillTiles, int numRows) */

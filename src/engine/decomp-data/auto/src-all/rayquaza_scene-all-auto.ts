@@ -17,77 +17,32 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBgTemplates_Charges: any = null;
-let sBgTemplates_ChasesAway: any = null;
-let sBgTemplates_Descends: any = null;
-let sBgTemplates_DuoFight: any = null;
-let sBgTemplates_TakesFlight: any = null;
-let sBodyPartSpriteId1: any = null;
-let sBodyPartSpriteId2: any = null;
-let sDecel: any = null;
-let sFloatTimer: any = null;
 let sGroudonBodySpriteId: any = null;
 let sGroudonClawSpriteId: any = null;
 let sGroudonShoulderSpriteId: any = null;
-let sIsKyogre: any = null;
 let sRayScene: any = null;
-let sScanlineParams_DuoFight_Clouds: any = null;
-let sSmokeId: any = null;
-let sSpeed: any = null;
-let sSpritePal_ChasesAway_Groudon: any = null;
-let sSpritePal_ChasesAway_Kyogre: any = null;
-let sSpritePal_ChasesAway_KyogreSplash: any = null;
-let sSpritePal_ChasesAway_Rayquaza: any = null;
-let sSpritePal_Descends_Rayquaza: any = null;
-let sSpritePal_DuoFight_Groudon: any = null;
-let sSpritePal_DuoFight_Kyogre: any = null;
-let sSpritePal_TakesFlight_Smoke: any = null;
-let sSpriteSheet_ChasesAway_Groudon: any = null;
-let sSpriteSheet_ChasesAway_GroudonTail: any = null;
-let sSpriteSheet_ChasesAway_Kyogre: any = null;
-let sSpriteSheet_ChasesAway_KyogreSplash: any = null;
-let sSpriteSheet_ChasesAway_Rayquaza: any = null;
-let sSpriteSheet_ChasesAway_RayquazaTail: any = null;
-let sSpriteSheet_Descends_Rayquaza: any = null;
-let sSpriteSheet_Descends_RayquazaTail: any = null;
-let sSpriteSheet_DuoFight_Groudon: any = null;
-let sSpriteSheet_DuoFight_GroudonClaw: any = null;
-let sSpriteSheet_DuoFight_GroudonShoulder: any = null;
-let sSpriteSheet_DuoFight_Kyogre: any = null;
-let sSpriteSheet_DuoFight_KyogreDorsalFin: any = null;
-let sSpriteSheet_DuoFight_KyogrePectoralFin: any = null;
-let sSpriteSheet_TakesFlight_Smoke: any = null;
-let sSpriteTemplate_ChasesAway_Groudon: any = null;
-let sSpriteTemplate_ChasesAway_GroudonTail: any = null;
-let sSpriteTemplate_ChasesAway_Kyogre: any = null;
-let sSpriteTemplate_ChasesAway_KyogreSplash: any = null;
-let sSpriteTemplate_ChasesAway_Rayquaza: any = null;
-let sSpriteTemplate_ChasesAway_RayquazaTail: any = null;
-let sSpriteTemplate_Descends_Rayquaza: any = null;
-let sSpriteTemplate_Descends_RayquazaTail: any = null;
-let sSpriteTemplate_DuoFightPre_Groudon: any = null;
-let sSpriteTemplate_DuoFightPre_GroudonClaw: any = null;
-let sSpriteTemplate_DuoFightPre_GroudonShoulder: any = null;
-let sSpriteTemplate_DuoFightPre_Kyogre: any = null;
-let sSpriteTemplate_DuoFightPre_KyogreDorsalFin: any = null;
-let sSpriteTemplate_DuoFightPre_KyogrePectoralFin: any = null;
-let sSpriteTemplate_DuoFight_Groudon: any = null;
-let sSpriteTemplate_DuoFight_GroudonClaw: any = null;
-let sSpriteTemplate_DuoFight_GroudonShoulder: any = null;
-let sSpriteTemplate_DuoFight_Kyogre: any = null;
-let sSpriteTemplate_DuoFight_KyogreDorsalFin: any = null;
-let sSpriteTemplate_DuoFight_KyogrePectoralFin: any = null;
-let sSpriteTemplate_TakesFlight_Smoke: any = null;
-let sTailFloatDelay: any = null;
-let sTailFloatPeak: any = null;
 let sTailSpriteId: any = null;
-let sTakesFlight_SmokeCoords: any = null;
-let sTasksForAnimations: any = null;
-let sTimer: any = null;
 let sXMovePeriod: any = null;
 let sYMovePeriod: any = null;
-let sYOffset: any = null;
-let sYOffsetDir: any = null;
+let spriteData: any = null;
+let tBgTaskId: any = null;
+let tGroudonSpriteId: any = null;
+let tHelperTaskId: any = null;
+let tKyogreSpriteId: any = null;
+let tOffset: any = null;
+let tRayquazaSpriteId: any = null;
+let tRayquazaTaskId: any = null;
+let tScale: any = null;
+let tScaleSpeed: any = null;
+let tScaleTimer: any = null;
+let tShakeDir: any = null;
+let tSoundTimer: any = null;
+let tState: any = null;
+let tTimer: any = null;
+let tYCoord: any = null;
+let tYOffset: any = null;
+let tYOffsetDir: any = null;
+let tYSpeed: any = null;
 /** void DoRayquazaScene(u8 animId, bool8 endEarly, MainCallback exitCallback) */
 export function DoRayquazaScene(animId: any, endEarly: any, exitCallback: any): any {
   sRayScene = AllocZeroed(0);
@@ -106,7 +61,7 @@ export function CB2_InitRayquazaScene(): any {
       ResetPaletteFade();
       ResetSpriteData();
       ResetTasks();
-      FillPalette(RGB_BLACK, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+      FillPalette((RGB(0, 0, 0)), BG_PLTT_ID(15), PLTT_SIZE_4BPP);
       CreateTask(sTasksForAnimations[sRayScene.animId], 0);
       SetMainCallback2(CB2_RayquazaScene);
 }
@@ -418,10 +373,10 @@ export function Task_DuoFightAnim(taskId: any): any {
           StopMapMusic();
       }
 
-      BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 0x10, (RGB(0, 0, 0)));
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
       SetVBlankCallback(VBlankCB_DuoFight);
-      PlaySE(SE_DOWNPOUR);
+      PlaySE((83));
 }
 
 /** static void Task_DuoFight_AnimateClouds(u8 taskId) */
@@ -526,22 +481,22 @@ export function Task_HandleDuoFight(taskId: any): any {
 
 /** static void DuoFight_Lightning1(void) */
 export function DuoFight_Lightning1(): any {
-  PlaySE(SE_THUNDER);
-      BlendPalettesGradually(PALETTES_BG & ~(0x8000), 0, 16, 0, RGB_WHITEALPHA, 0, 0);
-      BlendPalettesGradually(PALETTES_OBJECTS, 0, 16, 0, RGB_BLACK,      0, 1);
+  PlaySE((87));
+      BlendPalettesGradually((0x0000FFFF) & ~(0x8000), 0, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))), 0, 0);
+      BlendPalettesGradually((0xFFFF0000), 0, 16, 0, (RGB(0, 0, 0)),      0, 1);
 }
 
 /** static void DuoFight_Lightning2(void) */
 export function DuoFight_Lightning2(): any {
-  PlaySE(SE_THUNDER);
-      BlendPalettesGradually(PALETTES_BG & ~(0x8000), 0, 16, 16, RGB_WHITEALPHA, 0, 0);
-      BlendPalettesGradually(PALETTES_OBJECTS, 0, 16, 16, RGB_BLACK,      0, 1);
+  PlaySE((87));
+      BlendPalettesGradually((0x0000FFFF) & ~(0x8000), 0, 16, 16, (((RGB(31, 31, 31)) | ((1 << 15)))), 0, 0);
+      BlendPalettesGradually((0xFFFF0000), 0, 16, 16, (RGB(0, 0, 0)),      0, 1);
 }
 
 /** static void DuoFight_LightningLong(void) */
 export function DuoFight_LightningLong(): any {
-  BlendPalettesGradually(PALETTES_BG & ~(0x8000), 4, 16, 0, RGB_WHITEALPHA, 0, 0);
-      BlendPalettesGradually(PALETTES_OBJECTS, 4, 16, 0, RGB_BLACK,      0, 1);
+  BlendPalettesGradually((0x0000FFFF) & ~(0x8000), 4, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))), 0, 0);
+      BlendPalettesGradually((0xFFFF0000), 4, 16, 0, (RGB(0, 0, 0)),      0, 1);
 }
 
 /** static void DuoFight_AnimateRain(void) */
@@ -570,8 +525,8 @@ export function DuoFight_PanOffScene(taskId: any): any {
 
 /** static void DuoFightEnd(u8 taskId, s8 palDelay) */
 export function DuoFightEnd(taskId: any, palDelay: any): any {
-  PlaySE(SE_DOWNPOUR_STOP);
-      BeginNormalPaletteFade(PALETTES_ALL, palDelay, 0, 0x10, RGB_BLACK);
+  PlaySE((84));
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), palDelay, 0, 0x10, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_DuoFightEnd;
 }
 
@@ -806,12 +761,12 @@ export function LoadTakesFlightSceneGfx(): any {
 /** static void Task_RayTakesFlightAnim(u8 taskId) */
 export function Task_RayTakesFlightAnim(taskId: any): any {
   let data: any = gTasks[taskId].data;
-      PlayNewMapMusic(MUS_RAYQUAZA_APPEARS);
+      PlayNewMapMusic((464));
       InitTakesFlightSceneBgs();
       LoadTakesFlightSceneGfx();
       SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_OBJ | BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND);
       SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(8, 8));
-      BlendPalettes(PALETTES_ALL, 16, 0);
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, 0);
       SetVBlankCallback(VBlankCB_RayquazaScene);
       CreateTask(Task_TakesFlight_CreateSmoke, 0);
       tState = 0;
@@ -828,7 +783,7 @@ export function Task_HandleRayTakesFlight(taskId: any): any {
            
           if (tTimer == 8)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
               tScale = 0;
               tScaleSpeed = 30;
               tYCoord = 0;
@@ -874,7 +829,7 @@ export function Task_HandleRayTakesFlight(taskId: any): any {
               if (tTimer > 295)
               {
                   tState++;
-                  BeginNormalPaletteFade(PALETTES_ALL, 6, 0, 0x10, RGB_BLACK);
+                  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 6, 0, 0x10, (RGB(0, 0, 0)));
               }
           }
           break;
@@ -979,8 +934,8 @@ export function LoadDescendsSceneGfx(): any {
       CpuFastFill16(0,sRayScene.tilemapBuffers[1][0x100], 0x340);
 
       LoadCompressedPalette(gRaySceneDescends_Bg_Pal, BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP);
-      gPlttBufferUnfaded[0] = RGB_WHITE;
-      gPlttBufferFaded[0] = RGB_WHITE;
+      gPlttBufferUnfaded[0] = (RGB(31, 31, 31));
+      gPlttBufferFaded[0] = (RGB(31, 31, 31));
       LoadCompressedSpriteSheet(sSpriteSheet_Descends_Rayquaza);
       LoadCompressedSpriteSheet(sSpriteSheet_Descends_RayquazaTail);
       LoadCompressedSpritePalette(sSpritePal_Descends_Rayquaza);
@@ -1020,7 +975,7 @@ export function Task_RayDescendsAnim(taskId: any): any {
       LoadDescendsSceneGfx();
       SetGpuRegBits(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_TGT2_BG1 | BLDCNT_TGT2_BG2 | BLDCNT_TGT2_BG3 | BLDCNT_TGT2_OBJ | BLDCNT_EFFECT_BLEND);
       SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(0, 16));
-      BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 0x10, (RGB(0, 0, 0)));
       SetVBlankCallback(VBlankCB_RayquazaScene);
       sRayScene.revealedLightLine = 0;
       sRayScene.revealedLightTimer = 0;
@@ -1041,7 +996,7 @@ export function Task_HandleRayDescends(taskId: any): any {
            
           if (tTimer == 8)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
               tTimer = 0;
               tState++;
           }
@@ -1090,7 +1045,7 @@ export function Task_HandleRayDescends(taskId: any): any {
           break;
       case 4:
            
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
           gTasks[taskId].func = Task_RayDescendsEnd;
           break;
       }
@@ -1219,7 +1174,7 @@ export function Task_RayChargesAnim(taskId: any): any {
       InitChargesSceneBgs();
       LoadChargesSceneGfx();
       SetWindowsHideVertBorders();
-      BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 0x10, (RGB(0, 0, 0)));
       SetVBlankCallback(VBlankCB_RayquazaScene);
       tState = 0;
       tTimer = 0;
@@ -1232,7 +1187,7 @@ export function Task_HandleRayCharges(taskId: any): any {
   let data: any = gTasks[taskId].data;
       RayCharges_AnimateBg();
       if ((tSoundTimer & 7) == 0 && tState <= 1 && tTimer <= 89)
-          PlaySE(SE_INTRO_BLAST);
+          PlaySE((103));
 
       tSoundTimer++;
       switch (tState)
@@ -1241,7 +1196,7 @@ export function Task_HandleRayCharges(taskId: any): any {
            
           if (tTimer == 8)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
               tTimer = 0;
               tState++;
           }
@@ -1277,7 +1232,7 @@ export function Task_HandleRayCharges(taskId: any): any {
           break;
       case 3:
            
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
           gTasks[taskId].func = Task_RayChargesEnd;
           break;
       }
@@ -1390,7 +1345,7 @@ export function Task_RayChasesAwayAnim(taskId: any): any {
       ClearGpuRegBits(REG_OFFSET_DISPCNT, DISPCNT_BG2_ON);
       SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG0 | BLDCNT_TGT2_BG1 | BLDCNT_EFFECT_BLEND);
       SetGpuReg(REG_OFFSET_BLDALPHA, BLDALPHA_BLEND(9, 14));
-      BlendPalettes(PALETTES_ALL, 0x10, RGB_BLACK);
+      BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 0x10, (RGB(0, 0, 0)));
       SetVBlankCallback(VBlankCB_RayquazaScene);
       tState = 0;
       tTimer = 0;
@@ -1413,7 +1368,7 @@ export function Task_HandleRayChasesAway(taskId: any): any {
           if (tTimer == 8)
           {
               ChasesAway_CreateTrioSprites(taskId);
-              BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
               tTimer = 0;
               tState++;
           }
@@ -1453,14 +1408,14 @@ export function Task_HandleRayChasesAway(taskId: any): any {
               tTimer++;
               if (tTimer % 144 == 0)
               {
-                  BlendPalettesGradually(PALETTES_BG & ~1, 0, 16, 0, RGB_WHITEALPHA, 0, 0);
-                  BlendPalettesGradually(PALETTES_OBJECTS, 0, 16, 0, RGB_BLACK,      0, 1);
+                  BlendPalettesGradually((0x0000FFFF) & ~1, 0, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))), 0, 0);
+                  BlendPalettesGradually((0xFFFF0000), 0, 16, 0, (RGB(0, 0, 0)),      0, 1);
               }
           }
           break;
       case 3:
            
-          BeginNormalPaletteFade(PALETTES_ALL, 4, 0, 0x10, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 4, 0, 0x10, (RGB(0, 0, 0)));
           gTasks[taskId].func = Task_RayChasesAwayEnd;
           break;
       }
@@ -1663,7 +1618,7 @@ export function SpriteCB_ChasesAway_KyogreLeave(sprite: any): any {
       }
 
       if (sprite.data[4] % 64 == 0)
-          PlaySE(SE_M_WHIRLPOOL);
+          PlaySE((165));
 
       sprite.data[4]++;
 }
@@ -1688,7 +1643,7 @@ export function SpriteCB_ChasesAway_Rayquaza(sprite: any): any {
       {
           SpriteCB_ChasesAway_RayquazaFloat(sprite);
           if (sprite.sYOffset == 0)
-              PlaySE(SE_MUGSHOT);
+              PlaySE((104));
           if (sprite.sYOffset == -3)
               ChasesAway_SetRayquazaAnim(sprite, 2, 48, 16);
       }
@@ -1708,7 +1663,7 @@ export function SpriteCB_ChasesAway_Rayquaza(sprite: any): any {
           ChasesAway_SetRayquazaAnim(sprite, 3, 48, 16);
           sprite.x2 = 1;
           gSprites[sprite.sTailSpriteId].x2 = 1;
-          PlayCry_Normal(SPECIES_RAYQUAZA, 0);
+          PlayCry_Normal((406), 0);
           CreateTask(Task_ChasesAway_AnimateRing, 0);
       }
       else
@@ -1786,7 +1741,7 @@ export function Task_ChasesAway_AnimateRing(taskId: any): any {
           break;
       case 1:
           if (tSoundTimer == 8)
-              PlaySE(SE_SLIDING_DOOR);
+              PlaySE((18));
           if (tNumRings == 2)
           {
               tState++;

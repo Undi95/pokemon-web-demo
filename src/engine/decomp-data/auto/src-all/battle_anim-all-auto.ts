@@ -17,15 +17,38 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let bg2: any = null;
+let bg3: any = null;
+let gAnimCustomPanning: any = null;
+let gAnimDisableStructPtr: any = null;
+let gAnimFriendship: any = null;
+let gAnimMoveDmg: any = null;
+let gAnimMovePower: any = null;
+let gAnimMoveTurn: any = null;
+let gAnimScriptActive: any = null;
+let gAnimScriptCallback: any = null;
+let gAnimSoundTaskCount: any = null;
+let gAnimVisualTaskCount: any = null;
+let gBattleAnimAttacker: any = null;
+let gBattleAnimTarget: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gBattle_BG2_X: any = null;
+let gBattle_BG2_Y: any = null;
+let gBattle_WIN0H: any = null;
+let gBattle_WIN0V: any = null;
+let gBattle_WIN1H: any = null;
+let gBattle_WIN1V: any = null;
+let half2: any = null;
+let incrementPanArg: any = null;
 let sAnimBackgroundFadeState: any = null;
 let sAnimFramesToWait: any = null;
 let sAnimMoveIndex: any = null;
-let sAnimSpriteIndexArray: any = null;
 let sBattleAnimScriptPtr: any = null;
 let sBattleAnimScriptRetAddr: any = null;
-let sMonAnimTaskIdArray: any = null;
-let sScriptCmdTable: any = null;
 let sSoundAnimFramesToWait: any = null;
+let targetPanning: any = null;
+let y: any = null;
 /** void ClearBattleAnimationVars(void) */
 export function ClearBattleAnimationVars(): any {
   let i: any = null;
@@ -44,11 +67,11 @@ export function ClearBattleAnimationVars(): any {
           sAnimSpriteIndexArray[i] = 0xFFFF;
 
        
-      for (i = 0; i < ANIM_ARGS_COUNT; i++)
+      for (i = 0; i < (8); i++)
           gBattleAnimArgs[i] = 0;
 
-      sMonAnimTaskIdArray[0] = TASK_NONE;
-      sMonAnimTaskIdArray[1] = TASK_NONE;
+      sMonAnimTaskIdArray[0] = ((0xFF));
+      sMonAnimTaskIdArray[1] = ((0xFF));
       gAnimMoveTurn = 0;
       sAnimBackgroundFadeState = 0;
       sAnimMoveIndex = 0;
@@ -74,7 +97,7 @@ export function LaunchBattleAnimation(animsTable: any, tableId: any, isMoveAnim:
           UpdateOamPriorityInAllHealthboxes(0);
           for (i = 0; i < MAX_BATTLERS_COUNT; i++)
           {
-              if (GetBattlerSide(i) != B_SIDE_PLAYER)
+              if (GetBattlerSide(i) != (0))
                   gAnimBattlerSpecies[i] = GetMonData(gEnemyParty[gBattlerPartyIndexes[i]], MON_DATA_SPECIES);
               else
                   gAnimBattlerSpecies[i] = GetMonData(gPlayerParty[gBattlerPartyIndexes[i]], MON_DATA_SPECIES);
@@ -82,7 +105,7 @@ export function LaunchBattleAnimation(animsTable: any, tableId: any, isMoveAnim:
       }
       else
       {
-          for (i = 0; i < CONTESTANT_COUNT; i++)
+          for (i = 0; i < (4); i++)
               gAnimBattlerSpecies[i] = gContestResources.moveAnim.species;
       }
 
@@ -91,11 +114,11 @@ export function LaunchBattleAnimation(animsTable: any, tableId: any, isMoveAnim:
       else
           sAnimMoveIndex = tableId;
 
-      for (i = 0; i < ANIM_ARGS_COUNT; i++)
+      for (i = 0; i < (8); i++)
           gBattleAnimArgs[i] = 0;
 
-      sMonAnimTaskIdArray[0] = TASK_NONE;
-      sMonAnimTaskIdArray[1] = TASK_NONE;
+      sMonAnimTaskIdArray[0] = ((0xFF));
+      sMonAnimTaskIdArray[1] = ((0xFF));
       sBattleAnimScriptPtr = animsTable[tableId];
       gAnimScriptActive = TRUE;
       sAnimFramesToWait = 0;
@@ -239,9 +262,9 @@ export function Cmd_createsprite(): any {
           sBattleAnimScriptPtr += 2;
       }
 
-      if (argVar & ANIMSPRITE_IS_TARGET)
+      if (argVar & ((1 << 7)))
       {
-          argVar ^= ANIMSPRITE_IS_TARGET;
+          argVar ^= ((1 << 7));
           if (argVar >= 64)
               argVar -= 64;
           else
@@ -330,7 +353,7 @@ export function Cmd_end(): any {
 
        
       if (gAnimVisualTaskCount != 0 || gAnimSoundTaskCount != 0
-       || sMonAnimTaskIdArray[0] != TASK_NONE || sMonAnimTaskIdArray[1] != TASK_NONE)
+       || sMonAnimTaskIdArray[0] != ((0xFF)) || sMonAnimTaskIdArray[1] != ((0xFF)))
       {
           sSoundAnimFramesToWait = 0;
           sAnimFramesToWait = 1;
@@ -430,7 +453,7 @@ export function Cmd_monbg(): any {
       sBattleAnimScriptPtr++;
 
       animBattler = sBattleAnimScriptPtr[0];
-      if (animBattler & ANIM_TARGET)
+      if (animBattler & (1))
           battler = gBattleAnimTarget;
       else
           battler = gBattleAnimAttacker;
@@ -455,7 +478,7 @@ export function Cmd_monbg(): any {
       }
 
        
-      battler ^= BIT_FLANK;
+      battler ^= (2);
       if (IsBattlerSpriteVisible(battler))
       {
           let position: any = GetBattlerPosition(battler);
@@ -677,19 +700,19 @@ export function Cmd_clearmonbg(): any {
       sBattleAnimScriptPtr++;
       animBattlerId = sBattleAnimScriptPtr[0];
 
-      if (animBattlerId == ANIM_ATTACKER)
-          animBattlerId = ANIM_ATK_PARTNER;
-      else if (animBattlerId == ANIM_TARGET)
-          animBattlerId = ANIM_DEF_PARTNER;
+      if (animBattlerId == (0))
+          animBattlerId = (2);
+      else if (animBattlerId == (1))
+          animBattlerId = (3);
 
-      if (animBattlerId == ANIM_ATTACKER || animBattlerId == ANIM_ATK_PARTNER)
+      if (animBattlerId == (0) || animBattlerId == (2))
           battler = gBattleAnimAttacker;
       else
           battler = gBattleAnimTarget;
 
-      if (sMonAnimTaskIdArray[0] != TASK_NONE)
+      if (sMonAnimTaskIdArray[0] != ((0xFF)))
           gSprites[gBattlerSpriteIds[battler]].invisible = FALSE;
-      if (animBattlerId > 1 && sMonAnimTaskIdArray[1] != TASK_NONE)
+      if (animBattlerId > 1 && sMonAnimTaskIdArray[1] != ((0xFF)))
           gSprites[gBattlerSpriteIds[BATTLE_PARTNER(battler)]].invisible = FALSE;
       else
           animBattlerId = 0;
@@ -713,17 +736,17 @@ export function Task_ClearMonBg(taskId: any): any {
           else
               to_BG2 = TRUE;
 
-          if (sMonAnimTaskIdArray[0] != TASK_NONE)
+          if (sMonAnimTaskIdArray[0] != ((0xFF)))
           {
               ResetBattleAnimBg(to_BG2);
               DestroyTask(sMonAnimTaskIdArray[0]);
-              sMonAnimTaskIdArray[0] = TASK_NONE;
+              sMonAnimTaskIdArray[0] = ((0xFF));
           }
           if (gTasks[taskId].data[0] > 1)
           {
               ResetBattleAnimBg(to_BG2 ^ 1);
               DestroyTask(sMonAnimTaskIdArray[1]);
-              sMonAnimTaskIdArray[1] = TASK_NONE;
+              sMonAnimTaskIdArray[1] = ((0xFF));
           }
           DestroyTask(taskId);
       }
@@ -739,12 +762,12 @@ export function Cmd_monbg_static(): any {
 
       animBattlerId = sBattleAnimScriptPtr[0];
 
-      if (animBattlerId == ANIM_ATTACKER)
-          animBattlerId = ANIM_ATK_PARTNER;
-      else if (animBattlerId == ANIM_TARGET)
-          animBattlerId = ANIM_DEF_PARTNER;
+      if (animBattlerId == (0))
+          animBattlerId = (2);
+      else if (animBattlerId == (1))
+          animBattlerId = (3);
 
-      if (animBattlerId == ANIM_ATTACKER || animBattlerId == ANIM_ATK_PARTNER)
+      if (animBattlerId == (0) || animBattlerId == (2))
           battler = gBattleAnimAttacker;
       else
           battler = gBattleAnimTarget;
@@ -760,7 +783,7 @@ export function Cmd_monbg_static(): any {
           MoveBattlerSpriteToBG(battler, toBG_2, FALSE);
       }
 
-      battler ^= BIT_FLANK;
+      battler ^= (2);
       if (animBattlerId > 1 && IsBattlerSpriteVisible(battler))
       {
           let position: any = GetBattlerPosition(battler);
@@ -784,12 +807,12 @@ export function Cmd_clearmonbg_static(): any {
       sBattleAnimScriptPtr++;
       animBattlerId = sBattleAnimScriptPtr[0];
 
-      if (animBattlerId == ANIM_ATTACKER)
-          animBattlerId = ANIM_ATK_PARTNER;
-      else if (animBattlerId == ANIM_TARGET)
-          animBattlerId = ANIM_DEF_PARTNER;
+      if (animBattlerId == (0))
+          animBattlerId = (2);
+      else if (animBattlerId == (1))
+          animBattlerId = (3);
 
-      if (animBattlerId == ANIM_ATTACKER || animBattlerId == ANIM_ATK_PARTNER)
+      if (animBattlerId == (0) || animBattlerId == (2))
           battler = gBattleAnimAttacker;
       else
           battler = gBattleAnimTarget;
@@ -946,7 +969,7 @@ export function Cmd_fadetobgfromset(): any {
 
       if (IsContest())
           gTasks[taskId].tBackgroundId = bg3;
-      else if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      else if (GetBattlerSide(gBattleAnimTarget) == (0))
           gTasks[taskId].tBackgroundId = bg2;
       else
           gTasks[taskId].tBackgroundId = bg1;
@@ -1070,40 +1093,40 @@ export function Cmd_changebg(): any {
 export function BattleAnimAdjustPanning(pan: any): any {
   if (!IsContest() && gBattleSpritesDataPtr.healthBoxesData[gBattleAnimAttacker].statusAnimActive)
       {
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
-              pan = SOUND_PAN_TARGET;
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
+              pan = (63);
           else
-              pan = SOUND_PAN_ATTACKER;
+              pan = (-64);
       }
       else if (IsContest())
       {
-          if (gBattleAnimAttacker != gBattleAnimTarget || gBattleAnimAttacker != 2 || pan != SOUND_PAN_TARGET)
+          if (gBattleAnimAttacker != gBattleAnimTarget || gBattleAnimAttacker != 2 || pan != (63))
               pan *= -1;
       }
-      else if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      else if (GetBattlerSide(gBattleAnimAttacker) == (0))
       {
-          if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimTarget) == (0))
           {
-              if (pan == SOUND_PAN_TARGET)
-                  pan = SOUND_PAN_ATTACKER;
-              else if (pan != SOUND_PAN_ATTACKER)
+              if (pan == (63))
+                  pan = (-64);
+              else if (pan != (-64))
                   pan *= -1;
           }
       }
-      else if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_OPPONENT)
+      else if (GetBattlerSide(gBattleAnimTarget) == (1))
       {
-          if (pan == SOUND_PAN_ATTACKER)
-              pan = SOUND_PAN_TARGET;
+          if (pan == (-64))
+              pan = (63);
       }
       else
       {
           pan *= -1;
       }
 
-      if (pan > SOUND_PAN_TARGET)
-          pan = SOUND_PAN_TARGET;
-      else if (pan < SOUND_PAN_ATTACKER)
-          pan = SOUND_PAN_ATTACKER;
+      if (pan > (63))
+          pan = (63);
+      else if (pan < (-64))
+          pan = (-64);
 
       return pan;
 }
@@ -1112,14 +1135,14 @@ export function BattleAnimAdjustPanning(pan: any): any {
 export function BattleAnimAdjustPanning2(pan: any): any {
   if (!IsContest() && gBattleSpritesDataPtr.healthBoxesData[gBattleAnimAttacker].statusAnimActive)
       {
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
-              pan = SOUND_PAN_TARGET;
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
+              pan = (63);
           else
-              pan = SOUND_PAN_ATTACKER;
+              pan = (-64);
       }
       else
       {
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER || IsContest())
+          if (GetBattlerSide(gBattleAnimAttacker) != (0) || IsContest())
               pan = -pan;
       }
       return pan;
@@ -1129,10 +1152,10 @@ export function BattleAnimAdjustPanning2(pan: any): any {
 export function KeepPanInRange(panArg: any, oldPan: any): any {
   let pan: any = panArg;
 
-      if (pan > SOUND_PAN_TARGET)
-          pan = SOUND_PAN_TARGET;
-      else if (pan < SOUND_PAN_ATTACKER)
-          pan = SOUND_PAN_ATTACKER;
+      if (pan > (63))
+          pan = (63);
+      else if (pan < (-64))
+          pan = (-64);
 
       return pan;
 }
@@ -1465,7 +1488,7 @@ export function Cmd_splitbgprio(): any {
       wantedBattler = sBattleAnimScriptPtr[1];
       sBattleAnimScriptPtr += 2;
 
-      if (wantedBattler != ANIM_ATTACKER)
+      if (wantedBattler != (0))
           battler = gBattleAnimTarget;
       else
           battler = gBattleAnimAttacker;
@@ -1501,7 +1524,7 @@ export function Cmd_splitbgprio_foes(): any {
        
       if (GetBattlerSide(gBattleAnimAttacker) != GetBattlerSide(gBattleAnimTarget))
       {
-          if (wantedBattler != ANIM_ATTACKER)
+          if (wantedBattler != (0))
               battler = gBattleAnimTarget;
           else
               battler = gBattleAnimAttacker;
@@ -1521,7 +1544,7 @@ export function Cmd_invisible(): any {
   let spriteId: any = null;
 
       spriteId = GetAnimBattlerSpriteId(sBattleAnimScriptPtr[1]);
-      if (spriteId != SPRITE_NONE)
+      if (spriteId != (0xFF))
           gSprites[spriteId].invisible = TRUE;
 
       sBattleAnimScriptPtr += 2;
@@ -1532,7 +1555,7 @@ export function Cmd_visible(): any {
   let spriteId: any = null;
 
       spriteId = GetAnimBattlerSpriteId(sBattleAnimScriptPtr[1]);
-      if (spriteId != SPRITE_NONE)
+      if (spriteId != (0xFF))
           gSprites[spriteId].invisible = FALSE;
 
       sBattleAnimScriptPtr += 2;
@@ -1551,17 +1574,17 @@ export function Cmd_teamattack_moveback(): any {
       if (!IsContest() && IsDoubleBattle()
        && GetBattlerSide(gBattleAnimAttacker) == GetBattlerSide(gBattleAnimTarget))
       {
-          if (wantedBattler == ANIM_ATTACKER)
+          if (wantedBattler == (0))
           {
               priorityRank = GetBattlerSpriteBGPriorityRank(gBattleAnimAttacker);
-              spriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+              spriteId = GetAnimBattlerSpriteId((0));
           }
           else
           {
               priorityRank = GetBattlerSpriteBGPriorityRank(gBattleAnimTarget);
-              spriteId = GetAnimBattlerSpriteId(ANIM_TARGET);
+              spriteId = GetAnimBattlerSpriteId((1));
           }
-          if (spriteId != SPRITE_NONE)
+          if (spriteId != (0xFF))
           {
               gSprites[spriteId].invisible = FALSE;
               if (priorityRank == 2)
@@ -1588,18 +1611,18 @@ export function Cmd_teamattack_movefwd(): any {
       if (!IsContest() && IsDoubleBattle()
        && GetBattlerSide(gBattleAnimAttacker) == GetBattlerSide(gBattleAnimTarget))
       {
-          if (wantedBattler == ANIM_ATTACKER)
+          if (wantedBattler == (0))
           {
               priorityRank = GetBattlerSpriteBGPriorityRank(gBattleAnimAttacker);
-              spriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+              spriteId = GetAnimBattlerSpriteId((0));
           }
           else
           {
               priorityRank = GetBattlerSpriteBGPriorityRank(gBattleAnimTarget);
-              spriteId = GetAnimBattlerSpriteId(ANIM_TARGET);
+              spriteId = GetAnimBattlerSpriteId((1));
           }
 
-          if (spriteId != SPRITE_NONE && priorityRank == 2)
+          if (spriteId != (0xFF) && priorityRank == 2)
               gSprites[spriteId].oam.priority = 2;
       }
 }

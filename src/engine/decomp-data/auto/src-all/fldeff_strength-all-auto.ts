@@ -15,9 +15,12 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gPostMenuFieldCallback: any = null;
 /** bool8 SetUpFieldMove_Strength(void) */
 export function SetUpFieldMove_Strength(): any {
-  if (CheckObjectGraphicsInFrontOfPlayer(OBJ_EVENT_GFX_PUSHABLE_BOULDER) == TRUE)
+  if (CheckObjectGraphicsInFrontOfPlayer((87)) == TRUE)
       {
           gSpecialVar_Result = GetCursorSelectionMonId();
           gFieldCallback2 = FieldCallback_PrepareFadeInFromMenu;
@@ -44,7 +47,7 @@ export function FldEff_UseStrength(): any {
 
 /** static void StartStrengthFieldEffect(void) */
 export function StartStrengthFieldEffect(): any {
-  FieldEffectActiveListRemove(FLDEFF_USE_STRENGTH);
+  FieldEffectActiveListRemove((40));
       ScriptContext_Enable();
 }
 

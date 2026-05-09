@@ -17,6 +17,7 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gSelectedObjectEvent: any = null;
 let sPrevMetatileBehavior: any = null;
 let sWildEncounterImmunitySteps: any = null;
 /** void FieldClearPlayerInput(struct FieldInput *input) */
@@ -72,13 +73,13 @@ export function FieldGetPlayerInput(input: any, newKeys: any, heldKeys: any): an
       }
 
       if (heldKeys & DPAD_UP)
-          input.dpadDirection = DIR_NORTH;
+          input.dpadDirection = (2);
       else if (heldKeys & DPAD_DOWN)
-          input.dpadDirection = DIR_SOUTH;
+          input.dpadDirection = (1);
       else if (heldKeys & DPAD_LEFT)
-          input.dpadDirection = DIR_WEST;
+          input.dpadDirection = (3);
       else if (heldKeys & DPAD_RIGHT)
-          input.dpadDirection = DIR_EAST;
+          input.dpadDirection = (4);
 }
 
 /** int ProcessPlayerFieldInput(struct FieldInput *input) */
@@ -87,7 +88,7 @@ export function ProcessPlayerFieldInput(input: any): any {
       let playerDirection: any = null;
       let metatileBehavior: any = null;
 
-      gSpecialVar_LastTalked = LOCALID_NONE;
+      gSpecialVar_LastTalked = (0);
       gSelectedObjectEvent = 0;
 
       playerDirection = GetPlayerFacingDirection();
@@ -104,7 +105,7 @@ export function ProcessPlayerFieldInput(input: any): any {
           return TRUE;
       if (input.tookStep)
       {
-          IncrementGameStat(GAME_STAT_STEPS);
+          IncrementGameStat((5));
           IncrementBirthIslandRockStepCount();
           if (TryStartStepBasedScript(position, metatileBehavior, playerDirection) == TRUE)
               return TRUE;
@@ -131,7 +132,7 @@ export function ProcessPlayerFieldInput(input: any): any {
           return TRUE;
       if (input.pressedStartButton)
       {
-          PlaySE(SE_WIN_OPEN);
+          PlaySE((6));
           ShowStartMenu();
           return TRUE;
       }
@@ -181,7 +182,7 @@ export function TryStartInteractionScript(position: any, metatileBehavior: any, 
        && script != SecretBase_EventScript_DollInteract
        && script != SecretBase_EventScript_CushionInteract
        && script != EventScript_PC)
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 
       ScriptContext_SetupScript(script);
       return TRUE;
@@ -189,7 +190,7 @@ export function TryStartInteractionScript(position: any, metatileBehavior: any, 
 
 /** static bool32 TrySetupDiveDownScript(void) */
 export function TrySetupDiveDownScript(): any {
-  if (FlagGet(FLAG_BADGE07_GET) && TrySetDiveWarp() == 2)
+  if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0xD))) && TrySetDiveWarp() == 2)
       {
           ScriptContext_SetupScript(EventScript_UseDive);
           return TRUE;
@@ -199,7 +200,7 @@ export function TrySetupDiveDownScript(): any {
 
 /** static bool32 TrySetupDiveEmergeScript(void) */
 export function TrySetupDiveEmergeScript(): any {
-  if (FlagGet(FLAG_BADGE07_GET) && gMapHeader.mapType == MAP_TYPE_UNDERWATER && TrySetDiveWarp() == 1)
+  if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0xD))) && gMapHeader.mapType == (5) && TrySetDiveWarp() == 1)
       {
           ScriptContext_SetupScript(EventScript_UseDiveUnderwater);
           return TRUE;
@@ -224,7 +225,7 @@ export function TryStartStepBasedScript(position: any, metatileBehavior: any, di
 
 /** static bool8 TryStartCoordEventScript(struct MapPosition *position) */
 export function TryStartCoordEventScript(position: any): any {
-  let script: any = GetCoordEventScriptAtPosition(gMapHeader, position.x - MAP_OFFSET, position.y - MAP_OFFSET, position.elevation);
+  let script: any = GetCoordEventScriptAtPosition(gMapHeader, position.x - (7), position.y - (7), position.elevation);
 
       if (script == NULL)
           return FALSE;
@@ -271,7 +272,7 @@ export function TryStartStepCountScript(metatileBehavior: any): any {
       UpdateFriendshipStepCounter();
       UpdateFarawayIslandStepCounter();
 
-      if (!(gPlayerAvatar.flags & PLAYER_AVATAR_FLAG_FORCED_MOVE) && !MetatileBehavior_IsForcedMovementTile(metatileBehavior))
+      if (!(gPlayerAvatar.flags & ((1 << 6))) && !MetatileBehavior_IsForcedMovementTile(metatileBehavior))
       {
           if (UpdatePoisonStepCounter() == TRUE)
           {
@@ -280,7 +281,7 @@ export function TryStartStepCountScript(metatileBehavior: any): any {
           }
           if (ShouldEggHatch())
           {
-              IncrementGameStat(GAME_STAT_HATCHED_EGGS);
+              IncrementGameStat((13));
               ScriptContext_SetupScript(EventScript_EggHatch);
               return TRUE;
           }
@@ -335,7 +336,7 @@ export function TryStartStepCountScript(metatileBehavior: any): any {
 
 /** static void UpdateFriendshipStepCounter(void) */
 export function UpdateFriendshipStepCounter(): any {
-  let ptr: any = GetVarPointer(VAR_FRIENDSHIP_STEP_COUNTER);
+  let ptr: any = GetVarPointer((0x402A));
       let i: any = null;
 
       ptr++;
@@ -343,9 +344,9 @@ export function UpdateFriendshipStepCounter(): any {
       if (ptr == 0)
       {
           let mon: any = gPlayerParty;
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
-              AdjustFriendship(mon, FRIENDSHIP_EVENT_WALKING);
+              AdjustFriendship(mon, (5));
               mon++;
           }
       }
@@ -353,27 +354,27 @@ export function UpdateFriendshipStepCounter(): any {
 
 /** void ClearPoisonStepCounter(void) */
 export function ClearPoisonStepCounter(): any {
-  VarSet(VAR_POISON_STEP_COUNTER, 0);
+  VarSet((0x402B), 0);
 }
 
 /** static bool8 UpdatePoisonStepCounter(void) */
 export function UpdatePoisonStepCounter(): any {
   let ptr: any = null;
 
-      if (gMapHeader.mapType != MAP_TYPE_SECRET_BASE)
+      if (gMapHeader.mapType != (9))
       {
-          ptr = GetVarPointer(VAR_POISON_STEP_COUNTER);
+          ptr = GetVarPointer((0x402B));
           ptr++;
           ptr %= 4;
           if (ptr == 0)
           {
               switch (DoPoisonFieldEffect())
               {
-              case FLDPSN_NONE:
+              case (0):
                   return FALSE;
-              case FLDPSN_PSN:
+              case (1):
                   return FALSE;
-              case FLDPSN_FNT:
+              case (2):
                   return TRUE;
               }
           }
@@ -410,7 +411,7 @@ export function CheckStandardWildEncounter(metatileBehavior: any): any {
 export function TryArrowWarp(position: any, metatileBehavior: any, direction: any): any {
   let warpEventId: any = GetWarpEventAtMapPosition(gMapHeader, position);
 
-      if (IsArrowWarpMetatileBehavior(metatileBehavior, direction) == TRUE && warpEventId != WARP_ID_NONE)
+      if (IsArrowWarpMetatileBehavior(metatileBehavior, direction) == TRUE && warpEventId != ((-1)))
       {
           StoreInitialPlayerAvatarState();
           SetupWarp(gMapHeader, warpEventId, position);
@@ -424,7 +425,7 @@ export function TryArrowWarp(position: any, metatileBehavior: any, direction: an
 export function TryStartWarpEventScript(position: any, metatileBehavior: any): any {
   let warpEventId: any = GetWarpEventAtMapPosition(gMapHeader, position);
 
-      if (warpEventId != WARP_ID_NONE && IsWarpMetatileBehavior(metatileBehavior) == TRUE)
+      if (warpEventId != ((-1)) && IsWarpMetatileBehavior(metatileBehavior) == TRUE)
       {
           StoreInitialPlayerAvatarState();
           SetupWarp(gMapHeader, warpEventId, position);
@@ -489,13 +490,13 @@ export function IsWarpMetatileBehavior(metatileBehavior: any): any {
 export function IsArrowWarpMetatileBehavior(metatileBehavior: any, direction: any): any {
   switch (direction)
       {
-      case DIR_NORTH:
+      case (2):
           return MetatileBehavior_IsNorthArrowWarp(metatileBehavior);
-      case DIR_SOUTH:
+      case (1):
           return MetatileBehavior_IsSouthArrowWarp(metatileBehavior);
-      case DIR_WEST:
+      case (3):
           return MetatileBehavior_IsWestArrowWarp(metatileBehavior);
-      case DIR_EAST:
+      case (4):
           return MetatileBehavior_IsEastArrowWarp(metatileBehavior);
       }
       return FALSE;
@@ -503,7 +504,7 @@ export function IsArrowWarpMetatileBehavior(metatileBehavior: any, direction: an
 
 /** static s8 GetWarpEventAtMapPosition(struct MapHeader *mapHeader, struct MapPosition *position) */
 export function GetWarpEventAtMapPosition(mapHeader: any, position: any): any {
-  return GetWarpEventAtPosition(mapHeader, position.x - MAP_OFFSET, position.y - MAP_OFFSET, position.elevation);
+  return GetWarpEventAtPosition(mapHeader, position.x - (7), position.y - (7), position.elevation);
 }
 
 /** static void SetupWarp(struct MapHeader *unused, s8 warpEventId, struct MapPosition *position) */
@@ -521,7 +522,7 @@ export function SetupWarp(unused: any, warpEventId: any, position: any): any {
               else
                   warpEvent = SetWarpDestinationTrainerHill4F();
           }
-          else if (trainerHillMapId == TRAINER_HILL_ROOF)
+          else if (trainerHillMapId == (5))
           {
               warpEvent = SetWarpDestinationTrainerHillFinalFloor(warpEventId);
           }
@@ -555,7 +556,7 @@ export function SetupWarp(unused: any, warpEventId: any, position: any): any {
 export function TryDoorWarp(position: any, metatileBehavior: any, direction: any): any {
   let warpEventId: any = null;
 
-      if (direction == DIR_NORTH)
+      if (direction == (2))
       {
           if (MetatileBehavior_IsOpenSecretBaseDoor(metatileBehavior) == TRUE)
           {
@@ -566,7 +567,7 @@ export function TryDoorWarp(position: any, metatileBehavior: any, direction: any
           if (MetatileBehavior_IsWarpDoor(metatileBehavior) == TRUE)
           {
               warpEventId = GetWarpEventAtMapPosition(gMapHeader, position);
-              if (warpEventId != WARP_ID_NONE && IsWarpMetatileBehavior(metatileBehavior) == TRUE)
+              if (warpEventId != ((-1)) && IsWarpMetatileBehavior(metatileBehavior) == TRUE)
               {
                   StoreInitialPlayerAvatarState();
                   SetupWarp(gMapHeader, warpEventId, position);
@@ -592,28 +593,28 @@ export function GetWarpEventAtPosition(mapHeader: any, x: any, y: any, elevation
                   return i;
           }
       }
-      return WARP_ID_NONE;
+      return ((-1));
 }
 
 /** bool8 TryDoDiveWarp(struct MapPosition *position, u16 metatileBehavior) */
 export function TryDoDiveWarp(position: any, metatileBehavior: any): any {
-  if (gMapHeader.mapType == MAP_TYPE_UNDERWATER && !MetatileBehavior_IsUnableToEmerge(metatileBehavior))
+  if (gMapHeader.mapType == (5) && !MetatileBehavior_IsUnableToEmerge(metatileBehavior))
       {
-          if (SetDiveWarpEmerge(position.x - MAP_OFFSET, position.y - MAP_OFFSET))
+          if (SetDiveWarpEmerge(position.x - (7), position.y - (7)))
           {
               StoreInitialPlayerAvatarState();
               DoDiveWarp();
-              PlaySE(SE_M_DIVE);
+              PlaySE((233));
               return TRUE;
           }
       }
       else if (MetatileBehavior_IsDiveable(metatileBehavior) == TRUE)
       {
-          if (SetDiveWarpDive(position.x - MAP_OFFSET, position.y - MAP_OFFSET))
+          if (SetDiveWarpDive(position.x - (7), position.y - (7)))
           {
               StoreInitialPlayerAvatarState();
               DoDiveWarp();
-              PlaySE(SE_M_DIVE);
+              PlaySE((233));
               return TRUE;
           }
       }
@@ -627,14 +628,14 @@ export function TrySetDiveWarp(): any {
 
       PlayerGetDestCoords(x,y);
       metatileBehavior = MapGridGetMetatileBehaviorAt(x, y);
-      if (gMapHeader.mapType == MAP_TYPE_UNDERWATER && !MetatileBehavior_IsUnableToEmerge(metatileBehavior))
+      if (gMapHeader.mapType == (5) && !MetatileBehavior_IsUnableToEmerge(metatileBehavior))
       {
-          if (SetDiveWarpEmerge(x - MAP_OFFSET, y - MAP_OFFSET) == TRUE)
+          if (SetDiveWarpEmerge(x - (7), y - (7)) == TRUE)
               return 1;
       }
       else if (MetatileBehavior_IsDiveable(metatileBehavior) == TRUE)
       {
-          if (SetDiveWarpDive(x - MAP_OFFSET, y - MAP_OFFSET) == TRUE)
+          if (SetDiveWarpDive(x - (7), y - (7)) == TRUE)
               return 2;
       }
       return 0;

@@ -17,7 +17,9 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sContestWinnerPicDummy: any = null;
+let gDifferentSaveFile: any = null;
+let gPlayerPartyCount: any = null;
+let gUnusedPokedexU8: any = null;
 /** void SetTrainerId(u32 trainerId, u8 *dst) */
 export function SetTrainerId(trainerId: any, dst: any): any {
   dst[0] = trainerId;
@@ -34,7 +36,7 @@ export function GetTrainerId(trainerId: any): any {
 /** void CopyTrainerId(u8 *dst, u8 *src) */
 export function CopyTrainerId(dst: any, src: any): any {
   let i: any = null;
-      for (i = 0; i < TRAINER_ID_LENGTH; i++)
+      for (i = 0; i < (4); i++)
           dst[i] = src[i];
 }
 
@@ -46,10 +48,10 @@ export function InitPlayerTrainerId(): any {
 
 /** static void SetDefaultOptions(void) */
 export function SetDefaultOptions(): any {
-  gSaveBlock2Ptr.optionsTextSpeed = OPTIONS_TEXT_SPEED_MID;
+  gSaveBlock2Ptr.optionsTextSpeed = (1);
       gSaveBlock2Ptr.optionsWindowFrameType = 0;
-      gSaveBlock2Ptr.optionsSound = OPTIONS_SOUND_MONO;
-      gSaveBlock2Ptr.optionsBattleStyle = OPTIONS_BATTLE_STYLE_SHIFT;
+      gSaveBlock2Ptr.optionsSound = (0);
+      gSaveBlock2Ptr.optionsBattleStyle = (0);
       gSaveBlock2Ptr.optionsBattleSceneOff = FALSE;
       gSaveBlock2Ptr.regionMapZoom = FALSE;
 }
@@ -68,7 +70,7 @@ export function ClearAllContestWinnerPics(): any {
       ClearContestWinnerPicsInContestHall();
 
        
-      for (i = MUSEUM_CONTEST_WINNERS_START; i < NUM_CONTEST_WINNERS; i++)
+      for (i = (((9) - 1)); i < (13); i++)
           gSaveBlock1Ptr.contestWinners[i] = sContestWinnerPicDummy;
 }
 
@@ -76,13 +78,13 @@ export function ClearAllContestWinnerPics(): any {
 export function ClearFrontierRecord(): any {
   CpuFill32(0,gSaveBlock2Ptr.frontier, sizeof(gSaveBlock2Ptr.frontier));
 
-      gSaveBlock2Ptr.frontier.opponentNames[0][0] = EOS;
-      gSaveBlock2Ptr.frontier.opponentNames[1][0] = EOS;
+      gSaveBlock2Ptr.frontier.opponentNames[0][0] = (0xFF);
+      gSaveBlock2Ptr.frontier.opponentNames[1][0] = (0xFF);
 }
 
 /** static void WarpToTruck(void) */
 export function WarpToTruck(): any {
-  SetWarpDestination(MAP_GROUP(MAP_INSIDE_OF_TRUCK), MAP_NUM(MAP_INSIDE_OF_TRUCK), WARP_ID_NONE, -1, -1);
+  SetWarpDestination(MAP_GROUP(MAP_INSIDE_OF_TRUCK), MAP_NUM(MAP_INSIDE_OF_TRUCK), ((-1)), -1, -1);
       WarpIntoMap();
 }
 
@@ -104,7 +106,7 @@ export function ResetMenuAndMonGlobals(): any {
 
 /** void NewGameInitData(void) */
 export function NewGameInitData(): any {
-  if (gSaveFileStatus == SAVE_STATUS_EMPTY || gSaveFileStatus == SAVE_STATUS_CORRUPT)
+  if (gSaveFileStatus == (0) || gSaveFileStatus == (2))
           RtcReset();
 
       gDifferentSaveFile = TRUE;
@@ -138,7 +140,7 @@ export function NewGameInitData(): any {
       ResetPokemonStorageSystem();
       ClearRoamerData();
       ClearRoamerLocationData();
-      gSaveBlock1Ptr.registeredItem = ITEM_NONE;
+      gSaveBlock1Ptr.registeredItem = (0);
       ClearBag();
       NewGameInitPCItems();
       ClearPokeblocks();

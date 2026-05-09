@@ -17,29 +17,27 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gTrainerBattleOpponent_A: any = null;
 let sBattle: any = null;
-let sBgTemplates: any = null;
-let sTextColors: any = null;
-let sWindowTemplates: any = null;
 /** static void CB2_SetUpPartiesAndStartBattle(void) */
 export function CB2_SetUpPartiesAndStartBattle(): any {
   let i: any = null;
-      StartUnionRoomBattle(BATTLE_TYPE_LINK | BATTLE_TYPE_TRAINER);
-      for (i = 0; i < UNION_ROOM_PARTY_SIZE; i++)
+      StartUnionRoomBattle(((1 << 1)) | ((1 << 3)));
+      for (i = 0; i < (2); i++)
       {
           gEnemyParty[i] = gPlayerParty[gSelectedOrderFromParty[i] - 1];
       }
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           ZeroMonData(gPlayerParty[i]);
       }
-      for (i = 0; i < UNION_ROOM_PARTY_SIZE; i++)
+      for (i = 0; i < (2); i++)
       {
           gPlayerParty[i] = gEnemyParty[i];
       }
-      IncrementGameStat(GAME_STAT_NUM_UNION_ROOM_BATTLES);
+      IncrementGameStat((50));
       CalculatePlayerPartyCount();
-      gTrainerBattleOpponent_A = TRAINER_UNION_ROOM;
+      gTrainerBattleOpponent_A = (3072);
       SetMainCallback2(CB2_InitBattle);
 }
 
@@ -113,7 +111,7 @@ export function CB2_UnionRoomBattle(): any {
           }
           break;
       case 2:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           ShowBg(0);
           gMain.state++;
           break;
@@ -123,11 +121,11 @@ export function CB2_UnionRoomBattle(): any {
               memset(gBlockSendBuffer, 0, 0x20);
               if (gSelectedOrderFromParty[0] == -gSelectedOrderFromParty[1])
               {
-                  gBlockSendBuffer[0] = ACTIVITY_DECLINE | IN_UNION_ROOM;
+                  gBlockSendBuffer[0] = (18) | ((1 << 6));
               }
               else
               {
-                  gBlockSendBuffer[0] = ACTIVITY_ACCEPT | IN_UNION_ROOM;
+                  gBlockSendBuffer[0] = (17) | ((1 << 6));
               }
               SendBlock(0, gBlockSendBuffer, 0x20);
               gMain.state++;
@@ -136,16 +134,16 @@ export function CB2_UnionRoomBattle(): any {
       case 4:
           if (GetBlockReceivedStatus() == 3)
           {
-              if (gBlockRecvBuffer[0][0] == (ACTIVITY_ACCEPT | IN_UNION_ROOM)
-               && gBlockRecvBuffer[1][0] == (ACTIVITY_ACCEPT | IN_UNION_ROOM))
+              if (gBlockRecvBuffer[0][0] == ((17) | ((1 << 6)))
+               && gBlockRecvBuffer[1][0] == ((17) | ((1 << 6))))
               {
-                  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+                  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
                   gMain.state = 50;
               }
               else
               {
                   SetCloseLinkCallback();
-                  if (gBlockRecvBuffer[GetMultiplayerId()][0] == (ACTIVITY_DECLINE | IN_UNION_ROOM))
+                  if (gBlockRecvBuffer[GetMultiplayerId()][0] == ((18) | ((1 << 6))))
                   {
                       gMain.state = 6;
                   }

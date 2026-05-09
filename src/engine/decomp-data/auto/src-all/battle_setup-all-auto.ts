@@ -17,12 +17,11 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBadgeFlags: any = null;
-let sBattleTransitionTable_BattleDome: any = null;
-let sBattleTransitionTable_BattleFrontier: any = null;
-let sBattleTransitionTable_BattlePyramid: any = null;
-let sBattleTransitionTable_Trainer: any = null;
-let sBattleTransitionTable_Wild: any = null;
+let gNoOfApproachingTrainers: any = null;
+let gSelectedObjectEvent: any = null;
+let gTrainerBattleOpponent_A: any = null;
+let gTrainerBattleOpponent_B: any = null;
+let gWhichTrainerToFaceAfterBattle: any = null;
 let sNoOfPossibleTrainerRetScripts: any = null;
 let sShouldCheckTrainerBScript: any = null;
 let sTrainerABattleScriptRetAddr: any = null;
@@ -91,14 +90,14 @@ export function DoStandardWildBattle(): any {
       StopPlayerAvatar();
       gMain.savedCallback = CB2_EndWildBattle;
       gBattleTypeFlags = 0;
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+      if (CurrentBattlePyramidLocation() != (0))
       {
-          VarSet(VAR_TEMP_PLAYING_PYRAMID_MUSIC, 0);
-          gBattleTypeFlags |= BATTLE_TYPE_PYRAMID;
+          VarSet(((((0x4000) + 0xE))), 0);
+          gBattleTypeFlags |= ((1 << 21));
       }
       CreateBattleStartTask(GetWildBattleTransition(), 0);
-      IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-      IncrementGameStat(GAME_STAT_WILD_BATTLES);
+      IncrementGameStat((7));
+      IncrementGameStat((8));
       IncrementDailyWildBattles();
       TryUpdateGymLeaderRematchFromWild();
 }
@@ -109,10 +108,10 @@ export function BattleSetup_StartRoamerBattle(): any {
       FreezeObjectEvents();
       StopPlayerAvatar();
       gMain.savedCallback = CB2_EndWildBattle;
-      gBattleTypeFlags = BATTLE_TYPE_ROAMER;
+      gBattleTypeFlags = ((1 << 10));
       CreateBattleStartTask(GetWildBattleTransition(), 0);
-      IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-      IncrementGameStat(GAME_STAT_WILD_BATTLES);
+      IncrementGameStat((7));
+      IncrementGameStat((8));
       IncrementDailyWildBattles();
       TryUpdateGymLeaderRematchFromWild();
 }
@@ -123,7 +122,7 @@ export function DoSafariBattle(): any {
       FreezeObjectEvents();
       StopPlayerAvatar();
       gMain.savedCallback = CB2_EndSafariBattle;
-      gBattleTypeFlags = BATTLE_TYPE_SAFARI;
+      gBattleTypeFlags = ((1 << 7));
       CreateBattleStartTask(GetWildBattleTransition(), 0);
 }
 
@@ -133,10 +132,10 @@ export function DoBattlePikeWildBattle(): any {
       FreezeObjectEvents();
       StopPlayerAvatar();
       gMain.savedCallback = CB2_EndWildBattle;
-      gBattleTypeFlags = BATTLE_TYPE_PIKE;
+      gBattleTypeFlags = ((1 << 20));
       CreateBattleStartTask(GetWildBattleTransition(), 0);
-      IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-      IncrementGameStat(GAME_STAT_WILD_BATTLES);
+      IncrementGameStat((7));
+      IncrementGameStat((8));
       IncrementDailyWildBattles();
       TryUpdateGymLeaderRematchFromWild();
 }
@@ -144,29 +143,29 @@ export function DoBattlePikeWildBattle(): any {
 /** static void DoTrainerBattle(void) */
 export function DoTrainerBattle(): any {
   CreateBattleStartTask(GetTrainerBattleTransition(), 0);
-      IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-      IncrementGameStat(GAME_STAT_TRAINER_BATTLES);
+      IncrementGameStat((7));
+      IncrementGameStat((9));
       TryUpdateGymLeaderRematchFromTrainer();
 }
 
 /** static void DoBattlePyramidTrainerHillBattle(void) */
 export function DoBattlePyramidTrainerHillBattle(): any {
-  if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+  if (CurrentBattlePyramidLocation() != (0))
           CreateBattleStartTask(GetSpecialBattleTransition(B_TRANSITION_GROUP_B_PYRAMID), 0);
       else
           CreateBattleStartTask(GetSpecialBattleTransition(B_TRANSITION_GROUP_TRAINER_HILL), 0);
 
-      IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-      IncrementGameStat(GAME_STAT_TRAINER_BATTLES);
+      IncrementGameStat((7));
+      IncrementGameStat((9));
       TryUpdateGymLeaderRematchFromTrainer();
 }
 
 /** void StartWallyTutorialBattle(void) */
 export function StartWallyTutorialBattle(): any {
-  CreateMaleMon(gEnemyParty[0], SPECIES_RALTS, 5);
+  CreateMaleMon(gEnemyParty[0], (392), 5);
       LockPlayerFieldControls();
       gMain.savedCallback = CB2_ReturnToFieldContinueScriptPlayMapMusic;
-      gBattleTypeFlags = BATTLE_TYPE_WALLY_TUTORIAL;
+      gBattleTypeFlags = ((1 << 9));
       CreateBattleStartTask(B_TRANSITION_SLICE, 0);
 }
 
@@ -176,8 +175,8 @@ export function BattleSetup_StartScriptedWildBattle(): any {
       gMain.savedCallback = CB2_EndScriptedWildBattle;
       gBattleTypeFlags = 0;
       CreateBattleStartTask(GetWildBattleTransition(), 0);
-      IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-      IncrementGameStat(GAME_STAT_WILD_BATTLES);
+      IncrementGameStat((7));
+      IncrementGameStat((8));
       IncrementDailyWildBattles();
       TryUpdateGymLeaderRematchFromWild();
 }
@@ -186,10 +185,10 @@ export function BattleSetup_StartScriptedWildBattle(): any {
 export function BattleSetup_StartLatiBattle(): any {
   LockPlayerFieldControls();
       gMain.savedCallback = CB2_EndScriptedWildBattle;
-      gBattleTypeFlags = BATTLE_TYPE_LEGENDARY;
+      gBattleTypeFlags = ((1 << 13));
       CreateBattleStartTask(GetWildBattleTransition(), 0);
-      IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-      IncrementGameStat(GAME_STAT_WILD_BATTLES);
+      IncrementGameStat((7));
+      IncrementGameStat((8));
       IncrementDailyWildBattles();
       TryUpdateGymLeaderRematchFromWild();
 }
@@ -198,37 +197,37 @@ export function BattleSetup_StartLatiBattle(): any {
 export function BattleSetup_StartLegendaryBattle(): any {
   LockPlayerFieldControls();
       gMain.savedCallback = CB2_EndScriptedWildBattle;
-      gBattleTypeFlags = BATTLE_TYPE_LEGENDARY;
+      gBattleTypeFlags = ((1 << 13));
 
       switch (GetMonData(gEnemyParty[0], MON_DATA_SPECIES, NULL))
       {
       default:
-      case SPECIES_GROUDON:
-          gBattleTypeFlags |= BATTLE_TYPE_GROUDON;
-          CreateBattleStartTask(B_TRANSITION_GROUDON, MUS_VS_KYOGRE_GROUDON);
+      case (405):
+          gBattleTypeFlags |= ((1 << 28));
+          CreateBattleStartTask(B_TRANSITION_GROUDON, (480));
           break;
-      case SPECIES_KYOGRE:
-          gBattleTypeFlags |= BATTLE_TYPE_KYOGRE;
-          CreateBattleStartTask(B_TRANSITION_KYOGRE, MUS_VS_KYOGRE_GROUDON);
+      case (404):
+          gBattleTypeFlags |= ((1 << 29));
+          CreateBattleStartTask(B_TRANSITION_KYOGRE, (480));
           break;
-      case SPECIES_RAYQUAZA:
-          gBattleTypeFlags |= BATTLE_TYPE_RAYQUAZA;
-          CreateBattleStartTask(B_TRANSITION_RAYQUAZA, MUS_VS_RAYQUAZA);
+      case (406):
+          gBattleTypeFlags |= ((1 << 30));
+          CreateBattleStartTask(B_TRANSITION_RAYQUAZA, (470));
           break;
-      case SPECIES_DEOXYS:
-          CreateBattleStartTask(B_TRANSITION_BLUR, MUS_RG_VS_DEOXYS);
+      case (410):
+          CreateBattleStartTask(B_TRANSITION_BLUR, (551));
           break;
-      case SPECIES_LUGIA:
-      case SPECIES_HO_OH:
-          CreateBattleStartTask(B_TRANSITION_BLUR, MUS_RG_VS_LEGEND);
+      case (249):
+      case (250):
+          CreateBattleStartTask(B_TRANSITION_BLUR, (553));
           break;
-      case SPECIES_MEW:
-          CreateBattleStartTask(B_TRANSITION_GRID_SQUARES, MUS_VS_MEW);
+      case (151):
+          CreateBattleStartTask(B_TRANSITION_GRID_SQUARES, (472));
           break;
       }
 
-      IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-      IncrementGameStat(GAME_STAT_WILD_BATTLES);
+      IncrementGameStat((7));
+      IncrementGameStat((8));
       IncrementDailyWildBattles();
       TryUpdateGymLeaderRematchFromWild();
 }
@@ -237,15 +236,15 @@ export function BattleSetup_StartLegendaryBattle(): any {
 export function StartGroudonKyogreBattle(): any {
   LockPlayerFieldControls();
       gMain.savedCallback = CB2_EndScriptedWildBattle;
-      gBattleTypeFlags = BATTLE_TYPE_LEGENDARY | BATTLE_TYPE_KYOGRE_GROUDON;
+      gBattleTypeFlags = ((1 << 13)) | ((1 << 12));
 
-      if (gGameVersion == VERSION_RUBY)
-          CreateBattleStartTask(B_TRANSITION_ANGLED_WIPES, MUS_VS_KYOGRE_GROUDON);  
+      if (gGameVersion == (2))
+          CreateBattleStartTask(B_TRANSITION_ANGLED_WIPES, (480));  
       else
-          CreateBattleStartTask(B_TRANSITION_RIPPLE, MUS_VS_KYOGRE_GROUDON);  
+          CreateBattleStartTask(B_TRANSITION_RIPPLE, (480));  
 
-      IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-      IncrementGameStat(GAME_STAT_WILD_BATTLES);
+      IncrementGameStat((7));
+      IncrementGameStat((8));
       IncrementDailyWildBattles();
       TryUpdateGymLeaderRematchFromWild();
 }
@@ -257,28 +256,28 @@ export function StartRegiBattle(): any {
 
       LockPlayerFieldControls();
       gMain.savedCallback = CB2_EndScriptedWildBattle;
-      gBattleTypeFlags = BATTLE_TYPE_LEGENDARY | BATTLE_TYPE_REGI;
+      gBattleTypeFlags = ((1 << 13)) | ((1 << 14));
 
       species = GetMonData(gEnemyParty[0], MON_DATA_SPECIES);
       switch (species)
       {
-      case SPECIES_REGIROCK:
+      case (401):
           transitionId = B_TRANSITION_REGIROCK;
           break;
-      case SPECIES_REGICE:
+      case (402):
           transitionId = B_TRANSITION_REGICE;
           break;
-      case SPECIES_REGISTEEL:
+      case (403):
           transitionId = B_TRANSITION_REGISTEEL;
           break;
       default:
           transitionId = B_TRANSITION_GRID_SQUARES;
           break;
       }
-      CreateBattleStartTask(transitionId, MUS_VS_REGI);
+      CreateBattleStartTask(transitionId, (479));
 
-      IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-      IncrementGameStat(GAME_STAT_WILD_BATTLES);
+      IncrementGameStat((7));
+      IncrementGameStat((8));
       IncrementDailyWildBattles();
       TryUpdateGymLeaderRematchFromWild();
 }
@@ -288,7 +287,7 @@ export function CB2_EndWildBattle(): any {
   CpuFill16(0, (BG_PLTT), BG_PLTT_SIZE);
       ResetOamRange(0, 128);
 
-      if (IsPlayerDefeated(gBattleOutcome) == TRUE && CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE && !InBattlePike())
+      if (IsPlayerDefeated(gBattleOutcome) == TRUE && CurrentBattlePyramidLocation() == (0) && !InBattlePike())
       {
           SetMainCallback2(CB2_WhiteOut);
       }
@@ -306,7 +305,7 @@ export function CB2_EndScriptedWildBattle(): any {
 
       if (IsPlayerDefeated(gBattleOutcome) == TRUE)
       {
-          if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() != (0))
               SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
           else
               SetMainCallback2(CB2_WhiteOut);
@@ -326,55 +325,55 @@ export function BattleSetup_GetEnvironmentId(): any {
       tileBehavior = MapGridGetMetatileBehaviorAt(x, y);
 
       if (MetatileBehavior_IsTallGrass(tileBehavior))
-          return BATTLE_ENVIRONMENT_GRASS;
+          return (0);
       if (MetatileBehavior_IsLongGrass(tileBehavior))
-          return BATTLE_ENVIRONMENT_LONG_GRASS;
+          return (1);
       if (MetatileBehavior_IsSandOrDeepSand(tileBehavior))
-          return BATTLE_ENVIRONMENT_SAND;
+          return (2);
 
       switch (gMapHeader.mapType)
       {
-      case MAP_TYPE_TOWN:
-      case MAP_TYPE_CITY:
-      case MAP_TYPE_ROUTE:
+      case (1):
+      case (2):
+      case (3):
           break;
-      case MAP_TYPE_UNDERGROUND:
+      case (4):
           if (MetatileBehavior_IsIndoorEncounter(tileBehavior))
-              return BATTLE_ENVIRONMENT_BUILDING;
+              return (8);
           if (MetatileBehavior_IsSurfableWaterOrUnderwater(tileBehavior))
-              return BATTLE_ENVIRONMENT_POND;
-          return BATTLE_ENVIRONMENT_CAVE;
-      case MAP_TYPE_INDOOR:
-      case MAP_TYPE_SECRET_BASE:
-          return BATTLE_ENVIRONMENT_BUILDING;
-      case MAP_TYPE_UNDERWATER:
-          return BATTLE_ENVIRONMENT_UNDERWATER;
-      case MAP_TYPE_OCEAN_ROUTE:
+              return (5);
+          return (7);
+      case (8):
+      case (9):
+          return (8);
+      case (5):
+          return (3);
+      case (6):
           if (MetatileBehavior_IsSurfableWaterOrUnderwater(tileBehavior))
-              return BATTLE_ENVIRONMENT_WATER;
-          return BATTLE_ENVIRONMENT_PLAIN;
+              return (4);
+          return (9);
       }
       if (MetatileBehavior_IsDeepOrOceanWater(tileBehavior))
-          return BATTLE_ENVIRONMENT_WATER;
+          return (4);
       if (MetatileBehavior_IsSurfableWaterOrUnderwater(tileBehavior))
-          return BATTLE_ENVIRONMENT_POND;
+          return (5);
       if (MetatileBehavior_IsMountain(tileBehavior))
-          return BATTLE_ENVIRONMENT_MOUNTAIN;
-      if (TestPlayerAvatarFlags(PLAYER_AVATAR_FLAG_SURFING))
+          return (6);
+      if (TestPlayerAvatarFlags(((1 << 3))))
       {
            
           if (MetatileBehavior_GetBridgeType(tileBehavior) != BRIDGE_TYPE_OCEAN)
-              return BATTLE_ENVIRONMENT_POND;
+              return (5);
 
           if (MetatileBehavior_IsBridgeOverWater(tileBehavior) == TRUE)
-              return BATTLE_ENVIRONMENT_WATER;
+              return (4);
       }
       if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_ROUTE113) && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_ROUTE113))
-          return BATTLE_ENVIRONMENT_SAND;
-      if (GetSavedWeather() == WEATHER_SANDSTORM)
-          return BATTLE_ENVIRONMENT_SAND;
+          return (2);
+      if (GetSavedWeather() == (8))
+          return (2);
 
-      return BATTLE_ENVIRONMENT_PLAIN;
+      return (9);
 }
 
 /** static u8 GetBattleTransitionTypeByMap(void) */
@@ -393,9 +392,9 @@ export function GetBattleTransitionTypeByMap(): any {
 
       switch (gMapHeader.mapType)
       {
-      case MAP_TYPE_UNDERGROUND:
+      case (4):
           return TRANSITION_TYPE_CAVE;
-      case MAP_TYPE_UNDERWATER:
+      case (5):
           return TRANSITION_TYPE_WATER;
       default:
           return TRANSITION_TYPE_NORMAL;
@@ -407,11 +406,11 @@ export function GetSumOfPlayerPartyLevel(numMons: any): any {
   let sum: any = 0;
       let i: any = null;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           let species: any = GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);
 
-          if (species != SPECIES_EGG && species != SPECIES_NONE && GetMonData(gPlayerParty[i], MON_DATA_HP) != 0)
+          if (species != (412) && species != (0) && GetMonData(gPlayerParty[i], MON_DATA_HP) != 0)
           {
               sum += GetMonData(gPlayerParty[i], MON_DATA_LEVEL);
               if (--numMons == 0)
@@ -442,7 +441,7 @@ export function GetSumOfEnemyPartyLevel(opponentId: any, numMons: any): any {
                   sum += party[i].lvl;
           }
           break;
-      case F_TRAINER_PARTY_CUSTOM_MOVESET:
+      case ((1 << 0)):
           {
               let party: any = null;
               party = gTrainers[opponentId].party.NoItemCustomMoves;
@@ -450,7 +449,7 @@ export function GetSumOfEnemyPartyLevel(opponentId: any, numMons: any): any {
                   sum += party[i].lvl;
           }
           break;
-      case F_TRAINER_PARTY_HELD_ITEM:
+      case ((1 << 1)):
           {
               let party: any = null;
               party = gTrainers[opponentId].party.ItemDefaultMoves;
@@ -458,7 +457,7 @@ export function GetSumOfEnemyPartyLevel(opponentId: any, numMons: any): any {
                   sum += party[i].lvl;
           }
           break;
-      case F_TRAINER_PARTY_CUSTOM_MOVESET | F_TRAINER_PARTY_HELD_ITEM:
+      case ((1 << 0)) | ((1 << 1)):
           {
               let party: any = null;
               party = gTrainers[opponentId].party.ItemCustomMoves;
@@ -479,14 +478,14 @@ export function GetWildBattleTransition(): any {
 
       if (enemyLevel < playerLevel)
       {
-          if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() != (0))
               return B_TRANSITION_BLUR;
           else
               return sBattleTransitionTable_Wild[transitionType][0];
       }
       else
       {
-          if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+          if (CurrentBattlePyramidLocation() != (0))
               return B_TRANSITION_GRID_SQUARES;
           else
               return sBattleTransitionTable_Wild[transitionType][1];
@@ -500,33 +499,33 @@ export function GetTrainerBattleTransition(): any {
       let enemyLevel: any = null;
       let playerLevel: any = null;
 
-      if (gTrainerBattleOpponent_A == TRAINER_SECRET_BASE)
+      if (gTrainerBattleOpponent_A == (1024))
           return B_TRANSITION_CHAMPION;
 
-      if (gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_ELITE_FOUR)
+      if (gTrainers[gTrainerBattleOpponent_A].trainerClass == (0x1f))
       {
-          if (gTrainerBattleOpponent_A == TRAINER_SIDNEY)
+          if (gTrainerBattleOpponent_A == (261))
               return B_TRANSITION_SIDNEY;
-          if (gTrainerBattleOpponent_A == TRAINER_PHOEBE)
+          if (gTrainerBattleOpponent_A == (262))
               return B_TRANSITION_PHOEBE;
-          if (gTrainerBattleOpponent_A == TRAINER_GLACIA)
+          if (gTrainerBattleOpponent_A == (263))
               return B_TRANSITION_GLACIA;
-          if (gTrainerBattleOpponent_A == TRAINER_DRAKE)
+          if (gTrainerBattleOpponent_A == (264))
               return B_TRANSITION_DRAKE;
           return B_TRANSITION_CHAMPION;
       }
 
-      if (gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_CHAMPION)
+      if (gTrainers[gTrainerBattleOpponent_A].trainerClass == (0x26))
           return B_TRANSITION_CHAMPION;
 
-      if (gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_TEAM_MAGMA
-          || gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_MAGMA_LEADER
-          || gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_MAGMA_ADMIN)
+      if (gTrainers[gTrainerBattleOpponent_A].trainerClass == (0x9)
+          || gTrainers[gTrainerBattleOpponent_A].trainerClass == (0x35)
+          || gTrainers[gTrainerBattleOpponent_A].trainerClass == (0x31))
           return B_TRANSITION_MAGMA;
 
-      if (gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_TEAM_AQUA
-          || gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_AQUA_LEADER
-          || gTrainers[gTrainerBattleOpponent_A].trainerClass == TRAINER_CLASS_AQUA_ADMIN)
+      if (gTrainers[gTrainerBattleOpponent_A].trainerClass == (0x3)
+          || gTrainers[gTrainerBattleOpponent_A].trainerClass == (0xd)
+          || gTrainers[gTrainerBattleOpponent_A].trainerClass == (0xb))
           return B_TRANSITION_AQUA;
 
       if (gTrainers[gTrainerBattleOpponent_A].doubleBattle == TRUE)
@@ -564,7 +563,7 @@ export function GetSpecialBattleTransition(id: any): any {
               return ((sBattleTransitionTable_BattleDome)[Random() % ARRAY_COUNT((sBattleTransitionTable_BattleDome))]);
           }
 
-          if (VarGet(VAR_FRONTIER_BATTLE_MODE) != FRONTIER_MODE_LINK_MULTIS)
+          if (VarGet((0x40CE)) != (3))
               return ((sBattleTransitionTable_BattleFrontier)[Random() % ARRAY_COUNT((sBattleTransitionTable_BattleFrontier))]);
       }
       else
@@ -581,7 +580,7 @@ export function GetSpecialBattleTransition(id: any): any {
               return ((sBattleTransitionTable_BattleDome)[Random() % ARRAY_COUNT((sBattleTransitionTable_BattleDome))]);
           }
 
-          if (VarGet(VAR_FRONTIER_BATTLE_MODE) != FRONTIER_MODE_LINK_MULTIS)
+          if (VarGet((0x40CE)) != (3))
               return ((sBattleTransitionTable_BattleFrontier)[Random() % ARRAY_COUNT((sBattleTransitionTable_BattleFrontier))]);
       }
 
@@ -599,11 +598,9 @@ export function ChooseStarter(): any {
 
 /** static void CB2_GiveStarter(void) */
 export function CB2_GiveStarter(): any {
-  let starterMon: any = null;
-
-      VarSet(VAR_STARTER_MON, gSpecialVar_Result);
+  let starterMon: any = null;VarSet(0x4023, gSpecialVar_Result);
       starterMon = GetStarterPokemon(gSpecialVar_Result);
-      ScriptGiveMon(starterMon, 5, ITEM_NONE, 0, 0, 0);
+      ScriptGiveMon(starterMon, 5, (0), 0, 0, 0);
       ResetTasks();
       PlayBattleBGM();
       SetMainCallback2(CB2_StartFirstBattle);
@@ -617,14 +614,14 @@ export function CB2_StartFirstBattle(): any {
 
       if (IsBattleTransitionDone() == TRUE)
       {
-          gBattleTypeFlags = BATTLE_TYPE_FIRST_BATTLE;
+          gBattleTypeFlags = ((1 << 4));
           gMain.savedCallback = CB2_EndFirstBattle;
           FreeAllWindowBuffers();
           SetMainCallback2(CB2_InitBattle);
           RestartWildEncounterImmunitySteps();
           ClearPoisonStepCounter();
-          IncrementGameStat(GAME_STAT_TOTAL_BATTLES);
-          IncrementGameStat(GAME_STAT_WILD_BATTLES);
+          IncrementGameStat((7));
+          IncrementGameStat((8));
           IncrementDailyWildBattles();
           TryUpdateGymLeaderRematchFromWild();
       }
@@ -638,13 +635,13 @@ export function CB2_EndFirstBattle(): any {
 
 /** static void TryUpdateGymLeaderRematchFromWild(void) */
 export function TryUpdateGymLeaderRematchFromWild(): any {
-  if (GetGameStat(GAME_STAT_WILD_BATTLES) % 60 == 0)
+  if (GetGameStat((8)) % 60 == 0)
           UpdateGymLeaderRematch();
 }
 
 /** static void TryUpdateGymLeaderRematchFromTrainer(void) */
 export function TryUpdateGymLeaderRematchFromTrainer(): any {
-  if (GetGameStat(GAME_STAT_TRAINER_BATTLES) % 20 == 0)
+  if (GetGameStat((9)) % 20 == 0)
           UpdateGymLeaderRematch();
 }
 
@@ -665,26 +662,26 @@ export function TrainerBattleLoadArg8(ptr: any): any {
 
 /** static u16 GetTrainerAFlag(void) */
 export function GetTrainerAFlag(): any {
-  return TRAINER_FLAGS_START + gTrainerBattleOpponent_A;
+  return (0x500) + gTrainerBattleOpponent_A;
 }
 
 /** static u16 GetTrainerBFlag(void) */
 export function GetTrainerBFlag(): any {
-  return TRAINER_FLAGS_START + gTrainerBattleOpponent_B;
+  return (0x500) + gTrainerBattleOpponent_B;
 }
 
 /** static bool32 IsPlayerDefeated(u32 battleOutcome) */
 export function IsPlayerDefeated(battleOutcome: any): any {
   switch (battleOutcome)
       {
-      case B_OUTCOME_LOST:
-      case B_OUTCOME_DREW:
+      case (2):
+      case (3):
           return TRUE;
-      case B_OUTCOME_WON:
-      case B_OUTCOME_RAN:
-      case B_OUTCOME_PLAYER_TELEPORTED:
-      case B_OUTCOME_MON_FLED:
-      case B_OUTCOME_CAUGHT:
+      case (1):
+      case (4):
+      case (5):
+      case (6):
+      case (7):
           return FALSE;
       default:
           return FALSE;
@@ -775,7 +772,7 @@ export function TrainerBattleLoadArgs(specs: any, data: any): any {
 
 /** void SetMapVarsToTrainer(void) */
 export function SetMapVarsToTrainer(): any {
-  if (sTrainerObjectEventLocalId != LOCALID_NONE)
+  if (sTrainerObjectEventLocalId != (0))
       {
           gSpecialVar_LastTalked = sTrainerObjectEventLocalId;
           gSelectedObjectEvent = GetObjectEventIdByLocalIdAndMap(sTrainerObjectEventLocalId, gSaveBlock1Ptr.location.mapNum, gSaveBlock1Ptr.location.mapGroup);
@@ -807,7 +804,7 @@ export function SetUpTwoTrainersBattle(): any {
 /** bool32 GetTrainerFlagFromScriptPointer(const u8 *data) */
 export function GetTrainerFlagFromScriptPointer(data: any): any {
   let flag: any = TrainerBattleLoadArg16(data + 2);
-      return FlagGet(TRAINER_FLAGS_START + flag);
+      return FlagGet((0x500) + flag);
 }
 
 /** void SetTrainerFacingDirection(void) */
@@ -823,7 +820,7 @@ export function GetTrainerBattleMode(): any {
 
 /** bool8 GetTrainerFlag(void) */
 export function GetTrainerFlag(): any {
-  if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+  if (CurrentBattlePyramidLocation() != (0))
           return GetBattlePyramidTrainerFlag(gSelectedObjectEvent);
       else if (InTrainerHill())
           return GetHillTrainerFlag(gSelectedObjectEvent);
@@ -840,30 +837,30 @@ export function SetBattledTrainersFlags(): any {
 
 /** bool8 HasTrainerBeenFought(u16 trainerId) */
 export function HasTrainerBeenFought(trainerId: any): any {
-  return FlagGet(TRAINER_FLAGS_START + trainerId);
+  return FlagGet((0x500) + trainerId);
 }
 
 /** void SetTrainerFlag(u16 trainerId) */
 export function SetTrainerFlag(trainerId: any): any {
-  FlagSet(TRAINER_FLAGS_START + trainerId);
+  FlagSet((0x500) + trainerId);
 }
 
 /** void ClearTrainerFlag(u16 trainerId) */
 export function ClearTrainerFlag(trainerId: any): any {
-  FlagClear(TRAINER_FLAGS_START + trainerId);
+  FlagClear((0x500) + trainerId);
 }
 
 /** void BattleSetup_StartTrainerBattle(void) */
 export function BattleSetup_StartTrainerBattle(): any {
   if (gNoOfApproachingTrainers == 2)
-          gBattleTypeFlags = (BATTLE_TYPE_DOUBLE | BATTLE_TYPE_TWO_OPPONENTS | BATTLE_TYPE_TRAINER);
+          gBattleTypeFlags = (((1 << 0)) | ((1 << 15)) | ((1 << 3)));
       else
-          gBattleTypeFlags = (BATTLE_TYPE_TRAINER);
+          gBattleTypeFlags = (((1 << 3)));
 
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+      if (CurrentBattlePyramidLocation() != (0))
       {
-          VarSet(VAR_TEMP_PLAYING_PYRAMID_MUSIC, 0);
-          gBattleTypeFlags |= BATTLE_TYPE_PYRAMID;
+          VarSet(((((0x4000) + 0xE))), 0);
+          gBattleTypeFlags |= ((1 << 21));
 
           if (gNoOfApproachingTrainers == 2)
           {
@@ -884,7 +881,7 @@ export function BattleSetup_StartTrainerBattle(): any {
       }
       else if (InTrainerHillChallenge())
       {
-          gBattleTypeFlags |= BATTLE_TYPE_TRAINER_HILL;
+          gBattleTypeFlags |= ((1 << 26));
 
           if (gNoOfApproachingTrainers == 2)
               FillHillTrainersParties();
@@ -900,7 +897,7 @@ export function BattleSetup_StartTrainerBattle(): any {
       gWhichTrainerToFaceAfterBattle = 0;
       gMain.savedCallback = CB2_EndTrainerBattle;
 
-      if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || InTrainerHillChallenge())
+      if (CurrentBattlePyramidLocation() != (0) || InTrainerHillChallenge())
           DoBattlePyramidTrainerHillBattle();
       else
           DoTrainerBattle();
@@ -910,13 +907,13 @@ export function BattleSetup_StartTrainerBattle(): any {
 
 /** static void CB2_EndTrainerBattle(void) */
 export function CB2_EndTrainerBattle(): any {
-  if (gTrainerBattleOpponent_A == TRAINER_SECRET_BASE)
+  if (gTrainerBattleOpponent_A == (1024))
       {
           SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
       }
       else if (IsPlayerDefeated(gBattleOutcome) == TRUE)
       {
-          if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE || InTrainerHillChallenge())
+          if (CurrentBattlePyramidLocation() != (0) || InTrainerHillChallenge())
               SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
           else
               SetMainCallback2(CB2_WhiteOut);
@@ -924,7 +921,7 @@ export function CB2_EndTrainerBattle(): any {
       else
       {
           SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
-          if (CurrentBattlePyramidLocation() == PYRAMID_LOCATION_NONE && !InTrainerHillChallenge())
+          if (CurrentBattlePyramidLocation() == (0) && !InTrainerHillChallenge())
           {
               RegisterTrainerInMatchCall();
               SetBattledTrainersFlags();
@@ -934,7 +931,7 @@ export function CB2_EndTrainerBattle(): any {
 
 /** static void CB2_EndRematchBattle(void) */
 export function CB2_EndRematchBattle(): any {
-  if (gTrainerBattleOpponent_A == TRAINER_SECRET_BASE)
+  if (gTrainerBattleOpponent_A == (1024))
       {
           SetMainCallback2(CB2_ReturnToFieldContinueScriptPlayMapMusic);
       }
@@ -953,7 +950,7 @@ export function CB2_EndRematchBattle(): any {
 
 /** void BattleSetup_StartRematchBattle(void) */
 export function BattleSetup_StartRematchBattle(): any {
-  gBattleTypeFlags = BATTLE_TYPE_TRAINER;
+  gBattleTypeFlags = ((1 << 3));
       gMain.savedCallback = CB2_EndRematchBattle;
       DoTrainerBattle();
       ScriptContext_Stop();
@@ -961,7 +958,7 @@ export function BattleSetup_StartRematchBattle(): any {
 
 /** void ShowTrainerIntroSpeech(void) */
 export function ShowTrainerIntroSpeech(): any {
-  if (CurrentBattlePyramidLocation() != PYRAMID_LOCATION_NONE)
+  if (CurrentBattlePyramidLocation() != (0))
       {
           if (gNoOfApproachingTrainers == 0 || gNoOfApproachingTrainers == 1)
               CopyPyramidTrainerSpeechBefore(LocalIdToPyramidTrainerId(gSpecialVar_LastTalked));
@@ -973,9 +970,9 @@ export function ShowTrainerIntroSpeech(): any {
       else if (InTrainerHillChallenge())
       {
           if (gNoOfApproachingTrainers == 0 || gNoOfApproachingTrainers == 1)
-              CopyTrainerHillTrainerText(TRAINER_HILL_TEXT_INTRO, LocalIdToHillTrainerId(gSpecialVar_LastTalked));
+              CopyTrainerHillTrainerText((2), LocalIdToHillTrainerId(gSpecialVar_LastTalked));
           else
-              CopyTrainerHillTrainerText(TRAINER_HILL_TEXT_INTRO, LocalIdToHillTrainerId(gObjectEvents[gApproachingTrainers[gApproachingTrainerId].objectEventId].localId));
+              CopyTrainerHillTrainerText((2), LocalIdToHillTrainerId(gObjectEvents[gApproachingTrainers[gApproachingTrainerId].objectEventId].localId));
 
           ShowFieldMessageFromBuffer();
       }
@@ -1000,52 +997,52 @@ export function PlayTrainerEncounterMusic(): any {
       else
           trainerId = gTrainerBattleOpponent_B;
 
-      if (sTrainerBattleMode != TRAINER_BATTLE_CONTINUE_SCRIPT_NO_MUSIC
-          && sTrainerBattleMode != TRAINER_BATTLE_CONTINUE_SCRIPT_DOUBLE_NO_MUSIC)
+      if (sTrainerBattleMode != (1)
+          && sTrainerBattleMode != (8))
       {
           switch (GetTrainerEncounterMusicId(trainerId))
           {
-          case TRAINER_ENCOUNTER_MUSIC_MALE:
-              music = MUS_ENCOUNTER_MALE;
+          case (0):
+              music = (380);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_FEMALE:
-              music = MUS_ENCOUNTER_FEMALE;
+          case (1):
+              music = (407);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_GIRL:
-              music = MUS_ENCOUNTER_GIRL;
+          case (2):
+              music = (379);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_INTENSE:
-              music = MUS_ENCOUNTER_INTENSE;
+          case (4):
+              music = (416);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_COOL:
-              music = MUS_ENCOUNTER_COOL;
+          case (5):
+              music = (417);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_AQUA:
-              music = MUS_ENCOUNTER_AQUA;
+          case (6):
+              music = (419);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_MAGMA:
-              music = MUS_ENCOUNTER_MAGMA;
+          case (7):
+              music = (441);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_SWIMMER:
-              music = MUS_ENCOUNTER_SWIMMER;
+          case (8):
+              music = (385);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_TWINS:
-              music = MUS_ENCOUNTER_TWINS;
+          case (9):
+              music = (449);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_ELITE_FOUR:
-              music = MUS_ENCOUNTER_ELITE_FOUR;
+          case (10):
+              music = (450);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_HIKER:
-              music = MUS_ENCOUNTER_HIKER;
+          case (11):
+              music = (451);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_INTERVIEWER:
-              music = MUS_ENCOUNTER_INTERVIEWER;
+          case (12):
+              music = (453);
               break;
-          case TRAINER_ENCOUNTER_MUSIC_RICH:
-              music = MUS_ENCOUNTER_RICH;
+          case (13):
+              music = (397);
               break;
           default:
-              music = MUS_ENCOUNTER_SUSPICIOUS;
+              music = (423);
           }
           PlayNewMapMusic(music);
       }
@@ -1070,7 +1067,7 @@ export function TrainerIdToRematchTableId(table: any, trainerId: any): any {
 
       for (i = 0; i < REMATCH_TABLE_ENTRIES; i++)
       {
-          for (j = 0; j < REMATCHES_COUNT; j++)
+          for (j = 0; j < (5); j++)
           {
               if (table[i].trainerIds[j] == 0) break;  
               if (table[i].trainerIds[j] == trainerId)
@@ -1083,10 +1080,10 @@ export function TrainerIdToRematchTableId(table: any, trainerId: any): any {
 
 /** static bool32 IsRematchForbidden(s32 rematchTableId) */
 export function IsRematchForbidden(rematchTableId: any): any {
-  if (rematchTableId >= REMATCH_ELITE_FOUR_ENTRIES)
+  if (rematchTableId >= (REMATCH_SIDNEY))
           return TRUE;
       else if (rematchTableId == REMATCH_WALLY_VR)
-          return !FlagGet(FLAG_DEFEATED_WALLY_VICTORY_ROAD);
+          return !FlagGet((0x7E));
       else
           return FALSE;
 }
@@ -1095,7 +1092,7 @@ export function IsRematchForbidden(rematchTableId: any): any {
 export function SetRematchIdForTrainer(table: any, tableId: any): any {
   let i: any = null;
 
-      for (i = 1; i < REMATCHES_COUNT; i++)
+      for (i = 1; i < (5); i++)
       {
           let trainerId: any = table[tableId].trainerIds[i];
 
@@ -1113,7 +1110,7 @@ export function UpdateRandomTrainerRematches(table: any, mapGroup: any, mapNum: 
   let i: any = null;
       let ret: any = FALSE;
 
-      for (i = 0; i <= REMATCH_SPECIAL_TRAINER_START; i++)
+      for (i = 0; i <= (REMATCH_WALLY_VR); i++)
       {
           if (table[i].mapGroup == mapGroup && table[i].mapNum == mapNum && !IsRematchForbidden(i))
           {
@@ -1122,7 +1119,7 @@ export function UpdateRandomTrainerRematches(table: any, mapGroup: any, mapNum: 
                    
                   ret = TRUE;
               }
-              else if (FlagGet(TRAINER_REGISTERED_FLAGS_START + i)
+              else if (FlagGet((0x15C) + i)
                && (Random() % 100) <= 30)   
               {
                   SetRematchIdForTrainer(table, i);
@@ -1172,7 +1169,7 @@ export function IsFirstTrainerIdReadyForRematch(table: any, firstBattleTrainerId
 
       if (tableId == -1)
           return FALSE;
-      if (tableId >= MAX_REMATCH_ENTRIES)
+      if (tableId >= (100))
           return FALSE;
       if (gSaveBlock1Ptr.trainerRematches[tableId] == 0)
           return FALSE;
@@ -1186,7 +1183,7 @@ export function IsTrainerReadyForRematch_(table: any, trainerId: any): any {
 
       if (tableId == -1)
           return FALSE;
-      if (tableId >= MAX_REMATCH_ENTRIES)
+      if (tableId >= (100))
           return FALSE;
       if (gSaveBlock1Ptr.trainerRematches[tableId] == 0)
           return FALSE;
@@ -1204,7 +1201,7 @@ export function GetRematchTrainerIdFromTable(table: any, firstBattleTrainerId: a
           return FALSE;
 
       trainerEntry =table[tableId];
-      for (i = 1; i < REMATCHES_COUNT; i++)
+      for (i = 1; i < (5); i++)
       {
           if (trainerEntry.trainerIds[i] == 0)  
               return trainerEntry.trainerIds[i - 1];
@@ -1212,7 +1209,7 @@ export function GetRematchTrainerIdFromTable(table: any, firstBattleTrainerId: a
               return trainerEntry.trainerIds[i];
       }
 
-      return trainerEntry.trainerIds[REMATCHES_COUNT - 1];
+      return trainerEntry.trainerIds[(5) - 1];
 }
 
 /** static u16 GetLastBeatenRematchTrainerIdFromTable(const struct RematchTrainer *table, u16 firstBattleTrainerId) */
@@ -1225,7 +1222,7 @@ export function GetLastBeatenRematchTrainerIdFromTable(table: any, firstBattleTr
           return FALSE;
 
       trainerEntry =table[tableId];
-      for (i = 1; i < REMATCHES_COUNT; i++)
+      for (i = 1; i < (5); i++)
       {
           if (trainerEntry.trainerIds[i] == 0)  
               return trainerEntry.trainerIds[i - 1];
@@ -1233,7 +1230,7 @@ export function GetLastBeatenRematchTrainerIdFromTable(table: any, firstBattleTr
               return trainerEntry.trainerIds[i - 1];
       }
 
-      return trainerEntry.trainerIds[REMATCHES_COUNT - 1];
+      return trainerEntry.trainerIds[(5) - 1];
 }
 
 /** static void ClearTrainerWantRematchState(const struct RematchTrainer *table, u16 firstBattleTrainerId) */
@@ -1251,7 +1248,7 @@ export function GetTrainerMatchCallFlag(trainerId: any): any {
       for (i = 0; i < REMATCH_TABLE_ENTRIES; i++)
       {
           if (gRematchTable[i].trainerIds[0] == trainerId)
-              return TRAINER_REGISTERED_FLAGS_START + i;
+              return (0x15C) + i;
       }
 
       return 0xFFFF;
@@ -1259,7 +1256,7 @@ export function GetTrainerMatchCallFlag(trainerId: any): any {
 
 /** static void RegisterTrainerInMatchCall(void) */
 export function RegisterTrainerInMatchCall(): any {
-  if (FlagGet(FLAG_HAS_MATCH_CALL))
+  if (FlagGet((0x12F)))
       {
           let matchCallFlagId: any = GetTrainerMatchCallFlag(gTrainerBattleOpponent_A);
           if (matchCallFlagId != 0xFFFF)
@@ -1381,7 +1378,7 @@ export function CountBattledRematchTeams(trainerId: any): any {
       if (HasTrainerBeenFought(gRematchTable[trainerId].trainerIds[0]) != TRUE)
           return 0;
 
-      for (i = 1; i < REMATCHES_COUNT; i++)
+      for (i = 1; i < (5); i++)
       {
           if (gRematchTable[trainerId].trainerIds[i] == 0)
               break;

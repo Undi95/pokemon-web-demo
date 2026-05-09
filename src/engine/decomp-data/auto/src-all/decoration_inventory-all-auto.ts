@@ -32,7 +32,7 @@ export function SetDecorationInventoriesPointers(): any {
 export function ClearDecorationInventory(category: any): any {
   let i: any = null;
       for (i = 0; i < gDecorationInventories[category].size; i ++)
-          gDecorationInventories[category].items[i] = DECOR_NONE;
+          gDecorationInventories[category].items[i] = (0);
 }
 
 /** void ClearDecorationInventories(void) */
@@ -47,7 +47,7 @@ export function GetFirstEmptyDecorSlot(category: any): any {
   let i: any = null;
       for (i = 0; i < gDecorationInventories[category].size; i++)
       {
-          if (gDecorationInventories[category].items[i] == DECOR_NONE)
+          if (gDecorationInventories[category].items[i] == (0))
               return i;
       }
 
@@ -74,7 +74,7 @@ export function DecorationAdd(decor: any): any {
   let category: any = null;
       let idx: any = null;
 
-      if (decor == DECOR_NONE)
+      if (decor == (0))
           return FALSE;
       category = gDecorations[decor].category;
       idx = GetFirstEmptyDecorSlot(category);
@@ -86,7 +86,7 @@ export function DecorationAdd(decor: any): any {
 
 /** bool8 DecorationCheckSpace(u8 decor) */
 export function DecorationCheckSpace(decor: any): any {
-  if (decor == DECOR_NONE)
+  if (decor == (0))
           return FALSE;
       if (GetFirstEmptyDecorSlot(gDecorations[decor].category) == -1)
           return FALSE;
@@ -99,7 +99,7 @@ export function DecorationRemove(decor: any): any {
       let category: any = null;
 
       i = 0;
-      if (decor == DECOR_NONE)
+      if (decor == (0))
           return 0;
 
       for (i = 0; i < gDecorationInventories[gDecorations[decor].category].size; i ++)
@@ -107,7 +107,7 @@ export function DecorationRemove(decor: any): any {
           category = gDecorations[decor].category;
           if (gDecorationInventories[category].items[i] == decor)
           {
-              gDecorationInventories[category].items[i] = DECOR_NONE;
+              gDecorationInventories[category].items[i] = (0);
               CondenseDecorationsInCategory(category);
               return 1;
           }
@@ -126,7 +126,7 @@ export function CondenseDecorationsInCategory(category: any): any {
       {
           for (j = i + 1; j < gDecorationInventories[category].size; j ++)
           {
-              if (gDecorationInventories[category].items[j] != DECOR_NONE && (gDecorationInventories[category].items[i] == DECOR_NONE || gDecorationInventories[category].items[i] > gDecorationInventories[category].items[j]))
+              if (gDecorationInventories[category].items[j] != (0) && (gDecorationInventories[category].items[i] == (0) || gDecorationInventories[category].items[i] > gDecorationInventories[category].items[j]))
               {
                   tmp = gDecorationInventories[category].items[i];
                   gDecorationInventories[category].items[i] = gDecorationInventories[category].items[j];
@@ -144,7 +144,7 @@ export function GetNumOwnedDecorationsInCategory(category: any): any {
       ct = 0;
       for (i = 0; i < gDecorationInventories[category].size; i++)
       {
-          if (gDecorationInventories[category].items[i] != DECOR_NONE)
+          if (gDecorationInventories[category].items[i] != (0))
               ct++;
       }
 

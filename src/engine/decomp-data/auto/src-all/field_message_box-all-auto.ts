@@ -58,7 +58,7 @@ export function CreateTask_DrawFieldMessage(): any {
 /** static void DestroyTask_DrawFieldMessage(void) */
 export function DestroyTask_DrawFieldMessage(): any {
   let taskId: any = FindTaskIdByFunc(Task_DrawFieldMessage);
-      if (taskId != TASK_NONE)
+      if (taskId != ((0xFF)))
           DestroyTask(taskId);
 }
 

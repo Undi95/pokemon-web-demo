@@ -15,6 +15,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gBattle_WIN0H: any = null;
+let gBattle_WIN0V: any = null;
+let var1: any = null;
 /** void AnimTask_AttackerFadeToInvisible(u8 taskId) */
 export function AnimTask_AttackerFadeToInvisible(taskId: any): any {
   CMD_ARGS(stepDelay);
@@ -183,7 +190,7 @@ export function AnimTearDrop(sprite: any): any {
       let battler: any = null;
       let xOffset: any = null;
 
-      if (cmd.relativeTo == ANIM_ATTACKER)
+      if (cmd.relativeTo == (0))
           battler = gBattleAnimAttacker;
       else
           battler = gBattleAnimTarget;
@@ -249,7 +256,7 @@ export function AnimTask_MoveAttackerMementoShadow(taskId: any): any {
       task.data[14] = pos - 32;
       task.data[15] = pos + 32;
 
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
           task.data[8] = -12;
       else
           task.data[8] = -64;
@@ -260,7 +267,7 @@ export function AnimTask_MoveAttackerMementoShadow(taskId: any): any {
           GetBattleAnimBg1Data(animBg);
           task.data[10] = gBattle_BG1_Y;
           SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_BG1);
-          FillPalette(RGB_BLACK, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
+          FillPalette((RGB(0, 0, 0)), BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
           scanlineParams.dmaDest =REG_BG1VOFS;
           var0 = WINOUT_WIN01_BG1;
           if (!IsContest())
@@ -270,7 +277,7 @@ export function AnimTask_MoveAttackerMementoShadow(taskId: any): any {
       {
           task.data[10] = gBattle_BG2_Y;
           SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT2_ALL | BLDCNT_EFFECT_BLEND | BLDCNT_TGT1_BG2);
-          FillPalette(RGB_BLACK, BG_PLTT_ID(9), PLTT_SIZE_4BPP);
+          FillPalette((RGB(0, 0, 0)), BG_PLTT_ID(9), PLTT_SIZE_4BPP);
           scanlineParams.dmaDest =REG_BG2VOFS;
           var0 = WINOUT_WIN01_BG2;
           if (!IsContest())
@@ -400,12 +407,12 @@ export function AnimTask_MoveTargetMementoShadow(taskId: any): any {
           {
               GetBattleAnimBg1Data(animBg);
               task.data[10] = gBattle_BG1_Y;
-              FillPalette(RGB_BLACK, BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
+              FillPalette((RGB(0, 0, 0)), BG_PLTT_ID(animBg.paletteId), PLTT_SIZE_4BPP);
           }
           else
           {
               task.data[10] = gBattle_BG2_Y;
-              FillPalette(RGB_BLACK, BG_PLTT_ID(9), PLTT_SIZE_4BPP);
+              FillPalette((RGB(0, 0, 0)), BG_PLTT_ID(9), PLTT_SIZE_4BPP);
           }
 
           SetAllBattlersSpritePriority(3);
@@ -419,7 +426,7 @@ export function AnimTask_MoveTargetMementoShadow(taskId: any): any {
           task.data[14] = x - 4;
           task.data[15] = x + 4;
 
-          if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimTarget) == (0))
               task.data[8] = -12;
           else
               task.data[8] = -64;
@@ -598,7 +605,7 @@ export function SetAllBattlersSpritePriority(priority: any): any {
       for (i = 0; i < MAX_BATTLERS_COUNT; i++)
       {
           let spriteId: any = GetAnimBattlerSpriteId(i);
-          if (spriteId != SPRITE_NONE)
+          if (spriteId != (0xFF))
               gSprites[spriteId].oam.priority = priority;
       }
 }
@@ -682,13 +689,13 @@ export function AnimTask_MetallicShine(taskId: any): any {
       }
       else
       {
-          if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+          if (GetBattlerSide(gBattleAnimAttacker) != (0))
               species = GetMonData(gEnemyParty[gBattlerPartyIndexes[gBattleAnimAttacker]], MON_DATA_SPECIES);
           else
               species = GetMonData(gPlayerParty[gBattlerPartyIndexes[gBattleAnimAttacker]], MON_DATA_SPECIES);
       }
 
-      spriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      spriteId = GetAnimBattlerSpriteId((0));
       newSpriteId = CreateInvisibleSpriteCopy(gBattleAnimAttacker, spriteId, species);
 
       GetBattleAnimBg1Data(animBg);
@@ -728,7 +735,7 @@ export function AnimTask_MetallicShine_Step(taskId: any): any {
           gTasks[taskId].data[11]++;
           if (gTasks[taskId].data[11] == 2)
           {
-              spriteId = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+              spriteId = GetAnimBattlerSpriteId((0));
               paletteNum = 16 + gSprites[spriteId].oam.paletteNum;
               if (gTasks[taskId].data[1] == 0)
                   SetGrayscaleOrOriginalPalette(paletteNum, TRUE);
@@ -767,30 +774,30 @@ export function AnimTask_SetGrayscaleOrOriginalPal(taskId: any): any {
 
       switch (cmd.battler)
       {
-      case ANIM_ATTACKER:
-      case ANIM_TARGET:
-      case ANIM_ATK_PARTNER:
-      case ANIM_DEF_PARTNER:
+      case (0):
+      case (1):
+      case (2):
+      case (3):
           spriteId = GetAnimBattlerSpriteId(cmd.battler);
           break;
-      case ANIM_PLAYER_LEFT:
+      case ((MAX_BATTLERS_COUNT + 0)):
           position = B_POSITION_PLAYER_LEFT;
           calcSpriteId = TRUE;
           break;
-      case ANIM_PLAYER_RIGHT:
+      case ((MAX_BATTLERS_COUNT + 1)):
           position = B_POSITION_PLAYER_RIGHT;
           calcSpriteId = TRUE;
           break;
-      case ANIM_OPPONENT_LEFT:
+      case ((MAX_BATTLERS_COUNT + 2)):
           position = B_POSITION_OPPONENT_LEFT;
           calcSpriteId = TRUE;
           break;
-      case ANIM_OPPONENT_RIGHT:
+      case ((MAX_BATTLERS_COUNT + 3)):
           position = B_POSITION_OPPONENT_RIGHT;
           calcSpriteId = TRUE;
           break;
       default:
-          spriteId = SPRITE_NONE;
+          spriteId = (0xFF);
           break;
       }
 
@@ -800,10 +807,10 @@ export function AnimTask_SetGrayscaleOrOriginalPal(taskId: any): any {
           if (IsBattlerSpriteVisible(battler))
               spriteId = gBattlerSpriteIds[battler];
           else
-              spriteId = SPRITE_NONE;
+              spriteId = (0xFF);
       }
 
-      if (spriteId != SPRITE_NONE)
+      if (spriteId != (0xFF))
           SetGrayscaleOrOriginalPalette(gSprites[spriteId].oam.paletteNum + 16, cmd.mode);
 
       DestroyAnimVisualTask(taskId);
@@ -812,10 +819,10 @@ export function AnimTask_SetGrayscaleOrOriginalPal(taskId: any): any {
 /** void GetIsDoomDesireHitTurn(u8 taskId) */
 export function GetIsDoomDesireHitTurn(taskId: any): any {
   if (gAnimMoveTurn < 2)
-          gBattleAnimArgs[ARG_RET_ID] = FALSE;
+          gBattleAnimArgs[(7)] = FALSE;
 
       if (gAnimMoveTurn == 2)
-          gBattleAnimArgs[ARG_RET_ID] = TRUE;
+          gBattleAnimArgs[(7)] = TRUE;
 
       DestroyAnimVisualTask(taskId);
 }

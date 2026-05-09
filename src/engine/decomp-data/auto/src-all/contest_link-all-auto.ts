@@ -15,6 +15,11 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gContestPlayerMonIndex: any = null;
+let gLinkContestFlags: any = null;
+let gNumLinkContestPlayers: any = null;
 /** bool32 LinkContest_SendBlock(void *src, u16 size) */
 export function LinkContest_SendBlock(src: any, size: any): any {
   memcpy(gDecompressionBuffer, src, size);
@@ -55,7 +60,7 @@ export function LinkContest_GetBlockReceivedFromAllPlayers(): any {
 export function Task_LinkContest_Init(taskId: any): any {
   let i: any = null;
 
-      for (i = 0; i < CONTESTANT_COUNT; i++)
+      for (i = 0; i < (4); i++)
           gBlockRecvBuffer[i][0] = 0xFF;
 
       gTasks[taskId].tState = 0;
@@ -76,23 +81,23 @@ export function Task_LinkContest_InitFlags(taskId: any): any {
 
       gContestPlayerMonIndex = GetMultiplayerId();
       gNumLinkContestPlayers = GetLinkPlayerCount();
-      gLinkContestFlags = LINK_CONTEST_FLAG_IS_LINK;
+      gLinkContestFlags = ((1 << 0));
       if (gWirelessCommType == 1)
-          gLinkContestFlags = LINK_CONTEST_FLAG_IS_LINK | LINK_CONTEST_FLAG_IS_WIRELESS;
+          gLinkContestFlags = ((1 << 0)) | ((1 << 1));
 
        
-      for (i = 0; i < gNumLinkContestPlayers && (gLinkPlayers[i].version & 0xFF) - 1 > VERSION_RUBY - 1; i++)
+      for (i = 0; i < gNumLinkContestPlayers && (gLinkPlayers[i].version & 0xFF) - 1 > (2) - 1; i++)
           ;
 
       if (i < gNumLinkContestPlayers)
-          gLinkContestFlags |= LINK_CONTEST_FLAG_HAS_RS_PLAYER;
+          gLinkContestFlags |= ((1 << 2));
 
       SwitchTaskToFollowupFunc(taskId);
 }
 
 /** bool32 LinkContest_TryLinkStandby(s16 *state) */
 export function LinkContest_TryLinkStandby(state: any): any {
-  if (gLinkContestFlags & LINK_CONTEST_FLAG_HAS_RS_PLAYER)
+  if (gLinkContestFlags & ((1 << 2)))
           return TRUE;
 
       switch (state)
@@ -383,14 +388,14 @@ export function Task_LinkContest_CommunicateAppealsState(taskId: any): any {
       case 0:
           if (IsLinkTaskFinished())
           {
-              if (LinkContest_SendBlock(eContestantStatus, CONTESTANT_COUNT * 0) == 1)
+              if (LinkContest_SendBlock(eContestantStatus, (4) * 0) == 1)
                   gTasks[taskId].tState++;
           }
           break;
       case 1:
           if (LinkContest_GetBlockReceivedFromAllPlayers())
           {
-              memcpy(eContestantStatus, gBlockRecvBuffer[gContestLinkLeaderIndex], CONTESTANT_COUNT * 0);
+              memcpy(eContestantStatus, gBlockRecvBuffer[gContestLinkLeaderIndex], (4) * 0);
               gTasks[taskId].tState++;
           }
           break;
@@ -477,7 +482,7 @@ export function Task_LinkContest_CommunicateLeaderIdsRS(taskId: any): any {
       case 1:
           if (LinkContest_GetBlockReceivedFromAllPlayers())
           {
-              for (i = 0; i < CONTESTANT_COUNT; i++)
+              for (i = 0; i < (4); i++)
                   gTasks[taskId].data[((i)) + 5] = gBlockRecvBuffer[i][0];
 
               gTasks[taskId].tState++;

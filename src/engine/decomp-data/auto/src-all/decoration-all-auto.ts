@@ -17,49 +17,30 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCancelDecoratingYesNoFunctions: any = null;
+let gCurDecorationIndex: any = null;
+let gCurDecorationItems: any = null;
+let gMultiuseListMenuTemplate: any = null;
+let gSpecialVar_0x8005: any = null;
+let gSpecialVar_0x8006: any = null;
+let gSpecialVar_0x8007: any = null;
 let sCurDecorMapX: any = null;
 let sCurDecorMapY: any = null;
 let sCurDecorSelectedInRearrangement: any = null;
 let sCurDecorationCategory: any = null;
-let sDecorMenuWindowIds: any = null;
-let sDecorRearrangementDataBuffer: any = null;
-let sDecorSelectorOam: any = null;
-let sDecorShapeSizes: any = null;
-let sDecorTilemaps: any = null;
-let sDecorWhilePlacingSpriteTemplate: any = null;
 let sDecor_CameraSpriteObjectIdx1: any = null;
 let sDecor_CameraSpriteObjectIdx2: any = null;
 let sDecorationActionsCursorPos: any = null;
-let sDecorationCategoryNames: any = null;
-let sDecorationContext: any = null;
-let sDecorationItemsListMenuTemplate: any = null;
 let sDecorationItemsMenu: any = null;
 let sDecorationLastDirectionMoved: any = null;
-let sDecorationMainMenuActions: any = null;
-let sDecorationMenuPalette: any = null;
-let sDecorationMovementInfo: any = null;
-let sDecorationSelectorSpriteTemplate: any = null;
-let sDecorationSlideElevation: any = null;
-let sDecorationStandElevations: any = null;
-let sDecorationWindowTemplates: any = null;
 let sDecorationsCursorPos: any = null;
 let sDecorationsScrollOffset: any = null;
 let sNumOwnedDecorationsInCurCategory: any = null;
-let sPlaceDecorationGraphicsDataBuffer: any = null;
-let sPlaceDecorationYesNoFunctions: any = null;
-let sPlacePutAwayYesNoFunctions: any = null;
-let sPlayerRoomItemsIndicesBuffer: any = null;
-let sPuttingAwayCursorSpriteTemplate: any = null;
-let sReturnDecorationYesNoFunctions: any = null;
-let sSecretBaseItemsIndicesBuffer: any = null;
-let sSecretBasePCMenuItemDescriptions: any = null;
-let sSecretBasePC_SelectedDecorationActions: any = null;
-let sSpritePal_PlaceDecoration: any = null;
-let sSpritePal_PuttingAwayCursorBrendan: any = null;
-let sSpritePal_PuttingAwayCursorMay: any = null;
-let sStopPuttingAwayDecorationsYesNoFunctions: any = null;
-let sTossDecorationYesNoFunctions: any = null;
+let tButton: any = null;
+let tDecorHeight: any = null;
+let tDecorWidth: any = null;
+let tDecorationItemsMenuCommand: any = null;
+let tMenuTaskId: any = null;
+let tState: any = null;
 /** void InitDecorationContextItems(void) */
 export function InitDecorationContextItems(): any {
   if (sCurDecorationCategory < DECORCAT_COUNT)
@@ -131,7 +112,7 @@ export function DoSecretBaseDecorationMenu(taskId: any): any {
   InitDecorationActionsWindow();
       sDecorationContext.items = gSaveBlock1Ptr.secretBases[0].decorations;
       sDecorationContext.pos = gSaveBlock1Ptr.secretBases[0].decorationPositions;
-      sDecorationContext.size = DECOR_MAX_SECRET_BASE;
+      sDecorationContext.size = (16);
       sDecorationContext.isPlayerRoom = FALSE;
       gTasks[taskId].func = HandleDecorationActionsMenuInput;
 }
@@ -141,7 +122,7 @@ export function DoPlayerRoomDecorationMenu(taskId: any): any {
   InitDecorationActionsWindow();
       sDecorationContext.items = gSaveBlock1Ptr.playerRoomDecorations;
       sDecorationContext.pos = gSaveBlock1Ptr.playerRoomDecorationPositions;
-      sDecorationContext.size = DECOR_MAX_PLAYERS_HOUSE;
+      sDecorationContext.size = (12);
       sDecorationContext.isPlayerRoom = TRUE;
       gTasks[taskId].func = HandleDecorationActionsMenuInput;
 }
@@ -154,16 +135,16 @@ export function HandleDecorationActionsMenuInput(taskId: any): any {
           switch (Menu_ProcessInput())
           {
           default:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sDecorationMainMenuActions[sDecorationActionsCursorPos].func.void_u8(taskId);
               break;
-          case MENU_NOTHING_CHOSEN:
+          case (-2):
               sDecorationActionsCursorPos = Menu_GetCursorPos();
               if (menuPos != sDecorationActionsCursorPos)
                   PrintCurMainMenuDescription();
               break;
-          case MENU_B_PRESSED:
-              PlaySE(SE_SELECT);
+          case (-1):
+              PlaySE((5));
               DecorationMenuAction_Cancel(taskId);
               break;
           }
@@ -173,7 +154,7 @@ export function HandleDecorationActionsMenuInput(taskId: any): any {
 /** static void PrintCurMainMenuDescription(void) */
 export function PrintCurMainMenuDescription(): any {
   FillWindowPixelBuffer(0, PIXEL_FILL(1));
-      AddTextPrinterParameterized2(0, FONT_NORMAL, sSecretBasePCMenuItemDescriptions[sDecorationActionsCursorPos], 0, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(0, FONT_NORMAL, sSecretBasePCMenuItemDescriptions[sDecorationActionsCursorPos], 0, 0, (0x2), (0x1), (0x3));
 }
 
 /** static void DecorationMenuAction_Decorate(u8 taskId) */
@@ -202,7 +183,7 @@ export function DecorationMenuAction_PutAway(taskId: any): any {
       {
           RemoveDecorationWindow(WINDOW_MAIN_MENU);
           ClearDialogWindowAndFrame(0, FALSE);
-          FadeScreen(FADE_TO_BLACK, 0);
+          FadeScreen((1), 0);
           gTasks[taskId].tState = 0;
           gTasks[taskId].func = Task_ContinuePuttingAwayDecorations;
       }
@@ -281,9 +262,9 @@ export function PrintDecorationCategoryMenuItems(taskId: any): any {
       {
            
           if (shouldDisable == TRUE && i != DECORCAT_DOLL && i != DECORCAT_CUSHION)
-              PrintDecorationCategoryMenuItem(windowId, i, 8, i * 16, TRUE, TEXT_SKIP_DRAW);
+              PrintDecorationCategoryMenuItem(windowId, i, 8, i * 16, TRUE, (0xFF));
           else
-              PrintDecorationCategoryMenuItem(windowId, i, 8, i * 16, FALSE, TEXT_SKIP_DRAW);
+              PrintDecorationCategoryMenuItem(windowId, i, 8, i * 16, FALSE, (0xFF));
       }
 
       AddTextPrinterParameterized(windowId, FONT_NORMAL, gTasks[taskId].tDecorationMenuCommand == (2) ? gText_Exit : gText_Cancel, 8, i * 16 + 1, 0, NULL);
@@ -302,7 +283,7 @@ export function PrintDecorationCategoryMenuItem(winid: any, category: any, x: an
       StringCopy(str, sDecorationCategoryNames[category]);
       AddTextPrinterParameterized(winid, FONT_NORMAL, gStringVar4, x, y, speed, NULL);
       str = ConvertIntToDecimalStringN(str, GetNumOwnedDecorationsInCategory(category), STR_CONV_MODE_RIGHT_ALIGN, 2);
-      str =  CHAR_SLASH;
+      str =  (0xBA);
       ConvertIntToDecimalStringN(str, gDecorationInventories[category].size, STR_CONV_MODE_RIGHT_ALIGN, 2);
       x = GetStringRightAlignXOffset(FONT_NORMAL, gStringVar4, width);
       AddTextPrinterParameterized(winid, FONT_NORMAL, gStringVar4, x, y, speed, NULL);
@@ -330,15 +311,15 @@ export function HandleDecorationCategoriesMenuInput(taskId: any): any {
           let input: any = Menu_ProcessInput();
           switch (input)
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case DECORCAT_COUNT:  
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ExitDecorationCategoriesMenu(taskId);
               break;
-          case MENU_NOTHING_CHOSEN:
+          case (-2):
               break;
           default:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sCurDecorationCategory = input;
               SelectDecorationCategory(taskId);
               break;
@@ -448,7 +429,7 @@ export function PrintDecorationItemMenuItems(taskId: any): any {
 
       StringCopy(sDecorationItemsMenu.names[i], gText_Cancel);
       sDecorationItemsMenu.items[i].name = sDecorationItemsMenu.names[i];
-      sDecorationItemsMenu.items[i].id = LIST_CANCEL;
+      sDecorationItemsMenu.items[i].id = (-2);
       gMultiuseListMenuTemplate = sDecorationItemsListMenuTemplate;
       gMultiuseListMenuTemplate.windowId = sDecorMenuWindowIds[WINDOW_DECORATION_CATEGORIES];
       gMultiuseListMenuTemplate.totalItems = sDecorationItemsMenu.numMenuItems;
@@ -465,25 +446,25 @@ export function CopyDecorationMenuItemName(dest: any, decoration: any): any {
 /** static void DecorationItemsMenu_OnCursorMove(s32 itemIndex, bool8 flag, struct ListMenu *menu) */
 export function DecorationItemsMenu_OnCursorMove(itemIndex: any, flag: any, menu: any): any {
   if (flag != TRUE)
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 
       PrintDecorationItemDescription(itemIndex);
 }
 
 /** static void DecorationItemsMenu_PrintDecorationInUse(u8 windowId, u32 itemIndex, u8 y) */
 export function DecorationItemsMenu_PrintDecorationInUse(windowId: any, itemIndex: any, y: any): any {
-  if (itemIndex != LIST_CANCEL)
+  if (itemIndex != (-2))
       {
           if (IsDecorationIndexInSecretBase(itemIndex + 1) == TRUE)
-              BlitMenuInfoIcon(windowId, MENU_INFO_ICON_BALL_RED, 92, y + 2);
+              BlitMenuInfoIcon(windowId, (((18) + 6)), 92, y + 2);
           else if (IsDecorationIndexInPlayersRoom(itemIndex + 1) == TRUE)
-              BlitMenuInfoIcon(windowId, MENU_INFO_ICON_BALL_BLUE, 92, y + 2);
+              BlitMenuInfoIcon(windowId, (((18) + 7)), 92, y + 2);
       }
 }
 
 /** static void AddDecorationItemsScrollIndicators(void) */
 export function AddDecorationItemsScrollIndicators(): any {
-  if (sDecorationItemsMenu.scrollIndicatorsTaskId == TASK_NONE)
+  if (sDecorationItemsMenu.scrollIndicatorsTaskId == ((0xFF)))
       {
           sDecorationItemsMenu.scrollIndicatorsTaskId = AddScrollIndicatorArrowPairParameterized(
               SCROLL_ARROW_UP,
@@ -498,10 +479,10 @@ export function AddDecorationItemsScrollIndicators(): any {
 
 /** static void RemoveDecorationItemsScrollIndicators(void) */
 export function RemoveDecorationItemsScrollIndicators(): any {
-  if (sDecorationItemsMenu.scrollIndicatorsTaskId != TASK_NONE)
+  if (sDecorationItemsMenu.scrollIndicatorsTaskId != ((0xFF)))
       {
           RemoveScrollIndicatorArrowPair(sDecorationItemsMenu.scrollIndicatorsTaskId);
-          sDecorationItemsMenu.scrollIndicatorsTaskId = TASK_NONE;
+          sDecorationItemsMenu.scrollIndicatorsTaskId = ((0xFF));
       }
 }
 
@@ -517,7 +498,7 @@ export function InitDecorationItemsWindow(taskId: any): any {
       AddDecorationWindow(WINDOW_DECORATION_CATEGORY_ITEMS);
       ShowDecorationCategorySummaryWindow(sCurDecorationCategory);
       sDecorationItemsMenu = AllocZeroed(0);
-      sDecorationItemsMenu.scrollIndicatorsTaskId = TASK_NONE;
+      sDecorationItemsMenu.scrollIndicatorsTaskId = ((0xFF));
       InitDecorationItemsMenuLimits();
       InitDecorationItemsMenuScrollAndCursor();
       InitDecorationItemsMenuScrollAndCursor2();
@@ -544,14 +525,14 @@ export function HandleDecorationItemsMenuInput(taskId: any): any {
           ListMenuGetScrollAndRow(tMenuTaskId,sDecorationsScrollOffset,sDecorationsCursorPos);
           switch (input)
           {
-          case LIST_NOTHING_CHOSEN:
+          case (-1):
               break;
-          case LIST_CANCEL:
-              PlaySE(SE_SELECT);
+          case (-2):
+              PlaySE((5));
               sSecretBasePC_SelectedDecorationActions[tDecorationMenuCommand][1](taskId);
               break;
           default:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               gCurDecorationIndex = input;
               RemoveDecorationItemsScrollIndicators();
               DestroyListMenuTask(tMenuTaskId,sDecorationsScrollOffset,sDecorationsCursorPos);
@@ -625,7 +606,7 @@ export function IdentifyOwnedDecorationsCurrentlyInUseInternal(taskId: any): any
 
       for (i = 0; i < ARRAY_COUNT(sSecretBaseItemsIndicesBuffer); i++)
       {
-          if (gSaveBlock1Ptr.secretBases[0].decorations[i] != DECOR_NONE)
+          if (gSaveBlock1Ptr.secretBases[0].decorations[i] != (0))
           {
               for (j = 0; j < gDecorationInventories[sCurDecorationCategory].size; j++)
               {
@@ -648,7 +629,7 @@ export function IdentifyOwnedDecorationsCurrentlyInUseInternal(taskId: any): any
       count = 0;
       for (i = 0; i < ARRAY_COUNT(sPlayerRoomItemsIndicesBuffer); i++)
       {
-          if (gSaveBlock1Ptr.playerRoomDecorations[i] != DECOR_NONE)
+          if (gSaveBlock1Ptr.playerRoomDecorations[i] != (0))
           {
               for (j = 0; j < gDecorationInventories[sCurDecorationCategory].size; j++)
               {
@@ -732,7 +713,7 @@ export function SetInitialPositions(taskId: any): any {
 /** static void WarpToInitialPosition(u8 taskId) */
 export function WarpToInitialPosition(taskId: any): any {
   DrawWholeMapView();
-      SetWarpDestination(gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE, gTasks[taskId].tInitialX, gTasks[taskId].tInitialY);
+      SetWarpDestination(gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)), gTasks[taskId].tInitialX, gTasks[taskId].tInitialY);
       WarpIntoMap();
 }
 
@@ -741,11 +722,11 @@ export function GetDecorationElevation(decoration: any, tileIndex: any): any {
   let elevation: any = ELEVATION_INVALID;
       switch (decoration)
       {
-      case DECOR_STAND:
-          elevation = sDecorationStandElevations[tileIndex] << MAPGRID_ELEVATION_SHIFT;
+      case (38):
+          elevation = sDecorationStandElevations[tileIndex] << (12);
           return elevation;
-      case DECOR_SLIDE:
-          elevation = sDecorationSlideElevation[tileIndex] << MAPGRID_ELEVATION_SHIFT;
+      case (34):
+          elevation = sDecorationSlideElevation[tileIndex] << (12);
           return elevation;
       default:
           return elevation;
@@ -767,10 +748,10 @@ export function ShowDecorationOnMap_(mapX: any, mapY: any, decWidth: any, decHei
           for (i = 0; i < decWidth; i++)
           {
               x = mapX + i;
-              attributes = GetMetatileAttributesById(NUM_TILES_IN_PRIMARY + gDecorations[decoration].tiles[j * decWidth + i]);
+              attributes = GetMetatileAttributesById((512) + gDecorations[decoration].tiles[j * decWidth + i]);
               if (MetatileBehavior_IsSecretBaseImpassable(UNPACK_BEHAVIOR(attributes)) == TRUE
-               || (gDecorations[decoration].permission != DECORPERM_PASS_FLOOR && (attributes >> METATILE_ATTR_LAYER_SHIFT) != METATILE_LAYER_TYPE_NORMAL))
-                  impassableFlag = MAPGRID_IMPASSABLE;
+               || (gDecorations[decoration].permission != DECORPERM_PASS_FLOOR && (attributes >> (12)) != METATILE_LAYER_TYPE_NORMAL))
+                  impassableFlag = ((0x0C00));
               else
                   impassableFlag = 0;
 
@@ -782,9 +763,9 @@ export function ShowDecorationOnMap_(mapX: any, mapY: any, decWidth: any, decHei
 
               elevation = GetDecorationElevation(gDecorations[decoration].id, j * decWidth + i);
               if (elevation != ELEVATION_INVALID)
-                  MapGridSetMetatileEntryAt(x, y, (gDecorations[decoration].tiles[j * decWidth + i] + (NUM_TILES_IN_PRIMARY | overlapsWall)) | impassableFlag | elevation);
+                  MapGridSetMetatileEntryAt(x, y, (gDecorations[decoration].tiles[j * decWidth + i] + ((512) | overlapsWall)) | impassableFlag | elevation);
               else
-                  MapGridSetMetatileIdAt(x, y, (gDecorations[decoration].tiles[j * decWidth + i] + (NUM_TILES_IN_PRIMARY | overlapsWall)) | impassableFlag);
+                  MapGridSetMetatileIdAt(x, y, (gDecorations[decoration].tiles[j * decWidth + i] + ((512) | overlapsWall)) | impassableFlag);
           }
       }
 }
@@ -831,19 +812,19 @@ export function SetDecoration(): any {
   let i: any = null;
       let j: any = null;
 
-      for (i = 0; i < ((FLAG_DECORATION_14 - FLAG_DECORATION_1 + 1)); i++)
+      for (i = 0; i < (((0xBB) - (0xAE) + 1)); i++)
       {
-          if (FlagGet(FLAG_DECORATION_1 + i) == TRUE)
+          if (FlagGet((0xAE) + i) == TRUE)
           {
-              FlagClear(FLAG_DECORATION_1 + i);
+              FlagClear((0xAE) + i);
               for (j = 0; j < gMapHeader.events.objectEventCount; j++)
               {
-                  if (gMapHeader.events.objectEvents[j].flagId == FLAG_DECORATION_1 + i)
+                  if (gMapHeader.events.objectEvents[j].flagId == (0xAE) + i)
                       break;
               }
 
               VarSet(
-                  VAR_OBJ_GFX_ID_0 + (gMapHeader.events.objectEvents[j].graphicsId - OBJ_EVENT_GFX_VAR_0),
+                  (0x4010) + (gMapHeader.events.objectEvents[j].graphicsId - (((((239) + 1)) + 0x0))),
                   sPlaceDecorationGraphicsDataBuffer.decoration.tiles[0]);
 
               gSpecialVar_0x8005 = gMapHeader.events.objectEvents[j].localId;
@@ -862,7 +843,7 @@ export function HasDecorationSpace(): any {
   let i: any = null;
       for (i = 0; i < sDecorationContext.size; i++)
       {
-          if (sDecorationContext.items[i] == DECOR_NONE)
+          if (sDecorationContext.items[i] == (0))
               return TRUE;
       }
 
@@ -880,7 +861,7 @@ export function DecorationItemsMenuAction_AttemptPlace(taskId: any): any {
       {
           if (HasDecorationSpace() == TRUE)
           {
-              FadeScreen(FADE_TO_BLACK, 0);
+              FadeScreen((1), 0);
               gTasks[taskId].tState = 0;
               gTasks[taskId].func = Task_PlaceDecoration;
           }
@@ -953,10 +934,10 @@ export function SetUpPlacingDecorationPlayerAvatar(taskId: any, data: any): any 
       if (data.decoration.shape == DECORSHAPE_3x1 || data.decoration.shape == DECORSHAPE_3x3 || data.decoration.shape == DECORSHAPE_3x2)
           x -= 8;
 
-      if (gSaveBlock2Ptr.playerGender == MALE)
-          sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_BRENDAN_DECORATING, SpriteCallbackDummy, x, 72, 0);
+      if (gSaveBlock2Ptr.playerGender == (0))
+          sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite((193), SpriteCallbackDummy, x, 72, 0);
       else
-          sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_MAY_DECORATING, SpriteCallbackDummy, x, 72, 0);
+          sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite((194), SpriteCallbackDummy, x, 72, 0);
 
       gSprites[sDecor_CameraSpriteObjectIdx2].oam.priority = 1;
       DestroySprite(gSprites[sDecor_CameraSpriteObjectIdx1]);
@@ -1039,8 +1020,8 @@ export function IsSecretBaseTrainerSpot(behaviorAt: any, layerType: any): any {
 
 /** static bool8 IsntInitialPosition(u8 taskId, s16 x, s16 y, u16 layerType) */
 export function IsntInitialPosition(taskId: any, x: any, y: any, layerType: any): any {
-  if (x == gTasks[taskId].tInitialX + MAP_OFFSET
-       && y == gTasks[taskId].tInitialY + MAP_OFFSET
+  if (x == gTasks[taskId].tInitialX + (7)
+       && y == gTasks[taskId].tInitialY + (7)
        && layerType != METATILE_LAYER_TYPE_NORMAL)
           return FALSE;
       return TRUE;
@@ -1050,7 +1031,7 @@ export function IsntInitialPosition(taskId: any, x: any, y: any, layerType: any)
 export function IsFloorOrBoardAndHole(behaviorAt: any, decoration: any): any {
   if (MetatileBehavior_IsSecretBaseTrainerSpot(behaviorAt) != TRUE)
       {
-          if (decoration.id == DECOR_SOLID_BOARD && MetatileBehavior_IsSecretBaseHole(behaviorAt) == TRUE)
+          if (decoration.id == (33) && MetatileBehavior_IsSecretBaseHole(behaviorAt) == TRUE)
               return TRUE;
 
           if (MetatileBehavior_IsNormal(behaviorAt))
@@ -1084,7 +1065,7 @@ export function CanPlaceDecoration(taskId: any, decoration: any): any {
               {
                   curX = gTasks[taskId].tCursorX + j;
                   behaviorAt = MapGridGetMetatileBehaviorAt(curX, curY);
-                  layerType = GetMetatileAttributesById((NUM_TILES_IN_PRIMARY + decoration.tiles[(mapY - 1 - i) * mapX + j])) & METATILE_ATTR_LAYER_MASK;
+                  layerType = GetMetatileAttributesById(((512) + decoration.tiles[(mapY - 1 - i) * mapX + j])) & (0xF000);
                   if (!IsFloorOrBoardAndHole(behaviorAt, decoration))
                       return FALSE;
 
@@ -1092,7 +1073,7 @@ export function CanPlaceDecoration(taskId: any, decoration: any): any {
                       return FALSE;
 
                   behaviorAt = GetObjectEventIdByPosition(curX, curY, 0);
-                  if (behaviorAt != 0 && behaviorAt != OBJECT_EVENTS_COUNT)
+                  if (behaviorAt != 0 && behaviorAt != (16))
                       return FALSE;
               }
           }
@@ -1105,14 +1086,14 @@ export function CanPlaceDecoration(taskId: any, decoration: any): any {
               {
                   curX = gTasks[taskId].tCursorX + j;
                   behaviorAt = MapGridGetMetatileBehaviorAt(curX, curY);
-                  layerType = GetMetatileAttributesById((NUM_TILES_IN_PRIMARY + decoration.tiles[(mapY - 1 - i) * mapX + j])) & METATILE_ATTR_LAYER_MASK;
+                  layerType = GetMetatileAttributesById(((512) + decoration.tiles[(mapY - 1 - i) * mapX + j])) & (0xF000);
                   if (!MetatileBehavior_IsNormal(behaviorAt) && !IsSecretBaseTrainerSpot(behaviorAt, layerType))
                       return FALSE;
 
                   if (!IsntInitialPosition(taskId, curX, curY, layerType))
                       return FALSE;
 
-                  if (GetObjectEventIdByPosition(curX, curY, 0) != OBJECT_EVENTS_COUNT)
+                  if (GetObjectEventIdByPosition(curX, curY, 0) != (16))
                       return FALSE;
               }
           }
@@ -1122,7 +1103,7 @@ export function CanPlaceDecoration(taskId: any, decoration: any): any {
           {
               curX = gTasks[taskId].tCursorX + j;
               behaviorAt = MapGridGetMetatileBehaviorAt(curX, curY);
-              layerType = GetMetatileAttributesById((NUM_TILES_IN_PRIMARY + decoration.tiles[j])) & METATILE_ATTR_LAYER_MASK;
+              layerType = GetMetatileAttributesById(((512) + decoration.tiles[j])) & (0xF000);
               if (!MetatileBehavior_IsNormal(behaviorAt) && !MetatileBehavior_IsSecretBaseNorthWall(behaviorAt))
                   return FALSE;
 
@@ -1130,7 +1111,7 @@ export function CanPlaceDecoration(taskId: any, decoration: any): any {
                   return FALSE;
 
               behaviorAt = GetObjectEventIdByPosition(curX, curY, 0);
-              if (behaviorAt != 0 && behaviorAt != OBJECT_EVENTS_COUNT)
+              if (behaviorAt != 0 && behaviorAt != (16))
                   return FALSE;
           }
           break;
@@ -1144,7 +1125,7 @@ export function CanPlaceDecoration(taskId: any, decoration: any): any {
                   if (!MetatileBehavior_IsSecretBaseNorthWall(MapGridGetMetatileBehaviorAt(curX, curY)))
                       return FALSE;
 
-                  if (MapGridGetMetatileIdAt(curX, curY + 1) == METATILE_SecretBase_SandOrnament_BrokenBase)
+                  if (MapGridGetMetatileIdAt(curX, curY + 1) == (0x28C))
                       return FALSE;
               }
           }
@@ -1166,7 +1147,7 @@ export function CanPlaceDecoration(taskId: any, decoration: any): any {
                       return FALSE;
               }
 
-              if (GetObjectEventIdByPosition(curX, curY, 0) != OBJECT_EVENTS_COUNT)
+              if (GetObjectEventIdByPosition(curX, curY, 0) != (16))
                   return FALSE;
           }
           break;
@@ -1183,7 +1164,7 @@ export function AttemptPlaceDecoration_(taskId: any): any {
       }
       else
       {
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           StringExpandPlaceholders(gStringVar4, gText_CantBePlacedHere);
           DisplayItemMessageOnField(taskId, gStringVar4, CantPlaceDecorationPrompt);
       }
@@ -1205,8 +1186,8 @@ export function PlaceDecoration(taskId: any): any {
       }
       else
       {
-          sCurDecorMapX = gTasks[taskId].tCursorX - MAP_OFFSET;
-          sCurDecorMapY = gTasks[taskId].tCursorY - MAP_OFFSET;
+          sCurDecorMapX = gTasks[taskId].tCursorX - (7);
+          sCurDecorMapY = gTasks[taskId].tCursorY - (7);
           ScriptContext_SetupScript(SecretBase_EventScript_SetDecoration);
       }
 
@@ -1223,19 +1204,19 @@ export function PlaceDecoration_(taskId: any): any {
 
       for (i = 0; i < sDecorationContext.size; i++)
       {
-          if (sDecorationContext.items[i] == DECOR_NONE)
+          if (sDecorationContext.items[i] == (0))
           {
               sDecorationContext.items[i] = gCurDecorationItems[gCurDecorationIndex];
-              sDecorationContext.pos[i] = ((gTasks[taskId].tCursorX - MAP_OFFSET) << 4) + (gTasks[taskId].tCursorY - MAP_OFFSET);
+              sDecorationContext.pos[i] = ((gTasks[taskId].tCursorX - (7)) << 4) + (gTasks[taskId].tCursorY - (7));
               break;
           }
       }
 
       if (!sDecorationContext.isPlayerRoom)
       {
-          for (i = 0; i < DECOR_MAX_SECRET_BASE; i++)
+          for (i = 0; i < (16); i++)
           {
-              if (sSecretBaseItemsIndicesBuffer[i] == DECOR_NONE)
+              if (sSecretBaseItemsIndicesBuffer[i] == (0))
               {
                   sSecretBaseItemsIndicesBuffer[i] = gCurDecorationIndex + 1;
                   break;
@@ -1244,9 +1225,9 @@ export function PlaceDecoration_(taskId: any): any {
       }
       else
       {
-          for (i = 0; i < DECOR_MAX_PLAYERS_HOUSE; i++)
+          for (i = 0; i < (12); i++)
           {
-              if (sPlayerRoomItemsIndicesBuffer[i] == DECOR_NONE)
+              if (sPlayerRoomItemsIndicesBuffer[i] == (0))
               {
                   sPlayerRoomItemsIndicesBuffer[i] = gCurDecorationIndex + 1;
                   break;
@@ -1269,7 +1250,7 @@ export function CancelDecorating(taskId: any): any {
 
 /** static void CancelDecorating_(u8 taskId) */
 export function CancelDecorating_(taskId: any): any {
-  FadeScreen(FADE_TO_BLACK, 0);
+  FadeScreen((1), 0);
       gTasks[taskId].tState = 0;
       gTasks[taskId].func = c1_overworld_prev_quest;
 }
@@ -1334,25 +1315,25 @@ export function FieldCB_InitDecorationItemsWindow(): any {
 /** static bool8 ApplyCursorMovement_IsInvalid(u8 taskId) */
 export function ApplyCursorMovement_IsInvalid(taskId: any): any {
   let data: any = gTasks[taskId].data;
-      if (sDecorationLastDirectionMoved == DIR_SOUTH && tCursorY - tDecorHeight - 6 < 0)
+      if (sDecorationLastDirectionMoved == (1) && tCursorY - tDecorHeight - 6 < 0)
       {
           tCursorY++;
           return FALSE;
       }
 
-      if (sDecorationLastDirectionMoved == DIR_NORTH && tCursorY - 7 >= gMapHeader.mapLayout.height)
+      if (sDecorationLastDirectionMoved == (2) && tCursorY - 7 >= gMapHeader.mapLayout.height)
       {
           tCursorY--;
           return FALSE;
       }
 
-      if (sDecorationLastDirectionMoved == DIR_WEST && tCursorX - 7 < 0)
+      if (sDecorationLastDirectionMoved == (3) && tCursorX - 7 < 0)
       {
           tCursorX++;
           return FALSE;
       }
 
-      if (sDecorationLastDirectionMoved == DIR_EAST && tCursorX + tDecorWidth - 8 >= gMapHeader.mapLayout.width)
+      if (sDecorationLastDirectionMoved == (4) && tCursorX + tDecorWidth - 8 >= gMapHeader.mapLayout.width)
       {
           tCursorX--;
           return FALSE;
@@ -1396,7 +1377,7 @@ export function Task_SelectLocation(taskId: any): any {
 
           if ((JOY_HELD(DPAD_ANY)) == DPAD_UP)
           {
-              sDecorationLastDirectionMoved = DIR_SOUTH;
+              sDecorationLastDirectionMoved = (1);
               gSprites[sDecor_CameraSpriteObjectIdx1].data[2] =  0;
               gSprites[sDecor_CameraSpriteObjectIdx1].data[3] = -2;
               tCursorY--;
@@ -1404,7 +1385,7 @@ export function Task_SelectLocation(taskId: any): any {
 
           if ((JOY_HELD(DPAD_ANY)) == DPAD_DOWN)
           {
-              sDecorationLastDirectionMoved = DIR_NORTH;
+              sDecorationLastDirectionMoved = (2);
               gSprites[sDecor_CameraSpriteObjectIdx1].data[2] =  0;
               gSprites[sDecor_CameraSpriteObjectIdx1].data[3] =  2;
               tCursorY++;
@@ -1412,7 +1393,7 @@ export function Task_SelectLocation(taskId: any): any {
 
           if ((JOY_HELD(DPAD_ANY)) == DPAD_LEFT)
           {
-              sDecorationLastDirectionMoved = DIR_WEST;
+              sDecorationLastDirectionMoved = (3);
               gSprites[sDecor_CameraSpriteObjectIdx1].data[2] = -2;
               gSprites[sDecor_CameraSpriteObjectIdx1].data[3] =  0;
               tCursorX--;
@@ -1420,7 +1401,7 @@ export function Task_SelectLocation(taskId: any): any {
 
           if ((JOY_HELD(DPAD_ANY)) == DPAD_RIGHT)
           {
-              sDecorationLastDirectionMoved = DIR_EAST;
+              sDecorationLastDirectionMoved = (4);
               gSprites[sDecor_CameraSpriteObjectIdx1].data[2] =  2;
               gSprites[sDecor_CameraSpriteObjectIdx1].data[3] =  0;
               tCursorX++;
@@ -1533,7 +1514,7 @@ export function SetDecorSelectionMetatiles(data: any): any {
       shape = data.decoration.shape;
       for (i = 0; i < sDecorTilemaps[shape].size; i++)
       {
-          data.tiles[sDecorTilemaps[shape].tiles[i]] = GetMetatile(data.decoration.tiles[sDecorTilemaps[shape].y[i]] * NUM_TILES_PER_METATILE + sDecorTilemaps[shape].x[i]);
+          data.tiles[sDecorTilemaps[shape].tiles[i]] = GetMetatile(data.decoration.tiles[sDecorTilemaps[shape].y[i]] * (8) + sDecorTilemaps[shape].x[i]);
       }
 }
 
@@ -1593,7 +1574,7 @@ export function gpu_pal_decompress_alloc_tag_and_upload(data: any, decor: any): 
       SetDecorSelectionMetatiles(data);
       SetDecorSelectionBoxOamAttributes(data.decoration.shape);
       SetDecorSelectionBoxTiles(data);
-      CopyPalette(data.palette, (gTilesetPointer_SecretBaseRedCave.metatiles)[(data.decoration.tiles[0] * NUM_TILES_PER_METATILE) + 7] >> 12);
+      CopyPalette(data.palette, (gTilesetPointer_SecretBaseRedCave.metatiles)[(data.decoration.tiles[0] * (8)) + 7] >> 12);
       LoadSpritePalette(sSpritePal_PlaceDecoration);
       return CreateSprite(sDecorationSelectorSpriteTemplate, 0, 0, 0);
 }
@@ -1606,7 +1587,7 @@ export function AddDecorationIconObjectFromIconTable(tilesTag: any, paletteTag: 
       let spriteId: any = null;
 
       if (!AllocItemIconTemporaryBuffers())
-          return MAX_SPRITES;
+          return (64);
 
       LZDecompressWram(GetDecorationIconPicOrPalette(decor, 0), gItemIconDecompressionBuffer);
       CopyItemIconPicTo4x4Buffer(gItemIconDecompressionBuffer, gItemIcon4x4Buffer);
@@ -1641,7 +1622,7 @@ export function AddDecorationIconObjectFromObjectEvent(tilesTag: any, paletteTag
           SetDecorSelectionMetatiles(sPlaceDecorationGraphicsDataBuffer);
           SetDecorSelectionBoxOamAttributes(sPlaceDecorationGraphicsDataBuffer.decoration.shape);
           SetDecorSelectionBoxTiles(sPlaceDecorationGraphicsDataBuffer);
-          CopyPalette(sPlaceDecorationGraphicsDataBuffer.palette, (gTilesetPointer_SecretBaseRedCave.metatiles)[(sPlaceDecorationGraphicsDataBuffer.decoration.tiles[0] * NUM_TILES_PER_METATILE) + 7] >> 12);
+          CopyPalette(sPlaceDecorationGraphicsDataBuffer.palette, (gTilesetPointer_SecretBaseRedCave.metatiles)[(sPlaceDecorationGraphicsDataBuffer.decoration.tiles[0] * (8)) + 7] >> 12);
           sheet.data = sPlaceDecorationGraphicsDataBuffer.image;
           sheet.size = sDecorShapeSizes[sPlaceDecorationGraphicsDataBuffer.decoration.shape] * TILE_SIZE_4BPP;
           sheet.tag = tilesTag;
@@ -1667,11 +1648,11 @@ export function AddDecorationIconObjectFromObjectEvent(tilesTag: any, paletteTag
 export function AddDecorationIconObject(decor: any, x: any, y: any, priority: any, tilesTag: any, paletteTag: any): any {
   let spriteId: any = null;
 
-      if (decor > NUM_DECORATIONS)
+      if (decor > ((120)))
       {
-          spriteId = AddDecorationIconObjectFromIconTable(tilesTag, paletteTag, DECOR_NONE);
-          if (spriteId == MAX_SPRITES)
-              return MAX_SPRITES;
+          spriteId = AddDecorationIconObjectFromIconTable(tilesTag, paletteTag, (0));
+          if (spriteId == (64))
+              return (64);
 
           gSprites[spriteId].x2 = x + 4;
           gSprites[spriteId].y2 = y + 4;
@@ -1679,11 +1660,11 @@ export function AddDecorationIconObject(decor: any, x: any, y: any, priority: an
       else if (gDecorIconTable[decor][0] == NULL)
       {
           spriteId = AddDecorationIconObjectFromObjectEvent(tilesTag, paletteTag, decor);
-          if (spriteId == MAX_SPRITES)
-              return MAX_SPRITES;
+          if (spriteId == (64))
+              return (64);
 
           gSprites[spriteId].x2 = x;
-          if (decor == DECOR_SILVER_SHIELD || decor == DECOR_GOLD_SHIELD)
+          if (decor == (42) || decor == (43))
               gSprites[spriteId].y2 = y - 4;
           else
               gSprites[spriteId].y2 = y;
@@ -1691,8 +1672,8 @@ export function AddDecorationIconObject(decor: any, x: any, y: any, priority: an
       else
       {
           spriteId = AddDecorationIconObjectFromIconTable(tilesTag, paletteTag, decor);
-          if (spriteId == MAX_SPRITES)
-              return MAX_SPRITES;
+          if (spriteId == (64))
+              return (64);
 
           gSprites[spriteId].x2 = x + 4;
           gSprites[spriteId].y2 = y + 4;
@@ -1704,7 +1685,7 @@ export function AddDecorationIconObject(decor: any, x: any, y: any, priority: an
 
 /** static void ClearDecorationContextIndex(u8 idx) */
 export function ClearDecorationContextIndex(idx: any): any {
-  sDecorationContext.items[idx] = DECOR_NONE;
+  sDecorationContext.items[idx] = (0);
       sDecorationContext.pos[idx] = 0;
 }
 
@@ -1767,7 +1748,7 @@ export function ClearRearrangementNonSprites(): any {
               {
                   for (x = 0; x < sDecorRearrangementDataBuffer[i].width; x++)
                   {
-                      MapGridSetMetatileEntryAt(posX + MAP_OFFSET + x, posY + MAP_OFFSET - y, gMapHeader.mapLayout.map[posX + x + gMapHeader.mapLayout.width * (posY - y)] | 0x3000);
+                      MapGridSetMetatileEntryAt(posX + (7) + x, posY + (7) - y, gMapHeader.mapLayout.map[posX + x + gMapHeader.mapLayout.width * (posY - y)] | 0x3000);
                   }
               }
 
@@ -1816,7 +1797,7 @@ export function HasDecorationsInUse(taskId: any): any {
   let i: any = null;
       for (i = 0; i < sDecorationContext.size; i++)
       {
-          if (sDecorationContext.items[i] != DECOR_NONE)
+          if (sDecorationContext.items[i] != (0))
               return TRUE;
       }
 
@@ -1829,10 +1810,10 @@ export function SetUpPuttingAwayDecorationPlayerAvatar(): any {
       sDecor_CameraSpriteObjectIdx1 = gSprites[gFieldCamera.spriteId].data[0];
       LoadPlayerSpritePalette();
       gFieldCamera.spriteId = CreateSprite(sPuttingAwayCursorSpriteTemplate, 120, 80, 0);
-      if (gSaveBlock2Ptr.playerGender == MALE)
-          sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_BRENDAN_DECORATING, SpriteCallbackDummy, 136, 72, 0);
+      if (gSaveBlock2Ptr.playerGender == (0))
+          sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite((193), SpriteCallbackDummy, 136, 72, 0);
       else
-          sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite(OBJ_EVENT_GFX_MAY_DECORATING, SpriteCallbackDummy, 136, 72, 0);
+          sDecor_CameraSpriteObjectIdx2 = CreateObjectGraphicsSprite((194), SpriteCallbackDummy, 136, 72, 0);
 
       gSprites[sDecor_CameraSpriteObjectIdx2].oam.priority = 1;
       DestroySprite(gSprites[sDecor_CameraSpriteObjectIdx1]);
@@ -2006,12 +1987,12 @@ export function DecorationIsUnderCursor(taskId: any, idx: any, data: any): any {
       let yOff: any = null;
       let ht: any = null;
 
-      x = gTasks[taskId].tCursorX - MAP_OFFSET;
-      y = gTasks[taskId].tCursorY - MAP_OFFSET;
+      x = gTasks[taskId].tCursorX - (7);
+      y = gTasks[taskId].tCursorY - (7);
       xOff = sDecorationContext.pos[idx] >> 4;
       yOff = sDecorationContext.pos[idx] & 0x0F;
       ht = data.height;
-      if (sDecorationContext.items[idx] == DECOR_SAND_ORNAMENT && MapGridGetMetatileIdAt(xOff + MAP_OFFSET, yOff + MAP_OFFSET) == METATILE_SecretBase_SandOrnament_BrokenBase)
+      if (sDecorationContext.items[idx] == (41) && MapGridGetMetatileIdAt(xOff + (7), yOff + (7)) == (0x28C))
           ht--;
 
       if (x >= xOff && x < xOff + data.width && y > yOff - ht && y <= yOff)
@@ -2031,7 +2012,7 @@ export function SetDecorRearrangementFlagIdIfFlagUnset(): any {
 
       xOff = sDecorationContext.pos[sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].idx] >> 4;
       yOff = sDecorationContext.pos[sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].idx] & 0x0F;
-      for (i = 0; i < OBJECT_EVENT_TEMPLATES_COUNT; i++)
+      for (i = 0; i < (64); i++)
       {
           if (gSaveBlock1Ptr.objectEventTemplates[i].x == xOff && gSaveBlock1Ptr.objectEventTemplates[i].y == yOff && !FlagGet(gSaveBlock1Ptr.objectEventTemplates[i].flagId))
           {
@@ -2047,7 +2028,7 @@ export function AttemptMarkSpriteDecorUnderCursorForRemoval(taskId: any): any {
 
       for (i = 0; i < sDecorationContext.size; i++)
       {
-          if (sDecorationContext.items[i] != DECOR_NONE)
+          if (sDecorationContext.items[i] != (0))
           {
               if (gDecorations[sDecorationContext.items[i]].permission == DECORPERM_SPRITE)
               {
@@ -2077,7 +2058,7 @@ export function MarkSpriteDecorsInBoundsForRemoval(left: any, top: any, right: a
           decor = sDecorationContext.items[i];
           xOff = sDecorationContext.pos[i] >> 4;
           yOff = sDecorationContext.pos[i] & 0x0F;
-          if (decor != DECOR_NONE && gDecorations[decor].permission == DECORPERM_SPRITE && left <= xOff && top <= yOff && right >= xOff && bottom >= yOff)
+          if (decor != (0) && gDecorations[decor].permission == DECORPERM_SPRITE && left <= xOff && top <= yOff && right >= xOff && bottom >= yOff)
           {
               sDecorRearrangementDataBuffer[sCurDecorSelectedInRearrangement].idx = i;
               SetDecorRearrangementFlagIdIfFlagUnset();
@@ -2101,7 +2082,7 @@ export function AttemptMarkDecorUnderCursorForRemoval(taskId: any): any {
           for (i = 0; i < sDecorationContext.size; i++)
           {
               var1 = sDecorationContext.items[i];
-              if (var1 != DECOR_NONE)
+              if (var1 != (0))
               {
                   SetDecorRearrangementShape(var1,sDecorRearrangementDataBuffer[0]);
                   if (DecorationIsUnderCursor(taskId, i,sDecorRearrangementDataBuffer[0]) == TRUE)
@@ -2133,7 +2114,7 @@ export function ReturnDecorationPrompt(taskId: any): any {
 
 /** static void PutAwayDecoration(u8 taskId) */
 export function PutAwayDecoration(taskId: any): any {
-  FadeScreen(FADE_TO_BLACK, 0);
+  FadeScreen((1), 0);
       gTasks[taskId].tState = 0;
       gTasks[taskId].func = Task_PutAwayDecoration;
 }
@@ -2152,7 +2133,7 @@ export function StopPuttingAwayDecorations(taskId: any): any {
 
 /** static void StopPuttingAwayDecorations_(u8 taskId) */
 export function StopPuttingAwayDecorations_(taskId: any): any {
-  FadeScreen(FADE_TO_BLACK, 0);
+  FadeScreen((1), 0);
       gTasks[taskId].tState = 0;
       gTasks[taskId].func = Task_StopPuttingAwayDecorations;
 }
@@ -2224,7 +2205,7 @@ export function InitializeCameraSprite1(sprite: any): any {
 
 /** static void LoadPlayerSpritePalette(void) */
 export function LoadPlayerSpritePalette(): any {
-  if (gSaveBlock2Ptr.playerGender == MALE)
+  if (gSaveBlock2Ptr.playerGender == (0))
           LoadSpritePalette(sSpritePal_PuttingAwayCursorBrendan);
       else
           LoadSpritePalette(sSpritePal_PuttingAwayCursorMay);
@@ -2258,7 +2239,7 @@ export function TossDecorationPrompt(taskId: any): any {
 
 /** static void TossDecoration(u8 taskId) */
 export function TossDecoration(taskId: any): any {
-  gCurDecorationItems[gCurDecorationIndex] = DECOR_NONE;
+  gCurDecorationItems[gCurDecorationIndex] = (0);
       sNumOwnedDecorationsInCurCategory = GetNumOwnedDecorationsInCategory(sCurDecorationCategory);
       CondenseDecorationsInCategory(sCurDecorationCategory);
       IdentifyOwnedDecorationsCurrentlyInUseInternal(taskId);

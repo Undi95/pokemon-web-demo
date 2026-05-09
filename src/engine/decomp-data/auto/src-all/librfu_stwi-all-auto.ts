@@ -15,6 +15,9 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gSTWIStatus: any = null;
 /** void STWI_init_all(struct RfuIntrStruct *interruptStruct, IntrFunc *interrupt, bool8 copyInterruptToRam) */
 export function STWI_init_all(interruptStruct: any, interrupt: any, copyInterruptToRam: any): any {
   if (copyInterruptToRam == TRUE)
@@ -30,7 +33,7 @@ export function STWI_init_all(interruptStruct: any, interrupt: any, copyInterrup
       }
       gSTWIStatus.rxPacket =interruptStruct.rxPacketAlloc;
       gSTWIStatus.txPacket =interruptStruct.txPacketAlloc;
-      gSTWIStatus.msMode = AGB_CLK_MASTER;
+      gSTWIStatus.msMode = (1);
       gSTWIStatus.state = 0;  
       gSTWIStatus.reqLength = 0;
       gSTWIStatus.reqNext = 0;
@@ -83,7 +86,7 @@ export function AgbRFU_SoftReset(): any {
       gSTWIStatus.timerState = 0;
       gSTWIStatus.timerActive = 0;
       gSTWIStatus.error = 0;
-      gSTWIStatus.msMode = AGB_CLK_MASTER;
+      gSTWIStatus.msMode = (1);
       gSTWIStatus.recoveryCount = 0;
       gSTWIStatus.sending = 0;
 }
@@ -144,7 +147,7 @@ export function STWI_poll_CommandEnd(): any {
 
 /** void STWI_send_ResetREQ(void) */
 export function STWI_send_ResetREQ(): any {
-  if (!STWI_init(ID_RESET_REQ))
+  if (!STWI_init((0x0010)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -153,7 +156,7 @@ export function STWI_send_ResetREQ(): any {
 
 /** void STWI_send_LinkStatusREQ(void) */
 export function STWI_send_LinkStatusREQ(): any {
-  if (!STWI_init(ID_LINK_STATUS_REQ))
+  if (!STWI_init((0x0011)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -162,7 +165,7 @@ export function STWI_send_LinkStatusREQ(): any {
 
 /** void STWI_send_VersionStatusREQ(void) */
 export function STWI_send_VersionStatusREQ(): any {
-  if (!STWI_init(ID_VERSION_STATUS_REQ))
+  if (!STWI_init((0x0012)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -171,7 +174,7 @@ export function STWI_send_VersionStatusREQ(): any {
 
 /** void STWI_send_SystemStatusREQ(void) */
 export function STWI_send_SystemStatusREQ(): any {
-  if (!STWI_init(ID_SYSTEM_STATUS_REQ))
+  if (!STWI_init((0x0013)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -180,7 +183,7 @@ export function STWI_send_SystemStatusREQ(): any {
 
 /** void STWI_send_SlotStatusREQ(void) */
 export function STWI_send_SlotStatusREQ(): any {
-  if (!STWI_init(ID_SLOT_STATUS_REQ))
+  if (!STWI_init((0x0014)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -189,7 +192,7 @@ export function STWI_send_SlotStatusREQ(): any {
 
 /** void STWI_send_ConfigStatusREQ(void) */
 export function STWI_send_ConfigStatusREQ(): any {
-  if (!STWI_init(ID_CONFIG_STATUS_REQ))
+  if (!STWI_init((0x0015)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -201,7 +204,7 @@ export function STWI_send_GameConfigREQ(serial_gname: any, uname: any): any {
   let packetBytes: any = null;
       let i: any = null;
 
-      if (!STWI_init(ID_GAME_CONFIG_REQ))
+      if (!STWI_init((0x0016)))
       {
           gSTWIStatus.reqLength = 6;
           packetBytes = gSTWIStatus.txPacket.rfuPacket8.data;
@@ -227,7 +230,7 @@ export function STWI_send_GameConfigREQ(serial_gname: any, uname: any): any {
 
 /** void STWI_send_SystemConfigREQ(u16 availSlotFlag, u8 maxMFrame, u8 mcTimer) */
 export function STWI_send_SystemConfigREQ(availSlotFlag: any, maxMFrame: any, mcTimer: any): any {
-  if (!STWI_init(ID_SYSTEM_CONFIG_REQ))
+  if (!STWI_init((0x0017)))
       {
           let packetBytes: any = null;
 
@@ -243,7 +246,7 @@ export function STWI_send_SystemConfigREQ(availSlotFlag: any, maxMFrame: any, mc
 
 /** void STWI_send_SC_StartREQ(void) */
 export function STWI_send_SC_StartREQ(): any {
-  if (!STWI_init(ID_SC_START_REQ))
+  if (!STWI_init((0x0019)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -252,7 +255,7 @@ export function STWI_send_SC_StartREQ(): any {
 
 /** void STWI_send_SC_PollingREQ(void) */
 export function STWI_send_SC_PollingREQ(): any {
-  if (!STWI_init(ID_SC_POLL_REQ))
+  if (!STWI_init((0x001a)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -261,7 +264,7 @@ export function STWI_send_SC_PollingREQ(): any {
 
 /** void STWI_send_SC_EndREQ(void) */
 export function STWI_send_SC_EndREQ(): any {
-  if (!STWI_init(ID_SC_END_REQ))
+  if (!STWI_init((0x001b)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -270,7 +273,7 @@ export function STWI_send_SC_EndREQ(): any {
 
 /** void STWI_send_SP_StartREQ(void) */
 export function STWI_send_SP_StartREQ(): any {
-  if (!STWI_init(ID_SP_START_REQ))
+  if (!STWI_init((0x001c)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -279,7 +282,7 @@ export function STWI_send_SP_StartREQ(): any {
 
 /** void STWI_send_SP_PollingREQ(void) */
 export function STWI_send_SP_PollingREQ(): any {
-  if (!STWI_init(ID_SP_POLL_REQ))
+  if (!STWI_init((0x001d)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -288,7 +291,7 @@ export function STWI_send_SP_PollingREQ(): any {
 
 /** void STWI_send_SP_EndREQ(void) */
 export function STWI_send_SP_EndREQ(): any {
-  if (!STWI_init(ID_SP_END_REQ))
+  if (!STWI_init((0x001e)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -297,7 +300,7 @@ export function STWI_send_SP_EndREQ(): any {
 
 /** void STWI_send_CP_StartREQ(u16 unk1) */
 export function STWI_send_CP_StartREQ(unk1: any): any {
-  if (!STWI_init(ID_CP_START_REQ))
+  if (!STWI_init((0x001f)))
       {
           gSTWIStatus.reqLength = 1;
           gSTWIStatus.txPacket.rfuPacket32.data[0] = unk1;
@@ -307,7 +310,7 @@ export function STWI_send_CP_StartREQ(unk1: any): any {
 
 /** void STWI_send_CP_PollingREQ(void) */
 export function STWI_send_CP_PollingREQ(): any {
-  if (!STWI_init(ID_CP_POLL_REQ))
+  if (!STWI_init((0x0020)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -316,7 +319,7 @@ export function STWI_send_CP_PollingREQ(): any {
 
 /** void STWI_send_CP_EndREQ(void) */
 export function STWI_send_CP_EndREQ(): any {
-  if (!STWI_init(ID_CP_END_REQ))
+  if (!STWI_init((0x0021)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -325,7 +328,7 @@ export function STWI_send_CP_EndREQ(): any {
 
 /** void STWI_send_DataTxREQ(const void *in, u8 size) */
 export function STWI_send_DataTxREQ(_in: any, size: any): any {
-  if (!STWI_init(ID_DATA_TX_REQ))
+  if (!STWI_init((0x0024)))
       {
           let reqLength: any = (size / 0);
           if (size & (sizeof- 1))
@@ -338,7 +341,7 @@ export function STWI_send_DataTxREQ(_in: any, size: any): any {
 
 /** void STWI_send_DataTxAndChangeREQ(const void *in, u8 size) */
 export function STWI_send_DataTxAndChangeREQ(_in: any, size: any): any {
-  if (!STWI_init(ID_DATA_TX_AND_CHANGE_REQ))
+  if (!STWI_init((0x0025)))
       {
           let reqLength: any = (size / 0);
           if (size & (sizeof- 1))
@@ -351,7 +354,7 @@ export function STWI_send_DataTxAndChangeREQ(_in: any, size: any): any {
 
 /** void STWI_send_DataRxREQ(void) */
 export function STWI_send_DataRxREQ(): any {
-  if (!STWI_init(ID_DATA_RX_REQ))
+  if (!STWI_init((0x0026)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -360,7 +363,7 @@ export function STWI_send_DataRxREQ(): any {
 
 /** void STWI_send_MS_ChangeREQ(void) */
 export function STWI_send_MS_ChangeREQ(): any {
-  if (!STWI_init(ID_MS_CHANGE_REQ))
+  if (!STWI_init((0x0027)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -369,7 +372,7 @@ export function STWI_send_MS_ChangeREQ(): any {
 
 /** void STWI_send_DataReadyAndChangeREQ(u8 unk) */
 export function STWI_send_DataReadyAndChangeREQ(unk: any): any {
-  if (!STWI_init(ID_DATA_READY_AND_CHANGE_REQ))
+  if (!STWI_init((0x0028)))
       {
           if (!unk)
           {
@@ -393,7 +396,7 @@ export function STWI_send_DataReadyAndChangeREQ(unk: any): any {
 
 /** void STWI_send_DisconnectedAndChangeREQ(u8 unk0, u8 unk1) */
 export function STWI_send_DisconnectedAndChangeREQ(unk0: any, unk1: any): any {
-  if (!STWI_init(ID_DISCONNECTED_AND_CHANGE_REQ))
+  if (!STWI_init((0x0029)))
       {
           let packetBytes: any = null;
 
@@ -410,7 +413,7 @@ export function STWI_send_DisconnectedAndChangeREQ(unk0: any, unk1: any): any {
 
 /** void STWI_send_ResumeRetransmitAndChangeREQ(void) */
 export function STWI_send_ResumeRetransmitAndChangeREQ(): any {
-  if (!STWI_init(ID_RESUME_RETRANSMIT_AND_CHANGE_REQ))
+  if (!STWI_init((0x0037)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -419,7 +422,7 @@ export function STWI_send_ResumeRetransmitAndChangeREQ(): any {
 
 /** void STWI_send_DisconnectREQ(u8 unk) */
 export function STWI_send_DisconnectREQ(unk: any): any {
-  if (!STWI_init(ID_DISCONNECT_REQ))
+  if (!STWI_init((0x0030)))
       {
           gSTWIStatus.reqLength = 1;
           gSTWIStatus.txPacket.rfuPacket32.data[0] = unk;
@@ -429,7 +432,7 @@ export function STWI_send_DisconnectREQ(unk: any): any {
 
 /** void STWI_send_TestModeREQ(u8 unk0, u8 unk1) */
 export function STWI_send_TestModeREQ(unk0: any, unk1: any): any {
-  if (!STWI_init(ID_TEST_MODE_REQ))
+  if (!STWI_init((0x0031)))
       {
           gSTWIStatus.reqLength = 1;
           gSTWIStatus.txPacket.rfuPacket32.data[0] = unk0 | (unk1 << 8);
@@ -442,7 +445,7 @@ export function STWI_send_CPR_StartREQ(unk0: any, unk1: any, unk2: any): any {
   let packetData: any = null;
       let arg1: any = null;
 
-      if (!STWI_init(ID_CPR_START_REQ))
+      if (!STWI_init((0x0032)))
       {
           gSTWIStatus.reqLength = 2;
           arg1 = unk1 | (unk0 << 16);
@@ -455,7 +458,7 @@ export function STWI_send_CPR_StartREQ(unk0: any, unk1: any, unk2: any): any {
 
 /** void STWI_send_CPR_PollingREQ(void) */
 export function STWI_send_CPR_PollingREQ(): any {
-  if (!STWI_init(ID_CPR_POLL_REQ))
+  if (!STWI_init((0x0033)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -464,7 +467,7 @@ export function STWI_send_CPR_PollingREQ(): any {
 
 /** void STWI_send_CPR_EndREQ(void) */
 export function STWI_send_CPR_EndREQ(): any {
-  if (!STWI_init(ID_CPR_END_REQ))
+  if (!STWI_init((0x0034)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -473,7 +476,7 @@ export function STWI_send_CPR_EndREQ(): any {
 
 /** void STWI_send_StopModeREQ(void) */
 export function STWI_send_StopModeREQ(): any {
-  if (!STWI_init(ID_STOP_MODE_REQ))
+  if (!STWI_init((0x003d)))
       {
           gSTWIStatus.reqLength = 0;
           STWI_start_Command();
@@ -499,7 +502,7 @@ export function STWI_intr_timer(): any {
           STWI_stop_timer();
           STWI_reset_ClockCounter();
           if (gSTWIStatus.callbackM != NULL)
-              gSTWIStatus.callbackM(ID_CLOCK_SLAVE_MS_CHANGE_ERROR_BY_DMA_REQ, 0);
+              gSTWIStatus.callbackM((0x00ff), 0);
           break;
       }
 }
@@ -545,7 +548,7 @@ export function STWI_init(request: any): any {
   if (!REG_IME)
       {
            
-          gSTWIStatus.error = ERR_REQ_CMD_IME_DISABLE;
+          gSTWIStatus.error = (((0x0000) | 0x0006));
           if (gSTWIStatus.callbackM != NULL)
               gSTWIStatus.callbackM(request, gSTWIStatus.error);
           return TRUE;
@@ -553,16 +556,16 @@ export function STWI_init(request: any): any {
       else if (gSTWIStatus.sending == 1)
       {
            
-          gSTWIStatus.error = ERR_REQ_CMD_SENDING;
+          gSTWIStatus.error = (((0x0000) | 0x0002));
           gSTWIStatus.sending = 0;
           if (gSTWIStatus.callbackM != NULL)
               gSTWIStatus.callbackM(request, gSTWIStatus.error);
           return TRUE;
       }
-      else if (gSTWIStatus.msMode == AGB_CLK_SLAVE)
+      else if (gSTWIStatus.msMode == (0))
       {
            
-          gSTWIStatus.error = ERR_REQ_CMD_CLOCK_SLAVE;
+          gSTWIStatus.error = (((0x0000) | 0x0004));
           if (gSTWIStatus.callbackM != NULL)
               gSTWIStatus.callbackM(request, gSTWIStatus.error, gSTWIStatus);
           return TRUE;
@@ -616,16 +619,16 @@ export function STWI_restart_Command(): any {
       }
       else
       {
-          if (gSTWIStatus.reqActiveCommand == ID_MS_CHANGE_REQ || gSTWIStatus.reqActiveCommand == ID_DATA_TX_AND_CHANGE_REQ || gSTWIStatus.reqActiveCommand == ID_UNK35_REQ || gSTWIStatus.reqActiveCommand == ID_RESUME_RETRANSMIT_AND_CHANGE_REQ)
+          if (gSTWIStatus.reqActiveCommand == (0x0027) || gSTWIStatus.reqActiveCommand == (0x0025) || gSTWIStatus.reqActiveCommand == (0x0035) || gSTWIStatus.reqActiveCommand == (0x0037))
           {
-              gSTWIStatus.error = ERR_REQ_CMD_CLOCK_DRIFT;
+              gSTWIStatus.error = (((0x0000) | 0x0001));
               gSTWIStatus.sending = 0;
               if (gSTWIStatus.callbackM != NULL)
                   gSTWIStatus.callbackM(gSTWIStatus.reqActiveCommand, gSTWIStatus.error);
           }
           else
           {
-              gSTWIStatus.error = ERR_REQ_CMD_CLOCK_DRIFT;
+              gSTWIStatus.error = (((0x0000) | 0x0001));
               gSTWIStatus.sending = 0;
               if (gSTWIStatus.callbackM != NULL)
                   gSTWIStatus.callbackM(gSTWIStatus.reqActiveCommand, gSTWIStatus.error);

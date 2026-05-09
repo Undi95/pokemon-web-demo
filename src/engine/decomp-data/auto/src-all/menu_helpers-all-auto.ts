@@ -19,9 +19,6 @@
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
 let sMessageNextTask: any = null;
 let sMessageWindowId: any = null;
-let sSpritePalette_SwapLine: any = null;
-let sSpriteSheet_SwapLine: any = null;
-let sSpriteTemplate_SwapLine: any = null;
 let sYesNo: any = null;
 /** void ResetVramOamAndBgCntRegs(void) */
 export function ResetVramOamAndBgCntRegs(): any {
@@ -62,7 +59,7 @@ export function DisplayMessageAndContinueTask(taskId: any, windowId: any, tileNu
           StringExpandPlaceholders(gStringVar4, string);
 
       gTextFlags.canABSpeedUpPrint = 1;
-      AddTextPrinterParameterized2(windowId, fontId, gStringVar4, textSpeed, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+      AddTextPrinterParameterized2(windowId, fontId, gStringVar4, textSpeed, NULL, (0x2), (0x1), (0x3));
       sMessageNextTask = taskFunc;
       gTasks[taskId].func = Task_ContinueTaskAfterMessagePrints;
 }
@@ -97,12 +94,12 @@ export function Task_CallYesOrNoCallback(taskId: any): any {
   switch (Menu_ProcessInputNoWrapClearOnChoose())
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           sYesNo.yesFunc(taskId);
           break;
       case 1:
-      case MENU_B_PRESSED:
-          PlaySE(SE_SELECT);
+      case (-1):
+          PlaySE((5));
           sYesNo.noFunc(taskId);
           break;
       }
@@ -124,7 +121,7 @@ export function AdjustQuantityAccordingToDPadInput(quantity: any, max: any): any
           }
           else
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               return TRUE;
           }
       }
@@ -140,7 +137,7 @@ export function AdjustQuantityAccordingToDPadInput(quantity: any, max: any): any
           }
           else
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               return TRUE;
           }
       }
@@ -156,7 +153,7 @@ export function AdjustQuantityAccordingToDPadInput(quantity: any, max: any): any
           }
           else
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               return TRUE;
           }
       }
@@ -172,7 +169,7 @@ export function AdjustQuantityAccordingToDPadInput(quantity: any, max: any): any
           }
           else
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               return TRUE;
           }
       }
@@ -182,12 +179,12 @@ export function AdjustQuantityAccordingToDPadInput(quantity: any, max: any): any
 
 /** u8 GetLRKeysPressed(void) */
 export function GetLRKeysPressed(): any {
-  if (gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_LR)
+  if (gSaveBlock2Ptr.optionsButtonMode == (1))
       {
           if (JOY_NEW(L_BUTTON))
-              return MENU_L_PRESSED;
+              return (1);
           if (JOY_NEW(R_BUTTON))
-              return MENU_R_PRESSED;
+              return (2);
       }
 
       return 0;
@@ -195,12 +192,12 @@ export function GetLRKeysPressed(): any {
 
 /** u8 GetLRKeysPressedAndHeld(void) */
 export function GetLRKeysPressedAndHeld(): any {
-  if (gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_LR)
+  if (gSaveBlock2Ptr.optionsButtonMode == (1))
       {
           if (JOY_REPEAT(L_BUTTON))
-              return MENU_L_PRESSED;
+              return (1);
           if (JOY_REPEAT(R_BUTTON))
-              return MENU_R_PRESSED;
+              return (2);
       }
 
       return 0;
@@ -208,7 +205,7 @@ export function GetLRKeysPressedAndHeld(): any {
 
 /** bool8 IsHoldingItemAllowed(u16 itemId) */
 export function IsHoldingItemAllowed(itemId: any): any {
-  if (itemId == ITEM_ENIGMA_BERRY
+  if (itemId == (175)
        && ((gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_TRADE_CENTER)
          && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_TRADE_CENTER))
          || InUnionRoom() == TRUE))
@@ -258,7 +255,7 @@ export function SetItemListPerPageCount(slots: any, slotsCount: any, pageItems: 
       totalItems = 0;
       for (i = 0; i < slotsCount; i++)
       {
-          if (slots_[i].itemId != ITEM_NONE)
+          if (slots_[i].itemId != (0))
               totalItems++;
       }
       totalItems++;  
@@ -364,8 +361,8 @@ export function SetSwapLineSpritesInvisibility(spriteIds: any, count: any, invis
 /** void UpdateSwapLineSpritesPos(u8 *spriteIds, u8 count, s16 x, u16 y) */
 export function UpdateSwapLineSpritesPos(spriteIds: any, count: any, x: any, y: any): any {
   let i: any = null;
-      let hasMargin: any = count & SWAP_LINE_HAS_MARGIN;
-      count &= ~SWAP_LINE_HAS_MARGIN;
+      let hasMargin: any = count & ((1 << 7));
+      count &= ~((1 << 7));
 
       for (i = 0; i < count; i++)
       {

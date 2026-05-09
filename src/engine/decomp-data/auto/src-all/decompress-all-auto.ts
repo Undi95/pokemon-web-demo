@@ -69,7 +69,7 @@ export function LoadCompressedSpritePaletteOverrideBuffer(src: any, buffer: any)
 
 /** void DecompressPicFromTable(const struct CompressedSpriteSheet *src, void *buffer, s32 species) */
 export function DecompressPicFromTable(src: any, buffer: any, species: any): any {
-  if (species > NUM_SPECIES)
+  if (species > ((412)))
           LZ77UnCompWram(gMonFrontPicTable[0].data, buffer);
       else
           LZ77UnCompWram(src.data, buffer);
@@ -90,22 +90,22 @@ export function HandleLoadSpecialPokePic(src: any, dest: any, species: any, pers
 
 /** void LoadSpecialPokePic(const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality, bool8 isFrontPic) */
 export function LoadSpecialPokePic(src: any, dest: any, species: any, personality: any, isFrontPic: any): any {
-  if (species == SPECIES_UNOWN)
+  if (species == (201))
       {
           let i: any = GET_UNOWN_LETTER(personality);
 
            
           if (i == 0)
-              i = SPECIES_UNOWN;
+              i = (201);
           else
-              i += SPECIES_UNOWN_B - 1;
+              i += ((((412)) + 1)) - 1;
 
           if (!isFrontPic)
               LZ77UnCompWram(gMonBackPicTable[i].data, dest);
           else
               LZ77UnCompWram(gMonFrontPicTable[i].data, dest);
       }
-      else if (species > NUM_SPECIES)  
+      else if (species > ((412)))  
       {
           LZ77UnCompWram(gMonFrontPicTable[0].data, dest);
       }
@@ -163,7 +163,7 @@ export function LoadCompressedSpritePaletteUsingHeap(src: any): any {
 
 /** void DecompressPicFromTable_2(const struct CompressedSpriteSheet *src, void *buffer, s32 species) */
 export function DecompressPicFromTable_2(src: any, buffer: any, species: any): any {
-  if (species > NUM_SPECIES)
+  if (species > ((412)))
           LZ77UnCompWram(gMonFrontPicTable[0].data, buffer);
       else
           LZ77UnCompWram(src.data, buffer);
@@ -172,22 +172,22 @@ export function DecompressPicFromTable_2(src: any, buffer: any, species: any): a
 
 /** void LoadSpecialPokePic_2(const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality, bool8 isFrontPic) */
 export function LoadSpecialPokePic_2(src: any, dest: any, species: any, personality: any, isFrontPic: any): any {
-  if (species == SPECIES_UNOWN)
+  if (species == (201))
       {
           let i: any = GET_UNOWN_LETTER(personality);
 
            
           if (i == 0)
-              i = SPECIES_UNOWN;
+              i = (201);
           else
-              i += SPECIES_UNOWN_B - 1;
+              i += ((((412)) + 1)) - 1;
 
           if (!isFrontPic)
               LZ77UnCompWram(gMonBackPicTable[i].data, dest);
           else
               LZ77UnCompWram(gMonFrontPicTable[i].data, dest);
       }
-      else if (species > NUM_SPECIES)  
+      else if (species > ((412)))  
       {
           LZ77UnCompWram(gMonFrontPicTable[0].data, dest);
       }
@@ -214,7 +214,7 @@ export function HandleLoadSpecialPokePic_2(src: any, dest: any, species: any, pe
 
 /** void DecompressPicFromTable_DontHandleDeoxys(const struct CompressedSpriteSheet *src, void *buffer, s32 species) */
 export function DecompressPicFromTable_DontHandleDeoxys(src: any, buffer: any, species: any): any {
-  if (species > NUM_SPECIES)
+  if (species > ((412)))
           LZ77UnCompWram(gMonFrontPicTable[0].data, buffer);
       else
           LZ77UnCompWram(src.data, buffer);
@@ -234,22 +234,22 @@ export function HandleLoadSpecialPokePic_DontHandleDeoxys(src: any, dest: any, s
 
 /** void LoadSpecialPokePic_DontHandleDeoxys(const struct CompressedSpriteSheet *src, void *dest, s32 species, u32 personality, bool8 isFrontPic) */
 export function LoadSpecialPokePic_DontHandleDeoxys(src: any, dest: any, species: any, personality: any, isFrontPic: any): any {
-  if (species == SPECIES_UNOWN)
+  if (species == (201))
       {
           let i: any = GET_UNOWN_LETTER(personality);
 
            
           if (i == 0)
-              i = SPECIES_UNOWN;
+              i = (201);
           else
-              i += SPECIES_UNOWN_B - 1;
+              i += ((((412)) + 1)) - 1;
 
           if (!isFrontPic)
               LZ77UnCompWram(gMonBackPicTable[i].data, dest);
           else
               LZ77UnCompWram(gMonFrontPicTable[i].data, dest);
       }
-      else if (species > NUM_SPECIES)  
+      else if (species > ((412)))  
       {
           LZ77UnCompWram(gMonFrontPicTable[0].data, dest);
       }
@@ -263,8 +263,8 @@ export function LoadSpecialPokePic_DontHandleDeoxys(src: any, dest: any, species
 
 /** static void DuplicateDeoxysTiles(void *pointer, s32 species) */
 export function DuplicateDeoxysTiles(pointer: any, species: any): any {
-  if (species == SPECIES_DEOXYS)
-          CpuCopy32(pointer + MON_PIC_SIZE, pointer, MON_PIC_SIZE);
+  if (species == (410))
+          CpuCopy32(pointer + (((64) * (64) / 2)), pointer, (((64) * (64) / 2)));
 }
 
 // ─── callsTo manifest (= 12 unique callees) ───────────────────────

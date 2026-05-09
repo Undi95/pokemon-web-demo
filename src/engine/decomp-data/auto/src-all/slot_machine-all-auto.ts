@@ -17,46 +17,11 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAnimFinished: any = null;
-let sAtOriginalColor: any = null;
-let sBetToMatchLineIds: any = null;
-let sBgTemplates: any = null;
-let sBiasProbabilities_Regular: any = null;
-let sBiasProbabilities_Special: any = null;
-let sBiasSymbols: any = null;
-let sBiasesRegular: any = null;
-let sBiasesSpecial: any = null;
-let sColor: any = null;
-let sColorIdx: any = null;
-let sColorIncr: any = null;
-let sColors_ReeltimeHelp: any = null;
-let sCounter: any = null;
-let sCurNum: any = null;
-let sDarkMatchLinePalTable: any = null;
-let sDecideStop_Bias: any = null;
-let sDecideStop_Bias_Reel1_Bets: any = null;
-let sDecideStop_Bias_Reel2_Bets: any = null;
-let sDecideStop_Bias_Reel3_Bets: any = null;
-let sDecideStop_NoBias: any = null;
-let sDecideStop_NoBias_Reel2_Bets: any = null;
-let sDecideStop_NoBias_Reel3_Bets: any = null;
-let sDelay: any = null;
-let sDelayTimer: any = null;
-let sDigitMax: any = null;
-let sDigitMin: any = null;
+let gOamLimit: any = null;
+let gSpriteCoordOffsetX: any = null;
+let gSpriteCoordOffsetY: any = null;
+let match: any = null;
 let sDigitalDisplayGfxPtr: any = null;
-let sDigitalDisplaySceneExitCallbacks: any = null;
-let sDigitalDisplayScenes: any = null;
-let sDigitalDisplayTasks: any = null;
-let sDigitalDisplay_Pal: any = null;
-let sDigitalDisplay_SpriteCallbacks: any = null;
-let sDigitalDisplay_SpriteCoords: any = null;
-let sEmptyTilemap: any = null;
-let sFlashDir: any = null;
-let sFlashPal: any = null;
-let sFlashState: any = null;
-let sFlashing: any = null;
-let sFlashingLightsPalTable: any = null;
 let sImageTable_BrokenReelTimeMachine: any = null;
 let sImageTable_DigitalDisplay_AButton: any = null;
 let sImageTable_DigitalDisplay_Big: any = null;
@@ -75,94 +40,21 @@ let sImageTable_DigitalDisplay_Win: any = null;
 let sImageTable_ReelTimeMachine: any = null;
 let sImageTable_ReelTimeMachineAntennae: any = null;
 let sImageTable_ReelTimePikachu: any = null;
-let sImageTables_DigitalDisplay: any = null;
-let sInfoBoxTasks: any = null;
-let sInitialReelPositions: any = null;
-let sIsPayout: any = null;
-let sLitMatchLinePalTable: any = null;
-let sMatchLineId: any = null;
-let sMatchLinePalOffsets: any = null;
-let sMatchLinesPerBet: any = null;
 let sMenuGfx: any = null;
-let sMoveY: any = null;
-let sNumFullFlashes: any = null;
-let sPayoutTasks: any = null;
-let sPikaPowerBoltTasks: any = null;
-let sPikaPowerTileTable: any = null;
-let sPikachuAuraFlashDelays: any = null;
-let sPokeballShiningPalTable: any = null;
-let sQuarterSpeed_ProbabilityBoost: any = null;
 let sReelBackgroundSpriteSheet: any = null;
 let sReelBackground_Gfx: any = null;
-let sReelBackground_Tilemap: any = null;
-let sReelButtonOffsets: any = null;
 let sReelButtonPress_Tilemap: any = null;
 let sReelOverlay_Tilemap: any = null;
-let sReelStopButtonTasks: any = null;
-let sReelStopShocks: any = null;
-let sReelSymbols: any = null;
-let sReelTasks: any = null;
-let sReelTimeBoltDelays: any = null;
-let sReelTimeExplodeProbability: any = null;
-let sReelTimeGfx: any = null;
 let sReelTimeGfxPtr: any = null;
-let sReelTimePikachuAnimIds: any = null;
-let sReelTimeProbabilities_LuckyGame: any = null;
-let sReelTimeProbabilities_NormalGame: any = null;
-let sReelTimeSpeed_Probabilities: any = null;
-let sReelTimeSymbols: any = null;
-let sReelTimeTasks: any = null;
-let sReelTimeWindow_Tilemap: any = null;
 let sSelectedPikaPowerTile: any = null;
 let sSlotMachine: any = null;
-let sSlotMachineMenu_Pal: any = null;
-let sSlotMachineSpritePalettes: any = null;
-let sSlotMachineSpriteSheets: any = null;
 let sSlotMachineSpritesheetsPtr: any = null;
-let sSlotMatchFlags: any = null;
-let sSlotPayouts: any = null;
-let sSlotTasks: any = null;
-let sSpecialDrawOdds: any = null;
-let sSpriteId: any = null;
-let sSpriteTemplate_BrokenReelTimeMachine: any = null;
-let sSpriteTemplate_CoinNumber: any = null;
-let sSpriteTemplate_PikaPowerBolt: any = null;
-let sSpriteTemplate_ReelBackground: any = null;
-let sSpriteTemplate_ReelSymbol: any = null;
-let sSpriteTemplate_ReelTimeBolt: any = null;
-let sSpriteTemplate_ReelTimeDuck: any = null;
-let sSpriteTemplate_ReelTimeExplosion: any = null;
-let sSpriteTemplate_ReelTimeMachine: any = null;
-let sSpriteTemplate_ReelTimeMachineAntennae: any = null;
-let sSpriteTemplate_ReelTimeNumberGap: any = null;
-let sSpriteTemplate_ReelTimeNumbers: any = null;
-let sSpriteTemplate_ReelTimePikachu: any = null;
-let sSpriteTemplate_ReelTimePikachuAura: any = null;
-let sSpriteTemplate_ReelTimeShadow: any = null;
-let sSpriteTemplate_ReelTimeSmoke: any = null;
-let sSpriteTemplates_DigitalDisplay: any = null;
-let sState: any = null;
-let sSubspriteTable_BrokenReelTimeMachine: any = null;
-let sSubspriteTable_ReelBackground: any = null;
-let sSubspriteTable_ReelTimeMachine: any = null;
-let sSubspriteTable_ReelTimeMachineAntennae: any = null;
-let sSubspriteTable_ReelTimeNumberGap: any = null;
-let sSubspriteTable_ReelTimeShadow: any = null;
-let sSubspriteTables_DigitalDisplay: any = null;
-let sSymbolToMatch: any = null;
-let sTimer: any = null;
-let sUnkPalette: any = null;
-let sWaitForAnim: any = null;
-let sWindowTemplate_InfoBox: any = null;
-let sWindowTemplates: any = null;
-let sXDir: any = null;
-let sYDir: any = null;
 /** static void Task_FadeToSlotMachine(u8 taskId) */
 export function Task_FadeToSlotMachine(taskId: any): any {
   switch (gTasks[taskId].tState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
           gTasks[taskId].tState++;
           break;
       case 1:
@@ -220,7 +112,7 @@ export function CB2_SlotMachineSetup(): any {
               gMain.state++;
               break;
           case 7:
-              BeginNormalPaletteFade(-1, 0, 0x10, 0, RGB_BLACK);
+              BeginNormalPaletteFade(-1, 0, 0x10, 0, (RGB(0, 0, 0)));
               ShowBg(0);
               ShowBg(1);
               ShowBg(2);
@@ -425,7 +317,7 @@ export function Task_SlotMachine(taskId: any): any {
 
 /** static bool8 SlotTask_UnfadeScreen(struct Task *task) */
 export function SlotTask_UnfadeScreen(task: any): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       LoadPikaPowerMeter(sSlotMachine.pikaPowerBolts);
       sSlotMachine.state++;  
       return FALSE;
@@ -468,7 +360,7 @@ export function SlotTask_ReadyNewReelTimeSpin(task: any): any {
 export function SlotTask_AskInsertBet(task: any): any {
   CreateDigitalDisplayScene(DIG_DISPLAY_INSERT_BET);
       sSlotMachine.state = SLOTTASK_BET_INPUT;
-      if (sSlotMachine.coins >= MAX_COINS)
+      if (sSlotMachine.coins >= (9999))
           sSlotMachine.state = SLOTTASK_MSG_MAX_COINS;
       return TRUE;
 }
@@ -492,7 +384,7 @@ export function SlotTask_HandleBetInput(task: any): any {
               sSlotMachine.coins -= ((3) - sSlotMachine.bet);
               sSlotMachine.bet = (3);
               sSlotMachine.state = SLOTTASK_START_SPIN;
-              PlaySE(SE_SHOP);
+              PlaySE((95));
           }
            
           else
@@ -505,7 +397,7 @@ export function SlotTask_HandleBetInput(task: any): any {
            
           if (JOY_NEW(DPAD_DOWN) && sSlotMachine.coins != 0)
           {
-              PlaySE(SE_SHOP);
+              PlaySE((95));
               LightenBetTiles(sSlotMachine.bet);
               sSlotMachine.coins--;
               sSlotMachine.bet++;
@@ -601,7 +493,7 @@ export function SlotTask_ResetBiasFailure(task: any): any {
 export function SlotTask_WaitReelStop(task: any): any {
   if (JOY_NEW(A_BUTTON))
       {
-          PlaySE(SE_CONTEST_PLACE);
+          PlaySE((24));
           StopSlotReel(sSlotMachine.currentReel);
           PressStopReelButton(sSlotMachine.currentReel);
           sSlotMachine.state = SLOTTASK_WAIT_ALL_REELS_STOP;
@@ -645,17 +537,17 @@ export function SlotTask_CheckMatches(task: any): any {
           }
           if (sSlotMachine.matches & ((1 << MATCH_BLUE_7) | (1 << MATCH_RED_7)))
           {
-              PlayFanfare(MUS_SLOTS_JACKPOT);
+              PlayFanfare((389));
               CreateDigitalDisplayScene(DIG_DISPLAY_BONUS_BIG);
           }
           else if (sSlotMachine.matches & (1 << MATCH_MIXED_7))
           {
-              PlayFanfare(MUS_SLOTS_JACKPOT);
+              PlayFanfare((389));
               CreateDigitalDisplayScene(DIG_DISPLAY_BONUS_REG);
           }
           else
           {
-              PlayFanfare(MUS_SLOTS_WIN);
+              PlayFanfare((390));
               CreateDigitalDisplayScene(DIG_DISPLAY_WIN);
           }
 
@@ -682,8 +574,8 @@ export function SlotTask_CheckMatches(task: any): any {
       {
           CreateDigitalDisplayScene(DIG_DISPLAY_LOSE);
           sSlotMachine.state = SLOTTASK_NO_MATCHES;
-          if ((sSlotMachine.netCoinLoss += sSlotMachine.bet) > MAX_COINS)
-              sSlotMachine.netCoinLoss = MAX_COINS;
+          if ((sSlotMachine.netCoinLoss += sSlotMachine.bet) > (9999))
+              sSlotMachine.netCoinLoss = (9999);
       }
       return FALSE;
 }
@@ -702,7 +594,7 @@ export function SlotTask_EndPayout(task: any): any {
           sSlotMachine.state = SLOTTASK_RESET_BET_TILES;
 
           if (sSlotMachine.matches & ((1 << MATCH_RED_7) | (1 << MATCH_BLUE_7)))
-              IncrementGameStat(GAME_STAT_SLOT_JACKPOTS);
+              IncrementGameStat((28));
 
           if (sSlotMachine.matches & (1 << MATCH_REPLAY))
           {
@@ -794,7 +686,7 @@ export function SlotTask_HandleQuitInput(task: any): any {
           sSlotMachine.coins += sSlotMachine.bet;
           sSlotMachine.state = SLOTTASK_END;
       }
-      else if (input == 1 || input == MENU_B_PRESSED)  
+      else if (input == 1 || input == (-1))  
       {
           ClearDialogWindowAndFrame(WIN_MSG, TRUE);
           sSlotMachine.state = SLOTTASK_BET_INPUT;
@@ -844,7 +736,7 @@ export function SlotTask_WaitMsg_NoMoreCoins(task: any): any {
 export function SlotTask_EndGame(task: any): any {
   SetCoins(sSlotMachine.coins);
       TryPutFindThatGamerOnAir(GetCoins());
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       sSlotMachine.state++;  
       return FALSE;
 }
@@ -1158,7 +1050,7 @@ export function AwardPayout(): any {
 
 /** static bool8 IsFinalTask_Task_Payout(void) */
 export function IsFinalTask_Task_Payout(): any {
-  if (FindTaskIdByFunc(Task_Payout) == TAIL_SENTINEL)
+  if (FindTaskIdByFunc(Task_Payout) == (0xFF))
           return TRUE;
       else
           return FALSE;
@@ -1189,9 +1081,9 @@ export function PayoutTask_GivePayout(task: any): any {
   if (!task.tTimer--)
       {
           if (IsFanfareTaskInactive())
-              PlaySE(SE_PIN);
+              PlaySE((21));
           sSlotMachine.payout--;
-          if (sSlotMachine.coins < MAX_COINS)
+          if (sSlotMachine.coins < (9999))
               sSlotMachine.coins++;
           task.tTimer = 8;
           if (JOY_HELD(A_BUTTON))
@@ -1199,10 +1091,10 @@ export function PayoutTask_GivePayout(task: any): any {
       }
       if (IsFanfareTaskInactive() && JOY_NEW(START_BUTTON))
       {
-          PlaySE(SE_PIN);
+          PlaySE((21));
           sSlotMachine.coins += sSlotMachine.payout;
-          if (sSlotMachine.coins > MAX_COINS)
-              sSlotMachine.coins = MAX_COINS;
+          if (sSlotMachine.coins > (9999))
+              sSlotMachine.coins = (9999);
           sSlotMachine.payout = 0;
       }
       if (sSlotMachine.payout == 0)
@@ -2239,7 +2131,7 @@ export function PikaPowerBolt_ClearAll(task: any): any {
 export function ResetPikaPowerBoltTask(task: any): any {
   let i: any = null;
 
-      for (i = 2; i < NUM_TASK_DATA; i++)
+      for (i = 2; i < (16); i++)
           task.data[i] = 0;
 }
 
@@ -2279,7 +2171,7 @@ export function BeginReelTime(): any {
 
 /** static bool8 IsReelTimeTaskDone(void) */
 export function IsReelTimeTaskDone(): any {
-  if (FindTaskIdByFunc(Task_ReelTime) == TAIL_SENTINEL)
+  if (FindTaskIdByFunc(Task_ReelTime) == (0xFF))
           return TRUE;
       return FALSE;
 }
@@ -2310,7 +2202,7 @@ export function ReelTime_Init(task: any): any {
       CreateReelTimeNumberGapSprite();
       GetReelTimeDraw();
       StopMapMusic();
-      PlayNewMapMusic(MUS_ROULETTE);
+      PlayNewMapMusic((392));
 }
 
 /** static void ReelTime_WindowEnter(struct Task *task) */
@@ -2452,7 +2344,7 @@ export function ReelTime_PikachuReact(task: any): any {
           {
               task.tTimer2 = 0xa0;
               StartSpriteAnimIfDifferent(gSprites[sSlotMachine.reelTimePikachuSpriteId], 5);
-              PlayFanfare(MUS_TOO_BAD);
+              PlayFanfare((391));
           }
           else
           {
@@ -2464,7 +2356,7 @@ export function ReelTime_PikachuReact(task: any): any {
                   ResetPikaPowerBolts();
                   sSlotMachine.pikaPowerBolts = 0;
               }
-              PlayFanfare(MUS_SLOTS_WIN);
+              PlayFanfare((390));
           }
       }
 }
@@ -2540,8 +2432,8 @@ export function ReelTime_ExplodeMachine(task: any): any {
       task.data[4] = 4;
       task.tTimer1 = 0;
       StopMapMusic();
-      PlayFanfare(MUS_TOO_BAD);
-      PlaySE(SE_M_EXPLOSION);
+      PlayFanfare((391));
+      PlaySE((178));
 }
 
 /** static void ReelTime_WaitExplode(struct Task *task) */
@@ -2610,7 +2502,7 @@ export function OpenInfoBox(digDisplayId: any): any {
 
 /** static bool8 IsInfoBoxClosed(void) */
 export function IsInfoBoxClosed(): any {
-  if (FindTaskIdByFunc(Task_InfoBox) == TASK_NONE)
+  if (FindTaskIdByFunc(Task_InfoBox) == ((0xFF)))
           return TRUE;
       else
           return FALSE;
@@ -2623,7 +2515,7 @@ export function Task_InfoBox(taskId: any): any {
 
 /** static void InfoBox_FadeIn(struct Task *task) */
 export function InfoBox_FadeIn(task: any): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
       task.tState++;
 }
 
@@ -2647,7 +2539,7 @@ export function InfoBox_DrawWindow(task: any): any {
 export function InfoBox_AddText(task: any): any {
   AddTextPrinterParameterized3(WIN_INFO, FONT_NORMAL, 2, 5, sColors_ReeltimeHelp, 0, gText_ReelTimeHelp);
       CopyWindowToVram(WIN_INFO, COPYWIN_FULL);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       task.tState++;
 }
 
@@ -2659,7 +2551,7 @@ export function InfoBox_WaitInput(task: any): any {
           ClearWindowTilemap(WIN_INFO);
           CopyWindowToVram(WIN_INFO, COPYWIN_MAP);
           RemoveWindow(WIN_INFO);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           task.tState++;
       }
 }
@@ -2680,7 +2572,7 @@ export function InfoBox_CreateDigitalDisplay(task: any): any {
 /** static void InfoBox_LoadPikaPowerMeter(struct Task *task) */
 export function InfoBox_LoadPikaPowerMeter(task: any): any {
   LoadPikaPowerMeter(sSlotMachine.pikaPowerBolts);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       task.tState++;
 }
 
@@ -2697,8 +2589,8 @@ export function CreateDigitalDisplayTask(): any {
       sSlotMachine.digDisplayTaskId = i;
       task =gTasks[i];
       task.data[1] = -1;
-      for (i = 4; i < NUM_TASK_DATA; i++)
-          task.data[i] = MAX_SPRITES;
+      for (i = 4; i < (16); i++)
+          task.data[i] = (64);
 }
 
 /** static void CreateDigitalDisplayScene(u8 id) */
@@ -2727,9 +2619,9 @@ export function CreateDigitalDisplayScene(id: any): any {
 export function AddDigitalDisplaySprite(templateIdx: any, callback: any, x: any, y: any, spriteId: any): any {
   let i: any = null;
       let task: any =gTasks[sSlotMachine.digDisplayTaskId];
-      for (i = 4; i < NUM_TASK_DATA; i++)
+      for (i = 4; i < (16); i++)
       {
-          if (task.data[i] == MAX_SPRITES)
+          if (task.data[i] == (64))
           {
               task.data[i] = CreateDigitalDisplaySprite(templateIdx, callback, x, y, spriteId);
               break;
@@ -2745,12 +2637,12 @@ export function DestroyDigitalDisplayScene(): any {
       if (task.data[1] != 0xFFFF)
           sDigitalDisplaySceneExitCallbacks[task.data[1]]();
 
-      for (i = 4; i < NUM_TASK_DATA; i++)
+      for (i = 4; i < (16); i++)
       {
-          if (task.data[i] != MAX_SPRITES)
+          if (task.data[i] != (64))
           {
               DestroySprite(gSprites[task.data[i]]);
-              task.data[i] = MAX_SPRITES;
+              task.data[i] = (64);
           }
       }
 }
@@ -2759,9 +2651,9 @@ export function DestroyDigitalDisplayScene(): any {
 export function IsDigitalDisplayAnimFinished(): any {
   let i: any = null;
       let task: any =gTasks[sSlotMachine.digDisplayTaskId];
-      for (i = 4; i < NUM_TASK_DATA; i++)
+      for (i = 4; i < (16); i++)
       {
-          if (task.data[i] != MAX_SPRITES)
+          if (task.data[i] != (64))
           {
               if (gSprites[task.data[i]].sWaitForAnim)
                   return FALSE;
@@ -2808,11 +2700,11 @@ export function CreateCreditPayoutNumberSprites(): any {
       let x: any = null;
 
        
-      for (x = 203, i = 1; i <= MAX_COINS; i *= 10, x -= 7)
+      for (x = 203, i = 1; i <= (9999); i *= 10, x -= 7)
           CreateCoinNumberSprite(x, 23, FALSE, i);
 
        
-      for (x = 235, i = 1; i <= MAX_COINS; i *= 10, x -= 7)
+      for (x = 235, i = 1; i <= (9999); i *= 10, x -= 7)
           CreateCoinNumberSprite(x, 23, TRUE, i);
 }
 

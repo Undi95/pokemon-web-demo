@@ -17,14 +17,12 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAffineAnims_StretchBattlerUp: any = null;
-let sAffineAnims_UproarDistortion: any = null;
-let sAmplitudeX: any = null;
-let sAmplitudeY: any = null;
-let sCircleSpeed: any = null;
-let sMoveSteps: any = null;
-let sMusicNotePaletteTagsTable: any = null;
-let sVoidLinesSpriteTemplate: any = null;
+let gBattle_BG1_X: any = null;
+let gBattle_BG1_Y: any = null;
+let gBattle_WIN0H: any = null;
+let gBattle_WIN0V: any = null;
+let val: any = null;
+let yDiff: any = null;
 /** static void AnimCirclingFinger(struct Sprite *sprite) */
 export function AnimCirclingFinger(sprite: any): any {
   SetSpriteCoordsToAnimAttackerCoords(sprite);
@@ -95,7 +93,7 @@ export function AnimVibrateBattlerBack(sprite: any): any {
       sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2);
       sprite.y = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y_PIC_OFFSET);
       spriteId = gBattlerSpriteIds[gBattleAnimTarget];
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.x -= gBattleAnimArgs[0];
       else
           sprite.x += gBattleAnimArgs[0];
@@ -145,7 +143,7 @@ export function AnimTask_Withdraw(taskId: any): any {
 export function AnimTask_Withdraw_Step(taskId: any): any {
   let spriteId: any = gBattlerSpriteIds[gBattleAnimAttacker];
       let rotation: any = null;
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
           rotation = -gTasks[taskId].data[0];
       else
           rotation = gTasks[taskId].data[0];
@@ -189,13 +187,13 @@ export function AnimTask_Withdraw_Step(taskId: any): any {
 /** static void AnimKinesisZapEnergy(struct Sprite *sprite) */
 export function AnimKinesisZapEnergy(sprite: any): any {
   SetSpriteCoordsToAnimAttackerCoords(sprite);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           sprite.x -= gBattleAnimArgs[0];
       else
           sprite.x += gBattleAnimArgs[0];
 
       sprite.y += gBattleAnimArgs[1];
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           sprite.hFlip = 1;
           if (gBattleAnimArgs[2])
@@ -237,7 +235,7 @@ export function AnimSonicBoomProjectile(sprite: any): any {
       {
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
       }
-      else if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      else if (GetBattlerSide(gBattleAnimAttacker) != (0))
       {
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
           gBattleAnimArgs[1] = -gBattleAnimArgs[1];
@@ -379,7 +377,7 @@ export function AirCutterProjectileStep1(taskId: any): any {
           gTasks[taskId].data[gTasks[taskId].data[1] + 13] = spriteId;
           gTasks[taskId].data[0] = gTasks[taskId].data[3];
           gTasks[taskId].data[1]++;
-          PlaySE12WithPanning(SE_M_BLIZZARD2, BattleAnimAdjustPanning(SOUND_PAN_ATTACKER + 1));
+          PlaySE12WithPanning((154), BattleAnimAdjustPanning((-64) + 1));
           if (gTasks[taskId].data[1] > 2)
               gTasks[taskId].func = AirCutterProjectileStep2;
       }
@@ -404,7 +402,7 @@ export function AnimTask_AirCutterProjectile(taskId: any): any {
       }
       else
       {
-          if (GET_BATTLER_SIDE2(gBattleAnimTarget) == B_SIDE_PLAYER)
+          if (GET_BATTLER_SIDE2(gBattleAnimTarget) == (0))
           {
               gTasks[taskId].data[4] = 1;
               gBattleAnimArgs[0] = -gBattleAnimArgs[0];
@@ -418,7 +416,7 @@ export function AnimTask_AirCutterProjectile(taskId: any): any {
 
       attackerX = gTasks[taskId].data[9] = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X);
       attackerY = gTasks[taskId].data[10] = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_Y);
-      if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+      if ((gBattleTypeFlags & ((1 << 0)))
           && IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimTarget)))
       {
           SetAverageBattlerPositions(gBattleAnimTarget, FALSE,targetX,targetY);
@@ -521,7 +519,7 @@ export function AnimCoinThrow(sprite: any): any {
       InitSpritePosToAnimAttacker(sprite, TRUE);
       r6 = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_X_2);
       r7 = GetBattlerSpriteCoord(gBattleAnimTarget, BATTLER_COORD_Y_PIC_OFFSET) + gBattleAnimArgs[3];
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
 
       r6 += gBattleAnimArgs[2];
@@ -546,7 +544,7 @@ export function AnimFallingCoin(sprite: any): any {
 export function AnimFallingCoin_Step(sprite: any): any {
   sprite.data[0] += 0x80;
       sprite.x2 = sprite.data[0] >> 8;
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
           sprite.x2 = -sprite.x2;
 
       sprite.y2 = Sin(sprite.data[1], sprite.data[2]);
@@ -576,7 +574,7 @@ export function AnimBulletSeed_Step1(sprite: any): any {
   let i: any = null;
       let rand: any = null;
       let ptr: any = null;
-      PlaySE12WithPanning(SE_M_HORN_ATTACK, BattleAnimAdjustPanning(SOUND_PAN_TARGET));
+      PlaySE12WithPanning((166), BattleAnimAdjustPanning((63)));
       sprite.x += sprite.x2;
       sprite.y += sprite.y2;
       sprite.y2 = 0;
@@ -614,7 +612,7 @@ export function AnimBulletSeed_Step2(sprite: any): any {
 /** static void AnimRazorWindTornado(struct Sprite *sprite) */
 export function AnimRazorWindTornado(sprite: any): any {
   InitSpritePosToAnimAttacker(sprite, FALSE);
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) == (0))
           sprite.y += 16;
 
       sprite.data[0] = gBattleAnimArgs[4];
@@ -733,7 +731,7 @@ export function AnimGuillotinePincer_Step3(sprite: any): any {
 
 /** void AnimTask_GrowAndGrayscale(u8 taskId) */
 export function AnimTask_GrowAndGrayscale(taskId: any): any {
-  let spriteId: any = GetAnimBattlerSpriteId(ANIM_TARGET);
+  let spriteId: any = GetAnimBattlerSpriteId((1));
       PrepareBattlerSpriteForRotScale(spriteId, ST_OAM_OBJ_BLEND);
       SetSpriteRotScale(spriteId, 0xD0, 0xD0, 0);
       SetGrayscaleOrOriginalPalette(gSprites[spriteId].oam.paletteNum + 16, FALSE);
@@ -745,7 +743,7 @@ export function AnimTask_GrowAndGrayscale(taskId: any): any {
 export function AnimTask_GrowAndGrayscale_Step(taskId: any): any {
   if (--gTasks[taskId].data[0] == -1)
       {
-          let spriteId: any = GetAnimBattlerSpriteId(ANIM_TARGET);
+          let spriteId: any = GetAnimBattlerSpriteId((1));
           ResetSpriteRotScale(spriteId);
           SetGrayscaleOrOriginalPalette(gSprites[spriteId].oam.paletteNum + 16, TRUE);
           DestroyAnimVisualTask(taskId);
@@ -755,7 +753,7 @@ export function AnimTask_GrowAndGrayscale_Step(taskId: any): any {
 /** void AnimTask_Minimize(u8 taskId) */
 export function AnimTask_Minimize(taskId: any): any {
   let task: any =gTasks[taskId];
-      let spriteId: any = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      let spriteId: any = GetAnimBattlerSpriteId((0));
       task.data[0] = spriteId;
       PrepareBattlerSpriteForRotScale(spriteId, ST_OAM_OBJ_NORMAL);
       task.data[1] = 0;
@@ -837,7 +835,7 @@ export function AnimTask_Minimize_Step(taskId: any): any {
 /** static void CreateMinimizeSprite(struct Task *task, u8 taskId) */
 export function CreateMinimizeSprite(task: any, taskId: any): any {
   let matrixNum: any = null;
-      let spriteId: any = CloneBattlerSpriteWithBlend(ANIM_ATTACKER);
+      let spriteId: any = CloneBattlerSpriteWithBlend((0));
       if (spriteId >= 0)
       {
           if ((matrixNum = AllocOamMatrix()) == 0xFF)
@@ -950,7 +948,7 @@ export function AnimTask_Splash_Step(taskId: any): any {
 /** void AnimTask_GrowAndShrink(u8 taskId) */
 export function AnimTask_GrowAndShrink(taskId: any): any {
   let task: any =gTasks[taskId];
-      let spriteId: any = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      let spriteId: any = GetAnimBattlerSpriteId((0));
       PrepareAffineAnimInTaskData(task, spriteId, gGrowAndShrinkAffineAnimCmds);
       task.func = AnimTask_GrowAndShrink_Step;
 }
@@ -964,7 +962,7 @@ export function AnimTask_GrowAndShrink_Step(taskId: any): any {
 
 /** static void AnimBreathPuff(struct Sprite *sprite) */
 export function AnimBreathPuff(sprite: any): any {
-  if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_PLAYER)
+  if (GetBattlerSide(gBattleAnimAttacker) == (0))
       {
           StartSpriteAnim(sprite, 0);
           sprite.x = GetBattlerSpriteCoord(gBattleAnimAttacker, BATTLER_COORD_X_2) + 32;
@@ -994,7 +992,7 @@ export function AnimAngerMark(sprite: any): any {
       else
           battler = gBattleAnimTarget;
 
-      if (GetBattlerSide(battler) == B_SIDE_OPPONENT)
+      if (GetBattlerSide(battler) == (1))
           gBattleAnimArgs[1] *= -1;
 
       sprite.x = GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2) + gBattleAnimArgs[1];
@@ -1009,7 +1007,7 @@ export function AnimAngerMark(sprite: any): any {
 /** void AnimTask_ThrashMoveMonHorizontal(u8 taskId) */
 export function AnimTask_ThrashMoveMonHorizontal(taskId: any): any {
   let task: any =gTasks[taskId];
-      let spriteId: any = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      let spriteId: any = GetAnimBattlerSpriteId((0));
       task.data[0] = spriteId;
       task.data[1] = 0;
       PrepareAffineAnimInTaskData(task, spriteId, gThrashMoveMonAffineAnimCmds);
@@ -1026,7 +1024,7 @@ export function AnimTask_ThrashMoveMonHorizontal_Step(taskId: any): any {
 /** void AnimTask_ThrashMoveMonVertical(u8 taskId) */
 export function AnimTask_ThrashMoveMonVertical(taskId: any): any {
   let task: any =gTasks[taskId];
-      task.data[0] = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      task.data[0] = GetAnimBattlerSpriteId((0));
       task.data[1] = 0;
       task.data[2] = 4;
       task.data[3] = 7;
@@ -1036,7 +1034,7 @@ export function AnimTask_ThrashMoveMonVertical(taskId: any): any {
       task.data[7] = 0;
       task.data[8] = 0;
       task.data[9] = 2;
-      if (GetBattlerSide(gBattleAnimAttacker) == B_SIDE_OPPONENT)
+      if (GetBattlerSide(gBattleAnimAttacker) == (1))
           task.data[2] *= -1;
 
       task.func = AnimTask_ThrashMoveMonVertical_Step;
@@ -1191,7 +1189,7 @@ export function AnimPencil(sprite: any): any {
       sprite.data[3] = 16;
       sprite.data[4] = 0;
       sprite.data[5] = GetBattlerSpriteCoordAttr(gBattleAnimTarget, BATTLER_COORD_ATTR_HEIGHT) + 2;
-      sprite.data[6] = BattleAnimAdjustPanning(SOUND_PAN_TARGET);
+      sprite.data[6] = BattleAnimAdjustPanning((63));
       sprite.callback = AnimPencil_Step;
 }
 
@@ -1218,7 +1216,7 @@ export function AnimPencil_Step(sprite: any): any {
               sprite.y -= 1;
               sprite.data[2]++;
               if (sprite.data[2] % 10 == 0)
-                  PlaySE12WithPanning(SE_M_SKETCH, sprite.data[6]);
+                  PlaySE12WithPanning((205), sprite.data[6]);
           }
           sprite.data[4] += sprite.data[3];
           if (sprite.data[4] > 31)
@@ -1275,7 +1273,7 @@ export function AnimBlendThinRing(sprite: any): any {
           else
               r4 = GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2);
 
-          if (GetBattlerSide(battler) != B_SIDE_PLAYER)
+          if (GetBattlerSide(battler) != (0))
               gBattleAnimArgs[0] -= (x - r4) - gBattleAnimArgs[0];   
           else
               gBattleAnimArgs[0] = x - r4;
@@ -1327,7 +1325,7 @@ export function AnimHyperVoiceRing(sprite: any): any {
           yCoordType = BATTLER_COORD_Y_PIC_OFFSET;
       }
 
-      if (GetBattlerSide(battler1) != B_SIDE_PLAYER)
+      if (GetBattlerSide(battler1) != (0))
       {
           startX = GetBattlerSpriteCoord(battler1, xCoordType) + gBattleAnimArgs[0];
           if (IsBattlerSpriteVisible(BATTLE_PARTNER(battler2)))
@@ -1381,7 +1379,7 @@ export function AnimHyperVoiceRing(sprite: any): any {
 
 /** static void AnimUproarRing(struct Sprite *sprite) */
 export function AnimUproarRing(sprite: any): any {
-  let index: any = IndexOfSpritePaletteTag(ANIM_TAG_THIN_RING);
+  let index: any = IndexOfSpritePaletteTag((((10000) + 203)));
       if (index != 0xFF)
       {
           BlendPalette((OBJ_PLTT_ID(index) + 1), 15, gBattleAnimArgs[5], gBattleAnimArgs[4]);
@@ -1396,7 +1394,7 @@ export function AnimUproarRing(sprite: any): any {
 export function AnimSoftBoiledEgg(sprite: any): any {
   let r1: any = null;
       InitSpritePosToAnimAttacker(sprite, FALSE);
-      r1 = GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER ? -160 : 160;
+      r1 = GetBattlerSide(gBattleAnimAttacker) != (0) ? -160 : 160;
       sprite.data[0] = 0x380;
       sprite.data[1] = r1;
       sprite.data[7] = gBattleAnimArgs[2];
@@ -1409,7 +1407,7 @@ export function AnimSoftBoiledEgg_Step1(sprite: any): any {
       sprite.y2 -= (sprite.data[0] >> 8);
       sprite.x2 = sprite.data[1] >> 8;
       sprite.data[0] -= 32;
-      add = GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER ? -160 : 160;
+      add = GetBattlerSide(gBattleAnimAttacker) != (0) ? -160 : 160;
       sprite.data[1] += add;
       if (sprite.y2 > 0)
       {
@@ -1497,7 +1495,7 @@ export function AnimSoftBoiledEgg_Step4_Callback(sprite: any): any {
 /** void AnimTask_AttackerStretchAndDisappear(u8 taskId) */
 export function AnimTask_AttackerStretchAndDisappear(taskId: any): any {
   let task: any =gTasks[taskId];
-      let spriteId: any = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      let spriteId: any = GetAnimBattlerSpriteId((0));
       task.data[0] = spriteId;
       PrepareAffineAnimInTaskData(task, spriteId, gStretchAttackerAffineAnimCmds);
       task.func = AnimTask_AttackerStretchAndDisappear_Step;
@@ -1522,7 +1520,7 @@ export function AnimTask_ExtremeSpeedImpact(taskId: any): any {
       task.data[2] = 0;
       task.data[3] = 0;
       task.data[12] = 3;
-      if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimTarget) == (0))
       {
           task.data[13] = 0xFFFF;
           task.data[14] = 8;
@@ -1533,7 +1531,7 @@ export function AnimTask_ExtremeSpeedImpact(taskId: any): any {
           task.data[14] = -8;
       }
 
-      task.data[15] = GetAnimBattlerSpriteId(ANIM_TARGET);
+      task.data[15] = GetAnimBattlerSpriteId((1));
       task.func = AnimTask_ExtremeSpeedImpact_Step;
 }
 
@@ -1593,7 +1591,7 @@ export function AnimTask_ExtremeSpeedMonReappear(taskId: any): any {
       task.data[4] = 1;
       task.data[13] = 14;
       task.data[14] = 2;
-      task.data[15] = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+      task.data[15] = GetAnimBattlerSpriteId((0));
       task.func = AnimTask_ExtremeSpeedMonReappear_Step;
 }
 
@@ -1688,7 +1686,7 @@ export function AnimTask_SpeedDust_Step(taskId: any): any {
               let spriteId: any = null;
               task.data[1] = 0;
               spriteId = CreateSprite(gSpeedDustSpriteTemplate, task.data[14], task.data[15], 0);
-              if (spriteId != MAX_SPRITES)
+              if (spriteId != (64))
               {
                   gSprites[spriteId].data[0] = taskId;
                   gSprites[spriteId].data[1] = 13;
@@ -1726,11 +1724,11 @@ export function AnimTask_LoadMusicNotesPals(taskId: any): any {
   let i: any = null;
       let paletteNums: any = [];
 
-      paletteNums[0] = IndexOfSpritePaletteTag(ANIM_TAG_MUSIC_NOTES_2);
+      paletteNums[0] = IndexOfSpritePaletteTag((((10000) + 206)));
       for (i = 1; i < (3); i++)
-          paletteNums[i] = AllocSpritePalette(ANIM_SPRITES_START - i);
+          paletteNums[i] = AllocSpritePalette((10000) - i);
 
-      gMonSpritesGfxPtr.buffer = AllocZeroed(MON_PIC_SIZE * MAX_MON_PIC_FRAMES);
+      gMonSpritesGfxPtr.buffer = AllocZeroed((((64) * (64) / 2)) * (4));
       LZDecompressWram(gBattleAnimSpritePal_MusicNotes2, gMonSpritesGfxPtr.buffer);
       for (i = 0; i < (3); i++)
           LoadPalette(gMonSpritesGfxPtr.buffer[i * 32], (OBJ_PLTT_ID(paletteNums[i])), PLTT_SIZE_4BPP);
@@ -1758,7 +1756,7 @@ export function SetMusicNotePalette(sprite: any, a: any, b: any): any {
 /** static void AnimHealBellMusicNote(struct Sprite *sprite) */
 export function AnimHealBellMusicNote(sprite: any): any {
   InitSpritePosToAnimAttacker(sprite, FALSE);
-      if (GetBattlerSide(gBattleAnimAttacker) != B_SIDE_PLAYER)
+      if (GetBattlerSide(gBattleAnimAttacker) != (0))
           gBattleAnimArgs[2] = -gBattleAnimArgs[2];
 
       sprite.data[0] = gBattleAnimArgs[4];
@@ -1821,7 +1819,7 @@ export function AnimTask_FakeOut_Step2(taskId: any): any {
       {
           gTasks[taskId].data[11] = 0x88;
           SetGpuReg(REG_OFFSET_BLDCNT, BLDCNT_TGT1_BG3 | BLDCNT_EFFECT_LIGHTEN);
-          BlendPalettes(GetBattlePalettesMask(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE), 16, RGB_WHITE);
+          BlendPalettes(GetBattlePalettesMask(TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE), 16, (RGB(31, 31, 31)));
       }
       else if (gTasks[taskId].data[10] > 4)
       {
@@ -1837,10 +1835,10 @@ export function AnimTask_FakeOut_Step2(taskId: any): any {
 
 /** void AnimTask_StretchTargetUp(u8 taskId) */
 export function AnimTask_StretchTargetUp(taskId: any): any {
-  let spriteId: any = GetAnimBattlerSpriteId(ANIM_TARGET);
+  let spriteId: any = GetAnimBattlerSpriteId((1));
       if (++gTasks[taskId].data[0] == 1)
       {
-          PrepareAffineAnimInTaskData(gTasks[taskId], GetAnimBattlerSpriteId(ANIM_TARGET), sAffineAnims_StretchBattlerUp);
+          PrepareAffineAnimInTaskData(gTasks[taskId], GetAnimBattlerSpriteId((1)), sAffineAnims_StretchBattlerUp);
           gSprites[spriteId].x2 = 4;
       }
       else
@@ -1857,10 +1855,10 @@ export function AnimTask_StretchTargetUp(taskId: any): any {
 
 /** void AnimTask_StretchAttackerUp(u8 taskId) */
 export function AnimTask_StretchAttackerUp(taskId: any): any {
-  let spriteId: any = GetAnimBattlerSpriteId(ANIM_ATTACKER);
+  let spriteId: any = GetAnimBattlerSpriteId((0));
       if (++gTasks[taskId].data[0] == 1)
       {
-          PrepareAffineAnimInTaskData(gTasks[taskId], GetAnimBattlerSpriteId(ANIM_ATTACKER), sAffineAnims_StretchBattlerUp);
+          PrepareAffineAnimInTaskData(gTasks[taskId], GetAnimBattlerSpriteId((0)), sAffineAnims_StretchBattlerUp);
           gSprites[spriteId].x2 = 4;
       }
       else
@@ -2044,7 +2042,7 @@ export function AnimTask_ScaryFace(taskId: any): any {
       GetBattleAnimBg1Data(animBg);
       if (IsContest())
           AnimLoadCompressedBgTilemapHandleContest(animBg,gBattleAnimBgTilemap_ScaryFaceContest, FALSE);
-      else if (GetBattlerSide(gBattleAnimTarget) == B_SIDE_OPPONENT)
+      else if (GetBattlerSide(gBattleAnimTarget) == (1))
           AnimLoadCompressedBgTilemapHandleContest(animBg,gBattleAnimBgTilemap_ScaryFacePlayer, FALSE);
       else
           AnimLoadCompressedBgTilemapHandleContest(animBg,gBattleAnimBgTilemap_ScaryFaceOpponent, FALSE);
@@ -2375,7 +2373,7 @@ export function AnimTask_UproarDistortion_Step(taskId: any): any {
 export function AnimJaggedMusicNote(sprite: any): any {
   let battler: any = !gBattleAnimArgs[0] ? gBattleAnimAttacker : gBattleAnimTarget;
 
-      if (GetBattlerSide(battler) == B_SIDE_OPPONENT)
+      if (GetBattlerSide(battler) == (1))
           gBattleAnimArgs[1] *= -1;
 
       sprite.x = GetBattlerSpriteCoord(battler, BATTLER_COORD_X_2)  + gBattleAnimArgs[1];
@@ -2493,7 +2491,7 @@ export function AnimPerishSongMusicNote_Step2(sprite: any): any {
 
 /** static void AnimGuardRing(struct Sprite *sprite) */
 export function AnimGuardRing(sprite: any): any {
-  if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE) && IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimAttacker)))
+  if ((gBattleTypeFlags & ((1 << 0))) && IsBattlerSpriteVisible(BATTLE_PARTNER(gBattleAnimAttacker)))
       {
           SetAverageBattlerPositions(gBattleAnimAttacker, FALSE,sprite.x,sprite.y);
           sprite.y += 40;
@@ -2516,13 +2514,13 @@ export function AnimGuardRing(sprite: any): any {
 
 /** void AnimTask_IsFuryCutterHitRight(u8 taskId) */
 export function AnimTask_IsFuryCutterHitRight(taskId: any): any {
-  gBattleAnimArgs[ARG_RET_ID] = gAnimDisableStructPtr.furyCutterCounter & 1;
+  gBattleAnimArgs[(7)] = gAnimDisableStructPtr.furyCutterCounter & 1;
       DestroyAnimVisualTask(taskId);
 }
 
 /** void AnimTask_GetFuryCutterHitCount(u8 taskId) */
 export function AnimTask_GetFuryCutterHitCount(taskId: any): any {
-  gBattleAnimArgs[ARG_RET_ID] = gAnimDisableStructPtr.furyCutterCounter;
+  gBattleAnimArgs[(7)] = gAnimDisableStructPtr.furyCutterCounter;
       DestroyAnimVisualTask(taskId);
 }
 

@@ -17,121 +17,18 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAcceptedActivityIds: any = null;
-let sAwaitingResponseTexts: any = null;
-let sBattleDeclinedTexts: any = null;
-let sBattleReactionTexts: any = null;
-let sCantTransmitToTrainerTexts: any = null;
-let sCardColorTexts: any = null;
-let sChatDeclinedTexts: any = null;
-let sChatReactionTexts: any = null;
-let sChooseTrainerTexts: any = null;
-let sCommunicatingWaitTexts: any = null;
-let sDeclineChatTexts: any = null;
-let sGladToMeetYouTexts: any = null;
+let gFieldLinkPlayerCount: any = null;
+let gLocalLinkPlayerId: any = null;
+let gMultiuseListMenuTemplate: any = null;
+let gPlayerCurrActivity: any = null;
+let gSpecialVar_0x8004: any = null;
+let gUnionRoomOfferedSpecies: any = null;
+let gUnionRoomRequestedMonType: any = null;
+let playerNameWinTemplate: any = null;
 let sGroup: any = null;
-let sHiDoSomethingTexts: any = null;
-let sIfYouWantToDoSomethingTexts: any = null;
-let sJoinChatTexts: any = null;
 let sLeader: any = null;
-let sLinkDroppedTexts: any = null;
-let sLinkGroupActivityNameTexts: any = null;
-let sLinkGroupToActivityAndCapacity: any = null;
-let sLinkGroupToURoomActivity: any = null;
-let sListMenuTemplate_InviteToActivity: any = null;
-let sListMenuTemplate_PossibleGroupMembers: any = null;
-let sListMenuTemplate_RegisterForTrade: any = null;
-let sListMenuTemplate_UnionRoomGroups: any = null;
-let sMenuTemplate_TradingBoardRequestType: any = null;
-let sNoWonderSharedTexts: any = null;
 let sPlayerActivityGroupSize: any = null;
-let sPlayerContactedYouTexts: any = null;
-let sPlayerDisconnectedTexts: any = null;
-let sPlayerUnavailableTexts: any = null;
-let sPlayersNeededOrModeTexts: any = null;
-let sShowTrainerCardDeclinedTexts: any = null;
-let sStartActivityTexts: any = null;
-let sText_AnOKWasSentToPlayer: any = null;
-let sText_AreTheseMembersOK: any = null;
-let sText_AskTrainerToMakeTrade: any = null;
-let sText_AwaitingCommunication: any = null;
-let sText_AwaitingLinkPressStart: any = null;
-let sText_AwaitingOtherMembers: any = null;
-let sText_AwaitingPlayersResponse: any = null;
-let sText_AwaitingPlayersResponseAboutTrade: any = null;
-let sText_AwaitingResponseFromWirelessSystem: any = null;
-let sText_BButtonCancel: any = null;
-let sText_BattleChallenge: any = null;
-let sText_CancelModeWithTheseMembers: any = null;
-let sText_CancelRegistrationOfEgg: any = null;
-let sText_CancelRegistrationOfMon: any = null;
-let sText_ChatDropped: any = null;
-let sText_ChatEnded: any = null;
-let sText_ChatInvitation: any = null;
-let sText_ChooseJoinCancel: any = null;
-let sText_ChooseRequestedMonType: any = null;
-let sText_ChooseTrainer: any = null;
-let sText_Colon: any = null;
-let sText_DontHaveEggTrainerWants: any = null;
-let sText_DontHaveTypeTrainerWants: any = null;
-let sText_EggTrade: any = null;
-let sText_FinishedCheckingPlayersTrainerCard: any = null;
-let sText_ID: any = null;
-let sText_LinkWithFriendDropped: any = null;
-let sText_ModeWithTheseMembersWillBeCanceled: any = null;
-let sText_NameWantedOfferLv: any = null;
-let sText_NeedTwoMonsOfLevel30OrLower1: any = null;
-let sText_NeedTwoMonsOfLevel30OrLower2: any = null;
-let sText_OfferDeclined1: any = null;
-let sText_OfferDeclined2: any = null;
-let sText_OfferToTradeEgg: any = null;
-let sText_OfferToTradeMon: any = null;
-let sText_PlayerContactedYouAddToMembers: any = null;
-let sText_PlayerContactedYouForXAccept: any = null;
-let sText_PlayerContactedYouShareX: any = null;
-let sText_PlayerHasBeenAskedToRegisterYouPleaseWait: any = null;
-let sText_PlayerOKdRegistration: any = null;
-let sText_PlayerSentBackOK: any = null;
-let sText_PleaseStartOver: any = null;
-let sText_QuitBeingMember: any = null;
-let sText_RegisterMonAtTradingBoard: any = null;
-let sText_RegistrationCanceled: any = null;
-let sText_RegistrationCanceled2: any = null;
-let sText_RegistrationCompleted: any = null;
-let sText_SearchingForWirelessSystemWait: any = null;
-let sText_ShowTrainerCard: any = null;
-let sText_TradeCanceled: any = null;
-let sText_TradeOfferRejected: any = null;
-let sText_TradingBoardInfo: any = null;
-let sText_TrainerAppearsBusy: any = null;
-let sText_TrainerBattleBusy: any = null;
-let sText_TrainerCardInfoPage1: any = null;
-let sText_TrainerCardInfoPage2: any = null;
-let sText_WaitOrShowCardTexts: any = null;
-let sText_WhichMonWillYouOffer: any = null;
-let sText_WirelessLinkDropped: any = null;
-let sText_WirelessLinkEstablished: any = null;
-let sText_WirelessSearchCanceled: any = null;
-let sText_XCheckedTradingBoard: any = null;
-let sTradeBoardListMenuTemplate: any = null;
-let sTradeReactionTexts: any = null;
-let sTrainerCardReactionTexts: any = null;
 let sURoom: any = null;
-let sUnionRoomPlayerName: any = null;
-let sUnionRoomPlayer_DummyRfu: any = null;
-let sUnionRoomTrade: any = null;
-let sWindowTemplate_5PlayerList: any = null;
-let sWindowTemplate_BButtonCancel: any = null;
-let sWindowTemplate_GroupList: any = null;
-let sWindowTemplate_InviteToActivity: any = null;
-let sWindowTemplate_NumPlayerMode: any = null;
-let sWindowTemplate_PlayerList: any = null;
-let sWindowTemplate_PlayerNameAndId: any = null;
-let sWindowTemplate_RegisterForTrade: any = null;
-let sWindowTemplate_TradingBoardHeader: any = null;
-let sWindowTemplate_TradingBoardMain: any = null;
-let sWindowTemplate_TradingBoardRequestType: any = null;
-let sWirelessLinkMain: any = null;
 /** static void PrintNumPlayersWaitingForMsg(u8 windowId, u8 capacityCode, u8 stringId) */
 export function PrintNumPlayersWaitingForMsg(windowId: any, capacityCode: any, stringId: any): any {
   FillWindowPixelBuffer(windowId, PIXEL_FILL(1));
@@ -172,24 +69,24 @@ export function PrintPlayerNameAndIdOnWindow(windowId: any): any {
 export function GetAwaitingCommunicationText(dst: any, activity: any): any {
   switch (activity)
       {
-      case ACTIVITY_BATTLE_SINGLE:
-      case ACTIVITY_BATTLE_DOUBLE:
-      case ACTIVITY_BATTLE_MULTI:
-      case ACTIVITY_TRADE:
-      case ACTIVITY_POKEMON_JUMP:
-      case ACTIVITY_BERRY_CRUSH:
-      case ACTIVITY_BERRY_PICK:
-      case ACTIVITY_BATTLE_TOWER:
-      case ACTIVITY_BATTLE_TOWER_OPEN:
-      case ACTIVITY_RECORD_CORNER:
-      case ACTIVITY_BERRY_BLENDER:
-      case ACTIVITY_WONDER_CARD:
-      case ACTIVITY_WONDER_NEWS:
-      case ACTIVITY_CONTEST_COOL:
-      case ACTIVITY_CONTEST_BEAUTY:
-      case ACTIVITY_CONTEST_CUTE:
-      case ACTIVITY_CONTEST_SMART:
-      case ACTIVITY_CONTEST_TOUGH:
+      case (1):
+      case (2):
+      case (3):
+      case (4):
+      case (9):
+      case (10):
+      case (11):
+      case (28):
+      case (14):
+      case (15):
+      case (16):
+      case (21):
+      case (22):
+      case (23):
+      case (24):
+      case (25):
+      case (26):
+      case (27):
           StringExpandPlaceholders(gStringVar4, sText_AwaitingCommunication);
           break;
       }
@@ -199,16 +96,16 @@ export function GetAwaitingCommunicationText(dst: any, activity: any): any {
 export function IsActivityWithVariableGroupSize(activity: any): any {
   switch (activity)
       {
-      case ACTIVITY_POKEMON_JUMP:
-      case ACTIVITY_BERRY_CRUSH:
-      case ACTIVITY_BERRY_PICK:
-      case ACTIVITY_RECORD_CORNER:
-      case ACTIVITY_BERRY_BLENDER:
-      case ACTIVITY_CONTEST_COOL:
-      case ACTIVITY_CONTEST_BEAUTY:
-      case ACTIVITY_CONTEST_CUTE:
-      case ACTIVITY_CONTEST_SMART:
-      case ACTIVITY_CONTEST_TOUGH:
+      case (9):
+      case (10):
+      case (11):
+      case (15):
+      case (16):
+      case (23):
+      case (24):
+      case (25):
+      case (26):
+      case (27):
           return TRUE;
       default:
           return FALSE;
@@ -226,7 +123,7 @@ export function TryBecomeLinkLeader(): any {
 
       data.state = LL_STATE_INIT;
       data.textState = 0;
-      gSpecialVar_Result = LINKUP_ONGOING;
+      gSpecialVar_Result = (0);
 }
 
 /** static void Task_TryBecomeLinkLeader(u8 taskId) */
@@ -237,7 +134,7 @@ export function Task_TryBecomeLinkLeader(taskId: any): any {
       switch (data.state)
       {
       case LL_STATE_INIT:
-          if (gSpecialVar_0x8004 == LINK_GROUP_BATTLE_TOWER && gSaveBlock2Ptr.frontier.lvlMode == FRONTIER_LVL_OPEN)
+          if (gSpecialVar_0x8004 == (20) && gSaveBlock2Ptr.frontier.lvlMode == (1))
               gSpecialVar_0x8004++;
           gPlayerCurrActivity = sLinkGroupToActivityAndCapacity[gSpecialVar_0x8004];
           sPlayerActivityGroupSize = sLinkGroupToActivityAndCapacity[gSpecialVar_0x8004] >> 8;
@@ -248,14 +145,14 @@ export function Task_TryBecomeLinkLeader(taskId: any): any {
           data.state = LL_STATE_INIT2;
           break;
       case LL_STATE_INIT2:
-          data.incomingPlayerList = AllocZeroed(RFU_CHILD_MAX * 0);
-          data.playerList = AllocZeroed(MAX_RFU_PLAYERS * 0);
-          data.playerListBackup = AllocZeroed(MAX_RFU_PLAYERS * 0);
-          ClearIncomingPlayerList(data.incomingPlayerList, RFU_CHILD_MAX);
-          ClearRfuPlayerList(data.playerList.players, MAX_RFU_PLAYERS);
+          data.incomingPlayerList = AllocZeroed((4) * 0);
+          data.playerList = AllocZeroed((5) * 0);
+          data.playerListBackup = AllocZeroed((5) * 0);
+          ClearIncomingPlayerList(data.incomingPlayerList, (4));
+          ClearRfuPlayerList(data.playerList.players, (5));
           CopyHostRfuGameDataAndUsername(data.playerList.players[0].rfu.data, data.playerList.players[0].rfu.name);
           data.playerList.players[0].timeoutCounter = 0;
-          data.playerList.players[0].groupScheduledAnim = UNION_ROOM_SPAWN_IN;
+          data.playerList.players[0].groupScheduledAnim = (1);
           data.playerList.players[0].useRedText = FALSE;
           data.playerList.players[0].newPlayerCountdown = 0;
           data.listenTaskId = CreateTask_ListenForCompatiblePartners(data.incomingPlayerList, 0xFF);
@@ -374,13 +271,13 @@ export function Task_TryBecomeLinkLeader(taskId: any): any {
           case 0:  
               LoadWirelessStatusIndicatorSpriteGfx();
               CreateWirelessStatusIndicatorSprite(0, 0);
-              data.joinRequestAnswer = RFU_STATUS_JOIN_GROUP_OK;
+              data.joinRequestAnswer = (5);
               SendRfuStatusToPartner(data.joinRequestAnswer, ReadAsU16(data.playerList.players[data.playerCount].rfu.data.compatibility.playerTrainerId), data.playerList.players[data.playerCount].rfu.name);
               data.state = LL_STATE_UPDATE_AFTER_JOIN_REQUEST;
               break;
           case 1:  
-          case MENU_B_PRESSED:
-              data.joinRequestAnswer = RFU_STATUS_JOIN_GROUP_NO;
+          case (-1):
+              data.joinRequestAnswer = (6);
               SendRfuStatusToPartner(data.joinRequestAnswer, ReadAsU16(data.playerList.players[data.playerCount].rfu.data.compatibility.playerTrainerId), data.playerList.players[data.playerCount].rfu.name);
               data.state = LL_STATE_UPDATE_AFTER_JOIN_REQUEST;
               break;
@@ -393,7 +290,7 @@ export function Task_TryBecomeLinkLeader(taskId: any): any {
           val = WaitSendRfuStatusToPartner(ReadAsU16(data.playerList.players[data.playerCount].rfu.data.compatibility.playerTrainerId), data.playerList.players[data.playerCount].rfu.name);
           if (val == 1)  
           {
-              if (data.joinRequestAnswer == RFU_STATUS_JOIN_GROUP_OK)
+              if (data.joinRequestAnswer == (5))
               {
                    
                   data.playerList.players[data.playerCount].newPlayerCountdown = 0;
@@ -401,7 +298,7 @@ export function Task_TryBecomeLinkLeader(taskId: any): any {
                   data.playerCount++;
                   if (data.playerCount == GROUP_MAX(sPlayerActivityGroupSize))
                   {
-                      if (GROUP_MIN2(sPlayerActivityGroupSize) != 0 || data.playerCount == RFU_CHILD_MAX)
+                      if (GROUP_MIN2(sPlayerActivityGroupSize) != 0 || data.playerCount == (4))
                       {
                           data.state = LL_STATE_MEMBERS_OK_PROMPT;
                       }
@@ -423,7 +320,7 @@ export function Task_TryBecomeLinkLeader(taskId: any): any {
               else  
               {
                   RequestDisconnectSlotByTrainerNameAndId(data.playerList.players[data.playerCount].rfu.name, ReadAsU16(data.playerList.players[data.playerCount].rfu.data.compatibility.playerTrainerId));
-                  data.playerList.players[data.playerCount].groupScheduledAnim = UNION_ROOM_SPAWN_NONE;
+                  data.playerList.players[data.playerCount].groupScheduledAnim = (0);
                   LeaderPrunePlayerList(data.playerList);
                   RedrawListMenu(data.listTaskId);
                   data.state = LL_STATE_GET_AWAITING_PLAYERS_TEXT;
@@ -434,7 +331,7 @@ export function Task_TryBecomeLinkLeader(taskId: any): any {
           else if (val == 2)
           {
                
-              RfuSetStatus(RFU_STATUS_OK, 0);
+              RfuSetStatus((0), 0);
               data.state = LL_STATE_GET_AWAITING_PLAYERS_TEXT;
           }
           break;
@@ -457,7 +354,7 @@ export function Task_TryBecomeLinkLeader(taskId: any): any {
               data.state = LL_STATE_CONFIRMED_MEMBERS;
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               if (GROUP_MIN2(sPlayerActivityGroupSize) != 0)
                   data.state = LL_STATE_CANCEL_WITH_MSG;
               else
@@ -476,7 +373,7 @@ export function Task_TryBecomeLinkLeader(taskId: any): any {
               data.state = LL_STATE_SHUTDOWN_AND_FAIL;
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               if (GROUP_MIN2(sPlayerActivityGroupSize) != 0)
                   data.state = LL_STATE_MEMBERS_OK_PROMPT;
               else if (data.playerCount == GROUP_MAX(sPlayerActivityGroupSize))
@@ -526,12 +423,12 @@ export function Task_TryBecomeLinkLeader(taskId: any): any {
       case LL_STATE_FAILED:
           ScriptContext_Enable();
           DestroyTask(taskId);
-          gSpecialVar_Result = LINKUP_FAILED;
+          gSpecialVar_Result = (5);
           break;
       case LL_STATE_RETRY:
           ScriptContext_Enable();
           DestroyTask(taskId);
-          gSpecialVar_Result = LINKUP_RETRY_ROLE_ASSIGN;
+          gSpecialVar_Result = (8);
           break;
       case LL_STATE_TRY_START_ACTIVITY:
           if (RfuHasErrored())
@@ -576,28 +473,28 @@ export function Leader_DestroyResources(data: any): any {
 export function Leader_GetAcceptNewMemberPrompt(dst: any, activity: any): any {
   switch (activity)
       {
-      case ACTIVITY_BATTLE_SINGLE:
-      case ACTIVITY_BATTLE_DOUBLE:
-      case ACTIVITY_TRADE:
-      case ACTIVITY_BATTLE_TOWER_OPEN:
-      case ACTIVITY_BATTLE_TOWER:
+      case (1):
+      case (2):
+      case (4):
+      case (14):
+      case (28):
           StringExpandPlaceholders(dst, sText_PlayerContactedYouForXAccept);
           break;
-      case ACTIVITY_WONDER_CARD:
-      case ACTIVITY_WONDER_NEWS:
+      case (21):
+      case (22):
           StringExpandPlaceholders(dst, sText_PlayerContactedYouShareX);
           break;
-      case ACTIVITY_BATTLE_MULTI:
-      case ACTIVITY_POKEMON_JUMP:
-      case ACTIVITY_BERRY_CRUSH:
-      case ACTIVITY_BERRY_PICK:
-      case ACTIVITY_RECORD_CORNER:
-      case ACTIVITY_BERRY_BLENDER:
-      case ACTIVITY_CONTEST_COOL:
-      case ACTIVITY_CONTEST_BEAUTY:
-      case ACTIVITY_CONTEST_CUTE:
-      case ACTIVITY_CONTEST_SMART:
-      case ACTIVITY_CONTEST_TOUGH:
+      case (3):
+      case (9):
+      case (10):
+      case (11):
+      case (15):
+      case (16):
+      case (23):
+      case (24):
+      case (25):
+      case (26):
+      case (27):
           StringExpandPlaceholders(dst, sText_PlayerContactedYouAddToMembers);
           break;
       }
@@ -607,12 +504,12 @@ export function Leader_GetAcceptNewMemberPrompt(dst: any, activity: any): any {
 export function GetYouDeclinedTheOfferMessage(dst: any, activity: any): any {
   switch (activity)
       {
-      case ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM:
-      case ACTIVITY_TRADE | IN_UNION_ROOM:
+      case (1) | ((1 << 6)):
+      case (4) | ((1 << 6)):
           StringExpandPlaceholders(dst, sText_OfferDeclined1);
           break;
-      case ACTIVITY_CHAT | IN_UNION_ROOM:
-      case ACTIVITY_CARD | IN_UNION_ROOM:
+      case (5) | ((1 << 6)):
+      case (8) | ((1 << 6)):
           StringExpandPlaceholders(dst, sText_OfferDeclined2);
           break;
       }
@@ -622,26 +519,26 @@ export function GetYouDeclinedTheOfferMessage(dst: any, activity: any): any {
 export function GetYouAskedToJoinGroupPleaseWaitMessage(dst: any, activity: any): any {
   switch (activity)
       {
-      case ACTIVITY_BATTLE_SINGLE:
-      case ACTIVITY_BATTLE_DOUBLE:
-      case ACTIVITY_TRADE:
-      case ACTIVITY_BATTLE_TOWER:
-      case ACTIVITY_BATTLE_TOWER_OPEN:
-      case ACTIVITY_WONDER_CARD:
-      case ACTIVITY_WONDER_NEWS:
+      case (1):
+      case (2):
+      case (4):
+      case (28):
+      case (14):
+      case (21):
+      case (22):
           StringExpandPlaceholders(dst, sText_AwaitingPlayersResponse);
           break;
-      case ACTIVITY_BATTLE_MULTI:
-      case ACTIVITY_POKEMON_JUMP:
-      case ACTIVITY_BERRY_CRUSH:
-      case ACTIVITY_BERRY_PICK:
-      case ACTIVITY_RECORD_CORNER:
-      case ACTIVITY_BERRY_BLENDER:
-      case ACTIVITY_CONTEST_COOL:
-      case ACTIVITY_CONTEST_BEAUTY:
-      case ACTIVITY_CONTEST_CUTE:
-      case ACTIVITY_CONTEST_SMART:
-      case ACTIVITY_CONTEST_TOUGH:
+      case (3):
+      case (9):
+      case (10):
+      case (11):
+      case (15):
+      case (16):
+      case (23):
+      case (24):
+      case (25):
+      case (26):
+      case (27):
           StringExpandPlaceholders(dst, sText_PlayerHasBeenAskedToRegisterYouPleaseWait);
           break;
       }
@@ -651,26 +548,26 @@ export function GetYouAskedToJoinGroupPleaseWaitMessage(dst: any, activity: any)
 export function GetGroupLeaderSentAnOKMessage(dst: any, activity: any): any {
   switch (activity)
       {
-      case ACTIVITY_BATTLE_SINGLE:
-      case ACTIVITY_BATTLE_DOUBLE:
-      case ACTIVITY_TRADE:
-      case ACTIVITY_BATTLE_TOWER:
-      case ACTIVITY_BATTLE_TOWER_OPEN:
-      case ACTIVITY_WONDER_CARD:
-      case ACTIVITY_WONDER_NEWS:
+      case (1):
+      case (2):
+      case (4):
+      case (28):
+      case (14):
+      case (21):
+      case (22):
           StringExpandPlaceholders(dst, sText_PlayerSentBackOK);
           break;
-      case ACTIVITY_BATTLE_MULTI:
-      case ACTIVITY_POKEMON_JUMP:
-      case ACTIVITY_BERRY_CRUSH:
-      case ACTIVITY_BERRY_PICK:
-      case ACTIVITY_RECORD_CORNER:
-      case ACTIVITY_BERRY_BLENDER:
-      case ACTIVITY_CONTEST_COOL:
-      case ACTIVITY_CONTEST_BEAUTY:
-      case ACTIVITY_CONTEST_CUTE:
-      case ACTIVITY_CONTEST_SMART:
-      case ACTIVITY_CONTEST_TOUGH:
+      case (3):
+      case (9):
+      case (10):
+      case (11):
+      case (15):
+      case (16):
+      case (23):
+      case (24):
+      case (25):
+      case (26):
+      case (27):
           StringExpandPlaceholders(dst, sText_PlayerOKdRegistration);
           break;
       }
@@ -680,15 +577,15 @@ export function GetGroupLeaderSentAnOKMessage(dst: any, activity: any): any {
 export function Leader_SetStateIfMemberListChanged(data: any, joinedState: any, droppedState: any): any {
   switch (LeaderUpdateGroupMembership(data.playerList))
       {
-      case UNION_ROOM_SPAWN_IN:
-          PlaySE(SE_PC_LOGIN);
+      case (1):
+          PlaySE((2));
           RedrawListMenu(data.listTaskId);
           CopyAndTranslatePlayerName(gStringVar2,data.playerList.players[data.playerCount]);
           Leader_GetAcceptNewMemberPrompt(gStringVar4, gPlayerCurrActivity);
           data.state = joinedState;
           break;
-      case UNION_ROOM_SPAWN_OUT:
-          RfuSetStatus(RFU_STATUS_OK, 0);
+      case (2):
+          RfuSetStatus((0), 0);
           RedrawListMenu(data.listTaskId);
           data.state = droppedState;
           return TRUE;
@@ -704,11 +601,11 @@ export function ItemPrintFunc_PossibleGroupMembers(windowId: any, id: any, y: an
 
       switch (data.playerList.players[id].groupScheduledAnim)
       {
-      case UNION_ROOM_SPAWN_IN:
+      case (1):
           if (data.playerList.players[id].newPlayerCountdown != 0)
               colorIdx = UR_COLOR_GREEN;
           break;
-      case UNION_ROOM_SPAWN_OUT:
+      case (2):
           colorIdx = UR_COLOR_RED;
           break;
       }
@@ -719,14 +616,14 @@ export function ItemPrintFunc_PossibleGroupMembers(windowId: any, id: any, y: an
 /** static u8 LeaderUpdateGroupMembership(struct RfuPlayerList *list) */
 export function LeaderUpdateGroupMembership(list: any): any {
   let data: any = sWirelessLinkMain.leader;
-      let ret: any = UNION_ROOM_SPAWN_NONE;
+      let ret: any = (0);
       let i: any = null;
       let id: any = null;
 
-      for (i = 1; i < MAX_RFU_PLAYERS; i++)
+      for (i = 1; i < (5); i++)
       {
           let _var: any = data.playerList.players[i].groupScheduledAnim;
-          if (_var == UNION_ROOM_SPAWN_IN)
+          if (_var == (1))
           {
               id = GetNewIncomingPlayerId(data.playerList.players[i], data.incomingPlayerList.players);
               if (id != 0xFF)
@@ -738,21 +635,21 @@ export function LeaderUpdateGroupMembership(list: any): any {
               else
               {
                    
-                  data.playerList.players[i].groupScheduledAnim = UNION_ROOM_SPAWN_OUT;
-                  ret = UNION_ROOM_SPAWN_OUT;
+                  data.playerList.players[i].groupScheduledAnim = (2);
+                  ret = (2);
               }
           }
       }
 
-      for (id = 0; id < RFU_CHILD_MAX; id++)
-          TryAddIncomingPlayerToList(data.playerList.players,data.incomingPlayerList.players[id], MAX_RFU_PLAYERS);
+      for (id = 0; id < (4); id++)
+          TryAddIncomingPlayerToList(data.playerList.players,data.incomingPlayerList.players[id], (5));
 
-      if (ret != UNION_ROOM_SPAWN_OUT)
+      if (ret != (2))
       {
-          for (id = 0; id < MAX_RFU_PLAYERS; id++)
+          for (id = 0; id < (5); id++)
           {
               if (data.playerList.players[id].newPlayerCountdown != 0)
-                  ret = UNION_ROOM_SPAWN_IN;
+                  ret = (1);
           }
       }
 
@@ -766,13 +663,13 @@ export function LeaderPrunePlayerList(list: any): any {
       let i: any = null;
       let playerCount: any = null;
 
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
           data.playerListBackup.players[i] = data.playerList.players[i];
 
       copiedCount = 0;
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
       {
-          if (data.playerListBackup.players[i].groupScheduledAnim == UNION_ROOM_SPAWN_IN)
+          if (data.playerListBackup.players[i].groupScheduledAnim == (1))
           {
               data.playerList.players[copiedCount] = data.playerListBackup.players[i];
               copiedCount++;
@@ -780,18 +677,18 @@ export function LeaderPrunePlayerList(list: any): any {
       }
 
       playerCount = copiedCount;
-      for (; copiedCount < MAX_RFU_PLAYERS; copiedCount++)
+      for (; copiedCount < (5); copiedCount++)
       {
           data.playerList.players[copiedCount].rfu = sUnionRoomPlayer_DummyRfu;
           data.playerList.players[copiedCount].timeoutCounter = 0;
-          data.playerList.players[copiedCount].groupScheduledAnim = UNION_ROOM_SPAWN_NONE;
+          data.playerList.players[copiedCount].groupScheduledAnim = (0);
           data.playerList.players[copiedCount].useRedText = FALSE;
           data.playerList.players[copiedCount].newPlayerCountdown = 0;
       }
 
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
       {
-          if (data.playerList.players[i].groupScheduledAnim != UNION_ROOM_SPAWN_IN)
+          if (data.playerList.players[i].groupScheduledAnim != (1))
               continue;
           if (data.playerList.players[i].newPlayerCountdown != 64)
               continue;
@@ -814,7 +711,7 @@ export function TryJoinLinkGroup(): any {
 
       data.state = LG_STATE_INIT;
       data.textState = 0;
-      gSpecialVar_Result = LINKUP_ONGOING;
+      gSpecialVar_Result = (0);
 }
 
 /** static void Task_TryJoinLinkGroup(u8 taskId) */
@@ -825,15 +722,15 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
       switch (data.state)
       {
       case LG_STATE_INIT:
-          if (gSpecialVar_0x8004 == LINK_GROUP_BATTLE_TOWER && gSaveBlock2Ptr.frontier.lvlMode == FRONTIER_LVL_OPEN)
+          if (gSpecialVar_0x8004 == (20) && gSaveBlock2Ptr.frontier.lvlMode == (1))
               gSpecialVar_0x8004++;
           gPlayerCurrActivity = sLinkGroupToURoomActivity[gSpecialVar_0x8004];
           SetHostRfuGameData(gPlayerCurrActivity, 0, FALSE);
           SetWirelessCommType1();
           OpenLink();
           InitializeRfuLinkManager_JoinGroup();
-          data.incomingPlayerList = AllocZeroed(RFU_CHILD_MAX * 0);
-          data.playerList = AllocZeroed(MAX_RFU_PLAYER_LIST_SIZE * 0);
+          data.incomingPlayerList = AllocZeroed((4) * 0);
+          data.playerList = AllocZeroed((16) * 0);
           data.state = LG_STATE_CHOOSE_LEADER_MSG;
           break;
       case LG_STATE_CHOOSE_LEADER_MSG:
@@ -841,8 +738,8 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
               data.state = LG_STATE_INIT_WINDOWS;
           break;
       case LG_STATE_INIT_WINDOWS:
-          ClearIncomingPlayerList(data.incomingPlayerList, RFU_CHILD_MAX);
-          ClearRfuPlayerList(data.playerList.players, MAX_RFU_PLAYER_LIST_SIZE);
+          ClearIncomingPlayerList(data.incomingPlayerList, (4));
+          ClearRfuPlayerList(data.playerList.players, (16));
           data.listenTaskId = CreateTask_ListenForCompatiblePartners(data.incomingPlayerList, gSpecialVar_0x8004);
           data.bButtonCancelWindowId = AddWindow(sWindowTemplate_BButtonCancel);
           data.listWindowId = AddWindow(sWindowTemplate_GroupList);
@@ -872,36 +769,36 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
           switch (id)
           {
           case 1:
-              PlaySE(SE_PC_LOGIN);
+              PlaySE((2));
               RedrawListMenu(data.listTaskId);
               break;
           case 0:
               id = ListMenu_ProcessInput(data.listTaskId);
-              if (JOY_NEW(A_BUTTON) && id != LIST_NOTHING_CHOSEN)
+              if (JOY_NEW(A_BUTTON) && id != (-1))
               {
                    
                   let activity: any = data.playerList.players[id].rfu.data.activity;
 
-                  if (data.playerList.players[id].groupScheduledAnim == UNION_ROOM_SPAWN_IN && !data.playerList.players[id].rfu.data.startedActivity)
+                  if (data.playerList.players[id].groupScheduledAnim == (1) && !data.playerList.players[id].rfu.data.startedActivity)
                   {
                       let readyStatus: any = IsTryingToTradeAcrossVersionTooSoon(data, id);
-                      if (readyStatus == UR_TRADE_READY)
+                      if (readyStatus == (0))
                       {
                            
                           AskToJoinRfuGroup(data, id);
                           data.state = LG_STATE_ASK_JOIN_GROUP;
-                          PlaySE(SE_POKENAV_ON);
+                          PlaySE((110));
                       }
                       else
                       {
                           StringCopy(gStringVar4, sCantTransmitToTrainerTexts[readyStatus - 1]);
                           data.state = LG_STATE_TRADE_NOT_READY;
-                          PlaySE(SE_POKENAV_ON);
+                          PlaySE((110));
                       }
                   }
                   else
                   {
-                      PlaySE(SE_WALL_HIT);
+                      PlaySE((7));
                   }
               }
               else if (JOY_NEW(B_BUTTON))
@@ -926,29 +823,29 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
           if (gReceivedRemoteLinkPlayers)
           {
               gPlayerCurrActivity = data.playerList.players[data.leaderId].rfu.data.activity;
-              RfuSetStatus(RFU_STATUS_OK, 0);
+              RfuSetStatus((0), 0);
               switch (gPlayerCurrActivity)
               {
-              case ACTIVITY_BATTLE_SINGLE:
-              case ACTIVITY_BATTLE_DOUBLE:
-              case ACTIVITY_BATTLE_MULTI:
-              case ACTIVITY_TRADE:
-              case ACTIVITY_CHAT:
-              case ACTIVITY_POKEMON_JUMP:
-              case ACTIVITY_BERRY_CRUSH:
-              case ACTIVITY_BERRY_PICK:
-              case ACTIVITY_SPIN_TRADE:
-              case ACTIVITY_BATTLE_TOWER:
-              case ACTIVITY_BATTLE_TOWER_OPEN:
-              case ACTIVITY_RECORD_CORNER:
-              case ACTIVITY_BERRY_BLENDER:
-              case ACTIVITY_WONDER_CARD:
-              case ACTIVITY_WONDER_NEWS:
-              case ACTIVITY_CONTEST_COOL:
-              case ACTIVITY_CONTEST_BEAUTY:
-              case ACTIVITY_CONTEST_CUTE:
-              case ACTIVITY_CONTEST_SMART:
-              case ACTIVITY_CONTEST_TOUGH:
+              case (1):
+              case (2):
+              case (3):
+              case (4):
+              case (5):
+              case (9):
+              case (10):
+              case (11):
+              case (13):
+              case (28):
+              case (14):
+              case (15):
+              case (16):
+              case (21):
+              case (22):
+              case (23):
+              case (24):
+              case (25):
+              case (26):
+              case (27):
                   data.state = LG_STATE_READY_START_ACTIVITY;
                   return;
               }
@@ -956,36 +853,36 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
 
           switch (RfuGetStatus())
           {
-          case RFU_STATUS_FATAL_ERROR:
+          case (1):
               data.state = LG_STATE_RFU_ERROR;
               break;
-          case RFU_STATUS_CONNECTION_ERROR:
-          case RFU_STATUS_JOIN_GROUP_NO:
-          case RFU_STATUS_LEAVE_GROUP:
+          case (2):
+          case (6):
+          case (9):
               data.state = LG_STATE_DISCONNECTED;
               break;
-          case RFU_STATUS_JOIN_GROUP_OK:
+          case (5):
               GetGroupLeaderSentAnOKMessage(gStringVar4, gPlayerCurrActivity);
               if (PrintOnTextbox(data.textState, gStringVar4))
               {
-                  if (gPlayerCurrActivity == ACTIVITY_BATTLE_TOWER || gPlayerCurrActivity == ACTIVITY_BATTLE_TOWER_OPEN)
+                  if (gPlayerCurrActivity == (28) || gPlayerCurrActivity == (14))
                   {
-                      RfuSetStatus(RFU_STATUS_ACK_JOIN_GROUP, 0);
+                      RfuSetStatus((12), 0);
                   }
                   else
                   {
-                      RfuSetStatus(RFU_STATUS_WAIT_ACK_JOIN_GROUP, 0);
+                      RfuSetStatus((7), 0);
                       StringCopy(gStringVar1, sLinkGroupActivityNameTexts[gPlayerCurrActivity]);
                       StringExpandPlaceholders(gStringVar4, sText_AwaitingOtherMembers);
                   }
               }
               break;
-          case RFU_STATUS_WAIT_ACK_JOIN_GROUP:
+          case (7):
               if (data.delayBeforePrint > 240)
               {
                   if (PrintOnTextbox(data.textState, gStringVar4))
                   {
-                      RfuSetStatus(RFU_STATUS_ACK_JOIN_GROUP, 0);
+                      RfuSetStatus((12), 0);
                       data.delayBeforePrint = 0;
                   }
               }
@@ -993,11 +890,11 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
               {
                   switch (gPlayerCurrActivity)
                   {
-                  case ACTIVITY_BATTLE_SINGLE:
-                  case ACTIVITY_BATTLE_DOUBLE:
-                  case ACTIVITY_TRADE:
-                  case ACTIVITY_BATTLE_TOWER:
-                  case ACTIVITY_BATTLE_TOWER_OPEN:
+                  case (1):
+                  case (2):
+                  case (4):
+                  case (28):
+                  case (14):
                       break;
                   default:
                       data.delayBeforePrint++;
@@ -1007,7 +904,7 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
               break;
           }
 
-          if (RfuGetStatus() == RFU_STATUS_OK && JOY_NEW(B_BUTTON))
+          if (RfuGetStatus() == (0) && JOY_NEW(B_BUTTON))
               data.state = LG_STATE_ASK_LEAVE_GROUP;
           break;
       case LG_STATE_ASK_LEAVE_GROUP:
@@ -1023,7 +920,7 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
               RedrawListMenu(data.listTaskId);
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               data.state = LG_STATE_ASK_JOIN_GROUP;
               RedrawListMenu(data.listTaskId);
               break;
@@ -1060,13 +957,13 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
           DestroyWirelessStatusIndicatorSprite();
           if (PrintOnTextbox(data.textState, sPlayerDisconnectedTexts[RfuGetStatus()]))
           {
-              gSpecialVar_Result = LINKUP_CONNECTION_ERROR;
+              gSpecialVar_Result = (6);
               data.state = LG_STATE_SHUTDOWN;
           }
           break;
       case LG_STATE_CANCELED:
           DestroyWirelessStatusIndicatorSprite();
-          gSpecialVar_Result = LINKUP_FAILED;
+          gSpecialVar_Result = (5);
           data.state = LG_STATE_SHUTDOWN;
           break;
       case LG_STATE_RETRY_CONNECTION:
@@ -1076,14 +973,14 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
           DestroyWirelessStatusIndicatorSprite();
           if (PrintOnTextbox(data.textState, sPlayerDisconnectedTexts[RfuGetStatus()]))
           {
-              gSpecialVar_Result = LINKUP_RETRY_ROLE_ASSIGN;
+              gSpecialVar_Result = (8);
               data.state = LG_STATE_SHUTDOWN;
           }
           break;
       case LG_STATE_TRADE_NOT_READY_RETRY:
           if (PrintOnTextbox(data.textState, gStringVar4))
           {
-              gSpecialVar_Result = LINKUP_RETRY_ROLE_ASSIGN;
+              gSpecialVar_Result = (8);
               data.state = LG_STATE_SHUTDOWN;
           }
           break;
@@ -1103,19 +1000,19 @@ export function Task_TryJoinLinkGroup(taskId: any): any {
 export function IsTryingToTradeAcrossVersionTooSoon(data: any, id: any): any {
   let partner: any =data.playerList.players[id];
 
-      if (gPlayerCurrActivity == ACTIVITY_TRADE && partner.rfu.data.compatibility.version != VERSION_EMERALD)
+      if (gPlayerCurrActivity == (4) && partner.rfu.data.compatibility.version != (3))
       {
-          if (!(gSaveBlock2Ptr.specialSaveWarpFlags & CHAMPION_SAVEWARP))
-              return UR_TRADE_PLAYER_NOT_READY;
+          if (!(gSaveBlock2Ptr.specialSaveWarpFlags & ((1 << 7))))
+              return (1);
           else if (partner.rfu.data.compatibility.canLinkNationally)
-              return UR_TRADE_READY;
+              return (0);
       }
       else
       {
-          return UR_TRADE_READY;
+          return (0);
       }
 
-      return UR_TRADE_PARTNER_NOT_READY;
+      return (2);
 }
 
 /** static void AskToJoinRfuGroup(struct WirelessLink_Group *data, s32 id) */
@@ -1152,25 +1049,25 @@ export function Task_ListenToWireless(taskId: any): any {
       switch (data.state)
       {
       case 0:
-          SetHostRfuGameData(ACTIVITY_NONE, 0, FALSE);
+          SetHostRfuGameData((0), 0, FALSE);
           SetWirelessCommType1();
           OpenLink();
           InitializeRfuLinkManager_JoinGroup();
           RfuSetIgnoreError(TRUE);
-          data.incomingPlayerList = AllocZeroed(RFU_CHILD_MAX * 0);
-          data.playerList = AllocZeroed(MAX_RFU_PLAYER_LIST_SIZE * 0);
+          data.incomingPlayerList = AllocZeroed((4) * 0);
+          data.playerList = AllocZeroed((16) * 0);
           data.state = 2;
           break;
       case 2:
-          ClearIncomingPlayerList(data.incomingPlayerList, RFU_CHILD_MAX);
-          ClearRfuPlayerList(data.playerList.players, MAX_RFU_PLAYER_LIST_SIZE);
+          ClearIncomingPlayerList(data.incomingPlayerList, (4));
+          ClearRfuPlayerList(data.playerList.players, (16));
           data.listenTaskId = CreateTask_ListenForCompatiblePartners(data.incomingPlayerList, 0xFF);
           data.leaderId = 0;
           data.state = 3;
           break;
       case 3:
           if (GetNewLeaderCandidate() == 1)
-              PlaySE(SE_PC_LOGIN);
+              PlaySE((2));
           if (gTasks[taskId].data[15] == 0xFF)
               data.state = 10;
           break;
@@ -1209,7 +1106,7 @@ export function IsPartnerActivityAcceptable(activity: any, linkGroup: any): any 
 
 /** static u8 GetGroupListTextColor(struct WirelessLink_Group *data, u32 id) */
 export function GetGroupListTextColor(data: any, id: any): any {
-  if (data.playerList.players[id].groupScheduledAnim == UNION_ROOM_SPAWN_IN)
+  if (data.playerList.players[id].groupScheduledAnim == (1))
       {
           if (data.playerList.players[id].rfu.data.startedActivity)
               return UR_COLOR_WHITE;
@@ -1236,14 +1133,14 @@ export function GetNewLeaderCandidate(): any {
       let i: any = null;
       let id: any = null;
 
-      for (i = 0; i < MAX_RFU_PLAYER_LIST_SIZE; i++)
+      for (i = 0; i < (16); i++)
       {
-          if (data.playerList.players[i].groupScheduledAnim != UNION_ROOM_SPAWN_NONE)
+          if (data.playerList.players[i].groupScheduledAnim != (0))
           {
               id = GetNewIncomingPlayerId(data.playerList.players[i], data.incomingPlayerList.players);
               if (id != 0xFF)
               {
-                  if (data.playerList.players[i].groupScheduledAnim == UNION_ROOM_SPAWN_IN)
+                  if (data.playerList.players[i].groupScheduledAnim == (1))
                   {
                       if (ArePlayerDataDifferent(data.playerList.players[i].rfu,data.incomingPlayerList.players[id].rfu))
                       {
@@ -1263,7 +1160,7 @@ export function GetNewLeaderCandidate(): any {
                   }
                   else
                   {
-                      data.playerList.players[i].groupScheduledAnim = UNION_ROOM_SPAWN_IN;
+                      data.playerList.players[i].groupScheduledAnim = (1);
                       data.playerList.players[i].newPlayerCountdown = 64;
                       ret = 1;
                   }
@@ -1272,12 +1169,12 @@ export function GetNewLeaderCandidate(): any {
               }
               else
               {
-                  if (data.playerList.players[i].groupScheduledAnim != UNION_ROOM_SPAWN_OUT)
+                  if (data.playerList.players[i].groupScheduledAnim != (2))
                   {
                       data.playerList.players[i].timeoutCounter++;
                       if (data.playerList.players[i].timeoutCounter >= 300)
                       {
-                          data.playerList.players[i].groupScheduledAnim = UNION_ROOM_SPAWN_OUT;
+                          data.playerList.players[i].groupScheduledAnim = (2);
                           ret = 2;
                       }
                   }
@@ -1285,9 +1182,9 @@ export function GetNewLeaderCandidate(): any {
           }
       }
 
-      for (id = 0; id < RFU_CHILD_MAX; id++)
+      for (id = 0; id < (4); id++)
       {
-          if (TryAddIncomingPlayerToList(data.playerList.players,data.incomingPlayerList.players[id], MAX_RFU_PLAYER_LIST_SIZE) != 0xFF)
+          if (TryAddIncomingPlayerToList(data.playerList.players,data.incomingPlayerList.players[id], (16)) != 0xFF)
               ret = 1;
       }
 
@@ -1321,23 +1218,23 @@ export function Task_StartUnionRoomTrade(taskId: any): any {
           if (GetBlockReceivedStatus() == 3)
           {
               gEnemyParty[0] = (gBlockRecvBuffer[GetMultiplayerId() ^ 1]);
-              IncrementGameStat(GAME_STAT_NUM_UNION_ROOM_BATTLES);
+              IncrementGameStat((50));
               ResetBlockReceivedFlags();
               gTasks[taskId].data[0]++;
           }
           break;
       case 2:
-          memcpy(gBlockSendBuffer, gSaveBlock1Ptr.mail, 0 * PARTY_SIZE + 4);
-          if (SendBlock(0, gBlockSendBuffer, 0 * PARTY_SIZE + 4))
+          memcpy(gBlockSendBuffer, gSaveBlock1Ptr.mail, 0 * (6) + 4);
+          if (SendBlock(0, gBlockSendBuffer, 0 * (6) + 4))
               gTasks[taskId].data[0]++;
           break;
       case 3:
           if (GetBlockReceivedStatus() == 3)
           {
-              memcpy(gTradeMail, gBlockRecvBuffer[GetMultiplayerId() ^ 1], 0 * PARTY_SIZE);
+              memcpy(gTradeMail, gBlockRecvBuffer[GetMultiplayerId() ^ 1], 0 * (6));
               ResetBlockReceivedFlags();
-              gSelectedTradeMonPositions[TRADE_PLAYER] = monId;
-              gSelectedTradeMonPositions[TRADE_PARTNER] = PARTY_SIZE;
+              gSelectedTradeMonPositions[(0)] = monId;
+              gSelectedTradeMonPositions[(1)] = (6);
               gMain.savedCallback = CB2_ReturnToField;
               SetMainCallback2(CB2_LinkTrade);
               ResetUnionRoomTrade(sUnionRoomTrade);
@@ -1414,7 +1311,7 @@ export function StartUnionRoomBattle(battleFlags: any): any {
   HealPlayerParty();
       SavePlayerParty();
       LoadPlayerBag();
-      gLinkPlayers[0].linkType = LINKTYPE_BATTLE;
+      gLinkPlayers[0].linkType = (0x2211);
       gLinkPlayers[GetMultiplayerId()].id = GetMultiplayerId();
       gLinkPlayers[GetMultiplayerId() ^ 1].id = GetMultiplayerId() ^ 1;
       gMain.savedCallback = CB2_ReturnFromCableClubBattle;
@@ -1424,20 +1321,20 @@ export function StartUnionRoomBattle(battleFlags: any): any {
 
 /** static void WarpForWirelessMinigame(u16 linkService, u16 x, u16 y) */
 export function WarpForWirelessMinigame(linkService: any, x: any, y: any): any {
-  VarSet(VAR_CABLE_CLUB_STATE, linkService);
-      SetWarpDestination(gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE, x, y);
-      SetDynamicWarpWithCoords(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, WARP_ID_NONE, x, y);
+  VarSet((0x4087), linkService);
+      SetWarpDestination(gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)), x, y);
+      SetDynamicWarpWithCoords(0, gSaveBlock1Ptr.location.mapGroup, gSaveBlock1Ptr.location.mapNum, ((-1)), x, y);
       WarpIntoMap();
 }
 
 /** static void WarpForCableClubActivity(s8 mapGroup, s8 mapNum, s32 x, s32 y, u16 linkService) */
 export function WarpForCableClubActivity(mapGroup: any, mapNum: any, x: any, y: any, linkService: any): any {
   gSpecialVar_0x8004 = linkService;
-      VarSet(VAR_CABLE_CLUB_STATE, linkService);
+      VarSet((0x4087), linkService);
       gFieldLinkPlayerCount = GetLinkPlayerCount();
       gLocalLinkPlayerId = GetMultiplayerId();
       SetCableClubWarp();
-      SetWarpDestination(mapGroup, mapNum, WARP_ID_NONE, x, y);
+      SetWarpDestination(mapGroup, mapNum, ((-1)), x, y);
       WarpIntoMap();
 }
 
@@ -1478,72 +1375,72 @@ export function Task_StartActivity(taskId: any): any {
   MysteryGift_DisableStats();
       switch (gPlayerCurrActivity)
       {
-      case ACTIVITY_BATTLE_SINGLE:
-      case ACTIVITY_BATTLE_DOUBLE:
-      case ACTIVITY_BATTLE_MULTI:
-      case ACTIVITY_TRADE:
-      case ACTIVITY_POKEMON_JUMP:
-      case ACTIVITY_BERRY_CRUSH:
-      case ACTIVITY_BERRY_PICK:
-      case ACTIVITY_SPIN_TRADE:
-      case ACTIVITY_RECORD_CORNER:
+      case (1):
+      case (2):
+      case (3):
+      case (4):
+      case (9):
+      case (10):
+      case (11):
+      case (13):
+      case (15):
           SaveLinkTrainerNames();
           break;
       }
 
       switch (gPlayerCurrActivity)
       {
-      case ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM:
-      case ACTIVITY_ACCEPT | IN_UNION_ROOM:
+      case (1) | ((1 << 6)):
+      case (17) | ((1 << 6)):
           CleanupOverworldWindowsAndTilemaps();
           gMain.savedCallback = CB2_UnionRoomBattle;
           InitChooseHalfPartyForBattle(3);
           break;
-      case ACTIVITY_BATTLE_SINGLE:
+      case (1):
           CleanupOverworldWindowsAndTilemaps();
           CreateTrainerCardInBuffer(gBlockSendBuffer, TRUE);
           HealPlayerParty();
           SavePlayerParty();
           LoadPlayerBag();
-          WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_2P), MAP_NUM(MAP_BATTLE_COLOSSEUM_2P), 6, 8, USING_SINGLE_BATTLE);
+          WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_2P), MAP_NUM(MAP_BATTLE_COLOSSEUM_2P), 6, 8, (1));
           SetMainCallback2(CB2_TransitionToCableClub);
           break;
-      case ACTIVITY_BATTLE_DOUBLE:
+      case (2):
           CleanupOverworldWindowsAndTilemaps();
           HealPlayerParty();
           SavePlayerParty();
           LoadPlayerBag();
           CreateTrainerCardInBuffer(gBlockSendBuffer, TRUE);
-          WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_2P), MAP_NUM(MAP_BATTLE_COLOSSEUM_2P), 6, 8, USING_DOUBLE_BATTLE);
+          WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_2P), MAP_NUM(MAP_BATTLE_COLOSSEUM_2P), 6, 8, (2));
           SetMainCallback2(CB2_TransitionToCableClub);
           break;
-      case ACTIVITY_BATTLE_MULTI:
+      case (3):
           CleanupOverworldWindowsAndTilemaps();
           HealPlayerParty();
           SavePlayerParty();
           LoadPlayerBag();
           CreateTrainerCardInBuffer(gBlockSendBuffer, TRUE);
-          WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_4P), MAP_NUM(MAP_BATTLE_COLOSSEUM_4P), 5, 8, USING_MULTI_BATTLE);
+          WarpForCableClubActivity(MAP_GROUP(MAP_BATTLE_COLOSSEUM_4P), MAP_NUM(MAP_BATTLE_COLOSSEUM_4P), 5, 8, (5));
           SetMainCallback2(CB2_TransitionToCableClub);
           break;
-      case ACTIVITY_TRADE:
+      case (4):
           CreateTrainerCardInBuffer(gBlockSendBuffer, TRUE);
           CleanupOverworldWindowsAndTilemaps();
-          WarpForCableClubActivity(MAP_GROUP(MAP_TRADE_CENTER), MAP_NUM(MAP_TRADE_CENTER), 5, 8, USING_TRADE_CENTER);
+          WarpForCableClubActivity(MAP_GROUP(MAP_TRADE_CENTER), MAP_NUM(MAP_TRADE_CENTER), 5, 8, (3));
           SetMainCallback2(CB2_TransitionToCableClub);
           break;
-      case ACTIVITY_RECORD_CORNER:
+      case (15):
           CreateTrainerCardInBuffer(gBlockSendBuffer, TRUE);
           CleanupOverworldWindowsAndTilemaps();
-          WarpForCableClubActivity(MAP_GROUP(MAP_RECORD_CORNER), MAP_NUM(MAP_RECORD_CORNER), 8, 9, USING_RECORD_CORNER);
+          WarpForCableClubActivity(MAP_GROUP(MAP_RECORD_CORNER), MAP_NUM(MAP_RECORD_CORNER), 8, 9, (4));
           SetMainCallback2(CB2_TransitionToCableClub);
           break;
-      case ACTIVITY_TRADE | IN_UNION_ROOM:
+      case (4) | ((1 << 6)):
           CleanupOverworldWindowsAndTilemaps();
           CreateTask(Task_StartUnionRoomTrade, 0);
           break;
-      case ACTIVITY_CHAT:
-      case ACTIVITY_CHAT | IN_UNION_ROOM:
+      case (5):
+      case (5) | ((1 << 6)):
           if (GetMultiplayerId() == 0)
           {
               LinkRfu_CreateConnectionAsParent();
@@ -1551,32 +1448,32 @@ export function Task_StartActivity(taskId: any): any {
           else
           {
               LinkRfu_StopManagerBeforeEnteringChat();
-              SetHostRfuGameData(ACTIVITY_CHAT | IN_UNION_ROOM, 0, TRUE);
+              SetHostRfuGameData((5) | ((1 << 6)), 0, TRUE);
           }
           EnterUnionRoomChat();
           break;
-      case ACTIVITY_CARD:
-      case ACTIVITY_CARD | IN_UNION_ROOM:
+      case (8):
+      case (8) | ((1 << 6)):
           CreateTrainerCardInBuffer(gBlockSendBuffer, FALSE);
           SetMainCallback2(CB2_ShowCard);
           break;
-      case ACTIVITY_POKEMON_JUMP:
-          WarpForWirelessMinigame(USING_MINIGAME, 5, 1);
+      case (9):
+          WarpForWirelessMinigame((8), 5, 1);
           StartPokemonJump(GetCursorSelectionMonId(), CB2_LoadMap);
           break;
-      case ACTIVITY_BERRY_CRUSH:
-          WarpForWirelessMinigame(USING_BERRY_CRUSH, 9, 1);
+      case (10):
+          WarpForWirelessMinigame((7), 9, 1);
           StartBerryCrush(CB2_LoadMap);
           break;
-      case ACTIVITY_BERRY_PICK:
-          WarpForWirelessMinigame(USING_MINIGAME, 5, 1);
+      case (11):
+          WarpForWirelessMinigame((8), 5, 1);
           StartDodrioBerryPicking(GetCursorSelectionMonId(), CB2_LoadMap);
           break;
       }
 
       DestroyTask(taskId);
-      gSpecialVar_Result = LINKUP_SUCCESS;
-      if (gPlayerCurrActivity != (ACTIVITY_TRADE | IN_UNION_ROOM))
+      gSpecialVar_Result = (1);
+      if (gPlayerCurrActivity != ((4) | ((1 << 6))))
           UnlockPlayerFieldControls();
 }
 
@@ -1588,12 +1485,12 @@ export function Task_RunScriptAndFadeToActivity(taskId: any): any {
       switch (data[0])
       {
       case 0:
-          gSpecialVar_Result = LINKUP_SUCCESS;
+          gSpecialVar_Result = (1);
           switch (gPlayerCurrActivity)
           {
-          case ACTIVITY_BATTLE_TOWER:
-          case ACTIVITY_BATTLE_TOWER_OPEN:
-              gLinkPlayers[0].linkType = LINKTYPE_BATTLE;
+          case (28):
+          case (14):
+              gLinkPlayers[0].linkType = (0x2211);
               gLinkPlayers[0].id = 0;
               gLinkPlayers[1].id = 2;
               sendBuff[0] = GetMonData(gPlayerParty[gSelectedOrderFromParty[0] - 1], MON_DATA_SPECIES);
@@ -1603,12 +1500,12 @@ export function Task_RunScriptAndFadeToActivity(taskId: any): any {
               SaveLinkTrainerNames();
               ResetBlockReceivedFlags();
               break;
-          case ACTIVITY_BERRY_BLENDER:
-          case ACTIVITY_CONTEST_COOL:
-          case ACTIVITY_CONTEST_BEAUTY:
-          case ACTIVITY_CONTEST_CUTE:
-          case ACTIVITY_CONTEST_SMART:
-          case ACTIVITY_CONTEST_TOUGH:
+          case (16):
+          case (23):
+          case (24):
+          case (25):
+          case (26):
+          case (27):
               SaveLinkTrainerNames();
               DestroyTask(taskId);
           default:
@@ -1620,14 +1517,14 @@ export function Task_RunScriptAndFadeToActivity(taskId: any): any {
       case 1:
           if (!ScriptContext_IsEnabled())
           {
-              FadeScreen(FADE_TO_BLACK, 0);
+              FadeScreen((1), 0);
               data[0] = 2;
           }
           break;
       case 2:
           if (!gPaletteFade.active)
           {
-              if (gPlayerCurrActivity == ACTIVITY_29)
+              if (gPlayerCurrActivity == (29))
               {
                   DestroyTask(taskId);
                   SetMainCallback2(CB2_StartCreateTradeMenu);
@@ -1656,7 +1553,7 @@ export function Task_RunScriptAndFadeToActivity(taskId: any): any {
               ResetBlockReceivedFlags();
               if (AreBattleTowerLinkSpeciesSame(gBlockRecvBuffer[0], gBlockRecvBuffer[1]))
               {
-                  gSpecialVar_Result = LINKUP_FAILED_BATTLE_TOWER;
+                  gSpecialVar_Result = (11);
                   data[0] = 7;
               }
               else
@@ -1706,7 +1603,7 @@ export function CreateTask_SendMysteryGift(activity: any): any {
       data.state = 0;
       data.textState = 0;
       data.activity = activity;
-      gSpecialVar_Result = LINKUP_ONGOING;
+      gSpecialVar_Result = (0);
 }
 
 /** static void Task_SendMysteryGift(u8 taskId) */
@@ -1728,14 +1625,14 @@ export function Task_SendMysteryGift(taskId: any): any {
           data.state = 1;
           break;
       case 1:
-          data.incomingPlayerList = AllocZeroed(RFU_CHILD_MAX * 0);
-          data.playerList = AllocZeroed(MAX_RFU_PLAYERS * 0);
-          data.playerListBackup = AllocZeroed(MAX_RFU_PLAYERS * 0);
-          ClearIncomingPlayerList(data.incomingPlayerList, RFU_CHILD_MAX);
-          ClearRfuPlayerList(data.playerList.players, MAX_RFU_PLAYERS);
+          data.incomingPlayerList = AllocZeroed((4) * 0);
+          data.playerList = AllocZeroed((5) * 0);
+          data.playerListBackup = AllocZeroed((5) * 0);
+          ClearIncomingPlayerList(data.incomingPlayerList, (4));
+          ClearRfuPlayerList(data.playerList.players, (5));
           CopyHostRfuGameDataAndUsername(data.playerList.players[0].rfu.data, data.playerList.players[0].rfu.name);
           data.playerList.players[0].timeoutCounter = 0;
-          data.playerList.players[0].groupScheduledAnim = UNION_ROOM_SPAWN_IN;
+          data.playerList.players[0].groupScheduledAnim = (1);
           data.playerList.players[0].useRedText = FALSE;
           data.playerList.players[0].newPlayerCountdown = 0;
           data.listenTaskId = CreateTask_ListenForCompatiblePartners(data.incomingPlayerList, 0xFF);
@@ -1789,13 +1686,13 @@ export function Task_SendMysteryGift(taskId: any): any {
               CreateWirelessStatusIndicatorSprite(0, 0);
               data.playerList.players[data.playerCount].newPlayerCountdown = 0;
               RedrawListMenu(data.listTaskId);
-              data.joinRequestAnswer = RFU_STATUS_JOIN_GROUP_OK;
+              data.joinRequestAnswer = (5);
               SendRfuStatusToPartner(data.joinRequestAnswer, ReadAsU16(data.playerList.players[data.playerCount].rfu.data.compatibility.playerTrainerId), data.playerList.players[data.playerCount].rfu.name);
               data.state = 8;
               break;
           case 1:
-          case MENU_B_PRESSED:
-              data.joinRequestAnswer = RFU_STATUS_JOIN_GROUP_NO;
+          case (-1):
+              data.joinRequestAnswer = (6);
               SendRfuStatusToPartner(data.joinRequestAnswer, ReadAsU16(data.playerList.players[data.playerCount].rfu.data.compatibility.playerTrainerId), data.playerList.players[data.playerCount].rfu.name);
               data.state = 8;
               break;
@@ -1805,7 +1702,7 @@ export function Task_SendMysteryGift(taskId: any): any {
           val = WaitSendRfuStatusToPartner(ReadAsU16(data.playerList.players[data.playerCount].rfu.data.compatibility.playerTrainerId), data.playerList.players[data.playerCount].rfu.name);
           if (val == 1)  
           {
-              if (data.joinRequestAnswer == RFU_STATUS_JOIN_GROUP_OK)
+              if (data.joinRequestAnswer == (5))
               {
                   data.playerList.players[data.playerCount].newPlayerCountdown = 0;
                   RedrawListMenu(data.listTaskId);
@@ -1818,7 +1715,7 @@ export function Task_SendMysteryGift(taskId: any): any {
               else
               {
                   RequestDisconnectSlotByTrainerNameAndId(data.playerList.players[data.playerCount].rfu.name, ReadAsU16(data.playerList.players[data.playerCount].rfu.data.compatibility.playerTrainerId));
-                  data.playerList.players[data.playerCount].groupScheduledAnim = UNION_ROOM_SPAWN_NONE;
+                  data.playerList.players[data.playerCount].groupScheduledAnim = (0);
                   LeaderPrunePlayerList(data.playerList);
                   RedrawListMenu(data.listTaskId);
                   data.state = 2;
@@ -1828,7 +1725,7 @@ export function Task_SendMysteryGift(taskId: any): any {
           }
           else if (val == 2)  
           {
-              RfuSetStatus(RFU_STATUS_OK, 0);
+              RfuSetStatus((0), 0);
               data.state = 2;
           }
           break;
@@ -1871,11 +1768,11 @@ export function Task_SendMysteryGift(taskId: any): any {
           if (PrintMysteryGiftMenuMessage(data.textState, sText_PleaseStartOver))
           {
               DestroyTask(taskId);
-              gSpecialVar_Result = LINKUP_FAILED;
+              gSpecialVar_Result = (5);
           }
           break;
       case 15:
-          if (RfuGetStatus() == RFU_STATUS_FATAL_ERROR || RfuGetStatus() == RFU_STATUS_CONNECTION_ERROR)
+          if (RfuGetStatus() == (1) || RfuGetStatus() == (2))
           {
               data.state = 13;
           }
@@ -1914,8 +1811,8 @@ export function CreateTask_LinkMysteryGiftWithFriend(activity: any): any {
 
       data.state = 0;
       data.textState = 0;
-      data.isWonderNews = activity - ACTIVITY_WONDER_CARD;
-      gSpecialVar_Result = LINKUP_ONGOING;
+      data.isWonderNews = activity - (21);
+      gSpecialVar_Result = (0);
 }
 
 /** static void Task_CardOrNewsWithFriend(u8 taskId) */
@@ -1927,12 +1824,12 @@ export function Task_CardOrNewsWithFriend(taskId: any): any {
       switch (data.state)
       {
       case 0:
-          SetHostRfuGameData(data.isWonderNews + ACTIVITY_WONDER_CARD, 0, FALSE);
+          SetHostRfuGameData(data.isWonderNews + (21), 0, FALSE);
           SetWirelessCommType1();
           OpenLink();
           InitializeRfuLinkManager_JoinGroup();
-          data.incomingPlayerList = AllocZeroed(RFU_CHILD_MAX * 0);
-          data.playerList = AllocZeroed(MAX_RFU_PLAYER_LIST_SIZE * 0);
+          data.incomingPlayerList = AllocZeroed((4) * 0);
+          data.playerList = AllocZeroed((16) * 0);
           data.state = 1;
           break;
       case 1:
@@ -1940,9 +1837,9 @@ export function Task_CardOrNewsWithFriend(taskId: any): any {
           data.state = 2;
           break;
       case 2:
-          ClearIncomingPlayerList(data.incomingPlayerList, RFU_CHILD_MAX);
-          ClearRfuPlayerList(data.playerList.players, MAX_RFU_PLAYER_LIST_SIZE);
-          data.listenTaskId = CreateTask_ListenForCompatiblePartners(data.incomingPlayerList, data.isWonderNews + LINK_GROUP_WONDER_CARD);
+          ClearIncomingPlayerList(data.incomingPlayerList, (4));
+          ClearRfuPlayerList(data.playerList.players, (16));
+          data.listenTaskId = CreateTask_ListenForCompatiblePartners(data.incomingPlayerList, data.isWonderNews + (7));
 
           listWinTemplate = sWindowTemplate_GroupList;
           listWinTemplate.baseBlock = GetMysteryGiftBaseBlock();
@@ -1973,18 +1870,18 @@ export function Task_CardOrNewsWithFriend(taskId: any): any {
           switch (id)
           {
           case 1:
-              PlaySE(SE_PC_LOGIN);
+              PlaySE((2));
           default:
               RedrawListMenu(data.listTaskId);
               break;
           case 0:
               id = ListMenu_ProcessInput(data.listTaskId);
-              if (JOY_NEW(A_BUTTON) && id != LIST_NOTHING_CHOSEN)
+              if (JOY_NEW(A_BUTTON) && id != (-1))
               {
                    
                   let activity: any = data.playerList.players[id].rfu.data.activity;
 
-                  if (data.playerList.players[id].groupScheduledAnim == UNION_ROOM_SPAWN_IN && !data.playerList.players[id].rfu.data.startedActivity)
+                  if (data.playerList.players[id].groupScheduledAnim == (1) && !data.playerList.players[id].rfu.data.startedActivity)
                   {
                       data.leaderId = id;
                       LoadWirelessStatusIndicatorSpriteGfx();
@@ -1992,12 +1889,12 @@ export function Task_CardOrNewsWithFriend(taskId: any): any {
                       RedrawListMenu(data.listTaskId);
                       CopyAndTranslatePlayerName(gStringVar1,data.playerList.players[data.leaderId]);
                       CreateTask_RfuReconnectWithParent(data.playerList.players[data.leaderId].rfu.name, ReadAsU16(data.playerList.players[data.leaderId].rfu.data.compatibility.playerTrainerId));
-                      PlaySE(SE_POKENAV_ON);
+                      PlaySE((110));
                       data.state = 4;
                   }
                   else
                   {
-                      PlaySE(SE_WALL_HIT);
+                      PlaySE((7));
                   }
               }
               else if (JOY_NEW(B_BUTTON))
@@ -2021,14 +1918,14 @@ export function Task_CardOrNewsWithFriend(taskId: any): any {
 
           switch (RfuGetStatus())
           {
-          case RFU_STATUS_FATAL_ERROR:
-          case RFU_STATUS_CONNECTION_ERROR:
-          case RFU_STATUS_JOIN_GROUP_NO:
+          case (1):
+          case (2):
+          case (6):
               data.state = 8;
               break;
-          case RFU_STATUS_JOIN_GROUP_OK:
+          case (5):
               MG_AddMessageTextPrinter(sText_PlayerSentBackOK);
-              RfuSetStatus(RFU_STATUS_OK, 0);
+              RfuSetStatus((0), 0);
               break;
           }
           break;
@@ -2050,7 +1947,7 @@ export function Task_CardOrNewsWithFriend(taskId: any): any {
               DestroyWirelessStatusIndicatorSprite();
               DestroyTask(taskId);
               LinkRfu_Shutdown();
-              gSpecialVar_Result = LINKUP_FAILED;
+              gSpecialVar_Result = (5);
           }
           break;
       case 7:
@@ -2058,7 +1955,7 @@ export function Task_CardOrNewsWithFriend(taskId: any): any {
           MG_AddMessageTextPrinter(sText_PleaseStartOver);
           DestroyTask(taskId);
           LinkRfu_Shutdown();
-          gSpecialVar_Result = LINKUP_FAILED;
+          gSpecialVar_Result = (5);
           break;
       case 11:
           data.state++;
@@ -2082,8 +1979,8 @@ export function CreateTask_LinkMysteryGiftOverWireless(activity: any): any {
 
       data.state = 0;
       data.textState = 0;
-      data.isWonderNews = activity - ACTIVITY_WONDER_CARD;
-      gSpecialVar_Result = LINKUP_ONGOING;
+      data.isWonderNews = activity - (21);
+      gSpecialVar_Result = (0);
 }
 
 /** static void Task_CardOrNewsOverWireless(u8 taskId) */
@@ -2095,12 +1992,12 @@ export function Task_CardOrNewsOverWireless(taskId: any): any {
       switch (data.state)
       {
       case 0:
-          SetHostRfuGameData(ACTIVITY_NONE, 0, FALSE);
+          SetHostRfuGameData((0), 0, FALSE);
           SetWirelessCommType1();
           OpenLink();
           InitializeRfuLinkManager_JoinGroup();
-          data.incomingPlayerList = AllocZeroed(RFU_CHILD_MAX * 0);
-          data.playerList = AllocZeroed(MAX_RFU_PLAYER_LIST_SIZE * 0);
+          data.incomingPlayerList = AllocZeroed((4) * 0);
+          data.playerList = AllocZeroed((16) * 0);
           data.state = 1;
           break;
       case 1:
@@ -2108,9 +2005,9 @@ export function Task_CardOrNewsOverWireless(taskId: any): any {
           data.state = 2;
           break;
       case 2:
-          ClearIncomingPlayerList(data.incomingPlayerList, RFU_CHILD_MAX);
-          ClearRfuPlayerList(data.playerList.players, MAX_RFU_PLAYER_LIST_SIZE);
-          data.listenTaskId = CreateTask_ListenForWonderDistributor(data.incomingPlayerList, data.isWonderNews + LINK_GROUP_WONDER_CARD);
+          ClearIncomingPlayerList(data.incomingPlayerList, (4));
+          ClearRfuPlayerList(data.playerList.players, (16));
+          data.listenTaskId = CreateTask_ListenForWonderDistributor(data.incomingPlayerList, data.isWonderNews + (7));
 
           if (data.showListMenu)
           {
@@ -2134,7 +2031,7 @@ export function Task_CardOrNewsOverWireless(taskId: any): any {
           switch (id)
           {
           case 1:
-              PlaySE(SE_PC_LOGIN);
+              PlaySE((2));
           default:
               if (data.showListMenu)
                   RedrawListMenu(data.listTaskId);
@@ -2144,21 +2041,21 @@ export function Task_CardOrNewsOverWireless(taskId: any): any {
                   id = ListMenu_ProcessInput(data.listTaskId);
               if (data.refreshTimer > 120)
               {
-                  if (data.playerList.players[0].groupScheduledAnim == UNION_ROOM_SPAWN_IN && !data.playerList.players[0].rfu.data.startedActivity)
+                  if (data.playerList.players[0].groupScheduledAnim == (1) && !data.playerList.players[0].rfu.data.startedActivity)
                   {
-                      if (HasWonderCardOrNewsByLinkGroup(data.playerList.players[0].rfu.data, data.isWonderNews + LINK_GROUP_WONDER_CARD))
+                      if (HasWonderCardOrNewsByLinkGroup(data.playerList.players[0].rfu.data, data.isWonderNews + (7)))
                       {
                           data.leaderId = 0;
                           data.refreshTimer = 0;
                           LoadWirelessStatusIndicatorSpriteGfx();
                           CreateWirelessStatusIndicatorSprite(0, 0);
                           CreateTask_RfuReconnectWithParent(data.playerList.players[0].rfu.name, ReadAsU16(data.playerList.players[0].rfu.data.compatibility.playerTrainerId));
-                          PlaySE(SE_POKENAV_ON);
+                          PlaySE((110));
                           data.state = 4;
                       }
                       else
                       {
-                          PlaySE(SE_BOO);
+                          PlaySE((22));
                           data.state = 10;
                       }
                   }
@@ -2186,14 +2083,14 @@ export function Task_CardOrNewsOverWireless(taskId: any): any {
 
           switch (RfuGetStatus())
           {
-          case RFU_STATUS_FATAL_ERROR:
-          case RFU_STATUS_CONNECTION_ERROR:
-          case RFU_STATUS_JOIN_GROUP_NO:
+          case (1):
+          case (2):
+          case (6):
               data.state = 8;
               break;
-          case RFU_STATUS_JOIN_GROUP_OK:
+          case (5):
               MG_AddMessageTextPrinter(sText_WirelessLinkEstablished);
-              RfuSetStatus(RFU_STATUS_OK, 0);
+              RfuSetStatus((0), 0);
               break;
           }
           break;
@@ -2218,7 +2115,7 @@ export function Task_CardOrNewsOverWireless(taskId: any): any {
               DestroyWirelessStatusIndicatorSprite();
               DestroyTask(taskId);
               LinkRfu_Shutdown();
-              gSpecialVar_Result = LINKUP_FAILED;
+              gSpecialVar_Result = (5);
           }
           break;
       case 7:
@@ -2227,7 +2124,7 @@ export function Task_CardOrNewsOverWireless(taskId: any): any {
               DestroyWirelessStatusIndicatorSprite();
               DestroyTask(taskId);
               LinkRfu_Shutdown();
-              gSpecialVar_Result = LINKUP_FAILED;
+              gSpecialVar_Result = (5);
           }
           break;
       case 11:
@@ -2236,7 +2133,7 @@ export function Task_CardOrNewsOverWireless(taskId: any): any {
               DestroyWirelessStatusIndicatorSprite();
               DestroyTask(taskId);
               LinkRfu_Shutdown();
-              gSpecialVar_Result = LINKUP_FAILED;
+              gSpecialVar_Result = (5);
           }
           break;
       case 13:
@@ -2299,70 +2196,70 @@ export function ScheduleFieldMessageAndExit(src: any): any {
 
 /** static void CopyPlayerListToBuffer(struct WirelessLink_URoom *uroom) */
 export function CopyPlayerListToBuffer(uroom: any): any {
-  memcpy(gDecompressionBuffer[0 - (MAX_UNION_ROOM_LEADERS * 0)],
+  memcpy(gDecompressionBuffer[0 - ((8) * 0)],
               uroom.playerList,
-              MAX_UNION_ROOM_LEADERS * 0);
+              (8) * 0);
 }
 
 /** static void CopyPlayerListFromBuffer(struct WirelessLink_URoom *uroom) */
 export function CopyPlayerListFromBuffer(uroom: any): any {
-  memcpy(uroom.playerList,gDecompressionBuffer[0 - (MAX_UNION_ROOM_LEADERS * 0)],
-             MAX_UNION_ROOM_LEADERS * 0);
+  memcpy(uroom.playerList,gDecompressionBuffer[0 - ((8) * 0)],
+             (8) * 0);
 }
 
 /** static void Task_RunUnionRoom(u8 taskId) */
 export function Task_RunUnionRoom(taskId: any): any {
   let id: any = 0;
       let input: any = 0;
-      let playerGender: any = MALE;
+      let playerGender: any = (0);
       let uroom: any = sWirelessLinkMain.uRoom;
       let taskData: any = gTasks[taskId].data;
 
       switch (uroom.state)
       {
       case UR_STATE_INIT:
-          uroom.incomingChildList = AllocZeroed(RFU_CHILD_MAX * 0);
-          uroom.incomingParentList = AllocZeroed(RFU_CHILD_MAX * 0);
-          uroom.playerList = AllocZeroed(MAX_UNION_ROOM_LEADERS * 0);
+          uroom.incomingChildList = AllocZeroed((4) * 0);
+          uroom.incomingParentList = AllocZeroed((4) * 0);
+          uroom.playerList = AllocZeroed((8) * 0);
           uroom.spawnPlayer = AllocZeroed(0);
-          ClearRfuPlayerList(uroom.playerList.players, MAX_UNION_ROOM_LEADERS);
-          gPlayerCurrActivity = IN_UNION_ROOM;
-          uroom.searchTaskId = CreateTask_SearchForChildOrParent(uroom.incomingParentList, uroom.incomingChildList, LINK_GROUP_UNION_ROOM_RESUME);
+          ClearRfuPlayerList(uroom.playerList.players, (8));
+          gPlayerCurrActivity = ((1 << 6));
+          uroom.searchTaskId = CreateTask_SearchForChildOrParent(uroom.incomingParentList, uroom.incomingChildList, (9));
           InitUnionRoomPlayerObjects(uroom.objects);
           SetTilesAroundUnionRoomPlayersPassable();
           uroom.state = UR_STATE_INIT_OBJECTS;
           break;
       case UR_STATE_INIT_OBJECTS:
           CreateUnionRoomPlayerSprites(uroom.spriteIds, taskData[0]);
-          if (++taskData[0] == MAX_UNION_ROOM_LEADERS)
+          if (++taskData[0] == (8))
               uroom.state = UR_STATE_INIT_LINK;
           break;
       case UR_STATE_INIT_LINK:
-          SetHostRfuGameData(IN_UNION_ROOM, 0, FALSE);
+          SetHostRfuGameData(((1 << 6)), 0, FALSE);
           SetTradeBoardRegisteredMonInfo(sUnionRoomTrade.type, sUnionRoomTrade.playerSpecies, sUnionRoomTrade.playerLevel);
           SetWirelessCommType1();
           OpenLink();
           InitializeRfuLinkManager_EnterUnionRoom();
           ClearRfuPlayerList(uroom.spawnPlayer.players[0], 1);
-          ClearIncomingPlayerList(uroom.incomingChildList, RFU_CHILD_MAX);
-          ClearIncomingPlayerList(uroom.incomingParentList, RFU_CHILD_MAX);
+          ClearIncomingPlayerList(uroom.incomingChildList, (4));
+          ClearIncomingPlayerList(uroom.incomingParentList, (4));
           gSpecialVar_Result = 0;
           uroom.state = UR_STATE_CHECK_SELECTING_MON;
           break;
       case UR_STATE_CHECK_SELECTING_MON:
-          if ((GetPartyMenuType() == PARTY_MENU_TYPE_UNION_ROOM_REGISTER
-            || GetPartyMenuType() == PARTY_MENU_TYPE_UNION_ROOM_TRADE)
+          if ((GetPartyMenuType() == (8)
+            || GetPartyMenuType() == (9))
              && sUnionRoomTrade.state != URTRADE_STATE_NONE)
           {
               id = GetCursorSelectionMonId();
               switch (sUnionRoomTrade.state)
               {
               case URTRADE_STATE_REGISTERING:
-                  UpdateGameData_SetActivity(ACTIVITY_PLYRTALK | IN_UNION_ROOM, 0, TRUE);
-                  if (id >= PARTY_SIZE)
+                  UpdateGameData_SetActivity((20) | ((1 << 6)), 0, TRUE);
+                  if (id >= (6))
                   {
                       ResetUnionRoomTrade(sUnionRoomTrade);
-                      SetTradeBoardRegisteredMonInfo(TYPE_NORMAL, SPECIES_NONE, 0);
+                      SetTradeBoardRegisteredMonInfo((0), (0), 0);
                       ScheduleFieldMessageAndExit(sText_RegistrationCanceled);
                   }
                   else if (!RegisterTradeMonAndGetIsEgg(GetCursorSelectionMonId(),sUnionRoomTrade))
@@ -2377,14 +2274,14 @@ export function Task_RunUnionRoom(taskId: any): any {
               case URTRADE_STATE_OFFERING:
                   CopyPlayerListFromBuffer(uroom);
                   taskData[1] = sUnionRoomTrade.offerPlayerId;
-                  if (id >= PARTY_SIZE)
+                  if (id >= (6))
                   {
                       ScheduleFieldMessageAndExit(sText_TradeCanceled);
                   }
                   else
                   {
-                      UpdateGameData_SetActivity(ACTIVITY_PLYRTALK | IN_UNION_ROOM, 0, TRUE);
-                      gPlayerCurrActivity = ACTIVITY_TRADE | IN_UNION_ROOM;
+                      UpdateGameData_SetActivity((20) | ((1 << 6)), 0, TRUE);
+                      gPlayerCurrActivity = (4) | ((1 << 6));
                       RegisterTradeMon(GetCursorSelectionMonId(),sUnionRoomTrade);
                       uroom.state = UR_STATE_TRADE_OFFER_MON;
                   }
@@ -2400,17 +2297,17 @@ export function Task_RunUnionRoom(taskId: any): any {
       case UR_STATE_MAIN:
           if (gSpecialVar_Result != 0)
           {
-              if (gSpecialVar_Result == UR_INTERACT_ATTENDANT)
+              if (gSpecialVar_Result == (9))
               {
-                  UpdateGameData_SetActivity(ACTIVITY_PLYRTALK | IN_UNION_ROOM, 0, TRUE);
-                  PlaySE(SE_PC_LOGIN);
+                  UpdateGameData_SetActivity((20) | ((1 << 6)), 0, TRUE);
+                  PlaySE((2));
                   StringCopy(gStringVar1, gSaveBlock2Ptr.playerName);
                   uroom.state = UR_STATE_INTERACT_WITH_ATTENDANT;
                   gSpecialVar_Result = 0;
               }
-              else if (gSpecialVar_Result == UR_INTERACT_START_MENU)
+              else if (gSpecialVar_Result == (11))
               {
-                  UpdateGameData_SetActivity(ACTIVITY_PLYRTALK | IN_UNION_ROOM, 0, TRUE);
+                  UpdateGameData_SetActivity((20) | ((1 << 6)), 0, TRUE);
                   uroom.state = UR_STATE_WAIT_FOR_START_MENU;
                   gSpecialVar_Result = 0;
               }
@@ -2428,15 +2325,15 @@ export function Task_RunUnionRoom(taskId: any): any {
               {
                   if (TryInteractWithUnionRoomMember(uroom.playerList,taskData[0],taskData[1], uroom.spriteIds))
                   {
-                      PlaySE(SE_SELECT);
+                      PlaySE((5));
                       StartScriptInteraction();
                       uroom.state = UR_STATE_INTERACT_WITH_PLAYER;
                       break;
                   }
                   else if (IsPlayerFacingTradingBoard())
                   {
-                      UpdateGameData_SetActivity(ACTIVITY_PLYRTALK | IN_UNION_ROOM, 0, TRUE);
-                      PlaySE(SE_PC_LOGIN);
+                      UpdateGameData_SetActivity((20) | ((1 << 6)), 0, TRUE);
+                      PlaySE((2));
                       StartScriptInteraction();
                       StringCopy(gStringVar1, gSaveBlock2Ptr.playerName);
                       uroom.state = UR_STATE_CHECK_TRADING_BOARD;
@@ -2447,15 +2344,15 @@ export function Task_RunUnionRoom(taskId: any): any {
               switch (HandlePlayerListUpdate())
               {
               case PLIST_NEW_PLAYER:
-                  PlaySE(SE_PC_LOGIN);
+                  PlaySE((2));
               case PLIST_RECENT_UPDATE:
                   ScheduleUnionRoomPlayerRefresh(uroom);
                   break;
               case PLIST_CONTACTED:
                   uroom.state = UR_STATE_PLAYER_CONTACTED_YOU;
                   StartScriptInteraction();
-                  SetTradeBoardRegisteredMonInfo(TYPE_NORMAL, SPECIES_NONE, 0);
-                  UpdateGameData_SetActivity(ACTIVITY_NPCTALK | IN_UNION_ROOM, GetActivePartnersInfo(uroom), FALSE);
+                  SetTradeBoardRegisteredMonInfo((0), (0), 0);
+                  UpdateGameData_SetActivity((19) | ((1 << 6)), GetActivePartnersInfo(uroom), FALSE);
                   break;
               }
               HandleUnionRoomPlayerRefresh(uroom);
@@ -2464,14 +2361,14 @@ export function Task_RunUnionRoom(taskId: any): any {
       case UR_STATE_WAIT_FOR_START_MENU:
           if (!FuncIsActiveTask(Task_ShowStartMenu))
           {
-              UpdateGameData_SetActivity(ACTIVITY_NONE | IN_UNION_ROOM, 0, FALSE);
+              UpdateGameData_SetActivity((0) | ((1 << 6)), 0, FALSE);
               uroom.state = UR_STATE_MAIN;
           }
           break;
       case UR_STATE_INTERACT_WITH_PLAYER:
           UR_RunTextPrinters();
           playerGender = GetUnionRoomPlayerGender(taskData[1], uroom.playerList);
-          UpdateGameData_SetActivity(ACTIVITY_PLYRTALK | IN_UNION_ROOM, 0, TRUE);
+          UpdateGameData_SetActivity((20) | ((1 << 6)), 0, TRUE);
           switch (UnionRoomGetPlayerInteractionResponse(uroom.playerList, taskData[0], taskData[1], playerGender))
           {
           case 0:  
@@ -2491,18 +2388,18 @@ export function Task_RunUnionRoom(taskId: any): any {
           UR_RunTextPrinters();
           switch (RfuGetStatus())
           {
-          case RFU_STATUS_NEW_CHILD_DETECTED:
+          case (4):
               HandleCancelActivity(TRUE);
               uroom.state = UR_STATE_MAIN;
               break;
-          case RFU_STATUS_FATAL_ERROR:
-          case RFU_STATUS_CONNECTION_ERROR:
+          case (1):
+          case (2):
               if (IsUnionRoomListenTaskActive() == TRUE)
                   ScheduleFieldMessageAndExit(sText_TrainerAppearsBusy);
               else
                   ScheduleFieldMessageWithFollowupState(UR_STATE_CANCEL_ACTIVITY_LINK_ERROR, sText_TrainerAppearsBusy);
 
-              gPlayerCurrActivity = IN_UNION_ROOM;
+              gPlayerCurrActivity = ((1 << 6));
               break;
           }
 
@@ -2516,7 +2413,7 @@ export function Task_RunUnionRoom(taskId: any): any {
       case UR_STATE_COMMUNICATING_WAIT_FOR_DATA:
           if (!FuncIsActiveTask(Task_ExchangeCards))
           {
-              if (gPlayerCurrActivity == (ACTIVITY_TRADE | IN_UNION_ROOM))
+              if (gPlayerCurrActivity == ((4) | ((1 << 6))))
                   ScheduleFieldMessageWithFollowupState(UR_STATE_SEND_TRADE_REQUST, sText_AwaitingPlayersResponseAboutTrade);
               else
                   uroom.state = UR_STATE_DO_SOMETHING_PROMPT;
@@ -2537,7 +2434,7 @@ export function Task_RunUnionRoom(taskId: any): any {
           break;
       case UR_STATE_HANDLE_DO_SOMETHING_PROMPT_INPUT:
           input = ListMenuHandler_AllItemsAvailable(uroom.textState,uroom.topListMenuWindowId,uroom.topListMenuId,sWindowTemplate_InviteToActivity,sListMenuTemplate_InviteToActivity);
-          if (input != LIST_NOTHING_CHOSEN)
+          if (input != (-1))
           {
               if (!gReceivedRemoteLinkPlayers)
               {
@@ -2547,9 +2444,9 @@ export function Task_RunUnionRoom(taskId: any): any {
               {
                   uroom.partnerYesNoResponse = 0;
                   playerGender = GetUnionRoomPlayerGender(taskData[1], uroom.playerList);
-                  if (input == LIST_CANCEL || input == IN_UNION_ROOM)
+                  if (input == (-2) || input == ((1 << 6)))
                   {
-                      uroom.playerSendBuffer[0] = IN_UNION_ROOM;
+                      uroom.playerSendBuffer[0] = ((1 << 6));
                       Rfu_SendPacket(uroom.playerSendBuffer);
                       StringCopy(gStringVar4, sIfYouWantToDoSomethingTexts[gLinkPlayers[0].gender]);
                       uroom.state = UR_STATE_REQUEST_DECLINED;
@@ -2558,13 +2455,13 @@ export function Task_RunUnionRoom(taskId: any): any {
                   {
                       gPlayerCurrActivity = input;
                       sPlayerActivityGroupSize = input >> 8;  
-                      if (gPlayerCurrActivity == (ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM) && !HasAtLeastTwoMonsOfLevel30OrLower())
+                      if (gPlayerCurrActivity == ((1) | ((1 << 6))) && !HasAtLeastTwoMonsOfLevel30OrLower())
                       {
                           ScheduleFieldMessageWithFollowupState(UR_STATE_DO_SOMETHING_PROMPT, sText_NeedTwoMonsOfLevel30OrLower1);
                       }
                       else
                       {
-                          uroom.playerSendBuffer[0] = gPlayerCurrActivity | IN_UNION_ROOM;
+                          uroom.playerSendBuffer[0] = gPlayerCurrActivity | ((1 << 6));
                           Rfu_SendPacket(uroom.playerSendBuffer);
                           uroom.state = UR_STATE_SEND_ACTIVITY_REQUEST;
                       }
@@ -2591,7 +2488,7 @@ export function Task_RunUnionRoom(taskId: any): any {
           uroom.state = UR_STATE_CANCEL_REQUEST_PRINT_MSG;
           break;
       case UR_STATE_SEND_TRADE_REQUST:
-          uroom.playerSendBuffer[0] = ACTIVITY_TRADE | IN_UNION_ROOM;
+          uroom.playerSendBuffer[0] = (4) | ((1 << 6));
           uroom.playerSendBuffer[1] = sUnionRoomTrade.species;
           uroom.playerSendBuffer[2] = sUnionRoomTrade.level;
           Rfu_SendPacket(uroom.playerSendBuffer);
@@ -2606,9 +2503,9 @@ export function Task_RunUnionRoom(taskId: any): any {
           else
           {
               PollPartnerYesNoResponse(uroom);
-              if (uroom.partnerYesNoResponse == (ACTIVITY_ACCEPT | IN_UNION_ROOM))
+              if (uroom.partnerYesNoResponse == ((17) | ((1 << 6))))
               {
-                  if (gPlayerCurrActivity == ACTIVITY_CARD)
+                  if (gPlayerCurrActivity == (8))
                   {
                       ViewURoomPartnerTrainerCard(gStringVar4, uroom, FALSE);
                       uroom.state = UR_STATE_PRINT_CARD_INFO;
@@ -2618,11 +2515,11 @@ export function Task_RunUnionRoom(taskId: any): any {
                       uroom.state = UR_STATE_PRINT_START_ACTIVITY_MSG;
                   }
               }
-              else if (uroom.partnerYesNoResponse == (ACTIVITY_DECLINE | IN_UNION_ROOM))
+              else if (uroom.partnerYesNoResponse == ((18) | ((1 << 6))))
               {
                   uroom.state = UR_STATE_REQUEST_DECLINED;
-                  GetURoomActivityRejectMsg(gStringVar4, gPlayerCurrActivity | IN_UNION_ROOM, gLinkPlayers[0].gender);
-                  gPlayerCurrActivity = ACTIVITY_NONE;
+                  GetURoomActivityRejectMsg(gStringVar4, gPlayerCurrActivity | ((1 << 6)), gLinkPlayers[0].gender);
+                  gPlayerCurrActivity = (0);
               }
           }
           break;
@@ -2662,15 +2559,15 @@ export function Task_RunUnionRoom(taskId: any): any {
           {
           case 0:  
               CopyBgTilemapBufferToVram(0);
-              gPlayerCurrActivity = ACTIVITY_CHAT | IN_UNION_ROOM;
-              UpdateGameData_SetActivity(ACTIVITY_CHAT | IN_UNION_ROOM, 0, TRUE);
+              gPlayerCurrActivity = (5) | ((1 << 6));
+              UpdateGameData_SetActivity((5) | ((1 << 6)), 0, TRUE);
               TryConnectToUnionRoomParent(uroom.playerList.players[taskData[1]].rfu.name,uroom.playerList.players[taskData[1]].rfu.data, gPlayerCurrActivity);
               uroom.unreadPlayerId = taskData[1];
               uroom.state = UR_STATE_TRY_ACCEPT_CHAT_REQUEST_DELAY;
               taskData[3] = 0;
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               playerGender = GetUnionRoomPlayerGender(taskData[1], uroom.playerList);
               ScheduleFieldMessageAndExit(sDeclineChatTexts[playerGender]);
               break;
@@ -2686,20 +2583,20 @@ export function Task_RunUnionRoom(taskId: any): any {
       case UR_STATE_TRY_ACCEPT_CHAT_REQUEST:
           switch (RfuGetStatus())
           {
-          case RFU_STATUS_NEW_CHILD_DETECTED:
+          case (4):
               HandleCancelActivity(TRUE);
               uroom.state = UR_STATE_MAIN;
               break;
-          case RFU_STATUS_FATAL_ERROR:
-          case RFU_STATUS_CONNECTION_ERROR:
+          case (1):
+          case (2):
               playerGender = GetUnionRoomPlayerGender(taskData[1], uroom.playerList);
-              UpdateGameData_SetActivity(ACTIVITY_PLYRTALK | IN_UNION_ROOM, 0, TRUE);
+              UpdateGameData_SetActivity((20) | ((1 << 6)), 0, TRUE);
               if (IsUnionRoomListenTaskActive() == TRUE)
                   ScheduleFieldMessageAndExit(sChatDeclinedTexts[playerGender]);
               else
                   ScheduleFieldMessageWithFollowupState(UR_STATE_CANCEL_ACTIVITY_LINK_ERROR, sChatDeclinedTexts[playerGender]);
               break;
-          case RFU_STATUS_CHILD_SEND_COMPLETE:
+          case (3):
               uroom.state = UR_STATE_ACCEPT_CHAT_REQUEST;
               break;
           }
@@ -2709,7 +2606,7 @@ export function Task_RunUnionRoom(taskId: any): any {
           if (RfuHasErrored())
           {
               playerGender = GetUnionRoomPlayerGender(taskData[1], uroom.playerList);
-              UpdateGameData_SetActivity(ACTIVITY_PLYRTALK | IN_UNION_ROOM, 0, TRUE);
+              UpdateGameData_SetActivity((20) | ((1 << 6)), 0, TRUE);
               if (IsUnionRoomListenTaskActive() == TRUE)
                   ScheduleFieldMessageAndExit(sChatDeclinedTexts[playerGender]);
               else
@@ -2719,7 +2616,7 @@ export function Task_RunUnionRoom(taskId: any): any {
               uroom.state = UR_STATE_START_ACTIVITY_FREE_UROOM;
           break;
       case UR_STATE_PLAYER_CONTACTED_YOU:
-          PlaySE(SE_DING_DONG);
+          PlaySE((73));
           StopUnionRoomLinkManager();
           uroom.state = UR_STATE_RECV_CONTACT_DATA;
           uroom.recvActivityRequest[0] = 0;
@@ -2768,19 +2665,19 @@ export function Task_RunUnionRoom(taskId: any): any {
           switch (UnionRoomHandleYesNo(uroom.textState, FALSE))
           {
           case 0:  
-              uroom.playerSendBuffer[0] = ACTIVITY_ACCEPT | IN_UNION_ROOM;
-              if (gPlayerCurrActivity == (ACTIVITY_CHAT | IN_UNION_ROOM))
-                  UpdateGameData_SetActivity(gPlayerCurrActivity | IN_UNION_ROOM, GetLinkPlayerInfoFlags(1), FALSE);
+              uroom.playerSendBuffer[0] = (17) | ((1 << 6));
+              if (gPlayerCurrActivity == ((5) | ((1 << 6))))
+                  UpdateGameData_SetActivity(gPlayerCurrActivity | ((1 << 6)), GetLinkPlayerInfoFlags(1), FALSE);
               else
-                  UpdateGameData_SetActivity(gPlayerCurrActivity | IN_UNION_ROOM, GetLinkPlayerInfoFlags(1), TRUE);
+                  UpdateGameData_SetActivity(gPlayerCurrActivity | ((1 << 6)), GetLinkPlayerInfoFlags(1), TRUE);
 
               uroom.spawnPlayer.players[0].newPlayerCountdown = 0;
               taskData[3] = 0;
-              if (gPlayerCurrActivity == (ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM))
+              if (gPlayerCurrActivity == ((1) | ((1 << 6))))
               {
                   if (!HasAtLeastTwoMonsOfLevel30OrLower())
                   {
-                      uroom.playerSendBuffer[0] = ACTIVITY_DECLINE | IN_UNION_ROOM;
+                      uroom.playerSendBuffer[0] = (18) | ((1 << 6));
                       Rfu_SendPacket(uroom.playerSendBuffer);
                       uroom.state = UR_STATE_DECLINE_ACTIVITY_REQUEST;
                       StringCopy(gStringVar4, sText_NeedTwoMonsOfLevel30OrLower2);
@@ -2791,7 +2688,7 @@ export function Task_RunUnionRoom(taskId: any): any {
                       uroom.state = UR_STATE_PRINT_START_ACTIVITY_MSG;
                   }
               }
-              else if (gPlayerCurrActivity == (ACTIVITY_CARD | IN_UNION_ROOM))
+              else if (gPlayerCurrActivity == ((8) | ((1 << 6))))
               {
                   Rfu_SendPacket(uroom.playerSendBuffer);
                   ViewURoomPartnerTrainerCard(gStringVar4, uroom, TRUE);
@@ -2804,8 +2701,8 @@ export function Task_RunUnionRoom(taskId: any): any {
               }
               break;
           case 1:  
-          case MENU_B_PRESSED:
-              uroom.playerSendBuffer[0] = ACTIVITY_DECLINE | IN_UNION_ROOM;
+          case (-1):
+              uroom.playerSendBuffer[0] = (18) | ((1 << 6));
               Rfu_SendPacket(uroom.playerSendBuffer);
               uroom.state = UR_STATE_DECLINE_ACTIVITY_REQUEST;
               GetYouDeclinedTheOfferMessage(gStringVar4, gPlayerCurrActivity);
@@ -2819,7 +2716,7 @@ export function Task_RunUnionRoom(taskId: any): any {
       case UR_STATE_CANCEL_REQUEST_PRINT_MSG:
           if (!gReceivedRemoteLinkPlayers)
           {
-              gPlayerCurrActivity = IN_UNION_ROOM;
+              gPlayerCurrActivity = ((1 << 6));
               ScheduleFieldMessageWithFollowupState(UR_STATE_CANCEL_REQUEST_RESTART_LINK, gStringVar4);
               memset(uroom.playerSendBuffer, 0, sizeof(uroom.playerSendBuffer));
               uroom.recvActivityRequest[0] = 0;
@@ -2831,7 +2728,7 @@ export function Task_RunUnionRoom(taskId: any): any {
           HandleCancelActivity(FALSE);
           break;
       case UR_STATE_PRINT_START_ACTIVITY_MSG:
-          GetURoomActivityStartMsg(gStringVar4, gPlayerCurrActivity | IN_UNION_ROOM);
+          GetURoomActivityStartMsg(gStringVar4, gPlayerCurrActivity | ((1 << 6)));
           ScheduleFieldMessageWithFollowupState(UR_STATE_START_ACTIVITY_LINK, gStringVar4);
           break;
       case UR_STATE_START_ACTIVITY_LINK:
@@ -2852,7 +2749,7 @@ export function Task_RunUnionRoom(taskId: any): any {
           uroom.state = UR_STATE_START_ACTIVITY_FADE;
           break;
       case UR_STATE_START_ACTIVITY_FADE:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           uroom.state = UR_STATE_START_ACTIVITY;
           break;
       case UR_STATE_START_ACTIVITY:
@@ -2865,13 +2762,13 @@ export function Task_RunUnionRoom(taskId: any): any {
           }
           break;
       case UR_STATE_INTERACT_WITH_ATTENDANT:
-          if (GetHostRfuGameData().tradeSpecies == SPECIES_NONE)
+          if (GetHostRfuGameData().tradeSpecies == (0))
           {
               uroom.state = UR_STATE_REGISTER_PROMPT;
           }
           else
           {
-              if (GetHostRfuGameData().tradeSpecies == SPECIES_EGG)
+              if (GetHostRfuGameData().tradeSpecies == (412))
               {
                   StringCopy(gStringVar4, sText_CancelRegistrationOfEgg);
               }
@@ -2890,9 +2787,9 @@ export function Task_RunUnionRoom(taskId: any): any {
           break;
       case UR_STATE_REGISTER_PROMPT_HANDLE_INPUT:
           input = ListMenuHandler_AllItemsAvailable(uroom.textState,uroom.tradeBoardMainWindowId,uroom.tradeBoardHeaderWindowId,sWindowTemplate_RegisterForTrade,sListMenuTemplate_RegisterForTrade);
-          if (input != LIST_NOTHING_CHOSEN)
+          if (input != (-1))
           {
-              if (input == LIST_CANCEL || input == 3)  
+              if (input == (-2) || input == 3)  
               {
                   uroom.state = UR_STATE_MAIN;
                   HandleCancelActivity(TRUE);
@@ -2912,7 +2809,7 @@ export function Task_RunUnionRoom(taskId: any): any {
           }
           break;
       case UR_STATE_REGISTER_SELECT_MON_FADE:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           uroom.state = UR_STATE_REGISTER_SELECT_MON;
           break;
       case UR_STATE_REGISTER_SELECT_MON:
@@ -2920,19 +2817,19 @@ export function Task_RunUnionRoom(taskId: any): any {
           {
               sUnionRoomTrade.state = URTRADE_STATE_REGISTERING;
               gFieldCallback = FieldCB_ContinueScriptUnionRoom;
-              ChooseMonForTradingBoard(PARTY_MENU_TYPE_UNION_ROOM_REGISTER, CB2_ReturnToField);
+              ChooseMonForTradingBoard((8), CB2_ReturnToField);
           }
           break;
       case UR_STATE_REGISTER_REQUEST_TYPE:
           input = ListMenuHandler_AllItemsAvailable(uroom.textState,uroom.tradeBoardMainWindowId,uroom.tradeBoardHeaderWindowId,sWindowTemplate_TradingBoardRequestType,sMenuTemplate_TradingBoardRequestType);
-          if (input != LIST_NOTHING_CHOSEN)
+          if (input != (-1))
           {
               switch (input)
               {
-              case LIST_CANCEL:
-              case NUMBER_OF_MON_TYPES:  
+              case (-2):
+              case (18):  
                   ResetUnionRoomTrade(sUnionRoomTrade);
-                  SetTradeBoardRegisteredMonInfo(TYPE_NORMAL, SPECIES_NONE, 0);
+                  SetTradeBoardRegisteredMonInfo((0), (0), 0);
                   ScheduleFieldMessageAndExit(sText_RegistrationCanceled);
                   break;
               default:
@@ -2953,7 +2850,7 @@ export function Task_RunUnionRoom(taskId: any): any {
               uroom.state = UR_STATE_CANCEL_REGISTRATION;
               break;
           case 1:  
-          case MENU_B_PRESSED:
+          case (-1):
               HandleCancelActivity(TRUE);
               uroom.state = UR_STATE_MAIN;
               break;
@@ -2962,7 +2859,7 @@ export function Task_RunUnionRoom(taskId: any): any {
       case UR_STATE_CANCEL_REGISTRATION:
           if (PrintOnTextbox(uroom.textState, sText_RegistrationCanceled2))
           {
-              SetTradeBoardRegisteredMonInfo(TYPE_NORMAL, SPECIES_NONE, 0);
+              SetTradeBoardRegisteredMonInfo((0), (0), 0);
               ResetUnionRoomTrade(sUnionRoomTrade);
               HandleCancelActivity(TRUE);
               uroom.state = UR_STATE_MAIN;
@@ -2979,11 +2876,11 @@ export function Task_RunUnionRoom(taskId: any): any {
       case UR_STATE_TRADING_BOARD_HANDLE_INPUT:
           input = TradeBoardMenuHandler(uroom.textState,uroom.tradeBoardMainWindowId,uroom.tradeBoardListMenuId,uroom.tradeBoardHeaderWindowId,sWindowTemplate_TradingBoardMain,sTradeBoardListMenuTemplate,
                                         uroom.playerList);
-          if (input != LIST_NOTHING_CHOSEN)
+          if (input != (-1))
           {
               switch (input)
               {
-              case LIST_CANCEL:
+              case (-2):
               case 8:  
                   HandleCancelActivity(TRUE);
                   uroom.state = UR_STATE_MAIN;
@@ -2992,17 +2889,17 @@ export function Task_RunUnionRoom(taskId: any): any {
                   UR_ClearBg0();
                   switch (IsRequestedTradeInPlayerParty(uroom.playerList.players[input].rfu.data.tradeType, uroom.playerList.players[input].rfu.data.tradeSpecies))
                   {
-                  case UR_TRADE_MATCH:
+                  case (0):
                       CopyAndTranslatePlayerName(gStringVar1,uroom.playerList.players[input]);
                       ScheduleFieldMessageWithFollowupState(UR_STATE_TRADE_PROMPT, sText_AskTrainerToMakeTrade);
                       taskData[1] = input;
                       break;
-                  case UR_TRADE_NOTYPE:
+                  case (1):
                       CopyAndTranslatePlayerName(gStringVar1,uroom.playerList.players[input]);
                       StringCopy(gStringVar2, gTypeNames[uroom.playerList.players[input].rfu.data.tradeType]);
                       ScheduleFieldMessageWithFollowupState(UR_STATE_TRADING_BOARD_LOAD, sText_DontHaveTypeTrainerWants);
                       break;
-                  case UR_TRADE_NOEGG:
+                  case (2):
                       CopyAndTranslatePlayerName(gStringVar1,uroom.playerList.players[input]);
                       StringCopy(gStringVar2, gTypeNames[uroom.playerList.players[input].rfu.data.tradeType]);
                       ScheduleFieldMessageWithFollowupState(UR_STATE_TRADING_BOARD_LOAD, sText_DontHaveEggTrainerWants);
@@ -3018,7 +2915,7 @@ export function Task_RunUnionRoom(taskId: any): any {
           case 0:  
               uroom.state = UR_STATE_TRADE_SELECT_MON;
               break;
-          case MENU_B_PRESSED:
+          case (-1):
           case 1:  
               HandleCancelActivity(TRUE);
               uroom.state = UR_STATE_MAIN;
@@ -3033,13 +2930,13 @@ export function Task_RunUnionRoom(taskId: any): any {
               gUnionRoomRequestedMonType = uroom.playerList.players[taskData[1]].rfu.data.tradeType;
               gUnionRoomOfferedSpecies = uroom.playerList.players[taskData[1]].rfu.data.tradeSpecies;
               gFieldCallback = FieldCB_ContinueScriptUnionRoom;
-              ChooseMonForTradingBoard(PARTY_MENU_TYPE_UNION_ROOM_TRADE, CB2_ReturnToField);
+              ChooseMonForTradingBoard((9), CB2_ReturnToField);
               CopyPlayerListToBuffer(uroom);
               sUnionRoomTrade.offerPlayerId = taskData[1];
           }
           break;
       case UR_STATE_TRADE_OFFER_MON:
-          gPlayerCurrActivity = ACTIVITY_TRADE | IN_UNION_ROOM;
+          gPlayerCurrActivity = (4) | ((1 << 6));
           TryConnectToUnionRoomParent(uroom.playerList.players[taskData[1]].rfu.name,uroom.playerList.players[taskData[1]].rfu.data, gPlayerCurrActivity);
           CopyAndTranslatePlayerName(gStringVar1,uroom.playerList.players[taskData[1]]);
           UR_PrintFieldMessage(sCommunicatingWaitTexts[2]);
@@ -3063,15 +2960,15 @@ export function Task_RunUnionRoom(taskId: any): any {
 /** void SetUsingUnionRoomStartMenu(void) */
 export function SetUsingUnionRoomStartMenu(): any {
   if (InUnionRoom() == TRUE)
-          gSpecialVar_Result = UR_INTERACT_START_MENU;
+          gSpecialVar_Result = (11);
 }
 
 /** static void ReceiveUnionRoomActivityPacket(struct WirelessLink_URoom *data) */
 export function ReceiveUnionRoomActivityPacket(data: any): any {
-  if (gRecvCmds[1][1] != 0 && (gRecvCmds[1][0] & RFUCMD_MASK) == RFUCMD_SEND_PACKET)
+  if (gRecvCmds[1][1] != 0 && (gRecvCmds[1][0] & (0xFF00)) == (0x2F00))
       {
           data.recvActivityRequest[0] = gRecvCmds[1][1];
-          if (gRecvCmds[1][1] == (ACTIVITY_TRADE | IN_UNION_ROOM))
+          if (gRecvCmds[1][1] == ((4) | ((1 << 6))))
           {
               data.recvActivityRequest[1] = gRecvCmds[1][2];
               data.recvActivityRequest[2] = gRecvCmds[1][3];
@@ -3109,7 +3006,7 @@ export function HandleContactFromOtherPlayer(uroom: any): any {
 export function InitUnionRoom(): any {
   let data: any = null;
 
-      sUnionRoomPlayerName[0] = EOS;
+      sUnionRoomPlayerName[0] = (0xFF);
       CreateTask(Task_InitUnionRoom, 0);
       sWirelessLinkMain.uRoom = sWirelessLinkMain.uRoom;  
       sWirelessLinkMain.uRoom = data = AllocZeroed(0);
@@ -3118,7 +3015,7 @@ export function InitUnionRoom(): any {
       data.textState = 0;
       data.unknown = 0;
       data.unreadPlayerId = 0;
-      sUnionRoomPlayerName[0] = EOS;
+      sUnionRoomPlayerName[0] = (0xFF);
 }
 
 /** static void Task_InitUnionRoom(u8 taskId) */
@@ -3133,7 +3030,7 @@ export function Task_InitUnionRoom(taskId: any): any {
           data.state = 1;
           break;
       case 1:
-          SetHostRfuGameData(ACTIVITY_SEARCH, 0, FALSE);
+          SetHostRfuGameData((12), 0, FALSE);
           SetWirelessCommType1();
           OpenLink();
           InitializeRfuLinkManager_EnterUnionRoom();
@@ -3141,15 +3038,15 @@ export function Task_InitUnionRoom(taskId: any): any {
           data.state = 2;
           break;
       case 2:
-          data.incomingChildList = AllocZeroed(RFU_CHILD_MAX * 0);
-          ClearIncomingPlayerList(data.incomingChildList, RFU_CHILD_MAX);
-          data.incomingParentList = AllocZeroed(RFU_CHILD_MAX * 0);
-          ClearIncomingPlayerList(data.incomingParentList, RFU_CHILD_MAX);
-          data.playerList = AllocZeroed(MAX_UNION_ROOM_LEADERS * 0);
-          ClearRfuPlayerList(data.playerList.players, MAX_UNION_ROOM_LEADERS);
+          data.incomingChildList = AllocZeroed((4) * 0);
+          ClearIncomingPlayerList(data.incomingChildList, (4));
+          data.incomingParentList = AllocZeroed((4) * 0);
+          ClearIncomingPlayerList(data.incomingParentList, (4));
+          data.playerList = AllocZeroed((8) * 0);
+          ClearRfuPlayerList(data.playerList.players, (8));
           data.spawnPlayer = AllocZeroed(0);
           ClearRfuPlayerList(data.spawnPlayer.players[0], 1);
-          data.searchTaskId = CreateTask_SearchForChildOrParent(data.incomingParentList, data.incomingChildList, LINK_GROUP_UNION_ROOM_INIT);
+          data.searchTaskId = CreateTask_SearchForChildOrParent(data.incomingParentList, data.incomingChildList, (10));
           data.state = 3;
           break;
       case 3:
@@ -3157,11 +3054,11 @@ export function Task_InitUnionRoom(taskId: any): any {
           {
           case PLIST_NEW_PLAYER:
           case PLIST_RECENT_UPDATE:
-              if (sUnionRoomPlayerName[0] == EOS)
+              if (sUnionRoomPlayerName[0] == (0xFF))
               {
-                  for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)
+                  for (i = 0; i < (8); i++)
                   {
-                      if (data.playerList.players[i].groupScheduledAnim == UNION_ROOM_SPAWN_IN)
+                      if (data.playerList.players[i].groupScheduledAnim == (1))
                       {
                           CopyAndTranslatePlayerName(text,data.playerList.players[i]);
                           if (PlayerHasMetTrainerBefore(ReadAsU16(data.playerList.players[i].rfu.data.compatibility.playerTrainerId), text))
@@ -3192,10 +3089,10 @@ export function Task_InitUnionRoom(taskId: any): any {
 
 /** bool16 BufferUnionRoomPlayerName(void) */
 export function BufferUnionRoomPlayerName(): any {
-  if (sUnionRoomPlayerName[0] != EOS)
+  if (sUnionRoomPlayerName[0] != (0xFF))
       {
           StringCopy(gStringVar1, sUnionRoomPlayerName);
-          sUnionRoomPlayerName[0] = EOS;
+          sUnionRoomPlayerName[0] = (0xFF);
           return TRUE;
       }
       else
@@ -3211,25 +3108,25 @@ export function HandlePlayerListUpdate(): any {
       let data: any = sWirelessLinkMain.uRoom;
       let retVal: any = PLIST_NONE;
 
-      for (i = 0; i < RFU_CHILD_MAX; i++)
+      for (i = 0; i < (4); i++)
       {
           if (ArePlayersDifferent(data.incomingParentList.players[i].rfu,sUnionRoomPlayer_DummyRfu) == TRUE)
           {
               data.spawnPlayer.players[0].rfu = data.incomingParentList.players[i].rfu;
               data.spawnPlayer.players[0].timeoutCounter = 0;
-              data.spawnPlayer.players[0].groupScheduledAnim = UNION_ROOM_SPAWN_IN;
+              data.spawnPlayer.players[0].groupScheduledAnim = (1);
               data.spawnPlayer.players[0].newPlayerCountdown = 1;
               return PLIST_CONTACTED;
           }
       }
-      for (j = 0; j < MAX_UNION_ROOM_LEADERS; j++)
+      for (j = 0; j < (8); j++)
       {
-          if (data.playerList.players[j].groupScheduledAnim != UNION_ROOM_SPAWN_NONE)
+          if (data.playerList.players[j].groupScheduledAnim != (0))
           {
               i = GetNewIncomingPlayerId(data.playerList.players[j],data.incomingChildList.players[0]);
               if (i != 0xFF)
               {
-                  if (data.playerList.players[j].groupScheduledAnim == UNION_ROOM_SPAWN_IN)
+                  if (data.playerList.players[j].groupScheduledAnim == (1))
                   {
                       if (ArePlayerDataDifferent(data.playerList.players[j].rfu,data.incomingChildList.players[i].rfu))
                       {
@@ -3246,22 +3143,22 @@ export function HandlePlayerListUpdate(): any {
                   }
                   else
                   {
-                      data.playerList.players[j].groupScheduledAnim = UNION_ROOM_SPAWN_IN;
+                      data.playerList.players[j].groupScheduledAnim = (1);
                       data.playerList.players[j].newPlayerCountdown = 0;
                       retVal = PLIST_RECENT_UPDATE;
                   }
                   data.playerList.players[j].timeoutCounter = 0;
               }
-              else if (data.playerList.players[j].groupScheduledAnim != UNION_ROOM_SPAWN_OUT)
+              else if (data.playerList.players[j].groupScheduledAnim != (2))
               {
                   data.playerList.players[j].timeoutCounter++;
                   if (data.playerList.players[j].timeoutCounter >= 600)
                   {
-                      data.playerList.players[j].groupScheduledAnim = UNION_ROOM_SPAWN_OUT;
+                      data.playerList.players[j].groupScheduledAnim = (2);
                       retVal = PLIST_RECENT_UPDATE;
                   }
               }
-              else if (data.playerList.players[j].groupScheduledAnim == UNION_ROOM_SPAWN_OUT)
+              else if (data.playerList.players[j].groupScheduledAnim == (2))
               {
                   data.playerList.players[j].timeoutCounter++;
                   if (data.playerList.players[j].timeoutCounter >= 900)
@@ -3269,8 +3166,8 @@ export function HandlePlayerListUpdate(): any {
               }
           }
       }
-      for (i = 0; i < RFU_CHILD_MAX; i++)
-          if (TryAddIncomingPlayerToList(data.playerList.players[0],data.incomingChildList.players[i], MAX_UNION_ROOM_LEADERS) != 0xFF)
+      for (i = 0; i < (4); i++)
+          if (TryAddIncomingPlayerToList(data.playerList.players[0],data.incomingChildList.players[i], (8)) != 0xFF)
               retVal = PLIST_NEW_PLAYER;
 
       return retVal;
@@ -3283,13 +3180,13 @@ export function Task_SearchForChildOrParent(taskId: any): any {
       let list: any = gTasks[taskId].data;
       let isParent: any = null;
 
-      for (i = 0; i < RFU_CHILD_MAX; i++)
+      for (i = 0; i < (4); i++)
       {
           isParent = Rfu_GetCompatiblePlayerData(rfu.data, rfu.name, i);
 
           if (!IsPartnerActivityAcceptable(rfu.data.activity, gTasks[taskId].data[4]))
               rfu = sUnionRoomPlayer_DummyRfu;
-          if (rfu.data.compatibility.language == LANGUAGE_JAPANESE)
+          if (rfu.data.compatibility.language == (1))
               rfu = sUnionRoomPlayer_DummyRfu;
 
           if (!isParent)
@@ -3325,7 +3222,7 @@ export function Task_ListenForCompatiblePartners(taskId: any): any {
   let i, j;
       let list: any = gTasks[taskId].data;
 
-      for (i = 0; i < RFU_CHILD_MAX; i++)
+      for (i = 0; i < (4); i++)
       {
           Rfu_GetCompatiblePlayerData(list[0].players[i].rfu.data, list[0].players[i].rfu.name, i);
           if (!IsPartnerActivityAcceptable(list[0].players[i].rfu.data.activity, gTasks[taskId].data[2]))
@@ -3343,14 +3240,14 @@ export function Task_ListenForCompatiblePartners(taskId: any): any {
 
 /** static bool32 HasWonderCardOrNewsByLinkGroup(struct RfuGameData *data, s16 linkGroup) */
 export function HasWonderCardOrNewsByLinkGroup(data: any, linkGroup: any): any {
-  if (linkGroup == LINK_GROUP_WONDER_CARD)
+  if (linkGroup == (7))
       {
           if (!data.compatibility.hasCard)
               return FALSE;
           else
               return TRUE;
       }
-      else if (linkGroup == LINK_GROUP_WONDER_NEWS)
+      else if (linkGroup == (8))
       {
           if (!data.compatibility.hasNews)
               return FALSE;
@@ -3368,7 +3265,7 @@ export function Task_ListenForWonderDistributor(taskId: any): any {
   let i: any = null;
       let list: any = gTasks[taskId].data;
 
-      for (i = 0; i < RFU_CHILD_MAX; i++)
+      for (i = 0; i < (4); i++)
       {
           if (Rfu_GetWonderDistributorPlayerData(list[0].players[i].rfu.data, list[0].players[i].rfu.name, i))
               HasWonderCardOrNewsByLinkGroup(list[0].players[i].rfu.data, gTasks[taskId].data[2]);
@@ -3454,14 +3351,14 @@ export function UnionRoomHandleYesNo(state: any, noDraw: any): any {
               return -3;
           }
           input = Menu_ProcessInputNoWrapClearOnChoose();
-          if (input == MENU_B_PRESSED || input == 0 || input == 1)
+          if (input == (-1) || input == 0 || input == 1)
           {
               state = 0;
               return input;
           }
           break;
       }
-      return MENU_NOTHING_CHOSEN;
+      return (-2);
 }
 
 /** static u8 CreateTradeBoardWindow(const struct WindowTemplate *template) */
@@ -3522,12 +3419,12 @@ export function ListMenuHandler_AllItemsAvailable(state: any, windowId: any, lis
               ClearStdWindowAndFrame(windowId, TRUE);
               RemoveWindow(windowId);
               state = 0;
-              return LIST_CANCEL;
+              return (-2);
           }
           break;
       }
 
-      return LIST_NOTHING_CHOSEN;
+      return (-1);
 }
 
 /** static s32 TradeBoardMenuHandler(u8 *state, u8 *mainWindowId, u8 *listMenuId, u8 *headerWindowId,
@@ -3564,7 +3461,7 @@ export function TradeBoardMenuHandler(state: any, mainWindowId: any, listMenuId:
                   RemoveWindow(mainWindowId);
                   DeleteTradeBoardWindow(headerWindowId);
                   state = 0;
-                  return LIST_CANCEL;
+                  return (-2);
               }
               else
               {
@@ -3579,14 +3476,14 @@ export function TradeBoardMenuHandler(state: any, mainWindowId: any, listMenuId:
                   }
                   else
                   {
-                      PlaySE(SE_WALL_HIT);
+                      PlaySE((7));
                   }
               }
           }
           break;
       }
 
-      return LIST_NOTHING_CHOSEN;
+      return (-1);
 }
 
 /** static void UR_ClearBg0(void) */
@@ -3619,55 +3516,55 @@ export function PrintUnionRoomText(windowId: any, fontId: any, str: any, x: any,
       case UR_COLOR_DEFAULT:
           printerTemplate.letterSpacing = 0;
           printerTemplate.lineSpacing = 0;
-          printerTemplate.fgColor = TEXT_COLOR_DARK_GRAY;
-          printerTemplate.bgColor = TEXT_COLOR_WHITE;
-          printerTemplate.shadowColor = TEXT_COLOR_LIGHT_GRAY;
+          printerTemplate.fgColor = (0x2);
+          printerTemplate.bgColor = (0x1);
+          printerTemplate.shadowColor = (0x3);
           break;
       case UR_COLOR_RED:
           printerTemplate.letterSpacing = 0;
           printerTemplate.lineSpacing = 0;
-          printerTemplate.fgColor = TEXT_COLOR_RED;
-          printerTemplate.bgColor = TEXT_COLOR_WHITE;
-          printerTemplate.shadowColor = TEXT_COLOR_LIGHT_RED;
+          printerTemplate.fgColor = (0x4);
+          printerTemplate.bgColor = (0x1);
+          printerTemplate.shadowColor = (0x5);
           break;
       case UR_COLOR_GREEN:
           printerTemplate.letterSpacing = 0;
           printerTemplate.lineSpacing = 0;
-          printerTemplate.fgColor = TEXT_COLOR_GREEN;
-          printerTemplate.bgColor = TEXT_COLOR_WHITE;
-          printerTemplate.shadowColor = TEXT_COLOR_LIGHT_GREEN;
+          printerTemplate.fgColor = (0x6);
+          printerTemplate.bgColor = (0x1);
+          printerTemplate.shadowColor = (0x7);
           break;
       case UR_COLOR_WHITE:
           printerTemplate.letterSpacing = 0;
           printerTemplate.lineSpacing = 0;
-          printerTemplate.fgColor = TEXT_COLOR_WHITE;
-          printerTemplate.bgColor = TEXT_COLOR_WHITE;
-          printerTemplate.shadowColor = TEXT_COLOR_LIGHT_GRAY;
+          printerTemplate.fgColor = (0x1);
+          printerTemplate.bgColor = (0x1);
+          printerTemplate.shadowColor = (0x3);
           break;
       case UR_COLOR_CANCEL:
           printerTemplate.letterSpacing = 0;
           printerTemplate.lineSpacing = 0;
-          printerTemplate.fgColor = TEXT_COLOR_WHITE;
-          printerTemplate.bgColor = TEXT_COLOR_DARK_GRAY;
-          printerTemplate.shadowColor = TEXT_COLOR_LIGHT_GRAY;
+          printerTemplate.fgColor = (0x1);
+          printerTemplate.bgColor = (0x2);
+          printerTemplate.shadowColor = (0x3);
           break;
       case UR_COLOR_TRADE_BOARD_SELF:
           printerTemplate.letterSpacing = 0;
           printerTemplate.lineSpacing = 0;
-          printerTemplate.fgColor = TEXT_COLOR_LIGHT_GREEN;
-          printerTemplate.bgColor = TEXT_DYNAMIC_COLOR_6;
-          printerTemplate.shadowColor = TEXT_COLOR_LIGHT_BLUE;
+          printerTemplate.fgColor = (0x7);
+          printerTemplate.bgColor = (0xF);
+          printerTemplate.shadowColor = (0x9);
           break;
       case UR_COLOR_TRADE_BOARD_OTHER:
           printerTemplate.letterSpacing = 0;
           printerTemplate.lineSpacing = 0;
-          printerTemplate.fgColor = TEXT_DYNAMIC_COLOR_5;
-          printerTemplate.bgColor = TEXT_DYNAMIC_COLOR_6;
-          printerTemplate.shadowColor = TEXT_COLOR_LIGHT_BLUE;
+          printerTemplate.fgColor = (0xE);
+          printerTemplate.bgColor = (0xF);
+          printerTemplate.shadowColor = (0x9);
           break;
       }
 
-      AddTextPrinter(printerTemplate, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinter(printerTemplate, (0xFF), NULL);
 }
 
 /** static void ClearRfuPlayerList(struct RfuPlayer *players, u8 count) */
@@ -3678,7 +3575,7 @@ export function ClearRfuPlayerList(players: any, count: any): any {
       {
           players[i].rfu = sUnionRoomPlayer_DummyRfu;
           players[i].timeoutCounter = 255;
-          players[i].groupScheduledAnim = UNION_ROOM_SPAWN_NONE;
+          players[i].groupScheduledAnim = (0);
           players[i].useRedText = FALSE;
           players[i].newPlayerCountdown = 0;
       }
@@ -3688,7 +3585,7 @@ export function ClearRfuPlayerList(players: any, count: any): any {
 export function ClearIncomingPlayerList(list: any, count: any): any {
   let i: any = null;
 
-      for (i = 0; i < RFU_CHILD_MAX; i++)
+      for (i = 0; i < (4); i++)
       {
           list.players[i].rfu = sUnionRoomPlayer_DummyRfu;
           list.players[i].active = FALSE;
@@ -3705,7 +3602,7 @@ export function ArePlayersDifferent(player1: any, player2: any): any {
               return TRUE;
       }
 
-      for (i = 0; i < PLAYER_NAME_LENGTH + 1; i++)
+      for (i = 0; i < (7) + 1; i++)
       {
           if (player1.name[i] != player2.name[i])
               return TRUE;
@@ -3724,7 +3621,7 @@ export function ArePlayerDataDifferent(player1: any, player2: any): any {
       if (player1.data.startedActivity != player2.data.startedActivity)
           return TRUE;
 
-      for (i = 0; i < RFU_CHILD_MAX; i++)
+      for (i = 0; i < (4); i++)
       {
           if (player1.data.partnerInfo[i] != player2.data.partnerInfo[i])
               return TRUE;
@@ -3744,7 +3641,7 @@ export function GetNewIncomingPlayerId(player: any, incomingPlayer: any): any {
   let result: any = 0xFF;  
       let i: any = null;
 
-      for (i = 0; i < RFU_CHILD_MAX; i++)
+      for (i = 0; i < (4); i++)
       {
           if (incomingPlayer[i].active && !ArePlayersDifferent(player.rfu,incomingPlayer[i].rfu))
           {
@@ -3764,11 +3661,11 @@ export function TryAddIncomingPlayerToList(players: any, incomingPlayer: any, ma
       {
           for (i = 0; i < max; i++)
           {
-              if (players[i].groupScheduledAnim == UNION_ROOM_SPAWN_NONE)
+              if (players[i].groupScheduledAnim == (0))
               {
                   players[i].rfu = incomingPlayer.rfu;
                   players[i].timeoutCounter = 0;
-                  players[i].groupScheduledAnim = UNION_ROOM_SPAWN_IN;
+                  players[i].groupScheduledAnim = (1);
                   players[i].newPlayerCountdown = 64;
                   incomingPlayer.active = FALSE;
                   return i;
@@ -3789,7 +3686,7 @@ export function PrintGroupMemberOnWindow(windowId: any, x: any, y: any, player: 
       PrintUnionRoomText(windowId, FONT_NORMAL, gStringVar4, x, y, UR_COLOR_DEFAULT);
       x += 18;
       activity = player.rfu.data.activity;
-      if (player.groupScheduledAnim == UNION_ROOM_SPAWN_IN && !(activity & IN_UNION_ROOM))
+      if (player.groupScheduledAnim == (1) && !(activity & ((1 << 6))))
       {
           CopyAndTranslatePlayerName(gStringVar4, player);
           PrintUnionRoomText(windowId, FONT_NORMAL, gStringVar4, x, y, colorIdx);
@@ -3804,7 +3701,7 @@ export function PrintGroupMemberOnWindow(windowId: any, x: any, y: any, player: 
 export function PrintGroupCandidateOnWindow(windowId: any, x: any, y: any, player: any, colorIdx: any, id: any): any {
   let trainerId: any = [];
 
-      if (player.groupScheduledAnim == UNION_ROOM_SPAWN_IN)
+      if (player.groupScheduledAnim == (1))
       {
           CopyAndTranslatePlayerName(gStringVar4, player);
           PrintUnionRoomText(windowId, FONT_NORMAL, gStringVar4, x, y, colorIdx);
@@ -3820,10 +3717,10 @@ export function IsPlayerFacingTradingBoard(): any {
   let x, y;
       GetXYCoordsOneStepInFrontOfPlayer(x,y);
 
-      if (x != 2 + MAP_OFFSET)
+      if (x != 2 + (7))
           return FALSE;
 
-      if (y != 1 + MAP_OFFSET)
+      if (y != 1 + (7))
           return FALSE;
 
       if (gPlayerAvatar.tileTransitionState == T_TILE_CENTER || gPlayerAvatar.tileTransitionState == T_NOT_MOVING)
@@ -3836,13 +3733,13 @@ export function IsPlayerFacingTradingBoard(): any {
 export function GetResponseIdx_InviteToURoomActivity(activity: any): any {
   switch (activity)
       {
-      case ACTIVITY_CHAT:
+      case (5):
           return 1;
-      case ACTIVITY_TRADE:
+      case (4):
           return 2;
-      case ACTIVITY_CARD:
+      case (8):
           return 3;
-      case ACTIVITY_BATTLE_MULTI:
+      case (3):
       default:
           return 0;
       }
@@ -3865,7 +3762,7 @@ export function UnionRoomGetPlayerInteractionResponse(list: any, overrideGender:
       {
           CopyAndTranslatePlayerName(gStringVar1, player);
           metBefore = PlayerHasMetTrainerBefore(ReadAsU16(player.rfu.data.compatibility.playerTrainerId), gStringVar1);
-          if (player.rfu.data.activity == (ACTIVITY_CHAT | IN_UNION_ROOM))
+          if (player.rfu.data.activity == ((5) | ((1 << 6))))
           {
               StringExpandPlaceholders(gStringVar4, sJoinChatTexts[metBefore][playerGender]);
               return 2;
@@ -3885,16 +3782,16 @@ export function UnionRoomGetPlayerInteractionResponse(list: any, overrideGender:
           }
           switch (player.rfu.data.activity & 0x3F)
           {
-          case ACTIVITY_BATTLE_SINGLE:
+          case (1):
               StringExpandPlaceholders(gStringVar4, sBattleReactionTexts[playerGender][Random() % ARRAY_COUNT(sBattleReactionTexts[0])]);
               break;
-          case ACTIVITY_TRADE:
+          case (4):
               StringExpandPlaceholders(gStringVar4, sTradeReactionTexts[playerGender][Random() % 2]);
               break;
-          case ACTIVITY_CHAT:
+          case (5):
               StringExpandPlaceholders(gStringVar4, sChatReactionTexts[playerGender][Random() % ARRAY_COUNT(sChatReactionTexts[0])]);
               break;
-          case ACTIVITY_CARD:
+          case (8):
               StringExpandPlaceholders(gStringVar4, sTrainerCardReactionTexts[playerGender][Random() % ARRAY_COUNT(sTrainerCardReactionTexts[0])]);
               break;
           default:
@@ -3913,7 +3810,7 @@ export function TradeBoardPrintItemInfo(windowId: any, y: any, data: any, player
       let level: any = data.tradeLevel;
 
       PrintUnionRoomText(windowId, FONT_NORMAL, playerName, 8, y, colorIdx);
-      if (species == SPECIES_EGG)
+      if (species == (412))
       {
           PrintUnionRoomText(windowId, FONT_NORMAL, sText_EggTrade, 68, y, colorIdx);
       }
@@ -3933,18 +3830,18 @@ export function TradeBoardListMenuItemPrintFunc(windowId: any, itemId: any, y: a
       let i, j;
       let playerName: any = [];  
 
-      if (itemId == LIST_HEADER && y == sTradeBoardListMenuTemplate.upText_Y)
+      if (itemId == (-3) && y == sTradeBoardListMenuTemplate.upText_Y)
       {
           gameData = GetHostRfuGameData();
-          if (gameData.tradeSpecies != SPECIES_NONE)
+          if (gameData.tradeSpecies != (0))
               TradeBoardPrintItemInfo(windowId, y, gameData, gSaveBlock2Ptr.playerName, UR_COLOR_TRADE_BOARD_SELF);
       }
       else
       {
           j = 0;
-          for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)
+          for (i = 0; i < (8); i++)
           {
-              if (leader.playerList.players[i].groupScheduledAnim == UNION_ROOM_SPAWN_IN && leader.playerList.players[i].rfu.data.tradeSpecies != SPECIES_NONE)
+              if (leader.playerList.players[i].groupScheduledAnim == (1) && leader.playerList.players[i].rfu.data.tradeSpecies != (0))
                   j++;
 
               if (j == itemId + 1)
@@ -3962,9 +3859,9 @@ export function GetIndexOfNthTradeBoardOffer(players: any, n: any): any {
   let i: any = null;
       let j: any = 0;
 
-      for (i = 0; i < MAX_UNION_ROOM_LEADERS; i++)
+      for (i = 0; i < (8); i++)
       {
-          if (players[i].groupScheduledAnim == UNION_ROOM_SPAWN_IN && players[i].rfu.data.tradeSpecies != SPECIES_NONE)
+          if (players[i].groupScheduledAnim == (1) && players[i].rfu.data.tradeSpecies != (0))
               j++;
 
           if (j == n + 1)
@@ -3983,15 +3880,15 @@ export function GetUnionRoomPlayerGender(playerIdx: any, list: any): any {
 export function IsRequestedTradeInPlayerParty(_type: any, species: any): any {
   let i: any = null;
 
-      if (species == SPECIES_EGG)
+      if (species == (412))
       {
           for (i = 0; i < gPlayerPartyCount; i++)
           {
               species = GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);
-              if (species == SPECIES_EGG)
-                  return UR_TRADE_MATCH;
+              if (species == (412))
+                  return (0);
           }
-          return UR_TRADE_NOEGG;
+          return (2);
       }
       else
       {
@@ -3999,9 +3896,9 @@ export function IsRequestedTradeInPlayerParty(_type: any, species: any): any {
           {
               species = GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);
               if (gSpeciesInfo[species].types[0] == _type || gSpeciesInfo[species].types[1] == _type)
-                  return UR_TRADE_MATCH;
+                  return (0);
           }
-          return UR_TRADE_NOTYPE;
+          return (1);
       }
 }
 
@@ -4009,16 +3906,16 @@ export function IsRequestedTradeInPlayerParty(_type: any, species: any): any {
 export function GetURoomActivityRejectMsg(dst: any, acitivty: any, playerGender: any): any {
   switch (acitivty)
       {
-      case ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM:
+      case (1) | ((1 << 6)):
           StringExpandPlaceholders(dst, sBattleDeclinedTexts[playerGender]);
           break;
-      case ACTIVITY_CHAT | IN_UNION_ROOM:
+      case (5) | ((1 << 6)):
           StringExpandPlaceholders(dst, sChatDeclinedTexts[playerGender]);
           break;
-      case ACTIVITY_TRADE | IN_UNION_ROOM:
+      case (4) | ((1 << 6)):
           StringExpandPlaceholders(dst, sText_TradeOfferRejected);
           break;
-      case ACTIVITY_CARD | IN_UNION_ROOM:
+      case (8) | ((1 << 6)):
           StringExpandPlaceholders(dst, sShowTrainerCardDeclinedTexts[playerGender]);
           break;
       }
@@ -4031,13 +3928,13 @@ export function GetURoomActivityStartMsg(dst: any, acitivty: any): any {
 
       switch (acitivty)
       {
-      case ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM:
+      case (1) | ((1 << 6)):
           StringCopy(dst, sStartActivityTexts[mpId][gender][0]);
           break;
-      case ACTIVITY_TRADE | IN_UNION_ROOM:
+      case (4) | ((1 << 6)):
           StringCopy(dst, sStartActivityTexts[mpId][gender][2]);
           break;
-      case ACTIVITY_CHAT | IN_UNION_ROOM:
+      case (5) | ((1 << 6)):
           StringCopy(dst, sStartActivityTexts[mpId][gender][1]);
           break;
       }
@@ -4046,25 +3943,25 @@ export function GetURoomActivityStartMsg(dst: any, acitivty: any): any {
 /** static s32 GetChatLeaderActionRequestMessage(u8 *dst, u32 gender, u16 *activityData, struct WirelessLink_URoom *uroom) */
 export function GetChatLeaderActionRequestMessage(dst: any, gender: any, activityData: any, uroom: any): any {
   let result: any = 0;
-      let species: any = SPECIES_NONE;
+      let species: any = (0);
       let i: any = null;
 
       switch (activityData[0])
       {
-      case ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM:
+      case (1) | ((1 << 6)):
           StringExpandPlaceholders(dst, sText_BattleChallenge);
           result = 1;
           break;
-      case ACTIVITY_CHAT | IN_UNION_ROOM:
+      case (5) | ((1 << 6)):
           StringExpandPlaceholders(dst, sText_ChatInvitation);
           result = 1;
           break;
-      case ACTIVITY_TRADE | IN_UNION_ROOM:
+      case (4) | ((1 << 6)):
           ConvertIntToDecimalStringN(uroom.activityRequestStrbufs[0], sUnionRoomTrade.playerLevel, STR_CONV_MODE_LEFT_ALIGN, 3);
           StringCopy(uroom.activityRequestStrbufs[1], gSpeciesNames[sUnionRoomTrade.playerSpecies]);
-          for (i = 0; i < RFU_CHILD_MAX; i++)
+          for (i = 0; i < (4); i++)
           {
-              if (gRfuLinkStatus.partner[i].serialNo == RFU_SERIAL_GAME)
+              if (gRfuLinkStatus.partner[i].serialNo == (0x0002))
               {
                   ConvertIntToDecimalStringN(uroom.activityRequestStrbufs[2], activityData[2], STR_CONV_MODE_LEFT_ALIGN, 3);
                   StringCopy(uroom.activityRequestStrbufs[3], gSpeciesNames[activityData[1]]);
@@ -4072,23 +3969,23 @@ export function GetChatLeaderActionRequestMessage(dst: any, gender: any, activit
                   break;
               }
           }
-          if (species == SPECIES_EGG)
+          if (species == (412))
           {
               StringCopy(dst, sText_OfferToTradeEgg);
           }
           else
           {
-              for (i = 0; i < RFU_CHILD_MAX; i++)
+              for (i = 0; i < (4); i++)
                   DynamicPlaceholderTextUtil_SetPlaceholderPtr(i, uroom.activityRequestStrbufs[i]);
               DynamicPlaceholderTextUtil_ExpandPlaceholders(dst, sText_OfferToTradeMon);
           }
           result = 1;
           break;
-      case ACTIVITY_CARD | IN_UNION_ROOM:
+      case (8) | ((1 << 6)):
           StringExpandPlaceholders(dst, sText_ShowTrainerCard);
           result = 1;
           break;
-      case ACTIVITY_NONE | IN_UNION_ROOM:
+      case (0) | ((1 << 6)):
           StringExpandPlaceholders(dst, sText_ChatDropped);
           result = 2;
           break;
@@ -4101,14 +3998,14 @@ export function GetChatLeaderActionRequestMessage(dst: any, gender: any, activit
 export function PollPartnerYesNoResponse(data: any): any {
   if (gRecvCmds[0][1] != 0)
       {
-          if (gRecvCmds[0][1] == (ACTIVITY_ACCEPT | IN_UNION_ROOM))
+          if (gRecvCmds[0][1] == ((17) | ((1 << 6))))
           {
-              data.partnerYesNoResponse = ACTIVITY_ACCEPT | IN_UNION_ROOM;
+              data.partnerYesNoResponse = (17) | ((1 << 6));
               return TRUE;
           }
-          else if (gRecvCmds[0][1] == (ACTIVITY_DECLINE | IN_UNION_ROOM))
+          else if (gRecvCmds[0][1] == ((18) | ((1 << 6))))
           {
-              data.partnerYesNoResponse = ACTIVITY_DECLINE | IN_UNION_ROOM;
+              data.partnerYesNoResponse = (18) | ((1 << 6));
               return TRUE;
           }
       }
@@ -4129,8 +4026,8 @@ export function HasAtLeastTwoMonsOfLevel30OrLower(): any {
 
       for (i = 0; i < gPlayerPartyCount; i++)
       {
-          if (GetMonData(gPlayerParty[i], MON_DATA_LEVEL) <= UNION_ROOM_MAX_LEVEL
-           && GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG) != SPECIES_EGG)
+          if (GetMonData(gPlayerParty[i], MON_DATA_LEVEL) <= (30)
+           && GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG) != (412))
               count++;
       }
 
@@ -4145,9 +4042,9 @@ export function ResetUnionRoomTrade(trade: any): any {
   trade.state = URTRADE_STATE_NONE;
       trade.type = 0;
       trade.playerPersonality = 0;
-      trade.playerSpecies = SPECIES_NONE;
+      trade.playerSpecies = (0);
       trade.playerLevel = 0;
-      trade.species = SPECIES_NONE;
+      trade.species = (0);
       trade.level = 0;
       trade.personality = 0;
 }
@@ -4162,7 +4059,7 @@ export function RegisterTradeMonAndGetIsEgg(monId: any, trade: any): any {
   trade.playerSpecies = GetMonData(gPlayerParty[monId], MON_DATA_SPECIES_OR_EGG);
       trade.playerLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL);
       trade.playerPersonality = GetMonData(gPlayerParty[monId], MON_DATA_PERSONALITY);
-      if (trade.playerSpecies == SPECIES_EGG)
+      if (trade.playerSpecies == (412))
           return TRUE;
       else
           return FALSE;
@@ -4216,11 +4113,11 @@ export function HandleCancelActivity(setData: any): any {
   UR_ClearBg0();
       UnlockPlayerFieldControls();
       UnionRoom_UnlockPlayerAndChatPartner();
-      gPlayerCurrActivity = ACTIVITY_NONE;
+      gPlayerCurrActivity = (0);
       if (setData)
       {
           SetTradeBoardRegisteredMonInfo(sUnionRoomTrade.type, sUnionRoomTrade.playerSpecies, sUnionRoomTrade.playerLevel);
-          UpdateGameData_SetActivity(ACTIVITY_NONE | IN_UNION_ROOM, 0, FALSE);
+          UpdateGameData_SetActivity((0) | ((1 << 6)), 0, FALSE);
       }
 }
 
@@ -4232,15 +4129,15 @@ export function StartScriptInteraction(): any {
 
 /** static u8 GetActivePartnersInfo(struct WirelessLink_URoom *data) */
 export function GetActivePartnersInfo(data: any): any {
-  let retVal: any = PINFO_ACTIVE_FLAG;
+  let retVal: any = ((1 << 7));
       let i: any = null;
 
-      for (i = 0; i < RFU_CHILD_MAX; i++)
+      for (i = 0; i < (4); i++)
       {
           if (data.incomingParentList.players[i].active)
           {
-              retVal |= data.incomingParentList.players[i].rfu.data.playerGender << PINFO_GENDER_SHIFT;
-              retVal |= data.incomingParentList.players[i].rfu.data.compatibility.playerTrainerId[0] & PINFO_TID_MASK;
+              retVal |= data.incomingParentList.players[i].rfu.data.playerGender << (3);
+              retVal |= data.incomingParentList.players[i].rfu.data.compatibility.playerTrainerId[0] & (0x7);
               break;
           }
       }
@@ -4290,7 +4187,7 @@ export function ViewURoomPartnerTrainerCard(unused: any, data: any, isParent: an
       ConvertIntToDecimalStringN(data.trainerCardStrBuffer[2], trainerCard.pokemonTrades, STR_CONV_MODE_LEFT_ALIGN, 5);
       DynamicPlaceholderTextUtil_SetPlaceholderPtr(3, data.trainerCardStrBuffer[2]);
 
-      for (i = 0; i < TRAINER_CARD_PROFILE_LENGTH; i++)
+      for (i = 0; i < (4); i++)
       {
           CopyEasyChatWord(data.trainerCardStrBuffer[i + 3], trainerCard.easyChatProfile[i]);
           DynamicPlaceholderTextUtil_SetPlaceholderPtr(i + 4, data.trainerCardStrBuffer[i + 3]);

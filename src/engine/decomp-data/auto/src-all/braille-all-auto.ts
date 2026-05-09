@@ -15,10 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sFont_Braille: any = null;
-let sScrollDistances: any = null;
 /** u16 FontFunc_Braille(struct TextPrinter *textPrinter) */
 export function FontFunc_Braille(textPrinter: any): any {
   let char_: any = null;
@@ -50,32 +46,32 @@ export function FontFunc_Braille(textPrinter: any): any {
           char_ = textPrinter.printerTemplate.currentChar++;
           switch (char_)
           {
-          case EOS:
+          case (0xFF):
               return RENDER_FINISH;
-          case CHAR_NEWLINE:
+          case (0xFE):
               textPrinter.printerTemplate.currentX = textPrinter.printerTemplate.x;
               textPrinter.printerTemplate.currentY += gFonts[textPrinter.printerTemplate.fontId].maxLetterHeight + textPrinter.printerTemplate.lineSpacing;
               return RENDER_REPEAT;
-          case PLACEHOLDER_BEGIN:
+          case (0xFD):
               textPrinter.printerTemplate.currentChar++;
               return RENDER_REPEAT;
-          case EXT_CTRL_CODE_BEGIN:
+          case (0xFC):
               char_ = textPrinter.printerTemplate.currentChar++;
               switch (char_)
               {
-              case EXT_CTRL_CODE_COLOR:
+              case (0x01):
                   textPrinter.printerTemplate.fgColor = textPrinter.printerTemplate.currentChar++;
                   GenerateFontHalfRowLookupTable(textPrinter.printerTemplate.fgColor, textPrinter.printerTemplate.bgColor, textPrinter.printerTemplate.shadowColor);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_HIGHLIGHT:
+              case (0x02):
                   textPrinter.printerTemplate.bgColor = textPrinter.printerTemplate.currentChar++;
                   GenerateFontHalfRowLookupTable(textPrinter.printerTemplate.fgColor, textPrinter.printerTemplate.bgColor, textPrinter.printerTemplate.shadowColor);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_SHADOW:
+              case (0x03):
                   textPrinter.printerTemplate.shadowColor = textPrinter.printerTemplate.currentChar++;
                   GenerateFontHalfRowLookupTable(textPrinter.printerTemplate.fgColor, textPrinter.printerTemplate.bgColor, textPrinter.printerTemplate.shadowColor);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW:
+              case (0x04):
                   textPrinter.printerTemplate.fgColor = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.bgColor = ++textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.shadowColor = ++textPrinter.printerTemplate.currentChar;
@@ -83,57 +79,57 @@ export function FontFunc_Braille(textPrinter: any): any {
 
                   GenerateFontHalfRowLookupTable(textPrinter.printerTemplate.fgColor, textPrinter.printerTemplate.bgColor, textPrinter.printerTemplate.shadowColor);
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_PALETTE:
+              case (0x05):
                   textPrinter.printerTemplate.currentChar++;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_FONT:
+              case (0x06):
                   subStruct.fontId = textPrinter.printerTemplate.currentChar;
                   textPrinter.printerTemplate.currentChar++;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_RESET_FONT:
+              case (0x07):
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_PAUSE:
+              case (0x08):
                   textPrinter.delayCounter = textPrinter.printerTemplate.currentChar++;
                   textPrinter.state = RENDER_STATE_PAUSE;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_PAUSE_UNTIL_PRESS:
+              case (0x09):
                   textPrinter.state = RENDER_STATE_WAIT;
                   if (gTextFlags.autoScroll)
                       subStruct.autoScrollDelay = 0;
                   return RENDER_UPDATE;
-              case EXT_CTRL_CODE_WAIT_SE:
+              case (0x0A):
                   textPrinter.state = RENDER_STATE_WAIT_SE;
                   return RENDER_UPDATE;
-              case EXT_CTRL_CODE_PLAY_BGM:
-              case EXT_CTRL_CODE_PLAY_SE:
+              case (0x0B):
+              case (0x10):
                   textPrinter.printerTemplate.currentChar += 2;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_ESCAPE:
+              case (0x0C):
                   char_ = ++textPrinter.printerTemplate.currentChar;
                   break;
-              case EXT_CTRL_CODE_SHIFT_RIGHT:
+              case (0x0D):
                   textPrinter.printerTemplate.currentX = textPrinter.printerTemplate.x + textPrinter.printerTemplate.currentChar++;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_SHIFT_DOWN:
+              case (0x0E):
                   textPrinter.printerTemplate.currentY = textPrinter.printerTemplate.y + textPrinter.printerTemplate.currentChar++;
                   return RENDER_REPEAT;
-              case EXT_CTRL_CODE_FILL_WINDOW:
+              case (0x0F):
                   FillWindowPixelBuffer(textPrinter.printerTemplate.windowId, PIXEL_FILL(textPrinter.printerTemplate.bgColor));
                   return RENDER_REPEAT;
               }
               break;
-          case CHAR_PROMPT_CLEAR:
+          case (0xFB):
               textPrinter.state = RENDER_STATE_CLEAR;
               TextPrinterInitDownArrowCounters(textPrinter);
               return RENDER_UPDATE;
-          case CHAR_PROMPT_SCROLL:
+          case (0xFA):
               textPrinter.state = RENDER_STATE_SCROLL_START;
               TextPrinterInitDownArrowCounters(textPrinter);
               return RENDER_UPDATE;
-          case CHAR_EXTRA_SYMBOL:
+          case (0xF9):
               char_ = textPrinter.printerTemplate.currentChar++| 0x100;
               break;
-          case CHAR_KEYPAD_ICON:
+          case (0xF8):
               textPrinter.printerTemplate.currentChar++;
               return RENDER_PRINT;
           }

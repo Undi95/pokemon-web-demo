@@ -17,48 +17,30 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gReservedSpritePaletteCount: any = null;
+let gSpecialVar_ItemId: any = null;
+let gSpriteCoordOffsetX: any = null;
+let gSpriteCoordOffsetY: any = null;
+let j: any = null;
+let presses: any = null;
 let sAmplitude: any = null;
-let sBerryCrushCommands: any = null;
-let sBgTemplates: any = null;
-let sBg_Tilemap: any = null;
-let sBigSparkleThresholds: any = null;
-let sBitTable: any = null;
 let sBitfield: any = null;
-let sContainerCap_Tilemap: any = null;
-let sCrusherTop_Tilemap: any = null;
-let sDigitObjTemplates: any = null;
 let sGame: any = null;
-let sImpactCoords: any = null;
-let sIntroOutroVibrationData: any = null;
-let sMessages: any = null;
-let sPlayerBerrySpriteTags: any = null;
-let sPlayerCoords: any = null;
-let sPlayerIdToPosId: any = null;
-let sPressingSpeedConversionTable: any = null;
-let sReceivedPlayerBitmasks: any = null;
-let sResultsTexts: any = null;
-let sResultsWindowHeights: any = null;
 let sSinIdx: any = null;
 let sSinSpeed: any = null;
-let sSparkleCoords: any = null;
-let sSparkleThresholds: any = null;
-let sSpritePals: any = null;
-let sSpriteSheets: any = null;
-let sSpriteTemplate_CrusherBase: any = null;
-let sSpriteTemplate_Impact: any = null;
-let sSpriteTemplate_PlayerBerry: any = null;
-let sSpriteTemplate_Sparkle: any = null;
-let sSpriteTemplate_Timer: any = null;
-let sSyncPressBonus: any = null;
-let sTextColorTable: any = null;
-let sVibrationData: any = null;
-let sWindowTemplate_Rankings: any = null;
-let sWindowTemplates_PlayerNames: any = null;
-let sWindowTemplates_Results: any = null;
 let sX: any = null;
 let sXSpeed: any = null;
 let sYAccel: any = null;
 let sYSpeed: any = null;
+let tState: any = null;
+let tWindowId: any = null;
+let temp2: any = null;
+let var1: any = null;
+let xDiv: any = null;
+let xModifier: any = null;
+let xPos: any = null;
+let yModifier: any = null;
+let yPos: any = null;
 /** static struct BerryCrushGame * GetBerryCrushGame(void) */
 export function GetBerryCrushGame(): any {
   return sGame;
@@ -78,7 +60,7 @@ export function QuitBerryCrush(exitCallback: any): any {
       if (exitCallback == CB2_ReturnToField)
       {
           gTextFlags.autoScroll = TRUE;
-          PlayNewMapMusic(MUS_POKE_CENTER);
+          PlayNewMapMusic((400));
           SetMainCallback1(CB1_Overworld);
       }
 
@@ -121,7 +103,7 @@ export function StartBerryCrush(exitCallback: any): any {
       sGame.gameState = STATE_INIT;
       sGame.nextCmd = CMD_FADE;
       sGame.afterPalFadeCmd = CMD_READY_BEGIN;
-      SetPaletteFadeArgs(sGame.commandArgs, TRUE, PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+      SetPaletteFadeArgs(sGame.commandArgs, TRUE, (((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       RunOrScheduleCommand(CMD_SHOW_GAME, 1, sGame.commandArgs);
       SetMainCallback2(MainCB);
       sGame.taskId = CreateTask(MainTask, 8);
@@ -130,15 +112,15 @@ export function StartBerryCrush(exitCallback: any): any {
 
 /** static void GetBerryFromBag(void) */
 export function GetBerryFromBag(): any {
-  if (gSpecialVar_ItemId < FIRST_BERRY_INDEX || gSpecialVar_ItemId > LAST_BERRY_INDEX + 1)
-          gSpecialVar_ItemId = FIRST_BERRY_INDEX;
+  if (gSpecialVar_ItemId < ((133)) || gSpecialVar_ItemId > ((175)) + 1)
+          gSpecialVar_ItemId = ((133));
       else
           RemoveBagItem(gSpecialVar_ItemId, 1);
 
-      sGame.players[sGame.localId].berryId = gSpecialVar_ItemId - FIRST_BERRY_INDEX;
+      sGame.players[sGame.localId].berryId = gSpecialVar_ItemId - ((133));
       sGame.nextCmd = CMD_FADE;
       sGame.afterPalFadeCmd = CMD_WAIT_BERRIES;
-      SetPaletteFadeArgs(sGame.commandArgs, FALSE, PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+      SetPaletteFadeArgs(sGame.commandArgs, FALSE, (((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       RunOrScheduleCommand(CMD_SHOW_GAME, 1, sGame.commandArgs);
       sGame.taskId = CreateTask(MainTask, 8);
       SetMainCallback2(MainCB);
@@ -239,21 +221,21 @@ export function SetNamesAndTextSpeed(game: any): any {
   let i: any = null;
       for (i = 0; i < game.playerCount; i++)
           StringCopy(game.players[i].name, gLinkPlayers[i].name);
-      for (; i < MAX_RFU_PLAYERS; i++)
+      for (; i < (5); i++)
       {
-          memset(game.players[i].name, 1, PLAYER_NAME_LENGTH);
-          game.players[i].name[PLAYER_NAME_LENGTH] = EOS;
+          memset(game.players[i].name, 1, (7));
+          game.players[i].name[(7)] = (0xFF);
       }
 
       switch (gSaveBlock2Ptr.optionsTextSpeed)
       {
-      case OPTIONS_TEXT_SPEED_SLOW:
+      case (0):
           game.textSpeed = 8;
           break;
-      case OPTIONS_TEXT_SPEED_MID:
+      case (1):
           game.textSpeed = 4;
           break;
-      case OPTIONS_TEXT_SPEED_FAST:
+      case (2):
           game.textSpeed = 1;
           break;
       }
@@ -342,7 +324,7 @@ export function ShowGameDisplay(): any {
           break;
       case 9:
           gPaletteFade.bufferTransferDisabled = FALSE;
-          BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
           ShowBg(0);
           ShowBg(1);
           ShowBg(2);
@@ -373,7 +355,7 @@ export function HideGameDisplay(): any {
               return 0;
           break;
       case 2:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           UpdatePaletteFade();
           break;
       case 3:
@@ -449,7 +431,7 @@ export function CreateBerrySprites(game: any, gfx: any): any {
           spriteId = AddCustomItemIconSprite(sSpriteTemplate_PlayerBerry,
               sPlayerBerrySpriteTags[i],
               sPlayerBerrySpriteTags[i],
-              game.players[i].berryId + FIRST_BERRY_INDEX);
+              game.players[i].berryId + ((133)));
           gfx.berrySprites[i] =gSprites[spriteId];
           gfx.berrySprites[i].oam.priority = 3;
           gfx.berrySprites[i].affineAnimPaused = TRUE;
@@ -581,9 +563,9 @@ export function UpdateInputEffects(game: any, gfx: any): any {
           else
           {
               if (numPlayersPressed == 1)
-                  PlaySE(SE_MUD_BALL);
+                  PlaySE((78));
               else
-                  PlaySE(SE_BREAKABLE_DOOR);
+                  PlaySE((77));
 
               game.playedSound = TRUE;
           }
@@ -690,7 +672,7 @@ export function PrintResultsText(game: any, page: any, sp14: any, baseY: any): a
               playerId = i;
               ranking = i;
               j = game.players[i].berryId;
-              if (j >= LAST_BERRY_INDEX - FIRST_BERRY_INDEX + 2)
+              if (j >= ((175)) - ((133)) + 2)
                   j = 0;
               StringCopy(gStringVar1, gBerries[j].name);
               StringExpandPlaceholders(gStringVar4, sResultsTexts[page]);
@@ -702,7 +684,7 @@ export function PrintResultsText(game: any, page: any, sp14: any, baseY: any): a
               StringCopy(gStringVar3, gText_1DotBlueF700);
           else
               StringCopy(gStringVar3, gText_1DotF700);
-          gStringVar3[0] = ranking + CHAR_1;
+          gStringVar3[0] = ranking + (0xA2);
           DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, game.players[playerId].name);
           DynamicPlaceholderTextUtil_ExpandPlaceholders(gStringVar4, gStringVar3);
           AddTextPrinterParameterized3(game.gfx.resultsWindowId, FONT_SHORT, 4, y, sTextColorTable[COLORID_GRAY], 0, gStringVar4);
@@ -861,7 +843,7 @@ export function Task_ShowRankings(taskId: any): any {
 
            
           yPos = 41;
-          for (i = 0; i < MAX_RFU_PLAYERS - 1; i++)
+          for (i = 0; i < (5) - 1; i++)
           {
               ConvertIntToDecimalStringN(gStringVar1, i + 2, STR_CONV_MODE_LEFT_ALIGN, 1);
               StringExpandPlaceholders(gStringVar4, gText_Var1Players);
@@ -1261,11 +1243,11 @@ export function Cmd_PrintMessage(game: any, args: any): any {
           if (args[1] & ((1 << 1)))
           {
               StringExpandPlaceholders(gStringVar4, sMessages[args[0]]);
-              AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, game.textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+              AddTextPrinterParameterized2(0, FONT_NORMAL, gStringVar4, game.textSpeed, 0, (0x2), (0x1), (0x3));
           }
           else
           {
-              AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[args[0]], game.textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+              AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[args[0]], game.textSpeed, 0, (0x2), (0x1), (0x3));
           }
           CopyWindowToVram(0, COPYWIN_FULL);
           break;
@@ -1318,7 +1300,7 @@ export function Cmd_SignalReadyToBegin(game: any, args: any): any {
       case 1:
           if (IsLinkTaskFinished())
           {
-              PlayNewMapMusic(MUS_RG_GAME_CORNER);
+              PlayNewMapMusic((485));
               RunOrScheduleCommand(CMD_ASK_PICK_BERRY, SCHEDULE_CMD, NULL);
               game.gameState = STATE_PICK_BERRY;
               game.cmdState = 0;
@@ -1395,7 +1377,7 @@ export function Cmd_WaitForOthersToPickBerries(game: any, args: any): any {
           for (i = 0; i < game.playerCount; i++)
           {
               game.players[i].berryId = gBlockRecvBuffer[i][0];
-              if (game.players[i].berryId > LAST_BERRY_INDEX + 1)
+              if (game.players[i].berryId > ((175)) + 1)
                   game.players[i].berryId = 0;
               game.targetAPresses += gBerryCrush_BerryData[game.players[i].berryId].difficulty;
               game.powder += gBerryCrush_BerryData[game.players[i].berryId].powder;
@@ -1434,7 +1416,7 @@ export function Cmd_DropBerriesIntoCrusher(game: any, args: any): any {
       case 2:
           game.gfx.berrySprites[game.gfx.counter].callback = SpriteCB_DropBerryIntoCrusher;
           game.gfx.berrySprites[game.gfx.counter].affineAnimPaused = FALSE;
-          PlaySE(SE_BALL_THROW);
+          PlaySE((61));
           break;
       case 3:
           if (game.gfx.berrySprites[game.gfx.counter].callback == SpriteCB_DropBerryIntoCrusher)
@@ -1460,7 +1442,7 @@ export function Cmd_DropBerriesIntoCrusher(game: any, args: any): any {
       case 6:
           if (!IsLinkTaskFinished())
               return 0;
-          PlaySE(SE_FALL);
+          PlaySE((43));
           RunOrScheduleCommand(CMD_DROP_LID, SCHEDULE_CMD, NULL);
           game.gameState = STATE_DROP_LID;
           game.cmdState = 0;
@@ -1482,7 +1464,7 @@ export function Cmd_DropLid(game: any, args: any): any {
           game.gfx.vibrationIdx = 4;
           game.gfx.counter = 0;
           game.gfx.numVibrations = sIntroOutroVibrationData[game.gfx.vibrationIdx][0];
-          PlaySE(SE_M_STRENGTH);
+          PlaySE((214));
           break;
       case 1:
           game.vibration = sIntroOutroVibrationData[game.gfx.vibrationIdx][game.gfx.counter];
@@ -1566,7 +1548,7 @@ export function HandlePartnerInput(game: any): any {
           linkState = gRecvCmds[i];
 
            
-          if ((linkState.rfuCmd & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
+          if ((linkState.rfuCmd & (0xFF00)) != (0x2F00))
               continue;
           if (linkState.sendFlag != (2))
               continue;
@@ -1794,7 +1776,7 @@ export function RecvLinkData(game: any): any {
       for (i = 0; i < game.playerCount; i++)
           game.players[i].inputState = INPUT_STATE_NONE;
 
-      if ((gRecvCmds[0][0] & RFUCMD_MASK) != RFUCMD_SEND_PACKET)
+      if ((gRecvCmds[0][0] & (0xFF00)) != (0x2F00))
       {
           game.playedSound = FALSE;
           return;
@@ -1885,14 +1867,14 @@ export function Cmd_FinishGame(game: any, args: any): any {
       {
       case 0:
           game.gameState = STATE_FINISHED;
-          PlaySE(SE_M_STRENGTH);
-          BlendPalettes(PALETTES_ALL, 8, RGB_YELLOW);
+          PlaySE((214));
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 8, (RGB(31, 31, 0)));
           game.gfx.counter = 2;
           break;
       case 1:
           if (--game.gfx.counter != -1)
               return 0;
-          BlendPalettes(PALETTES_ALL, 0, RGB_YELLOW);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 0, (RGB(31, 31, 0)));
           game.gfx.vibrationIdx = 4;
           game.gfx.counter = 0;
           game.gfx.numVibrations = sIntroOutroVibrationData[game.gfx.vibrationIdx][0];
@@ -1942,14 +1924,14 @@ export function Cmd_HandleTimeUp(game: any, args: any): any {
       {
       case 0:
           game.gameState = STATE_TIMES_UP;
-          PlaySE(SE_FAILURE);
-          BlendPalettes(PALETTES_ALL, 8, RGB_RED);
+          PlaySE((32));
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 8, (RGB(31, 0, 0)));
           game.gfx.counter = 4;
           break;
       case 1:
           if (--game.gfx.counter != -1)
               return 0;
-          BlendPalettes(PALETTES_ALL, 0, RGB_RED);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 0, (RGB(31, 0, 0)));
           game.gfx.counter = 0;
           break;
       case 2:
@@ -2185,7 +2167,7 @@ export function Cmd_ShowResults(game: any, args: any): any {
           }
           if (!(JOY_NEW(A_BUTTON)))
               return 0;
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           CloseResultsWindow(game);
           break;
       case 3:
@@ -2230,7 +2212,7 @@ export function Cmd_SaveGame(game: any, args: any): any {
           if (!IsLinkTaskFinished())
               return 0;
           DrawDialogueFrame(0, FALSE);
-          AddTextPrinterParameterized2(0, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          AddTextPrinterParameterized2(0, FONT_NORMAL, gText_SavingDontTurnOffPower, 0, 0, (0x2), (0x1), (0x3));
           CopyWindowToVram(0, COPYWIN_FULL);
           CreateTask(Task_LinkFullSave, 0);
           break;
@@ -2347,7 +2329,7 @@ export function Cmd_PlayAgain(game: any, args: any): any {
   switch (game.cmdState)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 1, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 1, 0, 16, (RGB(0, 0, 0)));
           UpdatePaletteFade();
           break;
       case 1:
@@ -2357,7 +2339,7 @@ export function Cmd_PlayAgain(game: any, args: any): any {
       case 2:
           ClearDialogWindowAndFrame(0, TRUE);
           ResetCrusherPos(game);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           UpdatePaletteFade();
           break;
       case 3:
@@ -2379,9 +2361,9 @@ export function Cmd_StopGame(game: any, args: any): any {
       case 0:
           DrawDialogueFrame(0, FALSE);
           if (game.playAgainState == (3))
-              AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[MSG_NO_BERRIES], game.textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+              AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[MSG_NO_BERRIES], game.textSpeed, 0, (0x2), (0x1), (0x3));
           else
-              AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[MSG_DROPPED], game.textSpeed, 0, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+              AddTextPrinterParameterized2(0, FONT_NORMAL, sMessages[MSG_DROPPED], game.textSpeed, 0, (0x2), (0x1), (0x3));
           CopyWindowToVram(0, COPYWIN_FULL);
           break;
       case 1:
@@ -2439,7 +2421,7 @@ export function Cmd_Quit(game: any, args: any): any {
 export function ResetGame(game: any): any {
   let i: any = 0;
 
-      IncrementGameStat(GAME_STAT_PLAYED_BERRY_CRUSH);
+      IncrementGameStat((51));
       game.unused = 0;
       game.cmdTimer = 0;
       game.gameState = STATE_RESET;
@@ -2461,7 +2443,7 @@ export function ResetGame(game: any): any {
       game.numBigSparkleChecks = -1;
       game.numBigSparkles = 0;
       game.sparkleCounter = 0;
-      for (i = 0; i < MAX_RFU_PLAYERS; i++)
+      for (i = 0; i < (5); i++)
       {
           game.players[i].berryId = -1;
           game.players[i].inputTime = 0;

@@ -17,92 +17,40 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAffineAnims_ReleaseMon: any = null;
-let sAnims_ChooseBoxMenu: any = null;
+let adjustedX: any = null;
+let bgType: any = null;
+let gKeyRepeatStartDelay: any = null;
+let gPlayerPartyCount: any = null;
+let gReservedSpriteTileCount: any = null;
+let maxMonIndex: any = null;
+let monIndex: any = null;
+let movingMon: any = null;
+let posY: any = null;
+let remainingBytes: any = null;
 let sAutoActionOn: any = null;
-let sBgTemplates: any = null;
-let sBoxTitleColors: any = null;
 let sChooseBoxMenu: any = null;
-let sChooseBoxMenuCenter_Gfx: any = null;
-let sChooseBoxMenuSides_Gfx: any = null;
-let sChooseBoxMenu_Pal: any = null;
-let sChooseBoxMenu_TextColors: any = null;
-let sCloseBoxButton_Tilemap: any = null;
 let sCurrentBoxOption: any = null;
 let sCursorArea: any = null;
-let sCursorPos: any = null;
 let sCursorPosition: any = null;
-let sDelay: any = null;
 let sDepositBoxId: any = null;
-let sDisplayMenu_Tilemap: any = null;
-let sDistance: any = null;
-let sHandCursorShadow_Gfx: any = null;
-let sHandCursor_Gfx: any = null;
-let sHandCursor_Pal: any = null;
 let sInPartyMenu: any = null;
-let sIncomingDelay: any = null;
-let sIncomingX: any = null;
-let sInterface_Pal: any = null;
 let sIsMonBeingMoved: any = null;
-let sItemIconGfxBuffer: any = null;
-let sItemIconId: any = null;
-let sItemInfoFrame_Gfx: any = null;
 let sLastUsedBox: any = null;
-let sMainMenuTexts: any = null;
-let sMenuTexts: any = null;
-let sMessages: any = null;
-let sMonX: any = null;
-let sMonY: any = null;
-let sMoveSteps: any = null;
 let sMovingItemId: any = null;
 let sMovingMonOrigBoxId: any = null;
 let sMovingMonOrigBoxPos: any = null;
 let sMultiMove: any = null;
 let sNumTilemapUtilIds: any = null;
-let sOutgoingDelay: any = null;
-let sOutgoingX: any = null;
-let sPartyId: any = null;
-let sPartySlotEmpty_Tilemap: any = null;
-let sPartySlotFilled_Tilemap: any = null;
-let sPkmnDataGray_Pal: any = null;
-let sPkmnData_Tilemap: any = null;
 let sPreviousBoxOption: any = null;
-let sRestrictedReleaseMoves: any = null;
 let sSavedCursorPosition: any = null;
 let sSavedMovingMon: any = null;
-let sScrollInDestX: any = null;
-let sScrollOutX: any = null;
-let sScrollingBgMoveItems_Pal: any = null;
-let sScrollingBg_Gfx: any = null;
-let sScrollingBg_Pal: any = null;
-let sScrollingBg_Tilemap: any = null;
-let sSpeed: any = null;
-let sSpeedX: any = null;
-let sSpeedY: any = null;
-let sSpriteSheet_Arrow: any = null;
-let sSpriteSheet_Waveform: any = null;
-let sSpriteTemplate_Arrow: any = null;
-let sSpriteTemplate_BoxTitle: any = null;
-let sSpriteTemplate_DisplayMon: any = null;
-let sSpriteTemplate_ItemIcon: any = null;
-let sSpriteTemplate_Waveform: any = null;
-let sState: any = null;
 let sStorage: any = null;
-let sTextWindows_Pal: any = null;
-let sText_OutOf30: any = null;
-let sTilemapDimensions: any = null;
 let sTilemapUtil: any = null;
-let sTimer: any = null;
 let sUnkUtil: any = null;
-let sWaldaWallpaperIcons: any = null;
-let sWaldaWallpapers: any = null;
-let sWallpapers: any = null;
-let sWaveformSpritePalette: any = null;
 let sWhichToReshow: any = null;
-let sWindowTemplate_MainMenu: any = null;
-let sWindowTemplate_MultiMove: any = null;
-let sWindowTemplates: any = null;
-let sYesNoWindowTemplate: any = null;
+let tileBytesToBuffer: any = null;
+let tileData2: any = null;
+let xDistance: any = null;
 /** void DrawTextWindowAndBufferTiles(const u8 *string, void *dst, u8 zero1, u8 zero2, s32 bytesToBuffer) */
 export function DrawTextWindowAndBufferTiles(string: any, dst: any, zero1: any, zero2: any, bytesToBuffer: any): any {
   let i, tileBytesToBuffer, remainingBytes;
@@ -119,12 +67,12 @@ export function DrawTextWindowAndBufferTiles(string: any, dst: any, zero1: any, 
       tileData2 = (winTemplate.width * TILE_SIZE_4BPP) + tileData1;
 
       if (!zero1)
-          txtColor[0] = TEXT_COLOR_TRANSPARENT;
+          txtColor[0] = (0x0);
       else
           txtColor[0] = zero2;
-      txtColor[1] = TEXT_DYNAMIC_COLOR_6;
-      txtColor[2] = TEXT_DYNAMIC_COLOR_5;
-      AddTextPrinterParameterized4(windowId, FONT_NORMAL, 0, 1, 0, 0, txtColor, TEXT_SKIP_DRAW, string);
+      txtColor[1] = (0xF);
+      txtColor[2] = (0xE);
+      AddTextPrinterParameterized4(windowId, FONT_NORMAL, 0, 1, 0, 0, txtColor, (0xFF), string);
 
       tileBytesToBuffer = bytesToBuffer;
       if (tileBytesToBuffer > 6)
@@ -153,9 +101,9 @@ export function DrawTextWindowAndBufferTiles(string: any, dst: any, zero1: any, 
 export function CountMonsInBox(boxId: any): any {
   let i, count;
 
-      for (i = 0, count = 0; i < IN_BOX_COUNT; i++)
+      for (i = 0, count = 0; i < (((5) * (6))); i++)
       {
-          if (GetBoxMonDataAt(boxId, i, MON_DATA_SPECIES) != SPECIES_NONE)
+          if (GetBoxMonDataAt(boxId, i, MON_DATA_SPECIES) != (0))
               count++;
       }
 
@@ -166,9 +114,9 @@ export function CountMonsInBox(boxId: any): any {
 export function GetFirstFreeBoxSpot(boxId: any): any {
   let i: any = null;
 
-      for (i = 0; i < IN_BOX_COUNT; i++)
+      for (i = 0; i < (((5) * (6))); i++)
       {
-          if (GetBoxMonDataAt(boxId, i, MON_DATA_SPECIES) == SPECIES_NONE)
+          if (GetBoxMonDataAt(boxId, i, MON_DATA_SPECIES) == (0))
               return i;
       }
 
@@ -179,9 +127,9 @@ export function GetFirstFreeBoxSpot(boxId: any): any {
 export function CountPartyNonEggMons(): any {
   let i, count;
 
-      for (i = 0, count = 0; i < PARTY_SIZE; i++)
+      for (i = 0, count = 0; i < (6); i++)
       {
-          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) != SPECIES_NONE
+          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) != (0)
               && !GetMonData(gPlayerParty[i], MON_DATA_IS_EGG))
           {
               count++;
@@ -195,10 +143,10 @@ export function CountPartyNonEggMons(): any {
 export function CountPartyAliveNonEggMonsExcept(slotToIgnore: any): any {
   let i, count;
 
-      for (i = 0, count = 0; i < PARTY_SIZE; i++)
+      for (i = 0, count = 0; i < (6); i++)
       {
           if (i != slotToIgnore
-              && GetMonData(gPlayerParty[i], MON_DATA_SPECIES) != SPECIES_NONE
+              && GetMonData(gPlayerParty[i], MON_DATA_SPECIES) != (0)
               && !GetMonData(gPlayerParty[i], MON_DATA_IS_EGG)
               && GetMonData(gPlayerParty[i], MON_DATA_HP) != 0)
           {
@@ -218,9 +166,9 @@ export function CountPartyAliveNonEggMons_IgnoreVar0x8004Slot(): any {
 export function CountPartyMons(): any {
   let i, count;
 
-      for (i = 0, count = 0; i < PARTY_SIZE; i++)
+      for (i = 0, count = 0; i < (6); i++)
       {
-          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) != SPECIES_NONE)
+          if (GetMonData(gPlayerParty[i], MON_DATA_SPECIES) != (0))
           {
               count++;
           }
@@ -240,7 +188,7 @@ export function Task_PCMainMenu(taskId: any): any {
           LoadMessageBoxAndBorderGfx();
           DrawDialogueFrame(0, FALSE);
           FillWindowPixelBuffer(0, PIXEL_FILL(1));
-          AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task.tSelectedOption].desc, TEXT_SKIP_DRAW, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+          AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task.tSelectedOption].desc, (0xFF), NULL, (0x2), (0x1), (0x3));
           CopyWindowToVram(0, COPYWIN_FULL);
           CopyWindowToVram(task.tWindowId, COPYWIN_FULL);
           task.tState++;
@@ -253,7 +201,7 @@ export function Task_PCMainMenu(taskId: any): any {
           task.tInput = Menu_ProcessInput();
           switch(task.tInput)
           {
-          case MENU_NOTHING_CHOSEN:
+          case (-2):
               task.tNextOption = task.tSelectedOption;
               if (JOY_NEW(DPAD_UP) && --task.tNextOption < 0)
                   task.tNextOption = OPTIONS_COUNT - 1;
@@ -264,10 +212,10 @@ export function Task_PCMainMenu(taskId: any): any {
               {
                   task.tSelectedOption = task.tNextOption;
                   FillWindowPixelBuffer(0, PIXEL_FILL(1));
-                  AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task.tSelectedOption].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+                  AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task.tSelectedOption].desc, 0, NULL, (0x2), (0x1), (0x3));
               }
               break;
-          case MENU_B_PRESSED:
+          case (-1):
           case OPTION_EXIT:
               ClearStdWindowAndFrame(task.tWindowId, TRUE);
               UnlockPlayerFieldControls();
@@ -276,24 +224,24 @@ export function Task_PCMainMenu(taskId: any): any {
               DestroyTask(taskId);
               break;
           default:
-              if (task.tInput == OPTION_WITHDRAW && CountPartyMons() == PARTY_SIZE)
+              if (task.tInput == OPTION_WITHDRAW && CountPartyMons() == (6))
               {
                    
                   FillWindowPixelBuffer(0, PIXEL_FILL(1));
-                  AddTextPrinterParameterized2(0, FONT_NORMAL, gText_PartyFull, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+                  AddTextPrinterParameterized2(0, FONT_NORMAL, gText_PartyFull, 0, NULL, (0x2), (0x1), (0x3));
                   task.tState = STATE_ERROR_MSG;
               }
               else if (task.tInput == OPTION_DEPOSIT && CountPartyMons() == 1)
               {
                    
                   FillWindowPixelBuffer(0, PIXEL_FILL(1));
-                  AddTextPrinterParameterized2(0, FONT_NORMAL, gText_JustOnePkmn, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+                  AddTextPrinterParameterized2(0, FONT_NORMAL, gText_JustOnePkmn, 0, NULL, (0x2), (0x1), (0x3));
                   task.tState = STATE_ERROR_MSG;
               }
               else
               {
                    
-                  FadeScreen(FADE_TO_BLACK, 0);
+                  FadeScreen((1), 0);
                   task.tState = STATE_ENTER_PC;
               }
               break;
@@ -305,7 +253,7 @@ export function Task_PCMainMenu(taskId: any): any {
           if (JOY_NEW(A_BUTTON | B_BUTTON))
           {
               FillWindowPixelBuffer(0, PIXEL_FILL(1));
-              AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task.tSelectedOption].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+              AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task.tSelectedOption].desc, 0, NULL, (0x2), (0x1), (0x3));
               task.tState = STATE_HANDLE_INPUT;
           }
           else if (JOY_NEW(DPAD_UP))
@@ -315,7 +263,7 @@ export function Task_PCMainMenu(taskId: any): any {
               Menu_MoveCursor(-1);
               task.tSelectedOption = Menu_GetCursorPos();
               FillWindowPixelBuffer(0, PIXEL_FILL(1));
-              AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task.tSelectedOption].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+              AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task.tSelectedOption].desc, 0, NULL, (0x2), (0x1), (0x3));
               task.tState = STATE_HANDLE_INPUT;
           }
           else if (JOY_NEW(DPAD_DOWN))
@@ -325,7 +273,7 @@ export function Task_PCMainMenu(taskId: any): any {
               Menu_MoveCursor(1);
               task.tSelectedOption = Menu_GetCursorPos();
               FillWindowPixelBuffer(0, PIXEL_FILL(1));
-              AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task.tSelectedOption].desc, 0, NULL, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY);
+              AddTextPrinterParameterized2(0, FONT_NORMAL, sMainMenuTexts[task.tSelectedOption].desc, 0, NULL, (0x2), (0x1), (0x3));
               task.tState = STATE_HANDLE_INPUT;
           }
           break;
@@ -388,18 +336,18 @@ export function ResetPokemonStorageSystem(): any {
   let boxId, boxPosition;
 
       SetCurrentBox(0);
-      for (boxId = 0; boxId < TOTAL_BOXES_COUNT; boxId++)
+      for (boxId = 0; boxId < (14); boxId++)
       {
-          for (boxPosition = 0; boxPosition < IN_BOX_COUNT; boxPosition++)
+          for (boxPosition = 0; boxPosition < (((5) * (6))); boxPosition++)
               ZeroBoxMonAt(boxId, boxPosition);
       }
-      for (boxId = 0; boxId < TOTAL_BOXES_COUNT; boxId++)
+      for (boxId = 0; boxId < (14); boxId++)
       {
           let dest: any = StringCopy(GetBoxNamePtr(boxId), gText_Box);
           ConvertIntToDecimalStringN(dest, boxId + 1, STR_CONV_MODE_LEFT_ALIGN, 2);
       }
 
-      for (boxId = 0; boxId < TOTAL_BOXES_COUNT; boxId++)
+      for (boxId = 0; boxId < (14); boxId++)
           SetBoxWallpaper(boxId, boxId % (MAX_DEFAULT_WALLPAPER + 1));
 
       ResetWaldaWallpaper();
@@ -451,22 +399,22 @@ export function DestroyChooseBoxMenuSprites(): any {
 export function HandleChooseBoxMenuInput(): any {
   if (JOY_NEW(B_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           return (201);
       }
       if (JOY_NEW(A_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           return sChooseBoxMenu.curBox;
       }
       if (JOY_NEW(DPAD_LEFT))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           ChooseBoxMenu_MoveLeft();
       }
       else if (JOY_NEW(DPAD_RIGHT))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           ChooseBoxMenu_MoveRight();
       }
       return (200);
@@ -551,14 +499,14 @@ export function ChooseBoxMenu_DestroySprites(): any {
 
 /** static void ChooseBoxMenu_MoveRight(void) */
 export function ChooseBoxMenu_MoveRight(): any {
-  if (++sChooseBoxMenu.curBox >= TOTAL_BOXES_COUNT)
+  if (++sChooseBoxMenu.curBox >= (14))
           sChooseBoxMenu.curBox = 0;
       ChooseBoxMenu_PrintInfo();
 }
 
 /** static void ChooseBoxMenu_MoveLeft(void) */
 export function ChooseBoxMenu_MoveLeft(): any {
-  sChooseBoxMenu.curBox = (sChooseBoxMenu.curBox == 0 ? TOTAL_BOXES_COUNT - 1 : sChooseBoxMenu.curBox - 1);
+  sChooseBoxMenu.curBox = (sChooseBoxMenu.curBox == 0 ? (14) - 1 : sChooseBoxMenu.curBox - 1);
       ChooseBoxMenu_PrintInfo();
 }
 
@@ -581,13 +529,13 @@ export function ChooseBoxMenu_PrintInfo(): any {
 
        
       center = GetStringCenterAlignXOffset(FONT_NORMAL, boxName, 64);
-      AddTextPrinterParameterized3(windowId, FONT_NORMAL, center, 1, sChooseBoxMenu_TextColors, TEXT_SKIP_DRAW, boxName);
+      AddTextPrinterParameterized3(windowId, FONT_NORMAL, center, 1, sChooseBoxMenu_TextColors, (0xFF), boxName);
 
        
       ConvertIntToDecimalStringN(numBoxMonsText, numInBox, STR_CONV_MODE_RIGHT_ALIGN, 2);
       StringAppend(numBoxMonsText, sText_OutOf30);
       center = GetStringCenterAlignXOffset(FONT_NORMAL, numBoxMonsText, 64);
-      AddTextPrinterParameterized3(windowId, FONT_NORMAL, center, 17, sChooseBoxMenu_TextColors, TEXT_SKIP_DRAW, numBoxMonsText);
+      AddTextPrinterParameterized3(windowId, FONT_NORMAL, center, 17, sChooseBoxMenu_TextColors, (0xFF), numBoxMonsText);
 
       winTileData = GetWindowAttribute(windowId, WINDOW_TILE_DATA);
       CpuCopy32(winTileData, OBJ_VRAM0 + 0x100 + (GetSpriteTileStartByTag(sChooseBoxMenu.tileTag) * 32), 0x400);
@@ -641,7 +589,7 @@ export function EnterPokeStorage(boxOption: any): any {
       {
           sStorage.boxOption = boxOption;
           sStorage.isReopening = FALSE;
-          sMovingItemId = ITEM_NONE;
+          sMovingItemId = (0);
           sStorage.state = 0;
           sStorage.taskId = CreateTask(Task_InitPokeStorage, 3);
           sLastUsedBox = StorageGetCurrentBox();
@@ -815,12 +763,12 @@ export function Task_InitPokeStorage(taskId: any): any {
           SetMonIconTransparency();
           if (!sStorage.isReopening)
           {
-              BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
+              BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
               SetPokeStorageTask(Task_ShowPokeStorage);
           }
           else
           {
-              BlendPalettes(PALETTES_ALL, 16, RGB_BLACK);
+              BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, (RGB(0, 0, 0)));
               SetPokeStorageTask(Task_ReshowPokeStorage);
           }
           SetVBlankCallback(VBlankCB_PokeStorage);
@@ -837,7 +785,7 @@ export function Task_ShowPokeStorage(taskId: any): any {
   switch (sStorage.state)
       {
       case 0:
-          PlaySE(SE_PC_LOGIN);
+          PlaySE((2));
           ComputerScreenOpenEffect(20, 0, 1);
           sStorage.state++;
           break;
@@ -853,13 +801,13 @@ export function Task_ReshowPokeStorage(taskId: any): any {
   switch (sStorage.state)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, -1, 0x10, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 0x10, 0, (RGB(0, 0, 0)));
           sStorage.state++;
           break;
       case 1:
           if (!UpdatePaletteFade())
           {
-              if (sWhichToReshow == SCREEN_CHANGE_ITEM_FROM_BAG - 1 && gSpecialVar_ItemId != ITEM_NONE)
+              if (sWhichToReshow == SCREEN_CHANGE_ITEM_FROM_BAG - 1 && gSpecialVar_ItemId != (0))
               {
                   PrintMessage(MSG_ITEM_IS_HELD);
                   sStorage.state++;
@@ -892,7 +840,7 @@ export function Task_PokeStorageMain(taskId: any): any {
           switch (HandleInput())
           {
           case INPUT_MOVE_CURSOR:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sStorage.state = MSTATE_MOVE_CURSOR;
               break;
           case INPUT_SHOW_PARTY:
@@ -927,16 +875,16 @@ export function Task_PokeStorageMain(taskId: any): any {
               SetPokeStorageTask(Task_OnBPressed);
               break;
           case INPUT_BOX_OPTIONS:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_HandleBoxOptions);
               break;
           case INPUT_IN_MENU:
               SetPokeStorageTask(Task_OnSelectedMon);
               break;
           case INPUT_SCROLL_RIGHT:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sStorage.newCurrBoxId = StorageGetCurrentBox() + 1;
-              if (sStorage.newCurrBoxId >= TOTAL_BOXES_COUNT)
+              if (sStorage.newCurrBoxId >= (14))
                   sStorage.newCurrBoxId = 0;
               if (sStorage.boxOption != OPTION_MOVE_ITEMS)
               {
@@ -950,10 +898,10 @@ export function Task_PokeStorageMain(taskId: any): any {
               }
               break;
           case INPUT_SCROLL_LEFT:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sStorage.newCurrBoxId = StorageGetCurrentBox() - 1;
               if (sStorage.newCurrBoxId < 0)
-                  sStorage.newCurrBoxId = TOTAL_BOXES_COUNT - 1;
+                  sStorage.newCurrBoxId = (14) - 1;
               if (sStorage.boxOption != OPTION_MOVE_ITEMS)
               {
                   SetUpScrollToBox(sStorage.newCurrBoxId);
@@ -974,7 +922,7 @@ export function Task_PokeStorageMain(taskId: any): any {
                   }
                   else
                   {
-                      PlaySE(SE_SELECT);
+                      PlaySE((5));
                       SetPokeStorageTask(Task_DepositMenu);
                   }
               }
@@ -990,7 +938,7 @@ export function Task_PokeStorageMain(taskId: any): any {
               }
               else
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   SetPokeStorageTask(Task_MoveMon);
               }
               break;
@@ -1001,32 +949,32 @@ export function Task_PokeStorageMain(taskId: any): any {
               }
               else
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   SetPokeStorageTask(Task_ShiftMon);
               }
               break;
           case INPUT_WITHDRAW:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_WithdrawMon);
               break;
           case INPUT_PLACE_MON:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_PlaceMon);
               break;
           case INPUT_TAKE_ITEM:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_TakeItemForMoving);
               break;
           case INPUT_GIVE_ITEM:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_GiveMovingItemToMon);
               break;
           case INPUT_SWITCH_ITEMS:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_SwitchSelectedItem);
               break;
           case INPUT_MULTIMOVE_START:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               MultiMove_SetFunction(MULTIMOVE_START);
               sStorage.state = MSTATE_MULTIMOVE_RUN;
               break;
@@ -1035,7 +983,7 @@ export function Task_PokeStorageMain(taskId: any): any {
               sStorage.state = MSTATE_MULTIMOVE_RUN_CANCEL;
               break;
           case INPUT_MULTIMOVE_CHANGE_SELECTION:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               MultiMove_SetFunction(MULTIMOVE_CHANGE_SELECTION);
               sStorage.state = MSTATE_MULTIMOVE_RUN_MOVED;
               break;
@@ -1044,19 +992,19 @@ export function Task_PokeStorageMain(taskId: any): any {
               sStorage.state = MSTATE_MULTIMOVE_RUN;
               break;
           case INPUT_MULTIMOVE_MOVE_MONS:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               MultiMove_SetFunction(MULTIMOVE_MOVE_MONS);
               sStorage.state = MSTATE_MULTIMOVE_RUN_MOVED;
               break;
           case INPUT_MULTIMOVE_PLACE_MONS:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               MultiMove_SetFunction(MULTIMOVE_PLACE_MONS);
               sStorage.state = MSTATE_MULTIMOVE_RUN;
               break;
           case INPUT_MULTIMOVE_UNABLE:
                
                
-              PlaySE(SE_FAILURE);
+              PlaySE((32));
               break;
           }
           break;
@@ -1102,12 +1050,12 @@ export function Task_PokeStorageMain(taskId: any): any {
           }
           break;
       case MSTATE_ERROR_LAST_PARTY_MON:
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           PrintMessage(MSG_LAST_POKE);
           sStorage.state = MSTATE_WAIT_ERROR_MSG;
           break;
       case MSTATE_ERROR_HAS_MAIL:
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           PrintMessage(MSG_PLEASE_REMOVE_MAIL);
           sStorage.state = MSTATE_WAIT_ERROR_MSG;
           break;
@@ -1172,7 +1120,7 @@ export function Task_HidePartyPokemon(taskId: any): any {
   switch (sStorage.state)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           SetUpHidePartyMenu();
           sStorage.state++;
           break;
@@ -1201,10 +1149,10 @@ export function Task_OnSelectedMon(taskId: any): any {
       case 0:
           if (!IsDisplayMosaicActive())
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               if (sStorage.boxOption != OPTION_MOVE_ITEMS)
                   PrintMessage(MSG_IS_SELECTED);
-              else if (IsMovingItem() || sStorage.displayMonItemId != ITEM_NONE)
+              else if (IsMovingItem() || sStorage.displayMonItemId != (0))
                   PrintMessage(MSG_IS_SELECTED2);
               else
                   PrintMessage(MSG_GIVE_TO_MON);
@@ -1220,7 +1168,7 @@ export function Task_OnSelectedMon(taskId: any): any {
       case 2:
           switch (HandleMenuInput())
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case MENU_CANCEL:
               ClearBottomWindow();
               SetPokeStorageTask(Task_PokeStorageMain);
@@ -1232,13 +1180,13 @@ export function Task_OnSelectedMon(taskId: any): any {
               }
               else
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   ClearBottomWindow();
                   SetPokeStorageTask(Task_MoveMon);
               }
               break;
           case MENU_PLACE:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ClearBottomWindow();
               SetPokeStorageTask(Task_PlaceMon);
               break;
@@ -1249,13 +1197,13 @@ export function Task_OnSelectedMon(taskId: any): any {
               }
               else
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   ClearBottomWindow();
                   SetPokeStorageTask(Task_ShiftMon);
               }
               break;
           case MENU_WITHDRAW:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ClearBottomWindow();
               SetPokeStorageTask(Task_WithdrawMon);
               break;
@@ -1270,7 +1218,7 @@ export function Task_OnSelectedMon(taskId: any): any {
               }
               else
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   ClearBottomWindow();
                   SetPokeStorageTask(Task_DepositMenu);
               }
@@ -1290,35 +1238,35 @@ export function Task_OnSelectedMon(taskId: any): any {
               }
               else
               {
-                  PlaySE(SE_SELECT);
+                  PlaySE((5));
                   SetPokeStorageTask(Task_ReleaseMon);
               }
               break;
           case MENU_SUMMARY:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_ShowMonSummary);
               break;
           case MENU_MARK:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_ShowMarkMenu);
               break;
           case MENU_TAKE:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_TakeItemForMoving);
               break;
           case MENU_GIVE:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_GiveMovingItemToMon);
               break;
           case MENU_BAG:
               SetPokeStorageTask(Task_ItemToBag);
               break;
           case MENU_SWITCH:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_SwitchSelectedItem);
               break;
           case MENU_GIVE_2:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_GiveItemFromBag);
               break;
           case MENU_INFO:
@@ -1327,17 +1275,17 @@ export function Task_OnSelectedMon(taskId: any): any {
           }
           break;
       case 3:
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           PrintMessage(MSG_LAST_POKE);
           sStorage.state = 6;
           break;
       case 5:
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           PrintMessage(MSG_CANT_RELEASE_EGG);
           sStorage.state = 6;
           break;
       case 4:
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           PrintMessage(MSG_PLEASE_REMOVE_MAIL);
           sStorage.state = 6;
           break;
@@ -1414,7 +1362,7 @@ export function Task_WithdrawMon(taskId: any): any {
   switch (sStorage.state)
       {
       case 0:
-          if (CalculatePlayerPartyCount() == PARTY_SIZE)
+          if (CalculatePlayerPartyCount() == (6))
           {
               PrintMessage(MSG_PARTY_FULL);
               sStorage.state = 1;
@@ -1538,7 +1486,7 @@ export function Task_ReleaseMon(taskId: any): any {
       case 1:
           switch (Menu_ProcessInputNoWrapClearOnChoose())
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case  1:  
               ClearBottomWindow();
               SetPokeStorageTask(Task_PokeStorageMain);
@@ -1761,13 +1709,13 @@ export function Task_ItemToBag(taskId: any): any {
       case 0:
           if (!AddBagItem(sStorage.displayMonItemId, 1))
           {
-              PlaySE(SE_FAILURE);
+              PlaySE((32));
               PrintMessage(MSG_BAG_FULL);
               sStorage.state = 3;
           }
           else
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               MoveItemFromMonToBag(sInPartyMenu ? CURSOR_AREA_IN_PARTY : CURSOR_AREA_IN_BOX, GetCursorPosition());
               sStorage.state = 1;
           }
@@ -1857,7 +1805,7 @@ export function Task_ShowItemInfo(taskId: any): any {
       case 1:
           if (!IsDma3ManagerBusyWithBgCopy())
           {
-              PlaySE(SE_WIN_OPEN);
+              PlaySE((6));
               PrintItemDescription();
               InitItemInfoWindow();
               sStorage.state++;
@@ -1874,7 +1822,7 @@ export function Task_ShowItemInfo(taskId: any): any {
       case 4:
           if (JOY_NEW(A_BUTTON | B_BUTTON | DPAD_ANY))
           {
-              PlaySE(SE_WIN_OPEN);
+              PlaySE((6));
               sStorage.state++;
           }
           break;
@@ -1894,7 +1842,7 @@ export function Task_CloseBoxWhileHoldingItem(taskId: any): any {
   switch (sStorage.state)
       {
       case 0:
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           PrintMessage(MSG_PUT_IN_BAG);
           ShowYesNoWindow(0);
           sStorage.state = 1;
@@ -1902,7 +1850,7 @@ export function Task_CloseBoxWhileHoldingItem(taskId: any): any {
       case 1:
           switch (Menu_ProcessInputNoWrapClearOnChoose())
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case 1:  
               ClearBottomWindow();
               SetPokeStorageTask(Task_PokeStorageMain);
@@ -2007,23 +1955,23 @@ export function Task_HandleBoxOptions(taskId: any): any {
       case 2:
           switch (HandleMenuInput())
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case MENU_CANCEL:
               AnimateBoxScrollArrows(TRUE);
               ClearBottomWindow();
               SetPokeStorageTask(Task_PokeStorageMain);
               break;
           case MENU_NAME:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               SetPokeStorageTask(Task_NameBox);
               break;
           case MENU_WALLPAPER:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ClearBottomWindow();
               SetPokeStorageTask(Task_HandleWallpapers);
               break;
           case MENU_JUMP:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ClearBottomWindow();
               SetPokeStorageTask(Task_JumpBox);
               break;
@@ -2049,7 +1997,7 @@ export function Task_HandleWallpapers(taskId: any): any {
           sStorage.wallpaperSetId = HandleMenuInput();
           switch (sStorage.wallpaperSetId)
           {
-          case MENU_B_PRESSED:
+          case (-1):
               AnimateBoxScrollArrows(TRUE);
               ClearBottomWindow();
               SetPokeStorageTask(Task_PokeStorageMain);
@@ -2058,14 +2006,14 @@ export function Task_HandleWallpapers(taskId: any): any {
           case MENU_SCENERY_2:
           case MENU_SCENERY_3:
           case MENU_ETCETERA:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               RemoveMenu();
               sStorage.wallpaperSetId -= (MENU_SCENERY_1);
               sStorage.state++;
               break;
           case MENU_FRIENDS:
                
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               sStorage.wallpaperId = WALLPAPER_FRIENDS;
               RemoveMenu();
               ClearBottomWindow();
@@ -2085,14 +2033,14 @@ export function Task_HandleWallpapers(taskId: any): any {
           sStorage.wallpaperId = HandleMenuInput();
           switch (sStorage.wallpaperId)
           {
-          case MENU_NOTHING_CHOSEN:
+          case (-2):
               break;
-          case MENU_B_PRESSED:
+          case (-1):
               ClearBottomWindow();
               sStorage.state = 0;
               break;
           default:
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ClearBottomWindow();
               sStorage.wallpaperId -= (MENU_FOREST);
               SetWallpaperForCurrentBox(sStorage.wallpaperId);
@@ -2169,7 +2117,7 @@ export function Task_NameBox(taskId: any): any {
       {
       case 0:
           SaveMovingMon();
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           sStorage.state++;
           break;
       case 1:
@@ -2189,7 +2137,7 @@ export function Task_ShowMonSummary(taskId: any): any {
       {
       case 0:
           InitSummaryScreenData();
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           sStorage.state++;
           break;
       case 1:
@@ -2208,7 +2156,7 @@ export function Task_GiveItemFromBag(taskId: any): any {
   switch (sStorage.state)
       {
       case 0:
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           sStorage.state++;
           break;
       case 1:
@@ -2229,7 +2177,7 @@ export function Task_OnCloseBoxPressed(taskId: any): any {
       case 0:
           if (IsMonBeingMoved())
           {
-              PlaySE(SE_FAILURE);
+              PlaySE((32));
               PrintMessage(MSG_HOLDING_POKE);
               sStorage.state = 1;
           }
@@ -2239,7 +2187,7 @@ export function Task_OnCloseBoxPressed(taskId: any): any {
           }
           else
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               PrintMessage(MSG_EXIT_BOX);
               ShowYesNoWindow(0);
               sStorage.state = 2;
@@ -2255,13 +2203,13 @@ export function Task_OnCloseBoxPressed(taskId: any): any {
       case 2:
           switch (Menu_ProcessInputNoWrapClearOnChoose())
           {
-          case MENU_B_PRESSED:
+          case (-1):
           case 1:
               ClearBottomWindow();
               SetPokeStorageTask(Task_PokeStorageMain);
               break;
           case 0:
-              PlaySE(SE_PC_OFF);
+              PlaySE((3));
               ClearBottomWindow();
               sStorage.state++;
               break;
@@ -2290,7 +2238,7 @@ export function Task_OnBPressed(taskId: any): any {
       case 0:
           if (IsMonBeingMoved())
           {
-              PlaySE(SE_FAILURE);
+              PlaySE((32));
               PrintMessage(MSG_HOLDING_POKE);
               sStorage.state = 1;
           }
@@ -2300,7 +2248,7 @@ export function Task_OnBPressed(taskId: any): any {
           }
           else
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               PrintMessage(MSG_CONTINUE_BOX);
               ShowYesNoWindow(0);
               sStorage.state = 2;
@@ -2321,8 +2269,8 @@ export function Task_OnBPressed(taskId: any): any {
               SetPokeStorageTask(Task_PokeStorageMain);
               break;
           case 1:
-          case MENU_B_PRESSED:
-              PlaySE(SE_PC_OFF);
+          case (-1):
+              PlaySE((3));
               ClearBottomWindow();
               sStorage.state++;
               break;
@@ -2353,7 +2301,7 @@ export function Task_ChangeScreen(taskId: any): any {
       if (sStorage.boxOption == OPTION_MOVE_ITEMS && IsMovingItem() == TRUE)
           sMovingItemId = GetMovingItemId();
       else
-          sMovingItemId = ITEM_NONE;
+          sMovingItemId = (0);
 
       switch (screenChangeType)
       {
@@ -2390,7 +2338,7 @@ export function Task_ChangeScreen(taskId: any): any {
 export function GiveChosenBagItem(): any {
   let itemId: any = gSpecialVar_ItemId;
 
-      if (itemId != ITEM_NONE)
+      if (itemId != (0))
       {
           let pos: any = GetCursorPosition();
           if (sInPartyMenu)
@@ -2536,11 +2484,11 @@ export function CreateDisplayMonSprite(): any {
       let tileStart: any = null;
       let palSlot: any = null;
       let spriteId: any = null;
-      let sheet: any = [sStorage.tileBuffer, MON_PIC_SIZE, GFXTAG_DISPLAY_MON];
+      let sheet: any = [sStorage.tileBuffer, (((64) * (64) / 2)), GFXTAG_DISPLAY_MON];
       let palette: any = [sStorage.displayMonPalBuffer, PALTAG_DISPLAY_MON];
       let template: any = sSpriteTemplate_DisplayMon;
 
-      for (i = 0; i < MON_PIC_SIZE; i++)
+      for (i = 0; i < (((64) * (64) / 2)); i++)
           sStorage.tileBuffer[i] = 0;
       for (i = 0; i < 16; i++)
           sStorage.displayMonPalBuffer[i] = 0;
@@ -2558,7 +2506,7 @@ export function CreateDisplayMonSprite(): any {
               break;
 
           spriteId = CreateSprite(template, 40, 48, 0);
-          if (spriteId == MAX_SPRITES)
+          if (spriteId == (64))
               break;
 
           sStorage.displayMonSprite =gSprites[spriteId];
@@ -2578,11 +2526,11 @@ export function LoadDisplayMonGfx(species: any, pid: any): any {
   if (sStorage.displayMonSprite == NULL)
           return;
 
-      if (species != SPECIES_NONE)
+      if (species != (0))
       {
           LoadSpecialPokePic(gMonFrontPicTable[species], sStorage.tileBuffer, species, pid, TRUE);
           LZ77UnCompWram(sStorage.displayMonPalette, sStorage.displayMonPalBuffer);
-          CpuCopy32(sStorage.tileBuffer, sStorage.displayMonTilePtr, MON_PIC_SIZE);
+          CpuCopy32(sStorage.tileBuffer, sStorage.displayMonTilePtr, (((64) * (64) / 2)));
           LoadPalette(sStorage.displayMonPalBuffer, sStorage.displayMonPalOffset, PLTT_SIZE_4BPP);
           sStorage.displayMonSprite.invisible = FALSE;
       }
@@ -2597,21 +2545,21 @@ export function PrintDisplayMonInfo(): any {
   FillWindowPixelBuffer(WIN_DISPLAY_INFO, PIXEL_FILL(1));
       if (sStorage.boxOption != OPTION_MOVE_ITEMS)
       {
-          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_NORMAL, sStorage.displayMonNameText, 6, 0, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, sStorage.displayMonSpeciesName, 6, 15, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, sStorage.displayMonGenderLvlText, 10, 29, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SMALL, sStorage.displayMonItemName, 6, 43, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_NORMAL, sStorage.displayMonNameText, 6, 0, (0xFF), NULL);
+          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, sStorage.displayMonSpeciesName, 6, 15, (0xFF), NULL);
+          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, sStorage.displayMonGenderLvlText, 10, 29, (0xFF), NULL);
+          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SMALL, sStorage.displayMonItemName, 6, 43, (0xFF), NULL);
       }
       else
       {
-          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SMALL, sStorage.displayMonItemName, 6, 0, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_NORMAL, sStorage.displayMonNameText, 6, 13, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, sStorage.displayMonSpeciesName, 6, 28, TEXT_SKIP_DRAW, NULL);
-          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, sStorage.displayMonGenderLvlText, 10, 42, TEXT_SKIP_DRAW, NULL);
+          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SMALL, sStorage.displayMonItemName, 6, 0, (0xFF), NULL);
+          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_NORMAL, sStorage.displayMonNameText, 6, 13, (0xFF), NULL);
+          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, sStorage.displayMonSpeciesName, 6, 28, (0xFF), NULL);
+          AddTextPrinterParameterized(WIN_DISPLAY_INFO, FONT_SHORT, sStorage.displayMonGenderLvlText, 10, 42, (0xFF), NULL);
       }
 
       CopyWindowToVram(WIN_DISPLAY_INFO, COPYWIN_GFX);
-      if (sStorage.displayMonSpecies != SPECIES_NONE)
+      if (sStorage.displayMonSpecies != (0))
       {
           UpdateMonMarkingTiles(sStorage.displayMonMarkings, sStorage.markingComboTilesPtr);
           sStorage.markingComboSprite.invisible = FALSE;
@@ -2626,7 +2574,7 @@ export function PrintDisplayMonInfo(): any {
 export function UpdateWaveformAnimation(): any {
   let i: any = null;
 
-      if (sStorage.displayMonSpecies != SPECIES_NONE)
+      if (sStorage.displayMonSpecies != (0))
       {
            
           TilemapUtil_SetRect(TILEMAPID_PKMN_DATA, 0, 0, 8, 2);
@@ -2788,10 +2736,10 @@ export function SetPartySlotTilemaps(): any {
 
        
        
-      for (i = 1; i < PARTY_SIZE; i++)
+      for (i = 1; i < (6); i++)
       {
           let species: any = GetMonData(gPlayerParty[i], MON_DATA_SPECIES);
-          SetPartySlotTilemap(i, species != SPECIES_NONE);
+          SetPartySlotTilemap(i, species != (0));
       }
 }
 
@@ -2829,7 +2777,7 @@ export function UpdatePartySlotColors(): any {
 /** static void SetUpDoShowPartyMenu(void) */
 export function SetUpDoShowPartyMenu(): any {
   sStorage.showPartyMenuState = 0;
-      PlaySE(SE_WIN_OPEN);
+      PlaySE((6));
       SetUpShowPartyMenu();
 }
 
@@ -2862,8 +2810,8 @@ export function DoShowPartyMenu(): any {
 export function UpdateBoxToSendMons(): any {
   if (sLastUsedBox != StorageGetCurrentBox())
       {
-          FlagClear(FLAG_SHOWN_BOX_WAS_FULL_MESSAGE);
-          VarSet(VAR_PC_BOX_TO_SEND_MON, StorageGetCurrentBox());
+          FlagClear((((((((0x500) + (864) - 1)) + 1)) + 0x77)));
+          VarSet((0x4036), StorageGetCurrentBox());
       }
 }
 
@@ -2900,17 +2848,17 @@ export function PrintMessage(id: any): any {
           else
               txtPtr = StringCopy(sStorage.itemName, sStorage.displayMonItemName);
 
-          while ((txtPtr - 1) == CHAR_SPACE)
+          while ((txtPtr - 1) == (0x00))
               txtPtr--;
 
-          txtPtr = EOS;
+          txtPtr = (0xFF);
           DynamicPlaceholderTextUtil_SetPlaceholderPtr(0, sStorage.itemName);
           break;
       }
 
       DynamicPlaceholderTextUtil_ExpandPlaceholders(sStorage.messageText, sMessages[id].text);
       FillWindowPixelBuffer(WIN_MESSAGE, PIXEL_FILL(1));
-      AddTextPrinterParameterized(WIN_MESSAGE, FONT_NORMAL, sStorage.messageText, 0, 1, TEXT_SKIP_DRAW, NULL);
+      AddTextPrinterParameterized(WIN_MESSAGE, FONT_NORMAL, sStorage.messageText, 0, 1, (0xFF), NULL);
       DrawTextBorderOuter(WIN_MESSAGE, 2, 14);
       PutWindowTilemap(WIN_MESSAGE);
       CopyWindowToVram(WIN_MESSAGE, COPYWIN_GFX);
@@ -2989,7 +2937,7 @@ export function InitCursorItemIcon(): any {
               TryLoadItemIconAtPos(CURSOR_AREA_IN_BOX, GetCursorPosition());
       }
 
-      if (sMovingItemId != ITEM_NONE)
+      if (sMovingItemId != (0))
       {
           InitItemIconInCursor(sMovingItemId);
           StartCursorAnim(CURSOR_ANIM_FIST);
@@ -3001,13 +2949,13 @@ export function InitMonIconFields(): any {
   let i: any = null;
 
       LoadMonIconPalettes();
-      for (i = 0; i < (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)); i++)
+      for (i = 0; i < (max((((5) * (6))) + (6) + 1, 40)); i++)
           sStorage.numIconsPerSpecies[i] = 0;
-      for (i = 0; i < (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)); i++)
-          sStorage.iconSpeciesList[i] = SPECIES_NONE;
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (max((((5) * (6))) + (6) + 1, 40)); i++)
+          sStorage.iconSpeciesList[i] = (0);
+      for (i = 0; i < (6); i++)
           sStorage.partySprites[i] = NULL;
-      for (i = 0; i < IN_BOX_COUNT; i++)
+      for (i = 0; i < (((5) * (6))); i++)
           sStorage.boxMonsSprites[i] = NULL;
 
       sStorage.movingMonSprite = NULL;
@@ -3040,12 +2988,12 @@ export function InitBoxMonSprites(boxId: any): any {
       boxPosition = 0;
 
        
-      for (i = 0; i < IN_BOX_ROWS; i++)
+      for (i = 0; i < (5); i++)
       {
-          for (j = 0; j < IN_BOX_COLUMNS; j++)
+          for (j = 0; j < (6); j++)
           {
               species = GetBoxMonDataAt(boxId, boxPosition, MON_DATA_SPECIES_OR_EGG);
-              if (species != SPECIES_NONE)
+              if (species != (0))
               {
                   personality = GetBoxMonDataAt(boxId, boxPosition, MON_DATA_PERSONALITY);
                   sStorage.boxMonsSprites[count] = CreateMonIconSprite(species, personality, 8 * (3 * j) + 100, 8 * (3 * i) + 44, 2, 19 - j);
@@ -3062,9 +3010,9 @@ export function InitBoxMonSprites(boxId: any): any {
        
       if (sStorage.boxOption == OPTION_MOVE_ITEMS)
       {
-          for (boxPosition = 0; boxPosition < IN_BOX_COUNT; boxPosition++)
+          for (boxPosition = 0; boxPosition < (((5) * (6))); boxPosition++)
           {
-              if (GetBoxMonDataAt(boxId, boxPosition, MON_DATA_HELD_ITEM) == ITEM_NONE)
+              if (GetBoxMonDataAt(boxId, boxPosition, MON_DATA_HELD_ITEM) == (0))
                   sStorage.boxMonsSprites[boxPosition].oam.objMode = ST_OAM_OBJ_BLEND;
           }
       }
@@ -3074,13 +3022,13 @@ export function InitBoxMonSprites(boxId: any): any {
 export function CreateBoxMonIconAtPos(boxPosition: any): any {
   let species: any = GetCurrentBoxMonData(boxPosition, MON_DATA_SPECIES_OR_EGG);
 
-      if (species != SPECIES_NONE)
+      if (species != (0))
       {
-          let x: any = 8 * (3 * (boxPosition % IN_BOX_COLUMNS)) + 100;
-          let y: any = 8 * (3 * (boxPosition / IN_BOX_COLUMNS)) + 44;
+          let x: any = 8 * (3 * (boxPosition % (6))) + 100;
+          let y: any = 8 * (3 * (boxPosition / (6))) + 44;
           let personality: any = GetCurrentBoxMonData(boxPosition, MON_DATA_PERSONALITY);
 
-          sStorage.boxMonsSprites[boxPosition] = CreateMonIconSprite(species, personality, x, y, 2, 19 - (boxPosition % IN_BOX_COLUMNS));
+          sStorage.boxMonsSprites[boxPosition] = CreateMonIconSprite(species, personality, x, y, 2, 19 - (boxPosition % (6)));
           if (sStorage.boxOption == OPTION_MOVE_ITEMS)
               sStorage.boxMonsSprites[boxPosition].oam.objMode = ST_OAM_OBJ_BLEND;
       }
@@ -3090,7 +3038,7 @@ export function CreateBoxMonIconAtPos(boxPosition: any): any {
 export function StartBoxMonIconsScrollOut(speed: any): any {
   let i: any = null;
 
-      for (i = 0; i < IN_BOX_COUNT; i++)
+      for (i = 0; i < (((5) * (6))); i++)
       {
           if (sStorage.boxMonsSprites[i] != NULL)
           {
@@ -3141,14 +3089,14 @@ export function DestroyBoxMonIconsInColumn(column: any): any {
   let row: any = null;
       let boxPosition: any = column;
 
-      for (row = 0; row < IN_BOX_ROWS; row++)
+      for (row = 0; row < (5); row++)
       {
           if (sStorage.boxMonsSprites[boxPosition] != NULL)
           {
               DestroyBoxMonIcon(sStorage.boxMonsSprites[boxPosition]);
               sStorage.boxMonsSprites[boxPosition] = NULL;
           }
-          boxPosition += IN_BOX_COLUMNS;
+          boxPosition += (6);
       }
 }
 
@@ -3164,9 +3112,9 @@ export function CreateBoxMonIconsInColumn(column: any, distance: any, speed: any
 
       if (sStorage.boxOption != OPTION_MOVE_ITEMS)
       {
-          for (i = 0; i < IN_BOX_ROWS; i++)
+          for (i = 0; i < (5); i++)
           {
-              if (sStorage.boxSpecies[boxPosition] != SPECIES_NONE)
+              if (sStorage.boxSpecies[boxPosition] != (0))
               {
                   sStorage.boxMonsSprites[boxPosition] = CreateMonIconSprite(sStorage.boxSpecies[boxPosition],
                                                                                           sStorage.boxPersonalities[boxPosition],
@@ -3180,7 +3128,7 @@ export function CreateBoxMonIconsInColumn(column: any, distance: any, speed: any
                       iconsCreated++;
                   }
               }
-              boxPosition += IN_BOX_COLUMNS;
+              boxPosition += (6);
               y += 24;
           }
       }
@@ -3188,9 +3136,9 @@ export function CreateBoxMonIconsInColumn(column: any, distance: any, speed: any
       {
            
            
-          for (i = 0; i < IN_BOX_ROWS; i++)
+          for (i = 0; i < (5); i++)
           {
-              if (sStorage.boxSpecies[boxPosition] != SPECIES_NONE)
+              if (sStorage.boxSpecies[boxPosition] != (0))
               {
                   sStorage.boxMonsSprites[boxPosition] = CreateMonIconSprite(sStorage.boxSpecies[boxPosition],
                                                                                           sStorage.boxPersonalities[boxPosition],
@@ -3201,12 +3149,12 @@ export function CreateBoxMonIconsInColumn(column: any, distance: any, speed: any
                       sStorage.boxMonsSprites[boxPosition].sSpeed = speed;
                       sStorage.boxMonsSprites[boxPosition].sScrollInDestX = xDest;
                       sStorage.boxMonsSprites[boxPosition].callback = SpriteCB_BoxMonIconScrollIn;
-                      if (GetBoxMonDataAt(sStorage.incomingBoxId, boxPosition, MON_DATA_HELD_ITEM) == ITEM_NONE)
+                      if (GetBoxMonDataAt(sStorage.incomingBoxId, boxPosition, MON_DATA_HELD_ITEM) == (0))
                           sStorage.boxMonsSprites[boxPosition].oam.objMode = ST_OAM_OBJ_BLEND;
                       iconsCreated++;
                   }
               }
-              boxPosition += IN_BOX_COLUMNS;
+              boxPosition += (6);
               y += 24;
           }
       }
@@ -3226,7 +3174,7 @@ export function InitBoxMonIconScroll(boxId: any, direction: any): any {
       if (direction > 0)
           sStorage.iconScrollCurColumn = 0;
       else
-          sStorage.iconScrollCurColumn = IN_BOX_COLUMNS - 1;
+          sStorage.iconScrollCurColumn = (6) - 1;
 
       sStorage.iconScrollPos = (24 * sStorage.iconScrollCurColumn) + 100;
       StartBoxMonIconsScrollOut(sStorage.iconScrollSpeed);
@@ -3254,7 +3202,7 @@ export function UpdateBoxMonIconScroll(): any {
           sStorage.iconScrollPos += sStorage.iconScrollSpeed;
           sStorage.iconScrollNumIncoming += CreateBoxMonIconsInColumn(sStorage.iconScrollCurColumn, sStorage.iconScrollDistance, sStorage.iconScrollSpeed);
 
-          if ((sStorage.iconScrollDirection > 0 && sStorage.iconScrollCurColumn == IN_BOX_COLUMNS - 1)
+          if ((sStorage.iconScrollDirection > 0 && sStorage.iconScrollCurColumn == (6) - 1)
            || (sStorage.iconScrollDirection < 0 && sStorage.iconScrollCurColumn == 0))
           {
                
@@ -3287,12 +3235,12 @@ export function GetIncomingBoxMonData(boxId: any): any {
   let i, j, boxPosition;
 
       boxPosition = 0;
-      for (i = 0; i < IN_BOX_ROWS; i++)
+      for (i = 0; i < (5); i++)
       {
-          for (j = 0; j < IN_BOX_COLUMNS; j++)
+          for (j = 0; j < (6); j++)
           {
               sStorage.boxSpecies[boxPosition] = GetBoxMonDataAt(boxId, boxPosition, MON_DATA_SPECIES_OR_EGG);
-              if (sStorage.boxSpecies[boxPosition] != SPECIES_NONE)
+              if (sStorage.boxSpecies[boxPosition] != (0))
                   sStorage.boxPersonalities[boxPosition] = GetBoxMonDataAt(boxId, boxPosition, MON_DATA_PERSONALITY);
               boxPosition++;
           }
@@ -3324,10 +3272,10 @@ export function CreatePartyMonsSprites(visible: any): any {
 
       sStorage.partySprites[0] = CreateMonIconSprite(species, personality, 104, 64, 1, 12);
       count = 1;
-      for (i = 1; i < PARTY_SIZE; i++)
+      for (i = 1; i < (6); i++)
       {
           species = GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);
-          if (species != SPECIES_NONE)
+          if (species != (0))
           {
               personality = GetMonData(gPlayerParty[i], MON_DATA_PERSONALITY);
               sStorage.partySprites[i] = CreateMonIconSprite(species, personality, 152,  8 * (3 * (i - 1)) + 16, 1, 12);
@@ -3350,9 +3298,9 @@ export function CreatePartyMonsSprites(visible: any): any {
 
       if (sStorage.boxOption == OPTION_MOVE_ITEMS)
       {
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
-              if (sStorage.partySprites[i] != NULL && GetMonData(gPlayerParty[i], MON_DATA_HELD_ITEM) == ITEM_NONE)
+              if (sStorage.partySprites[i] != NULL && GetMonData(gPlayerParty[i], MON_DATA_HELD_ITEM) == (0))
                   sStorage.partySprites[i].oam.objMode = ST_OAM_OBJ_BLEND;
           }
       }
@@ -3363,7 +3311,7 @@ export function CompactPartySprites(): any {
   let i, targetSlot;
 
       sStorage.numPartyToCompact = 0;
-      for (i = 0, targetSlot = 0; i < PARTY_SIZE; i++)
+      for (i = 0, targetSlot = 0; i < (6); i++)
       {
           if (sStorage.partySprites[i] != NULL)
           {
@@ -3442,7 +3390,7 @@ export function DestroyMovingMonIcon(): any {
 export function MovePartySprites(yDelta: any): any {
   let i, posY;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (sStorage.partySprites[i] != NULL)
           {
@@ -3470,7 +3418,7 @@ export function DestroyPartyMonIcon(partyId: any): any {
 export function DestroyAllPartyMonIcons(): any {
   let i: any = null;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (sStorage.partySprites[i] != NULL)
           {
@@ -3512,7 +3460,7 @@ export function SetMovingMonSprite(mode: any, id: any): any {
 
 /** static void SetPlacedMonSprite(u8 boxId, u8 position) */
 export function SetPlacedMonSprite(boxId: any, position: any): any {
-  if (boxId == TOTAL_BOXES_COUNT)  
+  if (boxId == (14))  
       {
           sStorage.partySprites[position] = sStorage.movingMonSprite;
           sStorage.partySprites[position].oam.priority = 1;
@@ -3522,7 +3470,7 @@ export function SetPlacedMonSprite(boxId: any, position: any): any {
       {
           sStorage.boxMonsSprites[position] = sStorage.movingMonSprite;
           sStorage.boxMonsSprites[position].oam.priority = 2;
-          sStorage.boxMonsSprites[position].subpriority = 19 - (position % IN_BOX_COLUMNS);
+          sStorage.boxMonsSprites[position].subpriority = 19 - (position % (6));
       }
       sStorage.movingMonSprite.callback = SpriteCallbackDummy;
       sStorage.movingMonSprite = NULL;
@@ -3530,7 +3478,7 @@ export function SetPlacedMonSprite(boxId: any, position: any): any {
 
 /** static void SaveMonSpriteAtPos(u8 boxId, u8 position) */
 export function SaveMonSpriteAtPos(boxId: any, position: any): any {
-  if (boxId == TOTAL_BOXES_COUNT)  
+  if (boxId == (14))  
           sStorage.shiftMonSpritePtr =sStorage.partySprites[position];
       else
           sStorage.shiftMonSpritePtr =sStorage.boxMonsSprites[position];
@@ -3658,24 +3606,24 @@ export function TryLoadMonIconTiles(species: any): any {
   let i, offset;
 
        
-      for (i = 0; i < (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)); i++)
+      for (i = 0; i < (max((((5) * (6))) + (6) + 1, 40)); i++)
       {
           if (sStorage.iconSpeciesList[i] == species)
               break;
       }
 
-      if (i == (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)))
+      if (i == (max((((5) * (6))) + (6) + 1, 40)))
       {
            
            
-          for (i = 0; i < (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)); i++)
+          for (i = 0; i < (max((((5) * (6))) + (6) + 1, 40)); i++)
           {
               if (sStorage.iconSpeciesList[i] == 0)
                   break;
           }
 
            
-          if (i == (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)))
+          if (i == (max((((5) * (6))) + (6) + 1, 40)))
               return 0xFFFF;
       }
 
@@ -3692,12 +3640,12 @@ export function TryLoadMonIconTiles(species: any): any {
 export function RemoveSpeciesFromIconList(species: any): any {
   let i: any = null;
 
-      for (i = 0; i < (max(IN_BOX_COUNT + PARTY_SIZE + 1, 40)); i++)
+      for (i = 0; i < (max((((5) * (6))) + (6) + 1, 40)); i++)
       {
           if (sStorage.iconSpeciesList[i] == species)
           {
               if (--sStorage.numIconsPerSpecies[i] == 0)
-                  sStorage.iconSpeciesList[i] = SPECIES_NONE;
+                  sStorage.iconSpeciesList[i] = (0);
               break;
           }
       }
@@ -3824,11 +3772,11 @@ export function DetermineBoxScrollDirection(boxId: any): any {
       for (i = 0; currentBox != boxId; i++)
       {
           currentBox++;
-          if (currentBox >= TOTAL_BOXES_COUNT)
+          if (currentBox >= (14))
               currentBox = 0;
       }
 
-      return (i < TOTAL_BOXES_COUNT / 2) ? 1 : -1;
+      return (i < (14) / 2) ? 1 : -1;
 }
 
 /** static void SetWallpaperForCurrentBox(u8 wallpaperId) */
@@ -3843,7 +3791,7 @@ export function DoWallpaperGfxChange(): any {
   switch (sStorage.wallpaperChangeState)
       {
       case 0:
-          BeginNormalPaletteFade(sStorage.wallpaperPalBits, 1, 0, 16, RGB_WHITEALPHA);
+          BeginNormalPaletteFade(sStorage.wallpaperPalBits, 1, 0, 16, (((RGB(31, 31, 31)) | ((1 << 15)))));
           sStorage.wallpaperChangeState++;
           break;
       case 1:
@@ -3858,7 +3806,7 @@ export function DoWallpaperGfxChange(): any {
           if (WaitForWallpaperGfxLoad() == TRUE)
           {
               CycleBoxTitleColor();
-              BeginNormalPaletteFade(sStorage.wallpaperPalBits, 1, 16, 0, RGB_WHITEALPHA);
+              BeginNormalPaletteFade(sStorage.wallpaperPalBits, 1, 16, 0, (((RGB(31, 31, 31)) | ((1 << 15)))));
               sStorage.wallpaperChangeState++;
           }
           break;
@@ -4010,7 +3958,7 @@ export function InitBoxTitle(boxId: any): any {
       sStorage.boxTitleAltPalOffset = OBJ_PLTT_ID(tagIndex) + 14;
       sStorage.wallpaperPalBits |= (1 << 16) << tagIndex;
 
-      StringCopyPadded(sStorage.boxTitleText, GetBoxNamePtr(boxId), 0, BOX_NAME_LENGTH);
+      StringCopyPadded(sStorage.boxTitleText, GetBoxNamePtr(boxId), 0, (8));
       DrawTextWindowAndBufferTiles(sStorage.boxTitleText, sStorage.boxTitleTiles, 0, 0, 2);
       LoadSpriteSheet(spriteSheet);
       x = GetBoxTitleBaseX(GetBoxNamePtr(boxId));
@@ -4047,7 +3995,7 @@ export function CreateIncomingBoxTitle(boxId: any, direction: any): any {
           template.paletteTag = PALTAG_BOX_TITLE;
       }
 
-      StringCopyPadded(sStorage.boxTitleText, GetBoxNamePtr(boxId), 0, BOX_NAME_LENGTH);
+      StringCopyPadded(sStorage.boxTitleText, GetBoxNamePtr(boxId), 0, (8));
       DrawTextWindowAndBufferTiles(sStorage.boxTitleText, sStorage.boxTitleTiles, 0, 0, 2);
       LoadSpriteSheet(spriteSheet);
       LoadPalette(sBoxTitleColors[GetBoxWallpaper(boxId)], palOffset, sizeof(sBoxTitleColors[0]));
@@ -4130,7 +4078,7 @@ export function CreateBoxScrollArrows(): any {
       for (i = 0; i < 2; i++)
       {
           let spriteId: any = CreateSprite(sSpriteTemplate_Arrow, 92 + i * 136, 28, 22);
-          if (spriteId != MAX_SPRITES)
+          if (spriteId != (64))
           {
               let sprite: any =gSprites[spriteId];
               StartSpriteAnim(sprite, i);
@@ -4281,8 +4229,8 @@ export function GetCursorCoordsByPos(cursorArea: any, cursorPosition: any, x: an
   switch (cursorArea)
       {
       case CURSOR_AREA_IN_BOX:
-          x = (cursorPosition % IN_BOX_COLUMNS) * 24 + 100;
-          y = (cursorPosition / IN_BOX_COLUMNS) * 24 +  32;
+          x = (cursorPosition % (6)) * 24 + 100;
+          y = (cursorPosition / (6)) * 24 +  32;
           break;
       case CURSOR_AREA_IN_PARTY:
           if (cursorPosition == 0)
@@ -4290,7 +4238,7 @@ export function GetCursorCoordsByPos(cursorArea: any, cursorPosition: any, x: an
               x = 104;
               y = 52;
           }
-          else if (cursorPosition == PARTY_SIZE)
+          else if (cursorPosition == (6))
           {
               x = 152;
               y = 132;
@@ -4325,7 +4273,7 @@ export function GetSpeciesAtCursorPosition(): any {
       case CURSOR_AREA_IN_BOX:
           return GetCurrentBoxMonData(sCursorPosition, MON_DATA_SPECIES);
       default:
-          return SPECIES_NONE;
+          return (0);
       }
 }
 
@@ -4559,8 +4507,8 @@ export function SetCursorInParty(): any {
       else
       {
           partyCount = CalculatePlayerPartyCount();
-          if (partyCount >= PARTY_SIZE)
-              partyCount = PARTY_SIZE - 1;
+          if (partyCount >= (6))
+              partyCount = (6) - 1;
       }
       if (sStorage.cursorSprite.vFlip)
           sStorage.cursorFlipTimer = 1;
@@ -4675,7 +4623,7 @@ export function MonPlaceChange_Shift(): any {
           switch (sCursorArea)
           {
           case CURSOR_AREA_IN_PARTY:
-              sStorage.shiftBoxId = TOTAL_BOXES_COUNT;
+              sStorage.shiftBoxId = (14);
               break;
           case CURSOR_AREA_IN_BOX:
               sStorage.shiftBoxId = StorageGetCurrentBox();
@@ -4748,7 +4696,7 @@ export function MoveMon(): any {
   switch (sCursorArea)
       {
       case CURSOR_AREA_IN_PARTY:
-          SetMovingMonData(TOTAL_BOXES_COUNT, sCursorPosition);
+          SetMovingMonData((14), sCursorPosition);
           SetMovingMonSprite(MODE_PARTY, sCursorPosition);
           break;
       case CURSOR_AREA_IN_BOX:
@@ -4772,8 +4720,8 @@ export function PlaceMon(): any {
       switch (sCursorArea)
       {
       case CURSOR_AREA_IN_PARTY:
-          SetPlacedMonData(TOTAL_BOXES_COUNT, sCursorPosition);
-          SetPlacedMonSprite(TOTAL_BOXES_COUNT, sCursorPosition);
+          SetPlacedMonData((14), sCursorPosition);
+          SetPlacedMonSprite((14), sCursorPosition);
           break;
       case CURSOR_AREA_IN_BOX:
           boxId = StorageGetCurrentBox();
@@ -4794,7 +4742,7 @@ export function RefreshDisplayMon(): any {
 
 /** static void SetMovingMonData(u8 boxId, u8 position) */
 export function SetMovingMonData(boxId: any, position: any): any {
-  if (boxId == TOTAL_BOXES_COUNT)
+  if (boxId == (14))
           sStorage.movingMon = gPlayerParty[sCursorPosition];
       else
           BoxMonAtToMon(boxId, position,sStorage.movingMon);
@@ -4806,7 +4754,7 @@ export function SetMovingMonData(boxId: any, position: any): any {
 
 /** static void SetPlacedMonData(u8 boxId, u8 position) */
 export function SetPlacedMonData(boxId: any, position: any): any {
-  if (boxId == TOTAL_BOXES_COUNT)
+  if (boxId == (14))
       {
           gPlayerParty[position] = sStorage.movingMon;
       }
@@ -4819,7 +4767,7 @@ export function SetPlacedMonData(boxId: any, position: any): any {
 
 /** static void PurgeMonOrBoxMon(u8 boxId, u8 position) */
 export function PurgeMonOrBoxMon(boxId: any, position: any): any {
-  if (boxId == TOTAL_BOXES_COUNT)
+  if (boxId == (14))
           ZeroMonData(gPlayerParty[position]);
       else
           ZeroBoxMonAt(boxId, position);
@@ -4827,7 +4775,7 @@ export function PurgeMonOrBoxMon(boxId: any, position: any): any {
 
 /** static void SetShiftedMonData(u8 boxId, u8 position) */
 export function SetShiftedMonData(boxId: any, position: any): any {
-  if (boxId == TOTAL_BOXES_COUNT)
+  if (boxId == (14))
           sStorage.tempMon = gPlayerParty[position];
       else
           BoxMonAtToMon(boxId, position,sStorage.tempMon);
@@ -4853,7 +4801,7 @@ export function TryStorePartyMonInBox(boxId: any): any {
       }
       else
       {
-          SetMovingMonData(TOTAL_BOXES_COUNT, sCursorPosition);
+          SetMovingMonData((14), sCursorPosition);
           SetPlacedMonData(boxId, boxPosition);
           DestroyPartyMonIcon(sCursorPosition);
       }
@@ -4911,7 +4859,7 @@ export function ReleaseMon(): any {
       else
       {
           if (sCursorArea == CURSOR_AREA_IN_PARTY)
-              boxId = TOTAL_BOXES_COUNT;
+              boxId = (14);
           else
               boxId = StorageGetCurrentBox();
 
@@ -4940,7 +4888,7 @@ export function GetRestrictedReleaseMoves(moves: any): any {
               moves++;
           }
       }
-      moves = MOVES_COUNT;
+      moves = (355);
 }
 
 /** static void InitCanReleaseMonVars(void) */
@@ -4965,7 +4913,7 @@ export function InitCanReleaseMonVars(): any {
           if (sCursorArea == CURSOR_AREA_IN_PARTY)
           {
               sStorage.tempMon = gPlayerParty[sCursorPosition];
-              sStorage.releaseBoxId = TOTAL_BOXES_COUNT;
+              sStorage.releaseBoxId = (14);
           }
           else
           {
@@ -4999,7 +4947,7 @@ export function AtLeastThreeUsableMons(): any {
       let count: any = (sIsMonBeingMoved != FALSE);
 
        
-      for (j = 0; j < PARTY_SIZE; j++)
+      for (j = 0; j < (6); j++)
       {
           if (GetMonData(gPlayerParty[j], MON_DATA_SANITY_HAS_SPECIES))
               count++;
@@ -5009,9 +4957,9 @@ export function AtLeastThreeUsableMons(): any {
           return TRUE;
 
        
-      for (i = 0; i < TOTAL_BOXES_COUNT; i++)
+      for (i = 0; i < (14); i++)
       {
-          for (j = 0; j < IN_BOX_COUNT; j++)
+          for (j = 0; j < (((5) * (6))); j++)
           {
               if (CheckBoxMonSanityAt(i, j))
               {
@@ -5037,10 +4985,10 @@ export function RunCanReleaseMon(): any {
       case 0:
            
            
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
                
-              if (sStorage.releaseBoxId != TOTAL_BOXES_COUNT || sStorage.releaseBoxPos != i)
+              if (sStorage.releaseBoxId != (14) || sStorage.releaseBoxPos != i)
               {
                   knownMoves = GetMonData(gPlayerParty[i], MON_DATA_KNOWN_MOVES, sStorage.restrictedMoveList);
                   sStorage.restrictedReleaseMonMoves &= ~(knownMoves);
@@ -5065,7 +5013,7 @@ export function RunCanReleaseMon(): any {
       case 1:
            
            
-          for (i = 0; i < IN_BOX_COUNT; i++)
+          for (i = 0; i < (((5) * (6))); i++)
           {
               knownMoves = GetAndCopyBoxMonDataAt(sStorage.releaseCheckBoxId, sStorage.releaseCheckBoxPos, MON_DATA_KNOWN_MOVES, sStorage.restrictedMoveList);
               if (knownMoves != 0 && !(sStorage.releaseBoxId == sStorage.releaseCheckBoxId
@@ -5082,10 +5030,10 @@ export function RunCanReleaseMon(): any {
                       break;
                   }
               }
-              if (++sStorage.releaseCheckBoxPos >= IN_BOX_COUNT)
+              if (++sStorage.releaseCheckBoxPos >= (((5) * (6))))
               {
                   sStorage.releaseCheckBoxPos = 0;
-                  if (++sStorage.releaseCheckBoxId >= TOTAL_BOXES_COUNT)
+                  if (++sStorage.releaseCheckBoxId >= (14))
                   {
                        
                        
@@ -5113,7 +5061,7 @@ export function LoadSavedMovingMon(): any {
       {
            
            
-          if (sMovingMonOrigBoxId == TOTAL_BOXES_COUNT)
+          if (sMovingMonOrigBoxId == (14))
               sStorage.movingMon = sSavedMovingMon;
           else
               sStorage.movingMon.box = sSavedMovingMon.box;
@@ -5141,7 +5089,7 @@ export function InitSummaryScreenData(): any {
       {
           sStorage.summaryMon.box = GetBoxedMonPtr(StorageGetCurrentBox(), 0);
           sStorage.summaryStartPos = sCursorPosition;
-          sStorage.summaryMaxPos = IN_BOX_COUNT - 1;
+          sStorage.summaryMaxPos = (((5) * (6))) - 1;
           sStorage.summaryScreenMode = SUMMARY_MODE_BOX;
       }
 }
@@ -5159,10 +5107,10 @@ export function CompactPartySlots(): any {
   let retVal: any = -1;
       let i, last;
 
-      for (i = 0, last = 0; i < PARTY_SIZE; i++)
+      for (i = 0, last = 0; i < (6); i++)
       {
           let species: any = GetMonData(gPlayerParty[i], MON_DATA_SPECIES);
-          if (species != SPECIES_NONE)
+          if (species != (0))
           {
               if (i != last)
                   gPlayerParty[last] = gPlayerParty[i];
@@ -5173,7 +5121,7 @@ export function CompactPartySlots(): any {
               retVal = i;
           }
       }
-      for (; last < PARTY_SIZE; last++)
+      for (; last < (6); last++)
           ZeroMonData(gPlayerParty[last]);
 
       return retVal;
@@ -5246,7 +5194,7 @@ export function TryRefreshDisplayMon(): any {
           switch (sCursorArea)
           {
           case CURSOR_AREA_IN_PARTY:
-              if (sCursorPosition < PARTY_SIZE)
+              if (sCursorPosition < (6))
               {
                   SetDisplayMonData(gPlayerParty[sCursorPosition], MODE_PARTY);
                   break;
@@ -5277,15 +5225,15 @@ export function SetDisplayMonData(pokemon: any, mode: any): any {
       let gender: any = null;
       let sanityIsBadEgg: any = null;
 
-      sStorage.displayMonItemId = ITEM_NONE;
-      gender = MON_MALE;
+      sStorage.displayMonItemId = (0);
+      gender = (0x00);
       sanityIsBadEgg = FALSE;
       if (mode == MODE_PARTY)
       {
           let mon: any = pokemon;
 
           sStorage.displayMonSpecies = GetMonData(mon, MON_DATA_SPECIES_OR_EGG);
-          if (sStorage.displayMonSpecies != SPECIES_NONE)
+          if (sStorage.displayMonSpecies != (0))
           {
               sanityIsBadEgg = GetMonData(mon, MON_DATA_SANITY_IS_BAD_EGG);
               if (sanityIsBadEgg)
@@ -5308,7 +5256,7 @@ export function SetDisplayMonData(pokemon: any, mode: any): any {
           let boxMon: any = pokemon;
 
           sStorage.displayMonSpecies = GetBoxMonData(pokemon, MON_DATA_SPECIES_OR_EGG);
-          if (sStorage.displayMonSpecies != SPECIES_NONE)
+          if (sStorage.displayMonSpecies != (0))
           {
               let otId: any = GetBoxMonData(boxMon, MON_DATA_OT_ID);
               sanityIsBadEgg = GetBoxMonData(boxMon, MON_DATA_SANITY_IS_BAD_EGG);
@@ -5330,82 +5278,82 @@ export function SetDisplayMonData(pokemon: any, mode: any): any {
       }
       else
       {
-          sStorage.displayMonSpecies = SPECIES_NONE;
-          sStorage.displayMonItemId = ITEM_NONE;
+          sStorage.displayMonSpecies = (0);
+          sStorage.displayMonItemId = (0);
       }
 
-      if (sStorage.displayMonSpecies == SPECIES_NONE)
+      if (sStorage.displayMonSpecies == (0))
       {
-          StringFill(sStorage.displayMonName, CHAR_SPACE, 5);
-          StringFill(sStorage.displayMonNameText, CHAR_SPACE, 8);
-          StringFill(sStorage.displayMonSpeciesName, CHAR_SPACE, 8);
-          StringFill(sStorage.displayMonGenderLvlText, CHAR_SPACE, 8);
-          StringFill(sStorage.displayMonItemName, CHAR_SPACE, 8);
+          StringFill(sStorage.displayMonName, (0x00), 5);
+          StringFill(sStorage.displayMonNameText, (0x00), 8);
+          StringFill(sStorage.displayMonSpeciesName, (0x00), 8);
+          StringFill(sStorage.displayMonGenderLvlText, (0x00), 8);
+          StringFill(sStorage.displayMonItemName, (0x00), 8);
       }
       else if (sStorage.displayMonIsEgg)
       {
           if (sanityIsBadEgg)
-              StringCopyPadded(sStorage.displayMonNameText, sStorage.displayMonName, CHAR_SPACE, 5);
+              StringCopyPadded(sStorage.displayMonNameText, sStorage.displayMonName, (0x00), 5);
           else
-              StringCopyPadded(sStorage.displayMonNameText, gText_EggNickname, CHAR_SPACE, 8);
+              StringCopyPadded(sStorage.displayMonNameText, gText_EggNickname, (0x00), 8);
 
-          StringFill(sStorage.displayMonSpeciesName, CHAR_SPACE, 8);
-          StringFill(sStorage.displayMonGenderLvlText, CHAR_SPACE, 8);
-          StringFill(sStorage.displayMonItemName, CHAR_SPACE, 8);
+          StringFill(sStorage.displayMonSpeciesName, (0x00), 8);
+          StringFill(sStorage.displayMonGenderLvlText, (0x00), 8);
+          StringFill(sStorage.displayMonItemName, (0x00), 8);
       }
       else
       {
-          if (sStorage.displayMonSpecies == SPECIES_NIDORAN_F || sStorage.displayMonSpecies == SPECIES_NIDORAN_M)
-              gender = MON_GENDERLESS;
+          if (sStorage.displayMonSpecies == (29) || sStorage.displayMonSpecies == (32))
+              gender = (0xFF);
 
-          StringCopyPadded(sStorage.displayMonNameText, sStorage.displayMonName, CHAR_SPACE, 5);
+          StringCopyPadded(sStorage.displayMonNameText, sStorage.displayMonName, (0x00), 5);
 
           txtPtr = sStorage.displayMonSpeciesName;
-          txtPtr =  CHAR_SLASH;
-          StringCopyPadded(txtPtr, gSpeciesNames[sStorage.displayMonSpecies], CHAR_SPACE, 5);
+          txtPtr =  (0xBA);
+          StringCopyPadded(txtPtr, gSpeciesNames[sStorage.displayMonSpecies], (0x00), 5);
 
           txtPtr = sStorage.displayMonGenderLvlText;
-          txtPtr =  EXT_CTRL_CODE_BEGIN;
-          txtPtr =  EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW;
+          txtPtr =  (0xFC);
+          txtPtr =  (0x04);
           switch (gender)
           {
-          case MON_MALE:
-              txtPtr =  TEXT_COLOR_RED;
-              txtPtr =  TEXT_COLOR_WHITE;
-              txtPtr =  TEXT_COLOR_LIGHT_RED;
-              txtPtr =  CHAR_MALE;
+          case (0x00):
+              txtPtr =  (0x4);
+              txtPtr =  (0x1);
+              txtPtr =  (0x5);
+              txtPtr =  (0xB5);
               break;
-          case MON_FEMALE:
-              txtPtr =  TEXT_COLOR_GREEN;
-              txtPtr =  TEXT_COLOR_WHITE;
-              txtPtr =  TEXT_COLOR_LIGHT_GREEN;
-              txtPtr =  CHAR_FEMALE;
+          case (0xFE):
+              txtPtr =  (0x6);
+              txtPtr =  (0x1);
+              txtPtr =  (0x7);
+              txtPtr =  (0xB6);
               break;
           default:
-              txtPtr =  TEXT_COLOR_DARK_GRAY;
-              txtPtr =  TEXT_COLOR_WHITE;
-              txtPtr =  TEXT_COLOR_LIGHT_GRAY;
-              txtPtr =  CHAR_SPACER;  
+              txtPtr =  (0x2);
+              txtPtr =  (0x1);
+              txtPtr =  (0x3);
+              txtPtr =  (0x77);  
               break;
           }
 
-          txtPtr =  EXT_CTRL_CODE_BEGIN;
-          txtPtr =  EXT_CTRL_CODE_COLOR_HIGHLIGHT_SHADOW;
-          txtPtr =  TEXT_COLOR_DARK_GRAY;
-          txtPtr =  TEXT_COLOR_WHITE;
-          txtPtr =  TEXT_COLOR_LIGHT_GRAY;
-          txtPtr =  CHAR_SPACE;
-          txtPtr =  CHAR_EXTRA_SYMBOL;
-          txtPtr =  CHAR_LV_2;
+          txtPtr =  (0xFC);
+          txtPtr =  (0x04);
+          txtPtr =  (0x2);
+          txtPtr =  (0x1);
+          txtPtr =  (0x3);
+          txtPtr =  (0x00);
+          txtPtr =  (0xF9);
+          txtPtr =  (0x05);
 
           txtPtr = ConvertIntToDecimalStringN(txtPtr, sStorage.displayMonLevel, STR_CONV_MODE_LEFT_ALIGN, 3);
-          txtPtr[0] = CHAR_SPACE;
-          txtPtr[1] = EOS;
+          txtPtr[0] = (0x00);
+          txtPtr[1] = (0xFF);
 
-          if (sStorage.displayMonItemId != ITEM_NONE)
-              StringCopyPadded(sStorage.displayMonItemName, GetItemName(sStorage.displayMonItemId), CHAR_SPACE, 8);
+          if (sStorage.displayMonItemId != (0))
+              StringCopyPadded(sStorage.displayMonItemName, GetItemName(sStorage.displayMonItemId), (0x00), 8);
           else
-              StringFill(sStorage.displayMonItemName, CHAR_SPACE, 8);
+              StringFill(sStorage.displayMonItemName, (0x00), 8);
       }
 }
 
@@ -5440,9 +5388,9 @@ export function InBoxInput_Normal(): any {
           if (JOY_REPEAT(DPAD_UP))
           {
               retVal = INPUT_MOVE_CURSOR;
-              if (sCursorPosition >= IN_BOX_COLUMNS)
+              if (sCursorPosition >= (6))
               {
-                  cursorPosition -= IN_BOX_COLUMNS;
+                  cursorPosition -= (6);
               }
               else
               {
@@ -5454,11 +5402,11 @@ export function InBoxInput_Normal(): any {
           else if (JOY_REPEAT(DPAD_DOWN))
           {
               retVal = INPUT_MOVE_CURSOR;
-              cursorPosition += IN_BOX_COLUMNS;
-              if (cursorPosition >= IN_BOX_COUNT)
+              cursorPosition += (6);
+              if (cursorPosition >= (((5) * (6))))
               {
                   cursorArea = CURSOR_AREA_BUTTONS;
-                  cursorPosition -= IN_BOX_COUNT;
+                  cursorPosition -= (((5) * (6)));
                   cursorPosition /= 3;
                   sStorage.cursorVerticalWrap = 1;
                   sStorage.cursorFlipTimer = 1;
@@ -5468,28 +5416,28 @@ export function InBoxInput_Normal(): any {
           else if (JOY_REPEAT(DPAD_LEFT))
           {
               retVal = INPUT_MOVE_CURSOR;
-              if (sCursorPosition % IN_BOX_COLUMNS != 0)
+              if (sCursorPosition % (6) != 0)
               {
                   cursorPosition--;
               }
               else
               {
                   sStorage.cursorHorizontalWrap = -1;
-                  cursorPosition += (IN_BOX_COLUMNS - 1);
+                  cursorPosition += ((6) - 1);
               }
               break;
           }
           else if (JOY_REPEAT(DPAD_RIGHT))
           {
               retVal = INPUT_MOVE_CURSOR;
-              if ((sCursorPosition + 1) % IN_BOX_COLUMNS != 0)
+              if ((sCursorPosition + 1) % (6) != 0)
               {
                   cursorPosition++;
               }
               else
               {
                   sStorage.cursorHorizontalWrap = 1;
-                  cursorPosition -= (IN_BOX_COLUMNS - 1);
+                  cursorPosition -= ((6) - 1);
               }
               break;
           }
@@ -5538,7 +5486,7 @@ export function InBoxInput_Normal(): any {
           if (JOY_NEW(B_BUTTON))
               return INPUT_PRESSED_B;
 
-          if (gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_LR)
+          if (gSaveBlock2Ptr.optionsButtonMode == (1))
           {
               if (JOY_HELD(L_BUTTON))
                   return INPUT_SCROLL_LEFT;
@@ -5568,9 +5516,9 @@ export function InBoxInput_SelectingMultiple(): any {
       {
           if (JOY_REPEAT(DPAD_UP))
           {
-              if (sCursorPosition / IN_BOX_COLUMNS != 0)
+              if (sCursorPosition / (6) != 0)
               {
-                  SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition - IN_BOX_COLUMNS);
+                  SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition - (6));
                   return INPUT_MULTIMOVE_CHANGE_SELECTION;
               }
               else
@@ -5580,9 +5528,9 @@ export function InBoxInput_SelectingMultiple(): any {
           }
           else if (JOY_REPEAT(DPAD_DOWN))
           {
-              if (sCursorPosition + IN_BOX_COLUMNS < IN_BOX_COUNT)
+              if (sCursorPosition + (6) < (((5) * (6))))
               {
-                  SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition + IN_BOX_COLUMNS);
+                  SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition + (6));
                   return INPUT_MULTIMOVE_CHANGE_SELECTION;
               }
               else
@@ -5592,7 +5540,7 @@ export function InBoxInput_SelectingMultiple(): any {
           }
           else if (JOY_REPEAT(DPAD_LEFT))
           {
-              if (sCursorPosition % IN_BOX_COLUMNS != 0)
+              if (sCursorPosition % (6) != 0)
               {
                   SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition - 1);
                   return INPUT_MULTIMOVE_CHANGE_SELECTION;
@@ -5604,7 +5552,7 @@ export function InBoxInput_SelectingMultiple(): any {
           }
           else if (JOY_REPEAT(DPAD_RIGHT))
           {
-              if ((sCursorPosition + 1) % IN_BOX_COLUMNS != 0)
+              if ((sCursorPosition + 1) % (6) != 0)
               {
                   SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition + 1);
                   return INPUT_MULTIMOVE_CHANGE_SELECTION;
@@ -5630,7 +5578,7 @@ export function InBoxInput_SelectingMultiple(): any {
           }
           else
           {
-              sIsMonBeingMoved = (sStorage.displayMonSpecies != SPECIES_NONE);
+              sIsMonBeingMoved = (sStorage.displayMonSpecies != (0));
               sStorage.inBoxMovingMode = MOVE_MODE_MULTIPLE_MOVING;
               sMovingMonOrigBoxId = StorageGetCurrentBox();
               return INPUT_MULTIMOVE_GRAB_SELECTION;
@@ -5644,7 +5592,7 @@ export function InBoxInput_MovingMultiple(): any {
       {
           if (MultiMove_TryMoveGroup(0))
           {
-              SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition - IN_BOX_COLUMNS);
+              SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition - (6));
               return INPUT_MULTIMOVE_MOVE_MONS;
           }
           else
@@ -5656,7 +5604,7 @@ export function InBoxInput_MovingMultiple(): any {
       {
           if (MultiMove_TryMoveGroup(1))
           {
-              SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition + IN_BOX_COLUMNS);
+              SetCursorPosition(CURSOR_AREA_IN_BOX, sCursorPosition + (6));
               return INPUT_MULTIMOVE_MOVE_MONS;
           }
           else
@@ -5707,7 +5655,7 @@ export function InBoxInput_MovingMultiple(): any {
       }
       else
       {
-          if (gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_LR)
+          if (gSaveBlock2Ptr.optionsButtonMode == (1))
           {
               if (JOY_HELD(L_BUTTON))
                   return INPUT_SCROLL_LEFT;
@@ -5739,14 +5687,14 @@ export function HandleInput_InParty(): any {
           if (JOY_REPEAT(DPAD_UP))
           {
               if (--cursorPosition < 0)
-                  cursorPosition = PARTY_SIZE;
+                  cursorPosition = (6);
               if (cursorPosition != sCursorPosition)
                   retVal = INPUT_MOVE_CURSOR;
               break;
           }
           else if (JOY_REPEAT(DPAD_DOWN))
           {
-              if (++cursorPosition > PARTY_SIZE)
+              if (++cursorPosition > (6))
                   cursorPosition = 0;
               if (cursorPosition != sCursorPosition)
                   retVal = INPUT_MOVE_CURSOR;
@@ -5777,7 +5725,7 @@ export function HandleInput_InParty(): any {
 
           if (JOY_NEW(A_BUTTON))
           {
-              if (sCursorPosition == PARTY_SIZE)
+              if (sCursorPosition == (6))
               {
                   if (sStorage.boxOption == OPTION_DEPOSIT)
                       return INPUT_CLOSE_BOX;
@@ -5875,7 +5823,7 @@ export function HandleInput_OnBox(): any {
           if (JOY_HELD(DPAD_RIGHT))
               return INPUT_SCROLL_RIGHT;
 
-          if (gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_LR)
+          if (gSaveBlock2Ptr.optionsButtonMode == (1))
           {
               if (JOY_HELD(L_BUTTON))
                   return INPUT_SCROLL_LEFT;
@@ -5933,9 +5881,9 @@ export function HandleInput_OnButtons(): any {
               cursorArea = CURSOR_AREA_IN_BOX;
               sStorage.cursorVerticalWrap = -1;
               if (sCursorPosition == 0)
-                  cursorPosition = IN_BOX_COUNT - 1 - 5;
+                  cursorPosition = (((5) * (6))) - 1 - 5;
               else
-                  cursorPosition = IN_BOX_COUNT - 1;
+                  cursorPosition = (((5) * (6))) - 1;
               sStorage.cursorFlipTimer = 1;
               break;
           }
@@ -6033,13 +5981,13 @@ export function SetMenuTexts_Mon(): any {
       switch (sStorage.boxOption)
       {
       case OPTION_DEPOSIT:
-          if (species != SPECIES_NONE)
+          if (species != (0))
               SetMenuText(MENU_STORE);
           else
               return FALSE;
           break;
       case OPTION_WITHDRAW:
-          if (species != SPECIES_NONE)
+          if (species != (0))
               SetMenuText(MENU_WITHDRAW);
           else
               return FALSE;
@@ -6047,14 +5995,14 @@ export function SetMenuTexts_Mon(): any {
       case OPTION_MOVE_MONS:
           if (sIsMonBeingMoved)
           {
-              if (species != SPECIES_NONE)
+              if (species != (0))
                   SetMenuText(MENU_SHIFT);
               else
                   SetMenuText(MENU_PLACE);
           }
           else
           {
-              if (species != SPECIES_NONE)
+              if (species != (0))
                   SetMenuText(MENU_MOVE);
               else
                   return FALSE;
@@ -6082,14 +6030,14 @@ export function SetMenuTexts_Mon(): any {
 
 /** static bool8 SetMenuTexts_Item(void) */
 export function SetMenuTexts_Item(): any {
-  if (sStorage.displayMonSpecies == SPECIES_EGG)
+  if (sStorage.displayMonSpecies == (412))
           return FALSE;
 
       if (!IsMovingItem())
       {
-          if (sStorage.displayMonItemId == ITEM_NONE)
+          if (sStorage.displayMonItemId == (0))
           {
-              if (sStorage.displayMonSpecies == SPECIES_NONE)
+              if (sStorage.displayMonSpecies == (0))
                   return FALSE;
 
               SetMenuText(MENU_GIVE_2);
@@ -6106,9 +6054,9 @@ export function SetMenuTexts_Item(): any {
       }
       else
       {
-          if (sStorage.displayMonItemId == ITEM_NONE)
+          if (sStorage.displayMonItemId == (0))
           {
-              if (sStorage.displayMonSpecies == SPECIES_NONE)
+              if (sStorage.displayMonSpecies == (0))
                   return FALSE;
 
               SetMenuText(MENU_GIVE);
@@ -6166,17 +6114,17 @@ export function CreateCursorSprites(): any {
       const sAnim_Cursor_Still: any =
       [
           ANIMCMD_FRAME(0, 5),
-          ANIMCMD_END
+          (0)
       ];
       const sAnim_Cursor_Open: any =
       [
           ANIMCMD_FRAME(32, 5),
-          ANIMCMD_END
+          (0)
       ];
       const sAnim_Cursor_Fist: any =
       [
           ANIMCMD_FRAME(48, 5),
-          ANIMCMD_END
+          (0)
       ];
 
       const sAnims_Cursor: any =
@@ -6198,7 +6146,7 @@ export function CreateCursorSprites(): any {
 
       GetCursorCoordsByPos(sCursorArea, sCursorPosition,x,y);
       spriteId = CreateSprite(sSpriteTemplate_Cursor, x, y, 6);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           sStorage.cursorSprite =gSprites[spriteId];
           sStorage.cursorSprite.oam.paletteNum = sStorage.cursorPalNums[sAutoActionOn];
@@ -6223,7 +6171,7 @@ export function CreateCursorSprites(): any {
       }
 
       spriteId = CreateSprite(sSpriteTemplate_CursorShadow, 0, 0, subpriority);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           sStorage.cursorShadowSprite =gSprites[spriteId];
           sStorage.cursorShadowSprite.oam.priority = priority;
@@ -6251,8 +6199,8 @@ export function GetCursorPosition(): any {
 export function GetCursorBoxColumnAndRow(column: any, row: any): any {
   if (sCursorArea == CURSOR_AREA_IN_BOX)
       {
-          column = sCursorPosition % IN_BOX_COLUMNS;
-          row = sCursorPosition / IN_BOX_COLUMNS;
+          column = sCursorPosition % (6);
+          row = sCursorPosition / (6);
       }
       else
       {
@@ -6339,7 +6287,7 @@ export function IsMenuLoading(): any {
 
 /** static s16 HandleMenuInput(void) */
 export function HandleMenuInput(): any {
-  let input: any = MENU_NOTHING_CHOSEN;
+  let input: any = (-2);
 
       do
       {
@@ -6350,23 +6298,23 @@ export function HandleMenuInput(): any {
           }
           else if (JOY_NEW(B_BUTTON))
           {
-              PlaySE(SE_SELECT);
-              input = MENU_B_PRESSED;
+              PlaySE((5));
+              input = (-1);
           }
 
           if (JOY_NEW(DPAD_UP))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Menu_MoveCursor(-1);
           }
           else if (JOY_NEW(DPAD_DOWN))
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               Menu_MoveCursor(1);
           }
       } while (0);
 
-      if (input != MENU_NOTHING_CHOSEN)
+      if (input != (-2))
           RemoveMenu();
 
       if (input >= 0)
@@ -6387,7 +6335,7 @@ export function MultiMove_Init(): any {
       if (sMultiMove != NULL)
       {
           sStorage.multiMoveWindowId = AddWindow8Bit(sWindowTemplate_MultiMove);
-          if (sStorage.multiMoveWindowId != WINDOW_NONE)
+          if (sStorage.multiMoveWindowId != (0xFF))
           {
               FillWindowPixelBuffer(sStorage.multiMoveWindowId, PIXEL_FILL(0));
               return TRUE;
@@ -6450,7 +6398,7 @@ export function MultiMove_Start(): any {
           SetBgAttribute(0, BG_ATTR_PALETTEMODE, 1);
           PutWindowTilemap(sStorage.multiMoveWindowId);
           CopyWindowToVram8Bit(sStorage.multiMoveWindowId, COPYWIN_FULL);
-          BlendPalettes(0x3F00, 8, RGB_WHITE);
+          BlendPalettes(0x3F00, 8, (RGB(31, 31, 31)));
           StartCursorAnim(CURSOR_ANIM_OPEN);
           SetGpuRegBits(REG_OFFSET_BG0CNT, BGCNT_256COLOR);
           sMultiMove.state++;
@@ -6611,7 +6559,7 @@ export function MultiMove_TryMoveGroup(dir: any): any {
           MultiMove_InitMove(0, Q_8_8(4), 6);
           break;
       case 1:  
-          if (sMultiMove.minRow + sMultiMove.rowsTotal >= IN_BOX_ROWS)
+          if (sMultiMove.minRow + sMultiMove.rowsTotal >= (5))
               return FALSE;
           sMultiMove.minRow++;
           MultiMove_InitMove(0, Q_8_8(-4), 6);
@@ -6623,7 +6571,7 @@ export function MultiMove_TryMoveGroup(dir: any): any {
           MultiMove_InitMove(Q_8_8(4), 0, 6);
           break;
       case 3:  
-          if (sMultiMove.minColumn + sMultiMove.columnsTotal >= IN_BOX_COLUMNS)
+          if (sMultiMove.minColumn + sMultiMove.columnsTotal >= (6))
               return FALSE;
           sMultiMove.minColumn++;
           MultiMove_InitMove(Q_8_8(-4), 0, 6);
@@ -6706,11 +6654,11 @@ export function MultiMove_DeselectRow(row: any, minColumn: any, maxColumn: any):
 
 /** static void MultiMove_SetIconToBg(u8 x, u8 y) */
 export function MultiMove_SetIconToBg(x: any, y: any): any {
-  let position: any = x + (IN_BOX_COLUMNS * y);
+  let position: any = x + ((6) * y);
       let species: any = GetCurrentBoxMonData(position, MON_DATA_SPECIES_OR_EGG);
       let personality: any = GetCurrentBoxMonData(position, MON_DATA_PERSONALITY);
 
-      if (species != SPECIES_NONE)
+      if (species != (0))
       {
           let iconGfx: any = GetMonIconPtr(species, personality, 1);
           let index: any = GetValidMonIconPalIndex(species) + 8;
@@ -6731,10 +6679,10 @@ export function MultiMove_SetIconToBg(x: any, y: any): any {
 
 /** static void MultiMove_ClearIconFromBg(u8 x, u8 y) */
 export function MultiMove_ClearIconFromBg(x: any, y: any): any {
-  let position: any = x + (IN_BOX_COLUMNS * y);
+  let position: any = x + ((6) * y);
       let species: any = GetCurrentBoxMonData(position, MON_DATA_SPECIES_OR_EGG);
 
-      if (species != SPECIES_NONE)
+      if (species != (0))
       {
           FillWindowPixelRect8Bit(sStorage.multiMoveWindowId,
                                   PIXEL_FILL(0),
@@ -6781,7 +6729,7 @@ export function MultiMove_GetMonsFromSelection(): any {
       rowCount = sMultiMove.minRow + sMultiMove.rowsTotal;
       for (i = sMultiMove.minRow; i < rowCount; i++)
       {
-          let boxPosition: any = (IN_BOX_COLUMNS * i) + sMultiMove.minColumn;
+          let boxPosition: any = ((6) * i) + sMultiMove.minColumn;
           for (j = sMultiMove.minColumn; j < columnCount; j++)
           {
               let boxMon: any = GetBoxedMonPtr(boxId, boxPosition);
@@ -6803,7 +6751,7 @@ export function MultiMove_RemoveMonsFromBox(): any {
 
       for (i = sMultiMove.minRow; i < rowCount; i++)
       {
-          let boxPosition: any = (IN_BOX_COLUMNS * i) + sMultiMove.minColumn;
+          let boxPosition: any = ((6) * i) + sMultiMove.minColumn;
           for (j = sMultiMove.minColumn; j < columnCount; j++)
           {
               DestroyBoxMonIconAtPosition(boxPosition);
@@ -6822,7 +6770,7 @@ export function MultiMove_CreatePlacedMonIcons(): any {
 
       for (i = sMultiMove.minRow; i < rowCount; i++)
       {
-          let boxPosition: any = (IN_BOX_COLUMNS * i) + sMultiMove.minColumn;
+          let boxPosition: any = ((6) * i) + sMultiMove.minColumn;
           for (j = sMultiMove.minColumn; j < columnCount; j++)
           {
               if (GetBoxMonData(sMultiMove.boxMons[monArrayId], MON_DATA_SANITY_HAS_SPECIES))
@@ -6843,7 +6791,7 @@ export function MultiMove_SetPlacedMonData(): any {
 
       for (i = sMultiMove.minRow; i < rowCount; i++)
       {
-          let boxPosition: any = (IN_BOX_COLUMNS * i) + sMultiMove.minColumn;
+          let boxPosition: any = ((6) * i) + sMultiMove.minColumn;
           for (j = sMultiMove.minColumn; j < columnCount; j++)
           {
               if (GetBoxMonData(sMultiMove.boxMons[monArrayId], MON_DATA_SANITY_HAS_SPECIES))
@@ -6866,7 +6814,7 @@ export function MultiMove_ResetBg(): any {
 
 /** static u8 MultiMove_GetOrigin(void) */
 export function MultiMove_GetOrigin(): any {
-  return (IN_BOX_COLUMNS * sMultiMove.fromRow) + sMultiMove.fromColumn;
+  return ((6) * sMultiMove.fromRow) + sMultiMove.fromColumn;
 }
 
 /** static bool8 MultiMove_CanPlaceSelection(void) */
@@ -6878,7 +6826,7 @@ export function MultiMove_CanPlaceSelection(): any {
 
       for (i = sMultiMove.minRow; i < rowCount; i++)
       {
-          let boxPosition: any = (IN_BOX_COLUMNS * i) + sMultiMove.minColumn;
+          let boxPosition: any = ((6) * i) + sMultiMove.minColumn;
           for (j = sMultiMove.minColumn; j < columnCount; j++)
           {
               if (GetBoxMonData(sMultiMove.boxMons[monArrayId], MON_DATA_SANITY_HAS_SPECIES)
@@ -6920,7 +6868,7 @@ export function CreateItemIconSprites(): any {
               sStorage.itemIcons[i].active = FALSE;
           }
       }
-      sStorage.movingItemId = ITEM_NONE;
+      sStorage.movingItemId = (0);
 }
 
 /** static void TryLoadItemIconAtPos(u8 cursorArea, u8 cursorPos) */
@@ -6942,7 +6890,7 @@ export function TryLoadItemIconAtPos(cursorArea: any, cursorPos: any): any {
           heldItem = GetCurrentBoxMonData(cursorPos, MON_DATA_HELD_ITEM);
           break;
       case CURSOR_AREA_IN_PARTY:
-          if (cursorPos >= PARTY_SIZE || !GetMonData(gPlayerParty[cursorPos], MON_DATA_SANITY_HAS_SPECIES))
+          if (cursorPos >= (6) || !GetMonData(gPlayerParty[cursorPos], MON_DATA_SANITY_HAS_SPECIES))
               return;
           heldItem = GetMonData(gPlayerParty[cursorPos], MON_DATA_HELD_ITEM);
           break;
@@ -6950,7 +6898,7 @@ export function TryLoadItemIconAtPos(cursorArea: any, cursorPos: any): any {
           return;
       }
 
-      if (heldItem != ITEM_NONE)
+      if (heldItem != (0))
       {
           let tiles: any = GetItemIconPic(heldItem);
           let pal: any = GetItemIconPalette(heldItem);
@@ -6984,7 +6932,7 @@ export function TakeItemFromMon(cursorArea: any, cursorPos: any): any {
           return;
 
       id = GetItemIconIdxByPosition(cursorArea, cursorPos);
-      itemId = ITEM_NONE;
+      itemId = (0);
       SetItemIconAffineAnim(id, ITEM_ANIM_PICK_UP);
       SetItemIconCallback(id, ITEM_CB_TO_HAND, cursorArea, cursorPos);
       SetItemIconPosition(id, (CURSOR_AREA_BOX_TITLE), 0);
@@ -7074,7 +7022,7 @@ export function MoveItemFromMonToBag(cursorArea: any, cursorPos: any): any {
       if (sStorage.boxOption != OPTION_MOVE_ITEMS)
           return;
 
-      itemId = ITEM_NONE;
+      itemId = (0);
       id = GetItemIconIdxByPosition(cursorArea, cursorPos);
       SetItemIconAffineAnim(id, ITEM_ANIM_DISAPPEAR);
       SetItemIconCallback(id, ITEM_CB_WAIT_ANIM, cursorArea, cursorPos);
@@ -7221,8 +7169,8 @@ export function SetItemIconPosition(id: any, cursorArea: any, cursorPos: any): a
       switch (cursorArea)
       {
       case CURSOR_AREA_IN_BOX:
-          x = cursorPos % IN_BOX_COLUMNS;
-          y = cursorPos / IN_BOX_COLUMNS;
+          x = cursorPos % (6);
+          y = cursorPos / (6);
           sStorage.itemIcons[id].sprite.x = (24 * x) + 112;
           sStorage.itemIcons[id].sprite.y = (24 * y) + 56;
           sStorage.itemIcons[id].sprite.oam.priority = 2;
@@ -7530,13 +7478,13 @@ export function StorageGetCurrentBox(): any {
 
 /** static void SetCurrentBox(u8 boxId) */
 export function SetCurrentBox(boxId: any): any {
-  if (boxId < TOTAL_BOXES_COUNT)
+  if (boxId < (14))
           gPokemonStoragePtr.currentBox = boxId;
 }
 
 /** u32 GetBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request) */
 export function GetBoxMonDataAt(boxId: any, boxPosition: any, request: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
+  if (boxId < (14) && boxPosition < (((5) * (6))))
           return GetBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition], request);
       else
           return 0;
@@ -7544,7 +7492,7 @@ export function GetBoxMonDataAt(boxId: any, boxPosition: any, request: any): any
 
 /** void SetBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request, const void *value) */
 export function SetBoxMonDataAt(boxId: any, boxPosition: any, request: any, value: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
+  if (boxId < (14) && boxPosition < (((5) * (6))))
           SetBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition], request, value);
 }
 
@@ -7560,17 +7508,17 @@ export function SetCurrentBoxMonData(boxPosition: any, request: any, value: any)
 
 /** void GetBoxMonNickAt(u8 boxId, u8 boxPosition, u8 *dst) */
 export function GetBoxMonNickAt(boxId: any, boxPosition: any, dst: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
+  if (boxId < (14) && boxPosition < (((5) * (6))))
           GetBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition], MON_DATA_NICKNAME, dst);
       else
-          dst = EOS;
+          dst = (0xFF);
 }
 
 /** u32 GetBoxMonLevelAt(u8 boxId, u8 boxPosition) */
 export function GetBoxMonLevelAt(boxId: any, boxPosition: any): any {
   let lvl: any = null;
 
-      if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT && GetBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition], MON_DATA_SANITY_HAS_SPECIES))
+      if (boxId < (14) && boxPosition < (((5) * (6))) && GetBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition], MON_DATA_SANITY_HAS_SPECIES))
           lvl = GetLevelFromBoxMonExp(gPokemonStoragePtr.boxes[boxId][boxPosition]);
       else
           lvl = 0;
@@ -7580,13 +7528,13 @@ export function GetBoxMonLevelAt(boxId: any, boxPosition: any): any {
 
 /** void SetBoxMonNickAt(u8 boxId, u8 boxPosition, const u8 *nick) */
 export function SetBoxMonNickAt(boxId: any, boxPosition: any, nick: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
+  if (boxId < (14) && boxPosition < (((5) * (6))))
           SetBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition], MON_DATA_NICKNAME, nick);
 }
 
 /** u32 GetAndCopyBoxMonDataAt(u8 boxId, u8 boxPosition, s32 request, void *dst) */
 export function GetAndCopyBoxMonDataAt(boxId: any, boxPosition: any, request: any, dst: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
+  if (boxId < (14) && boxPosition < (((5) * (6))))
           return GetBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition], request, dst);
       else
           return 0;
@@ -7594,19 +7542,19 @@ export function GetAndCopyBoxMonDataAt(boxId: any, boxPosition: any, request: an
 
 /** void SetBoxMonAt(u8 boxId, u8 boxPosition, struct BoxPokemon *src) */
 export function SetBoxMonAt(boxId: any, boxPosition: any, src: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
+  if (boxId < (14) && boxPosition < (((5) * (6))))
           gPokemonStoragePtr.boxes[boxId][boxPosition] = src;
 }
 
 /** void CopyBoxMonAt(u8 boxId, u8 boxPosition, struct BoxPokemon *dst) */
 export function CopyBoxMonAt(boxId: any, boxPosition: any, dst: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
+  if (boxId < (14) && boxPosition < (((5) * (6))))
           dst = gPokemonStoragePtr.boxes[boxId][boxPosition];
 }
 
 /** void CreateBoxMonAt(u8 boxId, u8 boxPosition, u16 species, u8 level, u8 fixedIV, u8 hasFixedPersonality, u32 personality, u8 otIDType, u32 otID) */
 export function CreateBoxMonAt(boxId: any, boxPosition: any, species: any, level: any, fixedIV: any, hasFixedPersonality: any, personality: any, otIDType: any, otID: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
+  if (boxId < (14) && boxPosition < (((5) * (6))))
       {
           CreateBoxMon(gPokemonStoragePtr.boxes[boxId][boxPosition],
                        species,
@@ -7619,19 +7567,19 @@ export function CreateBoxMonAt(boxId: any, boxPosition: any, species: any, level
 
 /** void ZeroBoxMonAt(u8 boxId, u8 boxPosition) */
 export function ZeroBoxMonAt(boxId: any, boxPosition: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
+  if (boxId < (14) && boxPosition < (((5) * (6))))
           ZeroBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition]);
 }
 
 /** void BoxMonAtToMon(u8 boxId, u8 boxPosition, struct Pokemon *dst) */
 export function BoxMonAtToMon(boxId: any, boxPosition: any, dst: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && boxPosition < IN_BOX_COUNT)
+  if (boxId < (14) && boxPosition < (((5) * (6))))
           BoxMonToMon(gPokemonStoragePtr.boxes[boxId][boxPosition], dst);
 }
 
 /** static u8 GetBoxWallpaper(u8 boxId) */
 export function GetBoxWallpaper(boxId: any): any {
-  if (boxId < TOTAL_BOXES_COUNT)
+  if (boxId < (14))
           return gPokemonStoragePtr.boxWallpapers[boxId];
       else
           return 0;
@@ -7639,7 +7587,7 @@ export function GetBoxWallpaper(boxId: any): any {
 
 /** static void SetBoxWallpaper(u8 boxId, u8 wallpaperId) */
 export function SetBoxWallpaper(boxId: any, wallpaperId: any): any {
-  if (boxId < TOTAL_BOXES_COUNT && wallpaperId < WALLPAPER_COUNT)
+  if (boxId < (14) && wallpaperId < WALLPAPER_COUNT)
           gPokemonStoragePtr.boxWallpapers[boxId] = wallpaperId;
 }
 
@@ -7655,7 +7603,7 @@ export function AdvanceStorageMonIndex(boxMons: any, currIndex: any, maxIndex: a
       {
           for (i = currIndex + direction; i >= 0 && i <= maxIndex; i += direction)
           {
-              if (GetBoxMonData(boxMons[i], MON_DATA_SPECIES) != SPECIES_NONE)
+              if (GetBoxMonData(boxMons[i], MON_DATA_SPECIES) != (0))
                   return i;
           }
       }
@@ -7663,7 +7611,7 @@ export function AdvanceStorageMonIndex(boxMons: any, currIndex: any, maxIndex: a
       {
           for (i = currIndex + direction; i >= 0 && i <= maxIndex; i += direction)
           {
-              if (GetBoxMonData(boxMons[i], MON_DATA_SPECIES) != SPECIES_NONE
+              if (GetBoxMonData(boxMons[i], MON_DATA_SPECIES) != (0)
                   && !GetBoxMonData(boxMons[i], MON_DATA_IS_EGG))
                   return i;
           }
@@ -7676,9 +7624,9 @@ export function AdvanceStorageMonIndex(boxMons: any, currIndex: any, maxIndex: a
 export function CheckFreePokemonStorageSpace(): any {
   let i, j;
 
-      for (i = 0; i < TOTAL_BOXES_COUNT; i++)
+      for (i = 0; i < (14); i++)
       {
-          for (j = 0; j < IN_BOX_COUNT; j++)
+          for (j = 0; j < (((5) * (6))); j++)
           {
               if (!GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_SANITY_HAS_SPECIES))
                   return TRUE;
@@ -7690,8 +7638,8 @@ export function CheckFreePokemonStorageSpace(): any {
 
 /** bool32 CheckBoxMonSanityAt(u32 boxId, u32 boxPosition) */
 export function CheckBoxMonSanityAt(boxId: any, boxPosition: any): any {
-  if (boxId < TOTAL_BOXES_COUNT
-          && boxPosition < IN_BOX_COUNT
+  if (boxId < (14)
+          && boxPosition < (((5) * (6)))
           && GetBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition], MON_DATA_SANITY_HAS_SPECIES)
           && !GetBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition], MON_DATA_SANITY_IS_EGG)
           && !GetBoxMonData(gPokemonStoragePtr.boxes[boxId][boxPosition], MON_DATA_SANITY_IS_BAD_EGG))
@@ -7705,9 +7653,9 @@ export function CountStorageNonEggMons(): any {
   let i, j;
       let count: any = 0;
 
-      for (i = 0; i < TOTAL_BOXES_COUNT; i++)
+      for (i = 0; i < (14); i++)
       {
-          for (j = 0; j < IN_BOX_COUNT; j++)
+          for (j = 0; j < (((5) * (6))); j++)
           {
               if (GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_SANITY_HAS_SPECIES)
                   && !GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_SANITY_IS_EGG))
@@ -7723,9 +7671,9 @@ export function CountAllStorageMons(): any {
   let i, j;
       let count: any = 0;
 
-      for (i = 0; i < TOTAL_BOXES_COUNT; i++)
+      for (i = 0; i < (14); i++)
       {
-          for (j = 0; j < IN_BOX_COUNT; j++)
+          for (j = 0; j < (((5) * (6))); j++)
           {
               if (GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_SANITY_HAS_SPECIES)
                   || GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_SANITY_IS_EGG))
@@ -7738,12 +7686,12 @@ export function CountAllStorageMons(): any {
 
 /** bool32 AnyStorageMonWithMove(u16 move) */
 export function AnyStorageMonWithMove(move: any): any {
-  const moves: any = [move, MOVES_COUNT];
+  const moves: any = [move, (355)];
       let i, j;
 
-      for (i = 0; i < TOTAL_BOXES_COUNT; i++)
+      for (i = 0; i < (14); i++)
       {
-          for (j = 0; j < IN_BOX_COUNT; j++)
+          for (j = 0; j < (((5) * (6))); j++)
           {
               if (GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_SANITY_HAS_SPECIES)
                   && !GetBoxMonData(gPokemonStoragePtr.boxes[i][j], MON_DATA_SANITY_IS_EGG)
@@ -7762,7 +7710,7 @@ export function ResetWaldaWallpaper(): any {
       gSaveBlock1Ptr.waldaPhrase.patternUnlocked = FALSE;
       gSaveBlock1Ptr.waldaPhrase.colors[0] = RGB(21, 25, 30);
       gSaveBlock1Ptr.waldaPhrase.colors[1] = RGB(6, 12, 24);
-      gSaveBlock1Ptr.waldaPhrase.text[0] = EOS;
+      gSaveBlock1Ptr.waldaPhrase.text[0] = (0xFF);
 }
 
 /** void SetWaldaWallpaperLockedOrUnlocked(bool32 unlocked) */
@@ -7810,7 +7758,7 @@ export function SetWaldaPhrase(src: any): any {
 
 /** bool32 IsWaldaPhraseEmpty(void) */
 export function IsWaldaPhraseEmpty(): any {
-  return (gSaveBlock1Ptr.waldaPhrase.text[0] == EOS);
+  return (gSaveBlock1Ptr.waldaPhrase.text[0] == (0xFF));
 }
 
 /** static void TilemapUtil_Init(u8 count) */

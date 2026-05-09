@@ -17,24 +17,14 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAnims_Player: any = null;
-let sAnims_Rival: any = null;
-let sBackgroundTemplates: any = null;
+let gIntroCredits_MovingSceneryState: any = null;
+let gIntroCredits_MovingSceneryVBase: any = null;
+let gIntroCredits_MovingSceneryVOffset: any = null;
+let gReservedSpritePaletteCount: any = null;
 let sCreditsData: any = null;
-let sCreditsEntryPointerTable: any = null;
-let sCredits_Pal: any = null;
-let sMonSpriteId: any = null;
-let sMonSpritePos: any = null;
-let sPosition: any = null;
 let sSavedTaskId: any = null;
-let sSpriteId: any = null;
-let sSpritePalette_MonBg: any = null;
-let sSpriteSheet_MonBg: any = null;
-let sSpriteTemplate_CreditsMonBg: any = null;
-let sState: any = null;
 let sUnkVar: any = null;
 let sUsedSpeedUp: any = null;
-let sWindowTemplates: any = null;
 /** static void VBlankCB_Credits(void) */
 export function VBlankCB_Credits(): any {
   LoadOam();
@@ -88,21 +78,21 @@ export function PrintCreditsText(string: any, y: any, isTitle: any): any {
   let x: any = null;
       let color: any = [];
 
-      color[0] = TEXT_COLOR_TRANSPARENT;
+      color[0] = (0x0);
 
       if (isTitle == TRUE)
       {
-          color[1] = TEXT_COLOR_LIGHT_GRAY;
-          color[2] = TEXT_COLOR_RED;
+          color[1] = (0x3);
+          color[2] = (0x4);
       }
       else
       {
-          color[1] = TEXT_COLOR_WHITE;
-          color[2] = TEXT_COLOR_DARK_GRAY;
+          color[1] = (0x1);
+          color[2] = (0x2);
       }
 
       x = GetStringCenterAlignXOffsetWithLetterSpacing(FONT_NORMAL, string, DISPLAY_WIDTH, 1);
-      AddTextPrinterParameterized4(0, FONT_NORMAL, x, y, 1, 0, color, TEXT_SKIP_DRAW, string);
+      AddTextPrinterParameterized4(0, FONT_NORMAL, x, y, 1, 0, color, (0xFF), string);
 }
 
 /** void CB2_StartCreditsSequence(void) */
@@ -113,7 +103,7 @@ export function CB2_StartCreditsSequence(): any {
 
       ResetGpuAndVram();
       SetVBlankCallback(NULL);
-      InitHeap(gHeap, HEAP_SIZE);
+      InitHeap(gHeap, (0x1C000));
       ResetPaletteFade();
       ResetTasks();
       InitCreditsBgsAndWindows();
@@ -141,10 +131,10 @@ export function CB2_StartCreditsSequence(): any {
       gTasks[pageTaskId].tMainTaskId = taskId;
       gTasks[taskId].tTaskId_UpdatePage = pageTaskId;
 
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
       EnableInterrupts(INTR_FLAG_VBLANK);
       SetVBlankCallback(VBlankCB_Credits);
-      m4aSongNumStart(MUS_CREDITS);
+      m4aSongNumStart((455));
       SetMainCallback2(CB2_Credits);
       sUsedSpeedUp = FALSE;
       sCreditsData = AllocZeroed(0);
@@ -186,7 +176,7 @@ export function Task_CreditsMain(taskId: any): any {
            
           gTasks[taskId].tCurrentMode = mode;
           gTasks[taskId].tNextMode = MODE_NONE;
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           gTasks[taskId].func = Task_ReadyBikeScene;
       }
       else if (gTasks[taskId].tNextMode == MODE_SHOW_MONS)
@@ -194,7 +184,7 @@ export function Task_CreditsMain(taskId: any): any {
            
           gTasks[taskId].tCurrentMode = mode;
           gTasks[taskId].tNextMode = MODE_NONE;
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 16, (RGB(0, 0, 0)));
           gTasks[taskId].func = Task_ReadyShowMons;
       }
 }
@@ -215,7 +205,7 @@ export function Task_SetBikeScene(taskId: any): any {
 
       if (LoadBikeScene(gTasks[taskId].tSceneNum, taskId))
       {
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           EnableInterrupts(INTR_FLAG_VBLANK);
           SetVBlankCallback(VBlankCB_Credits);
           gTasks[taskId].func = Task_WaitPaletteFade;
@@ -250,15 +240,15 @@ export function Task_LoadShowMons(taskId: any): any {
           LZ77UnCompVram(gBirchGrassTilemap, (BG_SCREEN_ADDR(7)));
           LoadPalette(gBirchBagGrass_Pal + 1, BG_PLTT_ID(0) + 1, PLTT_SIZEOF(2 * 16 - 1));
 
-          for (i = 0; i < MON_PIC_SIZE; i++)
+          for (i = 0; i < (((64) * (64) / 2)); i++)
               gDecompressionBuffer[i] = 0x11;
-          for (i = 0; i < MON_PIC_SIZE; i++)
-              (gDecompressionBuffer + MON_PIC_SIZE)[i] = 0x22;
-          for (i = 0; i < MON_PIC_SIZE; i++)
-              (gDecompressionBuffer + MON_PIC_SIZE * 2)[i] = 0x33;
+          for (i = 0; i < (((64) * (64) / 2)); i++)
+              (gDecompressionBuffer + (((64) * (64) / 2)))[i] = 0x22;
+          for (i = 0; i < (((64) * (64) / 2)); i++)
+              (gDecompressionBuffer + (((64) * (64) / 2)) * 2)[i] = 0x33;
 
-          temp = (gDecompressionBuffer[((MON_PIC_SIZE * 3))]);
-          temp[0] = RGB_BLACK;
+          temp = (gDecompressionBuffer[(((((64) * (64) / 2)) * 3))]);
+          temp[0] = (RGB(0, 0, 0));
           temp[1] = RGB(31, 31, 20);  
           temp[2] = RGB(31, 20, 20);  
           temp[3] = RGB(20, 20, 31);  
@@ -275,7 +265,7 @@ export function Task_LoadShowMons(taskId: any): any {
           gTasks[gTasks[taskId].tTaskId_ShowMons].tMainTaskId = taskId;
           gTasks[gTasks[taskId].tTaskId_ShowMons].data[2] = gTasks[taskId].tSceneNum;  
 
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 16, 0, (RGB(0, 0, 0)));
           SetGpuReg(REG_OFFSET_BG3HOFS, 0);
           SetGpuReg(REG_OFFSET_BG3VOFS, 32);
           SetGpuReg(REG_OFFSET_BG3CNT, BGCNT_PRIORITY(3)
@@ -304,7 +294,7 @@ export function Task_CreditsTheEnd1(taskId: any): any {
           return;
       }
 
-      BeginNormalPaletteFade(PALETTES_ALL, 12, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 12, 0, 16, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_CreditsTheEnd2;
 }
 
@@ -324,7 +314,7 @@ export function Task_CreditsTheEnd3(taskId: any): any {
       LoadTheEndScreen(0, 0x3800, BG_PLTT_ID(0));
       ResetSpriteData();
       FreeAllSpritePalettes();
-      BeginNormalPaletteFade(PALETTES_ALL, 8, 16, 0, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 8, 16, 0, (RGB(0, 0, 0)));
 
       SetGpuReg(REG_OFFSET_BG0CNT, BGCNT_PRIORITY(0)
                                  | BGCNT_CHARBASE(0)
@@ -348,7 +338,7 @@ export function Task_CreditsTheEnd4(taskId: any): any {
           return;
       }
 
-      BeginNormalPaletteFade(PALETTES_ALL, 6, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 6, 0, 16, (RGB(0, 0, 0)));
       gTasks[taskId].func = Task_CreditsTheEnd5;
 }
 
@@ -358,7 +348,7 @@ export function Task_CreditsTheEnd5(taskId: any): any {
       {
           DrawTheEnd(0x3800, 0);
 
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0, (RGB(0, 0, 0)));
           gTasks[taskId].tDelay = 7200;
           gTasks[taskId].func = Task_CreditsTheEnd6;
       }
@@ -371,7 +361,7 @@ export function Task_CreditsTheEnd6(taskId: any): any {
           if (gTasks[taskId].tDelay == 0 || gMain.newKeys)
           {
               FadeOutBGM(4);
-              BeginNormalPaletteFade(PALETTES_ALL, 8, 0, 16, RGB_WHITEALPHA);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 8, 0, 16, (((RGB(31, 31, 31)) | ((1 << 15)))));
               gTasks[taskId].func = Task_CreditsSoftReset;
               return;
           }
@@ -380,7 +370,7 @@ export function Task_CreditsTheEnd6(taskId: any): any {
               FadeOutBGM(8);
 
           if (gTasks[taskId].tDelay == 6840)
-              m4aSongNumStart(MUS_END);
+              m4aSongNumStart((456));
 
           gTasks[taskId].tDelay--;
       }
@@ -873,7 +863,7 @@ export function LoadBikeScene(scene: any, taskId: any): any {
           gMain.state++;
           break;
       case 2:
-          if (gSaveBlock2Ptr.playerGender == MALE)
+          if (gSaveBlock2Ptr.playerGender == (0))
           {
               LoadCompressedSpriteSheet(gSpriteSheet_CreditsBrendan);
               LoadCompressedSpriteSheet(gSpriteSheet_CreditsRivalMay);
@@ -1170,14 +1160,14 @@ export function SpriteCB_CreditsMonBg(sprite: any): any {
 
 /** static void DeterminePokemonToShow(void) */
 export function DeterminePokemonToShow(): any {
-  let starter: any = SpeciesToNationalPokedexNum(GetStarterPokemon(VarGet(VAR_STARTER_MON)));
+  let starter: any = SpeciesToNationalPokedexNum(GetStarterPokemon(VarGet((0x4023))));
       let page: any = null;
       let dexNum: any = null;
       let j: any = null;
 
        
        
-      for (dexNum = 1, j = 0; dexNum < NATIONAL_DEX_COUNT; dexNum++)
+      for (dexNum = 1, j = 0; dexNum < (NATIONAL_DEX_DEOXYS); dexNum++)
       {
           if (GetSetPokedexFlag(dexNum, FLAG_GET_CAUGHT))
           {
@@ -1187,7 +1177,7 @@ export function DeterminePokemonToShow(): any {
       }
 
        
-      for (dexNum = j; dexNum < NATIONAL_DEX_COUNT; dexNum++)
+      for (dexNum = j; dexNum < (NATIONAL_DEX_DEOXYS); dexNum++)
           sCreditsData.caughtMonIds[dexNum] = NATIONAL_DEX_NONE;
 
        

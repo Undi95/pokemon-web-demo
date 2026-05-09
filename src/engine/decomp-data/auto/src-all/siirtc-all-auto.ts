@@ -39,7 +39,7 @@ export function SiiRtcProbe(): any {
           return 0;
 
       errorCode = 0;
-      if (!(rtc.status & SIIRTCINFO_24HOUR) || (rtc.status & SIIRTCINFO_POWER))
+      if (!(rtc.status & (0x40)) || (rtc.status & (0x80)))
       {
            
 
@@ -91,7 +91,7 @@ export function SiiRtcReset(): any {
 
       sLocked = FALSE;
 
-      rtc.status = SIIRTCINFO_24HOUR;
+      rtc.status = (0x40);
 
       result = SiiRtcSetStatus(rtc);
 
@@ -144,9 +144,9 @@ export function SiiRtcSetStatus(rtc: any): any {
       GPIO_PORT_DATA = (1) | (4);
 
       statusData = (0x40)
-                 | ((rtc.status & SIIRTCINFO_INTAE) << 3)
-                 | ((rtc.status & SIIRTCINFO_INTME) << 2)
-                 | ((rtc.status & SIIRTCINFO_INTFE) << 1);
+                 | ((rtc.status & (0x04)) << 3)
+                 | ((rtc.status & (0x02)) << 2)
+                 | ((rtc.status & (0x01)) << 1);
 
       GPIO_PORT_DIRECTION = (((1) | (2) | (4)));
 

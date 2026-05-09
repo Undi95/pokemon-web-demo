@@ -17,44 +17,15 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAlphabetGroupIdMap: any = null;
-let sAlphabetKeyboardColumnOffsets: any = null;
-let sAnimateCursor: any = null;
-let sBerryMasterWifePhrases: any = null;
-let sCompressedSpriteSheets: any = null;
-let sDefaultBattleLostWords: any = null;
-let sDefaultBattleStartWords: any = null;
-let sDefaultBattleWonWords: any = null;
-let sDefaultProfileWords: any = null;
-let sDelayTimer: any = null;
-let sEasyChatBgTemplates: any = null;
-let sEasyChatKeyboardAlphabet: any = null;
+let cursorRow: any = null;
+let destState: any = null;
+let gSpecialVar_0x8004: any = null;
+let rows: any = null;
 let sEasyChatScreen: any = null;
-let sEasyChatScreenTemplates: any = null;
-let sEasyChatWindowTemplates: any = null;
-let sEasyChatYesNoWindowTemplate: any = null;
-let sFooterOptionXOffsets: any = null;
-let sFooterTextOptions: any = null;
-let sMysteryGiftPhrase: any = null;
-let sPhraseFrameDimensions: any = null;
-let sQuizLadyEasyChatScreens: any = null;
-let sRestrictedWordSpecies: any = null;
 let sScreenControl: any = null;
-let sSpritePalettes: any = null;
-let sSpriteSheets: any = null;
-let sSpriteTemplate_ButtonWindow: any = null;
-let sSpriteTemplate_ModeWindow: any = null;
-let sSpriteTemplate_RectangleCursor: any = null;
-let sSpriteTemplate_ScrollIndicator: any = null;
-let sSpriteTemplate_StartSelectButton: any = null;
-let sSpriteTemplate_TriangleCursor: any = null;
-let sTextInputFrameGreen_Pal: any = null;
-let sTextInputFrameOrange_Pal: any = null;
-let sTextInputFrame_Gfx: any = null;
-let sText_Clear17: any = null;
-let sText_Pal: any = null;
-let sTitleText_Pal: any = null;
 let sWordData: any = null;
+let tFuncId: any = null;
+let tState: any = null;
 /** void DoEasyChatScreen(u8 type, u16 *words, MainCallback exitCallback, u8 displayedPersonType) */
 export function DoEasyChatScreen(_type: any, words: any, exitCallback: any, displayedPersonType: any): any {
   let taskId: any = null;
@@ -113,8 +84,8 @@ export function Task_EasyChatScreen(taskId: any): any {
       {
       case MAINSTATE_FADE_IN:
           SetVBlankCallback(VBlankCB_EasyChatScreen);
-          BlendPalettes(PALETTES_ALL, 16, 0);
-          BeginNormalPaletteFade(PALETTES_ALL, -1, 16, 0, RGB_BLACK);
+          BlendPalettes((((0x0000FFFF) | (0xFFFF0000))), 16, 0);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 16, 0, (RGB(0, 0, 0)));
           tState = MAINSTATE_WAIT_FADE_IN;
           break;
       case MAINSTATE_HANDLE_INPUT:
@@ -122,19 +93,19 @@ export function Task_EasyChatScreen(taskId: any): any {
           if (IsFuncIdForQuizLadyScreen(funcId))
           {
                
-              BeginNormalPaletteFade(PALETTES_ALL, -2, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -2, 0, 16, (RGB(0, 0, 0)));
               tState = MAINSTATE_TO_QUIZ_LADY;
               tFuncId = funcId;
           }
           else if (funcId == ECFUNC_EXIT)
           {
                
-              BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 16, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 0, 16, (RGB(0, 0, 0)));
               tState = MAINSTATE_EXIT;
           }
           else if (funcId != ECFUNC_NONE)
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               StartEasyChatFunction(funcId);
               tState++;  
           }
@@ -219,85 +190,85 @@ export function ShowEasyChatScreen(): any {
   let i: any = null;
       let words: any = null;
       let bard: any = null;
-      let displayedPersonType: any = EASY_CHAT_PERSON_DISPLAY_NONE;
+      let displayedPersonType: any = (3);
       switch (gSpecialVar_0x8004)
       {
-      case EASY_CHAT_TYPE_PROFILE:
+      case (0):
           words = gSaveBlock1Ptr.easyChatProfile;
           break;
-      case EASY_CHAT_TYPE_BATTLE_START:
+      case (1):
           words = gSaveBlock1Ptr.easyChatBattleStart;
           break;
-      case EASY_CHAT_TYPE_BATTLE_WON:
+      case (2):
           words = gSaveBlock1Ptr.easyChatBattleWon;
           break;
-      case EASY_CHAT_TYPE_BATTLE_LOST:
+      case (3):
           words = gSaveBlock1Ptr.easyChatBattleLost;
           break;
-      case EASY_CHAT_TYPE_MAIL:
+      case (4):
           words = gSaveBlock1Ptr.mail[gSpecialVar_0x8005].words;
           break;
-      case EASY_CHAT_TYPE_BARD_SONG:
+      case (6):
           bard =gSaveBlock1Ptr.oldMan.bard;
-          for (i = 0; i < NUM_BARD_SONG_WORDS; i ++)
+          for (i = 0; i < (6); i ++)
               bard.newSongLyrics[i] = bard.songLyrics[i];
 
           words = bard.newSongLyrics;
           break;
-      case EASY_CHAT_TYPE_INTERVIEW:
+      case (5):
           words = gSaveBlock1Ptr.tvShows[gSpecialVar_0x8005].bravoTrainer.words;
           displayedPersonType = gSpecialVar_0x8006;
           break;
-      case EASY_CHAT_TYPE_FAN_CLUB:
+      case (7):
           words =gSaveBlock1Ptr.tvShows[gSpecialVar_0x8005].fanclubOpinions.words[gSpecialVar_0x8006];
-          displayedPersonType = EASY_CHAT_PERSON_REPORTER_FEMALE;
+          displayedPersonType = (1);
           break;
-      case EASY_CHAT_TYPE_DUMMY_SHOW:
+      case (8):
           words = gSaveBlock1Ptr.tvShows[gSpecialVar_0x8005].dummy.words;
-          displayedPersonType = EASY_CHAT_PERSON_REPORTER_MALE;
+          displayedPersonType = (0);
           break;
-      case EASY_CHAT_TYPE_TRENDY_PHRASE:
+      case (9):
           words = gStringVar3;
           words[0] = gSaveBlock1Ptr.dewfordTrends[0].words[0];
           words[1] = gSaveBlock1Ptr.dewfordTrends[0].words[1];
           break;
-      case EASY_CHAT_TYPE_GABBY_AND_TY:
+      case (10):
           words = gSaveBlock1Ptr.gabbyAndTyData.quote;
-          words = EC_EMPTY_WORD;
-          displayedPersonType = EASY_CHAT_PERSON_REPORTER_FEMALE;
+          words = (0xFFFF);
+          displayedPersonType = (1);
           break;
-      case EASY_CHAT_TYPE_CONTEST_INTERVIEW:
+      case (11):
           words =gSaveBlock1Ptr.tvShows[gSpecialVar_0x8005].bravoTrainer.words[gSpecialVar_0x8006];
-          displayedPersonType = EASY_CHAT_PERSON_REPORTER_MALE;
+          displayedPersonType = (0);
           break;
-      case EASY_CHAT_TYPE_BATTLE_TOWER_INTERVIEW:
+      case (12):
           words = gSaveBlock1Ptr.tvShows[gSpecialVar_0x8005].bravoTrainerTower.words;
-          displayedPersonType = EASY_CHAT_PERSON_REPORTER_FEMALE;
+          displayedPersonType = (1);
           break;
-      case EASY_CHAT_TYPE_GOOD_SAYING:
+      case (13):
           words = gStringVar3;
           InitializeEasyChatWordArray(words, 2);
           break;
-      case EASY_CHAT_TYPE_FAN_QUESTION:
+      case (14):
           words = gSaveBlock1Ptr.tvShows[gSpecialVar_0x8005].fanClubSpecial.words;
-          words[0] = EC_EMPTY_WORD;
-          displayedPersonType = EASY_CHAT_PERSON_BOY;
+          words[0] = (0xFFFF);
+          displayedPersonType = (2);
           break;
-      case EASY_CHAT_TYPE_QUIZ_ANSWER:
+      case (15):
           words =gSaveBlock1Ptr.lilycoveLady.quiz.playerAnswer;
           break;
-      case EASY_CHAT_TYPE_QUIZ_QUESTION:
+      case (16):
           return;
-      case EASY_CHAT_TYPE_QUIZ_SET_QUESTION:
+      case (17):
           words = gSaveBlock1Ptr.lilycoveLady.quiz.question;
           break;
-      case EASY_CHAT_TYPE_QUIZ_SET_ANSWER:
+      case (18):
           words =gSaveBlock1Ptr.lilycoveLady.quiz.correctAnswer;
           break;
-      case EASY_CHAT_TYPE_APPRENTICE:
+      case (19):
           words = gSaveBlock2Ptr.apprentices[0].speechWon;
           break;
-      case EASY_CHAT_TYPE_QUESTIONNAIRE:
+      case (20):
           words = GetQuestionnaireWordsPtr();
           break;
       default:
@@ -316,13 +287,13 @@ export function CB2_QuizLadyQuestion(): any {
       switch (gMain.state)
       {
       case 0:
-          FadeScreen(FADE_TO_BLACK, 0);
+          FadeScreen((1), 0);
           break;
       case 1:
           if (!gPaletteFade.active)
           {
               lilycoveLady =gSaveBlock1Ptr.lilycoveLady;
-              lilycoveLady.quiz.playerAnswer = EC_EMPTY_WORD;
+              lilycoveLady.quiz.playerAnswer = (0xFFFF);
               CleanupOverworldWindowsAndTilemaps();
               DoQuizQuestionEasyChatScreen();
           }
@@ -365,32 +336,32 @@ export function EnterQuizLadyScreen(funcId: any): any {
 /** static void DoQuizAnswerEasyChatScreen(void) */
 export function DoQuizAnswerEasyChatScreen(): any {
   DoEasyChatScreen(
-          EASY_CHAT_TYPE_QUIZ_ANSWER,gSaveBlock1Ptr.lilycoveLady.quiz.playerAnswer,
+          (15),gSaveBlock1Ptr.lilycoveLady.quiz.playerAnswer,
           CB2_ReturnToFieldContinueScript,
-          EASY_CHAT_PERSON_DISPLAY_NONE);
+          (3));
 }
 
 /** static void DoQuizQuestionEasyChatScreen(void) */
 export function DoQuizQuestionEasyChatScreen(): any {
-  DoEasyChatScreen(EASY_CHAT_TYPE_QUIZ_QUESTION,
+  DoEasyChatScreen((16),
           gSaveBlock1Ptr.lilycoveLady.quiz.question,
           CB2_ReturnToFieldContinueScript,
-          EASY_CHAT_PERSON_DISPLAY_NONE);
+          (3));
 }
 
 /** static void DoQuizSetAnswerEasyChatScreen(void) */
 export function DoQuizSetAnswerEasyChatScreen(): any {
-  DoEasyChatScreen(EASY_CHAT_TYPE_QUIZ_SET_ANSWER,gSaveBlock1Ptr.lilycoveLady.quiz.correctAnswer,
+  DoEasyChatScreen((18),gSaveBlock1Ptr.lilycoveLady.quiz.correctAnswer,
           CB2_ReturnToFieldContinueScript,
-          EASY_CHAT_PERSON_DISPLAY_NONE);
+          (3));
 }
 
 /** static void DoQuizSetQuestionEasyChatScreen(void) */
 export function DoQuizSetQuestionEasyChatScreen(): any {
-  DoEasyChatScreen(EASY_CHAT_TYPE_QUIZ_SET_QUESTION,
+  DoEasyChatScreen((17),
           gSaveBlock1Ptr.lilycoveLady.quiz.question,
           CB2_ReturnToFieldContinueScript,
-          EASY_CHAT_PERSON_DISPLAY_NONE);
+          (3));
 }
 
 /** static bool8 InitEasyChatScreenStruct(u8 type, u16 *words, u8 displayedPersonType) */
@@ -410,7 +381,7 @@ export function InitEasyChatScreenStruct(_type: any, words: any, displayedPerson
       sEasyChatScreen.displayedPersonType = displayedPersonType;
       sEasyChatScreen.unused = 0;
       templateId = GetEachChatScreenTemplateId(_type);
-      if (_type == EASY_CHAT_TYPE_QUIZ_QUESTION)
+      if (_type == (16))
       {
           GetQuizTitle(sEasyChatScreen.quizTitle);
           sEasyChatScreen.titleText = sEasyChatScreen.quizTitle;
@@ -438,7 +409,7 @@ export function InitEasyChatScreenStruct(_type: any, words: any, displayedPerson
       {
            
           for (i = 0; i < sEasyChatScreen.maxWords; i ++)
-              sEasyChatScreen.currentPhrase[i] = EC_EMPTY_WORD;
+              sEasyChatScreen.currentPhrase[i] = (0xFFFF);
 
           sEasyChatScreen.savedPhrase = sEasyChatScreen.currentPhrase;
       }
@@ -720,14 +691,14 @@ export function HandleEasyChatInput_WordSelect(): any {
 export function HandleEasyChatInput_ExitPrompt(): any {
   switch (Menu_ProcessInputNoWrapClearOnChoose())
       {
-      case MENU_B_PRESSED:
+      case (-1):
       case 1:  
           sEasyChatScreen.inputState = GetEasyChatBackupState();
           return ECFUNC_CLOSE_PROMPT;
       case 0:  
           gSpecialVar_Result = 0;
-          if (sEasyChatScreen.type == EASY_CHAT_TYPE_QUIZ_SET_QUESTION
-           || sEasyChatScreen.type == EASY_CHAT_TYPE_QUIZ_SET_ANSWER)
+          if (sEasyChatScreen.type == (17)
+           || sEasyChatScreen.type == (18))
               SaveCurrentPhrase();
 
           return ECFUNC_EXIT;
@@ -740,7 +711,7 @@ export function HandleEasyChatInput_ExitPrompt(): any {
 export function HandleEasyChatInput_ConfirmWordsYesNo(): any {
   switch (Menu_ProcessInputNoWrapClearOnChoose())
       {
-      case MENU_B_PRESSED:
+      case (-1):
       case 1:  
           sEasyChatScreen.inputState = GetEasyChatBackupState();
           return ECFUNC_CLOSE_PROMPT;
@@ -758,7 +729,7 @@ export function HandleEasyChatInput_ConfirmWordsYesNo(): any {
 export function HandleEasyChatInput_DeleteAllYesNo(): any {
   switch (Menu_ProcessInputNoWrapClearOnChoose())
       {
-      case MENU_B_PRESSED:
+      case (-1):
       case 1:  
           sEasyChatScreen.inputState = INPUTSTATE_MAIN_SCREEN_BUTTONS;
           return ECFUNC_CLOSE_PROMPT;
@@ -803,7 +774,7 @@ export function HandleEasyChatInput_StartConfirmLyrics(): any {
 export function HandleEasyChatInput_ConfirmLyricsYesNo(): any {
   switch (Menu_ProcessInputNoWrapClearOnChoose())
       {
-      case MENU_B_PRESSED:
+      case (-1):
       case 1:  
           ResetCurrentPhraseToSaved();
           sEasyChatScreen.inputStateBackup = INPUTSTATE_PHRASE;
@@ -820,8 +791,8 @@ export function HandleEasyChatInput_ConfirmLyricsYesNo(): any {
 
 /** static u16 StartConfirmExitPrompt(void) */
 export function StartConfirmExitPrompt(): any {
-  if (sEasyChatScreen.type == EASY_CHAT_TYPE_APPRENTICE
-       || sEasyChatScreen.type == EASY_CHAT_TYPE_CONTEST_INTERVIEW)
+  if (sEasyChatScreen.type == (19)
+       || sEasyChatScreen.type == (11))
       {
           sEasyChatScreen.inputStateBackup = sEasyChatScreen.inputState;
           sEasyChatScreen.inputState = INPUTSTATE_WAIT_FOR_MSG;
@@ -838,7 +809,7 @@ export function StartConfirmExitPrompt(): any {
 /** static int DoDeleteAllButton(void) */
 export function DoDeleteAllButton(): any {
   sEasyChatScreen.inputStateBackup = sEasyChatScreen.inputState;
-      if (sEasyChatScreen.type != EASY_CHAT_TYPE_BARD_SONG)
+      if (sEasyChatScreen.type != (6))
       {
            
           sEasyChatScreen.inputState = INPUTSTATE_DELETE_ALL_YES_NO;
@@ -856,7 +827,7 @@ export function DoDeleteAllButton(): any {
 /** static u16 TryConfirmWords(void) */
 export function TryConfirmWords(): any {
   sEasyChatScreen.inputStateBackup = sEasyChatScreen.inputState;
-      if (sEasyChatScreen.type == EASY_CHAT_TYPE_QUIZ_SET_QUESTION)
+      if (sEasyChatScreen.type == (17))
       {
           if (IsQuizQuestionEmpty())
           {
@@ -873,7 +844,7 @@ export function TryConfirmWords(): any {
           sEasyChatScreen.inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;
           return ECFUNC_PROMPT_CONFIRM;
       }
-      else if (sEasyChatScreen.type == EASY_CHAT_TYPE_QUIZ_SET_ANSWER)
+      else if (sEasyChatScreen.type == (18))
       {
           if (IsQuizAnswerEmpty())
           {
@@ -890,8 +861,8 @@ export function TryConfirmWords(): any {
           sEasyChatScreen.inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;
           return ECFUNC_PROMPT_CONFIRM;
       }
-      else if (sEasyChatScreen.type == EASY_CHAT_TYPE_TRENDY_PHRASE
-            || sEasyChatScreen.type == EASY_CHAT_TYPE_GOOD_SAYING)
+      else if (sEasyChatScreen.type == (9)
+            || sEasyChatScreen.type == (13))
       {
           if (!IsCurrentPhraseFull())
           {
@@ -902,8 +873,8 @@ export function TryConfirmWords(): any {
           sEasyChatScreen.inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;
           return ECFUNC_PROMPT_CONFIRM;
       }
-      else if (sEasyChatScreen.type == EASY_CHAT_TYPE_APPRENTICE
-            || sEasyChatScreen.type == EASY_CHAT_TYPE_CONTEST_INTERVIEW)
+      else if (sEasyChatScreen.type == (19)
+            || sEasyChatScreen.type == (11))
       {
           if (IsCurrentPhraseEmpty())
           {
@@ -914,7 +885,7 @@ export function TryConfirmWords(): any {
           sEasyChatScreen.inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;
           return ECFUNC_PROMPT_CONFIRM;
       }
-      else if (sEasyChatScreen.type == EASY_CHAT_TYPE_QUESTIONNAIRE)
+      else if (sEasyChatScreen.type == (20))
       {
           sEasyChatScreen.inputState = INPUTSTATE_CONFIRM_WORDS_YES_NO;
           return ECFUNC_PROMPT_CONFIRM;
@@ -937,12 +908,12 @@ export function DoQuizButton(): any {
   sEasyChatScreen.inputStateBackup = sEasyChatScreen.inputState;
       switch (sEasyChatScreen.type)
       {
-      case EASY_CHAT_TYPE_QUIZ_ANSWER:
+      case (15):
           return ECFUNC_QUIZ_QUESTION;
-      case EASY_CHAT_TYPE_QUIZ_SET_QUESTION:
+      case (17):
           SaveCurrentPhrase();
           return ECFUNC_SET_QUIZ_ANSWER;
-      case EASY_CHAT_TYPE_QUIZ_SET_ANSWER:
+      case (18):
           SaveCurrentPhrase();
           return ECFUNC_SET_QUIZ_QUESTION;
       default:
@@ -1002,14 +973,14 @@ export function StartSwitchKeyboardMode(): any {
 
 /** static int DeleteSelectedWord(void) */
 export function DeleteSelectedWord(): any {
-  if (sEasyChatScreen.type == EASY_CHAT_TYPE_BARD_SONG)
+  if (sEasyChatScreen.type == (6))
       {
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           return ECFUNC_NONE;
       }
       else
       {
-          SetSelectedWord(EC_EMPTY_WORD);
+          SetSelectedWord((0xFFFF));
           return ECFUNC_REPRINT_PHRASE;
       }
 }
@@ -1020,13 +991,13 @@ export function SelectNewWord(): any {
       if (DummyWordCheck(easyChatWord))
       {
            
-          PlaySE(SE_FAILURE);
+          PlaySE((32));
           return ECFUNC_NONE;
       }
       else
       {
           SetSelectedWord(easyChatWord);
-          if (sEasyChatScreen.type != EASY_CHAT_TYPE_BARD_SONG)
+          if (sEasyChatScreen.type != (6))
           {
               sEasyChatScreen.inputState = INPUTSTATE_PHRASE;
               return ECFUNC_CLOSE_WORD_SELECT;
@@ -1050,7 +1021,7 @@ export function SaveCurrentPhrase(): any {
 export function ResetCurrentPhrase(): any {
   let i: any = null;
       for (i = 0; i < sEasyChatScreen.maxWords; i++)
-          sEasyChatScreen.currentPhrase[i] = EC_EMPTY_WORD;
+          sEasyChatScreen.currentPhrase[i] = (0xFFFF);
 }
 
 /** static void ResetCurrentPhraseToSaved(void) */
@@ -1080,8 +1051,8 @@ export function DidPhraseChange(): any {
 
 /** static bool32 GetEasyChatCompleted(void) */
 export function GetEasyChatCompleted(): any {
-  if (sEasyChatScreen.type == EASY_CHAT_TYPE_QUIZ_SET_QUESTION
-       || sEasyChatScreen.type == EASY_CHAT_TYPE_QUIZ_SET_ANSWER)
+  if (sEasyChatScreen.type == (17)
+       || sEasyChatScreen.type == (18))
       {
           if (IsQuizQuestionEmpty())
               return FALSE;
@@ -1473,12 +1444,12 @@ export function GetEasyChatConfirmText(str1: any, str2: any): any {
 export function GetEasyChatConfirmExitText(str1: any, str2: any): any {
   switch (sEasyChatScreen.type)
       {
-      case EASY_CHAT_TYPE_MAIL:
+      case (4):
           str1 = gText_StopGivingPkmnMail;
           str2 = NULL;
           break;
-      case EASY_CHAT_TYPE_QUIZ_ANSWER:
-      case EASY_CHAT_TYPE_QUIZ_QUESTION:
+      case (15):
+      case (16):
           str1 = gText_LikeToQuitQuiz;
           str2 = gText_ChallengeQuestionMark;
           break;
@@ -1603,7 +1574,7 @@ export function IsCurrentPhraseEmpty(): any {
 
       for (i = 0; i < sEasyChatScreen.maxWords; i++)
       {
-          if (sEasyChatScreen.currentPhrase[i] != EC_EMPTY_WORD)
+          if (sEasyChatScreen.currentPhrase[i] != (0xFFFF))
               return FALSE;
       }
 
@@ -1616,7 +1587,7 @@ export function IsCurrentPhraseFull(): any {
 
       for (i = 0; i < sEasyChatScreen.maxWords; i++)
       {
-          if (sEasyChatScreen.currentPhrase[i] == EC_EMPTY_WORD)
+          if (sEasyChatScreen.currentPhrase[i] == (0xFFFF))
               return FALSE;
       }
 
@@ -1628,13 +1599,13 @@ export function IsQuizQuestionEmpty(): any {
   let i: any = null;
       let saveBlock1: any = null;
 
-      if (sEasyChatScreen.type == EASY_CHAT_TYPE_QUIZ_SET_QUESTION)
+      if (sEasyChatScreen.type == (17))
           return IsCurrentPhraseEmpty();
 
       saveBlock1 = gSaveBlock1Ptr;
-      for (i = 0; i < QUIZ_QUESTION_LEN; i++)
+      for (i = 0; i < (9); i++)
       {
-          if (saveBlock1.lilycoveLady.quiz.question[i] != EC_EMPTY_WORD)
+          if (saveBlock1.lilycoveLady.quiz.question[i] != (0xFFFF))
               return FALSE;
       }
 
@@ -1644,11 +1615,11 @@ export function IsQuizQuestionEmpty(): any {
 /** static int IsQuizAnswerEmpty(void) */
 export function IsQuizAnswerEmpty(): any {
   let quiz: any = null;
-      if (sEasyChatScreen.type == EASY_CHAT_TYPE_QUIZ_SET_ANSWER)
+      if (sEasyChatScreen.type == (18))
           return IsCurrentPhraseEmpty();
 
       quiz =gSaveBlock1Ptr.lilycoveLady.quiz;
-      return quiz.correctAnswer == EC_EMPTY_WORD ? TRUE : FALSE;
+      return quiz.correctAnswer == (0xFFFF) ? TRUE : FALSE;
 }
 
 /** static void GetQuizTitle(u8 *dst) */
@@ -1691,27 +1662,27 @@ export function BufferCurrentPhraseToStringVar2(): any {
       }
 
       str--;
-      str[0] = EOS;
+      str[0] = (0xFF);
 }
 
 /** static void SetSpecialEasyChatResult(void) */
 export function SetSpecialEasyChatResult(): any {
   switch (sEasyChatScreen.type)
       {
-      case EASY_CHAT_TYPE_PROFILE:
-          FlagSet(FLAG_SYS_CHAT_USED);
+      case (0):
+          FlagSet((((((((0x500) + (864) - 1)) + 1)) + 0x5)));
           break;
-      case EASY_CHAT_TYPE_QUESTIONNAIRE:
+      case (20):
           if (DidPlayerInputMysteryGiftPhrase())
               gSpecialVar_0x8004 = 2;
           else
               gSpecialVar_0x8004 = 0;
           break;
-      case EASY_CHAT_TYPE_TRENDY_PHRASE:
+      case (9):
           BufferCurrentPhraseToStringVar2();
           gSpecialVar_0x8004 = TrySetTrendyPhrase(sEasyChatScreen.currentPhrase);
           break;
-      case EASY_CHAT_TYPE_GOOD_SAYING:
+      case (13):
           gSpecialVar_0x8004 = DidPlayerInputABerryMasterWifePhrase();
           break;
       }
@@ -1788,7 +1759,7 @@ export function LoadEasyChatScreen(): any {
           break;
       case 4:
           LoadEasyChatGfx();
-          if (GetEasyChatScreenType() != EASY_CHAT_TYPE_QUIZ_QUESTION)
+          if (GetEasyChatScreenType() != (16))
               CreateMainCursorSprite();
           break;
       case 5:
@@ -1914,7 +1885,7 @@ export function UpdateMainCursor(): any {
       x = 8 * sPhraseFrameDimensions[frameId].left + 13;
       for (i = 0; i < cursorColumn; i++)
       {
-          if (ecWord == EC_EMPTY_WORD)
+          if (ecWord == (0xFFFF))
           {
               stringWidth = 72;
           }
@@ -2678,7 +2649,7 @@ export function PrintTitle(): any {
        
       xOffset = GetStringCenterAlignXOffset(FONT_NORMAL, titleText, 240);
       FillWindowPixelBuffer(WIN_TITLE, PIXEL_FILL(0));
-      PrintEasyChatTextWithColors(WIN_TITLE, FONT_NORMAL, titleText, xOffset, 1, TEXT_SKIP_DRAW, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY);
+      PrintEasyChatTextWithColors(WIN_TITLE, FONT_NORMAL, titleText, xOffset, 1, (0xFF), (0x0), (0x2), (0x3));
       PutWindowTilemap(WIN_TITLE);
       CopyWindowToVram(WIN_TITLE, COPYWIN_FULL);
 }
@@ -2749,10 +2720,10 @@ export function PrintEasyChatStdMessage(msgId: any): any {
 
       FillWindowPixelBuffer(WIN_MSG, PIXEL_FILL(1));
       if (text1)
-          PrintEasyChatText(WIN_MSG, FONT_NORMAL, text1, 0, 1, TEXT_SKIP_DRAW, 0);
+          PrintEasyChatText(WIN_MSG, FONT_NORMAL, text1, 0, 1, (0xFF), 0);
 
       if (text2)
-          PrintEasyChatText(WIN_MSG, FONT_NORMAL, text2, 0, 17, TEXT_SKIP_DRAW, 0);
+          PrintEasyChatText(WIN_MSG, FONT_NORMAL, text2, 0, 17, (0xFF), 0);
 
       CopyWindowToVram(WIN_MSG, COPYWIN_FULL);
 }
@@ -2806,11 +2777,11 @@ export function PrintCurrentPhrase(): any {
               strClear[2] = 6;
 
           str = sScreenControl.phrasePrintBuffer;
-          sScreenControl.phrasePrintBuffer[0] = EOS;
+          sScreenControl.phrasePrintBuffer[0] = (0xFF);
           str = StringAppend(str, strClear);
           for (j = 0; j < numColumns; j++)
           {
-              if (currentPhrase != EC_EMPTY_WORD)
+              if (currentPhrase != (0xFFFF))
               {
                   str = CopyEasyChatWord(str, currentPhrase);
                   currentPhrase++;
@@ -2823,7 +2794,7 @@ export function PrintCurrentPhrase(): any {
                       str = WriteColorChangeControlCode(str, 0, 4);
                       for (k = 0; k < 12; k++)
                       {
-                          str = CHAR_HYPHEN;
+                          str = (0xAE);
                           str++;
                       }
 
@@ -2844,8 +2815,8 @@ export function PrintCurrentPhrase(): any {
               }
           }
 
-          str = EOS;
-          PrintEasyChatText(sScreenControl.windowId, FONT_NORMAL, sScreenControl.phrasePrintBuffer, 0, i * 16 + 1, TEXT_SKIP_DRAW, 0);
+          str = (0xFF);
+          PrintEasyChatText(sScreenControl.windowId, FONT_NORMAL, sScreenControl.phrasePrintBuffer, 0, i * 16 + 1, (0xFF), 0);
       }
 
       CopyWindowToVram(sScreenControl.windowId, COPYWIN_FULL);
@@ -2985,13 +2956,13 @@ export function PrintKeyboardGroupNames(): any {
           for (x = 0; x < 2; x++)
           {
               let groupId: any = GetUnlockedEasyChatGroupId(i++);
-              if (groupId == EC_NUM_GROUPS)
+              if (groupId == (22))
               {
                   InitLowerWindowScroll(GetKeyboardScrollOffset(), 0);
                   return;
               }
 
-              PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, GetEasyChatWordGroupName(groupId), x * 84 + 10, y, TEXT_SKIP_DRAW, NULL);
+              PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, GetEasyChatWordGroupName(groupId), x * 84 + 10, y, (0xFF), NULL);
           }
 
           y += 16;
@@ -3003,7 +2974,7 @@ export function PrintKeyboardAlphabet(): any {
   let i: any = null;
 
       for (i = 0; i < ARRAY_COUNT(sEasyChatKeyboardAlphabet); i++)
-          PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, sEasyChatKeyboardAlphabet[i], 10, 97 + i * 16, TEXT_SKIP_DRAW, NULL);
+          PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, sEasyChatKeyboardAlphabet[i], 10, 97 + i * 16, (0xFF), NULL);
 }
 
 /** static void PrintInitialWordSelectText(void) */
@@ -3068,13 +3039,13 @@ export function PrintWordSelectText(scrollOffset: any, numRows: any): any {
           for (j = 0; j < 2; j++)
           {
               easyChatWord = GetWordFromSelectedGroup(wordIndex++);
-              if (easyChatWord != EC_EMPTY_WORD)
+              if (easyChatWord != (0xFFFF))
               {
                   CopyEasyChatWordPadded(sScreenControl.wordSelectPrintBuffer, easyChatWord, 0);
                   if (!DummyWordCheck(easyChatWord))
-                      PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, sScreenControl.wordSelectPrintBuffer, (j * 13 + 3) * 8, y, TEXT_SKIP_DRAW, NULL);
+                      PrintEasyChatText(WIN_INPUT_SELECT, FONT_NORMAL, sScreenControl.wordSelectPrintBuffer, (j * 13 + 3) * 8, y, (0xFF), NULL);
                   else  
-                      PrintEasyChatTextWithColors(WIN_INPUT_SELECT, FONT_NORMAL, sScreenControl.wordSelectPrintBuffer, (j * 13 + 3) * 8, y, TEXT_SKIP_DRAW, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_RED, TEXT_COLOR_LIGHT_GRAY);
+                      PrintEasyChatTextWithColors(WIN_INPUT_SELECT, FONT_NORMAL, sScreenControl.wordSelectPrintBuffer, (j * 13 + 3) * 8, y, (0xFF), (0x1), (0x5), (0x3));
               }
           }
 
@@ -3652,11 +3623,11 @@ export function IsModeWindowAnimActive(): any {
 /** static void CreateScrollIndicatorSprites(void) */
 export function CreateScrollIndicatorSprites(): any {
   let spriteId: any = CreateSprite(sSpriteTemplate_ScrollIndicator, 96, 80, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
           sScreenControl.scrollIndicatorUpSprite =gSprites[spriteId];
 
       spriteId = CreateSprite(sSpriteTemplate_ScrollIndicator, 96, 156, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           sScreenControl.scrollIndicatorDownSprite =gSprites[spriteId];
           sScreenControl.scrollIndicatorDownSprite.vFlip = TRUE;
@@ -3696,11 +3667,11 @@ export function SetScrollIndicatorXPos(inWordSelect: any): any {
 /** static void CreateStartSelectButtonSprites(void) */
 export function CreateStartSelectButtonSprites(): any {
   let spriteId: any = CreateSprite(sSpriteTemplate_StartSelectButton, 220, 84, 1);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
           sScreenControl.startButtonSprite =gSprites[spriteId];
 
       spriteId = CreateSprite(sSpriteTemplate_StartSelectButton, 220, 156, 1);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           sScreenControl.selectButtonSprite =gSprites[spriteId];
           StartSpriteAnim(sScreenControl.selectButtonSprite, 1);
@@ -3728,14 +3699,14 @@ export function TryAddInterviewObjectEvents(): any {
 
       switch (GetDisplayedPersonType())
       {
-      case EASY_CHAT_PERSON_REPORTER_MALE:
-          graphicsId = OBJ_EVENT_GFX_REPORTER_M;
+      case (0):
+          graphicsId = (67);
           break;
-      case EASY_CHAT_PERSON_REPORTER_FEMALE:
-          graphicsId = OBJ_EVENT_GFX_REPORTER_F;
+      case (1):
+          graphicsId = (68);
           break;
-      case EASY_CHAT_PERSON_BOY:
-          graphicsId = OBJ_EVENT_GFX_BOY_1;
+      case (2):
+          graphicsId = (7);
           break;
       default:
           return;
@@ -3746,7 +3717,7 @@ export function TryAddInterviewObjectEvents(): any {
 
        
       spriteId = CreateObjectGraphicsSprite(graphicsId, SpriteCallbackDummy, 76, 40, 0);
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].oam.priority = 0;
           StartSpriteAnim(gSprites[spriteId], 2);
@@ -3754,13 +3725,13 @@ export function TryAddInterviewObjectEvents(): any {
 
        
       spriteId = CreateObjectGraphicsSprite(
-          gSaveBlock2Ptr.playerGender == MALE ? OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL : OBJ_EVENT_GFX_RIVAL_MAY_NORMAL,
+          gSaveBlock2Ptr.playerGender == (0) ? (100) : (105),
           SpriteCallbackDummy,
           52,
           40,
           0);
 
-      if (spriteId != MAX_SPRITES)
+      if (spriteId != (64))
       {
           gSprites[spriteId].oam.priority = 0;
           StartSpriteAnim(gSprites[spriteId], 3);
@@ -3827,13 +3798,13 @@ export function AddMainScreenButtonWindow(): any {
 export function IsEasyChatGroupUnlocked(groupId: any): any {
   switch (groupId)
       {
-      case EC_GROUP_TRENDY_SAYING:
-          return FlagGet(FLAG_UNLOCKED_TRENDY_SAYINGS);
-      case EC_GROUP_EVENTS:
-      case EC_GROUP_MOVE_1:
-      case EC_GROUP_MOVE_2:
-          return FlagGet(FLAG_SYS_GAME_CLEAR);
-      case EC_GROUP_POKEMON_NATIONAL:
+      case (20):
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x6)));
+      case (17):
+      case (18):
+      case (19):
+          return FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4)));
+      case (21):
           return EasyChatIsNationalPokedexEnabled();
       default:
           return TRUE;
@@ -3842,7 +3813,7 @@ export function IsEasyChatGroupUnlocked(groupId: any): any {
 
 /** u16 EasyChat_GetNumWordsInGroup(u8 groupId) */
 export function EasyChat_GetNumWordsInGroup(groupId: any): any {
-  if (groupId == EC_GROUP_POKEMON)
+  if (groupId == (0))
           return GetNationalPokedexCount(FLAG_GET_SEEN);
 
       if (IsEasyChatGroupUnlocked(groupId))
@@ -3858,21 +3829,21 @@ export function IsEasyChatWordInvalid(easyChatWord: any): any {
       let index: any = null;
       let numWords: any = null;
       let list: any = null;
-      if (easyChatWord == EC_EMPTY_WORD)
+      if (easyChatWord == (0xFFFF))
           return FALSE;
 
       groupId = EC_GROUP(easyChatWord);
       index = EC_INDEX(easyChatWord);
-      if (groupId >= EC_NUM_GROUPS)
+      if (groupId >= (22))
           return TRUE;
 
       numWords = gEasyChatGroups[groupId].numWords;
       switch (groupId)
       {
-      case EC_GROUP_POKEMON:
-      case EC_GROUP_POKEMON_NATIONAL:
-      case EC_GROUP_MOVE_1:
-      case EC_GROUP_MOVE_2:
+      case (0):
+      case (21):
+      case (18):
+      case (19):
           list = gEasyChatGroups[groupId].wordData.valueList;
           for (i = 0; i < numWords; i++)
           {
@@ -3893,17 +3864,17 @@ export function IsBardWordInvalid(easyChatWord: any): any {
   let numWordsInGroup: any = null;
       let groupId: any = EC_GROUP(easyChatWord);
       let index: any = EC_INDEX(easyChatWord);
-      if (groupId >= EC_NUM_GROUPS)
+      if (groupId >= (22))
           return TRUE;
 
       switch (groupId)
       {
-      case EC_GROUP_POKEMON:
-      case EC_GROUP_POKEMON_NATIONAL:
+      case (0):
+      case (21):
           numWordsInGroup = gNumBardWords_Species;
           break;
-      case EC_GROUP_MOVE_1:
-      case EC_GROUP_MOVE_2:
+      case (18):
+      case (19):
           numWordsInGroup = gNumBardWords_Moves;
           break;
       default:
@@ -3919,7 +3890,7 @@ export function IsBardWordInvalid(easyChatWord: any): any {
 
 /** static u16 GetEasyChatWordStringLength(u16 easyChatWord) */
 export function GetEasyChatWordStringLength(easyChatWord: any): any {
-  if (easyChatWord == EC_EMPTY_WORD)
+  if (easyChatWord == (0xFFFF))
           return 0;
 
       if (IsEasyChatWordInvalid(easyChatWord))
@@ -3954,10 +3925,10 @@ export function CanPhraseFitInXRowsYCols(easyChatWords: any, numRows: any, numCo
 /** u16 GetRandomEasyChatWordFromGroup(u16 groupId) */
 export function GetRandomEasyChatWordFromGroup(groupId: any): any {
   let index: any = Random() % gEasyChatGroups[groupId].numWords;
-      if (groupId == EC_GROUP_POKEMON
-       || groupId == EC_GROUP_POKEMON_NATIONAL
-       || groupId == EC_GROUP_MOVE_1
-       || groupId == EC_GROUP_MOVE_2)
+      if (groupId == (0)
+       || groupId == (21)
+       || groupId == (18)
+       || groupId == (19))
       {
           index = gEasyChatGroups[groupId].wordData.valueList[index];
       }
@@ -3968,9 +3939,9 @@ export function GetRandomEasyChatWordFromGroup(groupId: any): any {
 /** u16 GetRandomEasyChatWordFromUnlockedGroup(u16 groupId) */
 export function GetRandomEasyChatWordFromUnlockedGroup(groupId: any): any {
   if (!IsEasyChatGroupUnlocked(groupId))
-          return EC_EMPTY_WORD;
+          return (0xFFFF);
 
-      if (groupId == EC_GROUP_POKEMON)
+      if (groupId == (0))
           return GetRandomUnlockedEasyChatPokemon();
 
       return GetRandomEasyChatWordFromGroup(groupId);
@@ -4020,7 +3991,7 @@ export function ShowEasyChatProfile(): any {
 
 /** void BufferDeepLinkPhrase(void) */
 export function BufferDeepLinkPhrase(): any {
-  let groupId: any = Random() & 1 ? EC_GROUP_HOBBIES : EC_GROUP_LIFESTYLE;
+  let groupId: any = Random() & 1 ? (13) : (12);
       let easyChatWord: any = GetRandomEasyChatWordFromUnlockedGroup(groupId);
       CopyEasyChatWord(gStringVar2, easyChatWord);
 }
@@ -4034,7 +4005,7 @@ export function IsTrendySayingUnlocked(wordIndex: any): any {
 
 /** void UnlockTrendySaying(u8 wordIndex) */
 export function UnlockTrendySaying(wordIndex: any): any {
-  if (wordIndex < NUM_TRENDY_SAYINGS)
+  if (wordIndex < (33))
       {
           let byteOffset: any = wordIndex / 8;
           let shift: any = wordIndex % 8;
@@ -4047,7 +4018,7 @@ export function GetNumTrendySayingsUnlocked(): any {
   let i: any = null;
       let numUnlocked: any = null;
 
-      for (i = 0, numUnlocked = 0; i < NUM_TRENDY_SAYINGS; i++)
+      for (i = 0, numUnlocked = 0; i < (33); i++)
       {
           if (IsTrendySayingUnlocked(i))
               numUnlocked++;
@@ -4061,11 +4032,11 @@ export function UnlockRandomTrendySaying(): any {
   let i: any = null;
       let numToSkip: any = null;
       let numUnlocked: any = GetNumTrendySayingsUnlocked();
-      if (numUnlocked == NUM_TRENDY_SAYINGS)
-          return EC_EMPTY_WORD;
+      if (numUnlocked == (33))
+          return (0xFFFF);
 
-      numToSkip = Random() % (NUM_TRENDY_SAYINGS - numUnlocked);
-      for (i = 0; i < NUM_TRENDY_SAYINGS; i++)
+      numToSkip = Random() % ((33) - numUnlocked);
+      for (i = 0; i < (33); i++)
       {
           if (!IsTrendySayingUnlocked(i))
           {
@@ -4077,13 +4048,13 @@ export function UnlockRandomTrendySaying(): any {
               else
               {
                   UnlockTrendySaying(i);
-                  return EC_WORD(EC_GROUP_TRENDY_SAYING, i);
+                  return EC_WORD((20), i);
               }
           }
       }
 
        
-      return EC_EMPTY_WORD;
+      return (0xFFFF);
 }
 
 /** static bool8 EasyChatIsNationalPokedexEnabled(void) */
@@ -4096,13 +4067,13 @@ export function GetRandomUnlockedEasyChatPokemon(): any {
   let i: any = null;
       let numWords: any = null;
       let species: any = null;
-      let index: any = EasyChat_GetNumWordsInGroup(EC_GROUP_POKEMON);
+      let index: any = EasyChat_GetNumWordsInGroup((0));
       if (index == 0)
-          return EC_EMPTY_WORD;
+          return (0xFFFF);
 
       index = Random() % index;
-      species = gEasyChatGroups[EC_GROUP_POKEMON].wordData.valueList;
-      numWords = gEasyChatGroups[EC_GROUP_POKEMON].numWords;
+      species = gEasyChatGroups[(0)].wordData.valueList;
+      numWords = gEasyChatGroups[(0)].numWords;
       for (i = 0; i < numWords; i++)
       {
           let dexNum: any = SpeciesToNationalPokedexNum(species);
@@ -4111,13 +4082,13 @@ export function GetRandomUnlockedEasyChatPokemon(): any {
               if (index)
                   index--;
               else
-                  return EC_WORD(EC_GROUP_POKEMON, species);
+                  return EC_WORD((0), species);
           }
 
           species++;
       }
 
-      return EC_EMPTY_WORD;
+      return (0xFFFF);
 }
 
 /** void InitEasyChatPhrases(void) */
@@ -4127,19 +4098,19 @@ export function InitEasyChatPhrases(): any {
       for (i = 0; i < ARRAY_COUNT(sDefaultProfileWords); i++)
           gSaveBlock1Ptr.easyChatProfile[i] = sDefaultProfileWords[i];
 
-      for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)
+      for (i = 0; i < (6); i++)
           gSaveBlock1Ptr.easyChatBattleStart[i] = sDefaultBattleStartWords[i];
 
-      for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)
+      for (i = 0; i < (6); i++)
           gSaveBlock1Ptr.easyChatBattleWon[i] = sDefaultBattleWonWords[i];
 
-      for (i = 0; i < EASY_CHAT_BATTLE_WORDS_COUNT; i++)
+      for (i = 0; i < (6); i++)
           gSaveBlock1Ptr.easyChatBattleLost[i] = sDefaultBattleLostWords[i];
 
-      for (i = 0; i < MAIL_COUNT; i++)
+      for (i = 0; i < ((10 + (6))); i++)
       {
-          for (j = 0; j < MAIL_WORDS_COUNT; j++)
-              gSaveBlock1Ptr.mail[i].words[j] = EC_EMPTY_WORD;
+          for (j = 0; j < (9); j++)
+              gSaveBlock1Ptr.mail[i].words[j] = (0xFFFF);
       }
        
        
@@ -4172,24 +4143,24 @@ export function SetUnlockedEasyChatGroups(): any {
 
       sWordData.numUnlockedGroups = 0;
       if (GetNationalPokedexCount(FLAG_GET_SEEN))
-          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_POKEMON;
+          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = (0);
 
        
-      for (i = EC_GROUP_TRAINER; i <= EC_GROUP_ADJECTIVES; i++)
+      for (i = (1); i <= (16); i++)
           sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = i;
 
-      if (FlagGet(FLAG_SYS_GAME_CLEAR))
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x4))))
       {
-          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_EVENTS;
-          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_MOVE_1;
-          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_MOVE_2;
+          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = (17);
+          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = (18);
+          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = (19);
       }
 
-      if (FlagGet(FLAG_UNLOCKED_TRENDY_SAYINGS))
-          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_TRENDY_SAYING;
+      if (FlagGet((((((((0x500) + (864) - 1)) + 1)) + 0x6))))
+          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = (20);
 
       if (IsNationalPokedexEnabled())
-          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = EC_GROUP_POKEMON_NATIONAL;
+          sWordData.unlockedGroupIds[sWordData.numUnlockedGroups++] = (21);
 }
 
 /** static u8 GetNumUnlockedEasyChatGroups(void) */
@@ -4200,7 +4171,7 @@ export function GetNumUnlockedEasyChatGroups(): any {
 /** static u8 GetUnlockedEasyChatGroupId(u8 index) */
 export function GetUnlockedEasyChatGroupId(index: any): any {
   if (index >= sWordData.numUnlockedGroups)
-          return EC_NUM_GROUPS;
+          return (22);
       else
           return sWordData.unlockedGroupIds[index];
 }
@@ -4213,7 +4184,7 @@ export function SetUnlockedWordsByAlphabet(): any {
       let numToProcess: any = null;
       let index: any = null;
 
-      for (i = 0; i < EC_NUM_ALPHABET_GROUPS; i++)
+      for (i = 0; i < (27); i++)
       {
           numWords = gEasyChatWordsByLetterPointers[i].numWords;
           words = gEasyChatWordsByLetterPointers[i].words;
@@ -4221,7 +4192,7 @@ export function SetUnlockedWordsByAlphabet(): any {
           index = 0;
           for (j = 0; j < numWords; j++)
           {
-              if (words == EC_EMPTY_WORD)
+              if (words == (0xFFFF))
               {
                   words++;
                   numToProcess = words;
@@ -4259,7 +4230,7 @@ export function SetSelectedWordGroup(inAlphabetMode: any, groupId: any): any {
 /** static u16 GetWordFromSelectedGroup(u16 index) */
 export function GetWordFromSelectedGroup(index: any): any {
   if (index >= sWordData.numSelectedGroupWords)
-          return EC_EMPTY_WORD;
+          return (0xFFFF);
       else
           return sWordData.selectedGroupWords[index];
 }
@@ -4277,8 +4248,8 @@ export function SetSelectedWordGroup_GroupMode(groupId: any): any {
       let wordInfo: any = null;
       let numWords: any = gEasyChatGroups[groupId].numWords;
 
-      if (groupId == EC_GROUP_POKEMON || groupId == EC_GROUP_POKEMON_NATIONAL
-       || groupId == EC_GROUP_MOVE_1  || groupId == EC_GROUP_MOVE_2)
+      if (groupId == (0) || groupId == (21)
+       || groupId == (18)  || groupId == (19))
       {
           list = gEasyChatGroups[groupId].wordData.valueList;
           for (i = 0, totalWords = 0; i < numWords; i++)
@@ -4330,16 +4301,16 @@ export function IsEasyChatGroupUnlocked2(groupId: any): any {
 export function IsEasyChatIndexAndGroupUnlocked(wordIndex: any, groupId: any): any {
   switch (groupId)
       {
-      case EC_GROUP_POKEMON:
+      case (0):
           return GetSetPokedexFlag(SpeciesToNationalPokedexNum(wordIndex), FLAG_GET_SEEN);
-      case EC_GROUP_POKEMON_NATIONAL:
+      case (21):
           if (IsRestrictedWordSpecies(wordIndex))
               GetSetPokedexFlag(SpeciesToNationalPokedexNum(wordIndex), FLAG_GET_SEEN);
           return TRUE;
-      case EC_GROUP_MOVE_1:
-      case EC_GROUP_MOVE_2:
+      case (18):
+      case (19):
           return TRUE;
-      case EC_GROUP_TRENDY_SAYING:
+      case (20):
           return IsTrendySayingUnlocked(wordIndex);
       default:
           return gEasyChatGroups[groupId].wordData.words[wordIndex].enabled;
@@ -4371,16 +4342,16 @@ export function IsEasyChatWordUnlocked(easyChatWord: any): any {
 /** void InitializeEasyChatWordArray(u16 *words, u16 length) */
 export function InitializeEasyChatWordArray(words: any, length: any): any {
   let i: any = null;
-      for (i = length - 1; i != EC_EMPTY_WORD; i--)
-          words =  EC_EMPTY_WORD;
+      for (i = length - 1; i != (0xFFFF); i--)
+          words =  (0xFFFF);
 }
 
 /** void InitQuestionnaireWords(void) */
 export function InitQuestionnaireWords(): any {
   let i: any = null;
       let words: any = GetQuestionnaireWordsPtr();
-      for (i = 0; i < NUM_QUESTIONNAIRE_WORDS; i++)
-          words[i] = EC_EMPTY_WORD;
+      for (i = 0; i < (4); i++)
+          words[i] = (0xFFFF);
 }
 
 /** bool32 IsEasyChatAnswerUnlocked(int easyChatWord) */

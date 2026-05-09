@@ -17,16 +17,19 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBigDoorOpenAnimFrames: any = null;
-let sDoorAnimGraphicsTable: any = null;
-let sDoorCloseAnimFrames: any = null;
-let sDoorOpenAnimFrames: any = null;
+let tCounter: any = null;
+let tFramesHi: any = null;
+let tFramesLo: any = null;
+let tGfxHi: any = null;
+let tGfxLo: any = null;
+let tX: any = null;
+let tY: any = null;
 /** static void CopyDoorTilesToVram(const struct DoorGraphics *gfx, const struct DoorAnimFrame *frame) */
 export function CopyDoorTilesToVram(gfx: any, frame: any): any {
   if (gfx.size == 2)
-          CpuFastCopy(gfx.tiles + frame.offset, (VRAM + TILE_OFFSET_4BPP(((NUM_TILES_TOTAL - 16)))), 16 * TILE_SIZE_4BPP);
+          CpuFastCopy(gfx.tiles + frame.offset, (VRAM + TILE_OFFSET_4BPP((((1024) - 16)))), 16 * TILE_SIZE_4BPP);
       else
-          CpuFastCopy(gfx.tiles + frame.offset, (VRAM + TILE_OFFSET_4BPP(((NUM_TILES_TOTAL - 8)))), 8 * TILE_SIZE_4BPP);
+          CpuFastCopy(gfx.tiles + frame.offset, (VRAM + TILE_OFFSET_4BPP((((1024) - 8)))), 8 * TILE_SIZE_4BPP);
 }
 
 /** static void BuildDoorTiles(u16 *tiles, u16 tileNum, const u8 *paletteNums) */
@@ -56,29 +59,29 @@ export function DrawCurrentDoorAnimFrame(gfx: any, x: any, y: any, paletteNums: 
       if (gfx.size == 2)
       {
            
-          BuildDoorTiles(tiles[8], ((NUM_TILES_TOTAL - 16)) + 0,paletteNums[0]);
+          BuildDoorTiles(tiles[8], (((1024) - 16)) + 0,paletteNums[0]);
           DrawDoorMetatileAt(x, y - 1,tiles[8]);
 
            
-          BuildDoorTiles(tiles[8], ((NUM_TILES_TOTAL - 16)) + 4,paletteNums[4]);
+          BuildDoorTiles(tiles[8], (((1024) - 16)) + 4,paletteNums[4]);
           DrawDoorMetatileAt(x, y,tiles[8]);
 
            
-          BuildDoorTiles(tiles[8], ((NUM_TILES_TOTAL - 16)) + 8,paletteNums[0]);
+          BuildDoorTiles(tiles[8], (((1024) - 16)) + 8,paletteNums[0]);
           DrawDoorMetatileAt(x + 1, y - 1,tiles[8]);
 
            
-          BuildDoorTiles(tiles[8], ((NUM_TILES_TOTAL - 16)) + 12,paletteNums[4]);
+          BuildDoorTiles(tiles[8], (((1024) - 16)) + 12,paletteNums[4]);
           DrawDoorMetatileAt(x + 1, y,tiles[8]);
       }
       else
       {
            
-          BuildDoorTiles(tiles[0], ((NUM_TILES_TOTAL - 8)) + 0,paletteNums[0]);
+          BuildDoorTiles(tiles[0], (((1024) - 8)) + 0,paletteNums[0]);
           DrawDoorMetatileAt(x, y - 1,tiles[0]);
 
            
-          BuildDoorTiles(tiles[0], ((NUM_TILES_TOTAL - 8)) + 4,paletteNums[4]);
+          BuildDoorTiles(tiles[0], (((1024) - 8)) + 4,paletteNums[4]);
           DrawDoorMetatileAt(x, y,tiles[0]);
       }
 }
@@ -101,14 +104,14 @@ export function DrawDoor(gfx: any, frame: any, x: any, y: any): any {
       {
           DrawClosedDoorTiles(gfx, x, y);
           if (ShouldUseMultiCorridorDoor())
-              DrawClosedDoorTiles(gfx, gSpecialVar_0x8004 + MAP_OFFSET, gSpecialVar_0x8005 + MAP_OFFSET);
+              DrawClosedDoorTiles(gfx, gSpecialVar_0x8004 + (7), gSpecialVar_0x8005 + (7));
       }
       else
       {
           CopyDoorTilesToVram(gfx, frame);
           DrawCurrentDoorAnimFrame(gfx, x, y, gfx.palettes);
           if (ShouldUseMultiCorridorDoor())
-              DrawCurrentDoorAnimFrame(gfx, gSpecialVar_0x8004 + MAP_OFFSET, gSpecialVar_0x8005 + MAP_OFFSET, gfx.palettes);
+              DrawCurrentDoorAnimFrame(gfx, gSpecialVar_0x8004 + (7), gSpecialVar_0x8005 + (7), gfx.palettes);
       }
 }
 
@@ -248,18 +251,18 @@ export function GetDoorSoundEffect(x: any, y: any): any {
   let sound: any = GetDoorSoundType(sDoorAnimGraphicsTable, x, y);
 
       if (sound == (0))
-          return SE_DOOR;
+          return (8);
       else if (sound == (1))
-          return SE_SLIDING_DOOR;
+          return (18);
       else if (sound == (2))
-          return SE_REPEL;
+          return (47);
       else
-          return SE_DOOR;
+          return (8);
 }
 
 /** static bool8 ShouldUseMultiCorridorDoor(void) */
 export function ShouldUseMultiCorridorDoor(): any {
-  if (FlagGet(FLAG_ENABLE_MULTI_CORRIDOR_DOOR))
+  if (FlagGet((((0x4000) + 0x2))))
       {
           if (gSaveBlock1Ptr.location.mapGroup == MAP_GROUP(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_CORRIDOR)
               && gSaveBlock1Ptr.location.mapNum == MAP_NUM(MAP_BATTLE_FRONTIER_BATTLE_TOWER_MULTI_CORRIDOR))

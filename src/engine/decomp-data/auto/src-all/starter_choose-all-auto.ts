@@ -17,25 +17,10 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAffineAnims_StarterPokemon: any = null;
-let sBallId: any = null;
-let sBgTemplates: any = null;
-let sCursorCoords: any = null;
-let sPokeballCoords: any = null;
-let sSpritePalettes_StarterChoose: any = null;
-let sSpriteSheet_PokeballSelect: any = null;
-let sSpriteSheet_StarterCircle: any = null;
-let sSpriteTemplate_Hand: any = null;
-let sSpriteTemplate_Pokeball: any = null;
-let sSpriteTemplate_StarterCircle: any = null;
-let sStarterLabelCoords: any = null;
+let labelBottom: any = null;
+let labelRight: any = null;
+let labelTop: any = null;
 let sStarterLabelWindowId: any = null;
-let sStarterMon: any = null;
-let sTaskId: any = null;
-let sTextColors: any = null;
-let sWindowTemplate_ConfirmStarter: any = null;
-let sWindowTemplate_StarterLabel: any = null;
-let sWindowTemplates: any = null;
 /** u16 GetStarterPokemon(u16 chosenStarterId) */
 export function GetStarterPokemon(chosenStarterId: any): any {
   if (chosenStarterId > (3))
@@ -99,7 +84,7 @@ export function CB2_ChooseStarter(): any {
       LoadCompressedSpriteSheet(sSpriteSheet_PokeballSelect[0]);
       LoadCompressedSpriteSheet(sSpriteSheet_StarterCircle[0]);
       LoadSpritePalettes(sSpritePalettes_StarterChoose);
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0x10, 0, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0x10, 0, (RGB(0, 0, 0)));
 
       EnableInterrupts(DISPSTAT_VBLANK);
       SetVBlankCallback(VblankCB_StarterChoose);
@@ -138,7 +123,7 @@ export function CB2_ChooseStarter(): any {
       gSprites[spriteId].sTaskId = taskId;
       gSprites[spriteId].sBallId = 2;
 
-      sStarterLabelWindowId = WINDOW_NONE;
+      sStarterLabelWindowId = (0xFF);
 }
 
 /** static void CB2_StarterChoose(void) */
@@ -227,8 +212,8 @@ export function Task_HandleConfirmStarterInput(taskId: any): any {
           SetMainCallback2(gMain.savedCallback);
           break;
       case 1:   
-      case MENU_B_PRESSED:
-          PlaySE(SE_SELECT);
+      case (-1):
+          PlaySE((5));
           spriteId = gTasks[taskId].tPkmnSpriteId;
           FreeOamMatrix(gSprites[spriteId].oam.matrixNum);
           FreeAndDestroyMonPicSprite(spriteId);
@@ -289,7 +274,7 @@ export function ClearStarterLabel(): any {
   FillWindowPixelBuffer(sStarterLabelWindowId, PIXEL_FILL(0));
       ClearWindowTilemap(sStarterLabelWindowId);
       RemoveWindow(sStarterLabelWindowId);
-      sStarterLabelWindowId = WINDOW_NONE;
+      sStarterLabelWindowId = (0xFF);
       SetGpuReg(REG_OFFSET_WIN0H, 0);
       SetGpuReg(REG_OFFSET_WIN0V, 0);
       ScheduleBgCopyTilemapToVram(0);
@@ -311,7 +296,7 @@ export function Task_CreateStarterLabel(taskId: any): any {
 export function CreatePokemonFrontSprite(species: any, x: any, y: any): any {
   let spriteId: any = null;
 
-      spriteId = CreateMonPicSprite_Affine(species, SHINY_ODDS, 0, MON_PIC_AFFINE_FRONT, x, y, 14, TAG_NONE);
+      spriteId = CreateMonPicSprite_Affine(species, (8), 0, (1), x, y, 14, (0xFFFF));
       gSprites[spriteId].oam.priority = 0;
       return spriteId;
 }

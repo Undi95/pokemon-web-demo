@@ -15,6 +15,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gFlashMemoryPresent: any = null;
+let gLastEncryptionKey: any = null;
+let gPlayerPartyCount: any = null;
+let gPokemonStoragePtr: any = null;
+let gTrainerHillVBlankCounter: any = null;
+let hblankCB: any = null;
+let vblankCB: any = null;
 /** void CheckForFlashMemory(void) */
 export function CheckForFlashMemory(): any {
   if (!IdentifyFlash())
@@ -90,7 +99,7 @@ export function MoveSaveBlocks_ResetHeap(): any {
       gPokemonStoragePtr = pokemonStorageCopy;
 
        
-      InitHeap(gHeap, HEAP_SIZE);
+      InitHeap(gHeap, (0x1C000));
 
        
       gMain.hblankCallback = hblankCB;
@@ -104,28 +113,28 @@ export function MoveSaveBlocks_ResetHeap(): any {
 
 /** u32 UseContinueGameWarp(void) */
 export function UseContinueGameWarp(): any {
-  return gSaveBlock2Ptr.specialSaveWarpFlags & CONTINUE_GAME_WARP;
+  return gSaveBlock2Ptr.specialSaveWarpFlags & ((1 << 0));
 }
 
 /** void ClearContinueGameWarpStatus(void) */
 export function ClearContinueGameWarpStatus(): any {
-  gSaveBlock2Ptr.specialSaveWarpFlags &= ~CONTINUE_GAME_WARP;
+  gSaveBlock2Ptr.specialSaveWarpFlags &= ~((1 << 0));
 }
 
 /** void SetContinueGameWarpStatus(void) */
 export function SetContinueGameWarpStatus(): any {
-  gSaveBlock2Ptr.specialSaveWarpFlags |= CONTINUE_GAME_WARP;
+  gSaveBlock2Ptr.specialSaveWarpFlags |= ((1 << 0));
 }
 
 /** void SetContinueGameWarpStatusToDynamicWarp(void) */
 export function SetContinueGameWarpStatusToDynamicWarp(): any {
   SetContinueGameWarpToDynamicWarp(0);
-      gSaveBlock2Ptr.specialSaveWarpFlags |= CONTINUE_GAME_WARP;
+      gSaveBlock2Ptr.specialSaveWarpFlags |= ((1 << 0));
 }
 
 /** void ClearContinueGameWarpStatus2(void) */
 export function ClearContinueGameWarpStatus2(): any {
-  gSaveBlock2Ptr.specialSaveWarpFlags &= ~CONTINUE_GAME_WARP;
+  gSaveBlock2Ptr.specialSaveWarpFlags &= ~((1 << 0));
 }
 
 /** void SavePlayerParty(void) */
@@ -134,7 +143,7 @@ export function SavePlayerParty(): any {
 
       gSaveBlock1Ptr.playerPartyCount = gPlayerPartyCount;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
           gSaveBlock1Ptr.playerParty[i] = gPlayerParty[i];
 }
 
@@ -144,7 +153,7 @@ export function LoadPlayerParty(): any {
 
       gPlayerPartyCount = gSaveBlock1Ptr.playerPartyCount;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
           gPlayerParty[i] = gSaveBlock1Ptr.playerParty[i];
 }
 
@@ -152,7 +161,7 @@ export function LoadPlayerParty(): any {
 export function SaveObjectEvents(): any {
   let i: any = null;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
           gSaveBlock1Ptr.objectEvents[i] = gObjectEvents[i];
 }
 
@@ -160,7 +169,7 @@ export function SaveObjectEvents(): any {
 export function LoadObjectEvents(): any {
   let i: any = null;
 
-      for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+      for (i = 0; i < (16); i++)
           gObjectEvents[i] = gSaveBlock1Ptr.objectEvents[i];
 }
 
@@ -181,27 +190,27 @@ export function LoadPlayerBag(): any {
   let i: any = null;
 
        
-      for (i = 0; i < BAG_ITEMS_COUNT; i++)
+      for (i = 0; i < (30); i++)
           gLoadedSaveData.items[i] = gSaveBlock1Ptr.bagPocket_Items[i];
 
        
-      for (i = 0; i < BAG_KEYITEMS_COUNT; i++)
+      for (i = 0; i < (30); i++)
           gLoadedSaveData.keyItems[i] = gSaveBlock1Ptr.bagPocket_KeyItems[i];
 
        
-      for (i = 0; i < BAG_POKEBALLS_COUNT; i++)
+      for (i = 0; i < (16); i++)
           gLoadedSaveData.pokeBalls[i] = gSaveBlock1Ptr.bagPocket_PokeBalls[i];
 
        
-      for (i = 0; i < BAG_TMHM_COUNT; i++)
+      for (i = 0; i < (64); i++)
           gLoadedSaveData.TMsHMs[i] = gSaveBlock1Ptr.bagPocket_TMHM[i];
 
        
-      for (i = 0; i < BAG_BERRIES_COUNT; i++)
+      for (i = 0; i < (46); i++)
           gLoadedSaveData.berries[i] = gSaveBlock1Ptr.bagPocket_Berries[i];
 
        
-      for (i = 0; i < MAIL_COUNT; i++)
+      for (i = 0; i < ((10 + (6))); i++)
           gLoadedSaveData.mail[i] = gSaveBlock1Ptr.mail[i];
 
       gLastEncryptionKey = gSaveBlock2Ptr.encryptionKey;
@@ -213,27 +222,27 @@ export function SavePlayerBag(): any {
       let encryptionKeyBackup: any = null;
 
        
-      for (i = 0; i < BAG_ITEMS_COUNT; i++)
+      for (i = 0; i < (30); i++)
           gSaveBlock1Ptr.bagPocket_Items[i] = gLoadedSaveData.items[i];
 
        
-      for (i = 0; i < BAG_KEYITEMS_COUNT; i++)
+      for (i = 0; i < (30); i++)
           gSaveBlock1Ptr.bagPocket_KeyItems[i] = gLoadedSaveData.keyItems[i];
 
        
-      for (i = 0; i < BAG_POKEBALLS_COUNT; i++)
+      for (i = 0; i < (16); i++)
           gSaveBlock1Ptr.bagPocket_PokeBalls[i] = gLoadedSaveData.pokeBalls[i];
 
        
-      for (i = 0; i < BAG_TMHM_COUNT; i++)
+      for (i = 0; i < (64); i++)
           gSaveBlock1Ptr.bagPocket_TMHM[i] = gLoadedSaveData.TMsHMs[i];
 
        
-      for (i = 0; i < BAG_BERRIES_COUNT; i++)
+      for (i = 0; i < (46); i++)
           gSaveBlock1Ptr.bagPocket_Berries[i] = gLoadedSaveData.berries[i];
 
        
-      for (i = 0; i < MAIL_COUNT; i++)
+      for (i = 0; i < ((10 + (6))); i++)
           gSaveBlock1Ptr.mail[i] = gLoadedSaveData.mail[i];
 
       encryptionKeyBackup = gSaveBlock2Ptr.encryptionKey;

@@ -15,9 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sTileBitAttributes: any = null;
 /** bool8 MetatileBehavior_IsATile(u8 metatileBehavior) */
 export function MetatileBehavior_IsATile(metatileBehavior: any): any {
   return TRUE;
@@ -356,7 +353,7 @@ export function MetatileBehavior_IsCounter(metatileBehavior: any): any {
 
 /** bool8 MetatileBehavior_IsPlayerFacingTVScreen(u8 metatileBehavior, u8 playerDir) */
 export function MetatileBehavior_IsPlayerFacingTVScreen(metatileBehavior: any, playerDir: any): any {
-  if (playerDir != DIR_NORTH)
+  if (playerDir != (2))
           return FALSE;
       else if (metatileBehavior == MB_TELEVISION)
           return TRUE;
@@ -1207,7 +1204,7 @@ export function MetatileBehavior_IsBattlePyramidWarp(metatileBehavior: any): any
 
 /** bool8 MetatileBehavior_IsPlayerFacingWirelessBoxResults(u8 tile, u8 playerDir) */
 export function MetatileBehavior_IsPlayerFacingWirelessBoxResults(tile: any, playerDir: any): any {
-  if (playerDir != CONNECTION_NORTH)  
+  if (playerDir != (2))  
           return FALSE;
       else if (tile == MB_WIRELESS_BOX_RESULTS)  
           return TRUE;
@@ -1217,7 +1214,7 @@ export function MetatileBehavior_IsPlayerFacingWirelessBoxResults(tile: any, pla
 
 /** bool8 MetatileBehavior_IsCableBoxResults2(u8 tile, u8 playerDir) */
 export function MetatileBehavior_IsCableBoxResults2(tile: any, playerDir: any): any {
-  if (playerDir != CONNECTION_NORTH)  
+  if (playerDir != (2))  
           return FALSE;
       else if (tile == MB_CABLE_BOX_RESULTS_2)  
           return TRUE;

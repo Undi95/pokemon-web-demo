@@ -31,7 +31,7 @@ export function HealPlayerParty(): any {
           ppBonuses = GetMonData(gPlayerParty[i], MON_DATA_PP_BONUSES);
 
            
-          for(j = 0; j < MAX_MON_MOVES; j++)
+          for(j = 0; j < (4); j++)
           {
               arg[0] = CalculatePPWithBonus(GetMonData(gPlayerParty[i], MON_DATA_MOVE1 + j), ppBonuses, j);
               SetMonData(gPlayerParty[i], MON_DATA_PP1 + j, arg);
@@ -53,7 +53,7 @@ export function ScriptGiveMon(species: any, level: any, item: any, unused1: any,
       let heldItem: any = [];
       let mon: any = null;
 
-      CreateMon(mon, species, level, USE_RANDOM_IVS, FALSE, 0, OT_ID_PLAYER_ID, 0);
+      CreateMon(mon, species, level, (((31) + 1)), FALSE, 0, (0), 0);
       heldItem[0] = item;
       heldItem[1] = item >> 8;
       SetMonData(mon, MON_DATA_HELD_ITEM, heldItem);
@@ -63,8 +63,8 @@ export function ScriptGiveMon(species: any, level: any, item: any, unused1: any,
        
       switch(sentToPc)
       {
-      case MON_GIVEN_TO_PARTY:
-      case MON_GIVEN_TO_PC:
+      case (0):
+      case (1):
           GetSetPokedexFlag(nationalDexNum, FLAG_SET_SEEN);
           GetSetPokedexFlag(nationalDexNum, FLAG_SET_CAUGHT);
           break;
@@ -88,14 +88,14 @@ export function ScriptGiveEgg(species: any): any {
 export function HasEnoughMonsForDoubleBattle(): any {
   switch (GetMonsStateToDoubles())
       {
-      case PLAYER_HAS_TWO_USABLE_MONS:
-          gSpecialVar_Result = PLAYER_HAS_TWO_USABLE_MONS;
+      case (0):
+          gSpecialVar_Result = (0);
           break;
-      case PLAYER_HAS_ONE_MON:
-          gSpecialVar_Result = PLAYER_HAS_ONE_MON;
+      case (1):
+          gSpecialVar_Result = (1);
           break;
-      case PLAYER_HAS_ONE_USABLE_MON:
-          gSpecialVar_Result = PLAYER_HAS_ONE_USABLE_MON;
+      case (2):
+          gSpecialVar_Result = (2);
           break;
       }
 }
@@ -104,10 +104,10 @@ export function HasEnoughMonsForDoubleBattle(): any {
 export function CheckPartyMonHasHeldItem(item: any): any {
   let i: any = null;
 
-      for(i = 0; i < PARTY_SIZE; i++)
+      for(i = 0; i < (6); i++)
       {
           let species: any = GetMonData(gPlayerParty[i], MON_DATA_SPECIES_OR_EGG);
-          if (species != SPECIES_NONE && species != SPECIES_EGG && GetMonData(gPlayerParty[i], MON_DATA_HELD_ITEM) == item)
+          if (species != (0) && species != (412) && GetMonData(gPlayerParty[i], MON_DATA_HELD_ITEM) == item)
               return TRUE;
       }
       return FALSE;
@@ -115,9 +115,9 @@ export function CheckPartyMonHasHeldItem(item: any): any {
 
 /** bool8 DoesPartyHaveEnigmaBerry(void) */
 export function DoesPartyHaveEnigmaBerry(): any {
-  let hasItem: any = CheckPartyMonHasHeldItem(ITEM_ENIGMA_BERRY);
+  let hasItem: any = CheckPartyMonHasHeldItem((175));
       if (hasItem == TRUE)
-          GetBerryNameByBerryType(ItemIdToBerryType(ITEM_ENIGMA_BERRY), gStringVar1);
+          GetBerryNameByBerryType(ItemIdToBerryType((175)), gStringVar1);
 
       return hasItem;
 }
@@ -127,7 +127,7 @@ export function CreateScriptedWildMon(species: any, level: any, item: any): any 
   let heldItem: any = [];
 
       ZeroEnemyPartyMons();
-      CreateMon(gEnemyParty[0], species, level, USE_RANDOM_IVS, 0, 0, OT_ID_PLAYER_ID, 0);
+      CreateMon(gEnemyParty[0], species, level, (((31) + 1)), 0, 0, (0), 0);
       if (item)
       {
           heldItem[0] = item;
@@ -138,7 +138,7 @@ export function CreateScriptedWildMon(species: any, level: any, item: any): any 
 
 /** void ScriptSetMonMoveSlot(u8 monIndex, u16 move, u8 slot) */
 export function ScriptSetMonMoveSlot(monIndex: any, move: any, slot: any): any {
-      if (monIndex >= PARTY_SIZE)
+      if (monIndex >= (6))
           monIndex = gPlayerPartyCount - 1;
 
       SetMonMoveSlot(gPlayerParty[monIndex], move, slot);
@@ -147,7 +147,7 @@ export function ScriptSetMonMoveSlot(monIndex: any, move: any, slot: any): any {
 /** void ChooseHalfPartyForBattle(void) */
 export function ChooseHalfPartyForBattle(): any {
   gMain.savedCallback = CB2_ReturnFromChooseHalfParty;
-      VarSet(VAR_FRONTIER_FACILITY, FACILITY_MULTI_OR_EREADER);
+      VarSet((0x40CF), (9));
       InitChooseHalfPartyForBattle(0);
 }
 

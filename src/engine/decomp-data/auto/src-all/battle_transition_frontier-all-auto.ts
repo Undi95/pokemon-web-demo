@@ -17,31 +17,6 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sAngle: any = null;
-let sDelayX: any = null;
-let sDelayY: any = null;
-let sFrontierCirclesAsymmetricSpiralInSeq_Funcs: any = null;
-let sFrontierCirclesAsymmetricSpiral_Funcs: any = null;
-let sFrontierCirclesCrossInSeq_Funcs: any = null;
-let sFrontierCirclesCross_Funcs: any = null;
-let sFrontierCirclesMeetInSeq_Funcs: any = null;
-let sFrontierCirclesMeet_Funcs: any = null;
-let sFrontierCirclesSymmetricSpiralInSeq_Funcs: any = null;
-let sFrontierCirclesSymmetricSpiral_Funcs: any = null;
-let sLogoCenter_Gfx: any = null;
-let sLogoCenter_Tilemap: any = null;
-let sLogo_Pal: any = null;
-let sRadius: any = null;
-let sRadiusDelta: any = null;
-let sRotateSpeed: any = null;
-let sSpeedX: any = null;
-let sSpeedY: any = null;
-let sSpritePalette_LogoCircles: any = null;
-let sSpriteSheet_LogoCircles: any = null;
-let sSpriteTemplate_LogoCircles: any = null;
-let sTargetRadius: any = null;
-let sTargetX: any = null;
-let sTargetY: any = null;
 let sTimerX: any = null;
 let sTimerY: any = null;
 /** static void LoadLogoGfx(void) */
@@ -222,7 +197,7 @@ export function FadeInCenterLogoCircle(task: any): any {
       {
           if (task.tFadeTimer == 31)
           {
-              BeginNormalPaletteFade(PALETTES_ALL, -1, 0, 0x10, RGB_BLACK);
+              BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), -1, 0, 0x10, (RGB(0, 0, 0)));
               task.tState++;
           }
           else

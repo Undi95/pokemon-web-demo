@@ -17,11 +17,22 @@
 
 
 // ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sBattlerId: any = null;
-let sPlayerBufferCommands: any = null;
-let sSpeedX: any = null;
-let sSpeedY: any = null;
-let sTargetIdentities: any = null;
+let gAnimDisableStructPtr: any = null;
+let gAnimFriendship: any = null;
+let gAnimMoveDmg: any = null;
+let gAnimMovePower: any = null;
+let gAnimMoveTurn: any = null;
+let gBattleOutcome: any = null;
+let gBattlePalaceMoveSelectionRngValue: any = null;
+let gBattle_BG0_X: any = null;
+let gBattle_BG0_Y: any = null;
+let gBattlerInMenuId: any = null;
+let gDoingBattleAnim: any = null;
+let gMultiUsePlayerCursor: any = null;
+let gNumberOfMovesToChoose: any = null;
+let gPlayerDpadHoldFrames: any = null;
+let gWeatherMoveAnim: any = null;
+let yPos: any = null;
 /** void SetControllerToPlayer(void) */
 export function SetControllerToPlayer(): any {
   gBattlerControllerFuncs[gActiveBattler] = PlayerBufferRunCommand;
@@ -32,7 +43,7 @@ export function SetControllerToPlayer(): any {
 /** static void PlayerBufferExecCompleted(void) */
 export function PlayerBufferExecCompleted(): any {
   gBattlerControllerFuncs[gActiveBattler] = PlayerBufferRunCommand;
-      if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+      if (gBattleTypeFlags & ((1 << 1)))
       {
           let playerId: any = GetMultiplayerId();
 
@@ -66,31 +77,31 @@ export function CompleteOnBankSpritePosX_0(): any {
 export function HandleInputChooseAction(): any {
   let itemId: any = gBattleBufferA[gActiveBattler][2] | (gBattleBufferA[gActiveBattler][3] << 8);
 
-      DoBounceEffect(gActiveBattler, BOUNCE_HEALTHBOX, 7, 1);
-      DoBounceEffect(gActiveBattler, BOUNCE_MON, 7, 1);
+      DoBounceEffect(gActiveBattler, (0x1), 7, 1);
+      DoBounceEffect(gActiveBattler, (0x0), 7, 1);
 
-      if (JOY_REPEAT(DPAD_ANY) && gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_L_EQUALS_A)
+      if (JOY_REPEAT(DPAD_ANY) && gSaveBlock2Ptr.optionsButtonMode == (2))
           gPlayerDpadHoldFrames++;
       else
           gPlayerDpadHoldFrames = 0;
 
       if (JOY_NEW(A_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 
           switch (gActionSelectionCursor[gActiveBattler])
           {
           case 0:  
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_USE_MOVE, 0);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (0), 0);
               break;
           case 1:  
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_USE_ITEM, 0);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (1), 0);
               break;
           case 2:  
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_SWITCH, 0);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (2), 0);
               break;
           case 3:  
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_RUN, 0);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (3), 0);
               break;
           }
           PlayerBufferExecCompleted();
@@ -99,7 +110,7 @@ export function HandleInputChooseAction(): any {
       {
           if (gActionSelectionCursor[gActiveBattler] & 1)  
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
               gActionSelectionCursor[gActiveBattler] ^= 1;
               ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
@@ -109,7 +120,7 @@ export function HandleInputChooseAction(): any {
       {
           if (!(gActionSelectionCursor[gActiveBattler] & 1))  
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
               gActionSelectionCursor[gActiveBattler] ^= 1;
               ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
@@ -119,7 +130,7 @@ export function HandleInputChooseAction(): any {
       {
           if (gActionSelectionCursor[gActiveBattler] & 2)  
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
               gActionSelectionCursor[gActiveBattler] ^= 2;
               ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
@@ -129,7 +140,7 @@ export function HandleInputChooseAction(): any {
       {
           if (!(gActionSelectionCursor[gActiveBattler] & 2))  
           {
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               ActionSelectionDestroyCursorAt(gActionSelectionCursor[gActiveBattler]);
               gActionSelectionCursor[gActiveBattler] ^= 2;
               ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
@@ -137,21 +148,21 @@ export function HandleInputChooseAction(): any {
       }
       else if (JOY_NEW(B_BUTTON) || gPlayerDpadHoldFrames > 59)
       {
-          if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+          if ((gBattleTypeFlags & ((1 << 0)))
            && GetBattlerPosition(gActiveBattler) == B_POSITION_PLAYER_RIGHT
            && !(gAbsentBattlerFlags & gBitTable[GetBattlerAtPosition(B_POSITION_PLAYER_LEFT)])
-           && !(gBattleTypeFlags & BATTLE_TYPE_MULTI))
+           && !(gBattleTypeFlags & ((1 << 6))))
           {
-              if (gBattleBufferA[gActiveBattler][1] == B_ACTION_USE_ITEM)
+              if (gBattleBufferA[gActiveBattler][1] == (1))
               {
                    
-                  if (itemId <= LAST_BALL)
+                  if (itemId <= ((12)))
                       AddBagItem(itemId, 1);
                   else
                       return;
               }
-              PlaySE(SE_SELECT);
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_CANCEL_PARTNER, 0);
+              PlaySE((5));
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (12), 0);
               PlayerBufferExecCompleted();
           }
       }
@@ -167,7 +178,7 @@ export function HandleInputChooseTarget(): any {
       let identities: any = [];
       memcpy(identities, sTargetIdentities, ARRAY_COUNT(sTargetIdentities));
 
-      DoBounceEffect(gMultiUsePlayerCursor, BOUNCE_HEALTHBOX, 15, 1);
+      DoBounceEffect(gMultiUsePlayerCursor, (0x1), 15, 1);
 
        
       i = 0;
@@ -176,36 +187,36 @@ export function HandleInputChooseTarget(): any {
           do
           {
               if (i != gMultiUsePlayerCursor)
-                  EndBounceEffect(i, BOUNCE_HEALTHBOX);
+                  EndBounceEffect(i, (0x1));
               i++;
           } while (i < gBattlersCount);
       }
 
-      if (JOY_HELD(DPAD_ANY) && gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_L_EQUALS_A)
+      if (JOY_HELD(DPAD_ANY) && gSaveBlock2Ptr.optionsButtonMode == (2))
           gPlayerDpadHoldFrames++;
       else
           gPlayerDpadHoldFrames = 0;
 
       if (JOY_NEW(A_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           gSprites[gBattlerSpriteIds[gMultiUsePlayerCursor]].callback = SpriteCB_HideAsMoveTarget;
-          BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, gMoveSelectionCursor[gActiveBattler] | (gMultiUsePlayerCursor << 8));
-          EndBounceEffect(gMultiUsePlayerCursor, BOUNCE_HEALTHBOX);
+          BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (10), gMoveSelectionCursor[gActiveBattler] | (gMultiUsePlayerCursor << 8));
+          EndBounceEffect(gMultiUsePlayerCursor, (0x1));
           PlayerBufferExecCompleted();
       }
       else if (JOY_NEW(B_BUTTON) || gPlayerDpadHoldFrames > 59)
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           gSprites[gBattlerSpriteIds[gMultiUsePlayerCursor]].callback = SpriteCB_HideAsMoveTarget;
           gBattlerControllerFuncs[gActiveBattler] = HandleInputChooseMove;
-          DoBounceEffect(gActiveBattler, BOUNCE_HEALTHBOX, 7, 1);
-          DoBounceEffect(gActiveBattler, BOUNCE_MON, 7, 1);
-          EndBounceEffect(gMultiUsePlayerCursor, BOUNCE_HEALTHBOX);
+          DoBounceEffect(gActiveBattler, (0x1), 7, 1);
+          DoBounceEffect(gActiveBattler, (0x0), 7, 1);
+          EndBounceEffect(gMultiUsePlayerCursor, (0x1));
       }
       else if (JOY_NEW(DPAD_LEFT | DPAD_UP))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           gSprites[gBattlerSpriteIds[gMultiUsePlayerCursor]].callback = SpriteCB_HideAsMoveTarget;
 
           do
@@ -231,7 +242,7 @@ export function HandleInputChooseTarget(): any {
               case B_POSITION_PLAYER_RIGHT:
                   if (gActiveBattler != gMultiUsePlayerCursor)
                       i++;
-                  else if (gBattleMoves[GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_MOVE1 + gMoveSelectionCursor[gActiveBattler])].target & MOVE_TARGET_USER_OR_SELECTED)
+                  else if (gBattleMoves[GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_MOVE1 + gMoveSelectionCursor[gActiveBattler])].target & ((1 << 1)))
                       i++;
                   break;
               case B_POSITION_OPPONENT_LEFT:
@@ -247,7 +258,7 @@ export function HandleInputChooseTarget(): any {
       }
       else if (JOY_NEW(DPAD_RIGHT | DPAD_DOWN))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           gSprites[gBattlerSpriteIds[gMultiUsePlayerCursor]].callback = SpriteCB_HideAsMoveTarget;
 
           do
@@ -273,7 +284,7 @@ export function HandleInputChooseTarget(): any {
               case B_POSITION_PLAYER_RIGHT:
                   if (gActiveBattler != gMultiUsePlayerCursor)
                       i++;
-                  else if (gBattleMoves[GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_MOVE1 + gMoveSelectionCursor[gActiveBattler])].target & MOVE_TARGET_USER_OR_SELECTED)
+                  else if (gBattleMoves[GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_MOVE1 + gMoveSelectionCursor[gActiveBattler])].target & ((1 << 1)))
                       i++;
                   break;
               case B_POSITION_OPPONENT_LEFT:
@@ -294,7 +305,7 @@ export function HandleInputChooseMove(): any {
   let canSelectTarget: any = FALSE;
       let moveInfo: any = (gBattleBufferA[gActiveBattler][4]);
 
-      if (JOY_HELD(DPAD_ANY) && gSaveBlock2Ptr.optionsButtonMode == OPTIONS_BUTTON_MODE_L_EQUALS_A)
+      if (JOY_HELD(DPAD_ANY) && gSaveBlock2Ptr.optionsButtonMode == (2))
           gPlayerDpadHoldFrames++;
       else
           gPlayerDpadHoldFrames = 0;
@@ -303,39 +314,39 @@ export function HandleInputChooseMove(): any {
       {
           let moveTarget: any = null;
 
-          PlaySE(SE_SELECT);
-          if (moveInfo.moves[gMoveSelectionCursor[gActiveBattler]] == MOVE_CURSE)
+          PlaySE((5));
+          if (moveInfo.moves[gMoveSelectionCursor[gActiveBattler]] == (174))
           {
-              if (moveInfo.monTypes[0] != TYPE_GHOST && moveInfo.monTypes[1] != TYPE_GHOST)
-                  moveTarget = MOVE_TARGET_USER;
+              if (moveInfo.monTypes[0] != (7) && moveInfo.monTypes[1] != (7))
+                  moveTarget = ((1 << 4));
               else
-                  moveTarget = MOVE_TARGET_SELECTED;
+                  moveTarget = (0);
           }
           else
           {
               moveTarget = gBattleMoves[moveInfo.moves[gMoveSelectionCursor[gActiveBattler]]].target;
           }
 
-          if (moveTarget & MOVE_TARGET_USER)
+          if (moveTarget & ((1 << 4)))
               gMultiUsePlayerCursor = gActiveBattler;
           else
               gMultiUsePlayerCursor = GetBattlerAtPosition(BATTLE_OPPOSITE(GET_BATTLER_SIDE(gActiveBattler)));
 
           if (!gBattleBufferA[gActiveBattler][1])  
           {
-              if (moveTarget & MOVE_TARGET_USER_OR_SELECTED && !gBattleBufferA[gActiveBattler][2])
+              if (moveTarget & ((1 << 1)) && !gBattleBufferA[gActiveBattler][2])
                   canSelectTarget++;
           }
           else  
           {
-              if (!(moveTarget & (MOVE_TARGET_RANDOM | MOVE_TARGET_BOTH | MOVE_TARGET_DEPENDS | MOVE_TARGET_FOES_AND_ALLY | MOVE_TARGET_OPPONENTS_FIELD | MOVE_TARGET_USER)))
+              if (!(moveTarget & (((1 << 2)) | ((1 << 3)) | ((1 << 0)) | ((1 << 5)) | ((1 << 6)) | ((1 << 4)))))
                   canSelectTarget++;  
 
               if (moveInfo.currentPp[gMoveSelectionCursor[gActiveBattler]] == 0)
               {
                   canSelectTarget = FALSE;
               }
-              else if (!(moveTarget & (MOVE_TARGET_USER | MOVE_TARGET_USER_OR_SELECTED)) && CountAliveMonsInBattle(BATTLE_ALIVE_EXCEPT_ACTIVE) <= 1)
+              else if (!(moveTarget & (((1 << 4)) | ((1 << 1)))) && CountAliveMonsInBattle((0)) <= 1)
               {
                   gMultiUsePlayerCursor = GetDefaultMoveTarget(gActiveBattler);
                   canSelectTarget = FALSE;
@@ -344,14 +355,14 @@ export function HandleInputChooseMove(): any {
 
           if (!canSelectTarget)
           {
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, gMoveSelectionCursor[gActiveBattler] | (gMultiUsePlayerCursor << 8));
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (10), gMoveSelectionCursor[gActiveBattler] | (gMultiUsePlayerCursor << 8));
               PlayerBufferExecCompleted();
           }
           else
           {
               gBattlerControllerFuncs[gActiveBattler] = HandleInputChooseTarget;
 
-              if (moveTarget & (MOVE_TARGET_USER | MOVE_TARGET_USER_OR_SELECTED))
+              if (moveTarget & (((1 << 4)) | ((1 << 1))))
                   gMultiUsePlayerCursor = gActiveBattler;
               else if (gAbsentBattlerFlags & gBitTable[GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT)])
                   gMultiUsePlayerCursor = GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT);
@@ -363,8 +374,8 @@ export function HandleInputChooseMove(): any {
       }
       else if (JOY_NEW(B_BUTTON) || gPlayerDpadHoldFrames > 59)
       {
-          PlaySE(SE_SELECT);
-          BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, 0xFFFF);
+          PlaySE((5));
+          BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (10), 0xFFFF);
           PlayerBufferExecCompleted();
       }
       else if (JOY_NEW(DPAD_LEFT))
@@ -373,7 +384,7 @@ export function HandleInputChooseMove(): any {
           {
               MoveSelectionDestroyCursorAt(gMoveSelectionCursor[gActiveBattler]);
               gMoveSelectionCursor[gActiveBattler] ^= 1;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
               MoveSelectionDisplayPpNumber();
               MoveSelectionDisplayMoveType();
@@ -386,7 +397,7 @@ export function HandleInputChooseMove(): any {
           {
               MoveSelectionDestroyCursorAt(gMoveSelectionCursor[gActiveBattler]);
               gMoveSelectionCursor[gActiveBattler] ^= 1;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
               MoveSelectionDisplayPpNumber();
               MoveSelectionDisplayMoveType();
@@ -398,7 +409,7 @@ export function HandleInputChooseMove(): any {
           {
               MoveSelectionDestroyCursorAt(gMoveSelectionCursor[gActiveBattler]);
               gMoveSelectionCursor[gActiveBattler] ^= 2;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
               MoveSelectionDisplayPpNumber();
               MoveSelectionDisplayMoveType();
@@ -411,7 +422,7 @@ export function HandleInputChooseMove(): any {
           {
               MoveSelectionDestroyCursorAt(gMoveSelectionCursor[gActiveBattler]);
               gMoveSelectionCursor[gActiveBattler] ^= 2;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
               MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
               MoveSelectionDisplayPpNumber();
               MoveSelectionDisplayMoveType();
@@ -419,7 +430,7 @@ export function HandleInputChooseMove(): any {
       }
       else if (JOY_NEW(SELECT_BUTTON))
       {
-          if (gNumberOfMovesToChoose > 1 && !(gBattleTypeFlags & BATTLE_TYPE_LINK))
+          if (gNumberOfMovesToChoose > 1 && !(gBattleTypeFlags & ((1 << 1))))
           {
               MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 29);
 
@@ -429,7 +440,7 @@ export function HandleInputChooseMove(): any {
                   gMultiUsePlayerCursor = gMoveSelectionCursor[gActiveBattler] + 1;
 
               MoveSelectionCreateCursorAt(gMultiUsePlayerCursor, 27);
-              BattlePutTextOnWindow(gText_BattleSwitchWhich, B_WIN_SWITCH_PROMPT);
+              BattlePutTextOnWindow(gText_BattleSwitchWhich, (11));
               gBattlerControllerFuncs[gActiveBattler] = HandleMoveSwitching;
           }
       }
@@ -443,7 +454,7 @@ export function HandleMoveSwitching(): any {
 
       if (JOY_NEW(A_BUTTON | SELECT_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
 
           if (gMoveSelectionCursor[gActiveBattler] != gMultiUsePlayerCursor)
           {
@@ -471,7 +482,7 @@ export function HandleMoveSwitching(): any {
 
               MoveSelectionDisplayMoveNames();
 
-              for (i = 0; i < MAX_MON_MOVES; i++)
+              for (i = 0; i < (4); i++)
                   perMovePPBonuses[i] = (gBattleMons[gActiveBattler].ppBonuses & (3 << (i * 2))) >> (i * 2);
 
               totalPPBonuses = perMovePPBonuses[gMoveSelectionCursor[gActiveBattler]];
@@ -479,27 +490,27 @@ export function HandleMoveSwitching(): any {
               perMovePPBonuses[gMultiUsePlayerCursor] = totalPPBonuses;
 
               totalPPBonuses = 0;
-              for (i = 0; i < MAX_MON_MOVES; i++)
+              for (i = 0; i < (4); i++)
                   totalPPBonuses |= perMovePPBonuses[i] << (i * 2);
 
               gBattleMons[gActiveBattler].ppBonuses = totalPPBonuses;
 
-              for (i = 0; i < MAX_MON_MOVES; i++)
+              for (i = 0; i < (4); i++)
               {
                   gBattleMons[gActiveBattler].moves[i] = moveInfo.moves[i];
                   gBattleMons[gActiveBattler].pp[i] = moveInfo.currentPp[i];
               }
 
-              if (!(gBattleMons[gActiveBattler].status2 & STATUS2_TRANSFORMED))
+              if (!(gBattleMons[gActiveBattler].status2 & ((1 << 21))))
               {
-                  for (i = 0; i < MAX_MON_MOVES; i++)
+                  for (i = 0; i < (4); i++)
                   {
                       moveStruct.moves[i] = GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_MOVE1 + i);
                       moveStruct.currentPp[i] = GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_PP1 + i);
                   }
 
                   totalPPBonuses = GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_PP_BONUSES);
-                  for (i = 0; i < MAX_MON_MOVES; i++)
+                  for (i = 0; i < (4); i++)
                       perMovePPBonuses[i] = (totalPPBonuses & (3 << (i * 2))) >> (i * 2);
 
                   i = moveStruct.moves[gMoveSelectionCursor[gActiveBattler]];
@@ -515,10 +526,10 @@ export function HandleMoveSwitching(): any {
                   perMovePPBonuses[gMultiUsePlayerCursor] = totalPPBonuses;
 
                   totalPPBonuses = 0;
-                  for (i = 0; i < MAX_MON_MOVES; i++)
+                  for (i = 0; i < (4); i++)
                       totalPPBonuses |= perMovePPBonuses[i] << (i * 2);
 
-                  for (i = 0; i < MAX_MON_MOVES; i++)
+                  for (i = 0; i < (4); i++)
                   {
                       SetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_MOVE1 + i,moveStruct.moves[i]);
                       SetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_PP1 + i,moveStruct.currentPp[i]);
@@ -537,7 +548,7 @@ export function HandleMoveSwitching(): any {
       }
       else if (JOY_NEW(B_BUTTON | SELECT_BUTTON))
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           MoveSelectionDestroyCursorAt(gMultiUsePlayerCursor);
           MoveSelectionCreateCursorAt(gMoveSelectionCursor[gActiveBattler], 0);
           gBattlerControllerFuncs[gActiveBattler] = HandleInputChooseMove;
@@ -555,7 +566,7 @@ export function HandleMoveSwitching(): any {
                   MoveSelectionDestroyCursorAt(gMultiUsePlayerCursor);
 
               gMultiUsePlayerCursor ^= 1;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
 
               if (gMultiUsePlayerCursor == gMoveSelectionCursor[gActiveBattler])
                   MoveSelectionCreateCursorAt(gMultiUsePlayerCursor, 0);
@@ -573,7 +584,7 @@ export function HandleMoveSwitching(): any {
                   MoveSelectionDestroyCursorAt(gMultiUsePlayerCursor);
 
               gMultiUsePlayerCursor ^= 1;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
 
               if (gMultiUsePlayerCursor == gMoveSelectionCursor[gActiveBattler])
                   MoveSelectionCreateCursorAt(gMultiUsePlayerCursor, 0);
@@ -591,7 +602,7 @@ export function HandleMoveSwitching(): any {
                   MoveSelectionDestroyCursorAt(gMultiUsePlayerCursor);
 
               gMultiUsePlayerCursor ^= 2;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
 
               if (gMultiUsePlayerCursor == gMoveSelectionCursor[gActiveBattler])
                   MoveSelectionCreateCursorAt(gMultiUsePlayerCursor, 0);
@@ -609,7 +620,7 @@ export function HandleMoveSwitching(): any {
                   MoveSelectionDestroyCursorAt(gMultiUsePlayerCursor);
 
               gMultiUsePlayerCursor ^= 2;
-              PlaySE(SE_SELECT);
+              PlaySE((5));
 
               if (gMultiUsePlayerCursor == gMoveSelectionCursor[gActiveBattler])
                   MoveSelectionCreateCursorAt(gMultiUsePlayerCursor, 0);
@@ -625,11 +636,11 @@ export function SetLinkBattleEndCallbacks(): any {
       {
           if (gReceivedRemoteLinkPlayers == 0)
           {
-              m4aSongNumStop(SE_LOW_HEALTH);
+              m4aSongNumStop((90));
               gMain.inBattle = FALSE;
               gMain.callback1 = gPreBattleCallback1;
               SetMainCallback2(CB2_InitEndLinkBattle);
-              if (gBattleOutcome == B_OUTCOME_WON)
+              if (gBattleOutcome == (1))
                   TryPutLinkBattleTvShowOnAir();
               FreeAllWindowBuffers();
           }
@@ -638,11 +649,11 @@ export function SetLinkBattleEndCallbacks(): any {
       {
           if (IsLinkTaskFinished())
           {
-              m4aSongNumStop(SE_LOW_HEALTH);
+              m4aSongNumStop((90));
               gMain.inBattle = FALSE;
               gMain.callback1 = gPreBattleCallback1;
               SetMainCallback2(CB2_InitEndLinkBattle);
-              if (gBattleOutcome == B_OUTCOME_WON)
+              if (gBattleOutcome == (1))
                   TryPutLinkBattleTvShowOnAir();
               FreeAllWindowBuffers();
           }
@@ -653,7 +664,7 @@ export function SetLinkBattleEndCallbacks(): any {
 export function SetBattleEndCallbacks(): any {
   if (!gPaletteFade.active)
       {
-          if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+          if (gBattleTypeFlags & ((1 << 1)))
           {
               if (IsLinkTaskFinished())
               {
@@ -667,7 +678,7 @@ export function SetBattleEndCallbacks(): any {
           }
           else
           {
-              m4aSongNumStop(SE_LOW_HEALTH);
+              m4aSongNumStop((90));
               gMain.inBattle = FALSE;
               gMain.callback1 = gPreBattleCallback1;
               SetMainCallback2(gMain.savedCallback);
@@ -712,7 +723,7 @@ export function Intro_WaitForShinyAnimAndHealthbox(): any {
   let healthboxAnimDone: any = FALSE;
 
        
-      if (!IsDoubleBattle() || (IsDoubleBattle() && (gBattleTypeFlags & BATTLE_TYPE_MULTI)))
+      if (!IsDoubleBattle() || (IsDoubleBattle() && (gBattleTypeFlags & ((1 << 6)))))
       {
           if (gSprites[gHealthboxSpriteIds[gActiveBattler]].callback == SpriteCallbackDummy)
               healthboxAnimDone = TRUE;
@@ -733,8 +744,8 @@ export function Intro_WaitForShinyAnimAndHealthbox(): any {
           gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].finishedShinyMonAnim = FALSE;
           gBattleSpritesDataPtr.healthBoxesData[BATTLE_PARTNER(gActiveBattler)].triedShinyMonAnim = FALSE;
           gBattleSpritesDataPtr.healthBoxesData[BATTLE_PARTNER(gActiveBattler)].finishedShinyMonAnim = FALSE;
-          FreeSpriteTilesByTag(ANIM_TAG_GOLD_STARS);
-          FreeSpritePaletteByTag(ANIM_TAG_GOLD_STARS);
+          FreeSpriteTilesByTag((((10000) + 233)));
+          FreeSpritePaletteByTag((((10000) + 233)));
 
           HandleLowHpMusicChange(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], gActiveBattler);
 
@@ -767,7 +778,7 @@ export function Intro_TryShinyAnimShowHealthbox(): any {
       {
           if (!gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].healthboxSlideInStarted)
           {
-              if (IsDoubleBattle() && !(gBattleTypeFlags & BATTLE_TYPE_MULTI))
+              if (IsDoubleBattle() && !(gBattleTypeFlags & ((1 << 6))))
               {
                   UpdateHealthboxAttribute(gHealthboxSpriteIds[BATTLE_PARTNER(gActiveBattler)],gPlayerParty[gBattlerPartyIndexes[BATTLE_PARTNER(gActiveBattler)]], HEALTHBOX_ALL);
                   StartHealthboxSlideIn(BATTLE_PARTNER(gActiveBattler));
@@ -788,7 +799,7 @@ export function Intro_TryShinyAnimShowHealthbox(): any {
       {
           if (!gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].bgmRestored)
           {
-              if (gBattleTypeFlags & BATTLE_TYPE_MULTI && gBattleTypeFlags & BATTLE_TYPE_LINK)
+              if (gBattleTypeFlags & ((1 << 6)) && gBattleTypeFlags & ((1 << 1)))
                   m4aMPlayContinue(gMPlayInfo_BGM);
               else
                   m4aMPlayVolumeControl(gMPlayInfo_BGM, TRACKS_ALL, 0x100);
@@ -798,7 +809,7 @@ export function Intro_TryShinyAnimShowHealthbox(): any {
       }
 
        
-      if (!IsDoubleBattle() || (IsDoubleBattle() && (gBattleTypeFlags & BATTLE_TYPE_MULTI)))
+      if (!IsDoubleBattle() || (IsDoubleBattle() && (gBattleTypeFlags & ((1 << 6)))))
       {
           if (gSprites[gBattleControllerData[gActiveBattler]].callback == SpriteCallbackDummy
               && gSprites[gBattlerSpriteIds[gActiveBattler]].callback == SpriteCallbackDummy)
@@ -820,7 +831,7 @@ export function Intro_TryShinyAnimShowHealthbox(): any {
        
       if (bgmRestored && battlerAnimsDone)
       {
-          if (IsDoubleBattle() && !(gBattleTypeFlags & BATTLE_TYPE_MULTI))
+          if (IsDoubleBattle() && !(gBattleTypeFlags & ((1 << 6))))
               DestroySprite(gSprites[gBattleControllerData[BATTLE_PARTNER(gActiveBattler)]]);
           DestroySprite(gSprites[gBattleControllerData[gActiveBattler]]);
 
@@ -843,12 +854,12 @@ export function SwitchIn_CleanShinyAnimShowSubstitute(): any {
            
           gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].triedShinyMonAnim = FALSE;
           gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].finishedShinyMonAnim = FALSE;
-          FreeSpriteTilesByTag(ANIM_TAG_GOLD_STARS);
-          FreeSpritePaletteByTag(ANIM_TAG_GOLD_STARS);
+          FreeSpriteTilesByTag((((10000) + 233)));
+          FreeSpritePaletteByTag((((10000) + 233)));
 
            
           if (gBattleSpritesDataPtr.battlerData[gActiveBattler].behindSubstitute)
-              InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, B_ANIM_MON_TO_SUBSTITUTE);
+              InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, (6));
 
           gBattlerControllerFuncs[gActiveBattler] = SwitchIn_HandleSoundAndEnd;
       }
@@ -911,7 +922,7 @@ export function CompleteOnHealthbarDone(): any {
 
 /** static void CompleteOnInactiveTextPrinter(void) */
 export function CompleteOnInactiveTextPrinter(): any {
-  if (!IsTextPrinterActive(B_WIN_MSG))
+  if (!IsTextPrinterActive((0)))
           PlayerBufferExecCompleted();
 }
 
@@ -938,7 +949,7 @@ export function Task_GiveExpToMon(taskId: any): any {
               gainedExp -= nextLvlExp - currExp;
               savedActiveBattler = gActiveBattler;
               gActiveBattler = battler;
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, RET_VALUE_LEVELED_UP, gainedExp);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (11), gainedExp);
               gActiveBattler = savedActiveBattler;
 
               if (IsDoubleBattle() == TRUE
@@ -976,7 +987,7 @@ export function Task_PrepareToGiveExpWithExpBar(taskId: any): any {
       exp -= currLvlExp;
       expToNextLvl = gExperienceTables[gSpeciesInfo[species].growthRate][level + 1] - currLvlExp;
       SetBattleBarStruct(battler, gHealthboxSpriteIds[battler], expToNextLvl, exp, -gainedExp);
-      PlaySE(SE_EXP);
+      PlaySE((33));
       gTasks[taskId].func = Task_GiveExpWithExpBar;
 }
 
@@ -1002,7 +1013,7 @@ export function Task_GiveExpWithExpBar(taskId: any): any {
               let species: any = null;
               let expOnNextLvl: any = null;
 
-              m4aSongNumStop(SE_EXP);
+              m4aSongNumStop((33));
               level = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL);
               currExp = GetMonData(gPlayerParty[monId], MON_DATA_EXP);
               species = GetMonData(gPlayerParty[monId], MON_DATA_SPECIES);
@@ -1017,7 +1028,7 @@ export function Task_GiveExpWithExpBar(taskId: any): any {
                   gainedExp -= expOnNextLvl - currExp;
                   savedActiveBattler = gActiveBattler;
                   gActiveBattler = battler;
-                  BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, RET_VALUE_LEVELED_UP, gainedExp);
+                  BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (11), gainedExp);
                   gActiveBattler = savedActiveBattler;
                   gTasks[taskId].func = Task_LaunchLvlUpAnim;
               }
@@ -1038,9 +1049,9 @@ export function Task_LaunchLvlUpAnim(taskId: any): any {
       let monIndex: any = gTasks[taskId].tExpTask_monId;
 
       if (IsDoubleBattle() == TRUE && monIndex == gBattlerPartyIndexes[BATTLE_PARTNER(battler)])
-          battler ^= BIT_FLANK;
+          battler ^= (2);
 
-      InitAndLaunchSpecialAnimation(battler, battler, battler, B_ANIM_LVL_UP);
+      InitAndLaunchSpecialAnimation(battler, battler, battler, (0));
       gTasks[taskId].func = Task_UpdateLvlInHealthbox;
 }
 
@@ -1102,7 +1113,7 @@ export function FreeMonSpriteAfterSwitchOutAnim(): any {
 
 /** static void CompleteOnInactiveTextPrinter2(void) */
 export function CompleteOnInactiveTextPrinter2(): any {
-  if (!IsTextPrinterActive(B_WIN_MSG))
+  if (!IsTextPrinterActive((0)))
           PlayerBufferExecCompleted();
 }
 
@@ -1127,7 +1138,7 @@ export function WaitForMonSelection(): any {
           if (gPartyMenuUseExitCallback == TRUE)
               BtlController_EmitChosenMonReturnValue(B_COMM_TO_ENGINE, gSelectedMonPartyId, gBattlePartyCurrentOrder);
           else
-              BtlController_EmitChosenMonReturnValue(B_COMM_TO_ENGINE, PARTY_SIZE, NULL);
+              BtlController_EmitChosenMonReturnValue(B_COMM_TO_ENGINE, (6), NULL);
 
           if ((gBattleBufferA[gActiveBattler][1] & 0xF) == 1)
               PrintLinkStandbyMsg();
@@ -1185,34 +1196,34 @@ export function DoHitAnimBlinkSpriteEffect(): any {
 export function PlayerHandleYesNoInput(): any {
   if (JOY_NEW(DPAD_UP) && gMultiUsePlayerCursor != 0)
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           BattleDestroyYesNoCursorAt(gMultiUsePlayerCursor);
           gMultiUsePlayerCursor = 0;
           BattleCreateYesNoCursorAt(0);
       }
       if (JOY_NEW(DPAD_DOWN) && gMultiUsePlayerCursor == 0)
       {
-          PlaySE(SE_SELECT);
+          PlaySE((5));
           BattleDestroyYesNoCursorAt(gMultiUsePlayerCursor);
           gMultiUsePlayerCursor = 1;
           BattleCreateYesNoCursorAt(1);
       }
       if (JOY_NEW(A_BUTTON))
       {
-          HandleBattleWindow(YESNOBOX_X_Y, WINDOW_CLEAR);
-          PlaySE(SE_SELECT);
+          HandleBattleWindow((23, 8, 29, 13), ((1 << 0)));
+          PlaySE((5));
 
           if (gMultiUsePlayerCursor != 0)
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_UNK_14, 0);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (14), 0);
           else
-              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_NOTHING_FAINTED, 0);
+              BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (13), 0);
 
           PlayerBufferExecCompleted();
       }
       if (JOY_NEW(B_BUTTON))
       {
-          HandleBattleWindow(YESNOBOX_X_Y, WINDOW_CLEAR);
-          PlaySE(SE_SELECT);
+          HandleBattleWindow((23, 8, 29, 13), ((1 << 0)));
+          PlaySE((5));
           PlayerBufferExecCompleted();
       }
 }
@@ -1223,13 +1234,13 @@ export function MoveSelectionDisplayMoveNames(): any {
       let moveInfo: any = (gBattleBufferA[gActiveBattler][4]);
       gNumberOfMovesToChoose = 0;
 
-      for (i = 0; i < MAX_MON_MOVES; i++)
+      for (i = 0; i < (4); i++)
       {
           MoveSelectionDestroyCursorAt(i);
           StringCopy(gDisplayedStringBattle, gMoveNames[moveInfo.moves[i]]);
            
-          BattlePutTextOnWindow(gDisplayedStringBattle, i + B_WIN_MOVE_NAME_1);
-          if (moveInfo.moves[i] != MOVE_NONE)
+          BattlePutTextOnWindow(gDisplayedStringBattle, i + (3));
+          if (moveInfo.moves[i] != (0))
               gNumberOfMovesToChoose++;
       }
 }
@@ -1237,7 +1248,7 @@ export function MoveSelectionDisplayMoveNames(): any {
 /** static void MoveSelectionDisplayPpString(void) */
 export function MoveSelectionDisplayPpString(): any {
   StringCopy(gDisplayedStringBattle, gText_MoveInterfacePP);
-      BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_PP);
+      BattlePutTextOnWindow(gDisplayedStringBattle, (7));
 }
 
 /** static void MoveSelectionDisplayPpNumber(void) */
@@ -1251,10 +1262,10 @@ export function MoveSelectionDisplayPpNumber(): any {
       SetPpNumbersPaletteInMoveSelection();
       moveInfo = (gBattleBufferA[gActiveBattler][4]);
       txtPtr = ConvertIntToDecimalStringN(gDisplayedStringBattle, moveInfo.currentPp[gMoveSelectionCursor[gActiveBattler]], STR_CONV_MODE_RIGHT_ALIGN, 2);
-      txtPtr =  CHAR_SLASH;
+      txtPtr =  (0xBA);
       ConvertIntToDecimalStringN(txtPtr, moveInfo.maxPp[gMoveSelectionCursor[gActiveBattler]], STR_CONV_MODE_RIGHT_ALIGN, 2);
 
-      BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_PP_REMAINING);
+      BattlePutTextOnWindow(gDisplayedStringBattle, (9));
 }
 
 /** static void MoveSelectionDisplayMoveType(void) */
@@ -1263,12 +1274,12 @@ export function MoveSelectionDisplayMoveType(): any {
       let moveInfo: any = (gBattleBufferA[gActiveBattler][4]);
 
       txtPtr = StringCopy(gDisplayedStringBattle, gText_MoveInterfaceType);
-      txtPtr =  EXT_CTRL_CODE_BEGIN;
-      txtPtr =  EXT_CTRL_CODE_FONT;
+      txtPtr =  (0xFC);
+      txtPtr =  (0x06);
       txtPtr =  FONT_NORMAL;
 
       StringCopy(txtPtr, gTypeNames[gBattleMoves[moveInfo.moves[gMoveSelectionCursor[gActiveBattler]]].type]);
-      BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MOVE_TYPE);
+      BattlePutTextOnWindow(gDisplayedStringBattle, (10));
 }
 
 /** static void MoveSelectionCreateCursorAt(u8 cursorPosition, u8 baseTileNum) */
@@ -1335,11 +1346,11 @@ export function CompleteOnFinishedBattleAnimation(): any {
 
 /** static void PrintLinkStandbyMsg(void) */
 export function PrintLinkStandbyMsg(): any {
-  if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+  if (gBattleTypeFlags & ((1 << 1)))
       {
           gBattle_BG0_X = 0;
           gBattle_BG0_Y = 0;
-          BattlePutTextOnWindow(gText_LinkStandby, B_WIN_MSG);
+          BattlePutTextOnWindow(gText_LinkStandby, (0));
       }
 }
 
@@ -1357,7 +1368,7 @@ export function PlayerHandleGetMonData(): any {
       else
       {
           monToCheck = gBattleBufferA[gActiveBattler][2];
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
               if (monToCheck & 1)
                   size += CopyPlayerMonData(i, monData + size);
@@ -1383,7 +1394,7 @@ export function CopyPlayerMonData(monId: any, dst: any): any {
       case REQUEST_ALL_BATTLE:
           battleMon.species = GetMonData(gPlayerParty[monId], MON_DATA_SPECIES);
           battleMon.item = GetMonData(gPlayerParty[monId], MON_DATA_HELD_ITEM);
-          for (size = 0; size < MAX_MON_MOVES; size++)
+          for (size = 0; size < (4); size++)
           {
               battleMon.moves[size] = GetMonData(gPlayerParty[monId], MON_DATA_MOVE1 + size);
               battleMon.pp[size] = GetMonData(gPlayerParty[monId], MON_DATA_PP1 + size);
@@ -1430,7 +1441,7 @@ export function CopyPlayerMonData(monId: any, dst: any): any {
           size = 2;
           break;
       case REQUEST_MOVES_PP_BATTLE:
-          for (size = 0; size < MAX_MON_MOVES; size++)
+          for (size = 0; size < (4); size++)
           {
               moveData.moves[size] = GetMonData(gPlayerParty[monId], MON_DATA_MOVE1 + size);
               moveData.pp[size] = GetMonData(gPlayerParty[monId], MON_DATA_PP1 + size);
@@ -1450,7 +1461,7 @@ export function CopyPlayerMonData(monId: any, dst: any): any {
           size = 2;
           break;
       case REQUEST_PP_DATA_BATTLE:
-          for (size = 0; size < MAX_MON_MOVES; size++)
+          for (size = 0; size < (4); size++)
               dst[size] = GetMonData(gPlayerParty[monId], MON_DATA_PP1 + size);
           dst[size] = GetMonData(gPlayerParty[monId], MON_DATA_PP_BONUSES);
           size++;
@@ -1700,7 +1711,7 @@ export function PlayerHandleSetMonData(): any {
       else
       {
           monToCheck = gBattleBufferA[gActiveBattler][2];
-          for (i = 0; i < PARTY_SIZE; i++)
+          for (i = 0; i < (6); i++)
           {
               if (monToCheck & 1)
                   SetPlayerMonData(i);
@@ -1724,7 +1735,7 @@ export function SetPlayerMonData(monId: any): any {
 
               SetMonData(gPlayerParty[monId], MON_DATA_SPECIES,battlePokemon.species);
               SetMonData(gPlayerParty[monId], MON_DATA_HELD_ITEM,battlePokemon.item);
-              for (i = 0; i < MAX_MON_MOVES; i++)
+              for (i = 0; i < (4); i++)
               {
                   SetMonData(gPlayerParty[monId], MON_DATA_MOVE1 + i,battlePokemon.moves[i]);
                   SetMonData(gPlayerParty[monId], MON_DATA_PP1 + i,battlePokemon.pp[i]);
@@ -1763,7 +1774,7 @@ export function SetPlayerMonData(monId: any): any {
           SetMonData(gPlayerParty[monId], MON_DATA_HELD_ITEM,gBattleBufferA[gActiveBattler][3]);
           break;
       case REQUEST_MOVES_PP_BATTLE:
-          for (i = 0; i < MAX_MON_MOVES; i++)
+          for (i = 0; i < (4); i++)
           {
               SetMonData(gPlayerParty[monId], MON_DATA_MOVE1 + i,moveData.moves[i]);
               SetMonData(gPlayerParty[monId], MON_DATA_PP1 + i,moveData.pp[i]);
@@ -1984,7 +1995,7 @@ export function StartSendOutAnim(battler: any, dontClearSubstituteBit: any): any
       gSprites[gBattlerSpriteIds[battler]].invisible = TRUE;
       gSprites[gBattlerSpriteIds[battler]].callback = SpriteCallbackDummy;
 
-      gSprites[gBattleControllerData[battler]].data[0] = DoPokeballSendOutAnimation(0, POKEBALL_PLAYER_SENDOUT);
+      gSprites[gBattleControllerData[battler]].data[0] = DoPokeballSendOutAnimation(0, (0xFF));
 }
 
 /** static void PlayerHandleReturnMonToBall(void) */
@@ -2010,7 +2021,7 @@ export function DoSwitchOutAnimation(): any {
       {
       case 0:
           if (gBattleSpritesDataPtr.battlerData[gActiveBattler].behindSubstitute)
-              InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, B_ANIM_SUBSTITUTE_TO_MON);
+              InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, (5));
 
           gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].animationState = 1;
           break;
@@ -2018,7 +2029,7 @@ export function DoSwitchOutAnimation(): any {
           if (!gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].specialAnimActive)
           {
               gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].animationState = 0;
-              InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, B_ANIM_SWITCH_OUT_PLAYER_MON);
+              InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, (1));
               gBattlerControllerFuncs[gActiveBattler] = FreeMonSpriteAfterSwitchOutAnim;
           }
           break;
@@ -2030,21 +2041,21 @@ export function PlayerHandleDrawTrainerPic(): any {
   let xPos, yPos;
       let trainerPicId: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+      if (gBattleTypeFlags & ((1 << 1)))
       {
-          if ((gLinkPlayers[GetMultiplayerId()].version & 0xFF) == VERSION_FIRE_RED
-              || (gLinkPlayers[GetMultiplayerId()].version & 0xFF) == VERSION_LEAF_GREEN)
+          if ((gLinkPlayers[GetMultiplayerId()].version & 0xFF) == (4)
+              || (gLinkPlayers[GetMultiplayerId()].version & 0xFF) == (5))
           {
-              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + TRAINER_BACK_PIC_RED;
+              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + (2);
           }
-          else if ((gLinkPlayers[GetMultiplayerId()].version & 0xFF) == VERSION_RUBY
-                   || (gLinkPlayers[GetMultiplayerId()].version & 0xFF) == VERSION_SAPPHIRE)
+          else if ((gLinkPlayers[GetMultiplayerId()].version & 0xFF) == (2)
+                   || (gLinkPlayers[GetMultiplayerId()].version & 0xFF) == (1))
           {
-              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + TRAINER_BACK_PIC_RUBY_SAPPHIRE_BRENDAN;
+              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + (4);
           }
           else
           {
-              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + TRAINER_BACK_PIC_BRENDAN;
+              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + (0);
           }
       }
       else
@@ -2052,14 +2063,14 @@ export function PlayerHandleDrawTrainerPic(): any {
           trainerPicId = gSaveBlock2Ptr.playerGender;
       }
 
-      if (gBattleTypeFlags & BATTLE_TYPE_MULTI)
+      if (gBattleTypeFlags & ((1 << 6)))
       {
-          if ((GetBattlerPosition(gActiveBattler) & BIT_FLANK) != B_FLANK_LEFT)  
+          if ((GetBattlerPosition(gActiveBattler) & (2)) != (0))  
               xPos = 90;
           else  
               xPos = 32;
 
-          if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER && gPartnerTrainerId != TRAINER_STEVEN_PARTNER)
+          if (gBattleTypeFlags & ((1 << 22)) && gPartnerTrainerId != (3075))
           {
               xPos = 90;
               yPos = (8 - gTrainerFrontPicCoords[trainerPicId].size) * 4 + 80;
@@ -2077,7 +2088,7 @@ export function PlayerHandleDrawTrainerPic(): any {
       }
 
        
-      if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER && gPartnerTrainerId != TRAINER_STEVEN_PARTNER)
+      if (gBattleTypeFlags & ((1 << 22)) && gPartnerTrainerId != (3075))
       {
           trainerPicId = PlayerGenderToFrontTrainerPicId(gSaveBlock2Ptr.playerGender);
           DecompressTrainerFrontPic(trainerPicId, gActiveBattler);
@@ -2112,26 +2123,26 @@ export function PlayerHandleDrawTrainerPic(): any {
 export function PlayerHandleTrainerSlide(): any {
   let trainerPicId: any = null;
 
-      if (gBattleTypeFlags & BATTLE_TYPE_LINK)
+      if (gBattleTypeFlags & ((1 << 1)))
       {
-          if ((gLinkPlayers[GetMultiplayerId()].version & 0xFF) == VERSION_FIRE_RED
-              || (gLinkPlayers[GetMultiplayerId()].version & 0xFF) == VERSION_LEAF_GREEN)
+          if ((gLinkPlayers[GetMultiplayerId()].version & 0xFF) == (4)
+              || (gLinkPlayers[GetMultiplayerId()].version & 0xFF) == (5))
           {
-              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + TRAINER_BACK_PIC_RED;
+              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + (2);
           }
-          else if ((gLinkPlayers[GetMultiplayerId()].version & 0xFF) == VERSION_RUBY
-                   || (gLinkPlayers[GetMultiplayerId()].version & 0xFF) == VERSION_SAPPHIRE)
+          else if ((gLinkPlayers[GetMultiplayerId()].version & 0xFF) == (2)
+                   || (gLinkPlayers[GetMultiplayerId()].version & 0xFF) == (1))
           {
-              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + TRAINER_BACK_PIC_RUBY_SAPPHIRE_BRENDAN;
+              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + (4);
           }
           else
           {
-              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + TRAINER_BACK_PIC_BRENDAN;
+              trainerPicId = gLinkPlayers[GetMultiplayerId()].gender + (0);
           }
       }
       else
       {
-          trainerPicId = gSaveBlock2Ptr.playerGender + TRAINER_BACK_PIC_BRENDAN;
+          trainerPicId = gSaveBlock2Ptr.playerGender + (0);
       }
 
       DecompressTrainerBackPic(trainerPicId, gActiveBattler);
@@ -2163,7 +2174,7 @@ export function PlayerHandleFaintAnimation(): any {
   if (gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].animationState == 0)
       {
           if (gBattleSpritesDataPtr.battlerData[gActiveBattler].behindSubstitute)
-              InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, B_ANIM_SUBSTITUTE_TO_MON);
+              InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, (5));
           gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].animationState++;
       }
       else
@@ -2172,7 +2183,7 @@ export function PlayerHandleFaintAnimation(): any {
           {
               gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].animationState = 0;
               HandleLowHpMusicChange(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], gActiveBattler);
-              PlaySE12WithPanning(SE_FAINT, SOUND_PAN_ATTACKER);
+              PlaySE12WithPanning((16), (-64));
               gSprites[gBattlerSpriteIds[gActiveBattler]].sSpeedX = 0;
               gSprites[gBattlerSpriteIds[gActiveBattler]].sSpeedY = 5;
               gSprites[gBattlerSpriteIds[gActiveBattler]].callback = SpriteCB_FaintSlideAnim;
@@ -2183,7 +2194,7 @@ export function PlayerHandleFaintAnimation(): any {
 
 /** static void PlayerHandlePaletteFade(void) */
 export function PlayerHandlePaletteFade(): any {
-  BeginNormalPaletteFade(PALETTES_ALL, 2, 0, 16, RGB_BLACK);
+  BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 2, 0, 16, (RGB(0, 0, 0)));
       PlayerBufferExecCompleted();
 }
 
@@ -2191,7 +2202,7 @@ export function PlayerHandlePaletteFade(): any {
 export function PlayerHandleSuccessBallThrowAnim(): any {
   gBattleSpritesDataPtr.animationData.ballThrowCaseId = BALL_3_SHAKES_SUCCESS;
       gDoingBattleAnim = TRUE;
-      InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), B_ANIM_BALL_THROW);
+      InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), (3));
       gBattlerControllerFuncs[gActiveBattler] = CompleteOnSpecialAnimDone;
 }
 
@@ -2201,7 +2212,7 @@ export function PlayerHandleBallThrowAnim(): any {
 
       gBattleSpritesDataPtr.animationData.ballThrowCaseId = ballThrowCaseId;
       gDoingBattleAnim = TRUE;
-      InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), B_ANIM_BALL_THROW);
+      InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT), (3));
       gBattlerControllerFuncs[gActiveBattler] = CompleteOnSpecialAnimDone;
 }
 
@@ -2253,7 +2264,7 @@ export function PlayerDoMoveAnimation(): any {
               && !gBattleSpritesDataPtr.battlerData[gActiveBattler].flag_x8)
           {
               gBattleSpritesDataPtr.battlerData[gActiveBattler].flag_x8 = 1;
-              InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, B_ANIM_SUBSTITUTE_TO_MON);
+              InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, (5));
           }
           gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].animationState = 1;
           break;
@@ -2272,7 +2283,7 @@ export function PlayerDoMoveAnimation(): any {
               SetBattlerSpriteAffineMode(ST_OAM_AFFINE_NORMAL);
               if (gBattleSpritesDataPtr.battlerData[gActiveBattler].behindSubstitute && multihit < 2)
               {
-                  InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, B_ANIM_MON_TO_SUBSTITUTE);
+                  InitAndLaunchSpecialAnimation(gActiveBattler, gActiveBattler, gActiveBattler, (6));
                   gBattleSpritesDataPtr.battlerData[gActiveBattler].flag_x8 = 0;
               }
               gBattleSpritesDataPtr.healthBoxesData[gActiveBattler].animationState = 3;
@@ -2298,7 +2309,7 @@ export function PlayerHandlePrintString(): any {
       gBattle_BG0_Y = 0;
       stringId = (gBattleBufferA[gActiveBattler][2]);
       BufferStringBattle(stringId);
-      BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_MSG);
+      BattlePutTextOnWindow(gDisplayedStringBattle, (0));
       gBattlerControllerFuncs[gActiveBattler] = CompleteOnInactiveTextPrinter2;
       BattleTv_SetDataBasedOnString(stringId);
       BattleArena_DeductSkillPoints(gActiveBattler, stringId);
@@ -2306,7 +2317,7 @@ export function PlayerHandlePrintString(): any {
 
 /** static void PlayerHandlePrintSelectionString(void) */
 export function PlayerHandlePrintSelectionString(): any {
-  if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)
+  if (GetBattlerSide(gActiveBattler) == (0))
           PlayerHandlePrintString();
       else
           PlayerBufferExecCompleted();
@@ -2328,22 +2339,22 @@ export function PlayerHandleChooseAction(): any {
 
       gBattlerControllerFuncs[gActiveBattler] = HandleChooseActionAfterDma3;
       BattleTv_ClearExplosionFaintCause();
-      BattlePutTextOnWindow(gText_BattleMenu, B_WIN_ACTION_MENU);
+      BattlePutTextOnWindow(gText_BattleMenu, (2));
 
       for (i = 0; i < 4; i++)
           ActionSelectionDestroyCursorAt(i);
 
       ActionSelectionCreateCursorAt(gActionSelectionCursor[gActiveBattler], 0);
       BattleStringExpandPlaceholdersToDisplayedString(gText_WhatWillPkmnDo);
-      BattlePutTextOnWindow(gDisplayedStringBattle, B_WIN_ACTION_PROMPT);
+      BattlePutTextOnWindow(gDisplayedStringBattle, (1));
 }
 
 /** static void PlayerHandleYesNoBox(void) */
 export function PlayerHandleYesNoBox(): any {
-  if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)
+  if (GetBattlerSide(gActiveBattler) == (0))
       {
-          HandleBattleWindow(YESNOBOX_X_Y, 0);
-          BattlePutTextOnWindow(gText_BattleYesNoChoice, B_WIN_YESNO);
+          HandleBattleWindow((23, 8, 29, 13), 0);
+          BattlePutTextOnWindow(gText_BattleYesNoChoice, (12));
           gMultiUsePlayerCursor = 1;
           BattleCreateYesNoCursorAt(1);
           gBattlerControllerFuncs[gActiveBattler] = PlayerHandleYesNoInput;
@@ -2369,14 +2380,14 @@ export function PlayerChooseMoveInBattlePalace(): any {
   if (MEM_PRE_DEC(gBattleStruct.arenaMindPoints + gActiveBattler) == 0)
       {
           gBattlePalaceMoveSelectionRngValue = gRngValue;
-          BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_EXEC_SCRIPT, ChooseMoveAndTargetInBattlePalace());
+          BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (10), ChooseMoveAndTargetInBattlePalace());
           PlayerBufferExecCompleted();
       }
 }
 
 /** static void PlayerHandleChooseMove(void) */
 export function PlayerHandleChooseMove(): any {
-  if (gBattleTypeFlags & BATTLE_TYPE_PALACE)
+  if (gBattleTypeFlags & ((1 << 17)))
       {
           MEM_WRITE((gBattleStruct.arenaMindPoints + gActiveBattler), 8);
           gBattlerControllerFuncs[gActiveBattler] = PlayerChooseMoveInBattlePalace;
@@ -2402,7 +2413,7 @@ export function InitMoveSelectionsVarsAndStrings(): any {
 export function PlayerHandleChooseItem(): any {
   let i: any = null;
 
-      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
       gBattlerControllerFuncs[gActiveBattler] = OpenBagAndChooseItem;
       gBattlerInMenuId = gActiveBattler;
 
@@ -2417,7 +2428,7 @@ export function PlayerHandleChoosePokemon(): any {
       for (i = 0; i < ARRAY_COUNT(gBattlePartyCurrentOrder); i++)
           gBattlePartyCurrentOrder[i] = gBattleBufferA[gActiveBattler][4 + i];
 
-      if (gBattleTypeFlags & BATTLE_TYPE_ARENA && (gBattleBufferA[gActiveBattler][1] & 0xF) != PARTY_ACTION_CANT_SWITCH)
+      if (gBattleTypeFlags & ((1 << 18)) && (gBattleBufferA[gActiveBattler][1] & 0xF) != (2))
       {
           BtlController_EmitChosenMonReturnValue(B_COMM_TO_ENGINE, gBattlerPartyIndexes[gActiveBattler] + 1, gBattlePartyCurrentOrder);
           PlayerBufferExecCompleted();
@@ -2429,7 +2440,7 @@ export function PlayerHandleChoosePokemon(): any {
           MEM_WRITE((gBattleStruct.battlerPreventingSwitchout), gBattleBufferA[gActiveBattler][1] >> 4);
           MEM_WRITE((gBattleStruct.prevSelectedPartySlot), gBattleBufferA[gActiveBattler][2]);
           MEM_WRITE((gBattleStruct.abilityPreventingSwitchout), gBattleBufferA[gActiveBattler][3]);
-          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 0x10, RGB_BLACK);
+          BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 0, 0, 0x10, (RGB(0, 0, 0)));
           gBattlerControllerFuncs[gActiveBattler] = OpenPartyMenuToChooseMon;
           gBattlerInMenuId = gActiveBattler;
       }
@@ -2438,7 +2449,7 @@ export function PlayerHandleChoosePokemon(): any {
 /** static void PlayerHandleCmd23(void) */
 export function PlayerHandleCmd23(): any {
   BattleStopLowHpSound();
-      BeginNormalPaletteFade(PALETTES_ALL, 2, 0, 16, RGB_BLACK);
+      BeginNormalPaletteFade((((0x0000FFFF) | (0xFFFF0000))), 2, 0, 16, (RGB(0, 0, 0)));
       PlayerBufferExecCompleted();
 }
 
@@ -2453,7 +2464,7 @@ export function PlayerHandleHealthBarUpdate(): any {
       if (hpVal > 0)
           gPlayerPartyLostHP += hpVal;
 
-      if (hpVal != INSTANT_HP_BAR_DROP)
+      if (hpVal != (0x7FFF))
       {
           let maxHP: any = GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_MAX_HP);
           let curHP: any = GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_HP);
@@ -2475,7 +2486,7 @@ export function PlayerHandleHealthBarUpdate(): any {
 export function PlayerHandleExpUpdate(): any {
   let monId: any = gBattleBufferA[gActiveBattler][1];
 
-      if (GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) >= MAX_LEVEL)
+      if (GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) >= (100))
       {
           PlayerBufferExecCompleted();
       }
@@ -2571,7 +2582,7 @@ export function PlayerHandleCmd32(): any {
 
 /** static void PlayerHandleTwoReturnValues(void) */
 export function PlayerHandleTwoReturnValues(): any {
-  BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, B_ACTION_USE_MOVE, 0);
+  BtlController_EmitTwoReturnValues(B_COMM_TO_ENGINE, (0), 0);
       PlayerBufferExecCompleted();
 }
 
@@ -2641,10 +2652,10 @@ export function PlayerHandleCantSwitch(): any {
 export function PlayerHandlePlaySE(): any {
   let pan: any = null;
 
-      if (GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)
-          pan = SOUND_PAN_ATTACKER;
+      if (GetBattlerSide(gActiveBattler) == (0))
+          pan = (-64);
       else
-          pan = SOUND_PAN_TARGET;
+          pan = (63);
 
       PlaySE12WithPanning(gBattleBufferA[gActiveBattler][1] | (gBattleBufferA[gActiveBattler][2] << 8), pan);
       PlayerBufferExecCompleted();
@@ -2669,7 +2680,7 @@ export function PlayerHandlePlayFanfareOrBGM(): any {
 export function PlayerHandleFaintingCry(): any {
   let species: any = GetMonData(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], MON_DATA_SPECIES);
 
-      PlayCry_ByMode(species, -25, CRY_MODE_FAINT);
+      PlayCry_ByMode(species, -25, (5));
       PlayerBufferExecCompleted();
 }
 
@@ -2735,7 +2746,7 @@ export function Task_StartSendOutAnim(taskId: any): any {
           let savedActiveBattler: any = gActiveBattler;
 
           gActiveBattler = gTasks[taskId].tBattlerId;
-          if (!IsDoubleBattle() || (gBattleTypeFlags & BATTLE_TYPE_MULTI))
+          if (!IsDoubleBattle() || (gBattleTypeFlags & ((1 << 6))))
           {
               gBattleBufferA[gActiveBattler][1] = gBattlerPartyIndexes[gActiveBattler];
               StartSendOutAnim(gActiveBattler, FALSE);
@@ -2744,11 +2755,11 @@ export function Task_StartSendOutAnim(taskId: any): any {
           {
               gBattleBufferA[gActiveBattler][1] = gBattlerPartyIndexes[gActiveBattler];
               StartSendOutAnim(gActiveBattler, FALSE);
-              gActiveBattler ^= BIT_FLANK;
+              gActiveBattler ^= (2);
               gBattleBufferA[gActiveBattler][1] = gBattlerPartyIndexes[gActiveBattler];
               BattleLoadPlayerMonSpriteGfx(gPlayerParty[gBattlerPartyIndexes[gActiveBattler]], gActiveBattler);
               StartSendOutAnim(gActiveBattler, FALSE);
-              gActiveBattler ^= BIT_FLANK;
+              gActiveBattler ^= (2);
           }
           gBattlerControllerFuncs[gActiveBattler] = Intro_TryShinyAnimShowHealthbox;
           gActiveBattler = savedActiveBattler;
@@ -2758,7 +2769,7 @@ export function Task_StartSendOutAnim(taskId: any): any {
 
 /** static void PlayerHandleDrawPartyStatusSummary(void) */
 export function PlayerHandleDrawPartyStatusSummary(): any {
-  if (gBattleBufferA[gActiveBattler][1] != 0 && GetBattlerSide(gActiveBattler) == B_SIDE_PLAYER)
+  if (gBattleBufferA[gActiveBattler][1] != 0 && GetBattlerSide(gActiveBattler) == (0))
       {
           PlayerBufferExecCompleted();
       }
@@ -2794,8 +2805,8 @@ export function PlayerHandleHidePartyStatusSummary(): any {
 
 /** static void PlayerHandleEndBounceEffect(void) */
 export function PlayerHandleEndBounceEffect(): any {
-  EndBounceEffect(gActiveBattler, BOUNCE_HEALTHBOX);
-      EndBounceEffect(gActiveBattler, BOUNCE_MON);
+  EndBounceEffect(gActiveBattler, (0x1));
+      EndBounceEffect(gActiveBattler, (0x0));
       PlayerBufferExecCompleted();
 }
 
@@ -2834,8 +2845,8 @@ export function PlayerHandleLinkStandbyMsg(): any {
           PrintLinkStandbyMsg();
            
       case LINK_STANDBY_STOP_BOUNCE_ONLY:
-          EndBounceEffect(gActiveBattler, BOUNCE_HEALTHBOX);
-          EndBounceEffect(gActiveBattler, BOUNCE_MON);
+          EndBounceEffect(gActiveBattler, (0x1));
+          EndBounceEffect(gActiveBattler, (0x0));
           break;
       case LINK_STANDBY_MSG_ONLY:
           PrintLinkStandbyMsg();

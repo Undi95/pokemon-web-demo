@@ -449,35 +449,38 @@ function patchAllAutoSyntaxBugs() {
     let s = fs.readFileSync(fp, 'utf8');
     const before = s;
 
-    // PATCH AA1 : `GetVarPointer(arg) = Y;` → `VarSet(arg, Y);`
-    // arg = identifier OR array-indexed expr (e.g. arr[y]).
+    // PATCH AA1 : `*?GetVarPointer(arg) = Y;` → `VarSet(arg, Y);`
+    // arg accepts identifier, array-indexed `arr[y]`, or paren-wrapped value
+    // (= `(0x4049)` après object macro substitution).
+    // Optional `*` prefix (= déréf de pointer return).
+    const VARPTR_ARG = '\\s*\\(?\\s*([^()]+(?:\\[[^\\]]*\\])?)\\s*\\)?\\s*';
     s = s.replace(
-      /GetVarPointer\(([^()]+(?:\[[^\]]*\])?)\)\s*=(?!=)\s*([^;\n]+);/g,
+      new RegExp(`\\*?\\s*GetVarPointer\\(${VARPTR_ARG}\\)\\s*=(?!=)\\s*([^;\\n]+);`, 'g'),
       'VarSet($1, $2);',
     );
 
-    // PATCH AA2 : `GetVarPointer(arg) += delta` → expression équiv.
+    // PATCH AA2 : `*?GetVarPointer(arg) += delta` → expression équiv.
     s = s.replace(
-      /GetVarPointer\(([^()]+(?:\[[^\]]*\])?)\)\s*\+=\s*([^);]+)\)/g,
+      new RegExp(`\\*?\\s*GetVarPointer\\(${VARPTR_ARG}\\)\\s*\\+=\\s*([^);]+)\\)`, 'g'),
       '(VarSet($1, VarGet($1) + ($2)), VarGet($1)))',
     );
 
-    // PATCH AA2b : `GetVarPointer(arg) op= rhs;` for op in `|& ^- * / %`.
+    // PATCH AA2b : `*?GetVarPointer(arg) op= rhs;` for op in `|& ^- * / %`.
     // → `VarSet(arg, VarGet(arg) <op> (rhs));`
     s = s.replace(
-      /GetVarPointer\(([^()]+(?:\[[^\]]*\])?)\)\s*([\|\&\^\-\*\/%])=\s*([^;\n]+);/g,
+      new RegExp(`\\*?\\s*GetVarPointer\\(${VARPTR_ARG}\\)\\s*([\\|\\&\\^\\-\\*\\/%])=\\s*([^;\\n]+);`, 'g'),
       (m, arg, op, rhs) => `VarSet(${arg}, VarGet(${arg}) ${op} (${rhs}));`,
     );
 
-    // PATCH AA3 : `++(GetVarPointer(arg))` → `(VarSet(X, VarGet(X) + 1), VarGet(X))`.
+    // PATCH AA3 : `++(*?GetVarPointer(arg))` → `(VarSet(X, VarGet(X) + 1), VarGet(X))`.
     s = s.replace(
-      /\+\+\(GetVarPointer\(([^()]+(?:\[[^\]]*\])?)\)\)/g,
+      new RegExp(`\\+\\+\\(\\*?\\s*GetVarPointer\\(${VARPTR_ARG}\\)\\)`, 'g'),
       '(VarSet($1, VarGet($1) + 1), VarGet($1))',
     );
 
-    // PATCH AA4 : `--(GetVarPointer(arg))` → idem decrement.
+    // PATCH AA4 : `--(*?GetVarPointer(arg))` → idem decrement.
     s = s.replace(
-      /--\(GetVarPointer\(([^()]+(?:\[[^\]]*\])?)\)\)/g,
+      new RegExp(`--\\(\\*?\\s*GetVarPointer\\(${VARPTR_ARG}\\)\\)`, 'g'),
       '(VarSet($1, VarGet($1) - 1), VarGet($1))',
     );
 
@@ -687,18 +690,18 @@ function patchAllAutoSyntaxBugs() {
         localNames.add(m[1]);
       }
 
-      // Find candidates : bare assignments `^\s+IDENT = ...;` inside bodies.
+      // Find candidates : ONLY bare assignments `^\s+IDENT = ...;` inside
+      // bodies. Strict mode requires declaration before assign. READS-only
+      // resolves correctly via globalThis fallback (= module scope → global).
+      // ⚠️ N'inject PAS sur reads-only sinon on shadow les exports
+      // globalThis.X (= e.g. sOptionMenuBgTemplates exposé par option-menu-impl
+      // se retrouverait shadowed par `let sOptionMenuBgTemplates = null` →
+      // InitBgsFromTemplates reçoit null → "templates is not iterable").
       const candidates = new Set();
-      // Pattern : assignment LHS at function body indent (= 6+ spaces).
+      // Pattern : assignment LHS at function body indent (= 2+ spaces/tabs).
       // Skip if part of `let X =` / `const X =` etc.
-      for (const m of s.matchAll(/^(?:    |\t)+(?!let\s|const\s|var\s|return\s|if\s|else|while\s|for\s|switch\s|case\s|do\s|try\s|throw\s|continue|break|MEM_WRITE|MEM_OP_ASSIGN)([A-Za-z_]\w*)\s*=(?!=)/gm)) {
+      for (const m of s.matchAll(/^[ \t]{2,}(?!let\s|const\s|var\s|return\s|if\s|else|while\s|for\s|switch\s|case\s|do\s|try\s|throw\s|continue|break|MEM_WRITE|MEM_OP_ASSIGN)([A-Za-z_]\w*)\s*=(?!=)/gm)) {
         candidates.add(m[1]);
-      }
-      // Reads : `IDENT.field` or `IDENT(...)` or `IDENT[idx]` patterns.
-      // We focus on reads of identifiers that look like `s<UpperCase>` (= static
-      // by emerald naming convention) to avoid huge false positive list.
-      for (const m of s.matchAll(/\b(s[A-Z]\w*)\b/g)) {
-        if (!m[1].endsWith('_t')) candidates.add(m[1]);
       }
 
       // Filter : remove imports, locals, params, known globals.

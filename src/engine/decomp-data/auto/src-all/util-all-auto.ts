@@ -15,11 +15,6 @@
 /* eslint-disable */
 // @ts-nocheck
 
-
-// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
-let sCrc16Table: any = null;
-let sInvisibleSpriteTemplate: any = null;
-let sSpriteDimensions: any = null;
 /** u8 CreateInvisibleSpriteWithCallback(void (*callback)(struct Sprite *)) */
 export function CreateInvisibleSpriteWithCallback(callback: any): any {
   let sprite: any = CreateSprite(sInvisibleSpriteTemplate, DISPLAY_WIDTH + 8, DISPLAY_HEIGHT + 8, 14);

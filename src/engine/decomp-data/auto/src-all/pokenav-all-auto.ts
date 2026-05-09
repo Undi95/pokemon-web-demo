@@ -15,6 +15,10 @@
 /* eslint-disable */
 // @ts-nocheck
 
+
+// ─── AUTO-INJECTED file-scope vars (= EWRAM/IWRAM static C decls) ──
+let gPokenavResources: any = null;
+let tState: any = null;
 /** u32 CreateLoopedTask(LoopedTask loopedTask, u32 priority) */
 export function CreateLoopedTask(loopedTask: any, priority: any): any {
   let taskId: any = null;
@@ -46,7 +50,7 @@ export function IsLoopedTaskActive(taskId: any): any {
 /** bool32 FuncIsActiveLoopedTask(LoopedTask func) */
 export function FuncIsActiveLoopedTask(func: any): any {
   let i: any = null;
-      for (i = 0; i < NUM_TASKS; i++)
+      for (i = 0; i < (16); i++)
       {
           if (gTasks[i].isActive
               && (gTasks[i].func == Task_RunLoopedTask || gTasks[i].func == Task_RunLoopedTask_LinkMode)
@@ -67,22 +71,22 @@ export function Task_RunLoopedTask(taskId: any): any {
           let action: any = loopedTask(state);
           switch (action)
           {
-          case LT_INC_AND_CONTINUE:
+          case (1):
               state++;
               break;
-          case LT_INC_AND_PAUSE:
+          case (0):
               state++;
               return;
-          case LT_FINISH:
+          case (4):
               DestroyTask(taskId);
               return;
            
           default:
               state = ((action) - 5);
               break;
-          case LT_CONTINUE:
+          case (3):
               break;
-          case LT_PAUSE:
+          case (2):
               return;
           }
       }
@@ -102,19 +106,19 @@ export function Task_RunLoopedTask_LinkMode(taskId: any): any {
       action = task(state);
       switch (action)
       {
-      case LT_INC_AND_PAUSE:
-      case LT_INC_AND_CONTINUE:
+      case (0):
+      case (1):
           state++;
           break;
-      case LT_FINISH:
+      case (4):
           DestroyTask(taskId);
           break;
        
       default:
           state = ((action) - 5);
           break;
-      case LT_PAUSE:
-      case LT_CONTINUE:
+      case (2):
+      case (3):
           break;
       }
 }
@@ -140,7 +144,7 @@ export function CB2_InitPokeNav(): any {
 /** void OpenPokenavForTutorial(void) */
 export function OpenPokenavForTutorial(): any {
   SetMainCallback2(CB2_InitPokenavForTutorial);
-      FadeScreen(FADE_TO_BLACK, 0);
+      FadeScreen((1), 0);
 }
 
 /** static void CB2_InitPokenavForTutorial(void) */
@@ -196,7 +200,7 @@ export function InitPokenavResources(resources: any): any {
 export function AnyMonHasRibbon(): any {
   let i, j;
 
-      for (i = 0; i < PARTY_SIZE; i++)
+      for (i = 0; i < (6); i++)
       {
           if (GetMonData(gPlayerParty[i],  MON_DATA_SANITY_HAS_SPECIES)
               && !GetMonData(gPlayerParty[i], MON_DATA_SANITY_IS_EGG)
@@ -206,9 +210,9 @@ export function AnyMonHasRibbon(): any {
           }
       }
 
-      for (j = 0; j < TOTAL_BOXES_COUNT; j++)
+      for (j = 0; j < (14); j++)
       {
-          for (i = 0; i < IN_BOX_COUNT; i++)
+          for (i = 0; i < (((5) * (6))); i++)
           {
               if (CheckBoxMonSanityAt(j, i)
                   && GetBoxMonDataAt(j, i, MON_DATA_RIBBON_COUNT) != 0)
@@ -260,12 +264,12 @@ export function Task_Pokenav(taskId: any): any {
           tState = 3;
       case 3:
           menuId = GetCurrentMenuCB();
-          if (menuId == POKENAV_MENU_FUNC_EXIT)
+          if (menuId == (-1))
           {
               ShutdownPokenav();
               tState = 5;
           }
-          else if (menuId >= POKENAV_MENU_IDS_START)
+          else if (menuId >= (100000))
           {
               PokenavMenuCallbacks[gPokenavResources.currentMenuIndex].free2();
               PokenavMenuCallbacks[gPokenavResources.currentMenuIndex].free1();
@@ -308,7 +312,7 @@ export function Task_Pokenav(taskId: any): any {
 
 /** static bool32 SetActivePokenavMenu(u32 menuId) */
 export function SetActivePokenavMenu(menuId: any): any {
-  let index: any = menuId - POKENAV_MENU_IDS_START;
+  let index: any = menuId - (100000);
 
       InitKeys_();
       if (!PokenavMenuCallbacks[index].init())
