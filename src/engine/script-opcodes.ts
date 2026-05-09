@@ -1689,9 +1689,181 @@ function parseValue(arg: string | undefined): number {
   return 0;
 }
 
+// ─── Phase 5.7+ iteration 6 : field SE/audio extras + register_matchcall ─────
+// 1:1 décomp scrcmd.c — alias to playse with stereo pan ignored (= we don't
+// emulate stereo positioning). 1746x usage in scripts.
+registerOpcode('playsewithpan', (_ctx, args) => {
+  const seName = args[0] ?? '';
+  const seId = (Songs as unknown as Record<string, number>)[seName];
+  if (typeof seId === 'number') PlaySE(seId);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_loopsewithpan` — looped SE. Same as playsewithpan for
+// stub purpose. 194x usage.
+registerOpcode('loopsewithpan', (_ctx, args) => {
+  const seName = args[0] ?? '';
+  const seId = (Songs as unknown as Record<string, number>)[seName];
+  if (typeof seId === 'number') PlaySE(seId);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_waitse` — wait for current SE to finish. We treat SE as
+// fire-and-forget so this is a no-op. 342x usage.
+registerOpcode('waitse', (_ctx) => false);
+
+// 1:1 décomp `ScrCmd_waitplaysewithpan`. 96x usage.
+registerOpcode('waitplaysewithpan', (_ctx) => false);
+
+// 1:1 décomp `ScrCmd_register_matchcall` (scrcmd.c) :
+//   sets `gMatchCallTrainerFlags` bit pour que le trainer puisse rappeler
+//   pour rematch. 152x usage (= post-battle des dresseurs early-game).
+//   MVP : on stocke un flag perso.
+registerOpcode('register_matchcall', (_ctx, args) => {
+  const trainerName = args[0] ?? '';
+  const g = globalThis as Record<string, unknown>;
+  if (!g.__matchCallTrainers) g.__matchCallTrainers = new Set<string>();
+  (g.__matchCallTrainers as Set<string>).add(trainerName);
+  console.log(`[opcode register_matchcall] '${trainerName}' registered for rematch`);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_setbyte` (scrcmd.c) — set a byte var. Le decomp utilise ça
+// rarement directement (= surtout pour battle script land). MVP no-op.
+registerOpcode('setbyte', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_pause` — alternate name for delay (= same arg semantic).
+registerOpcode('pause', (ctx, args) => {
+  let frames = parseValue(args[0]);
+  const tick = (): boolean => {
+    if (frames <= 0) return true;
+    frames--;
+    return false;
+  };
+  SetupNativeScript(ctx, tick);
+  return true;
+});
+
+// 1:1 décomp `ScrCmd_random` — RNG result into VAR_RESULT. Range = args[0].
+registerOpcode('random', (_ctx, args) => {
+  const range = parseValue(args[0]);
+  const r = Math.floor(Math.random() * Math.max(1, range));
+  VarSet('VAR_RESULT', r);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_finditem` — field find item / `setvar VAR_RESULT` if found.
+//   MVP : mark obtained as success (= not blocking flow but no real item).
+registerOpcode('finditem', (_ctx, _args) => {
+  // Note: real impl would load item from event_objects template + add to bag.
+  console.log('[opcode finditem] stub — TODO field item find UI');
+  VarSet('VAR_RESULT', 1);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_pokemart` — open pokemart UI with mart list pointer.
+//   MVP : log + skip (= no shop UI yet).
+registerOpcode('pokemart', (_ctx, args) => {
+  console.log(`[opcode pokemart] '${args[0]}' — TODO pokemart UI`);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_pokemartdecoration` / `pokemartdecoration2`.
+registerOpcode('pokemartdecoration', (_ctx, _args) => false);
+registerOpcode('pokemartdecoration2', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_setberrytree` — set berry tree state. 160x usage but
+// only outdoor maps with berry trees. MVP no-op (= no berry growth sim yet).
+registerOpcode('setberrytree', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_braillemsgbox` — message in braille font. 48x usage.
+//   MVP : log + skip (= no braille font yet).
+registerOpcode('braillemsgbox', (_ctx, args) => {
+  console.log(`[opcode braillemsgbox] '${args[0]}' — TODO braille font`);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_braillemessage` / `brailleformat` — braille only. No-op.
+registerOpcode('braillemessage', (_ctx, _args) => false);
+registerOpcode('brailleformat', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_messageautoscroll` — message that auto-scrolls.
+//   MVP : log + skip (= would need msgbox + auto-advance timer).
+registerOpcode('messageautoscroll', (_ctx, args) => {
+  console.log(`[opcode messageautoscroll] '${args[0]}' — TODO autoscroll`);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_dofieldeffect` — fire a field effect (= leaves rustle,
+// rocksmash break, etc.). MVP no-op (= we don't have field effects yet).
+registerOpcode('dofieldeffect', (_ctx, args) => {
+  console.log(`[opcode dofieldeffect] effect=${args[0]} — TODO field effects`);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_setfieldeffectargument` — sets args for next field effect.
+registerOpcode('setfieldeffectargument', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_waitfieldeffect` — wait for field effect to finish.
+registerOpcode('waitfieldeffect', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_jumpargeq` / `jumpifbyte` / `jumpifbytewasset` etc. —
+//   alternate cond jumps. Treat as no-op fall-through.
+registerOpcode('jumpargeq', (_ctx, _args) => false);
+registerOpcode('jumpifbyte', (_ctx, _args) => false);
+registerOpcode('jumpifbytewasset', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_setarg` — sets script arg. MVP no-op.
+registerOpcode('setarg', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_endall` — like end but bypasses cleanup. Same effect.
+registerOpcode('endall', (ctx) => {
+  StopScript(ctx);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_end2` — alternate end (= same semantic).
+registerOpcode('end2', (ctx) => {
+  StopScript(ctx);
+  return false;
+});
+
+// 1:1 décomp `ScrCmd_loadword` — load text address into ctx slot. MVP no-op.
+registerOpcode('loadword', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_callstd` / `gotostd` — call/jump to a stdscript handler.
+//   Le décomp dispatches via gStdScripts[id]. MVP no-op (= we use string-named
+//   scripts, not numeric IDs).
+registerOpcode('callstd', (_ctx, _args) => false);
+registerOpcode('gotostd', (_ctx, _args) => false);
+registerOpcode('callstd_if', (_ctx, _args) => false);
+registerOpcode('gotostd_if', (_ctx, _args) => false);
+
+// 1:1 décomp `ScrCmd_settrainerflag` / `cleartrainerflag`. 114x usage.
+registerOpcode('settrainerflag', (_ctx, args) => {
+  const trainer = args[0] ?? '';
+  const g = globalThis as Record<string, unknown>;
+  if (!g.__defeatedTrainers) g.__defeatedTrainers = new Set<string>();
+  (g.__defeatedTrainers as Set<string>).add(trainer);
+  return false;
+});
+registerOpcode('cleartrainerflag', (_ctx, args) => {
+  const trainer = args[0] ?? '';
+  const g = globalThis as Record<string, unknown>;
+  if (g.__defeatedTrainers) (g.__defeatedTrainers as Set<string>).delete(trainer);
+  return false;
+});
+registerOpcode('checktrainerflag', (_ctx, args) => {
+  const trainer = args[0] ?? '';
+  const g = globalThis as Record<string, unknown>;
+  const has = (g.__defeatedTrainers as Set<string>)?.has(trainer) ?? false;
+  VarSet('VAR_RESULT', has ? 1 : 0);
+  return false;
+});
+
 // ─── Mark module loaded (= for sanity check) ────────────────────────────────
 
-console.log('[script-opcodes] registered Phase 4.5 MVP opcodes');
+console.log('[script-opcodes] registered Phase 4.5 MVP opcodes + iter6 stubs');
 
 // Lint-friendly export to avoid "unused imports".
 export { COMPARE_LT, COMPARE_EQ, COMPARE_GT };
