@@ -8,26 +8,24 @@
  *   - `CreateYesNoMenu` / `Menu_ProcessInputNoWrapClearOnChoose`
  *     pour la confirmation (= 1:1 décomp Task_AskConfirmStarter)
  *   - `gMain.heldKeys` / `gMain.newKeys` pour input gauche/droite/A/B
+ *   - Phase 5.5b : **vrais sprites** via runtime CreateSpriteFromTemplate
+ *     (= sSpriteTemplate_Pokeball/Hand/StarterCircle, registered dans
+ *     SPRITE_TEMPLATES via extract-sprite-system.mjs)
  *
  * Le flow tourne via SetupNativeScript polling depuis l'opcode `special` (= dans
  * script-opcodes.ts). Chaque tick avance la state machine.
  *
- * State machine (= 1:1 décomp src/starter_choose.c Task_StarterChoose suite) :
- *   PROMPT       : show "Le PROF. SEKO a des ennuis!\nChoisis un POKéMON et sauve-le!"
- *                  + show selection legend (= 1=Arcko / 2=Poussifeu / 3=Gobou)
- *   WAIT_INPUT   : poll arrows (gauche/droite) + A. Update label si changement.
- *   ASK_CONFIRM  : show "Prendre ce POKéMON?" + spawn YesNo menu
+ * State machine (= 1:1 décomp src/starter_choose.c) :
+ *   LOAD_ASSETS  : async preload sprite sheet + palette pour TAG_POKEBALL_SELECT
+ *   SPAWN_SPRITES : spawn 3 pokeballs + hand cursor (= 1:1 décomp CB2_ChooseStarter)
+ *   PROMPT       : ShowFieldMessage gText_BirchInTrouble
+ *   WAIT_INPUT   : poll arrows + A. Update hand position si selection change.
+ *   ASK_CONFIRM  : ShowFieldMessage gText_ConfirmStarterChoice + spawn YesNo
  *   WAIT_CONFIRM : poll Menu_ProcessInputNoWrapClearOnChoose
- *   COMMIT       : addToParty + setVar + cleanup → done
- *   DECLINE      : cleanup yesno → back to WAIT_INPUT
+ *   COMMIT       : addToParty + setVar + cleanup sprites + cleanup window
+ *   DECLINE      : cleanup yesno → back to PROMPT
  *
- * 1:1 limitation : pas de sprites pokeball/hand visuels (= sScene Phaser
- * séparée violerait directive). Le user voit le dialog + arrow keys + yesno
- * comme un sign/NPC dialog. Pour avoir les sprites visuels 1:1, il faut
- * activer les auto-callbacks `starter_choose-callbacks-auto.ts` via le runtime
- * complet (= ~6h de bridging). Phase ultérieure.
- *
- * Cf. memory/upd2-progress.md Phase 5.5.
+ * Cf. memory/upd2-progress.md.
  */
 import { ShowFieldMessage, IsFieldMessageBoxHidden, HideFieldMessageBox } from './field-message-box';
 import { CreateYesNoMenu, Menu_ProcessInputNoWrapClearOnChoose, GetYesNoWindowId } from './gba-menu-system';
@@ -36,17 +34,27 @@ import { getRuntime } from './decomp-globals';
 import { gameState } from './game-state';
 import { createPokemonInstance } from './pokemon';
 import { VarSet } from './script-vars';
+import { Sin } from './decomp-helpers';
 
 // 1:1 décomp `sStarterMon[]` (= public/decomp/em/static-tables/starter_choose.json).
 const STARTER_SPECIES: ReadonlyArray<string> = [
   'SPECIES_TREECKO', 'SPECIES_TORCHIC', 'SPECIES_MUDKIP',
 ];
+// 1:1 décomp sPokeballCoords (= 32x32 sprite center).
+const POKEBALL_COORDS: ReadonlyArray<readonly [number, number]> = [
+  [60, 64], [120, 88], [180, 64],
+];
+// 1:1 décomp sCursorCoords (= hand bobs above pokeball, base y).
+const CURSOR_COORDS: ReadonlyArray<readonly [number, number]> = [
+  [60, 32], [120, 56], [180, 32],
+];
+
 // FR labels (= cf. species_names_fr).
 const STARTER_NAMES: ReadonlyArray<string>      = ['ARCKO', 'POUSSIFEU', 'GOBOU'];
 // 1:1 décomp pokedex-entries.json categories.
 const STARTER_CATEGORIES: ReadonlyArray<string> = ['BOIS GECKO', 'POUSSIN', 'POISSONBOUE'];
 
-// 1:1 décomp gText_BirchInTrouble + selection legend.
+// 1:1 décomp gText_BirchInTrouble.
 const TEXT_BIRCH_IN_TROUBLE = 'Le PROF. SEKO a des ennuis!\nChoisis un POKéMON et sauve-le!';
 // 1:1 décomp gText_ConfirmStarterChoice.
 const TEXT_CONFIRM_STARTER = 'Prendre ce POKéMON?';
@@ -57,10 +65,18 @@ const B_BUTTON   = 0x02;
 const DPAD_RIGHT = 0x10;
 const DPAD_LEFT  = 0x20;
 
-type State = 'INIT' | 'PROMPT_WAIT' | 'PROMPT_DONE' | 'WAIT_INPUT'
+// Asset URLs (= public/decomp/em/starter_choose/).
+// Runtime LoadCompressedSpriteSheet expects palette PNG (= 4bpp indexed avec
+// palette embedded). Notre engine extract palette from PNG directly.
+const POKEBALL_SHEET_URL = '/decomp/em/starter_choose/pokeball_selection.png';
+const STARTER_CIRCLE_SHEET_URL = '/decomp/em/starter_choose/starter_circle.png';
+
+type State = 'LOAD_ASSETS' | 'WAIT_LOAD' | 'SPAWN_SPRITES'
+           | 'PROMPT_INIT' | 'PROMPT_WAIT' | 'WAIT_INPUT'
            | 'ASK_CONFIRM_INIT' | 'ASK_CONFIRM_WAIT' | 'WAIT_CONFIRM'
            | 'COMMIT_INIT' | 'COMMIT_WAIT'
-           | 'DECLINE_INIT' | 'DECLINE_WAIT'
+           | 'DECLINE_INIT'
+           | 'CLEANUP'
            | 'DONE';
 
 interface ChooseStarterFlow {
@@ -70,28 +86,93 @@ interface ChooseStarterFlow {
 
 /** Build a fresh ChooseStarter flow + return the controller. */
 export function startChooseStarterFlow(): ChooseStarterFlow {
-  let state: State = 'INIT';
+  let state: State = 'LOAD_ASSETS';
   let selection = 1;  // Default = TORCHIC (= 1:1 décomp middle pokeball).
   let chosenIdx = -1;
 
-  const buildPromptText = (): string => {
-    return `${TEXT_BIRCH_IN_TROUBLE}\n→ ${STARTER_NAMES[selection]} (${STARTER_CATEGORIES[selection]})`;
-  };
+  // Sprite IDs (= -1 if not spawned yet).
+  const pokeballSpriteIds: number[] = [-1, -1, -1];
+  let handSpriteId = -1;
+
+  // Async preload state.
+  let loadStarted = false;
+  let loadDone = false;
+  let loadFailed = false;
+
+  // Hand bob timer.
+  let handBobTimer = 0;
+  let lastSelection = -1;
 
   const tick = (): boolean => {
     const rt = getRuntime();
     if (!rt) return false;
 
     switch (state) {
-      case 'INIT': {
-        // Show initial dialog with current selection.
-        ShowFieldMessage(buildPromptText());
+      case 'LOAD_ASSETS': {
+        if (!loadStarted) {
+          loadStarted = true;
+          // 1:1 décomp CB2_ChooseStarter :
+          //   LoadCompressedSpriteSheet(&sSpriteSheet_PokeballSelect);
+          //   LoadCompressedSpriteSheet(sStarterCircleSpriteSheet);
+          //   LoadSpritePalettes(sSpritePalettes_StarterChoose);
+          (async () => {
+            try {
+              // Load tile sheet for pokeball + hand + starter circle.
+              await rt.LoadCompressedSpriteSheetsFromTable(
+                'sSpriteSheet_PokeballSelect',
+                () => POKEBALL_SHEET_URL,
+              );
+              // Load palettes for both tags.
+              await rt.LoadSpritePalettesFromTable(
+                'sSpritePalettes_StarterChoose',
+                (palName) => {
+                  if (palName.includes('sPokeballSelection_Pal')) return POKEBALL_SHEET_URL;
+                  if (palName.includes('sStarterCircle_Pal')) return STARTER_CIRCLE_SHEET_URL;
+                  return null;
+                },
+              );
+              loadDone = true;
+            } catch (e) {
+              console.error('[StarterChoose] asset load failed', e);
+              loadFailed = true;
+            }
+          })();
+        }
+        state = 'WAIT_LOAD';
+        return false;
+      }
+
+      case 'WAIT_LOAD': {
+        if (loadFailed) {
+          // Fallback : auto-pick TREECKO + done.
+          chosenIdx = 0;
+          state = 'COMMIT_INIT';
+          return false;
+        }
+        if (loadDone) state = 'SPAWN_SPRITES';
+        return false;
+      }
+
+      case 'SPAWN_SPRITES': {
+        // Spawn 3 pokeballs at sPokeballCoords (= 1:1 décomp).
+        for (let i = 0; i < 3; i++) {
+          const [x, y] = POKEBALL_COORDS[i];
+          pokeballSpriteIds[i] = rt.CreateSpriteFromTemplate('sSpriteTemplate_Pokeball', x, y);
+        }
+        // Spawn hand cursor.
+        const [hx, hy] = CURSOR_COORDS[selection];
+        handSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Hand', hx, hy);
+        state = 'PROMPT_INIT';
+        return false;
+      }
+
+      case 'PROMPT_INIT': {
+        ShowFieldMessage(TEXT_BIRCH_IN_TROUBLE);
         state = 'PROMPT_WAIT';
         return false;
       }
 
       case 'PROMPT_WAIT': {
-        // Wait for message render done.
         if (IsFieldMessageBoxHidden()) {
           state = 'WAIT_INPUT';
         }
@@ -99,35 +180,40 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       }
 
       case 'WAIT_INPUT': {
+        // Hand bob (1:1 décomp SpriteCB_SelectionHand : sprite.y2 = Sin(data[1], 8); data[1] += 4).
+        handBobTimer = (handBobTimer + 4) & 0xFF;
+        if (handSpriteId >= 0) {
+          const handSprite = rt.gSprites.get(handSpriteId);
+          if (handSprite) {
+            const [hx, hy] = CURSOR_COORDS[selection];
+            handSprite.x = hx;
+            handSprite.y = hy;
+            handSprite.y2 = Sin(handBobTimer, 8);
+          }
+        }
+
         const newKeys = rt.gMain.newKeys;
-        // ←/→ : change selection, refresh dialog text.
         if ((newKeys & DPAD_LEFT) && selection > 0) {
           selection--;
-          state = 'INIT';  // Re-render with new selection.
-          HideFieldMessageBox();
         } else if ((newKeys & DPAD_RIGHT) && selection < STARTER_SPECIES.length - 1) {
           selection++;
-          state = 'INIT';
-          HideFieldMessageBox();
         } else if (newKeys & A_BUTTON) {
           state = 'ASK_CONFIRM_INIT';
           HideFieldMessageBox();
-        } else if (newKeys & B_BUTTON) {
-          // B doesn't cancel here (= no exit, must pick).
         }
         return false;
       }
 
       case 'ASK_CONFIRM_INIT': {
-        // Show confirm dialog "Prendre ce POKéMON ?" + name.
-        ShowFieldMessage(`${STARTER_NAMES[selection]}\n${TEXT_CONFIRM_STARTER}`);
+        // Show confirm dialog with starter name + category.
+        ShowFieldMessage(`${STARTER_NAMES[selection]}, ${STARTER_CATEGORIES[selection]}!\n${TEXT_CONFIRM_STARTER}`);
         state = 'ASK_CONFIRM_WAIT';
         return false;
       }
 
       case 'ASK_CONFIRM_WAIT': {
         if (IsFieldMessageBoxHidden()) {
-          // Spawn YesNo menu (= 1:1 décomp CreateYesNoMenu(sWindowTemplate_ConfirmStarter, 0x2A8, 0xD, 0)).
+          // 1:1 décomp `CreateYesNoMenu(sWindowTemplate_ConfirmStarter, 0x2A8, 0xD, 0)`.
           // sWindowTemplate_ConfirmStarter from décomp : tilemapLeft=21, tilemapTop=8,
           // width=6, height=4, paletteNum=14, baseBlock=0x125.
           const tmpl: WindowTemplate = {
@@ -136,7 +222,7 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
             tilemapTop: 8,
             width: 6,
             height: 4,
-            paletteNum: 15,    // DLG_WINDOW_PALETTE_NUM
+            paletteNum: 15,
             baseBlock: 0x125,
           };
           CreateYesNoMenu(tmpl, 0x214, 14, 0);
@@ -148,7 +234,6 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       case 'WAIT_CONFIRM': {
         const result = Menu_ProcessInputNoWrapClearOnChoose();
         if (result === -2 /* MENU_NOTHING_CHOSEN */) return false;
-        // 0 = OUI, 1 = NON, -1 = B pressed (treated as NON 1:1 décomp).
         const yesNo = result === 0 ? 0 : 1;
         // Cleanup yesno window.
         const wid = GetYesNoWindowId();
@@ -166,9 +251,6 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       }
 
       case 'COMMIT_INIT': {
-        // 1:1 décomp CB2_GiveStarter logic :
-        //   *GetVarPointer(VAR_STARTER_MON) = gSpecialVar_Result;
-        //   ScriptGiveMon(GetStarterPokemon(idx), 5, ITEM_NONE, 0, 0, 0);
         try {
           const speciesEnum = STARTER_SPECIES[chosenIdx];
           const starter = createPokemonInstance(speciesEnum, 5);
@@ -181,31 +263,32 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         } catch (e) {
           console.error('[StarterChoose] commit failed', e);
         }
-        // Show one final dialog "X est ton POKéMON !" then close.
         ShowFieldMessage(`${STARTER_NAMES[chosenIdx]} est ton POKéMON !`);
         state = 'COMMIT_WAIT';
         return false;
       }
 
       case 'COMMIT_WAIT': {
-        if (IsFieldMessageBoxHidden()) {
-          // Wait for A press to close final message.
-          if (rt.gMain.newKeys & (A_BUTTON | B_BUTTON)) {
-            HideFieldMessageBox();
-            state = 'DONE';
-          }
+        if (IsFieldMessageBoxHidden() && (rt.gMain.newKeys & (A_BUTTON | B_BUTTON))) {
+          HideFieldMessageBox();
+          state = 'CLEANUP';
         }
         return false;
       }
 
       case 'DECLINE_INIT': {
-        // Back to selection prompt.
-        state = 'INIT';
+        state = 'PROMPT_INIT';
         return false;
       }
 
-      case 'DECLINE_WAIT': {
-        return false;  // unused
+      case 'CLEANUP': {
+        // Destroy all sprites.
+        for (const id of pokeballSpriteIds) {
+          if (id >= 0) rt.DestroySprite(id);
+        }
+        if (handSpriteId >= 0) rt.DestroySprite(handSpriteId);
+        state = 'DONE';
+        return false;
       }
 
       case 'DONE': {

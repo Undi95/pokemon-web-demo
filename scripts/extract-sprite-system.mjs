@@ -47,6 +47,8 @@ const SOURCES = [
   'src/save.c',
   'src/menu_helpers.c',
   'src/text_window.c',
+  // Phase 5.5b : ChooseStarter sprite templates (sSpriteTemplate_Pokeball/Hand/StarterCircle).
+  'src/starter_choose.c',
 ];
 
 mkdirSync(outDir, { recursive: true });
