@@ -126,18 +126,36 @@ function applyNoIntroPreset(): void {
   // Le preset ?nointro bypass le coord trigger qui set normalement ces flags.
   gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_TRUCK');
   gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_TRUCK');
-  // Setrespawn 1:1 décomp (= pas implémenté en TS mais on store la cible).
-  // Genre-dependent : Male → Brendan 2F, Female → May 2F.
+  // 1:1 décomp `InsideOfTruck_EventScript_SetIntroFlags{Male,Female}`
+  // (data/maps/InsideOfTruck/scripts.inc). Les deux maisons partagent le même
+  // layout/objets — flags determinent qui est player_mom vs rival_mom.
+  // Pattern :
+  //   - Sa maison : show player_mom, hide rival_mom + rival_sibling
+  //   - Maison rival : hide player_mom, show rival_mom + rival_sibling
+  // Bug fix iter20 : on inversait MAYS_HOUSE_RIVAL_MOM ↔ BRENDANS_HOUSE_RIVAL_MOM.
+  // Symptôme : les 2 maisons montraient les MEMES NPCs (= rival_mom partout, etc).
   if (gameState.gender === 'FEMALE') {
-    gameState.setVar('VAR_LITTLEROOT_INTRO_STATE', 6);
-    // Hide Brendan-side NPCs (= rival mom + family chez le rival).
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_MOM');
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_RIVAL_MOM');
+    // Player May → sa maison = MaysHouse, rival = Brendan dans BrendansHouse.
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_MOM');         // hide player_mom dans rival's house
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_MOM');       // hide rival_mom dans sa maison
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_SIBLING');   // hide rival's sibling chez elle
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_2F_POKE_BALL');    // post-intro pokeball gone
+    gameState.setVar('VAR_LITTLEROOT_HOUSES_STATE_MAY', 1);
   } else {
-    // Hide May-side NPCs (= rival mom).
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_MOM');
-    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_RIVAL_MOM');
+    // Player Brendan → sa maison = BrendansHouse, rival = May dans MaysHouse.
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_MAYS_HOUSE_MOM');             // hide player_mom dans rival's house
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_RIVAL_MOM');   // hide rival_mom dans sa maison
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_RIVAL_SIBLING'); // hide rival's sibling
+    gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_BRENDANS_HOUSE_2F_POKE_BALL');
+    gameState.setVar('VAR_LITTLEROOT_HOUSES_STATE_BRENDAN', 1);
   }
+  // Vigoroth déménageurs : visibles pendant l'intro 1F seulement (= player coming
+  // home). Une fois sortis (= ?nointro = post-intro), ils sont gone.
+  // Pas spécifié dans SetIntroFlagsMale/Female mais après l'intro Maman talks
+  // (`PlayersHouse_1F_EventScript_Mom`) ces flags sont set.
+  // Cf. décomp data/scripts/players_house.inc lignes ~50.
+  gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_PLAYERS_HOUSE_VIGOROTH_1');
+  gameState.setFlag('FLAG_HIDE_LITTLEROOT_TOWN_PLAYERS_HOUSE_VIGOROTH_2');
   gameState.save();
   console.log(`[boot-mode] ?nointro preset : name='${gameState.playerName}' gender='${gameState.gender}' INTRO_STATE=6`);
 }
