@@ -71,7 +71,9 @@ interface BridgeReport {
 }
 
 const AUTO_DIR = '/__src__/engine/decomp-data/auto/src-all/';
-const MANIFEST_URL = '/__decomp/em/extracted-all/_summary.json';
+// The /__decomp/ vite plugin serves the original decomp REPO (= ../decomps/pokeemeraude/).
+// Our extracted JSON files live in public/decomp/ (= served via /decomp/ path).
+const MANIFEST_URL = '/decomp/em/extracted-all/_summary.json';
 
 let _autoFilesCache: string[] | null = null;
 let _allCalleesCache: Map<string, Set<string>> | null = null;
@@ -106,7 +108,7 @@ async function fetchAutoFiles(): Promise<string[]> {
 async function fetchCallsTo(file: string): Promise<Set<string>> {
   // Try the JSON extracted version first (= public/decomp/em/extracted-all/<file>.json).
   try {
-    const resp = await fetch(`/__decomp/em/extracted-all/${file}.json`);
+    const resp = await fetch(`/decomp/em/extracted-all/${file}.json`);
     if (resp.ok) {
       const json = await resp.json() as { functions: Record<string, { callsTo: string[] }> };
       const all = new Set<string>();
@@ -138,7 +140,7 @@ async function buildInternalDefinedSet(): Promise<Set<string>> {
   const defined = new Set<string>();
   await Promise.all(files.map(async f => {
     try {
-      const resp = await fetch(`/__decomp/em/extracted-all/${f}.json`);
+      const resp = await fetch(`/decomp/em/extracted-all/${f}.json`);
       if (resp.ok) {
         const json = await resp.json() as { functions: Record<string, unknown> };
         for (const name of Object.keys(json.functions || {})) defined.add(name);
@@ -250,7 +252,7 @@ const bridge: DevBridge = {
     // Get function count from extracted JSON.
     let totalFunctions = 0;
     try {
-      const resp = await fetch(`/__decomp/em/extracted-all/${file}.json`);
+      const resp = await fetch(`/decomp/em/extracted-all/${file}.json`);
       if (resp.ok) {
         const json = await resp.json() as { count?: number };
         totalFunctions = json.count ?? 0;
