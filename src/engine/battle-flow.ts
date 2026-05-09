@@ -230,6 +230,25 @@ function getSpeciesStats(speciesEnum: string): { hp: number, atk: number, def: n
   return { hp: 38, atk: 30, def: 41, spa: 30, spd: 41, spe: 60 };
 }
 
+/** Iter19 : get species types (= [type1, type2]) for type effectiveness. */
+function getSpeciesTypes(speciesEnum: string): [string, string] {
+  const dataMod = (globalThis as { __game_data?: { getSpeciesInfo: (k: string) => { types?: [string, string] } | undefined } }).__game_data;
+  const info = dataMod?.getSpeciesInfo(speciesEnum);
+  if (info?.types) return info.types;
+  return ['TYPE_NORMAL', 'TYPE_NORMAL'];  // safe fallback
+}
+
+/** Iter19 : compute type effectiveness multiplier vs both defender types.
+ *  Returns 0 (= immune), 0.25 / 0.5 (= not effective), 1 (= neutral),
+ *  2 / 4 (= super effective). */
+function getTypeEffectivenessMul(moveType: string, defType1: string, defType2: string): number {
+  const dataMod = (globalThis as { __game_data?: { getTypeMultiplier: (att: string, def: string) => number } }).__game_data;
+  if (!dataMod) return 1;
+  const mul1 = dataMod.getTypeMultiplier(moveType, defType1);
+  const mul2 = (defType1 === defType2) ? 1 : dataMod.getTypeMultiplier(moveType, defType2);
+  return mul1 * mul2;
+}
+
 /** Build a fresh battle flow + return controller. */
 export function startBirchTutorialBattle(): BattleFlow {
   return startWildBattle({
@@ -352,23 +371,33 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     return 0;
   };
 
-  /** Apply chosen move's damage from attacker to defender. Returns damage dealt. */
-  const applyMoveDamage = (attacker: PokemonInstance, defender: PokemonInstance, moveIdx: number): number => {
+  /** Apply chosen move's damage from attacker to defender. Returns damage dealt + effectiveness mul. */
+  const applyMoveDamage = (attacker: PokemonInstance, defender: PokemonInstance, moveIdx: number): { damage: number, typeMul: number } => {
     const mv = attacker.moves[moveIdx];
-    if (!mv) return 0;
+    if (!mv) return { damage: 0, typeMul: 1 };
     const moveData = getMove('MOVE_' + mv.id.toUpperCase());
     const power = moveData?.power ?? 0;
-    if (power <= 0) return 0;  // status moves
+    if (power <= 0) return { damage: 0, typeMul: 1 };  // status moves
     // Stats : we recompute Atk/Def from species + level + IVs.
     const attackerStats = getSpeciesStats(attacker.speciesEnum);
     const defenderStats = getSpeciesStats(defender.speciesEnum);
     const attackerAtk = calcStat(attackerStats.atk, attacker.ivs.atk, attacker.evs.atk, attacker.level);
     const defenderDef = calcStat(defenderStats.def, defender.ivs.def, defender.evs.def, defender.level);
-    const damage = calculateBaseDamage(attackerAtk, defenderDef, attacker.level, power);
+    let damage = calculateBaseDamage(attackerAtk, defenderDef, attacker.level, power);
+    // Iter19 : STAB (Same Type Attack Bonus) — 1.5× if move type matches attacker type.
+    const moveType = moveData?.type ?? 'TYPE_NORMAL';
+    const [aType1, aType2] = getSpeciesTypes(attacker.speciesEnum);
+    if (moveType === aType1 || moveType === aType2) {
+      damage = Math.floor(damage * 1.5);
+    }
+    // Iter19 : Type effectiveness (= immune 0×, not eff 0.5×, neutral 1×, super 2×, double super 4×).
+    const [dType1, dType2] = getSpeciesTypes(defender.speciesEnum);
+    const typeMul = getTypeEffectivenessMul(moveType, dType1, dType2);
+    damage = Math.floor(damage * typeMul);
     defender.currentHp = Math.max(0, defender.currentHp - damage);
     // Decrement PP.
     if (mv.pp > 0) mv.pp--;
-    return damage;
+    return { damage, typeMul };
   };
 
   const tick = (): boolean => {
@@ -623,11 +652,23 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'PLAYER_DAMAGE_OPP': {
         if (!playerMon || !opponentMon) { state = 'CLEANUP'; return false; }
-        const damage = applyMoveDamage(playerMon, opponentMon, chosenMoveIndex);
+        const { damage, typeMul } = applyMoveDamage(playerMon, opponentMon, chosenMoveIndex);
         renderHpWindows();
         if (damage > 0) {
-          // Currently no specific text — could add "C'est super efficace!" etc.
-          state = 'CHECK_OPP_FAINTED';
+          // Iter19 : type effectiveness messages.
+          if (typeMul === 0) {
+            ShowFieldMessage(`Ça n'a aucun effet sur\n${opponentMon.nickname}...`);
+            state = 'PLAYER_DAMAGE_OPP_WAIT';
+          } else if (typeMul >= 2) {
+            ShowFieldMessage(`C'est super efficace!`);
+            state = 'PLAYER_DAMAGE_OPP_WAIT';
+          } else if (typeMul > 0 && typeMul < 1) {
+            ShowFieldMessage(`Ce n'est pas\ntrès efficace...`);
+            state = 'PLAYER_DAMAGE_OPP_WAIT';
+          } else {
+            // Neutral 1× damage — straight to fainted check.
+            state = 'CHECK_OPP_FAINTED';
+          }
         } else {
           // Status move (= Growl). Just acknowledge.
           ShowFieldMessage(`${opponentMon.nickname}\nest affaibli!`);
@@ -697,10 +738,25 @@ export function startWildBattle(params: BattleParams): BattleFlow {
 
       case 'OPPONENT_DAMAGE_PLAYER': {
         if (!opponentMon || !playerMon) { state = 'CLEANUP'; return false; }
-        const damage = applyMoveDamage(opponentMon, playerMon, chosenMoveIndex);
+        const { damage, typeMul } = applyMoveDamage(opponentMon, playerMon, chosenMoveIndex);
         renderHpWindows();
-        void damage;  // not announced in MVP
-        state = 'CHECK_PLAYER_FAINTED';
+        if (damage > 0) {
+          // Iter19 : type effectiveness messages (= same as player turn).
+          if (typeMul === 0) {
+            ShowFieldMessage(`Ça n'a aucun effet sur\n${playerMon.nickname}...`);
+            state = 'OPPONENT_DAMAGE_PLAYER_WAIT';
+          } else if (typeMul >= 2) {
+            ShowFieldMessage(`C'est super efficace!`);
+            state = 'OPPONENT_DAMAGE_PLAYER_WAIT';
+          } else if (typeMul > 0 && typeMul < 1) {
+            ShowFieldMessage(`Ce n'est pas\ntrès efficace...`);
+            state = 'OPPONENT_DAMAGE_PLAYER_WAIT';
+          } else {
+            state = 'CHECK_PLAYER_FAINTED';
+          }
+        } else {
+          state = 'CHECK_PLAYER_FAINTED';
+        }
         return false;
       }
 
