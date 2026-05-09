@@ -181,56 +181,56 @@ export function CopyPartyAndObjectsFromSave(): void {
 }
 
 /** 1:1 décomp `SetContinueGameWarpStatusToDynamicWarp(void)` (load_save.c:149).
- *  Set `block1.continueGameWarp = block1.dynamicWarp`.
+ *  Set `block1.continueGameWarp = block1.dynamicWarp` + flag CONTINUE_GAME_WARP.
  *
- *  Si dynamicWarp invalide (= warpId=-1, x=-1, y=-1), fallback web-port :
- *  utilise la position courante (= block1.location + block1.pos). Le décomp
- *  ROM en case dynamicWarp invalide spawne au center map ; notre fallback
- *  est plus user-friendly (= continue où player saved).
+ *  ⚠️ **NE PAS APPELER au save normal** : analyse binaire d'un vrai .sav ROM
+ *  Émeraude (= save in truck) montre que `specialSaveWarpFlags = 0` et
+ *  `continueGameWarp = zeros`. Le décomp `start_menu.c` SET le flag puis le
+ *  CLEAR via ClearContinueGameWarpStatus2 dans le même save flow (= timing
+ *  async / write incremental over frames), résultat persisted = flag CLEAR.
  *
- *  Pour les use cases standard (= save après que setdynamicwarp ait posé un
- *  spawn point comme MAP_LITTLEROOT_TOWN 3,10), continueGameWarp pointe vers
- *  ce spawn point, pas où le player est physiquement. C'est le comportement
- *  1:1 décomp ROM. */
+ *  Cette fn est gardée pour les cas spéciaux où on veut explicitly forcer
+ *  un warp au Continue (= post-Battle Frontier, contest, link-trade exit). */
 export function SetContinueGameWarpStatusToDynamicWarp(): void {
   const block1 = GetSaveBlock1();
-  const dw = block1.dynamicWarp;
-  if (dw.warpId === -1 && dw.mapGroup === -1 && dw.mapNum === -1 && dw.x === -1 && dw.y === -1) {
-    // dynamicWarp invalide : fallback à current map+pos (= save où player est).
-    const loc = block1.location;
-    block1.continueGameWarp = {
-      mapGroup: loc.mapGroup, mapNum: loc.mapNum, warpId: -1,
-      x: block1.pos.x, y: block1.pos.y,
-    };
-    // Preserve __mapId via location si dispo, sinon current.
-    return;
-  }
-  block1.continueGameWarp = { ...dw };
+  block1.continueGameWarp = { ...block1.dynamicWarp };
   // Aussi propager le mapId string custom pour bridge web port.
   const dwMapId = (block1 as { __dynamicWarpMapId?: string }).__dynamicWarpMapId;
   if (dwMapId) {
     (block1 as { __mapId?: string }).__mapId = dwMapId;
   }
+  // Set CONTINUE_GAME_WARP bit dans specialSaveWarpFlags.
+  const block2 = GetSaveBlock2();
+  block2.specialSaveWarpFlags |= 0x4;  // CONTINUE_GAME_WARP = 0x4
 }
 
-/** Helper web-port : sync la position courante du player (= depuis le
- *  ObjectEvent player) vers `block1.pos`. À call avant le save pour que
- *  pos reflète où le player est *vraiment*, pas la position de spawn. */
+/** 1:1 décomp `ClearContinueGameWarpStatus2(void)` (load_save.c:155). */
+export function ClearContinueGameWarpStatus2(): void {
+  const block2 = GetSaveBlock2();
+  block2.specialSaveWarpFlags &= ~0x4;
+}
+
+/** 1:1 décomp `UseContinueGameWarp(void)` (load_save.c:134).
+ *  Returns true si flag CONTINUE_GAME_WARP set dans specialSaveWarpFlags. */
+export function UseContinueGameWarp(): boolean {
+  return (GetSaveBlock2().specialSaveWarpFlags & 0x4) !== 0;
+}
+
+/** Helper web-port : sync la position courante du player vers `block1.pos`.
+ *  À call avant le save pour que pos reflète où le player est *vraiment*.
+ *
+ *  Notre web port stocke la position player dans `gPlayerAvatar.x/y` (= map
+ *  coords), pas dans `gObjectEvents[]`. Le décomp utilise les deux : pos est
+ *  updated via `CameraMove()` à chaque step (= directly écrit `gSaveBlock1Ptr->pos`),
+ *  et le player NPC est aussi dans `gObjectEvents[gPlayerAvatar.objectEventId]`
+ *  pour rendering + collision.
+ *
+ *  Notre simplification : sync `gPlayerAvatar.x/y` → `block1.pos` au save.
+ *  Préserve aussi le `__facing` pour spawn direction au resume. */
 export function SyncPlayerPositionToBlock(): void {
   const block1 = GetSaveBlock1();
-  // Trouve le player ObjectEvent (= localId 0xFF dans notre runtime, ou
-  // gPlayerAvatar.objectEventId si défini).
-  const playerEventId = gPlayerAvatar.objectEventId;
-  let playerNpc: ObjectEvent | null = null;
-  if (playerEventId >= 0 && playerEventId < gObjectEvents.length) {
-    playerNpc = gObjectEvents[playerEventId];
-  }
-  if (!playerNpc) {
-    // Fallback : cherche par localId 0xFF.
-    playerNpc = gObjectEvents.find(n => n.active && n.localId === 0xFF) ?? null;
-  }
-  if (!playerNpc) return;
-  block1.pos = { x: playerNpc.currentCoordsX, y: playerNpc.currentCoordsY };
+  block1.pos = { x: gPlayerAvatar.x, y: gPlayerAvatar.y };
+  (block1 as { __facing?: number }).__facing = gPlayerAvatar.facing;
 }
 
 /** Helper web-port : sync la map courante vers `block1.location` et update
@@ -248,23 +248,35 @@ export function SetCurrentMapLocation(mapId: string, x: number, y: number, warpI
 /** Pre-save sync : sync tous les states courants vers les save blocks AVANT
  *  d'écrire en localStorage. À call dans gameState.save() avant TrySavingData.
  *
- *  1:1 décomp `start_menu.c case 1` Save flow :
- *    SetContinueGameWarpStatusToDynamicWarp();
- *    WriteSaveBlock2();
- *    case 2: WriteSaveBlock1Sector(); ClearContinueGameWarpStatus2();
+ *  1:1 décomp `start_menu.c case 1+2` Save flow analysed via vrai .sav ROM
+ *  Émeraude (= user a fourni un .sav save in truck) :
+ *    case 1: SetContinueGameWarpStatusToDynamicWarp() ← set flag in RAM
+ *            WriteSaveBlock2() ← incremental write over frames
+ *    case 2: WriteSaveBlock1Sector() ← incremental
+ *            ClearContinueGameWarpStatus2() ← clear flag in RAM
  *
- *  Notre version inline tout en un seul step (= JSON write atomic). */
+ *  Le résultat PERSISTED dans le .sav binaire montre `specialSaveWarpFlags = 0`
+ *  et `continueGameWarp = zeros`. Le timing async write + clear → la version
+ *  persistée a flag CLEAR. Le ROM resume utilise `block1.location` + `block1.pos`
+ *  directement (= via branch ELSE de CB2_ContinueSavedGame quand
+ *  UseContinueGameWarp() returns 0).
+ *
+ *  Donc on NE TOUCHE PAS continueGameWarp au save normal. block1.location +
+ *  block1.pos sont la source de vérité pour resume. */
 export function PreSaveSyncBlocks(): void {
   // 1. Sync player position to block1.pos (= sync runtime → persistent).
+  //    Le décomp ROM update block1.pos via CameraMove() à chaque step ; notre
+  //    web port pour pragmatisme sync au save (= une fois suffit).
   SyncPlayerPositionToBlock();
-  // 2. Sync NPCs positions to block1.objectEvents (= 1:1 décomp SaveObjectEvents).
-  SaveObjectEvents();
-  // 3. Set continueGameWarp from dynamicWarp (= 1:1 décomp).
-  SetContinueGameWarpStatusToDynamicWarp();
-  // 4. SavePlayerParty (= no-op shared ref, mais update playerPartyCount).
+  // 2. Sync NPCs positions to block1.objectEvents (= 1:1 décomp SaveObjectEvents
+  //    via CopyPartyAndObjectsToSave dans HandleSavingData).
   SavePlayerParty();
+  SaveObjectEvents();
   // Note : SaveMapView (= 256 metatiles snapshot) skipped pour MVP — sera
   // ajouté quand on implémente cross-border map view restoration.
+  // Note : SetContinueGameWarpStatusToDynamicWarp NOT called ici — le décomp
+  //  binary save montre flag = 0 + continueGameWarp = zeros (= async clear
+  //  timing). Resume use block1.location + block1.pos.
 }
 
 /** Post-load apply : restore les NPCs positions live depuis block1.

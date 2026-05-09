@@ -198,6 +198,19 @@ function applyNoIntroPreset(): void {
  */
 export function decideBootMode(): BootSpawn {
   if (hasNoIntroParam()) {
+    // User feedback : "Le menu nointro lache dans le jeu avec des flag deja
+    // actif, tu pux le modifier pour montrer l'écran nouveau jeu direct,
+    // comme ça on peut recharger la save facile". Si une save valid existe
+    // déjà, on skip l'applyNoIntroPreset (= ne touche pas la save) et on
+    // résume direct via le save path (= 1:1 ROM Continue behavior).
+    if (gameState.hasPersistedSave() && gameState.load() && gameState.map) {
+      const m = gameState.map;
+      console.log(`[boot-mode] ?nointro + save valide → resume ${m.name} (${m.x}, ${m.y})`);
+      return {
+        mapId: m.name, x: m.x, y: m.y,
+        facing: m.facing ?? DIR_SOUTH, mode: 'resume',
+      };
+    }
     applyNoIntroPreset();
     // 1:1 décomp `setdynamicwarp MAP_LITTLEROOT_TOWN, 3, 10` (MALE) /
     // `setdynamicwarp MAP_LITTLEROOT_TOWN, 12, 10` (FEMALE)

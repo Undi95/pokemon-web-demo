@@ -118,52 +118,54 @@ class GameState {
   }
 
   // ===== Position / map ===============================================
-  /** Map courante + position spawn. 1:1 décomp `block1.location` + `__mapId`.
-   *  - Au boot/warp : setter call par TestOverworldScene avec map+spawn coords.
-   *  - Au save : PreSaveSyncBlocks() sync block1.pos = current player pos +
-   *    set continueGameWarp pour le "Continue" menu.
-   *  - Au resume : decideBootMode() lit ce getter pour determine la map à load
-   *    et le spawn position.
+  /** Map courante + position. 1:1 décomp source de vérité = `block1.location`
+   *  (= map info, set par WarpIntoMap au map load) + `block1.pos` (= position
+   *  player, updated par CameraMove à chaque step + sync au save).
    *
-   *  Le getter prefer `continueGameWarp` (= 1:1 décomp resume target) si valid,
-   *  sinon falls back à `location` (= current map info). */
+   *  Validé via parse binaire d'un vrai .sav ROM Émeraude (save in truck) :
+   *    location  = (mapGroup=25, mapNum=40)  ← MAP_INSIDE_OF_TRUCK
+   *    pos       = (1, 2)                    ← position courante au save
+   *    continueGameWarp = zeros               ← NOT used pour resume normal
+   *    specialSaveWarpFlags = 0               ← NOT set pour resume normal
+   *
+   *  Au resume `CB2_ContinueSavedGame` :
+   *    UseContinueGameWarp() returns false → branch ELSE → CB2_ReturnToField
+   *    use block1.location pour load map + block1.pos pour spawn position.
+   *
+   *  Web port `__mapId` field bridge avec mapGroup/mapNum. */
   get map(): { name: string; x: number; y: number; facing?: number } | undefined {
     const block1 = GetSaveBlock1();
-    // 1:1 décomp "Continue saved game" use continueGameWarp pour spawn position.
-    const cw = block1.continueGameWarp;
-    const cwValid = !(cw.mapGroup === -1 && cw.mapNum === -1 && cw.warpId === -1
-                   && cw.x === -1 && cw.y === -1);
-    const mapId = (block1 as { __mapId?: string }).__mapId;
-    if (cwValid && mapId) {
-      return { name: mapId, x: cw.x, y: cw.y, facing: (block1 as { __facing?: number }).__facing };
-    }
-    // Fallback : location (= current map info, set au map load).
     const loc = block1.location;
-    const locValid = !(loc.mapGroup === -1 && loc.mapNum === -1 && loc.warpId === -1
-                    && loc.x === -1 && loc.y === -1);
-    if (locValid && mapId) {
-      return { name: mapId, x: loc.x, y: loc.y, facing: (block1 as { __facing?: number }).__facing };
-    }
-    return undefined;
+    const mapId = (block1 as { __mapId?: string }).__mapId;
+    // location invalid sentinel : (-1, -1, -1, -1, -1) après emptySaveBlock1
+    // OR (0, 0, 0, 0, 0) pré-WarpIntoMap.
+    const isDummy = (loc.mapGroup === -1 && loc.mapNum === -1)
+                 || (loc.mapGroup === 0 && loc.mapNum === 0 && !mapId);
+    if (isDummy || !mapId) return undefined;
+    // 1:1 décomp : pos est la position courante du player (= updated par
+    // CameraMove). Si pos invalide (= 0, 0 initial), fallback à location.x/y.
+    const px = (block1.pos.x === 0 && block1.pos.y === 0 && loc.x >= 0) ? loc.x : block1.pos.x;
+    const py = (block1.pos.x === 0 && block1.pos.y === 0 && loc.y >= 0) ? loc.y : block1.pos.y;
+    return { name: mapId, x: px, y: py, facing: (block1 as { __facing?: number }).__facing };
   }
   set map(v: { name: string; x: number; y: number; facing?: number } | undefined) {
     const block1 = GetSaveBlock1();
     if (!v) {
+      // Clear → reset location + pos to invalid sentinel.
       block1.location = { mapGroup: -1, mapNum: -1, warpId: -1, x: -1, y: -1 };
-      block1.continueGameWarp = { mapGroup: -1, mapNum: -1, warpId: -1, x: -1, y: -1 };
+      block1.pos = { x: 0, y: 0 };
       delete (block1 as { __mapId?: string }).__mapId;
       delete (block1 as { __facing?: number }).__facing;
       return;
     }
-    // 1:1 décomp : `location` est set au map load (= current map info).
-    block1.location = { mapGroup: 0, mapNum: 0, warpId: -1, x: v.x, y: v.y };
+    // 1:1 décomp `WarpIntoMap` flow : location = current map info (= warp
+    // dest), pos = spawn coords (= depuis SetPlayerCoordsFromWarp).
+    block1.location = { mapGroup: 0, mapNum: 0, warpId: -1, x: -1, y: -1 };
     block1.pos = { x: v.x, y: v.y };
     (block1 as { __mapId?: string }).__mapId = v.name;
     (block1 as { __facing?: number }).__facing = v.facing;
-    // continueGameWarp aussi update (= web-port pragmatic : ensure resume pointe
-    // vers le boot spawn courant. Au save explicite via menu, PreSaveSyncBlocks
-    // override avec dynamicWarp si valid, sinon current pos).
-    block1.continueGameWarp = { mapGroup: 0, mapNum: 0, warpId: -1, x: v.x, y: v.y };
+    // continueGameWarp NOT touched ici (= 1:1 décomp ROM behavior validé via
+    // .sav binaire user). PreSaveSyncBlocks ne le touche pas non plus au save.
   }
 
   // ===== Dynamic warp + respawn =======================================
