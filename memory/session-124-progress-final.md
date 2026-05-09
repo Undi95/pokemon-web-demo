@@ -242,6 +242,32 @@ Fix : `data[4]` sert de flag `_truck3Swapped` persistant. Set à 1 quand
 xpan===2 hit pour la 1ère fois. Reste à 1 pour toutes les iterations
 suivantes → no Y bob ever again.
 
+### Subsprite primary OAM hidden — TENTÉ + REVERTED (`1905efd3` → `d0dd400b`)
+
+User A/B test ROM screenshots avec flèches rouges identifia "boxes
+elevation/animations mélangée". Live OAM dump révéla : pour chaque box
+16x16 elevation=8 (= sOamTable_16x16_2 split applied), 3 OAMs visibles :
+- Primary OAM (= 16x16 placeholder) **encore visible**
+- Top half 16x8 child OAM
+- Bottom half 16x8 child OAM
+
+`SetSubspriteTables` hide bien le primary, MAIS `syncSpritesToOam` (= called
+chaque frame in tickFixed) re-active le primary. Le hook
+`globalThis._syncSubspriteOam` qui run APRÈS doit re-hide. Seul
+`naming-screen-impl.ts` install ce hook.
+
+**Tenté** : install hook dans `TestOverworldScene.create()`.
+
+**Reverted par user** : "C'est pas fix du tout visuellement". Le hook
+hide bien le primary OAM (= verified live, OAMs 1/4/7 disparaissent),
+MAIS le résultat visuel n'a pas changé visuellement pour user. Probable
+cause : les 16x16 boxes solides n'ont pas de différence visible entre
+"render 16x16 + split derrière" et "render split only" tant qu'aucun
+sprite player ne overlap.
+
+TODO Phase 5 : revisit avec test où player walks behind/over la box pour
+voir si le split fonctionne correctement.
+
 ### TODO Phase 5 — boxes elevation/animations subtiles
 
 User feedback final (= screenshots A/B end-of-cinematic) : "Je pense que
