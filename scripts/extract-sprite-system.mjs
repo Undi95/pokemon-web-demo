@@ -162,7 +162,13 @@ function parseAnimCmd(name, body) {
 
 // ─── 2. AnimCmd *const[] tables ────────────────────────────────────────────
 
-const RE_ANIMS_TABLE = /static\s+const\s+union\s+AnimCmd\s*\*\s*const\s+(\w+)\s*\[\s*\]\s*=\s*/g;
+// Session 124 fix Bug 6a : accept array sizes with C constant expressions
+// (e.g. `[NUM_PRESS_START_FRAMES + NUM_COPYRIGHT_FRAMES]`). Avant, regex
+// strict `\[\s*\]` ne match que les sizes vides → manquait l'extraction
+// de `sStartCopyrightBannerAnimTable` (= title screen). Workaround patch
+// manuel ajouté dans sprite-system.ts session 113. Avec ce fix l'extracteur
+// le capture directement.
+const RE_ANIMS_TABLE = /static\s+const\s+union\s+AnimCmd\s*\*\s*const\s+(\w+)\s*\[[^\]]*\]\s*=\s*/g;
 
 function parseRefTable(body) {
   // Body contains comma-separated identifiers (sometimes [INDEX] = name).
@@ -223,7 +229,8 @@ function parseAffineAnimCmd(name, body) {
 
 // ─── 4. AffineAnimCmd *const[] tables ──────────────────────────────────────
 
-const RE_AFFINE_ANIMS_TABLE = /static\s+const\s+union\s+AffineAnimCmd\s*\*\s*const\s+(\w+)\s*\[\s*\]\s*=\s*/g;
+// Session 124 fix Bug 6a : accept array sizes with expressions (cf. RE_ANIMS_TABLE).
+const RE_AFFINE_ANIMS_TABLE = /static\s+const\s+union\s+AffineAnimCmd\s*\*\s*const\s+(\w+)\s*\[[^\]]*\]\s*=\s*/g;
 
 // ─── 5. SpriteTemplate ─────────────────────────────────────────────────────
 

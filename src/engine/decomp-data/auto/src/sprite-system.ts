@@ -4,7 +4,7 @@
 //
 // Stats:
 //   79    sAnim_*[]              (union AnimCmd)
-//   31    sAnims_*[]             (AnimCmd *const[])
+//   32    sAnims_*[]             (AnimCmd *const[])
 //   7    sAffineAnim_*[]        (union AffineAnimCmd)
 //   3    sAffineAnims_*[]       (AffineAnimCmd *const[])
 //   37    sSpriteTemplate_*       (struct SpriteTemplate)
@@ -204,6 +204,7 @@ export const SPRITE_SYSTEM_SOURCES = {
   "anims:sPokemonLogoShineAnimSequence": "src/title_screen.c",
   "animTables:sVersionBannerLeftAnimTable": "src/title_screen.c",
   "animTables:sVersionBannerRightAnimTable": "src/title_screen.c",
+  "animTables:sStartCopyrightBannerAnimTable": "src/title_screen.c",
   "animTables:sPokemonLogoShineAnimTable": "src/title_screen.c",
   "spriteTemplates:sVersionBannerLeftSpriteTemplate": "src/title_screen.c",
   "spriteTemplates:sVersionBannerRightSpriteTemplate": "src/title_screen.c",
@@ -479,13 +480,9 @@ export const SPRITE_ANIM_TABLES = {
   "sAnims_Volbeat": {"anims":["sAnim_Volbeat"]},
   "sAnims_WaterDrop": {"anims":["sAnim_WaterDrop_UpperHalf","sAnim_WaterDrop_LowerHalf","sAnim_WaterDrop_Reflection","sAnim_WaterDrop_Ripple"]},
   "sPokemonLogoShineAnimTable": {"anims":["sPokemonLogoShineAnimSequence"]},
+  "sStartCopyrightBannerAnimTable": {"anims":["sAnim_PressStart_0","sAnim_PressStart_1","sAnim_PressStart_2","sAnim_PressStart_3","sAnim_PressStart_4","sAnim_Copyright_0","sAnim_Copyright_1","sAnim_Copyright_2","sAnim_Copyright_3","sAnim_Copyright_4"]},
   "sVersionBannerLeftAnimTable": {"anims":["sVersionBannerLeftAnimSequence"]},
   "sVersionBannerRightAnimTable": {"anims":["sVersionBannerRightAnimSequence"]},
-  // HOTFIX 2026-05-09 : extractor n'attrape pas ce designated initializer C
-  // (= [NUM_PRESS_START_FRAMES] = ...) → table missing → `StartSpriteAnim(spriteId, i)`
-  // pour i=0..4 lookup undefined → all 5 sprites show tile 0 → "APPUYEZ SUR START"
-  // tiled. Source 1:1 décomp src/title_screen.c:271-284.
-  "sStartCopyrightBannerAnimTable": {"anims":["sAnim_PressStart_0","sAnim_PressStart_1","sAnim_PressStart_2","sAnim_PressStart_3","sAnim_PressStart_4","sAnim_Copyright_0","sAnim_Copyright_1","sAnim_Copyright_2","sAnim_Copyright_3","sAnim_Copyright_4"]},
 } as const;
 
 export const SPRITE_AFFINE_ANIMS = {
