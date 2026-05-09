@@ -29,7 +29,7 @@
  */
 import type { DecompRuntime, DecompTask } from './decomp-runtime';
 import { PlaySE } from './decomp-globals';
-import { stopPrerenderedSE } from './m4a/se-noise-prerendered';
+import { stopPrerenderedSE, playPrerenderedSEWithLoop } from './m4a/se-noise-prerendered';
 import {
   SE_TRUCK_MOVE,
   SE_TRUCK_STOP,
@@ -144,8 +144,20 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
       if (data[1] === 90) {
         data[1] = 0;
         data[0] = 1;
-        PlaySE(SE_TRUCK_MOVE);
-        console.log('[truck-cinematic] state 0→1 : SE_TRUCK_MOVE played');
+        // Session 124 fix Bug 2 : SE_MOVE en LOOP pendant toute la cinématique
+        // (= 1:1 ROM behavior : le son du camion qui roule joue continu jusqu'à
+        // ce que le camion s'arrête).
+        //
+        // ROM décomp ne loop pas explicitement le SE car le sample SE_MOVE ROM
+        // est probablement plus long (~10s+) ET le sound engine GBA reboucle
+        // les samples avec sustain. Notre WAV pre-rendered = 8s one-shot →
+        // sans loop, gap entre fin du WAV et SE_STOP.
+        //
+        // Solution : `playPrerenderedSEWithLoop` (cf. se-noise-prerendered.ts)
+        // joue le buffer en loop. Le state 2→3 transition appelle
+        // stopPrerenderedSE qui kill le loop avant SE_STOP.
+        playPrerenderedSEWithLoop('se_truck_move', 'se1');
+        console.log('[truck-cinematic] state 0→1 : SE_TRUCK_MOVE looped (will stop at state 2→3)');
       }
       break;
     case 1:
@@ -176,6 +188,9 @@ const Task_HandleTruckSequence = function (task: DecompTask, rt: DecompRuntime):
       data[2]++;
       data[1]++;
       SetCameraPanning(0, GetTruckCameraBobbingY(data[2]));// POST-increment
+      // 1:1 décomp Task_HandleTruckSequence state 2 :
+      //   if (!gPaletteFade.active && tTimer > 300) { ... PlaySE(SE_TRUCK_STOP); }
+      // SE_MOVE est en loop depuis state 0→1 → s'arrête au stop ci-dessous.
       if (!rt.gPaletteFade.active && data[1] > 300) {
         // 1:1 décomp : DestroyTask(Task_Truck1) → CreateTask(Task_Truck2)
         //   → PlaySE(SE_TRUCK_STOP) → tState=3.
