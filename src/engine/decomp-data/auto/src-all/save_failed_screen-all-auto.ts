@@ -33,11 +33,11 @@ const {
   PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, ProgramFlashByte, REG_OFFSET_BG0CNT,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS,
   REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS,
-  REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, ReadFlash,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  SetWindowAttribute, ShowBg, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
+  REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_DISPCNT,
+  ReadFlash, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
+  SetVBlankCallback, SetWindowAttribute, ShowBg, TRUE,
+  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SaveFailedScreenTextPrint(const u8 *text, u8 x, u8 y) */

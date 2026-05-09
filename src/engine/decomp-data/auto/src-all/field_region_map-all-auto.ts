@@ -32,9 +32,9 @@ const {
   NULL, PALETTES_ALL, PIXEL_FILL, ProcessSpriteCopyRequests,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-  ResetBgsAndClearDma3BusyFlags, ResetSpriteData, ScheduleBgCopyTilemapToVram, SetGpuReg,
-  SetGpuRegBits, SetMainCallback2, SetVBlankCallback, ShowBg,
-  TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags, ResetSpriteData, ScheduleBgCopyTilemapToVram,
+  SetGpuReg, SetGpuRegBits, SetMainCallback2, SetVBlankCallback,
+  ShowBg, TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void FieldInitRegionMap(MainCallback callback) */

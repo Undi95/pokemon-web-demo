@@ -39,8 +39,8 @@ const {
   PLTT_SIZE_4BPP, PlaySE, PokenavFadeScreen, PokenavFillPalette,
   Pokenav_AllocAndLoadPalettes, PrintHelpBarText, PutWindowTilemap, RemoveWindow,
   ResetAllPicSprites, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, SetBgTilemapBuffer,
-  ShowBg, StartSpriteAffineAnim, StringCopy, StringGet_Nickname,
-  TRUE,  // 4-per-line for readability
+  ShowBg, SpriteCallbackDummy, StartSpriteAffineAnim, StringCopy,
+  StringGet_Nickname, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_RibbonsSummaryMenu(void) */

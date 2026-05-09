@@ -1,0 +1,651 @@
+{
+  "srcFile": "src/pokemon_summary_screen.c",
+  "count": 51,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 27,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 25,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 29,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 27,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0,\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 25,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0,\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 29,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    },\n}"
+    },
+    "sMultiBattleOrder": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "2",
+        "3",
+        "1",
+        "4",
+        "5"
+      ],
+      "rawValue": "{0, 2, 3, 1, 4, 5}"
+    },
+    "sSummaryTemplate": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "PSS_LABEL_WINDOW_POKEMON_INFO_TITLE",
+        "PSS_LABEL_WINDOW_POKEMON_SKILLS_TITLE",
+        "PSS_LABEL_WINDOW_BATTLE_MOVES_TITLE",
+        "PSS_LABEL_WINDOW_CONTEST_MOVES_TITLE",
+        "PSS_LABEL_WINDOW_PROMPT_CANCEL",
+        "PSS_LABEL_WINDOW_PROMPT_INFO",
+        "PSS_LABEL_WINDOW_PROMPT_SWITCH",
+        "PSS_LABEL_WINDOW_UNUSED1",
+        "PSS_LABEL_WINDOW_POKEMON_INFO_RENTAL",
+        "PSS_LABEL_WINDOW_POKEMON_INFO_TYPE",
+        "PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_LEFT",
+        "PSS_LABEL_WINDOW_POKEMON_SKILLS_STATS_RIGHT",
+        "PSS_LABEL_WINDOW_POKEMON_SKILLS_EXP",
+        "PSS_LABEL_WINDOW_POKEMON_SKILLS_STATUS",
+        "PSS_LABEL_WINDOW_MOVES_POWER_ACC",
+        "PSS_LABEL_WINDOW_MOVES_APPEAL_JAM",
+        "PSS_LABEL_WINDOW_UNUSED2",
+        "PSS_LABEL_WINDOW_PORTRAIT_DEX_NUMBER",
+        "PSS_LABEL_WINDOW_PORTRAIT_NICKNAME",
+        "PSS_LABEL_WINDOW_PORTRAIT_SPECIES",
+        "PSS_LABEL_WINDOW_END"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    [PSS_LABEL_WINDOW_POKEMON_INFO_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 11,\n        .height = 2,\n        .paletteNum = 6,\n        .baseBlock = 1,\n    },\n    [PSS_LABEL_WINDOW_POKEMON_SKILLS_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 11,\n        .height = 2,\n        .paletteNum = 6,\n        .baseBlock = 23,\n    },\n    [PSS_LABEL_WINDOW_BATTLE_MOVES_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 11,\n        .height = 2,\n        .paletteNum = 6,\n        .baseBlock = 45,\n    },\n    [PSS_LABEL_WINDOW_CONTEST_MOVES_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 11,\n        .height = 2,\n        .paletteNum = 6,\n        .baseBlock = 67,\n    },\n    [PSS_LABEL_WINDOW_PROMPT_CANCEL] = {\n        .bg = 0,\n        .tilemapLeft = 22,\n        .tilemapTop = 0,\n        .width = 8,\n        .height = 2,\n        .paletteN..."
+    },
+    "sPageInfoTemplate": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "PSS_DATA_WINDOW_INFO_ORIGINAL_TRAINER",
+        "PSS_DATA_WINDOW_INFO_ID",
+        "PSS_DATA_WINDOW_INFO_ABILITY",
+        "PSS_DATA_WINDOW_INFO_MEMO"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [PSS_DATA_WINDOW_INFO_ORIGINAL_TRAINER] = {\n        .bg = 0,\n        .tilemapLeft = 11,\n        .tilemapTop = 4,\n        .width = 11,\n        .height = 2,\n        .paletteNum = 6,\n        .baseBlock = 449,\n    },\n    [PSS_DATA_WINDOW_INFO_ID] = {\n        .bg = 0,\n        .tilemapLeft = 22,\n        .tilemapTop = 4,\n        .width = 7,\n        .height = 2,\n        .paletteNum = 6,\n        .baseBlock = 471,\n    },\n    [PSS_DATA_WINDOW_INFO_ABILITY] = {\n        .bg = 0,\n        .tilemapLeft = 11,\n        .tilemapTop = 9,\n        .width = 19,  \n        .height = 4,\n        .paletteNum = 6,\n        .baseBlock = 485,\n    },\n    [PSS_DATA_WINDOW_INFO_MEMO] = {\n        .bg = 0,\n        .tilemapLeft = 11,\n        .tilemapTop = 14,\n        .width = 18,\n        .height = 6,\n        .paletteNum = 6,\n        .baseBlock = 561,  \n    },\n}"
+    },
+    "sPageSkillsTemplate": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "PSS_DATA_WINDOW_SKILLS_HELD_ITEM",
+        "PSS_DATA_WINDOW_SKILLS_RIBBON_COUNT",
+        "PSS_DATA_WINDOW_SKILLS_STATS_LEFT",
+        "PSS_DATA_WINDOW_SKILLS_STATS_RIGHT",
+        "PSS_DATA_WINDOW_EXP"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [PSS_DATA_WINDOW_SKILLS_HELD_ITEM] = {\n        .bg = 0,\n        .tilemapLeft = 10,\n        .tilemapTop = 4,\n        .width = 10,\n        .height = 2,\n        .paletteNum = 6,\n        .baseBlock = 449,\n    },\n    [PSS_DATA_WINDOW_SKILLS_RIBBON_COUNT] = {\n        .bg = 0,\n        .tilemapLeft = 20,\n        .tilemapTop = 4,\n        .width = 10,\n        .height = 2,\n        .paletteNum = 6,\n        .baseBlock = 469,\n    },\n    [PSS_DATA_WINDOW_SKILLS_STATS_LEFT] = {\n        .bg = 0,\n        .tilemapLeft = 16,\n        .tilemapTop = 7,\n        .width = 6,\n        .height = 6,\n        .paletteNum = 6,\n        .baseBlock = 489,\n    },\n    [PSS_DATA_WINDOW_SKILLS_STATS_RIGHT] = {\n        .bg = 0,\n        .tilemapLeft = 27,\n        .tilemapTop = 7,\n        .width = 3,\n        .height = 6,\n        .paletteNum = 6,\n        .baseBlock = 525,\n    },\n    [PSS_DATA_WINDOW_EXP] = {\n        .bg = 0,\n        .tilemapLeft = 24,\n        .tilemapTop = 14,\n        .width = 6,\n        .height = 4,\n        .paletteNum = 6,\n    ..."
+    },
+    "sPageMovesTemplate": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "PSS_DATA_WINDOW_MOVE_NAMES",
+        "PSS_DATA_WINDOW_MOVE_PP",
+        "PSS_DATA_WINDOW_MOVE_DESCRIPTION"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [PSS_DATA_WINDOW_MOVE_NAMES] = {\n        .bg = 0,\n        .tilemapLeft = 15,\n        .tilemapTop = 4,\n        .width = 9,\n        .height = 10,\n        .paletteNum = 6,\n        .baseBlock = 449,\n    },\n    [PSS_DATA_WINDOW_MOVE_PP] = {\n        .bg = 0,\n        .tilemapLeft = 24,\n        .tilemapTop = 4,\n        .width = 6,\n        .height = 10,\n        .paletteNum = 8,\n        .baseBlock = 539,\n    },\n    [PSS_DATA_WINDOW_MOVE_DESCRIPTION] = {\n        .bg = 0,\n        .tilemapLeft = 10,\n        .tilemapTop = 15,\n        .width = 20,\n        .height = 4,\n        .paletteNum = 6,\n        .baseBlock = 599,\n    },\n}"
+    },
+    "sTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{0, 1, 2}",
+        "{0, 3, 4}",
+        "{0, 5, 6}",
+        "{0, 7, 8}",
+        "{0, 9, 10}",
+        "{0, 11, 12}",
+        "{0, 13, 14}",
+        "{0, 7, 8}",
+        "{13, 15, 14}",
+        "{0, 1, 2}",
+        "{0, 3, 4}",
+        "{0, 5, 6}",
+        "{0, 7, 8}"
+      ],
+      "rawValue": "{\n    {0, 1, 2},\n    {0, 3, 4},\n    {0, 5, 6},\n    {0, 7, 8},\n    {0, 9, 10},\n    {0, 11, 12},\n    {0, 13, 14},\n    {0, 7, 8},\n    {13, 15, 14},\n    {0, 1, 2},\n    {0, 3, 4},\n    {0, 5, 6},\n    {0, 7, 8}\n}"
+    },
+    "sButtons_Gfx": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "INCGFX_U8(\"graphics/summary_screen/a_button.png\", \".4bpp\")",
+        "INCGFX_U8(\"graphics/summary_screen/b_button.png\", \".4bpp\")"
+      ],
+      "rawValue": "{\n    INCGFX_U8(\"graphics/summary_screen/a_button.png\", \".4bpp\"),\n    INCGFX_U8(\"graphics/summary_screen/b_button.png\", \".4bpp\"),\n}"
+    },
+    "sTextPrinterTasks": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "PSS_PAGE_INFO",
+        "PSS_PAGE_SKILLS",
+        "PSS_PAGE_BATTLE_MOVES",
+        "PSS_PAGE_CONTEST_MOVES"
+      ],
+      "indexedValues": [
+        "Task_PrintInfoPage",
+        "Task_PrintSkillsPage",
+        "Task_PrintBattleMoves",
+        "Task_PrintContestMoves"
+      ],
+      "rawValue": "{\n    [PSS_PAGE_INFO] = Task_PrintInfoPage,\n    [PSS_PAGE_SKILLS] = Task_PrintSkillsPage,\n    [PSS_PAGE_BATTLE_MOVES] = Task_PrintBattleMoves,\n    [PSS_PAGE_CONTEST_MOVES] = Task_PrintContestMoves\n}"
+    },
+    "sSpriteAnim_TypeNormal": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_NORMAL * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_NORMAL * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeFighting": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_FIGHTING * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_FIGHTING * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeFlying": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_FLYING * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_FLYING * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypePoison": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_POISON * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_POISON * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeGround": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_GROUND * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_GROUND * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeRock": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_ROCK * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_ROCK * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeBug": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_BUG * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_BUG * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeGhost": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_GHOST * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_GHOST * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeSteel": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_STEEL * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_STEEL * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeMystery": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_MYSTERY * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_MYSTERY * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeFire": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_FIRE * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_FIRE * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeWater": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_WATER * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_WATER * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeGrass": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_GRASS * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_GRASS * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeElectric": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_ELECTRIC * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_ELECTRIC * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypePsychic": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_PSYCHIC * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_PSYCHIC * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeIce": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_ICE * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_ICE * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeDragon": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_DRAGON * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_DRAGON * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_TypeDark": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(TYPE_DARK * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(TYPE_DARK * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_CategoryCool": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME((CONTEST_CATEGORY_COOL + NUMBER_OF_MON_TYPES) * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME((CONTEST_CATEGORY_COOL + NUMBER_OF_MON_TYPES) * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_CategoryBeauty": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME((CONTEST_CATEGORY_BEAUTY + NUMBER_OF_MON_TYPES) * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME((CONTEST_CATEGORY_BEAUTY + NUMBER_OF_MON_TYPES) * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_CategoryCute": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME((CONTEST_CATEGORY_CUTE + NUMBER_OF_MON_TYPES) * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME((CONTEST_CATEGORY_CUTE + NUMBER_OF_MON_TYPES) * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_CategorySmart": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME((CONTEST_CATEGORY_SMART + NUMBER_OF_MON_TYPES) * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME((CONTEST_CATEGORY_SMART + NUMBER_OF_MON_TYPES) * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_CategoryTough": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME((CONTEST_CATEGORY_TOUGH + NUMBER_OF_MON_TYPES) * 8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME((CONTEST_CATEGORY_TOUGH + NUMBER_OF_MON_TYPES) * 8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sMoveTypeToOamPaletteNum": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "TYPE_NORMAL",
+        "TYPE_FIGHTING",
+        "TYPE_FLYING",
+        "TYPE_POISON",
+        "TYPE_GROUND",
+        "TYPE_ROCK",
+        "TYPE_BUG",
+        "TYPE_GHOST",
+        "TYPE_STEEL",
+        "TYPE_MYSTERY",
+        "TYPE_FIRE",
+        "TYPE_WATER",
+        "TYPE_GRASS",
+        "TYPE_ELECTRIC",
+        "TYPE_PSYCHIC",
+        "TYPE_ICE",
+        "TYPE_DRAGON",
+        "TYPE_DARK"
+      ],
+      "indexedValues": [
+        "13",
+        "13",
+        "14",
+        "14",
+        "13",
+        "13",
+        "15",
+        "14",
+        "13",
+        "15",
+        "13",
+        "14",
+        "15",
+        "13",
+        "14",
+        "14",
+        "15",
+        "13"
+      ],
+      "rawValue": "{\n    [TYPE_NORMAL] = 13,\n    [TYPE_FIGHTING] = 13,\n    [TYPE_FLYING] = 14,\n    [TYPE_POISON] = 14,\n    [TYPE_GROUND] = 13,\n    [TYPE_ROCK] = 13,\n    [TYPE_BUG] = 15,\n    [TYPE_GHOST] = 14,\n    [TYPE_STEEL] = 13,\n    [TYPE_MYSTERY] = 15,\n    [TYPE_FIRE] = 13,\n    [TYPE_WATER] = 14,\n    [TYPE_GRASS] = 15,\n    [TYPE_ELECTRIC] = 13,\n    [TYPE_PSYCHIC] = 14,\n    [TYPE_ICE] = 14,\n    [TYPE_DRAGON] = 15,\n    [TYPE_DARK] = 13,\n    [NUMBER_OF_MON_TYPES + CONTEST_CATEGORY_COOL] = 13,\n    [NUMBER_OF_MON_TYPES + CONTEST_CATEGORY_BEAUTY] = 14,\n    [NUMBER_OF_MON_TYPES + CONTEST_CATEGORY_CUTE] = 14,\n    [NUMBER_OF_MON_TYPES + CONTEST_CATEGORY_SMART] = 15,\n    [NUMBER_OF_MON_TYPES + CONTEST_CATEGORY_TOUGH] = 13,\n}"
+    },
+    "sSpriteAnim_MoveSelector0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_MoveSelector1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_MoveSelector2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_MoveSelector3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(12, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(12, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_MoveSelectorLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_MoveSelectorRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 0, TRUE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 0, TRUE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_MoveSelectorMiddle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(20, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(20, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_MoveSelector7": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_MoveSelector8": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 0, TRUE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 0, TRUE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_MoveSelector9": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(28, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(28, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_StatusPoison": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_StatusParalyzed": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_StatusSleep": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_StatusFrozen": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(12, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(12, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_StatusBurn": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_StatusPokerus": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(20, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(20, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_StatusFaint": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sTextPrinterFunctions": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "PSS_PAGE_INFO",
+        "PSS_PAGE_SKILLS",
+        "PSS_PAGE_BATTLE_MOVES",
+        "PSS_PAGE_CONTEST_MOVES"
+      ],
+      "indexedValues": [
+        "PrintInfoPageText",
+        "PrintSkillsPageText",
+        "PrintBattleMoves",
+        "PrintContestMoves"
+      ],
+      "rawValue": "{\n    [PSS_PAGE_INFO] = PrintInfoPageText,\n    [PSS_PAGE_SKILLS] = PrintSkillsPageText,\n    [PSS_PAGE_BATTLE_MOVES] = PrintBattleMoves,\n    [PSS_PAGE_CONTEST_MOVES] = PrintContestMoves\n}"
+    }
+  }
+}

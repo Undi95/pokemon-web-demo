@@ -1,0 +1,263 @@
+{
+  "srcFile": "src/pokenav_menu_handler_gfx.c",
+  "count": 22,
+  "tables": {
+    "sPokenavMainMenuBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0x000\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 23,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0x000\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0x000\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0x000\n    }, {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 23,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0x000\n    }, {\n        .bg = 3,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0x000\n    }\n}"
+    },
+    "sMenuHandlerLoopTaskFuncs": {
+      "type": "LoopedTask",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "POKENAV_MENU_FUNC_NONE",
+        "POKENAV_MENU_FUNC_MOVE_CURSOR",
+        "POKENAV_MENU_FUNC_OPEN_CONDITION",
+        "POKENAV_MENU_FUNC_RETURN_TO_MAIN",
+        "POKENAV_MENU_FUNC_OPEN_CONDITION_SEARCH",
+        "POKENAV_MENU_FUNC_RETURN_TO_CONDITION",
+        "POKENAV_MENU_FUNC_NO_RIBBON_WINNERS",
+        "POKENAV_MENU_FUNC_RESHOW_DESCRIPTION",
+        "POKENAV_MENU_FUNC_OPEN_FEATURE"
+      ],
+      "indexedValues": [
+        "NULL",
+        "LoopedTask_MoveMenuCursor",
+        "LoopedTask_OpenConditionMenu",
+        "LoopedTask_ReturnToMainMenu",
+        "LoopedTask_OpenConditionSearchMenu",
+        "LoopedTask_ReturnToConditionMenu",
+        "LoopedTask_SelectRibbonsNoWinners",
+        "LoopedTask_ReShowDescription",
+        "LoopedTask_OpenPokenavFeature"
+      ],
+      "rawValue": "{\n    [POKENAV_MENU_FUNC_NONE]                  = NULL,\n    [POKENAV_MENU_FUNC_MOVE_CURSOR]           = LoopedTask_MoveMenuCursor,\n    [POKENAV_MENU_FUNC_OPEN_CONDITION]        = LoopedTask_OpenConditionMenu,\n    [POKENAV_MENU_FUNC_RETURN_TO_MAIN]        = LoopedTask_ReturnToMainMenu,\n    [POKENAV_MENU_FUNC_OPEN_CONDITION_SEARCH] = LoopedTask_OpenConditionSearchMenu,\n    [POKENAV_MENU_FUNC_RETURN_TO_CONDITION]   = LoopedTask_ReturnToConditionMenu,\n    [POKENAV_MENU_FUNC_NO_RIBBON_WINNERS]     = LoopedTask_SelectRibbonsNoWinners,\n    [POKENAV_MENU_FUNC_RESHOW_DESCRIPTION]    = LoopedTask_ReShowDescription,\n    [POKENAV_MENU_FUNC_OPEN_FEATURE]          = LoopedTask_OpenPokenavFeature\n}"
+    },
+    "sPokenavOptionsSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = gPokenavOptions_Gfx,\n        .size = 0x3400,\n        .tag = GFXTAG_OPTIONS\n    }",
+        "{\n        .data = sMatchCallBlueLightTiles,\n        .size = 0x0100,\n        .tag = GFXTAG_BLUE_LIGHT\n    }"
+      ],
+      "rawValue": "{\n    {\n        .data = gPokenavOptions_Gfx,\n        .size = 0x3400,\n        .tag = GFXTAG_OPTIONS\n    },\n    {\n        .data = sMatchCallBlueLightTiles,\n        .size = 0x0100,\n        .tag = GFXTAG_BLUE_LIGHT\n    }\n}"
+    },
+    "sPokenavOptionsSpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{&gPokenavOptions_Pal[0x00], PALTAG_OPTIONS_DEFAULT}",
+        "{&gPokenavOptions_Pal[0x10], PALTAG_OPTIONS_BLUE}",
+        "{&gPokenavOptions_Pal[0x20], PALTAG_OPTIONS_PINK}",
+        "{&gPokenavOptions_Pal[0x30], PALTAG_OPTIONS_BEIGE}",
+        "{&gPokenavOptions_Pal[0x40], PALTAG_OPTIONS_RED}",
+        "{sMatchCallBlueLightPal, PALTAG_BLUE_LIGHT}",
+        "{}"
+      ],
+      "rawValue": "{\n    {&gPokenavOptions_Pal[0x00], PALTAG_OPTIONS_DEFAULT},\n    {&gPokenavOptions_Pal[0x10], PALTAG_OPTIONS_BLUE},\n    {&gPokenavOptions_Pal[0x20], PALTAG_OPTIONS_PINK},\n    {&gPokenavOptions_Pal[0x30], PALTAG_OPTIONS_BEIGE},\n    {&gPokenavOptions_Pal[0x40], PALTAG_OPTIONS_RED},\n    {sMatchCallBlueLightPal, PALTAG_BLUE_LIGHT},\n    {}\n}"
+    },
+    "sOptionsLabelGfx_RegionMap": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x000",
+        "PALTAG_OPTIONS_DEFAULT - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x000, PALTAG_OPTIONS_DEFAULT - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_Condition": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x020",
+        "PALTAG_OPTIONS_BLUE - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x020, PALTAG_OPTIONS_BLUE - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_MatchCall": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x040",
+        "PALTAG_OPTIONS_RED - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x040, PALTAG_OPTIONS_RED - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_Ribbons": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x060",
+        "PALTAG_OPTIONS_PINK - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x060, PALTAG_OPTIONS_PINK - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_SwitchOff": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x080",
+        "PALTAG_OPTIONS_BEIGE - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x080, PALTAG_OPTIONS_BEIGE - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_Party": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0A0",
+        "PALTAG_OPTIONS_BLUE - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x0A0, PALTAG_OPTIONS_BLUE - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_Search": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0C0",
+        "PALTAG_OPTIONS_BLUE - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x0C0, PALTAG_OPTIONS_BLUE - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_Cool": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0E0",
+        "PALTAG_OPTIONS_RED - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x0E0, PALTAG_OPTIONS_RED - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_Beauty": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x100",
+        "PALTAG_OPTIONS_BLUE - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x100, PALTAG_OPTIONS_BLUE - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_Cute": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x120",
+        "PALTAG_OPTIONS_PINK - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x120, PALTAG_OPTIONS_PINK - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_Smart": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x140",
+        "PALTAG_OPTIONS_DEFAULT - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x140, PALTAG_OPTIONS_DEFAULT - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_Tough": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x160",
+        "PALTAG_OPTIONS_DEFAULT - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x160, PALTAG_OPTIONS_DEFAULT - PALTAG_OPTIONS_START}"
+    },
+    "sOptionsLabelGfx_Cancel": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x180",
+        "PALTAG_OPTIONS_BEIGE - PALTAG_OPTIONS_START"
+      ],
+      "rawValue": "{0x180, PALTAG_OPTIONS_BEIGE - PALTAG_OPTIONS_START}"
+    },
+    "sPokenavMenuOptionLabelGfx": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "POKENAV_MENU_TYPE_DEFAULT",
+        "POKENAV_MENU_TYPE_UNLOCK_MC",
+        "POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS",
+        "POKENAV_MENU_TYPE_CONDITION",
+        "POKENAV_MENU_TYPE_CONDITION_SEARCH"
+      ],
+      "indexedValues": [
+        "{\n        .yStart = 42",
+        "{\n        .yStart = 42",
+        "{\n        .yStart = 42",
+        "{\n        .yStart = 56",
+        "{\n        .yStart = 40"
+      ],
+      "rawValue": "{\n    [POKENAV_MENU_TYPE_DEFAULT] =\n    {\n        .yStart = 42,\n        .deltaY = 20,\n        .gfx = {\n            sOptionsLabelGfx_RegionMap,\n            sOptionsLabelGfx_Condition,\n            sOptionsLabelGfx_SwitchOff\n        }\n    },\n    [POKENAV_MENU_TYPE_UNLOCK_MC] =\n    {\n        .yStart = 42,\n        .deltaY = 20,\n        .gfx = {\n            sOptionsLabelGfx_RegionMap,\n            sOptionsLabelGfx_Condition,\n            sOptionsLabelGfx_MatchCall,\n            sOptionsLabelGfx_SwitchOff\n        }\n    },\n    [POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS] =\n    {\n        .yStart = 42,\n        .deltaY = 20,\n        .gfx = {\n            sOptionsLabelGfx_RegionMap,\n            sOptionsLabelGfx_Condition,\n            sOptionsLabelGfx_MatchCall,\n            sOptionsLabelGfx_Ribbons,\n            sOptionsLabelGfx_SwitchOff\n        }\n    },\n    [POKENAV_MENU_TYPE_CONDITION] =\n    {\n        .yStart = 56,\n        .deltaY = 20,\n        .gfx = {\n            sOptionsLabelGfx_Party,\n            sOptionsLabelGfx_Search,\n     ..."
+    },
+    "sOptionDescTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_GREEN",
+        "TEXT_COLOR_BLUE",
+        "TEXT_COLOR_LIGHT_GREEN"
+      ],
+      "rawValue": "{TEXT_COLOR_GREEN, TEXT_COLOR_BLUE, TEXT_COLOR_LIGHT_GREEN}"
+    },
+    "sOptionDescTextColors2": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_GREEN",
+        "TEXT_COLOR_BLUE",
+        "TEXT_COLOR_LIGHT_GREEN"
+      ],
+      "rawValue": "{TEXT_COLOR_GREEN, TEXT_COLOR_BLUE, TEXT_COLOR_LIGHT_GREEN}"
+    },
+    "sAffineAnim_MenuOption_Normal": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_MenuOption_Zoom": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 0x12)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 0x12),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

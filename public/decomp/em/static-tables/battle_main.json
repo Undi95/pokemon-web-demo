@@ -1,0 +1,126 @@
+{
+  "srcFile": "src/battle_main.c",
+  "count": 7,
+  "tables": {
+    "sFlickerArray": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sUnusedBattlersArray": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sAnim_Unused": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_Unused": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x10, 0x0, 0, 4)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 0x3C)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x10, 0x0, 0, 4),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 0x3C),\n    AFFINEANIMCMD_JUMP(1),\n}"
+    },
+    "sCenterToCornerVecXs": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-32",
+        "-16",
+        "-16",
+        "-32",
+        "-32"
+      ],
+      "rawValue": "{-32, -16, -16, -32, -32}"
+    },
+    "sTurnActionsFuncsTable": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "B_ACTION_USE_MOVE",
+        "B_ACTION_USE_ITEM",
+        "B_ACTION_SWITCH",
+        "B_ACTION_RUN",
+        "B_ACTION_SAFARI_WATCH_CAREFULLY",
+        "B_ACTION_SAFARI_BALL",
+        "B_ACTION_SAFARI_POKEBLOCK",
+        "B_ACTION_SAFARI_GO_NEAR",
+        "B_ACTION_SAFARI_RUN",
+        "B_ACTION_WALLY_THROW",
+        "B_ACTION_EXEC_SCRIPT",
+        "B_ACTION_TRY_FINISH",
+        "B_ACTION_FINISHED",
+        "B_ACTION_NOTHING_FAINTED"
+      ],
+      "indexedValues": [
+        "HandleAction_UseMove",
+        "HandleAction_UseItem",
+        "HandleAction_Switch",
+        "HandleAction_Run",
+        "HandleAction_WatchesCarefully",
+        "HandleAction_SafariZoneBallThrow",
+        "HandleAction_ThrowPokeblock",
+        "HandleAction_GoNear",
+        "HandleAction_SafariZoneRun",
+        "HandleAction_WallyBallThrow",
+        "HandleAction_RunBattleScript",
+        "HandleAction_TryFinish",
+        "HandleAction_ActionFinished",
+        "HandleAction_NothingIsFainted"
+      ],
+      "rawValue": "{\n    [B_ACTION_USE_MOVE]               = HandleAction_UseMove,\n    [B_ACTION_USE_ITEM]               = HandleAction_UseItem,\n    [B_ACTION_SWITCH]                 = HandleAction_Switch,\n    [B_ACTION_RUN]                    = HandleAction_Run,\n    [B_ACTION_SAFARI_WATCH_CAREFULLY] = HandleAction_WatchesCarefully,\n    [B_ACTION_SAFARI_BALL]            = HandleAction_SafariZoneBallThrow,\n    [B_ACTION_SAFARI_POKEBLOCK]       = HandleAction_ThrowPokeblock,\n    [B_ACTION_SAFARI_GO_NEAR]         = HandleAction_GoNear,\n    [B_ACTION_SAFARI_RUN]             = HandleAction_SafariZoneRun,\n    [B_ACTION_WALLY_THROW]            = HandleAction_WallyBallThrow,\n    [B_ACTION_EXEC_SCRIPT]            = HandleAction_RunBattleScript,\n    [B_ACTION_TRY_FINISH]             = HandleAction_TryFinish,\n    [B_ACTION_FINISHED]               = HandleAction_ActionFinished,\n    [B_ACTION_NOTHING_FAINTED]        = HandleAction_NothingIsFainted,\n}"
+    },
+    "sEndTurnFuncsTable": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "B_OUTCOME_WON",
+        "B_OUTCOME_LOST",
+        "B_OUTCOME_DREW",
+        "B_OUTCOME_RAN",
+        "B_OUTCOME_PLAYER_TELEPORTED",
+        "B_OUTCOME_MON_FLED",
+        "B_OUTCOME_CAUGHT",
+        "B_OUTCOME_NO_SAFARI_BALLS",
+        "B_OUTCOME_FORFEITED",
+        "B_OUTCOME_MON_TELEPORTED"
+      ],
+      "indexedValues": [
+        "HandleEndTurn_BattleWon",
+        "HandleEndTurn_BattleLost",
+        "HandleEndTurn_BattleLost",
+        "HandleEndTurn_RanFromBattle",
+        "HandleEndTurn_FinishBattle",
+        "HandleEndTurn_MonFled",
+        "HandleEndTurn_FinishBattle",
+        "HandleEndTurn_FinishBattle",
+        "HandleEndTurn_FinishBattle",
+        "HandleEndTurn_FinishBattle"
+      ],
+      "rawValue": "{\n    [0]                           = HandleEndTurn_ContinueBattle,\n    [B_OUTCOME_WON]               = HandleEndTurn_BattleWon,\n    [B_OUTCOME_LOST]              = HandleEndTurn_BattleLost,\n    [B_OUTCOME_DREW]              = HandleEndTurn_BattleLost,\n    [B_OUTCOME_RAN]               = HandleEndTurn_RanFromBattle,\n    [B_OUTCOME_PLAYER_TELEPORTED] = HandleEndTurn_FinishBattle,\n    [B_OUTCOME_MON_FLED]          = HandleEndTurn_MonFled,\n    [B_OUTCOME_CAUGHT]            = HandleEndTurn_FinishBattle,\n    [B_OUTCOME_NO_SAFARI_BALLS]   = HandleEndTurn_FinishBattle,\n    [B_OUTCOME_FORFEITED]         = HandleEndTurn_FinishBattle,\n    [B_OUTCOME_MON_TELEPORTED]    = HandleEndTurn_FinishBattle,\n}"
+    }
+  }
+}

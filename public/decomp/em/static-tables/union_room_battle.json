@@ -1,0 +1,36 @@
+{
+  "srcFile": "src/union_room_battle.c",
+  "count": 3,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 31\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 31\n    }\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 15,\n        .width = 24,\n        .height = 4,\n        .paletteNum = 14,\n        .baseBlock = 0x014\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 15,\n        .width = 24,\n        .height = 4,\n        .paletteNum = 14,\n        .baseBlock = 0x014\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_DARK_GRAY",
+        "TEXT_COLOR_LIGHT_GRAY"
+      ],
+      "rawValue": "{ TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY }"
+    }
+  }
+}

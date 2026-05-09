@@ -1,0 +1,15 @@
+{
+  "srcFile": "src/event_data.c",
+  "count": 1,
+  "tables": {
+    "sSpecialFlags": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    }
+  }
+}

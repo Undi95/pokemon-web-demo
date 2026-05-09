@@ -39,12 +39,12 @@ const {
   PlayBGM, PlayCry_Normal, PlayNewMapMusic, READ_PTR_FROM_TASK,
   Random, Random32, ResetMapMusic, RtcCalcLocalTime,
   SET16, SET32, SET8, SET_BY_WIDTH,
-  STORE_PTR_IN_TASK, SetPCBoxToSendMon, SetSpriteCB_MonAnimDummy, StartMonSummaryAnimation,
-  StartSpriteAnim, StorageGetCurrentBox, StringCompare, StringCopy,
-  StringCopy_Nickname, StringLength, StripExtCtrlCodes, SummaryScreen_SetAnimDelayTaskId,
-  TASK_NONE, TRAINER_ENCOUNTER_MUSIC, TRUE, TRY_FREE_AND_SET_NULL,
-  UPDATE_FRIENDSHIP_FROM_ITEM, UpdateSentPokesToOpponentValue, VarGet, VarSet,
-  m4aMPlayAllStop, memcpy, memset,  // 4-per-line for readability
+  STORE_PTR_IN_TASK, SetPCBoxToSendMon, SetSpriteCB_MonAnimDummy, SpriteCallbackDummy,
+  StartMonSummaryAnimation, StartSpriteAnim, StorageGetCurrentBox, StringCompare,
+  StringCopy, StringCopy_Nickname, StringLength, StripExtCtrlCodes,
+  SummaryScreen_SetAnimDelayTaskId, TASK_NONE, TRAINER_ENCOUNTER_MUSIC, TRUE,
+  TRY_FREE_AND_SET_NULL, UPDATE_FRIENDSHIP_FROM_ITEM, UpdateSentPokesToOpponentValue, VarGet,
+  VarSet, m4aMPlayAllStop, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ZeroBoxMonData(struct BoxPokemon *boxMon) */

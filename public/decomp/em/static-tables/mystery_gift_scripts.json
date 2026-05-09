@@ -1,0 +1,287 @@
+{
+  "srcFile": "src/mystery_gift_scripts.c",
+  "count": 23,
+  "tables": {
+    "sClientScript_SendGameData": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_LOAD_GAME_DATA}",
+        "{CLI_SEND_LOADED}",
+        "{CLI_RECV, MG_LINKID_CLIENT_SCRIPT}",
+        "{CLI_COPY_RECV}"
+      ],
+      "rawValue": "{\n    {CLI_LOAD_GAME_DATA},\n    {CLI_SEND_LOADED},\n    {CLI_RECV, MG_LINKID_CLIENT_SCRIPT},\n    {CLI_COPY_RECV}\n}"
+    },
+    "sClientScript_CantAccept": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_SEND_READY_END}",
+        "{CLI_RETURN, CLI_MSG_CANT_ACCEPT}"
+      ],
+      "rawValue": "{\n    {CLI_SEND_READY_END},\n    {CLI_RETURN, CLI_MSG_CANT_ACCEPT}\n}"
+    },
+    "sClientScript_CommError": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_SEND_READY_END}",
+        "{CLI_RETURN, CLI_MSG_COMM_ERROR}"
+      ],
+      "rawValue": "{\n    {CLI_SEND_READY_END},\n    {CLI_RETURN, CLI_MSG_COMM_ERROR}\n}"
+    },
+    "sClientScript_NothingSent": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_SEND_READY_END}",
+        "{CLI_RETURN, CLI_MSG_NOTHING_SENT}"
+      ],
+      "rawValue": "{\n    {CLI_SEND_READY_END},\n    {CLI_RETURN, CLI_MSG_NOTHING_SENT}\n}"
+    },
+    "sClientScript_SaveCard": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_RECV, MG_LINKID_CARD}",
+        "{CLI_SAVE_CARD}",
+        "{CLI_RECV, MG_LINKID_RAM_SCRIPT}",
+        "{CLI_SAVE_RAM_SCRIPT}",
+        "{CLI_SEND_READY_END}",
+        "{CLI_RETURN, CLI_MSG_CARD_RECEIVED}"
+      ],
+      "rawValue": "{\n    {CLI_RECV, MG_LINKID_CARD},\n    {CLI_SAVE_CARD},\n    {CLI_RECV, MG_LINKID_RAM_SCRIPT},\n    {CLI_SAVE_RAM_SCRIPT},\n    {CLI_SEND_READY_END},\n    {CLI_RETURN, CLI_MSG_CARD_RECEIVED}\n}"
+    },
+    "sClientScript_SaveNews": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_RECV, MG_LINKID_NEWS}",
+        "{CLI_SAVE_NEWS}",
+        "{CLI_SEND_LOADED}",
+        "{CLI_RECV, MG_LINKID_CLIENT_SCRIPT}",
+        "{CLI_COPY_RECV}"
+      ],
+      "rawValue": "{\n    {CLI_RECV, MG_LINKID_NEWS},\n    {CLI_SAVE_NEWS},\n    {CLI_SEND_LOADED},  \n    {CLI_RECV, MG_LINKID_CLIENT_SCRIPT},\n    {CLI_COPY_RECV}\n}"
+    },
+    "sClientScript_HadNews": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_SEND_READY_END}",
+        "{CLI_RETURN, CLI_MSG_HAD_NEWS}"
+      ],
+      "rawValue": "{\n    {CLI_SEND_READY_END},\n    {CLI_RETURN, CLI_MSG_HAD_NEWS}\n}"
+    },
+    "sClientScript_NewsReceived": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_SEND_READY_END}",
+        "{CLI_RETURN, CLI_MSG_NEWS_RECEIVED}"
+      ],
+      "rawValue": "{\n    {CLI_SEND_READY_END},\n    {CLI_RETURN, CLI_MSG_NEWS_RECEIVED}\n}"
+    },
+    "sClientScript_AskToss": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_ASK_TOSS}",
+        "{CLI_LOAD_TOSS_RESPONSE}",
+        "{CLI_SEND_LOADED}",
+        "{CLI_RECV, MG_LINKID_CLIENT_SCRIPT}",
+        "{CLI_COPY_RECV}"
+      ],
+      "rawValue": "{\n    {CLI_ASK_TOSS},\n    {CLI_LOAD_TOSS_RESPONSE},\n    {CLI_SEND_LOADED},\n    {CLI_RECV, MG_LINKID_CLIENT_SCRIPT},\n    {CLI_COPY_RECV}\n}"
+    },
+    "sClientScript_Canceled": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_SEND_READY_END}",
+        "{CLI_RETURN, CLI_MSG_COMM_CANCELED}"
+      ],
+      "rawValue": "{\n    {CLI_SEND_READY_END},\n    {CLI_RETURN, CLI_MSG_COMM_CANCELED}\n}"
+    },
+    "sClientScript_HadCard": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_SEND_READY_END}",
+        "{CLI_RETURN, CLI_MSG_HAD_CARD}"
+      ],
+      "rawValue": "{\n    {CLI_SEND_READY_END},\n    {CLI_RETURN, CLI_MSG_HAD_CARD}\n}"
+    },
+    "sClientScript_DynamicError": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_RECV, MG_LINKID_DYNAMIC_MSG}",
+        "{CLI_COPY_MSG}",
+        "{CLI_SEND_READY_END}",
+        "{CLI_RETURN, CLI_MSG_BUFFER_FAILURE}"
+      ],
+      "rawValue": "{\n    {CLI_RECV, MG_LINKID_DYNAMIC_MSG},\n    {CLI_COPY_MSG},\n    {CLI_SEND_READY_END},\n    {CLI_RETURN, CLI_MSG_BUFFER_FAILURE}\n}"
+    },
+    "sClientScript_DynamicSuccess": {
+      "type": "struct MysteryGiftClientCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{CLI_RECV, MG_LINKID_DYNAMIC_MSG}",
+        "{CLI_COPY_MSG}",
+        "{CLI_SEND_READY_END}",
+        "{CLI_RETURN, CLI_MSG_BUFFER_SUCCESS}"
+      ],
+      "rawValue": "{\n    {CLI_RECV, MG_LINKID_DYNAMIC_MSG},\n    {CLI_COPY_MSG},\n    {CLI_SEND_READY_END},\n    {CLI_RETURN, CLI_MSG_BUFFER_SUCCESS}\n}"
+    },
+    "sServerScript_CantSend": {
+      "type": "struct MysteryGiftServerCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_CantAccept)}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_READY_END}",
+        "{SVR_RETURN, SVR_MSG_CANT_SEND_GIFT_1}"
+      ],
+      "rawValue": "{\n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_CantAccept)},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_READY_END},\n    {SVR_RETURN, SVR_MSG_CANT_SEND_GIFT_1}\n}"
+    },
+    "sServerScript_CommError": {
+      "type": "struct MysteryGiftServerCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_CommError)}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_READY_END}",
+        "{SVR_RETURN, SVR_MSG_COMM_ERROR}"
+      ],
+      "rawValue": "{\n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_CommError)},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_READY_END},\n    {SVR_RETURN, SVR_MSG_COMM_ERROR}\n}"
+    },
+    "sServerScript_ClientCanceledNews": {
+      "type": "struct MysteryGiftServerCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_Canceled)}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_READY_END}",
+        "{SVR_RETURN, SVR_MSG_CLIENT_CANCELED}"
+      ],
+      "rawValue": "{\n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_Canceled)},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_READY_END},\n    {SVR_RETURN, SVR_MSG_CLIENT_CANCELED}\n}"
+    },
+    "sServerScript_ClientCanceledCard": {
+      "type": "struct MysteryGiftServerCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_DynamicError)}",
+        "{SVR_SEND}",
+        "{SVR_LOAD_MSG, PTR_ARG(sText_CanceledReadingCard)}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_READY_END}",
+        "{SVR_RETURN, SVR_MSG_CLIENT_CANCELED}"
+      ],
+      "rawValue": "{\n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_DynamicError)},\n    {SVR_SEND},\n    {SVR_LOAD_MSG, PTR_ARG(sText_CanceledReadingCard)},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_READY_END},\n    {SVR_RETURN, SVR_MSG_CLIENT_CANCELED}\n}"
+    },
+    "sServerScript_HasNews": {
+      "type": "struct MysteryGiftServerCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_HadNews)}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_READY_END}",
+        "{SVR_RETURN, SVR_MSG_HAS_NEWS}"
+      ],
+      "rawValue": "{\n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_HadNews)},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_READY_END},\n    {SVR_RETURN, SVR_MSG_HAS_NEWS}\n}"
+    },
+    "sServerScript_SendNews": {
+      "type": "struct MysteryGiftServerCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_SaveNews)}",
+        "{SVR_SEND}",
+        "{SVR_LOAD_NEWS}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_RESPONSE}",
+        "{SVR_READ_RESPONSE}",
+        "{SVR_GOTO_IF_EQ, TRUE, sServerScript_HasNews}",
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_NewsReceived)}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_READY_END}",
+        "{SVR_RETURN, SVR_MSG_NEWS_SENT}"
+      ],
+      "rawValue": "{\n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_SaveNews)},\n    {SVR_SEND},\n    {SVR_LOAD_NEWS},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_RESPONSE},\n    {SVR_READ_RESPONSE},\n    {SVR_GOTO_IF_EQ, TRUE, sServerScript_HasNews},  \n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_NewsReceived)},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_READY_END},\n    {SVR_RETURN, SVR_MSG_NEWS_SENT}\n}"
+    },
+    "sServerScript_SendCard": {
+      "type": "struct MysteryGiftServerCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_SaveCard)}",
+        "{SVR_SEND}",
+        "{SVR_LOAD_CARD}",
+        "{SVR_SEND}",
+        "{SVR_LOAD_RAM_SCRIPT}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_READY_END}",
+        "{SVR_RETURN, SVR_MSG_CARD_SENT}"
+      ],
+      "rawValue": "{\n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_SaveCard)},\n    {SVR_SEND},\n    {SVR_LOAD_CARD},\n    {SVR_SEND},\n    {SVR_LOAD_RAM_SCRIPT},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_READY_END},\n    {SVR_RETURN, SVR_MSG_CARD_SENT}\n}"
+    },
+    "sServerScript_TossPrompt": {
+      "type": "struct MysteryGiftServerCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_AskToss)}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_RESPONSE}",
+        "{SVR_READ_RESPONSE}",
+        "{SVR_GOTO_IF_EQ, FALSE, sServerScript_SendCard}",
+        "{SVR_GOTO, .ptr = sServerScript_ClientCanceledCard}"
+      ],
+      "rawValue": "{\n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_AskToss)},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_RESPONSE},\n    {SVR_READ_RESPONSE},\n    {SVR_GOTO_IF_EQ, FALSE, sServerScript_SendCard},     \n    {SVR_GOTO, .ptr = sServerScript_ClientCanceledCard}  \n}"
+    },
+    "sServerScript_HasCard": {
+      "type": "struct MysteryGiftServerCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_HadCard)}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_READY_END}",
+        "{SVR_RETURN, SVR_MSG_HAS_CARD}"
+      ],
+      "rawValue": "{\n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_HadCard)},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_READY_END},\n    {SVR_RETURN, SVR_MSG_HAS_CARD}\n}"
+    },
+    "sServerScript_NothingSent": {
+      "type": "struct MysteryGiftServerCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_NothingSent)}",
+        "{SVR_SEND}",
+        "{SVR_RECV, MG_LINKID_READY_END}",
+        "{SVR_RETURN, SVR_MSG_NOTHING_SENT}"
+      ],
+      "rawValue": "{\n    {SVR_LOAD_CLIENT_SCRIPT, PTR_ARG(sClientScript_NothingSent)},\n    {SVR_SEND},\n    {SVR_RECV, MG_LINKID_READY_END},\n    {SVR_RETURN, SVR_MSG_NOTHING_SENT}\n}"
+    }
+  }
+}

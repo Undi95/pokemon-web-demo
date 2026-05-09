@@ -1,0 +1,62 @@
+{
+  "srcFile": "src/daycare.c",
+  "count": 6,
+  "tables": {
+    "sHatchedEggLevelUpMoves": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sHatchedEggFatherMoves": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sHatchedEggFinalMoves": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sHatchedEggEggMoves": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sHatchedEggMotherMoves": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sLevelMenuItems": {
+      "type": "struct ListMenuItem",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gText_ExpandedPlaceholder_Empty, 0}",
+        "{gText_ExpandedPlaceholder_Empty, 1}",
+        "{gText_Exit, DAYCARE_LEVEL_MENU_EXIT}"
+      ],
+      "rawValue": "{\n    {gText_ExpandedPlaceholder_Empty, 0},\n    {gText_ExpandedPlaceholder_Empty, 1},\n    {gText_Exit, DAYCARE_LEVEL_MENU_EXIT}\n}"
+    }
+  }
+}

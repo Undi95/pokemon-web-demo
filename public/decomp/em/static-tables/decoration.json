@@ -1,0 +1,145 @@
+{
+  "srcFile": "src/decoration.c",
+  "count": 13,
+  "tables": {
+    "sSecretBaseItemsIndicesBuffer": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sPlayerRoomItemsIndicesBuffer": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDecorMenuWindowIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDecorRearrangementDataBuffer": {
+      "type": "struct DecorRearrangementDataBuffer",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDecorationMainMenuActions": {
+      "type": "struct MenuAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .text = gText_Decorate,\n        .func = { .void_u8 = DecorationMenuAction_Decorate },\n    }",
+        "{\n        .text = gText_PutAway,\n        .func = { .void_u8 = DecorationMenuAction_PutAway },\n    }",
+        "{\n        .text = gText_Toss2,\n        .func = { .void_u8 = DecorationMenuAction_Toss },\n    }",
+        "{\n        .text = gText_Cancel,\n        .func = { .void_u8 = DecorationMenuAction_Cancel },\n    }"
+      ],
+      "rawValue": "{\n    {\n        .text = gText_Decorate,\n        .func = { .void_u8 = DecorationMenuAction_Decorate },\n    },\n    {\n        .text = gText_PutAway,\n        .func = { .void_u8 = DecorationMenuAction_PutAway },\n    },\n    {\n        .text = gText_Toss2,\n        .func = { .void_u8 = DecorationMenuAction_Toss },\n    },\n    {\n        .text = gText_Cancel,\n        .func = { .void_u8 = DecorationMenuAction_Cancel },\n    },\n}"
+    },
+    "sSecretBasePC_SelectedDecorationActions": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ DecorationItemsMenuAction_AttemptPlace, DecorationItemsMenuAction_Cancel }",
+        "{ DecorationItemsMenuAction_AttemptToss,  DecorationItemsMenuAction_Cancel }",
+        "{ DecorationItemsMenuAction_Trade,        DecorationItemsMenuAction_Cancel }"
+      ],
+      "rawValue": "{\n   { DecorationItemsMenuAction_AttemptPlace, DecorationItemsMenuAction_Cancel },\n   { DecorationItemsMenuAction_AttemptToss,  DecorationItemsMenuAction_Cancel },\n   { DecorationItemsMenuAction_Trade,        DecorationItemsMenuAction_Cancel },\n}"
+    },
+    "sDecorationWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 18,\n        .height = 2 * ARRAY_COUNT(sDecorationMainMenuActions),\n        .paletteNum = 15,\n        .baseBlock = 0x0001\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 13,\n        .height = 18,\n        .paletteNum = 13,\n        .baseBlock = 0x0091\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = 17,\n        .tilemapTop = 1,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x017b\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = 16,\n        .tilemapTop = 13,\n        .width = 13,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 0x0193\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 18,\n        .height = 2 * ARRAY_COUNT(sDecorationMainMenuActions),\n        .paletteNum = 15,\n        .baseBlock = 0x0001\n    },\n    {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 13,\n        .height = 18,\n        .paletteNum = 13,\n        .baseBlock = 0x0091\n    },\n    {\n        .bg = 0,\n        .tilemapLeft = 17,\n        .tilemapTop = 1,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x017b\n    },\n    {\n        .bg = 0,\n        .tilemapLeft = 16,\n        .tilemapTop = 13,\n        .width = 13,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 0x0193\n    }\n}"
+    },
+    "sDecorSelectorAnimCmd0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0, FALSE, FALSE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0, FALSE, FALSE),\n    ANIMCMD_END\n}"
+    },
+    "sPlacePutAwayYesNoFunctions": {
+      "type": "struct YesNoFuncTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .yesFunc = AttemptPlaceDecoration,\n        .noFunc = AttemptCancelPlaceDecoration,\n    }",
+        "{\n        .yesFunc = AttemptPutAwayDecoration,\n        .noFunc = AttemptCancelPutAwayDecoration,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .yesFunc = AttemptPlaceDecoration,\n        .noFunc = AttemptCancelPlaceDecoration,\n    },\n    {\n        .yesFunc = AttemptPutAwayDecoration,\n        .noFunc = AttemptCancelPutAwayDecoration,\n    }\n}"
+    },
+    "sDecorationStandElevations": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "4",
+        "4",
+        "4",
+        "4",
+        "0",
+        "3",
+        "3",
+        "0"
+      ],
+      "rawValue": "{\n    4, 4, 4, 4,\n    0, 3, 3, 0\n}"
+    },
+    "sDecorationSlideElevation": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "4",
+        "4",
+        "4",
+        "4",
+        "0",
+        "4",
+        "3",
+        "0"
+      ],
+      "rawValue": "{\n    4, 4,\n    4, 4,\n    0, 4,\n    3, 0,\n}"
+    },
+    "sDecorShapeSizes": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[DECORSHAPE_1x1] = 4",
+        "[DECORSHAPE_2x1] = 8",
+        "[DECORSHAPE_3x1] = 16",
+        "[DECORSHAPE_4x2] = 32",
+        "[DECORSHAPE_2x2] = 16",
+        "[DECORSHAPE_1x2] = 8",
+        "[DECORSHAPE_1x3] = 16",
+        "[DECORSHAPE_2x4] = 32",
+        "[DECORSHAPE_3x3] = 64",
+        "[DECORSHAPE_3x2] = 32"
+      ],
+      "rawValue": "{\n    [DECORSHAPE_1x1] = 4,\n    [DECORSHAPE_2x1] = 8,\n    [DECORSHAPE_3x1] = 16,\n    [DECORSHAPE_4x2] = 32,\n    [DECORSHAPE_2x2] = 16,\n    [DECORSHAPE_1x2] = 8,\n    [DECORSHAPE_1x3] = 16,\n    [DECORSHAPE_2x4] = 32,\n    [DECORSHAPE_3x3] = 64,\n    [DECORSHAPE_3x2] = 32,\n}"
+    },
+    "sPuttingAwayCursorAnimCmd0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0, 0),\n    ANIMCMD_END\n}"
+    }
+  }
+}

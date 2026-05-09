@@ -1,0 +1,27 @@
+{
+  "srcFile": "src/pokenav_match_call_list.c",
+  "count": 2,
+  "tables": {
+    "sMatchCallOptionsNoCheckPage": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MATCH_CALL_OPTION_CALL",
+        "MATCH_CALL_OPTION_CANCEL"
+      ],
+      "rawValue": "{\n    MATCH_CALL_OPTION_CALL,\n    MATCH_CALL_OPTION_CANCEL\n}"
+    },
+    "sMatchCallOptionsHasCheckPage": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MATCH_CALL_OPTION_CALL",
+        "MATCH_CALL_OPTION_CHECK",
+        "MATCH_CALL_OPTION_CANCEL"
+      ],
+      "rawValue": "{\n    MATCH_CALL_OPTION_CALL,\n    MATCH_CALL_OPTION_CHECK,\n    MATCH_CALL_OPTION_CANCEL\n}"
+    }
+  }
+}

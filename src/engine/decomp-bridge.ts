@@ -1186,6 +1186,38 @@ export {
   MapGridGetElevationAt,
 } from './map-loader';
 
+// ─── Re-exports : static const data tables (= ports manuels) ─────────────────
+
+export {
+  // ANIM_STD_GO_X constants
+  ANIM_STD_GO_SOUTH, ANIM_STD_GO_NORTH, ANIM_STD_GO_WEST, ANIM_STD_GO_EAST,
+  ANIM_STD_GO_FAST_SOUTH, ANIM_STD_GO_FAST_NORTH, ANIM_STD_GO_FAST_WEST, ANIM_STD_GO_FAST_EAST,
+  ANIM_STD_GO_FASTER_SOUTH, ANIM_STD_GO_FASTER_NORTH, ANIM_STD_GO_FASTER_WEST, ANIM_STD_GO_FASTER_EAST,
+  ANIM_STD_GO_FASTEST_SOUTH, ANIM_STD_GO_FASTEST_NORTH, ANIM_STD_GO_FASTEST_WEST, ANIM_STD_GO_FASTEST_EAST,
+  // Movement direction anim tables
+  sMoveDirectionAnimNums,
+  sMoveDirectionFastAnimNums,
+  sMoveDirectionFasterAnimNums,
+  sMoveDirectionFastestAnimNums,
+  // Direction lookup
+  sOppositeDirections,
+  gStandardDirections,
+  // Jump tables
+  sJumpInitDisplacements,
+  sJumpDisplacements,
+  // Step times by speed
+  sStepTimes,
+  // Direction to coordinate vectors
+  sDirectionToVectors,
+  // Movement action lookup tables
+  gFaceDirectionMovementActions,
+  gWalkSlowMovementActions,
+  gWalkNormalMovementActions,
+  gWalkFastMovementActions,
+  // Lazy table fetcher
+  getStaticTable,
+} from './static-data-tables';
+
 // ─── Re-exports : metatile behavior predicates ────────────────────────────────
 
 // Block/Jump predicates (= déjà implémentés à la main).
@@ -1307,6 +1339,19 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'CpuCopy16', 'CpuCopy32',
   'ScriptReadByte',
   'memcpy', 'memset', 'strcmp', 'strlen',
+  // Static data tables (= ports manuels depuis sX[] décomp)
+  'ANIM_STD_GO_SOUTH', 'ANIM_STD_GO_NORTH', 'ANIM_STD_GO_WEST', 'ANIM_STD_GO_EAST',
+  'ANIM_STD_GO_FAST_SOUTH', 'ANIM_STD_GO_FAST_NORTH', 'ANIM_STD_GO_FAST_WEST', 'ANIM_STD_GO_FAST_EAST',
+  'ANIM_STD_GO_FASTER_SOUTH', 'ANIM_STD_GO_FASTER_NORTH', 'ANIM_STD_GO_FASTER_WEST', 'ANIM_STD_GO_FASTER_EAST',
+  'ANIM_STD_GO_FASTEST_SOUTH', 'ANIM_STD_GO_FASTEST_NORTH', 'ANIM_STD_GO_FASTEST_WEST', 'ANIM_STD_GO_FASTEST_EAST',
+  'sMoveDirectionAnimNums', 'sMoveDirectionFastAnimNums',
+  'sMoveDirectionFasterAnimNums', 'sMoveDirectionFastestAnimNums',
+  'sOppositeDirections', 'gStandardDirections',
+  'sJumpInitDisplacements', 'sJumpDisplacements',
+  'sStepTimes', 'sDirectionToVectors',
+  'gFaceDirectionMovementActions', 'gWalkSlowMovementActions',
+  'gWalkNormalMovementActions', 'gWalkFastMovementActions',
+  'getStaticTable',
   'TRY_FREE_AND_SET_NULL',
   'GET_BATTLER_SIDE', 'GET_BATTLER_SIDE2', 'GET_BATTLER_POSITION',
   'RGB2', 'SPRITE_SHAPE', 'SPRITE_SIZE',

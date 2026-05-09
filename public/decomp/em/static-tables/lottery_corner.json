@@ -1,0 +1,18 @@
+{
+  "srcFile": "src/lottery_corner.c",
+  "count": 1,
+  "tables": {
+    "sLotteryPrizes": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_PP_UP",
+        "ITEM_EXP_SHARE",
+        "ITEM_MAX_REVIVE",
+        "ITEM_MASTER_BALL"
+      ],
+      "rawValue": "{\n    ITEM_PP_UP,\n    ITEM_EXP_SHARE,\n    ITEM_MAX_REVIVE,\n    ITEM_MASTER_BALL,\n}"
+    }
+  }
+}

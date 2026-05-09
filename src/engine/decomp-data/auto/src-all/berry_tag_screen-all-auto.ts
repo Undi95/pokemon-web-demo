@@ -35,13 +35,13 @@ const {
   LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadOam,
   LoadPalette, MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv, NULL,
   PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT, ResetAllBgsCoordinates,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks, STR_CONV_MODE_LEADING_ZEROS,
-  STR_CONV_MODE_LEFT_ALIGN, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
-  ShowBg, StringCopy, StringExpandPlaceholders, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, memcpy,  // 4-per-line for readability
+  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
+  ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks,
+  STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
+  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
+  SetVBlankHBlankCallbacksToNull, ShowBg, StringCopy, StringExpandPlaceholders,
+  TRUE, TransferPlttBuffer, UpdatePaletteFade, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void DoBerryTagScreen(void) */

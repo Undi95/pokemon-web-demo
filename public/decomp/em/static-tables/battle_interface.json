@@ -1,0 +1,215 @@
+{
+  "srcFile": "src/battle_interface.c",
+  "count": 18,
+  "tables": {
+    "sHealthboxPlayerSpriteTemplates": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = TAG_HEALTHBOX_PLAYER1_TILE,\n        .paletteTag = TAG_HEALTHBOX_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy\n    }",
+        "{\n        .tileTag = TAG_HEALTHBOX_PLAYER2_TILE,\n        .paletteTag = TAG_HEALTHBOX_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = TAG_HEALTHBOX_PLAYER1_TILE,\n        .paletteTag = TAG_HEALTHBOX_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy\n    },\n    {\n        .tileTag = TAG_HEALTHBOX_PLAYER2_TILE,\n        .paletteTag = TAG_HEALTHBOX_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy\n    }\n}"
+    },
+    "sHealthboxOpponentSpriteTemplates": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = TAG_HEALTHBOX_OPPONENT1_TILE,\n        .paletteTag = TAG_HEALTHBOX_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy\n    }",
+        "{\n        .tileTag = TAG_HEALTHBOX_OPPONENT2_TILE,\n        .paletteTag = TAG_HEALTHBOX_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = TAG_HEALTHBOX_OPPONENT1_TILE,\n        .paletteTag = TAG_HEALTHBOX_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy\n    },\n    {\n        .tileTag = TAG_HEALTHBOX_OPPONENT2_TILE,\n        .paletteTag = TAG_HEALTHBOX_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy\n    }\n}"
+    },
+    "sHealthbarSpriteTemplates": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = TAG_HEALTHBAR_PLAYER1_TILE,\n        .paletteTag = TAG_HEALTHBAR_PAL,\n        .oam = &sOamData_Healthbar,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_HealthBar\n    }",
+        "{\n        .tileTag = TAG_HEALTHBAR_OPPONENT1_TILE,\n        .paletteTag = TAG_HEALTHBAR_PAL,\n        .oam = &sOamData_Healthbar,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_HealthBar\n    }",
+        "{\n        .tileTag = TAG_HEALTHBAR_PLAYER2_TILE,\n        .paletteTag = TAG_HEALTHBAR_PAL,\n        .oam = &sOamData_Healthbar,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_HealthBar\n    }",
+        "{\n        .tileTag = TAG_HEALTHBAR_OPPONENT2_TILE,\n        .paletteTag = TAG_HEALTHBAR_PAL,\n        .oam = &sOamData_Healthbar,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_HealthBar\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = TAG_HEALTHBAR_PLAYER1_TILE,\n        .paletteTag = TAG_HEALTHBAR_PAL,\n        .oam = &sOamData_Healthbar,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_HealthBar\n    },\n    {\n        .tileTag = TAG_HEALTHBAR_OPPONENT1_TILE,\n        .paletteTag = TAG_HEALTHBAR_PAL,\n        .oam = &sOamData_Healthbar,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_HealthBar\n    },\n    {\n        .tileTag = TAG_HEALTHBAR_PLAYER2_TILE,\n        .paletteTag = TAG_HEALTHBAR_PAL,\n        .oam = &sOamData_Healthbar,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_HealthBar\n    },\n    {\n        .tileTag = TAG_HEALTHBAR_OPPONENT2_TILE,\n        .paletteTag = TAG_HEALTHBAR_PAL,\n        .oam = &sOamData_Healthbar,\n        .ani..."
+    },
+    "sUnused_Subsprites_0": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = 48,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 32,\n        .priority = 1\n    }",
+        "{\n        .x = DISPLAY_WIDTH,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 48,\n        .priority = 1\n    }",
+        "{\n        .x = 16,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 52,\n        .priority = 1\n    }",
+        "{\n        .x = 48,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 56,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = 48,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 32,\n        .priority = 1\n    },\n    {\n        .x = DISPLAY_WIDTH,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 48,\n        .priority = 1\n    },\n    {\n        .x = 16,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 52,\n        .priority = 1\n    },\n    {\n        .x = 48,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 56,\n        .priority = 1\n    }\n}"
+    },
+    "sUnused_Subsprites_2": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 64,\n        .priority = 1\n    }",
+        "{\n        .x = 48,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 96,\n        .priority = 1\n    }",
+        "{\n        .x = DISPLAY_WIDTH,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 112,\n        .priority = 1\n    }",
+        "{\n        .x = 16,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 116,\n        .priority = 1\n    }",
+        "{\n        .x = 48,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 120,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 64,\n        .priority = 1\n    },\n    {\n        .x = 48,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 96,\n        .priority = 1\n    },\n    {\n        .x = DISPLAY_WIDTH,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 112,\n        .priority = 1\n    },\n    {\n        .x = 16,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 116,\n        .priority = 1\n    },\n    {\n        .x = 48,\n        .y = 32,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 120,\n        .priority = 1\n    }\n}"
+    },
+    "sUnused_Subsprites_1": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = 48,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 32,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = 48,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 32,\n        .priority = 1\n    }\n}"
+    },
+    "sUnused_Subsprites_3": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = 48,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 32,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = 48,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 32,\n        .priority = 1\n    }\n}"
+    },
+    "sHealthBar_Subsprites_Player": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = 16,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = 16,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    }\n}"
+    },
+    "sHealthBar_Subsprites_Opponent": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = 16,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    }",
+        "{\n        .x = DISPLAY_WIDTH - 16,\n        .y = 0,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 8,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = DISPLAY_WIDTH,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = 16,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    },\n    {\n        .x = DISPLAY_WIDTH - 16,\n        .y = 0,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 8,\n        .priority = 1\n    }\n}"
+    },
+    "sUnused_SubspriteTable": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sUnused_Subsprites_0), sUnused_Subsprites_0}",
+        "{ARRAY_COUNT(sUnused_Subsprites_1), sUnused_Subsprites_1}",
+        "{ARRAY_COUNT(sUnused_Subsprites_2), sUnused_Subsprites_2}",
+        "{ARRAY_COUNT(sUnused_Subsprites_3), sUnused_Subsprites_3}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sUnused_Subsprites_0), sUnused_Subsprites_0},\n    {ARRAY_COUNT(sUnused_Subsprites_1), sUnused_Subsprites_1},\n    {ARRAY_COUNT(sUnused_Subsprites_2), sUnused_Subsprites_2},\n    {ARRAY_COUNT(sUnused_Subsprites_3), sUnused_Subsprites_3}\n}"
+    },
+    "sHealthBar_SubspriteTables": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "B_SIDE_PLAYER",
+        "B_SIDE_OPPONENT"
+      ],
+      "indexedValues": [
+        "{ARRAY_COUNT(sHealthBar_Subsprites_Player)",
+        "{ARRAY_COUNT(sHealthBar_Subsprites_Opponent)"
+      ],
+      "rawValue": "{\n    [B_SIDE_PLAYER]   = {ARRAY_COUNT(sHealthBar_Subsprites_Player), sHealthBar_Subsprites_Player},\n    [B_SIDE_OPPONENT] = {ARRAY_COUNT(sHealthBar_Subsprites_Opponent), sHealthBar_Subsprites_Opponent}\n}"
+    },
+    "sStatusSummaryBar_Subsprites_Enter": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = 32 * 5,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = 32 * 6,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    }",
+        "{\n        .x = 32 * 7,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    }",
+        "{\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = 32 * 5,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = 32 * 6,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    },\n    {\n        .x = 32 * 7,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    },\n    {\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1\n    }\n}"
+    },
+    "sStatusSummaryBar_Subsprites_Exit": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = 32 * 5,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = 32 * 6,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    }",
+        "{\n        .x = 32 * 7,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    }",
+        "{\n        .x = 32 * 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    }",
+        "{\n        .x = 32 * 1,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    }",
+        "{\n        .x = 32 * 2,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = 32 * 5,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = 32 * 6,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    },\n    {\n        .x = 32 * 7,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    },\n    {\n        .x = 32 * 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    },\n    {\n        .x = 32 * 1,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    },\n    {\n        .x = 32 * 2,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1\n    }\n}"
+    },
+    "sStatusSummaryBar_SubspriteTable_Enter": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sStatusSummaryBar_Subsprites_Enter), sStatusSummaryBar_Subsprites_Enter}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sStatusSummaryBar_Subsprites_Enter), sStatusSummaryBar_Subsprites_Enter}\n}"
+    },
+    "sStatusSummaryBar_SubspriteTable_Exit": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sStatusSummaryBar_Subsprites_Exit), sStatusSummaryBar_Subsprites_Exit}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sStatusSummaryBar_Subsprites_Exit), sStatusSummaryBar_Subsprites_Exit}\n}"
+    },
+    "sStatusSummaryBarSpriteTemplates": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  \n        .tileTag = TAG_STATUS_SUMMARY_BAR_TILE,\n        .paletteTag = TAG_STATUS_SUMMARY_BAR_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_StatusSummaryBar_Enter\n    }",
+        "{  \n        .tileTag = TAG_STATUS_SUMMARY_BAR_TILE,\n        .paletteTag = TAG_STATUS_SUMMARY_BAR_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_StatusSummaryBar_Enter\n    }"
+      ],
+      "rawValue": "{\n    {  \n        .tileTag = TAG_STATUS_SUMMARY_BAR_TILE,\n        .paletteTag = TAG_STATUS_SUMMARY_BAR_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_StatusSummaryBar_Enter\n    },\n    {  \n        .tileTag = TAG_STATUS_SUMMARY_BAR_TILE,\n        .paletteTag = TAG_STATUS_SUMMARY_BAR_PAL,\n        .oam = &sOamData_64x32,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_StatusSummaryBar_Enter\n    }\n}"
+    },
+    "sStatusSummaryBallsSpriteTemplates": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = TAG_STATUS_SUMMARY_BALLS_TILE,\n        .paletteTag = TAG_STATUS_SUMMARY_BALLS_PAL,\n        .oam = &sOamData_StatusSummaryBalls,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_StatusSummaryBalls_Enter\n    }",
+        "{\n        .tileTag = TAG_STATUS_SUMMARY_BALLS_TILE,\n        .paletteTag = TAG_STATUS_SUMMARY_BALLS_PAL,\n        .oam = &sOamData_StatusSummaryBalls,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_StatusSummaryBalls_Enter\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = TAG_STATUS_SUMMARY_BALLS_TILE,\n        .paletteTag = TAG_STATUS_SUMMARY_BALLS_PAL,\n        .oam = &sOamData_StatusSummaryBalls,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_StatusSummaryBalls_Enter\n    },\n    {\n        .tileTag = TAG_STATUS_SUMMARY_BALLS_TILE,\n        .paletteTag = TAG_STATUS_SUMMARY_BALLS_PAL,\n        .oam = &sOamData_StatusSummaryBalls,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_StatusSummaryBalls_Enter\n    }\n}"
+    },
+    "sStatusIconColors": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "PAL_STATUS_PSN",
+        "PAL_STATUS_PAR",
+        "PAL_STATUS_SLP",
+        "PAL_STATUS_FRZ",
+        "PAL_STATUS_BRN"
+      ],
+      "indexedValues": [
+        "RGB(24",
+        "RGB(23",
+        "RGB(20",
+        "RGB(17",
+        "RGB(28"
+      ],
+      "rawValue": "{\n    [PAL_STATUS_PSN] = RGB(24, 12, 24),\n    [PAL_STATUS_PAR] = RGB(23, 23, 3),\n    [PAL_STATUS_SLP] = RGB(20, 20, 17),\n    [PAL_STATUS_FRZ] = RGB(17, 22, 28),\n    [PAL_STATUS_BRN] = RGB(28, 14, 10),\n}"
+    }
+  }
+}

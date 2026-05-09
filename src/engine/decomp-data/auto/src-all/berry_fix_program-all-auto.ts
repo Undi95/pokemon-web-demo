@@ -32,9 +32,10 @@ const {
   MultiBootStartMaster, NULL, PIXEL_FILL, PLTT_OFFSET_4BPP,
   PLTT_SIZE, PLTT_SIZEOF, PutWindowTilemap, REG_OFFSET_BG0CNT,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT, REG_OFFSET_BG1HOFS,
-  REG_OFFSET_BG1VOFS, REG_OFFSET_BLDCNT, ResetBgsAndClearDma3BusyFlags, ResetSpriteData,
-  ResetTasks, ScanlineEffect_Stop, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, TryScene, VRAM_SIZE,  // 4-per-line for readability
+  REG_OFFSET_BG1VOFS, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags,
+  ResetSpriteData, ResetTasks, ScanlineEffect_Stop, SetGpuReg,
+  SetMainCallback2, SetVBlankCallback, ShowBg, TryScene,
+  VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CB2_InitBerryFixProgram(void) */

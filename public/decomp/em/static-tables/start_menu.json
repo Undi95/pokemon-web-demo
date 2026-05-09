@@ -1,0 +1,79 @@
+{
+  "srcFile": "src/start_menu.c",
+  "count": 5,
+  "tables": {
+    "sCurrentStartMenuActions": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sInitStartMenuData": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sStartMenuItems": {
+      "type": "struct MenuAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MENU_ACTION_POKEDEX",
+        "MENU_ACTION_POKEMON",
+        "MENU_ACTION_BAG",
+        "MENU_ACTION_POKENAV",
+        "MENU_ACTION_PLAYER",
+        "MENU_ACTION_SAVE",
+        "MENU_ACTION_OPTION",
+        "MENU_ACTION_EXIT",
+        "MENU_ACTION_RETIRE_SAFARI",
+        "MENU_ACTION_PLAYER_LINK",
+        "MENU_ACTION_REST_FRONTIER",
+        "MENU_ACTION_RETIRE_FRONTIER",
+        "MENU_ACTION_PYRAMID_BAG"
+      ],
+      "indexedValues": [
+        "{gText_MenuPokedex",
+        "{gText_MenuPokemon",
+        "{gText_MenuBag",
+        "{gText_MenuPokenav",
+        "{gText_MenuPlayer",
+        "{gText_MenuSave",
+        "{gText_MenuOption",
+        "{gText_MenuExit",
+        "{gText_MenuRetire",
+        "{gText_MenuPlayer",
+        "{gText_MenuRest",
+        "{gText_MenuRetire",
+        "{gText_MenuBag"
+      ],
+      "rawValue": "{\n    [MENU_ACTION_POKEDEX]         = {gText_MenuPokedex, {.u8_void = StartMenuPokedexCallback}},\n    [MENU_ACTION_POKEMON]         = {gText_MenuPokemon, {.u8_void = StartMenuPokemonCallback}},\n    [MENU_ACTION_BAG]             = {gText_MenuBag,     {.u8_void = StartMenuBagCallback}},\n    [MENU_ACTION_POKENAV]         = {gText_MenuPokenav, {.u8_void = StartMenuPokeNavCallback}},\n    [MENU_ACTION_PLAYER]          = {gText_MenuPlayer,  {.u8_void = StartMenuPlayerNameCallback}},\n    [MENU_ACTION_SAVE]            = {gText_MenuSave,    {.u8_void = StartMenuSaveCallback}},\n    [MENU_ACTION_OPTION]          = {gText_MenuOption,  {.u8_void = StartMenuOptionCallback}},\n    [MENU_ACTION_EXIT]            = {gText_MenuExit,    {.u8_void = StartMenuExitCallback}},\n    [MENU_ACTION_RETIRE_SAFARI]   = {gText_MenuRetire,  {.u8_void = StartMenuSafariZoneRetireCallback}},\n    [MENU_ACTION_PLAYER_LINK]     = {gText_MenuPlayer,  {.u8_void = StartMenuLinkModePlayerNameCallback}},\n    [MENU_ACTION_REST_FRONTIER]   = {gText_MenuRes..."
+    },
+    "sBgTemplates_LinkBattleSave": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }\n}"
+    },
+    "sWindowTemplates_LinkBattleSave": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 26,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x194\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 26,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x194\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    }
+  }
+}

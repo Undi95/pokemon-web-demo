@@ -1,0 +1,171 @@
+{
+  "srcFile": "src/battle_anim_fight.c",
+  "count": 15,
+  "tables": {
+    "sAnim_Fist": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FootWide": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FootTall": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_HandLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_HandRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 1, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 1, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_SpinningHandOrFoot": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 20, 1)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 20, 1),\n    AFFINEANIMCMD_JUMP(1),\n}"
+    },
+    "sAffineAnim_MegaPunchKick": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFFC, 0xFFFC, 20, 1)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFFC, 0xFFFC, 20, 1),\n    AFFINEANIMCMD_JUMP(1),\n}"
+    },
+    "sAffineAnim_SuperpowerOrb": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x20, 0x20, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 64)",
+        "AFFINEANIMCMD_FRAME(0xFFFA, 0xFFFA, 0, 8)",
+        "AFFINEANIMCMD_FRAME(0x6, 0x6, 0, 8)",
+        "AFFINEANIMCMD_JUMP(2)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x20, 0x20, 0, 0),\n    AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 64),\n    AFFINEANIMCMD_FRAME(0xFFFA, 0xFFFA, 0, 8),\n    AFFINEANIMCMD_FRAME(0x6, 0x6, 0, 8),\n    AFFINEANIMCMD_JUMP(2),\n}"
+    },
+    "sAnim_RevengeSmallScratch_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_RevengeSmallScratch_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4, .vFlip = TRUE)",
+        "ANIMCMD_FRAME(16, 4, .vFlip = TRUE)",
+        "ANIMCMD_FRAME(32, 4, .vFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4, .vFlip = TRUE),\n    ANIMCMD_FRAME(16, 4, .vFlip = TRUE),\n    ANIMCMD_FRAME(32, 4, .vFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_RevengeSmallScratch_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(16, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(32, 4, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(16, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(32, 4, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_RevengeBigScratch_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 6)",
+        "ANIMCMD_FRAME(64, 6)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 6),\n    ANIMCMD_FRAME(64, 6),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_RevengeBigScratch_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 6, .vFlip = TRUE, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(64, 6, .vFlip = TRUE, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 6, .vFlip = TRUE, .hFlip = TRUE),\n    ANIMCMD_FRAME(64, 6, .vFlip = TRUE, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_RevengeBigScratch_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 6, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(64, 6, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 6, .hFlip = TRUE),\n    ANIMCMD_FRAME(64, 6, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_FocusPunchFist": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x200, 0x200, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFE0, 0xFFE0, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x200, 0x200, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFE0, 0xFFE0, 0, 8),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

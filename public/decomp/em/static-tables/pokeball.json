@@ -1,0 +1,128 @@
+{
+  "srcFile": "src/pokeball.c",
+  "count": 12,
+  "tables": {
+    "sBallAnimSeq3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sBallAnimSeq5": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sBallAnimSeq4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sBallAnimSeq6": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(12, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(12, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sBallAnimSeq0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sBallAnimSeq1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_END,\n}"
+    },
+    "sBallAnimSeq2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_BallRotate_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_BallRotate_Right": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, -3, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, -3, 1),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_BallRotate_Left": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, 3, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, 3, 1),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_BallRotate_3": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_BallRotate_4": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, 25, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, 25, 1),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    }
+  }
+}

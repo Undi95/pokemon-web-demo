@@ -1,0 +1,98 @@
+{
+  "srcFile": "src/bike.c",
+  "count": 7,
+  "tables": {
+    "sMachBikeSpeeds": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "PLAYER_SPEED_NORMAL",
+        "PLAYER_SPEED_FAST",
+        "PLAYER_SPEED_FASTEST"
+      ],
+      "rawValue": "{PLAYER_SPEED_NORMAL, PLAYER_SPEED_FAST, PLAYER_SPEED_FASTEST}"
+    },
+    "sAcroBikeJumpTimerList": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "4",
+        "0"
+      ],
+      "rawValue": "{4, 0}"
+    },
+    "sAcroBikeTricksList": {
+      "type": "struct BikeHistoryInputInfo",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{DIR_SOUTH, B_BUTTON, 0xF, 0xF, sAcroBikeJumpTimerList, sAcroBikeJumpTimerList, DIR_SOUTH}",
+        "{DIR_NORTH, B_BUTTON, 0xF, 0xF, sAcroBikeJumpTimerList, sAcroBikeJumpTimerList, DIR_NORTH}",
+        "{DIR_WEST, B_BUTTON, 0xF, 0xF, sAcroBikeJumpTimerList, sAcroBikeJumpTimerList, DIR_WEST}",
+        "{DIR_EAST, B_BUTTON, 0xF, 0xF, sAcroBikeJumpTimerList, sAcroBikeJumpTimerList, DIR_EAST}"
+      ],
+      "rawValue": "{\n     \n    {DIR_SOUTH, B_BUTTON, 0xF, 0xF, sAcroBikeJumpTimerList, sAcroBikeJumpTimerList, DIR_SOUTH},\n    {DIR_NORTH, B_BUTTON, 0xF, 0xF, sAcroBikeJumpTimerList, sAcroBikeJumpTimerList, DIR_NORTH},\n    {DIR_WEST, B_BUTTON, 0xF, 0xF, sAcroBikeJumpTimerList, sAcroBikeJumpTimerList, DIR_WEST},\n    {DIR_EAST, B_BUTTON, 0xF, 0xF, sAcroBikeJumpTimerList, sAcroBikeJumpTimerList, DIR_EAST},\n}"
+    },
+    "sMachBikeTransitions": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "MachBikeTransition_FaceDirection",
+        "MachBikeTransition_TurnDirection",
+        "MachBikeTransition_TrySpeedUp",
+        "MachBikeTransition_TrySlowDown"
+      ],
+      "rawValue": "{\n    MachBikeTransition_FaceDirection,  \n    MachBikeTransition_TurnDirection,\n    MachBikeTransition_TrySpeedUp,\n    MachBikeTransition_TrySlowDown,\n}"
+    },
+    "sMachBikeSpeedCallbacks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "PlayerWalkNormal",
+        "PlayerWalkFast",
+        "PlayerWalkFaster"
+      ],
+      "rawValue": "{\n    PlayerWalkNormal,\n    PlayerWalkFast,\n    PlayerWalkFaster,\n}"
+    },
+    "sAcroBikeTransitions": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "AcroBikeTransition_FaceDirection",
+        "AcroBikeTransition_TurnDirection",
+        "AcroBikeTransition_Moving",
+        "AcroBikeTransition_NormalToWheelie",
+        "AcroBikeTransition_WheelieToNormal",
+        "AcroBikeTransition_WheelieIdle",
+        "AcroBikeTransition_WheelieHoppingStanding",
+        "AcroBikeTransition_WheelieHoppingMoving",
+        "AcroBikeTransition_SideJump",
+        "AcroBikeTransition_TurnJump",
+        "AcroBikeTransition_WheelieMoving",
+        "AcroBikeTransition_WheelieRisingMoving",
+        "AcroBikeTransition_WheelieLoweringMoving"
+      ],
+      "rawValue": "{\n    AcroBikeTransition_FaceDirection,\n    AcroBikeTransition_TurnDirection,\n    AcroBikeTransition_Moving,\n    AcroBikeTransition_NormalToWheelie,\n    AcroBikeTransition_WheelieToNormal,\n    AcroBikeTransition_WheelieIdle,\n    AcroBikeTransition_WheelieHoppingStanding,\n    AcroBikeTransition_WheelieHoppingMoving,\n    AcroBikeTransition_SideJump,\n    AcroBikeTransition_TurnJump,\n    AcroBikeTransition_WheelieMoving,\n    AcroBikeTransition_WheelieRisingMoving,\n    AcroBikeTransition_WheelieLoweringMoving,\n}"
+    },
+    "sAcroBikeInputHandlers": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "AcroBikeHandleInputNormal",
+        "AcroBikeHandleInputTurning",
+        "AcroBikeHandleInputWheelieStanding",
+        "AcroBikeHandleInputBunnyHop",
+        "AcroBikeHandleInputWheelieMoving",
+        "AcroBikeHandleInputSidewaysJump",
+        "AcroBikeHandleInputTurnJump"
+      ],
+      "rawValue": "{\n    AcroBikeHandleInputNormal,\n    AcroBikeHandleInputTurning,\n    AcroBikeHandleInputWheelieStanding,\n    AcroBikeHandleInputBunnyHop,\n    AcroBikeHandleInputWheelieMoving,\n    AcroBikeHandleInputSidewaysJump,\n    AcroBikeHandleInputTurnJump,\n}"
+    }
+  }
+}

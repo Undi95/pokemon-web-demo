@@ -1,0 +1,748 @@
+{
+  "srcFile": "src/intro.c",
+  "count": 59,
+  "tables": {
+    "sUnusedData": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x02",
+        "0x03",
+        "0x04",
+        "0x05",
+        "0x01",
+        "0x01",
+        "0x01",
+        "0x06",
+        "0x07",
+        "0x08",
+        "0x09",
+        "0x0A",
+        "0x0B",
+        "0x0C",
+        "0x02",
+        "0x0D",
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x13",
+        "0x14",
+        "0x15",
+        "0x16",
+        "0x17",
+        "0x18",
+        "0x19",
+        "0x02",
+        "0x0D",
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x1A",
+        "0x1B",
+        "0x1C",
+        "0x1D",
+        "0x1E",
+        "0x1F",
+        "0x20",
+        "0x21",
+        "0x02",
+        "0x0D",
+        "0x0E",
+        "0x0F",
+        "0x10",
+        "0x11",
+        "0x12",
+        "0x22",
+        "0x23",
+        "0x24",
+        "0x25",
+        "0x26",
+        "0x27",
+        "0x28",
+        "0x29",
+        "0x2A",
+        "0x00"
+      ],
+      "rawValue": "{\n    0x02, 0x03, 0x04, 0x05, 0x01, 0x01, 0x01, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x02, 0x0D,\n    0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x02, 0x0D, 0x0E, 0x0F,\n    0x10, 0x11, 0x12, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x02, 0x0D, 0x0E, 0x0F, 0x10,\n    0x11, 0x12, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x00\n}"
+    },
+    "sSpriteSheet_Sparkle": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gIntroSparkle_Gfx, 0x400, TAG_SPARKLE}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gIntroSparkle_Gfx, 0x400, TAG_SPARKLE},\n    {},\n}"
+    },
+    "sSpritePalette_Sparkle": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gIntroLightning_Pal, TAG_SPARKLE}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gIntroLightning_Pal, TAG_SPARKLE},  \n    {},\n}"
+    },
+    "sAnim_Sparkle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_FRAME(4, 2)",
+        "ANIMCMD_FRAME(8, 2)",
+        "ANIMCMD_FRAME(12, 2)",
+        "ANIMCMD_FRAME(16, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_FRAME(4, 2),\n    ANIMCMD_FRAME(8, 2),\n    ANIMCMD_FRAME(12, 2),\n    ANIMCMD_FRAME(16, 2),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sSparkleCoords": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{124, 40}",
+        "{102, 30}",
+        "{ 77, 30}",
+        "{ 54, 15}",
+        "{148,  9}",
+        "{ 63, 28}",
+        "{ 93, 40}",
+        "{148, 32}",
+        "{173, 41}",
+        "{ 94, 20}",
+        "{208, 38}",
+        "{}"
+      ],
+      "rawValue": "{\n    {124, 40},\n    {102, 30},\n    { 77, 30},\n    { 54, 15},\n    {148,  9},\n    { 63, 28},\n    { 93, 40},\n    {148, 32},\n    {173, 41},\n    { 94, 20},\n    {208, 38},\n    {},\n}"
+    },
+    "sSpriteSheet_RunningPokemon": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gIntroVolbeat_Gfx, 0x400, TAG_VOLBEAT}",
+        "{gIntroTorchic_Gfx, 0xC00, TAG_TORCHIC}",
+        "{gIntroManectric_Gfx, 0x2000, TAG_MANECTRIC}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gIntroVolbeat_Gfx, 0x400, TAG_VOLBEAT},\n    {gIntroTorchic_Gfx, 0xC00, TAG_TORCHIC},\n    {gIntroManectric_Gfx, 0x2000, TAG_MANECTRIC},\n    {},\n}"
+    },
+    "sSpritePalettes_RunningPokemon": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gIntroVolbeat_Pal, TAG_VOLBEAT}",
+        "{gIntroTorchic_Pal, TAG_TORCHIC}",
+        "{gIntroManectric_Pal, TAG_MANECTRIC}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gIntroVolbeat_Pal, TAG_VOLBEAT},\n    {gIntroTorchic_Pal, TAG_TORCHIC},\n    {gIntroManectric_Pal, TAG_MANECTRIC},\n    {},\n}"
+    },
+    "sAnim_Volbeat": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_FRAME(16, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_FRAME(16, 2),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_Torchic_Walk": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(16, 5)",
+        "ANIMCMD_FRAME(32, 5)",
+        "ANIMCMD_FRAME(16, 5)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(16, 5),\n    ANIMCMD_FRAME(32, 5),\n    ANIMCMD_FRAME(16, 5),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_Torchic_Run": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 3)",
+        "ANIMCMD_FRAME(16, 3)",
+        "ANIMCMD_FRAME(32, 3)",
+        "ANIMCMD_FRAME(16, 3)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 3),\n    ANIMCMD_FRAME(16, 3),\n    ANIMCMD_FRAME(32, 3),\n    ANIMCMD_FRAME(16, 3),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_Torchic_Trip": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 4)",
+        "ANIMCMD_FRAME(64, 6)",
+        "ANIMCMD_FRAME(80, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 4),\n    ANIMCMD_FRAME(64, 6),\n    ANIMCMD_FRAME(80, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Manectric": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(64, 4)",
+        "ANIMCMD_FRAME(128, 4)",
+        "ANIMCMD_FRAME(192, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(64, 4),\n    ANIMCMD_FRAME(128, 4),\n    ANIMCMD_FRAME(192, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sSpriteSheet_Lightning": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gIntroLightning_Gfx, 0xC00, TAG_LIGHTNING}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gIntroLightning_Gfx, 0xC00, TAG_LIGHTNING},\n    {},\n}"
+    },
+    "sSpritePalette_Lightning": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gIntroLightning_Pal, TAG_LIGHTNING}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gIntroLightning_Pal, TAG_LIGHTNING},\n    {},\n}"
+    },
+    "sAnim_Lightning_Top": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_FRAME(48, 2)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_FRAME(48, 2),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Lightning_Middle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 2)",
+        "ANIMCMD_FRAME(64, 2)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 2),\n    ANIMCMD_FRAME(64, 2),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Lightning_Bottom": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 2)",
+        "ANIMCMD_FRAME(80, 2)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 2),\n    ANIMCMD_FRAME(80, 2),\n    ANIMCMD_END,\n}"
+    },
+    "sGroudonRockData": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{104, 0, 0x0C0}",
+        "{142, 3, 0x280}",
+        "{ 83, 1, 0x180}",
+        "{155, 0, 0x080}",
+        "{ 56, 2, 0x200}",
+        "{174, 1, 0x100}"
+      ],
+      "rawValue": "{\n    {104, 0, 0x0C0},\n    {142, 3, 0x280},\n    { 83, 1, 0x180},\n    {155, 0, 0x080},\n    { 56, 2, 0x200},\n    {174, 1, 0x100},\n}"
+    },
+    "sSpriteSheet_Bubbles": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gIntroBubbles_Gfx, 0x600, TAG_BUBBLES}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gIntroBubbles_Gfx, 0x600, TAG_BUBBLES},\n    {},\n}"
+    },
+    "sSpritePalette_Bubbles": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gIntroBubbles_Pal, TAG_BUBBLES}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gIntroBubbles_Pal, TAG_BUBBLES},\n    {},\n}"
+    },
+    "sKyogreBubbleData": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 66,  64,  1}",
+        "{ 96,  96,  8}",
+        "{128,  64,  1}",
+        "{144,  48,  8}",
+        "{160,  72,  1}",
+        "{176,  96,  8}",
+        "{ 96,  96,  4}",
+        "{112, 104,  8}",
+        "{128,  96,  4}",
+        "{ 88,  32,  4}",
+        "{104,  24,  8}",
+        "{120,  32,  4}"
+      ],
+      "rawValue": "{\n     \n    { 66,  64,  1},\n    { 96,  96,  8},\n    {128,  64,  1},\n    {144,  48,  8},\n    {160,  72,  1},\n    {176,  96,  8},\n     \n    { 96,  96,  4},\n    {112, 104,  8},\n    {128,  96,  4},\n    { 88,  32,  4},\n    {104,  24,  8},\n    {120,  32,  4},\n}"
+    },
+    "sAnim_Bubbles": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(8, 4)",
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(24, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(8, 4),\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(24, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_WaterDrop_UpperHalf": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_WaterDrop_LowerHalf": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_WaterDrop_Reflection": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_WaterDrop_Ripple": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PlayerBicycle_Fast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(64, 4)",
+        "ANIMCMD_FRAME(128, 4)",
+        "ANIMCMD_FRAME(192, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(64, 4),\n    ANIMCMD_FRAME(128, 4),\n    ANIMCMD_FRAME(192, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_PlayerBicycle_Slow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(64, 8)",
+        "ANIMCMD_FRAME(128, 8)",
+        "ANIMCMD_FRAME(192, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(64, 8),\n    ANIMCMD_FRAME(128, 8),\n    ANIMCMD_FRAME(192, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_PlayerBicycle_LookBack": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(256, 4)",
+        "ANIMCMD_FRAME(320, 4)",
+        "ANIMCMD_FRAME(384, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(256, 4),\n    ANIMCMD_FRAME(320, 4),\n    ANIMCMD_FRAME(384, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PlayerBicycle_LookForward": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(384, 16)",
+        "ANIMCMD_FRAME(320, 16)",
+        "ANIMCMD_FRAME(256, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(384, 16),\n    ANIMCMD_FRAME(320, 16),\n    ANIMCMD_FRAME(256, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_GameFreakLetter_G": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_GameFreakLetter_A": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(84, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(84, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_GameFreakLetter_M": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(88, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(88, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_GameFreakLetter_E": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(92, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(92, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_GameFreakLetter_F": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(96, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(96, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_GameFreakLetter_R": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(100, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(100, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_GameFreakLetter_K": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(104, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(104, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PresentsLetter_P": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(112, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(112, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PresentsLetter_R": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(113, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(113, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PresentsLetter_E": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(114, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(114, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PresentsLetter_S": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(115, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(115, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PresentsLetter_N": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(116, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(116, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PresentsLetter_T": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(117, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(117, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_GameFreakLogo": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(128, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(128, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sGameFreakLetterData": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{GAMEFREAK_G, -72}",
+        "{GAMEFREAK_A, -56}",
+        "{GAMEFREAK_M, -40}",
+        "{GAMEFREAK_E, -24}",
+        "{GAMEFREAK_F,   8}",
+        "{GAMEFREAK_R,  24}",
+        "{GAMEFREAK_E,  40}",
+        "{GAMEFREAK_A,  56}",
+        "{GAMEFREAK_K,  72}"
+      ],
+      "rawValue": "{\n     \n    {GAMEFREAK_G, -72},\n    {GAMEFREAK_A, -56},\n    {GAMEFREAK_M, -40},\n    {GAMEFREAK_E, -24},\n    {GAMEFREAK_F,   8},\n    {GAMEFREAK_R,  24},\n    {GAMEFREAK_E,  40},\n    {GAMEFREAK_A,  56},\n    {GAMEFREAK_K,  72},\n}"
+    },
+    "sPresentsLetterData": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{PRESENTS_P, -28}",
+        "{PRESENTS_R, -20}",
+        "{PRESENTS_E, -12}",
+        "{PRESENTS_S,  -4}",
+        "{PRESENTS_E,   4}",
+        "{PRESENTS_N,  12}",
+        "{PRESENTS_T,  20}",
+        "{PRESENTS_S,  28}"
+      ],
+      "rawValue": "{\n     \n    {PRESENTS_P, -28},\n    {PRESENTS_R, -20},\n    {PRESENTS_E, -12},\n    {PRESENTS_S,  -4},\n    {PRESENTS_E,   4},\n    {PRESENTS_N,  12},\n    {PRESENTS_T,  20},\n    {PRESENTS_S,  28},\n}"
+    },
+    "sAffineAnim_GameFreak_Small": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(128, 128, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(128, 128, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_GameFreak_GrowAndShrink": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(128, 128, 0, 0)",
+        "AFFINEANIMCMD_FRAME(16, 16, 0, 16)",
+        "AFFINEANIMCMD_FRAME(-16, -16, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(128, 128, 0, 0),\n    AFFINEANIMCMD_FRAME(16, 16, 0, 16),\n    AFFINEANIMCMD_FRAME(-16, -16, 0, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_GameFreak_GrowBig": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_FRAME(8, 8, 0, 48)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_FRAME(8, 8, 0, 48),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_GameFreak_GrowMedium": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_FRAME(2, 2, 0, 48)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_FRAME(2, 2, 0, 48),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sGameFreakLettersMoveSpeed": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "256",
+        "192",
+        "128",
+        "64",
+        "0",
+        "64",
+        "128",
+        "192",
+        "256"
+      ],
+      "rawValue": "{\n    256,  \n    192,  \n    128,  \n     64,  \n      0,  \n     64,  \n    128,  \n    192,  \n    256   \n}"
+    },
+    "sGameFreakLetterStartDelays": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "23",
+        "23",
+        "49",
+        "62",
+        "36",
+        "36",
+        "10",
+        "10"
+      ],
+      "rawValue": "{\n    0,   \n    23,  \n    23,  \n    49,  \n    62,  \n    36,  \n    36,  \n    10,  \n    10   \n}"
+    },
+    "sAnim_FlygonSilhouette": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 10)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 10),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sSpriteSheet_WaterDropsAndLogo": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sIntroDropsLogo_Gfx, 0x1400, GFXTAG_DROPS_LOGO}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sIntroDropsLogo_Gfx, 0x1400, GFXTAG_DROPS_LOGO},\n    {},\n}"
+    },
+    "sSpriteSheet_FlygonSilhouette": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gIntroFlygonSilhouette_Gfx, 0x400, TAG_FLYGON_SILHOUETTE}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gIntroFlygonSilhouette_Gfx, 0x400, TAG_FLYGON_SILHOUETTE},\n    {},\n}"
+    },
+    "sSpritePalettes_Intro1": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sIntroDrops_Pal, PALTAG_DROPS}",
+        "{sIntroLogo_Pal, PALTAG_LOGO}",
+        "{sIntroFlygonSilhouette_Pal, TAG_FLYGON_SILHOUETTE}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sIntroDrops_Pal, PALTAG_DROPS},\n    {sIntroLogo_Pal, PALTAG_LOGO},\n    {sIntroFlygonSilhouette_Pal, TAG_FLYGON_SILHOUETTE},\n    {},\n}"
+    },
+    "sAnim_RayquazaOrb": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sSpriteSheet_RayquazaOrb": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sIntroMisc_Gfx, 0xA00, TAG_RAYQUAZA_ORB}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sIntroMisc_Gfx, 0xA00, TAG_RAYQUAZA_ORB},\n    {},\n}"
+    },
+    "sSpritePalette_RayquazaOrb": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sIntroRayquzaOrb_Pal, TAG_RAYQUAZA_ORB}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sIntroRayquzaOrb_Pal, TAG_RAYQUAZA_ORB},\n    {},\n}"
+    }
+  }
+}

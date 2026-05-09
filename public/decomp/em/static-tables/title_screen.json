@@ -1,0 +1,176 @@
+{
+  "srcFile": "src/title_screen.c",
+  "count": 17,
+  "tables": {
+    "sVersionBannerLeftAnimSequence": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_END,\n}"
+    },
+    "sVersionBannerRightAnimSequence": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(VERSION_BANNER_RIGHT_TILEOFFSET, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(VERSION_BANNER_RIGHT_TILEOFFSET, 30),\n    ANIMCMD_END,\n}"
+    },
+    "sSpriteSheet_EmeraldVersion": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = gTitleScreenEmeraldVersionGfx,\n        .size = 0x1000,\n        .tag = TAG_VERSION\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = gTitleScreenEmeraldVersionGfx,\n        .size = 0x1000,\n        .tag = TAG_VERSION\n    },\n    {},\n}"
+    },
+    "sAnim_PressStart_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PressStart_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PressStart_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(9, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(9, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PressStart_3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(13, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(13, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PressStart_4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(17, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(17, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Copyright_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(21, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(21, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Copyright_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(25, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(25, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Copyright_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(29, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(29, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Copyright_3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(33, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(33, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Copyright_4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(37, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(37, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sSpriteSheet_PressStart": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = gTitleScreenPressStartGfx,\n        .size = 0x520,\n        .tag = TAG_PRESS_START_COPYRIGHT\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = gTitleScreenPressStartGfx,\n        .size = 0x520,\n        .tag = TAG_PRESS_START_COPYRIGHT\n    },\n    {},\n}"
+    },
+    "sSpritePalette_PressStart": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = gTitleScreenPressStartPal,\n        .tag = TAG_PRESS_START_COPYRIGHT\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = gTitleScreenPressStartPal,\n        .tag = TAG_PRESS_START_COPYRIGHT\n    },\n    {},\n}"
+    },
+    "sPokemonLogoShineAnimSequence": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sPokemonLogoShineSpriteSheet": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sTitleScreenLogoShineGfx,\n        .size = 0x800,\n        .tag = TAG_LOGO_SHINE\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = sTitleScreenLogoShineGfx,\n        .size = 0x800,\n        .tag = TAG_LOGO_SHINE\n    },\n    {},\n}"
+    }
+  }
+}

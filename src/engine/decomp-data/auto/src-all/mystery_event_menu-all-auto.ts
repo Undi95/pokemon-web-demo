@@ -25,18 +25,18 @@ const {
   ARRAY_COUNT, AddTextPrinterParameterized4, AnimateSprites, BG_PLTT_ID,
   BeginNormalPaletteFade, BuildOamBuffer, CheckShouldAdvanceLinkState, CloseLink,
   CopyWindowToVram, CpuFill32, CreateTask, DISPCNT_BG0_ON,
-  DISPCNT_OBJ_1D_MAP, DeactivateAllTextPrinters, DoSoftReset, DrawStdFrameWithCustomTileAndPalette,
-  FALSE, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAllSpritePalettes,
-  GetBlockReceivedStatus, GetLinkPlayerCount_2, GetLinkPlayerDataExchangeStatusTimed, InitBgsFromTemplates,
-  InitWindows, IsLinkConnectionEstablished, IsLinkMaster, IsTextPrinterActive,
-  JOY_NEW, LoadOam, LoadUserWindowBorderGfx, Menu_LoadStdPalAt,
-  OpenLink, PALETTES_ALL, PIXEL_FILL, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT, ResetBgsAndClearDma3BusyFlags,
-  ResetBlockReceivedFlags, ResetSpriteData, ResetTasks, RunMysteryEventScript,
-  RunTasks, RunTextPrinters, SetBackdropFromColor, SetCloseLinkCallback,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  StopMapMusic, StringCopy, TRUE, TransferPlttBuffer,
-  TrySavingData, UpdatePaletteFade,  // 4-per-line for readability
+  DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP, DeactivateAllTextPrinters, DoSoftReset,
+  DrawStdFrameWithCustomTileAndPalette, FALSE, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
+  FreeAllSpritePalettes, GetBlockReceivedStatus, GetLinkPlayerCount_2, GetLinkPlayerDataExchangeStatusTimed,
+  InitBgsFromTemplates, InitWindows, IsLinkConnectionEstablished, IsLinkMaster,
+  IsTextPrinterActive, JOY_NEW, LoadOam, LoadUserWindowBorderGfx,
+  Menu_LoadStdPalAt, OpenLink, PALETTES_ALL, PIXEL_FILL,
+  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT,
+  REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetSpriteData,
+  ResetTasks, RunMysteryEventScript, RunTasks, RunTextPrinters,
+  SetBackdropFromColor, SetCloseLinkCallback, SetGpuReg, SetMainCallback2,
+  SetVBlankCallback, ShowBg, StopMapMusic, StringCopy,
+  TRUE, TransferPlttBuffer, TrySavingData, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB(void) */

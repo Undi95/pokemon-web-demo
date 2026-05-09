@@ -1,0 +1,52 @@
+{
+  "srcFile": "src/sound.c",
+  "count": 1,
+  "tables": {
+    "sFanfares": {
+      "type": "struct Fanfare",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FANFARE_LEVEL_UP",
+        "FANFARE_OBTAIN_ITEM",
+        "FANFARE_EVOLVED",
+        "FANFARE_OBTAIN_TMHM",
+        "FANFARE_HEAL",
+        "FANFARE_OBTAIN_BADGE",
+        "FANFARE_MOVE_DELETED",
+        "FANFARE_OBTAIN_BERRY",
+        "FANFARE_AWAKEN_LEGEND",
+        "FANFARE_SLOTS_JACKPOT",
+        "FANFARE_SLOTS_WIN",
+        "FANFARE_TOO_BAD",
+        "FANFARE_RG_POKE_FLUTE",
+        "FANFARE_RG_OBTAIN_KEY_ITEM",
+        "FANFARE_RG_DEX_RATING",
+        "FANFARE_OBTAIN_B_POINTS",
+        "FANFARE_OBTAIN_SYMBOL",
+        "FANFARE_REGISTER_MATCH_CALL"
+      ],
+      "indexedValues": [
+        "{ MUS_LEVEL_UP",
+        "{ MUS_OBTAIN_ITEM",
+        "{ MUS_EVOLVED",
+        "{ MUS_OBTAIN_TMHM",
+        "{ MUS_HEAL",
+        "{ MUS_OBTAIN_BADGE",
+        "{ MUS_MOVE_DELETED",
+        "{ MUS_OBTAIN_BERRY",
+        "{ MUS_AWAKEN_LEGEND",
+        "{ MUS_SLOTS_JACKPOT",
+        "{ MUS_SLOTS_WIN",
+        "{ MUS_TOO_BAD",
+        "{ MUS_RG_POKE_FLUTE",
+        "{ MUS_RG_OBTAIN_KEY_ITEM",
+        "{ MUS_RG_DEX_RATING",
+        "{ MUS_OBTAIN_B_POINTS",
+        "{ MUS_OBTAIN_SYMBOL",
+        "{ MUS_REGISTER_MATCH_CALL"
+      ],
+      "rawValue": "{\n    [FANFARE_LEVEL_UP]            = { MUS_LEVEL_UP,             80 },\n    [FANFARE_OBTAIN_ITEM]         = { MUS_OBTAIN_ITEM,         160 },\n    [FANFARE_EVOLVED]             = { MUS_EVOLVED,             220 },\n    [FANFARE_OBTAIN_TMHM]         = { MUS_OBTAIN_TMHM,         220 },\n    [FANFARE_HEAL]                = { MUS_HEAL,                160 },\n    [FANFARE_OBTAIN_BADGE]        = { MUS_OBTAIN_BADGE,        340 },\n    [FANFARE_MOVE_DELETED]        = { MUS_MOVE_DELETED,        180 },\n    [FANFARE_OBTAIN_BERRY]        = { MUS_OBTAIN_BERRY,        120 },\n    [FANFARE_AWAKEN_LEGEND]       = { MUS_AWAKEN_LEGEND,       710 },\n    [FANFARE_SLOTS_JACKPOT]       = { MUS_SLOTS_JACKPOT,       250 },\n    [FANFARE_SLOTS_WIN]           = { MUS_SLOTS_WIN,           150 },\n    [FANFARE_TOO_BAD]             = { MUS_TOO_BAD,             160 },\n    [FANFARE_RG_POKE_FLUTE]       = { MUS_RG_POKE_FLUTE,       450 },\n    [FANFARE_RG_OBTAIN_KEY_ITEM]  = { MUS_RG_OBTAIN_KEY_ITEM,  170 },\n    [FANFARE_RG_DEX_RATING]       = { MUS_..."
+    }
+  }
+}

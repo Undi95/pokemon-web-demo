@@ -41,15 +41,15 @@ const {
   MysteryGiftClient_Create, MysteryGiftClient_GetMsg, MysteryGiftClient_Run, MysteryGiftClient_SetParam,
   NULL, PLTT_SIZE_4BPP, PlayBGM, PlayFanfare,
   ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, Rfu_SetCloseLinkCallback, RunTasks,
-  RunTextPrinters, ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, ShowBg, StringCopy,
-  StringExpandPlaceholders, TRUE, TransferPlttBuffer, TrySavingData,
-  ValidateSavedWonderCard, ValidateSavedWonderNews, WonderCard_Destroy, WonderCard_Enter,
-  WonderCard_Exit, WonderCard_Init, WonderNews_AddScrollIndicatorArrowPair, WonderNews_Destroy,
-  WonderNews_Enter, WonderNews_Exit, WonderNews_GetInput, WonderNews_Init,
-  WonderNews_RemoveScrollIndicatorArrowPair, WonderNews_SetReward, memcpy,  // 4-per-line for readability
+  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, RemoveWindow, ResetBgsAndClearDma3BusyFlags,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, Rfu_SetCloseLinkCallback,
+  RunTasks, RunTextPrinters, ScanlineEffect_Stop, SetBgTilemapBuffer,
+  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
+  StringCopy, StringExpandPlaceholders, TRUE, TransferPlttBuffer,
+  TrySavingData, ValidateSavedWonderCard, ValidateSavedWonderNews, WonderCard_Destroy,
+  WonderCard_Enter, WonderCard_Exit, WonderCard_Init, WonderNews_AddScrollIndicatorArrowPair,
+  WonderNews_Destroy, WonderNews_Enter, WonderNews_Exit, WonderNews_GetInput,
+  WonderNews_Init, WonderNews_RemoveScrollIndicatorArrowPair, WonderNews_SetReward, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_MysteryGiftEReader(void) */

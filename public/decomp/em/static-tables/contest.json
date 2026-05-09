@@ -1,0 +1,268 @@
+{
+  "srcFile": "src/contest.c",
+  "count": 17,
+  "tables": {
+    "sSliderHeartYPositions": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "36",
+        "76",
+        "116",
+        "156"
+      ],
+      "rawValue": "{\n    36, 76, 116, 156\n}"
+    },
+    "sNextTurnSpriteYPositions": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "36",
+        "76",
+        "116",
+        "156"
+      ],
+      "rawValue": "{\n    36, 76, 116, 156\n}"
+    },
+    "sAffineAnim_SliderHeart_Normal": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_SliderHeart_SpinDisappear": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_FRAME(-10, -10, -20, 20)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_FRAME(-10, -10, -20, 20),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_SliderHeart_SpinAppear": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(56, 56, 0, 0)",
+        "AFFINEANIMCMD_FRAME(10, 10, 20, 20)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(56, 56, 0, 0),\n    AFFINEANIMCMD_FRAME(10, 10, 20, 20),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sSpriteSheet_NextTurn": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = gContestNextTurnGfx,\n        .size = 0x100,\n        .tag = TAG_NEXT_TURN_1_GFX\n    }",
+        "{\n        .data = gContestNextTurnGfx,\n        .size = 0x100,\n        .tag = TAG_NEXT_TURN_2_GFX\n    }",
+        "{\n        .data = gContestNextTurnGfx,\n        .size = 0x100,\n        .tag = TAG_NEXT_TURN_3_GFX\n    }",
+        "{\n        .data = gContestNextTurnGfx,\n        .size = 0x100,\n        .tag = TAG_NEXT_TURN_4_GFX\n    }"
+      ],
+      "rawValue": "{\n    {\n        .data = gContestNextTurnGfx,\n        .size = 0x100,\n        .tag = TAG_NEXT_TURN_1_GFX\n    },\n    {\n        .data = gContestNextTurnGfx,\n        .size = 0x100,\n        .tag = TAG_NEXT_TURN_2_GFX\n    },\n    {\n        .data = gContestNextTurnGfx,\n        .size = 0x100,\n        .tag = TAG_NEXT_TURN_3_GFX\n    },\n    {\n        .data = gContestNextTurnGfx,\n        .size = 0x100,\n        .tag = TAG_NEXT_TURN_4_GFX\n    }\n}"
+    },
+    "sSpriteTemplates_NextTurn": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = TAG_NEXT_TURN_1_GFX,\n        .paletteTag = TAG_NEXT_TURN_PAL,\n        .oam = &sOam_NextTurn,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    }",
+        "{\n        .tileTag = TAG_NEXT_TURN_2_GFX,\n        .paletteTag = TAG_NEXT_TURN_PAL,\n        .oam = &sOam_NextTurn,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    }",
+        "{\n        .tileTag = TAG_NEXT_TURN_3_GFX,\n        .paletteTag = TAG_NEXT_TURN_PAL,\n        .oam = &sOam_NextTurn,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    }",
+        "{\n        .tileTag = TAG_NEXT_TURN_4_GFX,\n        .paletteTag = TAG_NEXT_TURN_PAL,\n        .oam = &sOam_NextTurn,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = TAG_NEXT_TURN_1_GFX,\n        .paletteTag = TAG_NEXT_TURN_PAL,\n        .oam = &sOam_NextTurn,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    },\n    {\n        .tileTag = TAG_NEXT_TURN_2_GFX,\n        .paletteTag = TAG_NEXT_TURN_PAL,\n        .oam = &sOam_NextTurn,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    },\n    {\n        .tileTag = TAG_NEXT_TURN_3_GFX,\n        .paletteTag = TAG_NEXT_TURN_PAL,\n        .oam = &sOam_NextTurn,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    },\n    {\n        .tileTag = TAG_NEXT_TURN_4_GFX,\n        .paletteTag = TAG_NEXT_TURN_PAL,\n        .oam = &sOam_NextTurn,\n        .anims = gDummySpriteAnimTable,\n        .images = ..."
+    },
+    "sSubsprites_NextTurn": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -28,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 0\n    }",
+        "{\n        .x = 4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -28,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 0\n    },\n    {\n        .x = 4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 0\n    }\n}"
+    },
+    "sSubspriteTable_NextTurn": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .subspriteCount = ARRAY_COUNT(sSubsprites_NextTurn),\n        .subsprites = sSubsprites_NextTurn\n    }"
+      ],
+      "rawValue": "{\n    {\n        .subspriteCount = ARRAY_COUNT(sSubsprites_NextTurn),\n        .subsprites = sSubsprites_NextTurn\n    }\n}"
+    },
+    "sContestBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 0x18,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x1E,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 0x1C,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 0x1A,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 0x18,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x1E,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 0x1C,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 0x1A,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sContestWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_CONTESTANT0_NAME",
+        "WIN_CONTESTANT1_NAME",
+        "WIN_CONTESTANT2_NAME",
+        "WIN_CONTESTANT3_NAME",
+        "WIN_GENERAL_TEXT",
+        "WIN_MOVE0",
+        "WIN_MOVE1",
+        "WIN_MOVE2",
+        "WIN_MOVE3",
+        "WIN_SLASH",
+        "WIN_MOVE_DESCRIPTION"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_CONTESTANT0_NAME] = {\n        .bg = 0,\n        .tilemapLeft = 18,\n        .tilemapTop = 0,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x200\n    },\n    [WIN_CONTESTANT1_NAME] = {\n        .bg = 0,\n        .tilemapLeft = 18,\n        .tilemapTop = 5,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x218\n    },\n    [WIN_CONTESTANT2_NAME] = {\n        .bg = 0,\n        .tilemapLeft = 18,\n        .tilemapTop = 10,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x230\n    },\n    [WIN_CONTESTANT3_NAME] = {\n        .bg = 0,\n        .tilemapLeft = 18,\n        .tilemapTop = 15,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x248\n    },\n    [WIN_GENERAL_TEXT] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 15,\n        .width = 17,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x260\n    },\n    [WIN_MOVE0..."
+    },
+    "sSpriteSheets_ContestantsTurnBlinkEffect": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = gBlankGfxCompressed,\n        .size = 0x1000,\n        .tag = TAG_BLINK_EFFECT_CONTESTANT0\n    }",
+        "{\n        .data = gBlankGfxCompressed,\n        .size = 0x1000,\n        .tag = TAG_BLINK_EFFECT_CONTESTANT1\n    }",
+        "{\n        .data = gBlankGfxCompressed,\n        .size = 0x1000,\n        .tag = TAG_BLINK_EFFECT_CONTESTANT2\n    }",
+        "{\n        .data = gBlankGfxCompressed,\n        .size = 0x1000,\n        .tag = TAG_BLINK_EFFECT_CONTESTANT3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .data = gBlankGfxCompressed,\n        .size = 0x1000,\n        .tag = TAG_BLINK_EFFECT_CONTESTANT0\n    },\n    {\n        .data = gBlankGfxCompressed,\n        .size = 0x1000,\n        .tag = TAG_BLINK_EFFECT_CONTESTANT1\n    },\n    {\n        .data = gBlankGfxCompressed,\n        .size = 0x1000,\n        .tag = TAG_BLINK_EFFECT_CONTESTANT2\n    },\n    {\n        .data = gBlankGfxCompressed,\n        .size = 0x1000,\n        .tag = TAG_BLINK_EFFECT_CONTESTANT3\n    }\n}"
+    },
+    "sSpritePalettes_ContestantsTurnBlinkEffect": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = eContestTempSave.cachedWindowPalettes[5],\n        .tag = TAG_BLINK_EFFECT_CONTESTANT0\n    }",
+        "{\n        .data = eContestTempSave.cachedWindowPalettes[6],\n        .tag = TAG_BLINK_EFFECT_CONTESTANT1\n    }",
+        "{\n        .data = eContestTempSave.cachedWindowPalettes[7],\n        .tag = TAG_BLINK_EFFECT_CONTESTANT2\n    }",
+        "{\n        .data = eContestTempSave.cachedWindowPalettes[8],\n        .tag = TAG_BLINK_EFFECT_CONTESTANT3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .data = eContestTempSave.cachedWindowPalettes[5],\n        .tag = TAG_BLINK_EFFECT_CONTESTANT0\n    },\n    {\n        .data = eContestTempSave.cachedWindowPalettes[6],\n        .tag = TAG_BLINK_EFFECT_CONTESTANT1\n    },\n    {\n        .data = eContestTempSave.cachedWindowPalettes[7],\n        .tag = TAG_BLINK_EFFECT_CONTESTANT2\n    },\n    {\n        .data = eContestTempSave.cachedWindowPalettes[8],\n        .tag = TAG_BLINK_EFFECT_CONTESTANT3\n    }\n}"
+    },
+    "sAffineAnim_ContestantsTurnBlinkEffect_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_ContestantsTurnBlinkEffect_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(3, 3, 0, 15)",
+        "AFFINEANIMCMD_FRAME(-3, -3, 0, 15)",
+        "AFFINEANIMCMD_FRAME(3, 3, 0, 15)",
+        "AFFINEANIMCMD_FRAME(-3, -3, 0, 15)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(3, 3, 0, 15),\n    AFFINEANIMCMD_FRAME(-3, -3, 0, 15),\n    AFFINEANIMCMD_FRAME(3, 3, 0, 15),\n    AFFINEANIMCMD_FRAME(-3, -3, 0, 15),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sSpriteTemplates_ContestantsTurnBlinkEffect": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = TAG_BLINK_EFFECT_CONTESTANT0,\n        .paletteTag = TAG_BLINK_EFFECT_CONTESTANT0,\n        .oam = &sOam_ContestantsTurnBlinkEffect,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = sAffineAnims_ContestantsTurnBlinkEffect,\n        .callback = SpriteCallbackDummy\n    }",
+        "{\n        .tileTag = TAG_BLINK_EFFECT_CONTESTANT1,\n        .paletteTag = TAG_BLINK_EFFECT_CONTESTANT1,\n        .oam = &sOam_ContestantsTurnBlinkEffect,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = sAffineAnims_ContestantsTurnBlinkEffect,\n        .callback = SpriteCallbackDummy\n    }",
+        "{\n        .tileTag = TAG_BLINK_EFFECT_CONTESTANT2,\n        .paletteTag = TAG_BLINK_EFFECT_CONTESTANT2,\n        .oam = &sOam_ContestantsTurnBlinkEffect,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = sAffineAnims_ContestantsTurnBlinkEffect,\n        .callback = SpriteCallbackDummy\n    }",
+        "{\n        .tileTag = TAG_BLINK_EFFECT_CONTESTANT3,\n        .paletteTag = TAG_BLINK_EFFECT_CONTESTANT3,\n        .oam = &sOam_ContestantsTurnBlinkEffect,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = sAffineAnims_ContestantsTurnBlinkEffect,\n        .callback = SpriteCallbackDummy\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = TAG_BLINK_EFFECT_CONTESTANT0,\n        .paletteTag = TAG_BLINK_EFFECT_CONTESTANT0,\n        .oam = &sOam_ContestantsTurnBlinkEffect,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = sAffineAnims_ContestantsTurnBlinkEffect,\n        .callback = SpriteCallbackDummy\n    },\n    {\n        .tileTag = TAG_BLINK_EFFECT_CONTESTANT1,\n        .paletteTag = TAG_BLINK_EFFECT_CONTESTANT1,\n        .oam = &sOam_ContestantsTurnBlinkEffect,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = sAffineAnims_ContestantsTurnBlinkEffect,\n        .callback = SpriteCallbackDummy\n    },\n    {\n        .tileTag = TAG_BLINK_EFFECT_CONTESTANT2,\n        .paletteTag = TAG_BLINK_EFFECT_CONTESTANT2,\n        .oam = &sOam_ContestantsTurnBlinkEffect,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = sAffineAnims_ContestantsTurnBlinkEffect,\n        .callback = SpriteCallbackDummy\n    },\n    {\n        .tileTag = TAG_..."
+    },
+    "sContestExcitementTable": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CONTEST_CATEGORY_COOL",
+        "CONTEST_CATEGORY_BEAUTY",
+        "CONTEST_CATEGORY_CUTE",
+        "CONTEST_CATEGORY_SMART",
+        "CONTEST_CATEGORY_TOUGH",
+        "CONTEST_CATEGORY_BEAUTY",
+        "CONTEST_CATEGORY_BEAUTY",
+        "CONTEST_CATEGORY_CUTE",
+        "CONTEST_CATEGORY_SMART",
+        "CONTEST_CATEGORY_TOUGH",
+        "CONTEST_CATEGORY_CUTE",
+        "CONTEST_CATEGORY_BEAUTY",
+        "CONTEST_CATEGORY_CUTE",
+        "CONTEST_CATEGORY_SMART",
+        "CONTEST_CATEGORY_TOUGH",
+        "CONTEST_CATEGORY_SMART",
+        "CONTEST_CATEGORY_BEAUTY",
+        "CONTEST_CATEGORY_CUTE",
+        "CONTEST_CATEGORY_SMART",
+        "CONTEST_CATEGORY_TOUGH",
+        "CONTEST_CATEGORY_TOUGH",
+        "CONTEST_CATEGORY_BEAUTY",
+        "CONTEST_CATEGORY_CUTE",
+        "CONTEST_CATEGORY_SMART",
+        "CONTEST_CATEGORY_TOUGH"
+      ],
+      "indexedValues": [
+        "{\n        [CONTEST_CATEGORY_COOL]   = +1",
+        "0",
+        "-1",
+        "-1",
+        "0",
+        "{\n        [CONTEST_CATEGORY_COOL]   =  0",
+        "+1",
+        "0",
+        "-1",
+        "-1",
+        "{\n        [CONTEST_CATEGORY_COOL]   = -1",
+        "0",
+        "+1",
+        "0",
+        "-1",
+        "{\n        [CONTEST_CATEGORY_COOL]   = -1",
+        "-1",
+        "0",
+        "+1",
+        "0",
+        "{\n        [CONTEST_CATEGORY_COOL]   =  0",
+        "-1",
+        "-1",
+        "0",
+        "+1"
+      ],
+      "rawValue": "{\n    [CONTEST_CATEGORY_COOL] = {\n        [CONTEST_CATEGORY_COOL]   = +1,\n        [CONTEST_CATEGORY_BEAUTY] =  0,\n        [CONTEST_CATEGORY_CUTE]   = -1,\n        [CONTEST_CATEGORY_SMART]  = -1,\n        [CONTEST_CATEGORY_TOUGH]  =  0\n    },\n    [CONTEST_CATEGORY_BEAUTY] = {\n        [CONTEST_CATEGORY_COOL]   =  0,\n        [CONTEST_CATEGORY_BEAUTY] = +1,\n        [CONTEST_CATEGORY_CUTE]   =  0,\n        [CONTEST_CATEGORY_SMART]  = -1,\n        [CONTEST_CATEGORY_TOUGH]  = -1\n    },\n    [CONTEST_CATEGORY_CUTE] = {\n        [CONTEST_CATEGORY_COOL]   = -1,\n        [CONTEST_CATEGORY_BEAUTY] =  0,\n        [CONTEST_CATEGORY_CUTE]   = +1,\n        [CONTEST_CATEGORY_SMART]  =  0,\n        [CONTEST_CATEGORY_TOUGH]  = -1\n    },\n    [CONTEST_CATEGORY_SMART] = {\n        [CONTEST_CATEGORY_COOL]   = -1,\n        [CONTEST_CATEGORY_BEAUTY] = -1,\n        [CONTEST_CATEGORY_CUTE]   =  0,\n        [CONTEST_CATEGORY_SMART]  = +1,\n        [CONTEST_CATEGORY_TOUGH]  =  0\n    },\n    [CONTEST_CATEGORY_TOUGH] = {\n        [CONTEST_CATEGORY_COOL]   ..."
+    }
+  }
+}

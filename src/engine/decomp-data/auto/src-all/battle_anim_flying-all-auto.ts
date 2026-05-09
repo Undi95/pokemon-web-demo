@@ -23,14 +23,14 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   AnimTranslateLinear, ArcTan2Neg, Cos, CreateSpriteAndAnimate,
-  DISPLAY_HEIGHT, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
-  DestroySpriteAndMatrix, FALSE, FreeOamMatrix, GetAnimBattlerSpriteId,
-  GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, IndexOfSpritePaletteTag,
-  InitAnimLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsContest,
-  OBJ_PLTT_ID, PLTT_ID, Random2, ResetSpriteRotScale_PreserveAffine,
-  ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_ON_MASK, SeekSpriteAnim, SetAverageBattlerPositions,
-  Sin, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
-  TRUE, TrySetSpriteRotScale, gSineTable,  // 4-per-line for readability
+  DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroyAnimSprite, DestroyAnimVisualTask,
+  DestroySprite, DestroySpriteAndMatrix, FALSE, FreeOamMatrix,
+  GetAnimBattlerSpriteId, GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteCoord,
+  IndexOfSpritePaletteTag, InitAnimLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
+  IsContest, OBJ_PLTT_ID, PLTT_ID, Random2,
+  ResetSpriteRotScale_PreserveAffine, ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_ON_MASK, SeekSpriteAnim,
+  SetAverageBattlerPositions, Sin, StartSpriteAffineAnim, StartSpriteAnim,
+  StoreSpriteCallbackInData6, TRUE, TrySetSpriteRotScale, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimEllipticalGust(struct Sprite *sprite) */

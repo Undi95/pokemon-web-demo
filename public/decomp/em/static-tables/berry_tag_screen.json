@@ -1,0 +1,46 @@
+{
+  "srcFile": "src/berry_tag_screen.c",
+  "count": 3,
+  "tables": {
+    "sBackgroundTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n      .bg = 0,\n      .charBaseIndex = 0,\n      .mapBaseIndex = 31,\n      .screenSize = 0,\n      .paletteMode = 0,\n      .priority = 0,\n      .baseTile = 0\n  }",
+        "{\n      .bg = 1,\n      .charBaseIndex = 0,\n      .mapBaseIndex = 30,\n      .screenSize = 0,\n      .paletteMode = 0,\n      .priority = 1,\n      .baseTile = 0\n  }",
+        "{\n      .bg = 2,\n      .charBaseIndex = 0,\n      .mapBaseIndex = 29,\n      .screenSize = 0,\n      .paletteMode = 0,\n      .priority = 2,\n      .baseTile = 0\n  }",
+        "{\n      .bg = 3,\n      .charBaseIndex = 0,\n      .mapBaseIndex = 28,\n      .screenSize = 0,\n      .paletteMode = 0,\n      .priority = 3,\n      .baseTile = 0\n  }"
+      ],
+      "rawValue": "{\n  {\n      .bg = 0,\n      .charBaseIndex = 0,\n      .mapBaseIndex = 31,\n      .screenSize = 0,\n      .paletteMode = 0,\n      .priority = 0,\n      .baseTile = 0\n  },\n  {\n      .bg = 1,\n      .charBaseIndex = 0,\n      .mapBaseIndex = 30,\n      .screenSize = 0,\n      .paletteMode = 0,\n      .priority = 1,\n      .baseTile = 0\n  },\n  {\n      .bg = 2,\n      .charBaseIndex = 0,\n      .mapBaseIndex = 29,\n      .screenSize = 0,\n      .paletteMode = 0,\n      .priority = 2,\n      .baseTile = 0\n  },\n  {\n      .bg = 3,\n      .charBaseIndex = 0,\n      .mapBaseIndex = 28,\n      .screenSize = 0,\n      .paletteMode = 0,\n      .priority = 3,\n      .baseTile = 0\n  }\n}"
+    },
+    "sTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{0, 2, 3}",
+        "{15, 14, 13}"
+      ],
+      "rawValue": "{\n    {0, 2, 3},\n    {15, 14, 13}\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_BERRY_NAME",
+        "WIN_SIZE_FIRM",
+        "WIN_DESC",
+        "WIN_BERRY_TAG"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 1",
+        "{\n        .bg = 1",
+        "{\n        .bg = 1",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_BERRY_NAME] = {\n        .bg = 1,\n        .tilemapLeft = 11,\n        .tilemapTop = 4,\n        .width = 8,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 72,  \n    },\n    [WIN_SIZE_FIRM] = {\n        .bg = 1,\n        .tilemapLeft = 11,\n        .tilemapTop = 7,\n        .width = 18,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 88,  \n    },\n    [WIN_DESC] = {\n        .bg = 1,\n        .tilemapLeft = 3,  \n        .tilemapTop = 14,\n        .width = 27,  \n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 160,  \n    },\n    [WIN_BERRY_TAG] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 0,\n        .width = 8,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 268,  \n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    }
+  }
+}

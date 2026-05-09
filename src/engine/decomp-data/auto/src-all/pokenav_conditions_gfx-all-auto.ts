@@ -46,11 +46,12 @@ const {
   NULL, OBJ_PLTT_ID, OpenMonMarkingsMenu, PLTT_SIZE_4BPP,
   PokenavFadeScreen, PokenavFillPalette, Pokenav_AllocAndLoadPalettes, PrintHelpBarText,
   ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  RemoveWindow, ResetConditionSparkleSprites, SPRITE_SHAPE, SPRITE_SIZE,
-  STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_InitHBlankDmaTransfer, SetBgTilemapBuffer, SetGpuReg,
-  SetLeftHeaderSpritesInvisibility, SetPokenavVBlankCallback, SetVBlankCallback_, ShowBg,
-  ShowLeftHeaderGfx, SlideMenuHeaderDown, StartSpriteAnim, StringCopy,
-  TRUE, TransferPlttBuffer, TryGetMonMarkId, WaitForHelpBar,  // 4-per-line for readability
+  REG_OFFSET_DISPCNT, RemoveWindow, ResetConditionSparkleSprites, SPRITE_SHAPE,
+  SPRITE_SIZE, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_InitHBlankDmaTransfer, SetBgTilemapBuffer,
+  SetGpuReg, SetLeftHeaderSpritesInvisibility, SetPokenavVBlankCallback, SetVBlankCallback_,
+  ShowBg, ShowLeftHeaderGfx, SlideMenuHeaderDown, SpriteCallbackDummy,
+  StartSpriteAnim, StringCopy, TRUE, TransferPlttBuffer,
+  TryGetMonMarkId, WaitForHelpBar,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 OpenConditionGraphMenu(void) */

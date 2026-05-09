@@ -1,0 +1,70 @@
+{
+  "srcFile": "src/contest_util.c",
+  "count": 5,
+  "tables": {
+    "sSpriteSheets_ResultsTextWindow": {
+      "type": "struct SpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_RESULTS_TEXT_WINDOW_LEFT }",
+        "{ .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_RESULTS_TEXT_WINDOW_MIDLEFT }",
+        "{ .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_RESULTS_TEXT_WINDOW_MIDRIGHT }",
+        "{ .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_RESULTS_TEXT_WINDOW_RIGHT }",
+        "{ .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_LINK_TEXT_WINDOW_LEFT }",
+        "{ .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_LINK_TEXT_WINDOW_MIDLEFT }",
+        "{ .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_LINK_TEXT_WINDOW_MIDRIGHT }",
+        "{ .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_LINK_TEXT_WINDOW_RIGHT }"
+      ],
+      "rawValue": "{\n    { .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_RESULTS_TEXT_WINDOW_LEFT },\n    { .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_RESULTS_TEXT_WINDOW_MIDLEFT },\n    { .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_RESULTS_TEXT_WINDOW_MIDRIGHT },\n    { .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_RESULTS_TEXT_WINDOW_RIGHT },\n    { .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_LINK_TEXT_WINDOW_LEFT },\n    { .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_LINK_TEXT_WINDOW_MIDLEFT },\n    { .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_LINK_TEXT_WINDOW_MIDRIGHT },\n    { .data = gMiscBlank_Gfx, .size = 0x400, .tag = TAG_LINK_TEXT_WINDOW_RIGHT },\n}"
+    },
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 24,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 26,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 24,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 26,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    }\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  \n        .bg = 1,\n        .tilemapLeft = 7,\n        .tilemapTop = 4,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 770\n    }",
+        "{  \n        .bg = 1,\n        .tilemapLeft = 7,\n        .tilemapTop = 7,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 794\n    }",
+        "{  \n        .bg = 1,\n        .tilemapLeft = 7,\n        .tilemapTop = 10,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 818\n    }",
+        "{  \n        .bg = 1,\n        .tilemapLeft = 7,\n        .tilemapTop = 13,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 842\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {  \n        .bg = 1,\n        .tilemapLeft = 7,\n        .tilemapTop = 4,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 770\n    },\n    {  \n        .bg = 1,\n        .tilemapLeft = 7,\n        .tilemapTop = 7,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 794\n    },\n    {  \n        .bg = 1,\n        .tilemapLeft = 7,\n        .tilemapTop = 10,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 818\n    },\n    {  \n        .bg = 1,\n        .tilemapLeft = 7,\n        .tilemapTop = 13,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 842\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sContestLinkTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_WHITE",
+        "TEXT_DYNAMIC_COLOR_6",
+        "TEXT_DYNAMIC_COLOR_5"
+      ],
+      "rawValue": "{TEXT_COLOR_WHITE, TEXT_DYNAMIC_COLOR_6, TEXT_DYNAMIC_COLOR_5}"
+    },
+    "sContestantLocalIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "LOCALID_CONTESTANT_1",
+        "LOCALID_CONTESTANT_2",
+        "LOCALID_CONTESTANT_3",
+        "LOCALID_CONTESTANT_4"
+      ],
+      "rawValue": "{\n        LOCALID_CONTESTANT_1,\n        LOCALID_CONTESTANT_2,\n        LOCALID_CONTESTANT_3,\n        LOCALID_CONTESTANT_4,\n    }"
+    }
+  }
+}

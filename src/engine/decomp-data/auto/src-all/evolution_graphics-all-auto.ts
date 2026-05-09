@@ -24,10 +24,10 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, BG_PLTT_ID, BeginNormalPaletteFade, Cos,
   CpuCopy16, CpuSet, CreateSprite, CreateTask,
-  DestroySprite, DestroyTask, FALSE, LoadCompressedSpriteSheetUsingHeap,
-  LoadSpritePalettes, OBJ_PLTT_ID, PLTT_SIZE_4BPP, PlaySE,
-  Random, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF, SetOamMatrix,
-  Sin, TRUE,  // 4-per-line for readability
+  DISPLAY_WIDTH, DestroySprite, DestroyTask, FALSE,
+  LoadCompressedSpriteSheetUsingHeap, LoadSpritePalettes, OBJ_PLTT_ID, PLTT_SIZE_4BPP,
+  PlaySE, Random, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF,
+  SetOamMatrix, Sin, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetEvoSparklesMatrices(void) */

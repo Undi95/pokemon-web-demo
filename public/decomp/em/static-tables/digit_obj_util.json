@@ -1,0 +1,40 @@
+{
+  "srcFile": "src/digit_obj_util.c",
+  "count": 1,
+  "tables": {
+    "sTilesPerImage": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ST_OAM_SQUARE",
+        "ST_OAM_SIZE_1",
+        "ST_OAM_SIZE_2",
+        "ST_OAM_SIZE_3",
+        "ST_OAM_H_RECTANGLE",
+        "ST_OAM_SIZE_1",
+        "ST_OAM_SIZE_2",
+        "ST_OAM_SIZE_3",
+        "ST_OAM_V_RECTANGLE",
+        "ST_OAM_SIZE_1",
+        "ST_OAM_SIZE_2",
+        "ST_OAM_SIZE_3"
+      ],
+      "indexedValues": [
+        "{\n        [ST_OAM_SIZE_0] = 0x01",
+        "0x04",
+        "0x10",
+        "0x40",
+        "{\n        [ST_OAM_SIZE_0] = 0x02",
+        "0x04",
+        "0x08",
+        "0x20",
+        "{\n        [ST_OAM_SIZE_0] = 0x02",
+        "0x04",
+        "0x08",
+        "0x20"
+      ],
+      "rawValue": "{\n    [ST_OAM_SQUARE]      = {\n        [ST_OAM_SIZE_0] = 0x01,  \n        [ST_OAM_SIZE_1] = 0x04,  \n        [ST_OAM_SIZE_2] = 0x10,  \n        [ST_OAM_SIZE_3] = 0x40   \n    },\n    [ST_OAM_H_RECTANGLE] = {\n        [ST_OAM_SIZE_0] = 0x02,  \n        [ST_OAM_SIZE_1] = 0x04,  \n        [ST_OAM_SIZE_2] = 0x08,  \n        [ST_OAM_SIZE_3] = 0x20   \n    },\n    [ST_OAM_V_RECTANGLE] = {\n        [ST_OAM_SIZE_0] = 0x02,  \n        [ST_OAM_SIZE_1] = 0x04,  \n        [ST_OAM_SIZE_2] = 0x08,  \n        [ST_OAM_SIZE_3] = 0x20   \n    }\n}"
+    }
+  }
+}

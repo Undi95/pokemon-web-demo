@@ -1,0 +1,139 @@
+{
+  "srcFile": "src/mystery_gift_menu.c",
+  "count": 12,
+  "tables": {
+    "sDownArrowCounterAndYCoordIdx": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sBGTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0x000\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0x000\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 13,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0x000\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 12,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0x000\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0x000\n    }, {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0x000\n    }, {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 13,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0x000\n    }, {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 12,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0x000\n    }\n}"
+    },
+    "sMainWindows": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_HEADER",
+        "WIN_MSG",
+        "WIN_UNK"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_HEADER] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = DISPLAY_TILE_WIDTH,\n        .height = 2,\n        .paletteNum = 12,\n        .baseBlock = 0x0013\n    },\n    [WIN_MSG] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 15,\n        .width = 28,\n        .height = 4,\n        .paletteNum = 12,\n        .baseBlock = 0x004f\n    },\n    [WIN_UNK] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 15,\n        .width = DISPLAY_TILE_WIDTH,\n        .height = 5,\n        .paletteNum = 13,\n        .baseBlock = 0x004f\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sListMenuItems_CardsOrNews": {
+      "type": "struct ListMenuItem",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gText_WonderCards,  0 }",
+        "{ gText_WonderNews,   1 }",
+        "{ gText_Exit3,        LIST_CANCEL }"
+      ],
+      "rawValue": "{\n    { gText_WonderCards,  0 },\n    { gText_WonderNews,   1 },\n    { gText_Exit3,        LIST_CANCEL }\n}"
+    },
+    "sListMenuItems_WirelessOrFriend": {
+      "type": "struct ListMenuItem",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gText_WirelessCommunication,  0 }",
+        "{ gText_Friend2,                1 }",
+        "{ gText_Cancel2,                LIST_CANCEL }"
+      ],
+      "rawValue": "{\n    { gText_WirelessCommunication,  0 },\n    { gText_Friend2,                1 },\n    { gText_Cancel2,                LIST_CANCEL }\n}"
+    },
+    "sListMenuItems_ReceiveSendToss": {
+      "type": "struct ListMenuItem",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gText_Receive,  0 }",
+        "{ gText_Send,     1 }",
+        "{ gText_Toss,     2 }",
+        "{ gText_Cancel2,  LIST_CANCEL }"
+      ],
+      "rawValue": "{\n    { gText_Receive,  0 },\n    { gText_Send,     1 },\n    { gText_Toss,     2 },\n    { gText_Cancel2,  LIST_CANCEL }\n}"
+    },
+    "sListMenuItems_ReceiveToss": {
+      "type": "struct ListMenuItem",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gText_Receive,  0 }",
+        "{ gText_Toss,     2 }",
+        "{ gText_Cancel2,  LIST_CANCEL }"
+      ],
+      "rawValue": "{\n    { gText_Receive,  0 },\n    { gText_Toss,     2 },\n    { gText_Cancel2,  LIST_CANCEL }\n}"
+    },
+    "sListMenuItems_ReceiveSend": {
+      "type": "struct ListMenuItem",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gText_Receive,  0 }",
+        "{ gText_Send,     1 }",
+        "{ gText_Cancel2,  LIST_CANCEL }"
+      ],
+      "rawValue": "{\n    { gText_Receive,  0 },\n    { gText_Send,     1 },\n    { gText_Cancel2,  LIST_CANCEL }\n}"
+    },
+    "sListMenuItems_Receive": {
+      "type": "struct ListMenuItem",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gText_Receive,  0 }",
+        "{ gText_Cancel2,  LIST_CANCEL }"
+      ],
+      "rawValue": "{\n    { gText_Receive,  0 },\n    { gText_Cancel2,  LIST_CANCEL }\n}"
+    },
+    "sTextColors_Header": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_DARK_GRAY"
+      ],
+      "rawValue": "{ TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE,     TEXT_COLOR_DARK_GRAY }"
+    },
+    "sTextColors_Header_Copy": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_DARK_GRAY"
+      ],
+      "rawValue": "{ TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE,     TEXT_COLOR_DARK_GRAY }"
+    },
+    "sMG_Ereader_TextColor_2": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_DARK_GRAY",
+        "TEXT_COLOR_LIGHT_GRAY"
+      ],
+      "rawValue": "{ TEXT_COLOR_WHITE,       TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY }"
+    }
+  }
+}

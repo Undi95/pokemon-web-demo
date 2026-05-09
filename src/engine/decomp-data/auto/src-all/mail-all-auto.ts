@@ -36,12 +36,12 @@ const {
   PIXEL_FILL, PLTT_SIZE_4BPP, ProcessSpriteCopyRequests, PutWindowTilemap,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, RunTextPrinters,
-  ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, StringCopy, StringLength,
-  TRUE, TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade,
-  memset,  // 4-per-line for readability
+  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
+  RunTextPrinters, ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg,
+  SetMainCallback2, SetVBlankCallback, ShowBg, SpriteCallbackDummy,
+  StringCopy, StringLength, TRUE, TransferPlttBuffer,
+  UnsetBgTilemapBuffer, UpdatePaletteFade, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ReadMail(struct Mail *mail, MainCallback exitCallback, bool8 hasText) */

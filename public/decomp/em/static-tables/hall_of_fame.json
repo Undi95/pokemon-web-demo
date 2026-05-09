@@ -1,0 +1,279 @@
+{
+  "srcFile": "src/hall_of_fame.c",
+  "count": 26,
+  "tables": {
+    "sHof_BgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n}"
+    },
+    "sMonInfoTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_DARK_GRAY"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY}"
+    },
+    "sPlayerInfoTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_DARK_GRAY",
+        "TEXT_COLOR_LIGHT_GRAY"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY}"
+    },
+    "sUnusedTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_RED",
+        "TEXT_COLOR_LIGHT_RED",
+        "TEXT_COLOR_TRANSPARENT"
+      ],
+      "rawValue": "{TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED, TEXT_COLOR_TRANSPARENT}"
+    },
+    "sSpriteSheet_Confetti": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{.data = gConfetti_Gfx, .size = 0x220, .tag = TAG_CONFETTI}",
+        "{}"
+      ],
+      "rawValue": "{\n    {.data = gConfetti_Gfx, .size = 0x220, .tag = TAG_CONFETTI},\n    {},\n}"
+    },
+    "sSpritePalette_Confetti": {
+      "type": "struct CompressedSpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{.data = gConfetti_Pal, .tag = TAG_CONFETTI}",
+        "{}"
+      ],
+      "rawValue": "{\n    {.data = gConfetti_Pal, .tag = TAG_CONFETTI},\n    {},\n}"
+    },
+    "sHallOfFame_MonFullTeamPositions": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{120,   210,    120,    40}",
+        "{326,   220,    56,     40}",
+        "{-86,   220,    184,    40}",
+        "{120,   -62,    120,    88}",
+        "{-70,   -92,    200,    88}",
+        "{310,   -92,    40,     88}"
+      ],
+      "rawValue": "{\n    {120,   210,    120,    40},\n    {326,   220,    56,     40},\n    {-86,   220,    184,    40},\n    {120,   -62,    120,    88},\n    {-70,   -92,    200,    88},\n    {310,   -92,    40,     88}\n}"
+    },
+    "sHallOfFame_MonHalfTeamPositions": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{120,   234,    120,    64}",
+        "{326,   244,    56,     64}",
+        "{-86,   244,    184,    64}"
+      ],
+      "rawValue": "{\n    {120,   234,    120,    64},\n    {326,   244,    56,     64},\n    {-86,   244,    184,    64}\n}"
+    },
+    "sAnim_PinkConfettiA": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_RedConfettiA": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_BlueConfettiA": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_RedConfettiB": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_BlueConfettiB": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_YellowConfettiA": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_WhiteConfettiA": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(6, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(6, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_GreenConfettiA": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_PinkConfettiB": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_BlueConfettiC": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(9, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(9, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_YellowConfettiB": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(10, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(10, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_WhiteConfettiB": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(11, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(11, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_GreenConfettiB": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(12, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(12, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_PinkConfettiC": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(13, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(13, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_RedConfettiC": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(14, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(14, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_YellowConfettiC": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(15, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(15, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_WhiteConfettiC": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 30),\n    ANIMCMD_END\n}"
+    },
+    "sHallOfFame_SlotOrder": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "2",
+        "1",
+        "3",
+        "6",
+        "4",
+        "5"
+      ],
+      "rawValue": "{\n    2, 1, 3,\n    6, 4, 5,\n}"
+    }
+  }
+}

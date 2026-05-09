@@ -1,0 +1,375 @@
+{
+  "srcFile": "src/pokeblock_feed.c",
+  "count": 22,
+  "tables": {
+    "sNatureToMonPokeblockAnim": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "NATURE_HARDY",
+        "NATURE_LONELY",
+        "NATURE_BRAVE",
+        "NATURE_ADAMANT",
+        "NATURE_NAUGHTY",
+        "NATURE_BOLD",
+        "NATURE_DOCILE",
+        "NATURE_RELAXED",
+        "NATURE_IMPISH",
+        "NATURE_LAX",
+        "NATURE_TIMID",
+        "NATURE_HASTY",
+        "NATURE_SERIOUS",
+        "NATURE_JOLLY",
+        "NATURE_NAIVE",
+        "NATURE_MODEST",
+        "NATURE_MILD",
+        "NATURE_QUIET",
+        "NATURE_BASHFUL",
+        "NATURE_RASH",
+        "NATURE_CALM",
+        "NATURE_GENTLE",
+        "NATURE_SASSY",
+        "NATURE_CAREFUL",
+        "NATURE_QUIRKY"
+      ],
+      "indexedValues": [
+        "{ ANIM_HARDY",
+        "{ ANIM_LONELY",
+        "{ ANIM_BRAVE",
+        "{ ANIM_ADAMANT",
+        "{ ANIM_NAUGHTY",
+        "{ ANIM_BOLD",
+        "{ ANIM_DOCILE",
+        "{ ANIM_RELAXED",
+        "{ ANIM_IMPISH",
+        "{ ANIM_LAX",
+        "{ ANIM_TIMID",
+        "{ ANIM_HASTY",
+        "{ ANIM_SERIOUS",
+        "{ ANIM_JOLLY",
+        "{ ANIM_NAIVE",
+        "{ ANIM_MODEST",
+        "{ ANIM_MILD",
+        "{ ANIM_QUIET",
+        "{ ANIM_BASHFUL",
+        "{ ANIM_RASH",
+        "{ ANIM_CALM",
+        "{ ANIM_GENTLE",
+        "{ ANIM_SASSY",
+        "{ ANIM_CAREFUL",
+        "{ ANIM_QUIRKY"
+      ],
+      "rawValue": "{\n    [NATURE_HARDY]   = { ANIM_HARDY,   AFFINE_NONE },\n    [NATURE_LONELY]  = { ANIM_LONELY,  AFFINE_NONE },\n    [NATURE_BRAVE]   = { ANIM_BRAVE,   AFFINE_TURN_UP },\n    [NATURE_ADAMANT] = { ANIM_ADAMANT, AFFINE_NONE },\n    [NATURE_NAUGHTY] = { ANIM_NAUGHTY, AFFINE_NONE },\n    [NATURE_BOLD]    = { ANIM_BOLD,    AFFINE_NONE },\n    [NATURE_DOCILE]  = { ANIM_DOCILE,  AFFINE_NONE },\n    [NATURE_RELAXED] = { ANIM_RELAXED, AFFINE_TURN_UP_AND_DOWN },\n    [NATURE_IMPISH]  = { ANIM_IMPISH,  AFFINE_NONE },\n    [NATURE_LAX]     = { ANIM_LAX,     AFFINE_NONE },\n    [NATURE_TIMID]   = { ANIM_TIMID,   AFFINE_NONE },\n    [NATURE_HASTY]   = { ANIM_HASTY,   AFFINE_NONE },\n    [NATURE_SERIOUS] = { ANIM_SERIOUS, AFFINE_TURN_DOWN },\n    [NATURE_JOLLY]   = { ANIM_JOLLY,   AFFINE_NONE },\n    [NATURE_NAIVE]   = { ANIM_NAIVE,   AFFINE_NONE },\n    [NATURE_MODEST]  = { ANIM_MODEST,  AFFINE_TURN_DOWN_SLOW },\n    [NATURE_MILD]    = { ANIM_MILD,    AFFINE_NONE },\n    [NATURE_QUIET]   = { ANIM_QUIET,   AFFINE_NONE },\n    [NATURE_BASHFUL]..."
+    },
+    "sMonPokeblockAnims": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ANIM_HARDY",
+        "ANIM_LONELY",
+        "ANIM_BRAVE",
+        "ANIM_ADAMANT",
+        "ANIM_NAUGHTY",
+        "ANIM_BOLD",
+        "ANIM_DOCILE",
+        "ANIM_RELAXED",
+        "ANIM_IMPISH",
+        "ANIM_LAX",
+        "ANIM_TIMID",
+        "ANIM_HASTY",
+        "ANIM_SERIOUS",
+        "ANIM_JOLLY",
+        "ANIM_NAIVE",
+        "ANIM_MODEST",
+        "ANIM_MILD",
+        "ANIM_QUIET",
+        "ANIM_BASHFUL",
+        "ANIM_RASH",
+        "ANIM_CALM",
+        "ANIM_GENTLE",
+        "ANIM_SASSY",
+        "ANIM_CAREFUL",
+        "ANIM_QUIRKY"
+      ],
+      "indexedValues": [
+        "{   0",
+        "{   0",
+        "{  64",
+        "{   0",
+        "{   0",
+        "{   0",
+        "{   0",
+        "{   0",
+        "{   0",
+        "{   0",
+        "{   0",
+        "{  64",
+        "{   0",
+        "{  64",
+        "{   0",
+        "{   0",
+        "{ 128",
+        "{   0",
+        "{   0",
+        "{  64",
+        "{   0",
+        "{   0",
+        "{   0",
+        "{   0",
+        "{   0"
+      ],
+      "rawValue": "{\n    [ANIM_HARDY] =\n    {   0,   4,   0,   8,  24,   0,   0,   0,  12,   FALSE},\n    {   0,   4,   0,  16,  24,   0,   0,   0,  12,   FALSE},\n    {   0,   4,   0,  32,  32,   0,   0,   0,  16,   TRUE},\n\n    [ANIM_LONELY] =\n    {   0,   3,   6,   0,  48,   0,   0,   0,  24,   TRUE},\n\n    [ANIM_BRAVE] =\n    {  64,  16, -24,   0,  32,   0,   0,   0,   0,   TRUE},\n\n    [ANIM_ADAMANT] =\n    {   0,   4,   8,   0,  16,   0,  -8,   0,   0,   FALSE},\n    {   0,   0,   0,   0,  16,   0,   0,   0,   0,   FALSE},\n    {   0,   4,   8,   0,  16,   0,  -8,   0,   0,   FALSE},\n    {   0,   0,   0,   0,  16,   0,   0,   0,   0,   FALSE},\n    {   0,   4, -16,   0,   4,   0,  16,   0,   0,   TRUE},\n\n    [ANIM_NAUGHTY] =\n    {   0,   3,   6,   0,  12,   0,   0,   0,   6,   FALSE},\n    {   0,   3,  -6,   0,  12,   0,   0,   0,   6,   FALSE},\n    {   0,  16,  16,   0,  45,   1,   0,   0,   0,   TRUE},\n\n    [ANIM_BOLD] =\n    {   0,  16,   0,  24,  32,   0,   0,   0,  16,   FALSE},\n    {   0,  16,   0,  23,  32,   0,   0,   0,  16,..."
+    },
+    "sAffineAnim_Mon_None": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnUp": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, 12, 1)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 30)",
+        "AFFINEANIMCMD_FRAME(0, 0, -12, 1)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, 12, 1),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 30),\n    AFFINEANIMCMD_FRAME(0, 0, -12, 1),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnUp_Flipped": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 12, 1)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 28)",
+        "AFFINEANIMCMD_FRAME(0, 0, -4, 3)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 12, 1),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 28),\n    AFFINEANIMCMD_FRAME(0, 0, -4, 3),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnUpAndDown": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 16)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 32)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 16),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 32),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 16),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnUpAndDown_Flipped": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 16)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 32)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 16),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 32),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 16),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnDown": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 8)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 16)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 8),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 16),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 8),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnDown_Flipped": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 8)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 16)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 8),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 16),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 8),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnDownSlow": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 8)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 32)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 8),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 32),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 8),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnDownSlow_Flipped": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 8)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 32)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 8),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 32),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 8),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnDownSlight": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 4)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 24)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 4)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 4),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 24),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 4),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnDownSlight_Flipped": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 4)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 24)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 4)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 4),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 24),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 4),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnUpHigh": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 24)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 16)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -12, 2)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 24),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 16),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -12, 2),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Mon_TurnUpHigh_Flipped": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 24)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 16)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -12, 2)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 24),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 16),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -12, 2),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sBackgroundTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 15,\n        .width = 28,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0xA\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 15,\n        .width = 28,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0xA\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sAffineAnim_Still": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_PokeblockCase_ThrowFromVertical": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 16, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 16, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 16, 1)",
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 16, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 16, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 16, 1),\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_PokeblockCase_ThrowFromHorizontal": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -16, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -16, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -16, 1)",
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -16, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -16, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -16, 1),\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAnim_Pokeblock": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAffineAnim_Pokeblock": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(-8, -8, 0, 1)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(-8, -8, 0, 1),\n    AFFINEANIMCMD_JUMP(1)\n}"
+    }
+  }
+}

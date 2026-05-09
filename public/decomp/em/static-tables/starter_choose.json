@@ -1,0 +1,191 @@
+{
+  "srcFile": "src/starter_choose.c",
+  "count": 16,
+  "tables": {
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 15,\n        .width = 24,\n        .height = 4,\n        .paletteNum = 14,\n        .baseBlock = 0x0200\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 15,\n        .width = 24,\n        .height = 4,\n        .paletteNum = 14,\n        .baseBlock = 0x0200\n    },\n    DUMMY_WIN_TEMPLATE,\n}"
+    },
+    "sPokeballCoords": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{60, 64}",
+        "{120, 88}",
+        "{180, 64}"
+      ],
+      "rawValue": "{\n    {60, 64},\n    {120, 88},\n    {180, 64},\n}"
+    },
+    "sStarterLabelCoords": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{0, 9}",
+        "{16, 10}",
+        "{8, 4}"
+      ],
+      "rawValue": "{\n    {0, 9},\n    {16, 10},\n    {8, 4},\n}"
+    },
+    "sStarterMon": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "SPECIES_TREECKO",
+        "SPECIES_TORCHIC",
+        "SPECIES_MUDKIP"
+      ],
+      "rawValue": "{\n    SPECIES_TREECKO,\n    SPECIES_TORCHIC,\n    SPECIES_MUDKIP,\n}"
+    },
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 7,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 6,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 7,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 6,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n}"
+    },
+    "sTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_LIGHT_GRAY"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY}"
+    },
+    "sCursorCoords": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{60, 32}",
+        "{120, 56}",
+        "{180, 32}"
+      ],
+      "rawValue": "{\n    {60, 32},\n    {120, 56},\n    {180, 32},\n}"
+    },
+    "sAnim_Hand": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 30),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Pokeball_Still": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Pokeball_Moving": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(0, 32)",
+        "ANIMCMD_FRAME(16, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(32, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(16, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(32, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(0, 32),\n    ANIMCMD_FRAME(16, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(32, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(16, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(32, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_StarterCircle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_StarterPokemon": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(16, 16, 0, 0)",
+        "AFFINEANIMCMD_FRAME(16, 16, 0, 15)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(16, 16, 0, 0),\n    AFFINEANIMCMD_FRAME(16, 16, 0, 15),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_StarterCircle": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(20, 20, 0, 0)",
+        "AFFINEANIMCMD_FRAME(20, 20, 0, 15)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(20, 20, 0, 0),\n    AFFINEANIMCMD_FRAME(20, 20, 0, 15),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteSheet_PokeballSelect": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = gPokeballSelection_Gfx,\n        .size = 0x0800,\n        .tag = TAG_POKEBALL_SELECT\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = gPokeballSelection_Gfx,\n        .size = 0x0800,\n        .tag = TAG_POKEBALL_SELECT\n    },\n    {}\n}"
+    },
+    "sSpriteSheet_StarterCircle": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sStarterCircle_Gfx,\n        .size = 0x0800,\n        .tag = TAG_STARTER_CIRCLE\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = sStarterCircle_Gfx,\n        .size = 0x0800,\n        .tag = TAG_STARTER_CIRCLE\n    },\n    {}\n}"
+    },
+    "sSpritePalettes_StarterChoose": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sPokeballSelection_Pal,\n        .tag = TAG_POKEBALL_SELECT\n    }",
+        "{\n        .data = sStarterCircle_Pal,\n        .tag = TAG_STARTER_CIRCLE\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = sPokeballSelection_Pal,\n        .tag = TAG_POKEBALL_SELECT\n    },\n    {\n        .data = sStarterCircle_Pal,\n        .tag = TAG_STARTER_CIRCLE\n    },\n    {},\n}"
+    }
+  }
+}

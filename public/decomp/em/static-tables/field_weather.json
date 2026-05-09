@@ -1,0 +1,60 @@
+{
+  "srcFile": "src/field_weather.c",
+  "count": 2,
+  "tables": {
+    "sDroughtWeatherColors": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "INCBIN_U16(\"graphics/weather/drought/colors_0.bin\")",
+        "INCBIN_U16(\"graphics/weather/drought/colors_1.bin\")",
+        "INCBIN_U16(\"graphics/weather/drought/colors_2.bin\")",
+        "INCBIN_U16(\"graphics/weather/drought/colors_3.bin\")",
+        "INCBIN_U16(\"graphics/weather/drought/colors_4.bin\")",
+        "INCBIN_U16(\"graphics/weather/drought/colors_5.bin\")"
+      ],
+      "rawValue": "{\n    INCBIN_U16(\"graphics/weather/drought/colors_0.bin\"),\n    INCBIN_U16(\"graphics/weather/drought/colors_1.bin\"),\n    INCBIN_U16(\"graphics/weather/drought/colors_2.bin\"),\n    INCBIN_U16(\"graphics/weather/drought/colors_3.bin\"),\n    INCBIN_U16(\"graphics/weather/drought/colors_4.bin\"),\n    INCBIN_U16(\"graphics/weather/drought/colors_5.bin\"),\n}"
+    },
+    "sWeatherFuncs": {
+      "type": "struct WeatherCallbacks",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WEATHER_NONE",
+        "WEATHER_SUNNY_CLOUDS",
+        "WEATHER_SUNNY",
+        "WEATHER_RAIN",
+        "WEATHER_SNOW",
+        "WEATHER_RAIN_THUNDERSTORM",
+        "WEATHER_FOG_HORIZONTAL",
+        "WEATHER_VOLCANIC_ASH",
+        "WEATHER_SANDSTORM",
+        "WEATHER_FOG_DIAGONAL",
+        "WEATHER_UNDERWATER",
+        "WEATHER_SHADE",
+        "WEATHER_DROUGHT",
+        "WEATHER_DOWNPOUR",
+        "WEATHER_UNDERWATER_BUBBLES"
+      ],
+      "indexedValues": [
+        "{None_Init",
+        "{Clouds_InitVars",
+        "{Sunny_InitVars",
+        "{Rain_InitVars",
+        "{Snow_InitVars",
+        "{Thunderstorm_InitVars",
+        "{FogHorizontal_InitVars",
+        "{Ash_InitVars",
+        "{Sandstorm_InitVars",
+        "{FogDiagonal_InitVars",
+        "{FogHorizontal_InitVars",
+        "{Shade_InitVars",
+        "{Drought_InitVars",
+        "{Downpour_InitVars",
+        "{Bubbles_InitVars"
+      ],
+      "rawValue": "{\n    [WEATHER_NONE]               = {None_Init,              None_Main,          None_Init,             None_Finish},\n    [WEATHER_SUNNY_CLOUDS]       = {Clouds_InitVars,        Clouds_Main,        Clouds_InitAll,        Clouds_Finish},\n    [WEATHER_SUNNY]              = {Sunny_InitVars,         Sunny_Main,         Sunny_InitAll,         Sunny_Finish},\n    [WEATHER_RAIN]               = {Rain_InitVars,          Rain_Main,          Rain_InitAll,          Rain_Finish},\n    [WEATHER_SNOW]               = {Snow_InitVars,          Snow_Main,          Snow_InitAll,          Snow_Finish},\n    [WEATHER_RAIN_THUNDERSTORM]  = {Thunderstorm_InitVars,  Thunderstorm_Main,  Thunderstorm_InitAll,  Thunderstorm_Finish},\n    [WEATHER_FOG_HORIZONTAL]     = {FogHorizontal_InitVars, FogHorizontal_Main, FogHorizontal_InitAll, FogHorizontal_Finish},\n    [WEATHER_VOLCANIC_ASH]       = {Ash_InitVars,           Ash_Main,           Ash_InitAll,           Ash_Finish},\n    [WEATHER_SANDSTORM]          = {Sandstorm_InitVars,     Sandsto..."
+    }
+  }
+}

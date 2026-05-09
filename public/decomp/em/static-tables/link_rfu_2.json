@@ -1,0 +1,260 @@
+{
+  "srcFile": "src/link_rfu_2.c",
+  "count": 17,
+  "tables": {
+    "sAvailSlots": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[1] = AVAIL_SLOT1",
+        "[2] = AVAIL_SLOT2",
+        "[3] = AVAIL_SLOT3",
+        "[4] = AVAIL_SLOT4"
+      ],
+      "rawValue": "{\n    [1] = AVAIL_SLOT1,\n    [2] = AVAIL_SLOT2,\n    [3] = AVAIL_SLOT3,\n    [4] = AVAIL_SLOT4\n}"
+    },
+    "sAllBlocksReceived": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "BLOCK_MASK(0)",
+        "BLOCK_MASK(1)",
+        "BLOCK_MASK(2)",
+        "BLOCK_MASK(3)",
+        "BLOCK_MASK(4)",
+        "BLOCK_MASK(5)",
+        "BLOCK_MASK(6)",
+        "BLOCK_MASK(7)",
+        "BLOCK_MASK(8)",
+        "BLOCK_MASK(9)",
+        "BLOCK_MASK(10)",
+        "BLOCK_MASK(11)",
+        "BLOCK_MASK(12)",
+        "BLOCK_MASK(13)",
+        "BLOCK_MASK(14)",
+        "BLOCK_MASK(15)",
+        "BLOCK_MASK(16)",
+        "BLOCK_MASK(17)",
+        "BLOCK_MASK(18)",
+        "BLOCK_MASK(19)",
+        "BLOCK_MASK(20)",
+        "BLOCK_MASK(21)",
+        "BLOCK_MASK(22)",
+        "BLOCK_MASK(23)",
+        "BLOCK_MASK(24)"
+      ],
+      "rawValue": "{\n    BLOCK_MASK(0),\n    BLOCK_MASK(1),\n    BLOCK_MASK(2),\n    BLOCK_MASK(3),\n    BLOCK_MASK(4),\n    BLOCK_MASK(5),\n    BLOCK_MASK(6),\n    BLOCK_MASK(7),\n    BLOCK_MASK(8),\n    BLOCK_MASK(9),\n    BLOCK_MASK(10),\n    BLOCK_MASK(11),\n    BLOCK_MASK(12),\n    BLOCK_MASK(13),\n    BLOCK_MASK(14),\n    BLOCK_MASK(15),\n    BLOCK_MASK(16),\n    BLOCK_MASK(17),\n    BLOCK_MASK(18),\n    BLOCK_MASK(19),\n    BLOCK_MASK(20),\n    BLOCK_MASK(21),\n    BLOCK_MASK(22),\n    BLOCK_MASK(23),\n    BLOCK_MASK(24),\n}"
+    },
+    "sSlotToLinkPlayerTableId": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "0",
+        "1",
+        "1",
+        "2",
+        "2",
+        "2",
+        "2",
+        "3"
+      ],
+      "rawValue": "{\n    0, 0, 1,\n    1, 2, 2,\n    2, 2, 3\n}"
+    },
+    "sPlayerBitsToCount": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "1",
+        "1",
+        "2",
+        "1",
+        "2",
+        "2",
+        "3",
+        "1",
+        "2",
+        "2",
+        "3",
+        "2",
+        "3",
+        "3",
+        "4"
+      ],
+      "rawValue": "{\n    0,  \n    1,  \n    1,  \n    2,  \n    1,  \n    2,  \n    2,  \n    3,  \n    1,  \n    2,  \n    2,  \n    3,  \n    2,  \n    3,  \n    3,  \n    4   \n}"
+    },
+    "sPlayerBitsToNewChildIdx": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "0",
+        "1",
+        "0",
+        "2",
+        "0",
+        "1",
+        "0",
+        "3",
+        "0",
+        "1",
+        "0",
+        "2",
+        "0",
+        "1",
+        "0"
+      ],
+      "rawValue": "{\n    0,  \n    0,  \n    1,  \n    0,  \n    2,  \n    0,  \n    1,  \n    0,  \n    3,  \n    0,  \n    1,  \n    0,  \n    2,  \n    0,  \n    1,  \n    0   \n}"
+    },
+    "sBlockRequests": {
+      "type": "struct BlockRequest",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BLOCK_REQ_SIZE_NONE",
+        "BLOCK_REQ_SIZE_200",
+        "BLOCK_REQ_SIZE_100",
+        "BLOCK_REQ_SIZE_220",
+        "BLOCK_REQ_SIZE_40"
+      ],
+      "indexedValues": [
+        "{ gBlockSendBuffer",
+        "{ gBlockSendBuffer",
+        "{ gBlockSendBuffer",
+        "{ gBlockSendBuffer",
+        "{ gBlockSendBuffer"
+      ],
+      "rawValue": "{\n    [BLOCK_REQ_SIZE_NONE] = { gBlockSendBuffer, 200 },\n    [BLOCK_REQ_SIZE_200]  = { gBlockSendBuffer, 200 },\n    [BLOCK_REQ_SIZE_100]  = { gBlockSendBuffer, 100 },\n    [BLOCK_REQ_SIZE_220]  = { gBlockSendBuffer, 220 },\n    [BLOCK_REQ_SIZE_40]   = { gBlockSendBuffer,  40 }\n}"
+    },
+    "sAcceptedSerialNos": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RFU_SERIAL_GAME",
+        "RFU_SERIAL_WONDER_DISTRIBUTOR",
+        "RFU_SERIAL_UNKNOWN",
+        "RFU_SERIAL_END"
+      ],
+      "rawValue": "{\n    RFU_SERIAL_GAME,\n    RFU_SERIAL_WONDER_DISTRIBUTOR,\n    RFU_SERIAL_UNKNOWN,\n    RFU_SERIAL_END\n}"
+    },
+    "sASCII_RfuCmds": {
+      "type": "char",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "\"RFU WAIT\"",
+        "\"RFU BOOT\"",
+        "\"RFU ERROR\"",
+        "\"RFU RESET\"",
+        "\"RFU CONFIG\"",
+        "\"RFU START\"",
+        "\"RFU SC POLL\"",
+        "\"RFU SP POLL\"",
+        "\"RFU START\"",
+        "\"RFU SEND ERR\"",
+        "\"RFU CP POLL\""
+      ],
+      "rawValue": "{\n    \"RFU WAIT\",\n    \"RFU BOOT\",\n    \"RFU ERROR\",\n    \"RFU RESET\",\n    \"RFU CONFIG\",\n    \"RFU START\",\n    \"RFU SC POLL\",\n    \"RFU SP POLL\",\n    \"RFU START\",\n    \"RFU SEND ERR\",\n    \"RFU CP POLL\"\n}"
+    },
+    "sASCII_RecoverCmds": {
+      "type": "char",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "\"              \"",
+        "\"RECOVER START \"",
+        "\"DISSCONECT    \"",
+        "\"RECOVER SUUSES\"",
+        "\"RECOVER FAILED\""
+      ],
+      "rawValue": "{\n    \"              \",\n    \"RECOVER START \",\n    \"DISSCONECT    \",\n    \"RECOVER SUUSES\",\n    \"RECOVER FAILED\"\n}"
+    },
+    "sShutdownTasks": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Task_PlayerExchange",
+        "Task_PlayerExchangeUpdate",
+        "Task_PlayerExchangeChat"
+      ],
+      "rawValue": "{\n    Task_PlayerExchange,\n    Task_PlayerExchangeUpdate,\n    Task_PlayerExchangeChat\n}"
+    },
+    "sASCII_30Spaces": {
+      "type": "char",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "\"                              \""
+      ],
+      "rawValue": "{\"                              \"}"
+    },
+    "sASCII_15Spaces": {
+      "type": "char",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "\"               \""
+      ],
+      "rawValue": "{\"               \"}"
+    },
+    "sASCII_8Spaces": {
+      "type": "char",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "\"        \""
+      ],
+      "rawValue": "{\"        \"}"
+    },
+    "sASCII_Space": {
+      "type": "char",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "\" \""
+      ],
+      "rawValue": "{\" \"}"
+    },
+    "sASCII_Asterisk": {
+      "type": "char",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "\"*\""
+      ],
+      "rawValue": "{\"*\"}"
+    },
+    "sASCII_ClockCmds": {
+      "type": "char",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "\"           \"",
+        "\"CLOCK DRIFT\"",
+        "\"BUSY SEND  \"",
+        "\"CMD REJECT \"",
+        "\"CLOCK SLAVE\""
+      ],
+      "rawValue": "{\n    \"           \",\n    \"CLOCK DRIFT\",\n    \"BUSY SEND  \",\n    \"CMD REJECT \",\n    \"CLOCK SLAVE\"\n}"
+    },
+    "sASCII_ChildParentSearch": {
+      "type": "char",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "\"CHILD \"",
+        "\"PARENT\"",
+        "\"SEARCH\""
+      ],
+      "rawValue": "{\n    \"CHILD \",\n    \"PARENT\",\n    \"SEARCH\"\n}"
+    }
+  }
+}

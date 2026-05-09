@@ -49,17 +49,17 @@ const {
   PlayFanfare, PlayNewMapMusic, PlaySE, ProcessSpriteCopyRequests,
   REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
   REG_OFFSET_BG2HOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS,
-  REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_MOSAIC,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H, REG_OFFSET_WIN1V,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, RemoveMonPPBonus, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, RunTasks, RunTextPrinters,
-  ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_Stop, SetBgAttribute, SetGpuReg,
-  SetHBlankCallback, SetMainCallback2, SetMonData, SetMonMoveSlot,
-  SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback, ShowBg, ShowSelectMovePokemonSummaryScreen,
-  Sin, SpeciesToNationalPokedexNum, StopMapMusic, StringCopy,
-  StringCopy_Nickname, StringExpandPlaceholders, TASK_NONE, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE, m4aMPlayAllStop,
-  memcpy,  // 4-per-line for readability
+  REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
+  REG_OFFSET_MOSAIC, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H,
+  REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, RemoveMonPPBonus,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
+  RunTextPrinters, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_Stop, SetBgAttribute,
+  SetGpuReg, SetHBlankCallback, SetMainCallback2, SetMonData,
+  SetMonMoveSlot, SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback, ShowBg,
+  ShowSelectMovePokemonSummaryScreen, Sin, SpeciesToNationalPokedexNum, SpriteCallbackDummy,
+  StopMapMusic, StringCopy, StringCopy_Nickname, StringExpandPlaceholders,
+  TASK_NONE, TRUE, TransferPlttBuffer, UpdatePaletteFade,
+  VRAM_SIZE, m4aMPlayAllStop, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_BeginEvolutionScene(void) */

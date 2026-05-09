@@ -1,0 +1,1086 @@
+{
+  "srcFile": "src/battle_transition.c",
+  "count": 74,
+  "tables": {
+    "sTasks_Intro": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[0 ... B_TRANSITION_COUNT - 1] = &Task_Intro"
+      ],
+      "rawValue": "{\n    [0 ... B_TRANSITION_COUNT - 1] = &Task_Intro\n}"
+    },
+    "sTasks_Main": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "B_TRANSITION_BLUR",
+        "B_TRANSITION_SWIRL",
+        "B_TRANSITION_SHUFFLE",
+        "B_TRANSITION_BIG_POKEBALL",
+        "B_TRANSITION_POKEBALLS_TRAIL",
+        "B_TRANSITION_CLOCKWISE_WIPE",
+        "B_TRANSITION_RIPPLE",
+        "B_TRANSITION_WAVE",
+        "B_TRANSITION_SLICE",
+        "B_TRANSITION_WHITE_BARS_FADE",
+        "B_TRANSITION_GRID_SQUARES",
+        "B_TRANSITION_ANGLED_WIPES",
+        "B_TRANSITION_SIDNEY",
+        "B_TRANSITION_PHOEBE",
+        "B_TRANSITION_GLACIA",
+        "B_TRANSITION_DRAKE",
+        "B_TRANSITION_CHAMPION",
+        "B_TRANSITION_AQUA",
+        "B_TRANSITION_MAGMA",
+        "B_TRANSITION_REGICE",
+        "B_TRANSITION_REGISTEEL",
+        "B_TRANSITION_REGIROCK",
+        "B_TRANSITION_KYOGRE",
+        "B_TRANSITION_GROUDON",
+        "B_TRANSITION_RAYQUAZA",
+        "B_TRANSITION_SHRED_SPLIT",
+        "B_TRANSITION_BLACKHOLE",
+        "B_TRANSITION_BLACKHOLE_PULSATE",
+        "B_TRANSITION_RECTANGULAR_SPIRAL",
+        "B_TRANSITION_FRONTIER_LOGO_WIGGLE",
+        "B_TRANSITION_FRONTIER_LOGO_WAVE",
+        "B_TRANSITION_FRONTIER_SQUARES",
+        "B_TRANSITION_FRONTIER_SQUARES_SCROLL",
+        "B_TRANSITION_FRONTIER_SQUARES_SPIRAL",
+        "B_TRANSITION_FRONTIER_CIRCLES_MEET",
+        "B_TRANSITION_FRONTIER_CIRCLES_CROSS",
+        "B_TRANSITION_FRONTIER_CIRCLES_ASYMMETRIC_SPIRAL",
+        "B_TRANSITION_FRONTIER_CIRCLES_SYMMETRIC_SPIRAL",
+        "B_TRANSITION_FRONTIER_CIRCLES_MEET_IN_SEQ",
+        "B_TRANSITION_FRONTIER_CIRCLES_CROSS_IN_SEQ",
+        "B_TRANSITION_FRONTIER_CIRCLES_ASYMMETRIC_SPIRAL_IN_SEQ",
+        "B_TRANSITION_FRONTIER_CIRCLES_SYMMETRIC_SPIRAL_IN_SEQ"
+      ],
+      "indexedValues": [
+        "Task_Blur",
+        "Task_Swirl",
+        "Task_Shuffle",
+        "Task_BigPokeball",
+        "Task_PokeballsTrail",
+        "Task_ClockwiseWipe",
+        "Task_Ripple",
+        "Task_Wave",
+        "Task_Slice",
+        "Task_WhiteBarsFade",
+        "Task_GridSquares",
+        "Task_AngledWipes",
+        "Task_Sidney",
+        "Task_Phoebe",
+        "Task_Glacia",
+        "Task_Drake",
+        "Task_Champion",
+        "Task_Aqua",
+        "Task_Magma",
+        "Task_Regice",
+        "Task_Registeel",
+        "Task_Regirock",
+        "Task_Kyogre",
+        "Task_Groudon",
+        "Task_Rayquaza",
+        "Task_ShredSplit",
+        "Task_Blackhole",
+        "Task_BlackholePulsate",
+        "Task_RectangularSpiral",
+        "Task_FrontierLogoWiggle",
+        "Task_FrontierLogoWave",
+        "Task_FrontierSquares",
+        "Task_FrontierSquaresScroll",
+        "Task_FrontierSquaresSpiral",
+        "Task_FrontierCirclesMeet",
+        "Task_FrontierCirclesCross",
+        "Task_FrontierCirclesAsymmetricSpiral",
+        "Task_FrontierCirclesSymmetricSpiral",
+        "Task_FrontierCirclesMeetInSeq",
+        "Task_FrontierCirclesCrossInSeq",
+        "Task_FrontierCirclesAsymmetricSpiralInSeq",
+        "Task_FrontierCirclesSymmetricSpiralInSeq"
+      ],
+      "rawValue": "{\n    [B_TRANSITION_BLUR] = Task_Blur,\n    [B_TRANSITION_SWIRL] = Task_Swirl,\n    [B_TRANSITION_SHUFFLE] = Task_Shuffle,\n    [B_TRANSITION_BIG_POKEBALL] = Task_BigPokeball,\n    [B_TRANSITION_POKEBALLS_TRAIL] = Task_PokeballsTrail,\n    [B_TRANSITION_CLOCKWISE_WIPE] = Task_ClockwiseWipe,\n    [B_TRANSITION_RIPPLE] = Task_Ripple,\n    [B_TRANSITION_WAVE] = Task_Wave,\n    [B_TRANSITION_SLICE] = Task_Slice,\n    [B_TRANSITION_WHITE_BARS_FADE] = Task_WhiteBarsFade,\n    [B_TRANSITION_GRID_SQUARES] = Task_GridSquares,\n    [B_TRANSITION_ANGLED_WIPES] = Task_AngledWipes,\n    [B_TRANSITION_SIDNEY] = Task_Sidney,\n    [B_TRANSITION_PHOEBE] = Task_Phoebe,\n    [B_TRANSITION_GLACIA] = Task_Glacia,\n    [B_TRANSITION_DRAKE] = Task_Drake,\n    [B_TRANSITION_CHAMPION] = Task_Champion,\n    [B_TRANSITION_AQUA] = Task_Aqua,\n    [B_TRANSITION_MAGMA] = Task_Magma,\n    [B_TRANSITION_REGICE] = Task_Regice,\n    [B_TRANSITION_REGISTEEL] = Task_Registeel,\n    [B_TRANSITION_REGIROCK] = Task_Regirock,\n    [B_TRANSITION_KYOGRE] = Task_Kyogre,\n  ..."
+    },
+    "sTaskHandlers": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "&Transition_StartIntro",
+        "&Transition_WaitForIntro",
+        "&Transition_StartMain",
+        "&Transition_WaitForMain"
+      ],
+      "rawValue": "{\n    &Transition_StartIntro,\n    &Transition_WaitForIntro,\n    &Transition_StartMain,\n    &Transition_WaitForMain\n}"
+    },
+    "sBlur_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Blur_Init",
+        "Blur_Main",
+        "Blur_End"
+      ],
+      "rawValue": "{\n    Blur_Init,\n    Blur_Main,\n    Blur_End\n}"
+    },
+    "sSwirl_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Swirl_Init",
+        "Swirl_End"
+      ],
+      "rawValue": "{\n    Swirl_Init,\n    Swirl_End,\n}"
+    },
+    "sShuffle_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Shuffle_Init",
+        "Shuffle_End"
+      ],
+      "rawValue": "{\n    Shuffle_Init,\n    Shuffle_End,\n}"
+    },
+    "sAqua_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Aqua_Init",
+        "Aqua_SetGfx",
+        "PatternWeave_Blend1",
+        "PatternWeave_Blend2",
+        "PatternWeave_FinishAppear",
+        "FramesCountdown",
+        "PatternWeave_CircularMask"
+      ],
+      "rawValue": "{\n    Aqua_Init,\n    Aqua_SetGfx,\n    PatternWeave_Blend1,\n    PatternWeave_Blend2,\n    PatternWeave_FinishAppear,\n    FramesCountdown,\n    PatternWeave_CircularMask\n}"
+    },
+    "sMagma_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Magma_Init",
+        "Magma_SetGfx",
+        "PatternWeave_Blend1",
+        "PatternWeave_Blend2",
+        "PatternWeave_FinishAppear",
+        "FramesCountdown",
+        "PatternWeave_CircularMask"
+      ],
+      "rawValue": "{\n    Magma_Init,\n    Magma_SetGfx,\n    PatternWeave_Blend1,\n    PatternWeave_Blend2,\n    PatternWeave_FinishAppear,\n    FramesCountdown,\n    PatternWeave_CircularMask\n}"
+    },
+    "sBigPokeball_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "BigPokeball_Init",
+        "BigPokeball_SetGfx",
+        "PatternWeave_Blend1",
+        "PatternWeave_Blend2",
+        "PatternWeave_FinishAppear",
+        "PatternWeave_CircularMask"
+      ],
+      "rawValue": "{\n    BigPokeball_Init,\n    BigPokeball_SetGfx,\n    PatternWeave_Blend1,\n    PatternWeave_Blend2,\n    PatternWeave_FinishAppear,\n    PatternWeave_CircularMask\n}"
+    },
+    "sRegice_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Regi_Init",
+        "Regice_SetGfx",
+        "PatternWeave_Blend1",
+        "PatternWeave_Blend2",
+        "PatternWeave_FinishAppear",
+        "PatternWeave_CircularMask"
+      ],
+      "rawValue": "{\n    Regi_Init,\n    Regice_SetGfx,\n    PatternWeave_Blend1,\n    PatternWeave_Blend2,\n    PatternWeave_FinishAppear,\n    PatternWeave_CircularMask\n}"
+    },
+    "sRegisteel_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Regi_Init",
+        "Registeel_SetGfx",
+        "PatternWeave_Blend1",
+        "PatternWeave_Blend2",
+        "PatternWeave_FinishAppear",
+        "PatternWeave_CircularMask"
+      ],
+      "rawValue": "{\n    Regi_Init,\n    Registeel_SetGfx,\n    PatternWeave_Blend1,\n    PatternWeave_Blend2,\n    PatternWeave_FinishAppear,\n    PatternWeave_CircularMask\n}"
+    },
+    "sRegirock_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Regi_Init",
+        "Regirock_SetGfx",
+        "PatternWeave_Blend1",
+        "PatternWeave_Blend2",
+        "PatternWeave_FinishAppear",
+        "PatternWeave_CircularMask"
+      ],
+      "rawValue": "{\n    Regi_Init,\n    Regirock_SetGfx,\n    PatternWeave_Blend1,\n    PatternWeave_Blend2,\n    PatternWeave_FinishAppear,\n    PatternWeave_CircularMask\n}"
+    },
+    "sKyogre_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "WeatherTrio_BgFadeBlack",
+        "WeatherTrio_WaitFade",
+        "Kyogre_Init",
+        "Kyogre_PaletteFlash",
+        "Kyogre_PaletteBrighten",
+        "FramesCountdown",
+        "WeatherDuo_FadeOut",
+        "WeatherDuo_End"
+      ],
+      "rawValue": "{\n    WeatherTrio_BgFadeBlack,\n    WeatherTrio_WaitFade,\n    Kyogre_Init,\n    Kyogre_PaletteFlash,\n    Kyogre_PaletteBrighten,\n    FramesCountdown,\n    WeatherDuo_FadeOut,\n    WeatherDuo_End\n}"
+    },
+    "sPokeballsTrail_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "PokeballsTrail_Init",
+        "PokeballsTrail_Main",
+        "PokeballsTrail_End"
+      ],
+      "rawValue": "{\n    PokeballsTrail_Init,\n    PokeballsTrail_Main,\n    PokeballsTrail_End\n}"
+    },
+    "sPokeballsTrail_StartXCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-16",
+        "DISPLAY_WIDTH + 16"
+      ],
+      "rawValue": "{ -16, DISPLAY_WIDTH + 16 }"
+    },
+    "sPokeballsTrail_Delays": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "32",
+        "64",
+        "18",
+        "48"
+      ],
+      "rawValue": "{0, 32, 64, 18, 48}"
+    },
+    "sPokeballsTrail_Speeds": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "8",
+        "-8"
+      ],
+      "rawValue": "{8, -8}"
+    },
+    "sClockwiseWipe_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ClockwiseWipe_Init",
+        "ClockwiseWipe_TopRight",
+        "ClockwiseWipe_Right",
+        "ClockwiseWipe_Bottom",
+        "ClockwiseWipe_Left",
+        "ClockwiseWipe_TopLeft",
+        "ClockwiseWipe_End"
+      ],
+      "rawValue": "{\n    ClockwiseWipe_Init,\n    ClockwiseWipe_TopRight,\n    ClockwiseWipe_Right,\n    ClockwiseWipe_Bottom,\n    ClockwiseWipe_Left,\n    ClockwiseWipe_TopLeft,\n    ClockwiseWipe_End\n}"
+    },
+    "sRipple_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Ripple_Init",
+        "Ripple_Main"
+      ],
+      "rawValue": "{\n    Ripple_Init,\n    Ripple_Main\n}"
+    },
+    "sWave_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Wave_Init",
+        "Wave_Main",
+        "Wave_End"
+      ],
+      "rawValue": "{\n    Wave_Init,\n    Wave_Main,\n    Wave_End\n}"
+    },
+    "sMugshot_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Mugshot_Init",
+        "Mugshot_SetGfx",
+        "Mugshot_ShowBanner",
+        "Mugshot_StartOpponentSlide",
+        "Mugshot_WaitStartPlayerSlide",
+        "Mugshot_WaitPlayerSlide",
+        "Mugshot_GradualWhiteFade",
+        "Mugshot_InitFadeWhiteToBlack",
+        "Mugshot_FadeToBlack",
+        "Mugshot_End"
+      ],
+      "rawValue": "{\n    Mugshot_Init,\n    Mugshot_SetGfx,\n    Mugshot_ShowBanner,\n    Mugshot_StartOpponentSlide,\n    Mugshot_WaitStartPlayerSlide,\n    Mugshot_WaitPlayerSlide,\n    Mugshot_GradualWhiteFade,\n    Mugshot_InitFadeWhiteToBlack,\n    Mugshot_FadeToBlack,\n    Mugshot_End\n}"
+    },
+    "sMugshotsTrainerPicIDsTable": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MUGSHOT_SIDNEY",
+        "MUGSHOT_PHOEBE",
+        "MUGSHOT_GLACIA",
+        "MUGSHOT_DRAKE",
+        "MUGSHOT_CHAMPION"
+      ],
+      "indexedValues": [
+        "TRAINER_PIC_ELITE_FOUR_SIDNEY",
+        "TRAINER_PIC_ELITE_FOUR_PHOEBE",
+        "TRAINER_PIC_ELITE_FOUR_GLACIA",
+        "TRAINER_PIC_ELITE_FOUR_DRAKE",
+        "TRAINER_PIC_CHAMPION_WALLACE"
+      ],
+      "rawValue": "{\n    [MUGSHOT_SIDNEY]   = TRAINER_PIC_ELITE_FOUR_SIDNEY,\n    [MUGSHOT_PHOEBE]   = TRAINER_PIC_ELITE_FOUR_PHOEBE,\n    [MUGSHOT_GLACIA]   = TRAINER_PIC_ELITE_FOUR_GLACIA,\n    [MUGSHOT_DRAKE]    = TRAINER_PIC_ELITE_FOUR_DRAKE,\n    [MUGSHOT_CHAMPION] = TRAINER_PIC_CHAMPION_WALLACE,\n}"
+    },
+    "sMugshotsOpponentRotationScales": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MUGSHOT_SIDNEY",
+        "MUGSHOT_PHOEBE",
+        "MUGSHOT_GLACIA",
+        "MUGSHOT_DRAKE",
+        "MUGSHOT_CHAMPION"
+      ],
+      "indexedValues": [
+        "{0x200",
+        "{0x200",
+        "{0x1B0",
+        "{0x1A0",
+        "{0x188"
+      ],
+      "rawValue": "{\n    [MUGSHOT_SIDNEY] =   {0x200, 0x200},\n    [MUGSHOT_PHOEBE] =   {0x200, 0x200},\n    [MUGSHOT_GLACIA] =   {0x1B0, 0x1B0},\n    [MUGSHOT_DRAKE] =    {0x1A0, 0x1A0},\n    [MUGSHOT_CHAMPION] = {0x188, 0x188},\n}"
+    },
+    "sMugshotsOpponentCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MUGSHOT_SIDNEY",
+        "MUGSHOT_PHOEBE",
+        "MUGSHOT_GLACIA",
+        "MUGSHOT_DRAKE",
+        "MUGSHOT_CHAMPION"
+      ],
+      "indexedValues": [
+        "{ 0",
+        "{ 0",
+        "{-4",
+        "{ 0",
+        "{-8"
+      ],
+      "rawValue": "{\n    [MUGSHOT_SIDNEY] =   { 0,  0},\n    [MUGSHOT_PHOEBE] =   { 0,  0},\n    [MUGSHOT_GLACIA] =   {-4,  4},\n    [MUGSHOT_DRAKE] =    { 0,  5},\n    [MUGSHOT_CHAMPION] = {-8,  7},\n}"
+    },
+    "sMugshotTrainerPicFuncs": {
+      "type": "TransitionSpriteCallback",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MugshotTrainerPic_Pause",
+        "MugshotTrainerPic_Init",
+        "MugshotTrainerPic_Slide",
+        "MugshotTrainerPic_SlideSlow",
+        "MugshotTrainerPic_Pause",
+        "MugshotTrainerPic_SlideOffscreen",
+        "MugshotTrainerPic_Pause"
+      ],
+      "rawValue": "{\n    MugshotTrainerPic_Pause,\n    MugshotTrainerPic_Init,\n    MugshotTrainerPic_Slide,\n    MugshotTrainerPic_SlideSlow,\n    MugshotTrainerPic_Pause,\n    MugshotTrainerPic_SlideOffscreen,\n    MugshotTrainerPic_Pause\n}"
+    },
+    "sTrainerPicSlideSpeeds": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "12",
+        "-12"
+      ],
+      "rawValue": "{12, -12}"
+    },
+    "sTrainerPicSlideAccels": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-1",
+        "1"
+      ],
+      "rawValue": "{-1,   1}"
+    },
+    "sSlice_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Slice_Init",
+        "Slice_Main",
+        "Slice_End"
+      ],
+      "rawValue": "{\n    Slice_Init,\n    Slice_Main,\n    Slice_End\n}"
+    },
+    "sShredSplit_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ShredSplit_Init",
+        "ShredSplit_Main",
+        "ShredSplit_BrokenCheck",
+        "ShredSplit_End"
+      ],
+      "rawValue": "{\n    ShredSplit_Init,\n    ShredSplit_Main,\n    ShredSplit_BrokenCheck,\n    ShredSplit_End\n}"
+    },
+    "sShredSplit_SectionYCoords": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "39",
+        "DISPLAY_HEIGHT - 41"
+      ],
+      "rawValue": "{39, DISPLAY_HEIGHT - 41}"
+    },
+    "sShredSplit_SectionMoveDirs": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "-1"
+      ],
+      "rawValue": "{1, -1}"
+    },
+    "sBlackhole_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Blackhole_Init",
+        "Blackhole_Vibrate",
+        "Blackhole_GrowEnd"
+      ],
+      "rawValue": "{\n    Blackhole_Init,\n    Blackhole_Vibrate,\n    Blackhole_GrowEnd\n}"
+    },
+    "sBlackholePulsate_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Blackhole_Init",
+        "BlackholePulsate_Main"
+      ],
+      "rawValue": "{\n    Blackhole_Init,\n    BlackholePulsate_Main\n}"
+    },
+    "sBlackhole_Vibrations": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-6",
+        "4"
+      ],
+      "rawValue": "{-6, 4}"
+    },
+    "sRectangularSpiral_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RectangularSpiral_Init",
+        "RectangularSpiral_Main",
+        "RectangularSpiral_End"
+      ],
+      "rawValue": "{\n    RectangularSpiral_Init,\n    RectangularSpiral_Main,\n    RectangularSpiral_End\n}"
+    },
+    "sRectangularSpiral_Major_InwardRight": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_RIGHT",
+        "27",
+        "275",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_RIGHT,  27, 275, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Major_InwardLeft": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_LEFT",
+        "486",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_LEFT,  486, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Major_InwardUp": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_UP",
+        "262",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_UP,    262, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Major_InwardDown": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_DOWN",
+        "507",
+        "SPIRAL_REBOUND"
+      ],
+      "rawValue": "{MOVE_DOWN,  507, SPIRAL_REBOUND}"
+    },
+    "sRectangularSpiral_Minor_InwardRight": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_RIGHT",
+        "213",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_RIGHT, 213, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Minor_InwardLeft": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_LEFT",
+        "548",
+        "SPIRAL_REBOUND"
+      ],
+      "rawValue": "{MOVE_LEFT,  548, SPIRAL_REBOUND}"
+    },
+    "sRectangularSpiral_Minor_InwardUp": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_UP",
+        "196",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_UP,    196, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Minor_InwardDown": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_DOWN",
+        "573",
+        "309",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_DOWN,  573, 309, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Minor_OutwardRight": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_RIGHT",
+        "474",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_RIGHT, 474, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Minor_OutwardLeft": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_LEFT",
+        "295",
+        "32",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_LEFT,  295, 32, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Minor_OutwardUp": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_UP",
+        "58",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_UP,     58, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Minor_OutwardDown": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_DOWN",
+        "455",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_DOWN,  455, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Major_OutwardRight": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_RIGHT",
+        "540",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_RIGHT, 540, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Major_OutwardLeft": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_LEFT",
+        "229",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_LEFT,  229, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Major_OutwardUp": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_UP",
+        "244",
+        "28",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_UP,    244, 28, SPIRAL_END}"
+    },
+    "sRectangularSpiral_Major_OutwardDown": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_DOWN",
+        "517",
+        "SPIRAL_END"
+      ],
+      "rawValue": "{MOVE_DOWN,  517, SPIRAL_END}"
+    },
+    "sGroudon_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "WeatherTrio_BgFadeBlack",
+        "WeatherTrio_WaitFade",
+        "Groudon_Init",
+        "Groudon_PaletteFlash",
+        "Groudon_PaletteBrighten",
+        "FramesCountdown",
+        "WeatherDuo_FadeOut",
+        "WeatherDuo_End"
+      ],
+      "rawValue": "{\n    WeatherTrio_BgFadeBlack,\n    WeatherTrio_WaitFade,\n    Groudon_Init,\n    Groudon_PaletteFlash,\n    Groudon_PaletteBrighten,\n    FramesCountdown,\n    WeatherDuo_FadeOut,\n    WeatherDuo_End\n}"
+    },
+    "sRayquaza_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "WeatherTrio_BgFadeBlack",
+        "WeatherTrio_WaitFade",
+        "Rayquaza_Init",
+        "Rayquaza_SetGfx",
+        "Rayquaza_PaletteFlash",
+        "Rayquaza_FadeToBlack",
+        "Rayquaza_WaitFade",
+        "Rayquaza_SetBlack",
+        "Rayquaza_TriRing",
+        "Blackhole_Vibrate",
+        "Blackhole_GrowEnd"
+      ],
+      "rawValue": "{\n    WeatherTrio_BgFadeBlack,\n    WeatherTrio_WaitFade,\n    Rayquaza_Init,\n    Rayquaza_SetGfx,\n    Rayquaza_PaletteFlash,\n    Rayquaza_FadeToBlack,\n    Rayquaza_WaitFade,\n    Rayquaza_SetBlack,\n    Rayquaza_TriRing,\n    Blackhole_Vibrate,\n    Blackhole_GrowEnd\n}"
+    },
+    "sWhiteBarsFade_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "WhiteBarsFade_Init",
+        "WhiteBarsFade_StartBars",
+        "WhiteBarsFade_WaitBars",
+        "WhiteBarsFade_BlendToBlack",
+        "WhiteBarsFade_End"
+      ],
+      "rawValue": "{\n    WhiteBarsFade_Init,\n    WhiteBarsFade_StartBars,\n    WhiteBarsFade_WaitBars,\n    WhiteBarsFade_BlendToBlack,\n    WhiteBarsFade_End\n}"
+    },
+    "sWhiteBarsFade_StartDelays": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "20",
+        "15",
+        "40",
+        "10",
+        "25",
+        "35",
+        "5"
+      ],
+      "rawValue": "{0, 20, 15, 40, 10, 25, 35, 5}"
+    },
+    "sGridSquares_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "GridSquares_Init",
+        "GridSquares_Main",
+        "GridSquares_End"
+      ],
+      "rawValue": "{\n    GridSquares_Init,\n    GridSquares_Main,\n    GridSquares_End\n}"
+    },
+    "sAngledWipes_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AngledWipes_Init",
+        "AngledWipes_SetWipeData",
+        "AngledWipes_DoWipe",
+        "AngledWipes_TryEnd",
+        "AngledWipes_StartNext"
+      ],
+      "rawValue": "{\n    AngledWipes_Init,\n    AngledWipes_SetWipeData,\n    AngledWipes_DoWipe,\n    AngledWipes_TryEnd,\n    AngledWipes_StartNext\n}"
+    },
+    "sAngledWipes_MoveData": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{56,            0,              0,              DISPLAY_HEIGHT, 0}",
+        "{104,           DISPLAY_HEIGHT, DISPLAY_WIDTH,  88,             1}",
+        "{DISPLAY_WIDTH, 72,             56,             0,              1}",
+        "{0,             32,             144,            DISPLAY_HEIGHT, 0}",
+        "{144,           DISPLAY_HEIGHT, 184,            0,              1}",
+        "{56,            0,              168,            DISPLAY_HEIGHT, 0}",
+        "{168,           DISPLAY_HEIGHT, 48,             0,              1}"
+      ],
+      "rawValue": "{\n \n    {56,            0,              0,              DISPLAY_HEIGHT, 0},\n    {104,           DISPLAY_HEIGHT, DISPLAY_WIDTH,  88,             1},\n    {DISPLAY_WIDTH, 72,             56,             0,              1},\n    {0,             32,             144,            DISPLAY_HEIGHT, 0},\n    {144,           DISPLAY_HEIGHT, 184,            0,              1},\n    {56,            0,              168,            DISPLAY_HEIGHT, 0},\n    {168,           DISPLAY_HEIGHT, 48,             0,              1},\n}"
+    },
+    "sAngledWipes_EndDelays": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "8",
+        "4",
+        "2",
+        "1",
+        "1",
+        "1",
+        "0"
+      ],
+      "rawValue": "{8, 4, 2, 1, 1, 1, 0}"
+    },
+    "sTransitionIntroFuncs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TransitionIntro_FadeToGray",
+        "TransitionIntro_FadeFromGray"
+      ],
+      "rawValue": "{\n    TransitionIntro_FadeToGray,\n    TransitionIntro_FadeFromGray\n}"
+    },
+    "sSpriteImage_Pokeball": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sPokeball_Gfx, sizeof(sPokeball_Gfx)}"
+      ],
+      "rawValue": "{\n    {sPokeball_Gfx, sizeof(sPokeball_Gfx)}\n}"
+    },
+    "sSpriteAnim_Pokeball": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAffineAnim_Pokeball1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, -4, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, -4, 1),\n    AFFINEANIMCMD_JUMP(0)\n}"
+    },
+    "sSpriteAffineAnim_Pokeball2": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, 4, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, 4, 1),\n    AFFINEANIMCMD_JUMP(0)\n}"
+    },
+    "sImageTable_UnusedBrendan": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sUnusedBrendan_Gfx, sizeof(sUnusedBrendan_Gfx)}"
+      ],
+      "rawValue": "{\n    {sUnusedBrendan_Gfx, sizeof(sUnusedBrendan_Gfx)}\n}"
+    },
+    "sImageTable_UnusedLass": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sUnusedLass_Gfx, sizeof(sUnusedLass_Gfx)}"
+      ],
+      "rawValue": "{\n    {sUnusedLass_Gfx, sizeof(sUnusedLass_Gfx)}\n}"
+    },
+    "sSpriteAnim_UnusedBrendanLass": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sFrontierLogoWiggle_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "FrontierLogoWiggle_Init",
+        "FrontierLogoWiggle_SetGfx",
+        "PatternWeave_Blend1",
+        "PatternWeave_Blend2",
+        "PatternWeave_FinishAppear",
+        "PatternWeave_CircularMask"
+      ],
+      "rawValue": "{\n    FrontierLogoWiggle_Init,\n    FrontierLogoWiggle_SetGfx,\n    PatternWeave_Blend1,\n    PatternWeave_Blend2,\n    PatternWeave_FinishAppear,\n    PatternWeave_CircularMask\n}"
+    },
+    "sFrontierLogoWave_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "FrontierLogoWave_Init",
+        "FrontierLogoWave_SetGfx",
+        "FrontierLogoWave_InitScanline",
+        "FrontierLogoWave_Main"
+      ],
+      "rawValue": "{\n    FrontierLogoWave_Init,\n    FrontierLogoWave_SetGfx,\n    FrontierLogoWave_InitScanline,\n    FrontierLogoWave_Main\n}"
+    },
+    "sFrontierSquares_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "FrontierSquares_Init",
+        "FrontierSquares_Draw",
+        "FrontierSquares_Shrink",
+        "FrontierSquares_End"
+      ],
+      "rawValue": "{\n    FrontierSquares_Init,\n    FrontierSquares_Draw,\n    FrontierSquares_Shrink,\n    FrontierSquares_End\n}"
+    },
+    "sFrontierSquaresSpiral_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "FrontierSquaresSpiral_Init",
+        "FrontierSquaresSpiral_Outward",
+        "FrontierSquaresSpiral_SetBlack",
+        "FrontierSquaresSpiral_Inward",
+        "FrontierSquares_End"
+      ],
+      "rawValue": "{\n    FrontierSquaresSpiral_Init,\n    FrontierSquaresSpiral_Outward,\n    FrontierSquaresSpiral_SetBlack,\n    FrontierSquaresSpiral_Inward,\n    FrontierSquares_End\n}"
+    },
+    "sFrontierSquaresScroll_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "FrontierSquaresScroll_Init",
+        "FrontierSquaresScroll_Draw",
+        "FrontierSquaresScroll_SetBlack",
+        "FrontierSquaresScroll_Erase",
+        "FrontierSquaresScroll_End"
+      ],
+      "rawValue": "{\n    FrontierSquaresScroll_Init,\n    FrontierSquaresScroll_Draw,\n    FrontierSquaresScroll_SetBlack,\n    FrontierSquaresScroll_Erase,\n    FrontierSquaresScroll_End\n}"
+    },
+    "sFrontierSquaresSpiral_Positions": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "27",
+        "20",
+        "13",
+        "6",
+        "5",
+        "4",
+        "3",
+        "2",
+        "1",
+        "0",
+        "7",
+        "14",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "19",
+        "12",
+        "11",
+        "10",
+        "9",
+        "8",
+        "15",
+        "16",
+        "17",
+        "18"
+      ],
+      "rawValue": "{\n    28, 29, 30, 31, 32, 33, 34,\n    27, 20, 13,  6,  5,  4,  3,\n     2,  1,  0,  7, 14, 21, 22,\n    23, 24, 25, 26, 19, 12, 11,\n    10,  9,  8, 15, 16, 17, 18\n}"
+    },
+    "sFrontierSquaresScroll_Positions": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "16",
+        "41",
+        "22",
+        "44",
+        "2",
+        "43",
+        "21",
+        "46",
+        "27",
+        "9",
+        "48",
+        "38",
+        "5",
+        "57",
+        "59",
+        "12",
+        "63",
+        "35",
+        "28",
+        "10",
+        "53",
+        "7",
+        "49",
+        "39",
+        "23",
+        "55",
+        "1",
+        "62",
+        "17",
+        "61",
+        "30",
+        "6",
+        "34",
+        "15",
+        "51",
+        "32",
+        "58",
+        "13",
+        "45",
+        "37",
+        "52",
+        "11",
+        "24",
+        "60",
+        "19",
+        "56",
+        "33",
+        "29",
+        "50",
+        "40",
+        "54",
+        "14",
+        "3",
+        "47",
+        "20",
+        "18",
+        "25",
+        "4",
+        "36",
+        "26",
+        "42",
+        "31",
+        "8"
+      ],
+      "rawValue": "{\n     0, 16, 41, 22, 44,  2, 43, 21,\n    46, 27,  9, 48, 38,  5, 57, 59,\n    12, 63, 35, 28, 10, 53,  7, 49,\n    39, 23, 55,  1, 62, 17, 61, 30,\n     6, 34, 15, 51, 32, 58, 13, 45,\n    37, 52, 11, 24, 60, 19, 56, 33,\n    29, 50, 40, 54, 14,  3, 47, 20,\n    18, 25,  4, 36, 26, 42, 31,  8\n}"
+    }
+  }
+}

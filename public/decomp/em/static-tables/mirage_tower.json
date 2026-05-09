@@ -1,0 +1,88 @@
+{
+  "srcFile": "src/mirage_tower.c",
+  "count": 6,
+  "tables": {
+    "sCeilingCrumblePositions": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  0,  10,  65}",
+        "{ 17,   3,  50}",
+        "{-12,   0,  75}",
+        "{ 10,  15,  90}",
+        "{  7,   8,  65}",
+        "{-18,   5,  75}",
+        "{ 22, -10,  55}",
+        "{-24,  -4,  65}"
+      ],
+      "rawValue": "{\n    {  0,  10,  65},\n    { 17,   3,  50},\n    {-12,   0,  75},\n    { 10,  15,  90},\n    {  7,   8,  65},\n    {-18,   5,  75},\n    { 22, -10,  55},\n    {-24,  -4,  65},\n}"
+    },
+    "sCeilingCrumbleSpriteSheets": {
+      "type": "struct SpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sMirageTowerCrumbles_Gfx, sizeof(sMirageTowerCrumbles_Gfx), TAG_CEILING_CRUMBLE}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sMirageTowerCrumbles_Gfx, sizeof(sMirageTowerCrumbles_Gfx), TAG_CEILING_CRUMBLE},\n    {}\n}"
+    },
+    "sInvisibleMirageTowerMetatiles": {
+      "type": "struct MetatileCoords",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{18, 53, METATILE_Mauville_DeepSand_Center}",
+        "{19, 53, METATILE_Mauville_DeepSand_Center}",
+        "{20, 53, METATILE_Mauville_DeepSand_Center}",
+        "{18, 54, METATILE_Mauville_DeepSand_Center}",
+        "{19, 54, METATILE_Mauville_DeepSand_Center}",
+        "{20, 54, METATILE_Mauville_DeepSand_Center}",
+        "{18, 55, METATILE_Mauville_DeepSand_Center}",
+        "{19, 55, METATILE_Mauville_DeepSand_Center}",
+        "{20, 55, METATILE_Mauville_DeepSand_Center}",
+        "{18, 56, METATILE_Mauville_DeepSand_Center}",
+        "{19, 56, METATILE_Mauville_DeepSand_Center}",
+        "{20, 56, METATILE_Mauville_DeepSand_Center}",
+        "{18, 57, METATILE_Mauville_DeepSand_BottomMid}",
+        "{19, 57, METATILE_Mauville_DeepSand_BottomMid}",
+        "{20, 57, METATILE_Mauville_DeepSand_BottomMid}",
+        "{18, 58, METATILE_General_SandPit_Center}",
+        "{19, 58, METATILE_General_SandPit_Center}",
+        "{20, 58, METATILE_General_SandPit_Center}"
+      ],
+      "rawValue": "{\n    {18, 53, METATILE_Mauville_DeepSand_Center},\n    {19, 53, METATILE_Mauville_DeepSand_Center},\n    {20, 53, METATILE_Mauville_DeepSand_Center},\n    {18, 54, METATILE_Mauville_DeepSand_Center},\n    {19, 54, METATILE_Mauville_DeepSand_Center},\n    {20, 54, METATILE_Mauville_DeepSand_Center},\n    {18, 55, METATILE_Mauville_DeepSand_Center},\n    {19, 55, METATILE_Mauville_DeepSand_Center},\n    {20, 55, METATILE_Mauville_DeepSand_Center},\n    {18, 56, METATILE_Mauville_DeepSand_Center},\n    {19, 56, METATILE_Mauville_DeepSand_Center},\n    {20, 56, METATILE_Mauville_DeepSand_Center},\n    {18, 57, METATILE_Mauville_DeepSand_BottomMid},\n    {19, 57, METATILE_Mauville_DeepSand_BottomMid},\n    {20, 57, METATILE_Mauville_DeepSand_BottomMid},\n    {18, 58, METATILE_General_SandPit_Center},\n    {19, 58, METATILE_General_SandPit_Center},\n    {20, 58, METATILE_General_SandPit_Center},\n}"
+    },
+    "sAnim_FallingFossil": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_CeilingCrumbleSmall": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 12)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 12),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_CeilingCrumbleLarge": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 12)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 12),\n    ANIMCMD_JUMP(0),\n}"
+    }
+  }
+}

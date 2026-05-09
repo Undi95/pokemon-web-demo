@@ -26,8 +26,9 @@ const {
   DestroySpriteAndFreeResources, FALSE, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
   FreeSpriteTilesByTag, ITEM_TO_BERRY, InitSpriteAffineAnim, IsEnigmaBerryValid,
   LZDecompressWram, LoadCompressedSpritePalette, LoadSpritePalette, LoadSpriteSheet,
-  ST_OAM_AFFINE_NORMAL, SetSwapLineSpritesInvisibility, StartSpriteAffineAnim, StartSpriteAnim,
-  TRUE, UpdateSwapLineSpritesPos, memcpy, memset,  // 4-per-line for readability
+  ST_OAM_AFFINE_NORMAL, SetSwapLineSpritesInvisibility, SpriteCallbackDummy, StartSpriteAffineAnim,
+  StartSpriteAnim, TRUE, UpdateSwapLineSpritesPos, memcpy,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RemoveBagSprite(u8 id) */

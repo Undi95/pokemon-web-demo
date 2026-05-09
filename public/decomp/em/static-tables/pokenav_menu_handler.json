@@ -1,0 +1,46 @@
+{
+  "srcFile": "src/pokenav_menu_handler.c",
+  "count": 2,
+  "tables": {
+    "sLastCursorPositions": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "POKENAV_MENU_TYPE_DEFAULT",
+        "POKENAV_MENU_TYPE_UNLOCK_MC",
+        "POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS",
+        "POKENAV_MENU_TYPE_CONDITION",
+        "POKENAV_MENU_TYPE_CONDITION_SEARCH"
+      ],
+      "indexedValues": [
+        "2",
+        "3",
+        "4",
+        "2",
+        "5"
+      ],
+      "rawValue": "{\n    [POKENAV_MENU_TYPE_DEFAULT]           = 2,\n    [POKENAV_MENU_TYPE_UNLOCK_MC]         = 3,\n    [POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS] = 4,\n    [POKENAV_MENU_TYPE_CONDITION]         = 2,\n    [POKENAV_MENU_TYPE_CONDITION_SEARCH]  = 5\n}"
+    },
+    "sMenuItems": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "POKENAV_MENU_TYPE_DEFAULT",
+        "POKENAV_MENU_TYPE_UNLOCK_MC",
+        "POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS",
+        "POKENAV_MENU_TYPE_CONDITION",
+        "POKENAV_MENU_TYPE_CONDITION_SEARCH"
+      ],
+      "indexedValues": [
+        "{\n        POKENAV_MENUITEM_MAP",
+        "{\n        POKENAV_MENUITEM_MAP",
+        "{\n        POKENAV_MENUITEM_MAP",
+        "{\n        POKENAV_MENUITEM_CONDITION_PARTY",
+        "{\n        POKENAV_MENUITEM_CONDITION_SEARCH_COOL"
+      ],
+      "rawValue": "{\n    [POKENAV_MENU_TYPE_DEFAULT] =\n    {\n        POKENAV_MENUITEM_MAP,\n        POKENAV_MENUITEM_CONDITION,\n        [2 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF\n    },\n    [POKENAV_MENU_TYPE_UNLOCK_MC] =\n    {\n        POKENAV_MENUITEM_MAP,\n        POKENAV_MENUITEM_CONDITION,\n        POKENAV_MENUITEM_MATCH_CALL,\n        [3 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF\n    },\n    [POKENAV_MENU_TYPE_UNLOCK_MC_RIBBONS] =\n    {\n        POKENAV_MENUITEM_MAP,\n        POKENAV_MENUITEM_CONDITION,\n        POKENAV_MENUITEM_MATCH_CALL,\n        POKENAV_MENUITEM_RIBBONS,\n        [4 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF\n    },\n    [POKENAV_MENU_TYPE_CONDITION] =\n    {\n        POKENAV_MENUITEM_CONDITION_PARTY,\n        POKENAV_MENUITEM_CONDITION_SEARCH,\n        POKENAV_MENUITEM_CONDITION_CANCEL,\n        [3 ... MAX_POKENAV_MENUITEMS - 1] = POKENAV_MENUITEM_SWITCH_OFF\n    },\n    [POKENAV_MENU_TYPE_CONDITION_SEARCH] =\n    {\n        POKENAV_MENUITEM_CONDITION_SEARCH_COOL,\n ..."
+    }
+  }
+}

@@ -40,13 +40,13 @@ const {
   PLTT_SIZEOF, PLTT_SIZE_4BPP, PlaySE, PokenavCopyPalette,
   PokenavFadeScreen, Pokenav_AllocAndLoadPalettes, PrintHelpBarText, ProcessSpriteCopyRequests,
   PutWindowTilemap, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
-  REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, RemoveWindow,
-  ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_OFF, ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL,
-  ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams, ScanlineEffect_Stop, SetBgTilemapBuffer,
-  SetGpuReg, SetGpuRegBits, SetPokenavVBlankCallback, SetVBlankCallback_,
-  SetWordTaskArg, ShowBg, ShowLeftHeaderGfx, SlideMenuHeaderUp,
-  StartSpriteAffineAnim, TRUE, TransferPlttBuffer, WaitForHelpBar,
-  gSineTable,  // 4-per-line for readability
+  REG_OFFSET_DISPCNT, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  RemoveWindow, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_OFF, ST_OAM_OBJ_BLEND,
+  ST_OAM_OBJ_NORMAL, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams, ScanlineEffect_Stop,
+  SetBgTilemapBuffer, SetGpuReg, SetGpuRegBits, SetPokenavVBlankCallback,
+  SetVBlankCallback_, SetWordTaskArg, ShowBg, ShowLeftHeaderGfx,
+  SlideMenuHeaderUp, SpriteCallbackDummy, StartSpriteAffineAnim, TRUE,
+  TransferPlttBuffer, WaitForHelpBar, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static bool32 AreAnyTrainerRematchesNearby(void) */

@@ -1,0 +1,623 @@
+{
+  "srcFile": "src/rayquaza_scene.c",
+  "count": 54,
+  "tables": {
+    "sTasksForAnimations": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "RAY_ANIM_DUO_FIGHT_PRE",
+        "RAY_ANIM_DUO_FIGHT",
+        "RAY_ANIM_TAKES_FLIGHT",
+        "RAY_ANIM_DESCENDS",
+        "RAY_ANIM_CHARGES",
+        "RAY_ANIM_CHASES_AWAY",
+        "RAY_ANIM_END"
+      ],
+      "indexedValues": [
+        "Task_DuoFightAnim",
+        "Task_DuoFightAnim",
+        "Task_RayTakesFlightAnim",
+        "Task_RayDescendsAnim",
+        "Task_RayChargesAnim",
+        "Task_RayChasesAwayAnim",
+        "Task_EndAfterFadeScreen"
+      ],
+      "rawValue": "{\n    [RAY_ANIM_DUO_FIGHT_PRE] = Task_DuoFightAnim,\n    [RAY_ANIM_DUO_FIGHT]     = Task_DuoFightAnim,\n    [RAY_ANIM_TAKES_FLIGHT]  = Task_RayTakesFlightAnim,\n    [RAY_ANIM_DESCENDS]      = Task_RayDescendsAnim,\n    [RAY_ANIM_CHARGES]       = Task_RayChargesAnim,\n    [RAY_ANIM_CHASES_AWAY]   = Task_RayChasesAwayAnim,\n    [RAY_ANIM_END]           = Task_EndAfterFadeScreen,\n}"
+    },
+    "sAnim_DuoFightPre_Groudon_Head": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_FRAME(64, 30)",
+        "ANIMCMD_FRAME(128, 30)",
+        "ANIMCMD_FRAME(64, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_FRAME(64, 30),\n    ANIMCMD_FRAME(128, 30),\n    ANIMCMD_FRAME(64, 30),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DuoFightPre_Groudon_Body": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(192, 30)",
+        "ANIMCMD_FRAME(256, 30)",
+        "ANIMCMD_FRAME(320, 30)",
+        "ANIMCMD_FRAME(256, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(192, 30),\n    ANIMCMD_FRAME(256, 30),\n    ANIMCMD_FRAME(320, 30),\n    ANIMCMD_FRAME(256, 30),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DuoFightPre_GroudonShoulderKyogreDorsalFin": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFightPre_GroudonClaw": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFightPre_Kyogre_TopLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFightPre_Kyogre_TopRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFightPre_Kyogre_FaceLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFightPre_Kyogre_FaceRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFightPre_Kyogre_ChinLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFightPre_Kyogre_ChinRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(40, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(40, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFightPre_Kyogre_LeftPectoralFin": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 36)",
+        "ANIMCMD_FRAME(64, 36)",
+        "ANIMCMD_FRAME(80, 36)",
+        "ANIMCMD_FRAME(64, 36)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 36),\n    ANIMCMD_FRAME(64, 36),\n    ANIMCMD_FRAME(80, 36),\n    ANIMCMD_FRAME(64, 36),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DuoFightPre_Kyogre_LeftShoulder": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(56, 36)",
+        "ANIMCMD_FRAME(72, 36)",
+        "ANIMCMD_FRAME(88, 36)",
+        "ANIMCMD_FRAME(72, 36)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(56, 36),\n    ANIMCMD_FRAME(72, 36),\n    ANIMCMD_FRAME(88, 36),\n    ANIMCMD_FRAME(72, 36),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DuoFightPre_Kyogre_RightShoulder": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(96, 36)",
+        "ANIMCMD_FRAME(104, 36)",
+        "ANIMCMD_FRAME(112, 36)",
+        "ANIMCMD_FRAME(104, 36)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(96, 36),\n    ANIMCMD_FRAME(104, 36),\n    ANIMCMD_FRAME(112, 36),\n    ANIMCMD_FRAME(104, 36),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DuoFightPre_KyogrePectoralFin": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 36)",
+        "ANIMCMD_FRAME(2, 36)",
+        "ANIMCMD_FRAME(4, 36)",
+        "ANIMCMD_FRAME(2, 36)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 36),\n    ANIMCMD_FRAME(2, 36),\n    ANIMCMD_FRAME(4, 36),\n    ANIMCMD_FRAME(2, 36),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sBgTemplates_DuoFight": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n}"
+    },
+    "sAnim_DuoFight_Groudon_Head": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 20)",
+        "ANIMCMD_FRAME(64, 20)",
+        "ANIMCMD_FRAME(128, 20)",
+        "ANIMCMD_FRAME(64, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 20),\n    ANIMCMD_FRAME(64, 20),\n    ANIMCMD_FRAME(128, 20),\n    ANIMCMD_FRAME(64, 20),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DuoFight_Groudon_Body": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(192, 20)",
+        "ANIMCMD_FRAME(256, 20)",
+        "ANIMCMD_FRAME(320, 20)",
+        "ANIMCMD_FRAME(256, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(192, 20),\n    ANIMCMD_FRAME(256, 20),\n    ANIMCMD_FRAME(320, 20),\n    ANIMCMD_FRAME(256, 20),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DuoFight_GroudonShoulderKyogreDorsalFin": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFight_GroudonClaw": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFight_Kyogre_TopLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFight_Kyogre_TopRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFight_Kyogre_FaceLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFight_Kyogre_FaceRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFight_Kyogre_ChinLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFight_Kyogre_ChinRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(40, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(40, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DuoFight_Kyogre_LeftPectoralFin": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 24)",
+        "ANIMCMD_FRAME(64, 24)",
+        "ANIMCMD_FRAME(80, 24)",
+        "ANIMCMD_FRAME(64, 24)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 24),\n    ANIMCMD_FRAME(64, 24),\n    ANIMCMD_FRAME(80, 24),\n    ANIMCMD_FRAME(64, 24),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DuoFight_Kyogre_LeftShoulder": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(56, 24)",
+        "ANIMCMD_FRAME(72, 24)",
+        "ANIMCMD_FRAME(88, 24)",
+        "ANIMCMD_FRAME(72, 24)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(56, 24),\n    ANIMCMD_FRAME(72, 24),\n    ANIMCMD_FRAME(88, 24),\n    ANIMCMD_FRAME(72, 24),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DuoFight_Kyogre_RightShoulder": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(96, 24)",
+        "ANIMCMD_FRAME(104, 24)",
+        "ANIMCMD_FRAME(112, 24)",
+        "ANIMCMD_FRAME(104, 24)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(96, 24),\n    ANIMCMD_FRAME(104, 24),\n    ANIMCMD_FRAME(112, 24),\n    ANIMCMD_FRAME(104, 24),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DuoFight_KyogrePectoralFin": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 24)",
+        "ANIMCMD_FRAME(2, 24)",
+        "ANIMCMD_FRAME(4, 24)",
+        "ANIMCMD_FRAME(2, 24)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 24),\n    ANIMCMD_FRAME(2, 24),\n    ANIMCMD_FRAME(4, 24),\n    ANIMCMD_FRAME(2, 24),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sBgTemplates_TakesFlight": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 29,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 29,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }\n}"
+    },
+    "sAnim_TakesFlight_Smoke": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAffineAnim_TakesFlight_Smoke": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-64, -64, 0, 1)",
+        "AFFINEANIMCMD_FRAME(32, 32, 0, 14)",
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-64, -64, 0, 1),\n    AFFINEANIMCMD_FRAME(32, 32, 0, 14),\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_JUMP(0)\n}"
+    },
+    "sTakesFlight_SmokeCoords": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{-1,  5}",
+        "{-3, -4}",
+        "{ 5, -3}",
+        "{-7,  2}",
+        "{-9, -1}",
+        "{ 1, -5}",
+        "{ 3,  4}",
+        "{-5,  3}",
+        "{ 7, -2}",
+        "{ 9,  1}"
+      ],
+      "rawValue": "{\n    {-1,  5},\n    {-3, -4},\n    { 5, -3},\n    {-7,  2},\n    {-9, -1},\n    { 1, -5},\n    { 3,  4},\n    {-5,  3},\n    { 7, -2},\n    { 9,  1}\n}"
+    },
+    "sBgTemplates_Descends": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sAnim_Descends_Rayquaza": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 32)",
+        "ANIMCMD_FRAME(64, 32)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 32),\n    ANIMCMD_FRAME(64, 32),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_Descends_RayquazaTail": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 32)",
+        "ANIMCMD_FRAME(8, 32)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 32),\n    ANIMCMD_FRAME(8, 32),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sBgTemplates_Charges": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sAnim_ChasesAway_Groudon_Still": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_Groudon_Moving": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 48)",
+        "ANIMCMD_FRAME(64, 32)",
+        "ANIMCMD_FRAME(0, 48)",
+        "ANIMCMD_FRAME(128, 32)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 48),\n    ANIMCMD_FRAME(64, 32),\n    ANIMCMD_FRAME(0, 48),\n    ANIMCMD_FRAME(128, 32),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_ChasesAway_GroudonTail": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_Kyogre_Front": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_Kyogre_Back": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_Kyogre_Tail": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_Rayquaza_FlyingDown": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_Rayquaza_Arriving": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_Rayquaza_Floating": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(128, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(128, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_Rayquaza_Shouting": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(192, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(192, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_RayquazaTail_FlyingDown": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_RayquazaTail_Arriving": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_RayquazaTail_Floating": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_RayquazaTail_Shouting": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChasesAway_KyogreSplash": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_FRAME(8, 8)",
+        "ANIMCMD_FRAME(12, 8)",
+        "ANIMCMD_FRAME(16, 8)",
+        "ANIMCMD_FRAME(20, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_FRAME(8, 8),\n    ANIMCMD_FRAME(12, 8),\n    ANIMCMD_FRAME(16, 8),\n    ANIMCMD_FRAME(20, 8),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sBgTemplates_ChasesAway": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }\n}"
+    }
+  }
+}

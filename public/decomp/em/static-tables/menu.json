@@ -1,0 +1,67 @@
+{
+  "srcFile": "src/menu.c",
+  "count": 4,
+  "tables": {
+    "sTextSpeedFrameDelays": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "OPTIONS_TEXT_SPEED_SLOW",
+        "OPTIONS_TEXT_SPEED_MID",
+        "OPTIONS_TEXT_SPEED_FAST"
+      ],
+      "indexedValues": [
+        "8",
+        "4",
+        "1"
+      ],
+      "rawValue": "{\n    [OPTIONS_TEXT_SPEED_SLOW] = 8,\n    [OPTIONS_TEXT_SPEED_MID]  = 4,\n    [OPTIONS_TEXT_SPEED_FAST] = 1\n}"
+    },
+    "sStandardTextBox_WindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x194\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x194\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_DYNAMIC_COLOR_6",
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_DARK_GRAY"
+      ],
+      "rawValue": "{ TEXT_DYNAMIC_COLOR_6, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY }"
+    },
+    "sMenuInfoIcons": {
+      "type": "struct MenuInfoIcon",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MENU_INFO_ICON_TYPE",
+        "MENU_INFO_ICON_POWER",
+        "MENU_INFO_ICON_ACCURACY",
+        "MENU_INFO_ICON_PP",
+        "MENU_INFO_ICON_EFFECT",
+        "MENU_INFO_ICON_BALL_RED",
+        "MENU_INFO_ICON_BALL_BLUE"
+      ],
+      "indexedValues": [
+        "{ 42",
+        "{ 42",
+        "{ 42",
+        "{ 42",
+        "{ 42",
+        "{  8",
+        "{  8"
+      ],
+      "rawValue": "{    \n    { 12, 12, 0x00 },   \n    [TYPE_NORMAL + 1]   = { 32, 12, 0x20 },\n    [TYPE_FIGHTING + 1] = { 32, 12, 0x64 },\n    [TYPE_FLYING + 1]   = { 32, 12, 0x60 },\n    [TYPE_POISON + 1]   = { 32, 12, 0x80 },\n    [TYPE_GROUND + 1]   = { 32, 12, 0x48 },\n    [TYPE_ROCK + 1]     = { 32, 12, 0x44 },\n    [TYPE_BUG + 1]      = { 32, 12, 0x6C },\n    [TYPE_GHOST + 1]    = { 32, 12, 0x68 },\n    [TYPE_STEEL + 1]    = { 32, 12, 0x88 },\n    [TYPE_MYSTERY + 1]  = { 32, 12, 0xA4 },\n    [TYPE_FIRE + 1]     = { 32, 12, 0x24 },\n    [TYPE_WATER + 1]    = { 32, 12, 0x28 },\n    [TYPE_GRASS + 1]    = { 32, 12, 0x2C },\n    [TYPE_ELECTRIC + 1] = { 32, 12, 0x40 },\n    [TYPE_PSYCHIC + 1]  = { 32, 12, 0x84 },\n    [TYPE_ICE + 1]      = { 32, 12, 0x4C },\n    [TYPE_DRAGON + 1]   = { 32, 12, 0xA0 },\n    [TYPE_DARK + 1]     = { 32, 12, 0x8C },\n    [MENU_INFO_ICON_TYPE]      = { 42, 12, 0xA8 },\n    [MENU_INFO_ICON_POWER]     = { 42, 12, 0xC0 },\n    [MENU_INFO_ICON_ACCURACY]  = { 42, 12, 0xC8 },\n    [MENU_INFO_ICON_PP]        = { 42, 12, 0xE0 ..."
+    }
+  }
+}

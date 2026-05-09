@@ -1,0 +1,56 @@
+{
+  "srcFile": "src/berry_fix_program.c",
+  "count": 4,
+  "tables": {
+    "sBerryFixBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }\n}"
+    },
+    "sBerryFixWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_TITLE",
+        "WIN_MSG_BODY",
+        "WIN_GAME_NAMES",
+        "WIN_TURN_OFF_TITLE"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 4,\n        .width = 26,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n    [WIN_MSG_BODY] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 11,\n        .width = 28,\n        .height = 8,\n        .paletteNum = 15,\n        .baseBlock = 53\n    },\n    [WIN_GAME_NAMES] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 8,\n        .width = 30,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 277\n    },\n    [WIN_TURN_OFF_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 8,\n        .tilemapTop = 0,\n        .width = 14,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 337\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sBerryProgramTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_DYNAMIC_COLOR_1",
+        "TEXT_DYNAMIC_COLOR_2",
+        "TEXT_DYNAMIC_COLOR_3"
+      ],
+      "rawValue": "{TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_2, TEXT_DYNAMIC_COLOR_3}"
+    },
+    "sGameTitleTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_DYNAMIC_COLOR_1",
+        "TEXT_DYNAMIC_COLOR_4"
+      ],
+      "rawValue": "{ TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_4}"
+    }
+  }
+}

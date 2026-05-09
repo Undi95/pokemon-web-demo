@@ -1,0 +1,206 @@
+{
+  "srcFile": "src/battle_anim_water.c",
+  "count": 18,
+  "tables": {
+    "sAnim_RainDrop": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_FRAME(8, 2)",
+        "ANIMCMD_FRAME(16, 2)",
+        "ANIMCMD_FRAME(24, 6)",
+        "ANIMCMD_FRAME(32, 2)",
+        "ANIMCMD_FRAME(40, 2)",
+        "ANIMCMD_FRAME(48, 2)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_FRAME(8, 2),\n    ANIMCMD_FRAME(16, 2),\n    ANIMCMD_FRAME(24, 6),\n    ANIMCMD_FRAME(32, 2),\n    ANIMCMD_FRAME(40, 2),\n    ANIMCMD_FRAME(48, 2),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_WaterBubbleProjectile": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xFFFB, 0xFFFB, 0, 10)",
+        "AFFINEANIMCMD_FRAME(0x5, 0x5, 0, 10)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xFFFB, 0xFFFB, 0, 10),\n    AFFINEANIMCMD_FRAME(0x5, 0x5, 0, 10),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_WaterBubbleProjectile": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_AuroraBeamRing_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_AuroraBeamRing_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_AuroraBeamRing": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(0x60, 0x60, 0, 1)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1),\n    AFFINEANIMCMD_FRAME(0x60, 0x60, 0, 1),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_WaterMudOrb": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_FRAME(8, 1)",
+        "ANIMCMD_FRAME(12, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_FRAME(8, 1),\n    ANIMCMD_FRAME(12, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_FlamethrowerFlame": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 2)",
+        "ANIMCMD_FRAME(32, 2)",
+        "ANIMCMD_FRAME(48, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 2),\n    ANIMCMD_FRAME(32, 2),\n    ANIMCMD_FRAME(48, 2),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_HydroCannonCharge": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x3, 0x3, 10, 50)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 10)",
+        "AFFINEANIMCMD_FRAME(0xFFEC, 0xFFEC, -10, 20)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x3, 0x3, 10, 50),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 10),\n    AFFINEANIMCMD_FRAME(0xFFEC, 0xFFEC, -10, 20),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_HydroCannonBeam": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x150, 0x150, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x150, 0x150, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_WaterBubble": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_WaterGunDroplet": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_WaterPulseBubble_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_WaterPulseBubble_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(9, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(9, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_WeatherBallWaterDown": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_WaterPulseRingBubble_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFF6, 0xFFF6, 0, 15)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFF6, 0xFFF6, 0, 15),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_WaterPulseRingBubble_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xE0, 0xE0, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 15)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xE0, 0xE0, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 15),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_WeatherBallWaterDown": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x150, 0x150, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 15)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x150, 0x150, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 15),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

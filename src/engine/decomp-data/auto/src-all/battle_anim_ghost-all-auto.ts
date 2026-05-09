@@ -26,18 +26,18 @@ const {
   BLDCNT_EFFECT_BLEND, BLDCNT_EFFECT_DARKEN, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2,
   BLDCNT_TGT1_BG3, BeginNormalPaletteFade, BlendPalette, ClearGpuRegBits,
   CloneBattlerSpriteWithBlend, Cos, CpuCopy32, CreateSprite,
-  DISPCNT_BG1_ON, DISPCNT_BG2_ON, DestroyAnimSprite, DestroyAnimVisualTask,
-  DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet, FALSE,
-  FreeSpritePaletteByTag, GetAnimBattlerSpriteId, GetBattlePalettesMask, GetBattlerSide,
-  GetBattlerSpriteBGPriority, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr,
-  GetBattlerSpriteSubpriority, GetBattlerYCoordWithElevation, InitAnimLinearTranslationWithSpeed, InitSpritePosToAnimAttacker,
-  InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest, OBJ_PLTT_ID2,
-  PLTT_SIZE_4BPP, PlaySE, PlaySE12WithPanning, PrepareBattlerSpriteForRotScale,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_WININ,
-  REG_OFFSET_WINOUT, ResetSpriteRotScale, ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL,
-  ScanlineEffect_InitWave, SetGpuReg, SetGpuRegBits, SetSpriteRotScale,
-  Sin, StoreSpriteCallbackInData6, TRUE, WIN_RANGE,
-  gSineTable,  // 4-per-line for readability
+  DISPCNT_BG1_ON, DISPCNT_BG2_ON, DISPLAY_WIDTH, DestroyAnimSprite,
+  DestroyAnimVisualTask, DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet,
+  FALSE, FreeSpritePaletteByTag, GetAnimBattlerSpriteId, GetBattlePalettesMask,
+  GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord,
+  GetBattlerSpriteCoordAttr, GetBattlerSpriteSubpriority, GetBattlerYCoordWithElevation, InitAnimLinearTranslationWithSpeed,
+  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest,
+  OBJ_PLTT_ID2, PLTT_SIZE_4BPP, PlaySE, PlaySE12WithPanning,
+  PrepareBattlerSpriteForRotScale, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
+  REG_OFFSET_DISPCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetSpriteRotScale,
+  ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL, ScanlineEffect_InitWave, SetGpuReg,
+  SetGpuRegBits, SetSpriteRotScale, Sin, SpriteCallbackDummy,
+  StoreSpriteCallbackInData6, TRUE, WIN_RANGE, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimConfuseRayBallBounce(struct Sprite *sprite) */

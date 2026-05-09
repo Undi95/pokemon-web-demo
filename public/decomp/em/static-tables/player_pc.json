@@ -1,0 +1,124 @@
+{
+  "srcFile": "src/player_pc.c",
+  "count": 8,
+  "tables": {
+    "sPlayerPCMenuActions": {
+      "type": "struct MenuAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MENU_ITEMSTORAGE",
+        "MENU_MAILBOX",
+        "MENU_DECORATION",
+        "MENU_TURNOFF"
+      ],
+      "indexedValues": [
+        "{ gText_ItemStorage",
+        "{ gText_Mailbox",
+        "{ gText_Decoration",
+        "{ gText_TurnOff"
+      ],
+      "rawValue": "{\n    [MENU_ITEMSTORAGE] = { gText_ItemStorage, {PlayerPC_ItemStorage} },\n    [MENU_MAILBOX]     = { gText_Mailbox,     {PlayerPC_Mailbox} },\n    [MENU_DECORATION]  = { gText_Decoration,  {PlayerPC_Decoration} },\n    [MENU_TURNOFF]     = { gText_TurnOff,     {PlayerPC_TurnOff} }\n}"
+    },
+    "sBedroomPC_OptionOrder": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MENU_ITEMSTORAGE",
+        "MENU_MAILBOX",
+        "MENU_DECORATION",
+        "MENU_TURNOFF"
+      ],
+      "rawValue": "{\n    MENU_ITEMSTORAGE,\n    MENU_MAILBOX,\n    MENU_DECORATION,\n    MENU_TURNOFF\n}"
+    },
+    "sPlayerPC_OptionOrder": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MENU_ITEMSTORAGE",
+        "MENU_MAILBOX",
+        "MENU_TURNOFF"
+      ],
+      "rawValue": "{\n    MENU_ITEMSTORAGE,\n    MENU_MAILBOX,\n    MENU_TURNOFF\n}"
+    },
+    "sItemStorage_MenuActions": {
+      "type": "struct MenuAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MENU_WITHDRAW",
+        "MENU_DEPOSIT",
+        "MENU_TOSS",
+        "MENU_EXIT"
+      ],
+      "indexedValues": [
+        "{ gText_WithdrawItem",
+        "{ gText_DepositItem",
+        "{ gText_TossItem",
+        "{ gText_Cancel"
+      ],
+      "rawValue": "{\n    [MENU_WITHDRAW] = { gText_WithdrawItem, {ItemStorage_Withdraw} },\n    [MENU_DEPOSIT]  = { gText_DepositItem,  {ItemStorage_Deposit} },\n    [MENU_TOSS]     = { gText_TossItem,     {ItemStorage_Toss} },\n    [MENU_EXIT]     = { gText_Cancel,       {ItemStorage_Exit} }\n}"
+    },
+    "sNewGamePCItems": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ ITEM_POTION, 1 }",
+        "{ ITEM_NONE, 0 }"
+      ],
+      "rawValue": "{\n    { ITEM_POTION, 1 },\n    { ITEM_NONE, 0 }\n}"
+    },
+    "sWindowTemplates_MainMenus": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_MAIN_MENU",
+        "WIN_MAIN_MENU_BEDROOM",
+        "WIN_ITEM_STORAGE_MENU"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_MAIN_MENU] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 9,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n    [WIN_MAIN_MENU_BEDROOM] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 9,\n        .height = 8,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n    [WIN_ITEM_STORAGE_MENU] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 10,\n        .height = 8,\n        .paletteNum = 15,\n        .baseBlock = 1\n    }\n}"
+    },
+    "sWindowTemplates_ItemStorage": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ITEMPC_WIN_LIST",
+        "ITEMPC_WIN_MESSAGE",
+        "ITEMPC_WIN_ICON",
+        "ITEMPC_WIN_TITLE",
+        "ITEMPC_WIN_QUANTITY",
+        "ITEMPC_WIN_YESNO"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [ITEMPC_WIN_LIST] = {\n        .bg = 0,\n        .tilemapLeft = 16,\n        .tilemapTop = 1,\n        .width = 13,\n        .height = 18,\n        .paletteNum = 15,\n        .baseBlock = 0x0001\n    },\n    [ITEMPC_WIN_MESSAGE] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 13,\n        .width = 13,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 0x00EB\n    },\n    [ITEMPC_WIN_ICON] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 8,\n        .width = 3,\n        .height = 3,\n        .paletteNum = 15,\n        .baseBlock = 0x0153\n    },\n    [ITEMPC_WIN_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 13,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x0139\n    },\n    [ITEMPC_WIN_QUANTITY] = {\n        .bg = 0,\n        .tilemapLeft = 8,\n        .tilemapTop = 9,\n        .width = 6,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x015C\n    },\n    [ITEMPC_WIN_YESNO] = {\n ..."
+    },
+    "sSwapArrowTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_LIGHT_GRAY",
+        "TEXT_COLOR_DARK_GRAY"
+      ],
+      "rawValue": "{TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_DARK_GRAY}"
+    }
+  }
+}

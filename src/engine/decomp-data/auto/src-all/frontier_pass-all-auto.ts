@@ -40,15 +40,15 @@ const {
   PlayBGM, PlayRecordedBattle, PlaySE, ProcessSpriteCopyRequests,
   PutWindowTilemap, Q_8_8, REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT,
   REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WIN1H,
-  REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetAffineAnimData,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, RunTasks, STR_CONV_MODE_LEFT_ALIGN, ScanlineEffect_Stop,
-  SetBgAffine, SetBgAttribute, SetBgTilemapBuffer, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg,
-  ShowPlayerTrainerCard, StartSpriteAnim, TRUE, TRY_FREE_AND_SET_NULL,
-  TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade, VRAM_SIZE,
-  memset,  // 4-per-line for readability
+  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
+  REG_OFFSET_WIN1H, REG_OFFSET_WIN1V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  ResetAffineAnimData, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, ResetTempTileDataBuffers, RunTasks, STR_CONV_MODE_LEFT_ALIGN,
+  ScanlineEffect_Stop, SetBgAffine, SetBgAttribute, SetBgTilemapBuffer,
+  SetGpuReg, SetMainCallback2, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
+  ShowBg, ShowPlayerTrainerCard, StartSpriteAnim, TRUE,
+  TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade,
+  VRAM_SIZE, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ResetGpuRegsAndBgs(void) */

@@ -1,0 +1,88 @@
+{
+  "srcFile": "src/link.c",
+  "count": 6,
+  "tables": {
+    "sBlockRequests": {
+      "type": "struct BlockRequest",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BLOCK_REQ_SIZE_NONE",
+        "BLOCK_REQ_SIZE_200",
+        "BLOCK_REQ_SIZE_100",
+        "BLOCK_REQ_SIZE_220",
+        "BLOCK_REQ_SIZE_40"
+      ],
+      "indexedValues": [
+        "{gBlockSendBuffer",
+        "{gBlockSendBuffer",
+        "{gBlockSendBuffer",
+        "{gBlockSendBuffer",
+        "{gBlockSendBuffer"
+      ],
+      "rawValue": "{\n    [BLOCK_REQ_SIZE_NONE] = {gBlockSendBuffer, 200},\n    [BLOCK_REQ_SIZE_200]  = {gBlockSendBuffer, 200},\n    [BLOCK_REQ_SIZE_100]  = {gBlockSendBuffer, 100},\n    [BLOCK_REQ_SIZE_220]  = {gBlockSendBuffer, 220},\n    [BLOCK_REQ_SIZE_40]   = {gBlockSendBuffer,  40}\n}"
+    },
+    "sBGControlRegs": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "REG_OFFSET_BG0CNT",
+        "REG_OFFSET_BG1CNT",
+        "REG_OFFSET_BG2CNT",
+        "REG_OFFSET_BG3CNT"
+      ],
+      "rawValue": "{\n    REG_OFFSET_BG0CNT,\n    REG_OFFSET_BG1CNT,\n    REG_OFFSET_BG2CNT,\n    REG_OFFSET_BG3CNT\n}"
+    },
+    "sLinkErrorBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .priority = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 8,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .priority = 0\n    }, {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 8,\n        .priority = 1\n    }\n}"
+    },
+    "sLinkErrorWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_LINK_ERROR_TOP",
+        "WIN_LINK_ERROR_MID",
+        "WIN_LINK_ERROR_BOTTOM"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_LINK_ERROR_TOP] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = DISPLAY_TILE_WIDTH,\n        .height = 5,\n        .paletteNum = 15,\n        .baseBlock = 0x002\n    },\n    [WIN_LINK_ERROR_MID] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 6,\n        .width = DISPLAY_TILE_WIDTH,\n        .height = 7,\n        .paletteNum = 15,\n        .baseBlock = 0x098\n    },\n    [WIN_LINK_ERROR_BOTTOM] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 13,\n        .width = DISPLAY_TILE_WIDTH,\n        .height = 7,\n        .paletteNum = 15,\n        .baseBlock = 0x16A\n    }, DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_DARK_GRAY"
+      ],
+      "rawValue": "{ TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY }"
+    },
+    "sUnusedData": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x00",
+        "0xFF",
+        "0xFE",
+        "0xFF",
+        "0x00"
+      ],
+      "rawValue": "{0x00, 0xFF, 0xFE, 0xFF, 0x00}"
+    }
+  }
+}

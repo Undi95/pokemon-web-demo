@@ -1,0 +1,22 @@
+{
+  "srcFile": "src/braille.c",
+  "count": 1,
+  "tables": {
+    "sScrollDistances": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "OPTIONS_TEXT_SPEED_SLOW",
+        "OPTIONS_TEXT_SPEED_MID",
+        "OPTIONS_TEXT_SPEED_FAST"
+      ],
+      "indexedValues": [
+        "1",
+        "2",
+        "4"
+      ],
+      "rawValue": "{\n    [OPTIONS_TEXT_SPEED_SLOW] = 1,\n    [OPTIONS_TEXT_SPEED_MID] = 2,\n    [OPTIONS_TEXT_SPEED_FAST] = 4,\n}"
+    }
+  }
+}

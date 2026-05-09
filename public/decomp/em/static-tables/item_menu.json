@@ -1,0 +1,290 @@
+{
+  "srcFile": "src/item_menu.c",
+  "count": 18,
+  "tables": {
+    "sBgTemplates_ItemMenu": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0,\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0,\n    },\n}"
+    },
+    "sItemMenuActions": {
+      "type": "struct MenuAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ACTION_USE",
+        "ACTION_TOSS",
+        "ACTION_REGISTER",
+        "ACTION_GIVE",
+        "ACTION_CANCEL",
+        "ACTION_BATTLE_USE",
+        "ACTION_CHECK",
+        "ACTION_WALK",
+        "ACTION_DESELECT",
+        "ACTION_CHECK_TAG",
+        "ACTION_CONFIRM",
+        "ACTION_SHOW",
+        "ACTION_GIVE_FAVOR_LADY",
+        "ACTION_CONFIRM_QUIZ_LADY",
+        "ACTION_DUMMY"
+      ],
+      "indexedValues": [
+        "{gMenuText_Use",
+        "{gMenuText_Toss",
+        "{gMenuText_Register",
+        "{gMenuText_Give",
+        "{gText_Cancel2",
+        "{gMenuText_Use",
+        "{gMenuText_Check",
+        "{gMenuText_Walk",
+        "{gMenuText_Deselect",
+        "{gMenuText_CheckTag",
+        "{gMenuText_Confirm2",
+        "{gMenuText_Show",
+        "{gMenuText_Give2",
+        "{gMenuText_Confirm",
+        "{gText_EmptyString2"
+      ],
+      "rawValue": "{\n    [ACTION_USE]               = {gMenuText_Use,      {ItemMenu_UseOutOfBattle}},\n    [ACTION_TOSS]              = {gMenuText_Toss,     {ItemMenu_Toss}},\n    [ACTION_REGISTER]          = {gMenuText_Register, {ItemMenu_Register}},\n    [ACTION_GIVE]              = {gMenuText_Give,     {ItemMenu_Give}},\n    [ACTION_CANCEL]            = {gText_Cancel2,      {ItemMenu_Cancel}},\n    [ACTION_BATTLE_USE]        = {gMenuText_Use,      {ItemMenu_UseInBattle}},\n    [ACTION_CHECK]             = {gMenuText_Check,    {ItemMenu_UseOutOfBattle}},\n    [ACTION_WALK]              = {gMenuText_Walk,     {ItemMenu_UseOutOfBattle}},\n    [ACTION_DESELECT]          = {gMenuText_Deselect, {ItemMenu_Register}},\n    [ACTION_CHECK_TAG]         = {gMenuText_CheckTag, {ItemMenu_CheckTag}},\n     \n    [ACTION_CONFIRM]           = {gMenuText_Confirm2,  {Task_FadeAndCloseBagMenu}},\n    [ACTION_SHOW]              = {gMenuText_Show,     {ItemMenu_Show}},\n    [ACTION_GIVE_FAVOR_LADY]   = {gMenuText_Give2,    {ItemMenu_GiveFavorLady}},\n    [ACT..."
+    },
+    "sContextMenuItems_ItemsPocket": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_USE",
+        "ACTION_GIVE",
+        "ACTION_TOSS",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_USE,         ACTION_GIVE,\n    ACTION_TOSS,        ACTION_CANCEL\n}"
+    },
+    "sContextMenuItems_KeyItemsPocket": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_USE",
+        "ACTION_REGISTER",
+        "ACTION_DUMMY",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_USE,         ACTION_REGISTER,\n    ACTION_DUMMY,       ACTION_CANCEL\n}"
+    },
+    "sContextMenuItems_BallsPocket": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_GIVE",
+        "ACTION_DUMMY",
+        "ACTION_TOSS",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_GIVE,        ACTION_DUMMY,\n    ACTION_TOSS,        ACTION_CANCEL\n}"
+    },
+    "sContextMenuItems_TmHmPocket": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_USE",
+        "ACTION_GIVE",
+        "ACTION_DUMMY",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_USE,         ACTION_GIVE,\n    ACTION_DUMMY,       ACTION_CANCEL\n}"
+    },
+    "sContextMenuItems_BerriesPocket": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_CHECK_TAG",
+        "ACTION_DUMMY",
+        "ACTION_USE",
+        "ACTION_GIVE",
+        "ACTION_TOSS",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_CHECK_TAG,   ACTION_DUMMY,\n    ACTION_USE,         ACTION_GIVE,\n    ACTION_TOSS,        ACTION_CANCEL\n}"
+    },
+    "sContextMenuItems_BattleUse": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_BATTLE_USE",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_BATTLE_USE,  ACTION_CANCEL\n}"
+    },
+    "sContextMenuItems_Give": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_GIVE",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_GIVE,        ACTION_CANCEL\n}"
+    },
+    "sContextMenuItems_Cancel": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_CANCEL\n}"
+    },
+    "sContextMenuItems_BerryBlenderCrush": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_CONFIRM",
+        "ACTION_DUMMY",
+        "ACTION_CHECK_TAG",
+        "ACTION_DUMMY",
+        "ACTION_CANCEL",
+        "ACTION_DUMMY"
+      ],
+      "rawValue": "{\n    ACTION_CONFIRM,     ACTION_DUMMY,\n    ACTION_CHECK_TAG,   ACTION_DUMMY,\n    ACTION_CANCEL,      ACTION_DUMMY\n}"
+    },
+    "sContextMenuItems_Apprentice": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_SHOW",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_SHOW,        ACTION_CANCEL\n}"
+    },
+    "sContextMenuItems_FavorLady": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_GIVE_FAVOR_LADY",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_GIVE_FAVOR_LADY, ACTION_CANCEL\n}"
+    },
+    "sContextMenuItems_QuizLady": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_CONFIRM_QUIZ_LADY",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{\n    ACTION_CONFIRM_QUIZ_LADY, ACTION_CANCEL\n}"
+    },
+    "sContextMenuFuncs": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ITEMMENULOCATION_FIELD",
+        "ITEMMENULOCATION_BATTLE",
+        "ITEMMENULOCATION_PARTY",
+        "ITEMMENULOCATION_SHOP",
+        "ITEMMENULOCATION_BERRY_TREE",
+        "ITEMMENULOCATION_BERRY_BLENDER_CRUSH",
+        "ITEMMENULOCATION_ITEMPC",
+        "ITEMMENULOCATION_FAVOR_LADY",
+        "ITEMMENULOCATION_QUIZ_LADY",
+        "ITEMMENULOCATION_APPRENTICE",
+        "ITEMMENULOCATION_WALLY",
+        "ITEMMENULOCATION_PCBOX"
+      ],
+      "indexedValues": [
+        "Task_ItemContext_Normal",
+        "Task_ItemContext_Normal",
+        "Task_ItemContext_GiveToParty",
+        "Task_ItemContext_Sell",
+        "Task_FadeAndCloseBagMenu",
+        "Task_ItemContext_Normal",
+        "Task_ItemContext_Deposit",
+        "Task_ItemContext_Normal",
+        "Task_ItemContext_Normal",
+        "Task_ItemContext_Normal",
+        "NULL",
+        "Task_ItemContext_GiveToPC"
+      ],
+      "rawValue": "{\n    [ITEMMENULOCATION_FIELD] =                  Task_ItemContext_Normal,\n    [ITEMMENULOCATION_BATTLE] =                 Task_ItemContext_Normal,\n    [ITEMMENULOCATION_PARTY] =                  Task_ItemContext_GiveToParty,\n    [ITEMMENULOCATION_SHOP] =                   Task_ItemContext_Sell,\n    [ITEMMENULOCATION_BERRY_TREE] =             Task_FadeAndCloseBagMenu,\n    [ITEMMENULOCATION_BERRY_BLENDER_CRUSH] =    Task_ItemContext_Normal,\n    [ITEMMENULOCATION_ITEMPC] =                 Task_ItemContext_Deposit,\n    [ITEMMENULOCATION_FAVOR_LADY] =             Task_ItemContext_Normal,\n    [ITEMMENULOCATION_QUIZ_LADY] =              Task_ItemContext_Normal,\n    [ITEMMENULOCATION_APPRENTICE] =             Task_ItemContext_Normal,\n    [ITEMMENULOCATION_WALLY] =                  NULL,\n    [ITEMMENULOCATION_PCBOX] =                  Task_ItemContext_GiveToPC\n}"
+    },
+    "sFontColorTable": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "COLORID_NORMAL",
+        "COLORID_POCKET_NAME",
+        "COLORID_GRAY_CURSOR",
+        "COLORID_UNUSED",
+        "COLORID_TMHM_INFO"
+      ],
+      "indexedValues": [
+        "{TEXT_COLOR_TRANSPARENT",
+        "{TEXT_COLOR_TRANSPARENT",
+        "{TEXT_COLOR_TRANSPARENT",
+        "{TEXT_COLOR_DARK_GRAY",
+        "{TEXT_COLOR_TRANSPARENT"
+      ],
+      "rawValue": "{\n                             \n    [COLORID_NORMAL]      = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE,      TEXT_COLOR_LIGHT_GRAY},\n    [COLORID_POCKET_NAME] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE,      TEXT_COLOR_RED},\n    [COLORID_GRAY_CURSOR] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_GREEN},\n    [COLORID_UNUSED]      = {TEXT_COLOR_DARK_GRAY,   TEXT_COLOR_WHITE,      TEXT_COLOR_LIGHT_GRAY},\n    [COLORID_TMHM_INFO]   = {TEXT_COLOR_TRANSPARENT, TEXT_DYNAMIC_COLOR_5,  TEXT_DYNAMIC_COLOR_1}\n}"
+    },
+    "sDefaultBagWindows": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_ITEM_LIST",
+        "WIN_DESCRIPTION",
+        "WIN_POCKET_NAME",
+        "WIN_TMHM_INFO_ICONS",
+        "WIN_TMHM_INFO",
+        "WIN_MESSAGE"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 1"
+      ],
+      "rawValue": "{\n    [WIN_ITEM_LIST] = {\n        .bg = 0,\n        .tilemapLeft = 14,\n        .tilemapTop = 2,\n        .width = 15,\n        .height = 16,\n        .paletteNum = 1,\n        .baseBlock = 0x27,\n    },\n    [WIN_DESCRIPTION] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 13,\n        .width = 14,\n        .height = 6,\n        .paletteNum = 1,\n        .baseBlock = 0x117,\n    },\n    [WIN_POCKET_NAME] = {\n        .bg = 0,\n        .tilemapLeft = 4,\n        .tilemapTop = 1,\n        .width = 8,\n        .height = 2,\n        .paletteNum = 1,\n        .baseBlock = 0x1A1,\n    },\n    [WIN_TMHM_INFO_ICONS] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 13,\n        .width = 5,\n        .height = 6,\n        .paletteNum = 12,\n        .baseBlock = 0x16B,\n    },\n    [WIN_TMHM_INFO] = {\n        .bg = 0,\n        .tilemapLeft = 7,\n        .tilemapTop = 13,\n        .width = 4,\n        .height = 6,\n        .paletteNum = 12,\n        .baseBlock = 0x189,\n    },\n    [WIN_MESSAGE] = {\n        .bg = 1,\n..."
+    },
+    "sContextMenuWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ITEMWIN_MESSAGE",
+        "ITEMWIN_YESNO_LOW",
+        "ITEMWIN_YESNO_HIGH",
+        "ITEMWIN_QUANTITY",
+        "ITEMWIN_QUANTITY_WIDE",
+        "ITEMWIN_MONEY"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 1",
+        "{  \n        .bg = 1",
+        "{  \n        .bg = 1",
+        "{  \n        .bg = 1",
+        "{  \n        .bg = 1",
+        "{\n        .bg = 1"
+      ],
+      "rawValue": "{\n    [ITEMWIN_1x1] = {\n        .bg = 1,\n        .tilemapLeft = 22,\n        .tilemapTop = 17,\n        .width = 7,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x21D,\n    },\n    [ITEMWIN_1x2] = {\n        .bg = 1,\n        .tilemapLeft = 22,\n        .tilemapTop = 15,\n        .width = 7,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x21D,\n    },\n    [ITEMWIN_2x2] = {\n        .bg = 1,\n        .tilemapLeft = 15,\n        .tilemapTop = 15,\n        .width = 14,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x21D,\n    },\n    [ITEMWIN_2x3] = {\n        .bg = 1,\n        .tilemapLeft = 15,\n        .tilemapTop = 13,\n        .width = 14,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 0x21D,\n    },\n    [ITEMWIN_MESSAGE] = {\n        .bg = 1,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x1B1,\n    },\n    [ITEMWIN_YESNO_LOW] = {  \n        .bg = 1,..."
+    }
+  }
+}

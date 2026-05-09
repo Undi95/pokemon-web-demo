@@ -1,0 +1,645 @@
+{
+  "srcFile": "src/pokemon_jump.c",
+  "count": 40,
+  "tables": {
+    "sPokeJumpMons": {
+      "type": "struct PokemonJumpMons",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ .species = SPECIES_BULBASAUR,  .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_CHARMANDER, .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_SQUIRTLE,   .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_CATERPIE,   .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_METAPOD,    .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_WEEDLE,     .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_KAKUNA,     .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_RATTATA,    .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_RATICATE,   .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_PIKACHU,    .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_SANDSHREW,  .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_NIDORAN_F,  .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_NIDORAN_M,  .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_CLEFAIRY,   .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_VULPIX,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_JIGGLYPUFF, .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_ODDISH,     .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_PARAS,      .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_MEOWTH,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_PSYDUCK,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_MANKEY,     .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_GROWLITHE,  .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_POLIWAG,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_BELLSPROUT, .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_SHELLDER,   .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_KRABBY,     .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_EXEGGCUTE,  .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_CUBONE,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_DITTO,      .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_EEVEE,      .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_OMANYTE,    .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_KABUTO,     .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_CHIKORITA,  .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_CYNDAQUIL,  .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_TOTODILE,   .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_SPINARAK,   .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_PICHU,      .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_CLEFFA,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_IGGLYBUFF,  .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_TOGEPI,     .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_MAREEP,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_BELLOSSOM,  .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_MARILL,     .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_SUNKERN,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_WOOPER,     .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_PINECO,     .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_SNUBBULL,   .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_SHUCKLE,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_TEDDIURSA,  .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_SLUGMA,     .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_SWINUB,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_HOUNDOUR,   .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_PHANPY,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_PORYGON2,   .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_TYROGUE,    .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_SMOOCHUM,   .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_ELEKID,     .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_MAGBY,      .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_LARVITAR,   .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_TREECKO,    .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_TORCHIC,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_MUDKIP,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_MARSHTOMP,  .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_POOCHYENA,  .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_ZIGZAGOON,  .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_LINOONE,    .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_WURMPLE,    .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_SILCOON,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_CASCOON,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_LOTAD,      .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_SEEDOT,     .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_RALTS,      .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_KIRLIA,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_SURSKIT,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_SHROOMISH,  .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_NINCADA,    .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_WHISMUR,    .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_AZURILL,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_SKITTY,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_SABLEYE,    .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_MAWILE,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_ARON,       .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_MEDITITE,   .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_ELECTRIKE,  .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_PLUSLE,     .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_MINUN,      .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_VOLBEAT,    .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_ILLUMISE,   .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_ROSELIA,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_GULPIN,     .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_NUMEL,      .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_TORKOAL,    .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_SPOINK,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_TRAPINCH,   .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_CACNEA,     .jumpType = JUMP_TYPE_SLOW, }",
+        "{ .species = SPECIES_ANORITH,    .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_WYNAUT,     .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_SNORUNT,    .jumpType = JUMP_TYPE_NORMAL, }",
+        "{ .species = SPECIES_CLAMPERL,   .jumpType = JUMP_TYPE_FAST, }",
+        "{ .species = SPECIES_BAGON,      .jumpType = JUMP_TYPE_FAST, }"
+      ],
+      "rawValue": "{\n    { .species = SPECIES_BULBASAUR,  .jumpType = JUMP_TYPE_SLOW, },\n    { .species = SPECIES_CHARMANDER, .jumpType = JUMP_TYPE_FAST, },\n    { .species = SPECIES_SQUIRTLE,   .jumpType = JUMP_TYPE_NORMAL, },\n    { .species = SPECIES_CATERPIE,   .jumpType = JUMP_TYPE_FAST, },\n    { .species = SPECIES_METAPOD,    .jumpType = JUMP_TYPE_FAST, },\n    { .species = SPECIES_WEEDLE,     .jumpType = JUMP_TYPE_FAST, },\n    { .species = SPECIES_KAKUNA,     .jumpType = JUMP_TYPE_FAST, },\n    { .species = SPECIES_RATTATA,    .jumpType = JUMP_TYPE_FAST, },\n    { .species = SPECIES_RATICATE,   .jumpType = JUMP_TYPE_FAST, },\n    { .species = SPECIES_PIKACHU,    .jumpType = JUMP_TYPE_NORMAL, },\n    { .species = SPECIES_SANDSHREW,  .jumpType = JUMP_TYPE_NORMAL, },\n    { .species = SPECIES_NIDORAN_F,  .jumpType = JUMP_TYPE_NORMAL, },\n    { .species = SPECIES_NIDORAN_M,  .jumpType = JUMP_TYPE_NORMAL, },\n    { .species = SPECIES_CLEFAIRY,   .jumpType = JUMP_TYPE_NORMAL, },\n    { .species = SPECIES_VULPIX,     .jumpType = JUMP_TYPE..."
+    },
+    "sVineBaseSpeeds": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "26",
+        "31",
+        "36",
+        "41",
+        "46",
+        "51",
+        "56",
+        "61"
+      ],
+      "rawValue": "{26, 31, 36, 41, 46, 51, 56, 61}"
+    },
+    "sVineSpeedDelays": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "1",
+        "1",
+        "2"
+      ],
+      "rawValue": "{0, 1, 1, 2}"
+    },
+    "sSoundEffects": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "SE_SHOP",
+        "SE_SHINY",
+        "SE_M_MORNING_SUN",
+        "SE_RG_POKE_JUMP_SUCCESS"
+      ],
+      "rawValue": "{SE_SHOP, SE_SHINY, SE_M_MORNING_SUN, SE_RG_POKE_JUMP_SUCCESS}"
+    },
+    "sJumpOffsets": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "JUMP_TYPE_NORMAL",
+        "JUMP_TYPE_FAST",
+        "JUMP_TYPE_SLOW"
+      ],
+      "indexedValues": [
+        "{ -3",
+        "{ -3",
+        "{ -3"
+      ],
+      "rawValue": "{\n    [JUMP_TYPE_NORMAL] = { -3,  -6,  -8, -10, -13, -15, -17, -19,\n                          -21, -23, -25, -27, -28, -29,\n                          JUMP_PEAK, JUMP_PEAK, JUMP_PEAK,\n                          -28, -27, -26, -25, -23, -22, -20, -18,\n                          -17, -15, -13, -11,  -8,  -6,  -4,  -1},\n\n    [JUMP_TYPE_FAST]  = { -3,  -6,  -9, -11, -14, -16, -18, -20,\n                         -22, -24, -26, -28, -29,\n                         JUMP_PEAK, JUMP_PEAK,\n                         -28, -26, -24, -22, -20, -18, -16, -14,\n                         -11, -9,  -6,  -4,  -1},\n\n    [JUMP_TYPE_SLOW]  = { -3,  -6,  -9, -11, -13, -15, -17, -19,\n                         -21, -23, -25, -27, -28, -29,\n                         JUMP_PEAK, JUMP_PEAK, JUMP_PEAK, JUMP_PEAK,\n                         -29, -29, -28, -28, -27, -27, -26, -25,\n                         -24, -22, -20, -18, -16, -14, -12, -11,\n                          -9,  -6,  -4,  -1},\n}"
+    },
+    "sScoreBonuses": {
+      "type": "int",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "0",
+        "50",
+        "100",
+        "200",
+        "500"
+      ],
+      "rawValue": "{0, 0, 50, 100, 200, 500}"
+    },
+    "sPrizeItems": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_LEPPA_BERRY",
+        "ITEM_LUM_BERRY",
+        "ITEM_SITRUS_BERRY",
+        "ITEM_FIGY_BERRY",
+        "ITEM_WIKI_BERRY",
+        "ITEM_MAGO_BERRY",
+        "ITEM_AGUAV_BERRY",
+        "ITEM_IAPAPA_BERRY"
+      ],
+      "rawValue": "{\n    ITEM_LEPPA_BERRY,\n    ITEM_LUM_BERRY,\n    ITEM_SITRUS_BERRY,\n    ITEM_FIGY_BERRY,\n    ITEM_WIKI_BERRY,\n    ITEM_MAGO_BERRY,\n    ITEM_AGUAV_BERRY,\n    ITEM_IAPAPA_BERRY\n}"
+    },
+    "sPrizeQuantityData": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ .score =  5000, .quantity = 1}",
+        "{ .score =  8000, .quantity = 2}",
+        "{ .score = 12000, .quantity = 3}",
+        "{ .score = 16000, .quantity = 4}",
+        "{ .score = 20000, .quantity = 5}"
+      ],
+      "rawValue": "{\n    { .score =  5000, .quantity = 1},\n    { .score =  8000, .quantity = 2},\n    { .score = 12000, .quantity = 3},\n    { .score = 16000, .quantity = 4},\n    { .score = 20000, .quantity = 5},\n}"
+    },
+    "sCompressedSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sVine1_Gfx, 0x600, GFXTAG_VINE1}",
+        "{sVine2_Gfx, 0xC00, GFXTAG_VINE2}",
+        "{sVine3_Gfx, 0x600, GFXTAG_VINE3}",
+        "{sVine4_Gfx, 0x600, GFXTAG_VINE4}",
+        "{sStar_Gfx,  0x200, GFXTAG_STAR}"
+      ],
+      "rawValue": "{\n    {sVine1_Gfx, 0x600, GFXTAG_VINE1},\n    {sVine2_Gfx, 0xC00, GFXTAG_VINE2},\n    {sVine3_Gfx, 0x600, GFXTAG_VINE3},\n    {sVine4_Gfx, 0x600, GFXTAG_VINE4},\n    {sStar_Gfx,  0x200, GFXTAG_STAR},\n}"
+    },
+    "sSpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sPokeJumpPal1, PALTAG_1}",
+        "{sPokeJumpPal2, PALTAG_2}"
+      ],
+      "rawValue": "{\n    {sPokeJumpPal1, PALTAG_1},\n    {sPokeJumpPal2, PALTAG_2},\n}"
+    },
+    "sVineYCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{96, 96, 96, 114, 120, 120, 120, 114, 96, 96}",
+        "{70, 80, 96, 114, 120, 128, 120, 114, 96, 80}",
+        "{50, 72, 96, 114, 128, 136, 128, 114, 96, 72}",
+        "{42, 72, 96, 114, 128, 136, 128, 114, 96, 72}"
+      ],
+      "rawValue": "{\n    {96, 96, 96, 114, 120, 120, 120, 114, 96, 96},\n    {70, 80, 96, 114, 120, 128, 120, 114, 96, 80},\n    {50, 72, 96, 114, 128, 136, 128, 114, 96, 72},\n    {42, 72, 96, 114, 128, 136, 128, 114, 96, 72},\n}"
+    },
+    "sVineXCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "16",
+        "40",
+        "72",
+        "104",
+        "136",
+        "168",
+        "200",
+        "224"
+      ],
+      "rawValue": "{16, 40, 72, 104, 136, 168, 200, 224}"
+    },
+    "sAnims_Vine_Highest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_Vine_Higher": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_Vine_High": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_Vine_Low": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_Vine_Lower": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_Vine_Lowest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(40, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(40, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_VineTall_Highest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_VineTall_Higher": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_VineTall_High": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_VineTall_Low": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_VineTall_Lower": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnims_VineTall_Lowest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Star_Still": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Star_Spinning": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(4, 4)",
+        "ANIMCMD_FRAME(8, 4)",
+        "ANIMCMD_FRAME(12, 4)",
+        "ANIMCMD_LOOP(1)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(4, 4),\n    ANIMCMD_FRAME(8, 4),\n    ANIMCMD_FRAME(12, 4),\n    ANIMCMD_LOOP(1),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_END\n}"
+    },
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = BG_INTERFACE,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 27,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = BG_VENUSAUR,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = BG_BONUSES,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 12,\n        .screenSize = 3,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = BG_SCENERY,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = BG_INTERFACE,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 27,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = BG_VENUSAUR,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = BG_BONUSES,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 12,\n        .screenSize = 3,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = BG_SCENERY,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_POINTS",
+        "WIN_TIMES"
+      ],
+      "indexedValues": [
+        "{\n        .bg = BG_INTERFACE",
+        "{\n        .bg = BG_INTERFACE"
+      ],
+      "rawValue": "{\n    [WIN_POINTS] = {\n        .bg = BG_INTERFACE,\n        .tilemapLeft = 19,\n        .tilemapTop = 0,\n        .width = 6,\n        .height = 2,\n        .paletteNum = 2,\n        .baseBlock = 0x13,\n    },\n    [WIN_TIMES] = {\n        .bg = BG_INTERFACE,\n        .tilemapLeft = 8,\n        .tilemapTop = 0,\n        .width = 6,\n        .height = 2,\n        .paletteNum = 2,\n        .baseBlock = 0x1F,\n    },\n    DUMMY_WIN_TEMPLATE,\n}"
+    },
+    "sPokeJumpGfxFuncs": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{GFXFUNC_LOAD,                 LoadPokeJumpGfx}",
+        "{GFXFUNC_SHOW_NAMES,           PrintPlayerNamesNoHighlight}",
+        "{GFXFUNC_SHOW_NAMES_HIGHLIGHT, PrintPlayerNamesWithHighlight}",
+        "{GFXFUNC_ERASE_NAMES,          ErasePlayerNames}",
+        "{GFXFUNC_MSG_PLAY_AGAIN,       Msg_WantToPlayAgain}",
+        "{GFXFUNC_MSG_SAVING,           Msg_SavingDontTurnOff}",
+        "{GFXFUNC_ERASE_MSG,            EraseMessage}",
+        "{GFXFUNC_MSG_PLAYER_DROPPED,   Msg_SomeoneDroppedOut}",
+        "{GFXFUNC_COUNTDOWN,            DoPokeJumpCountdown}",
+        "{GFXFUNC_MSG_COMM_STANDBY,     Msg_CommunicationStandby}"
+      ],
+      "rawValue": "{\n    {GFXFUNC_LOAD,                 LoadPokeJumpGfx},  \n    {GFXFUNC_SHOW_NAMES,           PrintPlayerNamesNoHighlight},\n    {GFXFUNC_SHOW_NAMES_HIGHLIGHT, PrintPlayerNamesWithHighlight},\n    {GFXFUNC_ERASE_NAMES,          ErasePlayerNames},\n    {GFXFUNC_MSG_PLAY_AGAIN,       Msg_WantToPlayAgain},\n    {GFXFUNC_MSG_SAVING,           Msg_SavingDontTurnOff},\n    {GFXFUNC_ERASE_MSG,            EraseMessage},\n    {GFXFUNC_MSG_PLAYER_DROPPED,   Msg_SomeoneDroppedOut},\n    {GFXFUNC_COUNTDOWN,            DoPokeJumpCountdown},\n    {GFXFUNC_MSG_COMM_STANDBY,     Msg_CommunicationStandby},\n}"
+    },
+    "sVenusaurStates": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "VINE_HIGHEST",
+        "VINE_DOWNSWING_HIGHER",
+        "VINE_DOWNSWING_HIGH",
+        "VINE_DOWNSWING_LOW",
+        "VINE_DOWNSWING_LOWER",
+        "VINE_LOWEST",
+        "VINE_UPSWING_LOWER",
+        "VINE_UPSWING_LOW",
+        "VINE_UPSWING_HIGH",
+        "VINE_UPSWING_HIGHER"
+      ],
+      "indexedValues": [
+        "VENUSAUR_UP",
+        "VENUSAUR_UP",
+        "VENUSAUR_NEUTRAL",
+        "VENUSAUR_NEUTRAL",
+        "VENUSAUR_DOWN",
+        "VENUSAUR_DOWN",
+        "VENUSAUR_DOWN",
+        "VENUSAUR_NEUTRAL",
+        "VENUSAUR_NEUTRAL",
+        "VENUSAUR_UP"
+      ],
+      "rawValue": "{\n    [VINE_HIGHEST]          = VENUSAUR_UP,\n    [VINE_DOWNSWING_HIGHER] = VENUSAUR_UP,\n    [VINE_DOWNSWING_HIGH]   = VENUSAUR_NEUTRAL,\n    [VINE_DOWNSWING_LOW]    = VENUSAUR_NEUTRAL,\n    [VINE_DOWNSWING_LOWER]  = VENUSAUR_DOWN,\n    [VINE_LOWEST]           = VENUSAUR_DOWN,\n    [VINE_UPSWING_LOWER]    = VENUSAUR_DOWN,\n    [VINE_UPSWING_LOW]      = VENUSAUR_NEUTRAL,\n    [VINE_UPSWING_HIGH]     = VENUSAUR_NEUTRAL,\n    [VINE_UPSWING_HIGHER]   = VENUSAUR_UP,\n}"
+    },
+    "sPlayerNameWindowCoords_2Players": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "6",
+        "8",
+        "16",
+        "8"
+      ],
+      "rawValue": "{\n     6, 8,\n    16, 8\n}"
+    },
+    "sPlayerNameWindowCoords_3Players": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "6",
+        "8",
+        "11",
+        "6",
+        "16",
+        "8"
+      ],
+      "rawValue": "{\n     6, 8,\n    11, 6,\n    16, 8\n}"
+    },
+    "sPlayerNameWindowCoords_4Players": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "2",
+        "6",
+        "6",
+        "8",
+        "16",
+        "8",
+        "20",
+        "6"
+      ],
+      "rawValue": "{\n     2, 6,\n     6, 8,\n    16, 8,\n    20, 6\n}"
+    },
+    "sPlayerNameWindowCoords_5Players": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "2",
+        "6",
+        "6",
+        "8",
+        "11",
+        "6",
+        "16",
+        "8",
+        "20",
+        "6"
+      ],
+      "rawValue": "{\n     2, 6,\n     6, 8,\n    11, 6,\n    16, 8,\n    20, 6\n}"
+    },
+    "sMonXCoords_2Players": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "88",
+        "152"
+      ],
+      "rawValue": "{88, 152}"
+    },
+    "sMonXCoords_3Players": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "88",
+        "120",
+        "152"
+      ],
+      "rawValue": "{88, 120, 152}"
+    },
+    "sMonXCoords_4Players": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "56",
+        "88",
+        "152",
+        "184"
+      ],
+      "rawValue": "{56, 88, 152, 184}"
+    },
+    "sMonXCoords_5Players": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "56",
+        "88",
+        "120",
+        "152",
+        "184"
+      ],
+      "rawValue": "{56, 88, 120, 152, 184}"
+    },
+    "sPokeJumpLeaderFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "FUNC_GAME_INTRO",
+        "FUNC_WAIT_ROUND",
+        "FUNC_GAME_ROUND",
+        "FUNC_GAME_OVER",
+        "FUNC_ASK_PLAY_AGAIN",
+        "FUNC_RESET_GAME",
+        "FUNC_EXIT",
+        "FUNC_GIVE_PRIZE",
+        "FUNC_SAVE"
+      ],
+      "indexedValues": [
+        "GameIntro_Leader",
+        "WaitRound_Leader",
+        "GameRound_Leader",
+        "GameOver_Leader",
+        "AskPlayAgain_Leader",
+        "ResetGame_Leader",
+        "ExitGame",
+        "GivePrize_Leader",
+        "SavePokeJump"
+      ],
+      "rawValue": "{\n    [FUNC_GAME_INTRO]     = GameIntro_Leader,\n    [FUNC_WAIT_ROUND]     = WaitRound_Leader,\n    [FUNC_GAME_ROUND]     = GameRound_Leader,\n    [FUNC_GAME_OVER]      = GameOver_Leader,\n    [FUNC_ASK_PLAY_AGAIN] = AskPlayAgain_Leader,\n    [FUNC_RESET_GAME]     = ResetGame_Leader,\n    [FUNC_EXIT]           = ExitGame,\n    [FUNC_GIVE_PRIZE]     = GivePrize_Leader,\n    [FUNC_SAVE]           = SavePokeJump,\n}"
+    },
+    "sPokeJumpMemberFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "FUNC_GAME_INTRO",
+        "FUNC_WAIT_ROUND",
+        "FUNC_GAME_ROUND",
+        "FUNC_GAME_OVER",
+        "FUNC_ASK_PLAY_AGAIN",
+        "FUNC_RESET_GAME",
+        "FUNC_EXIT",
+        "FUNC_GIVE_PRIZE",
+        "FUNC_SAVE"
+      ],
+      "indexedValues": [
+        "GameIntro_Member",
+        "WaitRound_Member",
+        "GameRound_Member",
+        "GameOver_Member",
+        "AskPlayAgain_Member",
+        "ResetGame_Member",
+        "ExitGame",
+        "GivePrize_Member",
+        "SavePokeJump"
+      ],
+      "rawValue": "{\n    [FUNC_GAME_INTRO]     = GameIntro_Member,\n    [FUNC_WAIT_ROUND]     = WaitRound_Member,\n    [FUNC_GAME_ROUND]     = GameRound_Member,\n    [FUNC_GAME_OVER]      = GameOver_Member,\n    [FUNC_ASK_PLAY_AGAIN] = AskPlayAgain_Member,\n    [FUNC_RESET_GAME]     = ResetGame_Member,\n    [FUNC_EXIT]           = ExitGame,\n    [FUNC_GIVE_PRIZE]     = GivePrize_Member,\n    [FUNC_SAVE]           = SavePokeJump,\n}"
+    }
+  }
+}

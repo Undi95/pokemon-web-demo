@@ -33,9 +33,9 @@ const {
   IsBattlerSpriteVisible, IsContest, IsDoubleBattle, LoadCompressedPalette,
   LoadPalette, OBJ_PLTT_ID, PLTT_ID, PLTT_SIZEOF,
   PLTT_SIZE_4BPP, PlaySE12WithPanning, REG_OFFSET_BG1CNT, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetBattleAnimBg,
-  SetAnimBgAttribute, SetGpuReg, SetGpuRegBits, TRUE,
-  UnpackSelectedBattlePalettes, UpdateAnimBg3ScreenSize, memcpy,  // 4-per-line for readability
+  REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  ResetBattleAnimBg, SetAnimBgAttribute, SetGpuReg, SetGpuRegBits,
+  TRUE, UnpackSelectedBattlePalettes, UpdateAnimBg3ScreenSize, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AnimTask_BlendBattleAnimPal(u8 taskId) */

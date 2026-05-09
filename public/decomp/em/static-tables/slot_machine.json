@@ -1,0 +1,2225 @@
+{
+  "srcFile": "src/slot_machine.c",
+  "count": 160,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x194\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x194\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sColors_ReeltimeHelp": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_LIGHT_GRAY",
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_DARK_GRAY"
+      ],
+      "rawValue": "{TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY}"
+    },
+    "sReelStopShocks": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "2",
+        "4",
+        "4",
+        "4",
+        "8"
+      ],
+      "rawValue": "{2, 4, 4, 4, 8}"
+    },
+    "sReelButtonOffsets": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "5",
+        "10",
+        "15"
+      ],
+      "rawValue": "{5, 10, 15}"
+    },
+    "sPikaPowerTileTable": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{0x9e, 0x6e}",
+        "{0x9f, 0x6f}",
+        "{0xaf, 0x7f}"
+      ],
+      "rawValue": "{\n    {0x9e, 0x6e},\n    {0x9f, 0x6f},\n    {0xaf, 0x7f},\n}"
+    },
+    "sReelTimePikachuAnimIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "1",
+        "2",
+        "2"
+      ],
+      "rawValue": "{1, 1, 2, 2}"
+    },
+    "sReelTimeBoltDelays": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "64",
+        "48",
+        "24",
+        "8"
+      ],
+      "rawValue": "{64, 48, 24, 8}"
+    },
+    "sPikachuAuraFlashDelays": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "10",
+        "8",
+        "6",
+        "4"
+      ],
+      "rawValue": "{10, 8, 6, 4}"
+    },
+    "sReelSymbols": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "LEFT_REEL",
+        "MIDDLE_REEL",
+        "RIGHT_REEL"
+      ],
+      "indexedValues": [
+        "{\n        SYMBOL_7_RED",
+        "{\n        SYMBOL_7_RED",
+        "{\n        SYMBOL_7_RED"
+      ],
+      "rawValue": "{\n    [LEFT_REEL] = {\n        SYMBOL_7_RED,\n        SYMBOL_CHERRY,\n        SYMBOL_AZURILL,\n        SYMBOL_REPLAY,\n        SYMBOL_POWER,\n        SYMBOL_LOTAD,\n        SYMBOL_7_BLUE,\n        SYMBOL_LOTAD,\n        SYMBOL_CHERRY,\n        SYMBOL_POWER,\n        SYMBOL_REPLAY,\n        SYMBOL_AZURILL,\n        SYMBOL_7_RED,\n        SYMBOL_POWER,\n        SYMBOL_LOTAD,\n        SYMBOL_REPLAY,\n        SYMBOL_AZURILL,\n        SYMBOL_7_BLUE,\n        SYMBOL_POWER,\n        SYMBOL_LOTAD,\n        SYMBOL_REPLAY\n    },\n    [MIDDLE_REEL] = {\n        SYMBOL_7_RED,\n        SYMBOL_CHERRY,\n        SYMBOL_REPLAY,\n        SYMBOL_LOTAD,\n        SYMBOL_AZURILL,\n        SYMBOL_CHERRY,\n        SYMBOL_REPLAY,\n        SYMBOL_POWER,\n        SYMBOL_POWER,\n        SYMBOL_LOTAD,\n        SYMBOL_7_BLUE,\n        SYMBOL_LOTAD,\n        SYMBOL_REPLAY,\n        SYMBOL_CHERRY,\n        SYMBOL_AZURILL,\n        SYMBOL_LOTAD,\n        SYMBOL_REPLAY,\n        SYMBOL_CHERRY,\n        SYMBOL_LOTAD,\n        SYMBOL_REPLAY,\n        SYMBOL_CHERRY\n    },\n    [RIGHT_REEL..."
+    },
+    "sReelTimeSymbols": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "0",
+        "5",
+        "4",
+        "3",
+        "2"
+      ],
+      "rawValue": "{\n    1, 0, 5, 4, 3, 2\n}"
+    },
+    "sInitialReelPositions": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "LEFT_REEL",
+        "MIDDLE_REEL",
+        "RIGHT_REEL"
+      ],
+      "indexedValues": [
+        "{0",
+        "{0",
+        "{0"
+      ],
+      "rawValue": "{\n    [LEFT_REEL]   = {0,  6},\n    [MIDDLE_REEL] = {0, 10},\n    [RIGHT_REEL]  = {0,  2}\n}"
+    },
+    "sSpecialDrawOdds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SLOT_MACHINE_UNLUCKIEST",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST"
+      ],
+      "indexedValues": [
+        "{1",
+        "{1",
+        "{2",
+        "{2",
+        "{2",
+        "{3"
+      ],
+      "rawValue": "{\n    [SLOT_MACHINE_UNLUCKIEST] = {1, 1, 12},\n    [SLOT_MACHINE_UNLUCKIER]  = {1, 1, 14},\n    [SLOT_MACHINE_UNLUCKY]    = {2, 2, 14},\n    [SLOT_MACHINE_LUCKY]      = {2, 2, 14},\n    [SLOT_MACHINE_LUCKIER]    = {2, 3, 16},\n    [SLOT_MACHINE_LUCKIEST]   = {3, 3, 16}\n}"
+    },
+    "sBiasProbabilities_Special": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SLOT_MACHINE_UNLUCKIEST",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST",
+        "SLOT_MACHINE_UNLUCKIEST",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST",
+        "SLOT_MACHINE_UNLUCKIEST",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST"
+      ],
+      "indexedValues": [
+        "25",
+        "25",
+        "30",
+        "40",
+        "40",
+        "50",
+        "25",
+        "25",
+        "30",
+        "30",
+        "35",
+        "35",
+        "25",
+        "25",
+        "30",
+        "25",
+        "25",
+        "30"
+      ],
+      "rawValue": "{\n    {\n         \n        [SLOT_MACHINE_UNLUCKIEST] = 25,\n        [SLOT_MACHINE_UNLUCKIER]  = 25,\n        [SLOT_MACHINE_UNLUCKY]    = 30,\n        [SLOT_MACHINE_LUCKY]      = 40,\n        [SLOT_MACHINE_LUCKIER]    = 40,\n        [SLOT_MACHINE_LUCKIEST]   = 50\n    },\n    {\n         \n        [SLOT_MACHINE_UNLUCKIEST] = 25,\n        [SLOT_MACHINE_UNLUCKIER]  = 25,\n        [SLOT_MACHINE_UNLUCKY]    = 30,\n        [SLOT_MACHINE_LUCKY]      = 30,\n        [SLOT_MACHINE_LUCKIER]    = 35,\n        [SLOT_MACHINE_LUCKIEST]   = 35\n    },\n    {\n         \n        [SLOT_MACHINE_UNLUCKIEST] = 25,\n        [SLOT_MACHINE_UNLUCKIER]  = 25,\n        [SLOT_MACHINE_UNLUCKY]    = 30,\n        [SLOT_MACHINE_LUCKY]      = 25,\n        [SLOT_MACHINE_LUCKIER]    = 25,\n        [SLOT_MACHINE_LUCKIEST]   = 30\n    }\n}"
+    },
+    "sBiasProbabilities_Regular": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SLOT_MACHINE_UNLUCKIEST",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST",
+        "SLOT_MACHINE_UNLUCKIEST",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST",
+        "SLOT_MACHINE_UNLUCKIEST",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST",
+        "SLOT_MACHINE_UNLUCKIEST",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST",
+        "SLOT_MACHINE_UNLUCKIEST",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST"
+      ],
+      "indexedValues": [
+        "20",
+        "25",
+        "25",
+        "20",
+        "25",
+        "25",
+        "12",
+        "15",
+        "15",
+        "18",
+        "19",
+        "22",
+        "25",
+        "25",
+        "25",
+        "30",
+        "30",
+        "40",
+        "25",
+        "25",
+        "20",
+        "20",
+        "15",
+        "15",
+        "40",
+        "40",
+        "35",
+        "35",
+        "40",
+        "40"
+      ],
+      "rawValue": "{\n    {\n         \n        [SLOT_MACHINE_UNLUCKIEST] = 20,\n        [SLOT_MACHINE_UNLUCKIER]  = 25,\n        [SLOT_MACHINE_UNLUCKY]    = 25,\n        [SLOT_MACHINE_LUCKY]      = 20,\n        [SLOT_MACHINE_LUCKIER]    = 25,\n        [SLOT_MACHINE_LUCKIEST]   = 25\n    },\n    {\n         \n        [SLOT_MACHINE_UNLUCKIEST] = 12,\n        [SLOT_MACHINE_UNLUCKIER]  = 15,\n        [SLOT_MACHINE_UNLUCKY]    = 15,\n        [SLOT_MACHINE_LUCKY]      = 18,\n        [SLOT_MACHINE_LUCKIER]    = 19,\n        [SLOT_MACHINE_LUCKIEST]   = 22\n    },\n    {\n         \n        [SLOT_MACHINE_UNLUCKIEST] = 25,\n        [SLOT_MACHINE_UNLUCKIER]  = 25,\n        [SLOT_MACHINE_UNLUCKY]    = 25,\n        [SLOT_MACHINE_LUCKY]      = 30,\n        [SLOT_MACHINE_LUCKIER]    = 30,\n        [SLOT_MACHINE_LUCKIEST]   = 40\n    },\n    {\n         \n        [SLOT_MACHINE_UNLUCKIEST] = 25,\n        [SLOT_MACHINE_UNLUCKIER]  = 25,\n        [SLOT_MACHINE_UNLUCKY]    = 20,\n        [SLOT_MACHINE_LUCKY]      = 20,\n        [SLOT_MACHINE_LUCKIER]    = 15,\n        [SLOT_MACHIN..."
+    },
+    "sReelTimeProbabilities_NormalGame": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{243, 243, 243,  80,  80,  80,  80,  40,  40,  40,  40,  40,  40,   5,   5,   5,   5}",
+        "{  5,   5,   5, 150, 150, 150, 150, 130, 130, 130, 130, 130, 130, 100, 100, 100,   5}",
+        "{  4,   4,   4,  20,  20,  20,  20,  80,  80,  80,  80,  80,  80, 100, 100, 100,  40}",
+        "{  2,   2,   2,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,  45,  45,  45, 100}",
+        "{  1,   1,   1,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   5,   5,   5, 100}",
+        "{  1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   6}"
+      ],
+      "rawValue": "{\n    {243, 243, 243,  80,  80,  80,  80,  40,  40,  40,  40,  40,  40,   5,   5,   5,   5},   \n    {  5,   5,   5, 150, 150, 150, 150, 130, 130, 130, 130, 130, 130, 100, 100, 100,   5},   \n    {  4,   4,   4,  20,  20,  20,  20,  80,  80,  80,  80,  80,  80, 100, 100, 100,  40},   \n    {  2,   2,   2,   3,   3,   3,   3,   3,   3,   3,   3,   3,   3,  45,  45,  45, 100},   \n    {  1,   1,   1,   2,   2,   2,   2,   2,   2,   2,   2,   2,   2,   5,   5,   5, 100},   \n    {  1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   6}    \n}"
+    },
+    "sReelTimeProbabilities_LuckyGame": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 243, 243, 243, 200, 200, 200, 200, 160, 160, 160, 160, 160, 160,  70,  70,  70,   5}",
+        "{   5,   5,   5,  25,  25,  25,  25,   5,   5,   5,   5,   5,   5,   2,   2,   2,   6}",
+        "{   4,   4,   4,  25,  25,  25,  25,  30,  30,  30,  30,  30,  30,  40,  40,  40,  35}",
+        "{   2,   2,   2,   3,   3,   3,   3,  30,  30,  30,  30,  30,  30, 100, 100, 100,  50}",
+        "{   1,   1,   1,   2,   2,   2,   2,  30,  30,  30,  30,  30,  30,  40,  40,  40, 100}",
+        "{   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   4,   4,   4,  60}"
+      ],
+      "rawValue": "{\n    { 243, 243, 243, 200, 200, 200, 200, 160, 160, 160, 160, 160, 160,  70,  70,  70,   5},   \n    {   5,   5,   5,  25,  25,  25,  25,   5,   5,   5,   5,   5,   5,   2,   2,   2,   6},   \n    {   4,   4,   4,  25,  25,  25,  25,  30,  30,  30,  30,  30,  30,  40,  40,  40,  35},   \n    {   2,   2,   2,   3,   3,   3,   3,  30,  30,  30,  30,  30,  30, 100, 100, 100,  50},   \n    {   1,   1,   1,   2,   2,   2,   2,  30,  30,  30,  30,  30,  30,  40,  40,  40, 100},   \n    {   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   4,   4,   4,  60}    \n}"
+    },
+    "sReelTimeExplodeProbability": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "128",
+        "175",
+        "200",
+        "225",
+        "256"
+      ],
+      "rawValue": "{\n    128, 175, 200, 225, 256\n}"
+    },
+    "sReelTimeSpeed_Probabilities": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{10,  5}",
+        "{10, 10}",
+        "{10, 15}",
+        "{10, 25}",
+        "{10, 35}"
+      ],
+      "rawValue": "{\n    {10,  5},\n    {10, 10},\n    {10, 15},\n    {10, 25},\n    {10, 35}\n}"
+    },
+    "sQuarterSpeed_ProbabilityBoost": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "5",
+        "10",
+        "15",
+        "20"
+      ],
+      "rawValue": "{\n    0, 5, 10, 15, 20\n}"
+    },
+    "sBiasSymbols": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "SYMBOL_REPLAY",
+        "SYMBOL_CHERRY",
+        "SYMBOL_LOTAD",
+        "SYMBOL_AZURILL",
+        "SYMBOL_POWER",
+        "SYMBOL_7_RED",
+        "SYMBOL_7_RED",
+        "SYMBOL_7_RED"
+      ],
+      "rawValue": "{\n  SYMBOL_REPLAY,   \n  SYMBOL_CHERRY,   \n  SYMBOL_LOTAD,    \n  SYMBOL_AZURILL,  \n  SYMBOL_POWER,    \n  SYMBOL_7_RED,    \n  SYMBOL_7_RED,    \n  SYMBOL_7_RED     \n}"
+    },
+    "sBiasesSpecial": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "BIAS_STRAIGHT_7",
+        "BIAS_REELTIME",
+        "BIAS_MIXED_7"
+      ],
+      "rawValue": "{\n    BIAS_STRAIGHT_7, BIAS_REELTIME, BIAS_MIXED_7\n}"
+    },
+    "sBiasesRegular": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "BIAS_POWER",
+        "BIAS_AZURILL",
+        "BIAS_LOTAD",
+        "BIAS_CHERRY",
+        "BIAS_REPLAY"
+      ],
+      "rawValue": "{\n    BIAS_POWER, BIAS_AZURILL, BIAS_LOTAD, BIAS_CHERRY, BIAS_REPLAY\n}"
+    },
+    "sSymbolToMatch": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SYMBOL_7_RED",
+        "SYMBOL_7_BLUE",
+        "SYMBOL_AZURILL",
+        "SYMBOL_LOTAD",
+        "SYMBOL_CHERRY",
+        "SYMBOL_POWER",
+        "SYMBOL_REPLAY"
+      ],
+      "indexedValues": [
+        "MATCH_RED_7",
+        "MATCH_BLUE_7",
+        "MATCH_AZURILL",
+        "MATCH_LOTAD",
+        "MATCH_CHERRY",
+        "MATCH_POWER",
+        "MATCH_REPLAY"
+      ],
+      "rawValue": "{\n    [SYMBOL_7_RED]   = MATCH_RED_7,\n    [SYMBOL_7_BLUE]  = MATCH_BLUE_7,\n    [SYMBOL_AZURILL] = MATCH_AZURILL,\n    [SYMBOL_LOTAD]   = MATCH_LOTAD,\n    [SYMBOL_CHERRY]  = MATCH_CHERRY,\n    [SYMBOL_POWER]   = MATCH_POWER,\n    [SYMBOL_REPLAY]  = MATCH_REPLAY\n}"
+    },
+    "sSlotMatchFlags": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MATCH_CHERRY",
+        "MATCH_TOPBOT_CHERRY",
+        "MATCH_REPLAY",
+        "MATCH_LOTAD",
+        "MATCH_AZURILL",
+        "MATCH_POWER",
+        "MATCH_MIXED_7",
+        "MATCH_RED_7",
+        "MATCH_BLUE_7"
+      ],
+      "indexedValues": [
+        "1 << MATCH_CHERRY",
+        "1 << MATCH_TOPBOT_CHERRY",
+        "1 << MATCH_REPLAY",
+        "1 << MATCH_LOTAD",
+        "1 << MATCH_AZURILL",
+        "1 << MATCH_POWER",
+        "1 << MATCH_MIXED_7",
+        "1 << MATCH_RED_7",
+        "1 << MATCH_BLUE_7"
+      ],
+      "rawValue": "{\n    [MATCH_CHERRY]        = 1 << MATCH_CHERRY,\n    [MATCH_TOPBOT_CHERRY] = 1 << MATCH_TOPBOT_CHERRY,\n    [MATCH_REPLAY]        = 1 << MATCH_REPLAY,\n    [MATCH_LOTAD]         = 1 << MATCH_LOTAD,\n    [MATCH_AZURILL]       = 1 << MATCH_AZURILL,\n    [MATCH_POWER]         = 1 << MATCH_POWER,\n    [MATCH_MIXED_7]       = 1 << MATCH_MIXED_7,\n    [MATCH_RED_7]         = 1 << MATCH_RED_7,\n    [MATCH_BLUE_7]        = 1 << MATCH_BLUE_7\n}"
+    },
+    "sSlotPayouts": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MATCH_CHERRY",
+        "MATCH_TOPBOT_CHERRY",
+        "MATCH_REPLAY",
+        "MATCH_LOTAD",
+        "MATCH_AZURILL",
+        "MATCH_POWER",
+        "MATCH_MIXED_7",
+        "MATCH_RED_7",
+        "MATCH_BLUE_7"
+      ],
+      "indexedValues": [
+        "2",
+        "4",
+        "0",
+        "6",
+        "12",
+        "3",
+        "90",
+        "300",
+        "300"
+      ],
+      "rawValue": "{\n    [MATCH_CHERRY]        = 2,\n    [MATCH_TOPBOT_CHERRY] = 4,\n    [MATCH_REPLAY]        = 0,\n    [MATCH_LOTAD]         = 6,\n    [MATCH_AZURILL]       = 12,\n    [MATCH_POWER]         = 3,\n    [MATCH_MIXED_7]       = 90,\n    [MATCH_RED_7]         = 300,\n    [MATCH_BLUE_7]        = 300\n}"
+    },
+    "sDigitalDisplay_SpriteCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "DIG_DISPINFO_INSERT",
+        "DIG_DISPINFO_STOP_S",
+        "DIG_DISPINFO_STOP_T",
+        "DIG_DISPINFO_STOP_O",
+        "DIG_DISPINFO_STOP_P",
+        "DIG_DISPINFO_A_BUTTON_STOP",
+        "DIG_DISPINFO_POKE_BALL_ROCKING",
+        "DIG_DISPINFO_WIN",
+        "DIG_DISPINFO_LOSE",
+        "DIG_DISPINFO_SMOKE_NW",
+        "DIG_DISPINFO_SMOKE_NE",
+        "DIG_DISPINFO_SMOKE_SW",
+        "DIG_DISPINFO_SMOKE_SE",
+        "DIG_DISPINFO_REEL",
+        "DIG_DISPINFO_TIME",
+        "DIG_DISPINFO_NUMBER",
+        "DIG_DISPINFO_DPAD",
+        "DIG_DISPINFO_POKE_BALL_SHINING",
+        "DIG_DISPINFO_REG_R",
+        "DIG_DISPINFO_REG_E",
+        "DIG_DISPINFO_REG_G",
+        "DIG_DISPINFO_REG_BONUS_B",
+        "DIG_DISPINFO_REG_BONUS_O",
+        "DIG_DISPINFO_REG_BONUS_N",
+        "DIG_DISPINFO_REG_BONUS_U",
+        "DIG_DISPINFO_REG_BONUS_S",
+        "DIG_DISPINFO_BIG_B",
+        "DIG_DISPINFO_BIG_I",
+        "DIG_DISPINFO_BIG_G",
+        "DIG_DISPINFO_BIG_BONUS_B",
+        "DIG_DISPINFO_BIG_BONUS_O",
+        "DIG_DISPINFO_BIG_BONUS_N",
+        "DIG_DISPINFO_BIG_BONUS_U",
+        "DIG_DISPINFO_BIG_BONUS_S",
+        "DIG_DISPINFO_A_BUTTON_START"
+      ],
+      "indexedValues": [
+        "{ 208",
+        "{ 184",
+        "{ 200",
+        "{ 216",
+        "{ 232",
+        "{ 208",
+        "{ 208",
+        "{ 208",
+        "{ 208",
+        "{ 192",
+        "{ 224",
+        "{ 192",
+        "{ 224",
+        "{ 144",
+        "{ 272",
+        "{ 168",
+        "{ 208",
+        "{ 208",
+        "{ 188",
+        "{ 208",
+        "{ 228",
+        "{ 184",
+        "{ 196",
+        "{ 208",
+        "{ 220",
+        "{ 232",
+        "{ 188",
+        "{ 208",
+        "{ 228",
+        "{ 184",
+        "{ 196",
+        "{ 208",
+        "{ 220",
+        "{ 232",
+        "{ 0"
+      ],
+      "rawValue": "{\n    [DIG_DISPINFO_INSERT] = { 208, 56},\n    [DIG_DISPINFO_STOP_S] = { 184,  0},\n    [DIG_DISPINFO_STOP_T] = { 200,  8},\n    [DIG_DISPINFO_STOP_O] = { 216, 16},\n    [DIG_DISPINFO_STOP_P] = { 232, 24},\n    [DIG_DISPINFO_A_BUTTON_STOP] = { 208, 72},\n    [DIG_DISPINFO_POKE_BALL_ROCKING] = { 208, 8},\n    [DIG_DISPINFO_WIN] = { 208, 64},\n    [DIG_DISPINFO_LOSE] = { 208, 56},\n    [DIG_DISPINFO_SMOKE_NW] = { 192,  88},\n    [DIG_DISPINFO_SMOKE_NE] = { 224,  88},\n    [DIG_DISPINFO_SMOKE_SW] = { 192, 120},\n    [DIG_DISPINFO_SMOKE_SE] = { 224, 120},\n    [DIG_DISPINFO_REEL] = { 144, 56},\n    [DIG_DISPINFO_TIME] = { 272, 88},\n    [DIG_DISPINFO_NUMBER] = { 168, 112},\n    [DIG_DISPINFO_DPAD] = { 208, 84},\n    [DIG_DISPINFO_POKE_BALL_SHINING] = { 208, 112},\n    [DIG_DISPINFO_REG_R] = { 188, 52},\n    [DIG_DISPINFO_REG_E] = { 208, 52},\n    [DIG_DISPINFO_REG_G] = { 228, 52},\n    [DIG_DISPINFO_REG_BONUS_B] = { 184, 72},\n    [DIG_DISPINFO_REG_BONUS_O] = { 196, 72},\n    [DIG_DISPINFO_REG_BONUS_N] = { 208, 72},\n    [DIG_DISPINFO_R..."
+    },
+    "sDigitalDisplay_SpriteCallbacks": {
+      "type": "SpriteCallback",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "DIG_DISPINFO_INSERT",
+        "DIG_DISPINFO_STOP_S",
+        "DIG_DISPINFO_STOP_T",
+        "DIG_DISPINFO_STOP_O",
+        "DIG_DISPINFO_STOP_P",
+        "DIG_DISPINFO_A_BUTTON_STOP",
+        "DIG_DISPINFO_POKE_BALL_ROCKING",
+        "DIG_DISPINFO_WIN",
+        "DIG_DISPINFO_LOSE",
+        "DIG_DISPINFO_SMOKE_NW",
+        "DIG_DISPINFO_SMOKE_NE",
+        "DIG_DISPINFO_SMOKE_SW",
+        "DIG_DISPINFO_SMOKE_SE",
+        "DIG_DISPINFO_REEL",
+        "DIG_DISPINFO_TIME",
+        "DIG_DISPINFO_NUMBER",
+        "DIG_DISPINFO_DPAD",
+        "DIG_DISPINFO_POKE_BALL_SHINING",
+        "DIG_DISPINFO_REG_R",
+        "DIG_DISPINFO_REG_E",
+        "DIG_DISPINFO_REG_G",
+        "DIG_DISPINFO_REG_BONUS_B",
+        "DIG_DISPINFO_REG_BONUS_O",
+        "DIG_DISPINFO_REG_BONUS_N",
+        "DIG_DISPINFO_REG_BONUS_U",
+        "DIG_DISPINFO_REG_BONUS_S",
+        "DIG_DISPINFO_BIG_B",
+        "DIG_DISPINFO_BIG_I",
+        "DIG_DISPINFO_BIG_G",
+        "DIG_DISPINFO_BIG_BONUS_B",
+        "DIG_DISPINFO_BIG_BONUS_O",
+        "DIG_DISPINFO_BIG_BONUS_N",
+        "DIG_DISPINFO_BIG_BONUS_U",
+        "DIG_DISPINFO_BIG_BONUS_S",
+        "DIG_DISPINFO_A_BUTTON_START"
+      ],
+      "indexedValues": [
+        "SpriteCB_DigitalDisplay_Static",
+        "SpriteCB_DigitalDisplay_Stop",
+        "SpriteCB_DigitalDisplay_Stop",
+        "SpriteCB_DigitalDisplay_Stop",
+        "SpriteCB_DigitalDisplay_Stop",
+        "SpriteCB_DigitalDisplay_AButtonStop",
+        "SpriteCB_DigitalDisplay_PokeballRocking",
+        "SpriteCB_DigitalDisplay_Static",
+        "SpriteCB_DigitalDisplay_Static",
+        "SpriteCB_DigitalDisplay_Smoke",
+        "SpriteCB_DigitalDisplay_SmokeNE",
+        "SpriteCB_DigitalDisplay_SmokeSW",
+        "SpriteCB_DigitalDisplay_SmokeSE",
+        "SpriteCB_DigitalDisplay_Reel",
+        "SpriteCB_DigitalDisplay_Time",
+        "SpriteCB_DigitalDisplay_ReelTimeNumber",
+        "SpriteCB_DigitalDisplay_Static",
+        "SpriteCB_DigitalDisplay_PokeballShining",
+        "SpriteCB_DigitalDisplay_RegBonus",
+        "SpriteCB_DigitalDisplay_RegBonus",
+        "SpriteCB_DigitalDisplay_RegBonus",
+        "SpriteCB_DigitalDisplay_RegBonus",
+        "SpriteCB_DigitalDisplay_RegBonus",
+        "SpriteCB_DigitalDisplay_RegBonus",
+        "SpriteCB_DigitalDisplay_RegBonus",
+        "SpriteCB_DigitalDisplay_RegBonus",
+        "SpriteCB_DigitalDisplay_BigBonus",
+        "SpriteCB_DigitalDisplay_BigBonus",
+        "SpriteCB_DigitalDisplay_BigBonus",
+        "SpriteCB_DigitalDisplay_BigBonus",
+        "SpriteCB_DigitalDisplay_BigBonus",
+        "SpriteCB_DigitalDisplay_BigBonus",
+        "SpriteCB_DigitalDisplay_BigBonus",
+        "SpriteCB_DigitalDisplay_BigBonus",
+        "SpriteCB_DigitalDisplay_AButtonStart"
+      ],
+      "rawValue": "{\n    [DIG_DISPINFO_INSERT]            = SpriteCB_DigitalDisplay_Static,\n    [DIG_DISPINFO_STOP_S]            = SpriteCB_DigitalDisplay_Stop,\n    [DIG_DISPINFO_STOP_T]            = SpriteCB_DigitalDisplay_Stop,\n    [DIG_DISPINFO_STOP_O]            = SpriteCB_DigitalDisplay_Stop,\n    [DIG_DISPINFO_STOP_P]            = SpriteCB_DigitalDisplay_Stop,\n    [DIG_DISPINFO_A_BUTTON_STOP]     = SpriteCB_DigitalDisplay_AButtonStop,\n    [DIG_DISPINFO_POKE_BALL_ROCKING] = SpriteCB_DigitalDisplay_PokeballRocking,\n    [DIG_DISPINFO_WIN]               = SpriteCB_DigitalDisplay_Static,\n    [DIG_DISPINFO_LOSE]              = SpriteCB_DigitalDisplay_Static,\n    [DIG_DISPINFO_SMOKE_NW]          = SpriteCB_DigitalDisplay_Smoke,\n    [DIG_DISPINFO_SMOKE_NE]          = SpriteCB_DigitalDisplay_SmokeNE,\n    [DIG_DISPINFO_SMOKE_SW]          = SpriteCB_DigitalDisplay_SmokeSW,\n    [DIG_DISPINFO_SMOKE_SE]          = SpriteCB_DigitalDisplay_SmokeSE,\n    [DIG_DISPINFO_REEL]              = SpriteCB_DigitalDisplay_Reel,\n    [DIG_DISPINFO_TIME..."
+    },
+    "sDigitalDisplay_InsertBet": {
+      "type": "struct DigitalDisplaySprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{DIG_SPRITE_EMPTY, DIG_DISPINFO_A_BUTTON_START, 0}",
+        "{DIG_SPRITE_INSERT, DIG_DISPINFO_INSERT, 0}",
+        "{DIG_SPRITE_D_PAD, DIG_DISPINFO_DPAD, 0}",
+        "DIG_SPRITE_DUMMY"
+      ],
+      "rawValue": "{\n    {DIG_SPRITE_EMPTY, DIG_DISPINFO_A_BUTTON_START, 0},  \n    {DIG_SPRITE_INSERT, DIG_DISPINFO_INSERT, 0},\n    {DIG_SPRITE_D_PAD, DIG_DISPINFO_DPAD, 0},\n    DIG_SPRITE_DUMMY\n}"
+    },
+    "sDigitalDisplay_StopReel": {
+      "type": "struct DigitalDisplaySprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{DIG_SPRITE_STOP_S, DIG_DISPINFO_STOP_S, 0}",
+        "{DIG_SPRITE_STOP_T, DIG_DISPINFO_STOP_T, 0}",
+        "{DIG_SPRITE_STOP_O, DIG_DISPINFO_STOP_O, 0}",
+        "{DIG_SPRITE_STOP_P, DIG_DISPINFO_STOP_P, 0}",
+        "{DIG_SPRITE_A_BUTTON, DIG_DISPINFO_A_BUTTON_STOP, 0}",
+        "{DIG_SPRITE_POKE_BALL, DIG_DISPINFO_POKE_BALL_ROCKING, 0}",
+        "DIG_SPRITE_DUMMY"
+      ],
+      "rawValue": "{\n    {DIG_SPRITE_STOP_S, DIG_DISPINFO_STOP_S, 0},\n    {DIG_SPRITE_STOP_T, DIG_DISPINFO_STOP_T, 0},\n    {DIG_SPRITE_STOP_O, DIG_DISPINFO_STOP_O, 0},\n    {DIG_SPRITE_STOP_P, DIG_DISPINFO_STOP_P, 0},\n    {DIG_SPRITE_A_BUTTON, DIG_DISPINFO_A_BUTTON_STOP, 0},\n    {DIG_SPRITE_POKE_BALL, DIG_DISPINFO_POKE_BALL_ROCKING, 0},\n    DIG_SPRITE_DUMMY\n}"
+    },
+    "sDigitalDisplay_Win": {
+      "type": "struct DigitalDisplaySprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{DIG_SPRITE_WIN, DIG_DISPINFO_WIN, 0}",
+        "{DIG_SPRITE_POKE_BALL, DIG_DISPINFO_POKE_BALL_SHINING, 0}",
+        "DIG_SPRITE_DUMMY"
+      ],
+      "rawValue": "{\n    {DIG_SPRITE_WIN, DIG_DISPINFO_WIN, 0},\n    {DIG_SPRITE_POKE_BALL, DIG_DISPINFO_POKE_BALL_SHINING, 0},\n    DIG_SPRITE_DUMMY\n}"
+    },
+    "sDigitalDisplay_Lose": {
+      "type": "struct DigitalDisplaySprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{DIG_SPRITE_LOSE, DIG_DISPINFO_LOSE, 0}",
+        "{DIG_SPRITE_SMOKE, DIG_DISPINFO_SMOKE_NW, 0}",
+        "{DIG_SPRITE_SMOKE, DIG_DISPINFO_SMOKE_NE, 1}",
+        "{DIG_SPRITE_SMOKE, DIG_DISPINFO_SMOKE_SW, 2}",
+        "{DIG_SPRITE_SMOKE, DIG_DISPINFO_SMOKE_SE, 3}",
+        "DIG_SPRITE_DUMMY"
+      ],
+      "rawValue": "{\n    {DIG_SPRITE_LOSE, DIG_DISPINFO_LOSE, 0},\n    {DIG_SPRITE_SMOKE, DIG_DISPINFO_SMOKE_NW, 0},\n    {DIG_SPRITE_SMOKE, DIG_DISPINFO_SMOKE_NE, 1},\n    {DIG_SPRITE_SMOKE, DIG_DISPINFO_SMOKE_SW, 2},\n    {DIG_SPRITE_SMOKE, DIG_DISPINFO_SMOKE_SE, 3},\n    DIG_SPRITE_DUMMY\n}"
+    },
+    "sDigitalDisplay_ReelTime": {
+      "type": "struct DigitalDisplaySprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{DIG_SPRITE_REEL, DIG_DISPINFO_REEL, 0}",
+        "{DIG_SPRITE_TIME, DIG_DISPINFO_TIME, 0}",
+        "{DIG_SPRITE_NUMBER, DIG_DISPINFO_NUMBER, 0}",
+        "DIG_SPRITE_DUMMY"
+      ],
+      "rawValue": "{\n    {DIG_SPRITE_REEL, DIG_DISPINFO_REEL, 0},\n    {DIG_SPRITE_TIME, DIG_DISPINFO_TIME, 0},\n    {DIG_SPRITE_NUMBER, DIG_DISPINFO_NUMBER, 0},  \n    DIG_SPRITE_DUMMY\n}"
+    },
+    "sDigitalDisplay_BonusBig": {
+      "type": "struct DigitalDisplaySprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{DIG_SPRITE_BIG_B, DIG_DISPINFO_BIG_B, 0}",
+        "{DIG_SPRITE_BIG_I, DIG_DISPINFO_BIG_I, 1}",
+        "{DIG_SPRITE_BIG_G, DIG_DISPINFO_BIG_G, 2}",
+        "{DIG_SPRITE_BONUS_B, DIG_DISPINFO_BIG_BONUS_B, 3}",
+        "{DIG_SPRITE_BONUS_O, DIG_DISPINFO_BIG_BONUS_O, 4}",
+        "{DIG_SPRITE_BONUS_N, DIG_DISPINFO_BIG_BONUS_N, 5}",
+        "{DIG_SPRITE_BONUS_U, DIG_DISPINFO_BIG_BONUS_U, 6}",
+        "{DIG_SPRITE_BONUS_S, DIG_DISPINFO_BIG_BONUS_S, 7}",
+        "{DIG_SPRITE_POKE_BALL, DIG_DISPINFO_POKE_BALL_SHINING, 0}",
+        "DIG_SPRITE_DUMMY"
+      ],
+      "rawValue": "{\n    {DIG_SPRITE_BIG_B, DIG_DISPINFO_BIG_B, 0},\n    {DIG_SPRITE_BIG_I, DIG_DISPINFO_BIG_I, 1},\n    {DIG_SPRITE_BIG_G, DIG_DISPINFO_BIG_G, 2},\n    {DIG_SPRITE_BONUS_B, DIG_DISPINFO_BIG_BONUS_B, 3},\n    {DIG_SPRITE_BONUS_O, DIG_DISPINFO_BIG_BONUS_O, 4},\n    {DIG_SPRITE_BONUS_N, DIG_DISPINFO_BIG_BONUS_N, 5},\n    {DIG_SPRITE_BONUS_U, DIG_DISPINFO_BIG_BONUS_U, 6},\n    {DIG_SPRITE_BONUS_S, DIG_DISPINFO_BIG_BONUS_S, 7},\n    {DIG_SPRITE_POKE_BALL, DIG_DISPINFO_POKE_BALL_SHINING, 0},\n    DIG_SPRITE_DUMMY\n}"
+    },
+    "sDigitalDisplay_BonusRegular": {
+      "type": "struct DigitalDisplaySprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{DIG_SPRITE_REG_R, DIG_DISPINFO_REG_R, 0}",
+        "{DIG_SPRITE_REG_E, DIG_DISPINFO_REG_E, 1}",
+        "{DIG_SPRITE_REG_G, DIG_DISPINFO_REG_G, 2}",
+        "{DIG_SPRITE_BONUS_B, DIG_DISPINFO_REG_BONUS_B, 3}",
+        "{DIG_SPRITE_BONUS_O, DIG_DISPINFO_REG_BONUS_O, 4}",
+        "{DIG_SPRITE_BONUS_N, DIG_DISPINFO_REG_BONUS_N, 5}",
+        "{DIG_SPRITE_BONUS_U, DIG_DISPINFO_REG_BONUS_U, 6}",
+        "{DIG_SPRITE_BONUS_S, DIG_DISPINFO_REG_BONUS_S, 7}",
+        "{DIG_SPRITE_POKE_BALL, DIG_DISPINFO_POKE_BALL_SHINING, 0}",
+        "DIG_SPRITE_DUMMY"
+      ],
+      "rawValue": "{\n    {DIG_SPRITE_REG_R, DIG_DISPINFO_REG_R, 0},\n    {DIG_SPRITE_REG_E, DIG_DISPINFO_REG_E, 1},\n    {DIG_SPRITE_REG_G, DIG_DISPINFO_REG_G, 2},\n    {DIG_SPRITE_BONUS_B, DIG_DISPINFO_REG_BONUS_B, 3},\n    {DIG_SPRITE_BONUS_O, DIG_DISPINFO_REG_BONUS_O, 4},\n    {DIG_SPRITE_BONUS_N, DIG_DISPINFO_REG_BONUS_N, 5},\n    {DIG_SPRITE_BONUS_U, DIG_DISPINFO_REG_BONUS_U, 6},\n    {DIG_SPRITE_BONUS_S, DIG_DISPINFO_REG_BONUS_S, 7},\n    {DIG_SPRITE_POKE_BALL, DIG_DISPINFO_POKE_BALL_SHINING, 0},\n    DIG_SPRITE_DUMMY\n}"
+    },
+    "sImageTable_ReelTimeNumbers": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gSlotMachineReelTimeNumber0, 0x80 }",
+        "{ gSlotMachineReelTimeNumber1, 0x80 }",
+        "{ gSlotMachineReelTimeNumber2, 0x80 }",
+        "{ gSlotMachineReelTimeNumber3, 0x80 }",
+        "{ gSlotMachineReelTimeNumber4, 0x80 }",
+        "{ gSlotMachineReelTimeNumber5, 0x80 }"
+      ],
+      "rawValue": "{\n    { gSlotMachineReelTimeNumber0, 0x80 },\n    { gSlotMachineReelTimeNumber1, 0x80 },\n    { gSlotMachineReelTimeNumber2, 0x80 },\n    { gSlotMachineReelTimeNumber3, 0x80 },\n    { gSlotMachineReelTimeNumber4, 0x80 },\n    { gSlotMachineReelTimeNumber5, 0x80 },\n}"
+    },
+    "sImageTable_ReelTimeShadow": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gSlotMachineReelTimeShadow, 0x200}"
+      ],
+      "rawValue": "{ {gSlotMachineReelTimeShadow, 0x200} }"
+    },
+    "sImageTable_ReelTimeNumberGap": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gSlotMachineReelTimeNumberGap_Gfx, 0x40}"
+      ],
+      "rawValue": "{ {gSlotMachineReelTimeNumberGap_Gfx, 0x40} }"
+    },
+    "sImageTable_ReelTimeBolt": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gSlotMachineReelTimeBolt0, 0x100 }",
+        "{ gSlotMachineReelTimeBolt1, 0x100 }"
+      ],
+      "rawValue": "{\n    { gSlotMachineReelTimeBolt0, 0x100 },\n    { gSlotMachineReelTimeBolt1, 0x100 },\n}"
+    },
+    "sImageTable_ReelTimePikachuAura": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gSlotMachineReelTimePikaAura, 0x400}"
+      ],
+      "rawValue": "{ {gSlotMachineReelTimePikaAura, 0x400} }"
+    },
+    "sImageTable_ReelTimeExplosion": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gSlotMachineReelTimeExplosion0, 0x200 }",
+        "{ gSlotMachineReelTimeExplosion1, 0x200 }"
+      ],
+      "rawValue": "{\n    { gSlotMachineReelTimeExplosion0, 0x200 },\n    { gSlotMachineReelTimeExplosion1, 0x200 },\n}"
+    },
+    "sImageTable_ReelTimeDuck": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gSlotMachineReelTimeDuck, 0x20}"
+      ],
+      "rawValue": "{ {gSlotMachineReelTimeDuck, 0x20} }"
+    },
+    "sImageTable_ReelTimeSmoke": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gSlotMachineReelTimeSmoke, 0x80}"
+      ],
+      "rawValue": "{ {gSlotMachineReelTimeSmoke, 0x80} }"
+    },
+    "sImageTable_PikaPowerBolt": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gSlotMachinePikaPowerBolt, 0x20}"
+      ],
+      "rawValue": "{ {gSlotMachinePikaPowerBolt, 0x20} }"
+    },
+    "sAnim_SingleFrame": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ReelTimeDuck": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_ReelTimePikachu_Still": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ReelTimePikachu_ChargingSlow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 16)",
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 16),\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_ReelTimePikachu_ChargingMedium": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_ReelTimePikachu_ChargingFast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_ReelTimePikachu_Cheering": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 32)",
+        "ANIMCMD_FRAME(3, 32)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 32),\n    ANIMCMD_FRAME(3, 32),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_ReelTimePikachu_FellOver": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ReelTimeNumber_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ReelTimeNumber_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ReelTimeNumber_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ReelTimeNumber_3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ReelTimeNumber_4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ReelTimeNumber_5": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ReelTimeBolt": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_ReelTimeExplosion": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_FRAME(1, 16)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_FRAME(1, 16),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_DigitalDisplay_AButton_Flashing": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_FRAME(1, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_FRAME(1, 30),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_DigitalDisplay_AButton_Static": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DigitalDisplay_DPad_Flashing": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_FRAME(1, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_FRAME(1, 30),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_DigitalDisplay_Pokeball_Rocking": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_FRAME(1, 16)",
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_FRAME(1, 16, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_FRAME(1, 16),\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_FRAME(1, 16, .hFlip = TRUE),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_DigitalDisplay_Pokeball_Static": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DigitalDisplay_Number_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DigitalDisplay_Number_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DigitalDisplay_Number_3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DigitalDisplay_Number_4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_DigitalDisplay_Number_5": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAffineAnim_ReelTimeSmoke": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(16, 16, 0, 0)",
+        "AFFINEANIMCMD_LOOP(0)",
+        "AFFINEANIMCMD_FRAME(1, 1, 0, 1)",
+        "AFFINEANIMCMD_LOOP(0xFF)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(16, 16, 0, 0),\n    AFFINEANIMCMD_LOOP(0),\n    AFFINEANIMCMD_FRAME(1, 1, 0, 1),\n    AFFINEANIMCMD_LOOP(0xFF),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_PikaPowerBolt": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, 8, 32)",
+        "AFFINEANIMCMD_FRAME(0, 0, 6, 32)",
+        "AFFINEANIMCMD_FRAME(0, 0, 4, 16)",
+        "AFFINEANIMCMD_FRAME(0, 0, 12, 2)",
+        "AFFINEANIMCMD_FRAME(0, 0, -12, 4)",
+        "AFFINEANIMCMD_FRAME(0, 0, 12, 2)",
+        "AFFINEANIMCMD_FRAME(0, 0, 12, 2)",
+        "AFFINEANIMCMD_FRAME(0, 0, -12, 4)",
+        "AFFINEANIMCMD_FRAME(0, 0, 12, 2)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, 8, 32),\n    AFFINEANIMCMD_FRAME(0, 0, 6, 32),\n    AFFINEANIMCMD_FRAME(0, 0, 4, 16),\n    AFFINEANIMCMD_FRAME(0, 0, 12, 2),\n    AFFINEANIMCMD_FRAME(0, 0, -12, 4),\n    AFFINEANIMCMD_FRAME(0, 0, 12, 2),\n    AFFINEANIMCMD_FRAME(0, 0, 12, 2),\n    AFFINEANIMCMD_FRAME(0, 0, -12, 4),\n    AFFINEANIMCMD_FRAME(0, 0, 12, 2),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sSubsprites_ReelBackground": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -64,\n        .y = -64,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = -64,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = -64,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -64,\n        .y = -64,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = -64,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = -64,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_ReelBackground": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_ReelBackground), sSubsprites_ReelBackground}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_ReelBackground), sSubsprites_ReelBackground}\n}"
+    },
+    "sSubsprites_ReelTimeMachineAntennae": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1,\n    }",
+        "{\n        .x = 0,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1,\n    }",
+        "{\n        .x = -32,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1,\n    }",
+        "{\n        .x = 0,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1,\n    }",
+        "{\n        .x = -32,\n        .y = 4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 1,\n    }",
+        "{\n        .x = 0,\n        .y = 4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1,\n    },\n    {\n        .x = 0,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1,\n    },\n    {\n        .x = -32,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1,\n    },\n    {\n        .x = 0,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1,\n    },\n    {\n        .x = -32,\n        .y = 4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 1,\n    },\n    {\n        .x = 0,\n        .y = 4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 1\n    }\n}"
+    },
+    "sSubspriteTable_ReelTimeMachineAntennae": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_ReelTimeMachineAntennae), sSubsprites_ReelTimeMachineAntennae}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_ReelTimeMachineAntennae), sSubsprites_ReelTimeMachineAntennae}\n}"
+    },
+    "sSubsprites_ReelTimeMachine": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -20,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1,\n    }",
+        "{\n        .x = -32,\n        .y = 12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 32,\n        .priority = 1,\n    }",
+        "{\n        .x = 0,\n        .y = 12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 36,\n        .priority = 1,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -20,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1,\n    },\n    {\n        .x = -32,\n        .y = 12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 32,\n        .priority = 1,\n    },\n    {\n        .x = 0,\n        .y = 12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 36,\n        .priority = 1,\n    }\n}"
+    },
+    "sSubspriteTable_ReelTimeMachine": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_ReelTimeMachine), sSubsprites_ReelTimeMachine}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_ReelTimeMachine), sSubsprites_ReelTimeMachine}\n}"
+    },
+    "sSubsprites_BrokenReelTimeMachine": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -24,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1,\n    }",
+        "{\n        .x = -32,\n        .y = 8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 32,\n        .priority = 1,\n    }",
+        "{\n        .x = 0,\n        .y = 8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 36,\n        .priority = 1,\n    }",
+        "{\n        .x = -32,\n        .y = 16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 40,\n        .priority = 1,\n    }",
+        "{\n        .x = 0,\n        .y = 16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 44,\n        .priority = 1,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -24,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1,\n    },\n    {\n        .x = -32,\n        .y = 8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 32,\n        .priority = 1,\n    },\n    {\n        .x = 0,\n        .y = 8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 36,\n        .priority = 1,\n    },\n    {\n        .x = -32,\n        .y = 16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 40,\n        .priority = 1,\n    },\n    {\n        .x = 0,\n        .y = 16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 44,\n        .priority = 1,\n    }\n}"
+    },
+    "sSubspriteTable_BrokenReelTimeMachine": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_BrokenReelTimeMachine), sSubsprites_BrokenReelTimeMachine}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_BrokenReelTimeMachine), sSubsprites_BrokenReelTimeMachine}\n}"
+    },
+    "sSubsprites_ReelTimeShadow": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1,\n    }",
+        "{\n        .x = 0,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1,\n    }",
+        "{\n        .x = -32,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1,\n    }",
+        "{\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1,\n    },\n    {\n        .x = 0,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1,\n    },\n    {\n        .x = -32,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1,\n    },\n    {\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1,\n    }\n}"
+    },
+    "sSubspriteTable_ReelTimeShadow": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_ReelTimeShadow), sSubsprites_ReelTimeShadow}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_ReelTimeShadow), sSubsprites_ReelTimeShadow}\n}"
+    },
+    "sSubsprites_ReelTimeNumberGap": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 1,\n    }",
+        "{\n        .x = -8,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 1,\n    }",
+        "{\n        .x = -8,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 1,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 1,\n    },\n    {\n        .x = -8,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 1,\n    },\n    {\n        .x = -8,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 1,\n    }\n}"
+    },
+    "sSubspriteTable_ReelTimeNumberGap": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_ReelTimeNumberGap), sSubsprites_ReelTimeNumberGap}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_ReelTimeNumberGap), sSubsprites_ReelTimeNumberGap}\n}"
+    },
+    "sSubsprites_DigitalDisplay_Reel": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -24,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = -32,\n        .y = 8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 32,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = 8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 36,\n        .priority = 3,\n    }",
+        "{\n        .x = -32,\n        .y = 16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 40,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = 16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 44,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -24,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = -32,\n        .y = 8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 32,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = 8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 36,\n        .priority = 3,\n    },\n    {\n        .x = -32,\n        .y = 16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 40,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = 16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 44,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_Reel": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_Reel), sSubsprites_DigitalDisplay_Reel}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_Reel), sSubsprites_DigitalDisplay_Reel}\n}"
+    },
+    "sSubsprites_DigitalDisplay_Time": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 3,\n    }",
+        "{\n        .x = -32,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 3,\n    },\n    {\n        .x = -32,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_Time": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_Time), sSubsprites_DigitalDisplay_Time}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_Time), sSubsprites_DigitalDisplay_Time}\n}"
+    },
+    "sSubsprites_DigitalDisplay_Insert": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 3,\n    }",
+        "{\n        .x = -32,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 3,\n    },\n    {\n        .x = -32,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_Insert": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_Insert), sSubsprites_DigitalDisplay_Insert}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_Insert), sSubsprites_DigitalDisplay_Insert}\n}"
+    },
+    "sSubsprites_DigitalDisplay_Unused1": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 3,\n    }",
+        "{\n        .x = -32,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 3,\n    },\n    {\n        .x = -32,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_Unused1": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_Unused1), sSubsprites_DigitalDisplay_Unused1}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_Unused1), sSubsprites_DigitalDisplay_Unused1}\n}"
+    },
+    "sSubsprites_DigitalDisplay_Win": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 3,\n    }",
+        "{\n        .x = -32,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3,\n    }",
+        "{\n        .x = -32,\n        .y = 4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = 4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 3,\n    },\n    {\n        .x = -32,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3,\n    },\n    {\n        .x = -32,\n        .y = 4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = 4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_Win": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_Win), sSubsprites_DigitalDisplay_Win}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_Win), sSubsprites_DigitalDisplay_Win}\n}"
+    },
+    "sSubsprites_DigitalDisplay_SmokeBig": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 0,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 0,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubsprites_DigitalDisplay_SmokeSmall": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 16,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 16,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_Smoke": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_SmokeBig),   sSubsprites_DigitalDisplay_SmokeBig}",
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_SmokeSmall), sSubsprites_DigitalDisplay_SmokeSmall}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_SmokeBig),   sSubsprites_DigitalDisplay_SmokeBig},\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_SmokeSmall), sSubsprites_DigitalDisplay_SmokeSmall}\n}"
+    },
+    "sSubsprites_DigitalDisplay_Pokeball": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -24,\n        .y = -24,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = 8,\n        .y = -24,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 4,\n        .priority = 3,\n    }",
+        "{\n        .x = -24,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 6,\n        .priority = 3,\n    }",
+        "{\n        .x = 8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 10,\n        .priority = 3,\n    }",
+        "{\n        .x = -24,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3,\n    }",
+        "{\n        .x = 8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 16,\n        .priority = 3,\n    }",
+        "{\n        .x = -24,\n        .y = 0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 18,\n        .priority = 3,\n    }",
+        "{\n        .x = 8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 22,\n        .priority = 3,\n    }",
+        "{\n        .x = -24,\n        .y = 8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 24,\n        .priority = 3,\n    }",
+        "{\n        .x = 8,\n        .y = 8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 28,\n        .priority = 3,\n    }",
+        "{\n        .x = -24,\n        .y = 16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 30,\n        .priority = 3,\n    }",
+        "{\n        .x = 8,\n        .y = 16,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 34,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -24,\n        .y = -24,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = 8,\n        .y = -24,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 4,\n        .priority = 3,\n    },\n    {\n        .x = -24,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 6,\n        .priority = 3,\n    },\n    {\n        .x = 8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 10,\n        .priority = 3,\n    },\n    {\n        .x = -24,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3,\n    },\n    {\n        .x = 8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 16,\n        .priority = 3,\n    },\n    {\n       ..."
+    },
+    "sSubspriteTable_DigitalDisplay_Pokeball": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_Pokeball), sSubsprites_DigitalDisplay_Pokeball}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_Pokeball), sSubsprites_DigitalDisplay_Pokeball}\n}"
+    },
+    "sSubsprites_DigitalDisplay_DPad": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = -16,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }",
+        "{\n        .x = 0,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 10,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = -16,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 3,\n    },\n    {\n        .x = 0,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 10,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_DPad": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_DPad), sSubsprites_DigitalDisplay_DPad}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_DPad), sSubsprites_DigitalDisplay_DPad}\n}"
+    },
+    "sSubsprites_DigitalDisplay_StopS": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_StopS": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_StopS), sSubsprites_DigitalDisplay_StopS}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_StopS), sSubsprites_DigitalDisplay_StopS}\n}"
+    },
+    "sSubsprites_DigitalDisplay_StopT": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 2,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 10,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 2,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 10,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_StopT": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_StopT), sSubsprites_DigitalDisplay_StopT}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_StopT), sSubsprites_DigitalDisplay_StopT}\n}"
+    },
+    "sSubsprites_DigitalDisplay_StopO": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 4,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 12,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 4,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 12,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_StopO": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_StopO), sSubsprites_DigitalDisplay_StopO}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_StopO), sSubsprites_DigitalDisplay_StopO}\n}"
+    },
+    "sSubsprites_DigitalDisplay_StopP": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 6,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 14,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 6,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 14,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_StopP": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_StopP), sSubsprites_DigitalDisplay_StopP}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_StopP), sSubsprites_DigitalDisplay_StopP}\n}"
+    },
+    "sSubsprites_DigitalDisplay_BonusB": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_BonusB": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_BonusB), sSubsprites_DigitalDisplay_BonusB}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_BonusB), sSubsprites_DigitalDisplay_BonusB}\n}"
+    },
+    "sSubsprites_DigitalDisplay_BonusO": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -4,\n        .y = -8,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 2,\n        .priority = 3,\n    }",
+        "{\n        .x = -4,\n        .y = 0,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -4,\n        .y = -8,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 2,\n        .priority = 3,\n    },\n    {\n        .x = -4,\n        .y = 0,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_BonusO": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_BonusO), sSubsprites_DigitalDisplay_BonusO}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_BonusO), sSubsprites_DigitalDisplay_BonusO}\n}"
+    },
+    "sSubsprites_DigitalDisplay_BonusN": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 3,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 11,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 3,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 11,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_BonusN": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_BonusN), sSubsprites_DigitalDisplay_BonusN}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_BonusN), sSubsprites_DigitalDisplay_BonusN}\n}"
+    },
+    "sSubsprites_DigitalDisplay_BonusU": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -4,\n        .y = -8,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 5,\n        .priority = 3,\n    }",
+        "{\n        .x = -4,\n        .y = 0,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 13,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -4,\n        .y = -8,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 5,\n        .priority = 3,\n    },\n    {\n        .x = -4,\n        .y = 0,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 13,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_BonusU": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_BonusU), sSubsprites_DigitalDisplay_BonusU}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_BonusU), sSubsprites_DigitalDisplay_BonusU}\n}"
+    },
+    "sSubsprites_DigitalDisplay_BonusS": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 6,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 14,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 6,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = 0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 14,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_BonusS": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_BonusS), sSubsprites_DigitalDisplay_BonusS}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_BonusS), sSubsprites_DigitalDisplay_BonusS}\n}"
+    },
+    "sSubsprites_DigitalDisplay_BigB": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -12,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 2,\n        .priority = 3,\n    }",
+        "{\n        .x = -12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 3,\n    }",
+        "{\n        .x = -12,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 16,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = 4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 18,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -12,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 2,\n        .priority = 3,\n    },\n    {\n        .x = -12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 3,\n    },\n    {\n        .x = -12,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 16,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = 4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 18,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_BigB": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_BigB), sSubsprites_DigitalDisplay_BigB}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_BigB), sSubsprites_DigitalDisplay_BigB}\n}"
+    },
+    "sSubsprites_DigitalDisplay_BigI": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 3,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 11,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 19,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 3,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 11,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 19,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_BigI": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_BigI), sSubsprites_DigitalDisplay_BigI}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_BigI), sSubsprites_DigitalDisplay_BigI}\n}"
+    },
+    "sSubsprites_DigitalDisplay_BigG": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -12,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 5,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 7,\n        .priority = 3,\n    }",
+        "{\n        .x = -12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 13,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 15,\n        .priority = 3,\n    }",
+        "{\n        .x = -12,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 21,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = 4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 23,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -12,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 5,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 7,\n        .priority = 3,\n    },\n    {\n        .x = -12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 13,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 15,\n        .priority = 3,\n    },\n    {\n        .x = -12,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 21,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = 4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 23,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_BigG": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_BigG), sSubsprites_DigitalDisplay_BigG}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_BigG), sSubsprites_DigitalDisplay_BigG}\n}"
+    },
+    "sSubsprites_DigitalDisplay_RegR": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -12,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 2,\n        .priority = 3,\n    }",
+        "{\n        .x = -12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 3,\n    }",
+        "{\n        .x = -12,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 16,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = 4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 18,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -12,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 2,\n        .priority = 3,\n    },\n    {\n        .x = -12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 3,\n    },\n    {\n        .x = -12,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 16,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = 4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 18,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_RegR": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_RegR), sSubsprites_DigitalDisplay_RegR}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_RegR), sSubsprites_DigitalDisplay_RegR}\n}"
+    },
+    "sSubsprites_DigitalDisplay_RegE": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 3,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 11,\n        .priority = 3,\n    }",
+        "{\n        .x = -8,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 19,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 3,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 11,\n        .priority = 3,\n    },\n    {\n        .x = -8,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 19,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_RegE": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_RegE), sSubsprites_DigitalDisplay_RegE}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_RegE), sSubsprites_DigitalDisplay_RegE}\n}"
+    },
+    "sSubsprites_DigitalDisplay_RegG": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -12,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 5,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 7,\n        .priority = 3,\n    }",
+        "{\n        .x = -12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 13,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 15,\n        .priority = 3,\n    }",
+        "{\n        .x = -12,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 21,\n        .priority = 3,\n    }",
+        "{\n        .x = 4,\n        .y = 4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 23,\n        .priority = 3,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -12,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 5,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 7,\n        .priority = 3,\n    },\n    {\n        .x = -12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 13,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 15,\n        .priority = 3,\n    },\n    {\n        .x = -12,\n        .y = 4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 21,\n        .priority = 3,\n    },\n    {\n        .x = 4,\n        .y = 4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 23,\n        .priority = 3,\n    }\n}"
+    },
+    "sSubspriteTable_DigitalDisplay_RegG": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_DigitalDisplay_RegG), sSubsprites_DigitalDisplay_RegG}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_DigitalDisplay_RegG), sSubsprites_DigitalDisplay_RegG}\n}"
+    },
+    "sSlotMachineSpriteSheets": {
+      "type": "struct SpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ .data = gSlotMachineReelSymbol1Tiles, .size = 0x200, .tag = GFXTAG_7_RED }",
+        "{ .data = gSlotMachineReelSymbol2Tiles, .size = 0x200, .tag = GFXTAG_7_BLUE }",
+        "{ .data = gSlotMachineReelSymbol3Tiles, .size = 0x200, .tag = GFXTAG_AZURILL }",
+        "{ .data = gSlotMachineReelSymbol4Tiles, .size = 0x200, .tag = GFXTAG_LOTAD }",
+        "{ .data = gSlotMachineReelSymbol5Tiles, .size = 0x200, .tag = GFXTAG_CHERRY }",
+        "{ .data = gSlotMachineReelSymbol6Tiles, .size = 0x200, .tag = GFXTAG_POWER }",
+        "{ .data = gSlotMachineReelSymbol7Tiles, .size = 0x200, .tag = GFXTAG_REPLAY }",
+        "{ .data = gSlotMachineNumber0Tiles, .size = 0x40, .tag = GFXTAG_NUM_0 }",
+        "{ .data = gSlotMachineNumber1Tiles, .size = 0x40, .tag = GFXTAG_NUM_1 }",
+        "{ .data = gSlotMachineNumber2Tiles, .size = 0x40, .tag = GFXTAG_NUM_2 }",
+        "{ .data = gSlotMachineNumber3Tiles, .size = 0x40, .tag = GFXTAG_NUM_3 }",
+        "{ .data = gSlotMachineNumber4Tiles, .size = 0x40, .tag = GFXTAG_NUM_4 }",
+        "{ .data = gSlotMachineNumber5Tiles, .size = 0x40, .tag = GFXTAG_NUM_5 }",
+        "{ .data = gSlotMachineNumber6Tiles, .size = 0x40, .tag = GFXTAG_NUM_6 }",
+        "{ .data = gSlotMachineNumber7Tiles, .size = 0x40, .tag = GFXTAG_NUM_7 }",
+        "{ .data = gSlotMachineNumber8Tiles, .size = 0x40, .tag = GFXTAG_NUM_8 }",
+        "{ .data = gSlotMachineNumber9Tiles, .size = 0x40, .tag = GFXTAG_NUM_9 }",
+        "{ .data = NULL, .size = 0x200, .tag = GFXTAG_STOP }",
+        "{ .data = NULL, .size = 0x200, .tag = GFXTAG_BONUS }",
+        "{ .data = NULL, .size = 0x300, .tag = GFXTAG_BIG }",
+        "{ .data = NULL, .size = 0x300, .tag = GFXTAG_REG }",
+        "{}"
+      ],
+      "rawValue": "{\n    { .data = gSlotMachineReelSymbol1Tiles, .size = 0x200, .tag = GFXTAG_7_RED },\n    { .data = gSlotMachineReelSymbol2Tiles, .size = 0x200, .tag = GFXTAG_7_BLUE },\n    { .data = gSlotMachineReelSymbol3Tiles, .size = 0x200, .tag = GFXTAG_AZURILL },\n    { .data = gSlotMachineReelSymbol4Tiles, .size = 0x200, .tag = GFXTAG_LOTAD },\n    { .data = gSlotMachineReelSymbol5Tiles, .size = 0x200, .tag = GFXTAG_CHERRY },\n    { .data = gSlotMachineReelSymbol6Tiles, .size = 0x200, .tag = GFXTAG_POWER },\n    { .data = gSlotMachineReelSymbol7Tiles, .size = 0x200, .tag = GFXTAG_REPLAY },\n    { .data = gSlotMachineNumber0Tiles, .size = 0x40, .tag = GFXTAG_NUM_0 },\n    { .data = gSlotMachineNumber1Tiles, .size = 0x40, .tag = GFXTAG_NUM_1 },\n    { .data = gSlotMachineNumber2Tiles, .size = 0x40, .tag = GFXTAG_NUM_2 },\n    { .data = gSlotMachineNumber3Tiles, .size = 0x40, .tag = GFXTAG_NUM_3 },\n    { .data = gSlotMachineNumber4Tiles, .size = 0x40, .tag = GFXTAG_NUM_4 },\n    { .data = gSlotMachineNumber5Tiles, .size = 0x40, .tag..."
+    },
+    "sUnusedColors": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RGB(27, 27, 27)",
+        "RGB(8, 11, 26)",
+        "RGB(11, 21, 13)",
+        "RGB_WHITE",
+        "RGB(16, 26, 21)",
+        "RGB(0, 22, 31)",
+        "RGB(26, 21, 0)",
+        "RGB(26, 21, 0)",
+        "RGB(29, 15, 0)",
+        "RGB(29, 15, 0)"
+      ],
+      "rawValue": "{\n    RGB(27, 27, 27),\n    RGB(8, 11, 26),\n    RGB(11, 21, 13),\n    RGB_WHITE,\n    RGB(16, 26, 21),\n    RGB(0, 22, 31),\n    RGB(26, 21, 0),\n    RGB(26, 21, 0),\n    RGB(29, 15, 0),\n    RGB(29, 15, 0),\n}"
+    },
+    "sMiddleRowLit_Pal": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RGB(17, 28, 31)"
+      ],
+      "rawValue": "{RGB(17, 28, 31)}"
+    },
+    "sTopRowLit_Pal": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RGB(31, 29, 16)"
+      ],
+      "rawValue": "{RGB(31, 29, 16)}"
+    },
+    "sBottomRowt_Pal": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RGB(31, 29, 16)"
+      ],
+      "rawValue": "{RGB(31, 29, 16)}"
+    },
+    "sNWSEDiagLit_Pal": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RGB(31, 21, 18)"
+      ],
+      "rawValue": "{RGB(31, 21, 18)}"
+    },
+    "sNESWDiagLit_Pal": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RGB(31, 21, 18)"
+      ],
+      "rawValue": "{RGB(31, 21, 18)}"
+    },
+    "sMatchLinePalOffsets": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MATCH_MIDDLE_ROW",
+        "MATCH_TOP_ROW",
+        "MATCH_BOTTOM_ROW",
+        "MATCH_NWSE_DIAG",
+        "MATCH_NESW_DIAG"
+      ],
+      "indexedValues": [
+        "BG_PLTT_ID(4) + 10",
+        "BG_PLTT_ID(4) + 11",
+        "BG_PLTT_ID(4) + 12",
+        "BG_PLTT_ID(4) + 14",
+        "BG_PLTT_ID(4) + 13"
+      ],
+      "rawValue": "{\n    [MATCH_MIDDLE_ROW] = BG_PLTT_ID(4) + 10,\n    [MATCH_TOP_ROW]    = BG_PLTT_ID(4) + 11,\n    [MATCH_BOTTOM_ROW] = BG_PLTT_ID(4) + 12,\n    [MATCH_NWSE_DIAG]  = BG_PLTT_ID(4) + 14,  \n    [MATCH_NESW_DIAG]  = BG_PLTT_ID(4) + 13   \n}"
+    },
+    "sBetToMatchLineIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{MATCH_MIDDLE_ROW, MATCH_MIDDLE_ROW}",
+        "{MATCH_TOP_ROW,    MATCH_BOTTOM_ROW}",
+        "{MATCH_NWSE_DIAG,  MATCH_NESW_DIAG}"
+      ],
+      "rawValue": "{\n    {MATCH_MIDDLE_ROW, MATCH_MIDDLE_ROW},  \n    {MATCH_TOP_ROW,    MATCH_BOTTOM_ROW},  \n    {MATCH_NWSE_DIAG,  MATCH_NESW_DIAG},   \n}"
+    },
+    "sMatchLinesPerBet": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "2",
+        "2"
+      ],
+      "rawValue": "{ 1, 2, 2 }"
+    },
+    "sUnkPalette": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[1] = RGB_WHITEALPHA",
+        "[3] = RGB(8, 8, 8)"
+      ],
+      "rawValue": "{\n    [1] = RGB_WHITEALPHA,\n    [3] = RGB(8, 8, 8),\n}"
+    },
+    "sSlotMachineSpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ .data = gSlotMachineReelSymbols_Pal,       .tag = PALTAG_REEL}",
+        "{ .data = gSlotMachineReelTimePikachu_Pal,   .tag = PALTAG_REEL_TIME_PIKACHU}",
+        "{ .data = gSlotMachineReelTimeMisc_Pal,      .tag = PALTAG_REEL_TIME_MISC}",
+        "{ .data = gSlotMachineReelTimeMachine_Pal,   .tag = PALTAG_REEL_TIME_MACHINE}",
+        "{ .data = gSlotMachineMisc_Pal,              .tag = PALTAG_MISC}",
+        "{ .data = gSlotMachineReelTimeExplosion_Pal, .tag = PALTAG_EXPLOSION}",
+        "{ .data = gSlotMachineDigitalDisplay_Pal,    .tag = PALTAG_DIG_DISPLAY}",
+        "{ .data = gSlotMachineMisc_Pal,              .tag = PALTAG_PIKA_AURA}",
+        "{}"
+      ],
+      "rawValue": "{\n    { .data = gSlotMachineReelSymbols_Pal,       .tag = PALTAG_REEL},\n    { .data = gSlotMachineReelTimePikachu_Pal,   .tag = PALTAG_REEL_TIME_PIKACHU},\n    { .data = gSlotMachineReelTimeMisc_Pal,      .tag = PALTAG_REEL_TIME_MISC},\n    { .data = gSlotMachineReelTimeMachine_Pal,   .tag = PALTAG_REEL_TIME_MACHINE},\n    { .data = gSlotMachineMisc_Pal,              .tag = PALTAG_MISC},\n    { .data = gSlotMachineReelTimeExplosion_Pal, .tag = PALTAG_EXPLOSION},\n    { .data = gSlotMachineDigitalDisplay_Pal,    .tag = PALTAG_DIG_DISPLAY},\n    { .data = gSlotMachineMisc_Pal,              .tag = PALTAG_PIKA_AURA},\n    {}\n}"
+    },
+    "sEmptyTilemap": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sSlotTasks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "SLOTTASK_UNFADE",
+        "SLOTTASK_WAIT_FADE",
+        "SLOTTASK_READY_NEW_SPIN",
+        "SLOTTASK_READY_NEW_RT_SPIN",
+        "SLOTTASK_ASK_INSERT_BET",
+        "SLOTTASK_BET_INPUT",
+        "SLOTTASK_MSG_NEED_3_COINS",
+        "SLOTTASK_WAIT_MSG_NEED_3_COINS",
+        "SLOTTASK_WAIT_INFO_BOX",
+        "SLOTTASK_START_SPIN",
+        "SLOTTASK_START_RT_SPIN",
+        "SLOTTASK_RESET_BIAS_FAILURE",
+        "SLOTTASK_WAIT_REEL_STOP",
+        "SLOTTASK_WAIT_ALL_REELS_STOP",
+        "SLOTTASK_CHECK_MATCHES",
+        "SLOTTASK_WAIT_PAYOUT",
+        "SLOTTASK_END_PAYOUT",
+        "SLOTTASK_MATCHED_POWER",
+        "SLOTTASK_WAIT_RT_ANIM",
+        "SLOTTASK_RESET_BET_TILES",
+        "SLOTTASK_NO_MATCHES",
+        "SLOTTASK_ASK_QUIT",
+        "SLOTTASK_HANDLE_QUIT_INPUT",
+        "SLOTTASK_MSG_MAX_COINS",
+        "SLOTTASK_WAIT_MSG_MAX_COINS",
+        "SLOTTASK_MSG_NO_MORE_COINS",
+        "SLOTTASK_WAIT_MSG_NO_MORE_COINS",
+        "SLOTTASK_END",
+        "SLOTTASK_FREE"
+      ],
+      "indexedValues": [
+        "SlotTask_UnfadeScreen",
+        "SlotTask_WaitUnfade",
+        "SlotTask_ReadyNewSpin",
+        "SlotTask_ReadyNewReelTimeSpin",
+        "SlotTask_AskInsertBet",
+        "SlotTask_HandleBetInput",
+        "SlotTask_PrintMsg_Need3Coins",
+        "SlotTask_WaitMsg_Need3Coins",
+        "SlotTask_WaitInfoBox",
+        "SlotTask_StartSpin",
+        "SlotTask_StartReelTimeSpin",
+        "SlotTask_ResetBiasFailure",
+        "SlotTask_WaitReelStop",
+        "SlotTask_WaitAllReelsStop",
+        "SlotTask_CheckMatches",
+        "SlotTask_WaitPayout",
+        "SlotTask_EndPayout",
+        "SlotTask_MatchedPower",
+        "SlotTask_WaitReelTimeAnim",
+        "SlotTask_ResetBetTiles",
+        "SlotTask_NoMatches",
+        "SlotTask_AskQuit",
+        "SlotTask_HandleQuitInput",
+        "SlotTask_PrintMsg_MaxCoins",
+        "SlotTask_WaitMsg_MaxCoins",
+        "SlotTask_PrintMsg_NoMoreCoins",
+        "SlotTask_WaitMsg_NoMoreCoins",
+        "SlotTask_EndGame",
+        "SlotTask_FreeDataStructures"
+      ],
+      "rawValue": "{\n    [SLOTTASK_UNFADE]                 = SlotTask_UnfadeScreen,\n    [SLOTTASK_WAIT_FADE]              = SlotTask_WaitUnfade,\n    [SLOTTASK_READY_NEW_SPIN]         = SlotTask_ReadyNewSpin,\n    [SLOTTASK_READY_NEW_RT_SPIN]      = SlotTask_ReadyNewReelTimeSpin,\n    [SLOTTASK_ASK_INSERT_BET]         = SlotTask_AskInsertBet,\n    [SLOTTASK_BET_INPUT]              = SlotTask_HandleBetInput,\n    [SLOTTASK_MSG_NEED_3_COINS]       = SlotTask_PrintMsg_Need3Coins,\n    [SLOTTASK_WAIT_MSG_NEED_3_COINS]  = SlotTask_WaitMsg_Need3Coins,\n    [SLOTTASK_WAIT_INFO_BOX]          = SlotTask_WaitInfoBox,\n    [SLOTTASK_START_SPIN]             = SlotTask_StartSpin,\n    [SLOTTASK_START_RT_SPIN]          = SlotTask_StartReelTimeSpin,\n    [SLOTTASK_RESET_BIAS_FAILURE]     = SlotTask_ResetBiasFailure,\n    [SLOTTASK_WAIT_REEL_STOP]         = SlotTask_WaitReelStop,\n    [SLOTTASK_WAIT_ALL_REELS_STOP]    = SlotTask_WaitAllReelsStop,\n    [SLOTTASK_CHECK_MATCHES]          = SlotTask_CheckMatches,\n    [SLOTTASK_WAIT_PAYOUT]            = SlotTas..."
+    },
+    "sPayoutTasks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "PAYOUT_TASK_INIT",
+        "PAYOUT_TASK_GIVE_PAYOUT",
+        "PAYOUT_TASK_FREE"
+      ],
+      "indexedValues": [
+        "PayoutTask_Init",
+        "PayoutTask_GivePayout",
+        "PayoutTask_Free"
+      ],
+      "rawValue": "{\n    [PAYOUT_TASK_INIT]        = PayoutTask_Init,\n    [PAYOUT_TASK_GIVE_PAYOUT] = PayoutTask_GivePayout,\n    [PAYOUT_TASK_FREE]        = PayoutTask_Free,\n}"
+    },
+    "sReelTasks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "REEL_TASK_STILL",
+        "REEL_TASK_SPIN",
+        "REEL_TASK_DECIDE_STOP",
+        "REEL_TASK_STOP_MOVE",
+        "REEL_TASK_STOP_SHAKE"
+      ],
+      "indexedValues": [
+        "ReelTask_StayStill",
+        "ReelTask_Spin",
+        "ReelTask_DecideStop",
+        "ReelTask_MoveToStop",
+        "ReelTask_ShakingStop"
+      ],
+      "rawValue": "{\n    [REEL_TASK_STILL]        = ReelTask_StayStill,\n    [REEL_TASK_SPIN]         = ReelTask_Spin,\n    [REEL_TASK_DECIDE_STOP]  = ReelTask_DecideStop,\n    [REEL_TASK_STOP_MOVE]    = ReelTask_MoveToStop,\n    [REEL_TASK_STOP_SHAKE] = ReelTask_ShakingStop,\n}"
+    },
+    "sDecideStop_Bias": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "DecideStop_Bias_Reel1",
+        "DecideStop_Bias_Reel2",
+        "DecideStop_Bias_Reel3"
+      ],
+      "rawValue": "{\n    DecideStop_Bias_Reel1,\n    DecideStop_Bias_Reel2,\n    DecideStop_Bias_Reel3,\n}"
+    },
+    "sDecideStop_NoBias": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "DecideStop_NoBias_Reel1",
+        "DecideStop_NoBias_Reel2",
+        "DecideStop_NoBias_Reel3"
+      ],
+      "rawValue": "{\n    DecideStop_NoBias_Reel1,\n    DecideStop_NoBias_Reel2,\n    DecideStop_NoBias_Reel3,\n}"
+    },
+    "sDecideStop_Bias_Reel1_Bets": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "DecideStop_Bias_Reel1_Bet1",
+        "DecideStop_Bias_Reel1_Bet2or3",
+        "DecideStop_Bias_Reel1_Bet2or3"
+      ],
+      "rawValue": "{\n    DecideStop_Bias_Reel1_Bet1,\n    DecideStop_Bias_Reel1_Bet2or3,\n    DecideStop_Bias_Reel1_Bet2or3,\n}"
+    },
+    "sDecideStop_Bias_Reel2_Bets": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "DecideStop_Bias_Reel2_Bet1or2",
+        "DecideStop_Bias_Reel2_Bet1or2",
+        "DecideStop_Bias_Reel2_Bet3"
+      ],
+      "rawValue": "{\n    DecideStop_Bias_Reel2_Bet1or2,\n    DecideStop_Bias_Reel2_Bet1or2,\n    DecideStop_Bias_Reel2_Bet3,\n}"
+    },
+    "sDecideStop_Bias_Reel3_Bets": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "DecideStop_Bias_Reel3_Bet1or2",
+        "DecideStop_Bias_Reel3_Bet1or2",
+        "DecideStop_Bias_Reel3_Bet3"
+      ],
+      "rawValue": "{\n    DecideStop_Bias_Reel3_Bet1or2,\n    DecideStop_Bias_Reel3_Bet1or2,\n    DecideStop_Bias_Reel3_Bet3,\n}"
+    },
+    "sDecideStop_NoBias_Reel2_Bets": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "DecideStop_NoBias_Reel2_Bet1",
+        "DecideStop_NoBias_Reel2_Bet2",
+        "DecideStop_NoBias_Reel2_Bet3"
+      ],
+      "rawValue": "{\n    DecideStop_NoBias_Reel2_Bet1,\n    DecideStop_NoBias_Reel2_Bet2,\n    DecideStop_NoBias_Reel2_Bet3,\n}"
+    },
+    "sDecideStop_NoBias_Reel3_Bets": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "DecideStop_NoBias_Reel3_Bet1",
+        "DecideStop_NoBias_Reel3_Bet2",
+        "DecideStop_NoBias_Reel3_Bet3"
+      ],
+      "rawValue": "{\n    DecideStop_NoBias_Reel3_Bet1,\n    DecideStop_NoBias_Reel3_Bet2,\n    DecideStop_NoBias_Reel3_Bet3,\n}"
+    },
+    "sReelStopButtonTasks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "StopReelButton_Press",
+        "StopReelButton_Wait",
+        "StopReelButton_Unpress"
+      ],
+      "rawValue": "{\n    StopReelButton_Press,\n    StopReelButton_Wait,\n    StopReelButton_Unpress,\n}"
+    },
+    "sPikaPowerBoltTasks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "PikaPowerBolt_Idle",
+        "PikaPowerBolt_AddBolt",
+        "PikaPowerBolt_WaitAnim",
+        "PikaPowerBolt_ClearAll"
+      ],
+      "rawValue": "{\n    PikaPowerBolt_Idle,\n    PikaPowerBolt_AddBolt,\n    PikaPowerBolt_WaitAnim,\n    PikaPowerBolt_ClearAll,\n}"
+    },
+    "sReelTimeTasks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "RT_TASK_INIT",
+        "RT_TASK_WINDOW_ENTER",
+        "RT_TASK_WAIT_START_PIKA",
+        "RT_TASK_PIKA_SPEEDUP1",
+        "RT_TASK_PIKA_SPEEDUP2",
+        "RT_TASK_WAIT_REEL",
+        "RT_TASK_CHECK_EXPLODE",
+        "RT_TASK_LAND",
+        "RT_TASK_PIKA_REACT",
+        "RT_TASK_WAIT_CLEAR_POWER",
+        "RT_TASK_CLOSE_WINDOW_SUCCESS",
+        "RT_TASK_DESTROY_SPRITES",
+        "RT_TASK_SET_REEL_SPEED",
+        "RT_TASK_END_SUCCESS",
+        "RT_TASK_EXPLODE",
+        "RT_TASK_WAIT_EXPLODE",
+        "RT_TASK_WAIT_SMOKE",
+        "RT_TASK_CLOSE_WINDOW_FAILURE",
+        "RT_TASK_END_FAILURE"
+      ],
+      "indexedValues": [
+        "ReelTime_Init",
+        "ReelTime_WindowEnter",
+        "ReelTime_WaitStartPikachu",
+        "ReelTime_PikachuSpeedUp1",
+        "ReelTime_PikachuSpeedUp2",
+        "ReelTime_WaitReel",
+        "ReelTime_CheckExplode",
+        "ReelTime_LandOnOutcome",
+        "ReelTime_PikachuReact",
+        "ReelTime_WaitClearPikaPower",
+        "ReelTime_CloseWindow",
+        "ReelTime_DestroySprites",
+        "ReelTime_SetReelSpeed",
+        "ReelTime_EndSuccess",
+        "ReelTime_ExplodeMachine",
+        "ReelTime_WaitExplode",
+        "ReelTime_WaitSmoke",
+        "ReelTime_CloseWindow",
+        "ReelTime_EndFailure"
+      ],
+      "rawValue": "{\n    [RT_TASK_INIT]                 = ReelTime_Init,\n    [RT_TASK_WINDOW_ENTER]         = ReelTime_WindowEnter,\n    [RT_TASK_WAIT_START_PIKA]      = ReelTime_WaitStartPikachu,\n    [RT_TASK_PIKA_SPEEDUP1]        = ReelTime_PikachuSpeedUp1,\n    [RT_TASK_PIKA_SPEEDUP2]        = ReelTime_PikachuSpeedUp2,\n    [RT_TASK_WAIT_REEL]            = ReelTime_WaitReel,\n    [RT_TASK_CHECK_EXPLODE]        = ReelTime_CheckExplode,\n    [RT_TASK_LAND]                 = ReelTime_LandOnOutcome,\n    [RT_TASK_PIKA_REACT]           = ReelTime_PikachuReact,\n    [RT_TASK_WAIT_CLEAR_POWER]     = ReelTime_WaitClearPikaPower,\n    [RT_TASK_CLOSE_WINDOW_SUCCESS] = ReelTime_CloseWindow,\n    [RT_TASK_DESTROY_SPRITES]      = ReelTime_DestroySprites,\n    [RT_TASK_SET_REEL_SPEED]       = ReelTime_SetReelSpeed,\n    [RT_TASK_END_SUCCESS]          = ReelTime_EndSuccess,\n    [RT_TASK_EXPLODE]              = ReelTime_ExplodeMachine,\n    [RT_TASK_WAIT_EXPLODE]         = ReelTime_WaitExplode,\n    [RT_TASK_WAIT_SMOKE]           = ReelTime_WaitSmoke,\n ..."
+    },
+    "sInfoBoxTasks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "InfoBox_FadeIn",
+        "InfoBox_WaitFade",
+        "InfoBox_DrawWindow",
+        "InfoBox_WaitFade",
+        "InfoBox_AddText",
+        "InfoBox_WaitFade",
+        "InfoBox_WaitInput",
+        "InfoBox_WaitFade",
+        "InfoBox_LoadSlotMachineTilemap",
+        "InfoBox_WaitFade",
+        "InfoBox_CreateDigitalDisplay",
+        "InfoBox_WaitFade",
+        "InfoBox_LoadPikaPowerMeter",
+        "InfoBox_WaitFade",
+        "InfoBox_FreeTask"
+      ],
+      "rawValue": "{\n     \n    InfoBox_FadeIn,\n    InfoBox_WaitFade,\n    InfoBox_DrawWindow,\n    InfoBox_WaitFade,\n    InfoBox_AddText,\n    InfoBox_WaitFade,\n     \n    InfoBox_WaitInput,\n     \n    InfoBox_WaitFade,\n    InfoBox_LoadSlotMachineTilemap,\n    InfoBox_WaitFade,\n    InfoBox_CreateDigitalDisplay,\n    InfoBox_WaitFade,\n    InfoBox_LoadPikaPowerMeter,\n    InfoBox_WaitFade,\n    InfoBox_FreeTask,\n}"
+    },
+    "sDigitalDisplayTasks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "DigitalDisplay_Idle"
+      ],
+      "rawValue": "{\n    DigitalDisplay_Idle,\n}"
+    },
+    "sDigitalDisplaySceneExitCallbacks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "DIG_DISPLAY_INSERT_BET",
+        "DIG_DISPLAY_STOP_REEL",
+        "DIG_DISPLAY_WIN",
+        "DIG_DISPLAY_LOSE",
+        "DIG_DISPLAY_REEL_TIME",
+        "DIG_DISPLAY_BONUS_REG",
+        "DIG_DISPLAY_BONUS_BIG"
+      ],
+      "indexedValues": [
+        "EndDigitalDisplayScene_InsertBet",
+        "EndDigitalDisplayScene_StopReel",
+        "EndDigitalDisplayScene_Win",
+        "EndDigitalDisplayScene_Dummy",
+        "EndDigitalDisplayScene_Dummy",
+        "EndDigitalDisplayScene_Win",
+        "EndDigitalDisplayScene_Win"
+      ],
+      "rawValue": "{\n    [DIG_DISPLAY_INSERT_BET] = EndDigitalDisplayScene_InsertBet,\n    [DIG_DISPLAY_STOP_REEL]  = EndDigitalDisplayScene_StopReel,\n    [DIG_DISPLAY_WIN]        = EndDigitalDisplayScene_Win,\n    [DIG_DISPLAY_LOSE]       = EndDigitalDisplayScene_Dummy,\n    [DIG_DISPLAY_REEL_TIME]  = EndDigitalDisplayScene_Dummy,\n    [DIG_DISPLAY_BONUS_REG]  = EndDigitalDisplayScene_Win,\n    [DIG_DISPLAY_BONUS_BIG]  = EndDigitalDisplayScene_Win\n}"
+    }
+  }
+}

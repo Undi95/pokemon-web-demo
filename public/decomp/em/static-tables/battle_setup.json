@@ -1,0 +1,220 @@
+{
+  "srcFile": "src/battle_setup.c",
+  "count": 13,
+  "tables": {
+    "sBattleTransitionTable_Wild": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "TRANSITION_TYPE_NORMAL",
+        "TRANSITION_TYPE_CAVE",
+        "TRANSITION_TYPE_FLASH",
+        "TRANSITION_TYPE_WATER"
+      ],
+      "indexedValues": [
+        "{B_TRANSITION_SLICE",
+        "{B_TRANSITION_CLOCKWISE_WIPE",
+        "{B_TRANSITION_BLUR",
+        "{B_TRANSITION_WAVE"
+      ],
+      "rawValue": "{\n    [TRANSITION_TYPE_NORMAL] = {B_TRANSITION_SLICE,          B_TRANSITION_WHITE_BARS_FADE},\n    [TRANSITION_TYPE_CAVE]   = {B_TRANSITION_CLOCKWISE_WIPE, B_TRANSITION_GRID_SQUARES},\n    [TRANSITION_TYPE_FLASH]  = {B_TRANSITION_BLUR,           B_TRANSITION_GRID_SQUARES},\n    [TRANSITION_TYPE_WATER]  = {B_TRANSITION_WAVE,           B_TRANSITION_RIPPLE},\n}"
+    },
+    "sBattleTransitionTable_Trainer": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "TRANSITION_TYPE_NORMAL",
+        "TRANSITION_TYPE_CAVE",
+        "TRANSITION_TYPE_FLASH",
+        "TRANSITION_TYPE_WATER"
+      ],
+      "indexedValues": [
+        "{B_TRANSITION_POKEBALLS_TRAIL",
+        "{B_TRANSITION_SHUFFLE",
+        "{B_TRANSITION_BLUR",
+        "{B_TRANSITION_SWIRL"
+      ],
+      "rawValue": "{\n    [TRANSITION_TYPE_NORMAL] = {B_TRANSITION_POKEBALLS_TRAIL, B_TRANSITION_ANGLED_WIPES},\n    [TRANSITION_TYPE_CAVE]   = {B_TRANSITION_SHUFFLE,         B_TRANSITION_BIG_POKEBALL},\n    [TRANSITION_TYPE_FLASH]  = {B_TRANSITION_BLUR,            B_TRANSITION_GRID_SQUARES},\n    [TRANSITION_TYPE_WATER]  = {B_TRANSITION_SWIRL,           B_TRANSITION_RIPPLE},\n}"
+    },
+    "sBattleTransitionTable_BattleFrontier": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "B_TRANSITION_FRONTIER_LOGO_WIGGLE",
+        "B_TRANSITION_FRONTIER_LOGO_WAVE",
+        "B_TRANSITION_FRONTIER_SQUARES",
+        "B_TRANSITION_FRONTIER_SQUARES_SCROLL",
+        "B_TRANSITION_FRONTIER_CIRCLES_MEET",
+        "B_TRANSITION_FRONTIER_CIRCLES_CROSS",
+        "B_TRANSITION_FRONTIER_CIRCLES_ASYMMETRIC_SPIRAL",
+        "B_TRANSITION_FRONTIER_CIRCLES_SYMMETRIC_SPIRAL",
+        "B_TRANSITION_FRONTIER_CIRCLES_MEET_IN_SEQ",
+        "B_TRANSITION_FRONTIER_CIRCLES_CROSS_IN_SEQ",
+        "B_TRANSITION_FRONTIER_CIRCLES_ASYMMETRIC_SPIRAL_IN_SEQ",
+        "B_TRANSITION_FRONTIER_CIRCLES_SYMMETRIC_SPIRAL_IN_SEQ"
+      ],
+      "rawValue": "{\n    B_TRANSITION_FRONTIER_LOGO_WIGGLE,\n    B_TRANSITION_FRONTIER_LOGO_WAVE,\n    B_TRANSITION_FRONTIER_SQUARES,\n    B_TRANSITION_FRONTIER_SQUARES_SCROLL,\n    B_TRANSITION_FRONTIER_CIRCLES_MEET,\n    B_TRANSITION_FRONTIER_CIRCLES_CROSS,\n    B_TRANSITION_FRONTIER_CIRCLES_ASYMMETRIC_SPIRAL,\n    B_TRANSITION_FRONTIER_CIRCLES_SYMMETRIC_SPIRAL,\n    B_TRANSITION_FRONTIER_CIRCLES_MEET_IN_SEQ,\n    B_TRANSITION_FRONTIER_CIRCLES_CROSS_IN_SEQ,\n    B_TRANSITION_FRONTIER_CIRCLES_ASYMMETRIC_SPIRAL_IN_SEQ,\n    B_TRANSITION_FRONTIER_CIRCLES_SYMMETRIC_SPIRAL_IN_SEQ\n}"
+    },
+    "sBattleTransitionTable_BattlePyramid": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "B_TRANSITION_FRONTIER_SQUARES",
+        "B_TRANSITION_FRONTIER_SQUARES_SCROLL",
+        "B_TRANSITION_FRONTIER_SQUARES_SPIRAL"
+      ],
+      "rawValue": "{\n    B_TRANSITION_FRONTIER_SQUARES,\n    B_TRANSITION_FRONTIER_SQUARES_SCROLL,\n    B_TRANSITION_FRONTIER_SQUARES_SPIRAL\n}"
+    },
+    "sBattleTransitionTable_BattleDome": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "B_TRANSITION_FRONTIER_LOGO_WIGGLE",
+        "B_TRANSITION_FRONTIER_SQUARES",
+        "B_TRANSITION_FRONTIER_SQUARES_SCROLL",
+        "B_TRANSITION_FRONTIER_SQUARES_SPIRAL"
+      ],
+      "rawValue": "{\n    B_TRANSITION_FRONTIER_LOGO_WIGGLE,\n    B_TRANSITION_FRONTIER_SQUARES,\n    B_TRANSITION_FRONTIER_SQUARES_SCROLL,\n    B_TRANSITION_FRONTIER_SQUARES_SPIRAL\n}"
+    },
+    "sOrdinaryBattleParams": {
+      "type": "struct TrainerBattleParameter",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT}",
+        "{&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerAIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerABattleScriptRetAddr, TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR}"
+      ],
+      "rawValue": "{\n    {&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT},\n    {&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerAIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerABattleScriptRetAddr, TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR},\n}"
+    },
+    "sContinueScriptBattleParams": {
+      "type": "struct TrainerBattleParameter",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT}",
+        "{&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerAIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerABattleScriptRetAddr, TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR}"
+      ],
+      "rawValue": "{\n    {&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT},\n    {&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerAIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerABattleScriptRetAddr, TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR},\n}"
+    },
+    "sDoubleBattleParams": {
+      "type": "struct TrainerBattleParameter",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT}",
+        "{&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerAIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerCannotBattleSpeech,   TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerABattleScriptRetAddr, TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR}"
+      ],
+      "rawValue": "{\n    {&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT},\n    {&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerAIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerCannotBattleSpeech,   TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerABattleScriptRetAddr, TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR},\n}"
+    },
+    "sOrdinaryNoIntroBattleParams": {
+      "type": "struct TrainerBattleParameter",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT}",
+        "{&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerAIntroSpeech,         TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerABattleScriptRetAddr, TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR}"
+      ],
+      "rawValue": "{\n    {&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT},\n    {&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerAIntroSpeech,         TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerABattleScriptRetAddr, TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR},\n}"
+    },
+    "sContinueScriptDoubleBattleParams": {
+      "type": "struct TrainerBattleParameter",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT}",
+        "{&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerAIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerCannotBattleSpeech,   TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerABattleScriptRetAddr, TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR}"
+      ],
+      "rawValue": "{\n    {&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT},\n    {&gTrainerBattleOpponent_A,     TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerAIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerADefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerCannotBattleSpeech,   TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerABattleScriptRetAddr, TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR},\n}"
+    },
+    "sTrainerBOrdinaryBattleParams": {
+      "type": "struct TrainerBattleParameter",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT}",
+        "{&gTrainerBattleOpponent_B,     TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerBIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerBDefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerBBattleScriptRetAddr, TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR}"
+      ],
+      "rawValue": "{\n    {&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT},\n    {&gTrainerBattleOpponent_B,     TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerBIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerBDefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerBBattleScriptRetAddr, TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR},\n}"
+    },
+    "sTrainerBContinueScriptBattleParams": {
+      "type": "struct TrainerBattleParameter",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT}",
+        "{&gTrainerBattleOpponent_B,     TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT}",
+        "{&sTrainerBIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerBDefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT}",
+        "{&sTrainerBBattleScriptRetAddr, TRAINER_PARAM_LOAD_VAL_32BIT}",
+        "{&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR}"
+      ],
+      "rawValue": "{\n    {&sTrainerBattleMode,           TRAINER_PARAM_LOAD_VAL_8BIT},\n    {&gTrainerBattleOpponent_B,     TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerObjectEventLocalId,   TRAINER_PARAM_LOAD_VAL_16BIT},\n    {&sTrainerBIntroSpeech,         TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerBDefeatSpeech,        TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerVictorySpeech,        TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerCannotBattleSpeech,   TRAINER_PARAM_CLEAR_VAL_32BIT},\n    {&sTrainerBBattleScriptRetAddr, TRAINER_PARAM_LOAD_VAL_32BIT},\n    {&sTrainerBattleEndScript,      TRAINER_PARAM_LOAD_SCRIPT_RET_ADDR},\n}"
+    },
+    "sBadgeFlags": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "FLAG_BADGE01_GET",
+        "FLAG_BADGE02_GET",
+        "FLAG_BADGE03_GET",
+        "FLAG_BADGE04_GET",
+        "FLAG_BADGE05_GET",
+        "FLAG_BADGE06_GET",
+        "FLAG_BADGE07_GET",
+        "FLAG_BADGE08_GET"
+      ],
+      "rawValue": "{\n    FLAG_BADGE01_GET, FLAG_BADGE02_GET, FLAG_BADGE03_GET, FLAG_BADGE04_GET,\n    FLAG_BADGE05_GET, FLAG_BADGE06_GET, FLAG_BADGE07_GET, FLAG_BADGE08_GET,\n}"
+    }
+  }
+}

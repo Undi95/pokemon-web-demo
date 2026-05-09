@@ -32,7 +32,7 @@ const {
   GetPokenavListWindowState, GetSubstructPtr, GetWindowAttribute, IsDma3ManagerBusyWithBgCopy,
   IsLoopedTaskActive, LT_SET_STATE, LoadCompressedSpriteSheet, NULL,
   PIXEL_FILL, Pokenav_AllocAndLoadPalettes, PutWindowTilemap, RemoveWindow,
-  SetBgTilemapBuffer, TRUE,  // 4-per-line for readability
+  SetBgTilemapBuffer, SpriteCallbackDummy, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 CreatePokenavList(const struct BgTemplate *bgTemplate, struct PokenavListTemplate *listTemplate, s32 tileOffset) */

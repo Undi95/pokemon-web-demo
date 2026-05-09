@@ -26,9 +26,9 @@ const {
   CpuFill32, CreateTask, DestroyTask, DmaCopy16,
   DmaCopy32, FALSE, FAST_FADE, GET_B,
   GET_G, GET_R, GetWordTaskArg, HARDWARE_FADE,
-  LZDecompressWram, PLTT_SIZE, Q_8_8, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, RGB2, SetGpuReg, SetWordTaskArg,
-  TRUE,  // 4-per-line for readability
+  LZDecompressWram, NORMAL_FADE, PLTT_SIZE, Q_8_8,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, RGB2, SetGpuReg,
+  SetWordTaskArg, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void LoadCompressedPalette(const u32 *src, u16 offset, u16 size) */

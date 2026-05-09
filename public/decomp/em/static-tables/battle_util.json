@@ -1,0 +1,89 @@
+{
+  "srcFile": "src/battle_util.c",
+  "count": 4,
+  "tables": {
+    "sPkblToEscapeFactor": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "B_MSG_MON_CURIOUS",
+        "B_MSG_MON_ENTHRALLED",
+        "B_MSG_MON_IGNORED",
+        "B_MSG_MON_CURIOUS",
+        "B_MSG_MON_ENTHRALLED",
+        "B_MSG_MON_IGNORED",
+        "B_MSG_MON_CURIOUS",
+        "B_MSG_MON_ENTHRALLED",
+        "B_MSG_MON_IGNORED",
+        "B_MSG_MON_CURIOUS",
+        "B_MSG_MON_ENTHRALLED",
+        "B_MSG_MON_IGNORED",
+        "B_MSG_MON_CURIOUS",
+        "B_MSG_MON_ENTHRALLED",
+        "B_MSG_MON_IGNORED"
+      ],
+      "indexedValues": [
+        "0",
+        "0",
+        "0",
+        "3",
+        "5",
+        "0",
+        "2",
+        "3",
+        "0",
+        "1",
+        "2",
+        "0",
+        "1",
+        "1",
+        "0"
+      ],
+      "rawValue": "{\n    {\n        [B_MSG_MON_CURIOUS]    = 0,\n        [B_MSG_MON_ENTHRALLED] = 0,\n        [B_MSG_MON_IGNORED]    = 0\n    },{\n        [B_MSG_MON_CURIOUS]    = 3,\n        [B_MSG_MON_ENTHRALLED] = 5,\n        [B_MSG_MON_IGNORED]    = 0\n    },{\n        [B_MSG_MON_CURIOUS]    = 2,\n        [B_MSG_MON_ENTHRALLED] = 3,\n        [B_MSG_MON_IGNORED]    = 0\n    },{\n        [B_MSG_MON_CURIOUS]    = 1,\n        [B_MSG_MON_ENTHRALLED] = 2,\n        [B_MSG_MON_IGNORED]    = 0\n    },{\n        [B_MSG_MON_CURIOUS]    = 1,\n        [B_MSG_MON_ENTHRALLED] = 1,\n        [B_MSG_MON_IGNORED]    = 0\n    }\n}"
+    },
+    "sGoNearCounterToCatchFactor": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "4",
+        "3",
+        "2",
+        "1"
+      ],
+      "rawValue": "{4, 3, 2, 1}"
+    },
+    "sGoNearCounterToEscapeFactor": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "4",
+        "4",
+        "4",
+        "4"
+      ],
+      "rawValue": "{4, 4, 4, 4}"
+    },
+    "sSoundMovesTable": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_GROWL",
+        "MOVE_ROAR",
+        "MOVE_SING",
+        "MOVE_SUPERSONIC",
+        "MOVE_SCREECH",
+        "MOVE_SNORE",
+        "MOVE_UPROAR",
+        "MOVE_METAL_SOUND",
+        "MOVE_GRASS_WHISTLE",
+        "MOVE_HYPER_VOICE",
+        "SOUND_MOVES_END"
+      ],
+      "rawValue": "{\n    MOVE_GROWL, MOVE_ROAR, MOVE_SING, MOVE_SUPERSONIC, MOVE_SCREECH, MOVE_SNORE,\n    MOVE_UPROAR, MOVE_METAL_SOUND, MOVE_GRASS_WHISTLE, MOVE_HYPER_VOICE, SOUND_MOVES_END\n}"
+    }
+  }
+}

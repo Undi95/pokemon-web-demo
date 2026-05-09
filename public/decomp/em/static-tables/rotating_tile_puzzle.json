@@ -1,0 +1,94 @@
+{
+  "srcFile": "src/rotating_tile_puzzle.c",
+  "count": 8,
+  "tables": {
+    "sMovement_ShiftRight": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_LOCK_ANIM",
+        "MOVEMENT_ACTION_WALK_NORMAL_RIGHT",
+        "MOVEMENT_ACTION_UNLOCK_ANIM",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_LOCK_ANIM,\n    MOVEMENT_ACTION_WALK_NORMAL_RIGHT,\n    MOVEMENT_ACTION_UNLOCK_ANIM,\n    MOVEMENT_ACTION_STEP_END\n}"
+    },
+    "sMovement_ShiftDown": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_LOCK_ANIM",
+        "MOVEMENT_ACTION_WALK_NORMAL_DOWN",
+        "MOVEMENT_ACTION_UNLOCK_ANIM",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_LOCK_ANIM,\n    MOVEMENT_ACTION_WALK_NORMAL_DOWN,\n    MOVEMENT_ACTION_UNLOCK_ANIM,\n    MOVEMENT_ACTION_STEP_END\n}"
+    },
+    "sMovement_ShiftLeft": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_LOCK_ANIM",
+        "MOVEMENT_ACTION_WALK_NORMAL_LEFT",
+        "MOVEMENT_ACTION_UNLOCK_ANIM",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_LOCK_ANIM,\n    MOVEMENT_ACTION_WALK_NORMAL_LEFT,\n    MOVEMENT_ACTION_UNLOCK_ANIM,\n    MOVEMENT_ACTION_STEP_END\n}"
+    },
+    "sMovement_ShiftUp": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_LOCK_ANIM",
+        "MOVEMENT_ACTION_WALK_NORMAL_UP",
+        "MOVEMENT_ACTION_UNLOCK_ANIM",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_LOCK_ANIM,\n    MOVEMENT_ACTION_WALK_NORMAL_UP,\n    MOVEMENT_ACTION_UNLOCK_ANIM,\n    MOVEMENT_ACTION_STEP_END\n}"
+    },
+    "sMovement_FaceRight": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_FACE_RIGHT",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_FACE_RIGHT,\n    MOVEMENT_ACTION_STEP_END\n}"
+    },
+    "sMovement_FaceDown": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_FACE_DOWN",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_FACE_DOWN,\n    MOVEMENT_ACTION_STEP_END\n}"
+    },
+    "sMovement_FaceLeft": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_FACE_LEFT",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_FACE_LEFT,\n    MOVEMENT_ACTION_STEP_END\n}"
+    },
+    "sMovement_FaceUp": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_FACE_UP",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_FACE_UP,\n    MOVEMENT_ACTION_STEP_END\n}"
+    }
+  }
+}

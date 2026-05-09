@@ -1,0 +1,300 @@
+{
+  "srcFile": "src/field_player_avatar.c",
+  "count": 17,
+  "tables": {
+    "sAcroBikeTrickCollisionTypes": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "COLLISION_WHEELIE_HOP",
+        "COLLISION_ISOLATED_VERTICAL_RAIL",
+        "COLLISION_ISOLATED_HORIZONTAL_RAIL",
+        "COLLISION_VERTICAL_RAIL",
+        "COLLISION_HORIZONTAL_RAIL"
+      ],
+      "rawValue": "{\n    COLLISION_WHEELIE_HOP,\n    COLLISION_ISOLATED_VERTICAL_RAIL,\n    COLLISION_ISOLATED_HORIZONTAL_RAIL,\n    COLLISION_VERTICAL_RAIL,\n    COLLISION_HORIZONTAL_RAIL,\n}"
+    },
+    "sRivalAvatarGfxIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "PLAYER_AVATAR_STATE_NORMAL",
+        "PLAYER_AVATAR_STATE_MACH_BIKE",
+        "PLAYER_AVATAR_STATE_ACRO_BIKE",
+        "PLAYER_AVATAR_STATE_SURFING",
+        "PLAYER_AVATAR_STATE_UNDERWATER",
+        "PLAYER_AVATAR_STATE_FIELD_MOVE",
+        "PLAYER_AVATAR_STATE_FISHING",
+        "PLAYER_AVATAR_STATE_WATERING"
+      ],
+      "indexedValues": [
+        "{OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL",
+        "{OBJ_EVENT_GFX_RIVAL_BRENDAN_MACH_BIKE",
+        "{OBJ_EVENT_GFX_RIVAL_BRENDAN_ACRO_BIKE",
+        "{OBJ_EVENT_GFX_RIVAL_BRENDAN_SURFING",
+        "{OBJ_EVENT_GFX_BRENDAN_UNDERWATER",
+        "{OBJ_EVENT_GFX_RIVAL_BRENDAN_FIELD_MOVE",
+        "{OBJ_EVENT_GFX_BRENDAN_FISHING",
+        "{OBJ_EVENT_GFX_BRENDAN_WATERING"
+      ],
+      "rawValue": "{\n    [PLAYER_AVATAR_STATE_NORMAL]     = {OBJ_EVENT_GFX_RIVAL_BRENDAN_NORMAL,     OBJ_EVENT_GFX_RIVAL_MAY_NORMAL},\n    [PLAYER_AVATAR_STATE_MACH_BIKE]  = {OBJ_EVENT_GFX_RIVAL_BRENDAN_MACH_BIKE,  OBJ_EVENT_GFX_RIVAL_MAY_MACH_BIKE},\n    [PLAYER_AVATAR_STATE_ACRO_BIKE]  = {OBJ_EVENT_GFX_RIVAL_BRENDAN_ACRO_BIKE,  OBJ_EVENT_GFX_RIVAL_MAY_ACRO_BIKE},\n    [PLAYER_AVATAR_STATE_SURFING]    = {OBJ_EVENT_GFX_RIVAL_BRENDAN_SURFING,    OBJ_EVENT_GFX_RIVAL_MAY_SURFING},\n    [PLAYER_AVATAR_STATE_UNDERWATER] = {OBJ_EVENT_GFX_BRENDAN_UNDERWATER,       OBJ_EVENT_GFX_MAY_UNDERWATER},\n    [PLAYER_AVATAR_STATE_FIELD_MOVE] = {OBJ_EVENT_GFX_RIVAL_BRENDAN_FIELD_MOVE, OBJ_EVENT_GFX_RIVAL_MAY_FIELD_MOVE},\n    [PLAYER_AVATAR_STATE_FISHING]    = {OBJ_EVENT_GFX_BRENDAN_FISHING,          OBJ_EVENT_GFX_MAY_FISHING},\n    [PLAYER_AVATAR_STATE_WATERING]   = {OBJ_EVENT_GFX_BRENDAN_WATERING,         OBJ_EVENT_GFX_MAY_WATERING}\n}"
+    },
+    "sPlayerAvatarGfxIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "PLAYER_AVATAR_STATE_NORMAL",
+        "PLAYER_AVATAR_STATE_MACH_BIKE",
+        "PLAYER_AVATAR_STATE_ACRO_BIKE",
+        "PLAYER_AVATAR_STATE_SURFING",
+        "PLAYER_AVATAR_STATE_UNDERWATER",
+        "PLAYER_AVATAR_STATE_FIELD_MOVE",
+        "PLAYER_AVATAR_STATE_FISHING",
+        "PLAYER_AVATAR_STATE_WATERING"
+      ],
+      "indexedValues": [
+        "{OBJ_EVENT_GFX_BRENDAN_NORMAL",
+        "{OBJ_EVENT_GFX_BRENDAN_MACH_BIKE",
+        "{OBJ_EVENT_GFX_BRENDAN_ACRO_BIKE",
+        "{OBJ_EVENT_GFX_BRENDAN_SURFING",
+        "{OBJ_EVENT_GFX_BRENDAN_UNDERWATER",
+        "{OBJ_EVENT_GFX_BRENDAN_FIELD_MOVE",
+        "{OBJ_EVENT_GFX_BRENDAN_FISHING",
+        "{OBJ_EVENT_GFX_BRENDAN_WATERING"
+      ],
+      "rawValue": "{\n    [PLAYER_AVATAR_STATE_NORMAL]     = {OBJ_EVENT_GFX_BRENDAN_NORMAL,     OBJ_EVENT_GFX_MAY_NORMAL},\n    [PLAYER_AVATAR_STATE_MACH_BIKE]  = {OBJ_EVENT_GFX_BRENDAN_MACH_BIKE,  OBJ_EVENT_GFX_MAY_MACH_BIKE},\n    [PLAYER_AVATAR_STATE_ACRO_BIKE]  = {OBJ_EVENT_GFX_BRENDAN_ACRO_BIKE,  OBJ_EVENT_GFX_MAY_ACRO_BIKE},\n    [PLAYER_AVATAR_STATE_SURFING]    = {OBJ_EVENT_GFX_BRENDAN_SURFING,    OBJ_EVENT_GFX_MAY_SURFING},\n    [PLAYER_AVATAR_STATE_UNDERWATER] = {OBJ_EVENT_GFX_BRENDAN_UNDERWATER, OBJ_EVENT_GFX_MAY_UNDERWATER},\n    [PLAYER_AVATAR_STATE_FIELD_MOVE] = {OBJ_EVENT_GFX_BRENDAN_FIELD_MOVE, OBJ_EVENT_GFX_MAY_FIELD_MOVE},\n    [PLAYER_AVATAR_STATE_FISHING]    = {OBJ_EVENT_GFX_BRENDAN_FISHING,    OBJ_EVENT_GFX_MAY_FISHING},\n    [PLAYER_AVATAR_STATE_WATERING]   = {OBJ_EVENT_GFX_BRENDAN_WATERING,   OBJ_EVENT_GFX_MAY_WATERING},\n}"
+    },
+    "sFRLGAvatarGfxIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MALE",
+        "FEMALE"
+      ],
+      "indexedValues": [
+        "OBJ_EVENT_GFX_RED",
+        "OBJ_EVENT_GFX_LEAF"
+      ],
+      "rawValue": "{\n    [MALE]   = OBJ_EVENT_GFX_RED,\n    [FEMALE] = OBJ_EVENT_GFX_LEAF\n}"
+    },
+    "sRSAvatarGfxIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MALE",
+        "FEMALE"
+      ],
+      "indexedValues": [
+        "OBJ_EVENT_GFX_LINK_RS_BRENDAN",
+        "OBJ_EVENT_GFX_LINK_RS_MAY"
+      ],
+      "rawValue": "{\n    [MALE]   = OBJ_EVENT_GFX_LINK_RS_BRENDAN,\n    [FEMALE] = OBJ_EVENT_GFX_LINK_RS_MAY\n}"
+    },
+    "sSpinDirections": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "DIR_SOUTH",
+        "DIR_WEST",
+        "DIR_EAST",
+        "DIR_NORTH",
+        "DIR_SOUTH"
+      ],
+      "rawValue": "{DIR_SOUTH, DIR_WEST, DIR_EAST, DIR_NORTH, DIR_SOUTH}"
+    },
+    "sForcedMovementTestFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "MetatileBehavior_IsTrickHouseSlipperyFloor",
+        "MetatileBehavior_IsIce_2",
+        "MetatileBehavior_IsWalkSouth",
+        "MetatileBehavior_IsWalkNorth",
+        "MetatileBehavior_IsWalkWest",
+        "MetatileBehavior_IsWalkEast",
+        "MetatileBehavior_IsSouthwardCurrent",
+        "MetatileBehavior_IsNorthwardCurrent",
+        "MetatileBehavior_IsWestwardCurrent",
+        "MetatileBehavior_IsEastwardCurrent",
+        "MetatileBehavior_IsSlideSouth",
+        "MetatileBehavior_IsSlideNorth",
+        "MetatileBehavior_IsSlideWest",
+        "MetatileBehavior_IsSlideEast",
+        "MetatileBehavior_IsWaterfall",
+        "MetatileBehavior_IsSecretBaseJumpMat",
+        "MetatileBehavior_IsSecretBaseSpinMat",
+        "MetatileBehavior_IsMuddySlope"
+      ],
+      "rawValue": "{\n    MetatileBehavior_IsTrickHouseSlipperyFloor,\n    MetatileBehavior_IsIce_2,\n    MetatileBehavior_IsWalkSouth,\n    MetatileBehavior_IsWalkNorth,\n    MetatileBehavior_IsWalkWest,\n    MetatileBehavior_IsWalkEast,\n    MetatileBehavior_IsSouthwardCurrent,\n    MetatileBehavior_IsNorthwardCurrent,\n    MetatileBehavior_IsWestwardCurrent,\n    MetatileBehavior_IsEastwardCurrent,\n    MetatileBehavior_IsSlideSouth,\n    MetatileBehavior_IsSlideNorth,\n    MetatileBehavior_IsSlideWest,\n    MetatileBehavior_IsSlideEast,\n    MetatileBehavior_IsWaterfall,\n    MetatileBehavior_IsSecretBaseJumpMat,\n    MetatileBehavior_IsSecretBaseSpinMat,\n    MetatileBehavior_IsMuddySlope,\n}"
+    },
+    "sForcedMovementFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "ForcedMovement_None",
+        "ForcedMovement_Slip",
+        "ForcedMovement_Slip",
+        "ForcedMovement_WalkSouth",
+        "ForcedMovement_WalkNorth",
+        "ForcedMovement_WalkWest",
+        "ForcedMovement_WalkEast",
+        "ForcedMovement_PushedSouthByCurrent",
+        "ForcedMovement_PushedNorthByCurrent",
+        "ForcedMovement_PushedWestByCurrent",
+        "ForcedMovement_PushedEastByCurrent",
+        "ForcedMovement_SlideSouth",
+        "ForcedMovement_SlideNorth",
+        "ForcedMovement_SlideWest",
+        "ForcedMovement_SlideEast",
+        "ForcedMovement_PushedSouthByCurrent",
+        "ForcedMovement_MatJump",
+        "ForcedMovement_MatSpin",
+        "ForcedMovement_MuddySlope"
+      ],
+      "rawValue": "{\n    ForcedMovement_None,\n    ForcedMovement_Slip,\n    ForcedMovement_Slip,\n    ForcedMovement_WalkSouth,\n    ForcedMovement_WalkNorth,\n    ForcedMovement_WalkWest,\n    ForcedMovement_WalkEast,\n    ForcedMovement_PushedSouthByCurrent,\n    ForcedMovement_PushedNorthByCurrent,\n    ForcedMovement_PushedWestByCurrent,\n    ForcedMovement_PushedEastByCurrent,\n    ForcedMovement_SlideSouth,\n    ForcedMovement_SlideNorth,\n    ForcedMovement_SlideWest,\n    ForcedMovement_SlideEast,\n    ForcedMovement_PushedSouthByCurrent,\n    ForcedMovement_MatJump,\n    ForcedMovement_MatSpin,\n    ForcedMovement_MuddySlope,\n}"
+    },
+    "sPlayerNotOnBikeFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "NOT_MOVING",
+        "TURN_DIRECTION",
+        "MOVING"
+      ],
+      "indexedValues": [
+        "PlayerNotOnBikeNotMoving",
+        "PlayerNotOnBikeTurningInPlace",
+        "PlayerNotOnBikeMoving"
+      ],
+      "rawValue": "{\n    [NOT_MOVING]     = PlayerNotOnBikeNotMoving,\n    [TURN_DIRECTION] = PlayerNotOnBikeTurningInPlace,\n    [MOVING]         = PlayerNotOnBikeMoving,\n}"
+    },
+    "sAcroBikeTrickMetatiles": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "MetatileBehavior_IsBumpySlope",
+        "MetatileBehavior_IsIsolatedVerticalRail",
+        "MetatileBehavior_IsIsolatedHorizontalRail",
+        "MetatileBehavior_IsVerticalRail",
+        "MetatileBehavior_IsHorizontalRail"
+      ],
+      "rawValue": "{\n    MetatileBehavior_IsBumpySlope,\n    MetatileBehavior_IsIsolatedVerticalRail,\n    MetatileBehavior_IsIsolatedHorizontalRail,\n    MetatileBehavior_IsVerticalRail,\n    MetatileBehavior_IsHorizontalRail,\n}"
+    },
+    "sPlayerAvatarTransitionFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "PLAYER_AVATAR_STATE_NORMAL",
+        "PLAYER_AVATAR_STATE_MACH_BIKE",
+        "PLAYER_AVATAR_STATE_ACRO_BIKE",
+        "PLAYER_AVATAR_STATE_SURFING",
+        "PLAYER_AVATAR_STATE_UNDERWATER",
+        "PLAYER_AVATAR_STATE_FIELD_MOVE",
+        "PLAYER_AVATAR_STATE_FISHING",
+        "PLAYER_AVATAR_STATE_WATERING"
+      ],
+      "indexedValues": [
+        "PlayerAvatarTransition_Normal",
+        "PlayerAvatarTransition_MachBike",
+        "PlayerAvatarTransition_AcroBike",
+        "PlayerAvatarTransition_Surfing",
+        "PlayerAvatarTransition_Underwater",
+        "PlayerAvatarTransition_ReturnToField",
+        "PlayerAvatarTransition_Dummy",
+        "PlayerAvatarTransition_Dummy"
+      ],
+      "rawValue": "{\n    [PLAYER_AVATAR_STATE_NORMAL]     = PlayerAvatarTransition_Normal,\n    [PLAYER_AVATAR_STATE_MACH_BIKE]  = PlayerAvatarTransition_MachBike,\n    [PLAYER_AVATAR_STATE_ACRO_BIKE]  = PlayerAvatarTransition_AcroBike,\n    [PLAYER_AVATAR_STATE_SURFING]    = PlayerAvatarTransition_Surfing,\n    [PLAYER_AVATAR_STATE_UNDERWATER] = PlayerAvatarTransition_Underwater,\n    [PLAYER_AVATAR_STATE_FIELD_MOVE] = PlayerAvatarTransition_ReturnToField,\n    [PLAYER_AVATAR_STATE_FISHING]    = PlayerAvatarTransition_Dummy,\n    [PLAYER_AVATAR_STATE_WATERING]   = PlayerAvatarTransition_Dummy,\n}"
+    },
+    "sArrowWarpMetatileBehaviorChecks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "[DIR_SOUTH - 1] = MetatileBehavior_IsSouthArrowWarp",
+        "[DIR_NORTH - 1] = MetatileBehavior_IsNorthArrowWarp",
+        "[DIR_WEST - 1]  = MetatileBehavior_IsWestArrowWarp",
+        "[DIR_EAST - 1]  = MetatileBehavior_IsEastArrowWarp"
+      ],
+      "rawValue": "{\n    [DIR_SOUTH - 1] = MetatileBehavior_IsSouthArrowWarp,\n    [DIR_NORTH - 1] = MetatileBehavior_IsNorthArrowWarp,\n    [DIR_WEST - 1]  = MetatileBehavior_IsWestArrowWarp,\n    [DIR_EAST - 1]  = MetatileBehavior_IsEastArrowWarp,\n}"
+    },
+    "sArrowWarpMetatileBehaviorChecks2": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "[DIR_SOUTH - 1] = MetatileBehavior_IsSouthArrowWarp",
+        "[DIR_NORTH - 1] = MetatileBehavior_IsNorthArrowWarp",
+        "[DIR_WEST - 1]  = MetatileBehavior_IsWestArrowWarp",
+        "[DIR_EAST - 1]  = MetatileBehavior_IsEastArrowWarp"
+      ],
+      "rawValue": "{\n    [DIR_SOUTH - 1] = MetatileBehavior_IsSouthArrowWarp,\n    [DIR_NORTH - 1] = MetatileBehavior_IsNorthArrowWarp,\n    [DIR_WEST - 1]  = MetatileBehavior_IsWestArrowWarp,\n    [DIR_EAST - 1]  = MetatileBehavior_IsEastArrowWarp,\n}"
+    },
+    "sPushBoulderFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "PushBoulder_Start",
+        "PushBoulder_Move",
+        "PushBoulder_End"
+      ],
+      "rawValue": "{\n    PushBoulder_Start,\n    PushBoulder_Move,\n    PushBoulder_End,\n}"
+    },
+    "sPlayerAvatarSecretBaseMatJump": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "PlayerAvatar_DoSecretBaseMatJump"
+      ],
+      "rawValue": "{\n    PlayerAvatar_DoSecretBaseMatJump,\n}"
+    },
+    "sPlayerAvatarSecretBaseMatSpin": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "PlayerAvatar_SecretBaseMatSpinStep0",
+        "PlayerAvatar_SecretBaseMatSpinStep1",
+        "PlayerAvatar_SecretBaseMatSpinStep2",
+        "PlayerAvatar_SecretBaseMatSpinStep3"
+      ],
+      "rawValue": "{\n    PlayerAvatar_SecretBaseMatSpinStep0,\n    PlayerAvatar_SecretBaseMatSpinStep1,\n    PlayerAvatar_SecretBaseMatSpinStep2,\n    PlayerAvatar_SecretBaseMatSpinStep3,\n}"
+    },
+    "sFishingStateFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "Fishing_Init",
+        "Fishing_GetRodOut",
+        "Fishing_WaitBeforeDots",
+        "Fishing_InitDots",
+        "Fishing_ShowDots",
+        "Fishing_CheckForBite",
+        "Fishing_GotBite",
+        "Fishing_WaitForA",
+        "Fishing_CheckMoreDots",
+        "Fishing_MonOnHook",
+        "Fishing_StartEncounter",
+        "Fishing_NotEvenNibble",
+        "Fishing_GotAway",
+        "Fishing_NoMon",
+        "Fishing_PutRodAway",
+        "Fishing_EndNoMon"
+      ],
+      "rawValue": "{\n    Fishing_Init,\n    Fishing_GetRodOut,\n    Fishing_WaitBeforeDots,\n    Fishing_InitDots,        \n    Fishing_ShowDots,\n    Fishing_CheckForBite,\n    Fishing_GotBite,         \n    Fishing_WaitForA,\n    Fishing_CheckMoreDots,\n    Fishing_MonOnHook,       \n    Fishing_StartEncounter,\n    Fishing_NotEvenNibble,   \n    Fishing_GotAway,         \n    Fishing_NoMon,           \n    Fishing_PutRodAway,\n    Fishing_EndNoMon,\n}"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "srcFile": "src/data/object_events/object_event_graphics.h",
+  "count": 1,
+  "tables": {
+    "sFiller": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    }
+  }
+}

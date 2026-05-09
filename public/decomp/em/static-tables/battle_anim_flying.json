@@ -1,0 +1,146 @@
+{
+  "srcFile": "src/battle_anim_flying.c",
+  "count": 12,
+  "tables": {
+    "sAffineAnim_GustToTarget": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x10, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xA, 0x0, 0, 24)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x10, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0xA, 0x0, 0, 24),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_AirWaveCrescent": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 3)",
+        "ANIMCMD_FRAME(0, 3, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 3, .vFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 3, .vFlip = TRUE, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 3),\n    ANIMCMD_FRAME(0, 3, .hFlip = TRUE),\n    ANIMCMD_FRAME(0, 3, .vFlip = TRUE),\n    ANIMCMD_FRAME(0, 3, .vFlip = TRUE, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_FlyBallUp": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x10, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x28, 0x0, 0, 6)",
+        "AFFINEANIMCMD_FRAME(0x0, 0xFFE0, 0, 5)",
+        "AFFINEANIMCMD_FRAME(0xFFF0, 0x20, 0, 10)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x10, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x28, 0x0, 0, 6),\n    AFFINEANIMCMD_FRAME(0x0, 0xFFE0, 0, 5),\n    AFFINEANIMCMD_FRAME(0xFFF0, 0x20, 0, 10),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_FlyBallAttack_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 50, 1)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 50, 1),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_FlyBallAttack_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -40, 1)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -40, 1),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_FallingFeather_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FallingFeather_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 0, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 0, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_WhirlwindLines": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_FRAME(8, 1)",
+        "ANIMCMD_FRAME(16, 1)",
+        "ANIMCMD_FRAME(8, 1, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 1, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_FRAME(8, 1),\n    ANIMCMD_FRAME(16, 1),\n    ANIMCMD_FRAME(8, 1, .hFlip = TRUE),\n    ANIMCMD_FRAME(0, 1, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_BounceBallShrink": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x10, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x28, 0x0, 0, 6)",
+        "AFFINEANIMCMD_FRAME(0x0, 0xFFE0, 0, 5)",
+        "AFFINEANIMCMD_FRAME(0xFFEC, 0x0, 0, 7)",
+        "AFFINEANIMCMD_FRAME(0xFFEC, 0xFFEC, 0, 5)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x10, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x28, 0x0, 0, 6),\n    AFFINEANIMCMD_FRAME(0x0, 0xFFE0, 0, 5),\n    AFFINEANIMCMD_FRAME(0xFFEC, 0x0, 0, 7),\n    AFFINEANIMCMD_FRAME(0xFFEC, 0xFFEC, 0, 5),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_BounceBallLand": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xA0, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xA0, 0x100, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_DiveBall": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x10, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x28, 0x0, 0, 6)",
+        "AFFINEANIMCMD_FRAME(0x0, 0xFFE0, 0, 5)",
+        "AFFINEANIMCMD_FRAME(0xFFF0, 0x20, 0, 10)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x10, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x28, 0x0, 0, 6),\n    AFFINEANIMCMD_FRAME(0x0, 0xFFE0, 0, 5),\n    AFFINEANIMCMD_FRAME(0xFFF0, 0x20, 0, 10),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_Unused": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x0, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x20, 0, 12)",
+        "AFFINEANIMCMD_FRAME(0x0, 0xFFE0, 0, 11)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x0, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x20, 0, 12),\n    AFFINEANIMCMD_FRAME(0x0, 0xFFE0, 0, 11),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

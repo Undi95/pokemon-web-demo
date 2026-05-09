@@ -1,0 +1,41 @@
+{
+  "srcFile": "src/pokenav_conditions_gfx.c",
+  "count": 2,
+  "tables": {
+    "sMenuBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 0x1F,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 0x1D,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x1E,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 0x1F,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 0x1D,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x1E,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sLoopedTaskFuncs": {
+      "type": "LoopedTask",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CONDITION_FUNC_NONE",
+        "CONDITION_FUNC_SLIDE_MON_IN",
+        "CONDITION_FUNC_RETURN",
+        "CONDITION_FUNC_NO_TRANSITION",
+        "CONDITION_FUNC_SLIDE_MON_OUT",
+        "CONDITION_FUNC_ADD_MARKINGS",
+        "CONDITION_FUNC_CLOSE_MARKINGS"
+      ],
+      "indexedValues": [
+        "NULL",
+        "LoopedTask_TransitionMons",
+        "LoopedTask_ExitConditionGraphMenu",
+        "LoopedTask_MoveCursorNoTransition",
+        "LoopedTask_SlideMonOut",
+        "LoopedTask_OpenMonMarkingsWindow",
+        "LoopedTask_CloseMonMarkingsWindow"
+      ],
+      "rawValue": "{\n    [CONDITION_FUNC_NONE]           = NULL,\n    [CONDITION_FUNC_SLIDE_MON_IN]   = LoopedTask_TransitionMons,\n    [CONDITION_FUNC_RETURN]         = LoopedTask_ExitConditionGraphMenu,\n    [CONDITION_FUNC_NO_TRANSITION]  = LoopedTask_MoveCursorNoTransition,\n    [CONDITION_FUNC_SLIDE_MON_OUT]  = LoopedTask_SlideMonOut,\n    [CONDITION_FUNC_ADD_MARKINGS]   = LoopedTask_OpenMonMarkingsWindow,\n    [CONDITION_FUNC_CLOSE_MARKINGS] = LoopedTask_CloseMonMarkingsWindow\n}"
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "srcFile": "src/gym_leader_rematch.c",
+  "count": 2,
+  "tables": {
+    "GymLeaderRematches_AfterNewMauville": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "REMATCH_ROXANNE",
+        "REMATCH_BRAWLY",
+        "REMATCH_WATTSON",
+        "REMATCH_FLANNERY",
+        "REMATCH_NORMAN",
+        "REMATCH_WINONA",
+        "REMATCH_TATE_AND_LIZA",
+        "REMATCH_JUAN"
+      ],
+      "rawValue": "{\n    REMATCH_ROXANNE,\n    REMATCH_BRAWLY,\n    REMATCH_WATTSON,\n    REMATCH_FLANNERY,\n    REMATCH_NORMAN,\n    REMATCH_WINONA,\n    REMATCH_TATE_AND_LIZA,\n    REMATCH_JUAN\n}"
+    },
+    "GymLeaderRematches_BeforeNewMauville": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "REMATCH_ROXANNE",
+        "REMATCH_BRAWLY",
+        "REMATCH_FLANNERY",
+        "REMATCH_NORMAN",
+        "REMATCH_WINONA",
+        "REMATCH_TATE_AND_LIZA",
+        "REMATCH_JUAN"
+      ],
+      "rawValue": "{\n    REMATCH_ROXANNE,\n    REMATCH_BRAWLY,\n     \n    REMATCH_FLANNERY,\n    REMATCH_NORMAN,\n    REMATCH_WINONA,\n    REMATCH_TATE_AND_LIZA,\n    REMATCH_JUAN\n}"
+    }
+  }
+}

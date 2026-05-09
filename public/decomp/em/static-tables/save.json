@@ -1,0 +1,28 @@
+{
+  "srcFile": "src/save.c",
+  "count": 1,
+  "tables": {
+    "sSaveSlotLayout": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "SAVEBLOCK_CHUNK(struct SaveBlock2, 0)",
+        "SAVEBLOCK_CHUNK(struct SaveBlock1, 0)",
+        "SAVEBLOCK_CHUNK(struct SaveBlock1, 1)",
+        "SAVEBLOCK_CHUNK(struct SaveBlock1, 2)",
+        "SAVEBLOCK_CHUNK(struct SaveBlock1, 3)",
+        "SAVEBLOCK_CHUNK(struct PokemonStorage, 0)",
+        "SAVEBLOCK_CHUNK(struct PokemonStorage, 1)",
+        "SAVEBLOCK_CHUNK(struct PokemonStorage, 2)",
+        "SAVEBLOCK_CHUNK(struct PokemonStorage, 3)",
+        "SAVEBLOCK_CHUNK(struct PokemonStorage, 4)",
+        "SAVEBLOCK_CHUNK(struct PokemonStorage, 5)",
+        "SAVEBLOCK_CHUNK(struct PokemonStorage, 6)",
+        "SAVEBLOCK_CHUNK(struct PokemonStorage, 7)",
+        "SAVEBLOCK_CHUNK(struct PokemonStorage, 8)"
+      ],
+      "rawValue": "{\n    SAVEBLOCK_CHUNK(struct SaveBlock2, 0),  \n\n    SAVEBLOCK_CHUNK(struct SaveBlock1, 0),  \n    SAVEBLOCK_CHUNK(struct SaveBlock1, 1),\n    SAVEBLOCK_CHUNK(struct SaveBlock1, 2),\n    SAVEBLOCK_CHUNK(struct SaveBlock1, 3),  \n\n    SAVEBLOCK_CHUNK(struct PokemonStorage, 0),  \n    SAVEBLOCK_CHUNK(struct PokemonStorage, 1),\n    SAVEBLOCK_CHUNK(struct PokemonStorage, 2),\n    SAVEBLOCK_CHUNK(struct PokemonStorage, 3),\n    SAVEBLOCK_CHUNK(struct PokemonStorage, 4),\n    SAVEBLOCK_CHUNK(struct PokemonStorage, 5),\n    SAVEBLOCK_CHUNK(struct PokemonStorage, 6),\n    SAVEBLOCK_CHUNK(struct PokemonStorage, 7),\n    SAVEBLOCK_CHUNK(struct PokemonStorage, 8),  \n}"
+    }
+  }
+}

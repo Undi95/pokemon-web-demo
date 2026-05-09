@@ -1,0 +1,93 @@
+{
+  "srcFile": "src/battle_anim_poison.c",
+  "count": 8,
+  "tables": {
+    "sAnim_ToxicBubble": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_FRAME(16, 5)",
+        "ANIMCMD_FRAME(24, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_FRAME(16, 5),\n    ANIMCMD_FRAME(24, 5),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PoisonProjectile": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_AcidPoisonDroplet": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_SludgeBombHit": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_PoisonProjectile": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x160, 0x160, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFF6, 0xFFF6, 0, 10)",
+        "AFFINEANIMCMD_FRAME(0xA, 0xA, 0, 10)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x160, 0x160, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFF6, 0xFFF6, 0, 10),\n    AFFINEANIMCMD_FRAME(0xA, 0xA, 0, 10),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_SludgeBombHit": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xEC, 0xEC, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xEC, 0xEC, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_AcidPoisonDroplet": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xFFF0, 0x10, 0, 6)",
+        "AFFINEANIMCMD_FRAME(0x10, 0xFFF0, 0, 6)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xFFF0, 0x10, 0, 6),\n    AFFINEANIMCMD_FRAME(0x10, 0xFFF0, 0, 6),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_Bubble": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x9C, 0x9C, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x5, 0x5, 0, 20)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x9C, 0x9C, 0, 0),\n    AFFINEANIMCMD_FRAME(0x5, 0x5, 0, 20),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

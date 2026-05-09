@@ -23,7 +23,7 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ALIGNED, BgAffineSet, CpuCopy32, CreateSprite,
-  DISPLAY_HEIGHT, TRUE,  // 4-per-line for readability
+  DISPLAY_HEIGHT, DISPLAY_WIDTH, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 CreateInvisibleSpriteWithCallback(void (*callback)(struct Sprite *)) */

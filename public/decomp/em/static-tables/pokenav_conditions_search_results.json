@@ -1,0 +1,65 @@
+{
+  "srcFile": "src/pokenav_conditions_search_results.c",
+  "count": 4,
+  "tables": {
+    "sSearchMonDataIds": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MON_DATA_COOL",
+        "MON_DATA_BEAUTY",
+        "MON_DATA_CUTE",
+        "MON_DATA_SMART",
+        "MON_DATA_TOUGH"
+      ],
+      "rawValue": "{MON_DATA_COOL, MON_DATA_BEAUTY, MON_DATA_CUTE, MON_DATA_SMART, MON_DATA_TOUGH}"
+    },
+    "sConditionSearchLoopedTaskFuncs": {
+      "type": "LoopedTask",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "BuildPartyMonSearchResults",
+        "InitBoxMonSearchResults",
+        "BuildBoxMonSearchResults",
+        "ConvertConditionsToListRanks"
+      ],
+      "rawValue": "{\n    BuildPartyMonSearchResults,\n    InitBoxMonSearchResults,\n    BuildBoxMonSearchResults,\n    ConvertConditionsToListRanks\n}"
+    },
+    "sConditionSearchResultBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 0x06,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x07,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 0x06,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }, {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x07,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sSearchResultLoopTaskFuncs": {
+      "type": "LoopedTask",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CONDITION_SEARCH_FUNC_NONE",
+        "CONDITION_SEARCH_FUNC_MOVE_UP",
+        "CONDITION_SEARCH_FUNC_MOVE_DOWN",
+        "CONDITION_SEARCH_FUNC_PAGE_UP",
+        "CONDITION_SEARCH_FUNC_PAGE_DOWN",
+        "CONDITION_SEARCH_FUNC_EXIT",
+        "CONDITION_SEARCH_FUNC_SELECT_MON"
+      ],
+      "indexedValues": [
+        "NULL",
+        "LoopedTask_MoveSearchListCursorUp",
+        "LoopedTask_MoveSearchListCursorDown",
+        "LoopedTask_MoveSearchListPageUp",
+        "LoopedTask_MoveSearchListPageDown",
+        "LoopedTask_ExitConditionSearchMenu",
+        "LoopedTask_SelectSearchResult"
+      ],
+      "rawValue": "{\n    [CONDITION_SEARCH_FUNC_NONE]       = NULL,\n    [CONDITION_SEARCH_FUNC_MOVE_UP]    = LoopedTask_MoveSearchListCursorUp,\n    [CONDITION_SEARCH_FUNC_MOVE_DOWN]  = LoopedTask_MoveSearchListCursorDown,\n    [CONDITION_SEARCH_FUNC_PAGE_UP]    = LoopedTask_MoveSearchListPageUp,\n    [CONDITION_SEARCH_FUNC_PAGE_DOWN]  = LoopedTask_MoveSearchListPageDown,\n    [CONDITION_SEARCH_FUNC_EXIT]       = LoopedTask_ExitConditionSearchMenu,\n    [CONDITION_SEARCH_FUNC_SELECT_MON] = LoopedTask_SelectSearchResult\n}"
+    }
+  }
+}

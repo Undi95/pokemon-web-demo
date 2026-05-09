@@ -40,14 +40,15 @@ const {
   Menu_ProcessInputNoWrapClearOnChoose, MonRestorePP, NULL, PALETTES_ALL,
   PIXEL_FILL, PLTT_SIZE_4BPP, PlayBGM, PlayFanfare,
   PlayRainStoppingSoundEffect, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
-  Random, RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, RunTasks,
-  RunTextPrinters, ScanlineEffect_Stop, SetBgAttribute, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetMonData, SetMultiuseSpriteTemplateToPokemon,
-  SetVBlankCallback, ShowBg, Sin, SpeciesToNationalPokedexNum,
-  StartSpriteAffineAnim, StartSpriteAnim, StopMapMusic, StringCompareWithoutExtCtrlCodes,
-  StringCopy, StringExpandPlaceholders, TRUE, TVShowConvertInternationalString,
-  TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  REG_OFFSET_DISPCNT, Random, RemoveWindow, ResetBgsAndClearDma3BusyFlags,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
+  RunTasks, RunTextPrinters, ScanlineEffect_Stop, SetBgAttribute,
+  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetMonData,
+  SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback, ShowBg, Sin,
+  SpeciesToNationalPokedexNum, SpriteCallbackDummy, StartSpriteAffineAnim, StartSpriteAnim,
+  StopMapMusic, StringCompareWithoutExtCtrlCodes, StringCopy, StringExpandPlaceholders,
+  TRUE, TVShowConvertInternationalString, TransferPlttBuffer, UnsetBgTilemapBuffer,
+  UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CreateHatchedMon(struct Pokemon *egg, struct Pokemon *temp) */

@@ -1,0 +1,82 @@
+{
+  "srcFile": "src/reset_rtc_screen.c",
+  "count": 7,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_TIME",
+        "WIN_MSG"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_TIME] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 19,\n        .height = 9,\n        .paletteNum = 15,\n        .baseBlock = 0x155\n    },\n    [WIN_MSG] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0xE9\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sInputMap": {
+      "type": "struct ResetRtcInputMap",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[SELECTION_DAYS - 1] = {\n        .dataIndex = DATAIDX_DAYS,\n        .minVal = 1,\n        .maxVal = 9999,\n        .left = 0,\n        .right = 2,\n        .unk = 0,\n    }",
+        "[SELECTION_HOURS - 1] = {\n        .dataIndex = DATAIDX_HOURS,\n        .minVal = 0,\n        .maxVal = 23,\n        .left = 1,\n        .right = 3,\n        .unk = 0,\n    }",
+        "[SELECTION_MINS - 1] = {\n        .dataIndex = DATAIDX_MINS,\n        .minVal = 0,\n        .maxVal = 59,\n        .left = 2,\n        .right = 4,\n        .unk = 0,\n    }",
+        "[SELECTION_SECS - 1] = {\n        .dataIndex = DATAIDX_SECS,\n        .minVal = 0,\n        .maxVal = 59,\n        .left = 3,\n        .right = 5,\n        .unk = 0,\n    }",
+        "[SELECTION_CONFIRM - 1] = {\n        .dataIndex = DATAIDX_CONFIRM,\n        .minVal = 0,\n        .maxVal = 0,\n        .left = 4,\n        .right = 0,\n        .unk = 6,\n    }"
+      ],
+      "rawValue": "{\n    [SELECTION_DAYS - 1] = {\n        .dataIndex = DATAIDX_DAYS,\n        .minVal = 1,\n        .maxVal = 9999,\n        .left = 0,\n        .right = 2,\n        .unk = 0,\n    },\n    [SELECTION_HOURS - 1] = {\n        .dataIndex = DATAIDX_HOURS,\n        .minVal = 0,\n        .maxVal = 23,\n        .left = 1,\n        .right = 3,\n        .unk = 0,\n    },\n    [SELECTION_MINS - 1] = {\n        .dataIndex = DATAIDX_MINS,\n        .minVal = 0,\n        .maxVal = 59,\n        .left = 2,\n        .right = 4,\n        .unk = 0,\n    },\n    [SELECTION_SECS - 1] = {\n        .dataIndex = DATAIDX_SECS,\n        .minVal = 0,\n        .maxVal = 59,\n        .left = 3,\n        .right = 5,\n        .unk = 0,\n    },\n    [SELECTION_CONFIRM - 1] = {\n        .dataIndex = DATAIDX_CONFIRM,\n        .minVal = 0,\n        .maxVal = 0,\n        .left = 4,\n        .right = 0,\n        .unk = 6,\n    },\n}"
+    },
+    "sPicTable_Arrow": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "obj_frame_tiles(sArrowDown_Gfx)",
+        "obj_frame_tiles(sArrowRight_Gfx)"
+      ],
+      "rawValue": "{\n    obj_frame_tiles(sArrowDown_Gfx),\n    obj_frame_tiles(sArrowRight_Gfx)\n}"
+    },
+    "sAnim_Arrow_Down": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_Arrow_Up": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30, .vFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30, .vFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_Arrow_Right": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 30),\n    ANIMCMD_JUMP(0),\n}"
+    }
+  }
+}

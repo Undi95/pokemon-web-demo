@@ -34,10 +34,10 @@ const {
   InitBgFromTemplate, InitBgsFromTemplates, InitWindows, IsDma3ManagerBusyWithBgCopy,
   IsLoopedTaskActive, LZ77UnCompWram, LoadCompressedSpriteSheet, LoadPalette,
   NULL, OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL,
-  PLTT_SIZE_4BPP, PlaySE, PutWindowTilemap, RGB2,
-  RequestDma3Copy, ResetBgPositions, ResetBgsAndClearDma3BusyFlags, ResetBldCnt_,
-  ResetSpriteData, ResetTempTileDataBuffers, SetBgTilemapBuffer, SetGpuReg,
-  ShowBg, TRUE,  // 4-per-line for readability
+  PLTT_SIZE_4BPP, PlaySE, PutWindowTilemap, REG_OFFSET_DISPCNT,
+  RGB2, RequestDma3Copy, ResetBgPositions, ResetBgsAndClearDma3BusyFlags,
+  ResetBldCnt_, ResetSpriteData, ResetTempTileDataBuffers, SetBgTilemapBuffer,
+  SetGpuReg, ShowBg, SpriteCallbackDummy, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 InitPokenavMainMenu(void) */

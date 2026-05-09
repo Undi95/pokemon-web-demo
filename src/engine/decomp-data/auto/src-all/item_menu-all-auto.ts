@@ -53,18 +53,18 @@ const {
   PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP, PlaySE,
   PlayerFreeze, PrintMenuActionGrid, PrintMenuActionTexts, PrintMoneyAmount,
   PrintMoneyAmountInMoneyBox, PrintMoneyAmountInMoneyBoxWithBorder, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BLDCNT, RemoveBagItem, RemoveBagItemIconSprite, RemoveBagSprite,
-  RemoveMoneyLabelObject, RemoveScrollIndicatorArrowPair, RemoveWindow, ResetAllBgsCoordinates,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks, STR_CONV_MODE_LEADING_ZEROS,
-  STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
-  ScriptContext_SetupScript, SetBagVisualPocketId, SetBgTilemapBuffer, SetCursorScrollWithinListBounds,
-  SetCursorWithinListBounds, SetGpuReg, SetItemMenuSwapLineInvisibility, SetMainCallback2,
-  SetTaskFuncWithFollowupFunc, SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShakeBagSprite,
-  ShowBg, SortBerriesOrTMHMs, StopPlayerAvatar, StringCopy,
-  StringExpandPlaceholders, SwitchTaskToFollowupFunc, TASK_NONE, TRUE,
-  TestPlayerAvatarFlags, TransferPlttBuffer, UpdateItemMenuSwapLinePos, UpdatePaletteFade,
-  memcpy, memset,  // 4-per-line for readability
+  REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, RemoveBagItem, RemoveBagItemIconSprite,
+  RemoveBagSprite, RemoveMoneyLabelObject, RemoveScrollIndicatorArrowPair, RemoveWindow,
+  ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks,
+  STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop,
+  ScheduleBgCopyTilemapToVram, ScriptContext_SetupScript, SetBagVisualPocketId, SetBgTilemapBuffer,
+  SetCursorScrollWithinListBounds, SetCursorWithinListBounds, SetGpuReg, SetItemMenuSwapLineInvisibility,
+  SetMainCallback2, SetTaskFuncWithFollowupFunc, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
+  ShakeBagSprite, ShowBg, SortBerriesOrTMHMs, StopPlayerAvatar,
+  StringCopy, StringExpandPlaceholders, SwitchTaskToFollowupFunc, TASK_NONE,
+  TRUE, TestPlayerAvatarFlags, TransferPlttBuffer, UpdateItemMenuSwapLinePos,
+  UpdatePaletteFade, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetBagScrollPositions(void) */

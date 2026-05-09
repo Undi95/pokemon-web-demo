@@ -1,0 +1,286 @@
+{
+  "srcFile": "src/frontier_pass.c",
+  "count": 23,
+  "tables": {
+    "sBgAffineCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[CURSOR_AREA_MAP - 1]  = {216,  32}",
+        "[CURSOR_AREA_CARD - 1] = {216, 128}"
+      ],
+      "rawValue": "{\n    [CURSOR_AREA_MAP - 1]  = {216,  32},\n    [CURSOR_AREA_CARD - 1] = {216, 128}\n}"
+    },
+    "sPassBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 29,\n        .screenSize = 1,\n        .paletteMode = 1,\n        .priority = 0,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 29,\n        .screenSize = 1,\n        .paletteMode = 1,\n        .priority = 0,\n        .baseTile = 0\n    },\n}"
+    },
+    "sMapBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n}"
+    },
+    "sPassWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WINDOW_EARNED_SYMBOLS",
+        "WINDOW_BATTLE_RECORD",
+        "WINDOW_BATTLE_POINTS",
+        "WINDOW_DESCRIPTION"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WINDOW_EARNED_SYMBOLS] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 3,\n        .width = 12,\n        .height = 3,\n        .paletteNum = 15,\n        .baseBlock = 0x1,\n    },\n    [WINDOW_BATTLE_RECORD] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 10,\n        .width = 12,\n        .height = 3,\n        .paletteNum = 15,\n        .baseBlock = 0x26,\n    },\n    [WINDOW_BATTLE_POINTS] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 13,\n        .width = 12,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x4B,\n    },\n    [WINDOW_DESCRIPTION] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 18,\n        .width = 30,\n        .height = 3,\n        .paletteNum = 15,\n        .baseBlock = 0x7C,\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sMapWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MAP_WINDOW_UNUSED",
+        "MAP_WINDOW_NAME",
+        "MAP_WINDOW_DESCRIPTION"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [MAP_WINDOW_UNUSED] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 1,\n        .width = 15,\n        .height = 5,\n        .paletteNum = 15,\n        .baseBlock = 0x1,\n    },\n    [MAP_WINDOW_NAME] = {\n        .bg = 0,\n        .tilemapLeft = 20,\n        .tilemapTop = 1,\n        .width = 10,\n        .height = 14,\n        .paletteNum = 15,\n        .baseBlock = 0x4D,\n    },\n    [MAP_WINDOW_DESCRIPTION] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 16,\n        .width = 26,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0xDA,\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY}",
+        "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_BLUE}",
+        "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED}"
+      ],
+      "rawValue": "{\n    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY},\n    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_LIGHT_BLUE},\n    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED},\n}"
+    },
+    "sPassAreasLayout": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[CURSOR_AREA_MAP - 1]            = { 28,  76, 132, 220}",
+        "[CURSOR_AREA_CARD - 1]           = { 84, 132, 132, 220}",
+        "[CURSOR_AREA_RECORD - 1]         = { 80, 102,  20, 108}",
+        "[CURSOR_AREA_CANCEL - 1]         = {  0,  16, 152, 240}",
+        "[CURSOR_AREA_POINTS - 1]         = {108, 134,  20, 108}",
+        "[CURSOR_AREA_EARNED_SYMBOLS - 1] = { 24,  48,  20, 108}",
+        "[CURSOR_AREA_SYMBOL_TOWER - 1]   = { 50,  66,  20,  36}",
+        "[CURSOR_AREA_SYMBOL_DOME - 1]    = { 66,  82,  32,  48}",
+        "[CURSOR_AREA_SYMBOL_PALACE - 1]  = { 50,  66,  44,  60}",
+        "[CURSOR_AREA_SYMBOL_ARENA - 1]   = { 66,  82,  56,  72}",
+        "[CURSOR_AREA_SYMBOL_FACTORY - 1] = { 50,  66,  68,  84}",
+        "[CURSOR_AREA_SYMBOL_PIKE - 1]    = { 66,  82,  80,  96}",
+        "[CURSOR_AREA_SYMBOL_PYRAMID - 1] = { 50,  66,  92, 108}"
+      ],
+      "rawValue": "{\n    [CURSOR_AREA_MAP - 1]            = { 28,  76, 132, 220},\n    [CURSOR_AREA_CARD - 1]           = { 84, 132, 132, 220},\n    [CURSOR_AREA_RECORD - 1]         = { 80, 102,  20, 108},\n    [CURSOR_AREA_CANCEL - 1]         = {  0,  16, 152, 240},\n    [CURSOR_AREA_POINTS - 1]         = {108, 134,  20, 108},\n    [CURSOR_AREA_EARNED_SYMBOLS - 1] = { 24,  48,  20, 108},\n    [CURSOR_AREA_SYMBOL_TOWER - 1]   = { 50,  66,  20,  36},\n    [CURSOR_AREA_SYMBOL_DOME - 1]    = { 66,  82,  32,  48},\n    [CURSOR_AREA_SYMBOL_PALACE - 1]  = { 50,  66,  44,  60},\n    [CURSOR_AREA_SYMBOL_ARENA - 1]   = { 66,  82,  56,  72},\n    [CURSOR_AREA_SYMBOL_FACTORY - 1] = { 50,  66,  68,  84},\n    [CURSOR_AREA_SYMBOL_PIKE - 1]    = { 66,  82,  80,  96},\n    [CURSOR_AREA_SYMBOL_PYRAMID - 1] = { 50,  66,  92, 108},\n}"
+    },
+    "sCursorSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sCursor_Gfx, 0x100, TAG_CURSOR}",
+        "{sMapCursor_Gfx, 0x400, TAG_MAP_INDICATOR}",
+        "{gFrontierPassMedals_Gfx, 0x380, TAG_MEDAL_SILVER}"
+      ],
+      "rawValue": "{\n    {sCursor_Gfx, 0x100, TAG_CURSOR},\n    {sMapCursor_Gfx, 0x400, TAG_MAP_INDICATOR},\n    {gFrontierPassMedals_Gfx, 0x380, TAG_MEDAL_SILVER},\n}"
+    },
+    "sHeadsSpriteSheet": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sHeads_Gfx, 0x100, TAG_HEAD_MALE}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sHeads_Gfx, 0x100, TAG_HEAD_MALE},\n    {}\n}"
+    },
+    "sSpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gFrontierPassCursor_Pal,       TAG_CURSOR}",
+        "{gFrontierPassMapCursor_Pal,    TAG_MAP_INDICATOR}",
+        "{gFrontierPassMedalsSilver_Pal, TAG_MEDAL_SILVER}",
+        "{gFrontierPassMedalsGold_Pal,   TAG_MEDAL_GOLD}",
+        "{sMaleHead_Pal,                 TAG_HEAD_MALE}",
+        "{sFemaleHead_Pal,               TAG_HEAD_FEMALE}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gFrontierPassCursor_Pal,       TAG_CURSOR},\n    {gFrontierPassMapCursor_Pal,    TAG_MAP_INDICATOR},\n    {gFrontierPassMedalsSilver_Pal, TAG_MEDAL_SILVER},\n    {gFrontierPassMedalsGold_Pal,   TAG_MEDAL_GOLD},\n    {sMaleHead_Pal,                 TAG_HEAD_MALE},\n    {sFemaleHead_Pal,               TAG_HEAD_FEMALE},\n    {}\n}"
+    },
+    "sAnim_Frame1_Unused": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Frame1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Frame2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Frame3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Frame4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(12, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(12, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Frame5": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Frame6": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(20, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(20, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Frame7": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_MapIndicatorCursor_Rectangle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 45)",
+        "ANIMCMD_FRAME(8, 45)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 45),\n    ANIMCMD_FRAME(8, 45),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_MapIndicatorCursor_Square": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 45)",
+        "ANIMCMD_FRAME(24, 45)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 45),\n    ANIMCMD_FRAME(24, 45),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAffineAnim_Unused": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sSpriteTemplates_Cursors": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = TAG_CURSOR,\n        .paletteTag = TAG_CURSOR,\n        .oam = &gOamData_AffineOff_ObjNormal_16x16,\n        .anims = sAnims_TwoFrame,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    }",
+        "{\n        .tileTag = TAG_MAP_INDICATOR,\n        .paletteTag = TAG_MAP_INDICATOR,\n        .oam = &gOamData_AffineOff_ObjNormal_32x16,\n        .anims = sAnims_MapIndicatorCursor,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    }"
+      ],
+      "rawValue": "{\n     \n    {\n        .tileTag = TAG_CURSOR,\n        .paletteTag = TAG_CURSOR,\n        .oam = &gOamData_AffineOff_ObjNormal_16x16,\n        .anims = sAnims_TwoFrame,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    },\n     \n    {\n        .tileTag = TAG_MAP_INDICATOR,\n        .paletteTag = TAG_MAP_INDICATOR,\n        .oam = &gOamData_AffineOff_ObjNormal_32x16,\n        .anims = sAnims_MapIndicatorCursor,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    },\n}"
+    },
+    "sMapLandmarks": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FRONTIER_FACILITY_TOWER",
+        "FRONTIER_FACILITY_DOME",
+        "FRONTIER_FACILITY_PALACE",
+        "FRONTIER_FACILITY_ARENA",
+        "FRONTIER_FACILITY_FACTORY",
+        "FRONTIER_FACILITY_PIKE",
+        "FRONTIER_FACILITY_PYRAMID"
+      ],
+      "indexedValues": [
+        "{gText_BattleTower3",
+        "{gText_BattleDome2",
+        "{gText_BattlePalace2",
+        "{gText_BattleArena2",
+        "{gText_BattleFactory2",
+        "{gText_BattlePike2",
+        "{gText_BattlePyramid2"
+      ],
+      "rawValue": "{\n    [FRONTIER_FACILITY_TOWER]   = {gText_BattleTower3,   gText_BattleTowerDesc,    89,  40, MAP_INDICATOR_SQUARE},\n    [FRONTIER_FACILITY_DOME]    = {gText_BattleDome2,    gText_BattleDomeDesc,     33,  42, MAP_INDICATOR_SQUARE},\n    [FRONTIER_FACILITY_PALACE]  = {gText_BattlePalace2,  gText_BattlePalaceDesc,  120,  86, MAP_INDICATOR_RECTANGLE},\n    [FRONTIER_FACILITY_ARENA]   = {gText_BattleArena2,   gText_BattleArenaDesc,   114,  59, MAP_INDICATOR_RECTANGLE},\n    [FRONTIER_FACILITY_FACTORY] = {gText_BattleFactory2, gText_BattleFactoryDesc,  25,  67, MAP_INDICATOR_RECTANGLE},\n    [FRONTIER_FACILITY_PIKE]    = {gText_BattlePike2,    gText_BattlePikeDesc,     57,  57, MAP_INDICATOR_SQUARE},\n    [FRONTIER_FACILITY_PYRAMID] = {gText_BattlePyramid2, gText_BattlePyramidDesc, 134,  41, MAP_INDICATOR_SQUARE},\n}"
+    }
+  }
+}

@@ -1,0 +1,234 @@
+{
+  "srcFile": "src/battle_anim_psychic.c",
+  "count": 16,
+  "tables": {
+    "sAffineAnim_PsychUpSpiral": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFFE, 0xFFFE, -10, 120)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFFE, 0xFFFE, -10, 120),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_ReflectSparkle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 3)",
+        "ANIMCMD_FRAME(16, 3)",
+        "ANIMCMD_FRAME(32, 3)",
+        "ANIMCMD_FRAME(48, 3)",
+        "ANIMCMD_FRAME(64, 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 3),\n    ANIMCMD_FRAME(16, 3),\n    ANIMCMD_FRAME(32, 3),\n    ANIMCMD_FRAME(48, 3),\n    ANIMCMD_FRAME(64, 3),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_SpecialScreenSparkle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_FRAME(12, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_FRAME(12, 5),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BentSpoon_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 60, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(16, 5, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 5, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 5, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 22, .hFlip = TRUE)",
+        "ANIMCMD_LOOP(0)",
+        "ANIMCMD_FRAME(16, 5, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 5, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 5, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 5, .hFlip = TRUE)",
+        "ANIMCMD_LOOP(1)",
+        "ANIMCMD_FRAME(8, 22, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(24, 3, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(32, 3, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(40, 22, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 60, .hFlip = TRUE),\n    ANIMCMD_FRAME(16, 5, .hFlip = TRUE),\n    ANIMCMD_FRAME(8, 5, .hFlip = TRUE),\n    ANIMCMD_FRAME(0, 5, .hFlip = TRUE),\n    ANIMCMD_FRAME(8, 22, .hFlip = TRUE),\n    ANIMCMD_LOOP(0),\n    ANIMCMD_FRAME(16, 5, .hFlip = TRUE),\n    ANIMCMD_FRAME(8, 5, .hFlip = TRUE),\n    ANIMCMD_FRAME(0, 5, .hFlip = TRUE),\n    ANIMCMD_FRAME(8, 5, .hFlip = TRUE),\n    ANIMCMD_LOOP(1),\n    ANIMCMD_FRAME(8, 22, .hFlip = TRUE),\n    ANIMCMD_FRAME(24, 3, .hFlip = TRUE),\n    ANIMCMD_FRAME(32, 3, .hFlip = TRUE),\n    ANIMCMD_FRAME(40, 22, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BentSpoon_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 60)",
+        "ANIMCMD_FRAME(16, 5)",
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(8, 22)",
+        "ANIMCMD_LOOP(0)",
+        "ANIMCMD_FRAME(16, 5)",
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_LOOP(1)",
+        "ANIMCMD_FRAME(8, 22)",
+        "ANIMCMD_FRAME(24, 3)",
+        "ANIMCMD_FRAME(32, 3)",
+        "ANIMCMD_FRAME(40, 22)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 60),\n    ANIMCMD_FRAME(16, 5),\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(8, 22),\n    ANIMCMD_LOOP(0),\n    ANIMCMD_FRAME(16, 5),\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_LOOP(1),\n    ANIMCMD_FRAME(8, 22),\n    ANIMCMD_FRAME(24, 3),\n    ANIMCMD_FRAME(32, 3),\n    ANIMCMD_FRAME(40, 22),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_QuestionMark": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 6)",
+        "ANIMCMD_FRAME(16, 6)",
+        "ANIMCMD_FRAME(32, 6)",
+        "ANIMCMD_FRAME(48, 6)",
+        "ANIMCMD_FRAME(64, 6)",
+        "ANIMCMD_FRAME(80, 6)",
+        "ANIMCMD_FRAME(96, 18)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 6),\n    ANIMCMD_FRAME(16, 6),\n    ANIMCMD_FRAME(32, 6),\n    ANIMCMD_FRAME(48, 6),\n    ANIMCMD_FRAME(64, 6),\n    ANIMCMD_FRAME(80, 6),\n    ANIMCMD_FRAME(96, 18),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_QuestionMark": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, 4, 4)",
+        "AFFINEANIMCMD_FRAME(0, 0, -4, 8)",
+        "AFFINEANIMCMD_FRAME(0, 0, 4, 4)",
+        "AFFINEANIMCMD_LOOP(2)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, 4, 4),\n    AFFINEANIMCMD_FRAME(0, 0, -4, 8),\n    AFFINEANIMCMD_FRAME(0, 0, 4, 4),\n    AFFINEANIMCMD_LOOP(2),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_MeditateStretchAttacker": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-8, 10, 0, 16)",
+        "AFFINEANIMCMD_FRAME(18, -18, 0, 16)",
+        "AFFINEANIMCMD_FRAME(-20, 16, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-8, 10, 0, 16),\n    AFFINEANIMCMD_FRAME(18, -18, 0, 16),\n    AFFINEANIMCMD_FRAME(-20, 16, 0, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Teleport": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(64, -4, 0, 20)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, -56)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(64, -4, 0, 20),\n    AFFINEANIMCMD_FRAME(0, 0, 0, -56),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_SkillSwapOrb_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 8)",
+        "AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 8)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 8),\n    AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 8),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_SkillSwapOrb_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xF0, 0xF0, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 6)",
+        "AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 8)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 2)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xF0, 0xF0, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 6),\n    AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 8),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 2),\n    AFFINEANIMCMD_JUMP(1),\n}"
+    },
+    "sAffineAnim_SkillSwapOrb_2": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xD0, 0xD0, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 4)",
+        "AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 8)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 4)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xD0, 0xD0, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 4),\n    AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 8),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 4),\n    AFFINEANIMCMD_JUMP(1),\n}"
+    },
+    "sAffineAnim_SkillSwapOrb_3": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xB0, 0xB0, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 2)",
+        "AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 8)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 6)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xB0, 0xB0, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 2),\n    AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 8),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 6),\n    AFFINEANIMCMD_JUMP(1),\n}"
+    },
+    "sAffineAnim_LusterPurgeCircle": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x20, 0x20, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 120)",
+        "AFFINEANIMCMD_END_ALT(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x20, 0x20, 0, 0),\n    AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 120),\n    AFFINEANIMCMD_END_ALT(1),\n}"
+    },
+    "sAffineAnim_PsychoBoostOrb_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x20, 0x20, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 17)",
+        "AFFINEANIMCMD_LOOP(0)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 10)",
+        "AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 10)",
+        "AFFINEANIMCMD_LOOP(4)",
+        "AFFINEANIMCMD_LOOP(0)",
+        "AFFINEANIMCMD_FRAME(0xFFF0, 0xFFF0, 0, 5)",
+        "AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 5)",
+        "AFFINEANIMCMD_LOOP(7)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x20, 0x20, 0, 0),\n    AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 17),\n    AFFINEANIMCMD_LOOP(0),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 10),\n    AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 10),\n    AFFINEANIMCMD_LOOP(4),\n    AFFINEANIMCMD_LOOP(0),\n    AFFINEANIMCMD_FRAME(0xFFF0, 0xFFF0, 0, 5),\n    AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 5),\n    AFFINEANIMCMD_LOOP(7),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_PsychoBoostOrb_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xFFEC, 0x18, 0, 15)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xFFEC, 0x18, 0, 15),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

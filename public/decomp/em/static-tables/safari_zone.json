@@ -1,0 +1,15 @@
+{
+  "srcFile": "src/safari_zone.c",
+  "count": 1,
+  "tables": {
+    "sPokeblockFeeders": {
+      "type": "struct PokeblockFeeder",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    }
+  }
+}

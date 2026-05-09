@@ -25,14 +25,14 @@ const {
   ARRAY_COUNT, ActionSelectionCreateCursorAt, ActionSelectionDestroyCursorAt, BattlePutTextOnWindow,
   BattleStopLowHpSound, BattleStringExpandPlaceholdersToDisplayedString, BeginFastPaletteFade, BeginNormalPaletteFade,
   BtlController_EmitOneReturnValue, BtlController_EmitTwoReturnValues, BufferStringBattle, CreateSprite,
-  DISPLAY_HEIGHT, DecompressTrainerBackPic, FALSE, FadeOutMapMusic,
-  FreeAllWindowBuffers, GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide,
-  GetMonData, GetMultiplayerId, HandleIntroSlide, InitAndLaunchSpecialAnimation,
-  IsDma3ManagerBusyWithBgCopy, IsTextPrinterActive, JOY_NEW, OpenPokeblockCaseInBattle,
-  PALETTES_ALL, PlayBGM, PlayCry_Normal, PlayFanfare,
-  PlaySE, PlaySE12WithPanning, PrepareBufferDataTransferLink, SetHealthboxSpriteVisible,
-  SetMainCallback2, SetMultiuseSpriteTemplateToTrainerBack, StartHealthboxSlideIn, TRUE,
-  TryHandleLaunchBattleTableAnimation, UpdateHealthboxAttribute,  // 4-per-line for readability
+  DISPLAY_HEIGHT, DISPLAY_WIDTH, DecompressTrainerBackPic, FALSE,
+  FadeOutMapMusic, FreeAllWindowBuffers, GetBattlerAtPosition, GetBattlerPosition,
+  GetBattlerSide, GetMonData, GetMultiplayerId, HandleIntroSlide,
+  InitAndLaunchSpecialAnimation, IsDma3ManagerBusyWithBgCopy, IsTextPrinterActive, JOY_NEW,
+  OpenPokeblockCaseInBattle, PALETTES_ALL, PlayBGM, PlayCry_Normal,
+  PlayFanfare, PlaySE, PlaySE12WithPanning, PrepareBufferDataTransferLink,
+  SetHealthboxSpriteVisible, SetMainCallback2, SetMultiuseSpriteTemplateToTrainerBack, SpriteCallbackDummy,
+  StartHealthboxSlideIn, TRUE, TryHandleLaunchBattleTableAnimation, UpdateHealthboxAttribute,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetControllerToSafari(void) */

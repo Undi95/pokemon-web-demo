@@ -1,0 +1,23 @@
+{
+  "srcFile": "src/field_screen_effect.c",
+  "count": 1,
+  "tables": {
+    "sFlashLevelToRadius": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "200",
+        "72",
+        "64",
+        "56",
+        "48",
+        "40",
+        "32",
+        "24",
+        "0"
+      ],
+      "rawValue": "{ 200, 72, 64, 56, 48, 40, 32, 24, 0 }"
+    }
+  }
+}

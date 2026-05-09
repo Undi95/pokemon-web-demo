@@ -1,0 +1,51 @@
+{
+  "srcFile": "src/pokenav_ribbons_list.c",
+  "count": 3,
+  "tables": {
+    "sMonRibbonListLoopTaskFuncs": {
+      "type": "LoopedTask",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "BuildPartyMonRibbonList",
+        "InitBoxMonRibbonList",
+        "BuildBoxMonRibbonList"
+      ],
+      "rawValue": "{\n    BuildPartyMonRibbonList,\n    InitBoxMonRibbonList,\n    BuildBoxMonRibbonList\n}"
+    },
+    "sMonRibbonListBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 0x06,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x07,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 0x06,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }, {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x07,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sRibbonsMonMenuLoopTaskFuncs": {
+      "type": "LoopedTask",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "RIBBONS_MON_LIST_FUNC_NONE",
+        "RIBBONS_MON_LIST_FUNC_MOVE_UP",
+        "RIBBONS_MON_LIST_FUNC_MOVE_DOWN",
+        "RIBBONS_MON_LIST_FUNC_PAGE_UP",
+        "RIBBONS_MON_LIST_FUNC_PAGE_DOWN",
+        "RIBBONS_MON_LIST_FUNC_EXIT",
+        "RIBBONS_MON_LIST_FUNC_OPEN_RIBBONS_SUMMARY"
+      ],
+      "indexedValues": [
+        "NULL",
+        "LoopedTask_RibbonsListMoveCursorUp",
+        "LoopedTask_RibbonsListMoveCursorDown",
+        "LoopedTask_RibbonsListMovePageUp",
+        "LoopedTask_RibbonsListMovePageDown",
+        "LoopedTask_RibbonsListReturnToMainMenu",
+        "LoopedTask_RibbonsListOpenSummary"
+      ],
+      "rawValue": "{\n    [RIBBONS_MON_LIST_FUNC_NONE]                 = NULL,\n    [RIBBONS_MON_LIST_FUNC_MOVE_UP]              = LoopedTask_RibbonsListMoveCursorUp,\n    [RIBBONS_MON_LIST_FUNC_MOVE_DOWN]            = LoopedTask_RibbonsListMoveCursorDown,\n    [RIBBONS_MON_LIST_FUNC_PAGE_UP]              = LoopedTask_RibbonsListMovePageUp,\n    [RIBBONS_MON_LIST_FUNC_PAGE_DOWN]            = LoopedTask_RibbonsListMovePageDown,\n    [RIBBONS_MON_LIST_FUNC_EXIT]                 = LoopedTask_RibbonsListReturnToMainMenu,\n    [RIBBONS_MON_LIST_FUNC_OPEN_RIBBONS_SUMMARY] = LoopedTask_RibbonsListOpenSummary\n}"
+    }
+  }
+}

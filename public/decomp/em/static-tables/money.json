@@ -1,0 +1,16 @@
+{
+  "srcFile": "src/money.c",
+  "count": 1,
+  "tables": {
+    "sSpriteAnim_MoneyLabel": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    }
+  }
+}

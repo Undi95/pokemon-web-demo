@@ -1,0 +1,438 @@
+{
+  "srcFile": "src/pokemon_storage_system.c",
+  "count": 33,
+  "tables": {
+    "sMainMenuTexts": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "OPTION_WITHDRAW",
+        "OPTION_DEPOSIT",
+        "OPTION_MOVE_MONS",
+        "OPTION_MOVE_ITEMS",
+        "OPTION_EXIT"
+      ],
+      "indexedValues": [
+        "{gText_WithdrawPokemon",
+        "{gText_DepositPokemon",
+        "{gText_MovePokemon",
+        "{gText_MoveItems",
+        "{gText_SeeYa"
+      ],
+      "rawValue": "{\n    [OPTION_WITHDRAW]   = {gText_WithdrawPokemon, gText_WithdrawMonDescription},\n    [OPTION_DEPOSIT]    = {gText_DepositPokemon,  gText_DepositMonDescription},\n    [OPTION_MOVE_MONS]  = {gText_MovePokemon,     gText_MoveMonDescription},\n    [OPTION_MOVE_ITEMS] = {gText_MoveItems,       gText_MoveItemsDescription},\n    [OPTION_EXIT]       = {gText_SeeYa,           gText_SeeYaDescription}\n}"
+    },
+    "sAnim_ChooseBoxMenu_TopLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChooseBoxMenu_BottomLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChooseBoxMenu_TopRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(6, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(6, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_ChooseBoxMenu_BottomRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(10, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(10, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAffineAnim_ChooseBoxMenu": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xE0, 0xE0, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xE0, 0xE0, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sChooseBoxMenu_TextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_RED",
+        "TEXT_DYNAMIC_COLOR_6",
+        "TEXT_DYNAMIC_COLOR_5"
+      ],
+      "rawValue": "{TEXT_COLOR_RED, TEXT_DYNAMIC_COLOR_6, TEXT_DYNAMIC_COLOR_5}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_DISPLAY_INFO",
+        "WIN_MESSAGE",
+        "WIN_ITEM_DESC"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 1",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n     \n    [WIN_DISPLAY_INFO] = {\n        .bg = 1,\n        .tilemapLeft = 0,\n        .tilemapTop = 11,\n        .width = 9,\n        .height = 7,\n        .paletteNum = 3,\n        .baseBlock = 0xC0,\n    },\n    [WIN_MESSAGE] = {\n        .bg = 0,\n        .tilemapLeft = 11,\n        .tilemapTop = 17,\n        .width = 18,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x14,\n    },\n    [WIN_ITEM_DESC] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 13,\n        .width = 21,\n        .height = 7,\n        .paletteNum = 15,\n        .baseBlock = 0x14,\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0x100\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 27,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0x100\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 27,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n}"
+    },
+    "sMessages": {
+      "type": "struct StorageMessage",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MSG_EXIT_BOX",
+        "MSG_WHAT_YOU_DO",
+        "MSG_PICK_A_THEME",
+        "MSG_PICK_A_WALLPAPER",
+        "MSG_IS_SELECTED",
+        "MSG_JUMP_TO_WHICH_BOX",
+        "MSG_DEPOSIT_IN_WHICH_BOX",
+        "MSG_WAS_DEPOSITED",
+        "MSG_BOX_IS_FULL",
+        "MSG_RELEASE_POKE",
+        "MSG_WAS_RELEASED",
+        "MSG_BYE_BYE",
+        "MSG_MARK_POKE",
+        "MSG_LAST_POKE",
+        "MSG_PARTY_FULL",
+        "MSG_HOLDING_POKE",
+        "MSG_WHICH_ONE_WILL_TAKE",
+        "MSG_CANT_RELEASE_EGG",
+        "MSG_CONTINUE_BOX",
+        "MSG_CAME_BACK",
+        "MSG_WORRIED",
+        "MSG_SURPRISE",
+        "MSG_PLEASE_REMOVE_MAIL",
+        "MSG_IS_SELECTED2",
+        "MSG_GIVE_TO_MON",
+        "MSG_PLACED_IN_BAG",
+        "MSG_BAG_FULL",
+        "MSG_PUT_IN_BAG",
+        "MSG_ITEM_IS_HELD",
+        "MSG_CHANGED_TO_ITEM",
+        "MSG_CANT_STORE_MAIL"
+      ],
+      "indexedValues": [
+        "{gText_ExitFromBox",
+        "{gText_WhatDoYouWantToDo",
+        "{gText_PleasePickATheme",
+        "{gText_PickTheWallpaper",
+        "{gText_PkmnIsSelected",
+        "{gText_JumpToWhichBox",
+        "{gText_DepositInWhichBox",
+        "{gText_PkmnWasDeposited",
+        "{gText_BoxIsFull2",
+        "{gText_ReleaseThisPokemon",
+        "{gText_PkmnWasReleased",
+        "{gText_ByeByePkmn",
+        "{gText_MarkYourPkmn",
+        "{gText_ThatsYourLastPkmn",
+        "{gText_YourPartysFull",
+        "{gText_YoureHoldingAPkmn",
+        "{gText_WhichOneWillYouTake",
+        "{gText_YouCantReleaseAnEgg",
+        "{gText_ContinueBoxOperations",
+        "{gText_PkmnCameBack",
+        "{gText_WasItWorriedAboutYou",
+        "{gText_FourEllipsesExclamation",
+        "{gText_PleaseRemoveTheMail",
+        "{gText_PkmnIsSelected",
+        "{gText_GiveToAPkmn",
+        "{gText_PlacedItemInBag",
+        "{gText_BagIsFull2",
+        "{gText_PutItemInBag",
+        "{gText_ItemIsNowHeld",
+        "{gText_ChangedToNewItem",
+        "{gText_MailCantBeStored"
+      ],
+      "rawValue": "{\n    [MSG_EXIT_BOX]             = {gText_ExitFromBox,             MSG_VAR_NONE},\n    [MSG_WHAT_YOU_DO]          = {gText_WhatDoYouWantToDo,       MSG_VAR_NONE},\n    [MSG_PICK_A_THEME]         = {gText_PleasePickATheme,        MSG_VAR_NONE},\n    [MSG_PICK_A_WALLPAPER]     = {gText_PickTheWallpaper,        MSG_VAR_NONE},\n    [MSG_IS_SELECTED]          = {gText_PkmnIsSelected,          MSG_VAR_MON_NAME_1},\n    [MSG_JUMP_TO_WHICH_BOX]    = {gText_JumpToWhichBox,          MSG_VAR_NONE},\n    [MSG_DEPOSIT_IN_WHICH_BOX] = {gText_DepositInWhichBox,       MSG_VAR_NONE},\n    [MSG_WAS_DEPOSITED]        = {gText_PkmnWasDeposited,        MSG_VAR_MON_NAME_1},\n    [MSG_BOX_IS_FULL]          = {gText_BoxIsFull2,              MSG_VAR_NONE},\n    [MSG_RELEASE_POKE]         = {gText_ReleaseThisPokemon,      MSG_VAR_NONE},\n    [MSG_WAS_RELEASED]         = {gText_PkmnWasReleased,         MSG_VAR_RELEASE_MON_1},\n    [MSG_BYE_BYE]              = {gText_ByeByePkmn,              MSG_VAR_RELEASE_MON_3},\n    [MSG_MARK_POKE]            =..."
+    },
+    "sAnim_Waveform_LeftOff": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Waveform_LeftOn": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 8)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_FRAME(6, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 8),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_FRAME(6, 8),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Waveform_RightOff": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Waveform_RightOn": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(10, 8)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_FRAME(12, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(10, 8),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_FRAME(12, 8),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAffineAnim_ReleaseMon_Release": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-2, -2, 0, 120)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-2, -2, 0, 120),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_ReleaseMon_CameBack": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(16, 16, 0, 0)",
+        "AFFINEANIMCMD_FRAME(16, 16, 0, 15)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(16, 16, 0, 0),\n    AFFINEANIMCMD_FRAME(16, 16, 0, 15),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAnim_BoxTitle_Left": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_BoxTitle_Right": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Arrow_Left": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Arrow_Right": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 5),\n    ANIMCMD_END\n}"
+    },
+    "sRestrictedReleaseMoves": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{MAP_GROUPS_COUNT, 0, MOVE_SURF}",
+        "{MAP_GROUPS_COUNT, 0, MOVE_DIVE}",
+        "{MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MOVE_STRENGTH}",
+        "{MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MOVE_ROCK_SMASH}",
+        "{MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MOVE_STRENGTH}",
+        "{MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MOVE_ROCK_SMASH}"
+      ],
+      "rawValue": "{\n    {MAP_GROUPS_COUNT, 0, MOVE_SURF},\n    {MAP_GROUPS_COUNT, 0, MOVE_DIVE},\n    {MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MOVE_STRENGTH},\n    {MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F), MOVE_ROCK_SMASH},\n    {MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MOVE_STRENGTH},\n    {MAP_GROUP(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MAP_NUM(MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_2F), MOVE_ROCK_SMASH},\n}"
+    },
+    "sAnim_Cursor_Bouncing": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_FRAME(16, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n        ANIMCMD_FRAME(0, 30),\n        ANIMCMD_FRAME(16, 30),\n        ANIMCMD_JUMP(0)\n    }"
+    },
+    "sAnim_Cursor_Still": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n        ANIMCMD_FRAME(0, 5),\n        ANIMCMD_END\n    }"
+    },
+    "sAnim_Cursor_Open": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n        ANIMCMD_FRAME(32, 5),\n        ANIMCMD_END\n    }"
+    },
+    "sAnim_Cursor_Fist": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n        ANIMCMD_FRAME(48, 5),\n        ANIMCMD_END\n    }"
+    },
+    "sAffineAnim_ItemIcon_Small": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(128, 128, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(128, 128, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_ItemIcon_Appear": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(88, 88, 0, 0)",
+        "AFFINEANIMCMD_FRAME(5, 5, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(88, 88, 0, 0),\n    AFFINEANIMCMD_FRAME(5, 5, 0, 8),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_ItemIcon_Disappear": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(128, 128, 0, 0)",
+        "AFFINEANIMCMD_FRAME(-5, -5, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(128, 128, 0, 0),\n    AFFINEANIMCMD_FRAME(-5, -5, 0, 8),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_ItemIcon_PickUp": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(128, 128, 0, 0)",
+        "AFFINEANIMCMD_FRAME(10, 10, 0, 12)",
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(128, 128, 0, 0),\n    AFFINEANIMCMD_FRAME(10, 10, 0, 12),\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_ItemIcon_PutDown": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_FRAME(-10, -10, 0, 12)",
+        "AFFINEANIMCMD_FRAME(128, 128, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_FRAME(-10, -10, 0, 12),\n    AFFINEANIMCMD_FRAME(128, 128, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_ItemIcon_PutAway": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_FRAME(-5, -5, 0, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_FRAME(-5, -5, 0, 16),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_ItemIcon_Large": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sTilemapDimensions": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BG_TYPE_NORMAL",
+        "BG_TYPE_AFFINE"
+      ],
+      "indexedValues": [
+        "{\n        { 256",
+        "{\n        { 128"
+      ],
+      "rawValue": "{\n    [BG_TYPE_NORMAL] = {\n        { 256,  256},\n        { 512,  256},\n        { 256,  512},\n        { 512,  512},\n    },\n    [BG_TYPE_AFFINE] = {\n        { 128,  128},\n        { 256,  256},\n        { 512,  512},\n        {1024, 1024},\n    },\n}"
+    }
+  }
+}

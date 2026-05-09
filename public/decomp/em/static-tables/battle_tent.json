@@ -1,0 +1,33 @@
+{
+  "srcFile": "src/battle_tent.c",
+  "count": 3,
+  "tables": {
+    "sVerdanturfTentRewards": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_NEST_BALL"
+      ],
+      "rawValue": "{ITEM_NEST_BALL}"
+    },
+    "sFallarborTentRewards": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_HYPER_POTION"
+      ],
+      "rawValue": "{ITEM_HYPER_POTION}"
+    },
+    "sSlateportTentRewards": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_FULL_HEAL"
+      ],
+      "rawValue": "{ITEM_FULL_HEAL}"
+    }
+  }
+}

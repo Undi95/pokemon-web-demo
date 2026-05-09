@@ -1,0 +1,25 @@
+{
+  "srcFile": "src/pokenav_list.c",
+  "count": 2,
+  "tables": {
+    "sListArrowSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sListArrow_Gfx,\n        .size = 0xC0,\n        .tag = GFXTAG_ARROW\n    }"
+      ],
+      "rawValue": "{\n    {\n        .data = sListArrow_Gfx,\n        .size = 0xC0,\n        .tag = GFXTAG_ARROW\n    }\n}"
+    },
+    "sListArrowPalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sListArrow_Pal,\n        .tag = PALTAG_ARROW\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = sListArrow_Pal,\n        .tag = PALTAG_ARROW\n    },\n    {}\n}"
+    }
+  }
+}

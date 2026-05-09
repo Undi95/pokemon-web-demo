@@ -1,0 +1,544 @@
+{
+  "srcFile": "src/data/object_events/object_event_subsprites.h",
+  "count": 40,
+  "tables": {
+    "sOamTable_16x16_0": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 2\n    }\n}"
+    },
+    "sOamTable_16x16_1": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 1\n    }\n}"
+    },
+    "sOamTable_16x16_2": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -8,\n        .y =  0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 2,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -8,\n        .y =  0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 2,\n        .priority = 3\n    }\n}"
+    },
+    "sOamTable_16x16_3": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 3\n    }\n}"
+    },
+    "sOamTable_16x16_4": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = -8,\n        .y = -8,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 3\n    }\n}"
+    },
+    "sOamTables_16x16": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{}",
+        "{ARRAY_COUNT(sOamTable_16x16_0), sOamTable_16x16_0}",
+        "{ARRAY_COUNT(sOamTable_16x16_1), sOamTable_16x16_1}",
+        "{ARRAY_COUNT(sOamTable_16x16_2), sOamTable_16x16_2}",
+        "{ARRAY_COUNT(sOamTable_16x16_3), sOamTable_16x16_3}",
+        "{ARRAY_COUNT(sOamTable_16x16_4), sOamTable_16x16_4}"
+      ],
+      "rawValue": "{\n    {},\n    {ARRAY_COUNT(sOamTable_16x16_0), sOamTable_16x16_0},\n    {ARRAY_COUNT(sOamTable_16x16_1), sOamTable_16x16_1},\n    {ARRAY_COUNT(sOamTable_16x16_2), sOamTable_16x16_2},\n    {ARRAY_COUNT(sOamTable_16x16_3), sOamTable_16x16_3},\n    {ARRAY_COUNT(sOamTable_16x16_4), sOamTable_16x16_4}\n}"
+    },
+    "sOamTable_16x32_0": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .tileOffset = 0,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .tileOffset = 0,\n        .priority = 2\n    }\n}"
+    },
+    "sOamTable_16x32_1": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .tileOffset = 0,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .tileOffset = 0,\n        .priority = 1\n    }\n}"
+    },
+    "sOamTable_16x32_2": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -8,\n        .y =   0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 4,\n        .priority = 2\n    }",
+        "{\n        .x = -8,\n        .y =   8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 6,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -8,\n        .y =   0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 4,\n        .priority = 2\n    },\n    {\n        .x = -8,\n        .y =   8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 6,\n        .priority = 3\n    }\n}"
+    },
+    "sOamTable_16x32_3": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -8,\n        .y =   0,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 4,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -8,\n        .y =   0,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 4,\n        .priority = 3\n    }\n}"
+    },
+    "sOamTable_16x32_4": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = -8,\n        .y =   0,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 4,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = -8,\n        .y =   0,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .tileOffset = 4,\n        .priority = 3\n    }\n}"
+    },
+    "sOamTables_16x32": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{}",
+        "{ARRAY_COUNT(sOamTable_16x32_0), sOamTable_16x32_0}",
+        "{ARRAY_COUNT(sOamTable_16x32_1), sOamTable_16x32_1}",
+        "{ARRAY_COUNT(sOamTable_16x32_2), sOamTable_16x32_2}",
+        "{ARRAY_COUNT(sOamTable_16x32_3), sOamTable_16x32_3}",
+        "{ARRAY_COUNT(sOamTable_16x32_4), sOamTable_16x32_4}"
+      ],
+      "rawValue": "{\n    {},\n    {ARRAY_COUNT(sOamTable_16x32_0), sOamTable_16x32_0},\n    {ARRAY_COUNT(sOamTable_16x32_1), sOamTable_16x32_1},\n    {ARRAY_COUNT(sOamTable_16x32_2), sOamTable_16x32_2},\n    {ARRAY_COUNT(sOamTable_16x32_3), sOamTable_16x32_3},\n    {ARRAY_COUNT(sOamTable_16x32_4), sOamTable_16x32_4}\n}"
+    },
+    "sOamTable_32x32_0": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 0,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 0,\n        .priority = 2\n    }\n}"
+    },
+    "sOamTable_32x32_1": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 0,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 0,\n        .priority = 1\n    }\n}"
+    },
+    "sOamTable_32x32_2": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =   0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =   8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y =   0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y =   8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 3\n    }\n}"
+    },
+    "sOamTable_32x32_3": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =   0,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 8,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y =   0,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 8,\n        .priority = 3\n    }\n}"
+    },
+    "sOamTable_32x32_4": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y =   0,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 8,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = -16,\n        .y =   0,\n        .shape = SPRITE_SHAPE(32x16),\n        .size = SPRITE_SIZE(32x16),\n        .tileOffset = 8,\n        .priority = 3\n    }\n}"
+    },
+    "sOamTables_32x32": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{}",
+        "{ARRAY_COUNT(sOamTable_32x32_0), sOamTable_32x32_0}",
+        "{ARRAY_COUNT(sOamTable_32x32_1), sOamTable_32x32_1}",
+        "{ARRAY_COUNT(sOamTable_32x32_2), sOamTable_32x32_2}",
+        "{ARRAY_COUNT(sOamTable_32x32_3), sOamTable_32x32_3}",
+        "{ARRAY_COUNT(sOamTable_32x32_4), sOamTable_32x32_4}"
+      ],
+      "rawValue": "{\n    {},\n    {ARRAY_COUNT(sOamTable_32x32_0), sOamTable_32x32_0},\n    {ARRAY_COUNT(sOamTable_32x32_1), sOamTable_32x32_1},\n    {ARRAY_COUNT(sOamTable_32x32_2), sOamTable_32x32_2},\n    {ARRAY_COUNT(sOamTable_32x32_3), sOamTable_32x32_3},\n    {ARRAY_COUNT(sOamTable_32x32_4), sOamTable_32x32_4}\n}"
+    },
+    "sOamTable_48x48": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -24,\n        .y = -24,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x =   8,\n        .y = -24,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 4,\n        .priority = 2\n    }",
+        "{\n        .x = -24,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 6,\n        .priority = 2\n    }",
+        "{\n        .x =   8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 10,\n        .priority = 2\n    }",
+        "{\n        .x = -24,\n        .y =  -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 2\n    }",
+        "{\n        .x =   8,\n        .y =  -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 16,\n        .priority = 2\n    }",
+        "{\n        .x = -24,\n        .y =   0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 18,\n        .priority = 2\n    }",
+        "{\n        .x =   8,\n        .y =   0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 22,\n        .priority = 2\n    }",
+        "{\n        .x = -24,\n        .y =   8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 24,\n        .priority = 2\n    }",
+        "{\n        .x =   8,\n        .y =   8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 28,\n        .priority = 2\n    }",
+        "{\n        .x = -24,\n        .y =  16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 30,\n        .priority = 2\n    }",
+        "{\n        .x =   8,\n        .y =  16,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 34,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -24,\n        .y = -24,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x =   8,\n        .y = -24,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 4,\n        .priority = 2\n    },\n    {\n        .x = -24,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 6,\n        .priority = 2\n    },\n    {\n        .x =   8,\n        .y = -16,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 10,\n        .priority = 2\n    },\n    {\n        .x = -24,\n        .y =  -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 2\n    },\n    {\n        .x =   8,\n        .y =  -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 16,\n        .priority = 2\n    },\n    {\n     ..."
+    },
+    "sOamTables_48x48": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48}",
+        "{ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48}",
+        "{ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48}",
+        "{ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48}",
+        "{ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48}",
+        "{ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48},\n    {ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48},\n    {ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48},\n    {ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48},\n    {ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48},\n    {ARRAY_COUNT(sOamTable_48x48), sOamTable_48x48}\n}"
+    },
+    "sOamTable_64x32_0": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -16,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -16,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 2\n    }\n}"
+    },
+    "sOamTable_64x32_1": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -16,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -16,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 1\n    }\n}"
+    },
+    "sOamTable_64x32_2": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -16,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -16,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 2\n    }\n}"
+    },
+    "sOamTable_64x32_3": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -16,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -16,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 0,\n        .priority = 2\n    }\n}"
+    },
+    "sOamTables_64x32": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{}",
+        "{ARRAY_COUNT(sOamTable_64x32_0), sOamTable_64x32_0}",
+        "{ARRAY_COUNT(sOamTable_64x32_1), sOamTable_64x32_1}",
+        "{ARRAY_COUNT(sOamTable_64x32_2), sOamTable_64x32_2}",
+        "{ARRAY_COUNT(sOamTable_64x32_3), sOamTable_64x32_3}",
+        "{ARRAY_COUNT(sOamTable_64x32_3), sOamTable_64x32_3}"
+      ],
+      "rawValue": "{\n    {},\n    {ARRAY_COUNT(sOamTable_64x32_0), sOamTable_64x32_0},\n    {ARRAY_COUNT(sOamTable_64x32_1), sOamTable_64x32_1},\n    {ARRAY_COUNT(sOamTable_64x32_2), sOamTable_64x32_2},\n    {ARRAY_COUNT(sOamTable_64x32_3), sOamTable_64x32_3},\n    {ARRAY_COUNT(sOamTable_64x32_3), sOamTable_64x32_3}\n}"
+    },
+    "sOamTable_64x64_0": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -32,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -32,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 2\n    }\n}"
+    },
+    "sOamTable_64x64_1": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -32,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -32,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 1\n    }\n}"
+    },
+    "sOamTable_64x64_2": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -32,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -32,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 2\n    }\n}"
+    },
+    "sOamTable_64x64_3": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -32,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -32,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 2\n    }\n}"
+    },
+    "sOamTables_64x64": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{}",
+        "{ARRAY_COUNT(sOamTable_64x64_0), sOamTable_64x64_0}",
+        "{ARRAY_COUNT(sOamTable_64x64_1), sOamTable_64x64_1}",
+        "{ARRAY_COUNT(sOamTable_64x64_2), sOamTable_64x64_2}",
+        "{ARRAY_COUNT(sOamTable_64x64_3), sOamTable_64x64_3}",
+        "{ARRAY_COUNT(sOamTable_64x64_3), sOamTable_64x64_3}"
+      ],
+      "rawValue": "{\n    {},\n    {ARRAY_COUNT(sOamTable_64x64_0), sOamTable_64x64_0},\n    {ARRAY_COUNT(sOamTable_64x64_1), sOamTable_64x64_1},\n    {ARRAY_COUNT(sOamTable_64x64_2), sOamTable_64x64_2},\n    {ARRAY_COUNT(sOamTable_64x64_3), sOamTable_64x64_3},\n    {ARRAY_COUNT(sOamTable_64x64_3), sOamTable_64x64_3}\n}"
+    },
+    "sOamTable_96x40_0": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 24,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 28,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 32,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 36,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 40,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 44,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 48,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 52,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 56,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 2\n    },\n    {\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 2\n    },\n    {\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 2\n    },\n    {\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 2\n    },\n    {\n     ..."
+    },
+    "sOamTable_96x40_1": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 24,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 28,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 32,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 36,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 40,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 44,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 48,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 52,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 56,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    },\n    {\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    },\n    {\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1\n    },\n    {\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 1\n    },\n    {\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 1\n    },\n    {\n     ..."
+    },
+    "sOamTable_96x40_2": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 24,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 28,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 32,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 36,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 40,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 44,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 48,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 52,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 56,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 2\n    },\n    {\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 2\n    },\n    {\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 2\n    },\n    {\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 2\n    },\n    {\n     ..."
+    },
+    "sOamTable_96x40_3": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 24,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 28,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 32,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 36,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 40,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 44,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 48,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 52,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =  12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 56,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    },\n    {\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 1\n    },\n    {\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 1\n    },\n    {\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 16,\n        .priority = 1\n    },\n    {\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 20,\n        .priority = 1\n    },\n    {\n     ..."
+    },
+    "sOamTables_96x40": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sOamTable_96x40_0), sOamTable_96x40_0}",
+        "{ARRAY_COUNT(sOamTable_96x40_0), sOamTable_96x40_0}",
+        "{ARRAY_COUNT(sOamTable_96x40_1), sOamTable_96x40_1}",
+        "{ARRAY_COUNT(sOamTable_96x40_2), sOamTable_96x40_2}",
+        "{ARRAY_COUNT(sOamTable_96x40_3), sOamTable_96x40_3}",
+        "{ARRAY_COUNT(sOamTable_96x40_3), sOamTable_96x40_3}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sOamTable_96x40_0), sOamTable_96x40_0},\n    {ARRAY_COUNT(sOamTable_96x40_0), sOamTable_96x40_0},\n    {ARRAY_COUNT(sOamTable_96x40_1), sOamTable_96x40_1},\n    {ARRAY_COUNT(sOamTable_96x40_2), sOamTable_96x40_2},\n    {ARRAY_COUNT(sOamTable_96x40_3), sOamTable_96x40_3},\n    {ARRAY_COUNT(sOamTable_96x40_3), sOamTable_96x40_3}\n}"
+    },
+    "sOamTable_88x32_0": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 2\n    }",
+        "{\n        .x =  32,\n        .y = -20,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 11,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 15,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 19,\n        .priority = 2\n    }",
+        "{\n        .x =  32,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 21,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 22,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 26,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 30,\n        .priority = 2\n    }",
+        "{\n        .x =  32,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 32,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 33,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 37,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 41,\n        .priority = 2\n    }",
+        "{\n        .x =  32,\n        .y =   4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 43,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 2\n    },\n    {\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 2\n    },\n    {\n        .x =  32,\n        .y = -20,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 2\n    },\n    {\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 11,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 15,\n        .priority = 2\n    },\n    {\n       ..."
+    },
+    "sOamTable_88x32_1": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 1\n    }",
+        "{\n        .x =  32,\n        .y = -20,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 11,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 15,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 19,\n        .priority = 1\n    }",
+        "{\n        .x =  32,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 21,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 22,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 26,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 30,\n        .priority = 1\n    }",
+        "{\n        .x =  32,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 32,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 33,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 37,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 41,\n        .priority = 1\n    }",
+        "{\n        .x =  32,\n        .y =   4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 43,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    },\n    {\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 1\n    },\n    {\n        .x =  32,\n        .y = -20,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 1\n    },\n    {\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 11,\n        .priority = 1\n    },\n    {\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 15,\n        .priority = 1\n    },\n    {\n       ..."
+    },
+    "sOamTable_88x32_2": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 2\n    }",
+        "{\n        .x =  32,\n        .y = -20,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 11,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 15,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 19,\n        .priority = 2\n    }",
+        "{\n        .x =  32,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 21,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 22,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 26,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 30,\n        .priority = 2\n    }",
+        "{\n        .x =  32,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 32,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 33,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 37,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 41,\n        .priority = 2\n    }",
+        "{\n        .x =  32,\n        .y =   4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 43,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 2\n    },\n    {\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 2\n    },\n    {\n        .x =  32,\n        .y = -20,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 2\n    },\n    {\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 11,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 15,\n        .priority = 2\n    },\n    {\n       ..."
+    },
+    "sOamTable_88x32_3": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 1\n    }",
+        "{\n        .x =  32,\n        .y = -20,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 11,\n        .priority = 1\n    }",
+        "{\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 15,\n        .priority = 1\n    }",
+        "{\n        .x =  16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 19,\n        .priority = 1\n    }",
+        "{\n        .x =  32,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 21,\n        .priority = 1\n    }",
+        "{\n        .x = -48,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 22,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 26,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 30,\n        .priority = 2\n    }",
+        "{\n        .x =  32,\n        .y =  -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 32,\n        .priority = 2\n    }",
+        "{\n        .x = -48,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 33,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 37,\n        .priority = 2\n    }",
+        "{\n        .x =  16,\n        .y =   4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 41,\n        .priority = 2\n    }",
+        "{\n        .x =  32,\n        .y =   4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 43,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -48,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x = -16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 1\n    },\n    {\n        .x =  16,\n        .y = -20,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 8,\n        .priority = 1\n    },\n    {\n        .x =  32,\n        .y = -20,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 10,\n        .priority = 1\n    },\n    {\n        .x = -48,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 11,\n        .priority = 1\n    },\n    {\n        .x = -16,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 15,\n        .priority = 1\n    },\n    {\n       ..."
+    },
+    "sOamTables_88x32": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sOamTable_88x32_0), sOamTable_88x32_0}",
+        "{ARRAY_COUNT(sOamTable_88x32_0), sOamTable_88x32_0}",
+        "{ARRAY_COUNT(sOamTable_88x32_1), sOamTable_88x32_1}",
+        "{ARRAY_COUNT(sOamTable_88x32_2), sOamTable_88x32_2}",
+        "{ARRAY_COUNT(sOamTable_88x32_3), sOamTable_88x32_3}",
+        "{ARRAY_COUNT(sOamTable_88x32_3), sOamTable_88x32_3}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sOamTable_88x32_0), sOamTable_88x32_0},\n    {ARRAY_COUNT(sOamTable_88x32_0), sOamTable_88x32_0},\n    {ARRAY_COUNT(sOamTable_88x32_1), sOamTable_88x32_1},\n    {ARRAY_COUNT(sOamTable_88x32_2), sOamTable_88x32_2},\n    {ARRAY_COUNT(sOamTable_88x32_3), sOamTable_88x32_3},\n    {ARRAY_COUNT(sOamTable_88x32_3), sOamTable_88x32_3}\n}"
+    }
+  }
+}

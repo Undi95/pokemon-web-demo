@@ -1,0 +1,46 @@
+{
+  "srcFile": "src/walda_phrase.c",
+  "count": 1,
+  "tables": {
+    "sWaldaLettersTable": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "CHAR_B",
+        "CHAR_C",
+        "CHAR_D",
+        "CHAR_F",
+        "CHAR_G",
+        "CHAR_H",
+        "CHAR_J",
+        "CHAR_K",
+        "CHAR_L",
+        "CHAR_M",
+        "CHAR_N",
+        "CHAR_P",
+        "CHAR_Q",
+        "CHAR_R",
+        "CHAR_S",
+        "CHAR_T",
+        "CHAR_V",
+        "CHAR_W",
+        "CHAR_Z",
+        "CHAR_b",
+        "CHAR_c",
+        "CHAR_d",
+        "CHAR_f",
+        "CHAR_g",
+        "CHAR_h",
+        "CHAR_j",
+        "CHAR_k",
+        "CHAR_m",
+        "CHAR_n",
+        "CHAR_p",
+        "CHAR_q",
+        "CHAR_s"
+      ],
+      "rawValue": "{\n    CHAR_B, CHAR_C, CHAR_D, CHAR_F, CHAR_G, CHAR_H, CHAR_J, CHAR_K, CHAR_L, CHAR_M, CHAR_N, CHAR_P, CHAR_Q, CHAR_R, CHAR_S, CHAR_T, CHAR_V, CHAR_W, CHAR_Z,\n    CHAR_b, CHAR_c, CHAR_d, CHAR_f, CHAR_g, CHAR_h, CHAR_j, CHAR_k,         CHAR_m, CHAR_n, CHAR_p, CHAR_q,         CHAR_s\n}"
+    }
+  }
+}

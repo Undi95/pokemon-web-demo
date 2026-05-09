@@ -1,0 +1,50 @@
+{
+  "srcFile": "src/cable_car.c",
+  "count": 4,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n}"
+    },
+    "sSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gCableCar_Gfx,      0x800, TAG_CABLE_CAR }",
+        "{ gCableCarDoor_Gfx,   0x40, TAG_DOOR }",
+        "{ gCableCarCable_Gfx,  0x80, TAG_CABLE }",
+        "{ }"
+      ],
+      "rawValue": "{\n    { gCableCar_Gfx,      0x800, TAG_CABLE_CAR },\n    { gCableCarDoor_Gfx,   0x40, TAG_DOOR },\n    { gCableCarCable_Gfx,  0x80, TAG_CABLE },\n    { },\n}"
+    },
+    "sSpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gCableCar_Pal, TAG_CABLE_CAR }",
+        "{ }"
+      ],
+      "rawValue": "{\n    { gCableCar_Pal, TAG_CABLE_CAR },\n    { }\n}"
+    },
+    "sSpriteTemplates_CableCar": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = TAG_CABLE_CAR,\n        .paletteTag = TAG_CABLE_CAR,\n        .oam = &sOam_CableCar,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_CableCar,\n    }",
+        "{\n        .tileTag = TAG_DOOR,\n        .paletteTag = TAG_CABLE_CAR,\n        .oam = &sOam_CableCarDoor,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_CableCar,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = TAG_CABLE_CAR,\n        .paletteTag = TAG_CABLE_CAR,\n        .oam = &sOam_CableCar,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_CableCar,\n    },\n    {\n        .tileTag = TAG_DOOR,\n        .paletteTag = TAG_CABLE_CAR,\n        .oam = &sOam_CableCarDoor,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_CableCar,\n    },\n}"
+    }
+  }
+}

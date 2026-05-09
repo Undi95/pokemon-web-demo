@@ -38,13 +38,13 @@ const {
   PALETTES_ALL, PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP,
   PlayCry_Normal, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
   REG_OFFSET_BG0CNT, REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BG3CNT,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_WIN0H,
-  REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, RemoveWindow,
-  ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RunTasks, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  Sin, SpeciesToNationalPokedexNum, StartSpriteAnimIfDifferent, TransferPlttBuffer,
-  UpdatePaletteFade, VRAM_SIZE, WIN_RANGE,  // 4-per-line for readability
+  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT,
+  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  RemoveWindow, ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
+  ResetSpriteData, ResetTasks, RunTasks, ScanlineEffect_Stop,
+  ScheduleBgCopyTilemapToVram, SetGpuReg, SetMainCallback2, SetVBlankCallback,
+  ShowBg, Sin, SpeciesToNationalPokedexNum, StartSpriteAnimIfDifferent,
+  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE, WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u16 GetStarterPokemon(u16 chosenStarterId) */

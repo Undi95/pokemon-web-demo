@@ -24,7 +24,7 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AnimateSprite, CreateInvisibleSpriteWithCallback, CreateSprite, DestroySprite,
   FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetSpriteTileStartByTag, LoadCompressedSpritePaletteUsingHeap,
-  LoadCompressedSpriteSheetUsingHeap, StartSpriteAnim,  // 4-per-line for readability
+  LoadCompressedSpriteSheetUsingHeap, SpriteCallbackDummy, StartSpriteAnim,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 SmokescreenImpact(s16 x, s16 y, bool8 persist) */

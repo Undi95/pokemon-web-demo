@@ -1,0 +1,91 @@
+{
+  "srcFile": "src/shop.c",
+  "count": 6,
+  "tables": {
+    "sShopMenuActions_BuySellQuit": {
+      "type": "struct MenuAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gText_ShopBuy, {.void_u8=Task_HandleShopMenuBuy} }",
+        "{ gText_ShopSell, {.void_u8=Task_HandleShopMenuSell} }",
+        "{ gText_ShopQuit, {.void_u8=Task_HandleShopMenuQuit} }"
+      ],
+      "rawValue": "{\n    { gText_ShopBuy, {.void_u8=Task_HandleShopMenuBuy} },\n    { gText_ShopSell, {.void_u8=Task_HandleShopMenuSell} },\n    { gText_ShopQuit, {.void_u8=Task_HandleShopMenuQuit} }\n}"
+    },
+    "sShopMenuActions_BuyQuit": {
+      "type": "struct MenuAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gText_ShopBuy, {.void_u8=Task_HandleShopMenuBuy} }",
+        "{ gText_ShopQuit, {.void_u8=Task_HandleShopMenuQuit} }"
+      ],
+      "rawValue": "{\n    { gText_ShopBuy, {.void_u8=Task_HandleShopMenuBuy} },\n    { gText_ShopQuit, {.void_u8=Task_HandleShopMenuQuit} }\n}"
+    },
+    "sShopMenuWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_BUY_SELL_QUIT",
+        "WIN_BUY_QUIT"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_BUY_SELL_QUIT] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 1,\n        .width = 9,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 0x0008,\n    },\n     \n    [WIN_BUY_QUIT] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 1,\n        .width = 9,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x0008,\n    }\n}"
+    },
+    "sShopBuyMenuBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sShopBuyMenuWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_MONEY",
+        "WIN_ITEM_LIST",
+        "WIN_ITEM_DESCRIPTION",
+        "WIN_QUANTITY_IN_BAG",
+        "WIN_QUANTITY_PRICE",
+        "WIN_MESSAGE"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_MONEY] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 10,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x001E,\n    },\n    [WIN_ITEM_LIST] = {\n        .bg = 0,\n        .tilemapLeft = 14,\n        .tilemapTop = 2,\n        .width = 15,\n        .height = 16,\n        .paletteNum = 15,\n        .baseBlock = 0x0032,\n    },\n    [WIN_ITEM_DESCRIPTION] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 13,\n        .width = 14,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 0x0122,\n    },\n    [WIN_QUANTITY_IN_BAG] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 11,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x0176,\n    },\n    [WIN_QUANTITY_PRICE] = {\n        .bg = 0,\n        .tilemapLeft = 18,\n        .tilemapTop = 11,\n        .width = 10,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x018E,\n    },\n    [WIN_MESSAGE] = {\n..."
+    },
+    "sShopBuyMenuTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "COLORID_NORMAL",
+        "COLORID_ITEM_LIST",
+        "COLORID_GRAY_CURSOR"
+      ],
+      "indexedValues": [
+        "{1",
+        "{0",
+        "{0"
+      ],
+      "rawValue": "{\n    [COLORID_NORMAL]      = {1, 2, 3},\n    [COLORID_ITEM_LIST]   = {0, 2, 3},\n    [COLORID_GRAY_CURSOR] = {0, 3, 2},\n}"
+    }
+  }
+}

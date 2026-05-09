@@ -29,12 +29,12 @@ const {
   GetBlockReceivedStatus, GetMultiplayerId, IncrementGameStat, InitBgsFromTemplates,
   InitWindows, IsLinkTaskFinished, IsTextPrinterActive, LoadOam,
   LoadUserWindowBorderGfx, LoadUserWindowBorderGfx_, Menu_LoadStdPal, PALETTES_ALL,
-  PIXEL_FILL, ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags,
-  ResetBlockReceivedFlags, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
-  RunTasks, RunTextPrinters, SendBlock, SetCloseLinkCallback,
-  SetGpuReg, SetLinkStandbyCallback, SetMainCallback2, SetVBlankCallback,
-  ShowBg, StartUnionRoomBattle, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, ZeroMonData, memset,  // 4-per-line for readability
+  PIXEL_FILL, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_DISPCNT,
+  ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetSpriteData, ResetTasks,
+  ResetTempTileDataBuffers, RunTasks, RunTextPrinters, SendBlock,
+  SetCloseLinkCallback, SetGpuReg, SetLinkStandbyCallback, SetMainCallback2,
+  SetVBlankCallback, ShowBg, StartUnionRoomBattle, TRUE,
+  TransferPlttBuffer, UpdatePaletteFade, ZeroMonData, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_SetUpPartiesAndStartBattle(void) */

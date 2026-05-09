@@ -1,0 +1,95 @@
+{
+  "srcFile": "src/wireless_communication_status_screen.c",
+  "count": 4,
+  "tables": {
+    "sPalettes": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "INCGFX_U16(\"graphics/wireless_status_screen/default.pal\", \".gbapal\")",
+        "{}",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_00.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_01.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_02.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_03.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_04.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_05.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_06.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_07.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_08.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_09.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_10.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_11.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_12.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/wireless_status_screen/anim_13.pal\", \".gbapal\")"
+      ],
+      "rawValue": "{\n    INCGFX_U16(\"graphics/wireless_status_screen/default.pal\", \".gbapal\"),\n    {},  \n    INCGFX_U16(\"graphics/wireless_status_screen/anim_00.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_01.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_02.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_03.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_04.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_05.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_06.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_07.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_08.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_09.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_10.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/anim_11.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/wireless_status_screen/an..."
+    },
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .priority = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 8,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .priority = 0\n    }, {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 8,\n        .priority = 1\n    }\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_TITLE",
+        "WIN_GROUP_NAMES",
+        "WIN_GROUP_COUNTS"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 0,\n        .width = 24,\n        .height = 3,\n        .paletteNum = 15,\n        .baseBlock = 0x0001\n    },\n    [WIN_GROUP_NAMES] = {\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 4,\n        .width = 21,\n        .height = 15,\n        .paletteNum = 15,\n        .baseBlock = 0x0049\n    },\n    [WIN_GROUP_COUNTS] = {\n        .bg = 0,\n        .tilemapLeft = 24,\n        .tilemapTop = 4,\n        .width = 3,\n        .height = 15,\n        .paletteNum = 15,\n        .baseBlock = 0x0184\n    }, DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sActivityGroupInfo": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ACTIVITY_BATTLE_SINGLE,                 GROUPTYPE_BATTLE, 2}",
+        "{ACTIVITY_BATTLE_DOUBLE,                 GROUPTYPE_BATTLE, 2}",
+        "{ACTIVITY_BATTLE_MULTI,                  GROUPTYPE_BATTLE, 4}",
+        "{ACTIVITY_TRADE,                         GROUPTYPE_TRADE,  2}",
+        "{ACTIVITY_WONDER_CARD_DUP,               GROUPTYPE_TOTAL,  2}",
+        "{ACTIVITY_WONDER_NEWS_DUP,               GROUPTYPE_TOTAL,  2}",
+        "{ACTIVITY_POKEMON_JUMP,                  GROUPTYPE_TOTAL,  0}",
+        "{ACTIVITY_BERRY_CRUSH,                   GROUPTYPE_TOTAL,  0}",
+        "{ACTIVITY_BERRY_PICK,                    GROUPTYPE_TOTAL,  0}",
+        "{ACTIVITY_SEARCH,                        GROUPTYPE_NONE,   0}",
+        "{ACTIVITY_SPIN_TRADE,                    GROUPTYPE_TRADE,  0}",
+        "{ACTIVITY_BERRY_BLENDER,                 GROUPTYPE_TOTAL,  0}",
+        "{ACTIVITY_RECORD_CORNER,                 GROUPTYPE_TOTAL,  0}",
+        "{ACTIVITY_NONE | IN_UNION_ROOM,          GROUPTYPE_UNION,  1}",
+        "{ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM, GROUPTYPE_UNION,  2}",
+        "{ACTIVITY_TRADE | IN_UNION_ROOM,         GROUPTYPE_UNION,  2}",
+        "{ACTIVITY_CHAT | IN_UNION_ROOM,          GROUPTYPE_UNION,  0}",
+        "{ACTIVITY_CARD | IN_UNION_ROOM,          GROUPTYPE_UNION,  2}",
+        "{ACTIVITY_PLYRTALK | IN_UNION_ROOM,      GROUPTYPE_UNION,  1}",
+        "{ACTIVITY_NPCTALK | IN_UNION_ROOM,       GROUPTYPE_UNION,  2}",
+        "{ACTIVITY_ACCEPT | IN_UNION_ROOM,        GROUPTYPE_UNION,  1}",
+        "{ACTIVITY_DECLINE | IN_UNION_ROOM,       GROUPTYPE_UNION,  1}",
+        "{ACTIVITY_WONDER_CARD,                   GROUPTYPE_TOTAL,  2}",
+        "{ACTIVITY_WONDER_NEWS,                   GROUPTYPE_TOTAL,  2}",
+        "{ACTIVITY_CONTEST_COOL,                  GROUPTYPE_TOTAL,  0}",
+        "{ACTIVITY_CONTEST_BEAUTY,                GROUPTYPE_TOTAL,  0}",
+        "{ACTIVITY_CONTEST_CUTE,                  GROUPTYPE_TOTAL,  0}",
+        "{ACTIVITY_CONTEST_SMART,                 GROUPTYPE_TOTAL,  0}",
+        "{ACTIVITY_CONTEST_TOUGH,                 GROUPTYPE_TOTAL,  0}",
+        "{ACTIVITY_BATTLE_TOWER,                  GROUPTYPE_BATTLE, 2}",
+        "{ACTIVITY_BATTLE_TOWER_OPEN,             GROUPTYPE_BATTLE, 2}"
+      ],
+      "rawValue": "{\n    {ACTIVITY_BATTLE_SINGLE,                 GROUPTYPE_BATTLE, 2},\n    {ACTIVITY_BATTLE_DOUBLE,                 GROUPTYPE_BATTLE, 2},\n    {ACTIVITY_BATTLE_MULTI,                  GROUPTYPE_BATTLE, 4},\n    {ACTIVITY_TRADE,                         GROUPTYPE_TRADE,  2},\n    {ACTIVITY_WONDER_CARD_DUP,               GROUPTYPE_TOTAL,  2},\n    {ACTIVITY_WONDER_NEWS_DUP,               GROUPTYPE_TOTAL,  2},\n    {ACTIVITY_POKEMON_JUMP,                  GROUPTYPE_TOTAL,  0},\n    {ACTIVITY_BERRY_CRUSH,                   GROUPTYPE_TOTAL,  0},\n    {ACTIVITY_BERRY_PICK,                    GROUPTYPE_TOTAL,  0},\n    {ACTIVITY_SEARCH,                        GROUPTYPE_NONE,   0},\n    {ACTIVITY_SPIN_TRADE,                    GROUPTYPE_TRADE,  0},\n    {ACTIVITY_BERRY_BLENDER,                 GROUPTYPE_TOTAL,  0},\n    {ACTIVITY_RECORD_CORNER,                 GROUPTYPE_TOTAL,  0},\n    {ACTIVITY_NONE | IN_UNION_ROOM,          GROUPTYPE_UNION,  1},\n    {ACTIVITY_BATTLE_SINGLE | IN_UNION_ROOM, GROUPTYPE_UNION,  2},\n    {ACTIVITY_TRA..."
+    }
+  }
+}

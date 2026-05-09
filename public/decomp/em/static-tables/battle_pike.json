@@ -1,0 +1,320 @@
+{
+  "srcFile": "src/battle_pike.c",
+  "count": 16,
+  "tables": {
+    "sLvl50_Mons1": {
+      "type": "struct PikeWildMon",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_BODY_SLAM, MOVE_SLUDGE_BOMB}\n    }",
+        "{\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_SURF}\n    }",
+        "{\n        .species = SPECIES_DUSCLOPS,\n        .levelDelta = 5,\n        .moves = {MOVE_WILL_O_WISP, MOVE_MEAN_LOOK, MOVE_TOXIC, MOVE_SHADOW_PUNCH}\n    }"
+      ],
+      "rawValue": "{\n    {\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_BODY_SLAM, MOVE_SLUDGE_BOMB}\n    },\n    {\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_SURF}\n    },\n    {\n        .species = SPECIES_DUSCLOPS,\n        .levelDelta = 5,\n        .moves = {MOVE_WILL_O_WISP, MOVE_MEAN_LOOK, MOVE_TOXIC, MOVE_SHADOW_PUNCH}\n    }\n}"
+    },
+    "sLvl50_Mons2": {
+      "type": "struct PikeWildMon",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_BODY_SLAM, MOVE_SLUDGE_BOMB}\n    }",
+        "{\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_SURF}\n    }",
+        "{\n        .species = SPECIES_ELECTRODE,\n        .levelDelta = 5,\n        .moves = {MOVE_EXPLOSION, MOVE_SELF_DESTRUCT, MOVE_THUNDER, MOVE_TOXIC}\n    }"
+      ],
+      "rawValue": "{\n    {\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_BODY_SLAM, MOVE_SLUDGE_BOMB}\n    },\n    {\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_SURF}\n    },\n    {\n        .species = SPECIES_ELECTRODE,\n        .levelDelta = 5,\n        .moves = {MOVE_EXPLOSION, MOVE_SELF_DESTRUCT, MOVE_THUNDER, MOVE_TOXIC}\n    }\n}"
+    },
+    "sLvl50_Mons3": {
+      "type": "struct PikeWildMon",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_BODY_SLAM, MOVE_SLUDGE_BOMB}\n    }",
+        "{\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_SURF}\n    }",
+        "{\n        .species = SPECIES_BRELOOM,\n        .levelDelta = 5,\n        .moves = {MOVE_SPORE, MOVE_STUN_SPORE, MOVE_POISON_POWDER, MOVE_HIDDEN_POWER}\n    }"
+      ],
+      "rawValue": "{\n    {\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_BODY_SLAM, MOVE_SLUDGE_BOMB}\n    },\n    {\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_SURF}\n    },\n    {\n        .species = SPECIES_BRELOOM,\n        .levelDelta = 5,\n        .moves = {MOVE_SPORE, MOVE_STUN_SPORE, MOVE_POISON_POWDER, MOVE_HIDDEN_POWER}\n    }\n}"
+    },
+    "sLvl50_Mons4": {
+      "type": "struct PikeWildMon",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_BODY_SLAM, MOVE_SLUDGE_BOMB}\n    }",
+        "{\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_SURF}\n    }",
+        "{\n        .species = SPECIES_WOBBUFFET,\n        .levelDelta = 5,\n        .moves = {MOVE_COUNTER, MOVE_MIRROR_COAT, MOVE_SAFEGUARD, MOVE_DESTINY_BOND}\n    }"
+      ],
+      "rawValue": "{\n    {\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_BODY_SLAM, MOVE_SLUDGE_BOMB}\n    },\n    {\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_SURF}\n    },\n    {\n        .species = SPECIES_WOBBUFFET,\n        .levelDelta = 5,\n        .moves = {MOVE_COUNTER, MOVE_MIRROR_COAT, MOVE_SAFEGUARD, MOVE_DESTINY_BOND}\n    }\n}"
+    },
+    "sLvlOpen_Mons1": {
+      "type": "struct PikeWildMon",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_POISON_FANG, MOVE_SLUDGE_BOMB}\n    }",
+        "{\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_ICE_BEAM}\n    }",
+        "{\n        .species = SPECIES_DUSCLOPS,\n        .levelDelta = 5,\n        .moves = {MOVE_WILL_O_WISP, MOVE_MEAN_LOOK, MOVE_TOXIC, MOVE_ICE_BEAM}\n    }"
+      ],
+      "rawValue": "{\n    {\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_POISON_FANG, MOVE_SLUDGE_BOMB}\n    },\n    {\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_ICE_BEAM}\n    },\n    {\n        .species = SPECIES_DUSCLOPS,\n        .levelDelta = 5,\n        .moves = {MOVE_WILL_O_WISP, MOVE_MEAN_LOOK, MOVE_TOXIC, MOVE_ICE_BEAM}\n    }\n}"
+    },
+    "sLvlOpen_Mons2": {
+      "type": "struct PikeWildMon",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_POISON_FANG, MOVE_SLUDGE_BOMB}\n    }",
+        "{\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_ICE_BEAM}\n    }",
+        "{\n        .species = SPECIES_ELECTRODE,\n        .levelDelta = 5,\n        .moves = {MOVE_EXPLOSION, MOVE_SELF_DESTRUCT, MOVE_THUNDER, MOVE_TOXIC}\n    }"
+      ],
+      "rawValue": "{\n    {\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_POISON_FANG, MOVE_SLUDGE_BOMB}\n    },\n    {\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_ICE_BEAM}\n    },\n    {\n        .species = SPECIES_ELECTRODE,\n        .levelDelta = 5,\n        .moves = {MOVE_EXPLOSION, MOVE_SELF_DESTRUCT, MOVE_THUNDER, MOVE_TOXIC}\n    }\n}"
+    },
+    "sLvlOpen_Mons3": {
+      "type": "struct PikeWildMon",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_POISON_FANG, MOVE_SLUDGE_BOMB}\n    }",
+        "{\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_ICE_BEAM}\n    }",
+        "{\n        .species = SPECIES_BRELOOM,\n        .levelDelta = 5,\n        .moves = {MOVE_SPORE, MOVE_STUN_SPORE, MOVE_POISON_POWDER, MOVE_HIDDEN_POWER}\n    }"
+      ],
+      "rawValue": "{\n    {\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_POISON_FANG, MOVE_SLUDGE_BOMB}\n    },\n    {\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_ICE_BEAM}\n    },\n    {\n        .species = SPECIES_BRELOOM,\n        .levelDelta = 5,\n        .moves = {MOVE_SPORE, MOVE_STUN_SPORE, MOVE_POISON_POWDER, MOVE_HIDDEN_POWER}\n    }\n}"
+    },
+    "sLvlOpen_Mons4": {
+      "type": "struct PikeWildMon",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_POISON_FANG, MOVE_SLUDGE_BOMB}\n    }",
+        "{\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_ICE_BEAM}\n    }",
+        "{\n        .species = SPECIES_WOBBUFFET,\n        .levelDelta = 5,\n        .moves = {MOVE_COUNTER, MOVE_MIRROR_COAT, MOVE_SAFEGUARD, MOVE_ENCORE}\n    }"
+      ],
+      "rawValue": "{\n    {\n        .species = SPECIES_SEVIPER,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_GLARE, MOVE_POISON_FANG, MOVE_SLUDGE_BOMB}\n    },\n    {\n        .species = SPECIES_MILOTIC,\n        .levelDelta = 4,\n        .moves = {MOVE_TOXIC, MOVE_HYPNOSIS, MOVE_BODY_SLAM, MOVE_ICE_BEAM}\n    },\n    {\n        .species = SPECIES_WOBBUFFET,\n        .levelDelta = 5,\n        .moves = {MOVE_COUNTER, MOVE_MIRROR_COAT, MOVE_SAFEGUARD, MOVE_ENCORE}\n    }\n}"
+    },
+    "sNPCTable": {
+      "type": "struct PikeRoomNPC",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .graphicsId = OBJ_EVENT_GFX_POKEFAN_F,\n        .speechId1 = 3,\n        .speechId2 = 5,\n        .speechId3 = 6\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_NINJA_BOY,\n        .speechId1 = 13,\n        .speechId2 = 32,\n        .speechId3 = 37\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_FAT_MAN,\n        .speechId1 = 8,\n        .speechId2 = 11,\n        .speechId3 = 12\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_BUG_CATCHER,\n        .speechId1 = 34,\n        .speechId2 = 30,\n        .speechId3 = 33\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_EXPERT_M,\n        .speechId1 = 0,\n        .speechId2 = 0,\n        .speechId3 = 0\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_OLD_WOMAN,\n        .speechId1 = 1,\n        .speechId2 = 1,\n        .speechId3 = 1\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_BLACK_BELT,\n        .speechId1 = 22,\n        .speechId2 = 23,\n        .speechId3 = 27\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_HIKER,\n        .speechId1 = 8,\n        .speechId2 = 22,\n        .speechId3 = 31\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_GIRL_3,\n        .speechId1 = 13,\n        .speechId2 = 39,\n        .speechId3 = 21\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_WOMAN_2,\n        .speechId1 = 2,\n        .speechId2 = 4,\n        .speechId3 = 17\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_CYCLING_TRIATHLETE_M,\n        .speechId1 = 30,\n        .speechId2 = 20,\n        .speechId3 = 36\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_MAN_5,\n        .speechId1 = 28,\n        .speechId2 = 34,\n        .speechId3 = 25\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_SCHOOL_KID_M,\n        .speechId1 = 23,\n        .speechId2 = 38,\n        .speechId3 = 26\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_FISHERMAN,\n        .speechId1 = 23,\n        .speechId2 = 30,\n        .speechId3 = 11\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_LASS,\n        .speechId1 = 15,\n        .speechId2 = 19,\n        .speechId3 = 14\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_MANIAC,\n        .speechId1 = 2,\n        .speechId2 = 29,\n        .speechId3 = 26\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_RUNNING_TRIATHLETE_M,\n        .speechId1 = 37,\n        .speechId2 = 12,\n        .speechId3 = 32\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_MAN_3,\n        .speechId1 = 24,\n        .speechId2 = 23,\n        .speechId3 = 38\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_WOMAN_3,\n        .speechId1 = 5,\n        .speechId2 = 22,\n        .speechId3 = 4\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_LITTLE_BOY,\n        .speechId1 = 41,\n        .speechId2 = 37,\n        .speechId3 = 35\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_TUBER_F,\n        .speechId1 = 39,\n        .speechId2 = 14,\n        .speechId3 = 13\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_GENTLEMAN,\n        .speechId1 = 10,\n        .speechId2 = 7,\n        .speechId3 = 9\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_LITTLE_GIRL,\n        .speechId1 = 40,\n        .speechId2 = 20,\n        .speechId3 = 16\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_RUNNING_TRIATHLETE_F,\n        .speechId1 = 18,\n        .speechId2 = 13,\n        .speechId3 = 21\n    }",
+        "{\n        .graphicsId = OBJ_EVENT_GFX_MAN_1,\n        .speechId1 = 22,\n        .speechId2 = 31,\n        .speechId3 = 27\n    }"
+      ],
+      "rawValue": "{\n    {\n        .graphicsId = OBJ_EVENT_GFX_POKEFAN_F,\n        .speechId1 = 3,\n        .speechId2 = 5,\n        .speechId3 = 6\n    },\n    {\n        .graphicsId = OBJ_EVENT_GFX_NINJA_BOY,\n        .speechId1 = 13,\n        .speechId2 = 32,\n        .speechId3 = 37\n    },\n    {\n        .graphicsId = OBJ_EVENT_GFX_FAT_MAN,\n        .speechId1 = 8,\n        .speechId2 = 11,\n        .speechId3 = 12\n    },\n    {\n        .graphicsId = OBJ_EVENT_GFX_BUG_CATCHER,\n        .speechId1 = 34,\n        .speechId2 = 30,\n        .speechId3 = 33\n    },\n    {\n        .graphicsId = OBJ_EVENT_GFX_EXPERT_M,\n        .speechId1 = 0,\n        .speechId2 = 0,\n        .speechId3 = 0\n    },\n    {\n        .graphicsId = OBJ_EVENT_GFX_OLD_WOMAN,\n        .speechId1 = 1,\n        .speechId2 = 1,\n        .speechId3 = 1\n    },\n    {\n        .graphicsId = OBJ_EVENT_GFX_BLACK_BELT,\n        .speechId1 = 22,\n        .speechId2 = 23,\n        .speechId3 = 27\n    },\n    {\n        .graphicsId = OBJ_EVENT_GFX_HIKER,\n        .speechId1 = 8,\n        .speechId2 = ..."
+    },
+    "sNPCSpeeches": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{EC_WORD_I_AM, EC_WORD_LOST, EC_WORD_GIVE_ME, EC_WORD_A, EC_MOVE2(HELPING_HAND), EC_WORD_EXCL}",
+        "{EC_WORD_HIM, EC_WORD_ALSO, EC_WORD_YOU_RE, EC_EMPTY_WORD, EC_WORD_LOST, EC_WORD_QUES}",
+        "{EC_WORD_THAT, EC_WORD_MAKE, EC_WORD_NOW, EC_WORD_QUES, EC_EMPTY_WORD, EC_EMPTY_WORD}",
+        "{EC_WORD_IT_S, EC_WORD_RECOMMEND, EC_WORD_EXCITING, EC_WORD_FOR, EC_WORD_ME, EC_WORD_EXCL}",
+        "{EC_WORD_WHOM, EC_WORD_DIDN_T, EC_WORD_AN, EC_EMPTY_WORD, EC_WORD_MISTAKE, EC_WORD_QUES}",
+        "{EC_WORD_IT_S, EC_WORD_REALLY, EC_WORD_RECOMMEND, EC_WORD_MEAN, EC_WORD_THERE, EC_WORD_EXCL}",
+        "{EC_WORD_NEED, EC_EMPTY_WORD, EC_WORD_WONDER, EC_WORD_AN, EC_WORD_NAP, EC_WORD_ELLIPSIS}",
+        "{EC_WORD_SOMEONE, EC_WORD_EVER, EC_WORD_A_LOT, EC_WORD_THIS, EC_WORD_CHALLENGE, EC_WORD_EXCL}",
+        "{EC_WORD_LOOKS, EC_EMPTY_WORD, EC_WORD_WILL, EC_EMPTY_WORD, EC_WORD_WIN, EC_WORD_ELLIPSIS}",
+        "{EC_WORD_READY, EC_WORD_EVEN_SO, EC_WORD_GIVE_UP, EC_WORD_MY, EC_WORD_SMALL, EC_WORD_QUES}",
+        "{EC_WORD_OH, EC_WORD_ELLIPSIS, EC_WORD_WHO, EC_WORD_ELLIPSIS, EC_WORD_DOES, EC_WORD_QUES}",
+        "{EC_WORD_I_AM, EC_WORD_THERE, EC_WORD_SINCE, EC_WORD_MOOD, EC_WORD_DAYS, EC_WORD_ELLIPSIS}",
+        "{EC_WORD_I, EC_WORD_THINKS, EC_WORD_THAT, EC_WORD_WILL, EC_WORD_GIVE_UP, EC_WORD_EXCL}",
+        "{EC_WORD_THAT, EC_EMPTY_WORD, EC_WORD_MAKE, EC_WORD_QUES, EC_EMPTY_WORD, EC_EMPTY_WORD}",
+        "{EC_WORD_I, EC_WORD_COULD, EC_WORD_WIN, EC_WORD_WITH, EC_WORD_FEELING, EC_MOVE(SHEER_COLD)}",
+        "{EC_WORD_I, EC_WORD_ON, EC_WORD_LISTEN, EC_WORD_OF, EC_WORD_COOL, EC_WORD_EXCL}",
+        "{EC_WORD_FIGHT, EC_WORD_ELLIPSIS, EC_WORD_IT_S, EC_WORD_REALLY, EC_WORD_MEAN, EC_WORD_EXCL}",
+        "{EC_WORD_TODAY, EC_WORD_ELLIPSIS, EC_WORD_I_AM, EC_EMPTY_WORD, EC_WORD_WEAK, EC_WORD_ELLIPSIS}",
+        "{EC_WORD_THE, EC_WORD_TIME, EC_WORD_IS, EC_EMPTY_WORD, EC_WORD_GREAT, EC_WORD_EXCL_EXCL}",
+        "{EC_WORD_NOT, EC_WORD_LAY, EC_WORD_A, EC_WORD_OTHER, EC_WORD_TRAINER, EC_WORD_ELLIPSIS}",
+        "{EC_WORD_I, EC_WORD_THINKS, EC_WORD_THAT, EC_WORD_IT_S, EC_WORD_EVEN_SO, EC_WORD_LEFT}",
+        "{EC_WORD_IT_S, EC_EMPTY_WORD, EC_WORD_SOON, EC_WORD_FEELING, EC_WORD_END, EC_WORD_QUES}",
+        "{EC_WORD_IT_S, EC_WORD_REALLY, EC_WORD_RECOMMEND, EC_EMPTY_WORD, EC_WORD_EASY, EC_WORD_EXCL}",
+        "{EC_WORD_APOLOGIZE, EC_WORD_I, EC_MOVE2(TACKLE), EC_WORD_DAUGHTER, EC_MOVE(FOCUS_ENERGY), EC_WORD_EXCL}",
+        "{EC_WORD_SURRENDER, EC_WORD_QUES, EC_WORD_I, EC_EMPTY_WORD, EC_WORD_REFUSE, EC_WORD_EXCL}",
+        "{EC_WORD_I_AM, EC_WORD_A_LOT, EC_WORD_TOO_WEAK, EC_EMPTY_WORD, EC_WORD_TODAY, EC_WORD_ELLIPSIS}",
+        "{EC_WORD_I, EC_WORD_ISN_T, EC_WORD_COULD, EC_WORD_PLUS, EC_WORD_WHO_WAS, EC_WORD_WHEN_I_WIN}",
+        "{EC_WORD_A, EC_WORD_TRAINER, EC_WORD_FOREVER, EC_EMPTY_WORD, EC_WORD_MISS, EC_WORD_OTHER}",
+        "{EC_WORD_CASE, EC_WORD_POKEMON, EC_WORD_STEEL, EC_WORD_ELLIPSIS, EC_WORD_IT_S, EC_WORD_AWESOME}",
+        "{EC_WORD_THERE, EC_WORD_ELLIPSIS, EC_WORD_I_AM, EC_WORD_THE, EC_WORD_BEST, EC_WORD_TRAINER}",
+        "{EC_WORD_IT_S, EC_WORD_HARD, EC_WORD_BUT, EC_WORD_IT_S, EC_WORD_ENTERTAINING, EC_WORD_EXCL_EXCL}",
+        "{EC_WORD_AND, EC_EMPTY_WORD, EC_WORD_FOREVER, EC_WORD_QUES, EC_EMPTY_WORD, EC_EMPTY_WORD}",
+        "{EC_WORD_I_AM, EC_WORD_RATHER, EC_WORD_CONFUSED, EC_WORD_ELLIPSIS, EC_EMPTY_WORD, EC_EMPTY_WORD}",
+        "{EC_WORD_GOOD_BYE, EC_WORD_ELLIPSIS, EC_WORD_WILL, EC_WORD_EVEN_SO, EC_WORD_FEELING, EC_WORD_HOME}",
+        "{EC_WORD_IT_S, EC_WORD_REALLY, EC_WORD_NO_MATCH, EC_EMPTY_WORD, EC_WORD_THERE, EC_WORD_EXCL}",
+        "{EC_WORD_A, EC_WORD_FIGHTING, EC_WORD_IT_S, EC_WORD_PROBABLY, EC_WORD_EXCITING, EC_WORD_EXCL}",
+        "{EC_WORD_I_AM, EC_WORD_UP, EC_WORD_THAT, EC_WORD_IT_S, EC_WORD_EVEN_SO, EC_WORD_RIGHT}",
+        "{EC_WORD_NO, EC_WORD_EXCL, EC_WORD_IT_S, EC_WORD_NOT, EC_WORD_JUST, EC_WORD_ELLIPSIS}",
+        "{EC_WORD_WHO_IS, EC_WORD_POKEMON, EC_WORD_ARE, EC_WORD_VERY, EC_WORD_NEVER, EC_WORD_EXCL}",
+        "{EC_WORD_WHO_IS, EC_WORD_POKEMON, EC_WORD_ARE, EC_WORD_VERSUS, EC_WORD_THE, EC_WORD_POISON}",
+        "{EC_WORD_LALALA, EC_WORD_LALALA, EC_WORD_I_AM, EC_WORD_THIN, EC_WORD_LALALA, EC_WORD_EXCL}",
+        "{EC_MOVE2(TOXIC), EC_WORD_IT_S, EC_WORD_REALLY, EC_EMPTY_WORD, EC_WORD_AWFUL, EC_WORD_EXCL}"
+      ],
+      "rawValue": "{\n    {EC_WORD_I_AM, EC_WORD_LOST, EC_WORD_GIVE_ME, EC_WORD_A, EC_MOVE2(HELPING_HAND), EC_WORD_EXCL},\n    {EC_WORD_HIM, EC_WORD_ALSO, EC_WORD_YOU_RE, EC_EMPTY_WORD, EC_WORD_LOST, EC_WORD_QUES},\n    {EC_WORD_THAT, EC_WORD_MAKE, EC_WORD_NOW, EC_WORD_QUES, EC_EMPTY_WORD, EC_EMPTY_WORD},\n    {EC_WORD_IT_S, EC_WORD_RECOMMEND, EC_WORD_EXCITING, EC_WORD_FOR, EC_WORD_ME, EC_WORD_EXCL},\n    {EC_WORD_WHOM, EC_WORD_DIDN_T, EC_WORD_AN, EC_EMPTY_WORD, EC_WORD_MISTAKE, EC_WORD_QUES},\n    {EC_WORD_IT_S, EC_WORD_REALLY, EC_WORD_RECOMMEND, EC_WORD_MEAN, EC_WORD_THERE, EC_WORD_EXCL},\n    {EC_WORD_NEED, EC_EMPTY_WORD, EC_WORD_WONDER, EC_WORD_AN, EC_WORD_NAP, EC_WORD_ELLIPSIS},\n    {EC_WORD_SOMEONE, EC_WORD_EVER, EC_WORD_A_LOT, EC_WORD_THIS, EC_WORD_CHALLENGE, EC_WORD_EXCL},\n    {EC_WORD_LOOKS, EC_EMPTY_WORD, EC_WORD_WILL, EC_EMPTY_WORD, EC_WORD_WIN, EC_WORD_ELLIPSIS},\n    {EC_WORD_READY, EC_WORD_EVEN_SO, EC_WORD_GIVE_UP, EC_WORD_MY, EC_WORD_SMALL, EC_WORD_QUES},\n    {EC_WORD_OH, EC_WORD_ELLIPSIS, EC_WORD_WHO, EC_WORD_ELLIPSIS, ..."
+    },
+    "sFrontierBrainStreakAppearances": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FRONTIER_FACILITY_TOWER",
+        "FRONTIER_FACILITY_DOME",
+        "FRONTIER_FACILITY_PALACE",
+        "FRONTIER_FACILITY_ARENA",
+        "FRONTIER_FACILITY_FACTORY",
+        "FRONTIER_FACILITY_PIKE",
+        "FRONTIER_FACILITY_PYRAMID"
+      ],
+      "indexedValues": [
+        "{35",
+        "{ 4",
+        "{21",
+        "{28",
+        "{21",
+        "{28",
+        "{21"
+      ],
+      "rawValue": "{\n    [FRONTIER_FACILITY_TOWER]   = {35,  70, 35, 1},\n    [FRONTIER_FACILITY_DOME]    = { 4,   9,  5, 0},\n    [FRONTIER_FACILITY_PALACE]  = {21,  42, 21, 1},\n    [FRONTIER_FACILITY_ARENA]   = {28,  56, 28, 1},\n    [FRONTIER_FACILITY_FACTORY] = {21,  42, 21, 1},\n    [FRONTIER_FACILITY_PIKE]    = {28, 140, 56, 1},\n    [FRONTIER_FACILITY_PYRAMID] = {21,  70, 35, 0},\n}"
+    },
+    "sRoomTypeHints": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "PIKE_HINT_PEOPLE",
+        "PIKE_HINT_PEOPLE",
+        "PIKE_HINT_WHISPERING",
+        "PIKE_HINT_NOSTALGIA",
+        "PIKE_HINT_NOSTALGIA",
+        "PIKE_HINT_POKEMON",
+        "PIKE_HINT_POKEMON",
+        "PIKE_HINT_WHISPERING",
+        "PIKE_HINT_BRAIN"
+      ],
+      "rawValue": "{\n    PIKE_HINT_PEOPLE,      \n    PIKE_HINT_PEOPLE,      \n    PIKE_HINT_WHISPERING,  \n    PIKE_HINT_NOSTALGIA,   \n    PIKE_HINT_NOSTALGIA,   \n    PIKE_HINT_POKEMON,     \n    PIKE_HINT_POKEMON,     \n    PIKE_HINT_WHISPERING,  \n    PIKE_HINT_BRAIN,       \n}"
+    },
+    "sNumMonsToHealBeforePikeQueen": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{2, 1, 0}",
+        "{2, 0, 1}",
+        "{1, 2, 0}",
+        "{1, 0, 2}",
+        "{0, 2, 1}",
+        "{0, 1, 2}"
+      ],
+      "rawValue": "{\n    {2, 1, 0},\n    {2, 0, 1},\n    {1, 2, 0},\n    {1, 0, 2},\n    {0, 2, 1},\n    {0, 1, 2},\n}"
+    },
+    "sWinStreakFlags": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "STREAK_PIKE_50",
+        "STREAK_PIKE_OPEN"
+      ],
+      "rawValue": "{STREAK_PIKE_50, STREAK_PIKE_OPEN}"
+    },
+    "sBattlePikeFunctions": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "BATTLE_PIKE_FUNC_SET_ROOM_TYPE",
+        "BATTLE_PIKE_FUNC_GET_DATA",
+        "BATTLE_PIKE_FUNC_SET_DATA",
+        "BATTLE_PIKE_FUNC_IS_FINAL_ROOM",
+        "BATTLE_PIKE_FUNC_SET_ROOM_OBJECTS",
+        "BATTLE_PIKE_FUNC_GET_ROOM_TYPE",
+        "BATTLE_PIKE_FUNC_SET_IN_WILD_MON_ROOM",
+        "BATTLE_PIKE_FUNC_CLEAR_IN_WILD_MON_ROOM",
+        "BATTLE_PIKE_FUNC_SAVE",
+        "BATTLE_PIKE_FUNC_DUMMY_1",
+        "BATTLE_PIKE_FUNC_DUMMY_2",
+        "BATTLE_PIKE_FUNC_GET_ROOM_STATUS",
+        "BATTLE_PIKE_FUNC_GET_ROOM_STATUS_MON",
+        "BATTLE_PIKE_FUNC_HEAL_ONE_TWO_MONS",
+        "BATTLE_PIKE_FUNC_BUFFER_NPC_MSG",
+        "BATTLE_PIKE_FUNC_STATUS_SCREEN_FLASH",
+        "BATTLE_PIKE_FUNC_IS_IN",
+        "BATTLE_PIKE_FUNC_SET_HINT_ROOM",
+        "BATTLE_PIKE_FUNC_GET_HINT_ROOM_ID",
+        "BATTLE_PIKE_FUNC_GET_ROOM_TYPE_HINT",
+        "BATTLE_PIKE_FUNC_CLEAR_TRAINER_IDS",
+        "BATTLE_PIKE_FUNC_GET_TRAINER_INTRO",
+        "BATTLE_PIKE_FUNC_GET_QUEEN_FIGHT_TYPE",
+        "BATTLE_PIKE_FUNC_HEAL_MONS_BEFORE_QUEEN",
+        "BATTLE_PIKE_FUNC_SET_HEAL_ROOMS_DISABLED",
+        "BATTLE_PIKE_FUNC_IS_PARTY_FULL_HEALTH",
+        "BATTLE_PIKE_FUNC_SAVE_HELD_ITEMS",
+        "BATTLE_PIKE_FUNC_RESET_HELD_ITEMS",
+        "BATTLE_PIKE_FUNC_INIT"
+      ],
+      "indexedValues": [
+        "SetRoomType",
+        "GetBattlePikeData",
+        "SetBattlePikeData",
+        "IsNextRoomFinal",
+        "SetupRoomObjectEvents",
+        "GetRoomType",
+        "SetInWildMonRoom",
+        "ClearInWildMonRoom",
+        "SavePikeChallenge",
+        "PikeDummy1",
+        "PikeDummy2",
+        "GetRoomInflictedStatus",
+        "GetRoomInflictedStatusMon",
+        "HealOneOrTwoMons",
+        "BufferNPCMessage",
+        "StatusInflictionScreenFlash",
+        "GetInBattlePike",
+        "SetHintedRoom",
+        "GetHintedRoomIndex",
+        "GetRoomTypeHint",
+        "ClearPikeTrainerIds",
+        "BufferTrainerIntro",
+        "GetCurrentRoomPikeQueenFightType",
+        "HealSomeMonsBeforePikeQueen",
+        "SetHealingroomTypesDisabled",
+        "IsPartyFullHealed",
+        "SaveMonHeldItems",
+        "RestoreMonHeldItems",
+        "InitPikeChallenge"
+      ],
+      "rawValue": "{\n    [BATTLE_PIKE_FUNC_SET_ROOM_TYPE]           = SetRoomType,\n    [BATTLE_PIKE_FUNC_GET_DATA]                = GetBattlePikeData,\n    [BATTLE_PIKE_FUNC_SET_DATA]                = SetBattlePikeData,\n    [BATTLE_PIKE_FUNC_IS_FINAL_ROOM]           = IsNextRoomFinal,\n    [BATTLE_PIKE_FUNC_SET_ROOM_OBJECTS]        = SetupRoomObjectEvents,\n    [BATTLE_PIKE_FUNC_GET_ROOM_TYPE]           = GetRoomType,\n    [BATTLE_PIKE_FUNC_SET_IN_WILD_MON_ROOM]    = SetInWildMonRoom,\n    [BATTLE_PIKE_FUNC_CLEAR_IN_WILD_MON_ROOM]  = ClearInWildMonRoom,\n    [BATTLE_PIKE_FUNC_SAVE]                    = SavePikeChallenge,\n    [BATTLE_PIKE_FUNC_DUMMY_1]                 = PikeDummy1,\n    [BATTLE_PIKE_FUNC_DUMMY_2]                 = PikeDummy2,\n    [BATTLE_PIKE_FUNC_GET_ROOM_STATUS]         = GetRoomInflictedStatus,\n    [BATTLE_PIKE_FUNC_GET_ROOM_STATUS_MON]     = GetRoomInflictedStatusMon,\n    [BATTLE_PIKE_FUNC_HEAL_ONE_TWO_MONS]       = HealOneOrTwoMons,\n    [BATTLE_PIKE_FUNC_BUFFER_NPC_MSG]          = BufferNPCMessage,\n    [BATTLE_PIK..."
+    },
+    "sStatusInflictionScreenFlashFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "StatusInflictionFadeOut",
+        "StatusInflictionFadeIn"
+      ],
+      "rawValue": "{\n    StatusInflictionFadeOut, StatusInflictionFadeIn\n}"
+    }
+  }
+}

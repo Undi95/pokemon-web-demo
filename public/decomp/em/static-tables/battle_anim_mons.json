@@ -1,0 +1,72 @@
+{
+  "srcFile": "src/battle_anim_mons.c",
+  "count": 5,
+  "tables": {
+    "sBattlerCoords": {
+      "type": "struct UCoords8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  \n        { 72, 80 },\n        { 176, 40 },\n        { 48, 40 },\n        { 112, 80 },\n    }",
+        "{  \n        { 32, 80 },\n        { 200, 40 },\n        { 90, 88 },\n        { 152, 32 },\n    }"
+      ],
+      "rawValue": "{\n    {  \n        { 72, 80 },\n        { 176, 40 },\n        { 48, 40 },\n        { 112, 80 },\n    },\n    {  \n        { 32, 80 },\n        { 200, 40 },\n        { 90, 88 },\n        { 152, 32 },\n    },\n}"
+    },
+    "sCastformElevations": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CASTFORM_NORMAL",
+        "CASTFORM_FIRE",
+        "CASTFORM_WATER",
+        "CASTFORM_ICE"
+      ],
+      "indexedValues": [
+        "13",
+        "14",
+        "13",
+        "13"
+      ],
+      "rawValue": "{\n    [CASTFORM_NORMAL] = 13,\n    [CASTFORM_FIRE]   = 14,\n    [CASTFORM_WATER]  = 13,\n    [CASTFORM_ICE]    = 13,\n}"
+    },
+    "sCastformBackSpriteYCoords": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CASTFORM_NORMAL",
+        "CASTFORM_FIRE",
+        "CASTFORM_WATER",
+        "CASTFORM_ICE"
+      ],
+      "indexedValues": [
+        "0",
+        "0",
+        "0",
+        "0"
+      ],
+      "rawValue": "{\n    [CASTFORM_NORMAL] = 0,\n    [CASTFORM_FIRE]   = 0,\n    [CASTFORM_WATER]  = 0,\n    [CASTFORM_ICE]    = 0,\n}"
+    },
+    "sSpriteTemplates_MoveEffectMons": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = TAG_MOVE_EFFECT_MON_1,\n        .paletteTag = TAG_MOVE_EFFECT_MON_1,\n        .oam = &gOamData_AffineNormal_ObjNormal_64x64,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    }",
+        "{\n        .tileTag = TAG_MOVE_EFFECT_MON_2,\n        .paletteTag = TAG_MOVE_EFFECT_MON_2,\n        .oam = &gOamData_AffineNormal_ObjNormal_64x64,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = TAG_MOVE_EFFECT_MON_1,\n        .paletteTag = TAG_MOVE_EFFECT_MON_1,\n        .oam = &gOamData_AffineNormal_ObjNormal_64x64,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    },\n    {\n        .tileTag = TAG_MOVE_EFFECT_MON_2,\n        .paletteTag = TAG_MOVE_EFFECT_MON_2,\n        .oam = &gOamData_AffineNormal_ObjNormal_64x64,\n        .anims = gDummySpriteAnimTable,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    }\n}"
+    },
+    "sSpriteSheets_MoveEffectMons": {
+      "type": "struct SpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gMiscBlank_Gfx, MON_PIC_SIZE, TAG_MOVE_EFFECT_MON_1, }",
+        "{ gMiscBlank_Gfx, MON_PIC_SIZE, TAG_MOVE_EFFECT_MON_2, }"
+      ],
+      "rawValue": "{\n    { gMiscBlank_Gfx, MON_PIC_SIZE, TAG_MOVE_EFFECT_MON_1, },\n    { gMiscBlank_Gfx, MON_PIC_SIZE, TAG_MOVE_EFFECT_MON_2, },\n}"
+    }
+  }
+}

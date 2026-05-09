@@ -1,0 +1,215 @@
+{
+  "srcFile": "src/data.c",
+  "count": 20,
+  "tables": {
+    "sAnim_GeneralFrame0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_GeneralFrame3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_Normal": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_Flipped": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_Emerge": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x28, 0x28, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x12, 0x12, 0, 12)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x28, 0x28, 0, 0),\n    AFFINEANIMCMD_FRAME(0x12, 0x12, 0, 12),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_Return": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME( -0x2,  -0x2, 0, 18)",
+        "AFFINEANIMCMD_FRAME(-0x10, -0x10, 0, 15)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME( -0x2,  -0x2, 0, 18),\n    AFFINEANIMCMD_FRAME(-0x10, -0x10, 0, 15),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_HorizontalSquishLoop": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xA0, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME( 0x4,   0x0, 0, 8)",
+        "AFFINEANIMCMD_FRAME(-0x4,   0x0, 0, 8)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xA0, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME( 0x4,   0x0, 0, 8),\n    AFFINEANIMCMD_FRAME(-0x4,   0x0, 0, 8),\n    AFFINEANIMCMD_JUMP(1),\n}"
+    },
+    "sAffineAnim_Battler_Grow": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x2, 0x2, 0, 20)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x2, 0x2, 0, 20),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_Shrink": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x2, -0x2, 0, 20)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x2, -0x2, 0, 20),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_BigToSmall": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(-0x10, -0x10, 0, 9)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(-0x10, -0x10, 0, 9),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_GrowLarge": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 63)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 63),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_TipRight": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -3, 5)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0,  3, 5)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -3, 5),\n    AFFINEANIMCMD_FRAME(0x0, 0x0,  3, 5),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_SpinShrink": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-0x4, -0x4, 4, 63)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-0x4, -0x4, 4, 63),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_TipLeft": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0,  3, 5)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -3, 5)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0,  3, 5),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -3, 5),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_RotateUpAndBack": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -5, 20)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0,  0, 20)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0,  5, 20)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -5, 20),\n    AFFINEANIMCMD_FRAME(0x0, 0x0,  0, 20),\n    AFFINEANIMCMD_FRAME(0x0, 0x0,  5, 20),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Battler_Spin": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 9, 110)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 9, 110),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_MonPic_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_MonPic_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_MonPic_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_MonPic_3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 0),\n    ANIMCMD_END,\n}"
+    }
+  }
+}

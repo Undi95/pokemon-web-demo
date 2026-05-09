@@ -1,0 +1,89 @@
+{
+  "srcFile": "src/battle_anim_normal.c",
+  "count": 7,
+  "tables": {
+    "sAnim_ConfusionDuck_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_FRAME(0, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_FRAME(0, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(8, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_ConfusionDuck_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(8, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(8, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_CirclingSparkle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 3)",
+        "ANIMCMD_FRAME(16, 3)",
+        "ANIMCMD_FRAME(32, 3)",
+        "ANIMCMD_FRAME(48, 3)",
+        "ANIMCMD_FRAME(64, 3)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 3),\n    ANIMCMD_FRAME(16, 3),\n    ANIMCMD_FRAME(32, 3),\n    ANIMCMD_FRAME(48, 3),\n    ANIMCMD_FRAME(64, 3),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_HitSplat_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_HitSplat_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xD8, 0xD8, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xD8, 0xD8, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_HitSplat_2": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xB0, 0xB0, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xB0, 0xB0, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_HitSplat_3": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x80, 0x80, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x80, 0x80, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 8),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

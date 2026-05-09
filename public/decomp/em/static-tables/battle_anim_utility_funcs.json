@@ -1,0 +1,15 @@
+{
+  "srcFile": "src/battle_anim_utility_funcs.c",
+  "count": 1,
+  "tables": {
+    "sCurseLinesPalette": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RGB_WHITE"
+      ],
+      "rawValue": "{ RGB_WHITE }"
+    }
+  }
+}

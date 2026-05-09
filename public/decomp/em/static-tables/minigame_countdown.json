@@ -1,0 +1,206 @@
+{
+  "srcFile": "src/minigame_countdown.c",
+  "count": 19,
+  "tables": {
+    "sSpriteSheet_321Start_Static": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{s321Start_Static_Gfx, 0xC00, TAG_STATIC_COUNTDOWN}",
+        "{}"
+      ],
+      "rawValue": "{\n    {s321Start_Static_Gfx, 0xC00, TAG_STATIC_COUNTDOWN},\n    {},\n}"
+    },
+    "sSpritePalette_321Start_Static": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{s321Start_Static_Pal, TAG_STATIC_COUNTDOWN}",
+        "{}"
+      ],
+      "rawValue": "{\n    {s321Start_Static_Pal, TAG_STATIC_COUNTDOWN},\n    {},\n}"
+    },
+    "sAnim_StaticCountdown_Three": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_StaticCountdown_Two": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_StaticCountdown_One": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_StaticCountdown_StartLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_StaticCountdown_StartMid": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_StaticCountdown_StartRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 0),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteTemplate_StaticCountdown": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = TAG_STATIC_COUNTDOWN,\n        .paletteTag = TAG_STATIC_COUNTDOWN,\n        .oam = &gOamData_AffineOff_ObjNormal_32x32,\n        .anims = sAnims_StaticCountdown,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = TAG_STATIC_COUNTDOWN,\n        .paletteTag = TAG_STATIC_COUNTDOWN,\n        .oam = &gOamData_AffineOff_ObjNormal_32x32,\n        .anims = sAnims_StaticCountdown,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    },\n}"
+    },
+    "sStaticCountdownFuncs": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FUNC_INIT",
+        "FUNC_FREE",
+        "FUNC_START",
+        "FUNC_RUN"
+      ],
+      "indexedValues": [
+        "Task_StaticCountdown_Init",
+        "Task_StaticCountdown_Free",
+        "Task_StaticCountdown_Start",
+        "Task_StaticCountdown_Run"
+      ],
+      "rawValue": "{\n    {\n        [FUNC_INIT]  = Task_StaticCountdown_Init,\n        [FUNC_FREE]  = Task_StaticCountdown_Free,\n        [FUNC_START] = Task_StaticCountdown_Start,\n        [FUNC_RUN]   = Task_StaticCountdown_Run\n    },\n}"
+    },
+    "sAnim_Numbers_Three": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Numbers_Two": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Numbers_One": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_StartLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_StartRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAffineAnim_Numbers_Normal": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Numbers_Squash": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_FRAME(16, -16, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_FRAME(16, -16, 0, 8),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Numbers_Stretch": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-18, 18, 0, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-18, 18, 0, 8),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Numbers_Land": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(  6,  -6, 0, 8)",
+        "AFFINEANIMCMD_FRAME( -4,   4, 0, 8)",
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(  6,  -6, 0, 8),\n    AFFINEANIMCMD_FRAME( -4,   4, 0, 8),\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    }
+  }
+}

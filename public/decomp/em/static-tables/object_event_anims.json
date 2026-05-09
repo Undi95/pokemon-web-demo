@@ -1,0 +1,1301 @@
+{
+  "srcFile": "src/data/object_events/object_event_anims.h",
+  "count": 108,
+  "tables": {
+    "sAnim_StayStill": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpFaceSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpFaceNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 16)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 16),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpFaceWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 16)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 16),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpFaceEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 16, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 16, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(3, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(3, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_FRAME(4, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_FRAME(4, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 8)",
+        "ANIMCMD_FRAME(2, 8)",
+        "ANIMCMD_FRAME(6, 8)",
+        "ANIMCMD_FRAME(2, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 8),\n    ANIMCMD_FRAME(2, 8),\n    ANIMCMD_FRAME(6, 8),\n    ANIMCMD_FRAME(2, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(6, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 8, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(6, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 8, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFastSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(3, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(3, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFastNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 4)",
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_FRAME(4, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 4),\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_FRAME(4, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFastWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 4)",
+        "ANIMCMD_FRAME(2, 4)",
+        "ANIMCMD_FRAME(6, 4)",
+        "ANIMCMD_FRAME(2, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 4),\n    ANIMCMD_FRAME(2, 4),\n    ANIMCMD_FRAME(6, 4),\n    ANIMCMD_FRAME(2, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFastEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(6, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 4, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(6, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 4, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFasterSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 2)",
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_FRAME(3, 2, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 2),\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_FRAME(3, 2, .hFlip = TRUE),\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFasterNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 2)",
+        "ANIMCMD_FRAME(1, 2)",
+        "ANIMCMD_FRAME(4, 2, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(1, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 2),\n    ANIMCMD_FRAME(1, 2),\n    ANIMCMD_FRAME(4, 2, .hFlip = TRUE),\n    ANIMCMD_FRAME(1, 2),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFasterWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 2)",
+        "ANIMCMD_FRAME(2, 2)",
+        "ANIMCMD_FRAME(6, 2)",
+        "ANIMCMD_FRAME(2, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 2),\n    ANIMCMD_FRAME(2, 2),\n    ANIMCMD_FRAME(6, 2),\n    ANIMCMD_FRAME(2, 2),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFasterEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 2, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 2, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(6, 2, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 2, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 2, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 2, .hFlip = TRUE),\n    ANIMCMD_FRAME(6, 2, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 2, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFastestSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 1)",
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_FRAME(3, 1, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 1),\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_FRAME(3, 1, .hFlip = TRUE),\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFastestNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_FRAME(4, 1, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_FRAME(4, 1, .hFlip = TRUE),\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFastestWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 1)",
+        "ANIMCMD_FRAME(2, 1)",
+        "ANIMCMD_FRAME(6, 1)",
+        "ANIMCMD_FRAME(2, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 1),\n    ANIMCMD_FRAME(2, 1),\n    ANIMCMD_FRAME(6, 1),\n    ANIMCMD_FRAME(2, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_QuintyPlumpGoFastestEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 1, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 1, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(6, 1, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 1, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 1, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 1, .hFlip = TRUE),\n    ANIMCMD_FRAME(6, 1, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 1, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_FaceSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_FaceNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 16)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 16),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_FaceWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 16)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 16),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_FaceEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 16, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 16, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 8)",
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_FRAME(6, 8)",
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 8),\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_FRAME(6, 8),\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 8)",
+        "ANIMCMD_FRAME(2, 8)",
+        "ANIMCMD_FRAME(8, 8)",
+        "ANIMCMD_FRAME(2, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 8),\n    ANIMCMD_FRAME(2, 8),\n    ANIMCMD_FRAME(8, 8),\n    ANIMCMD_FRAME(2, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 8, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(8, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 8, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFastSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(4, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(4, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFastNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 4)",
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_FRAME(6, 4)",
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 4),\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_FRAME(6, 4),\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFastWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 4)",
+        "ANIMCMD_FRAME(2, 4)",
+        "ANIMCMD_FRAME(8, 4)",
+        "ANIMCMD_FRAME(2, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 4),\n    ANIMCMD_FRAME(2, 4),\n    ANIMCMD_FRAME(8, 4),\n    ANIMCMD_FRAME(2, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFastEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 4, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(8, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 4, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFasterSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 2)",
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_FRAME(4, 2)",
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 2),\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_FRAME(4, 2),\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFasterNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 2)",
+        "ANIMCMD_FRAME(1, 2)",
+        "ANIMCMD_FRAME(6, 2)",
+        "ANIMCMD_FRAME(1, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 2),\n    ANIMCMD_FRAME(1, 2),\n    ANIMCMD_FRAME(6, 2),\n    ANIMCMD_FRAME(1, 2),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFasterWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 2)",
+        "ANIMCMD_FRAME(2, 2)",
+        "ANIMCMD_FRAME(8, 2)",
+        "ANIMCMD_FRAME(2, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 2),\n    ANIMCMD_FRAME(2, 2),\n    ANIMCMD_FRAME(8, 2),\n    ANIMCMD_FRAME(2, 2),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFasterEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 2, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 2, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 2, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 2, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 2, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 2, .hFlip = TRUE),\n    ANIMCMD_FRAME(8, 2, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 2, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFastestSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 1)",
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 1),\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFastestNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 1)",
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_FRAME(6, 1)",
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 1),\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_FRAME(6, 1),\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFastestWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 1)",
+        "ANIMCMD_FRAME(2, 1)",
+        "ANIMCMD_FRAME(8, 1)",
+        "ANIMCMD_FRAME(2, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 1),\n    ANIMCMD_FRAME(2, 1),\n    ANIMCMD_FRAME(8, 1),\n    ANIMCMD_FRAME(2, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GoFastestEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 1, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 1, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 1, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 1, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 1, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 1, .hFlip = TRUE),\n    ANIMCMD_FRAME(8, 1, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 1, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RunSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(12, 5)",
+        "ANIMCMD_FRAME(9, 3)",
+        "ANIMCMD_FRAME(13, 5)",
+        "ANIMCMD_FRAME(9, 3)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(12, 5),\n    ANIMCMD_FRAME(9, 3),\n    ANIMCMD_FRAME(13, 5),\n    ANIMCMD_FRAME(9, 3),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RunNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(14, 5)",
+        "ANIMCMD_FRAME(10, 3)",
+        "ANIMCMD_FRAME(15, 5)",
+        "ANIMCMD_FRAME(10, 3)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(14, 5),\n    ANIMCMD_FRAME(10, 3),\n    ANIMCMD_FRAME(15, 5),\n    ANIMCMD_FRAME(10, 3),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RunWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 5)",
+        "ANIMCMD_FRAME(11, 3)",
+        "ANIMCMD_FRAME(17, 5)",
+        "ANIMCMD_FRAME(11, 3)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 5),\n    ANIMCMD_FRAME(11, 3),\n    ANIMCMD_FRAME(17, 5),\n    ANIMCMD_FRAME(11, 3),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RunEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 5, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(11, 3, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(17, 5, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(11, 3, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 5, .hFlip = TRUE),\n    ANIMCMD_FRAME(11, 3, .hFlip = TRUE),\n    ANIMCMD_FRAME(17, 5, .hFlip = TRUE),\n    ANIMCMD_FRAME(11, 3, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_FieldMove": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_FRAME(2, 4)",
+        "ANIMCMD_FRAME(3, 4)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_FRAME(2, 4),\n    ANIMCMD_FRAME(3, 4),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_GetOnOffSurfBlobSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(9, 32)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(9, 32),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GetOnOffSurfBlobNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(10, 32)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(10, 32),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GetOnOffSurfBlobWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(11, 32)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(11, 32),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_GetOnOffSurfBlobEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(11, 32, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(11, 32, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_BunnyHopBackWheelSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(9, 4)",
+        "ANIMCMD_FRAME(10, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(9, 4),\n    ANIMCMD_FRAME(10, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BunnyHopBackWheelNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(13, 4)",
+        "ANIMCMD_FRAME(14, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(13, 4),\n    ANIMCMD_FRAME(14, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BunnyHopBackWheelWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(17, 4)",
+        "ANIMCMD_FRAME(18, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(17, 4),\n    ANIMCMD_FRAME(18, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BunnyHopBackWheelEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(17, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(18, 4, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(17, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(18, 4, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BunnyHopFrontWheelSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(11, 4)",
+        "ANIMCMD_FRAME(12, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(11, 4),\n    ANIMCMD_FRAME(12, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BunnyHopFrontWheelNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(15, 4)",
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(15, 4),\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BunnyHopFrontWheelWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(19, 4)",
+        "ANIMCMD_FRAME(20, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(19, 4),\n    ANIMCMD_FRAME(20, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BunnyHopFrontWheelEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(19, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(20, 4, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(19, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(20, 4, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_StandingWheelieBackWheelSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(9, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(9, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_StandingWheelieBackWheelNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(13, 4)",
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(13, 4),\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_StandingWheelieBackWheelWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(17, 4)",
+        "ANIMCMD_FRAME(2, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(17, 4),\n    ANIMCMD_FRAME(2, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_StandingWheelieBackWheelEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(17, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 4, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(17, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 4, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_StandingWheelieFrontWheelSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(11, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(11, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_StandingWheelieFrontWheelNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(15, 4)",
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(15, 4),\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_StandingWheelieFrontWheelWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(19, 4)",
+        "ANIMCMD_FRAME(2, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(19, 4),\n    ANIMCMD_FRAME(2, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_StandingWheelieFrontWheelEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(19, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 4, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(19, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 4, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_MovingWheelieSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(21, 4)",
+        "ANIMCMD_FRAME(10, 4)",
+        "ANIMCMD_FRAME(22, 4)",
+        "ANIMCMD_FRAME(10, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(21, 4),\n    ANIMCMD_FRAME(10, 4),\n    ANIMCMD_FRAME(22, 4),\n    ANIMCMD_FRAME(10, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_MovingWheelieNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(23, 4)",
+        "ANIMCMD_FRAME(14, 4)",
+        "ANIMCMD_FRAME(24, 4)",
+        "ANIMCMD_FRAME(14, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(23, 4),\n    ANIMCMD_FRAME(14, 4),\n    ANIMCMD_FRAME(24, 4),\n    ANIMCMD_FRAME(14, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_MovingWheelieWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(25, 4)",
+        "ANIMCMD_FRAME(18, 4)",
+        "ANIMCMD_FRAME(26, 4)",
+        "ANIMCMD_FRAME(18, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(25, 4),\n    ANIMCMD_FRAME(18, 4),\n    ANIMCMD_FRAME(26, 4),\n    ANIMCMD_FRAME(18, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_MovingWheelieEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(25, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(18, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(26, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(18, 4, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(25, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(18, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(26, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(18, 4, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_BerryTreeStage0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 32)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 32),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BerryTreeStage1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 32)",
+        "ANIMCMD_FRAME(2, 32)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 32),\n    ANIMCMD_FRAME(2, 32),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BerryTreeStage2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 48)",
+        "ANIMCMD_FRAME(4, 48)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 48),\n    ANIMCMD_FRAME(4, 48),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BerryTreeStage3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 32)",
+        "ANIMCMD_FRAME(5, 32)",
+        "ANIMCMD_FRAME(6, 32)",
+        "ANIMCMD_FRAME(6, 32)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 32),\n    ANIMCMD_FRAME(5, 32),\n    ANIMCMD_FRAME(6, 32),\n    ANIMCMD_FRAME(6, 32),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BerryTreeStage4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 48)",
+        "ANIMCMD_FRAME(7, 48)",
+        "ANIMCMD_FRAME(8, 48)",
+        "ANIMCMD_FRAME(8, 48)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 48),\n    ANIMCMD_FRAME(7, 48),\n    ANIMCMD_FRAME(8, 48),\n    ANIMCMD_FRAME(8, 48),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_NurseBow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(9, 32)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(9, 32),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_RockBreak": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_FRAME(2, 8)",
+        "ANIMCMD_FRAME(3, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_FRAME(2, 8),\n    ANIMCMD_FRAME(3, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_TreeCut": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 6)",
+        "ANIMCMD_FRAME(1, 6)",
+        "ANIMCMD_FRAME(2, 6)",
+        "ANIMCMD_FRAME(3, 6)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 6),\n    ANIMCMD_FRAME(1, 6),\n    ANIMCMD_FRAME(2, 6),\n    ANIMCMD_FRAME(3, 6),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_TakeOutRodSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 4)",
+        "ANIMCMD_FRAME(9, 4)",
+        "ANIMCMD_FRAME(10, 4)",
+        "ANIMCMD_FRAME(11, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 4),\n    ANIMCMD_FRAME(9, 4),\n    ANIMCMD_FRAME(10, 4),\n    ANIMCMD_FRAME(11, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_TakeOutRodNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 4)",
+        "ANIMCMD_FRAME(5, 4)",
+        "ANIMCMD_FRAME(6, 4)",
+        "ANIMCMD_FRAME(7, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 4),\n    ANIMCMD_FRAME(5, 4),\n    ANIMCMD_FRAME(6, 4),\n    ANIMCMD_FRAME(7, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_TakeOutRodWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_FRAME(2, 4)",
+        "ANIMCMD_FRAME(3, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_FRAME(2, 4),\n    ANIMCMD_FRAME(3, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_TakeOutRodEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(1, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(3, 4, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(1, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(3, 4, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PutAwayRodSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(11, 4)",
+        "ANIMCMD_FRAME(10, 6)",
+        "ANIMCMD_FRAME(9, 6)",
+        "ANIMCMD_FRAME(8, 6)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(11, 4),\n    ANIMCMD_FRAME(10, 6),\n    ANIMCMD_FRAME(9, 6),\n    ANIMCMD_FRAME(8, 6),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PutAwayRodNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 4)",
+        "ANIMCMD_FRAME(6, 6)",
+        "ANIMCMD_FRAME(5, 6)",
+        "ANIMCMD_FRAME(4, 6)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 4),\n    ANIMCMD_FRAME(6, 6),\n    ANIMCMD_FRAME(5, 6),\n    ANIMCMD_FRAME(4, 6),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PutAwayRodWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 4)",
+        "ANIMCMD_FRAME(2, 4)",
+        "ANIMCMD_FRAME(1, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 4),\n    ANIMCMD_FRAME(2, 4),\n    ANIMCMD_FRAME(1, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_PutAwayRodEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(1, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 4, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(1, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(0, 4, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_HookedPokemonSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(10, 6)",
+        "ANIMCMD_FRAME(11, 6)",
+        "ANIMCMD_LOOP(1)",
+        "ANIMCMD_FRAME(11, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(10, 6),\n    ANIMCMD_FRAME(11, 6),\n    ANIMCMD_LOOP(1),\n    ANIMCMD_FRAME(11, 30),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_HookedPokemonNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(6, 6)",
+        "ANIMCMD_FRAME(7, 6)",
+        "ANIMCMD_LOOP(1)",
+        "ANIMCMD_FRAME(7, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(6, 6),\n    ANIMCMD_FRAME(7, 6),\n    ANIMCMD_LOOP(1),\n    ANIMCMD_FRAME(7, 30),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_HookedPokemonWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 6)",
+        "ANIMCMD_FRAME(3, 6)",
+        "ANIMCMD_LOOP(1)",
+        "ANIMCMD_FRAME(3, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 6),\n    ANIMCMD_FRAME(3, 6),\n    ANIMCMD_LOOP(1),\n    ANIMCMD_FRAME(3, 30),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_HookedPokemonEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 6, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(3, 6, .hFlip = TRUE)",
+        "ANIMCMD_LOOP(1)",
+        "ANIMCMD_FRAME(3, 30, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 6, .hFlip = TRUE),\n    ANIMCMD_FRAME(3, 6, .hFlip = TRUE),\n    ANIMCMD_LOOP(1),\n    ANIMCMD_FRAME(3, 30, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_KyogreGroudon_GoSouthStart": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1)",
+        "AFFINEANIMCMD_LOOP(7)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1),\n    AFFINEANIMCMD_LOOP(7),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_KyogreGroudon_GoSouth": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1)",
+        "AFFINEANIMCMD_LOOP(15)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 1)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1)",
+        "AFFINEANIMCMD_LOOP(15)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1),\n    AFFINEANIMCMD_LOOP(15),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 1),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 1),\n    AFFINEANIMCMD_LOOP(15),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_KyogreGroudon_AttackEast": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 10, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 10, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_KyogreGroudon_AttackWest": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 10, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 10, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_KyogreGroudon_DipEast": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 1)",
+        "AFFINEANIMCMD_LOOP(8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -1, 1),\n    AFFINEANIMCMD_LOOP(8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_KyogreGroudon_DipWest": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 1)",
+        "AFFINEANIMCMD_LOOP(8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 1, 1),\n    AFFINEANIMCMD_LOOP(8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_HoOhFlapWings": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 8)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_FRAME(3, 8)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 8),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_FRAME(3, 8),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_HoOhStayStill": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 16)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 16),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RayquazaCoiledAwake": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RayquazaFlyUp": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RayquazaCoiledAsleep": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RayquazaCoiledMouthOpen": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RayquazaNormal": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RayquazaFaceSouth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RayquazaFaceNorth": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RayquazaFaceWest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_RayquazaFaceEast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sStepAnimTables": {
+      "type": "struct StepAnimTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .anims = sAnimTable_QuintyPlump,\n        .animPos = {1, 3, 0, 2},\n    }",
+        "{\n        .anims = sAnimTable_Standard,\n        .animPos = {1, 3, 0, 2},\n    }",
+        "{\n        .anims = sAnimTable_BrendanMayNormal,\n        .animPos = {1, 3, 0, 2},\n    }",
+        "{\n        .anims = sAnimTable_AcroBike,\n        .animPos = {1, 3, 0, 2},\n    }",
+        "{\n        .anims = sAnimTable_Surfing,\n        .animPos = {1, 3, 0, 2},\n    }",
+        "{\n        .anims = sAnimTable_Nurse,\n        .animPos = {1, 3, 0, 2},\n    }",
+        "{\n        .anims = sAnimTable_Fishing,\n        .animPos = {1, 3, 0, 2},\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .anims = sAnimTable_QuintyPlump,\n        .animPos = {1, 3, 0, 2},\n    },\n    {\n        .anims = sAnimTable_Standard,\n        .animPos = {1, 3, 0, 2},\n    },\n    {\n        .anims = sAnimTable_BrendanMayNormal,\n        .animPos = {1, 3, 0, 2},\n    },\n    {\n        .anims = sAnimTable_AcroBike,\n        .animPos = {1, 3, 0, 2},\n    },\n    {\n        .anims = sAnimTable_Surfing,\n        .animPos = {1, 3, 0, 2},\n    },\n    {\n        .anims = sAnimTable_Nurse,\n        .animPos = {1, 3, 0, 2},\n    },\n    {\n        .anims = sAnimTable_Fishing,\n        .animPos = {1, 3, 0, 2},\n    },\n    {},\n}"
+    }
+  }
+}

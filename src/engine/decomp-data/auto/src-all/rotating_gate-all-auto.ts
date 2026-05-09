@@ -23,10 +23,11 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, CreateSprite, DIR_EAST, DIR_NORTH,
-  DIR_SOUTH, DIR_WEST, DISPLAY_HEIGHT, DestroySprite,
-  FALSE, FreeSpriteOamMatrix, GetMapCoordsFromSpritePos, GetPlayerSpeed,
-  GetVarPointer, LoadSpriteSheets, MAP_GROUP, MAP_NUM,
-  MapGridGetCollisionAt, PlaySE, StartSpriteAffineAnim, TRUE,  // 4-per-line for readability
+  DIR_SOUTH, DIR_WEST, DISPLAY_HEIGHT, DISPLAY_WIDTH,
+  DestroySprite, FALSE, FreeSpriteOamMatrix, GetMapCoordsFromSpritePos,
+  GetPlayerSpeed, GetVarPointer, LoadSpriteSheets, MAP_GROUP,
+  MAP_NUM, MapGridGetCollisionAt, PlaySE, StartSpriteAffineAnim,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static s32 GetCurrentMapRotatingGatePuzzleType(void) */

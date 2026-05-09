@@ -1,0 +1,80 @@
+{
+  "srcFile": "src/evolution_graphics.c",
+  "count": 5,
+  "tables": {
+    "sEvoSparkleSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sEvoSparkle_Gfx, 0x20, TAG_SPARKLE}",
+        "{NULL, 0, 0}"
+      ],
+      "rawValue": "{\n    {sEvoSparkle_Gfx, 0x20, TAG_SPARKLE},\n    {NULL, 0, 0}\n}"
+    },
+    "sEvoSparkleSpritePals": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sEvoSparkle_Pal, TAG_SPARKLE}",
+        "{NULL, 0}"
+      ],
+      "rawValue": "{\n    {sEvoSparkle_Pal, TAG_SPARKLE},\n    {NULL, 0}\n}"
+    },
+    "sSpriteAnim_EvoSparkle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_END\n}"
+    },
+    "sEvoSparkleMatrices": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x3C0",
+        "0x380",
+        "0x340",
+        "0x300",
+        "0x2C0",
+        "0x280",
+        "0x240",
+        "0x200",
+        "0x1C0",
+        "0x180",
+        "0x140",
+        "0x100"
+      ],
+      "rawValue": "{\n    0x3C0, 0x380, 0x340, 0x300, 0x2C0, 0x280,\n    0x240, 0x200, 0x1C0, 0x180, 0x140, 0x100\n}"
+    },
+    "sUnused": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-4",
+        "0x10",
+        "-3",
+        "0x30",
+        "-2",
+        "0x50",
+        "-1",
+        "0x70",
+        "1",
+        "0x70",
+        "2",
+        "0x50",
+        "3",
+        "0x30",
+        "4",
+        "0x10"
+      ],
+      "rawValue": "{\n    -4, 0x10,\n    -3, 0x30,\n    -2, 0x50,\n    -1, 0x70,\n     1, 0x70,\n     2, 0x50,\n     3, 0x30,\n     4, 0x10\n}"
+    }
+  }
+}

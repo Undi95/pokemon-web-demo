@@ -1,0 +1,121 @@
+{
+  "srcFile": "src/battle_anim_dragon.c",
+  "count": 10,
+  "tables": {
+    "sUnusedOverheatData": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sAnim_OutrageOverheatFire_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_FRAME(48, 4)",
+        "ANIMCMD_FRAME(64, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_FRAME(48, 4),\n    ANIMCMD_FRAME(64, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DragonBreathFire_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 3)",
+        "ANIMCMD_FRAME(32, 3)",
+        "ANIMCMD_FRAME(48, 3)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 3),\n    ANIMCMD_FRAME(32, 3),\n    ANIMCMD_FRAME(48, 3),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_DragonBreathFire_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 3, .vFlip = TRUE, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(32, 3, .vFlip = TRUE, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(48, 3, .vFlip = TRUE, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 3, .vFlip = TRUE, .hFlip = TRUE),\n    ANIMCMD_FRAME(32, 3, .vFlip = TRUE, .hFlip = TRUE),\n    ANIMCMD_FRAME(48, 3, .vFlip = TRUE, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_DragonBreathFire_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x50, 0x50, 127, 0)",
+        "AFFINEANIMCMD_FRAME(0xD, 0xD, 0, 100)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x50, 0x50, 127, 0),\n    AFFINEANIMCMD_FRAME(0xD, 0xD, 0, 100),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_DragonBreathFire_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x50, 0x50, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xD, 0xD, 0, 100)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x50, 0x50, 0, 0),\n    AFFINEANIMCMD_FRAME(0xD, 0xD, 0, 100),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_DragonRageFirePlume": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(16, 5)",
+        "ANIMCMD_FRAME(32, 5)",
+        "ANIMCMD_FRAME(48, 5)",
+        "ANIMCMD_FRAME(64, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(16, 5),\n    ANIMCMD_FRAME(32, 5),\n    ANIMCMD_FRAME(48, 5),\n    ANIMCMD_FRAME(64, 5),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_DragonRageFire": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 3)",
+        "ANIMCMD_FRAME(32, 3)",
+        "ANIMCMD_FRAME(48, 3)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 3),\n    ANIMCMD_FRAME(32, 3),\n    ANIMCMD_FRAME(48, 3),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_DragonRageFire_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x64, 0x64, 127, 1)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x64, 0x64, 127, 1),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_DragonRageFire_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x64, 0x64, 0, 1)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x64, 0x64, 0, 1),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

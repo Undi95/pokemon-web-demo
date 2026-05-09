@@ -25,16 +25,16 @@ const {
   ARRAY_COUNT, ApplyWeatherColorMapIfIdle, ApplyWeatherColorMapIfIdle_Gradual, BLDALPHA_BLEND,
   BLDCNT_EFFECT_LIGHTEN, BLDCNT_TGT1_BG1, BLDCNT_TGT1_BG2, BLDCNT_TGT1_BG3,
   BLDCNT_TGT1_OBJ, CalcCenterToCornerVec, CreateSprite, CreateSpriteAtEnd,
-  CreateTask, DISPLAY_HEIGHT, DestroySprite, DestroyTask,
-  DroughtStateInit, DroughtStateRun, FALSE, FindTaskIdByFunc,
-  FreeSpriteTilesByTag, FuncIsActiveTask, ISO_RANDOMIZE2, IncrementGameStat,
-  IsSEPlaying, LoadCustomWeatherSpritePalette, LoadDroughtWeatherPalettes, LoadSpriteSheet,
-  NULL, PlaySE, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_WININ, Random, ResetDroughtWeatherPaletteLoading,
-  SPRITE_SHAPE, SPRITE_SIZE, ST_OAM_AFFINE_OFF, ScriptContext_Enable,
-  SetCurrentAndNextWeather, SetGpuReg, SetNextWeather, SetRainStrengthFromSoundEffect,
-  SetSpritePosToMapCoords, StartSpriteAnim, TRUE, Weather_SetBlendCoeffs,
-  Weather_SetTargetBlendCoeffs, Weather_UpdateBlend, gSineTable,  // 4-per-line for readability
+  CreateTask, DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroySprite,
+  DestroyTask, DroughtStateInit, DroughtStateRun, FALSE,
+  FindTaskIdByFunc, FreeSpriteTilesByTag, FuncIsActiveTask, ISO_RANDOMIZE2,
+  IncrementGameStat, IsSEPlaying, LoadCustomWeatherSpritePalette, LoadDroughtWeatherPalettes,
+  LoadSpriteSheet, NULL, PlaySE, REG_OFFSET_BLDALPHA,
+  REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_WININ, Random,
+  ResetDroughtWeatherPaletteLoading, SPRITE_SHAPE, SPRITE_SIZE, ST_OAM_AFFINE_OFF,
+  ScriptContext_Enable, SetCurrentAndNextWeather, SetGpuReg, SetNextWeather,
+  SetRainStrengthFromSoundEffect, SetSpritePosToMapCoords, StartSpriteAnim, TRUE,
+  Weather_SetBlendCoeffs, Weather_SetTargetBlendCoeffs, Weather_UpdateBlend, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void Clouds_InitVars(void) */

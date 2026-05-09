@@ -1,0 +1,356 @@
+{
+  "srcFile": "src/field_weather_effect.c",
+  "count": 29,
+  "tables": {
+    "sCloudSpriteMapCoords": {
+      "type": "struct Coords16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 0, 66}",
+        "{ 5, 73}",
+        "{10, 78}"
+      ],
+      "rawValue": "{\n    { 0, 66},\n    { 5, 73},\n    {10, 78},\n}"
+    },
+    "sCloudSpriteAnimCmd": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sRainSpriteCoords": {
+      "type": "struct Coords16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  0,   0}",
+        "{  0, 160}",
+        "{  0,  64}",
+        "{144, 224}",
+        "{144, 128}",
+        "{ 32,  32}",
+        "{ 32, 192}",
+        "{ 32,  96}",
+        "{ 72, 128}",
+        "{ 72,  32}",
+        "{ 72, 192}",
+        "{216,  96}",
+        "{216,   0}",
+        "{104, 160}",
+        "{104,  64}",
+        "{104, 224}",
+        "{144,   0}",
+        "{144, 160}",
+        "{144,  64}",
+        "{ 32, 224}",
+        "{ 32, 128}",
+        "{ 72,  32}",
+        "{ 72, 192}",
+        "{ 48,  96}"
+      ],
+      "rawValue": "{\n    {  0,   0},\n    {  0, 160},\n    {  0,  64},\n    {144, 224},\n    {144, 128},\n    { 32,  32},\n    { 32, 192},\n    { 32,  96},\n    { 72, 128},\n    { 72,  32},\n    { 72, 192},\n    {216,  96},\n    {216,   0},\n    {104, 160},\n    {104,  64},\n    {104, 224},\n    {144,   0},\n    {144, 160},\n    {144,  64},\n    { 32, 224},\n    { 32, 128},\n    { 72,  32},\n    { 72, 192},\n    { 48,  96},\n}"
+    },
+    "sRainSpriteFallAnimCmd": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sRainSpriteSplashAnimCmd": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 3)",
+        "ANIMCMD_FRAME(32, 2)",
+        "ANIMCMD_FRAME(40, 2)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 3),\n    ANIMCMD_FRAME(32, 2),\n    ANIMCMD_FRAME(40, 2),\n    ANIMCMD_END,\n}"
+    },
+    "sRainSpriteHeavySplashAnimCmd": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 3)",
+        "ANIMCMD_FRAME(16, 3)",
+        "ANIMCMD_FRAME(24, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 3),\n    ANIMCMD_FRAME(16, 3),\n    ANIMCMD_FRAME(24, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sRainSpriteMovement": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{-0x68,  0xD0}",
+        "{-0xA0, 0x140}"
+      ],
+      "rawValue": "{\n    {-0x68,  0xD0},\n    {-0xA0, 0x140},\n}"
+    },
+    "sRainSpriteFallingDurations": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{18, 7}",
+        "{12, 10}"
+      ],
+      "rawValue": "{\n    {18, 7},\n    {12, 10},\n}"
+    },
+    "sSnowflakeSpriteImages": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gWeatherSnow1Tiles, sizeof(gWeatherSnow1Tiles)}",
+        "{gWeatherSnow2Tiles, sizeof(gWeatherSnow2Tiles)}"
+      ],
+      "rawValue": "{\n    {gWeatherSnow1Tiles, sizeof(gWeatherSnow1Tiles)},\n    {gWeatherSnow2Tiles, sizeof(gWeatherSnow2Tiles)},\n}"
+    },
+    "sSnowflakeAnimCmd0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sSnowflakeAnimCmd1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sUnusedData": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "6",
+        "6",
+        "12",
+        "18",
+        "42",
+        "300",
+        "300"
+      ],
+      "rawValue": "{0, 6, 6, 12, 18, 42, 300, 300}"
+    },
+    "sAnim_FogH_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FogH_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FogH_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FogH_3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(96, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(96, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FogH_4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(128, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(128, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FogH_5": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(160, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(160, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_FogH": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x200, 0x200, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x200, 0x200, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAshSpriteAnimCmd0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 60)",
+        "ANIMCMD_FRAME(64, 60)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 60),\n    ANIMCMD_FRAME(64, 60),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sFogDiagonalSpriteAnimCmd0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sSandstormSpriteAnimCmd0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 3),\n    ANIMCMD_END,\n}"
+    },
+    "sSandstormSpriteAnimCmd1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 3),\n    ANIMCMD_END,\n}"
+    },
+    "sSwirlEntranceDelays": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "120",
+        "80",
+        "160",
+        "40",
+        "0"
+      ],
+      "rawValue": "{0, 120, 80, 160, 40, 0}"
+    },
+    "sBubbleStartDelays": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "40",
+        "90",
+        "60",
+        "90",
+        "2",
+        "60",
+        "40",
+        "30"
+      ],
+      "rawValue": "{40, 90, 60, 90, 2, 60, 40, 30}"
+    },
+    "sBubbleStartCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{120, 160}",
+        "{376, 160}",
+        "{ 40, 140}",
+        "{296, 140}",
+        "{180, 130}",
+        "{436, 130}",
+        "{ 60, 160}",
+        "{436, 160}",
+        "{220, 180}",
+        "{476, 180}",
+        "{ 10,  90}",
+        "{266,  90}",
+        "{256, 160}"
+      ],
+      "rawValue": "{\n    {120, 160},\n    {376, 160},\n    { 40, 140},\n    {296, 140},\n    {180, 130},\n    {436, 130},\n    { 60, 160},\n    {436, 160},\n    {220, 180},\n    {476, 180},\n    { 10,  90},\n    {266,  90},\n    {256, 160},\n}"
+    },
+    "sBubbleSpriteAnimCmd0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_FRAME(1, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_FRAME(1, 16),\n    ANIMCMD_END,\n}"
+    },
+    "sWeatherCycleRoute119": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "WEATHER_SUNNY",
+        "WEATHER_RAIN",
+        "WEATHER_RAIN_THUNDERSTORM",
+        "WEATHER_RAIN"
+      ],
+      "rawValue": "{\n    WEATHER_SUNNY,\n    WEATHER_RAIN,\n    WEATHER_RAIN_THUNDERSTORM,\n    WEATHER_RAIN,\n}"
+    },
+    "sWeatherCycleRoute123": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "WEATHER_SUNNY",
+        "WEATHER_SUNNY",
+        "WEATHER_RAIN",
+        "WEATHER_SUNNY"
+      ],
+      "rawValue": "{\n    WEATHER_SUNNY,\n    WEATHER_SUNNY,\n    WEATHER_RAIN,\n    WEATHER_SUNNY,\n}"
+    }
+  }
+}

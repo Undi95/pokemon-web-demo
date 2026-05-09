@@ -1,0 +1,173 @@
+{
+  "srcFile": "src/credits.c",
+  "count": 15,
+  "tables": {
+    "sBackgroundTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 9,\n        .width = DISPLAY_TILE_WIDTH,\n        .height = 12,\n        .paletteNum = 8,\n        .baseBlock = 1\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 9,\n        .width = DISPLAY_TILE_WIDTH,\n        .height = 12,\n        .paletteNum = 8,\n        .baseBlock = 1\n    },\n    DUMMY_WIN_TEMPLATE,\n}"
+    },
+    "sMonSpritePos": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{104, 36}",
+        "{120, 36}",
+        "{136, 36}"
+      ],
+      "rawValue": "{\n    {104, 36},\n    {120, 36},\n    {136, 36},\n}"
+    },
+    "sAnim_Player_Slow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(64, 8)",
+        "ANIMCMD_FRAME(128, 8)",
+        "ANIMCMD_FRAME(192, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(64, 8),\n    ANIMCMD_FRAME(128, 8),\n    ANIMCMD_FRAME(192, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_Player_Fast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(64, 4)",
+        "ANIMCMD_FRAME(128, 4)",
+        "ANIMCMD_FRAME(192, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(64, 4),\n    ANIMCMD_FRAME(128, 4),\n    ANIMCMD_FRAME(192, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_Player_LookBack": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(256, 4)",
+        "ANIMCMD_FRAME(320, 4)",
+        "ANIMCMD_FRAME(384, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(256, 4),\n    ANIMCMD_FRAME(320, 4),\n    ANIMCMD_FRAME(384, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Player_LookForward": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(384, 30)",
+        "ANIMCMD_FRAME(320, 30)",
+        "ANIMCMD_FRAME(256, 30)",
+        "ANIMCMD_FRAME(256, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(384, 30),\n    ANIMCMD_FRAME(320, 30),\n    ANIMCMD_FRAME(256, 30),\n    ANIMCMD_FRAME(256, 30),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Rival_Slow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(64, 8)",
+        "ANIMCMD_FRAME(128, 8)",
+        "ANIMCMD_FRAME(192, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(64, 8),\n    ANIMCMD_FRAME(128, 8),\n    ANIMCMD_FRAME(192, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_Rival_Fast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(64, 4)",
+        "ANIMCMD_FRAME(128, 4)",
+        "ANIMCMD_FRAME(192, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(64, 4),\n    ANIMCMD_FRAME(128, 4),\n    ANIMCMD_FRAME(192, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_Rival_Still": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sSpriteSheet_MonBg": {
+      "type": "struct SpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ gDecompressionBuffer, MONBG_OFFSET, TAG_MON_BG }",
+        "{}"
+      ],
+      "rawValue": "{\n    { gDecompressionBuffer, MONBG_OFFSET, TAG_MON_BG },\n    {},\n}"
+    },
+    "sSpritePalette_MonBg": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ (const u16 *)&gDecompressionBuffer[MONBG_OFFSET], TAG_MON_BG }",
+        "{}"
+      ],
+      "rawValue": "{\n    { (const u16 *)&gDecompressionBuffer[MONBG_OFFSET], TAG_MON_BG },\n    {},\n}"
+    },
+    "sAnim_MonBg_Yellow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_MonBg_Red": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_MonBg_Blue": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(128, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(128, 8),\n    ANIMCMD_END,\n}"
+    }
+  }
+}

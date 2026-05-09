@@ -24,18 +24,19 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, BG_PLTT_ID, BG_SCREEN_ADDR,
   BeginNormalPaletteFade, ClearSaveData, CreateTask, CreateYesNoMenu,
-  DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters, DestroyTask,
-  DmaFill16, DmaFill32, DoSoftReset, DrawStdFrameWithCustomTileAndPalette,
-  EnableInterrupts, FALSE, FillWindowPixelBuffer, FreeAllWindowBuffers,
-  InitBgsFromTemplates, InitWindows, LoadPalette, LoadWindowGfx,
-  Menu_ProcessInputNoWrapClearOnChoose, NULL, PALETTES_BG, PIXEL_FILL,
-  PLTT_SIZE, PLTT_SIZE_4BPP, PlaySE, REG_OFFSET_BG0HOFS,
-  REG_OFFSET_BG0VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, RunTasks, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, ShowBg, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
+  DISPCNT_MODE_0, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DeactivateAllTextPrinters,
+  DestroyTask, DmaFill16, DmaFill32, DoSoftReset,
+  DrawStdFrameWithCustomTileAndPalette, EnableInterrupts, FALSE, FillWindowPixelBuffer,
+  FreeAllWindowBuffers, InitBgsFromTemplates, InitWindows, LoadPalette,
+  LoadWindowGfx, Menu_ProcessInputNoWrapClearOnChoose, NULL, PALETTES_BG,
+  PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP, PlaySE,
+  REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
+  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT,
+  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
+  RunTasks, SetGpuReg, SetMainCallback2, SetVBlankCallback,
+  ShowBg, TRUE, TransferPlttBuffer, UpdatePaletteFade,
+  VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CB2_InitClearSaveDataScreen(void) */

@@ -1,0 +1,48 @@
+{
+  "srcFile": "src/battle_gfx_sfx_util.c",
+  "count": 4,
+  "tables": {
+    "sSpriteSheets_DoublesPlayerHealthbox": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gHealthboxDoublesPlayerGfx, 0x800, TAG_HEALTHBOX_PLAYER1_TILE}",
+        "{gHealthboxDoublesPlayerGfx, 0x800, TAG_HEALTHBOX_PLAYER2_TILE}"
+      ],
+      "rawValue": "{\n    {gHealthboxDoublesPlayerGfx, 0x800, TAG_HEALTHBOX_PLAYER1_TILE},\n    {gHealthboxDoublesPlayerGfx, 0x800, TAG_HEALTHBOX_PLAYER2_TILE}\n}"
+    },
+    "sSpriteSheets_DoublesOpponentHealthbox": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gHealthboxDoublesOpponentGfx, 0x800, TAG_HEALTHBOX_OPPONENT1_TILE}",
+        "{gHealthboxDoublesOpponentGfx, 0x800, TAG_HEALTHBOX_OPPONENT2_TILE}"
+      ],
+      "rawValue": "{\n    {gHealthboxDoublesOpponentGfx, 0x800, TAG_HEALTHBOX_OPPONENT1_TILE},\n    {gHealthboxDoublesOpponentGfx, 0x800, TAG_HEALTHBOX_OPPONENT2_TILE}\n}"
+    },
+    "sSpriteSheets_HealthBar": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gBlankGfxCompressed, 0x0100, TAG_HEALTHBAR_PLAYER1_TILE}",
+        "{gBlankGfxCompressed, 0x0120, TAG_HEALTHBAR_OPPONENT1_TILE}",
+        "{gBlankGfxCompressed, 0x0100, TAG_HEALTHBAR_PLAYER2_TILE}",
+        "{gBlankGfxCompressed, 0x0120, TAG_HEALTHBAR_OPPONENT2_TILE}"
+      ],
+      "rawValue": "{\n    {gBlankGfxCompressed, 0x0100, TAG_HEALTHBAR_PLAYER1_TILE},\n    {gBlankGfxCompressed, 0x0120, TAG_HEALTHBAR_OPPONENT1_TILE},\n    {gBlankGfxCompressed, 0x0100, TAG_HEALTHBAR_PLAYER2_TILE},\n    {gBlankGfxCompressed, 0x0120, TAG_HEALTHBAR_OPPONENT2_TILE}\n}"
+    },
+    "sSpritePalettes_HealthBoxHealthBar": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gBattleInterface_BallStatusBarPal, TAG_HEALTHBOX_PAL}",
+        "{gBattleInterface_BallDisplayPal, TAG_HEALTHBAR_PAL}"
+      ],
+      "rawValue": "{\n    {gBattleInterface_BallStatusBarPal, TAG_HEALTHBOX_PAL},\n    {gBattleInterface_BallDisplayPal, TAG_HEALTHBAR_PAL}\n}"
+    }
+  }
+}

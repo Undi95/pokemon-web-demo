@@ -26,8 +26,8 @@ const {
   CreateSprite, DestroySprite, FALSE, FreeSpritePaletteByTag,
   FreeSpriteTilesByTag, GetWindowFrameTilesPal, JOY_NEW, LoadSpritePalettes,
   LoadSpriteSheets, NULL, PlaySE, RequestDma3Copy,
-  SPRITE_SHAPE, SPRITE_SIZE, ST_OAM_AFFINE_OFF, StartSpriteAnim,
-  TILE_SIZE_4BPP, TRUE,  // 4-per-line for readability
+  SPRITE_SHAPE, SPRITE_SIZE, ST_OAM_AFFINE_OFF, SpriteCallbackDummy,
+  StartSpriteAnim, TILE_SIZE_4BPP, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitMonMarkingsMenu(struct MonMarkingsMenu *ptr) */

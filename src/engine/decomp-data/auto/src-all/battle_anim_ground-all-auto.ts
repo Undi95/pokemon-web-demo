@@ -22,12 +22,12 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  BATTLE_PARTNER, CreateTask, DISPLAY_HEIGHT, DestroyAnimSprite,
-  DestroyAnimVisualTask, DestroyTask, FALSE, GetAnimBattlerSpriteId,
-  GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoord2,
-  GetBattlerYCoordWithElevation, InitAnimArcTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
-  IsBattlerSpriteVisible, Random2, ScanlineEffect_SetParams, StoreSpriteCallbackInData6,
-  TRUE, TranslateAnimHorizontalArc, gSineTable,  // 4-per-line for readability
+  BATTLE_PARTNER, CreateTask, DISPLAY_HEIGHT, DISPLAY_WIDTH,
+  DestroyAnimSprite, DestroyAnimVisualTask, DestroyTask, FALSE,
+  GetAnimBattlerSpriteId, GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord,
+  GetBattlerSpriteCoord2, GetBattlerYCoordWithElevation, InitAnimArcTranslation, InitSpritePosToAnimAttacker,
+  InitSpritePosToAnimTarget, IsBattlerSpriteVisible, Random2, ScanlineEffect_SetParams,
+  StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimBonemerangProjectile(struct Sprite *sprite) */

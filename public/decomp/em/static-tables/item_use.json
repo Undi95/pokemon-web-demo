@@ -1,0 +1,29 @@
+{
+  "srcFile": "src/item_use.c",
+  "count": 2,
+  "tables": {
+    "sItemUseCallbacks": {
+      "type": "MainCallback",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[ITEM_USE_PARTY_MENU - 1]  = CB2_ShowPartyMenuForItemUse",
+        "[ITEM_USE_FIELD - 1]       = CB2_ReturnToField",
+        "[ITEM_USE_PBLOCK_CASE - 1] = NULL"
+      ],
+      "rawValue": "{\n    [ITEM_USE_PARTY_MENU - 1]  = CB2_ShowPartyMenuForItemUse,\n    [ITEM_USE_FIELD - 1]       = CB2_ReturnToField,\n    [ITEM_USE_PBLOCK_CASE - 1] = NULL,\n}"
+    },
+    "sClockwiseDirections": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "DIR_NORTH",
+        "DIR_EAST",
+        "DIR_SOUTH",
+        "DIR_WEST"
+      ],
+      "rawValue": "{DIR_NORTH, DIR_EAST, DIR_SOUTH, DIR_WEST}"
+    }
+  }
+}

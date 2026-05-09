@@ -49,17 +49,18 @@ const {
   PlayNewMapMusic, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
   Q_24_8, Q_24_8_TO_INT, Q_8_8, REG_OFFSET_BG0VOFS,
   REG_OFFSET_BG1VOFS, REG_OFFSET_BG2VOFS, REG_OFFSET_BG3VOFS, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, Random, RemoveBagItem, RemoveWindow,
-  ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTempTileDataBuffers, Rfu_SendPacket, Rfu_SetLinkStandbyCallback, RunTasks,
-  RunTextPrinters, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN,
-  SWAP, ScanlineEffect_Stop, ScriptContext_Enable, SendBlock,
-  SetBgTilemapBuffer, SetCloseLinkCallback, SetGpuReg, SetGpuRegBits,
-  SetHBlankCallback, SetMainCallback1, SetMainCallback2, SetVBlankCallback,
-  ShowBg, Sin, StartMinigameCountdown, StartSpriteAffineAnim,
-  StartSpriteAnim, StringAppend, StringCopy, StringExpandPlaceholders,
-  TRUE, TransferPlttBuffer, UnlockPlayerFieldControls, UnsetBgTilemapBuffer,
-  UpdatePaletteFade, memcpy, memset,  // 4-per-line for readability
+  REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, Random, RemoveBagItem,
+  RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetPaletteFade,
+  ResetSpriteData, ResetTempTileDataBuffers, Rfu_SendPacket, Rfu_SetLinkStandbyCallback,
+  RunTasks, RunTextPrinters, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN,
+  STR_CONV_MODE_RIGHT_ALIGN, SWAP, ScanlineEffect_Stop, ScriptContext_Enable,
+  SendBlock, SetBgTilemapBuffer, SetCloseLinkCallback, SetGpuReg,
+  SetGpuRegBits, SetHBlankCallback, SetMainCallback1, SetMainCallback2,
+  SetVBlankCallback, ShowBg, Sin, SpriteCallbackDummy,
+  StartMinigameCountdown, StartSpriteAffineAnim, StartSpriteAnim, StringAppend,
+  StringCopy, StringExpandPlaceholders, TRUE, TransferPlttBuffer,
+  UnlockPlayerFieldControls, UnsetBgTilemapBuffer, UpdatePaletteFade, memcpy,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static struct BerryCrushGame * GetBerryCrushGame(void) */

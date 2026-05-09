@@ -1,0 +1,100 @@
+{
+  "srcFile": "src/pokenav_main_menu.c",
+  "count": 7,
+  "tables": {
+    "sHelpBarWindowTemplate": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 22,\n        .width = 16,\n        .height = 2,\n        .paletteNum = 0,\n        .baseBlock = 0x36,\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 22,\n        .width = 16,\n        .height = 2,\n        .paletteNum = 0,\n        .baseBlock = 0x36,\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sHelpBarTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_RED",
+        "TEXT_COLOR_WHITE",
+        "TEXT_COLOR_DARK_GRAY"
+      ],
+      "rawValue": "{\n    TEXT_COLOR_RED, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY\n}"
+    },
+    "sSpinningPokenavSpriteSheet": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sSpinningPokenav_Gfx,\n        .size = 0x1000,\n        .tag = 0,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .data = sSpinningPokenav_Gfx,\n        .size = 0x1000,\n        .tag = 0,\n    }\n}"
+    },
+    "sSpinningNavgearPalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sSpinningPokenav_Pal,\n        .tag = 0,\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = sSpinningPokenav_Pal,\n        .tag = 0,\n    },\n    {}\n}"
+    },
+    "sMenuLeftHeaderSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "POKENAV_GFX_MAIN_MENU",
+        "POKENAV_GFX_CONDITION_MENU",
+        "POKENAV_GFX_RIBBONS_MENU",
+        "POKENAV_GFX_MATCH_CALL_MENU",
+        "POKENAV_GFX_MAP_MENU_ZOOMED_OUT",
+        "POKENAV_GFX_MAP_MENU_ZOOMED_IN"
+      ],
+      "indexedValues": [
+        "{\n        .data = gPokenavLeftHeaderMainMenu_Gfx",
+        "{\n        .data = gPokenavLeftHeaderCondition_Gfx",
+        "{\n        .data = gPokenavLeftHeaderRibbons_Gfx",
+        "{\n        .data = gPokenavLeftHeaderMatchCall_Gfx",
+        "{\n        .data = gPokenavLeftHeaderHoennMap_Gfx",
+        "{\n        .data = gPokenavLeftHeaderHoennMap_Gfx"
+      ],
+      "rawValue": "{\n    [POKENAV_GFX_MAIN_MENU] = {\n        .data = gPokenavLeftHeaderMainMenu_Gfx,\n        .size = 0x20,\n        .tag = 3\n    },\n    [POKENAV_GFX_CONDITION_MENU] = {\n        .data = gPokenavLeftHeaderCondition_Gfx,\n        .size = 0x20,\n        .tag = 1\n    },\n    [POKENAV_GFX_RIBBONS_MENU] = {\n        .data = gPokenavLeftHeaderRibbons_Gfx,\n        .size = 0x20,\n        .tag = 2\n    },\n    [POKENAV_GFX_MATCH_CALL_MENU] = {\n        .data = gPokenavLeftHeaderMatchCall_Gfx,\n        .size = 0x20,\n        .tag = 4\n    },\n    [POKENAV_GFX_MAP_MENU_ZOOMED_OUT] = {\n        .data = gPokenavLeftHeaderHoennMap_Gfx,\n        .size = 0x20,\n        .tag = 0\n    },\n    [POKENAV_GFX_MAP_MENU_ZOOMED_IN] = {\n        .data = gPokenavLeftHeaderHoennMap_Gfx,\n        .size = 0x40,\n        .tag = 0\n    }\n}"
+    },
+    "sPokenavSubMenuLeftHeaderSpriteSheets": {
+      "type": "struct CompressedSpriteSheetNoSize",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[POKENAV_GFX_PARTY_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderParty_Gfx,\n        .tag = 1\n    }",
+        "[POKENAV_GFX_SEARCH_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderSearch_Gfx,\n        .tag = 1\n    }",
+        "[POKENAV_GFX_COOL_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderCool_Gfx,\n        .tag = 4\n    }",
+        "[POKENAV_GFX_BEAUTY_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderBeauty_Gfx,\n        .tag = 1\n    }",
+        "[POKENAV_GFX_CUTE_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderCute_Gfx,\n        .tag = 2\n    }",
+        "[POKENAV_GFX_SMART_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderSmart_Gfx,\n        .tag = 0\n    }",
+        "[POKENAV_GFX_TOUGH_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderTough_Gfx,\n        .tag = 0\n    }"
+      ],
+      "rawValue": "{\n    [POKENAV_GFX_PARTY_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderParty_Gfx,\n        .tag = 1\n    },\n    [POKENAV_GFX_SEARCH_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderSearch_Gfx,\n        .tag = 1\n    },\n    [POKENAV_GFX_COOL_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderCool_Gfx,\n        .tag = 4\n    },\n    [POKENAV_GFX_BEAUTY_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderBeauty_Gfx,\n        .tag = 1\n    },\n    [POKENAV_GFX_CUTE_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderCute_Gfx,\n        .tag = 2\n    },\n    [POKENAV_GFX_SMART_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderSmart_Gfx,\n        .tag = 0\n    },\n    [POKENAV_GFX_TOUGH_MENU - POKENAV_GFX_SUBMENUS_START] = {\n        .data = gPokenavLeftHeaderTough_Gfx,\n        .tag = 0\n    }\n}"
+    },
+    "sSpinningPokenavAnims": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(16, 8)",
+        "ANIMCMD_FRAME(32, 8)",
+        "ANIMCMD_FRAME(48, 8)",
+        "ANIMCMD_FRAME(64, 8)",
+        "ANIMCMD_FRAME(80, 8)",
+        "ANIMCMD_FRAME(96, 8)",
+        "ANIMCMD_FRAME(112, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(16, 8),\n    ANIMCMD_FRAME(32, 8),\n    ANIMCMD_FRAME(48, 8),\n    ANIMCMD_FRAME(64, 8),\n    ANIMCMD_FRAME(80, 8),\n    ANIMCMD_FRAME(96, 8),\n    ANIMCMD_FRAME(112, 8),\n    ANIMCMD_JUMP(0)\n}"
+    }
+  }
+}

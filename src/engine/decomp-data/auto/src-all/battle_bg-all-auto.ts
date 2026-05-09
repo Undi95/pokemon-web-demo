@@ -31,9 +31,9 @@ const {
   LoadCompressedPalette, LoadCompressedSpriteSheetUsingHeap, LoadMessageBoxGfx, LoadUserWindowBorderGfx,
   Menu_LoadStdPalAt, OBJ_PLTT_ID, PLTT_SIZEOF, PLTT_SIZE_4BPP,
   PlaySE, REG_OFFSET_BG1CNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
-  REG_OFFSET_BLDY, REG_OFFSET_WININ, REG_OFFSET_WINOUT, ResetBgsAndClearDma3BusyFlags,
-  SetBgAttribute, SetBgTilemapBuffer, SetGpuReg, Sin2,
-  TRUE,  // 4-per-line for readability
+  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  ResetBgsAndClearDma3BusyFlags, SetBgAttribute, SetBgTilemapBuffer, SetGpuReg,
+  Sin2, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void BattleInitBgsAndWindows(void) */

@@ -1,0 +1,795 @@
+{
+  "srcFile": "src/dodrio_berry_picking.c",
+  "count": 59,
+  "tables": {
+    "sDodrioSpriteIds": {
+      "type": "u16 *",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "NULL"
+      ],
+      "rawValue": "{NULL}"
+    },
+    "sCloudSpriteIds": {
+      "type": "u16 *",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "NULL"
+      ],
+      "rawValue": "{NULL}"
+    },
+    "sBerrySpriteIds": {
+      "type": "u16 *",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "NULL"
+      ],
+      "rawValue": "{NULL}"
+    },
+    "sBerryIconSpriteIds": {
+      "type": "u16 *",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "NULL"
+      ],
+      "rawValue": "{NULL}"
+    },
+    "sActiveColumnMap": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  \n       \n        {0, 1, 2, 3,     4, 5, 6,     7, 8, 9, 0},\n    }",
+        "{  \n        {0, 1, 2,     3, 4, 5, 6, 3,     8, 9, 0},\n        {0, 1, 2,     5, 6, 3, 4, 5,     8, 9, 0},\n    }",
+        "{  \n        {0, 1,     2, 3, 4, 5, 6, 7, 2,     9, 0},\n        {0, 1,     4, 5, 6, 7, 2, 3, 4,     9, 0},\n        {0, 1,     6, 7, 2, 3, 4, 5, 6,     9, 0},\n    }",
+        "{  \n        {0,     1, 2, 3, 4, 5, 6, 7, 8, 1,     0},\n        {0,     3, 4, 5, 6, 7, 8, 1, 2, 3,     0},\n        {0,     5, 6, 7, 8, 1, 2, 3, 4, 5,     0},\n        {0,     7, 8, 1, 2, 3, 4, 5, 6, 7,     0},\n    }",
+        "{  \n        {    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0    },\n        {    2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2    },\n        {    4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4    },\n        {    6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6    },\n        {    8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8    },\n    }"
+      ],
+      "rawValue": "{\n    {  \n       \n        {0, 1, 2, 3,     4, 5, 6,     7, 8, 9, 0},\n    },\n    {  \n        {0, 1, 2,     3, 4, 5, 6, 3,     8, 9, 0},\n        {0, 1, 2,     5, 6, 3, 4, 5,     8, 9, 0},\n    },\n    {  \n        {0, 1,     2, 3, 4, 5, 6, 7, 2,     9, 0},\n        {0, 1,     4, 5, 6, 7, 2, 3, 4,     9, 0},\n        {0, 1,     6, 7, 2, 3, 4, 5, 6,     9, 0},\n    },\n    {  \n        {0,     1, 2, 3, 4, 5, 6, 7, 8, 1,     0},\n        {0,     3, 4, 5, 6, 7, 8, 1, 2, 3,     0},\n        {0,     5, 6, 7, 8, 1, 2, 3, 4, 5,     0},\n        {0,     7, 8, 1, 2, 3, 4, 5, 6, 7,     0},\n    },\n    {  \n        {    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0    },\n        {    2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2    },\n        {    4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4    },\n        {    6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6    },\n        {    8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8    },\n    },\n}"
+    },
+    "sDodrioHeadToColumnMap": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  \n        {4, 5, 6},\n    }",
+        "{  \n        {3, 4, 5},\n        {5, 6, 3},\n    }",
+        "{  \n        {4, 5, 6},\n        {6, 7, 2},\n        {2, 3, 4},\n    }",
+        "{  \n        {3, 4, 5},\n        {5, 6, 7},\n        {7, 8, 1},\n        {1, 2, 3},\n    }",
+        "{  \n        {4, 5, 6},\n        {6, 7, 8},\n        {8, 9, 0},\n        {0, 1, 2},\n        {2, 3, 4},\n    }"
+      ],
+      "rawValue": "{\n    {  \n        {4, 5, 6},\n    },\n    {  \n        {3, 4, 5},\n        {5, 6, 3},\n    },\n    {  \n        {4, 5, 6},\n        {6, 7, 2},\n        {2, 3, 4},\n    },\n    {  \n        {3, 4, 5},\n        {5, 6, 7},\n        {7, 8, 1},\n        {1, 2, 3},\n    },\n    {  \n        {4, 5, 6},\n        {6, 7, 8},\n        {8, 9, 0},\n        {0, 1, 2},\n        {2, 3, 4},\n    },\n}"
+    },
+    "sDodrioNeighborMap": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  \n        {1, 0, 1},\n    }",
+        "{  \n        {1, 0, 1},\n        {0, 1, 0},\n    }",
+        "{  \n        {2, 0, 1},\n        {0, 1, 2},\n        {1, 2, 0},\n    }",
+        "{  \n        {3, 0, 1},\n        {0, 1, 2},\n        {1, 2, 3},\n        {2, 3, 0},\n    }",
+        "{  \n        {4, 0, 1},\n        {0, 1, 2},\n        {1, 2, 3},\n        {2, 3, 4},\n        {3, 4, 0},\n    }"
+      ],
+      "rawValue": "{\n    {  \n        {1, 0, 1},\n    },\n    {  \n        {1, 0, 1},\n        {0, 1, 0},\n    },\n    {  \n        {2, 0, 1},\n        {0, 1, 2},\n        {1, 2, 0},\n    },\n    {  \n        {3, 0, 1},\n        {0, 1, 2},\n        {1, 2, 3},\n        {2, 3, 0},\n    },\n    {  \n        {4, 0, 1},\n        {0, 1, 2},\n        {1, 2, 3},\n        {2, 3, 4},\n        {3, 4, 0},\n    },\n}"
+    },
+    "sPlayerIdAtColumn": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{x, x, x, x, 1, 1, 1, x, x, x, x}",
+        "{x, x, x, 0, 0, 1, 1, 0, x, x, x}",
+        "{x, x, 2, 2, 0, 0, 1, 1, 1, x, x}",
+        "{x, 3, 3, 0, 0, 1, 1, 2, 2, 3, x}",
+        "{3, 3, 4, 4, 0, 0, 1, 1, 2, 2, 3}"
+      ],
+      "rawValue": "{\n    {x, x, x, x, 1, 1, 1, x, x, x, x},  \n    {x, x, x, 0, 0, 1, 1, 0, x, x, x},  \n    {x, x, 2, 2, 0, 0, 1, 1, 1, x, x},  \n    {x, 3, 3, 0, 0, 1, 1, 2, 2, 3, x},  \n    {3, 3, 4, 4, 0, 0, 1, 1, 2, 2, 3},  \n}"
+    },
+    "sUnsharedColumns": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{5}",
+        "{4, 6}",
+        "{3, 5, 7}",
+        "{2, 4, 6, 8}",
+        "#ifndef BUGFIX\n    {1, 3, 5, 6, 9}",
+        "#else\n    {1, 3, 5, 7, 9}",
+        "#endif"
+      ],
+      "rawValue": "{\n    {5},\n    {4, 6},\n    {3, 5, 7},\n    {2, 4, 6, 8},\n#ifndef BUGFIX\n    {1, 3, 5, 6, 9},  \n#else\n    {1, 3, 5, 7, 9},\n#endif\n}"
+    },
+    "sBerryFallDelays": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BERRY_BLUE",
+        "BERRY_GREEN",
+        "BERRY_GOLD",
+        "BERRY_BLUE",
+        "BERRY_GREEN",
+        "BERRY_GOLD",
+        "BERRY_BLUE",
+        "BERRY_GREEN",
+        "BERRY_GOLD"
+      ],
+      "indexedValues": [
+        "40",
+        "24",
+        "13",
+        "32",
+        "19",
+        "10",
+        "22",
+        "13",
+        "7"
+      ],
+      "rawValue": "{\n    { [BERRY_BLUE] = 40, [BERRY_GREEN] = 24, [BERRY_GOLD] = 13 },\n    { [BERRY_BLUE] = 32, [BERRY_GREEN] = 19, [BERRY_GOLD] = 10 },\n    { [BERRY_BLUE] = 22, [BERRY_GREEN] = 13, [BERRY_GOLD] =  7 },\n}"
+    },
+    "sTreeBorderXPos": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "8",
+        "5",
+        "8",
+        "11",
+        "15"
+      ],
+      "rawValue": "{8, 5, 8, 11, 15}"
+    },
+    "sDifficultyThresholds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "5",
+        "10",
+        "20",
+        "30",
+        "50",
+        "70",
+        "100"
+      ],
+      "rawValue": "{5, 10, 20, 30, 50, 70, 100}"
+    },
+    "sPrizeBerryIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  \n        ITEM_TO_BERRY(ITEM_RAZZ_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_BLUK_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_NANAB_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_WEPEAR_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_PINAP_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_PINAP_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_WEPEAR_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_NANAB_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_BLUK_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_RAZZ_BERRY) - 1\n    }",
+        "{  \n        ITEM_TO_BERRY(ITEM_POMEG_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_KELPSY_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_QUALOT_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_HONDEW_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_GREPA_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_TAMATO_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_CORNN_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_MAGOST_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_RABUTA_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_NOMEL_BERRY) - 1\n    }",
+        "{  \n        ITEM_TO_BERRY(ITEM_SPELON_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_PAMTRE_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_WATMEL_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_DURIN_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_BELUE_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_BELUE_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_DURIN_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_WATMEL_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_PAMTRE_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_SPELON_BERRY) - 1\n    }"
+      ],
+      "rawValue": "{\n    {  \n        ITEM_TO_BERRY(ITEM_RAZZ_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_BLUK_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_NANAB_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_WEPEAR_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_PINAP_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_PINAP_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_WEPEAR_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_NANAB_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_BLUK_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_RAZZ_BERRY) - 1\n    },\n    {  \n        ITEM_TO_BERRY(ITEM_POMEG_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_KELPSY_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_QUALOT_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_HONDEW_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_GREPA_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_TAMATO_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_CORNN_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_MAGOST_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_RABUTA_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_NOMEL_BERRY) - 1\n    },\n    {  \n        ITEM_TO_BERRY(ITEM_SPELON_BERRY) - 1,\n        ITEM_TO_BERRY(ITEM_PAMTRE_BE..."
+    },
+    "sBerryScoreMultipliers": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BERRY_BLUE",
+        "BERRY_GREEN",
+        "BERRY_GOLD",
+        "BERRY_MISSED"
+      ],
+      "indexedValues": [
+        "10",
+        "30",
+        "50",
+        "50"
+      ],
+      "rawValue": "{\n    [BERRY_BLUE]   = 10,\n    [BERRY_GREEN]  = 30,\n    [BERRY_GOLD]   = 50,\n    [BERRY_MISSED] = 50  \n}"
+    },
+    "sRecordNumMaxDigits": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "4",
+        "7",
+        "4"
+      ],
+      "rawValue": "{4, 7, 4}"
+    },
+    "sRecordTextYCoords": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{25}",
+        "{41}",
+        "{57}"
+      ],
+      "rawValue": "{{25}, {41}, {57}}"
+    },
+    "sRecordNumYCoords": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{25}",
+        "{41}",
+        "{73}"
+      ],
+      "rawValue": "{{25}, {41}, {73}}"
+    },
+    "sDebug_BerryResults": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BERRY_BLUE",
+        "BERRY_GREEN",
+        "BERRY_GOLD",
+        "BERRY_MISSED",
+        "BERRY_BLUE",
+        "BERRY_GREEN",
+        "BERRY_GOLD",
+        "BERRY_MISSED",
+        "BERRY_BLUE",
+        "BERRY_GREEN",
+        "BERRY_GOLD",
+        "BERRY_MISSED",
+        "BERRY_BLUE",
+        "BERRY_GREEN",
+        "BERRY_GOLD",
+        "BERRY_MISSED",
+        "BERRY_BLUE",
+        "BERRY_GREEN",
+        "BERRY_GOLD",
+        "BERRY_MISSED"
+      ],
+      "indexedValues": [
+        "MAX_BERRIES",
+        "0",
+        "90",
+        "MAX_BERRIES",
+        "MAX_BERRIES",
+        "MAX_BERRIES",
+        "70",
+        "MAX_BERRIES",
+        "MAX_BERRIES",
+        "0",
+        "MAX_BERRIES",
+        "0",
+        "MAX_BERRIES",
+        "MAX_BERRIES",
+        "60",
+        "0",
+        "MAX_BERRIES",
+        "MAX_BERRIES",
+        "MAX_BERRIES",
+        "0"
+      ],
+      "rawValue": "{\n    {\n        [BERRY_BLUE]   = MAX_BERRIES,\n        [BERRY_GREEN]  = 0,\n        [BERRY_GOLD]   = 90,\n        [BERRY_MISSED] = MAX_BERRIES\n    },\n    {\n        [BERRY_BLUE]   = MAX_BERRIES,\n        [BERRY_GREEN]  = MAX_BERRIES,\n        [BERRY_GOLD]   = 70,\n        [BERRY_MISSED] = MAX_BERRIES\n    },\n    {\n        [BERRY_BLUE]   = MAX_BERRIES,\n        [BERRY_GREEN]  = 0,\n        [BERRY_GOLD]   = MAX_BERRIES,\n        [BERRY_MISSED] = 0\n    },\n    {\n        [BERRY_BLUE]   = MAX_BERRIES,\n        [BERRY_GREEN]  = MAX_BERRIES,\n        [BERRY_GOLD]   = 60,\n        [BERRY_MISSED] = 0\n    },\n    {\n        [BERRY_BLUE]   = MAX_BERRIES,\n        [BERRY_GREEN]  = MAX_BERRIES,\n        [BERRY_GOLD]   = MAX_BERRIES,\n        [BERRY_MISSED] = 0\n    },\n}"
+    },
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = BG_INTERFACE,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = BG_TREE_LEFT,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 12,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = BG_TREE_RIGHT,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 14,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = BG_SCENERY,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = BG_INTERFACE,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = BG_TREE_LEFT,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 12,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = BG_TREE_RIGHT,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 14,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = BG_SCENERY,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n}"
+    },
+    "sWindowTemplates_Results": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = BG_INTERFACE,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 28,\n        .height = 2,\n        .paletteNum = 13,\n        .baseBlock = 0x13,\n    }",
+        "{\n        .bg = BG_INTERFACE,\n        .tilemapLeft = 1,\n        .tilemapTop = 5,\n        .width = 28,\n        .height = 14,\n        .paletteNum = 13,\n        .baseBlock = 0x4B,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = BG_INTERFACE,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 28,\n        .height = 2,\n        .paletteNum = 13,\n        .baseBlock = 0x13,\n    },\n    {\n        .bg = BG_INTERFACE,\n        .tilemapLeft = 1,\n        .tilemapTop = 5,\n        .width = 28,\n        .height = 14,\n        .paletteNum = 13,\n        .baseBlock = 0x4B,\n    }\n}"
+    },
+    "sWindowTemplates_PlayAgain": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_PLAY_AGAIN",
+        "WIN_YES_NO"
+      ],
+      "indexedValues": [
+        "{\n        .bg = BG_INTERFACE",
+        "{\n        .bg = BG_INTERFACE"
+      ],
+      "rawValue": "{\n    [WIN_PLAY_AGAIN] = {\n        .bg = BG_INTERFACE,\n        .tilemapLeft = 1,\n        .tilemapTop = 8,\n        .width = 19,\n        .height = 3,\n        .paletteNum = 13,\n        .baseBlock = 0x13,\n    },\n    [WIN_YES_NO] = {\n        .bg = BG_INTERFACE,\n        .tilemapLeft = 22,\n        .tilemapTop = 7,\n        .width = 6,\n        .height = 4,\n        .paletteNum = 13,\n        .baseBlock = 0x4C,\n    }\n}"
+    },
+    "sActiveColumnMap_Duplicate": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0},\n    }",
+        "{\n        {0, 1, 2, 3, 4, 5, 6, 3, 8, 9, 0},\n        {0, 1, 2, 5, 6, 3, 4, 5, 8, 9, 0},\n    }",
+        "{\n        {0, 1, 2, 3, 4, 5, 6, 7, 2, 9, 0},\n        {0, 1, 4, 5, 6, 7, 2, 3, 4, 9, 0},\n        {0, 1, 6, 7, 2, 3, 4, 5, 6, 9, 0},\n    }",
+        "{\n        {0, 1, 2, 3, 4, 5, 6, 7, 8, 1, 0},\n        {0, 3, 4, 5, 6, 7, 8, 1, 2, 3, 0},\n        {0, 5, 6, 7, 8, 1, 2, 3, 4, 5, 0},\n        {0, 7, 8, 1, 2, 3, 4, 5, 6, 7, 0},\n    }",
+        "{\n        {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0},\n        {2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2},\n        {4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4},\n        {6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6},\n        {8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8},\n    }"
+      ],
+      "rawValue": "{\n    {\n        {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0},\n    },\n    {\n        {0, 1, 2, 3, 4, 5, 6, 3, 8, 9, 0},\n        {0, 1, 2, 5, 6, 3, 4, 5, 8, 9, 0},\n    },\n    {\n        {0, 1, 2, 3, 4, 5, 6, 7, 2, 9, 0},\n        {0, 1, 4, 5, 6, 7, 2, 3, 4, 9, 0},\n        {0, 1, 6, 7, 2, 3, 4, 5, 6, 9, 0},\n    },\n    {\n        {0, 1, 2, 3, 4, 5, 6, 7, 8, 1, 0},\n        {0, 3, 4, 5, 6, 7, 8, 1, 2, 3, 0},\n        {0, 5, 6, 7, 8, 1, 2, 3, 4, 5, 0},\n        {0, 7, 8, 1, 2, 3, 4, 5, 6, 7, 0},\n    },\n    {\n        {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0},\n        {2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2},\n        {4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4},\n        {6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6},\n        {8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8},\n    },\n}"
+    },
+    "sDodrioHeadToColumnMap_Duplicate": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        {4, 5, 6},\n    }",
+        "{\n        {3, 4, 5},\n        {5, 6, 3},\n    }",
+        "{\n        {4, 5, 6},\n        {6, 7, 2},\n        {2, 3, 4},\n    }",
+        "{\n        {3, 4, 5},\n        {5, 6, 7},\n        {7, 8, 1},\n        {1, 2, 3},\n    }",
+        "{\n        {4, 5, 6},\n        {6, 7, 8},\n        {8, 9, 0},\n        {0, 1, 2},\n        {2, 3, 4},\n    }"
+      ],
+      "rawValue": "{\n    {\n        {4, 5, 6},\n    },\n    {\n        {3, 4, 5},\n        {5, 6, 3},\n    },\n    {\n        {4, 5, 6},\n        {6, 7, 2},\n        {2, 3, 4},\n    },\n    {\n        {3, 4, 5},\n        {5, 6, 7},\n        {7, 8, 1},\n        {1, 2, 3},\n    },\n    {\n        {4, 5, 6},\n        {6, 7, 8},\n        {8, 9, 0},\n        {0, 1, 2},\n        {2, 3, 4},\n    },\n}"
+    },
+    "sDodrioNeighborMap_Duplicate": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        {1, 0, 1},\n    }",
+        "{\n        {1, 0, 1},\n        {0, 1, 0},\n    }",
+        "{\n        {2, 0, 1},\n        {0, 1, 2},\n        {1, 2, 0},\n    }",
+        "{\n        {3, 0, 1},\n        {0, 1, 2},\n        {1, 2, 3},\n        {2, 3, 0},\n    }",
+        "{\n        {4, 0, 1},\n        {0, 1, 2},\n        {1, 2, 3},\n        {2, 3, 4},\n        {3, 4, 0},\n    }"
+      ],
+      "rawValue": "{\n    {\n        {1, 0, 1},\n    },\n    {\n        {1, 0, 1},\n        {0, 1, 0},\n    },\n    {\n        {2, 0, 1},\n        {0, 1, 2},\n        {1, 2, 0},\n    },\n    {\n        {3, 0, 1},\n        {0, 1, 2},\n        {1, 2, 3},\n        {2, 3, 0},\n    },\n    {\n        {4, 0, 1},\n        {0, 1, 2},\n        {1, 2, 3},\n        {2, 3, 4},\n        {3, 4, 0},\n    },\n}"
+    },
+    "sPlayerIdAtColumn_Duplicate": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{9, 9, 9, 9, 1, 1, 1, 9, 9, 9, 9}",
+        "{9, 9, 9, 0, 0, 1, 1, 0, 9, 9, 9}",
+        "{9, 9, 2, 2, 0, 0, 1, 1, 1, 9, 9}",
+        "{9, 3, 3, 0, 0, 1, 1, 2, 2, 3, 9}",
+        "{3, 3, 4, 4, 0, 0, 1, 1, 2, 2, 3}"
+      ],
+      "rawValue": "{\n    {9, 9, 9, 9, 1, 1, 1, 9, 9, 9, 9},\n    {9, 9, 9, 0, 0, 1, 1, 0, 9, 9, 9},\n    {9, 9, 2, 2, 0, 0, 1, 1, 1, 9, 9},\n    {9, 3, 3, 0, 0, 1, 1, 2, 2, 3, 9},\n    {3, 3, 4, 4, 0, 0, 1, 1, 2, 2, 3},\n}"
+    },
+    "sUnsharedColumns_Duplicate": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{5}",
+        "{4, 6}",
+        "{3, 5, 7}",
+        "{2, 4, 6, 8}",
+        "{1, 3, 5, 6, 9}"
+      ],
+      "rawValue": "{\n    {5},\n    {4, 6},\n    {3, 5, 7},\n    {2, 4, 6, 8},\n    {1, 3, 5, 6, 9},\n}"
+    },
+    "sAnim_Dodrio_Normal": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Dodrio_PickRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Dodrio_PickMiddle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(128, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(128, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Dodrio_PickLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(192, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(192, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Dodrio_Down": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(256, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(256, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnims_StatusBar_Yellow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnims_StatusBar_Gray": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnims_StatusBar_Red": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Berry_Blue": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Berry_Green": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Berry_Gold": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Berry_BlueSquished": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(12, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(12, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Berry_GreenSquished": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Berry_GoldSquished": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(20, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(20, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Berry_Eaten": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Berry_Empty1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(28, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(28, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Berry_Empty2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Cloud": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sUnusedSounds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "SE_M_CHARM",
+        "SE_NOTE_C",
+        "SE_NOTE_D",
+        "SE_NOTE_E",
+        "SE_NOTE_F",
+        "SE_NOTE_G",
+        "SE_NOTE_A",
+        "SE_NOTE_B",
+        "SE_NOTE_C_HIGH",
+        "SE_RG_CARD_OPEN"
+      ],
+      "rawValue": "{\n    SE_M_CHARM,\n    SE_NOTE_C,\n    SE_NOTE_D,\n    SE_NOTE_E,\n    SE_NOTE_F,\n    SE_NOTE_G,\n    SE_NOTE_A,\n    SE_NOTE_B,\n    SE_NOTE_C_HIGH,\n    SE_RG_CARD_OPEN\n}"
+    },
+    "sBerryIconXCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "88",
+        "128",
+        "168",
+        "208"
+      ],
+      "rawValue": "{88, 128, 168, 208}"
+    },
+    "sCloudStartCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{230, 55}",
+        "{ 30, 74}"
+      ],
+      "rawValue": "{\n    {230, 55},\n    { 30, 74}\n}"
+    },
+    "sTextColorTable": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "COLORID_GRAY",
+        "COLORID_RED",
+        "COLORID_BLUE",
+        "COLORID_GREEN"
+      ],
+      "indexedValues": [
+        "{TEXT_COLOR_WHITE",
+        "{TEXT_COLOR_WHITE",
+        "{TEXT_COLOR_WHITE",
+        "{TEXT_COLOR_WHITE"
+      ],
+      "rawValue": "{\n    [COLORID_GRAY]  = {TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY},\n    [COLORID_RED]   = {TEXT_COLOR_WHITE, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED},\n    [COLORID_BLUE]  = {TEXT_COLOR_WHITE, TEXT_COLOR_BLUE, TEXT_COLOR_LIGHT_BLUE},\n    [COLORID_GREEN] = {TEXT_COLOR_WHITE, TEXT_COLOR_GREEN, TEXT_COLOR_LIGHT_GREEN},\n}"
+    },
+    "sNameWindowCoords_1Player": {
+      "type": "struct WinCoords",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{12, 6}"
+      ],
+      "rawValue": "{{12, 6}}"
+    },
+    "sNameWindowCoords_2Players": {
+      "type": "struct WinCoords",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{9, 10}",
+        "{15, 6}"
+      ],
+      "rawValue": "{{9, 10}, {15, 6}}"
+    },
+    "sNameWindowCoords_3Players": {
+      "type": "struct WinCoords",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{12, 6}",
+        "{18, 10}",
+        "{6, 10}"
+      ],
+      "rawValue": "{{12, 6}, {18, 10}, {6, 10}}"
+    },
+    "sNameWindowCoords_4Players": {
+      "type": "struct WinCoords",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{9, 10}",
+        "{15, 6}",
+        "{21, 10}",
+        "{3, 6}"
+      ],
+      "rawValue": "{{9, 10}, {15, 6}, {21, 10}, {3, 6}}"
+    },
+    "sNameWindowCoords_5Players": {
+      "type": "struct WinCoords",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{12, 6}",
+        "{18, 10}",
+        "{23, 6}",
+        "{1, 6}",
+        "{6, 10}"
+      ],
+      "rawValue": "{{12, 6}, {18, 10}, {23, 6}, {1, 6}, {6, 10}}"
+    },
+    "sResultsXCoords": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "92",
+        "132",
+        "172",
+        "212"
+      ],
+      "rawValue": "{92, 132, 172, 212}"
+    },
+    "sResultsYCoords": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "33",
+        "49",
+        "65",
+        "81",
+        "97"
+      ],
+      "rawValue": "{33, 49, 65, 81, 97}"
+    },
+    "sRankingYCoords": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "17",
+        "33",
+        "49",
+        "65",
+        "81"
+      ],
+      "rawValue": "{17, 33, 49, 65, 81}"
+    },
+    "sGfxFuncs": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{GFXFUNC_LOAD,               LoadGfx}",
+        "{GFXFUNC_SHOW_NAMES,         ShowNames}",
+        "{GFXFUNC_SHOW_RESULTS,       ShowResults}",
+        "{GFXFUNC_MSG_PLAY_AGAIN,     Msg_WantToPlayAgain}",
+        "{GFXFUNC_MSG_SAVING,         Msg_SavingDontTurnOff}",
+        "{GFXFUNC_MSG_COMM_STANDBY,   Msg_CommunicationStandby}",
+        "{GFXFUNC_ERASE_MSG,          EraseMessage}",
+        "{GFXFUNC_MSG_PLAYER_DROPPED, Msg_SomeoneDroppedOut}",
+        "{GFXFUNC_STOP,               StopGfxFuncs}",
+        "{GFXFUNC_IDLE,               GfxIdle}"
+      ],
+      "rawValue": "{\n    {GFXFUNC_LOAD,               LoadGfx},  \n    {GFXFUNC_SHOW_NAMES,         ShowNames},\n    {GFXFUNC_SHOW_RESULTS,       ShowResults},\n    {GFXFUNC_MSG_PLAY_AGAIN,     Msg_WantToPlayAgain},\n    {GFXFUNC_MSG_SAVING,         Msg_SavingDontTurnOff},\n    {GFXFUNC_MSG_COMM_STANDBY,   Msg_CommunicationStandby},\n    {GFXFUNC_ERASE_MSG,          EraseMessage},\n    {GFXFUNC_MSG_PLAYER_DROPPED, Msg_SomeoneDroppedOut},\n    {GFXFUNC_STOP,               StopGfxFuncs},\n    {GFXFUNC_IDLE,               GfxIdle},\n}"
+    },
+    "sLeaderFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "FUNC_INTRO",
+        "FUNC_INIT_COUNTDOWN",
+        "FUNC_COUNTDOWN",
+        "FUNC_WAIT_START",
+        "FUNC_PLAY_GAME",
+        "FUNC_INIT_RESULTS",
+        "FUNC_RESULTS",
+        "FUNC_ASK_PLAY_AGAIN",
+        "FUNC_END_LINK",
+        "FUNC_EXIT",
+        "FUNC_RESET_GAME",
+        "FUNC_WAIT_END_GAME"
+      ],
+      "indexedValues": [
+        "DoGameIntro",
+        "InitCountdown",
+        "DoCountdown",
+        "WaitGameStart",
+        "PlayGame_Leader",
+        "InitResults_Leader",
+        "DoResults",
+        "AskPlayAgain",
+        "EndLink",
+        "ExitGame",
+        "ResetGame",
+        "WaitEndGame_Leader"
+      ],
+      "rawValue": "{\n    [FUNC_INTRO]          = DoGameIntro,\n    [FUNC_INIT_COUNTDOWN] = InitCountdown,\n    [FUNC_COUNTDOWN]      = DoCountdown,\n    [FUNC_WAIT_START]     = WaitGameStart,\n    [FUNC_PLAY_GAME]      = PlayGame_Leader,\n    [FUNC_INIT_RESULTS]   = InitResults_Leader,\n    [FUNC_RESULTS]        = DoResults,\n    [FUNC_ASK_PLAY_AGAIN] = AskPlayAgain,\n    [FUNC_END_LINK]       = EndLink,\n    [FUNC_EXIT]           = ExitGame,\n    [FUNC_RESET_GAME]     = ResetGame,\n    [FUNC_WAIT_END_GAME]  = WaitEndGame_Leader\n}"
+    },
+    "sMemberFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "FUNC_INTRO",
+        "FUNC_INIT_COUNTDOWN",
+        "FUNC_COUNTDOWN",
+        "FUNC_WAIT_START",
+        "FUNC_PLAY_GAME",
+        "FUNC_INIT_RESULTS",
+        "FUNC_RESULTS",
+        "FUNC_ASK_PLAY_AGAIN",
+        "FUNC_END_LINK",
+        "FUNC_EXIT",
+        "FUNC_RESET_GAME",
+        "FUNC_WAIT_END_GAME"
+      ],
+      "indexedValues": [
+        "DoGameIntro",
+        "InitCountdown",
+        "DoCountdown",
+        "WaitGameStart",
+        "PlayGame_Member",
+        "InitResults_Member",
+        "DoResults",
+        "AskPlayAgain",
+        "EndLink",
+        "ExitGame",
+        "ResetGame",
+        "WaitEndGame_Member"
+      ],
+      "rawValue": "{\n    [FUNC_INTRO]          = DoGameIntro,\n    [FUNC_INIT_COUNTDOWN] = InitCountdown,\n    [FUNC_COUNTDOWN]      = DoCountdown,\n    [FUNC_WAIT_START]     = WaitGameStart,\n    [FUNC_PLAY_GAME]      = PlayGame_Member,\n    [FUNC_INIT_RESULTS]   = InitResults_Member,\n    [FUNC_RESULTS]        = DoResults,\n    [FUNC_ASK_PLAY_AGAIN] = AskPlayAgain,\n    [FUNC_END_LINK]       = EndLink,\n    [FUNC_EXIT]           = ExitGame,\n    [FUNC_RESET_GAME]     = ResetGame,\n    [FUNC_WAIT_END_GAME]  = WaitEndGame_Member\n}"
+    }
+  }
+}

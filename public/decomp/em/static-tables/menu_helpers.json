@@ -1,0 +1,36 @@
+{
+  "srcFile": "src/menu_helpers.c",
+  "count": 3,
+  "tables": {
+    "sAnim_SwapLine_RightArrow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_SwapLine_Line": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_SwapLine_LeftArrow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0, .hFlip = TRUE),\n    ANIMCMD_END\n}"
+    }
+  }
+}

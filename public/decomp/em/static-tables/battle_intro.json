@@ -1,0 +1,36 @@
+{
+  "srcFile": "src/battle_intro.c",
+  "count": 1,
+  "tables": {
+    "sBattleIntroSlideFuncs": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BATTLE_ENVIRONMENT_GRASS",
+        "BATTLE_ENVIRONMENT_LONG_GRASS",
+        "BATTLE_ENVIRONMENT_SAND",
+        "BATTLE_ENVIRONMENT_UNDERWATER",
+        "BATTLE_ENVIRONMENT_WATER",
+        "BATTLE_ENVIRONMENT_POND",
+        "BATTLE_ENVIRONMENT_MOUNTAIN",
+        "BATTLE_ENVIRONMENT_CAVE",
+        "BATTLE_ENVIRONMENT_BUILDING",
+        "BATTLE_ENVIRONMENT_PLAIN"
+      ],
+      "indexedValues": [
+        "BattleIntroSlide1",
+        "BattleIntroSlide1",
+        "BattleIntroSlide2",
+        "BattleIntroSlide2",
+        "BattleIntroSlide2",
+        "BattleIntroSlide1",
+        "BattleIntroSlide1",
+        "BattleIntroSlide1",
+        "BattleIntroSlide3",
+        "BattleIntroSlide3"
+      ],
+      "rawValue": "{\n    [BATTLE_ENVIRONMENT_GRASS]      = BattleIntroSlide1,\n    [BATTLE_ENVIRONMENT_LONG_GRASS] = BattleIntroSlide1,\n    [BATTLE_ENVIRONMENT_SAND]       = BattleIntroSlide2,\n    [BATTLE_ENVIRONMENT_UNDERWATER] = BattleIntroSlide2,\n    [BATTLE_ENVIRONMENT_WATER]      = BattleIntroSlide2,\n    [BATTLE_ENVIRONMENT_POND]       = BattleIntroSlide1,\n    [BATTLE_ENVIRONMENT_MOUNTAIN]   = BattleIntroSlide1,\n    [BATTLE_ENVIRONMENT_CAVE]       = BattleIntroSlide1,\n    [BATTLE_ENVIRONMENT_BUILDING]   = BattleIntroSlide3,\n    [BATTLE_ENVIRONMENT_PLAIN]      = BattleIntroSlide3,\n}"
+    }
+  }
+}

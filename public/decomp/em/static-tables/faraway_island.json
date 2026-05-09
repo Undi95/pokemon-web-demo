@@ -1,0 +1,18 @@
+{
+  "srcFile": "src/faraway_island.c",
+  "count": 1,
+  "tables": {
+    "sFarawayIslandRockCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{14 + MAP_OFFSET,  9 + MAP_OFFSET}",
+        "{18 + MAP_OFFSET,  9 + MAP_OFFSET}",
+        "{ 9 + MAP_OFFSET, 10 + MAP_OFFSET}",
+        "{13 + MAP_OFFSET, 13 + MAP_OFFSET}"
+      ],
+      "rawValue": "{\n    {14 + MAP_OFFSET,  9 + MAP_OFFSET},\n    {18 + MAP_OFFSET,  9 + MAP_OFFSET},\n    { 9 + MAP_OFFSET, 10 + MAP_OFFSET},\n    {13 + MAP_OFFSET, 13 + MAP_OFFSET},\n}"
+    }
+  }
+}

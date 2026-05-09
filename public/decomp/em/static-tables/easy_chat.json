@@ -1,0 +1,380 @@
+{
+  "srcFile": "src/easy_chat.c",
+  "count": 29,
+  "tables": {
+    "sQuizLadyEasyChatScreens": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .funcId = ECFUNC_QUIZ_ANSWER,\n        .callback = DoQuizAnswerEasyChatScreen,\n    }",
+        "{\n        .funcId = ECFUNC_QUIZ_QUESTION,\n        .callback = DoQuizQuestionEasyChatScreen,\n    }",
+        "{\n        .funcId = ECFUNC_SET_QUIZ_ANSWER,\n        .callback = DoQuizSetAnswerEasyChatScreen,\n    }",
+        "{\n        .funcId = ECFUNC_SET_QUIZ_QUESTION,\n        .callback = DoQuizSetQuestionEasyChatScreen,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .funcId = ECFUNC_QUIZ_ANSWER,\n        .callback = DoQuizAnswerEasyChatScreen,\n    },\n    {\n        .funcId = ECFUNC_QUIZ_QUESTION,\n        .callback = DoQuizQuestionEasyChatScreen,\n    },\n    {\n        .funcId = ECFUNC_SET_QUIZ_ANSWER,\n        .callback = DoQuizSetAnswerEasyChatScreen,\n    },\n    {\n        .funcId = ECFUNC_SET_QUIZ_QUESTION,\n        .callback = DoQuizSetQuestionEasyChatScreen,\n    },\n}"
+    },
+    "sEasyChatScreenTemplates": {
+      "type": "struct EasyChatScreenTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .type = EASY_CHAT_TYPE_PROFILE,\n        .numColumns = 2,\n        .numRows = 2,\n        .frameId = FRAMEID_GENERAL_2x2,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_Profile,\n        .instructionsText1 = gText_CombineFourWordsOrPhrases,\n        .instructionsText2 = gText_AndMakeYourProfile,\n        .confirmText1 = gText_YourProfile,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_BATTLE_START,\n        .numColumns = 2,\n        .numRows = 3,\n        .frameId = FRAMEID_GENERAL_2x3,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_AtTheBattlesStart,\n        .instructionsText1 = gText_CombineSixWordsOrPhrases,\n        .instructionsText2 = gText_AndMakeAMessage,\n        .confirmText1 = gText_YourFeelingAtTheBattlesStart,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_BATTLE_WON,\n        .numColumns = 2,\n        .numRows = 3,\n        .frameId = FRAMEID_GENERAL_2x3,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_UponWinningABattle,\n        .instructionsText1 = gText_CombineSixWordsOrPhrases,\n        .instructionsText2 = gText_AndMakeAMessage,\n        .confirmText1 = gText_WhatYouSayIfYouWin,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_BATTLE_LOST,\n        .numColumns = 2,\n        .numRows = 3,\n        .frameId = FRAMEID_GENERAL_2x3,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_UponLosingABattle,\n        .instructionsText1 = gText_CombineSixWordsOrPhrases,\n        .instructionsText2 = gText_AndMakeAMessage,\n        .confirmText1 = gText_WhatYouSayIfYouLose,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_MAIL,\n        .numColumns = 2,\n        .numRows = 5,\n        .frameId = FRAMEID_MAIL,\n        .fourFooterOptions = FALSE,\n        .titleText = NULL,\n        .instructionsText1 = gText_CombineNineWordsOrPhrases,\n        .instructionsText2 = gText_AndMakeAMessage2,\n        .confirmText1 = gText_TheMailMessage,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_INTERVIEW,\n        .numColumns = 2,\n        .numRows = 2,\n        .frameId = FRAMEID_INTERVIEW,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_Interview,\n        .instructionsText1 = gText_CombineFourWordsOrPhrases,\n        .instructionsText2 = gText_LetsReplyToTheInterview,\n        .confirmText1 = gText_TheAnswer,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_BARD_SONG,\n        .numColumns = 2,\n        .numRows = 3,\n        .frameId = FRAMEID_GENERAL_2x3,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_TheBardsSong,\n        .instructionsText1 = gText_ChangeJustOneWordOrPhrase,\n        .instructionsText2 = gText_AndImproveTheBardsSong,\n        .confirmText1 = gText_TheBardsSong2,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_FAN_CLUB,\n        .numColumns = 1,\n        .numRows = 1,\n        .frameId = FRAMEID_INTERVIEW_SHOW_PERSON,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_Interview,\n        .instructionsText1 = gText_FindWordsThatDescribeYour,\n        .instructionsText2 = gText_FeelingsRightNow,\n        .confirmText1 = gText_TheAnswer,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_TRENDY_PHRASE,\n        .numColumns = 2,\n        .numRows = 1,\n        .frameId = FRAMEID_COMBINE_TWO_WORDS,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_WhatsHipAndHappening,\n        .instructionsText1 = gText_CombineTwoWordsOrPhrases,\n        .instructionsText2 = gText_AndMakeATrendySaying,\n        .confirmText1 = gText_TheTrendySaying,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_QUIZ_QUESTION,\n        .numColumns = 2,\n        .numRows = 5,\n        .frameId = FRAMEID_QUIZ_QUESTION,\n        .fourFooterOptions = TRUE,\n        .titleText = NULL,\n        .instructionsText1 = gText_AfterYouHaveReadTheQuiz,\n        .instructionsText2 = gText_QuestionPressTheAButton,\n        .confirmText1 = NULL,\n        .confirmText2 = NULL,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_QUIZ_ANSWER,\n        .numColumns = 1,\n        .numRows = 1,\n        .frameId = FRAMEID_QUIZ_ANSWER,\n        .fourFooterOptions = TRUE,\n        .titleText = gText_TheQuizAnswerIs,\n        .instructionsText1 = gText_OutOfTheListedChoices,\n        .instructionsText2 = gText_SelectTheAnswerToTheQuiz,\n        .confirmText1 = gText_TheAnswerColon,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_QUIZ_SET_QUESTION,\n        .numColumns = 2,\n        .numRows = 5,\n        .frameId = FRAMEID_QUIZ_SET_QUESTION,\n        .fourFooterOptions = TRUE,\n        .titleText = NULL,\n        .instructionsText1 = gText_CombineNineWordsOrPhrases,\n        .instructionsText2 = gText_AndCreateAQuiz,\n        .confirmText1 = gText_IsThisQuizOK,\n        .confirmText2 = NULL,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_QUIZ_SET_ANSWER,\n        .numColumns = 1,\n        .numRows = 1,\n        .frameId = FRAMEID_QUIZ_ANSWER,\n        .fourFooterOptions = TRUE,\n        .titleText = gText_TheQuizAnswerIs,\n        .instructionsText1 = gText_PickAWordOrPhraseAnd,\n        .instructionsText2 = gText_SetTheQuizAnswer,\n        .confirmText1 = gText_IsThisQuizOK,\n        .confirmText2 = NULL,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_BARD_SONG,\n        .numColumns = 2,\n        .numRows = 3,\n        .frameId = FRAMEID_GENERAL_2x3,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_TheBardsSong,\n        .instructionsText1 = gText_ChangeJustOneWordOrPhrase,\n        .instructionsText2 = gText_AndImproveTheBardsSong,\n        .confirmText1 = gText_TheBardsSong2,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_APPRENTICE,\n        .numColumns = 2,\n        .numRows = 3,\n        .frameId = FRAMEID_GENERAL_2x3,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_ApprenticesPhrase,\n        .instructionsText1 = gText_FindWordsWhichFit,\n        .instructionsText2 = gText_TheTrainersImage,\n        .confirmText1 = gText_ApprenticePhrase,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_GOOD_SAYING,\n        .numColumns = 2,\n        .numRows = 1,\n        .frameId = FRAMEID_COMBINE_TWO_WORDS,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_GoodSaying,\n        .instructionsText1 = gText_CombineTwoWordsOrPhrases2,\n        .instructionsText2 = gText_ToTeachHerAGoodSaying,\n        .confirmText1 = gText_TheAnswer,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_GABBY_AND_TY,\n        .numColumns = 1,\n        .numRows = 1,\n        .frameId = FRAMEID_INTERVIEW_SHOW_PERSON,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_Interview,\n        .instructionsText1 = gText_FindWordsThatDescribeYour,\n        .instructionsText2 = gText_FeelingsRightNow,\n        .confirmText1 = gText_TheAnswer,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_BATTLE_TOWER_INTERVIEW,\n        .numColumns = 1,\n        .numRows = 1,\n        .frameId = FRAMEID_INTERVIEW_SHOW_PERSON,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_Interview,\n        .instructionsText1 = gText_FindWordsThatDescribeYour,\n        .instructionsText2 = gText_FeelingsRightNow,\n        .confirmText1 = gText_TheAnswer,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_CONTEST_INTERVIEW,\n        .numColumns = 1,\n        .numRows = 1,\n        .frameId = FRAMEID_INTERVIEW_SHOW_PERSON,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_Interview,\n        .instructionsText1 = gText_FindWordsThatDescribeYour,\n        .instructionsText2 = gText_FeelingsRightNow,\n        .confirmText1 = gText_TheAnswer,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_FAN_QUESTION,\n        .numColumns = 1,\n        .numRows = 1,\n        .frameId = FRAMEID_INTERVIEW_SHOW_PERSON,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_FansQuestion,\n        .instructionsText1 = gText_FindWordsWhichFit,\n        .instructionsText2 = gText_TheTrainersImage,\n        .confirmText1 = gText_TheImage,\n        .confirmText2 = gText_IsAsShownOkay,\n    }",
+        "{\n        .type = EASY_CHAT_TYPE_QUESTIONNAIRE,\n        .numColumns = 2,\n        .numRows = 2,\n        .frameId = FRAMEID_GENERAL_2x2,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_Questionnaire,\n        .instructionsText1 = gText_CombineFourWordsOrPhrases,\n        .instructionsText2 = gText_AndFillOutTheQuestionnaire,\n        .confirmText1 = gText_TheAnswer,\n        .confirmText2 = gText_IsAsShownOkay,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .type = EASY_CHAT_TYPE_PROFILE,\n        .numColumns = 2,\n        .numRows = 2,\n        .frameId = FRAMEID_GENERAL_2x2,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_Profile,\n        .instructionsText1 = gText_CombineFourWordsOrPhrases,\n        .instructionsText2 = gText_AndMakeYourProfile,\n        .confirmText1 = gText_YourProfile,\n        .confirmText2 = gText_IsAsShownOkay,\n    },\n    {\n        .type = EASY_CHAT_TYPE_BATTLE_START,\n        .numColumns = 2,\n        .numRows = 3,\n        .frameId = FRAMEID_GENERAL_2x3,\n        .fourFooterOptions = FALSE,\n        .titleText = gText_AtTheBattlesStart,\n        .instructionsText1 = gText_CombineSixWordsOrPhrases,\n        .instructionsText2 = gText_AndMakeAMessage,\n        .confirmText1 = gText_YourFeelingAtTheBattlesStart,\n        .confirmText2 = gText_IsAsShownOkay,\n    },\n    {\n        .type = EASY_CHAT_TYPE_BATTLE_WON,\n        .numColumns = 2,\n        .numRows = 3,\n        .frameId = FRAMEID_GENERAL_2x3,\n        .fourFooterOptio..."
+    },
+    "sAlphabetGroupIdMap": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 1,  2,  3,  4,  5,  6,  0}",
+        "{ 7,  8,  9, 10, 11, 12,  0}",
+        "{13, 14, 15, 16, 17, 18, 19}",
+        "{20, 21, 22, 23, 24, 25, 26}"
+      ],
+      "rawValue": "{\n    { 1,  2,  3,  4,  5,  6,  0},\n    { 7,  8,  9, 10, 11, 12,  0},\n    {13, 14, 15, 16, 17, 18, 19},\n    {20, 21, 22, 23, 24, 25, 26},\n}"
+    },
+    "sMysteryGiftPhrase": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "EC_WORD_LINK",
+        "EC_WORD_WITH",
+        "EC_WORD_CASE",
+        "EC_WORD_TRAINER"
+      ],
+      "rawValue": "{\n    EC_WORD_LINK,\n    EC_WORD_WITH,\n    EC_WORD_CASE,\n    EC_WORD_TRAINER,\n}"
+    },
+    "sBerryMasterWifePhrases": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[PHRASE_GREAT_BATTLE - 1]        = {EC_WORD_GREAT, EC_WORD_FIGHTING}",
+        "[PHRASE_CHALLENGE_CONTEST - 1]   = {EC_WORD_CONTEST, EC_WORD_CHALLENGE}",
+        "[PHRASE_OVERWHELMING_LATIAS - 1] = {EC_WORD_OVERWHELMING, EC_POKEMON(LATIAS)}",
+        "[PHRASE_COOL_LATIOS - 1]         = {EC_WORD_COOL, EC_POKEMON(LATIOS)}",
+        "[PHRASE_SUPER_HUSTLE - 1]        = {EC_WORD_SUPER, EC_WORD_HUSTLE}"
+      ],
+      "rawValue": "{\n    [PHRASE_GREAT_BATTLE - 1]        = {EC_WORD_GREAT, EC_WORD_FIGHTING},\n    [PHRASE_CHALLENGE_CONTEST - 1]   = {EC_WORD_CONTEST, EC_WORD_CHALLENGE},\n    [PHRASE_OVERWHELMING_LATIAS - 1] = {EC_WORD_OVERWHELMING, EC_POKEMON(LATIAS)},\n    [PHRASE_COOL_LATIOS - 1]         = {EC_WORD_COOL, EC_POKEMON(LATIOS)},\n    [PHRASE_SUPER_HUSTLE - 1]        = {EC_WORD_SUPER, EC_WORD_HUSTLE},\n}"
+    },
+    "sPhraseFrameDimensions": {
+      "type": "struct EasyChatPhraseFrameDimensions",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FRAMEID_MAIL",
+        "FRAMEID_COMBINE_TWO_WORDS",
+        "FRAMEID_INTERVIEW_SHOW_PERSON",
+        "FRAMEID_INTERVIEW",
+        "FRAMEID_QUIZ_ANSWER",
+        "FRAMEID_QUIZ_QUESTION",
+        "FRAMEID_QUIZ_SET_QUESTION"
+      ],
+      "indexedValues": [
+        "{\n        .left = 3",
+        "{\n        .left = 3",
+        "{\n        .left = 16",
+        "{\n        .left = 3",
+        "{\n        .left = 9",
+        "{\n        .left = 5",
+        "{\n        .left = 3"
+      ],
+      "rawValue": "{\n    [FRAMEID_GENERAL_2x2] = {\n        .left = 3,\n        .top = 4,\n        .width = 24,\n        .height = 4,\n        .footerId = FOOTER_NORMAL,\n    },\n    [FRAMEID_GENERAL_2x3] = {\n        .left = 3,\n        .top = 3,\n        .width = 24,\n        .height = 6,\n        .footerId = FOOTER_NORMAL,\n    },\n    [FRAMEID_MAIL] = {\n        .left = 3,\n        .top = 0,\n        .width = 24,\n        .height = 10,\n        .footerId = FOOTER_NORMAL,\n    },\n    [FRAMEID_COMBINE_TWO_WORDS] = {\n        .left = 3,\n        .top = 5,\n        .width = 24,\n        .height = 2,\n        .footerId = FOOTER_NORMAL,\n    },\n    [FRAMEID_INTERVIEW_SHOW_PERSON] = {\n        .left = 16,\n        .top = 5,\n        .width = 12,\n        .height = 2,\n        .footerId = FOOTER_NORMAL,\n    },\n    [FRAMEID_INTERVIEW] = {\n        .left = 3,\n        .top = 4,\n        .width = 24,\n        .height = 4,\n        .footerId = FOOTER_NORMAL,\n    },\n    [FRAMEID_QUIZ_ANSWER] = {\n        .left = 9,\n        .top = 4,\n        .width = 12,\n        .height = 2..."
+    },
+    "sEasyChatBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0x80,\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0,\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0x80,\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    },\n}"
+    },
+    "sEasyChatWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_TITLE",
+        "WIN_MSG",
+        "WIN_INPUT_SELECT"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 1",
+        "{\n        .bg = 0",
+        "{\n        .bg = 2"
+      ],
+      "rawValue": "{\n    [WIN_TITLE] = {\n        .bg = 1,\n        .tilemapLeft = 0,  \n        .tilemapTop = 0,\n        .width = 30,  \n        .height = 2,\n        .paletteNum = 10,\n        .baseBlock = 0x10,\n    },\n    [WIN_MSG] = {\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 15,\n        .width = 24,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0xA,\n    },\n    [WIN_INPUT_SELECT] = {\n        .bg = 2,\n        .tilemapLeft = 1,\n        .tilemapTop = 0,\n        .width = 28,\n        .height = 32,\n        .paletteNum = 3,\n        .baseBlock = 0,\n    },\n    DUMMY_WIN_TEMPLATE,\n}"
+    },
+    "sSpriteSheets": {
+      "type": "struct SpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sTriangleCursor_Gfx,\n        .size = sizeof(sTriangleCursor_Gfx),\n        .tag = GFXTAG_TRIANGLE_CURSOR\n    }",
+        "{\n        .data = sScrollIndicator_Gfx,\n        .size = sizeof(sScrollIndicator_Gfx),\n        .tag = GFXTAG_SCROLL_INDICATOR\n    }",
+        "{\n        .data = sStartSelectButtons_Gfx,\n        .size = sizeof(sStartSelectButtons_Gfx),\n        .tag = GFXTAG_START_SELECT_BUTTONS\n    }",
+        "{0}"
+      ],
+      "rawValue": "{\n    {\n        .data = sTriangleCursor_Gfx,\n        .size = sizeof(sTriangleCursor_Gfx),\n        .tag = GFXTAG_TRIANGLE_CURSOR\n    },\n    {\n        .data = sScrollIndicator_Gfx,\n        .size = sizeof(sScrollIndicator_Gfx),\n        .tag = GFXTAG_SCROLL_INDICATOR\n    },\n    {\n        .data = sStartSelectButtons_Gfx,\n        .size = sizeof(sStartSelectButtons_Gfx),\n        .tag = GFXTAG_START_SELECT_BUTTONS\n    },\n    {0}\n}"
+    },
+    "sSpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sTriangleCursor_Pal,\n        .tag = PALTAG_TRIANGLE_CURSOR,\n    }",
+        "{\n        .data = gEasyChatRectangleCursor_Pal,\n        .tag = PALTAG_RECTANGLE_CURSOR,\n    }",
+        "{\n        .data = gEasyChatButtonWindow_Pal,\n        .tag = PALTAG_MISC_UI,  \n    }",
+        "{\n        .data = sRSInterviewFrame_Pal,\n        .tag = PALTAG_RS_INTERVIEW_FRAME,\n    }",
+        "{0}"
+      ],
+      "rawValue": "{\n    {\n        .data = sTriangleCursor_Pal,\n        .tag = PALTAG_TRIANGLE_CURSOR,\n    },\n    {\n        .data = gEasyChatRectangleCursor_Pal,\n        .tag = PALTAG_RECTANGLE_CURSOR,\n    },\n    {\n        .data = gEasyChatButtonWindow_Pal,\n        .tag = PALTAG_MISC_UI,  \n    },\n    {\n        .data = sRSInterviewFrame_Pal,\n        .tag = PALTAG_RS_INTERVIEW_FRAME,\n    },\n    {0}\n}"
+    },
+    "sCompressedSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sRSInterviewFrame_Gfx,\n        .size = 0x800,\n        .tag = GFXTAG_RS_INTERVIEW_FRAME,\n    }",
+        "{\n        .data = gEasyChatRectangleCursor_Gfx,\n        .size = 0x1000,\n        .tag = GFXTAG_RECTANGLE_CURSOR,\n    }",
+        "{\n        .data = gEasyChatButtonWindow_Gfx,\n        .size = 0x800,\n        .tag = GFXTAG_BUTTON_WINDOW,\n    }",
+        "{\n        .data = gEasyChatMode_Gfx,\n        .size = 0x1000,\n        .tag = GFXTAG_MODE_WINDOW,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .data = sRSInterviewFrame_Gfx,\n        .size = 0x800,\n        .tag = GFXTAG_RS_INTERVIEW_FRAME,\n    },\n    {\n        .data = gEasyChatRectangleCursor_Gfx,\n        .size = 0x1000,\n        .tag = GFXTAG_RECTANGLE_CURSOR,\n    },\n    {\n        .data = gEasyChatButtonWindow_Gfx,\n        .size = 0x800,\n        .tag = GFXTAG_BUTTON_WINDOW,\n    },\n    {\n        .data = gEasyChatMode_Gfx,\n        .size = 0x1000,\n        .tag = GFXTAG_MODE_WINDOW,\n    },\n}"
+    },
+    "sAlphabetKeyboardColumnOffsets": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "12",
+        "24",
+        "56",
+        "68",
+        "80",
+        "92"
+      ],
+      "rawValue": "{0, 12, 24, 56, 68, 80, 92}"
+    },
+    "sAnim_RectangleCursor_OnGroup": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_RectangleCursor_OnButton": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_RectangleCursor_OnOthers": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_RectangleCursor_OnLetter": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(96, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(96, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_ModeWindow_Hidden": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(96, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(96, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_ModeWindow_ToGroup": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 4),  \n    ANIMCMD_FRAME(32, 4),  \n    ANIMCMD_END,\n}"
+    },
+    "sAnim_ModeWindow_ToAlphabet": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 4),  \n    ANIMCMD_FRAME(0, 4),   \n    ANIMCMD_END,\n}"
+    },
+    "sAnim_ModeWindow_ToHidden": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 4)",
+        "ANIMCMD_FRAME(96, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 4),  \n    ANIMCMD_FRAME(96, 0),  \n    ANIMCMD_END,\n}"
+    },
+    "sAnim_ModeWindow_Transition": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Frame0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Frame1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sFooterOptionXOffsets": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FOOTER_NORMAL",
+        "FOOTER_QUIZ",
+        "FOOTER_ANSWER"
+      ],
+      "indexedValues": [
+        "{16",
+        "{16",
+        "{16"
+      ],
+      "rawValue": "{\n    [FOOTER_NORMAL] = {16, 111, 196,   0},\n    [FOOTER_QUIZ]   = {16,  82, 148, 184},\n    [FOOTER_ANSWER] = {16,  78, 141, 174},\n}"
+    },
+    "sDefaultProfileWords": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "EC_WORD_ADORE",
+        "EC_WORD_CASE",
+        "EC_WORD_POKEMON",
+        "EC_EMPTY_WORD"
+      ],
+      "rawValue": "{\n    EC_WORD_ADORE,\n    EC_WORD_CASE,\n    EC_WORD_POKEMON,\n    EC_EMPTY_WORD,\n}"
+    },
+    "sDefaultBattleStartWords": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "EC_WORD_APOLOGIZE",
+        "EC_WORD_EXCL",
+        "EC_WORD_HERE_I_COME",
+        "EC_WORD_EXCL",
+        "EC_EMPTY_WORD",
+        "EC_EMPTY_WORD"
+      ],
+      "rawValue": "{\n    EC_WORD_APOLOGIZE,\n    EC_WORD_EXCL,\n    EC_WORD_HERE_I_COME,\n    EC_WORD_EXCL,\n    EC_EMPTY_WORD,\n    EC_EMPTY_WORD,\n}"
+    },
+    "sDefaultBattleWonWords": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "EC_WORD_YAY",
+        "EC_WORD_YAY",
+        "EC_WORD_I_VE",
+        "EC_WORD_REALLY",
+        "EC_WORD_WINS",
+        "EC_WORD_EXCL_EXCL"
+      ],
+      "rawValue": "{\n    EC_WORD_YAY,\n    EC_WORD_YAY,\n    EC_WORD_I_VE,\n    EC_WORD_REALLY,\n    EC_WORD_WINS,\n    EC_WORD_EXCL_EXCL,\n}"
+    },
+    "sDefaultBattleLostWords": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "EC_WORD_IT_S",
+        "EC_EMPTY_WORD",
+        "EC_WORD_AWFUL",
+        "EC_WORD_ELLIPSIS",
+        "EC_WORD_I_VE",
+        "EC_WORD_LOST"
+      ],
+      "rawValue": "{\n    EC_WORD_IT_S,\n    EC_EMPTY_WORD,\n    EC_WORD_AWFUL,\n    EC_WORD_ELLIPSIS,\n    EC_WORD_I_VE,\n    EC_WORD_LOST,\n}"
+    },
+    "sRestrictedWordSpecies": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "SPECIES_DEOXYS"
+      ],
+      "rawValue": "{\n    SPECIES_DEOXYS,\n}"
+    }
+  }
+}

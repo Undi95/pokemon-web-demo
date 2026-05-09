@@ -26,7 +26,8 @@ const {
   FALSE, FREE_SPRITE_TILE, LoadPalette, NULL,
   ObjAffineSet, PLTT_ID, PLTT_SIZE_4BPP, SAFE_DIV,
   SET_SPRITE_TILE_RANGE, SPRITE_TILE_IS_ALLOCATED, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_DOUBLE_MASK,
-  ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_ON_MASK, TILE_SIZE_4BPP, TRUE,  // 4-per-line for readability
+  ST_OAM_AFFINE_OFF, ST_OAM_AFFINE_ON_MASK, SpriteCallbackDummy, TILE_SIZE_4BPP,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetSpriteData(void) */

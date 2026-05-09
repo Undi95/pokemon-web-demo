@@ -45,12 +45,13 @@ const {
   Menu_ProcessInputNoWrapClearOnChoose, MoveConditionMonOffscreen, MoveConditionMonOnscreen, NULL,
   OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP,
   PlaySE, PreparePokeblockFeedScene, ProcessSpriteCopyRequests, PutWindowTilemap,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, ResetBgsAndClearDma3BusyFlags, ResetConditionSparkleSprites,
-  ResetSpriteData, RunTextPrinters, SPRITE_SHAPE, SPRITE_SIZE,
-  ScanlineEffect_InitHBlankDmaTransfer, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
-  SetMonData, SetVBlankCallback, ShowBg, StartSpriteAnim,
-  StringAppend, StringCopy, StringGet_Nickname, TRUE,
-  TransferPlttBuffer, TryClearPokeblock, UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
+  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, ResetBgsAndClearDma3BusyFlags,
+  ResetConditionSparkleSprites, ResetSpriteData, RunTextPrinters, SPRITE_SHAPE,
+  SPRITE_SIZE, ScanlineEffect_InitHBlankDmaTransfer, SetBgTilemapBuffer, SetGpuReg,
+  SetMainCallback2, SetMonData, SetVBlankCallback, ShowBg,
+  SpriteCallbackDummy, StartSpriteAnim, StringAppend, StringCopy,
+  StringGet_Nickname, TRUE, TransferPlttBuffer, TryClearPokeblock,
+  UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ChooseMonToGivePokeblock(struct Pokeblock *pokeblock, void (*callback)(void)) */

@@ -1,0 +1,51 @@
+{
+  "srcFile": "src/pokedex_area_screen.c",
+  "count": 4,
+  "tables": {
+    "sSpeciesHiddenFromAreaScreen": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "SPECIES_WYNAUT"
+      ],
+      "rawValue": "{ SPECIES_WYNAUT }"
+    },
+    "sMovingRegionMapSections": {
+      "type": "mapsec_u16_t",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MAPSEC_MARINE_CAVE",
+        "MAPSEC_UNDERWATER_MARINE_CAVE",
+        "MAPSEC_TERRA_CAVE"
+      ],
+      "rawValue": "{\n    MAPSEC_MARINE_CAVE,\n    MAPSEC_UNDERWATER_MARINE_CAVE,\n    MAPSEC_TERRA_CAVE\n}"
+    },
+    "sFeebasData": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{SPECIES_FEEBAS, MAP_GROUP(MAP_ROUTE119), MAP_NUM(MAP_ROUTE119)}",
+        "{NUM_SPECIES}"
+      ],
+      "rawValue": "{\n    {SPECIES_FEEBAS, MAP_GROUP(MAP_ROUTE119), MAP_NUM(MAP_ROUTE119)},\n    {NUM_SPECIES}\n}"
+    },
+    "sLandmarkData": {
+      "type": "mapsec_u16_t",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{MAPSEC_SKY_PILLAR,       FLAG_LANDMARK_SKY_PILLAR}",
+        "{MAPSEC_SEAFLOOR_CAVERN,  FLAG_LANDMARK_SEAFLOOR_CAVERN}",
+        "{MAPSEC_ALTERING_CAVE,    FLAG_LANDMARK_ALTERING_CAVE}",
+        "{MAPSEC_MIRAGE_TOWER,     FLAG_LANDMARK_MIRAGE_TOWER}",
+        "{MAPSEC_DESERT_UNDERPASS, FLAG_LANDMARK_DESERT_UNDERPASS}",
+        "{MAPSEC_ARTISAN_CAVE,     FLAG_LANDMARK_ARTISAN_CAVE}",
+        "{MAPSEC_NONE}"
+      ],
+      "rawValue": "{\n    {MAPSEC_SKY_PILLAR,       FLAG_LANDMARK_SKY_PILLAR},\n    {MAPSEC_SEAFLOOR_CAVERN,  FLAG_LANDMARK_SEAFLOOR_CAVERN},\n    {MAPSEC_ALTERING_CAVE,    FLAG_LANDMARK_ALTERING_CAVE},\n    {MAPSEC_MIRAGE_TOWER,     FLAG_LANDMARK_MIRAGE_TOWER},\n    {MAPSEC_DESERT_UNDERPASS, FLAG_LANDMARK_DESERT_UNDERPASS},\n    {MAPSEC_ARTISAN_CAVE,     FLAG_LANDMARK_ARTISAN_CAVE},\n    {MAPSEC_NONE}\n}"
+    }
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "srcFile": "src/battle_transition_frontier.c",
+  "count": 12,
+  "tables": {
+    "sFiller": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sAnim_LogoCircle_Top": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_LogoCircle_Left": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_LogoCircle_Right": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(128, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(128, 1),\n    ANIMCMD_END\n}"
+    },
+    "sFrontierCirclesMeet_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Circles_Init",
+        "CirclesMeet_CreateSprites",
+        "WaitForLogoCirclesAnim",
+        "FadeInCenterLogoCircle",
+        "CirclesMeet_End"
+      ],
+      "rawValue": "{\n    Circles_Init,\n    CirclesMeet_CreateSprites,\n    WaitForLogoCirclesAnim,\n    FadeInCenterLogoCircle,\n    CirclesMeet_End\n}"
+    },
+    "sFrontierCirclesCross_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Circles_Init",
+        "CirclesCross_CreateSprites",
+        "WaitForLogoCirclesAnim",
+        "FadeInCenterLogoCircle",
+        "CirclesCross_End"
+      ],
+      "rawValue": "{\n    Circles_Init,\n    CirclesCross_CreateSprites,\n    WaitForLogoCirclesAnim,\n    FadeInCenterLogoCircle,\n    CirclesCross_End\n}"
+    },
+    "sFrontierCirclesAsymmetricSpiral_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Circles_Init",
+        "CirclesAsymmetricSpiral_CreateSprites",
+        "WaitForLogoCirclesAnim",
+        "FadeInCenterLogoCircle",
+        "CirclesAsymmetricSpiral_End"
+      ],
+      "rawValue": "{\n    Circles_Init,\n    CirclesAsymmetricSpiral_CreateSprites,\n    WaitForLogoCirclesAnim,\n    FadeInCenterLogoCircle,\n    CirclesAsymmetricSpiral_End\n}"
+    },
+    "sFrontierCirclesSymmetricSpiral_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Circles_Init",
+        "CirclesSymmetricSpiral_CreateSprites",
+        "WaitForLogoCirclesAnim",
+        "FadeInCenterLogoCircle",
+        "CirclesSymmetricSpiral_End"
+      ],
+      "rawValue": "{\n    Circles_Init,\n    CirclesSymmetricSpiral_CreateSprites,\n    WaitForLogoCirclesAnim,\n    FadeInCenterLogoCircle,\n    CirclesSymmetricSpiral_End\n}"
+    },
+    "sFrontierCirclesMeetInSeq_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Circles_Init",
+        "CirclesMeetInSeq_CreateSprites",
+        "WaitForLogoCirclesAnim",
+        "FadeInCenterLogoCircle",
+        "CirclesMeetInSeq_End"
+      ],
+      "rawValue": "{\n    Circles_Init,\n    CirclesMeetInSeq_CreateSprites,\n    WaitForLogoCirclesAnim,\n    FadeInCenterLogoCircle,\n    CirclesMeetInSeq_End\n}"
+    },
+    "sFrontierCirclesCrossInSeq_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Circles_Init",
+        "CirclesCrossInSeq_CreateSprites",
+        "WaitForLogoCirclesAnim",
+        "FadeInCenterLogoCircle",
+        "CirclesCrossInSeq_End"
+      ],
+      "rawValue": "{\n    Circles_Init,\n    CirclesCrossInSeq_CreateSprites,\n    WaitForLogoCirclesAnim,\n    FadeInCenterLogoCircle,\n    CirclesCrossInSeq_End\n}"
+    },
+    "sFrontierCirclesAsymmetricSpiralInSeq_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Circles_Init",
+        "CirclesAsymmetricSpiralInSeq_CreateSprites",
+        "WaitForLogoCirclesAnim",
+        "FadeInCenterLogoCircle",
+        "CirclesAsymmetricSpiralInSeq_End"
+      ],
+      "rawValue": "{\n    Circles_Init,\n    CirclesAsymmetricSpiralInSeq_CreateSprites,\n    WaitForLogoCirclesAnim,\n    FadeInCenterLogoCircle,\n    CirclesAsymmetricSpiralInSeq_End\n}"
+    },
+    "sFrontierCirclesSymmetricSpiralInSeq_Funcs": {
+      "type": "TransitionStateFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Circles_Init",
+        "CirclesSymmetricSpiralInSeq_CreateSprites",
+        "WaitForLogoCirclesAnim",
+        "FadeInCenterLogoCircle",
+        "CirclesSymmetricSpiralInSeq_End"
+      ],
+      "rawValue": "{\n    Circles_Init,\n    CirclesSymmetricSpiralInSeq_CreateSprites,\n    WaitForLogoCirclesAnim,\n    FadeInCenterLogoCircle,\n    CirclesSymmetricSpiralInSeq_End\n}"
+    }
+  }
+}

@@ -1,0 +1,513 @@
+{
+  "srcFile": "src/field_effect.c",
+  "count": 42,
+  "tables": {
+    "sPicTable_NewGameBirch": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "obj_frame_tiles(sNewGameBirch_Gfx)"
+      ],
+      "rawValue": "{\n    obj_frame_tiles(sNewGameBirch_Gfx)\n}"
+    },
+    "sAnim_NewGameBirch": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(.imageValue = 0, .duration = 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(.imageValue = 0, .duration = 1),\n    ANIMCMD_END\n}"
+    },
+    "sPicTable_PokeballGlow": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "obj_frame_tiles(sPokeballGlow_Gfx)"
+      ],
+      "rawValue": "{\n    obj_frame_tiles(sPokeballGlow_Gfx)\n}"
+    },
+    "sPicTable_PokecenterMonitor": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "obj_frame_tiles(sPokecenterMonitor0_Gfx)",
+        "obj_frame_tiles(sPokecenterMonitor1_Gfx)"
+      ],
+      "rawValue": "{\n    obj_frame_tiles(sPokecenterMonitor0_Gfx),\n    obj_frame_tiles(sPokecenterMonitor1_Gfx)\n}"
+    },
+    "sPicTable_HofMonitorBig": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "obj_frame_tiles(sHofMonitorBig_Gfx)"
+      ],
+      "rawValue": "{\n    obj_frame_tiles(sHofMonitorBig_Gfx)\n}"
+    },
+    "sPicTable_HofMonitorSmall": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{.data = sHofMonitorSmall_Gfx, .size = 0x200}"
+      ],
+      "rawValue": "{\n    {.data = sHofMonitorSmall_Gfx, .size = 0x200}  \n}"
+    },
+    "sSubsprites_PokecenterMonitor": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -12,\n        .y =  -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x =  4,\n        .y = -8,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 2,\n        .priority = 2\n    }",
+        "{\n        .x = -12,\n        .y =   0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 3,\n        .priority = 2\n    }",
+        "{\n        .x = 4,\n        .y = 0,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 5,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -12,\n        .y =  -8,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x =  4,\n        .y = -8,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 2,\n        .priority = 2\n    },\n    {\n        .x = -12,\n        .y =   0,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 3,\n        .priority = 2\n    },\n    {\n        .x = 4,\n        .y = 0,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 5,\n        .priority = 2\n    }\n}"
+    },
+    "sSubsprites_HofMonitorBig": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -32,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x =  0,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 2\n    }",
+        "{\n        .x = -32,\n        .y =  0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 2\n    }",
+        "{\n        .x =   0,\n        .y =  0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -32,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x =  0,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 4,\n        .priority = 2\n    },\n    {\n        .x = -32,\n        .y =  0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 8,\n        .priority = 2\n    },\n    {\n        .x =   0,\n        .y =  0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 12,\n        .priority = 2\n    }\n}"
+    },
+    "sAnim_Static": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(.imageValue = 0, .duration = 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(.imageValue = 0, .duration = 1),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Flicker": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(.imageValue = 0, .duration = 16)",
+        "ANIMCMD_FRAME(.imageValue = 1, .duration = 16)",
+        "ANIMCMD_FRAME(.imageValue = 0, .duration = 16)",
+        "ANIMCMD_FRAME(.imageValue = 1, .duration = 16)",
+        "ANIMCMD_FRAME(.imageValue = 0, .duration = 16)",
+        "ANIMCMD_FRAME(.imageValue = 1, .duration = 16)",
+        "ANIMCMD_FRAME(.imageValue = 0, .duration = 16)",
+        "ANIMCMD_FRAME(.imageValue = 1, .duration = 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(.imageValue = 0, .duration = 16),\n    ANIMCMD_FRAME(.imageValue = 1, .duration = 16),\n    ANIMCMD_FRAME(.imageValue = 0, .duration = 16),\n    ANIMCMD_FRAME(.imageValue = 1, .duration = 16),\n    ANIMCMD_FRAME(.imageValue = 0, .duration = 16),\n    ANIMCMD_FRAME(.imageValue = 1, .duration = 16),\n    ANIMCMD_FRAME(.imageValue = 0, .duration = 16),\n    ANIMCMD_FRAME(.imageValue = 1, .duration = 16),\n    ANIMCMD_END\n}"
+    },
+    "sPokeballCoordOffsets": {
+      "type": "struct Coords16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{.x = 0, .y = 0}",
+        "{.x = 6, .y = 0}",
+        "{.x = 0, .y = 4}",
+        "{.x = 6, .y = 4}",
+        "{.x = 0, .y = 8}",
+        "{.x = 6, .y = 8}"
+      ],
+      "rawValue": "{\n    {.x = 0, .y = 0},\n    {.x = 6, .y = 0},\n    {.x = 0, .y = 4},\n    {.x = 6, .y = 4},\n    {.x = 0, .y = 8},\n    {.x = 6, .y = 8}\n}"
+    },
+    "sPokeballGlowReds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "16",
+        "12",
+        "8",
+        "0"
+      ],
+      "rawValue": "{16, 12, 8, 0}"
+    },
+    "sPokeballGlowGreens": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "16",
+        "12",
+        "8",
+        "0"
+      ],
+      "rawValue": "{16, 12, 8, 0}"
+    },
+    "sPokeballGlowBlues": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "0",
+        "0",
+        "0"
+      ],
+      "rawValue": "{ 0,  0, 0, 0}"
+    },
+    "sAffineAnim_FlyBirdLeaveBall": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(8, 8, -30, 0)",
+        "AFFINEANIMCMD_FRAME(28, 28, 0, 30)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(8, 8, -30, 0),\n    AFFINEANIMCMD_FRAME(28, 28, 0, 30),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_FlyBirdReturnToBall": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 64, 0)",
+        "AFFINEANIMCMD_FRAME(-10, -10, 0, 22)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 64, 0),\n    AFFINEANIMCMD_FRAME(-10, -10, 0, 22),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sImages_DeoxysRockFragment": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "obj_frame_tiles(sRockFragment_TopLeft)",
+        "obj_frame_tiles(sRockFragment_TopRight)",
+        "obj_frame_tiles(sRockFragment_BottomLeft)",
+        "obj_frame_tiles(sRockFragment_BottomRight)"
+      ],
+      "rawValue": "{\n    obj_frame_tiles(sRockFragment_TopLeft),\n    obj_frame_tiles(sRockFragment_TopRight),\n    obj_frame_tiles(sRockFragment_BottomLeft),\n    obj_frame_tiles(sRockFragment_BottomRight),\n}"
+    },
+    "sAnim_RockFragment_TopLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(.imageValue = 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(.imageValue = 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_RockFragment_TopRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(.imageValue = 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(.imageValue = 1),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_RockFragment_BottomLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(.imageValue = 2)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(.imageValue = 2),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_RockFragment_BottomRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(.imageValue = 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(.imageValue = 3),\n    ANIMCMD_END\n}"
+    },
+    "sPokecenterHealEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "PokecenterHealEffect_Init",
+        "PokecenterHealEffect_WaitForBallPlacement",
+        "PokecenterHealEffect_WaitForBallFlashing",
+        "PokecenterHealEffect_WaitForSoundAndEnd"
+      ],
+      "rawValue": "{\n    PokecenterHealEffect_Init,\n    PokecenterHealEffect_WaitForBallPlacement,\n    PokecenterHealEffect_WaitForBallFlashing,\n    PokecenterHealEffect_WaitForSoundAndEnd\n}"
+    },
+    "sHallOfFameRecordEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "HallOfFameRecordEffect_Init",
+        "HallOfFameRecordEffect_WaitForBallPlacement",
+        "HallOfFameRecordEffect_WaitForBallFlashing",
+        "HallOfFameRecordEffect_WaitForSoundAndEnd"
+      ],
+      "rawValue": "{\n    HallOfFameRecordEffect_Init,\n    HallOfFameRecordEffect_WaitForBallPlacement,\n    HallOfFameRecordEffect_WaitForBallFlashing,\n    HallOfFameRecordEffect_WaitForSoundAndEnd\n}"
+    },
+    "sPokeballGlowEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "PokeballGlowEffect_PlaceBalls",
+        "PokeballGlowEffect_TryPlaySe",
+        "PokeballGlowEffect_Flash1",
+        "PokeballGlowEffect_Flash2",
+        "PokeballGlowEffect_WaitAfterFlash",
+        "PokeballGlowEffect_Dummy",
+        "PokeballGlowEffect_WaitForSound",
+        "PokeballGlowEffect_Idle"
+      ],
+      "rawValue": "{\n    PokeballGlowEffect_PlaceBalls,\n    PokeballGlowEffect_TryPlaySe,\n    PokeballGlowEffect_Flash1,\n    PokeballGlowEffect_Flash2,\n    PokeballGlowEffect_WaitAfterFlash,\n    PokeballGlowEffect_Dummy,\n    PokeballGlowEffect_WaitForSound,\n    PokeballGlowEffect_Idle\n}"
+    },
+    "sFallWarpFieldEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "FallWarpEffect_Init",
+        "FallWarpEffect_WaitWeather",
+        "FallWarpEffect_StartFall",
+        "FallWarpEffect_Fall",
+        "FallWarpEffect_Land",
+        "FallWarpEffect_CameraShake",
+        "FallWarpEffect_End"
+      ],
+      "rawValue": "{\n    FallWarpEffect_Init,\n    FallWarpEffect_WaitWeather,\n    FallWarpEffect_StartFall,\n    FallWarpEffect_Fall,\n    FallWarpEffect_Land,\n    FallWarpEffect_CameraShake,\n    FallWarpEffect_End,\n}"
+    },
+    "sEscalatorWarpOutFieldEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "EscalatorWarpOut_Init",
+        "EscalatorWarpOut_WaitForPlayer",
+        "EscalatorWarpOut_Up_Ride",
+        "EscalatorWarpOut_Up_End",
+        "EscalatorWarpOut_Down_Ride",
+        "EscalatorWarpOut_Down_End"
+      ],
+      "rawValue": "{\n    EscalatorWarpOut_Init,\n    EscalatorWarpOut_WaitForPlayer,\n    EscalatorWarpOut_Up_Ride,\n    EscalatorWarpOut_Up_End,\n    EscalatorWarpOut_Down_Ride,\n    EscalatorWarpOut_Down_End,\n}"
+    },
+    "sEscalatorWarpInFieldEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "EscalatorWarpIn_Init",
+        "EscalatorWarpIn_Down_Init",
+        "EscalatorWarpIn_Down_Ride",
+        "EscalatorWarpIn_Up_Init",
+        "EscalatorWarpIn_Up_Ride",
+        "EscalatorWarpIn_WaitForMovement",
+        "EscalatorWarpIn_End"
+      ],
+      "rawValue": "{\n    EscalatorWarpIn_Init,\n    EscalatorWarpIn_Down_Init,\n    EscalatorWarpIn_Down_Ride,\n    EscalatorWarpIn_Up_Init,\n    EscalatorWarpIn_Up_Ride,\n    EscalatorWarpIn_WaitForMovement,\n    EscalatorWarpIn_End,\n}"
+    },
+    "sWaterfallFieldEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "WaterfallFieldEffect_Init",
+        "WaterfallFieldEffect_ShowMon",
+        "WaterfallFieldEffect_WaitForShowMon",
+        "WaterfallFieldEffect_RideUp",
+        "WaterfallFieldEffect_ContinueRideOrEnd"
+      ],
+      "rawValue": "{\n    WaterfallFieldEffect_Init,\n    WaterfallFieldEffect_ShowMon,\n    WaterfallFieldEffect_WaitForShowMon,\n    WaterfallFieldEffect_RideUp,\n    WaterfallFieldEffect_ContinueRideOrEnd,\n}"
+    },
+    "sDiveFieldEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "DiveFieldEffect_Init",
+        "DiveFieldEffect_ShowMon",
+        "DiveFieldEffect_TryWarp"
+      ],
+      "rawValue": "{\n    DiveFieldEffect_Init,\n    DiveFieldEffect_ShowMon,\n    DiveFieldEffect_TryWarp,\n}"
+    },
+    "sLavaridgeGymB1FWarpEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "LavaridgeGymB1FWarpEffect_Init",
+        "LavaridgeGymB1FWarpEffect_CameraShake",
+        "LavaridgeGymB1FWarpEffect_Launch",
+        "LavaridgeGymB1FWarpEffect_Rise",
+        "LavaridgeGymB1FWarpEffect_FadeOut",
+        "LavaridgeGymB1FWarpEffect_Warp"
+      ],
+      "rawValue": "{\n    LavaridgeGymB1FWarpEffect_Init,\n    LavaridgeGymB1FWarpEffect_CameraShake,\n    LavaridgeGymB1FWarpEffect_Launch,\n    LavaridgeGymB1FWarpEffect_Rise,\n    LavaridgeGymB1FWarpEffect_FadeOut,\n    LavaridgeGymB1FWarpEffect_Warp,\n}"
+    },
+    "sLavaridgeGymB1FWarpExitEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "LavaridgeGymB1FWarpExitEffect_Init",
+        "LavaridgeGymB1FWarpExitEffect_StartPopOut",
+        "LavaridgeGymB1FWarpExitEffect_PopOut",
+        "LavaridgeGymB1FWarpExitEffect_End"
+      ],
+      "rawValue": "{\n    LavaridgeGymB1FWarpExitEffect_Init,\n    LavaridgeGymB1FWarpExitEffect_StartPopOut,\n    LavaridgeGymB1FWarpExitEffect_PopOut,\n    LavaridgeGymB1FWarpExitEffect_End,\n}"
+    },
+    "sLavaridgeGym1FWarpEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "LavaridgeGym1FWarpEffect_Init",
+        "LavaridgeGym1FWarpEffect_AshPuff",
+        "LavaridgeGym1FWarpEffect_Disappear",
+        "LavaridgeGym1FWarpEffect_FadeOut",
+        "LavaridgeGym1FWarpEffect_Warp"
+      ],
+      "rawValue": "{\n    LavaridgeGym1FWarpEffect_Init,\n    LavaridgeGym1FWarpEffect_AshPuff,\n    LavaridgeGym1FWarpEffect_Disappear,\n    LavaridgeGym1FWarpEffect_FadeOut,\n    LavaridgeGym1FWarpEffect_Warp,\n}"
+    },
+    "sEscapeRopeWarpOutEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "EscapeRopeWarpOutEffect_Init",
+        "EscapeRopeWarpOutEffect_Spin"
+      ],
+      "rawValue": "{\n    EscapeRopeWarpOutEffect_Init,\n    EscapeRopeWarpOutEffect_Spin,\n}"
+    },
+    "sEscapeRopeWarpInEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "EscapeRopeWarpInEffect_Init",
+        "EscapeRopeWarpInEffect_Spin"
+      ],
+      "rawValue": "{\n    EscapeRopeWarpInEffect_Init,\n    EscapeRopeWarpInEffect_Spin\n}"
+    },
+    "sTeleportWarpOutFieldEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "TeleportWarpOutFieldEffect_Init",
+        "TeleportWarpOutFieldEffect_SpinGround",
+        "TeleportWarpOutFieldEffect_SpinExit",
+        "TeleportWarpOutFieldEffect_End"
+      ],
+      "rawValue": "{\n    TeleportWarpOutFieldEffect_Init,\n    TeleportWarpOutFieldEffect_SpinGround,\n    TeleportWarpOutFieldEffect_SpinExit,\n    TeleportWarpOutFieldEffect_End\n}"
+    },
+    "sTeleportWarpInFieldEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "TeleportWarpInFieldEffect_Init",
+        "TeleportWarpInFieldEffect_SpinEnter",
+        "TeleportWarpInFieldEffect_SpinGround"
+      ],
+      "rawValue": "{\n    TeleportWarpInFieldEffect_Init,\n    TeleportWarpInFieldEffect_SpinEnter,\n    TeleportWarpInFieldEffect_SpinGround\n}"
+    },
+    "sFieldMoveShowMonOutdoorsEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "FieldMoveShowMonOutdoorsEffect_Init",
+        "FieldMoveShowMonOutdoorsEffect_LoadGfx",
+        "FieldMoveShowMonOutdoorsEffect_CreateBanner",
+        "FieldMoveShowMonOutdoorsEffect_WaitForMon",
+        "FieldMoveShowMonOutdoorsEffect_ShrinkBanner",
+        "FieldMoveShowMonOutdoorsEffect_RestoreBg",
+        "FieldMoveShowMonOutdoorsEffect_End"
+      ],
+      "rawValue": "{\n    FieldMoveShowMonOutdoorsEffect_Init,\n    FieldMoveShowMonOutdoorsEffect_LoadGfx,\n    FieldMoveShowMonOutdoorsEffect_CreateBanner,\n    FieldMoveShowMonOutdoorsEffect_WaitForMon,\n    FieldMoveShowMonOutdoorsEffect_ShrinkBanner,\n    FieldMoveShowMonOutdoorsEffect_RestoreBg,\n    FieldMoveShowMonOutdoorsEffect_End,\n}"
+    },
+    "sFieldMoveShowMonIndoorsEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "FieldMoveShowMonIndoorsEffect_Init",
+        "FieldMoveShowMonIndoorsEffect_LoadGfx",
+        "FieldMoveShowMonIndoorsEffect_SlideBannerOn",
+        "FieldMoveShowMonIndoorsEffect_WaitForMon",
+        "FieldMoveShowMonIndoorsEffect_RestoreBg",
+        "FieldMoveShowMonIndoorsEffect_SlideBannerOff",
+        "FieldMoveShowMonIndoorsEffect_End"
+      ],
+      "rawValue": "{\n    FieldMoveShowMonIndoorsEffect_Init,\n    FieldMoveShowMonIndoorsEffect_LoadGfx,\n    FieldMoveShowMonIndoorsEffect_SlideBannerOn,\n    FieldMoveShowMonIndoorsEffect_WaitForMon,\n    FieldMoveShowMonIndoorsEffect_RestoreBg,\n    FieldMoveShowMonIndoorsEffect_SlideBannerOff,\n    FieldMoveShowMonIndoorsEffect_End,\n}"
+    },
+    "sSurfFieldEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "SurfFieldEffect_Init",
+        "SurfFieldEffect_FieldMovePose",
+        "SurfFieldEffect_ShowMon",
+        "SurfFieldEffect_JumpOnSurfBlob",
+        "SurfFieldEffect_End"
+      ],
+      "rawValue": "{\n    SurfFieldEffect_Init,\n    SurfFieldEffect_FieldMovePose,\n    SurfFieldEffect_ShowMon,\n    SurfFieldEffect_JumpOnSurfBlob,\n    SurfFieldEffect_End,\n}"
+    },
+    "sFlyOutFieldEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "FlyOutFieldEffect_FieldMovePose",
+        "FlyOutFieldEffect_ShowMon",
+        "FlyOutFieldEffect_BirdLeaveBall",
+        "FlyOutFieldEffect_WaitBirdLeave",
+        "FlyOutFieldEffect_BirdSwoopDown",
+        "FlyOutFieldEffect_JumpOnBird",
+        "FlyOutFieldEffect_FlyOffWithBird",
+        "FlyOutFieldEffect_WaitFlyOff",
+        "FlyOutFieldEffect_End"
+      ],
+      "rawValue": "{\n    FlyOutFieldEffect_FieldMovePose,\n    FlyOutFieldEffect_ShowMon,\n    FlyOutFieldEffect_BirdLeaveBall,\n    FlyOutFieldEffect_WaitBirdLeave,\n    FlyOutFieldEffect_BirdSwoopDown,\n    FlyOutFieldEffect_JumpOnBird,\n    FlyOutFieldEffect_FlyOffWithBird,\n    FlyOutFieldEffect_WaitFlyOff,\n    FlyOutFieldEffect_End,\n}"
+    },
+    "sFlyInFieldEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "FlyInFieldEffect_BirdSwoopDown",
+        "FlyInFieldEffect_FlyInWithBird",
+        "FlyInFieldEffect_JumpOffBird",
+        "FlyInFieldEffect_FieldMovePose",
+        "FlyInFieldEffect_BirdReturnToBall",
+        "FlyInFieldEffect_WaitBirdReturn",
+        "FlyInFieldEffect_End"
+      ],
+      "rawValue": "{\n    FlyInFieldEffect_BirdSwoopDown,\n    FlyInFieldEffect_FlyInWithBird,\n    FlyInFieldEffect_JumpOffBird,\n    FlyInFieldEffect_FieldMovePose,\n    FlyInFieldEffect_BirdReturnToBall,\n    FlyInFieldEffect_WaitBirdReturn,\n    FlyInFieldEffect_End,\n}"
+    },
+    "sDestroyDeoxysRockEffectFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "DestroyDeoxysRockEffect_CameraShake",
+        "DestroyDeoxysRockEffect_RockFragments",
+        "DestroyDeoxysRockEffect_WaitAndEnd"
+      ],
+      "rawValue": "{\n    DestroyDeoxysRockEffect_CameraShake,\n    DestroyDeoxysRockEffect_RockFragments,\n    DestroyDeoxysRockEffect_WaitAndEnd,\n}"
+    }
+  }
+}

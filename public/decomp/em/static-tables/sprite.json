@@ -1,0 +1,161 @@
+{
+  "srcFile": "src/sprite.c",
+  "count": 12,
+  "tables": {
+    "sUnknownData": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x01",
+        "0x04",
+        "0x10",
+        "0x40",
+        "0x02",
+        "0x04",
+        "0x08",
+        "0x20",
+        "0x02",
+        "0x04",
+        "0x08",
+        "0x20",
+        "0x01",
+        "0x04",
+        "0x10",
+        "0x40",
+        "0x02",
+        "0x04",
+        "0x08",
+        "0x20",
+        "0x02",
+        "0x04",
+        "0x08",
+        "0x20"
+      ],
+      "rawValue": "{\n    0x01, 0x04, 0x10, 0x40,\n    0x02, 0x04, 0x08, 0x20,\n    0x02, 0x04, 0x08, 0x20,\n    0x01, 0x04, 0x10, 0x40,\n    0x02, 0x04, 0x08, 0x20,\n    0x02, 0x04, 0x08, 0x20,\n}"
+    },
+    "sCenterToCornerVecTable": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{    \n        {  -4,  -4 },\n        {  -8,  -8 },\n        { -16, -16 },\n        { -32, -32 },\n    }",
+        "{    \n        {  -8,  -4 },\n        { -16,  -4 },\n        { -16,  -8 },\n        { -32, -16 },\n    }",
+        "{    \n        {  -4,  -8 },\n        {  -4, -16 },\n        {  -8, -16 },\n        { -16, -32 },\n    }"
+      ],
+      "rawValue": "{\n    {    \n        {  -4,  -4 },\n        {  -8,  -8 },\n        { -16, -16 },\n        { -32, -32 },\n    },\n    {    \n        {  -8,  -4 },\n        { -16,  -4 },\n        { -16,  -8 },\n        { -32, -16 },\n    },\n    {    \n        {  -4,  -8 },\n        {  -4, -16 },\n        {  -8, -16 },\n        { -16, -32 },\n    },\n}"
+    },
+    "sAnimFuncs": {
+      "type": "AnimFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ContinueAnim",
+        "BeginAnim"
+      ],
+      "rawValue": "{\n    ContinueAnim,\n    BeginAnim,\n}"
+    },
+    "sAffineAnimFuncs": {
+      "type": "AnimFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ContinueAffineAnim",
+        "BeginAffineAnim"
+      ],
+      "rawValue": "{\n    ContinueAffineAnim,\n    BeginAffineAnim,\n}"
+    },
+    "sAnimCmdFuncs": {
+      "type": "AnimCmdFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AnimCmd_loop",
+        "AnimCmd_jump",
+        "AnimCmd_end",
+        "AnimCmd_frame"
+      ],
+      "rawValue": "{\n    AnimCmd_loop,\n    AnimCmd_jump,\n    AnimCmd_end,\n    AnimCmd_frame,\n}"
+    },
+    "sAffineAnimCmdFuncs": {
+      "type": "AffineAnimCmdFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AffineAnimCmd_loop",
+        "AffineAnimCmd_jump",
+        "AffineAnimCmd_end",
+        "AffineAnimCmd_frame"
+      ],
+      "rawValue": "{\n    AffineAnimCmd_loop,\n    AffineAnimCmd_jump,\n    AffineAnimCmd_end,\n    AffineAnimCmd_frame,\n}"
+    },
+    "sOamDimensions32": {
+      "type": "struct OamDimensions32",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ST_OAM_SQUARE",
+        "ST_OAM_H_RECTANGLE",
+        "ST_OAM_V_RECTANGLE"
+      ],
+      "indexedValues": [
+        "{\n        [SPRITE_SIZE(8x8)]   = {  8",
+        "{\n        [SPRITE_SIZE(16x8)]  = { 16",
+        "{\n        [SPRITE_SIZE(8x16)]  = {  8"
+      ],
+      "rawValue": "{\n    [ST_OAM_SQUARE] =\n    {\n        [SPRITE_SIZE(8x8)]   = {  8,  8 },\n        [SPRITE_SIZE(16x16)] = { 16, 16 },\n        [SPRITE_SIZE(32x32)] = { 32, 32 },\n        [SPRITE_SIZE(64x64)] = { 64, 64 },\n    },\n    [ST_OAM_H_RECTANGLE] =\n    {\n        [SPRITE_SIZE(16x8)]  = { 16,  8 },\n        [SPRITE_SIZE(32x8)]  = { 32,  8 },\n        [SPRITE_SIZE(32x16)] = { 32, 16 },\n        [SPRITE_SIZE(64x32)] = { 64, 32 },\n    },\n    [ST_OAM_V_RECTANGLE] =\n    {\n        [SPRITE_SIZE(8x16)]  = {  8, 16 },\n        [SPRITE_SIZE(8x32)]  = {  8, 32 },\n        [SPRITE_SIZE(16x32)] = { 16, 32 },\n        [SPRITE_SIZE(32x64)] = { 32, 64 },\n    },\n}"
+    },
+    "sOamDimensions": {
+      "type": "struct OamDimensions",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ST_OAM_SQUARE",
+        "ST_OAM_H_RECTANGLE",
+        "ST_OAM_V_RECTANGLE"
+      ],
+      "indexedValues": [
+        "{\n        [SPRITE_SIZE(8x8)]   = {  8",
+        "{\n        [SPRITE_SIZE(16x8)]  = { 16",
+        "{\n        [SPRITE_SIZE(8x16)]  = {  8"
+      ],
+      "rawValue": "{\n    [ST_OAM_SQUARE] =\n    {\n        [SPRITE_SIZE(8x8)]   = {  8,  8 },\n        [SPRITE_SIZE(16x16)] = { 16, 16 },\n        [SPRITE_SIZE(32x32)] = { 32, 32 },\n        [SPRITE_SIZE(64x64)] = { 64, 64 },\n    },\n    [ST_OAM_H_RECTANGLE] =\n    {\n        [SPRITE_SIZE(16x8)]  = { 16,  8 },\n        [SPRITE_SIZE(32x8)]  = { 32,  8 },\n        [SPRITE_SIZE(32x16)] = { 32, 16 },\n        [SPRITE_SIZE(64x32)] = { 64, 32 },\n    },\n    [ST_OAM_V_RECTANGLE] =\n    {\n        [SPRITE_SIZE(8x16)]  = {  8, 16 },\n        [SPRITE_SIZE(8x32)]  = {  8, 32 },\n        [SPRITE_SIZE(16x32)] = { 16, 32 },\n        [SPRITE_SIZE(32x64)] = { 32, 64 },\n    },\n}"
+    },
+    "sSpritePriorities": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sSpriteOrder": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sSpriteCopyRequests": {
+      "type": "struct SpriteCopyRequest",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sSpriteTileAllocBitmap": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    }
+  }
+}

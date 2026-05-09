@@ -81,9 +81,13 @@ function getBridgeExports() {
   // Match `export { A, B as C, D } from '...';` and `export { A, B };`
   const reList = /^export\s*\{([^}]+)\}/gm;
   while ((m = reList.exec(src)) !== null) {
-    for (const part of m[1].split(',')) {
+    // Strip line comments + block comments inside the export block.
+    const cleaned = m[1].replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const part of cleaned.split(',')) {
       const trimmed = part.trim();
       if (!trimmed) continue;
+      // Skip parts that aren't valid identifiers (= safety).
+      if (!/^[A-Za-z_$][\w$\s]*(\s+as\s+[A-Za-z_$][\w$]*)?$/.test(trimmed)) continue;
       const aliasMatch = trimmed.match(/^\S+\s+as\s+([A-Za-z_$][\w$]*)$/);
       names.add(aliasMatch ? aliasMatch[1] : trimmed.split(/\s+/)[0]);
     }

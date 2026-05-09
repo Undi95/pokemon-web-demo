@@ -1,0 +1,133 @@
+{
+  "srcFile": "src/egg_hatch.c",
+  "count": 11,
+  "tables": {
+    "sSpriteAnim_Egg_Normal": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_Egg_Cracked1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 5),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_Egg_Cracked2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 5),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_Egg_Cracked3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 5),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_EggShard0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_EggShard1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 5),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_EggShard2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 5),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_EggShard3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 5),\n    ANIMCMD_END\n}"
+    },
+    "sBgTemplates_EggHatch": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 24,\n        .screenSize = 3,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 8,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 24,\n        .screenSize = 3,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 8,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n}"
+    },
+    "sWinTemplates_EggHatch": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 26,\n        .height = 4,\n        .paletteNum = 0,\n        .baseBlock = 64\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 26,\n        .height = 4,\n        .paletteNum = 0,\n        .baseBlock = 64\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sEggShardVelocities": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{Q_8_8(-1.5),       Q_8_8(-3.75)}",
+        "{Q_8_8(-5),         Q_8_8(-3)}",
+        "{Q_8_8(3.5),        Q_8_8(-3)}",
+        "{Q_8_8(-4),         Q_8_8(-3.75)}",
+        "{Q_8_8(2),          Q_8_8(-1.5)}",
+        "{Q_8_8(-0.5),       Q_8_8(-6.75)}",
+        "{Q_8_8(5),          Q_8_8(-2.25)}",
+        "{Q_8_8(-1.5),       Q_8_8(-3.75)}",
+        "{Q_8_8(4.5),        Q_8_8(-1.5)}",
+        "{Q_8_8(-1),         Q_8_8(-6.75)}",
+        "{Q_8_8(4),          Q_8_8(-2.25)}",
+        "{Q_8_8(-3.5),       Q_8_8(-3.75)}",
+        "{Q_8_8(1),          Q_8_8(-1.5)}",
+        "{Q_8_8(-3.515625),  Q_8_8(-6.75)}",
+        "{Q_8_8(4.5),        Q_8_8(-2.25)}",
+        "{Q_8_8(-0.5),       Q_8_8(-7.5)}",
+        "{Q_8_8(1),          Q_8_8(-4.5)}",
+        "{Q_8_8(-2.5),       Q_8_8(-2.25)}",
+        "{Q_8_8(2.5),        Q_8_8(-7.5)}"
+      ],
+      "rawValue": "{\n     \n    {Q_8_8(-1.5),       Q_8_8(-3.75)},\n\n     \n    {Q_8_8(-5),         Q_8_8(-3)},\n    {Q_8_8(3.5),        Q_8_8(-3)},\n\n     \n    {Q_8_8(-4),         Q_8_8(-3.75)},\n    {Q_8_8(2),          Q_8_8(-1.5)},\n    {Q_8_8(-0.5),       Q_8_8(-6.75)},\n    {Q_8_8(5),          Q_8_8(-2.25)},\n    {Q_8_8(-1.5),       Q_8_8(-3.75)},\n    {Q_8_8(4.5),        Q_8_8(-1.5)},\n    {Q_8_8(-1),         Q_8_8(-6.75)},\n    {Q_8_8(4),          Q_8_8(-2.25)},\n    {Q_8_8(-3.5),       Q_8_8(-3.75)},\n    {Q_8_8(1),          Q_8_8(-1.5)},\n    {Q_8_8(-3.515625),  Q_8_8(-6.75)},\n    {Q_8_8(4.5),        Q_8_8(-2.25)},\n    {Q_8_8(-0.5),       Q_8_8(-7.5)},\n    {Q_8_8(1),          Q_8_8(-4.5)},\n    {Q_8_8(-2.5),       Q_8_8(-2.25)},\n    {Q_8_8(2.5),        Q_8_8(-7.5)},\n}"
+    }
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "srcFile": "src/battle_bg.c",
+  "count": 6,
+  "tables": {
+    "sUnrefArray": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0300",
+        "0x0000"
+      ],
+      "rawValue": "{0x0300, 0x0000}"
+    },
+    "sVsLetterAffineAnimCmds0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0080, 0x0080, 0x00, 0x00)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0080, 0x0080, 0x00, 0x00),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sVsLetterAffineAnimCmds1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0080, 0x0080, 0x00, 0x00)",
+        "AFFINEANIMCMD_FRAME(0x0018, 0x0018, 0x00, 0x80)",
+        "AFFINEANIMCMD_FRAME(0x0018, 0x0018, 0x00, 0x80)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0080, 0x0080, 0x00, 0x00),\n    AFFINEANIMCMD_FRAME(0x0018, 0x0018, 0x00, 0x80),\n    AFFINEANIMCMD_FRAME(0x0018, 0x0018, 0x00, 0x80),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sStandardBattleWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "B_WIN_MSG",
+        "B_WIN_ACTION_PROMPT",
+        "B_WIN_ACTION_MENU",
+        "B_WIN_MOVE_NAME_1",
+        "B_WIN_MOVE_NAME_2",
+        "B_WIN_MOVE_NAME_3",
+        "B_WIN_MOVE_NAME_4",
+        "B_WIN_PP",
+        "B_WIN_DUMMY",
+        "B_WIN_PP_REMAINING",
+        "B_WIN_MOVE_TYPE",
+        "B_WIN_SWITCH_PROMPT",
+        "B_WIN_YESNO",
+        "B_WIN_LEVEL_UP_BOX",
+        "B_WIN_LEVEL_UP_BANNER",
+        "B_WIN_VS_PLAYER",
+        "B_WIN_VS_OPPONENT",
+        "B_WIN_VS_MULTI_PLAYER_1",
+        "B_WIN_VS_MULTI_PLAYER_2",
+        "B_WIN_VS_MULTI_PLAYER_3",
+        "B_WIN_VS_MULTI_PLAYER_4",
+        "B_WIN_VS_OUTCOME_DRAW",
+        "B_WIN_VS_OUTCOME_LEFT",
+        "B_WIN_VS_OUTCOME_RIGHT"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 1",
+        "{\n        .bg = 2",
+        "{\n        .bg = 1",
+        "{\n        .bg = 2",
+        "{\n        .bg = 1",
+        "{\n        .bg = 2",
+        "{\n        .bg = 1",
+        "{\n        .bg = 2",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [B_WIN_MSG] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,  \n        .height = 4,\n        .paletteNum = 0,\n        .baseBlock = 0x0090,\n    },\n    [B_WIN_ACTION_PROMPT] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 35,\n        .width = 14,\n        .height = 4,\n        .paletteNum = 0,\n        .baseBlock = 0x01c0,\n    },\n    [B_WIN_ACTION_MENU] = {\n        .bg = 0,\n        .tilemapLeft = 17,\n        .tilemapTop = 35,\n        .width = 12,\n        .height = 4,\n        .paletteNum = 5,\n        .baseBlock = 0x0190,\n    },\n    [B_WIN_MOVE_NAME_1] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 55,\n        .width = 8,\n        .height = 2,\n        .paletteNum = 5,\n        .baseBlock = 0x0300,\n    },\n    [B_WIN_MOVE_NAME_2] = {\n        .bg = 0,\n        .tilemapLeft = 11,\n        .tilemapTop = 55,\n        .width = 8,\n        .height = 2,\n        .paletteNum = 5,\n        .baseBlock = 0x0310,\n    },\n    [B_WIN_MOVE_NAME_3] = ..."
+    },
+    "sBattleArenaWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "B_WIN_MSG",
+        "B_WIN_ACTION_PROMPT",
+        "B_WIN_ACTION_MENU",
+        "B_WIN_MOVE_NAME_1",
+        "B_WIN_MOVE_NAME_2",
+        "B_WIN_MOVE_NAME_3",
+        "B_WIN_MOVE_NAME_4",
+        "B_WIN_PP",
+        "B_WIN_DUMMY",
+        "B_WIN_PP_REMAINING",
+        "B_WIN_MOVE_TYPE",
+        "B_WIN_SWITCH_PROMPT",
+        "B_WIN_YESNO",
+        "B_WIN_LEVEL_UP_BOX",
+        "B_WIN_LEVEL_UP_BANNER",
+        "ARENA_WIN_PLAYER_NAME",
+        "ARENA_WIN_VS",
+        "ARENA_WIN_OPPONENT_NAME",
+        "ARENA_WIN_MIND",
+        "ARENA_WIN_SKILL",
+        "ARENA_WIN_BODY",
+        "ARENA_WIN_JUDGMENT_TITLE",
+        "ARENA_WIN_JUDGMENT_TEXT"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 1",
+        "{\n        .bg = 2",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [B_WIN_MSG] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,  \n        .height = 4,\n        .paletteNum = 0,\n        .baseBlock = 0x0090,\n    },\n    [B_WIN_ACTION_PROMPT] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 35,\n        .width = 14,\n        .height = 4,\n        .paletteNum = 0,\n        .baseBlock = 0x01c0,\n    },\n    [B_WIN_ACTION_MENU] = {\n        .bg = 0,\n        .tilemapLeft = 17,\n        .tilemapTop = 35,\n        .width = 12,\n        .height = 4,\n        .paletteNum = 5,\n        .baseBlock = 0x0190,\n    },\n    [B_WIN_MOVE_NAME_1] = {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 55,\n        .width = 8,\n        .height = 2,\n        .paletteNum = 5,\n        .baseBlock = 0x0300,\n    },\n    [B_WIN_MOVE_NAME_2] = {\n        .bg = 0,\n        .tilemapLeft = 11,\n        .tilemapTop = 55,\n        .width = 8,\n        .height = 2,\n        .paletteNum = 5,\n        .baseBlock = 0x0310,\n    },\n    [B_WIN_MOVE_NAME_3] = ..."
+    },
+    "sBattleEnvironmentTable": {
+      "type": "struct BattleBackground",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BATTLE_ENVIRONMENT_GRASS",
+        "BATTLE_ENVIRONMENT_LONG_GRASS",
+        "BATTLE_ENVIRONMENT_SAND",
+        "BATTLE_ENVIRONMENT_UNDERWATER",
+        "BATTLE_ENVIRONMENT_WATER",
+        "BATTLE_ENVIRONMENT_POND",
+        "BATTLE_ENVIRONMENT_MOUNTAIN",
+        "BATTLE_ENVIRONMENT_CAVE",
+        "BATTLE_ENVIRONMENT_BUILDING",
+        "BATTLE_ENVIRONMENT_PLAIN"
+      ],
+      "indexedValues": [
+        "{\n        .tileset = gBattleEnvironmentTiles_TallGrass",
+        "{\n        .tileset = gBattleEnvironmentTiles_LongGrass",
+        "{\n        .tileset = gBattleEnvironmentTiles_Sand",
+        "{\n        .tileset = gBattleEnvironmentTiles_Underwater",
+        "{\n        .tileset = gBattleEnvironmentTiles_Water",
+        "{\n        .tileset = gBattleEnvironmentTiles_PondWater",
+        "{\n        .tileset = gBattleEnvironmentTiles_Rock",
+        "{\n        .tileset = gBattleEnvironmentTiles_Cave",
+        "{\n        .tileset = gBattleEnvironmentTiles_Building",
+        "{\n        .tileset = gBattleEnvironmentTiles_Building"
+      ],
+      "rawValue": "{\n    [BATTLE_ENVIRONMENT_GRASS] =\n    {\n        .tileset = gBattleEnvironmentTiles_TallGrass,\n        .tilemap = gBattleEnvironmentTilemap_TallGrass,\n        .entryTileset = gBattleEnvironmentAnimTiles_TallGrass,\n        .entryTilemap = gBattleEnvironmentAnimTilemap_TallGrass,\n        .palette = gBattleEnvironmentPalette_TallGrass,\n    },\n\n    [BATTLE_ENVIRONMENT_LONG_GRASS] =\n    {\n        .tileset = gBattleEnvironmentTiles_LongGrass,\n        .tilemap = gBattleEnvironmentTilemap_LongGrass,\n        .entryTileset = gBattleEnvironmentAnimTiles_LongGrass,\n        .entryTilemap = gBattleEnvironmentAnimTilemap_LongGrass,\n        .palette = gBattleEnvironmentPalette_LongGrass,\n    },\n\n    [BATTLE_ENVIRONMENT_SAND] =\n    {\n        .tileset = gBattleEnvironmentTiles_Sand,\n        .tilemap = gBattleEnvironmentTilemap_Sand,\n        .entryTileset = gBattleEnvironmentAnimTiles_Sand,\n        .entryTilemap = gBattleEnvironmentAnimTilemap_Sand,\n        .palette = gBattleEnvironmentPalette_Sand,\n    },\n\n    [BATTLE_ENVIRONM..."
+    }
+  }
+}

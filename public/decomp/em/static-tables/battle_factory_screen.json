@@ -1,0 +1,445 @@
+{
+  "srcFile": "src/battle_factory_screen.c",
+  "count": 31,
+  "tables": {
+    "sSelect_SpriteSheets": {
+      "type": "struct SpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sArrow_Gfx,              sizeof(sArrow_Gfx),              GFXTAG_ARROW}",
+        "{sMenuHighlightLeft_Gfx,  sizeof(sMenuHighlightLeft_Gfx),  GFXTAG_MENU_HIGHLIGHT_LEFT}",
+        "{sMenuHighlightRight_Gfx, sizeof(sMenuHighlightRight_Gfx), GFXTAG_MENU_HIGHLIGHT_RIGHT}",
+        "{sMonPicBgAnim_Gfx,       sizeof(sMonPicBgAnim_Gfx),       GFXTAG_MON_PIC_BG_ANIM}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sArrow_Gfx,              sizeof(sArrow_Gfx),              GFXTAG_ARROW},\n    {sMenuHighlightLeft_Gfx,  sizeof(sMenuHighlightLeft_Gfx),  GFXTAG_MENU_HIGHLIGHT_LEFT},\n    {sMenuHighlightRight_Gfx, sizeof(sMenuHighlightRight_Gfx), GFXTAG_MENU_HIGHLIGHT_RIGHT},\n    {sMonPicBgAnim_Gfx,       sizeof(sMonPicBgAnim_Gfx),       GFXTAG_MON_PIC_BG_ANIM},\n    {},\n}"
+    },
+    "sSelect_BallGfx": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gPokeballSelection_Gfx, 0x800, GFXTAG_BALL}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gPokeballSelection_Gfx, 0x800, GFXTAG_BALL},\n    {},\n}"
+    },
+    "sSelect_SpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sPokeballGray_Pal,     PALTAG_BALL_GRAY}",
+        "{sPokeballSelected_Pal, PALTAG_BALL_SELECTED}",
+        "{sInterface_Pal,        PALTAG_INTERFACE}",
+        "{sMonPicBg_Pal,         PALTAG_MON_PIC_BG}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sPokeballGray_Pal,     PALTAG_BALL_GRAY},\n    {sPokeballSelected_Pal, PALTAG_BALL_SELECTED},\n    {sInterface_Pal,        PALTAG_INTERFACE},\n    {sMonPicBg_Pal,         PALTAG_MON_PIC_BG},\n    {},\n}"
+    },
+    "sSelect_BgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 24,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 25,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 27,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 24,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 25,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 27,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n}"
+    },
+    "sSelect_WindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SELECT_WIN_TITLE",
+        "SELECT_WIN_SPECIES",
+        "SELECT_WIN_INFO",
+        "SELECT_WIN_OPTIONS",
+        "SELECT_WIN_YES_NO",
+        "SELECT_WIN_MON_CATEGORY"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [SELECT_WIN_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 2,\n        .width = 12,\n        .height = 2,\n        .paletteNum = PALNUM_TEXT,\n        .baseBlock = 0x0001,\n    },\n    [SELECT_WIN_SPECIES] = {\n        .bg = 0,\n        .tilemapLeft = 19,\n        .tilemapTop = 2,\n        .width = 11,\n        .height = 2,\n        .paletteNum = PALNUM_FADE_TEXT,\n        .baseBlock = 0x0019,\n    },\n    [SELECT_WIN_INFO] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 15,\n        .width = 20,\n        .height = 3,\n        .paletteNum = PALNUM_TEXT,\n        .baseBlock = 0x002f,\n    },\n    [SELECT_WIN_OPTIONS] = {\n        .bg = 0,\n        .tilemapLeft = 22,\n        .tilemapTop = 14,\n        .width = 8,\n        .height = 6,\n        .paletteNum = PALNUM_TEXT,\n        .baseBlock = 0x006b,\n    },\n    [SELECT_WIN_YES_NO] = {\n        .bg = 0,\n        .tilemapLeft = 22,\n        .tilemapTop = 14,\n        .width = 8,\n        .height = 4,\n        .paletteNum = PALNUM_TEXT,\n     ..."
+    },
+    "sMenuOptionTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_DARK_GRAY",
+        "TEXT_COLOR_TRANSPARENT"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_TRANSPARENT}"
+    },
+    "sSpeciesNameTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_RED",
+        "TEXT_COLOR_TRANSPARENT"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_TRANSPARENT}"
+    },
+    "sAnim_Select_Interface": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Select_MonPicBgAnim": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Select_Pokeball_Still": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Select_Pokeball_Moving": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(0, 32)",
+        "ANIMCMD_FRAME(16, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(32, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(16, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(32, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(0, 32),\n    ANIMCMD_FRAME(16, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(32, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(16, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(32, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Select_MonPicBg_Opening": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(5, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(16, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(32, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(64, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(128, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(256, 5, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(5, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(16, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(32, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(64, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(128, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(256, 5, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Select_MonPicBg_Closing": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(128, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(64, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(32, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(16, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(5, 5, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(128, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(64, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(32, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(16, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(5, 5, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Select_MonPicBg_Open": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSwap_SpriteSheets": {
+      "type": "struct SpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sArrow_Gfx,                 sizeof(sArrow_Gfx),                 GFXTAG_ARROW}",
+        "{sMenuHighlightLeft_Gfx,     sizeof(sMenuHighlightLeft_Gfx),     GFXTAG_MENU_HIGHLIGHT_LEFT}",
+        "{sMenuHighlightRight_Gfx,    sizeof(sMenuHighlightRight_Gfx),    GFXTAG_MENU_HIGHLIGHT_RIGHT}",
+        "{sActionBoxLeft_Gfx,         sizeof(sActionBoxLeft_Gfx),         GFXTAG_ACTION_BOX_LEFT}",
+        "{sActionBoxRight_Gfx,        sizeof(sActionBoxRight_Gfx),        GFXTAG_ACTION_BOX_RIGHT}",
+        "#ifdef BUGFIX\n    {sActionHighlightLeft_Gfx,   sizeof(sActionHighlightLeft_Gfx),   GFXTAG_ACTION_HIGHLIGHT_LEFT}",
+        "#else\n    {sActionHighlightLeft_Gfx,   8 * TILE_SIZE_4BPP,   GFXTAG_ACTION_HIGHLIGHT_LEFT}",
+        "#endif\n    {sActionHighlightMiddle_Gfx, sizeof(sActionHighlightMiddle_Gfx), GFXTAG_ACTION_HIGHLIGHT_MIDDLE}",
+        "{sActionHighlightRight_Gfx,  sizeof(sActionHighlightRight_Gfx),  GFXTAG_ACTION_HIGHLIGHT_RIGHT}",
+        "{sMonPicBgAnim_Gfx,          sizeof(sMonPicBgAnim_Gfx),          GFXTAG_MON_PIC_BG_ANIM}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sArrow_Gfx,                 sizeof(sArrow_Gfx),                 GFXTAG_ARROW},\n    {sMenuHighlightLeft_Gfx,     sizeof(sMenuHighlightLeft_Gfx),     GFXTAG_MENU_HIGHLIGHT_LEFT},\n    {sMenuHighlightRight_Gfx,    sizeof(sMenuHighlightRight_Gfx),    GFXTAG_MENU_HIGHLIGHT_RIGHT},\n    {sActionBoxLeft_Gfx,         sizeof(sActionBoxLeft_Gfx),         GFXTAG_ACTION_BOX_LEFT},\n    {sActionBoxRight_Gfx,        sizeof(sActionBoxRight_Gfx),        GFXTAG_ACTION_BOX_RIGHT},\n#ifdef BUGFIX\n    {sActionHighlightLeft_Gfx,   sizeof(sActionHighlightLeft_Gfx),   GFXTAG_ACTION_HIGHLIGHT_LEFT},\n#else\n    {sActionHighlightLeft_Gfx,   8 * TILE_SIZE_4BPP,   GFXTAG_ACTION_HIGHLIGHT_LEFT},\n#endif\n    {sActionHighlightMiddle_Gfx, sizeof(sActionHighlightMiddle_Gfx), GFXTAG_ACTION_HIGHLIGHT_MIDDLE},\n    {sActionHighlightRight_Gfx,  sizeof(sActionHighlightRight_Gfx),  GFXTAG_ACTION_HIGHLIGHT_RIGHT},\n    {sMonPicBgAnim_Gfx,          sizeof(sMonPicBgAnim_Gfx),          GFXTAG_MON_PIC_BG_ANIM},\n    {},\n}"
+    },
+    "sSwap_BallGfx": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gPokeballSelection_Gfx, 0x800, GFXTAG_BALL}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gPokeballSelection_Gfx, 0x800, GFXTAG_BALL},\n    {},\n}"
+    },
+    "sSwap_SpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sPokeballGray_Pal,     PALTAG_BALL_GRAY}",
+        "{sPokeballSelected_Pal, PALTAG_BALL_SELECTED}",
+        "{sInterface_Pal,        PALTAG_INTERFACE}",
+        "{sMonPicBg_Pal,         PALTAG_MON_PIC_BG}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sPokeballGray_Pal,     PALTAG_BALL_GRAY},\n    {sPokeballSelected_Pal, PALTAG_BALL_SELECTED},\n    {sInterface_Pal,        PALTAG_INTERFACE},\n    {sMonPicBg_Pal,         PALTAG_MON_PIC_BG},\n    {},\n}"
+    },
+    "sAnim_Swap_Interface": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Swap_MonPicBgAnim": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Swap_Pokeball_Still": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Swap_Pokeball_Moving": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(0, 32)",
+        "ANIMCMD_FRAME(16, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(32, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(16, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(32, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(0, 32),\n    ANIMCMD_FRAME(16, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(32, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(16, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(32, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Swap_MonPicBg_Opening": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(5, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(16, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(32, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(64, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(128, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(256, 5, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(5, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(16, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(32, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(64, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(128, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(256, 5, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Swap_MonPicBg_Closing": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(128, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(64, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(32, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(16, 5, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 1)",
+        "AFFINEANIMCMD_FRAME(5, 5, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(128, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(64, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(32, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(16, 5, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 0, 1),\n    AFFINEANIMCMD_FRAME(5, 5, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Swap_MonPicBg_Open": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSwap_MenuOptionFuncs": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "Swap_OptionSummary",
+        "Swap_OptionSwap",
+        "Swap_OptionRechoose"
+      ],
+      "rawValue": "{\n    Swap_OptionSummary,\n    Swap_OptionSwap,\n    Swap_OptionRechoose,\n}"
+    },
+    "sSwap_BgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 24,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 25,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 26,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 27,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 24,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 25,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 26,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 27,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n}"
+    },
+    "sSwap_WindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SWAP_WIN_TITLE",
+        "SWAP_WIN_SPECIES",
+        "SWAP_WIN_INFO",
+        "SWAP_WIN_OPTIONS",
+        "SWAP_WIN_YES_NO",
+        "SWAP_WIN_ACTION_FADE",
+        "SWAP_WIN_UNUSED",
+        "SWAP_WIN_SPECIES_AT_FADE",
+        "SWAP_WIN_MON_CATEGORY"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 2",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 2",
+        "{\n        .bg = 2",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [SWAP_WIN_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 2,\n        .width = 12,\n        .height = 2,\n        .paletteNum = PALNUM_TEXT,\n        .baseBlock = 0x0001,\n    },\n    [SWAP_WIN_SPECIES] = {\n        .bg = 2,\n        .tilemapLeft = 19,\n        .tilemapTop = 2,\n        .width = 11,\n        .height = 2,\n        .paletteNum = PALNUM_FADE_TEXT,\n        .baseBlock = 0x0019,\n    },\n    [SWAP_WIN_INFO] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 15,\n        .width = 20,\n        .height = 3,\n        .paletteNum = PALNUM_TEXT,\n        .baseBlock = 0x002f,\n    },\n    [SWAP_WIN_OPTIONS] = {\n        .bg = 0,\n        .tilemapLeft = 21,\n        .tilemapTop = 14,\n        .width = 9,\n        .height = 6,\n        .paletteNum = PALNUM_TEXT,\n        .baseBlock = 0x006b,\n    },\n    [SWAP_WIN_YES_NO] = {\n        .bg = 0,\n        .tilemapLeft = 22,\n        .tilemapTop = 14,\n        .width = 8,\n        .height = 4,\n        .paletteNum = PALNUM_TEXT,\n        .baseBl..."
+    },
+    "sSwapMenuOptionsTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_DARK_GRAY",
+        "TEXT_COLOR_TRANSPARENT"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_TRANSPARENT}"
+    },
+    "sSwapSpeciesNameTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_RED",
+        "TEXT_COLOR_TRANSPARENT"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_TRANSPARENT}"
+    },
+    "sSwap_PlayerScreenActions": {
+      "type": "struct SwapScreenAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{.id = SWAPACTION_MON, .func = Swap_ActionMon}",
+        "{.id = SWAPACTION_MON, .func = Swap_ActionMon}",
+        "{.id = SWAPACTION_MON, .func = Swap_ActionMon}",
+        "{.id = SWAPACTION_CANCEL, .func = Swap_ActionCancel}"
+      ],
+      "rawValue": "{\n    {.id = SWAPACTION_MON, .func = Swap_ActionMon},\n    {.id = SWAPACTION_MON, .func = Swap_ActionMon},\n    {.id = SWAPACTION_MON, .func = Swap_ActionMon},\n    {.id = SWAPACTION_CANCEL, .func = Swap_ActionCancel},\n}"
+    },
+    "sSwap_EnemyScreenActions": {
+      "type": "struct SwapScreenAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{.id = SWAPACTION_MON, .func = Swap_ActionMon}",
+        "{.id = SWAPACTION_MON, .func = Swap_ActionMon}",
+        "{.id = SWAPACTION_MON, .func = Swap_ActionMon}",
+        "{.id = SWAPACTION_PKMN_FOR_SWAP, .func = Swap_ActionPkmnForSwap}",
+        "{.id = SWAPACTION_CANCEL, .func = Swap_ActionCancel}"
+      ],
+      "rawValue": "{\n    {.id = SWAPACTION_MON, .func = Swap_ActionMon},\n    {.id = SWAPACTION_MON, .func = Swap_ActionMon},\n    {.id = SWAPACTION_MON, .func = Swap_ActionMon},\n    {.id = SWAPACTION_PKMN_FOR_SWAP, .func = Swap_ActionPkmnForSwap},\n    {.id = SWAPACTION_CANCEL, .func = Swap_ActionCancel},\n}"
+    }
+  }
+}

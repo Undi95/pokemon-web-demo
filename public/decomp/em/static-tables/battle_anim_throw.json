@@ -1,0 +1,263 @@
+{
+  "srcFile": "src/battle_anim_throw.c",
+  "count": 13,
+  "tables": {
+    "sCaptureStars": {
+      "type": "struct CaptureStar",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .xOffset = 10,\n        .yOffset = 2,\n        .amplitude = -3,\n    }",
+        "{\n        .xOffset = 15,\n        .yOffset = 0,\n        .amplitude = -4,\n    }",
+        "{\n        .xOffset = -10,\n        .yOffset = 2,\n        .amplitude = -4,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .xOffset = 10,\n        .yOffset = 2,\n        .amplitude = -3,\n    },\n    {\n        .xOffset = 15,\n        .yOffset = 0,\n        .amplitude = -4,\n    },\n    {\n        .xOffset = -10,\n        .yOffset = 2,\n        .amplitude = -4,\n    },\n}"
+    },
+    "sBallParticleSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BALL_POKE",
+        "BALL_GREAT",
+        "BALL_SAFARI",
+        "BALL_ULTRA",
+        "BALL_MASTER",
+        "BALL_NET",
+        "BALL_DIVE",
+        "BALL_NEST",
+        "BALL_REPEAT",
+        "BALL_TIMER",
+        "BALL_LUXURY",
+        "BALL_PREMIER"
+      ],
+      "indexedValues": [
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles",
+        "{gBattleAnimSpriteGfx_Particles"
+      ],
+      "rawValue": "{\n    [BALL_POKE]    = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_POKEBALL},\n    [BALL_GREAT]   = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_GREATBALL},\n    [BALL_SAFARI]  = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_SAFARIBALL},\n    [BALL_ULTRA]   = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_ULTRABALL},\n    [BALL_MASTER]  = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_MASTERBALL},\n    [BALL_NET]     = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_NETBALL},\n    [BALL_DIVE]    = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_DIVEBALL},\n    [BALL_NEST]    = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_NESTBALL},\n    [BALL_REPEAT]  = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_REPEATBALL},\n    [BALL_TIMER]   = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_TIMERBALL},\n    [BALL_LUXURY]  = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_PARTICLES_LUXURYBALL},\n    [BALL_PREMIER] = {gBattleAnimSpriteGfx_Particles, 0x100, TAG_P..."
+    },
+    "sBallParticlePalettes": {
+      "type": "struct CompressedSpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BALL_POKE",
+        "BALL_GREAT",
+        "BALL_SAFARI",
+        "BALL_ULTRA",
+        "BALL_MASTER",
+        "BALL_NET",
+        "BALL_DIVE",
+        "BALL_NEST",
+        "BALL_REPEAT",
+        "BALL_TIMER",
+        "BALL_LUXURY",
+        "BALL_PREMIER"
+      ],
+      "indexedValues": [
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact",
+        "{gBattleAnimSpritePal_CircleImpact"
+      ],
+      "rawValue": "{\n    [BALL_POKE]    = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_POKEBALL},\n    [BALL_GREAT]   = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_GREATBALL},\n    [BALL_SAFARI]  = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_SAFARIBALL},\n    [BALL_ULTRA]   = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_ULTRABALL},\n    [BALL_MASTER]  = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_MASTERBALL},\n    [BALL_NET]     = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_NETBALL},\n    [BALL_DIVE]    = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_DIVEBALL},\n    [BALL_NEST]    = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_NESTBALL},\n    [BALL_REPEAT]  = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_REPEATBALL},\n    [BALL_TIMER]   = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_TIMERBALL},\n    [BALL_LUXURY]  = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_LUXURYBALL},\n    [BALL_PREMIER] = {gBattleAnimSpritePal_CircleImpact, TAG_PARTICLES_PREMIERBALL},\n}"
+    },
+    "sAnim_RegularBall": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_FRAME(2, 1)",
+        "ANIMCMD_FRAME(0, 1, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 1)",
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_FRAME(2, 1),\n    ANIMCMD_FRAME(0, 1, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 1),\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_MasterBall": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_NetDiveBall": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_NestBall": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(5, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(5, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_LuxuryPremierBall": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(6, 4)",
+        "ANIMCMD_FRAME(7, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(6, 4),\n    ANIMCMD_FRAME(7, 4),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_UltraRepeatTimerBall": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sBallParticleAnimNums": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BALL_POKE",
+        "BALL_GREAT",
+        "BALL_SAFARI",
+        "BALL_ULTRA",
+        "BALL_MASTER",
+        "BALL_NET",
+        "BALL_DIVE",
+        "BALL_NEST",
+        "BALL_REPEAT",
+        "BALL_TIMER",
+        "BALL_LUXURY",
+        "BALL_PREMIER"
+      ],
+      "indexedValues": [
+        "0",
+        "0",
+        "0",
+        "5",
+        "1",
+        "2",
+        "2",
+        "3",
+        "5",
+        "5",
+        "4",
+        "4"
+      ],
+      "rawValue": "{\n    [BALL_POKE]    = 0,\n    [BALL_GREAT]   = 0,\n    [BALL_SAFARI]  = 0,\n    [BALL_ULTRA]   = 5,\n    [BALL_MASTER]  = 1,\n    [BALL_NET]     = 2,\n    [BALL_DIVE]    = 2,\n    [BALL_NEST]    = 3,\n    [BALL_REPEAT]  = 5,\n    [BALL_TIMER]   = 5,\n    [BALL_LUXURY]  = 4,\n    [BALL_PREMIER] = 4,\n}"
+    },
+    "sBallParticleAnimationFuncs": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BALL_POKE",
+        "BALL_GREAT",
+        "BALL_SAFARI",
+        "BALL_ULTRA",
+        "BALL_MASTER",
+        "BALL_NET",
+        "BALL_DIVE",
+        "BALL_NEST",
+        "BALL_REPEAT",
+        "BALL_TIMER",
+        "BALL_LUXURY",
+        "BALL_PREMIER"
+      ],
+      "indexedValues": [
+        "PokeBallOpenParticleAnimation",
+        "GreatBallOpenParticleAnimation",
+        "SafariBallOpenParticleAnimation",
+        "UltraBallOpenParticleAnimation",
+        "MasterBallOpenParticleAnimation",
+        "SafariBallOpenParticleAnimation",
+        "DiveBallOpenParticleAnimation",
+        "UltraBallOpenParticleAnimation",
+        "RepeatBallOpenParticleAnimation",
+        "TimerBallOpenParticleAnimation",
+        "GreatBallOpenParticleAnimation",
+        "PremierBallOpenParticleAnimation"
+      ],
+      "rawValue": "{\n    [BALL_POKE]    = PokeBallOpenParticleAnimation,\n    [BALL_GREAT]   = GreatBallOpenParticleAnimation,\n    [BALL_SAFARI]  = SafariBallOpenParticleAnimation,\n    [BALL_ULTRA]   = UltraBallOpenParticleAnimation,\n    [BALL_MASTER]  = MasterBallOpenParticleAnimation,\n    [BALL_NET]     = SafariBallOpenParticleAnimation,\n    [BALL_DIVE]    = DiveBallOpenParticleAnimation,\n    [BALL_NEST]    = UltraBallOpenParticleAnimation,\n    [BALL_REPEAT]  = RepeatBallOpenParticleAnimation,\n    [BALL_TIMER]   = TimerBallOpenParticleAnimation,\n    [BALL_LUXURY]  = GreatBallOpenParticleAnimation,\n    [BALL_PREMIER] = PremierBallOpenParticleAnimation,\n}"
+    },
+    "sBallParticleSpriteTemplates": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "BALL_POKE",
+        "BALL_GREAT",
+        "BALL_SAFARI",
+        "BALL_ULTRA",
+        "BALL_MASTER",
+        "BALL_NET",
+        "BALL_DIVE",
+        "BALL_NEST",
+        "BALL_REPEAT",
+        "BALL_TIMER",
+        "BALL_LUXURY",
+        "BALL_PREMIER"
+      ],
+      "indexedValues": [
+        "{\n        .tileTag = TAG_PARTICLES_POKEBALL",
+        "{\n        .tileTag = TAG_PARTICLES_GREATBALL",
+        "{\n        .tileTag = TAG_PARTICLES_SAFARIBALL",
+        "{\n        .tileTag = TAG_PARTICLES_ULTRABALL",
+        "{\n        .tileTag = TAG_PARTICLES_MASTERBALL",
+        "{\n        .tileTag = TAG_PARTICLES_NETBALL",
+        "{\n        .tileTag = TAG_PARTICLES_DIVEBALL",
+        "{\n        .tileTag = TAG_PARTICLES_NESTBALL",
+        "{\n        .tileTag = TAG_PARTICLES_REPEATBALL",
+        "{\n        .tileTag = TAG_PARTICLES_TIMERBALL",
+        "{\n        .tileTag = TAG_PARTICLES_LUXURYBALL",
+        "{\n        .tileTag = TAG_PARTICLES_PREMIERBALL"
+      ],
+      "rawValue": "{\n    [BALL_POKE] = {\n        .tileTag = TAG_PARTICLES_POKEBALL,\n        .paletteTag = TAG_PARTICLES_POKEBALL,\n        .oam = &gOamData_AffineOff_ObjNormal_8x8,\n        .anims = sAnims_BallParticles,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    },\n    [BALL_GREAT] = {\n        .tileTag = TAG_PARTICLES_GREATBALL,\n        .paletteTag = TAG_PARTICLES_GREATBALL,\n        .oam = &gOamData_AffineOff_ObjNormal_8x8,\n        .anims = sAnims_BallParticles,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    },\n    [BALL_SAFARI] = {\n        .tileTag = TAG_PARTICLES_SAFARIBALL,\n        .paletteTag = TAG_PARTICLES_SAFARIBALL,\n        .oam = &gOamData_AffineOff_ObjNormal_8x8,\n        .anims = sAnims_BallParticles,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy,\n    },\n    [BALL_ULTRA] = {\n        .tileTag = TAG_PAR..."
+    },
+    "sAnim_SafariRock": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 1),\n    ANIMCMD_END,\n}"
+    }
+  }
+}

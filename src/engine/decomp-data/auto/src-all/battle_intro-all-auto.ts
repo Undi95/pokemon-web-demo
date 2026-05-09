@@ -27,11 +27,11 @@ const {
   BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1, BLDCNT_TGT2_BG3,
   BLDCNT_TGT2_OBJ, Cos2, CpuCopy16, CpuFill32,
   CreateTask, DISPCNT_OBJ_1D_MAP, DISPCNT_OBJ_ON, DISPCNT_WIN0_ON,
-  DISPCNT_WIN1_ON, DISPLAY_HEIGHT, DestroyTask, GetBattlerAtPosition,
-  GetGpuReg, LoadBgTilemap, LoadBgTiles, REG_OFFSET_BG1CNT,
-  REG_OFFSET_BG2CNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
-  REG_OFFSET_WININ, REG_OFFSET_WINOUT, ST_OAM_OBJ_WINDOW, SetBgAttribute,
-  SetGpuReg,  // 4-per-line for readability
+  DISPCNT_WIN1_ON, DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroyTask,
+  GetBattlerAtPosition, GetGpuReg, LoadBgTilemap, LoadBgTiles,
+  REG_OFFSET_BG1CNT, REG_OFFSET_BG2CNT, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT,
+  REG_OFFSET_BLDY, REG_OFFSET_DISPCNT, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  ST_OAM_OBJ_WINDOW, SetBgAttribute, SetGpuReg,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetAnimBgAttribute(u8 bgId, u8 attributeId, u8 value) */

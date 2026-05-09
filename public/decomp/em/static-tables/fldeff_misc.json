@@ -1,0 +1,184 @@
+{
+  "srcFile": "src/fldeff_misc.c",
+  "count": 14,
+  "tables": {
+    "sFiller": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sAnim_SecretPowerCave": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_FRAME(2, 8)",
+        "ANIMCMD_FRAME(3, 8)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_FRAME(2, 8),\n    ANIMCMD_FRAME(3, 8),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_VineDropLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_FRAME(2, 8)",
+        "ANIMCMD_FRAME(3, 8)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_FRAME(2, 8),\n    ANIMCMD_FRAME(3, 8),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_VineRiseLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_FRAME(3, 8)",
+        "ANIMCMD_FRAME(2, 8)",
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_FRAME(3, 8),\n    ANIMCMD_FRAME(2, 8),\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_VineDropRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(1, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(3, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(4, 8, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(1, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(3, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(4, 8, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_VineRiseRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(3, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(2, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(1, 8, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(0, 8, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(3, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(2, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(1, 8, .hFlip = TRUE),\n    ANIMCMD_FRAME(0, 8, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_SecretPowerShrub": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_FRAME(2, 8)",
+        "ANIMCMD_FRAME(3, 8)",
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_FRAME(2, 8),\n    ANIMCMD_FRAME(3, 8),\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_END,\n}"
+    },
+    "sPicTable_SecretPowerCave": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "overworld_frame(sSecretPowerCave_Gfx, 2, 2, 0)",
+        "overworld_frame(sSecretPowerCave_Gfx, 2, 2, 1)",
+        "overworld_frame(sSecretPowerCave_Gfx, 2, 2, 2)",
+        "overworld_frame(sSecretPowerCave_Gfx, 2, 2, 3)",
+        "overworld_frame(sSecretPowerCave_Gfx, 2, 2, 4)"
+      ],
+      "rawValue": "{\n    overworld_frame(sSecretPowerCave_Gfx, 2, 2, 0),\n    overworld_frame(sSecretPowerCave_Gfx, 2, 2, 1),\n    overworld_frame(sSecretPowerCave_Gfx, 2, 2, 2),\n    overworld_frame(sSecretPowerCave_Gfx, 2, 2, 3),\n    overworld_frame(sSecretPowerCave_Gfx, 2, 2, 4),\n}"
+    },
+    "sPicTable_SecretPowerTree": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "overworld_frame(sSecretPowerTree_Gfx, 2, 2, 0)",
+        "overworld_frame(sSecretPowerTree_Gfx, 2, 2, 1)",
+        "overworld_frame(sSecretPowerTree_Gfx, 2, 2, 2)",
+        "overworld_frame(sSecretPowerTree_Gfx, 2, 2, 3)",
+        "overworld_frame(sSecretPowerTree_Gfx, 2, 2, 4)"
+      ],
+      "rawValue": "{\n    overworld_frame(sSecretPowerTree_Gfx, 2, 2, 0),\n    overworld_frame(sSecretPowerTree_Gfx, 2, 2, 1),\n    overworld_frame(sSecretPowerTree_Gfx, 2, 2, 2),\n    overworld_frame(sSecretPowerTree_Gfx, 2, 2, 3),\n    overworld_frame(sSecretPowerTree_Gfx, 2, 2, 4),\n     \n}"
+    },
+    "sPicTable_SecretPowerShrub": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "overworld_frame(sSecretPowerShrub_Gfx, 2, 2, 0)",
+        "overworld_frame(sSecretPowerShrub_Gfx, 2, 2, 1)",
+        "overworld_frame(sSecretPowerShrub_Gfx, 2, 2, 2)",
+        "overworld_frame(sSecretPowerShrub_Gfx, 2, 2, 3)",
+        "overworld_frame(sSecretPowerShrub_Gfx, 2, 2, 4)"
+      ],
+      "rawValue": "{\n    overworld_frame(sSecretPowerShrub_Gfx, 2, 2, 0),\n    overworld_frame(sSecretPowerShrub_Gfx, 2, 2, 1),\n    overworld_frame(sSecretPowerShrub_Gfx, 2, 2, 2),\n    overworld_frame(sSecretPowerShrub_Gfx, 2, 2, 3),\n    overworld_frame(sSecretPowerShrub_Gfx, 2, 2, 4),\n}"
+    },
+    "sAnim_SandPillar": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 6)",
+        "ANIMCMD_FRAME(1, 6)",
+        "ANIMCMD_FRAME(2, 6)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 6),\n    ANIMCMD_FRAME(1, 6),\n    ANIMCMD_FRAME(2, 6),\n    ANIMCMD_END,\n}"
+    },
+    "sPicTable_SandPillar": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sSandPillar0_Gfx, sizeof(sSandPillar0_Gfx)}",
+        "{sSandPillar1_Gfx, sizeof(sSandPillar1_Gfx)}",
+        "{sSandPillar2_Gfx, sizeof(sSandPillar2_Gfx)}"
+      ],
+      "rawValue": "{\n    {sSandPillar0_Gfx, sizeof(sSandPillar0_Gfx)},\n    {sSandPillar1_Gfx, sizeof(sSandPillar1_Gfx)},\n    {sSandPillar2_Gfx, sizeof(sSandPillar2_Gfx)},\n}"
+    },
+    "sPicTable_RecordMixLights": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "overworld_frame(sRecordMixLights_Gfx, 4, 1, 0)",
+        "overworld_frame(sRecordMixLights_Gfx, 4, 1, 1)",
+        "overworld_frame(sRecordMixLights_Gfx, 4, 1, 2)"
+      ],
+      "rawValue": "{\n    overworld_frame(sRecordMixLights_Gfx, 4, 1, 0),\n    overworld_frame(sRecordMixLights_Gfx, 4, 1, 1),\n    overworld_frame(sRecordMixLights_Gfx, 4, 1, 2),\n}"
+    },
+    "sAnim_RecordMixLights": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_FRAME(1, 30)",
+        "ANIMCMD_FRAME(2, 30)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_FRAME(1, 30),\n    ANIMCMD_FRAME(2, 30),\n    ANIMCMD_JUMP(0),\n}"
+    }
+  }
+}

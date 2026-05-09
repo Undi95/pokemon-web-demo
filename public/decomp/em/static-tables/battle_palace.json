@@ -1,0 +1,87 @@
+{
+  "srcFile": "src/battle_palace.c",
+  "count": 5,
+  "tables": {
+    "sBattlePalaceEarlyPrizes": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_HP_UP",
+        "ITEM_PROTEIN",
+        "ITEM_IRON",
+        "ITEM_CALCIUM",
+        "ITEM_CARBOS",
+        "ITEM_ZINC"
+      ],
+      "rawValue": "{\n    ITEM_HP_UP,\n    ITEM_PROTEIN,\n    ITEM_IRON,\n    ITEM_CALCIUM,\n    ITEM_CARBOS,\n    ITEM_ZINC\n}"
+    },
+    "sBattlePalaceLatePrizes": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_BRIGHT_POWDER",
+        "ITEM_WHITE_HERB",
+        "ITEM_QUICK_CLAW",
+        "ITEM_LEFTOVERS",
+        "ITEM_MENTAL_HERB",
+        "ITEM_KINGS_ROCK",
+        "ITEM_FOCUS_BAND",
+        "ITEM_SCOPE_LENS",
+        "ITEM_CHOICE_BAND"
+      ],
+      "rawValue": "{\n    ITEM_BRIGHT_POWDER,\n    ITEM_WHITE_HERB,\n    ITEM_QUICK_CLAW,\n    ITEM_LEFTOVERS,\n    ITEM_MENTAL_HERB,\n    ITEM_KINGS_ROCK,\n    ITEM_FOCUS_BAND,\n    ITEM_SCOPE_LENS,\n    ITEM_CHOICE_BAND\n}"
+    },
+    "sWinStreakFlags": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{STREAK_PALACE_SINGLES_50, STREAK_PALACE_SINGLES_OPEN}",
+        "{STREAK_PALACE_DOUBLES_50, STREAK_PALACE_DOUBLES_OPEN}"
+      ],
+      "rawValue": "{\n    {STREAK_PALACE_SINGLES_50, STREAK_PALACE_SINGLES_OPEN},\n    {STREAK_PALACE_DOUBLES_50, STREAK_PALACE_DOUBLES_OPEN},\n}"
+    },
+    "sWinStreakMasks": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{~(STREAK_PALACE_SINGLES_50), ~(STREAK_PALACE_SINGLES_OPEN)}",
+        "{~(STREAK_PALACE_DOUBLES_50), ~(STREAK_PALACE_DOUBLES_OPEN)}"
+      ],
+      "rawValue": "{\n    {~(STREAK_PALACE_SINGLES_50), ~(STREAK_PALACE_SINGLES_OPEN)},\n    {~(STREAK_PALACE_DOUBLES_50), ~(STREAK_PALACE_DOUBLES_OPEN)},\n}"
+    },
+    "sBattlePalaceFunctions": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "BATTLE_PALACE_FUNC_INIT",
+        "BATTLE_PALACE_FUNC_GET_DATA",
+        "BATTLE_PALACE_FUNC_SET_DATA",
+        "BATTLE_PALACE_FUNC_GET_COMMENT_ID",
+        "BATTLE_PALACE_FUNC_SET_OPPONENT",
+        "BATTLE_PALACE_FUNC_GET_OPPONENT_INTRO",
+        "BATTLE_PALACE_FUNC_INCREMENT_STREAK",
+        "BATTLE_PALACE_FUNC_SAVE",
+        "BATTLE_PALACE_FUNC_SET_PRIZE",
+        "BATTLE_PALACE_FUNC_GIVE_PRIZE"
+      ],
+      "indexedValues": [
+        "InitPalaceChallenge",
+        "GetPalaceData",
+        "SetPalaceData",
+        "GetPalaceCommentId",
+        "SetPalaceOpponent",
+        "BufferOpponentIntroSpeech",
+        "IncrementPalaceStreak",
+        "SavePalaceChallenge",
+        "SetRandomPalacePrize",
+        "GivePalacePrize"
+      ],
+      "rawValue": "{\n    [BATTLE_PALACE_FUNC_INIT]               = InitPalaceChallenge,\n    [BATTLE_PALACE_FUNC_GET_DATA]           = GetPalaceData,\n    [BATTLE_PALACE_FUNC_SET_DATA]           = SetPalaceData,\n    [BATTLE_PALACE_FUNC_GET_COMMENT_ID]     = GetPalaceCommentId,\n    [BATTLE_PALACE_FUNC_SET_OPPONENT]       = SetPalaceOpponent,\n    [BATTLE_PALACE_FUNC_GET_OPPONENT_INTRO] = BufferOpponentIntroSpeech,\n    [BATTLE_PALACE_FUNC_INCREMENT_STREAK]   = IncrementPalaceStreak,\n    [BATTLE_PALACE_FUNC_SAVE]               = SavePalaceChallenge,\n    [BATTLE_PALACE_FUNC_SET_PRIZE]          = SetRandomPalacePrize,\n    [BATTLE_PALACE_FUNC_GIVE_PRIZE]         = GivePalacePrize,\n}"
+    }
+  }
+}

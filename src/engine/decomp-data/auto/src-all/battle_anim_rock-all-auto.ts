@@ -25,15 +25,15 @@ const {
   AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemapHandleContest, AnimateSprite, BATTLE_PARTNER,
   BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG1,
   BattleAnimAdjustPanning, ClearBattleAnimBg, Cos, CreateSprite,
-  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, FALSE,
-  FindTaskIdByFunc, GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattlerSide,
-  GetBattlerSpriteCoord, InitAnimArcTranslation, InitSpriteDataForLinearTranslation, InitSpritePosToAnimAttacker,
-  InitSpritePosToAnimTarget, IsContest, LoadCompressedPalette, PLTT_SIZE_4BPP,
-  PlaySE12WithPanning, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, SetAnimBgAttribute, SetAverageBattlerPositions, SetGpuReg,
-  SetSubspriteTables, Sin, StartSpriteAffineAnim, StartSpriteAnim,
-  StoreSpriteCallbackInData6, TASK_NONE, TRUE, TranslateAnimHorizontalArc,
-  TranslateAnimSpriteToTargetMonLocation, UpdateAnimBg3ScreenSize,  // 4-per-line for readability
+  DISPLAY_WIDTH, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
+  FALSE, FindTaskIdByFunc, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
+  GetBattlerSide, GetBattlerSpriteCoord, InitAnimArcTranslation, InitSpriteDataForLinearTranslation,
+  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsContest, LoadCompressedPalette,
+  PLTT_SIZE_4BPP, PlaySE12WithPanning, REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS,
+  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, SetAnimBgAttribute, SetAverageBattlerPositions,
+  SetGpuReg, SetSubspriteTables, Sin, StartSpriteAffineAnim,
+  StartSpriteAnim, StoreSpriteCallbackInData6, TASK_NONE, TRUE,
+  TranslateAnimHorizontalArc, TranslateAnimSpriteToTargetMonLocation, UpdateAnimBg3ScreenSize,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimFallingRock(struct Sprite *sprite) */

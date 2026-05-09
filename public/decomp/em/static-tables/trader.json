@@ -1,0 +1,18 @@
+{
+  "srcFile": "src/trader.c",
+  "count": 1,
+  "tables": {
+    "sDefaultTraderDecorations": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "DECOR_DUSKULL_DOLL",
+        "DECOR_BALL_CUSHION",
+        "DECOR_TIRE",
+        "DECOR_PRETTY_FLOWERS"
+      ],
+      "rawValue": "{\n    DECOR_DUSKULL_DOLL,\n    DECOR_BALL_CUSHION,\n    DECOR_TIRE,\n    DECOR_PRETTY_FLOWERS,\n}"
+    }
+  }
+}

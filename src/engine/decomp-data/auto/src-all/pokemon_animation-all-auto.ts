@@ -26,7 +26,8 @@ const {
   Cos, CreateTask, DestroyTask, FALSE,
   FreeOamMatrix, GetNature, GlowColor, InitSpriteAffineAnim,
   OBJ_PLTT_ID, ObjAffineSet, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL,
-  ST_OAM_AFFINE_OFF, Sin, StartSpriteAffineAnim, TRUE,  // 4-per-line for readability
+  ST_OAM_AFFINE_OFF, Sin, SpriteCallbackDummy, StartSpriteAffineAnim,
+  TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetPosForRotation(struct Sprite *sprite, u16 index, s16 amplitudeX, s16 amplitudeY) */

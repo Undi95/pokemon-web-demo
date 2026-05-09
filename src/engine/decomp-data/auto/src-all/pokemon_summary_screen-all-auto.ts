@@ -48,16 +48,17 @@ const {
   NULL, OBJ_PLTT_ID, PALETTES_ALL, PIXEL_FILL,
   PLTT_SIZEOF, PLTT_SIZE_4BPP, PlayCry_ByMode, PlaySE,
   PokemonSummaryDoMonAnimation, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_BLDCNT,
-  RemoveWindow, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks,
-  STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop,
-  ScheduleBgCopyTilemapToVram, SetBgAttribute, SetBgTilemapBuffer, SetBgTilemapPalette,
-  SetBoxMonData, SetGpuReg, SetMainCallback2, SetMonData,
-  SetMultiuseSpriteTemplateToPokemon, SetTaskFuncWithFollowupFunc, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
-  ShouldIgnoreDeoxysForm, ShouldPlayNormalMonCry, ShowBg, SpeciesToPokedexNum,
-  StartSpriteAnim, StopCryAndClearCrySongs, StopPokemonAnimationDelayTask, StringAppend,
-  StringCompareWithoutExtCtrlCodes, StringCopy, StringExpandPlaceholders, SwitchTaskToFollowupFunc,
-  TASK_NONE, TRUE, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  REG_OFFSET_DISPCNT, RemoveWindow, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags,
+  ResetPaletteFade, ResetSpriteData, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs,
+  RunTasks, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN,
+  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetBgAttribute, SetBgTilemapBuffer,
+  SetBgTilemapPalette, SetBoxMonData, SetGpuReg, SetMainCallback2,
+  SetMonData, SetMultiuseSpriteTemplateToPokemon, SetTaskFuncWithFollowupFunc, SetVBlankCallback,
+  SetVBlankHBlankCallbacksToNull, ShouldIgnoreDeoxysForm, ShouldPlayNormalMonCry, ShowBg,
+  SpeciesToPokedexNum, SpriteCallbackDummy, StartSpriteAnim, StopCryAndClearCrySongs,
+  StopPokemonAnimationDelayTask, StringAppend, StringCompareWithoutExtCtrlCodes, StringCopy,
+  StringExpandPlaceholders, SwitchTaskToFollowupFunc, TASK_NONE, TRUE,
+  TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ShowPokemonSummaryScreen(u8 mode, void *mons, u8 monIndex, u8 maxMonIndex, void (*callback)(void)) */

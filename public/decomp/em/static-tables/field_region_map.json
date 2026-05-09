@@ -1,0 +1,30 @@
+{
+  "srcFile": "src/field_region_map.c",
+  "count": 2,
+  "tables": {
+    "sFieldRegionMapBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 28,\n        .screenSize = 2,\n        .paletteMode = 1,\n        .priority = 2,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }, {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 28,\n        .screenSize = 2,\n        .paletteMode = 1,\n        .priority = 2,\n        .baseTile = 0\n    }\n}"
+    },
+    "sFieldRegionMapWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_MAPSEC_NAME",
+        "WIN_TITLE"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_MAPSEC_NAME] = {\n        .bg = 0,\n        .tilemapLeft = 17,\n        .tilemapTop = 17,\n        .width = 12,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n    [WIN_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 22,\n        .tilemapTop = 1,\n        .width = 7,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 25\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    }
+  }
+}

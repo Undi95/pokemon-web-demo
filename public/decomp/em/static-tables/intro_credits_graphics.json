@@ -1,0 +1,252 @@
+{
+  "srcFile": "src/intro_credits_graphics.c",
+  "count": 22,
+  "tables": {
+    "sUnused": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0"
+      ],
+      "rawValue": "{0}"
+    },
+    "sSpriteSheet_Clouds": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sClouds_Gfx,\n        .size = 0x400,\n        .tag = TAG_MOVING_SCENERY\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = sClouds_Gfx,\n        .size = 0x400,\n        .tag = TAG_MOVING_SCENERY\n    },\n    {}\n}"
+    },
+    "sAnim_Cloud_Largest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME( 0, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME( 0, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Cloud_Large": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Cloud_Small": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(20, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(20, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Cloud_Smallest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(22, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(22, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteMetadata_Clouds": {
+      "type": "struct IntroCreditsSpriteMetadata",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 72,\n        .y = 32,\n        .subpriority = 100,\n        .xOff = 0xc00\n    }",
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 158,\n        .y = 32,\n        .subpriority = 100,\n        .xOff = 0xc00\n    }",
+        "{\n        .animNum = 1,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .x = 192,\n        .y = 40,\n        .subpriority = 101,\n        .xOff = 0x800\n    }",
+        "{\n        .animNum = 1,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .x = 56,\n        .y = 40,\n        .subpriority = 101,\n        .xOff = 0x800\n    }",
+        "{\n        .animNum = 2,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .x = 100,\n        .y = 44,\n        .subpriority = 102,\n        .xOff = 0x400\n    }",
+        "{\n        .animNum = 2,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .x = 152,\n        .y = 44,\n        .subpriority = 102,\n        .xOff = 0x400\n    }",
+        "{\n        .animNum = 3,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .x = 8,\n        .y = 46,\n        .subpriority = 103,\n        .xOff = 0x100\n    }",
+        "{\n        .animNum = 3,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .x = 56,\n        .y = 46,\n        .subpriority = 103,\n        .xOff = 0x100\n    }",
+        "{\n        .animNum = 3,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .x = 240,\n        .y = 46,\n        .subpriority = 103,\n        .xOff = 0x100\n    }"
+      ],
+      "rawValue": "{\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 72,\n        .y = 32,\n        .subpriority = 100,\n        .xOff = 0xc00\n    },\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 158,\n        .y = 32,\n        .subpriority = 100,\n        .xOff = 0xc00\n    },\n    {\n        .animNum = 1,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .x = 192,\n        .y = 40,\n        .subpriority = 101,\n        .xOff = 0x800\n    },\n    {\n        .animNum = 1,\n        .shape = SPRITE_SHAPE(16x16),\n        .size = SPRITE_SIZE(16x16),\n        .x = 56,\n        .y = 40,\n        .subpriority = 101,\n        .xOff = 0x800\n    },\n    {\n        .animNum = 2,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .x = 100,\n        .y = 44,\n        .subpriority = 102,\n        .xOff = 0x400\n    },\n    {\n        .animNum = 2,\n        .shape = SPRITE_SHAP..."
+    },
+    "sSpriteSheet_TreesSmall": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sTreesSmall_Gfx,\n        .size = 0x400,\n        .tag = TAG_MOVING_SCENERY\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = sTreesSmall_Gfx,\n        .size = 0x400,\n        .tag = TAG_MOVING_SCENERY\n    },\n    {}\n}"
+    },
+    "sAnim_Trees_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME( 0, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME( 0, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Trees_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 30),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Trees_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteMetadata_Trees": {
+      "type": "struct IntroCreditsSpriteMetadata",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 16,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x2000,\n    }",
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 80,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x2000,\n    }",
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 144,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x2000,\n    }",
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 208,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x2000,\n    }",
+        "{\n        .animNum = 1,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .x = 40,\n        .y = 88,\n        .subpriority = 101,\n        .xOff = 0x1000,\n    }",
+        "{\n        .animNum = 1,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .x = 104,\n        .y = 88,\n        .subpriority = 101,\n        .xOff = 0x1000,\n    }",
+        "{\n        .animNum = 1,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .x = 168,\n        .y = 88,\n        .subpriority = 101,\n        .xOff = 0x1000,\n    }",
+        "{\n        .animNum = 1,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .x = 232,\n        .y = 88,\n        .subpriority = 101,\n        .xOff = 0x1000,\n    }",
+        "{\n        .animNum = 2,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .x = 56,\n        .y = 88,\n        .subpriority = 102,\n        .xOff = 0x800,\n    }",
+        "{\n        .animNum = 2,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .x = 120,\n        .y = 88,\n        .subpriority = 102,\n        .xOff = 0x800,\n    }",
+        "{\n        .animNum = 2,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .x = 184,\n        .y = 88,\n        .subpriority = 102,\n        .xOff = 0x800,\n    }",
+        "{\n        .animNum = 2,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .x = 248,\n        .y = 88,\n        .subpriority = 102,\n        .xOff = 0x800,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 16,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x2000,\n    },\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 80,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x2000,\n    },\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 144,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x2000,\n    },\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 208,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x2000,\n    },\n    {\n        .animNum = 1,\n        .shape = SPRITE_SHAPE(16x32),\n        .size = SPRITE_SIZE(16x32),\n        .x = 40,\n        .y = 88,\n        .subpriority = 101,\n        .xOff = 0x1000,\n    },\n    {\n        .animNum = 1,\n        .shape = ..."
+    },
+    "sSpriteSheet_HouseSilhouette": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sHouseSilhouette_Gfx,\n        .size = 0x400,\n        .tag = TAG_MOVING_SCENERY\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = sHouseSilhouette_Gfx,\n        .size = 0x400,\n        .tag = TAG_MOVING_SCENERY\n    },\n    {}\n}"
+    },
+    "sAnim_HouseSilhouette": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteMetadata_HouseSilhouette": {
+      "type": "struct IntroCreditsSpriteMetadata",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 24,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    }",
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 64,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    }",
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 104,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    }",
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 144,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    }",
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 184,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    }",
+        "{\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 224,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 24,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    },\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 64,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    },\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 104,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    },\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 144,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    },\n    {\n        .animNum = 0,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .x = 184,\n        .y = 88,\n        .subpriority = 100,\n        .xOff = 0x1000,\n    },\n    {\n        .animNum = 0,\n        .shape =..."
+    },
+    "sAnim_Player": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(  0, 8)",
+        "ANIMCMD_FRAME( 64, 8)",
+        "ANIMCMD_FRAME(128, 8)",
+        "ANIMCMD_FRAME(192, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(  0, 8),\n    ANIMCMD_FRAME( 64, 8),\n    ANIMCMD_FRAME(128, 8),\n    ANIMCMD_FRAME(192, 8),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Bicycle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(  0, 8)",
+        "ANIMCMD_FRAME( 32, 8)",
+        "ANIMCMD_FRAME( 64, 8)",
+        "ANIMCMD_FRAME( 96, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(  0, 8),\n    ANIMCMD_FRAME( 32, 8),\n    ANIMCMD_FRAME( 64, 8),\n    ANIMCMD_FRAME( 96, 8),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_FlygonLeft": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 16),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_FlygonRight": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 16)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 16),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteSheet_IntroFlygon_Unused": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = gIntroFlygon_Gfx,\n        .size = 0x1000,\n        .tag = TAG_FLYGON_LATIOS\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = gIntroFlygon_Gfx,\n        .size = 0x1000,\n        .tag = TAG_FLYGON_LATIOS\n    },\n    {}\n}"
+    },
+    "sSpriteSheet_Latios": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sLatios_Gfx,\n        .size = 0x1000,\n        .tag = TAG_FLYGON_LATIOS\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = sLatios_Gfx,\n        .size = 0x1000,\n        .tag = TAG_FLYGON_LATIOS\n    },\n    {}\n}"
+    },
+    "sSpriteSheet_Latias": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sLatias_Gfx,\n        .size = 0x1000,\n        .tag = TAG_FLYGON_LATIAS\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = sLatias_Gfx,\n        .size = 0x1000,\n        .tag = TAG_FLYGON_LATIAS\n    },\n    {}\n}"
+    }
+  }
+}

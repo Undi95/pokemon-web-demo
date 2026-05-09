@@ -1,0 +1,47 @@
+{
+  "srcFile": "src/text_window.c",
+  "count": 2,
+  "tables": {
+    "sTextWindowPalettes": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "INCGFX_U16(\"graphics/text_window/message_box.png\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/text_window/text_pal1.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/text_window/text_pal2.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/text_window/text_pal3.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/text_window/text_pal4.pal\", \".gbapal\")"
+      ],
+      "rawValue": "{\n    INCGFX_U16(\"graphics/text_window/message_box.png\", \".gbapal\"),\n    INCGFX_U16(\"graphics/text_window/text_pal1.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/text_window/text_pal2.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/text_window/text_pal3.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/text_window/text_pal4.pal\", \".gbapal\")\n}"
+    },
+    "sWindowFrames": {
+      "type": "struct TilesPal",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gTextWindowFrame1_Gfx, gTextWindowFrame1_Pal}",
+        "{sTextWindowFrame2_Gfx, sTextWindowFrame2_Pal}",
+        "{sTextWindowFrame3_Gfx, sTextWindowFrame3_Pal}",
+        "{sTextWindowFrame4_Gfx, sTextWindowFrame4_Pal}",
+        "{sTextWindowFrame5_Gfx, sTextWindowFrame5_Pal}",
+        "{sTextWindowFrame6_Gfx, sTextWindowFrame6_Pal}",
+        "{sTextWindowFrame7_Gfx, sTextWindowFrame7_Pal}",
+        "{sTextWindowFrame8_Gfx, sTextWindowFrame8_Pal}",
+        "{sTextWindowFrame9_Gfx, sTextWindowFrame9_Pal}",
+        "{sTextWindowFrame10_Gfx, sTextWindowFrame10_Pal}",
+        "{sTextWindowFrame11_Gfx, sTextWindowFrame11_Pal}",
+        "{sTextWindowFrame12_Gfx, sTextWindowFrame12_Pal}",
+        "{sTextWindowFrame13_Gfx, sTextWindowFrame13_Pal}",
+        "{sTextWindowFrame14_Gfx, sTextWindowFrame14_Pal}",
+        "{sTextWindowFrame15_Gfx, sTextWindowFrame15_Pal}",
+        "{sTextWindowFrame16_Gfx, sTextWindowFrame16_Pal}",
+        "{sTextWindowFrame17_Gfx, sTextWindowFrame17_Pal}",
+        "{sTextWindowFrame18_Gfx, sTextWindowFrame18_Pal}",
+        "{sTextWindowFrame19_Gfx, sTextWindowFrame19_Pal}",
+        "{sTextWindowFrame20_Gfx, sTextWindowFrame20_Pal}"
+      ],
+      "rawValue": "{\n    {gTextWindowFrame1_Gfx, gTextWindowFrame1_Pal},\n    {sTextWindowFrame2_Gfx, sTextWindowFrame2_Pal},\n    {sTextWindowFrame3_Gfx, sTextWindowFrame3_Pal},\n    {sTextWindowFrame4_Gfx, sTextWindowFrame4_Pal},\n    {sTextWindowFrame5_Gfx, sTextWindowFrame5_Pal},\n    {sTextWindowFrame6_Gfx, sTextWindowFrame6_Pal},\n    {sTextWindowFrame7_Gfx, sTextWindowFrame7_Pal},\n    {sTextWindowFrame8_Gfx, sTextWindowFrame8_Pal},\n    {sTextWindowFrame9_Gfx, sTextWindowFrame9_Pal},\n    {sTextWindowFrame10_Gfx, sTextWindowFrame10_Pal},\n    {sTextWindowFrame11_Gfx, sTextWindowFrame11_Pal},\n    {sTextWindowFrame12_Gfx, sTextWindowFrame12_Pal},\n    {sTextWindowFrame13_Gfx, sTextWindowFrame13_Pal},\n    {sTextWindowFrame14_Gfx, sTextWindowFrame14_Pal},\n    {sTextWindowFrame15_Gfx, sTextWindowFrame15_Pal},\n    {sTextWindowFrame16_Gfx, sTextWindowFrame16_Pal},\n    {sTextWindowFrame17_Gfx, sTextWindowFrame17_Pal},\n    {sTextWindowFrame18_Gfx, sTextWindowFrame18_Pal},\n    {sTextWindowFrame19_Gfx, sTextWindowFrame19_Pal},\n    {sTextWind..."
+    }
+  }
+}

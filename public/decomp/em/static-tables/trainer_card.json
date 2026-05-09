@@ -1,0 +1,121 @@
+{
+  "srcFile": "src/trainer_card.c",
+  "count": 8,
+  "tables": {
+    "sTrainerCardBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 27,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 192\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 27,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 192\n    },\n}"
+    },
+    "sTrainerCardWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_MSG",
+        "WIN_CARD_TEXT",
+        "WIN_TRAINER_PIC"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 1",
+        "{\n        .bg = 1",
+        "{\n        .bg = 3"
+      ],
+      "rawValue": "{\n    [WIN_MSG] = {\n        .bg = 1,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x253,\n    },\n    [WIN_CARD_TEXT] = {\n        .bg = 1,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 28,\n        .height = 18,\n        .paletteNum = 15,\n        .baseBlock = 0x1,\n    },\n    [WIN_TRAINER_PIC] = {\n        .bg = 3,\n        .tilemapLeft = 19,\n        .tilemapTop = 5,\n        .width = 9,\n        .height = 10,\n        .paletteNum = 8,\n        .baseBlock = 0x150,\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sTrainerCardTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_DARK_GRAY",
+        "TEXT_COLOR_LIGHT_GRAY"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY}"
+    },
+    "sTrainerCardStatColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_RED",
+        "TEXT_COLOR_LIGHT_RED"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_RED, TEXT_COLOR_LIGHT_RED}"
+    },
+    "sTimeColonInvisibleTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_TRANSPARENT"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_TRANSPARENT, TEXT_COLOR_TRANSPARENT}"
+    },
+    "sTrainerPicOffset": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MALE",
+        "FEMALE",
+        "MALE",
+        "FEMALE"
+      ],
+      "indexedValues": [
+        "{13",
+        "{13",
+        "{1",
+        "{1"
+      ],
+      "rawValue": "{\n     \n    {\n        [MALE]   = {13, 4},\n        [FEMALE] = {13, 4}\n    },\n     \n    {\n        [MALE]   = {1, 0},\n        [FEMALE] = {1, 0}\n    },\n}"
+    },
+    "sTrainerPicFacilityClass": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CARD_TYPE_FRLG",
+        "FEMALE",
+        "CARD_TYPE_RS",
+        "FEMALE",
+        "CARD_TYPE_EMERALD",
+        "FEMALE"
+      ],
+      "indexedValues": [
+        "{\n        [MALE]   = FACILITY_CLASS_RED",
+        "FACILITY_CLASS_LEAF",
+        "{\n        [MALE]   = FACILITY_CLASS_RS_BRENDAN",
+        "FACILITY_CLASS_RS_MAY",
+        "{\n        [MALE]   = FACILITY_CLASS_BRENDAN",
+        "FACILITY_CLASS_MAY"
+      ],
+      "rawValue": "{\n    [CARD_TYPE_FRLG] =\n    {\n        [MALE]   = FACILITY_CLASS_RED,\n        [FEMALE] = FACILITY_CLASS_LEAF\n    },\n    [CARD_TYPE_RS] =\n    {\n        [MALE]   = FACILITY_CLASS_RS_BRENDAN,\n        [FEMALE] = FACILITY_CLASS_RS_MAY\n    },\n    [CARD_TYPE_EMERALD] =\n    {\n        [MALE]   = FACILITY_CLASS_BRENDAN,\n        [FEMALE] = FACILITY_CLASS_MAY\n    }\n}"
+    },
+    "sTrainerCardFlipTasks": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "Task_BeginCardFlip",
+        "Task_AnimateCardFlipDown",
+        "Task_DrawFlippedCardSide",
+        "Task_SetCardFlipped",
+        "Task_AnimateCardFlipUp",
+        "Task_EndCardFlip"
+      ],
+      "rawValue": "{\n    Task_BeginCardFlip,\n    Task_AnimateCardFlipDown,\n    Task_DrawFlippedCardSide,\n    Task_SetCardFlipped,\n    Task_AnimateCardFlipUp,\n    Task_EndCardFlip,\n}"
+    }
+  }
+}

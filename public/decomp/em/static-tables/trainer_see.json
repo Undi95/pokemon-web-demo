@@ -1,0 +1,103 @@
+{
+  "srcFile": "src/trainer_see.c",
+  "count": 7,
+  "tables": {
+    "sSpriteImageTable_ExclamationQuestionMark": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sEmotion_ExclamationMarkGfx,\n        .size = sizeof(sEmotion_ExclamationMarkGfx)\n    }",
+        "{\n        .data = sEmotion_QuestionMarkGfx,\n        .size = sizeof(sEmotion_QuestionMarkGfx)\n    }"
+      ],
+      "rawValue": "{\n    {\n        .data = sEmotion_ExclamationMarkGfx,\n        .size = sizeof(sEmotion_ExclamationMarkGfx)\n    },\n    {\n        .data = sEmotion_QuestionMarkGfx,\n        .size = sizeof(sEmotion_QuestionMarkGfx)\n    }\n}"
+    },
+    "sSpriteImageTable_HeartIcon": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = sEmotion_HeartGfx,\n        .size = sizeof(sEmotion_HeartGfx)\n    }"
+      ],
+      "rawValue": "{\n    {\n        .data = sEmotion_HeartGfx,\n        .size = sizeof(sEmotion_HeartGfx)\n    }\n}"
+    },
+    "sSpriteAnim_Icons1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 60)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 60),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_Icons2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 60)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 60),\n    ANIMCMD_END\n}"
+    },
+    "sDirectionalApproachDistanceFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "GetTrainerApproachDistanceSouth",
+        "GetTrainerApproachDistanceNorth",
+        "GetTrainerApproachDistanceWest",
+        "GetTrainerApproachDistanceEast"
+      ],
+      "rawValue": "{\n    GetTrainerApproachDistanceSouth,\n    GetTrainerApproachDistanceNorth,\n    GetTrainerApproachDistanceWest,\n    GetTrainerApproachDistanceEast,\n}"
+    },
+    "sTrainerSeeFuncList": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "TRSEE_NONE",
+        "TRSEE_EXCLAMATION",
+        "TRSEE_EXCLAMATION_WAIT",
+        "TRSEE_MOVE_TO_PLAYER",
+        "TRSEE_PLAYER_FACE",
+        "TRSEE_PLAYER_FACE_WAIT",
+        "TRSEE_REVEAL_DISGUISE",
+        "TRSEE_REVEAL_DISGUISE_WAIT",
+        "TRSEE_REVEAL_BURIED",
+        "TRSEE_BURIED_POP_OUT",
+        "TRSEE_BURIED_JUMP",
+        "TRSEE_REVEAL_BURIED_WAIT"
+      ],
+      "indexedValues": [
+        "TrainerSeeIdle",
+        "TrainerExclamationMark",
+        "WaitTrainerExclamationMark",
+        "TrainerMoveToPlayer",
+        "PlayerFaceApproachingTrainer",
+        "WaitPlayerFaceApproachingTrainer",
+        "RevealDisguisedTrainer",
+        "WaitRevealDisguisedTrainer",
+        "RevealBuriedTrainer",
+        "PopOutOfAshBuriedTrainer",
+        "JumpInPlaceBuriedTrainer",
+        "WaitRevealBuriedTrainer"
+      ],
+      "rawValue": "{\n    [TRSEE_NONE]                 = TrainerSeeIdle,\n    [TRSEE_EXCLAMATION]          = TrainerExclamationMark,\n    [TRSEE_EXCLAMATION_WAIT]     = WaitTrainerExclamationMark,\n    [TRSEE_MOVE_TO_PLAYER]       = TrainerMoveToPlayer,\n    [TRSEE_PLAYER_FACE]          = PlayerFaceApproachingTrainer,\n    [TRSEE_PLAYER_FACE_WAIT]     = WaitPlayerFaceApproachingTrainer,\n    [TRSEE_REVEAL_DISGUISE]      = RevealDisguisedTrainer,\n    [TRSEE_REVEAL_DISGUISE_WAIT] = WaitRevealDisguisedTrainer,\n    [TRSEE_REVEAL_BURIED]        = RevealBuriedTrainer,\n    [TRSEE_BURIED_POP_OUT]       = PopOutOfAshBuriedTrainer,\n    [TRSEE_BURIED_JUMP]          = JumpInPlaceBuriedTrainer,\n    [TRSEE_REVEAL_BURIED_WAIT]   = WaitRevealBuriedTrainer,\n}"
+    },
+    "sTrainerSeeFuncList2": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "RevealBuriedTrainer",
+        "PopOutOfAshBuriedTrainer",
+        "JumpInPlaceBuriedTrainer",
+        "WaitRevealBuriedTrainer"
+      ],
+      "rawValue": "{\n    RevealBuriedTrainer,\n    PopOutOfAshBuriedTrainer,\n    JumpInPlaceBuriedTrainer,\n    WaitRevealBuriedTrainer,\n}"
+    }
+  }
+}

@@ -23,9 +23,9 @@
 import * as _bridge from '../../../decomp-bridge';
 const {
   ClearGpuRegBits, DISPCNT_FORCED_BLANK, FALSE, GetSaveBlocksPointersBaseOffset,
-  InitHeap, LoadGameSave, RegisterRamReset, ResetMenuAndMonGlobals,
-  Sav2_ClearSetDefault, Save_ResetSaveCounters, SetMainCallback2, SetPokemonCryStereo,
-  SetSaveBlocksPointers,  // 4-per-line for readability
+  InitHeap, LoadGameSave, REG_OFFSET_DISPCNT, RegisterRamReset,
+  ResetMenuAndMonGlobals, Sav2_ClearSetDefault, Save_ResetSaveCounters, SetMainCallback2,
+  SetPokemonCryStereo, SetSaveBlocksPointers,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ReloadSave(void) */

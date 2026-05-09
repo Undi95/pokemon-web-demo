@@ -33,8 +33,8 @@ const {
   REG_OFFSET_MOSAIC, ResetPaletteFade, ResetSpriteData, ScanlineEffect_Clear,
   SetBattlerShadowSpriteCallback, SetBgAttribute, SetGpuReg, SetHBlankCallback,
   SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible, SetMainCallback2, SetMultiuseSpriteTemplateToPokemon,
-  SetMultiuseSpriteTemplateToTrainerBack, SetVBlankCallback, ShowBg, StartSpriteAnim,
-  TRUE, UpdateHealthboxAttribute, VRAM_SIZE,  // 4-per-line for readability
+  SetMultiuseSpriteTemplateToTrainerBack, SetVBlankCallback, ShowBg, SpriteCallbackDummy,
+  StartSpriteAnim, TRUE, UpdateHealthboxAttribute, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ReshowBattleScreenAfterMenu(void) */

@@ -1,0 +1,155 @@
+{
+  "srcFile": "src/use_pokeblock.c",
+  "count": 11,
+  "tables": {
+    "sConditionToMonData": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CONDITION_COOL",
+        "CONDITION_TOUGH",
+        "CONDITION_SMART",
+        "CONDITION_CUTE",
+        "CONDITION_BEAUTY"
+      ],
+      "indexedValues": [
+        "MON_DATA_COOL",
+        "MON_DATA_TOUGH",
+        "MON_DATA_SMART",
+        "MON_DATA_CUTE",
+        "MON_DATA_BEAUTY"
+      ],
+      "rawValue": "{\n    [CONDITION_COOL]   = MON_DATA_COOL,\n    [CONDITION_TOUGH]  = MON_DATA_TOUGH,\n    [CONDITION_SMART]  = MON_DATA_SMART,\n    [CONDITION_CUTE]   = MON_DATA_CUTE,\n    [CONDITION_BEAUTY] = MON_DATA_BEAUTY\n}"
+    },
+    "sConditionToFlavor": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CONDITION_COOL",
+        "CONDITION_TOUGH",
+        "CONDITION_SMART",
+        "CONDITION_CUTE",
+        "CONDITION_BEAUTY"
+      ],
+      "indexedValues": [
+        "FLAVOR_SPICY",
+        "FLAVOR_SOUR",
+        "FLAVOR_BITTER",
+        "FLAVOR_SWEET",
+        "FLAVOR_DRY"
+      ],
+      "rawValue": "{\n    [CONDITION_COOL]   = FLAVOR_SPICY,\n    [CONDITION_TOUGH]  = FLAVOR_SOUR,\n    [CONDITION_SMART]  = FLAVOR_BITTER,\n    [CONDITION_CUTE]   = FLAVOR_SWEET,\n    [CONDITION_BEAUTY] = FLAVOR_DRY\n}"
+    },
+    "sNatureTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_BLUE",
+        "TEXT_COLOR_WHITE"
+      ],
+      "rawValue": "{\n    TEXT_COLOR_TRANSPARENT,\n    TEXT_COLOR_BLUE,\n    TEXT_COLOR_WHITE\n}"
+    },
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x1F,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 0x1E,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 0x1D,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0x100\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 0x17,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x1F,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 0x1E,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 0x1D,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0x100\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 0x17,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_NAME",
+        "WIN_NATURE",
+        "WIN_TEXT"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_NAME] = {\n        .bg = 0,\n        .tilemapLeft = 13,\n        .tilemapTop = 1,\n        .width = 13,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n    [WIN_NATURE] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 14,\n        .width = 11,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x35\n    },\n    [WIN_TEXT] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 17,\n        .width = 28,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 0x4B\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sUpDownCoordsOnGraph": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CONDITION_COOL",
+        "CONDITION_TOUGH",
+        "CONDITION_SMART",
+        "CONDITION_CUTE",
+        "CONDITION_BEAUTY"
+      ],
+      "indexedValues": [
+        "{156",
+        "{117",
+        "{117",
+        "{197",
+        "{197"
+      ],
+      "rawValue": "{\n    [CONDITION_COOL]   = {156,  36},\n    [CONDITION_TOUGH]  = {117,  59},\n    [CONDITION_SMART]  = {117, 118},\n    [CONDITION_CUTE]   = {197, 118},\n    [CONDITION_BEAUTY] = {197,  59}\n}"
+    },
+    "sAnim_Up": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Down": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Condition_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Condition_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Condition_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 5),\n    ANIMCMD_END\n}"
+    }
+  }
+}

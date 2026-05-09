@@ -1,0 +1,54 @@
+{
+  "srcFile": "src/battle_anim_smokescreen.c",
+  "count": 4,
+  "tables": {
+    "sAnim_SmokescreenImpact_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(4, 4)",
+        "ANIMCMD_FRAME(8, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(4, 4),\n    ANIMCMD_FRAME(8, 4),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_SmokescreenImpact_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(4, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 4, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(4, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(8, 4, .hFlip = TRUE),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_SmokescreenImpact_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4, .vFlip = TRUE)",
+        "ANIMCMD_FRAME(4, 4, .vFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 4, .vFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4, .vFlip = TRUE),\n    ANIMCMD_FRAME(4, 4, .vFlip = TRUE),\n    ANIMCMD_FRAME(8, 4, .vFlip = TRUE),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_SmokescreenImpact_3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4, .hFlip = TRUE, .vFlip = TRUE)",
+        "ANIMCMD_FRAME(4, 4, .hFlip = TRUE, .vFlip = TRUE)",
+        "ANIMCMD_FRAME(8, 4, .hFlip = TRUE, .vFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4, .hFlip = TRUE, .vFlip = TRUE),\n    ANIMCMD_FRAME(4, 4, .hFlip = TRUE, .vFlip = TRUE),\n    ANIMCMD_FRAME(8, 4, .hFlip = TRUE, .vFlip = TRUE),\n    ANIMCMD_END\n}"
+    }
+  }
+}

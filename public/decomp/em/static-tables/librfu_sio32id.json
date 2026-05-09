@@ -1,0 +1,18 @@
+{
+  "srcFile": "src/librfu_sio32id.c",
+  "count": 1,
+  "tables": {
+    "Sio32ConnectionData": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x494e",
+        "0x544e",
+        "0x4e45",
+        "0x4f44"
+      ],
+      "rawValue": "{ 0x494e, 0x544e, 0x4e45, 0x4f44 }"
+    }
+  }
+}

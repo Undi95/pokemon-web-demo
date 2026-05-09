@@ -1,0 +1,220 @@
+{
+  "srcFile": "src/frontier_util.c",
+  "count": 7,
+  "tables": {
+    "sFrontierBrainStreakAppearances": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FRONTIER_FACILITY_TOWER",
+        "FRONTIER_FACILITY_DOME",
+        "FRONTIER_FACILITY_PALACE",
+        "FRONTIER_FACILITY_ARENA",
+        "FRONTIER_FACILITY_FACTORY",
+        "FRONTIER_FACILITY_PIKE",
+        "FRONTIER_FACILITY_PYRAMID"
+      ],
+      "indexedValues": [
+        "{35",
+        "{ 4",
+        "{21",
+        "{28",
+        "{21",
+        "{28",
+        "{21"
+      ],
+      "rawValue": "{\n    [FRONTIER_FACILITY_TOWER]   = {35,  70, 35, 1},\n    [FRONTIER_FACILITY_DOME]    = { 4,   9,  5, 0},\n    [FRONTIER_FACILITY_PALACE]  = {21,  42, 21, 1},\n    [FRONTIER_FACILITY_ARENA]   = {28,  56, 28, 1},\n    [FRONTIER_FACILITY_FACTORY] = {21,  42, 21, 1},\n    [FRONTIER_FACILITY_PIKE]    = {28, 140, 56, 1},\n    [FRONTIER_FACILITY_PYRAMID] = {21,  70, 35, 0},\n}"
+    },
+    "sFrontierBrainsMons": {
+      "type": "struct FrontierBrainMon",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FRONTIER_FACILITY_TOWER",
+        "FRONTIER_FACILITY_DOME",
+        "FRONTIER_FACILITY_PALACE",
+        "FRONTIER_FACILITY_ARENA",
+        "FRONTIER_FACILITY_FACTORY",
+        "FRONTIER_FACILITY_PIKE",
+        "FRONTIER_FACILITY_PYRAMID"
+      ],
+      "indexedValues": [
+        "{\n         \n        {\n            {\n                .species = SPECIES_ALAKAZAM",
+        "{\n         \n        {\n            {\n                .species = SPECIES_SWAMPERT",
+        "{\n         \n        {\n            {\n                .species = SPECIES_CROBAT",
+        "{\n         \n        {\n            {\n                .species = SPECIES_HERACROSS",
+        "{\n         \n         \n        {\n            {\n                .species = SPECIES_METANG",
+        "{\n         \n        {\n            {\n                .species = SPECIES_SEVIPER",
+        "{\n         \n        {\n            {\n                .species = SPECIES_REGIROCK"
+      ],
+      "rawValue": "{\n    [FRONTIER_FACILITY_TOWER] =\n    {\n         \n        {\n            {\n                .species = SPECIES_ALAKAZAM,\n                .heldItem = ITEM_BRIGHT_POWDER,\n                .fixedIV = 24,\n                .nature = NATURE_MODEST,\n                .evs = {106, 0, 152, 152, 100, 0},\n                .moves = {MOVE_THUNDER_PUNCH, MOVE_FIRE_PUNCH, MOVE_ICE_PUNCH, MOVE_DISABLE},\n            },\n            {\n                .species = SPECIES_ENTEI,\n                .heldItem = ITEM_LUM_BERRY,\n                .fixedIV = 24,\n                .nature = NATURE_LONELY,\n                .evs = {100, 152, 152, 0, 100, 6},\n                .moves = {MOVE_FIRE_BLAST, MOVE_CALM_MIND, MOVE_RETURN, MOVE_ROAR},\n            },\n            {\n                .species = SPECIES_SNORLAX,\n                .heldItem = ITEM_QUICK_CLAW,\n                .fixedIV = 24,\n                .nature = NATURE_ADAMANT,\n                .evs = {152, 152, 0, 0, 106, 100},\n                .moves = {MOVE_BODY_SLAM, MOVE_BELLY_DRUM, MOVE_YAWN, MOVE_S..."
+    },
+    "sBattlePointAwards": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        {1, 2, 3, 3}, {1, 1}, {4, 5}, {1}, {3, 4}, {1}, {5}\n    }",
+        "{\n        {2, 3, 4, 4}, {1, 1}, {4, 5}, {1}, {3, 4}, {1}, {5}\n    }",
+        "{\n        {3, 4, 5, 5}, {2, 2}, {5, 6}, {1}, {4, 5}, {2}, {6}\n    }",
+        "{\n        {4, 5, 6, 6}, {2, 2}, {5, 6}, {2}, {4, 5}, {2}, {6}\n    }",
+        "{\n        {5, 6, 7, 7}, {3, 3}, {6, 7}, {2}, {5, 6}, {2}, {7}\n    }",
+        "{\n        {6, 7, 8, 8}, {3, 3}, {6, 7}, {2}, {5, 6}, {4}, {7}\n    }",
+        "{\n        {7, 8, 9, 9}, {4, 4}, {7, 8}, {3}, {6, 7}, {4}, {8}\n    }",
+        "{\n        {8, 9, 10, 10}, {4, 4}, {7, 8}, {3},{6, 7}, {4}, {8}\n    }",
+        "{\n        {9, 10, 11, 11}, {5, 5}, {8, 9}, {4}, {7, 8}, {8}, {9}\n    }",
+        "{\n        {10, 11, 12, 12}, {5, 5}, {8, 9}, {4}, {7, 8}, {8}, {9}\n    }",
+        "{\n        {11, 12, 13, 13}, {6, 6}, {9, 10}, {5,0}, {8, 9}, {8}, {10}\n    }",
+        "{\n        {12, 13, 14, 14}, {6, 6}, {9, 10}, {6,0}, {8, 9}, {8}, {10}\n    }",
+        "{\n        {13, 14, 15, 15}, {7, 7}, {10, 11}, {7}, {9, 10}, {10}, {11}\n    }",
+        "{\n        {14, 15, 15, 15}, {7, 7}, {10, 11}, {8}, {9, 10}, {10}, {11}\n    }",
+        "{\n        {15, 15, 15, 15}, {8, 8}, {11, 12}, {9}, {10, 11}, {10}, {12}\n    }",
+        "{\n        {15, 15, 15, 15}, {8, 8}, {11, 12}, {10}, {10, 11}, {10}, {12}\n    }",
+        "{\n        {15, 15, 15, 15}, {9, 9}, {12, 13}, {11}, {11, 12}, {12}, {13}\n    }",
+        "{\n        {15, 15, 15, 15}, {9, 9}, {12, 13}, {12}, {11, 12}, {12}, {13}\n    }",
+        "{\n        {15, 15, 15, 15}, {10, 10}, {13, 14}, {13}, {12, 13}, {12}, {14}\n    }",
+        "{\n        {15, 15, 15, 15}, {10, 10}, {13, 14}, {14}, {12, 13}, {12}, {14}\n    }",
+        "{\n        {15, 15, 15, 15}, {11, 11}, {14, 15}, {15}, {13, 14}, {12}, {15}\n    }",
+        "{\n        {15, 15, 15, 15}, {11, 11}, {14, 15}, {15}, {13, 14}, {14}, {15}\n    }",
+        "{\n        {15, 15, 15, 15}, {12, 12}, {15, 15}, {15}, {14, 15}, {14}, {15}\n    }",
+        "{\n        {15, 15, 15, 15}, {12, 12}, {15, 15}, {15}, {14, 15}, {14}, {15}\n    }",
+        "{\n        {15, 15, 15, 15}, {13, 13}, {15, 15}, {15}, {15, 15}, {14}, {15}\n    }",
+        "{\n        {15, 15, 15, 15}, {13, 13}, {15, 15}, {15}, {15, 15}, {15}, {15}\n    }",
+        "{\n        {15, 15, 15, 15}, {14, 14}, {15, 15}, {15}, {15, 15}, {15}, {15}\n    }",
+        "{\n        {15, 15, 15, 15}, {14, 14}, {15, 15}, {15}, {15, 15}, {15}, {15}\n    }",
+        "{\n        {15, 15, 15, 15}, {15, 15}, {15, 15}, {15}, {15, 15}, {15}, {15}\n    }",
+        "{\n        {15, 15, 15, 15}, {15, 15}, {15, 15}, {15}, {15, 15}, {15}, {15}\n    }"
+      ],
+      "rawValue": "{\n    {\n        {1, 2, 3, 3}, {1, 1}, {4, 5}, {1}, {3, 4}, {1}, {5}\n    },\n    {\n        {2, 3, 4, 4}, {1, 1}, {4, 5}, {1}, {3, 4}, {1}, {5}\n    },\n    {\n        {3, 4, 5, 5}, {2, 2}, {5, 6}, {1}, {4, 5}, {2}, {6}\n    },\n    {\n        {4, 5, 6, 6}, {2, 2}, {5, 6}, {2}, {4, 5}, {2}, {6}\n    },\n    {\n        {5, 6, 7, 7}, {3, 3}, {6, 7}, {2}, {5, 6}, {2}, {7}\n    },\n    {\n        {6, 7, 8, 8}, {3, 3}, {6, 7}, {2}, {5, 6}, {4}, {7}\n    },\n    {\n        {7, 8, 9, 9}, {4, 4}, {7, 8}, {3}, {6, 7}, {4}, {8}\n    },\n    {\n        {8, 9, 10, 10}, {4, 4}, {7, 8}, {3},{6, 7}, {4}, {8}\n    },\n    {\n        {9, 10, 11, 11}, {5, 5}, {8, 9}, {4}, {7, 8}, {8}, {9}\n    },\n    {\n        {10, 11, 12, 12}, {5, 5}, {8, 9}, {4}, {7, 8}, {8}, {9}\n    },\n    {\n        {11, 12, 13, 13}, {6, 6}, {9, 10}, {5,0}, {8, 9}, {8}, {10}\n    },\n    {\n        {12, 13, 14, 14}, {6, 6}, {9, 10}, {6,0}, {8, 9}, {8}, {10}\n    },\n    {\n        {13, 14, 15, 15}, {7, 7}, {10, 11}, {7}, {9, 10}, {10}, {11}\n    },\n    {\n        {14, 15, 15, 15}, {7, 7}, ..."
+    },
+    "sBattledBrainBitFlags": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FRONTIER_FACILITY_TOWER",
+        "FRONTIER_FACILITY_DOME",
+        "FRONTIER_FACILITY_PALACE",
+        "FRONTIER_FACILITY_ARENA",
+        "FRONTIER_FACILITY_FACTORY",
+        "FRONTIER_FACILITY_PIKE",
+        "FRONTIER_FACILITY_PYRAMID"
+      ],
+      "indexedValues": [
+        "{1 << 0",
+        "{1 << 2",
+        "{1 << 4",
+        "{1 << 6",
+        "{1 << 8",
+        "{1 << 10",
+        "{1 << 12"
+      ],
+      "rawValue": "{\n    [FRONTIER_FACILITY_TOWER]   = {1 << 0, 1 << 1},\n    [FRONTIER_FACILITY_DOME]    = {1 << 2, 1 << 3},\n    [FRONTIER_FACILITY_PALACE]  = {1 << 4, 1 << 5},\n    [FRONTIER_FACILITY_ARENA]   = {1 << 6, 1 << 7},\n    [FRONTIER_FACILITY_FACTORY] = {1 << 8, 1 << 9},\n    [FRONTIER_FACILITY_PIKE]    = {1 << 10, 1 << 11},\n    [FRONTIER_FACILITY_PYRAMID] = {1 << 12, 1 << 13},\n}"
+    },
+    "sFrontierBrainObjEventGfx": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FRONTIER_FACILITY_TOWER",
+        "FRONTIER_FACILITY_DOME",
+        "FRONTIER_FACILITY_PALACE",
+        "FRONTIER_FACILITY_ARENA",
+        "FRONTIER_FACILITY_FACTORY",
+        "FRONTIER_FACILITY_PIKE",
+        "FRONTIER_FACILITY_PYRAMID"
+      ],
+      "indexedValues": [
+        "{OBJ_EVENT_GFX_ANABEL",
+        "{OBJ_EVENT_GFX_TUCKER",
+        "{OBJ_EVENT_GFX_SPENSER",
+        "{OBJ_EVENT_GFX_GRETA",
+        "{OBJ_EVENT_GFX_NOLAND",
+        "{OBJ_EVENT_GFX_LUCY",
+        "{OBJ_EVENT_GFX_BRANDON"
+      ],
+      "rawValue": "{\n    [FRONTIER_FACILITY_TOWER]   = {OBJ_EVENT_GFX_ANABEL,  TRUE},\n    [FRONTIER_FACILITY_DOME]    = {OBJ_EVENT_GFX_TUCKER,  FALSE},\n    [FRONTIER_FACILITY_PALACE]  = {OBJ_EVENT_GFX_SPENSER, FALSE},\n    [FRONTIER_FACILITY_ARENA]   = {OBJ_EVENT_GFX_GRETA,   TRUE},\n    [FRONTIER_FACILITY_FACTORY] = {OBJ_EVENT_GFX_NOLAND,  FALSE},\n    [FRONTIER_FACILITY_PIKE]    = {OBJ_EVENT_GFX_LUCY,    TRUE},\n    [FRONTIER_FACILITY_PYRAMID] = {OBJ_EVENT_GFX_BRANDON, FALSE},\n}"
+    },
+    "sFrontierBrainTrainerIds": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FRONTIER_FACILITY_TOWER",
+        "FRONTIER_FACILITY_DOME",
+        "FRONTIER_FACILITY_PALACE",
+        "FRONTIER_FACILITY_ARENA",
+        "FRONTIER_FACILITY_FACTORY",
+        "FRONTIER_FACILITY_PIKE",
+        "FRONTIER_FACILITY_PYRAMID"
+      ],
+      "indexedValues": [
+        "TRAINER_ANABEL",
+        "TRAINER_TUCKER",
+        "TRAINER_SPENSER",
+        "TRAINER_GRETA",
+        "TRAINER_NOLAND",
+        "TRAINER_LUCY",
+        "TRAINER_BRANDON"
+      ],
+      "rawValue": "{\n    [FRONTIER_FACILITY_TOWER]   = TRAINER_ANABEL,\n    [FRONTIER_FACILITY_DOME]    = TRAINER_TUCKER,\n    [FRONTIER_FACILITY_PALACE]  = TRAINER_SPENSER,\n    [FRONTIER_FACILITY_ARENA]   = TRAINER_GRETA,\n    [FRONTIER_FACILITY_FACTORY] = TRAINER_NOLAND,\n    [FRONTIER_FACILITY_PIKE]    = TRAINER_LUCY,\n    [FRONTIER_FACILITY_PYRAMID] = TRAINER_BRANDON,\n}"
+    },
+    "sFrontierUtilFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "FRONTIER_UTIL_FUNC_GET_STATUS",
+        "FRONTIER_UTIL_FUNC_GET_DATA",
+        "FRONTIER_UTIL_FUNC_SET_DATA",
+        "FRONTIER_UTIL_FUNC_SET_PARTY_ORDER",
+        "FRONTIER_UTIL_FUNC_SOFT_RESET",
+        "FRONTIER_UTIL_FUNC_SET_TRAINERS",
+        "FRONTIER_UTIL_FUNC_SAVE_PARTY",
+        "FRONTIER_UTIL_FUNC_RESULTS_WINDOW",
+        "FRONTIER_UTIL_FUNC_CHECK_AIR_TV_SHOW",
+        "FRONTIER_UTIL_FUNC_GET_BRAIN_STATUS",
+        "FRONTIER_UTIL_FUNC_IS_BRAIN",
+        "FRONTIER_UTIL_FUNC_GIVE_BATTLE_POINTS",
+        "FRONTIER_UTIL_FUNC_GET_FACILITY_SYMBOLS",
+        "FRONTIER_UTIL_FUNC_GIVE_FACILITY_SYMBOL",
+        "FRONTIER_UTIL_FUNC_CHECK_BATTLE_TYPE",
+        "FRONTIER_UTIL_FUNC_CHECK_INELIGIBLE",
+        "FRONTIER_UTIL_FUNC_CHECK_VISIT_TRAINER",
+        "FRONTIER_UTIL_FUNC_INCREMENT_STREAK",
+        "FRONTIER_UTIL_FUNC_RESTORE_HELD_ITEMS",
+        "FRONTIER_UTIL_FUNC_SAVE_BATTLE",
+        "FRONTIER_UTIL_FUNC_BUFFER_TRAINER_NAME",
+        "FRONTIER_UTIL_FUNC_RESET_SKETCH_MOVES",
+        "FRONTIER_UTIL_FUNC_SET_BRAIN_OBJECT"
+      ],
+      "indexedValues": [
+        "GetChallengeStatus",
+        "GetFrontierData",
+        "SetFrontierData",
+        "SetSelectedPartyOrder",
+        "DoSoftReset_",
+        "SetFrontierTrainers",
+        "SaveSelectedParty",
+        "ShowFacilityResultsWindow",
+        "CheckPutFrontierTVShowOnAir",
+        "Script_GetFrontierBrainStatus",
+        "IsTrainerFrontierBrain",
+        "GiveBattlePoints",
+        "GetFacilitySymbolCount",
+        "GiveFacilitySymbol",
+        "CheckBattleTypeFlag",
+        "CheckPartyIneligibility",
+        "ValidateVisitingTrainer",
+        "IncrementWinStreak",
+        "RestoreHeldItems",
+        "SaveRecordBattle",
+        "BufferFrontierTrainerName",
+        "ResetSketchedMoves",
+        "SetFacilityBrainObjectEvent"
+      ],
+      "rawValue": "{\n    [FRONTIER_UTIL_FUNC_GET_STATUS]            = GetChallengeStatus,\n    [FRONTIER_UTIL_FUNC_GET_DATA]              = GetFrontierData,\n    [FRONTIER_UTIL_FUNC_SET_DATA]              = SetFrontierData,\n    [FRONTIER_UTIL_FUNC_SET_PARTY_ORDER]       = SetSelectedPartyOrder,\n    [FRONTIER_UTIL_FUNC_SOFT_RESET]            = DoSoftReset_,\n    [FRONTIER_UTIL_FUNC_SET_TRAINERS]          = SetFrontierTrainers,\n    [FRONTIER_UTIL_FUNC_SAVE_PARTY]            = SaveSelectedParty,\n    [FRONTIER_UTIL_FUNC_RESULTS_WINDOW]        = ShowFacilityResultsWindow,\n    [FRONTIER_UTIL_FUNC_CHECK_AIR_TV_SHOW]     = CheckPutFrontierTVShowOnAir,\n    [FRONTIER_UTIL_FUNC_GET_BRAIN_STATUS]      = Script_GetFrontierBrainStatus,\n    [FRONTIER_UTIL_FUNC_IS_BRAIN]              = IsTrainerFrontierBrain,\n    [FRONTIER_UTIL_FUNC_GIVE_BATTLE_POINTS]    = GiveBattlePoints,\n    [FRONTIER_UTIL_FUNC_GET_FACILITY_SYMBOLS]  = GetFacilitySymbolCount,\n    [FRONTIER_UTIL_FUNC_GIVE_FACILITY_SYMBOL]  = GiveFacilitySymbol,\n    [FRONTIER_UTIL_FUNC_CHECK_BA..."
+    }
+  }
+}

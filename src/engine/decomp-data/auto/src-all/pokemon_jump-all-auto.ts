@@ -48,9 +48,9 @@ const {
   Rfu_SendPacket, RunTasks, SPRITE_SHAPE, SPRITE_SIZE,
   STR_CONV_MODE_LEFT_ALIGN, ScriptContext_Enable, SetBgTilemapBuffer, SetCloseLinkCallback,
   SetMainCallback2, SetVBlankCallback, SetWordTaskArg, ShowBg,
-  StartMinigameCountdown, StartSpriteAnim, StringCopy, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade, VINE_STATE_TIMER, gSineTable,
-  memcpy,  // 4-per-line for readability
+  SpriteCallbackDummy, StartMinigameCountdown, StartSpriteAnim, StringCopy,
+  TRUE, TransferPlttBuffer, UpdatePaletteFade, VINE_STATE_TIMER,
+  gSineTable, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void StartPokemonJump(u16 partyId, MainCallback exitCallback) */

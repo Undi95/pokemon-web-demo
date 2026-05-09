@@ -22,11 +22,11 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  BATTLE_PARTNER, Cos, DestroyAnimSprite, DestroyAnimVisualTask,
-  FALSE, GetAnimBattlerSpriteId, GetBattlerAtPosition, GetBattlerSide,
-  InitSpriteDataForLinearTranslation, IsBattlerSpriteVisible, IsContest, PrepareBattlerSpriteForRotScale,
-  ResetSpriteRotScale, ST_OAM_OBJ_NORMAL, SetBattlerSpriteYOffsetFromRotation, SetSpriteRotScale,
-  Sin, StoreSpriteCallbackInData6, TRUE,  // 4-per-line for readability
+  BATTLE_PARTNER, Cos, DISPLAY_WIDTH, DestroyAnimSprite,
+  DestroyAnimVisualTask, FALSE, GetAnimBattlerSpriteId, GetBattlerAtPosition,
+  GetBattlerSide, InitSpriteDataForLinearTranslation, IsBattlerSpriteVisible, IsContest,
+  PrepareBattlerSpriteForRotScale, ResetSpriteRotScale, ST_OAM_OBJ_NORMAL, SetBattlerSpriteYOffsetFromRotation,
+  SetSpriteRotScale, Sin, StoreSpriteCallbackInData6, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AnimTask_ShakeMon(u8 taskId) */

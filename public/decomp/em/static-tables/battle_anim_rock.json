@@ -1,0 +1,147 @@
+{
+  "srcFile": "src/battle_anim_rock.c",
+  "count": 14,
+  "tables": {
+    "sAnim_FlyingRock_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FlyingRock_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FlyingRock_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_Whirlpool": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xC0, 0xC0, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x2, 0xFFFD, 0, 5)",
+        "AFFINEANIMCMD_FRAME(0xFFFE, 0x3, 0, 5)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xC0, 0xC0, 0, 0),\n    AFFINEANIMCMD_FRAME(0x2, 0xFFFD, 0, 5),\n    AFFINEANIMCMD_FRAME(0xFFFE, 0x3, 0, 5),\n    AFFINEANIMCMD_JUMP(1),\n}"
+    },
+    "sFlyingSandSubsprites": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{.x = -16, .y = 0, .shape = SPRITE_SHAPE(32x16), .size = SPRITE_SIZE(32x16), .tileOffset = 0, .priority = 1}",
+        "{.x =  16, .y = 0, .shape = SPRITE_SHAPE(32x16), .size = SPRITE_SIZE(32x16), .tileOffset = 8, .priority = 1}"
+      ],
+      "rawValue": "{\n    {.x = -16, .y = 0, .shape = SPRITE_SHAPE(32x16), .size = SPRITE_SIZE(32x16), .tileOffset = 0, .priority = 1},\n    {.x =  16, .y = 0, .shape = SPRITE_SHAPE(32x16), .size = SPRITE_SIZE(32x16), .tileOffset = 8, .priority = 1},\n}"
+    },
+    "sFlyingSandSubspriteTable": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sFlyingSandSubsprites), sFlyingSandSubsprites}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sFlyingSandSubsprites), sFlyingSandSubsprites},\n}"
+    },
+    "sAnim_Rock_Biggest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Rock_Bigger": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Rock_Big": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Rock_Small": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Rock_Smaller": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Rock_Smallest": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_BasicRock_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -5, 5)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -5, 5),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_BasicRock_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 5, 5)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 5, 5),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    }
+  }
+}

@@ -1,0 +1,324 @@
+{
+  "srcFile": "src/battle_anim_ice.c",
+  "count": 26,
+  "tables": {
+    "sAnim_Unused": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(1, 5, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5, .hFlip = TRUE),\n    ANIMCMD_FRAME(1, 5, .hFlip = TRUE),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_IceCrystalLargeChunk": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_IceCrystalLarge": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_IceCrystalSmall": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(6, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(6, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Snowball": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(7, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(7, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_BlizzardIceCrystal": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_SmallBubblePair": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(12, 6)",
+        "ANIMCMD_FRAME(13, 6)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(12, 6),\n    ANIMCMD_FRAME(13, 6),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_IceCrystalSpiralInwardLarge": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 40, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 40, 1),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_IceBeamInnerCrystal": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 10, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 10, 1),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_IceCrystalHit": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xCE, 0xCE, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x5, 0x5, 0, 10)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 6)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xCE, 0xCE, 0, 0),\n    AFFINEANIMCMD_FRAME(0x5, 0x5, 0, 10),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 6),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_IceGroundSpike": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(2, 5)",
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_FRAME(6, 5)",
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_FRAME(2, 5)",
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(2, 5),\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_FRAME(6, 5),\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_FRAME(2, 5),\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_Cloud": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(8, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(8, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sHazeBlendAmounts": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "1",
+        "2",
+        "2",
+        "2",
+        "2",
+        "3",
+        "4",
+        "4",
+        "4",
+        "5",
+        "6",
+        "6",
+        "6",
+        "6",
+        "7",
+        "8",
+        "8",
+        "8",
+        "9"
+      ],
+      "rawValue": "{\n    0, 1, 2, 2, 2, 2, 3, 4, 4, 4, 5, 6, 6, 6, 6, 7, 8, 8, 8, 9,\n}"
+    },
+    "sMistBlendAmounts": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "1",
+        "1",
+        "1",
+        "1",
+        "2",
+        "2",
+        "2",
+        "2",
+        "3",
+        "3",
+        "3",
+        "3",
+        "3",
+        "4",
+        "4",
+        "4",
+        "4",
+        "4",
+        "5"
+      ],
+      "rawValue": "{\n    0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5,\n}"
+    },
+    "sHailCoordData": {
+      "type": "struct HailStruct",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{.x = 100, .y = 120, .bPosition = B_POSITION_PLAYER_LEFT,    .type = HAILSTRUCTTYPE_FIXED_POSITION}",
+        "{.x = 85,  .y = 120, .bPosition = B_POSITION_PLAYER_LEFT,    .type = HAILSTRUCTTYPE_NEGATIVE_POS_MOD}",
+        "{.x = 242, .y = 120, .bPosition = B_POSITION_OPPONENT_LEFT,  .type = HAILSTRUCTTYPE_POSITIVE_POS_MOD}",
+        "{.x = 66,  .y = 120, .bPosition = B_POSITION_PLAYER_RIGHT,   .type = HAILSTRUCTTYPE_POSITIVE_POS_MOD}",
+        "{.x = 182, .y = 120, .bPosition = B_POSITION_OPPONENT_RIGHT, .type = HAILSTRUCTTYPE_NEGATIVE_POS_MOD}",
+        "{.x = 60,  .y = 120, .bPosition = B_POSITION_PLAYER_LEFT,    .type = HAILSTRUCTTYPE_FIXED_POSITION}",
+        "{.x = 214, .y = 120, .bPosition = B_POSITION_OPPONENT_LEFT,  .type = HAILSTRUCTTYPE_NEGATIVE_POS_MOD}",
+        "{.x = 113, .y = 120, .bPosition = B_POSITION_PLAYER_LEFT,    .type = HAILSTRUCTTYPE_POSITIVE_POS_MOD}",
+        "{.x = 210, .y = 120, .bPosition = B_POSITION_OPPONENT_RIGHT, .type = HAILSTRUCTTYPE_POSITIVE_POS_MOD}",
+        "{.x = 38,  .y = 120, .bPosition = B_POSITION_PLAYER_RIGHT,   .type = HAILSTRUCTTYPE_NEGATIVE_POS_MOD}"
+      ],
+      "rawValue": "{\n    {.x = 100, .y = 120, .bPosition = B_POSITION_PLAYER_LEFT,    .type = HAILSTRUCTTYPE_FIXED_POSITION},\n    {.x = 85,  .y = 120, .bPosition = B_POSITION_PLAYER_LEFT,    .type = HAILSTRUCTTYPE_NEGATIVE_POS_MOD},\n    {.x = 242, .y = 120, .bPosition = B_POSITION_OPPONENT_LEFT,  .type = HAILSTRUCTTYPE_POSITIVE_POS_MOD},\n    {.x = 66,  .y = 120, .bPosition = B_POSITION_PLAYER_RIGHT,   .type = HAILSTRUCTTYPE_POSITIVE_POS_MOD},\n    {.x = 182, .y = 120, .bPosition = B_POSITION_OPPONENT_RIGHT, .type = HAILSTRUCTTYPE_NEGATIVE_POS_MOD},\n    {.x = 60,  .y = 120, .bPosition = B_POSITION_PLAYER_LEFT,    .type = HAILSTRUCTTYPE_FIXED_POSITION},\n    {.x = 214, .y = 120, .bPosition = B_POSITION_OPPONENT_LEFT,  .type = HAILSTRUCTTYPE_NEGATIVE_POS_MOD},\n    {.x = 113, .y = 120, .bPosition = B_POSITION_PLAYER_LEFT,    .type = HAILSTRUCTTYPE_POSITIVE_POS_MOD},\n    {.x = 210, .y = 120, .bPosition = B_POSITION_OPPONENT_RIGHT, .type = HAILSTRUCTTYPE_POSITIVE_POS_MOD},\n    {.x = 38,  .y = 120, .bPosition = B_POSITION_PLAYER_RIGHT, ..."
+    },
+    "sAffineAnim_HailParticle_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_HailParticle_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xF0, 0xF0, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xF0, 0xF0, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_HailParticle_2": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xE0, 0xE0, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xE0, 0xE0, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_WeatherBallIceDown": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x150, 0x150, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x150, 0x150, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_IceBallChunk_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_IceBallChunk_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_FRAME(48, 4)",
+        "ANIMCMD_FRAME(64, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_FRAME(48, 4),\n    ANIMCMD_FRAME(64, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_IceBallChunk_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xE0, 0xE0, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xE0, 0xE0, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_IceBallChunk_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x118, 0x118, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x118, 0x118, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_IceBallChunk_2": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x150, 0x150, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x150, 0x150, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_IceBallChunk_3": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x180, 0x180, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x180, 0x180, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_IceBallChunk_4": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x1C0, 0x1C0, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x1C0, 0x1C0, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

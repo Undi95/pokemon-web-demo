@@ -1,0 +1,458 @@
+{
+  "srcFile": "src/berry_crush.c",
+  "count": 31,
+  "tables": {
+    "sBitTable": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1 << 0",
+        "1 << 1",
+        "1 << 2",
+        "1 << 3",
+        "1 << 4",
+        "1 << 5",
+        "1 << 6",
+        "1 << 7"
+      ],
+      "rawValue": "{\n    1 << 0,\n    1 << 1,\n    1 << 2,\n    1 << 3,\n    1 << 4,\n    1 << 5,\n    1 << 6,\n    1 << 7\n}"
+    },
+    "sSyncPressBonus": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "5"
+      ],
+      "rawValue": "{ 0, 1, 2, 3, 5 }"
+    },
+    "sIntroOutroVibrationData": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 4, 1, 0, -1,  0,  0, 0}",
+        "{ 4, 2, 0, -1,  0,  0, 0}",
+        "{ 4, 2, 0, -2,  0,  0, 0}",
+        "{ 6, 3, 1, -1, -3, -1, 0}",
+        "{ 6, 4, 1, -2, -4, -2, 0}"
+      ],
+      "rawValue": "{\n    { 4, 1, 0, -1,  0,  0, 0},\n    { 4, 2, 0, -1,  0,  0, 0},\n    { 4, 2, 0, -2,  0,  0, 0},\n    { 6, 3, 1, -1, -3, -1, 0},\n    { 6, 4, 1, -2, -4, -2, 0},\n}"
+    },
+    "sVibrationData": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{3, 2, 1, 0}",
+        "{3, 3, 1, 0}",
+        "{3, 3, 2, 0}",
+        "{3, 4, 2, 0}",
+        "{3, 5, 3, 0}"
+      ],
+      "rawValue": "{\n    {3, 2, 1, 0},\n    {3, 3, 1, 0},\n    {3, 3, 2, 0},\n    {3, 4, 2, 0},\n    {3, 5, 3, 0},\n}"
+    },
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 13,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 12,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 11,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 13,\n        .screenSize = 2,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0,\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 12,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0,\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 11,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    },\n}"
+    },
+    "sTextColorTable": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "COLORID_GRAY",
+        "COLORID_BLACK",
+        "COLORID_LIGHT_GRAY",
+        "COLORID_BLUE",
+        "COLORID_GREEN",
+        "COLORID_RED"
+      ],
+      "indexedValues": [
+        "{TEXT_COLOR_WHITE",
+        "{TEXT_COLOR_TRANSPARENT",
+        "{TEXT_COLOR_TRANSPARENT",
+        "{TEXT_COLOR_WHITE",
+        "{TEXT_COLOR_WHITE",
+        "{TEXT_COLOR_WHITE"
+      ],
+      "rawValue": "{\n    [COLORID_GRAY]       = {TEXT_COLOR_WHITE,       TEXT_COLOR_DARK_GRAY,  TEXT_COLOR_LIGHT_GRAY},\n    [COLORID_BLACK]      = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE,      TEXT_COLOR_DARK_GRAY},\n    [COLORID_LIGHT_GRAY] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_RED},\n    [COLORID_BLUE]       = {TEXT_COLOR_WHITE,       TEXT_COLOR_BLUE,       TEXT_COLOR_LIGHT_BLUE},\n    [COLORID_GREEN]      = {TEXT_COLOR_WHITE,       TEXT_COLOR_GREEN,      TEXT_COLOR_LIGHT_GREEN},\n    [COLORID_RED]        = {TEXT_COLOR_WHITE,       TEXT_COLOR_RED,        TEXT_COLOR_LIGHT_RED},\n}"
+    },
+    "sWindowTemplates_PlayerNames": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 9,\n        .height = 2,\n        .paletteNum = 8,\n        .baseBlock = 1005\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 3,\n        .width = 9,\n        .height = 2,\n        .paletteNum = 8,\n        .baseBlock = 987\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 6,\n        .width = 9,\n        .height = 2,\n        .paletteNum = 8,\n        .baseBlock = 969\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = 21,\n        .tilemapTop = 3,\n        .width = 9,\n        .height = 2,\n        .paletteNum = 8,\n        .baseBlock = 951\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = 21,\n        .tilemapTop = 6,\n        .width = 9,\n        .height = 2,\n        .paletteNum = 8,\n        .baseBlock = 933\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 9,\n        .height = 2,\n        .paletteNum = 8,\n        .baseBlock = 1005\n    },\n    {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 3,\n        .width = 9,\n        .height = 2,\n        .paletteNum = 8,\n        .baseBlock = 987\n    },\n    {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 6,\n        .width = 9,\n        .height = 2,\n        .paletteNum = 8,\n        .baseBlock = 969\n    },\n    {\n        .bg = 0,\n        .tilemapLeft = 21,\n        .tilemapTop = 3,\n        .width = 9,\n        .height = 2,\n        .paletteNum = 8,\n        .baseBlock = 951\n    },\n    {\n        .bg = 0,\n        .tilemapLeft = 21,\n        .tilemapTop = 6,\n        .width = 9,\n        .height = 2,\n        .paletteNum = 8,\n        .baseBlock = 933\n    },\n    DUMMY_WIN_TEMPLATE,\n}"
+    },
+    "sWindowTemplates_Results": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[STATE_RESULTS_PRESSES - RESULTS_STATE_START] = {\n        .bg = 0,\n        .tilemapLeft = 5,\n        .tilemapTop = 2,\n        .width = 20,\n        .height = 16,\n        .paletteNum = 15,\n        .baseBlock = 1\n    }",
+        "[STATE_RESULTS_RANDOM - RESULTS_STATE_START] = {\n        .bg = 0,\n        .tilemapLeft = 5,\n        .tilemapTop = 2,\n        .width = 20,\n        .height = 16,\n        .paletteNum = 15,\n        .baseBlock = 1\n    }",
+        "[STATE_RESULTS_CRUSHING - RESULTS_STATE_START] = {\n        .bg = 0,\n        .tilemapLeft = 4,\n        .tilemapTop = 2,\n        .width = 22,\n        .height = 16,\n        .paletteNum = 15,\n        .baseBlock = 1\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    [STATE_RESULTS_PRESSES - RESULTS_STATE_START] = {\n        .bg = 0,\n        .tilemapLeft = 5,\n        .tilemapTop = 2,\n        .width = 20,\n        .height = 16,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n    [STATE_RESULTS_RANDOM - RESULTS_STATE_START] = {\n        .bg = 0,\n        .tilemapLeft = 5,\n        .tilemapTop = 2,\n        .width = 20,\n        .height = 16,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n    [STATE_RESULTS_CRUSHING - RESULTS_STATE_START] = {\n        .bg = 0,\n        .tilemapLeft = 4,\n        .tilemapTop = 2,\n        .width = 22,\n        .height = 16,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n    DUMMY_WIN_TEMPLATE,\n}"
+    },
+    "sResultsWindowHeights": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{6, 8, 9, 11}",
+        "{12, 14, 15, 16}"
+      ],
+      "rawValue": "{\n    {6, 8, 9, 11},     \n    {12, 14, 15, 16},  \n}"
+    },
+    "sPressingSpeedConversionTable": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "50000000",
+        "25000000",
+        "12500000",
+        "6250000",
+        "3125000",
+        "1562500",
+        "781250",
+        "390625"
+      ],
+      "rawValue": "{\n    50000000,  \n    25000000,  \n    12500000,  \n     6250000,  \n     3125000,  \n     1562500,  \n      781250,  \n      390625   \n}"
+    },
+    "sPlayerIdToPosId": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{1, 3}",
+        "{0, 1, 3}",
+        "{1, 3, 2, 4}",
+        "{0, 1, 3, 2, 4}"
+      ],
+      "rawValue": "{\n    {1, 3},\n    {0, 1, 3},\n    {1, 3, 2, 4},\n    {0, 1, 3, 2, 4},\n}"
+    },
+    "sPlayerCoords": {
+      "type": "struct BerryCrushPlayerCoords",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .playerId = 0,\n        .windowGfxX = 0,\n        .windowGfxY = 0,\n        .impactXOffset = 0,\n        .impactYOffset = -16,\n        .berryXOffset = 0,\n        .berryXDest = 0,\n    }",
+        "{\n        .playerId = 1,\n        .windowGfxX = 0,\n        .windowGfxY = 3,\n        .impactXOffset = -28,\n        .impactYOffset = -4,\n        .berryXOffset = -24,\n        .berryXDest = 16,\n    }",
+        "{\n        .playerId = 2,\n        .windowGfxX = 0,\n        .windowGfxY = 6,\n        .impactXOffset = -16,\n        .impactYOffset = 20,\n        .berryXOffset = -8,\n        .berryXDest = 16,\n    }",
+        "{\n        .playerId = 3,\n        .windowGfxX = 20,\n        .windowGfxY = 3,\n        .impactXOffset = 28,\n        .impactYOffset = -4,\n        .berryXOffset = 32,\n        .berryXDest = -8,\n    }",
+        "{\n        .playerId = 4,\n        .windowGfxX = 20,\n        .windowGfxY = 6,\n        .impactXOffset = 16,\n        .impactYOffset = 20,\n        .berryXOffset = 16,\n        .berryXDest = -8,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .playerId = 0,\n        .windowGfxX = 0,\n        .windowGfxY = 0,\n        .impactXOffset = 0,\n        .impactYOffset = -16,\n        .berryXOffset = 0,\n        .berryXDest = 0,\n    },\n    {\n        .playerId = 1,\n        .windowGfxX = 0,\n        .windowGfxY = 3,\n        .impactXOffset = -28,\n        .impactYOffset = -4,\n        .berryXOffset = -24,\n        .berryXDest = 16,\n    },\n    {\n        .playerId = 2,\n        .windowGfxX = 0,\n        .windowGfxY = 6,\n        .impactXOffset = -16,\n        .impactYOffset = 20,\n        .berryXOffset = -8,\n        .berryXDest = 16,\n    },\n    {\n        .playerId = 3,\n        .windowGfxX = 20,\n        .windowGfxY = 3,\n        .impactXOffset = 28,\n        .impactYOffset = -4,\n        .berryXOffset = 32,\n        .berryXDest = -8,\n    },\n    {\n        .playerId = 4,\n        .windowGfxX = 20,\n        .windowGfxY = 6,\n        .impactXOffset = 16,\n        .impactYOffset = 20,\n        .berryXOffset = 16,\n        .berryXDest = -8,\n    }\n}"
+    },
+    "sImpactCoords": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 0, 0}",
+        "{-1, 0}",
+        "{ 1, 1}"
+      ],
+      "rawValue": "{\n    { 0, 0},\n    {-1, 0},\n    { 1, 1},\n}"
+    },
+    "sSparkleCoords": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  0,   0}",
+        "{-16,  -4}",
+        "{ 16,  -4}",
+        "{ -8,  -2}",
+        "{  8,  -2}",
+        "{-24,  -8}",
+        "{ 24,  -8}",
+        "{-32, -12}",
+        "{ 32, -12}",
+        "{-40, -16}",
+        "{ 40, -16}"
+      ],
+      "rawValue": "{\n    {  0,   0},\n    {-16,  -4},\n    { 16,  -4},\n    { -8,  -2},\n    {  8,  -2},\n    {-24,  -8},\n    { 24,  -8},\n    {-32, -12},\n    { 32, -12},\n    {-40, -16},\n    { 40, -16},\n}"
+    },
+    "sPlayerBerrySpriteTags": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TAG_PLAYER1_BERRY",
+        "TAG_PLAYER2_BERRY",
+        "TAG_PLAYER3_BERRY",
+        "TAG_PLAYER4_BERRY",
+        "TAG_PLAYER5_BERRY"
+      ],
+      "rawValue": "{\n    TAG_PLAYER1_BERRY,\n    TAG_PLAYER2_BERRY,\n    TAG_PLAYER3_BERRY,\n    TAG_PLAYER4_BERRY,\n    TAG_PLAYER5_BERRY\n}"
+    },
+    "sSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ .data = sCrusherBase_Gfx, .size = 0x800, .tag = TAG_CRUSHER_BASE }",
+        "{ .data = sImpact_Gfx,      .size = 0xE00, .tag = GFXTAG_IMPACT }",
+        "{ .data = sSparkle_Gfx,     .size = 0x700, .tag = GFXTAG_SPARKLE }",
+        "{ .data = sTimerDigits_Gfx, .size = 0x2C0, .tag = TAG_TIMER_DIGITS }",
+        "{}"
+      ],
+      "rawValue": "{\n    { .data = sCrusherBase_Gfx, .size = 0x800, .tag = TAG_CRUSHER_BASE },\n    { .data = sImpact_Gfx,      .size = 0xE00, .tag = GFXTAG_IMPACT },\n    { .data = sSparkle_Gfx,     .size = 0x700, .tag = GFXTAG_SPARKLE },\n    { .data = sTimerDigits_Gfx, .size = 0x2C0, .tag = TAG_TIMER_DIGITS },\n    {}\n}"
+    },
+    "sSpritePals": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ .data = sCrusherBase_Pal, .tag = TAG_CRUSHER_BASE }",
+        "{ .data = sEffects_Pal,     .tag = PALTAG_EFFECT }",
+        "{ .data = sTimerDigits_Pal, .tag = TAG_TIMER_DIGITS }",
+        "{}"
+      ],
+      "rawValue": "{\n    { .data = sCrusherBase_Pal, .tag = TAG_CRUSHER_BASE },\n    { .data = sEffects_Pal,     .tag = PALTAG_EFFECT },  \n    { .data = sTimerDigits_Pal, .tag = TAG_TIMER_DIGITS },\n    {}\n}"
+    },
+    "sAnim_CrusherBase": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Impact_Small": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Impact_Big": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 2)",
+        "ANIMCMD_FRAME(64, 2)",
+        "ANIMCMD_FRAME(80, 2)",
+        "ANIMCMD_FRAME(96, 2)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 2),\n    ANIMCMD_FRAME(64, 2),\n    ANIMCMD_FRAME(80, 2),\n    ANIMCMD_FRAME(96, 2),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Sparkle_Small": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_FRAME(4, 2)",
+        "ANIMCMD_FRAME(8, 2)",
+        "ANIMCMD_FRAME(12, 2)",
+        "ANIMCMD_FRAME(16, 2)",
+        "ANIMCMD_FRAME(20, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_FRAME(4, 2),\n    ANIMCMD_FRAME(8, 2),\n    ANIMCMD_FRAME(12, 2),\n    ANIMCMD_FRAME(16, 2),\n    ANIMCMD_FRAME(20, 2),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Sparkle_Big": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(24, 4)",
+        "ANIMCMD_FRAME(28, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_FRAME(36, 4)",
+        "ANIMCMD_FRAME(40, 4)",
+        "ANIMCMD_FRAME(44, 4)",
+        "ANIMCMD_FRAME(48, 4)",
+        "ANIMCMD_FRAME(52, 4)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(24, 4),\n    ANIMCMD_FRAME(28, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_FRAME(36, 4),\n    ANIMCMD_FRAME(40, 4),\n    ANIMCMD_FRAME(44, 4),\n    ANIMCMD_FRAME(48, 4),\n    ANIMCMD_FRAME(52, 4),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Timer": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(20, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(20, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_PlayerBerry": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAffineAnim_PlayerBerry_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, 2, 1)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, 2, 1),\n    AFFINEANIMCMD_JUMP(1)\n}"
+    },
+    "sAffineAnim_PlayerBerry_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0, 0, -2, 1)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_FRAME(0, 0, -2, 1),\n    AFFINEANIMCMD_JUMP(1)\n}"
+    },
+    "sDigitObjTemplates": {
+      "type": "struct DigitObjUtilTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  \n        .strConvMode = 1,\n        .shape = 2,\n        .size = 0,\n        .priority = 0,\n        .oamCount = 2,\n        .xDelta = 8,\n        .x = 156,\n        .y = 0,\n        .spriteSheet = (void *) &sSpriteSheets[3],\n        .spritePal = &sSpritePals[2],\n    }",
+        "{  \n        .strConvMode = 0,\n        .shape = 2,\n        .size = 0,\n        .priority = 0,\n        .oamCount = 2,\n        .xDelta = 8,\n        .x = 180,\n        .y = 0,\n        .spriteSheet = (void *) &sSpriteSheets[3],\n        .spritePal = &sSpritePals[2],\n    }",
+        "{  \n        .strConvMode = 0,\n        .shape = 2,\n        .size = 0,\n        .priority = 0,\n        .oamCount = 2,\n        .xDelta = 8,\n        .x = 204,\n        .y = 0,\n        .spriteSheet = (void *) &sSpriteSheets[3],\n        .spritePal = &sSpritePals[2],\n    }"
+      ],
+      "rawValue": "{\n    {  \n        .strConvMode = 1,\n        .shape = 2,\n        .size = 0,\n        .priority = 0,\n        .oamCount = 2,\n        .xDelta = 8,\n        .x = 156,\n        .y = 0,\n        .spriteSheet = (void *) &sSpriteSheets[3],\n        .spritePal = &sSpritePals[2],\n    },\n    {  \n        .strConvMode = 0,\n        .shape = 2,\n        .size = 0,\n        .priority = 0,\n        .oamCount = 2,\n        .xDelta = 8,\n        .x = 180,\n        .y = 0,\n        .spriteSheet = (void *) &sSpriteSheets[3],\n        .spritePal = &sSpritePals[2],\n    },\n    {  \n        .strConvMode = 0,\n        .shape = 2,\n        .size = 0,\n        .priority = 0,\n        .oamCount = 2,\n        .xDelta = 8,\n        .x = 204,\n        .y = 0,\n        .spriteSheet = (void *) &sSpriteSheets[3],\n        .spritePal = &sSpritePals[2],\n    }\n}"
+    },
+    "sSparkleThresholds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{2,  4,  6,  7}",
+        "{3,  5,  8, 11}",
+        "{3,  7, 11, 15}",
+        "{4,  8, 12, 17}"
+      ],
+      "rawValue": "{\n    {2,  4,  6,  7},  \n    {3,  5,  8, 11},  \n    {3,  7, 11, 15},  \n    {4,  8, 12, 17},  \n}"
+    },
+    "sBigSparkleThresholds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "5",
+        "7",
+        "9",
+        "12"
+      ],
+      "rawValue": "{5, 7, 9, 12}"
+    },
+    "sReceivedPlayerBitmasks": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x03",
+        "0x07",
+        "0x0F",
+        "0x1F"
+      ],
+      "rawValue": "{0x03, 0x07, 0x0F, 0x1F}"
+    },
+    "sBerryCrushCommands": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "CMD_NONE",
+        "CMD_FADE",
+        "CMD_WAIT_FADE",
+        "CMD_PRINT_MSG",
+        "CMD_SHOW_GAME",
+        "CMD_HIDE_GAME",
+        "CMD_READY_BEGIN",
+        "CMD_ASK_PICK_BERRY",
+        "CMD_PICK_BERRY",
+        "CMD_WAIT_BERRIES",
+        "CMD_DROP_BERRIES",
+        "CMD_DROP_LID",
+        "CMD_COUNTDOWN",
+        "CMD_PLAY_GAME_LEADER",
+        "CMD_PLAY_GAME_MEMBER",
+        "CMD_FINISH_GAME",
+        "CMD_TIMES_UP",
+        "CMD_CALC_RESULTS",
+        "CMD_SHOW_RESULTS",
+        "CMD_SAVE",
+        "CMD_ASK_PLAY_AGAIN",
+        "CMD_COMM_PLAY_AGAIN",
+        "CMD_PLAY_AGAIN_YES",
+        "CMD_PLAY_AGAIN_NO",
+        "CMD_CLOSE_LINK",
+        "CMD_QUIT"
+      ],
+      "indexedValues": [
+        "NULL",
+        "Cmd_BeginNormalPaletteFade",
+        "Cmd_WaitPaletteFade",
+        "Cmd_PrintMessage",
+        "Cmd_ShowGameDisplay",
+        "Cmd_HideGameDisplay",
+        "Cmd_SignalReadyToBegin",
+        "Cmd_AskPickBerry",
+        "Cmd_GoToBerryPouch",
+        "Cmd_WaitForOthersToPickBerries",
+        "Cmd_DropBerriesIntoCrusher",
+        "Cmd_DropLid",
+        "Cmd_Countdown",
+        "Cmd_PlayGame_Leader",
+        "Cmd_PlayGame_Member",
+        "Cmd_FinishGame",
+        "Cmd_HandleTimeUp",
+        "Cmd_TabulateResults",
+        "Cmd_ShowResults",
+        "Cmd_SaveGame",
+        "Cmd_AskPlayAgain",
+        "Cmd_CommunicatePlayAgainResponses",
+        "Cmd_PlayAgain",
+        "Cmd_StopGame",
+        "Cmd_CloseLink",
+        "Cmd_Quit"
+      ],
+      "rawValue": "{\n    [CMD_NONE]             = NULL,\n    [CMD_FADE]             = Cmd_BeginNormalPaletteFade,\n    [CMD_WAIT_FADE]        = Cmd_WaitPaletteFade,\n    [CMD_PRINT_MSG]        = Cmd_PrintMessage,\n    [CMD_SHOW_GAME]        = Cmd_ShowGameDisplay,\n    [CMD_HIDE_GAME]        = Cmd_HideGameDisplay,\n    [CMD_READY_BEGIN]      = Cmd_SignalReadyToBegin,\n    [CMD_ASK_PICK_BERRY]   = Cmd_AskPickBerry,\n    [CMD_PICK_BERRY]       = Cmd_GoToBerryPouch,\n    [CMD_WAIT_BERRIES]     = Cmd_WaitForOthersToPickBerries,\n    [CMD_DROP_BERRIES]     = Cmd_DropBerriesIntoCrusher,\n    [CMD_DROP_LID]         = Cmd_DropLid,\n    [CMD_COUNTDOWN]        = Cmd_Countdown,\n    [CMD_PLAY_GAME_LEADER] = Cmd_PlayGame_Leader,\n    [CMD_PLAY_GAME_MEMBER] = Cmd_PlayGame_Member,\n    [CMD_FINISH_GAME]      = Cmd_FinishGame,\n    [CMD_TIMES_UP]         = Cmd_HandleTimeUp,\n    [CMD_CALC_RESULTS]     = Cmd_TabulateResults,\n    [CMD_SHOW_RESULTS]     = Cmd_ShowResults,\n    [CMD_SAVE]             = Cmd_SaveGame,\n    [CMD_ASK_PLAY_AGAIN]   = Cmd_AskPlayAgain,\n  ..."
+    }
+  }
+}

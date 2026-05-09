@@ -32,11 +32,12 @@ const {
   InitBgsFromTemplates, InitWindows, IsDma3ManagerBusyWithBgCopy, JOY_NEW,
   LoadOam, LoadPalette, Menu_LoadStdPalAt, NULL,
   PALETTES_ALL, PIXEL_FILL, PLTT_SIZEOF, PLTT_SIZE_4BPP,
-  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
-  RunTextPrinters, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  TRUE, TransferPlttBuffer, UpdatePaletteFade, memcpy,  // 4-per-line for readability
+  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, REG_OFFSET_DISPCNT,
+  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
+  RunTasks, RunTextPrinters, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop,
+  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
+  ShowBg, TRUE, TransferPlttBuffer, UpdatePaletteFade,
+  memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_RunWirelessCommunicationScreen(void) */

@@ -1,0 +1,29 @@
+{
+  "srcFile": "src/mystery_event_menu.c",
+  "count": 2,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_MSG",
+        "WIN_LOADING"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_MSG] = {\n        .bg = 0,\n        .tilemapLeft = 4,\n        .tilemapTop = 15,\n        .width = 22,\n        .height = 4,\n        .paletteNum = 14,\n        .baseBlock = 20\n    },\n    [WIN_LOADING] = {\n        .bg = 0,\n        .tilemapLeft = 7,\n        .tilemapTop = 6,\n        .width = 16,\n        .height = 4,\n        .paletteNum = 14,\n        .baseBlock = 0x6C\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    }
+  }
+}

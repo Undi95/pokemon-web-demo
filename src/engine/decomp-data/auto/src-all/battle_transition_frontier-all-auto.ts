@@ -22,14 +22,15 @@
 // to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BeginNormalPaletteFade,
-  ChangeBgX, ChangeBgY, ClearGpuRegBits, Cos2,
-  CreateSprite, DISPCNT_BG0_ON, DISPCNT_WIN0_ON, DISPCNT_WIN1_ON,
-  DestroySprite, DestroyTask, FALSE, FindTaskIdByFunc,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetBg0TilesDst, LZ77UnCompVram,
-  LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette, PALETTES_ALL,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, SetGpuReg, SetGpuRegBits,
-  Sin2, StartSpriteAnim, TRUE,  // 4-per-line for readability
+  BG_PLTT_ID, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND, BLDCNT_TGT1_BG0,
+  BeginNormalPaletteFade, ChangeBgX, ChangeBgY, ClearGpuRegBits,
+  Cos2, CreateSprite, DISPCNT_BG0_ON, DISPCNT_WIN0_ON,
+  DISPCNT_WIN1_ON, DestroySprite, DestroyTask, FALSE,
+  FindTaskIdByFunc, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetBg0TilesDst,
+  LZ77UnCompVram, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette,
+  PALETTES_ALL, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT,
+  SetGpuReg, SetGpuRegBits, Sin2, SpriteCallbackDummy,
+  StartSpriteAnim, TRUE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void LoadLogoGfx(void) */

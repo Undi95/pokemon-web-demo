@@ -1,0 +1,77 @@
+{
+  "srcFile": "src/pokenav_match_call_gfx.c",
+  "count": 4,
+  "tables": {
+    "sMatchCallBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 1,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 0x1F,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x06,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0x80\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 0x07,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 1,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 0x1F,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 0x06,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0x80\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 0x07,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sMatchCallLoopTaskFuncs": {
+      "type": "LoopedTask",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "POKENAV_MC_FUNC_NONE",
+        "POKENAV_MC_FUNC_DOWN",
+        "POKENAV_MC_FUNC_UP",
+        "POKENAV_MC_FUNC_PG_DOWN",
+        "POKENAV_MC_FUNC_PG_UP",
+        "POKENAV_MC_FUNC_SELECT",
+        "POKENAV_MC_FUNC_MOVE_OPTIONS_CURSOR",
+        "POKENAV_MC_FUNC_CANCEL",
+        "POKENAV_MC_FUNC_CALL_MSG",
+        "POKENAV_MC_FUNC_NEARBY_MSG",
+        "POKENAV_MC_FUNC_EXIT_CALL",
+        "POKENAV_MC_FUNC_SHOW_CHECK_PAGE",
+        "POKENAV_MC_FUNC_CHECK_PAGE_UP",
+        "POKENAV_MC_FUNC_CHECK_PAGE_DOWN",
+        "POKENAV_MC_FUNC_EXIT_CHECK_PAGE",
+        "POKENAV_MC_FUNC_EXIT"
+      ],
+      "indexedValues": [
+        "NULL",
+        "MatchCallListCursorDown",
+        "MatchCallListCursorUp",
+        "MatchCallListPageDown",
+        "MatchCallListPageUp",
+        "SelectMatchCallEntry",
+        "MoveMatchCallOptionsCursor",
+        "CancelMatchCallSelection",
+        "DoMatchCallMessage",
+        "DoTrainerCloseByMessage",
+        "CloseMatchCallMessage",
+        "ShowCheckPage",
+        "ShowCheckPageUp",
+        "ShowCheckPageDown",
+        "ExitCheckPage",
+        "ExitMatchCall"
+      ],
+      "rawValue": "{\n    [POKENAV_MC_FUNC_NONE]                = NULL,\n    [POKENAV_MC_FUNC_DOWN]                = MatchCallListCursorDown,\n    [POKENAV_MC_FUNC_UP]                  = MatchCallListCursorUp,\n    [POKENAV_MC_FUNC_PG_DOWN]             = MatchCallListPageDown,\n    [POKENAV_MC_FUNC_PG_UP]               = MatchCallListPageUp,\n    [POKENAV_MC_FUNC_SELECT]              = SelectMatchCallEntry,\n    [POKENAV_MC_FUNC_MOVE_OPTIONS_CURSOR] = MoveMatchCallOptionsCursor,\n    [POKENAV_MC_FUNC_CANCEL]              = CancelMatchCallSelection,\n    [POKENAV_MC_FUNC_CALL_MSG]            = DoMatchCallMessage,\n    [POKENAV_MC_FUNC_NEARBY_MSG]          = DoTrainerCloseByMessage,\n    [POKENAV_MC_FUNC_EXIT_CALL]           = CloseMatchCallMessage,\n    [POKENAV_MC_FUNC_SHOW_CHECK_PAGE]     = ShowCheckPage,\n    [POKENAV_MC_FUNC_CHECK_PAGE_UP]       = ShowCheckPageUp,\n    [POKENAV_MC_FUNC_CHECK_PAGE_DOWN]     = ShowCheckPageDown,\n    [POKENAV_MC_FUNC_EXIT_CHECK_PAGE]     = ExitCheckPage,\n    [POKENAV_MC_FUNC_EXIT]                = ExitMatchC..."
+    },
+    "sOptionsCursorSpriteSheets": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sOptionsCursor_Gfx, 0x40, GFXTAG_CURSOR}"
+      ],
+      "rawValue": "{\n    {sOptionsCursor_Gfx, 0x40, GFXTAG_CURSOR}\n}"
+    },
+    "sOptionsCursorSpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sOptionsCursor_Pal, PALTAG_CURSOR}"
+      ],
+      "rawValue": "{\n    {sOptionsCursor_Pal, PALTAG_CURSOR}\n}"
+    }
+  }
+}

@@ -44,14 +44,15 @@ const {
   LoadSpriteSheet, LoadUserWindowBorderGfx_, LoadWirelessStatusIndicatorSpriteGfx, NULL,
   PALETTES_ALL, PIXEL_FILL, PLTT_SIZE, PLTT_SIZE_4BPP,
   PlayFanfareByFanfareNum, PlayNewMapMusic, PlaySE, ProcessSpriteCopyRequests,
-  PutWindowTilemap, REG_OFFSET_BG1HOFS, REG_OFFSET_BG2HOFS, Random,
-  RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetSpriteData,
-  ResetTasks, ResetTempTileDataBuffers, Rfu_SendPacket, Rfu_SetLinkStandbyCallback,
-  RunTasks, STR_CONV_MODE_LEFT_ALIGN, SWAP, ScriptContext_Enable,
-  SendBlock, SetBgTilemapBuffer, SetCloseLinkCallback, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, ShowBg, StartMinigameCountdown,
-  StartSpriteAnim, StopMapMusic, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, VRAM_SIZE, WaitFanfare, memcpy,  // 4-per-line for readability
+  PutWindowTilemap, REG_OFFSET_BG1HOFS, REG_OFFSET_BG2HOFS, REG_OFFSET_DISPCNT,
+  Random, RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags,
+  ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, Rfu_SendPacket,
+  Rfu_SetLinkStandbyCallback, RunTasks, STR_CONV_MODE_LEFT_ALIGN, SWAP,
+  ScriptContext_Enable, SendBlock, SetBgTilemapBuffer, SetCloseLinkCallback,
+  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
+  SpriteCallbackDummy, StartMinigameCountdown, StartSpriteAnim, StopMapMusic,
+  TRUE, TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,
+  WaitFanfare, memcpy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void StartDodrioBerryPicking(u16 partyId, MainCallback exitCallback) */

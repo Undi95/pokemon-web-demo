@@ -39,14 +39,14 @@ const {
   REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG1CNT,
   REG_OFFSET_BG1HOFS, REG_OFFSET_BG1VOFS, REG_OFFSET_BG2CNT, REG_OFFSET_BG2HOFS,
   REG_OFFSET_BG2VOFS, REG_OFFSET_BG3CNT, REG_OFFSET_BG3HOFS, REG_OFFSET_BG3VOFS,
-  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_WIN0H,
-  REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, RemoveWindow,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  RunTasks, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Stop,
-  SetBgTilemapBuffer, SetGameStat, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, StringCompareN, StringCopyN,
-  StringExpandPlaceholders, StringFillWithTerminator, TRUE, TransferPlttBuffer,
-  UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
+  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_DISPCNT,
+  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
+  RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, RunTasks, STR_CONV_MODE_LEFT_ALIGN, STR_CONV_MODE_RIGHT_ALIGN,
+  ScanlineEffect_Stop, SetBgTilemapBuffer, SetGameStat, SetGpuReg,
+  SetMainCallback2, SetVBlankCallback, ShowBg, StringCompareN,
+  StringCopyN, StringExpandPlaceholders, StringFillWithTerminator, TRUE,
+  TransferPlttBuffer, UpdatePaletteFade, VRAM_SIZE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ClearLinkBattleRecord(struct LinkBattleRecord *record) */

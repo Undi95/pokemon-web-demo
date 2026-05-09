@@ -1,0 +1,36 @@
+{
+  "srcFile": "src/battle_anim_ground.c",
+  "count": 3,
+  "tables": {
+    "sAffineAnim_Bonemerang": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 15, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 15, 1),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_SpinningBone": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 20, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 20, 1),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_MudSlapMud": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_END,\n}"
+    }
+  }
+}

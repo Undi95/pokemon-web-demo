@@ -1,0 +1,64 @@
+{
+  "srcFile": "src/mauville_old_man.c",
+  "count": 2,
+  "tables": {
+    "sDefaultBardSongLyrics": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "EC_WORD_FEELING",
+        "EC_WORD_DIET",
+        "EC_WORD_IT_S",
+        "EC_EMPTY_WORD",
+        "EC_WORD_COOL",
+        "EC_EMPTY_WORD"
+      ],
+      "rawValue": "{\n    EC_WORD_FEELING,\n    EC_WORD_DIET,\n    EC_WORD_IT_S,\n    EC_EMPTY_WORD,\n    EC_WORD_COOL,\n    EC_EMPTY_WORD\n}"
+    },
+    "sStorytellerStories": {
+      "type": "struct Story",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        50, 1,\n        MauvilleCity_PokemonCenter_1F_Text_SavedGameTitle,\n        MauvilleCity_PokemonCenter_1F_Text_SavedGameAction,\n        MauvilleCity_PokemonCenter_1F_Text_SavedGameStory\n    }",
+        "{\n        GAME_STAT_STARTED_TRENDS, 1,\n        MauvilleCity_PokemonCenter_1F_Text_TrendsStartedTitle,\n        MauvilleCity_PokemonCenter_1F_Text_TrendsStartedAction,\n        MauvilleCity_PokemonCenter_1F_Text_TrendsStartedStory\n    }",
+        "{\n        GAME_STAT_PLANTED_BERRIES, 1,\n        MauvilleCity_PokemonCenter_1F_Text_BerriesPlantedTitle,\n        MauvilleCity_PokemonCenter_1F_Text_BerriesPlantedAction,\n        MauvilleCity_PokemonCenter_1F_Text_BerriesPlantedStory\n    }",
+        "{\n        GAME_STAT_TRADED_BIKES, 1,\n        MauvilleCity_PokemonCenter_1F_Text_BikeTradesTitle,\n        MauvilleCity_PokemonCenter_1F_Text_BikeTradesAction,\n        MauvilleCity_PokemonCenter_1F_Text_BikeTradesStory\n    }",
+        "{\n        GAME_STAT_GOT_INTERVIEWED, 1,\n        MauvilleCity_PokemonCenter_1F_Text_InterviewsTitle,\n        MauvilleCity_PokemonCenter_1F_Text_InterviewsAction,\n        MauvilleCity_PokemonCenter_1F_Text_InterviewsStory\n    }",
+        "{\n        GAME_STAT_TRAINER_BATTLES, 1,\n        MauvilleCity_PokemonCenter_1F_Text_TrainerBattlesTitle,\n        MauvilleCity_PokemonCenter_1F_Text_TrainerBattlesAction,\n        MauvilleCity_PokemonCenter_1F_Text_TrainerBattlesStory\n    }",
+        "{\n        GAME_STAT_POKEMON_CAPTURES, 1,\n        MauvilleCity_PokemonCenter_1F_Text_PokemonCaughtTitle,\n        MauvilleCity_PokemonCenter_1F_Text_PokemonCaughtAction,\n        MauvilleCity_PokemonCenter_1F_Text_PokemonCaughtStory\n    }",
+        "{\n        GAME_STAT_FISHING_ENCOUNTERS, 1,\n        MauvilleCity_PokemonCenter_1F_Text_FishingPokemonCaughtTitle,\n        MauvilleCity_PokemonCenter_1F_Text_FishingPokemonCaughtAction,\n        MauvilleCity_PokemonCenter_1F_Text_FishingPokemonCaughtStory\n    }",
+        "{\n        GAME_STAT_HATCHED_EGGS, 1,\n        MauvilleCity_PokemonCenter_1F_Text_EggsHatchedTitle,\n        MauvilleCity_PokemonCenter_1F_Text_EggsHatchedAction,\n        MauvilleCity_PokemonCenter_1F_Text_EggsHatchedStory\n    }",
+        "{\n        GAME_STAT_EVOLVED_POKEMON, 1,\n        MauvilleCity_PokemonCenter_1F_Text_PokemonEvolvedTitle,\n        MauvilleCity_PokemonCenter_1F_Text_PokemonEvolvedAction,\n        MauvilleCity_PokemonCenter_1F_Text_PokemonEvolvedStory\n    }",
+        "{\n        GAME_STAT_USED_POKECENTER, 1,\n        MauvilleCity_PokemonCenter_1F_Text_UsedPokemonCenterTitle,\n        MauvilleCity_PokemonCenter_1F_Text_UsedPokemonCenterAction,\n        MauvilleCity_PokemonCenter_1F_Text_UsedPokemonCenterStory\n    }",
+        "{\n        GAME_STAT_RESTED_AT_HOME, 1,\n        MauvilleCity_PokemonCenter_1F_Text_RestedAtHomeTitle,\n        MauvilleCity_PokemonCenter_1F_Text_RestedAtHomeAction,\n        MauvilleCity_PokemonCenter_1F_Text_RestedAtHomeStory\n    }",
+        "{\n        GAME_STAT_ENTERED_SAFARI_ZONE, 1,\n        MauvilleCity_PokemonCenter_1F_Text_SafariGamesTitle,\n        MauvilleCity_PokemonCenter_1F_Text_SafariGamesAction,\n        MauvilleCity_PokemonCenter_1F_Text_SafariGamesStory\n    }",
+        "{\n        GAME_STAT_USED_CUT, 1,\n        MauvilleCity_PokemonCenter_1F_Text_UsedCutTitle,\n        MauvilleCity_PokemonCenter_1F_Text_UsedCutAction,\n        MauvilleCity_PokemonCenter_1F_Text_UsedCutStory\n    }",
+        "{\n        GAME_STAT_USED_ROCK_SMASH, 1,\n        MauvilleCity_PokemonCenter_1F_Text_UsedRockSmashTitle,\n        MauvilleCity_PokemonCenter_1F_Text_UsedRockSmashAction,\n        MauvilleCity_PokemonCenter_1F_Text_UsedRockSmashStory\n    }",
+        "{\n        GAME_STAT_MOVED_SECRET_BASE, 1,\n        MauvilleCity_PokemonCenter_1F_Text_MovedBasesTitle,\n        MauvilleCity_PokemonCenter_1F_Text_MovedBasesAction,\n        MauvilleCity_PokemonCenter_1F_Text_MovedBasesStory\n    }",
+        "{\n        GAME_STAT_USED_SPLASH, 1,\n        MauvilleCity_PokemonCenter_1F_Text_UsedSplashTitle,\n        MauvilleCity_PokemonCenter_1F_Text_UsedSplashAction,\n        MauvilleCity_PokemonCenter_1F_Text_UsedSplashStory\n    }",
+        "{\n        GAME_STAT_USED_STRUGGLE, 1,\n        MauvilleCity_PokemonCenter_1F_Text_UsedStruggleTitle,\n        MauvilleCity_PokemonCenter_1F_Text_UsedStruggleAction,\n        MauvilleCity_PokemonCenter_1F_Text_UsedStruggleStory\n    }",
+        "{\n        GAME_STAT_SLOT_JACKPOTS, 1,\n        MauvilleCity_PokemonCenter_1F_Text_SlotJackpotsTitle,\n        MauvilleCity_PokemonCenter_1F_Text_SlotJackpotsAction,\n        MauvilleCity_PokemonCenter_1F_Text_SlotJackpotsStory\n    }",
+        "{\n        GAME_STAT_CONSECUTIVE_ROULETTE_WINS, 2,\n        MauvilleCity_PokemonCenter_1F_Text_RouletteWinsTitle,\n        MauvilleCity_PokemonCenter_1F_Text_RouletteWinsAction,\n        MauvilleCity_PokemonCenter_1F_Text_RouletteWinsStory\n    }",
+        "{\n        GAME_STAT_ENTERED_BATTLE_TOWER, 1,\n        MauvilleCity_PokemonCenter_1F_Text_BattleTowerChallengesTitle,\n        MauvilleCity_PokemonCenter_1F_Text_BattleTowerChallengesAction,\n        MauvilleCity_PokemonCenter_1F_Text_BattleTowerChallengesStory\n    }",
+        "{\n        GAME_STAT_POKEBLOCKS, 1,\n        MauvilleCity_PokemonCenter_1F_Text_MadePokeblocksTitle,\n        MauvilleCity_PokemonCenter_1F_Text_MadePokeblocksAction,\n        MauvilleCity_PokemonCenter_1F_Text_MadePokeblocksStory\n    }",
+        "{\n        GAME_STAT_ENTERED_CONTEST, 1,\n        MauvilleCity_PokemonCenter_1F_Text_EnteredContestsTitle,\n        MauvilleCity_PokemonCenter_1F_Text_EnteredContestsAction,\n        MauvilleCity_PokemonCenter_1F_Text_EnteredContestsStory\n    }",
+        "{\n        GAME_STAT_WON_CONTEST, 1,\n        MauvilleCity_PokemonCenter_1F_Text_WonContestsTitle,\n        MauvilleCity_PokemonCenter_1F_Text_WonContestsAction,\n        MauvilleCity_PokemonCenter_1F_Text_WonContestsStory\n    }",
+        "{\n        GAME_STAT_SHOPPED, 1,\n        MauvilleCity_PokemonCenter_1F_Text_TimesShoppedTitle,\n        MauvilleCity_PokemonCenter_1F_Text_TimesShoppedAction,\n        MauvilleCity_PokemonCenter_1F_Text_TimesShoppedStory\n    }",
+        "{\n        GAME_STAT_USED_ITEMFINDER, 1,\n        MauvilleCity_PokemonCenter_1F_Text_UsedItemFinderTitle,\n        MauvilleCity_PokemonCenter_1F_Text_UsedItemFinderAction,\n        MauvilleCity_PokemonCenter_1F_Text_UsedItemFinderStory\n    }",
+        "{\n        GAME_STAT_GOT_RAINED_ON, 1,\n        MauvilleCity_PokemonCenter_1F_Text_TimesRainedTitle,\n        MauvilleCity_PokemonCenter_1F_Text_TimesRainedAction,\n        MauvilleCity_PokemonCenter_1F_Text_TimesRainedStory\n    }",
+        "{\n        GAME_STAT_CHECKED_POKEDEX, 1,\n        MauvilleCity_PokemonCenter_1F_Text_CheckedPokedexTitle,\n        MauvilleCity_PokemonCenter_1F_Text_CheckedPokedexAction,\n        MauvilleCity_PokemonCenter_1F_Text_CheckedPokedexStory\n    }",
+        "{\n        GAME_STAT_RECEIVED_RIBBONS, 1,\n        MauvilleCity_PokemonCenter_1F_Text_ReceivedRibbonsTitle,\n        MauvilleCity_PokemonCenter_1F_Text_ReceivedRibbonsAction,\n        MauvilleCity_PokemonCenter_1F_Text_ReceivedRibbonsStory\n    }",
+        "{\n        GAME_STAT_JUMPED_DOWN_LEDGES, 1,\n        MauvilleCity_PokemonCenter_1F_Text_LedgesJumpedTitle,\n        MauvilleCity_PokemonCenter_1F_Text_LedgesJumpedAction,\n        MauvilleCity_PokemonCenter_1F_Text_LedgesJumpedStory\n    }",
+        "{\n        GAME_STAT_WATCHED_TV, 1,\n        MauvilleCity_PokemonCenter_1F_Text_TVWatchedTitle,\n        MauvilleCity_PokemonCenter_1F_Text_TVWatchedAction,\n        MauvilleCity_PokemonCenter_1F_Text_TVWatchedStory\n    }",
+        "{\n        GAME_STAT_CHECKED_CLOCK, 1,\n        MauvilleCity_PokemonCenter_1F_Text_CheckedClockTitle,\n        MauvilleCity_PokemonCenter_1F_Text_CheckedClockAction,\n        MauvilleCity_PokemonCenter_1F_Text_CheckedClockStory\n    }",
+        "{\n        GAME_STAT_WON_POKEMON_LOTTERY, 1,\n        MauvilleCity_PokemonCenter_1F_Text_WonLotteryTitle,\n        MauvilleCity_PokemonCenter_1F_Text_WonLotteryAction,\n        MauvilleCity_PokemonCenter_1F_Text_WonLotteryStory\n    }",
+        "{\n        GAME_STAT_USED_DAYCARE, 1,\n        MauvilleCity_PokemonCenter_1F_Text_UsedDaycareTitle,\n        MauvilleCity_PokemonCenter_1F_Text_UsedDaycareAction,\n        MauvilleCity_PokemonCenter_1F_Text_UsedDaycareStory\n    }",
+        "{\n        GAME_STAT_RODE_CABLE_CAR, 1,\n        MauvilleCity_PokemonCenter_1F_Text_RodeCableCarTitle,\n        MauvilleCity_PokemonCenter_1F_Text_RodeCableCarAction,\n        MauvilleCity_PokemonCenter_1F_Text_RodeCableCarStory\n    }",
+        "{\n        GAME_STAT_ENTERED_HOT_SPRINGS, 1,\n        MauvilleCity_PokemonCenter_1F_Text_HotSpringsTitle,\n        MauvilleCity_PokemonCenter_1F_Text_HotSpringsAction,\n        MauvilleCity_PokemonCenter_1F_Text_HotSpringsStory\n    }"
+      ],
+      "rawValue": "{\n     \n    {\n        50, 1,\n        MauvilleCity_PokemonCenter_1F_Text_SavedGameTitle,\n        MauvilleCity_PokemonCenter_1F_Text_SavedGameAction,\n        MauvilleCity_PokemonCenter_1F_Text_SavedGameStory\n    },\n    {\n        GAME_STAT_STARTED_TRENDS, 1,\n        MauvilleCity_PokemonCenter_1F_Text_TrendsStartedTitle,\n        MauvilleCity_PokemonCenter_1F_Text_TrendsStartedAction,\n        MauvilleCity_PokemonCenter_1F_Text_TrendsStartedStory\n    },\n    {\n        GAME_STAT_PLANTED_BERRIES, 1,\n        MauvilleCity_PokemonCenter_1F_Text_BerriesPlantedTitle,\n        MauvilleCity_PokemonCenter_1F_Text_BerriesPlantedAction,\n        MauvilleCity_PokemonCenter_1F_Text_BerriesPlantedStory\n    },\n    {\n        GAME_STAT_TRADED_BIKES, 1,\n        MauvilleCity_PokemonCenter_1F_Text_BikeTradesTitle,\n        MauvilleCity_PokemonCenter_1F_Text_BikeTradesAction,\n        MauvilleCity_PokemonCenter_1F_Text_BikeTradesStory\n    },\n    {\n        GAME_STAT_GOT_INTERVIEWED, 1,\n        MauvilleCity_PokemonCenter_1F_Text_InterviewsTitl..."
+    }
+  }
+}

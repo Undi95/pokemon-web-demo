@@ -1,0 +1,427 @@
+{
+  "srcFile": "src/trainer_hill.c",
+  "count": 25,
+  "tables": {
+    "sTrainerClassesAndMusic": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{TRAINER_CLASS_TEAM_AQUA, TRAINER_ENCOUNTER_MUSIC_AQUA}",
+        "{TRAINER_CLASS_AQUA_ADMIN, TRAINER_ENCOUNTER_MUSIC_AQUA}",
+        "{TRAINER_CLASS_AQUA_LEADER, TRAINER_ENCOUNTER_MUSIC_AQUA}",
+        "{TRAINER_CLASS_AROMA_LADY, TRAINER_ENCOUNTER_MUSIC_FEMALE}",
+        "{TRAINER_CLASS_BATTLE_GIRL, TRAINER_ENCOUNTER_MUSIC_INTENSE}",
+        "{TRAINER_CLASS_SWIMMER_F, TRAINER_ENCOUNTER_MUSIC_FEMALE}",
+        "{TRAINER_CLASS_POKEFAN, TRAINER_ENCOUNTER_MUSIC_TWINS}",
+        "{TRAINER_CLASS_DRAGON_TAMER, TRAINER_ENCOUNTER_MUSIC_INTENSE}",
+        "{TRAINER_CLASS_COOLTRAINER, TRAINER_ENCOUNTER_MUSIC_COOL}",
+        "{TRAINER_CLASS_GUITARIST, TRAINER_ENCOUNTER_MUSIC_INTENSE}",
+        "{TRAINER_CLASS_SAILOR, TRAINER_ENCOUNTER_MUSIC_MALE}",
+        "{TRAINER_CLASS_TWINS, TRAINER_ENCOUNTER_MUSIC_TWINS}",
+        "{TRAINER_CLASS_INTERVIEWER, TRAINER_ENCOUNTER_MUSIC_INTERVIEWER}",
+        "{TRAINER_CLASS_RUIN_MANIAC, TRAINER_ENCOUNTER_MUSIC_HIKER}",
+        "{TRAINER_CLASS_GENTLEMAN, TRAINER_ENCOUNTER_MUSIC_RICH}",
+        "{TRAINER_CLASS_SWIMMER_M, TRAINER_ENCOUNTER_MUSIC_FEMALE}",
+        "{TRAINER_CLASS_POKEMANIAC, TRAINER_ENCOUNTER_MUSIC_SUSPICIOUS}",
+        "{TRAINER_CLASS_BLACK_BELT, TRAINER_ENCOUNTER_MUSIC_INTENSE}",
+        "{TRAINER_CLASS_OLD_COUPLE, TRAINER_ENCOUNTER_MUSIC_INTENSE}",
+        "{TRAINER_CLASS_BUG_MANIAC, TRAINER_ENCOUNTER_MUSIC_SUSPICIOUS}",
+        "{TRAINER_CLASS_CAMPER, TRAINER_ENCOUNTER_MUSIC_MALE}",
+        "{TRAINER_CLASS_KINDLER, TRAINER_ENCOUNTER_MUSIC_HIKER}",
+        "{TRAINER_CLASS_TEAM_MAGMA, TRAINER_ENCOUNTER_MUSIC_MAGMA}",
+        "{TRAINER_CLASS_MAGMA_ADMIN, TRAINER_ENCOUNTER_MUSIC_MAGMA}",
+        "{TRAINER_CLASS_MAGMA_LEADER, TRAINER_ENCOUNTER_MUSIC_MAGMA}",
+        "{TRAINER_CLASS_LASS, TRAINER_ENCOUNTER_MUSIC_FEMALE}",
+        "{TRAINER_CLASS_BUG_CATCHER, TRAINER_ENCOUNTER_MUSIC_MALE}",
+        "{TRAINER_CLASS_NINJA_BOY, TRAINER_ENCOUNTER_MUSIC_SUSPICIOUS}",
+        "{TRAINER_CLASS_RICH_BOY, TRAINER_ENCOUNTER_MUSIC_RICH}",
+        "{TRAINER_CLASS_HEX_MANIAC, TRAINER_ENCOUNTER_MUSIC_SUSPICIOUS}",
+        "{TRAINER_CLASS_BEAUTY, TRAINER_ENCOUNTER_MUSIC_FEMALE}",
+        "{TRAINER_CLASS_LADY, TRAINER_ENCOUNTER_MUSIC_FEMALE}",
+        "{TRAINER_CLASS_PARASOL_LADY, TRAINER_ENCOUNTER_MUSIC_FEMALE}",
+        "{TRAINER_CLASS_PICNICKER, TRAINER_ENCOUNTER_MUSIC_GIRL}",
+        "{TRAINER_CLASS_PKMN_BREEDER, TRAINER_ENCOUNTER_MUSIC_FEMALE}",
+        "{TRAINER_CLASS_COLLECTOR, TRAINER_ENCOUNTER_MUSIC_SUSPICIOUS}",
+        "{TRAINER_CLASS_PKMN_RANGER, TRAINER_ENCOUNTER_MUSIC_COOL}",
+        "{TRAINER_CLASS_RIVAL, TRAINER_ENCOUNTER_MUSIC_MALE}",
+        "{TRAINER_CLASS_YOUNG_COUPLE, TRAINER_ENCOUNTER_MUSIC_GIRL}",
+        "{TRAINER_CLASS_PSYCHIC, TRAINER_ENCOUNTER_MUSIC_INTENSE}",
+        "{TRAINER_CLASS_SR_AND_JR, TRAINER_ENCOUNTER_MUSIC_TWINS}",
+        "{TRAINER_CLASS_ELITE_FOUR, TRAINER_ENCOUNTER_MUSIC_FEMALE}",
+        "{TRAINER_CLASS_YOUNGSTER, TRAINER_ENCOUNTER_MUSIC_MALE}",
+        "{TRAINER_CLASS_EXPERT, TRAINER_ENCOUNTER_MUSIC_INTENSE}",
+        "{TRAINER_CLASS_TRIATHLETE, TRAINER_ENCOUNTER_MUSIC_MALE}",
+        "{TRAINER_CLASS_BIRD_KEEPER, TRAINER_ENCOUNTER_MUSIC_COOL}",
+        "{TRAINER_CLASS_FISHERMAN, TRAINER_ENCOUNTER_MUSIC_HIKER}",
+        "{TRAINER_CLASS_CHAMPION, TRAINER_ENCOUNTER_MUSIC_MALE}",
+        "{TRAINER_CLASS_TUBER_M, TRAINER_ENCOUNTER_MUSIC_MALE}",
+        "{TRAINER_CLASS_TUBER_F, TRAINER_ENCOUNTER_MUSIC_GIRL}",
+        "{TRAINER_CLASS_SIS_AND_BRO, TRAINER_ENCOUNTER_MUSIC_SWIMMER}",
+        "{TRAINER_CLASS_HIKER, TRAINER_ENCOUNTER_MUSIC_HIKER}",
+        "{TRAINER_CLASS_LEADER, TRAINER_ENCOUNTER_MUSIC_FEMALE}",
+        "{TRAINER_CLASS_SCHOOL_KID, TRAINER_ENCOUNTER_MUSIC_MALE}"
+      ],
+      "rawValue": "{\n    {TRAINER_CLASS_TEAM_AQUA, TRAINER_ENCOUNTER_MUSIC_AQUA},\n    {TRAINER_CLASS_AQUA_ADMIN, TRAINER_ENCOUNTER_MUSIC_AQUA},\n    {TRAINER_CLASS_AQUA_LEADER, TRAINER_ENCOUNTER_MUSIC_AQUA},\n    {TRAINER_CLASS_AROMA_LADY, TRAINER_ENCOUNTER_MUSIC_FEMALE},\n    {TRAINER_CLASS_BATTLE_GIRL, TRAINER_ENCOUNTER_MUSIC_INTENSE},\n    {TRAINER_CLASS_SWIMMER_F, TRAINER_ENCOUNTER_MUSIC_FEMALE},\n    {TRAINER_CLASS_POKEFAN, TRAINER_ENCOUNTER_MUSIC_TWINS},\n    {TRAINER_CLASS_DRAGON_TAMER, TRAINER_ENCOUNTER_MUSIC_INTENSE},\n    {TRAINER_CLASS_COOLTRAINER, TRAINER_ENCOUNTER_MUSIC_COOL},\n    {TRAINER_CLASS_GUITARIST, TRAINER_ENCOUNTER_MUSIC_INTENSE},\n    {TRAINER_CLASS_SAILOR, TRAINER_ENCOUNTER_MUSIC_MALE},\n    {TRAINER_CLASS_TWINS, TRAINER_ENCOUNTER_MUSIC_TWINS},\n    {TRAINER_CLASS_INTERVIEWER, TRAINER_ENCOUNTER_MUSIC_INTERVIEWER},\n    {TRAINER_CLASS_RUIN_MANIAC, TRAINER_ENCOUNTER_MUSIC_HIKER},\n    {TRAINER_CLASS_GENTLEMAN, TRAINER_ENCOUNTER_MUSIC_RICH},\n    {TRAINER_CLASS_SWIMMER_M, TRAINER_ENCOUNTER_MUSIC_FEMALE},\n    {TRAINER_CL..."
+    },
+    "sPrizeListRareCandy1": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_RARE_CANDY",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_RARE_CANDY,       ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListLuxuryBall1": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_LUXURY_BALL",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_LUXURY_BALL,      ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListMaxRevive1": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_MAX_REVIVE",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_MAX_REVIVE,       ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListMaxEther1": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_MAX_ETHER",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_MAX_ETHER,        ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListElixir1": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_ELIXIR",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_ELIXIR,           ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListRoar": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_TM_ROAR",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_TM_ROAR,          ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListSludgeBomb": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_TM_SLUDGE_BOMB",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_TM_SLUDGE_BOMB,   ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListToxic": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_TM_TOXIC",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_TM_TOXIC,         ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListSunnyDay": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_TM_SUNNY_DAY",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_TM_SUNNY_DAY,     ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListEarthQuake": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_TM_EARTHQUAKE",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_TM_EARTHQUAKE,    ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListRareCandy2": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_RARE_CANDY",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_RARE_CANDY,       ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListLuxuryBall2": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_LUXURY_BALL",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_LUXURY_BALL,      ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListMaxRevive2": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_MAX_REVIVE",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_MAX_REVIVE,       ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListMaxEther2": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_MAX_ETHER",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_MAX_ETHER,        ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListElixir2": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_ELIXIR",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_ELIXIR,           ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListBrickBreak": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_TM_BRICK_BREAK",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_TM_BRICK_BREAK,   ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListTorment": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_TM_TORMENT",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_TM_TORMENT,       ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListSkillSwap": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_TM_SKILL_SWAP",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_TM_SKILL_SWAP,    ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListGigaDrain": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_TM_GIGA_DRAIN",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_TM_GIGA_DRAIN,    ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sPrizeListAttract": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ITEM_TM_ATTRACT",
+        "ITEM_ETHER",
+        "ITEM_MAX_POTION",
+        "ITEM_REVIVE",
+        "ITEM_FLUFFY_TAIL",
+        "ITEM_GREAT_BALL"
+      ],
+      "rawValue": "{ITEM_TM_ATTRACT,       ITEM_ETHER, ITEM_MAX_POTION, ITEM_REVIVE, ITEM_FLUFFY_TAIL, ITEM_GREAT_BALL}"
+    },
+    "sRecordWinColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_COLOR_DARK_GRAY",
+        "TEXT_COLOR_LIGHT_GRAY"
+      ],
+      "rawValue": "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY}"
+    },
+    "sNextFloorMapNum": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[TRAINER_HILL_1F - 1] = MAP_NUM(MAP_TRAINER_HILL_2F)",
+        "[TRAINER_HILL_2F - 1] = MAP_NUM(MAP_TRAINER_HILL_3F)",
+        "[TRAINER_HILL_3F - 1] = MAP_NUM(MAP_TRAINER_HILL_4F)",
+        "[TRAINER_HILL_4F - 1] = MAP_NUM(MAP_TRAINER_HILL_ROOF)"
+      ],
+      "rawValue": "{\n    [TRAINER_HILL_1F - 1] = MAP_NUM(MAP_TRAINER_HILL_2F),\n    [TRAINER_HILL_2F - 1] = MAP_NUM(MAP_TRAINER_HILL_3F),\n    [TRAINER_HILL_3F - 1] = MAP_NUM(MAP_TRAINER_HILL_4F),\n    [TRAINER_HILL_4F - 1] = MAP_NUM(MAP_TRAINER_HILL_ROOF)\n}"
+    },
+    "sTrainerPartySlots": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{0, 1, 2}",
+        "{3, 4, 5}"
+      ],
+      "rawValue": "{\n    {0, 1, 2},\n    {3, 4, 5}\n}"
+    },
+    "sHillFunctions": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "TRAINER_HILL_FUNC_START",
+        "TRAINER_HILL_FUNC_GET_OWNER_STATE",
+        "TRAINER_HILL_FUNC_GIVE_PRIZE",
+        "TRAINER_HILL_FUNC_CHECK_FINAL_TIME",
+        "TRAINER_HILL_FUNC_RESUME_TIMER",
+        "TRAINER_HILL_FUNC_SET_LOST",
+        "TRAINER_HILL_FUNC_GET_CHALLENGE_STATUS",
+        "TRAINER_HILL_FUNC_GET_CHALLENGE_TIME",
+        "TRAINER_HILL_FUNC_GET_ALL_FLOORS_USED",
+        "TRAINER_HILL_FUNC_GET_IN_EREADER_MODE",
+        "TRAINER_HILL_FUNC_IN_CHALLENGE",
+        "TRAINER_HILL_FUNC_POST_BATTLE_TEXT",
+        "TRAINER_HILL_FUNC_SET_ALL_TRAINER_FLAGS",
+        "TRAINER_HILL_FUNC_GET_GAME_SAVED",
+        "TRAINER_HILL_FUNC_SET_GAME_SAVED",
+        "TRAINER_HILL_FUNC_CLEAR_GAME_SAVED",
+        "TRAINER_HILL_FUNC_GET_WON",
+        "TRAINER_HILL_FUNC_SET_MODE"
+      ],
+      "indexedValues": [
+        "TrainerHillStartChallenge",
+        "GetOwnerState",
+        "GiveChallengePrize",
+        "CheckFinalTime",
+        "TrainerHillResumeTimer",
+        "TrainerHillSetPlayerLost",
+        "TrainerHillGetChallengeStatus",
+        "BufferChallengeTime",
+        "GetAllFloorsUsed",
+        "GetInEReaderMode",
+        "IsTrainerHillChallengeActive",
+        "ShowTrainerHillPostBattleText",
+        "SetAllTrainerFlags",
+        "GetGameSaved",
+        "SetGameSaved",
+        "ClearGameSaved",
+        "GetChallengeWon",
+        "TrainerHillSetMode"
+      ],
+      "rawValue": "{\n    [TRAINER_HILL_FUNC_START]                 = TrainerHillStartChallenge,\n    [TRAINER_HILL_FUNC_GET_OWNER_STATE]       = GetOwnerState,\n    [TRAINER_HILL_FUNC_GIVE_PRIZE]            = GiveChallengePrize,\n    [TRAINER_HILL_FUNC_CHECK_FINAL_TIME]      = CheckFinalTime,\n    [TRAINER_HILL_FUNC_RESUME_TIMER]          = TrainerHillResumeTimer,\n    [TRAINER_HILL_FUNC_SET_LOST]              = TrainerHillSetPlayerLost,\n    [TRAINER_HILL_FUNC_GET_CHALLENGE_STATUS]  = TrainerHillGetChallengeStatus,\n    [TRAINER_HILL_FUNC_GET_CHALLENGE_TIME]    = BufferChallengeTime,\n    [TRAINER_HILL_FUNC_GET_ALL_FLOORS_USED]   = GetAllFloorsUsed,\n    [TRAINER_HILL_FUNC_GET_IN_EREADER_MODE]   = GetInEReaderMode,\n    [TRAINER_HILL_FUNC_IN_CHALLENGE]          = IsTrainerHillChallengeActive,\n    [TRAINER_HILL_FUNC_POST_BATTLE_TEXT]      = ShowTrainerHillPostBattleText,\n    [TRAINER_HILL_FUNC_SET_ALL_TRAINER_FLAGS] = SetAllTrainerFlags,\n    [TRAINER_HILL_FUNC_GET_GAME_SAVED]        = GetGameSaved,\n    [TRAINER_HILL_FUNC_SET_GAME_SAVED] ..."
+    }
+  }
+}

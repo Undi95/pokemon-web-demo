@@ -1,0 +1,477 @@
+{
+  "srcFile": "src/naming_screen.c",
+  "count": 34,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .priority = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 29,\n        .priority = 1\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 28,\n        .priority = 2\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 31,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .priority = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 29,\n        .priority = 1\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 28,\n        .priority = 2\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 31,\n        .priority = 3\n    }\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_KB_PAGE_1",
+        "WIN_KB_PAGE_2",
+        "WIN_TEXT_ENTRY",
+        "WIN_TEXT_ENTRY_BOX",
+        "WIN_BANNER"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 1",
+        "{\n        .bg = 2",
+        "{\n        .bg = 3",
+        "{\n        .bg = 3",
+        "{\n        .bg = 0"
+      ],
+      "rawValue": "{\n    [WIN_KB_PAGE_1] = {\n        .bg = 1,\n        .tilemapLeft = 3,\n        .tilemapTop = 10,\n        .width = 19,\n        .height = 8,\n        .paletteNum = 10,\n        .baseBlock = 0x030\n    },\n    [WIN_KB_PAGE_2] = {\n        .bg = 2,\n        .tilemapLeft = 3,\n        .tilemapTop = 10,\n        .width = 19,\n        .height = 8,\n        .paletteNum = 10,\n        .baseBlock = 0x0C8\n    },\n    [WIN_TEXT_ENTRY] = {\n        .bg = 3,\n        .tilemapLeft = 8,\n        .tilemapTop = 6,\n        .width = 17,\n        .height = 2,\n        .paletteNum = 10,\n        .baseBlock = 0x030\n    },\n    [WIN_TEXT_ENTRY_BOX] = {\n        .bg = 3,\n        .tilemapLeft = 8,\n        .tilemapTop = 4,\n        .width = 17,\n        .height = 2,\n        .paletteNum = 10,\n        .baseBlock = 0x052\n    },\n    [WIN_BANNER] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = DISPLAY_TILE_WIDTH,\n        .height = 2,\n        .paletteNum = 11,\n        .baseBlock = 0x074\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sKeyboardChars": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "KEYBOARD_LETTERS_LOWER",
+        "KEYBOARD_LETTERS_UPPER",
+        "KEYBOARD_SYMBOLS"
+      ],
+      "indexedValues": [
+        "{\n        __(\"abcdefgh.\")",
+        "{\n        __(\"ABCDEFGH.\")",
+        "{\n        __(\"01234    \")"
+      ],
+      "rawValue": "{\n    [KEYBOARD_LETTERS_LOWER] = {\n        __(\"abcdefgh.\"),\n        __(\"ijklmnop,\"),\n        __(\"qrstuvwx \"),\n        __(\"yz  -    \"),\n    },\n    [KEYBOARD_LETTERS_UPPER] = {\n        __(\"ABCDEFGH.\"),\n        __(\"IJKLMNOP,\"),\n        __(\"QRSTUVWX \"),\n        __(\"YZ  -    \"),\n    },\n    [KEYBOARD_SYMBOLS] = {\n        __(\"01234    \"),\n        __(\"56789    \"),\n        __(\"!?♂♀/    \"),\n        __(\"…“”‘'    \"),\n    }\n}"
+    },
+    "sPageColumnCounts": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "KEYBOARD_LETTERS_LOWER",
+        "KEYBOARD_LETTERS_UPPER",
+        "KEYBOARD_SYMBOLS"
+      ],
+      "indexedValues": [
+        "KBCOL_COUNT",
+        "KBCOL_COUNT",
+        "6"
+      ],
+      "rawValue": "{\n    [KEYBOARD_LETTERS_LOWER] = KBCOL_COUNT,\n    [KEYBOARD_LETTERS_UPPER] = KBCOL_COUNT,\n    [KEYBOARD_SYMBOLS]       = 6\n}"
+    },
+    "sPageColumnXPos": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "KEYBOARD_LETTERS_LOWER",
+        "KEYBOARD_LETTERS_UPPER",
+        "KEYBOARD_SYMBOLS"
+      ],
+      "indexedValues": [
+        "{0",
+        "{0",
+        "{0"
+      ],
+      "rawValue": "{\n    [KEYBOARD_LETTERS_LOWER] = {0, 12, 24, 36, 62, 74, 86, 98, 123},\n    [KEYBOARD_LETTERS_UPPER] = {0, 12, 24, 36, 62, 74, 86, 98, 123},\n    [KEYBOARD_SYMBOLS]       = {0, 22, 44, 66, 88, 110}\n}"
+    },
+    "sPageToNextGfxId": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "KBPAGE_SYMBOLS",
+        "KBPAGE_LETTERS_UPPER",
+        "KBPAGE_LETTERS_LOWER"
+      ],
+      "indexedValues": [
+        "PAGE_SWAP_UPPER",
+        "PAGE_SWAP_LOWER",
+        "PAGE_SWAP_OTHERS"
+      ],
+      "rawValue": "{\n    [KBPAGE_SYMBOLS]       = PAGE_SWAP_UPPER,\n    [KBPAGE_LETTERS_UPPER] = PAGE_SWAP_LOWER,\n    [KBPAGE_LETTERS_LOWER] = PAGE_SWAP_OTHERS\n}"
+    },
+    "sPageToNextKeyboardId": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "KBPAGE_SYMBOLS",
+        "KBPAGE_LETTERS_UPPER",
+        "KBPAGE_LETTERS_LOWER"
+      ],
+      "indexedValues": [
+        "KEYBOARD_LETTERS_UPPER",
+        "KEYBOARD_LETTERS_LOWER",
+        "KEYBOARD_SYMBOLS"
+      ],
+      "rawValue": "{\n    [KBPAGE_SYMBOLS]       = KEYBOARD_LETTERS_UPPER,\n    [KBPAGE_LETTERS_UPPER] = KEYBOARD_LETTERS_LOWER,\n    [KBPAGE_LETTERS_LOWER] = KEYBOARD_SYMBOLS\n}"
+    },
+    "sPageToKeyboardId": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "KBPAGE_SYMBOLS",
+        "KBPAGE_LETTERS_UPPER",
+        "KBPAGE_LETTERS_LOWER"
+      ],
+      "indexedValues": [
+        "KEYBOARD_SYMBOLS",
+        "KEYBOARD_LETTERS_UPPER",
+        "KEYBOARD_LETTERS_LOWER"
+      ],
+      "rawValue": "{\n    [KBPAGE_SYMBOLS]       = KEYBOARD_SYMBOLS,\n    [KBPAGE_LETTERS_UPPER] = KEYBOARD_LETTERS_UPPER,\n    [KBPAGE_LETTERS_LOWER] = KEYBOARD_LETTERS_LOWER\n}"
+    },
+    "sButtonKeyRoles": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "KEY_ROLE_PAGE",
+        "KEY_ROLE_BACKSPACE",
+        "KEY_ROLE_OK"
+      ],
+      "rawValue": "{KEY_ROLE_PAGE, KEY_ROLE_BACKSPACE, KEY_ROLE_OK}"
+    },
+    "sPageSwapPalTags": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "PAGE_SWAP_UPPER",
+        "PAGE_SWAP_OTHERS",
+        "PAGE_SWAP_LOWER"
+      ],
+      "indexedValues": [
+        "PALTAG_PAGE_SWAP_UPPER",
+        "PALTAG_PAGE_SWAP_OTHERS",
+        "PALTAG_PAGE_SWAP_LOWER"
+      ],
+      "rawValue": "{\n    [PAGE_SWAP_UPPER]  = PALTAG_PAGE_SWAP_UPPER,\n    [PAGE_SWAP_OTHERS] = PALTAG_PAGE_SWAP_OTHERS,\n    [PAGE_SWAP_LOWER]  = PALTAG_PAGE_SWAP_LOWER\n}"
+    },
+    "sPageSwapGfxTags": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "PAGE_SWAP_UPPER",
+        "PAGE_SWAP_OTHERS",
+        "PAGE_SWAP_LOWER"
+      ],
+      "indexedValues": [
+        "GFXTAG_PAGE_SWAP_UPPER",
+        "GFXTAG_PAGE_SWAP_OTHERS",
+        "GFXTAG_PAGE_SWAP_LOWER"
+      ],
+      "rawValue": "{\n    [PAGE_SWAP_UPPER]  = GFXTAG_PAGE_SWAP_UPPER,\n    [PAGE_SWAP_OTHERS] = GFXTAG_PAGE_SWAP_OTHERS,\n    [PAGE_SWAP_LOWER]  = GFXTAG_PAGE_SWAP_LOWER\n}"
+    },
+    "sGenderColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_BLUE, TEXT_COLOR_BLUE}",
+        "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_RED, TEXT_COLOR_RED}"
+      ],
+      "rawValue": "{\n    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_BLUE, TEXT_COLOR_BLUE},\n    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_RED, TEXT_COLOR_RED}\n}"
+    },
+    "sFillValues": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "KEYBOARD_LETTERS_LOWER",
+        "KEYBOARD_LETTERS_UPPER",
+        "KEYBOARD_SYMBOLS"
+      ],
+      "indexedValues": [
+        "PIXEL_FILL(14)",
+        "PIXEL_FILL(13)",
+        "PIXEL_FILL(15)"
+      ],
+      "rawValue": "{\n    [KEYBOARD_LETTERS_LOWER] = PIXEL_FILL(14),\n    [KEYBOARD_LETTERS_UPPER] = PIXEL_FILL(13),\n    [KEYBOARD_SYMBOLS]       = PIXEL_FILL(15)\n}"
+    },
+    "sSubsprites_PageSwapFrame": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -20,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x =  12,\n        .y = -16,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 4,\n        .priority = 1\n    }",
+        "{\n        .x = -20,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 5,\n        .priority = 1\n    }",
+        "{\n        .x =  12,\n        .y = -8,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 9,\n        .priority = 1\n    }",
+        "{\n        .x = -20,\n        .y =  0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 10,\n        .priority = 1\n    }",
+        "{\n        .x =  12,\n        .y =  0,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 14,\n        .priority = 1\n    }",
+        "{\n        .x = -20,\n        .y =  8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 15,\n        .priority = 1\n    }",
+        "{\n        .x =  12,\n        .y =  8,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 19,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -20,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x =  12,\n        .y = -16,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 4,\n        .priority = 1\n    },\n    {\n        .x = -20,\n        .y = -8,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 5,\n        .priority = 1\n    },\n    {\n        .x =  12,\n        .y = -8,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 9,\n        .priority = 1\n    },\n    {\n        .x = -20,\n        .y =  0,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 10,\n        .priority = 1\n    },\n    {\n        .x =  12,\n        .y =  0,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 14,\n        .priority = 1\n    },\n    {\n        .x = -20..."
+    },
+    "sSubsprites_PageSwapText": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x =   4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 2,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x =   4,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 2,\n        .priority = 1\n    }\n}"
+    },
+    "sSubsprites_Button": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -20,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    }",
+        "{\n        .x =  12,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 4,\n        .priority = 1\n    }",
+        "{\n        .x = -20,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 5,\n        .priority = 1\n    }",
+        "{\n        .x =  12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 9,\n        .priority = 1\n    }",
+        "{\n        .x = -20,\n        .y =  4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 10,\n        .priority = 1\n    }",
+        "{\n        .x =  12,\n        .y =  4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 14,\n        .priority = 1\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -20,\n        .y = -12,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 0,\n        .priority = 1\n    },\n    {\n        .x =  12,\n        .y = -12,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 4,\n        .priority = 1\n    },\n    {\n        .x = -20,\n        .y = -4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 5,\n        .priority = 1\n    },\n    {\n        .x =  12,\n        .y = -4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 9,\n        .priority = 1\n    },\n    {\n        .x = -20,\n        .y =  4,\n        .shape = SPRITE_SHAPE(32x8),\n        .size = SPRITE_SIZE(32x8),\n        .tileOffset = 10,\n        .priority = 1\n    },\n    {\n        .x =  12,\n        .y =  4,\n        .shape = SPRITE_SHAPE(8x8),\n        .size = SPRITE_SIZE(8x8),\n        .tileOffset = 14,\n        .priority = 1\n    }\n}"
+    },
+    "sSubsprites_PCIcon": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -8,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 3\n    }",
+        "{\n        .x = -8,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 2,\n        .priority = 3\n    }",
+        "{\n        .x = -8,\n        .y =  4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 4,\n        .priority = 3\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -8,\n        .y = -12,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 0,\n        .priority = 3\n    },\n    {\n        .x = -8,\n        .y = -4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 2,\n        .priority = 3\n    },\n    {\n        .x = -8,\n        .y =  4,\n        .shape = SPRITE_SHAPE(16x8),\n        .size = SPRITE_SIZE(16x8),\n        .tileOffset = 4,\n        .priority = 3\n    }\n}"
+    },
+    "sSubspriteTable_PageSwapFrame": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_PageSwapFrame), sSubsprites_PageSwapFrame}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_PageSwapFrame), sSubsprites_PageSwapFrame}\n}"
+    },
+    "sSubspriteTable_PageSwapText": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_PageSwapText), sSubsprites_PageSwapText}",
+        "{ARRAY_COUNT(sSubsprites_PageSwapText), sSubsprites_PageSwapText}",
+        "{ARRAY_COUNT(sSubsprites_PageSwapText), sSubsprites_PageSwapText}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_PageSwapText), sSubsprites_PageSwapText},\n    {ARRAY_COUNT(sSubsprites_PageSwapText), sSubsprites_PageSwapText},\n    {ARRAY_COUNT(sSubsprites_PageSwapText), sSubsprites_PageSwapText}\n}"
+    },
+    "sSubspriteTable_Button": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_Button), sSubsprites_Button}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_Button), sSubsprites_Button}\n}"
+    },
+    "sSubspriteTable_PCIcon": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sSubsprites_PCIcon), sSubsprites_PCIcon}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sSubsprites_PCIcon), sSubsprites_PCIcon}\n}"
+    },
+    "sImageTable_PCIcon": {
+      "type": "struct SpriteFrameImage",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sPCIconOff_Gfx, sizeof(sPCIconOff_Gfx)}",
+        "{sPCIconOn_Gfx, sizeof(sPCIconOn_Gfx)}"
+      ],
+      "rawValue": "{\n    {sPCIconOff_Gfx, sizeof(sPCIconOff_Gfx)},\n    {sPCIconOn_Gfx, sizeof(sPCIconOn_Gfx)},\n}"
+    },
+    "sAnim_Loop": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_CursorSquish": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 8)",
+        "ANIMCMD_FRAME(8, 8)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 8),\n    ANIMCMD_FRAME(8, 8),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_PCIcon": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_FRAME(1, 2)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_FRAME(1, 2),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sSpriteSheets": {
+      "type": "struct SpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gNamingScreenBackButton_Gfx,     0x1E0,  GFXTAG_BACK_BUTTON}",
+        "{gNamingScreenOKButton_Gfx,       0x1E0,  GFXTAG_OK_BUTTON}",
+        "{gNamingScreenPageSwapFrame_Gfx,  0x280,  GFXTAG_PAGE_SWAP_FRAME}",
+        "{gNamingScreenPageSwapButton_Gfx + 0x8, 0x100,  GFXTAG_PAGE_SWAP_BUTTON}",
+        "{gNamingScreenPageSwapUpper_Gfx,  0x060,  GFXTAG_PAGE_SWAP_UPPER}",
+        "{gNamingScreenPageSwapLower_Gfx,  0x060,  GFXTAG_PAGE_SWAP_LOWER}",
+        "{gNamingScreenPageSwapOthers_Gfx, 0x060,  GFXTAG_PAGE_SWAP_OTHERS}",
+        "{gNamingScreenCursor_Gfx,         0x080,  GFXTAG_CURSOR}",
+        "{gNamingScreenCursorSquished_Gfx + 0x8, 0x080,  GFXTAG_CURSOR_SQUISHED}",
+        "{gNamingScreenCursorFilled_Gfx,   0x080,  GFXTAG_CURSOR_FILLED}",
+        "{gNamingScreenInputArrow_Gfx,     0x020,  GFXTAG_INPUT_ARROW}",
+        "{gNamingScreenUnderscore_Gfx,     0x020,  GFXTAG_UNDERSCORE}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gNamingScreenBackButton_Gfx,     0x1E0,  GFXTAG_BACK_BUTTON},\n    {gNamingScreenOKButton_Gfx,       0x1E0,  GFXTAG_OK_BUTTON},\n    {gNamingScreenPageSwapFrame_Gfx,  0x280,  GFXTAG_PAGE_SWAP_FRAME},\n    {gNamingScreenPageSwapButton_Gfx + 0x8, 0x100,  GFXTAG_PAGE_SWAP_BUTTON},\n    {gNamingScreenPageSwapUpper_Gfx,  0x060,  GFXTAG_PAGE_SWAP_UPPER},\n    {gNamingScreenPageSwapLower_Gfx,  0x060,  GFXTAG_PAGE_SWAP_LOWER},\n    {gNamingScreenPageSwapOthers_Gfx, 0x060,  GFXTAG_PAGE_SWAP_OTHERS},\n    {gNamingScreenCursor_Gfx,         0x080,  GFXTAG_CURSOR},\n    {gNamingScreenCursorSquished_Gfx + 0x8, 0x080,  GFXTAG_CURSOR_SQUISHED},\n    {gNamingScreenCursorFilled_Gfx,   0x080,  GFXTAG_CURSOR_FILLED},\n    {gNamingScreenInputArrow_Gfx,     0x020,  GFXTAG_INPUT_ARROW},\n    {gNamingScreenUnderscore_Gfx,     0x020,  GFXTAG_UNDERSCORE},\n    {}\n}"
+    },
+    "sSpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gNamingScreenMenu_Pal[0], PALTAG_MENU}",
+        "{gNamingScreenMenu_Pal[1], PALTAG_PAGE_SWAP_UPPER}",
+        "{gNamingScreenMenu_Pal[2], PALTAG_PAGE_SWAP_LOWER}",
+        "{gNamingScreenMenu_Pal[3], PALTAG_PAGE_SWAP_OTHERS}",
+        "{gNamingScreenMenu_Pal[4], PALTAG_PAGE_SWAP}",
+        "{gNamingScreenMenu_Pal[5], PALTAG_CURSOR}",
+        "{gNamingScreenMenu_Pal[4], PALTAG_BACK_BUTTON}",
+        "{gNamingScreenMenu_Pal[4], PALTAG_OK_BUTTON}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gNamingScreenMenu_Pal[0], PALTAG_MENU},\n    {gNamingScreenMenu_Pal[1], PALTAG_PAGE_SWAP_UPPER},\n    {gNamingScreenMenu_Pal[2], PALTAG_PAGE_SWAP_LOWER},\n    {gNamingScreenMenu_Pal[3], PALTAG_PAGE_SWAP_OTHERS},\n    {gNamingScreenMenu_Pal[4], PALTAG_PAGE_SWAP},\n    {gNamingScreenMenu_Pal[5], PALTAG_CURSOR},\n    {gNamingScreenMenu_Pal[4], PALTAG_BACK_BUTTON},\n    {gNamingScreenMenu_Pal[4], PALTAG_OK_BUTTON},\n    {}\n}"
+    },
+    "sPageSwapAnimStateFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "PageSwapAnimState_Init",
+        "PageSwapAnimState_1",
+        "PageSwapAnimState_2",
+        "PageSwapAnimState_Done"
+      ],
+      "rawValue": "{\n    PageSwapAnimState_Init,\n    PageSwapAnimState_1,\n    PageSwapAnimState_2,\n    PageSwapAnimState_Done,\n}"
+    },
+    "sPageSwapSpriteFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "PageSwapSprite_Init",
+        "PageSwapSprite_Idle",
+        "PageSwapSprite_SlideOff",
+        "PageSwapSprite_SlideOn"
+      ],
+      "rawValue": "{\n    PageSwapSprite_Init,\n    PageSwapSprite_Idle,\n    PageSwapSprite_SlideOff,\n    PageSwapSprite_SlideOn,\n}"
+    },
+    "sIconFunctions": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "NamingScreen_NoIcon",
+        "NamingScreen_CreatePlayerIcon",
+        "NamingScreen_CreatePCIcon",
+        "NamingScreen_CreateMonIcon",
+        "NamingScreen_CreateWaldaDadIcon"
+      ],
+      "rawValue": "{\n    NamingScreen_NoIcon,\n    NamingScreen_CreatePlayerIcon,\n    NamingScreen_CreatePCIcon,\n    NamingScreen_CreateMonIcon,\n    NamingScreen_CreateWaldaDadIcon,\n}"
+    },
+    "sKeyboardKeyHandlers": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "KEY_ROLE_CHAR",
+        "KEY_ROLE_PAGE",
+        "KEY_ROLE_BACKSPACE",
+        "KEY_ROLE_OK"
+      ],
+      "indexedValues": [
+        "KeyboardKeyHandler_Character",
+        "KeyboardKeyHandler_Page",
+        "KeyboardKeyHandler_Backspace",
+        "KeyboardKeyHandler_OK"
+      ],
+      "rawValue": "{\n    [KEY_ROLE_CHAR]      = KeyboardKeyHandler_Character,\n    [KEY_ROLE_PAGE]      = KeyboardKeyHandler_Page,\n    [KEY_ROLE_BACKSPACE] = KeyboardKeyHandler_Backspace,\n    [KEY_ROLE_OK]        = KeyboardKeyHandler_OK,\n}"
+    },
+    "sInputFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "INPUT_STATE_DISABLED",
+        "INPUT_STATE_ENABLED",
+        "INPUT_STATE_OVERRIDE"
+      ],
+      "indexedValues": [
+        "Input_Disabled",
+        "Input_Enabled",
+        "Input_Override"
+      ],
+      "rawValue": "{\n    [INPUT_STATE_DISABLED] = Input_Disabled,\n    [INPUT_STATE_ENABLED]  = Input_Enabled,\n    [INPUT_STATE_OVERRIDE] = Input_Override,\n}"
+    },
+    "sDrawTextEntryBoxFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "NAMING_SCREEN_PLAYER",
+        "NAMING_SCREEN_BOX",
+        "NAMING_SCREEN_CAUGHT_MON",
+        "NAMING_SCREEN_NICKNAME",
+        "NAMING_SCREEN_WALDA"
+      ],
+      "indexedValues": [
+        "DrawNormalTextEntryBox",
+        "DrawNormalTextEntryBox",
+        "DrawMonTextEntryBox",
+        "DrawMonTextEntryBox",
+        "DrawNormalTextEntryBox"
+      ],
+      "rawValue": "{\n    [NAMING_SCREEN_PLAYER]     = DrawNormalTextEntryBox,\n    [NAMING_SCREEN_BOX]        = DrawNormalTextEntryBox,\n    [NAMING_SCREEN_CAUGHT_MON] = DrawMonTextEntryBox,\n    [NAMING_SCREEN_NICKNAME]   = DrawMonTextEntryBox,\n    [NAMING_SCREEN_WALDA]      = DrawNormalTextEntryBox,\n}"
+    },
+    "sDrawGenderIconFuncs": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "FALSE",
+        "TRUE"
+      ],
+      "indexedValues": [
+        "DummyGenderIcon",
+        "DrawGenderIcon"
+      ],
+      "rawValue": "{\n    [FALSE] = DummyGenderIcon,\n    [TRUE]  = DrawGenderIcon,\n}"
+    }
+  }
+}

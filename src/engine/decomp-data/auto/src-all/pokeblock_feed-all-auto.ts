@@ -37,13 +37,13 @@ const {
   LoadPalette, LoadUserWindowBorderGfx, MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv,
   NULL, PALETTES_ALL, PIXEL_FILL, PLTT_SIZE_4BPP,
   PlayCry_Normal, PokeblockCopyName, PokeblockGetGain, ProcessSpriteCopyRequests,
-  PutWindowTilemap, REG_OFFSET_BLDCNT, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs,
-  RunTasks, RunTextPrintersRetIsActive, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL,
-  ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
-  SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg,
-  Sin, StartSpriteAffineAnim, StringExpandPlaceholders, TRUE,
-  TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  PutWindowTilemap, REG_OFFSET_BLDCNT, REG_OFFSET_DISPCNT, ResetAllBgsCoordinates,
+  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTempTileDataBuffers,
+  ResetVramOamAndBgCntRegs, RunTasks, RunTextPrintersRetIsActive, ST_OAM_AFFINE_DOUBLE,
+  ST_OAM_AFFINE_NORMAL, ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer, SetGpuReg,
+  SetMainCallback2, SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
+  ShowBg, Sin, SpriteCallbackDummy, StartSpriteAffineAnim,
+  StringExpandPlaceholders, TRUE, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_PokeblockFeed(void) */

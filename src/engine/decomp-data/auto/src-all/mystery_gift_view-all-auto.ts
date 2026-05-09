@@ -26,17 +26,18 @@ const {
   AllocZeroed, BG_PLTT_ID, BeginNormalPaletteFade, ChangeBgY,
   ClearGpuRegBits, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyRectToBgTilemapBufferRect,
   CopyWindowToVram, CreateMonIconNoPersonality, CreateSprite, DISPCNT_WIN0_ON,
-  DecompressAndCopyTileDataToVram, DestroySprite, FALSE, FREE_AND_SET_NULL,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAndDestroyMonIconSprite, FreeMonIconPalettes,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetFontAttribute,
-  GetIconSpeciesNoPersonality, GetStringWidth, GetTextWindowPalette, HideBg,
-  LZ77UnCompWram, LoadCompressedSpriteSheetUsingHeap, LoadMonIconPalettes, LoadPalette,
-  LoadSpritePalette, MG_DrawCheckerboardPattern, NULL, PALETTES_ALL,
-  PLTT_SIZE_4BPP, PrintMysteryGiftOrEReaderHeader, PutWindowTilemap, REG_OFFSET_WIN0H,
-  REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT, RemoveScrollIndicatorArrowPair,
-  RemoveWindow, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_LEFT_ALIGN, SetGpuReg,
-  SetGpuRegBits, ShowBg, TASK_NONE, TRUE,
-  UpdatePaletteFade, WIN_RANGE, memcpy, memset,  // 4-per-line for readability
+  DISPLAY_WIDTH, DecompressAndCopyTileDataToVram, DestroySprite, FALSE,
+  FREE_AND_SET_NULL, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAndDestroyMonIconSprite,
+  FreeMonIconPalettes, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
+  GetFontAttribute, GetIconSpeciesNoPersonality, GetStringWidth, GetTextWindowPalette,
+  HideBg, LZ77UnCompWram, LoadCompressedSpriteSheetUsingHeap, LoadMonIconPalettes,
+  LoadPalette, LoadSpritePalette, MG_DrawCheckerboardPattern, NULL,
+  PALETTES_ALL, PLTT_SIZE_4BPP, PrintMysteryGiftOrEReaderHeader, PutWindowTilemap,
+  REG_OFFSET_DISPCNT, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ,
+  REG_OFFSET_WINOUT, RemoveScrollIndicatorArrowPair, RemoveWindow, STR_CONV_MODE_LEADING_ZEROS,
+  STR_CONV_MODE_LEFT_ALIGN, SetGpuReg, SetGpuRegBits, ShowBg,
+  SpriteCallbackDummy, TASK_NONE, TRUE, UpdatePaletteFade,
+  WIN_RANGE, memcpy, memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 WonderCard_Init(struct WonderCard *card, struct WonderCardMetadata *metadata) */

@@ -1,0 +1,827 @@
+{
+  "srcFile": "src/pokedex.c",
+  "count": 61,
+  "tables": {
+    "sSpriteAnim_ScrollBar": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_ScrollArrow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(1, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(1, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_RotatingPokeBall": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(16, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(16, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_StartButton": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(48, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(48, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_SearchText": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(40, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(40, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_SelectButton": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(32, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(32, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_MenuText": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(56, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(56, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_Unused": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(200, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(200, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_SeenText": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(64, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(64, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_OwnText": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(96, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(96, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennText": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(160, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(160, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalText": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(168, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(168, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennSeenOwnDigit0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(128, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(128, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennSeenOwnDigit1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(130, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(130, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennSeenOwnDigit2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(132, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(132, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennSeenOwnDigit3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(134, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(134, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennSeenOwnDigit4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(136, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(136, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennSeenOwnDigit5": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(138, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(138, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennSeenOwnDigit6": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(140, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(140, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennSeenOwnDigit7": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(142, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(142, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennSeenOwnDigit8": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(144, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(144, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_HoennSeenOwnDigit9": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(146, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(146, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalSeenOwnDigit0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(176, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(176, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalSeenOwnDigit1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(178, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(178, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalSeenOwnDigit2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(180, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(180, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalSeenOwnDigit3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(182, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(182, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalSeenOwnDigit4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(184, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(184, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalSeenOwnDigit5": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(186, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(186, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalSeenOwnDigit6": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(188, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(188, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalSeenOwnDigit7": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(190, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(190, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalSeenOwnDigit8": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(192, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(192, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_NationalSeenOwnDigit9": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(194, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(194, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_DexListStartMenuCursor": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 30),\n    ANIMCMD_END\n}"
+    },
+    "sInterfaceSpriteSheet": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gPokedexInterface_Gfx, 0x2000, TAG_DEX_INTERFACE}",
+        "{0}"
+      ],
+      "rawValue": "{\n    {gPokedexInterface_Gfx, 0x2000, TAG_DEX_INTERFACE},\n    {0}\n}"
+    },
+    "sInterfaceSpritePalette": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gPokedexBgHoenn_Pal, TAG_DEX_INTERFACE}",
+        "{0}"
+      ],
+      "rawValue": "{\n    {gPokedexBgHoenn_Pal, TAG_DEX_INTERFACE},\n    {0}\n}"
+    },
+    "sScrollMonIncrements": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "4",
+        "8",
+        "16",
+        "32",
+        "32"
+      ],
+      "rawValue": "{4, 8, 16, 32, 32}"
+    },
+    "sScrollTimers": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "8",
+        "4",
+        "2",
+        "1",
+        "1"
+      ],
+      "rawValue": "{8, 4, 2, 1, 1}"
+    },
+    "sPokedex_BgTemplate": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 12,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 13,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 12,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 13,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sPokemonList_WindowTemplate": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 2,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 32,\n        .height = 32,\n        .paletteNum = 0,\n        .baseBlock = 1,\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 2,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 32,\n        .height = 32,\n        .paletteNum = 0,\n        .baseBlock = 1,\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sInfoScreen_BgTemplate": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 12,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 13,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 12,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 13,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }\n}"
+    },
+    "sInfoScreen_WindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_INFO",
+        "WIN_FOOTPRINT",
+        "WIN_CRY_WAVE",
+        "WIN_VU_METER"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 2",
+        "{\n        .bg = 2",
+        "{\n        .bg = 0",
+        "{\n        .bg = 2"
+      ],
+      "rawValue": "{\n    [WIN_INFO] =\n    {\n        .bg = 2,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 32,\n        .height = 20,\n        .paletteNum = 0,\n        .baseBlock = 1,\n    },\n    [WIN_FOOTPRINT] =\n    {\n        .bg = 2,\n        .tilemapLeft = 25,\n        .tilemapTop = 8,\n        .width = 2,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 641,\n    },\n    [WIN_CRY_WAVE] =\n    {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 12,\n        .width = 32,\n        .height = 7,\n        .paletteNum = 8,\n        .baseBlock = 645,\n    },\n    [WIN_VU_METER] =\n    {\n        .bg = 2,\n        .tilemapLeft = 18,\n        .tilemapTop = 3,\n        .width = 10,\n        .height = 8,\n        .paletteNum = 9,\n        .baseBlock = 869,\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sNewEntryInfoScreen_BgTemplate": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    },\n}"
+    },
+    "sNewEntryInfoScreen_WindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_INFO",
+        "WIN_FOOTPRINT"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 2",
+        "{\n        .bg = 2"
+      ],
+      "rawValue": "{\n    [WIN_INFO] =\n    {\n        .bg = 2,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 32,\n        .height = 20,\n        .paletteNum = 0,\n        .baseBlock = 1,\n    },\n    [WIN_FOOTPRINT] =\n    {\n        .bg = 2,\n        .tilemapLeft = 25,\n        .tilemapTop = 8,\n        .width = 2,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 641,\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sLetterSearchRanges": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "NAME_ABC",
+        "NAME_DEF",
+        "NAME_GHI",
+        "NAME_JKL",
+        "NAME_MNO",
+        "NAME_PQR",
+        "NAME_STU",
+        "NAME_VWX",
+        "NAME_YZ"
+      ],
+      "indexedValues": [
+        "{CHAR_A",
+        "{CHAR_D",
+        "{CHAR_G",
+        "{CHAR_J",
+        "{CHAR_M",
+        "{CHAR_P",
+        "{CHAR_S",
+        "{CHAR_V",
+        "{CHAR_Y"
+      ],
+      "rawValue": "{\n    {},  \n    [NAME_ABC] = {CHAR_A, 3, CHAR_a, 3},\n    [NAME_DEF] = {CHAR_D, 3, CHAR_d, 3},\n    [NAME_GHI] = {CHAR_G, 3, CHAR_g, 3},\n    [NAME_JKL] = {CHAR_J, 3, CHAR_j, 3},\n    [NAME_MNO] = {CHAR_M, 3, CHAR_m, 3},\n    [NAME_PQR] = {CHAR_P, 3, CHAR_p, 3},\n    [NAME_STU] = {CHAR_S, 3, CHAR_s, 3},\n    [NAME_VWX] = {CHAR_V, 3, CHAR_v, 3},\n    [NAME_YZ]  = {CHAR_Y, 2, CHAR_y, 2},\n}"
+    },
+    "sSearchMenuTopBarItems": {
+      "type": "struct SearchMenuTopBarItem",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SEARCH_TOPBAR_SEARCH",
+        "SEARCH_TOPBAR_SHIFT",
+        "SEARCH_TOPBAR_CANCEL"
+      ],
+      "indexedValues": [
+        "{\n        .description = gText_SearchForPkmnBasedOnParameters",
+        "{\n        .description = gText_SwitchPokedexListings",
+        "{\n        .description = gText_ReturnToPokedex"
+      ],
+      "rawValue": "{\n    [SEARCH_TOPBAR_SEARCH] =\n    {\n        .description = gText_SearchForPkmnBasedOnParameters,\n        .highlightX = 0,\n        .highlightY = 0,\n        .highlightWidth = 5,\n    },\n    [SEARCH_TOPBAR_SHIFT] =\n    {\n        .description = gText_SwitchPokedexListings,\n        .highlightX = 6,\n        .highlightY = 0,\n        .highlightWidth = 5,\n    },\n    [SEARCH_TOPBAR_CANCEL] =\n    {\n        .description = gText_ReturnToPokedex,\n        .highlightX = 12,\n        .highlightY = 0,\n        .highlightWidth = 5,\n    },\n}"
+    },
+    "sSearchMenuItems": {
+      "type": "struct SearchMenuItem",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SEARCH_NAME",
+        "SEARCH_COLOR",
+        "SEARCH_TYPE_LEFT",
+        "SEARCH_TYPE_RIGHT",
+        "SEARCH_ORDER",
+        "SEARCH_MODE",
+        "SEARCH_OK"
+      ],
+      "indexedValues": [
+        "{\n        .description = gText_ListByFirstLetter",
+        "{\n        .description = gText_ListByBodyColor",
+        "{\n        .description = gText_ListByType",
+        "{\n        .description = gText_ListByType",
+        "{\n        .description = gText_SelectPokedexListingMode",
+        "{\n        .description = gText_SelectPokedexMode",
+        "{\n        .description = gText_ExecuteSearchSwitch"
+      ],
+      "rawValue": "{\n    [SEARCH_NAME] =\n    {\n        .description = gText_ListByFirstLetter,\n        .titleBgX = 0,\n        .titleBgY = 2,\n        .titleBgWidth = 5,\n        .selectionBgX = 5,\n        .selectionBgY = 2,\n        .selectionBgWidth = 12,\n    },\n    [SEARCH_COLOR] =\n    {\n        .description = gText_ListByBodyColor,\n        .titleBgX = 0,\n        .titleBgY = 4,\n        .titleBgWidth = 5,\n        .selectionBgX = 5,\n        .selectionBgY = 4,\n        .selectionBgWidth = 12,\n    },\n    [SEARCH_TYPE_LEFT] =\n    {\n        .description = gText_ListByType,\n        .titleBgX = 0,\n        .titleBgY = 6,\n        .titleBgWidth = 5,\n        .selectionBgX = 5,\n        .selectionBgY = 6,\n        .selectionBgWidth = 6,\n    },\n    [SEARCH_TYPE_RIGHT] =\n    {\n        .description = gText_ListByType,\n        .titleBgX = 0,\n        .titleBgY = 6,\n        .titleBgWidth = 5,\n        .selectionBgX = 11,\n        .selectionBgY = 6,\n        .selectionBgWidth = 6,\n    },\n    [SEARCH_ORDER] =\n    {\n        .description = gText_SelectPoked..."
+    },
+    "sSearchMovementMap_SearchNatDex": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SEARCH_NAME",
+        "SEARCH_COLOR",
+        "SEARCH_TYPE_LEFT",
+        "SEARCH_TYPE_RIGHT",
+        "SEARCH_ORDER",
+        "SEARCH_MODE",
+        "SEARCH_OK"
+      ],
+      "indexedValues": [
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{   SEARCH_TYPE_LEFT",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF"
+      ],
+      "rawValue": "{\n    [SEARCH_NAME] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        SEARCH_COLOR\n    },\n    [SEARCH_COLOR] =\n    {\n        0xFF,\n        0xFF,\n        SEARCH_NAME,\n        SEARCH_TYPE_LEFT\n    },\n    [SEARCH_TYPE_LEFT] =\n    {\n        0xFF,\n        SEARCH_TYPE_RIGHT,\n        SEARCH_COLOR,\n        SEARCH_ORDER\n    },\n    [SEARCH_TYPE_RIGHT] =\n    {   SEARCH_TYPE_LEFT,\n        0xFF,\n        SEARCH_COLOR,\n        SEARCH_ORDER\n    },\n    [SEARCH_ORDER] =\n    {\n        0xFF,\n        0xFF,\n        SEARCH_TYPE_LEFT,\n        SEARCH_MODE\n    },\n    [SEARCH_MODE] =\n    {\n        0xFF,\n        0xFF,\n        SEARCH_ORDER,\n        SEARCH_OK\n    },\n    [SEARCH_OK] =\n    {\n        0xFF,\n        0xFF,\n        SEARCH_MODE,\n        0xFF\n    },\n}"
+    },
+    "sSearchMovementMap_ShiftNatDex": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SEARCH_NAME",
+        "SEARCH_COLOR",
+        "SEARCH_TYPE_LEFT",
+        "SEARCH_TYPE_RIGHT",
+        "SEARCH_ORDER",
+        "SEARCH_MODE",
+        "SEARCH_OK"
+      ],
+      "indexedValues": [
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF"
+      ],
+      "rawValue": "{\n    [SEARCH_NAME] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        0xFF\n    },\n    [SEARCH_COLOR] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        0xFF\n    },\n    [SEARCH_TYPE_LEFT] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        0xFF\n    },\n    [SEARCH_TYPE_RIGHT] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        0xFF\n    },\n    [SEARCH_ORDER] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        SEARCH_MODE\n    },\n    [SEARCH_MODE] =\n    {\n        0xFF,\n        0xFF,\n        SEARCH_ORDER,\n        SEARCH_OK\n    },\n    [SEARCH_OK] =\n    {\n        0xFF,\n        0xFF,\n        SEARCH_MODE,\n        0xFF\n    },\n}"
+    },
+    "sSearchMovementMap_SearchHoennDex": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SEARCH_NAME",
+        "SEARCH_COLOR",
+        "SEARCH_TYPE_LEFT",
+        "SEARCH_TYPE_RIGHT",
+        "SEARCH_ORDER",
+        "SEARCH_MODE",
+        "SEARCH_OK"
+      ],
+      "indexedValues": [
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{   SEARCH_TYPE_LEFT",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF"
+      ],
+      "rawValue": "{\n    [SEARCH_NAME] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        SEARCH_COLOR\n    },\n    [SEARCH_COLOR] =\n    {\n        0xFF,\n        0xFF,\n        SEARCH_NAME,\n        SEARCH_TYPE_LEFT\n    },\n    [SEARCH_TYPE_LEFT] =\n    {\n        0xFF,\n        SEARCH_TYPE_RIGHT,\n        SEARCH_COLOR,\n        SEARCH_ORDER\n    },\n    [SEARCH_TYPE_RIGHT] =\n    {   SEARCH_TYPE_LEFT,\n        0xFF,\n        SEARCH_COLOR,\n        SEARCH_ORDER\n    },\n    [SEARCH_ORDER] =\n    {\n        0xFF,\n        0xFF,\n        SEARCH_TYPE_LEFT,\n        SEARCH_OK\n    },\n    [SEARCH_MODE] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        0xFF\n    },\n    [SEARCH_OK] =\n    {\n        0xFF,\n        0xFF,\n        SEARCH_ORDER,\n        0xFF\n    },\n}"
+    },
+    "sSearchMovementMap_ShiftHoennDex": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SEARCH_NAME",
+        "SEARCH_COLOR",
+        "SEARCH_TYPE_LEFT",
+        "SEARCH_TYPE_RIGHT",
+        "SEARCH_ORDER",
+        "SEARCH_MODE",
+        "SEARCH_OK"
+      ],
+      "indexedValues": [
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF",
+        "{\n        0xFF"
+      ],
+      "rawValue": "{\n    [SEARCH_NAME] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        0xFF\n    },\n    [SEARCH_COLOR] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        0xFF\n    },\n    [SEARCH_TYPE_LEFT] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        0xFF\n    },\n    [SEARCH_TYPE_RIGHT] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        0xFF\n    },\n    [SEARCH_ORDER] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        SEARCH_OK\n    },\n    [SEARCH_MODE] =\n    {\n        0xFF,\n        0xFF,\n        0xFF,\n        0xFF\n    },\n    [SEARCH_OK] =\n    {\n        0xFF,\n        0xFF,\n        SEARCH_ORDER,\n        0xFF\n    },\n}"
+    },
+    "sDexModeOptions": {
+      "type": "struct SearchOptionText",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "DEX_MODE_HOENN",
+        "DEX_MODE_NATIONAL"
+      ],
+      "indexedValues": [
+        "{gText_DexHoennDescription",
+        "{gText_DexNatDescription"
+      ],
+      "rawValue": "{\n    [DEX_MODE_HOENN]    = {gText_DexHoennDescription, gText_DexHoennTitle},\n    [DEX_MODE_NATIONAL] = {gText_DexNatDescription,   gText_DexNatTitle},\n    {},\n}"
+    },
+    "sDexOrderOptions": {
+      "type": "struct SearchOptionText",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ORDER_NUMERICAL",
+        "ORDER_ALPHABETICAL",
+        "ORDER_HEAVIEST",
+        "ORDER_LIGHTEST",
+        "ORDER_TALLEST",
+        "ORDER_SMALLEST"
+      ],
+      "indexedValues": [
+        "{gText_DexSortNumericalDescription",
+        "{gText_DexSortAtoZDescription",
+        "{gText_DexSortHeaviestDescription",
+        "{gText_DexSortLightestDescription",
+        "{gText_DexSortTallestDescription",
+        "{gText_DexSortSmallestDescription"
+      ],
+      "rawValue": "{\n    [ORDER_NUMERICAL]    = {gText_DexSortNumericalDescription, gText_DexSortNumericalTitle},\n    [ORDER_ALPHABETICAL] = {gText_DexSortAtoZDescription,      gText_DexSortAtoZTitle},\n    [ORDER_HEAVIEST]     = {gText_DexSortHeaviestDescription,  gText_DexSortHeaviestTitle},\n    [ORDER_LIGHTEST]     = {gText_DexSortLightestDescription,  gText_DexSortLightestTitle},\n    [ORDER_TALLEST]      = {gText_DexSortTallestDescription,   gText_DexSortTallestTitle},\n    [ORDER_SMALLEST]     = {gText_DexSortSmallestDescription,  gText_DexSortSmallestTitle},\n    {},\n}"
+    },
+    "sDexSearchNameOptions": {
+      "type": "struct SearchOptionText",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "NAME_ABC",
+        "NAME_DEF",
+        "NAME_GHI",
+        "NAME_JKL",
+        "NAME_MNO",
+        "NAME_PQR",
+        "NAME_STU",
+        "NAME_VWX",
+        "NAME_YZ"
+      ],
+      "indexedValues": [
+        "{gText_DexEmptyString",
+        "{gText_DexEmptyString",
+        "{gText_DexEmptyString",
+        "{gText_DexEmptyString",
+        "{gText_DexEmptyString",
+        "{gText_DexEmptyString",
+        "{gText_DexEmptyString",
+        "{gText_DexEmptyString",
+        "{gText_DexEmptyString"
+      ],
+      "rawValue": "{\n    {gText_DexEmptyString, gText_DexSearchDontSpecify},\n    [NAME_ABC] = {gText_DexEmptyString, gText_DexSearchAlphaABC},\n    [NAME_DEF] = {gText_DexEmptyString, gText_DexSearchAlphaDEF},\n    [NAME_GHI] = {gText_DexEmptyString, gText_DexSearchAlphaGHI},\n    [NAME_JKL] = {gText_DexEmptyString, gText_DexSearchAlphaJKL},\n    [NAME_MNO] = {gText_DexEmptyString, gText_DexSearchAlphaMNO},\n    [NAME_PQR] = {gText_DexEmptyString, gText_DexSearchAlphaPQR},\n    [NAME_STU] = {gText_DexEmptyString, gText_DexSearchAlphaSTU},\n    [NAME_VWX] = {gText_DexEmptyString, gText_DexSearchAlphaVWX},\n    [NAME_YZ]  = {gText_DexEmptyString, gText_DexSearchAlphaYZ},\n    {},\n}"
+    },
+    "sDexSearchColorOptions": {
+      "type": "struct SearchOptionText",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gText_DexEmptyString, gText_DexSearchDontSpecify}",
+        "[BODY_COLOR_RED + 1]    = {gText_DexEmptyString, gText_DexSearchColorRed}",
+        "[BODY_COLOR_BLUE + 1]   = {gText_DexEmptyString, gText_DexSearchColorBlue}",
+        "[BODY_COLOR_YELLOW + 1] = {gText_DexEmptyString, gText_DexSearchColorYellow}",
+        "[BODY_COLOR_GREEN + 1]  = {gText_DexEmptyString, gText_DexSearchColorGreen}",
+        "[BODY_COLOR_BLACK + 1]  = {gText_DexEmptyString, gText_DexSearchColorBlack}",
+        "[BODY_COLOR_BROWN + 1]  = {gText_DexEmptyString, gText_DexSearchColorBrown}",
+        "[BODY_COLOR_PURPLE + 1] = {gText_DexEmptyString, gText_DexSearchColorPurple}",
+        "[BODY_COLOR_GRAY + 1]   = {gText_DexEmptyString, gText_DexSearchColorGray}",
+        "[BODY_COLOR_WHITE + 1]  = {gText_DexEmptyString, gText_DexSearchColorWhite}",
+        "[BODY_COLOR_PINK + 1]   = {gText_DexEmptyString, gText_DexSearchColorPink}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gText_DexEmptyString, gText_DexSearchDontSpecify},\n    [BODY_COLOR_RED + 1]    = {gText_DexEmptyString, gText_DexSearchColorRed},\n    [BODY_COLOR_BLUE + 1]   = {gText_DexEmptyString, gText_DexSearchColorBlue},\n    [BODY_COLOR_YELLOW + 1] = {gText_DexEmptyString, gText_DexSearchColorYellow},\n    [BODY_COLOR_GREEN + 1]  = {gText_DexEmptyString, gText_DexSearchColorGreen},\n    [BODY_COLOR_BLACK + 1]  = {gText_DexEmptyString, gText_DexSearchColorBlack},\n    [BODY_COLOR_BROWN + 1]  = {gText_DexEmptyString, gText_DexSearchColorBrown},\n    [BODY_COLOR_PURPLE + 1] = {gText_DexEmptyString, gText_DexSearchColorPurple},\n    [BODY_COLOR_GRAY + 1]   = {gText_DexEmptyString, gText_DexSearchColorGray},\n    [BODY_COLOR_WHITE + 1]  = {gText_DexEmptyString, gText_DexSearchColorWhite},\n    [BODY_COLOR_PINK + 1]   = {gText_DexEmptyString, gText_DexSearchColorPink},\n    {},\n}"
+    },
+    "sDexSearchTypeOptions": {
+      "type": "struct SearchOptionText",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gText_DexEmptyString, gText_DexSearchTypeNone}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_NORMAL]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_FIGHTING]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_FLYING]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_POISON]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_GROUND]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_ROCK]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_BUG]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_GHOST]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_STEEL]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_FIRE]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_WATER]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_GRASS]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_ELECTRIC]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_PSYCHIC]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_ICE]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_DRAGON]}",
+        "{gText_DexEmptyString, gTypeNames[TYPE_DARK]}",
+        "{}"
+      ],
+      "rawValue": "{\n    {gText_DexEmptyString, gText_DexSearchTypeNone},\n    {gText_DexEmptyString, gTypeNames[TYPE_NORMAL]},\n    {gText_DexEmptyString, gTypeNames[TYPE_FIGHTING]},\n    {gText_DexEmptyString, gTypeNames[TYPE_FLYING]},\n    {gText_DexEmptyString, gTypeNames[TYPE_POISON]},\n    {gText_DexEmptyString, gTypeNames[TYPE_GROUND]},\n    {gText_DexEmptyString, gTypeNames[TYPE_ROCK]},\n    {gText_DexEmptyString, gTypeNames[TYPE_BUG]},\n    {gText_DexEmptyString, gTypeNames[TYPE_GHOST]},\n    {gText_DexEmptyString, gTypeNames[TYPE_STEEL]},\n    {gText_DexEmptyString, gTypeNames[TYPE_FIRE]},\n    {gText_DexEmptyString, gTypeNames[TYPE_WATER]},\n    {gText_DexEmptyString, gTypeNames[TYPE_GRASS]},\n    {gText_DexEmptyString, gTypeNames[TYPE_ELECTRIC]},\n    {gText_DexEmptyString, gTypeNames[TYPE_PSYCHIC]},\n    {gText_DexEmptyString, gTypeNames[TYPE_ICE]},\n    {gText_DexEmptyString, gTypeNames[TYPE_DRAGON]},\n    {gText_DexEmptyString, gTypeNames[TYPE_DARK]},\n    {},\n}"
+    },
+    "sPokedexModes": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "DEX_MODE_HOENN",
+        "DEX_MODE_NATIONAL"
+      ],
+      "rawValue": "{DEX_MODE_HOENN, DEX_MODE_NATIONAL}"
+    },
+    "sOrderOptions": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ORDER_NUMERICAL",
+        "ORDER_ALPHABETICAL",
+        "ORDER_HEAVIEST",
+        "ORDER_LIGHTEST",
+        "ORDER_TALLEST",
+        "ORDER_SMALLEST"
+      ],
+      "rawValue": "{\n    ORDER_NUMERICAL,\n    ORDER_ALPHABETICAL,\n    ORDER_HEAVIEST,\n    ORDER_LIGHTEST,\n    ORDER_TALLEST,\n    ORDER_SMALLEST,\n}"
+    },
+    "sDexSearchTypeIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TYPE_NONE",
+        "TYPE_NORMAL",
+        "TYPE_FIGHTING",
+        "TYPE_FLYING",
+        "TYPE_POISON",
+        "TYPE_GROUND",
+        "TYPE_ROCK",
+        "TYPE_BUG",
+        "TYPE_GHOST",
+        "TYPE_STEEL",
+        "TYPE_FIRE",
+        "TYPE_WATER",
+        "TYPE_GRASS",
+        "TYPE_ELECTRIC",
+        "TYPE_PSYCHIC",
+        "TYPE_ICE",
+        "TYPE_DRAGON",
+        "TYPE_DARK"
+      ],
+      "rawValue": "{\n    TYPE_NONE,\n    TYPE_NORMAL,\n    TYPE_FIGHTING,\n    TYPE_FLYING,\n    TYPE_POISON,\n    TYPE_GROUND,\n    TYPE_ROCK,\n    TYPE_BUG,\n    TYPE_GHOST,\n    TYPE_STEEL,\n    TYPE_FIRE,\n    TYPE_WATER,\n    TYPE_GRASS,\n    TYPE_ELECTRIC,\n    TYPE_PSYCHIC,\n    TYPE_ICE,\n    TYPE_DRAGON,\n    TYPE_DARK,\n}"
+    },
+    "sSearchOptions": {
+      "type": "struct SearchOption",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SEARCH_NAME",
+        "SEARCH_COLOR",
+        "SEARCH_TYPE_LEFT",
+        "SEARCH_TYPE_RIGHT",
+        "SEARCH_ORDER",
+        "SEARCH_MODE"
+      ],
+      "indexedValues": [
+        "{sDexSearchNameOptions",
+        "{sDexSearchColorOptions",
+        "{sDexSearchTypeOptions",
+        "{sDexSearchTypeOptions",
+        "{sDexOrderOptions",
+        "{sDexModeOptions"
+      ],
+      "rawValue": "{\n    [SEARCH_NAME]       = {sDexSearchNameOptions,  6,  7, ARRAY_COUNT(sDexSearchNameOptions) - 1},\n    [SEARCH_COLOR]      = {sDexSearchColorOptions, 8,  9, ARRAY_COUNT(sDexSearchColorOptions) - 1},\n    [SEARCH_TYPE_LEFT]  = {sDexSearchTypeOptions, 10, 11, ARRAY_COUNT(sDexSearchTypeOptions) - 1},\n    [SEARCH_TYPE_RIGHT] = {sDexSearchTypeOptions, 12, 13, ARRAY_COUNT(sDexSearchTypeOptions) - 1},\n    [SEARCH_ORDER]      = {sDexOrderOptions,       4,  5, ARRAY_COUNT(sDexOrderOptions) - 1},\n    [SEARCH_MODE]       = {sDexModeOptions,        2,  3, ARRAY_COUNT(sDexModeOptions) - 1},\n}"
+    },
+    "sSearchMenu_BgTemplate": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 12,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 13,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 12,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 13,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sSearchMenu_WindowTemplate": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 2,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 32,\n        .height = 20,\n        .paletteNum = 0,\n        .baseBlock = 0x0001,\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 2,\n        .tilemapLeft = 0,\n        .tilemapTop = 0,\n        .width = 32,\n        .height = 20,\n        .paletteNum = 0,\n        .baseBlock = 0x0001,\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    }
+  }
+}

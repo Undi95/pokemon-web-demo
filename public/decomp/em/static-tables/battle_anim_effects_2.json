@@ -1,0 +1,100 @@
+{
+  "srcFile": "src/battle_anim_effects_2.c",
+  "count": 8,
+  "tables": {
+    "sAnim_BouncingMusicNote": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_SmallExplosion": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 9)",
+        "ANIMCMD_FRAME(16, 3)",
+        "ANIMCMD_FRAME(32, 3)",
+        "ANIMCMD_FRAME(48, 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 9),\n    ANIMCMD_FRAME(16, 3),\n    ANIMCMD_FRAME(32, 3),\n    ANIMCMD_FRAME(48, 3),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_SmallExplosion": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x50, 0x50, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x9, 0x9, 0, 18)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x50, 0x50, 0, 0),\n    AFFINEANIMCMD_FRAME(0x9, 0x9, 0, 18),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sMusicNotePaletteTagsTable": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIM_TAG_MUSIC_NOTES_2",
+        "ANIM_SPRITES_START - 1",
+        "ANIM_SPRITES_START - 2"
+      ],
+      "rawValue": "{\n    ANIM_TAG_MUSIC_NOTES_2,\n    ANIM_SPRITES_START - 1,\n    ANIM_SPRITES_START - 2,\n}"
+    },
+    "sAffineAnims_StretchBattlerUp": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x000A, 0xFFF3, 0x00, 0x0A)",
+        "AFFINEANIMCMD_FRAME(0xFFF6, 0x000D, 0x00, 0x0A)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x000A, 0xFFF3, 0x00, 0x0A),\n    AFFINEANIMCMD_FRAME(0xFFF6, 0x000D, 0x00, 0x0A),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_FurySwipes": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(16, 4)",
+        "ANIMCMD_FRAME(32, 4)",
+        "ANIMCMD_FRAME(48, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(16, 4),\n    ANIMCMD_FRAME(32, 4),\n    ANIMCMD_FRAME(48, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_FurySwipes_Flipped": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(16, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(32, 4, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(48, 4, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(16, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(32, 4, .hFlip = TRUE),\n    ANIMCMD_FRAME(48, 4, .hFlip = TRUE),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnims_UproarDistortion": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-12, 8, 0, 4)",
+        "AFFINEANIMCMD_FRAME(20, -20, 0, 4)",
+        "AFFINEANIMCMD_FRAME(-8, 12, 0, 4)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-12, 8, 0, 4),\n    AFFINEANIMCMD_FRAME(20, -20, 0, 4),\n    AFFINEANIMCMD_FRAME(-8, 12, 0, 4),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

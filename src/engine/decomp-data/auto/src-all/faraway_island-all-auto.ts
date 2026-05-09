@@ -26,8 +26,8 @@ const {
   DIR_NORTH, DIR_SOUTH, DIR_WEST, DestroySprite,
   FALSE, FlagGet, IndexOfSpritePaletteTag, LoadSpritePalette,
   MAP_GROUP, MAP_NUM, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsPokeGrass,
-  SetSpritePosToOffsetMapCoords, TRUE, TryGetObjectEventIdByLocalIdAndMap, UpdateSpritePaletteWithWeather,
-  VarGet, VarSet,  // 4-per-line for readability
+  SetSpritePosToOffsetMapCoords, SpriteCallbackDummy, TRUE, TryGetObjectEventIdByLocalIdAndMap,
+  UpdateSpritePaletteWithWeather, VarGet, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u8 GetMewObjectEventId(void) */

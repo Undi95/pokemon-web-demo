@@ -1,0 +1,21 @@
+{
+  "srcFile": "src/give_gift_ribbon_to_party.c",
+  "count": 1,
+  "tables": {
+    "sGiftRibbonsMonDataIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MON_DATA_MARINE_RIBBON",
+        "MON_DATA_LAND_RIBBON",
+        "MON_DATA_SKY_RIBBON",
+        "MON_DATA_COUNTRY_RIBBON",
+        "MON_DATA_NATIONAL_RIBBON",
+        "MON_DATA_EARTH_RIBBON",
+        "MON_DATA_WORLD_RIBBON"
+      ],
+      "rawValue": "{\n    MON_DATA_MARINE_RIBBON, MON_DATA_LAND_RIBBON, MON_DATA_SKY_RIBBON,\n    MON_DATA_COUNTRY_RIBBON, MON_DATA_NATIONAL_RIBBON, MON_DATA_EARTH_RIBBON,\n    MON_DATA_WORLD_RIBBON\n}"
+    }
+  }
+}

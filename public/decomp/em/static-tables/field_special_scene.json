@@ -1,0 +1,53 @@
+{
+  "srcFile": "src/field_special_scene.c",
+  "count": 3,
+  "tables": {
+    "sTruckCamera_HorizontalTable": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "1",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "2",
+        "-1",
+        "-1",
+        "-1",
+        "0"
+      ],
+      "rawValue": "{0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, -1, -1, -1, 0}"
+    },
+    "sSSTidalSailEastMovementScript": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_WALK_FAST_RIGHT",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_WALK_FAST_RIGHT,\n    MOVEMENT_ACTION_STEP_END\n}"
+    },
+    "sSSTidalSailWestMovementScript": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_WALK_FAST_LEFT",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_WALK_FAST_LEFT,\n    MOVEMENT_ACTION_STEP_END\n}"
+    }
+  }
+}

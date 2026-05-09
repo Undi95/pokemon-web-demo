@@ -1,0 +1,58 @@
+{
+  "srcFile": "src/data/object_events/movement_action_func_tables.h",
+  "count": 3,
+  "tables": {
+    "sJumpInitDisplacements": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "JUMP_DISTANCE_IN_PLACE",
+        "JUMP_DISTANCE_NORMAL",
+        "JUMP_DISTANCE_FAR"
+      ],
+      "indexedValues": [
+        "0",
+        "1",
+        "1"
+      ],
+      "rawValue": "{\n    [JUMP_DISTANCE_IN_PLACE] = 0,\n    [JUMP_DISTANCE_NORMAL] = 1,\n    [JUMP_DISTANCE_FAR] = 1,\n}"
+    },
+    "sJumpDisplacements": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "JUMP_DISTANCE_IN_PLACE",
+        "JUMP_DISTANCE_NORMAL",
+        "JUMP_DISTANCE_FAR"
+      ],
+      "indexedValues": [
+        "0",
+        "0",
+        "1"
+      ],
+      "rawValue": "{\n    [JUMP_DISTANCE_IN_PLACE] = 0,\n    [JUMP_DISTANCE_NORMAL] = 0,\n    [JUMP_DISTANCE_FAR] = 1,\n}"
+    },
+    "sDirectionAnimFuncsBySpeed": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "MOVE_SPEED_NORMAL",
+        "MOVE_SPEED_FAST_1",
+        "MOVE_SPEED_FAST_2",
+        "MOVE_SPEED_FASTER",
+        "MOVE_SPEED_FASTEST"
+      ],
+      "indexedValues": [
+        "GetMoveDirectionAnimNum",
+        "GetMoveDirectionFastAnimNum",
+        "GetMoveDirectionFastAnimNum",
+        "GetMoveDirectionFasterAnimNum",
+        "GetMoveDirectionFastestAnimNum"
+      ],
+      "rawValue": "{\n    [MOVE_SPEED_NORMAL] = GetMoveDirectionAnimNum,\n    [MOVE_SPEED_FAST_1] = GetMoveDirectionFastAnimNum,\n    [MOVE_SPEED_FAST_2] = GetMoveDirectionFastAnimNum,\n    [MOVE_SPEED_FASTER] = GetMoveDirectionFasterAnimNum,\n    [MOVE_SPEED_FASTEST] = GetMoveDirectionFastestAnimNum,\n}"
+    }
+  }
+}

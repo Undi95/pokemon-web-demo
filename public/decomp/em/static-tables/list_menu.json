@@ -1,0 +1,56 @@
+{
+  "srcFile": "src/list_menu.c",
+  "count": 5,
+  "tables": {
+    "sSpriteAnim_ScrollArrowIndicator0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_ScrollArrowIndicator1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30, 1, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30, 1, 0),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_ScrollArrowIndicator2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 30),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_ScrollArrowIndicator3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 30, 0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 30, 0, 1),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteAnim_RedArrowCursor": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 30)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 30),\n    ANIMCMD_END\n}"
+    }
+  }
+}

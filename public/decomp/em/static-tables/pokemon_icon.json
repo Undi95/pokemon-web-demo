@@ -1,0 +1,97 @@
+{
+  "srcFile": "src/pokemon_icon.c",
+  "count": 8,
+  "tables": {
+    "sAnim_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 6)",
+        "ANIMCMD_FRAME(1, 6)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 6),\n    ANIMCMD_FRAME(1, 6),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 8)",
+        "ANIMCMD_FRAME(1, 8)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 8),\n    ANIMCMD_FRAME(1, 8),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 14)",
+        "ANIMCMD_FRAME(1, 14)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 14),\n    ANIMCMD_FRAME(1, 14),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 22)",
+        "ANIMCMD_FRAME(1, 22)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 22),\n    ANIMCMD_FRAME(1, 22),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 29)",
+        "ANIMCMD_FRAME(0, 29)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 29),\n    ANIMCMD_FRAME(0, 29),  \n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, 0, 10)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, 0, 10),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-2, -2, 0, 122)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-2, -2, 0, 122),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteImageSizes": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ST_OAM_SQUARE",
+        "ST_OAM_H_RECTANGLE",
+        "ST_OAM_V_RECTANGLE"
+      ],
+      "indexedValues": [
+        "{\n        [SPRITE_SIZE(8x8)]   =  8 * 8  / 2",
+        "{\n        [SPRITE_SIZE(16x8)]  = 16 * 8  / 2",
+        "{\n        [SPRITE_SIZE(8x16)]  =  8 * 16 / 2"
+      ],
+      "rawValue": "{\n    [ST_OAM_SQUARE] =\n    {\n        [SPRITE_SIZE(8x8)]   =  8 * 8  / 2,\n        [SPRITE_SIZE(16x16)] = 16 * 16 / 2,\n        [SPRITE_SIZE(32x32)] = 32 * 32 / 2,\n        [SPRITE_SIZE(64x64)] = 64 * 64 / 2,\n    },\n    [ST_OAM_H_RECTANGLE] =\n    {\n        [SPRITE_SIZE(16x8)]  = 16 * 8  / 2,\n        [SPRITE_SIZE(32x8)]  = 32 * 8  / 2,\n        [SPRITE_SIZE(32x16)] = 32 * 16 / 2,\n        [SPRITE_SIZE(64x32)] = 64 * 32 / 2,\n    },\n    [ST_OAM_V_RECTANGLE] =\n    {\n        [SPRITE_SIZE(8x16)]  =  8 * 16 / 2,\n        [SPRITE_SIZE(8x32)]  =  8 * 32 / 2,\n        [SPRITE_SIZE(16x32)] = 16 * 32 / 2,\n        [SPRITE_SIZE(32x64)] = 32 * 64 / 2,\n    },\n}"
+    }
+  }
+}

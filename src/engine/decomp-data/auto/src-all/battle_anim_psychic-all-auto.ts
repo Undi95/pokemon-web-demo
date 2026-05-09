@@ -24,18 +24,18 @@ import * as _bridge from '../../../decomp-bridge';
 const {
   AllocOamMatrix, BATTLE_PARTNER, BLDALPHA_BLEND, BLDCNT_EFFECT_BLEND,
   BattleAnimAdjustPanning, CalcCenterToCornerVec, ChangeSpriteAffineAnim, CloneBattlerSpriteWithBlend,
-  CreateSprite, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
-  DestroySpriteAndMatrix, DestroySpriteWithActiveSheet, FALSE, FreeOamMatrix,
-  GetAnimBattlerSpriteId, GetBattlerAtPosition, GetBattlerSide, GetBattlerSpriteBGPriorityRank,
-  GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, GetBattlerYCoordWithElevation, IndexOfSpritePaletteTag,
-  InitAnimArcTranslation, InitSpriteAffineAnim, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
-  IsBattlerSpriteVisible, IsContest, IsDoubleBattle, MoveBattlerSpriteToBG,
-  OBJ_PLTT_ID, PlaySE12WithPanning, PrepareAffineAnimInTaskData, REG_OFFSET_BLDALPHA,
-  REG_OFFSET_BLDCNT, ResetBattleAnimBg, ResetSpriteRotScale, RunAffineAnimFromTaskData,
-  ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF, ScanlineEffect_SetParams,
-  SetBattlerSpriteYOffsetFromOtherYScale, SetGpuReg, SetSpriteRotScale, StartSpriteAffineAnim,
-  StartSpriteAnim, StoreSpriteCallbackInData6, TRUE, TranslateAnimHorizontalArc,
-  gSineTable,  // 4-per-line for readability
+  CreateSprite, DISPLAY_WIDTH, DestroyAnimSprite, DestroyAnimVisualTask,
+  DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet, FALSE,
+  FreeOamMatrix, GetAnimBattlerSpriteId, GetBattlerAtPosition, GetBattlerSide,
+  GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, GetBattlerYCoordWithElevation,
+  IndexOfSpritePaletteTag, InitAnimArcTranslation, InitSpriteAffineAnim, InitSpritePosToAnimAttacker,
+  InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest, IsDoubleBattle,
+  MoveBattlerSpriteToBG, OBJ_PLTT_ID, PlaySE12WithPanning, PrepareAffineAnimInTaskData,
+  REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, ResetBattleAnimBg, ResetSpriteRotScale,
+  RunAffineAnimFromTaskData, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL, ST_OAM_AFFINE_OFF,
+  ScanlineEffect_SetParams, SetBattlerSpriteYOffsetFromOtherYScale, SetGpuReg, SetSpriteRotScale,
+  SpriteCallbackDummy, StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
+  TRUE, TranslateAnimHorizontalArc, gSineTable,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimDefensiveWall(struct Sprite *sprite) */

@@ -1,0 +1,115 @@
+{
+  "srcFile": "src/battle_anim_status_effects.c",
+  "count": 10,
+  "tables": {
+    "sAnim_FlickeringOrb": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 3)",
+        "ANIMCMD_FRAME(4, 3)",
+        "ANIMCMD_FRAME(8, 3)",
+        "ANIMCMD_FRAME(12, 3)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 3),\n    ANIMCMD_FRAME(4, 3),\n    ANIMCMD_FRAME(8, 3),\n    ANIMCMD_FRAME(12, 3),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_WeatherBallNormal": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 3)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 3),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_SpinningSparkle": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 3)",
+        "ANIMCMD_FRAME(16, 3)",
+        "ANIMCMD_FRAME(32, 3)",
+        "ANIMCMD_FRAME(48, 3)",
+        "ANIMCMD_FRAME(64, 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 3),\n    ANIMCMD_FRAME(16, 3),\n    ANIMCMD_FRAME(32, 3),\n    ANIMCMD_FRAME(48, 3),\n    ANIMCMD_FRAME(64, 3),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_FlickeringImpact_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_FlickeringImpact_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_FlickeringImpact_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_FlickeringShrinkOrb": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 15)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 15),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAffineAnim_FlickeringShrinkOrb": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(96, 96, 0, 0)",
+        "AFFINEANIMCMD_FRAME(2, 2, 0, 1)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(96, 96, 0, 0),\n    AFFINEANIMCMD_FRAME(2, 2, 0, 1),\n    AFFINEANIMCMD_JUMP(1)\n}"
+    },
+    "sFrozenIceCubeSubsprites": {
+      "type": "struct Subsprite",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 2\n    }",
+        "{\n        .x = -16,\n        .y =  48,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 64,\n        .priority = 2\n    }",
+        "{\n        .x =  48,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x64),\n        .size = SPRITE_SIZE(32x64),\n        .tileOffset = 96,\n        .priority = 2\n    }",
+        "{\n        .x =  48,\n        .y =  48,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 128,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .x = -16,\n        .y = -16,\n        .shape = SPRITE_SHAPE(64x64),\n        .size = SPRITE_SIZE(64x64),\n        .tileOffset = 0,\n        .priority = 2\n    },\n    {\n        .x = -16,\n        .y =  48,\n        .shape = SPRITE_SHAPE(64x32),\n        .size = SPRITE_SIZE(64x32),\n        .tileOffset = 64,\n        .priority = 2\n    },\n    {\n        .x =  48,\n        .y = -16,\n        .shape = SPRITE_SHAPE(32x64),\n        .size = SPRITE_SIZE(32x64),\n        .tileOffset = 96,\n        .priority = 2\n    },\n    {\n        .x =  48,\n        .y =  48,\n        .shape = SPRITE_SHAPE(32x32),\n        .size = SPRITE_SIZE(32x32),\n        .tileOffset = 128,\n        .priority = 2\n    },\n}"
+    },
+    "sFrozenIceCubeSubspriteTable": {
+      "type": "struct SubspriteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ARRAY_COUNT(sFrozenIceCubeSubsprites), sFrozenIceCubeSubsprites}"
+      ],
+      "rawValue": "{\n    {ARRAY_COUNT(sFrozenIceCubeSubsprites), sFrozenIceCubeSubsprites},\n}"
+    }
+  }
+}

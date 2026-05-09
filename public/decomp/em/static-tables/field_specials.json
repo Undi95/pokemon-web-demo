@@ -1,0 +1,425 @@
+{
+  "srcFile": "src/field_specials.c",
+  "count": 23,
+  "tables": {
+    "sMauvilleGymSwitchCoords": {
+      "type": "struct UCoords8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 0 + MAP_OFFSET, 15 + MAP_OFFSET}",
+        "{ 4 + MAP_OFFSET, 12 + MAP_OFFSET}",
+        "{ 3 + MAP_OFFSET,  9 + MAP_OFFSET}",
+        "{ 8 + MAP_OFFSET,  9 + MAP_OFFSET}"
+      ],
+      "rawValue": "{\n    { 0 + MAP_OFFSET, 15 + MAP_OFFSET},\n    { 4 + MAP_OFFSET, 12 + MAP_OFFSET},\n    { 3 + MAP_OFFSET,  9 + MAP_OFFSET},\n    { 8 + MAP_OFFSET,  9 + MAP_OFFSET}\n}"
+    },
+    "sSlidingDoorNextFrameDelay": {
+      "type": "bool8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{0, 1, 1, 1, 1}"
+    },
+    "sPetalburgGymSlidingDoorMetatiles": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "METATILE_PetalburgGym_SlidingDoor_Frame0",
+        "METATILE_PetalburgGym_SlidingDoor_Frame1",
+        "METATILE_PetalburgGym_SlidingDoor_Frame2",
+        "METATILE_PetalburgGym_SlidingDoor_Frame3",
+        "METATILE_PetalburgGym_SlidingDoor_Frame4"
+      ],
+      "rawValue": "{\n    METATILE_PetalburgGym_SlidingDoor_Frame0,\n    METATILE_PetalburgGym_SlidingDoor_Frame1,\n    METATILE_PetalburgGym_SlidingDoor_Frame2,\n    METATILE_PetalburgGym_SlidingDoor_Frame3,\n    METATILE_PetalburgGym_SlidingDoor_Frame4,\n}"
+    },
+    "sSlotMachineRandomSeeds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "12",
+        "2",
+        "4",
+        "5",
+        "1",
+        "8",
+        "7",
+        "11",
+        "3",
+        "10",
+        "9",
+        "6"
+      ],
+      "rawValue": "{12, 2, 4, 5, 1, 8, 7, 11, 3, 10, 9, 6}"
+    },
+    "sSlotMachineIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "SLOT_MACHINE_UNLUCKIEST",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKIER",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_UNLUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST"
+      ],
+      "rawValue": "{\n        SLOT_MACHINE_UNLUCKIEST,\n        SLOT_MACHINE_UNLUCKIER,\n        SLOT_MACHINE_UNLUCKIER,\n        SLOT_MACHINE_UNLUCKY,\n        SLOT_MACHINE_UNLUCKY,\n        SLOT_MACHINE_UNLUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIEST\n    }"
+    },
+    "sSlotMachineServiceDayIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKY",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIER",
+        "SLOT_MACHINE_LUCKIEST",
+        "SLOT_MACHINE_LUCKIEST"
+      ],
+      "rawValue": "{\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKY,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIER,\n        SLOT_MACHINE_LUCKIEST,\n        SLOT_MACHINE_LUCKIEST\n    }"
+    },
+    "sElevatorWindowTiles_Ascending": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        METATILE_BattleFrontier_Elevator_Top0,\n        METATILE_BattleFrontier_Elevator_Top1,\n        METATILE_BattleFrontier_Elevator_Top2\n    }",
+        "{\n        METATILE_BattleFrontier_Elevator_Mid0,\n        METATILE_BattleFrontier_Elevator_Mid1,\n        METATILE_BattleFrontier_Elevator_Mid2\n    }",
+        "{\n        METATILE_BattleFrontier_Elevator_Bottom0,\n        METATILE_BattleFrontier_Elevator_Bottom1,\n        METATILE_BattleFrontier_Elevator_Bottom2\n    }"
+      ],
+      "rawValue": "{\n    {\n        METATILE_BattleFrontier_Elevator_Top0,\n        METATILE_BattleFrontier_Elevator_Top1,\n        METATILE_BattleFrontier_Elevator_Top2\n    },\n    {\n        METATILE_BattleFrontier_Elevator_Mid0,\n        METATILE_BattleFrontier_Elevator_Mid1,\n        METATILE_BattleFrontier_Elevator_Mid2\n    },\n    {\n        METATILE_BattleFrontier_Elevator_Bottom0,\n        METATILE_BattleFrontier_Elevator_Bottom1,\n        METATILE_BattleFrontier_Elevator_Bottom2\n    },\n}"
+    },
+    "sElevatorWindowTiles_Descending": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        METATILE_BattleFrontier_Elevator_Top0,\n        METATILE_BattleFrontier_Elevator_Top2,\n        METATILE_BattleFrontier_Elevator_Top1\n    }",
+        "{\n        METATILE_BattleFrontier_Elevator_Mid0,\n        METATILE_BattleFrontier_Elevator_Mid2,\n        METATILE_BattleFrontier_Elevator_Mid1\n    }",
+        "{\n        METATILE_BattleFrontier_Elevator_Bottom0,\n        METATILE_BattleFrontier_Elevator_Bottom2,\n        METATILE_BattleFrontier_Elevator_Bottom1\n    }"
+      ],
+      "rawValue": "{\n    {\n        METATILE_BattleFrontier_Elevator_Top0,\n        METATILE_BattleFrontier_Elevator_Top2,\n        METATILE_BattleFrontier_Elevator_Top1\n    },\n    {\n        METATILE_BattleFrontier_Elevator_Mid0,\n        METATILE_BattleFrontier_Elevator_Mid2,\n        METATILE_BattleFrontier_Elevator_Mid1\n    },\n    {\n        METATILE_BattleFrontier_Elevator_Bottom0,\n        METATILE_BattleFrontier_Elevator_Bottom2,\n        METATILE_BattleFrontier_Elevator_Bottom1\n    },\n}"
+    },
+    "sElevatorTripLength": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "8",
+        "16",
+        "24",
+        "32",
+        "38",
+        "46",
+        "52",
+        "56",
+        "57"
+      ],
+      "rawValue": "{ 8, 16, 24, 32, 38, 46, 52, 56, 57 }"
+    },
+    "sElevatorLightCycles": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "3",
+        "6",
+        "9",
+        "12",
+        "15",
+        "18",
+        "21",
+        "24",
+        "27"
+      ],
+      "rawValue": "{ 3, 6, 9, 12, 15, 18, 21, 24, 27 }"
+    },
+    "sPokemonCenters": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MAP_OLDALE_TOWN_POKEMON_CENTER_1F",
+        "MAP_DEWFORD_TOWN_POKEMON_CENTER_1F",
+        "MAP_LAVARIDGE_TOWN_POKEMON_CENTER_1F",
+        "MAP_FALLARBOR_TOWN_POKEMON_CENTER_1F",
+        "MAP_VERDANTURF_TOWN_POKEMON_CENTER_1F",
+        "MAP_PACIFIDLOG_TOWN_POKEMON_CENTER_1F",
+        "MAP_PETALBURG_CITY_POKEMON_CENTER_1F",
+        "MAP_SLATEPORT_CITY_POKEMON_CENTER_1F",
+        "MAP_MAUVILLE_CITY_POKEMON_CENTER_1F",
+        "MAP_RUSTBORO_CITY_POKEMON_CENTER_1F",
+        "MAP_FORTREE_CITY_POKEMON_CENTER_1F",
+        "MAP_LILYCOVE_CITY_POKEMON_CENTER_1F",
+        "MAP_MOSSDEEP_CITY_POKEMON_CENTER_1F",
+        "MAP_SOOTOPOLIS_CITY_POKEMON_CENTER_1F",
+        "MAP_EVER_GRANDE_CITY_POKEMON_CENTER_1F",
+        "MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F",
+        "MAP_BATTLE_FRONTIER_POKEMON_CENTER_1F",
+        "MAP_UNION_ROOM",
+        "MAP_UNDEFINED"
+      ],
+      "rawValue": "{\n        MAP_OLDALE_TOWN_POKEMON_CENTER_1F,\n        MAP_DEWFORD_TOWN_POKEMON_CENTER_1F,\n        MAP_LAVARIDGE_TOWN_POKEMON_CENTER_1F,\n        MAP_FALLARBOR_TOWN_POKEMON_CENTER_1F,\n        MAP_VERDANTURF_TOWN_POKEMON_CENTER_1F,\n        MAP_PACIFIDLOG_TOWN_POKEMON_CENTER_1F,\n        MAP_PETALBURG_CITY_POKEMON_CENTER_1F,\n        MAP_SLATEPORT_CITY_POKEMON_CENTER_1F,\n        MAP_MAUVILLE_CITY_POKEMON_CENTER_1F,\n        MAP_RUSTBORO_CITY_POKEMON_CENTER_1F,\n        MAP_FORTREE_CITY_POKEMON_CENTER_1F,\n        MAP_LILYCOVE_CITY_POKEMON_CENTER_1F,\n        MAP_MOSSDEEP_CITY_POKEMON_CENTER_1F,\n        MAP_SOOTOPOLIS_CITY_POKEMON_CENTER_1F,\n        MAP_EVER_GRANDE_CITY_POKEMON_CENTER_1F,\n        MAP_EVER_GRANDE_CITY_POKEMON_LEAGUE_1F,\n        MAP_BATTLE_FRONTIER_POKEMON_CENTER_1F,\n        MAP_UNION_ROOM,\n        MAP_UNDEFINED\n    }"
+    },
+    "sFrontierManiacStreakThresholds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FRONTIER_MANIAC_TOWER_SINGLES",
+        "FRONTIER_MANIAC_TOWER_DOUBLES",
+        "FRONTIER_MANIAC_TOWER_MULTIS",
+        "FRONTIER_MANIAC_TOWER_LINK",
+        "FRONTIER_MANIAC_DOME",
+        "FRONTIER_MANIAC_FACTORY",
+        "FRONTIER_MANIAC_PALACE",
+        "FRONTIER_MANIAC_ARENA",
+        "FRONTIER_MANIAC_PIKE",
+        "FRONTIER_MANIAC_PYRAMID"
+      ],
+      "indexedValues": [
+        "{ 21",
+        "{ 21",
+        "{ 255",
+        "{ 255",
+        "{ 2",
+        "{ 7",
+        "{ 7",
+        "{ 14",
+        "{ 13",
+        "{ 7"
+      ],
+      "rawValue": "{\n        [FRONTIER_MANIAC_TOWER_SINGLES] = { 21, 56 },\n        [FRONTIER_MANIAC_TOWER_DOUBLES] = { 21, 35 },\n        [FRONTIER_MANIAC_TOWER_MULTIS]  = { 255, 255 },\n        [FRONTIER_MANIAC_TOWER_LINK]    = { 255, 255 },\n        [FRONTIER_MANIAC_DOME]          = { 2, 4 },\n        [FRONTIER_MANIAC_FACTORY]       = { 7, 21 },\n        [FRONTIER_MANIAC_PALACE]        = { 7, 21 },\n        [FRONTIER_MANIAC_ARENA]         = { 14, 28 },\n        [FRONTIER_MANIAC_PIKE]          = { 13, 112 },  \n        [FRONTIER_MANIAC_PYRAMID]       = { 7, 56 }\n    }"
+    },
+    "sBattleTowerStreakThresholds": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "14",
+        "21",
+        "28",
+        "35",
+        "49",
+        "63",
+        "77",
+        "91",
+        "0"
+      ],
+      "rawValue": "{\n        7, 14, 21, 28, 35, 49, 63, 77, 91, 0\n    }"
+    },
+    "sFrontierChallenges": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_SINGLES)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_DOUBLES)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_MULTIS)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_DOME,    FRONTIER_MODE_SINGLES)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_DOME,    FRONTIER_MODE_DOUBLES)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_FACTORY, FRONTIER_MODE_SINGLES)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_FACTORY, FRONTIER_MODE_DOUBLES)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_PALACE,  FRONTIER_MODE_SINGLES)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_PALACE,  FRONTIER_MODE_DOUBLES)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_ARENA,   FRONTIER_MODE_SINGLES)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_PIKE,    FRONTIER_MODE_SINGLES)",
+        "FRONTIER_CHALLENGE(FRONTIER_FACILITY_PYRAMID, FRONTIER_MODE_SINGLES)"
+      ],
+      "rawValue": "{\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_DOUBLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_TOWER,   FRONTIER_MODE_MULTIS),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_DOME,    FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_DOME,    FRONTIER_MODE_DOUBLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_FACTORY, FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_FACTORY, FRONTIER_MODE_DOUBLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_PALACE,  FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_PALACE,  FRONTIER_MODE_DOUBLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_ARENA,   FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_PIKE,    FRONTIER_MODE_SINGLES),\n        FRONTIER_CHALLENGE(FRONTIER_FACILITY_PYRAMID, FRONTIER_MODE_SINGLES)\n    }"
+    },
+    "sBattleFrontier_TutorMoves1": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_SOFT_BOILED",
+        "MOVE_SEISMIC_TOSS",
+        "MOVE_DREAM_EATER",
+        "MOVE_MEGA_PUNCH",
+        "MOVE_MEGA_KICK",
+        "MOVE_BODY_SLAM",
+        "MOVE_ROCK_SLIDE",
+        "MOVE_COUNTER",
+        "MOVE_THUNDER_WAVE",
+        "MOVE_SWORDS_DANCE"
+      ],
+      "rawValue": "{\n    MOVE_SOFT_BOILED,\n    MOVE_SEISMIC_TOSS,\n    MOVE_DREAM_EATER,\n    MOVE_MEGA_PUNCH,\n    MOVE_MEGA_KICK,\n    MOVE_BODY_SLAM,\n    MOVE_ROCK_SLIDE,\n    MOVE_COUNTER,\n    MOVE_THUNDER_WAVE,\n    MOVE_SWORDS_DANCE\n}"
+    },
+    "sBattleFrontier_TutorMoves2": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVE_DEFENSE_CURL",
+        "MOVE_SNORE",
+        "MOVE_MUD_SLAP",
+        "MOVE_SWIFT",
+        "MOVE_ICY_WIND",
+        "MOVE_ENDURE",
+        "MOVE_PSYCH_UP",
+        "MOVE_ICE_PUNCH",
+        "MOVE_THUNDER_PUNCH",
+        "MOVE_FIRE_PUNCH"
+      ],
+      "rawValue": "{\n    MOVE_DEFENSE_CURL,\n    MOVE_SNORE,\n    MOVE_MUD_SLAP,\n    MOVE_SWIFT,\n    MOVE_ICY_WIND,\n    MOVE_ENDURE,\n    MOVE_PSYCH_UP,\n    MOVE_ICE_PUNCH,\n    MOVE_THUNDER_PUNCH,\n    MOVE_FIRE_PUNCH\n}"
+    },
+    "sDeoxysRockPalettes": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_1.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_2.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_3.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_4.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_5.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_6.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_7.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_8.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_9.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_10.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_11.pal\", \".gbapal\")"
+      ],
+      "rawValue": "{\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_1.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_2.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_3.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_4.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_5.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_6.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_7.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_8.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_9.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_10.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/field_effects/palettes/deoxys_rock_11.pal\", \".gbapal\"),\n}"
+    },
+    "sDeoxysRockCoords": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 15, 12 }",
+        "{ 11, 14 }",
+        "{ 15,  8 }",
+        "{ 19, 14 }",
+        "{ 12, 11 }",
+        "{ 18, 11 }",
+        "{ 15, 14 }",
+        "{ 11, 14 }",
+        "{ 19, 14 }",
+        "{ 15, 15 }",
+        "{ 15, 10 }"
+      ],
+      "rawValue": "{\n    { 15, 12 },\n    { 11, 14 },\n    { 15,  8 },\n    { 19, 14 },\n    { 12, 11 },\n    { 18, 11 },\n    { 15, 14 },\n    { 11, 14 },\n    { 19, 14 },\n    { 15, 15 },\n    { 15, 10 },\n}"
+    },
+    "sStoneMaxStepCounts": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "4",
+        "8",
+        "8",
+        "8",
+        "4",
+        "4",
+        "4",
+        "6",
+        "3",
+        "3"
+      ],
+      "rawValue": "{ 4, 8, 8, 8, 4, 4, 4, 6, 3, 3 }"
+    },
+    "sAbnormalWeatherMapNumbers": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MAP_NUM(MAP_ROUTE114)",
+        "MAP_NUM(MAP_ROUTE114)",
+        "MAP_NUM(MAP_ROUTE115)",
+        "MAP_NUM(MAP_ROUTE115)",
+        "MAP_NUM(MAP_ROUTE116)",
+        "MAP_NUM(MAP_ROUTE116)",
+        "MAP_NUM(MAP_ROUTE118)",
+        "MAP_NUM(MAP_ROUTE118)",
+        "MAP_NUM(MAP_ROUTE105)",
+        "MAP_NUM(MAP_ROUTE105)",
+        "MAP_NUM(MAP_ROUTE125)",
+        "MAP_NUM(MAP_ROUTE125)",
+        "MAP_NUM(MAP_ROUTE127)",
+        "MAP_NUM(MAP_ROUTE127)",
+        "MAP_NUM(MAP_ROUTE129)",
+        "MAP_NUM(MAP_ROUTE129)"
+      ],
+      "rawValue": "{\n        MAP_NUM(MAP_ROUTE114),\n        MAP_NUM(MAP_ROUTE114),\n        MAP_NUM(MAP_ROUTE115),\n        MAP_NUM(MAP_ROUTE115),\n        MAP_NUM(MAP_ROUTE116),\n        MAP_NUM(MAP_ROUTE116),\n        MAP_NUM(MAP_ROUTE118),\n        MAP_NUM(MAP_ROUTE118),\n        MAP_NUM(MAP_ROUTE105),\n        MAP_NUM(MAP_ROUTE105),\n        MAP_NUM(MAP_ROUTE125),\n        MAP_NUM(MAP_ROUTE125),\n        MAP_NUM(MAP_ROUTE127),\n        MAP_NUM(MAP_ROUTE127),\n        MAP_NUM(MAP_ROUTE129),\n        MAP_NUM(MAP_ROUTE129)\n    }"
+    },
+    "sPokeMarts": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ MAP_GROUP(MAP_OLDALE_TOWN_MART),     MAP_NUM(MAP_OLDALE_TOWN_MART),     LOCALID_OLDALE_MART_CLERK }",
+        "{ MAP_GROUP(MAP_LAVARIDGE_TOWN_MART),  MAP_NUM(MAP_LAVARIDGE_TOWN_MART),  LOCALID_LAVARIDGE_MART_CLERK }",
+        "{ MAP_GROUP(MAP_FALLARBOR_TOWN_MART),  MAP_NUM(MAP_FALLARBOR_TOWN_MART),  LOCALID_FALLARBOR_MART_CLERK }",
+        "{ MAP_GROUP(MAP_VERDANTURF_TOWN_MART), MAP_NUM(MAP_VERDANTURF_TOWN_MART), LOCALID_VERDANTURF_MART_CLERK }",
+        "{ MAP_GROUP(MAP_PETALBURG_CITY_MART),  MAP_NUM(MAP_PETALBURG_CITY_MART),  LOCALID_PETALBURG_MART_CLERK }",
+        "{ MAP_GROUP(MAP_SLATEPORT_CITY_MART),  MAP_NUM(MAP_SLATEPORT_CITY_MART),  LOCALID_SLATEPORT_MART_CLERK }",
+        "{ MAP_GROUP(MAP_MAUVILLE_CITY_MART),   MAP_NUM(MAP_MAUVILLE_CITY_MART),   LOCALID_MAUVILLE_MART_CLERK }",
+        "{ MAP_GROUP(MAP_RUSTBORO_CITY_MART),   MAP_NUM(MAP_RUSTBORO_CITY_MART),   LOCALID_RUSTBORO_MART_CLERK }",
+        "{ MAP_GROUP(MAP_FORTREE_CITY_MART),    MAP_NUM(MAP_FORTREE_CITY_MART),    LOCALID_FORTREE_MART_CLERK }",
+        "{ MAP_GROUP(MAP_MOSSDEEP_CITY_MART),   MAP_NUM(MAP_MOSSDEEP_CITY_MART),   LOCALID_MOSSDEEP_MART_CLERK }",
+        "{ MAP_GROUP(MAP_SOOTOPOLIS_CITY_MART), MAP_NUM(MAP_SOOTOPOLIS_CITY_MART), LOCALID_SOOTOPOLIS_MART_CLERK }",
+        "{ MAP_GROUP(MAP_BATTLE_FRONTIER_MART), MAP_NUM(MAP_BATTLE_FRONTIER_MART), LOCALID_FRONTIER_MART_CLERK }"
+      ],
+      "rawValue": "{\n        { MAP_GROUP(MAP_OLDALE_TOWN_MART),     MAP_NUM(MAP_OLDALE_TOWN_MART),     LOCALID_OLDALE_MART_CLERK },\n        { MAP_GROUP(MAP_LAVARIDGE_TOWN_MART),  MAP_NUM(MAP_LAVARIDGE_TOWN_MART),  LOCALID_LAVARIDGE_MART_CLERK },\n        { MAP_GROUP(MAP_FALLARBOR_TOWN_MART),  MAP_NUM(MAP_FALLARBOR_TOWN_MART),  LOCALID_FALLARBOR_MART_CLERK },\n        { MAP_GROUP(MAP_VERDANTURF_TOWN_MART), MAP_NUM(MAP_VERDANTURF_TOWN_MART), LOCALID_VERDANTURF_MART_CLERK },\n        { MAP_GROUP(MAP_PETALBURG_CITY_MART),  MAP_NUM(MAP_PETALBURG_CITY_MART),  LOCALID_PETALBURG_MART_CLERK },\n        { MAP_GROUP(MAP_SLATEPORT_CITY_MART),  MAP_NUM(MAP_SLATEPORT_CITY_MART),  LOCALID_SLATEPORT_MART_CLERK },\n        { MAP_GROUP(MAP_MAUVILLE_CITY_MART),   MAP_NUM(MAP_MAUVILLE_CITY_MART),   LOCALID_MAUVILLE_MART_CLERK },\n        { MAP_GROUP(MAP_RUSTBORO_CITY_MART),   MAP_NUM(MAP_RUSTBORO_CITY_MART),   LOCALID_RUSTBORO_MART_CLERK },\n        { MAP_GROUP(MAP_FORTREE_CITY_MART),    MAP_NUM(MAP_FORTREE_CITY_MART),    LOCALID_FORTREE_MART_CLERK },\n  ..."
+    },
+    "sCounterIncrements": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "FANCOUNTER_DEFEATED_DRAKE",
+        "FANCOUNTER_BATTLED_AT_BASE",
+        "FANCOUNTER_FINISHED_CONTEST",
+        "FANCOUNTER_USED_BATTLE_TOWER"
+      ],
+      "indexedValues": [
+        "2",
+        "1",
+        "2",
+        "1"
+      ],
+      "rawValue": "{\n        [FANCOUNTER_DEFEATED_DRAKE]    = 2,\n        [FANCOUNTER_BATTLED_AT_BASE]   = 1,\n        [FANCOUNTER_FINISHED_CONTEST]  = 2,\n        [FANCOUNTER_USED_BATTLE_TOWER] = 1\n    }"
+    },
+    "sFanClubMemberIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "FANCLUB_MEMBER1",
+        "FANCLUB_MEMBER2",
+        "FANCLUB_MEMBER3",
+        "FANCLUB_MEMBER4",
+        "FANCLUB_MEMBER5",
+        "FANCLUB_MEMBER6",
+        "FANCLUB_MEMBER7",
+        "FANCLUB_MEMBER8"
+      ],
+      "rawValue": "{\n        FANCLUB_MEMBER1,\n        FANCLUB_MEMBER2,\n        FANCLUB_MEMBER3,\n        FANCLUB_MEMBER4,\n        FANCLUB_MEMBER5,\n        FANCLUB_MEMBER6,\n        FANCLUB_MEMBER7,\n        FANCLUB_MEMBER8\n    }"
+    }
+  }
+}

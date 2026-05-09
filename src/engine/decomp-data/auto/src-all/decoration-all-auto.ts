@@ -48,10 +48,11 @@ const {
   RemoveScrollIndicatorArrowPair, RemoveWindow, ReshowPlayerPC, STR_CONV_MODE_RIGHT_ALIGN,
   ST_OAM_4BPP, ST_OAM_AFFINE_OFF, ST_OAM_OBJ_NORMAL, ScheduleBgCopyTilemapToVram,
   ScriptContext_SetupScript, SetCursorScrollWithinListBounds, SetCursorWithinListBounds, SetMainCallback2,
-  SetWarpDestination, StringAppend, StringCopy, StringExpandPlaceholders,
-  StringLength, TASK_NONE, TILE_SIZE_4BPP, TRUE,
-  TryMoveObjectEventToMapCoords, TryOverrideObjectEventTemplateCoords, TryPutSecretBaseVisitOnAir, TrySpawnObjectEvent,
-  UNPACK_BEHAVIOR, VarSet, WarpIntoMap, memset,  // 4-per-line for readability
+  SetWarpDestination, SpriteCallbackDummy, StringAppend, StringCopy,
+  StringExpandPlaceholders, StringLength, TASK_NONE, TILE_SIZE_4BPP,
+  TRUE, TryMoveObjectEventToMapCoords, TryOverrideObjectEventTemplateCoords, TryPutSecretBaseVisitOnAir,
+  TrySpawnObjectEvent, UNPACK_BEHAVIOR, VarSet, WarpIntoMap,
+  memset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitDecorationContextItems(void) */

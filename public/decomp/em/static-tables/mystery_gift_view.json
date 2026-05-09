@@ -1,0 +1,104 @@
+{
+  "srcFile": "src/mystery_gift_view.c",
+  "count": 7,
+  "tables": {
+    "sCard_TextColorTable": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY}",
+        "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY}"
+      ],
+      "rawValue": "{\n    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY},\n    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_DARK_GRAY}\n}"
+    },
+    "sCard_WindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CARD_WIN_HEADER",
+        "CARD_WIN_BODY",
+        "CARD_WIN_FOOTER"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 1",
+        "{\n        .bg = 1",
+        "{\n        .bg = 1"
+      ],
+      "rawValue": "{\n    [CARD_WIN_HEADER] = {\n        .bg = 1,\n        .tilemapLeft = 1,\n        .tilemapTop = 1,\n        .width = 25,\n        .height = 4,\n        .paletteNum = 2,\n        .baseBlock = 0x029c\n    },\n    [CARD_WIN_BODY] = {\n        .bg = 1,\n        .tilemapLeft = 1,\n        .tilemapTop = 6,\n        .width = 28,\n        .height = 8,\n        .paletteNum = 2,\n        .baseBlock = 0x01bc\n    },\n    [CARD_WIN_FOOTER] = {\n        .bg = 1,\n        .tilemapLeft = 1,\n        .tilemapTop = 14,\n        .width = 28,\n        .height = 5,\n        .paletteNum = 2,\n        .baseBlock = 0x0130\n    }\n}"
+    },
+    "sSpritePalettes_StampShadow": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sStampShadowPal1, TAG_STAMP_SHADOW}",
+        "{sStampShadowPal2, TAG_STAMP_SHADOW}",
+        "{sStampShadowPal3, TAG_STAMP_SHADOW}",
+        "{sStampShadowPal4, TAG_STAMP_SHADOW}",
+        "{sStampShadowPal5, TAG_STAMP_SHADOW}",
+        "{sStampShadowPal6, TAG_STAMP_SHADOW}",
+        "{sStampShadowPal7, TAG_STAMP_SHADOW}",
+        "{sStampShadowPal8, TAG_STAMP_SHADOW}"
+      ],
+      "rawValue": "{\n    {sStampShadowPal1, TAG_STAMP_SHADOW},\n    {sStampShadowPal2, TAG_STAMP_SHADOW},\n    {sStampShadowPal3, TAG_STAMP_SHADOW},\n    {sStampShadowPal4, TAG_STAMP_SHADOW},\n    {sStampShadowPal5, TAG_STAMP_SHADOW},\n    {sStampShadowPal6, TAG_STAMP_SHADOW},\n    {sStampShadowPal7, TAG_STAMP_SHADOW},\n    {sStampShadowPal8, TAG_STAMP_SHADOW}\n}"
+    },
+    "sCardGraphics": {
+      "type": "struct WonderGraphics",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 0, .tiles = sWonderCardBgGfx1, .map = sWonderCardBgTilemap1, .pal = sWonderCardBgPal1}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 1, .tiles = sWonderCardBgGfx2, .map = sWonderCardBgTilemap2, .pal = sWonderCardBgPal2}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 2, .tiles = sWonderCardBgGfx3, .map = sWonderCardBgTilemap3, .pal = sWonderCardBgPal3}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 3, .tiles = sWonderCardBgGfx3, .map = sWonderCardBgTilemap3, .pal = sWonderCardBgPal4}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 4, .tiles = sWonderCardBgGfx3, .map = sWonderCardBgTilemap3, .pal = sWonderCardBgPal5}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 5, .tiles = sWonderCardBgGfx3, .map = sWonderCardBgTilemap3, .pal = sWonderCardBgPal6}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 6, .tiles = sWonderCardBgGfx7, .map = sWonderCardBgTilemap7, .pal = sWonderCardBgPal7}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 7, .tiles = sWonderCardBgGfx8, .map = sWonderCardBgTilemap8, .pal = sWonderCardBgPal8}"
+      ],
+      "rawValue": "{\n    {.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 0, .tiles = sWonderCardBgGfx1, .map = sWonderCardBgTilemap1, .pal = sWonderCardBgPal1},\n    {.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 1, .tiles = sWonderCardBgGfx2, .map = sWonderCardBgTilemap2, .pal = sWonderCardBgPal2},\n    {.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 2, .tiles = sWonderCardBgGfx3, .map = sWonderCardBgTilemap3, .pal = sWonderCardBgPal3},\n    {.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 3, .tiles = sWonderCardBgGfx3, .map = sWonderCardBgTilemap3, .pal = sWonderCardBgPal4},\n    {.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 4, .tiles = sWonderCardBgGfx3, .map = sWonderCardBgTilemap3, .pal = sWonderCardBgPal5},\n    {.titleTextPal = 1, .bodyTextPal = 0, .footerTextPal = 0, .stampShadowPal = 5, .tiles = sWonderCardBgGfx3, .map = sWonderCardBgTilemap3, .pal = sWonderCardBgPal6},\n    {.titleTex..."
+    },
+    "sNews_TextColorTable": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY}",
+        "{TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE,     TEXT_COLOR_DARK_GRAY}"
+      ],
+      "rawValue": "{\n    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY},\n    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE,     TEXT_COLOR_DARK_GRAY}\n}"
+    },
+    "sNews_WindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "NEWS_WIN_TITLE",
+        "NEWS_WIN_BODY"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 2"
+      ],
+      "rawValue": "{\n    [NEWS_WIN_TITLE] = {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 0,\n        .width = 28,\n        .height = 3,\n        .paletteNum = 2,\n        .baseBlock = 0x2AC\n    },\n    [NEWS_WIN_BODY] = {\n        .bg = 2,\n        .tilemapLeft = 1,\n        .tilemapTop = 3,\n        .width = 28,\n        .height = DISPLAY_TILE_HEIGHT,\n        .paletteNum = 2,\n        .baseBlock = 0x07C\n    }\n}"
+    },
+    "sNewsGraphics": {
+      "type": "struct WonderGraphics",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx1, .map = sWonderNewsTilemap1, .pal = sWonderNewsPal1}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx2, .map = sWonderNewsTilemap2, .pal = sWonderCardBgPal2}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx3, .map = sWonderNewsTilemap3, .pal = sWonderCardBgPal3}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx3, .map = sWonderNewsTilemap3, .pal = sWonderCardBgPal4}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx3, .map = sWonderNewsTilemap3, .pal = sWonderCardBgPal5}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx3, .map = sWonderNewsTilemap3, .pal = sWonderCardBgPal6}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx7, .map = sWonderNewsTilemap7, .pal = sWonderNewsPal7}",
+        "{.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx8, .map = sWonderNewsTilemap8, .pal = sWonderNewsPal8}"
+      ],
+      "rawValue": "{\n    {.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx1, .map = sWonderNewsTilemap1, .pal = sWonderNewsPal1},\n    {.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx2, .map = sWonderNewsTilemap2, .pal = sWonderCardBgPal2},\n    {.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx3, .map = sWonderNewsTilemap3, .pal = sWonderCardBgPal3},\n    {.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx3, .map = sWonderNewsTilemap3, .pal = sWonderCardBgPal4},\n    {.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx3, .map = sWonderNewsTilemap3, .pal = sWonderCardBgPal5},\n    {.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx3, .map = sWonderNewsTilemap3, .pal = sWonderCardBgPal6},\n    {.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx7, .map = sWonderNewsTilemap7, .pal = sWonderNewsPal7},\n    {.titleTextPal = 1, .bodyTextPal = 0, .tiles = sWonderNewsGfx8, .map = sWonderNewsTilemap8, .pal = sWonderNewsPal8}\n}"
+    }
+  }
+}

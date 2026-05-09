@@ -1,0 +1,193 @@
+{
+  "srcFile": "src/pokenav_ribbons_summary.c",
+  "count": 9,
+  "tables": {
+    "sRibbonData": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{1, 1, CHAMPION_RIBBON,      FALSE}",
+        "{3, 4, COOL_RIBBON_NORMAL,   FALSE}",
+        "{3, 4, BEAUTY_RIBBON_NORMAL, FALSE}",
+        "{3, 4, CUTE_RIBBON_NORMAL,   FALSE}",
+        "{3, 4, SMART_RIBBON_NORMAL,  FALSE}",
+        "{3, 4, TOUGH_RIBBON_NORMAL,  FALSE}",
+        "{1, 1, WINNING_RIBBON,       FALSE}",
+        "{1, 1, VICTORY_RIBBON,       FALSE}",
+        "{1, 1, ARTIST_RIBBON,        FALSE}",
+        "{1, 1, EFFORT_RIBBON,        FALSE}",
+        "{1, 1, MARINE_RIBBON,        TRUE}",
+        "{1, 1, LAND_RIBBON,          TRUE}",
+        "{1, 1, SKY_RIBBON,           TRUE}",
+        "{1, 1, COUNTRY_RIBBON,       TRUE}",
+        "{1, 1, NATIONAL_RIBBON,      TRUE}",
+        "{1, 1, EARTH_RIBBON,         TRUE}",
+        "{1, 1, WORLD_RIBBON,         TRUE}"
+      ],
+      "rawValue": "{\n    {1, 1, CHAMPION_RIBBON,      FALSE},\n    {3, 4, COOL_RIBBON_NORMAL,   FALSE},\n    {3, 4, BEAUTY_RIBBON_NORMAL, FALSE},\n    {3, 4, CUTE_RIBBON_NORMAL,   FALSE},\n    {3, 4, SMART_RIBBON_NORMAL,  FALSE},\n    {3, 4, TOUGH_RIBBON_NORMAL,  FALSE},\n    {1, 1, WINNING_RIBBON,       FALSE},\n    {1, 1, VICTORY_RIBBON,       FALSE},\n    {1, 1, ARTIST_RIBBON,        FALSE},\n    {1, 1, EFFORT_RIBBON,        FALSE},\n    {1, 1, MARINE_RIBBON,        TRUE},\n    {1, 1, LAND_RIBBON,          TRUE},\n    {1, 1, SKY_RIBBON,           TRUE},\n    {1, 1, COUNTRY_RIBBON,       TRUE},\n    {1, 1, NATIONAL_RIBBON,      TRUE},\n    {1, 1, EARTH_RIBBON,         TRUE},\n    {1, 1, WORLD_RIBBON,         TRUE}\n}"
+    },
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 1,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 0x07,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 0x06,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 1,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 0x07,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 0x06,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }\n}"
+    },
+    "sRibbonsSummaryMenuLoopTaskFuncs": {
+      "type": "LoopedTask",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "RIBBONS_SUMMARY_FUNC_NONE",
+        "RIBBONS_SUMMARY_FUNC_SWITCH_MONS",
+        "RIBBONS_SUMMARY_FUNC_SELECT_RIBBON",
+        "RIBBONS_SUMMARY_FUNC_EXPANDED_CURSOR_MOVE",
+        "RIBBONS_SUMMARY_FUNC_EXPANDED_CANCEL",
+        "RIBBONS_SUMMARY_FUNC_EXIT"
+      ],
+      "indexedValues": [
+        "NULL",
+        "LoopedTask_SwitchRibbonsSummaryMon",
+        "LoopedTask_ExpandSelectedRibbon",
+        "LoopedTask_MoveRibbonsCursorExpanded",
+        "LoopedTask_ShrinkExpandedRibbon",
+        "LoopedTask_ExitRibbonsSummaryMenu"
+      ],
+      "rawValue": "{\n    [RIBBONS_SUMMARY_FUNC_NONE]                 = NULL,\n    [RIBBONS_SUMMARY_FUNC_SWITCH_MONS]          = LoopedTask_SwitchRibbonsSummaryMon,\n    [RIBBONS_SUMMARY_FUNC_SELECT_RIBBON]        = LoopedTask_ExpandSelectedRibbon,\n    [RIBBONS_SUMMARY_FUNC_EXPANDED_CURSOR_MOVE] = LoopedTask_MoveRibbonsCursorExpanded,\n    [RIBBONS_SUMMARY_FUNC_EXPANDED_CANCEL]      = LoopedTask_ShrinkExpandedRibbon,\n    [RIBBONS_SUMMARY_FUNC_EXIT]                 = LoopedTask_ExitRibbonsSummaryMenu\n}"
+    },
+    "sRibbonMonListIndexWindowTemplate": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 2,\n        .tilemapLeft = 1,\n        .tilemapTop = 5,\n        .width = 7,\n        .height = 2,\n        .paletteNum = 1,\n        .baseBlock = 0x6E,\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .bg = 2,\n        .tilemapLeft = 1,\n        .tilemapTop = 5,\n        .width = 7,\n        .height = 2,\n        .paletteNum = 1,\n        .baseBlock = 0x6E,\n    },\n    {},\n}"
+    },
+    "sRibbonGfxData": {
+      "type": "const",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "CHAMPION_RIBBON",
+        "COOL_RIBBON_NORMAL",
+        "COOL_RIBBON_SUPER",
+        "COOL_RIBBON_HYPER",
+        "COOL_RIBBON_MASTER",
+        "BEAUTY_RIBBON_NORMAL",
+        "BEAUTY_RIBBON_SUPER",
+        "BEAUTY_RIBBON_HYPER",
+        "BEAUTY_RIBBON_MASTER",
+        "CUTE_RIBBON_NORMAL",
+        "CUTE_RIBBON_SUPER",
+        "CUTE_RIBBON_HYPER",
+        "CUTE_RIBBON_MASTER",
+        "SMART_RIBBON_NORMAL",
+        "SMART_RIBBON_SUPER",
+        "SMART_RIBBON_HYPER",
+        "SMART_RIBBON_MASTER",
+        "TOUGH_RIBBON_NORMAL",
+        "TOUGH_RIBBON_SUPER",
+        "TOUGH_RIBBON_HYPER",
+        "TOUGH_RIBBON_MASTER",
+        "WINNING_RIBBON",
+        "VICTORY_RIBBON",
+        "ARTIST_RIBBON",
+        "EFFORT_RIBBON",
+        "MARINE_RIBBON",
+        "LAND_RIBBON",
+        "SKY_RIBBON",
+        "COUNTRY_RIBBON",
+        "NATIONAL_RIBBON",
+        "EARTH_RIBBON",
+        "WORLD_RIBBON"
+      ],
+      "indexedValues": [
+        "{ RIBBONGFX_CHAMPION",
+        "{ RIBBONGFX_CONTEST_NORMAL",
+        "{ RIBBONGFX_CONTEST_SUPER",
+        "{ RIBBONGFX_CONTEST_HYPER",
+        "{ RIBBONGFX_CONTEST_MASTER",
+        "{ RIBBONGFX_CONTEST_NORMAL",
+        "{ RIBBONGFX_CONTEST_SUPER",
+        "{ RIBBONGFX_CONTEST_HYPER",
+        "{ RIBBONGFX_CONTEST_MASTER",
+        "{ RIBBONGFX_CONTEST_NORMAL",
+        "{ RIBBONGFX_CONTEST_SUPER",
+        "{ RIBBONGFX_CONTEST_HYPER",
+        "{ RIBBONGFX_CONTEST_MASTER",
+        "{ RIBBONGFX_CONTEST_NORMAL",
+        "{ RIBBONGFX_CONTEST_SUPER",
+        "{ RIBBONGFX_CONTEST_HYPER",
+        "{ RIBBONGFX_CONTEST_MASTER",
+        "{ RIBBONGFX_CONTEST_NORMAL",
+        "{ RIBBONGFX_CONTEST_SUPER",
+        "{ RIBBONGFX_CONTEST_HYPER",
+        "{ RIBBONGFX_CONTEST_MASTER",
+        "{ RIBBONGFX_WINNING",
+        "{ RIBBONGFX_VICTORY",
+        "{ RIBBONGFX_ARTIST",
+        "{ RIBBONGFX_EFFORT",
+        "{ RIBBONGFX_GIFT_1",
+        "{ RIBBONGFX_GIFT_1",
+        "{ RIBBONGFX_GIFT_1",
+        "{ RIBBONGFX_GIFT_2",
+        "{ RIBBONGFX_GIFT_2",
+        "{ RIBBONGFX_GIFT_3",
+        "{ RIBBONGFX_GIFT_3"
+      ],
+      "rawValue": "{\n    [CHAMPION_RIBBON]      = { RIBBONGFX_CHAMPION,       TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1)},\n    [COOL_RIBBON_NORMAL]   = { RIBBONGFX_CONTEST_NORMAL, TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1)},\n    [COOL_RIBBON_SUPER]    = { RIBBONGFX_CONTEST_SUPER,  TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1)},\n    [COOL_RIBBON_HYPER]    = { RIBBONGFX_CONTEST_HYPER,  TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1)},\n    [COOL_RIBBON_MASTER]   = { RIBBONGFX_CONTEST_MASTER, TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_1)},\n    [BEAUTY_RIBBON_NORMAL] = { RIBBONGFX_CONTEST_NORMAL, TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2)},\n    [BEAUTY_RIBBON_SUPER]  = { RIBBONGFX_CONTEST_SUPER,  TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2)},\n    [BEAUTY_RIBBON_HYPER]  = { RIBBONGFX_CONTEST_HYPER,  TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2)},\n    [BEAUTY_RIBBON_MASTER] = { RIBBONGFX_CONTEST_MASTER, TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_2)},\n    [CUTE_RIBBON_NORMAL]   = { RIBBONGFX_CONTEST_NORMAL, TO_PAL_OFFSET(PALTAG_RIBBON_ICONS_3)},\n    [CUTE_RIBBON_SUPER]    = { RIBBONGFX_CONTEST_SUPER,  TO_PA..."
+    },
+    "sSpritePalettes_RibbonIcons": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sRibbonIcons1_Pal, PALTAG_RIBBON_ICONS_1}",
+        "{sRibbonIcons2_Pal, PALTAG_RIBBON_ICONS_2}",
+        "{sRibbonIcons3_Pal, PALTAG_RIBBON_ICONS_3}",
+        "{sRibbonIcons4_Pal, PALTAG_RIBBON_ICONS_4}",
+        "{sRibbonIcons5_Pal, PALTAG_RIBBON_ICONS_5}",
+        "{}"
+      ],
+      "rawValue": "{\n    {sRibbonIcons1_Pal, PALTAG_RIBBON_ICONS_1},\n    {sRibbonIcons2_Pal, PALTAG_RIBBON_ICONS_2},\n    {sRibbonIcons3_Pal, PALTAG_RIBBON_ICONS_3},\n    {sRibbonIcons4_Pal, PALTAG_RIBBON_ICONS_4},\n    {sRibbonIcons5_Pal, PALTAG_RIBBON_ICONS_5},\n    {},\n}"
+    },
+    "sAffineAnim_RibbonIconBig_Normal": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(128, 128, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(128, 128, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_RibbonIconBig_ZoomIn": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(128, 128, 0, 0)",
+        "AFFINEANIMCMD_FRAME(32, 32, 0, 4)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(128, 128, 0, 0),\n    AFFINEANIMCMD_FRAME(32, 32, 0, 4),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_RibbonIconBig_ZoomOut": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_FRAME(-32, -32, 0, 4)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_FRAME(-32, -32, 0, 4),\n    AFFINEANIMCMD_END\n}"
+    }
+  }
+}

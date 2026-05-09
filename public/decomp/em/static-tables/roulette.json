@@ -1,0 +1,631 @@
+{
+  "srcFile": "src/roulette.c",
+  "count": 45,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 4,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 6,\n        .screenSize = 1,\n        .paletteMode = 1,\n        .priority = 2,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n     \n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n     \n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 4,\n        .screenSize = 1,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n     \n    {\n        .bg = 2,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 6,\n        .screenSize = 1,\n        .paletteMode = 1,\n        .priority = 2,\n        .baseTile = 0\n    }\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 2,  \n        .tilemapTop = 15,\n        .width = 26,  \n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0xBD  \n    }",
+        "#ifdef UBFIX\n    DUMMY_WIN_TEMPLATE",
+        "#endif"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 2,  \n        .tilemapTop = 15,\n        .width = 26,  \n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0xBD  \n    },\n    #ifdef UBFIX\n    DUMMY_WIN_TEMPLATE,\n    #endif\n}"
+    },
+    "sGridSelections": {
+      "type": "struct GridSelection",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "SELECTION_NONE",
+        "COL_WYNAUT",
+        "COL_AZURILL",
+        "COL_SKITTY",
+        "COL_MAKUHITA",
+        "ROW_ORANGE",
+        "SQU_ORANGE_WYNAUT",
+        "SQU_ORANGE_AZURILL",
+        "SQU_ORANGE_SKITTY",
+        "SQU_ORANGE_MAKUHITA",
+        "ROW_GREEN",
+        "SQU_GREEN_WYNAUT",
+        "SQU_GREEN_AZURILL",
+        "SQU_GREEN_SKITTY",
+        "SQU_GREEN_MAKUHITA",
+        "ROW_PURPLE",
+        "SQU_PURPLE_WYNAUT",
+        "SQU_PURPLE_AZURILL",
+        "SQU_PURPLE_SKITTY",
+        "SQU_PURPLE_MAKUHITA"
+      ],
+      "indexedValues": [
+        "{\n        .spriteIdOffset = 0xFF",
+        "{\n        .spriteIdOffset = 12",
+        "{\n        .spriteIdOffset = 13",
+        "{\n        .spriteIdOffset = 14",
+        "{\n        .spriteIdOffset = 15",
+        "{\n        .spriteIdOffset = 16",
+        "{\n        .spriteIdOffset = 0",
+        "{\n        .spriteIdOffset = 9",
+        "{\n        .spriteIdOffset = 6",
+        "{\n        .spriteIdOffset = 3",
+        "{\n        .spriteIdOffset = 17",
+        "{\n        .spriteIdOffset = 4",
+        "{\n        .spriteIdOffset = 1",
+        "{\n        .spriteIdOffset = 10",
+        "{\n        .spriteIdOffset = 7",
+        "{\n        .spriteIdOffset = 18",
+        "{\n        .spriteIdOffset = 8",
+        "{\n        .spriteIdOffset = 5",
+        "{\n        .spriteIdOffset = 2",
+        "{\n        .spriteIdOffset = 11"
+      ],
+      "rawValue": "{\n    [SELECTION_NONE] = {\n        .spriteIdOffset = 0xFF,\n        .baseMultiplier = 0,\n        .column = 0,\n        .row = 0,\n        .x = 7,\n        .y = 7,\n        .var05 = 0,\n        .tilemapOffset = 0,\n        .flag = 0,\n        .inSelectionFlags = 0,\n        .flashFlags = 0,\n    },\n    [COL_WYNAUT] = {\n        .spriteIdOffset = 12,\n        .baseMultiplier = NUM_BOARD_POKES,\n        .column = 1,\n        .row = 0,\n        .x = 17,\n        .y = 7,\n        .var05 = 0,\n        .tilemapOffset = 0,\n        .flag = F_WYNAUT_COL,\n        .inSelectionFlags = F_WYNAUT_COL | F_ORANGE_WYNAUT | F_GREEN_WYNAUT | F_PURPLE_WYNAUT,\n        .flashFlags = F_FLASH_COLUMN,\n    },\n    [COL_AZURILL] = {\n        .spriteIdOffset = 13,\n        .baseMultiplier = NUM_BOARD_POKES,\n        .column = 2,\n        .row = 0,\n        .x = 20,\n        .y = 7,\n        .var05 = 0,\n        .tilemapOffset = 0,\n        .flag = F_AZURILL_COL,\n        .inSelectionFlags = F_AZURILL_COL | F_ORANGE_AZURILL | F_GREEN_AZURILL | F_PURPLE_AZURILL,\n      ..."
+    },
+    "sRouletteSlots": {
+      "type": "struct RouletteSlot",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .id1 = 0,\n        .id2 = 1,\n        .gridSquare = SQU_ORANGE_WYNAUT,\n        .flag = F_ORANGE_WYNAUT,\n    }",
+        "{\n        .id1 = 1,\n        .id2 = 3,\n        .gridSquare = SQU_GREEN_AZURILL,\n        .flag = F_GREEN_AZURILL,\n    }",
+        "{\n        .id1 = 2,\n        .id2 = 5,\n        .gridSquare = SQU_PURPLE_SKITTY,\n        .flag = F_PURPLE_SKITTY,\n    }",
+        "{\n        .id1 = 3,\n        .id2 = 7,\n        .gridSquare = SQU_ORANGE_MAKUHITA,\n        .flag = F_ORANGE_MAKUHITA,\n    }",
+        "{\n        .id1 = 4,\n        .id2 = 9,\n        .gridSquare = SQU_GREEN_WYNAUT,\n        .flag = F_GREEN_WYNAUT,\n    }",
+        "{\n        .id1 = 5,\n        .id2 = 11,\n        .gridSquare = SQU_PURPLE_AZURILL,\n        .flag = F_PURPLE_AZURILL,\n    }",
+        "{\n        .id1 = 6,\n        .id2 = 13,\n        .gridSquare = SQU_ORANGE_SKITTY,\n        .flag = F_ORANGE_SKITTY,\n    }",
+        "{\n        .id1 = 7,\n        .id2 = 15,\n        .gridSquare = SQU_GREEN_MAKUHITA,\n        .flag = F_GREEN_MAKUHITA,\n    }",
+        "{\n        .id1 = 8,\n        .id2 = 17,\n        .gridSquare = SQU_PURPLE_WYNAUT,\n        .flag = F_PURPLE_WYNAUT,\n    }",
+        "{\n        .id1 = 9,\n        .id2 = 19,\n        .gridSquare = SQU_ORANGE_AZURILL,\n        .flag = F_ORANGE_AZURILL,\n    }",
+        "{\n        .id1 = 10,\n        .id2 = 21,\n        .gridSquare = SQU_GREEN_SKITTY,\n        .flag = F_GREEN_SKITTY,\n    }",
+        "{\n        .id1 = 11,\n        .id2 = 23,\n        .gridSquare = SQU_PURPLE_MAKUHITA,\n        .flag = F_PURPLE_MAKUHITA,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .id1 = 0,\n        .id2 = 1,\n        .gridSquare = SQU_ORANGE_WYNAUT,\n        .flag = F_ORANGE_WYNAUT,\n    },\n    {\n        .id1 = 1,\n        .id2 = 3,\n        .gridSquare = SQU_GREEN_AZURILL,\n        .flag = F_GREEN_AZURILL,\n    },\n    {\n        .id1 = 2,\n        .id2 = 5,\n        .gridSquare = SQU_PURPLE_SKITTY,\n        .flag = F_PURPLE_SKITTY,\n    },\n    {\n        .id1 = 3,\n        .id2 = 7,\n        .gridSquare = SQU_ORANGE_MAKUHITA,\n        .flag = F_ORANGE_MAKUHITA,\n    },\n    {\n        .id1 = 4,\n        .id2 = 9,\n        .gridSquare = SQU_GREEN_WYNAUT,\n        .flag = F_GREEN_WYNAUT,\n    },\n    {\n        .id1 = 5,\n        .id2 = 11,\n        .gridSquare = SQU_PURPLE_AZURILL,\n        .flag = F_PURPLE_AZURILL,\n    },\n    {\n        .id1 = 6,\n        .id2 = 13,\n        .gridSquare = SQU_ORANGE_SKITTY,\n        .flag = F_ORANGE_SKITTY,\n    },\n    {\n        .id1 = 7,\n        .id2 = 15,\n        .gridSquare = SQU_GREEN_MAKUHITA,\n        .flag = F_GREEN_MAKUHITA,\n    },\n    {\n        .id1 = 8,\n     ..."
+    },
+    "sTableMinBets": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "3",
+        "1",
+        "6"
+      ],
+      "rawValue": "{1, 3, 1, 6}"
+    },
+    "sRouletteTables": {
+      "type": "struct RouletteTable",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .minBet = 1,\n        .randDistanceHigh = DEGREES_PER_SLOT * 2,\n        .randDistanceLow = DEGREES_PER_SLOT,\n        .wheelSpeed = 1,\n        .wheelDelay = 1,\n        .shroomish = {\n            .startAngle = 45,\n            .dropAngle = 30,\n            .fallSlowdown = 1,\n        },\n        .taillow = {\n            .baseDropDelay = 75,\n            .rightStartAngle = 27,\n            .leftStartAngle = 24,\n        },\n        .ballSpeed = 10,\n        .baseTravelDist = 360,\n        .var1C = -0.5f\n    }",
+        "{\n        .minBet = 3,\n        .randDistanceHigh = DEGREES_PER_SLOT,\n        .randDistanceLow = DEGREES_PER_SLOT / 2,\n        .wheelSpeed = 1,\n        .wheelDelay = 0,\n        .shroomish = {\n            .startAngle = 75,\n            .dropAngle = 60,\n            .fallSlowdown = 2,\n        },\n        .taillow = {\n            .baseDropDelay = 0,\n            .rightStartAngle = 54,\n            .leftStartAngle = 48,\n        },\n        .ballSpeed = 10,\n        .baseTravelDist = 270,\n        .var1C = -1.0f\n    }"
+      ],
+      "rawValue": "{\n     \n    {\n        .minBet = 1,\n        .randDistanceHigh = DEGREES_PER_SLOT * 2,\n        .randDistanceLow = DEGREES_PER_SLOT,\n        .wheelSpeed = 1,\n        .wheelDelay = 1,\n        .shroomish = {\n            .startAngle = 45,\n            .dropAngle = 30,\n            .fallSlowdown = 1,\n        },\n        .taillow = {\n            .baseDropDelay = 75,\n            .rightStartAngle = 27,\n            .leftStartAngle = 24,\n        },\n        .ballSpeed = 10,\n        .baseTravelDist = 360,\n        .var1C = -0.5f\n    },\n     \n    {\n        .minBet = 3,\n        .randDistanceHigh = DEGREES_PER_SLOT,\n        .randDistanceLow = DEGREES_PER_SLOT / 2,\n        .wheelSpeed = 1,\n        .wheelDelay = 0,\n        .shroomish = {\n            .startAngle = 75,\n            .dropAngle = 60,\n            .fallSlowdown = 2,\n        },\n        .taillow = {\n            .baseDropDelay = 0,\n            .rightStartAngle = 54,\n            .leftStartAngle = 48,\n        },\n        .ballSpeed = 10,\n        .baseTravelDist = 270,\n        ...."
+    },
+    "sFlashData_Colors": {
+      "type": "struct RouletteFlashSettings",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(0) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(0) + 10,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(1) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(5) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(5) + 10,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(6) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(7) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(7) + 10,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(8) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(9) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(9) + 10,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(10) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "{  \n        .color = RGB(22, 30, 29),\n        .paletteOffset = BG_PLTT_ID(2) + 8,\n        .numColors = 2,\n        .delay = 10,\n        .unk6 = -1,\n        .numFadeCycles = 14,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }"
+      ],
+      "rawValue": "{\n    {  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(0) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    },\n    {  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(0) + 10,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    },\n    {  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(1) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    },\n    {  \n        .color = FLASHUTIL_USE_EXISTING_COLOR,\n        .paletteOffset = BG_PLTT_ID(5) + 5,\n        .numColors = 1,\n        .delay = 1,\n        .unk6 = -1,\n        .numFadeCycles = 8,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    },\n    {  \n        .color = FLAS..."
+    },
+    "sFlashData_PokeIcons": {
+      "type": "struct RouletteFlashSettings",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[GET_ROW_IDX(ROW_ORANGE)] = {\n        .color = RGB(31, 31, 20),\n        .paletteOffset = OBJ_PLTT_ID(0) + 1,\n        .numColors = 5,\n        .delay = 30,\n        .unk6 = -1,\n        .numFadeCycles = 14,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "[GET_ROW_IDX(ROW_GREEN)] = {\n        .color = RGB(27, 31, 31),\n        .paletteOffset = OBJ_PLTT_ID(0) + 6,\n        .numColors = 5,\n        .delay = 30,\n        .unk6 = -1,\n        .numFadeCycles = 14,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }",
+        "[GET_ROW_IDX(ROW_PURPLE)] = {\n        .color = RGB(31, 27, 31),\n        .paletteOffset = OBJ_PLTT_ID(0) + 11,\n        .numColors = 5,\n        .delay = 30,\n        .unk6 = -1,\n        .numFadeCycles = 14,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }"
+      ],
+      "rawValue": "{\n    [GET_ROW_IDX(ROW_ORANGE)] = {\n        .color = RGB(31, 31, 20),\n        .paletteOffset = OBJ_PLTT_ID(0) + 1,\n        .numColors = 5,\n        .delay = 30,\n        .unk6 = -1,\n        .numFadeCycles = 14,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    },\n    [GET_ROW_IDX(ROW_GREEN)] = {\n        .color = RGB(27, 31, 31),\n        .paletteOffset = OBJ_PLTT_ID(0) + 6,\n        .numColors = 5,\n        .delay = 30,\n        .unk6 = -1,\n        .numFadeCycles = 14,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    },\n    [GET_ROW_IDX(ROW_PURPLE)] = {\n        .color = RGB(31, 27, 31),\n        .paletteOffset = OBJ_PLTT_ID(0) + 11,\n        .numColors = 5,\n        .delay = 30,\n        .unk6 = -1,\n        .numFadeCycles = 14,\n        .unk7_5 = -2,\n        .colorDeltaDir = 0,\n    }\n}"
+    },
+    "sFiller": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sSpritePalettes": {
+      "type": "struct SpritePalette",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ .data = gRouletteShadow_Pal,      .tag = PALTAG_SHADOW }",
+        "{ .data = gRouletteBall_Pal,        .tag = PALTAG_BALL }",
+        "{ .data = gRouletteBallCounter_Pal, .tag = PALTAG_BALL_COUNTER }",
+        "{ .data = gRouletteCursor_Pal,      .tag = PALTAG_CURSOR }",
+        "{ .data = gRouletteCredit_Pal,      .tag = PALTAG_INTERFACE }",
+        "{ .data = gRouletteShroomish_Pal,   .tag = PALTAG_SHROOMISH }",
+        "{ .data = gRouletteTaillow_Pal,     .tag = PALTAG_TAILLOW }",
+        "{ .data = gRouletteGridIcons_Pal,   .tag = PALTAG_GRID_ICONS }",
+        "{ .data = gRouletteWynaut_Pal,      .tag = PALTAG_WYNAUT }",
+        "{ .data = gRouletteAzurill_Pal,     .tag = PALTAG_AZURILL }",
+        "{ .data = gRouletteSkitty_Pal,      .tag = PALTAG_SKITTY }",
+        "{ .data = gRouletteMakuhita_Pal,    .tag = PALTAG_MAKUHITA }",
+        "{}"
+      ],
+      "rawValue": "{\n     \n    { .data = gRouletteShadow_Pal,      .tag = PALTAG_SHADOW },\n    { .data = gRouletteBall_Pal,        .tag = PALTAG_BALL },\n    { .data = gRouletteBallCounter_Pal, .tag = PALTAG_BALL_COUNTER },\n    { .data = gRouletteCursor_Pal,      .tag = PALTAG_CURSOR },\n    { .data = gRouletteCredit_Pal,      .tag = PALTAG_INTERFACE },\n    { .data = gRouletteShroomish_Pal,   .tag = PALTAG_SHROOMISH },\n    { .data = gRouletteTaillow_Pal,     .tag = PALTAG_TAILLOW },\n    { .data = gRouletteGridIcons_Pal,   .tag = PALTAG_GRID_ICONS },\n    { .data = gRouletteWynaut_Pal,      .tag = PALTAG_WYNAUT },\n    { .data = gRouletteAzurill_Pal,     .tag = PALTAG_AZURILL },\n    { .data = gRouletteSkitty_Pal,      .tag = PALTAG_SKITTY },\n    { .data = gRouletteMakuhita_Pal,    .tag = PALTAG_MAKUHITA },\n    {}\n}"
+    },
+    "sAffineAnim_Unused1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAffineAnim_Unused2": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAnim_WheelIcons": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_FRAME(32, 0)",
+        "ANIMCMD_FRAME(64, 0)",
+        "ANIMCMD_FRAME(72, 0)",
+        "ANIMCMD_FRAME(8, 0)",
+        "ANIMCMD_FRAME(40, 0)",
+        "ANIMCMD_FRAME(48, 0)",
+        "ANIMCMD_FRAME(80, 0)",
+        "ANIMCMD_FRAME(16, 0)",
+        "ANIMCMD_FRAME(24, 0)",
+        "ANIMCMD_FRAME(56, 0)",
+        "ANIMCMD_FRAME(88, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_FRAME(32, 0),\n    ANIMCMD_FRAME(64, 0),\n    ANIMCMD_FRAME(72, 0),\n    ANIMCMD_FRAME(8, 0),\n    ANIMCMD_FRAME(40, 0),\n    ANIMCMD_FRAME(48, 0),\n    ANIMCMD_FRAME(80, 0),\n    ANIMCMD_FRAME(16, 0),\n    ANIMCMD_FRAME(24, 0),\n    ANIMCMD_FRAME(56, 0),\n    ANIMCMD_FRAME(88, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Headers": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_FRAME(16, 0)",
+        "ANIMCMD_FRAME(32, 0)",
+        "ANIMCMD_FRAME(48, 0)",
+        "ANIMCMD_FRAME(64, 0)",
+        "ANIMCMD_FRAME(80, 0)",
+        "ANIMCMD_FRAME(96, 0)",
+        "ANIMCMD_FRAME(112, 0)",
+        "ANIMCMD_FRAME(128, 0)",
+        "ANIMCMD_FRAME(144, 0)",
+        "ANIMCMD_FRAME(160, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_FRAME(16, 0),\n    ANIMCMD_FRAME(32, 0),\n    ANIMCMD_FRAME(48, 0),\n    ANIMCMD_FRAME(64, 0),\n    ANIMCMD_FRAME(80, 0),\n    ANIMCMD_FRAME(96, 0),\n    ANIMCMD_FRAME(112, 0),\n    ANIMCMD_FRAME(128, 0),\n    ANIMCMD_FRAME(144, 0),\n    ANIMCMD_FRAME(160, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_GridIcons": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_FRAME(4, 0)",
+        "ANIMCMD_FRAME(8, 0)",
+        "ANIMCMD_FRAME(12, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_FRAME(4, 0),\n    ANIMCMD_FRAME(8, 0),\n    ANIMCMD_FRAME(12, 0),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteTemplates_PokeHeaders": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_WynautHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }",
+        "{\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_AzurillHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }",
+        "{\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_SkittyHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }",
+        "{\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_MakuhitaHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_WynautHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    },\n    {\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_AzurillHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    },\n    {\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_SkittyHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    },\n    {\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_MakuhitaHeader,\n        .images = NULL,\n        .affineAni..."
+    },
+    "sSpriteTemplates_ColorHeaders": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_OrangeHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }",
+        "{\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_GreenHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }",
+        "{\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_PurpleHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_OrangeHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    },\n    {\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_GreenHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    },\n    {\n        .tileTag = GFXTAG_HEADERS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridHeader,\n        .anims = sAnim_PurpleHeader,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }\n}"
+    },
+    "sSpriteTemplates_GridIcons": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = GFXTAG_GRID_ICONS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridIcon,\n        .anims = sAnim_GridIcon_Wynaut,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }",
+        "{\n        .tileTag = GFXTAG_GRID_ICONS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridIcon,\n        .anims = sAnim_GridIcon_Azurill,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }",
+        "{\n        .tileTag = GFXTAG_GRID_ICONS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridIcon,\n        .anims = sAnim_GridIcon_Skitty,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }",
+        "{\n        .tileTag = GFXTAG_GRID_ICONS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridIcon,\n        .anims = sAnim_GridIcon_Makuhita,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = GFXTAG_GRID_ICONS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridIcon,\n        .anims = sAnim_GridIcon_Wynaut,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    },\n    {\n        .tileTag = GFXTAG_GRID_ICONS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridIcon,\n        .anims = sAnim_GridIcon_Azurill,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    },\n    {\n        .tileTag = GFXTAG_GRID_ICONS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridIcon,\n        .anims = sAnim_GridIcon_Skitty,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_GridSquare\n    },\n    {\n        .tileTag = GFXTAG_GRID_ICONS,\n        .paletteTag = PALTAG_GRID_ICONS,\n        .oam = &sOam_GridIcon,\n        .anims = sAnim_GridIcon_Makuhita,\n        .images = NULL,\n  ..."
+    },
+    "sSpriteTemplates_WheelIcons": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_WYNAUT,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_OrangeWynaut,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_AZURILL,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_GreenAzurill,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_SKITTY,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_PurpleSkitty,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_MAKUHITA,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_OrangeMakuhita,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_WYNAUT,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_GreenWynaut,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_AZURILL,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_PurpleAzurill,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_SKITTY,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_OrangeSkitty,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_MAKUHITA,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_GreenMakuhita,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_WYNAUT,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_PurpleWynaut,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_AZURILL,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_OrangeAzurill,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_SKITTY,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_GreenSkitty,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }",
+        "{\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_MAKUHITA,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_PurpleMakuhita,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    }"
+      ],
+      "rawValue": "{\n    {\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_WYNAUT,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_OrangeWynaut,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    },\n    {\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_AZURILL,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_GreenAzurill,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    },\n    {\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_SKITTY,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_PurpleSkitty,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_WheelIcon\n    },\n    {\n        .tileTag = GFXTAG_WHEEL_ICONS,\n        .paletteTag = PALTAG_MAKUHITA,\n        .oam = &sOam_WheelIcon,\n        .anims = sAnim_WheelIcon_OrangeMakuhita,\n       ..."
+    },
+    "sSpriteSheets_Interface": {
+      "type": "struct CompressedSpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .data = gRouletteCredit_Gfx,\n        .size = 0x400,\n        .tag = GFXTAG_CREDIT\n    }",
+        "{\n        .data = gRouletteNumbers_Gfx,\n        .size = 0x280,\n        .tag = GFXTAG_CREDIT_DIGIT\n    }",
+        "{\n        .data = gRouletteMultiplier_Gfx,\n        .size = 0x500,\n        .tag = GFXTAG_MULTIPLIER\n    }",
+        "{\n        .data = sBallCounter_Gfx,\n        .size = 0x140,\n        .tag = GFXTAG_BALL_COUNTER\n    }",
+        "{\n        .data = sCursor_Gfx,\n        .size = 0x200,\n        .tag = GFXTAG_CURSOR\n    }",
+        "{}"
+      ],
+      "rawValue": "{\n    {\n        .data = gRouletteCredit_Gfx,\n        .size = 0x400,\n        .tag = GFXTAG_CREDIT\n    },\n    {\n        .data = gRouletteNumbers_Gfx,\n        .size = 0x280,\n        .tag = GFXTAG_CREDIT_DIGIT\n    },\n    {\n        .data = gRouletteMultiplier_Gfx,\n        .size = 0x500,\n        .tag = GFXTAG_MULTIPLIER\n    },\n    {\n        .data = sBallCounter_Gfx,\n        .size = 0x140,\n        .tag = GFXTAG_BALL_COUNTER\n    },\n    {\n        .data = sCursor_Gfx,\n        .size = 0x200,\n        .tag = GFXTAG_CURSOR\n    },\n    {}\n}"
+    },
+    "sAnim_CreditDigit": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_FRAME(2, 0)",
+        "ANIMCMD_FRAME(4, 0)",
+        "ANIMCMD_FRAME(6, 0)",
+        "ANIMCMD_FRAME(8, 0)",
+        "ANIMCMD_FRAME(10, 0)",
+        "ANIMCMD_FRAME(12, 0)",
+        "ANIMCMD_FRAME(14, 0)",
+        "ANIMCMD_FRAME(16, 0)",
+        "ANIMCMD_FRAME(18, 0)",
+        "#ifdef BUGFIX\n    ANIMCMD_END\n#endif"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),   \n    ANIMCMD_FRAME(2, 0),   \n    ANIMCMD_FRAME(4, 0),   \n    ANIMCMD_FRAME(6, 0),   \n    ANIMCMD_FRAME(8, 0),   \n    ANIMCMD_FRAME(10, 0),  \n    ANIMCMD_FRAME(12, 0),  \n    ANIMCMD_FRAME(14, 0),  \n    ANIMCMD_FRAME(16, 0),  \n    ANIMCMD_FRAME(18, 0),  \n     \n     \n#ifdef BUGFIX\n    ANIMCMD_END\n#endif\n}"
+    },
+    "sAnim_Multiplier": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_FRAME(8, 0)",
+        "ANIMCMD_FRAME(16, 0)",
+        "ANIMCMD_FRAME(24, 0)",
+        "ANIMCMD_FRAME(32, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_FRAME(8, 0),\n    ANIMCMD_FRAME(16, 0),\n    ANIMCMD_FRAME(24, 0),\n    ANIMCMD_FRAME(32, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_BallCounter": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_FRAME(2, 0)",
+        "ANIMCMD_FRAME(4, 0)",
+        "ANIMCMD_FRAME(6, 0)",
+        "ANIMCMD_FRAME(8, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_FRAME(2, 0),\n    ANIMCMD_FRAME(4, 0),\n    ANIMCMD_FRAME(6, 0),\n    ANIMCMD_FRAME(8, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Ball_RollFast": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Ball_RollMedium": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 10)",
+        "ANIMCMD_FRAME(4, 10)",
+        "ANIMCMD_FRAME(8, 10)",
+        "ANIMCMD_FRAME(4, 10)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 10),\n    ANIMCMD_FRAME(4, 10),\n    ANIMCMD_FRAME(8, 10),\n    ANIMCMD_FRAME(4, 10),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Ball_RollSlow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 15)",
+        "ANIMCMD_FRAME(4, 15)",
+        "ANIMCMD_FRAME(8, 15)",
+        "ANIMCMD_FRAME(4, 15)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 15),\n    ANIMCMD_FRAME(4, 15),\n    ANIMCMD_FRAME(8, 15),\n    ANIMCMD_FRAME(4, 15),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Ball_StopOnFrame1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 2)",
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_FRAME(12, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 2),\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_FRAME(12, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Ball_StopOnFrame3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 2)",
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_FRAME(4, 4)",
+        "ANIMCMD_FRAME(8, 4)",
+        "ANIMCMD_FRAME(12, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 2),\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_FRAME(4, 4),\n    ANIMCMD_FRAME(8, 4),\n    ANIMCMD_FRAME(12, 4),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Ball_StopOnFrame4": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 2)",
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_FRAME(8, 5)",
+        "ANIMCMD_FRAME(12, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 2),\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_FRAME(8, 5),\n    ANIMCMD_FRAME(12, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Ball_Still": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(12, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(12, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Ball_StopOnFrame2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(8, 2)",
+        "ANIMCMD_FRAME(4, 5)",
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(12, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(8, 2),\n    ANIMCMD_FRAME(4, 5),\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(12, 5),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Shroomish": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 6)",
+        "ANIMCMD_FRAME(16, 6)",
+        "ANIMCMD_FRAME(32, 6)",
+        "ANIMCMD_FRAME(48, 6)",
+        "ANIMCMD_FRAME(32, 6)",
+        "ANIMCMD_FRAME(64, 6)",
+        "ANIMCMD_JUMP(2)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 6),\n    ANIMCMD_FRAME(16, 6),\n    ANIMCMD_FRAME(32, 6),\n    ANIMCMD_FRAME(48, 6),\n    ANIMCMD_FRAME(32, 6),\n    ANIMCMD_FRAME(64, 6),\n    ANIMCMD_JUMP(2)\n}"
+    },
+    "sAnim_Taillow_WingDown_Left": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 10)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 10),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Taillow_WingDown_Right": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 10, .hFlip = TRUE)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 10, .hFlip = TRUE),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_Taillow_FlapSlow_Left": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 20)",
+        "ANIMCMD_FRAME(96, 20)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 20),\n    ANIMCMD_FRAME(96, 20),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Taillow_FlapSlow_Right": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 20, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(96, 20, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 20, .hFlip = TRUE),\n    ANIMCMD_FRAME(96, 20, .hFlip = TRUE),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Taillow_FlapFast_Left": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 10)",
+        "ANIMCMD_FRAME(96, 10)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 10),\n    ANIMCMD_FRAME(96, 10),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAnim_Taillow_FlapFast_Right": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(80, 10, .hFlip = TRUE)",
+        "ANIMCMD_FRAME(96, 10, .hFlip = TRUE)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(80, 10, .hFlip = TRUE),\n    ANIMCMD_FRAME(96, 10, .hFlip = TRUE),\n    ANIMCMD_JUMP(0)\n}"
+    },
+    "sAffineAnim_Unused3": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x80, 0x80, 0, 0)",
+        "AFFINEANIMCMD_FRAME(2,    2,    0, 60)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x80, 0x80, 0, 0),\n    AFFINEANIMCMD_FRAME(2,    2,    0, 60),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_TaillowShadow": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(-2,    0x0,   0, 15)",
+        "AFFINEANIMCMD_FRAME(-1,    -2,    0, 15)",
+        "AFFINEANIMCMD_FRAME(-1,    -5,    0, 24)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(-2,    0x0,   0, 15),\n    AFFINEANIMCMD_FRAME(-1,    -2,    0, 15),\n    AFFINEANIMCMD_FRAME(-1,    -5,    0, 24),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAffineAnim_Unused4": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sAnim_ShroomishBallShadow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END\n}"
+    },
+    "sAnim_UnstickMonShadow": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 0),\n    ANIMCMD_END\n}"
+    },
+    "sSpriteTemplate_ShroomishShadow": {
+      "type": "struct SpriteTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .tileTag = GFXTAG_SHADOW,\n        .paletteTag = PALTAG_SHADOW,\n        .oam = &sOam_ShroomishBallShadow,\n        .anims = sAnims_ShroomishBallShadow,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy\n    }",
+        "{\n        .tileTag = GFXTAG_SHADOW,\n        .paletteTag = PALTAG_SHADOW,\n        .oam = &sOam_ShroomishShadow,\n        .anims = sAnims_UnstickMonShadow,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_Shroomish\n    }"
+      ],
+      "rawValue": "{\n     \n    {\n        .tileTag = GFXTAG_SHADOW,\n        .paletteTag = PALTAG_SHADOW,\n        .oam = &sOam_ShroomishBallShadow,\n        .anims = sAnims_ShroomishBallShadow,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCallbackDummy\n    },\n     \n    {\n        .tileTag = GFXTAG_SHADOW,\n        .paletteTag = PALTAG_SHADOW,\n        .oam = &sOam_ShroomishShadow,\n        .anims = sAnims_UnstickMonShadow,\n        .images = NULL,\n        .affineAnims = gDummySpriteAffineAnimTable,\n        .callback = SpriteCB_Shroomish\n    }\n}"
+    },
+    "sShroomishShadowAlphas": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x907",
+        "0x808",
+        "0x709",
+        "0x60A",
+        "0x50B",
+        "0x40C",
+        "0x30D",
+        "0x20E",
+        "0x10F",
+        "0x010"
+      ],
+      "rawValue": "{\n    0x907,\n    0x808,\n    0x709,\n    0x60A,\n    0x50B,\n    0x40C,\n    0x30D,\n    0x20E,\n    0x10F,\n    0x010,\n}"
+    }
+  }
+}

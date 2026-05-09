@@ -1,0 +1,159 @@
+{
+  "srcFile": "src/battle_pyramid_bag.c",
+  "count": 12,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 3,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n}"
+    },
+    "sMenuActions": {
+      "type": "struct MenuAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "ACTION_USE_FIELD",
+        "ACTION_TOSS",
+        "ACTION_GIVE",
+        "ACTION_CANCEL",
+        "ACTION_USE_BATTLE",
+        "ACTION_DUMMY"
+      ],
+      "indexedValues": [
+        "{ gMenuText_Use",
+        "{ gMenuText_Toss",
+        "{ gMenuText_Give",
+        "{ gText_Cancel2",
+        "{ gMenuText_Use",
+        "{ gText_EmptyString2"
+      ],
+      "rawValue": "{\n    [ACTION_USE_FIELD] =    { gMenuText_Use, {BagAction_UseOnField} },\n    [ACTION_TOSS] =         { gMenuText_Toss, {BagAction_Toss} },\n    [ACTION_GIVE] =         { gMenuText_Give, {BagAction_Give} },\n    [ACTION_CANCEL] =       { gText_Cancel2, {BagAction_Cancel} },\n    [ACTION_USE_BATTLE] =   { gMenuText_Use, {BagAction_UseInBattle} },\n    [ACTION_DUMMY] =        { gText_EmptyString2, {NULL} },\n}"
+    },
+    "sMenuActionIds_Field": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_USE_FIELD",
+        "ACTION_GIVE",
+        "ACTION_TOSS",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{ACTION_USE_FIELD, ACTION_GIVE, ACTION_TOSS, ACTION_CANCEL}"
+    },
+    "sMenuActionIds_ChooseToss": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_TOSS",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{ACTION_TOSS, ACTION_CANCEL}"
+    },
+    "sMenuActionIds_Battle": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_USE_BATTLE",
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{ACTION_USE_BATTLE, ACTION_CANCEL}"
+    },
+    "sMenuActionIds_BattleCannotUse": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ACTION_CANCEL"
+      ],
+      "rawValue": "{ACTION_CANCEL}"
+    },
+    "sTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "COLORID_DARK_GRAY",
+        "COLORID_LIGHT_GRAY",
+        "COLORID_WHITE_BG"
+      ],
+      "indexedValues": [
+        "{TEXT_COLOR_TRANSPARENT",
+        "{TEXT_COLOR_TRANSPARENT",
+        "{TEXT_COLOR_WHITE"
+      ],
+      "rawValue": "{\n    [COLORID_DARK_GRAY]  = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY,  TEXT_COLOR_LIGHT_GRAY},\n    [COLORID_LIGHT_GRAY] = {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_LIGHT_GRAY, TEXT_COLOR_WHITE},\n    [COLORID_WHITE_BG]   = {TEXT_COLOR_WHITE,       TEXT_COLOR_DARK_GRAY,  TEXT_COLOR_LIGHT_GRAY},  \n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "WIN_LIST",
+        "WIN_INFO",
+        "WIN_MSG",
+        "WIN_TOSS_NUM"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 0",
+        "{\n        .bg = 0",
+        "{\n        .bg = 1",
+        "{\n        .bg = 1"
+      ],
+      "rawValue": "{\n    [WIN_LIST] = {\n        .bg = 0,\n        .tilemapLeft = 14,\n        .tilemapTop = 2,\n        .width = 15,\n        .height = 16,\n        .paletteNum = 15,\n        .baseBlock = 30\n    },\n    [WIN_INFO] = {\n        .bg = 0,\n        .tilemapLeft = 0,\n        .tilemapTop = 13,\n        .width = 14,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 270\n    },\n    [WIN_MSG] = {\n        .bg = 1,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 354\n    },\n    [WIN_TOSS_NUM] = {\n        .bg = 1,\n        .tilemapLeft = 24,\n        .tilemapTop = 17,\n        .width = 5,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 462\n    },\n    DUMMY_WIN_TEMPLATE,\n}"
+    },
+    "sWindowTemplates_MenuActions": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MENU_WIN_YESNO"
+      ],
+      "indexedValues": [
+        "{\n        .bg = 1"
+      ],
+      "rawValue": "{\n    [MENU_WIN_1x1] = {\n        .bg = 1,\n        .tilemapLeft = 22,\n        .tilemapTop = 17,\n        .width = 7,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 472\n    },\n    [MENU_WIN_1x2] = {\n        .bg = 1,\n        .tilemapLeft = 22,\n        .tilemapTop = 15,\n        .width = 7,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 472\n    },\n    [MENU_WIN_2x2] = {\n        .bg = 1,\n        .tilemapLeft = 15,\n        .tilemapTop = 15,\n        .width = 14,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 472\n    },\n    [MENU_WIN_2x3] = {  \n        .bg = 1,\n        .tilemapLeft = 15,\n        .tilemapTop = 13,\n        .width = 14,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 472\n    },\n    [MENU_WIN_YESNO] = {\n        .bg = 1,\n        .tilemapLeft = 24,\n        .tilemapTop = 15,\n        .width = 5,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 472\n    },\n}"
+    },
+    "sAnim_PyramidBag": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 4)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 4),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_PyramidBag_Still": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(256, 256, 0, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(256, 256, 0, 0),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_PyramidBag_Shake": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0, 0, 254, 2)",
+        "AFFINEANIMCMD_FRAME(0, 0, 2, 4)",
+        "AFFINEANIMCMD_FRAME(0, 0, 254, 4)",
+        "AFFINEANIMCMD_FRAME(0, 0, 2, 2)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0, 0, 254, 2),\n    AFFINEANIMCMD_FRAME(0, 0, 2, 4),\n    AFFINEANIMCMD_FRAME(0, 0, 254, 4),\n    AFFINEANIMCMD_FRAME(0, 0, 2, 2),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

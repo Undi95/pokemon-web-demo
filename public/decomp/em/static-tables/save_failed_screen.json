@@ -1,0 +1,60 @@
+{
+  "srcFile": "src/save_failed_screen.c",
+  "count": 5,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0,\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0,\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 14,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0,\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 15,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0,\n    },\n}"
+    },
+    "sDummyWindowTemplate": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{ DUMMY_WIN_TEMPLATE }"
+    },
+    "sWindowTemplate_Text": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 13,\n        .width = 28,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 1,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 1,\n        .tilemapTop = 13,\n        .width = 28,\n        .height = 6,\n        .paletteNum = 15,\n        .baseBlock = 1,\n    }\n}"
+    },
+    "sWindowTemplate_Clock": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 14,\n        .tilemapTop = 9,\n        .width = 2,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 169,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 14,\n        .tilemapTop = 9,\n        .width = 2,\n        .height = 2,\n        .paletteNum = 15,\n        .baseBlock = 169,\n    }\n}"
+    },
+    "sClockFrames": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 1, 0, 0 }",
+        "{ 5, 0, 0 }",
+        "{ 9, 0, 0 }",
+        "{ 5, 0, 1 }",
+        "{ 1, 0, 1 }",
+        "{ 5, 1, 1 }",
+        "{ 9, 1, 0 }",
+        "{ 5, 1, 0 }"
+      ],
+      "rawValue": "{\n    { 1, 0, 0 },\n    { 5, 0, 0 },\n    { 9, 0, 0 },\n    { 5, 0, 1 },\n    { 1, 0, 1 },\n    { 5, 1, 1 },\n    { 9, 1, 0 },\n    { 5, 1, 0 },\n}"
+    }
+  }
+}

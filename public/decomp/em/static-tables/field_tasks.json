@@ -1,0 +1,126 @@
+{
+  "srcFile": "src/field_tasks.c",
+  "count": 6,
+  "tables": {
+    "sPerStepCallbacks": {
+      "type": "TaskFunc",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "STEP_CB_DUMMY",
+        "STEP_CB_ASH",
+        "STEP_CB_FORTREE_BRIDGE",
+        "STEP_CB_PACIFIDLOG_BRIDGE",
+        "STEP_CB_SOOTOPOLIS_ICE",
+        "STEP_CB_TRUCK",
+        "STEP_CB_SECRET_BASE",
+        "STEP_CB_CRACKED_FLOOR"
+      ],
+      "indexedValues": [
+        "DummyPerStepCallback",
+        "AshGrassPerStepCallback",
+        "FortreeBridgePerStepCallback",
+        "PacifidlogBridgePerStepCallback",
+        "SootopolisGymIcePerStepCallback",
+        "EndTruckSequence",
+        "SecretBasePerStepCallback",
+        "CrackedFloorPerStepCallback"
+      ],
+      "rawValue": "{\n    [STEP_CB_DUMMY]             = DummyPerStepCallback,\n    [STEP_CB_ASH]               = AshGrassPerStepCallback,\n    [STEP_CB_FORTREE_BRIDGE]    = FortreeBridgePerStepCallback,\n    [STEP_CB_PACIFIDLOG_BRIDGE] = PacifidlogBridgePerStepCallback,\n    [STEP_CB_SOOTOPOLIS_ICE]    = SootopolisGymIcePerStepCallback,\n    [STEP_CB_TRUCK]             = EndTruckSequence,\n    [STEP_CB_SECRET_BASE]       = SecretBasePerStepCallback,\n    [STEP_CB_CRACKED_FLOOR]     = CrackedFloorPerStepCallback\n}"
+    },
+    "sHalfSubmergedBridgeMetatileOffsets": {
+      "type": "struct PacifidlogMetatileOffsets",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 0,  0, METATILE_Pacifidlog_HalfSubmergedLogs_VerticalTop}",
+        "{0, 1, METATILE_Pacifidlog_HalfSubmergedLogs_VerticalBottom}",
+        "{ 0, -1, METATILE_Pacifidlog_HalfSubmergedLogs_VerticalTop}",
+        "{0, 0, METATILE_Pacifidlog_HalfSubmergedLogs_VerticalBottom}",
+        "{ 0,  0, METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalLeft}",
+        "{1, 0, METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalRight}",
+        "{-1,  0, METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalLeft}",
+        "{0, 0, METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalRight}"
+      ],
+      "rawValue": "{\n    { 0,  0, METATILE_Pacifidlog_HalfSubmergedLogs_VerticalTop}, {0, 1, METATILE_Pacifidlog_HalfSubmergedLogs_VerticalBottom},\n    { 0, -1, METATILE_Pacifidlog_HalfSubmergedLogs_VerticalTop}, {0, 0, METATILE_Pacifidlog_HalfSubmergedLogs_VerticalBottom},\n    { 0,  0, METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalLeft}, {1, 0, METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalRight},\n    {-1,  0, METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalLeft}, {0, 0, METATILE_Pacifidlog_HalfSubmergedLogs_HorizontalRight}\n}"
+    },
+    "sFullySubmergedBridgeMetatileOffsets": {
+      "type": "struct PacifidlogMetatileOffsets",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 0,  0, METATILE_Pacifidlog_SubmergedLogs_VerticalTop}",
+        "{0, 1, METATILE_Pacifidlog_SubmergedLogs_VerticalBottom}",
+        "{ 0, -1, METATILE_Pacifidlog_SubmergedLogs_VerticalTop}",
+        "{0, 0, METATILE_Pacifidlog_SubmergedLogs_VerticalBottom}",
+        "{ 0,  0, METATILE_Pacifidlog_SubmergedLogs_HorizontalLeft}",
+        "{1, 0, METATILE_Pacifidlog_SubmergedLogs_HorizontalRight}",
+        "{-1,  0, METATILE_Pacifidlog_SubmergedLogs_HorizontalLeft}",
+        "{0, 0, METATILE_Pacifidlog_SubmergedLogs_HorizontalRight}"
+      ],
+      "rawValue": "{\n    { 0,  0, METATILE_Pacifidlog_SubmergedLogs_VerticalTop}, {0, 1, METATILE_Pacifidlog_SubmergedLogs_VerticalBottom},\n    { 0, -1, METATILE_Pacifidlog_SubmergedLogs_VerticalTop}, {0, 0, METATILE_Pacifidlog_SubmergedLogs_VerticalBottom},\n    { 0,  0, METATILE_Pacifidlog_SubmergedLogs_HorizontalLeft}, {1, 0, METATILE_Pacifidlog_SubmergedLogs_HorizontalRight},\n    {-1,  0, METATILE_Pacifidlog_SubmergedLogs_HorizontalLeft}, {0, 0, METATILE_Pacifidlog_SubmergedLogs_HorizontalRight}\n}"
+    },
+    "sFloatingBridgeMetatileOffsets": {
+      "type": "struct PacifidlogMetatileOffsets",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 0,  0, METATILE_Pacifidlog_FloatingLogs_VerticalTop}",
+        "{0, 1, METATILE_Pacifidlog_FloatingLogs_VerticalBottom}",
+        "{ 0, -1, METATILE_Pacifidlog_FloatingLogs_VerticalTop}",
+        "{0, 0, METATILE_Pacifidlog_FloatingLogs_VerticalBottom}",
+        "{ 0,  0, METATILE_Pacifidlog_FloatingLogs_HorizontalLeft}",
+        "{1, 0, METATILE_Pacifidlog_FloatingLogs_HorizontalRight}",
+        "{-1,  0, METATILE_Pacifidlog_FloatingLogs_HorizontalLeft}",
+        "{0, 0, METATILE_Pacifidlog_FloatingLogs_HorizontalRight}"
+      ],
+      "rawValue": "{\n    { 0,  0, METATILE_Pacifidlog_FloatingLogs_VerticalTop}, {0, 1, METATILE_Pacifidlog_FloatingLogs_VerticalBottom},\n    { 0, -1, METATILE_Pacifidlog_FloatingLogs_VerticalTop}, {0, 0, METATILE_Pacifidlog_FloatingLogs_VerticalBottom},\n    { 0,  0, METATILE_Pacifidlog_FloatingLogs_HorizontalLeft}, {1, 0, METATILE_Pacifidlog_FloatingLogs_HorizontalRight},\n    {-1,  0, METATILE_Pacifidlog_FloatingLogs_HorizontalLeft}, {0, 0, METATILE_Pacifidlog_FloatingLogs_HorizontalRight}\n}"
+    },
+    "sSootopolisGymIceRowVars": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "VAR_TEMP_1",
+        "VAR_TEMP_2",
+        "VAR_TEMP_3",
+        "VAR_TEMP_4",
+        "0",
+        "0",
+        "VAR_TEMP_5",
+        "VAR_TEMP_6",
+        "VAR_TEMP_7",
+        "0",
+        "0",
+        "VAR_TEMP_8",
+        "VAR_TEMP_9",
+        "VAR_TEMP_A",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0"
+      ],
+      "rawValue": "{\n    0,\n    0,\n    0,\n    0,\n    0,\n    0,\n    VAR_TEMP_1,\n    VAR_TEMP_2,\n    VAR_TEMP_3,\n    VAR_TEMP_4,\n    0,\n    0,\n    VAR_TEMP_5,\n    VAR_TEMP_6,\n    VAR_TEMP_7,\n    0,\n    0,\n    VAR_TEMP_8,\n    VAR_TEMP_9,\n    VAR_TEMP_A,\n    0,\n    0,\n    0,\n    0,\n    0,\n    0\n}"
+    },
+    "sMuddySlopeMetatiles": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "METATILE_General_MuddySlope_Frame0",
+        "METATILE_General_MuddySlope_Frame3",
+        "METATILE_General_MuddySlope_Frame2",
+        "METATILE_General_MuddySlope_Frame1"
+      ],
+      "rawValue": "{\n    METATILE_General_MuddySlope_Frame0,\n    METATILE_General_MuddySlope_Frame3,\n    METATILE_General_MuddySlope_Frame2,\n    METATILE_General_MuddySlope_Frame1\n}"
+    }
+  }
+}

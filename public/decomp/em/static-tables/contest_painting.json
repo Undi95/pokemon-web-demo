@@ -1,0 +1,25 @@
+{
+  "srcFile": "src/contest_painting.c",
+  "count": 2,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 10,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0,\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 1,\n        .charBaseIndex = 1,\n        .mapBaseIndex = 10,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0,\n    },\n}"
+    },
+    "sBgPalette": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RGB_BLACK",
+        "RGB_BLACK"
+      ],
+      "rawValue": "{RGB_BLACK, RGB_BLACK}"
+    }
+  }
+}

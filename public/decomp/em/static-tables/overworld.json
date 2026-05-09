@@ -1,0 +1,79 @@
+{
+  "srcFile": "src/overworld.c",
+  "count": 5,
+  "tables": {
+    "sUnusedData": {
+      "type": "u32",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1200",
+        "3600",
+        "1200",
+        "2400",
+        "50",
+        "80",
+        "-44",
+        "44"
+      ],
+      "rawValue": "{\n    1200, 3600, 1200, 2400, 50, 80, -44, 44\n}"
+    },
+    "sOverworldBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 1,\n        .baseTile = 0\n    },\n    {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 28,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 2,\n        .baseTile = 0\n    },\n    {\n        .bg = 3,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sLinkPlayerMovementModes": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "MOVEMENT_MODE_FREE",
+        "MOVEMENT_MODE_FROZEN",
+        "MOVEMENT_MODE_SCRIPTED"
+      ],
+      "indexedValues": [
+        "MovementEventModeCB_Normal",
+        "MovementEventModeCB_Ignored",
+        "MovementEventModeCB_Scripted"
+      ],
+      "rawValue": "{\n    [MOVEMENT_MODE_FREE]     = MovementEventModeCB_Normal,\n    [MOVEMENT_MODE_FROZEN]   = MovementEventModeCB_Ignored,\n    [MOVEMENT_MODE_SCRIPTED] = MovementEventModeCB_Scripted,\n}"
+    },
+    "sLinkPlayerFacingHandlers": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "FacingHandler_DoNothing",
+        "FacingHandler_DpadMovement",
+        "FacingHandler_DpadMovement",
+        "FacingHandler_DpadMovement",
+        "FacingHandler_DpadMovement",
+        "FacingHandler_DoNothing",
+        "FacingHandler_DoNothing",
+        "FacingHandler_ForcedFacingChange",
+        "FacingHandler_ForcedFacingChange",
+        "FacingHandler_ForcedFacingChange",
+        "FacingHandler_ForcedFacingChange"
+      ],
+      "rawValue": "{\n    FacingHandler_DoNothing,\n    FacingHandler_DpadMovement,\n    FacingHandler_DpadMovement,\n    FacingHandler_DpadMovement,\n    FacingHandler_DpadMovement,\n    FacingHandler_DoNothing,\n    FacingHandler_DoNothing,\n    FacingHandler_ForcedFacingChange,\n    FacingHandler_ForcedFacingChange,\n    FacingHandler_ForcedFacingChange,\n    FacingHandler_ForcedFacingChange,\n}"
+    },
+    "sMovementStatusHandler": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "plainValues": [
+        "MovementStatusHandler_EnterFreeMode",
+        "MovementStatusHandler_TryAdvanceScript"
+      ],
+      "rawValue": "{\n     \n    MovementStatusHandler_EnterFreeMode,\n     \n    MovementStatusHandler_TryAdvanceScript,\n}"
+    }
+  }
+}

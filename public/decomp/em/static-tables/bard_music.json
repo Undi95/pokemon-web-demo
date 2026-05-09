@@ -1,0 +1,487 @@
+{
+  "srcFile": "src/bard_music.c",
+  "count": 37,
+  "tables": {
+    "sPitch1_0": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-0x300",
+        "PITCH_END"
+      ],
+      "rawValue": "{ -0x300, PITCH_END }"
+    },
+    "sPitch1_1": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0900",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0900, PITCH_END }"
+    },
+    "sPitch1_2": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0100",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0100, PITCH_END }"
+    },
+    "sPitch1_3": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0400",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0400, PITCH_END }"
+    },
+    "sPitch1_4": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0b00",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0b00, PITCH_END }"
+    },
+    "sPitch2_0": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-0x300",
+        "-0x100",
+        "PITCH_END"
+      ],
+      "rawValue": "{ -0x300, -0x100, PITCH_END }"
+    },
+    "sPitch2_1": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-0x300",
+        "0x0200",
+        "PITCH_END"
+      ],
+      "rawValue": "{ -0x300, 0x0200, PITCH_END }"
+    },
+    "sPitch2_2": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0200",
+        "0x0400",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0200, 0x0400, PITCH_END }"
+    },
+    "sPitch2_3": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0600",
+        "0x0800",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0600, 0x0800, PITCH_END }"
+    },
+    "sPitch2_4": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0900",
+        "0x0800",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0900, 0x0800, PITCH_END }"
+    },
+    "sPitch3_0": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-0x300",
+        "-0x100",
+        "-0x300",
+        "PITCH_END"
+      ],
+      "rawValue": "{ -0x300, -0x100, -0x300, PITCH_END }"
+    },
+    "sPitch3_1": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0400",
+        "-0x300",
+        "0x0400",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0400, -0x300, 0x0400, PITCH_END }"
+    },
+    "sPitch3_2": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0900",
+        "0x0800",
+        "0x0600",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0900, 0x0800, 0x0600, PITCH_END }"
+    },
+    "sPitch3_3": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0100",
+        "0x0200",
+        "0x0400",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0100, 0x0200, 0x0400, PITCH_END }"
+    },
+    "sPitch3_4": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0600",
+        "0x1000",
+        "0x0d00",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0600, 0x1000, 0x0d00, PITCH_END }"
+    },
+    "sPitch4_0": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0400",
+        "0x0900",
+        "0x0400",
+        "0x0900",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0400, 0x0900, 0x0400, 0x0900, PITCH_END }"
+    },
+    "sPitch4_1": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0900",
+        "0x0400",
+        "0x0d00",
+        "0x0400",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0900, 0x0400, 0x0d00, 0x0400, PITCH_END }"
+    },
+    "sPitch4_2": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0100",
+        "0x0200",
+        "0x0400",
+        "0x0600",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0100, 0x0200, 0x0400, 0x0600, PITCH_END }"
+    },
+    "sPitch4_3": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0800",
+        "0x0600",
+        "0x0400",
+        "0x0200",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0800, 0x0600, 0x0400, 0x0200, PITCH_END }"
+    },
+    "sPitch4_4": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0f00",
+        "0x0d00",
+        "0x0b00",
+        "0x0a00",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0f00, 0x0d00, 0x0b00, 0x0a00, PITCH_END }"
+    },
+    "sPitch5_0": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-0x300",
+        "-0x100",
+        "0x0100",
+        "0x0200",
+        "0x0400",
+        "PITCH_END"
+      ],
+      "rawValue": "{ -0x300, -0x100, 0x0100, 0x0200, 0x0400, PITCH_END }"
+    },
+    "sPitch5_1": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0900",
+        "0x0800",
+        "0x0600",
+        "0x0400",
+        "0x0200",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0900, 0x0800, 0x0600, 0x0400, 0x0200, PITCH_END }"
+    },
+    "sPitch5_2": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0100",
+        "0x0400",
+        "0x0900",
+        "0x0400",
+        "0x0100",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0100, 0x0400, 0x0900, 0x0400, 0x0100, PITCH_END }"
+    },
+    "sPitch5_3": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0900",
+        "0x0400",
+        "0x0900",
+        "0x0400",
+        "-0x300",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0900, 0x0400, 0x0900, 0x0400, -0x300, PITCH_END }"
+    },
+    "sPitch5_4": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0b00",
+        "0x0800",
+        "0x0400",
+        "0x0400",
+        "0x0600",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0b00, 0x0800, 0x0400, 0x0400, 0x0600, PITCH_END }"
+    },
+    "sPitch6_0": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "-0x300",
+        "-0x100",
+        "0x0100",
+        "0x0200",
+        "0x0400",
+        "0x0600",
+        "PITCH_END"
+      ],
+      "rawValue": "{ -0x300, -0x100, 0x0100, 0x0200, 0x0400, 0x0600, PITCH_END }"
+    },
+    "sPitch6_1": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0800",
+        "0x0600",
+        "0x0400",
+        "0x0200",
+        "0x0100",
+        "-0x100",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0800, 0x0600, 0x0400, 0x0200, 0x0100, -0x100, PITCH_END }"
+    },
+    "sPitch6_2": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0100",
+        "0x0200",
+        "0x0400",
+        "0x0100",
+        "0x0200",
+        "0x1000",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0100, 0x0200, 0x0400, 0x0100, 0x0200, 0x1000, PITCH_END }"
+    },
+    "sPitch6_3": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0400",
+        "-0x300",
+        "0x0900",
+        "0x0400",
+        "0x0900",
+        "0x0400",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0400, -0x300, 0x0900, 0x0400, 0x0900, 0x0400, PITCH_END }"
+    },
+    "sPitch6_4": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0800",
+        "0x0900",
+        "0x0800",
+        "0x0900",
+        "0x0800",
+        "0x0900",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0800, 0x0900, 0x0800, 0x0900, 0x0800, 0x0900, PITCH_END }"
+    },
+    "sPitch7_0": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0200",
+        "0x0100",
+        "0x0200",
+        "0x0100",
+        "0x0200",
+        "0x0400",
+        "0x0200",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0200, 0x0100, 0x0200, 0x0100, 0x0200, 0x0400, 0x0200, PITCH_END }"
+    },
+    "sPitch7_1": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0100",
+        "0x0100",
+        "-0x100",
+        "-0x100",
+        "-0x300",
+        "0x0400",
+        "-0x300",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0100, 0x0100, -0x100, -0x100, -0x300, 0x0400, -0x300, PITCH_END }"
+    },
+    "sPitch7_2": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0800",
+        "0x0900",
+        "0x0b00",
+        "0x0d00",
+        "0x0e00",
+        "0x0d00",
+        "0x0b00",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0800, 0x0900, 0x0b00, 0x0d00, 0x0e00, 0x0d00, 0x0b00, PITCH_END }"
+    },
+    "sPitch7_3": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0800",
+        "0x0600",
+        "0x0400",
+        "0x0200",
+        "0x0d00",
+        "0x0b00",
+        "0x0900",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0800, 0x0600, 0x0400, 0x0200, 0x0d00, 0x0b00, 0x0900, PITCH_END }"
+    },
+    "sPitch7_4": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0x0300",
+        "0x0400",
+        "0x0600",
+        "0x0800",
+        "0x0700",
+        "0x0800",
+        "0x0400",
+        "PITCH_END"
+      ],
+      "rawValue": "{ 0x0300, 0x0400, 0x0600, 0x0800, 0x0700, 0x0800, 0x0400, PITCH_END }"
+    },
+    "sEmptyPhonemeTemplate": {
+      "type": "struct BardSoundTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "NULL_BARD_SOUND",
+        "NULL_BARD_SOUND",
+        "NULL_BARD_SOUND",
+        "NULL_BARD_SOUND",
+        "NULL_BARD_SOUND",
+        "NULL_BARD_SOUND"
+      ],
+      "rawValue": "{\n    NULL_BARD_SOUND,\n    NULL_BARD_SOUND,\n    NULL_BARD_SOUND,\n    NULL_BARD_SOUND,\n    NULL_BARD_SOUND,\n    NULL_BARD_SOUND\n}"
+    },
+    "sPhonemeLengths": {
+      "type": "int",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "NUM_PHONEME_SONGS"
+      ],
+      "indexedValues": [
+        "15"
+      ],
+      "rawValue": "{\n    [PHONEME_ID(PH_TRAP_BLEND)] = 9,\n    [PHONEME_ID(PH_TRAP_HELD)] = 22,\n    [PHONEME_ID(PH_TRAP_SOLO)] = 15,\n    [PHONEME_ID(PH_FACE_BLEND)] = 16,\n    [PHONEME_ID(PH_FACE_HELD)] = 39,\n    [PHONEME_ID(PH_FACE_SOLO)] = 21,\n    [PHONEME_ID(PH_CLOTH_BLEND)] = 9,\n    [PHONEME_ID(PH_CLOTH_HELD)] = 30,\n    [PHONEME_ID(PH_CLOTH_SOLO)] = 24,\n    [PHONEME_ID(PH_DRESS_BLEND)] = 15,\n    [PHONEME_ID(PH_DRESS_HELD)] = 25,\n    [PHONEME_ID(PH_DRESS_SOLO)] = 12,\n    [PHONEME_ID(PH_FLEECE_BLEND)] = 22,\n    [PHONEME_ID(PH_FLEECE_HELD)] = 45,\n    [PHONEME_ID(PH_FLEECE_SOLO)] = 24,\n    [PHONEME_ID(PH_KIT_BLEND)] = 15,\n    [PHONEME_ID(PH_KIT_HELD)] = 40,\n    [PHONEME_ID(PH_KIT_SOLO)] = 9,\n    [PHONEME_ID(PH_PRICE_BLEND)] = 21,\n    [PHONEME_ID(PH_PRICE_HELD)] = 42,\n    [PHONEME_ID(PH_PRICE_SOLO)] = 18,\n    [PHONEME_ID(PH_LOT_BLEND)] = 9,\n    [PHONEME_ID(PH_LOT_HELD)] = 22,\n    [PHONEME_ID(PH_LOT_SOLO)] = 15,\n    [PHONEME_ID(PH_GOAT_BLEND)] = 27,\n    [PHONEME_ID(PH_GOAT_HELD)] = 48,\n    [PHONEME_ID(PH_GOAT_SOLO)] = 18,\n    [PHON..."
+    }
+  }
+}

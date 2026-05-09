@@ -1,0 +1,134 @@
+{
+  "srcFile": "src/union_room_player_avatar.c",
+  "count": 9,
+  "tables": {
+    "sUnionRoomObjGfxIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MALE",
+        "FEMALE"
+      ],
+      "indexedValues": [
+        "{\n        OBJ_EVENT_GFX_MAN_3",
+        "{\n        OBJ_EVENT_GFX_WOMAN_5"
+      ],
+      "rawValue": "{\n    [MALE] = {\n        OBJ_EVENT_GFX_MAN_3,\n        OBJ_EVENT_GFX_BLACK_BELT,\n        OBJ_EVENT_GFX_CAMPER,\n        OBJ_EVENT_GFX_YOUNGSTER,\n        OBJ_EVENT_GFX_PSYCHIC_M,\n        OBJ_EVENT_GFX_BUG_CATCHER,\n        OBJ_EVENT_GFX_MAN_4,\n        OBJ_EVENT_GFX_MAN_5\n    },\n    [FEMALE] = {\n        OBJ_EVENT_GFX_WOMAN_5,\n        OBJ_EVENT_GFX_HEX_MANIAC,\n        OBJ_EVENT_GFX_PICNICKER,\n        OBJ_EVENT_GFX_LASS,\n        OBJ_EVENT_GFX_LASS,\n        OBJ_EVENT_GFX_GIRL_3,\n        OBJ_EVENT_GFX_WOMAN_2,\n        OBJ_EVENT_GFX_BEAUTY\n    }\n}"
+    },
+    "sUnionRoomPlayerCoords": {
+      "type": "s16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 4,  6}",
+        "{13,  8}",
+        "{10,  6}",
+        "{ 1,  8}",
+        "{13,  4}",
+        "{ 7,  4}",
+        "{ 1,  4}",
+        "{ 7,  8}"
+      ],
+      "rawValue": "{\n    { 4,  6},\n    {13,  8},\n    {10,  6},\n    { 1,  8},\n    {13,  4},\n    { 7,  4},\n    { 1,  4},\n    { 7,  8}\n}"
+    },
+    "sUnionRoomGroupOffsets": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 0,  0}",
+        "{ 1,  0}",
+        "{ 0, -1}",
+        "{-1,  0}",
+        "{ 0,  1}"
+      ],
+      "rawValue": "{\n    { 0,  0},  \n    { 1,  0},  \n    { 0, -1},  \n    {-1,  0},  \n    { 0,  1}   \n}"
+    },
+    "sOppositeFacingDirection": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "DIR_NONE",
+        "DIR_SOUTH",
+        "DIR_NORTH",
+        "DIR_WEST",
+        "DIR_EAST"
+      ],
+      "indexedValues": [
+        "DIR_NONE",
+        "DIR_NORTH",
+        "DIR_SOUTH",
+        "DIR_EAST",
+        "DIR_WEST"
+      ],
+      "rawValue": "{\n    [DIR_NONE]  = DIR_NONE,\n    [DIR_SOUTH] = DIR_NORTH,\n    [DIR_NORTH] = DIR_SOUTH,\n    [DIR_WEST]  = DIR_EAST,\n    [DIR_EAST]  = DIR_WEST\n}"
+    },
+    "sMemberFacingDirections": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "DIR_SOUTH",
+        "DIR_WEST",
+        "DIR_SOUTH",
+        "DIR_EAST",
+        "DIR_NORTH"
+      ],
+      "rawValue": "{\n    DIR_SOUTH,  \n    DIR_WEST,\n    DIR_SOUTH,\n    DIR_EAST,\n    DIR_NORTH\n}"
+    },
+    "sUnionRoomLocalIds": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "LOCALID_UNION_ROOM_PLAYER_1",
+        "LOCALID_UNION_ROOM_PLAYER_2",
+        "LOCALID_UNION_ROOM_PLAYER_3",
+        "LOCALID_UNION_ROOM_PLAYER_4",
+        "LOCALID_UNION_ROOM_PLAYER_5",
+        "LOCALID_UNION_ROOM_PLAYER_6",
+        "LOCALID_UNION_ROOM_PLAYER_7",
+        "LOCALID_UNION_ROOM_PLAYER_8"
+      ],
+      "rawValue": "{\n    LOCALID_UNION_ROOM_PLAYER_1,\n    LOCALID_UNION_ROOM_PLAYER_2,\n    LOCALID_UNION_ROOM_PLAYER_3,\n    LOCALID_UNION_ROOM_PLAYER_4,\n    LOCALID_UNION_ROOM_PLAYER_5,\n    LOCALID_UNION_ROOM_PLAYER_6,\n    LOCALID_UNION_ROOM_PLAYER_7,\n    LOCALID_UNION_ROOM_PLAYER_8\n}"
+    },
+    "sHidePlayerFlags": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "FLAG_HIDE_UNION_ROOM_PLAYER_1",
+        "FLAG_HIDE_UNION_ROOM_PLAYER_2",
+        "FLAG_HIDE_UNION_ROOM_PLAYER_3",
+        "FLAG_HIDE_UNION_ROOM_PLAYER_4",
+        "FLAG_HIDE_UNION_ROOM_PLAYER_5",
+        "FLAG_HIDE_UNION_ROOM_PLAYER_6",
+        "FLAG_HIDE_UNION_ROOM_PLAYER_7",
+        "FLAG_HIDE_UNION_ROOM_PLAYER_8"
+      ],
+      "rawValue": "{\n    FLAG_HIDE_UNION_ROOM_PLAYER_1,\n    FLAG_HIDE_UNION_ROOM_PLAYER_2,\n    FLAG_HIDE_UNION_ROOM_PLAYER_3,\n    FLAG_HIDE_UNION_ROOM_PLAYER_4,\n    FLAG_HIDE_UNION_ROOM_PLAYER_5,\n    FLAG_HIDE_UNION_ROOM_PLAYER_6,\n    FLAG_HIDE_UNION_ROOM_PLAYER_7,\n    FLAG_HIDE_UNION_ROOM_PLAYER_8\n}"
+    },
+    "sMovement_UnionPlayerExit": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_FLY_UP",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_FLY_UP,\n    MOVEMENT_ACTION_STEP_END\n}"
+    },
+    "sMovement_UnionPlayerEnter": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "MOVEMENT_ACTION_FLY_DOWN",
+        "MOVEMENT_ACTION_STEP_END"
+      ],
+      "rawValue": "{\n    MOVEMENT_ACTION_FLY_DOWN,\n    MOVEMENT_ACTION_STEP_END\n}"
+    }
+  }
+}

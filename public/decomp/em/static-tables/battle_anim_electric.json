@@ -1,0 +1,236 @@
+{
+  "srcFile": "src/battle_anim_electric.c",
+  "count": 18,
+  "tables": {
+    "sAnim_Lightning": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(16, 5)",
+        "ANIMCMD_FRAME(32, 8)",
+        "ANIMCMD_FRAME(48, 5)",
+        "ANIMCMD_FRAME(64, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(16, 5),\n    ANIMCMD_FRAME(32, 8),\n    ANIMCMD_FRAME(48, 5),\n    ANIMCMD_FRAME(64, 5),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_UnusedSpinningFist": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 20)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -16, 60)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 0, 20),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -16, 60),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_UnusedCirclingShock": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(16, 5)",
+        "ANIMCMD_FRAME(32, 5)",
+        "ANIMCMD_FRAME(48, 5)",
+        "ANIMCMD_FRAME(64, 5)",
+        "ANIMCMD_FRAME(80, 5)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(16, 5),\n    ANIMCMD_FRAME(32, 5),\n    ANIMCMD_FRAME(48, 5),\n    ANIMCMD_FRAME(64, 5),\n    ANIMCMD_FRAME(80, 5),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_FlashingSpark": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 20, 1)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 20, 1),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sAnim_ThunderboltOrb": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 6)",
+        "ANIMCMD_FRAME(16, 6)",
+        "ANIMCMD_FRAME(32, 6)",
+        "ANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 6),\n    ANIMCMD_FRAME(16, 6),\n    ANIMCMD_FRAME(32, 6),\n    ANIMCMD_JUMP(0),\n}"
+    },
+    "sAffineAnim_ThunderboltOrb": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0xE8, 0xE8, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 10)",
+        "AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 10)",
+        "AFFINEANIMCMD_JUMP(1)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0xE8, 0xE8, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 10),\n    AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 10),\n    AFFINEANIMCMD_JUMP(1),\n}"
+    },
+    "sElectricChargingParticleCoordOffsets": {
+      "type": "s8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 58, -60}",
+        "{-56, -36}",
+        "{  8, -56}",
+        "{-16,  56}",
+        "{ 58, -10}",
+        "{-58,  10}",
+        "{ 48, -18}",
+        "{-8,   56}",
+        "{ 16, -56}",
+        "{-58, -42}",
+        "{ 58,  30}",
+        "{-48,  40}",
+        "{ 12, -48}",
+        "{ 48, -12}",
+        "{-56,  18}",
+        "{ 48,  48}"
+      ],
+      "rawValue": "{\n    { 58, -60},\n    {-56, -36},\n    {  8, -56},\n    {-16,  56},\n    { 58, -10},\n    {-58,  10},\n    { 48, -18},\n    {-8,   56},\n    { 16, -56},\n    {-58, -42},\n    { 58,  30},\n    {-48,  40},\n    { 12, -48},\n    { 48, -12},\n    {-56,  18},\n    { 48,  48},\n}"
+    },
+    "sAnim_ElectricChargingParticles_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(3, 1)",
+        "ANIMCMD_FRAME(2, 1)",
+        "ANIMCMD_FRAME(1, 1)",
+        "ANIMCMD_FRAME(0, 1)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(3, 1),\n    ANIMCMD_FRAME(2, 1),\n    ANIMCMD_FRAME(1, 1),\n    ANIMCMD_FRAME(0, 1),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_ElectricChargingParticles_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 5)",
+        "ANIMCMD_FRAME(1, 5)",
+        "ANIMCMD_FRAME(2, 5)",
+        "ANIMCMD_FRAME(3, 5)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 5),\n    ANIMCMD_FRAME(1, 5),\n    ANIMCMD_FRAME(2, 5),\n    ANIMCMD_FRAME(3, 5),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_GrowingElectricOrb_0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 60)",
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_LOOP(0)",
+        "AFFINEANIMCMD_FRAME(0xFFFC, 0xFFFC, 0, 5)",
+        "AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 5)",
+        "AFFINEANIMCMD_LOOP(10)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 0),\n    AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 60),\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_LOOP(0),\n    AFFINEANIMCMD_FRAME(0xFFFC, 0xFFFC, 0, 5),\n    AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 5),\n    AFFINEANIMCMD_LOOP(10),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAffineAnim_GrowingElectricOrb_1": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 30)",
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0xFFFC, 0xFFFC, 0, 5)",
+        "AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 5)",
+        "AFFINEANIMCMD_JUMP(3)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 0),\n    AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 30),\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0xFFFC, 0xFFFC, 0, 5),\n    AFFINEANIMCMD_FRAME(0x4, 0x4, 0, 5),\n    AFFINEANIMCMD_JUMP(3),\n}"
+    },
+    "sAffineAnim_GrowingElectricOrb_2": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 30)",
+        "AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 30)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x10, 0x10, 0, 0),\n    AFFINEANIMCMD_FRAME(0x8, 0x8, 0, 30),\n    AFFINEANIMCMD_FRAME(0xFFF8, 0xFFF8, 0, 30),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sAnim_ElectricPuff": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 3)",
+        "ANIMCMD_FRAME(16, 3)",
+        "ANIMCMD_FRAME(32, 3)",
+        "ANIMCMD_FRAME(48, 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 3),\n    ANIMCMD_FRAME(16, 3),\n    ANIMCMD_FRAME(32, 3),\n    ANIMCMD_FRAME(48, 3),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_VoltTackleBolt_0": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 3),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_VoltTackleBolt_1": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(2, 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(2, 3),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_VoltTackleBolt_2": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(4, 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(4, 3),\n    ANIMCMD_END,\n}"
+    },
+    "sAnim_VoltTackleBolt_3": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(6, 3)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(6, 3),\n    ANIMCMD_END,\n}"
+    },
+    "sAffineAnim_VoltTackleBolt": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0),\n    AFFINEANIMCMD_END,\n}"
+    }
+  }
+}

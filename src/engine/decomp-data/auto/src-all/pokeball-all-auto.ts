@@ -31,9 +31,9 @@ const {
   InitAnimArcTranslation, IsBGMPlaying, IsCryPlayingOrClearCrySongs, IsDoubleBattle,
   ItemIdToBallId, LZDecompressVram, LaunchBallFadeMonTask, LoadCompressedSpritePaletteUsingHeap,
   LoadCompressedSpriteSheetUsingHeap, PlayCry_ByMode, PlayCry_ReleaseDouble, PlaySE,
-  ShouldPlayNormalMonCry, Sin, StartSpriteAffineAnim, StartSpriteAnim,
-  StopCryAndClearCrySongs, TRUE, TranslateAnimHorizontalArc, gSineTable,
-  m4aMPlayAllStop,  // 4-per-line for readability
+  ShouldPlayNormalMonCry, Sin, SpriteCallbackDummy, StartSpriteAffineAnim,
+  StartSpriteAnim, StopCryAndClearCrySongs, TRUE, TranslateAnimHorizontalArc,
+  gSineTable, m4aMPlayAllStop,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 DoPokeballSendOutAnimation(s16 pan, u8 kindOfThrow) */

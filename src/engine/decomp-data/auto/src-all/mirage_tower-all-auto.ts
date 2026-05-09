@@ -34,9 +34,9 @@ const {
   REG_OFFSET_BG0CNT, REG_OFFSET_BG0HOFS, REG_OFFSET_BG0VOFS, REG_OFFSET_BG2CNT,
   Random, SWAP, ScriptContext_Enable, SetBgAttribute,
   SetBgTilemapBuffer, SetCameraPanning, SetCameraPanningCallback, SetGpuReg,
-  SetGpuRegBits, ShowBg, StartSpriteAnim, TASK_NONE,
-  TRUE, TryGetObjectEventIdByLocalIdAndMap, UnloadUsedPulseBlendPalettes, UnmarkUsedPulseBlendPalettes,
-  UnsetBgTilemapBuffer, UpdatePulseBlend, VarGet,  // 4-per-line for readability
+  SetGpuRegBits, ShowBg, SpriteCallbackDummy, StartSpriteAnim,
+  TASK_NONE, TRUE, TryGetObjectEventIdByLocalIdAndMap, UnloadUsedPulseBlendPalettes,
+  UnmarkUsedPulseBlendPalettes, UnsetBgTilemapBuffer, UpdatePulseBlend, VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 IsMirageTowerVisible(void) */

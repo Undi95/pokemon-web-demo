@@ -1,0 +1,442 @@
+{
+  "srcFile": "src/rotating_gate.c",
+  "count": 32,
+  "tables": {
+    "sRotatingGate_FortreePuzzleConfig": {
+      "type": "struct RotatingGatePuzzle",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 6,  7, GATE_SHAPE_T2, GATE_ORIENTATION_90}",
+        "{ 9, 15, GATE_SHAPE_T2, GATE_ORIENTATION_180}",
+        "{ 3, 19, GATE_SHAPE_T2, GATE_ORIENTATION_90}",
+        "{ 2,  6, GATE_SHAPE_T1, GATE_ORIENTATION_90}",
+        "{ 9, 12, GATE_SHAPE_T1, GATE_ORIENTATION_0}",
+        "{ 6, 23, GATE_SHAPE_T1, GATE_ORIENTATION_0}",
+        "{12, 22, GATE_SHAPE_T1, GATE_ORIENTATION_0}",
+        "{ 6,  3, GATE_SHAPE_L4, GATE_ORIENTATION_180}"
+      ],
+      "rawValue": "{\n    { 6,  7, GATE_SHAPE_T2, GATE_ORIENTATION_90},\n    { 9, 15, GATE_SHAPE_T2, GATE_ORIENTATION_180},\n    { 3, 19, GATE_SHAPE_T2, GATE_ORIENTATION_90},\n    { 2,  6, GATE_SHAPE_T1, GATE_ORIENTATION_90},\n    { 9, 12, GATE_SHAPE_T1, GATE_ORIENTATION_0},\n    { 6, 23, GATE_SHAPE_T1, GATE_ORIENTATION_0},\n    {12, 22, GATE_SHAPE_T1, GATE_ORIENTATION_0},\n    { 6,  3, GATE_SHAPE_L4, GATE_ORIENTATION_180},\n}"
+    },
+    "sRotatingGate_TrickHousePuzzleConfig": {
+      "type": "struct RotatingGatePuzzle",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{14,  5, GATE_SHAPE_T1, GATE_ORIENTATION_90}",
+        "{10,  6, GATE_SHAPE_L2, GATE_ORIENTATION_180}",
+        "{ 6,  6, GATE_SHAPE_L4, GATE_ORIENTATION_90}",
+        "{14,  8, GATE_SHAPE_T1, GATE_ORIENTATION_90}",
+        "{ 3, 10, GATE_SHAPE_L3, GATE_ORIENTATION_270}",
+        "{ 9, 14, GATE_SHAPE_L1, GATE_ORIENTATION_90}",
+        "{ 3, 15, GATE_SHAPE_T3, GATE_ORIENTATION_0}",
+        "{ 2, 17, GATE_SHAPE_L2, GATE_ORIENTATION_180}",
+        "{12, 18, GATE_SHAPE_T3, GATE_ORIENTATION_270}",
+        "{ 5, 18, GATE_SHAPE_L4, GATE_ORIENTATION_90}",
+        "{10, 19, GATE_SHAPE_L3, GATE_ORIENTATION_180}"
+      ],
+      "rawValue": "{\n    {14,  5, GATE_SHAPE_T1, GATE_ORIENTATION_90},\n    {10,  6, GATE_SHAPE_L2, GATE_ORIENTATION_180},\n    { 6,  6, GATE_SHAPE_L4, GATE_ORIENTATION_90},\n    {14,  8, GATE_SHAPE_T1, GATE_ORIENTATION_90},\n    { 3, 10, GATE_SHAPE_L3, GATE_ORIENTATION_270},\n    { 9, 14, GATE_SHAPE_L1, GATE_ORIENTATION_90},\n    { 3, 15, GATE_SHAPE_T3, GATE_ORIENTATION_0},\n    { 2, 17, GATE_SHAPE_L2, GATE_ORIENTATION_180},\n    {12, 18, GATE_SHAPE_T3, GATE_ORIENTATION_270},\n    { 5, 18, GATE_SHAPE_L4, GATE_ORIENTATION_90},\n    {10, 19, GATE_SHAPE_L3, GATE_ORIENTATION_180},\n}"
+    },
+    "sRotatingGatesGraphicsTable": {
+      "type": "struct SpriteSheet",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{sRotatingGateTiles_1, sizeof(sRotatingGateTiles_1), ROTATING_GATE_TILE_TAG + GATE_SHAPE_L1}",
+        "{sRotatingGateTiles_2, sizeof(sRotatingGateTiles_2), ROTATING_GATE_TILE_TAG + GATE_SHAPE_L2}",
+        "{sRotatingGateTiles_3, sizeof(sRotatingGateTiles_3), ROTATING_GATE_TILE_TAG + GATE_SHAPE_L3}",
+        "{sRotatingGateTiles_4, sizeof(sRotatingGateTiles_4), ROTATING_GATE_TILE_TAG + GATE_SHAPE_L4}",
+        "{sRotatingGateTiles_5, sizeof(sRotatingGateTiles_5), ROTATING_GATE_TILE_TAG + GATE_SHAPE_T1}",
+        "{sRotatingGateTiles_6, sizeof(sRotatingGateTiles_6), ROTATING_GATE_TILE_TAG + GATE_SHAPE_T2}",
+        "{sRotatingGateTiles_7, sizeof(sRotatingGateTiles_7), ROTATING_GATE_TILE_TAG + GATE_SHAPE_T3}",
+        "{sRotatingGateTiles_8, sizeof(sRotatingGateTiles_8), ROTATING_GATE_TILE_TAG + GATE_SHAPE_T4}",
+        "{NULL}"
+      ],
+      "rawValue": "{\n    {sRotatingGateTiles_1, sizeof(sRotatingGateTiles_1), ROTATING_GATE_TILE_TAG + GATE_SHAPE_L1},\n    {sRotatingGateTiles_2, sizeof(sRotatingGateTiles_2), ROTATING_GATE_TILE_TAG + GATE_SHAPE_L2},\n    {sRotatingGateTiles_3, sizeof(sRotatingGateTiles_3), ROTATING_GATE_TILE_TAG + GATE_SHAPE_L3},\n    {sRotatingGateTiles_4, sizeof(sRotatingGateTiles_4), ROTATING_GATE_TILE_TAG + GATE_SHAPE_L4},\n    {sRotatingGateTiles_5, sizeof(sRotatingGateTiles_5), ROTATING_GATE_TILE_TAG + GATE_SHAPE_T1},\n    {sRotatingGateTiles_6, sizeof(sRotatingGateTiles_6), ROTATING_GATE_TILE_TAG + GATE_SHAPE_T2},\n    {sRotatingGateTiles_7, sizeof(sRotatingGateTiles_7), ROTATING_GATE_TILE_TAG + GATE_SHAPE_T3},\n    {sRotatingGateTiles_8, sizeof(sRotatingGateTiles_8), ROTATING_GATE_TILE_TAG + GATE_SHAPE_T4},\n    {NULL},\n}"
+    },
+    "sSpriteAnim_RotatingGateLarge": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0),\n    ANIMCMD_END,\n}"
+    },
+    "sSpriteAnim_RotatingGateRegular": {
+      "type": "union AnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "ANIMCMD_FRAME(0, 0)",
+        "ANIMCMD_END"
+      ],
+      "rawValue": "{\n    ANIMCMD_FRAME(0, 0), ANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_Rotated0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sSpriteAffineAnim_Rotated90": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, -64, 0)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, -64, 0),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sSpriteAffineAnim_Rotated180": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, -128, 0)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, -128, 0),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sSpriteAffineAnim_Rotated270": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0)",
+        "AFFINEANIMCMD_JUMP(0)"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0),\n    AFFINEANIMCMD_JUMP(0),\n}"
+    },
+    "sSpriteAffineAnim_RotatingClockwise0to90": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -4, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -4, 16),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingClockwise90to180": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, -64, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -4, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, -64, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -4, 16),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingClockwise180to270": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, -128, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -4, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, -128, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -4, 16),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingClockwise270to360": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -4, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -4, 16),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingAnticlockwise360to270": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 4, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 4, 16),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingAnticlockwise270to180": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 4, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 4, 16),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingAnticlockwise180to90": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, -128, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 4, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, -128, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 4, 16),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingAnticlockwise90to0": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, -64, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 4, 16)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, -64, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 4, 16),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingClockwise0to90Faster": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingClockwise90to180Faster": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, -64, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, -64, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingClockwise180to270Faster": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, -128, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, -128, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingClockwise270to360Faster": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, -8, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingAnticlockwise360to270Faster": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 0, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingAnticlockwise270to180Faster": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, 64, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingAnticlockwise180to90Faster": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, -128, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, -128, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sSpriteAffineAnim_RotatingAnticlockwise90to0Faster": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(0x100, 0x100, -64, 0)",
+        "AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 8)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(0x100, 0x100, -64, 0),\n    AFFINEANIMCMD_FRAME(0x0, 0x0, 8, 8),\n    AFFINEANIMCMD_END,\n}"
+    },
+    "sRotatingGate_RotationInfoNorth": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_CW(GATE_ARM_WEST, 1)",
+        "GATE_ROT_CW(GATE_ARM_WEST, 0)",
+        "GATE_ROT_ACW(GATE_ARM_EAST, 0)",
+        "GATE_ROT_ACW(GATE_ARM_EAST, 1)",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE"
+      ],
+      "rawValue": "{\n    GATE_ROT_NONE,                 GATE_ROT_NONE,                 GATE_ROT_NONE,                  GATE_ROT_NONE,\n    GATE_ROT_CW(GATE_ARM_WEST, 1), GATE_ROT_CW(GATE_ARM_WEST, 0), GATE_ROT_ACW(GATE_ARM_EAST, 0), GATE_ROT_ACW(GATE_ARM_EAST, 1),\n    GATE_ROT_NONE,                 GATE_ROT_NONE,                 GATE_ROT_NONE,                  GATE_ROT_NONE,\n    GATE_ROT_NONE,                 GATE_ROT_NONE,                 GATE_ROT_NONE,                  GATE_ROT_NONE,\n}"
+    },
+    "sRotatingGate_RotationInfoSouth": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_ACW(GATE_ARM_WEST, 1)",
+        "GATE_ROT_ACW(GATE_ARM_WEST, 0)",
+        "GATE_ROT_CW(GATE_ARM_EAST, 0)",
+        "GATE_ROT_CW(GATE_ARM_EAST, 1)",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE"
+      ],
+      "rawValue": "{\n    GATE_ROT_NONE,                  GATE_ROT_NONE,                  GATE_ROT_NONE,                 GATE_ROT_NONE,\n    GATE_ROT_NONE,                  GATE_ROT_NONE,                  GATE_ROT_NONE,                 GATE_ROT_NONE,\n    GATE_ROT_ACW(GATE_ARM_WEST, 1), GATE_ROT_ACW(GATE_ARM_WEST, 0), GATE_ROT_CW(GATE_ARM_EAST, 0), GATE_ROT_CW(GATE_ARM_EAST, 1),\n    GATE_ROT_NONE,                  GATE_ROT_NONE,                  GATE_ROT_NONE,                 GATE_ROT_NONE,\n}"
+    },
+    "sRotatingGate_RotationInfoWest": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "GATE_ROT_NONE",
+        "GATE_ROT_ACW(GATE_ARM_NORTH, 1)",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_ACW(GATE_ARM_NORTH, 0)",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_CW(GATE_ARM_SOUTH, 0)",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_CW(GATE_ARM_SOUTH, 1)",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE"
+      ],
+      "rawValue": "{\n    GATE_ROT_NONE, GATE_ROT_ACW(GATE_ARM_NORTH, 1), GATE_ROT_NONE, GATE_ROT_NONE,\n    GATE_ROT_NONE, GATE_ROT_ACW(GATE_ARM_NORTH, 0), GATE_ROT_NONE, GATE_ROT_NONE,\n    GATE_ROT_NONE, GATE_ROT_CW(GATE_ARM_SOUTH, 0),  GATE_ROT_NONE, GATE_ROT_NONE,\n    GATE_ROT_NONE, GATE_ROT_CW(GATE_ARM_SOUTH, 1),  GATE_ROT_NONE, GATE_ROT_NONE,\n}"
+    },
+    "sRotatingGate_RotationInfoEast": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_CW(GATE_ARM_NORTH, 1)",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_CW(GATE_ARM_NORTH, 0)",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_ACW(GATE_ARM_SOUTH, 0)",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_NONE",
+        "GATE_ROT_ACW(GATE_ARM_SOUTH, 1)",
+        "GATE_ROT_NONE"
+      ],
+      "rawValue": "{\n    GATE_ROT_NONE, GATE_ROT_NONE, GATE_ROT_CW(GATE_ARM_NORTH, 1),  GATE_ROT_NONE,\n    GATE_ROT_NONE, GATE_ROT_NONE, GATE_ROT_CW(GATE_ARM_NORTH, 0),  GATE_ROT_NONE,\n    GATE_ROT_NONE, GATE_ROT_NONE, GATE_ROT_ACW(GATE_ARM_SOUTH, 0), GATE_ROT_NONE,\n    GATE_ROT_NONE, GATE_ROT_NONE, GATE_ROT_ACW(GATE_ARM_SOUTH, 1), GATE_ROT_NONE,\n}"
+    },
+    "sRotatingGate_ArmPositionsClockwiseRotation": {
+      "type": "struct Coords8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ 0, -1 }",
+        "{ 1, -2 }",
+        "{ 0, 0 }",
+        "{ 1, 0 }",
+        "{ -1, 0 }",
+        "{ -1, 1 }",
+        "{ -1, -1 }",
+        "{ -2, -1 }"
+      ],
+      "rawValue": "{\n    { 0, -1 }, { 1, -2 }, { 0, 0 }, { 1, 0 }, { -1, 0 }, { -1, 1 }, { -1, -1 }, { -2, -1 },\n}"
+    },
+    "sRotatingGate_ArmPositionsAntiClockwiseRotation": {
+      "type": "struct Coords8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ -1, -1 }",
+        "{ -1, -2 }",
+        "{ 0, -1 }",
+        "{ 1, -1 }",
+        "{ 0, 0 }",
+        "{ 0, 1 }",
+        "{ -1, 0 }",
+        "{ -2, 0 }"
+      ],
+      "rawValue": "{\n    { -1, -1 }, { -1, -2 }, { 0, -1 }, { 1, -1 }, { 0, 0 }, { 0, 1 }, { -1, 0 }, { -2, 0 },\n}"
+    },
+    "sRotatingGate_ArmLayout": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        1, 0,\n        1, 0,\n        0, 0,\n        0, 0,\n    }",
+        "{\n        1, 1,\n        1, 0,\n        0, 0,\n        0, 0,\n    }",
+        "{\n        1, 0,\n        1, 1,\n        0, 0,\n        0, 0,\n    }",
+        "{\n        1, 1,\n        1, 1,\n        0, 0,\n        0, 0,\n    }",
+        "{\n        1, 0,\n        1, 0,\n        1, 0,\n        0, 0,\n    }",
+        "{\n        1, 1,\n        1, 0,\n        1, 0,\n        0, 0,\n    }",
+        "{\n        1, 0,\n        1, 1,\n        1, 0,\n        0, 0,\n    }",
+        "{\n        1, 0,\n        1, 0,\n        1, 1,\n        0, 0,\n    }",
+        "{\n        1, 1,\n        1, 1,\n        1, 0,\n        0, 0,\n    }",
+        "{\n        1, 1,\n        1, 0,\n        1, 1,\n        0, 0,\n    }",
+        "{\n        1, 0,\n        1, 1,\n        1, 1,\n        0, 0,\n    }",
+        "{\n        1, 1,\n        1, 1,\n        1, 1,\n        0, 0,\n    }"
+      ],
+      "rawValue": "{\n     \n    {\n        1, 0,\n        1, 0,\n        0, 0,\n        0, 0,\n    },\n    {\n        1, 1,\n        1, 0,\n        0, 0,\n        0, 0,\n    },\n    {\n        1, 0,\n        1, 1,\n        0, 0,\n        0, 0,\n    },\n    {\n        1, 1,\n        1, 1,\n        0, 0,\n        0, 0,\n    },\n\n     \n    {\n        1, 0,\n        1, 0,\n        1, 0,\n        0, 0,\n    },\n    {\n        1, 1,\n        1, 0,\n        1, 0,\n        0, 0,\n    },\n    {\n        1, 0,\n        1, 1,\n        1, 0,\n        0, 0,\n    },\n    {\n        1, 0,\n        1, 0,\n        1, 1,\n        0, 0,\n    },\n\n     \n     \n     \n    {\n        1, 1,\n        1, 1,\n        1, 0,\n        0, 0,\n    },\n    {\n        1, 1,\n        1, 0,\n        1, 1,\n        0, 0,\n    },\n    {\n        1, 0,\n        1, 1,\n        1, 1,\n        0, 0,\n    },\n    {\n        1, 1,\n        1, 1,\n        1, 1,\n        0, 0,\n    },\n}"
+    }
+  }
+}

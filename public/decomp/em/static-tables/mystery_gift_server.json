@@ -1,0 +1,26 @@
+{
+  "srcFile": "src/mystery_gift_server.c",
+  "count": 1,
+  "tables": {
+    "sFuncTable": {
+      "type": "unknown",
+      "isFnPtr": true,
+      "isArray": true,
+      "indexedKeys": [
+        "FUNC_INIT",
+        "FUNC_DONE",
+        "FUNC_RECV",
+        "FUNC_SEND",
+        "FUNC_RUN"
+      ],
+      "indexedValues": [
+        "Server_Init",
+        "Server_Done",
+        "Server_Recv",
+        "Server_Send",
+        "Server_Run"
+      ],
+      "rawValue": "{\n    [FUNC_INIT] = Server_Init,\n    [FUNC_DONE] = Server_Done,\n    [FUNC_RECV] = Server_Recv,\n    [FUNC_SEND] = Server_Send,\n    [FUNC_RUN] = Server_Run\n}"
+    }
+  }
+}

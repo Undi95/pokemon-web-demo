@@ -1,0 +1,113 @@
+{
+  "srcFile": "src/main_menu.c",
+  "count": 9,
+  "tables": {
+    "sBirchSpeechBgPals": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "INCGFX_U16(\"graphics/birch_speech/bg0.pal\", \".gbapal\")",
+        "INCGFX_U16(\"graphics/birch_speech/bg1.pal\", \".gbapal\")"
+      ],
+      "rawValue": "{\n    INCGFX_U16(\"graphics/birch_speech/bg0.pal\", \".gbapal\"),\n    INCGFX_U16(\"graphics/birch_speech/bg1.pal\", \".gbapal\")\n}"
+    },
+    "sBirchSpeechPlatformBlackPal": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "RGB_BLACK",
+        "RGB_BLACK",
+        "RGB_BLACK",
+        "RGB_BLACK",
+        "RGB_BLACK",
+        "RGB_BLACK",
+        "RGB_BLACK",
+        "RGB_BLACK"
+      ],
+      "rawValue": "{RGB_BLACK, RGB_BLACK, RGB_BLACK, RGB_BLACK, RGB_BLACK, RGB_BLACK, RGB_BLACK, RGB_BLACK}"
+    },
+    "sWindowTemplates_MainMenu": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN0,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN0,\n        .paletteNum = 15,\n        .baseBlock = 1\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN1,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN1,\n        .paletteNum = 15,\n        .baseBlock = 0x35\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN2,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN2,\n        .paletteNum = 15,\n        .baseBlock = 1\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN3,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN3,\n        .paletteNum = 15,\n        .baseBlock = 0x9D\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN4,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN4,\n        .paletteNum = 15,\n        .baseBlock = 0xD1\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN5,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN5,\n        .paletteNum = 15,\n        .baseBlock = 0x105\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN6,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN6,\n        .paletteNum = 15,\n        .baseBlock = 0x139\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT_ERROR,\n        .tilemapTop = MENU_TOP_ERROR,\n        .width = MENU_WIDTH_ERROR,\n        .height = MENU_HEIGHT_ERROR,\n        .paletteNum = 15,\n        .baseBlock = 0x16D\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n     \n     \n    {\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN0,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN0,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n     \n    {\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN1,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN1,\n        .paletteNum = 15,\n        .baseBlock = 0x35\n    },\n     \n     \n    {\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN2,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN2,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n     \n    {\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN3,\n        .width = MENU_WIDTH,\n        .height = MENU_HEIGHT_WIN3,\n        .paletteNum = 15,\n        .baseBlock = 0x9D\n    },\n     \n    {\n        .bg = 0,\n        .tilemapLeft = MENU_LEFT,\n        .tilemapTop = MENU_TOP_WIN4,\n        .width = MEN..."
+    },
+    "sNewGameBirchSpeechTextWindows": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 1\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 5,\n        .width = 6,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x6D\n    }",
+        "{\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 2,\n        .width = 9,\n        .height = 10,\n        .paletteNum = 15,\n        .baseBlock = 0x85\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 15,\n        .width = 27,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n    {\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 5,\n        .width = 6,\n        .height = 4,\n        .paletteNum = 15,\n        .baseBlock = 0x6D\n    },\n    {\n        .bg = 0,\n        .tilemapLeft = 3,\n        .tilemapTop = 2,\n        .width = 9,\n        .height = 10,\n        .paletteNum = 15,\n        .baseBlock = 0x85\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sTextColor_Headers": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_DYNAMIC_COLOR_1",
+        "TEXT_DYNAMIC_COLOR_2",
+        "TEXT_DYNAMIC_COLOR_3"
+      ],
+      "rawValue": "{TEXT_DYNAMIC_COLOR_1, TEXT_DYNAMIC_COLOR_2, TEXT_DYNAMIC_COLOR_3}"
+    },
+    "sTextColor_MenuInfo": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_DYNAMIC_COLOR_1",
+        "TEXT_COLOR_WHITE",
+        "TEXT_DYNAMIC_COLOR_3"
+      ],
+      "rawValue": "{TEXT_DYNAMIC_COLOR_1, TEXT_COLOR_WHITE, TEXT_DYNAMIC_COLOR_3}"
+    },
+    "sMainMenuBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 7,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 30,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 0,\n        .baseTile = 0\n    },\n    {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 7,\n        .screenSize = 0,\n        .paletteMode = 0,\n        .priority = 3,\n        .baseTile = 0\n    }\n}"
+    },
+    "sSpriteAffineAnim_PlayerShrink": {
+      "type": "union AffineAnimCmd",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "AFFINEANIMCMD_FRAME(-2, -2, 0, 0x30)",
+        "AFFINEANIMCMD_END"
+      ],
+      "rawValue": "{\n    AFFINEANIMCMD_FRAME(-2, -2, 0, 0x30),\n    AFFINEANIMCMD_END\n}"
+    },
+    "sMenuActions_Gender": {
+      "type": "struct MenuAction",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{gText_BirchBoy, {NULL}}",
+        "{gText_BirchGirl, {NULL}}"
+      ],
+      "rawValue": "{\n    {gText_BirchBoy, {NULL}},\n    {gText_BirchGirl, {NULL}}\n}"
+    }
+  }
+}

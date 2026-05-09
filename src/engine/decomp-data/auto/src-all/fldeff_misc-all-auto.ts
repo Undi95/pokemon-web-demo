@@ -26,19 +26,20 @@ const {
   ConvertIntToDecimalStringN, CreateFieldMoveTask, CreateSprite, CreateSpriteAtEnd,
   CreateTask, CurMapIsSecretBase, CurrentMapDrawMetatileAt, DIR_EAST,
   DIR_NORTH, DIR_SOUTH, DIR_WEST, DISPCNT_WIN0_ON,
-  DISPLAY_HEIGHT, DestroySprite, DestroyTask, FALSE,
-  FieldEffectActiveListRemove, FieldEffectStart, FieldEffectStop, FreeSpritePalette,
-  FuncIsActiveTask, GetCursorSelectionMonId, GetGpuReg, GetMapCoordsFromSpritePos,
-  GetPlayerAvatarFlags, GetPlayerFacingDirection, GetWalkInPlaceNormalMovementAction, GetXYCoordsOneStepInFrontOfPlayer,
-  LoadSpritePalette, LockPlayerFieldControls, MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt,
-  MapGridSetMetatileIdAt, MetatileBehavior_IsSecretBaseCave, MetatileBehavior_IsSecretBaseShrub, MetatileBehavior_IsSecretBaseTree,
-  ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden, ObjectEventSetHeldMovement, PALETTES_ALL,
-  PlaySE, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY, REG_OFFSET_MOSAIC,
-  REG_OFFSET_WIN0H, REG_OFFSET_WIN0V, REG_OFFSET_WININ, REG_OFFSET_WINOUT,
-  STR_CONV_MODE_LEFT_ALIGN, ScriptContext_Enable, ScriptContext_SetupScript, SetCurSecretBaseIdFromPosition,
-  SetGpuReg, SetGpuRegBits, SetPlayerAvatarTransitionFlags, SetPlayerAvatarWatering,
-  SetSpritePosToOffsetMapCoords, StringCopy, TRUE, ToggleSecretBaseEntranceMetatile,
-  TrySetCurSecretBaseIndex, VarGet, VarSet, WIN_RANGE,  // 4-per-line for readability
+  DISPLAY_HEIGHT, DISPLAY_WIDTH, DestroySprite, DestroyTask,
+  FALSE, FieldEffectActiveListRemove, FieldEffectStart, FieldEffectStop,
+  FreeSpritePalette, FuncIsActiveTask, GetCursorSelectionMonId, GetGpuReg,
+  GetMapCoordsFromSpritePos, GetPlayerAvatarFlags, GetPlayerFacingDirection, GetWalkInPlaceNormalMovementAction,
+  GetXYCoordsOneStepInFrontOfPlayer, LoadSpritePalette, LockPlayerFieldControls, MapGridGetMetatileBehaviorAt,
+  MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MetatileBehavior_IsSecretBaseCave, MetatileBehavior_IsSecretBaseShrub,
+  MetatileBehavior_IsSecretBaseTree, ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden, ObjectEventSetHeldMovement,
+  PALETTES_ALL, PlaySE, REG_OFFSET_BLDCNT, REG_OFFSET_BLDY,
+  REG_OFFSET_DISPCNT, REG_OFFSET_MOSAIC, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V,
+  REG_OFFSET_WININ, REG_OFFSET_WINOUT, STR_CONV_MODE_LEFT_ALIGN, ScriptContext_Enable,
+  ScriptContext_SetupScript, SetCurSecretBaseIdFromPosition, SetGpuReg, SetGpuRegBits,
+  SetPlayerAvatarTransitionFlags, SetPlayerAvatarWatering, SetSpritePosToOffsetMapCoords, StringCopy,
+  TRUE, ToggleSecretBaseEntranceMetatile, TrySetCurSecretBaseIndex, VarGet,
+  VarSet, WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ComputerScreenOpenEffect(u16 increment, u16 unused, u8 priority) */

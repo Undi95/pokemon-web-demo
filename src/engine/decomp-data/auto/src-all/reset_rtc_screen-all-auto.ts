@@ -31,14 +31,14 @@ const {
   FALSE, FreeAllWindowBuffers, FreeSpritePaletteByTag, InitBgsFromTemplates,
   InitWindows, JOY_NEW, JOY_REPEAT, LoadMessageBoxAndBorderGfx,
   LoadOam, LoadSpritePalette, NULL, PALETTES_ALL,
-  PLTT_SIZE, PlaySE, ProcessSpriteCopyRequests, RemoveWindow,
-  ResetBgsAndClearDma3BusyFlags, ResetOamRange, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RtcCalcLocalTime, RtcCalcLocalTimeOffset, RtcReset,
-  RunTasks, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN, ScanlineEffect_Clear,
-  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, StringCopy, TRUE,
-  TransferPlttBuffer, TrySavingData, UpdatePaletteFade, VRAM_SIZE,
-  VarSet,  // 4-per-line for readability
+  PLTT_SIZE, PlaySE, ProcessSpriteCopyRequests, REG_OFFSET_DISPCNT,
+  RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetOamRange, ResetPaletteFade,
+  ResetSpriteData, ResetTasks, RtcCalcLocalTime, RtcCalcLocalTimeOffset,
+  RtcReset, RunTasks, STR_CONV_MODE_LEADING_ZEROS, STR_CONV_MODE_RIGHT_ALIGN,
+  ScanlineEffect_Clear, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetGpuReg,
+  SetMainCallback2, SetVBlankCallback, ShowBg, StringCopy,
+  TRUE, TransferPlttBuffer, TrySavingData, UpdatePaletteFade,
+  VRAM_SIZE, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SpriteCB_Cursor_UpOrRight(struct Sprite *sprite) */

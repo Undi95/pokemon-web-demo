@@ -37,8 +37,8 @@ const {
   PLTT_SIZE_4BPP, REG_OFFSET_BLDALPHA, REG_OFFSET_BLDCNT, RelocateBattleBgPal,
   RequestDma3Copy, SAFE_DIV, ST_OAM_AFFINE_DOUBLE, ST_OAM_AFFINE_NORMAL,
   ST_OAM_OBJ_BLEND, ST_OAM_OBJ_NORMAL, ST_OAM_OBJ_WINDOW, SetAnimBgAttribute,
-  SetGpuReg, ShouldIgnoreDeoxysForm, Sin, StartSpriteAffineAnim,
-  StartSpriteAnim, TRUE, UpdateMonIconFrame,  // 4-per-line for readability
+  SetGpuReg, ShouldIgnoreDeoxysForm, Sin, SpriteCallbackDummy,
+  StartSpriteAffineAnim, StartSpriteAnim, TRUE, UpdateMonIconFrame,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 GetBattlerSpriteCoord(u8 battler, u8 coordType) */

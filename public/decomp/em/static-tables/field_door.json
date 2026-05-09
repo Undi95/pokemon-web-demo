@@ -1,0 +1,1230 @@
+{
+  "srcFile": "src/field_door.c",
+  "count": 105,
+  "tables": {
+    "sDoorNullPalette1": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette2": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette3": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette4": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette5": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette6": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette7": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette8": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sFiller1": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sFiller2": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette11": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette12": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette13": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette14": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette15": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette16": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette17": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette18": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette19": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette20": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette21": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette22": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette23": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette24": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette25": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette26": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette27": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette28": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette29": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette30": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette31": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette32": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette33": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette34": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette35": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette36": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette37": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette38": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette39": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette40": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette41": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette42": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette43": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette44": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette45": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette46": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette47": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette48": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorNullPalette49": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "rawValue": "{}"
+    },
+    "sDoorOpenAnimFrames": {
+      "type": "struct DoorAnimFrame",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{4, -1}",
+        "{4, 0}",
+        "{4, 0x100}",
+        "{4, 0x200}",
+        "{0, 0}"
+      ],
+      "rawValue": "{\n    {4, -1},\n    {4, 0},\n    {4, 0x100},\n    {4, 0x200},\n    {0, 0},\n}"
+    },
+    "sDoorCloseAnimFrames": {
+      "type": "struct DoorAnimFrame",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{4, 0x200}",
+        "{4, 0x100}",
+        "{4, 0}",
+        "{4, -1}",
+        "{0, 0}"
+      ],
+      "rawValue": "{\n    {4, 0x200},\n    {4, 0x100},\n    {4, 0},\n    {4, -1},\n    {0, 0},\n}"
+    },
+    "sBigDoorOpenAnimFrames": {
+      "type": "struct DoorAnimFrame",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{4, -1}",
+        "{4, 0}",
+        "{4, 0x200}",
+        "{4, 0x400}",
+        "{0, 0}"
+      ],
+      "rawValue": "{\n    {4, -1},\n    {4, 0},\n    {4, 0x200},\n    {4, 0x400},\n    {0, 0},\n}"
+    },
+    "sBigDoorCloseAnimFrames": {
+      "type": "struct DoorAnimFrame",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{4, 0x400}",
+        "{4, 0x200}",
+        "{4, 0}",
+        "{4, -1}",
+        "{0, 0}"
+      ],
+      "rawValue": "{\n    {4, 0x400},\n    {4, 0x200},\n    {4, 0},\n    {4, -1},\n    {0, 0},\n}"
+    },
+    "sDoorAnimPalettes_General": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{1, 1, 1, 1, 1, 1, 1, 1}"
+    },
+    "sDoorAnimPalettes_PokeCenter": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{1, 1, 1, 1, 1, 1, 1, 1}"
+    },
+    "sDoorAnimPalettes_Gym": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5"
+      ],
+      "rawValue": "{5, 5, 5, 5, 5, 5, 5, 5}"
+    },
+    "sDoorAnimPalettes_PokeMart": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "0",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{0, 0, 1, 1, 1, 1, 1, 1}"
+    },
+    "sDoorAnimPalettes_Littleroot": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "10",
+        "10",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6"
+      ],
+      "rawValue": "{10, 10, 6, 6, 6, 6, 6, 6}"
+    },
+    "sDoorAnimPalettes_BirchsLab": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8"
+      ],
+      "rawValue": "{8, 8, 8, 8, 8, 8, 8, 8}"
+    },
+    "sDoorAnimPalettes_RustboroTan": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "11",
+        "11",
+        "11",
+        "11",
+        "11",
+        "11",
+        "11",
+        "11"
+      ],
+      "rawValue": "{11, 11, 11, 11, 11, 11, 11, 11}"
+    },
+    "sDoorAnimPalettes_RustboroGray": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10",
+        "10"
+      ],
+      "rawValue": "{10, 10, 10, 10, 10, 10, 10, 10}"
+    },
+    "sDoorAnimPalettes_FallarborLightRoof": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_Lilycove": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8"
+      ],
+      "rawValue": "{8, 8, 8, 8, 8, 8, 8, 8}"
+    },
+    "sDoorAnimPalettes_Oldale": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "10",
+        "10",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9"
+      ],
+      "rawValue": "{10, 10, 9, 9, 9, 9, 9, 9}"
+    },
+    "sDoorAnimPalettes_Mossdeep": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "9",
+        "9",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{9, 9, 1, 1, 1, 1, 1, 1}"
+    },
+    "sDoorAnimPalettes_PokemonLeague": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8"
+      ],
+      "rawValue": "{8, 8, 8, 8, 8, 8, 8, 8}"
+    },
+    "sDoorAnimPalettes_Pacifidlog": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9"
+      ],
+      "rawValue": "{9, 9, 9, 9, 9, 9, 9, 9}"
+    },
+    "sDoorAnimPalettes_SootopolisPeakedRoof": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6"
+      ],
+      "rawValue": "{6, 6, 6, 6, 6, 6, 6, 6}"
+    },
+    "sDoorAnimPalettes_Sootopolis": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6"
+      ],
+      "rawValue": "{6, 6, 6, 6, 6, 6, 6, 6}"
+    },
+    "sDoorAnimPalettes_Dewford": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "0",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5"
+      ],
+      "rawValue": "{0, 0, 5, 5, 5, 5, 5, 5}"
+    },
+    "sDoorAnimPalettes_Slateport": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "6",
+        "6",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{6, 6, 1, 1, 1, 1, 1, 1}"
+    },
+    "sDoorAnimPalettes_Mauville": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_Verdanturf": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "6",
+        "6",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5"
+      ],
+      "rawValue": "{6, 6, 5, 5, 5, 5, 5, 5}"
+    },
+    "sDoorAnimPalettes_LilycoveWooden": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5"
+      ],
+      "rawValue": "{5, 5, 5, 5, 5, 5, 5, 5}"
+    },
+    "sDoorAnimPalettes_Contest": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{1, 1, 1, 1, 1, 1, 1, 1}"
+    },
+    "sDoorAnimPalettes_PetalburgGym": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6"
+      ],
+      "rawValue": "{6, 6, 6, 6, 6, 6, 6, 6}"
+    },
+    "sDoorAnimPalettes_CyclingRoad": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_LilycoveDeptStore": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5"
+      ],
+      "rawValue": "{5, 5, 5, 5, 5, 5, 5, 5}"
+    },
+    "sDoorAnimPalettes_SafariZone": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9"
+      ],
+      "rawValue": "{9, 9, 9, 9, 9, 9, 9, 9}"
+    },
+    "sDoorAnimPalettes_MossdeepSpaceCenter": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8",
+        "8"
+      ],
+      "rawValue": "{8, 8, 8, 8, 8, 8, 8, 8}"
+    },
+    "sDoorAnimPalettes_CableClub": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6",
+        "6"
+      ],
+      "rawValue": "{6, 6, 6, 6, 6, 6, 6, 6}"
+    },
+    "sDoorAnimPalettes_AbandonedShip": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_FallarborDarkRoof": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "11",
+        "11",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{11, 11, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_AbandonedShipRoom": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_LilycoveDeptStoreElevator": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "6",
+        "6",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{6, 6, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_BattleTowerOld": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9"
+      ],
+      "rawValue": "{9, 9, 9, 9, 9, 9, 9, 9}"
+    },
+    "sDoorAnimPalettes_BattleTowerElevator": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_UnusedBattleFrontier": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9"
+      ],
+      "rawValue": "{9, 9, 9, 9, 9, 9, 9, 9}"
+    },
+    "sDoorAnimPalettes_BattleDome": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{1, 1, 1, 1, 1, 1, 1, 1}"
+    },
+    "sDoorAnimPalettes_BattleFactory": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9"
+      ],
+      "rawValue": "{9, 9, 9, 9, 9, 9, 9, 9}"
+    },
+    "sDoorAnimPalettes_BattleTower": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0"
+      ],
+      "rawValue": "{0, 0, 0, 0, 0, 0, 0, 0}"
+    },
+    "sDoorAnimPalettes_BattleArena": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5",
+        "5"
+      ],
+      "rawValue": "{5, 5, 5, 5, 5, 5, 5, 5}"
+    },
+    "sDoorAnimPalettes_BattleArenaLobby": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_BattleDomeLobby": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_BattlePalaceLobby": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_BattleTent": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{1, 1, 1, 1, 1, 1, 1, 1}"
+    },
+    "sDoorAnimPalettes_BattleDomeCorridor": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_BattleTowerMultiCorridor": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_Unused": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{1, 1, 1, 1, 1, 1, 1, 1}"
+    },
+    "sDoorAnimPalettes_BattleFrontier": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1",
+        "1"
+      ],
+      "rawValue": "{1, 1, 1, 1, 1, 1, 1, 1}"
+    },
+    "sDoorAnimPalettes_BattleDomePreBattleRoom": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "9",
+        "9",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{9, 9, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_BattleTentInterior": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9",
+        "9"
+      ],
+      "rawValue": "{9, 9, 9, 9, 9, 9, 9, 9}"
+    },
+    "sDoorAnimPalettes_TrainerHillLobbyElevator": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{7, 7, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimPalettes_TrainerHillRoofElevator": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "9",
+        "9",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7",
+        "7"
+      ],
+      "rawValue": "{9, 9, 7, 7, 7, 7, 7, 7}"
+    },
+    "sDoorAnimGraphicsTable": {
+      "type": "struct DoorGraphics",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{METATILE_General_Door,                                 DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_General, sDoorAnimPalettes_General}",
+        "{METATILE_General_Door_PokeCenter,                      DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_PokeCenter, sDoorAnimPalettes_PokeCenter}",
+        "{METATILE_General_Door_Gym,                             DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_Gym, sDoorAnimPalettes_Gym}",
+        "{METATILE_General_Door_PokeMart,                        DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_PokeMart, sDoorAnimPalettes_PokeMart}",
+        "{METATILE_Petalburg_Door_Littleroot,                    DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Littleroot, sDoorAnimPalettes_Littleroot}",
+        "{METATILE_Petalburg_Door_BirchsLab,                     DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_BirchsLab, sDoorAnimPalettes_BirchsLab}",
+        "{METATILE_Rustboro_Door_Tan,                            DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_RustboroTan, sDoorAnimPalettes_RustboroTan}",
+        "{METATILE_Rustboro_Door_Gray,                           DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_RustboroGray, sDoorAnimPalettes_RustboroGray}",
+        "{METATILE_Fallarbor_Door_LightRoof,                     DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_FallarborLightRoof, sDoorAnimPalettes_FallarborLightRoof}",
+        "{METATILE_Petalburg_Door_Oldale,                        DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Oldale, sDoorAnimPalettes_Oldale}",
+        "{METATILE_Mauville_Door,                                DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Mauville, sDoorAnimPalettes_Mauville}",
+        "{METATILE_Mauville_Door_Verdanturf,                     DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Verdanturf, sDoorAnimPalettes_Verdanturf}",
+        "{METATILE_Slateport_Door,                               DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Slateport, sDoorAnimPalettes_Slateport}",
+        "{METATILE_Dewford_Door,                                 DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Dewford, sDoorAnimPalettes_Dewford}",
+        "{METATILE_General_Door_Contest,                         DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_Contest, sDoorAnimPalettes_Contest}",
+        "{METATILE_Lilycove_Door,                                DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Lilycove, sDoorAnimPalettes_Lilycove}",
+        "{METATILE_Lilycove_Door_Wooden,                         DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_LilycoveWooden, sDoorAnimPalettes_LilycoveWooden}",
+        "{METATILE_Mossdeep_Door,                                DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Mossdeep, sDoorAnimPalettes_Mossdeep}",
+        "{METATILE_Sootopolis_Door_PeakedRoof,                   DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_SootopolisPeakedRoof, sDoorAnimPalettes_SootopolisPeakedRoof}",
+        "{METATILE_Sootopolis_Door,                              DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Sootopolis, sDoorAnimPalettes_Sootopolis}",
+        "{METATILE_EverGrande_Door_PokemonLeague,                DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_PokemonLeague, sDoorAnimPalettes_PokemonLeague}",
+        "{METATILE_Pacifidlog_Door,                              DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Pacifidlog, sDoorAnimPalettes_Pacifidlog}",
+        "{METATILE_PetalburgGym_Door,                            DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_PetalburgGym, sDoorAnimPalettes_PetalburgGym}",
+        "{METATILE_Mauville_Door_CyclingRoad,                    DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_CyclingRoad, sDoorAnimPalettes_CyclingRoad}",
+        "{METATILE_Lilycove_Door_DeptStore,                      DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_LilycoveDeptStore, sDoorAnimPalettes_LilycoveDeptStore}",
+        "{METATILE_Lilycove_Door_SafariZone,                     DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_SafariZone, sDoorAnimPalettes_SafariZone}",
+        "{METATILE_Mossdeep_Door_SpaceCenter,                    DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_MossdeepSpaceCenter, sDoorAnimPalettes_MossdeepSpaceCenter}",
+        "{METATILE_PokemonCenter_Door_CableClub,                 DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_CableClub, sDoorAnimPalettes_CableClub}",
+        "{METATILE_InsideShip_IntactDoor_Bottom_Unlocked,        DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_AbandonedShip, sDoorAnimPalettes_AbandonedShip}",
+        "{METATILE_Fallarbor_Door_DarkRoof,                      DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_FallarborDarkRoof, sDoorAnimPalettes_FallarborDarkRoof}",
+        "{METATILE_InsideShip_IntactDoor_Bottom_Interior,        DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_AbandonedShipRoom, sDoorAnimPalettes_AbandonedShipRoom}",
+        "{METATILE_Shop_Door_Elevator,                           DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_LilycoveDeptStoreElevator, sDoorAnimPalettes_LilycoveDeptStoreElevator}",
+        "{METATILE_Dewford_Door_BattleTower,                     DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleTowerOld, sDoorAnimPalettes_BattleTowerOld}",
+        "{METATILE_BattleFrontier_Door_Elevator,                 DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleTowerElevator, sDoorAnimPalettes_BattleTowerElevator}",
+        "{0x3B0,                                                 DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_UnusedBattleFrontier, sDoorAnimPalettes_UnusedBattleFrontier}",
+        "{METATILE_BattleFrontierOutsideWest_Door_BattleDome,    DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleDome, sDoorAnimPalettes_BattleDome}",
+        "{METATILE_BattleFrontierOutsideWest_Door_BattleFactory, DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleFactory, sDoorAnimPalettes_BattleFactory}",
+        "{METATILE_BattleFrontierOutsideEast_Door_BattleTower,   DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleTower, sDoorAnimPalettes_BattleTower}",
+        "{METATILE_BattleFrontierOutsideEast_Door_BattleArena,   DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_BattleArena, sDoorAnimPalettes_BattleArena}",
+        "{METATILE_BattleArena_Door,                             DOOR_SOUND_ARENA,   1, sDoorAnimTiles_BattleArenaLobby, sDoorAnimPalettes_BattleArenaLobby}",
+        "{METATILE_BattleDome_Door_Lobby,                        DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleDomeLobby, sDoorAnimPalettes_BattleDomeLobby}",
+        "{METATILE_BattlePalace_Door,                            DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_BattlePalaceLobby, sDoorAnimPalettes_BattlePalaceLobby}",
+        "{METATILE_Slateport_Door_BattleTent,                    DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleTent, sDoorAnimPalettes_BattleTent}",
+        "{METATILE_Mauville_Door_BattleTent,                     DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleTent, sDoorAnimPalettes_BattleTent}",
+        "{METATILE_Fallarbor_Door_BattleTent,                    DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleTent, sDoorAnimPalettes_BattleTent}",
+        "{METATILE_BattleDome_Door_Corridor,                     DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleDomeCorridor, sDoorAnimPalettes_BattleDomeCorridor}",
+        "{METATILE_BattleFrontier_Door_MultiCorridor,            DOOR_SOUND_SLIDING, 2, sDoorAnimTiles_BattleTowerMultiCorridor, sDoorAnimPalettes_BattleTowerMultiCorridor}",
+        "{METATILE_BattleFrontierOutsideWest_Door,               DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_BattleFrontier, sDoorAnimPalettes_BattleFrontier}",
+        "{METATILE_BattleFrontierOutsideWest_Door_Sliding,       DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleFrontierSliding, sDoorAnimPalettes_BattleFrontier}",
+        "{METATILE_BattleDome_Door_PreBattleRoom,                DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleDomePreBattleRoom, sDoorAnimPalettes_BattleDomePreBattleRoom}",
+        "{METATILE_BattleTent_Door,                              DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_BattleTentInterior, sDoorAnimPalettes_BattleTentInterior}",
+        "{METATILE_TrainerHill_Door_Elevator_Lobby,              DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_TrainerHillLobbyElevator, sDoorAnimPalettes_TrainerHillLobbyElevator}",
+        "{METATILE_TrainerHill_Door_Elevator_Roof,               DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_TrainerHillRoofElevator, sDoorAnimPalettes_TrainerHillRoofElevator}",
+        "{}"
+      ],
+      "rawValue": "{\n    {METATILE_General_Door,                                 DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_General, sDoorAnimPalettes_General},\n    {METATILE_General_Door_PokeCenter,                      DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_PokeCenter, sDoorAnimPalettes_PokeCenter},\n    {METATILE_General_Door_Gym,                             DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_Gym, sDoorAnimPalettes_Gym},\n    {METATILE_General_Door_PokeMart,                        DOOR_SOUND_SLIDING, 1, sDoorAnimTiles_PokeMart, sDoorAnimPalettes_PokeMart},\n    {METATILE_Petalburg_Door_Littleroot,                    DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_Littleroot, sDoorAnimPalettes_Littleroot},\n    {METATILE_Petalburg_Door_BirchsLab,                     DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_BirchsLab, sDoorAnimPalettes_BirchsLab},\n    {METATILE_Rustboro_Door_Tan,                            DOOR_SOUND_NORMAL,  1, sDoorAnimTiles_RustboroTan, sDoorAnimPalettes_RustboroTan},\n    {METATILE_Rustboro_Door_Gray,                          ..."
+    }
+  }
+}

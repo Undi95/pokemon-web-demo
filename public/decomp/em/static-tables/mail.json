@@ -1,0 +1,136 @@
+{
+  "srcFile": "src/mail.c",
+  "count": 9,
+  "tables": {
+    "sBgTemplates": {
+      "type": "struct BgTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .priority = 0\n    }",
+        "{\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .priority = 1\n    }",
+        "{\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .priority = 2\n    }"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .charBaseIndex = 2,\n        .mapBaseIndex = 31,\n        .priority = 0\n    }, {\n        .bg = 1,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 30,\n        .priority = 1\n    }, {\n        .bg = 2,\n        .charBaseIndex = 0,\n        .mapBaseIndex = 29,\n        .priority = 2\n    }\n}"
+    },
+    "sWindowTemplates": {
+      "type": "struct WindowTemplate",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 3,\n        .width = 26,\n        .height = 15,\n        .paletteNum = 15,\n        .baseBlock = 1\n    }",
+        "DUMMY_WIN_TEMPLATE"
+      ],
+      "rawValue": "{\n    {\n        .bg = 0,\n        .tilemapLeft = 2,\n        .tilemapTop = 3,\n        .width = 26,\n        .height = 15,\n        .paletteNum = 15,\n        .baseBlock = 1\n    },\n    DUMMY_WIN_TEMPLATE\n}"
+    },
+    "sTextColors": {
+      "type": "u8",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "TEXT_COLOR_TRANSPARENT",
+        "TEXT_DYNAMIC_COLOR_1",
+        "TEXT_DYNAMIC_COLOR_2"
+      ],
+      "rawValue": "{\n    TEXT_COLOR_TRANSPARENT,\n    TEXT_DYNAMIC_COLOR_1,\n    TEXT_DYNAMIC_COLOR_2\n}"
+    },
+    "sBgColors": {
+      "type": "u16",
+      "isFnPtr": false,
+      "isArray": true,
+      "indexedKeys": [
+        "MALE",
+        "FEMALE"
+      ],
+      "indexedValues": [
+        "{ RGB(13",
+        "{ RGB(28"
+      ],
+      "rawValue": "{\n    [MALE]   = { RGB(13, 22, 26), RGB(5, 13, 20) },\n    [FEMALE] = { RGB(28, 15, 17), RGB(20, 6, 14) }\n}"
+    },
+    "sMailGraphics": {
+      "type": "struct MailGraphics",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[ITEM_TO_MAIL(ITEM_ORANGE_MAIL)] = {\n        .palette = gMailPalette_Orange,\n        .tiles = gMailTiles_Orange,\n        .tileMap = gMailTilemap_Orange,\n        .unused = 0x2C0,\n        .textColor = RGB(10, 10, 10),\n        .textShadow = RGB(25, 25, 25),\n    }",
+        "[ITEM_TO_MAIL(ITEM_HARBOR_MAIL)] = {\n        .palette = gMailPalette_Harbor,\n        .tiles = gMailTiles_Harbor,\n        .tileMap = gMailTilemap_Harbor,\n        .unused = 0x2E0,\n        .textColor = RGB_WHITE,\n        .textShadow = RGB(17, 17, 17),\n    }",
+        "[ITEM_TO_MAIL(ITEM_GLITTER_MAIL)] = {\n        .palette = gMailPalette_Glitter,\n        .tiles = gMailTiles_Glitter,\n        .tileMap = gMailTilemap_Glitter,\n        .unused = 0x400,\n        .textColor = RGB(10, 10, 10),\n        .textShadow = RGB(25, 25, 25),\n    }",
+        "[ITEM_TO_MAIL(ITEM_MECH_MAIL)] = {\n        .palette = gMailPalette_Mech,\n        .tiles = gMailTiles_Mech,\n        .tileMap = gMailTilemap_Mech,\n        .unused = 0x1E0,\n        .textColor = RGB_WHITE,\n        .textShadow = RGB(17, 17, 17),\n    }",
+        "[ITEM_TO_MAIL(ITEM_WOOD_MAIL)] = {\n        .palette = gMailPalette_Wood,\n        .tiles = gMailTiles_Wood,\n        .tileMap = gMailTilemap_Wood,\n        .unused = 0x2E0,\n        .textColor = RGB_WHITE,\n        .textShadow = RGB(17, 17, 17),\n    }",
+        "[ITEM_TO_MAIL(ITEM_WAVE_MAIL)] = {\n        .palette = gMailPalette_Wave,\n        .tiles = gMailTiles_Wave,\n        .tileMap = gMailTilemap_Wave,\n        .unused = 0x300,\n        .textColor = RGB(10, 10, 10),\n        .textShadow = RGB(25, 25, 25),\n    }",
+        "[ITEM_TO_MAIL(ITEM_BEAD_MAIL)] = {\n        .palette = gMailPalette_Bead,\n        .tiles = gMailTiles_Bead,\n        .tileMap = gMailTilemap_Bead,\n        .unused = 0x140,\n        .textColor = RGB_WHITE,\n        .textShadow = RGB(17, 17, 17),\n    }",
+        "[ITEM_TO_MAIL(ITEM_SHADOW_MAIL)] = {\n        .palette = gMailPalette_Shadow,\n        .tiles = gMailTiles_Shadow,\n        .tileMap = gMailTilemap_Shadow,\n        .unused = 0x300,\n        .textColor = RGB_WHITE,\n        .textShadow = RGB(17, 17, 17),\n    }",
+        "[ITEM_TO_MAIL(ITEM_TROPIC_MAIL)] = {\n        .palette = gMailPalette_Tropic,\n        .tiles = gMailTiles_Tropic,\n        .tileMap = gMailTilemap_Tropic,\n        .unused = 0x220,\n        .textColor = RGB(10, 10, 10),\n        .textShadow = RGB(25, 25, 25),\n    }",
+        "[ITEM_TO_MAIL(ITEM_DREAM_MAIL)] = {\n        .palette = gMailPalette_Dream,\n        .tiles = gMailTiles_Dream,\n        .tileMap = gMailTilemap_Dream,\n        .unused = 0x340,\n        .textColor = RGB(10, 10, 10),\n        .textShadow = RGB(25, 25, 25),\n    }",
+        "[ITEM_TO_MAIL(ITEM_FAB_MAIL)] = {\n        .palette = gMailPalette_Fab,\n        .tiles = gMailTiles_Fab,\n        .tileMap = gMailTilemap_Fab,\n        .unused = 0x2a0,\n        .textColor = RGB(10, 10, 10),\n        .textShadow = RGB(25, 25, 25),\n    }",
+        "[ITEM_TO_MAIL(ITEM_RETRO_MAIL)] = {\n        .palette = gMailPalette_Retro,\n        .tiles = gMailTiles_Retro,\n        .tileMap = gMailTilemap_Retro,\n        .unused = 0x520,\n        .textColor = RGB(10, 10, 10),\n        .textShadow = RGB(25, 25, 25),\n    }"
+      ],
+      "rawValue": "{\n    [ITEM_TO_MAIL(ITEM_ORANGE_MAIL)] = {\n        .palette = gMailPalette_Orange,\n        .tiles = gMailTiles_Orange,\n        .tileMap = gMailTilemap_Orange,\n        .unused = 0x2C0,\n        .textColor = RGB(10, 10, 10),\n        .textShadow = RGB(25, 25, 25),\n    },\n    [ITEM_TO_MAIL(ITEM_HARBOR_MAIL)] = {\n        .palette = gMailPalette_Harbor,\n        .tiles = gMailTiles_Harbor,\n        .tileMap = gMailTilemap_Harbor,\n        .unused = 0x2E0,\n        .textColor = RGB_WHITE,\n        .textShadow = RGB(17, 17, 17),\n    },\n    [ITEM_TO_MAIL(ITEM_GLITTER_MAIL)] = {\n        .palette = gMailPalette_Glitter,\n        .tiles = gMailTiles_Glitter,\n        .tileMap = gMailTilemap_Glitter,\n        .unused = 0x400,\n        .textColor = RGB(10, 10, 10),\n        .textShadow = RGB(25, 25, 25),\n    },\n    [ITEM_TO_MAIL(ITEM_MECH_MAIL)] = {\n        .palette = gMailPalette_Mech,\n        .tiles = gMailTiles_Mech,\n        .tileMap = gMailTilemap_Mech,\n        .unused = 0x1E0,\n        .textColor = RGB_WHITE,\n        .textShadow ..."
+    },
+    "sLineLayouts_Wide": {
+      "type": "struct MailLineLayout",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ .numEasyChatWords = 3, .xOffset = 0, .height = 16 }",
+        "{ .numEasyChatWords = 3, .xOffset = 0, .height = 16 }",
+        "{ .numEasyChatWords = 3, .xOffset = 0, .height = 16 }"
+      ],
+      "rawValue": "{\n    { .numEasyChatWords = 3, .xOffset = 0, .height = 16 },\n    { .numEasyChatWords = 3, .xOffset = 0, .height = 16 },\n    { .numEasyChatWords = 3, .xOffset = 0, .height = 16 }\n}"
+    },
+    "sMailLayouts_Wide": {
+      "type": "struct MailLayout",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[ITEM_TO_MAIL(ITEM_ORANGE_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_HARBOR_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_GLITTER_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_MECH_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_WOOD_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_WAVE_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_BEAD_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_SHADOW_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_TROPIC_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_DREAM_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_FAB_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 8,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    }",
+        "[ITEM_TO_MAIL(ITEM_RETRO_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 0,\n        .lines = sLineLayouts_Wide,\n    }"
+      ],
+      "rawValue": "{\n    [ITEM_TO_MAIL(ITEM_ORANGE_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    },\n    [ITEM_TO_MAIL(ITEM_HARBOR_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    },\n    [ITEM_TO_MAIL(ITEM_GLITTER_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    },\n    [ITEM_TO_MAIL(ITEM_MECH_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Wide),\n        .signatureYPos = 0,\n        .signatureWidth = 0,\n        .wordsYPos = 2,\n        .wordsXPos = 4,\n        .lines = sLineLayouts_Wide,\n    },\n    [ITEM_TO_MAIL(ITEM_WOOD_MAIL)] = {\n        .numLines = ..."
+    },
+    "sLineLayouts_Tall": {
+      "type": "struct MailLineLayout",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "{ .numEasyChatWords = 2, .xOffset = 0, .height = 16 }",
+        "{ .numEasyChatWords = 2, .xOffset = 0, .height = 16 }",
+        "{ .numEasyChatWords = 2, .xOffset = 0, .height = 16 }",
+        "{ .numEasyChatWords = 2, .xOffset = 0, .height = 16 }",
+        "{ .numEasyChatWords = 1, .xOffset = 0, .height = 16 }"
+      ],
+      "rawValue": "{\n    { .numEasyChatWords = 2, .xOffset = 0, .height = 16 },\n    { .numEasyChatWords = 2, .xOffset = 0, .height = 16 },\n    { .numEasyChatWords = 2, .xOffset = 0, .height = 16 },\n    { .numEasyChatWords = 2, .xOffset = 0, .height = 16 },\n    { .numEasyChatWords = 1, .xOffset = 0, .height = 16 }\n}"
+    },
+    "sMailLayouts_Tall": {
+      "type": "struct MailLayout",
+      "isFnPtr": false,
+      "isArray": true,
+      "plainValues": [
+        "[ITEM_TO_MAIL(ITEM_ORANGE_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 7,\n        .signatureWidth = 88,\n        .wordsYPos = 11,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_HARBOR_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 10,\n        .signatureWidth = 96,\n        .wordsYPos = 9,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_GLITTER_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 12,\n        .signatureWidth = 104,\n        .wordsYPos = 5,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_MECH_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 5,\n        .signatureWidth = 96,\n        .wordsYPos = 8,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_WOOD_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 10,\n        .signatureWidth = 96,\n        .wordsYPos = 9,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_WAVE_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 9,\n        .signatureWidth = 112,\n        .wordsYPos = 5,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_BEAD_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 12,\n        .signatureWidth = 104,\n        .wordsYPos = 9,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_SHADOW_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 13,\n        .signatureWidth = 104,\n        .wordsYPos = 13,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_TROPIC_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 9,\n        .signatureWidth = 96,\n        .wordsYPos = 9,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_DREAM_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 9,\n        .signatureWidth = 96,\n        .wordsYPos = 9,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_FAB_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 17,\n        .signatureWidth = 104,\n        .wordsYPos = 15,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }",
+        "[ITEM_TO_MAIL(ITEM_RETRO_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 9,\n        .signatureWidth = 96,\n        .wordsYPos = 5,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    }"
+      ],
+      "rawValue": "{\n    [ITEM_TO_MAIL(ITEM_ORANGE_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 7,\n        .signatureWidth = 88,\n        .wordsYPos = 11,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    },\n    [ITEM_TO_MAIL(ITEM_HARBOR_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 10,\n        .signatureWidth = 96,\n        .wordsYPos = 9,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    },\n    [ITEM_TO_MAIL(ITEM_GLITTER_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 12,\n        .signatureWidth = 104,\n        .wordsYPos = 5,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    },\n    [ITEM_TO_MAIL(ITEM_MECH_MAIL)] = {\n        .numLines = ARRAY_COUNT(sLineLayouts_Tall),\n        .signatureYPos = 5,\n        .signatureWidth = 96,\n        .wordsYPos = 8,\n        .wordsXPos = 30,\n        .lines = sLineLayouts_Tall,\n    },\n    [ITEM_TO_MAIL(ITEM_WOOD_MAIL)] = {\n        ..."
+    }
+  }
+}
