@@ -387,6 +387,10 @@ export interface DecompSprite {
   vFlip: boolean;
   /** Affine matrix slot (1:1 décomp sprite->oam.matrixNum). */
   matrixNum: number;
+  /** 1:1 décomp `sprite->subpriority` — set by CreateSprite's 4th arg, used
+   *  by BuildSpritePriorities to order same-OAM-priority sprites. Lower value
+   *  = drawn ON TOP. Default 0xFF (= sentinel, equivalent to "behind everything"). */
+  subpriority: number;
   /** centerToCornerVec : décalage OAM x/y pour positionnement correct selon
    *  shape/size/affineMode (1:1 décomp src/sprite.c CalcCenterToCornerVec).
    *  Utilisé par syncSpritesToOam : oam.x = sprite.x + sprite.x2 + centerToCornerVecX. */
@@ -1239,6 +1243,8 @@ export class DecompRuntime {
     tileId: number, paletteBank: number, x: number, y: number,
     shape: 0 | 1 | 2, size: 0 | 1 | 2 | 3, priority: number,
     paletteMode?: 0 | 1, affineMode?: 0 | 1 | 2 | 3, affineParamIndex?: number,
+    /** 1:1 décomp `CreateSprite` 4th arg. Default 0xFF (= sentinel "behind"). */
+    subpriority?: number,
   }): { spriteId: number, oamIndex: number } {
     // Recherche un slot OAM libre.
     // Bug session 89 fix : avant on testait `!oam.visible` pour décider si un
@@ -1328,6 +1334,7 @@ export class DecompRuntime {
       affineAnimBeginning: false, affineAnimPaused: false,
       shape: cfg.shape, size: cfg.size,
       affineMode: (cfg.affineMode ?? 0) as 0 | 1 | 2 | 3,
+      subpriority: cfg.subpriority ?? 0xFF,
     };
     this.gSprites.set(spriteId, sprite);
     return { spriteId, oamIndex };
@@ -1689,7 +1696,7 @@ export class DecompRuntime {
   /** 1:1 décomp `CreateSprite(&sSpriteTemplate_X, x, y, subpriority)` :
    *  résout template → OAM data + anim table + paletteTag/tileTag depuis sprite-system.ts,
    *  alloue un OAM slot, configure-le, enregistre l'anim state, retourne spriteId. */
-  CreateSpriteFromTemplate(templateName: string, x: number, y: number): number {
+  CreateSpriteFromTemplate(templateName: string, x: number, y: number, subpriority: number = 0xFF): number {
     const tpl = (SPRITE_TEMPLATES as Record<string, { tileTag: string, paletteTag: string, oam: string, anims: string, affineAnims: string, callback: string }>)[templateName];
     if (!tpl) {
       console.warn(`[runtime] CreateSpriteFromTemplate: ${templateName} not found`);
@@ -1723,6 +1730,7 @@ export class DecompRuntime {
       priority: parseInt(oam.priority ?? '0', 10) || 0,
       paletteMode: oam.bpp === 'ST_OAM_8BPP' ? 1 : 0,
       affineMode: affineModeNum,
+      subpriority,
     });
 
     if (animTable && firstAnim && firstAnim.frames.length > 0) {
@@ -2071,6 +2079,8 @@ export class DecompRuntime {
       oam.flipV = sprite.vFlip;
       oam.affineParamIndex = sprite.matrixNum;
       oam.objMode = sprite.objMode as 0 | 1 | 2;
+      // 1:1 décomp BuildSpritePriorities (sprite.c:361) — sync subpriority.
+      oam.subpriority = sprite.subpriority;
       // Audit V2 : merge sprite.affineMode + oam.affineMode (= last writer wins
       // pour OFF-state explicit reset, but if either is set NORMAL/DOUBLE, we
       // keep the affine mode active — matches decomp behavior where ANY write

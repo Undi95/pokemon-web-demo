@@ -144,16 +144,33 @@ export function composeFrame(
   // au pire (= 240 décodes max × 3 BG = 720 décodes/frame). Bug a0a6aff2 fix.
   for (const cache of _tileCachesCache) cache.clear();
 
-  // Build sorted OAM indices by Y ascending (= highest y rendered last = on
-  // top). Tie-break par OAM idx descending (= sprite 0 wins for same y).
-  // Évite que player (= OAM 0) soit toujours au-dessus des NPCs : maintenant
-  // le sprite avec y le plus haut visuellement apparaît devant.
+  // 1:1 décomp BuildSpritePriorities + SortSprites (sprite.c:325-450).
+  //   priority = subpriority | (oam.priority << 8)
+  //   sort ASC by priority, tie-break by Y DESC (= larger Y at lower index).
+  //   Render in this sorted order with "last write wins" → smaller index =
+  //   drawn first = appears BEHIND. Larger index = drawn last = ON TOP.
+  //
+  // Hotfix Manectric/Brendan intro Z-bug : avant on triait par Y ASC seul,
+  // ce qui ignorait subpriority. Quand Manectric (subpri=0) et Brendan
+  // (subpri=2) se croisent en Y (= Sin/Cos circular pattern), la priorité
+  // était inversée → Brendan apparaissait devant Manectric. Fix : honorer
+  // subpriority comme dans le décomp.
+  //
+  // Note : "lower OAM index drawn first" matches our compositor "last write
+  // wins" semantic (= larger OAM index in render order = on top).
   if (oam) {
     _oamSortedIndices.length = 0;
     for (let i = 0; i < oam.length; i++) _oamSortedIndices.push(i);
     _oamSortedIndices.sort((a, b) => {
       const sa = oam[a]; const sb = oam[b];
+      // Primary : composite priority (lower = drawn FIRST = behind).
+      const pa = (sa.subpriority ?? 0xFF) | (sa.priority << 8);
+      const pb = (sb.subpriority ?? 0xFF) | (sb.priority << 8);
+      if (pa !== pb) return pb - pa;  // higher priority first → ends drawn LAST = on top
+      // Tie-break : Y ASC (= higher Y on screen drawn last = on top, matches
+      // décomp `sprite1Y < sprite2Y → swap` insertion sort).
       if (sa.y !== sb.y) return sa.y - sb.y;
+      // Secondary tie-break : OAM idx DESC (= sprite 0 wins for same y).
       return b - a;
     });
   }

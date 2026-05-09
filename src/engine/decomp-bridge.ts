@@ -2852,20 +2852,25 @@ import { getRuntime as _getRT } from './decomp-globals';
 
 /** 1:1 décomp `src/sprite.c CreateSprite(template, x, y, subpriority)` :
  *  Crée un sprite depuis un SpriteTemplate. Retourne le spriteId.
- *  Notre runtime expose ça via CreateSpriteFromTemplate (= prend templateName). */
-export function CreateSprite(template: any, x: number, y: number, _subpriority?: number): number {
+ *  Notre runtime expose ça via CreateSpriteFromTemplate (= prend templateName).
+ *  HOTFIX 2026-05-09 : on passe maintenant `subpriority` au runtime — était
+ *  ignoré → bug intro Manectric/Brendan Z-order (= Brendan apparaissait devant
+ *  Manectric pendant circular run). Décomp sprite.c:540-588 store subpriority
+ *  sur sprite, BuildSpritePriorities (line 361-369) compose `subpriority |
+ *  (oam.priority << 8)`, SortSprites (line 372-450) sort ASC. Lower subpri =
+ *  drawn ON TOP (= GBATEK : OAM[lower index] = displayed in front). */
+export function CreateSprite(template: any, x: number, y: number, subpriority: number = 0xFF): number {
   const rt = _getRT();
-  // `template` peut être un objet template ou un nom string.
   const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
-  return rt.CreateSpriteFromTemplate(templateName, x, y);
+  return rt.CreateSpriteFromTemplate(templateName, x, y, subpriority);
 }
 
 /** 1:1 décomp `src/sprite.c CreateSpriteAtEnd(template, x, y, subpriority)` :
  *  Comme CreateSprite mais alloue le DERNIER slot OAM dispo (= sprites bg vs npc). */
-export function CreateSpriteAtEnd(template: any, x: number, y: number, _subpriority?: number): number {
+export function CreateSpriteAtEnd(template: any, x: number, y: number, subpriority: number = 0xFF): number {
   const rt = _getRT();
   const templateName = typeof template === 'string' ? template : template?.name ?? template?.tag ?? 'unknown';
-  return rt.CreateSpriteFromTemplate(templateName, x, y);
+  return rt.CreateSpriteFromTemplate(templateName, x, y, subpriority);
 }
 
 /** 1:1 décomp `src/sprite.c DestroySprite(sprite)` — kill un sprite par id. */

@@ -159,6 +159,13 @@ export interface OamEntry {
   affineMode: 0 | 1 | 2 | 3;
   /** Affine matrix slot (0-31, attr1 bits 9-13) si affineMode != NORMAL. */
   affineParamIndex: number;
+  /** Sub-priority used by `BuildSpritePriorities` (= sprite.c:361) to order
+   *  same-priority OBJs : `priority = subpriority | (oam.priority << 8)`,
+   *  sort ASC. Lower subpriority drawn ON TOP. Hardware GBA OAM doesn't
+   *  have a subpriority field — décomp synthesizes it from the SpriteTemplate's
+   *  4th CreateSprite arg. We mirror it here so the compositor can sort
+   *  correctly (= 1:1 décomp BuildSpritePriorities + SortSprites). */
+  subpriority: number;
 }
 
 /** Sprite size lookup [shape][size] → [width_tiles, height_tiles]. */
@@ -186,6 +193,7 @@ export function defaultOamEntry(): OamEntry {
     objMode: 0,
     affineMode: 0,
     affineParamIndex: 0,
+    subpriority: 0xFF,  // 1:1 décomp default for sentinel slots (sprite.c:168)
   };
 }
 
