@@ -64,6 +64,10 @@ import './engine/dev-bridge-audit-tools';
 // Side-effect import : pose window.dev.movementDispatch.* — bridge string
 // action names → MovementAction_*_StepN auto-fonctions.
 import './engine/movement-action-dispatch';
+// Side-effect import : pose window.dev.battle.startTrainer (= trainer battle
+// flow registered au boot pour debug). Sans ça, le devtool n'est registered
+// qu'après le premier dynamic import depuis _runTrainerBattle opcode.
+import './engine/trainer-battle-flow';
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
