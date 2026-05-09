@@ -274,7 +274,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
   // Turn counter for some text variation.
   let turnCount = 0;
 
-  /** Refresh both HP windows with current HP text. */
+  /** Refresh both HP windows with current HP text.
+   *  IMPORTANT : doit appeler CopyWindowToVram après le draw pour pousser
+   *  le contenu vers le BG (sinon HP text reste blanche / stale → bug iter11). */
   const renderHpWindows = (): void => {
     if (oppHpWindowId >= 0 && opponentMon) {
       FillWindowPixelBuffer(oppHpWindowId, 0x11);  // both nibbles = bgColor 1
@@ -282,6 +284,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         oppHpWindowId, 1, 1, 1, [1, 2, 3], 255 /* TEXT_SKIP_DRAW = sync */,
         `${opponentMon.nickname}\nLv${opponentMon.level} PV:${opponentMon.currentHp}/${opponentMon.maxHp}`,
       );
+      CopyWindowToVram(oppHpWindowId, 2);
     }
     if (playerHpWindowId >= 0 && playerMon) {
       FillWindowPixelBuffer(playerHpWindowId, 0x11);
@@ -289,6 +292,7 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         playerHpWindowId, 1, 1, 1, [1, 2, 3], 255,
         `${playerMon.nickname}\nLv${playerMon.level} PV:${playerMon.currentHp}/${playerMon.maxHp}`,
       );
+      CopyWindowToVram(playerHpWindowId, 2);
     }
   };
 
