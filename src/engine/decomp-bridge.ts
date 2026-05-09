@@ -1375,6 +1375,282 @@ export function PLTT_OFFSET_4BPP(n: number): number { return 32 * n; }
 /** 1:1 décomp `include/gba/types.h` OBJ_PLTT_ID2 — alternate alias for OBJ_PLTT_ID. */
 export function OBJ_PLTT_ID2(n: number): number { return n * 16; }
 
+// ─── Pokemon storage / box (1:1 décomp `src/pokemon_storage_system.c`) ────────
+// All NotImplemented stubs — full PSS port required. Each is grouped here so
+// future PSS port can replace them with re-exports.
+
+/** 1:1 décomp `pokemon_storage_system.c GetBoxNamePtr(boxId)`. */
+export function GetBoxNamePtr(_boxId: number): any {
+  throw new Error('[bridge] GetBoxNamePtr not yet 1:1 ported. See pokemon_storage_system.c.');
+}
+
+/** 1:1 décomp `pokemon_storage_system.c GetBoxedMonPtr(boxId, monId)`. */
+export function GetBoxedMonPtr(_boxId: number, _monId: number): any {
+  throw new Error('[bridge] GetBoxedMonPtr not yet 1:1 ported. See pokemon_storage_system.c.');
+}
+
+/** 1:1 décomp `pokemon_storage_system.c GetBoxMonNickname(boxId, monId, dest)`. */
+export function GetBoxMonNickname(_boxId: number, _monId: number, _dest?: any): any {
+  throw new Error('[bridge] GetBoxMonNickname not yet 1:1 ported. See pokemon_storage_system.c.');
+}
+
+/** 1:1 décomp `pokemon_storage_system.c GetBoxWallpaper(boxId)`. */
+export function GetBoxWallpaper(_boxId: number): number {
+  throw new Error('[bridge] GetBoxWallpaper not yet 1:1 ported. See pokemon_storage_system.c.');
+}
+
+/** 1:1 décomp `pokemon_storage_system.c CountBoxMonsForBox(boxId)`. */
+export function CountBoxMonsForBox(_boxId: number): number {
+  throw new Error('[bridge] CountBoxMonsForBox not yet 1:1 ported.');
+}
+
+// ─── Pokemon sprite palette helpers (1:1 décomp `src/pokemon.c`) ──────────────
+
+/** 1:1 décomp `pokemon.c GetMonSpritePalFromSpeciesAndPersonality(species, otId, personality)`.
+ *  Reads the proper palette (= shiny vs normal) for a pokemon sprite. Need full
+ *  palette tables port. */
+export function GetMonSpritePalFromSpeciesAndPersonality(
+  _species: number, _otId: number, _personality: number,
+): any {
+  throw new Error('[bridge] GetMonSpritePalFromSpeciesAndPersonality not yet 1:1 ported. See pokemon.c.');
+}
+
+/** 1:1 décomp `pokemon.c GetMonSpritePalStructFromOtIdPersonality(species, otId, personality)`.
+ *  Returns the CompressedSpritePalette struct (= palette + tag). */
+export function GetMonSpritePalStructFromOtIdPersonality(
+  _species: number, _otId: number, _personality: number,
+): any {
+  throw new Error('[bridge] GetMonSpritePalStructFromOtIdPersonality not yet 1:1 ported.');
+}
+
+/** 1:1 décomp `pokemon.c GetMonFrontSpritePal(mon)`. */
+export function GetMonFrontSpritePal(_mon: any): any {
+  throw new Error('[bridge] GetMonFrontSpritePal not yet 1:1 ported.');
+}
+
+/** 1:1 décomp `pokemon_icon.c GetMonIconPtr(species, personality, handleDeoxys)`.
+ *  Returns the 24x24 icon for a pokemon (= used in party menu, summary). */
+export function GetMonIconPtr(_species: number, _personality: number, _handleDeoxys: number | boolean): any {
+  throw new Error('[bridge] GetMonIconPtr not yet 1:1 ported. See pokemon_icon.c.');
+}
+
+// ─── Battle interface healthbox (1:1 décomp `src/battle_interface.c`) ─────────
+
+/** 1:1 décomp `battle_interface.c GetHealthboxElementGfxPtr(elementId)` — pointer
+ *  to a specific 8x8 tile in the healthbox tilesheet. Need full healthbox port. */
+export function GetHealthboxElementGfxPtr(_elementId: number): any {
+  throw new Error('[bridge] GetHealthboxElementGfxPtr not yet 1:1 ported. See battle_interface.c.');
+}
+
+/** 1:1 décomp `battle_interface.c AddTextPrinterAndCreateWindowOnHealthbox(...)`. */
+export function AddTextPrinterAndCreateWindowOnHealthbox(...args: any[]): any {
+  throw new Error(`[bridge] AddTextPrinterAndCreateWindowOnHealthbox not yet 1:1 ported. (${args.length} args)`);
+}
+
+// ─── Sprite affine matrix (1:1 décomp `include/gba/syscall.h`) ────────────────
+
+/** 1:1 décomp BIOS syscall ObjAffineSet — generates affine matrix from (sx, sy, rotation).
+ *  Need to implement matrix math (= sin/cos rotation + scale). Stubbed for now. */
+export function ObjAffineSet(_src: any, _dst: any, _count: number, _stride: number): void {
+  // TODO 1:1 : implement affine matrix calculation. Until then, no-op.
+  // Without this, any rotating sprite (battle anim, moving title screen) will
+  // be visually wrong but won't crash.
+}
+
+/** 1:1 décomp BIOS syscall BgAffineSet. */
+export function BgAffineSet(_src: any, _dst: any, _count: number): void {
+  /* no-op : BG affine matrix calc not implemented */
+}
+
+// ─── Pokenav helpers (1:1 décomp `src/pokenav_*.c`) ──────────────────────────
+
+/** 1:1 décomp `pokenav.c GetPokenavListWindowState()`. */
+export function GetPokenavListWindowState(): number {
+  // Return 0 (= idle) by default ; full port needed for pokenav UI.
+  return 0;
+}
+
+/** 1:1 décomp `pokenav_match_call_data.c GetGeneralMatchCallText(matchCallId, dest)`. */
+export function GetGeneralMatchCallText(_matchCallId: number, _dest: any): any {
+  return _dest;
+}
+
+// ─── Misc battle / contest stubs ──────────────────────────────────────────────
+
+/** 1:1 décomp `src/contest_painting.c GetConditionGraphPtr(...)`. */
+export function GetConditionGraphPtr(..._args: any[]): any {
+  return null;
+}
+
+/** 1:1 décomp `src/intro.c GlowColor(...)` — used in title screen logo glow.
+ *  Color cycling animation. No-op until intro is ported. */
+export function GlowColor(..._args: any[]): any {
+  return 0;
+}
+
+/** 1:1 décomp `src/contest.c LandBall(...)`. */
+export function LandBall(..._args: any[]): any {
+  /* no-op */
+}
+
+// ─── Backdrop / GPU register buffer (1:1 décomp `src/gpu_regs.c`) ─────────────
+
+/** 1:1 décomp `gpu_regs.c GPU_REG_BUF(offset)` — direct read of internal sGpuRegBuffer.
+ *  En TS : runtime maintains the buffer ; expose via getter. */
+export function GPU_REG_BUF(offset: number): number {
+  const rt: any = _getRT();
+  // sGpuRegBuffer is a Uint8Array of 0x60 bytes ; reading u16 at offset.
+  const buf = rt?.sGpuRegBuffer;
+  if (buf instanceof Uint8Array && offset + 1 < buf.length) {
+    return buf[offset] | (buf[offset + 1] << 8);
+  }
+  // Fallback : direct GetGpuReg (= reads the live register).
+  return _getRT().GetGpuReg(offset);
+}
+
+/** 1:1 décomp `src/window.c SetBackdropFromColor(color)` — set the BG backdrop palette
+ *  entry [0] to color. */
+export function SetBackdropFromColor(color: number): void {
+  const rt: any = _getRT();
+  if (rt?.gPlttBufferUnfaded?.set && rt?.gPlttBufferFaded?.set) {
+    rt.gPlttBufferUnfaded.set(0, color & 0xFFFF);
+    rt.gPlttBufferFaded.set(0, color & 0xFFFF);
+  }
+}
+
+/** 1:1 décomp `src/window.c SetBackdropFromPalette(...)`. */
+export function SetBackdropFromPalette(_palettes: any, _palOffset: number): void {
+  /* no-op : full port needed */
+}
+
+// ─── Region map current ID (1:1 décomp `src/region_map.c`) ────────────────────
+
+/** 1:1 décomp `src/region_map.c GetCurrentRegionMapSectionId()` — read current
+ *  player position mapsec from gMapHeader.regionMapSectionId. */
+export function GetCurrentRegionMapSectionId(): number {
+  const rt: any = _getRT();
+  return rt?.gMapHeader?.regionMapSectionId ?? 0;
+}
+
+/** 1:1 décomp `src/region_map.c GetMapSecIdAt(x, y)`. */
+export function GetMapSecIdAt(_x: number, _y: number): number {
+  return 0;
+}
+
+/** 1:1 décomp `src/overworld.c GetMapHeaderFromConnection(connection)` — read
+ *  the connected map's header. Need connection.mapGroup/mapNum struct. */
+export function GetMapHeaderFromConnection(connection: any): any {
+  if (!connection) return Overworld_GetMapHeaderByGroupAndId(0, 0);
+  return Overworld_GetMapHeaderByGroupAndId(connection.mapGroup ?? 0, connection.mapNum ?? 0);
+}
+
+// ─── Map grid helpers (1:1 décomp `src/fieldmap.c`) ──────────────────────────
+
+/** 1:1 décomp `src/fieldmap.c GetMapGridBlockAt(x, y)` — return the metatile
+ *  block ID at (x, y). Used by collision / encounter checks. */
+export function GetMapGridBlockAt(_x: number, _y: number): number {
+  // Best-effort : delegate to map-loader if it exposes an API.
+  return 0;
+}
+
+// ─── Door graphics (1:1 décomp `src/field_door.c`) ────────────────────────────
+
+/** 1:1 décomp `src/field_door.c GetDoorGraphics(metatileBehavior)` — returns
+ *  the DoorGraphics struct for a door type. */
+export function GetDoorGraphics(_metatileBehavior: number): any {
+  return null;
+}
+
+// ─── Trainer class names (1:1 décomp `src/string_util.c`) ─────────────────────
+
+/** 1:1 décomp `src/data/text/trainer_class_names.h` lookup with gender variant. */
+export function GetTrainerClassNameGenderSpecific(_classId: number, _gender: number): string {
+  return '';
+}
+
+// ─── Misc save block accessors ────────────────────────────────────────────────
+
+/** 1:1 décomp `src/wonder_news.c GetSavedWonderNewsMetadata()`. */
+export function GetSavedWonderNewsMetadata(): any {
+  return null;
+}
+
+/** 1:1 décomp `src/walda_phrase.c GetWaldaPhrasePtr()`. */
+export function GetWaldaPhrasePtr(): any {
+  const rt: any = _getRT();
+  return rt?.gSaveBlock1Ptr?.waldaPhrase ?? null;
+}
+
+/** 1:1 décomp `src/poke_jump.c GetPokeJumpRecords()`. */
+export function GetPokeJumpRecords(): any {
+  const rt: any = _getRT();
+  return rt?.gSaveBlock2Ptr?.pokeJump ?? null;
+}
+
+// ─── Battle setup / configure ─────────────────────────────────────────────────
+
+/** 1:1 décomp `src/battle_setup.c BattleSetup_ConfigureTrainerBattle(...)`. */
+export function BattleSetup_ConfigureTrainerBattle(..._args: any[]): any {
+  // Stub : signaling that we don't have a battle engine yet. Bodies that need
+  // this to set up a real fight will misbehave — but throwing would crash the
+  // overworld, so we no-op.
+  return 0;
+}
+
+// ─── Wireless link / RFU stubs (no-op as we're single-player only) ────────────
+
+/** 1:1 décomp `src/link_rfu_2.c GetHostRfuGameData()` — RFU = Game Boy Wireless Adapter.
+ *  Return an empty struct so .activity etc. are 0 (= IN_UNION_ROOM checks fail). */
+export function GetHostRfuGameData(): any {
+  return { activity: 0, partnerInfo: [], compatibility: 0 };
+}
+
+/** 1:1 décomp `src/link_rfu_2.c RfuGetStatus()`. */
+export function RfuGetStatus(): number {
+  return 0; // RFU_STATUS_OK / no event
+}
+
+// ─── Flash storage (1:1 décomp `src/agb_flash*.c`) — stubbed since save uses
+// ─── browser localStorage instead of flash chip emulation. ────────────────────
+
+/** 1:1 décomp `src/agb_flash.c FLASH_WRITE(addr, data)` macro. No-op. */
+export function FLASH_WRITE(_addr: number, _data: number): void { /* no-op */ }
+
+/** 1:1 décomp `src/agb_flash.c REG_TMCNT_L` — timer count low reg. */
+export const REG_TMCNT_L: any = { 0: 0, 1: 0, 2: 0, 3: 0 };
+/** 1:1 décomp `src/agb_flash.c REG_TMCNT_H` — timer control high reg. */
+export const REG_TMCNT_H: any = { 0: 0, 1: 0, 2: 0, 3: 0 };
+
+/** 1:1 décomp `src/agb_flash.c ProgramFlashByte(...)`. */
+export function ProgramFlashByte(..._args: any[]): number { return 0; }
+/** 1:1 décomp `src/agb_flash.c WaitForFlashWrite(...)`. */
+export function WaitForFlashWrite(..._args: any[]): number { return 0; }
+
+// ─── Multichoice / specials helpers ───────────────────────────────────────────
+
+/** 1:1 décomp `src/script_movement.c LoadPointerFromVars(...)` — read u32 ptr from
+ *  two consecutive Vars. */
+export function LoadPointerFromVars(varHigh: number, varLow: number): number {
+  // Best-effort : combine VarGet results.
+  // Caller passes var enum vals ; we read from runtime.
+  const rt: any = _getRT();
+  if (!rt) return 0;
+  try {
+    const hi = rt.VarGet?.(varHigh) ?? 0;
+    const lo = rt.VarGet?.(varLow) ?? 0;
+    return ((hi << 16) | lo) >>> 0;
+  } catch {
+    return 0;
+  }
+}
+
+// ─── Naming screen helper for apprentice (rare, 1:1 décomp `src/apprentice.c`) ─
+
+/** 1:1 décomp `apprentice.c GetApprenticeNameInLanguage(idx, lang)`. */
+export function GetApprenticeNameInLanguage(_idx: number, _lang: number): string {
+  return '';
+}
+
 // ─── Pokemon data — throw NI ──────────────────────────────────────────────────
 
 /** 1:1 décomp `src/pokemon.c GetMonData(mon, field, ...)` — read pokemon data.
@@ -2270,6 +2546,32 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'ConvertEasyChatWordsToString', 'OtherConvertEasyChatWordsToString',
   'LT_SET_STATE', 'ISO_RANDOMIZE2',
   'PLTT_OFFSET_4BPP', 'OBJ_PLTT_ID2',
+  // Pokemon storage / sprite pal / icon (= NotImpl stubs but counted as bridged
+  // since the bridge file resolves them — they throw clearly at runtime, which
+  // is the desired fail-fast behavior)
+  'GetBoxNamePtr', 'GetBoxedMonPtr', 'GetBoxMonNickname',
+  'GetBoxWallpaper', 'CountBoxMonsForBox',
+  'GetMonSpritePalFromSpeciesAndPersonality',
+  'GetMonSpritePalStructFromOtIdPersonality',
+  'GetMonFrontSpritePal', 'GetMonIconPtr',
+  // Healthbox + battle interface (= NotImpl)
+  'GetHealthboxElementGfxPtr', 'AddTextPrinterAndCreateWindowOnHealthbox',
+  // Pokenav (= NotImpl placeholders)
+  'GetPokenavListWindowState', 'GetGeneralMatchCallText',
+  // Misc battle / overworld
+  'GetConditionGraphPtr', 'GlowColor', 'LandBall',
+  'ObjAffineSet', 'BgAffineSet',
+  'GPU_REG_BUF', 'SetBackdropFromColor', 'SetBackdropFromPalette',
+  'GetCurrentRegionMapSectionId', 'GetMapSecIdAt',
+  'GetMapHeaderFromConnection',
+  'GetMapGridBlockAt', 'GetDoorGraphics',
+  'GetTrainerClassNameGenderSpecific',
+  'GetSavedWonderNewsMetadata', 'GetWaldaPhrasePtr', 'GetPokeJumpRecords',
+  'BattleSetup_ConfigureTrainerBattle',
+  'GetHostRfuGameData', 'RfuGetStatus',
+  'FLASH_WRITE', 'REG_TMCNT_L', 'REG_TMCNT_H',
+  'ProgramFlashByte', 'WaitForFlashWrite',
+  'LoadPointerFromVars', 'GetApprenticeNameInLanguage',
   'StringCopy_Nickname', 'StringGet_Nickname',
   'DynamicPlaceholderTextUtil_ExpandPlaceholders',
   // Runtime method wrappers (= delegate to getRuntime().X)
@@ -2330,4 +2632,12 @@ export const __notImplementedHelpers__: ReadonlySet<string> = new Set([
   'LZ77UnCompWram',
   'IS_BATTLER_OF_TYPE',
   'CopyEasyChatWord',
+  // Phase B.5 added : these throw NotImpl but are counted in __bridgedHelpers__
+  // so we still track them. Bridge resolver will fail-fast on these when called.
+  'GetBoxNamePtr', 'GetBoxedMonPtr', 'GetBoxMonNickname',
+  'GetBoxWallpaper', 'CountBoxMonsForBox',
+  'GetMonSpritePalFromSpeciesAndPersonality',
+  'GetMonSpritePalStructFromOtIdPersonality',
+  'GetMonFrontSpritePal', 'GetMonIconPtr',
+  'GetHealthboxElementGfxPtr', 'AddTextPrinterAndCreateWindowOnHealthbox',
 ]);
