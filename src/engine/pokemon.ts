@@ -13,7 +13,8 @@ import { Dex } from '@pkmn/dex';
 import {
   getSpeciesId, getMoveId, getSpeciesNameFr, getMoveNameFr,
 } from './data-tables';
-import { Random } from './random';
+import { Random, Random32 } from './random';
+import { gameState } from './game-state';
 
 /** Convertit `SPECIES_TREECKO` → `treecko` (id format @pkmn/dex). */
 export function speciesEnumToDexId(speciesEnum: string): string {
@@ -60,6 +61,24 @@ export interface PokemonInstance {
    *  GROWTH_MEDIUM_FAST / FAST / MEDIUM_SLOW / SLOW / ERRATIC / FLUCTUATING.
    *  Cached at create pour éviter lookup species à chaque check level-up. */
   growthRate?: string;
+  /** Session 124 : personality value u32 (= 1:1 décomp `MON_DATA_PERSONALITY`).
+   *  Generated via `Random32()` at create. Used pour shiny check + gender
+   *  determination + nature + abilitySlot. */
+  personality?: number;
+  /** Session 124 : shiny flag (= 1:1 décomp `IsShinyOtIdPersonality`).
+   *  Computed at create depuis personality + playerTrainerId. */
+  isShiny?: boolean;
+}
+
+/**
+ * 1:1 décomp `GET_SHINY_VALUE(otId, personality)` (pokemon.h:371) :
+ *   shinyValue = HIHALF(otId) ^ LOHALF(otId) ^ HIHALF(personality) ^ LOHALF(personality)
+ * Pokemon est shiny si shinyValue < SHINY_ODDS (= 8).
+ * Probability = 8/65536 = 1/8192 (= classic Gen 3 odds).
+ */
+function isShinyFromOtIdPersonality(otId: number, personality: number): boolean {
+  const shinyValue = ((otId >>> 16) ^ (otId & 0xFFFF) ^ (personality >>> 16) ^ (personality & 0xFFFF)) & 0xFFFF;
+  return shinyValue < 8;
 }
 
 const ZERO_STATS: StatSpread = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
@@ -143,6 +162,16 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
   const species = Dex.species.get(dexId);
   const speciesName = species.name;
   const speciesNameFr = getSpeciesNameFr(speciesEnum);
+  // Session 124 : 1:1 décomp `CreateBoxMon` ordering — personality FIRST,
+  // PUIS IVs (= mêmes Random() calls dans le même order qu'en ROM, donc
+  // RNG-perfect compat).
+  // Décomp pokemon.c:2207 :
+  //   personality = Random32();   ← 2× Random() calls
+  //   value = playerTrainerId;    (= no RNG)
+  //   ... ivs = randomIVs();      ← 2× Random() calls
+  const personality = Random32();
+  const otId = gameState.trainerId ?? 0;
+  const isShiny = isShinyFromOtIdPersonality(otId, personality);
   const ivs = opts?.ivs ?? randomIVs();
   const evs = opts?.evs ?? ZERO_STATS;
   const baseHp = species.baseStats?.hp ?? 50;
@@ -183,6 +212,8 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     status: null,
     currentExp,
     growthRate,
+    personality,
+    isShiny,
   };
 }
 
@@ -258,7 +289,7 @@ export function pokemonToShowdownSet(p: PokemonInstance): {
     level: p.level,
     // gender '' : @pkmn/sim auto-detect via species genderRatio. Le décomp
     // calcule via `personality & 0xFF` vs `gBaseStats[species].genderRatio`.
-    // TODO : extraire genderRatio par species si on veut shiny/personality 1:1.
+    // TODO : extraire genderRatio par species si on veut gender 1:1 personality.
     gender: '',
     moves: p.moves.map(m => m.id),
     ability: p.ability,
@@ -266,7 +297,10 @@ export function pokemonToShowdownSet(p: PokemonInstance): {
     nature: p.nature,
     ivs: p.ivs,
     evs: p.evs,
-    shiny: false,
+    // Session 124 : shiny propagé depuis PokemonInstance.isShiny (= 1:1 décomp
+    // GET_SHINY_VALUE check fait au create depuis personality + playerTrainerId).
+    // Default false si pas set (= back-compat saves pre-session-124).
+    shiny: p.isShiny ?? false,
     // Valeurs décomp-aligned (PAS du hardcode arbitraire) :
     //   `PARTY_MON_INIT_HAPPINESS = 70` (cf. include/constants/pokemon.h)
     //   `pokeball: 'pokeball'` = ITEM_POKE_BALL (ball par défaut au catch initial)
