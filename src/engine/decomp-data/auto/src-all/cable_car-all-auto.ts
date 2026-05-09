@@ -18,21 +18,21 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AllocZeroed, AnimateGroundGoingDown, AnimateGroundGoingUp,
-  AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BufferNextGroundSegment,
-  BuildOamBuffer, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect_ChangePalette, CreateCableCarSprites,
+  ARRAY_COUNT, AllocZeroed, AnimateSprites, BG_PLTT_ID,
+  BeginNormalPaletteFade, BuildOamBuffer, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect_ChangePalette,
   CreateObjectGraphicsSprite, CreateSprite, CreateTask, DecompressAndCopyTileDataToVram,
   DestroySprite, DestroyTask, DmaFill16Defvars, DmaFill32Defvars,
-  DmaFillLarge16, DrawNextGroundSegmentGoingDown, DrawNextGroundSegmentGoingUp, FREE_AND_SET_NULL,
-  FadeInNewBGM, FadeOutBGM, FillBgTilemapBufferRect, FreeAllSpritePalettes,
-  FreeTempTileDataBuffersIfPossible, HideBg, InitBgsFromTemplates, InitGroundTilemapData,
-  InitMapMusic, LoadCompressedSpriteSheet, LoadOam, LoadPalette,
-  LoadSpritePalettes, LockPlayerFieldControls, MapMusicMain, ProcessSpriteCopyRequests,
-  Random, ResetBgsAndClearDma3BusyFlags, ResetMapMusic, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, RunTasks,
-  S16TOPOSFLOAT, ScanlineEffect_Stop, SetBgRegs, SetBgTilemapBuffer,
+  DmaFillLarge16, FREE_AND_SET_NULL, FadeInNewBGM, FadeOutBGM,
+  FillBgTilemapBufferRect, FreeAllSpritePalettes, FreeTempTileDataBuffersIfPossible, HideBg,
+  InitBgsFromTemplates, InitMapMusic, LoadCompressedSpriteSheet, LoadOam,
+  LoadPalette, LoadSpritePalettes, LockPlayerFieldControls, MapMusicMain,
+  ProcessSpriteCopyRequests, Random, ResetBgsAndClearDma3BusyFlags, ResetMapMusic,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
+  RunTasks, S16TOPOSFLOAT, ScanlineEffect_Stop, SetBgTilemapBuffer,
   SetCurrentAndNextWeatherNoDelay, SetGpuReg, SetMainCallback2, SetNextWeather,
   SetVBlankCallback, ShowBg, StartSpriteAnim, StartWeather,
   TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade, WarpIntoMap,  // 4-per-line for readability

@@ -18,26 +18,24 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized3, AllocSpritePalette, AllocSubstruct,
   BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, ChangeBgY,
-  CleanupPokenavMainMenuResources, CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded, CopyToBgTilemapBuffer,
-  CopyWindowToVram, CpuCopy16, CpuFill16, CreateLeftHeaderSprites,
-  CreateLoopedTask, CreateSprite, DecompressAndCopyTileDataToVram, DestroySprite,
-  DrawHelpBar, FillWindowPixelBuffer, FillWindowPixelRect, FreeAllSpritePalettes,
+  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram, CpuCopy16,
+  CpuFill16, CreateLoopedTask, CreateSprite, DecompressAndCopyTileDataToVram,
+  DestroySprite, FillWindowPixelBuffer, FillWindowPixelRect, FreeAllSpritePalettes,
   FreeAllWindowBuffers, FreeMenuHandlerSubstruct2, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
   FreeTempTileDataBuffersIfPossible, GET_B, GET_G, GET_R,
   GetBgY, GetDecompressedDataSize, GetSpriteTileStartByTag, GetSubstructPtr,
-  HideLeftHeaderSprites, HideLeftHeaderSubmenuSprites, IndexOfSpritePaletteTag, InitBgFromTemplate,
-  InitBgsFromTemplates, InitHelpBar, InitPokenavMainMenuResources, InitWindows,
+  IndexOfSpritePaletteTag, InitBgFromTemplate, InitBgsFromTemplates, InitWindows,
   IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive, LZ77UnCompWram, LoadCompressedSpriteSheet,
-  LoadLeftHeaderGfxForMenu, LoadLeftHeaderGfxForSubMenu, LoadPalette, MoveLeftHeader,
-  OBJ_PLTT_ID, PIXEL_FILL, PlaySE, Pokenav_AllocAndLoadPalettes,
+  LoadPalette, OBJ_PLTT_ID, PIXEL_FILL, PlaySE,
   PutWindowTilemap, RGB2, RequestDma3Copy, ResetBgPositions,
   ResetBgsAndClearDma3BusyFlags, ResetBldCnt_, ResetSpriteData, ResetTempTileDataBuffers,
-  SetBgTilemapBuffer, SetGpuReg, ShowBg, ShowLeftHeaderSprites,
-  ShowLeftHeaderSubmenuSprites,  // 4-per-line for readability
+  SetBgTilemapBuffer, SetGpuReg, ShowBg,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 InitPokenavMainMenu(void) */

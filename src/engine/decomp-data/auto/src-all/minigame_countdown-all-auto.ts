@@ -18,14 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CreateNumberSprite, CreateSprite, CreateStartSprite, CreateTask,
-  DestroySprite, DestroyTask, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, FuncIsActiveTask, GetMultiplayerId, InitStartGraphic,
-  IsStartGraphicAnimRunning, Load321StartGfx, LoadCompressedSpriteSheet, LoadSpritePalette,
-  PlaySE, Rfu_SendPacket, RunMinigameCountdownDigitsAnim, SetSpriteMatrixAnchor,
-  StartSpriteAffineAnim, StartSpriteAnim, StaticCountdown_CreateSprites,  // 4-per-line for readability
+  CreateSprite, CreateTask, DestroySprite, DestroyTask,
+  FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FuncIsActiveTask,
+  GetMultiplayerId, LoadCompressedSpriteSheet, LoadSpritePalette, PlaySE,
+  Rfu_SendPacket, SetSpriteMatrixAnchor, StartSpriteAffineAnim, StartSpriteAnim,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void Task_StaticCountdown(u8 taskId) */

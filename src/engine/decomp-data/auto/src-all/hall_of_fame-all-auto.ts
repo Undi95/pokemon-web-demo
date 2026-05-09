@@ -18,39 +18,38 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized2, AddTextPrinterParameterized3, AddWindow,
   AllocZeroed, AnimateSprites, BG_PLTT_ID, BLDALPHA_BLEND,
   BeginNormalPaletteFade, BlendPalettes, BlendPalettesUnfaded, BuildOamBuffer,
-  ChangeBgX, ChangeBgY, ClearDialogWindowAndFrame, ClearVramOamPltt_LoadHofPal,
-  ComputerScreenCloseEffect, ComputerScreenOpenEffect, ConfettiUtil_AddNew, ConfettiUtil_Free,
-  ConfettiUtil_Init, ConfettiUtil_Remove, ConfettiUtil_SetCallback, ConfettiUtil_SetData,
-  ConfettiUtil_Update, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyWindowToVram,
-  CpuCopy16, CreateHofConfettiSprite, CreateMonPicSprite_Affine, CreateMonPicSprite_HandleDeoxys,
-  CreateSprite, CreateTask, CreateTrainerPicSprite, DecompressAndCopyTileDataToVram,
-  DestroySprite, DestroyTask, DmaFill16, DmaFill32,
-  DoMonFrontSpriteAnimation, DrawDialogueFrame, DrawStdFrameWithCustomTileAndPalette, FadeOutBGM,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FindTaskIdByFunc, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeAndDestroyMonPicSprite, FreeAndDestroyTrainerPicSprite, FreeOamMatrix,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetGameStat,
-  GetGenderFromSpeciesAndPersonality, GetMonData, GetStringCenterAlignXOffset, GetStringRightAlignXOffset,
-  GetTextWindowPalette, HallOfFame_PrintMonInfo, HallOfFame_PrintPlayerInfo, HallOfFame_PrintWelcomeText,
-  HideBg, HofPCTopBar_AddWindow, HofPCTopBar_Print, HofPCTopBar_PrintPair,
-  HofPCTopBar_RemoveWindow, InitBgsFromTemplates, InitHallOfFameScreen, InitHofBgs,
-  InitStandardTextBoxWindows, InitTextBoxGfxAndPrinters, IsComputerScreenCloseEffectActive, IsComputerScreenOpenEffectActive,
-  IsCryPlayingOrClearCrySongs, JOY_NEW, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
-  LoadGameSave, LoadHofBgs, LoadHofGfx, LoadOam,
-  LoadPalette, LoadWindowGfx, PIXEL_FILL, PlayBGM,
-  PlayCry_Normal, PlaySE, PlayerGenderToFrontTrainerPicId_Debug, ProcessSpriteCopyRequests,
-  PutWindowTilemap, Random, ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
-  ReturnFromHallOfFamePC, RunTasks, RunTextPrinters, ScanlineEffect_Stop,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  ShowBg, SpeciesToPokedexNum, StartCredits, StartSpriteAnim,
-  StopCryAndClearCrySongs, StopDomeConfetti, StringCopy, StringExpandPlaceholders,
-  TRY_FREE_AND_SET_NULL, TransferPlttBuffer, TrySavingData, UnsetBgTilemapBuffer,
-  UpdatePaletteFade,  // 4-per-line for readability
+  ChangeBgX, ChangeBgY, ClearDialogWindowAndFrame, ComputerScreenCloseEffect,
+  ComputerScreenOpenEffect, ConfettiUtil_AddNew, ConfettiUtil_Free, ConfettiUtil_Init,
+  ConfettiUtil_Remove, ConfettiUtil_SetCallback, ConfettiUtil_SetData, ConfettiUtil_Update,
+  ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyWindowToVram, CpuCopy16,
+  CreateMonPicSprite_Affine, CreateMonPicSprite_HandleDeoxys, CreateSprite, CreateTask,
+  CreateTrainerPicSprite, DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask,
+  DmaFill16, DmaFill32, DoMonFrontSpriteAnimation, DrawDialogueFrame,
+  DrawStdFrameWithCustomTileAndPalette, FadeOutBGM, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
+  FindTaskIdByFunc, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeAndDestroyMonPicSprite,
+  FreeAndDestroyTrainerPicSprite, FreeOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  FreeTempTileDataBuffersIfPossible, GetGameStat, GetGenderFromSpeciesAndPersonality, GetMonData,
+  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, GetTextWindowPalette, HideBg,
+  HofPCTopBar_AddWindow, HofPCTopBar_Print, HofPCTopBar_PrintPair, HofPCTopBar_RemoveWindow,
+  InitBgsFromTemplates, InitStandardTextBoxWindows, InitTextBoxGfxAndPrinters, IsComputerScreenCloseEffectActive,
+  IsComputerScreenOpenEffectActive, IsCryPlayingOrClearCrySongs, JOY_NEW, LoadCompressedSpritePalette,
+  LoadCompressedSpriteSheet, LoadGameSave, LoadOam, LoadPalette,
+  LoadWindowGfx, PIXEL_FILL, PlayBGM, PlayCry_Normal,
+  PlaySE, PlayerGenderToFrontTrainerPicId_Debug, ProcessSpriteCopyRequests, PutWindowTilemap,
+  Random, ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
+  ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, ReturnFromHallOfFamePC,
+  RunTasks, RunTextPrinters, ScanlineEffect_Stop, SetBgTilemapBuffer,
+  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
+  SpeciesToPokedexNum, StartSpriteAnim, StopCryAndClearCrySongs, StringCopy,
+  StringExpandPlaceholders, TRY_FREE_AND_SET_NULL, TransferPlttBuffer, TrySavingData,
+  UnsetBgTilemapBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_HallOfFame(void) */

@@ -18,32 +18,29 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized2, AllocZeroed, AllocateMonSpritesGfx,
   AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes,
-  BuildOamBuffer, CalcCenterToCornerVec, CalculateMonAnimLength, CalculateMonAnimMovement,
-  CalculateMonAnimMovementEnd, ClearScheduledBgCopiesToVram, Cos, CreateMonSprite,
-  CreatePokeblockCaseSprite, CreatePokeblockCaseSpriteForFeeding, CreatePokeblockSprite, CreateSprite,
-  CreateTask, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroySprite,
-  DestroyTask, DoMonAnimStep, DoPokeblockCaseThrowEffect, DoScheduledBgTilemapCopiesToVram,
+  BuildOamBuffer, CalcCenterToCornerVec, ClearScheduledBgCopiesToVram, Cos,
+  CreatePokeblockCaseSprite, CreateSprite, CreateTask, DeactivateAllTextPrinters,
+  DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask, DoScheduledBgTilemapCopiesToVram,
   DrawStdFrameWithCustomTileAndPalette, FillWindowPixelBuffer, Free, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, FreeMonSpriteOamMatrix, FreeMonSpritesGfx, FreeOamMatrix,
-  FreeSpriteOamMatrix, FreeTempTileDataBuffersIfPossible, GetMonData, GetMonNickname,
-  GetMonSpritePalStructFromOtIdPersonality, GetNature, GetPlayerTextSpeedDelay, GetPokeblockData,
-  HandleInitBackgrounds, HandleInitWindows, HandleLoadSpecialPokePic_2, InitBgsFromTemplates,
-  InitMonAnimStage, InitSpriteAffineAnim, InitWindows, IsMonSpriteNotFlipped,
-  LZDecompressWram, LaunchPokeblockFeedTask, LoadCompressedPalette, LoadCompressedSpritePalette,
-  LoadCompressedSpriteSheet, LoadMonAndSceneGfx, LoadOam, LoadPalette,
-  LoadPokeblockFeedScene, LoadUserWindowBorderGfx, MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv,
-  PIXEL_FILL, PlayCry_Normal, PokeblockCopyName, PokeblockGetGain,
-  ProcessSpriteCopyRequests, PutWindowTilemap, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs,
-  RunTasks, RunTextPrintersRetIsActive, ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetMultiuseSpriteTemplateToPokemon, SetPokeblockSpritePal,
+  FreeAllWindowBuffers, FreeMonSpritesGfx, FreeOamMatrix, FreeSpriteOamMatrix,
+  FreeTempTileDataBuffersIfPossible, GetMonData, GetMonNickname, GetMonSpritePalStructFromOtIdPersonality,
+  GetNature, GetPlayerTextSpeedDelay, GetPokeblockData, HandleLoadSpecialPokePic_2,
+  InitBgsFromTemplates, InitSpriteAffineAnim, InitWindows, IsMonSpriteNotFlipped,
+  LZDecompressWram, LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
+  LoadOam, LoadPalette, LoadUserWindowBorderGfx, MenuHelpers_IsLinkActive,
+  MenuHelpers_ShouldWaitForLinkRecv, PIXEL_FILL, PlayCry_Normal, PokeblockCopyName,
+  PokeblockGetGain, ProcessSpriteCopyRequests, PutWindowTilemap, ResetAllBgsCoordinates,
+  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTempTileDataBuffers,
+  ResetVramOamAndBgCntRegs, RunTasks, RunTextPrintersRetIsActive, ScheduleBgCopyTilemapToVram,
+  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetMultiuseSpriteTemplateToPokemon,
   SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg, Sin,
-  StartMonJumpForPokeblock, StartSpriteAffineAnim, StringExpandPlaceholders, TransferPlttBuffer,
-  UpdateMonAnim, UpdatePaletteFade,  // 4-per-line for readability
+  StartSpriteAffineAnim, StringExpandPlaceholders, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_PokeblockFeed(void) */

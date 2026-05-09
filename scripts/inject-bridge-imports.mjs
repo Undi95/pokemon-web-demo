@@ -56,19 +56,39 @@ function stripExistingBridgeImport(src) {
   return src.slice(0, beginIdx) + src.slice(endLineEnd);
 }
 
+/** Extract names defined in the auto-file via `export function X` so we DON'T
+ *  destructure them from bridge (= avoid "already declared" esbuild error). */
+function extractDefinedFunctions(src) {
+  const names = new Set();
+  const re = /^export\s+function\s+([A-Za-z_][A-Za-z0-9_]*)/gm;
+  let m;
+  while ((m = re.exec(src)) !== null) names.add(m[1]);
+  return names;
+}
+
 /** Generate the bridge import block. */
-function generateImportBlock(callsTo) {
+function generateImportBlock(callsTo, definedFunctions) {
   if (!callsTo || callsTo.length === 0) return '';
   // Filter out callees that are obviously not from the bridge (= TypeScript reserved
   // words and things that would conflict). Conservative whitelist : start with
   // letter or underscore, no funky chars.
-  const valid = callsTo.filter(name => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name));
+  let valid = callsTo.filter(name => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name));
+  // ⚠️ EXCLUDE names that are also defined in the auto-file via `export function`,
+  // since destructuring them would cause "already declared" errors at module scope.
+  // The auto-defined version takes precedence (= it has the actual décomp body).
+  // Helpers that are NOT auto-defined fall through to bridge resolution.
+  if (definedFunctions) {
+    valid = valid.filter(name => !definedFunctions.has(name));
+  }
   // Drop duplicates, sort.
   const sorted = [...new Set(valid)].sort();
+  if (sorted.length === 0) return '';
   const lines = [];
   lines.push(BEGIN_MARKER);
   lines.push(`// Pull tous les callees ce module fait depuis le bridge unifié.`);
   lines.push(`// Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.`);
+  lines.push(`// Names already defined in this file via 'export function' are EXCLUDED`);
+  lines.push(`// to avoid "already declared" esbuild errors.`);
   lines.push(`import * as _bridge from '../../../decomp-bridge';`);
   lines.push(`const {`);
   // Pack 4 per line for readability.
@@ -104,7 +124,10 @@ function processFile(fpath) {
   if (insertAt === -1) {
     return { fpath, status: 'no-insertion-point', changed: false };
   }
-  const block = generateImportBlock(callsTo);
+  // Extract auto-defined function names so we exclude them from destructure
+  // (= avoid "already declared" esbuild errors).
+  const definedFunctions = extractDefinedFunctions(stripped);
+  const block = generateImportBlock(callsTo, definedFunctions);
   if (!block) {
     return { fpath, status: 'empty-callsTo', changed: false };
   }
@@ -113,7 +136,8 @@ function processFile(fpath) {
     return { fpath, status: 'unchanged', changed: false };
   }
   writeFileSync(fpath, newSrc, 'utf8');
-  return { fpath, status: 'updated', changed: true, calleesCount: callsTo.length };
+  return { fpath, status: 'updated', changed: true,
+           calleesCount: callsTo.length, definedCount: definedFunctions.size };
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────

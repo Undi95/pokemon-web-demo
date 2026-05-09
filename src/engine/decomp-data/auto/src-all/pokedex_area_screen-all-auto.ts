@@ -18,23 +18,22 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocZeroed, BG_PLTT_ID, BLDALPHA_BLEND,
-  BeginNormalPaletteFade, BuildAreaGlowTilemap, ChangeBgY, CorrectSpecialMapSecId,
-  CpuCopy32, CreateAreaMarkerSprites, CreateAreaUnknownSprites, CreateRegionMapPlayerIcon,
-  CreateSprite, CreateTask, DecompressAndCopyTileDataToVram, DestroyAreaScreenSprites,
-  DestroySprite, DestroyTask, DoAreaGlow, DrawAreaGlow,
-  FREE_AND_SET_NULL, FindMapsWithMon, FlagGet, FreeAllSpritePalettes,
-  FreePokedexAreaMapBgNum, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
-  GetRegionMapSecIdAt, GetRegionMapSectionId, GetRoamerLocation, HideBg,
-  JOY_NEW, LZ77UnCompWram, LoadAreaUnknownGraphics, LoadBgTilemap,
+  BeginNormalPaletteFade, ChangeBgY, CorrectSpecialMapSecId, CpuCopy32,
+  CreateRegionMapPlayerIcon, CreateSprite, CreateTask, DecompressAndCopyTileDataToVram,
+  DestroySprite, DestroyTask, FREE_AND_SET_NULL, FlagGet,
+  FreeAllSpritePalettes, FreePokedexAreaMapBgNum, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  FreeTempTileDataBuffersIfPossible, GetRegionMapSecIdAt, GetRegionMapSectionId, GetRoamerLocation,
+  HideBg, JOY_NEW, LZ77UnCompWram, LoadBgTilemap,
   LoadPokedexAreaMapGfx, LoadSpritePalette, LoadSpriteSheet, MAP_GROUP,
-  MapHasSpecies, MonListHasSpecies, Overworld_GetMapHeaderByGroupAndId, PlaySE,
-  PokedexAreaMapChangeBgY, PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs, ResetDrawAreaGlowState, ResetPokedexAreaMapBg,
-  ResetSpriteData, SetAreaHasMon, SetBgAttribute, SetGpuReg,
-  SetGpuRegBits, SetSpecialMapHasMon, ShowBg, ShowRegionMapForPokedexAreaScreen,
-  StartAreaGlow, StringFill, TryShowPokedexAreaMap, VarGet,  // 4-per-line for readability
+  Overworld_GetMapHeaderByGroupAndId, PlaySE, PokedexAreaMapChangeBgY, PokedexAreaScreen_UpdateRegionMapVariablesAndVideoRegs,
+  ResetSpriteData, SetBgAttribute, SetGpuReg, SetGpuRegBits,
+  ShowBg, ShowRegionMapForPokedexAreaScreen, StringFill, TryShowPokedexAreaMap,
+  VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ResetDrawAreaGlowState(void) */

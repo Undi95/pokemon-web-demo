@@ -18,15 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, CreateSprite, DestroySprite, FreeSpriteOamMatrix,
-  GetCurrentMapRotatingGatePuzzleType, GetMapCoordsFromSpritePos, GetPlayerSpeed, GetVarPointer,
-  LoadRotatingGatePics, LoadSpriteSheets, MAP_GROUP, MAP_NUM,
-  MapGridGetCollisionAt, PlaySE, RotatingGate_CanRotate, RotatingGate_CreateGate,
-  RotatingGate_CreateGatesWithinViewport, RotatingGate_DestroyGatesOutsideViewport, RotatingGate_GetGateOrientation, RotatingGate_GetRotationInfo,
-  RotatingGate_HasArm, RotatingGate_HideGatesOutsideViewport, RotatingGate_LoadPuzzleConfig, RotatingGate_ResetAllGateOrientations,
-  RotatingGate_RotateInDirection, RotatingGate_SetGateOrientation, RotatingGate_TriggerRotationAnimation, StartSpriteAffineAnim,  // 4-per-line for readability
+  GetMapCoordsFromSpritePos, GetPlayerSpeed, GetVarPointer, LoadSpriteSheets,
+  MAP_GROUP, MAP_NUM, MapGridGetCollisionAt, PlaySE,
+  StartSpriteAffineAnim,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static s32 GetCurrentMapRotatingGatePuzzleType(void) */

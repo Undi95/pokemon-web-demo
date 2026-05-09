@@ -18,28 +18,26 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddScrollArrows, AddScrollIndicatorArrowPair, AddTextPrinterParameterized,
-  AllocZeroed, AnimateSprites, BeginNormalPaletteFade, BuildOamBuffer,
-  ClearScheduledBgCopiesToVram, CopyWindowToVram, CreateLearnableMovesList, CreateSprite,
-  CreateTask, CreateUISprites, DestroyListMenuTask, DestroyTask,
-  DoMoveRelearnerMain, DoScheduledBgTilemapCopiesToVram, FREE_AND_SET_NULL, FillWindowPixelBuffer,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeMoveRelearnerResources, GetCurrentSelectedMove,
-  GetLRKeysPressed, GetMonData, GetMoveRelearnerMoves, GiveMoveToMon,
-  HandleInput, HideHeartSpritesAndShowTeachMoveText, InitBgsFromTemplates, InitMoveRelearnerBackgroundLayers,
-  InitMoveRelearnerWindows, IsFanfareTaskInactive, JOY_NEW, ListMenuGetScrollAndRow,
-  ListMenuInit, ListMenu_ProcessInput, LoadMoveRelearnerMovesList, LoadOam,
-  LoadSpritePalette, LoadSpriteSheet, LockPlayerFieldControls, Menu_ProcessInputNoWrapClearOnChoose,
-  MoveRelearnerCreateYesNoMenu, MoveRelearnerPrintMessage, MoveRelearnerRunTextPrinters, MoveRelearnerShowHideHearts,
-  PlayFanfare, PlaySE, PrintMessageWithPlaceholders, ProcessSpriteCopyRequests,
-  PutWindowTilemap, RemoveMonPPBonus, RemoveScrollArrows, RemoveScrollIndicatorArrowPair,
+  ARRAY_COUNT, AddScrollIndicatorArrowPair, AddTextPrinterParameterized, AllocZeroed,
+  AnimateSprites, BeginNormalPaletteFade, BuildOamBuffer, ClearScheduledBgCopiesToVram,
+  CopyWindowToVram, CreateSprite, CreateTask, DestroyListMenuTask,
+  DestroyTask, DoScheduledBgTilemapCopiesToVram, FREE_AND_SET_NULL, FillWindowPixelBuffer,
+  FreeAllSpritePalettes, FreeAllWindowBuffers, GetLRKeysPressed, GetMonData,
+  GetMoveRelearnerMoves, GiveMoveToMon, InitBgsFromTemplates, InitMoveRelearnerWindows,
+  IsFanfareTaskInactive, JOY_NEW, ListMenuGetScrollAndRow, ListMenuInit,
+  ListMenu_ProcessInput, LoadMoveRelearnerMovesList, LoadOam, LoadSpritePalette,
+  LoadSpriteSheet, LockPlayerFieldControls, Menu_ProcessInputNoWrapClearOnChoose, MoveRelearnerCreateYesNoMenu,
+  MoveRelearnerPrintMessage, MoveRelearnerRunTextPrinters, PlayFanfare, PlaySE,
+  ProcessSpriteCopyRequests, PutWindowTilemap, RemoveMonPPBonus, RemoveScrollIndicatorArrowPair,
   ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetSpriteData, ResetTasks,
   ResetVramOamAndBgCntRegs, RunTasks, ScheduleBgCopyTilemapToVram, SetBackdropFromColor,
   SetGpuReg, SetMainCallback2, SetMonMoveSlot, SetVBlankCallback,
-  ShowBg, ShowSelectMovePokemonSummaryScreen, ShowTeachMoveText, StartSpriteAnim,
-  StringCopy, StringCopy_Nickname, StringExpandPlaceholders, TransferPlttBuffer,
-  UpdatePaletteFade,  // 4-per-line for readability
+  ShowBg, ShowSelectMovePokemonSummaryScreen, StartSpriteAnim, StringCopy,
+  StringCopy_Nickname, StringExpandPlaceholders, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_MoveRelearner(void) */

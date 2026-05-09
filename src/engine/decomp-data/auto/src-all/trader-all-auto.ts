@@ -18,15 +18,16 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AddTextPrinterParameterized, AddWindow, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
-  ConvertInternationalString, ConvertPixelWidthToTileWidth, CopyDecorationCategoryName, CreateAvailableDecorationsMenu,
-  CreateTask, DecorationAdd, DecorationRemove, DestroyTask,
-  DrawStdFrameWithCustomTileAndPalette, GetFirstEmptyDecorSlot, GetNumOwnedDecorationsInCategory, GetStringWidth,
-  InitMenuInUpperLeftCornerNormal, IsSelectedDecorInThePC, Menu_ProcessInput, PlaySE,
-  RemoveWindow, ScheduleBgCopyTilemapToVram, ScriptContext_Enable, StringCopy,
-  Task_BufferDecorSelectionAndCloseWindow,  // 4-per-line for readability
+  ConvertInternationalString, ConvertPixelWidthToTileWidth, CopyDecorationCategoryName, CreateTask,
+  DecorationAdd, DecorationRemove, DestroyTask, DrawStdFrameWithCustomTileAndPalette,
+  GetFirstEmptyDecorSlot, GetNumOwnedDecorationsInCategory, GetStringWidth, InitMenuInUpperLeftCornerNormal,
+  IsSelectedDecorInThePC, Menu_ProcessInput, PlaySE, RemoveWindow,
+  ScheduleBgCopyTilemapToVram, ScriptContext_Enable, StringCopy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void TraderSetup(void) */

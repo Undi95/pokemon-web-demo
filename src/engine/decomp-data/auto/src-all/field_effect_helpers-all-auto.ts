@@ -18,21 +18,20 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AnimateRayquazaInFigure8, BG_SCREEN_ADDR, CreateCopySpriteAt, CreateSpriteAtEnd,
-  CurrentMapDrawMetatileAt, ElevationToPriority, FieldEffectActiveListRemove, FieldEffectStart,
-  FieldEffectStop, GetFigure8XOffset, GetFigure8YOffset, GetObjectEventGraphicsInfo,
-  GetObjectEventIdByLocalIdAndMap, GetObjectPaletteTag, GetReflectionVerticalOffset, GetSurfBlob_BobState,
-  GetSurfBlob_DontSyncAnim, GetSurfBlob_HasPlayerOffset, InitRayquazaForFigure8Anim, LoadObjectHighBridgeReflectionPalette,
-  LoadObjectReflectionPalette, LoadObjectRegularReflectionPalette, LoadPlayerObjectReflectionPalette, LoadSpecialObjectReflectionPalette,
-  MapGridGetElevationAt, MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MetatileBehavior_GetBridgeType,
-  MetatileBehavior_IsLongGrass, MetatileBehavior_IsPokeGrass, MetatileBehavior_IsReflective, MetatileBehavior_IsSurfableWaterOrUnderwater,
-  MetatileBehavior_IsTallGrass, MoveCoords, PatchObjectPalette, PlaySE,
-  SeekSpriteAnim, SetGpuReg, SetObjectSubpriorityByElevation, SetSpritePosToMapCoords,
-  SetSpritePosToOffsetMapCoords, ShowDisguiseFieldEffect, StartSpriteAnim, StartSpriteAnimIfDifferent,
-  SynchronizeSurfAnim, SynchronizeSurfPosition, TryGetObjectEventIdByLocalIdAndMap, UpdateBobbingEffect,
-  UpdateGrassFieldEffectSubpriority, UpdateObjectEventSpriteInvisibility, UpdateSpritePaletteWithWeather,  // 4-per-line for readability
+  BG_SCREEN_ADDR, CreateCopySpriteAt, CreateSpriteAtEnd, CurrentMapDrawMetatileAt,
+  ElevationToPriority, FieldEffectActiveListRemove, FieldEffectStart, FieldEffectStop,
+  GetFigure8XOffset, GetFigure8YOffset, GetObjectEventGraphicsInfo, GetObjectEventIdByLocalIdAndMap,
+  GetObjectPaletteTag, LoadPlayerObjectReflectionPalette, LoadSpecialObjectReflectionPalette, MapGridGetElevationAt,
+  MapGridGetMetatileBehaviorAt, MapGridSetMetatileIdAt, MetatileBehavior_GetBridgeType, MetatileBehavior_IsLongGrass,
+  MetatileBehavior_IsPokeGrass, MetatileBehavior_IsReflective, MetatileBehavior_IsSurfableWaterOrUnderwater, MetatileBehavior_IsTallGrass,
+  MoveCoords, PatchObjectPalette, PlaySE, SeekSpriteAnim,
+  SetGpuReg, SetObjectSubpriorityByElevation, SetSpritePosToMapCoords, SetSpritePosToOffsetMapCoords,
+  StartSpriteAnim, StartSpriteAnimIfDifferent, TryGetObjectEventIdByLocalIdAndMap, UpdateObjectEventSpriteInvisibility,
+  UpdateSpritePaletteWithWeather,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetUpReflection(struct ObjectEvent *objectEvent, struct Sprite *sprite, bool8 stillReflection) */

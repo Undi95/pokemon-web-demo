@@ -18,10 +18,11 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CpuFill32, REG_TMCNT_L, STWI_set_Callback_ID, Sio32IDInit,
-  Sio32IDMain,  // 4-per-line for readability
+  CpuFill32, REG_TMCNT_L, STWI_set_Callback_ID,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** s32 AgbRFU_checkID(u8 maxTries) */

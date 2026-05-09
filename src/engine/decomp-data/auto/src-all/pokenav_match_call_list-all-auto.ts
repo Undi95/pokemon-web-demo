@@ -18,15 +18,16 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocSubstruct, CreateLoopedTask, FlagGet,
   FreePokenavSubstruct, GetMatchCallMapSec, GetMatchTableMapSectionId, GetPokenavMode,
   GetStringClearToWidth, GetSubstructPtr, GetTrainerClassNameGenderSpecific, GetTrainerIdxByRematchIdx,
-  IsRematchEntryRegistered, JOY_NEW, JOY_REPEAT, MatchCall_GetEnabled,
-  MatchCall_GetMapSec, MatchCall_GetNameAndDesc, MatchCall_GetOverrideFacilityClass, MatchCall_GetRematchTableIdx,
-  MatchCall_HasCheckPage, MatchCall_HasRematchId, PlaySE, PokenavList_GetSelectedIndex,
-  SetPokenavMode, ShouldDoNearbyMessage,  // 4-per-line for readability
+  JOY_NEW, JOY_REPEAT, MatchCall_GetEnabled, MatchCall_GetMapSec,
+  MatchCall_GetNameAndDesc, MatchCall_GetOverrideFacilityClass, MatchCall_GetRematchTableIdx, MatchCall_HasCheckPage,
+  MatchCall_HasRematchId, PlaySE, PokenavList_GetSelectedIndex, SetPokenavMode,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_MatchCall(void) */

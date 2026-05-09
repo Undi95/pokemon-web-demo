@@ -18,22 +18,21 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized2, AddWindow,
-  CheckBagHasItem, ClearStdWindowAndFrameToTransparent, ClearToTransparentAndRemoveWindow, ConvertPixelWidthToTileWidth,
-  CopyWindowToVram, CreateLilycoveSSTidalMultichoice, CreateMonSprite_PicBox, CreatePCMultichoice,
-  CreateStartMenuForPokenavTutorial, CreateTask, CreateWindowFromRect, CreateWindowTemplate,
-  DestroyTask, DisplayTextAndGetWidth, DisplayTextAndGetWidthInternal, DisplayYesNoMenuDefaultYes,
-  DrawLinkServicesMultichoiceMenu, DrawMultichoiceMenu, FillWindowPixelBuffer, FindTaskIdByFunc,
-  FlagGet, FlagSet, FreeResourcesAndDestroySprite, FuncIsActiveTask,
-  GetFontAttribute, GetStringWidth, InitMenuActionGrid, InitMenuInUpperLeftCornerNormal,
-  InitMenuNormal, InitMultichoiceCheckWrap, InitMultichoiceNoWrap, JOY_NEW,
+  CheckBagHasItem, ClearStdWindowAndFrameToTransparent, CopyWindowToVram, CreateMonSprite_PicBox,
+  CreateTask, CreateWindowTemplate, DestroyTask, DisplayYesNoMenuDefaultYes,
+  FillWindowPixelBuffer, FindTaskIdByFunc, FlagGet, FlagSet,
+  FreeResourcesAndDestroySprite, FuncIsActiveTask, GetFontAttribute, GetStringWidth,
+  InitMenuActionGrid, InitMenuInUpperLeftCornerNormal, InitMenuNormal, JOY_NEW,
   LoadMessageBoxAndFrameGfx, Menu_GetCursorPos, Menu_ProcessGridInput, Menu_ProcessInput,
   Menu_ProcessInputNoWrap, Menu_ProcessInputNoWrapClearOnChoose, PIXEL_FILL, PlaySE,
   PrintMenuGridTable, PrintMenuTable, PrintPlayerNameOnWindow, PutWindowTilemap,
-  RemoveWindow, ScheduleBgCopyTilemapToVram, ScriptContext_Enable, ScriptMenu_AdjustLeftCoordFromWidth,
-  SetStandardWindowBorderStyle, ShowScrollableMultichoice, StringExpandPlaceholders,  // 4-per-line for readability
+  RemoveWindow, ScheduleBgCopyTilemapToVram, ScriptContext_Enable, SetStandardWindowBorderStyle,
+  ShowScrollableMultichoice, StringExpandPlaceholders,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 ScriptMenu_Multichoice(u8 left, u8 top, u8 multichoiceId, bool8 ignoreBPress) */

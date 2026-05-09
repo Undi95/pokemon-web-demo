@@ -18,15 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, CalculateMonStats, CreateMon, CreateMonWithEVSpreadNatureOTID,
-  DoBattleFactorySelectScreen, DoBattleFactorySwapScreen, GetBoxMonData, GetFactoryMonFixedIV,
-  GetFactoryMonId, GetMonData, GetMoveBattleStyle, GetNumPastRentalsRank,
+  DoBattleFactorySelectScreen, DoBattleFactorySwapScreen, GetBoxMonData, GetMonData,
   GetRandomScaledFrontierTrainerId, Random, SaveGameFrontier, SetBattleFacilityTrainerGfxId,
-  SetDynamicWarp, SetFacilityPtrsGetLevel, SetMonData, SetMonMoveAvoidReturn,
-  SetMonMoveSlot, T1_READ_32, VarGet, VarSet,
-  ZeroPlayerPartyMons,  // 4-per-line for readability
+  SetDynamicWarp, SetFacilityPtrsGetLevel, SetMonData, SetMonMoveSlot,
+  T1_READ_32, VarGet, VarSet, ZeroPlayerPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallBattleFactoryFunction(void) */

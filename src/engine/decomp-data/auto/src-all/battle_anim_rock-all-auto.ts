@@ -18,18 +18,19 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemapHandleContest, AnimateSprite, BATTLE_PARTNER,
   BG_PLTT_ID, BLDALPHA_BLEND, BattleAnimAdjustPanning, ClearBattleAnimBg,
-  Cos, CreateRolloutDirtSprite, CreateSprite, DestroyAnimSprite,
-  DestroyAnimVisualTask, DestroySprite, FindTaskIdByFunc, GetAnimBattlerSpriteId,
-  GetBattleAnimBg1Data, GetBattlerSide, GetBattlerSpriteCoord, GetRolloutCounter,
-  InitAnimArcTranslation, InitSpriteDataForLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget,
-  IsContest, LoadCompressedPalette, PlaySE12WithPanning, SetAnimBgAttribute,
-  SetAverageBattlerPositions, SetGpuReg, SetSubspriteTables, Sin,
-  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,
-  TranslateAnimSpriteToTargetMonLocation, UpdateAnimBg3ScreenSize,  // 4-per-line for readability
+  Cos, CreateSprite, DestroyAnimSprite, DestroyAnimVisualTask,
+  DestroySprite, FindTaskIdByFunc, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
+  GetBattlerSide, GetBattlerSpriteCoord, InitAnimArcTranslation, InitSpriteDataForLinearTranslation,
+  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsContest, LoadCompressedPalette,
+  PlaySE12WithPanning, SetAnimBgAttribute, SetAverageBattlerPositions, SetGpuReg,
+  SetSubspriteTables, Sin, StartSpriteAffineAnim, StartSpriteAnim,
+  StoreSpriteCallbackInData6, TranslateAnimHorizontalArc, TranslateAnimSpriteToTargetMonLocation, UpdateAnimBg3ScreenSize,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimFallingRock(struct Sprite *sprite) */

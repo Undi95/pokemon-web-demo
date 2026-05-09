@@ -18,43 +18,31 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ABILITY_ON_FIELD2, APPLY_STAT_MOD, ARRAY_COUNT, AbilityBattleEffects,
   BATTLE_OPPOSITE, BATTLE_PARTNER, BattleStringExpandPlaceholders, BattleStringExpandPlaceholdersToDisplayedString,
-  BeginEvolutionScene, BoxMonRestorePP, BtlController_EmitGetMonData, CALC_STAT,
-  CalculateBoxMonChecksum, CalculateMonStats, CalculatePPWithBonus, CalculatePlayerPartyCount,
-  CheckPartyHasHadPokerus, ClearTemporarySpeciesSpriteData, CopyMon, CopyMonToPC,
-  CopyPlayerPartyMonToBattleData, CountAliveMonsInBattle, CreateBoxMon, CreateEventMon,
-  CreateMon, CreateTask, CurrentBattlePyramidLocation, DRAW_SPINDA_SPOTS,
-  DecryptBoxMon, DeleteFirstMoveAndGiveMoveToBoxMon, DestroyTask, DoMonFrontSpriteAnimation,
-  EncryptBoxMon, FacilityClassToPicIndex, FindTaskIdByFunc, FlagClear,
-  FlagGet, Free, GET_BATTLER_SIDE, GET_SHINY_VALUE,
-  GET_UNOWN_LETTER, GetAbilityBySpecies, GetApprenticeNameInLanguage, GetBattleBGM,
+  BeginEvolutionScene, BtlController_EmitGetMonData, CALC_STAT, ClearTemporarySpeciesSpriteData,
+  CreateTask, CurrentBattlePyramidLocation, DRAW_SPINDA_SPOTS, DestroyTask,
+  FindTaskIdByFunc, FlagClear, FlagGet, Free,
+  GET_BATTLER_SIDE, GET_SHINY_VALUE, GET_UNOWN_LETTER, GetApprenticeNameInLanguage,
   GetBattlerAtPosition, GetBattlerSide, GetBoxMonData, GetBoxMonDataAt,
-  GetBoxMonGender, GetBoxedMonPtr, GetCurrentRegionMapSectionId, GetDeoxysStat,
-  GetEvolutionTargetSpecies, GetFrontierEnemyMonLevel, GetFrontierOpponentClass, GetGenderFromSpeciesAndPersonality,
-  GetItemHoldEffect, GetItemHoldEffectParam, GetLevelFromBoxMonExp, GetLevelFromMonExp,
-  GetMonAbility, GetMonData, GetMonEVCount, GetMultiplayerId,
-  GetNature, GetNatureFromPersonality, GetPCBoxToSendMon, GetPartyIdFromBattlePartyId,
-  GetSetPokedexFlag, GetSpeciesBackAnimSet, GetSpeciesName, GetSubstruct,
-  GetTrainerEncounterMusicIdInBattlePyramid, GetTrainerEncounterMusicIdInTrainerHill, GetWildMonTableIdInAlteringCave, GiveBoxMonInitialMoveset,
-  GiveMoveToBoxMon, GiveMoveToMon, HasTwoFramesAnimation, HealStatusConditions,
-  IS_TYPE_PHYSICAL, IS_TYPE_SPECIAL, ITEM_HAS_EFFECT, InBattlePike,
-  InTrainerHillChallenge, IsNationalPokedexEnabled, IsOtherTrainer, IsPokemonStorageFull,
-  IsShinyOtIdPersonality, LaunchAnimationTaskForBackSprite, LaunchAnimationTaskForFrontSprite, MOVE_IS_PERMANENT,
-  MarkBattlerForControllerExec, ModifyStatByNature, MonRestorePP, NationalPokedexNumToSpecies,
-  PREPARE_MON_NICK_WITH_PREFIX_BUFFER, PlayBGM, PlayCry_Normal, PlayNewMapMusic,
-  PokemonUseItemEffects, READ_PTR_FROM_TASK, Random, Random32,
+  GetBoxedMonPtr, GetCurrentRegionMapSectionId, GetFrontierEnemyMonLevel, GetFrontierOpponentClass,
+  GetItemHoldEffect, GetItemHoldEffectParam, GetMonData, GetMultiplayerId,
+  GetPCBoxToSendMon, GetPartyIdFromBattlePartyId, GetSetPokedexFlag, GetSpeciesBackAnimSet,
+  GetSubstruct, GetTrainerEncounterMusicIdInBattlePyramid, GetTrainerEncounterMusicIdInTrainerHill, IS_TYPE_PHYSICAL,
+  IS_TYPE_SPECIAL, ITEM_HAS_EFFECT, InBattlePike, InTrainerHillChallenge,
+  IsNationalPokedexEnabled, LaunchAnimationTaskForBackSprite, LaunchAnimationTaskForFrontSprite, MOVE_IS_PERMANENT,
+  MarkBattlerForControllerExec, PREPARE_MON_NICK_WITH_PREFIX_BUFFER, PlayBGM, PlayCry_Normal,
+  PlayNewMapMusic, READ_PTR_FROM_TASK, Random, Random32,
   ResetMapMusic, RtcCalcLocalTime, SET16, SET32,
-  SET8, SET_BY_WIDTH, STORE_PTR_IN_TASK, SetBoxMonData,
-  SetMonData, SetMonMoveSlot, SetPCBoxToSendMon, SetSpriteCB_MonAnimDummy,
-  ShouldGetStatBadgeBoost, ShouldSkipFriendshipChange, SpeciesToHoennPokedexNum, SpeciesToNationalPokedexNum,
-  StartMonSummaryAnimation, StartSpriteAnim, StorageGetCurrentBox, StringCompare,
-  StringCopy, StringCopy_Nickname, StringLength, StripExtCtrlCodes,
-  SummaryScreen_SetAnimDelayTaskId, TRAINER_ENCOUNTER_MUSIC, TRY_FREE_AND_SET_NULL, UPDATE_FRIENDSHIP_FROM_ITEM,
-  UpdateSentPokesToOpponentValue, VarGet, VarSet, ZeroBoxMonData,
-  ZeroEnemyPartyMons, ZeroMonData,  // 4-per-line for readability
+  SET8, SET_BY_WIDTH, STORE_PTR_IN_TASK, SetPCBoxToSendMon,
+  SetSpriteCB_MonAnimDummy, StartMonSummaryAnimation, StartSpriteAnim, StorageGetCurrentBox,
+  StringCompare, StringCopy, StringCopy_Nickname, StringLength,
+  StripExtCtrlCodes, SummaryScreen_SetAnimDelayTaskId, TRAINER_ENCOUNTER_MUSIC, TRY_FREE_AND_SET_NULL,
+  UPDATE_FRIENDSHIP_FROM_ITEM, UpdateSentPokesToOpponentValue, VarGet, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ZeroBoxMonData(struct BoxPokemon *boxMon) */

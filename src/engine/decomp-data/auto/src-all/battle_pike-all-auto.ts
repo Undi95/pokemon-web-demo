@@ -18,19 +18,17 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AllocZeroed, AtLeastOneHealthyMon, AtLeastTwoAliveMons,
-  BlendPalettes, CalculateMonStats, CalculatePPWithBonus, CanEncounterWildMon,
-  CreateTask, DestroyTask, DoesAbilityPreventStatus, DoesTypePreventStatus,
-  FindTaskIdByFunc, Free, FrontierSpeechToString, GetAilmentFromStatus,
-  GetBattlePikeWildMonHeaderId, GetHighestLevelInPlayerParty, GetMonAbility, GetMonData,
-  GetNPCRoomGraphicsId, GetNextRoomType, GetPikeQueenFightType, GetPlayerSymbolCountForFacility,
-  GetRandomScaledFrontierTrainerId, HealMon, InBattlePike, IsStatusInflictionScreenFlashTaskFinished,
-  PrepareOneTrainer, PrepareTwoTrainers, Random, SWAP,
-  SaveMapView, ScriptContext_Enable, SetBattleFacilityTrainerGfxId, SetFrontierBrainObjEventGfx,
-  SetMonData, SetMonMoveSlot, SpeciesToPikeMonId, StartStatusInflictionScreenFlash,
-  TryHealMons, TryInflictRandomStatus, TrySavingData, VarSet,  // 4-per-line for readability
+  ARRAY_COUNT, AllocZeroed, BlendPalettes, CalculateMonStats,
+  CalculatePPWithBonus, CreateTask, DestroyTask, FindTaskIdByFunc,
+  Free, FrontierSpeechToString, GetAilmentFromStatus, GetHighestLevelInPlayerParty,
+  GetMonAbility, GetMonData, GetPlayerSymbolCountForFacility, GetRandomScaledFrontierTrainerId,
+  Random, SWAP, SaveMapView, ScriptContext_Enable,
+  SetBattleFacilityTrainerGfxId, SetFrontierBrainObjEventGfx, SetMonData, SetMonMoveSlot,
+  TrySavingData, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallBattlePikeFunction(void) */

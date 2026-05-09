@@ -18,41 +18,33 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddRegistryMenuScrollArrows, AddScrollIndicatorArrowPairParameterized, AddWindow,
-  AllocZeroed, BuildRegistryMenuItems, ClearAndLeaveSecretBase, ClearDialogWindowAndFrame,
-  ClearDuplicateOwnedSecretBase, ClearDuplicateOwnedSecretBases, ClearSecretBase, ClearStdWindowAndFrame,
-  ClearWindowTilemap, ClosePlayerSecretBaseEntrance, ConvertInternationalString, CpuFastFill16,
-  CreateTask, CurMapIsSecretBase, CurrentMapDrawMetatileAt, DeleteFirstOldBaseFromPlayerInRecordMixingFriendsRecords,
-  DestroyListMenuTask, DestroyTask, DisplayItemMessageOnField, DisplayYesNoMenuDefaultYes,
-  DoYesNoFuncWithChoice, DrawWholeMapView, FadeInFromBlack, FadeScreen,
-  FieldEffectActiveListContains, FinalizeRegistryMenu, FindAvailableSecretBaseIndex, FindMetatileIdMapCoords,
-  FindUnregisteredSecretBaseIndex, FlagClear, FlagGet, FlagSet,
-  Free, GET_BASE_COMPUTER_X, GET_BASE_COMPUTER_Y, GET_BASE_MAP_NUM,
-  GET_BASE_WARP_ID, GetAverageEVs, GetLinkPlayerCount, GetMaxWidthInMenuTable,
-  GetMonData, GetNameLength, GetNumRegisteredSecretBases, GetSecretBaseIndexFromId,
-  GetSecretBaseName, GetSecretBaseOwnerType, GetSecretBaseTypeInFrontOfPlayer_, GetXYCoordsOneStepInFrontOfPlayer,
-  GoToSecretBasePCRegisterMenu, HideMapNamePopUpWindow, INIT_SECRET_BASE_RECORD_MIXER, IncrementGameStat,
-  InitMenuInUpperLeftCornerNormal, IsSecretBaseRegistered, IsWeatherNotFadingIn, ListMenuGetScrollAndRow,
-  ListMenuInit, ListMenu_ProcessInput, LockPlayerFieldControls, MAP_GROUP,
-  MAP_NUM, MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt,
-  Menu_ProcessInputNoWrap, MetatileBehavior_HoldsLargeDecoration, MetatileBehavior_HoldsSmallDecoration, MetatileBehavior_IsSecretBaseBalloon,
-  MetatileBehavior_IsSecretBaseBreakableDoor, MetatileBehavior_IsSecretBaseGlitterMat, MetatileBehavior_IsSecretBaseJumpMat, MetatileBehavior_IsSecretBaseSoundMat,
-  MetatileBehavior_IsSecretBaseSpinMat, ObjectEventTurn, OverrideSecretBaseDecorationSpriteScript, PlaySE,
-  PlayerGetDestCoords, PopSecretBaseBalloon, PrintMenuTable, RemoveObjectEventByLocalIdAndMap,
-  RemoveScrollIndicatorArrowPair, RemoveWindow, ReturnToMainRegistryMenu, SECRET_BASE_ID_TO_GROUP,
-  SWAP, SaveRecordMixBases, SaveSecretBase, ScheduleBgCopyTilemapToVram,
-  ScriptContext_Enable, ScriptContext_SetupScript, SecretBaseBelongsToPlayer, SecretBasesBelongToSamePlayer,
-  SecretBasesHaveSameTrainerId, SecretBasesHaveSameTrainerName, SetCurSecretBaseId, SetCurSecretBaseIdFromPosition,
-  SetCursorWithinListBounds, SetDynamicWarp, SetMainCallback2, SetSecretBaseWarpDestination,
-  SetStandardWindowBorderStyle, SetWarpDestination, SetWarpDestinationToDynamicWarp, SetWarpDestinationToMapWarp,
-  ShatterSecretBaseBreakableDoor, ShowDecorationOnMap, ShowRegistryMenuActions, SortSecretBasesByRegistryStatus,
-  StringCopyN, StringExpandPlaceholders, TryGainNewFanFromCounter, TryMoveObjectEventToMapCoords,
-  TryOverrideObjectEventTemplateCoords, TryPutSecretBaseSecretsOnAir, TrySaveFriendsSecretBase, TrySaveFriendsSecretBases,
-  TrySaveRegisteredDuplicate, TrySaveRegisteredDuplicates, TrySetCurSecretBaseIndex, TrySpawnObjectEvent,
-  UnlockPlayerFieldControls, VarGet, VarSet, WarpIntoMap,
-  WarpOutOfSecretBase,  // 4-per-line for readability
+  ARRAY_COUNT, AddScrollIndicatorArrowPairParameterized, AddWindow, AllocZeroed,
+  ClearDialogWindowAndFrame, ClearStdWindowAndFrame, ClearWindowTilemap, ConvertInternationalString,
+  CpuFastFill16, CreateTask, CurrentMapDrawMetatileAt, DestroyListMenuTask,
+  DestroyTask, DisplayItemMessageOnField, DisplayYesNoMenuDefaultYes, DoYesNoFuncWithChoice,
+  DrawWholeMapView, FadeInFromBlack, FadeScreen, FieldEffectActiveListContains,
+  FlagClear, FlagGet, FlagSet, Free,
+  GET_BASE_COMPUTER_X, GET_BASE_COMPUTER_Y, GET_BASE_MAP_NUM, GET_BASE_WARP_ID,
+  GetLinkPlayerCount, GetMaxWidthInMenuTable, GetMonData, GetSecretBaseName,
+  GetXYCoordsOneStepInFrontOfPlayer, HideMapNamePopUpWindow, INIT_SECRET_BASE_RECORD_MIXER, IncrementGameStat,
+  InitMenuInUpperLeftCornerNormal, IsWeatherNotFadingIn, ListMenuGetScrollAndRow, ListMenuInit,
+  ListMenu_ProcessInput, LockPlayerFieldControls, MAP_GROUP, MAP_NUM,
+  MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, Menu_ProcessInputNoWrap,
+  MetatileBehavior_HoldsLargeDecoration, MetatileBehavior_HoldsSmallDecoration, MetatileBehavior_IsSecretBaseBalloon, MetatileBehavior_IsSecretBaseBreakableDoor,
+  MetatileBehavior_IsSecretBaseGlitterMat, MetatileBehavior_IsSecretBaseJumpMat, MetatileBehavior_IsSecretBaseSoundMat, MetatileBehavior_IsSecretBaseSpinMat,
+  ObjectEventTurn, OverrideSecretBaseDecorationSpriteScript, PlaySE, PlayerGetDestCoords,
+  PopSecretBaseBalloon, PrintMenuTable, RemoveObjectEventByLocalIdAndMap, RemoveScrollIndicatorArrowPair,
+  RemoveWindow, SECRET_BASE_ID_TO_GROUP, SWAP, ScheduleBgCopyTilemapToVram,
+  ScriptContext_Enable, ScriptContext_SetupScript, SetCursorWithinListBounds, SetDynamicWarp,
+  SetMainCallback2, SetStandardWindowBorderStyle, SetWarpDestination, SetWarpDestinationToDynamicWarp,
+  SetWarpDestinationToMapWarp, ShatterSecretBaseBreakableDoor, ShowDecorationOnMap, StringCopyN,
+  StringExpandPlaceholders, TryGainNewFanFromCounter, TryMoveObjectEventToMapCoords, TryOverrideObjectEventTemplateCoords,
+  TryPutSecretBaseSecretsOnAir, TrySpawnObjectEvent, UnlockPlayerFieldControls, VarGet,
+  VarSet, WarpIntoMap,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ClearSecretBase(struct SecretBase *secretBase) */

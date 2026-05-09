@@ -18,22 +18,23 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AdjustSecretPowerSpritePixelOffsets, BlendPalettes, CheckPlayerHasSecretBase, ClearGpuRegBits,
-  ConvertIntToDecimalStringN, CreateComputerScreenEffectTask, CreateFieldMoveTask, CreateSprite,
-  CreateSpriteAtEnd, CreateTask, CurMapIsSecretBase, CurrentMapDrawMetatileAt,
-  DestroySprite, DestroyTask, DoBalloonSoundEffect, DoSecretBaseBreakableDoorEffect,
+  BlendPalettes, CheckPlayerHasSecretBase, ClearGpuRegBits, ConvertIntToDecimalStringN,
+  CreateFieldMoveTask, CreateSprite, CreateSpriteAtEnd, CreateTask,
+  CurMapIsSecretBase, CurrentMapDrawMetatileAt, DestroySprite, DestroyTask,
   FieldEffectActiveListRemove, FieldEffectStart, FieldEffectStop, FreeSpritePalette,
   FuncIsActiveTask, GetCursorSelectionMonId, GetGpuReg, GetMapCoordsFromSpritePos,
   GetPlayerAvatarFlags, GetPlayerFacingDirection, GetWalkInPlaceNormalMovementAction, GetXYCoordsOneStepInFrontOfPlayer,
   LoadSpritePalette, LockPlayerFieldControls, MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt,
   MapGridSetMetatileIdAt, MetatileBehavior_IsSecretBaseCave, MetatileBehavior_IsSecretBaseShrub, MetatileBehavior_IsSecretBaseTree,
   ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden, ObjectEventSetHeldMovement, PlaySE,
-  ScriptContext_Enable, ScriptContext_SetupScript, SetCurSecretBaseIdFromPosition, SetCurrentSecretBase,
-  SetGpuReg, SetGpuRegBits, SetPlayerAvatarTransitionFlags, SetPlayerAvatarWatering,
-  SetSpritePosToOffsetMapCoords, StringCopy, ToggleSecretBaseEntranceMetatile, TrySetCurSecretBaseIndex,
-  VarGet, VarSet, WIN_RANGE,  // 4-per-line for readability
+  ScriptContext_Enable, ScriptContext_SetupScript, SetCurSecretBaseIdFromPosition, SetGpuReg,
+  SetGpuRegBits, SetPlayerAvatarTransitionFlags, SetPlayerAvatarWatering, SetSpritePosToOffsetMapCoords,
+  StringCopy, ToggleSecretBaseEntranceMetatile, TrySetCurSecretBaseIndex, VarGet,
+  VarSet, WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ComputerScreenOpenEffect(u16 increment, u16 unused, u8 priority) */

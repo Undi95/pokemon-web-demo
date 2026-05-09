@@ -18,28 +18,26 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocPaintingResources,
-  AllocZeroed, AllocateMonSpritesGfx, ApplyImageProcessingEffects, ApplyImageProcessingQuantization,
-  BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE, BG_PLTT_ID,
-  BG_SCREEN_ADDR, BeginFastPaletteFade, BeginNormalPaletteFade, BufferContestName,
-  ChangeBgX, ChangeBgY, ConvertImageProcessingToGBA, ConvertInternationalContestantName,
-  CopyBgTilemapBufferToVram, CopyWindowToVram, CreateContestPaintingPicture, DeactivateAllTextPrinters,
-  DmaClear32, DmaFillLarge32, DoContestPaintingImageProcessing, FREE_AND_SET_NULL,
-  FillWindowPixelBuffer, Free, FreeMonSpritesGfx, GetBgTilemapBuffer,
-  GetImageEffectForContestWinner, GetMonSpritePalFromSpeciesAndPersonality, GetStringCenterAlignXOffset, HandleLoadSpecialPokePic_DontHandleDeoxys,
-  HoldContestPainting, InitBgsFromTemplates, InitContestMonPixels, InitContestPaintingBg,
-  InitContestPaintingVars, InitContestPaintingWindow, InitKeys, InitPaintingMonOamData,
-  JOY_NEW, LZDecompressVram, LoadContestPaintingFrame, LoadOam,
-  LoadPalette, OBJ_PLTT_ID, PIXEL_FILL, PrintContestPaintingCaption,
+  ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocZeroed,
+  AllocateMonSpritesGfx, ApplyImageProcessingEffects, ApplyImageProcessingQuantization, BGCNT_CHARBASE,
+  BGCNT_PRIORITY, BGCNT_SCREENBASE, BG_PLTT_ID, BG_SCREEN_ADDR,
+  BeginFastPaletteFade, BeginNormalPaletteFade, BufferContestName, ChangeBgX,
+  ChangeBgY, ConvertImageProcessingToGBA, ConvertInternationalContestantName, CopyBgTilemapBufferToVram,
+  CopyWindowToVram, DeactivateAllTextPrinters, DmaClear32, DmaFillLarge32,
+  FREE_AND_SET_NULL, FillWindowPixelBuffer, Free, FreeMonSpritesGfx,
+  GetBgTilemapBuffer, GetMonSpritePalFromSpeciesAndPersonality, GetStringCenterAlignXOffset, HandleLoadSpecialPokePic_DontHandleDeoxys,
+  InitBgsFromTemplates, InitKeys, JOY_NEW, LZDecompressVram,
+  LoadOam, LoadPalette, OBJ_PLTT_ID, PIXEL_FILL,
   ProcessSpriteCopyRequests, PutWindowTilemap, RLUnCompVram, RLUnCompWram,
   RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
   RunTextPrinters, ScanlineEffect_Stop, SeedRng, SetBackdropFromPalette,
   SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
-  ShowBg, ShowContestPainting, StringAppend, StringCopy,
-  StringExpandPlaceholders, TransferPlttBuffer, UpdateContestPaintingMosaicEffect, UpdatePaletteFade,
-  VRAM_PICTURE_DATA, _InitContestMonPixels,  // 4-per-line for readability
+  ShowBg, StringAppend, StringCopy, StringExpandPlaceholders,
+  TransferPlttBuffer, UpdatePaletteFade, VRAM_PICTURE_DATA,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetContestWinnerForPainting(int contestWinnerId) */

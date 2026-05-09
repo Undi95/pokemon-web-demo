@@ -18,23 +18,23 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AnimateSprites,
   BeginNormalPaletteFade, BuildOamBuffer, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent,
-  ConvertIntToDecimalStringN, CopyWindowToVram, CreateCursor, CreateSpriteAtEnd,
-  CreateTask, DeactivateAllTextPrinters, DestroySprite, DestroyTask,
-  DisableResetRTC, DmaClear16, DmaFillLarge16, DoScheduledBgTilemapCopiesToVram,
-  DoSoftReset, DrawDialogFrameWithCustomTileAndPalette, DrawStdFrameWithCustomTileAndPalette, FreeAllWindowBuffers,
-  FreeCursorPalette, FreeSpritePaletteByTag, HideChooseTimeWindow, InitBgsFromTemplates,
-  InitResetRtcScreenBgAndWindows, InitWindows, JOY_NEW, JOY_REPEAT,
-  LoadMessageBoxAndBorderGfx, LoadOam, LoadSpritePalette, MoveTimeUpDown,
-  PlaySE, PrintTime, ProcessSpriteCopyRequests, RemoveWindow,
-  ResetBgsAndClearDma3BusyFlags, ResetOamRange, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RtcCalcLocalTime, RtcCalcLocalTimeOffset, RtcReset,
-  RunTasks, ScanlineEffect_Clear, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  ShowChooseTimeWindow, ShowMessage, StringCopy, TransferPlttBuffer,
+  ConvertIntToDecimalStringN, CopyWindowToVram, CreateSpriteAtEnd, CreateTask,
+  DeactivateAllTextPrinters, DestroySprite, DestroyTask, DisableResetRTC,
+  DmaClear16, DmaFillLarge16, DoScheduledBgTilemapCopiesToVram, DoSoftReset,
+  DrawDialogFrameWithCustomTileAndPalette, DrawStdFrameWithCustomTileAndPalette, FreeAllWindowBuffers, FreeSpritePaletteByTag,
+  InitBgsFromTemplates, InitWindows, JOY_NEW, JOY_REPEAT,
+  LoadMessageBoxAndBorderGfx, LoadOam, LoadSpritePalette, PlaySE,
+  ProcessSpriteCopyRequests, RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetOamRange,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, RtcCalcLocalTime,
+  RtcCalcLocalTimeOffset, RtcReset, RunTasks, ScanlineEffect_Clear,
+  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetGpuReg, SetMainCallback2,
+  SetVBlankCallback, ShowBg, StringCopy, TransferPlttBuffer,
   TrySavingData, UpdatePaletteFade, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

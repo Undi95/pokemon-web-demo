@@ -18,15 +18,12 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AGB_ASSERT_EX, AllocZeroed, CalcByteArraySum, CloseSerial,
-  CpuFill32, DetermineSendRecvState, DisableTm3, EReaderHandleTransfer,
-  EReaderHelper_RestoreRegsState, EReaderHelper_SaveRegsState, EnableSio, Free,
-  GetKeyInput, GetTrainerHillUnkVal, OpenSerial32, OpenSerialMulti,
-  SetUpTransferManager, StartTm3, TryReadSpecialSaveSector, TryReadTrainerHill,
-  TryReadTrainerHill_Internal, TryWriteSpecialSaveSector, TryWriteTrainerHill_Internal, VBlankIntrWait,
-  ValidateTrainerChecksum, ValidateTrainerHillChecksum,  // 4-per-line for readability
+  AGB_ASSERT_EX, AllocZeroed, CalcByteArraySum, CpuFill32,
+  Free, TryReadSpecialSaveSector, TryWriteSpecialSaveSector, VBlankIntrWait,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u8 GetTrainerHillUnkVal(void) */

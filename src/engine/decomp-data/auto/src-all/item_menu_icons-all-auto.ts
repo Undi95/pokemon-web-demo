@@ -18,14 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddItemIconSprite, ArrangeBerryGfx, CreateSprite, CreateSwapLineSprites,
-  DestroySprite, DestroySpriteAndFreeResources, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, ITEM_TO_BERRY, InitSpriteAffineAnim, IsEnigmaBerryValid,
-  LZDecompressWram, LoadBerryGfx, LoadCompressedSpritePalette, LoadSpritePalette,
-  LoadSpriteSheet, RemoveBagSprite, SetBagVisualPocketId, SetSwapLineSpritesInvisibility,
-  StartSpriteAffineAnim, StartSpriteAnim, UpdateSwapLineSpritesPos, UpdateSwitchPocketRotatingBallCoords,  // 4-per-line for readability
+  AddItemIconSprite, CreateSprite, CreateSwapLineSprites, DestroySprite,
+  DestroySpriteAndFreeResources, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  ITEM_TO_BERRY, InitSpriteAffineAnim, IsEnigmaBerryValid, LZDecompressWram,
+  LoadCompressedSpritePalette, LoadSpritePalette, LoadSpriteSheet, SetSwapLineSpritesInvisibility,
+  StartSpriteAffineAnim, StartSpriteAnim, UpdateSwapLineSpritesPos,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RemoveBagSprite(u8 id) */

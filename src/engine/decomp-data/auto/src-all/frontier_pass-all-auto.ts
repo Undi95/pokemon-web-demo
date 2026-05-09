@@ -18,35 +18,31 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddTextPrinterParameterized3, AllocZeroed, AllocateFrontierPassData,
-  AllocateFrontierPassGfx, AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade,
-  BlendPalettes, BuildOamBuffer, CanCopyRecordedBattleSaveData, ChangeBgX,
-  ChangeBgY, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer,
-  CopyToBgTilemapBufferRect_ChangePalette, CopyWindowToVram, CountPlayerTrainerStars, CpuFill16,
-  CpuFill32, CreateSprite, CreateTask, CurrentBattlePyramidLocation,
-  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask,
-  DisableInterrupts, DrawFrontierPassBg, ExitFrontierMap, FREE_AND_SET_NULL,
+  ARRAY_COUNT, AddTextPrinterParameterized3, AllocZeroed, AnimateSprites,
+  BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer,
+  CanCopyRecordedBattleSaveData, ChangeBgX, ChangeBgY, ConvertIntToDecimalStringN,
+  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect_ChangePalette, CopyWindowToVram,
+  CountPlayerTrainerStars, CpuFill16, CpuFill32, CreateSprite,
+  CreateTask, CurrentBattlePyramidLocation, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram,
+  DestroySprite, DestroyTask, DisableInterrupts, FREE_AND_SET_NULL,
   FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FlagGet,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeCursorAndSymbolSprites, FreeFrontierMap,
-  FreeFrontierPassData, FreeFrontierPassGfx, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
-  GetCurrentRegionMapSectionId, GetCursorAreaFromCoords, GetStringCenterAlignXOffset, GetStringRightAlignXOffset,
-  GetTextWindowPalette, HandleFrontierMapCursorMove, HideBg, HideFrontierPass,
-  InitBgsFromTemplates, InitFrontierMap, InitFrontierMapSprites, InitFrontierPass,
-  InitWindows, JOY_HELD, JOY_NEW, LeaveFrontierPass,
-  LoadCompressedSpriteSheet, LoadCursorAndSymbolSprites, LoadOam, LoadPalette,
-  LoadSpritePalettes, MAP_NUM, MapNumToFrontierFacilityId, MathUtil_Inv16,
-  NON_HIGHLIGHT_AREA, Overworld_PlaySpecialMapMusic, PIXEL_FILL, PlayBGM,
-  PlayRecordedBattle, PlaySE, PrintAreaDescription, PrintOnFrontierMap,
-  ProcessSpriteCopyRequests, PutWindowTilemap, Q_8_8, ResetAffineAnimData,
-  ResetBgsAndClearDma3BusyFlags, ResetGpuRegsAndBgs, ResetPaletteFade, ResetSpriteData,
+  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible,
+  GetCurrentRegionMapSectionId, GetStringCenterAlignXOffset, GetStringRightAlignXOffset, GetTextWindowPalette,
+  HideBg, InitBgsFromTemplates, InitWindows, JOY_HELD,
+  JOY_NEW, LoadCompressedSpriteSheet, LoadOam, LoadPalette,
+  LoadSpritePalettes, MAP_NUM, MathUtil_Inv16, NON_HIGHLIGHT_AREA,
+  Overworld_PlaySpecialMapMusic, PIXEL_FILL, PlayBGM, PlayRecordedBattle,
+  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, Q_8_8,
+  ResetAffineAnimData, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
   ResetTasks, ResetTempTileDataBuffers, RunTasks, ScanlineEffect_Stop,
   SetBgAffine, SetBgAttribute, SetBgTilemapBuffer, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowAndPrintWindows,
-  ShowBg, ShowFrontierMap, ShowHideZoomingArea, ShowPlayerTrainerCard,
-  StartSpriteAnim, TRY_FREE_AND_SET_NULL, TransferPlttBuffer, TryCallPassAreaFunction,
-  UnsetBgTilemapBuffer, UpdateAreaHighlight, UpdatePaletteFade,  // 4-per-line for readability
+  SetMainCallback2, SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg,
+  ShowPlayerTrainerCard, StartSpriteAnim, TRY_FREE_AND_SET_NULL, TransferPlttBuffer,
+  UnsetBgTilemapBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ResetGpuRegsAndBgs(void) */

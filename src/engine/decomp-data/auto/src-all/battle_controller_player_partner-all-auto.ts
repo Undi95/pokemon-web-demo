@@ -18,6 +18,8 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AI_TrySwitchOrUseItem, ARRAY_COUNT, AllocSpritePalette, BATTLE_PARTNER,
@@ -25,22 +27,21 @@ const {
   BattleLoadPlayerMonSpriteGfx, BattlePutTextOnWindow, BattleStopLowHpSound, BeginFastPaletteFade,
   BtlController_EmitChosenMonReturnValue, BtlController_EmitDataTransfer, BtlController_EmitTwoReturnValues, BufferStringBattle,
   CalculateMonStats, ClearTemporarySpeciesSpriteData, CopyAllBattleSpritesInvisibilities, CopyBattleSpriteInvisibility,
-  CopyPlayerPartnerMonData, CreateInvisibleSpriteWithCallback, CreatePartyStatusSummarySprites, CreateSprite,
-  CreateTask, DecompressTrainerBackPic, DecompressTrainerFrontPic, DestroySprite,
-  DestroyTask, DoHitAnimHealthboxEffect, DoMoveAnim, DoPokeballSendOutAnimation,
-  FadeOutMapMusic, FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide,
-  GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority, GetFrontierTrainerFrontSpriteId,
-  GetMonData, GetMostSuitableMonToSwitchInto, GetMultiplayerId, HandleIntroSlide,
-  HandleLowHpMusicChange, IndexOfSpritePaletteTag, InitAndLaunchChosenStatusAnimation, InitAndLaunchSpecialAnimation,
-  IsBattleSEPlaying, IsBattlerSpritePresent, IsCryPlayingOrClearCrySongs, IsDoubleBattle,
-  IsMoveWithoutAnimation, IsTextPrinterActive, LoadBattleBarGfx, LoadCompressedPalette,
-  MoveBattleBar, OBJ_PLTT_ID, PlayBGM, PlayCry_ByMode,
-  PlayFanfare, PlaySE, PlaySE12WithPanning, PlayerPartnerBufferExecCompleted,
-  PrepareBufferDataTransferLink, SetBattleBarStruct, SetBattlerSpriteAffineMode, SetHealthboxSpriteInvisible,
-  SetHealthboxSpriteVisible, SetMonData, SetMultiuseSpriteTemplateToPokemon, SetMultiuseSpriteTemplateToTrainerBack,
-  SetMultiuseSpriteTemplateToTrainerFront, SetPlayerPartnerMonData, SetSpritePrimaryCoordsFromSecondaryCoords, StartHealthboxSlideIn,
-  StartSendOutAnim, StartSpriteAnim, StoreSpriteCallbackInData6, StringCopy_Nickname,
+  CreateInvisibleSpriteWithCallback, CreatePartyStatusSummarySprites, CreateSprite, CreateTask,
+  DecompressTrainerBackPic, DecompressTrainerFrontPic, DestroySprite, DestroyTask,
+  DoHitAnimHealthboxEffect, DoMoveAnim, DoPokeballSendOutAnimation, FadeOutMapMusic,
+  FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord,
+  GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority, GetFrontierTrainerFrontSpriteId, GetMonData,
+  GetMostSuitableMonToSwitchInto, GetMultiplayerId, HandleIntroSlide, HandleLowHpMusicChange,
+  IndexOfSpritePaletteTag, InitAndLaunchChosenStatusAnimation, InitAndLaunchSpecialAnimation, IsBattleSEPlaying,
+  IsBattlerSpritePresent, IsCryPlayingOrClearCrySongs, IsDoubleBattle, IsMoveWithoutAnimation,
+  IsTextPrinterActive, LoadBattleBarGfx, LoadCompressedPalette, MoveBattleBar,
+  OBJ_PLTT_ID, PlayBGM, PlayCry_ByMode, PlayFanfare,
+  PlaySE, PlaySE12WithPanning, PrepareBufferDataTransferLink, SetBattleBarStruct,
+  SetBattlerSpriteAffineMode, SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible, SetMonData,
+  SetMultiuseSpriteTemplateToPokemon, SetMultiuseSpriteTemplateToTrainerBack, SetMultiuseSpriteTemplateToTrainerFront, SetSpritePrimaryCoordsFromSecondaryCoords,
+  StartHealthboxSlideIn, StartSpriteAnim, StoreSpriteCallbackInData6, StringCopy_Nickname,
   TryHandleLaunchBattleTableAnimation, TrySetBehindSubstituteSpriteBit, TryShinyAnimation, UpdateHealthboxAttribute,
   UpdateHpTextInHealthbox,  // 4-per-line for readability
 } = _bridge;

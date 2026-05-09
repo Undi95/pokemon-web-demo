@@ -18,27 +18,25 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddScrollIndicatorArrowPairParameterized, AddTextPrinterParameterized, AddTextPrinterParameterized2,
   AddTextPrinterParameterized3, AddTextPrinterParameterized4, AddWindow, Alloc,
   BG_PLTT_ID, BufferConditionMenuSpacedStringN, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
-  ConditionGraph_CalcLeftHalf, ConditionGraph_CalcLine, ConditionGraph_CalcPositions, ConditionGraph_CalcRightHalf,
-  ConditionGraph_TryUpdate, ConditionGraph_Update, ConvertIntToDecimalStringN, ConvertInternationalPlayerName,
-  ConvertInternationalString, CopyWindowToVram, CreateSprite, CreateYesNoMenu,
-  DeactivateAllTextPrinters, DestroyConditionSparkleSprites, DestroySprite, DrawStdFrameWithCustomTileAndPalette,
-  FillWindowPixelBuffer, Free, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  GET_NUM_CONDITION_SPARKLES, GetAndCopyBoxMonDataAt, GetBoxMonDataAt, GetBoxNamePtr,
-  GetBoxOrPartyMonData, GetConditionMenuMonString, GetMaxWidthInMenuTable, GetMonData,
+  ConvertIntToDecimalStringN, ConvertInternationalPlayerName, ConvertInternationalString, CopyWindowToVram,
+  CreateSprite, CreateYesNoMenu, DeactivateAllTextPrinters, DestroySprite,
+  DrawStdFrameWithCustomTileAndPalette, FillWindowPixelBuffer, Free, FreeSpritePaletteByTag,
+  FreeSpriteTilesByTag, GET_NUM_CONDITION_SPARKLES, GetAndCopyBoxMonDataAt, GetBoxMonDataAt,
+  GetBoxNamePtr, GetConditionMenuMonString, GetMaxWidthInMenuTable, GetMonData,
   GetMonSpritePalFromSpeciesAndPersonality, GetPlayerTextSpeedDelay, GetStringCenterAlignXOffset, GetStringRightAlignXOffset,
-  GetStringWidth, InitConditionSparkles, InitWindows, IsTextPrinterActive,
-  LZ77UnCompWram, ListMenuInit, LoadPalette, LoadSpecialPokePic,
-  LoadUserWindowBorderGfx, MoveConditionMonOffscreen, MoveConditionMonOnscreen, MoveRelearnerDummy,
-  MoveRelearnerLoadBattleMoveDescription, MoveRelearnerMenuLoadContestMoveDescription, MoveRelearnerShowHideHearts, PIXEL_FILL,
-  PlaySE, PutWindowTilemap, RemoveWindow, RunTextPrinters,
-  SHIFT_RIGHT_ADJUSTED, ScanlineEffect_Clear, ScanlineEffect_SetParams, ScheduleBgCopyTilemapToVram,
-  SeekSpriteAnim, SetConditionSparklePosition, SetGpuReg, SetNextConditionSparkle,
-  SetStandardWindowBorderStyle, ShowAllConditionSparkles, StringCopy, StringLength,
+  GetStringWidth, InitWindows, IsTextPrinterActive, LZ77UnCompWram,
+  ListMenuInit, LoadPalette, LoadSpecialPokePic, LoadUserWindowBorderGfx,
+  MoveRelearnerDummy, MoveRelearnerShowHideHearts, PIXEL_FILL, PlaySE,
+  PutWindowTilemap, RemoveWindow, RunTextPrinters, SHIFT_RIGHT_ADJUSTED,
+  ScanlineEffect_Clear, ScanlineEffect_SetParams, ScheduleBgCopyTilemapToVram, SeekSpriteAnim,
+  SetGpuReg, SetStandardWindowBorderStyle, StringCopy, StringLength,
   WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

@@ -18,13 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   Alloc, AllocZeroed, BgTileAllocOp, BlitBitmapRect4Bit,
-  BlitBitmapRect4BitTo8Bit, BlitBitmapRectToWindow, CopyBgTilemapBufferToVram, CpuCopy16,
-  CpuFastFill8, FillBgTilemapBufferRect, FillBitmapRect4Bit, FillBitmapRect8Bit,
-  Free, FreeAllWindowBuffers, GetBgAttribute, GetBgTilemapBuffer,
-  GetNumActiveWindowsOnBg, GetNumActiveWindowsOnBg8Bit, LZ77UnCompWram, LoadBgTiles,
+  BlitBitmapRect4BitTo8Bit, CopyBgTilemapBufferToVram, CpuCopy16, CpuFastFill8,
+  FillBgTilemapBufferRect, FillBitmapRect4Bit, FillBitmapRect8Bit, Free,
+  GetBgAttribute, GetBgTilemapBuffer, LZ77UnCompWram, LoadBgTiles,
   MOVE_TILES_DOWN, MOVE_TILES_UP, SetBgTilemapBuffer, WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

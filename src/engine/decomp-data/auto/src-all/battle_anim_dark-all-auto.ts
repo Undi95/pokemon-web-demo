@@ -18,19 +18,21 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemap, BATTLE_PARTNER, BG_PLTT_ID,
   BLDALPHA_BLEND, BlendPalette, CMD_ARGS, ClearBattleAnimBg,
   CreateInvisibleSpriteCopy, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
-  DestroySpriteAndMatrix, DoMementoShadowEffect, FillPalette, GetAnimBattlerSpriteId,
-  GetBattleAnimBg1Data, GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide,
-  GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, GetGpuReg,
-  GetMonData, InitAnimArcTranslation, InitSpriteDataForLinearTranslation, IsBattlerSpriteVisible,
-  IsContest, IsDoubleBattle, LoadCompressedPalette, MoveBattlerSpriteToBG,
-  ResetBattleAnimBg, ScanlineEffect_SetParams, SetAllBattlersSpritePriority, SetAnimBgAttribute,
-  SetGpuReg, SetGpuRegBits, SetGrayscaleOrOriginalPalette, Sin,
-  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,  // 4-per-line for readability
+  DestroySpriteAndMatrix, FillPalette, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
+  GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteBGPriorityRank,
+  GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, GetGpuReg, GetMonData,
+  InitAnimArcTranslation, InitSpriteDataForLinearTranslation, IsBattlerSpriteVisible, IsContest,
+  IsDoubleBattle, LoadCompressedPalette, MoveBattlerSpriteToBG, ResetBattleAnimBg,
+  ScanlineEffect_SetParams, SetAnimBgAttribute, SetGpuReg, SetGpuRegBits,
+  SetGrayscaleOrOriginalPalette, Sin, StartSpriteAffineAnim, StartSpriteAnim,
+  StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AnimTask_AttackerFadeToInvisible(u8 taskId) */

@@ -18,6 +18,8 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocZeroed, AllocateMonSpritesGfx, AnimateSprites,
@@ -25,31 +27,29 @@ const {
   BattleCreateYesNoCursorAt, BattleDestroyYesNoCursorAt, BattlePutTextOnWindow, BattleStringExpandPlaceholdersToDisplayedString,
   BeginNormalPaletteFade, BlendPalettes, BufferMoveToLearnIntoBattleTextBuff2, BuildOamBuffer,
   CalculateMonStats, CalculatePlayerPartyCount, CopyBgTilemapBufferToVram, CopyMon,
-  CopyToBgTilemapBuffer, Cos, CpuFill32, CreateBgAnimTask,
-  CreateShedinja, CreateSprite, CreateTask, CreateWirelessStatusIndicatorSprite,
-  CreateYesNoMenu, CycleEvolutionMonSprite, DecompressAndLoadBgGfxUsingHeap, DecompressPicFromTable_2,
-  DestroyTask, DestroyWirelessStatusIndicatorSprite, DoMonFrontSpriteAnimation, DrawTextOnTradeWindow,
-  EvoScene_DoMonAnimAndCry, EvoScene_IsMonAnimFinished, EvolutionRenameMon, EvolutionScene,
-  EvolutionSparkles_ArcDown, EvolutionSparkles_CircleInward, EvolutionSparkles_SpiralUpward, EvolutionSparkles_SprayAndFlash,
-  EvolutionSparkles_SprayAndFlash_Trade, FREE_AND_SET_NULL, FillBgTilemapBufferRect, FillPalette,
-  FindTaskIdByFunc, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeMonSpritesGfx, FuncIsActiveTask, GetBattleBgTemplateData, GetBgTilemapBuffer,
-  GetMonData, GetMonSpritePalStructFromOtIdPersonality, GetMoveSlotToReplace, GetSetPokedexFlag,
-  HandleBattleWindow, IncrementGameStat, InitBattleBgsVideo, InitMovingBgPalette,
-  InitTradeSequenceBgGpuRegs, IsCryFinished, IsFanfareTaskInactive, IsHMMove2,
-  IsSEPlaying, IsTextPrinterActive, JOY_NEW, LinkTradeDrawWindow,
-  LoadBattleTextboxAndBackground, LoadCompressedPalette, LoadEvoSparkleSpriteAndPal, LoadOam,
-  LoadPalette, LoadTradeAnimGfx, LoadUserWindowBorderGfx, LoadWirelessStatusIndicatorSpriteGfx,
-  Menu_ProcessInputNoWrapClearOnChoose, MonTryLearningNewMove, OBJ_PLTT_ID, Overworld_PlaySpecialMapMusic,
-  PREPARE_MOVE_BUFFER, PlayBGM, PlayCry_Normal, PlayFanfare,
-  PlayNewMapMusic, PlaySE, ProcessSpriteCopyRequests, RemoveMonPPBonus,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, RestoreBgAfterAnim,
-  RunTasks, RunTextPrinters, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_Stop,
-  SetBgAttribute, SetGpuReg, SetHBlankCallback, SetMainCallback2,
-  SetMonData, SetMonMoveSlot, SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback,
-  ShowBg, ShowSelectMovePokemonSummaryScreen, Sin, SpeciesToNationalPokedexNum,
-  StartBgAnimation, StopBgAnimation, StopMapMusic, StringCopy,
-  StringCopy_Nickname, StringExpandPlaceholders, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  CopyToBgTilemapBuffer, Cos, CpuFill32, CreateSprite,
+  CreateTask, CreateWirelessStatusIndicatorSprite, CreateYesNoMenu, CycleEvolutionMonSprite,
+  DecompressAndLoadBgGfxUsingHeap, DecompressPicFromTable_2, DestroyTask, DestroyWirelessStatusIndicatorSprite,
+  DoMonFrontSpriteAnimation, DrawTextOnTradeWindow, EvolutionRenameMon, EvolutionSparkles_ArcDown,
+  EvolutionSparkles_CircleInward, EvolutionSparkles_SpiralUpward, EvolutionSparkles_SprayAndFlash, EvolutionSparkles_SprayAndFlash_Trade,
+  FREE_AND_SET_NULL, FillBgTilemapBufferRect, FillPalette, FindTaskIdByFunc,
+  Free, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeMonSpritesGfx,
+  FuncIsActiveTask, GetBattleBgTemplateData, GetBgTilemapBuffer, GetMonData,
+  GetMonSpritePalStructFromOtIdPersonality, GetMoveSlotToReplace, GetSetPokedexFlag, HandleBattleWindow,
+  IncrementGameStat, InitBattleBgsVideo, InitTradeSequenceBgGpuRegs, IsCryFinished,
+  IsFanfareTaskInactive, IsHMMove2, IsSEPlaying, IsTextPrinterActive,
+  JOY_NEW, LinkTradeDrawWindow, LoadBattleTextboxAndBackground, LoadCompressedPalette,
+  LoadEvoSparkleSpriteAndPal, LoadOam, LoadPalette, LoadTradeAnimGfx,
+  LoadUserWindowBorderGfx, LoadWirelessStatusIndicatorSpriteGfx, Menu_ProcessInputNoWrapClearOnChoose, MonTryLearningNewMove,
+  OBJ_PLTT_ID, Overworld_PlaySpecialMapMusic, PREPARE_MOVE_BUFFER, PlayBGM,
+  PlayCry_Normal, PlayFanfare, PlayNewMapMusic, PlaySE,
+  ProcessSpriteCopyRequests, RemoveMonPPBonus, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, RunTasks, RunTextPrinters, ScanlineEffect_InitHBlankDmaTransfer,
+  ScanlineEffect_Stop, SetBgAttribute, SetGpuReg, SetHBlankCallback,
+  SetMainCallback2, SetMonData, SetMonMoveSlot, SetMultiuseSpriteTemplateToPokemon,
+  SetVBlankCallback, ShowBg, ShowSelectMovePokemonSummaryScreen, Sin,
+  SpeciesToNationalPokedexNum, StopMapMusic, StringCopy, StringCopy_Nickname,
+  StringExpandPlaceholders, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_BeginEvolutionScene(void) */

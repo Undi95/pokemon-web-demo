@@ -18,6 +18,8 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AI_TrySwitchOrUseItem, ARRAY_COUNT, BATTLE_PARTNER, BattleAI_ChooseMoveOrAction,
@@ -31,16 +33,15 @@ const {
   GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord,
   GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority, GetEreaderTrainerFrontSpriteId, GetFrontierBrainTrainerPicIndex,
   GetFrontierTrainerFrontSpriteId, GetMonData, GetMostSuitableMonToSwitchInto, GetMultiplayerId,
-  GetOpponentMonData, GetSecretBaseTrainerPicIndex, GetTrainerHillTrainerFrontSpriteId, HandleIntroSlide,
-  HideBattlerShadowSprite, IndexOfSpritePaletteTag, InitAndLaunchChosenStatusAnimation, InitAndLaunchSpecialAnimation,
-  IsBattleSEPlaying, IsBattlerSpritePresent, IsCryPlayingOrClearCrySongs, IsDoubleBattle,
-  IsMoveWithoutAnimation, IsTextPrinterActive, LoadBattleBarGfx, MOD,
-  MoveBattleBar, OpponentBufferExecCompleted, PlayBGM, PlayCry_ByMode,
-  PlayFanfare, PlaySE12WithPanning, PrepareBufferDataTransferLink, Random,
-  SetBattleBarStruct, SetBattlerShadowSpriteCallback, SetBattlerSpriteAffineMode, SetHealthboxSpriteInvisible,
-  SetHealthboxSpriteVisible, SetMainCallback2, SetMonData, SetMultiuseSpriteTemplateToPokemon,
-  SetMultiuseSpriteTemplateToTrainerBack, SetOpponentMonData, SetSpritePrimaryCoordsFromSecondaryCoords, StartHealthboxSlideIn,
-  StartSendOutAnim, StartSpriteAnim, StoreSpriteCallbackInData6, StringCopy_Nickname,
+  GetSecretBaseTrainerPicIndex, GetTrainerHillTrainerFrontSpriteId, HandleIntroSlide, HideBattlerShadowSprite,
+  IndexOfSpritePaletteTag, InitAndLaunchChosenStatusAnimation, InitAndLaunchSpecialAnimation, IsBattleSEPlaying,
+  IsBattlerSpritePresent, IsCryPlayingOrClearCrySongs, IsDoubleBattle, IsMoveWithoutAnimation,
+  IsTextPrinterActive, LoadBattleBarGfx, MOD, MoveBattleBar,
+  PlayBGM, PlayCry_ByMode, PlayFanfare, PlaySE12WithPanning,
+  PrepareBufferDataTransferLink, Random, SetBattleBarStruct, SetBattlerShadowSpriteCallback,
+  SetBattlerSpriteAffineMode, SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible, SetMainCallback2,
+  SetMonData, SetMultiuseSpriteTemplateToPokemon, SetMultiuseSpriteTemplateToTrainerBack, SetSpritePrimaryCoordsFromSecondaryCoords,
+  StartHealthboxSlideIn, StartSpriteAnim, StoreSpriteCallbackInData6, StringCopy_Nickname,
   TryHandleLaunchBattleTableAnimation, TrySetBehindSubstituteSpriteBit, TryShinyAnimation, UpdateHealthboxAttribute,
   UpdateHpTextInHealthbox,  // 4-per-line for readability
 } = _bridge;

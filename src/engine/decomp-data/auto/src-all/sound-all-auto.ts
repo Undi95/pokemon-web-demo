@@ -18,13 +18,12 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, ClearPokemonCrySongs, CreateFanfareTask, CreateTask,
-  DestroyTask, FadeInNewBGM, FadeOutBGM, FadeOutMapMusic,
-  FuncIsActiveTask, GET_CRY, IsBGMStopped, IsFanfareTaskInactive,
-  IsNotWaitingForBGMStop, IsPokemonCryPlaying, PlayBGM, PlayCryInternal,
-  PlayFanfareByFanfareNum, ResetMapMusic, RestoreBGMVolumeAfterPokemonCry, SetPokemonCryChorus,
+  ARRAY_COUNT, ClearPokemonCrySongs, CreateTask, DestroyTask,
+  FuncIsActiveTask, GET_CRY, IsPokemonCryPlaying, SetPokemonCryChorus,
   SetPokemonCryLength, SetPokemonCryPanpot, SetPokemonCryPitch, SetPokemonCryPriority,
   SetPokemonCryProgress, SetPokemonCryRelease, SetPokemonCryTone, SetPokemonCryVolume,
   SpeciesToCryId,  // 4-per-line for readability

@@ -18,18 +18,19 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocSpritePalette, BG_CHAR_ADDR, BG_PLTT_ID,
-  BG_SCREEN_ADDR, BattleInitBgsAndWindows, BattlePutTextOnWindow, CopyBgTilemapBufferToVram,
-  CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect_ChangePalette, Cos2, CpuCopy16,
-  CreateSprite, DeactivateAllTextPrinters, DestroyTask, DisableInterrupts,
-  DrawLinkBattleParticipantPokeballs, DrawLinkBattleVsScreenOutcomeText, DrawMainBattleBackground, EnableInterrupts,
+  BG_SCREEN_ADDR, BattlePutTextOnWindow, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer,
+  CopyToBgTilemapBufferRect_ChangePalette, Cos2, CpuCopy16, CreateSprite,
+  DeactivateAllTextPrinters, DestroyTask, DisableInterrupts, EnableInterrupts,
   GetCurrentMapBattleScene, InitBgsFromTemplates, InitWindows, LZDecompressVram,
-  LoadBattleMenuWindowGfx, LoadCompressedPalette, LoadCompressedSpriteSheetUsingHeap, LoadMessageBoxGfx,
-  LoadUserWindowBorderGfx, Menu_LoadStdPalAt, OBJ_PLTT_ID, PLTT_SIZEOF,
-  PlaySE, ResetBgsAndClearDma3BusyFlags, SetBgAttribute, SetBgTilemapBuffer,
-  SetGpuReg, Sin2,  // 4-per-line for readability
+  LoadCompressedPalette, LoadCompressedSpriteSheetUsingHeap, LoadMessageBoxGfx, LoadUserWindowBorderGfx,
+  Menu_LoadStdPalAt, OBJ_PLTT_ID, PLTT_SIZEOF, PlaySE,
+  ResetBgsAndClearDma3BusyFlags, SetBgAttribute, SetBgTilemapBuffer, SetGpuReg,
+  Sin2,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void BattleInitBgsAndWindows(void) */

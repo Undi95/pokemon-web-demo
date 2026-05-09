@@ -18,12 +18,12 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   CpuCopy32, DmaCopy16, IntrEnable, REG_TMCNT_H,
-  REG_TMCNT_L, STWI_init, STWI_init_Callback_M, STWI_init_Callback_S,
-  STWI_reset_ClockCounter, STWI_restart_Command, STWI_set_Callback_M, STWI_set_Callback_S,
-  STWI_set_timer, STWI_start_Command, STWI_stop_timer,  // 4-per-line for readability
+  REG_TMCNT_L,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void STWI_init_all(struct RfuIntrStruct *interruptStruct, IntrFunc *interrupt, bool8 copyInterruptToRam) */

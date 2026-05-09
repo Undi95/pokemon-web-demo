@@ -18,16 +18,16 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AllocSubstruct, CalculatePlayerPartyCount, ConditionGraphDrawMonPic, ConditionGraphHandleDpadInput,
-  ConditionGraph_CalcPositions, ConditionGraph_Init, ConditionGraph_SetNewPositions, CopyConditionMonNameGender,
-  CopyMonNameGenderLocation, CopyStringLeftAlignedToConditionData, FreePokenavSubstruct, GET_NUM_CONDITION_SPARKLES,
-  GetBoxNamePtr, GetBoxOrPartyMonData, GetMonConditionGraphData, GetMonData,
+  AllocSubstruct, CalculatePlayerPartyCount, ConditionGraph_CalcPositions, ConditionGraph_Init,
+  ConditionGraph_SetNewPositions, CopyConditionMonNameGender, CopyStringLeftAlignedToConditionData, FreePokenavSubstruct,
+  GET_NUM_CONDITION_SPARKLES, GetBoxNamePtr, GetBoxOrPartyMonData, GetMonData,
   GetMonMarkingsData, GetMonSpritePalFromSpeciesAndPersonality, GetSubstructPtr, HandleMonMarkingsMenuInput,
-  InitPartyConditionListParameters, InitSearchResultsConditionList, IsConditionMenuSearchMode, JOY_HELD,
-  JOY_NEW, LZ77UnCompWram, LoadSpecialPokePic, PlaySE,
-  SetBoxMonDataAt, SetMonData, SwitchConditionSummaryIndex,  // 4-per-line for readability
+  JOY_HELD, JOY_NEW, LZ77UnCompWram, LoadSpecialPokePic,
+  PlaySE, SetBoxMonDataAt, SetMonData,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_ConditionGraph_Party(void) */

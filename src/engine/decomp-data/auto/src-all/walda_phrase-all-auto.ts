@@ -18,15 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ALIGNED, ARRAY_COUNT, ClearWallpaperDataBit, DoNamingScreen,
-  GetLetterTableId, GetTrainerId, GetWaldaPhraseInputCase, GetWaldaPhrasePtr,
-  GetWallpaperDataBit, GetWallpaperDataBits, IsWaldaPhraseEmpty, MaskWallpaperData,
-  RotateWallpaperDataLeft, SetMainCallback2, SetWaldaPhrase, SetWaldaWallpaperColors,
-  SetWaldaWallpaperIconId, SetWaldaWallpaperLockedOrUnlocked, SetWaldaWallpaperPatternId, SetWallpaperDataBit,
-  SetWallpaperDataFromLetter, StringCompare, StringCopy, StringLength,
-  TO_BIT_OFFSET, TryCalculateWallpaper,  // 4-per-line for readability
+  ALIGNED, ARRAY_COUNT, DoNamingScreen, GetTrainerId,
+  GetWaldaPhrasePtr, IsWaldaPhraseEmpty, SetMainCallback2, SetWaldaPhrase,
+  SetWaldaWallpaperColors, SetWaldaWallpaperIconId, SetWaldaWallpaperLockedOrUnlocked, SetWaldaWallpaperPatternId,
+  StringCompare, StringCopy, StringLength, TO_BIT_OFFSET,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u16 TryBufferWaldaPhrase(void) */

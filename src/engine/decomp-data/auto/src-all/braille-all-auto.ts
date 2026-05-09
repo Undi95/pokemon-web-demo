@@ -18,12 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CopyGlyphToWindow, CopyWindowToVram, DecompressGlyphTile, DecompressGlyph_Braille,
-  FillWindowPixelBuffer, GenerateFontHalfRowLookupTable, IsSEPlaying, JOY_HELD,
-  JOY_NEW, PIXEL_FILL, ScrollWindow, TextPrinterClearDownArrow,
-  TextPrinterInitDownArrowCounters, TextPrinterWait, TextPrinterWaitWithDownArrow,  // 4-per-line for readability
+  CopyGlyphToWindow, CopyWindowToVram, DecompressGlyphTile, FillWindowPixelBuffer,
+  GenerateFontHalfRowLookupTable, IsSEPlaying, JOY_HELD, JOY_NEW,
+  PIXEL_FILL, ScrollWindow, TextPrinterClearDownArrow, TextPrinterInitDownArrowCounters,
+  TextPrinterWait, TextPrinterWaitWithDownArrow,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u16 FontFunc_Braille(struct TextPrinter *textPrinter) */

@@ -18,17 +18,18 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized4, Alloc, AnimateSprites,
   BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer,
   CopyBgTilemapBufferToVram, CopyWindowToVram, CreateTask, DeactivateAllTextPrinters,
-  DecompressAndCopyTileDataToVram, DestroyTask, DisplayDiplomaText, DmaFill16,
-  DmaFill32, EnableInterrupts, FillWindowPixelBuffer, Free,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeTempTileDataBuffersIfPossible, HasAllMons,
-  InitBgsFromTemplates, InitDiplomaBg, InitDiplomaWindow, InitWindows,
-  JOY_NEW, LZDecompressWram, LoadOam, LoadPalette,
-  PIXEL_FILL, PrintDiplomaText, ProcessSpriteCopyRequests, PutWindowTilemap,
+  DecompressAndCopyTileDataToVram, DestroyTask, DmaFill16, DmaFill32,
+  EnableInterrupts, FillWindowPixelBuffer, Free, FreeAllSpritePalettes,
+  FreeAllWindowBuffers, FreeTempTileDataBuffersIfPossible, HasAllMons, InitBgsFromTemplates,
+  InitWindows, JOY_NEW, LZDecompressWram, LoadOam,
+  LoadPalette, PIXEL_FILL, ProcessSpriteCopyRequests, PutWindowTilemap,
   ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
   ResetTempTileDataBuffers, RunTasks, ScanlineEffect_Stop, SetBgTilemapBuffer,
   SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,

@@ -18,13 +18,12 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CgbModVol, CgbOscOff, CgbPan, Clear64byte,
-  ClearModM, CpuCopy32, CpuFill32, MEMACC_COND_JUMP,
-  MPlayContinue, MPlayExtender, MPlayFadeOut, MPlayJumpTableCopy,
-  MPlayOpen, MPlayStart, READ_XCMD_BYTE, SampleFreqSet,
-  SoundInit, SoundMain, TrackStop,  // 4-per-line for readability
+  CpuCopy32, CpuFill32, MEMACC_COND_JUMP, MPlayJumpTableCopy,
+  READ_XCMD_BYTE, SoundMain, TrackStop,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 MidiKeyToFreq(struct WaveData *wav, u8 key, u8 fineAdjust) */

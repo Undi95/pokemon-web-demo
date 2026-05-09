@@ -18,6 +18,8 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocSubstruct,
@@ -25,28 +27,26 @@ const {
   BufferMonMarkingsMenuTiles, ChangeBgX, ChangeBgY, ConditionGraph_Draw,
   ConditionGraph_InitResetScanline, ConditionGraph_InitWindow, ConditionGraph_ResetScanline, ConditionGraph_SetNewPositions,
   ConditionGraph_TryUpdate, ConditionMenu_UpdateMonEnter, ConditionMenu_UpdateMonExit, ConvertIntToDecimalStringN,
-  CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded, CopyToBgTilemapBufferRect, CopyUnusedConditionWindowsToVram,
-  CopyWindowToVram, CpuFill32, CreateConditionMonPic, CreateConditionSparkleSprites,
-  CreateLoopedTask, CreateMonMarkingAllCombosSprite, CreateMonMarkingsOrPokeballIndicators, CreateSprite,
-  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroyConditionSparkleSprites, DestroySprite,
-  DmaCopy16Defvars, DoConditionGraphEnterTransition, DoConditionGraphExitTransition, FillWindowPixelBuffer,
-  FreeConditionMenuGfx, FreeConditionSparkles, FreeMonMarkingsMenu, FreePokenavSubstruct,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetConditionGraphCurrentListIndex,
-  GetConditionGraphMenuCurrentLoadIndex, GetConditionGraphPtr, GetConditionMonDataBuffer, GetConditionMonLocationText,
-  GetConditionMonNameText, GetConditionMonPal, GetConditionMonPicGfx, GetMonListCount,
-  GetNumConditionMonSparkles, GetSubstructPtr, HideBg, IndexOfSpritePaletteTag,
-  InitBgTemplates, InitMonMarkingsMenu, IsConditionMenuSearchMode, IsLoopedTaskActive,
-  IsPaletteFadeActive, LZ77UnCompVram, LoadConditionGraphMenuGfx, LoadConditionMonPicTemplate,
-  LoadConditionSelectionIcons, LoadConditionSparkle, LoadLeftHeaderGfxForIndex, LoadNextConditionMenuMonData,
-  LoadOam, LoadPalette, LoadSpritePalette, LoadSpriteSheet,
-  LoadSpriteSheets, MainMenuLoopedTaskIsBusy, MoveConditionMonOffscreen, OBJ_PLTT_ID,
-  OpenMonMarkingsMenu, PokenavFadeScreen, PokenavFillPalette, Pokenav_AllocAndLoadPalettes,
-  PrintHelpBarText, ProcessSpriteCopyRequests, PutWindowTilemap, RemoveWindow,
-  ResetConditionSparkleSprites, SPRITE_SHAPE, SPRITE_SIZE, ScanlineEffect_InitHBlankDmaTransfer,
-  SetBgTilemapBuffer, SetExitVBlank, SetGpuReg, SetLeftHeaderSpritesInvisibility,
-  SetPokenavVBlankCallback, SetVBlankCallback_, ShowBg, ShowLeftHeaderGfx,
-  SlideMenuHeaderDown, StartSpriteAnim, StringCopy, ToggleGraphData,
-  TransferPlttBuffer, TryGetMonMarkId, UpdateConditionGraphMenuWindows, WaitForHelpBar,  // 4-per-line for readability
+  CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded, CopyToBgTilemapBufferRect, CopyWindowToVram,
+  CpuFill32, CreateConditionSparkleSprites, CreateLoopedTask, CreateMonMarkingAllCombosSprite,
+  CreateSprite, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroyConditionSparkleSprites,
+  DestroySprite, DmaCopy16Defvars, FillWindowPixelBuffer, FreeConditionSparkles,
+  FreeMonMarkingsMenu, FreePokenavSubstruct, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  FreeTempTileDataBuffersIfPossible, GetConditionGraphCurrentListIndex, GetConditionGraphMenuCurrentLoadIndex, GetConditionGraphPtr,
+  GetConditionMonDataBuffer, GetConditionMonLocationText, GetConditionMonNameText, GetConditionMonPal,
+  GetConditionMonPicGfx, GetMonListCount, GetNumConditionMonSparkles, GetSubstructPtr,
+  HideBg, IndexOfSpritePaletteTag, InitBgTemplates, InitMonMarkingsMenu,
+  IsConditionMenuSearchMode, IsLoopedTaskActive, IsPaletteFadeActive, LZ77UnCompVram,
+  LoadConditionGraphMenuGfx, LoadConditionMonPicTemplate, LoadConditionSelectionIcons, LoadConditionSparkle,
+  LoadLeftHeaderGfxForIndex, LoadNextConditionMenuMonData, LoadOam, LoadPalette,
+  LoadSpritePalette, LoadSpriteSheet, LoadSpriteSheets, MainMenuLoopedTaskIsBusy,
+  MoveConditionMonOffscreen, OBJ_PLTT_ID, OpenMonMarkingsMenu, PokenavFadeScreen,
+  PokenavFillPalette, Pokenav_AllocAndLoadPalettes, PrintHelpBarText, ProcessSpriteCopyRequests,
+  PutWindowTilemap, RemoveWindow, ResetConditionSparkleSprites, SPRITE_SHAPE,
+  SPRITE_SIZE, ScanlineEffect_InitHBlankDmaTransfer, SetBgTilemapBuffer, SetGpuReg,
+  SetLeftHeaderSpritesInvisibility, SetPokenavVBlankCallback, SetVBlankCallback_, ShowBg,
+  ShowLeftHeaderGfx, SlideMenuHeaderDown, StartSpriteAnim, StringCopy,
+  TransferPlttBuffer, TryGetMonMarkId, WaitForHelpBar,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 OpenConditionGraphMenu(void) */

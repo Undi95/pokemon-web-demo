@@ -18,6 +18,8 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddBagItem, AddItemIconSprite, AddPCItem,
@@ -25,34 +27,24 @@ const {
   AdjustQuantityAccordingToDPadInput, AllocZeroed, CB2_GoToItemDepositMenu, CalculatePlayerPartyCount,
   ChooseMonToGiveMailFromMailbox, CleanupOverworldWindowsAndTilemaps, ClearDialogWindowAndFrame, ClearItemSlots,
   ClearMail, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap, CompactPCItems,
-  ConvertIntToDecimalStringN, ConvertInternationalPlayerNameStripChar, CopyItemName, CopyItemName_PlayerPC,
-  CopyWindowToVram, CountUsedPCItemSlots, CreateSwapLineSprites, CreateTask,
-  CreateYesNoMenuWithCallbacks, DestroyListMenuTask, DestroySprite, DestroySwapLineSprites,
-  DestroyTask, DisplayItemMessageOnField, DisplayYesNoMenuDefaultYes, DoPlayerRoomDecorationMenu,
-  DrawDialogueFrame, DrawStdFrameWithCustomTileAndPalette, FadeInFromBlack, FadeScreen,
-  FillWindowPixelBuffer, FillWindowPixelRect, Free, FreeAndReserveObjectSpritePalettes,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetItemDescription, GetItemImportance,
-  GetMailboxMailCount, GetMaxWidthInMenuTable, GetMaxWidthInSubsetOfMenuTable, GetMenuCursorDimensionByFont,
-  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, InitItemStorageMenu, InitMenuInUpperLeftCornerNormal,
-  IsDma3ManagerBusyWithBgCopy, IsWeatherNotFadingIn, ItemStorageMenuPrint, ItemStorage_AddScrollIndicator,
-  ItemStorage_AddWindow, ItemStorage_CompactCursor, ItemStorage_CompactList, ItemStorage_DoItemAction,
-  ItemStorage_DoItemToss, ItemStorage_DoItemWithdraw, ItemStorage_DrawItemIcon, ItemStorage_DrawSwapArrow,
-  ItemStorage_Enter, ItemStorage_EraseItemIcon, ItemStorage_EraseMainMenu, ItemStorage_Exit,
-  ItemStorage_ExitItemList, ItemStorage_FinishItemSwap, ItemStorage_Free, ItemStorage_GetMessage,
-  ItemStorage_Init, ItemStorage_PrintDescription, ItemStorage_PrintItemQuantity, ItemStorage_PrintMessage,
-  ItemStorage_RefreshListMenu, ItemStorage_RemoveScrollIndicator, ItemStorage_RemoveWindow, ItemStorage_ReturnToListInput,
-  ItemStorage_SetSwapArrow, ItemStorage_StartItemSwap, ItemStorage_UpdateSwapLinePos, JOY_NEW,
-  ListMenuGetScrollAndRow, ListMenuGetYCoordForPrintingArrowCursor, ListMenuInit, ListMenuSetTemplateField,
-  ListMenu_ProcessInput, LoadListMenuSwapLineGfx, LoadMessageBoxAndBorderGfx, MailboxMenu_AddScrollArrows,
-  MailboxMenu_AddWindow, MailboxMenu_Alloc, MailboxMenu_CreateList, MailboxMenu_Free,
-  MailboxMenu_RemoveWindow, Mailbox_Cancel, Mailbox_CancelMoveToBag, Mailbox_CompactMailList,
-  Mailbox_DoMailMoveToBag, Mailbox_DrawMailboxMenu, Mailbox_NoPokemonForMail, Mailbox_ReturnToPlayerPC,
-  Menu_GetCursorPos, Menu_ProcessInput, Menu_ProcessInputNoWrap, Menu_ProcessInputNoWrapClearOnChoose,
-  MoveItemSlotInList, PIXEL_FILL, PlaySE, PrintMenuActionTextsInUpperLeftCorner,
-  PrintMenuTable, ProcessMenuInput_other, ReadMail, RemovePCItem,
-  RemoveScrollIndicatorArrowPair, RemoveWindow, ReshowPlayerPC, SWAP,
-  ScheduleBgCopyTilemapToVram, ScriptContext_Enable, ScriptContext_SetupScript, SetCursorWithinListBounds,
-  SetItemListPerPageCount, SetMainCallback2, SetPlayerPCListCount, SetStandardWindowBorderStyle,
+  ConvertIntToDecimalStringN, ConvertInternationalPlayerNameStripChar, CopyItemName, CopyWindowToVram,
+  CountUsedPCItemSlots, CreateSwapLineSprites, CreateTask, CreateYesNoMenuWithCallbacks,
+  DestroyListMenuTask, DestroySprite, DestroySwapLineSprites, DestroyTask,
+  DisplayItemMessageOnField, DisplayYesNoMenuDefaultYes, DoPlayerRoomDecorationMenu, DrawDialogueFrame,
+  DrawStdFrameWithCustomTileAndPalette, FadeInFromBlack, FadeScreen, FillWindowPixelBuffer,
+  FillWindowPixelRect, Free, FreeAndReserveObjectSpritePalettes, FreeSpritePaletteByTag,
+  FreeSpriteTilesByTag, GetItemDescription, GetItemImportance, GetMaxWidthInMenuTable,
+  GetMaxWidthInSubsetOfMenuTable, GetMenuCursorDimensionByFont, GetStringCenterAlignXOffset, GetStringRightAlignXOffset,
+  InitMenuInUpperLeftCornerNormal, IsDma3ManagerBusyWithBgCopy, IsWeatherNotFadingIn, ItemStorage_GetMessage,
+  JOY_NEW, ListMenuGetScrollAndRow, ListMenuGetYCoordForPrintingArrowCursor, ListMenuInit,
+  ListMenuSetTemplateField, ListMenu_ProcessInput, LoadListMenuSwapLineGfx, LoadMessageBoxAndBorderGfx,
+  MailboxMenu_AddScrollArrows, MailboxMenu_AddWindow, MailboxMenu_Alloc, MailboxMenu_CreateList,
+  MailboxMenu_Free, MailboxMenu_RemoveWindow, Menu_GetCursorPos, Menu_ProcessInput,
+  Menu_ProcessInputNoWrap, Menu_ProcessInputNoWrapClearOnChoose, MoveItemSlotInList, PIXEL_FILL,
+  PlaySE, PrintMenuActionTextsInUpperLeftCorner, PrintMenuTable, ProcessMenuInput_other,
+  ReadMail, RemovePCItem, RemoveScrollIndicatorArrowPair, RemoveWindow,
+  SWAP, ScheduleBgCopyTilemapToVram, ScriptContext_Enable, ScriptContext_SetupScript,
+  SetCursorWithinListBounds, SetItemListPerPageCount, SetMainCallback2, SetStandardWindowBorderStyle,
   SetSwapLineSpritesInvisibility, StringCopy, StringExpandPlaceholders, UpdateSwapLineSpritesPos,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

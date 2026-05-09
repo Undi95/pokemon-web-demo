@@ -18,14 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AllocZeroed, CpuFill32, FREE_AND_SET_NULL, Free,
   GetGameStat, InitMysteryEventScriptContext, InitRamScript_NoObjectEvent, IsWonderNewsSameAsSaved,
-  MysteryGiftClient_CallFunc, MysteryGiftClient_CopyRecvScript, MysteryGiftClient_Free, MysteryGiftClient_Init,
-  MysteryGiftClient_InitSendWord, MysteryGiftLink_Init, MysteryGiftLink_InitRecv, MysteryGiftLink_InitSend,
-  MysteryGiftLink_Recv, MysteryGiftLink_Send, MysteryGift_LoadLinkGameData, MysteryGift_TrySaveStamp,
-  RunMysteryEventScriptContextCommand, SaveWonderCard, SaveWonderNews, ValidateEReaderTrainer,  // 4-per-line for readability
+  MysteryGiftLink_Init, MysteryGiftLink_InitRecv, MysteryGiftLink_InitSend, MysteryGiftLink_Recv,
+  MysteryGiftLink_Send, MysteryGift_LoadLinkGameData, MysteryGift_TrySaveStamp, RunMysteryEventScriptContextCommand,
+  SaveWonderCard, SaveWonderNews, ValidateEReaderTrainer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void MysteryGiftClient_Create(bool32 isWonderNews) */

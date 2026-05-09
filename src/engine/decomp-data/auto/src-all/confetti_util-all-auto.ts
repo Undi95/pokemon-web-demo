@@ -18,10 +18,12 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocZeroed, FREE_AND_SET_NULL, GetSpriteTileStartByTag,
-  GetTilesPerImage, IndexOfSpritePaletteTag, SetAnimAndTileNum,  // 4-per-line for readability
+  GetTilesPerImage, IndexOfSpritePaletteTag,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 ConfettiUtil_Init(u8 count) */

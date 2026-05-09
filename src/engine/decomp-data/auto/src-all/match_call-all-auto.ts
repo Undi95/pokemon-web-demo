@@ -18,32 +18,28 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinter, AddWindow, Alloc,
-  BG_PLTT_ID, BuildMatchCallString, ChangeBgY, CheckMatchCallChance,
-  ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyWindowToVram, CreateTask,
-  DecompressAndCopyTileDataToVram, DestroyTask, DrawMatchCallTextBoxBorder_Internal, FillBgTilemapBufferRect_Palette0,
-  FillWindowPixelBuffer, FlagGet, Free, FreeTempTileDataBuffersIfPossible,
-  FreezeObjectEvents, FuncIsActiveTask, GetActiveMatchCallTrainerId, GetBattleMatchCallText,
-  GetBgAttribute, GetCurrentTotalMinutes, GetDifferentRouteMatchCallText, GetGameStat,
-  GetGeneralMatchCallText, GetHoennPokedexCount, GetLandEncounterSlot, GetLastBeatenRematchTrainerId,
-  GetMapName, GetMonAbility, GetMonData, GetNationalPokedexCount,
-  GetNthRematchTrainerFought, GetNumOwnedBadges, GetNumRegisteredTrainers, GetNumRematchTrainersFought,
-  GetObjectEventIdByLocalIdAndMap, GetPlayerTextSpeedDelay, GetPokedexRatingLevel, GetRematchTrainerLocation,
-  GetSameRouteMatchCallText, GetSetPokedexFlag, GetTrainerId, GetTrainerMatchCallId,
-  GetWaterEncounterSlot, GetWindowAttribute, HasTrainerBeenFought, InitMatchCallTextPrinter,
-  IsDma3ManagerBusyWithBgCopy, IsNationalPokedexEnabled, IsSEPlaying, IsTextPrinterActive,
-  JOY_HELD, JOY_NEW, LoadBgTiles, LoadMessageBoxAndBorderGfx,
-  LoadPalette, LockPlayerFieldControls, MAP_GROUP, MapAllowsMatchCall,
-  ObjectEventClearHeldMovementIfFinished, Overworld_MapTypeAllowsTeleportAndFly, PIXEL_FILL, PlaySE,
-  PlayerFreeze, PopulateMatchCallStringVar, PopulateMatchCallStringVars, PutWindowTilemap,
-  Random, RemoveWindow, RtcCalcLocalTime, RtcGetLocalDayCount,
-  RunMatchCallTextPrinter, RunTextPrinters, ScriptMovement_UnfreezeObjectEvents, SelectMatchCallMessage,
-  SelectMatchCallTrainer, ShouldTrainerRequestBattle, SpeciesToNationalPokedexNum, StartMatchCall,
-  StopPlayerAvatar, StringCopy, StringExpandPlaceholders, TrainerIsEligibleForRematch,
-  UnfreezeObjectEvents, UnlockPlayerFieldControls, UpdateMatchCallMinutesCounter, UpdateMatchCallStepCounter,
-  UpdateRematchIfDefeated, WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
+  BG_PLTT_ID, ChangeBgY, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram,
+  CopyWindowToVram, CreateTask, DecompressAndCopyTileDataToVram, DestroyTask,
+  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FlagGet, Free,
+  FreeTempTileDataBuffersIfPossible, FreezeObjectEvents, FuncIsActiveTask, GetBattleMatchCallText,
+  GetBgAttribute, GetDifferentRouteMatchCallText, GetGameStat, GetGeneralMatchCallText,
+  GetHoennPokedexCount, GetLastBeatenRematchTrainerId, GetMapName, GetMonAbility,
+  GetMonData, GetNationalPokedexCount, GetObjectEventIdByLocalIdAndMap, GetPlayerTextSpeedDelay,
+  GetRematchTrainerLocation, GetSameRouteMatchCallText, GetSetPokedexFlag, GetTrainerId,
+  GetWindowAttribute, HasTrainerBeenFought, IsDma3ManagerBusyWithBgCopy, IsNationalPokedexEnabled,
+  IsSEPlaying, IsTextPrinterActive, JOY_HELD, JOY_NEW,
+  LoadBgTiles, LoadMessageBoxAndBorderGfx, LoadPalette, LockPlayerFieldControls,
+  MAP_GROUP, ObjectEventClearHeldMovementIfFinished, Overworld_MapTypeAllowsTeleportAndFly, PIXEL_FILL,
+  PlaySE, PlayerFreeze, PutWindowTilemap, Random,
+  RemoveWindow, RtcCalcLocalTime, RtcGetLocalDayCount, RunTextPrinters,
+  ScriptMovement_UnfreezeObjectEvents, SpeciesToNationalPokedexNum, StopPlayerAvatar, StringCopy,
+  StringExpandPlaceholders, UnfreezeObjectEvents, UnlockPlayerFieldControls, UpdateRematchIfDefeated,
+  WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitMatchCallCounters(void) */

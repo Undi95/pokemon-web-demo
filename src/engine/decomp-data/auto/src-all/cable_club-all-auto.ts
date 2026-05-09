@@ -18,35 +18,33 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddTextPrinterParameterized, AddWindow, AreBattleTowerLinkSpeciesSame, CheckLinkCanceled,
-  CheckLinkCanceledBeforeConnection, CheckLinkErrored, CheckLinkPlayersMatchSaved, CheckShouldAdvanceLinkState,
-  CheckSioErrored, CleanupOverworldWindowsAndTilemaps, ClearLinkCallback_2, ClearLinkPlayerCountWindow,
-  ClearLinkRfuCallback, ClearStdWindowAndFrame, CloseLink, ConvertIntToDecimalStringN,
-  ConvertLinkPlayerName, CopyTrainerCardData, CopyWindowToVram, CreateLinkupTask,
-  CreateTask, CreateTask_CreateTradeMenu, CreateTask_EnterCableClubSeat, DestroyTask,
-  DoesLinkPlayerCountMatchSaved, EraseFieldMessageBox, ExchangeDataAndGetLinkupStatus, FadeScreen,
-  FindTaskIdByFunc, FinishLinkup, FuncIsActiveTask, GetBlockReceivedStatus,
-  GetCableClubPartnersReady, GetFieldMessageBoxMode, GetLinkPlayerCount, GetLinkPlayerCountAsBitFlags,
-  GetLinkPlayerCount_2, GetLinkPlayerDataExchangeStatusTimed, GetMonData, GetMultiplayerId,
-  GetSavedLinkPlayerCountAsBitFlags, GetSavedPlayerCount, GetSioMultiSI, GetStringCenterAlignXOffset,
-  GetTrainerCardStars, HasLinkErrorOccurred, HideFieldMessageBox, InUnionRoom,
-  IsFieldMessageBoxHidden, IsLinkConnectionEstablished, IsLinkMaster, IsLinkPlayerDataExchangeComplete,
-  IsLinkTaskFinished, JOY_HELD, JOY_NEW, Link_AnyPartnersPlayingRubyOrSapphire,
-  LoadPlayerParty, LockPlayerFieldControls, MysteryGift_TryIncrementStat, OpenLink,
-  OpenLinkTimed, Overworld_ResetMapMusic, PlayMapChosenOrBattleBGM, PlaySE,
-  PrintNumPlayersInLink, QueueExitLinkRoomKey, ReducePlayerPartyToSelectedMons, RemoveWindow,
-  ResetBlockReceivedFlag, ResetBlockReceivedFlags, ResetLinkPlayerCount, ResetLinkPlayers,
-  RunTasks, SaveGame, SaveLinkPlayers, SavePlayerBag,
-  ScriptContext_Enable, ScriptContext_Stop, SendBlock, SendBlockRequest,
-  SetCloseLinkCallback, SetCloseLinkCallbackHandleJP, SetInCableClubSeat, SetLinkBattleTypeFlags,
+  AddTextPrinterParameterized, AddWindow, CheckLinkPlayersMatchSaved, CheckShouldAdvanceLinkState,
+  CleanupOverworldWindowsAndTilemaps, ClearLinkCallback_2, ClearLinkRfuCallback, ClearStdWindowAndFrame,
+  CloseLink, ConvertIntToDecimalStringN, ConvertLinkPlayerName, CopyTrainerCardData,
+  CopyWindowToVram, CreateTask, CreateTask_CreateTradeMenu, DestroyTask,
+  DoesLinkPlayerCountMatchSaved, EraseFieldMessageBox, FadeScreen, FindTaskIdByFunc,
+  FuncIsActiveTask, GetBlockReceivedStatus, GetCableClubPartnersReady, GetFieldMessageBoxMode,
+  GetLinkPlayerCount, GetLinkPlayerCountAsBitFlags, GetLinkPlayerCount_2, GetLinkPlayerDataExchangeStatusTimed,
+  GetMonData, GetMultiplayerId, GetSavedLinkPlayerCountAsBitFlags, GetSavedPlayerCount,
+  GetSioMultiSI, GetStringCenterAlignXOffset, GetTrainerCardStars, HasLinkErrorOccurred,
+  HideFieldMessageBox, InUnionRoom, IsFieldMessageBoxHidden, IsLinkConnectionEstablished,
+  IsLinkMaster, IsLinkPlayerDataExchangeComplete, IsLinkTaskFinished, JOY_HELD,
+  JOY_NEW, Link_AnyPartnersPlayingRubyOrSapphire, LoadPlayerParty, LockPlayerFieldControls,
+  MysteryGift_TryIncrementStat, OpenLink, OpenLinkTimed, Overworld_ResetMapMusic,
+  PlayMapChosenOrBattleBGM, PlaySE, QueueExitLinkRoomKey, ReducePlayerPartyToSelectedMons,
+  RemoveWindow, ResetBlockReceivedFlag, ResetBlockReceivedFlags, ResetLinkPlayerCount,
+  ResetLinkPlayers, RunTasks, SaveGame, SaveLinkPlayers,
+  SavePlayerBag, ScriptContext_Enable, ScriptContext_Stop, SendBlock,
+  SendBlockRequest, SetCloseLinkCallback, SetCloseLinkCallbackHandleJP, SetInCableClubSeat,
   SetLinkStandbyCallback, SetLinkWaitingForScript, SetLocalLinkPlayerId, SetMainCallback2,
   SetStandardWindowBorderStyle, SetStartedCableClubActivity, SetSuppressLinkErrorMessage, SetTaskFuncWithFollowupFunc,
   SetWarpDestinationToDynamicWarp, ShowFieldAutoScrollMessage, ShowFieldMessage, ShowTrainerCardInLink,
   StartSendingKeysToLink, StopFieldMessage, StringCopy, StringExpandPlaceholders,
-  SwitchTaskToFollowupFunc, TrainerCard_GenerateCardForLinkPlayer, TryLinkTimeout, UpdateLinkPlayerCountDisplay,
-  UpdatePlayerLinkBattleRecords, UpdateTrainerFansAfterLinkBattle,  // 4-per-line for readability
+  SwitchTaskToFollowupFunc, TrainerCard_GenerateCardForLinkPlayer, UpdatePlayerLinkBattleRecords, UpdateTrainerFansAfterLinkBattle,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CreateLinkupTask(u8 minPlayers, u8 maxPlayers) */

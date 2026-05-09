@@ -18,18 +18,20 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, Alloc, AnimateSprites,
   BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer, ClearScheduledBgCopiesToVram,
   CopyWindowToVram, CreateRegionMapCursor, CreateRegionMapPlayerIcon, DeactivateAllTextPrinters,
-  DoRegionMapInputCallback, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette, FieldUpdateRegionMap,
-  FillWindowPixelBuffer, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeRegionMapIconResources,
-  GetStringCenterAlignXOffset, InitBgsFromTemplates, InitRegionMap, InitWindows,
-  LoadOam, LoadUserWindowBorderGfx, PIXEL_FILL, PrintRegionMapSecName,
-  ProcessSpriteCopyRequests, ResetBgsAndClearDma3BusyFlags, ResetSpriteData, ScheduleBgCopyTilemapToVram,
-  SetGpuReg, SetGpuRegBits, SetMainCallback2, SetVBlankCallback,
-  ShowBg, TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
+  DoRegionMapInputCallback, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette, FillWindowPixelBuffer,
+  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeRegionMapIconResources, GetStringCenterAlignXOffset,
+  InitBgsFromTemplates, InitRegionMap, InitWindows, LoadOam,
+  LoadUserWindowBorderGfx, PIXEL_FILL, ProcessSpriteCopyRequests, ResetBgsAndClearDma3BusyFlags,
+  ResetSpriteData, ScheduleBgCopyTilemapToVram, SetGpuReg, SetGpuRegBits,
+  SetMainCallback2, SetVBlankCallback, ShowBg, TRY_FREE_AND_SET_NULL,
+  TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void FieldInitRegionMap(MainCallback callback) */

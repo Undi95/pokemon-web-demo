@@ -18,10 +18,11 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  Callback_Dummy_ID, Callback_Dummy_M, Callback_Dummy_S, REG_TMCNT_H,
-  REG_TMCNT_L, STWI_init_slave, STWI_set_timer_in_RAM, STWI_stop_timer_in_RAM,  // 4-per-line for readability
+  Callback_Dummy_M, REG_TMCNT_H, REG_TMCNT_L,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void IntrSIO32(void) */

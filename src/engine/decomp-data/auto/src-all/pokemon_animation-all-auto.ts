@@ -18,24 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ANIM_SPRITE, ARRAY_COUNT, AddNewAnim, Anim_BounceRotateToSides,
-  Anim_BounceRotateToSides_Small, BlendPalette, BounceRotateToSides, CalcCenterToCornerVec,
-  CircleCounterclockwise, ConcaveArc, ConvexDoubleArc, Cos,
-  CreateTask, DeepVerticalSquishBounce, DestroyTask, FreeOamMatrix,
-  GetNature, GlowColor, Grow, GrowStutter,
-  HandleSetAffineData, HandleStartAffineAnim, HorizontalJumpsVerticalStretch_0, HorizontalRepeatedSpring,
-  HorizontalShake, HorizontalSlide, HorizontalSpring, HorizontalStretchFar,
-  InitAnimData, InitSpriteAffineAnim, OBJ_PLTT_ID, ObjAffineSet,
-  ResetSpriteAfterAnim, RisingWobble, RotateToSides, SetAffineData,
-  SetHorizontalDip, SetPosForRotation, SetShakeFlashYellowPos, ShakeFlashYellow,
-  ShakeGlow_Blend, ShakeGlow_Move, ShrinkGrow, ShrinkGrowVibrate,
-  Sin, Spin, StartSpriteAffineAnim, SwingConcave,
-  SwingConvex, TriangleDown, TryFlipX, TumblingFrontFlip,
-  Twist, VerticalJumps, VerticalShake, VerticalShakeBack,
-  VerticalShakeLowTwice, VerticalShakeTwice, VerticalSlide, VerticalSlideWobble,
-  VerticalSquishBounce, VerticalStretchBothEnds, Zigzag,  // 4-per-line for readability
+  ANIM_SPRITE, ARRAY_COUNT, BlendPalette, CalcCenterToCornerVec,
+  Cos, CreateTask, DestroyTask, FreeOamMatrix,
+  GetNature, GlowColor, InitSpriteAffineAnim, OBJ_PLTT_ID,
+  ObjAffineSet, Sin, StartSpriteAffineAnim,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetPosForRotation(struct Sprite *sprite, u16 index, s16 amplitudeX, s16 amplitudeY) */

@@ -18,20 +18,21 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AnimTranslateLinear, AnimateBallOpenParticles, AnimateBallOpenParticlesForPokeball, AnimateSprite,
-  ChangeSpriteAffineAnim, Cos, CreateInvisibleSpriteWithCallback, CreateSprite,
-  CreateTask, DestroySprite, DestroySpriteAndFreeResources, DestroyTask,
-  DoMonFrontSpriteAnimation, FreeBallGfx, FreeOamMatrix, FreeSpriteOamMatrix,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetBattlerAtPosition, GetBattlerPokeballItemId,
-  GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord, GetMonData,
-  GetSpriteTileStartByTag, HIBYTE, InitAnimArcTranslation, IsBGMPlaying,
-  IsCryPlayingOrClearCrySongs, IsDoubleBattle, ItemIdToBallId, LZDecompressVram,
-  LaunchBallFadeMonTask, LaunchBallFadeMonTaskForPokeball, LoadBallGfx, LoadCompressedSpritePaletteUsingHeap,
-  LoadCompressedSpriteSheetUsingHeap, PlayCry_ByMode, PlayCry_ReleaseDouble, PlaySE,
-  ShouldPlayNormalMonCry, Sin, StartSpriteAffineAnim, StartSpriteAnim,
-  StopCryAndClearCrySongs, TranslateAnimHorizontalArc,  // 4-per-line for readability
+  AnimTranslateLinear, AnimateBallOpenParticles, AnimateSprite, ChangeSpriteAffineAnim,
+  Cos, CreateInvisibleSpriteWithCallback, CreateSprite, CreateTask,
+  DestroySprite, DestroySpriteAndFreeResources, DestroyTask, DoMonFrontSpriteAnimation,
+  FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord,
+  GetMonData, GetSpriteTileStartByTag, HIBYTE, InitAnimArcTranslation,
+  IsBGMPlaying, IsCryPlayingOrClearCrySongs, IsDoubleBattle, ItemIdToBallId,
+  LZDecompressVram, LaunchBallFadeMonTask, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheetUsingHeap,
+  PlayCry_ByMode, PlayCry_ReleaseDouble, PlaySE, ShouldPlayNormalMonCry,
+  Sin, StartSpriteAffineAnim, StartSpriteAnim, StopCryAndClearCrySongs,
+  TranslateAnimHorizontalArc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 DoPokeballSendOutAnimation(s16 pan, u8 kindOfThrow) */

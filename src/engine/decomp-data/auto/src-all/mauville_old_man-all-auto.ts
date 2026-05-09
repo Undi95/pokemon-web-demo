@@ -18,26 +18,21 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddTextPrinterParameterized, BardSing, CalcWordSounds,
-  ClearToTransparentAndRemoveWindow, ConvertIntToDecimalStringN, ConvertInternationalString, ConvertPixelWidthToTileWidth,
-  CopyEasyChatWord, CopyWindowToVram, CreateTask, CreateWindowFromRect,
-  DestroyTask, DrawDialogueFrame, DrawSongTextWindow, EasyChat_GetNumWordsInGroup,
-  EnableTextPrinters, FadeInBGM, FadeOutBGMTemporarily, GetCurrentMauvilleOldMan,
-  GetFreeStorySlot, GetGameStat, GetRandomEasyChatWordFromUnlockedGroup, GetStoryActionByStat,
-  GetStoryByStattellerPlayerName, GetStoryTextByStat, GetStoryTitleByStat, GetStringWidth,
-  GetWordSoundTemplates, HasTrainerStatIncreased, InitGiddyTaleList, InitMenuInUpperLeftCornerNormal,
-  IsBGMPausedOrStopped, IsStringJapanese, Menu_ProcessInput, PrepareSongText,
-  PrintStoryList, Random, ResetBardFlag, ResetHipsterFlag,
-  ResetStorytellerFlag, ResetTraderFlag, RunTextPrintersAndIsPrinter0Active, SWAP,
-  ScrambleStatList, ScriptContext_Enable, ScriptContext_Stop, SetMauvilleOldManObjEventGfx,
-  SetStandardWindowBorderStyle, SetupBard, SetupGiddy, SetupHipster,
-  SetupStoryteller, SetupTrader, ShowFieldMessage, StartBardSong,
-  StorytellerDisplayStory, StorytellerGetGameStat, StorytellerGetRecordedTrainerStat, StorytellerInitializeRandomStat,
-  StorytellerRecordNewStat, StorytellerSetPlayerName, StorytellerSetRecordedTrainerStat, StorytellerSetup,
-  Storyteller_ResetFlag, StringCopy, StripExtCtrlCodes, TraderSetup,
-  Trader_ResetFlag, UnlockRandomTrendySaying, VarSet, WORD_TO_PITCH_TABLE_INDEX,  // 4-per-line for readability
+  ARRAY_COUNT, AddTextPrinterParameterized, CalcWordSounds, ClearToTransparentAndRemoveWindow,
+  ConvertIntToDecimalStringN, ConvertInternationalString, ConvertPixelWidthToTileWidth, CopyEasyChatWord,
+  CopyWindowToVram, CreateTask, CreateWindowFromRect, DestroyTask,
+  DrawDialogueFrame, EasyChat_GetNumWordsInGroup, FadeInBGM, FadeOutBGMTemporarily,
+  GetGameStat, GetRandomEasyChatWordFromUnlockedGroup, GetStoryActionByStat, GetStoryTextByStat,
+  GetStoryTitleByStat, GetStringWidth, GetWordSoundTemplates, InitMenuInUpperLeftCornerNormal,
+  IsBGMPausedOrStopped, IsStringJapanese, Menu_ProcessInput, Random,
+  RunTextPrintersAndIsPrinter0Active, SWAP, ScriptContext_Enable, ScriptContext_Stop,
+  SetStandardWindowBorderStyle, ShowFieldMessage, StringCopy, StripExtCtrlCodes,
+  TraderSetup, Trader_ResetFlag, UnlockRandomTrendySaying, VarSet,
+  WORD_TO_PITCH_TABLE_INDEX,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetupBard(void) */

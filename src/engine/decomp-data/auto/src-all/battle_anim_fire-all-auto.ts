@@ -18,18 +18,18 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AnimTranslateLinear, BATTLE_PARTNER, BG_PLTT_ID, BlendPalette,
-  Cos, CreateEruptionLaunchRocks, CreateSprite, DestroyAnimSprite,
-  DestroyAnimVisualTask, DestroySprite, DestroySpriteAndMatrix, GetAnimBattlerSpriteId,
-  GetBattleAnimBg1Data, GetBattlerAtPosition, GetBattlerSide, GetBattlerSpriteBGPriority,
-  GetBattlerSpriteCoord, GetEruptionLaunchRockInitialYPos, InitAnimLinearTranslation, InitAnimLinearTranslationWithSpeed,
-  InitEruptionLaunchRockCoordData, InitSpritePosToAnimAttacker, IsBattlerSpriteVisible, IsContest,
-  PlaySE12WithPanning, PrepareBattlerSpriteForRotScale, PrepareEruptAnimTaskData, ResetSpriteRotScale,
-  SetAnimSpriteInitialXOffset, SetBattlerSpriteYOffsetFromYScale, SetSpriteCoordsToAnimAttackerCoords, Sin,
-  StartSpriteAnim, StoreSpriteCallbackInData6, UpdateEruptAnimTask, UpdateEruptionLaunchRockPos,
-  UpdateFireRingCircleOffset,  // 4-per-line for readability
+  Cos, CreateSprite, DestroyAnimSprite, DestroyAnimVisualTask,
+  DestroySprite, DestroySpriteAndMatrix, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
+  GetBattlerAtPosition, GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteCoord,
+  InitAnimLinearTranslation, InitAnimLinearTranslationWithSpeed, InitSpritePosToAnimAttacker, IsBattlerSpriteVisible,
+  IsContest, PlaySE12WithPanning, PrepareBattlerSpriteForRotScale, PrepareEruptAnimTaskData,
+  ResetSpriteRotScale, SetAnimSpriteInitialXOffset, SetBattlerSpriteYOffsetFromYScale, SetSpriteCoordsToAnimAttackerCoords,
+  Sin, StartSpriteAnim, StoreSpriteCallbackInData6, UpdateEruptAnimTask,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimFireSpiralInward(struct Sprite *sprite) */

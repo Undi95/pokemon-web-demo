@@ -18,23 +18,23 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized4, Alloc, AllocZeroed,
   AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer,
   ChangeBgX, ChangeBgY, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram,
-  CopyToBgTilemapBuffer, CopyWindowToVram, CountPlayersInGroupAndGetActivity, CreateTask,
-  CreateTask_ListenToWireless, CyclePalette, DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap,
-  DestroyTask, DynamicPlaceholderTextUtil_Reset, FillBgTilemapBufferRect, FillWindowPixelBuffer,
-  Free, FreeAllWindowBuffers, GetBgTilemapBuffer, GetStringCenterAlignXOffset,
-  HaveCountsChanged, InitBgsFromTemplates, InitWindows, IsDma3ManagerBusyWithBgCopy,
-  JOY_NEW, LoadOam, LoadPalette, Menu_LoadStdPalAt,
-  PIXEL_FILL, PLTT_SIZEOF, PlaySE, PrintHeaderTexts,
+  CopyToBgTilemapBuffer, CopyWindowToVram, CreateTask, CreateTask_ListenToWireless,
+  DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap, DestroyTask, DynamicPlaceholderTextUtil_Reset,
+  FillBgTilemapBufferRect, FillWindowPixelBuffer, Free, FreeAllWindowBuffers,
+  GetBgTilemapBuffer, GetStringCenterAlignXOffset, InitBgsFromTemplates, InitWindows,
+  IsDma3ManagerBusyWithBgCopy, JOY_NEW, LoadOam, LoadPalette,
+  Menu_LoadStdPalAt, PIXEL_FILL, PLTT_SIZEOF, PlaySE,
   ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
   ResetSpriteData, ResetTasks, RunTasks, RunTextPrinters,
   ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, TransferPlttBuffer, UpdateCommunicationCounts,
-  UpdatePaletteFade, WCSS_AddTextPrinterParameterized,  // 4-per-line for readability
+  SetVBlankCallback, ShowBg, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_RunWirelessCommunicationScreen(void) */

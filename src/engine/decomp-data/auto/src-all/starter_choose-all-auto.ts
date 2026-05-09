@@ -18,17 +18,18 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddWindow,
   AnimateSprites, BG_PLTT_ID, BG_SCREEN_ADDR, BeginNormalPaletteFade,
   BuildOamBuffer, ChangeBgX, ChangeBgY, ClearScheduledBgCopiesToVram,
-  ClearStarterLabel, ClearWindowTilemap, CopyMonCategoryText, CreateMonPicSprite_Affine,
-  CreatePokemonFrontSprite, CreateSprite, CreateStarterPokemonLabel, CreateTask,
-  CreateYesNoMenu, DeactivateAllTextPrinters, DestroySprite, DmaFill16,
-  DmaFill32, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette, EnableInterrupts,
-  FillWindowPixelBuffer, FreeAllSpritePalettes, FreeAndDestroyMonPicSprite, FreeOamMatrix,
-  GetOverworldTextboxPalettePtr, GetStarterPokemon, GetStringCenterAlignXOffset, InitBgsFromTemplates,
+  ClearWindowTilemap, CopyMonCategoryText, CreateMonPicSprite_Affine, CreateSprite,
+  CreateTask, CreateYesNoMenu, DeactivateAllTextPrinters, DestroySprite,
+  DmaFill16, DmaFill32, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette,
+  EnableInterrupts, FillWindowPixelBuffer, FreeAllSpritePalettes, FreeAndDestroyMonPicSprite,
+  FreeOamMatrix, GetOverworldTextboxPalettePtr, GetStringCenterAlignXOffset, InitBgsFromTemplates,
   InitWindows, JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet,
   LoadOam, LoadPalette, LoadSpritePalettes, LoadUserWindowBorderGfx,
   Menu_ProcessInputNoWrapClearOnChoose, PIXEL_FILL, PlayCry_Normal, PlaySE,

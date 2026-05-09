@@ -18,21 +18,22 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddTextPrinterForUnionRoomBattle, AddTextPrinterParameterized4, AllocZeroed,
-  AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer,
-  CalculatePlayerPartyCount, ClearWindowTilemap, CopyWindowToVram, DeactivateAllTextPrinters,
-  DrawTextBorderOuter, FillBgTilemapBufferRect, FillWindowPixelBuffer, FreeAllSpritePalettes,
-  GetBlockReceivedStatus, GetMultiplayerId, IncrementGameStat, InitBgsFromTemplates,
-  InitWindows, IsLinkTaskFinished, IsTextPrinterActive, LoadOam,
-  LoadUserWindowBorderGfx, LoadUserWindowBorderGfx_, Menu_LoadStdPal, PIXEL_FILL,
-  PrintUnionRoomBattleMessage, ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags,
-  ResetBlockReceivedFlags, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
-  RunTasks, RunTextPrinters, SendBlock, SetCloseLinkCallback,
-  SetGpuReg, SetLinkStandbyCallback, SetMainCallback2, SetVBlankCallback,
-  ShowBg, StartUnionRoomBattle, TransferPlttBuffer, UpdatePaletteFade,
-  ZeroMonData,  // 4-per-line for readability
+  ARRAY_COUNT, AddTextPrinterParameterized4, AllocZeroed, AnimateSprites,
+  BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer, CalculatePlayerPartyCount,
+  ClearWindowTilemap, CopyWindowToVram, DeactivateAllTextPrinters, DrawTextBorderOuter,
+  FillBgTilemapBufferRect, FillWindowPixelBuffer, FreeAllSpritePalettes, GetBlockReceivedStatus,
+  GetMultiplayerId, IncrementGameStat, InitBgsFromTemplates, InitWindows,
+  IsLinkTaskFinished, IsTextPrinterActive, LoadOam, LoadUserWindowBorderGfx,
+  LoadUserWindowBorderGfx_, Menu_LoadStdPal, PIXEL_FILL, ProcessSpriteCopyRequests,
+  PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetSpriteData,
+  ResetTasks, ResetTempTileDataBuffers, RunTasks, RunTextPrinters,
+  SendBlock, SetCloseLinkCallback, SetGpuReg, SetLinkStandbyCallback,
+  SetMainCallback2, SetVBlankCallback, ShowBg, StartUnionRoomBattle,
+  TransferPlttBuffer, UpdatePaletteFade, ZeroMonData,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_SetUpPartiesAndStartBattle(void) */

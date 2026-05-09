@@ -18,36 +18,26 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocZeroed,
-  AppendCaughtBannedMonSpeciesName, AppendIfValid, ArenaGetWinStreak, ArenaPrintPrevOrCurrentStreak,
-  ArenaPrintRecordStreak, ArenaPrintStreak, BufferApprenticeChallengeText, CalculateMonStats,
-  ClearContinueGameWarpStatus2, ClearSelectedPartyOrder, ConvertIntToDecimalStringN, CopyFrontierBrainText,
-  CopyTrainerId, CopyWindowToVram, CreateMon, DoSoftReset,
-  DomeGetWinStreak, DomePrintPrevOrCurrentStreak, DrawStdWindowFrame, FactoryGetRentsCount,
-  FactoryGetWinStreak, FactoryPrintPrevOrCurrentStreak, FactoryPrintRecordStreak, FactoryPrintStreak,
-  Fill1PRecords, Fill2PRecords, FillWindowPixelBuffer, FlagGet,
+  BufferApprenticeChallengeText, CalculateMonStats, ClearContinueGameWarpStatus2, ClearSelectedPartyOrder,
+  ConvertIntToDecimalStringN, CopyTrainerId, CopyWindowToVram, CreateMon,
+  DoSoftReset, DrawStdWindowFrame, FillWindowPixelBuffer, FlagGet,
   FlagSet, Free, FrontierGamblerSetWonOrLost, FrontierSpeechToString,
-  GetCurrentFacilityWinStreak, GetDomeTrainerSelectedMons, GetFronterBrainSymbol, GetFrontierBrainStatus,
-  GetFrontierTrainerName, GetMonData, GetNatureFromPersonality, GetPlayerHallRecords,
-  GetPlayerSymbolCountForFacility, GetRecordedBattleApprenticeId, GetRecordedBattleEasyChatSpeech, GetRecordedBattleFronterBrainSymbol,
+  GetDomeTrainerSelectedMons, GetFrontierTrainerName, GetMonData, GetNatureFromPersonality,
+  GetPlayerHallRecords, GetRecordedBattleApprenticeId, GetRecordedBattleEasyChatSpeech, GetRecordedBattleFronterBrainSymbol,
   GetRecordedBattleFrontierFacility, GetSetPokedexFlag, GetStringCenterAlignXOffset, GetStringRightAlignXOffset,
-  IncrementDailyBattlePoints, IsShinyOtIdPersonality, IsStringJapanese, IsWinStreakActive,
-  LoadPlayerParty, MoveRecordedBattleToSaveData, PIXEL_FILL, PalaceGetWinStreak,
-  PalacePrintPrevOrCurrentStreak, PalacePrintRecordStreak, PalacePrintStreak, PikeGetWinStreak,
-  PikePrintCleared, PikePrintPrevOrCurrentStreak, Print1PRecord, Print2PRecord,
-  PrintAligned, PrintHallRecords, PrintHyphens, PrintTwoStrings,
-  PutWindowTilemap, PyramidGetWinStreak, PyramidPrintPrevOrCurrentStreak, PyramidPrintRecordStreak,
-  PyramidPrintStreak, Random32, ReducePlayerPartyToSelectedMons, SetContinueGameWarpStatusToDynamicWarp,
-  SetFacilityPtrsGetLevel, SetFrontierBrainObjEventGfx, SetGameStat, SetMonData,
-  SetMonMoveSlot, SetTrainerId, ShouldAirFrontierTVShow, ShowArenaResultsWindow,
-  ShowDomeResultsWindow, ShowFactoryResultsWindow, ShowLinkContestResultsWindow, ShowPalaceResultsWindow,
-  ShowPikeResultsWindow, ShowPyramidResultsWindow, ShowTowerResultsWindow, SpeciesToNationalPokedexNum,
-  StringAppend, StringCopy, StringExpandPlaceholders, StripExtCtrlCodes,
-  TVShowConvertInternationalString, TowerGetWinStreak, TowerPrintPrevOrCurrentStreak, TowerPrintRecordStreak,
-  TowerPrintStreak, TrainerIdToDomeTournamentId, TryPutFrontierTVShowOnAir, TrySavingData,
-  ValidateEReaderTrainer, VarGet, VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
+  IncrementDailyBattlePoints, IsShinyOtIdPersonality, IsStringJapanese, LoadPlayerParty,
+  MoveRecordedBattleToSaveData, PIXEL_FILL, PutWindowTilemap, Random32,
+  ReducePlayerPartyToSelectedMons, SetContinueGameWarpStatusToDynamicWarp, SetFacilityPtrsGetLevel, SetGameStat,
+  SetMonData, SetMonMoveSlot, SetTrainerId, ShouldAirFrontierTVShow,
+  SpeciesToNationalPokedexNum, StringAppend, StringCopy, StringExpandPlaceholders,
+  StripExtCtrlCodes, TVShowConvertInternationalString, TrainerIdToDomeTournamentId, TryPutFrontierTVShowOnAir,
+  TrySavingData, ValidateEReaderTrainer, VarGet, VarSet,
+  ZeroEnemyPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallFrontierUtilFunc(void) */

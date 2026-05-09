@@ -18,17 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AllocSpritePalette, ApplyColorMap, ApplyColorMapWithBlend, ApplyDroughtColorMapWithBlend,
-  ApplyFogBlend, ApplyWeatherColorMapIfIdle, BG_PLTT_ID, BLDALPHA_BLEND,
-  BeginNormalPaletteFade, BlendPalette, BuildColorMaps, CpuCopy16,
-  CpuCopy32, CpuFastCopy, CreateTask, DROUGHT_COLOR_INDEX,
-  FadeInScreen_Drought, FadeInScreen_FogHorizontal, FadeInScreen_RainShowShade, FuncIsActiveTask,
-  IsSpecialSEPlaying, LightenSpritePaletteInFog, LoadDroughtWeatherPalette, LoadPalette,
-  MarkFogSpritePalToLighten, OBJ_PLTT_ID, PLTT_ID, PlayRainStoppingSoundEffect,
-  PlaySE, RGB2, SetDroughtColorMap, SetGpuReg,
-  UpdateSpritePaletteWithWeather, Weather_SetBlendCoeffs,  // 4-per-line for readability
+  AllocSpritePalette, BG_PLTT_ID, BLDALPHA_BLEND, BeginNormalPaletteFade,
+  BlendPalette, CpuCopy16, CpuCopy32, CpuFastCopy,
+  CreateTask, DROUGHT_COLOR_INDEX, FuncIsActiveTask, IsSpecialSEPlaying,
+  LoadPalette, OBJ_PLTT_ID, PLTT_ID, PlaySE,
+  RGB2, SetGpuReg,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void StartWeather(void) */

@@ -18,11 +18,12 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   CalcCRC16WithTable, GetBlockReceivedStatus, IsLinkTaskFinished, LinkRfu_FatalError,
-  MGL_HasReceived, MGL_ReceiveBlock, MGL_ResetReceived, ResetBlockReceivedFlag,
-  SendBlock,  // 4-per-line for readability
+  ResetBlockReceivedFlag, SendBlock,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 MysteryGiftLink_Recv(struct MysteryGiftLink *link) */

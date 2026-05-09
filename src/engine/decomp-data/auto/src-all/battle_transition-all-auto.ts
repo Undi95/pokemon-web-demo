@@ -18,6 +18,8 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocOamMatrix, AllocZeroed, AnimateSprites,
@@ -25,23 +27,18 @@ const {
   BeginNormalPaletteFade, BlendPalette, BlendPalettes, BuildOamBuffer,
   CalcCenterToCornerVec, ClearGpuRegBits, CopyBgTilemapBufferToVram, CopyRectToBgTilemapBufferRect,
   Cos, CpuCopy16, CpuCopy32, CpuFill16,
-  CpuFill32, CpuSet, CreateIntroTask, CreateInvisibleSprite,
-  CreateSpriteAtEnd, CreateTask, CreateTrainerSprite, DestroySprite,
-  DestroyTask, DmaCopy16, DmaSet, DmaStop,
-  DoMugshotTransition, EnableInterrupts, FREE_AND_SET_NULL, FadeScreenBlack,
-  FieldEffectActiveListContains, FieldEffectStart, FieldEffectStop, FillBgTilemapBufferRect,
-  FillBgTilemapBufferRect_Palette0, FindTaskIdByFunc, GetBg0TilemapDst, GetBg0TilesDst,
-  GetCameraOffsetWithPan, IncrementTrainerPicState, InitBlackWipe, InitPatternWeaveTransition,
-  InitSpriteAffineAnim, InitTransitionData, IsBattleTransitionDone, IsIntroTaskDone,
-  IsTrainerPicSlideDone, LZ77UnCompVram, LaunchBattleTransitionTask, LoadOam,
-  LoadPalette, Mugshots_CreateTrainerPics, PLTT_SIZEOF, PlaySE,
-  PlayerGenderToFrontTrainerPicId, ProcessSpriteCopyRequests, Random, RunTasks,
-  SET_TILE, SPRITE_SHAPE, SPRITE_SIZE, ScanlineEffect_Clear,
-  SetCircularMask, SetGpuReg, SetGpuRegBits, SetHBlankCallback,
-  SetMainCallback2, SetOamMatrixRotationScaling, SetSinWave, SetTrainerPicSlideDirection,
-  SetVBlankCallback, SetWeatherScreenFadeOut, Sin, StartSpriteAffineAnim,
-  TransferPlttBuffer, UpdateBlackWipe, UpdatePaletteFade, UpdateRectangularSpiralLine,
-  VBlankCB_BattleTransition, VBlankCB_SetWinAndBlend, WIN_RANGE,  // 4-per-line for readability
+  CpuFill32, CpuSet, CreateInvisibleSprite, CreateSpriteAtEnd,
+  CreateTask, CreateTrainerSprite, DestroySprite, DestroyTask,
+  DmaCopy16, DmaSet, DmaStop, EnableInterrupts,
+  FREE_AND_SET_NULL, FieldEffectActiveListContains, FieldEffectStart, FieldEffectStop,
+  FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FindTaskIdByFunc, GetCameraOffsetWithPan,
+  InitSpriteAffineAnim, LZ77UnCompVram, LoadOam, LoadPalette,
+  PLTT_SIZEOF, PlaySE, PlayerGenderToFrontTrainerPicId, ProcessSpriteCopyRequests,
+  Random, RunTasks, SET_TILE, SPRITE_SHAPE,
+  SPRITE_SIZE, ScanlineEffect_Clear, SetGpuReg, SetGpuRegBits,
+  SetHBlankCallback, SetMainCallback2, SetOamMatrixRotationScaling, SetVBlankCallback,
+  SetWeatherScreenFadeOut, Sin, StartSpriteAffineAnim, TransferPlttBuffer,
+  UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_TestBattleTransition(void) */

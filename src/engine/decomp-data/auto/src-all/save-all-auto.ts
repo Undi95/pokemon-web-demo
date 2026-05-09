@@ -18,18 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CalculateChecksum, ClearContinueGameWarpStatus2, CopyPartyAndObjectsFromSave, CopyPartyAndObjectsToSave,
-  CopySaveSlotData, CopySectorSignatureByte, DestroyTask, DoSaveFailedScreen,
-  EraseFlashSector, GetGameStat, GetSaveValidStatus, HandleReplaceSector,
-  HandleReplaceSectorAndVerify, HandleSavingData, HandleWriteIncrementalSector, HandleWriteSector,
-  HandleWriteSectorNBytes, IncrementGameStat, IsLinkTaskFinished, LinkFullSave_Init,
-  LinkFullSave_ReplaceLastSector, LinkFullSave_SetLastSectorSignature, LinkFullSave_WriteSector, ProgramFlashByte,
-  ProgramFlashSectorAndVerify, ReadFlash, ReadFlashSector, RestoreSaveBackupVars,
-  RestoreSaveBackupVarsAndIncrement, SaveMapView, SetContinueGameWarpStatusToDynamicWarp, SetDamagedSectorBits,
-  SetLinkStandbyCallback, TryLoadSaveSector, TryLoadSaveSlot, TryWriteSector,
-  UpdateSaveAddresses, WriteSaveSectorOrSlot, WriteSectorSignatureByte, WriteSectorSignatureByte_NoOffset,  // 4-per-line for readability
+  ClearContinueGameWarpStatus2, CopyPartyAndObjectsFromSave, CopyPartyAndObjectsToSave, DestroyTask,
+  DoSaveFailedScreen, EraseFlashSector, GetGameStat, IncrementGameStat,
+  IsLinkTaskFinished, ProgramFlashByte, ProgramFlashSectorAndVerify, ReadFlash,
+  SaveMapView, SetContinueGameWarpStatusToDynamicWarp, SetLinkStandbyCallback,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearSaveData(void) */

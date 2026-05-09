@@ -18,30 +18,27 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocZeroed,
   AnimateSprites, BATTLE_OPPOSITE, BG_PLTT_ID, BeginNormalPaletteFade,
-  BuildOamBuffer, ChangeBgX, ChangeBgY, ClearLinkBattleRecord,
-  ClearLinkBattleRecords, ClearStdWindowAndFrame, ClearTasksAndGraphicalStructs, ClearVramOamPlttRegs,
+  BuildOamBuffer, ChangeBgX, ChangeBgY, ClearStdWindowAndFrame,
   ClearWindowTilemap, ConvertIntToDecimalStringN, ConvertInternationalString, CopyBgTilemapBufferToVram,
   CopyToBgTilemapBufferRect, CopyWindowToVram, CpuFill16, CreateTask,
   DeactivateAllTextPrinters, DestroyTask, DmaClear16, DmaClear32,
-  DmaClearLarge16, DrawStdWindowFrame, FillWindowPixelBuffer, FindLinkBattleRecord,
-  Free, FreeAllSpritePalettes, FreeAllWindowBuffers, GetGameStat,
-  GetLinkBattleRecordTotalBattles, GetStringCenterAlignXOffset, GetTextWindowPalette, InUnionRoom,
-  IncTrainerCardLosses, IncTrainerCardWins, IncrementGameStat, InitBgsFromTemplates,
+  DmaClearLarge16, DrawStdWindowFrame, FillWindowPixelBuffer, Free,
+  FreeAllSpritePalettes, FreeAllWindowBuffers, GetGameStat, GetStringCenterAlignXOffset,
+  GetTextWindowPalette, InUnionRoom, IncrementGameStat, InitBgsFromTemplates,
   InitWindows, IsDma3ManagerBusyWithBgCopy, JOY_NEW, LoadBgTiles,
-  LoadOam, LoadPalette, LoadTrainerHillRecordsWindowGfx, PIXEL_FILL,
-  PlaySE, PrintLinkBattleRecord, PrintLinkBattleWinsLossesDraws, PrintOnTrainerHillRecordsWindow,
-  ProcessSpriteCopyRequests, PutWindowTilemap, RemoveTrainerHillRecordsWindow, RemoveWindow,
-  ResetBgCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RunTasks, ScanlineEffect_Stop, SetBgTilemapBuffer,
-  SetDispcntReg, SetGameStat, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, SortLinkBattleRecords, StringCompareN,
-  StringCopyN, StringExpandPlaceholders, StringFillWithTerminator, TransferPlttBuffer,
-  UpdateLinkBattleGameStats, UpdateLinkBattleRecord, UpdateLinkBattleRecords, UpdatePaletteFade,
-  UpdateTrainerCardWinsLosses,  // 4-per-line for readability
+  LoadOam, LoadPalette, PIXEL_FILL, PlaySE,
+  PrintOnTrainerHillRecordsWindow, ProcessSpriteCopyRequests, PutWindowTilemap, RemoveWindow,
+  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
+  RunTasks, ScanlineEffect_Stop, SetBgTilemapBuffer, SetGameStat,
+  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
+  StringCompareN, StringCopyN, StringExpandPlaceholders, StringFillWithTerminator,
+  TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ClearLinkBattleRecord(struct LinkBattleRecord *record) */

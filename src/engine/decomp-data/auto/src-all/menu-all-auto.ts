@@ -18,28 +18,24 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddTextPrinter, AddTextPrinterParameterized, AddTextPrinterParameterized2,
-  AddTextPrinterParameterized3, AddTextPrinterParameterized4, AddWindow, AddWindowParameterized,
+  ARRAY_COUNT, AddTextPrinter, AddTextPrinterParameterized, AddWindow,
   BG_PLTT_ID, BG_TILE_V_FLIP, BlitBitmapRectToWindow, CallWindowFunction,
-  ChangeBgX, ChangeBgY, ChangeGridMenuCursorPosition, ChangeMenuGridCursorPosition,
-  CheckForSpaceForDma3Request, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap, ConvertIntToDecimalStringN,
-  CopyBgTilemapBufferToVram, CopyWindowToVram, CreateTask, CreateYesNoMenu,
-  DeactivateAllTextPrinters, DestroyTask, DisplayMessageAndContinueTask, DrawDialogFrameWithCustomTileAndPalette,
-  DrawStdFrameWithCustomTileAndPalette, EraseYesNoWindow, FREE_AND_SET_NULL, FillBgTilemapBufferRect,
-  FillWindowPixelBuffer, FillWindowPixelRect, FlagGet, Free,
-  FreeAllWindowBuffers, GetBgAttribute, GetBgTilemapBuffer, GetFontAttribute,
-  GetHoennPokedexCount, GetLRKeysPressed, GetMapNameGeneric, GetMenuCursorDimensionByFont,
-  GetNationalPokedexCount, GetPlayerTextSpeed, GetPlayerTextSpeedDelay, GetStringWidth,
-  GetWindowAttribute, GetWordTaskArg, InitMenu, InitMenuInUpperLeftCorner,
-  InitMenuInUpperLeftCornerNormal, InitMenuNormal, InitWindows, IsDma3ManagerBusyWithBgCopy,
-  IsNationalPokedexEnabled, IsTextPrinterActive, JOY_NEW, JOY_REPEAT,
-  LoadBgTilemap, LoadBgTiles, LoadMessageBoxAndBorderGfx, LoadMessageBoxGfx,
-  LoadPalette, LoadUserWindowBorderGfx, Menu_MoveCursor, Menu_MoveCursorNoWrapAround,
-  Menu_ProcessInputNoWrap, MoveMenuGridCursor, PIXEL_FILL, PlaySE,
-  PutWindowTilemap, RedrawMenuCursor, RemoveWindow, RequestDma3Fill,
-  RunTextPrinters, SetWindowTemplateFields, SetWordTaskArg, StringCopy,
+  ChangeBgX, ChangeBgY, CheckForSpaceForDma3Request, ClearWindowTilemap,
+  ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyWindowToVram, CreateTask,
+  DeactivateAllTextPrinters, DestroyTask, DisplayMessageAndContinueTask, FREE_AND_SET_NULL,
+  FillBgTilemapBufferRect, FillWindowPixelBuffer, FillWindowPixelRect, FlagGet,
+  Free, FreeAllWindowBuffers, GetBgAttribute, GetBgTilemapBuffer,
+  GetFontAttribute, GetHoennPokedexCount, GetLRKeysPressed, GetMapNameGeneric,
+  GetMenuCursorDimensionByFont, GetNationalPokedexCount, GetStringWidth, GetWindowAttribute,
+  GetWordTaskArg, InitWindows, IsDma3ManagerBusyWithBgCopy, IsNationalPokedexEnabled,
+  IsTextPrinterActive, JOY_NEW, JOY_REPEAT, LoadBgTilemap,
+  LoadBgTiles, LoadMessageBoxGfx, LoadPalette, LoadUserWindowBorderGfx,
+  PIXEL_FILL, PlaySE, PutWindowTilemap, RemoveWindow,
+  RequestDma3Fill, RunTextPrinters, SetWordTaskArg, StringCopy,
   StringExpandPlaceholders,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

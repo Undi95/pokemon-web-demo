@@ -18,19 +18,12 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AIStackPop, AIStackPushVar, AreMovesContestCombo, ContestAICmd_check_can_participate,
-  ContestAICmd_check_combo_finisher, ContestAICmd_check_combo_starter, ContestAICmd_check_most_appealing_move, ContestAICmd_check_most_jamming_move,
-  ContestAICmd_check_user_has_exciting_move, ContestAICmd_check_user_has_move, ContestAICmd_check_would_finish_combo, ContestAICmd_get_appeal_num,
-  ContestAICmd_get_completed_combo, ContestAICmd_get_condition, ContestAICmd_get_contest_type, ContestAICmd_get_excitement,
-  ContestAICmd_get_move_effect, ContestAICmd_get_move_effect_type, ContestAICmd_get_move_excitement, ContestAICmd_get_move_used_count,
-  ContestAICmd_get_num_move_hearts, ContestAICmd_get_num_move_jam_hearts, ContestAICmd_get_points, ContestAICmd_get_points_diff,
-  ContestAICmd_get_preliminary_points, ContestAICmd_get_preliminary_points_diff, ContestAICmd_get_used_combo_starter, ContestAICmd_get_used_moves_effect,
-  ContestAICmd_get_used_moves_effect_type, ContestAICmd_get_used_moves_excitement, ContestAICmd_get_user_condition, ContestAICmd_get_user_order,
-  ContestAI_DoAIProcessing, Contest_GetMoveExcitement, Contest_IsMonsTurnDisabled, GetContestantIdByTurn,
-  IsContestantAllowedToCombo, MOD, Random, T1_READ_16,
-  T1_READ_PTR,  // 4-per-line for readability
+  AreMovesContestCombo, Contest_GetMoveExcitement, Contest_IsMonsTurnDisabled, IsContestantAllowedToCombo,
+  MOD, Random, T1_READ_16, T1_READ_PTR,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ContestAI_ResetAI(u8 contestantAI) */

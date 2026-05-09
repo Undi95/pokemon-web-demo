@@ -18,38 +18,29 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, BattleSetup_ConfigureTrainerBattle, BattleTransition_StartOnField, BitmaskAllOtherLinkPlayers,
-  BufferApprenticeChallengeText, CalcEmeraldBattleTowerChecksum, CalcRubyBattleTowerChecksum, CalculateMonStats,
-  ChooseSpecialBattleTowerTrainer, ClearApprentice, ClearBattleTowerRecord, ClearEReaderTrainer,
-  ConvertEasyChatWordsToString, ConvertIntToDecimalStringN, ConvertInternationalString, ConvertPokemonToBattleTowerPokemon,
-  CopyEReaderTrainerFarewellMessage, CopyFrontierBrainTrainerName, CopyTrainerId, CpuFill32,
-  CreateApprenticeMon, CreateBattleTowerMon, CreateBattleTowerMon_HandleLevel, CreateFrontierBrainPokemon,
-  CreateMon, CreateMonWithEVSpreadNatureOTID, CreateTask, CreateTask_PlayMapChosenOrBattleBGM,
-  DestroyTask, FillFactoryBrainParty, FillFactoryFrontierTrainerParty, FillFactoryTentTrainerParty,
-  FillFactoryTrainerParty, FillFrontierTrainerParty, FillFrontierTrainersParties, FillPartnerParty,
-  FillTentTrainerParty, FillTentTrainerParty_, FillTrainerParty, FlagClear,
-  FlagGet, FrontierSpeechToString, FrontierSpeechToString2, GetApprenticeMultiPartnerParty,
-  GetApprenticeNameInLanguage, GetBattleFacilityTrainerGfxId, GetBattleTentTrainerId, GetBattleTowerTrainerLanguage,
-  GetBlockReceivedStatus, GetCurrentBattleTowerWinStreak, GetCurrentFacilityWinStreak, GetFactoryMonFixedIV,
-  GetFrontierBrainTrainerClass, GetFrontierBrainTrainerPicIndex, GetFrontierEnemyMonLevel, GetFrontierTrainerFacilityClass,
-  GetFrontierTrainerFixedIvs, GetFrontierTrainerName, GetHighestLevelInPlayerParty, GetMonCountForBattleMode,
-  GetMonData, GetMultiplayerId, GetNatureFromPersonality, GetPotentialPartnerMoveAndSpecies,
-  GetRandomFrontierMonFromSet, GetRandomScaledFrontierTrainerId, GetRecordMixFriendMultiPartnerParty, GetRecordedBattleApprenticeId,
-  GetRecordedBattleApprenticeLanguage, GetRecordedBattleRecordMixFriendClass, GetRecordedBattleRecordMixFriendLanguage, GetRecordedBattleRecordMixFriendName,
-  GetRibbonCount, GetSpecialBattleTransition, GetStringWidth, HideBattleTowerReporter,
-  IncrementGameStat, IsBattleTransitionDone, IsFrontierBrainFemale, IsFrontierTrainerFemale,
-  IsLinkTaskFinished, IsShinyOtIdPersonality, OtherConvertEasyChatWordsToString, PlayMapChosenOrBattleBGM,
-  Random, Random32, RecordedBattle_SaveBattleOutcome, ResetApprenticeStruct,
-  ResetBlockReceivedFlags, ResetFrontierTrainerIds, SaveBattleTowerRecord, SaveCurrentWinStreak,
-  SaveGameFrontier, SendBlock, SetBattleFacilityTrainerGfxId, SetCloseLinkCallback,
-  SetDynamicWarp, SetFacilityPtrsGetLevel, SetFrontierBrainObjEventGfx_2, SetMainCallback2,
-  SetMonData, SetMonMoveAvoidReturn, SetMonMoveSlot, SetNextBattleTentOpponent,
-  SetTentPtrsGetLevel, ShowFieldMessage, StringCopy, StringCopy_PlayerName,
+  BufferApprenticeChallengeText, CalculateMonStats, ConvertEasyChatWordsToString, ConvertIntToDecimalStringN,
+  ConvertInternationalString, ConvertPokemonToBattleTowerPokemon, CopyFrontierBrainTrainerName, CopyTrainerId,
+  CpuFill32, CreateApprenticeMon, CreateBattleTowerMon, CreateBattleTowerMon_HandleLevel,
+  CreateFrontierBrainPokemon, CreateMon, CreateMonWithEVSpreadNatureOTID, CreateTask,
+  CreateTask_PlayMapChosenOrBattleBGM, DestroyTask, FillFactoryBrainParty, FlagClear,
+  FlagGet, GetApprenticeNameInLanguage, GetBlockReceivedStatus, GetCurrentFacilityWinStreak,
+  GetFactoryMonFixedIV, GetFrontierBrainTrainerClass, GetFrontierBrainTrainerPicIndex, GetMonData,
+  GetMultiplayerId, GetNatureFromPersonality, GetRecordedBattleApprenticeId, GetRecordedBattleApprenticeLanguage,
+  GetRecordedBattleRecordMixFriendClass, GetRecordedBattleRecordMixFriendLanguage, GetRecordedBattleRecordMixFriendName, GetRibbonCount,
+  GetSpecialBattleTransition, GetStringWidth, HideBattleTowerReporter, IncrementGameStat,
+  IsBattleTransitionDone, IsFrontierBrainFemale, IsLinkTaskFinished, IsShinyOtIdPersonality,
+  OtherConvertEasyChatWordsToString, PlayMapChosenOrBattleBGM, Random, Random32,
+  RecordedBattle_SaveBattleOutcome, ResetApprenticeStruct, ResetBlockReceivedFlags, ResetFrontierTrainerIds,
+  SaveGameFrontier, SendBlock, SetCloseLinkCallback, SetDynamicWarp,
+  SetFrontierBrainObjEventGfx_2, SetMainCallback2, SetMonData, SetMonMoveAvoidReturn,
+  SetMonMoveSlot, ShowFieldMessage, StringCopy, StringCopy_PlayerName,
   StripExtCtrlCodes, T1_READ_32, TVShowConvertInternationalString, TryPutSpotTheCutiesOnAir,
-  UpdateGymLeaderRematch, ValidateApprenticesChecksums, ValidateBattleTowerRecordChecksums, VarGet,
-  VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
+  UpdateGymLeaderRematch, VarGet, VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallBattleTowerFunc(void) */

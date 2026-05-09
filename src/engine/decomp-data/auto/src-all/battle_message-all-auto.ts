@@ -18,23 +18,23 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinter, Alloc, BATTLE_OPPOSITE,
-  BATTLE_PARTNER, BG_PLTT_ID, BattleStringExpandPlaceholders, BattleStringExpandPlaceholdersToDisplayedString,
-  ChooseMoveUsedParticle, ChooseTypeOfMoveUsedString, ConvertIntToDecimalStringN, ConvertInternationalString,
+  BATTLE_PARTNER, BG_PLTT_ID, ConvertIntToDecimalStringN, ConvertInternationalString,
   CopyFrontierBrainTrainerName, CopyFrontierTrainerText, CopyItemName, CopyTrainerHillTrainerText,
-  CopyWindowToVram, CpuCopy16, ExpandBattleTextBuffPlaceholders, FillWindowPixelBuffer,
-  FlagGet, Free, GET_BATTLER_SIDE, GetBattleWindowTemplatePixelWidth,
-  GetBattlerAtPosition, GetBattlerMultiplayerId, GetBattlerSide, GetCurrentPpToMaxPpState,
-  GetEreaderTrainerClassId, GetEreaderTrainerName, GetFrontierBrainTrainerClass, GetFrontierOpponentClass,
-  GetFrontierTrainerName, GetMonData, GetMultiplayerId, GetPlayerTextSpeedDelay,
-  GetSecretBaseTrainerClass, GetSpeciesName, GetStringCenterAlignXOffsetWithLetterSpacing, GetTextSpeedInRecordedBattle,
-  GetTrainerALoseText, GetTrainerBLoseText, GetTrainerClassNameGenderSpecific, GetTrainerHillOpponentClass,
-  GetTrainerHillTrainerName, GetUnionRoomTrainerClass, HANDLE_NICKNAME_STRING_CASE, IsFrontierTrainerFemale,
-  PLTT_SIZEOF, PutWindowTilemap, StringAppend, StringCopy,
-  StringGet_Nickname, StringLength, T1_READ_16, T1_READ_32,
-  TryGetStatusString,  // 4-per-line for readability
+  CopyWindowToVram, CpuCopy16, FillWindowPixelBuffer, FlagGet,
+  Free, GET_BATTLER_SIDE, GetBattleWindowTemplatePixelWidth, GetBattlerAtPosition,
+  GetBattlerMultiplayerId, GetBattlerSide, GetEreaderTrainerClassId, GetEreaderTrainerName,
+  GetFrontierBrainTrainerClass, GetFrontierOpponentClass, GetFrontierTrainerName, GetMonData,
+  GetMultiplayerId, GetPlayerTextSpeedDelay, GetSecretBaseTrainerClass, GetSpeciesName,
+  GetStringCenterAlignXOffsetWithLetterSpacing, GetTextSpeedInRecordedBattle, GetTrainerALoseText, GetTrainerBLoseText,
+  GetTrainerClassNameGenderSpecific, GetTrainerHillOpponentClass, GetTrainerHillTrainerName, GetUnionRoomTrainerClass,
+  HANDLE_NICKNAME_STRING_CASE, IsFrontierTrainerFemale, PLTT_SIZEOF, PutWindowTilemap,
+  StringAppend, StringCopy, StringGet_Nickname, StringLength,
+  T1_READ_16, T1_READ_32, TryGetStatusString,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void BufferStringBattle(u16 stringID) */

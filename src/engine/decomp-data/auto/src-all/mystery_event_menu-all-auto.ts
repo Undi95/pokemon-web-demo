@@ -18,22 +18,23 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized4, AnimateSprites, BG_PLTT_ID,
-  BeginNormalPaletteFade, BuildOamBuffer, CheckLanguageMatch, CheckShouldAdvanceLinkState,
-  CloseLink, CopyWindowToVram, CpuFill32, CreateTask,
-  DeactivateAllTextPrinters, DoSoftReset, DrawStdFrameWithCustomTileAndPalette, FillBgTilemapBufferRect_Palette0,
-  FillWindowPixelBuffer, FreeAllSpritePalettes, GetBlockReceivedStatus, GetEventLoadMessage,
-  GetLinkPlayerCount_2, GetLinkPlayerDataExchangeStatusTimed, InitBgsFromTemplates, InitWindows,
-  IsLinkConnectionEstablished, IsLinkMaster, IsTextPrinterActive, JOY_NEW,
-  LoadOam, LoadUserWindowBorderGfx, Menu_LoadStdPalAt, OpenLink,
-  PIXEL_FILL, PlaySE, PrintMysteryMenuText, ProcessSpriteCopyRequests,
-  PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags, ResetSpriteData,
-  ResetTasks, RunMysteryEventScript, RunTasks, RunTextPrinters,
-  SetBackdropFromColor, SetCloseLinkCallback, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, StopMapMusic, StringCopy,
-  TransferPlttBuffer, TrySavingData, UpdatePaletteFade,  // 4-per-line for readability
+  BeginNormalPaletteFade, BuildOamBuffer, CheckShouldAdvanceLinkState, CloseLink,
+  CopyWindowToVram, CpuFill32, CreateTask, DeactivateAllTextPrinters,
+  DoSoftReset, DrawStdFrameWithCustomTileAndPalette, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
+  FreeAllSpritePalettes, GetBlockReceivedStatus, GetLinkPlayerCount_2, GetLinkPlayerDataExchangeStatusTimed,
+  InitBgsFromTemplates, InitWindows, IsLinkConnectionEstablished, IsLinkMaster,
+  IsTextPrinterActive, JOY_NEW, LoadOam, LoadUserWindowBorderGfx,
+  Menu_LoadStdPalAt, OpenLink, PIXEL_FILL, PlaySE,
+  ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetBlockReceivedFlags,
+  ResetSpriteData, ResetTasks, RunMysteryEventScript, RunTasks,
+  RunTextPrinters, SetBackdropFromColor, SetCloseLinkCallback, SetGpuReg,
+  SetMainCallback2, SetVBlankCallback, ShowBg, StopMapMusic,
+  StringCopy, TransferPlttBuffer, TrySavingData, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB(void) */

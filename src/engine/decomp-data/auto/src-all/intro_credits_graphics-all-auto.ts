@@ -18,14 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE, BG_CHAR_ADDR,
-  BG_PLTT_ID, BG_SCREEN_ADDR, CalcCenterToCornerVec, CreateCloudSprites,
-  CreateHouseSprites, CreateMovingScenerySprites, CreateSprite, CreateTask,
-  CreateTreeSprites, DestroySprite, LZ77UnCompVram, LoadCompressedSpriteSheet,
-  LoadPalette, OBJ_PLTT_ID, SetGpuReg, StartSpriteAnim,
-  Task_BicycleBgAnimation,  // 4-per-line for readability
+  BG_PLTT_ID, BG_SCREEN_ADDR, CalcCenterToCornerVec, CreateSprite,
+  CreateTask, DestroySprite, LZ77UnCompVram, LoadCompressedSpriteSheet,
+  LoadPalette, OBJ_PLTT_ID, SetGpuReg, StartSpriteAnim,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void LoadIntroPart2Graphics(u8 scenery) */

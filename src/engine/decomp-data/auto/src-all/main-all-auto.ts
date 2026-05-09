@@ -18,21 +18,20 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CallCallbacks, CheckForFlashMemory, ClearDma3Requests, ClearSpriteCopyRequests,
-  CopyBufferedValuesToGpuRegs, CpuFill16, DmaCopy32, DmaStop,
-  DoSoftReset, EnableInterrupts, EnableVCountIntrAtLine150, GetGpuReg,
-  HandleLinkConnection, InitGpuRegManager, InitHeap, InitIntrHandlers,
-  InitKeys, InitMainCallbacks, InitMapMusic, InitRFU,
-  JOY_HELD, JOY_HELD_RAW, JOY_NEW, LinkVSync,
-  MapMusicMain, Overworld_RecvKeysFromLinkIsRunning, Overworld_SendKeysToLinkIsRunning, PlayTimeCounter_Update,
-  ProcessDma3Requests, Random, ReadKeys, RegisterRamReset,
-  ResetBgs, RfuVSync, RtcGetMinuteCount, RtcInit,
-  ScanlineEffect_Stop, SeedRng, SeedRngWithRtc, SetDefaultFontsPointer,
-  SetFlashTimerIntr, SetGpuReg, SetHBlankCallback, SetMainCallback2,
-  SetSerialCallback, SetVBlankCallback, SiiRtcProtect, SoftReset,
-  TryReceiveLinkBattleData, UpdateLinkAndCallCallbacks, UpdateWirelessStatusIndicatorSprite, WaitForVBlank,  // 4-per-line for readability
+  CheckForFlashMemory, ClearDma3Requests, ClearSpriteCopyRequests, CopyBufferedValuesToGpuRegs,
+  CpuFill16, DmaCopy32, DmaStop, EnableInterrupts,
+  GetGpuReg, HandleLinkConnection, InitGpuRegManager, InitHeap,
+  InitMapMusic, InitRFU, JOY_HELD, JOY_HELD_RAW,
+  JOY_NEW, LinkVSync, MapMusicMain, Overworld_RecvKeysFromLinkIsRunning,
+  Overworld_SendKeysToLinkIsRunning, PlayTimeCounter_Update, ProcessDma3Requests, Random,
+  RegisterRamReset, ResetBgs, RfuVSync, RtcGetMinuteCount,
+  RtcInit, ScanlineEffect_Stop, SeedRng, SetDefaultFontsPointer,
+  SetFlashTimerIntr, SetGpuReg, SiiRtcProtect, SoftReset,
+  TryReceiveLinkBattleData, UpdateWirelessStatusIndicatorSprite,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AgbMain(void) */

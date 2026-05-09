@@ -18,39 +18,35 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddBirchSpeechObjects, AddNewGameBirchObject, AddScrollIndicatorArrowPair,
-  AddTextPrinterForMessage, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddTextPrinterWithCallbackForMessage,
-  AnimateSprites, BG_PLTT_ID, BG_SCREEN_ADDR, BG_TILE_V_FLIP,
-  BLDALPHA_BLEND, BeginNormalPaletteFade, BuildOamBuffer, CallWindowFunction,
-  ChangeBgX, ChangeBgY, ClearMainMenuWindowTilemap, ClearStdWindowAndFrame,
-  ClearWindowTilemap, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyWindowToVram,
-  CreateMainMenuErrorWindow, CreateMonPicSprite_Affine, CreatePokeballSpriteToReleaseMon, CreateTask,
-  CreateTrainerSprite, CreateWindowTemplate, CreateYesNoMenu, CreateYesNoMenuParameterized,
+  ARRAY_COUNT, AddNewGameBirchObject, AddScrollIndicatorArrowPair, AddTextPrinterForMessage,
+  AddTextPrinterParameterized, AddTextPrinterParameterized3, AddTextPrinterWithCallbackForMessage, AnimateSprites,
+  BG_PLTT_ID, BG_SCREEN_ADDR, BG_TILE_V_FLIP, BLDALPHA_BLEND,
+  BeginNormalPaletteFade, BuildOamBuffer, CallWindowFunction, ChangeBgX,
+  ChangeBgY, ClearStdWindowAndFrame, ClearWindowTilemap, ConvertIntToDecimalStringN,
+  CopyBgTilemapBufferToVram, CopyWindowToVram, CreateMonPicSprite_Affine, CreatePokeballSpriteToReleaseMon,
+  CreateTask, CreateTrainerSprite, CreateWindowTemplate, CreateYesNoMenu,
   DeactivateAllTextPrinters, DestroyTask, DmaFill16, DmaFill32,
-  DoNamingScreen, DrawMainMenuWindowBorder, EnableInterrupts, FacilityClassToPicIndex,
-  FadeOutBGM, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
-  FillWindowPixelRect, FlagGet, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeAndDestroyMonPicSprite, GetFontAttribute, GetHoennPokedexCount, GetNationalPokedexCount,
-  GetStringRightAlignXOffset, GetWindowAttribute, GetWindowFrameTilesPal, HandleMainMenuInput,
-  HideBg, HighlightSelectedMainMenuItem, InitBgFromTemplate, InitBgsFromTemplates,
-  InitMainMenu, InitMenuInUpperLeftCornerNormal, InitSpriteAffineAnim, InitWindows,
+  DoNamingScreen, EnableInterrupts, FacilityClassToPicIndex, FadeOutBGM,
+  FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect,
+  FlagGet, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeAndDestroyMonPicSprite,
+  GetFontAttribute, GetHoennPokedexCount, GetNationalPokedexCount, GetStringRightAlignXOffset,
+  GetWindowAttribute, GetWindowFrameTilesPal, HideBg, InitBgFromTemplate,
+  InitBgsFromTemplates, InitMenuInUpperLeftCornerNormal, InitSpriteAffineAnim, InitWindows,
   IsMysteryGiftEnabled, IsNationalPokedexEnabled, IsTextPrinterActive, IsWirelessAdapterConnected,
-  JOY_NEW, LZ77UnCompVram, LoadBgTiles, LoadMainMenuWindowFrameTiles,
-  LoadMessageBoxGfx, LoadOam, LoadPalette, MENU_WIN_VCOORDS,
-  MainMenu_FormatSavegameBadges, MainMenu_FormatSavegamePlayer, MainMenu_FormatSavegamePokedex, MainMenu_FormatSavegameText,
-  MainMenu_FormatSavegameTime, Menu_GetCursorPos, Menu_ProcessInputNoWrap, Menu_ProcessInputNoWrapClearOnChoose,
-  NewGameBirchSpeech_ClearGenderWindow, NewGameBirchSpeech_ClearWindow, NewGameBirchSpeech_CreateLotadSprite, NewGameBirchSpeech_ProcessGenderMenuInput,
-  NewGameBirchSpeech_SetDefaultPlayerName, NewGameBirchSpeech_ShowDialogueWindow, NewGameBirchSpeech_ShowGenderMenu, NewGameBirchSpeech_StartFadeInTarget1OutTarget2,
-  NewGameBirchSpeech_StartFadeOutTarget1InTarget2, NewGameBirchSpeech_StartFadePlatformIn, NewGameBirchSpeech_StartFadePlatformOut, PIXEL_FILL,
-  PLTT_SIZEOF, PlayBGM, PlaySE, PrintMenuTable,
-  ProcessSpriteCopyRequests, PutWindowTilemap, Random, RemoveScrollIndicatorArrowPair,
-  ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RtcGetErrorStatus, RunTasks, RunTextPrinters,
-  RunTextPrintersAndIsPrinter0Active, ScanlineEffect_Stop, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, ShowBg, StartSpriteAffineAnim, StringExpandPlaceholders,
-  TransferPlttBuffer, UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
+  JOY_NEW, LZ77UnCompVram, LoadBgTiles, LoadMessageBoxGfx,
+  LoadOam, LoadPalette, MENU_WIN_VCOORDS, Menu_GetCursorPos,
+  Menu_ProcessInputNoWrap, Menu_ProcessInputNoWrapClearOnChoose, PIXEL_FILL, PLTT_SIZEOF,
+  PlayBGM, PlaySE, PrintMenuTable, ProcessSpriteCopyRequests,
+  PutWindowTilemap, Random, RemoveScrollIndicatorArrowPair, ResetAllPicSprites,
+  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
+  RtcGetErrorStatus, RunTasks, RunTextPrinters, RunTextPrintersAndIsPrinter0Active,
+  ScanlineEffect_Stop, SetGpuReg, SetMainCallback2, SetVBlankCallback,
+  ShowBg, StartSpriteAffineAnim, StringExpandPlaceholders, TransferPlttBuffer,
+  UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CB2_MainMenu(void) */

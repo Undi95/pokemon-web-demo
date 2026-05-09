@@ -18,15 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AllocZeroed, CopyTrainerRecord, CpuCopy16,
-  CpuFill16, CreateSprite, DestroySprite, DestroyWirelessStatusIndicatorSprite,
-  FlagGet, Free, GetConnectedChildStrength, GetLinkPlayerCount,
-  GetMultiplayerId, GetParentSignalStrength, GetSpriteTileStartByTag, IsNationalPokedexEnabled,
+  ARRAY_COUNT, AllocZeroed, CpuCopy16, CpuFill16,
+  CreateSprite, DestroySprite, FlagGet, Free,
+  GetLinkPlayerCount, GetMultiplayerId, GetSpriteTileStartByTag, IsNationalPokedexEnabled,
   IsRfuRecoveringFromLinkLoss, IsRfuSerialNumberValid, LoadCompressedSpriteSheet, LoadSpritePalette,
-  NameIsNotEmpty, RfuBackupQueue_Dequeue, RfuGetStatus, SetWirelessStatusIndicatorAnim,
-  StringCompare, StringCopy,  // 4-per-line for readability
+  RfuGetStatus, StringCompare, StringCopy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RfuRecvQueue_Reset(struct RfuRecvQueue *queue) */

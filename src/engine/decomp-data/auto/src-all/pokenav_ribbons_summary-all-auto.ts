@@ -18,34 +18,27 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddRibbonCountWindow, AddRibbonListIndexWindow, AddRibbonSummaryMonNameWindow,
-  AddTextPrinterParameterized, AddTextPrinterParameterized3, AddWindow, AllocSubstruct,
-  BG_PLTT_ID, BgDmaFill, BufferSmallRibbonGfxData, ChangeBgX,
-  ChangeBgY, ClearRibbonsSummaryBg, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram,
-  CopyPaletteIntoBufferUnfaded, CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect, CopyWindowToVram,
-  CreateBigRibbonSprite, CreateLoopedTask, CreateMonPicSprite_HandleDeoxys, CreateSprite,
-  DecompressAndCopyTileDataToVram, DestroyRibbonsMonFrontPic, DestroySprite, DrawAllRibbonsSmall,
-  DrawRibbonSmall, DrawRibbonsMonFrontPic, DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset,
-  DynamicPlaceholderTextUtil_SetPlaceholderPtr, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAndDestroyMonPicSprite,
-  FreePokenavSubstruct, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FreeTempTileDataBuffersIfPossible, GetBoxMonData, GetBoxMonDataAt, GetBoxMonGender,
-  GetBoxedMonPtr, GetCurrMonRibbonCount, GetGiftRibbonIds, GetLevelFromBoxMonExp,
-  GetLevelFromMonExp, GetMonData, GetMonGender, GetMonNicknameLevelGender,
-  GetMonRibbons, GetMonSpeciesPersonalityOtId, GetNormalRibbonIds, GetRibbonId,
-  GetRibbonsSummaryCurrentIndex, GetRibbonsSummaryMonListCount, GetSelectedPosition, GetSpriteTileStartByTag,
-  GetStringCenterAlignXOffset, GetSubstructPtr, HideBg, IndexOfSpritePaletteTag,
-  InitBgTemplates, IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive, IsMonSpriteAnimating,
-  IsPaletteFadeActive, IsRibbonAnimating, JOY_NEW, JOY_REPEAT,
+  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddWindow,
+  AllocSubstruct, BG_PLTT_ID, BgDmaFill, ChangeBgX,
+  ChangeBgY, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded,
+  CopyToBgTilemapBuffer, CopyToBgTilemapBufferRect, CopyWindowToVram, CreateLoopedTask,
+  CreateMonPicSprite_HandleDeoxys, CreateSprite, DecompressAndCopyTileDataToVram, DestroySprite,
+  DynamicPlaceholderTextUtil_ExpandPlaceholders, DynamicPlaceholderTextUtil_Reset, DynamicPlaceholderTextUtil_SetPlaceholderPtr, FillBgTilemapBufferRect_Palette0,
+  FillWindowPixelBuffer, FreeAndDestroyMonPicSprite, FreePokenavSubstruct, FreeSpriteOamMatrix,
+  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetBoxMonData,
+  GetBoxMonDataAt, GetBoxMonGender, GetBoxedMonPtr, GetGiftRibbonIds,
+  GetLevelFromBoxMonExp, GetLevelFromMonExp, GetMonData, GetMonGender,
+  GetNormalRibbonIds, GetSpriteTileStartByTag, GetStringCenterAlignXOffset, GetSubstructPtr,
+  HideBg, IndexOfSpritePaletteTag, InitBgTemplates, IsDma3ManagerBusyWithBgCopy,
+  IsLoopedTaskActive, IsPaletteFadeActive, JOY_NEW, JOY_REPEAT,
   LoadCompressedSpriteSheet, PIXEL_FILL, PlaySE, PokenavFadeScreen,
-  PokenavFillPalette, Pokenav_AllocAndLoadPalettes, PrintCurrentMonRibbonCount, PrintHelpBarText,
-  PrintRibbbonsSummaryMonInfo, PrintRibbonNameAndDescription, PrintRibbonsMonListIndex, PutWindowTilemap,
-  RemoveWindow, ResetAllPicSprites, ResetSpritesAndDrawMonFrontPic, SetBgTilemapBuffer,
-  ShowBg, SlideMonSpriteOff, SlideMonSpriteOn, StartMonSpriteSlide,
-  StartSpriteAffineAnim, StringCopy, StringGet_Nickname, TrySelectRibbonDown,
-  TrySelectRibbonLeft, TrySelectRibbonRight, TrySelectRibbonUp, UpdateAndZoomInSelectedRibbon,
-  ZoomOutSelectedRibbon,  // 4-per-line for readability
+  PokenavFillPalette, Pokenav_AllocAndLoadPalettes, PrintHelpBarText, PutWindowTilemap,
+  RemoveWindow, ResetAllPicSprites, SetBgTilemapBuffer, ShowBg,
+  StartSpriteAffineAnim, StringCopy, StringGet_Nickname,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_RibbonsSummaryMenu(void) */

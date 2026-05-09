@@ -18,24 +18,19 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddScrollIndicatorArrowObject, AddScrollIndicatorArrowPair, AddTextPrinterParameterized4, AddWindow,
-  Alloc, ClearStdWindowAndFrame, ClearWindowTilemap, CopyWindowToVram,
-  CreateSprite, CreateTask, DestroyListMenuTask, DestroySprite,
-  DestroyTask, DrawTextBorderOuter, FillWindowPixelBuffer, FillWindowPixelRect,
-  Free, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetFontAttribute,
-  GetMenuCursorDimensionByFont, GetWindowAttribute, JOY_NEW, JOY_REPEAT,
-  ListMenuAddCursorObject, ListMenuAddCursorObjectInternal, ListMenuAddRedArrowCursorObject, ListMenuAddRedOutlineCursorObject,
-  ListMenuCallSelectionChangedCallback, ListMenuChangeSelection, ListMenuDrawCursor, ListMenuErasePrintedCursor,
-  ListMenuGetRedOutlineCursorSpriteCount, ListMenuInit, ListMenuInitInternal, ListMenuPrint,
-  ListMenuPrintEntries, ListMenuRemoveCursorObject, ListMenuRemoveRedArrowCursorObject, ListMenuRemoveRedOutlineCursorObject,
-  ListMenuScroll, ListMenuSetUpRedOutlineCursorSpriteOamTable, ListMenuUpdateCursorObject, ListMenuUpdateRedArrowCursorObject,
-  ListMenuUpdateRedOutlineCursorObject, ListMenuUpdateSelectedRowIndexAndScrollOffset, ListMenu_ProcessInput, LoadCompressedSpriteSheet,
-  LoadPalette, LoadSpritePalette, LoadUserWindowBorderGfx, OBJ_PLTT_ID,
-  PIXEL_FILL, PlaySE, PutWindowRectTilemapOverridePalette, PutWindowTilemap,
-  RemoveWindow, ScrollWindow, SetSubspriteTables, SetWindowAttribute,
-  StartSpriteAnim,  // 4-per-line for readability
+  AddTextPrinterParameterized4, AddWindow, Alloc, ClearStdWindowAndFrame,
+  ClearWindowTilemap, CopyWindowToVram, CreateSprite, CreateTask,
+  DestroySprite, DestroyTask, DrawTextBorderOuter, FillWindowPixelBuffer,
+  FillWindowPixelRect, Free, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  GetFontAttribute, GetMenuCursorDimensionByFont, GetWindowAttribute, JOY_NEW,
+  JOY_REPEAT, LoadCompressedSpriteSheet, LoadPalette, LoadSpritePalette,
+  LoadUserWindowBorderGfx, OBJ_PLTT_ID, PIXEL_FILL, PlaySE,
+  PutWindowRectTilemapOverridePalette, PutWindowTilemap, RemoveWindow, ScrollWindow,
+  SetSubspriteTables, SetWindowAttribute, StartSpriteAnim,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** s32 DoMysteryGiftListMenu(const struct WindowTemplate *windowTemplate, const struct ListMenuTemplate *listMenuTemplate, u8 drawMode, u16 tileNum, u16 palOffset) */

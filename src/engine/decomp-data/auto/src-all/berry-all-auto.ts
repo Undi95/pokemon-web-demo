@@ -18,17 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddBagItem, AllowBerryTreeGrowth, BerryTreeGetNumStagesWatered, BerryTreeGrow,
-  BerryTypeToItemId, CalcBerryYield, CalcBerryYieldInternal, CpuFill16,
-  GetBerryCountByBerryTreeId, GetBerryCountString, GetBerryCountStringByBerryType, GetBerryInfo,
-  GetBerryNameByBerryType, GetBerryTreeInfo, GetBerryTypeByBerryTreeId, GetCameraCoords,
-  GetEnigmaBerryChecksum, GetNumStagesWateredByBerryTreeId, GetObjectEventBerryTreeId, GetObjectEventScriptPointerPlayerFacing,
-  GetStageByBerryTreeId, GetStageDurationByBerryType, ITEM_TO_BERRY, IsBagPocketNonEmpty,
-  IsBerryTreeSparkling, ItemIdToBerryType, ObjectEventInteractionGetBerryTreeData, ObjectEventInteractionWaterBerryTree,
-  PlantBerryTree, Random, RemoveBerryTree, SetBerryTreeJustPicked,
-  SetMainCallback2,  // 4-per-line for readability
+  AddBagItem, CpuFill16, GetBerryCountString, GetBerryInfo,
+  GetBerryTreeInfo, GetCameraCoords, GetObjectEventBerryTreeId, GetObjectEventScriptPointerPlayerFacing,
+  ITEM_TO_BERRY, IsBagPocketNonEmpty, IsBerryTreeSparkling, Random,
+  SetBerryTreeJustPicked, SetMainCallback2,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearEnigmaBerries(void) */

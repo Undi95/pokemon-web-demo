@@ -18,19 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddTextPrinter, BlitBitmapRectToWindow, ClearTextSpan,
-  CopyGlyphToWindow, CopyWindowToVram, CpuCopy32, DecompressGlyphTile,
-  DecompressGlyph_Bold, DecompressGlyph_Narrow, DecompressGlyph_Normal, DecompressGlyph_Short,
-  DecompressGlyph_Small, DecompressGlyph_SmallNarrow, DrawKeypadIcon, DynamicPlaceholderTextUtil_GetPlaceholderPtr,
-  FillBitmapRect4Bit, FillWindowPixelBuffer, FillWindowPixelRect, GLYPH_COPY,
-  GenerateFontHalfRowLookupTable, GetFontAttribute, GetFontWidthFunc, GetKeypadIconWidth,
-  GetPlayerTextSpeed, IsSEPlaying, JOY_HELD, JOY_NEW,
-  PIXEL_FILL, PlayBGM, PlaySE, RenderFont,
-  RenderText, RestoreTextColors, SaveTextColors, ScrollWindow,
-  SetFontsPointer, TextPrinterClearDownArrow, TextPrinterDrawDownArrow, TextPrinterInitDownArrowCounters,
-  TextPrinterWait, TextPrinterWaitAutoMode, TextPrinterWaitWithDownArrow,  // 4-per-line for readability
+  ARRAY_COUNT, BlitBitmapRectToWindow, CopyWindowToVram, CpuCopy32,
+  DynamicPlaceholderTextUtil_GetPlaceholderPtr, FillBitmapRect4Bit, FillWindowPixelBuffer, FillWindowPixelRect,
+  GetFontWidthFunc, GetPlayerTextSpeed, IsSEPlaying, JOY_HELD,
+  JOY_NEW, PIXEL_FILL, PlayBGM, PlaySE,
+  ScrollWindow,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetFontsPointer(const struct FontInfo *fonts) */

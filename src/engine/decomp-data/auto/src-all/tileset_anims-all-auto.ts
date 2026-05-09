@@ -18,19 +18,12 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AppendTilesetAnimToBuffer, BG_PLTT_ID, BlendAnimPalette_BattleDome_FloorLights,
-  BlendAnimPalette_BattleDome_FloorLightsNoBlend, BlendPalette, CpuCopy16, CpuFill32,
-  DmaCopy16, FindTaskIdByFunc, QueueAnimTiles_BattleFrontierOutsideEast_Flag, QueueAnimTiles_BattleFrontierOutsideWest_Flag,
-  QueueAnimTiles_BattlePyramid_StatueShadow, QueueAnimTiles_BattlePyramid_Torch, QueueAnimTiles_BikeShop_BlinkingLights, QueueAnimTiles_Building_TVTurnedOn,
-  QueueAnimTiles_Cave_Lava, QueueAnimTiles_Dewford_Flag, QueueAnimTiles_EliteFour_GroundLights, QueueAnimTiles_EliteFour_WallLights,
-  QueueAnimTiles_EverGrande_Flowers, QueueAnimTiles_General_Flower, QueueAnimTiles_General_LandWaterEdge, QueueAnimTiles_General_SandWaterEdge,
-  QueueAnimTiles_General_Water, QueueAnimTiles_General_Waterfall, QueueAnimTiles_Lavaridge_Lava, QueueAnimTiles_Lavaridge_Steam,
-  QueueAnimTiles_MauvilleGym_ElectricGates, QueueAnimTiles_Mauville_Flowers, QueueAnimTiles_Pacifidlog_LogBridges, QueueAnimTiles_Pacifidlog_WaterCurrents,
-  QueueAnimTiles_Rustboro_Fountain, QueueAnimTiles_Rustboro_WindyWater, QueueAnimTiles_Slateport_Balloons, QueueAnimTiles_SootopolisGym_Waterfalls,
-  QueueAnimTiles_Sootopolis_StormyWater, QueueAnimTiles_Underwater_Seaweed, ResetTilesetAnimBuffer, TILE_OFFSET_4BPP,
-  _InitPrimaryTilesetAnimation, _InitSecondaryTilesetAnimation,  // 4-per-line for readability
+  ARRAY_COUNT, BG_PLTT_ID, BlendPalette, CpuCopy16,
+  CpuFill32, DmaCopy16, FindTaskIdByFunc, TILE_OFFSET_4BPP,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void ResetTilesetAnimBuffer(void) */

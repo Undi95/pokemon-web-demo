@@ -18,6 +18,8 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AllocSpritePalette, AnimTranslateLinear, BATTLE_PARTNER, BLDALPHA_BLEND,
@@ -30,7 +32,7 @@ const {
   InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest, OBJ_PLTT_ID2,
   PlaySE, PlaySE12WithPanning, PrepareBattlerSpriteForRotScale, ResetSpriteRotScale,
   ScanlineEffect_InitWave, SetGpuReg, SetGpuRegBits, SetSpriteRotScale,
-  Sin, StoreSpriteCallbackInData6, UpdateConfuseRayBallBlend, WIN_RANGE,  // 4-per-line for readability
+  Sin, StoreSpriteCallbackInData6, WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimConfuseRayBallBounce(struct Sprite *sprite) */

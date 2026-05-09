@@ -18,25 +18,22 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   APPRENTICE_SPECIES_ID, APPRENTICE_SPECIES_ID_NO_COND, ARRAY_COUNT, AddTextPrinterForMessage,
   AddTextPrinterParameterized, AddWindow, AllocZeroed, ApprenticeOpenBagMenu,
   CalcApprenticeChecksum, CanSpeciesLearnTMHM, ClearStdWindowAndFrameToTransparent, ConvertIntToDecimalStringN,
-  ConvertInternationalString, ConvertPixelWidthToTileWidth, CopyWindowToVram, CreateAndShowWindow,
-  CreateApprenticeMenu, CreateChooseAnswerTask, CreateTask, CreateWindowTemplate,
-  DestroyTask, DrawDialogueFrame, ExecuteFuncAfterButtonPress, FREE_AND_SET_NULL,
-  FreezeObjectEvents, FrontierSpeechToString, GetApprenticeNameInLanguage, GetDefaultMove,
-  GetItemName, GetLatestLearnedMoves, GetMonIdForQuestion, GetRandomAlternateMove,
-  GetStringWidth, GetTrainerId, GivenApprenticeLvlMode, InitMenuInUpperLeftCornerNormal,
-  ItemIdToBattleMoveId, JOY_NEW, LockPlayerFieldControls, Menu_ProcessInput,
-  Menu_ProcessInputNoWrap, PlaySE, PlayerFreeze, PrintApprenticeMessage,
-  PutWindowTilemap, Random, RemoveAndHideWindow, RemoveWindow,
-  RunTextPrintersAndIsPrinter0Active, SWAP, SaveApprenticeParty, ScriptContext_Enable,
-  ScriptMenu_AdjustLeftCoordFromWidth, Script_ResetPlayerApprentice, SetApprenticeId, SetPlayersApprenticeLvlMode,
-  SetRandomQuestionData, SetStandardWindowBorderStyle, StopPlayerAvatar, StringCopy,
-  StringCopy_PlayerName, StringExpandPlaceholders, TVShowConvertInternationalString, TrySetMove,
-  VarSet,  // 4-per-line for readability
+  ConvertInternationalString, ConvertPixelWidthToTileWidth, CopyWindowToVram, CreateTask,
+  CreateWindowTemplate, DestroyTask, DrawDialogueFrame, FREE_AND_SET_NULL,
+  FreezeObjectEvents, FrontierSpeechToString, GetApprenticeNameInLanguage, GetItemName,
+  GetStringWidth, GetTrainerId, InitMenuInUpperLeftCornerNormal, ItemIdToBattleMoveId,
+  JOY_NEW, LockPlayerFieldControls, Menu_ProcessInput, Menu_ProcessInputNoWrap,
+  PlaySE, PlayerFreeze, PutWindowTilemap, Random,
+  RemoveWindow, RunTextPrintersAndIsPrinter0Active, SWAP, ScriptContext_Enable,
+  ScriptMenu_AdjustLeftCoordFromWidth, SetStandardWindowBorderStyle, StopPlayerAvatar, StringCopy,
+  StringCopy_PlayerName, StringExpandPlaceholders, TVShowConvertInternationalString, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void BufferApprenticeChallengeText(u8 saveApprenticeId) */

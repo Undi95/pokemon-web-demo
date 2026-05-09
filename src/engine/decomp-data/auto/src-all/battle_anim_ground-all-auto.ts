@@ -18,14 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   BATTLE_PARTNER, CreateTask, DestroyAnimSprite, DestroyAnimVisualTask,
   DestroyTask, GetAnimBattlerSpriteId, GetBattlerSide, GetBattlerSpriteBGPriorityRank,
   GetBattlerSpriteCoord, GetBattlerSpriteCoord2, GetBattlerYCoordWithElevation, InitAnimArcTranslation,
   InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsBattlerSpriteVisible, Random2,
-  ScanlineEffect_SetParams, SetBattlersXOffsetForShake, SetDigScanlineEffect, StoreSpriteCallbackInData6,
-  TranslateAnimHorizontalArc,  // 4-per-line for readability
+  ScanlineEffect_SetParams, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimBonemerangProjectile(struct Sprite *sprite) */

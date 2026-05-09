@@ -18,25 +18,22 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AcroBikeTransition_FaceDirection, AcroBikeTransition_TurnDirection, AcroBikeTransition_WheelieHoppingStanding,
-  AcroBike_GetJumpDirection, AcroBike_TryHistoryUpdate, Bike_DPadToDirection, Bike_SetBikeStill,
-  Bike_TryAdvanceCyclingRoadCollisions, Bike_UpdateABStartSelectHistory, Bike_UpdateDirTimerHistory, CanBikeFaceDirOnMetatile,
-  CheckForObjectEventCollision, CheckMovementInputAcroBike, GetBikeCollision, GetBikeCollisionAt,
-  GetJumpMovementAction, GetMachBikeTransition, GetOppositeDirection, GetPlayerFacingDirection,
-  GetPlayerMovementDirection, HasPlayerInputTakenLongerThanList, IsPlayerCollidingWithFarawayIslandMew, IsRunningDisallowedByMetatile,
-  MachBikeTransition_FaceDirection, MachBikeTransition_TrySlowDown, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsBumpySlope,
-  MetatileBehavior_IsFortreeBridge, MetatileBehavior_IsHorizontalRail, MetatileBehavior_IsIsolatedHorizontalRail, MetatileBehavior_IsIsolatedVerticalRail,
-  MetatileBehavior_IsRunningDisallowed, MetatileBehavior_IsVerticalRail, MoveCoords, MovePlayerOnAcroBike,
-  MovePlayerOnMachBike, Overworld_ChangeMusicTo, Overworld_ClearSavedMusic, Overworld_PlaySpecialMapMusic,
-  Overworld_SetSavedMusic, PlaySE, PlayerAcroTurnJump, PlayerEndWheelie,
-  PlayerEndWheelieWhileMoving, PlayerFaceDirection, PlayerGetDestCoords, PlayerGetElevation,
-  PlayerIdleWheelie, PlayerJumpLedge, PlayerLedgeHoppingWheelie, PlayerMovingHoppingWheelie,
-  PlayerOnBikeCollide, PlayerOnBikeCollideWithFarawayIslandMew, PlayerPopWheelieWhileMoving, PlayerRideWaterCurrent,
-  PlayerSetAnimId, PlayerStandingHoppingWheelie, PlayerStartWheelie, PlayerTurnInPlace,
-  PlayerUseAcroBikeOnBumpySlope, PlayerWheelieInPlace, PlayerWheelieMove, SetObjectEventDirection,
-  SetPlayerAvatarTransitionFlags, TestPlayerAvatarFlags, WillPlayerCollideWithCollision,  // 4-per-line for readability
+  ARRAY_COUNT, CheckForObjectEventCollision, GetJumpMovementAction, GetOppositeDirection,
+  GetPlayerFacingDirection, GetPlayerMovementDirection, IsPlayerCollidingWithFarawayIslandMew, MapGridGetMetatileBehaviorAt,
+  MetatileBehavior_IsBumpySlope, MetatileBehavior_IsFortreeBridge, MetatileBehavior_IsHorizontalRail, MetatileBehavior_IsIsolatedHorizontalRail,
+  MetatileBehavior_IsIsolatedVerticalRail, MetatileBehavior_IsRunningDisallowed, MetatileBehavior_IsVerticalRail, MoveCoords,
+  Overworld_ChangeMusicTo, Overworld_ClearSavedMusic, Overworld_PlaySpecialMapMusic, Overworld_SetSavedMusic,
+  PlaySE, PlayerAcroTurnJump, PlayerEndWheelie, PlayerEndWheelieWhileMoving,
+  PlayerFaceDirection, PlayerGetDestCoords, PlayerGetElevation, PlayerIdleWheelie,
+  PlayerJumpLedge, PlayerLedgeHoppingWheelie, PlayerMovingHoppingWheelie, PlayerOnBikeCollide,
+  PlayerOnBikeCollideWithFarawayIslandMew, PlayerPopWheelieWhileMoving, PlayerRideWaterCurrent, PlayerSetAnimId,
+  PlayerStandingHoppingWheelie, PlayerStartWheelie, PlayerTurnInPlace, PlayerUseAcroBikeOnBumpySlope,
+  PlayerWheelieInPlace, PlayerWheelieMove, SetObjectEventDirection, SetPlayerAvatarTransitionFlags,
+  TestPlayerAvatarFlags,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void MovePlayerOnBike(u8 direction, u16 newKeys, u16 heldKeys) */

@@ -18,27 +18,28 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, BATTLE_PARTNER, BattleLoadOpponentMonSpriteGfx, BattlePutTextOnWindow,
   BattleStopLowHpSound, BeginFastPaletteFade, BtlController_EmitChosenMonReturnValue, BtlController_EmitDataTransfer,
   BtlController_EmitTwoReturnValues, BufferStringBattle, ChooseMoveAndTargetInBattlePalace, ClearTemporarySpeciesSpriteData,
-  CopyAllBattleSpritesInvisibilities, CopyBattleSpriteInvisibility, CopyRecordedOpponentMonData, CreateInvisibleSpriteWithCallback,
-  CreatePartyStatusSummarySprites, CreateSprite, CreateTask, DecompressTrainerFrontPic,
-  DestroySprite, DestroyTask, DoHitAnimHealthboxEffect, DoMoveAnim,
-  DoPokeballSendOutAnimation, FadeOutMapMusic, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, FreeTrainerFrontPicPalette, GetActiveBattlerLinkPlayerGender, GetBattlerPosition,
-  GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority,
-  GetFrontierTrainerFrontSpriteId, GetMonData, GetMultiplayerId, GetUnionRoomTrainerPic,
-  HandleIntroSlide, HideBattlerShadowSprite, IndexOfSpritePaletteTag, InitAndLaunchChosenStatusAnimation,
-  InitAndLaunchSpecialAnimation, IsBattleSEPlaying, IsBattlerSpritePresent, IsCryPlayingOrClearCrySongs,
-  IsDoubleBattle, IsMoveWithoutAnimation, IsTextPrinterActive, LoadBattleBarGfx,
-  MoveBattleBar, PlayBGM, PlayCry_ByMode, PlayFanfare,
-  PlaySE12WithPanning, PlayerGenderToFrontTrainerPicId, PrepareBufferDataTransferLink, RecordedBattle_GetBattlerAction,
-  RecordedOpponentBufferExecCompleted, SetBattleBarStruct, SetBattlerShadowSpriteCallback, SetBattlerSpriteAffineMode,
-  SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible, SetMonData, SetMultiuseSpriteTemplateToPokemon,
-  SetMultiuseSpriteTemplateToTrainerBack, SetRecordedOpponentMonData, SetSpritePrimaryCoordsFromSecondaryCoords, StartHealthboxSlideIn,
-  StartSendOutAnim, StartSpriteAnim, StoreSpriteCallbackInData6, StringCopy_Nickname,
+  CopyAllBattleSpritesInvisibilities, CopyBattleSpriteInvisibility, CreateInvisibleSpriteWithCallback, CreatePartyStatusSummarySprites,
+  CreateSprite, CreateTask, DecompressTrainerFrontPic, DestroySprite,
+  DestroyTask, DoHitAnimHealthboxEffect, DoMoveAnim, DoPokeballSendOutAnimation,
+  FadeOutMapMusic, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  FreeTrainerFrontPicPalette, GetActiveBattlerLinkPlayerGender, GetBattlerPosition, GetBattlerSide,
+  GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority, GetFrontierTrainerFrontSpriteId,
+  GetMonData, GetMultiplayerId, GetUnionRoomTrainerPic, HandleIntroSlide,
+  HideBattlerShadowSprite, IndexOfSpritePaletteTag, InitAndLaunchChosenStatusAnimation, InitAndLaunchSpecialAnimation,
+  IsBattleSEPlaying, IsBattlerSpritePresent, IsCryPlayingOrClearCrySongs, IsDoubleBattle,
+  IsMoveWithoutAnimation, IsTextPrinterActive, LoadBattleBarGfx, MoveBattleBar,
+  PlayBGM, PlayCry_ByMode, PlayFanfare, PlaySE12WithPanning,
+  PlayerGenderToFrontTrainerPicId, PrepareBufferDataTransferLink, RecordedBattle_GetBattlerAction, SetBattleBarStruct,
+  SetBattlerShadowSpriteCallback, SetBattlerSpriteAffineMode, SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible,
+  SetMonData, SetMultiuseSpriteTemplateToPokemon, SetMultiuseSpriteTemplateToTrainerBack, SetSpritePrimaryCoordsFromSecondaryCoords,
+  StartHealthboxSlideIn, StartSpriteAnim, StoreSpriteCallbackInData6, StringCopy_Nickname,
   TryHandleLaunchBattleTableAnimation, TrySetBehindSubstituteSpriteBit, TryShinyAnimation, UpdateHealthboxAttribute,
   UpdateHpTextInHealthbox,  // 4-per-line for readability
 } = _bridge;

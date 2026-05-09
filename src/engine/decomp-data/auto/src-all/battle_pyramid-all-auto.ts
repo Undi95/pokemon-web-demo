@@ -18,22 +18,20 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddBagItem, AddPyramidBagItem, AllocZeroed,
   BG_PLTT_ID, CalculateMonStats, CopyItemName, CpuCopy16,
-  CpuFill32, CreateTask, CurrentBattlePyramidLocation, DestroyTask,
-  DoSoftReset, Free, FrontierSpeechToString, GetBattleFacilityTrainerGfxId,
-  GetChosenApproachingTrainerObjectEventId, GetMonData, GetNumBattlePyramidObjectEvents, GetPostBattleDirectionHintTextIndex,
-  GetPyramidEntranceAndExitSquareIds, GetPyramidFloorLayoutOffsets, GetPyramidFloorTemplateId, GetRandomScaledFrontierTrainerId,
-  GetSpeciesName, GetUniqueTrainerId, InitBattlePyramidBagCursorPosition, InitPyramidBagItems,
-  LoadPlayerParty, LocalIdToPyramidTrainerId, MAP_GROUP, MAP_NUM,
-  MOD, MarkPyramidTrainerAsBattled, Overworld_GetMapHeaderByGroupAndId, PlaySE,
-  Random, Random2, RestorePyramidPlayerParty, RunOnLoadMapScript,
-  SaveMapView, SeedRng2, SetFacilityPtrsGetLevel, SetMonData,
-  SetMonMoveSlot, SetPyramidObjectPositionsInAndNearSquare, SetPyramidObjectPositionsNearSquare, SetPyramidObjectPositionsUniformly,
-  ShowBattlePyramidStartMenu, ShowFieldMessage, TrySavingData, TrySetPyramidObjectEventPositionAtCoords,
-  TrySetPyramidObjectEventPositionInSquare, VarSet, WriteBattlePyramidViewScanlineEffectBuffer,  // 4-per-line for readability
+  CpuFill32, CreateTask, DestroyTask, DoSoftReset,
+  Free, FrontierSpeechToString, GetBattleFacilityTrainerGfxId, GetChosenApproachingTrainerObjectEventId,
+  GetMonData, GetRandomScaledFrontierTrainerId, GetSpeciesName, InitBattlePyramidBagCursorPosition,
+  LoadPlayerParty, MAP_GROUP, MAP_NUM, MOD,
+  Overworld_GetMapHeaderByGroupAndId, PlaySE, Random, Random2,
+  RunOnLoadMapScript, SaveMapView, SeedRng2, SetFacilityPtrsGetLevel,
+  SetMonData, SetMonMoveSlot, ShowBattlePyramidStartMenu, ShowFieldMessage,
+  TrySavingData, VarSet, WriteBattlePyramidViewScanlineEffectBuffer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallBattlePyramidFunction(void) */

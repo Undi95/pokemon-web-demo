@@ -18,16 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  BeginFastPaletteFadeInternal, BlendPalette, BlendPalettes, CpuCopy16,
-  CpuCopy32, CpuFill16, CpuFill32, CreateTask,
-  DestroyTask, DmaCopy16, DmaCopy32, GET_B,
-  GET_G, GET_R, GetWordTaskArg, IsSoftwarePaletteFadeFinishing,
-  LZDecompressWram, PaletteStruct_GetPalNum, PaletteStruct_Reset, PaletteStruct_ResetById,
-  Q_8_8, RGB2, ResetPaletteFadeControl, SetGpuReg,
-  SetWordTaskArg, UpdateBlendRegisters, UpdateFastPaletteFade, UpdateHardwarePaletteFade,
-  UpdateNormalPaletteFade, UpdatePaletteFade,  // 4-per-line for readability
+  BlendPalette, CpuCopy16, CpuCopy32, CpuFill16,
+  CpuFill32, CreateTask, DestroyTask, DmaCopy16,
+  DmaCopy32, GET_B, GET_G, GET_R,
+  GetWordTaskArg, LZDecompressWram, Q_8_8, RGB2,
+  SetGpuReg, SetWordTaskArg,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void LoadCompressedPalette(const u32 *src, u16 offset, u16 size) */

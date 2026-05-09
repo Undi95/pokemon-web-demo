@@ -18,25 +18,21 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddTextPrinterAndCreateWindowOnHealthbox, BLDALPHA_BLEND, CalcBarFilledPixels, CalcNewBarValue,
-  ConvertIntToDecimalStringN, CpuCopy16, CpuCopy32, CpuFill32,
-  CreateSprite, CreateSpriteAtEnd, CreateTask, DestroySprite,
-  DestroySpriteAndFreeResources, DestroyTask, FillHealthboxObject, FillPalette,
-  FreeSpriteOamMatrix, GetBattlerPosition, GetBattlerSide, GetHealthboxElementGfxPtr,
-  GetMonData, GetMonGender, GetNature, GetScaledExpFraction,
-  GetScaledHPFraction, GetSetPokedexFlag, GetStatusIconForBattlerId, GetStringRightAlignXOffset,
-  HpTextIntoHealthboxObject, IsDoubleBattle, LoadBattleBarGfx, LoadCompressedSpriteSheetUsingHeap,
-  LoadSpritePalette, LoadSpriteSheet, MoveBattleBar, MoveBattleBarGraphically,
-  PLTT_ID, PLTT_SIZEOF, PlaySE12WithPanning, PlaySE1WithPanning,
-  PlaySE2WithPanning, PrintSafariMonInfo, Q_24_8, Q_24_8_TO_INT,
-  RemoveWindow, RemoveWindowOnHealthbox, RenderTextHandleBold, SafariTextIntoHealthboxObject,
-  SetBattleBarStruct, SetGpuReg, SetSubspriteTables, SpeciesToNationalPokedexNum,
-  StringAppend, StringCompare, StringCopy, StringGet_Nickname,
-  TextIntoHealthboxObject, TryAddPokeballIconToHealthbox, UpdateHealthboxAttribute, UpdateHpTextInHealthbox,
-  UpdateHpTextInHealthboxInDoubles, UpdateLeftNoOfBallsTextOnHealthbox, UpdateLvlInHealthbox, UpdateNickInHealthbox,
-  UpdateSafariBallsTextOnHealthbox, UpdateSpritePos, UpdateStatusIconInHealthbox,  // 4-per-line for readability
+  AddTextPrinterAndCreateWindowOnHealthbox, BLDALPHA_BLEND, ConvertIntToDecimalStringN, CpuCopy16,
+  CpuCopy32, CpuFill32, CreateSprite, CreateSpriteAtEnd,
+  CreateTask, DestroySprite, DestroySpriteAndFreeResources, DestroyTask,
+  FillPalette, FreeSpriteOamMatrix, GetBattlerPosition, GetBattlerSide,
+  GetHealthboxElementGfxPtr, GetMonData, GetMonGender, GetNature,
+  GetSetPokedexFlag, GetStringRightAlignXOffset, IsDoubleBattle, LoadBattleBarGfx,
+  LoadCompressedSpriteSheetUsingHeap, LoadSpritePalette, LoadSpriteSheet, PLTT_ID,
+  PLTT_SIZEOF, PlaySE12WithPanning, PlaySE1WithPanning, PlaySE2WithPanning,
+  Q_24_8, Q_24_8_TO_INT, RemoveWindow, RenderTextHandleBold,
+  SetGpuReg, SetSubspriteTables, SpeciesToNationalPokedexNum, StringAppend,
+  StringCompare, StringCopy, StringGet_Nickname,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static s32 DummiedOutFunction(s16 unused1, s16 unused2, s32 unused3) */

@@ -18,34 +18,24 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AllocSpritePalette, AllocZeroed, AnimFastTranslateLinear, AnimSetCenterToCornerVecX,
-  AnimTask_BlendPalInAndOutSetup, AnimTranslateLinear, ArcTan2, ArcTan2_,
+  AllocSpritePalette, AllocZeroed, AnimSetCenterToCornerVecX, ArcTan2,
   BATTLE_PARTNER, BLDALPHA_BLEND, BlendPalette, CalcCenterToCornerVec,
-  CloneBattlerSpriteWithBlend, ConvertPosDataToTranslateLinearData, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer,
-  Cos, CpuCopy32, CpuFill32, CreateBattlerTrace,
-  CreateInvisibleSpriteWithCallback, CreateSprite, DestroyAnimSprite, DestroyAnimVisualTask,
-  DestroySprite, DestroySpriteAndFreeResources, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet,
-  FREE_AND_SET_NULL, FillBgTilemapBufferRect, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
-  GET_BATTLER_SIDE2, GET_MON_COORDS_HEIGHT, GET_MON_COORDS_WIDTH, GET_UNOWN_LETTER,
-  GetAnimBattlerSpriteId, GetAnimBgAttribute, GetBattleAnimBg1Data, GetBattleAnimBgData,
-  GetBattleBgPaletteNum, GetBattlerAtPosition, GetBattlerElevation, GetBattlerPosition,
-  GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoord2,
-  GetBattlerSpriteFinal_Y, GetBattlerSpriteSubpriority, GetBattlerYDelta, GetBattlerYDeltaFromSpriteId,
+  CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, Cos, CpuCopy32,
+  CpuFill32, CreateInvisibleSpriteWithCallback, CreateSprite, DestroyAnimSprite,
+  DestroyAnimVisualTask, DestroySprite, DestroySpriteAndFreeResources, FREE_AND_SET_NULL,
+  FillBgTilemapBufferRect, FreeSpriteOamMatrix, FreeSpritePaletteByTag, GET_BATTLER_SIDE2,
+  GET_MON_COORDS_HEIGHT, GET_MON_COORDS_WIDTH, GET_UNOWN_LETTER, GetAnimBgAttribute,
   GetMonData, GetMonSpritePalFromSpeciesAndPersonality, IS_DOUBLE_BATTLE, IndexOfSpritePaletteTag,
-  InitAnimArcTranslation, InitAnimBgTilemapBuffer, InitAnimFastLinearTranslation, InitAnimFastLinearTranslationWithSpeed,
-  InitAnimLinearTranslation, InitAnimLinearTranslationWithSpeed, InitSpriteDataForLinearTranslation, InitSpritePosToAnimAttacker,
-  InitSpritePosToAnimTarget, IsBattlerSpritePresent, IsBattlerSpriteVisible, IsContest,
-  IsDoubleBattle, LZDecompressWram, LoadBgTiles, LoadCompressedPalette,
-  LoadPointerFromVars, LoadSpecialPokePic_2, LoadSpecialPokePic_DontHandleDeoxys, LoadSpriteSheet,
-  OBJ_PLTT_ID, OBJ_PLTT_ID2, ObjAffineSet, PLTT_ID,
-  PrepareBattlerSpriteForRotScale, RelocateBattleBgPal, RequestDma3Copy, ResetSpriteRotScale,
-  SAFE_DIV, SetAnimBgAttribute, SetAnimSpriteInitialXOffset, SetBattlerSpriteYOffsetFromYScale,
-  SetCallbackToStoredInData6, SetGpuReg, SetSpriteCoordsToAnimAttackerCoords, SetSpriteRotScale,
-  ShouldIgnoreDeoxysForm, ShouldRotScaleSpeciesBeFlipped, Sin, StartSpriteAffineAnim,
-  StartSpriteAnim, StorePointerInVars, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,
-  TrySetSpriteRotScale, UpdateMonIconFrame,  // 4-per-line for readability
+  IsBattlerSpriteVisible, IsContest, LZDecompressWram, LoadBgTiles,
+  LoadCompressedPalette, LoadPointerFromVars, LoadSpecialPokePic_2, LoadSpecialPokePic_DontHandleDeoxys,
+  LoadSpriteSheet, OBJ_PLTT_ID, OBJ_PLTT_ID2, ObjAffineSet,
+  PLTT_ID, RelocateBattleBgPal, RequestDma3Copy, SAFE_DIV,
+  SetAnimBgAttribute, SetGpuReg, ShouldIgnoreDeoxysForm, Sin,
+  StartSpriteAffineAnim, StartSpriteAnim, UpdateMonIconFrame,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 GetBattlerSpriteCoord(u8 battler, u8 coordType) */

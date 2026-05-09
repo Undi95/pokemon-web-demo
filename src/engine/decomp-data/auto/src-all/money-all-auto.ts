@@ -18,15 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddMoneyLabelObject, AddTextPrinterParameterized, AddWindow, ClearStdWindowAndFrameToTransparent,
-  ConvertIntToDecimalStringN, CopyWindowToVram, CreateSprite, DestroySpriteAndFreeResources,
-  DrawStdFrameWithCustomTileAndPalette, FillWindowPixelBuffer, GetMoney, IsEnoughMoney,
-  LoadCompressedSpritePalette, LoadCompressedSpriteSheet, PIXEL_FILL, PrintMoneyAmount,
-  PrintMoneyAmountInMoneyBox, PrintMoneyAmountInMoneyBoxWithBorder, PutWindowTilemap, RemoveMoney,
-  RemoveMoneyLabelObject, RemoveWindow, SetMoney, SetWindowTemplateFields,
-  StringExpandPlaceholders, StringLength,  // 4-per-line for readability
+  AddTextPrinterParameterized, AddWindow, ClearStdWindowAndFrameToTransparent, ConvertIntToDecimalStringN,
+  CopyWindowToVram, CreateSprite, DestroySpriteAndFreeResources, DrawStdFrameWithCustomTileAndPalette,
+  FillWindowPixelBuffer, LoadCompressedSpritePalette, LoadCompressedSpriteSheet, PIXEL_FILL,
+  PutWindowTilemap, RemoveWindow, SetWindowTemplateFields, StringExpandPlaceholders,
+  StringLength,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 GetMoney(u32 *moneyPtr) */

@@ -18,18 +18,18 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  Alloc, AnimateSprites, AnyMonHasRibbon, BuildOamBuffer,
-  CheckBoxMonSanityAt, CreateTask, DestroyTask, FREE_AND_SET_NULL,
-  FadeScreen, FreeAllSpritePalettes, FreeMenuHandlerSubstruct1, FreePokenavResources,
-  FreePokenavSubstruct, GetBoxMonDataAt, GetCurrentMenuCB, GetMonData,
-  GetWordTaskArg, InitKeys, InitKeys_, InitPokenavMainMenu,
-  InitPokenavResources, IsActiveMenuLoopTaskActive, IsActiveMenuLoopTaskActive_, IsOverworldLinkActive,
-  LOOPED_TASK_DECODE_STATE, LOOPED_TASK_ID, LOOPED_TASK_PRIMARY_ID, LOOPED_TASK_SECONDARY_ID,
-  LoadOam, Overworld_IsRecvQueueAtMax, PokenavMainMenuLoopedTaskIsActive, ProcessSpriteCopyRequests,
-  ResetSpriteData, ResetTasks, RunMainMenuLoopedTask, RunTasks,
-  SetActiveMenuLoopTasks, SetActivePokenavMenu, SetMainCallback2, SetVBlankCallback,
+  Alloc, AnimateSprites, BuildOamBuffer, CheckBoxMonSanityAt,
+  CreateTask, DestroyTask, FREE_AND_SET_NULL, FadeScreen,
+  FreeAllSpritePalettes, FreeMenuHandlerSubstruct1, GetBoxMonDataAt, GetMonData,
+  GetWordTaskArg, InitKeys, InitPokenavMainMenu, IsActiveMenuLoopTaskActive,
+  IsOverworldLinkActive, LOOPED_TASK_DECODE_STATE, LOOPED_TASK_ID, LOOPED_TASK_PRIMARY_ID,
+  LOOPED_TASK_SECONDARY_ID, LoadOam, Overworld_IsRecvQueueAtMax, PokenavMainMenuLoopedTaskIsActive,
+  ProcessSpriteCopyRequests, ResetSpriteData, ResetTasks, RunMainMenuLoopedTask,
+  RunTasks, SetActiveMenuLoopTasks, SetMainCallback2, SetVBlankCallback,
   SetWordTaskArg, ShutdownPokenav, TRY_FREE_AND_SET_NULL, TransferPlttBuffer,
   UpdatePaletteFade, WaitForPokenavShutdownFade,  // 4-per-line for readability
 } = _bridge;

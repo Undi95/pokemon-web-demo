@@ -18,22 +18,23 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, CancelPlayerForcedMovement, CheckPathBetweenTrainerAndPlayer, CheckTrainer,
-  ConfigureAndSetUpOneTrainerBattle, ConfigureTwoTrainersBattle, CreateSpriteAtEnd, CreateTask,
-  CurrentBattlePyramidLocation, DestroyTask, FieldEffectActiveListContains, FieldEffectStart,
-  FieldEffectStop, FreezeObjectEventsExceptOne, GetBattlePyramidTrainerFlag, GetCollisionAtCoords,
-  GetCollisionFlagsAtCoords, GetFaceDirectionMovementAction, GetHillTrainerFlag, GetJumpInPlaceMovementAction,
-  GetMonsStateToDoubles_2, GetObjectEventScriptPointerByObjectEventId, GetOppositeDirection, GetTrainerApproachDistance,
-  GetTrainerFacingDirectionMovementType, GetTrainerFlagFromScriptPointer, GetTrainerHillTrainerScript, GetWalkNormalMovementAction,
-  InTrainerHill, InitTrainerApproachTask, LoadWordFromTwoHalfwords, MoveCoords,
+  ARRAY_COUNT, CancelPlayerForcedMovement, ConfigureAndSetUpOneTrainerBattle, ConfigureTwoTrainersBattle,
+  CreateSpriteAtEnd, CreateTask, CurrentBattlePyramidLocation, DestroyTask,
+  FieldEffectActiveListContains, FieldEffectStart, FieldEffectStop, FreezeObjectEventsExceptOne,
+  GetBattlePyramidTrainerFlag, GetCollisionAtCoords, GetCollisionFlagsAtCoords, GetFaceDirectionMovementAction,
+  GetHillTrainerFlag, GetJumpInPlaceMovementAction, GetMonsStateToDoubles_2, GetObjectEventScriptPointerByObjectEventId,
+  GetOppositeDirection, GetTrainerFacingDirectionMovementType, GetTrainerFlagFromScriptPointer, GetTrainerHillTrainerScript,
+  GetWalkNormalMovementAction, InTrainerHill, LoadWordFromTwoHalfwords, MoveCoords,
   ObjectEventCheckHeldMovementStatus, ObjectEventClearHeldMovement, ObjectEventClearHeldMovementIfFinished, ObjectEventGetLocalIdAndMap,
   ObjectEventIsMovementOverridden, ObjectEventSetHeldMovement, OverrideTemplateCoordsForObjectEvent, PlayerGetDestCoords,
-  ResetTrainerOpponentIds, ScriptContext_Enable, ScriptMovement_StartObjectMovementScript, SetIconSpriteData,
-  SetMovingNpcId, SetTaskFuncWithFollowupFunc, SetTrainerMovementType, SetUpTwoTrainersBattle,
-  StartSpriteAnim, StartTrainerApproach, StoreWordInTwoHalfwords, SwitchTaskToFollowupFunc,
-  TryGetObjectEventIdByLocalIdAndMap, TryOverrideTemplateCoordsForObjectEvent, UnfreezeObjectEvents,  // 4-per-line for readability
+  ResetTrainerOpponentIds, ScriptContext_Enable, ScriptMovement_StartObjectMovementScript, SetMovingNpcId,
+  SetTaskFuncWithFollowupFunc, SetTrainerMovementType, SetUpTwoTrainersBattle, StartSpriteAnim,
+  StoreWordInTwoHalfwords, SwitchTaskToFollowupFunc, TryGetObjectEventIdByLocalIdAndMap, TryOverrideTemplateCoordsForObjectEvent,
+  UnfreezeObjectEvents,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 CheckForTrainersWantingBattle(void) */

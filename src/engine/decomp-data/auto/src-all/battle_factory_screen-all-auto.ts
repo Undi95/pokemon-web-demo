@@ -18,48 +18,32 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, Alloc,
   AllocZeroed, AnimateSprites, BG_PLTT_ID, BLDALPHA_BLEND,
   BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer, CalculatePlayerPartyCount,
   ChangeBgX, ChangeBgY, ClearGpuRegBits, ClearWindowTilemap,
-  CloseMonPic, CopyBgTilemapBufferToVram, CopyMonCategoryText, CopySwappedMonData,
-  CopyToBgTilemapBufferRect, CopyWindowToVram, CpuCopy16, CpuFill32,
-  CreateFrontierFactorySelectableMons, CreateMonPicSprite_HandleDeoxys, CreateMonWithEVSpreadNatureOTID, CreateSlateportTentSelectableMons,
+  CopyBgTilemapBufferToVram, CopyMonCategoryText, CopyToBgTilemapBufferRect, CopyWindowToVram,
+  CpuCopy16, CpuFill32, CreateMonPicSprite_HandleDeoxys, CreateMonWithEVSpreadNatureOTID,
   CreateSprite, CreateTask, DeactivateAllTextPrinters, DestroySprite,
   DestroyTask, FREE_AND_SET_NULL, FillWindowPixelBuffer, FreeAllSpritePalettes,
   FreeAllWindowBuffers, FreeAndDestroyMonPicSprite, FreeOamMatrix, FuncIsActiveTask,
   GetBoxMonData, GetFactoryMonFixedIV, GetMonData, GetNumPastRentalsRank,
-  GetStringRightAlignXOffset, HideBg, HideMonPic, IndexOfSpritePaletteTag,
-  InitBgsFromTemplates, InitWindows, JOY_NEW, JOY_REPEAT,
-  LoadBgTilemap, LoadBgTiles, LoadCompressedSpriteSheet, LoadOam,
-  LoadPalette, LoadSpritePalettes, LoadSpriteSheets, OpenMonPic,
-  PIXEL_FILL, PLTT_SIZEOF, PlaySE, ProcessSpriteCopyRequests,
-  PutWindowTilemap, Random, ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
-  RunTextPrinters, Select_AreSpeciesValid, Select_CopyMonsToPlayerParty, Select_CreateChosenMonsSprites,
-  Select_CreateMonSprite, Select_DeclineChosenMons, Select_DestroyAllSprites, Select_ErasePopupMenu,
-  Select_HandleMonSelectionChange, Select_HideChosenMons, Select_InitAllSprites, Select_InitMonsData,
-  Select_PrintCantSelectSameMon, Select_PrintMenuOptions, Select_PrintMonCategory, Select_PrintMonSpecies,
-  Select_PrintRentalPkmnString, Select_PrintSelectMonString, Select_PrintYesNoOptions, Select_ReshowMonSprite,
-  Select_RunMenuOptionFunc, Select_SetBallSpritePaletteNum, Select_SetMonPicAnimating, Select_SetWinRegs,
-  Select_ShowChosenMons, Select_ShowMenuOptions, Select_ShowYesNoOptions, Select_UpdateBallCursorPosition,
-  Select_UpdateMenuCursorPosition, Select_UpdateYesNoCursorPosition, SetBgTilemapBuffer, SetGpuReg,
-  SetGpuRegBits, SetHBlankCallback, SetMainCallback2, SetMonData,
-  SetMonMoveAvoidReturn, SetVBlankCallback, ShowBg, ShowPokemonSummaryScreen,
-  SpeciesToNationalPokedexNum, StartSpriteAffineAnim, StartSpriteAnim, StartSpriteAnimIfDifferent,
-  StringCopy, Swap_AlreadyHasSameSpecies, Swap_CreateMonSprite, Swap_DestroyAllSprites,
-  Swap_EraseActionFadeWindow, Swap_ErasePopupMenu, Swap_EraseSpeciesAtFadeWindow, Swap_EraseSpeciesWindow,
-  Swap_HandleActionCursorChange, Swap_HideActionButtonHighlights, Swap_HighlightActionButton, Swap_InitActions,
-  Swap_InitAllSprites, Swap_InitStruct, Swap_PrintActionString, Swap_PrintActionStrings,
-  Swap_PrintActionStrings2, Swap_PrintMenuOptions, Swap_PrintMonCategory, Swap_PrintMonSpecies,
-  Swap_PrintMonSpeciesAtFade, Swap_PrintMonSpeciesForTransition, Swap_PrintOnInfoWindow, Swap_PrintOneActionString,
-  Swap_PrintPkmnSwap, Swap_PrintYesNoOptions, Swap_RunActionFunc, Swap_RunMenuOptionFunc,
-  Swap_ShowMenuOptions, Swap_ShowSummaryMonSprite, Swap_ShowYesNoOptions, Swap_UpdateActionCursorPosition,
-  Swap_UpdateBallCursorPosition, Swap_UpdateMenuCursorPosition, Swap_UpdateYesNoCursorPosition, T1_READ_32,
-  TRY_FREE_AND_SET_NULL, TransferPlttBuffer, UpdatePaletteFade, VarGet,
-  WIN_RANGE,  // 4-per-line for readability
+  GetStringRightAlignXOffset, HideBg, IndexOfSpritePaletteTag, InitBgsFromTemplates,
+  InitWindows, JOY_NEW, JOY_REPEAT, LoadBgTilemap,
+  LoadBgTiles, LoadCompressedSpriteSheet, LoadOam, LoadPalette,
+  LoadSpritePalettes, LoadSpriteSheets, PIXEL_FILL, PLTT_SIZEOF,
+  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, Random,
+  ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, RunTasks, RunTextPrinters, SetBgTilemapBuffer,
+  SetGpuReg, SetGpuRegBits, SetHBlankCallback, SetMainCallback2,
+  SetMonData, SetMonMoveAvoidReturn, SetVBlankCallback, ShowBg,
+  ShowPokemonSummaryScreen, SpeciesToNationalPokedexNum, StartSpriteAffineAnim, StartSpriteAnim,
+  StartSpriteAnimIfDifferent, StringCopy, T1_READ_32, TRY_FREE_AND_SET_NULL,
+  TransferPlttBuffer, UpdatePaletteFade, VarGet, WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SpriteCB_Pokeball(struct Sprite *sprite) */

@@ -18,24 +18,20 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AllowWildCheckOnNewMetatile, ApplyCleanseTagEncounterRateMod, ApplyFluteEncounterRateMod, AreLegendariesInSootopolisPreventingEncounters,
-  BattleSetup_StartBattlePikeWildBattle, BattleSetup_StartRoamerBattle, BattleSetup_StartWildBattle, CheckFeebas,
-  ChooseWildMonIndex_Fishing, ChooseWildMonIndex_Land, ChooseWildMonIndex_WaterRock, ChooseWildMonLevel,
-  CreateMonWithGenderNatureLetter, CreateMonWithNature, CreateWildMon, CurrentBattlePyramidLocation,
-  DoMassOutbreakEncounterTest, EncounterOddsCheck, FeebasRandom, FeebasSeedRng,
-  FlagGet, GenerateBattlePyramidWildMon, GenerateFishingWildMon, GetBattlePikeWildMonHeaderId,
-  GetCurrentMapWildMonHeaderId, GetFeebasFishingSpotId, GetGenderFromSpeciesAndPersonality, GetMonAbility,
-  GetMonData, GetSafariZoneFlag, GetXYCoordsOneStepInFrontOfPlayer, ISO_RANDOMIZE2,
-  InBattlePike, InUnionRoom, IncrementGameStat, IsAbilityAllowingEncounter,
-  IsWildLevelAllowedByRepel, MAP_GROUP, MAP_NUM, MapGridGetMetatileBehaviorAt,
-  MetatileBehavior_IsBridgeOverWater, MetatileBehavior_IsLandWildEncounter, MetatileBehavior_IsSurfableAndNotWaterfall, MetatileBehavior_IsWaterWildEncounter,
-  PickWildMonNature, PlayerGetDestCoords, PokeblockGetGain, Random,
+  BattleSetup_StartBattlePikeWildBattle, BattleSetup_StartRoamerBattle, BattleSetup_StartWildBattle, CreateMonWithGenderNatureLetter,
+  CreateMonWithNature, CurrentBattlePyramidLocation, FlagGet, GenerateBattlePyramidWildMon,
+  GetBattlePikeWildMonHeaderId, GetGenderFromSpeciesAndPersonality, GetMonAbility, GetMonData,
+  GetSafariZoneFlag, GetXYCoordsOneStepInFrontOfPlayer, ISO_RANDOMIZE2, InBattlePike,
+  InUnionRoom, IncrementGameStat, MAP_GROUP, MAP_NUM,
+  MapGridGetMetatileBehaviorAt, MetatileBehavior_IsBridgeOverWater, MetatileBehavior_IsLandWildEncounter, MetatileBehavior_IsSurfableAndNotWaterfall,
+  MetatileBehavior_IsWaterWildEncounter, PlayerGetDestCoords, PokeblockGetGain, Random,
   SWAP, SafariZoneGetActivePokeblock, ScriptContext_SetupScript, SetMonMoveSlot,
-  SetPokemonAnglerSpecies, SetUpMassOutbreakEncounter, TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX, TestPlayerAvatarFlags,
-  TryGenerateBattlePikeWildMon, TryGenerateWildMon, TryStartRoamerEncounter, VarGet,
-  VarSet, WildEncounterCheck, ZeroEnemyPartyMons,  // 4-per-line for readability
+  SetPokemonAnglerSpecies, TRY_GET_ABILITY_INFLUENCED_WILD_MON_INDEX, TestPlayerAvatarFlags, TryGenerateBattlePikeWildMon,
+  TryStartRoamerEncounter, VarGet, VarSet, ZeroEnemyPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void DisableWildEncounters(bool8 disabled) */

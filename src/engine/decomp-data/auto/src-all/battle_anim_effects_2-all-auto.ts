@@ -18,28 +18,29 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AllocOamMatrix, AllocSpritePalette, AllocZeroed, AnimLoadCompressedBgGfx,
   AnimLoadCompressedBgTilemapHandleContest, AnimTranslateLinear, ArcTan2Neg, BATTLE_PARTNER,
   BG_PLTT_ID, BLDALPHA_BLEND, BattleAnimAdjustPanning, BlendPalette,
   BlendPalettes, CalcCenterToCornerVec, ClearBattleAnimBg, CloneBattlerSpriteWithBlend,
-  Cos, CreateMinimizeSprite, CreateSprite, DestroyAnimSprite,
-  DestroyAnimVisualTask, DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet,
-  FREE_AND_SET_NULL, FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
-  GET_BATTLER_SIDE2, GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattlePalettesMask,
-  GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr,
-  GetBattlerSpriteSubpriority, GetBattlerYCoordWithElevation, IndexOfSpritePaletteTag, InitAnimLinearTranslation,
-  InitSpritePosToAnimAttacker, IsBattlerSpriteVisible, IsContest, IsDoubleBattle,
-  LZDecompressWram, LoadCompressedPalette, LoadPalette, MathUtil_Inv16,
-  MathUtil_Mul16, OBJ_PLTT_ID, PlaySE12WithPanning, PrepareAffineAnimInTaskData,
-  PrepareBattlerSpriteForRotScale, Q_8_8, Random2, ResetSpriteRotScale,
-  RunAffineAnimFromTaskData, ScanlineEffect_SetParams, SeekSpriteAnim, SetAnimBgAttribute,
-  SetAnimSpriteInitialXOffset, SetAverageBattlerPositions, SetBattlerSpriteYOffsetFromRotation, SetBattlerSpriteYOffsetFromYScale,
-  SetGpuReg, SetGrayscaleOrOriginalPalette, SetMusicNotePalette, SetSpriteCoordsToAnimAttackerCoords,
-  SetSpriteNextToMonHead, SetSpritePrimaryCoordsFromSecondaryCoords, SetSpriteRotScale, Sin,
-  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6, TrySetSpriteRotScale,
-  WIN_RANGE,  // 4-per-line for readability
+  Cos, CreateSprite, DestroyAnimSprite, DestroyAnimVisualTask,
+  DestroySprite, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet, FREE_AND_SET_NULL,
+  FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag, GET_BATTLER_SIDE2,
+  GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattlePalettesMask, GetBattlerSide,
+  GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, GetBattlerSpriteSubpriority,
+  GetBattlerYCoordWithElevation, IndexOfSpritePaletteTag, InitAnimLinearTranslation, InitSpritePosToAnimAttacker,
+  IsBattlerSpriteVisible, IsContest, IsDoubleBattle, LZDecompressWram,
+  LoadCompressedPalette, LoadPalette, MathUtil_Inv16, MathUtil_Mul16,
+  OBJ_PLTT_ID, PlaySE12WithPanning, PrepareAffineAnimInTaskData, PrepareBattlerSpriteForRotScale,
+  Q_8_8, Random2, ResetSpriteRotScale, RunAffineAnimFromTaskData,
+  ScanlineEffect_SetParams, SeekSpriteAnim, SetAnimBgAttribute, SetAnimSpriteInitialXOffset,
+  SetAverageBattlerPositions, SetBattlerSpriteYOffsetFromRotation, SetBattlerSpriteYOffsetFromYScale, SetGpuReg,
+  SetGrayscaleOrOriginalPalette, SetSpriteCoordsToAnimAttackerCoords, SetSpriteNextToMonHead, SetSpritePrimaryCoordsFromSecondaryCoords,
+  SetSpriteRotScale, Sin, StartSpriteAffineAnim, StartSpriteAnim,
+  StoreSpriteCallbackInData6, TrySetSpriteRotScale, WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimCirclingFinger(struct Sprite *sprite) */

@@ -18,34 +18,21 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AnimateSprites, AreAllPlayersFinishedReceiving, AreAllPlayersReadyToReceive,
-  BuildOamBuffer, CallRfuFunc, CanTryReconnectParent, CheckForLeavingGroupMembers,
-  ChildBuildSendCmd, ClearSavedLinkPlayers, ClearSelectedLinkPlayerIds, CloseLink,
-  ConvertLinkPlayerName, CpuFill16, CpuFill32, CreateTask,
-  CreateTask_ChildSearchForParent, CreateTask_ParentSearchForChildren, Debug_PrintEmpty, Debug_PrintString,
-  DestroyTask, FindTaskIdByFunc, FuncIsActiveTask, GetBlenderArrowPosition,
-  GetBlockReceivedStatus, GetHostRfuGameData, GetJoinGroupStatus, GetLinkPlayerCount,
-  GetLinkPlayerInfoFlags, GetMultiplayerId, GetNewChildrenInUnionRoomChat, GetPartnerIndexByNameAndTrainerID,
-  HandleSendFailure, InitChildRecvBuffers, InitHostRfuGameData, InitParentSendData,
-  InitRFUAPI, IsLinkTaskFinished, IsPartnerActivityIncompatible, IsRfuRecvQueueEmpty,
-  IsRfuSerialNumberValid, LinkPlayerFromBlock, LinkRfu_Shutdown, LoadLinkPlayerIds,
-  LoadOam, LocalLinkPlayerToBlock, MoveSendCmdToRecv, ParentResetChildRecvMetadata,
-  ProcessSpriteCopyRequests, Random2, ReadAllPlayerRecvCmds, ReadU16,
-  ReceiveRfuLinkPlayers, ResetBlockReceivedFlag, ResetBlockReceivedFlags, ResetLinkRfuGFLayer,
-  ResetSendDataManager, RfuBackupQueue_Dequeue, RfuBackupQueue_Enqueue, RfuCheckErrorStatus,
-  RfuGetStatus, RfuHandleReceiveCommand, RfuHasErrored, RfuMain1_Child,
-  RfuMain1_Parent, RfuMain1_UnionRoom, RfuMain2_Parent, RfuPrepareSendBuffer,
-  RfuRecvQueue_Dequeue, RfuRecvQueue_Enqueue, RfuRecvQueue_Reset, RfuReqDisconnectSlot,
-  RfuSendQueue_Dequeue, RfuSendQueue_Enqueue, RfuSendQueue_Reset, RfuSetErrorParams,
-  RfuSetIgnoreError, RfuSetStatus, RfuShutdownAfterDisconnect, Rfu_GetIndexOfNewestChild,
-  Rfu_InitBlockSend, Rfu_ResetBlockReceivedFlag, Rfu_SetBlockReceivedFlag, RunTasks,
-  SendBlock, SendDisconnectCommand, SetHostRfuGameData, SetHostRfuUsername,
-  SetLinkErrorBuffer, SetLinkPlayerIdsFromSlots, SetMainCallback2, StartDisconnectNewChild,
-  StringCompare, StringCopy, TransferPlttBuffer, TryDisconnectRfu,
-  TryReconnectParent, UpdateBackupQueue, UpdateChildStatuses, UpdateGameData_GroupLockedIn,
-  UpdateGameData_SetActivity, UpdatePaletteFade, ValidateAndReceivePokemonSioInfo,  // 4-per-line for readability
+  ARRAY_COUNT, AnimateSprites, BuildOamBuffer, ClearSavedLinkPlayers,
+  CloseLink, ConvertLinkPlayerName, CpuFill16, CpuFill32,
+  CreateTask, Debug_PrintString, DestroyTask, FindTaskIdByFunc,
+  FuncIsActiveTask, GetBlenderArrowPosition, GetBlockReceivedStatus, GetHostRfuGameData,
+  GetLinkPlayerCount, GetMultiplayerId, InitHostRfuGameData, IsLinkTaskFinished,
+  LinkPlayerFromBlock, LoadOam, LocalLinkPlayerToBlock, ProcessSpriteCopyRequests,
+  Random2, ResetBlockReceivedFlag, ResetBlockReceivedFlags, RfuBackupQueue_Dequeue,
+  RfuBackupQueue_Enqueue, RfuRecvQueue_Dequeue, RfuRecvQueue_Enqueue, RfuRecvQueue_Reset,
+  RfuSendQueue_Dequeue, RfuSendQueue_Enqueue, RfuSendQueue_Reset, RunTasks,
+  SendBlock, SetLinkErrorBuffer, SetMainCallback2, StringCompare,
+  StringCopy, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetLinkRfuGFLayer(void) */

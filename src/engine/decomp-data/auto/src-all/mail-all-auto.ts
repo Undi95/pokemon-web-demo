@@ -18,24 +18,25 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized3, AllocZeroed, AnimateSprites,
-  BG_PLTT_ID, BeginNormalPaletteFade, BufferMailText, BuildOamBuffer,
-  ConvertEasyChatWordsToString, ConvertInternationalPlayerName, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer,
-  CopyWindowToVram, CpuFill16, CreateMonIconNoPersonality, DeactivateAllTextPrinters,
-  DecompressAndCopyTileDataToVram, FREE_AND_SET_NULL, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeAndDestroyMonIconSprite, FreeMonIconPalette,
-  FreeTempTileDataBuffersIfPossible, GetIconSpeciesNoPersonality, GetOverworldTextboxPalettePtr, GetStringCenterAlignXOffset,
-  IS_ITEM_MAIL, ITEM_TO_MAIL, InitBgsFromTemplates, InitWindows,
-  JOY_NEW, LoadMonIconPalette, LoadOam, LoadPalette,
-  MailReadBuildGraphics, MailSpeciesToSpecies, MenuHelpers_IsLinkActive, Overworld_IsRecvQueueAtMax,
-  PIXEL_FILL, PrintMailText, ProcessSpriteCopyRequests, PutWindowTilemap,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, RunTextPrinters, ScanlineEffect_Stop, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
-  StringCopy, StringLength, TransferPlttBuffer, UnsetBgTilemapBuffer,
-  UpdatePaletteFade,  // 4-per-line for readability
+  BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer, ConvertEasyChatWordsToString,
+  ConvertInternationalPlayerName, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram,
+  CpuFill16, CreateMonIconNoPersonality, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram,
+  FREE_AND_SET_NULL, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAllSpritePalettes,
+  FreeAllWindowBuffers, FreeAndDestroyMonIconSprite, FreeMonIconPalette, FreeTempTileDataBuffersIfPossible,
+  GetIconSpeciesNoPersonality, GetOverworldTextboxPalettePtr, GetStringCenterAlignXOffset, IS_ITEM_MAIL,
+  ITEM_TO_MAIL, InitBgsFromTemplates, InitWindows, JOY_NEW,
+  LoadMonIconPalette, LoadOam, LoadPalette, MailSpeciesToSpecies,
+  MenuHelpers_IsLinkActive, Overworld_IsRecvQueueAtMax, PIXEL_FILL, ProcessSpriteCopyRequests,
+  PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, ResetTempTileDataBuffers, RunTextPrinters, ScanlineEffect_Stop,
+  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetVBlankCallback,
+  ShowBg, StringCopy, StringLength, TransferPlttBuffer,
+  UnsetBgTilemapBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ReadMail(struct Mail *mail, MainCallback exitCallback, bool8 hasText) */

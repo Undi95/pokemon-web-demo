@@ -18,33 +18,27 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocZeroed, AnimateSprites, BG_PLTT_ID,
   BLDALPHA_BLEND, BeginNormalPaletteFade, BlendPalettes, BlendPalettesGradually,
-  BuildOamBuffer, ChangeBgX, ChangeBgY, ChasesAway_CreateTrioSprites,
-  ChasesAway_GroudonStartLeave, ChasesAway_KyogreStartLeave, ChasesAway_PushDuoBack, ChasesAway_SetRayquazaAnim,
-  ClearGpuRegBits, ClearScheduledBgCopiesToVram, CpuFastCopy, CpuFastFill16,
-  CreateDescendsRayquazaSprite, CreateSprite, CreateTask, DecompressAndCopyTileDataToVram,
-  DestroyTask, DoScheduledBgTilemapCopiesToVram, DuoFightEnd, DuoFightPre_CreateGroudonSprites,
-  DuoFightPre_CreateKyogreSprites, DuoFight_AnimateRain, DuoFight_CreateGroudonSprites, DuoFight_CreateKyogreSprites,
-  DuoFight_Lightning1, DuoFight_Lightning2, DuoFight_LightningLong, DuoFight_SlideGroudonDown,
-  DuoFight_SlideKyogreDown, EnableInterrupts, FillPalette, FindTaskIdByFunc,
-  Free, FreeAllSpritePalettes, FreeTempTileDataBuffersIfPossible, GetBgY,
-  GetGpuReg, InitBgsFromTemplates, InitChargesSceneBgs, InitChasesAwaySceneBgs,
-  InitDescendsSceneBgs, InitDuoFightSceneBgs, InitSpriteAffineAnim, InitTakesFlightSceneBgs,
-  LZDecompressWram, LoadChargesSceneGfx, LoadChasesAwaySceneGfx, LoadCompressedPalette,
-  LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadDescendsSceneGfx, LoadDuoFightSceneGfx,
-  LoadOam, LoadTakesFlightSceneGfx, PlayCry_Normal, PlayNewMapMusic,
-  PlaySE, ProcessSpriteCopyRequests, Random, RayCharges_AnimateBg,
+  BuildOamBuffer, ChangeBgX, ChangeBgY, ClearGpuRegBits,
+  ClearScheduledBgCopiesToVram, CpuFastCopy, CpuFastFill16, CreateSprite,
+  CreateTask, DecompressAndCopyTileDataToVram, DestroyTask, DoScheduledBgTilemapCopiesToVram,
+  EnableInterrupts, FillPalette, FindTaskIdByFunc, Free,
+  FreeAllSpritePalettes, FreeTempTileDataBuffersIfPossible, GetBgY, GetGpuReg,
+  InitBgsFromTemplates, InitSpriteAffineAnim, LZDecompressWram, LoadCompressedPalette,
+  LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadOam, PlayCry_Normal,
+  PlayNewMapMusic, PlaySE, ProcessSpriteCopyRequests, Random,
   ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, ResetWindowDimensions,
-  RunTasks, ScanlineEffect_Clear, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams,
-  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetBgAffine, SetBgTilemapBuffer,
-  SetGpuReg, SetGpuRegBits, SetHBlankCallback, SetMainCallback2,
-  SetVBlankCallback, SetVBlankHBlankCallbacksToNull, SetWindowsHideVertBorders, ShowBg,
-  SpriteCB_ChasesAway_RayquazaFloat, StartSpriteAnim, StopMapMusic, Task_RayTakesFlightEnd,
-  TransferPlttBuffer, UpdatePaletteFade, VBlankCB_RayquazaScene, WIN_RANGE,  // 4-per-line for readability
+  ResetTasks, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks,
+  ScanlineEffect_Clear, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams, ScanlineEffect_Stop,
+  ScheduleBgCopyTilemapToVram, SetBgAffine, SetBgTilemapBuffer, SetGpuReg,
+  SetGpuRegBits, SetHBlankCallback, SetMainCallback2, SetVBlankCallback,
+  SetVBlankHBlankCallbacksToNull, ShowBg, StartSpriteAnim, StopMapMusic,
+  TransferPlttBuffer, UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void DoRayquazaScene(u8 animId, bool8 endEarly, MainCallback exitCallback) */

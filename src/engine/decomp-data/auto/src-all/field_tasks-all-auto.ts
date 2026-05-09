@@ -18,20 +18,19 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, ArePlayerFieldControlsLocked, CheckBagHasItem, CoordInIcePuzzleRegion,
-  CreateTask, CurrentMapDrawMetatileAt, DoTimeBasedEvents, FindTaskIdByFunc,
-  FuncIsActiveTask, GetPacifidlogBridgeMetatileOffsets, GetPlayerSpeed, GetVarPointer,
-  IsIcePuzzleCoordVisited, MapGridGetMetatileBehaviorAt, MapGridGetMetatileIdAt, MapGridSetMetatileIdAt,
-  MarkIcePuzzleCoordVisited, MetatileBehavior_IsAshGrass, MetatileBehavior_IsCrackedFloor, MetatileBehavior_IsCrackedFloorHole,
-  MetatileBehavior_IsCrackedIce, MetatileBehavior_IsFortreeBridge, MetatileBehavior_IsMuddySlope, MetatileBehavior_IsPacifidlogHorizontalLogLeft,
-  MetatileBehavior_IsPacifidlogHorizontalLogRight, MetatileBehavior_IsPacifidlogLog, MetatileBehavior_IsPacifidlogVerticalLogBottom, MetatileBehavior_IsPacifidlogVerticalLogTop,
-  MetatileBehavior_IsThinIce, PlaySE, PlayerGetDestCoords, PlayerGetElevation,
-  RunTimeBasedEvents, SetCrackedFloorHoleMetatile, SetMuddySlopeMetatile, ShouldRaisePacifidlogLogs,
-  ShouldSinkPacifidlogLogs, StartAshFieldEffect, TryLowerFortreeBridge, TryRaiseFortreeBridge,
-  TrySetLogBridgeFloating, TrySetLogBridgeFullySubmerged, TrySetLogBridgeHalfSubmerged, TrySetPacifidlogBridgeMetatiles,
-  UpdateAmbientCry, VarGet, VarSet,  // 4-per-line for readability
+  ARRAY_COUNT, ArePlayerFieldControlsLocked, CheckBagHasItem, CreateTask,
+  CurrentMapDrawMetatileAt, DoTimeBasedEvents, FindTaskIdByFunc, FuncIsActiveTask,
+  GetPacifidlogBridgeMetatileOffsets, GetPlayerSpeed, GetVarPointer, MapGridGetMetatileBehaviorAt,
+  MapGridGetMetatileIdAt, MapGridSetMetatileIdAt, MetatileBehavior_IsAshGrass, MetatileBehavior_IsCrackedFloor,
+  MetatileBehavior_IsCrackedFloorHole, MetatileBehavior_IsCrackedIce, MetatileBehavior_IsFortreeBridge, MetatileBehavior_IsMuddySlope,
+  MetatileBehavior_IsPacifidlogHorizontalLogLeft, MetatileBehavior_IsPacifidlogHorizontalLogRight, MetatileBehavior_IsPacifidlogLog, MetatileBehavior_IsPacifidlogVerticalLogBottom,
+  MetatileBehavior_IsPacifidlogVerticalLogTop, MetatileBehavior_IsThinIce, PlaySE, PlayerGetDestCoords,
+  PlayerGetElevation, StartAshFieldEffect, UpdateAmbientCry, VarGet,
+  VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void Task_RunPerStepCallback(u8 taskId) */

@@ -18,24 +18,24 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ClearAllContestWinnerPics, ClearAllMail, ClearBag, ClearBerryTrees,
-  ClearContestWinnerPicsInContestHall, ClearDecorationInventories, ClearFrontierRecord, ClearMysteryGift,
-  ClearPlayerLinkBattleRecords, ClearPokeblocks, ClearPokedexFlags, ClearRankingHallRecords,
-  ClearRoamerData, ClearRoamerLocationData, ClearSav1, ClearSav2,
-  ClearSecretBases, ClearTVShowData, CpuFill16, CpuFill32,
-  GetGeneratedTrainerIdLower, InitDewfordTrend, InitEasyChatPhrases, InitEventData,
-  InitLilycoveLady, InitLotadSizeRecord, InitMatchCallCounters, InitPlayerTrainerId,
+  ClearAllMail, ClearBag, ClearBerryTrees, ClearContestWinnerPicsInContestHall,
+  ClearDecorationInventories, ClearMysteryGift, ClearPlayerLinkBattleRecords, ClearPokeblocks,
+  ClearRankingHallRecords, ClearRoamerData, ClearRoamerLocationData, ClearSav1,
+  ClearSav2, ClearSecretBases, ClearTVShowData, CpuFill16,
+  CpuFill32, GetGeneratedTrainerIdLower, InitDewfordTrend, InitEasyChatPhrases,
+  InitEventData, InitLilycoveLady, InitLotadSizeRecord, InitMatchCallCounters,
   InitSeedotSizeRecord, InitUnionRoomChatRegisteredTexts, MAP_GROUP, MAP_NUM,
   NewGameInitPCItems, PlayTimeCounter_Reset, Random, ResetAllApprenticeData,
   ResetBagScrollPositions, ResetContestLinkResults, ResetFanClub, ResetGabbyAndTy,
-  ResetGameStats, ResetLinkContestBoolean, ResetLotteryCorner, ResetMiniGamesRecords,
-  ResetPokeblockScrollPositions, ResetPokedex, ResetPokedexScrollPositions, ResetPokemonJumpRecords,
-  ResetPokemonStorageSystem, ResetTrainerHillResults, RtcReset, RunScriptImmediately,
-  SetBerryPowder, SetCoins, SetDefaultOptions, SetMauvilleOldMan,
-  SetMoney, SetTrainerId, SetWarpDestination, WarpIntoMap,
-  WarpToTruck, WipeTrainerNameRecords, ZeroEnemyPartyMons, ZeroPlayerPartyMons,  // 4-per-line for readability
+  ResetGameStats, ResetLinkContestBoolean, ResetLotteryCorner, ResetPokeblockScrollPositions,
+  ResetPokedex, ResetPokedexScrollPositions, ResetPokemonJumpRecords, ResetPokemonStorageSystem,
+  ResetTrainerHillResults, RtcReset, RunScriptImmediately, SetBerryPowder,
+  SetCoins, SetMauvilleOldMan, SetMoney, SetWarpDestination,
+  WarpIntoMap, WipeTrainerNameRecords, ZeroEnemyPartyMons, ZeroPlayerPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetTrainerId(u32 trainerId, u8 *dst) */

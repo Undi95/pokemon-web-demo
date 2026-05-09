@@ -18,30 +18,27 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddBerryTagTextToBg0, AddTextPrinterParameterized, AddTextPrinterParameterized4,
-  AllocZeroed, AnimateSprites, BG_PLTT_ID, BagGetItemIdByPocketPosition,
-  BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer, ChangeBgY,
-  ClearScheduledBgCopiesToVram, ConvertIntToDecimalStringN, CreateBerryFlavorCircleSprite, CreateBerrySprite,
-  CreateBerryTagSprite, CreateFlavorCircleSprites, CreateTask, DeactivateAllTextPrinters,
-  DecompressAndCopyTileDataToVram, DestroyBerrySprite, DestroyFlavorCircleSprites, DestroySprite,
-  DestroyTask, DoScheduledBgTilemapCopiesToVram, FillWindowPixelBuffer, Free,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeBerryTagSpritePalette, FreeTempTileDataBuffersIfPossible,
-  GetBerryInfo, GetBgTilemapBuffer, GetStringCenterAlignXOffset, HandleBagCursorPositionChange,
-  HandleInitBackgrounds, HandleInitWindows, ITEM_TO_BERRY, InitBerryTagScreen,
-  InitBgsFromTemplates, InitWindows, ItemIdToBerryType, JOY_NEW,
-  JOY_REPEAT, LZDecompressWram, LoadBerryTagGfx, LoadCompressedPalette,
-  LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadOam, LoadPalette,
-  MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv, PIXEL_FILL, PlaySE,
-  PrepareToCloseBerryTagScreen, PrintAllBerryData, PrintBerryDescription1, PrintBerryDescription2,
-  PrintBerryFirmness, PrintBerryNumberAndName, PrintBerrySize, PrintTextInBerryTagScreen,
-  ProcessSpriteCopyRequests, PutWindowTilemap, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
-  ResetVramOamAndBgCntRegs, RunTasks, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
-  SetBgTilemapBuffer, SetFlavorCirclesVisiblity, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg, StringCopy,
-  StringExpandPlaceholders, TransferPlttBuffer, TryChangeDisplayedBerry, UpdatePaletteFade,  // 4-per-line for readability
+  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized4, AllocZeroed,
+  AnimateSprites, BG_PLTT_ID, BagGetItemIdByPocketPosition, BeginNormalPaletteFade,
+  BlendPalettes, BuildOamBuffer, ChangeBgY, ClearScheduledBgCopiesToVram,
+  ConvertIntToDecimalStringN, CreateBerryFlavorCircleSprite, CreateBerryTagSprite, CreateTask,
+  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask,
+  DoScheduledBgTilemapCopiesToVram, FillWindowPixelBuffer, Free, FreeAllSpritePalettes,
+  FreeAllWindowBuffers, FreeBerryTagSpritePalette, FreeTempTileDataBuffersIfPossible, GetBerryInfo,
+  GetBgTilemapBuffer, GetStringCenterAlignXOffset, ITEM_TO_BERRY, InitBgsFromTemplates,
+  InitWindows, ItemIdToBerryType, JOY_NEW, JOY_REPEAT,
+  LZDecompressWram, LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
+  LoadOam, LoadPalette, MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv,
+  PIXEL_FILL, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
+  ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs, RunTasks,
+  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer, SetGpuReg,
+  SetMainCallback2, SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg,
+  StringCopy, StringExpandPlaceholders, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void DoBerryTagScreen(void) */

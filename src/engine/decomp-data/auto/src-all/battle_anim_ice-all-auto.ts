@@ -18,19 +18,21 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AnimFastTranslateLinear, AnimLoadCompressedBgTilemapHandleContest, AnimTranslateLinear,
   BG_PLTT_ID, BLDALPHA_BLEND, ClearBattleAnimBg, ConvertPosDataToTranslateLinearData,
   Cos, CreateSprite, DestroyAnimSprite, DestroyAnimVisualTask,
   DestroySprite, DestroySpriteAndMatrix, FreeOamMatrix, GET_BATTLER_SIDE2,
-  GenerateHailParticle, GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattlerAtPosition,
-  GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr,
-  InitAnimArcTranslation, InitAnimFastLinearTranslationWithSpeed, InitAnimLinearTranslation, InitAnimLinearTranslationWithSpeed,
-  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest,
-  IsDoubleBattle, LoadBgTiles, LoadPalette, Random2,
-  SetAnimBgAttribute, SetAverageBattlerPositions, SetGpuReg, Sin,
-  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,  // 4-per-line for readability
+  GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattlerAtPosition, GetBattlerSide,
+  GetBattlerSpriteBGPriority, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, InitAnimArcTranslation,
+  InitAnimFastLinearTranslationWithSpeed, InitAnimLinearTranslation, InitAnimLinearTranslationWithSpeed, InitSpritePosToAnimAttacker,
+  InitSpritePosToAnimTarget, IsBattlerSpriteVisible, IsContest, IsDoubleBattle,
+  LoadBgTiles, LoadPalette, Random2, SetAnimBgAttribute,
+  SetAverageBattlerPositions, SetGpuReg, Sin, StartSpriteAffineAnim,
+  StartSpriteAnim, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimUnusedIceCrystalThrow(struct Sprite *sprite) */

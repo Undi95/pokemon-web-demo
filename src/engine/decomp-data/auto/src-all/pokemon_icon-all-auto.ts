@@ -18,13 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, BG_PLTT_ID, CreateMonIconSprite, CreateSprite,
-  DestroySprite, FreeAndDestroyMonIconSprite_, FreeSpritePaletteByTag, GET_UNOWN_LETTER,
-  GetIconSpecies, GetMonIconPtr, GetMonIconTiles, GetUnownLetterByPersonality,
+  ARRAY_COUNT, BG_PLTT_ID, CreateSprite, DestroySprite,
+  FreeSpritePaletteByTag, GET_UNOWN_LETTER, GetMonIconPtr, GetMonIconTiles,
   IndexOfSpritePaletteTag, LoadPalette, LoadSpritePalette, MailSpeciesToSpecies,
-  RequestSpriteCopy, UpdateMonIconFrame,  // 4-per-line for readability
+  RequestSpriteCopy,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 CreateMonIcon(u16 species, void (*callback)(struct Sprite *), s16 x, s16 y, u8 subpriority, u32 personality, bool32 handleDeoxys) */

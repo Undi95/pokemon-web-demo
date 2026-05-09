@@ -18,14 +18,13 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  Alloc, CopyWorkToOam, CpuFill16, DigitObjUtil_DeletePrinter,
-  DigitObjUtil_Free, DigitObjUtil_PrintNumOn, DrawNumObjsLeadingZeros, DrawNumObjsMinusInBack,
-  DrawNumObjsMinusInFront, FREE_AND_SET_NULL, Free, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, GetDecompressedDataSize, GetFirstOamId, GetSpriteTileStartByTag,
-  GetTilesPerImage, IndexOfSpritePaletteTag, LoadCompressedSpriteSheet, LoadSpritePalette,
-  LoadSpriteSheet, SharesPalWithAnyActive, SharesTileWithAnyActive,  // 4-per-line for readability
+  Alloc, CpuFill16, FREE_AND_SET_NULL, Free,
+  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetDecompressedDataSize, GetSpriteTileStartByTag,
+  IndexOfSpritePaletteTag, LoadCompressedSpriteSheet, LoadSpritePalette, LoadSpriteSheet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 DigitObjUtil_Init(u32 count) */

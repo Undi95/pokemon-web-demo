@@ -18,23 +18,23 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, Alloc, AllocZeroed, BGCNT_PRIORITY,
   ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect_ChangePalette,
-  CpuSet, CreateCeilingCrumbleSprites, CreateSprite, CreateTask,
-  DestroySprite, DestroyTask, DrawWholeMapView, FREE_AND_SET_NULL,
-  FindTaskIdByFunc, FlagClear, FlagGet, FlagSet,
-  FreeAllWindowBuffers, FreeSpriteTilesByTag, FuncIsActiveTask, IncrementCeilingCrumbleFinishedCount,
-  InitPulseBlend, InitPulseBlendPaletteSettings, InitStandardTextBoxWindows, InstallCameraPanAheadCallback,
-  LoadBgTiles, LoadSpriteSheets, MAP_GROUP, MAP_NUM,
-  MapGridSetMetatileIdAt, MarkUsedPulseBlendPalettes, PlaySE, Random,
-  SWAP, ScriptContext_Enable, SetBgAttribute, SetBgShakeOffsets,
-  SetBgTilemapBuffer, SetCameraPanning, SetCameraPanningCallback, SetGpuReg,
-  SetGpuRegBits, SetInvisibleMirageTowerMetatiles, ShowBg, StartScreenShake,
-  StartSpriteAnim, TryGetObjectEventIdByLocalIdAndMap, TryStartMirageTowerPulseBlendEffect, UnloadUsedPulseBlendPalettes,
-  UnmarkUsedPulseBlendPalettes, UnsetBgTilemapBuffer, UpdateDisintegrationEffect, UpdatePulseBlend,
-  VarGet,  // 4-per-line for readability
+  CpuSet, CreateSprite, CreateTask, DestroySprite,
+  DestroyTask, DrawWholeMapView, FREE_AND_SET_NULL, FindTaskIdByFunc,
+  FlagClear, FlagGet, FlagSet, FreeAllWindowBuffers,
+  FreeSpriteTilesByTag, FuncIsActiveTask, InitPulseBlend, InitPulseBlendPaletteSettings,
+  InitStandardTextBoxWindows, InstallCameraPanAheadCallback, LoadBgTiles, LoadSpriteSheets,
+  MAP_GROUP, MAP_NUM, MapGridSetMetatileIdAt, MarkUsedPulseBlendPalettes,
+  PlaySE, Random, SWAP, ScriptContext_Enable,
+  SetBgAttribute, SetBgTilemapBuffer, SetCameraPanning, SetCameraPanningCallback,
+  SetGpuReg, SetGpuRegBits, ShowBg, StartSpriteAnim,
+  TryGetObjectEventIdByLocalIdAndMap, UnloadUsedPulseBlendPalettes, UnmarkUsedPulseBlendPalettes, UnsetBgTilemapBuffer,
+  UpdatePulseBlend, VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool8 IsMirageTowerVisible(void) */

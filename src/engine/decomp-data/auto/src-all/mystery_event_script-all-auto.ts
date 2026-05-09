@@ -18,18 +18,18 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  CalcByteArraySum, CalcCRC16, CalcRecordMixingGiftChecksum, CalculatePlayerPartyCount,
-  CheckCompatibility, ClearRecordMixingGift, CompactPartySlots, CpuFill16,
-  EnableNationalPokedex, EnableResetRTC, GetMonData, GetSetPokedexFlag,
-  GiveGiftRibbonToParty, GiveMailToMon, InitMysteryEventScript, InitRamScript,
-  InitScriptContext, IsEnigmaBerryValid, IsRecordMixingGiftValid, ItemIsMail,
-  RunMysteryEventScriptCommand, RunScriptCommand, RunScriptImmediately, ScriptReadByte,
-  ScriptReadHalfword, ScriptReadWord, SetEnigmaBerry, SetIncompatible,
-  SetMysteryEventScriptStatus, SetRecordMixingGift, SetupBytecodeScript, SpeciesToNationalPokedexNum,
-  StopScript, StringCompare, StringCopyN, StringExpandPlaceholders,
-  UnlockTrendySaying, ValidateEReaderTrainer, VarSet,  // 4-per-line for readability
+  CalcByteArraySum, CalcCRC16, CalculatePlayerPartyCount, CompactPartySlots,
+  CpuFill16, EnableNationalPokedex, EnableResetRTC, GetMonData,
+  GetSetPokedexFlag, GiveGiftRibbonToParty, GiveMailToMon, InitRamScript,
+  InitScriptContext, IsEnigmaBerryValid, ItemIsMail, RunScriptCommand,
+  RunScriptImmediately, ScriptReadByte, ScriptReadHalfword, ScriptReadWord,
+  SetEnigmaBerry, SetupBytecodeScript, SpeciesToNationalPokedexNum, StopScript,
+  StringCompare, StringCopyN, StringExpandPlaceholders, UnlockTrendySaying,
+  ValidateEReaderTrainer, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static bool32 CheckCompatibility(u16 unk0, u32 unk1, u16 unk2, u32 version) */

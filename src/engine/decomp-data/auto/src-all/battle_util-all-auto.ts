@@ -18,29 +18,26 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AbilityBattleEffects, BATTLE_OPPOSITE, BATTLE_PARTNER, BattleArena_AddMindPoints,
-  BattleScriptExecute, BattleScriptPop, BattleScriptPush, BattleScriptPushCursor,
-  BattleScriptPushCursorAndCallback, BtlController_EmitPrintString, BtlController_EmitSetMonData, CalculateBaseDamage,
-  CalculatePPWithBonus, CancelMultiTurnMoves, CastformDataTypeChange, CheckMoveLimitations,
-  ClearFuryCutterDestinyBondGrudge, CountTrailingZeroBits, CurrentBattlePyramidLocation, FlagGet,
-  GET_BATTLER_SIDE, GET_MOVE_TYPE, GetBattlerAtPosition, GetBattlerMultiplayerId,
-  GetBattlerPosition, GetBattlerSide, GetBattlerTurnOrderNum, GetCurrentWeather,
-  GetGenderFromSpeciesAndPersonality, GetImprisonedMovesCount, GetItemHoldEffect, GetItemHoldEffectParam,
-  GetLinkPlayerCount, GetLinkTrainerFlankId, GetMonData, GetMoveTarget,
-  GetPyramidRunMultiplier, GetWhoStrikesFirst, HandleFaintedMonActions, HasNoMonsToSwitch,
-  IS_BATTLER_OF_TYPE, IsBattlerModernFatefulEncounter, IsOtherTrainer, ItemBattleEffects,
-  MOD, MOVE_IS_PERMANENT, MarkBattlerForControllerExec, OpponentSwitchInResetSentPokesToOpponentValue,
-  PREPARE_ABILITY_BUFFER, PREPARE_BYTE_NUMBER_BUFFER, PREPARE_MON_NICK_BUFFER, PREPARE_MON_NICK_WITH_PREFIX_BUFFER,
-  PREPARE_MOVE_BUFFER, PREPARE_STAT_BUFFER, PREPARE_STRING_BUFFER, PREPARE_TYPE_BUFFER,
-  PlaySE, Random, RecordAbilityBattle, RecordItemEffectBattle,
-  SET_BATTLER_TYPE, SET_STATCHANGER, STATUS1_SLEEP_TURN, STATUS1_TOXIC_TURN,
-  STATUS2_BIDE_TURN, STATUS2_CONFUSION_TURN, STATUS2_INFATUATED_WITH, STATUS2_LOCK_CONFUSE_TURN,
-  STATUS2_UPROAR_TURN, STATUS2_WRAPPED_TURN, STATUS3_ALWAYS_HITS_TURN, STATUS3_YAWN_TURN,
-  SetMoveEffect, SpecialStatusesClear, StringCopy, SwapTurnOrder,
-  TRY_EAT_CONFUSE_BERRY, TRY_EAT_STAT_UP_BERRY, TryRunFromBattle, UproarWakeUpCheck,
-  WasUnableToUseMove,  // 4-per-line for readability
+  BATTLE_OPPOSITE, BATTLE_PARTNER, BattleArena_AddMindPoints, BtlController_EmitPrintString,
+  BtlController_EmitSetMonData, CalculateBaseDamage, CalculatePPWithBonus, CountTrailingZeroBits,
+  CurrentBattlePyramidLocation, FlagGet, GET_BATTLER_SIDE, GET_MOVE_TYPE,
+  GetBattlerAtPosition, GetBattlerMultiplayerId, GetBattlerPosition, GetBattlerSide,
+  GetBattlerTurnOrderNum, GetCurrentWeather, GetGenderFromSpeciesAndPersonality, GetItemHoldEffect,
+  GetItemHoldEffectParam, GetLinkPlayerCount, GetLinkTrainerFlankId, GetMonData,
+  GetPyramidRunMultiplier, GetWhoStrikesFirst, IS_BATTLER_OF_TYPE, IsOtherTrainer,
+  MOD, MOVE_IS_PERMANENT, PREPARE_ABILITY_BUFFER, PREPARE_BYTE_NUMBER_BUFFER,
+  PREPARE_MON_NICK_BUFFER, PREPARE_MON_NICK_WITH_PREFIX_BUFFER, PREPARE_MOVE_BUFFER, PREPARE_STAT_BUFFER,
+  PREPARE_STRING_BUFFER, PREPARE_TYPE_BUFFER, PlaySE, Random,
+  RecordAbilityBattle, RecordItemEffectBattle, SET_BATTLER_TYPE, SET_STATCHANGER,
+  STATUS1_SLEEP_TURN, STATUS1_TOXIC_TURN, STATUS2_BIDE_TURN, STATUS2_CONFUSION_TURN,
+  STATUS2_INFATUATED_WITH, STATUS2_LOCK_CONFUSE_TURN, STATUS2_UPROAR_TURN, STATUS2_WRAPPED_TURN,
+  STATUS3_ALWAYS_HITS_TURN, STATUS3_YAWN_TURN, SetMoveEffect, SpecialStatusesClear,
+  StringCopy, SwapTurnOrder, TRY_EAT_CONFUSE_BERRY, TRY_EAT_STAT_UP_BERRY,
+  UproarWakeUpCheck,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void HandleAction_UseMove(void) */

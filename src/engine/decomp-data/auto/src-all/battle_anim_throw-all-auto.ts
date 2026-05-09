@@ -18,29 +18,29 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AllocSpritePalette, AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemap,
-  AnimateBallOpenParticles, AnimateSprite, BG_PLTT_ID, BLDALPHA_BLEND,
-  BOUNCES, BeginNormalPaletteFade, BlendPalette, BlendPalettes,
-  ChangeSpriteAffineAnim, ClearBehindSubstituteBit, Cos, CreateInvisibleSpriteWithCallback,
-  CreateSprite, CreateTask, DIRECTION, DestroyAnimSprite,
-  DestroyAnimVisualTask, DestroyBallOpenAnimationParticle, DestroySprite, DestroySpriteAndFreeResources,
-  DestroyTask, FALL, FreeBallGfx, FreeHealthboxPalsForLevelUp,
-  FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FuncIsActiveTask, GET_SHINY_VALUE, GetBattleAnimBg1Data, GetBattlePalettesMask,
-  GetBattlerAtPosition, GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord,
-  GetBattlerSpriteSubpriority, GetGpuReg, GetMonData, GetSpriteTileStartByTag,
-  IncrBallParticleCount, IndexOfSpritePaletteTag, InitAnimArcTranslation, InitSpritePosToAnimAttacker,
-  IsBattlerSpriteVisible, IsContest, ItemIdToBallId, LaunchBallFadeMonTask,
-  LoadBallGfx, LoadBallParticleGfx, LoadBattleMonGfxAndAnimate, LoadCompressedPalette,
-  LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheetUsingHeap, LoadHealthboxPalsForLevelUp, LoadPalette,
-  MakeCaptureStars, OBJ_PLTT_ID, PHASE_DELTA, PlaySE,
-  PlaySE12WithPanning, PrepareBattlerSpriteForRotScale, RESET_STATE, RISE_FASTER,
-  RequestDma3Fill, ResetBattleAnimBg, ResetSpriteRotScale, SHAKES,
-  SHAKE_INC, STATE, SetAnimBgAttribute, SetBattlerSpriteYOffsetFromYScale,
-  SetGpuReg, SetGpuRegBits, SetSpriteRotScale, Sin,
-  StartSpriteAffineAnim, StartSpriteAnim, TranslateAnimHorizontalArc, UpdateOamPriorityInAllHealthboxes,  // 4-per-line for readability
+  AnimateSprite, BG_PLTT_ID, BLDALPHA_BLEND, BOUNCES,
+  BeginNormalPaletteFade, BlendPalette, BlendPalettes, ChangeSpriteAffineAnim,
+  ClearBehindSubstituteBit, Cos, CreateInvisibleSpriteWithCallback, CreateSprite,
+  CreateTask, DIRECTION, DestroyAnimSprite, DestroyAnimVisualTask,
+  DestroySprite, DestroySpriteAndFreeResources, DestroyTask, FALL,
+  FreeBallGfx, FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
+  FreeSpriteTilesByTag, FuncIsActiveTask, GET_SHINY_VALUE, GetBattleAnimBg1Data,
+  GetBattlePalettesMask, GetBattlerAtPosition, GetBattlerSide, GetBattlerSpriteBGPriorityRank,
+  GetBattlerSpriteCoord, GetBattlerSpriteSubpriority, GetGpuReg, GetMonData,
+  GetSpriteTileStartByTag, IndexOfSpritePaletteTag, InitAnimArcTranslation, InitSpritePosToAnimAttacker,
+  IsBattlerSpriteVisible, IsContest, LoadBallGfx, LoadBattleMonGfxAndAnimate,
+  LoadCompressedPalette, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheetUsingHeap, LoadPalette,
+  OBJ_PLTT_ID, PHASE_DELTA, PlaySE, PlaySE12WithPanning,
+  PrepareBattlerSpriteForRotScale, RESET_STATE, RISE_FASTER, RequestDma3Fill,
+  ResetBattleAnimBg, ResetSpriteRotScale, SHAKES, SHAKE_INC,
+  STATE, SetAnimBgAttribute, SetBattlerSpriteYOffsetFromYScale, SetGpuReg,
+  SetGpuRegBits, SetSpriteRotScale, Sin, StartSpriteAffineAnim,
+  StartSpriteAnim, TranslateAnimHorizontalArc, UpdateOamPriorityInAllHealthboxes,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AnimTask_UnusedLevelUpHealthBox(u8 taskId) */

@@ -18,25 +18,25 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddTextPrinterParameterized, AdvanceClock, AnimateSprites,
-  BG_PLTT_ID, BG_SCREEN_ADDR, BeginNormalPaletteFade, BuildOamBuffer,
-  CalcMinHandDelta, CalcNewMinHandAngle, ChangeBgX, ChangeBgY,
-  ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap, Cos2,
-  CreateSprite, CreateTask, CreateYesNoMenu, DeactivateAllTextPrinters,
-  DmaClear16, DmaClear32, DmaFillLarge16, DoScheduledBgTilemapCopiesToVram,
-  DrawStdFrameWithCustomTileAndPalette, EnableInterrupts, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  GetOverworldTextboxPalettePtr, InitBgsFromTemplates, InitClockWithRtc, InitWindows,
+  ARRAY_COUNT, AddTextPrinterParameterized, AnimateSprites, BG_PLTT_ID,
+  BG_SCREEN_ADDR, BeginNormalPaletteFade, BuildOamBuffer, ChangeBgX,
+  ChangeBgY, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
+  Cos2, CreateSprite, CreateTask, CreateYesNoMenu,
+  DeactivateAllTextPrinters, DmaClear16, DmaClear32, DmaFillLarge16,
+  DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette, EnableInterrupts, FreeAllSpritePalettes,
+  FreeAllWindowBuffers, GetOverworldTextboxPalettePtr, InitBgsFromTemplates, InitWindows,
   JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet,
   LoadOam, LoadPalette, LoadSpritePalettes, LoadUserWindowBorderGfx,
-  LoadWallClockGraphics, Menu_ProcessInputNoWrapClearOnChoose, PLTT_SIZEOF, PlaySE,
-  ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, RtcCalcLocalTime, RtcInitLocalTimeOffset,
-  RunTasks, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetGpuReg,
-  SetMainCallback2, SetOamMatrix, SetVBlankCallback, ShowBg,
-  Sin2, TransferPlttBuffer, UpdateClockPeriod, UpdatePaletteFade,
-  WallClockInit,  // 4-per-line for readability
+  Menu_ProcessInputNoWrapClearOnChoose, PLTT_SIZEOF, PlaySE, ProcessSpriteCopyRequests,
+  PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ResetTasks, RtcCalcLocalTime, RtcInitLocalTimeOffset, RunTasks,
+  ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetGpuReg, SetMainCallback2,
+  SetOamMatrix, SetVBlankCallback, ShowBg, Sin2,
+  TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_WallClock(void) */

@@ -18,32 +18,24 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddTextPrinter, AddWindow, AlterEggSpeciesWithIncenseItem,
-  AppendMonGenderSymbol, ApplyDaycareExperience, BoxMonRestorePP, BoxMonToMon,
-  BuildEggMoveset, CalculateMonStats, CalculatePlayerPartyCount, CanMonLearnTMHM,
-  ChooseMonForDaycare, ClearDaycareMonMail, ClearMail, ClearStdWindowAndFrame,
-  CompactPartySlots, ConvertIntToDecimalStringN, CopyWindowToVram, CountPokemonInDaycare,
-  CreateMon, CreateTask, DaycareAddTextPrinter, DaycarePrintMonLvl,
-  DaycarePrintMonNickname, Daycare_FindEmptySpot, DeleteFirstMoveAndGiveMoveToMon, DestroyListMenuTask,
-  DestroyTask, DetermineEggSpeciesAndParentSlots, DrawStdWindowFrame, EggGroupsOverlap,
-  FlagSet, GetBoxMonData, GetBoxMonGender, GetBoxMonNickname,
-  GetCursorSelectionMonId, GetDaycareCompatibilityScore, GetDaycareCompatibilityScoreFromSave, GetDaycareCostForMon,
-  GetDaycareCostForSelectedMon, GetEggCyclesToSubtract, GetEggMoves, GetEggSpecies,
-  GetGenderFromSpeciesAndPersonality, GetLevelAfterDaycareSteps, GetLevelFromBoxMonExp, GetLevelUpMovesBySpecies,
-  GetMonData, GetMonNickname2, GetNatureFromPersonality, GetNumLevelsGainedForDaycareMon,
-  GetNumLevelsGainedFromSteps, GetParentToInheritNature, GetStringRightAlignXOffset, GiveMailToMon,
-  GiveMoveToMon, GiveVoltTackleIfLightBall, InheritIVs, IsEggPending,
+  ARRAY_COUNT, AddTextPrinter, AddWindow, AppendMonGenderSymbol,
+  BoxMonRestorePP, BoxMonToMon, CalculateMonStats, CalculatePlayerPartyCount,
+  CanMonLearnTMHM, ChooseMonForDaycare, ClearMail, ClearStdWindowAndFrame,
+  CompactPartySlots, ConvertIntToDecimalStringN, CopyWindowToVram, CreateMon,
+  CreateTask, DeleteFirstMoveAndGiveMoveToMon, DestroyListMenuTask, DestroyTask,
+  DrawStdWindowFrame, FlagSet, GetBoxMonData, GetBoxMonGender,
+  GetBoxMonNickname, GetCursorSelectionMonId, GetEggCyclesToSubtract, GetGenderFromSpeciesAndPersonality,
+  GetLevelFromBoxMonExp, GetLevelUpMovesBySpecies, GetMonData, GetMonNickname2,
+  GetNatureFromPersonality, GetStringRightAlignXOffset, GiveMailToMon, GiveMoveToMon,
   ItemIdToBattleMoveId, JOY_NEW, ListMenuInit, ListMenu_ProcessInput,
   MonHasMail, MonTryLearningNewMove, Random, Random2,
-  RemoveEggFromDayCare, RemoveIVIndexFromList, RemoveWindow, ScriptContext_Enable,
-  SeedRng2, SetBoxMonData, SetInitialEggData, SetMonData,
-  ShiftDaycareSlots, StorePokemonInDaycare, StorePokemonInEmptyDaycareSlot, StringAppend,
-  StringCopy, StripExtCtrlCodes, TakeMailFromMon, TakeSelectedPokemonFromDaycare,
-  TakeSelectedPokemonMonFromDaycareShiftSlots, TriggerPendingDaycareEgg, TryIncrementMonLevel, TryProduceOrHatchEgg,
-  ZeroBoxMonData, ZeroMonData, _GetDaycareMonNicknames, _GiveEggFromDaycare,
-  _TriggerPendingDaycareEgg,  // 4-per-line for readability
+  RemoveWindow, ScriptContext_Enable, SeedRng2, SetBoxMonData,
+  SetMonData, StringAppend, StringCopy, StripExtCtrlCodes,
+  TakeMailFromMon, TryIncrementMonLevel, ZeroBoxMonData, ZeroMonData,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u8 CountPokemonInDaycare(struct DayCare *daycare) */

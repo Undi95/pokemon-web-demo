@@ -18,13 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, BufferMenuFrameTiles, BufferMenuWindowTiles, CalcCenterToCornerVec,
-  CpuFastCopy, CpuFill16, CreateMonMarkingsMenuSprites, CreateSprite,
-  DestroySprite, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetWindowFrameTilesPal,
-  JOY_NEW, LoadSpritePalettes, LoadSpriteSheets, PlaySE,
-  RequestDma3Copy, SPRITE_SHAPE, SPRITE_SIZE, StartSpriteAnim,  // 4-per-line for readability
+  ARRAY_COUNT, CalcCenterToCornerVec, CpuFastCopy, CpuFill16,
+  CreateSprite, DestroySprite, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  GetWindowFrameTilesPal, JOY_NEW, LoadSpritePalettes, LoadSpriteSheets,
+  PlaySE, RequestDma3Copy, SPRITE_SHAPE, SPRITE_SIZE,
+  StartSpriteAnim,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitMonMarkingsMenu(struct MonMarkingsMenu *ptr) */

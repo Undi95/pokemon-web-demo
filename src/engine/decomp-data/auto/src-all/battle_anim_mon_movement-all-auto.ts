@@ -18,13 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AnimTask_TranslateMonElliptical, BATTLE_PARTNER, Cos, DestroyAnimSprite,
-  DestroyAnimVisualTask, GetAnimBattlerSpriteId, GetBattlerAtPosition, GetBattlerSide,
-  InitSpriteDataForLinearTranslation, IsBattlerSpriteVisible, IsContest, PrepareBattlerSpriteForRotScale,
-  ResetSpriteRotScale, SetBattlerSpriteYOffsetFromRotation, SetSpriteRotScale, Sin,
-  StoreSpriteCallbackInData6,  // 4-per-line for readability
+  BATTLE_PARTNER, Cos, DestroyAnimSprite, DestroyAnimVisualTask,
+  GetAnimBattlerSpriteId, GetBattlerAtPosition, GetBattlerSide, InitSpriteDataForLinearTranslation,
+  IsBattlerSpriteVisible, IsContest, PrepareBattlerSpriteForRotScale, ResetSpriteRotScale,
+  SetBattlerSpriteYOffsetFromRotation, SetSpriteRotScale, Sin, StoreSpriteCallbackInData6,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AnimTask_ShakeMon(u8 taskId) */

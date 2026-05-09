@@ -18,16 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddPyramidBagItem, Alloc, AllocZeroed, ApplyNewEncryptionKeyToBagItems,
-  ApplyNewEncryptionKeyToHword, CheckBagHasItem, CheckPyramidBagHasItem, CheckPyramidBagHasSpace,
-  ClearItemSlots, CompactPCItems, CurMapIsSecretBase, CurrentBattlePyramidLocation,
-  FindFreePCItemSlot, FlagGet, Free, GetBagItemQuantity,
-  GetBerryCountString, GetItemListPosition, GetItemName, GetItemPocket,
-  GetPCItemQuantity, RemovePyramidBagItem, SWAP, SanitizeItemId,
-  SetBagItemQuantity, SetPCItemQuantity, StringCopy, SwapItemSlots,
-  VarGet, VarSet,  // 4-per-line for readability
+  Alloc, AllocZeroed, ApplyNewEncryptionKeyToHword, CurMapIsSecretBase,
+  CurrentBattlePyramidLocation, FlagGet, Free, GetItemListPosition,
+  GetItemName, SWAP, StringCopy, VarGet,
+  VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static u16 GetBagItemQuantity(u16 *quantity) */

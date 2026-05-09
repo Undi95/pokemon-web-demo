@@ -18,18 +18,18 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AbnormalWeatherHasExpired, AdjustFriendship, CheckForTrainersWantingBattle, CheckStandardWildEncounter,
-  CountSSTidalStep, DoDiveWarp, DoDoorWarp, DoEscalatorWarp,
-  DoLavaridgeGym1FWarp, DoLavaridgeGymB1FWarp, DoMossdeepGymWarp, DoPoisonFieldEffect,
-  DoSecretBaseGlitterMatSparkle, DoSpinExitWarp, DoTeleportTileWarp, DoWarp,
-  FlagGet, GetCoordEventScriptAtPosition, GetCurrentTrainerHillMapId, GetInFrontOfPlayerPosition,
-  GetInteractionScript, GetNumFloorsInTrainerHillChallenge, GetPlayerCurMetatileBehavior, GetPlayerFacingDirection,
-  GetPlayerMovementDirection, GetPlayerPosition, GetPlayerSpeed, GetVarPointer,
-  GetWarpEventAtMapPosition, GetWarpEventAtPosition, GetXYCoordsOneStepInFrontOfPlayer, InUnionRoom,
-  IncrementBirthIslandRockStepCount, IncrementGameStat, IncrementRematchStepCounter, IsArrowWarpMetatileBehavior,
-  IsWarpMetatileBehavior, MAP_NUM, MapGridGetElevationAt, MapGridGetMetatileBehaviorAt,
+  AbnormalWeatherHasExpired, AdjustFriendship, CheckForTrainersWantingBattle, CountSSTidalStep,
+  DoDiveWarp, DoDoorWarp, DoEscalatorWarp, DoLavaridgeGym1FWarp,
+  DoLavaridgeGymB1FWarp, DoMossdeepGymWarp, DoPoisonFieldEffect, DoSecretBaseGlitterMatSparkle,
+  DoSpinExitWarp, DoTeleportTileWarp, DoWarp, FlagGet,
+  GetCoordEventScriptAtPosition, GetCurrentTrainerHillMapId, GetInteractionScript, GetNumFloorsInTrainerHillChallenge,
+  GetPlayerFacingDirection, GetPlayerMovementDirection, GetPlayerSpeed, GetVarPointer,
+  GetXYCoordsOneStepInFrontOfPlayer, InUnionRoom, IncrementBirthIslandRockStepCount, IncrementGameStat,
+  IncrementRematchStepCounter, MAP_NUM, MapGridGetElevationAt, MapGridGetMetatileBehaviorAt,
   MapGridGetMetatileIdAt, MetatileBehavior_IsAquaHideoutWarp, MetatileBehavior_IsBattlePyramidWarp, MetatileBehavior_IsCrackedFloorHole,
   MetatileBehavior_IsDiveable, MetatileBehavior_IsEastArrowWarp, MetatileBehavior_IsEscalator, MetatileBehavior_IsForcedMovementTile,
   MetatileBehavior_IsLadder, MetatileBehavior_IsLavaridge1FWarp, MetatileBehavior_IsLavaridgeB1FWarp, MetatileBehavior_IsMossdeepGymWarp,
@@ -39,15 +39,11 @@ const {
   PlaySE, PlaySecretBaseMusicNoteMatSound, PlayerGetDestCoords, PlayerGetElevation,
   SafariZoneTakeStep, ScriptContext_SetupScript, SetDiveWarpDive, SetDiveWarpEmerge,
   SetDynamicWarp, SetWarpDestinationToDynamicWarp, SetWarpDestinationToMapWarp, SetWarpDestinationTrainerHill4F,
-  SetWarpDestinationTrainerHillFinalFloor, SetupWarp, ShouldDoBrailleRegicePuzzle, ShouldDoRivalRayquazaCall,
-  ShouldDoRoxanneCall, ShouldDoScottBattleFrontierCall, ShouldDoScottFortreeCall, ShouldDoWallyCall,
-  ShouldEggHatch, ShowStartMenu, StandardWildEncounter, StoreInitialPlayerAvatarState,
-  TryArrowWarp, TryDoorWarp, TryRunOnFrameMapScript, TrySetDiveWarp,
-  TrySetupDiveDownScript, TrySetupDiveEmergeScript, TryStartCoordEventScript, TryStartInteractionScript,
-  TryStartMatchCall, TryStartMiscWalkingScripts, TryStartStepBasedScript, TryStartStepCountScript,
-  TryStartWarpEventScript, UpdateEscapeWarp, UpdateFarawayIslandStepCounter, UpdateFriendshipStepCounter,
-  UpdatePoisonStepCounter, UpdateRepelCounter, UseRegisteredKeyItemOnField, VarSet,
-  WarpIntoSecretBase,  // 4-per-line for readability
+  SetWarpDestinationTrainerHillFinalFloor, ShouldDoBrailleRegicePuzzle, ShouldDoRivalRayquazaCall, ShouldDoRoxanneCall,
+  ShouldDoScottBattleFrontierCall, ShouldDoScottFortreeCall, ShouldDoWallyCall, ShouldEggHatch,
+  ShowStartMenu, StandardWildEncounter, StoreInitialPlayerAvatarState, TryRunOnFrameMapScript,
+  TryStartMatchCall, UpdateEscapeWarp, UpdateFarawayIslandStepCounter, UpdateRepelCounter,
+  UseRegisteredKeyItemOnField, VarSet, WarpIntoSecretBase,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void FieldClearPlayerInput(struct FieldInput *input) */

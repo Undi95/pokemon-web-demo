@@ -18,28 +18,29 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, ActionSelectionCreateCursorAt, ActionSelectionDestroyCursorAt, AllocSpritePalette,
   BATTLE_PARTNER, BattlePutTextOnWindow, BattleStopLowHpSound, BattleStringExpandPlaceholdersToDisplayedString,
   BeginFastPaletteFade, BeginNormalPaletteFade, BtlController_EmitDataTransfer, BtlController_EmitOneReturnValue,
-  BtlController_EmitTwoReturnValues, BufferStringBattle, CopyAllBattleSpritesInvisibilities, CopyWallyMonData,
-  CreateInvisibleSpriteWithCallback, CreatePartyStatusSummarySprites, CreateSprite, CreateTask,
-  DecompressTrainerBackPic, DestroySprite, DestroyTask, DoHitAnimHealthboxEffect,
-  DoMoveAnim, DoPokeballSendOutAnimation, DoWallyTutorialBagMenu, FadeOutMapMusic,
-  FreeAllWindowBuffers, FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  GetBattlerAtPosition, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord,
-  GetBattlerSpriteDefault_Y, GetBattlerSpriteSubpriority, GetMonData, GetMultiplayerId,
-  HandleIntroSlide, HandleLowHpMusicChange, InitAndLaunchSpecialAnimation, InitMoveSelectionsVarsAndStrings,
-  IsDma3ManagerBusyWithBgCopy, IsDoubleBattle, IsMoveWithoutAnimation, IsTextPrinterActive,
-  LoadBattleBarGfx, LoadCompressedPalette, MoveBattleBar, OBJ_PLTT_ID,
-  PlayBGM, PlayCry_Normal, PlayFanfare, PlaySE,
-  PlayerHandleGetRawMonData, PrepareBufferDataTransferLink, ReshowBattleScreenDummy, SetBattleBarStruct,
-  SetBattlerSpriteAffineMode, SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible, SetMonData,
-  SetMultiuseSpriteTemplateToPokemon, SetMultiuseSpriteTemplateToTrainerBack, SetSpritePrimaryCoordsFromSecondaryCoords, SetWallyMonData,
-  StartHealthboxSlideIn, StartSendOutAnim, StartSpriteAnim, StoreSpriteCallbackInData6,
-  StringCopy_Nickname, TryHandleLaunchBattleTableAnimation, TrySetBehindSubstituteSpriteBit, TryShinyAnimation,
-  UpdateHealthboxAttribute, UpdateHpTextInHealthbox, WallyBufferExecCompleted, WallyHandlePrintString,  // 4-per-line for readability
+  BtlController_EmitTwoReturnValues, BufferStringBattle, CopyAllBattleSpritesInvisibilities, CreateInvisibleSpriteWithCallback,
+  CreatePartyStatusSummarySprites, CreateSprite, CreateTask, DecompressTrainerBackPic,
+  DestroySprite, DestroyTask, DoHitAnimHealthboxEffect, DoMoveAnim,
+  DoPokeballSendOutAnimation, DoWallyTutorialBagMenu, FadeOutMapMusic, FreeAllWindowBuffers,
+  FreeSpriteOamMatrix, FreeSpritePaletteByTag, FreeSpriteTilesByTag, GetBattlerAtPosition,
+  GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y,
+  GetBattlerSpriteSubpriority, GetMonData, GetMultiplayerId, HandleIntroSlide,
+  HandleLowHpMusicChange, InitAndLaunchSpecialAnimation, InitMoveSelectionsVarsAndStrings, IsDma3ManagerBusyWithBgCopy,
+  IsDoubleBattle, IsMoveWithoutAnimation, IsTextPrinterActive, LoadBattleBarGfx,
+  LoadCompressedPalette, MoveBattleBar, OBJ_PLTT_ID, PlayBGM,
+  PlayCry_Normal, PlayFanfare, PlaySE, PlayerHandleGetRawMonData,
+  PrepareBufferDataTransferLink, ReshowBattleScreenDummy, SetBattleBarStruct, SetBattlerSpriteAffineMode,
+  SetHealthboxSpriteInvisible, SetHealthboxSpriteVisible, SetMonData, SetMultiuseSpriteTemplateToPokemon,
+  SetMultiuseSpriteTemplateToTrainerBack, SetSpritePrimaryCoordsFromSecondaryCoords, StartHealthboxSlideIn, StartSpriteAnim,
+  StoreSpriteCallbackInData6, StringCopy_Nickname, TryHandleLaunchBattleTableAnimation, TrySetBehindSubstituteSpriteBit,
+  TryShinyAnimation, UpdateHealthboxAttribute, UpdateHpTextInHealthbox,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetControllerToWally(void) */

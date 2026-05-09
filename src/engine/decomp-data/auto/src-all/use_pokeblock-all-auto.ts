@@ -18,41 +18,36 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddPokeblockToConditions, AddTextPrinterParameterized, AddTextPrinterParameterized3,
-  Alloc, AllocZeroed, AnimateSprites, AskUsePokeblock,
-  BG_PLTT_ID, BLDALPHA_BLEND, BeginNormalPaletteFade, BlendPalettes,
-  BufferEnhancedText, BuildOamBuffer, CalculateConditionEnhancements, CalculateNumAdditionalSparkles,
-  CalculatePlayerPartyCount, CalculatePokeblockEffectiveness, ChangeBgX, ChangeBgY,
-  ClearWindowTilemap, ConditionGraph_CalcPositions, ConditionGraph_Draw, ConditionGraph_Init,
-  ConditionGraph_InitResetScanline, ConditionGraph_InitWindow, ConditionGraph_ResetScanline, ConditionGraph_SetNewPositions,
-  ConditionGraph_TryUpdate, ConditionGraph_Update, ConditionMenu_UpdateMonEnter, ConditionMenu_UpdateMonExit,
-  CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect, CopyWindowToVram, CpuFill32,
-  CreateConditionSparkleSprites, CreateConditionSprite, CreateSprite, CreateYesNoMenu,
-  DeactivateAllTextPrinters, DestroyConditionSparkleSprites, DestroySprite, Dma3CopyLarge16_,
-  DrawTextBorderOuter, EraseMenuWindow, FREE_AND_SET_NULL, FillWindowPixelBuffer,
+  ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, Alloc,
+  AllocZeroed, AnimateSprites, BG_PLTT_ID, BLDALPHA_BLEND,
+  BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer, CalculatePlayerPartyCount,
+  ChangeBgX, ChangeBgY, ClearWindowTilemap, ConditionGraph_CalcPositions,
+  ConditionGraph_Draw, ConditionGraph_Init, ConditionGraph_InitResetScanline, ConditionGraph_InitWindow,
+  ConditionGraph_ResetScanline, ConditionGraph_SetNewPositions, ConditionGraph_TryUpdate, ConditionGraph_Update,
+  ConditionMenu_UpdateMonEnter, ConditionMenu_UpdateMonExit, CopyBgTilemapBufferToVram, CopyToBgTilemapBufferRect,
+  CopyWindowToVram, CpuFill32, CreateConditionSparkleSprites, CreateSprite,
+  CreateYesNoMenu, DeactivateAllTextPrinters, DestroyConditionSparkleSprites, DestroySprite,
+  Dma3CopyLarge16_, DrawTextBorderOuter, FREE_AND_SET_NULL, FillWindowPixelBuffer,
   FreeAllSpritePalettes, FreeAllWindowBuffers, FreeConditionSparkles, FreeSpritePaletteByTag,
   FreeSpriteTilesByTag, GET_NUM_CONDITION_SPARKLES, GetBoxOrPartyMonData, GetConditionMenuMonConditions,
-  GetConditionMenuMonGfx, GetConditionMenuMonNameAndLocString, GetMonConditions, GetMonData,
-  GetMonFlavorRelation, GetNature, GetPartyIdFromSelectionId, GetSelectionIdFromPartyId,
-  HandleAskUsePokeblockInput, IndexOfSpritePaletteTag, InitBgsFromTemplates, InitWindows,
-  IsSheenMaxed, JOY_HELD, JOY_NEW, LZ77UnCompVram,
-  LoadAndCreateSelectionIcons, LoadAndCreateUpDownSprites, LoadBgTilemap, LoadBgTiles,
-  LoadCompressedSpriteSheet, LoadConditionGfx, LoadConditionMonPicTemplate, LoadConditionSelectionIcons,
-  LoadConditionSparkle, LoadConditionTitle, LoadInitialMonInfo, LoadMonInfo,
-  LoadOam, LoadPalette, LoadPartyInfo, LoadSpritePalette,
-  LoadSpritePalettes, LoadSpriteSheet, LoadSpriteSheets, LoadUsePokeblockMenuGfx,
-  LoadUserWindowBorderGfx, Menu_ProcessInputNoWrapClearOnChoose, MoveConditionMonOffscreen, MoveConditionMonOnscreen,
-  OBJ_PLTT_ID, PIXEL_FILL, PlaySE, PreparePokeblockFeedScene,
-  PrintFirstEnhancement, PrintMenuWindowText, PrintWontEatAnymore, ProcessSpriteCopyRequests,
+  GetConditionMenuMonGfx, GetConditionMenuMonNameAndLocString, GetMonData, GetMonFlavorRelation,
+  GetNature, IndexOfSpritePaletteTag, InitBgsFromTemplates, InitWindows,
+  JOY_HELD, JOY_NEW, LZ77UnCompVram, LoadBgTilemap,
+  LoadBgTiles, LoadCompressedSpriteSheet, LoadConditionMonPicTemplate, LoadConditionSelectionIcons,
+  LoadConditionSparkle, LoadOam, LoadPalette, LoadSpritePalette,
+  LoadSpritePalettes, LoadSpriteSheet, LoadSpriteSheets, LoadUserWindowBorderGfx,
+  Menu_ProcessInputNoWrapClearOnChoose, MoveConditionMonOffscreen, MoveConditionMonOnscreen, OBJ_PLTT_ID,
+  PIXEL_FILL, PlaySE, PreparePokeblockFeedScene, ProcessSpriteCopyRequests,
   PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetConditionSparkleSprites, ResetSpriteData,
   RunTextPrinters, SPRITE_SHAPE, SPRITE_SIZE, ScanlineEffect_InitHBlankDmaTransfer,
   SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetMonData,
-  SetUsePokeblockCallback, SetVBlankCallback, ShowBg, ShowUsePokeblockMenuForResults,
-  StartSpriteAnim, StringAppend, StringCopy, StringGet_Nickname,
-  TransferPlttBuffer, TryClearPokeblock, TryPrintNextEnhancement, UpdateMonInfoText,
-  UpdateMonPic, UpdatePaletteFade, UpdateSelection,  // 4-per-line for readability
+  SetVBlankCallback, ShowBg, StartSpriteAnim, StringAppend,
+  StringCopy, StringGet_Nickname, TransferPlttBuffer, TryClearPokeblock,
+  UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ChooseMonToGivePokeblock(struct Pokeblock *pokeblock, void (*callback)(void)) */

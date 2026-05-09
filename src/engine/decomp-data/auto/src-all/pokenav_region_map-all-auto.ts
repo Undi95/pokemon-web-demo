@@ -18,33 +18,30 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocSubstruct,
   AreLeftHeaderSpritesMoving, BG_PLTT_ID, BgDmaFill, BlendRegionMap,
-  ChangeBgX, ChangeBgY, ChangeBgYForZoom, CopyBgTilemapBufferToVram,
-  CopyPaletteIntoBufferUnfaded, CopyToBgTilemapBufferRect, CopyWindowToVram, CpuFill16,
-  CreateCityZoomTextSprites, CreateLoopedTask, CreateRegionMapCursor, CreateRegionMapPlayerIcon,
-  CreateSprite, CreateTask, DecompressAndCopyTileDataToVram, DecompressCityMaps,
-  DestroySprite, DestroyTask, DoRegionMapInputCallback, DrawCityMap,
+  ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded,
+  CopyToBgTilemapBufferRect, CopyWindowToVram, CpuFill16, CreateLoopedTask,
+  CreateRegionMapCursor, CreateRegionMapPlayerIcon, CreateSprite, CreateTask,
+  DecompressAndCopyTileDataToVram, DestroySprite, DestroyTask, DoRegionMapInputCallback,
   DrawTextBorderOuter, FadeToBlackExceptPrimary, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0,
-  FillWindowPixelBuffer, FreeCityZoomViewGfx, FreePokenavSubstruct, FreeRegionMapIconResources,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, FuncIsActiveLoopedTask,
-  FuncIsActiveTask, GetBgY, GetLandmarkName, GetSubstructPtr,
-  GetZoomDisabled, HideBg, InitBgTemplates, InitRegionMapData,
-  IsChangeBgYForZoomActive, IsDecompressCityMapsActive, IsDma3ManagerBusyWithBgCopy, IsDma3ManagerBusyWithBgCopy_,
-  IsEventIslandMapSecId, IsLoopedTaskActive, IsPaletteFadeActive, IsRegionMapZoomed,
-  JOY_NEW, LZ77UnCompWram, LoadCityZoomViewGfx, LoadCompressedSpriteSheet,
-  LoadLeftHeaderGfxForIndex, LoadOam, LoadPokenavRegionMapGfx, LoadRegionMapGfx,
-  LoadUserWindowBorderGfx_, MainMenuLoopedTaskIsBusy, PIXEL_FILL, PlaySE,
-  PokenavFadeScreen, Pokenav_AllocAndLoadPalettes, PrintHelpBarText, PrintLandmarkNames,
+  FillWindowPixelBuffer, FreePokenavSubstruct, FreeRegionMapIconResources, FreeSpritePaletteByTag,
+  FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, FuncIsActiveLoopedTask, FuncIsActiveTask,
+  GetBgY, GetLandmarkName, GetSubstructPtr, HideBg,
+  InitBgTemplates, InitRegionMapData, IsDma3ManagerBusyWithBgCopy, IsEventIslandMapSecId,
+  IsLoopedTaskActive, IsPaletteFadeActive, IsRegionMapZoomed, JOY_NEW,
+  LZ77UnCompWram, LoadCompressedSpriteSheet, LoadLeftHeaderGfxForIndex, LoadOam,
+  LoadRegionMapGfx, LoadUserWindowBorderGfx_, MainMenuLoopedTaskIsBusy, PIXEL_FILL,
+  PlaySE, PokenavFadeScreen, Pokenav_AllocAndLoadPalettes, PrintHelpBarText,
   ProcessSpriteCopyRequests, PutWindowRectTilemap, PutWindowTilemap, RemoveWindow,
-  SetBgMode, SetBgTilemapBuffer, SetCityZoomTextInvisibility, SetLeftHeaderSpritesInvisibility,
-  SetPokenavVBlankCallback, SetRegionMapDataForZoom, SetVBlankCallback_, ShouldOpenRegionMapZoomed,
-  ShowBg, ShowLeftHeaderGfx, SlideMenuHeaderDown, StringCopyPadded,
-  TransferPlttBuffer, TryFreeTempTileDataBuffers, TrySetPlayerIconBlink, UpdateCityZoomTextPosition,
-  UpdateMapSecInfoWindow, UpdateRegionMapRightHeaderTiles, UpdateRegionMapVideoRegs, UpdateRegionMapZoom,
-  WaitForHelpBar,  // 4-per-line for readability
+  SetBgMode, SetBgTilemapBuffer, SetLeftHeaderSpritesInvisibility, SetPokenavVBlankCallback,
+  SetRegionMapDataForZoom, SetVBlankCallback_, ShowBg, ShowLeftHeaderGfx,
+  SlideMenuHeaderDown, StringCopyPadded, TransferPlttBuffer, TrySetPlayerIconBlink,
+  UpdateRegionMapRightHeaderTiles, UpdateRegionMapVideoRegs, UpdateRegionMapZoom, WaitForHelpBar,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** u32 PokenavCallback_Init_RegionMap(void) */

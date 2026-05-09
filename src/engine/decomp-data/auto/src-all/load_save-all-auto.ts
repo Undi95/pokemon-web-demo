@@ -18,13 +18,13 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ApplyNewEncryptionKeyToAllEncryptedData, ApplyNewEncryptionKeyToBagItems, ApplyNewEncryptionKeyToBagItems_, ApplyNewEncryptionKeyToBerryPowder,
-  ApplyNewEncryptionKeyToGameStats, ApplyNewEncryptionKeyToHword, ApplyNewEncryptionKeyToWord, CpuFill16,
-  IdentifyFlash, InitFlashTimer, InitHeap, LoadObjectEvents,
-  LoadPlayerParty, Random, SaveObjectEvents, SavePlayerParty,
-  SetBagItemsPointers, SetContinueGameWarpToDynamicWarp, SetDecorationInventoriesPointers, SetSaveBlocksPointers,  // 4-per-line for readability
+  ApplyNewEncryptionKeyToBagItems, ApplyNewEncryptionKeyToBagItems_, ApplyNewEncryptionKeyToBerryPowder, ApplyNewEncryptionKeyToGameStats,
+  CpuFill16, IdentifyFlash, InitFlashTimer, InitHeap,
+  Random, SetBagItemsPointers, SetContinueGameWarpToDynamicWarp, SetDecorationInventoriesPointers,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CheckForFlashMemory(void) */

@@ -18,25 +18,20 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddBagItem, AddDecorationIconObject, AddItemIconSprite,
   AddMoneyLabelObject, AddScrollIndicatorArrowPairParameterized, AddTextPrinterParameterized4, AddWindow,
   AdjustQuantityAccordingToDPadInput, Alloc, AllocZeroed, AnimateSprites,
   BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BuildOamBuffer,
-  BuyMenuAddItemIcon, BuyMenuAddScrollIndicatorArrows, BuyMenuBuildListMenuTemplate, BuyMenuCheckForOverlapWithMenuBg,
-  BuyMenuCheckIfObjectEventOverlapsMenuBg, BuyMenuCollectObjectEventData, BuyMenuCopyMenuBgToBg1TilemapBuffer, BuyMenuDecompressBgGraphics,
-  BuyMenuDisplayMessage, BuyMenuDrawGraphics, BuyMenuDrawMapBg, BuyMenuDrawMapGraphics,
-  BuyMenuDrawMapMetatile, BuyMenuDrawMapMetatileLayer, BuyMenuDrawObjectEvents, BuyMenuFreeMemory,
-  BuyMenuInitBgs, BuyMenuInitWindows, BuyMenuPrint, BuyMenuPrintCursor,
-  BuyMenuPrintItemQuantityAndPrice, BuyMenuRemoveItemIcon, BuyMenuRemoveScrollIndicatorArrows, BuyMenuReturnToItemList,
-  BuyMenuSetListEntry, ClearDialogWindowAndFrameToTransparent, ClearItemPurchases, ClearScheduledBgCopiesToVram,
-  ClearStdWindowAndFrameToTransparent, ClearWindowTilemap, ConvertIntToDecimalStringN, CopyItemName,
-  CopyWindowToVram, CountTotalItemQuantityInBag, CpuFastFill, CreateObjectGraphicsSprite,
-  CreateShopMenu, CreateTask, CreateYesNoMenuWithCallbacks, DeactivateAllTextPrinters,
-  DecompressAndCopyTileDataToVram, DecorationAdd, DestroySprite, DestroyTask,
-  DisplayItemMessageOnField, DisplayMessageAndContinueTask, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette,
-  ExitBuyMenu, FadeInFromBlack, FadeScreen, FillBgTilemapBufferRect_Palette0,
+  ClearDialogWindowAndFrameToTransparent, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent, ClearWindowTilemap,
+  ConvertIntToDecimalStringN, CopyItemName, CopyWindowToVram, CountTotalItemQuantityInBag,
+  CpuFastFill, CreateObjectGraphicsSprite, CreateTask, CreateYesNoMenuWithCallbacks,
+  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DecorationAdd, DestroySprite,
+  DestroyTask, DisplayItemMessageOnField, DisplayMessageAndContinueTask, DoScheduledBgTilemapCopiesToVram,
+  DrawStdFrameWithCustomTileAndPalette, FadeInFromBlack, FadeScreen, FillBgTilemapBufferRect_Palette0,
   FillWindowPixelBuffer, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
   FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetItemDescription,
   GetItemPocket, GetItemPrice, GetMaxWidthInMenuTable, GetMoney,
@@ -48,14 +43,13 @@ const {
   LoadMessageBoxGfx, LoadOam, LoadUserWindowBorderGfx, LockPlayerFieldControls,
   MapGridGetMetatileIdAt, MapGridGetMetatileLayerTypeAt, Menu_ProcessInputNoWrap, PIXEL_FILL,
   PlaySE, PrintMenuTable, PrintMoneyAmount, PrintMoneyAmountInMoneyBox,
-  PrintMoneyAmountInMoneyBoxWithBorder, ProcessSpriteCopyRequests, PutWindowTilemap, RecordItemPurchase,
-  RemoveMoney, RemoveMoneyLabelObject, RemoveScrollIndicatorArrowPair, RemoveWindow,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  ResetTempTileDataBuffers, RunTasks, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
-  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetShopItemsForSale,
-  SetShopMenuCallback, SetStandardWindowBorderStyle, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
-  ShowBg, StartSpriteAnim, StringCopy, StringExpandPlaceholders,
-  Task_HandleShopMenuQuit, TransferPlttBuffer, TryPutSmartShopperOnAir, UnlockPlayerFieldControls,
+  PrintMoneyAmountInMoneyBoxWithBorder, ProcessSpriteCopyRequests, PutWindowTilemap, RemoveMoney,
+  RemoveMoneyLabelObject, RemoveScrollIndicatorArrowPair, RemoveWindow, ResetBgsAndClearDma3BusyFlags,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, ResetTempTileDataBuffers,
+  RunTasks, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, SetBgTilemapBuffer,
+  SetGpuReg, SetMainCallback2, SetStandardWindowBorderStyle, SetVBlankCallback,
+  SetVBlankHBlankCallbacksToNull, ShowBg, StartSpriteAnim, StringCopy,
+  StringExpandPlaceholders, TransferPlttBuffer, TryPutSmartShopperOnAir, UnlockPlayerFieldControls,
   UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

@@ -18,18 +18,19 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, BG_PLTT_ID, BG_SCREEN_ADDR,
   BeginNormalPaletteFade, ClearSaveData, CreateTask, CreateYesNoMenu,
   DeactivateAllTextPrinters, DestroyTask, DmaFill16, DmaFill32,
   DoSoftReset, DrawStdFrameWithCustomTileAndPalette, EnableInterrupts, FillWindowPixelBuffer,
-  FreeAllWindowBuffers, InitBgsFromTemplates, InitClearSaveDataScreenWindows, InitWindows,
-  LoadPalette, LoadWindowGfx, Menu_ProcessInputNoWrapClearOnChoose, PIXEL_FILL,
-  PlaySE, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
-  ResetTasks, RunTasks, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, SetupClearSaveDataScreen, ShowBg, TransferPlttBuffer,
-  UpdatePaletteFade,  // 4-per-line for readability
+  FreeAllWindowBuffers, InitBgsFromTemplates, InitWindows, LoadPalette,
+  LoadWindowGfx, Menu_ProcessInputNoWrapClearOnChoose, PIXEL_FILL, PlaySE,
+  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
+  RunTasks, SetGpuReg, SetMainCallback2, SetVBlankCallback,
+  ShowBg, TransferPlttBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CB2_InitClearSaveDataScreen(void) */

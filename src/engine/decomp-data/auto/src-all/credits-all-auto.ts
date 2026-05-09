@@ -18,30 +18,29 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized4, AllocZeroed, AnimateSprites,
   BGCNT_CHARBASE, BGCNT_PRIORITY, BGCNT_SCREENBASE, BG_PLTT_ID,
   BG_SCREEN_ADDR, BLDALPHA_BLEND, BeginNormalPaletteFade, BuildOamBuffer,
-  CheckChangeScene, CopyWindowToVram, CreateBicycleBgAnimationTask, CreateCreditsMonSprite,
-  CreateIntroBrendanSprite, CreateIntroMaySprite, CreateMonSpriteFromNationalDexNumber, CreateSprite,
-  CreateTask, CycleSceneryPalette, DeactivateAllTextPrinters, DestroySprite,
-  DestroyTask, DeterminePokemonToShow, DmaFill16, DmaFill32,
-  DrawTheEnd, EnableInterrupts, FREE_AND_SET_NULL, FadeOutBGM,
+  CopyWindowToVram, CreateBicycleBgAnimationTask, CreateIntroBrendanSprite, CreateIntroMaySprite,
+  CreateMonSpriteFromNationalDexNumber, CreateSprite, CreateTask, CycleSceneryPalette,
+  DeactivateAllTextPrinters, DestroySprite, DestroyTask, DmaFill16,
+  DmaFill32, EnableInterrupts, FREE_AND_SET_NULL, FadeOutBGM,
   FillWindowPixelBuffer, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
-  FreeAndDestroyMonPicSprite, FreeCreditsBgsAndWindows, GetBgTilemapBuffer, GetSetPokedexFlag,
-  GetStarterPokemon, GetStringCenterAlignXOffsetWithLetterSpacing, InitBgsFromTemplates, InitCreditsBgsAndWindows,
-  InitHeap, InitWindows, JOY_HELD, LZ77UnCompVram,
-  LoadBikeScene, LoadCompressedSpriteSheet, LoadCreditsSceneGraphics, LoadOam,
-  LoadPalette, LoadSpritePalette, LoadSpritePalettes, LoadSpriteSheet,
-  LoadTheEndScreen, PIXEL_FILL, PLTT_SIZEOF, PrintCreditsText,
-  ProcessSpriteCopyRequests, PutWindowTilemap, Random, ResetAllPicSprites,
-  ResetBgsAndClearDma3BusyFlags, ResetCreditsTasks, ResetGpuAndVram, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, RunTasks, SetBgTilemapBuffer,
-  SetBikeScene, SetCreditsSceneBgCnt, SetGpuReg, SetMainCallback2,
+  FreeAndDestroyMonPicSprite, GetBgTilemapBuffer, GetSetPokedexFlag, GetStarterPokemon,
+  GetStringCenterAlignXOffsetWithLetterSpacing, InitBgsFromTemplates, InitHeap, InitWindows,
+  JOY_HELD, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadCreditsSceneGraphics,
+  LoadOam, LoadPalette, LoadSpritePalette, LoadSpritePalettes,
+  LoadSpriteSheet, PIXEL_FILL, PLTT_SIZEOF, ProcessSpriteCopyRequests,
+  PutWindowTilemap, Random, ResetAllPicSprites, ResetBgsAndClearDma3BusyFlags,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
+  SetBgTilemapBuffer, SetCreditsSceneBgCnt, SetGpuReg, SetMainCallback2,
   SetOamMatrix, SetVBlankCallback, ShowBg, Sin,
   SoftReset, SpeciesToNationalPokedexNum, StartSpriteAnimIfDifferent, TransferPlttBuffer,
-  UpdatePaletteFade, VBlankCB_Credits, VarGet,  // 4-per-line for readability
+  UpdatePaletteFade, VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VBlankCB_Credits(void) */

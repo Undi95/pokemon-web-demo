@@ -18,35 +18,29 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddOptionDescriptionWindow, AddTextPrinterParameterized3, AddWindow,
-  AllocSubstruct, AreAnyTrainerRematchesNearby, AreLeftHeaderSpritesMoving, AreMenuOptionSpritesMoving,
-  BG_PLTT_ID, BLDALPHA_BLEND, CalcCenterToCornerVec, ChangeBgDotsColorToPurple,
+  ARRAY_COUNT, AddTextPrinterParameterized3, AddWindow, AllocSubstruct,
+  AreLeftHeaderSpritesMoving, BG_PLTT_ID, BLDALPHA_BLEND, CalcCenterToCornerVec,
   ChangeBgX, ChangeBgY, ClearGpuRegBits, CopyBgTilemapBufferToVram,
   CopyPaletteIntoBufferUnfaded, CopyToBgTilemapBuffer, CopyWindowToVram, CpuFill16,
-  CreateBgDotLightBluePalTask, CreateBgDotPurplePalTask, CreateLoopedTask, CreateMatchCallBlueLightSprite,
-  CreateMenuOptionSprites, CreateMovingBgDotsTask, CreateSprite, CreateTask,
-  DecompressAndCopyTileDataToVram, DestroyMenuOptionGlowTask, DestroyMenuOptionSprites, DestroyMovingDotsBgTask,
-  DestroyRematchBlueLightSprite, DestroySprite, DestroyTask, DrawCurrentMenuOptionLabels,
-  DrawOptionLabelGfx, FillWindowPixelBuffer, FindTaskIdByFunc, FreeAndDestroyMainMenuSprites,
+  CreateLoopedTask, CreateSprite, CreateTask, DecompressAndCopyTileDataToVram,
+  DestroySprite, DestroyTask, FillWindowPixelBuffer, FindTaskIdByFunc,
   FreeOamMatrix, FreePokenavSubstruct, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
   FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, FuncIsActiveTask, GetCurrentMenuItemId,
   GetHelpBarTextId, GetMatchTableMapSectionId, GetPokenavCursorPos, GetPokenavMenuType,
   GetSpriteTileStartByTag, GetStringWidth, GetSubstructPtr, GetWordTaskArg,
-  HideMainOrSubMenuLeftHeader, IndexOfSpritePaletteTag, InitBgTemplates, InitMenuOptionGlow,
-  InitSpriteAffineAnim, IsDma3ManagerBusyWithBgCopy, IsDma3ManagerBusyWithBgCopy_, IsLoopedTaskActive,
-  IsPaletteFadeActive, IsRematchEntryRegistered, IsTaskActive_UpdateBgDotsPalette, LoadCompressedSpriteSheet,
-  LoadLeftHeaderGfxForIndex, LoadOam, LoadPalette, LoadPokenavOptionPalettes,
-  OpenPokenavMenu, PIXEL_FILL, PLTT_SIZEOF, PlaySE,
-  PokenavCopyPalette, PokenavFadeScreen, Pokenav_AllocAndLoadPalettes, PrintCurrentOptionDescription,
-  PrintHelpBarText, PrintNoRibbonWinners, ProcessSpriteCopyRequests, PutWindowTilemap,
-  RemoveWindow, ResetBldCnt, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams,
+  HideMainOrSubMenuLeftHeader, IndexOfSpritePaletteTag, InitBgTemplates, InitSpriteAffineAnim,
+  IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive, IsPaletteFadeActive, IsRematchEntryRegistered,
+  LoadCompressedSpriteSheet, LoadLeftHeaderGfxForIndex, LoadOam, LoadPalette,
+  PIXEL_FILL, PLTT_SIZEOF, PlaySE, PokenavCopyPalette,
+  PokenavFadeScreen, Pokenav_AllocAndLoadPalettes, PrintHelpBarText, ProcessSpriteCopyRequests,
+  PutWindowTilemap, RemoveWindow, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_SetParams,
   ScanlineEffect_Stop, SetBgTilemapBuffer, SetGpuReg, SetGpuRegBits,
-  SetMenuOptionGlow, SetOptionInvisibility, SetPokenavVBlankCallback, SetVBlankCallback_,
-  SetWordTaskArg, SetupPokenavMenuScanlineEffects, ShowBg, ShowLeftHeaderGfx,
-  SlideMenuHeaderUp, StartOptionAnimations_CursorMoved, StartOptionAnimations_Enter, StartOptionAnimations_Exit,
-  StartOptionSlide, StartOptionZoom, StartSpriteAffineAnim, TransferPlttBuffer,
+  SetPokenavVBlankCallback, SetVBlankCallback_, SetWordTaskArg, ShowBg,
+  ShowLeftHeaderGfx, SlideMenuHeaderUp, StartSpriteAffineAnim, TransferPlttBuffer,
   WaitForHelpBar,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

@@ -18,23 +18,18 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AnimateUnionRoomPlayer, AnimateUnionRoomPlayerDespawn, AnimateUnionRoomPlayerSpawn, ArePlayerFieldControlsLocked,
-  AssembleGroup, CreateTask, CreateTask_AnimateUnionRoomPlayers, CreateUnionRoomPlayerObjectEvent,
-  CreateVirtualObject, DespawnGroupLeader, DespawnGroupLeaderAndMembers, DespawnGroupMember,
-  DestroySprite, DestroyTask, DestroyTask_AnimateUnionRoomPlayers, FindTaskIdByFunc,
-  FlagClear, FlagGet, FlagSet, FreezeObjectEvent,
-  FuncIsActiveTask, GetNewFacingDirectionForUnionRoomPlayer, GetPlayerFacingDirection, GetUnionRoomPlayerCoords,
-  GetUnionRoomPlayerGraphicsId, GetXYCoordsOneStepInFrontOfPlayer, HideUnionRoomPlayer, IsPlayerStandingStill,
-  IsUnionRoomPlayerAt, IsUnionRoomPlayerHidden, IsUnionRoomPlayerInvisible, IsVirtualObjectAnimating,
-  IsVirtualObjectInvisible, MapGridSetMetatileImpassabilityAt, ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden,
-  ObjectEventSetHeldMovement, PlayerGetDestCoords, RemoveObjectEventByLocalIdAndMap, RemoveUnionRoomPlayerObjectEvent,
-  SetUnionRoomObjectFacingDirection, SetUnionRoomPlayerEnterExitMovement, SetUnionRoomPlayerGfx, SetVirtualObjectGraphics,
-  SetVirtualObjectInvisibility, SetVirtualObjectSpriteAnim, ShowUnionRoomPlayer, SpawnGroupLeader,
-  SpawnGroupLeaderAndMembers, SpawnGroupMember, TryGetObjectEventIdByLocalIdAndMap, TryReleaseUnionRoomPlayerObjectEvent,
-  TrySpawnObjectEvent, TurnVirtualObject, UR_PLAYER_SPRITE_ID, UnfreezeObjectEvent,
-  UpdateUnionRoomPlayerSprites, VarSet,  // 4-per-line for readability
+  ArePlayerFieldControlsLocked, CreateTask, CreateVirtualObject, DestroySprite,
+  DestroyTask, FindTaskIdByFunc, FlagClear, FlagGet,
+  FlagSet, FreezeObjectEvent, FuncIsActiveTask, GetPlayerFacingDirection,
+  GetXYCoordsOneStepInFrontOfPlayer, IsVirtualObjectAnimating, IsVirtualObjectInvisible, MapGridSetMetatileImpassabilityAt,
+  ObjectEventClearHeldMovementIfFinished, ObjectEventIsMovementOverridden, ObjectEventSetHeldMovement, PlayerGetDestCoords,
+  RemoveObjectEventByLocalIdAndMap, SetVirtualObjectGraphics, SetVirtualObjectInvisibility, SetVirtualObjectSpriteAnim,
+  TryGetObjectEventIdByLocalIdAndMap, TrySpawnObjectEvent, TurnVirtualObject, UR_PLAYER_SPRITE_ID,
+  UnfreezeObjectEvent, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static bool32 IsPlayerStandingStill(void) */

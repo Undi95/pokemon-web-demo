@@ -18,46 +18,33 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AllocZeroed,
   AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes,
-  BlinkTimeColon, BufferBattleFacilityStats, BufferBerryCrushPoints, BufferHofDebutTime,
-  BufferLinkBattleResults, BufferLinkContestNum, BufferLinkPokeblocksNum, BufferNameForCardBack,
-  BufferNumTrades, BufferTextsVarsForCardPage2, BufferUnionRoomStats, BuildOamBuffer,
-  ChangeBgX, ChangeBgY, CloseTrainerCard, ConvertIntToDecimalStringN,
+  BuildOamBuffer, ChangeBgX, ChangeBgY, ConvertIntToDecimalStringN,
   ConvertInternationalString, CopyBgTilemapBufferToVram, CopyEasyChatWord, CopyWindowToVram,
-  CountPlayerMuseumPaintings, CpuSet, CreateTask, CreateTrainerCardTrainerPic,
-  CreateTrainerCardTrainerPicSprite, CreateWirelessStatusIndicatorSprite, DeactivateAllTextPrinters, DestroyTask,
-  DmaClear16, DmaClear32, DmaCopy16, DrawCardBackStats,
-  DrawCardFrontOrBack, DrawCardScreenBackground, DrawDialogueFrame, DrawStarsAndBadgesOnCard,
-  DrawTrainerCardWindow, EnableInterrupts, FREE_AND_SET_NULL, FacilityClassToPicIndex,
-  FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect,
-  FindTaskIdByFunc, FlagGet, FlipTrainerCard, FreeAllSpritePalettes,
-  FreeAllWindowBuffers, GetCappedGameStat, GetCaughtMonsCount, GetGameStat,
-  GetHoennPokedexCount, GetMonIconPaletteIndexFromSpecies, GetMonIconTiles, GetMoney,
-  GetNationalPokedexCount, GetRubyTrainerStars, GetSetCardType, GetStringCenterAlignXOffset,
-  GetStringRightAlignXOffset, GetStringWidth, HasAllFrontierSymbols, HasAllHoennMons,
-  HideBg, InUnionRoom, InitBgsAndWindows, InitBgsFromTemplates,
-  InitGpuRegs, InitTrainerCardData, InitWindows, IsCardFlipTaskActive,
+  CountPlayerMuseumPaintings, CpuSet, CreateTask, CreateTrainerCardTrainerPicSprite,
+  CreateWirelessStatusIndicatorSprite, DeactivateAllTextPrinters, DestroyTask, DmaClear16,
+  DmaClear32, DmaCopy16, DrawDialogueFrame, EnableInterrupts,
+  FREE_AND_SET_NULL, FacilityClassToPicIndex, FillBgTilemapBufferRect, FillBgTilemapBufferRect_Palette0,
+  FillWindowPixelBuffer, FillWindowPixelRect, FindTaskIdByFunc, FlagGet,
+  FreeAllSpritePalettes, FreeAllWindowBuffers, GetGameStat, GetHoennPokedexCount,
+  GetMonIconPaletteIndexFromSpecies, GetMonIconTiles, GetMoney, GetNationalPokedexCount,
+  GetStringCenterAlignXOffset, GetStringRightAlignXOffset, GetStringWidth, HasAllHoennMons,
+  HideBg, InUnionRoom, InitBgsFromTemplates, InitWindows,
   IsDma3ManagerBusyWithBgCopy, IsNationalPokedexEnabled, IsSEPlaying, JOY_NEW,
-  LZ77UnCompWram, LoadBgTiles, LoadCardGfx, LoadMessageBoxAndBorderGfx,
-  LoadMonIconGfx, LoadOam, LoadPalette, LoadStickerGfx,
-  LoadWirelessStatusIndicatorSpriteGfx, Overworld_IsRecvQueueAtMax, PIXEL_FILL, PlaySE,
-  PrintAllOnCardBack, PrintAllOnCardFront, PrintBattleFacilityStringOnCard, PrintBerryCrushStringOnCard,
-  PrintContestStringOnCard, PrintHofDebutTimeOnCard, PrintIdOnCard, PrintLinkBattleResultsOnCard,
-  PrintMoneyOnCard, PrintNameOnCardBack, PrintNameOnCardFront, PrintPokeblockStringOnCard,
-  PrintPokedexOnCard, PrintPokemonIconsOnCard, PrintProfilePhraseOnCard, PrintStatOnBackOfCard,
-  PrintStickersOnCard, PrintTimeOnCard, PrintTradesStringOnCard, PrintUnionStringOnCard,
-  ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetGpuRegs,
+  LZ77UnCompWram, LoadBgTiles, LoadMessageBoxAndBorderGfx, LoadOam,
+  LoadPalette, LoadWirelessStatusIndicatorSpriteGfx, Overworld_IsRecvQueueAtMax, PIXEL_FILL,
+  PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags,
   ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
-  ScanlineEffect_Clear, ScanlineEffect_Stop, SetBgTilemapBuffer, SetCardBgsAndPals,
-  SetCloseLinkCallback, SetDataFromTrainerCard, SetGpuReg, SetHBlankCallback,
-  SetMainCallback2, SetPlayerCardData, SetTrainerCardCb2, SetUpTrainerCardTask,
-  SetVBlankCallback, ShowBg, StringCopy, StringExpandPlaceholders,
-  Task_DoCardFlipTask, TintPalette_CustomTone, TintPalette_SepiaTone, TrainerCard_GenerateCardForPlayer,
-  TransferPlttBuffer, UpdateCardFlipRegs, UpdatePaletteFade, VersionToCardType,
-  WIN_RANGE, WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
+  ScanlineEffect_Clear, ScanlineEffect_Stop, SetBgTilemapBuffer, SetCloseLinkCallback,
+  SetGpuReg, SetHBlankCallback, SetMainCallback2, SetVBlankCallback,
+  ShowBg, StringCopy, StringExpandPlaceholders, TintPalette_CustomTone,
+  TintPalette_SepiaTone, TransferPlttBuffer, UpdatePaletteFade, WIN_RANGE,
+  WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void VblankCb_TrainerCard(void) */

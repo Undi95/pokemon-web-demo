@@ -18,37 +18,31 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddBagItem, AddTextPrinterParameterized, Alloc,
-  AllocZeroed, CalcEmeraldBattleTowerChecksum, CalculateDaycareMailRandSum, CheckBagHasItem,
-  CheckPCHasItem, CheckShouldAdvanceLinkState, ClearContinueGameWarpStatus2, ClearDialogWindowAndFrame,
-  ClearJapaneseSecretBases, ClearLinkCallback_2, ConvertIntToDecimalStringN, ConvertInternationalString,
-  CopyTrainerId, CopyWindowToVram, CreateRecordMixingLights, CreateTask,
-  CreateTask_EnterCableClubSeat, CreateTask_ReestablishCableClubLink, DeactivateAllNormalTVShows, DestroyRecordMixingLights,
-  DestroyTask, DrawDialogueFrame, EmeraldBattleTowerRecordToRuby, FillWinStreakRecords1P,
-  FillWinStreakRecords2P, FlagSet, Free, FuncIsActiveTask,
-  GetBlockReceivedStatus, GetDaycareMailItemId, GetDaycareMailRandSum, GetLilycoveLadyId,
-  GetLinkPlayerCount, GetLinkPlayerCountAsBitFlags, GetLinkPlayerCount_2, GetLinkPlayerTrainerId,
-  GetMultiplayerId, GetMultiplayerId_, GetNewHallRecords, GetPlayerHallRecords,
-  GetPlayerRecvBuffer, GetPocketByItemId, GetRecordMixingDaycareMail, GetRecordMixingGift,
-  GetSavedApprentices, GetSavedPlayerCount, GetTrainerId, InitDaycareMailRecordMixing,
-  IsApprenticeAlreadySaved, IsLinkMaster, IsLinkTaskFinished, IsStringJapanese,
-  LinkDummy_Return2, Link_AnyPartnersPlayingRubyOrSapphire, LoadPtrFromTaskData, PadNameString,
-  PlaySE, PrepareExchangePacket, PrepareExchangePacketForRubySapphire, PrepareUnknownExchangePacket,
-  PrintTextOnRecordMixing, PutNewBattleTowerRecord, QuizLadyClearQuestionForRecordMix, Random2,
-  ReceiveApprenticeData, ReceiveBattleTowerData, ReceiveDaycareMailData, ReceiveDewfordTrendData,
-  ReceiveExchangePacket, ReceiveGiftItem, ReceiveLilycoveLadyData, ReceiveOldManData,
-  ReceivePokeNewsData, ReceiveRankingHallRecords, ReceiveSecretBasesData, ReceiveTvShowsData,
-  ResetBlockReceivedFlag, ResetLilycoveLadyForRecordMix, ResetMauvilleOldManFlag, Rfu_SetLinkRecovery,
-  RubyBattleTowerRecordToEmerald, SanitizeDaycareMailForRuby, SanitizeEmeraldBattleTowerRecord, SanitizeMauvilleOldManForRuby,
-  SanitizeReceivedEmeraldOldMan, SanitizeReceivedRubyOldMan, SanitizeRubyBattleTowerRecord, SanitizeTVShowLocationsForRuby,
-  SanitizeTVShowsForRuby, SaveHighestWinStreakRecords, ScriptContext_Enable, SeedRng,
-  SeedRng2, SendBlockRequest, SetCloseLinkCallback, SetContinueGameWarpStatusToDynamicWarp,
-  SetLinkStandbyCallback, SetLinkWaitingForScript, SetLocalLinkPlayerId, SetPlayerSecretBaseParty,
-  SetSrcLookupPointers, ShufflePlayerIndices, StorePtrInTaskData, StringCopy,
-  StringLength, StripExtCtrlCodes, SwapDaycareMail, VarSet,
-  WriteSaveBlock1Sector, WriteSaveBlock2,  // 4-per-line for readability
+  AllocZeroed, CalcEmeraldBattleTowerChecksum, CheckBagHasItem, CheckPCHasItem,
+  CheckShouldAdvanceLinkState, ClearContinueGameWarpStatus2, ClearDialogWindowAndFrame, ClearJapaneseSecretBases,
+  ClearLinkCallback_2, ConvertIntToDecimalStringN, ConvertInternationalString, CopyTrainerId,
+  CopyWindowToVram, CreateRecordMixingLights, CreateTask, CreateTask_EnterCableClubSeat,
+  CreateTask_ReestablishCableClubLink, DeactivateAllNormalTVShows, DestroyRecordMixingLights, DestroyTask,
+  DrawDialogueFrame, EmeraldBattleTowerRecordToRuby, FlagSet, Free,
+  FuncIsActiveTask, GetBlockReceivedStatus, GetLilycoveLadyId, GetLinkPlayerCount,
+  GetLinkPlayerCountAsBitFlags, GetLinkPlayerCount_2, GetLinkPlayerTrainerId, GetMultiplayerId,
+  GetPlayerRecvBuffer, GetPocketByItemId, GetRecordMixingGift, GetSavedPlayerCount,
+  GetTrainerId, InitDaycareMailRecordMixing, IsLinkMaster, IsLinkTaskFinished,
+  IsStringJapanese, LinkDummy_Return2, Link_AnyPartnersPlayingRubyOrSapphire, LoadPtrFromTaskData,
+  PadNameString, PlaySE, PutNewBattleTowerRecord, QuizLadyClearQuestionForRecordMix,
+  Random2, ReceiveDewfordTrendData, ReceivePokeNewsData, ReceiveSecretBasesData,
+  ReceiveTvShowsData, ResetBlockReceivedFlag, ResetLilycoveLadyForRecordMix, ResetMauvilleOldManFlag,
+  Rfu_SetLinkRecovery, RubyBattleTowerRecordToEmerald, SanitizeMauvilleOldManForRuby, SanitizeReceivedEmeraldOldMan,
+  SanitizeReceivedRubyOldMan, SanitizeRubyBattleTowerRecord, SanitizeTVShowLocationsForRuby, SanitizeTVShowsForRuby,
+  ScriptContext_Enable, SeedRng, SeedRng2, SendBlockRequest,
+  SetCloseLinkCallback, SetContinueGameWarpStatusToDynamicWarp, SetLinkStandbyCallback, SetLinkWaitingForScript,
+  SetLocalLinkPlayerId, SetPlayerSecretBaseParty, StringCopy, StringLength,
+  StripExtCtrlCodes, VarSet, WriteSaveBlock1Sector, WriteSaveBlock2,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RecordMixingPlayerSpotTriggered(void) */

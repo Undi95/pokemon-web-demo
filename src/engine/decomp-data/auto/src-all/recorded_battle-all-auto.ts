@@ -18,17 +18,17 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AllocZeroed, AnimateSprites, BeginNormalPaletteFade, BuildOamBuffer,
-  CalcByteArraySum, ConvertInternationalString, CopyRecordedBattleFromSave, CreateTask,
-  DestroyTask, Free, GetBattlerSide, GetFronterBrainSymbol,
-  GetLinkPlayerCount, GetMonData, GetMultiplayerId, GetNextRecordedDataByte,
-  IsRecordedBattleSaveValid, PlayMapChosenOrBattleBGM, RecordedBattleToSave, RecordedBattle_GetBattlerAction,
-  RecordedBattle_RestoreSavedParties, RecordedBattle_SaveParties, RecordedBattle_SetBattlerAction, ResetPaletteFadeControl,
-  RunTasks, SetMainCallback2, SetMonData, SetVariablesForRecordedBattle,
-  StringCopy, StripExtCtrlCodes, TryCopyRecordedBattleSaveData, TryReadSpecialSaveSector,
-  TryWriteSpecialSaveSector, VarGet, ZeroEnemyPartyMons, ZeroPlayerPartyMons,  // 4-per-line for readability
+  CalcByteArraySum, ConvertInternationalString, CreateTask, DestroyTask,
+  Free, GetBattlerSide, GetFronterBrainSymbol, GetLinkPlayerCount,
+  GetMonData, GetMultiplayerId, PlayMapChosenOrBattleBGM, ResetPaletteFadeControl,
+  RunTasks, SetMainCallback2, SetMonData, StringCopy,
+  StripExtCtrlCodes, TryReadSpecialSaveSector, TryWriteSpecialSaveSector, VarGet,
+  ZeroEnemyPartyMons, ZeroPlayerPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void RecordedBattle_Init(u8 mode) */

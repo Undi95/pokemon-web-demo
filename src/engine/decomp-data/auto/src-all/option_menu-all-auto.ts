@@ -18,24 +18,22 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AnimateSprites, BG_PLTT_ID,
-  BattleScene_DrawChoices, BattleScene_ProcessInput, BattleStyle_DrawChoices, BattleStyle_ProcessInput,
-  BeginNormalPaletteFade, BuildOamBuffer, ButtonMode_DrawChoices, ButtonMode_ProcessInput,
-  ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram,
-  CreateTask, DeactivateAllTextPrinters, DestroyTask, DmaClear16,
-  DmaClear32, DmaClearLarge16, DrawBgWindowFrames, DrawHeaderText,
-  DrawOptionMenuChoice, DrawOptionMenuTexts, FillBgTilemapBufferRect, FillWindowPixelBuffer,
-  FrameType_DrawChoices, FrameType_ProcessInput, FreeAllWindowBuffers, GetStringRightAlignXOffset,
-  GetStringWidth, GetWindowFrameTilesPal, HighlightOptionMenuItem, InitBgsFromTemplates,
-  InitWindows, JOY_NEW, LoadBgTiles, LoadOam,
-  LoadPalette, PIXEL_FILL, ProcessSpriteCopyRequests, PutWindowTilemap,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
-  RunTasks, ScanlineEffect_Stop, SetGpuReg, SetMainCallback2,
-  SetPokemonCryStereo, SetVBlankCallback, ShowBg, Sound_DrawChoices,
-  Sound_ProcessInput, TextSpeed_DrawChoices, TextSpeed_ProcessInput, TransferPlttBuffer,
-  UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
+  BeginNormalPaletteFade, BuildOamBuffer, ChangeBgX, ChangeBgY,
+  CopyBgTilemapBufferToVram, CopyWindowToVram, CreateTask, DeactivateAllTextPrinters,
+  DestroyTask, DmaClear16, DmaClear32, DmaClearLarge16,
+  FillBgTilemapBufferRect, FillWindowPixelBuffer, FreeAllWindowBuffers, GetStringRightAlignXOffset,
+  GetStringWidth, GetWindowFrameTilesPal, InitBgsFromTemplates, InitWindows,
+  JOY_NEW, LoadBgTiles, LoadOam, LoadPalette,
+  PIXEL_FILL, ProcessSpriteCopyRequests, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags,
+  ResetPaletteFade, ResetSpriteData, ResetTasks, RunTasks,
+  ScanlineEffect_Stop, SetGpuReg, SetMainCallback2, SetPokemonCryStereo,
+  SetVBlankCallback, ShowBg, TransferPlttBuffer, UpdatePaletteFade,
+  WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void MainCB2(void) */

@@ -18,22 +18,23 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemap, AnimLoadCompressedBgTilemapHandleContest, AnimSmallWaterOrb,
-  AnimTranslateLinear, BG_PLTT_ID, BLDALPHA_BLEND, CMD_ARGS,
-  ClearBattleAnimBg, Cos, CreateInvisibleSpriteWithCallback, CreateSprite,
-  CreateTask, CreateWaterPulseRingBubbles, CreateWaterSportDroplet, CreateWaterSpoutLaunchDroplets,
-  CreateWaterSpoutRainDroplet, DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite,
-  DestroyTask, FreeOamMatrix, FreeSpriteOamMatrix, GetAnimBattlerSpriteId,
-  GetBattleAnimBg1Data, GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord,
-  GetBattlerSpriteSubpriority, GetMonData, GetWaterSpoutPowerForAnim, ISO_RANDOMIZE2,
-  IndexOfSpritePaletteTag, InitAnimArcTranslation, InitAnimLinearTranslation, InitSpritePosToAnimAttacker,
-  InitSpritePosToAnimTarget, IsContest, LoadCompressedPalette, OBJ_PLTT_ID,
-  PrepareBattlerSpriteForRotScale, PrepareEruptAnimTaskData, Random2, ResetSpriteRotScale,
-  ScanlineEffect_SetParams, ScanlineEffect_Stop, SetAnimBgAttribute, SetBattlerSpriteYOffsetFromYScale,
-  SetGpuReg, Sin, StartSpriteAffineAnim, StartSpriteAnim,
-  StoreSpriteCallbackInData6, TranslateAnimHorizontalArc, UpdateEruptAnimTask,  // 4-per-line for readability
+  AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemap, AnimLoadCompressedBgTilemapHandleContest, AnimTranslateLinear,
+  BG_PLTT_ID, BLDALPHA_BLEND, CMD_ARGS, ClearBattleAnimBg,
+  Cos, CreateInvisibleSpriteWithCallback, CreateSprite, CreateTask,
+  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, DestroyTask,
+  FreeOamMatrix, FreeSpriteOamMatrix, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
+  GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteSubpriority,
+  GetMonData, ISO_RANDOMIZE2, IndexOfSpritePaletteTag, InitAnimArcTranslation,
+  InitAnimLinearTranslation, InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsContest,
+  LoadCompressedPalette, OBJ_PLTT_ID, PrepareBattlerSpriteForRotScale, PrepareEruptAnimTaskData,
+  Random2, ResetSpriteRotScale, ScanlineEffect_SetParams, ScanlineEffect_Stop,
+  SetAnimBgAttribute, SetBattlerSpriteYOffsetFromYScale, SetGpuReg, Sin,
+  StartSpriteAffineAnim, StartSpriteAnim, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc,
+  UpdateEruptAnimTask,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AnimTask_CreateRaindrops(u8 taskId) */

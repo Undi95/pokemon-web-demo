@@ -18,14 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   BerryTreeTimeUpdate, CalcTimeDifference, ClearDailyFlags, FlagGet,
-  FlagSet, GetVarPointer, InPokemonCenter, InitTimeBasedEvents,
-  RtcCalcLocalTime, SetMainCallback2, SetRandomLotteryNumber, SetShoalItemFlag,
-  UpdateBirchState, UpdateDewfordTrendPerDay, UpdateFrontierGambler, UpdateFrontierManiac,
-  UpdateMirageRnd, UpdatePartyPokerusTime, UpdatePerDay, UpdatePerMinute,
-  UpdateTVShowsPerDay, UpdateWeatherPerDay, VarSet,  // 4-per-line for readability
+  FlagSet, GetVarPointer, InPokemonCenter, RtcCalcLocalTime,
+  SetMainCallback2, SetRandomLotteryNumber, SetShoalItemFlag, UpdateBirchState,
+  UpdateDewfordTrendPerDay, UpdateFrontierGambler, UpdateFrontierManiac, UpdateMirageRnd,
+  UpdatePartyPokerusTime, UpdateTVShowsPerDay, UpdateWeatherPerDay, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void InitTimeBasedEvents(void) */

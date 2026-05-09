@@ -18,26 +18,26 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddRibbonsMonListWindow, AddTextPrinterParameterized, AddWindow,
-  AllocSubstruct, AreLeftHeaderSpritesMoving, BG_PLTT_ID, ChangeBgX,
-  ChangeBgY, CheckBoxMonSanityAt, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram,
-  CopyPaletteIntoBufferUnfaded, CopyToBgTilemapBuffer, CopyWindowToVram, CreateLoopedTask,
-  CreatePokenavList, CreateRibbonMonsList, DecompressAndCopyTileDataToVram, DestroyPokenavList,
-  DrawListIndexNumber, FreePokenavSubstruct, FreeTempTileDataBuffersIfPossible, GetBoxMonData,
-  GetBoxMonDataAt, GetBoxMonGender, GetBoxedMonPtr, GetLevelFromBoxMonExp,
-  GetLevelFromMonExp, GetMonData, GetMonGender, GetMonRibbonMonListData,
-  GetRibbonListMenuCurrIndex, GetRibbonsMonListCount, GetStringCenterAlignXOffset, GetStringClearToWidth,
-  GetSubstructPtr, HideBg, InitBgTemplates, InsertMonListItem,
-  IsCreatePokenavListTaskActive, IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive, IsPaletteFadeActive,
-  JOY_NEW, JOY_REPEAT, LT_SET_STATE, LoadLeftHeaderGfxForIndex,
-  MainMenuLoopedTaskIsBusy, PlaySE, PokenavFadeScreen, PokenavList_GetSelectedIndex,
-  PokenavList_IsMoveWindowTaskActive, PokenavList_MoveCursorDown, PokenavList_MoveCursorUp, PokenavList_PageDown,
-  PokenavList_PageUp, PrintHelpBarText, PutWindowTilemap, RemoveWindow,
-  SetBgTilemapBuffer, SetLeftHeaderSpritesInvisibility, ShowBg, ShowLeftHeaderGfx,
-  SlideMenuHeaderDown, StringCopy, StringGet_Nickname, UpdateIndexNumberDisplay,
-  UpdateMonListBgs,  // 4-per-line for readability
+  ARRAY_COUNT, AddTextPrinterParameterized, AddWindow, AllocSubstruct,
+  AreLeftHeaderSpritesMoving, BG_PLTT_ID, ChangeBgX, ChangeBgY,
+  CheckBoxMonSanityAt, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyPaletteIntoBufferUnfaded,
+  CopyToBgTilemapBuffer, CopyWindowToVram, CreateLoopedTask, CreatePokenavList,
+  DecompressAndCopyTileDataToVram, DestroyPokenavList, FreePokenavSubstruct, FreeTempTileDataBuffersIfPossible,
+  GetBoxMonData, GetBoxMonDataAt, GetBoxMonGender, GetBoxedMonPtr,
+  GetLevelFromBoxMonExp, GetLevelFromMonExp, GetMonData, GetMonGender,
+  GetMonRibbonMonListData, GetStringCenterAlignXOffset, GetStringClearToWidth, GetSubstructPtr,
+  HideBg, InitBgTemplates, IsCreatePokenavListTaskActive, IsDma3ManagerBusyWithBgCopy,
+  IsLoopedTaskActive, IsPaletteFadeActive, JOY_NEW, JOY_REPEAT,
+  LT_SET_STATE, LoadLeftHeaderGfxForIndex, MainMenuLoopedTaskIsBusy, PlaySE,
+  PokenavFadeScreen, PokenavList_GetSelectedIndex, PokenavList_IsMoveWindowTaskActive, PokenavList_MoveCursorDown,
+  PokenavList_MoveCursorUp, PokenavList_PageDown, PokenavList_PageUp, PrintHelpBarText,
+  PutWindowTilemap, RemoveWindow, SetBgTilemapBuffer, SetLeftHeaderSpritesInvisibility,
+  ShowBg, ShowLeftHeaderGfx, SlideMenuHeaderDown, StringCopy,
+  StringGet_Nickname,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 PokenavCallback_Init_MonRibbonList(void) */

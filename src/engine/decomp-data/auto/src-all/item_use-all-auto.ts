@@ -18,36 +18,32 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, BagMenu_YesNo, CanFish, CanUseDigOrEscapeRopeOnCurMap,
-  CheckForHiddenItemsInMapConnection, CleanupOverworldWindowsAndTilemaps, ClearDialogWindowAndFrame, CloseBattlePyramidBag,
-  ConvertIntToDecimalStringN, CopyItemName, CreateTask, CurrentBattlePyramidLocation,
-  DestroyTask, DisplayCannotDismountBikeMessage, DisplayCannotUseItemMessage, DisplayDadsAdviceCannotUseItemMessage,
-  DisplayItemMessage, DisplayItemMessageInBattlePyramid, DisplayItemMessageOnField, ExecuteTableBasedItemEffect,
-  FadeInFromBlack, FadeScreen, FlagClear, FlagGet,
-  FlagSet, GetBerryPowder, GetCoins, GetDirectionToHiddenItem,
-  GetItemEffectType, GetItemFieldFunc, GetItemHoldEffectParam, GetItemPocket,
-  GetItemSecondaryId, GetItemType, GetMapConnectionAtPos, GetMapHeaderFromConnection,
-  GetObjectEventIdByLocalIdAndMap, GetObjectEventIdByPosition, GetOnOffBike, GetPlayerFacingDirection,
-  GetXYCoordsOneStepInFrontOfPlayer, IncrementGameStat, IsBikingDisallowedByPlayer, IsHiddenItemPresentAtCoords,
-  IsHiddenItemPresentInConnection, IsPlayerFacingEmptyBerryTreePatch, IsPlayerFacingSurfableFishableWater, IsPlayerPartyAndPokemonStorageFull,
-  IsSEPlaying, IsWeatherNotFadingIn, ItemIdToBattleMoveId, ItemUseInBattle_Medicine,
-  ItemUseInBattle_PPRecovery, ItemUseInBattle_ShowPartyMenu, ItemUseInBattle_StatIncrease, ItemUseOutOfBattle_CannotUse,
-  ItemUseOutOfBattle_Medicine, ItemUseOutOfBattle_PPRecovery, ItemUseOutOfBattle_PPUp, ItemUseOutOfBattle_RareCandy,
-  ItemUseOutOfBattle_SacredAsh, ItemfinderCheckForHiddenItems, JOY_NEW, LockPlayerFieldControls,
+  ARRAY_COUNT, BagMenu_YesNo, CleanupOverworldWindowsAndTilemaps, ClearDialogWindowAndFrame,
+  CloseBattlePyramidBag, ConvertIntToDecimalStringN, CopyItemName, CreateTask,
+  CurrentBattlePyramidLocation, DestroyTask, DisplayItemMessage, DisplayItemMessageInBattlePyramid,
+  DisplayItemMessageOnField, ExecuteTableBasedItemEffect, FadeInFromBlack, FadeScreen,
+  FlagClear, FlagGet, FlagSet, GetBerryPowder,
+  GetCoins, GetItemEffectType, GetItemFieldFunc, GetItemHoldEffectParam,
+  GetItemPocket, GetItemSecondaryId, GetItemType, GetMapConnectionAtPos,
+  GetMapHeaderFromConnection, GetObjectEventIdByLocalIdAndMap, GetObjectEventIdByPosition, GetOnOffBike,
+  GetPlayerFacingDirection, GetXYCoordsOneStepInFrontOfPlayer, IncrementGameStat, IsBikingDisallowedByPlayer,
+  IsPlayerFacingEmptyBerryTreePatch, IsPlayerFacingSurfableFishableWater, IsPlayerPartyAndPokemonStorageFull, IsSEPlaying,
+  IsWeatherNotFadingIn, ItemIdToBattleMoveId, JOY_NEW, LockPlayerFieldControls,
   MapGridGetCollisionAt, MapGridGetMetatileBehaviorAt, MenuHelpers_IsLinkActive, MetatileBehavior_IsBridgeOverWaterNoEdge,
   MetatileBehavior_IsHorizontalRail, MetatileBehavior_IsIsolatedHorizontalRail, MetatileBehavior_IsIsolatedVerticalRail, MetatileBehavior_IsSurfableWaterOrUnderwater,
   MetatileBehavior_IsVerticalRail, MetatileBehavior_IsWaterfall, ObjectEventCheckHeldMovementStatus, ObjectEventClearHeldMovement,
   ObjectEventClearHeldMovementIfFinished, OpenPokeblockCase, Overworld_IsBikingAllowed, Overworld_ResetStateAfterDigEscRope,
-  PlaySE, PlayerFaceHiddenItem, PlayerGetDestCoords, PlayerGetElevation,
-  PlayerTurnInPlace, ReadMail, RemoveBagItem, RemoveUsedItem,
-  ResetInitialPlayerAvatarState, ScriptContext_SetupScript, ScriptUnfreezeObjectEvents, SetDistanceOfClosestHiddenItem,
-  SetUpItemUseCallback, SetUpItemUseOnFieldCallback, StartEscapeRopeFieldEffect, StartFishing,
-  StringCopy, StringExpandPlaceholders, Task_FadeAndCloseBagMenu, TestPlayerAvatarFlags,
-  TryToWaterBerryTree, TryToWaterSudowoodo, UnfreezeObjectEvent, UnlockPlayerFieldControls,
-  UpdatePocketItemList, UpdatePocketListPosition, UpdatePyramidBagCursorPos, UpdatePyramidBagList,
-  UseStatIncreaseItem, VarGet, VarSet,  // 4-per-line for readability
+  PlaySE, PlayerGetDestCoords, PlayerGetElevation, PlayerTurnInPlace,
+  ReadMail, RemoveBagItem, ResetInitialPlayerAvatarState, ScriptContext_SetupScript,
+  ScriptUnfreezeObjectEvents, StartEscapeRopeFieldEffect, StartFishing, StringCopy,
+  StringExpandPlaceholders, Task_FadeAndCloseBagMenu, TestPlayerAvatarFlags, TryToWaterBerryTree,
+  UnfreezeObjectEvent, UnlockPlayerFieldControls, UpdatePocketItemList, UpdatePocketListPosition,
+  UpdatePyramidBagCursorPos, UpdatePyramidBagList, UseStatIncreaseItem, VarGet,
+  VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetUpItemUseCallback(u8 taskId) */

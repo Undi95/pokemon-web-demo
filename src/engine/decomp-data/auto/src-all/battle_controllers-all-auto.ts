@@ -18,18 +18,18 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, BYTE_TO_RECEIVE, BYTE_TO_SEND, BattleAI_HandleItemUseBeforeAISetup,
   BitmaskAllOtherLinkPlayers, BufferBattlePartyCurrentOrderBySide, CheckShouldAdvanceLinkState, ClearBattleAnimationVars,
-  ClearBattleMonForms, CreateMon, CreateTask, CreateTasksForSendRecvLinkBuffers,
-  DestroyTask_RfuIdle, GET_BATTLER_SIDE2, GetBlockReceivedStatus, GetLinkPlayerCount,
-  GetLinkPlayerCount_2, GetMonData, GetMultiplayerId, HandleLinkBattleSetup,
-  IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL, InitLinkBtlControllers, InitSinglePlayerBtlControllers, IsLinkMaster,
+  ClearBattleMonForms, CreateMon, CreateTask, DestroyTask_RfuIdle,
+  GET_BATTLER_SIDE2, GetBlockReceivedStatus, GetLinkPlayerCount, GetLinkPlayerCount_2,
+  GetMonData, GetMultiplayerId, IS_BATTLE_CONTROLLER_ACTIVE_ON_LOCAL, IsLinkMaster,
   IsLinkTaskFinished, MARK_BATTLE_CONTROLLER_IDLE_FOR_PLAYER, MarkBattlerReceivedLinkData, OpenLink,
-  PrepareBufferDataTransfer, PrepareBufferDataTransferLink, RecordedBattle_BufferNewBattlerData, RecordedBattle_Init,
-  RecordedBattle_SaveParties, ResetBlockReceivedFlag, SendBlock, SetBattlePartyIds,
-  SetMonData, SetWirelessCommType1, ZeroEnemyPartyMons,  // 4-per-line for readability
+  RecordedBattle_BufferNewBattlerData, RecordedBattle_Init, RecordedBattle_SaveParties, ResetBlockReceivedFlag,
+  SendBlock, SetMonData, SetWirelessCommType1, ZeroEnemyPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void HandleLinkBattleSetup(void) */

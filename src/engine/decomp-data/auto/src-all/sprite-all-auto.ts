@@ -18,27 +18,13 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ALLOC_SPRITE_TILE, AddSpriteToOamBuffer, AddSpritesToOamBuffer, AddSubspritesToOamBuffer,
-  AffineAnimDelay, AffineAnimStateReset, AffineAnimStateRestartAnim, AffineAnimStateStartAnim,
-  AllocOamMatrix, AllocSpriteTileRange, AllocSpriteTiles, AnimateSprite,
-  ApplyAffineAnimFrame, ApplyAffineAnimFrameAbsolute, ApplyAffineAnimFrameRelativeAndUpdateMatrix, BeginAffineAnimLoop,
-  BeginAnimLoop, BuildSpritePriorities, CalcCenterToCornerVec, ChangeSpriteAffineAnim,
-  ClearSpriteCopyRequests, ContinueAffineAnim, ContinueAffineAnimLoop, ContinueAnim,
-  ContinueAnimLoop, ConvertScaleParam, CopyMatricesToOamBuffer, CopyOamMatrix,
-  CpuCopy16, CpuCopy32, CreateSprite, CreateSpriteAt,
-  DecrementAffineAnimDelayCounter, DecrementAnimDelayCounter, DestroySprite, DoLoadSpritePalette,
-  FREE_SPRITE_TILE, FreeOamMatrix, FreeSpriteOamMatrix, FreeSpritePalette,
-  FreeSpritePaletteByTag, FreeSpriteTileRanges, FreeSpriteTiles, FreeSpriteTilesByTag,
-  GetAffineAnimFrame, GetAnchorCoord, GetSpriteMatrixNum, GetSpriteTileStartByTag,
-  IndexOfSpritePaletteTag, IndexOfSpriteTileTag, InitSpriteAffineAnim, JumpToTopOfAffineAnimLoop,
-  JumpToTopOfAnimLoop, LoadPalette, LoadSpritePalette, LoadSpriteSheet,
-  ObjAffineSet, PLTT_ID, RequestSpriteFrameImageCopy, ResetAffineAnimData,
-  ResetAllSprites, ResetOamMatrices, ResetOamRange, ResetSprite,
-  SAFE_DIV, SET_SPRITE_TILE_RANGE, SPRITE_TILE_IS_ALLOCATED, SetOamMatrix,
-  SetSpriteOamFlipBits, SetSpriteSheetFrameTileNum, SortSprites, StartSpriteAffineAnim,
-  StartSpriteAnim, UpdateOamCoords, UpdateSpriteMatrixAnchorPos,  // 4-per-line for readability
+  ALLOC_SPRITE_TILE, CpuCopy16, CpuCopy32, FREE_SPRITE_TILE,
+  LoadPalette, ObjAffineSet, PLTT_ID, SAFE_DIV,
+  SET_SPRITE_TILE_RANGE, SPRITE_TILE_IS_ALLOCATED,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetSpriteData(void) */

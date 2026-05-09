@@ -18,19 +18,21 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized3, AllocZeroed, BG_CHAR_ADDR,
-  BG_SCREEN_ADDR, BerryFix_GpuSet, BerryFix_HideScene, BerryFix_SetScene,
-  ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram, CopyWindowToVram,
-  CpuCopy32, DeactivateAllTextPrinters, DisableInterrupts, DmaCopy32,
-  DmaFill32, DoSoftReset, EnableInterrupts, FillBgTilemapBufferRect_Palette0,
-  FillWindowPixelBuffer, GetStringWidth, HideBg, InitBgsFromTemplates,
-  InitWindows, JOY_NEW, LZ77UnCompVram, MultiBootCheckComplete,
-  MultiBootInit, MultiBootMain, MultiBootStartMaster, PIXEL_FILL,
-  PLTT_OFFSET_4BPP, PLTT_SIZEOF, PutWindowTilemap, ResetBgsAndClearDma3BusyFlags,
-  ResetSpriteData, ResetTasks, ScanlineEffect_Stop, SetGpuReg,
-  SetMainCallback2, SetVBlankCallback, ShowBg, TryScene,  // 4-per-line for readability
+  BG_SCREEN_ADDR, ChangeBgX, ChangeBgY, CopyBgTilemapBufferToVram,
+  CopyWindowToVram, CpuCopy32, DeactivateAllTextPrinters, DisableInterrupts,
+  DmaCopy32, DmaFill32, DoSoftReset, EnableInterrupts,
+  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, GetStringWidth, HideBg,
+  InitBgsFromTemplates, InitWindows, JOY_NEW, LZ77UnCompVram,
+  MultiBootCheckComplete, MultiBootInit, MultiBootMain, MultiBootStartMaster,
+  PIXEL_FILL, PLTT_OFFSET_4BPP, PLTT_SIZEOF, PutWindowTilemap,
+  ResetBgsAndClearDma3BusyFlags, ResetSpriteData, ResetTasks, ScanlineEffect_Stop,
+  SetGpuReg, SetMainCallback2, SetVBlankCallback, ShowBg,
+  TryScene,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CB2_InitBerryFixProgram(void) */

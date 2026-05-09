@@ -18,34 +18,34 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddHatchedMonToParty, AddTextPrinterParameterized4, Alloc,
-  AllocateMonSpritesGfx, AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade,
-  BuildOamBuffer, CalculateMonStats, CalculatePlayerPartyCount, ChangeBgX,
-  ChangeBgY, CleanupOverworldWindowsAndTilemaps, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer,
-  CopyWindowToVram, CountPartyAliveNonEggMonsExcept, CountStorageNonEggMons, CreateEggShardSprite,
-  CreateHatchedMon, CreateMon, CreateRandomEggShardSprite, CreateSprite,
+  ARRAY_COUNT, AddTextPrinterParameterized4, Alloc, AllocateMonSpritesGfx,
+  AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BuildOamBuffer,
+  CalculateMonStats, CalculatePlayerPartyCount, ChangeBgX, ChangeBgY,
+  CleanupOverworldWindowsAndTilemaps, CopyBgTilemapBufferToVram, CopyToBgTilemapBuffer, CopyWindowToVram,
+  CountPartyAliveNonEggMonsExcept, CountStorageNonEggMons, CreateMon, CreateSprite,
   CreateTask, CreateYesNoMenu, DeactivateAllTextPrinters, DecompressAndLoadBgGfxUsingHeap,
   DestroySprite, DestroyTask, DoMonFrontSpriteAnimation, DoNamingScreen,
-  EggHatchCreateMonSprite, EggHatchPrintMessage, FadeScreen, FillWindowPixelBuffer,
-  Free, FreeAllSpritePalettes, FreeMonSpritesGfx, GetBoxMonNickname,
-  GetCurrentMapMusic, GetCurrentRegionMapSectionId, GetMonAbility, GetMonData,
-  GetMonGender, GetMonNickname2, GetMonSpritePalStruct, GetSetPokedexFlag,
-  GetSpeciesName, HandleLoadSpecialPokePic_DontHandleDeoxys, InitBgsFromTemplates, InitWindows,
-  IsFanfareTaskInactive, IsTextPrinterActive, LoadBgTiles, LoadCompressedPalette,
-  LoadCompressedSpritePalette, LoadOam, LoadPalette, LoadSpritePalette,
-  LoadSpriteSheet, LoadUserWindowBorderGfx, LockPlayerFieldControls, Menu_ProcessInputNoWrapClearOnChoose,
-  MonRestorePP, PIXEL_FILL, PlayBGM, PlayFanfare,
-  PlayRainStoppingSoundEffect, PlaySE, ProcessSpriteCopyRequests, PutWindowTilemap,
-  Random, RemoveWindow, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, RunTasks,
-  RunTextPrinters, ScanlineEffect_Stop, SetBgAttribute, SetBgTilemapBuffer,
-  SetGpuReg, SetMainCallback2, SetMonData, SetMultiuseSpriteTemplateToPokemon,
-  SetVBlankCallback, ShowBg, Sin, SpeciesToNationalPokedexNum,
-  StartSpriteAffineAnim, StartSpriteAnim, StopMapMusic, StringCompareWithoutExtCtrlCodes,
-  StringCopy, StringExpandPlaceholders, TVShowConvertInternationalString, TransferPlttBuffer,
-  UnsetBgTilemapBuffer, UpdatePaletteFade, _CheckDaycareMonReceivedMail,  // 4-per-line for readability
+  FadeScreen, FillWindowPixelBuffer, Free, FreeAllSpritePalettes,
+  FreeMonSpritesGfx, GetBoxMonNickname, GetCurrentMapMusic, GetCurrentRegionMapSectionId,
+  GetMonAbility, GetMonData, GetMonGender, GetMonNickname2,
+  GetMonSpritePalStruct, GetSetPokedexFlag, GetSpeciesName, HandleLoadSpecialPokePic_DontHandleDeoxys,
+  InitBgsFromTemplates, InitWindows, IsFanfareTaskInactive, IsTextPrinterActive,
+  LoadBgTiles, LoadCompressedPalette, LoadCompressedSpritePalette, LoadOam,
+  LoadPalette, LoadSpritePalette, LoadSpriteSheet, LoadUserWindowBorderGfx,
+  LockPlayerFieldControls, Menu_ProcessInputNoWrapClearOnChoose, MonRestorePP, PIXEL_FILL,
+  PlayBGM, PlayFanfare, PlayRainStoppingSoundEffect, PlaySE,
+  ProcessSpriteCopyRequests, PutWindowTilemap, Random, RemoveWindow,
+  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
+  ResetTempTileDataBuffers, RunTasks, RunTextPrinters, ScanlineEffect_Stop,
+  SetBgAttribute, SetBgTilemapBuffer, SetGpuReg, SetMainCallback2,
+  SetMonData, SetMultiuseSpriteTemplateToPokemon, SetVBlankCallback, ShowBg,
+  Sin, SpeciesToNationalPokedexNum, StartSpriteAffineAnim, StartSpriteAnim,
+  StopMapMusic, StringCompareWithoutExtCtrlCodes, StringCopy, StringExpandPlaceholders,
+  TVShowConvertInternationalString, TransferPlttBuffer, UnsetBgTilemapBuffer, UpdatePaletteFade,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void CreateHatchedMon(struct Pokemon *egg, struct Pokemon *temp) */

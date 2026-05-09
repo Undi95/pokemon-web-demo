@@ -18,23 +18,19 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, ApplyGlobalTintToPaletteEntries, AreCoordsWithinMapGridBounds, BG_PLTT_ID,
-  ClearMirageTowerPulseBlendEffect, ClearSavedMapView, CopyTilesetToVram, CopyTilesetToVramUsingHeap,
-  CpuCopy16, CpuFastFill16, CpuFill16, DecompressAndCopyTileDataToVram,
-  DecompressAndLoadBgGfxUsingHeap, FillConnection, FillEastConnection, FillNorthConnection,
-  FillSouthConnection, FillWestConnection, FixLongGrassMetatilesWindowBottom, FixLongGrassMetatilesWindowTop,
+  ClearMirageTowerPulseBlendEffect, CpuCopy16, CpuFastFill16, CpuFill16,
+  DecompressAndCopyTileDataToVram, DecompressAndLoadBgGfxUsingHeap, FixLongGrassMetatilesWindowBottom, FixLongGrassMetatilesWindowTop,
   GenerateBattlePyramidFloorLayout, GenerateTrainerHillFloorLayout, GetBorderBlockAt, GetIncomingConnection,
-  GetMapBorderIdAt, GetMapGridBlockAt, GetMapHeaderFromConnection, GetMetatileAttributesById,
-  GetPostCameraMoveMapBorderId, InitBackupMapLayoutConnections, InitBackupMapLayoutData, InitMapLayoutData,
-  InitSecretBaseAppearance, IsCoordInConnectingMap, IsCoordInIncomingConnectingMap, IsLargeBreakableDecoration,
+  GetMapGridBlockAt, GetMapHeaderFromConnection, InitSecretBaseAppearance, IsLargeBreakableDecoration,
   LoadBgTiles, LoadCompressedPalette, LoadMapFromCameraTransition, LoadPalette,
-  LoadPrimaryTilesetPalette, LoadSavedMapView, LoadSecondaryTilesetPalette, LoadTilesetPalette,
-  MapGridGetMetatileIdAt, MoveMapViewToBackup, PLTT_SIZEOF, RunOnLoadMapScript,
-  SaveMapView, SavedMapViewIsEmpty, SetOccupiedSecretBaseEntranceMetatiles, SetPositionFromConnection,
-  SkipCopyingMetatileFromSavedMap, UNPACK_BEHAVIOR, UNPACK_COLLISION, UNPACK_ELEVATION,
-  UNPACK_LAYER_TYPE, UNPACK_METATILE, UpdateTVScreensOnMap,  // 4-per-line for readability
+  PLTT_SIZEOF, RunOnLoadMapScript, SetOccupiedSecretBaseEntranceMetatiles, UNPACK_BEHAVIOR,
+  UNPACK_COLLISION, UNPACK_ELEVATION, UNPACK_LAYER_TYPE, UNPACK_METATILE,
+  UpdateTVScreensOnMap,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitMap(void) */

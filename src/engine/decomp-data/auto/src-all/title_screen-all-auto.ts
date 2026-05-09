@@ -18,21 +18,22 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AnimateSprites, BGCNT_CHARBASE, BGCNT_PRIORITY,
   BGCNT_SCREENBASE, BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR,
   BLDALPHA_BLEND, BeginNormalPaletteFade, BuildOamBuffer, CanResetRTC,
-  Cos, CreateCopyrightBanner, CreatePressStartBanner, CreateSprite,
-  CreateTask, DestroySprite, DmaFill16, DmaFill32,
-  EnableInterrupts, FadeOutBGM, FreeAllSpritePalettes, JOY_HELD,
-  JOY_NEW, LZ77UnCompVram, LoadCompressedSpriteSheet, LoadOam,
-  LoadPalette, LoadSpritePalette, OBJ_PLTT_ID, PanFadeAndZoomScreen,
-  ProcessSpriteCopyRequests, Q_8_8, Q_8_8_TO_INT, ResetPaletteFade,
-  ResetSpriteData, ResetTasks, RunTasks, ScanlineEffect_InitHBlankDmaTransfer,
-  ScanlineEffect_InitWave, ScanlineEffect_Stop, SetGpuReg, SetMainCallback2,
-  SetVBlankCallback, StartPokemonLogoShine, StartSpriteAnim, TransferPlttBuffer,
-  UpdateLegendaryMarkingColor, UpdatePaletteFade, _RGB,  // 4-per-line for readability
+  Cos, CreateSprite, CreateTask, DestroySprite,
+  DmaFill16, DmaFill32, EnableInterrupts, FadeOutBGM,
+  FreeAllSpritePalettes, JOY_HELD, JOY_NEW, LZ77UnCompVram,
+  LoadCompressedSpriteSheet, LoadOam, LoadPalette, LoadSpritePalette,
+  OBJ_PLTT_ID, PanFadeAndZoomScreen, ProcessSpriteCopyRequests, Q_8_8,
+  Q_8_8_TO_INT, ResetPaletteFade, ResetSpriteData, ResetTasks,
+  RunTasks, ScanlineEffect_InitHBlankDmaTransfer, ScanlineEffect_InitWave, ScanlineEffect_Stop,
+  SetGpuReg, SetMainCallback2, SetVBlankCallback, StartSpriteAnim,
+  TransferPlttBuffer, UpdatePaletteFade, _RGB,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SpriteCB_VersionBannerLeft(struct Sprite *sprite) */

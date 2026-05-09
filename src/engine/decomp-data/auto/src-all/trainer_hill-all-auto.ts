@@ -18,23 +18,21 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddBagItem, AddTextPrinterParameterized3, AllocZeroed,
   BG_PLTT_ID, CalculateMonStats, ClearTrainerHillVBlankCounter, ConvertIntToDecimalStringN,
-  CopyItemName, CopyTrainerHillTrainerText, CopyWindowToVram, CpuCopy32,
-  CpuFill32, CreateBattleTowerMon, CreateNPCTrainerHillParty, FacilityClassToGraphicsId,
-  FillWindowPixelBuffer, FlagGet, FreeDataStruct, FrontierSpeechToString,
-  GetCurrentTrainerHillMapId, GetFloorId, GetHighestLevelInPlayerParty, GetInEReaderMode,
-  GetMapDataForFloor, GetMonData, GetNumFloorsInTrainerHillChallenge, GetPrizeItemId,
-  GetPrizeListId, GetStringCenterAlignXOffset, GetStringRightAlignXOffset, GetTimerValue,
-  InTrainerHillChallenge, InitMapFromSavedGame, LoadPalette, LoadTrainerHillFloorObjectEventScripts,
-  MAP_GROUP, MAP_NUM, OnTrainerHillEReaderChallengeFloor, Overworld_GetMapHeaderByGroupAndId,
-  PACK_COLLISION, PACK_ELEVATION, PACK_METATILE, PIXEL_FILL,
-  PutWindowTilemap, ReadTrainerHillAndValidate, RunOnLoadMapScript, SetMonData,
-  SetTimerValue, SetTrainerHillMonLevel, SetTrainerHillVBlankCounter, SetUpDataStruct,
-  ShowFieldMessageFromBuffer, StringCopy, StringExpandPlaceholders, TRY_FREE_AND_SET_NULL,
-  TrainerHillDummy, VarGet, ZeroEnemyPartyMons,  // 4-per-line for readability
+  CopyItemName, CopyWindowToVram, CpuCopy32, CpuFill32,
+  CreateBattleTowerMon, FacilityClassToGraphicsId, FillWindowPixelBuffer, FlagGet,
+  FrontierSpeechToString, GetHighestLevelInPlayerParty, GetMonData, GetStringCenterAlignXOffset,
+  GetStringRightAlignXOffset, InitMapFromSavedGame, LoadPalette, MAP_GROUP,
+  MAP_NUM, Overworld_GetMapHeaderByGroupAndId, PACK_COLLISION, PACK_ELEVATION,
+  PACK_METATILE, PIXEL_FILL, PutWindowTilemap, ReadTrainerHillAndValidate,
+  RunOnLoadMapScript, SetMonData, SetTrainerHillVBlankCounter, ShowFieldMessageFromBuffer,
+  StringCopy, StringExpandPlaceholders, TRY_FREE_AND_SET_NULL, TrainerHillDummy,
+  VarGet, ZeroEnemyPartyMons,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void CallTrainerHillFunction(void) */

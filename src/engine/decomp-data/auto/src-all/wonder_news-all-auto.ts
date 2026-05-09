@@ -18,12 +18,12 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AGB_ASSERT, GetRewardItem, GetRewardType, GetSavedWonderNewsMetadata,
-  GetVarPointer, ITEM_TO_BERRY, IncrementRewardCounter, IncrementSentRewardCounter,
-  IsMysteryEventEnabled, Random, ResetSentRewardCounter, ValidateSavedWonderNews,
-  VarSet,  // 4-per-line for readability
+  AGB_ASSERT, GetSavedWonderNewsMetadata, GetVarPointer, ITEM_TO_BERRY,
+  IsMysteryEventEnabled, Random, ValidateSavedWonderNews, VarSet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void WonderNews_SetReward(u32 newsType) */

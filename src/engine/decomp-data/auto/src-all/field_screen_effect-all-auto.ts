@@ -18,33 +18,30 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   BGMusicStopped, BG_PLTT_ID, BLDALPHA_BLEND, BgDmaFill,
   ClearGpuRegBits, ClearLinkCallback_2, ClearMirageTowerPulseBlendEffect, CpuFastFill16,
   CpuFastSet, CreateTask, CreateTask_ReestablishCableClubLink, DestroyTask,
-  DoDiveWarp, DoPlayerSpinEntrance, DoPlayerSpinExit, FadeInFromBlack,
-  FadeInFromWhite, FadeScreen, FieldAnimateDoorClose, FieldAnimateDoorOpen,
-  FieldSetDoorOpened, FillPalBufferBlack, FillPalBufferWhite, FindTaskIdByFunc,
-  FreezeObjectEvents, FuncIsActiveTask, GetCurrentMapType, GetDestinationWarpMapHeader,
-  GetDoorSoundEffect, GetFlashLevel, GetLastUsedWarpMapType, GetMapPairFadeFromType,
-  GetMapPairFadeToType, GetObjectEventIdByLocalIdAndMap, GetPlayerFacingDirection, GetWalkNormalMovementAction,
-  InstallCameraPanAheadCallback, IsLinkTaskFinished, IsPlayerSpinEntranceActive, IsPlayerSpinExitActive,
-  IsPlayerStandingStill, IsWeatherNotFadingIn, LoadOrbEffectPalette, LoadPalette,
-  LockPlayerFieldControls, MapGridGetMetatileBehaviorAt, MetatileBehavior_IsDoor, MetatileBehavior_IsNonAnimDoor,
-  ObjectEventClearHeldMovementIfActive, ObjectEventClearHeldMovementIfFinished, ObjectEventSetHeldMovement, OnTrainerHillEReaderChallengeFloor,
-  Overworld_FadeOutMapMusic, Overworld_PlaySpecialMapMusic, PIXEL_FILL, PLTT_SIZEOF,
-  PaletteFadeActive, PlayRainStoppingSoundEffect, PlaySE, PlayerGetDestCoords,
-  ResetAllMultiplayerState, RfuSetErrorParams, SaveObjectEvents, ScanlineEffect_Clear,
-  ScanlineEffect_SetParams, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram, ScriptContext_Enable,
-  ScriptUnfreezeObjectEvents, SetBgTilemapPalette, SetCameraPanning, SetCameraPanningCallback,
-  SetCloseLinkCallback, SetFlashScanlineEffectWindowBoundaries, SetFlashScanlineEffectWindowBoundary, SetGpuReg,
-  SetGpuRegBits, SetLinkStandbyCallback, SetMainCallback2, SetObjectEventLoadFlag,
-  SetOrbFlashScanlineEffectWindowBoundaries, SetOrbFlashScanlineEffectWindowBoundary, SetPlayerInvisibility, SetPlayerVisibility,
-  SetUpWarpExitTask, ShowReturnToFieldStartMenu, StartEscalatorWarp, StartLavaridgeGym1FWarp,
-  StartLavaridgeGymB1FWarp, StartSendingKeysToLink, StartUpdateFlashLevelEffect, StartUpdateOrbFlashEffect,
-  StartWaitForFlashUpdate, TryFadeOutOldMapMusic, UnfreezeObjectEvents, UnlockPlayerFieldControls,
-  UpdateOrbEffectBlend, WaitForWeatherFadeIn, WarpFadeInScreen, WarpFadeOutScreen,
+  DoPlayerSpinEntrance, DoPlayerSpinExit, FadeScreen, FieldAnimateDoorClose,
+  FieldAnimateDoorOpen, FieldSetDoorOpened, FindTaskIdByFunc, FreezeObjectEvents,
+  FuncIsActiveTask, GetCurrentMapType, GetDestinationWarpMapHeader, GetDoorSoundEffect,
+  GetFlashLevel, GetLastUsedWarpMapType, GetMapPairFadeFromType, GetMapPairFadeToType,
+  GetObjectEventIdByLocalIdAndMap, GetPlayerFacingDirection, GetWalkNormalMovementAction, InstallCameraPanAheadCallback,
+  IsLinkTaskFinished, IsPlayerSpinEntranceActive, IsPlayerSpinExitActive, IsPlayerStandingStill,
+  IsWeatherNotFadingIn, LoadPalette, LockPlayerFieldControls, MapGridGetMetatileBehaviorAt,
+  MetatileBehavior_IsDoor, MetatileBehavior_IsNonAnimDoor, ObjectEventClearHeldMovementIfActive, ObjectEventClearHeldMovementIfFinished,
+  ObjectEventSetHeldMovement, OnTrainerHillEReaderChallengeFloor, Overworld_FadeOutMapMusic, Overworld_PlaySpecialMapMusic,
+  PIXEL_FILL, PLTT_SIZEOF, PlayRainStoppingSoundEffect, PlaySE,
+  PlayerGetDestCoords, ResetAllMultiplayerState, RfuSetErrorParams, SaveObjectEvents,
+  ScanlineEffect_Clear, ScanlineEffect_SetParams, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
+  ScriptContext_Enable, ScriptUnfreezeObjectEvents, SetBgTilemapPalette, SetCameraPanning,
+  SetCameraPanningCallback, SetCloseLinkCallback, SetGpuReg, SetGpuRegBits,
+  SetLinkStandbyCallback, SetMainCallback2, SetObjectEventLoadFlag, SetPlayerInvisibility,
+  ShowReturnToFieldStartMenu, StartEscalatorWarp, StartLavaridgeGym1FWarp, StartLavaridgeGymB1FWarp,
+  StartSendingKeysToLink, TryFadeOutOldMapMusic, UnfreezeObjectEvents, UnlockPlayerFieldControls,
   WarpIntoMap,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

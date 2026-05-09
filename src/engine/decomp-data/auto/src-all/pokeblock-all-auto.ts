@@ -18,38 +18,32 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddScrollIndicatorArrowPairParameterized, AddTextPrinterParameterized4, Alloc,
   AnimateSprites, BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes,
-  BuildOamBuffer, ChooseMonToGivePokeblock, ClearDialogWindowAndFrameToTransparent, ClearPokeblock,
-  ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent, CloseTossPokeblockWindow, CompactPokeblockSlots,
-  ConvertIntToDecimalStringN, CopyToBgTilemapBufferRect, CopyWindowToVram, CreatePokeblockCaseSprite,
-  CreateScrollArrows, CreateSprite, CreateSwapLineSprites, CreateTask,
-  CreateYesNoMenuWithCallbacks, DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroyListMenuTask,
-  DestroyScrollArrows, DestroyTask, DisplayMessageAndContinueTask, DoScheduledBgTilemapCopiesToVram,
-  DrawPokeblockInfo, DrawPokeblockMenuHighlight, DrawPokeblockMenuTitleText, DrawStdFrameWithCustomTileAndPalette,
-  FadePaletteAndSetTaskToClosePokeblockCase, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, Free,
-  FreeAllSpritePalettes, FreeAllWindowBuffers, FreeOamMatrix, FreeTempTileDataBuffersIfPossible,
-  GetFirstFreePokeblockSlot, GetHighestPokeblocksFlavorLevel, GetItemName, GetNature,
-  GetPlayerTextSpeedDelay, GetPokeblockData, GetPokeblocksFeel, GetStringCenterAlignXOffset,
-  GivePokeblockToContestLady, HandleInitBackgrounds, HandleInitWindows, InitBgsFromTemplates,
-  InitMenuInUpperLeftCornerNormal, InitPokeblockMenu, InitSpriteAffineAnim, InitWindows,
-  JOY_NEW, LZDecompressWram, LimitMenuScrollAndRow, ListMenuGetScrollAndRow,
-  ListMenuInit, ListMenu_ProcessInput, LoadCompressedPalette, LoadCompressedSpritePalette,
-  LoadCompressedSpriteSheet, LoadListMenuSwapLineGfx, LoadMessageBoxGfx, LoadOam,
-  LoadPalette, LoadPokeblockMenuGfx, LoadUserWindowBorderGfx, MenuHelpers_IsLinkActive,
-  MenuHelpers_ShouldWaitForLinkRecv, Menu_ProcessInputNoWrap, OpenPokeblockCase, PIXEL_FILL,
-  PlaySE, PokeblockAction_Cancel, PokeblockGetGain, PrintMenuActionTextsInUpperLeftCorner,
-  PrintOnPokeblockWindow, ProcessSpriteCopyRequests, PutPokeblockListMenuString, PutWindowTilemap,
+  BuildOamBuffer, ChooseMonToGivePokeblock, ClearDialogWindowAndFrameToTransparent, ClearScheduledBgCopiesToVram,
+  ClearStdWindowAndFrameToTransparent, ConvertIntToDecimalStringN, CopyToBgTilemapBufferRect, CopyWindowToVram,
+  CreateSprite, CreateSwapLineSprites, CreateTask, CreateYesNoMenuWithCallbacks,
+  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroyListMenuTask, DestroyTask,
+  DisplayMessageAndContinueTask, DoScheduledBgTilemapCopiesToVram, DrawStdFrameWithCustomTileAndPalette, FillBgTilemapBufferRect_Palette0,
+  FillWindowPixelBuffer, Free, FreeAllSpritePalettes, FreeAllWindowBuffers,
+  FreeOamMatrix, FreeTempTileDataBuffersIfPossible, GetItemName, GetNature,
+  GetPlayerTextSpeedDelay, GetStringCenterAlignXOffset, GivePokeblockToContestLady, InitBgsFromTemplates,
+  InitMenuInUpperLeftCornerNormal, InitSpriteAffineAnim, InitWindows, JOY_NEW,
+  LZDecompressWram, ListMenuGetScrollAndRow, ListMenuInit, ListMenu_ProcessInput,
+  LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet, LoadListMenuSwapLineGfx,
+  LoadMessageBoxGfx, LoadOam, LoadPalette, LoadUserWindowBorderGfx,
+  MenuHelpers_IsLinkActive, MenuHelpers_ShouldWaitForLinkRecv, Menu_ProcessInputNoWrap, PIXEL_FILL,
+  PlaySE, PrintMenuActionTextsInUpperLeftCorner, ProcessSpriteCopyRequests, PutWindowTilemap,
   RemoveScrollIndicatorArrowPair, ResetAllBgsCoordinates, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade,
   ResetSpriteData, ResetTasks, ResetTempTileDataBuffers, ResetVramOamAndBgCntRegs,
   RunTasks, SafariZoneActivatePokeblockFeeder, ScanlineEffect_Stop, ScheduleBgCopyTilemapToVram,
-  SetBgTilemapBuffer, SetGpuReg, SetInitialScroll, SetMainCallback2,
-  SetMenuItemsCountAndMaxShowed, SetSwapLineSpritesInvisibility, SetVBlankCallback, SetVBlankHBlankCallbacksToNull,
-  ShowBg, ShowPokeblockActionsWindow, StringCopy, StringExpandPlaceholders,
-  SwapPokeblockMenuItems, TransferPlttBuffer, TryClearPokeblock, UpdatePaletteFade,
-  UpdatePokeblockList, UpdatePokeblockSwapMenu, UpdateSwapLineSpritesPos,  // 4-per-line for readability
+  SetBgTilemapBuffer, SetGpuReg, SetMainCallback2, SetSwapLineSpritesInvisibility,
+  SetVBlankCallback, SetVBlankHBlankCallbacksToNull, ShowBg, StringCopy,
+  StringExpandPlaceholders, TransferPlttBuffer, UpdatePaletteFade, UpdateSwapLineSpritesPos,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void OpenPokeblockCase(u8 caseId, void (*callback)(void)) */

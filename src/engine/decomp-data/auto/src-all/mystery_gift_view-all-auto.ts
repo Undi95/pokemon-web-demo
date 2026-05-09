@@ -18,21 +18,22 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddScrollIndicatorArrowPair, AddTextPrinterParameterized3, AddWindow,
-  AllocZeroed, BG_PLTT_ID, BeginNormalPaletteFade, BufferCardText,
-  BufferNewsText, ChangeBgY, ClearGpuRegBits, ConvertIntToDecimalStringN,
-  CopyBgTilemapBufferToVram, CopyRectToBgTilemapBufferRect, CopyWindowToVram, CreateCardSprites,
-  CreateMonIconNoPersonality, CreateSprite, DecompressAndCopyTileDataToVram, DestroyCardSprites,
-  DestroySprite, DrawCardWindow, DrawNewsWindows, FREE_AND_SET_NULL,
-  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FreeAndDestroyMonIconSprite, FreeMonIconPalettes,
-  FreeSpritePaletteByTag, FreeSpriteTilesByTag, FreeTempTileDataBuffersIfPossible, GetFontAttribute,
-  GetIconSpeciesNoPersonality, GetStringWidth, GetTextWindowPalette, HideBg,
-  LZ77UnCompWram, LoadCompressedSpriteSheetUsingHeap, LoadMonIconPalettes, LoadPalette,
-  LoadSpritePalette, MG_DrawCheckerboardPattern, PrintMysteryGiftOrEReaderHeader, PutWindowTilemap,
-  RemoveScrollIndicatorArrowPair, RemoveWindow, SetGpuReg, SetGpuRegBits,
-  ShowBg, UpdateNewsScroll, UpdatePaletteFade, WIN_RANGE,  // 4-per-line for readability
+  AllocZeroed, BG_PLTT_ID, BeginNormalPaletteFade, ChangeBgY,
+  ClearGpuRegBits, ConvertIntToDecimalStringN, CopyBgTilemapBufferToVram, CopyRectToBgTilemapBufferRect,
+  CopyWindowToVram, CreateMonIconNoPersonality, CreateSprite, DecompressAndCopyTileDataToVram,
+  DestroySprite, FREE_AND_SET_NULL, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer,
+  FreeAndDestroyMonIconSprite, FreeMonIconPalettes, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
+  FreeTempTileDataBuffersIfPossible, GetFontAttribute, GetIconSpeciesNoPersonality, GetStringWidth,
+  GetTextWindowPalette, HideBg, LZ77UnCompWram, LoadCompressedSpriteSheetUsingHeap,
+  LoadMonIconPalettes, LoadPalette, LoadSpritePalette, MG_DrawCheckerboardPattern,
+  PrintMysteryGiftOrEReaderHeader, PutWindowTilemap, RemoveScrollIndicatorArrowPair, RemoveWindow,
+  SetGpuReg, SetGpuRegBits, ShowBg, UpdatePaletteFade,
+  WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 WonderCard_Init(struct WonderCard *card, struct WonderCardMetadata *metadata) */

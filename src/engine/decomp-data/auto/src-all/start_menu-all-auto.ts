@@ -18,42 +18,36 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, AddStartMenuAction, AddStartMenuWindow, AddTextPrinterForMessage_2,
-  AddTextPrinterParameterized, AddTextPrinterParameterized2, AddWindow, AppendToList,
-  BG_PLTT_ID, BeginNormalPaletteFade, BlendPalettes, BufferSaveMenuText,
-  BuildBattlePikeStartMenu, BuildBattlePyramidStartMenu, BuildLinkModeStartMenu, BuildMultiPartnerRoomStartMenu,
-  BuildNormalStartMenu, BuildSafariZoneStartMenu, BuildStartMenuActions, BuildUnionRoomStartMenu,
-  CleanupOverworldWindowsAndTilemaps, ClearContinueGameWarpStatus2, ClearDialogWindowAndFrame, ClearDialogWindowAndFrameToTransparent,
-  ClearStdWindowAndFrame, ClearStdWindowAndFrameToTransparent, ConvertIntToDecimalStringN, CopyWindowToVram,
-  CreateStartMenuTask, CreateTask, CurrentBattlePyramidLocation, DestroyTask,
-  DisplayYesNoMenuDefaultYes, DisplayYesNoMenuWithDefault, DmaClear16, DmaFillLarge16,
-  DrawStdWindowFrame, DrawTextBorderOuter, EnableInterrupts, FadeScreen,
-  FillWindowPixelBuffer, FlagGet, FlagSet, FreeAllWindowBuffers,
-  FreezeObjectEvents, FuncIsActiveTask, GetNationalPokedexCount, GetSafariZoneFlag,
-  GetStartMenuWindowId, GetStringRightAlignXOffset, HideSaveInfoWindow, HideSaveMessageWindow,
-  HideStartMenu, HideStartMenuWindow, InBattlePike, InMultiPartnerRoom,
-  InUnionRoom, IncrementGameStat, InitBattlePyramidRetire, InitBgsFromTemplates,
-  InitMenuNormal, InitSave, InitSaveWindowAfterLinkBattle, InitStartMenu,
-  InitStartMenuStep, InitWindows, IsOverworldLinkActive, IsSEPlaying,
+  ARRAY_COUNT, AddStartMenuWindow, AddTextPrinterForMessage_2, AddTextPrinterParameterized,
+  AddTextPrinterParameterized2, AddWindow, BG_PLTT_ID, BeginNormalPaletteFade,
+  BlendPalettes, BufferSaveMenuText, CleanupOverworldWindowsAndTilemaps, ClearContinueGameWarpStatus2,
+  ClearDialogWindowAndFrame, ClearDialogWindowAndFrameToTransparent, ClearStdWindowAndFrame, ClearStdWindowAndFrameToTransparent,
+  ConvertIntToDecimalStringN, CopyWindowToVram, CreateTask, CurrentBattlePyramidLocation,
+  DestroyTask, DisplayYesNoMenuDefaultYes, DisplayYesNoMenuWithDefault, DmaClear16,
+  DmaFillLarge16, DrawStdWindowFrame, DrawTextBorderOuter, EnableInterrupts,
+  FadeScreen, FillWindowPixelBuffer, FlagGet, FlagSet,
+  FreeAllWindowBuffers, FreezeObjectEvents, FuncIsActiveTask, GetNationalPokedexCount,
+  GetSafariZoneFlag, GetStartMenuWindowId, GetStringRightAlignXOffset, InBattlePike,
+  InMultiPartnerRoom, InUnionRoom, IncrementGameStat, InitBgsFromTemplates,
+  InitMenuNormal, InitWindows, IsOverworldLinkActive, IsSEPlaying,
   IsTextPrinterActive, JOY_HELD, JOY_NEW, Link_AnyPartnersPlayingFRLG_JP,
   LoadMessageBoxAndBorderGfx, LoadMessageBoxAndFrameGfx, LoadUserWindowBorderGfx_, LockPlayerFieldControls,
   Menu_LoadStdPalAt, Menu_MoveCursor, Menu_ProcessInputNoWrapClearOnChoose, PIXEL_FILL,
   PausePyramidChallenge, PlayRainStoppingSoundEffect, PlaySE, PlayerFreeze,
-  PrintPlayerNameOnWindow, PrintStartMenuActions, PutWindowTilemap, RemoveExtraStartMenuWindows,
-  RemoveSaveInfoWindow, RemoveStartMenuWindow, RemoveWindow, ResetBgsAndClearDma3BusyFlags,
-  ResetPaletteFade, ResetSpriteData, ResetTasks, ReturnToFieldOpenStartMenu,
-  RunSaveCallback, RunTasks, RunTextPrintersAndIsPrinter0Active, SafariZoneRetirePrompt,
-  SaveErrorTimer, SaveMapView, SaveStartTimer, SaveSuccesTimer,
-  ScanlineEffect_Clear, ScanlineEffect_Stop, ScriptContext_Enable, ScriptContext_SetupScript,
-  ScriptUnfreezeObjectEvents, SetContinueGameWarpStatusToDynamicWarp, SetGpuReg, SetMainCallback2,
-  SetTaskFuncWithFollowupFunc, SetUsingUnionRoomStartMenu, SetVBlankCallback, ShowBg,
-  ShowFrontierPass, ShowPlayerTrainerCard, ShowPyramidFloorWindow, ShowSafariBallsWindow,
-  ShowSaveInfoWindow, ShowSaveMessage, ShowTrainerCardInLink, SoftResetInBattlePyramid,
-  StopPlayerAvatar, StringCopy, StringExpandPlaceholders, SwitchTaskToFollowupFunc,
-  TransferPlttBuffer, TrySavingData, UnlockPlayerFieldControls, UpdatePaletteFade,
-  WriteSaveBlock1Sector, WriteSaveBlock2,  // 4-per-line for readability
+  PrintPlayerNameOnWindow, PutWindowTilemap, RemoveStartMenuWindow, RemoveWindow,
+  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ResetTasks,
+  ReturnToFieldOpenStartMenu, RunTasks, RunTextPrintersAndIsPrinter0Active, SafariZoneRetirePrompt,
+  SaveMapView, ScanlineEffect_Clear, ScanlineEffect_Stop, ScriptContext_Enable,
+  ScriptContext_SetupScript, ScriptUnfreezeObjectEvents, SetContinueGameWarpStatusToDynamicWarp, SetGpuReg,
+  SetMainCallback2, SetTaskFuncWithFollowupFunc, SetUsingUnionRoomStartMenu, SetVBlankCallback,
+  ShowBg, ShowFrontierPass, ShowPlayerTrainerCard, ShowTrainerCardInLink,
+  SoftResetInBattlePyramid, StopPlayerAvatar, StringCopy, StringExpandPlaceholders,
+  SwitchTaskToFollowupFunc, TransferPlttBuffer, TrySavingData, UnlockPlayerFieldControls,
+  UpdatePaletteFade, WriteSaveBlock1Sector, WriteSaveBlock2,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void SetDexPokemonPokenavFlags(void) */

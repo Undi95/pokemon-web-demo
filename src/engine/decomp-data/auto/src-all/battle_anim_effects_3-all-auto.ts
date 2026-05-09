@@ -18,21 +18,22 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AnimClappingHand, AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemapHandleContest, AnimTranslateLinear,
-  ArcTan2Neg, BATTLE_PARTNER, BG_PLTT_ID, BLDALPHA_BLEND,
-  BattleAnimAdjustPanning, BlendPalette, ChangeSpriteAffineAnim, ClearBattleAnimBg,
-  ClearGpuRegBits, CloneBattlerSpriteWithBlend, Cos, CpuCopy32,
-  CreateAdditionalMonSpriteForMoveAnim, CreateSprite, CreateSpriteAndAnimate, CreateSweatDroplets,
-  DestroyAnimSprite, DestroyAnimVisualTask, DestroySprite, DestroySpriteAndFreeResources_,
-  DestroySpriteAndMatrix, DestroySpriteWithActiveSheet, DestroyTask, FillPalette,
-  FreeOamMatrix, GetAnimBattlerSpriteId, GetBattleAnimBg1Data, GetBattleBgPaletteNum,
-  GetBattlerPosition, GetBattlerSide, GetBattlerSpriteBGPriority, GetBattlerSpriteBGPriorityRank,
-  GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr, GetBattlerSpriteSubpriority, GetBattlerYCoordWithElevation,
-  GetBgDataForTransform, GetGlareEyeDotCoords, GetGpuReg, GetMonData,
-  HandleSpeciesGfxDataChange, InitAnimArcTranslation, InitAnimLinearTranslation, InitSpritePosToAnimAttacker,
-  InitSpritePosToAnimTarget, InitYawnCloudPosition, IsContest, IsDoubleBattle,
+  AnimLoadCompressedBgGfx, AnimLoadCompressedBgTilemapHandleContest, AnimTranslateLinear, ArcTan2Neg,
+  BATTLE_PARTNER, BG_PLTT_ID, BLDALPHA_BLEND, BattleAnimAdjustPanning,
+  BlendPalette, ChangeSpriteAffineAnim, ClearBattleAnimBg, ClearGpuRegBits,
+  CloneBattlerSpriteWithBlend, Cos, CpuCopy32, CreateAdditionalMonSpriteForMoveAnim,
+  CreateSprite, CreateSpriteAndAnimate, DestroyAnimSprite, DestroyAnimVisualTask,
+  DestroySprite, DestroySpriteAndFreeResources_, DestroySpriteAndMatrix, DestroySpriteWithActiveSheet,
+  DestroyTask, FillPalette, FreeOamMatrix, GetAnimBattlerSpriteId,
+  GetBattleAnimBg1Data, GetBattleBgPaletteNum, GetBattlerPosition, GetBattlerSide,
+  GetBattlerSpriteBGPriority, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteCoordAttr,
+  GetBattlerSpriteSubpriority, GetBattlerYCoordWithElevation, GetBgDataForTransform, GetGpuReg,
+  GetMonData, HandleSpeciesGfxDataChange, InitAnimArcTranslation, InitAnimLinearTranslation,
+  InitSpritePosToAnimAttacker, InitSpritePosToAnimTarget, IsContest, IsDoubleBattle,
   IsSpeciesNotUnown, LoadBattleMonGfxAndAnimate, LoadBgTiles, LoadCompressedPalette,
   OBJ_PLTT_ID, PlaySE12WithPanning, PlaySE1WithPanning, PrepareAffineAnimInTaskData,
   PrepareBattlerSpriteForRotScale, Random2, ResetSpriteRotScale, ResetSpriteRotScale_PreserveAffine,
@@ -41,7 +42,7 @@ const {
   SetGpuReg, SetGpuRegBits, SetSpriteCoordsToAnimAttackerCoords, SetSpriteRotScale,
   Sin, SmokescreenImpact, StartMonScrollingBgMask, StartSpriteAffineAnim,
   StartSpriteAnim, StoreSpriteCallbackInData6, TranslateAnimHorizontalArc, TrySetSpriteRotScale,
-  UpdateYawnCloudPosition, WIN_RANGE,  // 4-per-line for readability
+  WIN_RANGE,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void AnimBlackSmoke(struct Sprite *sprite) */

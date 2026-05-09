@@ -18,16 +18,13 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  BgAffineSet, BgTileAllocOp, CheckForSpaceForDma3Request, CopyRectToBgTilemapBufferRect,
-  CopyTileMapEntry, CpuCopy16, GetBgControlAttribute, GetBgMetricAffineMode,
-  GetBgMetricTextMode, GetBgMode, GetBgType, GetGpuReg,
-  GetTileMapIndexFromCoords, HideBgInternal, IsInvalidBg, IsInvalidBg32,
-  IsTileMapOutsideWram, LZ77UnCompWram, LoadBgVram, PLTT_OFFSET_4BPP,
-  RequestDma3Copy, ResetBgControlStructs, ResetBgs, SetBgAffineInternal,
-  SetBgControlAttributes, SetBgModeInternal, SetGpuReg, SetGpuReg_ForcedBlank,
-  SetTextModeAndHideBgs, ShowBgInternal, SyncBgVisibilityAndMode, WriteSequenceToBgTilemapBuffer,  // 4-per-line for readability
+  BgAffineSet, CheckForSpaceForDma3Request, CpuCopy16, GetGpuReg,
+  LZ77UnCompWram, PLTT_OFFSET_4BPP, RequestDma3Copy, SetGpuReg,
+  SetGpuReg_ForcedBlank,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ResetBgs(void) */

@@ -18,14 +18,14 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AIStackPop, AIStackPushVar, AI_CalcDmg, BATTLE_OPPOSITE,
-  BATTLE_PARTNER, BattleAI_DoAIProcessing, BattleAI_GetWantedBattler, BattleAI_SetupAIData,
-  CheckMoveLimitations, ChooseMoveOrAction_Doubles, ChooseMoveOrAction_Singles, GET_BATTLER_SIDE,
-  GetAiScriptsInBattleFactory, GetAiScriptsInRecordedBattle, GetBattlerAtPosition, GetBattlerPosition,
-  GetBattlerSide, GetGenderFromSpeciesAndPersonality, GetItemHoldEffect, GetMonData,
-  GetWhoStrikesFirst, IS_BATTLER_OF_TYPE, Random, RecordLastUsedMoveByTarget,
+  AI_CalcDmg, BATTLE_OPPOSITE, BATTLE_PARTNER, CheckMoveLimitations,
+  GET_BATTLER_SIDE, GetAiScriptsInBattleFactory, GetAiScriptsInRecordedBattle, GetBattlerAtPosition,
+  GetBattlerPosition, GetBattlerSide, GetGenderFromSpeciesAndPersonality, GetItemHoldEffect,
+  GetMonData, GetWhoStrikesFirst, IS_BATTLER_OF_TYPE, Random,
   T1_READ_16, T1_READ_32, T1_READ_PTR, TypeCalc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───

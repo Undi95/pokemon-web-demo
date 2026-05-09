@@ -18,18 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AGB_ASSERT, ARRAY_COUNT, CALC_CRC, ClearEReaderTrainer,
-  ClearMysteryGiftFlags, ClearMysteryGiftVars, ClearRamScript, ClearSavedTrainerIds,
-  ClearSavedWonderCard, ClearSavedWonderCardAndRelated, ClearSavedWonderCardMetadata, ClearSavedWonderNews,
-  ClearSavedWonderNewsMetadata, CopyTrainerId, CpuFill32, FlagGet,
-  GetNumStampsInLinkData, GetNumStampsInMetadata, GetNumStampsInSavedCard, GetSavedWonderCard,
-  GetSavedWonderCardMetadata, GetSavedWonderNews, GetSavedWonderNewsMetadata, GetWonderCardFlagID,
-  IncrementCardStat, IncrementCardStatForNewTrainer, InitQuestionnaireWords, IsStampInMetadata,
-  IsWonderCardFlagIDInValidRange, RecordTrainerId, StringCopy, ValidateSavedRamScript,
-  ValidateSavedWonderCard, ValidateSavedWonderNews, ValidateStamp, ValidateWonderCard,
-  ValidateWonderNews, WonderNews_Reset,  // 4-per-line for readability
+  ClearMysteryGiftFlags, ClearMysteryGiftVars, ClearRamScript, CopyTrainerId,
+  CpuFill32, FlagGet, GetSavedWonderCard, GetSavedWonderCardMetadata,
+  GetSavedWonderNews, GetSavedWonderNewsMetadata, InitQuestionnaireWords, StringCopy,
+  ValidateSavedRamScript, WonderNews_Reset,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearMysteryGift(void) */

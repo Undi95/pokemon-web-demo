@@ -18,26 +18,24 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddSpriteIndex, BATTLE_PARTNER, BG_CHAR_ADDR, BG_PLTT_ID,
-  BG_SCREEN_ADDR, BattleAnimAdjustPanning, BattleAnimAdjustPanning2, BeginHardwarePaletteFade,
-  CalculatePanIncrement, ClearBattleAnimBg, ClearSpriteIndex, CpuCopy32,
-  CpuFill16, CreateSpriteAndAnimate, CreateTask, DestroyAnimVisualTask,
-  DestroySprite, DestroyTask, DmaCopy32, DrawBattlerOnBg,
-  DrawMainBattleBackground, FlipBattlerBgTiles, FreeSpriteOamMatrix, FreeSpritePaletteByTag,
-  FreeSpriteTilesByTag, GET_TRUE_SPRITE_INDEX, GetAnimBattlerSpriteId, GetBattleAnimBg1Data,
-  GetBattleAnimBgData, GetBattleBgPaletteNum, GetBattlerPosition, GetBattlerSide,
-  GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteSubpriority, GetMonData,
-  InitPrioritiesForVisibleBattlers, IsBattlerSpritePresent, IsBattlerSpriteVisible, IsContest,
-  IsDoubleBattle, IsSEPlaying, IsSpeciesNotUnown, LZDecompressVram,
-  LZDecompressWram, LaunchBattleAnimation, LoadCompressedPalette, LoadCompressedSpritePaletteUsingHeap,
-  LoadCompressedSpriteSheetUsingHeap, LoadContestBgAfterMoveAnim, LoadDefaultBg, LoadMoveBg,
-  LoadPalette, MoveBattlerSpriteToBG, OBJ_PLTT_ID, PLTT_OFFSET_4BPP,
-  PlaySE, PlaySE12WithPanning, RelocateBattleBgPal, RequestDma3Fill,
-  ResetBattleAnimBg, SE12PanpotControl, SWAP, SetAnimBgAttribute,
-  SetGpuReg, T1_READ_16, T2_READ_32, T2_READ_PTR,
-  UpdateOamPriorityInAllHealthboxes,  // 4-per-line for readability
+  BATTLE_PARTNER, BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR,
+  BeginHardwarePaletteFade, ClearBattleAnimBg, CpuCopy32, CpuFill16,
+  CreateSpriteAndAnimate, CreateTask, DestroySprite, DestroyTask,
+  DmaCopy32, DrawBattlerOnBg, DrawMainBattleBackground, FreeSpriteOamMatrix,
+  FreeSpritePaletteByTag, FreeSpriteTilesByTag, GET_TRUE_SPRITE_INDEX, GetAnimBattlerSpriteId,
+  GetBattleAnimBg1Data, GetBattleAnimBgData, GetBattleBgPaletteNum, GetBattlerPosition,
+  GetBattlerSide, GetBattlerSpriteBGPriorityRank, GetBattlerSpriteCoord, GetBattlerSpriteSubpriority,
+  GetMonData, InitPrioritiesForVisibleBattlers, IsBattlerSpritePresent, IsDoubleBattle,
+  IsSEPlaying, IsSpeciesNotUnown, LZDecompressVram, LZDecompressWram,
+  LoadCompressedPalette, LoadCompressedSpritePaletteUsingHeap, LoadCompressedSpriteSheetUsingHeap, LoadContestBgAfterMoveAnim,
+  LoadPalette, OBJ_PLTT_ID, PLTT_OFFSET_4BPP, PlaySE,
+  PlaySE12WithPanning, RequestDma3Fill, SE12PanpotControl, SWAP,
+  SetAnimBgAttribute, SetGpuReg, T1_READ_16, T2_READ_32,
+  T2_READ_PTR, UpdateOamPriorityInAllHealthboxes,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void ClearBattleAnimationVars(void) */

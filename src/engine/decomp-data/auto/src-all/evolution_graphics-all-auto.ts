@@ -18,14 +18,15 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, BG_PLTT_ID, BeginNormalPaletteFade, Cos,
-  CpuCopy16, CpuSet, CreateSparkle_ArcDown, CreateSparkle_CircleInward,
-  CreateSparkle_SpiralUpward, CreateSparkle_Spray, CreateSprite, CreateTask,
-  DestroySprite, DestroyTask, EndOnPostEvoMon, EndOnPreEvoMon,
-  LoadCompressedSpriteSheetUsingHeap, LoadSpritePalettes, OBJ_PLTT_ID, PlaySE,
-  Random, SetEvoSparklesMatrices, SetOamMatrix, Sin,  // 4-per-line for readability
+  CpuCopy16, CpuSet, CreateSprite, CreateTask,
+  DestroySprite, DestroyTask, LoadCompressedSpriteSheetUsingHeap, LoadSpritePalettes,
+  OBJ_PLTT_ID, PlaySE, Random, SetOamMatrix,
+  Sin,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** static void SetEvoSparklesMatrices(void) */

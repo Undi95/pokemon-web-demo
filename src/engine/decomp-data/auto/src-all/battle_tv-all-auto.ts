@@ -18,13 +18,13 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  AddMovePoints, AddPointsBasedOnWeather, AddPointsOnFainting, CalculateBaseDamage,
-  GET_BATTLER_SIDE, GetBattlerMoveSlotId, GetBattlerPosition, GetBattlerSide,
+  CalculateBaseDamage, GET_BATTLER_SIDE, GetBattlerPosition, GetBattlerSide,
   GetLinkTrainerFlankId, GetMonData, GetOpposingLinkMultiBattlerId, IS_TYPE_PHYSICAL,
-  IsNotSpecialBattleString, PutBattleUpdateOnTheAir, ShouldCalculateDamage, TryPutBattleSeminarOnAir,
-  TrySetBattleSeminarShow, TypeCalc,  // 4-per-line for readability
+  PutBattleUpdateOnTheAir, TryPutBattleSeminarOnAir, TypeCalc,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void BattleTv_SetDataBasedOnString(u16 stringId) */

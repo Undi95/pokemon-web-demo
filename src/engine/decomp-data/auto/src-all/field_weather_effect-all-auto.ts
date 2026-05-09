@@ -18,32 +18,19 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
-  ARRAY_COUNT, ApplyWeatherColorMapIfIdle, ApplyWeatherColorMapIfIdle_Gradual, Ash_InitVars,
-  Ash_Main, BLDALPHA_BLEND, Bubbles_InitVars, Bubbles_Main,
-  CalcCenterToCornerVec, Clouds_InitVars, Clouds_Main, CreateAbnormalWeatherTask,
-  CreateAshSprites, CreateBubbleSprite, CreateCloudSprites, CreateFogDiagonalSprites,
-  CreateFogHorizontalSprites, CreateRainSprite, CreateSandstormSprites, CreateSnowflakeSprite,
-  CreateSprite, CreateSpriteAtEnd, CreateSwirlSandstormSprites, CreateTask,
-  DestroyAshSprites, DestroyBubbleSprites, DestroyCloudSprites, DestroyFogDiagonalSprites,
-  DestroyFogHorizontalSprites, DestroyRainSprites, DestroySandstormSprites, DestroySnowflakeSprite,
-  DestroySprite, DestroyTask, Downpour_InitVars, DroughtStateInit,
-  DroughtStateRun, Drought_InitVars, Drought_Main, EnqueueThunder,
-  FindTaskIdByFunc, FogDiagonal_InitVars, FogDiagonal_Main, FogHorizontal_Finish,
-  FogHorizontal_InitVars, FogHorizontal_Main, FreeSpriteTilesByTag, FuncIsActiveTask,
-  GetSavedWeather, ISO_RANDOMIZE2, IncrementGameStat, InitRainSpriteMovement,
-  InitSnowflakeSpriteMovement, IsSEPlaying, LoadAshSpriteSheet, LoadCustomWeatherSpritePalette,
-  LoadDroughtWeatherPalettes, LoadRainSpriteSheet, LoadSpriteSheet, PlaySE,
-  Rain_InitVars, Rain_Main, Random, ResetDroughtWeatherPaletteLoading,
-  SPRITE_SHAPE, SPRITE_SIZE, Sandstorm_InitVars, Sandstorm_Main,
-  ScriptContext_Enable, SetCurrentAndNextWeather, SetGpuReg, SetNextWeather,
-  SetRainStrengthFromSoundEffect, SetSavedWeather, SetSpritePosToMapCoords, Shade_InitVars,
-  Snow_InitVars, Snow_Main, StartRainSpriteFall, StartSpriteAnim,
-  Sunny_InitVars, Thunderstorm_InitVars, Thunderstorm_Main, TranslateWeatherNum,
-  UpdateFogDiagonalMovement, UpdateRainCounter, UpdateRainSprite, UpdateSandstormMovement,
-  UpdateSandstormWaveIndex, UpdateSnowflakeSprite, UpdateThunderSound, UpdateVisibleRainSprites,
-  UpdateVisibleSnowflakeSprites, Weather_SetBlendCoeffs, Weather_SetTargetBlendCoeffs, Weather_UpdateBlend,  // 4-per-line for readability
+  ARRAY_COUNT, ApplyWeatherColorMapIfIdle, ApplyWeatherColorMapIfIdle_Gradual, BLDALPHA_BLEND,
+  CalcCenterToCornerVec, CreateSprite, CreateSpriteAtEnd, CreateTask,
+  DestroySprite, DestroyTask, DroughtStateInit, DroughtStateRun,
+  FindTaskIdByFunc, FreeSpriteTilesByTag, FuncIsActiveTask, ISO_RANDOMIZE2,
+  IncrementGameStat, IsSEPlaying, LoadCustomWeatherSpritePalette, LoadDroughtWeatherPalettes,
+  LoadSpriteSheet, PlaySE, Random, ResetDroughtWeatherPaletteLoading,
+  SPRITE_SHAPE, SPRITE_SIZE, ScriptContext_Enable, SetCurrentAndNextWeather,
+  SetGpuReg, SetNextWeather, SetRainStrengthFromSoundEffect, SetSpritePosToMapCoords,
+  StartSpriteAnim, Weather_SetBlendCoeffs, Weather_SetTargetBlendCoeffs, Weather_UpdateBlend,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void Clouds_InitVars(void) */

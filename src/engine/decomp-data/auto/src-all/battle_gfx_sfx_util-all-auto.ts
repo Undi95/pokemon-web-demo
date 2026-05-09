@@ -18,26 +18,25 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   AllocZeroed, BATTLE_OPPOSITE, BATTLE_PARTNER, BG_PLTT_ID,
-  BattleAI_ChooseMoveOrAction, BattleAI_SetupAIData, BattleLoadAllHealthBoxesGfx, BattleLoadOpponentMonSpriteGfx,
-  BattleLoadPlayerMonSpriteGfx, BattleLoadSubstituteOrMonSpriteGfx, BlendPalette, BufferBattlePartyCurrentOrder,
-  CheckMoveLimitations, ClearBehindSubstituteBit, ClearSpritesBattlerHealthboxAnimData, ClearSpritesHealthboxAnimData,
-  CpuCopy32, CreateBattlerHealthboxSprites, CreateSafariPlayerHealthboxSprites, CreateSprite,
-  CreateTask, DecompressPicFromTable_2, DestroyTask, Dma3CopyLarge32_,
-  DmaCopy32, DummyBattleInterfaceFunc, FREE_AND_SET_NULL, FreeSpritePaletteByTag,
-  GET_BATTLER_SIDE, GetBattlePalaceMoveGroup, GetBattlePalaceTarget, GetBattlerAtPosition,
-  GetBattlerPosition, GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y,
-  GetHPBarLevel, GetMonData, GetMonFrontSpritePal, GetMonSpritePalFromSpeciesAndPersonality,
-  GetNatureFromPersonality, GetPartyIdFromBattlePartyId, GetSubstituteSpriteDefault_Y, HandleLoadSpecialPokePic,
-  HandleLoadSpecialPokePic_DontHandleDeoxys, HandleLowHpMusicChange, InitBattlerHealthboxCoords, IsBattlerSpritePresent,
-  IsContest, IsDoubleBattle, IsSEPlaying, LZDecompressVram,
-  LZDecompressWram, LaunchBattleAnimation, LaunchStatusAnimation, LoadAndCreateEnemyShadowSprites,
-  LoadBattleMonGfxAndAnimate, LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
+  BattleAI_ChooseMoveOrAction, BattleAI_SetupAIData, BlendPalette, BufferBattlePartyCurrentOrder,
+  CheckMoveLimitations, CpuCopy32, CreateBattlerHealthboxSprites, CreateSafariPlayerHealthboxSprites,
+  CreateSprite, CreateTask, DecompressPicFromTable_2, DestroyTask,
+  Dma3CopyLarge32_, DmaCopy32, DummyBattleInterfaceFunc, FREE_AND_SET_NULL,
+  FreeSpritePaletteByTag, GET_BATTLER_SIDE, GetBattlerAtPosition, GetBattlerPosition,
+  GetBattlerSide, GetBattlerSpriteCoord, GetBattlerSpriteDefault_Y, GetHPBarLevel,
+  GetMonData, GetMonFrontSpritePal, GetMonSpritePalFromSpeciesAndPersonality, GetNatureFromPersonality,
+  GetPartyIdFromBattlePartyId, GetSubstituteSpriteDefault_Y, HandleLoadSpecialPokePic, HandleLoadSpecialPokePic_DontHandleDeoxys,
+  InitBattlerHealthboxCoords, IsBattlerSpritePresent, IsContest, IsDoubleBattle,
+  IsSEPlaying, LZDecompressVram, LZDecompressWram, LaunchBattleAnimation,
+  LaunchStatusAnimation, LoadCompressedPalette, LoadCompressedSpritePalette, LoadCompressedSpriteSheet,
   LoadPalette, LoadSpritePalette, OBJ_PLTT_ID, PLTT_SIZEOF,
-  PlaySE, Random, SetHealthboxSpriteInvisible, ShouldAnimBeDoneRegardlessOfSubstitute,
-  ShouldIgnoreDeoxysForm, StartSpriteAnim, TRY_FREE_AND_SET_NULL, UpdateHealthboxAttribute,  // 4-per-line for readability
+  PlaySE, Random, SetHealthboxSpriteInvisible, ShouldIgnoreDeoxysForm,
+  StartSpriteAnim, TRY_FREE_AND_SET_NULL, UpdateHealthboxAttribute,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void AllocateBattleSpritesData(void) */

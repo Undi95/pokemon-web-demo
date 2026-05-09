@@ -18,24 +18,20 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, AddTextPrinterParameterized3, AddWindow,
   AllocSubstruct, BgDmaFill, ChangeBgX, ChangeBgY,
-  ClearRematchPokeballIcon, CopyBgTilemapBufferToVram, CopyPokenavListMenuTemplate, CopyWindowRectToVram,
-  CopyWindowToVram, CpuFastFill8, CreateListArrowSprites, CreateLoopedTask,
-  CreateMoveListWindowTask, CreateSprite, DestroyListArrows, DestroySprite,
-  EraseListEntry, FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect,
-  FillWindowTilesByRow, FreePokenavSubstruct, FreeSpritePaletteByTag, FreeSpriteTilesByTag,
-  FuncIsActiveLoopedTask, GetBgTilemapBuffer, GetBgY, GetMatchCallFlavorText,
-  GetPokenavListWindowState, GetSubstructPtr, GetWindowAttribute, InitListItems,
-  InitPokenavListBg, InitPokenavListWindow, InitPokenavListWindowState, IsDma3ManagerBusyWithBgCopy,
-  IsLoopedTaskActive, IsPrintListItemsTaskActive, LT_SET_STATE, LoadCompressedSpriteSheet,
-  LoadListArrowGfx, MoveListWindow, PIXEL_FILL, PokenavList_IsMoveWindowTaskActive,
-  Pokenav_AllocAndLoadPalettes, PrintCheckPageTrainerName, PrintListItems, PrintMatchCallFieldNames,
-  PrintMatchCallFlavorText, PrintMatchCallListTrainerName, PutWindowTilemap, RemoveWindow,
-  SetBgTilemapBuffer, SetListMarginTile, ShouldShowDownArrow, ShouldShowUpArrow,
-  ToggleListArrows,  // 4-per-line for readability
+  ClearRematchPokeballIcon, CopyBgTilemapBufferToVram, CopyWindowRectToVram, CopyWindowToVram,
+  CpuFastFill8, CreateLoopedTask, CreateSprite, DestroySprite,
+  FillBgTilemapBufferRect_Palette0, FillWindowPixelBuffer, FillWindowPixelRect, FillWindowTilesByRow,
+  FreePokenavSubstruct, FreeSpritePaletteByTag, FreeSpriteTilesByTag, FuncIsActiveLoopedTask,
+  GetBgTilemapBuffer, GetBgY, GetMatchCallFlavorText, GetPokenavListWindowState,
+  GetSubstructPtr, GetWindowAttribute, IsDma3ManagerBusyWithBgCopy, IsLoopedTaskActive,
+  LT_SET_STATE, LoadCompressedSpriteSheet, PIXEL_FILL, Pokenav_AllocAndLoadPalettes,
+  PutWindowTilemap, RemoveWindow, SetBgTilemapBuffer,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** bool32 CreatePokenavList(const struct BgTemplate *bgTemplate, struct PokenavListTemplate *listTemplate, s32 tileOffset) */

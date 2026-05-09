@@ -18,34 +18,29 @@
 // ─── BRIDGE IMPORT (auto-injected by inject-bridge-imports.mjs) ───
 // Pull tous les callees ce module fait depuis le bridge unifié.
 // Si un helper est bridgé : binding actif. Sinon : undefined → throw au call.
+// Names already defined in this file via 'export function' are EXCLUDED
+// to avoid "already declared" esbuild errors.
 import * as _bridge from '../../../decomp-bridge';
 const {
   ARRAY_COUNT, AddTextPrinterParameterized, Alloc, AnimateSprites,
   BG_CHAR_ADDR, BG_PLTT_ID, BG_SCREEN_ADDR, BeginNormalPaletteFade,
-  BlendPalettes, BuildOamBuffer, CalcZoomScrollParams, ClearScheduledBgCopiesToVram,
-  ClearStdWindowAndFrameToTransparent, CopyWindowToVram, CorrectSpecialMapSecId_Internal, CpuCopy16,
-  CreateFlyDestIcons, CreateRegionMapCursor, CreateRegionMapPlayerIcon, CreateSprite,
-  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroySprite, DoRegionMapInputCallback,
-  DoScheduledBgTilemapCopiesToVram, DrawFlyDestTextWindow, DrawStdFrameWithCustomTileAndPalette, FillWindowPixelBuffer,
-  FlagGet, FreeAllSpritePalettes, FreeAllWindowBuffers, FreeRegionMapCursorSprite,
-  FreeRegionMapIconResources, FreeSpritePaletteByTag, FreeSpriteTileRanges, FreeSpriteTilesByTag,
-  FreeTempTileDataBuffersIfPossible, GetMapName, GetMapSecDimensions, GetMapSecIdAt,
-  GetMapTypeByGroupAndId, GetMapsecType, GetMarineCaveCoords, GetPositionOfCursorWithinMapSec,
-  GetSSTidalLocation, GetStringRightAlignXOffset, HideRegionMapPlayerIcon, IndexOfSpritePaletteTag,
-  InitBgsFromTemplates, InitMapBasedOnPlayerLocation, InitRegionMap, InitRegionMapData,
-  InitWindows, IsEventIslandMapSecId, IsPlayerInAquaHideout, JOY_HELD,
-  JOY_NEW, LZ77UnCompVram, LZ77UnCompWram, LoadFlyDestIcons,
-  LoadOam, LoadPalette, LoadRegionMapGfx, LoadSpritePalette,
+  BlendPalettes, BuildOamBuffer, ClearScheduledBgCopiesToVram, ClearStdWindowAndFrameToTransparent,
+  CopyWindowToVram, CorrectSpecialMapSecId_Internal, CpuCopy16, CreateSprite,
+  DeactivateAllTextPrinters, DecompressAndCopyTileDataToVram, DestroySprite, DoScheduledBgTilemapCopiesToVram,
+  DrawStdFrameWithCustomTileAndPalette, FillWindowPixelBuffer, FlagGet, FreeAllSpritePalettes,
+  FreeAllWindowBuffers, FreeSpritePaletteByTag, FreeSpriteTileRanges, FreeSpriteTilesByTag,
+  FreeTempTileDataBuffersIfPossible, GetMapName, GetMapSecIdAt, GetMapTypeByGroupAndId,
+  GetSSTidalLocation, GetStringRightAlignXOffset, IndexOfSpritePaletteTag, InitBgsFromTemplates,
+  InitWindows, JOY_HELD, JOY_NEW, LZ77UnCompVram,
+  LZ77UnCompWram, LoadOam, LoadPalette, LoadSpritePalette,
   LoadSpriteSheet, LoadUserWindowBorderGfx, MAP_GROUP, MAP_NUM,
   OBJ_PLTT_ID, Overworld_GetMapHeaderByGroupAndId, PIXEL_FILL, ProcessSpriteCopyRequests,
-  PutWindowTilemap, RegionMap_InitializeStateBasedOnSSTidalLocation, RegionMap_IsMapSecIdInNextRow, RegionMap_SetBG2XAndBG2Y,
-  ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData, ReturnToFieldFromFlyMapSelect,
-  SPRITE_SHAPE, SPRITE_SIZE, ScheduleBgCopyTilemapToVram, SetBgAttribute,
-  SetFlyMapCallback, SetGpuReg, SetGpuRegBits, SetMainCallback2,
+  PutWindowTilemap, ResetBgsAndClearDma3BusyFlags, ResetPaletteFade, ResetSpriteData,
+  ReturnToFieldFromFlyMapSelect, SPRITE_SHAPE, SPRITE_SIZE, ScheduleBgCopyTilemapToVram,
+  SetBgAttribute, SetGpuReg, SetGpuRegBits, SetMainCallback2,
   SetVBlankCallback, SetWarpDestinationToHealLocation, SetWarpDestinationToMapWarp, ShowBg,
-  SpriteCB_PlayerIcon, StartSpriteAnim, StringFill, StringLength,
-  TRY_FREE_AND_SET_NULL, TransferPlttBuffer, TryCreateRedOutlineFlyDestIcons, UnhideRegionMapPlayerIcon,
-  UpdatePaletteFade, UpdateRegionMapVideoRegs, VarGet,  // 4-per-line for readability
+  StartSpriteAnim, StringFill, StringLength, TRY_FREE_AND_SET_NULL,
+  TransferPlttBuffer, UpdatePaletteFade, VarGet,  // 4-per-line for readability
 } = _bridge;
 // ─── END BRIDGE IMPORT ───
 /** void InitRegionMap(struct RegionMap *regionMap, bool8 zoomed) */
