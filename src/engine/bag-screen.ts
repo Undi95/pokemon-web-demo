@@ -67,6 +67,10 @@ const BAG_SPRITE_PAL = 13;
 /** Palette slot pour le tilemap fond menu.bin (= rayures rose/mauve). */
 const BAG_BG_PAL = 12;
 
+/** Palette slot pour l'item icon courant (= chaque item a sa propre palette,
+ *  on charge à la volée selon item sélectionné). Slot 11 libre. */
+const ITEM_ICON_PAL = 11;
+
 /** BG layer pour le tilemap fond. BG2 est utilisé par overworld pour la map ;
  *  on save les overworld settings au open, et on restore au close. */
 const BAG_BG_LAYER = 2;
@@ -97,6 +101,14 @@ const HEADER_WINDOW_TEMPLATE: WindowTemplate = {
   paletteNum: STD_FRAME_PAL, baseBlock: 0x1,
 };
 
+/** Window pour l'icône de l'item sélectionné (= 24×24 px = 3×3 tiles).
+ *  Position : dans le sac, aux coordonnées du décomp item_menu.c (= sur le sprite sac
+ *  affichée à env. (8, 64) → tilemapLeft=1, tilemapTop=8). */
+const ITEM_ICON_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 0, tilemapLeft: 5, tilemapTop: 11, width: 3, height: 3,
+  paletteNum: ITEM_ICON_PAL, baseBlock: 0x150,
+};
+
 const LIST_WINDOW_TEMPLATE: WindowTemplate = {
   bg: 0, tilemapLeft: 16, tilemapTop: 2, width: 13, height: 11,
   paletteNum: STD_FRAME_PAL, baseBlock: 0x40,
@@ -117,7 +129,12 @@ let _spriteWid = -1;
 let _headerWid = -1;
 let _listWid = -1;
 let _descWid = -1;
+let _itemIconWid = -1;
 let _onClose: (() => void) | null = null;
+/** Cache des item icons chargés pour pas re-fetch chaque scroll. */
+const _itemIconCache: Record<string, { charData: Uint8Array; palette: Uint16Array }> = {};
+/** Item key actuellement loadé dans la window icon (= évite re-load redondant). */
+let _loadedIconKey: string | null = null;
 
 // Save overworld BG2 state pour restore au close.
 let _savedBgState: {
@@ -166,13 +183,20 @@ async function _loadAssets(): Promise<BagAssets> {
       // menu_male.pal / menu_female.pal = palette 16 colors du fond
       loadGbaPal(`/decomp/em/bag/menu_${gender}.pal`),
     ]);
+    // Use la palette PLTE du PNG si disponible (= matche les indices remappés
+    // par loadIndexedPngStrict). Sinon fallback à menu_male.pal.
+    // Concat les 2 sub-palettes : PNG palette pour les indices charData +
+    // 2ème sub-palette de menu_male.pal pour palette bank 1.
+    const combinedPal = new Uint16Array(32);
+    combinedPal.set(bgTilesPng.palette.subarray(0, 16), 0);
+    if (bgPal.length >= 32) combinedPal.set(bgPal.subarray(16, 32), 16);
     _assets = {
       bagSprite: { charData: bag.charData, palette: bag.palette },
       selectButton: { charData: button.charData, palette: button.palette },
       rotatingBall: { charData: ball.charData, palette: ball.palette },
       bgTiles: bgTilesPng.charData,
       bgTilemap: bgTilemap,
-      bgPalette: bgPal,
+      bgPalette: combinedPal,
     };
     _assetsLoading = null;
     return _assets;
@@ -336,6 +360,64 @@ function _drawAll(): void {
   _drawHeader();
   _drawList();
   _drawDesc();
+  _drawItemIcon();
+}
+
+/** Convertit ITEM_KEY → filename slug pour /decomp/em/items/icons/.
+ *  ITEM_POKE_BALL → poke_ball
+ *  ITEM_POTION → potion
+ *  ITEM_FULL_HEAL → full_heal */
+function _itemIconUrlBase(itemKey: string): string {
+  const slug = itemKey.replace(/^ITEM_/, '').toLowerCase();
+  return `/decomp/em/items/icons/${slug}`;
+}
+
+/** Charge async l'icône de l'item sélectionné dans une cache, puis la draw.
+ *  Idempotent : si même item déjà loadé, juste re-blit. */
+async function _ensureItemIconLoaded(itemKey: string): Promise<void> {
+  if (_itemIconCache[itemKey]) return;
+  try {
+    const base = _itemIconUrlBase(itemKey);
+    const png = await loadIndexedPngStrict(`${base}.png`, 4);
+    _itemIconCache[itemKey] = { charData: png.charData, palette: png.palette };
+  } catch (e) {
+    // Item icon manquant : on ignore (= window restera vide pour cet item).
+    console.warn(`[bag-screen] item icon load failed for ${itemKey}`, e);
+  }
+}
+
+function _drawItemIcon(): void {
+  if (_itemIconWid < 0) return;
+  FillWindowPixelBuffer(_itemIconWid, 0x00);
+  const itemKey = _selectedItemKey();
+  if (!itemKey) {
+    // No item selected : just clear.
+    PutWindowTilemap(_itemIconWid);
+    CopyWindowToVram(_itemIconWid, 3);
+    return;
+  }
+  const icon = _itemIconCache[itemKey];
+  if (!icon) {
+    // Pas encore chargé : fire async load + redraw quand done.
+    void _ensureItemIconLoaded(itemKey).then(() => {
+      // Ré-appel _drawItemIcon une fois loadé. Idempotent.
+      if (_isOpen && _selectedItemKey() === itemKey) {
+        _drawItemIcon();
+      }
+    });
+    PutWindowTilemap(_itemIconWid);
+    CopyWindowToVram(_itemIconWid, 3);
+    return;
+  }
+  // Charge la palette de l'item dans son slot dédié, puis blit le sprite.
+  if (_loadedIconKey !== itemKey) {
+    LoadPalette(icon.palette, ITEM_ICON_PAL * 16, icon.palette.length * 2);
+    _loadedIconKey = itemKey;
+  }
+  // Item icons sont 24×24 px (3×3 tiles).
+  BlitBitmapToWindow(_itemIconWid, icon.charData, 0, 0, 24, 24, 24);
+  PutWindowTilemap(_itemIconWid);
+  CopyWindowToVram(_itemIconWid, 3);
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -365,15 +447,17 @@ export function OpenBagScreen(onClose: () => void): void {
   _headerWid = AddWindow(HEADER_WINDOW_TEMPLATE);
   _listWid = AddWindow(LIST_WINDOW_TEMPLATE);
   _descWid = AddWindow(DESC_WINDOW_TEMPLATE);
+  _itemIconWid = AddWindow(ITEM_ICON_WINDOW_TEMPLATE);
 
-  // Frames sur header / list / desc — pas sur sprite (= sac doit être visible
-  // sans frame autour, comme dans le ROM).
+  // Frames sur header / list / desc — pas sur sprite ni icon (= sprites doivent
+  // être visibles sans frame autour, comme dans le ROM).
   DrawStdFrameWithCustomTileAndPalette(_headerWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
   DrawStdFrameWithCustomTileAndPalette(_listWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
   DrawStdFrameWithCustomTileAndPalette(_descWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
 
-  // Just put + copy le sprite window (pas de frame).
+  // Just put + copy les sprite windows (pas de frame).
   PutWindowTilemap(_spriteWid);
+  PutWindowTilemap(_itemIconWid);
 
   // Async : load assets puis setup BG fond + draw sprite. Les autres draw
   // marchent déjà sans assets (text-only).
@@ -534,6 +618,14 @@ export function CloseBagScreen(): void {
     RemoveWindow(_spriteWid);
     _spriteWid = -1;
   }
+  if (_itemIconWid >= 0) {
+    FillWindowPixelBuffer(_itemIconWid, 0x00);
+    PutWindowTilemap(_itemIconWid);
+    CopyWindowToVram(_itemIconWid, 3);
+    RemoveWindow(_itemIconWid);
+    _itemIconWid = -1;
+  }
+  _loadedIconKey = null;
   if (_headerWid >= 0) {
     ClearStdWindowAndFrame(_headerWid, true);
     RemoveWindow(_headerWid);
@@ -602,6 +694,7 @@ export function TickBagScreen(newKeys: number): void {
     PlaySE(5);
     _drawList();
     _drawDesc();
+    _drawItemIcon();
     return;
   }
   if (newKeys & KEY_UP) {
@@ -616,6 +709,7 @@ export function TickBagScreen(newKeys: number): void {
     PlaySE(5);
     _drawList();
     _drawDesc();
+    _drawItemIcon();
     return;
   }
   if (newKeys & KEY_A) {
