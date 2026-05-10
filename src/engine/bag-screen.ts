@@ -518,14 +518,19 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
   const cfg = bg2.config;
 
   // Save overworld BG2 state pour restore au close.
-  // VRAM snap range = char data + tilemap (= conservatif).
+  // VRAM snap range = char data + tilemap + BG0 tilemap (= overworld map data
+  // que le décomp clear via CpuFill16(0, VRAM, VRAM_SIZE) dans
+  // ResetVramOamAndBgCntRegs).
   const charOff = BAG_BG_CHAR_BASE * 0x4000;
   const mapOff = BAG_BG_MAP_BASE * 0x800;
-  const charLen = 0x4000;  // 16 KB tile data
-  const mapLen = 0x800;    // 2 KB tilemap
-  const vramSnap = new Uint8Array(charLen + mapLen);
+  const bg0MapOff = 31 * 0x800;  // BG0 mapBase 31 = overworld map tilemap
+  const charLen = 0x4000;
+  const mapLen = 0x800;
+  const bg0MapLen = 0x800;
+  const vramSnap = new Uint8Array(charLen + mapLen + bg0MapLen);
   vramSnap.set(rt.gba.vram.subarray(charOff, charOff + charLen), 0);
   vramSnap.set(rt.gba.vram.subarray(mapOff, mapOff + mapLen), charLen);
+  vramSnap.set(rt.gba.vram.subarray(bg0MapOff, bg0MapOff + bg0MapLen), charLen + mapLen);
 
   // Snapshot sub-palette 0 (= 16 u16 = 32 bytes) avant de la clobber.
   // gPlttBufferUnfaded est un Uint16Array indexé par u16.
@@ -545,6 +550,15 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
     vramSnap,
     paletteSnap,
   };
+
+  // 1:1 décomp ResetVramOamAndBgCntRegs : clear BG0 tilemap (= overworld map tiles
+  // qu'on voit derrière). Notre runtime continue de tick l'overworld qui re-écrit
+  // BG0 chaque frame, mais le menu pixel-perfect doit avoir BG0 vide pour les
+  // windows seulement. Faut bloquer l'overworld update de BG0 = soit suspendre
+  // le redraw map, soit clear BG0 chaque frame.
+  // Pour l'instant : clear initial. Le hook _syncSubspriteOam au tick (ajouté
+  // plus tôt) va pas suffire — BG0 est re-écrit par DrawWholeMapView.
+  rt.gba.vram.fill(0, bg0MapOff, bg0MapOff + bg0MapLen);
 
   // 1:1 décomp pattern : write tile data + tilemap to VRAM.
   rt.gba.vram.set(assets.bgTiles, charOff);
@@ -651,10 +665,13 @@ function _teardownBackgroundTilemap(): void {
   if (_savedBgState.vramSnap) {
     const charOff = BAG_BG_CHAR_BASE * 0x4000;
     const mapOff = BAG_BG_MAP_BASE * 0x800;
+    const bg0MapOff = 31 * 0x800;
     const charLen = 0x4000;
     const mapLen = 0x800;
+    const bg0MapLen = 0x800;
     rt.gba.vram.set(_savedBgState.vramSnap.subarray(0, charLen), charOff);
     rt.gba.vram.set(_savedBgState.vramSnap.subarray(charLen, charLen + mapLen), mapOff);
+    rt.gba.vram.set(_savedBgState.vramSnap.subarray(charLen + mapLen, charLen + mapLen + bg0MapLen), bg0MapOff);
   }
 
   // Restore sub-palette 0 (= overworld metatile 0).
