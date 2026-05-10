@@ -215,12 +215,18 @@ export function preloadBagAssets(): void {
 
 interface ItemSlot { itemKey: string; quantity: number }
 
+/** Sentinel itemKey pour la dernière entry "FERMER LE SAC" (= 1:1 décomp
+ *  item_menu.c:LoadBagItemListBuffers qui ajoute gText_CloseBag avec id=LIST_CANCEL). */
+const CLOSE_BAG_KEY = '__CLOSE_BAG__';
+
 function _currentPocketItems(): ItemSlot[] {
   const bag = gameState.bag as unknown as Record<string, ItemSlot[]>;
   const k = POCKETS[_pocketIdx].key;
   const slots = bag[k] ?? [];
-  // Filter out empty slots.
-  return slots.filter(s => s?.itemKey && (s.quantity ?? 0) > 0);
+  // Filter out empty slots, then append CLOSE_BAG sentinel à la fin (= 1:1
+  // décomp gText_CloseBag dernière entry, sauf si hideCloseBagText).
+  const realItems = slots.filter(s => s?.itemKey && (s.quantity ?? 0) > 0);
+  return [...realItems, { itemKey: CLOSE_BAG_KEY, quantity: 0 }];
 }
 
 function _selectedItemKey(): string | null {
@@ -269,35 +275,36 @@ function _drawList(): void {
   if (_listWid < 0) return;
   FillWindowPixelBuffer(_listWid, 0x11);
   const items = _currentPocketItems();
-  if (items.length === 0) {
+  for (let i = 0; i < VISIBLE_ROWS; i++) {
+    const idx = _scrollOffset + i;
+    if (idx >= items.length) break;
+    const slot = items[idx];
+    const cursor = (i === _cursorPos) ? '>' : ' ';
+    if (slot.itemKey === CLOSE_BAG_KEY) {
+      // 1:1 décomp gText_CloseBag = "FERMER LE SAC", sans quantité.
+      AddTextPrinterParameterized3(
+        _listWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW,
+        `${cursor}FERMER LE SAC`,
+      );
+      continue;
+    }
+    const name = getItemNameFr(slot.itemKey);
+    const qty = slot.quantity;
     AddTextPrinterParameterized3(
-      _listWid, FONT_NORMAL, 8, 4, COLOR_MAIN, TEXT_SKIP_DRAW, '(vide)',
+      _listWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW,
+      `${cursor}${name}`,
     );
-  } else {
-    for (let i = 0; i < VISIBLE_ROWS; i++) {
-      const idx = _scrollOffset + i;
-      if (idx >= items.length) break;
-      const slot = items[idx];
-      const name = getItemNameFr(slot.itemKey);
-      const qty = slot.quantity;
-      const cursor = (i === _cursorPos) ? '>' : ' ';
-      const line = `${cursor}${name}`;
-      AddTextPrinterParameterized3(
-        _listWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, line,
-      );
-      // Right-align quantity.
-      const qtyStr = `x${qty}`;
-      AddTextPrinterParameterized3(
-        _listWid, FONT_NORMAL, 78, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
-      );
-    }
-    // Scroll indicators.
-    if (_scrollOffset > 0) {
-      AddTextPrinterParameterized3(_listWid, FONT_NORMAL, 95, 1, COLOR_MAIN, TEXT_SKIP_DRAW, '^');
-    }
-    if (_scrollOffset + VISIBLE_ROWS < items.length) {
-      AddTextPrinterParameterized3(_listWid, FONT_NORMAL, 95, 1 + (VISIBLE_ROWS - 1) * 16, COLOR_MAIN, TEXT_SKIP_DRAW, 'v');
-    }
+    const qtyStr = `x${qty}`;
+    AddTextPrinterParameterized3(
+      _listWid, FONT_NORMAL, 78, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
+    );
+  }
+  // Scroll indicators.
+  if (_scrollOffset > 0) {
+    AddTextPrinterParameterized3(_listWid, FONT_NORMAL, 95, 1, COLOR_MAIN, TEXT_SKIP_DRAW, '^');
+  }
+  if (_scrollOffset + VISIBLE_ROWS < items.length) {
+    AddTextPrinterParameterized3(_listWid, FONT_NORMAL, 95, 1 + (VISIBLE_ROWS - 1) * 16, COLOR_MAIN, TEXT_SKIP_DRAW, 'v');
   }
   PutWindowTilemap(_listWid);
   CopyWindowToVram(_listWid, 3);
@@ -310,6 +317,13 @@ function _drawDesc(): void {
   // bag.pal n'a pas les couleurs du button → glitch). Pour l'instant juste texte.
   const TEXT_LEFT = 4;
   const itemKey = _selectedItemKey();
+  if (itemKey === CLOSE_BAG_KEY) {
+    // 1:1 décomp : sur FERMER LE SAC, description = "Retourner au jeu."
+    AddTextPrinterParameterized3(_descWid, FONT_NORMAL, TEXT_LEFT, 1, COLOR_MAIN, TEXT_SKIP_DRAW, 'Retourner au jeu.');
+    PutWindowTilemap(_descWid);
+    CopyWindowToVram(_descWid, 3);
+    return;
+  }
   if (itemKey) {
     const def = getItem(itemKey);
     const desc = def?.descriptionLabel ? getItemDescriptionFr(def.descriptionLabel) : '';
@@ -391,8 +405,9 @@ function _drawItemIcon(): void {
   if (_itemIconWid < 0) return;
   FillWindowPixelBuffer(_itemIconWid, 0x00);
   const itemKey = _selectedItemKey();
-  if (!itemKey) {
-    // No item selected : just clear.
+  // CLOSE_BAG_KEY = pas d'icon item, juste vide (= 1:1 décomp shows BAG_CLOSE icon
+  // mais pour l'instant on skip — Phase 2+ load select_button.png ici).
+  if (!itemKey || itemKey === CLOSE_BAG_KEY) {
     PutWindowTilemap(_itemIconWid);
     CopyWindowToVram(_itemIconWid, 3);
     return;
@@ -724,10 +739,15 @@ export function TickBagScreen(newKeys: number): void {
   if (newKeys & KEY_A) {
     const itemKey = _selectedItemKey();
     if (!itemKey) return;
+    if (itemKey === CLOSE_BAG_KEY) {
+      // 1:1 décomp : LIST_CANCEL → Task_FadeAndCloseBagMenu.
+      PlaySE(5);
+      CloseBagScreen();
+      return;
+    }
     PlaySE(5);
     // Phase 6+ : real use logic (Use/Give/Toss). Pour l'instant : log + flash msg.
     console.log(`[bag-screen] use ${itemKey} — TODO Phase 6+ (use/give/toss menu)`);
-    // Pas de feedback visuel pour le moment, juste consume le key.
     return;
   }
 }
