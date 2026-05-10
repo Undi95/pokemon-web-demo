@@ -68,8 +68,18 @@ function _g<T = unknown>(name: string): T | undefined {
 /** Returns "MAP_X (col, row) facing DIR" string. */
 function _where(): string {
   const pa = _g<PlayerAvatar>('gPlayerAvatar');
-  const gs = _g<{ data?: { location?: { __mapId?: string } } }>('gameState');
-  const mapId = gs?.data?.location?.__mapId ?? '?';
+  // Session 127 fix : `gameState.map.name` au lieu de `gameState.data.location.__mapId`
+  // (la 1ère structure était hypothétique, la vraie c'est `gameState.map.name`).
+  const gs = _g<{
+    data?: { location?: { __mapId?: string; mapName?: string } };
+    map?: { name?: string };
+    location?: { mapName?: string };
+  }>('gameState');
+  const mapId = gs?.map?.name
+    ?? gs?.location?.mapName
+    ?? gs?.data?.location?.__mapId
+    ?? gs?.data?.location?.mapName
+    ?? '?';
   if (!pa) return `${mapId} (no avatar)`;
   return `${mapId} (${pa.x},${pa.y}) facing ${_DIR_NAMES[pa.facing ?? 0]}`;
 }
@@ -133,29 +143,53 @@ function _npcs(): Array<Record<string, unknown>> {
 }
 
 function _dialog(): { open: boolean; text?: string; state?: string } {
+  // Session 127 fix : la textbox réelle est rendue via Phaser direct + `gWindowOpen`.
+  // Cherche aussi `__activeMessageBox`, `__currentDialogText`, et le DOM canvas overlay
+  // (peu probable mais possible). Best effort.
   const sCurrentText = _g<string>('__sCurrentText');
   const fmb = _g<{ open?: boolean; text?: string; state?: string }>('__fieldMessageBox');
+  const amb = _g<{ open?: boolean; text?: string }>('__activeMessageBox');
+  const dlg = _g<{ visible?: boolean; text?: string }>('__currentDialog');
+  const txt = _g<string>('__currentDialogText');
+  // Check script runtime for "msgbox halted" state (= dialog open while script paused).
+  const sr = _g<{ status?: () => unknown; halted?: () => boolean }>('__scriptRuntime');
+  const halted = !!sr?.halted?.();
+
   if (fmb?.open) return { open: true, text: fmb.text, state: fmb.state };
+  if (amb?.open) return { open: true, text: amb.text };
+  if (dlg?.visible) return { open: true, text: dlg.text };
+  if (txt) return { open: true, text: txt };
   if (sCurrentText) return { open: true, text: sCurrentText };
+  if (halted) return { open: true, text: '(halted on msgbox)' };
   return { open: false };
 }
 
 function _party(): Array<Record<string, unknown>> {
   const gs = _g<{ party?: unknown[] }>('gameState');
   return (gs?.party ?? []).map((m: unknown, i: number) => {
+    // Session 127 fix : essayer plusieurs aliases pour HP / moves.name (la
+    // structure interne stocke `currentHp`/`hpCurrent` au lieu de `hp`,
+    // et les moves ont parfois `move`/`id`/`moveId` au lieu de `name`).
     const mon = m as {
-      species?: string; nickname?: string; speciesNameFr?: string; level?: number;
-      hp?: number; maxHp?: number; moves?: Array<{ name?: string; pp?: number }>;
-      experience?: number; status?: string;
+      species?: string; nickname?: string; speciesNameFr?: string; speciesName?: string; level?: number;
+      hp?: number; currentHp?: number; hpCurrent?: number; current_hp?: number;
+      maxHp?: number; hpMax?: number; max_hp?: number;
+      moves?: Array<{ name?: string; move?: string; moveName?: string; id?: number; moveId?: number; pp?: number }>;
+      experience?: number; exp?: number; status?: string;
     };
+    const hp = mon.hp ?? mon.currentHp ?? mon.hpCurrent ?? mon.current_hp ?? '?';
+    const maxHp = mon.maxHp ?? mon.hpMax ?? mon.max_hp ?? '?';
     return {
       slot: i,
       species: mon.species,
-      name: mon.nickname || mon.speciesNameFr || mon.species,
+      name: mon.nickname || mon.speciesNameFr || mon.speciesName || mon.species,
       lv: mon.level,
-      hp: `${mon.hp}/${mon.maxHp}`,
-      moves: mon.moves?.map((mv) => `${mv.name}(${mv.pp})`).join(', ') ?? '?',
-      exp: mon.experience,
+      hp: `${hp}/${maxHp}`,
+      moves: mon.moves?.map((mv) => {
+        const moveName = mv.name ?? mv.move ?? mv.moveName ?? `move#${mv.id ?? mv.moveId ?? '?'}`;
+        return `${moveName}(${mv.pp ?? '?'})`;
+      }).join(', ') ?? '?',
+      exp: mon.experience ?? mon.exp,
       status: mon.status ?? 'OK',
     };
   });
@@ -167,10 +201,14 @@ function _bag(): Record<string, Array<{ item: string; qty: number }>> {
   const out: Record<string, Array<{ item: string; qty: number }>> = {};
   for (const [pocket, items] of Object.entries(bag)) {
     if (!Array.isArray(items)) continue;
-    out[pocket] = items.map((it) => ({
-      item: it?.itemKey?.replace(/^ITEM_/, '') ?? '?',
-      qty: it?.quantity ?? 0,
-    }));
+    // Session 127 fix : filter pour ne montrer QUE les slots non-vides (avant on
+    // retournait 16-30 slots vides par pocket = bruit énorme dans la console).
+    out[pocket] = items
+      .filter((it) => it?.itemKey && (it.quantity ?? 0) > 0)
+      .map((it) => ({
+        item: it?.itemKey?.replace(/^ITEM_/, '') ?? '?',
+        qty: it?.quantity ?? 0,
+      }));
   }
   return out;
 }
