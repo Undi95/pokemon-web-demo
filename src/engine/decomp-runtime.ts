@@ -1970,6 +1970,15 @@ export class DecompRuntime {
     //    RunTasks/AnimateSprites/BuildOamBuffer/UpdatePaletteFade dans CET
     //    ORDRE — cf MainCB2_Intro src/intro.c:1042-1052).
     if (this.gMain.callback2) this.gMain.callback2(this);
+    // 1:1 décomp `PlayTimeCounter_Update()` (main.c:181, AgbMain VBlank loop).
+    // Audit session 126 (post-test user) : avant ce call, playTimeVBlanks restait
+    // à 0 → DUREE JEU "0:00" indéfiniment. Maintenant tick chaque frame logique
+    // → playTimeSeconds incrémente toutes les 60 frames (= 1 sec @ 60Hz).
+    // Le state RUNNING est set par PlayTimeCounter_Start() au boot overworld.
+    // Lookup via globalThis pour éviter cycle import decomp-runtime ↔ save-system.
+    const playTimeUpdate = (globalThis as Record<string, unknown>).PlayTimeCounter_Update as
+      (() => void) | undefined;
+    playTimeUpdate?.();
     // 1:1 décomp : seuls les `MainCB2*` callbacks (= main loops de scène)
     // appellent RunTasks + AnimateSprites + BuildOamBuffer (cf intro.c:1042).
     // Les CB2 de transition (CB2_GoTo*) et d'init (CB2_Init*) ne tournent que

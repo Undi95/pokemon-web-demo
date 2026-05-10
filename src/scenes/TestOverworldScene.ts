@@ -201,6 +201,16 @@ export class TestOverworldScene extends Phaser.Scene {
     exposeGbaGlobals();
     InitKeys(this.rt);
 
+    // Audit session 126 (post-test) : 1:1 décomp `CB2_NewGame:1144 + CB2_
+    // ContinueSavedGame:1340` → `PlayTimeCounter_Start()`. Sans ça, le state
+    // reste à STOPPED → playTimeVBlanks/Seconds/Minutes/Hours jamais incrémentés
+    // → DUREE JEU "0:00" toujours. À call AU BOOT overworld pour que le tick
+    // dans decomp-runtime.tickFixed soit actif.
+    void import('../engine/play-time-counter').then(({ PlayTimeCounter_Start }) => {
+      PlayTimeCounter_Start();
+      console.log('[TestOverworld] PlayTimeCounter_Start invoked');
+    });
+
     const frameImg = this.add.image(0, 0, 'test-overworld-frame').setOrigin(0, 0);
     if (GAME_W !== 240 || GAME_H !== 160) {
       frameImg.setPosition((GAME_W - 240) / 2, (GAME_H - 160) / 2);

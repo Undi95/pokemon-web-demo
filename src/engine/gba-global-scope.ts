@@ -14,6 +14,9 @@ import * as _cb from './copyright-boot';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
 import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry } from './decomp-bridge';
 import {
+  PlayTimeCounter_Update, PlayTimeCounter_Start, PlayTimeCounter_Stop, PlayTimeCounter_Reset,
+} from './play-time-counter';
+import {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
   MapGridGetElevationAt,
@@ -502,6 +505,15 @@ const symbolsToExpose: Record<string, unknown> = {
   MapGridGetMetatileIdAt,
   GetMapBorderIdAt,
   GetMetatileAttributesById,
+
+  // Audit session 126 (post-test) : PlayTimeCounter ticks 1:1 décomp
+  // `play_time.c`. Appelé chaque frame par decomp-runtime.tickFixed
+  // (= via globalThis lookup pour éviter cycle import). Sans expose,
+  // playTimeVBlanks reste à 0 → DUREE JEU "0:00" forever.
+  PlayTimeCounter_Update,
+  PlayTimeCounter_Start,
+  PlayTimeCounter_Stop,
+  PlayTimeCounter_Reset,
   // RGB(r, g, b) macro 1:1 décomp `include/constants/rgb.h:8` :
   //   #define RGB(r, g, b)  ((r) | ((g) << 5) | ((b) << 10))
   // Le transpiler ne gère QUE les macros 1-arg, donc RGB(r, g, b) reste un
