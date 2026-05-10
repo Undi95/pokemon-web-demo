@@ -33,7 +33,7 @@ import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset } from './gba-text-system';
 import { gameState } from './game-state';
 import { getItem, getItemNameFr, getItemDescriptionFr } from './data-tables';
-import { PlaySE, LoadPalette, getRuntime } from './decomp-globals';
+import { PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID } from './decomp-globals';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { setFieldCameraSuspended } from './field-camera';
 import { getString } from './gba-strings';
@@ -190,6 +190,23 @@ let _loadedIconKey: string | null = null;
  *  (= 1:1 effet `CpuFill32(0, OAM, OAM_SIZE)` du décomp ResetVramOamAndBgCntRegs). */
 let _savedSyncSubspriteHook: unknown = undefined;
 
+// ─── Sprite sac OAM (= 1:1 décomp item_menu_icons.c sBagSpriteTemplate) ─────
+
+/** VRAM OBJ byte offset pour bag_male.4bpp.bin (= 12288 bytes = 0x3000).
+ *  Offset 0 = libre car overworld OAM cleared via _syncSubspriteOam hook. */
+const BAG_SPRITE_OBJ_OFFSET = 0;
+const BAG_SPRITE_OBJ_PAL = 0;
+/** 1:1 décomp item_menu_icons.c sBagSpriteAnimTable[bagPocketId+1] tile offsets :
+ *    POCKET_ITEMS=64, POKE_BALLS=192, TM_HM=256, BERRIES=320, KEY_ITEMS=128. */
+const BAG_FRAME_TILE_OFFSET: ReadonlyArray<number> = [64, 192, 256, 320, 128];
+
+let _bagSpriteOamId = -1;
+/** OAM index du bag sprite (= différent du spriteId). Used by _syncSubspriteOam
+ *  hook pour whitelist ce slot (= ne pas clear son visible chaque frame). */
+let _bagSpriteOamIndex = -1;
+/** Idempotent flag : ne load le tile data + palette dans VRAM OBJ qu'une fois. */
+let _bagAssetsLoadedToObj = false;
+
 // Save overworld BG2 state pour restore au close.
 let _savedBgState: {
   charBase?: number; mapBase?: number;
@@ -209,10 +226,12 @@ interface BagAssets {
   bagSprite: { charData: Uint8Array; palette: Uint16Array };
   selectButton: { charData: Uint8Array; palette: Uint16Array };
   rotatingBall: { charData: Uint8Array; palette: Uint16Array };
-  /** Background tilemap fond rayé (= rayures rose/mauve du décomp).
-   *  menu.png = 64 bytes/tile × N tiles = ~17 tiles 4bpp.
-   *  menu.bin = 1024 u16 = 32×32 tilemap (bg screen size 0).
-   *  menu_male.pal / menu_female.pal = 16 colors palette du tilemap. */
+  /** Bag sprite raw 4bpp pour OAM rendu (= 1:1 décomp gBagMaleTiles size 0x3000).
+   *  Différent de bagSprite.charData (= via loadIndexedPngStrict canvas remap).
+   *  Use loadTileBin → indices bruts qui matchent bag.gbapal. */
+  bagSpriteRaw4bpp: Uint8Array;
+  bagSpritePal: Uint16Array;
+  /** Background tilemap fond rayé (= rayures rose/mauve du décomp). */
   bgTiles: Uint8Array;
   bgTilemap: Uint16Array;
   bgPalette: Uint16Array;
@@ -226,28 +245,28 @@ async function _loadAssets(): Promise<BagAssets> {
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
     const gender = gameState.gender === 'FEMALE' ? 'female' : 'male';
-    const [bag, button, ball, bgTilesRaw, bgTilemap, bgPal] = await Promise.all([
+    const [bag, button, ball, bgTilesRaw, bgTilemap, bgPal, bagRaw, bagPal] = await Promise.all([
       loadIndexedPngStrict(`/decomp/em/bag/bag_${gender}.png`, 4),
       loadIndexedPngStrict('/decomp/em/bag/select_button.png', 4),
       loadIndexedPngStrict('/decomp/em/bag/rotating_ball.png', 4),
-      // menu.4bpp.bin = raw 4bpp tile data (= 1:1 décomp `gBagScreen_Gfx`).
-      // Sans remapping canvas → indices BRUTS qui matchent menu_male.pal.
       loadTileBin('/decomp/em/bag/menu.png', 4),
-      // menu.bin = tilemap u16 du fond (32×32 = 1024 entries) — 1:1 décomp
-      // `gBagScreen_GfxTileMap`. Déjà décompressé.
       loadTilemapBin('/decomp/em/bag/menu.bin'),
-      // menu_male.pal / menu_female.pal = palette 32 colors du fond (= 2
-      // sub-palettes). 1:1 décomp `LoadCompressedPalette(gBagScreen{Male,Female}_Pal,
-      // BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP)`.
       loadGbaPal(`/decomp/em/bag/menu_${gender}.pal`),
+      // 1:1 décomp gBagMaleTiles / gBagFemaleTiles = bag_male/female.4bpp.bin
+      // raw indices pour OAM render (= 12288 bytes = 0x3000 = 384 tiles 4bpp).
+      loadTileBin(`/decomp/em/bag/bag_${gender}.png`, 4),
+      // 1:1 décomp gBagPalette = bag.pal (= 16 colors JASC-PAL).
+      loadGbaPal('/decomp/em/bag/bag.pal'),
     ]);
     _assets = {
       bagSprite: { charData: bag.charData, palette: bag.palette },
       selectButton: { charData: button.charData, palette: button.palette },
       rotatingBall: { charData: ball.charData, palette: ball.palette },
-      bgTiles: bgTilesRaw,  // raw 4bpp bytes, indices bruts du décomp
+      bgTiles: bgTilesRaw,
       bgTilemap: bgTilemap,
       bgPalette: bgPal,
+      bagSpriteRaw4bpp: bagRaw,
+      bagSpritePal: bagPal,
     };
     _assetsLoading = null;
     return _assets;
@@ -286,6 +305,11 @@ function _selectedItemKey(): string | null {
 }
 
 function _drawSprite(): void {
+  // Désactivé : sprite sac est maintenant un OAM (= 1:1 décomp). Cf.
+  // _spawnBagSpriteOam dans _setupBackgroundTilemap. Garde la fonction comme
+  // no-op pour pas casser les callers, en attendant cleanup complet.
+  return;
+  // eslint-disable-next-line no-unreachable
   if (_spriteWid < 0 || !_assets) return;
   FillWindowPixelBuffer(_spriteWid, 0x00);
   // Bag sprite : 64×64 (= 8×8 tiles, le sac complet rempli sur tout le sprite).
@@ -702,6 +726,10 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
   HideBg(3);
   ShowBg(BAG_BG_LAYER);
 
+  // 1:1 décomp item_menu_icons.c:AddBagVisualSprite : créer sprite OAM 64×64
+  // à position (68, 66) avec tile data bag_male.4bpp.bin + bag.pal.
+  _spawnBagSpriteOam(assets);
+
   // 1:1 décomp menu_helpers.c:ResetVramOamAndBgCntRegs effect :
   //   SetGpuReg(REG_OFFSET_DISPCNT, 0); CpuFill32(0, OAM, OAM_SIZE);
   // → clear OAM hardware (= cache tous sprites overworld).
@@ -716,8 +744,11 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
     if (!_isOpen) return;
     const r = getRuntime();
     if (!r) return;
-    for (const o of r.gba.oam) {
-      o.visible = false;
+    // Cache tous les OAM SAUF nos sprites bag-screen owned (= bag sac, item icon,
+    // pocket arrows, etc.). _bagSpriteOamIndex set par _spawnBagSpriteOam.
+    for (let i = 0; i < r.gba.oam.length; i++) {
+      if (i === _bagSpriteOamIndex) continue;  // whitelist bag sprite
+      r.gba.oam[i].visible = false;
     }
   };
 }
@@ -741,6 +772,56 @@ function _fillBgTilemapRect(
       rt.gba.vram[byteIdx + 1] = (tile >> 8) & 0xFF;
     }
   }
+}
+
+/** 1:1 décomp item_menu_icons.c:437-442 AddBagVisualSprite :
+ *    *spriteId = CreateSprite(&sBagSpriteTemplate, 68, 66, 0);
+ *    SetBagVisualPocketId(bagPocketId, FALSE);
+ *    → StartSpriteAnim(sprite, bagPocketId + 1)
+ *
+ *  Sprite 64×64 OAM, palette = bag.pal (= 16 colors slot OBJ_PLTT[BAG_SPRITE_OBJ_PAL]).
+ *  Le sprite affiche le sac selon le pocket courant (= différentes "frames"
+ *  d'animation = différents tile offsets). */
+function _spawnBagSpriteOam(assets: BagAssets): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // Idempotent : ne load les assets dans VRAM OBJ qu'une fois.
+  if (!_bagAssetsLoadedToObj) {
+    rt.gba.objVram.set(assets.bagSpriteRaw4bpp, BAG_SPRITE_OBJ_OFFSET);
+    rt.LoadPaletteObj(assets.bagSpritePal, OBJ_PLTT_ID(BAG_SPRITE_OBJ_PAL));
+    _bagAssetsLoadedToObj = true;
+  }
+  // tileNum dans OAM = byteOffset / 32 + frame_offset selon pocket.
+  // NB: dans le décomp, AnimCmds référencent des tile offsets relatifs au
+  // sBagSpriteTemplate.tileTag — les frames pour chaque pocket sont à
+  // offset 64, 128, 192, 256, 320 dans gBagMaleTiles.
+  const baseTileNum = BAG_SPRITE_OBJ_OFFSET / 32;
+  const frameOff = BAG_FRAME_TILE_OFFSET[_pocketIdx] ?? 0;
+  const sprite = rt.CreateSpriteAtOam({
+    tileId: baseTileNum + frameOff,
+    paletteBank: BAG_SPRITE_OBJ_PAL,
+    // 1:1 décomp CreateSprite(template, 68, 66, 0) — CalcCenterToCornerVec
+    // applique automatiquement -32/-32 pour shape=square 64×64. Notre
+    // syncSpritesToOam fait oam.x = sprite.x + centerToCornerVecX.
+    x: 68, y: 66,
+    shape: 0,    // SQUARE
+    size: 3,     // 64×64
+    priority: 0,
+  });
+  _bagSpriteOamId = sprite.spriteId;
+  _bagSpriteOamIndex = sprite.oamIndex;
+}
+
+/** Update sprite sac OAM tileNum quand pocket switch. */
+function _updateBagSpriteOam(): void {
+  const rt = getRuntime();
+  if (!rt || _bagSpriteOamId < 0) return;
+  const sprite = rt.gSprites.get(_bagSpriteOamId);
+  if (!sprite) return;
+  const baseTileNum = BAG_SPRITE_OBJ_OFFSET / 32;
+  const frameOff = BAG_FRAME_TILE_OFFSET[_pocketIdx] ?? 0;
+  const oam = rt.gba.oam[sprite.oamIndex];
+  if (oam) oam.tileNum = baseTileNum + frameOff;
 }
 
 /** Restore overworld BG2 state (= avant le bag screen). */
@@ -814,6 +895,24 @@ function _doTeardown(): void {
   if (!_isOpen) return;
   _isOpen = false;
   _phase = 'idle';
+  // 1:1 décomp item_menu.c:Task_CloseBagMenu :
+  //   ResetSpriteData(); FreeAllSpritePalettes();
+  // → Destroy bag sprite OAM avant teardown VRAM (= sinon le sprite pointe
+  // vers tile data invalide après restore).
+  if (_bagSpriteOamId >= 0) {
+    const rt = getRuntime();
+    if (rt) {
+      const spr = rt.gSprites.get(_bagSpriteOamId);
+      if (spr) spr.inUse = false;
+      rt.gSprites.delete(_bagSpriteOamId);
+      const oam = rt.gba.oam[spr?.oamIndex ?? -1];
+      if (oam) oam.visible = false;
+    }
+    _bagSpriteOamId = -1;
+    _bagSpriteOamIndex = -1;
+  }
+  _bagAssetsLoadedToObj = false;
+
   // Restore overworld BG2 + VRAM AVANT de remove les windows (= sinon les
   // windows hidden + overworld pas restored = écran noir 1 frame).
   _teardownBackgroundTilemap();
@@ -901,6 +1000,7 @@ export function TickBagScreen(newKeys: number): void {
     _scrollOffset = 0;
     PlaySE(5);
     _drawAll();
+    _updateBagSpriteOam();  // 1:1 décomp StartSpriteAnim selon pocket
     return;
   }
   if (newKeys & KEY_LEFT) {
@@ -909,6 +1009,7 @@ export function TickBagScreen(newKeys: number): void {
     _scrollOffset = 0;
     PlaySE(5);
     _drawAll();
+    _updateBagSpriteOam();
     return;
   }
   if (newKeys & KEY_DOWN) {
