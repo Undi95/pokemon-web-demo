@@ -226,3 +226,53 @@ La save existante avait DÉJÀ tout (Pokédex, badges Bourg, Poussifeu lvl5, FLA
 - Pocket dots animés rotating_ball.png (= 5 dots, l'actif clignote)
 
 — Claude Sonnet 4.5, session 127 suite, 2026-05-10
+
+---
+
+## 🎨 Session 127 — Pixel-perfect étape 2 (commits 82d704b8, b23abff5)
+
+**User feedback** : "Ouai, bon, on est loin du frame perfect" + screenshot officiel + "Fait les graphismes 1:1 maintenant"
+
+### Tilemap fond menu.bin (commit 82d704b8) — INFRASTRUCTURE OK, COULEURS WIP
+- Load `menu.png` + `menu.bin` + `menu_male/female.pal` au open via `_loadAssets`
+- BG2 takeover : save overworld VRAM (`charBase 3 + mapBase 4`) + sub-palette 0 + BG2 config avant load. Restore au close → overworld revient propre (validé)
+- `InitBgFromTemplate` avec priority 3 (= behind windows BG0)
+- HideBg(1)+HideBg(3) au open → ShowBg(1)+ShowBg(3) au close
+- **Marche** : tilemap rendu visible (bandes), overworld restored après close ✓
+- **À fix** : couleurs N&B au lieu de rose/mauve. Cause : `loadIndexedPngStrict` re-mappe les indices selon la PLTE du PNG, qui diffère de `menu_male.pal`. Tentative de combinedPal (PNG + 2ème sub-pal de menu_male) ne marche pas non plus. Solution probable : charger menu.png en **raw mode** sans remapping (= juste lire les nibbles direct), OU regenerer un .4bpp.bin pré-converti
+
+### Item icon de l'item sélectionné (commit b23abff5) — ÇA MARCHE ✅
+- Window dédiée 24×24 px (3×3 tiles) sous le sprite sac
+- Cache `_itemIconCache` pour pas re-fetch à chaque scroll
+- Lazy load via `loadIndexedPngStrict('/decomp/em/items/icons/<slug>.png')` avec slug = `ITEM_KEY.toLowerCase().replace('item_', '')`
+- Palette de l'icon chargée dans slot dédié (`ITEM_ICON_PAL = 11`) à chaque change d'item
+- Re-draw automatique quand cursor scroll (up/down/left/right) → icon change instantanément
+- **Validé** : POKé BALL → icon rouge+blanche identique au décomp ✓
+
+### État final SAC
+
+| Élément | Décomp officiel | Notre rendu |
+|---------|-----------------|-------------|
+| Sprite sac vert | ✓ | ✓ (commit 876366b1) |
+| Description FR item | "Un objet qui permet..." | ✓ (commit 74b938ea) |
+| Item icon (POKé BALL etc.) | rouge/blanc 24×24 | ✅ (commit b23abff5) |
+| Tilemap fond rayé rose/mauve | rayures verticales | ⚠️ infra OK, couleurs N&B (b23abff5+82d704b8) |
+| Frame orange custom | ✓ | ❌ pas encore |
+| Pocket dots indicator | 5 dots, actif rouge | ❌ pas encore |
+| select_button bottom-left | "Retourner au jeu." | ❌ pas encore |
+
+### Total commits session 127 (8 commits + 1 commit notes)
+
+| Commit | Sujet |
+|--------|-------|
+| `fb12c78f` | Combat Zigzagton + 4 fixes devtools |
+| `96b0620c` | Fix dialog() devtools (root cause) |
+| `8dc34208` | SAC fonctionnel (5 pockets + nav + descs) |
+| `876366b1` | SAC clean : sprite sac visible |
+| `74b938ea` | SAC : descriptions FR du décomp chargées |
+| `c0591fe9` | Toutes options Start menu wirées (POKéMON / PLAYER / POKéDEX) |
+| `27bd587b` | Notes md session 127 finales |
+| `82d704b8` | Pixel-perfect étape 2 WIP : tilemap fond infrastructure |
+| `b23abff5` | Pixel-perfect : item icon (POKé BALL render OK) |
+
+— Claude Sonnet 4.5, session 127 polish visuel, 2026-05-10
