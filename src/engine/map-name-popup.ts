@@ -387,7 +387,7 @@ function ShowMapNamePopUpWindow(): void {
   // → bgColor=0 = skip BOX_FILL pixels = préserve le wood pattern derrière.
   const approxTextWidth = mapName.length * 6;
   const centerX = Math.max(0, Math.floor((80 - approxTextWidth) / 2));
-  AddTextPrinterParameterized3(_popupWindowId, 0 /* FONT_NORMAL */,
+  AddTextPrinterParameterized3(_popupWindowId, 1 /* FONT_NORMAL = 1 */,
     centerX, 3, [0 /* TEXT_COLOR_TRANSPARENT */, 2, 3], 255 /* TEXT_SKIP_DRAW */, mapName);
   CopyWindowToVram(_popupWindowId, 3 /* COPYWIN_FULL */);
 }

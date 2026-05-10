@@ -116,9 +116,15 @@ export function GetStringRightAlignXOffset(str: string, rightX: number): number 
 
 /** 1:1 décomp src/text.c `GetStringCenterAlignXOffset(fontId, str, totalWidth)`.
  *  Retourne la X offset où placer le START de `str` pour qu'il soit centered
- *  dans `totalWidth` pixels. */
+ *  dans `totalWidth` pixels.
+ *
+ *  ⚠️ Le décomp C fait `(totalWidth - GetStringWidth(...)) / 2` en integer
+ *  division (= floor). En JS la division retourne float (12.5, 15.5, 3.5
+ *  pour OBJETS/BAIES/OBJ. RARES dans le bag). AddTextPrinterParameterized3
+ *  ne render PAS le texte avec un offset fractionnaire (= header pocket
+ *  vide pour ces 3 strings dans le SAC). Floor pour 1:1 C. */
 export function GetStringCenterAlignXOffset(str: string, totalWidth: number): number {
-  return (totalWidth - GetStringWidth(str)) / 2;
+  return Math.floor((totalWidth - GetStringWidth(str)) / 2);
 }
 
 function ensureFontLoaded(): void {

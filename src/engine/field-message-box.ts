@@ -165,7 +165,7 @@ export function TickFieldMessageBox(): void {
       //   AddTextPrinterParameterized2 avec FONT_NORMAL, color=[1,2,3] (= bg/fg/shadow),
       //   speed=playerOption (= 1 frame/char en FAST).
       // Notre AddTextPrinterParameterized3 prend speed négatif pour player option.
-      AddTextPrinterParameterized3(sWindowId, 0 /* FONT_NORMAL */, 0, 1,
+      AddTextPrinterParameterized3(sWindowId, 1 /* FONT_NORMAL = 1 */, 0, 1,
         [1, 2, 3], -1 /* = player option speed */, gStringVar4);
       sStateStep++;
       break;

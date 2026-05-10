@@ -154,7 +154,7 @@ export function DrawHeaderText(): void {
   // FillWindowPixelBuffer(WIN_HEADER, PIXEL_FILL(1)) — fill window BG color 1
   FillWindowPixelBuffer(WIN_HEADER, 0x11); // PIXEL_FILL(1) = (1<<4)|1 = 0x11 (4bpp packed)
   const text = String((globalThis as any).gText_Option ?? 'OPTIONS');
-  AddTextPrinterParameterized3(WIN_HEADER, 0, 8, 1, TEXT_COLOR_NORMAL, 255, text);
+  AddTextPrinterParameterized3(WIN_HEADER, 1 /* FONT_NORMAL = 1 */, 8, 1, TEXT_COLOR_NORMAL, 255, text);
   PutWindowTilemap(WIN_HEADER);
   CopyWindowToVram(WIN_HEADER, 3);
 }
@@ -166,7 +166,7 @@ export function DrawOptionMenuTexts(): void {
   FillWindowPixelBuffer(WIN_OPTIONS, 0x11);
   for (let i = 0; i < ITEM_LABEL_KEYS.length; i++) {
     const labelText = String((globalThis as any)[ITEM_LABEL_KEYS[i]] ?? ITEM_LABEL_KEYS[i]);
-    AddTextPrinterParameterized3(WIN_OPTIONS, 0, 8, i * 16 + 1, TEXT_COLOR_NORMAL, 255, labelText);
+    AddTextPrinterParameterized3(WIN_OPTIONS, 1 /* FONT_NORMAL = 1 */, 8, i * 16 + 1, TEXT_COLOR_NORMAL, 255, labelText);
   }
   CopyWindowToVram(WIN_OPTIONS, 3);
 }
@@ -273,7 +273,7 @@ export function DrawOptionMenuChoice(text: unknown, x: number, y: number, style:
       .replace(/\{COLOR\s+\w+\}/, '{COLOR RED}')
       .replace(/\{SHADOW\s+\w+\}/, '{SHADOW LIGHT_RED}');
   }
-  AddTextPrinterParameterized3(WIN_OPTIONS, 0, x, y + 1, TEXT_COLOR_NORMAL, 255, renderText);
+  AddTextPrinterParameterized3(WIN_OPTIONS, 1 /* FONT_NORMAL = 1 */, x, y + 1, TEXT_COLOR_NORMAL, 255, renderText);
 }
 
 // ─── Per-option Draw + Process helpers ──────────────────────────────────────
