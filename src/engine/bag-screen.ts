@@ -554,14 +554,16 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
   // BG2 vofs/hofs chaque frame (= sinon le tilemap fond scroll avec le player).
   setFieldCameraSuspended(true);
 
-  // 1:1 décomp `InitBgFromTemplate` pour notre BG2 bag :
+  // 1:1 décomp `InitBgFromTemplate` pour notre BG2 bag (sBgTemplates_ItemMenu[2]) :
+  //   .bg = 2, .charBaseIndex = 3, .mapBaseIndex = 29,
+  //   .screenSize = 0, .paletteMode = 0, .priority = 2, .baseTile = 0
   InitBgFromTemplate({
     bg: BAG_BG_LAYER,
     charBaseIndex: BAG_BG_CHAR_BASE,
     mapBaseIndex: BAG_BG_MAP_BASE,
-    screenSize: 0,        // 32×32 tilemap
-    paletteMode: 0,       // 4bpp
-    priority: 3,          // behind tout (= windows BG0/1 sur priority 0/1)
+    screenSize: 0,
+    paletteMode: 0,
+    priority: 2,  // 1:1 décomp item_menu.c:228 (= behind windows BG0)
     baseTile: 0,
   });
   // Hide BG1 et BG3 de l'overworld (= keep BG0 pour les windows). BG2 = notre fond.
