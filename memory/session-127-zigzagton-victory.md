@@ -364,3 +364,74 @@ Le bag-screen.ts est maintenant un **modèle template** pour les autres écrans 
 L'approche 1:1 ligne par ligne valide : chercher dans le décomp la fonction (e.g. `BagMenu_InitBGs`, `LoadBagMenu_Graphics`, `LoadBagMenuTextWindows`, `Task_FadeAndCloseBagMenu`), copier les valeurs exactes (templates, baseBlocks, palette IDs, tile IDs, positions), puis adapter au runtime engine. Beaucoup plus efficace que essai-erreur.
 
 — Claude Sonnet 4.5, session 127 SAC complet, 2026-05-10
+
+---
+
+## 🎨 SAC pixel-perfect ITER 2 — sprite OAM + textes décomp + audit ligne par ligne
+
+**User feedback** : "Recheck le sac de la decomp ligne par ligne. Courage" + screenshots côte-à-côte montrant les différences.
+
+### Audit complet via agent Explore
+
+Spawned agent qui m'a donné les valeurs EXACTES :
+- `sBgTemplates_ItemMenu[3]` : positions BG0/BG1/BG2 charBase + mapBase + priority
+- `sDefaultBagWindows[]` : positions WIN_ITEM_LIST (14, 2, 15, 16) baseBlock=0x27, WIN_DESCRIPTION (0, 13, 14, 6) baseBlock=0x117, WIN_POCKET_NAME (4, 1, 8, 2) baseBlock=0x1A1
+- `sFontColorTable[COLORID_NORMAL]` = `[TEXT_COLOR_TRANSPARENT=0, TEXT_COLOR_WHITE=1, TEXT_COLOR_LIGHT_GRAY=3]`
+- `BagMenu_PrintCursorAtPos` : cursor `gText_SelectorArrow2` ("▶") à x=0 FONT_NORMAL
+- `sItemListMenu.fontId = FONT_NARROW` pour les item names
+- `BagMenu_ItemPrintCallback` : quantity right-aligned via `GetStringRightAlignXOffset(FONT_NARROW, str, 119)`
+- `AddBagVisualSprite` : `CreateSprite(&sBagSpriteTemplate, 68, 66, 0)` puis `StartSpriteAnim(sprite, bagPocketId + 1)` selon pocket
+- `AddBagItemIconSprite` : `gSprites[id].x2 = 24; y2 = 88;`
+- `sBagScrollArrowsTemplate` : LEFT @ (28, 16), RIGHT @ (100, 16)
+
+### Commits de cette itération (8 commits)
+
+| # | Commit | Sujet |
+|---|--------|-------|
+| 1 | `f3653980` | Tous les textes via `getString()` depuis strings.json (zéro hardcode) |
+| 2 | `25fd2f91` | Descriptions FR via strings.json (item.descriptionLabel direct) + COLOR_MAIN [0,1,3] (= fond transparent au lieu de noir) + item icon position 1:1 (3, 11) |
+| 3 | `fa77d19c` | Cursor ▶ séparé à x=0 FONT_NORMAL, item name x=8 FONT_NARROW, quantity right-aligned via GetStringRightAlignXOffset(qtyStr, 119) |
+| 4 | `5e14d1d0` | Sprite sac en OAM 1:1 décomp (CreateSpriteAtOam à (68, 66) shape=0 size=3, bag_male.4bpp.bin dans VRAM OBJ, bag.pal dans OBJ_PLTT[0], tileNum selon pocket via BAG_FRAME_TILE_OFFSET[]) |
+
+### État final SAC vs décomp officiel (rendu screenshots côte-à-côte)
+
+| Élément | Décomp | Rendu actuel |
+|---------|--------|--------------|
+| Tilemap fond rose/mauve rayé | ✓ | ✅ 1:1 |
+| Frame ORANGE header chevrons | ✓ | ✅ (= dans tilemap menu.bin) |
+| 5 pocket dots indicator | ✓ | ✅ tile 0x1017/0x102B |
+| Sprite sac vert | ✓ | ✅ OAM 1:1 (CreateSpriteAtOam 68,66, anim selon pocket) |
+| Item icon (POKé BALL) | ✓ | ✅ (window 16×16 — pas OAM 32×32 car PNG décomp 24×24) |
+| Zone list jaune pâle | ✓ | ✅ |
+| Zone description jaune pâle | ✓ | ✅ |
+| Cursor ▶ noir | ✓ | ✅ (gText_SelectorArrow2 charmap byte 239) |
+| Item name FONT_NARROW | ✓ | ✅ |
+| Quantity right-aligned ×119 | ✓ | ✅ (GetStringRightAlignXOffset) |
+| Texte fond TRANSPARENT (COLORID_NORMAL [0,1,3]) | ✓ | ✅ |
+| Description FR du décomp | ✓ | ✅ strings.json `sPokeBallDesc` |
+| Labels pockets (OBJETS, POKé BALLS, CT & CS, BAIES, OBJ. RARES) | ✓ | ✅ strings.json |
+| FERMER LE SAC + Retourner/au jeu | ✓ | ✅ strings.json |
+| NPCs/player overworld cachés | ✓ | ✅ _syncSubspriteOam hook (whitelist bag sprite OAM) |
+| Map overworld cachée | ✓ | ✅ BG0 mapBase 31 cleared |
+| Fade in/out RGB_BLACK 16 frames | ✓ | ✅ 1:1 BeginNormalPaletteFade |
+| OW palette restored (32 entries) | ✓ | ✅ paletteSnap sub-palettes 0+1 |
+
+### Reste optionnel (= polish 100% pixel-perfect)
+
+- ❌ Item icon en OAM (= 32×32 sprite avec PNG 24×24 zero-pad) au lieu de window
+- ❌ Pocket switch arrows OAM ◀▶ à (28, 16) et (100, 16)
+- ❌ Sprite sac shake animation (= sprite.affineMode + ANIM_BAG_SHAKE)
+- ❌ rotating_ball OAM sprite anim au switch pocket (= 16×16 affine rotation)
+
+### Approche 1:1 ligne par ligne validée
+
+Pattern systématique :
+1. Spawn agent Explore avec query précise (= "donne-moi les valeurs EXACTES")
+2. Reproduire ces valeurs sans déviation (= templates, baseBlocks, palette IDs, tile IDs, positions)
+3. Vérifier visuellement avec screenshot
+4. Si différence : re-lire le décomp ligne par ligne pour la fonction concernée
+5. Itérer
+
+Cette approche a permis de transformer le SAC de "windows GBA standard avec text" en rendu **très proche du décomp officiel** en ~24 commits sur 2 itérations.
+
+— Claude Sonnet 4.5, session 127 SAC iter 2, 2026-05-10
