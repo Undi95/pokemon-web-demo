@@ -251,11 +251,26 @@ function _drawSprite(): void {
   CopyWindowToVram(_spriteWid, 3);
 }
 
+/** 1:1 décomp item_menu.c:DrawPocketIndicatorSquare(x, isCurrentPocket) :
+ *    if (!isCurrentPocket)
+ *        FillBgTilemapBufferRect_Palette0(2, 0x1017, x + 5, 3, 1, 1);
+ *    else
+ *        FillBgTilemapBufferRect_Palette0(2, 0x102B, x + 5, 3, 1, 1);
+ *
+ *  Tile 0x1017 = paletteBank 1 + tile 23 (= dot vide)
+ *  Tile 0x102B = paletteBank 1 + tile 43 (= dot rempli courant)
+ *  Position (x+5, 3) pour pocket x = 0..4. */
+function _drawPocketDots(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  for (let i = 0; i < POCKETS.length; i++) {
+    const tile = (i === _pocketIdx) ? 0x102B : 0x1017;
+    _fillBgTilemapRect(rt, tile, i + 5, 3, 1, 1);
+  }
+}
+
 function _drawDots(): void {
-  // TODO étape 2 : dots indicator. rotating_ball.png a une palette différente
-  // de bag.pal et le BlitBitmapToWindow ne supporte qu'une palette par window.
-  // Faut soit (a) une window dédiée pour les dots, (b) re-mapper les indices
-  // pour qu'ils tombent dans la bag.pal. Skip pour la 1ère passe.
+  _drawPocketDots();
 }
 
 function _drawHeader(): void {
