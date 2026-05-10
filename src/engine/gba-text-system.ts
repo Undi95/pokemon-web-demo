@@ -114,6 +114,13 @@ export function GetStringRightAlignXOffset(str: string, rightX: number): number 
   return rightX - GetStringWidth(str);
 }
 
+/** 1:1 décomp src/text.c `GetStringCenterAlignXOffset(fontId, str, totalWidth)`.
+ *  Retourne la X offset où placer le START de `str` pour qu'il soit centered
+ *  dans `totalWidth` pixels. */
+export function GetStringCenterAlignXOffset(str: string, totalWidth: number): number {
+  return (totalWidth - GetStringWidth(str)) / 2;
+}
+
 function ensureFontLoaded(): void {
   if (!glyphData || !glyphWidths || !charmap) {
     throw new Error('[gba-text-system] Font data not loaded. Call preloadFontData() first.');

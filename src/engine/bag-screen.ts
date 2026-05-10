@@ -30,7 +30,7 @@ import {
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset } from './gba-text-system';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gameState } from './game-state';
 import { getItem, getItemNameFr, getItemDescriptionFr } from './data-tables';
 import { PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID } from './decomp-globals';
@@ -353,14 +353,16 @@ function _drawDots(): void {
 
 function _drawHeader(): void {
   if (_headerWid < 0) return;
-  // 1:1 décomp PrintPocketNames : print pocket name centered in 8×2 tiles window
-  // (= 64×16 px). Texte centered horizontalement.
+  // 1:1 décomp item_menu.c:PrintPocketNames :
+  //   offset = GetStringCenterAlignXOffset(FONT_NORMAL, pocketName1, 0x40);
+  //   BagMenu_Print(windowId, FONT_NORMAL, pocketName1, offset, 1, ...);
+  // 0x40 = 64 px = width de la zone pocket name. Center le texte dans 64 px.
   FillWindowPixelBuffer(_headerWid, 0x00);
-  // Texte centered : 8 tiles × 8 px = 64 px. Pour center un texte ~50 px, x≈8.
-  // Décomp utilise GetStringCenterAlignXOffset, on simplifie par offset fixe.
+  const pocketName = getString(POCKETS[_pocketIdx].textKey);
+  const offset = GetStringCenterAlignXOffset(pocketName, 0x40);
   AddTextPrinterParameterized3(
-    _headerWid, FONT_NORMAL, 0, 1, COLOR_POCKET_NAME, TEXT_SKIP_DRAW,
-    getString(POCKETS[_pocketIdx].textKey),
+    _headerWid, FONT_NORMAL, offset, 1, COLOR_POCKET_NAME, TEXT_SKIP_DRAW,
+    pocketName,
   );
   // Pas d'indicator "1/5" dans le décomp original — le pocket actif est
   // indiqué visuellement par le dot rouge sous le header.
@@ -869,7 +871,11 @@ function _tickPocketSwitchAnim(): void {
   }
 }
 
-/** Update sprite sac OAM tileNum quand pocket switch. */
+/** Update sprite sac OAM tileNum + bag jump animation au pocket switch.
+ *  1:1 décomp item_menu_icons.c SetBagVisualPocketId(bagPocketId, TRUE) :
+ *    sprite->y2 = -5;
+ *    sprite->callback = SpriteCB_BagVisualSwitchingPockets;
+ *  → sprite shifté -5 px puis revient à 0 chaque frame. */
 function _updateBagSpriteOam(): void {
   const rt = getRuntime();
   if (!rt || _bagSpriteOamId < 0) return;
@@ -879,6 +885,20 @@ function _updateBagSpriteOam(): void {
   const frameOff = BAG_FRAME_TILE_OFFSET[_pocketIdx] ?? 0;
   const oam = rt.gba.oam[sprite.oamIndex];
   if (oam) oam.tileNum = baseTileNum + frameOff;
+  // 1:1 décomp `sprite->y2 = -5` au switch pocket → bag "jump" effect.
+  sprite.y2 = -5;
+}
+
+/** 1:1 décomp SpriteCB_BagVisualSwitchingPockets :
+ *    if (sprite->y2 != 0) sprite->y2++;
+ *  → revient à 0 (= position normale) en 5 frames.
+ *  Appelé chaque frame TickBagScreen quand bag est ouvert. */
+function _tickBagSpriteJumpAnim(): void {
+  const rt = getRuntime();
+  if (!rt || _bagSpriteOamId < 0) return;
+  const sprite = rt.gSprites.get(_bagSpriteOamId);
+  if (!sprite) return;
+  if (sprite.y2 < 0) sprite.y2++;
 }
 
 /** Restore overworld BG2 state (= avant le bag screen). */
@@ -1033,8 +1053,10 @@ export function TickBagScreen(newKeys: number): void {
   }
   if (_phase === 'switching_pocket') {
     _tickPocketSwitchAnim();
-    return;  // ignore inputs pendant l'animation
+    return;
   }
+  // Bag jump anim : continue en arrière-plan (incremente y2 vers 0).
+  _tickBagSpriteJumpAnim();
 
   // Note : pas besoin de hide les sprites au tick. Le hook _syncSubspriteOam
   // installé au open s'exécute APRÈS syncSpritesToOam chaque frame et clear
