@@ -7,6 +7,10 @@
  * Audit session 126 : créé pour debug avancé où on n'a pas accès au visuel ou
  * où on veut comparer state frame-by-frame avec un comportement attendu.
  *
+ * Session 127 : import direct des fns field-message-box pour `dialog()` au lieu
+ * de chercher des magic globals qui n'existaient pas (sCurrentText n'est pas
+ * exposé sur globalThis, c'est une `let` interne au module).
+ *
  * USAGE :
  *   scope.where()        → "MAP_LITTLEROOT_TOWN (5, 8) facing NORTH"
  *   scope.see()          → snapshot complet du frame courant (= overworld état)
@@ -28,6 +32,12 @@
  *   scope.press(key)     → simule press de touche (= 'a', 'b', 'up', 'down', etc.)
  *   scope.ai(plan)       → exécute un plan (= ['up', 'up', 'a', 'wait 60', 'a'])
  */
+
+import {
+  GetCurrentFieldMessageText,
+  GetFieldMessageBoxMode,
+  IsFieldMessageBoxHidden,
+} from './field-message-box';
 
 interface ObjectEvent {
   active?: boolean;
@@ -142,25 +152,17 @@ function _npcs(): Array<Record<string, unknown>> {
     }));
 }
 
-function _dialog(): { open: boolean; text?: string; state?: string } {
-  // Session 127 fix : la textbox réelle est rendue via Phaser direct + `gWindowOpen`.
-  // Cherche aussi `__activeMessageBox`, `__currentDialogText`, et le DOM canvas overlay
-  // (peu probable mais possible). Best effort.
-  const sCurrentText = _g<string>('__sCurrentText');
-  const fmb = _g<{ open?: boolean; text?: string; state?: string }>('__fieldMessageBox');
-  const amb = _g<{ open?: boolean; text?: string }>('__activeMessageBox');
-  const dlg = _g<{ visible?: boolean; text?: string }>('__currentDialog');
-  const txt = _g<string>('__currentDialogText');
-  // Check script runtime for "msgbox halted" state (= dialog open while script paused).
-  const sr = _g<{ status?: () => unknown; halted?: () => boolean }>('__scriptRuntime');
-  const halted = !!sr?.halted?.();
-
-  if (fmb?.open) return { open: true, text: fmb.text, state: fmb.state };
-  if (amb?.open) return { open: true, text: amb.text };
-  if (dlg?.visible) return { open: true, text: dlg.text };
-  if (txt) return { open: true, text: txt };
-  if (sCurrentText) return { open: true, text: sCurrentText };
-  if (halted) return { open: true, text: '(halted on msgbox)' };
+function _dialog(): { open: boolean; text?: string; mode?: string } {
+  // Session 127 fix : import direct des fns field-message-box.ts (sCurrentText
+  // est un `let` private du module, pas un global). Source de vérité unique :
+  // c'est ce que ShowFieldMessage() écrit + ce que la state machine rend.
+  const hidden = IsFieldMessageBoxHidden();
+  const text = GetCurrentFieldMessageText();
+  const modeNum = GetFieldMessageBoxMode();
+  const modeNames = ['HIDDEN', 'NORMAL', 'AUTO_SCROLL'];
+  if (!hidden || text) {
+    return { open: true, text, mode: modeNames[modeNum] ?? `?(${modeNum})` };
+  }
   return { open: false };
 }
 

@@ -126,6 +126,12 @@ export function GetFieldMessageBoxMode(): number {
   return sFieldMessageBoxMode;
 }
 
+/** Pas dans le décomp — helper devtools (= dev-scope.ts) pour lire le texte
+ *  courant rendered dans la field message box. Retourne '' si box hidden. */
+export function GetCurrentFieldMessageText(): string {
+  return sFieldMessageBoxMode === FIELD_MESSAGE_BOX_HIDDEN ? '' : sCurrentText;
+}
+
 // ─── Tick state machine (= 1:1 décomp Task_DrawFieldMessage) ────────────────
 
 /** À call chaque frame depuis MainCB2_Overworld APRÈS PlayerStep.
