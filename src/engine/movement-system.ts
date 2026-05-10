@@ -357,6 +357,32 @@ function _tickAction(action: string, target: MovementTarget, frame: number, rt: 
   if (action === 'player_run_left')  return _tickWalk(target, DIR_WEST,  frame, 8, 2);
   if (action === 'player_run_right') return _tickWalk(target, DIR_EAST,  frame, 8, 2);
 
+  // ─── Slide actions (= glide sans walk anim cycle, used pour ice/conveyor) ─
+  // 1:1 décomp `MovementAction_SlideUp_Step0` etc. (event_object_movement.c).
+  // Same speed as walk_normal but no leg anim cycle.
+  if (action === 'slide_down')  return _tickWalk(target, DIR_SOUTH, frame, 8, 2);
+  if (action === 'slide_up')    return _tickWalk(target, DIR_NORTH, frame, 8, 2);
+  if (action === 'slide_left')  return _tickWalk(target, DIR_WEST,  frame, 8, 2);
+  if (action === 'slide_right') return _tickWalk(target, DIR_EAST,  frame, 8, 2);
+  if (action === 'slide_slow_down')  return _tickWalk(target, DIR_SOUTH, frame, 16, 1);
+  if (action === 'slide_slow_up')    return _tickWalk(target, DIR_NORTH, frame, 16, 1);
+  if (action === 'slide_slow_left')  return _tickWalk(target, DIR_WEST,  frame, 16, 1);
+  if (action === 'slide_slow_right') return _tickWalk(target, DIR_EAST,  frame, 16, 1);
+  if (action === 'slide_fast_down')  return _tickWalk(target, DIR_SOUTH, frame, 4, 4);
+  if (action === 'slide_fast_up')    return _tickWalk(target, DIR_NORTH, frame, 4, 4);
+  if (action === 'slide_fast_left')  return _tickWalk(target, DIR_WEST,  frame, 4, 4);
+  if (action === 'slide_fast_right') return _tickWalk(target, DIR_EAST,  frame, 4, 4);
+
+  // ─── Walk diagonale slow (= 32 frames, used pour Lavaridge ash) ──────────
+  // 1:1 décomp `MovementAction_WalkSlowDiagonalNE_Step0` etc.
+  // Direction visuelle composite (= 0.5 px/frame x + y).
+  if (action === 'walk_slow_diag_northeast' || action === 'walk_slow_diag_northwest'
+   || action === 'walk_slow_diag_southeast' || action === 'walk_slow_diag_southwest') {
+    // MVP : alias to vertical walk_slow (= visual approximation).
+    const dir = action.includes('north') ? DIR_NORTH : DIR_SOUTH;
+    return _tickWalk(target, dir, frame, 32, 0.5);
+  }
+
   // ─── Phase 5.3c : Auto-dispatch fallback via event_object_movement-all-auto.
   // Si l'action a un MovementAction_X_Step0/1 dans le décomp auto-porté, on
   // tente de l'appeler. Si ça throw (= helper/data manquant), on tombe sur

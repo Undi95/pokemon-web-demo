@@ -95,6 +95,11 @@ exposeGbaGlobals();
 import { loadMultichoiceLists } from './engine/multichoice-data';
 void loadMultichoiceLists();
 
+// Audit session 126 (post-test) : devtools "voir sans voir l'écran" pour audit
+// avancé via console JS uniquement. window.scope.help() pour usage.
+import { installScopeDevtools } from './engine/dev-scope';
+installScopeDevtools();
+
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
