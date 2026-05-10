@@ -230,6 +230,49 @@ export function DEBUG_ExpandBagToFit(maxPerPocket = 256): void {
   grow(gameState.bag.keyItems);
 }
 
+/** 1:1 décomp item.c:CompactItemsInBagPocket : remove gaps (= empty slots) en
+ *  shiftant les non-empty au début. Préserve l'ordre. */
+function compactPocket(arr: ItemSlot[]): void {
+  const valid = arr.filter(s => s.itemKey && s.quantity > 0);
+  for (let i = 0; i < arr.length; i++) {
+    if (i < valid.length) {
+      arr[i].itemKey = valid[i].itemKey;
+      arr[i].quantity = valid[i].quantity;
+    } else {
+      arr[i].itemKey = '';
+      arr[i].quantity = 0;
+    }
+  }
+}
+
+/** 1:1 décomp item.c:SortBerriesOrTMHMs : sort par itemId croissant + remove gaps.
+ *  Notre items.json est en ordre de définition donc on trie par index ITEM_X
+ *  dans la table (= proxy pour itemId du décomp). */
+function sortPocketByItemId(arr: ItemSlot[]): void {
+  const valid = arr.filter(s => s.itemKey && s.quantity > 0);
+  // Sort by itemKey alphabetique pour stable ordering (= proxy pour itemId).
+  // Le décomp utilise gItems[i].itemId mais on n'a pas la table runtime ici.
+  valid.sort((a, b) => a.itemKey.localeCompare(b.itemKey));
+  for (let i = 0; i < arr.length; i++) {
+    if (i < valid.length) {
+      arr[i].itemKey = valid[i].itemKey;
+      arr[i].quantity = valid[i].quantity;
+    } else {
+      arr[i].itemKey = '';
+      arr[i].quantity = 0;
+    }
+  }
+}
+
+/** 1:1 décomp item_menu.c:UpdatePocketItemList(pocketId). Appelé après chaque
+ *  modification (= AddBagItem / RemoveBagItem / DoItemSwap) pour normaliser le
+ *  pocket. TMHM + Berries → sort by itemId. Autres → compact (remove gaps). */
+export function UpdatePocketItemList(pocketKey: 'items' | 'pokeBalls' | 'tmHm' | 'berries' | 'keyItems'): void {
+  const arr = gameState.bag[pocketKey];
+  if (pocketKey === 'tmHm' || pocketKey === 'berries') sortPocketByItemId(arr);
+  else compactPocket(arr);
+}
+
 /** 1:1 décomp `ClearBag` : reset complet à empty. */
 export function ClearBag(): void {
   const empty = emptyBag();

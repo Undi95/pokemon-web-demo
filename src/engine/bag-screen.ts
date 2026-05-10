@@ -32,7 +32,8 @@ import {
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gameState } from './game-state';
-import { getItem, getItemNameFr, getItemDescriptionFr } from './data-tables';
+import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from './data-tables';
+import { RemoveBagItem, UpdatePocketItemList } from './bag';
 import { PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID } from './decomp-globals';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { setFieldCameraSuspended } from './field-camera';
@@ -162,6 +163,30 @@ const DESC_WINDOW_TEMPLATE: WindowTemplate = {
   paletteNum: 1, baseBlock: 0x117,
 };
 
+/** 1:1 décomp item_menu.c:455 sContextMenuWindowTemplates[ITEMWIN_2x2] :
+ *    .bg = 1, .tilemapLeft = 15, .tilemapTop = 15, .width = 14, .height = 4,
+ *    .paletteNum = 15, .baseBlock = 0x21D.
+ *  Pour le port web on utilise BG 0 (= même BG que les autres windows). */
+const CTX_2X2_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 0, tilemapLeft: 15, tilemapTop: 15, width: 14, height: 4,
+  paletteNum: 15, baseBlock: 0x21D,
+};
+/** ITEMWIN_2x3 pour berries (6 actions). */
+const CTX_2X3_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 0, tilemapLeft: 15, tilemapTop: 13, width: 14, height: 6,
+  paletteNum: 15, baseBlock: 0x21D,
+};
+/** ITEMWIN_YESNO_LOW pour confirm Toss (5x4 dans le coin droit). */
+const YESNO_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 0, tilemapLeft: 24, tilemapTop: 15, width: 5, height: 4,
+  paletteNum: 15, baseBlock: 0x238,
+};
+/** ITEMWIN_QUANTITY pour quantity selector Toss. */
+const QTY_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 0, tilemapLeft: 24, tilemapTop: 17, width: 5, height: 2,
+  paletteNum: 15, baseBlock: 0x250,
+};
+
 // ─── Module state ────────────────────────────────────────────────────────────
 
 /** Phase de la state machine open/close du bag (= 1:1 décomp).
@@ -170,8 +195,67 @@ const DESC_WINDOW_TEMPLATE: WindowTemplate = {
  *  - 'open' : bag visible et interactive
  *  - 'fading_out' : close démarré, fade TO BLACK en cours
  *  - 'switching_pocket' : animation switch pocket (16 frames, DrawItemListBgRow). */
-type Phase = 'idle' | 'fading_in' | 'open' | 'fading_out' | 'switching_pocket';
+type Phase =
+  | 'idle' | 'fading_in' | 'open' | 'fading_out' | 'switching_pocket'
+  | 'context_menu'      // Context menu (Use/Give/Toss/Cancel) overlay
+  | 'toss_quantity'     // Quantity selector (1..max) avant confirm toss
+  | 'toss_confirm'      // Yes/No confirm "Toss N item?"
+  | 'toss_message'      // "Threw away N item" wait A/B before remove
+  | 'swap_items'        // SELECT pressed : moving item, list cursor moves
+  | 'message';          // Generic field message (Use stub etc.)
 let _phase: Phase = 'idle';
+
+/** 1:1 décomp ItemMenuAction enum (item_menu.c:70). Le mapping action →
+ *  textKey (= gMenuText_X) + handler. */
+const enum ItemAction {
+  USE = 0, TOSS = 1, REGISTER = 2, GIVE = 3, CANCEL = 4,
+  BATTLE_USE = 5, CHECK = 6, WALK = 7, DESELECT = 8, CHECK_TAG = 9,
+  CONFIRM = 10, SHOW = 11, GIVE_FAVOR_LADY = 12, CONFIRM_QUIZ_LADY = 13, DUMMY = 14,
+}
+/** Mapping ItemAction → gMenuText_* key. */
+const ACTION_TEXT_KEYS: Record<number, string> = {
+  [ItemAction.USE]: 'gMenuText_Use',
+  [ItemAction.TOSS]: 'gMenuText_Toss',
+  [ItemAction.REGISTER]: 'gMenuText_Register',
+  [ItemAction.GIVE]: 'gMenuText_Give',
+  [ItemAction.CANCEL]: 'gText_Cancel2',
+  [ItemAction.BATTLE_USE]: 'gMenuText_Use',
+  [ItemAction.CHECK]: 'gMenuText_Check',
+  [ItemAction.WALK]: 'gMenuText_Walk',
+  [ItemAction.DESELECT]: 'gMenuText_Deselect',
+  [ItemAction.CHECK_TAG]: 'gMenuText_CheckTag',
+  [ItemAction.CONFIRM]: 'gMenuText_Confirm2',
+  [ItemAction.SHOW]: 'gMenuText_Show',
+  [ItemAction.GIVE_FAVOR_LADY]: 'gMenuText_Give2',
+  [ItemAction.CONFIRM_QUIZ_LADY]: 'gMenuText_Confirm',
+  [ItemAction.DUMMY]: '',
+};
+/** 1:1 décomp sContextMenuItems_*Pocket arrays. 4 actions par pocket (= 2x2 grid),
+ *  6 pour berries (= 2x3). DUMMY = blank slot. */
+const CTX_ITEMS_POCKET: ItemAction[] = [ItemAction.USE, ItemAction.GIVE, ItemAction.TOSS, ItemAction.CANCEL];
+const CTX_KEY_ITEMS_POCKET: ItemAction[] = [ItemAction.USE, ItemAction.REGISTER, ItemAction.DUMMY, ItemAction.CANCEL];
+const CTX_BALLS_POCKET: ItemAction[] = [ItemAction.GIVE, ItemAction.DUMMY, ItemAction.TOSS, ItemAction.CANCEL];
+const CTX_TMHM_POCKET: ItemAction[] = [ItemAction.USE, ItemAction.GIVE, ItemAction.DUMMY, ItemAction.CANCEL];
+const CTX_BERRIES_POCKET: ItemAction[] = [
+  ItemAction.CHECK_TAG, ItemAction.DUMMY,
+  ItemAction.USE, ItemAction.GIVE,
+  ItemAction.TOSS, ItemAction.CANCEL,
+];
+
+/** Context menu state. */
+let _ctxActions: ItemAction[] = [];
+let _ctxCursor = 0;
+/** Item selected when A pressed = target of context menu operation. */
+let _ctxItemKey: string = '';
+let _ctxItemPocketIdx = 0;
+let _ctxItemListIdx = 0;
+/** Toss quantity selector state. */
+let _tossQty = 1;
+let _tossMaxQty = 1;
+/** Toss yes/no cursor (0=Yes, 1=No). */
+let _tossYesNoCursor = 0;
+/** Item swap state. */
+let _swapFromIdx = -1;
 
 /** State pour Task_SwitchBagPocket animation 1:1 décomp item_menu.c:1363.
  *  16 frames : chaque frame DrawItemListBgRow(timer) = tile 17 (jaune pâle)
@@ -179,16 +263,55 @@ let _phase: Phase = 'idle';
  *  Quand timer == 16, swap _pocketIdx + redraw nouveau pocket. */
 let _switchTimer = 0;
 let _switchDir: -1 | 0 | 1 = 0;
+/** 1:1 décomp gBagMenu->pocketNameBuffer pattern : on stocke les indices
+ *  source/dest du switch pour la double-buffer animation pocket name. */
+let _switchOldPocketIdx = 0;
+let _switchNewPocketIdx = 0;
 
 let _isOpen = false;
 let _pocketIdx = 0;
 let _cursorPos = 0;     // 0..VISIBLE_ROWS-1, position du cursor dans la fenêtre
 let _scrollOffset = 0;  // index du 1er item visible
+/** 1:1 décomp gBagPosition.cursorPosition[POCKETS_COUNT] + scrollPosition[].
+ *  Mémorise la position cursor/scroll par pocket : quand on switch, on save
+ *  l'état du pocket courant puis on restore celui du nouveau pocket. */
+const _cursorPerPocket: number[] = [0, 0, 0, 0, 0];
+const _scrollPerPocket: number[] = [0, 0, 0, 0, 0];
+
+/** 1:1 décomp gBagPosition.location (ITEMMENULOCATION_FIELD = 0, BATTLE = 1,
+ *  PARTY = 2, SHOP = 3, PC = 4, etc.). Pour l'instant on supporte FIELD only,
+ *  mais le mapping gBagMenu_ReturnToStrings[location] est prêt. */
+const enum BagLocation {
+  FIELD = 0, BATTLE = 1, PARTY = 2, SHOP = 3, BERRY_TREE = 4,
+  BERRY_BLENDER_CRUSH = 5, ITEMPC = 6, FAVOR_LADY = 7, QUIZ_LADY = 8,
+  APPRENTICE = 9, WALLY = 10, PCBOX = 11,
+}
+let _bagLocation: BagLocation = BagLocation.FIELD;
+/** Mapping 1:1 décomp gBagMenu_ReturnToStrings[location] → text key. */
+const RETURN_TO_STRINGS: Record<BagLocation, string> = {
+  [BagLocation.FIELD]: 'gText_TheField',
+  [BagLocation.BATTLE]: 'gText_TheBattle',
+  [BagLocation.PARTY]: 'gText_ThePokemonList',
+  [BagLocation.SHOP]: 'gText_TheShop',
+  [BagLocation.BERRY_TREE]: 'gText_TheField',
+  [BagLocation.BERRY_BLENDER_CRUSH]: 'gText_TheField',
+  [BagLocation.ITEMPC]: 'gText_ThePC',
+  [BagLocation.FAVOR_LADY]: 'gText_TheField',
+  [BagLocation.QUIZ_LADY]: 'gText_TheField',
+  [BagLocation.APPRENTICE]: 'gText_TheField',
+  [BagLocation.WALLY]: 'gText_TheBattle',
+  [BagLocation.PCBOX]: 'gText_ThePC',
+};
 let _spriteWid = -1;
 let _headerWid = -1;
 let _listWid = -1;
 let _descWid = -1;
 let _itemIconWid = -1;
+/** Context menu windows : 2x2 (4 actions) ou 2x3 (6 actions berries).
+ *  Spawned dans phase 'context_menu', removed au close. */
+let _ctxWid = -1;
+let _yesNoWid = -1;
+let _qtyWid = -1;
 let _onClose: (() => void) | null = null;
 /** Cache des item icons chargés pour pas re-fetch chaque scroll. */
 const _itemIconCache: Record<string, { charData: Uint8Array; palette: Uint16Array }> = {};
@@ -229,6 +352,12 @@ let _bagSpriteOamId = -1;
 let _bagSpriteOamIndex = -1;
 /** Idempotent flag : ne load le tile data + palette dans VRAM OBJ qu'une fois. */
 let _bagAssetsLoadedToObj = false;
+/** 1:1 décomp item_menu_icons.c sSpriteAffineAnim_BagShake :
+ *  4 frames affine animation (rotate -2/+2/-2/+2) sur 12 frames total. Triggered
+ *  par BagMenu_MoveCursorCallback → ShakeBagSprite quand cursor change.
+ *  Compteur 0..12 ; angle calculé via _bagShakeAngle table. */
+let _bagShakeFrame = 0;
+const BAG_SHAKE_FRAMES = 12;
 
 /** OAM ids des 2 chevrons LEFT/RIGHT (= sBagScrollArrowsTemplate firstX=28 secondX=100).
  *  -1 = pas spawn. Spawn à l'open + dans _setupBackgroundTilemap, despawn au close. */
@@ -442,6 +571,35 @@ function _drawHeader(): void {
   //   BagMenu_Print(windowId, FONT_NORMAL, pocketName1, offset, 1, ...);
   // 0x40 = 64 px = width de la zone pocket name. Center le texte dans 64 px.
   FillWindowPixelBuffer(_headerWid, 0x00);
+  // Si on est en train de switch pocket, rendu double-buffer animé.
+  // 1:1 décomp PrintPocketNames(pocketName1, pocketName2) où name1 = old + name2 = new,
+  // puis CopyPocketNameToWindow(scrollOffset) chaque frame avec scrollOffset
+  // de 0 à 8 (en pratique, qui correspond à un scroll horizontal de 8 tiles
+  // soit 64 pixels, taille du buffer 32×32 / 2 = 16 tiles).
+  if (_phase === 'switching_pocket') {
+    // Position scroll : 0..16 → offset 0..-64 ou 0..+64 selon direction.
+    const phase = _switchTimer;  // 0..16
+    const scrollPx = Math.floor((phase / 16) * 64);  // 0..64
+    const oldName = getString(POCKETS[_switchOldPocketIdx].textKey);
+    const newName = getString(POCKETS[_switchNewPocketIdx].textKey);
+    const oldOffset = GetStringCenterAlignXOffset(oldName, 0x40);
+    const newOffset = GetStringCenterAlignXOffset(newName, 0x40);
+    // RIGHT switch (dir=+1) : old glisse vers la gauche, new entre par la droite.
+    // LEFT switch (dir=-1) : old glisse vers la droite, new entre par la gauche.
+    const dir = _switchDir;
+    AddTextPrinterParameterized3(
+      _headerWid, FONT_NORMAL, oldOffset - dir * scrollPx, 1,
+      COLOR_POCKET_NAME, TEXT_SKIP_DRAW, oldName,
+    );
+    AddTextPrinterParameterized3(
+      _headerWid, FONT_NORMAL, newOffset + dir * (64 - scrollPx), 1,
+      COLOR_POCKET_NAME, TEXT_SKIP_DRAW, newName,
+    );
+    _drawDots();
+    PutWindowTilemap(_headerWid);
+    CopyWindowToVram(_headerWid, 3);
+    return;
+  }
   const pocketName = getString(POCKETS[_pocketIdx].textKey);
   const offset = GetStringCenterAlignXOffset(pocketName, 0x40);
   AddTextPrinterParameterized3(
@@ -484,18 +642,50 @@ function _drawList(): void {
     }
     // 1:1 décomp item_menu.c:262 sItemListMenu.fontId = FONT_NARROW.
     // Item name à x=8 (= après cursor at x=0).
-    const name = getItemNameFr(slot.itemKey);
+    const pocketKey = POCKETS[_pocketIdx].key;
+    const def = getItem(slot.itemKey);
+    // 1:1 décomp item_menu.c:899 GetItemNameFromPocket :
+    //   TMHM_POCKET → "CT01    FOCUS PUNCH" (= numéro + tab + nom du move).
+    //   BERRIES_POCKET → "01  ORAN" (= numéro berry + nom).
+    //   Default → nom item plain.
+    let displayName = getItemNameFr(slot.itemKey);
+    let isHM = false;
+    if (pocketKey === 'tmHm' && def?.descriptionLabel) {
+      // descriptionLabel "sTM01Desc" / "sHM03Desc" → extract number.
+      const tmMatch = def.descriptionLabel.match(/^s(TM|HM)(\d+)Desc$/);
+      if (tmMatch) {
+        isHM = tmMatch[1] === 'HM';
+        const itemNum = def.name;  // "CT01" / "CS01" déjà formatté FR
+        const moveSlug = slot.itemKey.replace(/^ITEM_(TM|HM)_/, '');
+        const moveName = getMoveNameFr(`MOVE_${moveSlug}`);
+        displayName = `${itemNum}  ${moveName}`;
+      }
+    }
     AddTextPrinterParameterized3(
-      _listWid, FONT_NARROW, 8, y, COLOR_MAIN, TEXT_SKIP_DRAW, name,
+      _listWid, FONT_NARROW, 8, y, COLOR_MAIN, TEXT_SKIP_DRAW, displayName,
     );
     // 1:1 décomp item_menu.c:986 BagMenu_ItemPrintCallback :
+    //   if (itemId >= ITEM_HM01 && itemId <= ITEM_HM08)
+    //     BlitBitmapToWindow(WIN_ITEM_LIST, gBagMenuHMIcon_Gfx, 8, y, 16, 16);
+    //  → petit badge "HM" 16×16 superposé à la position du tile move name.
+    if (isHM) {
+      // Rendu via marqueur texte simple (l'asset hm_icon.png n'est pas
+      // extrait séparément ; on utilise un glyph "★" pour différencier HM/TM).
+      AddTextPrinterParameterized3(
+        _listWid, FONT_NORMAL, 0, y, COLOR_POCKET_NAME, TEXT_SKIP_DRAW, '★',
+      );
+    }
+    // 1:1 décomp item_menu.c:986 BagMenu_ItemPrintCallback :
     //   GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 119)
-    // Quantity right-aligned à x=119 (= droite de la list window, avant le frame).
-    const qtyStr = `×${slot.quantity}`;  // × = U+00D7 multiplication sign
-    const qtyX = GetStringRightAlignXOffset(qtyStr, 119);
-    AddTextPrinterParameterized3(
-      _listWid, FONT_NARROW, qtyX, y, COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
-    );
+    // Quantity right-aligned à x=119. POCKET_KEY_ITEMS + TMHM = pas de qty
+    // affichée (= 1 par slot, importance set par GetItemImportance).
+    if (pocketKey !== 'keyItems' && pocketKey !== 'tmHm') {
+      const qtyStr = `×${slot.quantity}`;
+      const qtyX = GetStringRightAlignXOffset(qtyStr, 119);
+      AddTextPrinterParameterized3(
+        _listWid, FONT_NARROW, qtyX, y, COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
+      );
+    }
   }
   PutWindowTilemap(_listWid);
   CopyWindowToVram(_listWid, 3);
@@ -512,11 +702,10 @@ function _drawDesc(): void {
     // 1:1 décomp item_menu.c:1008 PrintItemDescription LIST_CANCEL :
     //   StringCopy(gStringVar1, gBagMenu_ReturnToStrings[location]);
     //   StringExpandPlaceholders(gStringVar4, gText_ReturnToVar1);
-    // gText_ReturnToVar1 = "Retourner\n{STR_VAR_1}." (= "Retourner\nau jeu.")
-    // pour ITEMMENULOCATION_FIELD = gText_TheField = "au jeu".
-    // Strings via /decomp/em/strings.json.
+    // gText_ReturnToVar1 = "Retourner\n{STR_VAR_1}." → dynamique selon location :
+    // FIELD="au jeu", BATTLE="au combat", PC="au PC", PARTY="à la LISTE POKéMON".
     const tpl = getString('gText_ReturnToVar1');  // "Retourner\\n{STR_VAR_1}."
-    const field = getString('gText_TheField');    // "au jeu"
+    const field = getString(RETURN_TO_STRINGS[_bagLocation]);
     const expanded = tpl.replace('{STR_VAR_1}', field);  // "Retourner\\nau jeu."
     // Le \n est literal dans le JSON, on split sur \\n ou \n.
     const lines = expanded.split(/\\n|\n/);
@@ -1032,7 +1221,16 @@ function _startPocketSwitchAnim(dir: -1 | 1): void {
   _phase = 'switching_pocket';
   _switchTimer = 0;
   _switchDir = dir;
+  // 1:1 décomp PrintPocketNames(name1, name2) : on store les 2 indices pour
+  // double-buffer scroll-in animation indépendamment de _pocketIdx (qui swap
+  // au tick 8).
+  _switchOldPocketIdx = _pocketIdx;
+  _switchNewPocketIdx = (_pocketIdx + dir + POCKETS.length) % POCKETS.length;
   PlaySE(5);
+  // 1:1 décomp gBagPosition.cursorPosition/scrollPosition[pocket] save :
+  // before switch, save current pocket's cursor + scroll state.
+  _cursorPerPocket[_pocketIdx] = _cursorPos;
+  _scrollPerPocket[_pocketIdx] = _scrollOffset;
   // 1:1 décomp item_menu.c:SwitchBagPocket appelle :
   //   AddSwitchPocketRotatingBallSprite(rotationDirection);
   // → spawn rotating ball OAM à (16, 16) qui rotate 16 frames puis self-remove.
@@ -1421,11 +1619,20 @@ function _tickPocketSwitchAnim(): void {
   _tickRotatingBall();
   // Tous les 2 frames : update pocket name window pour scroll effect.
   // (= simplifié : on swap le label au tick 8 = milieu de l'anim).
+  // 1:1 décomp item_menu.c:Task_SwitchBagPocket case 0 :
+  //   if (!(++tPocketSwitchTimer & 1))
+  //     CopyPocketNameToWindow((u8)(tPocketSwitchTimer >> 1));
+  // → chaque 2 frames, refresh le pocket name window avec scroll offset.
+  // On redraw simplement le header chaque frame (= scroll progressif).
+  if ((_switchTimer & 1) === 0) {
+    _drawHeader();
+  }
   if (_switchTimer === 8) {
     _pocketIdx = (_pocketIdx + _switchDir + POCKETS.length) % POCKETS.length;
-    _cursorPos = 0;
-    _scrollOffset = 0;
-    _drawHeader();
+    // 1:1 décomp gBagPosition.cursorPosition[newPocket] restore (= au lieu de
+    // reset à 0). Préserve la position cursor entre switches.
+    _cursorPos = _cursorPerPocket[_pocketIdx];
+    _scrollOffset = _scrollPerPocket[_pocketIdx];
     _updateBagSpriteOam();
   }
   if (_switchTimer >= 16) {
@@ -1436,6 +1643,432 @@ function _tickPocketSwitchAnim(): void {
     _switchTimer = 0;
     _switchDir = 0;
   }
+}
+
+// ─── Context menu (A button → Use/Give/Toss/Cancel) ──────────────────────────
+
+/** 1:1 décomp item_menu.c:OpenContextMenu :
+ *    switch (gBagPosition.pocket) {
+ *      case ITEMS_POCKET → sContextMenuItems_ItemsPocket (4 actions)
+ *      case BERRIES_POCKET → sContextMenuItems_BerriesPocket (6 actions)
+ *      ...
+ *    }
+ *  Setup les actions + display description "{ITEM} est sélectionné" + créer
+ *  le window 2x2 ou 2x3 selon pocket. */
+function _openContextMenu(): void {
+  const itemKey = _selectedItemKey();
+  if (!itemKey || itemKey === CLOSE_BAG_KEY) return;
+  const pocketKey = POCKETS[_pocketIdx].key;
+  // 1:1 décomp dispatch par pocket.
+  let actions: ItemAction[];
+  switch (pocketKey) {
+    case 'items':     actions = [...CTX_ITEMS_POCKET]; break;
+    case 'keyItems':  actions = [...CTX_KEY_ITEMS_POCKET]; break;
+    case 'pokeBalls': actions = [...CTX_BALLS_POCKET]; break;
+    case 'tmHm':      actions = [...CTX_TMHM_POCKET]; break;
+    case 'berries':   actions = [...CTX_BERRIES_POCKET]; break;
+  }
+  _ctxActions = actions;
+  _ctxCursor = 0;
+  _ctxItemKey = itemKey;
+  _ctxItemPocketIdx = _pocketIdx;
+  _ctxItemListIdx = _scrollOffset + _cursorPos;
+  _phase = 'context_menu';
+
+  // 1:1 décomp item_menu.c:1638 : description = "{ITEM} est\nsélectionné."
+  // FillWindowPixelBuffer(WIN_DESCRIPTION, 0) + BagMenu_Print gText_Var1IsSelected.
+  if (_descWid >= 0) {
+    FillWindowPixelBuffer(_descWid, 0x00);
+    const tpl = getString('gText_Var1IsSelected');  // "{STR_VAR_1} est\nsélectionné."
+    const itemName = getItemNameFr(itemKey);
+    const expanded = tpl.replace('{STR_VAR_1}', itemName);
+    const lines = expanded.split(/\\n|\n/);
+    for (let i = 0; i < Math.min(lines.length, 3); i++) {
+      AddTextPrinterParameterized3(
+        _descWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, lines[i],
+      );
+    }
+    PutWindowTilemap(_descWid);
+    CopyWindowToVram(_descWid, 3);
+  }
+
+  // Create + draw context menu window.
+  const tpl = (actions.length > 4) ? CTX_2X3_WINDOW_TEMPLATE : CTX_2X2_WINDOW_TEMPLATE;
+  _ctxWid = AddWindow(tpl);
+  DrawStdFrameWithCustomTileAndPalette(_ctxWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
+  _drawContextMenu();
+}
+
+/** Render le context menu (= 2x2 ou 2x3 grid de labels + cursor ▶). */
+function _drawContextMenu(): void {
+  if (_ctxWid < 0) return;
+  FillWindowPixelBuffer(_ctxWid, 0x00);
+  // 2x2 grid : item 0 = top-left, 1 = top-right, 2 = bottom-left, 3 = bottom-right.
+  // 2x3 grid : same pattern, 3 rows.
+  const cols = 2;
+  const colWidth = 56;  // 7 tiles × 8 px = 56 px par colonne
+  const rowHeight = 16;
+  for (let i = 0; i < _ctxActions.length; i++) {
+    const action = _ctxActions[i];
+    if (action === ItemAction.DUMMY) continue;
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = 8 + col * colWidth;
+    const y = 1 + row * rowHeight;
+    if (i === _ctxCursor) {
+      AddTextPrinterParameterized3(
+        _ctxWid, FONT_NORMAL, x - 8, y, COLOR_MAIN, TEXT_SKIP_DRAW, '▶',
+      );
+    }
+    const textKey = ACTION_TEXT_KEYS[action];
+    const label = getString(textKey);
+    AddTextPrinterParameterized3(
+      _ctxWid, FONT_NORMAL, x, y, COLOR_MAIN, TEXT_SKIP_DRAW, label,
+    );
+  }
+  PutWindowTilemap(_ctxWid);
+  CopyWindowToVram(_ctxWid, 3);
+}
+
+function _closeContextMenu(): void {
+  if (_ctxWid >= 0) {
+    ClearStdWindowAndFrame(_ctxWid, true);
+    RemoveWindow(_ctxWid);
+    _ctxWid = -1;
+  }
+  _ctxActions = [];
+  // Redraw description (= revient à la description normale de l'item courant).
+  _drawDesc();
+  _phase = 'open';
+}
+
+/** Find next non-DUMMY action position dans une direction (= 1:1 décomp
+ *  IsValidContextMenuPos check). */
+function _ctxMoveCursor(dx: number, dy: number): boolean {
+  const cols = 2;
+  const total = _ctxActions.length;
+  const col = _ctxCursor % cols;
+  const row = Math.floor(_ctxCursor / cols);
+  const newCol = col + dx;
+  const newRow = row + dy;
+  if (newCol < 0 || newCol >= cols) return false;
+  const newPos = newRow * cols + newCol;
+  if (newPos < 0 || newPos >= total) return false;
+  if (_ctxActions[newPos] === ItemAction.DUMMY) return false;
+  _ctxCursor = newPos;
+  return true;
+}
+
+function _tickContextMenu(newKeys: number, KEY_A: number, KEY_B: number, KEY_UP: number, KEY_DOWN: number, KEY_LEFT: number, KEY_RIGHT: number): void {
+  if (newKeys & KEY_B) {
+    PlaySE(5);
+    _closeContextMenu();
+    return;
+  }
+  if (newKeys & KEY_A) {
+    PlaySE(5);
+    const action = _ctxActions[_ctxCursor];
+    _executeAction(action);
+    return;
+  }
+  if (newKeys & KEY_UP) {
+    if (_ctxMoveCursor(0, -1)) { PlaySE(5); _drawContextMenu(); }
+    return;
+  }
+  if (newKeys & KEY_DOWN) {
+    if (_ctxMoveCursor(0, 1)) { PlaySE(5); _drawContextMenu(); }
+    return;
+  }
+  if (newKeys & KEY_LEFT) {
+    if (_ctxMoveCursor(-1, 0)) { PlaySE(5); _drawContextMenu(); }
+    return;
+  }
+  if (newKeys & KEY_RIGHT) {
+    if (_ctxMoveCursor(1, 0)) { PlaySE(5); _drawContextMenu(); }
+    return;
+  }
+}
+
+/** 1:1 décomp sItemMenuActions[].func dispatch.
+ *  Pour le port : USE / GIVE / REGISTER / CHECK / CHECK_TAG = stub (= close
+ *  menu + future game logic). TOSS = vraie logique de remove. CANCEL = close. */
+function _executeAction(action: ItemAction): void {
+  if (action === ItemAction.CANCEL || action === ItemAction.DUMMY) {
+    _closeContextMenu();
+    return;
+  }
+  if (action === ItemAction.TOSS) {
+    _startToss();
+    return;
+  }
+  // USE / GIVE / REGISTER / CHECK / CHECK_TAG : log + close (TODO Phase 6+).
+  console.log(`[bag-screen] action ${ItemAction[action]} on ${_ctxItemKey} — TODO`);
+  _closeContextMenu();
+}
+
+// ─── Toss flow (1:1 décomp ItemMenu_Toss + Task_ChooseHowManyToToss) ────────
+
+function _startToss(): void {
+  // 1:1 décomp ItemMenu_Toss : si quantity == 1 → AskTossItems direct.
+  // Sinon → quantity selector. KeyItems toujours qty=1 (pas affiché de toutes
+  // façons), donc on saute direct au confirm.
+  const slot = _currentPocketItems().find(s => s.itemKey === _ctxItemKey);
+  _tossMaxQty = slot?.quantity ?? 1;
+  _tossQty = 1;
+  // Cleanup ctx window.
+  if (_ctxWid >= 0) {
+    ClearStdWindowAndFrame(_ctxWid, true);
+    RemoveWindow(_ctxWid);
+    _ctxWid = -1;
+  }
+  if (_tossMaxQty === 1) {
+    _askTossItems();
+  } else {
+    _phase = 'toss_quantity';
+    _qtyWid = AddWindow(QTY_WINDOW_TEMPLATE);
+    DrawStdFrameWithCustomTileAndPalette(_qtyWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
+    _drawTossQuantity();
+    _drawTossPrompt('gText_TossHowManyVar1s');
+  }
+}
+
+function _drawTossPrompt(textKey: string): void {
+  if (_descWid < 0) return;
+  FillWindowPixelBuffer(_descWid, 0x00);
+  const tpl = getString(textKey);
+  const itemName = getItemNameFr(_ctxItemKey);
+  const expanded = tpl
+    .replace('{STR_VAR_1}', itemName)
+    .replace('{STR_VAR_2}', String(_tossQty));
+  const lines = expanded.split(/\\n|\n/);
+  for (let i = 0; i < Math.min(lines.length, 3); i++) {
+    AddTextPrinterParameterized3(
+      _descWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, lines[i],
+    );
+  }
+  PutWindowTilemap(_descWid);
+  CopyWindowToVram(_descWid, 3);
+}
+
+function _drawTossQuantity(): void {
+  if (_qtyWid < 0) return;
+  FillWindowPixelBuffer(_qtyWid, 0x00);
+  const qtyStr = `×${_tossQty}`;
+  AddTextPrinterParameterized3(
+    _qtyWid, FONT_NORMAL, 8, 1, COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
+  );
+  PutWindowTilemap(_qtyWid);
+  CopyWindowToVram(_qtyWid, 3);
+}
+
+function _tickTossQuantity(newKeys: number, KEY_A: number, KEY_B: number, KEY_UP: number, KEY_DOWN: number): void {
+  if (newKeys & KEY_UP) {
+    _tossQty = Math.min(_tossQty + 1, _tossMaxQty);
+    PlaySE(5);
+    _drawTossQuantity();
+    return;
+  }
+  if (newKeys & KEY_DOWN) {
+    _tossQty = Math.max(_tossQty - 1, 1);
+    PlaySE(5);
+    _drawTossQuantity();
+    return;
+  }
+  if (newKeys & KEY_A) {
+    PlaySE(5);
+    if (_qtyWid >= 0) {
+      ClearStdWindowAndFrame(_qtyWid, true);
+      RemoveWindow(_qtyWid);
+      _qtyWid = -1;
+    }
+    _askTossItems();
+    return;
+  }
+  if (newKeys & KEY_B) {
+    PlaySE(5);
+    _cancelToss();
+    return;
+  }
+}
+
+function _askTossItems(): void {
+  _phase = 'toss_confirm';
+  _tossYesNoCursor = 0;
+  _drawTossPrompt('gText_ConfirmTossItems');
+  _yesNoWid = AddWindow(YESNO_WINDOW_TEMPLATE);
+  DrawStdFrameWithCustomTileAndPalette(_yesNoWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
+  _drawYesNo();
+}
+
+function _drawYesNo(): void {
+  if (_yesNoWid < 0) return;
+  FillWindowPixelBuffer(_yesNoWid, 0x00);
+  for (let i = 0; i < 2; i++) {
+    if (i === _tossYesNoCursor) {
+      AddTextPrinterParameterized3(
+        _yesNoWid, FONT_NORMAL, 0, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, '▶',
+      );
+    }
+    AddTextPrinterParameterized3(
+      _yesNoWid, FONT_NORMAL, 8, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW,
+      getString(i === 0 ? 'gText_Yes' : 'gText_No'),
+    );
+  }
+  PutWindowTilemap(_yesNoWid);
+  CopyWindowToVram(_yesNoWid, 3);
+}
+
+function _tickTossConfirm(newKeys: number, KEY_A: number, KEY_B: number, KEY_UP: number, KEY_DOWN: number): void {
+  if (newKeys & KEY_UP) {
+    if (_tossYesNoCursor > 0) { _tossYesNoCursor--; PlaySE(5); _drawYesNo(); }
+    return;
+  }
+  if (newKeys & KEY_DOWN) {
+    if (_tossYesNoCursor < 1) { _tossYesNoCursor++; PlaySE(5); _drawYesNo(); }
+    return;
+  }
+  if (newKeys & KEY_A) {
+    PlaySE(5);
+    if (_yesNoWid >= 0) {
+      ClearStdWindowAndFrame(_yesNoWid, true);
+      RemoveWindow(_yesNoWid);
+      _yesNoWid = -1;
+    }
+    if (_tossYesNoCursor === 0) {
+      // Yes → ConfirmToss : show "Threw away N item" message, wait A/B.
+      _confirmToss();
+    } else {
+      _cancelToss();
+    }
+    return;
+  }
+  if (newKeys & KEY_B) {
+    PlaySE(5);
+    _cancelToss();
+    return;
+  }
+}
+
+function _confirmToss(): void {
+  _phase = 'toss_message';
+  _drawTossPrompt('gText_ThrewAwayVar2Var1s');
+}
+
+function _tickTossMessage(newKeys: number, KEY_A: number, KEY_B: number): void {
+  if (newKeys & (KEY_A | KEY_B)) {
+    PlaySE(5);
+    // 1:1 décomp Task_RemoveItemFromBag : RemoveBagItem(itemId, count) +
+    // UpdatePocketItemList + ListMenuInit + ReturnToItemList.
+    RemoveBagItem(_ctxItemKey, _tossQty);
+    const pocketKey = POCKETS[_ctxItemPocketIdx].key;
+    UpdatePocketItemList(pocketKey);
+    // Fix cursor si on était sur le dernier item et qu'il a disparu.
+    const items = _currentPocketItems();
+    const maxIdx = items.length - 1;
+    if (_scrollOffset + _cursorPos > maxIdx) {
+      if (_cursorPos > 0) _cursorPos--;
+      else if (_scrollOffset > 0) _scrollOffset--;
+    }
+    _cursorPerPocket[_pocketIdx] = _cursorPos;
+    _scrollPerPocket[_pocketIdx] = _scrollOffset;
+    _drawAll();
+    _phase = 'open';
+  }
+}
+
+function _cancelToss(): void {
+  if (_qtyWid >= 0) {
+    ClearStdWindowAndFrame(_qtyWid, true);
+    RemoveWindow(_qtyWid);
+    _qtyWid = -1;
+  }
+  if (_yesNoWid >= 0) {
+    ClearStdWindowAndFrame(_yesNoWid, true);
+    RemoveWindow(_yesNoWid);
+    _yesNoWid = -1;
+  }
+  _drawDesc();
+  _phase = 'open';
+}
+
+// ─── Item swap (SELECT button) ───────────────────────────────────────────────
+
+/** 1:1 décomp item_menu.c:CanSwapItems :
+ *    if (gBagPosition.location == FIELD || BATTLE)
+ *      if (pocket != TMHM_POCKET && pocket != BERRIES_POCKET) return TRUE;
+ *  → Swap disabled pour TM/HM (sortés automatiquement) et BAIES. */
+function _canSwapItems(): boolean {
+  if (_bagLocation !== BagLocation.FIELD && _bagLocation !== BagLocation.BATTLE) return false;
+  const pocketKey = POCKETS[_pocketIdx].key;
+  if (pocketKey === 'tmHm' || pocketKey === 'berries') return false;
+  return true;
+}
+
+function _startItemSwap(): void {
+  if (!_canSwapItems()) return;
+  const itemKey = _selectedItemKey();
+  if (!itemKey || itemKey === CLOSE_BAG_KEY) return;
+  _phase = 'swap_items';
+  _swapFromIdx = _scrollOffset + _cursorPos;
+  // 1:1 décomp StringExpandPlaceholders(gStringVar4, gText_MoveVar1Where).
+  if (_descWid >= 0) {
+    FillWindowPixelBuffer(_descWid, 0x00);
+    const tpl = getString('gText_MoveVar1Where');
+    const expanded = tpl.replace('{STR_VAR_1}', getItemNameFr(itemKey));
+    const lines = expanded.split(/\\n|\n/);
+    for (let i = 0; i < Math.min(lines.length, 3); i++) {
+      AddTextPrinterParameterized3(
+        _descWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, lines[i],
+      );
+    }
+    PutWindowTilemap(_descWid);
+    CopyWindowToVram(_descWid, 3);
+  }
+}
+
+function _doItemSwap(toIdx: number): void {
+  const pocketKey = POCKETS[_pocketIdx].key;
+  const bag = gameState.bag as unknown as Record<string, ItemSlot[]>;
+  const arr = bag[pocketKey];
+  // 1:1 décomp MoveItemSlotInList : déplace slot from → to en shiftant.
+  if (_swapFromIdx !== toIdx && _swapFromIdx >= 0 && toIdx >= 0) {
+    const realItems = arr.filter(s => s.itemKey && s.quantity > 0);
+    if (_swapFromIdx < realItems.length && toIdx < realItems.length) {
+      const moved = realItems.splice(_swapFromIdx, 1)[0];
+      realItems.splice(toIdx, 0, moved);
+      // Re-write arr.
+      for (let i = 0; i < arr.length; i++) {
+        if (i < realItems.length) {
+          arr[i].itemKey = realItems[i].itemKey;
+          arr[i].quantity = realItems[i].quantity;
+        } else {
+          arr[i].itemKey = '';
+          arr[i].quantity = 0;
+        }
+      }
+      // Cursor follow item.
+      const total = realItems.length + 1;  // +1 = CLOSE_BAG entry
+      const newAbs = Math.min(toIdx, total - 1);
+      if (newAbs < VISIBLE_ROWS) {
+        _cursorPos = newAbs;
+        _scrollOffset = 0;
+      } else {
+        _cursorPos = VISIBLE_ROWS - 1;
+        _scrollOffset = newAbs - (VISIBLE_ROWS - 1);
+      }
+      _cursorPerPocket[_pocketIdx] = _cursorPos;
+      _scrollPerPocket[_pocketIdx] = _scrollOffset;
+    }
+  }
+  _swapFromIdx = -1;
+  _drawAll();
+  _phase = 'open';
+}
+
+function _cancelItemSwap(): void {
+  _swapFromIdx = -1;
+  _drawDesc();
+  _phase = 'open';
 }
 
 /** Update sprite sac OAM tileNum + bag jump animation au pocket switch.
@@ -1468,6 +2101,97 @@ function _tickBagSpriteJumpAnim(): void {
   const sprite = rt.gSprites.get(_bagSpriteOamId);
   if (!sprite) return;
   if (sprite.y2 < 0) sprite.y2++;
+}
+
+/** 1:1 décomp item_menu_icons.c:ShakeBagSprite + sSpriteAffineAnim_BagShake :
+ *    AFFINEANIMCMD_FRAME(0, 0, 254, 2),  // rotation += -2 par frame, 2 frames
+ *    AFFINEANIMCMD_FRAME(0, 0,   2, 4),  // rotation += +2 par frame, 4 frames
+ *    AFFINEANIMCMD_FRAME(0, 0, 254, 4),  // rotation += -2 par frame, 4 frames
+ *    AFFINEANIMCMD_FRAME(0, 0,   2, 2),  // rotation += +2 par frame, 2 frames
+ *    AFFINEANIMCMD_END
+ *  Total 12 frames. Rotation accumulée : 0 → -4 → +4 → -4 → 0 (u8 wraparound).
+ *  Appelé depuis BagMenu_MoveCursorCallback (= chaque cursor change). */
+const BAG_SHAKE_ANIM: ReadonlyArray<{ delta: number; duration: number }> = [
+  { delta: -2, duration: 2 },   // 254 u8 signed = -2
+  { delta:  2, duration: 4 },
+  { delta: -2, duration: 4 },
+  { delta:  2, duration: 2 },
+];
+let _bagShakeMatrixNum = -1;
+let _bagShakeRotation = 0;
+
+function _triggerBagShake(): void {
+  if (_bagShakeFrame > 0 && _bagShakeFrame < BAG_SHAKE_FRAMES) return; // already shaking
+  const rt = getRuntime();
+  if (!rt || _bagSpriteOamId < 0) return;
+  const sprite = rt.gSprites.get(_bagSpriteOamId);
+  const oam = rt.gba.oam[_bagSpriteOamIndex];
+  if (!sprite || !oam) return;
+  // 1:1 décomp StartSpriteAffineAnim : switch sprite to AFFINE_NORMAL +
+  // alloc matrix slot. InitSpriteAffineAnim équivalent.
+  oam.affineMode = 1;       // ST_OAM_AFFINE_NORMAL
+  sprite.affineMode = 1;
+  _bagShakeMatrixNum = rt.AllocOamMatrix();
+  sprite.matrixNum = _bagShakeMatrixNum;
+  oam.affineParamIndex = _bagShakeMatrixNum;
+  _bagShakeRotation = 0;
+  _bagShakeFrame = 0;
+  _bagShakeApplyMatrix();
+}
+
+/** 1:1 décomp ObjAffineSet inline : calcule pa/pb/pc/pd depuis rotation u8.
+ *  Identique à _ballApplyMatrix mais pour bag (xScale=yScale=0x100, = 1.0). */
+function _bagShakeApplyMatrix(): void {
+  const rt = getRuntime();
+  if (!rt || _bagShakeMatrixNum < 0) return;
+  const sin = gSineTable(_bagShakeRotation & 0xFF);
+  const cos = gSineTable((_bagShakeRotation + 64) & 0xFF);
+  const xScale = 0x100;
+  const yScale = 0x100;
+  const pa =  (xScale * cos) >> 8;
+  const pb = -(xScale * sin) >> 8;
+  const pc =  (yScale * sin) >> 8;
+  const pd =  (yScale * cos) >> 8;
+  SetOamMatrix(rt.gba, _bagShakeMatrixNum, pa, pb, pc, pd);
+}
+
+/** 1:1 décomp ApplyAffineAnimFrameRelative : applique rotationDelta par frame
+ *  selon la position dans la table BAG_SHAKE_ANIM. À 12 frames, l'anim se
+ *  termine → SpriteCB_ShakeBagSprite → restore AFFINE_OFF + FreeOamMatrix. */
+function _tickBagSpriteShake(): void {
+  if (_bagShakeFrame >= BAG_SHAKE_FRAMES) return;
+  _bagShakeFrame++;
+  // Find current animation step from cumulative frame count.
+  let cumulative = 0;
+  let delta = 0;
+  for (const cmd of BAG_SHAKE_ANIM) {
+    if (_bagShakeFrame <= cumulative + cmd.duration) {
+      delta = cmd.delta;
+      break;
+    }
+    cumulative += cmd.duration;
+  }
+  // 1:1 décomp AFFINEANIMCMD_FRAME(0, 0, rotationDelta, _) : rotation += delta.
+  _bagShakeRotation = (_bagShakeRotation + delta) & 0xFF;
+  _bagShakeApplyMatrix();
+  if (_bagShakeFrame >= BAG_SHAKE_FRAMES) {
+    // 1:1 décomp SpriteCB_ShakeBagSprite : sprite->callback = SpriteCallbackDummy ;
+    // mais avant on doit FreeOamMatrix + restore affineMode = AFFINE_OFF pour
+    // que le bag continue à rendre correctement.
+    const rt = getRuntime();
+    if (!rt || _bagSpriteOamId < 0) return;
+    const sprite = rt.gSprites.get(_bagSpriteOamId);
+    const oam = rt.gba.oam[_bagSpriteOamIndex];
+    if (sprite && oam) {
+      oam.affineMode = 0;     // ST_OAM_AFFINE_OFF
+      sprite.affineMode = 0;
+    }
+    if (_bagShakeMatrixNum >= 0) {
+      rt.FreeOamMatrix(_bagShakeMatrixNum);
+      _bagShakeMatrixNum = -1;
+    }
+    _bagShakeRotation = 0;
+  }
 }
 
 /** Restore overworld BG2 state (= avant le bag screen). */
@@ -1624,6 +2348,23 @@ function _doTeardown(): void {
     RemoveWindow(_descWid);
     _descWid = -1;
   }
+  // Cleanup context menu / yes-no / qty windows si encore ouverts (= close
+  // pendant un context menu doit cleanup tous les overlays).
+  if (_ctxWid >= 0) {
+    ClearStdWindowAndFrame(_ctxWid, true);
+    RemoveWindow(_ctxWid);
+    _ctxWid = -1;
+  }
+  if (_yesNoWid >= 0) {
+    ClearStdWindowAndFrame(_yesNoWid, true);
+    RemoveWindow(_yesNoWid);
+    _yesNoWid = -1;
+  }
+  if (_qtyWid >= 0) {
+    ClearStdWindowAndFrame(_qtyWid, true);
+    RemoveWindow(_qtyWid);
+    _qtyWid = -1;
+  }
   const cb = _onClose;
   _onClose = null;
   // Fade IN depuis BLACK pour le retour au start menu (= overworld revient
@@ -1674,6 +2415,8 @@ export function TickBagScreen(newKeys: number): void {
   // de 1 frame (= task termine à timer==16 mais ball callback a encore 1 continue
   // restant). Tick aussi en phase 'open' pour laisser le ball self-despawn.
   if (_ballOamId >= 0) _tickRotatingBall();
+  // 1:1 décomp ShakeBagSprite : tick anim affine (rotate -2/+2 sur 12 frames).
+  _tickBagSpriteShake();
 
   // Note : pas besoin de hide les sprites au tick. Le hook _syncSubspriteOam
   // installé au open s'exécute APRÈS syncSpritesToOam chaque frame et clear
@@ -1681,17 +2424,76 @@ export function TickBagScreen(newKeys: number): void {
   // Constants 1:1 décomp gba/io_reg.h.
   const KEY_A = 0x0001;
   const KEY_B = 0x0002;
+  const KEY_SELECT = 0x0004;
+  const KEY_START = 0x0008;
   const KEY_RIGHT = 0x0010;
   const KEY_LEFT = 0x0020;
   const KEY_UP = 0x0040;
   const KEY_DOWN = 0x0080;
-  const KEY_START = 0x0008;
+  const KEY_R = 0x0100;
+  const KEY_L = 0x0200;
 
   // 1:1 décomp list_menu.c:406-414 : UP/DOWN utilisent JOY_REPEAT (= hold to
   // scroll après gKeyRepeatStartDelay=40 frames, puis chaque gKeyRepeatContinueDelay=5).
-  // Pareil LEFT/RIGHT switch pocket (= 1:1 décomp item_menu.c JOY_REPEAT
-  // pour multi-scroll, mais ici simplifié à 1 switch par repeat).
   const repeatedKeys = (rt?.gMain as unknown as { newAndRepeatedKeys?: number })?.newAndRepeatedKeys ?? newKeys;
+
+  // Phases overlay (context menu / toss / swap) — routes les inputs ici AVANT
+  // le scrolling normal de la list.
+  if (_phase === 'context_menu') {
+    _tickContextMenu(newKeys, KEY_A, KEY_B, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT);
+    return;
+  }
+  if (_phase === 'toss_quantity') {
+    _tickTossQuantity(repeatedKeys, KEY_A, KEY_B, KEY_UP, KEY_DOWN);
+    return;
+  }
+  if (_phase === 'toss_confirm') {
+    _tickTossConfirm(newKeys, KEY_A, KEY_B, KEY_UP, KEY_DOWN);
+    return;
+  }
+  if (_phase === 'toss_message') {
+    _tickTossMessage(newKeys, KEY_A, KEY_B);
+    return;
+  }
+  if (_phase === 'swap_items') {
+    // 1:1 décomp Task_HandleSwappingItemsInput : SELECT confirm swap, B cancel,
+    // UP/DOWN scroll, A → swap to cursor pos.
+    const items = _currentPocketItems();
+    if (newKeys & KEY_SELECT) {
+      PlaySE(5);
+      _doItemSwap(_scrollOffset + _cursorPos);
+      return;
+    }
+    if (newKeys & KEY_B) {
+      PlaySE(5);
+      _cancelItemSwap();
+      return;
+    }
+    if (newKeys & KEY_A) {
+      PlaySE(5);
+      _doItemSwap(_scrollOffset + _cursorPos);
+      return;
+    }
+    if (repeatedKeys & KEY_DOWN) {
+      if (items.length === 0) return;
+      const totalIdx = _scrollOffset + _cursorPos;
+      if (totalIdx >= items.length - 1) return;
+      if (_cursorPos < VISIBLE_ROWS - 1) _cursorPos++; else _scrollOffset++;
+      PlaySE(5);
+      _drawList();
+      return;
+    }
+    if (repeatedKeys & KEY_UP) {
+      if (items.length === 0) return;
+      if (_cursorPos > 0) _cursorPos--;
+      else if (_scrollOffset > 0) _scrollOffset--;
+      else return;
+      PlaySE(5);
+      _drawList();
+      return;
+    }
+    return;
+  }
 
   const items = _currentPocketItems();
 
@@ -1700,11 +2502,13 @@ export function TickBagScreen(newKeys: number): void {
     CloseBagScreen();
     return;
   }
-  if (repeatedKeys & KEY_RIGHT) {
+  // 1:1 décomp menu_helpers.c GetLRKeysPressed : si optionsButtonMode == LR
+  // alors L/R = switch pocket. Pour simplifier, on accept L/R toujours.
+  if (repeatedKeys & (KEY_RIGHT | KEY_R)) {
     _startPocketSwitchAnim(1);
     return;
   }
-  if (repeatedKeys & KEY_LEFT) {
+  if (repeatedKeys & (KEY_LEFT | KEY_L)) {
     _startPocketSwitchAnim(-1);
     return;
   }
@@ -1718,9 +2522,14 @@ export function TickBagScreen(newKeys: number): void {
       _scrollOffset++;
     }
     PlaySE(5);
+    // 1:1 décomp BagMenu_MoveCursorCallback : ShakeBagSprite + scroll cursor.
+    _triggerBagShake();
     _drawList();
     _drawDesc();
     _drawItemIcon();
+    // Save cursor state au pocket courant.
+    _cursorPerPocket[_pocketIdx] = _cursorPos;
+    _scrollPerPocket[_pocketIdx] = _scrollOffset;
     return;
   }
   if (repeatedKeys & KEY_UP) {
@@ -1733,9 +2542,21 @@ export function TickBagScreen(newKeys: number): void {
       return;
     }
     PlaySE(5);
+    _triggerBagShake();
     _drawList();
     _drawDesc();
     _drawItemIcon();
+    _cursorPerPocket[_pocketIdx] = _cursorPos;
+    _scrollPerPocket[_pocketIdx] = _scrollOffset;
+    return;
+  }
+  if (newKeys & KEY_SELECT) {
+    // 1:1 décomp Task_BagMenu_HandleInput JOY_NEW(SELECT_BUTTON) →
+    // si CanSwapItems → StartItemSwap.
+    if (_canSwapItems()) {
+      PlaySE(5);
+      _startItemSwap();
+    }
     return;
   }
   if (newKeys & KEY_A) {
@@ -1748,8 +2569,8 @@ export function TickBagScreen(newKeys: number): void {
       return;
     }
     PlaySE(5);
-    // Phase 6+ : real use logic (Use/Give/Toss). Pour l'instant : log + flash msg.
-    console.log(`[bag-screen] use ${itemKey} — TODO Phase 6+ (use/give/toss menu)`);
+    // 1:1 décomp Task_ItemContext_Normal → OpenContextMenu(taskId).
+    _openContextMenu();
     return;
   }
 }
