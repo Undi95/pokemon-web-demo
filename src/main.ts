@@ -102,8 +102,9 @@ installScopeDevtools();
 
 // Session 127 : preload bag screen graphics (sprite sac + dots + button).
 // Async, idempotent. Au 1er Open du bag, les assets sont déjà cached.
-import { preloadBagAssets } from './engine/bag-screen';
+import { preloadBagAssets, initItemIconMap } from './engine/bag-screen';
 preloadBagAssets();
+void initItemIconMap();
 
 // Session 127 : preload text-tables.json AU BOOT (= species/moves/items/abilities
 // FR). Avant : juste loadé par starter-choose-flow.ts on demand → bag screen

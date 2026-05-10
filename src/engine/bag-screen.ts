@@ -570,21 +570,43 @@ function _drawAll(): void {
  *  ITEM_FULL_HEAL → full_heal
  *  Cas spécial : RETURN_TO_FIELD → return_to_field_arrow (= 1:1 décomp
  *  gItemIcon_ReturnToFieldArrow pour ITEM_LIST_END = ITEMS_COUNT). */
+/** Mapping ITEM_X → file slug (= gItemIcon_X → "graphics/items/icons/X.png").
+ *  Loaded au boot par initItemIconMap depuis /decomp/em/items/item-icon-map.json
+ *  (= généré par scripts/extract-item-icon-map.mjs depuis item_icon_table.h
+ *  + graphics/items.h du décomp).
+ *
+ *  1:1 décomp pattern : plusieurs items partagent un sprite (Orb, TM, HM, etc.)
+ *  avec une palette différente par item. Sans ce mapping, le slug auto
+ *  ITEM_RED_ORB → red_orb.png n'existe pas (= seule orb.png est extraite). */
+let _itemIconMap: Record<string, string> = {};
+
+export async function initItemIconMap(): Promise<void> {
+  try {
+    const resp = await fetch('/decomp/em/items/item-icon-map.json');
+    if (!resp.ok) return;
+    _itemIconMap = await resp.json();
+  } catch (e) {
+    console.warn('[bag-screen] item-icon-map.json load failed', e);
+  }
+}
+
 function _itemIconUrlBase(itemKey: string): string {
   if (itemKey === 'ITEM_RETURN_TO_FIELD') {
     return '/decomp/em/items/icons/return_to_field_arrow';
   }
-  // 1:1 décomp src/data/item_icon_table.h : TOUS les ITEM_TM_* utilisent
-  // gItemIcon_TM (= un seul sprite générique), TOUS les ITEM_HM_* utilisent
-  // gItemIcon_HM. La couleur/palette diffère par type (FightingTMHM, etc.)
-  // mais l'icon graphique est partagé. Pour le port web on map tous vers
-  // /decomp/em/items/icons/tm.png et hm.png respectivement.
+  // 1:1 décomp mapping si présent dans item-icon-map.json.
+  const mapped = _itemIconMap[itemKey];
+  if (mapped) return `/decomp/em/items/icons/${mapped}`;
+  // Fallback TM/HM nommés (notre items.json utilise ITEM_TM_FOCUS_PUNCH mais
+  // le décomp utilise ITEM_TM01 → pas dans le mapping). Tous les TM/HM partagent
+  // gItemIcon_TM / gItemIcon_HM (= tm.png / hm.png).
   if (itemKey.startsWith('ITEM_TM_')) {
     return '/decomp/em/items/icons/tm';
   }
   if (itemKey.startsWith('ITEM_HM_')) {
     return '/decomp/em/items/icons/hm';
   }
+  // Fallback final : slug auto depuis ITEM_X.
   const slug = itemKey.replace(/^ITEM_/, '').toLowerCase();
   return `/decomp/em/items/icons/${slug}`;
 }
@@ -1480,7 +1502,13 @@ function _doTeardown(): void {
 }
 
 /** Drive depuis le tick start-menu. Lit gMain.newKeys et navigue.
- *  Caller doit consume les keys après cet appel. */
+ *  Caller doit consume les keys après cet appel.
+ *
+ *  1:1 décomp list_menu.c:ListMenu_ProcessInput utilise :
+ *    - JOY_NEW(A/B)         : new press only (= newKeys & KEY)
+ *    - JOY_REPEAT(UP/DOWN)  : new press OU repeated key (= hold to scroll)
+ *  JOY_REPEAT lit gMain.newAndRepeatedKeys. Le runtime maintient ce field
+ *  avec gKeyRepeatStartDelay=40 + gKeyRepeatContinueDelay=5 (1:1 main.c). */
 export function TickBagScreen(newKeys: number): void {
   if (!_isOpen) return;
 
@@ -1522,6 +1550,12 @@ export function TickBagScreen(newKeys: number): void {
   const KEY_DOWN = 0x0080;
   const KEY_START = 0x0008;
 
+  // 1:1 décomp list_menu.c:406-414 : UP/DOWN utilisent JOY_REPEAT (= hold to
+  // scroll après gKeyRepeatStartDelay=40 frames, puis chaque gKeyRepeatContinueDelay=5).
+  // Pareil LEFT/RIGHT switch pocket (= 1:1 décomp item_menu.c JOY_REPEAT
+  // pour multi-scroll, mais ici simplifié à 1 switch par repeat).
+  const repeatedKeys = (rt?.gMain as unknown as { newAndRepeatedKeys?: number })?.newAndRepeatedKeys ?? newKeys;
+
   const items = _currentPocketItems();
 
   if (newKeys & (KEY_B | KEY_START)) {
@@ -1529,15 +1563,15 @@ export function TickBagScreen(newKeys: number): void {
     CloseBagScreen();
     return;
   }
-  if (newKeys & KEY_RIGHT) {
+  if (repeatedKeys & KEY_RIGHT) {
     _startPocketSwitchAnim(1);
     return;
   }
-  if (newKeys & KEY_LEFT) {
+  if (repeatedKeys & KEY_LEFT) {
     _startPocketSwitchAnim(-1);
     return;
   }
-  if (newKeys & KEY_DOWN) {
+  if (repeatedKeys & KEY_DOWN) {
     if (items.length === 0) return;
     const totalIdx = _scrollOffset + _cursorPos;
     if (totalIdx >= items.length - 1) return;
@@ -1552,7 +1586,7 @@ export function TickBagScreen(newKeys: number): void {
     _drawItemIcon();
     return;
   }
-  if (newKeys & KEY_UP) {
+  if (repeatedKeys & KEY_UP) {
     if (items.length === 0) return;
     if (_cursorPos > 0) {
       _cursorPos--;
