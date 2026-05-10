@@ -552,6 +552,18 @@ export function OpenStartMenu(): void {
   sSubState = 'menu';
   _spawnMenuWindow();
   LockPlayerFieldControls();
+  // 1:1 décomp src/start_menu.c:581 ShowStartMenu :
+  //   if (!IsOverworldLinkActive()) {
+  //     FreezeObjectEvents();
+  //     PlayerFreeze();
+  //     StopPlayerAvatar();
+  //   }
+  // Freeze TOUS les NPCs immédiatement (= mid-step si nécessaire). Le player
+  // est aussi frozen via LockPlayerFieldControls (= input bloqué). Les NPCs
+  // restent figés pendant tout le menu + sous-menus (bag, party, etc.).
+  // User report : "appuyer sur le bouton START freeze tous les NPC dans ce
+  // menu ET ses sous-menus, même mid-step."
+  void import('./object-events').then(({ FreezeObjectEvents }) => FreezeObjectEvents());
   sIsOpen = true;
   PlaySE(_seWinOpen());
   console.log('[start-menu] opened');
@@ -575,6 +587,10 @@ export function CloseStartMenu(): void {
   // Cleanup any open dialog.
   if (!IsFieldMessageBoxHidden()) HideFieldMessageBox();
   UnlockPlayerFieldControls();
+  // 1:1 inverse de FreezeObjectEvents au open : tous les NPCs reprennent leur
+  // mouvement normal au close du menu. Le player a déjà UnlockPlayerFieldControls
+  // donc reprend ses inputs.
+  void import('./object-events').then(({ UnfreezeAllNpcs }) => UnfreezeAllNpcs());
   sIsOpen = false;
   sSubState = 'menu';
   console.log('[start-menu] closed');

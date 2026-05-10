@@ -162,13 +162,19 @@ const DESC_WINDOW_TEMPLATE: WindowTemplate = {
 
 /** Phase de la state machine open/close du bag (= 1:1 décomp).
  *  - 'idle' : fermé
- *  - 'fading_in' : open démarré, fade FROM BLACK en cours, bag setup mais pas
- *    encore "interactive" (= waitfade)
+ *  - 'fading_in' : open démarré, fade FROM BLACK en cours
  *  - 'open' : bag visible et interactive
- *  - 'fading_out' : close démarré, fade TO BLACK en cours, bag encore setup
- *    (= visuel encore là). Quand fade fini → teardown + onClose. */
-type Phase = 'idle' | 'fading_in' | 'open' | 'fading_out';
+ *  - 'fading_out' : close démarré, fade TO BLACK en cours
+ *  - 'switching_pocket' : animation switch pocket (16 frames, DrawItemListBgRow). */
+type Phase = 'idle' | 'fading_in' | 'open' | 'fading_out' | 'switching_pocket';
 let _phase: Phase = 'idle';
+
+/** State pour Task_SwitchBagPocket animation 1:1 décomp item_menu.c:1363.
+ *  16 frames : chaque frame DrawItemListBgRow(timer) = tile 17 (jaune pâle)
+ *  fill row à y=timer+2, x=14, w=15, h=1 → clears la list row par row.
+ *  Quand timer == 16, swap _pocketIdx + redraw nouveau pocket. */
+let _switchTimer = 0;
+let _switchDir: -1 | 0 | 1 = 0;
 
 let _isOpen = false;
 let _pocketIdx = 0;
@@ -812,6 +818,54 @@ function _spawnBagSpriteOam(assets: BagAssets): void {
   _bagSpriteOamIndex = sprite.oamIndex;
 }
 
+/** 1:1 décomp item_menu.c:Task_SwitchBagPocket case 0 :
+ *    DrawItemListBgRow(tPocketSwitchTimer);
+ *    if (!(++tPocketSwitchTimer & 1))
+ *        CopyPocketNameToWindow((u8)(tPocketSwitchTimer >> 1));
+ *    if (tPocketSwitchTimer == 16)
+ *        tPocketSwitchState++;
+ *
+ *  Démarre l'animation : 16 frames de DrawItemListBgRow row par row qui clear
+ *  la list (= tile 17 jaune pâle uni). À la fin, swap pocket + reload list. */
+function _startPocketSwitchAnim(dir: -1 | 1): void {
+  if (_phase !== 'open') return;
+  _phase = 'switching_pocket';
+  _switchTimer = 0;
+  _switchDir = dir;
+  PlaySE(5);
+  // Cache la list pendant l'animation : draw juste tile 17 sur toute la zone.
+  // _tickPocketSwitchAnim va dessiner row par row.
+}
+
+function _tickPocketSwitchAnim(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // 1:1 décomp DrawItemListBgRow(y) :
+  //   FillBgTilemapBufferRect_Palette0(2, 17, 14, y + 2, 15, 1);
+  // y va de 0 à 15 (= 16 rows). Notre fonction _fillBgTilemapRect fait pareil.
+  // Note : la zone list = (14, 2, 15, 16) — y+2 = row absolute dans tilemap.
+  _fillBgTilemapRect(rt, 17, 14, _switchTimer + 2, 15, 1);
+  _switchTimer++;
+  // Tous les 2 frames : update pocket name window pour scroll effect.
+  // (= simplifié : on swap le label au tick 8 = milieu de l'anim).
+  if (_switchTimer === 8) {
+    _pocketIdx = (_pocketIdx + _switchDir + POCKETS.length) % POCKETS.length;
+    _cursorPos = 0;
+    _scrollOffset = 0;
+    _drawHeader();
+    _updateBagSpriteOam();
+  }
+  if (_switchTimer >= 16) {
+    // Animation finie → reload la list du nouveau pocket et redraw.
+    _drawList();
+    _drawDesc();
+    _drawItemIcon();
+    _phase = 'open';
+    _switchTimer = 0;
+    _switchDir = 0;
+  }
+}
+
 /** Update sprite sac OAM tileNum quand pocket switch. */
 function _updateBagSpriteOam(): void {
   const rt = getRuntime();
@@ -968,11 +1022,15 @@ export function TickBagScreen(newKeys: number): void {
   const rt = getRuntime();
   if (_phase === 'fading_in') {
     if (rt && !rt.gPaletteFade.active) _phase = 'open';
-    return;  // ignore inputs pendant fade
+    return;
   }
   if (_phase === 'fading_out') {
     if (rt && !rt.gPaletteFade.active) _doTeardown();
-    return;  // ignore inputs pendant fade
+    return;
+  }
+  if (_phase === 'switching_pocket') {
+    _tickPocketSwitchAnim();
+    return;  // ignore inputs pendant l'animation
   }
 
   // Note : pas besoin de hide les sprites au tick. Le hook _syncSubspriteOam
@@ -995,21 +1053,11 @@ export function TickBagScreen(newKeys: number): void {
     return;
   }
   if (newKeys & KEY_RIGHT) {
-    _pocketIdx = (_pocketIdx + 1) % POCKETS.length;
-    _cursorPos = 0;
-    _scrollOffset = 0;
-    PlaySE(5);
-    _drawAll();
-    _updateBagSpriteOam();  // 1:1 décomp StartSpriteAnim selon pocket
+    _startPocketSwitchAnim(1);
     return;
   }
   if (newKeys & KEY_LEFT) {
-    _pocketIdx = (_pocketIdx - 1 + POCKETS.length) % POCKETS.length;
-    _cursorPos = 0;
-    _scrollOffset = 0;
-    PlaySE(5);
-    _drawAll();
-    _updateBagSpriteOam();
+    _startPocketSwitchAnim(-1);
     return;
   }
   if (newKeys & KEY_DOWN) {

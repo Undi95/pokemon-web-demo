@@ -634,6 +634,25 @@ export function UnfreezeAllNpcs(): void {
     if (npc.active) npc.frozen = false;
   }
 }
+
+/** 1:1 décomp event_object_movement.c:8159 FreezeObjectEvents :
+ *    for (i = 0; i < OBJECT_EVENTS_COUNT; i++)
+ *        if (gObjectEvents[i].active && i != gPlayerAvatar.objectEventId)
+ *            FreezeObjectEvent(&gObjectEvents[i]);
+ *
+ *  Set frozen=true sur tous les NPCs actifs (skip player). Le tick movement
+ *  state machine check `if (npc.frozen) continue;` → NPC reste à sa position
+ *  même mid-step. Appelé par `ShowStartMenu` quand l'user appuie START dans
+ *  l'overworld pour ouvrir le menu. */
+export function FreezeObjectEvents(): void {
+  for (let i = 0; i < gObjectEvents.length; i++) {
+    const npc = gObjectEvents[i];
+    if (!npc.active) continue;
+    // Skip player (= localId 0xFF ou similar). On freeze juste les NPCs.
+    if (npc.localIdRaw === 'LOCALID_PLAYER') continue;
+    npc.frozen = true;
+  }
+}
 // Phase 4.6 audit Opus §5 : back-compat globalThis + register field-globals.
 (globalThis as Record<string, unknown>).__UnfreezeAllNpcs = UnfreezeAllNpcs;
 
