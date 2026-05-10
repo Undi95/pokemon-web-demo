@@ -33,7 +33,18 @@ export function getNatureNameFr(nature: string): string {
   return textTables?.natures[nature] ?? nature.replace(/^NATURE_/, '');
 }
 export function getItemDescriptionFr(label: string): string {
-  return textTables?.item_descriptions[label] ?? '';
+  if (!textTables) return '';
+  // 1ère tentative : direct hit (= label déjà en clean form "PokeBall").
+  const direct = textTables.item_descriptions[label];
+  if (direct) return direct;
+  // 2ème tentative : strip prefix `s` + suffix `Desc` du symbol décomp
+  // (= "sPokeBallDesc" → "PokeBall"). Convention 1:1 décomp src/data/items.h.
+  if (label.startsWith('s') && label.endsWith('Desc')) {
+    const cleaned = label.slice(1, -4);
+    const stripped = textTables.item_descriptions[cleaned];
+    if (stripped) return stripped;
+  }
+  return '';
 }
 
 // ----- Items (items.json) -----

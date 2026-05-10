@@ -105,6 +105,23 @@ installScopeDevtools();
 import { preloadBagAssets } from './engine/bag-screen';
 preloadBagAssets();
 
+// Session 127 : preload text-tables.json AU BOOT (= species/moves/items/abilities
+// FR). Avant : juste loadé par starter-choose-flow.ts on demand → bag screen
+// affiché AVANT starter-choose (= ?nointro avec save advanced) tombe sur des
+// descriptions vides. Maintenant les tables sont disponibles dès boot.
+import { loadTextTables, type TextTables } from './engine/data-tables';
+void (async () => {
+  try {
+    const resp = await fetch('/decomp/em/text-tables.json');
+    if (resp.ok) {
+      const json = await resp.json() as TextTables;
+      loadTextTables(json);
+    }
+  } catch (e) {
+    console.warn('[main] text-tables preload failed', e);
+  }
+})();
+
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
