@@ -341,10 +341,22 @@ export class TestOverworldScene extends Phaser.Scene {
       // eslint-disable-next-line @typescript-eslint/no-this-alias
       const self = this;
       const MainCB2_Overworld = function MainCB2_Overworld(): void {
-        // Phase 4.6 : pendant warp transition (= async load map), skip tout
-        // le game logic. tickFixed continue d'appeler UpdatePaletteFade
-        // automatiquement → le fade out/in render correctement.
-        if (self.warpInProgress) return;
+        // Audit session 126 LOT E3 : 1:1 décomp `CB2_Overworld` (overworld.c:
+        // 1453-1480) ne skip QUE player input pendant un fade, pas tout le
+        // game logic. Avant : `if (warpInProgress) return` skip TOUT (script
+        // tick, msgbox, start menu) → un script qui call fadescreen puis
+        // enchaîne ne reprend pas immédiatement après fade. Maintenant : on
+        // skip uniquement les player-driven ticks (PlayerStep + camera +
+        // npc movement) mais on laisse script + msgbox + start menu tick.
+        // Risque : state corruption si scripts modifient des structures de
+        // map en cours de teardown. À tester live ; revert si bugs visibles.
+        if (self.warpInProgress) {
+          // 1:1 décomp partial : tick script engine + message box pendant fade
+          // pour que les scripts qui call fadescreen + enchaînent reprennent.
+          ScriptContext_RunScript();
+          TickFieldMessageBox();
+          return;
+        }
         // Phase 4.6 : check pending warp détecté par PlayerStep au step end
         // ou collision push UP devant door. Si yes, démarre la transition
         // async + skip ce frame de game logic.
