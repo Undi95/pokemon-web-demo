@@ -169,7 +169,7 @@ type State =
   | 'CLEANUP'
   | 'DONE';
 
-interface BattleFlow {
+export interface BattleFlow {
   /** Tick the battle state machine. Returns true when battle is done. */
   tick(): boolean;
   /** Public for debug : current state name. */

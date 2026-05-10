@@ -44,6 +44,10 @@ import { pauseTilesetAnimations, resumeTilesetAnimations } from './tileset-anims
 import { setFieldCameraSuspended } from './field-camera';
 import { getString, initStringsFromDecomp } from './gba-strings';
 import { getSpeciesNameFr, loadTextTables, type TextTables } from './data-tables';
+// Audit session 126 (post-test user) : wire le first wild battle Zigzagoon
+// après starter pick. 1:1 décomp `battle_setup.c:CB2_GiveStarter:917-928` →
+// `CB2_StartFirstBattle:930-948` set BATTLE_TYPE_FIRST_BATTLE puis CB2_InitBattle.
+import { startBirchTutorialBattle, type BattleFlow } from './battle-flow';
 
 // 1:1 décomp `sStarterMon[]` (= public/decomp/em/static-tables/starter_choose.json).
 const STARTER_SPECIES: ReadonlyArray<string> = [
@@ -131,6 +135,7 @@ type State = 'LOAD_ASSETS' | 'WAIT_LOAD'
            | 'PROMPT_INIT' | 'PROMPT_WAIT' | 'WAIT_INPUT'
            | 'ASK_CONFIRM_INIT' | 'ASK_CONFIRM_WAIT' | 'WAIT_CONFIRM'
            | 'COMMIT_INIT'
+           | 'LAUNCH_FIRST_BATTLE' | 'WAIT_FIRST_BATTLE'
            | 'DECLINE_INIT'
            | 'FADE_OUT_BIRCH' | 'WAIT_FADE_OUT_BIRCH'
            | 'CLEANUP'
@@ -153,6 +158,10 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
   let handSpriteId = -1;
   let circleSpriteId = -1;
   let monSpriteId = -1;
+
+  // Audit session 126 : first wild battle Zigzagoon Lv 2 (= 1:1 décomp
+  // `CB2_StartFirstBattle:930-948`). Spawn après starter committed à party.
+  let firstBattleFlow: BattleFlow | null = null;
 
   // Pokemon front sprite asset state (= preloaded during LOAD_ASSETS).
   // Each starter gets its own byteOffset + palette slot in OBJ VRAM.
@@ -626,6 +635,34 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         } catch (e) {
           console.error('[StarterChoose] commit failed', e);
         }
+        // Audit session 126 : 1:1 décomp `CB2_GiveStarter` (battle_setup.c:917)
+        // → `CB2_StartFirstBattle:930-948` lance le first wild battle vs
+        // ZIGZAGOON Lv 2 AVANT de retourner au field. Avant ce wire, on
+        // sautait directement à FADE_OUT_BIRCH → CLEANUP → overworld sans
+        // combat. Maintenant on launch le battle entre les 2.
+        state = 'LAUNCH_FIRST_BATTLE';
+        return false;
+      }
+
+      case 'LAUNCH_FIRST_BATTLE': {
+        // 1:1 décomp `startBirchTutorialBattle()` = wild battle vs Zigzagoon
+        // Lv 2. Le BattleFlow gère son propre fade-in/out, sprites, UI move
+        // menu, damage calc. On le tick comme un sub-flow.
+        if (!firstBattleFlow) {
+          console.log('[StarterChoose] launching first wild battle vs Zigzagoon Lv 2');
+          firstBattleFlow = startBirchTutorialBattle();
+        }
+        if (firstBattleFlow.tick()) {
+          // Battle terminé (DONE state). Continuer le flow normal.
+          firstBattleFlow = null;
+          state = 'WAIT_FIRST_BATTLE';
+        }
+        return false;
+      }
+
+      case 'WAIT_FIRST_BATTLE': {
+        // 1 frame buffer pour ensure overworld restore from battle est settled
+        // avant notre propre fade-out + cleanup.
         state = 'FADE_OUT_BIRCH';
         return false;
       }
