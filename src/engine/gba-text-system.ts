@@ -37,6 +37,19 @@ let glyphWidths: Uint8Array | null = null;
 let charmap: Record<string, number> | null = null;
 let downArrowPixels: number[][] | null = null;
 
+/** 1:1 décomp text.h enum FontIds : FONT_SMALL=0, FONT_NORMAL=1, FONT_SHORT=2,
+ *  FONT_SHORT_COPY_{1,2,3}=3,4,5, FONT_NARROW=7, FONT_SMALL_NARROW=8. */
+const FONT_NAMES: Record<number, string> = {
+  0: 'small',
+  1: 'normal',
+  2: 'short',
+  3: 'short', 4: 'short', 5: 'short',  // FONT_SHORT_COPY_*
+  7: 'narrow',
+  8: 'smallnarrow',
+};
+let glyphDataByFont: Record<string, number[][]> | null = null;
+let glyphWidthsByFont: Record<string, Uint8Array> | null = null;
+
 async function loadFontData(): Promise<void> {
   if (glyphData) return;
   const [fontRes, widthsRes, charmapRes, arrowRes] = await Promise.all([
@@ -45,12 +58,29 @@ async function loadFontData(): Promise<void> {
     fetch('/decomp/em/ui/charmap.json').then((r) => r.json()),
     fetch('/decomp/em/ui/fonts/down_arrow.json').then((r) => r.json()),
   ]);
-  // 'normal' font = FONT_NORMAL
-  glyphData = fontRes.normal as number[][];
-  glyphWidths = new Uint8Array(widthsRes.normal as number[]);
+  // 1:1 décomp : load TOUS les fonts (normal, short, narrow, small, smallnarrow).
+  // sItemListMenu.fontId = FONT_NARROW (=7) → glyph data différent de FONT_NORMAL.
+  glyphDataByFont = {};
+  glyphWidthsByFont = {};
+  for (const name of ['normal', 'short', 'narrow', 'small', 'smallnarrow']) {
+    if (fontRes[name]) glyphDataByFont[name] = fontRes[name] as number[][];
+    if (widthsRes[name]) glyphWidthsByFont[name] = new Uint8Array(widthsRes[name] as number[]);
+  }
+  // Default refs vers FONT_NORMAL (= back-compat avec callers qui ne passent pas fontId).
+  glyphData = glyphDataByFont.normal;
+  glyphWidths = glyphWidthsByFont.normal;
   charmap = charmapRes as Record<string, number>;
   const arrow = arrowRes as { width: number; height: number; pixels: number[][] };
   downArrowPixels = arrow.pixels;
+}
+
+/** Résout glyph data + widths selon fontId. Fallback à FONT_NORMAL si inconnu. */
+function _resolveFont(fontId: number): { glyphData: number[][]; glyphWidths: Uint8Array } {
+  const name = FONT_NAMES[fontId] ?? 'normal';
+  return {
+    glyphData: glyphDataByFont?.[name] ?? glyphData!,
+    glyphWidths: glyphWidthsByFont?.[name] ?? glyphWidths!,
+  };
 }
 
 /** Force load font data (call during scene preload). */
@@ -178,7 +208,7 @@ function _getPlayerTextSpeedDelay(): number {
 
 export function AddTextPrinterParameterized3(
   windowId: number,
-  _fontId: number,
+  fontId: number,
   left: number,
   top: number,
   colorArray: readonly number[],
@@ -192,11 +222,14 @@ export function AddTextPrinterParameterized3(
     return 0;
   }
   const encoded = encodeStringForFont(str, charmap!);
+  // 1:1 décomp : glyph data selon fontId (= FONT_NARROW = different glyphs
+  // que FONT_NORMAL). Avant : fontId ignored, toujours FONT_NORMAL rendered.
+  const fnt = _resolveFont(fontId);
   const opts: AddTextPrinterOpts = {
     window: win,
     encodedString: encoded,
-    glyphData: glyphData!,
-    glyphWidths: glyphWidths!,
+    glyphData: fnt.glyphData,
+    glyphWidths: fnt.glyphWidths,
     x: left,
     y: top,
     // 1:1 décomp src/text.c AddTextPrinterParameterized3 : `color` array layout

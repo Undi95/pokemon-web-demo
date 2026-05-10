@@ -41,8 +41,9 @@ import { getString } from './gba-strings';
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const FONT_NORMAL = 1;
-/** 1:1 décomp item_menu.c sItemListMenu.fontId = FONT_NARROW (= 2). */
-const FONT_NARROW = 2;
+/** 1:1 décomp text.h enum FontIds : FONT_NARROW = 7 (pas 2 !).
+ *  sItemListMenu.fontId = FONT_NARROW = glyph data narrow différent de FONT_NORMAL. */
+const FONT_NARROW = 7;
 const TEXT_SKIP_DRAW = 255;
 /** 1:1 décomp item_menu.c:387 sFontColorTable[COLORID_NORMAL] :
  *    {TEXT_COLOR_TRANSPARENT=0, TEXT_COLOR_WHITE=1, TEXT_COLOR_LIGHT_GRAY=3}
