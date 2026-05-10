@@ -140,6 +140,11 @@ const _itemIconCache: Record<string, { charData: Uint8Array; palette: Uint16Arra
 /** Item key actuellement loadé dans la window icon (= évite re-load redondant). */
 let _loadedIconKey: string | null = null;
 
+/** Hook _syncSubspriteOam saved au open pour restore au close.
+ *  Pendant que bag est open, on overrides ce hook pour hide tous les OAM
+ *  (= 1:1 effet `CpuFill32(0, OAM, OAM_SIZE)` du décomp ResetVramOamAndBgCntRegs). */
+let _savedSyncSubspriteHook: unknown = undefined;
+
 // Save overworld BG2 state pour restore au close.
 let _savedBgState: {
   charBase?: number; mapBase?: number;
@@ -593,6 +598,25 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
   HideBg(1);
   HideBg(3);
   ShowBg(BAG_BG_LAYER);
+
+  // 1:1 décomp menu_helpers.c:ResetVramOamAndBgCntRegs effect :
+  //   SetGpuReg(REG_OFFSET_DISPCNT, 0); CpuFill32(0, OAM, OAM_SIZE);
+  // → clear OAM hardware (= cache tous sprites overworld).
+  //
+  // Notre runtime tick continue normalement même quand bag est open (= on swap
+  // pas le CB2). Donc syncSpritesToOam re-écrit oam.visible chaque frame. Pour
+  // bloquer ça : installer un hook `_syncSubspriteOam` (= déjà utilisé par
+  // naming-screen, summary-screen, etc.) qui s'exécute APRÈS syncSpritesToOam
+  // et clear tous les OAM. Au close, on retire le hook.
+  _savedSyncSubspriteHook = (globalThis as Record<string, unknown>)._syncSubspriteOam;
+  (globalThis as Record<string, unknown>)._syncSubspriteOam = () => {
+    if (!_isOpen) return;
+    const r = getRuntime();
+    if (!r) return;
+    for (const o of r.gba.oam) {
+      o.visible = false;
+    }
+  };
 }
 
 /** 1:1 décomp `FillBgTilemapBufferRect_Palette0(bg, tile, x, y, w, h)`.
@@ -651,6 +675,11 @@ function _teardownBackgroundTilemap(): void {
   ShowBg(BAG_BG_LAYER);
   ShowBg(3);
 
+  // Restore _syncSubspriteOam hook (= NPCs/player overworld réapparaissent au
+  // prochain frame quand syncSpritesToOam re-set oam.visible = !sprite.invisible).
+  (globalThis as Record<string, unknown>)._syncSubspriteOam = _savedSyncSubspriteHook;
+  _savedSyncSubspriteHook = undefined;
+
   // Re-active la field camera (= overworld scroll reprend).
   setFieldCameraSuspended(false);
 
@@ -703,6 +732,10 @@ export function CloseBagScreen(): void {
  *  Caller doit consume les keys après cet appel. */
 export function TickBagScreen(newKeys: number): void {
   if (!_isOpen) return;
+
+  // Note : pas besoin de hide les sprites au tick. Le hook _syncSubspriteOam
+  // installé au open s'exécute APRÈS syncSpritesToOam chaque frame et clear
+  // tous les OAM. Voir _setupBackgroundTilemap.
   // Constants 1:1 décomp gba/io_reg.h.
   const KEY_A = 0x0001;
   const KEY_B = 0x0002;
