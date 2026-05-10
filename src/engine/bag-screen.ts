@@ -170,25 +170,10 @@ function _drawSprite(): void {
 }
 
 function _drawDots(): void {
-  // Dots dessinés par-dessus la window header (= petites pastilles indicatives
-  // d'un pocket). 5 dots, le _pocketIdx-ième est highlight.
-  // rotating_ball.png contient 4 frames d'animation (rotation) en 16×16 chacun
-  // OU 8×8 chacun (= dépend du décomp). Pour simplifier on prend frame 0.
-  // On dessine direct dans _headerWid au-dessus du texte.
-  if (_headerWid < 0 || !_assets) return;
-  const ballSize = 8; // 8×8 par dot (= 1 tile)
-  const startX = 4;
-  const startY = 9; // sous le texte "OBJETS"
-  for (let i = 0; i < POCKETS.length; i++) {
-    // Pocket actif = dot rempli (frame 0), inactif = dot vide ou skipped.
-    // Pour simplifier : on draw juste un dot pour le pocket actif.
-    if (i !== _pocketIdx) continue;
-    BlitBitmapToWindow(
-      _headerWid, _assets.rotatingBall.charData,
-      startX + i * (ballSize + 2), startY,
-      ballSize, ballSize, 8,  // src width 8 px = frame 0 only
-    );
-  }
+  // TODO étape 2 : dots indicator. rotating_ball.png a une palette différente
+  // de bag.pal et le BlitBitmapToWindow ne supporte qu'une palette par window.
+  // Faut soit (a) une window dédiée pour les dots, (b) re-mapper les indices
+  // pour qu'ils tombent dans la bag.pal. Skip pour la 1ère passe.
 }
 
 function _drawHeader(): void {
@@ -250,21 +235,15 @@ function _drawList(): void {
 function _drawDesc(): void {
   if (_descWid < 0) return;
   FillWindowPixelBuffer(_descWid, 0x11);
-  // Bouton retour à gauche (= select_button.png 16×16 px) + texte description à droite.
-  const TEXT_LEFT = 24; // px, après l'icône
-  if (_assets) {
-    BlitBitmapToWindow(
-      _descWid, _assets.selectButton.charData,
-      4, 4, 16, 16, 16,
-    );
-  }
+  // TODO étape 2 : blit du select_button.png (palette dédiée nécessaire =
+  // bag.pal n'a pas les couleurs du button → glitch). Pour l'instant juste texte.
+  const TEXT_LEFT = 4;
   const itemKey = _selectedItemKey();
   if (itemKey) {
     const def = getItem(itemKey);
     const desc = def?.descriptionLabel ? getItemDescriptionFr(def.descriptionLabel) : '';
     if (desc) {
-      // Wrap à ~24 chars per line (= moins de room avec icône).
-      const lines = _wrap(desc, 24);
+      const lines = _wrap(desc, 28);
       for (let i = 0; i < Math.min(lines.length, 3); i++) {
         AddTextPrinterParameterized3(
           _descWid, FONT_NORMAL, TEXT_LEFT, 1 + i * 14, COLOR_MAIN, TEXT_SKIP_DRAW, lines[i],
