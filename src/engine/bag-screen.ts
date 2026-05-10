@@ -58,7 +58,8 @@ const POCKETS: ReadonlyArray<{
   { key: 'keyItems',  label: 'OBJETS RARES' },
 ];
 
-const VISIBLE_ROWS = 5;
+/** 1:1 décomp item_menu.c : list window 15×16 tiles, max 8 items visibles. */
+const VISIBLE_ROWS = 8;
 
 /** Palette slot custom pour le sprite sac — différent de STD_FRAME_PAL (14).
  *  Le décomp utilise palette 0 pour bag.pal, mais nos pals 0-12 sont prises
@@ -124,14 +125,20 @@ const ITEM_ICON_WINDOW_TEMPLATE: WindowTemplate = {
   paletteNum: ITEM_ICON_PAL, baseBlock: 0x300,
 };
 
+/** 1:1 décomp item_menu.c:398 sDefaultBagWindows[WIN_ITEM_LIST] :
+ *    .bg = 0, .tilemapLeft = 14, .tilemapTop = 2,
+ *    .width = 15, .height = 16, .paletteNum = 1, .baseBlock = 0x27. */
 const LIST_WINDOW_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 16, tilemapTop: 2, width: 13, height: 11,
-  paletteNum: STD_FRAME_PAL, baseBlock: 0x40,
+  bg: 0, tilemapLeft: 14, tilemapTop: 2, width: 15, height: 16,
+  paletteNum: 1, baseBlock: 0x27,
 };
 
+/** 1:1 décomp item_menu.c:407 sDefaultBagWindows[WIN_DESCRIPTION] :
+ *    .bg = 0, .tilemapLeft = 0, .tilemapTop = 13,
+ *    .width = 14, .height = 6, .paletteNum = 1, .baseBlock = 0x117. */
 const DESC_WINDOW_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 0, tilemapTop: 14, width: 30, height: 5,
-  paletteNum: STD_FRAME_PAL, baseBlock: 0x100,
+  bg: 0, tilemapLeft: 0, tilemapTop: 13, width: 14, height: 6,
+  paletteNum: 1, baseBlock: 0x117,
 };
 
 // ─── Module state ────────────────────────────────────────────────────────────
