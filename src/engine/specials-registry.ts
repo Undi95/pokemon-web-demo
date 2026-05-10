@@ -185,6 +185,35 @@ registerSpecial('IsLeadMonNicknamed', () => {
   return 0;
 });
 
+/** 1:1 décomp `ChangePokemonNickname` (pokemon_util.c).
+ *  Le décomp ouvre le naming screen UI. Notre runtime n'a pas encore wired le
+ *  naming-screen-impl.ts depuis ce special (= scene change complexe).
+ *
+ *  Audit session 126 (post-test user) : bug observé "OUI black screen avec
+ *  dialogue qui continue" → cause = `fadescreen FADE_TO_BLACK; special
+ *  ChangePokemonNickname; return` du script `Common_EventScript_NameReceived
+ *  PartyMon` → notre special était missing → fade reste black.
+ *
+ *  Fix MVP : re-fade FROM_BLACK pour débloquer visuellement (= skip rename).
+ *  Player garde le nom species par défaut. À wirer naming-screen-impl
+ *  proprement Phase 6+. */
+registerSpecial('ChangePokemonNickname', () => {
+  // Force unfade pour rendre le screen visible.
+  try {
+    const rt = (globalThis as Record<string, unknown>).__rt as
+      { BeginNormalPaletteFade?: (...args: unknown[]) => void } | undefined;
+    rt?.BeginNormalPaletteFade?.('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+  } catch { /* */ }
+  // Lazy import pour avoid circular.
+  void (async () => {
+    try {
+      const { getRuntime } = await import('./decomp-globals');
+      getRuntime().BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+    } catch { /* */ }
+  })();
+  return 0;
+});
+
 /** 1:1 décomp `BufferLeadMonSpeciesName` (pokemon_util.c).
  *  Sets gStringVar1 to lead party mon species name. Used by scripts post-battle. */
 registerSpecial('BufferLeadMonSpeciesName', () => {

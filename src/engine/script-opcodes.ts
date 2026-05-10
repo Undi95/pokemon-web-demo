@@ -677,10 +677,17 @@ registerOpcode('msgbox', (ctx, args) => {
       }
       case 4: {
         // Wait yesnobox selection. Menu_ProcessInputNoWrapClearOnChoose returns
-        // 0 (OUI), 1 (NON), -1 (B = NON), or -2 (no choice yet).
+        // cursor pos (0=OUI top, 1=NON bottom), -1 (B pressed), -2 (no choice).
+        // Audit session 126 (post-test user) BUG MAJEUR : 1:1 décomp
+        // `script_menu.c:Task_HandleYesNoInput` INVERSE les valeurs :
+        //   case 0 (OUI top)     → gSpecialVar_Result = 1 (= YES enum)
+        //   case 1 / B_PRESSED  → gSpecialVar_Result = 0 (= NO enum)
+        // event.inc:1932-1933 confirme : `YES = 1, NO = 0`. Avant ce fix on
+        // faisait l'inverse → tous les `goto_if_eq VAR_RESULT, YES` failed
+        // silencieusement (= rename starter, multiples dialogues YESNO).
         const result = Menu_ProcessInputNoWrapClearOnChoose();
         if (result === -2) return false;
-        const yesNoResult = result === 0 ? 0 : 1;
+        const yesNoResult = result === 0 ? 1 : 0;
         gSpecialVar.Result = yesNoResult;
         // Cleanup yesno window.
         const wid = GetYesNoWindowId();
@@ -901,8 +908,11 @@ registerOpcode('yesnobox', (ctx, args) => {
     if (!menuActive) return true;
     const result = Menu_ProcessInputNoWrapClearOnChoose();
     if (result === -2 /* MENU_NOTHING_CHOSEN */) return false;
-    // 1:1 décomp menu.c : -1 (B pressed) treated as NON = 1.
-    const yesNoResult = result === 0 ? 0 : 1;
+    // 1:1 décomp `script_menu.c:Task_HandleYesNoInput` :
+    //   case 0 (OUI top) → VAR_RESULT = 1 (= YES enum, event.inc:1932)
+    //   case 1 / B_PRESSED → VAR_RESULT = 0 (= NO enum)
+    // Avant ce fix on inversait → goto_if_eq VAR_RESULT, YES failed silent.
+    const yesNoResult = result === 0 ? 1 : 0;
     gSpecialVar.Result = yesNoResult;
     // Cleanup yesno window (= 1:1 décomp EraseYesNoWindow déjà fait par
     // Menu_ProcessInputNoWrapClearOnChoose en interne).
@@ -1164,15 +1174,37 @@ registerOpcode('playbgm', (_ctx, args) => {
   return false;
 });
 
-/** 1:1 décomp `ScrCmd_savebgm` (scrcmd.c) : save current BGM for later restore. */
-registerOpcode('savebgm', (_ctx, _args) => {
-  // No-op for MVP — would track current song id for restore.
+/** 1:1 décomp `ScrCmd_savebgm` (scrcmd.c) :
+ *    sSavedBgm = VarGet(arg);  // store song id for restore by fadedefaultbgm
+ *  Audit session 126 (post-test user) : avant no-op → BGM restait bloqué. */
+let _savedBgmSongId = 0;
+registerOpcode('savebgm', (_ctx, args) => {
+  const songName = args[0] ?? '';
+  const songId = (Songs as unknown as Record<string, number>)[songName];
+  _savedBgmSongId = typeof songId === 'number' ? songId : VarGet(songName);
   return false;
 });
 
-/** 1:1 décomp `ScrCmd_fadedefaultbgm` (scrcmd.c) : fade back to default BGM. */
+/** 1:1 décomp `ScrCmd_fadedefaultbgm` (scrcmd.c) :
+ *    PlayNewMapMusic(GetCurrentMapMusic());  // restart map default BGM
+ *  Audit session 126 (post-test user) : avant no-op → BGM bloqué après
+ *  scripts qui call playbgm puis fadedefaultbgm (= TV event PetalburgGymReport,
+ *  Brendan rival meet, etc). */
 registerOpcode('fadedefaultbgm', (_ctx, _args) => {
-  // No-op for MVP — would fade to map default BGM.
+  const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+    { music?: number | string } | undefined;
+  const mapMusic = gMapHeader?.music;
+  let songId: number | undefined;
+  if (typeof mapMusic === 'number' && mapMusic > 0) {
+    songId = mapMusic;
+  } else if (typeof mapMusic === 'string') {
+    songId = (Songs as unknown as Record<string, number>)[mapMusic];
+  }
+  if (typeof songId === 'number' && songId > 0) {
+    void import('./decomp-globals').then(({ m4aSongNumStart }) => {
+      m4aSongNumStart(songId!, true);
+    });
+  }
   return false;
 });
 
@@ -1418,14 +1450,30 @@ registerOpcode('addobject', (_ctx, args) => {
 
 registerOpcode('removeobject', (_ctx, args) => {
   // 1:1 décomp `ScrCmd_removeobject` : SetFlag(flagId) + remove sprite.
+  // Audit session 126 (post-test user) : avant on set juste npc.active=false
+  // mais le SPRITE OAM restait visible → Mom restait collée à l'écran après
+  // qu'elle quitte (= post-clock 2F). 1:1 décomp `RemoveObjectEvent` aussi
+  // destroy le sprite via FreeAndDestroyObjectEventSprite.
   const localIdRaw = _resolveObjectLocalIdRaw(args[0] ?? '');
   const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
     { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
   const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
   if (tpl?.flagId) FlagSet(tpl.flagId);
-  // Find active NPC + mark inactive.
+  // Find active NPC + destroy sprite + mark inactive.
   const npc = gObjectEvents.find(n => n.active && n.localIdRaw === localIdRaw);
-  if (npc) npc.active = false;
+  if (npc) {
+    if (npc.spriteId >= 0) {
+      try {
+        const rt = getRuntime();
+        rt.DestroySprite(npc.spriteId);
+      } catch (e) {
+        console.warn(`[opcode removeobject] DestroySprite ${npc.spriteId} threw:`, e);
+      }
+      npc.spriteId = -1;
+    }
+    npc.active = false;
+    npc.invisible = true;
+  }
   return false;
 });
 
