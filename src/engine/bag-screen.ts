@@ -135,10 +135,12 @@ const HEADER_WINDOW_TEMPLATE: WindowTemplate = {
 /** Window pour l'icône de l'item sélectionné (= 24×24 px = 3×3 tiles).
  *  1:1 décomp item_menu_icons.c:549-550 :
  *    gSprites[iconSpriteId].x2 = 24; y2 = 88;
- *  → position (24, 88) en pixel = tile (3, 11) sur grille 8x8. C'est dans la
- *  petite frame jaune pâle bottom-left du tilemap menu.bin (= sous le sac). */
+ *  + sBagItemIconSprite OamData : shape SQUARE size 32×32 → centerToCornerVec
+ *    = (-16, -16). Donc oam.x = 0 + 24 + (-16) = 8, oam.y = 0 + 88 + (-16) = 72.
+ *  → sprite rendu à pixel (8, 72) sur l'écran. Pour notre window 24×24
+ *    (= sprite content), tilemap pos = pixel/8 = (1, 9). */
 const ITEM_ICON_WINDOW_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 3, tilemapTop: 11, width: 3, height: 3,
+  bg: 0, tilemapLeft: 1, tilemapTop: 9, width: 3, height: 3,
   paletteNum: ITEM_ICON_PAL, baseBlock: 0x300,
 };
 
