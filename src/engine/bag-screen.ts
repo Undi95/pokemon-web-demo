@@ -46,16 +46,18 @@ const COLOR_MAIN: [number, number, number] = [1, 2, 3];
 const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;
 
-/** Pocket display order — 1:1 décomp items_pocket.c sBagPockets. */
+/** Pocket display order — 1:1 décomp items_pocket.c sBagPockets.
+ *  Labels = 1:1 décomp src/strings.c gText_*Pocket :
+ *    "OBJETS", "POKé BALLS", "CT & CS", "BAIES", "OBJ. RARES" */
 const POCKETS: ReadonlyArray<{
   key: 'items' | 'pokeBalls' | 'tmHm' | 'berries' | 'keyItems';
   label: string;
 }> = [
   { key: 'items',     label: 'OBJETS' },
   { key: 'pokeBalls', label: 'POKé BALLS' },
-  { key: 'tmHm',      label: 'CT/CS' },
+  { key: 'tmHm',      label: 'CT & CS' },
   { key: 'berries',   label: 'BAIES' },
-  { key: 'keyItems',  label: 'OBJETS RARES' },
+  { key: 'keyItems',  label: 'OBJ. RARES' },
 ];
 
 /** 1:1 décomp item_menu.c : list window 15×16 tiles, max 8 items visibles. */
@@ -367,8 +369,13 @@ function _drawDesc(): void {
   const TEXT_LEFT = 4;
   const itemKey = _selectedItemKey();
   if (itemKey === CLOSE_BAG_KEY) {
-    // 1:1 décomp : sur FERMER LE SAC, description = "Retourner au jeu."
-    AddTextPrinterParameterized3(_descWid, FONT_NORMAL, TEXT_LEFT, 1, COLOR_MAIN, TEXT_SKIP_DRAW, 'Retourner au jeu.');
+    // 1:1 décomp item_menu.c:1008 PrintItemDescription LIST_CANCEL :
+    //   StringCopy(gStringVar1, gBagMenu_ReturnToStrings[location]);
+    //   StringExpandPlaceholders(gStringVar4, gText_ReturnToVar1);
+    // gText_ReturnToVar1 = "Retourner\n{STR_VAR_1}." (= "Retourner\nau jeu.")
+    // pour ITEMMENULOCATION_FIELD = gText_TheField = "au jeu".
+    AddTextPrinterParameterized3(_descWid, FONT_NORMAL, TEXT_LEFT, 1, COLOR_MAIN, TEXT_SKIP_DRAW, 'Retourner');
+    AddTextPrinterParameterized3(_descWid, FONT_NORMAL, TEXT_LEFT, 17, COLOR_MAIN, TEXT_SKIP_DRAW, 'au jeu.');
     PutWindowTilemap(_descWid);
     CopyWindowToVram(_descWid, 3);
     return;
