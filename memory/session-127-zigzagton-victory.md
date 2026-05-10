@@ -276,3 +276,91 @@ La save existante avait DÉJÀ tout (Pokédex, badges Bourg, Poussifeu lvl5, FLA
 | `b23abff5` | Pixel-perfect : item icon (POKé BALL render OK) |
 
 — Claude Sonnet 4.5, session 127 polish visuel, 2026-05-10
+
+---
+
+## 🏆 Session 127 — SAC pixel-perfect 1:1 décomp COMPLET (commits 32c574a9 → e14f7ad7)
+
+**User feedback** : "regarde la decomp si t'es pas sur, on a tout, tu dois juste appliqué" + "priorise le 1:1 ligne par ligne plutôt que essais erreur" + "regarde le type de fading utilisé pour rentrer/sortir, je pense que c'est ça qui fait que la palette est mauvaise sur l'OW"
+
+### Approche validée : 1:1 ligne par ligne via décomp lookup
+
+Au lieu d'essai-erreur, chercher dans le décomp la fonction concernée puis reproduire exactement. Spawned agent Explore pour audit de `src/item_menu.c` qui m'a donné les valeurs exactes :
+- `sBgTemplates_ItemMenu[2] = { bg=2, charBaseIndex=3, mapBaseIndex=29, priority=2 }`
+- `sDefaultBagWindows[WIN_ITEM_LIST] = (14, 2, 15, 16) paletteNum=1 baseBlock=0x27`
+- `sDefaultBagWindows[WIN_DESCRIPTION] = (0, 13, 14, 6) paletteNum=1 baseBlock=0x117`
+- `sDefaultBagWindows[WIN_POCKET_NAME] = (4, 1, 8, 2) paletteNum=1 baseBlock=0x1A1`
+- `LoadCompressedPalette(gBagScreen{Male,Female}_Pal, BG_PLTT_ID(0), 64)` — 32 entries
+- `DecompressAndCopyTileDataToVram(2, gBagScreen_Gfx, 0, 0, 0)` — tile data à charBase 3
+- `LZDecompressWram(gBagScreen_GfxTileMap, gBagMenu->tilemapBuffer)` puis `SetBgTilemapBuffer(2, ...)` — tilemap à mapBase 29
+
+### Pipeline complet des fixes (16 commits)
+
+| # | Commit | Sujet |
+|---|--------|-------|
+| 1 | `82d704b8` | Infrastructure tilemap fond menu.bin (BG2 takeover) |
+| 2 | `b23abff5` | Item icon de l'item sélectionné (POKé BALL render) |
+| 3 | `821c8cfb` | raw 4bpp.bin (`extract-all-tile-bins.mjs` extended) + camera suspend |
+| 4 | `c50d1552` | BG2 priority 2 (1:1 décomp) |
+| 5 | `32c574a9` | FERMER LE SAC entry (1:1 gText_CloseBag) |
+| 6 | `5c8957fb` | Windows transparentes PIXEL_FILL(0) — voir BG2 derrière |
+| 7 | `7e0d651f` | Hide NPCs/player via _syncSubspriteOam hook (1:1 ResetVramOamAndBgCntRegs) |
+| 8 | `9f5f35be` | Clear BG0 mapBase 31 (= overworld map cachée derrière windows) |
+| 9 | `3c515da7` | Pocket dots indicator via FillBgTilemapBufferRect (tiles 0x1017/0x102B) |
+| 10 | `98282cbe` | Header window position 1:1 (4, 1, 8, 2) paletteNum=1 baseBlock=0x1A1 |
+| 11 | `d001ff69` | List+desc windows 1:1 positions (paletteNum=1, baseBlock 0x27/0x117) |
+| 12 | `2735e86a` | **Fade in/out 1:1 + fix palette leak rouge OW (paletteSnap 16→32 entries)** |
+| 13 | `e14f7ad7` | Labels pockets 1:1 + "Retourner / au jeu." 2 lignes |
+
+### Bug critique identifié + fixé : palette leak
+
+User : "y a la couleur rouge qui a leak sur l'ombre des pancartes"
+
+Root cause : on chargeait `LoadPalette(bgPalette, 0, 64)` (= 32 entries menu_male.pal écrasant sub-palettes 0 ET 1 du BG_PLTT) mais on save juste 16 entries (= sub-palette 0 seulement). Au close, sub-palette 1 restait clobbée → leak rouge sur les metatiles overworld qui utilisent sub-palette 1 pour leurs ombres/borders (boîtes aux lettres, pancartes).
+
+Fix : `paletteSnap = new Uint16Array(32)` + restore les 32 entries. Combiné avec le fade in/out (= 1:1 décomp Task_FadeAndCloseBagMenu), la transition est parfaite.
+
+### État final SAC vs décomp officiel
+
+| Élément | Décomp | Notre rendu |
+|---------|--------|-------------|
+| Tilemap fond rose/mauve | ✓ | ✅ 1:1 |
+| Frame ORANGE chevrons header | ✓ | ✅ 1:1 (window position align frame menu.bin) |
+| Cercle décor à gauche header | ✓ | ✅ 1:1 (in tilemap) |
+| 5 pocket dots indicator | ✓ | ✅ 1:1 (tile 0x1017/0x102B) |
+| Sprite sac vert | ✓ | ✅ 1:1 (bag_male.4bpp.bin via window) |
+| Item icon (POKé BALL) | ✓ | ✅ 1:1 |
+| Zone list jaune pâle | ✓ | ✅ 1:1 (15×16 tiles) |
+| Zone description jaune pâle | ✓ | ✅ 1:1 (14×6 tiles, baseBlock 0x117) |
+| Labels pockets : OBJETS / POKé BALLS / CT & CS / BAIES / OBJ. RARES | ✓ | ✅ 1:1 strings.c |
+| FERMER LE SAC entry | ✓ | ✅ 1:1 gText_CloseBag |
+| "Retourner / au jeu." sur 2 lignes | ✓ | ✅ 1:1 gText_ReturnToVar1 |
+| Description FR du décomp | ✓ | ✅ 1:1 text-tables.json |
+| NPCs/player overworld cachés | ✓ | ✅ 1:1 |
+| Map overworld cachée | ✓ | ✅ 1:1 |
+| Pocket switching fonctionnel | ✓ | ✅ 1:1 |
+| **Fade in/out RGB_BLACK** | ✓ | ✅ 1:1 (Task_FadeAndCloseBagMenu) |
+| **OW restored proprement** | ✓ | ✅ 1:1 (paletteSnap 32 entries) |
+
+### Reste pour 100% pixel-perfect (= optionnel)
+
+- ❌ Sprite sac en OAM animé (= shake / pocket switch jump). Actuellement window opaque qui montre le sprite mais pas d'anim au switch.
+- ❌ rotating_ball OAM sprite anim au switch pocket.
+- ❌ Bag scroll arrows (= petites flèches haut/bas quand list scrollable).
+
+### Pattern réutilisable pour les autres screens (party, trainer card, pokedex)
+
+Le bag-screen.ts est maintenant un **modèle template** pour les autres écrans menu :
+1. Save BG2/VRAM/palette au open
+2. Load assets via loadTileBin (raw 4bpp) + loadGbaPal (vrai .pal du décomp)
+3. Setup BG2 avec InitBgFromTemplate (charBase + mapBase + priority 2)
+4. Hide BG1/BG3 + clear BG0 mapBase 31
+5. Install _syncSubspriteOam hook pour cacher les sprites overworld
+6. setFieldCameraSuspended(true)
+7. BeginNormalPaletteFade FROM BLACK
+8. Tick : phase machine 'fading_in' → 'open' → 'fading_out'
+9. Au close : fade TO BLACK → wait fade fini → restore tout → fade FROM BLACK
+
+L'approche 1:1 ligne par ligne valide : chercher dans le décomp la fonction (e.g. `BagMenu_InitBGs`, `LoadBagMenu_Graphics`, `LoadBagMenuTextWindows`, `Task_FadeAndCloseBagMenu`), copier les valeurs exactes (templates, baseBlocks, palette IDs, tile IDs, positions), puis adapter au runtime engine. Beaucoup plus efficace que essai-erreur.
+
+— Claude Sonnet 4.5, session 127 SAC complet, 2026-05-10
