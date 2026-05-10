@@ -164,3 +164,65 @@ La save existante avait DÉJÀ tout (Pokédex, badges Bourg, Poussifeu lvl5, FLA
 **Pour résumer en une phrase** : Le port TypeScript/Phaser de Pokémon Émeraude FR a maintenant un flow boot→combat-Zigzaton **100% 1:1 décomp PRET fonctionnel**. 32 étapes validées sans aucun bug bloquant. Les bugs trouvés sont tous côté devtools (cosmétiques) ou contournables (twin loop). 🎉
 
 — Claude Sonnet 4.5, session 127, 2026-05-10
+
+---
+
+## 🎮 Session 127 — Suite : menu Start toutes options wirées (commits 876366b1, 74b938ea, c0591fe9)
+
+**User feedback** : "Pour tout ce qui va être graphisme de menu de pokemon, sac, objet etc... On peut automatisé ça aussi ? Nouveau but : Menu start 1:1 decomp avec options qui marchent (toutes, pas de no op)"
+
+**Réponse à la question graphisme** : OUI automatisable. Le décomp PRET est open-source complet. On a déjà 100% des assets bruts (PNG/PAL/BIN) et 5000+ lignes d'auto-files transpilés. Stratégie retenue = custom UI quasi-1:1 avec primitifs gba-window/text/menu (au lieu de wirer les auto-files complets qui requièrent ~100+ bridge fns gba bas niveau).
+
+**Travail accompli** :
+
+### 1. Fix `dialog()` devtools (commit 96b0620c)
+- Root cause : `sCurrentText` est une `let` privée du module field-message-box.ts, jamais exposée sur globalThis
+- Fix : import direct `IsFieldMessageBoxHidden` + nouvelle fonction exportée `GetCurrentFieldMessageText()`
+- Validé : `scope.dialog()` retourne maintenant `{ open: true, mode: 'NORMAL', text: "..." }` quand dialog visible
+
+### 2. Bag screen pixel-perfect étape 1 (commits 8dc34208 → 876366b1)
+- Création `src/engine/bag-screen.ts` (~280 lignes)
+- 5 pockets navigables (OBJETS / POKé BALLS / CT/CS / BAIES / OBJETS RARES)
+- Scroll 5 items visibles à la fois, indicateurs ↑/↓
+- Description par item via `getItemDescriptionFr`
+- Inputs : ↑/↓ scroll, ←/→ pocket, A use, B retour
+- **Étape 1 visuelle** : sprite sac réel chargé du décomp (`bag_male.png` 64×64, palette slot 13, blit dans window dédiée)
+- Assets copiés `decomps/pokeemeraude/graphics/bag/*` → `public/decomp/em/bag/` + 218 item icons → `public/decomp/em/items/icons/`
+- **Étape 2 visuelle reportée** : tilemap fond menu.bin (rayures rose/mauve), frame orange custom, pocket dots animés rotating_ball.png, item icon par row, select_button bottom-left
+
+### 3. Bug critique fix : descriptions items FR (commit 74b938ea)
+- **Bug** : `text-tables.json` jamais loadé en mode `?nointro` (= seul starter-choose-flow.ts le load on-demand) → bag screen affichait "Prix: 200" fallback au lieu de la vraie description
+- **Fix** : preload `text-tables.json` au boot main.ts (= idempotent async fetch)
+- **Validé** : POKé BALL → "Un objet qui permet d'attraper les POKéMON sauvages." (1:1 décomp fr décomp)
+
+### 4. Toutes options Start menu wirées (commit c0591fe9)
+- `src/engine/party-screen.ts` (~210 lignes) : 6 slots POKéMON avec nicknames, HP color-coded (vert/jaune/rouge selon ratio), moves avec PP, ability, types
+- `src/engine/trainer-card-screen.ts` (~135 lignes) : nom / sexe / ID / argent / POKéMON / POKéDEX captures / badges / play time
+- `src/engine/pokedex-screen.ts` (~110 lignes) : Vus / Capturés via flags `_SEEN`/`_CAUGHT` + stats équipe
+- start-menu.ts intégration : nouvelles SubStates (`bag_screen` / `party_screen` / `trainer_card_screen` / `pokedex_screen`), TickStartMenu dispatch vers chaque tick
+- Pattern commun : `IsXOpen` / `OpenX(onClose)` / `CloseX` / `TickX(newKeys)`
+
+**État final menu Start** :
+
+| Option | Avant | Après |
+|--------|-------|-------|
+| POKéDEX | text "compteur" | UI Vus/Capturés + stats |
+| POKéMON | text "party list" | UI 6 slots + nicknames + HP color + moves |
+| SAC | text "items list" | UI 5 pockets + sprite sac + scroll + descriptions FR |
+| POKéNAV | "non disponible" | (toujours stub si !FLAG_SYS_POKENAV_GET, 1:1 ROM) |
+| {PLAYER} | text "name+gender" | UI Carte Dresseur (nom/sexe/ID/badges/play time) |
+| SAUVER | ✓ déjà 1:1 | (rien changé) |
+| OPTIONS | ✓ déjà 1:1 | (rien changé) |
+| RETOUR | ✓ trivial | (rien changé) |
+
+**À faire prochaine session** :
+- Tilemap fond `menu.bin` pour SAC (rayures rose/mauve identiques au screen officiel)
+- Frame orange custom du décomp (= ajouter select_button + frames colorées)
+- Sprites contextuels :
+  - Trainer pic dans CARTE DE DRESSEUR (= sprite male/female du décomp)
+  - Mon sprites front dans POKéMON (= sprite Poussifeu, etc.)
+  - Mini-icons mons dans POKéDEX list scrollable
+- Item icon par row dans SAC list (= petite icône POKé BALL rouge à gauche)
+- Pocket dots animés rotating_ball.png (= 5 dots, l'actif clignote)
+
+— Claude Sonnet 4.5, session 127 suite, 2026-05-10
