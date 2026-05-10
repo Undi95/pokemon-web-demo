@@ -122,6 +122,12 @@ void (async () => {
   }
 })();
 
+// Session 127 : preload strings.json AU BOOT (= gText_* du décomp).
+// Sans ça, les screens qui appellent getString() voient "[MISSING:gText_...]".
+// Pattern 1:1 ABSOLU ZÉRO HARDCODE : tous les textes FR viennent du décomp.
+import { initStringsFromDecomp } from './engine/gba-strings';
+void initStringsFromDecomp();
+
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);

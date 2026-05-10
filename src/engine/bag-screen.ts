@@ -36,6 +36,7 @@ import { getItem, getItemNameFr, getItemDescriptionFr } from './data-tables';
 import { PlaySE, LoadPalette, getRuntime } from './decomp-globals';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { setFieldCameraSuspended } from './field-camera';
+import { getString } from './gba-strings';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -47,17 +48,18 @@ const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;
 
 /** Pocket display order — 1:1 décomp items_pocket.c sBagPockets.
- *  Labels = 1:1 décomp src/strings.c gText_*Pocket :
- *    "OBJETS", "POKé BALLS", "CT & CS", "BAIES", "OBJ. RARES" */
+ *  Labels = 1:1 décomp src/strings.c gText_*Pocket via getString() (= chargé
+ *  depuis /decomp/em/strings.json par gba-strings.ts au boot).
+ *  Pas hardcoded → si le décomp change un texte, on suit automatiquement. */
 const POCKETS: ReadonlyArray<{
   key: 'items' | 'pokeBalls' | 'tmHm' | 'berries' | 'keyItems';
-  label: string;
+  textKey: string;
 }> = [
-  { key: 'items',     label: 'OBJETS' },
-  { key: 'pokeBalls', label: 'POKé BALLS' },
-  { key: 'tmHm',      label: 'CT & CS' },
-  { key: 'berries',   label: 'BAIES' },
-  { key: 'keyItems',  label: 'OBJ. RARES' },
+  { key: 'items',     textKey: 'gText_ItemsPocket' },
+  { key: 'pokeBalls', textKey: 'gText_PokeBallsPocket' },
+  { key: 'tmHm',      textKey: 'gText_TMHMPocket' },
+  { key: 'berries',   textKey: 'gText_BerriesPocket' },
+  { key: 'keyItems',  textKey: 'gText_KeyItemsPocket' },
 ];
 
 /** 1:1 décomp item_menu.c : list window 15×16 tiles, max 8 items visibles. */
@@ -312,7 +314,7 @@ function _drawHeader(): void {
   // Décomp utilise GetStringCenterAlignXOffset, on simplifie par offset fixe.
   AddTextPrinterParameterized3(
     _headerWid, FONT_NORMAL, 0, 1, COLOR_MAIN, TEXT_SKIP_DRAW,
-    POCKETS[_pocketIdx].label,
+    getString(POCKETS[_pocketIdx].textKey),
   );
   // Pas d'indicator "1/5" dans le décomp original — le pocket actif est
   // indiqué visuellement par le dot rouge sous le header.
@@ -332,10 +334,10 @@ function _drawList(): void {
     const slot = items[idx];
     const cursor = (i === _cursorPos) ? '>' : ' ';
     if (slot.itemKey === CLOSE_BAG_KEY) {
-      // 1:1 décomp gText_CloseBag = "FERMER LE SAC", sans quantité.
+      // 1:1 décomp gText_CloseBag = "FERMER LE SAC" via strings.json.
       AddTextPrinterParameterized3(
         _listWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW,
-        `${cursor}FERMER LE SAC`,
+        `${cursor}${getString('gText_CloseBag')}`,
       );
       continue;
     }
@@ -374,8 +376,18 @@ function _drawDesc(): void {
     //   StringExpandPlaceholders(gStringVar4, gText_ReturnToVar1);
     // gText_ReturnToVar1 = "Retourner\n{STR_VAR_1}." (= "Retourner\nau jeu.")
     // pour ITEMMENULOCATION_FIELD = gText_TheField = "au jeu".
-    AddTextPrinterParameterized3(_descWid, FONT_NORMAL, TEXT_LEFT, 1, COLOR_MAIN, TEXT_SKIP_DRAW, 'Retourner');
-    AddTextPrinterParameterized3(_descWid, FONT_NORMAL, TEXT_LEFT, 17, COLOR_MAIN, TEXT_SKIP_DRAW, 'au jeu.');
+    // Strings via /decomp/em/strings.json.
+    const tpl = getString('gText_ReturnToVar1');  // "Retourner\\n{STR_VAR_1}."
+    const field = getString('gText_TheField');    // "au jeu"
+    const expanded = tpl.replace('{STR_VAR_1}', field);  // "Retourner\\nau jeu."
+    // Le \n est literal dans le JSON, on split sur \\n ou \n.
+    const lines = expanded.split(/\\n|\n/);
+    for (let i = 0; i < Math.min(lines.length, 3); i++) {
+      AddTextPrinterParameterized3(
+        _descWid, FONT_NORMAL, TEXT_LEFT, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW,
+        lines[i],
+      );
+    }
     PutWindowTilemap(_descWid);
     CopyWindowToVram(_descWid, 3);
     return;
@@ -396,16 +408,9 @@ function _drawDesc(): void {
       const txt = fallbackParts.length > 0 ? fallbackParts.join('  ') : 'Pas de description.';
       AddTextPrinterParameterized3(_descWid, FONT_NORMAL, TEXT_LEFT, 1, COLOR_MAIN, TEXT_SKIP_DRAW, txt);
     }
-  } else {
-    AddTextPrinterParameterized3(
-      _descWid, FONT_NORMAL, TEXT_LEFT, 1, COLOR_MAIN, TEXT_SKIP_DRAW,
-      'Aucun objet dans cette poche.',
-    );
-    AddTextPrinterParameterized3(
-      _descWid, FONT_NORMAL, TEXT_LEFT, 17, COLOR_MAIN, TEXT_SKIP_DRAW,
-      'B : retour menu',
-    );
   }
+  // Note : pas de else branch (= itemKey null). _currentPocketItems append
+  // toujours CLOSE_BAG_KEY donc une entry sélectionnable existe toujours.
   PutWindowTilemap(_descWid);
   CopyWindowToVram(_descWid, 3);
 }
