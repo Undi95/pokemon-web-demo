@@ -55,6 +55,12 @@ import * as vars from './decomp-data/auto/include/constants/vars-data';
 import * as metatileLabels from './decomp-data/auto/include/constants/metatile_labels-data';
 import * as metatileBehaviors from './decomp-data/auto/include/constants/metatile_behaviors-data';
 import * as mapScripts from './decomp-data/auto/include/constants/map_scripts-data';
+// Audit session 126 LOT D2 : MULTI_* enum (= multichoice IDs script_menu.h).
+// Used par opcode multichoice/multichoicedefault/multichoicegrid pour resolve
+// les literals MULTI_TV_LATI / MULTI_BRINEY_ON_DEWFORD / etc en numeric ID.
+import * as scriptMenu from './decomp-data/auto/include/constants/script_menu-data';
+// GAME_STAT_* enum (= incrementgamestat opcode resolves names).
+import * as gameStats from './decomp-data/auto/include/constants/game_stat-data';
 // Misc per-screen constants (= title screen tile offsets, etc.) extraits
 // dans `decomp-data/*-data.ts`. Pas dans `auto/include/constants/` car
 // définis inline dans .c files. Inclus pour résoudre tileNum strings comme
@@ -94,6 +100,8 @@ _mergeConstants(titleScreen);
 _mergeConstants(metatileLabels);
 _mergeConstants(metatileBehaviors);
 _mergeConstants(mapScripts);
+_mergeConstants(scriptMenu);
+_mergeConstants(gameStats);
 
 /** Resolve a constant name to its numeric value. Returns undefined si pas trouvé.
  *  Caller decide quoi faire (= fallback 0, log warning, etc.). */

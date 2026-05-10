@@ -1,0 +1,693 @@
+{
+  "lists": {
+    "MultichoiceList_BrineyOnDewford": [
+      "gText_Petalburg",
+      "gText_Slateport",
+      "gText_Exit"
+    ],
+    "MultichoiceList_EnterInfo": [
+      "gText_Enter2",
+      "gText_Info2",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ContestInfo": [
+      "gText_WhatsAContest",
+      "gText_TypesOfContests",
+      "gText_Ranks",
+      "gText_Cancel2"
+    ],
+    "MultichoiceList_ContestType": [
+      "gText_CoolnessContest",
+      "gText_BeautyContest",
+      "gText_CutenessContest",
+      "gText_SmartnessContest",
+      "gText_ToughnessContest",
+      "gText_Exit"
+    ],
+    "MultichoiceList_BasePCWithRegistry": [
+      "gText_Decoration2",
+      "gText_PackUp",
+      "gText_Registry",
+      "gText_Exit"
+    ],
+    "MultichoiceList_BasePCNoRegistry": [
+      "gText_Decoration2",
+      "gText_PackUp",
+      "gText_Exit"
+    ],
+    "MultichoiceList_RegisterMenu": [
+      "gMenuText_Register",
+      "gText_Registry",
+      "gText_Information",
+      "gText_Cancel2"
+    ],
+    "MultichoiceList_Bike": [
+      "gText_Mach",
+      "gText_Acro"
+    ],
+    "MultichoiceList_StatusInfo": [
+      "gText_Psn",
+      "gText_Par",
+      "gText_Slp",
+      "gText_Brn",
+      "gText_Frz",
+      "gText_Exit"
+    ],
+    "MultichoiceList_BrineyOffDewford": [
+      "gText_Dewford",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ViewedPaintings": [
+      "gText_SawIt",
+      "gText_NotYet"
+    ],
+    "MultichoiceList_YesNoInfo2": [
+      "gText_Yes",
+      "gText_No",
+      "gText_Info2"
+    ],
+    "MultichoiceList_ChallengeInfo": [
+      "gText_Challenge",
+      "gText_Info3",
+      "gText_Exit"
+    ],
+    "MultichoiceList_LevelMode": [
+      "gText_Lv50",
+      "gText_OpenLevel",
+      "gText_Exit"
+    ],
+    "MultichoiceList_Mechadoll1_Q1": [
+      "gTrickHouse_Mechadoll_Oddish",
+      "gTrickHouse_Mechadoll_Poochyena",
+      "gTrickHouse_Mechadoll_Taillow"
+    ],
+    "MultichoiceList_Mechadoll1_Q2": [
+      "gTrickHouse_Mechadoll_Azurill",
+      "gTrickHouse_Mechadoll_Lotad",
+      "gTrickHouse_Mechadoll_Wingull"
+    ],
+    "MultichoiceList_Mechadoll1_Q3": [
+      "gTrickHouse_Mechadoll_Dustox",
+      "gTrickHouse_Mechadoll_Zubat",
+      "gTrickHouse_Mechadoll_Nincada"
+    ],
+    "MultichoiceList_Mechadoll2_Q1": [
+      "gTrickHouse_Mechadoll_Ralts",
+      "gTrickHouse_Mechadoll_Zigzagoon",
+      "gTrickHouse_Mechadoll_Slakoth"
+    ],
+    "MultichoiceList_Mechadoll2_Q2": [
+      "gTrickHouse_Mechadoll_Poochyena2",
+      "gTrickHouse_Mechadoll_Shroomish",
+      "gTrickHouse_Mechadoll_Zigzagoon2"
+    ],
+    "MultichoiceList_Mechadoll2_Q3": [
+      "gTrickHouse_Mechadoll_Poochyena3",
+      "gTrickHouse_Mechadoll_Zubat2",
+      "gTrickHouse_Mechadoll_Carvanha"
+    ],
+    "MultichoiceList_Mechadoll3_Q1": [
+      "gTrickHouse_Mechadoll_BurnHeal",
+      "gTrickHouse_Mechadoll_HarborMail",
+      "gTrickHouse_Mechadoll_SamePrice"
+    ],
+    "MultichoiceList_Mechadoll3_Q2": [
+      "gTrickHouse_Mechadoll_60Yen",
+      "gTrickHouse_Mechadoll_55Yen",
+      "gTrickHouse_Mechadoll_Nothing"
+    ],
+    "MultichoiceList_Mechadoll3_Q3": [
+      "gTrickHouse_Mechadoll_CostMore",
+      "gTrickHouse_Mechadoll_CostLess",
+      "gTrickHouse_Mechadoll_SamePrice2"
+    ],
+    "MultichoiceList_Mechadoll4_Q1": [
+      "gTrickHouse_Mechadoll_Male",
+      "gTrickHouse_Mechadoll_Female",
+      "gTrickHouse_Mechadoll_Neither"
+    ],
+    "MultichoiceList_Mechadoll4_Q2": [
+      "gTrickHouse_Mechadoll_ElderlyMen",
+      "gTrickHouse_Mechadoll_ElderlyLadies",
+      "gTrickHouse_Mechadoll_SameNumber"
+    ],
+    "MultichoiceList_Mechadoll4_Q3": [
+      "gTrickHouse_Mechadoll_None",
+      "gTrickHouse_Mechadoll_One",
+      "gTrickHouse_Mechadoll_Two"
+    ],
+    "MultichoiceList_Mechadoll5_Q1": [
+      "gTrickHouse_Mechadoll_Two2",
+      "gTrickHouse_Mechadoll_Three",
+      "gTrickHouse_Mechadoll_Four"
+    ],
+    "MultichoiceList_Mechadoll5_Q2": [
+      "gTrickHouse_Mechadoll_Six",
+      "gTrickHouse_Mechadoll_Seven",
+      "gTrickHouse_Mechadoll_Eight"
+    ],
+    "MultichoiceList_Mechadoll5_Q3": [
+      "gTrickHouse_Mechadoll_Six2",
+      "gTrickHouse_Mechadoll_Seven2",
+      "gTrickHouse_Mechadoll_Eight2"
+    ],
+    "MultichoiceList_VendingMachine": [
+      "gText_FreshWaterAndPrice",
+      "gText_SodaPopAndPrice",
+      "gText_LemonadeAndPrice",
+      "gText_Exit"
+    ],
+    "MultichoiceList_MachBikeInfo": [
+      "gText_HowToRide",
+      "gText_HowToTurn",
+      "gText_SandySlopes",
+      "gText_Exit"
+    ],
+    "MultichoiceList_AcroBikeInfo": [
+      "gText_Wheelies",
+      "gText_BunnyHops",
+      "gText_Jump",
+      "gText_Exit"
+    ],
+    "MultichoiceList_Satisfaction": [
+      "gText_Satisfied",
+      "gText_Dissatisfied"
+    ],
+    "MultichoiceList_SternDeepSea": [
+      "gText_DeepSeaTooth",
+      "gText_DeepSeaScale",
+      "gText_Exit"
+    ],
+    "MultichoiceList_UnusedAshVendor": [
+      "gText_BlueFlute2",
+      "gText_YellowFlute2",
+      "gText_RedFlute2",
+      "gText_WhiteFlute2",
+      "gText_BlackFlute2",
+      "gText_GlassChair",
+      "gText_GlassDesk",
+      "gText_Cancel2"
+    ],
+    "MultichoiceList_GameCornerDolls": [
+      "gText_TreeckoDollAndPrice",
+      "gText_TorchicDollAndPrice",
+      "gText_MudkipDollAndPrice",
+      "gText_Exit"
+    ],
+    "MultichoiceList_GameCornerTMs": [
+      "gText_TM32AndPrice",
+      "gText_TM29AndPrice",
+      "gText_TM35AndPrice",
+      "gText_TM24AndPrice",
+      "gText_TM13AndPrice",
+      "gText_Exit"
+    ],
+    "MultichoiceList_GameCornerCoins": [
+      "gText_50CoinsAndPrice",
+      "gText_500CoinsAndPrice",
+      "gText_Exit"
+    ],
+    "MultichoiceList_HowsFishing": [
+      "gText_Excellent2",
+      "gText_NotSoGood"
+    ],
+    "MultichoiceList_SSTidalSlateportWithBF": [
+      "gText_LilycoveCity",
+      "gText_BattleFrontier",
+      "gText_Exit"
+    ],
+    "MultichoiceList_SSTidalBattleFrontier": [
+      "gText_SlateportCity",
+      "gText_LilycoveCity",
+      "gText_Exit"
+    ],
+    "MultichoiceList_RightLeft": [
+      "gText_Right",
+      "gText_Left"
+    ],
+    "MultichoiceList_SSTidalSlateportNoBF": [
+      "gText_LilycoveCity",
+      "gText_Exit"
+    ],
+    "MultichoiceList_Floors": [
+      "gText_5F",
+      "gText_4F",
+      "gText_3F",
+      "gText_2F",
+      "gText_1F",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsR": [
+      "gText_RedShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsY": [
+      "gText_YellowShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsRY": [
+      "gText_RedShard",
+      "gText_YellowShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsB": [
+      "gText_BlueShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsRB": [
+      "gText_RedShard",
+      "gText_BlueShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsYB": [
+      "gText_YellowShard",
+      "gText_BlueShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsRYB": [
+      "gText_RedShard",
+      "gText_YellowShard",
+      "gText_BlueShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsG": [
+      "gText_GreenShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsRG": [
+      "gText_RedShard",
+      "gText_GreenShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsYG": [
+      "gText_YellowShard",
+      "gText_GreenShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsRYG": [
+      "gText_RedShard",
+      "gText_YellowShard",
+      "gText_GreenShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsBG": [
+      "gText_BlueShard",
+      "gText_GreenShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsRBG": [
+      "gText_RedShard",
+      "gText_BlueShard",
+      "gText_GreenShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsYBG": [
+      "gText_YellowShard",
+      "gText_BlueShard",
+      "gText_GreenShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ShardsRYBG": [
+      "gText_RedShard",
+      "gText_YellowShard",
+      "gText_BlueShard",
+      "gText_GreenShard",
+      "gText_Exit"
+    ],
+    "MultichoiceList_TourneyWithRecord": [
+      "gText_Opponent",
+      "gText_Tourney_Tree",
+      "gText_ReadyToStart",
+      "gText_Record2",
+      "gText_Rest",
+      "gText_Retire"
+    ],
+    "MultichoiceList_TourneyNoRecord": [
+      "gText_Opponent",
+      "gText_Tourney_Tree",
+      "gText_ReadyToStart",
+      "gText_Rest",
+      "gText_Retire"
+    ],
+    "MultichoiceList_Tent": [
+      "gText_RedTent",
+      "gText_BlueTent"
+    ],
+    "MultichoiceList_LinkServicesNoBerry": [
+      "gText_TradeCenter",
+      "gText_Colosseum",
+      "gText_RecordCorner",
+      "gText_Exit"
+    ],
+    "MultichoiceList_YesNoInfo": [
+      "gText_Yes",
+      "gText_No",
+      "gText_Info2"
+    ],
+    "MultichoiceList_BattleMode": [
+      "gText_SingleBattle",
+      "gText_DoubleBattle",
+      "gText_MultiBattle",
+      "gText_Info2",
+      "gText_Exit"
+    ],
+    "MultichoiceList_LinkServicesNoRecord": [
+      "gText_TradeCenter",
+      "gText_Colosseum",
+      "gText_BerryCrush3",
+      "gText_Exit"
+    ],
+    "MultichoiceList_LinkServicesAll": [
+      "gText_TradeCenter",
+      "gText_Colosseum",
+      "gText_RecordCorner",
+      "gText_BerryCrush3",
+      "gText_Exit"
+    ],
+    "MultichoiceList_LinkServicesNoRecordBerry": [
+      "gText_TradeCenter",
+      "gText_Colosseum",
+      "gText_Exit"
+    ],
+    "MultichoiceList_WirelessMinigame": [
+      "gText_PokemonJump",
+      "gText_DodrioBerryPicking",
+      "gText_Exit"
+    ],
+    "MultichoiceList_LinkLeader": [
+      "gText_JoinGroup",
+      "gText_BecomeLeader",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ContestRank": [
+      "gText_NormalRank",
+      "gText_SuperRank",
+      "gText_HyperRank",
+      "gText_MasterRank",
+      "gText_Exit"
+    ],
+    "MultichoiceList_FrontierItemChoose": [
+      "gText_BattleBag",
+      "gText_HeldItem",
+      "gText_Exit"
+    ],
+    "MultichoiceList_LinkContestInfo": [
+      "gText_LinkContest",
+      "gText_AboutE_Mode",
+      "gText_AboutG_Mode",
+      "gText_Cancel2"
+    ],
+    "MultichoiceList_LinkContestMode": [
+      "gText_E_Mode",
+      "gText_G_Mode",
+      "gText_Exit"
+    ],
+    "MultichoiceList_ForcedStartMenu": [
+      "gText_MenuOptionPokedex",
+      "gText_MenuOptionPokemon",
+      "gText_MenuOptionBag",
+      "gText_MenuOptionPokenav",
+      "gText_Blank",
+      "gText_MenuOptionSave",
+      "gText_MenuOptionOption",
+      "gText_MenuOptionExit"
+    ],
+    "MultichoiceList_FrontierGamblerBet": [
+      "gText_5BP",
+      "gText_10BP",
+      "gText_15BP",
+      "gText_Exit"
+    ],
+    "MultichoiceList_UnusedSSTidal1": [
+      "gText_SouthernIsland",
+      "gText_BirthIsland",
+      "gText_Exit"
+    ],
+    "MultichoiceList_UnusedSSTidal2": [
+      "gText_SouthernIsland",
+      "gText_FarawayIsland",
+      "gText_Exit"
+    ],
+    "MultichoiceList_UnusedSSTidal3": [
+      "gText_BirthIsland",
+      "gText_FarawayIsland",
+      "gText_Exit"
+    ],
+    "MultichoiceList_UnusedSSTidal4": [
+      "gText_SouthernIsland",
+      "gText_BirthIsland",
+      "gText_FarawayIsland",
+      "gText_Exit"
+    ],
+    "MultichoiceList_Fossil": [
+      "gText_ClawFossil",
+      "gText_RootFossil",
+      "gText_Exit"
+    ],
+    "MultichoiceList_YesNo": [
+      "gText_Yes",
+      "gText_No4"
+    ],
+    "MultichoiceList_FrontierRules": [
+      "gText_TwoStyles",
+      "gText_Lv50_3",
+      "gText_OpenLevel2",
+      "gText_MonTypeAndNo",
+      "gText_HoldItems",
+      "gText_Exit"
+    ],
+    "MultichoiceList_FrontierPassInfo": [
+      "gText_Symbols2",
+      "gText_Record3",
+      "gText_BattlePts",
+      "gText_Exit"
+    ],
+    "MultichoiceList_BattleArenaRules": [
+      "gText_BattleRules",
+      "gText_JudgeMind",
+      "gText_JudgeSkill",
+      "gText_JudgeBody",
+      "gText_Exit"
+    ],
+    "MultichoiceList_BattleTowerRules": [
+      "gText_TowerInfo",
+      "gText_BattleMon",
+      "gText_BattleSalon",
+      "gText_MultiLink2",
+      "gText_Exit"
+    ],
+    "MultichoiceList_BattleDomeRules": [
+      "gText_Matchup",
+      "gText_TourneyTree",
+      "gText_DoubleKO",
+      "gText_Exit"
+    ],
+    "MultichoiceList_BattleFactoryRules": [
+      "gText_BasicRules",
+      "gText_SwapPartners",
+      "gText_SwapNumber",
+      "gText_SwapNotes",
+      "gText_OpenLevel3",
+      "gText_Exit"
+    ],
+    "MultichoiceList_BattlePalaceRules": [
+      "gText_BattleBasics",
+      "gText_PokemonNature",
+      "gText_PokemonMoves",
+      "gText_Underpowered",
+      "gText_WhenInDanger",
+      "gText_Exit"
+    ],
+    "MultichoiceList_BattlePyramidRules": [
+      "gText_PyramidPokemon",
+      "gText_PyramidTrainers",
+      "gText_PyramidMaze",
+      "gText_BattleBag2",
+      "gText_Exit"
+    ],
+    "MultichoiceList_BattlePikeRules": [
+      "gText_PokenavAndBag",
+      "gText_HeldItems",
+      "gText_PokemonOrder",
+      "gText_Exit"
+    ],
+    "MultichoiceList_GoOnRecordRestRetire": [
+      "gText_GoOn",
+      "gText_Record2",
+      "gText_Rest",
+      "gText_Retire"
+    ],
+    "MultichoiceList_GoOnRestRetire": [
+      "gText_GoOn",
+      "gText_Rest",
+      "gText_Retire"
+    ],
+    "MultichoiceList_GoOnRecordRetire": [
+      "gText_GoOn",
+      "gText_Record2",
+      "gText_Retire"
+    ],
+    "MultichoiceList_GoOnRetire": [
+      "gText_GoOn",
+      "gText_Retire"
+    ],
+    "MultichoiceList_TVLati": [
+      "gText_Red",
+      "gText_Blue"
+    ],
+    "MultichoiceList_BattleTowerFeelings": [
+      "gText_IllBattleNow",
+      "gText_IWon",
+      "gText_ILost",
+      "gText_IWontTell"
+    ],
+    "MultichoiceList_WheresRayquaza": [
+      "gText_CaveOfOrigin",
+      "gText_MtPyre",
+      "gText_SkyPillar",
+      "gText_DontRemember"
+    ],
+    "MultichoiceList_SlateportTentRules": [
+      "gText_BasicRules",
+      "gText_SwapPartners",
+      "gText_SwapNumber",
+      "gText_SwapNotes",
+      "gText_BattlePokemon",
+      "gText_Exit"
+    ],
+    "MultichoiceList_FallarborTentRules": [
+      "gText_BattleTrainers",
+      "gText_BattleRules",
+      "gText_JudgeMind",
+      "gText_JudgeSkill",
+      "gText_JudgeBody",
+      "gText_Exit"
+    ],
+    "MultichoiceList_TagMatchType": [
+      "gText_NormalTagMatch",
+      "gText_VarietyTagMatch",
+      "gText_UniqueTagMatch",
+      "gText_ExpertTagMatch",
+      "gText_Exit"
+    ],
+    "MultichoiceList_Exit": [
+      "gText_Exit"
+    ]
+  },
+  "index": {
+    "MULTI_BRINEY_ON_DEWFORD": "MultichoiceList_BrineyOnDewford",
+    "MULTI_PC": "MultichoiceList_Exit",
+    "MULTI_ENTERINFO": "MultichoiceList_EnterInfo",
+    "MULTI_CONTEST_INFO": "MultichoiceList_ContestInfo",
+    "MULTI_CONTEST_TYPE": "MultichoiceList_ContestType",
+    "MULTI_BASE_PC_NO_REGISTRY": "MultichoiceList_BasePCNoRegistry",
+    "MULTI_BASE_PC_WITH_REGISTRY": "MultichoiceList_BasePCWithRegistry",
+    "MULTI_REGISTER_MENU": "MultichoiceList_RegisterMenu",
+    "MULTI_SSTIDAL_LILYCOVE": "MultichoiceList_Exit",
+    "MULTI_UNUSED_9": "MultichoiceList_Exit",
+    "MULTI_UNUSED_10": "MultichoiceList_Exit",
+    "MULTI_FRONTIER_PASS_INFO": "MultichoiceList_FrontierPassInfo",
+    "MULTI_BIKE": "MultichoiceList_Bike",
+    "MULTI_STATUS_INFO": "MultichoiceList_StatusInfo",
+    "MULTI_BRINEY_OFF_DEWFORD": "MultichoiceList_BrineyOffDewford",
+    "MULTI_UNUSED_15": "MultichoiceList_Exit",
+    "MULTI_VIEWED_PAINTINGS": "MultichoiceList_ViewedPaintings",
+    "MULTI_YESNOINFO": "MultichoiceList_YesNoInfo",
+    "MULTI_BATTLE_MODE": "MultichoiceList_BattleMode",
+    "MULTI_UNUSED_19": "MultichoiceList_Exit",
+    "MULTI_YESNOINFO_2": "MultichoiceList_YesNoInfo2",
+    "MULTI_UNUSED_21": "MultichoiceList_Exit",
+    "MULTI_UNUSED_22": "MultichoiceList_Exit",
+    "MULTI_CHALLENGEINFO": "MultichoiceList_ChallengeInfo",
+    "MULTI_LEVEL_MODE": "MultichoiceList_LevelMode",
+    "MULTI_MECHADOLL1_Q1": "MultichoiceList_Mechadoll1_Q1",
+    "MULTI_MECHADOLL1_Q2": "MultichoiceList_Mechadoll1_Q2",
+    "MULTI_MECHADOLL1_Q3": "MultichoiceList_Mechadoll1_Q3",
+    "MULTI_MECHADOLL2_Q1": "MultichoiceList_Mechadoll2_Q1",
+    "MULTI_MECHADOLL2_Q2": "MultichoiceList_Mechadoll2_Q2",
+    "MULTI_MECHADOLL2_Q3": "MultichoiceList_Mechadoll2_Q3",
+    "MULTI_MECHADOLL3_Q1": "MultichoiceList_Mechadoll3_Q1",
+    "MULTI_MECHADOLL3_Q2": "MultichoiceList_Mechadoll3_Q2",
+    "MULTI_MECHADOLL3_Q3": "MultichoiceList_Mechadoll3_Q3",
+    "MULTI_MECHADOLL4_Q1": "MultichoiceList_Mechadoll4_Q1",
+    "MULTI_MECHADOLL4_Q2": "MultichoiceList_Mechadoll4_Q2",
+    "MULTI_MECHADOLL4_Q3": "MultichoiceList_Mechadoll4_Q3",
+    "MULTI_MECHADOLL5_Q1": "MultichoiceList_Mechadoll5_Q1",
+    "MULTI_MECHADOLL5_Q2": "MultichoiceList_Mechadoll5_Q2",
+    "MULTI_MECHADOLL5_Q3": "MultichoiceList_Mechadoll5_Q3",
+    "MULTI_UNUSED_40": "MultichoiceList_Exit",
+    "MULTI_UNUSED_41": "MultichoiceList_Exit",
+    "MULTI_VENDING_MACHINE": "MultichoiceList_VendingMachine",
+    "MULTI_MACH_BIKE_INFO": "MultichoiceList_MachBikeInfo",
+    "MULTI_ACRO_BIKE_INFO": "MultichoiceList_AcroBikeInfo",
+    "MULTI_SATISFACTION": "MultichoiceList_Satisfaction",
+    "MULTI_STERN_DEEPSEA": "MultichoiceList_SternDeepSea",
+    "MULTI_UNUSED_ASH_VENDOR": "MultichoiceList_UnusedAshVendor",
+    "MULTI_GAME_CORNER_DOLLS": "MultichoiceList_GameCornerDolls",
+    "MULTI_GAME_CORNER_COINS": "MultichoiceList_GameCornerCoins",
+    "MULTI_HOWS_FISHING": "MultichoiceList_HowsFishing",
+    "MULTI_UNUSED_51": "MultichoiceList_Exit",
+    "MULTI_SSTIDAL_SLATEPORT_WITH_BF": "MultichoiceList_SSTidalSlateportWithBF",
+    "MULTI_SSTIDAL_BATTLE_FRONTIER": "MultichoiceList_SSTidalBattleFrontier",
+    "MULTI_RIGHTLEFT": "MultichoiceList_RightLeft",
+    "MULTI_GAME_CORNER_TMS": "MultichoiceList_GameCornerTMs",
+    "MULTI_SSTIDAL_SLATEPORT_NO_BF": "MultichoiceList_SSTidalSlateportNoBF",
+    "MULTI_FLOORS": "MultichoiceList_Floors",
+    "MULTI_SHARDS_R": "MultichoiceList_ShardsR",
+    "MULTI_SHARDS_Y": "MultichoiceList_ShardsY",
+    "MULTI_SHARDS_RY": "MultichoiceList_ShardsRY",
+    "MULTI_SHARDS_B": "MultichoiceList_ShardsB",
+    "MULTI_SHARDS_RB": "MultichoiceList_ShardsRB",
+    "MULTI_SHARDS_YB": "MultichoiceList_ShardsYB",
+    "MULTI_SHARDS_RYB": "MultichoiceList_ShardsRYB",
+    "MULTI_SHARDS_G": "MultichoiceList_ShardsG",
+    "MULTI_SHARDS_RG": "MultichoiceList_ShardsRG",
+    "MULTI_SHARDS_YG": "MultichoiceList_ShardsYG",
+    "MULTI_SHARDS_RYG": "MultichoiceList_ShardsRYG",
+    "MULTI_SHARDS_BG": "MultichoiceList_ShardsBG",
+    "MULTI_SHARDS_RBG": "MultichoiceList_ShardsRBG",
+    "MULTI_SHARDS_YBG": "MultichoiceList_ShardsYBG",
+    "MULTI_SHARDS_RYBG": "MultichoiceList_ShardsRYBG",
+    "MULTI_TOURNEY_WITH_RECORD": "MultichoiceList_TourneyWithRecord",
+    "MULTI_CABLE_CLUB_NO_RECORD_MIX": "MultichoiceList_LinkServicesNoRecordBerry",
+    "MULTI_WIRELESS_NO_RECORD_BERRY": "MultichoiceList_LinkServicesNoRecordBerry",
+    "MULTI_CABLE_CLUB_WITH_RECORD_MIX": "MultichoiceList_LinkServicesNoBerry",
+    "MULTI_WIRELESS_NO_BERRY": "MultichoiceList_LinkServicesNoBerry",
+    "MULTI_WIRELESS_NO_RECORD": "MultichoiceList_LinkServicesNoRecord",
+    "MULTI_WIRELESS_ALL_SERVICES": "MultichoiceList_LinkServicesAll",
+    "MULTI_WIRELESS_MINIGAME": "MultichoiceList_WirelessMinigame",
+    "MULTI_LINK_LEADER": "MultichoiceList_LinkLeader",
+    "MULTI_CONTEST_RANK": "MultichoiceList_ContestRank",
+    "MULTI_FRONTIER_ITEM_CHOOSE": "MultichoiceList_FrontierItemChoose",
+    "MULTI_LINK_CONTEST_INFO": "MultichoiceList_LinkContestInfo",
+    "MULTI_LINK_CONTEST_MODE": "MultichoiceList_LinkContestMode",
+    "MULTI_FORCED_START_MENU": "MultichoiceList_ForcedStartMenu",
+    "MULTI_FRONTIER_GAMBLER_BET": "MultichoiceList_FrontierGamblerBet",
+    "MULTI_TENT": "MultichoiceList_Tent",
+    "MULTI_UNUSED_SSTIDAL_1": "MultichoiceList_UnusedSSTidal1",
+    "MULTI_UNUSED_SSTIDAL_2": "MultichoiceList_UnusedSSTidal2",
+    "MULTI_UNUSED_SSTIDAL_3": "MultichoiceList_UnusedSSTidal3",
+    "MULTI_UNUSED_SSTIDAL_4": "MultichoiceList_UnusedSSTidal4",
+    "MULTI_FOSSIL": "MultichoiceList_Fossil",
+    "MULTI_YESNO": "MultichoiceList_YesNo",
+    "MULTI_FRONTIER_RULES": "MultichoiceList_FrontierRules",
+    "MULTI_BATTLE_ARENA_RULES": "MultichoiceList_BattleArenaRules",
+    "MULTI_BATTLE_TOWER_RULES": "MultichoiceList_BattleTowerRules",
+    "MULTI_BATTLE_DOME_RULES": "MultichoiceList_BattleDomeRules",
+    "MULTI_BATTLE_FACTORY_RULES": "MultichoiceList_BattleFactoryRules",
+    "MULTI_BATTLE_PALACE_RULES": "MultichoiceList_BattlePalaceRules",
+    "MULTI_BATTLE_PYRAMID_RULES": "MultichoiceList_BattlePyramidRules",
+    "MULTI_BATTLE_PIKE_RULES": "MultichoiceList_BattlePikeRules",
+    "MULTI_GO_ON_RECORD_REST_RETIRE": "MultichoiceList_GoOnRecordRestRetire",
+    "MULTI_GO_ON_REST_RETIRE": "MultichoiceList_GoOnRestRetire",
+    "MULTI_GO_ON_RECORD_RETIRE": "MultichoiceList_GoOnRecordRetire",
+    "MULTI_GO_ON_RETIRE": "MultichoiceList_GoOnRetire",
+    "MULTI_TOURNEY_NO_RECORD": "MultichoiceList_TourneyNoRecord",
+    "MULTI_TV_LATI": "MultichoiceList_TVLati",
+    "MULTI_BATTLE_TOWER_FEELINGS": "MultichoiceList_BattleTowerFeelings",
+    "MULTI_WHERES_RAYQUAZA": "MultichoiceList_WheresRayquaza",
+    "MULTI_SLATEPORT_TENT_RULES": "MultichoiceList_SlateportTentRules",
+    "MULTI_FALLARBOR_TENT_RULES": "MultichoiceList_FallarborTentRules",
+    "MULTI_TAG_MATCH_TYPE": "MultichoiceList_TagMatchType"
+  }
+}

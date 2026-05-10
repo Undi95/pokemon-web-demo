@@ -86,6 +86,15 @@ exposeRtcDevApi();
 import { exposeGbaGlobals } from './engine/gba-global-scope';
 exposeGbaGlobals();
 
+// Audit session 126 LOT D2 : preload multichoice lists data depuis
+// `public/decomp/em/multichoice-lists.json` (= 102 lists, 114 index entries
+// extraits via `scripts/extract-multichoice-lists.mjs` du décomp script_menu.h).
+// Async, idempotent. Sans ça : `multichoice` opcode fallback "VAR_RESULT=0" =
+// 1st option auto, dialogues à choix cassés (Latias TV broadcast, contests,
+// PC menus, etc.).
+import { loadMultichoiceLists } from './engine/multichoice-data';
+void loadMultichoiceLists();
+
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
