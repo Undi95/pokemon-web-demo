@@ -37,6 +37,7 @@ import { PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID } from './decomp-globals';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { setFieldCameraSuspended } from './field-camera';
 import { getString } from './gba-strings';
+import { gSineTable, SetOamMatrix } from './decomp-helpers';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -209,12 +210,70 @@ const BAG_SPRITE_OBJ_PAL = 0;
  *    POCKET_ITEMS=64, POKE_BALLS=192, TM_HM=256, BERRIES=320, KEY_ITEMS=128. */
 const BAG_FRAME_TILE_OFFSET: ReadonlyArray<number> = [64, 192, 256, 320, 128];
 
+/** VRAM OBJ byte offset pour scroll_indicator.4bpp = 256 bytes = 8 tiles.
+ *  Placé après le bag sprite (= offset 0x3000). */
+const SCROLL_ARROW_OBJ_OFFSET = 0x3000;
+/** Palette OBJ slot pour les chevrons (= red.pal du décomp interface).
+ *  Slot 1 libre (= bag.pal a slot 0). */
+const SCROLL_ARROW_OBJ_PAL = 1;
+
+/** VRAM OBJ byte offset pour rotating_ball.4bpp = 128 bytes = 4 tiles.
+ *  Placé après scroll_indicator (= offset 0x3100). */
+const ROTATING_BALL_OBJ_OFFSET = 0x3100;
+/** Palette OBJ slot pour le rotating ball (= rotating_ball.pal). */
+const ROTATING_BALL_OBJ_PAL = 2;
+
 let _bagSpriteOamId = -1;
 /** OAM index du bag sprite (= différent du spriteId). Used by _syncSubspriteOam
  *  hook pour whitelist ce slot (= ne pas clear son visible chaque frame). */
 let _bagSpriteOamIndex = -1;
 /** Idempotent flag : ne load le tile data + palette dans VRAM OBJ qu'une fois. */
 let _bagAssetsLoadedToObj = false;
+
+/** OAM ids des 2 chevrons LEFT/RIGHT (= sBagScrollArrowsTemplate firstX=28 secondX=100).
+ *  -1 = pas spawn. Spawn à l'open + dans _setupBackgroundTilemap, despawn au close. */
+let _arrowLeftOamId = -1;
+let _arrowLeftOamIndex = -1;
+let _arrowRightOamId = -1;
+let _arrowRightOamIndex = -1;
+/** Sin position pour le bobbing horizontal (= 1:1 décomp tSinePos += tFrequency).
+ *  LEFT freq=8, RIGHT freq=-8. x2 = sin(sinePos & 0xFF) * 2 / 256. */
+let _arrowSinePosLeft = 0;
+let _arrowSinePosRight = 0;
+let _scrollArrowAssetsLoaded = false;
+
+/** OAM id du rotating ball pendant pocket switch. -1 = pas spawn / animation finie. */
+let _ballOamId = -1;
+let _ballOamIndex = -1;
+/** Affine matrix slot alloué pour le ball (= 1:1 décomp InitSpriteAffineAnim
+ *  → sOamMatrixAllocBitmap alloc free slot). FreeOamMatrix au remove. */
+let _ballMatrixNum = -1;
+/** 1:1 décomp sprite->data[0] = rotationDirection (s16). -1 ou +1.
+ *  Détermine quelle affineAnims table : Rotation1 (rotation=8/frame) ou
+ *  Rotation2 (rotation=248/frame = -8 signed). */
+let _ballRotationDir: -1 | 1 = 1;
+/** 1:1 décomp sprite->data[3] = frame counter, 0..16. remove à 16. */
+let _ballData3 = 0;
+/** 1:1 décomp sprite->data[1] = centerToCornerVecY (= -8 pour 16×16 square).
+ *  Stocké car UpdateSwitchPocketRotatingBallCoords le réutilise chaque frame :
+ *    centerToCornerVecX = data[1] - ((data[3] + 1) & 1);
+ *    centerToCornerVecY = data[1] - ((data[3] + 1) & 1);  */
+let _ballData1 = 0;
+/** Rotation accumulée en u8 ticks (= 0..255 où 256 = 360°). +8 ou -8 par frame
+ *  selon dir (= 1:1 décomp AFFINEANIMCMD_FRAME(0, 0, 8/248, 16) rotationDelta). */
+let _ballRotation = 0;
+/** Phase init (=true au 1er tick = SpriteCB_Init, =false ensuite = Continue). */
+let _ballInitPending = false;
+let _rotatingBallAssetsLoaded = false;
+
+/** Snapshot OBJ VRAM range qu'on écrase (= bag sprite + scroll arrow + rotating ball).
+ *  L'overworld stocke les sprite tiles des NPCs/player dans ce range — sans backup,
+ *  on les corrompt visuellement au close (= sprite player vert blob etc.). */
+let _savedObjVram: Uint8Array | null = null;
+/** Snapshot OBJ palettes 0, 1, 2 (= 48 u16 = 96 bytes) qu'on écrase. Le player
+ *  utilise OBJ palette 0, NPCs/particles utilisent 1, 2, etc. Sans restore au
+ *  close, leur palette reste celle du bag (= corruption visuelle). */
+let _savedObjPalettes: Uint16Array | null = null;
 
 // Save overworld BG2 state pour restore au close.
 let _savedBgState: {
@@ -244,6 +303,11 @@ interface BagAssets {
   bgTiles: Uint8Array;
   bgTilemap: Uint16Array;
   bgPalette: Uint16Array;
+  /** Scroll indicator chevrons (= 1:1 décomp graphics/interface/scroll_indicator.png
+   *  16×32, 8 tiles 4bpp). Tile 0-3 = LEFT/RIGHT (avec hflip), tile 4-7 = UP/DOWN. */
+  scrollArrowGfx: Uint8Array;
+  /** Palette pour les chevrons (= 1:1 décomp graphics/interface/red.pal). */
+  scrollArrowPal: Uint16Array;
 }
 
 let _assets: BagAssets | null = null;
@@ -254,7 +318,8 @@ async function _loadAssets(): Promise<BagAssets> {
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
     const gender = gameState.gender === 'FEMALE' ? 'female' : 'male';
-    const [bag, button, ball, bgTilesRaw, bgTilemap, bgPal, bagRaw, bagPal] = await Promise.all([
+    const [bag, button, ball, bgTilesRaw, bgTilemap, bgPal, bagRaw, bagPal,
+           scrollArrow, scrollArrowPal] = await Promise.all([
       loadIndexedPngStrict(`/decomp/em/bag/bag_${gender}.png`, 4),
       loadIndexedPngStrict('/decomp/em/bag/select_button.png', 4),
       loadIndexedPngStrict('/decomp/em/bag/rotating_ball.png', 4),
@@ -266,6 +331,11 @@ async function _loadAssets(): Promise<BagAssets> {
       loadTileBin(`/decomp/em/bag/bag_${gender}.png`, 4),
       // 1:1 décomp gBagPalette = bag.pal (= 16 colors JASC-PAL).
       loadGbaPal('/decomp/em/bag/bag.pal'),
+      // 1:1 décomp scroll_indicator 16×32 4bpp pour les 2 chevrons LEFT/RIGHT
+      // autour du pocket name. loadIndexedPngStrict utilise la palette PLTE
+      // du PNG (= matche red.pal car le PNG a été exporté avec).
+      loadIndexedPngStrict('/decomp/em/interface/scroll_indicator.png', 4),
+      loadGbaPal('/decomp/em/interface/red.pal'),
     ]);
     _assets = {
       bagSprite: { charData: bag.charData, palette: bag.palette },
@@ -276,6 +346,8 @@ async function _loadAssets(): Promise<BagAssets> {
       bgPalette: bgPal,
       bagSpriteRaw4bpp: bagRaw,
       bagSpritePal: bagPal,
+      scrollArrowGfx: scrollArrow.charData,
+      scrollArrowPal: scrollArrowPal,
     };
     _assetsLoading = null;
     return _assets;
@@ -744,9 +816,35 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
   HideBg(3);
   ShowBg(BAG_BG_LAYER);
 
+  // Snapshot OBJ VRAM + palettes AVANT de les écraser (= 1:1 décomp
+  // item_menu.c:CB2_BagMenuRun n'a pas ce problème car le décomp swap CB2 et
+  // ResetVramOamAndBgCntRegs clear OAM. Nous on tick l'overworld en parallèle,
+  // donc le player/NPCs lisent encore les palettes OBJ pendant le bag → on
+  // doit save/restore pour pas corrompre leur sprite au close).
+  // Range écrit : 0x0000-0x3180 (= bag 0x3000 + scroll 0x100 + ball 0x80).
+  // Round à 0x3200 pour une marge.
+  if (!_savedObjVram) {
+    _savedObjVram = new Uint8Array(0x3200);
+    _savedObjVram.set(rt.gba.objVram.subarray(0, 0x3200));
+  }
+  // OBJ palettes 0, 1, 2 (= bag, scroll arrow, rotating ball). Snapshot 48 u16.
+  if (!_savedObjPalettes) {
+    _savedObjPalettes = new Uint16Array(48);
+    for (let i = 0; i < 48; i++) {
+      // OBJ_PLTT = gPlttBufferUnfaded[256+slot*16+i] (cf. decomp-globals.ts:1388).
+      _savedObjPalettes[i] = rt.gPlttBufferUnfaded.get(256 + i) ?? 0;
+    }
+  }
+
   // 1:1 décomp item_menu_icons.c:AddBagVisualSprite : créer sprite OAM 64×64
   // à position (68, 66) avec tile data bag_male.4bpp.bin + bag.pal.
   _spawnBagSpriteOam(assets);
+
+  // 1:1 décomp item_menu.c:1057 (LoadBagItemListBuffers context) :
+  //   gBagMenu->pocketSwitchArrowsTask = AddScrollIndicatorArrowPair(
+  //       &sBagScrollArrowsTemplate, &gBagPosition.pocketSwitchArrowPos);
+  // → 2 chevrons LEFT/RIGHT à (28, 16) et (100, 16) bobbing horizontal ±2 px.
+  _spawnPocketArrows(assets);
 
   // 1:1 décomp menu_helpers.c:ResetVramOamAndBgCntRegs effect :
   //   SetGpuReg(REG_OFFSET_DISPCNT, 0); CpuFill32(0, OAM, OAM_SIZE);
@@ -762,10 +860,16 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
     if (!_isOpen) return;
     const r = getRuntime();
     if (!r) return;
-    // Cache tous les OAM SAUF nos sprites bag-screen owned (= bag sac, item icon,
-    // pocket arrows, etc.). _bagSpriteOamIndex set par _spawnBagSpriteOam.
+    // Cache tous les OAM SAUF nos sprites bag-screen owned. Whitelist :
+    //   - _bagSpriteOamIndex     : sprite sac (= bag visual)
+    //   - _arrowLeftOamIndex     : chevron LEFT
+    //   - _arrowRightOamIndex    : chevron RIGHT
+    //   - _ballOamIndex          : rotating ball (= seulement pendant switch)
     for (let i = 0; i < r.gba.oam.length; i++) {
-      if (i === _bagSpriteOamIndex) continue;  // whitelist bag sprite
+      if (i === _bagSpriteOamIndex) continue;
+      if (i === _arrowLeftOamIndex) continue;
+      if (i === _arrowRightOamIndex) continue;
+      if (i === _ballOamIndex) continue;
       r.gba.oam[i].visible = false;
     }
   };
@@ -845,8 +949,296 @@ function _startPocketSwitchAnim(dir: -1 | 1): void {
   _switchTimer = 0;
   _switchDir = dir;
   PlaySE(5);
+  // 1:1 décomp item_menu.c:SwitchBagPocket appelle :
+  //   AddSwitchPocketRotatingBallSprite(rotationDirection);
+  // → spawn rotating ball OAM à (16, 16) qui rotate 16 frames puis self-remove.
+  if (_assets) {
+    _spawnRotatingBallSprite(dir);
+  }
   // Cache la list pendant l'animation : draw juste tile 17 sur toute la zone.
   // _tickPocketSwitchAnim va dessiner row par row.
+}
+
+// ─── Chevrons LEFT/RIGHT autour du pocket name ───────────────────────────────
+
+/** 1:1 décomp list_menu.c:AddScrollIndicatorArrowPair :
+ *    LoadCompressedSpriteSheet(sScrollIndicator_Gfx);
+ *    LoadPalette(sRedInterface_Pal, OBJ_PLTT_ID(palNum), 32);
+ *    AddScrollIndicatorArrowObject(LEFT, 28, 16, ...);
+ *    AddScrollIndicatorArrowObject(RIGHT, 100, 16, ...);
+ *
+ *  scroll_indicator.png = 16×32 = 8 tiles 4bpp. Frame 0 (tiles 0-3) = LEFT.
+ *  RIGHT = même tile data + hflip. Bobbing horizontal sin wave ±2 px. */
+function _spawnPocketArrows(assets: BagAssets): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // Idempotent : load gfx + palette dans VRAM OBJ une fois.
+  if (!_scrollArrowAssetsLoaded) {
+    rt.gba.objVram.set(assets.scrollArrowGfx, SCROLL_ARROW_OBJ_OFFSET);
+    rt.LoadPaletteObj(assets.scrollArrowPal, OBJ_PLTT_ID(SCROLL_ARROW_OBJ_PAL));
+    _scrollArrowAssetsLoaded = true;
+  }
+  const baseTile = SCROLL_ARROW_OBJ_OFFSET / 32;
+  // 1:1 décomp sScrollIndicatorTemplates[SCROLL_ARROW_LEFT] :
+  //   animNum=0 (frame 0, no flip), bounceDir=0 (horizontal), freq=8.
+  const left = rt.CreateSpriteAtOam({
+    tileId: baseTile, paletteBank: SCROLL_ARROW_OBJ_PAL,
+    x: 28, y: 16,
+    shape: 0, size: 1,    // shape 0=square, size 1=16×16
+    priority: 0,
+  });
+  _arrowLeftOamId = left.spriteId;
+  _arrowLeftOamIndex = left.oamIndex;
+  // 1:1 décomp animNum=1 = ANIMCMD_FRAME(0, 30, 1, 0) → tile 0 + hflip.
+  const right = rt.CreateSpriteAtOam({
+    tileId: baseTile, paletteBank: SCROLL_ARROW_OBJ_PAL,
+    x: 100, y: 16,
+    shape: 0, size: 1,
+    priority: 0,
+  });
+  _arrowRightOamId = right.spriteId;
+  _arrowRightOamIndex = right.oamIndex;
+  const rs = rt.gSprites.get(_arrowRightOamId);
+  if (rs) rs.hFlip = true;
+  _arrowSinePosLeft = 0;
+  _arrowSinePosRight = 0;
+}
+
+function _despawnPocketArrows(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  for (const id of [_arrowLeftOamId, _arrowRightOamId]) {
+    if (id < 0) continue;
+    const spr = rt.gSprites.get(id);
+    if (spr) {
+      spr.inUse = false;
+      const oam = rt.gba.oam[spr.oamIndex];
+      if (oam) oam.visible = false;
+    }
+    rt.gSprites.delete(id);
+  }
+  _arrowLeftOamId = -1;
+  _arrowLeftOamIndex = -1;
+  _arrowRightOamId = -1;
+  _arrowRightOamIndex = -1;
+}
+
+/** 1:1 décomp list_menu.c:997-1022 SpriteCallback_ScrollIndicatorArrow case 1 :
+ *    multiplier = sprite->tMultiplier;     // = 2 (sScrollIndicatorTemplates[].multiplier)
+ *    sprite->x2 = (gSineTable[(u8)(sprite->tSinePos)] * multiplier) / 256;
+ *    sprite->tSinePos += sprite->tFrequency;  // LEFT freq=8, RIGHT freq=-8 (=248 u8)
+ *  → bobbing horizontal ±2 px chaque frame.
+ *
+ *  bounceDir = 0 = horizontal x2 (= LEFT/RIGHT chevrons). bounceDir = 1 serait
+ *  vertical y2 (UP/DOWN chevrons, pas utilisés ici). */
+function _tickPocketArrows(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const sLeft = _arrowLeftOamId >= 0 ? rt.gSprites.get(_arrowLeftOamId) : null;
+  if (sLeft) {
+    // 1:1 décomp gSineTable[idx & 0xFF] (= G_SINE_TABLE depuis decomp-data/sine-table.ts).
+    sLeft.x2 = (gSineTable(_arrowSinePosLeft) * 2) >> 8;
+    _arrowSinePosLeft = (_arrowSinePosLeft + 8) & 0xFF;
+  }
+  const sRight = _arrowRightOamId >= 0 ? rt.gSprites.get(_arrowRightOamId) : null;
+  if (sRight) {
+    sRight.x2 = (gSineTable(_arrowSinePosRight) * 2) >> 8;
+    // 1:1 décomp tFrequency = -8 → tSinePos -= 8 (u8 wrap → +248).
+    _arrowSinePosRight = (_arrowSinePosRight - 8) & 0xFF;
+  }
+}
+
+// ─── Rotating ball au pocket switch (1:1 décomp item_menu_icons.c) ──────────
+
+/** 1:1 décomp item_menu_icons.c:497-504 AddSwitchPocketRotatingBallSprite :
+ *    LoadSpriteSheet(&sRotatingBallTable);
+ *    LoadSpritePalette(&sRotatingBallPaletteTable);
+ *    *spriteId = CreateSprite(&sRotatingBallSpriteTemplate, 16, 16, 0);
+ *    gSprites[*spriteId].data[0] = rotationDirection;
+ *
+ *  sRotatingBallSpriteTemplate.callback = SpriteCB_SwitchPocketRotatingBallInit
+ *  → init au 1er tick puis continue 16 frames puis remove. */
+function _spawnRotatingBallSprite(dir: -1 | 1): void {
+  const rt = getRuntime();
+  if (!rt || !_assets) return;
+  // 1:1 décomp LoadSpriteSheet(sRotatingBallTable) + LoadSpritePalette :
+  //   tag-based VRAM upload une fois, idempotent.
+  if (!_rotatingBallAssetsLoaded) {
+    rt.gba.objVram.set(_assets.rotatingBall.charData, ROTATING_BALL_OBJ_OFFSET);
+    rt.LoadPaletteObj(_assets.rotatingBall.palette, OBJ_PLTT_ID(ROTATING_BALL_OBJ_PAL));
+    _rotatingBallAssetsLoaded = true;
+  }
+  // Despawn ancien (= safety si on enchaîne 2 switches rapidement).
+  if (_ballOamId >= 0) {
+    _despawnRotatingBall();
+  }
+  // 1:1 décomp sRotatingBallOamData :
+  //   .affineMode = ST_OAM_AFFINE_OFF (= 0)   ← initial, switch à NORMAL dans Init
+  //   .shape = SPRITE_SHAPE(16x16) (= 0)
+  //   .size = SPRITE_SIZE(16x16) (= 1)
+  //   .priority = 2
+  //   .matrixNum = 4 (= placeholder dans la struct, override par alloc)
+  const baseTile = ROTATING_BALL_OBJ_OFFSET / 32;
+  const ball = rt.CreateSpriteAtOam({
+    tileId: baseTile, paletteBank: ROTATING_BALL_OBJ_PAL,
+    // 1:1 décomp CreateSprite(template, 16, 16, 0) — sprite center à (16, 16).
+    x: 16, y: 16,
+    shape: 0, size: 1,        // 16×16 square
+    priority: 2,              // 1:1 décomp .priority = 2
+    affineMode: 0,            // 1:1 décomp .affineMode = ST_OAM_AFFINE_OFF
+  });
+  _ballOamId = ball.spriteId;
+  _ballOamIndex = ball.oamIndex;
+  // 1:1 décomp gSprites[*spriteId].data[0] = rotationDirection.
+  _ballRotationDir = dir;
+  _ballData3 = 0;
+  _ballRotation = 0;
+  _ballInitPending = true;  // Init callback exécuté au prochain tick.
+}
+
+function _despawnRotatingBall(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // 1:1 décomp item_menu_icons.c:RemoveBagSprite(ITEMMENUSPRITE_BALL) :
+  //   FreeSpriteTilesByTag(TAG_ROTATING_BALL_GFX);
+  //   FreeSpritePaletteByTag(TAG_ROTATING_BALL_GFX);
+  //   DestroySprite(&gSprites[*spriteId]);
+  //   *spriteId = SPRITE_NONE;
+  // → on libère le matrix slot via FreeOamMatrix (= 1:1 décomp DestroySprite si
+  //   sprite has affineMode != OFF, sinon no-op).
+  if (_ballMatrixNum >= 0) {
+    rt.FreeOamMatrix(_ballMatrixNum);
+    _ballMatrixNum = -1;
+  }
+  if (_ballOamId >= 0) {
+    const spr = rt.gSprites.get(_ballOamId);
+    if (spr) {
+      spr.inUse = false;
+      const oam = rt.gba.oam[spr.oamIndex];
+      if (oam) oam.visible = false;
+    }
+    rt.gSprites.delete(_ballOamId);
+  }
+  _ballOamId = -1;
+  _ballOamIndex = -1;
+  _ballData3 = 0;
+  _ballRotation = 0;
+  _ballInitPending = false;
+}
+
+/** 1:1 décomp item_menu_icons.c:506-510 UpdateSwitchPocketRotatingBallCoords :
+ *    sprite->centerToCornerVecX = sprite->data[1] - ((sprite->data[3] + 1) & 1);
+ *    sprite->centerToCornerVecY = sprite->data[1] - ((sprite->data[3] + 1) & 1);
+ *
+ *  data[1] = centerToCornerVecY initial (= -8 pour 16×16 square après l'écrase
+ *  bug du décomp `data[1] = ctcvX; data[1] = ctcvY;` cf. SpriteCB_Init line
+ *  521-522). data[3] = frame counter 0..16.
+ *
+ *  Effet : ctcv alterne -8/-9 chaque frame → wobble 1px du sprite. */
+function _updateBallCoords(): void {
+  const rt = getRuntime();
+  const spr = rt?.gSprites.get(_ballOamId);
+  if (!spr) return;
+  const adjusted = _ballData1 - (((_ballData3 + 1) & 1));
+  spr.centerToCornerVecX = adjusted;
+  spr.centerToCornerVecY = adjusted;
+}
+
+/** 1:1 décomp src/sprite.c:ObjAffineSet inline pattern (= what
+ *  applyMatrixFromAffineState fait dans sprite-engine-impl) :
+ *    sin = gSineTable[rotation & 0xFF]
+ *    cos = gSineTable[(rotation + 64) & 0xFF]
+ *    pa =  (xScale * cos) >> 8         // xScale = 0x100 (= 1.0 = no scale)
+ *    pb = -(xScale * sin) >> 8
+ *    pc =  (yScale * sin) >> 8
+ *    pd =  (yScale * cos) >> 8
+ *
+ *  ⚠️ ConvertScaleParam pas appliqué ici car xScale=yScale=0x100 → param=0x100
+ *  (= identity), donc skipped pour clarté. */
+function _ballApplyMatrix(): void {
+  const rt = getRuntime();
+  if (!rt || _ballMatrixNum < 0) return;
+  const sin = gSineTable(_ballRotation & 0xFF);
+  const cos = gSineTable((_ballRotation + 64) & 0xFF);
+  const xScale = 0x100;
+  const yScale = 0x100;
+  const pa =  (xScale * cos) >> 8;
+  const pb = -(xScale * sin) >> 8;
+  const pc =  (yScale * sin) >> 8;
+  const pd =  (yScale * cos) >> 8;
+  SetOamMatrix(rt.gba, _ballMatrixNum, pa, pb, pc, pd);
+}
+
+/** 1:1 décomp item_menu_icons.c:512-525 SpriteCB_SwitchPocketRotatingBallInit :
+ *    sprite->oam.affineMode = ST_OAM_AFFINE_NORMAL;
+ *    if (sprite->data[0] == -1)
+ *        sprite->affineAnims = sRotatingBallAnimCmds;       // Rotation1 +8/frame
+ *    else
+ *        sprite->affineAnims = sRotatingBallAnimCmds_FullRotation;  // Rotation2 -8/frame
+ *
+ *    InitSpriteAffineAnim(sprite);   // alloc matrix + reset affine state
+ *    sprite->data[1] = sprite->centerToCornerVecX;
+ *    sprite->data[1] = sprite->centerToCornerVecY;          // ← écrase data[1] avec ctcvY (bug)
+ *    UpdateSwitchPocketRotatingBallCoords(sprite);
+ *    sprite->callback = SpriteCB_SwitchPocketRotatingBallContinue; */
+function _ballInitCallback(): void {
+  const rt = getRuntime();
+  if (!rt || _ballOamId < 0) return;
+  const spr = rt.gSprites.get(_ballOamId);
+  if (!spr) return;
+  // sprite->oam.affineMode = ST_OAM_AFFINE_NORMAL.
+  const oam = rt.gba.oam[_ballOamIndex];
+  if (oam) oam.affineMode = 1;  // ST_OAM_AFFINE_NORMAL
+  spr.affineMode = 1;
+  // InitSpriteAffineAnim équiv : alloc matrix slot.
+  _ballMatrixNum = rt.AllocOamMatrix();
+  spr.matrixNum = _ballMatrixNum;
+  if (oam) oam.affineParamIndex = _ballMatrixNum;
+  // 1:1 décomp ctcv 16×16 square = -8 (cf. sCenterToCornerVecTable[0][1] =
+  // [-8, -8]). data[1] écrasé avec ctcvY (= bug du décomp où ctcvX overwritten).
+  _ballData1 = -8;
+  // 1:1 décomp Rotation1 / Rotation2 :
+  //   Rotation1 (data[0] == -1) : AFFINEANIMCMD_FRAME(0, 0, 8, 16)   → rot += 8/frame
+  //   Rotation2 (else)          : AFFINEANIMCMD_FRAME(0, 0, 248, 16) → rot += 248/frame
+  // (248 = -8 signed mod 256 → opposite direction)
+  // _ballRotationDir tracking → applied dans _ballContinueCallback.
+  _updateBallCoords();
+  _ballApplyMatrix();
+  _ballInitPending = false;
+}
+
+/** 1:1 décomp item_menu_icons.c:527-533 SpriteCB_SwitchPocketRotatingBallContinue :
+ *    sprite->data[3]++;
+ *    UpdateSwitchPocketRotatingBallCoords(sprite);
+ *    if (sprite->data[3] == 16)
+ *        RemoveBagSprite(ITEMMENUSPRITE_BALL);
+ *
+ *  En parallèle, le pipeline d'animation affine (AnimateSprite branch
+ *  affineAnimEnded) applique AFFINEANIMCMD_FRAME(0, 0, ±8, 16) chaque frame :
+ *  rotation += rotationDelta. Ici on simule manuellement. */
+function _ballContinueCallback(): void {
+  if (_ballOamId < 0) return;
+  // 1:1 décomp data[3]++ AVANT update coords (= ordre du décomp).
+  _ballData3++;
+  // Apply rotation += rotationDelta (= affine anim frame appliquée par pipeline).
+  // Rotation1 (data[0] == -1) : +8 ; Rotation2 (data[0] != -1) : +248 (= -8 signed).
+  const rotationDelta = (_ballRotationDir === -1) ? 8 : 248;
+  _ballRotation = (_ballRotation + rotationDelta) & 0xFF;
+  _ballApplyMatrix();
+  _updateBallCoords();
+  if (_ballData3 === 16) {
+    _despawnRotatingBall();
+  }
+}
+
+/** Tick du rotating ball : appelle Init au 1er tick, Continue ensuite. */
+function _tickRotatingBall(): void {
+  if (_ballOamId < 0) return;
+  if (_ballInitPending) {
+    _ballInitCallback();
+    return;
+  }
+  _ballContinueCallback();
 }
 
 function _tickPocketSwitchAnim(): void {
@@ -858,6 +1250,9 @@ function _tickPocketSwitchAnim(): void {
   // Note : la zone list = (14, 2, 15, 16) — y+2 = row absolute dans tilemap.
   _fillBgTilemapRect(rt, 17, 14, _switchTimer + 2, 15, 1);
   _switchTimer++;
+  // 1:1 décomp parallel : SpriteCB_SwitchPocketRotatingBallContinue tick chaque
+  // frame indépendamment du Task_SwitchBagPocket. data[3] s'incrémente.
+  _tickRotatingBall();
   // Tous les 2 frames : update pocket name window pour scroll effect.
   // (= simplifié : on swap le label au tick 8 = milieu de l'anim).
   if (_switchTimer === 8) {
@@ -998,6 +1393,36 @@ function _doTeardown(): void {
   }
   _bagAssetsLoadedToObj = false;
 
+  // 1:1 décomp item_menu.c:1064 RemoveScrollIndicatorArrowPair :
+  //   DestroySprite(&gSprites[data->topSpriteId]);
+  //   DestroySprite(&gSprites[data->bottomSpriteId]);
+  //   FreeSpriteTilesByTag(data->tileTag); FreeSpritePaletteByTag(data->palTag);
+  //   DestroyTask(taskId);
+  _despawnPocketArrows();
+  _scrollArrowAssetsLoaded = false;
+  // 1:1 décomp item_menu_icons.c:RemoveBagSprite(ITEMMENUSPRITE_BALL) si encore
+  // alive (= switch interrompu par close). Idempotent.
+  _despawnRotatingBall();
+  _rotatingBallAssetsLoaded = false;
+
+  // Restore OBJ VRAM + palettes 0/1/2 (= player/NPCs/particles overworld utilisent
+  // ces ranges). Sans restore, sprite player apparaît "vert blob" au retour OW
+  // car ses palette indices pointent vers les couleurs du bag.pal.
+  const rt0 = getRuntime();
+  if (rt0 && _savedObjVram) {
+    rt0.gba.objVram.set(_savedObjVram, 0);
+    _savedObjVram = null;
+  }
+  if (rt0 && _savedObjPalettes) {
+    // 1:1 décomp LoadPalette OBJ : écrit gPlttBufferUnfaded ET Faded à offset
+    // 256+slot*16 (cf. decomp-globals.ts:249-252). 48 entries = OBJ palettes 0-2.
+    for (let i = 0; i < 48; i++) {
+      rt0.gPlttBufferUnfaded.set(256 + i, _savedObjPalettes[i]);
+      rt0.gPlttBufferFaded.set(256 + i, _savedObjPalettes[i]);
+    }
+    _savedObjPalettes = null;
+  }
+
   // Restore overworld BG2 + VRAM AVANT de remove les windows (= sinon les
   // windows hidden + overworld pas restored = écran noir 1 frame).
   _teardownBackgroundTilemap();
@@ -1065,6 +1490,14 @@ export function TickBagScreen(newKeys: number): void {
   }
   // Bag jump anim : continue en arrière-plan (incremente y2 vers 0).
   _tickBagSpriteJumpAnim();
+  // 1:1 décomp list_menu.c:Task_ScrollIndicatorArrowPair → tick les chevrons
+  // chaque frame (= sin wave bobbing horizontal).
+  _tickPocketArrows();
+  // 1:1 décomp : SpriteCB_SwitchPocketRotatingBallContinue tick chaque frame
+  // jusqu'à data[3]==16 → RemoveBagSprite. Le sprite outlive le Task_SwitchBagPocket
+  // de 1 frame (= task termine à timer==16 mais ball callback a encore 1 continue
+  // restant). Tick aussi en phase 'open' pour laisser le ball self-despawn.
+  if (_ballOamId >= 0) _tickRotatingBall();
 
   // Note : pas besoin de hide les sprites au tick. Le hook _syncSubspriteOam
   // installé au open s'exécute APRÈS syncSpritesToOam chaque frame et clear
