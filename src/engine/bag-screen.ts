@@ -97,12 +97,22 @@ const BAG_BG_CHAR_BASE = 3;
  *    Desc + button (bottom): tilemapLeft 0,  tilemapTop 14, width 30, height 5  → desc + select btn */
 const SPRITE_WINDOW_TEMPLATE: WindowTemplate = {
   bg: 0, tilemapLeft: 1, tilemapTop: 2, width: 12, height: 12,
-  paletteNum: BAG_SPRITE_PAL, baseBlock: 0x180,
+  // baseBlock 0x250 = au-dessus de tous les autres baseBlocks (= header 0x1A1
+  // + 16 tiles, desc 0x100 + 150 tiles, list 0x40 + 143 tiles, icon 0x150 + 9
+  // tiles). Évite collision avec le tilemap entries des autres windows.
+  paletteNum: BAG_SPRITE_PAL, baseBlock: 0x250,
 };
 
+/** 1:1 décomp item_menu.c:416 sDefaultBagWindows[WIN_POCKET_NAME] :
+ *    .bg = 0, .tilemapLeft = 4, .tilemapTop = 1,
+ *    .width = 8, .height = 2, .paletteNum = 1, .baseBlock = 0x1A1
+ *  Position (4, 1) car le frame orange custom (= chevrons gauche/droite) est
+ *  PRÉ-RENDU dans menu.bin BG2 derrière. La window contient juste le texte
+ *  de la pocket avec sub-palette 1 (= rose/violet pour le texte).
+ *  ⚠️ baseBlock 0x1A1 = élevé pour ne pas overlap d'autres windows. */
 const HEADER_WINDOW_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 14, tilemapTop: 0, width: 16, height: 2,
-  paletteNum: STD_FRAME_PAL, baseBlock: 0x1,
+  bg: 0, tilemapLeft: 4, tilemapTop: 1, width: 8, height: 2,
+  paletteNum: 1, baseBlock: 0x1A1,
 };
 
 /** Window pour l'icône de l'item sélectionné (= 24×24 px = 3×3 tiles).
@@ -110,7 +120,8 @@ const HEADER_WINDOW_TEMPLATE: WindowTemplate = {
  *  affichée à env. (8, 64) → tilemapLeft=1, tilemapTop=8). */
 const ITEM_ICON_WINDOW_TEMPLATE: WindowTemplate = {
   bg: 0, tilemapLeft: 5, tilemapTop: 11, width: 3, height: 3,
-  paletteNum: ITEM_ICON_PAL, baseBlock: 0x150,
+  // baseBlock 0x300 = après sprite (0x250..). Évite collision avec sprite entries.
+  paletteNum: ITEM_ICON_PAL, baseBlock: 0x300,
 };
 
 const LIST_WINDOW_TEMPLATE: WindowTemplate = {
@@ -275,19 +286,18 @@ function _drawDots(): void {
 
 function _drawHeader(): void {
   if (_headerWid < 0) return;
-  // 1:1 décomp item_menu.c:LoadBagMenuTextWindows : FillWindowPixelBuffer(i, PIXEL_FILL(0))
-  // = pixel 0 partout = transparent → BG2 (tile fond rose/mauve ou tile 17 jaune pâle pour la list zone) visible derrière.
+  // 1:1 décomp PrintPocketNames : print pocket name centered in 8×2 tiles window
+  // (= 64×16 px). Texte centered horizontalement.
   FillWindowPixelBuffer(_headerWid, 0x00);
+  // Texte centered : 8 tiles × 8 px = 64 px. Pour center un texte ~50 px, x≈8.
+  // Décomp utilise GetStringCenterAlignXOffset, on simplifie par offset fixe.
   AddTextPrinterParameterized3(
-    _headerWid, FONT_NORMAL, 4, 1, COLOR_MAIN, TEXT_SKIP_DRAW,
+    _headerWid, FONT_NORMAL, 0, 1, COLOR_MAIN, TEXT_SKIP_DRAW,
     POCKETS[_pocketIdx].label,
   );
-  // Indicator pocket nav : "1/5"
-  const indicator = `${_pocketIdx + 1}/${POCKETS.length}`;
-  AddTextPrinterParameterized3(
-    _headerWid, FONT_NORMAL, 90, 1, COLOR_MAIN, TEXT_SKIP_DRAW, indicator,
-  );
-  // Draw dots indicateur sous le texte (1 dot par pocket, actif = visible).
+  // Pas d'indicator "1/5" dans le décomp original — le pocket actif est
+  // indiqué visuellement par le dot rouge sous le header.
+  // Draw dots indicateur (= 1:1 DrawPocketIndicatorSquare).
   _drawDots();
   PutWindowTilemap(_headerWid);
   CopyWindowToVram(_headerWid, 3);
