@@ -255,7 +255,9 @@ function _drawDots(): void {
 
 function _drawHeader(): void {
   if (_headerWid < 0) return;
-  FillWindowPixelBuffer(_headerWid, 0x11);
+  // 1:1 décomp item_menu.c:LoadBagMenuTextWindows : FillWindowPixelBuffer(i, PIXEL_FILL(0))
+  // = pixel 0 partout = transparent → BG2 (tile fond rose/mauve ou tile 17 jaune pâle pour la list zone) visible derrière.
+  FillWindowPixelBuffer(_headerWid, 0x00);
   AddTextPrinterParameterized3(
     _headerWid, FONT_NORMAL, 4, 1, COLOR_MAIN, TEXT_SKIP_DRAW,
     POCKETS[_pocketIdx].label,
@@ -273,7 +275,7 @@ function _drawHeader(): void {
 
 function _drawList(): void {
   if (_listWid < 0) return;
-  FillWindowPixelBuffer(_listWid, 0x11);
+  FillWindowPixelBuffer(_listWid, 0x00);
   const items = _currentPocketItems();
   for (let i = 0; i < VISIBLE_ROWS; i++) {
     const idx = _scrollOffset + i;
@@ -312,7 +314,7 @@ function _drawList(): void {
 
 function _drawDesc(): void {
   if (_descWid < 0) return;
-  FillWindowPixelBuffer(_descWid, 0x11);
+  FillWindowPixelBuffer(_descWid, 0x00);
   // TODO étape 2 : blit du select_button.png (palette dédiée nécessaire =
   // bag.pal n'a pas les couleurs du button → glitch). Pour l'instant juste texte.
   const TEXT_LEFT = 4;
@@ -581,10 +583,37 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
     priority: 2,  // 1:1 décomp item_menu.c:228 (= behind windows BG0)
     baseTile: 0,
   });
+
+  // Note : le décomp call FillBgTilemapBufferRect_Palette0(2, 17, 14, 2, 15, 16)
+  // pour redessiner la zone list après pocket switch (= reset après transition
+  // animation tile 11). Mais menu.bin INITIAL contient DEJA tile 17 (= jaune
+  // pâle) à cette zone — donc pas besoin de fill au load. Notre tilemap est
+  // déjà correct after rt.gba.vram.set(tilemapBytes, mapOff).
   // Hide BG1 et BG3 de l'overworld (= keep BG0 pour les windows). BG2 = notre fond.
   HideBg(1);
   HideBg(3);
   ShowBg(BAG_BG_LAYER);
+}
+
+/** 1:1 décomp `FillBgTilemapBufferRect_Palette0(bg, tile, x, y, w, h)`.
+ *  Overwrite une rect dans le BG tilemap avec un tile_idx donné.
+ *  Tile entries u16 = (paletteBank << 12) | tile_idx. paletteBank=0 par défaut. */
+function _fillBgTilemapRect(
+  rt: ReturnType<typeof getRuntime>,
+  tile: number, x: number, y: number, w: number, h: number,
+): void {
+  if (!rt) return;
+  const mapOff = BAG_BG_MAP_BASE * 0x800;
+  for (let dy = 0; dy < h; dy++) {
+    for (let dx = 0; dx < w; dx++) {
+      const px = x + dx;
+      const py = y + dy;
+      if (px < 0 || px >= 32 || py < 0 || py >= 32) continue;
+      const byteIdx = mapOff + (py * 32 + px) * 2;
+      rt.gba.vram[byteIdx] = tile & 0xFF;
+      rt.gba.vram[byteIdx + 1] = (tile >> 8) & 0xFF;
+    }
+  }
 }
 
 /** Restore overworld BG2 state (= avant le bag screen). */
