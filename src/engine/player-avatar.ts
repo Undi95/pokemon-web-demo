@@ -37,6 +37,7 @@ import { loadIndexedPngStrict, extractPngPlte } from './gba/png-loader';
 import {
   MapGridGetCollisionAt,
   MapGridGetMetatileBehaviorAt,
+  MapGridGetElevationAt,
   MAP_OFFSET,
 } from './map-loader';
 import { MB_TALL_GRASS } from './tilemap-loader';
@@ -541,6 +542,19 @@ function checkPlayerCollision(direction: number): number {
    || IsMetatileDirectionallyImpassable(currentBehavior, targetBehavior, direction)) {
     return COLLISION_IMPASSABLE;
   }
+  // 3. Elevation mismatch check (= 1:1 décomp `IsElevationMismatchAt`,
+  //    event_object_movement.c). Audit session 126 C7 : avant skip → bug
+  //    latent sur ledges/staircases. Maintenant 1:1 décomp :
+  //      bool IsElevationMismatchAt(currentElev, x, y) {
+  //        target = MapGridGetElevationAt(x, y);
+  //        if (target == 0 || currentElev == 0) return FALSE;
+  //        return currentElev != target;
+  //      }
+  const targetElev = MapGridGetElevationAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
+  const currentElev = gPlayerAvatar.currentElevation;
+  if (targetElev !== 0 && currentElev !== 0 && targetElev !== currentElev) {
+    return COLLISION_ELEVATION_MISMATCH;
+  }
   // 4. NPC collision (= 1:1 décomp `DoesObjectCollideWithObjectAt`).
   //    Pendant un walk, currentCoords = TARGET et previousCoords = SOURCE →
   //    les 2 cells sont bloquées simultanément (= step-on race fix).
@@ -816,6 +830,13 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       gPlayerAvatar.stepDirection = DIR_NONE;
       gFieldCamera.movementSpeedX = 0;
       gFieldCamera.movementSpeedY = 0;
+      // Audit session 126 C7 : update currentElevation au step end (= 1:1
+      // décomp ObjectEventUpdateElevation appelé après chaque step). Sans
+      // ça, currentElevation reste à 3 (= default neutre) → IsElevationMismatchAt
+      // ne fire jamais → ledges/staircases pas 1:1.
+      const newElev = MapGridGetElevationAt(
+        gPlayerAvatar.x + MAP_OFFSET, gPlayerAvatar.y + MAP_OFFSET);
+      if (newElev !== 0) gPlayerAvatar.currentElevation = newElev;
       // Switch walk anim alt for next step (= alternate walk1/walk2).
       gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
       // 1:1 décomp `GroundEffect_StepOnTallGrass` (event_object_movement.c:7815) :

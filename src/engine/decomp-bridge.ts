@@ -1546,12 +1546,13 @@ export function GetMapHeaderFromConnection(connection: any): any {
 
 // ─── Map grid helpers (1:1 décomp `src/fieldmap.c`) ──────────────────────────
 
-/** 1:1 décomp `src/fieldmap.c GetMapGridBlockAt(x, y)` — return the metatile
- *  block ID at (x, y). Used by collision / encounter checks. */
-export function GetMapGridBlockAt(_x: number, _y: number): number {
-  // Best-effort : delegate to map-loader if it exposes an API.
-  return 0;
-}
+// Audit session 126 C8 : `GetMapGridBlockAt` stub `return 0` SUPPRIMÉ. La vraie
+// impl est dans `map-loader.ts:1300` (= function private). Les callsites
+// passent par `MapGridGetCollisionAt / MapGridGetMetatileBehaviorAt /
+// MapGridGetElevationAt / MapGridGetMetatileIdAt` (= public exports de
+// map-loader, exposés sur globalThis via gba-global-scope.ts). Le stub était
+// dead code (= personne ne l'importait depuis decomp-bridge), mais mieux
+// pour clarté.
 
 // ─── Door graphics (1:1 décomp `src/field_door.c`) ────────────────────────────
 
@@ -3186,7 +3187,7 @@ export const __bridgedHelpers__: ReadonlySet<string> = new Set([
   'GPU_REG_BUF', 'SetBackdropFromColor', 'SetBackdropFromPalette',
   'GetCurrentRegionMapSectionId', 'GetMapSecIdAt',
   'GetMapHeaderFromConnection',
-  'GetMapGridBlockAt', 'GetDoorGraphics',
+  'GetDoorGraphics',  // GetMapGridBlockAt removed — vraie impl dans map-loader.ts
   'GetTrainerClassNameGenderSpecific',
   'GetSavedWonderNewsMetadata', 'GetWaldaPhrasePtr', 'GetPokeJumpRecords',
   'BattleSetup_ConfigureTrainerBattle',

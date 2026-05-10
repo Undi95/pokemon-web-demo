@@ -424,6 +424,19 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       }
 
       case 'SPAWN_SPRITES': {
+        // Audit session 126 : destroy old pokeball/hand sprites BEFORE spawn pour
+        // éviter les dupes en cas de re-entry (= reload page sans clean rt.gSprites,
+        // ou hot-reload). Idempotent : DestroySprite no-op si spriteId < 0.
+        for (let i = 0; i < 3; i++) {
+          if (pokeballSpriteIds[i] >= 0) {
+            try { rt.DestroySprite(pokeballSpriteIds[i]); } catch { /* */ }
+            pokeballSpriteIds[i] = -1;
+          }
+        }
+        if (handSpriteId >= 0) {
+          try { rt.DestroySprite(handSpriteId); } catch { /* */ }
+          handSpriteId = -1;
+        }
         // Spawn 3 pokeballs at sPokeballCoords (= 1:1 décomp).
         for (let i = 0; i < 3; i++) {
           const [x, y] = POKEBALL_COORDS[i];

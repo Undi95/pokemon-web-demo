@@ -387,13 +387,23 @@ export class GameScene extends Phaser.Scene {
     //   - CB2_ContinueSavedGame : Continue action → load + spawn saved map.
     if (!this.overworldTransitionStarted) {
       if (this.rt.gMain.callback2 === CB2_NewGame) {
+        // Audit session 126 fix : null-out callback2 IMMÉDIATEMENT pour empêcher
+        // tickFixed de l'exécuter pendant que transitionToOverworld await la fade
+        // (= ~1s de frames). Avant : tickFixed continuait à fire CB2_NewGame /
+        // CB2_ContinueSavedGame qui crashent sur gSaveBlock1Ptr.location undefined
+        // → spam logs `Cannot read properties of undefined (reading 'mapGroup')`.
+        this.rt.gMain.callback2 = null;
         void this.transitionToOverworld('newgame');
         return;
       } else if (this.rt.gMain.callback2 === CB2_ContinueSavedGame) {
+        this.rt.gMain.callback2 = null;
         void this.transitionToOverworld('continue');
         return;
       }
     }
+    // Skip tickFixed pendant que la transition est en cours (= avoid running
+    // any leftover callback2 between detection and scene.start).
+    if (this.overworldTransitionStarted) return;
     // Optim : skip bridge.tick si pas de frame logique avancée. Cf
     // TestOverworldScene.update().
     let framesProcessed = 0;

@@ -43,8 +43,13 @@ import {
   gPlayerAvatar, DIR_SOUTH, DIR_NORTH, DIR_WEST, DIR_EAST,
 } from './player-avatar';
 import { getRuntime } from './decomp-globals';
-import { resolveDecompConstant } from './decomp-constants';
+import { resolveDecompConstant, reverseDecompConstant } from './decomp-constants';
 import { RtcCalcLocalTime, gLocalTime } from './rtc';
+import { setStringVar } from './string-buffers';
+import {
+  getSpeciesNameFr, getMoveNameFr, getItemNameFr, getTrainerNameFr,
+  getTrainerClassNameFr, getTrainer,
+} from './data-tables';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1138,6 +1143,21 @@ registerOpcode('setobjectxyperm', (_ctx, args) => {
   if (npc) {
     npc.initialCoordsX = x;
     npc.initialCoordsY = y;
+    // Audit session 126 C6 : aussi sync `currentCoordsX/Y` + `previousCoordsX/Y`.
+    // 1:1 décomp `setobjectxyperm` ne touche QUE le template — le NPC actif
+    // reste à sa position courante. MAIS notre runtime spawn déjà actifs au
+    // load → si le script change perm coords après spawn (= cas LittlerootTown
+    // SetMomInFrontOfDoor → setobjectxyperm Mom 5,9), Mom reste à sa position
+    // initiale au lieu de bouger. Pour 1:1 visuel sur les changements en cours
+    // de game, on sync les coords actuelles aussi. Sans ça : NPC visuellement
+    // figé à son spawn pos même si template a changé.
+    npc.currentCoordsX = x;
+    npc.currentCoordsY = y;
+    npc.previousCoordsX = x;
+    npc.previousCoordsY = y;
+    // Sync world coords (= pixel pos) aussi pour que le sprite se déplace.
+    npc.worldX = x * 16;
+    npc.worldY = y * 16;
   }
   return false;
 });
@@ -1212,13 +1232,42 @@ registerOpcode('map_script_2', () => false);
 
 // ─── Object event manipulation (= 1:1 décomp ScrCmd_addobject etc.) ─────────
 
+/** Helper : resolve un identifier d'objet en `localIdRaw` (= string LOCALID_*).
+ *
+ *  Audit session 126 fix Mom invisible 2F : le décomp `ScrCmd_addobject` fait
+ *  `objectId = VarGet(...)` (= number), puis match template par `objectId` numérique.
+ *  Notre impl matchait par `localIdRaw` (string), ce qui marche pour les
+ *  literals `LOCALID_X` mais PAS pour les VAR_0x8008 que les scripts comme
+ *  `PlayersHouse_2F_EventScript_MomComesUpstairsFemale` utilisent :
+ *      setvar VAR_0x8008, LOCALID_PLAYERS_HOUSE_2F_MOM
+ *      addobject VAR_0x8008
+ *  Avant : `addobject VAR_0x8008` était traité comme localIdRaw = "VAR_0x8008"
+ *  → template introuvable → no-op → Mom invisible.
+ *  Maintenant : si arg starts with `VAR_`, on VarGet → number, puis on resolve
+ *  via `reverseDecompConstant(num, 'LOCALID_')` pour retrouver le LOCALID_X. */
+function _resolveObjectLocalIdRaw(arg: string): string {
+  if (arg.startsWith('LOCALID_')) return arg;
+  if (arg.startsWith('VAR_') || /^-?\d+$/.test(arg) || /^0x[0-9a-fA-F]+$/.test(arg)) {
+    const num = VarGet(arg);
+    const resolved = reverseDecompConstant(num, 'LOCALID_');
+    if (resolved) return resolved;
+    // Fallback : match par numeric localId dans gMapHeader (= map.json local_id
+    // assignment-order).
+    const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
+      { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
+    const tplByLocalId = gMapHeader?.events?.objectEvents?.find(t => t.localId === num);
+    if (tplByLocalId?.localIdRaw) return tplByLocalId.localIdRaw;
+  }
+  return arg;
+}
+
 registerOpcode('addobject', (_ctx, args) => {
   // 1:1 décomp `ScrCmd_addobject` (scrcmd.c) :
   //   TrySpawnObjectEvent(localId, mapNum, mapGroup)
   // qui ClearFlag + spawn directement le NPC. Sans le spawn immédiat, le NPC
   // attendrait le prochain tile cross pour apparaitre — mais pendant un script
   // lockall le player ne bouge pas → NPC jamais visible.
-  const localIdRaw = args[0] ?? '';
+  const localIdRaw = _resolveObjectLocalIdRaw(args[0] ?? '');
   const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
     { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
   const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
@@ -1227,14 +1276,14 @@ registerOpcode('addobject', (_ctx, args) => {
   const rt = getRuntime();
   if (rt) {
     const ok = TrySpawnObjectEvent(localIdRaw, rt);
-    console.log(`[opcode addobject] ${localIdRaw} → ${ok ? 'spawned' : 'failed'}`);
+    console.log(`[opcode addobject] ${args[0]} → ${localIdRaw} → ${ok ? 'spawned' : 'failed'}`);
   }
   return false;
 });
 
 registerOpcode('removeobject', (_ctx, args) => {
   // 1:1 décomp `ScrCmd_removeobject` : SetFlag(flagId) + remove sprite.
-  const localIdRaw = args[0] ?? '';
+  const localIdRaw = _resolveObjectLocalIdRaw(args[0] ?? '');
   const gMapHeader = (globalThis as Record<string, unknown>).gMapHeader as
     { events?: { objectEvents?: ObjectEventTemplate[] } } | undefined;
   const tpl = gMapHeader?.events?.objectEvents?.find(t => t.localIdRaw === localIdRaw);
@@ -1536,16 +1585,40 @@ registerOpcode('warp', (_ctx, args) => {
 
 // ─── Setrespawn (= MVP no-op) ────────────────────────────────────────────────
 
-registerOpcode('setrespawn', (_ctx, _args) => false);
+/** 1:1 décomp `ScrCmd_setrespawn` (scrcmd.c) :
+ *    SetLastHealLocationWarp(VarGet(healLocationId));
+ *  Set `gSaveBlock1Ptr->lastHealLocation` à la heal location passée en arg.
+ *  Audit session 126 C1 : avant no-op → après defeat / poison KO, le player
+ *  reste là où il était (= bug ROM-faithful majeur). Maintenant store dans
+ *  block1.respawnLocation (= notre proxy) ET aussi block1.lastHealLocation
+ *  (= structure WarpData attendue par les auto-files comme field_specials). */
+registerOpcode('setrespawn', (_ctx, args) => {
+  const healLocId = args[0] ?? '';
+  // Le décomp resolve la heal location en (mapGroup, mapNum, x, y) via
+  // sHealLocations[]. Notre table TS est dans heal_location-all-auto.ts mais
+  // pas exposée comme lookup direct. Fallback : store la STRING ID, et le code
+  // qui consume (= DoWhiteOut → SetWarpDestinationToLastHealLocation) résoudra
+  // au moment du respawn (= probably aussi à porter). Pour MVP : note la heal
+  // location dans saveBlock1 pour persist + sync DEBUG.
+  gameState.setRespawn(healLocId);
+  return false;
+});
 
 // ─── Misc stubs (= unblock script flow without full implementation) ─────────
 
-/** 1:1 décomp `ScrCmd_incrementgamestat` (scrcmd.c) : track game statistics
- *  (= GAME_STAT_CHECKED_CLOCK, GAME_STAT_BATTLES, etc.). MVP : log + no-op. */
+/** 1:1 décomp `ScrCmd_incrementgamestat` (scrcmd.c) :
+ *    IncrementGameStat(stat);  // +1 à gSaveBlock1Ptr->gameStats[stat]
+ *  Audit session 126 C2 : avant no-op → stats jamais tracked. Some flags
+ *  conditional dependent (e.g. GAME_STAT_STEPS for daycare egg). Maintenant
+ *  on update block1.gameStats[]. Le numeric `stat` est résolu via VarGet (=
+ *  resolveDecompConstant si literal GAME_STAT_X). */
 registerOpcode('incrementgamestat', (_ctx, args) => {
-  const stat = args[0] ?? '';
-  // No tracking for MVP. Could store in gameState if needed later.
-  void stat;
+  const stat = VarGet(args[0] ?? '0');
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { gameStats?: number[] } | undefined;
+  if (block1?.gameStats && stat >= 0 && stat < block1.gameStats.length) {
+    block1.gameStats[stat] = (block1.gameStats[stat] ?? 0) + 1;
+  }
   return false;
 });
 
@@ -1579,16 +1652,43 @@ registerOpcode('giveitem', (_ctx, args) => {
 /** 1:1 décomp `givecoins` macro. Stub. */
 registerOpcode('givecoins', (_ctx, _args) => false);
 
-/** 1:1 décomp `givemoney` macro. Stub. */
-registerOpcode('givemoney', (_ctx, _args) => false);
+/** 1:1 décomp `ScrCmd_addmoney` (scrcmd.c) :
+ *    AddMoney(&gSaveBlock1Ptr->money, VarGet(amount));
+ *  Audit session 126 C4 : avant no-op → casino + Wally evolution broken.
+ *  Now : add montant à block1.money, capped à 999999 (= MAX_MONEY décomp). */
+registerOpcode('givemoney', (_ctx, args) => {
+  const amount = VarGet(args[0] ?? '0');
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { money?: number } | undefined;
+  if (block1) {
+    block1.money = Math.min(999999, (block1.money ?? 0) + amount);
+  }
+  return false;
+});
 
-/** 1:1 décomp `takemoney` macro. Stub. */
-registerOpcode('takemoney', (_ctx, _args) => false);
+/** 1:1 décomp `ScrCmd_takemoney` (scrcmd.c) : sub from block1.money, floor 0. */
+registerOpcode('takemoney', (_ctx, args) => {
+  const amount = VarGet(args[0] ?? '0');
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { money?: number } | undefined;
+  if (block1) {
+    block1.money = Math.max(0, (block1.money ?? 0) - amount);
+  }
+  return false;
+});
 
 /** 1:1 décomp `addtronyc_extras` Pokemon-related. Stub. */
 registerOpcode('givepokemon', (_ctx, _args) => false);
-registerOpcode('checkmoney', (_ctx, _args) => {
-  gameState.setVar('VAR_RESULT', 0);
+
+/** 1:1 décomp `ScrCmd_checkmoneyforshop` :
+ *    gSpecialVar_Result = (gSaveBlock1Ptr->money >= amount);
+ *  Returns TRUE si player a assez d'argent. */
+registerOpcode('checkmoney', (_ctx, args) => {
+  const amount = VarGet(args[0] ?? '0');
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { money?: number } | undefined;
+  const has = (block1?.money ?? 0) >= amount;
+  gameState.setVar('VAR_RESULT', has ? 1 : 0);
   return false;
 });
 
@@ -1618,20 +1718,154 @@ registerOpcode('checkcoins', (_ctx, _args) => {
 });
 registerOpcode('takecoins', (_ctx, _args) => false);
 registerOpcode('vbuffer', (_ctx, _args) => false);
-registerOpcode('buffermoneyamount', (_ctx, _args) => false);
-registerOpcode('bufferspeciesname', (_ctx, _args) => false);
-registerOpcode('bufferleadmonspeciesname', (_ctx, _args) => false);
-registerOpcode('buffertrainerclassname', (_ctx, _args) => false);
-registerOpcode('buffertrainername', (_ctx, _args) => false);
-registerOpcode('bufferpartymonnick', (_ctx, _args) => false);
-registerOpcode('bufferitemname', (_ctx, _args) => false);
-registerOpcode('bufferdecorationname', (_ctx, _args) => false);
-registerOpcode('buffermovename', (_ctx, _args) => false);
-registerOpcode('buffernumberstring', (_ctx, _args) => false);
-registerOpcode('bufferstdstring', (_ctx, _args) => false);
-registerOpcode('bufferstring', (_ctx, _args) => false);
-registerOpcode('bufferboxname', (_ctx, _args) => false);
-registerOpcode('bufferattackname', (_ctx, _args) => false);
+
+// ─── Buffer opcodes (= 1:1 décomp scrcmd.c bufferXXX) ────────────────────────
+// Audit session 126 : ports depuis script-runner.ts legacy. Sans ces impls,
+// les dialogs avec `{STR_VAR_N}` placeholders affichaient texte tronqué (= "ton
+// ." au lieu de "ton TREECKO"). Le sync vers gStringVarN se fait dans
+// `setStringVar` (string-buffers.ts) qui écrit aussi sur globalThis.
+//
+// Pattern args :
+//   args[0] = N (1..4) = STR_VAR slot
+//   args[1+] = source value (= literal SPECIES_X, VAR_X ou number)
+// Pour SPECIES/MOVE/ITEM : si literal préfixé, use direct ; sinon resolve via
+// VarGet → reverseDecompConstant pour retrouver le name.
+
+/** 1:1 décomp `ScrCmd_bufferspeciesname` (scrcmd.c) :
+ *    StringCopy(sScriptStringVars[N], gSpeciesNames[VarGet(species)]); */
+registerOpcode('bufferspeciesname', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  let speciesName = args[1] || '';
+  if (!speciesName.startsWith('SPECIES_')) {
+    const num = VarGet(args[1] || '');
+    speciesName = reverseDecompConstant(num, 'SPECIES_') ?? `SPECIES_${num}`;
+  }
+  setStringVar(n, getSpeciesNameFr(speciesName));
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_bufferleadmonspeciesname` (scrcmd.c) :
+ *    species = GetMonData(&gPlayerParty[GetLeadMonIndex()], MON_DATA_SPECIES);
+ *    StringCopy(dest, gSpeciesNames[species]); */
+registerOpcode('bufferleadmonspeciesname', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  const lead = gameState.party?.[0];
+  const speciesName = lead?.speciesNameFr ?? (lead?.species ? getSpeciesNameFr(lead.species) : '');
+  setStringVar(n, speciesName);
+  return false;
+});
+
+registerOpcode('buffertrainerclassname', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  const t = getTrainer(args[1] || '');
+  setStringVar(n, t ? getTrainerClassNameFr(t.trainerClass) : '');
+  return false;
+});
+
+registerOpcode('buffertrainername', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  setStringVar(n, getTrainerNameFr(args[1] || ''));
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_bufferpartymonnick` :
+ *    GetMonData(&gPlayerParty[VarGet(slot)], MON_DATA_NICKNAME, dest); */
+registerOpcode('bufferpartymonnick', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  const slot = Math.max(0, Math.min(5, parseValue(args[1] || '0')));
+  const mon = gameState.party?.[slot];
+  setStringVar(n, mon?.nickname || mon?.speciesNameFr || '');
+  return false;
+});
+
+registerOpcode('bufferitemname', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  let itemName = args[1] || '';
+  if (!itemName.startsWith('ITEM_')) {
+    const num = VarGet(args[1] || '');
+    itemName = reverseDecompConstant(num, 'ITEM_') ?? `ITEM_${num}`;
+  }
+  setStringVar(n, getItemNameFr(itemName));
+  return false;
+});
+
+registerOpcode('bufferitemnameplural', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  let itemName = args[1] || '';
+  if (!itemName.startsWith('ITEM_')) {
+    const num = VarGet(args[1] || '');
+    itemName = reverseDecompConstant(num, 'ITEM_') ?? `ITEM_${num}`;
+  }
+  const qty = parseValue(args[2] || '0');
+  const name = getItemNameFr(itemName);
+  setStringVar(n, qty > 1 ? name + 's' : name);
+  return false;
+});
+
+registerOpcode('bufferdecorationname', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  setStringVar(n, args[1]?.replace(/^DECOR_/, '') ?? '');
+  return false;
+});
+
+registerOpcode('buffermovename', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  let moveName = args[1] || '';
+  if (!moveName.startsWith('MOVE_')) {
+    const num = VarGet(args[1] || '');
+    moveName = reverseDecompConstant(num, 'MOVE_') ?? `MOVE_${num}`;
+  }
+  setStringVar(n, getMoveNameFr(moveName));
+  return false;
+});
+
+registerOpcode('bufferattackname', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  let moveName = args[1] || '';
+  if (!moveName.startsWith('MOVE_')) {
+    const num = VarGet(args[1] || '');
+    moveName = reverseDecompConstant(num, 'MOVE_') ?? `MOVE_${num}`;
+  }
+  setStringVar(n, getMoveNameFr(moveName));
+  return false;
+});
+
+registerOpcode('buffernumberstring', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  setStringVar(n, String(parseValue(args[1] || '0')));
+  return false;
+});
+
+registerOpcode('buffermoneyamount', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  const amount = parseValue(args[1] || '0');
+  setStringVar(n, String(amount) + '$');
+  return false;
+});
+
+registerOpcode('bufferstdstring', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  // Pas de table std strings extraite — fallback vide pour ne pas afficher
+  // `{STR_VAR_N}` brut dans les dialogs.
+  setStringVar(n, '');
+  void args;
+  return false;
+});
+
+registerOpcode('bufferstring', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  // Texte direct entre guillemets — extraire (peut contenir des espaces).
+  const txt = (args.slice(1).join(' ') || '').replace(/^"/, '').replace(/"$/, '');
+  setStringVar(n, txt);
+  return false;
+});
+
+registerOpcode('bufferboxname', (_ctx, args) => {
+  const n = parseValue(args[0]) || 1;
+  setStringVar(n, '');
+  void args;
+  return false;
+});
 registerOpcode('preparemsg', (_ctx, _args) => false);
 registerOpcode('selectapproachingtrainer', (_ctx, _args) => false);
 registerOpcode('lockfortrainer', (_ctx, _args) => false);

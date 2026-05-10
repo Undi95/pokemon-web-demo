@@ -538,7 +538,12 @@ export function TryRunOnFrameMapScript(): boolean {
     if (op.name !== 'map_script_2') continue;
     const [varName, valueTok, scriptLabel] = op.args;
     if (!varName || !valueTok || !scriptLabel) continue;
-    const expected = /^-?\d+$/.test(valueTok) ? Number(valueTok) : 0;
+    // Audit session 126 fix B5 : avant `expected = Number(valueTok) ?? 0`
+    // → si valueTok = "MALE" / "FEMALE" / "METATILE_X", parsing échoue
+    // silencieusement → 0, et VarGet(varName) match 0 par accident → wrong
+    // script fired. 1:1 décomp event_data.c:VarGet(id) returns id si pas une
+    // var ; resolveDecompConstant idem pour les constants C compile-time.
+    const expected = VarGet(valueTok);
     if (VarGet(varName) === expected) {
       console.log(`[script-runtime] OnFrame match : ${varName}=${expected} → ${scriptLabel}`);
       // 1:1 décomp : OnFrame scripts can have waits (msgbox, applymovement +

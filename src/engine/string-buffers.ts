@@ -17,6 +17,15 @@ const buffers: Record<number, string> = { 1: '', 2: '', 3: '', 4: '' };
 
 export function setStringVar(n: number, value: string): void {
   buffers[n] = value ?? '';
+  // Audit session 126 : sync vers `globalThis.gStringVarN` (= module-level
+  // `gStringVar1..4` dans gba-text-system.ts). `StringExpandPlaceholders`
+  // (gba-text-system.ts:430-432) lit ces gStringVarN pour substituer
+  // `{STR_VAR_N}` dans les texts décomp. Avant ce sync : opcodes bufferXXX
+  // écrivaient dans `buffers[]` mais le placeholder substitution lisait
+  // `gStringVarN` (= toujours empty) → "ton ." au lieu de "ton TREECKO".
+  if (n >= 1 && n <= 4) {
+    (globalThis as Record<string, unknown>)[`gStringVar${n}`] = value ?? '';
+  }
 }
 
 export function getStringVar(n: number): string {
@@ -24,5 +33,8 @@ export function getStringVar(n: number): string {
 }
 
 export function clearStringVars(): void {
-  for (const k of Object.keys(buffers)) buffers[Number(k)] = '';
+  for (const k of Object.keys(buffers)) {
+    buffers[Number(k)] = '';
+    (globalThis as Record<string, unknown>)[`gStringVar${k}`] = '';
+  }
 }
