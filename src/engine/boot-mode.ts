@@ -18,7 +18,7 @@
  */
 import { gameState } from './game-state';
 import { NewGameInit } from './new-game-flags';
-import { AddBagItem } from './bag';
+import { AddBagItem, DEBUG_ExpandBagToFit } from './bag';
 import { DIR_SOUTH } from './direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from './data-tables';
 
@@ -58,7 +58,22 @@ export async function preloadBootData(): Promise<void> {
   }
 }
 
-/** Lit `?nointro` depuis l'URL courante (= true si présent). */
+/** Lit `?debug` depuis l'URL courante (= true si présent).
+ *  `?debug` = preset complet testing : tous les items du jeu, all flags
+ *  (dex/pokemon/dash), Bourg-en-Vol devant la maison player.
+ *  Renommage 2026-05-11 (ex-`?nointro` étendu): séparé en 2 params car le
+ *  preset complet ≠ "skip intro et charger save". */
+export function hasDebugParam(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const url = new URL(window.location.href);
+    return url.searchParams.has('debug');
+  } catch { return false; }
+}
+
+/** Lit `?nointro` depuis l'URL courante (= true si présent).
+ *  `?nointro` = juste charger la save existante directement sans title screen
+ *  (= Continue automatique). Si pas de save valide → fallback new game truck. */
 export function hasNoIntroParam(): boolean {
   if (typeof window === 'undefined') return false;
   try {
@@ -109,11 +124,14 @@ function applyNoIntroPreset(): void {
   // 1:1 décomp `RunScriptImmediately(EventScript_ResetAllMapFlags)` au tout début
   // d'une nouvelle partie. Sans ça les NPCs cachés réapparaissent.
   NewGameInit();
-  // Bag preset : tous les items du jeu × 1 (= 1:1 décomp AddBagItem, mais
-  // ITEM_NONE et ITEM_B_USE_* skippés par getAllItemKeys). Permet de tester
-  // tous les sprites d'item icon visuellement dans le SAC. AddBagItem dispatch
-  // automatiquement au bon pocket via getItem(key).pocket.
-  // Items qu'on a en spécial avec qty>1 pour voir le ×N right-align :
+  // ⚠️ DEBUG ONLY : agrandit les pockets (= override les caps BAG_*_COUNT
+  // 1:1 décomp) pour pouvoir afficher TOUS les items du jeu. POCKET_ITEMS
+  // a 207 items mais cap 30, POCKET_KEY_ITEMS 57 mais cap 30. Sans cet
+  // expand, on droppe les items après le 30ème slot.
+  DEBUG_ExpandBagToFit(256);
+  // Bag preset : tous les items du jeu × 1. AddBagItem dispatch automatiquement
+  // au bon pocket via getItem(key).pocket. Items en quantité > 1 pour tester
+  // le rendu ×N right-align :
   const SPECIAL_QTY: Record<string, number> = {
     'ITEM_POTION': 5,
     'ITEM_SUPER_POTION': 3,
@@ -215,18 +233,27 @@ function applyNoIntroPreset(): void {
  * Décide le mode de boot et retourne le spawn initial.
  *
  * Ordre de priorité :
- *   1. `?nointro` URL param → preset + spawn Bourg-en-Vol devant maison Brendan.
- *   2. `?truck` URL param → dev shortcut : reset save + truck cinematic spawn.
- *   3. Save existante avec `map` field → resume saved position.
- *   4. Default → new game truck cinematic.
+ *   1. `?debug` → preset complet (tous items, all flags) + spawn Bourg.
+ *   2. `?nointro` → resume save existante (= skip title screen / Continue auto).
+ *      Si pas de save → fallback new game truck.
+ *   3. `?truck` → dev shortcut : reset save + truck cinematic spawn.
+ *   4. Save existante avec `map` field → resume saved position.
+ *   5. Default → new game truck cinematic.
  */
 export function decideBootMode(): BootSpawn {
+  if (hasDebugParam()) {
+    // `?debug` = preset complet testing : tous les items, all flags.
+    // Toujours appliqué (même si save existante = override).
+    applyNoIntroPreset();
+    const isFemale = gameState.gender === 'FEMALE';
+    const spawnX = isFemale ? 14 : 5;
+    console.log(`[boot-mode] ?debug → preset complet, spawn (${spawnX}, 9)`);
+    return { mapId: 'MAP_LITTLEROOT_TOWN', x: spawnX, y: 9, facing: DIR_SOUTH, mode: 'nointro' };
+  }
+
   if (hasNoIntroParam()) {
-    // User feedback : "Le menu nointro lache dans le jeu avec des flag deja
-    // actif, tu pux le modifier pour montrer l'écran nouveau jeu direct,
-    // comme ça on peut recharger la save facile". Si une save valid existe
-    // déjà, on skip l'applyNoIntroPreset (= ne touche pas la save) et on
-    // résume direct via le save path (= 1:1 ROM Continue behavior).
+    // `?nointro` = charger save existante directement (= 1:1 ROM Continue).
+    // Pas de preset, pas de touch à la save : juste resume.
     if (gameState.hasPersistedSave() && gameState.load() && gameState.map) {
       const m = gameState.map;
       console.log(`[boot-mode] ?nointro + save valide → resume ${m.name} (${m.x}, ${m.y})`);
@@ -235,20 +262,8 @@ export function decideBootMode(): BootSpawn {
         facing: m.facing ?? DIR_SOUTH, mode: 'resume',
       };
     }
-    applyNoIntroPreset();
-    // 1:1 décomp `setdynamicwarp MAP_LITTLEROOT_TOWN, 3, 10` (MALE) /
-    // `setdynamicwarp MAP_LITTLEROOT_TOWN, 12, 10` (FEMALE)
-    // (data/maps/InsideOfTruck/scripts.inc:33,46). Le decomp décale x=3 (vs
-    // notre warp position 5,8) car setdynamicwarp set le RESPAWN tile, pas
-    // la position spawn. Pour le simple ?nointro on spawn directement devant
-    // la porte de la maison du player :
-    //   MALE   → devant Brendan's House à (5, 9) facing SOUTH
-    //   FEMALE → devant May's House à (14, 9) facing SOUTH
-    // Sans la branch gender, FEMALE entrait dans BRENDAN's house qui n'a
-    // pas son layout actif → bug visible (= mauvaise maison).
-    const isFemale = gameState.gender === 'FEMALE';
-    const spawnX = isFemale ? 14 : 5;
-    return { mapId: 'MAP_LITTLEROOT_TOWN', x: spawnX, y: 9, facing: DIR_SOUTH, mode: 'nointro' };
+    // Pas de save valide → fallback new game truck (= cinematic).
+    console.log(`[boot-mode] ?nointro mais pas de save valide → fallback newgame`);
   }
 
   if (hasTruckParam()) {

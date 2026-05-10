@@ -579,12 +579,21 @@ function _drawAll(): void {
  *  avec une palette différente par item. Sans ce mapping, le slug auto
  *  ITEM_RED_ORB → red_orb.png n'existe pas (= seule orb.png est extraite). */
 let _itemIconMap: Record<string, string> = {};
+/** Mapping ITEM_X → palette file slug (= gItemIconPalette_X). 1:1 décomp
+ *  pattern : RED_ORB et BLUE_ORB partagent gItemIcon_Orb (= orb.png) mais
+ *  ont des palettes différentes (red_orb.pal vs blue_orb.pal) qui donnent
+ *  des couleurs différentes au même sprite. Sans charger la palette per-item,
+ *  les 2 apparaissent identiques (= bug "même sprite" reporté par user). */
+let _itemPaletteMap: Record<string, string> = {};
 
 export async function initItemIconMap(): Promise<void> {
   try {
-    const resp = await fetch('/decomp/em/items/item-icon-map.json');
-    if (!resp.ok) return;
-    _itemIconMap = await resp.json();
+    const [iconResp, palResp] = await Promise.all([
+      fetch('/decomp/em/items/item-icon-map.json'),
+      fetch('/decomp/em/items/item-palette-map.json'),
+    ]);
+    if (iconResp.ok) _itemIconMap = await iconResp.json();
+    if (palResp.ok) _itemPaletteMap = await palResp.json();
   } catch (e) {
     console.warn('[bag-screen] item-icon-map.json load failed', e);
   }
@@ -611,14 +620,37 @@ function _itemIconUrlBase(itemKey: string): string {
   return `/decomp/em/items/icons/${slug}`;
 }
 
+/** URL de la palette per-item (= 1:1 décomp gItemIconPalette_X). */
+function _itemPaletteUrl(itemKey: string): string | null {
+  const slug = _itemPaletteMap[itemKey];
+  if (!slug) return null;
+  return `/decomp/em/items/icon_palettes/${slug}.pal`;
+}
+
 /** Charge async l'icône de l'item sélectionné dans une cache, puis la draw.
- *  Idempotent : si même item déjà loadé, juste re-blit. */
+ *  Idempotent : si même item déjà loadé, juste re-blit.
+ *
+ *  1:1 décomp : sprite charData partagé + palette per-item (= load les 2
+ *  séparément). Le PNG embed sa propre palette mais on l'override avec la
+ *  per-item palette du décomp si dispo. */
 async function _ensureItemIconLoaded(itemKey: string): Promise<void> {
   if (_itemIconCache[itemKey]) return;
   try {
     const base = _itemIconUrlBase(itemKey);
     const png = await loadIndexedPngStrict(`${base}.png`, 4);
-    _itemIconCache[itemKey] = { charData: png.charData, palette: png.palette };
+    // 1:1 décomp : si une palette per-item existe (= cas Red/Blue Orb, Potions
+    // variants, etc.), elle override la palette embed du PNG.
+    let palette = png.palette;
+    const palUrl = _itemPaletteUrl(itemKey);
+    if (palUrl) {
+      try {
+        const customPal = await loadGbaPal(palUrl);
+        palette = customPal;
+      } catch (palErr) {
+        console.warn(`[bag-screen] palette load failed for ${itemKey}, using PNG embed`, palErr);
+      }
+    }
+    _itemIconCache[itemKey] = { charData: png.charData, palette };
   } catch (e) {
     // Item icon manquant : on ignore (= window restera vide pour cet item).
     console.warn(`[bag-screen] item icon load failed for ${itemKey}`, e);

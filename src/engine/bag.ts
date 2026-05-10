@@ -213,6 +213,23 @@ export function RemoveBagItem(itemKey: string, count: number): boolean {
   return true;
 }
 
+/** DEV/DEBUG ONLY : agrandit toutes les pockets pour qu'elles puissent contenir
+ *  jusqu'à N slots chacune. Utile pour `?debug` qui veut afficher TOUS les items
+ *  du jeu (= POCKET_ITEMS a 207 items mais BAG_ITEMS_COUNT cap à 30).
+ *
+ *  ⚠️ NON 1:1 décomp — réservé au mode debug. Le décomp ROM utilise les caps
+ *  fixes BAG_*_COUNT. */
+export function DEBUG_ExpandBagToFit(maxPerPocket = 256): void {
+  const grow = (arr: ItemSlot[]) => {
+    while (arr.length < maxPerPocket) arr.push({ itemKey: '', quantity: 0 });
+  };
+  grow(gameState.bag.items);
+  grow(gameState.bag.pokeBalls);
+  grow(gameState.bag.tmHm);
+  grow(gameState.bag.berries);
+  grow(gameState.bag.keyItems);
+}
+
 /** 1:1 décomp `ClearBag` : reset complet à empty. */
 export function ClearBag(): void {
   const empty = emptyBag();
