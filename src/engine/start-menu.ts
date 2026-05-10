@@ -184,19 +184,42 @@ function showMessageThenClose(text: string): boolean {
   return false;
 }
 
-/** POKéDEX action : stub — le Pokédex n'est pas implémenté. */
+/** POKéDEX action : compteur vus/capturés (= pré-Pokédex UI complet Phase 6+). */
 function pokedexAction(): boolean {
-  return showMessageThenReturn('Le POKéDEX n\'est pas\nencore disponible.');
+  // 1:1 décomp `GetPokedexCaughtCount` / `GetPokedexSeenCount` — read flags
+  // `FLAG_POKEDEX_FLAG_X_CAUGHT/SEEN` dans block1.flags.
+  // Phase 6+ : vraie UI Pokédex avec list 386 mons + sprites + descriptions.
+  let caughtCount = 0;
+  let seenCount = 0;
+  const allFlags = (gameState as unknown as { getAllFlagNames?: () => string[] }).getAllFlagNames?.() ?? [];
+  for (const f of allFlags) {
+    if (f.startsWith('FLAG_DEX_FLAG_') || f.startsWith('FLAG_POKEDEX_')) {
+      if (f.endsWith('_CAUGHT')) caughtCount++;
+      if (f.endsWith('_SEEN')) seenCount++;
+    }
+  }
+  const hasDex = gameState.hasFlag('FLAG_SYS_POKEDEX_GET');
+  if (!hasDex) {
+    return showMessageThenReturn('Le POKéDEX n\'est pas\nencore disponible.');
+  }
+  return showMessageThenReturn(
+    `POKéDEX :\nVus : ${seenCount}\nCapturés : ${caughtCount}`,
+  );
 }
 
-/** POKéMON action : si party empty, message ; sinon TODO sub-menu party. */
+/** POKéMON action : list party avec Lv + HP. Phase 6+ = vraie UI sprites + moves. */
 function pokemonAction(): boolean {
   if (gameState.party.length === 0) {
     return showMessageThenReturn('Vous n\'avez pas\nencore de POKéMON.');
   }
-  // MVP : list party names dans le dialog. À remplacer par vrai party menu plus tard.
-  const names = gameState.party.map((p, i) => `${i + 1}. ${p.speciesNameFr ?? '???'}`).join('\n');
-  return showMessageThenReturn(`Équipe POKéMON :\n${names}`);
+  const lines = gameState.party.map((p, i) => {
+    const name = p.nickname || p.speciesNameFr || p.species?.replace(/^SPECIES_/, '') || '???';
+    const lv = p.level ?? '?';
+    const hp = p.hp ?? '?';
+    const maxHp = p.maxHp ?? p.hp ?? '?';
+    return `${i + 1}.${name} N.${lv} ${hp}/${maxHp}`;
+  });
+  return showMessageThenReturn(`Équipe POKéMON :\n${lines.join('\n')}`);
 }
 
 /** SAC action : list bag contents par pocket dans le dialog. */
