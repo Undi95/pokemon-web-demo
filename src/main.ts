@@ -100,6 +100,11 @@ void loadMultichoiceLists();
 import { installScopeDevtools } from './engine/dev-scope';
 installScopeDevtools();
 
+// Session 127 : preload bag screen graphics (sprite sac + dots + button).
+// Async, idempotent. Au 1er Open du bag, les assets sont déjà cached.
+import { preloadBagAssets } from './engine/bag-screen';
+preloadBagAssets();
+
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);

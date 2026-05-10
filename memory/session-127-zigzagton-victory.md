@@ -61,11 +61,10 @@ Flag final : `FLAG_RESCUED_BIRCH` ✓
 - **Impact** : Devtools console moins fiable pour détecter dialog ouvert. N'impact pas le gameplay.
 - **Fix suggéré** : Hook directement sur l'objet textbox Phaser ou lire un flag global comme `gWindowOpen` / `gPaletteFade.active`.
 
-### Bug #2 : Twin NPC re-talk loop quand player face WEST
-- **Repro** : Près de la twin de Bourg-en-Vol (10,1) facing WEST, chaque press A re-déclenche son script alors qu'on veut juste fermer un dialog.
-- **Root cause** : Le talk_to_npc handler fire toujours quand player face un NPC + press A, même si on vient de close son dialog.
-- **Workaround validé** : Press B (= 'x' clavier) pour close dialog au lieu de A. Évite le re-talk.
-- **Pas un bug 1:1 décomp** — le décomp original a le même comportement, c'est juste un point de friction pour le dev devtools.
+### ~~Bug #2~~ : ❌ NON-bug confirmé par user — twin NPC bloque exprès
+- **Init repro** : Près de la twin de Bourg-en-Vol (10,1) facing WEST, chaque press A re-déclenche son script.
+- **User feedback (2026-05-10 00:XX)** : "La fille qui te bloque twin c'est normal c'est pour te forcer a faire l'event du starter."
+- **Conclusion** : 1:1 ROM PRET. La twin sert de "garde" pour empêcher player d'aller dans les hautes herbes sans Pokémon. Notre comportement = correct. Workaround dev seulement (press B au lieu de A).
 
 ### Bug #3 : `bag` retourne tableau de 16 slots vides + 1 POKE_BALL au lieu de juste les items
 - **Repro** : `window.scope.bag()` retourne énorme objet avec tous les slots vides "{ item: '', qty: 0 }".
