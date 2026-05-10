@@ -574,6 +574,17 @@ function _itemIconUrlBase(itemKey: string): string {
   if (itemKey === 'ITEM_RETURN_TO_FIELD') {
     return '/decomp/em/items/icons/return_to_field_arrow';
   }
+  // 1:1 décomp src/data/item_icon_table.h : TOUS les ITEM_TM_* utilisent
+  // gItemIcon_TM (= un seul sprite générique), TOUS les ITEM_HM_* utilisent
+  // gItemIcon_HM. La couleur/palette diffère par type (FightingTMHM, etc.)
+  // mais l'icon graphique est partagé. Pour le port web on map tous vers
+  // /decomp/em/items/icons/tm.png et hm.png respectivement.
+  if (itemKey.startsWith('ITEM_TM_')) {
+    return '/decomp/em/items/icons/tm';
+  }
+  if (itemKey.startsWith('ITEM_HM_')) {
+    return '/decomp/em/items/icons/hm';
+  }
   const slug = itemKey.replace(/^ITEM_/, '').toLowerCase();
   return `/decomp/em/items/icons/${slug}`;
 }

@@ -63,6 +63,14 @@ export function loadItemsTable(t: Record<string, ItemDef>): void { itemsTable = 
 export function getItem(itemId: string): ItemDef | undefined {
   return itemsTable?.[itemId];
 }
+/** Retourne tous les itemKeys connus du jeu (= clés de items.json).
+ *  Skip ITEM_NONE (= placeholder décomp) et ITEM_B_USE_* (= virtual items
+ *  battle-only, pas inventory). Utile pour `?nointro` testing visuel. */
+export function getAllItemKeys(): string[] {
+  if (!itemsTable) return [];
+  return Object.keys(itemsTable).filter(k =>
+    k !== 'ITEM_NONE' && !k.startsWith('ITEM_B_USE'));
+}
 export function getItemNameFr(itemId: string): string {
   return itemsTable?.[itemId]?.name ?? itemId.replace(/^ITEM_/, '');
 }

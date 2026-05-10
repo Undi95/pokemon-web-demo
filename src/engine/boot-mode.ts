@@ -20,7 +20,7 @@ import { gameState } from './game-state';
 import { NewGameInit } from './new-game-flags';
 import { AddBagItem } from './bag';
 import { DIR_SOUTH } from './direction-coords';
-import { loadItemsTable, type ItemDef } from './data-tables';
+import { loadItemsTable, getAllItemKeys, type ItemDef } from './data-tables';
 
 const ITEMS_JSON_URL = '/decomp/em/items.json';
 
@@ -109,44 +109,26 @@ function applyNoIntroPreset(): void {
   // 1:1 décomp `RunScriptImmediately(EventScript_ResetAllMapFlags)` au tout début
   // d'une nouvelle partie. Sans ça les NPCs cachés réapparaissent.
   NewGameInit();
-  // Bag preset (= 1:1 décomp AddBagItem). Items dans TOUTES les pockets pour
-  // testing visuel pixel-perfect du SAC (= 5 pockets navigables avec contenu).
-  // OBJETS (medicine + held items + battle items) :
-  AddBagItem('ITEM_POTION', 5);
-  AddBagItem('ITEM_SUPER_POTION', 3);
-  AddBagItem('ITEM_FULL_HEAL', 2);
-  AddBagItem('ITEM_REVIVE', 1);
-  AddBagItem('ITEM_ANTIDOTE', 4);
-  AddBagItem('ITEM_AWAKENING', 2);
-  AddBagItem('ITEM_REPEL', 3);
-  AddBagItem('ITEM_X_ATTACK', 1);
-  AddBagItem('ITEM_ESCAPE_ROPE', 2);
-  // POKé BALLS :
-  AddBagItem('ITEM_POKE_BALL', 5);
-  AddBagItem('ITEM_GREAT_BALL', 3);
-  AddBagItem('ITEM_ULTRA_BALL', 2);
-  AddBagItem('ITEM_NET_BALL', 1);
-  AddBagItem('ITEM_DIVE_BALL', 1);
-  AddBagItem('ITEM_TIMER_BALL', 1);
-  // CT & CS (= TMs/HMs, naming par symbol PRET = ITEM_TM_X / ITEM_HM_X) :
-  AddBagItem('ITEM_TM_FOCUS_PUNCH', 1);
-  AddBagItem('ITEM_TM_DRAGON_CLAW', 1);
-  AddBagItem('ITEM_TM_AERIAL_ACE', 1);
-  AddBagItem('ITEM_HM_CUT', 1);
-  AddBagItem('ITEM_HM_FLASH', 1);
-  // BAIES :
-  AddBagItem('ITEM_ORAN_BERRY', 5);
-  AddBagItem('ITEM_CHERI_BERRY', 4);
-  AddBagItem('ITEM_PECHA_BERRY', 3);
-  AddBagItem('ITEM_RAWST_BERRY', 2);
-  AddBagItem('ITEM_LEPPA_BERRY', 2);
-  AddBagItem('ITEM_SITRUS_BERRY', 1);
-  // OBJ. RARES (= keyItems) :
-  AddBagItem('ITEM_MACH_BIKE', 1);
-  AddBagItem('ITEM_GO_GOGGLES', 1);
-  AddBagItem('ITEM_DEVON_SCOPE', 1);
-  AddBagItem('ITEM_GOOD_ROD', 1);
-  AddBagItem('ITEM_ITEMFINDER', 1);
+  // Bag preset : tous les items du jeu × 1 (= 1:1 décomp AddBagItem, mais
+  // ITEM_NONE et ITEM_B_USE_* skippés par getAllItemKeys). Permet de tester
+  // tous les sprites d'item icon visuellement dans le SAC. AddBagItem dispatch
+  // automatiquement au bon pocket via getItem(key).pocket.
+  // Items qu'on a en spécial avec qty>1 pour voir le ×N right-align :
+  const SPECIAL_QTY: Record<string, number> = {
+    'ITEM_POTION': 5,
+    'ITEM_SUPER_POTION': 3,
+    'ITEM_FULL_HEAL': 2,
+    'ITEM_REVIVE': 1,
+    'ITEM_ANTIDOTE': 4,
+    'ITEM_POKE_BALL': 5,
+    'ITEM_GREAT_BALL': 3,
+    'ITEM_ULTRA_BALL': 2,
+    'ITEM_ORAN_BERRY': 5,
+    'ITEM_CHERI_BERRY': 4,
+  };
+  for (const k of getAllItemKeys()) {
+    AddBagItem(k, SPECIAL_QTY[k] ?? 1);
+  }
   // Running shoes (= FLAG_SYS_B_DASH set par dad in
   // LittlerootTown_EventScript_SetReceivedRunningShoes scripts.inc:889).
   gameState.setFlag('FLAG_SYS_B_DASH');
