@@ -1,5 +1,5 @@
-import { runScript, type ParsedScripts, type ScriptContext } from './script-runner';
 import { gameState } from './game-state';
+import { RunScriptImmediately, ensureCommonScriptsLoaded } from './script-runtime';
 
 /**
  * Initialise une nouvelle partie en exécutant directement les vrais scripts
@@ -14,26 +14,24 @@ import { gameState } from './game-state';
  *      `setdynamicwarp MAP_LITTLEROOT_TOWN, 3|12, 10` au moment où le joueur
  *      marche vers la sortie. C'est exactement ce que fait le vrai jeu.
  *
- * AVANT cette session on appelait directement SetIntroFlags*, ce qui skip
- * l'intro camion — fix de la dette session 12.
+ * Audit session 126 LOT C10 : migré depuis `script-runner` (legacy) vers
+ * `script-runtime` (= moderne, support compositional opcodes + waits +
+ * goto_if_set qui respecte les flags réels au lieu de toujours skip).
+ *
+ * `RunScriptImmediately` accepte un label common scripts (= preload via
+ * `ensureCommonScriptsLoaded`).
  */
-export async function runNewGameInit(allScripts: ParsedScripts, gender: 'MALE' | 'FEMALE') {
+export async function runNewGameInit(gender: 'MALE' | 'FEMALE'): Promise<void> {
   // Set VAR_RESULT au genre choisi pour les éventuels branch `goto_if_eq VAR_RESULT`
   gameState.setVar('VAR_RESULT', gender === 'MALE' ? 0 : 1);
 
-  const ctx: ScriptContext = {
-    showText: () => Promise.resolve(),
-    faceNpcToPlayer: () => { },
-    lockPlayer: () => { },
-    releasePlayer: () => { },
-  };
+  // Audit session 126 C10 : preload common scripts pour que RunScriptImmediately
+  // trouve `EventScript_ResetAllMapFlags` (= scripts/new_game.inc, dans common).
+  await ensureCommonScriptsLoaded();
 
-  // Reset des flags par défaut (cache tous les NPCs de début de jeu)
-  if (!allScripts?.scripts?.['EventScript_ResetAllMapFlags']) {
-    console.error('[new-game-init] EventScript_ResetAllMapFlags introuvable dans le pool');
-    return;
-  }
-  await runScript('EventScript_ResetAllMapFlags', allScripts, ctx);
+  // Reset des flags par défaut (cache tous les NPCs de début de jeu).
+  // 1:1 décomp `EventScript_ResetAllMapFlags` (= setflag séries pour FLAG_HIDE_*).
+  RunScriptImmediately('EventScript_ResetAllMapFlags');
 
   // Spawn manuel dans le camion. Coords (1, 2) = côté ouest du camion 5×5,
   // le joueur marche vers l'est et déclenche le coord trigger à (3, 2).

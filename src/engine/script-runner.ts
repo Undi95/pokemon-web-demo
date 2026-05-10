@@ -1,22 +1,27 @@
 /**
- * Runner de scripts de map pokeemerald — version minimaliste.
+ * Runner de scripts de map pokeemerald — version legacy (= utilisée par
+ * `OverworldScene` non-active + `world-renderer` type-only + `map-scripts`).
  *
- * On supporte le sous-ensemble nécessaire pour jouer les dialogues NPC de
- * début de jeu. Pour l'état joueur/flags/vars, on part du principe que TOUT
- * est à l'état initial (flags non set, vars = 0). Les branches conditionnelles
- * sont donc résolues en conséquence : `goto_if_set` ne saute jamais,
- * `goto_if_ne VAR, 0, label` ne saute jamais (var == 0), etc.
+ * Audit session 126 LOT C10 : le commentaire daté précédent disait que
+ * `goto_if_set` était toujours ignoré. C'est faux : ligne 602 lit
+ * `gameState.hasFlag(token)` correctement. Vars / flags sont aussi readés
+ * depuis `gameState` (= shared avec `script-runtime` moderne).
  *
- * Commandes implémentées :
+ * **Status legacy** : le runtime principal est désormais `script-runtime.ts`
+ * (= bytecode-style 1:1 décomp avec waits + compositional opcodes). Ce
+ * runner reste pour back-compat de `OverworldScene` (= scene 5 inactive
+ * dans le path actuel). Migration future : delete ce module + adapter
+ * OverworldScene.
+ *
+ * Commandes implémentées (= sous-ensemble) :
  *   lock / release / end / return / nop / closemessage : no-op visuel
  *   faceplayer        : tourne le NPC vers le joueur
  *   msgbox <tx>, ... : affiche le texte <tx>, attend input
  *   goto <label>      : saut inconditionnel
- *   goto_if_set ...   : ignoré (on considère que le flag n'est pas set)
- *   goto_if_ne ...    : saute ssi la valeur != 0 — on considère var == 0, donc ignore
- *   goto_if_eq ...    : saute ssi la valeur == 0 par défaut
+ *   goto_if_set ...   : check gameState.hasFlag (= 1:1 décomp)
+ *   goto_if_ne ...    : check var != value
+ *   goto_if_eq ...    : check var == value
  *   call <label>      : push et saut
- *   <autres>          : ignorés silencieusement
  */
 
 export interface ParsedScripts {

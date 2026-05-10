@@ -432,9 +432,22 @@ export function ScriptContext_Enable(): void {
 }
 
 /** 1:1 décomp `RunScriptImmediately(const u8 *ptr)`. Run synchronous (=
- *  utilisé par OnTransition / OnLoad / OnWarp). */
+ *  utilisé par OnTransition / OnLoad / OnWarp).
+ *
+ *  Audit session 126 LOT C10 : fallback common scripts si label pas dans
+ *  `_scriptsByLabel`. Permet `RunScriptImmediately('EventScript_ResetAllMap
+ *  Flags')` AVANT que la 1ère map soit loaded (= use case new-game-init).
+ *  Le `_commonJson` est chargé au boot par `loadCommonScripts`. */
 export function RunScriptImmediately(label: string): void {
-  const opcodes = _scriptsByLabel.get(label);
+  let opcodes = _scriptsByLabel.get(label);
+  if (!opcodes) {
+    // Fallback common scripts (= avant que loadMapScripts soit call).
+    const commonLines = _commonJson?.scripts?.[label];
+    if (commonLines) {
+      opcodes = commonLines.map(parseOpcode);
+      _scriptsByLabel.set(label, opcodes);  // cache pour next call
+    }
+  }
   if (!opcodes) {
     console.warn(`[script-runtime] RunScriptImmediately: script '${label}' not found`);
     return;
@@ -446,6 +459,13 @@ export function RunScriptImmediately(label: string): void {
     if (!RunScriptCommand(sImmediateScriptContext)) return;
   }
   console.warn(`[script-runtime] RunScriptImmediately(${label}) didn't terminate after 100 ticks`);
+}
+
+/** Audit session 126 LOT C10 : ensure common scripts are loaded. Public
+ *  accessor pour modules qui doivent run un script common avant que la
+ *  1ère map soit loaded (= ex. new-game-init). */
+export async function ensureCommonScriptsLoaded(): Promise<void> {
+  await _loadCommonScripts();
 }
 
 // ─── Map script hooks (= 1:1 décomp `RunOn*MapScript`) ──────────────────────
