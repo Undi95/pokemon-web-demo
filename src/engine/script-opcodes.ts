@@ -11,7 +11,7 @@
 import {
   registerOpcode, type ScriptContext,
   ScriptJump, ScriptCall, ScriptReturn, StopScript,
-  SetupNativeScript, getScript, getText,
+  SetupNativeScript, getScript, getText, getOpcodeHandler,
 } from './script-runtime';
 import {
   FlagSet, FlagClear, FlagGet, VarSet, VarGet, Compare,
@@ -1868,8 +1868,34 @@ registerOpcode('takemoney', (_ctx, args) => {
   return false;
 });
 
-/** 1:1 décomp `addtronyc_extras` Pokemon-related. Stub. */
-registerOpcode('givepokemon', (_ctx, _args) => false);
+/** 1:1 décomp `ScrCmd_givemon` (scrcmd.c) :
+ *    species = VarGet(args[0]); level = VarGet(args[1]); item = VarGet(args[2]);
+ *    ScriptGiveMon(species, level, item, 0, 0, 0);
+ *  Audit session 126 (post-test) : avant no-op → cadeaux Pokémon broken
+ *  (= Wally Ralts, in-game trades, etc). Maintenant : créer mon + addToParty. */
+registerOpcode('givepokemon', (_ctx, args) => {
+  const speciesArg = args[0] ?? '';
+  const level = parseValue(args[1] ?? '5') || 5;
+  // Resolve species : literal SPECIES_X ou VAR_X.
+  let speciesName = speciesArg;
+  if (!speciesName.startsWith('SPECIES_')) {
+    const num = VarGet(speciesArg);
+    speciesName = reverseDecompConstant(num, 'SPECIES_') ?? `SPECIES_${num}`;
+  }
+  void (async () => {
+    try {
+      const { createPokemonInstance } = await import('./pokemon');
+      const mon = createPokemonInstance(speciesName, level);
+      const ok = gameState.addToParty(mon);
+      gameState.setVar('VAR_RESULT', ok ? 0 : 2);  // 0=success, 1=full, 2=fail
+      console.log(`[opcode givepokemon] ${speciesName} Lv${level} → ${ok ? 'added' : 'party full'}`);
+    } catch (e) {
+      console.warn('[opcode givepokemon] failed:', e);
+      gameState.setVar('VAR_RESULT', 2);
+    }
+  })();
+  return false;
+});
 
 /** 1:1 décomp `ScrCmd_checkmoneyforshop` :
  *    gSpecialVar_Result = (gSaveBlock1Ptr->money >= amount);
@@ -1917,8 +1943,10 @@ registerOpcode('turnvobject', (_ctx, _args) => false);
 // s'ouvrent plus pour le player. Reported by user. Removed.
 // setdoor_opened/setdoor_closed sont des opcodes différents (= snake_case avec
 // underscore), pas dupliqués, on les garde.
-registerOpcode('setdoor_opened', (_ctx, _args) => false);
-registerOpcode('setdoor_closed', (_ctx, _args) => false);
+// Alias setdoor_opened/setdoor_closed → versions handled par setdooropen/setdoorclosed.
+// 1:1 décomp scrcmd : these are just naming variants.
+registerOpcode('setdoor_opened', (ctx, args) => getOpcodeHandler('setdooropen')?.(ctx, args) ?? false);
+registerOpcode('setdoor_closed', (ctx, args) => getOpcodeHandler('setdoorclosed')?.(ctx, args) ?? false);
 registerOpcode('addelevmenuitem', (_ctx, _args) => false);
 registerOpcode('showelevmenu', (_ctx, _args) => false);
 /** 1:1 décomp `ScrCmd_checkcoins` (scrcmd.c) :
@@ -2097,9 +2125,23 @@ registerOpcode('lockfortrainer', (_ctx, _args) => false);
 // HOTFIX 2026-05-09 : faceplayer/turnobject sont déjà registered avec les vraies
 // implementations plus haut (lignes 496, 505). Les stubs no-op qui étaient ici
 // écrasaient → NPCs ne se tournent plus vers le player. Reported by user. Removed.
-registerOpcode('vmessage', (_ctx, _args) => false);
-registerOpcode('vmsgbox', (_ctx, _args) => false);
-registerOpcode('vbufferstring', (_ctx, _args) => false);
+// 1:1 décomp `ScrCmd_vmessage / vmsgbox / vbufferstring` (scrcmd.c) :
+// Versions "v" prennent un VAR_X qui contient une string offset (= multi-language
+// dynamic). Notre runtime est FR-only → traite comme alias des versions normales.
+registerOpcode('vmessage', (ctx, args) => getOpcodeHandler('message')?.(ctx, args) ?? false);
+registerOpcode('vmsgbox', (ctx, args) => getOpcodeHandler('msgbox')?.(ctx, args) ?? false);
+registerOpcode('vbufferstring', (ctx, args) => getOpcodeHandler('bufferstring')?.(ctx, args) ?? false);
+
+// 1:1 décomp `ScrCmd_addcoins` (scrcmd.c) : block1.coins += amount, cap 9999.
+registerOpcode('addcoins', (ctx, args) => getOpcodeHandler('givecoins')?.(ctx, args) ?? false);
+
+// 1:1 décomp `ScrCmd_messageinstant` (scrcmd.c) : msgbox sans typewriter effect
+// (= text appears all at once instead of char-by-char). MVP : alias message.
+registerOpcode('messageinstant', (ctx, args) => getOpcodeHandler('message')?.(ctx, args) ?? false);
+
+// 1:1 décomp `ScrCmd_warpwhitefade` (scrcmd.c) : warp avec white fade
+// transition (= rare, used Sky Pillar etc.). MVP : alias warp normal.
+registerOpcode('warpwhitefade', (ctx, args) => getOpcodeHandler('warp')?.(ctx, args) ?? false);
 registerOpcode('checkpartymove', (_ctx, _args) => {
   gameState.setVar('VAR_RESULT', 0);
   return false;

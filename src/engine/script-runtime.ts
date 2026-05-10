@@ -315,6 +315,12 @@ export function registerOpcode(name: string, handler: OpcodeHandler): void {
   _handlers.set(name, handler);
 }
 
+/** Audit session 126 (post-test) : public accessor pour aliasing opcodes
+ *  (= setdoor_opened → setdooropen). Returns undefined si pas registered. */
+export function getOpcodeHandler(name: string): OpcodeHandler | undefined {
+  return _handlers.get(name);
+}
+
 /** Lookup handler. Si pas trouvé : warn une fois, then noop. */
 const _warnedMissing = new Set<string>();
 function dispatchOpcode(ctx: ScriptContext, op: Opcode): boolean {

@@ -540,6 +540,92 @@ registerSpecial('BufferFavorLadyRequest', () => { /* no-op */ });
 registerSpecial('GetDaycareState', () => 0);
 // IsTrainerRegistered + IsWirelessContest already registered in iter7/iter9.
 
+// ─── Audit session 126 (post-test) : specials wire batch ─────────────────────
+// 161 specials missing détectés via scripts/find-missing-specials.mjs. La plupart
+// sont post-game (Frontier/Tower/Museum). Voici les wired pour le path normal :
+
+import { resolveDecompConstant } from './decomp-constants';
+
+/** 1:1 décomp `BufferMonNickname` (pokemon_util.c) :
+ *    GetMonData(&gPlayerParty[gSpecialVar_0x8004], MON_DATA_NICKNAME, dest);
+ *  Utilisé par scripts give Pokémon, daycare retrieve, etc. Buffer dans
+ *  STR_VAR_1 le nickname du party[VAR_0x8004]. */
+registerSpecial('BufferMonNickname', () => {
+  const slot = gameState.getVar?.('VAR_0x8004') ?? 0;
+  const mon = gameState.party?.[slot];
+  setStringVar(1, mon?.nickname || mon?.speciesNameFr || '???');
+  return 0;
+});
+
+/** 1:1 décomp `ScriptGetPartyMonSpecies` :
+ *    return GetMonData(&gPlayerParty[VAR_0x8004], MON_DATA_SPECIES);
+ *  Utilisé par scripts pour check le species du Pokémon en slot. */
+registerSpecial('ScriptGetPartyMonSpecies', () => {
+  const slot = gameState.getVar?.('VAR_0x8004') ?? 0;
+  const mon = gameState.party?.[slot];
+  if (!mon?.species) return 0;
+  // Resolve species name → numeric ID via constants.
+  return mon.species.startsWith('SPECIES_')
+    ? (resolveDecompConstant(mon.species) ?? 0)
+    : 0;
+});
+
+/** 1:1 décomp `GetPlayerAvatarBike` (= field_player_avatar.c) :
+ *    return PlayerGetAvatarFlags() & PLAYER_AVATAR_FLAG_*BIKE;
+ *  Pour MVP (no bike yet), retourne 0 (= pas en vélo). */
+registerSpecial('GetPlayerAvatarBike', () => 0);
+
+/** 1:1 décomp `ShowMapNamePopup` (= map_name_popup.c) :
+ *    Show the map name popup at top-left for ~2s. */
+registerSpecial('ShowMapNamePopup', () => {
+  // Notre runtime affiche déjà le popup via overworld → handled. No-op safe.
+  return 0;
+});
+
+/** 1:1 décomp `IsSelectedMonEgg` :
+ *    return GetMonData(party[VAR_0x8004], MON_DATA_IS_EGG); */
+registerSpecial('IsSelectedMonEgg', () => {
+  const slot = gameState.getVar?.('VAR_0x8004') ?? 0;
+  const mon = gameState.party?.[slot];
+  return (mon as { isEgg?: number })?.isEgg ? 1 : 0;
+});
+
+/** 1:1 décomp `StorePlayerCoordsInVars` (event_object_movement.c) :
+ *    *VarGetPtr(VAR_0x8004) = gPlayerAvatar.x;
+ *    *VarGetPtr(VAR_0x8005) = gPlayerAvatar.y;
+ *  Used par scripts qui veulent positionner un NPC à coords player. */
+registerSpecial('StorePlayerCoordsInVars', () => {
+  const pa = (globalThis as { gPlayerAvatar?: { x: number; y: number } }).gPlayerAvatar;
+  if (pa) {
+    gameState.setVar?.('VAR_0x8004', pa.x);
+    gameState.setVar?.('VAR_0x8005', pa.y);
+  }
+  return 0;
+});
+
+/** Misc post-game stubs (= return 0/no-op pour éviter NaN VAR_RESULT) :
+ *  Battle Frontier, Museum, Mirage Island, Painting, etc. */
+const _STUB_RETURN_0_SPECIALS = [
+  'StartRegiBattle', 'MoveElevator', 'GetFrontierBattlePoints', 'UpdateBattlePointsWindow',
+  'CountPlayerMuseumPaintings', 'CloseDeptStoreElevatorWindow',
+  'BufferMoveDeleterNicknameAndMove', 'DoSealedChamberShakingEffect_Short',
+  'RemoveBerryPowderVendorMenu', 'OffsetCameraForBattle', 'DoBattlePyramidMonsHaveHeldItem',
+  'SaveForBattleTowerLink', 'SetBattleTowerLinkPlayerGfx', 'LinkRetireStatusWithBattleTowerPartner',
+  'ShowFrontierGamblerGoMessage', 'GiveFrontierBattlePoints', 'CloseBattleFrontierTutorWindow',
+  'GetDewfordHallPaintingNameIndex', 'GameClear', 'SetMewAboveGrass',
+  'RotatingGate_InitPuzzle', 'RotatingGate_InitPuzzleAndGraphics', 'ShouldDoBrailleRegicePuzzle',
+  'SaveMuseumContestPainting', 'GiveMonArtistRibbon', 'TryPutLotteryWinnerReportOnAir',
+  'ScriptMenu_CreateLilycoveSSTidalMultichoice', 'GetLilycoveSSTidalSelection',
+  'DoOrbEffect', 'FadeOutOrbEffect', 'MauvilleGymDeactivatePuzzle',
+  'GetWeekCount', 'ReducePlayerPartyToSelectedMons', 'CableCarWarp', 'CableCar',
+  'LoopWingFlapSE', 'GetDaysUntilPacifidlogTMAvailable', 'SetPacifidlogTMReceivedDay',
+  'IsMirageIslandPresent', 'HasEnoughBerryPowder',
+  'GetSeedotSizeRecordInfo', 'GetLotadSizeRecordInfo',
+];
+for (const name of _STUB_RETURN_0_SPECIALS) {
+  registerSpecial(name, () => 0);
+}
+
 /** Boot marker — confirme que le registry a été importé au boot.
  *  Utilisé par debug pour vérifier que le module est loaded. */
-console.log('[specials-registry] loaded — 130 stubs registered (Phase 5.7+ iter10)');
+console.log(`[specials-registry] loaded — ${130 + 6 + _STUB_RETURN_0_SPECIALS.length} stubs registered (Phase 5.7+ iter10 + audit126)`);
