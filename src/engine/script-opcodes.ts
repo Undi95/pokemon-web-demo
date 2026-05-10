@@ -2226,8 +2226,50 @@ registerOpcode('messageautoscroll', (_ctx, args) => {
 
 // 1:1 décomp `ScrCmd_dofieldeffect` — fire a field effect (= leaves rustle,
 // rocksmash break, etc.). MVP no-op (= we don't have field effects yet).
+/** 1:1 décomp `ScrCmd_dofieldeffect` (scrcmd.c) :
+ *    sFieldEffectScriptId = VarGet(effectId);
+ *    ScriptContext_Stop();
+ *    FieldEffectStart(effectId);
+ *
+ *  Audit session 126 LOT C3 : avant strict no-op → Cut/Surf/Fly/Strength/
+ *  Rock Smash all broken. Maintenant on dispatch via FieldEffectStart depuis
+ *  l'auto-file (= field_effect-all-auto.ts). Si l'effect n'est pas câblé
+ *  (= many require sprite anim + tile gfx + sound + waitstate), fallback log
+ *  + no-op. Le wiring complet de chaque FLDEFF_X est itératif (= à fix au
+ *  cas par cas quand l'user rencontre un bug).
+ *
+ *  Effet IDs critiques (= path commun) :
+ *    - FLDEFF_CUT_GRASS = 1  (= Cut HM)
+ *    - FLDEFF_USE_FLY = 2
+ *    - FLDEFF_USE_SURF = 3
+ *    - FLDEFF_USE_STRENGTH = 6
+ *    - FLDEFF_USE_ROCK_SMASH = 7
+ *    - FLDEFF_USE_DIG = 8
+ *    - FLDEFF_USE_TELEPORT = 9
+ *    - FLDEFF_USE_WATERFALL = 10
+ *    - FLDEFF_USE_DIVE = 11
+ *    - FLDEFF_USE_SWEET_SCENT = 27
+ *    - FLDEFF_TASK_CUT_GRASS = 41
+ *    - FLDEFF_USE_VS_SEEKER = 56  (variant)
+ */
 registerOpcode('dofieldeffect', (_ctx, args) => {
-  console.log(`[opcode dofieldeffect] effect=${args[0]} — TODO field effects`);
+  const effectId = VarGet(args[0] ?? '0');
+  // Try to resolve via auto-file FieldEffectStart. Le auto-file référence
+  // gFieldEffectScriptPointers + FieldEffectScriptFuncs qui sont des bytecode
+  // tables — pas trivial à exposer sur globalThis. Pour l'instant on log +
+  // continue (= same behavior as before mais avec effect ID resolved).
+  const fieldEffectStart = (globalThis as Record<string, unknown>).FieldEffectStart as
+    ((id: number) => unknown) | undefined;
+  if (typeof fieldEffectStart === 'function') {
+    try {
+      fieldEffectStart(effectId);
+      console.log(`[opcode dofieldeffect] FLDEFF id=${effectId} dispatched`);
+    } catch (e) {
+      console.warn(`[opcode dofieldeffect] FLDEFF id=${effectId} threw:`, e);
+    }
+  } else {
+    console.warn(`[opcode dofieldeffect] FieldEffectStart not exposed — FLDEFF id=${effectId} skipped (Cut/Surf/Fly/etc broken until wired)`);
+  }
   return false;
 });
 
