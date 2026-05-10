@@ -143,6 +143,16 @@ const DESC_WINDOW_TEMPLATE: WindowTemplate = {
 
 // ─── Module state ────────────────────────────────────────────────────────────
 
+/** Phase de la state machine open/close du bag (= 1:1 décomp).
+ *  - 'idle' : fermé
+ *  - 'fading_in' : open démarré, fade FROM BLACK en cours, bag setup mais pas
+ *    encore "interactive" (= waitfade)
+ *  - 'open' : bag visible et interactive
+ *  - 'fading_out' : close démarré, fade TO BLACK en cours, bag encore setup
+ *    (= visuel encore là). Quand fade fini → teardown + onClose. */
+type Phase = 'idle' | 'fading_in' | 'open' | 'fading_out';
+let _phase: Phase = 'idle';
+
 let _isOpen = false;
 let _pocketIdx = 0;
 let _cursorPos = 0;     // 0..VISIBLE_ROWS-1, position du cursor dans la fenêtre
@@ -484,11 +494,15 @@ export function IsBagScreenOpen(): boolean {
 /** Open le bag screen. Le caller passe un onClose callback (= start-menu doit
  *  ré-afficher son main menu après que l'user appuie B ici).
  *
- *  Si les assets ne sont pas encore chargés, on les load async puis on draw
- *  le sprite. Les windows text marchent déjà sans assets — UX dégradée OK. */
+ *  1:1 décomp Task_FadeAndCloseBagMenu / SetupBagMenu pattern :
+ *    - Setup bag (= load assets, draw windows)
+ *    - BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK) → fade IN
+ *      depuis BLACK pendant 16 frames
+ *    - Wait fade fini → bag interactive */
 export function OpenBagScreen(onClose: () => void): void {
   if (_isOpen) return;
   _isOpen = true;
+  _phase = 'fading_in';
   _pocketIdx = 0;
   _cursorPos = 0;
   _scrollOffset = 0;
@@ -530,6 +544,15 @@ export function OpenBagScreen(onClose: () => void): void {
   });
 
   PlaySE(6 /* SE_WIN_OPEN */);
+
+  // 1:1 décomp BagMenu_InitBGs case 20 :
+  //   BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
+  //   gPaletteFade.bufferTransferDisabled = FALSE;
+  // → fade IN depuis BLACK (startY=16=fully black, endY=0=visible).
+  const rt = getRuntime();
+  if (rt) {
+    rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0 /* RGB_BLACK */);
+  }
 }
 
 /** Setup BG2 pour render le tilemap fond menu.bin du décomp.
@@ -564,10 +587,14 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
   vramSnap.set(rt.gba.vram.subarray(mapOff, mapOff + mapLen), charLen);
   vramSnap.set(rt.gba.vram.subarray(bg0MapOff, bg0MapOff + bg0MapLen), charLen + mapLen);
 
-  // Snapshot sub-palette 0 (= 16 u16 = 32 bytes) avant de la clobber.
-  // gPlttBufferUnfaded est un Uint16Array indexé par u16.
-  const paletteSnap = new Uint16Array(16);
-  for (let i = 0; i < 16; i++) {
+  // Snapshot sub-palettes 0 + 1 (= 32 u16 = 64 bytes) avant de les clobber.
+  // On charge `assets.bgPalette` (= 32 entries de menu_male.pal) à offset 0,
+  // donc les 2 sub-palettes 0 et 1 sont écrasées. La sub-palette 1 contient
+  // probably des couleurs spécifiques aux ombres/borders des metatiles
+  // overworld → si on restore juste sub-palette 0, on a leak rouge sur
+  // les ombres des panneaux/mailboxes (= bug user report 2026-05-10 polish).
+  const paletteSnap = new Uint16Array(32);
+  for (let i = 0; i < 32; i++) {
     paletteSnap[i] = rt.gPlttBufferUnfaded.get?.(i) ?? 0;
   }
 
@@ -735,9 +762,28 @@ function _teardownBackgroundTilemap(): void {
   _savedBgState = null;
 }
 
+/** Démarre le close du bag screen (= fade out). Le teardown réel (= restore
+ *  VRAM/palette/sprites + onClose callback) se passe au tick quand fade fini.
+ *  1:1 décomp Task_FadeAndCloseBagMenu :
+ *    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+ *    gTasks[taskId].func = Task_CloseBagMenu;  // wait fade dans ce task */
 export function CloseBagScreen(): void {
+  if (!_isOpen || _phase === 'fading_out') return;
+  _phase = 'fading_out';
+  // Fade OUT vers BLACK (startY=0=visible, endY=16=fully black).
+  const rt = getRuntime();
+  if (rt) {
+    rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0 /* RGB_BLACK */);
+  }
+}
+
+/** Teardown réel — appelé après que le fade out soit fini (= 1:1 décomp
+ *  Task_CloseBagMenu when !gPaletteFade.active). Restore VRAM, palettes,
+ *  sprites, puis call onClose (= return start menu). */
+function _doTeardown(): void {
   if (!_isOpen) return;
   _isOpen = false;
+  _phase = 'idle';
   // Restore overworld BG2 + VRAM AVANT de remove les windows (= sinon les
   // windows hidden + overworld pas restored = écran noir 1 frame).
   _teardownBackgroundTilemap();
@@ -774,6 +820,12 @@ export function CloseBagScreen(): void {
   }
   const cb = _onClose;
   _onClose = null;
+  // Fade IN depuis BLACK pour le retour au start menu (= overworld revient
+  // visible). 1:1 décomp pattern : exitCallback re-init et fade IN.
+  const rt = getRuntime();
+  if (rt) {
+    rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0 /* RGB_BLACK */);
+  }
   cb?.();
 }
 
@@ -781,6 +833,18 @@ export function CloseBagScreen(): void {
  *  Caller doit consume les keys après cet appel. */
 export function TickBagScreen(newKeys: number): void {
   if (!_isOpen) return;
+
+  // Phase machine : pendant fade in/out, ignore inputs (= 1:1 décomp Task
+  // attend !gPaletteFade.active). Quand fade out fini → trigger _doTeardown.
+  const rt = getRuntime();
+  if (_phase === 'fading_in') {
+    if (rt && !rt.gPaletteFade.active) _phase = 'open';
+    return;  // ignore inputs pendant fade
+  }
+  if (_phase === 'fading_out') {
+    if (rt && !rt.gPaletteFade.active) _doTeardown();
+    return;  // ignore inputs pendant fade
+  }
 
   // Note : pas besoin de hide les sprites au tick. Le hook _syncSubspriteOam
   // installé au open s'exécute APRÈS syncSpritesToOam chaque frame et clear
