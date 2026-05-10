@@ -30,7 +30,7 @@ import {
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset } from './gba-text-system';
 import { gameState } from './game-state';
 import { getItem, getItemNameFr, getItemDescriptionFr } from './data-tables';
 import { PlaySE, LoadPalette, getRuntime } from './decomp-globals';
@@ -41,6 +41,8 @@ import { getString } from './gba-strings';
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const FONT_NORMAL = 1;
+/** 1:1 décomp item_menu.c sItemListMenu.fontId = FONT_NARROW (= 2). */
+const FONT_NARROW = 2;
 const TEXT_SKIP_DRAW = 255;
 /** 1:1 décomp item_menu.c:387 sFontColorTable[COLORID_NORMAL] :
  *    {TEXT_COLOR_TRANSPARENT=0, TEXT_COLOR_WHITE=1, TEXT_COLOR_LIGHT_GRAY=3}
@@ -343,32 +345,38 @@ function _drawList(): void {
     const idx = _scrollOffset + i;
     if (idx >= items.length) break;
     const slot = items[idx];
-    const cursor = (i === _cursorPos) ? '>' : ' ';
-    if (slot.itemKey === CLOSE_BAG_KEY) {
-      // 1:1 décomp gText_CloseBag = "FERMER LE SAC" via strings.json.
+    const y = 1 + i * 16;
+    // 1:1 décomp item_menu.c:1026 BagMenu_PrintCursorAtPos :
+    //   BagMenu_Print(WIN_ITEM_LIST, FONT_NORMAL, gText_SelectorArrow2, 0, y, ...)
+    // Cursor ▶ rendu en FONT_NORMAL à x=0, indépendamment du nom item.
+    if (i === _cursorPos) {
       AddTextPrinterParameterized3(
-        _listWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW,
-        `${cursor}${getString('gText_CloseBag')}`,
+        _listWid, FONT_NORMAL, 0, y, COLOR_MAIN, TEXT_SKIP_DRAW, '▶',
+      );
+    }
+    if (slot.itemKey === CLOSE_BAG_KEY) {
+      // 1:1 décomp gText_CloseBag = "FERMER LE SAC". Pas de quantity.
+      // Position x=8 = après le cursor.
+      AddTextPrinterParameterized3(
+        _listWid, FONT_NARROW, 8, y, COLOR_MAIN, TEXT_SKIP_DRAW,
+        getString('gText_CloseBag'),
       );
       continue;
     }
+    // 1:1 décomp item_menu.c:262 sItemListMenu.fontId = FONT_NARROW.
+    // Item name à x=8 (= après cursor at x=0).
     const name = getItemNameFr(slot.itemKey);
-    const qty = slot.quantity;
     AddTextPrinterParameterized3(
-      _listWid, FONT_NORMAL, 4, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW,
-      `${cursor}${name}`,
+      _listWid, FONT_NARROW, 8, y, COLOR_MAIN, TEXT_SKIP_DRAW, name,
     );
-    const qtyStr = `x${qty}`;
+    // 1:1 décomp item_menu.c:986 BagMenu_ItemPrintCallback :
+    //   GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 119)
+    // Quantity right-aligned à x=119 (= droite de la list window, avant le frame).
+    const qtyStr = `×${slot.quantity}`;  // × = U+00D7 multiplication sign
+    const qtyX = GetStringRightAlignXOffset(qtyStr, 119);
     AddTextPrinterParameterized3(
-      _listWid, FONT_NORMAL, 78, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
+      _listWid, FONT_NARROW, qtyX, y, COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
     );
-  }
-  // Scroll indicators.
-  if (_scrollOffset > 0) {
-    AddTextPrinterParameterized3(_listWid, FONT_NORMAL, 95, 1, COLOR_MAIN, TEXT_SKIP_DRAW, '^');
-  }
-  if (_scrollOffset + VISIBLE_ROWS < items.length) {
-    AddTextPrinterParameterized3(_listWid, FONT_NORMAL, 95, 1 + (VISIBLE_ROWS - 1) * 16, COLOR_MAIN, TEXT_SKIP_DRAW, 'v');
   }
   PutWindowTilemap(_listWid);
   CopyWindowToVram(_listWid, 3);
