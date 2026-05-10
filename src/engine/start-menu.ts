@@ -69,6 +69,9 @@ import { CB2_InitOptionMenu } from './decomp-data/auto/src-all/option_menu-all-a
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { preloadOptionMenuAssets } from './option-menu-impl';
 import { OpenBagScreen, TickBagScreen } from './bag-screen';
+import { OpenPartyScreen, TickPartyScreen } from './party-screen';
+import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer-card-screen';
+import { OpenPokedexScreen, TickPokedexScreen } from './pokedex-screen';
 
 // ─── Types + state ───────────────────────────────────────────────────────────
 
@@ -189,42 +192,55 @@ function showMessageThenClose(text: string): boolean {
   return false;
 }
 
-/** POKéDEX action : compteur vus/capturés (= pré-Pokédex UI complet Phase 6+). */
+/** POKéDEX action : ouvre vraie UI Pokédex (compteurs + stats).
+ *  Session 127 : remplace le `showMessageThenReturn` par pokedex-screen. */
 function pokedexAction(): boolean {
-  // 1:1 décomp `GetPokedexCaughtCount` / `GetPokedexSeenCount` — read flags
-  // `FLAG_POKEDEX_FLAG_X_CAUGHT/SEEN` dans block1.flags.
-  // Phase 6+ : vraie UI Pokédex avec list 386 mons + sprites + descriptions.
-  let caughtCount = 0;
-  let seenCount = 0;
-  const allFlags = (gameState as unknown as { getAllFlagNames?: () => string[] }).getAllFlagNames?.() ?? [];
-  for (const f of allFlags) {
-    if (f.startsWith('FLAG_DEX_FLAG_') || f.startsWith('FLAG_POKEDEX_')) {
-      if (f.endsWith('_CAUGHT')) caughtCount++;
-      if (f.endsWith('_SEEN')) seenCount++;
-    }
-  }
-  const hasDex = gameState.hasFlag('FLAG_SYS_POKEDEX_GET');
-  if (!hasDex) {
+  if (!gameState.hasFlag('FLAG_SYS_POKEDEX_GET')) {
     return showMessageThenReturn('Le POKéDEX n\'est pas\nencore disponible.');
   }
-  return showMessageThenReturn(
-    `POKéDEX :\nVus : ${seenCount}\nCapturés : ${caughtCount}`,
-  );
+  if (sWindowId >= 0) {
+    ClearStdWindowAndFrame(sWindowId, true);
+    RemoveWindow(sWindowId);
+    sWindowId = -1;
+  }
+  sSubState = 'pokedex_screen';
+  try {
+    OpenPokedexScreen(() => {
+      sSubState = 'menu';
+      _spawnMenuWindow();
+    });
+  } catch (e) {
+    console.error('[start-menu] OpenPokedexScreen failed', e);
+    sSubState = 'menu';
+    _spawnMenuWindow();
+  }
+  return false;
 }
 
-/** POKéMON action : list party avec Lv + HP. Phase 6+ = vraie UI sprites + moves. */
+/** POKéMON action : ouvre vraie UI party avec slots + moves + HP color-coded.
+ *  Session 127 : remplace l'ancien `showMessageThenReturn` text par le party-screen. */
 function pokemonAction(): boolean {
   if (gameState.party.length === 0) {
     return showMessageThenReturn('Vous n\'avez pas\nencore de POKéMON.');
   }
-  const lines = gameState.party.map((p, i) => {
-    const name = p.nickname || p.speciesNameFr || p.species?.replace(/^SPECIES_/, '') || '???';
-    const lv = p.level ?? '?';
-    const hp = p.hp ?? '?';
-    const maxHp = p.maxHp ?? p.hp ?? '?';
-    return `${i + 1}.${name} N.${lv} ${hp}/${maxHp}`;
-  });
-  return showMessageThenReturn(`Équipe POKéMON :\n${lines.join('\n')}`);
+  // Hide start menu window — party screen prend l'écran.
+  if (sWindowId >= 0) {
+    ClearStdWindowAndFrame(sWindowId, true);
+    RemoveWindow(sWindowId);
+    sWindowId = -1;
+  }
+  sSubState = 'party_screen';
+  try {
+    OpenPartyScreen(() => {
+      sSubState = 'menu';
+      _spawnMenuWindow();
+    });
+  } catch (e) {
+    console.error('[start-menu] OpenPartyScreen failed', e);
+    sSubState = 'menu';
+    _spawnMenuWindow();
+  }
+  return false;
 }
 
 /** SAC action : open vrai bag screen avec 5 pockets + scroll + descriptions.
@@ -257,14 +273,26 @@ function sacAction(): boolean {
   return false;
 }
 
-/** {PLAYER} action : trainer card mini-fiche. */
+/** {PLAYER} action : ouvre vraie UI Carte Dresseur.
+ *  Session 127 : remplace le `showMessageThenReturn` par trainer-card-screen. */
 function playerCardAction(): boolean {
-  const name = gameState.playerName ?? 'PLAYER';
-  const gender = gameState.gender === 'MALE' ? 'GARÇON' : 'FILLE';
-  const partySize = gameState.partySize;
-  return showMessageThenReturn(
-    `DRESSEUR : ${name}\nSEXE : ${gender}\nÉQUIPE : ${partySize}/6`,
-  );
+  if (sWindowId >= 0) {
+    ClearStdWindowAndFrame(sWindowId, true);
+    RemoveWindow(sWindowId);
+    sWindowId = -1;
+  }
+  sSubState = 'trainer_card_screen';
+  try {
+    OpenTrainerCardScreen(() => {
+      sSubState = 'menu';
+      _spawnMenuWindow();
+    });
+  } catch (e) {
+    console.error('[start-menu] OpenTrainerCardScreen failed', e);
+    sSubState = 'menu';
+    _spawnMenuWindow();
+  }
+  return false;
 }
 
 /** 1:1 décomp start_menu.c:1332-1393 ShowSaveInfoWindow.
@@ -617,10 +645,13 @@ export function TickStartMenu(): void {
       // besoin de check IsBagScreenOpen ici.
       break;
     case 'party_screen':
+      TickPartyScreen(newKeys);
+      break;
     case 'trainer_card_screen':
+      TickTrainerCardScreen(newKeys);
+      break;
     case 'pokedex_screen':
-      // TODO session 127 next : tick les autres screens. Pour l'instant fallback
-      // closing comportement (= quand l'user revient via leur onClose).
+      TickPokedexScreen(newKeys);
       break;
   }
 }
