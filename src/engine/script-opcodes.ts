@@ -1785,7 +1785,15 @@ registerOpcode('giveitem', (_ctx, args) => {
 });
 
 /** 1:1 décomp `givecoins` macro. Stub. */
-registerOpcode('givecoins', (_ctx, _args) => false);
+/** 1:1 décomp `ScrCmd_givecoins` (scrcmd.c) :
+ *    GiveCoins(VarGet(amount));  // block1.coins += amount, cap 9999. */
+registerOpcode('givecoins', (_ctx, args) => {
+  const amount = VarGet(args[0] ?? '0');
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { coins?: number } | undefined;
+  if (block1) block1.coins = Math.min(9999, (block1.coins ?? 0) + amount);
+  return false;
+});
 
 /** 1:1 décomp `ScrCmd_addmoney` (scrcmd.c) :
  *    AddMoney(&gSaveBlock1Ptr->money, VarGet(amount));
@@ -1829,8 +1837,26 @@ registerOpcode('checkmoney', (_ctx, args) => {
 
 /** 1:1 décomp `startminigame_*` etc. Stubs no-op. */
 registerOpcode('cmd5e', (_ctx, _args) => false);
-registerOpcode('setweather', (_ctx, _args) => false);
-registerOpcode('doweather', (_ctx, _args) => false);
+
+/** 1:1 décomp `ScrCmd_setweather` (scrcmd.c) :
+ *    SetSavedWeather(VarGet(weather));
+ *  Stocke dans block1.weather. Effet visuel applied au prochain doweather. */
+registerOpcode('setweather', (_ctx, args) => {
+  const weather = VarGet(args[0] ?? '0');
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { weather?: number } | undefined;
+  if (block1) block1.weather = weather;
+  return false;
+});
+
+/** 1:1 décomp `ScrCmd_doweather` (scrcmd.c) :
+ *    DoCurrentWeather();  // active le weather sauvegardé
+ *  Pour MVP on log + no-op (= sans repro live d'un cas qui en a besoin). */
+registerOpcode('doweather', (_ctx, _args) => {
+  // TODO : appeler le système weather pour appliquer la weather courante.
+  return false;
+});
+
 registerOpcode('setstepcallback', (_ctx, _args) => false);
 registerOpcode('setmaplayoutindex', (_ctx, _args) => false);
 registerOpcode('setobjectsubpriority', (_ctx, _args) => false);
@@ -1847,11 +1873,27 @@ registerOpcode('setdoor_opened', (_ctx, _args) => false);
 registerOpcode('setdoor_closed', (_ctx, _args) => false);
 registerOpcode('addelevmenuitem', (_ctx, _args) => false);
 registerOpcode('showelevmenu', (_ctx, _args) => false);
-registerOpcode('checkcoins', (_ctx, _args) => {
-  gameState.setVar('VAR_RESULT', 0);
+/** 1:1 décomp `ScrCmd_checkcoins` (scrcmd.c) :
+ *    *(u16 *)VarGetPtr(args[0]) = block1.coins;
+ *  Le résultat va dans la VAR passée en arg, pas VAR_RESULT. */
+registerOpcode('checkcoins', (_ctx, args) => {
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { coins?: number } | undefined;
+  const coins = block1?.coins ?? 0;
+  const dst = args[0] ?? 'VAR_RESULT';
+  if (dst.startsWith('VAR_')) gameState.setVar(dst, coins);
+  else gameState.setVar('VAR_RESULT', coins);
   return false;
 });
-registerOpcode('takecoins', (_ctx, _args) => false);
+/** 1:1 décomp `ScrCmd_takecoins` (scrcmd.c) :
+ *    SubtractCoins(VarGet(amount));  // block1.coins -= amount, floor 0. */
+registerOpcode('takecoins', (_ctx, args) => {
+  const amount = VarGet(args[0] ?? '0');
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { coins?: number } | undefined;
+  if (block1) block1.coins = Math.max(0, (block1.coins ?? 0) - amount);
+  return false;
+});
 registerOpcode('vbuffer', (_ctx, _args) => false);
 
 // ─── Buffer opcodes (= 1:1 décomp scrcmd.c bufferXXX) ────────────────────────
@@ -2184,17 +2226,63 @@ registerOpcode('random', (_ctx, args) => {
 
 // 1:1 décomp `ScrCmd_finditem` — field find item / `setvar VAR_RESULT` if found.
 //   MVP : mark obtained as success (= not blocking flow but no real item).
-registerOpcode('finditem', (_ctx, _args) => {
-  // Note: real impl would load item from event_objects template + add to bag.
-  console.log('[opcode finditem] stub — TODO field item find UI');
-  VarSet('VAR_RESULT', 1);
+/** 1:1 décomp `ScrCmd_finditem` (scrcmd.c) :
+ *    itemId = VarGet(args[0]);
+ *    amount = VarGet(args[1]);
+ *    if (AddBagItem(itemId, amount)) gSpecialVar_Result = 0;
+ *    else gSpecialVar_Result = 1;  // bag full
+ *
+ *  Audit session 126 LOT D4 : avant stub, maintenant vraie impl. Le UI
+ *  "X obtained!" + SE_PIN est handled par le script qui appelle finditem
+ *  (= il enchaîne avec msgbox + playse SE_PIN). On ne fait que add to bag. */
+registerOpcode('finditem', (_ctx, args) => {
+  const itemArg = args[0] ?? '';
+  const amount = parseValue(args[1] ?? '1') || 1;
+  // Resolve itemId : si literal ITEM_X → resolveDecompConstant ; sinon VarGet.
+  let itemId = 0;
+  if (itemArg.startsWith('ITEM_')) {
+    itemId = resolveDecompConstant(itemArg) ?? 0;
+  } else {
+    itemId = VarGet(itemArg);
+  }
+  if (itemId > 0 && AddBagItem(itemArg, amount)) {
+    gSpecialVar.Result = 0;  // success
+  } else {
+    gSpecialVar.Result = 1;  // bag full / invalid
+  }
   return false;
 });
 
 // 1:1 décomp `ScrCmd_pokemart` — open pokemart UI with mart list pointer.
 //   MVP : log + skip (= no shop UI yet).
+/** 1:1 décomp `ScrCmd_pokemart` (scrcmd.c) :
+ *    products = (const u16 *)ScriptReadWord(ctx);
+ *    CreatePokemartMenu(products);
+ *    ScriptContext_Stop();
+ *
+ *  Audit session 126 LOT D3 : avant log + no-op, le shop UI complet est
+ *  ~3000 lignes décomp (= shop.c). Pour MVP on tente d'invoquer
+ *  CreatePokemartMenu via globalThis. Si non exposé : log + skip.
+ *
+ *  Note : `args[0]` est typiquement un POINTER LABEL (= "DewfordTown_Mart_
+ *  Pokemart") qui est résolu au compile time vers une array de u16 itemIds.
+ *  Notre runtime a probably la liste dans le scripts JSON sous ce label. */
 registerOpcode('pokemart', (_ctx, args) => {
-  console.log(`[opcode pokemart] '${args[0]}' — TODO pokemart UI`);
+  const productsLabel = args[0] ?? '';
+  const createPokemartMenu = (globalThis as Record<string, unknown>).CreatePokemartMenu as
+    ((items: unknown) => void) | undefined;
+  if (typeof createPokemartMenu === 'function') {
+    try {
+      // Pour l'instant on passe le label string ; le auto-file expects un u16*.
+      // À wire proprement : resolve label → array via map scripts data.
+      createPokemartMenu(productsLabel);
+      console.log(`[opcode pokemart] CreatePokemartMenu('${productsLabel}') dispatched`);
+    } catch (e) {
+      console.warn(`[opcode pokemart] CreatePokemartMenu threw:`, e);
+    }
+  } else {
+    console.warn(`[opcode pokemart] '${productsLabel}' — CreatePokemartMenu not exposed (= shop UI ~3000 lignes décomp à wire)`);
+  }
   return false;
 });
 
