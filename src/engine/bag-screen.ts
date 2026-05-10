@@ -242,6 +242,18 @@ let _arrowSinePosLeft = 0;
 let _arrowSinePosRight = 0;
 let _scrollArrowAssetsLoaded = false;
 
+/** OAM ids des 2 flèches UP/DOWN scroll list (= 1:1 décomp item_menu.c:1033
+ *  AddScrollIndicatorArrowPairParameterized(UP, commonX=172, firstY=12,
+ *  secondY=148). Visible quand list overflows. */
+let _arrowUpOamId = -1;
+let _arrowUpOamIndex = -1;
+let _arrowDownOamId = -1;
+let _arrowDownOamIndex = -1;
+/** Sin position pour le bobbing VERTICAL (= 1:1 décomp bounceDir=1, y2 = sin*mult/256).
+ *  UP freq=8, DOWN freq=-8. */
+let _arrowSinePosUp = 0;
+let _arrowSinePosDown = 0;
+
 /** OAM id du rotating ball pendant pocket switch. -1 = pas spawn / animation finie. */
 let _ballOamId = -1;
 let _ballOamIndex = -1;
@@ -911,6 +923,11 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
   // → 2 chevrons LEFT/RIGHT à (28, 16) et (100, 16) bobbing horizontal ±2 px.
   _spawnPocketArrows(assets);
 
+  // 1:1 décomp item_menu.c:1030 CreatePocketScrollArrowPair :
+  //   AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 172, 12, 148, ...);
+  // → 2 flèches UP/DOWN sur le côté droit de la list pour indiquer scrolling.
+  _spawnListScrollArrows();
+
   // 1:1 décomp menu_helpers.c:ResetVramOamAndBgCntRegs effect :
   //   SetGpuReg(REG_OFFSET_DISPCNT, 0); CpuFill32(0, OAM, OAM_SIZE);
   // → clear OAM hardware (= cache tous sprites overworld).
@@ -934,6 +951,8 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
       if (i === _bagSpriteOamIndex) continue;
       if (i === _arrowLeftOamIndex) continue;
       if (i === _arrowRightOamIndex) continue;
+      if (i === _arrowUpOamIndex) continue;
+      if (i === _arrowDownOamIndex) continue;
       if (i === _ballOamIndex) continue;
       r.gba.oam[i].visible = false;
     }
@@ -1110,6 +1129,88 @@ function _tickPocketArrows(): void {
     sRight.x2 = (gSineTable(_arrowSinePosRight) * 2) >> 8;
     // 1:1 décomp tFrequency = -8 → tSinePos -= 8 (u8 wrap → +248).
     _arrowSinePosRight = (_arrowSinePosRight - 8) & 0xFF;
+  }
+}
+
+// ─── Flèches UP/DOWN scroll list (1:1 décomp item_menu.c:1030) ──────────────
+
+/** 1:1 décomp item_menu.c:1033 CreatePocketScrollArrowPair :
+ *    AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 172, 12, 148,
+ *      numItemStacks - numShownItems, TAG_POCKET_SCROLL_ARROW, TAG_POCKET_SCROLL_ARROW,
+ *      &scrollPosition);
+ *  → UP arrow à (172, 12), DOWN arrow à (172, 148). Spawn quand list overflow,
+ *  visible selon scroll position. */
+function _spawnListScrollArrows(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  // Idempotent — gfx + palette déjà loadés par _spawnPocketArrows (= même
+  // scroll_indicator.png + red.pal).
+  if (!_scrollArrowAssetsLoaded) return;
+  const baseTile = SCROLL_ARROW_OBJ_OFFSET / 32;
+  // 1:1 décomp animNum=2 = ANIMCMD_FRAME(4, 30) → tile 4 (= frame UP/DOWN base).
+  // Pour UP : no flip. Pour DOWN : vflip (= animNum=3 ANIMCMD_FRAME(4, 30, 0, 1)).
+  const up = rt.CreateSpriteAtOam({
+    tileId: baseTile + 4, paletteBank: SCROLL_ARROW_OBJ_PAL,
+    x: 172, y: 12,
+    shape: 0, size: 1,
+    priority: 0,
+  });
+  _arrowUpOamId = up.spriteId;
+  _arrowUpOamIndex = up.oamIndex;
+  const down = rt.CreateSpriteAtOam({
+    tileId: baseTile + 4, paletteBank: SCROLL_ARROW_OBJ_PAL,
+    x: 172, y: 148,
+    shape: 0, size: 1,
+    priority: 0,
+  });
+  _arrowDownOamId = down.spriteId;
+  _arrowDownOamIndex = down.oamIndex;
+  const ds = rt.gSprites.get(_arrowDownOamId);
+  if (ds) ds.vFlip = true;
+  _arrowSinePosUp = 0;
+  _arrowSinePosDown = 0;
+}
+
+function _despawnListScrollArrows(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  for (const id of [_arrowUpOamId, _arrowDownOamId]) {
+    if (id < 0) continue;
+    const spr = rt.gSprites.get(id);
+    if (spr) {
+      spr.inUse = false;
+      const oam = rt.gba.oam[spr.oamIndex];
+      if (oam) oam.visible = false;
+    }
+    rt.gSprites.delete(id);
+  }
+  _arrowUpOamId = -1;
+  _arrowUpOamIndex = -1;
+  _arrowDownOamId = -1;
+  _arrowDownOamIndex = -1;
+}
+
+/** 1:1 décomp list_menu.c:1126 Task_ScrollIndicatorArrowPair :
+ *    - UP invisible si scrollOffset == 0 (fullyUpThreshold)
+ *    - DOWN invisible si scrollOffset == numItems - numShown (fullyDownThreshold)
+ *  + bobbing VERTICAL (bounceDir=1, y2 = sin*mult/256, UP freq=+8, DOWN freq=-8). */
+function _tickListScrollArrows(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const items = _currentPocketItems();
+  const maxOffset = Math.max(0, items.length - VISIBLE_ROWS);
+
+  const sUp = _arrowUpOamId >= 0 ? rt.gSprites.get(_arrowUpOamId) : null;
+  if (sUp) {
+    sUp.invisible = (_scrollOffset === 0);
+    sUp.y2 = (gSineTable(_arrowSinePosUp) * 2) >> 8;
+    _arrowSinePosUp = (_arrowSinePosUp + 8) & 0xFF;
+  }
+  const sDown = _arrowDownOamId >= 0 ? rt.gSprites.get(_arrowDownOamId) : null;
+  if (sDown) {
+    sDown.invisible = (_scrollOffset >= maxOffset);
+    sDown.y2 = (gSineTable(_arrowSinePosDown) * 2) >> 8;
+    _arrowSinePosDown = (_arrowSinePosDown - 8) & 0xFF;
   }
 }
 
@@ -1464,6 +1565,7 @@ function _doTeardown(): void {
   //   FreeSpriteTilesByTag(data->tileTag); FreeSpritePaletteByTag(data->palTag);
   //   DestroyTask(taskId);
   _despawnPocketArrows();
+  _despawnListScrollArrows();
   _scrollArrowAssetsLoaded = false;
   // 1:1 décomp item_menu_icons.c:RemoveBagSprite(ITEMMENUSPRITE_BALL) si encore
   // alive (= switch interrompu par close). Idempotent.
@@ -1564,6 +1666,9 @@ export function TickBagScreen(newKeys: number): void {
   // 1:1 décomp list_menu.c:Task_ScrollIndicatorArrowPair → tick les chevrons
   // chaque frame (= sin wave bobbing horizontal).
   _tickPocketArrows();
+  // 1:1 décomp idem pour les flèches UP/DOWN scroll list (= visibility +
+  // bobbing vertical). Visibles seulement quand scroll possible.
+  _tickListScrollArrows();
   // 1:1 décomp : SpriteCB_SwitchPocketRotatingBallContinue tick chaque frame
   // jusqu'à data[3]==16 → RemoveBagSprite. Le sprite outlive le Task_SwitchBagPocket
   // de 1 frame (= task termine à timer==16 mais ball callback a encore 1 continue

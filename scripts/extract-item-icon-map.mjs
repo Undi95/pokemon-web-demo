@@ -54,6 +54,23 @@ for (const [item, icon] of Object.entries(itemToIcon)) {
   if (palSym && palSymToFile[palSym]) itemToPalSlug[item] = palSymToFile[palSym];
 }
 
+// Extra : map nos items.json nommés (ITEM_TM_FOCUS_PUNCH) vers la palette
+// de ITEM_TM01 (décomp). descriptionLabel = "sTM01Desc" → numéro TM01.
+// Sans ça, TOUS nos CT partagent la même palette (= bug "tous mêmes
+// sprite" reporté par user). Pareil pour CS / HMs.
+const ourItems = JSON.parse(fs.readFileSync('public/decomp/em/items.json', 'utf8'));
+for (const [itemKey, def] of Object.entries(ourItems)) {
+  if (!itemKey.startsWith('ITEM_TM_') && !itemKey.startsWith('ITEM_HM_')) continue;
+  const label = def?.descriptionLabel;
+  if (!label) continue;
+  // sTM01Desc → ITEM_TM01, sHM03Desc → ITEM_HM03.
+  const m2 = label.match(/^s(TM|HM)(\d+)Desc$/);
+  if (!m2) continue;
+  const decompKey = `ITEM_${m2[1]}${m2[2]}`;
+  if (itemToIconSlug[decompKey]) itemToIconSlug[itemKey] = itemToIconSlug[decompKey];
+  if (itemToPalSlug[decompKey]) itemToPalSlug[itemKey] = itemToPalSlug[decompKey];
+}
+
 fs.writeFileSync(ICON_OUT_PATH, JSON.stringify(itemToIconSlug));
 fs.writeFileSync(PAL_OUT_PATH, JSON.stringify(itemToPalSlug));
 
