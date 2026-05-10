@@ -34,7 +34,8 @@ import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { gameState } from './game-state';
 import { getItem, getItemNameFr, getItemDescriptionFr } from './data-tables';
 import { PlaySE, LoadPalette, getRuntime } from './decomp-globals';
-import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin } from './gba/png-loader';
+import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
+import { setFieldCameraSuspended } from './field-camera';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -71,18 +72,21 @@ const BAG_BG_PAL = 12;
  *  on charge à la volée selon item sélectionné). Slot 11 libre. */
 const ITEM_ICON_PAL = 11;
 
-/** BG layer pour le tilemap fond. BG2 est utilisé par overworld pour la map ;
- *  on save les overworld settings au open, et on restore au close. */
+/** BG layer pour le tilemap fond. 1:1 décomp item_menu.c sBgTemplates_ItemMenu :
+ *  BG2 = char 3, map 29, priority 2 (= le fond rayé).
+ *  BG0 = char 0, map 31, priority 1 (= textbox window).
+ *  BG1 = char 0, map 30, priority 0 (= ?).
+ *
+ *  On clobbe l'overworld BG (= map 28-31 sont aussi utilisées par l'overworld),
+ *  donc on save/restore VRAM ranges au open/close. */
 const BAG_BG_LAYER = 2;
 
-/** VRAM offset (= mapBase) pour le tilemap fond. mapBase 4 = VRAM 0x4000.
- *  Overworld utilise mapBase 28-31 pour ses tilemaps BG. Slot 4 libre. */
-const BAG_BG_MAP_BASE = 4;
+/** VRAM offset (= mapBase) pour le tilemap fond. 1:1 décomp = 29.
+ *  29 × 0x800 = 0xE800 → 0xF000. */
+const BAG_BG_MAP_BASE = 29;
 
-/** VRAM tile data offset (= charBaseIndex). charBase 1 = VRAM 0x4000.
- *  Wait non c'est pareil que mapBase. Faut un autre charBase.
- *  Overworld charBase = 0 (pour BG1) et 2 (pour BG0 overworld + windows).
- *  charBase 3 = VRAM 0xC000, libre pour le bag. */
+/** VRAM tile data offset (= charBaseIndex). 1:1 décomp = 3.
+ *  3 × 0x4000 = 0xC000 → 0x10000. */
 const BAG_BG_CHAR_BASE = 3;
 
 /** Window templates — résolution GBA = 30 tiles wide × 20 tiles high (240×160 px).
@@ -172,31 +176,28 @@ async function _loadAssets(): Promise<BagAssets> {
   if (_assetsLoading) return _assetsLoading;
   _assetsLoading = (async () => {
     const gender = gameState.gender === 'FEMALE' ? 'female' : 'male';
-    const [bag, button, ball, bgTilesPng, bgTilemap, bgPal] = await Promise.all([
+    const [bag, button, ball, bgTilesRaw, bgTilemap, bgPal] = await Promise.all([
       loadIndexedPngStrict(`/decomp/em/bag/bag_${gender}.png`, 4),
       loadIndexedPngStrict('/decomp/em/bag/select_button.png', 4),
       loadIndexedPngStrict('/decomp/em/bag/rotating_ball.png', 4),
-      // menu.png = tile data 4bpp pour le fond
-      loadIndexedPngStrict('/decomp/em/bag/menu.png', 4),
-      // menu.bin = tilemap u16 du fond (32×32 = 1024 entries)
+      // menu.4bpp.bin = raw 4bpp tile data (= 1:1 décomp `gBagScreen_Gfx`).
+      // Sans remapping canvas → indices BRUTS qui matchent menu_male.pal.
+      loadTileBin('/decomp/em/bag/menu.png', 4),
+      // menu.bin = tilemap u16 du fond (32×32 = 1024 entries) — 1:1 décomp
+      // `gBagScreen_GfxTileMap`. Déjà décompressé.
       loadTilemapBin('/decomp/em/bag/menu.bin'),
-      // menu_male.pal / menu_female.pal = palette 16 colors du fond
+      // menu_male.pal / menu_female.pal = palette 32 colors du fond (= 2
+      // sub-palettes). 1:1 décomp `LoadCompressedPalette(gBagScreen{Male,Female}_Pal,
+      // BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP)`.
       loadGbaPal(`/decomp/em/bag/menu_${gender}.pal`),
     ]);
-    // Use la palette PLTE du PNG si disponible (= matche les indices remappés
-    // par loadIndexedPngStrict). Sinon fallback à menu_male.pal.
-    // Concat les 2 sub-palettes : PNG palette pour les indices charData +
-    // 2ème sub-palette de menu_male.pal pour palette bank 1.
-    const combinedPal = new Uint16Array(32);
-    combinedPal.set(bgTilesPng.palette.subarray(0, 16), 0);
-    if (bgPal.length >= 32) combinedPal.set(bgPal.subarray(16, 32), 16);
     _assets = {
       bagSprite: { charData: bag.charData, palette: bag.palette },
       selectButton: { charData: button.charData, palette: button.palette },
       rotatingBall: { charData: ball.charData, palette: ball.palette },
-      bgTiles: bgTilesPng.charData,
+      bgTiles: bgTilesRaw,  // raw 4bpp bytes, indices bruts du décomp
       bgTilemap: bgTilemap,
-      bgPalette: combinedPal,
+      bgPalette: bgPal,
     };
     _assetsLoading = null;
     return _assets;
@@ -549,6 +550,9 @@ function _setupBackgroundTilemap(assets: BagAssets): void {
   rt.SetGpuReg(0x16 /* REG_BG2VOFS */, 0);
   cfg.hofs = 0;
   cfg.vofs = 0;
+  // 1:1 décomp pattern : suspend la field camera pour qu'elle ne re-set pas
+  // BG2 vofs/hofs chaque frame (= sinon le tilemap fond scroll avec le player).
+  setFieldCameraSuspended(true);
 
   // 1:1 décomp `InitBgFromTemplate` pour notre BG2 bag :
   InitBgFromTemplate({
@@ -600,6 +604,9 @@ function _teardownBackgroundTilemap(): void {
   ShowBg(1);
   ShowBg(BAG_BG_LAYER);
   ShowBg(3);
+
+  // Re-active la field camera (= overworld scroll reprend).
+  setFieldCameraSuspended(false);
 
   _savedBgState = null;
 }

@@ -76,6 +76,16 @@ const targets = [
   // bloquait loadIndexedPng strict avant). bpp:4 + extractPalette:true génère
   // tiles.4bpp.bin + tiles.gbapal pour LoadPalette(BG_PLTT_ID(0), 64 bytes).
   { src: `${PUBLIC}/starter_choose/tiles.png`, bpp: 4, extractPalette: true },
+  // Session 127 — Bag screen (= SAC option du start menu). 1:1 décomp item_menu.c :
+  //   gBagScreen_Gfx = menu.png 4bpp.lz (53 tiles, 8 colors palette = sub-palette 0)
+  //   gBagMaleTiles / gBagFemaleTiles = bag_male/female.png 4bpp.lz (sprite OAM)
+  //   select_button + rotating_ball = sprite icons OAM
+  // bpp:4 + extractPalette:true → matches le runtime LoadCompressedPalette(...).
+  { src: `${PUBLIC}/bag/menu.png`, bpp: 4, extractPalette: true },
+  { src: `${PUBLIC}/bag/bag_male.png`, bpp: 4, extractPalette: true },
+  { src: `${PUBLIC}/bag/bag_female.png`, bpp: 4, extractPalette: true },
+  { src: `${PUBLIC}/bag/select_button.png`, bpp: 4, extractPalette: true },
+  { src: `${PUBLIC}/bag/rotating_ball.png`, bpp: 4, extractPalette: true },
 ];
 
 // Phase 5.1 — Tilemaps copiés direct depuis le décomp source (= raw uncompressed
