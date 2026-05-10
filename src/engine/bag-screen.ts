@@ -651,35 +651,40 @@ function _drawList(): void {
     let displayName = getItemNameFr(slot.itemKey);
     let isHM = false;
     if (pocketKey === 'tmHm' && def?.descriptionLabel) {
-      // descriptionLabel "sTM01Desc" / "sHM03Desc" → extract number.
+      // 1:1 décomp item_menu.c:899 GetItemNameFromPocket TMHM_POCKET render :
+      //   StringCopy(gStringVar2, gMoveNames[ItemIdToBattleMoveId(itemId)]);
+      //   if (itemId >= ITEM_HM01) → gText_NumberItem_HM avec nombre 1-8 (1 digit)
+      //   else                     → gText_NumberItem_TMBerry avec nombre 1-50 (2 digits)
+      // Notre items.json a déjà def.name = "CT01" / "CS01" (= prefix FR formatté
+      // depuis le décomp). On utilise ça + le move name.
       const tmMatch = def.descriptionLabel.match(/^s(TM|HM)(\d+)Desc$/);
       if (tmMatch) {
         isHM = tmMatch[1] === 'HM';
-        const itemNum = def.name;  // "CT01" / "CS01" déjà formatté FR
+        const itemNum = def.name;  // "CT01" / "CS01"
         const moveSlug = slot.itemKey.replace(/^ITEM_(TM|HM)_/, '');
         const moveName = getMoveNameFr(`MOVE_${moveSlug}`);
-        displayName = `${itemNum}  ${moveName}`;
+        displayName = `${itemNum} ${moveName}`;
       }
     }
     AddTextPrinterParameterized3(
       _listWid, FONT_NARROW, 8, y, COLOR_MAIN, TEXT_SKIP_DRAW, displayName,
     );
-    // 1:1 décomp item_menu.c:986 BagMenu_ItemPrintCallback :
+    // 1:1 décomp item_menu.c:969-971 BagMenu_ItemPrintCallback :
     //   if (itemId >= ITEM_HM01 && itemId <= ITEM_HM08)
-    //     BlitBitmapToWindow(WIN_ITEM_LIST, gBagMenuHMIcon_Gfx, 8, y, 16, 16);
-    //  → petit badge "HM" 16×16 superposé à la position du tile move name.
-    if (isHM) {
-      // Rendu via marqueur texte simple (l'asset hm_icon.png n'est pas
-      // extrait séparément ; on utilise un glyph "★" pour différencier HM/TM).
-      AddTextPrinterParameterized3(
-        _listWid, FONT_NORMAL, 0, y, COLOR_POCKET_NAME, TEXT_SKIP_DRAW, '★',
-      );
-    }
-    // 1:1 décomp item_menu.c:986 BagMenu_ItemPrintCallback :
-    //   GetStringRightAlignXOffset(FONT_NARROW, gStringVar4, 119)
-    // Quantity right-aligned à x=119. POCKET_KEY_ITEMS + TMHM = pas de qty
-    // affichée (= 1 par slot, importance set par GetItemImportance).
-    if (pocketKey !== 'keyItems' && pocketKey !== 'tmHm') {
+    //     BlitBitmapToWindow(windowId, gBagMenuHMIcon_Gfx, 8, y - 1, 16, 16);
+    // → petit badge "HM" 16×16. TODO : extraire hm_icon.png + blit. Pour
+    // l'instant, le prefix "CS0N" du nom suffit à identifier les HMs (= 1:1
+    // visuel acceptable car le nom CS01 etc. est déjà distinctif).
+    // 1:1 décomp item_menu.c:973-988 BagMenu_ItemPrintCallback :
+    //   if (BERRIES_POCKET) → print qty avec BERRY_CAPACITY_DIGITS
+    //   else if (!KEYITEMS_POCKET && !GetItemImportance(itemId)) → print qty
+    //   else → registered icon (key items) ou rien (HMs ont importance=1)
+    // HMs = importance=1 → PAS de qty ("on en a qu'une" — user).
+    // TMs = importance=0 → qty affichée comme un item normal ("on peut en avoir
+    // plusieurs" — user). gText_xVar1 = "×{STR_VAR_1}".
+    const showQty = (pocketKey === 'berries')
+      || (pocketKey !== 'keyItems' && !isHM);
+    if (showQty) {
       const qtyStr = `×${slot.quantity}`;
       const qtyX = GetStringRightAlignXOffset(qtyStr, 119);
       AddTextPrinterParameterized3(
@@ -1699,14 +1704,16 @@ function _openContextMenu(): void {
   _drawContextMenu();
 }
 
-/** Render le context menu (= 2x2 ou 2x3 grid de labels + cursor ▶). */
+/** Render le context menu (= 2x2 ou 2x3 grid de labels + cursor ▶).
+ *  1:1 décomp item_menu.c:1684 PrintContextMenuItemGrid :
+ *    PrintMenuActionGrid(windowId, FONT_NARROW, 8, 1, 56, columns, rows,
+ *      sItemMenuActions, gBagMenu->contextMenuItemsPtr);
+ *  → FONT_NARROW (= même que la list des items), left=8, top=1, optionWidth=56 px. */
 function _drawContextMenu(): void {
   if (_ctxWid < 0) return;
   FillWindowPixelBuffer(_ctxWid, 0x00);
-  // 2x2 grid : item 0 = top-left, 1 = top-right, 2 = bottom-left, 3 = bottom-right.
-  // 2x3 grid : same pattern, 3 rows.
   const cols = 2;
-  const colWidth = 56;  // 7 tiles × 8 px = 56 px par colonne
+  const colWidth = 56;  // 1:1 décomp optionWidth = 56 px par colonne.
   const rowHeight = 16;
   for (let i = 0; i < _ctxActions.length; i++) {
     const action = _ctxActions[i];
@@ -1722,8 +1729,9 @@ function _drawContextMenu(): void {
     }
     const textKey = ACTION_TEXT_KEYS[action];
     const label = getString(textKey);
+    // 1:1 décomp FONT_NARROW (= comme la list).
     AddTextPrinterParameterized3(
-      _ctxWid, FONT_NORMAL, x, y, COLOR_MAIN, TEXT_SKIP_DRAW, label,
+      _ctxWid, FONT_NARROW, x, y, COLOR_MAIN, TEXT_SKIP_DRAW, label,
     );
   }
   PutWindowTilemap(_ctxWid);
@@ -1853,9 +1861,16 @@ function _drawTossPrompt(textKey: string): void {
 function _drawTossQuantity(): void {
   if (_qtyWid < 0) return;
   FillWindowPixelBuffer(_qtyWid, 0x00);
-  const qtyStr = `×${_tossQty}`;
+  // 1:1 décomp item_menu.c:1203 PrintItemQuantity :
+  //   ConvertIntToDecimalStringN(... STR_CONV_MODE_LEADING_ZEROS, BAG_ITEM_CAPACITY_DIGITS=2);
+  //   StringExpandPlaceholders(gStringVar4, gText_xVar1);  // "×{STR_VAR_1}"
+  //   AddTextPrinterParameterized(windowId, FONT_NORMAL, gStringVar4,
+  //     GetStringCenterAlignXOffset(FONT_NORMAL, gStringVar4, 0x28), 2, ...);
+  // → "×01".."×99" avec leading zero, centered dans 0x28 (= 40 px), y=2.
+  const qtyStr = `×${String(_tossQty).padStart(2, '0')}`;
+  const xOffset = GetStringCenterAlignXOffset(qtyStr, 0x28);
   AddTextPrinterParameterized3(
-    _qtyWid, FONT_NORMAL, 8, 1, COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
+    _qtyWid, FONT_NORMAL, xOffset, 2, COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
   );
   PutWindowTilemap(_qtyWid);
   CopyWindowToVram(_qtyWid, 3);
