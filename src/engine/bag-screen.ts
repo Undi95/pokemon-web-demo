@@ -495,8 +495,13 @@ function _drawAll(): void {
 /** Convertit ITEM_KEY → filename slug pour /decomp/em/items/icons/.
  *  ITEM_POKE_BALL → poke_ball
  *  ITEM_POTION → potion
- *  ITEM_FULL_HEAL → full_heal */
+ *  ITEM_FULL_HEAL → full_heal
+ *  Cas spécial : RETURN_TO_FIELD → return_to_field_arrow (= 1:1 décomp
+ *  gItemIcon_ReturnToFieldArrow pour ITEM_LIST_END = ITEMS_COUNT). */
 function _itemIconUrlBase(itemKey: string): string {
+  if (itemKey === 'ITEM_RETURN_TO_FIELD') {
+    return '/decomp/em/items/icons/return_to_field_arrow';
+  }
   const slug = itemKey.replace(/^ITEM_/, '').toLowerCase();
   return `/decomp/em/items/icons/${slug}`;
 }
@@ -519,18 +524,22 @@ function _drawItemIcon(): void {
   if (_itemIconWid < 0) return;
   FillWindowPixelBuffer(_itemIconWid, 0x00);
   const itemKey = _selectedItemKey();
-  // CLOSE_BAG_KEY = pas d'icon item, juste vide (= 1:1 décomp shows BAG_CLOSE icon
-  // mais pour l'instant on skip — Phase 2+ load select_button.png ici).
-  if (!itemKey || itemKey === CLOSE_BAG_KEY) {
+  if (!itemKey) {
     PutWindowTilemap(_itemIconWid);
     CopyWindowToVram(_itemIconWid, 3);
     return;
   }
-  const icon = _itemIconCache[itemKey];
+  // 1:1 décomp item_icon.c:GetItemIconPicOrPalette(ITEM_LIST_END) :
+  //   if (itemId == ITEM_LIST_END) itemId = ITEMS_COUNT;
+  //   gItemIconTable[ITEMS_COUNT] = { gItemIcon_ReturnToFieldArrow, ... };
+  // → cursor sur LIST_CANCEL (= FERMER LE SAC) charge return_to_field_arrow.png
+  // (= flèche retour 24×24 dans /items/icons/).
+  // Treat CLOSE_BAG_KEY comme un item virtuel "ITEM_RETURN_TO_FIELD" : load
+  // l'icon (= return_to_field_arrow.png) puis blit normalement.
+  const effectiveKey = (itemKey === CLOSE_BAG_KEY) ? 'ITEM_RETURN_TO_FIELD' : itemKey;
+  const icon = _itemIconCache[effectiveKey];
   if (!icon) {
-    // Pas encore chargé : fire async load + redraw quand done.
-    void _ensureItemIconLoaded(itemKey).then(() => {
-      // Ré-appel _drawItemIcon une fois loadé. Idempotent.
+    void _ensureItemIconLoaded(effectiveKey).then(() => {
       if (_isOpen && _selectedItemKey() === itemKey) {
         _drawItemIcon();
       }
@@ -539,12 +548,10 @@ function _drawItemIcon(): void {
     CopyWindowToVram(_itemIconWid, 3);
     return;
   }
-  // Charge la palette de l'item dans son slot dédié, puis blit le sprite.
-  if (_loadedIconKey !== itemKey) {
+  if (_loadedIconKey !== effectiveKey) {
     LoadPalette(icon.palette, ITEM_ICON_PAL * 16, icon.palette.length * 2);
-    _loadedIconKey = itemKey;
+    _loadedIconKey = effectiveKey;
   }
-  // Item icons sont 24×24 px (3×3 tiles).
   BlitBitmapToWindow(_itemIconWid, icon.charData, 0, 0, 24, 24, 24);
   PutWindowTilemap(_itemIconWid);
   CopyWindowToVram(_itemIconWid, 3);
