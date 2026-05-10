@@ -42,7 +42,17 @@ import { getString } from './gba-strings';
 
 const FONT_NORMAL = 1;
 const TEXT_SKIP_DRAW = 255;
-const COLOR_MAIN: [number, number, number] = [1, 2, 3];
+/** 1:1 décomp item_menu.c:387 sFontColorTable[COLORID_NORMAL] :
+ *    {TEXT_COLOR_TRANSPARENT=0, TEXT_COLOR_WHITE=1, TEXT_COLOR_LIGHT_GRAY=3}
+ *  Mapping paletteNum=1 (= sub-palette 1 de menu_male.pal) :
+ *    [0] = transparent (= skip pixel, BG2 derrière visible)
+ *    [1] = noir (= TEXT_COLOR_WHITE alias, mais palette index 1 = noir → texte noir)
+ *    [3] = jaune pâle/gris (= shadow drop)
+ *  Avant : [1, 2, 3] = bg=noir/fg=blanc → texte BLANC sur FOND NOIR (faux). */
+const COLOR_MAIN: [number, number, number] = [0, 1, 3];
+/** 1:1 décomp item_menu.c:390 sFontColorTable[COLORID_POCKET_NAME] :
+ *    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_RED} = [0, 1, 4]. */
+const COLOR_POCKET_NAME: [number, number, number] = [0, 1, 4];
 /** Standard menu frame tile + palette (= même que start menu = cohérent). */
 const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;
@@ -121,11 +131,12 @@ const HEADER_WINDOW_TEMPLATE: WindowTemplate = {
 };
 
 /** Window pour l'icône de l'item sélectionné (= 24×24 px = 3×3 tiles).
- *  Position : dans le sac, aux coordonnées du décomp item_menu.c (= sur le sprite sac
- *  affichée à env. (8, 64) → tilemapLeft=1, tilemapTop=8). */
+ *  1:1 décomp item_menu_icons.c:549-550 :
+ *    gSprites[iconSpriteId].x2 = 24; y2 = 88;
+ *  → position (24, 88) en pixel = tile (3, 11) sur grille 8x8. C'est dans la
+ *  petite frame jaune pâle bottom-left du tilemap menu.bin (= sous le sac). */
 const ITEM_ICON_WINDOW_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 5, tilemapTop: 11, width: 3, height: 3,
-  // baseBlock 0x300 = après sprite (0x250..). Évite collision avec sprite entries.
+  bg: 0, tilemapLeft: 3, tilemapTop: 11, width: 3, height: 3,
   paletteNum: ITEM_ICON_PAL, baseBlock: 0x300,
 };
 
@@ -313,7 +324,7 @@ function _drawHeader(): void {
   // Texte centered : 8 tiles × 8 px = 64 px. Pour center un texte ~50 px, x≈8.
   // Décomp utilise GetStringCenterAlignXOffset, on simplifie par offset fixe.
   AddTextPrinterParameterized3(
-    _headerWid, FONT_NORMAL, 0, 1, COLOR_MAIN, TEXT_SKIP_DRAW,
+    _headerWid, FONT_NORMAL, 0, 1, COLOR_POCKET_NAME, TEXT_SKIP_DRAW,
     getString(POCKETS[_pocketIdx].textKey),
   );
   // Pas d'indicator "1/5" dans le décomp original — le pocket actif est
@@ -393,20 +404,19 @@ function _drawDesc(): void {
     return;
   }
   if (itemKey) {
+    // 1:1 décomp item.c GetItemDescription(itemId) = gItems[itemId].description
+    // = pointer vers le symbol "sPokeBallDesc". Notre items.json a
+    // `descriptionLabel: "sPokeBallDesc"` → lookup direct dans strings.json
+    // (= zéro hardcode, vraies descriptions FR du décomp).
+    // Les newlines literals "\n" du décomp = déjà placés pour les 3 lignes max.
     const def = getItem(itemKey);
-    const desc = def?.descriptionLabel ? getItemDescriptionFr(def.descriptionLabel) : '';
-    if (desc) {
-      const lines = _wrap(desc, 28);
-      for (let i = 0; i < Math.min(lines.length, 3); i++) {
-        AddTextPrinterParameterized3(
-          _descWid, FONT_NORMAL, TEXT_LEFT, 1 + i * 14, COLOR_MAIN, TEXT_SKIP_DRAW, lines[i],
-        );
-      }
-    } else {
-      const fallbackParts = [];
-      if (def?.price && def.price > 0) fallbackParts.push(`Prix: ${def.price}`);
-      const txt = fallbackParts.length > 0 ? fallbackParts.join('  ') : 'Pas de description.';
-      AddTextPrinterParameterized3(_descWid, FONT_NORMAL, TEXT_LEFT, 1, COLOR_MAIN, TEXT_SKIP_DRAW, txt);
+    const desc = def?.descriptionLabel ? getString(def.descriptionLabel) : '';
+    const lines = desc.split(/\\n|\n/);
+    for (let i = 0; i < Math.min(lines.length, 3); i++) {
+      AddTextPrinterParameterized3(
+        _descWid, FONT_NORMAL, TEXT_LEFT, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW,
+        lines[i],
+      );
     }
   }
   // Note : pas de else branch (= itemKey null). _currentPocketItems append
