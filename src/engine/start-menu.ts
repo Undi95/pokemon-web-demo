@@ -68,6 +68,7 @@ import { FlagGet } from './script-vars';
 import { CB2_InitOptionMenu } from './decomp-data/auto/src-all/option_menu-all-auto';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { preloadOptionMenuAssets } from './option-menu-impl';
+import { OpenBagScreen, TickBagScreen } from './bag-screen';
 
 // ─── Types + state ───────────────────────────────────────────────────────────
 
@@ -86,7 +87,11 @@ type SubState =
   | 'save_yesno'            // Yes/No menu open ; wait input
   | 'save_overwrite_msg'    // showing "Une partie déjà sauvegardée. Remplacer?" dialog ; printer done → spawn Yes/No
   | 'save_overwrite_yesno'  // Yes/No menu open for overwrite confirm
-  | 'save_done';            // showing "Partie sauvegardée!" ; A/B → close menu
+  | 'save_done'             // showing "Partie sauvegardée!" ; A/B → close menu
+  | 'bag_screen'            // session 127 : bag UI ouvert, drive via TickBagScreen
+  | 'party_screen'          // session 127 : party UI ouvert, drive via TickPartyScreen
+  | 'trainer_card_screen'   // session 127 : trainer card UI ouvert
+  | 'pokedex_screen';       // session 127 : pokédex UI ouvert
 
 let sIsOpen = false;
 let sWindowId = -1;
@@ -222,33 +227,34 @@ function pokemonAction(): boolean {
   return showMessageThenReturn(`Équipe POKéMON :\n${lines.join('\n')}`);
 }
 
-/** SAC action : list bag contents par pocket dans le dialog. */
+/** SAC action : open vrai bag screen avec 5 pockets + scroll + descriptions.
+ *  Session 127 : remplace l'ancien `showMessageThenReturn(text liste)`.
+ *
+ *  Le bag screen prend le contrôle des inputs jusqu'à ce que l'user appuie B
+ *  (= return au start menu). On hide le start menu window pendant ce temps,
+ *  on garde sIsOpen=true pour que TickStartMenu drive _tickBagScreen. */
 function sacAction(): boolean {
-  const items = bagContents();
-  if (items.length === 0) {
-    return showMessageThenReturn('Le SAC est vide.');
+  // Hide start menu window — bag screen va prendre l'écran.
+  if (sWindowId >= 0) {
+    ClearStdWindowAndFrame(sWindowId, true);
+    RemoveWindow(sWindowId);
+    sWindowId = -1;
   }
-  // Group par pocket, format simple.
-  const POCKET_FR: Record<string, string> = {
-    POCKET_ITEMS: 'OBJETS',
-    POCKET_POKE_BALLS: 'POKé BALLS',
-    POCKET_TM_HM: 'CT/CS',
-    POCKET_BERRIES: 'BAIES',
-    POCKET_KEY_ITEMS: 'OBJETS RARES',
-  };
-  const lines: string[] = [];
-  let lastPocket = '';
-  for (const it of items) {
-    if (it.pocket !== lastPocket) {
-      lines.push(`[${POCKET_FR[it.pocket] ?? it.pocket}]`);
-      lastPocket = it.pocket;
-    }
-    const friendlyName = it.itemKey.replace(/^ITEM_/, '').replace(/_/g, ' ');
-    lines.push(`${friendlyName} ×${it.quantity}`);
+  // Set sub-state AVANT OpenBagScreen pour éviter ré-entrer sacAction si
+  // OpenBagScreen throw (= sSubState reste à 'menu' sinon → re-fire next frame).
+  sSubState = 'bag_screen';
+  try {
+    OpenBagScreen(() => {
+      sSubState = 'menu';
+      _spawnMenuWindow();
+    });
+  } catch (e) {
+    console.error('[start-menu] OpenBagScreen failed', e);
+    // Recovery : ré-affiche le start menu pour que l'user ne soit pas bloqué.
+    sSubState = 'menu';
+    _spawnMenuWindow();
   }
-  // Limite à 10 lines pour pas dépasser le dialog box.
-  const text = lines.slice(0, 10).join('\n');
-  return showMessageThenReturn(text);
+  return false;
 }
 
 /** {PLAYER} action : trainer card mini-fiche. */
@@ -475,6 +481,28 @@ function pokenavAction(): boolean {
   return showMessageThenReturn('Le POKéNAV n\'est pas\nencore disponible.');
 }
 
+/** Spawn la window principale du start menu et la draw avec items + cursor.
+ *  1:1 décomp pattern de start_menu.c:CreateStartMenuTask + DrawStartMenu. */
+function _spawnMenuWindow(): void {
+  const tmpl = buildStartMenuTemplate(sItems.length);
+  sWindowId = AddWindow(tmpl);
+  // 1:1 décomp `LoadMessageBoxAndBorderGfx()` (menu.c:210-214) qui charge :
+  //   LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(15))
+  //   LoadUserWindowBorderGfx_(0, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(14))
+  // Sans ça, palette 15 noire ou 14 stale. Cf. _redrawMenu.
+  LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM * 16);
+  LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
+  DrawStdFrameWithCustomTileAndPalette(sWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM);
+  for (let i = 0; i < sItems.length; i++) {
+    AddTextPrinterParameterized3(
+      sWindowId, 1 /* FONT_NORMAL */,
+      8, CURSOR_Y_TOP + i * CURSOR_Y_PER_ROW,
+      [1, 2, 3], 255 /* TEXT_SKIP_DRAW */, sItems[i].label,
+    );
+  }
+  drawCursor();
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 export function IsStartMenuOpen(): boolean {
@@ -494,27 +522,7 @@ export function OpenStartMenu(): void {
   sItems = buildItems();
   sCursorPos = 0;
   sSubState = 'menu';
-  const tmpl = buildStartMenuTemplate(sItems.length);
-  sWindowId = AddWindow(tmpl);
-  // 1:1 décomp `LoadMessageBoxAndBorderGfx()` (menu.c:210-214) qui charge :
-  //   LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(DLG_WINDOW_PALETTE_NUM=15))
-  //   LoadUserWindowBorderGfx_(0, STD_WINDOW_BASE_TILE_NUM, BG_PLTT_ID(STD_WINDOW_PALETTE_NUM=14))
-  // Sans LoadMessageBoxGfx, palette 15 reste à 0 → window pixel buffer (= text bg
-  // via fillWindowPixelBuffer(0x11) = idx 1) rend en NOIR au lieu de blanc.
-  // Sans LoadUserWindowBorderGfx, palette 14 reste avec données stale d'autres
-  // chargements (= e.g. message_box d'un dialog précédent → red/orange leak dans
-  // les frame tiles).
-  LoadMessageBoxGfx(0, DLG_WINDOW_BASE_TILE_NUM, DLG_WINDOW_PALETTE_NUM * 16);
-  LoadUserWindowBorderGfx(0, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM * 16);
-  DrawStdFrameWithCustomTileAndPalette(sWindowId, true, STD_WINDOW_BASE_TILE_NUM, STD_WINDOW_PALETTE_NUM);
-  for (let i = 0; i < sItems.length; i++) {
-    AddTextPrinterParameterized3(
-      sWindowId, 1 /* FONT_NORMAL */,
-      8, CURSOR_Y_TOP + i * CURSOR_Y_PER_ROW,
-      [1, 2, 3], 255 /* TEXT_SKIP_DRAW */, sItems[i].label,
-    );
-  }
-  drawCursor();
+  _spawnMenuWindow();
   LockPlayerFieldControls();
   sIsOpen = true;
   PlaySE(_seWinOpen());
@@ -600,6 +608,19 @@ export function TickStartMenu(): void {
       break;
     case 'save_done':
       _tickSaveDone(newKeys);
+      break;
+    case 'bag_screen':
+      // Drive le bag screen ; quand l'user appuie B, BagScreen.CloseBagScreen
+      // call son onClose qui set sSubState='menu' + _spawnMenuWindow().
+      TickBagScreen(newKeys);
+      // Safety : si l'onClose a déjà fire, sSubState est déjà 'menu' — pas
+      // besoin de check IsBagScreenOpen ici.
+      break;
+    case 'party_screen':
+    case 'trainer_card_screen':
+    case 'pokedex_screen':
+      // TODO session 127 next : tick les autres screens. Pour l'instant fallback
+      // closing comportement (= quand l'user revient via leur onClose).
       break;
   }
 }
