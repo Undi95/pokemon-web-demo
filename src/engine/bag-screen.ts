@@ -861,10 +861,9 @@ function _tickPocketSwitchAnim(): void {
     _updateBagSpriteOam();
   }
   if (_switchTimer >= 16) {
-    // Animation finie → reload la list du nouveau pocket et redraw.
-    _drawList();
-    _drawDesc();
-    _drawItemIcon();
+    // Animation finie → reload la list du nouveau pocket et redraw tout
+    // (incluant header au cas où il aurait été cleared par les fillBgTilemap).
+    _drawAll();
     _phase = 'open';
     _switchTimer = 0;
     _switchDir = 0;
@@ -884,7 +883,9 @@ function _updateBagSpriteOam(): void {
   const baseTileNum = BAG_SPRITE_OBJ_OFFSET / 32;
   const frameOff = BAG_FRAME_TILE_OFFSET[_pocketIdx] ?? 0;
   const oam = rt.gba.oam[sprite.oamIndex];
-  if (oam) oam.tileNum = baseTileNum + frameOff;
+  // OAM field = `tileId` (pas tileNum, qui n'existe pas dans la struct). Bug
+  // précédent : oam.tileNum= silently créait une prop ignored by renderer.
+  if (oam) oam.tileId = baseTileNum + frameOff;
   // 1:1 décomp `sprite->y2 = -5` au switch pocket → bag "jump" effect.
   sprite.y2 = -5;
 }
