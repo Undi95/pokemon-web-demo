@@ -329,6 +329,35 @@ export function resetObjectEventAllocations(): void {
     npc.walkFramesLeft = 0;
     npc.movementStep = 0;
     npc.movementDelay = 0;
+    // Audit session 126 : reset COMPLET des champs identifiants. Sans ça les
+    // slots `active=false` gardent leurs anciens graphicsId/coords/mapId →
+    // 1) zombies dans `__gObjectEvents` (= les MOVING_BOX du Truck visibles
+    //    après warp Brendan/MaysHouse_1F),
+    // 2) potentiel bug collision si un check parcourt le array sans filtrer
+    //    sur active (= rare mais possible),
+    // 3) débug live difficile (= confusion sur identité du slot).
+    npc.graphicsId = '';
+    npc.movementType = '';
+    npc.localId = 0;
+    npc.localIdRaw = '';
+    npc.mapId = '';
+    npc.scriptLabel = '';
+    npc.currentCoordsX = 0;
+    npc.currentCoordsY = 0;
+    npc.previousCoordsX = 0;
+    npc.previousCoordsY = 0;
+    npc.initialCoordsX = 0;
+    npc.initialCoordsY = 0;
+    npc.facingDirection = DIR_SOUTH;
+    npc.movementRangeX = 0;
+    npc.movementRangeY = 0;
+    npc.directionSeqIdx = 0;
+    npc.objTileBase = 0;
+    npc.paletteBank = 0;
+    npc.worldX = 0;
+    npc.worldY = 0;
+    npc.walkDirection = DIR_NONE;
+    npc.walkAnimAlt = 0;
   }
 }
 

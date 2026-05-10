@@ -486,6 +486,15 @@ export class DecompRuntime {
    *  de la frame — sans ça la fade engine advance 2×, durée /2. */
   private _paletteFadeCalledThisFrame = false;
 
+  /** Track runTasks calls per frame (= 1:1 décomp idempotency).
+   *  Reset chaque frame en fin de runOneFrame. Les MainCB2_* auto-décomp font
+   *  `RunTasks()` dans leur body (cf. option_menu.c:138, intro.c:1042). Le
+   *  runtime ré-appelle `runTasks()` après callback2 en backup pour les
+   *  MainCB2_* manuels TS qui ne le font pas (e.g. MainCB2_Overworld). Sans
+   *  ce flag, les Tasks tournent 2× → JOY_NEW(DPAD_X) traité 2× → cursor
+   *  saute 2 cases par appui (= bug option menu field). */
+  private _runTasksCalledThisFrame = false;
+
   /** Mode vidéo courant (bits 0-2 de DISPCNT). Utilisé pour déterminer isAffine. */
   private _dispCntMode = 0;
 
@@ -1531,6 +1540,13 @@ export class DecompRuntime {
    *  visitées cette frame (évite double-exec si une task se re-crée par
    *  réutilisation du même slot id). */
   runTasks(): void {
+    // 1:1 décomp idempotency : skip 2nd call dans la même frame. Les MainCB2_*
+    // auto-décomp font `RunTasks()` dans leur body (option_menu.c:138 etc).
+    // Notre runtime ré-appelle `runTasks()` en backup pour les MainCB2_*
+    // manuels TS (= MainCB2_Overworld). Sans guard → tasks run 2× → bug
+    // double DPAD_DOWN dans option menu field. Reset flag en fin runOneFrame.
+    if (this._runTasksCalledThisFrame) return;
+    this._runTasksCalledThisFrame = true;
     const visited = new Set<number>();
     let processed = 0;
     const maxIters = 256;  // safety guard contre boucle infinie
@@ -2010,6 +2026,7 @@ export class DecompRuntime {
       this.UpdatePaletteFade();
     }
     this._paletteFadeCalledThisFrame = false;  // reset for next frame
+    this._runTasksCalledThisFrame = false;     // reset for next frame
     // VBlank callbacks (= VBlankCB_Intro etc) : ScanlineEffect tick + TransferPlttBuffer.
     // 1:1 décomp : VBlankCB de chaque scène call TransferPlttBuffer. SI vblankCallback
     // est NULL (= scene init via `SetVBlankCallback(NULL)`), AUCUN transfert ne

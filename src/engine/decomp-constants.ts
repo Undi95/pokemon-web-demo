@@ -47,6 +47,14 @@ import * as fieldEffects from './decomp-data/auto/include/constants/field_effect
 import * as opponents from './decomp-data/auto/include/constants/opponents-data';
 import * as pokemon from './decomp-data/auto/include/constants/pokemon-data';
 import * as vars from './decomp-data/auto/include/constants/vars-data';
+// Audit session 125 : METATILE_*, MB_*, MAP_SCRIPT_ON_* manquaient → setmetatile
+// resolved les NAMES à 0 → corruption tile (= bug exit truck après option menu).
+// 1:1 décomp = ces constants sont resolved au compile-time (assembleur GBA), pas
+// runtime ; donc on les charge dans la table pour que parseValue/VarGet fallback
+// les resolve correctement quand un script les référence.
+import * as metatileLabels from './decomp-data/auto/include/constants/metatile_labels-data';
+import * as metatileBehaviors from './decomp-data/auto/include/constants/metatile_behaviors-data';
+import * as mapScripts from './decomp-data/auto/include/constants/map_scripts-data';
 // Misc per-screen constants (= title screen tile offsets, etc.) extraits
 // dans `decomp-data/*-data.ts`. Pas dans `auto/include/constants/` car
 // définis inline dans .c files. Inclus pour résoudre tileNum strings comme
@@ -83,6 +91,9 @@ _mergeConstants(opponents);
 _mergeConstants(pokemon);
 _mergeConstants(vars);
 _mergeConstants(titleScreen);
+_mergeConstants(metatileLabels);
+_mergeConstants(metatileBehaviors);
+_mergeConstants(mapScripts);
 
 /** Resolve a constant name to its numeric value. Returns undefined si pas trouvé.
  *  Caller decide quoi faire (= fallback 0, log warning, etc.). */
@@ -112,7 +123,7 @@ export function reverseDecompConstant(value: number, prefix: string): string | u
 /** Total constants loaded — utile pour debug + sanity check. */
 export const _constantsCount = Object.keys(_constantsTable).length;
 
-console.log(`[decomp-constants] loaded ${_constantsCount} constants from 13 namespaces`);
+console.log(`[decomp-constants] loaded ${_constantsCount} constants from 17 namespaces`);
 
 if (typeof window !== 'undefined') {
   // Debug : window.dev.audit.constant("OBJ_EVENT_GFX_RIVAL_MAY_NORMAL") → 105

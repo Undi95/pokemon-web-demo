@@ -428,10 +428,24 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
         for (let i = 0; i < 3; i++) {
           const [x, y] = POKEBALL_COORDS[i];
           pokeballSpriteIds[i] = rt.CreateSpriteFromTemplate('sSpriteTemplate_Pokeball', x, y);
+          // Audit session 126 : le template `sSpriteTemplate_Pokeball` référence
+          // la callback `SpriteCB_Pokeball`. Cette callback est définie dans
+          // 3 auto-files (= starter_choose, pokeball, battle_factory_screen).
+          // flattenBarrelOnGlobalThis expose la 1ère trouvée alphabetically,
+          // qui est `battle_factory_screen-all-auto.ts:36 SpriteCB_Pokeball` —
+          // celle-ci accède `sprite.oam.paletteNum` qui est undefined dans
+          // notre runtime → crash continu pendant tout le starter choose flow.
+          // Notre flow gère lui-même l'anim via StartSpriteAnim dans WAIT_INPUT
+          // (= ligne 479), donc la callback du sprite est redondante. On la
+          // null-out pour éviter le crash. 1:1 fonctionnel décomp (= même
+          // résultat visuel : selected pokeball anim 1, others anim 0).
+          rt.setSpriteCallback(pokeballSpriteIds[i], null);
         }
         // Spawn hand cursor.
         const [hx, hy] = CURSOR_COORDS[selection];
         handSpriteId = rt.CreateSpriteFromTemplate('sSpriteTemplate_Hand', hx, hy);
+        // Idem : null-out la callback du hand sprite (= flow gère hand bob inline).
+        rt.setSpriteCallback(handSpriteId, null);
         state = 'PROMPT_INIT';
         return false;
       }

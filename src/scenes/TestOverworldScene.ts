@@ -34,6 +34,7 @@ import {
   CONNECTION_SOUTH,
   CONNECTION_WEST,
   CONNECTION_EAST,
+  gMapHeader,
 } from '../engine/map-loader';
 import type { MapHeader, WarpEvent } from '../engine/map-loader';
 import {
@@ -434,6 +435,75 @@ export class TestOverworldScene extends Phaser.Scene {
         TransferTilesetAnimsBuffer(rt);
       };
       this.rt.gMain.callback2 = MainCB2_Overworld;
+      // Expose pour le retour depuis option menu / sub-CB2 1:1 décomp :
+      // CB2_ReturnToFieldLocal_Manual (option-menu-return.ts) doit pouvoir
+      // restaurer ce closure quand le state machine décomp completes (= 1:1
+      // `SetMainCallback2(CB2_Overworld)` après ReturnToFieldLocal returns TRUE).
+      (globalThis as Record<string, unknown>)._overworldMainCB2 = MainCB2_Overworld;
+      // Expose un helper de restauration utilisé par CB2_ReturnToFieldLocal_Manual
+      // après option menu Sortir. 1:1 décomp `ReturnToFieldLocal` flow (=
+      // ResetScreenForMapLoad → ResumeMap → InitObjectEventsReturnToField →
+      // SetCameraToTrackPlayer → InitViewGraphics) compactés en une seule
+      // opération qui re-init les BG configs + re-render le map + re-spawn
+      // les NPCs. Async car loadAndInitMap fetch tilesets/palettes.
+      (globalThis as Record<string, unknown>)._restoreOverworldFromMenu = async (): Promise<void> => {
+        if (!gMapHeader) {
+          console.warn('[restoreOverworldFromMenu] no gMapHeader, abort');
+          return;
+        }
+        console.log(`[restoreOverworldFromMenu] mapId=${gMapHeader.id} pos=(${gPlayerAvatar.x},${gPlayerAvatar.y}) facing=${gPlayerAvatar.facing}`);
+        // 1:1 décomp `InitOverworldBgs` (overworld.c) : re-config BG0/1/2/3 via
+        // `sOverworldBgTemplates`. CB2_InitOptionMenu state 1 fait
+        // `InitBgsFromTemplates(0, sOptionMenuBgTemplates)` → BG0 charBase=1
+        // mapBase=31 (= different from overworld charBase=2). Sans re-config
+        // les BG slots, post-menu BG0 charBase reste à 1 → start menu/dialog
+        // tiles rendered depuis mauvaise charBase area = garbage visuel.
+        // Values 1:1 sOverworldBgTemplates (overworld.c:266-304).
+        const bg0c = self.rt.gba.bg(0).config;
+        bg0c.charBaseIndex = 2; bg0c.mapBaseIndex = 31; bg0c.screenSize = 0;
+        bg0c.paletteMode = 0; bg0c.priority = 0; bg0c.visible = true;
+        bg0c.hofs = 0; bg0c.vofs = 0;
+        const bg1c = self.rt.gba.bg(1).config;
+        bg1c.charBaseIndex = 0; bg1c.mapBaseIndex = 29; bg1c.screenSize = 0;
+        bg1c.paletteMode = 0; bg1c.priority = 1; bg1c.visible = true;
+        bg1c.hofs = 0; bg1c.vofs = 0;
+        const bg2c = self.rt.gba.bg(2).config;
+        bg2c.charBaseIndex = 0; bg2c.mapBaseIndex = 28; bg2c.screenSize = 0;
+        bg2c.paletteMode = 0; bg2c.priority = 2; bg2c.visible = true;
+        bg2c.hofs = 0; bg2c.vofs = 0;
+        const bg3c = self.rt.gba.bg(3).config;
+        bg3c.charBaseIndex = 0; bg3c.mapBaseIndex = 30; bg3c.screenSize = 0;
+        bg3c.paletteMode = 0; bg3c.priority = 3; bg3c.visible = true;
+        bg3c.hofs = 0; bg3c.vofs = 0;
+        self.rt.SetGpuReg(REG_OFFSET_DISPCNT,
+          DISPCNT_OBJ_ON | DISPCNT_OBJ_1D_MAP |
+          DISPCNT_BG0_ON | DISPCNT_BG1_ON | DISPCNT_BG2_ON | DISPCNT_BG3_ON);
+        // 1:1 décomp `ReturnToFieldLocal` (overworld.c:1961) state machine combiné :
+        //   - state 0 : ResetScreenForMapLoad + ResumeMap + InitObjectEventsReturnToField
+        //   - state 1 : InitViewGraphics (= setup BG regs + DrawWholeMapView)
+        // Notre `loadAndInitMap` fait l'équivalent en 1 fonction async.
+        await self.loadAndInitMap(gMapHeader.id, gPlayerAvatar.x, gPlayerAvatar.y, gPlayerAvatar.facing);
+        // Clear BG0 tilemap (= mapBase 31, 2KB) après loadAndInitMap : option menu
+        // CB2_InitOptionMenu state 8 fait `PutWindowTilemap(WIN_OPTIONS)` qui écrit
+        // dans BG0 mapBase 31 (= bg=0, baseBlock=0x36, 26×14 tiles). Au close,
+        // `FreeAllWindowBuffers` free les structs windows mais PAS le VRAM tilemap
+        // qui contient encore les entries WIN_OPTIONS pointing aux option menu
+        // tile IDs. Sans ce clear, post-menu BG0 affiche du garbled (= "STYLE
+        // COMBAT" / "CHOIX" / "SON" etc visible en arrière-plan via mapBase entries).
+        // Sur ROM ce résidu n'est pas observé probablement à cause du timing
+        // VBlank / fade-in qui masque, mais pour notre engine on doit explicitly
+        // wipe pour garantir clean rendering.
+        const bg0Cfg = self.rt.gba.bg(0).config;
+        const bg0MapStart = bg0Cfg.mapBaseIndex * 2048;
+        const vram = self.rt.gba.vram;
+        for (let i = 0; i < 2048; i++) vram[bg0MapStart + i] = 0;
+        // Re-set VBlankCallback (= option menu CB2_InitOptionMenu set NULL).
+        // 1:1 décomp `SetFieldVBlankCallback` appelé par `CB2_ReturnToFieldLocal`
+        // après que ReturnToFieldLocal returns TRUE.
+        const _VBlankCB_Overworld_Restored: () => void = () => { /* marker */ };
+        self.rt.SetVBlankCallback(_VBlankCB_Overworld_Restored);
+        console.log('[restoreOverworldFromMenu] done');
+      };
 
       this.statusText?.setText(`Bourg-en-Vol ${header.mapLayout.width}x${header.mapLayout.height} (arrows = walk)`);
       this.booted = true;
@@ -505,7 +575,6 @@ export class TestOverworldScene extends Phaser.Scene {
     LoadMapTilesetPalettes(header.mapLayout);
     // 1:1 décomp `InitTilesetAnimations` (tileset_anims.c:574-579).
     // Doit être appelé APRÈS CopyMapTilesetsToVram (= callbacks setté par CopyMapTilesetsToVram).
-    // Reset buffer + init primary + secondary callbacks.
     InitTilesetAnimations();
 
     // 1:1 décomp `ResetFieldCamera` + `ResetCameraUpdateInfo` (= reset complet

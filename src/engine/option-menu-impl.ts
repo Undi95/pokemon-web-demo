@@ -232,11 +232,38 @@ export function DrawOptionMenuChoice(text: unknown, x: number, y: number, style:
   // delegate, qui passe le buffer brut du décomp). Si array, decode en string
   // via charCode (= les inline codes restent intacts car les strings.json sont
   // déjà décodées en UTF-8).
+  //
+  // 1:1 décomp charmap.h fix : l'auto-fichier `FrameType_DrawChoices` hardcode
+  // `(0xA1)` (= CHAR_0 décomp GBA charmap) et `(0x77)` (= CHAR_SPACER). Notre
+  // text-system décode en ASCII donc ces bytes seraient mal mappés (= 0xA3 →
+  // glyph 'j' au lieu de '2'). Remap au runtime : 0xA1-0xAA → 0x30-0x39
+  // (digits ASCII), 0x77 → 0x20 (space ASCII). Ce mapping ne touche PAS les
+  // bytes des strings (= les strings ne contiennent pas 0xA1-0xAA car les
+  // gText_* sont déjà ASCII-decoded depuis strings.json).
   let renderText: string;
   if (typeof text === 'string') {
     renderText = text;
   } else if (Array.isArray(text)) {
-    renderText = String.fromCharCode(...(text as number[]).filter(c => c !== 0xFF));
+    const remapped: number[] = [];
+    for (const c of text as unknown[]) {
+      if (typeof c !== 'number') {
+        // String chars from gText_FrameTypeNumber prefix : convert via charCodeAt.
+        if (typeof c === 'string' && c.length > 0) {
+          remapped.push(c.charCodeAt(0));
+        }
+        // Skip null/undefined entries (= initialisation sparse de l'array auto).
+        continue;
+      }
+      if (c === 0xFF) continue;            // EOS — skip
+      if (c >= 0xA1 && c <= 0xAA) {        // CHAR_0..CHAR_9 décomp → ASCII '0'..'9'
+        remapped.push(0x30 + (c - 0xA1));
+      } else if (c === 0x77) {             // CHAR_SPACER décomp → ASCII space
+        remapped.push(0x20);
+      } else {
+        remapped.push(c);
+      }
+    }
+    renderText = String.fromCharCode(...remapped);
   } else {
     renderText = String(text ?? '');
   }
@@ -267,16 +294,34 @@ function rightAlignX(text: string, rightX: number): number {
   return GetStringRightAlignXOffset(text, rightX);
 }
 
-/** 1:1 décomp option_menu.c:421-442 TextSpeed_DrawChoices. */
+/** 1:1 décomp option_menu.c:421-442 TextSpeed_DrawChoices.
+ *
+ *      DrawOptionMenuChoice(gText_TextSpeedSlow, 104, YPOS_TEXTSPEED, styles[0]);
+ *      widthSlow = GetStringWidth(FONT_NORMAL, gText_TextSpeedSlow, 0);
+ *      widthMid  = GetStringWidth(FONT_NORMAL, gText_TextSpeedMid, 0);
+ *      widthFast = GetStringWidth(FONT_NORMAL, gText_TextSpeedFast, 0);
+ *      widthMid -= 94;
+ *      xMid = (widthSlow - widthMid - widthFast) / 2 + 104;
+ *      DrawOptionMenuChoice(gText_TextSpeedMid, xMid, YPOS_TEXTSPEED, styles[1]);
+ *      DrawOptionMenuChoice(gText_TextSpeedFast,
+ *          GetStringRightAlignXOffset(FONT_NORMAL, gText_TextSpeedFast, 198),
+ *          YPOS_TEXTSPEED, styles[2]);
+ */
 export function TextSpeed_DrawChoices(selection: number): void {
   const styles = [0, 0, 0]; styles[selection] = 1;
   const slow = gs('gText_TextSpeedSlow');
   const mid  = gs('gText_TextSpeedMid');
   const fast = gs('gText_TextSpeedFast');
   DrawOptionMenuChoice(slow, 104, Y_TEXTSPEED, styles[0]);
-  // xMid : decomp `(widthSlow - (widthMid - 94) - widthFast) / 2 + 104`.
-  // Approximation : entre slow et fast, centré.
-  DrawOptionMenuChoice(mid, 152, Y_TEXTSPEED, styles[1]);
+  // 1:1 décomp xMid calc : pixel widths via GetStringWidth (= notre
+  // measureStringWidth). rightAlignX fait `198 - width(fast)` (= équivaut à
+  // GetStringRightAlignXOffset). Pour xMid, on reproduit la formule littéralement.
+  const widthSlow = GetStringRightAlignXOffset(slow, 0) * -1;
+  const widthMid  = GetStringRightAlignXOffset(mid, 0) * -1;
+  const widthFast = GetStringRightAlignXOffset(fast, 0) * -1;
+  const widthMidAdj = widthMid - 94;
+  const xMid = Math.floor((widthSlow - widthMidAdj - widthFast) / 2) + 104;
+  DrawOptionMenuChoice(mid, xMid, Y_TEXTSPEED, styles[1]);
   DrawOptionMenuChoice(fast, rightAlignX(fast, 198), Y_TEXTSPEED, styles[2]);
 }
 
@@ -638,6 +683,16 @@ function flattenBarrelOnGlobalThis(): void {
 (globalThis as Record<string, unknown>).__optionMenuImpl_DrawOptionMenuChoice = DrawOptionMenuChoice;
 (globalThis as Record<string, unknown>).__optionMenuImpl_DrawHeaderText = DrawHeaderText;
 (globalThis as Record<string, unknown>).__optionMenuImpl_DrawOptionMenuTexts = DrawOptionMenuTexts;
+// 1:1 décomp delegates pour les *_DrawChoices : l'auto-fichier `option_menu-all-auto.ts`
+// hardcode `(0xA1)` (CHAR_0 GBA charmap) et `(0x77)` (CHAR_SPACER) qui sont mal mappés
+// par notre text-system ASCII (= bug "j" pour FENETRE TYPE). Notre TS version utilise
+// CHAR_0 ASCII (0x30) et string concat correct → "1", "2", etc.
+(globalThis as Record<string, unknown>).__optionMenuImpl_TextSpeed_DrawChoices = TextSpeed_DrawChoices;
+(globalThis as Record<string, unknown>).__optionMenuImpl_BattleScene_DrawChoices = BattleScene_DrawChoices;
+(globalThis as Record<string, unknown>).__optionMenuImpl_BattleStyle_DrawChoices = BattleStyle_DrawChoices;
+(globalThis as Record<string, unknown>).__optionMenuImpl_Sound_DrawChoices = Sound_DrawChoices;
+(globalThis as Record<string, unknown>).__optionMenuImpl_ButtonMode_DrawChoices = ButtonMode_DrawChoices;
+(globalThis as Record<string, unknown>).__optionMenuImpl_FrameType_DrawChoices = FrameType_DrawChoices;
 
 // gPaletteFade + gTasks : forwarders dynamiques vers le runtime courant.
 Object.defineProperty(globalThis, 'gPaletteFade', {

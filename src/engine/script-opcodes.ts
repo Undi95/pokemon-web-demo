@@ -567,11 +567,19 @@ registerOpcode('closemessage', (_ctx) => {
 registerOpcode('msgbox', (ctx, args) => {
   const textLabel = args[0];
   const type = args[1] ?? 'MSGBOX_DEFAULT';
-  const rawText = getText(textLabel);
-  if (!rawText) {
-    console.warn(`[opcode msgbox] text '${textLabel}' not found`);
-    return false;
+  // 1:1 décomp : le linker GBA garantit le label existe au compile time, donc le
+  // décomp ne gère pas ce cas. Notre runtime fetch async les textes depuis JSON,
+  // un label peut être absent si extract-scripts.mjs ne l'a pas récolté ou si la
+  // map JSON est mal chargée. Avant : `return false` (= advance) → le script
+  // exécutait silencieusement les opcodes suivants (setvar, applymovement...) →
+  // bug invisible (= dialog jamais affiché mais state changed). Maintenant on
+  // affiche `[MISSING:label]` à l'écran avec le flow msgbox normal → debug visible
+  // + halt jusqu'à A press, comme un vrai dialog.
+  const lookupText = getText(textLabel);
+  if (!lookupText) {
+    console.error(`[opcode msgbox] text '${textLabel}' not found — showing [MISSING] placeholder`);
   }
+  const rawText = lookupText ?? `[MISSING:${textLabel}]`;
 
   // 1:1 décomp `data/scripts/std_msgbox.inc` semantics :
   //   MSGBOX_NPC      → lock + faceplayer + message + waitbuttonpress + release

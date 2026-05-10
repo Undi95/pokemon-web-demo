@@ -30,7 +30,7 @@
  *   DONE       : flow returns true → script unblocks waitstate
  */
 
-import { gMain } from './decomp-globals';
+import { gMain, getRuntime } from './decomp-globals';
 import { RtcCalcLocalTime, gLocalTime, RtcCalcLocalTimeOffset } from './rtc';
 import { gameState } from './game-state';
 import { SignalWaitState } from './script-opcodes';
@@ -287,6 +287,15 @@ export function startWallClockFlow(mode: Mode): WallClockFlow {
           overlay.style.opacity = '0';
           setTimeout(() => cleanup(), 320);
         }
+        // Audit session 126 : 1:1 décomp `wallclock.c:864,892`
+        // `BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK)` (= unfade)
+        // au retour à overworld. Sans ça, le `fadescreen FADE_TO_BLACK` du
+        // script `SetWallClock` qui a précédé reste actif → BG noir post-confirm.
+        // Le décomp ROM le fait dans CB2_StartWallClock cleanup ; notre flow
+        // standalone doit le faire explicitement.
+        try {
+          getRuntime().BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+        } catch (e) { console.warn('[wallclock-flow] BeginNormalPaletteFade failed:', e); }
         state = 'DONE';
         return false;
       }

@@ -12,6 +12,15 @@
 import * as _dg from './decomp-globals';
 import * as _cb from './copyright-boot';
 import { FlagSet, FlagClear, FlagGet, VarSet, VarGet } from './script-vars';
+import { Overworld_GetMapHeaderByGroupAndId, defineMapHeaderEntry } from './decomp-bridge';
+import {
+  MapGridGetCollisionAt,
+  MapGridGetMetatileBehaviorAt,
+  MapGridGetElevationAt,
+  MapGridGetMetatileIdAt,
+  GetMapBorderIdAt,
+  GetMetatileAttributesById,
+} from './map-loader';
 const dg = _dg as any;
 const cb = _cb as any;
 
@@ -473,6 +482,26 @@ const symbolsToExpose: Record<string, unknown> = {
   // version auto/src-all cassée — first-seen wins). Sinon `FlagClear` du
   // barrel call `GetFlagPointer` non-défini → ReferenceError au resume.
   FlagSet, FlagClear, FlagGet, VarSet, VarGet,
+
+  // Overworld map header lookups (1:1 décomp `src/overworld.c:579`). Référencées
+  // sans qualifier dans `decomp-data/auto/src-all/overworld-all-auto.ts` (=
+  // CB2_ContinueSavedGame, LoadCurrentMapData, LoadSaveblockMapHeader, etc).
+  // Sans cette expose : `Overworld_GetMapHeaderByGroupAndId is not defined` →
+  // CB2_ContinueSavedGame crash → user croit que sa save a disparu (audit
+  // session 126).
+  Overworld_GetMapHeaderByGroupAndId,
+  defineMapHeaderEntry,
+
+  // Map grid + metatile lookups 1:1 décomp `src/fieldmap.c`. Référencées sans
+  // qualifier dans `decomp-data/auto/src-all/fieldmap-all-auto.ts` et autres.
+  // Sans cette expose : ReferenceError au runtime quand un auto-file appelle
+  // ces fns (ex. collision check, IsCoordOutsideMap, etc).
+  MapGridGetCollisionAt,
+  MapGridGetMetatileBehaviorAt,
+  MapGridGetElevationAt,
+  MapGridGetMetatileIdAt,
+  GetMapBorderIdAt,
+  GetMetatileAttributesById,
   // RGB(r, g, b) macro 1:1 décomp `include/constants/rgb.h:8` :
   //   #define RGB(r, g, b)  ((r) | ((g) << 5) | ((b) << 10))
   // Le transpiler ne gère QUE les macros 1-arg, donc RGB(r, g, b) reste un

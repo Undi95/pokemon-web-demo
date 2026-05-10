@@ -144,6 +144,19 @@ if (existsSync(dataRoot)) {
     Object.assign(commonTexts, parsed.texts);
   }
 }
+// Merger les scripts/textes des maps dans le pool common pour résoudre les
+// cross-references inter-map (ex. LittlerootTown_MaysHouse_1F goto
+// PlayersHouse_1F_EventScript_EnterHouseMovingIn défini dans BrendansHouse_1F).
+// Le décomp linker GBA résout ces refs au compile time via un namespace global ;
+// notre runtime charge UNIQUEMENT `_common.json` au boot (cf. script-runtime.ts
+// loadCommonScripts), donc sans ce merge, msgbox cross-map silent-fail.
+// Common (= data/scripts canonical) garde la priorité — on n'écrase pas.
+for (const [k, v] of Object.entries(allScripts)) {
+  if (!(k in commonScripts)) commonScripts[k] = v;
+}
+for (const [k, v] of Object.entries(allTexts)) {
+  if (!(k in commonTexts)) commonTexts[k] = v;
+}
 writeFileSync(join(outRoot, '_common.json'), JSON.stringify({ scripts: commonScripts, texts: commonTexts }));
 
 // Pool global = commun + tous les scripts/textes de toutes les maps.

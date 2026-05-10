@@ -14,6 +14,7 @@
  */
 
 import { gameState } from './game-state';
+import { resolveDecompConstant } from './decomp-constants';
 
 // ─── Flag API (1:1 décomp event_data.c) ──────────────────────────────────────
 
@@ -60,6 +61,20 @@ export function VarGet(varId: string): number {
     const pa = (globalThis as { gPlayerAvatar?: { facing: number } }).gPlayerAvatar;
     return pa?.facing ?? 0;
   }
+  // 1:1 décomp event_data.c:174-180 : `if (id < VARS_START) return id`.
+  // Sur ROM les constants comme METATILE_X / MALE / FEMALE sont resolved au
+  // compile time (= literal u16 inline dans le bytecode). Notre transpiler
+  // garde le NAME → on resolve ici via la table des constants extraites depuis
+  // les headers décomp. Audit session 125 : sans ça, setmetatile écrivait 0
+  // (= wall) sur (4,2) → player can't exit truck après option menu cycle.
+  if (varId.startsWith('VAR_')) {
+    // Var symbolique → lookup gameState (= ROM : gSaveBlock1Ptr->vars[id-0x4000]).
+    return gameState.getVar(varId);
+  }
+  // Constant resolution (METATILE_*, MALE/FEMALE, FLAG_*, ITEM_*, MUS_*, etc).
+  const constVal = resolveDecompConstant(varId);
+  if (constVal !== undefined) return constVal & 0xFFFF;
+  // Unknown : fallback gameState (= legacy comportement, returns 0 if not set).
   return gameState.getVar(varId);
 }
 

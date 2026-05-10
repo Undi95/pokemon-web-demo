@@ -296,27 +296,11 @@ export function TextSpeed_ProcessInput(selection: any): any {
       return selection;
 }
 
-/** static void TextSpeed_DrawChoices(u8 selection) */
+/** ⚠️ MANUAL FIX post-transpile : auto body utilisait `GetStringWidth(FONT_NORMAL, ...)`
+ *  qui passe par le text-all-auto.ts version broken au field. Delegate à notre
+ *  version TS (option-menu-impl.ts) qui calcule xMid correctement. */
 export function TextSpeed_DrawChoices(selection: any): any {
-  let styles: any = [];
-      let widthSlow, widthMid, widthFast, xMid;
-
-      styles[0] = 0;
-      styles[1] = 0;
-      styles[2] = 0;
-      styles[selection] = 1;
-
-      DrawOptionMenuChoice(gText_TextSpeedSlow, 104, ((MENUITEM_TEXTSPEED * 16)), styles[0]);
-
-      widthSlow = GetStringWidth(FONT_NORMAL, gText_TextSpeedSlow, 0);
-      widthMid = GetStringWidth(FONT_NORMAL, gText_TextSpeedMid, 0);
-      widthFast = GetStringWidth(FONT_NORMAL, gText_TextSpeedFast, 0);
-
-      widthMid -= 94;
-      xMid = (widthSlow - widthMid - widthFast) / 2 + 104;
-      DrawOptionMenuChoice(gText_TextSpeedMid, xMid, ((MENUITEM_TEXTSPEED * 16)), styles[1]);
-
-      DrawOptionMenuChoice(gText_TextSpeedFast, GetStringRightAlignXOffset(FONT_NORMAL, gText_TextSpeedFast, 198), ((MENUITEM_TEXTSPEED * 16)), styles[2]);
+  return (globalThis as any).__optionMenuImpl_TextSpeed_DrawChoices(selection);
 }
 
 /** static u8 BattleScene_ProcessInput(u8 selection) */
@@ -330,16 +314,9 @@ export function BattleScene_ProcessInput(selection: any): any {
       return selection;
 }
 
-/** static void BattleScene_DrawChoices(u8 selection) */
+/** ⚠️ MANUAL FIX post-transpile : delegate à TS (= cf TextSpeed_DrawChoices). */
 export function BattleScene_DrawChoices(selection: any): any {
-  let styles: any = [];
-
-      styles[0] = 0;
-      styles[1] = 0;
-      styles[selection] = 1;
-
-      DrawOptionMenuChoice(gText_BattleSceneOn, 104, ((MENUITEM_BATTLESCENE * 16)), styles[0]);
-      DrawOptionMenuChoice(gText_BattleSceneOff, GetStringRightAlignXOffset(FONT_NORMAL, gText_BattleSceneOff, 198), ((MENUITEM_BATTLESCENE * 16)), styles[1]);
+  return (globalThis as any).__optionMenuImpl_BattleScene_DrawChoices(selection);
 }
 
 /** static u8 BattleStyle_ProcessInput(u8 selection) */
@@ -353,16 +330,9 @@ export function BattleStyle_ProcessInput(selection: any): any {
       return selection;
 }
 
-/** static void BattleStyle_DrawChoices(u8 selection) */
+/** ⚠️ MANUAL FIX post-transpile : delegate à TS (= cf TextSpeed_DrawChoices). */
 export function BattleStyle_DrawChoices(selection: any): any {
-  let styles: any = [];
-
-      styles[0] = 0;
-      styles[1] = 0;
-      styles[selection] = 1;
-
-      DrawOptionMenuChoice(gText_BattleStyleShift, 104, ((MENUITEM_BATTLESTYLE * 16)), styles[0]);
-      DrawOptionMenuChoice(gText_BattleStyleSet, GetStringRightAlignXOffset(FONT_NORMAL, gText_BattleStyleSet, 198), ((MENUITEM_BATTLESTYLE * 16)), styles[1]);
+  return (globalThis as any).__optionMenuImpl_BattleStyle_DrawChoices(selection);
 }
 
 /** static u8 Sound_ProcessInput(u8 selection) */
@@ -377,16 +347,9 @@ export function Sound_ProcessInput(selection: any): any {
       return selection;
 }
 
-/** static void Sound_DrawChoices(u8 selection) */
+/** ⚠️ MANUAL FIX post-transpile : delegate à TS (= cf TextSpeed_DrawChoices). */
 export function Sound_DrawChoices(selection: any): any {
-  let styles: any = [];
-
-      styles[0] = 0;
-      styles[1] = 0;
-      styles[selection] = 1;
-
-      DrawOptionMenuChoice(gText_SoundMono, 104, ((MENUITEM_SOUND * 16)), styles[0]);
-      DrawOptionMenuChoice(gText_SoundStereo, GetStringRightAlignXOffset(FONT_NORMAL, gText_SoundStereo, 198), ((MENUITEM_SOUND * 16)), styles[1]);
+  return (globalThis as any).__optionMenuImpl_Sound_DrawChoices(selection);
 }
 
 /** static u8 FrameType_ProcessInput(u8 selection) */
@@ -416,38 +379,11 @@ export function FrameType_ProcessInput(selection: any): any {
       return selection;
 }
 
-/** static void FrameType_DrawChoices(u8 selection) */
+/** ⚠️ MANUAL FIX post-transpile : auto body utilise CHAR_0=0xA1 + CHAR_SPACER=0x77
+ *  hardcodés (= GBA charmap) qui mappent mal vers ASCII (= bug "j" pour TYPE 2).
+ *  Delegate à TS qui utilise CHAR_0 ASCII = 0x30. */
 export function FrameType_DrawChoices(selection: any): any {
-  let text: any = [];
-      let n: any = selection + 1;
-      let i: any = null;
-      let width: any = null;  
-
-      for (i = 0; gText_FrameTypeNumber[i] != (0xFF) && i <= 5; i++)
-          text[i] = gText_FrameTypeNumber[i];
-
-       
-      if (n / 10 != 0)
-      {
-          text[i] = n / 10 + (0xA1);
-          i++;
-          text[i] = n % 10 + (0xA1);
-          i++;
-      }
-      else
-      {
-          text[i] = n % 10 + (0xA1);
-          i++;
-          text[i] = (0x77);
-          i++;
-      }
-
-      text[i] = (0xFF);
-
-       
-      width = GetStringWidth(1, gText_FrameType, 0);
-      DrawOptionMenuChoice(gText_FrameType, 104, ((MENUITEM_FRAMETYPE * 16)), 0);
-      DrawOptionMenuChoice(text, width + 107, ((MENUITEM_FRAMETYPE * 16)), 1);
+  return (globalThis as any).__optionMenuImpl_FrameType_DrawChoices(selection);
 }
 
 /** static u8 ButtonMode_ProcessInput(u8 selection) */
@@ -473,27 +409,9 @@ export function ButtonMode_ProcessInput(selection: any): any {
       return selection;
 }
 
-/** static void ButtonMode_DrawChoices(u8 selection) */
+/** ⚠️ MANUAL FIX post-transpile : delegate à TS (= cf TextSpeed_DrawChoices). */
 export function ButtonMode_DrawChoices(selection: any): any {
-  let widthNormal, widthLR, widthLA, xLR;
-      let styles: any = [];
-
-      styles[0] = 0;
-      styles[1] = 0;
-      styles[2] = 0;
-      styles[selection] = 1;
-
-      DrawOptionMenuChoice(gText_ButtonTypeNormal, 104, ((MENUITEM_BUTTONMODE * 16)), styles[0]);
-
-      widthNormal = GetStringWidth(FONT_NORMAL, gText_ButtonTypeNormal, 0);
-      widthLR = GetStringWidth(FONT_NORMAL, gText_ButtonTypeLR, 0);
-      widthLA = GetStringWidth(FONT_NORMAL, gText_ButtonTypeLEqualsA, 0);
-
-      widthLR -= 94;
-      xLR = (widthNormal - widthLR - widthLA) / 2 + 104;
-      DrawOptionMenuChoice(gText_ButtonTypeLR, xLR, ((MENUITEM_BUTTONMODE * 16)), styles[1]);
-
-      DrawOptionMenuChoice(gText_ButtonTypeLEqualsA, GetStringRightAlignXOffset(FONT_NORMAL, gText_ButtonTypeLEqualsA, 198), ((MENUITEM_BUTTONMODE * 16)), styles[2]);
+  return (globalThis as any).__optionMenuImpl_ButtonMode_DrawChoices(selection);
 }
 
 /** ⚠️ MANUAL FIX post-transpile : delegate à option-menu-impl.ts. */

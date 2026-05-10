@@ -66,7 +66,7 @@ import { getMapNameFr } from '../data/map-names-fr';
 import { gSaveBlock2Ptr } from './gba-menu-system';
 import { FlagGet } from './script-vars';
 import { CB2_InitOptionMenu } from './decomp-data/auto/src-all/option_menu-all-auto';
-import { CB2_ReturnToFieldWithOpenMenu } from './decomp-data/auto/src-all/overworld-all-auto';
+import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { preloadOptionMenuAssets } from './option-menu-impl';
 
 // ─── Types + state ───────────────────────────────────────────────────────────
@@ -383,15 +383,28 @@ function saveAction(): boolean {
  *  reset gMain.state à 0, set savedCallback = CB2_ReturnToFieldWithOpenMenu,
  *  puis SetMainCallback2(CB2_InitOptionMenu) qui prend le relais. */
 function optionsAction(): boolean {
-  // Async preload (= attendre que les frame tiles + text palette soient en
-  // mémoire avant d'appeler CB2_InitOptionMenu qui s'attend à les trouver).
+  // 1:1 décomp `StartMenuOptionCallback` (start_menu.c:731-745) :
+  //   if (!gPaletteFade.active) {
+  //     PlayRainStoppingSoundEffect();
+  //     RemoveExtraStartMenuWindows();
+  //     CleanupOverworldWindowsAndTilemaps();
+  //     SetMainCallback2(CB2_InitOptionMenu);
+  //     gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
+  //     return TRUE;
+  //   }
+  //   return FALSE;
   void preloadOptionMenuAssets().then(() => {
     gMain.state = 0;
-    gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
+    // 1:1 décomp gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu, mais on
+    // utilise notre wrapper TS (option-menu-return.ts) car le auto-fichier
+    // CB2_ReturnToFieldLocal est broken (transpiler ne supporte pas u8 *state
+    // pointer arg). Notre version reproduit la state machine 1:1 avec
+    // gMain.state mutable.
+    gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu_Manual;
     const rt = getRuntime();
     rt.SetMainCallback2(CB2_InitOptionMenu);
   });
-  // Return true = close the start menu now ; the CB2 swap takes over the frame.
+  // Return true = close the start menu now ; the CB2 swap takes over la frame.
   return true;
 }
 

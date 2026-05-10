@@ -145,9 +145,24 @@ export function SaveObjectEvents(): void {
 export function LoadObjectEvents(): void {
   const block1 = GetSaveBlock1();
   if (!block1.objectEvents || block1.objectEvents.length === 0) return;
+  // Audit session 126 fix : ne PAS appliquer les snaps qui ne sont pas de la
+  // map courante. Sans ce check, après un warp Truck → MaysHouse_1F, les snaps
+  // MOVING_BOX (= NPCs du Truck) qui ont localId 1,2,3 matchaient les NEW NPCs
+  // MaysHouse (= Mom/Vigoroth/Vigoroth aussi localId 1,2,3) → applySnapshot
+  // ÉCRASE les nouveaux NPCs avec MOVING_BOX → 1) zombies visuels, 2) bloque
+  // le player car (2,3) devient un MOVING_BOX collidable.
+  // Le décomp 1:1 n'a pas ce problème car les NPC indexes (= sObjectEvents[i])
+  // sont stables intra-map ET les saves contiennent des snaps mapId-tagged.
+  // Notre runtime spawn dynamiquement → match par localId seul est ambigu
+  // entre maps. Ajout du check mapId.
+  const currentMapId = (block1 as { __mapId?: string }).__mapId ?? '';
   for (let i = 0; i < OBJECT_EVENTS_COUNT && i < block1.objectEvents.length; i++) {
     const snap = block1.objectEvents[i];
     if (!snap || !snap.active) continue;
+    // Skip les snaps d'une autre map (= NPCs persisted depuis une session/map
+    // précédente). Si snap.mapId est vide (= ancien snap sans mapId), apply
+    // par compat (= ancienne save format).
+    if (snap.mapId && currentMapId && snap.mapId !== currentMapId) continue;
     // Match par localId (= NPCs spawnés depuis template ont leur localId set).
     const target = gObjectEvents.find(npc => npc.active && npc.localId === snap.localId);
     if (target) applySnapshotToObjectEvent(target, snap);

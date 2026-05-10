@@ -691,7 +691,12 @@ export function InitMap(): void {
   InitMapLayoutData(gMapHeader);
   // SetOccupiedSecretBaseEntranceMetatiles(gMapHeader.events);  // TODO Phase 4.7
   // 1:1 décomp `RunOnLoadMapScript` (fieldmap.c:75) — script-runtime sait
-  // dispatch via mapScripts entries.
+  // dispatch via mapScripts entries. Audit session 125 : auparavant on
+  // skippait ce hook en mode restore option menu pour éviter corruption tile
+  // (= setmetatile + VarGet=0 sur METATILE_* writes 0/wall). Maintenant que
+  // VarGet resolve les constants via decomp-constants table (= 1:1 ROM
+  // assembleur compile-time resolution), le hook fonctionne et on peut le
+  // re-enable.
   if (_runOnLoadMapScriptHook) _runOnLoadMapScriptHook();
 }
 

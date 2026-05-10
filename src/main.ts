@@ -72,6 +72,20 @@ import './engine/trainer-battle-flow';
 // `globalThis.__rtcModule` pour save sync. Cf. session 124 fix Bug 4.
 import { exposeRtcDevApi } from './engine/rtc';
 exposeRtcDevApi();
+
+// Audit session 126 fix Bug #3 : expose les bridge fns (gMain, FlagSet,
+// Overworld_GetMapHeaderByGroupAndId, MapGridGetCollisionAt, etc) sur globalThis
+// AU BOOT, avant que Phaser.Game crée les scenes. Avant : exposeGbaGlobals() était
+// appelé par GameScene.create() / TestOverworldScene.create(), mais le runtime tick
+// pouvait fire CB2_ContinueSavedGame depuis runOneFrame avant qu'une scene n'ait
+// fait son create() → identifiers libres dans les auto-files (= overworld-all-auto.ts
+// LoadSaveblockMapHeader) cherchaient les fns sur globalThis et trouvaient undefined
+// → ReferenceError → boot crash. L'expose au boot main.ts garantit dispo sur globalThis
+// avant tout tick. Idempotent : ré-appel par les scenes ne fait que re-set les mêmes
+// valeurs (pas de side-effect négatif).
+import { exposeGbaGlobals } from './engine/gba-global-scope';
+exposeGbaGlobals();
+
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
