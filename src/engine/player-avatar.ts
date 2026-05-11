@@ -543,17 +543,30 @@ function checkPlayerCollision(direction: number): number {
     return COLLISION_IMPASSABLE;
   }
   // 3. Elevation mismatch check (= 1:1 décomp `IsElevationMismatchAt`,
-  //    event_object_movement.c). Audit session 126 C7 : avant skip → bug
-  //    latent sur ledges/staircases. Maintenant 1:1 décomp :
-  //      bool IsElevationMismatchAt(currentElev, x, y) {
-  //        target = MapGridGetElevationAt(x, y);
-  //        if (target == 0 || currentElev == 0) return FALSE;
-  //        return currentElev != target;
+  //    event_object_movement.c:13000) — exact pattern :
+  //      static bool8 IsElevationMismatchAt(u8 elevation, s16 x, s16 y) {
+  //          if (elevation == ELEVATION_TRANSITION) return FALSE;
+  //          mapElevation = MapGridGetElevationAt(x, y);
+  //          if (mapElevation == ELEVATION_TRANSITION
+  //              || mapElevation == ELEVATION_MULTI_LEVEL) return FALSE;
+  //          if (mapElevation != elevation) return TRUE;
+  //          return FALSE;
   //      }
-  const targetElev = MapGridGetElevationAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
+  //
+  //  ELEVATION_TRANSITION = 15 (= "0xF"), ELEVATION_MULTI_LEVEL = 0.
+  //  Bug user session 129 : tile (11,10) devant truck cache a elevation 15
+  //  (transition), player elevation 3 → ancienne logique retournait MISMATCH
+  //  car target!=0 && current!=0 && target!=current. 1:1 décomp = no mismatch
+  //  (transition tile traversable peu importe currentElev).
+  const ELEVATION_TRANSITION = 15;
+  const ELEVATION_MULTI_LEVEL = 0;
   const currentElev = gPlayerAvatar.currentElevation;
-  if (targetElev !== 0 && currentElev !== 0 && targetElev !== currentElev) {
-    return COLLISION_ELEVATION_MISMATCH;
+  if (currentElev !== ELEVATION_TRANSITION) {
+    const targetElev = MapGridGetElevationAt(dx + MAP_OFFSET, dy + MAP_OFFSET);
+    if (targetElev !== ELEVATION_TRANSITION && targetElev !== ELEVATION_MULTI_LEVEL
+        && targetElev !== currentElev) {
+      return COLLISION_ELEVATION_MISMATCH;
+    }
   }
   // 4. NPC collision (= 1:1 décomp `DoesObjectCollideWithObjectAt`).
   //    Pendant un walk, currentCoords = TARGET et previousCoords = SOURCE →
