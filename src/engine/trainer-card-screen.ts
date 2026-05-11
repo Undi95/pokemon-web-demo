@@ -98,7 +98,8 @@ const WIN_CARD_TEXT_TEMPLATE: WindowTemplate = {
 interface TrainerCardAssets {
   bgTiles: Uint8Array;          // tiles.png raw 4bpp data
   bgTilemap: Uint16Array;       // bg.bin
-  frontTilemap: Uint16Array;    // front.bin
+  frontTilemap: Uint16Array;    // front.bin (= card front layout)
+  backTilemap: Uint16Array;     // back.bin (= card back layout for flip)
   bgPalette: Uint16Array;       // green.pal (48 entries = pal 0+1+2)
   femaleBgPalette: Uint16Array; // female_bg.pal (16 entries = overwrites pal 1)
   starPalette: Uint16Array;     // star.pal (16 entries = pal 4)
@@ -110,6 +111,10 @@ interface TrainerCardAssets {
 
 let _isOpen = false;
 let _phase: 'idle' | 'fading_in' | 'open' | 'fading_out' = 'idle';
+/** Current card side : 'front' (= default) ou 'back'. Toggle via A press. */
+let _cardSide: 'front' | 'back' = 'front';
+/** Flip animation in progress (= input disabled jusqu'à fade-in-back/front complete). */
+let _flipping = false;
 let _assets: TrainerCardAssets | null = null;
 let _assetsLoading: Promise<TrainerCardAssets> | null = null;
 let _wid = -1;
@@ -132,12 +137,13 @@ async function _loadAssets(): Promise<TrainerCardAssets> {
     //   - green.pal (48 entries) → BG_PLTT_ID(0) fill palettes 0+1+2
     //   - female_bg.pal (16 entries) → BG_PLTT_ID(1) overwrite si FEMALE
     //   - star.pal (16 entries) → BG_PLTT_ID(4) pour stars achievement
-    const [bgTilesRaw, bgTilemapBin, frontTilemapBin,
+    const [bgTilesRaw, bgTilemapBin, frontTilemapBin, backTilemapBin,
            bgPalette, femaleBgPalette, starPalette,
            trainerPicRaw, trainerPic, badgesRaw, badgesImg] = await Promise.all([
       loadTileBin('/decomp/em/trainer_card/tiles.png', 4),
       loadTilemapBin('/decomp/em/trainer_card/bg.bin'),
       loadTilemapBin('/decomp/em/trainer_card/front.bin'),
+      loadTilemapBin('/decomp/em/trainer_card/back.bin'),
       loadGbaPal('/decomp/em/trainer_card/green.pal'),
       loadGbaPal('/decomp/em/trainer_card/female_bg.pal'),
       loadGbaPal('/decomp/em/trainer_card/star.pal'),
@@ -151,6 +157,7 @@ async function _loadAssets(): Promise<TrainerCardAssets> {
       bgTiles: bgTilesRaw,
       bgTilemap: bgTilemapBin,
       frontTilemap: frontTilemapBin,
+      backTilemap: backTilemapBin,
       bgPalette,
       femaleBgPalette,
       starPalette,
@@ -370,6 +377,103 @@ function _drawCardFront(): void {
   CopyWindowToVram(_wid, 3);
 }
 
+/** 1:1 décomp `PrintAllOnCardBack` flow (trainer_card.c:405) :
+ *    case 0: PrintNameOnCardBack();         // player name top-right
+ *    case 1: PrintHofDebutTimeOnCard();     // si hasHofResult
+ *    case 2: PrintLinkBattleResultsOnCard;  // si hasLinkResults
+ *    case 3: PrintTradesStringOnCard();     // si hasTrades
+ *    case 4-7: BerryCrush/Pokeblock/Union/Contest/PokemonIcons/BattleFacility/Stickers
+ *
+ *  Pour MVP carte dresseur new-game : hasHofResult/hasLinkResults/hasTrades
+ *  = FALSE (= flags pas set). Back card affiche juste player name + stats
+ *  placeholders (= "0 ECHANGES", "0 COMBATS LIEN") pour visual completeness.
+ *
+ *  1:1 décomp `PrintNameOnCardBack` (line 1175) :
+ *    AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL,
+ *        GetStringRightAlignXOffset(FONT_NORMAL, playerName, 216), 9, ...)
+ *  = player name right-aligned a x=216, y=9.
+ *
+ *  1:1 décomp `PrintStatOnBackOfCard` (line 1196) :
+ *    AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 16, top*16+33,
+ *        sTrainerCardTextColors, TEXT_SKIP_DRAW, statName);
+ *    AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL,
+ *        GetStringRightAlignXOffset(FONT_NORMAL, stat, 216), top*16+33, ...);
+ *  = label a x=16, value right-aligned a x=216, y=top*16+33.
+ */
+function _drawCardBack(): void {
+  if (_wid < 0) return;
+  FillWindowPixelBuffer(_wid, 0x00);
+  const d = _bufferCardData();
+  // 1:1 décomp `BufferNameForCardBack` (trainer_card.c:1164) :
+  //   StringCopy(gStringVar1, playerName);
+  //   StringExpandPlaceholders(textPlayersCard, gText_Var1sTrainerCard);
+  //   gText_Var1sTrainerCard FR = "CARTE DE DRESSEUR de {STR_VAR_1}"
+  //
+  // Puis `PrintNameOnCardBack` (line 1180) Hoenn variant :
+  //   right-aligned a x=216, y=9.
+  const headerStr = `CARTE DE DRESSEUR de ${d.name}`;
+  const headerX = GetStringRightAlignXOffset(headerStr, 216);
+  AddTextPrinterParameterized3(_wid, FONT_NORMAL, headerX, 9, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, headerStr);
+  // 1:1 décomp `PrintAllOnCardBack` (trainer_card.c:405) : chaque stat est
+  // gated par un `hasXResult` flag. Si flag=false → SKIP le print (= ligne
+  // empty du tilemap back.bin reste visible, sans label/value).
+  //
+  // Pour MVP : flags computed depuis save data minimal. Toutes false pour
+  // new game → back affiche juste le header. Match 1:1 ROM screenshot user.
+  //
+  // Future : wire les vrais flags depuis gSaveBlock2Ptr.gameStats + HOF data :
+  //   hasHofResult    : FLAG_SYS_GAME_CLEAR || gSaveBlock2Ptr.linkBattles*
+  //   hasLinkResults  : (linkBattleWins + linkBattleLosses) > 0
+  //   hasTrades       : gameStats[GAME_STAT_POKEMON_TRADES] > 0
+  //   hasContestResult: gameStats[GAME_STAT_ENTERED_CONTEST] > 0
+  //   hasBattleTowerResult : gSaveBlock2Ptr.frontier.battleTowerWins > 0
+  const stats: Array<{ has: boolean, label: string, value: string }> = [
+    { has: false, label: 'PANTHEON Nº 1', value: '----' },
+    { has: false, label: 'COMBATS LIEN', value: '0 V / 0 D' },
+    { has: false, label: 'ECHANGES', value: '0' },
+    { has: false, label: 'CONCOURS', value: '0' },
+    { has: false, label: 'TOUR BATTLE', value: '0 V' },
+  ];
+  for (let i = 0; i < stats.length; i++) {
+    const stat = stats[i];
+    if (!stat.has) continue;  // 1:1 décomp : skip si flag false
+    const y = i * 16 + 33;
+    AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, y, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, stat.label);
+    const valueX = GetStringRightAlignXOffset(stat.value, 216);
+    AddTextPrinterParameterized3(_wid, FONT_NORMAL, valueX, y, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, stat.value);
+  }
+  CopyWindowToVram(_wid, 3);
+}
+
+/** Swap BG0 tilemap entre front.bin et back.bin avec remap 30×20 → 32×32.
+ *  1:1 décomp DrawCardFrontOrBack (trainer_card.c:1481). */
+function _swapCardSide(toSide: 'front' | 'back'): void {
+  const rt = getRuntime();
+  if (!rt || !_assets) return;
+  const frontMapOff = CARD_FRONT_MAP_BASE * 0x800;
+  const dst = new Uint16Array(rt.gba.vram.buffer, frontMapOff, 32 * 32);
+  const src = toSide === 'front' ? _assets.frontTilemap : _assets.backTilemap;
+  for (let i = 0; i < 20; i++) {
+    for (let j = 0; j < 32; j++) {
+      dst[32 * i + j] = (j < 30) ? src[30 * i + j] : src[0];
+    }
+  }
+}
+
+/** Show/hide trainer pic + badges OAM (= visible front uniquement). */
+function _setOamVisibility(visible: boolean): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (_trainerPicOamId >= 0) {
+    const spr = rt.gSprites.get(_trainerPicOamId);
+    if (spr) spr.invisible = !visible;
+  }
+  for (const id of _badgeOamIds) {
+    const spr = rt.gSprites.get(id);
+    if (spr) spr.invisible = !visible;
+  }
+}
+
 /** Spawn trainer pic OAM 64×64 à droite-haut (= 1:1 décomp CreateTrainerCardTrainerPic). */
 function _spawnTrainerPicOam(assets: TrainerCardAssets): void {
   const rt = getRuntime();
@@ -388,13 +492,14 @@ function _spawnTrainerPicOam(assets: TrainerCardAssets): void {
   //
   // Mon erreur précédente : avais interprété (1, 0) comme TILE offset → 8px
   // pixel trop à droite. Fix : (1, 0) = pixel offset direct.
-  _trainerPicOamId = rt.CreateSpriteAtOam({
+  const trainerSpr = rt.CreateSpriteAtOam({
     x: 185, y: 72,
     shape: 0, size: 3,       // 64×64
     tileId: TRAINER_PIC_OBJ_OFFSET / 32,
     paletteBank: TRAINER_PIC_OBJ_PAL,
     priority: 0,
   });
+  _trainerPicOamId = trainerSpr.spriteId;
 }
 
 /** Spawn 8 badge OAM 32×32 à la rangée du bas. Visible only si badge flag set. */
@@ -412,14 +517,14 @@ function _spawnBadgesOam(assets: TrainerCardAssets): void {
   // Position : 8 slots horizontaux y=132, x espacé 32px from x=8.
   for (let i = 0; i < 8; i++) {
     if (i >= d.badges) continue;  // only show earned badges
-    const id = rt.CreateSpriteAtOam({
+    const badgeSpr = rt.CreateSpriteAtOam({
       x: 24 + i * 28, y: 132,
       shape: 0, size: 2,         // 32×32
       tileId: baseTile + i * TILES_PER_BADGE,
       paletteBank: BADGES_OBJ_PAL,
       priority: 0,
     });
-    _badgeOamIds.push(id);
+    _badgeOamIds.push(badgeSpr.spriteId);
   }
 }
 
@@ -442,6 +547,8 @@ function _freeTrainerCard(): void {
   if (_wid >= 0) { RemoveWindow(_wid); _wid = -1; }
   _isOpen = false;
   _phase = 'idle';
+  _cardSide = 'front';
+  _flipping = false;
   _graphicsReady = false;
   _graphicsLoading = false;
   _textWindowsReady = false;
@@ -467,39 +574,97 @@ function Task_CloseTrainerCard(task: DecompTask): void {
   _cardInputTaskId = -1;
 }
 
-/** 1:1 décomp `Task_TrainerCardMain` STATE_HANDLE_INPUT_FRONT (trainer_card.c:446) :
- *      if (JOY_NEW(A_BUTTON)) {
- *          FlipTrainerCard();         // → STATE_WAIT_FLIP_TO_BACK
- *          PlaySE(SE_RG_CARD_FLIP);
- *      } else if (JOY_NEW(B_BUTTON)) {
- *          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, blendColor);
- *          → STATE_CLOSE_CARD
- *      }
+/** 1:1 décomp `Task_DoCardFlipTask` (trainer_card.c:1602) — simplified via
+ *  BeginNormalPaletteFade au lieu du scanline HBlank effect 3D rotate.
  *
- *  Notre version simplifiée :
- *    A → close (= future TODO : flip animation vers carte BACK)
- *    B → close
- *    START → close (= bonus dev shortcut)
+ *  Pipeline :
+ *    state 0 : FadeScreen(FADE_TO_BLACK, -2) (= fast fade, ~8 frames)
+ *    state 1 : wait fade-out done → swap tilemap + redraw text + toggle OAM
+ *    state 2 : FadeScreen(FADE_FROM_BLACK, -2) (= fast fade-in)
+ *    state 3 : wait fade-in done → set _flipping=false, _cardSide flipped */
+function Task_FlipCard(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  const tState = task.data?.[0] ?? 0;
+  const tTargetSide = (task.data?.[1] ?? 0) ? 'back' : 'front';
+  switch (tState) {
+    case 0:
+      // Start fast fade-to-black (delay=-2 → deltaY=4 → ~8 frames).
+      rt.BeginNormalPaletteFade(0xFFFFFFFF, -2, 0, 16, 0 /* RGB_BLACK */);
+      if (task.data) task.data[0] = 1;
+      break;
+    case 1:
+      if (rt.gPaletteFade.active) return;  // wait fade done
+      // Swap tilemap + redraw text + show/hide OAM.
+      _swapCardSide(tTargetSide);
+      if (tTargetSide === 'back') {
+        _drawCardBack();
+        _setOamVisibility(false);
+      } else {
+        _drawCardFront();
+        _setOamVisibility(true);
+      }
+      _cardSide = tTargetSide;
+      if (task.data) task.data[0] = 2;
+      break;
+    case 2:
+      // Start fast fade-from-black.
+      rt.BeginNormalPaletteFade(0xFFFFFFFF, -2, 16, 0, 0 /* RGB_BLACK */);
+      if (task.data) task.data[0] = 3;
+      break;
+    case 3:
+      if (rt.gPaletteFade.active) return;
+      _flipping = false;
+      rt.DestroyTask(task.taskId);
+      break;
+  }
+}
+
+/** 1:1 décomp `Task_TrainerCardMain` input flow (trainer_card.c:446-501) :
  *
- *  Le flip back-card (= Hall of Fame, Link battles, Trades, Stickers) est un
- *  refactor 2-3h supplémentaire (= 2nd tilemap back.bin + autre print fns).
- *  Pour MVP carte dresseur : front uniquement, A/B/START exit. */
+ *  STATE_HANDLE_INPUT_FRONT :
+ *    A → FlipTrainerCard + SE_RG_CARD_FLIP → STATE_WAIT_FLIP_TO_BACK
+ *    B → BeginNormalPaletteFade ALL → STATE_CLOSE_CARD (= exit)
+ *
+ *  STATE_HANDLE_INPUT_BACK :
+ *    A → BeginNormalPaletteFade ALL → STATE_CLOSE_CARD (= exit)
+ *    B → FlipTrainerCard + SE_RG_CARD_FLIP → STATE_WAIT_FLIP_TO_FRONT */
 function Task_TrainerCard_HandleInput(_task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
+  if (_phase !== 'open') return;
+  if (_flipping) return;  // input disabled pendant flip animation
   const newKeys = rt.gMain.newKeys;
   const KEY_A = 0x0001, KEY_B = 0x0002, KEY_START = 0x0008;
-  if (_phase !== 'open') return;
-  if (newKeys & KEY_A) {
-    // 1:1 décomp : A press = FlipTrainerCard + SE_RG_CARD_FLIP. Stubbed pour
-    // l'instant (= no back card UI), juste close avec le même SE pour user feel.
-    PlaySE(5);
-    CloseTrainerCardScreen();
-    return;
-  }
-  if (newKeys & (KEY_B | KEY_START)) {
-    PlaySE(5);
-    CloseTrainerCardScreen();
+  if (_cardSide === 'front') {
+    if (newKeys & KEY_A) {
+      // A on front → flip to back.
+      PlaySE(5);  // SE_RG_CARD_FLIP (= 1:1 décomp PlaySE après FlipTrainerCard)
+      _flipping = true;
+      const task = rt.CreateTask(Task_FlipCard, 0);
+      const t = rt.gTasks.get(task);
+      if (t?.data) { t.data[0] = 0; t.data[1] = 1 /* target = back */; }
+      return;
+    }
+    if (newKeys & (KEY_B | KEY_START)) {
+      PlaySE(5);
+      CloseTrainerCardScreen();
+    }
+  } else {
+    // _cardSide === 'back'
+    if (newKeys & KEY_B) {
+      // B on back → flip to front.
+      PlaySE(5);
+      _flipping = true;
+      const task = rt.CreateTask(Task_FlipCard, 0);
+      const t = rt.gTasks.get(task);
+      if (t?.data) { t.data[0] = 0; t.data[1] = 0 /* target = front */; }
+      return;
+    }
+    if (newKeys & (KEY_A | KEY_START)) {
+      PlaySE(5);
+      CloseTrainerCardScreen();
+    }
   }
 }
 
@@ -654,6 +819,7 @@ export function TickTrainerCardScreen(_newKeys: number): void {
   const _g: Record<string, unknown> = {
     CB2_InitTrainerCard, MainCB2_TrainerCardRun, VBlankCB_TrainerCardRun,
     Task_FadeAndCloseTrainerCard, Task_CloseTrainerCard,
+    Task_FlipCard,
   };
   for (const [k, v] of Object.entries(_g)) {
     if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {
