@@ -33,7 +33,7 @@
  */
 
 import {
-  InitWindows, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
+  InitWindows, AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   BlitBitmapToWindow,
   RemoveWindow, ShowBg, HideBg,
   type WindowTemplate,
@@ -162,7 +162,12 @@ interface PartyAssets {
 }
 
 let _isOpen = false;
-let _phase: 'idle' | 'open' | 'fading_out' = 'idle';
+let _phase: 'idle' | 'open' | 'action_menu' | 'fading_out' = 'idle';
+/** Action menu state : sub-cursor pos + spawned window id. 1:1 décomp
+ *  sPartyMenuInternal->actions / numActions / windowId[0]. */
+let _actionCursor = 0;
+let _actionWindowId = -1;
+let _actionList: number[] = [];  // MENU_SUMMARY=0, MENU_ITEM=3, MENU_CANCEL1=2 (= notre order)
 let _assets: PartyAssets | null = null;
 let _assetsLoading: Promise<PartyAssets> | null = null;
 let _slotWindowIds: number[] = [];
@@ -631,9 +636,13 @@ function _freePartyMenu(): void {
   for (const wid of _slotWindowIds) if (wid >= 0) RemoveWindow(wid);
   _slotWindowIds = [];
   if (_msgWid >= 0) { RemoveWindow(_msgWid); _msgWid = -1; }
+  if (_actionWindowId >= 0) { RemoveWindow(_actionWindowId); _actionWindowId = -1; }
+  _actionList = [];
+  _actionCursor = 0;
   _isOpen = false;
   _phase = 'idle';
-  _cursorPos = 0;
+  _slotId = 0;
+  _lastSelectedSlot = 0;
   _graphicsReady = false;
   _graphicsLoading = false;
   _windowsReady = false;
@@ -751,6 +760,96 @@ function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
   }
 }
 
+/** 1:1 décomp `DisplaySelectionWindow` SELECTWINDOW_ACTIONS (party_menu.c:2533) :
+ *    bg=2, tilemapLeft=19, tilemapTop=(19 - numActions*2), width=10,
+ *    height=(numActions*2), paletteNum=14, baseBlock=0x2E9.
+ *  Spawn action window à droite + cursor à (cursorDimension, 1 + i*16).
+ *  Strings 1:1 décomp FR :
+ *    MENU_SUMMARY (= "RESUME") - gText_Summary5
+ *    MENU_ITEM    (= "OBJET")  - gText_Item
+ *    MENU_CANCEL1 (= "RETOUR") - gText_Cancel2 */
+const ACTION_MENU_STRINGS_FR: Record<number, string> = {
+  0: 'RESUME',  // MENU_SUMMARY index in our action list
+  1: 'OBJET',   // MENU_ITEM
+  2: 'RETOUR',  // MENU_CANCEL1
+};
+
+function _openActionMenu(rt: ReturnType<typeof getRuntime>): void {
+  if (!rt) return;
+  PlaySE(5);  // SE_SELECT
+  _actionList = [0, 1, 2];  // RESUME, OBJET, RETOUR (= 3 actions field menu)
+  _actionCursor = 0;
+  const numActions = _actionList.length;
+  // 1:1 décomp window template : bg=2 width=10 height=(numActions*2).
+  // ⚠️ AddWindow (= 1:1 decomp AddWindow), PAS InitWindows qui wipe tous les
+  // windows existants (= bug screen-noir si on l'utilisait ici).
+  const tilemapTop = 19 - numActions * 2;
+  _actionWindowId = AddWindow({
+    bg: 2, tilemapLeft: 19, tilemapTop, width: 10, height: numActions * 2,
+    paletteNum: 14, baseBlock: 0x2E9,
+  });
+  // Draw frame border 1:1 décomp DrawStdFrameWithCustomTileAndPalette(wid, FALSE, 0x4F, 13).
+  LoadUserWindowBorderGfx(0, 0x4F, 13 * 16);
+  // Render text 1:1 décomp : pour chaque action, AddTextPrinter au (cursorDim, i*16 + 1).
+  // cursorDim approximé à 8 (= FONT_NORMAL cursor width).
+  FillWindowPixelBuffer(_actionWindowId, 0x11);  // = palette 14 idx 1 white
+  PutWindowTilemap(_actionWindowId);
+  for (let i = 0; i < numActions; i++) {
+    const str = ACTION_MENU_STRINGS_FR[_actionList[i]] ?? '';
+    // sFontColorTable[3] = [WHITE, DARK_GRAY, LIGHT_GRAY] pour actions selection.
+    AddTextPrinterParameterized3(
+      _actionWindowId, FONT_NORMAL, 8, i * 16 + 1,
+      [1, 2, 3] as [number, number, number],
+      TEXT_SKIP_DRAW, str,
+    );
+  }
+  CopyWindowToVram(_actionWindowId, 3);
+  _phase = 'action_menu';
+}
+
+function _closeActionMenu(): void {
+  if (_actionWindowId >= 0) {
+    RemoveWindow(_actionWindowId);
+    _actionWindowId = -1;
+  }
+  _actionList = [];
+  _actionCursor = 0;
+  _phase = 'open';
+}
+
+/** Action menu input handler 1:1 décomp `Task_HandleSelectionMenuInput`
+ *  (party_menu.c:2740) : UP/DOWN navigate, A select, B = cancel (= action
+ *  at index numActions-1 = RETOUR). */
+function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
+  if (!rt) return;
+  const newKeys = rt.gMain.newKeys;
+  const newRepKeys = rt.gMain.newAndRepeatedKeys ?? newKeys;
+  const KEY_A = 0x0001, KEY_B = 0x0002;
+  const DPAD_UP = 0x40, DPAD_DOWN = 0x80;
+  if (newRepKeys & DPAD_UP) {
+    if (_actionCursor > 0) { _actionCursor--; PlaySE(5); }
+  } else if (newRepKeys & DPAD_DOWN) {
+    if (_actionCursor < _actionList.length - 1) { _actionCursor++; PlaySE(5); }
+  } else if (newKeys & KEY_A) {
+    PlaySE(5);
+    const action = _actionList[_actionCursor];
+    if (action === 2 /* RETOUR */) {
+      _closeActionMenu();
+    } else if (action === 0 /* RESUME */) {
+      // TODO : ouvrir summary screen (= CB2 swap to summary)
+      console.log('[party-screen] TODO : RESUME → open summary screen');
+      _closeActionMenu();
+    } else if (action === 1 /* OBJET */) {
+      // TODO : ouvrir bag pour give/swap item
+      console.log('[party-screen] TODO : OBJET → bag give/swap');
+      _closeActionMenu();
+    }
+  } else if (newKeys & KEY_B) {
+    PlaySE(5);
+    _closeActionMenu();
+  }
+}
+
 /** Input handler 1:1 décomp `Task_HandleChooseMonInput` (party_menu.c:1260) :
  *    A → if cancel slot: close, else: action menu (RESUME/OBJET/RETOUR)
  *    B → close
@@ -759,13 +858,14 @@ function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
 function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
+  // Sub-state action menu : dispatcher différent.
+  if (_phase === 'action_menu') { _handleActionMenuInput(rt); return; }
   if (_phase !== 'open') return;
   const result = _partyMenuButtonHandler(rt);
   const KEY_A = 0x0001, KEY_B = 0x0002;
   if (result === KEY_A) {
-    // TODO : open action menu (RESUME/OBJET/RETOUR)
-    // For now, MVP : just play SE
-    PlaySE(5);
+    // A sur slot mon → ouvre action menu. (A sur CANCEL est déjà mappé à B.)
+    _openActionMenu(rt);
   } else if (result === KEY_B) {
     PlaySE(5);
     ClosePartyScreen();
