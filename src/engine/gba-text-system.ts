@@ -508,6 +508,31 @@ export function StringExpandPlaceholders(_dest: string, src: string): string {
   return result;
 }
 
+// ─── Font IDs & TEXT_SKIP_DRAW (1:1 décomp include/text.h) ──────────────────
+
+/** 1:1 décomp `include/text.h` enum FontIds. Source de vérité unique pour
+ *  éviter la duplication entre bag-screen, party-screen, pokedex-screen,
+ *  trainer-card-screen, start-menu, option-menu-impl, etc.
+ *
+ *  Valeurs identiques à text.h :
+ *    FONT_SMALL=0, FONT_NORMAL=1, FONT_SHORT=2, FONT_SHORT_COPY_{1,2,3}=3,4,5,
+ *    FONT_BRAILLE=6, FONT_NARROW=7, FONT_SMALL_NARROW=8, FONT_BOLD=9. */
+export const FONT_SMALL = 0;
+export const FONT_NORMAL = 1;
+export const FONT_SHORT = 2;
+export const FONT_SHORT_COPY_1 = 3;
+export const FONT_SHORT_COPY_2 = 4;
+export const FONT_SHORT_COPY_3 = 5;
+export const FONT_BRAILLE = 6;
+export const FONT_NARROW = 7;
+export const FONT_SMALL_NARROW = 8;
+export const FONT_BOLD = 9;
+
+/** 1:1 décomp `#define TEXT_SKIP_DRAW 0xFF` (text.h:8).
+ *  Sentinel pour `AddTextPrinterParameterized3.speed` indiquant "ne pas dessiner
+ *  immédiatement, juste setup le printer state". */
+export const TEXT_SKIP_DRAW = 0xFF;
+
 // ─── Text colors helper ──────────────────────────────────────────────────────
 
 // 1:1 décomp main_menu.c:410 sTextColor_Headers = [TEXT_DYNAMIC_COLOR_1, _2, _3]

@@ -72,6 +72,7 @@ import { OpenBagScreen, TickBagScreen } from './bag-screen';
 import { OpenPartyScreen, TickPartyScreen } from './party-screen';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer-card-screen';
 import { OpenPokedexScreen, TickPokedexScreen } from './pokedex-screen';
+import { getString } from './gba-strings';
 
 // ─── Types + state ───────────────────────────────────────────────────────────
 
@@ -344,18 +345,23 @@ function _showSaveInfoWindow(): void {
   const regionName = getMapNameFr(gMapHeader?.regionMapSectionId);
   AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, 1, colorRegion, TEXT_SKIP_DRAW, regionName);
 
-  // JOUEUR + name — y=17.
+  // 1:1 décomp `gText_SavingDontTurnOff` / `gText_PlayerSavedGame` use `gText_*`
+  // pour leurs labels (= strings.json). Notre code utilise `getString()` pour
+  // lookup ces gText_* et fallback au littéral si pas dans strings.json.
+  // JOUEUR + name — y=17. Décomp = `gText_ContinueMenuPlayer` (= "JOUEUR").
   let yOffset = 17;
-  AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW, 'JOUEUR');
+  AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW,
+    getString('gText_ContinueMenuPlayer'));
   AddTextPrinterParameterized3(
     sSaveInfoWindowId, FONT_NORMAL,
     GetStringRightAlignXOffset(playerName, 0x70), yOffset,
     colorMain, TEXT_SKIP_DRAW, playerName,
   );
 
-  // BADGES + count — y=33.
+  // BADGES + count — y=33. Décomp = `gText_ContinueMenuBadges` (= "BADGES").
   yOffset += 16;
-  AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW, 'BADGES');
+  AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW,
+    getString('gText_ContinueMenuBadges'));
   let badgeCount = 0;
   for (const fname of ['FLAG_BADGE01_GET','FLAG_BADGE02_GET','FLAG_BADGE03_GET','FLAG_BADGE04_GET',
                         'FLAG_BADGE05_GET','FLAG_BADGE06_GET','FLAG_BADGE07_GET','FLAG_BADGE08_GET']) {
@@ -369,9 +375,11 @@ function _showSaveInfoWindow(): void {
   );
 
   // POKéDEX + count — y=49 (only if FLAG_SYS_POKEDEX_GET).
+  // Décomp = `gText_ContinueMenuPokedex` (= "POKéDEX").
   if (hasDex) {
     yOffset += 16;
-    AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW, 'POKéDEX');
+    AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW,
+      getString('gText_ContinueMenuPokedex'));
     // TODO Phase 4+ : implement real dex count via dex flags. Pour l'instant : 0.
     const dexStr = '0';
     AddTextPrinterParameterized3(
@@ -382,8 +390,10 @@ function _showSaveInfoWindow(): void {
   }
 
   // DUREE JEU + HH:MM — y=49 (no dex) ou 65 (with dex).
+  // Décomp = `gText_ContinueMenuTime` (= "DUREE JEU").
   yOffset += 16;
-  AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW, 'DUREE JEU');
+  AddTextPrinterParameterized3(sSaveInfoWindowId, FONT_NORMAL, 0, yOffset, colorMain, TEXT_SKIP_DRAW,
+    getString('gText_ContinueMenuTime'));
   const hours = Number(sb2.playTimeHours ?? 0);
   const minutes = Number(sb2.playTimeMinutes ?? 0);
   const timeStr = `${hours}:${String(minutes).padStart(2, '0')}`;
@@ -486,21 +496,35 @@ function optionsAction(): boolean {
  *  Pokédex entry débloquée par le Prof Birch (FLAG_SYS_POKEDEX_GET).
  *  PokéNav entry débloquée plus tard (= post-Devon Goods, FLAG_SYS_POKENAV_GET). */
 function buildItems(): MenuItem[] {
+  // 1:1 décomp `BuildNormalStartMenu` + `sStartMenuItems` :
+  //   Labels viennent de strings.json (= 1:1 décomp `src/strings.c`).
+  //   getString() retourne le label FR depuis strings.json :
+  //     gText_MenuPokedex   = "POKéDEX"
+  //     gText_MenuPokemon   = "POKéMON"
+  //     gText_MenuBag       = "SAC"
+  //     gText_MenuOption    = "OPTIONS"
+  //     gText_MenuExit      = "RETOUR"
+  //     gText_MenuSave      = "SAUVER"
+  //   Pour PokéNav, le décomp utilise `gText_MenuOptionPokenav` (= "POKéNAV").
+  //   {PLAYER} (= entry trainer card) → décomp expand `gText_MenuPlayer` =
+  //     "{PLAYER}" via StringExpandPlaceholders ; nous on resolve direct via
+  //     gameState.playerName car notre AddTextPrinter ne fait pas l'expand.
   const items: MenuItem[] = [];
   if (FlagGet('FLAG_SYS_POKEDEX_GET')) {
-    items.push({ label: 'POKéDEX', onSelect: pokedexAction });
+    items.push({ label: getString('gText_MenuPokedex'), onSelect: pokedexAction });
   }
   if (FlagGet('FLAG_SYS_POKEMON_GET')) {
-    items.push({ label: 'POKéMON', onSelect: pokemonAction });
+    items.push({ label: getString('gText_MenuPokemon'), onSelect: pokemonAction });
   }
-  items.push({ label: 'SAC', onSelect: sacAction });
+  items.push({ label: getString('gText_MenuBag'), onSelect: sacAction });
   if (FlagGet('FLAG_SYS_POKENAV_GET')) {
-    items.push({ label: 'POKéNAV', onSelect: pokenavAction });
+    items.push({ label: getString('gText_MenuOptionPokenav'), onSelect: pokenavAction });
   }
+  // {PLAYER} entry : décomp expand placeholder, nous on resolve direct.
   items.push({ label: gameState.playerName, onSelect: playerCardAction });
-  items.push({ label: 'SAUVER', onSelect: saveAction });
-  items.push({ label: 'OPTIONS', onSelect: optionsAction });
-  items.push({ label: 'RETOUR', onSelect: () => true });
+  items.push({ label: getString('gText_MenuSave'), onSelect: saveAction });
+  items.push({ label: getString('gText_MenuOption'), onSelect: optionsAction });
+  items.push({ label: getString('gText_MenuExit'), onSelect: () => true });
   return items;
 }
 

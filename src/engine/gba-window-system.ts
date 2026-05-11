@@ -145,11 +145,20 @@ function tileMapIndex(tileX: number, tileY: number, screenSize: number): number 
 
 // ─── Window API ──────────────────────────────────────────────────────────────
 
-export function InitWindows(templates: readonly WindowTemplate[]): void {
+/** 1:1 décomp `bool32 InitWindows(const struct WindowTemplate *templates)` :
+ *  Clear all existing windows + alloc one window per template, returns array
+ *  of allocated window IDs. Window IDs sont indexés sur l'ordre des templates.
+ *
+ *  Note décomp : la signature C retourne `bool32` (success/fail), notre TS
+ *  retourne directement `number[]` (= IDs) — plus utile au caller. Si on a
+ *  besoin du bool, vérifier `result.length === templates.length`. */
+export function InitWindows(templates: readonly WindowTemplate[]): number[] {
   FreeAllWindowBuffers();
+  const ids: number[] = [];
   for (const t of templates) {
-    AddWindow(t);
+    ids.push(AddWindow(t));
   }
+  return ids;
 }
 
 export function AddWindow(template: WindowTemplate): number {
