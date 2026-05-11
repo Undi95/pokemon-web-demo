@@ -462,29 +462,40 @@ function saveAction(): boolean {
  *  reset gMain.state à 0, set savedCallback = CB2_ReturnToFieldWithOpenMenu,
  *  puis SetMainCallback2(CB2_InitOptionMenu) qui prend le relais. */
 function optionsAction(): boolean {
-  // 1:1 décomp `StartMenuOptionCallback` (start_menu.c:731-745) :
-  //   if (!gPaletteFade.active) {
-  //     PlayRainStoppingSoundEffect();
-  //     RemoveExtraStartMenuWindows();
-  //     CleanupOverworldWindowsAndTilemaps();
-  //     SetMainCallback2(CB2_InitOptionMenu);
-  //     gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
-  //     return TRUE;
-  //   }
-  //   return FALSE;
-  void preloadOptionMenuAssets().then(() => {
-    gMain.state = 0;
-    // 1:1 décomp gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu, mais on
-    // utilise notre wrapper TS (option-menu-return.ts) car le auto-fichier
-    // CB2_ReturnToFieldLocal est broken (transpiler ne supporte pas u8 *state
-    // pointer arg). Notre version reproduit la state machine 1:1 avec
-    // gMain.state mutable.
-    gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu_Manual;
-    const rt = getRuntime();
-    rt.SetMainCallback2(CB2_InitOptionMenu);
-  });
-  // Return true = close the start menu now ; the CB2 swap takes over la frame.
-  return true;
+  // 1:1 décomp `HandleStartMenuInput` (start_menu.c:336) + `StartMenuOptionCallback` :
+  //     FadeScreen(FADE_TO_BLACK, 0);  // = BeginNormalPaletteFade(ALL, 0, 0, 16, RGB_BLACK)
+  //     gMenuCallback = StartMenuOptionCallback;
+  //   StartMenuOptionCallback (start_menu.c:731-745) :
+  //     if (!gPaletteFade.active) {
+  //       PlayRainStoppingSoundEffect();
+  //       RemoveExtraStartMenuWindows();
+  //       CleanupOverworldWindowsAndTilemaps();
+  //       SetMainCallback2(CB2_InitOptionMenu);
+  //       gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
+  //       return TRUE;
+  //     }
+  //     return FALSE;
+  //
+  // Notre version : start fade-out + queue action + attend dans _tickFadingToScreen.
+  // Sans fade-to-black préalable, on voit les NPCs/player disparaître au state
+  // 2 de CB2_InitOptionMenu (ResetSpriteData) AVANT que screen soit noir.
+  const rt = getRuntime();
+  if (!rt) return false;
+  rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0 /* RGB_BLACK */);
+  sPendingScreenAction = () => {
+    void preloadOptionMenuAssets().then(() => {
+      gMain.state = 0;
+      // 1:1 décomp gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu, mais on
+      // utilise notre wrapper TS (option-menu-return.ts) car le auto-fichier
+      // CB2_ReturnToFieldLocal est broken (transpiler ne supporte pas u8 *state
+      // pointer arg). Notre version reproduit la state machine 1:1 avec
+      // gMain.state mutable.
+      gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu_Manual;
+      rt.SetMainCallback2(CB2_InitOptionMenu);
+    });
+  };
+  sSubState = 'fading_to_screen';
+  return false;  // ne pas close start menu yet ; on attend fade fini.
 }
 
 // ─── Build items list ────────────────────────────────────────────────────────

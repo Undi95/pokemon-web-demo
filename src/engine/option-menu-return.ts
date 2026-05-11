@@ -132,6 +132,23 @@ function ReturnToFieldLocal_Manual(): boolean {
       ResetTasks();
       ResetSpriteData();
       ResetPaletteFade();
+      // 1:1 décomp `ResetVramOamAndBgCntRegs` (menu_helpers.c:97) appelé par
+      // `ResetScreenForMapLoad` (overworld.c:2077) au début de
+      // `CB2_ReturnToFieldLocal` case 0. CRITIQUE : reset BLDCNT/BLDY/WIN regs
+      // sinon les effets du sub-menu (= option menu set BLDCNT_EFFECT_DARKEN +
+      // BLDY=4 pour le highlight) persistent → BG0 reste assombri en revenant
+      // à l'overworld → dialog text apparaît "noirci" (= user session 129 bug
+      // report "toutes les palette des textbox sont noircie").
+      const rt = getRuntime();
+      rt.SetGpuReg(0x50 /* BLDCNT */, 0);
+      rt.SetGpuReg(0x52 /* BLDALPHA */, 0);
+      rt.SetGpuReg(0x54 /* BLDY */, 0);
+      rt.SetGpuReg(0x40 /* WIN0H */, 0);
+      rt.SetGpuReg(0x44 /* WIN0V */, 0);
+      rt.SetGpuReg(0x42 /* WIN1H */, 0);
+      rt.SetGpuReg(0x46 /* WIN1V */, 0);
+      rt.SetGpuReg(0x48 /* WININ */, 0);
+      rt.SetGpuReg(0x4A /* WINOUT */, 0);
       // 1:1 décomp `InitFieldMessageBox` (= post-FreeAllWindowBuffers reset).
       // Le bag/options ont fait `InitWindows([...])` qui appelle `FreeAllWindowBuffers`
       // → tous les slots gWindows[] free, mais `sWindowId` dans field-message-box.ts
