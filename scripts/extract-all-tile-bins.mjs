@@ -90,6 +90,13 @@ const targets = [
   //   + badges.png (= 8 badges sheet) — utilises par BG0 (front.bin) et BG2 (bg.bin).
   { src: `${PUBLIC}/trainer_card/tiles.png`, bpp: 4, extractPalette: false },
   { src: `${PUBLIC}/trainer_card/badges.png`, bpp: 4, extractPalette: true },
+  // Phase 5.3 party menu : bg.png (= background tiles avec slot frames),
+  // hold_icons.png (= 16x16 held item indicators), pokeball.png (= grosse
+  // poké ball déco), pokeball_small.png (= petite poké ball pour SORTIR).
+  { src: `${PUBLIC}/party_menu/bg.png`, bpp: 4, extractPalette: true },
+  { src: `${PUBLIC}/party_menu/hold_icons.png`, bpp: 4, extractPalette: true },
+  { src: `${PUBLIC}/party_menu/pokeball.png`, bpp: 4, extractPalette: true },
+  { src: `${PUBLIC}/party_menu/pokeball_small.png`, bpp: 4, extractPalette: true },
 ];
 
 // Phase 5.1 — Tilemaps copiés direct depuis le décomp source (= raw uncompressed

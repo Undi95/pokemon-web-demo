@@ -227,27 +227,16 @@ function pokedexAction(): boolean {
 
 /** POKéMON action : ouvre vraie UI party avec slots + moves + HP color-coded.
  *  Session 127 : remplace l'ancien `showMessageThenReturn` text par le party-screen. */
+/** POKéMON action — 1:1 décomp `HandleStartMenuInput` + `StartMenuPokemonCallback`
+ *  (start_menu.c:759) : FadeScreen(FADE_TO_BLACK, 0) + queue OpenPartyScreen.
+ *  Pattern identique au sac/trainer-card (= CB2 swap). */
 function pokemonAction(): boolean {
   if (gameState.party.length === 0) {
     return showMessageThenReturn('Vous n\'avez pas\nencore de POKéMON.');
   }
-  // Hide start menu window — party screen prend l'écran.
-  if (sWindowId >= 0) {
-    ClearStdWindowAndFrame(sWindowId, true);
-    RemoveWindow(sWindowId);
-    sWindowId = -1;
-  }
-  sSubState = 'party_screen';
-  try {
-    OpenPartyScreen(() => {
-      sSubState = 'menu';
-      _spawnMenuWindow();
-    });
-  } catch (e) {
-    console.error('[start-menu] OpenPartyScreen failed', e);
-    sSubState = 'menu';
-    _spawnMenuWindow();
-  }
+  FadeScreen(FADE_TO_BLACK, 0);
+  sPendingScreenAction = () => OpenPartyScreen();
+  sSubState = 'fading_to_screen';
   return false;
 }
 
