@@ -37,7 +37,7 @@ import {
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
-import { AddTextPrinterParameterized3, GetStringRightAlignXOffset } from './gba-text-system';
+import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gameState } from './game-state';
 import { FlagGet } from './script-vars';
 import { gSaveBlock2Ptr } from './gba-menu-system';
@@ -330,14 +330,22 @@ function _drawCardFront(): void {
   const d = _bufferCardData();
   // 1:1 décomp : pas de gender color, tout en gray transparent.
   void d.isFemale;
-  // NOM + name à (16, 33) — 1:1 décomp Hoenn variant.
+  // 1:1 décomp `PrintNameOnCardFront` (trainer_card.c:1003-1013) :
+  //   StringCopy(buffer, gText_TrainerCardName);    // "NOM "
+  //   StringCopy(txtPtr, sData->trainerCard.playerName);
+  //   AddTextPrinterParameterized3(WIN_CARD_TEXT, FONT_NORMAL, 16, 33, ...)
+  // Tout dans UN SEUL buffer → name suit "NOM " immédiatement.
   const nomLabel = getString('gText_TrainerCardName') || 'NOM ';
-  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 33, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, nomLabel);
-  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 48, 33, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, d.name);
-  // NºID + 5-digit ID à (120, 9) top-right.
+  const nomBuffer = `${nomLabel}${d.name}`;
+  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 33, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, nomBuffer);
+  // 1:1 décomp `PrintIdOnCard` (trainer_card.c:1029) :
+  //   xPos = GetStringCenterAlignXOffset(FONT_NORMAL, buffer, 96) + 120;
+  //   top = 9;
+  // Center le buffer dans une zone 96px starting at x=120.
   const idLabel = getString('gText_TrainerCardIDNo') || 'NºID /';
   const idStr = `${idLabel}${String(d.trainerId).padStart(5, '0')}`;
-  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 120, 9, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, idStr);
+  const idX = GetStringCenterAlignXOffset(idStr, 96) + 120;
+  AddTextPrinterParameterized3(_wid, FONT_NORMAL, idX, 9, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, idStr);
   // ARGENT + ¥money à (16, 57), value right-align x=128.
   const moneyLabel = getString('gText_TrainerCardMoney') || 'ARGENT';
   AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 57, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, moneyLabel);
@@ -367,18 +375,21 @@ function _spawnTrainerPicOam(assets: TrainerCardAssets): void {
   const rt = getRuntime();
   if (!rt) return;
   void assets;
-  // 1:1 décomp `CreateTrainerCardTrainerPic` + `sTrainerPicOffset[Hoenn]`
-  // (trainer_card.c:287, 1882) :
-  //   WIN_TRAINER_PIC template (= trainer_card.c:253) : tilemapLeft=19,
-  //     tilemapTop=5, width=9, height=10 → pixel origin (19*8, 5*8) = (152, 40).
-  //   sTrainerPicOffset[Hoenn][MALE/FEMALE] = (1, 0) (= tile offset).
-  //   Sprite pixel top-left = window origin + tile_offset*8 = (152+8, 40+0)
-  //     = (160, 40).
-  //   Notre OAM CreateSpriteAtOam x/y = CENTER (= 1:1 décomp CalcCenterToCornerVec
-  //     pour square 64×64 = top-left - (32, 32) from center).
-  //   Donc OAM center = (160+32, 40+32) = (192, 72).
+  // 1:1 décomp `CreateTrainerCardTrainerPic` (trainer_card.c:1882) appelle
+  // `CreateTrainerCardTrainerPicSprite(picIdx, isFrontPic=TRUE, destX, destY, palSlot=8, WIN_TRAINER_PIC)`
+  // qui internement appelle `BlitBitmapRectToWindow(WIN_TRAINER_PIC, framePics,
+  // 0, 0, 64, 64, destX, destY, 64, 64)` (trainer_pokemon_sprites.c:331).
+  //
+  //   sTrainerPicOffset[Hoenn][MALE/FEMALE] = (1, 0) — c'est PIXEL offset,
+  //     pas tile offset (= u8 dest x/y dans BlitBitmapRectToWindow).
+  //   WIN_TRAINER_PIC origin (= 19*8, 5*8) = (152, 40).
+  //   Sprite pixel top-left = window origin + offset = (152+1, 40+0) = (153, 40).
+  //   OAM center (= CalcCenterToCornerVec square 64×64 = -32/-32) = (185, 72).
+  //
+  // Mon erreur précédente : avais interprété (1, 0) comme TILE offset → 8px
+  // pixel trop à droite. Fix : (1, 0) = pixel offset direct.
   _trainerPicOamId = rt.CreateSpriteAtOam({
-    x: 192, y: 72,
+    x: 185, y: 72,
     shape: 0, size: 3,       // 64×64
     tileId: TRAINER_PIC_OBJ_OFFSET / 32,
     paletteBank: TRAINER_PIC_OBJ_PAL,
@@ -456,14 +467,37 @@ function Task_CloseTrainerCard(task: DecompTask): void {
   _cardInputTaskId = -1;
 }
 
-/** Task input handler (= 1:1 Task_TrainerCardInput simplifié). */
+/** 1:1 décomp `Task_TrainerCardMain` STATE_HANDLE_INPUT_FRONT (trainer_card.c:446) :
+ *      if (JOY_NEW(A_BUTTON)) {
+ *          FlipTrainerCard();         // → STATE_WAIT_FLIP_TO_BACK
+ *          PlaySE(SE_RG_CARD_FLIP);
+ *      } else if (JOY_NEW(B_BUTTON)) {
+ *          BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, blendColor);
+ *          → STATE_CLOSE_CARD
+ *      }
+ *
+ *  Notre version simplifiée :
+ *    A → close (= future TODO : flip animation vers carte BACK)
+ *    B → close
+ *    START → close (= bonus dev shortcut)
+ *
+ *  Le flip back-card (= Hall of Fame, Link battles, Trades, Stickers) est un
+ *  refactor 2-3h supplémentaire (= 2nd tilemap back.bin + autre print fns).
+ *  Pour MVP carte dresseur : front uniquement, A/B/START exit. */
 function Task_TrainerCard_HandleInput(_task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
   const newKeys = rt.gMain.newKeys;
   const KEY_A = 0x0001, KEY_B = 0x0002, KEY_START = 0x0008;
   if (_phase !== 'open') return;
-  if (newKeys & (KEY_A | KEY_B | KEY_START)) {
+  if (newKeys & KEY_A) {
+    // 1:1 décomp : A press = FlipTrainerCard + SE_RG_CARD_FLIP. Stubbed pour
+    // l'instant (= no back card UI), juste close avec le même SE pour user feel.
+    PlaySE(5);
+    CloseTrainerCardScreen();
+    return;
+  }
+  if (newKeys & (KEY_B | KEY_START)) {
     PlaySE(5);
     CloseTrainerCardScreen();
   }
