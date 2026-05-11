@@ -286,25 +286,20 @@ function sacAction(): boolean {
   return false;  // ne pas close start menu yet ; on attend fade fini.
 }
 
-/** {PLAYER} action : ouvre vraie UI Carte Dresseur.
- *  Session 127 : remplace le `showMessageThenReturn` par trainer-card-screen. */
+/** {PLAYER} action — 1:1 décomp `HandleStartMenuInput` + `StartMenuPlayerCallback`
+ *  (start_menu.c:797-811) :
+ *      FadeScreen(FADE_TO_BLACK, 0);
+ *      gMenuCallback = StartMenuPlayerCallback;
+ *
+ *  Puis `StartMenuPlayerCallback` attend `!gPaletteFade.active` avant de
+ *  `SetMainCallback2(CB2_TrainerCard)` via ShowPlayerTrainerCard.
+ *
+ *  Notre version : pattern identique au sac (= fade-to-black + queue
+ *  OpenTrainerCardScreen + attend dans _tickFadingToScreen). */
 function playerCardAction(): boolean {
-  if (sWindowId >= 0) {
-    ClearStdWindowAndFrame(sWindowId, true);
-    RemoveWindow(sWindowId);
-    sWindowId = -1;
-  }
-  sSubState = 'trainer_card_screen';
-  try {
-    OpenTrainerCardScreen(() => {
-      sSubState = 'menu';
-      _spawnMenuWindow();
-    });
-  } catch (e) {
-    console.error('[start-menu] OpenTrainerCardScreen failed', e);
-    sSubState = 'menu';
-    _spawnMenuWindow();
-  }
+  FadeScreen(FADE_TO_BLACK, 0);
+  sPendingScreenAction = () => OpenTrainerCardScreen();
+  sSubState = 'fading_to_screen';
   return false;
 }
 
