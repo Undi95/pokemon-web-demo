@@ -95,13 +95,19 @@ type SubState =
   | 'bag_screen'            // session 127 : bag UI ouvert, drive via TickBagScreen
   | 'party_screen'          // session 127 : party UI ouvert, drive via TickPartyScreen
   | 'trainer_card_screen'   // session 127 : trainer card UI ouvert
-  | 'pokedex_screen';       // session 127 : pokédex UI ouvert
+  | 'pokedex_screen'        // session 127 : pokédex UI ouvert
+  | 'fading_to_screen';     // 1:1 décomp HandleStartMenuInput : fade-to-black actif,
+                            // attend !gPaletteFade.active puis exécute sPendingScreenAction
 
 let sIsOpen = false;
 let sWindowId = -1;
 let sCursorPos = 0;
 let sItems: MenuItem[] = [];
 let sSubState: SubState = 'menu';
+/** 1:1 décomp `HandleStartMenuInput` : action queue pendant le fade-to-black.
+ *  Décomp set `gMenuCallback = sStartMenuItems[i].func`, la callback est ré-appelée
+ *  chaque frame jusqu'à `!gPaletteFade.active`. Nous on capture l'action ici. */
+let sPendingScreenAction: (() => void) | null = null;
 
 // ─── Constants 1:1 décomp ────────────────────────────────────────────────────
 
@@ -261,9 +267,23 @@ function pokemonAction(): boolean {
  *  CB2_ReturnToFieldWithOpenMenu_Manual qui re-init OW + reopen start menu
  *  via FieldCB chain. Cf. bag-screen.ts CB2_InitBagMenu state machine. */
 function sacAction(): boolean {
-  // 1:1 décomp StartMenuBagCallback : OpenBagScreen async preload + swap CB2.
-  OpenBagScreen();
-  return true;  // close start menu maintenant ; CB2 swap take over next frame.
+  // 1:1 décomp `HandleStartMenuInput` (start_menu.c:336) :
+  //     FadeScreen(FADE_TO_BLACK, 0);  // = BeginNormalPaletteFade(ALL, 0, 0, 16, RGB_BLACK)
+  //     gMenuCallback = StartMenuBagCallback;
+  //
+  // Puis `StartMenuBagCallback` attend `!gPaletteFade.active` avant de
+  // `SetMainCallback2(CB2_BagMenuFromStartMenu)`. Sans ce fade-out, le user
+  // voit les NPCs/player disparaître à state 4 ResetSpriteData AVANT que
+  // l'écran soit noir → "frame cheloue" feedback session 129.
+  //
+  // Notre version : start fade-out + queue OpenBagScreen + attend dans
+  // _tickFadingToScreen jusqu'à fade fini.
+  const rt = getRuntime();
+  if (!rt) return false;
+  rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0 /* RGB_BLACK */);
+  sPendingScreenAction = () => OpenBagScreen();
+  sSubState = 'fading_to_screen';
+  return false;  // ne pas close start menu yet ; on attend fade fini.
 }
 
 /** {PLAYER} action : ouvre vraie UI Carte Dresseur.
@@ -687,7 +707,33 @@ export function TickStartMenu(): void {
     case 'pokedex_screen':
       TickPokedexScreen(newKeys);
       break;
+    case 'fading_to_screen':
+      _tickFadingToScreen();
+      break;
   }
+}
+
+/** 1:1 décomp `StartMenuBagCallback` (start_menu.c:763) :
+ *      if (!gPaletteFade.active) {
+ *          PlayRainStoppingSoundEffect();
+ *          RemoveExtraStartMenuWindows();
+ *          CleanupOverworldWindowsAndTilemaps();
+ *          SetMainCallback2(CB2_BagMenuFromStartMenu);
+ *          return TRUE;
+ *      }
+ *      return FALSE;
+ *
+ *  Attend que le fade-to-black démarré par sacAction soit fini, puis exécute
+ *  l'action queue (= OpenBagScreen qui swap CB2). Le `SetMainCallback2` se
+ *  fait écran déjà noir → user ne voit pas le ResetSpriteData wipe sprites. */
+function _tickFadingToScreen(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  if (rt.gPaletteFade.active) return;  // = `if (!gPaletteFade.active)` inversé
+  const action = sPendingScreenAction;
+  sPendingScreenAction = null;
+  if (action) action();
+  CloseStartMenu();  // = `DestroyStartMenu` post-callback return TRUE
 }
 
 function _tickMainMenu(newKeys: number): void {

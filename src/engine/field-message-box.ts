@@ -75,10 +75,16 @@ export async function preloadStandardMenuPalette(): Promise<void> {
   /* no-op — kept for backward compat with TestOverworldScene boot */
 }
 
-/** 1:1 décomp `InitFieldMessageBox(void)`. À call au boot. */
+/** 1:1 décomp `InitFieldMessageBox(void)`. À call au boot.
+ *  ⚠️ Reset `sWindowId` AUSSI (= 1:1 InitFieldMessageBox post-FreeAllWindowBuffers
+ *  flow décomp). Sans ce reset : si un sub-menu (bag/options/party) appelle
+ *  `InitWindows(...)` qui fait `FreeAllWindowBuffers`, le sWindowId capturé
+ *  AVANT pointe vers un slot libéré → AddTextPrinterParameterized3 warn
+ *  "window N not found" + dialog invisible. */
 export function InitFieldMessageBox(): void {
   sFieldMessageBoxMode = FIELD_MESSAGE_BOX_HIDDEN;
   sStateStep = 0;
+  sWindowId = -1;
 }
 
 /** 1:1 décomp `ShowFieldMessage(const u8 *str)`. Returns FALSE si déjà en cours.

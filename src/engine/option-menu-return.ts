@@ -37,6 +37,7 @@
 
 import { getRuntime, gMain, ResetTasks, ResetPaletteFade } from './decomp-globals';
 import { ResetSpriteData } from './decomp-bridge';
+import { InitFieldMessageBox } from './field-message-box';
 
 /** 1:1 décomp `bool8 FieldCB_ReturnToFieldOpenStartMenu(void)`
  *  (field_screen_effect.c:440) :
@@ -131,6 +132,14 @@ function ReturnToFieldLocal_Manual(): boolean {
       ResetTasks();
       ResetSpriteData();
       ResetPaletteFade();
+      // 1:1 décomp `InitFieldMessageBox` (= post-FreeAllWindowBuffers reset).
+      // Le bag/options ont fait `InitWindows([...])` qui appelle `FreeAllWindowBuffers`
+      // → tous les slots gWindows[] free, mais `sWindowId` dans field-message-box.ts
+      // (let module-level) garde encore la valeur alloué AVANT le bag. Sans reset
+      // ici, le prochain ShowFieldMessage skip le AddWindow (= sWindowId >= 0)
+      // mais AddTextPrinterParameterized3 fail "window N not found" → dialog
+      // sign/dialogbox invisible (user session 129 bug report).
+      InitFieldMessageBox();
       gMain.state++;
       break;
     }
