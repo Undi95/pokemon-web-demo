@@ -118,6 +118,11 @@ const PARTY_OVERLAY_MAP_BASE = 28; // BG2 empty
 /** OAM offsets. */
 const ICON_OBJ_PAL_BASE = 5;       // palette 5..7 (= per icon pal index)
 const ICON_OBJ_TILE_OFFSET = 0;    // OBJ VRAM offset 0 = base for icons
+/** 1:1 décomp pokemon_icon.png 32×64 = 2 frames empilées verticalement.
+ *  Chaque frame 32×32 = 16 tiles 4bpp. On réserve 32 tiles par slot (= 6 slots
+ *  × 32 = 192 tiles VRAM, fit avant POKEBALL_TILE_BASE=256). */
+const ICON_TILES_PER_FRAME = 16;
+const ICON_TILES_PER_SLOT  = 32;  // 2 frames × 16 tiles
 
 /** 1:1 décomp `sSinglePartyMenuWindowTemplate` (party_menu.h:123) :
  *  Each slot has unique paletteNum + baseBlock pour color variation par row. */
@@ -293,6 +298,16 @@ function _loadPartyGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     // 1:1 décomp `LoadCompressedPalette(gPartyMenuBg_Pal, BG_PLTT_ID(0),
     // 11 * PLTT_SIZE_4BPP)` (party_menu.c:749) — load 11 sub-palettes (= 176 entries).
     LoadPalette(assets.bgPalette, 0, assets.bgPalette.length * 2);
+    // 1:1 décomp `PartyPaletteBufferCopy(palNum)` (party_menu.c:779) : COPIE
+    // palette 3 (= la sub-pal "base" du slot 0 big) vers palettes 4..8 (=
+    // les slots wide 1-5). SANS ce step, palettes 4-8 utilisent les sub-pals
+    // 4-8 du bg.pal (= des couleurs différentes/roses) au lieu de la même
+    // sub-pal base que slot 0. Appelé pour palNum=4..8 sequentially.
+    for (let palNum = 4; palNum <= 8; palNum++) {
+      const src = new Uint16Array(16);
+      for (let k = 0; k < 16; k++) src[k] = assets.bgPalette[3 * 16 + k];
+      LoadPalette(src, palNum * 16, 32);
+    }
     _graphicsReady = true;
     _graphicsLoading = false;
   }).catch((e) => {
@@ -609,11 +624,15 @@ async function _spawnIconOams(): Promise<void> {
       const iconPng = await loadIndexedPngStrict(`/decomp/em/pokemon/${dexId}/icon.png`, 4);
       // 1:1 décomp pokemon_icon.png = 32×64 sheet vertical stack de 2 anim frames
       // 32×32. Une frame = 4×4 tiles = 16 tiles = 512 bytes 4bpp.
-      const TILES_PER_FRAME = 16;
-      const BYTES_PER_FRAME = TILES_PER_FRAME * 32;  // 512
-      const slotTileBase = ICON_OBJ_TILE_OFFSET / 32 + i * TILES_PER_FRAME;  // tile #
+      // Charge LES DEUX frames (= 32 tiles = 1024 bytes) pour idle anim toggle.
+      const BYTES_PER_FRAME = ICON_TILES_PER_FRAME * 32;  // 512
+      const BYTES_PER_SLOT  = ICON_TILES_PER_SLOT  * 32;  // 1024
+      const slotTileBase = ICON_OBJ_TILE_OFFSET / 32 + i * ICON_TILES_PER_SLOT;
       const slotByteOffset = slotTileBase * 32;
-      rt.gba.objVram.set(iconPng.charData.slice(0, BYTES_PER_FRAME), slotByteOffset);
+      // Frames stockées contiguës : tiles [slotTileBase..+15] = frame 0,
+      //   [slotTileBase+16..+31] = frame 1.
+      rt.gba.objVram.set(iconPng.charData.slice(0, BYTES_PER_SLOT), slotByteOffset);
+      void BYTES_PER_FRAME;
       // Load icon palette (= normal.pal).
       const iconPal = await loadGbaPal(`/decomp/em/pokemon/${dexId}/normal.pal`);
       const palBank = ICON_OBJ_PAL_BASE + i;
@@ -756,19 +775,24 @@ function _partyMenuButtonHandler(rt: ReturnType<typeof getRuntime>): number {
   return newKeys & (KEY_A | KEY_B);
 }
 
-/** 1:1 décomp `SpriteCB_BouncePartyMonIcon` (party_menu.c:4003).
- *  Le décomp tick `UpdateMonIconFrame(sprite)` qui retourne un animCmd. Sur
- *  cmd != 0, oscillate y2 : odd → -3, even → +1. Notre engine n'a pas le
- *  UpdateMonIconFrame icon anim system → on émule via un counter manuel
- *  qui toggle phase toutes les ~8 frames (= rough match du timing décomp). */
+/** 1:1 décomp `SpriteCB_BouncePartyMonIcon` (party_menu.c:4003) + idle anim
+ *  via `SpriteCB_UpdatePartyMonIcon` qui cycle entre frame 0 et frame 1 du
+ *  icon.png. Le décomp tick `UpdateMonIconFrame(sprite)` qui retourne un
+ *  animCmd. Notre engine émule le frame cycle via un counter manuel +
+ *  toggle tileId entre frame 0 (= base) et frame 1 (= base+16). */
 function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
-  if (!_isOpen || _phase !== 'open') return;
+  if (!_isOpen) return;
+  // Run l'animation même dans action_menu state (= icons continuent à idle).
+  if (_phase !== 'open' && _phase !== 'action_menu') return;
   _bounceCounter++;
   const rt = getRuntime();
   if (!rt) return;
-  // Phase toggle ~8 frames (= 7.5 Hz). Match l'approx bounce speed du décomp.
-  const phase = (_bounceCounter >> 3) & 1;
-  const bounceY = phase ? -3 : 1;
+  // Bounce phase : toggle toutes les ~8 frames pour selected. Match le décomp.
+  const bouncePhase = (_bounceCounter >> 3) & 1;
+  const bounceY = bouncePhase ? -3 : 1;
+  // Idle anim frame phase : toggle toutes les ~32 frames (= 1.9 Hz, lent
+  // breathing). Le décomp tick selon sAnimCmds qui varient par species.
+  const animFrame = (_bounceCounter >> 5) & 1;  // 0 or 1
   for (let i = 0; i < 6; i++) {
     const id = _iconOamBySlot[i];
     if (id < 0) continue;
@@ -777,7 +801,11 @@ function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
     const oam = rt.gba.oam[spr.oamIndex];
     if (!oam) continue;
     const base = _iconBaseY[i];
+    // Selected slot bounces, autres slots stationary base y.
     oam.y = (i === _slotId) ? base + bounceY : base;
+    // Frame swap pour idle anim sur TOUS les slots.
+    const slotTileBase = ICON_OBJ_TILE_OFFSET / 32 + i * ICON_TILES_PER_SLOT;
+    oam.tileId = slotTileBase + animFrame * ICON_TILES_PER_FRAME;
   }
 }
 
