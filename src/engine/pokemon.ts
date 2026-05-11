@@ -68,6 +68,60 @@ export interface PokemonInstance {
   /** Session 124 : shiny flag (= 1:1 décomp `IsShinyOtIdPersonality`).
    *  Computed at create depuis personality + playerTrainerId. */
   isShiny?: boolean;
+  /** Session 130 : gender dérivé 1:1 décomp `GetGenderFromSpeciesAndPersonality`.
+   *  MON_MALE=0, MON_FEMALE=254, MON_GENDERLESS=255. */
+  monGender?: 0 | 254 | 255;
+}
+
+/** 1:1 décomp `MON_MALE` / `MON_FEMALE` / `MON_GENDERLESS` (include/pokemon.h). */
+export const MON_MALE = 0;
+export const MON_FEMALE = 254;
+export const MON_GENDERLESS = 255;
+
+/** 1:1 décomp `PERCENT_FEMALE(x)` macro : (u8)((x * 255) / 100). */
+function PERCENT_FEMALE_VALUE(x: number): number {
+  return Math.floor((x * 255) / 100) & 0xFF;
+}
+
+/** Parse le string `genderRatio` du species-info.json (= "PERCENT_FEMALE(12.5)",
+ *  "MON_MALE", "MON_FEMALE", "MON_GENDERLESS", ou un u8 raw e.g. "31"). */
+function parseGenderRatio(raw: string | number | undefined): number {
+  if (raw === undefined || raw === null) return MON_GENDERLESS;
+  if (typeof raw === 'number') return raw & 0xFF;
+  const trimmed = raw.trim();
+  if (trimmed === 'MON_MALE')       return MON_MALE;
+  if (trimmed === 'MON_FEMALE')     return MON_FEMALE;
+  if (trimmed === 'MON_GENDERLESS') return MON_GENDERLESS;
+  const pf = trimmed.match(/^PERCENT_FEMALE\(([^)]+)\)$/);
+  if (pf) return PERCENT_FEMALE_VALUE(parseFloat(pf[1]));
+  const n = parseInt(trimmed, 10);
+  return Number.isFinite(n) ? (n & 0xFF) : MON_GENDERLESS;
+}
+
+/** 1:1 décomp `GetGenderFromSpeciesAndPersonality` (pokemon.c:6080).
+ *  Returns MON_MALE / MON_FEMALE / MON_GENDERLESS. */
+export function GetGenderFromSpeciesAndPersonality(speciesEnum: string, personality: number): number {
+  let ratio: number = MON_GENDERLESS;
+  try {
+    const dataMod = (globalThis as { __game_data?: { getSpeciesInfo: (k: string) => { genderRatio?: string | number } | undefined } }).__game_data;
+    const info = dataMod?.getSpeciesInfo(speciesEnum);
+    ratio = parseGenderRatio(info?.genderRatio);
+  } catch { /* fallback genderless */ }
+  if (ratio === MON_MALE)       return MON_MALE;
+  if (ratio === MON_FEMALE)     return MON_FEMALE;
+  if (ratio === MON_GENDERLESS) return MON_GENDERLESS;
+  if (ratio > (personality & 0xFF)) return MON_FEMALE;
+  return MON_MALE;
+}
+
+/** Helper UI : retourne 'M' | 'F' | null pour symbol display. */
+export function getMonGenderSymbol(mon: { monGender?: number; personality?: number; speciesEnum?: string }): 'M' | 'F' | null {
+  const g = mon.monGender ?? (mon.personality !== undefined && mon.speciesEnum
+    ? GetGenderFromSpeciesAndPersonality(mon.speciesEnum, mon.personality)
+    : MON_GENDERLESS);
+  if (g === MON_MALE) return 'M';
+  if (g === MON_FEMALE) return 'F';
+  return null;
 }
 
 /**
@@ -172,6 +226,9 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
   const personality = Random32();
   const otId = gameState.trainerId ?? 0;
   const isShiny = isShinyFromOtIdPersonality(otId, personality);
+  // 1:1 décomp `GetGenderFromSpeciesAndPersonality` (pokemon.c:6080) :
+  // gender dérivé de species genderRatio + (personality & 0xFF).
+  const monGender = GetGenderFromSpeciesAndPersonality(speciesEnum, personality) as 0 | 254 | 255;
   const ivs = opts?.ivs ?? randomIVs();
   const evs = opts?.evs ?? ZERO_STATS;
   const baseHp = species.baseStats?.hp ?? 50;
@@ -220,6 +277,7 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
     growthRate,
     personality,
     isShiny,
+    monGender,
   };
 }
 
@@ -293,10 +351,20 @@ export function pokemonToShowdownSet(p: PokemonInstance): {
     name: p.nickname,
     species: p.speciesName,
     level: p.level,
-    // gender '' : @pkmn/sim auto-detect via species genderRatio. Le décomp
-    // calcule via `personality & 0xFF` vs `gBaseStats[species].genderRatio`.
-    // TODO : extraire genderRatio par species si on veut gender 1:1 personality.
-    gender: '',
+    // Session 130 : gender 1:1 décomp dérivé de personality + species genderRatio.
+    // @pkmn/sim accepte 'M' / 'F' / 'N' (= genderless). Fallback 'N' si pas calc.
+    gender: (() => {
+      if (p.monGender === MON_MALE) return 'M';
+      if (p.monGender === MON_FEMALE) return 'F';
+      if (p.monGender === MON_GENDERLESS) return 'N';
+      // Back-compat saves pré-session-130 : derive from speciesEnum + personality.
+      if (p.personality !== undefined && p.speciesEnum) {
+        const g = GetGenderFromSpeciesAndPersonality(p.speciesEnum, p.personality);
+        if (g === MON_MALE) return 'M';
+        if (g === MON_FEMALE) return 'F';
+      }
+      return 'N';
+    })(),
     moves: p.moves.map(m => m.id),
     ability: p.ability,
     item: p.heldItem,

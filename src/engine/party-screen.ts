@@ -62,6 +62,36 @@ const STD_FRAME_PAL = 14;
 const COLOR_TEXT: [number, number, number] = [0, 3, 2];
 const COLOR_HP: [number, number, number] = [0, 3, 2];
 
+/** 1:1 décomp `#define PARTY_PAL_*` (party_menu.c:150). */
+const PARTY_PAL_SELECTED    = 1 << 0;
+const PARTY_PAL_FAINTED     = 1 << 1;
+const PARTY_PAL_TO_SWITCH   = 1 << 2;
+const PARTY_PAL_MULTI_ALT   = 1 << 3;
+const PARTY_PAL_SWITCHING   = 1 << 4;
+const PARTY_PAL_TO_SOFTBOIL = 1 << 5;
+const PARTY_PAL_NO_MON      = 1 << 6;
+
+/** 1:1 décomp palette offset arrays (party_menu.h:574..596).
+ *  *PalIds = indices dans le bg.pal global (176 entries) à copier dans la sub-pal du window slot.
+ *  *PalOffsets = positions cibles dans la sub-pal (0-15). */
+const sPartyBoxPalOffsets1     = [4, 5, 6];
+const sPartyBoxPalOffsets2     = [1, 7, 8];
+const sPartyBoxNoMonPalOffsets = [1, 11, 12];
+
+const sPartyBoxEmptySlotPalIds1       = [52, 53, 54];
+const sPartyBoxEmptySlotPalIds2       = [49, 55, 56];
+const sPartyBoxCurrSelectionPalIds1   = [116, 117, 118];
+const sPartyBoxCurrSelectionPalIds2   = [97, 103, 104];
+const sPartyBoxFaintedPalIds1         = [84, 85, 86];
+const sPartyBoxFaintedPalIds2         = [81, 87, 88];
+const sPartyBoxCurrSelectionFaintedPalIds = [148, 149, 150];
+const sPartyBoxSelectedForActionPalIds1   = [100, 101, 102];
+const sPartyBoxSelectedForActionPalIds2   = [161, 167, 168];
+const sPartyBoxMultiPalIds1               = [68, 69, 70];
+const sPartyBoxMultiPalIds2               = [65, 71, 72];
+const sPartyBoxCurrSelectionMultiPalIds   = [132, 133, 134];
+const sPartyBoxNoMonPalIds                = [17, 27, 28];
+
 /** 1:1 décomp `sPartyMenuBgTemplates` (party_menu.h:1) :
  *  BG0 mapBase=31 priority=1 → windows (= slot frames + text + msg)
  *  BG1 mapBase=30 priority=2 → bg.bin background (= yellow stripes décor)
@@ -129,8 +159,12 @@ let _assetsLoading: Promise<PartyAssets> | null = null;
 let _slotWindowIds: number[] = [];
 let _msgWid = -1;
 let _inputTaskId = -1;
-let _iconOamIds: number[] = [];
+let _bounceTaskId = -1;
+/** Indexed par slot index (0..5). -1 = pas de mon dans ce slot. */
+let _iconOamBySlot: number[] = [-1, -1, -1, -1, -1, -1];
+let _iconBaseY: number[] = [0, 0, 0, 0, 0, 0];
 let _cancelButtonOamId = -1;
+let _bounceCounter = 0;
 /** 1:1 décomp `gPartyMenu.slotId` (= currently highlighted slot).
  *  Valeurs : 0..5 (mons), 6 = Confirm (unused single layout), 7 = Cancel button. */
 let _slotId = 0;
@@ -358,6 +392,115 @@ function _drawAllSlots(): void {
   }
 }
 
+/** 1:1 décomp `LOAD_PARTY_BOX_PAL` macro (party_menu.c:2198) :
+ *  Pour chaque (palId, palOffset) dans les arrays 3-element, copie 1 RGB15 color
+ *  depuis `bgPalette[palId]` (= snapshot des 11 sub-pals via PartyMenuInternal->palBuffer)
+ *  vers la sub-pal du window slot à position `palOffset + BG_PLTT_ID(slot_pal_num)`. */
+function _loadPartyBoxPalSet(slotPalNum: number, palIds: readonly number[], palOffsets: readonly number[]): void {
+  if (!_assets) return;
+  for (let i = 0; i < 3; i++) {
+    const src = new Uint16Array(1);
+    src[0] = _assets.bgPalette[palIds[i]];
+    LoadPalette(src, slotPalNum * 16 + palOffsets[i], 2);
+  }
+}
+
+/** 1:1 décomp `LoadPartyBoxPalette` (party_menu.c:2205) :
+ *  Sélectionne le palette set selon palFlags + applique 6 color swap (2 sets de 3). */
+function _loadPartyBoxPalette(slotIdx: number, palFlags: number): void {
+  // Slot palette num = paletteNum du window template (= 3 pour slot 0, 4-8 pour slots 1-5).
+  const slotPalNum = SLOT_WINDOW_TEMPLATES[slotIdx]?.paletteNum;
+  if (slotPalNum === undefined) return;
+  if (palFlags & PARTY_PAL_NO_MON) {
+    _loadPartyBoxPalSet(slotPalNum, sPartyBoxNoMonPalIds, sPartyBoxNoMonPalOffsets);
+    return;
+  }
+  if (palFlags & PARTY_PAL_TO_SOFTBOIL) {
+    _loadPartyBoxPalSet(slotPalNum, sPartyBoxSelectedForActionPalIds1, sPartyBoxPalOffsets1);
+    if (palFlags & PARTY_PAL_SELECTED)
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxCurrSelectionPalIds2, sPartyBoxPalOffsets2);
+    else
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxSelectedForActionPalIds2, sPartyBoxPalOffsets2);
+    return;
+  }
+  if (palFlags & PARTY_PAL_SWITCHING) {
+    _loadPartyBoxPalSet(slotPalNum, sPartyBoxSelectedForActionPalIds1, sPartyBoxPalOffsets1);
+    _loadPartyBoxPalSet(slotPalNum, sPartyBoxSelectedForActionPalIds2, sPartyBoxPalOffsets2);
+    return;
+  }
+  if (palFlags & PARTY_PAL_TO_SWITCH) {
+    _loadPartyBoxPalSet(slotPalNum, sPartyBoxSelectedForActionPalIds1, sPartyBoxPalOffsets1);
+    if (palFlags & PARTY_PAL_SELECTED)
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxCurrSelectionPalIds2, sPartyBoxPalOffsets2);
+    else
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxSelectedForActionPalIds2, sPartyBoxPalOffsets2);
+    return;
+  }
+  if (palFlags & PARTY_PAL_FAINTED) {
+    if (palFlags & PARTY_PAL_SELECTED) {
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxCurrSelectionFaintedPalIds, sPartyBoxPalOffsets1);
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxCurrSelectionPalIds2, sPartyBoxPalOffsets2);
+    } else {
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxFaintedPalIds1, sPartyBoxPalOffsets1);
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxFaintedPalIds2, sPartyBoxPalOffsets2);
+    }
+    return;
+  }
+  if (palFlags & PARTY_PAL_MULTI_ALT) {
+    if (palFlags & PARTY_PAL_SELECTED) {
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxCurrSelectionMultiPalIds, sPartyBoxPalOffsets1);
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxCurrSelectionPalIds2, sPartyBoxPalOffsets2);
+    } else {
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxMultiPalIds1, sPartyBoxPalOffsets1);
+      _loadPartyBoxPalSet(slotPalNum, sPartyBoxMultiPalIds2, sPartyBoxPalOffsets2);
+    }
+    return;
+  }
+  if (palFlags & PARTY_PAL_SELECTED) {
+    _loadPartyBoxPalSet(slotPalNum, sPartyBoxCurrSelectionPalIds1, sPartyBoxPalOffsets1);
+    _loadPartyBoxPalSet(slotPalNum, sPartyBoxCurrSelectionPalIds2, sPartyBoxPalOffsets2);
+    return;
+  }
+  // Default (= non-selected mon slot).
+  _loadPartyBoxPalSet(slotPalNum, sPartyBoxEmptySlotPalIds1, sPartyBoxPalOffsets1);
+  _loadPartyBoxPalSet(slotPalNum, sPartyBoxEmptySlotPalIds2, sPartyBoxPalOffsets2);
+}
+
+/** 1:1 décomp `GetPartyBoxPaletteFlags` (party_menu.c:1165).
+ *  Pour notre MVP single-layout sans switching/softboil, juste SELECTED + FAINTED. */
+function _getPartyBoxPaletteFlags(slotIdx: number, animNum: number): number {
+  let palFlags = 0;
+  if (animNum === 1) palFlags |= PARTY_PAL_SELECTED;
+  const mon = (gameState.party as PokemonInstance[])[slotIdx];
+  if (mon && mon.currentHp === 0) palFlags |= PARTY_PAL_FAINTED;
+  return palFlags;
+}
+
+/** 1:1 décomp `AnimatePartySlot` (party_menu.c:1120).
+ *  animNum=0 = not selected (default), animNum=1 = selected (cursor here). */
+function AnimatePartySlot(slotIdx: number, animNum: number): void {
+  const PARTY_SIZE = 6, CANCEL = PARTY_SIZE + 1;
+  if (slotIdx < PARTY_SIZE) {
+    const mon = (gameState.party as PokemonInstance[])[slotIdx];
+    if (mon) {
+      _loadPartyBoxPalette(slotIdx, _getPartyBoxPaletteFlags(slotIdx, animNum));
+    }
+    return;
+  }
+  if (slotIdx === CANCEL) {
+    // Cancel button OAM frame swap : animNum=0 → frame Closed, animNum=1 → frame Open.
+    // 1:1 décomp PartyMenuStartSpriteAnim. Frame 0 = tile 0..15, frame 1 = tile 16..31.
+    const rt = getRuntime();
+    if (!rt || _cancelButtonOamId < 0) return;
+    const spr = rt.gSprites.get(_cancelButtonOamId);
+    if (!spr) return;
+    const oam = rt.gba.oam[spr.oamIndex];
+    if (!oam) return;
+    const POKEBALL_TILE_BASE = 256;
+    oam.tileId = POKEBALL_TILE_BASE + (animNum === 1 ? 16 : 0);
+  }
+}
+
 function _drawMsg(): void {
   if (_msgWid < 0) return;
   FillWindowPixelBuffer(_msgWid, 0x11);
@@ -376,9 +519,13 @@ async function _spawnCancelButtonOam(): Promise<void> {
     // pokeball.png = 32×32 sprite × 2 anim frames (Closed/Open) = 16+16 = 32 tiles.
     const tiles = await loadTileBin('/decomp/em/party_menu/pokeball.png', 4);
     const pal = await loadGbaPal('/decomp/em/party_menu/pokeball.gbapal');
+    // 1:1 décomp gPartyMenuPokeball_Gfx size 0x400 (= 1024 bytes = 32 tiles 4bpp).
+    // pokeball.png = 32×32 sprite × 2 anim frames (Closed/Open) = 16+16 = 32 tiles.
     // Write tile data à OBJ VRAM offset 256 (= après les icons aux offsets 0..255).
+    // Charge LES DEUX frames (= tiles 256..271 closed, tiles 272..287 open) sinon
+    // AnimatePartySlot(CANCEL, 1) montre des garbage tiles pour frame 1.
     const POKEBALL_TILE_BASE = 256;
-    rt.gba.objVram.set(tiles.slice(0, 16 * 32), POKEBALL_TILE_BASE * 32);
+    rt.gba.objVram.set(tiles.slice(0, 32 * 32), POKEBALL_TILE_BASE * 32);
     // Load palette à OBJ bank 9 (= sépare des icon banks 5-7).
     const POKEBALL_PAL_BANK = 9;
     rt.LoadPaletteObj(pal, OBJ_PLTT_ID(POKEBALL_PAL_BANK));
@@ -401,7 +548,8 @@ async function _spawnCancelButtonOam(): Promise<void> {
 async function _spawnIconOams(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
-  _iconOamIds = [];
+  _iconOamBySlot = [-1, -1, -1, -1, -1, -1];
+  _iconBaseY = [0, 0, 0, 0, 0, 0];
   const party = gameState.party as PokemonInstance[];
   for (let i = 0; i < 6; i++) {
     const mon = party[i];
@@ -424,14 +572,16 @@ async function _spawnIconOams(): Promise<void> {
       // Spawn OAM 32×32 à coords ICON_COORDS[i] (= sprite OAM x/y est top-left,
       // notre engine center-vec ajustement = + size/2).
       const [x, y] = ICON_COORDS[i];
+      const oamY = y + 16;
       const spr = rt.CreateSpriteAtOam({
-        x: x + 16, y: y + 16,
+        x: x + 16, y: oamY,
         shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
         tileId: slotTileBase,
         paletteBank: palBank,
         priority: 1,
       });
-      _iconOamIds.push(spr.spriteId);
+      _iconOamBySlot[i] = spr.spriteId;
+      _iconBaseY[i] = oamY;
     } catch (e) {
       console.warn(`[party-screen] icon load failed for ${dexId}:`, e);
     }
@@ -446,10 +596,15 @@ function _freePartyMenu(): void {
     if (spr) { spr.inUse = false; const oam = rt.gba.oam[spr.oamIndex]; if (oam) oam.visible = false; }
     rt.gSprites.delete(id);
   };
-  for (const id of _iconOamIds) freeOam(id);
-  _iconOamIds = [];
+  for (const id of _iconOamBySlot) freeOam(id);
+  _iconOamBySlot = [-1, -1, -1, -1, -1, -1];
+  _iconBaseY = [0, 0, 0, 0, 0, 0];
   freeOam(_cancelButtonOamId);
   _cancelButtonOamId = -1;
+  if (rt && _bounceTaskId >= 0) {
+    rt.DestroyTask(_bounceTaskId);
+    _bounceTaskId = -1;
+  }
   for (const wid of _slotWindowIds) if (wid >= 0) RemoveWindow(wid);
   _slotWindowIds = [];
   if (_msgWid >= 0) { RemoveWindow(_msgWid); _msgWid = -1; }
@@ -536,12 +691,41 @@ function _partyMenuButtonHandler(rt: ReturnType<typeof getRuntime>): number {
     _updateSlotIdSingle(dir);
     if (_slotId !== prev) {
       PlaySE(5);  // SE_SELECT
+      // 1:1 décomp UpdateCurrentPartySelection (party_menu.c:1505) :
+      // AnimatePartySlot(oldSlot, 0); AnimatePartySlot(newSlot, 1);
+      AnimatePartySlot(prev, 0);
+      AnimatePartySlot(_slotId, 1);
     }
     return 0;
   }
   // Pressed A on Cancel = treat as B (= close)
   if ((newKeys & KEY_A) && _slotId === CANCEL) return KEY_B;
   return newKeys & (KEY_A | KEY_B);
+}
+
+/** 1:1 décomp `SpriteCB_BouncePartyMonIcon` (party_menu.c:4003).
+ *  Le décomp tick `UpdateMonIconFrame(sprite)` qui retourne un animCmd. Sur
+ *  cmd != 0, oscillate y2 : odd → -3, even → +1. Notre engine n'a pas le
+ *  UpdateMonIconFrame icon anim system → on émule via un counter manuel
+ *  qui toggle phase toutes les ~8 frames (= rough match du timing décomp). */
+function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
+  if (!_isOpen || _phase !== 'open') return;
+  _bounceCounter++;
+  const rt = getRuntime();
+  if (!rt) return;
+  // Phase toggle ~8 frames (= 7.5 Hz). Match l'approx bounce speed du décomp.
+  const phase = (_bounceCounter >> 3) & 1;
+  const bounceY = phase ? -3 : 1;
+  for (let i = 0; i < 6; i++) {
+    const id = _iconOamBySlot[i];
+    if (id < 0) continue;
+    const spr = rt.gSprites.get(id);
+    if (!spr) continue;
+    const oam = rt.gba.oam[spr.oamIndex];
+    if (!oam) continue;
+    const base = _iconBaseY[i];
+    oam.y = (i === _slotId) ? base + bounceY : base;
+  }
 }
 
 /** Input handler 1:1 décomp `Task_HandleChooseMonInput` (party_menu.c:1260) :
@@ -607,11 +791,20 @@ export function CB2_InitPartyMenu(): void {
     case 11: _drawAllSlots(); _drawMsg(); rt.gMain.state++; break;
     case 12:
       _inputTaskId = rt.CreateTask(Task_PartyMenu_HandleInput, 0);
+      // 1:1 décomp icon bounce anim task : oscillate y2 du selected mon icon.
+      _bounceCounter = 0;
+      _bounceTaskId = rt.CreateTask(Task_PartyMenu_BounceIcon, 1);
       rt.gMain.state++; break;
     case 13:
       // Spawn icon OAMs + cancel button async, advance immédiatement.
       void _spawnIconOams();
       void _spawnCancelButtonOam();
+      rt.gMain.state++; break;
+    case 14:
+      // 1:1 décomp `AnimatePartySlot(gPartyMenu.slotId, 1)` (party_menu.c:1116) :
+      // initial highlight du slot 0 + default unselected pour les autres mons.
+      for (let i = 0; i < 6; i++) AnimatePartySlot(i, 0);
+      AnimatePartySlot(_slotId, 1);
       rt.gMain.state++; break;
     case 14: rt.gMain.state++; break;
     case 15: rt.gMain.state++; break;

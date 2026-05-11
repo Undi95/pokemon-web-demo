@@ -249,6 +249,18 @@ function applyNoIntroPreset(): void {
     });
     gameState.addToParty(arcko);
     console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.currentHp}/${arcko.maxHp}) held=${arcko.heldItem} ability=${arcko.ability} moves=[${arcko.moves.map(m => m.id).join(',')}]`);
+    // ⚠️ DEBUG ONLY : Jirachi Lv100 pour tester party menu selection
+    // (= 2ème mon = test cursor LEFT/RIGHT/UP/DOWN entre slot 0 et slots 1-5).
+    const jirachi = createPokemonInstance('SPECIES_JIRACHI', 100, {
+      heldItem: 'starpiece',
+      ability: 'Serene Grace',
+      nature: 'Modest',
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+      evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
+      moves: ['psychic', 'doomdesire', 'thunderbolt', 'rest'],
+    });
+    gameState.addToParty(jirachi);
+    console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.currentHp}/${jirachi.maxHp})`);
   }
 
   gameState.save();
