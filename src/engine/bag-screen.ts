@@ -881,7 +881,11 @@ function _drawItemIcon(): void {
   const icon = _itemIconCache[effectiveKey];
   if (!icon) {
     void _ensureItemIconLoaded(effectiveKey).then(() => {
-      if (_isOpen && _selectedItemKey() === itemKey) {
+      // 1:1 ROM : ne pas check _isOpen ici. Pendant state 13 (_drawAll), _isOpen
+      // est encore false (= set true seulement au state default). Mais la
+      // recursion peut résoudre APRÈS bag fully open. Vérifier juste que la
+      // selection courante n'a pas changé (= si user a déjà scrollé, skip).
+      if (_selectedItemKey() === itemKey && _itemIconWid >= 0) {
         _drawItemIcon();
       }
     });
@@ -2263,6 +2267,9 @@ let _bagInputTaskId = -1;
 /** Flag pour state 8 _loadBagMenuGraphicsCb2 async loader. */
 let _bagGraphicsReady = false;
 let _bagGraphicsLoading = false;
+/** Flag pour state 9 _loadBagMenuTextWindowsCb2 async loader. */
+let _loadBagMenuTextWindowsCb2Ready = false;
+let _loadBagMenuTextWindowsCb2Loading = false;
 
 /** Cache std_menu.pal loaded once via loadGbaPal (= asset shared with all menus
  *  that use BG palette slot 15). */
@@ -2591,6 +2598,8 @@ export function CB2_InitBagMenu(): void {
       _initBagBgs(rt);
       _bagGraphicsReady = false;
       _bagGraphicsLoading = false;
+      _loadBagMenuTextWindowsCb2Ready = false;
+      _loadBagMenuTextWindowsCb2Loading = false;
       rt.gMain.state++;
       break;
     case 8:
@@ -2601,8 +2610,19 @@ export function CB2_InitBagMenu(): void {
     case 9:
       // LoadBagMenuTextWindows = InitWindows + LoadUserWindowBorderGfx +
       // LoadMessageBoxGfx + ListMenuLoadStdPalAt + LoadPalette gStandardMenuPalette
-      // BG_PLTT_ID(15). Async (= std_menu.pal fetch), advance state when done.
-      void _loadBagMenuTextWindowsCb2(rt).then(() => { /* state already advanced */ });
+      // BG_PLTT_ID(15). Async (= std_menu.pal fetch). Reste sur state 9 jusqu'à
+      // ready pour que state 19 BlendPalettes blackify la palette 15 chargée
+      // (= sinon palette 15 reste OW value, on voit des frames cream pendant fade).
+      if (!_loadBagMenuTextWindowsCb2Ready) {
+        if (!_loadBagMenuTextWindowsCb2Loading) {
+          _loadBagMenuTextWindowsCb2Loading = true;
+          void _loadBagMenuTextWindowsCb2(rt).then(() => {
+            _loadBagMenuTextWindowsCb2Ready = true;
+            _loadBagMenuTextWindowsCb2Loading = false;
+          });
+        }
+        break;  // stay on state 9 until ready
+      }
       rt.gMain.state++;
       break;
     case 10:
