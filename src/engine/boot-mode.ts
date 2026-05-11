@@ -21,6 +21,7 @@ import { NewGameInit } from './new-game-flags';
 import { AddBagItem, DEBUG_ExpandBagToFit } from './bag';
 import { DIR_SOUTH } from './direction-coords';
 import { loadItemsTable, getAllItemKeys, type ItemDef } from './data-tables';
+import { createPokemonInstance } from './pokemon';
 
 const ITEMS_JSON_URL = '/decomp/em/items.json';
 
@@ -224,6 +225,31 @@ function applyNoIntroPreset(): void {
   // Note : movementType (FACE_UP) n'est pas persisté actuellement (= follow-up).
   // L'API `setObjectMovementType` n'existe pas encore sur gameState. Mom
   // gardera son MOVEMENT_TYPE_FACE_RIGHT du template jusqu'à ce qu'on étende.
+
+  // ⚠️ DEBUG ONLY : ajouter Arcko Lv5 complet à la party (= testing Pokemon
+  // screen pages, party UI, battle system). Pokémon "complet" :
+  //   - Species : SPECIES_TREECKO (= ARCKO en FR, starter gen 3 Hoenn)
+  //   - Level : 5 (= 1:1 décomp starter au début du jeu)
+  //   - Held item : ITEM_MIRACLE_SEED (= "Grain Miracle" FR, +20% dmg Plante)
+  //   - Ability : "Overgrow" (= Engrais FR, +50% Plante moves quand HP < 1/3)
+  //   - Moves 4 : Pound, Leer (= level-up natural), Absorb (Lv6 cheat), Quick
+  //     Attack (= variety pour test type categories Normal/Physical)
+  //   - Nature : Hardy (= +0/-0, balanced pour tests)
+  //   - IVs : 31/31/31/31/31/31 (= max, simplifie damage calc tests)
+  //   - EVs : 0 (= un fresh starter)
+  // Skip si party déjà populée (= user a déjà fait l'intro + caught Treecko).
+  if (gameState.party.length === 0) {
+    const arcko = createPokemonInstance('SPECIES_TREECKO', 5, {
+      heldItem: 'miracleseed',  // @pkmn/dex canonical (= ITEM_MIRACLE_SEED)
+      ability: 'Overgrow',
+      nature: 'Hardy',
+      ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
+      evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
+      moves: ['pound', 'leer', 'absorb', 'quickattack'],
+    });
+    gameState.addToParty(arcko);
+    console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.currentHp}/${arcko.maxHp}) held=${arcko.heldItem} ability=${arcko.ability} moves=[${arcko.moves.map(m => m.id).join(',')}]`);
+  }
 
   gameState.save();
   console.log(`[boot-mode] ?nointro preset : name='${gameState.playerName}' gender='${gameState.gender}' INTRO_STATE=6`);

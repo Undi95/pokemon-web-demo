@@ -179,9 +179,15 @@ export function createPokemonInstance(speciesEnum: string, level: number, opts?:
   const moveIds = opts?.moves ?? pickLevelUpMoves(dexId, level);
   const moves = moveIds.slice(0, 4).map(id => {
     const mv = Dex.moves.get(id);
+    // Build MOVE_FOO_BAR enum from name "Foo Bar" (= 1:1 décomp constants).
+    // id "quickattack" → mv.name "Quick Attack" → "MOVE_QUICK_ATTACK".
+    // Si pas de mv.name : fallback id.toUpperCase() (= mono-word moves).
+    const enumKey = mv?.name
+      ? 'MOVE_' + mv.name.toUpperCase().replace(/[ '-]/g, '_').replace(/_+/g, '_')
+      : 'MOVE_' + id.toUpperCase();
     return {
       id: mv.id || id,
-      nameFr: getMoveNameFr('MOVE_' + id.toUpperCase()) || mv.name || id,
+      nameFr: getMoveNameFr(enumKey) || mv.name || id,
       pp: mv.pp ?? 30,
       ppMax: mv.pp ?? 30,
     };
