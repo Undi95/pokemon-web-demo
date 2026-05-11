@@ -593,9 +593,9 @@ async function _spawnCancelButtonOam(): Promise<void> {
     // Load palette à OBJ bank 9 (= sépare des icon banks 5-7).
     const POKEBALL_PAL_BANK = 9;
     rt.LoadPaletteObj(pal, OBJ_PLTT_ID(POKEBALL_PAL_BANK));
-    // Spawn OAM 32×32 à (198, 148) + center adjust (= 32×32 → -16).
+    // 1:1 décomp `CreateSprite(template, 198, 148, 8)` : sprite center coords.
     const spr = rt.CreateSpriteAtOam({
-      x: 198 + 16, y: 148 + 16,
+      x: 198, y: 148,
       shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
       tileId: POKEBALL_TILE_BASE,
       paletteBank: POKEBALL_PAL_BANK,
@@ -637,12 +637,14 @@ async function _spawnIconOams(): Promise<void> {
       const iconPal = await loadGbaPal(`/decomp/em/pokemon/${dexId}/normal.pal`);
       const palBank = ICON_OBJ_PAL_BASE + i;
       rt.LoadPaletteObj(iconPal, OBJ_PLTT_ID(palBank));
-      // Spawn OAM 32×32 à coords ICON_COORDS[i] (= sprite OAM x/y est top-left,
-      // notre engine center-vec ajustement = + size/2).
+      // 1:1 décomp `CreateMonIconSprite(template, x, y, ...)` (= sprite center
+      // coords in pixels). Notre `CreateSpriteAtOam` engine applique
+      // CalcCenterToCornerVec INTERNE via le sprite.centerToCornerVec stocké
+      // au create. Passer les coords DÉCOMP direct (= sprite center).
       const [x, y] = ICON_COORDS[i];
-      const oamY = y + 16;
+      const oamY = y;
       const spr = rt.CreateSpriteAtOam({
-        x: x + 16, y: oamY,
+        x, y,
         shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
         tileId: slotTileBase,
         paletteBank: palBank,
