@@ -131,7 +131,10 @@ let _msgWid = -1;
 let _inputTaskId = -1;
 let _iconOamIds: number[] = [];
 let _cancelButtonOamId = -1;
-let _cursorPos = 0;
+/** 1:1 décomp `gPartyMenu.slotId` (= currently highlighted slot).
+ *  Valeurs : 0..5 (mons), 6 = Confirm (unused single layout), 7 = Cancel button. */
+let _slotId = 0;
+let _lastSelectedSlot = 0;
 let _graphicsReady = false;
 let _graphicsLoading = false;
 let _windowsReady = false;
@@ -477,21 +480,90 @@ function Task_ClosePartyMenu(task: DecompTask): void {
   _inputTaskId = -1;
 }
 
-/** Input handler 1:1 décomp `Task_HandleChooseMonInput` :
- *    A → action menu (RESUME/OBJET/RETOUR) [TODO]
- *    B / START → exit
- *    UP/DOWN/LEFT/RIGHT → navigate cursor [TODO] */
+/** 1:1 décomp `UpdatePartySelectionSingleLayout` (party_menu.c:1523).
+ *  Layout single (= notre cas) : slotId values 0..5 (mons), 7 (Cancel).
+ *  Confirm (slot 6) pas utilisé en single layout (= chooseHalf=false). */
+function _updateSlotIdSingle(dir: number): void {
+  const partyCount = (gameState.party as PokemonInstance[]).length;
+  const PARTY_SIZE = 6;
+  const CANCEL = PARTY_SIZE + 1;  // = 7
+  switch (dir) {
+    case MENU_DIR_UP:
+      if (_slotId === 0) _slotId = CANCEL;
+      else if (_slotId === CANCEL) _slotId = partyCount - 1;
+      else _slotId--;
+      break;
+    case MENU_DIR_DOWN:
+      if (_slotId === CANCEL) _slotId = 0;
+      else if (_slotId === partyCount - 1) _slotId = CANCEL;
+      else _slotId++;
+      break;
+    case MENU_DIR_RIGHT:
+      if (partyCount !== 1 && _slotId === 0) {
+        _slotId = _lastSelectedSlot === 0 ? 1 : _lastSelectedSlot;
+      }
+      break;
+    case MENU_DIR_LEFT:
+      if (_slotId !== 0 && _slotId !== PARTY_SIZE && _slotId !== CANCEL) {
+        _lastSelectedSlot = _slotId;
+        _slotId = 0;
+      }
+      break;
+  }
+}
+
+/** 1:1 décomp `PartyMenuButtonHandler` (party_menu.c:1455).
+ *  Reads gMain.newAndRepeatedKeys for DPAD, JOY_NEW for A/B/START.
+ *  Returns A_BUTTON / B_BUTTON / START_BUTTON / 0. */
+const MENU_DIR_UP = -1, MENU_DIR_DOWN = 1, MENU_DIR_LEFT = -2, MENU_DIR_RIGHT = 2;
+function _partyMenuButtonHandler(rt: ReturnType<typeof getRuntime>): number {
+  if (!rt) return 0;
+  const PARTY_SIZE = 6, CANCEL = PARTY_SIZE + 1;
+  const newRepKeys = rt.gMain.newAndRepeatedKeys ?? rt.gMain.newKeys;
+  const newKeys = rt.gMain.newKeys;
+  const KEY_A = 0x0001, KEY_B = 0x0002, KEY_START = 0x0008;
+  const DPAD_UP = 0x40, DPAD_DOWN = 0x80, DPAD_LEFT = 0x20, DPAD_RIGHT = 0x10;
+  let dir = 0;
+  switch (newRepKeys & (DPAD_UP | DPAD_DOWN | DPAD_LEFT | DPAD_RIGHT)) {
+    case DPAD_UP:    dir = MENU_DIR_UP;    break;
+    case DPAD_DOWN:  dir = MENU_DIR_DOWN;  break;
+    case DPAD_LEFT:  dir = MENU_DIR_LEFT;  break;
+    case DPAD_RIGHT: dir = MENU_DIR_RIGHT; break;
+  }
+  if (newKeys & KEY_START) return KEY_START;
+  if (dir !== 0) {
+    const prev = _slotId;
+    _updateSlotIdSingle(dir);
+    if (_slotId !== prev) {
+      PlaySE(5);  // SE_SELECT
+    }
+    return 0;
+  }
+  // Pressed A on Cancel = treat as B (= close)
+  if ((newKeys & KEY_A) && _slotId === CANCEL) return KEY_B;
+  return newKeys & (KEY_A | KEY_B);
+}
+
+/** Input handler 1:1 décomp `Task_HandleChooseMonInput` (party_menu.c:1260) :
+ *    A → if cancel slot: close, else: action menu (RESUME/OBJET/RETOUR)
+ *    B → close
+ *    START → MoveCursorToConfirm (= no-op si pas chooseHalf)
+ *    DPAD → cursor nav */
 function Task_PartyMenu_HandleInput(_task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
-  const newKeys = rt.gMain.newKeys;
-  const KEY_A = 0x0001, KEY_B = 0x0002, KEY_START = 0x0008;
   if (_phase !== 'open') return;
-  if (newKeys & (KEY_B | KEY_START)) {
+  const result = _partyMenuButtonHandler(rt);
+  const KEY_A = 0x0001, KEY_B = 0x0002;
+  if (result === KEY_A) {
+    // TODO : open action menu (RESUME/OBJET/RETOUR)
+    // For now, MVP : just play SE
+    PlaySE(5);
+  } else if (result === KEY_B) {
     PlaySE(5);
     ClosePartyScreen();
   }
-  // TODO : cursor nav + A action menu
+  // START: en single layout pas de Confirm → no-op
 }
 
 export function VBlankCB_PartyMenuRun(): void { /* transferts auto */ }
