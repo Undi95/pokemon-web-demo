@@ -27,6 +27,7 @@ import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, FillWindowPixelBuffer, PutWindowTilemap,
   CopyWindowToVram, BlitBitmapToWindow, ShowBg, HideBg, InitBgFromTemplate,
+  InitWindows,
   type WindowTemplate,
 } from './gba-window-system';
 import { LoadUserWindowBorderGfx } from './gba-text-window';
@@ -34,11 +35,17 @@ import { AddTextPrinterParameterized3, GetStringRightAlignXOffset, GetStringCent
 import { gameState } from './game-state';
 import { getItem, getItemNameFr, getItemDescriptionFr, getMoveNameFr } from './data-tables';
 import { RemoveBagItem, UpdatePocketItemList } from './bag';
-import { PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID } from './decomp-globals';
+import {
+  PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
+  BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
+} from './decomp-globals';
+import { ResetSpriteData } from './decomp-bridge';
+import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { setFieldCameraSuspended } from './field-camera';
 import { getString } from './gba-strings';
 import { gSineTable, SetOamMatrix } from './decomp-helpers';
+import type { DecompTask } from './decomp-runtime';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -58,6 +65,13 @@ const COLOR_MAIN: [number, number, number] = [0, 1, 3];
 /** 1:1 décomp item_menu.c:390 sFontColorTable[COLORID_POCKET_NAME] :
  *    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_WHITE, TEXT_COLOR_RED} = [0, 1, 4]. */
 const COLOR_POCKET_NAME: [number, number, number] = [0, 1, 4];
+/** Colors pour context menu / yes-no / qty (= paletteNum=15 = gStandardMenuPalette
+ *  loaded à BG_PLTT_ID(15) par LoadBagMenuTextWindows 1:1 décomp item_menu.c:2466).
+ *  std_menu.pal idx 0 transparent, idx 1 cream/off-white, idx 2 dark gray, idx 3 light gray.
+ *  bg=1 (cream = matche PIXEL_FILL(1) du frame interior), fg=2 (dark gray = text),
+ *  shadow=3 (light gray). 1:1 décomp PrintMenuActionGrid utilise FONT_NARROW
+ *  default = ces couleurs sFontInfos[FONT_NARROW]. */
+const COLOR_CTX_NORMAL: [number, number, number] = [1, 2, 3];
 /** Standard menu frame tile + palette (= même que start menu = cohérent). */
 const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;
@@ -163,27 +177,28 @@ const DESC_WINDOW_TEMPLATE: WindowTemplate = {
   paletteNum: 1, baseBlock: 0x117,
 };
 
-/** 1:1 décomp item_menu.c:455 sContextMenuWindowTemplates[ITEMWIN_2x2] :
- *    .bg = 1, .tilemapLeft = 15, .tilemapTop = 15, .width = 14, .height = 4,
- *    .paletteNum = 15, .baseBlock = 0x21D.
- *  Pour le port web on utilise BG 0 (= même BG que les autres windows). */
+/** 1:1 décomp item_menu.c:455 sContextMenuWindowTemplates :
+ *    [ITEMWIN_2x2]       = {.bg=1, .tilemapLeft=15, .tilemapTop=15, .width=14, .height=4, .paletteNum=15, .baseBlock=0x21D}
+ *    [ITEMWIN_2x3]       = {.bg=1, .tilemapLeft=15, .tilemapTop=13, .width=14, .height=6, .paletteNum=15, .baseBlock=0x21D}
+ *    [ITEMWIN_YESNO_LOW] = {.bg=1, .tilemapLeft=24, .tilemapTop=15, .width=5,  .height=4, .paletteNum=15, .baseBlock=0x238}
+ *    [ITEMWIN_QUANTITY]  = {.bg=1, .tilemapLeft=24, .tilemapTop=17, .width=5,  .height=2, .paletteNum=15, .baseBlock=0x250}
+ *
+ *  BG=1 priority=0 (= sBgTemplates_ItemMenu[1]) → rend ON TOP de BG=0 (priority=1
+ *  items list / desc / sprite). Items list reste visible derrière context menu. */
 const CTX_2X2_WINDOW_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 15, tilemapTop: 15, width: 14, height: 4,
+  bg: 1, tilemapLeft: 15, tilemapTop: 15, width: 14, height: 4,
   paletteNum: 15, baseBlock: 0x21D,
 };
-/** ITEMWIN_2x3 pour berries (6 actions). */
 const CTX_2X3_WINDOW_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 15, tilemapTop: 13, width: 14, height: 6,
+  bg: 1, tilemapLeft: 15, tilemapTop: 13, width: 14, height: 6,
   paletteNum: 15, baseBlock: 0x21D,
 };
-/** ITEMWIN_YESNO_LOW pour confirm Toss (5x4 dans le coin droit). */
 const YESNO_WINDOW_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 24, tilemapTop: 15, width: 5, height: 4,
+  bg: 1, tilemapLeft: 24, tilemapTop: 15, width: 5, height: 4,
   paletteNum: 15, baseBlock: 0x238,
 };
-/** ITEMWIN_QUANTITY pour quantity selector Toss. */
 const QTY_WINDOW_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 24, tilemapTop: 17, width: 5, height: 2,
+  bg: 1, tilemapLeft: 24, tilemapTop: 17, width: 5, height: 2,
   paletteNum: 15, baseBlock: 0x250,
 };
 
@@ -914,60 +929,29 @@ export function IsBagScreenOpen(): boolean {
  *    - BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK) → fade IN
  *      depuis BLACK pendant 16 frames
  *    - Wait fade fini → bag interactive */
-export function OpenBagScreen(onClose: () => void): void {
+export function OpenBagScreen(_onCloseLegacy?: () => void): void {
   if (_isOpen) return;
-  _isOpen = true;
-  _phase = 'fading_in';
-  _pocketIdx = 0;
-  _cursorPos = 0;
-  _scrollOffset = 0;
-  _onClose = onClose;
-
-  // 1:1 décomp pattern start_menu.c — BG 0 + STD frame tiles.
-  LoadUserWindowBorderGfx(0, STD_FRAME_TILE, STD_FRAME_PAL * 16);
-
-  // Sprite window pour le sac (= no frame border, juste le pixel buffer).
-  _spriteWid = AddWindow(SPRITE_WINDOW_TEMPLATE);
-  _headerWid = AddWindow(HEADER_WINDOW_TEMPLATE);
-  _listWid = AddWindow(LIST_WINDOW_TEMPLATE);
-  _descWid = AddWindow(DESC_WINDOW_TEMPLATE);
-  _itemIconWid = AddWindow(ITEM_ICON_WINDOW_TEMPLATE);
-
-  // Frames sur header / list / desc — pas sur sprite ni icon (= sprites doivent
-  // être visibles sans frame autour, comme dans le ROM).
-  DrawStdFrameWithCustomTileAndPalette(_headerWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
-  DrawStdFrameWithCustomTileAndPalette(_listWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
-  DrawStdFrameWithCustomTileAndPalette(_descWid, true, STD_FRAME_TILE, STD_FRAME_PAL);
-
-  // Just put + copy les sprite windows (pas de frame).
-  PutWindowTilemap(_spriteWid);
-  PutWindowTilemap(_itemIconWid);
-
-  // Async : load assets puis setup BG fond + draw sprite. Les autres draw
-  // marchent déjà sans assets (text-only).
-  _drawHeader();
-  _drawList();
-  _drawDesc();
-  void _loadAssets().then((assets) => {
-    _setupBackgroundTilemap(assets);
-    // Load la palette du sac dans son slot custom (= 13 × 16 = offset 208).
-    LoadPalette(assets.bagSprite.palette, BAG_SPRITE_PAL * 16, 32);
-    // Re-render avec les sprites.
-    _drawAll();
+  // 1:1 décomp `GoToBagMenu` (item_menu.c:617) :
+  //   gBagMenu = AllocZeroed(...)  ← notre gBagMenu state est implicite
+  //   gBagPosition.exitCallback = exitCallback
+  //   SetMainCallback2(CB2_Bag)
+  //
+  // Le `_onCloseLegacy` arg est obsolète depuis le CB2 swap (= le retour passe
+  // par `gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu_Manual` set par
+  // sacAction, qui re-init OW + reopen start menu via FieldCB chain — 1:1
+  // décomp item_menu.c). Conservé pour compat callers.
+  //
+  // Pré-load les assets puis swap CB2. Le state machine `CB2_InitBagMenu` fait
+  // le setup réel (= state 0..20 + default).
+  void _loadAssets().then(() => {
+    const rt = getRuntime();
+    if (!rt) return;
+    rt.gMain.state = 0;
+    rt.gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu_Manual;
+    rt.SetMainCallback2(CB2_InitBagMenu);
   }).catch((e) => {
-    console.warn('[bag-screen] failed to load bag assets', e);
+    console.error('[bag-screen] OpenBagScreen asset preload failed', e);
   });
-
-  PlaySE(6 /* SE_WIN_OPEN */);
-
-  // 1:1 décomp BagMenu_InitBGs case 20 :
-  //   BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK);
-  //   gPaletteFade.bufferTransferDisabled = FALSE;
-  // → fade IN depuis BLACK (startY=16=fully black, endY=0=visible).
-  const rt = getRuntime();
-  if (rt) {
-    rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0 /* RGB_BLACK */);
-  }
 }
 
 /** Setup BG2 pour render le tilemap fond menu.bin du décomp.
@@ -1680,6 +1664,12 @@ function _openContextMenu(): void {
   _ctxItemListIdx = _scrollOffset + _cursorPos;
   _phase = 'context_menu';
 
+  // 1:1 décomp item_menu.c:1573 OpenContextMenu → BagDestroyPocketScrollArrowPair :
+  // hide chevrons pocket (LEFT/RIGHT) + flèches UP/DOWN list pendant le context
+  // menu (= sinon flèches OAM rendent par-dessus la window context).
+  _despawnPocketArrows();
+  _despawnListScrollArrows();
+
   // 1:1 décomp item_menu.c:1638 : description = "{ITEM} est\nsélectionné."
   // FillWindowPixelBuffer(WIN_DESCRIPTION, 0) + BagMenu_Print gText_Var1IsSelected.
   if (_descWid >= 0) {
@@ -1711,7 +1701,11 @@ function _openContextMenu(): void {
  *  → FONT_NARROW (= même que la list des items), left=8, top=1, optionWidth=56 px. */
 function _drawContextMenu(): void {
   if (_ctxWid < 0) return;
-  FillWindowPixelBuffer(_ctxWid, 0x00);
+  // 1:1 décomp item_menu.c PrintContextMenuItemGrid → PrintMenuActionGrid.
+  // PIXEL_FILL(1) = 0x11 (= idx 1 = cream/off-white std_menu.pal palette 15).
+  // Le pixel buffer interior est opaque cream → items list BG=0 derrière reste
+  // visible MAIS le context menu écrit ses tiles par-dessus à priority=0.
+  FillWindowPixelBuffer(_ctxWid, 0x11);
   const cols = 2;
   const colWidth = 56;  // 1:1 décomp optionWidth = 56 px par colonne.
   const rowHeight = 16;
@@ -1723,15 +1717,16 @@ function _drawContextMenu(): void {
     const x = 8 + col * colWidth;
     const y = 1 + row * rowHeight;
     if (i === _ctxCursor) {
+      // Cursor "▶" en couleur dark gray sur cream (= matche text).
       AddTextPrinterParameterized3(
-        _ctxWid, FONT_NORMAL, x - 8, y, COLOR_MAIN, TEXT_SKIP_DRAW, '▶',
+        _ctxWid, FONT_NORMAL, x - 8, y, COLOR_CTX_NORMAL, TEXT_SKIP_DRAW, '▶',
       );
     }
     const textKey = ACTION_TEXT_KEYS[action];
     const label = getString(textKey);
-    // 1:1 décomp FONT_NARROW (= comme la list).
+    // 1:1 décomp FONT_NARROW + COLORID_NORMAL [bg=1, fg=2, shadow=3] sur cream.
     AddTextPrinterParameterized3(
-      _ctxWid, FONT_NARROW, x, y, COLOR_MAIN, TEXT_SKIP_DRAW, label,
+      _ctxWid, FONT_NARROW, x, y, COLOR_CTX_NORMAL, TEXT_SKIP_DRAW, label,
     );
   }
   PutWindowTilemap(_ctxWid);
@@ -1745,9 +1740,19 @@ function _closeContextMenu(): void {
     _ctxWid = -1;
   }
   _ctxActions = [];
-  // Redraw description (= revient à la description normale de l'item courant).
+  // Le context menu (BG=1) chevauche la list (BG=0) à y=15-18. Au close,
+  // ClearStdWindowAndFrame clear ses tilemap entries BG=1, mais la list BG=0
+  // dessous reste intacte. Redraw quand même pour s'assurer que tout est OK.
+  _drawList();
   _drawDesc();
+  _drawItemIcon();
   _phase = 'open';
+  // 1:1 décomp item_menu.c:1591 CloseContextMenu : re-spawn chevrons pocket +
+  // flèches list que OpenContextMenu avait hidden.
+  if (_assets) {
+    _spawnPocketArrows(_assets);
+    _spawnListScrollArrows();
+  }
 }
 
 /** Find next non-DUMMY action position dans une direction (= 1:1 décomp
@@ -1860,7 +1865,8 @@ function _drawTossPrompt(textKey: string): void {
 
 function _drawTossQuantity(): void {
   if (_qtyWid < 0) return;
-  FillWindowPixelBuffer(_qtyWid, 0x00);
+  // PIXEL_FILL(1) = cream opaque (palette 15 idx 1 std_menu.pal).
+  FillWindowPixelBuffer(_qtyWid, 0x11);
   // 1:1 décomp item_menu.c:1203 PrintItemQuantity :
   //   ConvertIntToDecimalStringN(... STR_CONV_MODE_LEADING_ZEROS, BAG_ITEM_CAPACITY_DIGITS=2);
   //   StringExpandPlaceholders(gStringVar4, gText_xVar1);  // "×{STR_VAR_1}"
@@ -1870,7 +1876,7 @@ function _drawTossQuantity(): void {
   const qtyStr = `×${String(_tossQty).padStart(2, '0')}`;
   const xOffset = GetStringCenterAlignXOffset(qtyStr, 0x28);
   AddTextPrinterParameterized3(
-    _qtyWid, FONT_NORMAL, xOffset, 2, COLOR_MAIN, TEXT_SKIP_DRAW, qtyStr,
+    _qtyWid, FONT_NORMAL, xOffset, 2, COLOR_CTX_NORMAL, TEXT_SKIP_DRAW, qtyStr,
   );
   PutWindowTilemap(_qtyWid);
   CopyWindowToVram(_qtyWid, 3);
@@ -1917,15 +1923,16 @@ function _askTossItems(): void {
 
 function _drawYesNo(): void {
   if (_yesNoWid < 0) return;
-  FillWindowPixelBuffer(_yesNoWid, 0x00);
+  // PIXEL_FILL(1) = cream opaque (palette 15 idx 1 std_menu.pal).
+  FillWindowPixelBuffer(_yesNoWid, 0x11);
   for (let i = 0; i < 2; i++) {
     if (i === _tossYesNoCursor) {
       AddTextPrinterParameterized3(
-        _yesNoWid, FONT_NORMAL, 0, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW, '▶',
+        _yesNoWid, FONT_NORMAL, 0, 1 + i * 16, COLOR_CTX_NORMAL, TEXT_SKIP_DRAW, '▶',
       );
     }
     AddTextPrinterParameterized3(
-      _yesNoWid, FONT_NORMAL, 8, 1 + i * 16, COLOR_MAIN, TEXT_SKIP_DRAW,
+      _yesNoWid, FONT_NORMAL, 8, 1 + i * 16, COLOR_CTX_NORMAL, TEXT_SKIP_DRAW,
       getString(i === 0 ? 'gText_Yes' : 'gText_No'),
     );
   }
@@ -2258,19 +2265,28 @@ function _teardownBackgroundTilemap(): void {
   _savedBgState = null;
 }
 
-/** Démarre le close du bag screen (= fade out). Le teardown réel (= restore
- *  VRAM/palette/sprites + onClose callback) se passe au tick quand fade fini.
- *  1:1 décomp Task_FadeAndCloseBagMenu :
+/** Démarre le close du bag screen. 1:1 décomp item_menu.c:1077
+ *  Task_FadeAndCloseBagMenu pattern :
  *    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
- *    gTasks[taskId].func = Task_CloseBagMenu;  // wait fade dans ce task */
+ *    gTasks[taskId].func = Task_CloseBagMenu;  // wait fade
+ *
+ *  Le Task créé tick chaque frame via RunTasks dans MainCB2_BagMenuRun.
+ *  Quand fade fini, Task_CloseBagMenu free les ressources et
+ *  SetMainCallback2(gMain.savedCallback) (= CB2_ReturnToFieldWithOpenMenu_Manual)
+ *  pour return à l'OW + reopen start menu. */
 export function CloseBagScreen(): void {
   if (!_isOpen || _phase === 'fading_out') return;
   _phase = 'fading_out';
-  // Fade OUT vers BLACK (startY=0=visible, endY=16=fully black).
   const rt = getRuntime();
-  if (rt) {
-    rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0 /* RGB_BLACK */);
+  if (!rt) return;
+  // Kill l'input task pour stopper TickBagScreen pendant le fade out
+  // (= sinon il consume les keys, l'user pourrait re-A pendant fade).
+  if (_bagInputTaskId >= 0) {
+    rt.DestroyTask(_bagInputTaskId);
+    _bagInputTaskId = -1;
   }
+  // 1:1 décomp Task_FadeAndCloseBagMenu — créé directement.
+  rt.CreateTask(Task_FadeAndCloseBagMenu_BagScreen, 0);
 }
 
 /** Teardown réel — appelé après que le fade out soit fini (= 1:1 décomp
@@ -2403,15 +2419,17 @@ export function TickBagScreen(newKeys: number): void {
   if (!_isOpen) return;
 
   // Phase machine : pendant fade in/out, ignore inputs (= 1:1 décomp Task
-  // attend !gPaletteFade.active). Quand fade out fini → trigger _doTeardown.
+  // attend !gPaletteFade.active). Fade out cleanup handled par
+  // Task_FadeAndCloseBagMenu_BagScreen + Task_CloseBagMenu_BagScreen
+  // (= 1:1 décomp item_menu.c). On reste dans 'fading_out' jusqu'à ce que
+  // Task swap CB2 (= TickBagScreen ne tournera plus après ça).
   const rt = getRuntime();
   if (_phase === 'fading_in') {
     if (rt && !rt.gPaletteFade.active) _phase = 'open';
     return;
   }
   if (_phase === 'fading_out') {
-    if (rt && !rt.gPaletteFade.active) _doTeardown();
-    return;
+    return;  // wait pour Task_CloseBagMenu (CB2 swap to OW)
   }
   if (_phase === 'switching_pocket') {
     _tickPocketSwitchAnim();
@@ -2587,5 +2605,449 @@ export function TickBagScreen(newKeys: number): void {
     // 1:1 décomp Task_ItemContext_Normal → OpenContextMenu(taskId).
     _openContextMenu();
     return;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CB2 scene swap 1:1 décomp item_menu.c
+// (GoToBagMenu → CB2_Bag → SetupBagMenu state machine → MainCB2_BagMenuRun)
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Task id du Task_BagMenu_HandleInput courant (= drive TickBagScreen via
+ *  RunTasks). -1 quand bag pas init / déjà closed. */
+let _bagInputTaskId = -1;
+
+/** Flag pour state 8 _loadBagMenuGraphicsCb2 async loader. */
+let _bagGraphicsReady = false;
+let _bagGraphicsLoading = false;
+
+/** Cache std_menu.pal loaded once via loadGbaPal (= asset shared with all menus
+ *  that use BG palette slot 15). */
+let _stdMenuPalCache: Uint16Array | null = null;
+async function _ensureStdMenuPal(): Promise<Uint16Array> {
+  if (_stdMenuPalCache) return _stdMenuPalCache;
+  _stdMenuPalCache = await loadGbaPal('/decomp/em/interface/std_menu.pal');
+  return _stdMenuPalCache;
+}
+
+/** 1:1 décomp item_menu.c:646 CB2_BagMenuRun :
+ *      RunTasks(); AnimateSprites(); BuildOamBuffer();
+ *      DoScheduledBgTilemapCopiesToVram(); UpdatePaletteFade();
+ *  Préfix `MainCB2` → le runtime tickFixed (decomp-runtime.ts:1994) appelle
+ *  automatiquement RunTasks + AnimateSprites + BuildOamBuffer + UpdatePaletteFade
+ *  pour les callback2.name commençant par "MainCB2". Donc body intentionellement
+ *  vide ici — la state machine est driven par les Tasks créées au state 14. */
+export function MainCB2_BagMenuRun(): void { /* runtime auto-tick */ }
+
+/** 1:1 décomp item_menu.c:655 VBlankCB_BagMenuRun :
+ *      LoadOam(); ProcessSpriteCopyRequests(); TransferPlttBuffer();
+ *  Notre runtime fait TransferPlttBuffer automatiquement à la fin de chaque
+ *  frame (cf. decomp-runtime.ts:2047+), donc no-op. Marker pour le naming. */
+export function VBlankCB_BagMenuRun(): void { /* transferts auto */ }
+
+/** 1:1 décomp item_menu.c:1077 Task_FadeAndCloseBagMenu :
+ *      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+ *      gTasks[taskId].func = Task_CloseBagMenu; */
+function Task_FadeAndCloseBagMenu_BagScreen(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0 /* RGB_BLACK */);
+  task.func = Task_CloseBagMenu_BagScreen;
+}
+
+/** 1:1 décomp item_menu.c:1083 Task_CloseBagMenu :
+ *      if (!gPaletteFade.active) {
+ *        DestroyListMenuTask(tListTaskId, ...);
+ *        SetMainCallback2(gBagPosition.exitCallback);
+ *        BagDestroyPocketScrollArrowPair();
+ *        ResetSpriteData(); FreeAllSpritePalettes(); FreeBagMenu();
+ *        DestroyTask(taskId);
+ *      } */
+function Task_CloseBagMenu_BagScreen(task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt || rt.gPaletteFade.active) return;
+  _freeBagMenu();
+  // 1:1 décomp `SetMainCallback2(gBagPosition.exitCallback)` (= notre
+  // gMain.savedCallback set par sacAction = CB2_ReturnToFieldWithOpenMenu_Manual).
+  const exitCb = rt.gMain.savedCallback;
+  if (exitCb) {
+    rt.SetMainCallback2(exitCb);
+  } else {
+    console.warn('[bag-screen] Task_CloseBagMenu : no savedCallback');
+    rt.SetMainCallback2(null);
+  }
+  rt.DestroyTask(task.taskId);
+  _bagInputTaskId = -1;
+}
+
+/** Task driver appelé chaque frame par RunTasks() pendant MainCB2_BagMenuRun.
+ *  Delegate à TickBagScreen (= existant) avec les newKeys courants.
+ *  1:1 décomp `Task_BagMenu_HandleInput` (item_menu.c:990). */
+function Task_BagMenu_HandleInput_BagScreen(_task: DecompTask): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  TickBagScreen(rt.gMain.newKeys);
+}
+
+/** 1:1 décomp item_menu.c:789 BagMenu_InitBGs :
+ *      ResetVramOamAndBgCntRegs();
+ *      memset(gBagMenu->tilemapBuffer, 0, sizeof(...));
+ *      ResetBgsAndClearDma3BusyFlags(0);
+ *      InitBgsFromTemplates(0, sBgTemplates_ItemMenu, 3);
+ *      SetBgTilemapBuffer(2, gBagMenu->tilemapBuffer);
+ *      ResetAllBgsCoordinates();
+ *      ScheduleBgCopyTilemapToVram(2);
+ *      SetGpuReg(DISPCNT, OBJ_ON | OBJ_1D_MAP);
+ *      ShowBg(0/1/2); SetGpuReg(BLDCNT, 0);
+ *
+ *  BG templates 1:1 sBgTemplates_ItemMenu (item_menu.c:213) :
+ *    BG0 char=0 map=31 prio=1 (= windows text/list/desc/header/sprite/icon)
+ *    BG1 char=0 map=30 prio=0 (= context menu / yesno / qty overlays)
+ *    BG2 char=3 map=29 prio=2 (= fond rayé menu.bin) */
+function _initBagBgs(rt: ReturnType<typeof getRuntime>): void {
+  if (!rt) return;
+  // 1:1 décomp ResetVramOamAndBgCntRegs (menu_helpers.c:94) :
+  //   SetGpuReg(DISPCNT/BG0/1/2/3CNT, 0);
+  //   CpuFill16(0, VRAM, VRAM_SIZE);
+  //   CpuFill32(0, OAM, OAM_SIZE);
+  //   CpuFill16(0, PLTT, PLTT_SIZE);
+  rt.SetGpuReg(0x00 /* DISPCNT */, 0);
+  rt.SetGpuReg(0x08 /* BG0CNT */, 0);
+  rt.SetGpuReg(0x0A /* BG1CNT */, 0);
+  rt.SetGpuReg(0x0C /* BG2CNT */, 0);
+  rt.SetGpuReg(0x0E /* BG3CNT */, 0);
+  rt.gba.vram.fill(0);
+  for (let i = 0; i < rt.gba.oam.length; i++) {
+    const oam = rt.gba.oam[i];
+    oam.visible = false; oam.x = 0; oam.y = 0;
+    oam.tileId = 0; oam.paletteBank = 0;
+    oam.affineMode = 0;
+  }
+  for (let i = 0; i < 512; i++) {
+    rt.gPlttBufferUnfaded.set(i, 0);
+    rt.gPlttBufferFaded.set(i, 0);
+  }
+  // InitBgsFromTemplates(0, sBgTemplates_ItemMenu, 3).
+  const bg0c = rt.gba.bg(0).config;
+  bg0c.charBaseIndex = 0; bg0c.mapBaseIndex = 31; bg0c.screenSize = 0;
+  bg0c.paletteMode = 0; bg0c.priority = 1; bg0c.visible = true;
+  bg0c.hofs = 0; bg0c.vofs = 0;
+  const bg1c = rt.gba.bg(1).config;
+  bg1c.charBaseIndex = 0; bg1c.mapBaseIndex = 30; bg1c.screenSize = 0;
+  bg1c.paletteMode = 0; bg1c.priority = 0; bg1c.visible = true;
+  bg1c.hofs = 0; bg1c.vofs = 0;
+  const bg2c = rt.gba.bg(2).config;
+  bg2c.charBaseIndex = 3; bg2c.mapBaseIndex = 29; bg2c.screenSize = 0;
+  bg2c.paletteMode = 0; bg2c.priority = 2; bg2c.visible = true;
+  bg2c.hofs = 0; bg2c.vofs = 0;
+  const bg3c = rt.gba.bg(3).config;
+  bg3c.visible = false;
+  // ResetAllBgsCoordinates : BG hofs/vofs registers = 0.
+  rt.SetGpuReg(0x10, 0); rt.SetGpuReg(0x12, 0); // BG0HOFS/VOFS
+  rt.SetGpuReg(0x14, 0); rt.SetGpuReg(0x16, 0); // BG1HOFS/VOFS
+  rt.SetGpuReg(0x18, 0); rt.SetGpuReg(0x1A, 0); // BG2HOFS/VOFS
+  // SetGpuReg(DISPCNT, OBJ_ON | OBJ_1D_MAP + BG0/1/2_ON).
+  // OBJ_ON=0x1000, OBJ_1D_MAP=0x40, BG0=0x100, BG1=0x200, BG2=0x400.
+  rt.SetGpuReg(0x00, 0x1000 | 0x40 | 0x100 | 0x200 | 0x400);
+  rt.SetGpuReg(0x50 /* BLDCNT */, 0);
+  ShowBg(0); ShowBg(1); ShowBg(2);
+  HideBg(3);
+}
+
+/** 1:1 décomp item_menu.c:805 LoadBagMenu_Graphics — async load tiles + tilemap
+ *  + palettes. Décomp = state machine 5 sub-states (DecompressTileData,
+ *  LZDecompressWram, LoadCompressedPalette, LoadCompressedSpriteSheet,
+ *  LoadCompressedSpritePalette + LoadListMenuSwapLineGfx). Notre version :
+ *  kick off async fetch via _loadAssets, retourne false jusqu'à ready. */
+function _loadBagMenuGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
+  if (!rt) return false;
+  if (_bagGraphicsReady) return true;
+  if (_bagGraphicsLoading) return false;
+  _bagGraphicsLoading = true;
+  void _loadAssets().then(async (assets) => {
+    const r = getRuntime();
+    if (!r) { _bagGraphicsLoading = false; return; }
+    // 1:1 décomp sub-state 0 : DecompressAndCopyTileDataToVram(2, gBagScreen_Gfx).
+    // BG2 charBase=3 → VRAM byte offset 3*0x4000 = 0xC000.
+    const charOff = BAG_BG_CHAR_BASE * 0x4000;
+    r.gba.vram.set(assets.bgTiles, charOff);
+    // 1:1 décomp sub-state 1 : LZDecompressWram(gBagScreen_GfxTileMap, tilemapBuffer).
+    // BG2 mapBase=29 → VRAM byte offset 29*0x800 = 0xE800.
+    const mapOff = BAG_BG_MAP_BASE * 0x800;
+    const tilemapBytes = new Uint8Array(
+      assets.bgTilemap.buffer, assets.bgTilemap.byteOffset, assets.bgTilemap.byteLength,
+    );
+    r.gba.vram.set(tilemapBytes, mapOff);
+    // 1:1 décomp sub-state 2 : LoadCompressedPalette(gBagScreenMale_Pal,
+    // BG_PLTT_ID(0), 2 * PLTT_SIZE_4BPP) → 32 entries à offset 0 (= sub-pal 0+1).
+    LoadPalette(assets.bgPalette, 0, assets.bgPalette.length * 2);
+    // 1:1 décomp sub-state 3 : LoadCompressedSpriteSheet(gBagMaleSpriteSheet)
+    // → bag sprite tile data dans OBJ VRAM offset 0.
+    r.gba.objVram.set(assets.bagSpriteRaw4bpp, BAG_SPRITE_OBJ_OFFSET);
+    // 1:1 décomp sub-state 4 : LoadCompressedSpritePalette(gBagPaletteTable)
+    // → bag.pal dans OBJ palette slot 0.
+    r.LoadPaletteObj(assets.bagSpritePal, OBJ_PLTT_ID(BAG_SPRITE_OBJ_PAL));
+    _bagAssetsLoadedToObj = true;
+    // Bag sprite window palette (= slot 13 BG palette pour le sprite window).
+    LoadPalette(assets.bagSprite.palette, BAG_SPRITE_PAL * 16, 32);
+    _bagGraphicsReady = true;
+    _bagGraphicsLoading = false;
+  }).catch((e) => {
+    console.error('[bag-screen] LoadBagMenu_Graphics failed:', e);
+    _bagGraphicsLoading = false;
+  });
+  return false;
+}
+
+/** 1:1 décomp item_menu.c:2457 LoadBagMenuTextWindows :
+ *      InitWindows(sDefaultBagWindows);    ← clear gWindows AND alloc new
+ *      DeactivateAllTextPrinters();
+ *      LoadUserWindowBorderGfx(0, 1, BG_PLTT_ID(14));
+ *      LoadMessageBoxGfx(0, 10, BG_PLTT_ID(13));
+ *      ListMenuLoadStdPalAt(BG_PLTT_ID(12), 1);
+ *      LoadPalette(&gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+ *      for (i = 0; i <= WIN_POCKET_NAME; i++) { FillWindowPixelBuffer(i, 0); PutWindowTilemap(i); }
+ *      ScheduleBgCopyTilemapToVram(0); ScheduleBgCopyTilemapToVram(1);
+ *
+ *  CRITIQUE : `InitWindows` clear gWindows = wipe les windows OW (map name
+ *  popup, dialog leftovers) avant d'alloc les windows bag. Sans ça, les tiles
+ *  OW persistent visuellement. */
+async function _loadBagMenuTextWindowsCb2(rt: ReturnType<typeof getRuntime>): Promise<void> {
+  if (!rt) return;
+  // 1:1 décomp : `InitWindows(sDefaultBagWindows)` reset gWindows + alloc 5
+  // windows nouveaux. IDs retournés en ordre des templates.
+  const ids = InitWindows([
+    LIST_WINDOW_TEMPLATE,        // WIN_ITEM_LIST   (= sDefaultBagWindows[0])
+    DESC_WINDOW_TEMPLATE,        // WIN_DESCRIPTION (= sDefaultBagWindows[1])
+    HEADER_WINDOW_TEMPLATE,      // WIN_POCKET_NAME (= sDefaultBagWindows[2])
+    ITEM_ICON_WINDOW_TEMPLATE,   // notre extra (= icon rendering via window jusqu'à port OAM)
+  ]);
+  _listWid = ids[0];
+  _descWid = ids[1];
+  _headerWid = ids[2];
+  _itemIconWid = ids[3];
+  // 1:1 décomp : bag sprite est OAM (= AddBagVisualSprite), PAS un window BG.
+  // -1 → les anciens helpers qui checkent skipperont gracieusement.
+  _spriteWid = -1;
+  // 1:1 décomp : frame tiles + palette 14 à BG=0 baseTile=STD_FRAME_TILE.
+  LoadUserWindowBorderGfx(0, STD_FRAME_TILE, STD_FRAME_PAL * 16);
+  // 1:1 décomp : `LoadPalette(gStandardMenuPalette, BG_PLTT_ID(15), 32)` —
+  // CRITIQUE : sans ce load, context menu + yesno + qty (= paletteNum=15)
+  // rendent noir car palette 15 = all zeros.
+  const stdMenuPal = await _ensureStdMenuPal();
+  LoadPalette(stdMenuPal, 15 * 16, 32);
+  // 1:1 décomp item_menu.c:2467 : `for (i = 0; i <= WIN_POCKET_NAME; i++) {
+  //   FillWindowPixelBuffer(i, PIXEL_FILL(0)); PutWindowTilemap(i); }`.
+  // → AUCUN DrawStdFrameWithCustomTileAndPalette pour header/list/desc !
+  // Le fond rayé menu.bin (= BG2) fournit déjà le layout visuel "bag screen".
+  FillWindowPixelBuffer(_listWid, 0x00); PutWindowTilemap(_listWid);
+  FillWindowPixelBuffer(_descWid, 0x00); PutWindowTilemap(_descWid);
+  FillWindowPixelBuffer(_headerWid, 0x00); PutWindowTilemap(_headerWid);
+  FillWindowPixelBuffer(_itemIconWid, 0x00); PutWindowTilemap(_itemIconWid);
+}
+
+/** 1:1 décomp item_menu.c:1069 FreeBagMenu + Task_CloseBagMenu cleanup :
+ *      Free(sListBuffer2); Free(sListBuffer1);
+ *      FreeAllWindowBuffers(); Free(gBagMenu);
+ *      ResetSpriteData(); FreeAllSpritePalettes();
+ *      BagDestroyPocketScrollArrowPair();
+ *
+ *  Pas de save/restore VRAM/palette — CB2_ReturnToFieldWithOpenMenu_Manual
+ *  va re-init OW from scratch via `_restoreOverworldFromMenu` (= loadAndInitMap
+ *  reload tilesets + palettes + spawn NPCs). */
+function _freeBagMenu(): void {
+  const rt = getRuntime();
+  // Destroy bag sprite OAM (= 1:1 décomp ResetSpriteData clear all OAM).
+  if (_bagSpriteOamId >= 0 && rt) {
+    const spr = rt.gSprites.get(_bagSpriteOamId);
+    if (spr) spr.inUse = false;
+    rt.gSprites.delete(_bagSpriteOamId);
+    const oam = rt.gba.oam[spr?.oamIndex ?? -1];
+    if (oam) oam.visible = false;
+  }
+  _bagSpriteOamId = -1;
+  _bagSpriteOamIndex = -1;
+  _bagAssetsLoadedToObj = false;
+  // 1:1 décomp BagDestroyPocketScrollArrowPair + RemoveScrollIndicatorArrowPair.
+  _despawnPocketArrows();
+  _despawnListScrollArrows();
+  _scrollArrowAssetsLoaded = false;
+  _despawnRotatingBall();
+  _rotatingBallAssetsLoaded = false;
+  // 1:1 décomp FreeAllWindowBuffers — remove all bag windows.
+  if (_spriteWid >= 0) { RemoveWindow(_spriteWid); _spriteWid = -1; }
+  if (_itemIconWid >= 0) { RemoveWindow(_itemIconWid); _itemIconWid = -1; }
+  if (_headerWid >= 0) {
+    ClearStdWindowAndFrame(_headerWid, true); RemoveWindow(_headerWid); _headerWid = -1;
+  }
+  if (_listWid >= 0) {
+    ClearStdWindowAndFrame(_listWid, true); RemoveWindow(_listWid); _listWid = -1;
+  }
+  if (_descWid >= 0) {
+    ClearStdWindowAndFrame(_descWid, true); RemoveWindow(_descWid); _descWid = -1;
+  }
+  if (_ctxWid >= 0) {
+    ClearStdWindowAndFrame(_ctxWid, true); RemoveWindow(_ctxWid); _ctxWid = -1;
+  }
+  if (_yesNoWid >= 0) {
+    ClearStdWindowAndFrame(_yesNoWid, true); RemoveWindow(_yesNoWid); _yesNoWid = -1;
+  }
+  if (_qtyWid >= 0) {
+    ClearStdWindowAndFrame(_qtyWid, true); RemoveWindow(_qtyWid); _qtyWid = -1;
+  }
+  _loadedIconKey = null;
+  _isOpen = false;
+  _phase = 'idle';
+  _bagGraphicsReady = false;
+  _bagGraphicsLoading = false;
+}
+
+/** 1:1 décomp item_menu.c:672 CB2_Bag + 678 SetupBagMenu state machine.
+ *  Décomp boucle `while (!SetupBagMenu()) {}` en 1 frame jusqu'à ready.
+ *  Notre version : 1 case par frame (= le runtime tick re-appelle CB2_InitBagMenu
+ *  à chaque frame jusqu'à state default qui swap vers MainCB2_BagMenuRun). */
+export function CB2_InitBagMenu(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  switch (rt.gMain.state) {
+    case 0:
+      // SetVBlankHBlankCallbacksToNull + ClearScheduledBgCopiesToVram.
+      rt.SetVBlankCallback(null);
+      rt.gMain.state++;
+      break;
+    case 1:
+      // ScanlineEffect_Stop (= no-op chez nous).
+      rt.gMain.state++;
+      break;
+    case 2:
+      // FreeAllSpritePalettes (= clear OBJ palette tracking).
+      rt.gMain.state++;
+      break;
+    case 3:
+      // ResetPaletteFade + gPaletteFade.bufferTransferDisabled = TRUE.
+      ResetPaletteFade();
+      rt.gPaletteFade.bufferTransferDisabled = true;
+      rt.gMain.state++;
+      break;
+    case 4:
+      // ResetSpriteData (= clear gSprites table).
+      ResetSpriteData();
+      rt.gMain.state++;
+      break;
+    case 5:
+      rt.gMain.state++;
+      break;
+    case 6:
+      // ResetTasks (= clear gTasks Map). Note : Task_BagMenu_HandleInput sera
+      // créée au state 14 — DOIT run après ResetTasks pour persister.
+      ResetTasks();
+      rt.gMain.state++;
+      break;
+    case 7:
+      // BagMenu_InitBGs + gBagMenu->graphicsLoadState = 0.
+      _initBagBgs(rt);
+      _bagGraphicsReady = false;
+      _bagGraphicsLoading = false;
+      rt.gMain.state++;
+      break;
+    case 8:
+      // if (!LoadBagMenu_Graphics()) break;  ← reste à state 8 jusqu'à ready.
+      if (!_loadBagMenuGraphicsCb2(rt)) break;
+      rt.gMain.state++;
+      break;
+    case 9:
+      // LoadBagMenuTextWindows = InitWindows + LoadUserWindowBorderGfx +
+      // LoadMessageBoxGfx + ListMenuLoadStdPalAt + LoadPalette gStandardMenuPalette
+      // BG_PLTT_ID(15). Async (= std_menu.pal fetch), advance state when done.
+      void _loadBagMenuTextWindowsCb2(rt).then(() => { /* state already advanced */ });
+      rt.gMain.state++;
+      break;
+    case 10:
+      // UpdatePocketItemLists + InitPocketListPositions + InitPocketScrollPositions.
+      // Notre bag-system gère ces lists au runtime ; reset cursor/scroll au open.
+      _pocketIdx = 0;
+      _cursorPos = 0;
+      _scrollOffset = 0;
+      _cursorPerPocket.fill(0);
+      _scrollPerPocket.fill(0);
+      _phase = 'fading_in';
+      _loadedIconKey = null;  // force reload palette icon au prochain draw
+      rt.gMain.state++;
+      break;
+    case 11:
+      // AllocateBagItemListBuffers (= no-op, on n'alloc pas).
+      rt.gMain.state++;
+      break;
+    case 12:
+      // LoadBagItemListBuffers (= populated via _drawList).
+      rt.gMain.state++;
+      break;
+    case 13:
+      // PrintPocketNames + CopyPocketNameToWindow + DrawPocketIndicatorSquare.
+      // Notre _drawAll fait l'équivalent.
+      _drawAll();
+      rt.gMain.state++;
+      break;
+    case 14:
+      // CreateBagInputHandlerTask + ListMenuInit (= cursor task).
+      _bagInputTaskId = rt.CreateTask(Task_BagMenu_HandleInput_BagScreen, 0);
+      rt.gMain.state++;
+      break;
+    case 15:
+      // AddBagVisualSprite — créer le sprite sac OAM 64×64 à (68, 66).
+      if (_assets) _spawnBagSpriteOam(_assets);
+      rt.gMain.state++;
+      break;
+    case 16:
+      // CreateItemMenuSwapLine (= line marker pour swap mode, no-op).
+      rt.gMain.state++;
+      break;
+    case 17:
+      // CreatePocketScrollArrowPair + CreatePocketSwitchArrowPair.
+      if (_assets) {
+        _spawnPocketArrows(_assets);
+        _spawnListScrollArrows();
+      }
+      rt.gMain.state++;
+      break;
+    case 18:
+      // PrepareTMHMMoveWindow (= no-op chez nous).
+      rt.gMain.state++;
+      break;
+    case 19:
+      // BlendPalettes(PALETTES_ALL, 16, 0) — start palette state at fully
+      // blended-to-black (avant fade vers visible au case 20).
+      BlendPalettes(0xFFFFFFFF, 16, 0);
+      rt.gMain.state++;
+      break;
+    case 20:
+      // BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK).
+      // startY=16=fully black → endY=0=visible sur 16 frames (= fade IN depuis BLACK).
+      rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0 /* RGB_BLACK */);
+      rt.gPaletteFade.bufferTransferDisabled = false;
+      PlaySE(6 /* SE_WIN_OPEN */);  // sonore "shing" au fade in
+      rt.gMain.state++;
+      break;
+    default:
+      // SetVBlankCallback + SetMainCallback2(CB2_BagMenuRun).
+      rt.SetVBlankCallback(VBlankCB_BagMenuRun);
+      rt.SetMainCallback2(MainCB2_BagMenuRun);
+      _isOpen = true;
+      return;
+  }
+}
+
+// Expose CB2_InitBagMenu et MainCB2_BagMenuRun sur globalThis pour permettre
+// référence cross-modules en bare identifier (= 1:1 décomp scope C visibility).
+{
+  const _g: Record<string, unknown> = {
+    CB2_InitBagMenu, MainCB2_BagMenuRun, VBlankCB_BagMenuRun,
+    Task_FadeAndCloseBagMenu: Task_FadeAndCloseBagMenu_BagScreen,
+    Task_CloseBagMenu: Task_CloseBagMenu_BagScreen,
+  };
+  for (const [k, v] of Object.entries(_g)) {
+    if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {
+      (globalThis as Record<string, unknown>)[k] = v;
+    }
   }
 }

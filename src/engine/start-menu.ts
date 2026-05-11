@@ -68,7 +68,7 @@ import { FlagGet } from './script-vars';
 import { CB2_InitOptionMenu } from './decomp-data/auto/src-all/option_menu-all-auto';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { preloadOptionMenuAssets } from './option-menu-impl';
-import { OpenBagScreen, TickBagScreen } from './bag-screen';
+import { OpenBagScreen } from './bag-screen';
 import { OpenPartyScreen, TickPartyScreen } from './party-screen';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer-card-screen';
 import { OpenPokedexScreen, TickPokedexScreen } from './pokedex-screen';
@@ -244,34 +244,26 @@ function pokemonAction(): boolean {
   return false;
 }
 
-/** SAC action : open vrai bag screen avec 5 pockets + scroll + descriptions.
- *  Session 127 : remplace l'ancien `showMessageThenReturn(text liste)`.
+/** SAC action — 1:1 décomp `StartMenuBagCallback` (start_menu.c:763) :
  *
- *  Le bag screen prend le contrôle des inputs jusqu'à ce que l'user appuie B
- *  (= return au start menu). On hide le start menu window pendant ce temps,
- *  on garde sIsOpen=true pour que TickStartMenu drive _tickBagScreen. */
+ *    if (!gPaletteFade.active) {
+ *        PlayRainStoppingSoundEffect();
+ *        RemoveExtraStartMenuWindows();
+ *        gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu;
+ *        SetMainCallback2(CB2_BagMenuFromStartMenu);
+ *        return TRUE;
+ *    }
+ *    return FALSE;
+ *
+ *  Session 129 refactor : passage CB2 scene swap proper 1:1 décomp. L'OW arrête
+ *  de tick pendant le bag (= plus de hacks save/restore VRAM / hook
+ *  _syncSubspriteOam / setFieldCameraSuspended). Le retour passe par
+ *  CB2_ReturnToFieldWithOpenMenu_Manual qui re-init OW + reopen start menu
+ *  via FieldCB chain. Cf. bag-screen.ts CB2_InitBagMenu state machine. */
 function sacAction(): boolean {
-  // Hide start menu window — bag screen va prendre l'écran.
-  if (sWindowId >= 0) {
-    ClearStdWindowAndFrame(sWindowId, true);
-    RemoveWindow(sWindowId);
-    sWindowId = -1;
-  }
-  // Set sub-state AVANT OpenBagScreen pour éviter ré-entrer sacAction si
-  // OpenBagScreen throw (= sSubState reste à 'menu' sinon → re-fire next frame).
-  sSubState = 'bag_screen';
-  try {
-    OpenBagScreen(() => {
-      sSubState = 'menu';
-      _spawnMenuWindow();
-    });
-  } catch (e) {
-    console.error('[start-menu] OpenBagScreen failed', e);
-    // Recovery : ré-affiche le start menu pour que l'user ne soit pas bloqué.
-    sSubState = 'menu';
-    _spawnMenuWindow();
-  }
-  return false;
+  // 1:1 décomp StartMenuBagCallback : OpenBagScreen async preload + swap CB2.
+  OpenBagScreen();
+  return true;  // close start menu maintenant ; CB2 swap take over next frame.
 }
 
 /** {PLAYER} action : ouvre vraie UI Carte Dresseur.
@@ -678,11 +670,13 @@ export function TickStartMenu(): void {
       _tickSaveDone(newKeys);
       break;
     case 'bag_screen':
-      // Drive le bag screen ; quand l'user appuie B, BagScreen.CloseBagScreen
-      // call son onClose qui set sSubState='menu' + _spawnMenuWindow().
-      TickBagScreen(newKeys);
-      // Safety : si l'onClose a déjà fire, sSubState est déjà 'menu' — pas
-      // besoin de check IsBagScreenOpen ici.
+      // Session 129 refactor : 'bag_screen' substate obsolète. Le bag est
+      // maintenant standalone CB2 (= MainCB2_BagMenuRun). TickStartMenu ne
+      // tourne pas pendant le bag (= MainCB2_Overworld est swap-out).
+      // Cette branche est unreachable mais gardée comme sentinel pour safety.
+      console.warn('[start-menu] bag_screen substate reached after CB2 refactor — should be unreachable');
+      sSubState = 'menu';
+      _spawnMenuWindow();
       break;
     case 'party_screen':
       TickPartyScreen(newKeys);

@@ -188,9 +188,13 @@ export class TestOverworldScene extends Phaser.Scene {
 
     // y=14 pour passer SOUS le texte vert de DebugOverlayScene
     // (= overlay fps/tasks/sprites qui occupe la première ligne 0-12).
+    // Session 129 : hidden par défaut (= pollue rendu GBA pendant menus/scenes
+    // non-OW comme bag/option/etc.). DebugOverlay green text reste pour fps/tasks.
+    // Ré-activer via `?statusText=1` URL param pour debug.
+    const showStatusText = new URLSearchParams(window.location.search).get('statusText') === '1';
     this.statusText = this.add.text(4, 14, 'Loading Littleroot Town...', {
       fontFamily: 'monospace', fontSize: '8px', color: '#FFFFFF',
-    }).setDepth(100);
+    }).setDepth(100).setVisible(showStatusText);
 
     // Init engine GBA + runtime décomp.
     this.gba = new Gba();
