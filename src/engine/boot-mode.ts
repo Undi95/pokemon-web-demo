@@ -247,8 +247,11 @@ function applyNoIntroPreset(): void {
       evs: { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 },
       moves: ['pound', 'leer', 'absorb', 'quickattack'],
     });
+    // ⚠️ DEBUG ONLY : force gender FEMALE pour Arcko (= test gender symbol ♀
+    // bleu dans party screen). Override le calc personality-based 1:1 décomp.
+    arcko.monGender = 254;  // MON_FEMALE
     gameState.addToParty(arcko);
-    console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.currentHp}/${arcko.maxHp}) held=${arcko.heldItem} ability=${arcko.ability} moves=[${arcko.moves.map(m => m.id).join(',')}]`);
+    console.log(`[boot-mode] ?debug Arcko ajouté : Lv${arcko.level} ${arcko.nickname} (${arcko.currentHp}/${arcko.maxHp}) gender=FEMALE held=${arcko.heldItem}`);
     // ⚠️ DEBUG ONLY : Jirachi Lv100 pour tester party menu selection
     // (= 2ème mon = test cursor LEFT/RIGHT/UP/DOWN entre slot 0 et slots 1-5).
     const jirachi = createPokemonInstance('SPECIES_JIRACHI', 100, {
@@ -259,8 +262,10 @@ function applyNoIntroPreset(): void {
       evs: { hp: 0, atk: 0, def: 0, spa: 252, spd: 4, spe: 252 },
       moves: ['psychic', 'doomdesire', 'thunderbolt', 'rest'],
     });
+    // Jirachi est MON_GENDERLESS (= mythical) — pas de symbol affiché.
+    jirachi.monGender = 255;  // MON_GENDERLESS
     gameState.addToParty(jirachi);
-    console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.currentHp}/${jirachi.maxHp})`);
+    console.log(`[boot-mode] ?debug Jirachi ajouté : Lv${jirachi.level} ${jirachi.nickname} (${jirachi.currentHp}/${jirachi.maxHp}) gender=GENDERLESS`);
   }
 
   gameState.save();

@@ -41,6 +41,7 @@ import {
 import { LoadUserWindowBorderGfx } from './gba-text-window';
 import { AddTextPrinterParameterized3 } from './gba-text-system';
 import { gameState } from './game-state';
+import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from './pokemon';
 import {
   PlaySE, LoadPalette, getRuntime, OBJ_PLTT_ID,
   BlendPalettes, ResetPaletteFade, ResetTasks, gMain,
@@ -61,6 +62,14 @@ const STD_FRAME_PAL = 14;
  *  [BG=TRANSPARENT, FG=LIGHT_GRAY, SHADOW=DARK_GRAY] = [0, 3, 2]. */
 const COLOR_TEXT: [number, number, number] = [0, 3, 2];
 const COLOR_HP: [number, number, number] = [0, 3, 2];
+/** 1:1 décomp `sFontColorTable[2]` (party_menu.h:117) gender symbol :
+ *  TRANSPARENT + DYNAMIC_COLOR_2 + DYNAMIC_COLOR_3. Les dynamic colors sont
+ *  patched runtime selon le gender (= rouge ♂ / bleu ♀) via sGenderMalePalIds
+ *  / sGenderFemalePalIds. Pour MVP simple, utilise [0, 11, 12] pour ♂ et
+ *  [0, 9, 10] pour ♀ (= positions PartyBoxNoMonPalOffsets + sHPBarPalOffsets
+ *  qui sont les slots où les genre colors atterissent dans la sub-pal). */
+const COLOR_GENDER_MALE:   [number, number, number] = [0, 11, 12];
+const COLOR_GENDER_FEMALE: [number, number, number] = [0,  9, 10];
 
 /** 1:1 décomp `#define PARTY_PAL_*` (party_menu.c:150). */
 const PARTY_PAL_SELECTED    = 1 << 0;
@@ -359,27 +368,41 @@ function _drawSlot(slotIdx: number): void {
     CopyWindowToVram(wid, 3);
     return;
   }
+  // 1:1 décomp DisplayPartyPokemonGender : gender symbol "♂"/"♀" affiché à
+  // (64, 20) slot 0 left column ou (62, 12) slot 1-5 right column.
+  const gSym = getMonGenderSymbol(mon);
+  const genderStr = gSym === 'M' ? '♂' : gSym === 'F' ? '♀' : '';
+  const genderColor = gSym === 'M' ? COLOR_GENDER_MALE : COLOR_GENDER_FEMALE;
   if (slotIdx === 0) {
-    // 1:1 décomp PARTY_BOX_LEFT_COLUMN :
+    // 1:1 décomp PARTY_BOX_LEFT_COLUMN (party_menu.h:32) :
     //   Nickname (24, 11) — width=40
     //   Level    (32, 20) — "N.X"
+    //   Gender   (64, 20) — width 8x8
     //   HP       (38, 37)
     //   MaxHP    (53, 37)
     AddTextPrinterParameterized3(wid, FONT_NORMAL, 24, 11, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
     AddTextPrinterParameterized3(wid, FONT_SMALL,  32, 20, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
+    if (genderStr) {
+      AddTextPrinterParameterized3(wid, FONT_NORMAL, 64, 20, genderColor, TEXT_SKIP_DRAW, genderStr);
+    }
     AddTextPrinterParameterized3(wid, FONT_SMALL,  38, 37, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.currentHp}/`);
     AddTextPrinterParameterized3(wid, FONT_SMALL,  53, 37, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.maxHp}`);
   } else {
     // 1:1 décomp PARTY_BOX_RIGHT_COLUMN :
     //   Nickname (22, 3) — width=40
     //   Level    (30, 12)
+    //   Gender   (62, 12)
     //   HP       (102, 12)
     //   MaxHP    (117, 12)
     AddTextPrinterParameterized3(wid, FONT_NORMAL, 22,  3, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
     AddTextPrinterParameterized3(wid, FONT_SMALL,  30, 12, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
+    if (genderStr) {
+      AddTextPrinterParameterized3(wid, FONT_NORMAL, 62, 12, genderColor, TEXT_SKIP_DRAW, genderStr);
+    }
     AddTextPrinterParameterized3(wid, FONT_SMALL, 102, 12, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.currentHp}/`);
     AddTextPrinterParameterized3(wid, FONT_SMALL, 117, 12, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.maxHp}`);
   }
+  void MON_MALE; void MON_FEMALE;  // referenced via getMonGenderSymbol
   CopyWindowToVram(wid, 3);
 }
 

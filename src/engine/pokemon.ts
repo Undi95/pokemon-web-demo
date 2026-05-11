@@ -15,6 +15,7 @@ import {
 } from './data-tables';
 import { Random, Random32 } from './random';
 import { gameState } from './game-state';
+import { getSpeciesInfo as gameDataGetSpeciesInfo } from './data/game-data';
 
 /** Convertit `SPECIES_TREECKO` → `treecko` (id format @pkmn/dex). */
 export function speciesEnumToDexId(speciesEnum: string): string {
@@ -101,10 +102,12 @@ function parseGenderRatio(raw: string | number | undefined): number {
 /** 1:1 décomp `GetGenderFromSpeciesAndPersonality` (pokemon.c:6080).
  *  Returns MON_MALE / MON_FEMALE / MON_GENDERLESS. */
 export function GetGenderFromSpeciesAndPersonality(speciesEnum: string, personality: number): number {
+  // Import statique de game-data — pas de circular dep (game-data n'importe
+  // pas pokemon.ts). Le globalThis.__game_data n'est set qu'au battle start
+  // donc trop tard pour gender derivation au createPokemonInstance.
   let ratio: number = MON_GENDERLESS;
   try {
-    const dataMod = (globalThis as { __game_data?: { getSpeciesInfo: (k: string) => { genderRatio?: string | number } | undefined } }).__game_data;
-    const info = dataMod?.getSpeciesInfo(speciesEnum);
+    const info = gameDataGetSpeciesInfo(speciesEnum);
     ratio = parseGenderRatio(info?.genderRatio);
   } catch { /* fallback genderless */ }
   if (ratio === MON_MALE)       return MON_MALE;
