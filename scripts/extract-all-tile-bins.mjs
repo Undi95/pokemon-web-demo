@@ -86,6 +86,10 @@ const targets = [
   { src: `${PUBLIC}/bag/bag_female.png`, bpp: 4, extractPalette: true },
   { src: `${PUBLIC}/bag/select_button.png`, bpp: 4, extractPalette: true },
   { src: `${PUBLIC}/bag/rotating_ball.png`, bpp: 4, extractPalette: true },
+  // Phase 5.2 trainer card : tiles.png (= card foreground tiles, 192 tiles total)
+  //   + badges.png (= 8 badges sheet) — utilises par BG0 (front.bin) et BG2 (bg.bin).
+  { src: `${PUBLIC}/trainer_card/tiles.png`, bpp: 4, extractPalette: false },
+  { src: `${PUBLIC}/trainer_card/badges.png`, bpp: 4, extractPalette: true },
 ];
 
 // Phase 5.1 — Tilemaps copiés direct depuis le décomp source (= raw uncompressed

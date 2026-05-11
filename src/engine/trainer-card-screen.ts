@@ -57,11 +57,17 @@ const TEXT_SKIP_DRAW = 255;
 const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;
 
-/** BG layer config (= 1:1 décomp sTrainerCardBgTemplates simplifié 3-layer). */
-const CARD_BG_CHAR_BASE = 3;
-const CARD_BG_MAP_BASE = 29;        // BG2 (= bg.bin)
-const CARD_FRONT_MAP_BASE = 30;     // BG1 (= front.bin overlay)
-const CARD_WIN_MAP_BASE = 31;       // BG0 (= text windows)
+/** BG layer config 1:1 décomp `sTrainerCardBgTemplates` (= trainer_card.c:193) :
+ *    BG0 charBase=0 mapBase=27 priority=2 screenSize=2 → front.bin (cardTilemap)
+ *    BG1 charBase=2 mapBase=29 priority=0 → text windows (paletteNum=15)
+ *    BG2 charBase=0 mapBase=30 priority=3 → bg.bin (bgTilemap)
+ *    BG3 charBase=0 mapBase=31 priority=1 baseTile=192 → trainer pic window
+ *      Notre simplification : pas de BG3, on utilise OAM pour trainer pic + badges. */
+const CARD_TILES_CHAR_BASE = 0;     // tiles.png raw 4bpp à charBase 0 (= shared BG0+BG2)
+const CARD_WIN_CHAR_BASE = 2;       // text/frame tiles à charBase 2 (= BG1)
+const CARD_FRONT_MAP_BASE = 27;     // BG0 = front.bin overlay (= card front)
+const CARD_WIN_MAP_BASE = 29;       // BG1 = text windows
+const CARD_BG_MAP_BASE = 30;        // BG2 = bg.bin background
 
 /** OAM palette slots. */
 const TRAINER_PIC_OBJ_PAL = 0;      // OBJ palette 0 = trainer pic colors
@@ -76,9 +82,11 @@ const COLOR_MALE: [number, number, number] = [1, 8, 9];
 const COLOR_FEMALE: [number, number, number] = [1, 4, 5];
 const COLOR_LABEL: [number, number, number] = [1, 2, 3];
 
-/** Windows : WIN_CARD_TEXT pour tout le texte (= NOM/NºID/etc.). */
+/** Windows : 1:1 décomp `sTrainerCardWindowTemplates` (trainer_card.c:233) :
+ *    WIN_CARD_TEXT : bg=1, (1, 1, 28, 18), paletteNum=15, baseBlock=0x1.
+ *  bg=1 = BG1 charBase=2 — séparé des trainer card tiles (charBase=0). */
 const WIN_CARD_TEXT_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 1, tilemapTop: 1, width: 28, height: 18,
+  bg: 1, tilemapLeft: 1, tilemapTop: 1, width: 28, height: 18,
   paletteNum: 15, baseBlock: 0x1,
 };
 
@@ -172,18 +180,26 @@ function _initCardBgs(rt: ReturnType<typeof getRuntime>): void {
   // Direct PLTT RAM clear (= bypass bufferTransferDisabled, sinon OW palettes leak).
   for (let i = 0; i < 256; i++) rt.gba.palette.loadBgRange(i, [0]);
   for (let i = 0; i < 256; i++) rt.gba.palette.loadObjRange(i, [0]);
-  // InitBgsFromTemplates : 3 BG layers + BG3 hidden.
+  // 1:1 décomp `sTrainerCardBgTemplates` (trainer_card.c:193) :
+  //   BG0 charBase=0 mapBase=27 priority=2 screenSize=2 (= front.bin)
+  //   BG1 charBase=2 mapBase=29 priority=0 (= text windows)
+  //   BG2 charBase=0 mapBase=30 priority=3 (= bg.bin background)
+  //   BG3 hidden (= notre simplification, on use OAM pour trainer pic).
   const bg0c = rt.gba.bg(0).config;
-  bg0c.charBaseIndex = 0; bg0c.mapBaseIndex = CARD_WIN_MAP_BASE; bg0c.screenSize = 0;
-  bg0c.paletteMode = 0; bg0c.priority = 0; bg0c.visible = true;
+  bg0c.charBaseIndex = CARD_TILES_CHAR_BASE; bg0c.mapBaseIndex = CARD_FRONT_MAP_BASE;
+  bg0c.screenSize = 0;  // 1:1 décomp screenSize=2 (64×32) MAIS bg.bin/front.bin
+                        // contiennent juste 30×20 entries → screenSize=0 (32×32) suffit
+                        // (rest = tile 0 transparent). Notre engine ne supporte pas screen sizes > 0 cleanly.
+  bg0c.paletteMode = 0; bg0c.priority = 2; bg0c.visible = true;
   bg0c.hofs = 0; bg0c.vofs = 0;
   const bg1c = rt.gba.bg(1).config;
-  bg1c.charBaseIndex = 0; bg1c.mapBaseIndex = CARD_FRONT_MAP_BASE; bg1c.screenSize = 0;
-  bg1c.paletteMode = 0; bg1c.priority = 1; bg1c.visible = true;
+  bg1c.charBaseIndex = CARD_WIN_CHAR_BASE; bg1c.mapBaseIndex = CARD_WIN_MAP_BASE;
+  bg1c.screenSize = 0;
+  bg1c.paletteMode = 0; bg1c.priority = 0; bg1c.visible = true;
   bg1c.hofs = 0; bg1c.vofs = 0;
   const bg2c = rt.gba.bg(2).config;
-  bg2c.charBaseIndex = CARD_BG_CHAR_BASE; bg2c.mapBaseIndex = CARD_BG_MAP_BASE;
-  bg2c.screenSize = 0; bg2c.paletteMode = 0; bg2c.priority = 2; bg2c.visible = true;
+  bg2c.charBaseIndex = CARD_TILES_CHAR_BASE; bg2c.mapBaseIndex = CARD_BG_MAP_BASE;
+  bg2c.screenSize = 0; bg2c.paletteMode = 0; bg2c.priority = 3; bg2c.visible = true;
   bg2c.hofs = 0; bg2c.vofs = 0;
   rt.gba.bg(3).config.visible = false;
   rt.SetGpuReg(0x10, 0); rt.SetGpuReg(0x12, 0);
@@ -204,21 +220,28 @@ function _loadCardGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
   void _loadAssets().then((assets) => {
     const r = getRuntime();
     if (!r) { _graphicsLoading = false; return; }
-    // BG2 charBase=3 → VRAM offset 3*0x4000 = 0xC000. Load tiles.
-    const charOff = CARD_BG_CHAR_BASE * 0x4000;
+    // 1:1 décomp `LoadBgTiles(0, sData->cardTiles, 0x1800, 0)` (trainer_card.c:1429) :
+    //   charBase=0 → VRAM offset 0*0x4000 = 0x0000. Load 0x1800 bytes = 192 tiles.
+    const charOff = CARD_TILES_CHAR_BASE * 0x4000;
     r.gba.vram.set(assets.bgTiles, charOff);
-    // BG2 mapBase=29 → 29*0x800 = 0xE800. Load bg.bin tilemap.
+    // 1:1 décomp `DrawCardScreenBackground` + `DrawCardFrontOrBack`
+    // (trainer_card.c:1463-1497) : REMAPPE 30×20 source → 32×32 dest avec
+    // padding `ptr[0]` aux colonnes 30-31. CRITIQUE : direct vram.set des
+    // 1200 bytes flat traite row pitch comme 32 → tilemap garbled.
+    //   for (i = 0..19) for (j = 0..31) :
+    //     dst[32*i+j] = (j<30) ? ptr[30*i+j] : ptr[0];
     const bgMapOff = CARD_BG_MAP_BASE * 0x800;
-    const bgTilemapBytes = new Uint8Array(
-      assets.bgTilemap.buffer, assets.bgTilemap.byteOffset, assets.bgTilemap.byteLength,
-    );
-    r.gba.vram.set(bgTilemapBytes, bgMapOff);
-    // BG1 mapBase=30 → 30*0x800 = 0xF000. Load front.bin overlay tilemap.
     const frontMapOff = CARD_FRONT_MAP_BASE * 0x800;
-    const frontTilemapBytes = new Uint8Array(
-      assets.frontTilemap.buffer, assets.frontTilemap.byteOffset, assets.frontTilemap.byteLength,
-    );
-    r.gba.vram.set(frontTilemapBytes, frontMapOff);
+    const bgDst = new Uint16Array(r.gba.vram.buffer, bgMapOff, 32 * 32);
+    const frontDst = new Uint16Array(r.gba.vram.buffer, frontMapOff, 32 * 32);
+    const bgSrc = assets.bgTilemap;
+    const frontSrc = assets.frontTilemap;
+    for (let i = 0; i < 20; i++) {
+      for (let j = 0; j < 32; j++) {
+        bgDst[32 * i + j]    = (j < 30) ? bgSrc[30 * i + j]    : bgSrc[0];
+        frontDst[32 * i + j] = (j < 30) ? frontSrc[30 * i + j] : frontSrc[0];
+      }
+    }
     // 1:1 décomp LoadPalette sequence (trainer_card.c:1434-1442) :
     //   green.pal (48 entries) → BG_PLTT_ID(0) fills palette 0+1+2.
     LoadPalette(assets.bgPalette, 0, assets.bgPalette.length * 2);
