@@ -2034,6 +2034,30 @@ function _tickBagSpriteShake(): void {
  *    - JOY_REPEAT(UP/DOWN)  : new press OU repeated key (= hold to scroll)
  *  JOY_REPEAT lit gMain.newAndRepeatedKeys. Le runtime maintient ce field
  *  avec gKeyRepeatStartDelay=40 + gKeyRepeatContinueDelay=5 (1:1 main.c). */
+/** Démarre le close du bag screen. 1:1 décomp item_menu.c:1077
+ *  Task_FadeAndCloseBagMenu pattern :
+ *    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
+ *    gTasks[taskId].func = Task_CloseBagMenu;  // wait fade
+ *
+ *  Le Task créé tick chaque frame via RunTasks dans MainCB2_BagMenuRun.
+ *  Quand fade fini, Task_CloseBagMenu free les ressources et
+ *  SetMainCallback2(gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu_Manual)
+ *  pour return à l'OW + reopen start menu. */
+export function CloseBagScreen(): void {
+  if (!_isOpen || _phase === 'fading_out') return;
+  _phase = 'fading_out';
+  const rt = getRuntime();
+  if (!rt) return;
+  // Kill l'input task pour stopper TickBagScreen pendant fade out
+  // (= sinon il consume les keys, user pourrait re-A pendant fade).
+  if (_bagInputTaskId >= 0) {
+    rt.DestroyTask(_bagInputTaskId);
+    _bagInputTaskId = -1;
+  }
+  // 1:1 décomp Task_FadeAndCloseBagMenu — créé directement.
+  rt.CreateTask(Task_FadeAndCloseBagMenu_BagScreen, 0);
+}
+
 export function TickBagScreen(newKeys: number): void {
   if (!_isOpen) return;
 
