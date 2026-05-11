@@ -76,11 +76,15 @@ const BADGES_OBJ_PAL = 1;           // OBJ palette 1 = badges colors
 const TRAINER_PIC_OBJ_OFFSET = 0;           // start of OBJ VRAM
 const BADGES_OBJ_OFFSET = 64 * 32;          // after trainer pic (64 tiles × 32 bytes 4bpp)
 
-/** Text colors palette 15 (= std_menu loaded à BG_PLTT_ID(15)) :
- *  TEXT_COLOR_RED = idx 4,5 ; TEXT_COLOR_BLUE = idx 8,9 ; idx 1=bg, 2=fg, 3=shadow. */
-const COLOR_MALE: [number, number, number] = [1, 8, 9];
-const COLOR_FEMALE: [number, number, number] = [1, 4, 5];
-const COLOR_LABEL: [number, number, number] = [1, 2, 3];
+/** 1:1 décomp `sTrainerCardTextColors` (trainer_card.c:283) :
+ *    {TEXT_COLOR_TRANSPARENT, TEXT_COLOR_DARK_GRAY, TEXT_COLOR_LIGHT_GRAY}
+ *    = [0, 2, 3] (= bg transparent, fg dark gray, shadow light gray).
+ *
+ *  Le ROM NE FAIT PAS de différence MALE/FEMALE sur le texte de la carte.
+ *  Mon erreur initiale (= COLOR_MALE blue / COLOR_FEMALE red) venait de la
+ *  confusion avec ShowSaveInfoWindow qui DOES gender-color. Pour trainer
+ *  card : 1:1 décomp = TOUS les textes en gray transparent. */
+const COLOR_CARD_TEXT: [number, number, number] = [0, 2, 3];
 
 /** Windows : 1:1 décomp `sTrainerCardWindowTemplates` (trainer_card.c:233) :
  *    WIN_CARD_TEXT : bg=1, (1, 1, 28, 18), paletteNum=15, baseBlock=0x1.
@@ -324,36 +328,37 @@ function _drawCardFront(): void {
   if (_wid < 0) return;
   FillWindowPixelBuffer(_wid, 0x00);
   const d = _bufferCardData();
-  const COLOR_VALUE = d.isFemale ? COLOR_FEMALE : COLOR_MALE;
+  // 1:1 décomp : pas de gender color, tout en gray transparent.
+  void d.isFemale;
   // NOM + name à (16, 33) — 1:1 décomp Hoenn variant.
   const nomLabel = getString('gText_TrainerCardName') || 'NOM ';
-  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 33, COLOR_LABEL, TEXT_SKIP_DRAW, nomLabel);
-  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 48, 33, COLOR_VALUE, TEXT_SKIP_DRAW, d.name);
+  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 33, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, nomLabel);
+  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 48, 33, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, d.name);
   // NºID + 5-digit ID à (120, 9) top-right.
   const idLabel = getString('gText_TrainerCardIDNo') || 'NºID /';
   const idStr = `${idLabel}${String(d.trainerId).padStart(5, '0')}`;
-  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 120, 9, COLOR_VALUE, TEXT_SKIP_DRAW, idStr);
+  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 120, 9, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, idStr);
   // ARGENT + ¥money à (16, 57), value right-align x=128.
   const moneyLabel = getString('gText_TrainerCardMoney') || 'ARGENT';
-  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 57, COLOR_LABEL, TEXT_SKIP_DRAW, moneyLabel);
+  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 57, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, moneyLabel);
   const moneySymbol = getString('gText_PokeDollar') || '¥';
   const moneyStr = `${moneySymbol}${d.money}`;
   const moneyX = GetStringRightAlignXOffset(moneyStr, 128);
-  AddTextPrinterParameterized3(_wid, FONT_NORMAL, moneyX, 57, COLOR_VALUE, TEXT_SKIP_DRAW, moneyStr);
+  AddTextPrinterParameterized3(_wid, FONT_NORMAL, moneyX, 57, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, moneyStr);
   // POKéDEX + count à (16, 73), value right-align x=128 (si dex enabled).
   if (d.hasDex) {
     const dexLabel = getString('gText_TrainerCardPokedex') || 'POKéDEX';
-    AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 73, COLOR_LABEL, TEXT_SKIP_DRAW, dexLabel);
+    AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 73, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, dexLabel);
     const dexStr = String(d.caughtMonsCount);
     const dexX = GetStringRightAlignXOffset(dexStr, 128);
-    AddTextPrinterParameterized3(_wid, FONT_NORMAL, dexX, 73, COLOR_VALUE, TEXT_SKIP_DRAW, dexStr);
+    AddTextPrinterParameterized3(_wid, FONT_NORMAL, dexX, 73, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, dexStr);
   }
   // DUREE JEU + HH:MM à (16, 89), value right-align x=128.
   const timeLabel = getString('gText_TrainerCardTime') || 'DUREE JEU';
-  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 89, COLOR_LABEL, TEXT_SKIP_DRAW, timeLabel);
+  AddTextPrinterParameterized3(_wid, FONT_NORMAL, 16, 89, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, timeLabel);
   const timeStr = `${d.hours}:${String(d.minutes).padStart(2, '0')}`;
   const timeX = GetStringRightAlignXOffset(timeStr, 128);
-  AddTextPrinterParameterized3(_wid, FONT_NORMAL, timeX, 89, COLOR_VALUE, TEXT_SKIP_DRAW, timeStr);
+  AddTextPrinterParameterized3(_wid, FONT_NORMAL, timeX, 89, COLOR_CARD_TEXT, TEXT_SKIP_DRAW, timeStr);
   CopyWindowToVram(_wid, 3);
 }
 
@@ -362,10 +367,18 @@ function _spawnTrainerPicOam(assets: TrainerCardAssets): void {
   const rt = getRuntime();
   if (!rt) return;
   void assets;
-  // CreateSpriteAtOam : trainer pic à (192, 64) shape=0 size=3 (= 64×64).
-  // Tile offset = 0 (= TRAINER_PIC_OBJ_OFFSET / 32 bytes per 4bpp tile = 0).
+  // 1:1 décomp `CreateTrainerCardTrainerPic` + `sTrainerPicOffset[Hoenn]`
+  // (trainer_card.c:287, 1882) :
+  //   WIN_TRAINER_PIC template (= trainer_card.c:253) : tilemapLeft=19,
+  //     tilemapTop=5, width=9, height=10 → pixel origin (19*8, 5*8) = (152, 40).
+  //   sTrainerPicOffset[Hoenn][MALE/FEMALE] = (1, 0) (= tile offset).
+  //   Sprite pixel top-left = window origin + tile_offset*8 = (152+8, 40+0)
+  //     = (160, 40).
+  //   Notre OAM CreateSpriteAtOam x/y = CENTER (= 1:1 décomp CalcCenterToCornerVec
+  //     pour square 64×64 = top-left - (32, 32) from center).
+  //   Donc OAM center = (160+32, 40+32) = (192, 72).
   _trainerPicOamId = rt.CreateSpriteAtOam({
-    x: 176, y: 80,           // centré à droite, milieu vertical
+    x: 192, y: 72,
     shape: 0, size: 3,       // 64×64
     tileId: TRAINER_PIC_OBJ_OFFSET / 32,
     paletteBank: TRAINER_PIC_OBJ_PAL,
