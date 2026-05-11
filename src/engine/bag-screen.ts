@@ -41,6 +41,7 @@ import {
 } from './decomp-globals';
 import { ResetSpriteData } from './decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
+import { FadeScreen, FADE_TO_BLACK, FADE_FROM_BLACK } from './fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { getString } from './gba-strings';
 import { gSineTable, SetOamMatrix } from './decomp-helpers';
@@ -2297,11 +2298,13 @@ export function VBlankCB_BagMenuRun(): void { /* transferts auto */ }
 
 /** 1:1 décomp item_menu.c:1077 Task_FadeAndCloseBagMenu :
  *      BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
- *      gTasks[taskId].func = Task_CloseBagMenu; */
+ *      gTasks[taskId].func = Task_CloseBagMenu;
+ *
+ *  = équivalent à `FadeScreen(FADE_TO_BLACK, 0)` (= field_weather.c). */
 function Task_FadeAndCloseBagMenu_BagScreen(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
-  rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0 /* RGB_BLACK */);
+  FadeScreen(FADE_TO_BLACK, 0);
   task.func = Task_CloseBagMenu_BagScreen;
 }
 
@@ -2692,9 +2695,10 @@ export function CB2_InitBagMenu(): void {
       rt.gMain.state++;
       break;
     case 20:
-      // BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK).
+      // 1:1 décomp `BeginNormalPaletteFade(PALETTES_ALL, 0, 16, 0, RGB_BLACK)` :
       // startY=16=fully black → endY=0=visible sur 16 frames (= fade IN depuis BLACK).
-      rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0 /* RGB_BLACK */);
+      // = équivalent à `FadeScreen(FADE_FROM_BLACK, 0)` (= field_weather.c).
+      FadeScreen(FADE_FROM_BLACK, 0);
       rt.gPaletteFade.bufferTransferDisabled = false;
       PlaySE(6 /* SE_WIN_OPEN */);  // sonore "shing" au fade in
       rt.gMain.state++;

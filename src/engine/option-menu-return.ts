@@ -38,6 +38,7 @@
 import { getRuntime, gMain, ResetTasks, ResetPaletteFade } from './decomp-globals';
 import { ResetSpriteData } from './decomp-bridge';
 import { InitFieldMessageBox } from './field-message-box';
+import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 
 /** 1:1 décomp `bool8 FieldCB_ReturnToFieldOpenStartMenu(void)`
  *  (field_screen_effect.c:440) :
@@ -77,9 +78,8 @@ function FieldCB_ReturnToFieldStartMenu(): boolean {
   //   CreateTask(Task_WaitForFadeShowStartMenu, 0x50);
   //   LockPlayerFieldControls();
   // FadeInFromBlack = FillPalBufferBlack + FadeScreen(FADE_FROM_BLACK, 0).
-  // Notre BeginNormalPaletteFade(ALL, 0, 16, 0, RGB_BLACK) est l'équivalent.
-  const rt = getRuntime();
-  rt.BeginNormalPaletteFade('PALETTES_ALL', 0, 16, 0, 'RGB_BLACK');
+  // = 1:1 décomp `FadeScreen(FADE_FROM_BLACK, 0)` (= field_weather.c).
+  FadeScreen(FADE_FROM_BLACK, 0);
   // Open start menu via le module start-menu.ts (exposé via globalThis).
   // 1:1 décomp `Task_ShowStartMenu` set gMenuCallback = HandleStartMenuInput.
   const sm = (globalThis as Record<string, unknown>).startMenu as { open?: () => void } | undefined;

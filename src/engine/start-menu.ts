@@ -73,6 +73,7 @@ import { OpenPartyScreen, TickPartyScreen } from './party-screen';
 import { OpenTrainerCardScreen, TickTrainerCardScreen } from './trainer-card-screen';
 import { OpenPokedexScreen, TickPokedexScreen } from './pokedex-screen';
 import { getString } from './gba-strings';
+import { FadeScreen, FADE_TO_BLACK } from './fade-screen';
 
 // ─── Types + state ───────────────────────────────────────────────────────────
 
@@ -278,9 +279,8 @@ function sacAction(): boolean {
   //
   // Notre version : start fade-out + queue OpenBagScreen + attend dans
   // _tickFadingToScreen jusqu'à fade fini.
-  const rt = getRuntime();
-  if (!rt) return false;
-  rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0 /* RGB_BLACK */);
+  // = équivalent à `FadeScreen(FADE_TO_BLACK, 0)` (= field_weather.c).
+  FadeScreen(FADE_TO_BLACK, 0);
   sPendingScreenAction = () => OpenBagScreen();
   sSubState = 'fading_to_screen';
   return false;  // ne pas close start menu yet ; on attend fade fini.
@@ -479,10 +479,11 @@ function optionsAction(): boolean {
   // Notre version : start fade-out + queue action + attend dans _tickFadingToScreen.
   // Sans fade-to-black préalable, on voit les NPCs/player disparaître au state
   // 2 de CB2_InitOptionMenu (ResetSpriteData) AVANT que screen soit noir.
-  const rt = getRuntime();
-  if (!rt) return false;
-  rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 0, 16, 0 /* RGB_BLACK */);
+  // = équivalent à `FadeScreen(FADE_TO_BLACK, 0)` (= field_weather.c).
+  FadeScreen(FADE_TO_BLACK, 0);
   sPendingScreenAction = () => {
+    const rt = getRuntime();
+    if (!rt) return;
     void preloadOptionMenuAssets().then(() => {
       gMain.state = 0;
       // 1:1 décomp gMain.savedCallback = CB2_ReturnToFieldWithOpenMenu, mais on
