@@ -70,6 +70,7 @@ import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonIns
 import { VarSet } from './script-vars';
 import { getMove, getMoveName, loadGameData } from './data/game-data';
 import { Random } from './random';
+import { IsBattleSceneOff } from './gba-menu-system';
 
 // ─── GBA input keys (= 1:1 décomp gba/key.h) ─────────────────────────────────
 const A_BUTTON   = 0x01;
@@ -744,7 +745,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         renderHpWindows();
         if (damage > 0) {
           // Bug 5c : shake opp sprite on damage.
-          if (opponentSpriteId >= 0) startShake(opponentSpriteId);
+          // 1:1 décomp battle_main.c:1073 : `if (gSaveBlock2Ptr->optionsBattleSceneOff == TRUE)
+          //   gHitMarker |= HITMARKER_NO_ANIMATIONS` set au battle init. Notre simplification :
+          // check IsBattleSceneOff() directement au site d'anim (= move shake équivalent
+          // visuel des battle anims du décomp). User option ANIMAT. COMBAT = NON skip anims.
+          if (opponentSpriteId >= 0 && !IsBattleSceneOff()) startShake(opponentSpriteId);
         }
         if (damage > 0) {
           // Iter19 : type effectiveness messages.
@@ -875,7 +880,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         renderHpWindows();
         if (damage > 0) {
           // Bug 5c : shake player sprite on damage.
-          if (playerSpriteId >= 0) startShake(playerSpriteId);
+          // 1:1 décomp HITMARKER_NO_ANIMATIONS check via IsBattleSceneOff() — cf
+          // sibling PLAYER_DAMAGE_OPP case ci-dessus pour explanation.
+          if (playerSpriteId >= 0 && !IsBattleSceneOff()) startShake(playerSpriteId);
         }
         if (damage > 0) {
           // Iter19 : type effectiveness messages (= same as player turn).
