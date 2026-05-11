@@ -113,8 +113,24 @@ let _isOpen = false;
 let _phase: 'idle' | 'fading_in' | 'open' | 'fading_out' = 'idle';
 /** Current card side : 'front' (= default) ou 'back'. Toggle via A press. */
 let _cardSide: 'front' | 'back' = 'front';
-/** Flip animation in progress (= input disabled jusqu'à fade-in-back/front complete). */
+/** Flip animation in progress (= input disabled jusqu'à animation complete). */
 let _flipping = false;
+/** Flip state machine pour Task_DoCardFlipTask (= 1:1 décomp 6-step pipeline) :
+ *  0=begin, 1=animate_down, 2=draw_flipped, 3=set_flipped, 4=animate_up, 5=end. */
+let _flipState = 0;
+/** Current squash progress (= cardTop pixel offset, 0=no squash, 77=fully squashed). */
+let _flipCardTop = 0;
+/** Direction du flip pendant l'animation : 'to_back' ou 'to_front'. */
+let _flipTargetSide: 'front' | 'back' = 'back';
+/** Buffer scanline offsets (= 1:1 décomp gScanlineEffectRegBuffers[0][160]).
+ *  Int16Array car les offsets peuvent être négatifs (= scanlines au-dessus
+ *  de la carte affichent un offset négatif pour hide). */
+const _flipScanlineBuf = new Int16Array(256);
+/** CARD_FLIP_Y = DISPLAY_HEIGHT/2 - 3 = 77. Half-screen squash threshold
+ *  (= décomp comment "Cannot be DISPLAY_HEIGHT/2, or cardHeight will be 0"). */
+const CARD_FLIP_Y = 77;
+/** Step per frame pendant l'animation squash/unsquash (= décomp `tCardTop += 7`). */
+const CARD_FLIP_STEP = 7;
 let _assets: TrainerCardAssets | null = null;
 let _assetsLoading: Promise<TrainerCardAssets> | null = null;
 let _wid = -1;
@@ -530,6 +546,13 @@ function _spawnBadgesOam(assets: TrainerCardAssets): void {
 
 function _freeTrainerCard(): void {
   const rt = getRuntime();
+  // Safety : uninstall HBlank callback si on close pendant flip animation.
+  if (rt) {
+    rt.gba.setHBlankCallback(null);
+    rt.gba.bg(0).config.vofs = 0;
+    rt.gba.bg(1).config.vofs = 0;
+    rt.gba.bg(2).config.vofs = 0;
+  }
   if (_trainerPicOamId >= 0 && rt) {
     const spr = rt.gSprites.get(_trainerPicOamId);
     if (spr) { spr.inUse = false; const oam = rt.gba.oam[spr.oamIndex]; if (oam) oam.visible = false; }
@@ -574,47 +597,148 @@ function Task_CloseTrainerCard(task: DecompTask): void {
   _cardInputTaskId = -1;
 }
 
-/** 1:1 décomp `Task_DoCardFlipTask` (trainer_card.c:1602) — simplified via
- *  BeginNormalPaletteFade au lieu du scanline HBlank effect 3D rotate.
+/** 1:1 décomp `Task_AnimateCardFlipDown/Up` scanline math (trainer_card.c:1625).
+ *  Compute _flipScanlineBuf[i] pour chaque scanline i=0..159 selon cardTop.
  *
- *  Pipeline :
- *    state 0 : FadeScreen(FADE_TO_BLACK, -2) (= fast fade, ~8 frames)
- *    state 1 : wait fade-out done → swap tilemap + redraw text + toggle OAM
- *    state 2 : FadeScreen(FADE_FROM_BLACK, -2) (= fast fade-in)
- *    state 3 : wait fade-in done → set _flipping=false, _cardSide flipped */
+ *  Décomp body (squash card vertically) :
+ *    cardBottom = DISPLAY_HEIGHT - cardTop
+ *    cardHeight = cardBottom - cardTop
+ *    r6 = -cardTop << 16
+ *    r5 = (DISPLAY_HEIGHT << 16) / cardHeight
+ *    r5 -= 1 << 16
+ *    var_24 = r6 + r5 * cardHeight
+ *    r10 = r5 / cardHeight
+ *    r5 *= 2
+ *    for (i=0..cardTop) buf[i] = -i
+ *    for (i=cardTop..cardBottom) { buf[i] = r6>>16; r6 += r5; r5 -= r10 }
+ *    for (i=cardBottom..160) buf[i] = var_24>>16
+ *
+ *  Notre version : math identique. Buffer Int16Array (signed) car offsets
+ *  peuvent être négatifs. */
+function _computeCardFlipScanlines(cardTop: number): void {
+  const DISPLAY_HEIGHT = 160;
+  const cardBottom = DISPLAY_HEIGHT - cardTop;
+  const cardHeight = cardBottom - cardTop;
+  if (cardHeight <= 0) return;  // safety
+  let r6 = -cardTop << 16;
+  let r5 = Math.floor((DISPLAY_HEIGHT << 16) / cardHeight);
+  r5 -= 1 << 16;
+  const var24 = r6 + r5 * cardHeight;
+  const r10 = Math.floor(r5 / cardHeight);
+  r5 *= 2;
+  let i = 0;
+  for (; i < cardTop; i++) {
+    _flipScanlineBuf[i] = -i;
+  }
+  for (; i < cardBottom; i++) {
+    _flipScanlineBuf[i] = r6 >> 16;
+    r6 += r5;
+    r5 -= r10;
+  }
+  const tail = var24 >> 16;
+  for (; i < DISPLAY_HEIGHT; i++) {
+    _flipScanlineBuf[i] = tail;
+  }
+}
+
+/** 1:1 décomp `UpdateCardFlipRegs(cardTop)` (trainer_card.c:868) :
+ *    blendY = (cardTop + 40) / 10
+ *    if (blendY <= 4) blendY = 0
+ *    SetGpuReg(BLDY, blendY)
+ *    SetGpuReg(WIN0V, WIN_RANGE(cardTop, DISPLAY_HEIGHT - cardTop))
+ *
+ *  Notre simplification : skip BLDY/WIN0V (= effets visuels additionnels).
+ *  L'effet principal de squash via scanline offsets suffit pour le rendu
+ *  visuel 3D rotation feel. */
+function _updateCardFlipRegs(_cardTop: number): void {
+  void _cardTop;
+}
+
+/** HBlank callback installé pendant le flip animation. Set BG0 vofs per
+ *  scanline depuis _flipScanlineBuf (= 1:1 décomp HblankCb_TrainerCard) :
+ *    REG_BG0VOFS = gScanlineEffectRegBuffers[1][REG_VCOUNT];
+ *  ONLY BG0 (= card front/back). BG2 (= bg.bin background teal stripes)
+ *  reste normal pour montrer le fond derrière la carte qui squash.
+ *  BG1 (= text windows) est aussi modulé pour que le texte squashe avec la
+ *  carte (= ROM hide BG1+BG3 entirely, on simule via modulation). */
+function _hblankCardFlip(y: number): void {
+  if (y < 0 || y >= 160) return;
+  const offset = _flipScanlineBuf[y];
+  const rt = getRuntime();
+  if (!rt) return;
+  // ROM modulate uniquement BG0VOFS (trainer_card.c:348). BG2 (= bg.bin
+  // teal background) doit rester en place. BG1 (= text) on modulate aussi
+  // pour que le texte de la carte squash avec la carte.
+  rt.gba.bg(0).config.vofs = offset & 0xFFFF;
+  rt.gba.bg(1).config.vofs = offset & 0xFFFF;
+}
+
+/** 1:1 décomp `Task_DoCardFlipTask` (trainer_card.c:1602) — 6-step pipeline.
+ *  Squash card vertically (= scanline Y offset modulation per row), swap
+ *  tilemap at full squash, unsquash. Donne l'illusion 3D rotate.
+ *
+ *  Steps :
+ *    0 : BeginCardFlip — clear scanline buf, install HBlank cb
+ *    1 : AnimateCardFlipDown — increment cardTop 0→77, compute scanlines
+ *    2 : DrawFlippedCardSide — swap tilemap + redraw text + toggle OAM
+ *    3 : SetCardFlipped — reset to begin unsquash
+ *    4 : AnimateCardFlipUp — decrement cardTop 77→0
+ *    5 : EndCardFlip — uninstall HBlank, reset BG vofs, _flipping=false */
 function Task_FlipCard(task: DecompTask): void {
   const rt = getRuntime();
   if (!rt) return;
-  const tState = task.data?.[0] ?? 0;
-  const tTargetSide = (task.data?.[1] ?? 0) ? 'back' : 'front';
-  switch (tState) {
+  switch (_flipState) {
     case 0:
-      // Start fast fade-to-black (delay=-2 → deltaY=4 → ~8 frames).
-      rt.BeginNormalPaletteFade(0xFFFFFFFF, -2, 0, 16, 0 /* RGB_BLACK */);
-      if (task.data) task.data[0] = 1;
+      // BeginCardFlip (1:1 décomp trainer_card.c:1608) : clear scanline buf,
+      // install HBlank cb. Hide OAM (trainer pic + badges) car ils don't
+      // squash with the card → afficher serait incohérent visuel.
+      for (let k = 0; k < 256; k++) _flipScanlineBuf[k] = 0;
+      rt.gba.setHBlankCallback(_hblankCardFlip);
+      _setOamVisibility(false);
+      _flipCardTop = 0;
+      _flipState = 1;
       break;
     case 1:
-      if (rt.gPaletteFade.active) return;  // wait fade done
-      // Swap tilemap + redraw text + show/hide OAM.
-      _swapCardSide(tTargetSide);
-      if (tTargetSide === 'back') {
-        _drawCardBack();
-        _setOamVisibility(false);
-      } else {
-        _drawCardFront();
-        _setOamVisibility(true);
-      }
-      _cardSide = tTargetSide;
-      if (task.data) task.data[0] = 2;
+      // AnimateCardFlipDown : increment cardTop par CARD_FLIP_STEP (=7) jusqu'à
+      // CARD_FLIP_Y (=77). À chaque step : recompute scanline buffer.
+      _flipCardTop += CARD_FLIP_STEP;
+      if (_flipCardTop >= CARD_FLIP_Y) _flipCardTop = CARD_FLIP_Y;
+      _computeCardFlipScanlines(_flipCardTop);
+      _updateCardFlipRegs(_flipCardTop);
+      if (_flipCardTop >= CARD_FLIP_Y) _flipState = 2;
       break;
     case 2:
-      // Start fast fade-from-black.
-      rt.BeginNormalPaletteFade(0xFFFFFFFF, -2, 16, 0, 0 /* RGB_BLACK */);
-      if (task.data) task.data[0] = 3;
+      // DrawFlippedCardSide : swap tilemap + redraw text. OAM reste cache
+      // pendant le flip animation (= restored seulement at state 5 si front).
+      _swapCardSide(_flipTargetSide);
+      if (_flipTargetSide === 'back') _drawCardBack();
+      else _drawCardFront();
+      _cardSide = _flipTargetSide;
+      _flipState = 3;
       break;
     case 3:
-      if (rt.gPaletteFade.active) return;
+      // SetCardFlipped : no-op transition (= 1:1 décomp = ready for unsquash).
+      _flipState = 4;
+      break;
+    case 4:
+      // AnimateCardFlipUp : decrement cardTop par CARD_FLIP_STEP jusqu'à 0.
+      _flipCardTop -= CARD_FLIP_STEP;
+      if (_flipCardTop <= 0) _flipCardTop = 0;
+      _computeCardFlipScanlines(_flipCardTop);
+      _updateCardFlipRegs(_flipCardTop);
+      if (_flipCardTop <= 0) _flipState = 5;
+      break;
+    case 5:
+      // EndCardFlip : uninstall HBlank, reset BG vofs, restore OAM si front.
+      rt.gba.setHBlankCallback(null);
+      rt.gba.bg(0).config.vofs = 0;
+      rt.gba.bg(1).config.vofs = 0;
+      rt.gba.bg(2).config.vofs = 0;
+      // Re-show trainer pic + badges OAM seulement si on est revenu sur front
+      // (= back card a pas d'OAM visible dans le ROM).
+      if (_cardSide === 'front') _setOamVisibility(true);
       _flipping = false;
+      _flipState = 0;
       rt.DestroyTask(task.taskId);
       break;
   }
@@ -641,9 +765,9 @@ function Task_TrainerCard_HandleInput(_task: DecompTask): void {
       // A on front → flip to back.
       PlaySE(5);  // SE_RG_CARD_FLIP (= 1:1 décomp PlaySE après FlipTrainerCard)
       _flipping = true;
-      const task = rt.CreateTask(Task_FlipCard, 0);
-      const t = rt.gTasks.get(task);
-      if (t?.data) { t.data[0] = 0; t.data[1] = 1 /* target = back */; }
+      _flipState = 0;
+      _flipTargetSide = 'back';
+      rt.CreateTask(Task_FlipCard, 0);
       return;
     }
     if (newKeys & (KEY_B | KEY_START)) {
@@ -656,9 +780,9 @@ function Task_TrainerCard_HandleInput(_task: DecompTask): void {
       // B on back → flip to front.
       PlaySE(5);
       _flipping = true;
-      const task = rt.CreateTask(Task_FlipCard, 0);
-      const t = rt.gTasks.get(task);
-      if (t?.data) { t.data[0] = 0; t.data[1] = 0 /* target = front */; }
+      _flipState = 0;
+      _flipTargetSide = 'front';
+      rt.CreateTask(Task_FlipCard, 0);
       return;
     }
     if (newKeys & (KEY_A | KEY_START)) {
