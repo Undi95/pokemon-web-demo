@@ -35,6 +35,7 @@
 import {
   InitWindows, AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
   BlitBitmapToWindow,
+  DrawStdFrameWithCustomTileAndPalette,
   RemoveWindow, ShowBg, HideBg,
   type WindowTemplate,
 } from './gba-window-system';
@@ -63,13 +64,13 @@ const STD_FRAME_PAL = 14;
 const COLOR_TEXT: [number, number, number] = [0, 3, 2];
 const COLOR_HP: [number, number, number] = [0, 3, 2];
 /** 1:1 décomp `sFontColorTable[2]` (party_menu.h:117) gender symbol :
- *  TRANSPARENT + DYNAMIC_COLOR_2 + DYNAMIC_COLOR_3. Les dynamic colors sont
- *  patched runtime selon le gender (= rouge ♂ / bleu ♀) via sGenderMalePalIds
- *  / sGenderFemalePalIds. Pour MVP simple, utilise [0, 11, 12] pour ♂ et
- *  [0, 9, 10] pour ♀ (= positions PartyBoxNoMonPalOffsets + sHPBarPalOffsets
- *  qui sont les slots où les genre colors atterissent dans la sub-pal). */
-const COLOR_GENDER_MALE:   [number, number, number] = [0, 11, 12];
-const COLOR_GENDER_FEMALE: [number, number, number] = [0,  9, 10];
+ *  [TRANSPARENT, TEXT_DYNAMIC_COLOR_2 (=0xB), TEXT_DYNAMIC_COLOR_3 (=0xC)].
+ *  Les dynamic colors aux positions 11/12 dans la sub-pal sont patched
+ *  runtime selon le gender via sGenderMalePalIds [59,60] (rouge ♂) ou
+ *  sGenderFemalePalIds [75,76] (bleu ♀) — cf. _loadGenderColors. */
+const COLOR_GENDER: [number, number, number] = [0, 0xB, 0xC];
+const sGenderMalePalIds   = [59, 60];
+const sGenderFemalePalIds = [75, 76];
 
 /** 1:1 décomp `#define PARTY_PAL_*` (party_menu.c:150). */
 const PARTY_PAL_SELECTED    = 1 << 0;
@@ -373,11 +374,16 @@ function _drawSlot(slotIdx: number): void {
     CopyWindowToVram(wid, 3);
     return;
   }
-  // 1:1 décomp DisplayPartyPokemonGender : gender symbol "♂"/"♀" affiché à
-  // (64, 20) slot 0 left column ou (62, 12) slot 1-5 right column.
+  // 1:1 décomp DisplayPartyPokemonGender (party_menu.c:2333) : symbol "♂"/"♀"
+  // affiché à (64, 20) slot 0 left column ou (62, 12) slot 1-5 right column,
+  // AVEC palette swap genderMale/Female aux positions TEXT_DYNAMIC_COLOR_2/3
+  // de la sub-pal du slot. Color triple stays [0, 0xB, 0xC] for both genders.
   const gSym = getMonGenderSymbol(mon);
   const genderStr = gSym === 'M' ? '♂' : gSym === 'F' ? '♀' : '';
-  const genderColor = gSym === 'M' ? COLOR_GENDER_MALE : COLOR_GENDER_FEMALE;
+  if (genderStr) {
+    const slotPalNum = SLOT_WINDOW_TEMPLATES[slotIdx]?.paletteNum ?? 3;
+    _loadGenderColors(slotPalNum, gSym === 'M');
+  }
   if (slotIdx === 0) {
     // 1:1 décomp PARTY_BOX_LEFT_COLUMN (party_menu.h:32) :
     //   Nickname (24, 11) — width=40
@@ -388,7 +394,7 @@ function _drawSlot(slotIdx: number): void {
     AddTextPrinterParameterized3(wid, FONT_NORMAL, 24, 11, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
     AddTextPrinterParameterized3(wid, FONT_SMALL,  32, 20, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
     if (genderStr) {
-      AddTextPrinterParameterized3(wid, FONT_NORMAL, 64, 20, genderColor, TEXT_SKIP_DRAW, genderStr);
+      AddTextPrinterParameterized3(wid, FONT_NORMAL, 64, 20, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
     }
     AddTextPrinterParameterized3(wid, FONT_SMALL,  38, 37, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.currentHp}/`);
     AddTextPrinterParameterized3(wid, FONT_SMALL,  53, 37, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.maxHp}`);
@@ -402,7 +408,7 @@ function _drawSlot(slotIdx: number): void {
     AddTextPrinterParameterized3(wid, FONT_NORMAL, 22,  3, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
     AddTextPrinterParameterized3(wid, FONT_SMALL,  30, 12, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
     if (genderStr) {
-      AddTextPrinterParameterized3(wid, FONT_NORMAL, 62, 12, genderColor, TEXT_SKIP_DRAW, genderStr);
+      AddTextPrinterParameterized3(wid, FONT_NORMAL, 62, 12, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
     }
     AddTextPrinterParameterized3(wid, FONT_SMALL, 102, 12, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.currentHp}/`);
     AddTextPrinterParameterized3(wid, FONT_SMALL, 117, 12, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.maxHp}`);
@@ -417,6 +423,21 @@ function _drawAllSlots(): void {
   for (let i = 0; i < 6; i++) {
     _drawSlotFrame(i);
     _drawSlot(i);
+  }
+}
+
+/** 1:1 décomp swap gender colors aux positions TEXT_DYNAMIC_COLOR_2 (=0xB)
+ *  et TEXT_DYNAMIC_COLOR_3 (=0xC) dans la sub-pal du slot. Avant de render
+ *  le ♂/♀ symbol, le décomp write `bgPalette[sGenderMale/FemalePalIds[i]]`
+ *  vers ces positions, puis render avec color triple [0, 0xB, 0xC]. */
+function _loadGenderColors(slotPalNum: number, isMale: boolean): void {
+  if (!_assets) return;
+  const ids = isMale ? sGenderMalePalIds : sGenderFemalePalIds;
+  for (let i = 0; i < 2; i++) {
+    const src = new Uint16Array(1);
+    src[0] = _assets.bgPalette[ids[i]];
+    // Position dans la sub-pal = 0xB + i (= TEXT_DYNAMIC_COLOR_2 + offset).
+    LoadPalette(src, slotPalNum * 16 + 0xB + i, 2);
   }
 }
 
@@ -774,6 +795,35 @@ const ACTION_MENU_STRINGS_FR: Record<number, string> = {
   2: 'RETOUR',  // MENU_CANCEL1
 };
 
+/** Re-render action menu contents (= called au open + après cursor move).
+ *  Le cursor "▶" est blit devant l'item selected. 1:1 décomp pattern
+ *  Menu_MoveCursor + InitMenuInUpperLeftCorner. */
+function _renderActionMenuContents(): void {
+  if (_actionWindowId < 0) return;
+  const numActions = _actionList.length;
+  FillWindowPixelBuffer(_actionWindowId, 0x11);  // = palette idx 1 (= white bg)
+  PutWindowTilemap(_actionWindowId);
+  for (let i = 0; i < numActions; i++) {
+    const str = ACTION_MENU_STRINGS_FR[_actionList[i]] ?? '';
+    const isSelected = i === _actionCursor;
+    // Cursor arrow ▶ devant le selected item à x=0, text à x=8 (= cursorDim).
+    if (isSelected) {
+      AddTextPrinterParameterized3(
+        _actionWindowId, FONT_NORMAL, 0, i * 16 + 1,
+        [1, 2, 3] as [number, number, number],
+        TEXT_SKIP_DRAW, '▶',
+      );
+    }
+    // sFontColorTable[3] = [WHITE, DARK_GRAY, LIGHT_GRAY] pour actions selection.
+    AddTextPrinterParameterized3(
+      _actionWindowId, FONT_NORMAL, 8, i * 16 + 1,
+      [1, 2, 3] as [number, number, number],
+      TEXT_SKIP_DRAW, str,
+    );
+  }
+  CopyWindowToVram(_actionWindowId, 3);
+}
+
 function _openActionMenu(rt: ReturnType<typeof getRuntime>): void {
   if (!rt) return;
   PlaySE(5);  // SE_SELECT
@@ -788,22 +838,12 @@ function _openActionMenu(rt: ReturnType<typeof getRuntime>): void {
     bg: 2, tilemapLeft: 19, tilemapTop, width: 10, height: numActions * 2,
     paletteNum: 14, baseBlock: 0x2E9,
   });
-  // Draw frame border 1:1 décomp DrawStdFrameWithCustomTileAndPalette(wid, FALSE, 0x4F, 13).
+  // 1:1 décomp DrawStdFrameWithCustomTileAndPalette(wid, FALSE, 0x4F, 13) :
+  // load user window frame tiles à baseTile 0x4F + apply palette 13 + blit
+  // frame border tilemap autour du window (= 8 tiles : 4 corners + 4 edges).
   LoadUserWindowBorderGfx(0, 0x4F, 13 * 16);
-  // Render text 1:1 décomp : pour chaque action, AddTextPrinter au (cursorDim, i*16 + 1).
-  // cursorDim approximé à 8 (= FONT_NORMAL cursor width).
-  FillWindowPixelBuffer(_actionWindowId, 0x11);  // = palette 14 idx 1 white
-  PutWindowTilemap(_actionWindowId);
-  for (let i = 0; i < numActions; i++) {
-    const str = ACTION_MENU_STRINGS_FR[_actionList[i]] ?? '';
-    // sFontColorTable[3] = [WHITE, DARK_GRAY, LIGHT_GRAY] pour actions selection.
-    AddTextPrinterParameterized3(
-      _actionWindowId, FONT_NORMAL, 8, i * 16 + 1,
-      [1, 2, 3] as [number, number, number],
-      TEXT_SKIP_DRAW, str,
-    );
-  }
-  CopyWindowToVram(_actionWindowId, 3);
+  DrawStdFrameWithCustomTileAndPalette(_actionWindowId, false, 0x4F, 13);
+  _renderActionMenuContents();
   _phase = 'action_menu';
 }
 
@@ -827,9 +867,9 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
   const KEY_A = 0x0001, KEY_B = 0x0002;
   const DPAD_UP = 0x40, DPAD_DOWN = 0x80;
   if (newRepKeys & DPAD_UP) {
-    if (_actionCursor > 0) { _actionCursor--; PlaySE(5); }
+    if (_actionCursor > 0) { _actionCursor--; PlaySE(5); _renderActionMenuContents(); }
   } else if (newRepKeys & DPAD_DOWN) {
-    if (_actionCursor < _actionList.length - 1) { _actionCursor++; PlaySE(5); }
+    if (_actionCursor < _actionList.length - 1) { _actionCursor++; PlaySE(5); _renderActionMenuContents(); }
   } else if (newKeys & KEY_A) {
     PlaySE(5);
     const action = _actionList[_actionCursor];
