@@ -26,7 +26,7 @@
 import {
   AddWindow, RemoveWindow, DrawStdFrameWithCustomTileAndPalette,
   ClearStdWindowAndFrame, FillWindowPixelBuffer, PutWindowTilemap,
-  CopyWindowToVram, BlitBitmapToWindow, ShowBg, HideBg, InitBgFromTemplate,
+  CopyWindowToVram, BlitBitmapToWindow, ShowBg, HideBg,
   InitWindows,
   type WindowTemplate,
 } from './gba-window-system';
@@ -42,7 +42,6 @@ import {
 import { ResetSpriteData } from './decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
-import { setFieldCameraSuspended } from './field-camera';
 import { getString } from './gba-strings';
 import { gSineTable, SetOamMatrix } from './decomp-helpers';
 import type { DecompTask } from './decomp-runtime';
@@ -327,16 +326,16 @@ let _itemIconWid = -1;
 let _ctxWid = -1;
 let _yesNoWid = -1;
 let _qtyWid = -1;
-let _onClose: (() => void) | null = null;
+// 🗑️ `_onClose`, `_savedSyncSubspriteHook` removed (session 129 CB2 swap) :
+// - onClose callback obsolète depuis CB2 swap (= FieldCB chain reopens start
+//   menu via CB2_ReturnToFieldWithOpenMenu_Manual).
+// - hook _syncSubspriteOam obsolète (= OW MainCB2 dead pendant bag, plus de
+//   syncSpritesToOam concurrent).
 /** Cache des item icons chargés pour pas re-fetch chaque scroll. */
 const _itemIconCache: Record<string, { charData: Uint8Array; palette: Uint16Array }> = {};
 /** Item key actuellement loadé dans la window icon (= évite re-load redondant). */
 let _loadedIconKey: string | null = null;
 
-/** Hook _syncSubspriteOam saved au open pour restore au close.
- *  Pendant que bag est open, on overrides ce hook pour hide tous les OAM
- *  (= 1:1 effet `CpuFill32(0, OAM, OAM_SIZE)` du décomp ResetVramOamAndBgCntRegs). */
-let _savedSyncSubspriteHook: unknown = undefined;
 
 // ─── Sprite sac OAM (= 1:1 décomp item_menu_icons.c sBagSpriteTemplate) ─────
 
@@ -422,27 +421,11 @@ let _ballRotation = 0;
 let _ballInitPending = false;
 let _rotatingBallAssetsLoaded = false;
 
-/** Snapshot OBJ VRAM range qu'on écrase (= bag sprite + scroll arrow + rotating ball).
- *  L'overworld stocke les sprite tiles des NPCs/player dans ce range — sans backup,
- *  on les corrompt visuellement au close (= sprite player vert blob etc.). */
-let _savedObjVram: Uint8Array | null = null;
-/** Snapshot OBJ palettes 0, 1, 2 (= 48 u16 = 96 bytes) qu'on écrase. Le player
- *  utilise OBJ palette 0, NPCs/particles utilisent 1, 2, etc. Sans restore au
- *  close, leur palette reste celle du bag (= corruption visuelle). */
-let _savedObjPalettes: Uint16Array | null = null;
-
-// Save overworld BG2 state pour restore au close.
-let _savedBgState: {
-  charBase?: number; mapBase?: number;
-  priority?: number; screenSize?: number;
-  visible?: boolean;
-  hofs?: number; vofs?: number;
-  vramSnap?: Uint8Array; // snapshot VRAM range bag occupy (= restore au close)
-  /** Snapshot des 16 u16 du sub-palette 0 BG_PLTT (= overworld metatile 0
-   *  palette). On clobbe sub-palette 0 avec menu_male.pal, donc save pour
-   *  restore au close. */
-  paletteSnap?: Uint16Array;
-} | null = null;
+// 🗑️ `_savedObjVram`, `_savedObjPalettes`, `_savedBgState` removed
+// (session 129 CB2 swap refactor) : plus de save/restore VRAM. Le CB2 swap
+// décomp swap MainCB2_Overworld → MainCB2_BagMenuRun (= l'OW arrête de tick).
+// Au close, CB2_ReturnToFieldWithOpenMenu_Manual re-init l'OW from scratch via
+// _restoreOverworldFromMenu (= loadAndInitMap reload tilesets/palettes/NPCs).
 
 // ─── Assets (lazy-loaded au 1er Open) ────────────────────────────────────────
 
@@ -954,188 +937,14 @@ export function OpenBagScreen(_onCloseLegacy?: () => void): void {
   });
 }
 
-/** Setup BG2 pour render le tilemap fond menu.bin du décomp.
- *  Save l'état overworld BG2 d'abord pour restore au close.
- *
- *  Layout VRAM 1:1 décomp item_menu.c :
- *    - tile data (menu.png 4bpp) → VRAM offset BAG_BG_CHAR_BASE * 0x4000
- *    - tilemap (menu.bin u16) → VRAM offset BAG_BG_MAP_BASE * 0x800
- *    - palette (menu_male.pal) → BG_PLTT[0] (= sub-palette 0, ce que ref menu.bin)
- *
- *  ⚠️ menu.bin a paletteIdx=0 dans bits 12-15 (= sub-palette 0). On doit donc
- *  charger menu_male.pal à l'offset 0 du BG_PLTT. Ça clobbe la palette
- *  overworld metatile 0, qu'on snapshot pour restore au close. */
-function _setupBackgroundTilemap(assets: BagAssets): void {
-  const rt = getRuntime();
-  if (!rt) return;
-  const bg2 = rt.gba.bg(BAG_BG_LAYER);
-  const cfg = bg2.config;
-
-  // Save overworld BG2 state pour restore au close.
-  // VRAM snap range = char data + tilemap + BG0 tilemap (= overworld map data
-  // que le décomp clear via CpuFill16(0, VRAM, VRAM_SIZE) dans
-  // ResetVramOamAndBgCntRegs).
-  const charOff = BAG_BG_CHAR_BASE * 0x4000;
-  const mapOff = BAG_BG_MAP_BASE * 0x800;
-  const bg0MapOff = 31 * 0x800;  // BG0 mapBase 31 = overworld map tilemap
-  const charLen = 0x4000;
-  const mapLen = 0x800;
-  const bg0MapLen = 0x800;
-  const vramSnap = new Uint8Array(charLen + mapLen + bg0MapLen);
-  vramSnap.set(rt.gba.vram.subarray(charOff, charOff + charLen), 0);
-  vramSnap.set(rt.gba.vram.subarray(mapOff, mapOff + mapLen), charLen);
-  vramSnap.set(rt.gba.vram.subarray(bg0MapOff, bg0MapOff + bg0MapLen), charLen + mapLen);
-
-  // Snapshot sub-palettes 0 + 1 (= 32 u16 = 64 bytes) avant de les clobber.
-  // On charge `assets.bgPalette` (= 32 entries de menu_male.pal) à offset 0,
-  // donc les 2 sub-palettes 0 et 1 sont écrasées. La sub-palette 1 contient
-  // probably des couleurs spécifiques aux ombres/borders des metatiles
-  // overworld → si on restore juste sub-palette 0, on a leak rouge sur
-  // les ombres des panneaux/mailboxes (= bug user report 2026-05-10 polish).
-  const paletteSnap = new Uint16Array(32);
-  for (let i = 0; i < 32; i++) {
-    paletteSnap[i] = rt.gPlttBufferUnfaded.get?.(i) ?? 0;
-  }
-
-  _savedBgState = {
-    charBase: cfg.charBase ?? cfg.charBaseIndex ?? 0,
-    mapBase: cfg.mapBase ?? cfg.mapBaseIndex ?? 0,
-    priority: cfg.priority ?? 0,
-    screenSize: cfg.screenSize ?? 0,
-    visible: !!cfg.visible,
-    hofs: cfg.hofs ?? 0,
-    vofs: cfg.vofs ?? 0,
-    vramSnap,
-    paletteSnap,
-  };
-
-  // 1:1 décomp ResetVramOamAndBgCntRegs : clear BG0 tilemap (= overworld map tiles
-  // qu'on voit derrière). Notre runtime continue de tick l'overworld qui re-écrit
-  // BG0 chaque frame, mais le menu pixel-perfect doit avoir BG0 vide pour les
-  // windows seulement. Faut bloquer l'overworld update de BG0 = soit suspendre
-  // le redraw map, soit clear BG0 chaque frame.
-  // Pour l'instant : clear initial. Le hook _syncSubspriteOam au tick (ajouté
-  // plus tôt) va pas suffire — BG0 est re-écrit par DrawWholeMapView.
-  rt.gba.vram.fill(0, bg0MapOff, bg0MapOff + bg0MapLen);
-
-  // 1:1 décomp pattern : write tile data + tilemap to VRAM.
-  rt.gba.vram.set(assets.bgTiles, charOff);
-  // bgTilemap is Uint16Array → write as bytes.
-  const tilemapBytes = new Uint8Array(
-    assets.bgTilemap.buffer,
-    assets.bgTilemap.byteOffset,
-    assets.bgTilemap.byteLength,
-  );
-  rt.gba.vram.set(tilemapBytes, mapOff);
-
-  // Load palette du fond à BG_PLTT[0] (= sub-palette 0, ce que référence menu.bin).
-  // Charge les 32 entries (= 2 sub-palettes) du menu_male.pal pour couvrir tout
-  // le tilemap. Le tilemap a paletteIdx=0 partout selon notre hex dump.
-  LoadPalette(assets.bgPalette, 0, assets.bgPalette.length * 2);
-  // ⚠️ menu.png canvas extraction par loadIndexedPngStrict re-mappe les indices
-  // selon SA palette PLTE. Si la palette interne du PNG diffère de menu_male.pal,
-  // les colors sortent fausses. Pour matching strict, il faudrait soit charger
-  // le PNG sans remapping, soit utiliser la palette du PNG. Test : la palette
-  // PLTE du PNG matchera probably bien sub-palette 0 de menu_male.pal car le
-  // PNG est exporté avec cette même palette. Si pas le cas, à investiguer.
-
-  // Reset BG scroll registers (= 1:1 décomp ChangeBgX/Y BG_COORD_SET 0).
-  rt.SetGpuReg(0x14 /* REG_BG2HOFS */, 0);
-  rt.SetGpuReg(0x16 /* REG_BG2VOFS */, 0);
-  cfg.hofs = 0;
-  cfg.vofs = 0;
-  // 1:1 décomp pattern : suspend la field camera pour qu'elle ne re-set pas
-  // BG2 vofs/hofs chaque frame (= sinon le tilemap fond scroll avec le player).
-  setFieldCameraSuspended(true);
-
-  // 1:1 décomp `InitBgFromTemplate` pour notre BG2 bag (sBgTemplates_ItemMenu[2]) :
-  //   .bg = 2, .charBaseIndex = 3, .mapBaseIndex = 29,
-  //   .screenSize = 0, .paletteMode = 0, .priority = 2, .baseTile = 0
-  InitBgFromTemplate({
-    bg: BAG_BG_LAYER,
-    charBaseIndex: BAG_BG_CHAR_BASE,
-    mapBaseIndex: BAG_BG_MAP_BASE,
-    screenSize: 0,
-    paletteMode: 0,
-    priority: 2,  // 1:1 décomp item_menu.c:228 (= behind windows BG0)
-    baseTile: 0,
-  });
-
-  // Note : le décomp call FillBgTilemapBufferRect_Palette0(2, 17, 14, 2, 15, 16)
-  // pour redessiner la zone list après pocket switch (= reset après transition
-  // animation tile 11). Mais menu.bin INITIAL contient DEJA tile 17 (= jaune
-  // pâle) à cette zone — donc pas besoin de fill au load. Notre tilemap est
-  // déjà correct after rt.gba.vram.set(tilemapBytes, mapOff).
-  // Hide BG1 et BG3 de l'overworld (= keep BG0 pour les windows). BG2 = notre fond.
-  HideBg(1);
-  HideBg(3);
-  ShowBg(BAG_BG_LAYER);
-
-  // Snapshot OBJ VRAM + palettes AVANT de les écraser (= 1:1 décomp
-  // item_menu.c:CB2_BagMenuRun n'a pas ce problème car le décomp swap CB2 et
-  // ResetVramOamAndBgCntRegs clear OAM. Nous on tick l'overworld en parallèle,
-  // donc le player/NPCs lisent encore les palettes OBJ pendant le bag → on
-  // doit save/restore pour pas corrompre leur sprite au close).
-  // Range écrit : 0x0000-0x3180 (= bag 0x3000 + scroll 0x100 + ball 0x80).
-  // Round à 0x3200 pour une marge.
-  if (!_savedObjVram) {
-    _savedObjVram = new Uint8Array(0x3200);
-    _savedObjVram.set(rt.gba.objVram.subarray(0, 0x3200));
-  }
-  // OBJ palettes 0, 1, 2 (= bag, scroll arrow, rotating ball). Snapshot 48 u16.
-  if (!_savedObjPalettes) {
-    _savedObjPalettes = new Uint16Array(48);
-    for (let i = 0; i < 48; i++) {
-      // OBJ_PLTT = gPlttBufferUnfaded[256+slot*16+i] (cf. decomp-globals.ts:1388).
-      _savedObjPalettes[i] = rt.gPlttBufferUnfaded.get(256 + i) ?? 0;
-    }
-  }
-
-  // 1:1 décomp item_menu_icons.c:AddBagVisualSprite : créer sprite OAM 64×64
-  // à position (68, 66) avec tile data bag_male.4bpp.bin + bag.pal.
-  _spawnBagSpriteOam(assets);
-
-  // 1:1 décomp item_menu.c:1057 (LoadBagItemListBuffers context) :
-  //   gBagMenu->pocketSwitchArrowsTask = AddScrollIndicatorArrowPair(
-  //       &sBagScrollArrowsTemplate, &gBagPosition.pocketSwitchArrowPos);
-  // → 2 chevrons LEFT/RIGHT à (28, 16) et (100, 16) bobbing horizontal ±2 px.
-  _spawnPocketArrows(assets);
-
-  // 1:1 décomp item_menu.c:1030 CreatePocketScrollArrowPair :
-  //   AddScrollIndicatorArrowPairParameterized(SCROLL_ARROW_UP, 172, 12, 148, ...);
-  // → 2 flèches UP/DOWN sur le côté droit de la list pour indiquer scrolling.
-  _spawnListScrollArrows();
-
-  // 1:1 décomp menu_helpers.c:ResetVramOamAndBgCntRegs effect :
-  //   SetGpuReg(REG_OFFSET_DISPCNT, 0); CpuFill32(0, OAM, OAM_SIZE);
-  // → clear OAM hardware (= cache tous sprites overworld).
-  //
-  // Notre runtime tick continue normalement même quand bag est open (= on swap
-  // pas le CB2). Donc syncSpritesToOam re-écrit oam.visible chaque frame. Pour
-  // bloquer ça : installer un hook `_syncSubspriteOam` (= déjà utilisé par
-  // naming-screen, summary-screen, etc.) qui s'exécute APRÈS syncSpritesToOam
-  // et clear tous les OAM. Au close, on retire le hook.
-  _savedSyncSubspriteHook = (globalThis as Record<string, unknown>)._syncSubspriteOam;
-  (globalThis as Record<string, unknown>)._syncSubspriteOam = () => {
-    if (!_isOpen) return;
-    const r = getRuntime();
-    if (!r) return;
-    // Cache tous les OAM SAUF nos sprites bag-screen owned. Whitelist :
-    //   - _bagSpriteOamIndex     : sprite sac (= bag visual)
-    //   - _arrowLeftOamIndex     : chevron LEFT
-    //   - _arrowRightOamIndex    : chevron RIGHT
-    //   - _ballOamIndex          : rotating ball (= seulement pendant switch)
-    for (let i = 0; i < r.gba.oam.length; i++) {
-      if (i === _bagSpriteOamIndex) continue;
-      if (i === _arrowLeftOamIndex) continue;
-      if (i === _arrowRightOamIndex) continue;
-      if (i === _arrowUpOamIndex) continue;
-      if (i === _arrowDownOamIndex) continue;
-      if (i === _ballOamIndex) continue;
-      r.gba.oam[i].visible = false;
-    }
-  };
-}
+// ═════════════════════════════════════════════════════════════════════════
+// DEAD CODE REMOVED (session 129 CB2 swap refactor) :
+// `_setupBackgroundTilemap` (180 lignes) was replaced by `_initBagBgs` +
+// `_loadBagMenuGraphicsCb2` (= 1:1 décomp BagMenu_InitBGs + LoadBagMenu_Graphics).
+// Le pattern CB2 swap supprime tous les hacks save/restore VRAM, hook
+// _syncSubspriteOam, setFieldCameraSuspended. Cf. fin du fichier pour la
+// state machine CB2_InitBagMenu 1:1 décomp item_menu.c.
+// ═════════════════════════════════════════════════════════════════════════
 
 /** 1:1 décomp `FillBgTilemapBufferRect_Palette0(bg, tile, x, y, w, h)`.
  *  Overwrite une rect dans le BG tilemap avec un tile_idx donné.
@@ -2216,196 +2025,6 @@ function _tickBagSpriteShake(): void {
   }
 }
 
-/** Restore overworld BG2 state (= avant le bag screen). */
-function _teardownBackgroundTilemap(): void {
-  const rt = getRuntime();
-  if (!rt || !_savedBgState) return;
-  const bg2 = rt.gba.bg(BAG_BG_LAYER);
-  const cfg = bg2.config;
-
-  // Restore VRAM bytes that we overwrote.
-  if (_savedBgState.vramSnap) {
-    const charOff = BAG_BG_CHAR_BASE * 0x4000;
-    const mapOff = BAG_BG_MAP_BASE * 0x800;
-    const bg0MapOff = 31 * 0x800;
-    const charLen = 0x4000;
-    const mapLen = 0x800;
-    const bg0MapLen = 0x800;
-    rt.gba.vram.set(_savedBgState.vramSnap.subarray(0, charLen), charOff);
-    rt.gba.vram.set(_savedBgState.vramSnap.subarray(charLen, charLen + mapLen), mapOff);
-    rt.gba.vram.set(_savedBgState.vramSnap.subarray(charLen + mapLen, charLen + mapLen + bg0MapLen), bg0MapOff);
-  }
-
-  // Restore sub-palette 0 (= overworld metatile 0).
-  if (_savedBgState.paletteSnap) {
-    LoadPalette(_savedBgState.paletteSnap, 0, _savedBgState.paletteSnap.length * 2);
-  }
-
-  // Restore BG2 config.
-  if (_savedBgState.charBase !== undefined) cfg.charBaseIndex = _savedBgState.charBase;
-  if (_savedBgState.mapBase !== undefined) cfg.mapBaseIndex = _savedBgState.mapBase;
-  if (_savedBgState.priority !== undefined) cfg.priority = _savedBgState.priority;
-  if (_savedBgState.screenSize !== undefined) cfg.screenSize = _savedBgState.screenSize;
-  if (_savedBgState.hofs !== undefined) cfg.hofs = _savedBgState.hofs;
-  if (_savedBgState.vofs !== undefined) cfg.vofs = _savedBgState.vofs;
-
-  // Re-show overworld BGs.
-  ShowBg(1);
-  ShowBg(BAG_BG_LAYER);
-  ShowBg(3);
-
-  // Restore _syncSubspriteOam hook (= NPCs/player overworld réapparaissent au
-  // prochain frame quand syncSpritesToOam re-set oam.visible = !sprite.invisible).
-  (globalThis as Record<string, unknown>)._syncSubspriteOam = _savedSyncSubspriteHook;
-  _savedSyncSubspriteHook = undefined;
-
-  // Re-active la field camera (= overworld scroll reprend).
-  setFieldCameraSuspended(false);
-
-  _savedBgState = null;
-}
-
-/** Démarre le close du bag screen. 1:1 décomp item_menu.c:1077
- *  Task_FadeAndCloseBagMenu pattern :
- *    BeginNormalPaletteFade(PALETTES_ALL, 0, 0, 16, RGB_BLACK);
- *    gTasks[taskId].func = Task_CloseBagMenu;  // wait fade
- *
- *  Le Task créé tick chaque frame via RunTasks dans MainCB2_BagMenuRun.
- *  Quand fade fini, Task_CloseBagMenu free les ressources et
- *  SetMainCallback2(gMain.savedCallback) (= CB2_ReturnToFieldWithOpenMenu_Manual)
- *  pour return à l'OW + reopen start menu. */
-export function CloseBagScreen(): void {
-  if (!_isOpen || _phase === 'fading_out') return;
-  _phase = 'fading_out';
-  const rt = getRuntime();
-  if (!rt) return;
-  // Kill l'input task pour stopper TickBagScreen pendant le fade out
-  // (= sinon il consume les keys, l'user pourrait re-A pendant fade).
-  if (_bagInputTaskId >= 0) {
-    rt.DestroyTask(_bagInputTaskId);
-    _bagInputTaskId = -1;
-  }
-  // 1:1 décomp Task_FadeAndCloseBagMenu — créé directement.
-  rt.CreateTask(Task_FadeAndCloseBagMenu_BagScreen, 0);
-}
-
-/** Teardown réel — appelé après que le fade out soit fini (= 1:1 décomp
- *  Task_CloseBagMenu when !gPaletteFade.active). Restore VRAM, palettes,
- *  sprites, puis call onClose (= return start menu). */
-function _doTeardown(): void {
-  if (!_isOpen) return;
-  _isOpen = false;
-  _phase = 'idle';
-  // 1:1 décomp item_menu.c:Task_CloseBagMenu :
-  //   ResetSpriteData(); FreeAllSpritePalettes();
-  // → Destroy bag sprite OAM avant teardown VRAM (= sinon le sprite pointe
-  // vers tile data invalide après restore).
-  if (_bagSpriteOamId >= 0) {
-    const rt = getRuntime();
-    if (rt) {
-      const spr = rt.gSprites.get(_bagSpriteOamId);
-      if (spr) spr.inUse = false;
-      rt.gSprites.delete(_bagSpriteOamId);
-      const oam = rt.gba.oam[spr?.oamIndex ?? -1];
-      if (oam) oam.visible = false;
-    }
-    _bagSpriteOamId = -1;
-    _bagSpriteOamIndex = -1;
-  }
-  _bagAssetsLoadedToObj = false;
-
-  // 1:1 décomp item_menu.c:1064 RemoveScrollIndicatorArrowPair :
-  //   DestroySprite(&gSprites[data->topSpriteId]);
-  //   DestroySprite(&gSprites[data->bottomSpriteId]);
-  //   FreeSpriteTilesByTag(data->tileTag); FreeSpritePaletteByTag(data->palTag);
-  //   DestroyTask(taskId);
-  _despawnPocketArrows();
-  _despawnListScrollArrows();
-  _scrollArrowAssetsLoaded = false;
-  // 1:1 décomp item_menu_icons.c:RemoveBagSprite(ITEMMENUSPRITE_BALL) si encore
-  // alive (= switch interrompu par close). Idempotent.
-  _despawnRotatingBall();
-  _rotatingBallAssetsLoaded = false;
-
-  // Restore OBJ VRAM + palettes 0/1/2 (= player/NPCs/particles overworld utilisent
-  // ces ranges). Sans restore, sprite player apparaît "vert blob" au retour OW
-  // car ses palette indices pointent vers les couleurs du bag.pal.
-  const rt0 = getRuntime();
-  if (rt0 && _savedObjVram) {
-    rt0.gba.objVram.set(_savedObjVram, 0);
-    _savedObjVram = null;
-  }
-  if (rt0 && _savedObjPalettes) {
-    // 1:1 décomp LoadPalette OBJ : écrit gPlttBufferUnfaded ET Faded à offset
-    // 256+slot*16 (cf. decomp-globals.ts:249-252). 48 entries = OBJ palettes 0-2.
-    for (let i = 0; i < 48; i++) {
-      rt0.gPlttBufferUnfaded.set(256 + i, _savedObjPalettes[i]);
-      rt0.gPlttBufferFaded.set(256 + i, _savedObjPalettes[i]);
-    }
-    _savedObjPalettes = null;
-  }
-
-  // Restore overworld BG2 + VRAM AVANT de remove les windows (= sinon les
-  // windows hidden + overworld pas restored = écran noir 1 frame).
-  _teardownBackgroundTilemap();
-  if (_spriteWid >= 0) {
-    // Pas de frame on sprite, juste clear + remove.
-    FillWindowPixelBuffer(_spriteWid, 0x00);
-    PutWindowTilemap(_spriteWid);
-    CopyWindowToVram(_spriteWid, 3);
-    RemoveWindow(_spriteWid);
-    _spriteWid = -1;
-  }
-  if (_itemIconWid >= 0) {
-    FillWindowPixelBuffer(_itemIconWid, 0x00);
-    PutWindowTilemap(_itemIconWid);
-    CopyWindowToVram(_itemIconWid, 3);
-    RemoveWindow(_itemIconWid);
-    _itemIconWid = -1;
-  }
-  _loadedIconKey = null;
-  if (_headerWid >= 0) {
-    ClearStdWindowAndFrame(_headerWid, true);
-    RemoveWindow(_headerWid);
-    _headerWid = -1;
-  }
-  if (_listWid >= 0) {
-    ClearStdWindowAndFrame(_listWid, true);
-    RemoveWindow(_listWid);
-    _listWid = -1;
-  }
-  if (_descWid >= 0) {
-    ClearStdWindowAndFrame(_descWid, true);
-    RemoveWindow(_descWid);
-    _descWid = -1;
-  }
-  // Cleanup context menu / yes-no / qty windows si encore ouverts (= close
-  // pendant un context menu doit cleanup tous les overlays).
-  if (_ctxWid >= 0) {
-    ClearStdWindowAndFrame(_ctxWid, true);
-    RemoveWindow(_ctxWid);
-    _ctxWid = -1;
-  }
-  if (_yesNoWid >= 0) {
-    ClearStdWindowAndFrame(_yesNoWid, true);
-    RemoveWindow(_yesNoWid);
-    _yesNoWid = -1;
-  }
-  if (_qtyWid >= 0) {
-    ClearStdWindowAndFrame(_qtyWid, true);
-    RemoveWindow(_qtyWid);
-    _qtyWid = -1;
-  }
-  const cb = _onClose;
-  _onClose = null;
-  // Fade IN depuis BLACK pour le retour au start menu (= overworld revient
-  // visible). 1:1 décomp pattern : exitCallback re-init et fade IN.
-  const rt = getRuntime();
-  if (rt) {
-    rt.BeginNormalPaletteFade(0xFFFFFFFF, 0, 16, 0, 0 /* RGB_BLACK */);
-  }
-  cb?.();
-}
 
 /** Drive depuis le tick start-menu. Lit gMain.newKeys et navigue.
  *  Caller doit consume les keys après cet appel.
