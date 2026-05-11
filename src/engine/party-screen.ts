@@ -130,6 +130,7 @@ let _slotWindowIds: number[] = [];
 let _msgWid = -1;
 let _inputTaskId = -1;
 let _iconOamIds: number[] = [];
+let _cancelButtonOamId = -1;
 let _cursorPos = 0;
 let _graphicsReady = false;
 let _graphicsLoading = false;
@@ -361,6 +362,37 @@ function _drawMsg(): void {
   CopyWindowToVram(_msgWid, 3);
 }
 
+/** Spawn the "SORTIR" cancel button OAM (= big pokeball with text gravé)
+ *  1:1 décomp `CreatePokeballButtonSprite(198, 148)` (party_menu.c:4138)
+ *  → sprite 32×32 sSpriteTemplate_MenuPokeball, priority=2. */
+async function _spawnCancelButtonOam(): Promise<void> {
+  const rt = getRuntime();
+  if (!rt) return;
+  try {
+    // 1:1 décomp gPartyMenuPokeball_Gfx size 0x400 (= 1024 bytes = 32 tiles 4bpp).
+    // pokeball.png = 32×32 sprite × 2 anim frames (Closed/Open) = 16+16 = 32 tiles.
+    const tiles = await loadTileBin('/decomp/em/party_menu/pokeball.png', 4);
+    const pal = await loadGbaPal('/decomp/em/party_menu/pokeball.gbapal');
+    // Write tile data à OBJ VRAM offset 256 (= après les icons aux offsets 0..255).
+    const POKEBALL_TILE_BASE = 256;
+    rt.gba.objVram.set(tiles.slice(0, 16 * 32), POKEBALL_TILE_BASE * 32);
+    // Load palette à OBJ bank 9 (= sépare des icon banks 5-7).
+    const POKEBALL_PAL_BANK = 9;
+    rt.LoadPaletteObj(pal, OBJ_PLTT_ID(POKEBALL_PAL_BANK));
+    // Spawn OAM 32×32 à (198, 148) + center adjust (= 32×32 → -16).
+    const spr = rt.CreateSpriteAtOam({
+      x: 198 + 16, y: 148 + 16,
+      shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
+      tileId: POKEBALL_TILE_BASE,
+      paletteBank: POKEBALL_PAL_BANK,
+      priority: 1,
+    });
+    _cancelButtonOamId = spr.spriteId;
+  } catch (e) {
+    console.warn('[party-screen] cancel button load failed:', e);
+  }
+}
+
 /** Spawn Pokémon icon OAM per slot. MVP : just placeholders (= no actual
  *  icon load). Future : load /decomp/em/pokemon/<dexid>/icon.png + .pal. */
 async function _spawnIconOams(): Promise<void> {
@@ -375,24 +407,24 @@ async function _spawnIconOams(): Promise<void> {
     const dexId = mon.speciesEnum.replace(/^SPECIES_/, '').toLowerCase();
     try {
       const iconPng = await loadIndexedPngStrict(`/decomp/em/pokemon/${dexId}/icon.png`, 4);
-      // icon.png = 32×64 sheet (4 frames 32×32) OU 16×32 (= 2 frames 16×16).
-      // Première frame = top du sheet, 16 tiles 8×8 par frame 32×32.
-      // Write tile data à OBJ VRAM offset (= ICON_OBJ_TILE_OFFSET + i * frame_tiles).
-      const tilesPerFrame = (iconPng.widthTiles ?? 4) * (iconPng.heightTiles ?? 8) / 4;  // = 8 tiles pour 32×32 frame
-      const bytesPerFrame = tilesPerFrame * 32;  // 4bpp = 32 bytes/tile
-      const slotOffset = ICON_OBJ_TILE_OFFSET + i * bytesPerFrame;
-      rt.gba.objVram.set(iconPng.charData.slice(0, bytesPerFrame), slotOffset);
+      // 1:1 décomp pokemon_icon.png = 32×64 sheet vertical stack de 2 anim frames
+      // 32×32. Une frame = 4×4 tiles = 16 tiles = 512 bytes 4bpp.
+      const TILES_PER_FRAME = 16;
+      const BYTES_PER_FRAME = TILES_PER_FRAME * 32;  // 512
+      const slotTileBase = ICON_OBJ_TILE_OFFSET / 32 + i * TILES_PER_FRAME;  // tile #
+      const slotByteOffset = slotTileBase * 32;
+      rt.gba.objVram.set(iconPng.charData.slice(0, BYTES_PER_FRAME), slotByteOffset);
       // Load icon palette (= normal.pal).
       const iconPal = await loadGbaPal(`/decomp/em/pokemon/${dexId}/normal.pal`);
       const palBank = ICON_OBJ_PAL_BASE + i;
       rt.LoadPaletteObj(iconPal, OBJ_PLTT_ID(palBank));
-      // Spawn OAM 32×32 à coords ICON_COORDS[i].
+      // Spawn OAM 32×32 à coords ICON_COORDS[i] (= sprite OAM x/y est top-left,
+      // notre engine center-vec ajustement = + size/2).
       const [x, y] = ICON_COORDS[i];
       const spr = rt.CreateSpriteAtOam({
-        x: x + 16,  // center adjust (= CalcCenterToCornerVec 32×32 = -16)
-        y: y + 16,
-        shape: 0, size: 2,  // 32×32
-        tileId: slotOffset / 32,
+        x: x + 16, y: y + 16,
+        shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
+        tileId: slotTileBase,
         paletteBank: palBank,
         priority: 1,
       });
@@ -405,14 +437,16 @@ async function _spawnIconOams(): Promise<void> {
 
 function _freePartyMenu(): void {
   const rt = getRuntime();
-  for (const id of _iconOamIds) {
-    if (rt) {
-      const spr = rt.gSprites.get(id);
-      if (spr) { spr.inUse = false; const oam = rt.gba.oam[spr.oamIndex]; if (oam) oam.visible = false; }
-      rt.gSprites.delete(id);
-    }
-  }
+  const freeOam = (id: number) => {
+    if (!rt || id < 0) return;
+    const spr = rt.gSprites.get(id);
+    if (spr) { spr.inUse = false; const oam = rt.gba.oam[spr.oamIndex]; if (oam) oam.visible = false; }
+    rt.gSprites.delete(id);
+  };
+  for (const id of _iconOamIds) freeOam(id);
   _iconOamIds = [];
+  freeOam(_cancelButtonOamId);
+  _cancelButtonOamId = -1;
   for (const wid of _slotWindowIds) if (wid >= 0) RemoveWindow(wid);
   _slotWindowIds = [];
   if (_msgWid >= 0) { RemoveWindow(_msgWid); _msgWid = -1; }
@@ -503,8 +537,9 @@ export function CB2_InitPartyMenu(): void {
       _inputTaskId = rt.CreateTask(Task_PartyMenu_HandleInput, 0);
       rt.gMain.state++; break;
     case 13:
-      // Spawn icon OAMs async, advance immédiatement (= icons appear quand load).
+      // Spawn icon OAMs + cancel button async, advance immédiatement.
       void _spawnIconOams();
+      void _spawnCancelButtonOam();
       rt.gMain.state++; break;
     case 14: rt.gMain.state++; break;
     case 15: rt.gMain.state++; break;
