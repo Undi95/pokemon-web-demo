@@ -34,6 +34,7 @@
 
 import {
   InitWindows, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
+  BlitBitmapToWindow,
   RemoveWindow, ShowBg, HideBg,
   type WindowTemplate,
 } from './gba-window-system';
@@ -52,16 +53,27 @@ import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
 const FONT_NORMAL = 1;
+const FONT_SMALL = 0;  // 1:1 décomp party_menu uses FONT_SMALL for nickname/level/HP
 const TEXT_SKIP_DRAW = 255;
 const STD_FRAME_TILE = 0x214;
 const STD_FRAME_PAL = 14;
-const COLOR_TEXT: [number, number, number] = [0, 2, 3];
+/** 1:1 décomp `sFontColorTable[0]` (party_menu.h:115) :
+ *  [BG=TRANSPARENT, FG=LIGHT_GRAY, SHADOW=DARK_GRAY] = [0, 3, 2]. */
+const COLOR_TEXT: [number, number, number] = [0, 3, 2];
+const COLOR_HP: [number, number, number] = [0, 3, 2];
 
-/** 1:1 décomp `sPartyMenuBgTemplates` (party_menu.h:1) BG offsets. */
+/** 1:1 décomp `sPartyMenuBgTemplates` (party_menu.h:1) :
+ *  BG0 mapBase=31 priority=1 → windows (= slot frames + text + msg)
+ *  BG1 mapBase=30 priority=2 → bg.bin background (= yellow stripes décor)
+ *  BG2 mapBase=28 priority=0 screenSize=1 → empty overlay (= laisse BG0+BG1 transparaitre)
+ *
+ *  ⚠️ `AllocPartyMenuBg` (party_menu.c:719) fait `SetBgTilemapBuffer(1, ...)`
+ *  et `AllocPartyMenuBgGfx` (party_menu.c:744) fait `LZDecompressWram(gPartyMenuBg_Tilemap, buf)` →
+ *  bg.bin va à BG1, pas BG2. */
 const PARTY_TILES_CHAR_BASE = 0;
-const PARTY_WIN_MAP_BASE = 31;     // BG0
-const PARTY_OVERLAY_MAP_BASE = 30; // BG1
-const PARTY_BG_MAP_BASE = 28;      // BG2 (= bg.bin)
+const PARTY_WIN_MAP_BASE = 31;     // BG0 windows
+const PARTY_BG_MAP_BASE = 30;      // BG1 bg.bin
+const PARTY_OVERLAY_MAP_BASE = 28; // BG2 empty
 
 /** OAM offsets. */
 const ICON_OBJ_PAL_BASE = 5;       // palette 5..7 (= per icon pal index)
@@ -98,6 +110,15 @@ interface PartyAssets {
   bgTiles: Uint8Array;
   bgTilemap: Uint16Array;
   bgPalette: Uint16Array;
+  /** 1:1 décomp `sSlotTilemap_Main` (party_menu.h:565) :
+   *  70 bytes u8, stride=10, layout 10×7 (= window slot 0 size). */
+  slotMainTilemap: Uint8Array;
+  /** 1:1 décomp `sSlotTilemap_Wide` (party_menu.h:567) :
+   *  54 bytes u8, stride=18, layout 18×3 (= window slots 1-5 size). */
+  slotWideTilemap: Uint8Array;
+  /** 1:1 décomp `sSlotTilemap_WideEmpty` (party_menu.h:569) :
+   *  Used by `DrawEmptySlot` for slots with no Pokémon. */
+  slotWideEmptyTilemap: Uint8Array;
   // Pokémon icons : loaded lazy per slot below.
 }
 
@@ -125,15 +146,32 @@ async function _loadAssets(): Promise<PartyAssets> {
     // les 11 sub-palettes (= 352 bytes). loadIndexedPngStrict ne retourne
     // que la PLTE chunk PNG (= 16 entries first sub-pal seul) → palette 1+
     // restent vides → bg.bin entries paletteNum=1..10 rendent BLACK.
-    const [bgTilesRaw, bgTilemapBin, bgPalFull] = await Promise.all([
+    const fetchU8 = async (url: string) => new Uint8Array(
+      await fetch(url).then(r => {
+        if (!r.ok) throw new Error(`fetch failed ${url} → ${r.status}`);
+        return r.arrayBuffer();
+      })
+    );
+    const [bgTilesRaw, bgTilemapBin, bgPalFull, slotMain, slotWide, slotWideEmpty] = await Promise.all([
       loadTileBin('/decomp/em/party_menu/bg.png', 4),
       loadTilemapBin('/decomp/em/party_menu/bg.bin'),
-      loadGbaPal('/decomp/em/party_menu/bg.gbapal'),
+      // 1:1 décomp FR `gPartyMenuBg_Pal` = bg.pal JASC text 176 entries
+      // (= 11 sub-palettes). Le PLTE chunk PNG ne contient que 16 entries
+      // (= sub-pal 0 only) — cf. doc loadIndexedPngStrict pour le pattern.
+      loadGbaPal('/decomp/em/party_menu/bg.pal'),
+      // 1:1 décomp `sSlotTilemap_Main/_Wide/_WideEmpty` (party_menu.h:565-569).
+      // Stride encoded dans `BlitBitmapToPartyWindow_LeftColumn` (= width arg).
+      fetchU8('/decomp/em/party_menu/slot_main.bin'),
+      fetchU8('/decomp/em/party_menu/slot_wide.bin'),
+      fetchU8('/decomp/em/party_menu/slot_wide_empty.bin'),
     ]);
     _assets = {
       bgTiles: bgTilesRaw,
       bgTilemap: bgTilemapBin,
       bgPalette: bgPalFull,  // 176 entries = palettes 0..10
+      slotMainTilemap: slotMain,
+      slotWideTilemap: slotWide,
+      slotWideEmptyTilemap: slotWideEmpty,
     };
     return _assets;
   })();
@@ -164,11 +202,11 @@ function _initPartyBgs(rt: ReturnType<typeof getRuntime>): void {
   bg0c.screenSize = 0; bg0c.paletteMode = 0; bg0c.priority = 1; bg0c.visible = true;
   bg0c.hofs = 0; bg0c.vofs = 0;
   const bg1c = rt.gba.bg(1).config;
-  bg1c.charBaseIndex = PARTY_TILES_CHAR_BASE; bg1c.mapBaseIndex = PARTY_OVERLAY_MAP_BASE;
+  bg1c.charBaseIndex = PARTY_TILES_CHAR_BASE; bg1c.mapBaseIndex = PARTY_BG_MAP_BASE;
   bg1c.screenSize = 0; bg1c.paletteMode = 0; bg1c.priority = 2; bg1c.visible = true;
   bg1c.hofs = 0; bg1c.vofs = 0;
   const bg2c = rt.gba.bg(2).config;
-  bg2c.charBaseIndex = PARTY_TILES_CHAR_BASE; bg2c.mapBaseIndex = PARTY_BG_MAP_BASE;
+  bg2c.charBaseIndex = PARTY_TILES_CHAR_BASE; bg2c.mapBaseIndex = PARTY_OVERLAY_MAP_BASE;
   bg2c.screenSize = 0; bg2c.paletteMode = 0; bg2c.priority = 0; bg2c.visible = true;
   bg2c.hofs = 0; bg2c.vofs = 0;
   rt.gba.bg(3).config.visible = false;
@@ -191,14 +229,16 @@ function _loadPartyGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
     // Load tiles à charBase=0.
     const charOff = PARTY_TILES_CHAR_BASE * 0x4000;
     r.gba.vram.set(assets.bgTiles, charOff);
-    // Load bg.bin tilemap à BG2 mapBase=28. bg.bin = 2048 bytes = 1024 entries
-    // = 32×32 layout (= screenSize=0 fits exactly, no remap needed).
+    // 1:1 décomp `LZDecompressWram(gPartyMenuBg_Tilemap, sPartyBgTilemapBuffer)` +
+    // `SetBgTilemapBuffer(1, ...)` (party_menu.c:719,744) : bg.bin va à BG1
+    // mapBase=30, PAS BG2 mapBase=28. BG2 reste vide (= laisse BG0+BG1 transparaitre).
     const bgMapOff = PARTY_BG_MAP_BASE * 0x800;
     const bgBytes = new Uint8Array(
       assets.bgTilemap.buffer, assets.bgTilemap.byteOffset, assets.bgTilemap.byteLength,
     );
     r.gba.vram.set(bgBytes, bgMapOff);
-    // Load bg palette à BG_PLTT_ID(0) (= 16 entries pour bg.png).
+    // 1:1 décomp `LoadCompressedPalette(gPartyMenuBg_Pal, BG_PLTT_ID(0),
+    // 11 * PLTT_SIZE_4BPP)` (party_menu.c:749) — load 11 sub-palettes (= 176 entries).
     LoadPalette(assets.bgPalette, 0, assets.bgPalette.length * 2);
     _graphicsReady = true;
     _graphicsLoading = false;
@@ -229,41 +269,89 @@ async function _loadPartyWindowsCb2(rt: ReturnType<typeof getRuntime>): Promise<
   PutWindowTilemap(_msgWid);
 }
 
-/** Render text for slot N. Affiche nickname / Lv / HP. */
+/** 1:1 décomp `BlitBitmapToPartyWindow` (party_menu.c:2150).
+ *  Stamp un tilemap u8 (chaque entry = tile index dans bg.png char data) dans
+ *  le window pixel buffer via lookup tiles raw 4bpp depuis `assets.bgTiles`.
+ *  Le décomp pattern :
+ *    pixels = AllocZeroed(height * width * 32);
+ *    for (i, j) : CpuCopy16(GetPartyMenuBgTile(b[x+j + (y+i)*stride]), &pixels[(i*width + j)*32], 32)
+ *    BlitBitmapToWindow(wid, pixels, x*8, y*8, width*8, height*8)
+ */
+function _blitSlotFrame(
+  windowId: number,
+  tilemap: Uint8Array, stride: number,
+  rx: number, ry: number, rw: number, rh: number,
+): void {
+  if (!_assets) return;
+  const pixels = new Uint8Array(rw * rh * 32);
+  for (let i = 0; i < rh; i++) {
+    for (let j = 0; j < rw; j++) {
+      const tileIdx = tilemap[(rx + j) + (ry + i) * stride];
+      const srcOff = tileIdx * 32;
+      pixels.set(_assets.bgTiles.subarray(srcOff, srcOff + 32), (i * rw + j) * 32);
+    }
+  }
+  BlitBitmapToWindow(windowId, pixels, rx * 8, ry * 8, rw * 8, rh * 8, rw * 8);
+}
+
+/** Blit slot frame 1:1 décomp `BlitBitmapToPartyWindow_LeftColumn/RightColumn`. */
+function _drawSlotFrame(slotIdx: number): void {
+  if (!_assets) return;
+  const wid = _slotWindowIds[slotIdx];
+  if (wid === undefined) return;
+  const mon = (gameState.party as PokemonInstance[])[slotIdx];
+  if (slotIdx === 0) {
+    // Slot 0 = LeftColumn : slot_main 10×7.
+    _blitSlotFrame(wid, _assets.slotMainTilemap, 10, 0, 0, 10, 7);
+  } else {
+    // Slots 1-5 = RightColumn : slot_wide (occupé) ou slot_wide_empty (vide).
+    const tm = mon ? _assets.slotWideTilemap : _assets.slotWideEmptyTilemap;
+    _blitSlotFrame(wid, tm, 18, 0, 0, 18, 3);
+  }
+}
+
+/** Render text for slot N. Positions 1:1 décomp `sPartyBoxInfoRects`
+ *  (party_menu.h:32) — Nickname/Level/HP/MaxHP fixed coords per box layout. */
 function _drawSlot(slotIdx: number): void {
   if (_slotWindowIds[slotIdx] === undefined) return;
   const wid = _slotWindowIds[slotIdx];
-  FillWindowPixelBuffer(wid, 0x00);
   const mon = (gameState.party as PokemonInstance[])[slotIdx];
   if (!mon) {
-    // Slot vide : no text (= just empty frame).
+    // Slot vide : no text (= just empty frame déjà blit).
     CopyWindowToVram(wid, 3);
     return;
   }
-  // Différent layout selon slot 0 (= big) vs slots 1-5 (= wide).
   if (slotIdx === 0) {
-    // Slot 0 layout (10×7 tiles = 80×56 px) :
-    //   Nickname à y=12
-    //   Lv N.X à y=28 (= ligne en dessous)
-    //   PV xx/xx à y=44
-    AddTextPrinterParameterized3(wid, FONT_NORMAL, 30, 12, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
-    AddTextPrinterParameterized3(wid, FONT_NORMAL, 30, 28, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
-    const hpStr = `${mon.currentHp}/${mon.maxHp}`;
-    AddTextPrinterParameterized3(wid, FONT_NORMAL, 30, 44, COLOR_TEXT, TEXT_SKIP_DRAW, `PV ${hpStr}`);
+    // 1:1 décomp PARTY_BOX_LEFT_COLUMN :
+    //   Nickname (24, 11) — width=40
+    //   Level    (32, 20) — "N.X"
+    //   HP       (38, 37)
+    //   MaxHP    (53, 37)
+    AddTextPrinterParameterized3(wid, FONT_NORMAL, 24, 11, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
+    AddTextPrinterParameterized3(wid, FONT_SMALL,  32, 20, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
+    AddTextPrinterParameterized3(wid, FONT_SMALL,  38, 37, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.currentHp}/`);
+    AddTextPrinterParameterized3(wid, FONT_SMALL,  53, 37, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.maxHp}`);
   } else {
-    // Slots 1-5 layout (18×3 tiles = 144×24 px) :
-    //   Nickname à (28, 4) — laisser space à gauche pour icon
-    //   Lv à (90, 4)
-    //   HP à (28, 14)
-    AddTextPrinterParameterized3(wid, FONT_NORMAL, 28, 4,  COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
-    AddTextPrinterParameterized3(wid, FONT_NORMAL, 90, 4,  COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
-    AddTextPrinterParameterized3(wid, FONT_NORMAL, 28, 14, COLOR_TEXT, TEXT_SKIP_DRAW, `${mon.currentHp}/${mon.maxHp}`);
+    // 1:1 décomp PARTY_BOX_RIGHT_COLUMN :
+    //   Nickname (22, 3) — width=40
+    //   Level    (30, 12)
+    //   HP       (102, 12)
+    //   MaxHP    (117, 12)
+    AddTextPrinterParameterized3(wid, FONT_NORMAL, 22,  3, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
+    AddTextPrinterParameterized3(wid, FONT_SMALL,  30, 12, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 102, 12, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.currentHp}/`);
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 117, 12, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.maxHp}`);
   }
   CopyWindowToVram(wid, 3);
 }
 
 function _drawAllSlots(): void {
-  for (let i = 0; i < 6; i++) _drawSlot(i);
+  // 1:1 décomp order : blit frame d'abord, puis text overlay (= AddTextPrinter
+  // écrit dans le même window pixel buffer, par-dessus le frame).
+  for (let i = 0; i < 6; i++) {
+    _drawSlotFrame(i);
+    _drawSlot(i);
+  }
 }
 
 function _drawMsg(): void {
@@ -479,6 +567,7 @@ export function TickPartyScreen(_newKeys: number): void {
   const _g: Record<string, unknown> = {
     CB2_InitPartyMenu, MainCB2_PartyMenuRun, VBlankCB_PartyMenuRun,
     Task_FadeAndClosePartyMenu, Task_ClosePartyMenu,
+    OpenPartyScreen, ClosePartyScreen, IsPartyScreenOpen,
   };
   for (const [k, v] of Object.entries(_g)) {
     if (typeof (globalThis as Record<string, unknown>)[k] === 'undefined') {

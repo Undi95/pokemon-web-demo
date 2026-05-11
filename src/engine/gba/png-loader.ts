@@ -307,7 +307,17 @@ export async function extractPngPlte(url: string): Promise<Uint16Array | null> {
  * Garantit que les indices résultants matchent l'ordre PLTE original (= ce que
  * le décomp gbagfx produit dans les .4bpp.lz).
  *
- * Pour 4bpp : tronque à 16 premières entries du PLTE (= ce qu'un PNG 4-bit utilise).
+ * Pour 4bpp : tronque à 16 premières entries du PLTE (= 1 sub-palette).
+ *   ⚠️ Si le PNG a une PLTE > 16 entries (= multi-sub-palettes serialized comme
+ *   `gPartyMenuBg_Pal` 176 entries = 11 sub-pals), seules les 16 premières
+ *   sont retournées. Les pixels avec indices > 15 (= sub-pal 1+) tombent à
+ *   transparent. Pour ces assets multi-sub-pal :
+ *     - Charge le `.4bpp.bin` via `loadTileBin` (= raw IDAT indices 0-15
+ *       préservés, paletteNum dans le tilemap entry).
+ *     - Charge la palette full via `loadGbaPal` sur le `.gbapal` sibling.
+ *   Cf. party-screen.ts ou starter-choose-flow.ts pour le pattern validé.
+ *
+ * Pour 8bpp : tronque à 256 premières entries (= max d'un PNG indexed).
  *
  * Use case : sprites multi-palette (drops_logo.png) où le sprite est rendu avec
  * une palette différente (drops.pal vs logo.pal) selon le tileId — il faut que
@@ -317,7 +327,8 @@ export async function loadIndexedPngStrict(url: string, bpp: 4 | 8 = 4): Promise
   // 1. Extract PLTE pour avoir la palette canonique du PNG
   const fullPlte = await extractPngPlte(url);
   if (!fullPlte) throw new Error(`PNG ${url} : no PLTE chunk (not indexed)`);
-  // Pour 4bpp on prend les 16 premières entries (= ce que le PNG 4-bit utilise réellement)
+  // Pour 4bpp on prend les 16 premières entries (= ce qu'un PNG 4-bit utilise réellement
+  // = sub-pal 0 only; pour multi-sub-pal, voir doc ci-dessus + loadGbaPal).
   const canonicalPalette = bpp === 4 ? fullPlte.subarray(0, 16) : fullPlte.subarray(0, 256);
 
   // 2. Load + map en utilisant la fonction with-pal (qui a déjà first-insert-wins)
