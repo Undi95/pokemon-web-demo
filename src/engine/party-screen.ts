@@ -53,6 +53,7 @@ import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { OpenSummaryScreen } from './summary-screen';
+import { getString } from './gba-strings';
 import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
@@ -634,10 +635,26 @@ function AnimatePartySlot(slotIdx: number, animNum: number): void {
   }
 }
 
+/** 1:1 décomp `DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON)` (party_menu.c:2459).
+ *  Le message stringId dépend de :
+ *    - chooseHalf (= false en single layout) → PARTY_MSG_CHOOSE_MON_AND_CONFIRM
+ *    - ShouldUseChooseMonText() = numAliveMons > 1 || PARTY_ACTION_SEND_OUT
+ *    - Si >1 alive mons : PARTY_MSG_CHOOSE_MON → "Choisir un POKéMON."
+ *    - Si ≤1 alive mons : PARTY_MSG_CHOOSE_MON_OR_CANCEL → "Choisir un PKMN ou annuler."
+ *  Strings depuis strings.json FR : gText_ChoosePokemon / gText_ChoosePokemonCancel. */
 function _drawMsg(): void {
   if (_msgWid < 0) return;
   FillWindowPixelBuffer(_msgWid, 0x11);
-  AddTextPrinterParameterized3(_msgWid, FONT_NORMAL, 8, 8, [1, 2, 3], TEXT_SKIP_DRAW, 'Choisir un PKMN ou annuler.');
+  // 1:1 décomp ShouldUseChooseMonText : count alive mons.
+  const party = gameState.party as PokemonInstance[];
+  let numAlive = 0;
+  for (const m of party) {
+    if (m && m.currentHp > 0) numAlive++;
+    if (numAlive > 1) break;
+  }
+  const useChooseMon = numAlive > 1;
+  const msg = useChooseMon ? getString('gText_ChoosePokemon') : getString('gText_ChoosePokemonCancel');
+  AddTextPrinterParameterized3(_msgWid, FONT_NORMAL, 8, 8, [1, 2, 3], TEXT_SKIP_DRAW, msg);
   CopyWindowToVram(_msgWid, 3);
 }
 
