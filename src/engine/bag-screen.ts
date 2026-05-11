@@ -2377,6 +2377,14 @@ function _initBagBgs(rt: ReturnType<typeof getRuntime>): void {
     rt.gPlttBufferUnfaded.set(i, 0);
     rt.gPlttBufferFaded.set(i, 0);
   }
+  // 1:1 décomp `CpuFill16(0, PLTT, PLTT_SIZE)` (= ResetVramOamAndBgCntRegs
+  // menu_helpers.c:97). Direct PLTT RAM clear, sans passer par gPlttBufferFaded
+  // → bypass `bufferTransferDisabled=true` set au state 3.
+  // Sans ce clear : PLTT RAM garde palettes OW pendant state 7-19 →
+  // bag tilemap rend avec couleurs OW (= "frame cheloue" bleu/orange user
+  // session 129).
+  for (let i = 0; i < 256; i++) rt.gba.palette.loadBgRange(i, [0]);
+  for (let i = 0; i < 256; i++) rt.gba.palette.loadObjRange(i, [0]);
   // InitBgsFromTemplates(0, sBgTemplates_ItemMenu, 3).
   const bg0c = rt.gba.bg(0).config;
   bg0c.charBaseIndex = 0; bg0c.mapBaseIndex = 31; bg0c.screenSize = 0;
