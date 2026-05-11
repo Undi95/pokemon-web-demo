@@ -33,7 +33,8 @@
  */
 
 import {
-  InitWindows, AddWindow, FillWindowPixelBuffer, PutWindowTilemap, CopyWindowToVram,
+  InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect,
+  PutWindowTilemap, CopyWindowToVram,
   BlitBitmapToWindow,
   DrawStdFrameWithCustomTileAndPalette,
   RemoveWindow, ShowBg, HideBg,
@@ -101,6 +102,18 @@ const sPartyBoxMultiPalIds1               = [68, 69, 70];
 const sPartyBoxMultiPalIds2               = [65, 71, 72];
 const sPartyBoxCurrSelectionMultiPalIds   = [132, 133, 134];
 const sPartyBoxNoMonPalIds                = [17, 27, 28];
+
+/** 1:1 décomp HP bar palette ids (party_menu.h:573, 581-583). */
+const sHPBarPalOffsets    = [9, 10];
+const sHPBarGreenPalIds   = [57, 58];
+const sHPBarYellowPalIds  = [73, 74];
+const sHPBarRedPalIds     = [89, 90];
+
+/** 1:1 décomp `sPartyBoxInfoRects` dimensions[20-22] = HP bar position
+ *  (x, y, width). PARTY_BOX_LEFT_COLUMN (slot 0) : (24, 35, 48).
+ *  PARTY_BOX_RIGHT_COLUMN (slots 1-5) : (88, 10, 48). */
+const HP_BAR_RECT_LEFT:  [number, number, number] = [24, 35, 48];
+const HP_BAR_RECT_RIGHT: [number, number, number] = [88, 10, 48];
 
 /** 1:1 décomp `sPartyMenuBgTemplates` (party_menu.h:1) :
  *  BG0 mapBase=31 priority=1 → windows (= slot frames + text + msg)
@@ -429,6 +442,9 @@ function _drawSlot(slotIdx: number): void {
     AddTextPrinterParameterized3(wid, FONT_SMALL, 117, 12, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.maxHp}`);
   }
   void MON_MALE; void MON_FEMALE;  // referenced via getMonGenderSymbol
+  // 1:1 décomp DisplayPartyPokemonHPBar : draw colored bar fill (green/yellow/
+  // red selon HP fraction) avec palette swap aux positions 9-10 de la sub-pal.
+  _drawHpBar(slotIdx, mon);
   CopyWindowToVram(wid, 3);
 }
 
@@ -438,6 +454,58 @@ function _drawAllSlots(): void {
   for (let i = 0; i < 6; i++) {
     _drawSlotFrame(i);
     _drawSlot(i);
+  }
+}
+
+/** 1:1 décomp `GetHPBarLevel(hp, maxhp)` (battle_interface.c:2527).
+ *  Returns 'GREEN' / 'YELLOW' / 'RED' / 'EMPTY' / 'FULL' selon fraction. */
+function _getHpBarLevel(hp: number, maxhp: number): 'FULL' | 'GREEN' | 'YELLOW' | 'RED' | 'EMPTY' {
+  if (hp === maxhp) return 'FULL';
+  const fraction = hp / maxhp;
+  if (fraction > 0.5) return 'GREEN';
+  if (fraction > 0.2) return 'YELLOW';
+  if (fraction > 0) return 'RED';
+  return 'EMPTY';
+}
+
+/** 1:1 décomp `DisplayPartyPokemonHPBar` (party_menu.c:2402) :
+ *  - Load palette colors aux positions [9, 10] avec sHPBar(Green/Yellow/Red)PalIds
+ *  - FillWindowPixelRect avec palette idx 9 (top row 1px) + 10 (bottom 2 rows)
+ *  - Pour la partie vide (empty), fill avec idx 0x0D et 0x02 (= alternating
+ *    fill pattern du décomp). */
+function _drawHpBar(slotIdx: number, mon: PokemonInstance): void {
+  if (!_assets) return;
+  const wid = _slotWindowIds[slotIdx];
+  if (wid === undefined) return;
+  const slotPalNum = SLOT_WINDOW_TEMPLATES[slotIdx]?.paletteNum;
+  if (slotPalNum === undefined) return;
+
+  // Load HP bar palette colors selon le level.
+  const level = _getHpBarLevel(mon.currentHp, mon.maxHp);
+  const palIds =
+    (level === 'FULL' || level === 'GREEN') ? sHPBarGreenPalIds
+    : level === 'YELLOW' ? sHPBarYellowPalIds
+    : sHPBarRedPalIds;
+  for (let i = 0; i < 2; i++) {
+    const src = new Uint16Array(1);
+    src[0] = _assets.bgPalette[palIds[i]];
+    LoadPalette(src, slotPalNum * 16 + sHPBarPalOffsets[i], 2);
+  }
+
+  // Position de la bar HP : (x, y, w) selon slot layout.
+  const [x, y, w] = slotIdx === 0 ? HP_BAR_RECT_LEFT : HP_BAR_RECT_RIGHT;
+  // 1:1 décomp GetScaledHPFraction : ratio * width arrondi.
+  const hpFraction = Math.floor((mon.currentHp / mon.maxHp) * w);
+
+  // 1:1 décomp FillWindowPixelRect :
+  //   row 1 (haut) = palette idx 9 (= sHPBarPalOffsets[0])
+  //   row 2-3 (bas) = palette idx 10 (= sHPBarPalOffsets[1])
+  FillWindowPixelRect(wid, sHPBarPalOffsets[0], x, y,     hpFraction, 1);
+  FillWindowPixelRect(wid, sHPBarPalOffsets[1], x, y + 1, hpFraction, 2);
+  // Partie vide alternating fill 0x0D (light gray) + 0x02 (dark gray).
+  if (hpFraction !== w) {
+    FillWindowPixelRect(wid, 0x0D, x + hpFraction, y,     w - hpFraction, 1);
+    FillWindowPixelRect(wid, 0x02, x + hpFraction, y + 1, w - hpFraction, 2);
   }
 }
 
