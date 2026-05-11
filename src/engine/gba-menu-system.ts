@@ -417,10 +417,51 @@ export function IsStereoSound(): boolean {
   return ((gSaveBlock2Ptr.optionsSound ?? OPTIONS_SOUND_MONO) | 0) === OPTIONS_SOUND_STEREO;
 }
 
+/** 1:1 décomp `SetPokemonCryStereo(u32 val)` (= sound.c). Toggle live l'audio
+ *  mode (= MONO/STEREO) sans attendre le sauvegarde Task_OptionMenuSave. Le
+ *  m4a engine lit ce flag à chaque PlayCry/PlayBGM pour appliquer le pan.
+ *
+ *  Notre version : sync immédiate sur gSaveBlock2Ptr.optionsSound + notify
+ *  l'audio engine. Le m4a engine lit `gSaveBlock2Ptr.optionsSound` à chaque
+ *  note via `IsStereoSound()` — équivalent fonctionnel décomp. */
+export function SetPokemonCryStereo(selection: number): void {
+  // 1:1 décomp : SetSoundOutputMode + RestoreNoteStereo. Notre m4a engine
+  // simplifié : update le flag dans gSaveBlock2Ptr, le prochain note lookup
+  // utilisera la nouvelle valeur.
+  gSaveBlock2Ptr.optionsSound = selection | 0;
+}
+
+/** 1:1 décomp helpers OPTIONS_BATTLE_SCENE_* / OPTIONS_BATTLE_STYLE_* — read
+ *  les options pour gating battle behavior. Le battle code lit ces helpers
+ *  à `SetUpFightOptions` / `OpponentSwitchInResetSentPokesToOpponentValue`
+ *  pour skip animations / show switch prompt. */
+export const OPTIONS_BATTLE_SCENE_ON  = 0;
+export const OPTIONS_BATTLE_SCENE_OFF = 1;
+export const OPTIONS_BATTLE_STYLE_SHIFT = 0;
+export const OPTIONS_BATTLE_STYLE_SET   = 1;
+
+/** Returns true si battle animations doivent être SKIPPED (= optionsBattleSceneOff
+ *  set par user dans option menu → set `gHitMarker |= HITMARKER_NO_ANIMATIONS`
+ *  dans battle init, cf. battle_main.c). Future-proof : appelable depuis
+ *  battle-flow.ts au battle init. */
+export function IsBattleSceneOff(): boolean {
+  return ((gSaveBlock2Ptr.optionsBattleSceneOff ?? OPTIONS_BATTLE_SCENE_ON) | 0) === OPTIONS_BATTLE_SCENE_OFF;
+}
+
+/** Returns le battle style courant : 0 = SHIFT (= ask user before switch
+ *  pokemon when enemy faints), 1 = SET (= no prompt). Future-proof : utilisé
+ *  par battle-flow au moment du switch après KO ennemi. */
+export function GetBattleStyle(): number {
+  return ((gSaveBlock2Ptr.optionsBattleStyle ?? OPTIONS_BATTLE_STYLE_SHIFT) | 0) & 1;
+}
+
 /** Bridge globalThis pour les auto-callbacks (= eval scope @ts-nocheck). */
 (globalThis as Record<string, unknown>).GetPlayerTextSpeed = GetPlayerTextSpeed;
 (globalThis as Record<string, unknown>).GetPlayerTextSpeedDelay = GetPlayerTextSpeedDelay;
 (globalThis as Record<string, unknown>).IsStereoSound = IsStereoSound;
+(globalThis as Record<string, unknown>).SetPokemonCryStereo = SetPokemonCryStereo;
+(globalThis as Record<string, unknown>).IsBattleSceneOff = IsBattleSceneOff;
+(globalThis as Record<string, unknown>).GetBattleStyle = GetBattleStyle;
 
 // Synchronise gSaveFileStatus mutable export sur globalThis pour les
 // callbacks auto-générés (= eval scope @ts-nocheck).

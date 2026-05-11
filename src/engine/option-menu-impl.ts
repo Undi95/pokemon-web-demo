@@ -30,7 +30,7 @@ import { WINDOW_FRAMES_COUNT, GetWindowFrameTilesPal, preloadTextWindowFrames } 
 import { BG_PLTT_ID, REG_OFFSET_WIN0H, REG_OFFSET_WIN0V } from './decomp-runtime';
 import { PLTT_SIZE_4BPP, WIN_RANGE } from './decomp-helpers';
 import { JOY_NEW } from './decomp-globals';
-import { gSaveBlock2Ptr } from './gba-menu-system';
+import { gSaveBlock2Ptr, SetPokemonCryStereo } from './gba-menu-system';
 import { loadGbaPal } from './gba/png-loader';
 
 // ─── State globals ───────────────────────────────────────────────────────────
@@ -417,10 +417,20 @@ export function BattleStyle_ProcessInput(selection: number): number {
   return selection;
 }
 
-/** 1:1 décomp option_menu.c:490-500 Sound_ProcessInput. */
+/** 1:1 décomp option_menu.c:490-500 Sound_ProcessInput :
+ *      if (JOY_NEW(DPAD_LEFT | DPAD_RIGHT)) {
+ *          selection ^= 1;
+ *          SetPokemonCryStereo(selection);  // ← LIVE toggle audio
+ *          sArrowPressed = TRUE;
+ *      }
+ *      return selection;
+ *
+ *  `SetPokemonCryStereo` apply le nouveau mode IMMEDIATEMENT (= sans attendre
+ *  Task_OptionMenuSave) pour que le user entende l'effet preview. */
 export function Sound_ProcessInput(selection: number): number {
   if (JOY_NEW(DPAD_RIGHT) || JOY_NEW(DPAD_LEFT)) {
     selection = selection ^ 1;
+    SetPokemonCryStereo(selection);  // 1:1 décomp live toggle
     sArrowPressed = true;
   }
   return selection;
