@@ -52,6 +52,7 @@ import { ResetSpriteData } from './decomp-bridge';
 import { CB2_ReturnToFieldWithOpenMenu_Manual } from './option-menu-return';
 import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
+import { OpenSummaryScreen } from './summary-screen';
 import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
@@ -974,9 +975,22 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
     if (action === 2 /* RETOUR */) {
       _closeActionMenu();
     } else if (action === 0 /* RESUME */) {
-      // TODO : ouvrir summary screen (= CB2 swap to summary)
-      console.log('[party-screen] TODO : RESUME → open summary screen');
-      _closeActionMenu();
+      // 1:1 décomp `CursorCb_Summary` (party_menu.c:2770) → CB2 swap vers
+      // pokemon summary screen avec le mon courant (= slot pointed by cursor).
+      const mon = (gameState.party as PokemonInstance[])[_slotId];
+      if (mon) {
+        _closeActionMenu();
+        // Fade to black + queue summary screen open. Same pattern as start-menu
+        // → bag/options/trainer-card (= sPendingScreenAction).
+        // For simplicity ici : direct OpenSummaryScreen qui fait CB2 swap.
+        // savedCallback restera notre party screen ? Non, on perd la party
+        // screen state. Pour vraie 1:1, le décomp utilise un CB2 chain
+        // qui restore la party à la fermeture. MVP : open summary direct,
+        // sa fermeture revient à overworld via savedCallback du party.
+        OpenSummaryScreen(mon);
+      } else {
+        _closeActionMenu();
+      }
     } else if (action === 1 /* OBJET */) {
       // TODO : ouvrir bag pour give/swap item
       console.log('[party-screen] TODO : OBJET → bag give/swap');
