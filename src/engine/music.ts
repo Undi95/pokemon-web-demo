@@ -149,7 +149,7 @@ export async function playSE(name: string): Promise<void> {
 }
 
 /** Joue le cri d'un Pokémon (WAV pré-extrait). Routé via masterGain (= respect
- *  du volume slider topbar/devtool). */
+ *  du volume slider topbar/devtool). Track end time pour IsCryPlaying / waitmoncry. */
 export function playCry(species: string): void {
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -165,6 +165,11 @@ export function playCry(species: string): void {
       gain.gain.value = 0.7;
       src.connect(gain).connect(getMasterGain());
       src.start();
+      // 1:1 décomp : track cry end time pour IsCryPlaying. Override le 1s
+      // default set par PlayCryInternal avec la vraie durée du WAV.
+      void import('./decomp-globals').then(({ _markAudioSlotActive }) => {
+        _markAudioSlotActive('cry', audioBuf.duration * 1000);
+      });
     })
     .catch(e => console.warn('[music] cry fail', species, e));
 }

@@ -127,6 +127,14 @@ export function getPrerenderedSEDuration(songName: string): number | null {
   return buf ? buf.duration : null;
 }
 
+/** 1:1 décomp `IsSEPlaying` (sound.c) : check si un SE pré-rendu est actif sur
+ *  ce slot. Utilisé par `waitse` opcode + `IsSEPlaying()` exporté dans
+ *  decomp-globals. Retourne TRUE si au moins un BufferSourceNode est encore
+ *  en train de jouer sur ce slot (= cf. onended handler qui clear _slotActive). */
+export function isPrerenderedSlotActive(slot: SlotKind): boolean {
+  return (_slotActive[slot]?.length ?? 0) > 0;
+}
+
 /**
  * Play un SE pré-rendu en LOOP infini sur le slot donné. Boucles jusqu'à ce
  * que `stopPrerenderedSE(slot)` soit appelé.

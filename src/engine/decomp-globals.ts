@@ -782,10 +782,9 @@ export function PlayFanfare(songNum: number): void {
 /** 1:1 décomp `PlayFanfareByFanfareNum` — alias avec id différent (= identique). */
 export function PlayFanfareByFanfareNum(num: number): void { PlayFanfare(num); }
 
-/** 1:1 décomp `IsFanfareTaskInactive` — true si pas de fanfare actif.
- *  MVP : retourne true (= pas de tracking d'état). Phase audio ultérieure
- *  ajoutera un proper Task pour gérer le fade BGM. */
-export function IsFanfareTaskInactive(): boolean { return true; }
+// Note : IsFanfareTaskInactive est ré-exporté plus bas avec real tracking
+// (= IsSEPlaying / IsCryPlaying / IsCryFinished / IsFanfareTaskInactive section).
+// L'ancien stub `return true` est remplacé par check `_audioEndTimeMs.fanfare`.
 
 /** 1:1 décomp `WaitFanfare` — task qui attend la fin du fanfare. MVP no-op. */
 export function WaitFanfare(): boolean { return true; }
@@ -850,6 +849,11 @@ export function PlaySE(seId: number): void {
         if (cfg && cfg.reverb !== null) _staticSetReverb(cfg.reverb);
         const seSongVol = cfg?.volume ?? null;
         _staticStopSong(slot);  // = sécurité, stop any spessasynth song
+        // 1:1 décomp : track end time pour IsSEPlaying (= waitse opcode).
+        // Durée connue via getPrerenderedSEDuration si déjà cached (sinon ~600ms default).
+        const { getPrerenderedSEDuration } = await import('./m4a/se-noise-prerendered');
+        const durSec = getPrerenderedSEDuration(name);
+        _markAudioSlotActive(slot, (durSec ?? 0.6) * 1000);
         await playPrerenderedSE(name, slot, seSongVol);
         return;
       }
@@ -867,6 +871,10 @@ export function PlaySE(seId: number): void {
         return;
       }
       const midi = await _staticLoadMidi(url);
+      // 1:1 décomp : track end time pour IsSEPlaying. Pour spessasynth path :
+      // utilise midi.duration si disponible, sinon ~800ms default (= SE moyenne).
+      const midiDur = (midi as { duration?: number }).duration ?? 0.8;
+      _markAudioSlotActive(slot, midiDur * 1000);
       // Reverb + volume par-song : si midi.cfg a des valeurs, on les respecte.
       // Sinon on hérite du reverb BGM courant (= comportement 1:1 GBA m4aSoundMode).
       const cfg = getSongConfig(name);
@@ -956,11 +964,88 @@ export function PlayCryInternal(
     }
     return;
   }
+  // 1:1 décomp : track cry end time pour IsCryPlaying / IsCryFinished /
+  // waitmoncry. Durée approximée à 1 sec par défaut (= moy. cri Émeraude),
+  // overridée par la vraie durée du WAV via _markCryActive depuis music.playCry.
+  _audioEndTimeMs.cry = performance.now() + 1000;
   void import('./music').then(({ playCry }) => {
     console.log('[PlayCryInternal] calling playCry(', name, ')');
     playCry(name);
   }).catch((e) => { console.error('[PlayCryInternal] import or playCry threw:', e); });
 }
+
+// ─── 1:1 décomp IsSEPlaying / IsCryPlaying / IsCryFinished / IsFanfareTaskInactive ─
+// Source : src/sound.c. Décomp utilise gMPlayInfo_SE1/2.status (= hardware m4a
+// state). Notre port utilise spessasynth + raw AudioBufferSource → on tracke
+// les end times et le state des slots m4a/player.ts.
+
+/** Track des fin-of-audio timestamps en ms (performance.now). Décrémenté
+ *  passivement (= no setTimeout, just check now() > endTimeMs). Utilisé par
+ *  waitse / waitmoncry / waitfanfare opcodes pour real tracking. */
+const _audioEndTimeMs: { se1: number; se2: number; cry: number; bgm: number; fanfare: number } = {
+  se1: 0, se2: 0, cry: 0, bgm: 0, fanfare: 0,
+};
+
+/** Appelé par PlaySE (et autres entrées audio) pour marquer un slot actif.
+ *  durationMs = durée estimée de la SE/cry/etc. Si pas connu, default ~600ms. */
+export function _markAudioSlotActive(slot: 'se1' | 'se2' | 'cry' | 'bgm' | 'fanfare', durationMs: number): void {
+  _audioEndTimeMs[slot] = performance.now() + durationMs;
+}
+
+/** 1:1 décomp `IsSEPlaying` (sound.c:577) :
+ *    if ((gMPlayInfo_SE1.status & PAUSE) && (gMPlayInfo_SE2.status & PAUSE)) return FALSE;
+ *    if (!(gMPlayInfo_SE1.status & TRACK) && !(gMPlayInfo_SE2.status & TRACK)) return FALSE;
+ *    return TRUE;
+ *  Notre version : check soit slot m4a (sequencer), soit slot prerendered
+ *  (BufferSourceNode active), soit end time tracker. TRUE si au moins un est
+ *  encore en train de jouer.
+ */
+export function IsSEPlaying(): boolean {
+  const now = performance.now();
+  if (_audioEndTimeMs.se1 > now || _audioEndTimeMs.se2 > now) return true;
+  // Fallback : check via player.ts isPlaying (= spessasynth sequencer state)
+  try {
+    const { isPlaying } = require('./m4a/player') as { isPlaying: (slot: string) => boolean };
+    if (isPlaying('se1') || isPlaying('se2')) return true;
+  } catch { /* skip */ }
+  // Fallback : check prerendered BufferSourceNode pool
+  try {
+    const { isPrerenderedSlotActive } = require('./m4a/se-noise-prerendered') as { isPrerenderedSlotActive: (slot: string) => boolean };
+    if (isPrerenderedSlotActive('se1') || isPrerenderedSlotActive('se2')) return true;
+  } catch { /* skip */ }
+  return false;
+}
+
+/** 1:1 décomp `IsCryPlaying` (sound.c) :
+ *    return IsPokemonCryPlaying(gMPlay_PokemonCry) ? TRUE : FALSE;
+ *  Notre version : end time tracker. Set par PlayCryInternal + music.playCry. */
+export function IsCryPlaying(): boolean {
+  return _audioEndTimeMs.cry > performance.now();
+}
+
+/** 1:1 décomp `IsCryFinished` (sound.c:566) :
+ *    if (FuncIsActiveTask(Task_DuckBGMForPokemonCry) == TRUE) return FALSE;
+ *    else { ClearPokemonCrySongs(); return TRUE; }
+ *  Notre version : returns !IsCryPlaying. */
+export function IsCryFinished(): boolean {
+  return !IsCryPlaying();
+}
+
+/** 1:1 décomp `IsFanfareTaskInactive` (sound.c) :
+ *    if (FuncIsActiveTask(Task_Fanfare) == TRUE) return FALSE;
+ *    return TRUE;
+ *  Notre version : check fanfare end time + m4a slot. */
+export function IsFanfareTaskInactive(): boolean {
+  if (_audioEndTimeMs.fanfare > performance.now()) return false;
+  return true;
+}
+
+// ─── Expose audio state functions sur globalThis pour script-opcodes ────────
+// Évite cycle d'import : script-opcodes.ts lit globalThis.__decompGlobals au
+// lieu d'importer directement de decomp-globals.ts.
+(globalThis as { __decompGlobals?: Record<string, unknown> }).__decompGlobals = {
+  IsSEPlaying, IsCryPlaying, IsCryFinished, IsFanfareTaskInactive,
+};
 
 /** 1:1 décomp constants pour PlayCryInternal (cf. species.h, sound.h). */
 export const SPECIES_GROUDON = 405;

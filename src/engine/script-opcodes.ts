@@ -1154,9 +1154,17 @@ registerOpcode('playfanfare', (_ctx, args) => {
   return false;
 });
 
-registerOpcode('waitfanfare', (_ctx) => {
-  // No-op pour MVP.
-  return false;
+registerOpcode('waitfanfare', (ctx) => {
+  // 1:1 décomp ScrCmd_waitfanfare (scrcmd.c:1187) :
+  //   SetupNativeScript(ctx, WaitForFanfareFinish) ; return TRUE
+  // WaitForFanfareFinish : return IsFanfareTaskInactive().
+  // Session 132 : real tracking via decomp-globals.IsFanfareTaskInactive.
+  const poll = (): boolean => {
+    const dg = (globalThis as { __decompGlobals?: { IsFanfareTaskInactive?: () => boolean } }).__decompGlobals;
+    return dg?.IsFanfareTaskInactive?.() ?? true;
+  };
+  SetupNativeScript(ctx, poll);
+  return true;
 });
 
 /** 1:1 décomp `ScrCmd_playbgm` (scrcmd.c) : PlayBGM avec un song id + loop flag.
@@ -3057,13 +3065,12 @@ registerOpcode('waitse', (ctx, _args) => {
   // 1:1 décomp ScrCmd_waitse (scrcmd.c:1162) :
   //   SetupNativeScript(ctx, WaitForSoundEffectFinish) ; return TRUE
   // WaitForSoundEffectFinish : return !IsSEPlaying().
-  // Notre port : SE est fire-and-forget via PlaySE (= pas de tracking IsSEPlaying).
-  // Pour 1:1 cohérence : on attend 16 frames (= ~267 ms = durée typique SE court).
-  // Future : tracker activement SE channel pour `IsSEPlaying()` réel.
-  let framesWaited = 0;
+  // Session 132 : real tracking via decomp-globals.IsSEPlaying (= check m4a
+  // sequencer state + prerendered slot active + endTimeMs tracker).
   const poll = (): boolean => {
-    framesWaited++;
-    return framesWaited >= 16;  // resume après ~267ms
+    // Import lazy pour éviter cycle decomp-globals.ts ↔ script-opcodes.ts.
+    const dg = (globalThis as { __decompGlobals?: { IsSEPlaying?: () => boolean } }).__decompGlobals;
+    return !(dg?.IsSEPlaying?.() ?? false);  // poll returns TRUE when SE done
   };
   SetupNativeScript(ctx, poll);
   return true;
@@ -3077,12 +3084,11 @@ registerOpcode('waitplaysewithpan', (ctx, _args) => {
 registerOpcode('waitmoncry', (ctx, _args) => {
   // 1:1 décomp ScrCmd_waitmoncry (scrcmd.c:1610) :
   //   SetupNativeScript(ctx, IsCryFinished) ; return TRUE
-  // IsCryFinished : returns !IsCryPlaying() (= via le wait task spawned par PlayCry_*).
-  // Notre port : pas de cry tracking → wait 30 frames (= 500ms, durée moyenne cry).
-  let framesWaited = 0;
+  // IsCryFinished : returns !IsCryPlaying.
+  // Session 132 : real tracking via decomp-globals.IsCryFinished
   const poll = (): boolean => {
-    framesWaited++;
-    return framesWaited >= 30;
+    const dg = (globalThis as { __decompGlobals?: { IsCryFinished?: () => boolean } }).__decompGlobals;
+    return dg?.IsCryFinished?.() ?? true;  // poll returns TRUE when cry done
   };
   SetupNativeScript(ctx, poll);
   return true;
@@ -3197,8 +3203,12 @@ registerOpcode('lockfortrainer', (ctx, _args) => {
 registerOpcode('setobjectsubpriority', (_ctx, args) => {
   // 1:1 décomp ScrCmd_setobjectsubpriority (scrcmd.c) :
   //   SetObjectSubpriority(localId, mapNum, mapGroup, priority + 83).
-  // Notre port : modifie le `subpriority` field sur l'ObjectEvent correspondant.
-  // priority + 83 = offset 1:1 décomp (= base subpriority).
+  // event_object_movement.c:SetObjectSubpriority :
+  //   sprite = &gSprites[objectEvent->spriteId];
+  //   sprite->subpriority = priority + 83;
+  //   sprite->coordOffsetEnabled = TRUE;  // = fixedPriority flag
+  // Session 132 : wire à decomp-runtime.gSprites pour que syncSpritesToOam
+  // propage subpriority → OAM.
   const localId = _vget(args[0]);
   const _mapGroup = parseValue(args[1] ?? '0');
   const _mapNum = parseValue(args[2] ?? '0');
@@ -3209,17 +3219,36 @@ registerOpcode('setobjectsubpriority', (_ctx, args) => {
   if (obj) {
     (obj as unknown as { subpriority?: number; fixedPriority?: boolean }).subpriority = effective;
     (obj as unknown as { fixedPriority?: boolean }).fixedPriority = true;
+    // Propage au Sprite via spriteId (= decomp-runtime.gSprites Map).
+    const rt = getRuntime();
+    const spriteId = (obj as unknown as { spriteId?: number }).spriteId;
+    if (rt && typeof spriteId === 'number' && spriteId >= 0) {
+      const spr = rt.gSprites.get(spriteId);
+      if (spr) spr.subpriority = effective;
+    }
   }
   return false;
 });
 
 registerOpcode('resetobjectsubpriority', (_ctx, args) => {
   // 1:1 décomp ScrCmd_resetobjectsubpriority : ResetObjectSubpriority(localId, mapNum, mapGroup).
+  // event_object_movement.c:ResetObjectSubpriority :
+  //   sprite = &gSprites[objectEvent->spriteId];
+  //   sprite->subpriority = 0;  // reset to default elevation-based
+  //   sprite->coordOffsetEnabled = FALSE;
   const localId = _vget(args[0]);
   const obj = gObjectEvents.find(o => o.active && (o as unknown as { localId?: number }).localId === localId);
   if (obj) {
     (obj as unknown as { subpriority?: number; fixedPriority?: boolean }).subpriority = undefined;
     (obj as unknown as { fixedPriority?: boolean }).fixedPriority = false;
+    // Reset Sprite subpriority à default (= calculé par elevation, 1:1 décomp).
+    const rt = getRuntime();
+    const spriteId = (obj as unknown as { spriteId?: number }).spriteId;
+    if (rt && typeof spriteId === 'number' && spriteId >= 0) {
+      const spr = rt.gSprites.get(spriteId);
+      // Reset subpriority à 0xFF (= default CreateSprite, lowest priority slot).
+      if (spr) spr.subpriority = 0xFF;
+    }
   }
   return false;
 });
