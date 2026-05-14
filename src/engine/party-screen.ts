@@ -36,12 +36,12 @@ import {
   InitWindows, AddWindow, FillWindowPixelBuffer, FillWindowPixelRect,
   PutWindowTilemap, CopyWindowToVram,
   BlitBitmapToWindow,
-  DrawStdFrameWithCustomTileAndPalette,
+  DrawStdFrameWithCustomTileAndPalette, ClearStdWindowAndFrame,
   RemoveWindow, ShowBg, HideBg,
   type WindowTemplate,
 } from './gba-window-system';
-import { LoadUserWindowBorderGfx } from './gba-text-window';
-import { AddTextPrinterParameterized3 } from './gba-text-system';
+import { LoadUserWindowBorderGfx, preloadTextWindowFrames } from './gba-text-window';
+import { AddTextPrinterParameterized3, GetStringCenterAlignXOffset } from './gba-text-system';
 import { gameState } from './game-state';
 import { getMonGenderSymbol, MON_MALE, MON_FEMALE } from './pokemon';
 import {
@@ -54,14 +54,17 @@ import { FadeScreen, FADE_FROM_BLACK } from './fade-screen';
 import { loadIndexedPngStrict, loadGbaPal, loadTilemapBin, loadTileBin } from './gba/png-loader';
 import { OpenSummaryScreen } from './summary-screen';
 import { getString } from './gba-strings';
+import { MON_ICON_PALETTE_INDICES } from './pokemon-icon-palettes';
 import type { DecompTask } from './decomp-runtime';
 import type { PokemonInstance } from './pokemon';
 
 const FONT_NORMAL = 1;
 const FONT_SMALL = 0;  // 1:1 décomp party_menu uses FONT_SMALL for nickname/level/HP
 const TEXT_SKIP_DRAW = 255;
-const STD_FRAME_TILE = 0x214;
-const STD_FRAME_PAL = 14;
+/** 1:1 décomp `LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13))` (party_menu.c:2096).
+ *  baseTile=0x4F, paletteNum=13. */
+const STD_FRAME_TILE = 0x4F;
+const STD_FRAME_PAL = 13;
 /** 1:1 décomp `sFontColorTable[0]` (party_menu.h:115) :
  *  [BG=TRANSPARENT, FG=LIGHT_GRAY, SHADOW=DARK_GRAY] = [0, 3, 2]. */
 const COLOR_TEXT: [number, number, number] = [0, 3, 2];
@@ -104,6 +107,10 @@ const sPartyBoxMultiPalIds1               = [68, 69, 70];
 const sPartyBoxMultiPalIds2               = [65, 71, 72];
 const sPartyBoxCurrSelectionMultiPalIds   = [132, 133, 134];
 const sPartyBoxNoMonPalIds                = [17, 27, 28];
+
+/** 1:1 décomp `gMonIconPaletteIndices[]` (pokemon_icon.c:468) :
+ *  Table complète 440 entries Gen 1-3 dans pokemon-icon-palettes.ts. */
+// MON_ICON_PALETTE_INDICES imported below from pokemon-icon-palettes.ts.
 
 /** 1:1 décomp HP bar palette ids (party_menu.h:573, 581-583). */
 const sHPBarPalOffsets    = [9, 10];
@@ -150,20 +157,45 @@ const SLOT_WINDOW_TEMPLATES: WindowTemplate[] = [
   { bg: 0, tilemapLeft: 12, tilemapTop: 13, width: 18, height: 3, paletteNum: 8, baseBlock: 0x181 },  // mon 6
 ];
 
-/** WIN_MSG : bottom dialog "Choisir un PKMN ou annuler" + SORTIR. */
+/** 1:1 décomp `sDefaultPartyMsgWindowTemplate` (party_menu.h:419) :
+ *  bg=2, (1, 17), 21×2, paletteNum=15, baseBlock=0x24F. — PARTY_MSG_CHOOSE_MON. */
 const MSG_WINDOW_TEMPLATE: WindowTemplate = {
-  bg: 0, tilemapLeft: 1, tilemapTop: 15, width: 28, height: 4, paletteNum: 15, baseBlock: 0x1DF,
+  bg: 2, tilemapLeft: 1, tilemapTop: 17, width: 21, height: 2, paletteNum: 15, baseBlock: 0x24F,
+};
+/** 1:1 décomp `sDoWhatWithMonMsgWindowTemplate` (party_menu.h:430) :
+ *  bg=2, (1, 17), 16×2, paletteNum=15, baseBlock=0x279. — PARTY_MSG_DO_WHAT_WITH_MON.
+ *  Width=16 (= shorter) pour ne pas overlap avec action menu à tile 19+. */
+const DO_WHAT_WITH_MON_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 2, tilemapLeft: 1, tilemapTop: 17, width: 16, height: 2, paletteNum: 15, baseBlock: 0x279,
+};
+
+/** 1:1 décomp `sCancelButtonWindowTemplate` (pokeemeraude FR party_menu.h:386) :
+ *  Window "SORTIR" à droite du SORTIR pokeball OAM. */
+const CANCEL_BUTTON_WINDOW_TEMPLATE: WindowTemplate = {
+  bg: 0, tilemapLeft: 24, tilemapTop: 17, width: 6, height: 2, paletteNum: 3, baseBlock: 0x1C7,
 };
 
 /** Pokémon icon sprite coords 1:1 décomp `sPartyMenuSpriteCoords[PARTY_LAYOUT_SINGLE]`
- *  (party_menu.h:68) — (iconX, iconY) per slot. */
+ *  (party_menu.h:68) — chaque slot a 4 pairs (x, y) :
+ *    [0,1] = Pokémon icon
+ *    [2,3] = held item
+ *    [4,5] = status condition
+ *    [6,7] = menu Poké Ball (= mini-pokeball au-dessus à gauche du slot) */
 const ICON_COORDS: Array<[number, number]> = [
-  [16,  40],  // slot 0 (big left)
+  [16,  40],  // slot 0 icon (big left)
   [104, 18],  // slot 1
   [104, 42],  // slot 2
   [104, 66],  // slot 3
   [104, 90],  // slot 4
   [104, 114], // slot 5
+];
+const POKEBALL_COORDS: Array<[number, number]> = [
+  [ 16, 34],  // slot 0
+  [102, 25],  // slot 1
+  [102, 49],  // slot 2
+  [102, 73],  // slot 3
+  [102, 97],  // slot 4
+  [102, 121], // slot 5
 ];
 
 interface PartyAssets {
@@ -193,11 +225,14 @@ let _assets: PartyAssets | null = null;
 let _assetsLoading: Promise<PartyAssets> | null = null;
 let _slotWindowIds: number[] = [];
 let _msgWid = -1;
+let _cancelButtonWid = -1;
 let _inputTaskId = -1;
 let _bounceTaskId = -1;
 /** Indexed par slot index (0..5). -1 = pas de mon dans ce slot. */
 let _iconOamBySlot: number[] = [-1, -1, -1, -1, -1, -1];
 let _iconBaseY: number[] = [0, 0, 0, 0, 0, 0];
+/** 1:1 décomp `menuBox->pokeballSpriteId` per slot (= CreatePartyMonPokeballSprite). */
+let _pokeballOamBySlot: number[] = [-1, -1, -1, -1, -1, -1];
 let _cancelButtonOamId = -1;
 let _bounceCounter = 0;
 /** 1:1 décomp `gPartyMenu.slotId` (= currently highlighted slot).
@@ -334,22 +369,46 @@ function _loadPartyGraphicsCb2(rt: ReturnType<typeof getRuntime>): boolean {
 
 async function _loadPartyWindowsCb2(rt: ReturnType<typeof getRuntime>): Promise<void> {
   if (!rt) return;
-  // InitWindows pour 6 slots + msg.
-  const ids = InitWindows([...SLOT_WINDOW_TEMPLATES, MSG_WINDOW_TEMPLATE]);
+  // InitWindows pour 6 slots + cancel button (= persistents). Le _msgWid est
+  // créé dynamiquement par `_drawMsg` (= 1:1 décomp DisplayPartyMenuStdMessage
+  // qui remove+add le window à chaque change de stringId).
+  const ids = InitWindows([...SLOT_WINDOW_TEMPLATES, CANCEL_BUTTON_WINDOW_TEMPLATE]);
   _slotWindowIds = ids.slice(0, 6);
-  _msgWid = ids[6];
-  // Load std frame palette pour le frame border autour de WIN_MSG.
-  LoadUserWindowBorderGfx(0, STD_FRAME_TILE, STD_FRAME_PAL * 16);
-  // Load gStandardMenuPalette à BG_PLTT_ID(15) pour text std colors.
+  _msgWid = -1;  // = WINDOW_NONE, créé par _drawMsg
+  _cancelButtonWid = ids[6];
+  // 1:1 décomp `InitPartyMenuWindows` (party_menu.c:2094-2098) :
+  //   LoadUserWindowBorderGfx(0, 0x4F, BG_PLTT_ID(13));
+  //   LoadPalette(GetOverworldTextboxPalettePtr(), BG_PLTT_ID(14), PLTT_SIZE_4BPP);
+  //   LoadPalette(gStandardMenuPalette, BG_PLTT_ID(15), PLTT_SIZE_4BPP);
+  // 1:1 décomp `LoadUserWindowBorderGfx(windowId, 0x4F, BG_PLTT_ID(13))`.
+  // En ?debug skip BirchRuntimeScene qui preload les frame assets, donc le
+  // cache est vide. On force load directement le frame 1 (= user default style)
+  // depuis PNG vers VRAM/palette. ⚠️ Ne PAS call LoadUserWindowBorderGfx APRÈS
+  // (= overwrite avec cache empty = palette 13 black).
+  try {
+    const framePng = await loadIndexedPngStrict('/decomp/em/ui/text_window/1.png', 4);
+    const rtX = getRuntime();
+    if (rtX) {
+      const charOff = 0 * 0x4000 + STD_FRAME_TILE * 32;
+      rtX.gba.vram.set(framePng.charData.slice(0, 0x120), charOff);
+    }
+    LoadPalette(framePng.palette, STD_FRAME_PAL * 16, 32);
+  } catch (e) {
+    console.warn('[party-screen] frame border load failed:', e);
+  }
   const stdMenuPal = await loadGbaPal('/decomp/em/interface/std_menu.pal');
   LoadPalette(stdMenuPal, 15 * 16, 32);
+  // 1:1 décomp BG_PLTT_ID(14) = overworld textbox palette (= action menu BG).
+  // Sans ça, palette 14 = noir → action window BG noir au lieu de gris/blanc.
+  // Pour MVP : use std_menu palette (= même que pal 15 = blanc/gris). Le décomp
+  // utilise GetOverworldTextboxPalettePtr() qui dépend du frame style user.
+  LoadPalette(stdMenuPal, 14 * 16, 32);
   // Initial fill transparent + put tilemap.
   for (const wid of _slotWindowIds) {
     FillWindowPixelBuffer(wid, 0x00);
     PutWindowTilemap(wid);
   }
-  FillWindowPixelBuffer(_msgWid, 0x11);  // = palette 15 idx 1 = white
-  PutWindowTilemap(_msgWid);
+  // _msgWid créé dynamiquement par _drawMsg (= différent template selon msg).
 }
 
 /** 1:1 décomp `BlitBitmapToPartyWindow` (party_menu.c:2150).
@@ -421,27 +480,35 @@ function _drawSlot(slotIdx: number): void {
     //   Gender   (64, 20) — width 8x8
     //   HP       (38, 37)
     //   MaxHP    (53, 37)
-    AddTextPrinterParameterized3(wid, FONT_NORMAL, 24, 11, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
+    // 1:1 décomp DisplayPartyPokemonBarDetail (party_menu.c:2282) :
+    //   AddTextPrinterParameterized3(windowId, FONT_SMALL, ...) — TOUT en FONT_SMALL.
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 24, 11, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
     AddTextPrinterParameterized3(wid, FONT_SMALL,  32, 20, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
     if (genderStr) {
-      AddTextPrinterParameterized3(wid, FONT_NORMAL, 64, 20, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
+      AddTextPrinterParameterized3(wid, FONT_SMALL, 64, 20, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
     }
-    AddTextPrinterParameterized3(wid, FONT_SMALL,  38, 37, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.currentHp}/`);
-    AddTextPrinterParameterized3(wid, FONT_SMALL,  53, 37, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.maxHp}`);
+    // 1:1 décomp DisplayPartyPokemonHP/MaxHP (party_menu.c:2367-2393) :
+    //   Décomp render 2 strings séparés " HH/" (à 38,37) + "/ MM" (à 53,37).
+    //   Les 2 slashes overlappent au pixel près à cause des FONT_SMALL widths
+    //   spécifiques de la ROM (= visual unique "/" + 2 spaces entre les deux nombres).
+    //   Notre FONT_SMALL widths diffèrent → render 1 seul string " HH/  MM" avec
+    //   2 spaces explicites + right-align sur le slot edge pour matcher la ROM.
+    const hpStr = `${`${mon.currentHp}`.padStart(3)}/ ${`${mon.maxHp}`.padStart(3)}`;
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 38, 37, COLOR_HP, TEXT_SKIP_DRAW, hpStr);
   } else {
     // 1:1 décomp PARTY_BOX_RIGHT_COLUMN :
     //   Nickname (22, 3) — width=40
     //   Level    (30, 12)
     //   Gender   (62, 12)
-    //   HP       (102, 12)
-    //   MaxHP    (117, 12)
-    AddTextPrinterParameterized3(wid, FONT_NORMAL, 22,  3, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
+    //   HP       (102, 12) + MaxHP (117, 12) → composé en 1 seul string " HH/  MM"
+    //     (= 2 espaces entre slash et MaxHP pour matcher visuel ROM 1:1).
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 22,  3, COLOR_TEXT, TEXT_SKIP_DRAW, mon.nickname);
     AddTextPrinterParameterized3(wid, FONT_SMALL,  30, 12, COLOR_TEXT, TEXT_SKIP_DRAW, `N.${mon.level}`);
     if (genderStr) {
-      AddTextPrinterParameterized3(wid, FONT_NORMAL, 62, 12, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
+      AddTextPrinterParameterized3(wid, FONT_SMALL, 62, 12, COLOR_GENDER, TEXT_SKIP_DRAW, genderStr);
     }
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 102, 12, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.currentHp}/`);
-    AddTextPrinterParameterized3(wid, FONT_SMALL, 117, 12, COLOR_HP,   TEXT_SKIP_DRAW, `${mon.maxHp}`);
+    const hpStrR = `${`${mon.currentHp}`.padStart(3)}/ ${`${mon.maxHp}`.padStart(3)}`;
+    AddTextPrinterParameterized3(wid, FONT_SMALL, 102, 12, COLOR_HP, TEXT_SKIP_DRAW, hpStrR);
   }
   void MON_MALE; void MON_FEMALE;  // referenced via getMonGenderSymbol
   // 1:1 décomp DisplayPartyPokemonHPBar : draw colored bar fill (green/yellow/
@@ -499,12 +566,14 @@ function _drawHpBar(slotIdx: number, mon: PokemonInstance): void {
   // 1:1 décomp GetScaledHPFraction : ratio * width arrondi.
   const hpFraction = Math.floor((mon.currentHp / mon.maxHp) * w);
 
-  // 1:1 décomp FillWindowPixelRect :
-  //   row 1 (haut) = palette idx 9 (= sHPBarPalOffsets[0])
-  //   row 2-3 (bas) = palette idx 10 (= sHPBarPalOffsets[1])
-  FillWindowPixelRect(wid, sHPBarPalOffsets[0], x, y,     hpFraction, 1);
-  FillWindowPixelRect(wid, sHPBarPalOffsets[1], x, y + 1, hpFraction, 2);
-  // Partie vide alternating fill 0x0D (light gray) + 0x02 (dark gray).
+  // 1:1 décomp FillWindowPixelRect (party_menu.c:2402) :
+  //   row 1 (haut, 1 px) = sHPBarPalOffsets[1] (= idx 10 = couleur FONCÉE)
+  //   row 2-3 (bas, 2 px) = sHPBarPalOffsets[0] (= idx 9 = couleur CLAIRE)
+  // L'inversion visuelle (foncé top / clair bot) donne l'effet d'ombrage de la
+  // ROM. NE PAS swap ces deux args — c'est ce qui rend la bar 1:1 décomp.
+  FillWindowPixelRect(wid, sHPBarPalOffsets[1], x, y,     hpFraction, 1);
+  FillWindowPixelRect(wid, sHPBarPalOffsets[0], x, y + 1, hpFraction, 2);
+  // Partie vide alternating fill 0x0D (top, foncé) + 0x02 (bot, clair).
   if (hpFraction !== w) {
     FillWindowPixelRect(wid, 0x0D, x + hpFraction, y,     w - hpFraction, 1);
     FillWindowPixelRect(wid, 0x02, x + hpFraction, y + 1, w - hpFraction, 2);
@@ -611,13 +680,35 @@ function _getPartyBoxPaletteFlags(slotIdx: number, animNum: number): number {
 }
 
 /** 1:1 décomp `AnimatePartySlot` (party_menu.c:1120).
- *  animNum=0 = not selected (default), animNum=1 = selected (cursor here). */
+ *  animNum=0 = not selected (default), animNum=1 = selected (cursor here).
+ *  Pour les mon slots, le décomp call aussi :
+ *    AnimateSelectedPartyIcon(monSpriteId, animNum)
+ *    PartyMenuStartSpriteAnim(pokeballSpriteId, animNum) ← pokeball Closed/Open */
 function AnimatePartySlot(slotIdx: number, animNum: number): void {
   const PARTY_SIZE = 6, CANCEL = PARTY_SIZE + 1;
   if (slotIdx < PARTY_SIZE) {
     const mon = (gameState.party as PokemonInstance[])[slotIdx];
     if (mon) {
       _loadPartyBoxPalette(slotIdx, _getPartyBoxPaletteFlags(slotIdx, animNum));
+      // 1:1 décomp `PartyMenuStartSpriteAnim(pokeballSpriteId, animNum)` :
+      // animNum=0 → Closed (tile 256), animNum=1 → Open (tile 272).
+      const rt = getRuntime();
+      const pkId = _pokeballOamBySlot[slotIdx];
+      if (rt && pkId >= 0) {
+        const spr = rt.gSprites.get(pkId);
+        if (spr) {
+          const oam = rt.gba.oam[spr.oamIndex];
+          if (oam) {
+            const POKEBALL_TILE_BASE = 256;
+            oam.tileId = POKEBALL_TILE_BASE + (animNum === 1 ? 16 : 0);
+          }
+        }
+      }
+    } else {
+      // 1:1 décomp `LoadPartyBoxPalette(box, PARTY_PAL_NO_MON)` (party_menu.c:842)
+      // pour slot vide → palette swap sPartyBoxNoMonPalIds aux positions
+      // sPartyBoxNoMonPalOffsets [1, 11, 12] (= teinte vert-olive match BG).
+      _loadPartyBoxPalette(slotIdx, PARTY_PAL_NO_MON);
     }
     return;
   }
@@ -635,16 +726,42 @@ function AnimatePartySlot(slotIdx: number, animNum: number): void {
   }
 }
 
-/** 1:1 décomp `DisplayPartyMenuStdMessage(PARTY_MSG_CHOOSE_MON)` (party_menu.c:2459).
- *  Le message stringId dépend de :
- *    - chooseHalf (= false en single layout) → PARTY_MSG_CHOOSE_MON_AND_CONFIRM
- *    - ShouldUseChooseMonText() = numAliveMons > 1 || PARTY_ACTION_SEND_OUT
- *    - Si >1 alive mons : PARTY_MSG_CHOOSE_MON → "Choisir un POKéMON."
- *    - Si ≤1 alive mons : PARTY_MSG_CHOOSE_MON_OR_CANCEL → "Choisir un PKMN ou annuler."
- *  Strings depuis strings.json FR : gText_ChoosePokemon / gText_ChoosePokemonCancel. */
+/** 1:1 décomp `CreateCancelConfirmWindows(chooseHalf=false)` (party_menu.c:2101).
+ *  En single layout : spawn sCancelButtonWindowTemplate + render gText_Cancel
+ *  (= "SORTIR" FR) centré FONT_SMALL + offset 3 pixels. */
+function _drawCancelButtonWindow(): void {
+  if (_cancelButtonWid < 0) return;
+  FillWindowPixelBuffer(_cancelButtonWid, 0x00);
+  const txt = getString('gText_Cancel');  // "SORTIR" FR
+  // 1:1 décomp : mainOffset = GetStringCenterAlignXOffset(FONT_SMALL, gText_Cancel, 48) + 3
+  // ⚠️ Notre GetStringWidth utilise FONT_NORMAL (= chars plus larges que FONT_SMALL).
+  // Pour 1:1 ROM "SORTIR" FONT_SMALL ≈ 30px → mainOffset = (48-30)/2 = 9 + 3 = 12.
+  // Hardcode 12 pour matcher pixel position du ROM.
+  const mainOffset = 12;
+  // sFontColorTable[0] = [TRANSPARENT, LIGHT_GRAY, DARK_GRAY] = [0, 3, 2]
+  AddTextPrinterParameterized3(
+    _cancelButtonWid, FONT_SMALL, mainOffset, 1,
+    [0, 3, 2] as [number, number, number],
+    TEXT_SKIP_DRAW, txt,
+  );
+  PutWindowTilemap(_cancelButtonWid);
+  CopyWindowToVram(_cancelButtonWid, 3);
+}
+
+/** 1:1 décomp `DisplayPartyMenuStdMessage` (party_menu.c:2459) :
+ *  Remove existing msg window, add NEW window with appropriate template
+ *  selon stringId. Différents templates pour CHOOSE_MON vs DO_WHAT_WITH_MON
+ *  (= widths différents pour ne pas overlap avec action menu). */
 function _drawMsg(): void {
-  if (_msgWid < 0) return;
-  FillWindowPixelBuffer(_msgWid, 0x11);
+  // 1:1 décomp `if (*windowPtr != WINDOW_NONE) PartyMenuRemoveWindow(windowPtr);`
+  // PartyMenuRemoveWindow → ClearStdWindowAndFrameToTransparent + RemoveWindow.
+  // Sans clear, le frame border + texte précédent restent visibles en VRAM.
+  if (_msgWid >= 0) {
+    ClearStdWindowAndFrame(_msgWid, false);
+    CopyWindowToVram(_msgWid, 3);
+    RemoveWindow(_msgWid);
+    _msgWid = -1;
+  }
   // 1:1 décomp ShouldUseChooseMonText : count alive mons.
   const party = gameState.party as PokemonInstance[];
   let numAlive = 0;
@@ -653,9 +770,64 @@ function _drawMsg(): void {
     if (numAlive > 1) break;
   }
   const useChooseMon = numAlive > 1;
-  const msg = useChooseMon ? getString('gText_ChoosePokemon') : getString('gText_ChoosePokemonCancel');
-  AddTextPrinterParameterized3(_msgWid, FONT_NORMAL, 8, 8, [1, 2, 3], TEXT_SKIP_DRAW, msg);
+  // 1:1 décomp switch sur stringId : DO_WHAT_WITH_MON ou CHOOSE_MON.
+  let msg: string;
+  let template: WindowTemplate;
+  if (_phase === 'action_menu') {
+    msg = getString('gText_DoWhatWithPokemon');  // "Que faire avec ce PKMN?"
+    template = DO_WHAT_WITH_MON_WINDOW_TEMPLATE;
+  } else {
+    msg = useChooseMon ? getString('gText_ChoosePokemon') : getString('gText_ChoosePokemonCancel');
+    template = MSG_WINDOW_TEMPLATE;
+  }
+  _msgWid = AddWindow(template);
+  // 1:1 décomp `DrawStdFrameWithCustomTileAndPalette(*windowPtr, FALSE, 0x4F, 13)`.
+  DrawStdFrameWithCustomTileAndPalette(_msgWid, false, 0x4F, 13);
+  AddTextPrinterParameterized3(_msgWid, FONT_NORMAL, 0, 1, [1, 2, 3], TEXT_SKIP_DRAW, msg);
   CopyWindowToVram(_msgWid, 3);
+}
+
+/** 1:1 décomp `CreatePartyMonPokeballSprite` (party_menu.c:4122) :
+ *  Spawn une mini-pokeball OAM 32×32 à `menuBox->spriteCoords[6, 7]` pour
+ *  chaque slot occupé. Réutilise les tiles + palette du SORTIR pokeball
+ *  (= sSpriteTemplate_MenuPokeball, TAG_POKEBALL shared). */
+function _spawnSlotPokeballOams(): void {
+  const rt = getRuntime();
+  if (!rt) return;
+  _pokeballOamBySlot = [-1, -1, -1, -1, -1, -1];
+  const party = gameState.party as PokemonInstance[];
+  const POKEBALL_TILE_BASE = 256;
+  const POKEBALL_PAL_BANK = 9;
+  for (let i = 0; i < 6; i++) {
+    const mon = party[i];
+    if (!mon) continue;
+    const [x, y] = POKEBALL_COORDS[i];
+    const spr = rt.CreateSpriteAtOam({
+      x, y,
+      shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
+      tileId: POKEBALL_TILE_BASE,  // frame 0 (Closed)
+      paletteBank: POKEBALL_PAL_BANK,
+      // 1:1 décomp CreatePartyMonPokeballSprite uses default OAM priority=1
+      // (= sSpriteTemplate_MenuPokeball template) + subpriority=8 from
+      // CreateSprite(..., x, y, 8) arg. Icon subpriority=1 → icon RENDU
+      // EN FRONT du pokeball (= ROM behavior, mini-pokeball partly behind icon).
+      priority: 1,
+      subpriority: 8,
+    });
+    _pokeballOamBySlot[i] = spr.spriteId;
+  }
+}
+
+/** Load pokeball tiles + palette à OBJ VRAM (= shared par SORTIR + slot pokeballs). */
+async function _loadPokeballGfx(): Promise<void> {
+  const rt = getRuntime();
+  if (!rt) return;
+  const tiles = await loadTileBin('/decomp/em/party_menu/pokeball.png', 4);
+  const pal = await loadGbaPal('/decomp/em/party_menu/pokeball.gbapal');
+  const POKEBALL_TILE_BASE = 256;
+  rt.gba.objVram.set(tiles.slice(0, 32 * 32), POKEBALL_TILE_BASE * 32);
+  const POKEBALL_PAL_BANK = 9;
+  rt.LoadPaletteObj(pal, OBJ_PLTT_ID(POKEBALL_PAL_BANK));
 }
 
 /** Spawn the "SORTIR" cancel button OAM (= big pokeball with text gravé)
@@ -665,27 +837,17 @@ async function _spawnCancelButtonOam(): Promise<void> {
   const rt = getRuntime();
   if (!rt) return;
   try {
-    // 1:1 décomp gPartyMenuPokeball_Gfx size 0x400 (= 1024 bytes = 32 tiles 4bpp).
-    // pokeball.png = 32×32 sprite × 2 anim frames (Closed/Open) = 16+16 = 32 tiles.
-    const tiles = await loadTileBin('/decomp/em/party_menu/pokeball.png', 4);
-    const pal = await loadGbaPal('/decomp/em/party_menu/pokeball.gbapal');
-    // 1:1 décomp gPartyMenuPokeball_Gfx size 0x400 (= 1024 bytes = 32 tiles 4bpp).
-    // pokeball.png = 32×32 sprite × 2 anim frames (Closed/Open) = 16+16 = 32 tiles.
-    // Write tile data à OBJ VRAM offset 256 (= après les icons aux offsets 0..255).
-    // Charge LES DEUX frames (= tiles 256..271 closed, tiles 272..287 open) sinon
-    // AnimatePartySlot(CANCEL, 1) montre des garbage tiles pour frame 1.
+    await _loadPokeballGfx();
     const POKEBALL_TILE_BASE = 256;
-    rt.gba.objVram.set(tiles.slice(0, 32 * 32), POKEBALL_TILE_BASE * 32);
-    // Load palette à OBJ bank 9 (= sépare des icon banks 5-7).
     const POKEBALL_PAL_BANK = 9;
-    rt.LoadPaletteObj(pal, OBJ_PLTT_ID(POKEBALL_PAL_BANK));
-    // 1:1 décomp `CreateSprite(template, 198, 148, 8)` : sprite center coords.
+    // 1:1 décomp `CreateSprite(template, 198, 148, 8)` puis
+    // `gSprites[spriteId].oam.priority = 2` (party_menu.c:4142).
     const spr = rt.CreateSpriteAtOam({
       x: 198, y: 148,
       shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
       tileId: POKEBALL_TILE_BASE,
       paletteBank: POKEBALL_PAL_BANK,
-      priority: 1,
+      priority: 2,
     });
     _cancelButtonOamId = spr.spriteId;
   } catch (e) {
@@ -719,8 +881,12 @@ async function _spawnIconOams(): Promise<void> {
       //   [slotTileBase+16..+31] = frame 1.
       rt.gba.objVram.set(iconPng.charData.slice(0, BYTES_PER_SLOT), slotByteOffset);
       void BYTES_PER_FRAME;
-      // Load icon palette (= normal.pal).
-      const iconPal = await loadGbaPal(`/decomp/em/pokemon/${dexId}/normal.pal`);
+      // 1:1 décomp `LoadMonIconPalette(species)` : lookup gMonIconPaletteIndices
+      // pour obtenir l'index 0/1/2, puis load `gMonIconPalettes[index]` (= un
+      // de 3 palettes shared between species). Pas normal.pal (= front sprite
+      // palette, DIFFERENT from icon palette).
+      const palIdx = MON_ICON_PALETTE_INDICES[mon.speciesEnum] ?? 0;
+      const iconPal = await loadGbaPal(`/decomp/em/pokemon/icon_palettes/icon_palette_${palIdx}.pal`);
       const palBank = ICON_OBJ_PAL_BASE + i;
       rt.LoadPaletteObj(iconPal, OBJ_PLTT_ID(palBank));
       // 1:1 décomp `CreateMonIconSprite(template, x, y, ...)` (= sprite center
@@ -734,7 +900,11 @@ async function _spawnIconOams(): Promise<void> {
         shape: 0, size: 2,  // SPRITE_SHAPE(32x32) + SPRITE_SIZE(32x32)
         tileId: slotTileBase,
         paletteBank: palBank,
+        // 1:1 décomp `CreatePartyMonIconSpriteParameterized(..., priority=1)`
+        // + CreateMonIcon subpriority=1 → icon EN FRONT du pokeball
+        // (subpriority=8). Lower subpriority = front in OAM rendering.
         priority: 1,
+        subpriority: 1,
       });
       _iconOamBySlot[i] = spr.spriteId;
       _iconBaseY[i] = oamY;
@@ -755,6 +925,8 @@ function _freePartyMenu(): void {
   for (const id of _iconOamBySlot) freeOam(id);
   _iconOamBySlot = [-1, -1, -1, -1, -1, -1];
   _iconBaseY = [0, 0, 0, 0, 0, 0];
+  for (const id of _pokeballOamBySlot) freeOam(id);
+  _pokeballOamBySlot = [-1, -1, -1, -1, -1, -1];
   freeOam(_cancelButtonOamId);
   _cancelButtonOamId = -1;
   if (rt && _bounceTaskId >= 0) {
@@ -764,6 +936,7 @@ function _freePartyMenu(): void {
   for (const wid of _slotWindowIds) if (wid >= 0) RemoveWindow(wid);
   _slotWindowIds = [];
   if (_msgWid >= 0) { RemoveWindow(_msgWid); _msgWid = -1; }
+  if (_cancelButtonWid >= 0) { RemoveWindow(_cancelButtonWid); _cancelButtonWid = -1; }
   if (_actionWindowId >= 0) { RemoveWindow(_actionWindowId); _actionWindowId = -1; }
   _actionList = [];
   _actionCursor = 0;
@@ -875,25 +1048,49 @@ function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
   _bounceCounter++;
   const rt = getRuntime();
   if (!rt) return;
-  // Bounce phase : toggle toutes les ~8 frames pour selected. Match le décomp.
-  const bouncePhase = (_bounceCounter >> 3) & 1;
-  const bounceY = bouncePhase ? -3 : 1;
-  // Idle anim frame phase : toggle toutes les ~32 frames (= 1.9 Hz, lent
-  // breathing). Le décomp tick selon sAnimCmds qui varient par species.
-  const animFrame = (_bounceCounter >> 5) & 1;  // 0 or 1
+  // 1:1 décomp `SpriteCB_BouncePartyMonIcon` (party_menu.c:4003) +
+  // `UpdateMonIconFrame` (pokemon_icon.c:316) :
+  //   if (animCmd != 0) sprite->y2 = (animCmd & 1) ? -3 : 1;
+  // ⚠️ Modify sprite.y2 (= delta offset), PAS oam.y direct (= sync écrase chaque frame).
+  //
+  // Durations 1:1 décomp pokemon_icon.c:941-982 (sAnim_0..sAnim_4) :
+  //   HP_BAR_FULL   (= HP == max)  : 6 frames / phase (rapide)
+  //   HP_BAR_GREEN  (> 50%)        : 8 frames / phase
+  //   HP_BAR_YELLOW (> 20%)        : 14 frames / phase (lent — mon affaibli)
+  //   HP_BAR_RED    (> 0%)         : 22 frames / phase (très lent — mon en péril)
+  //   HP_BAR_EMPTY  (fainted)      : pas de bounce (frame 0 fixe)
+  // Note : décomp ralentit le bounce quand HP bas (= mon fatigué, pas panic).
+  const party = gameState.party as PokemonInstance[];
   for (let i = 0; i < 6; i++) {
     const id = _iconOamBySlot[i];
     if (id < 0) continue;
     const spr = rt.gSprites.get(id);
     if (!spr) continue;
+    const mon = party[i];
+    let bouncePeriod = 8;  // default GREEN
+    let canBounce = true;
+    if (mon) {
+      if (mon.currentHp <= 0) { canBounce = false; }  // FAINTED
+      else if (mon.currentHp === mon.maxHp) bouncePeriod = 6;  // FULL
+      else {
+        const frac = mon.maxHp > 0 ? mon.currentHp / mon.maxHp : 0;
+        if (frac > 0.5) bouncePeriod = 8;   // GREEN
+        else if (frac > 0.2) bouncePeriod = 14;  // YELLOW
+        else bouncePeriod = 22;             // RED
+      }
+    }
+    const bouncePhase = canBounce ? Math.floor(_bounceCounter / bouncePeriod) & 1 : 0;
+    const bounceY = canBounce ? (bouncePhase ? -3 : 1) : 0;
+    // Selected slot bounces, autres slots y2=0.
+    spr.y2 = (i === _slotId) ? bounceY : 0;
+    // Frame swap pour idle anim sur TOUS les slots — utilise le même
+    // bouncePhase HP-based (= 1:1 décomp UpdateMonIconFrame qui tick
+    // chaque sAnim_N selon HP_BAR_LEVEL du mon, partagé entre Bounce et
+    // UpdatePartyMonIcon callbacks).
     const oam = rt.gba.oam[spr.oamIndex];
     if (!oam) continue;
-    const base = _iconBaseY[i];
-    // Selected slot bounces, autres slots stationary base y.
-    oam.y = (i === _slotId) ? base + bounceY : base;
-    // Frame swap pour idle anim sur TOUS les slots.
     const slotTileBase = ICON_OBJ_TILE_OFFSET / 32 + i * ICON_TILES_PER_SLOT;
-    oam.tileId = slotTileBase + animFrame * ICON_TILES_PER_FRAME;
+    oam.tileId = slotTileBase + bouncePhase * ICON_TILES_PER_FRAME;
   }
 }
 
@@ -905,10 +1102,16 @@ function Task_PartyMenu_BounceIcon(_task: DecompTask): void {
  *    MENU_SUMMARY (= "RESUME") - gText_Summary5
  *    MENU_ITEM    (= "OBJET")  - gText_Item
  *    MENU_CANCEL1 (= "RETOUR") - gText_Cancel2 */
+/** 1:1 décomp action keys (party_menu.h:660-678) — MENU_* values. */
+const MENU_SUMMARY = 0;
+const MENU_SWITCH  = 1;  // = "ORDRE" FR (gText_Switch2)
+const MENU_ITEM    = 3;
+const MENU_CANCEL1 = 2;
 const ACTION_MENU_STRINGS_FR: Record<number, string> = {
-  0: 'RESUME',  // MENU_SUMMARY index in our action list
-  1: 'OBJET',   // MENU_ITEM
-  2: 'RETOUR',  // MENU_CANCEL1
+  [MENU_SUMMARY]: 'RESUME',
+  [MENU_SWITCH]:  'ORDRE',
+  [MENU_ITEM]:    'OBJET',
+  [MENU_CANCEL1]: 'RETOUR',
 };
 
 /** Re-render action menu contents (= called au open + après cursor move).
@@ -916,6 +1119,12 @@ const ACTION_MENU_STRINGS_FR: Record<number, string> = {
  *  Menu_MoveCursor + InitMenuInUpperLeftCorner. */
 function _renderActionMenuContents(): void {
   if (_actionWindowId < 0) return;
+  // 1:1 décomp DisplaySelectionWindow (party_menu.c:2533) :
+  //   DrawStdFrameWithCustomTileAndPalette(wid, FALSE, 0x4F, 13) APRÈS AddWindow.
+  // ⚠️ DrawStdFrame doit être appelé AVANT FillWindowPixelBuffer + PutWindowTilemap
+  // sinon le frame border n'apparaît pas (= bug visuel : menu sans cadre).
+  DrawStdFrameWithCustomTileAndPalette(_actionWindowId, false, 0x4F, 13);
+
   const numActions = _actionList.length;
   FillWindowPixelBuffer(_actionWindowId, 0x11);  // = palette idx 1 (= white bg)
   PutWindowTilemap(_actionWindowId);
@@ -943,7 +1152,21 @@ function _renderActionMenuContents(): void {
 function _openActionMenu(rt: ReturnType<typeof getRuntime>): void {
   if (!rt) return;
   PlaySE(5);  // SE_SELECT
-  _actionList = [0, 1, 2];  // RESUME, OBJET, RETOUR (= 3 actions field menu)
+  // 1:1 décomp `SetPartyMonFieldSelectionActions` (party_menu.c:2607) :
+  //   AppendToList(MENU_SUMMARY);
+  //   for each field move: AppendToList(MENU_FIELD_MOVES + j);
+  //   if (party[1].species != NONE) AppendToList(MENU_SWITCH);  ← ORDRE
+  //   if (item is mail) AppendToList(MENU_MAIL); else AppendToList(MENU_ITEM);
+  //   AppendToList(MENU_CANCEL1);
+  _actionList = [MENU_SUMMARY];
+  // TODO : add field moves (CUT/FLASH/SURF/etc.) si mon les connait.
+  const party = gameState.party as PokemonInstance[];
+  if (party.length > 1 && party[1] && party[1].speciesEnum !== 'SPECIES_NONE') {
+    _actionList.push(MENU_SWITCH);  // ORDRE - si plus de 1 mon
+  }
+  // TODO : check si held item est mail → MENU_MAIL, sinon MENU_ITEM.
+  _actionList.push(MENU_ITEM);
+  _actionList.push(MENU_CANCEL1);
   _actionCursor = 0;
   const numActions = _actionList.length;
   // 1:1 décomp window template : bg=2 width=10 height=(numActions*2).
@@ -954,23 +1177,29 @@ function _openActionMenu(rt: ReturnType<typeof getRuntime>): void {
     bg: 2, tilemapLeft: 19, tilemapTop, width: 10, height: numActions * 2,
     paletteNum: 14, baseBlock: 0x2E9,
   });
-  // 1:1 décomp DrawStdFrameWithCustomTileAndPalette(wid, FALSE, 0x4F, 13) :
-  // load user window frame tiles à baseTile 0x4F + apply palette 13 + blit
-  // frame border tilemap autour du window (= 8 tiles : 4 corners + 4 edges).
+  // 1:1 décomp : load user window frame tiles à baseTile 0x4F + palette 13.
+  // ⚠️ DrawStdFrameWithCustomTileAndPalette est appelé dans _renderActionMenuContents
+  // (PAS ici) — sinon le PutWindowTilemap suivant écrase le frame border et
+  // le menu apparaît sans cadre.
   LoadUserWindowBorderGfx(0, 0x4F, 13 * 16);
-  DrawStdFrameWithCustomTileAndPalette(_actionWindowId, false, 0x4F, 13);
-  _renderActionMenuContents();
   _phase = 'action_menu';
+  _drawMsg();
+  _renderActionMenuContents();
 }
 
 function _closeActionMenu(): void {
   if (_actionWindowId >= 0) {
+    // 1:1 décomp PartyMenuRemoveWindow : clear frame border avant remove.
+    ClearStdWindowAndFrame(_actionWindowId, false);
+    CopyWindowToVram(_actionWindowId, 3);
     RemoveWindow(_actionWindowId);
     _actionWindowId = -1;
   }
   _actionList = [];
   _actionCursor = 0;
   _phase = 'open';
+  // Re-render dialog avec "Choisir un POKéMON." après fermeture action menu.
+  _drawMsg();
 }
 
 /** Action menu input handler 1:1 décomp `Task_HandleSelectionMenuInput`
@@ -989,26 +1218,23 @@ function _handleActionMenuInput(rt: ReturnType<typeof getRuntime>): void {
   } else if (newKeys & KEY_A) {
     PlaySE(5);
     const action = _actionList[_actionCursor];
-    if (action === 2 /* RETOUR */) {
+    if (action === MENU_CANCEL1 /* RETOUR */) {
       _closeActionMenu();
-    } else if (action === 0 /* RESUME */) {
+    } else if (action === MENU_SUMMARY /* RESUME */) {
       // 1:1 décomp `CursorCb_Summary` (party_menu.c:2770) → CB2 swap vers
       // pokemon summary screen avec le mon courant (= slot pointed by cursor).
       const mon = (gameState.party as PokemonInstance[])[_slotId];
       if (mon) {
         _closeActionMenu();
-        // Fade to black + queue summary screen open. Same pattern as start-menu
-        // → bag/options/trainer-card (= sPendingScreenAction).
-        // For simplicity ici : direct OpenSummaryScreen qui fait CB2 swap.
-        // savedCallback restera notre party screen ? Non, on perd la party
-        // screen state. Pour vraie 1:1, le décomp utilise un CB2 chain
-        // qui restore la party à la fermeture. MVP : open summary direct,
-        // sa fermeture revient à overworld via savedCallback du party.
         OpenSummaryScreen(mon);
       } else {
         _closeActionMenu();
       }
-    } else if (action === 1 /* OBJET */) {
+    } else if (action === MENU_SWITCH /* ORDRE */) {
+      // TODO : 1:1 décomp `CursorCb_Switch` → switch action (= slot reorder).
+      console.log('[party-screen] TODO : ORDRE → switch mon slots');
+      _closeActionMenu();
+    } else if (action === MENU_ITEM /* OBJET */) {
       // TODO : ouvrir bag pour give/swap item
       console.log('[party-screen] TODO : OBJET → bag give/swap');
       _closeActionMenu();
@@ -1080,7 +1306,7 @@ export function CB2_InitPartyMenu(): void {
       }
       rt.gMain.state++; break;
     case 10: _phase = 'open'; rt.gMain.state++; break;
-    case 11: _drawAllSlots(); _drawMsg(); rt.gMain.state++; break;
+    case 11: _drawAllSlots(); _drawMsg(); _drawCancelButtonWindow(); rt.gMain.state++; break;
     case 12:
       _inputTaskId = rt.CreateTask(Task_PartyMenu_HandleInput, 0);
       // 1:1 décomp icon bounce anim task : oscillate y2 du selected mon icon.
@@ -1088,9 +1314,10 @@ export function CB2_InitPartyMenu(): void {
       _bounceTaskId = rt.CreateTask(Task_PartyMenu_BounceIcon, 1);
       rt.gMain.state++; break;
     case 13:
-      // Spawn icon OAMs + cancel button async, advance immédiatement.
+      // Spawn icon OAMs + cancel button + slot pokeballs async, advance immédiatement.
       void _spawnIconOams();
-      void _spawnCancelButtonOam();
+      // Sequence : _spawnCancelButtonOam load tiles → then _spawnSlotPokeballOams réutilise.
+      void _spawnCancelButtonOam().then(() => { _spawnSlotPokeballOams(); });
       rt.gMain.state++; break;
     case 14:
       // 1:1 décomp `AnimatePartySlot(gPartyMenu.slotId, 1)` (party_menu.c:1116) :
