@@ -1055,6 +1055,8 @@ import './flash-mask';
 import './field-effect-active-list';
 // money-box-ui.ts auto-register __moneyBoxUI pour show/hide/update money & coins box.
 import './money-box-ui';
+// virtual-objects.ts auto-register __virtualObjects pour createvobject/turnvobject opcodes.
+import './virtual-objects';
 
 /** 1:1 décomp constants pour PlayCryInternal (cf. species.h, sound.h). */
 export const SPECIES_GROUDON = 405;

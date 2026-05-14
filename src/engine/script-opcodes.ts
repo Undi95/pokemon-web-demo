@@ -3274,17 +3274,20 @@ registerOpcode('resetobjectsubpriority', (_ctx, args) => {
 registerOpcode('createvobject', (_ctx, args) => {
   // 1:1 décomp ScrCmd_createvobject (scrcmd.c:1900) :
   //   CreateVirtualObject(graphicsId, virtualObjId, x, y, elevation, direction).
+  // Session 132 : real sprite create via virtual-objects.ts (= load gfx +
+  // CreateObjectGraphicsSprite + StartSpriteAnim).
   const graphicsId = parseValue(args[0] ?? '0');
   const virtualObjId = parseValue(args[1] ?? '0');
   const x = _vget(args[2]);
   const y = _vget(args[3]);
   const elevation = parseValue(args[4] ?? '0');
   const direction = parseValue(args[5] ?? '0');
-  _gVirtualObjects.set(virtualObjId, {
-    active: true,
-    graphicsId, x, y, elevation, direction,
-  });
-  (globalThis as Record<string, unknown>).gVirtualObjects = _gVirtualObjects;
+  void (async () => {
+    const vo = (globalThis as { __virtualObjects?: { CreateVirtualObject?: (g: number, id: number, x: number, y: number, e: number, d: number) => Promise<number> } }).__virtualObjects;
+    if (vo?.CreateVirtualObject) {
+      await vo.CreateVirtualObject(graphicsId, virtualObjId, x, y, elevation, direction);
+    }
+  })();
   return false;
 });
 
@@ -3292,8 +3295,8 @@ registerOpcode('turnvobject', (_ctx, args) => {
   // 1:1 décomp ScrCmd_turnvobject : TurnVirtualObject(virtualObjId, direction).
   const virtualObjId = parseValue(args[0] ?? '0');
   const direction = parseValue(args[1] ?? '0');
-  const vobj = _gVirtualObjects.get(virtualObjId);
-  if (vobj) vobj.direction = direction;
+  const vo = (globalThis as { __virtualObjects?: { TurnVirtualObject?: (id: number, d: number) => void } }).__virtualObjects;
+  vo?.TurnVirtualObject?.(virtualObjId, direction);
   return false;
 });
 
