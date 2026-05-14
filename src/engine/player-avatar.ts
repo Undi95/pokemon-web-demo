@@ -852,6 +852,13 @@ export function PlayerStep(heldKeys: number, newKeys: number, rt: DecompRuntime)
       if (newElev !== 0) gPlayerAvatar.currentElevation = newElev;
       // Switch walk anim alt for next step (= alternate walk1/walk2).
       gPlayerAvatar.walkAnimAlt = (gPlayerAvatar.walkAnimAlt ^ 1) as 0 | 1;
+      // 1:1 décomp `RunOnSteppedCallback` (overworld.c:1930) : dispatch
+      // active per-step callback at end of each tile step. Triggers ash piles
+      // (Route 113), sinking bridges (Fortree/Pacifidlog), ice cracks (Sootopolis),
+      // step counter increment + daily flag thresholds.
+      void import('./step-callbacks').then(({ DoPerStepCallback }) => {
+        DoPerStepCallback();
+      });
       // 1:1 décomp `GroundEffect_StepOnTallGrass` (event_object_movement.c:7815) :
       // si player step ON tall grass tile → spawn rustle anim. Trigger au step
       // end (= player vient d'arriver sur la new tile).

@@ -3333,10 +3333,14 @@ registerOpcode('setmaplayoutindex', (_ctx, args) => {
 
 registerOpcode('setstepcallback', (_ctx, args) => {
   // 1:1 décomp ScrCmd_setstepcallback : ActivatePerStepCallback(callbackId).
-  // Active une callback exécutée à chaque step du player (= déclenche
-  // encounters spéciaux, daily events, etc.).
+  // Active une callback exécutée à chaque step du player.
+  // Session 132 : real dispatch via step-callbacks.ts (= 8 callback handlers
+  // 1:1 décomp gPerStepCallbacks[]).
   const callbackId = parseValue(args[0] ?? '0');
-  (globalThis as Record<string, unknown>).gActivePerStepCallbackId = callbackId;
+  void (async () => {
+    const { ActivatePerStepCallback } = await import('./step-callbacks');
+    ActivatePerStepCallback(callbackId);
+  })();
   return false;
 });
 
@@ -3455,20 +3459,12 @@ registerOpcode('updatecoinsbox', (_ctx, _args) => {
 registerOpcode('dotimebasedevents', (_ctx, _args) => {
   // 1:1 décomp ScrCmd_dotimebasedevents : DoTimeBasedEvents().
   // Trigger berry growth + tide cycle + Shoal Cave water level + etc.
+  // Session 132 : real impl via time-based-events.ts (= berry growth math
+  // 1:1 décomp berry.c:BerryTreeTimeUpdate using RTC minutes delta).
   void (async () => {
     try {
-      // Trigger berry tree time update.
-      const trees = _berryTreesArr();
-      if (trees) {
-        // Avancer chaque arbre selon le temps écoulé (= MVP : juste log).
-        for (let i = 0; i < trees.length; i++) {
-          const t = trees[i];
-          if (t.berry > 0 && t.minutesUntilNextStage !== undefined) {
-            // Real impl : decrement minutesUntilNextStage + RtcGetMinuteCount diff.
-            void t;
-          }
-        }
-      }
+      const { DoTimeBasedEvents } = await import('./time-based-events');
+      DoTimeBasedEvents();
     } catch (e) {
       console.warn('[opcode dotimebasedevents] failed:', e);
     }

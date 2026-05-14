@@ -1,0 +1,170 @@
+/**
+ * time-based-events.ts — 1:1 décomp `src/berry.c:BerryTreeTimeUpdate` +
+ * `src/overworld.c:DoTimeBasedEvents`.
+ *
+ * Source de vérité :
+ *   - `D:/Projet 1/decomps/pokeemeraude/src/berry.c:1076-1112` (BerryTreeTimeUpdate)
+ *   - `D:/Projet 1/decomps/pokeemeraude/src/overworld.c:DoTimeBasedEvents`
+ *   - `D:/Projet 1/decomps/pokeemeraude/include/constants/berry.h` (BERRY_STAGE_*)
+ *
+ * Concept :
+ *   Tous les berries trees ont un timer `minutesUntilNextStage`. Au step 256
+ *   intervals OU au script-driven `dotimebasedevents`, on calc le delta
+ *   minutes RTC depuis le last update + on advance les trees concerned.
+ *
+ *   Stages : SOWN (0) → SPROUTED (1) → TALLER (2) → BLOOMING (3) → BERRIES (4).
+ *   Quand BERRIES atteint : minutesUntilNextStage *= 4 (= 4× withering time).
+ *   Si 71 stages × duration > minutes : tree wilt (= reset to gBlankBerryTree).
+ *
+ * Most berries : stageDuration = 3 hours = 180 minutes per stage (data/berry.h).
+ */
+
+import { RtcGetMinuteCount } from './rtc';
+
+// ─── Constants 1:1 décomp ────────────────────────────────────────────────────
+
+export const BERRY_STAGE_NO_BERRY = 0;
+export const BERRY_STAGE_PLANTED = 1;
+export const BERRY_STAGE_SPROUTED = 2;
+export const BERRY_STAGE_TALLER = 3;
+export const BERRY_STAGE_FLOWER = 4;
+export const BERRY_STAGE_BERRIES = 5;
+export const BERRY_STAGE_SOWN = BERRY_STAGE_PLANTED;
+
+// ─── Helper : berry stage duration ──────────────────────────────────────────
+
+/** 1:1 décomp `GetStageDurationByBerryType(berry)` (berry.c:1246) :
+ *    return GetBerryInfo(berry)->stageDuration * 60;
+ *  La majorité des berries ont stageDuration = 3 (= 3h × 60 = 180min/stage).
+ *  Quelques-uns ont 2/4/6/12 hours. Pour MVP on retourne 180. */
+function _stageDurationMinutes(_berry: number): number {
+  // Future : map berry id → real stageDuration via data/berry.h gBerries[].
+  return 180;
+}
+
+// ─── Berry tree growth 1:1 décomp ────────────────────────────────────────────
+
+interface BerryTree {
+  berry: number;
+  stage: number;
+  minutesUntilNextStage: number;
+  berryYield: number;
+  regrowthCount: number;
+  watered1: number;
+  watered2: number;
+  watered3: number;
+  watered4: number;
+  stopGrowth: number;
+}
+
+function _berryTreesArr(): BerryTree[] | undefined {
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { berryTrees?: BerryTree[] } | undefined;
+  return block1?.berryTrees;
+}
+
+const _gBlankBerryTree: BerryTree = {
+  berry: 0, stage: 0, minutesUntilNextStage: 0, berryYield: 0,
+  regrowthCount: 0, watered1: 0, watered2: 0, watered3: 0, watered4: 0,
+  stopGrowth: 0,
+};
+
+/** 1:1 décomp `BerryTreeGrow(tree)` (berry.c:1029) : advance le tree d'un stage.
+ *  Returns FALSE si on arrive à une stage terminal qu'on devrait stopper. */
+function _BerryTreeGrow(tree: BerryTree): boolean {
+  if (tree.stopGrowth) return false;
+  switch (tree.stage) {
+    case BERRY_STAGE_PLANTED:
+      tree.stage = BERRY_STAGE_SPROUTED;
+      break;
+    case BERRY_STAGE_SPROUTED:
+      tree.stage = BERRY_STAGE_TALLER;
+      break;
+    case BERRY_STAGE_TALLER:
+      tree.stage = BERRY_STAGE_FLOWER;
+      break;
+    case BERRY_STAGE_FLOWER:
+      tree.stage = BERRY_STAGE_BERRIES;
+      // berryYield computed via CalcBerryYield(tree) en décomp.
+      // MVP : 2 berries par défaut (= moyenne ROM).
+      tree.berryYield = 2;
+      break;
+    case BERRY_STAGE_BERRIES:
+      // Withering → reset à SPROUTED OU clear si regrowthCount maxed.
+      tree.watered1 = 0;
+      tree.watered2 = 0;
+      tree.watered3 = 0;
+      tree.watered4 = 0;
+      tree.berryYield = 0;
+      tree.stage = BERRY_STAGE_SPROUTED;
+      tree.regrowthCount++;
+      if (tree.regrowthCount === 10) {
+        Object.assign(tree, _gBlankBerryTree);
+      }
+      break;
+  }
+  return true;
+}
+
+/** 1:1 décomp `BerryTreeTimeUpdate(minutes)` (berry.c:1076).
+ *  Advance tous les berry trees actifs selon le delta minutes passé. */
+export function BerryTreeTimeUpdate(minutes: number): void {
+  const trees = _berryTreesArr();
+  if (!trees) return;
+  for (let i = 0; i < trees.length; i++) {
+    const tree = trees[i];
+    if (tree.berry && tree.stage && !tree.stopGrowth) {
+      // 1:1 décomp : si > 71 × stageDuration minutes passed, le tree wilts complet
+      // (= blank). 71 stages = trees abandonnés depuis longtemps.
+      if (minutes >= _stageDurationMinutes(tree.berry) * 71) {
+        Object.assign(tree, _gBlankBerryTree);
+      } else {
+        let time = minutes;
+        while (time !== 0) {
+          if (tree.minutesUntilNextStage > time) {
+            tree.minutesUntilNextStage -= time;
+            break;
+          }
+          time -= tree.minutesUntilNextStage;
+          tree.minutesUntilNextStage = _stageDurationMinutes(tree.berry);
+          if (!_BerryTreeGrow(tree)) break;
+          // Stage BERRIES : duration ×4 (= longer to wither).
+          if (tree.stage === BERRY_STAGE_BERRIES) {
+            tree.minutesUntilNextStage *= 4;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ─── DoTimeBasedEvents 1:1 décomp ────────────────────────────────────────────
+
+/** 1:1 décomp `DoTimeBasedEvents` (overworld.c) :
+ *    - Read gSaveBlock1Ptr->lastBerryTreeUpdate
+ *    - Calc minutes diff vs RtcGetMinuteCount()
+ *    - Call BerryTreeTimeUpdate(diff)
+ *    - Store new lastBerryTreeUpdate
+ *    - Also : daily flag clear, weather rotation, etc.
+ *  Notre version : utilise minutes since RTC anchor (s32) à la place de struct Time. */
+export function DoTimeBasedEvents(): void {
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { lastBerryTreeUpdateMin?: number } | undefined;
+  if (!block1) return;
+
+  const minuteNow = RtcGetMinuteCount();
+  const lastUpdate = block1.lastBerryTreeUpdateMin ?? minuteNow;
+  const diff = minuteNow - lastUpdate;
+
+  block1.lastBerryTreeUpdateMin = minuteNow;
+
+  if (diff > 0) {
+    BerryTreeTimeUpdate(diff);
+  }
+
+  // Future :
+  // - ClearDailyFlagsAfterChallenge if day changed
+  // - Rotate Mass Outbreaks
+  // - Weather rotation (Route 119/123)
+  // - Mirage Island calc
+}

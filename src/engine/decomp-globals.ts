@@ -1047,6 +1047,10 @@ export function IsFanfareTaskInactive(): boolean {
   IsSEPlaying, IsCryPlaying, IsCryFinished, IsFanfareTaskInactive,
 };
 
+// ─── Side-effect imports : load modules qui s'auto-registrent sur globalThis ─
+// flash-mask.ts auto-register __applyFlashMask pour phaser-bridge post-process.
+import './flash-mask';
+
 /** 1:1 décomp constants pour PlayCryInternal (cf. species.h, sound.h). */
 export const SPECIES_GROUDON = 405;
 export const SPECIES_KYOGRE = 404;
