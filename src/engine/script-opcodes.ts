@@ -3339,12 +3339,14 @@ registerOpcode('animateflash', (ctx, args) => {
 registerOpcode('setmaplayoutindex', (_ctx, args) => {
   // 1:1 décomp ScrCmd_setmaplayoutindex : SetCurrentMapLayout(VarGet(layout)).
   // Change le layout (= tile data + collisions) de la map active sans recharger
-  // toute la map (= utilisé pour switch jour/nuit dans Pacifidlog, etc.).
+  // toute la map (= utilisé pour Birch lab post-starter, Pacifidlog day/night,
+  // Sootopolis ice cracks, ShoalCave tide, SkyPillar dust, Route 111 desert).
+  // Session 132 : dispatch à map-layout-swap.ts qui gère le load layout async.
   const layoutIdx = _vget(args[0]);
-  // Notre port : pas encore de système de dynamic layout swap. On stocke le
-  // requested layout, le rendering pourra l'appliquer si supporté.
-  (globalThis as Record<string, unknown>).gPendingMapLayoutIndex = layoutIdx;
-  console.log(`[opcode setmaplayoutindex] requested layout ${layoutIdx}`);
+  void (async () => {
+    const swap = (globalThis as { __mapLayoutSwap?: { SetCurrentMapLayout?: (idx: number) => Promise<void> } }).__mapLayoutSwap;
+    await swap?.SetCurrentMapLayout?.(layoutIdx);
+  })();
   return false;
 });
 
