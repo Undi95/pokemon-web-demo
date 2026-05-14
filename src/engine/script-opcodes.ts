@@ -3422,18 +3422,24 @@ registerOpcode('removecoins', (_ctx, args) => {
 registerOpcode('showmoneybox', (_ctx, args) => {
   // 1:1 décomp ScrCmd_showmoneybox (scrcmd.c) :
   //   if (!ignore) DrawMoneyBox(GetMoney(&gSaveBlock1Ptr->money), x, y).
+  // Session 132 : real UI via money-box-ui.ts.
   const x = parseValue(args[0] ?? '0');
   const y = parseValue(args[1] ?? '0');
   const ignore = parseValue(args[2] ?? '0');
-  if (!ignore) {
-    (globalThis as Record<string, unknown>).gMoneyBoxState = { visible: true, x, y };
-  }
+  if (ignore) return false;
+  void (async () => {
+    const ui = (globalThis as { __moneyBoxUI?: { DrawMoneyBox?: (amt: number, x: number, y: number) => void; _getMoney?: () => number } }).__moneyBoxUI;
+    if (ui?.DrawMoneyBox && ui._getMoney) ui.DrawMoneyBox(ui._getMoney(), x, y);
+  })();
   return false;
 });
 
 registerOpcode('hidemoneybox', (_ctx, _args) => {
   // 1:1 décomp ScrCmd_hidemoneybox : HideMoneyBox().
-  (globalThis as Record<string, unknown>).gMoneyBoxState = { visible: false, x: 0, y: 0 };
+  void (async () => {
+    const ui = (globalThis as { __moneyBoxUI?: { HideMoneyBox?: () => void } }).__moneyBoxUI;
+    ui?.HideMoneyBox?.();
+  })();
   return false;
 });
 
@@ -3442,10 +3448,11 @@ registerOpcode('updatemoneybox', (_ctx, args) => {
   const _x = parseValue(args[0] ?? '0');
   const _y = parseValue(args[1] ?? '0');
   const ignore = parseValue(args[2] ?? '0');
-  if (!ignore) {
-    const st = (globalThis as Record<string, unknown>).gMoneyBoxState as { visible: boolean; x: number; y: number } | undefined;
-    if (st) st.visible = true;  // trigger re-render
-  }
+  if (ignore) return false;
+  void (async () => {
+    const ui = (globalThis as { __moneyBoxUI?: { ChangeAmountInMoneyBox?: (amt: number) => void; _getMoney?: () => number } }).__moneyBoxUI;
+    if (ui?.ChangeAmountInMoneyBox && ui._getMoney) ui.ChangeAmountInMoneyBox(ui._getMoney());
+  })();
   return false;
 });
 
@@ -3453,20 +3460,28 @@ registerOpcode('showcoinsbox', (_ctx, args) => {
   // 1:1 décomp ScrCmd_showcoinsbox : ShowCoinsWindow(GetCoins(), x, y).
   const x = parseValue(args[0] ?? '0');
   const y = parseValue(args[1] ?? '0');
-  (globalThis as Record<string, unknown>).gCoinsBoxState = { visible: true, x, y };
+  void (async () => {
+    const ui = (globalThis as { __moneyBoxUI?: { ShowCoinsWindow?: (amt: number, x: number, y: number) => void; _getCoins?: () => number } }).__moneyBoxUI;
+    if (ui?.ShowCoinsWindow && ui._getCoins) ui.ShowCoinsWindow(ui._getCoins(), x, y);
+  })();
   return false;
 });
 
 registerOpcode('hidecoinsbox', (_ctx, _args) => {
   // 1:1 décomp ScrCmd_hidecoinsbox : HideCoinsWindow().
-  (globalThis as Record<string, unknown>).gCoinsBoxState = { visible: false, x: 0, y: 0 };
+  void (async () => {
+    const ui = (globalThis as { __moneyBoxUI?: { HideCoinsWindow?: () => void } }).__moneyBoxUI;
+    ui?.HideCoinsWindow?.();
+  })();
   return false;
 });
 
 registerOpcode('updatecoinsbox', (_ctx, _args) => {
   // 1:1 décomp ScrCmd_updatecoinsbox : PrintCoinsString(GetCoins()).
-  const st = (globalThis as Record<string, unknown>).gCoinsBoxState as { visible: boolean; x: number; y: number } | undefined;
-  if (st) st.visible = true;
+  void (async () => {
+    const ui = (globalThis as { __moneyBoxUI?: { PrintCoinsString?: (amt: number) => void; _getCoins?: () => number } }).__moneyBoxUI;
+    if (ui?.PrintCoinsString && ui._getCoins) ui.PrintCoinsString(ui._getCoins());
+  })();
   return false;
 });
 

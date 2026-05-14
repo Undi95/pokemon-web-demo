@@ -1053,6 +1053,8 @@ import './flash-mask';
 // field-effect-active-list.ts auto-register __fieldEffectActiveList pour
 // dofieldeffect / waitfieldeffect / dofieldeffectsparkle opcodes.
 import './field-effect-active-list';
+// money-box-ui.ts auto-register __moneyBoxUI pour show/hide/update money & coins box.
+import './money-box-ui';
 
 /** 1:1 décomp constants pour PlayCryInternal (cf. species.h, sound.h). */
 export const SPECIES_GROUDON = 405;
