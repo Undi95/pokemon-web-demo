@@ -1050,6 +1050,9 @@ export function IsFanfareTaskInactive(): boolean {
 // ─── Side-effect imports : load modules qui s'auto-registrent sur globalThis ─
 // flash-mask.ts auto-register __applyFlashMask pour phaser-bridge post-process.
 import './flash-mask';
+// field-effect-active-list.ts auto-register __fieldEffectActiveList pour
+// dofieldeffect / waitfieldeffect / dofieldeffectsparkle opcodes.
+import './field-effect-active-list';
 
 /** 1:1 décomp constants pour PlayCryInternal (cf. species.h, sound.h). */
 export const SPECIES_GROUDON = 405;

@@ -684,14 +684,20 @@ function _tickJump(target: MovementTarget, dir: number, frame: number, distance:
       }
       // 1:1 décomp `GroundEffect_JumpLandingDust` (event_object_movement.c).
       // Spawn dust cloud à landing position si on a un rt.
+      // Player jump landing : pas de flag disable côté player (= toujours dust).
       if (_activeRt) SpawnJumpLandingDust(_activeRt, gPlayerAvatar.x, gPlayerAvatar.y);
     } else if (target.npc) {
       target.npc.previousCoordsX = target.npc.currentCoordsX;
       target.npc.previousCoordsY = target.npc.currentCoordsY;
       target.npc.walkFramesLeft = 0;
       target.npc.walkDirection = DIR_NONE;
-      // Dust at NPC landing position.
-      if (_activeRt) SpawnJumpLandingDust(_activeRt, target.npc.currentCoordsX, target.npc.currentCoordsY);
+      // Dust at NPC landing position — sauf si flag disableJumpLandingGroundEffect
+      // set par script opcode `disable_jump_landing_ground_effect`. 1:1 décomp
+      // event_object_movement.c:DoLandingEffect skip si flag set.
+      const flag = (target.npc as unknown as { disableJumpLandingGroundEffect?: boolean }).disableJumpLandingGroundEffect;
+      if (_activeRt && !flag) {
+        SpawnJumpLandingDust(_activeRt, target.npc.currentCoordsX, target.npc.currentCoordsY);
+      }
     }
     return true;
   }

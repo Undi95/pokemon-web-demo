@@ -2440,6 +2440,10 @@ registerOpcode('messageautoscroll', (_ctx, args) => {
  */
 registerOpcode('dofieldeffect', (_ctx, args) => {
   const effectId = VarGet(args[0] ?? '0');
+  // Session 132 : track active list pour waitfieldeffect consumer.
+  // 1:1 décomp `FieldEffectStart(id)` ajoute id à gFieldEffectActiveList.
+  const fa = (globalThis as { __fieldEffectActiveList?: { FieldEffectActiveListAdd?: (id: number) => void } }).__fieldEffectActiveList;
+  fa?.FieldEffectActiveListAdd?.(effectId);
   // Try to resolve via auto-file FieldEffectStart. Le auto-file référence
   // gFieldEffectScriptPointers + FieldEffectScriptFuncs qui sont des bytecode
   // tables — pas trivial à exposer sur globalThis. Pour l'instant on log +
@@ -3099,13 +3103,11 @@ registerOpcode('waitfieldeffect', (ctx, args) => {
   //   sFieldEffectScriptId = VarGet(arg);
   //   SetupNativeScript(ctx, WaitForFieldEffectFinish) ; return TRUE
   // WaitForFieldEffectFinish : return !FieldEffectActiveListContains(sFieldEffectScriptId).
+  // Session 132 : real tracking via field-effect-active-list.ts.
   _sFieldEffectScriptId = _vget(args[0]);
-  // Notre port : field effects sont fire-and-forget en grande partie (= pas
-  // d'active list tracking). On wait 60 frames (= 1s, durée moyenne effect).
-  let framesWaited = 0;
   const poll = (): boolean => {
-    framesWaited++;
-    return framesWaited >= 60;
+    const fa = (globalThis as { __fieldEffectActiveList?: { FieldEffectActiveListContains?: (id: number) => boolean } }).__fieldEffectActiveList;
+    return !(fa?.FieldEffectActiveListContains?.(_sFieldEffectScriptId) ?? false);
   };
   SetupNativeScript(ctx, poll);
   return true;
@@ -3133,6 +3135,7 @@ registerOpcode('dofieldeffectsparkle', (ctx, args) => {
   // 1:1 décomp macro `dofieldeffectsparkle x, y, priority` (event.inc:1974) :
   //   setfieldeffectargument 0, x ; setfieldeffectargument 1, y ;
   //   setfieldeffectargument 2, priority ; dofieldeffect FLDEFF_SPARKLE
+  // Session 132 : trigger active list add pour tracking via waitfieldeffect.
   const x = _vget(args[0]);
   const y = _vget(args[1]);
   const priority = _vget(args[2]);
@@ -3140,7 +3143,11 @@ registerOpcode('dofieldeffectsparkle', (ctx, args) => {
   _gFieldEffectArguments[1] = y;
   _gFieldEffectArguments[2] = priority;
   (globalThis as Record<string, unknown>).gFieldEffectArguments = _gFieldEffectArguments;
-  // dofieldeffect FLDEFF_SPARKLE (= 36 dans field_effect.h).
+  // FLDEFF_SPARKLE = 36 (= 1:1 décomp include/constants/field_effects.h).
+  const FLDEFF_SPARKLE = 36;
+  const fa = (globalThis as { __fieldEffectActiveList?: { FieldEffectActiveListAdd?: (id: number, dur?: number) => void } }).__fieldEffectActiveList;
+  // Sparkle dure ~30 frames = ~500ms.
+  fa?.FieldEffectActiveListAdd?.(FLDEFF_SPARKLE, 500);
   return getOpcodeHandler('dofieldeffect')?.(ctx, ['36']) ?? false;
 });
 
@@ -3182,15 +3189,24 @@ registerOpcode('lockfortrainer', (ctx, _args) => {
   if (_isInTrainerLink()) return false;
   const npc = gObjectEvents[gSelectedObjectEvent.index];
   if (npc && npc.active) {
-    // FreezeForApproachingTrainers : freeze tous les NPCs sauf le selected.
+    // 1:1 décomp FreezeForApproachingTrainers (trainer_see.c) : freeze tous
+    // les NPCs sauf le selected approaching trainer.
     for (const n of gObjectEvents) if (n.active) n.frozen = true;
-    // npc.frozen = true (déjà fait par boucle).
-    // IsFreezeObjectAndPlayerFinished : returns TRUE quand player + tous les
-    // NPCs ont fini leur step animation courant. Notre port : 4 frames.
-    let framesWaited = 0;
+    // Capture the initial step state of player + all NPCs to detect when
+    // all step animations have completed.
     const poll = (): boolean => {
-      framesWaited++;
-      return framesWaited >= 4;
+      // 1:1 décomp IsFreezeObjectAndPlayerFinished (event_object_movement.c) :
+      //   return !player.runningState !== MOVING && all NPCs stepFramesLeft === 0
+      // Notre check : gPlayerAvatar.stepFramesLeft === 0 (= player tile-aligned)
+      //   ET tous les active NPCs ont leur step done.
+      if (gPlayerAvatar.stepFramesLeft > 0) return false;
+      // NPC step state : si npc.walkFramesLeft > 0, encore en cours.
+      for (const n of gObjectEvents) {
+        if (!n.active) continue;
+        const walking = (n as unknown as { walkFramesLeft?: number }).walkFramesLeft ?? 0;
+        if (walking > 0) return false;
+      }
+      return true;  // tous arrêtés → resume script
     };
     SetupNativeScript(ctx, poll);
     return true;
