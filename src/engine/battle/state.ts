@@ -445,6 +445,17 @@ export const gLastHitBy: number[] = [0, 0, 0, 0];
 /** Battler turn order : gBattlerByTurnOrder[i] = battler index qui agit i-ième. */
 export const gBattlerByTurnOrder: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `gChosenActionByBattler[MAX_BATTLERS_COUNT]` (battle_main.c).
+ *  Action chosen for the turn (B_ACTION_USE_MOVE / SWITCH / RUN / etc.). */
+export const gChosenActionByBattler: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `gChosenMoveByBattler[MAX_BATTLERS_COUNT]` (battle_main.c). */
+export const gChosenMoveByBattler: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `gActionsByTurnOrder[MAX_BATTLERS_COUNT]` (battle_main.c).
+ *  Action queue triée par turn order. */
+export const gActionsByTurnOrder: number[] = [0, 0, 0, 0];
+
 /** Communication channel (= used for MISS_TYPE etc. inter-script). */
 export const gBattleCommunication: number[] = new Array(16).fill(0);
 
@@ -497,6 +508,9 @@ export function resetBattleState(): void {
     gLastUsedMove[i] = 0;
     gLastHitBy[i] = 0;
     gBattlerByTurnOrder[i] = 0;
+    gChosenActionByBattler[i] = 0;
+    gChosenMoveByBattler[i] = 0;
+    gActionsByTurnOrder[i] = 0;
   }
   Object.assign(gBattleScripting, _makeBlankScripting());
   for (let i = 0; i < gBattleCommunication.length; i++) gBattleCommunication[i] = 0;

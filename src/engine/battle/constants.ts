@@ -612,6 +612,18 @@ export const ABILITY_NATURAL_CURE = 30;
 export const MOVE_PROTECT = 182;
 export const MOVE_DETECT  = 197;
 export const MOVE_ENDURE  = 203;
+export const MOVE_PURSUIT = 228;
+
+// ─── B_ACTION_* (battle.h:27-38) — 1:1 décomp ──────────────────────────────
+export const B_ACTION_USE_MOVE   = 0;
+export const B_ACTION_TRY_FINISH = 11;
+
+// ─── ABILITY_PRESSURE / ABILITY_OBLIVIOUS (abilities.h) — 1:1 décomp ──────
+export const ABILITY_PRESSURE  = 46;
+export const ABILITY_OBLIVIOUS = 12;
+
+// ─── REQUEST_PPMOVE1_BATTLE (battle_controllers.h:14) — 1:1 décomp ────────
+export const REQUEST_PPMOVE1_BATTLE = 9;
 
 // ─── EFFECT_PROTECT / EFFECT_ENDURE (battle_move_effects.h) ───────────────
 export const EFFECT_PROTECT = 111;

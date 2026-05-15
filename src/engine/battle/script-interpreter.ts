@@ -496,6 +496,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-22').then(({ installNiveau22Handlers }) => {
     installNiveau22Handlers(_commands);
   });
+  // Session 135 — Niveau 23 (clear/spite/imprison/future/pursuit).
+  void import('./cmd-niveau-23').then(({ installNiveau23Handlers }) => {
+    installNiveau23Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
