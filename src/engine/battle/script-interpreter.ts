@@ -532,6 +532,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-31').then(({ installNiveau31Handlers }) => {
     installNiveau31Handlers(_commands);
   });
+  // Session 135 — Niveau 32 (learn move / party UI / ball stubs).
+  void import('./cmd-niveau-32').then(({ installNiveau32Handlers }) => {
+    installNiveau32Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
