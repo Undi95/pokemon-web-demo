@@ -40,15 +40,11 @@ import { gBitTable } from './battle-controllers';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** 1:1 stub `GetGenderFromSpeciesAndPersonality(species, personality)`
- *  (pokemon.c). Returns MON_MALE / MON_FEMALE / MON_GENDERLESS.
- *
- *  Notre stub : utilise personality % 2 (= 0:MALE, 1:FEMALE) sans species
- *  gender ratio lookup. */
-function _getGenderFromSpeciesAndPersonality(_species: number, personality: number): number {
-  // TODO porter gSpeciesInfo[species].genderRatio + comparaison avec
-  // personality lo byte.
-  return (personality & 1) === 0 ? 0x00 : 0xFE;  // MON_MALE / MON_FEMALE
+// 1:1 décomp `GetGenderFromSpeciesAndPersonality` — full port via species-runtime
+// (= utilise gSpeciesInfo[species].genderRatio + personality lo byte 1:1).
+import { GetGenderFromSpeciesAndPersonality as _GetGenderFull } from './data/species-runtime';
+function _getGenderFromSpeciesAndPersonality(species: number, personality: number): number {
+  return _GetGenderFull(species, personality);
 }
 
 /** 1:1 stub `IsInvalidForSleepTalkOrAssist(move)` (battle_util.c).

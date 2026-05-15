@@ -207,3 +207,45 @@ export function resetBattleHistory(): void {
     _battleHistory.itemEffects[i] = 0;
   }
 }
+
+// ─── GetDefaultMoveTarget (pokemon.c:3422-3446) — 1:1 décomp ──────────────
+
+/** 1:1 décomp `GetDefaultMoveTarget(battler)`. Retourne le default target pour
+ *  un battler (= utilisé quand le UI demande qui attaque par défaut sans
+ *  override). Logique single vs double battle. */
+export function GetDefaultMoveTarget(battler: number): number {
+  // Lazy imports pour éviter circular avec battle/constants.
+  // BATTLE_OPPOSITE(side) = side ^ 1.
+  // BATTLE_PARTNER(position) = position ^ 2.
+  const BIT_SIDE = 1;
+  const BIT_FLANK = 2;
+  const BATTLE_TYPE_DOUBLE = 1;  // 1 << 0
+  const BATTLE_ALIVE_EXCEPT_ACTIVE = 0;
+
+  // Lazy lookup gBattleTypeFlags + gAbsentBattlerFlags from globalThis (= same trick).
+  const stateMod = (globalThis as { __battleState?: { gBattleTypeFlags?: number; gAbsentBattlerFlags?: number } }).__battleState;
+  const gBattleTypeFlags = stateMod?.gBattleTypeFlags ?? 0;
+  const gAbsentBattlerFlags = stateMod?.gAbsentBattlerFlags ?? 0;
+
+  const battlerSide = battler & BIT_SIDE;
+  const opposing = battlerSide ^ BIT_SIDE;
+
+  if (!(gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) {
+    return GetBattlerAtPosition(opposing);
+  }
+
+  // Count alive battlers except active — STUB simple : 2 si double, sinon 1.
+  // (= devrait wire CountAliveMonsInBattle BATTLE_ALIVE_EXCEPT_ACTIVE = 0)
+  const aliveExceptActive = 2;
+  if (aliveExceptActive > 1) {
+    // Pick random partner ou opposing.
+    const position = (Math.random() < 0.5) ? (opposing ^ BIT_FLANK) : opposing;
+    return GetBattlerAtPosition(position);
+  }
+
+  // Last alive : redirect partner si opposing absent.
+  if (gAbsentBattlerFlags & (1 << opposing)) {
+    return GetBattlerAtPosition(opposing ^ BIT_FLANK);
+  }
+  return GetBattlerAtPosition(opposing);
+}
