@@ -429,20 +429,35 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
     setActiveBattler(activeBattler);
     const mon = gBattleMons[activeBattler];
 
-    // 1:1 décomp : Substitute path — TODO porter
-    // (= si SUBSTITUTE + substituteHP + !IGNORE_SUBSTITUTE → damage va au
-    //  substitute via gDisableStructs.substituteHP -= damage ;
-    //  shellBellDmg tracked, PushCursor + BattleScript_SubstituteFade si 0).
-    // Pour MVP : tout damage va au mon direct (= sans substitute layer).
+    // 1:1 décomp : Substitute path. Si SUBSTITUTE actif + substituteHP > 0 +
+    // !IGNORE_SUBSTITUTE → damage va au substitute, pas au mon.
+    const HITMARKER_IGNORE_SUBSTITUTE_LOCAL = 1 << 8;
+    if ((mon.status2 & STATUS2_SUBSTITUTE)
+        && gDisableStructs[activeBattler].substituteHP > 0
+        && !(gHitMarker & HITMARKER_IGNORE_SUBSTITUTE_LOCAL)) {
+      const subHP = gDisableStructs[activeBattler].substituteHP;
+      if (subHP >= gBattleMoveDamage) {
+        gDisableStructs[activeBattler].substituteHP = subHP - gBattleMoveDamage;
+        gSpecialStatuses[activeBattler].shellBellDmg += gBattleMoveDamage;
+      } else {
+        // Substitute absorbs partial, rest goes through.
+        gSpecialStatuses[activeBattler].shellBellDmg += subHP;
+        setBattleMoveDamage(subHP);
+        gDisableStructs[activeBattler].substituteHP = 0;
+      }
+      // 1:1 décomp : si substituteHP == 0 → push BattleScript_SubstituteFade.
+      // STUB : push deferred au handler caller (= pas wired pour MVP).
+      return false;  // Pas de damage au mon direct.
+    }
 
     if (gBattleMoveDamage < 0) {
       // Negative damage = heal.
       mon.hp += -gBattleMoveDamage;
       if (mon.hp > mon.maxHP) mon.hp = mon.maxHP;
     } else {
-      // 1:1 décomp : HITMARKER_IGNORE_BIDE check + gBideDmg tracker — TODO.
-      // 1:1 décomp : physical/special damage tracker (= gProtectStructs.physicalDmg
-      // / specialDmg + battlerId pour Counter/Mirror Coat) — TODO.
+      // 1:1 décomp : Bide damage tracker (= gBideDmg[target] += damage si
+      // attacker != target). STUB : pas wired pour MVP. TODO porter
+      // HITMARKER_IGNORE_BIDE check.
 
       if (mon.hp > gBattleMoveDamage) {
         mon.hp -= gBattleMoveDamage;
@@ -452,20 +467,25 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
         mon.hp = 0;
       }
 
-      // 1:1 décomp : shellBellDmg tracker (= gSpecialStatuses[active].shellBellDmg)
-      // — TODO porter gSpecialStatuses.
+      // 1:1 décomp : shellBellDmg tracker (= post-combat Shell Bell heal).
+      gSpecialStatuses[activeBattler].shellBellDmg += gBattleMoveDamage;
+
+      // 1:1 décomp : physical/special damage tracker. Pour Counter/Mirror Coat.
+      // STUB : pas wired pour MVP — Counter/Mirror Coat utilise battle bytecode.
     }
 
-    // 1:1 décomp : clear HITMARKER_PASSIVE_HP_UPDATE.
-    // TODO : exposer HITMARKER_PASSIVE_HP_UPDATE constant + clear ici.
+    // 1:1 décomp : clear HITMARKER_PASSIVE_HP_UPDATE (bit 19).
+    setHitMarker(gHitMarker & ~(1 << 19));
 
-    // 1:1 décomp : Emit SetMonData REQUEST_HP_BATTLE + Mark — la HP doit sync au
-    // controller pour update UI. TODO porter via emit.
+    // 1:1 décomp : Emit SetMonData REQUEST_HP_BATTLE + Mark — STUB UI controller.
   } else {
-    // 1:1 décomp : NO_EFFECT path → set shellBellDmg = IGNORE_SHELL_BELL si 0.
-    // TODO porter gSpecialStatuses.
+    // 1:1 décomp : NO_EFFECT path → set shellBellDmg = IGNORE_SHELL_BELL sentinel.
     const activeBattler = _utilGetBattler(battlerArg);
     setActiveBattler(activeBattler);
+    // Marker for Shell Bell to ignore this damage in post-hit recovery.
+    if (gSpecialStatuses[activeBattler].shellBellDmg === 0) {
+      gSpecialStatuses[activeBattler].shellBellDmg = -1;  // IGNORE_SHELL_BELL sentinel
+    }
   }
   return false;
 }
