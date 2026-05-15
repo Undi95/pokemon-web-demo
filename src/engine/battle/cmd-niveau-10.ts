@@ -64,10 +64,10 @@ function Cmd_recordlastability(ctx: BattleScriptContext): boolean {
   return false;
 }
 
-/** 1:1 stub `RecordAbilityBattle(battlerId, ability)` (battle_util.c). MVP
- *  no-op (= ability AI tracking pas porté). */
-function _recordAbilityBattle(_battlerId: number, _ability: number): void {
-  // TODO porter quand AI ability tracking sera implémenté.
+// 1:1 décomp `RecordAbilityBattle` — wired via util.ts (= AI tracking module).
+import { RecordAbilityBattle as _recordAbilityBattleFull } from './util';
+function _recordAbilityBattle(battlerId: number, ability: number): void {
+  _recordAbilityBattleFull(battlerId, ability);
 }
 
 // ─── 0x7D setrain ──────────────────────────────────────────────────────────
