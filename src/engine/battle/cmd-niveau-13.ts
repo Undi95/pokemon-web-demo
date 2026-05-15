@@ -25,6 +25,7 @@ import {
   setBattleMoveDamage, setDynamicBasePower,
   gCurrentMove, gBattleTypeFlags,
   gBattlersCount,
+  gAbsentBattlerFlags,
 } from './state';
 import {
   STAT_ATK, MAX_STAT_STAGE,
@@ -44,9 +45,7 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** Partial 1:1 décomp `gAbsentBattlerFlags` — bitmask des battlers absents.
- *  MVP : aucun battler absent. */
-const gAbsentBattlerFlags = 0;
+// 1:1 décomp `gAbsentBattlerFlags` — wired depuis state.ts.
 
 // ─── 0x79 setatkhptozero ───────────────────────────────────────────────────
 
