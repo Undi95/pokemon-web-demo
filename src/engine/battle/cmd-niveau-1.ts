@@ -623,10 +623,19 @@ function _AccuracyCalcHelper(ctx: BattleScriptContext, jumpTarget: number, move:
   }
   setHitMarker(gHitMarker & ~HITMARKER_IGNORE_UNDERWATER_LOCAL);
 
-  // Thunder en Rain = hit (no acc check) || EFFECT_ALWAYS_HIT || EFFECT_VITAL_THROW.
+  // 1:1 décomp : Thunder en Rain = hit (no acc check) si WEATHER_HAS_EFFECT.
+  // WEATHER_HAS_EFFECT = !ABILITY_ON_FIELD(CloudNine/AirLock).
+  // Lazy lookup via globalThis pour éviter circular dep.
+  const checkFn = (globalThis as { __abilityBattleEffectsCheck?: (caseID: number, b: number, ab: number, s: number, m: number) => number }).__abilityBattleEffectsCheck;
+  let weatherActive = true;
+  if (checkFn) {
+    const CHECK_ON_FIELD = 12, CLOUD_NINE = 13, AIR_LOCK = 76;
+    weatherActive = !checkFn(CHECK_ON_FIELD, 0, CLOUD_NINE, 0, 0)
+                 && !checkFn(CHECK_ON_FIELD, 0, AIR_LOCK, 0, 0);
+  }
+
   const moveEff = getBattleMove(move).effect;
-  // STUB : WEATHER_HAS_EFFECT check skipped pour MVP — assume weather actif.
-  if (((gBattleWeather & 1 /* B_WEATHER_RAIN_TEMPORARY */) && moveEff === EFFECT_THUNDER)
+  if ((weatherActive && (gBattleWeather & 1 /* B_WEATHER_RAIN_TEMPORARY */) && moveEff === EFFECT_THUNDER)
       || moveEff === _EFFECT_ALWAYS_HIT_LOCAL
       || moveEff === _EFFECT_VITAL_THROW_LOCAL) {
     return true;  // hit, no acc check
