@@ -71,9 +71,9 @@ import {
   MON_DATA_LEVEL, MON_DATA_EXP,
 } from './party-storage';
 import {
-  HOLD_EFFECT_EXP_SHARE, HOLD_EFFECT_LUCKY_EGG,
+  HOLD_EFFECT_EXP_SHARE, HOLD_EFFECT_LUCKY_EGG, HOLD_EFFECT_MACHO_BRACE,
 } from '../decomp-data/auto/include/constants/hold_effects-data';
-import { getSpeciesExpYield, getSpeciesGrowthRate } from './data/species-runtime';
+import { getSpeciesExpYield, getSpeciesGrowthRate, getSpeciesEvYield } from './data/species-runtime';
 import { getLevelFromExp, MAX_LEVEL } from './data/experience-tables';
 import { gBitTable } from './battle-controllers';
 import {
@@ -534,11 +534,67 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
   return false;
 }
 
-/** 1:1 stub `MonGainEVs(mon, opponentSpecies)` (pokemon.c). STUB MVP no-op.
- *  TODO porter EV system complet : evYield 6-stats + bonus Macho Brace +
- *  cap 510 total + cap 100 per-stat. */
-function _stubMonGainEVs(_monId: number, _opponentSpecies: number): void {
-  // TODO porter EV gain logic. Pour MVP : no-op.
+// MAX_PER_STAT_EVS = 255 et MAX_TOTAL_EVS = 510 — 1:1 décomp (constants/pokemon.h:203-204).
+const MAX_TOTAL_EVS_LOCAL    = 510;
+const MAX_PER_STAT_EVS_LOCAL = 255;
+
+/** 1:1 décomp `MonGainEVs(mon, defeatedSpecies)` (pokemon.c:5975-6052).
+ *  Distribue les EVs de la victime au mon vainqueur, en respectant les caps
+ *  255 par stat et 510 total. Macho Brace × 2, Pokerus × 2 (cumule). */
+function _MonGainEVs(monId: number, defeatedSpecies: number): void {
+  const mon = gPlayerParty[monId];
+  if (!mon) return;
+
+  // 1:1 décomp : evs[NUM_STATS] = GetMonData(mon, MON_DATA_HP_EV + i, 0).
+  const evs: number[] = [
+    GetMonData(mon, 26 /* MON_DATA_HP_EV */) as number,
+    GetMonData(mon, 27 /* MON_DATA_ATK_EV */) as number,
+    GetMonData(mon, 28 /* MON_DATA_DEF_EV */) as number,
+    GetMonData(mon, 29 /* MON_DATA_SPEED_EV */) as number,
+    GetMonData(mon, 30 /* MON_DATA_SPATK_EV */) as number,
+    GetMonData(mon, 31 /* MON_DATA_SPDEF_EV */) as number,
+  ];
+  let totalEVs = evs.reduce((a, b) => a + b, 0);
+
+  // STUB CheckPartyHasHadPokerus : pas wired (= false toujours = multiplier 1).
+  const multiplier = 1;
+
+  // STUB GetItemHoldEffect : holdEffect du mon.
+  const heldItem = GetMonData(mon, MON_DATA_HELD_ITEM) as number;
+  const holdEffect = GetItemHoldEffect(heldItem);
+
+  // evYield from defeated species : ordre [hp, atk, def, spe, spa, spd] = NUM_STATS.
+  const evYield = getSpeciesEvYield(defeatedSpecies);
+
+  for (let i = 0; i < 6 /* NUM_STATS */; i++) {
+    if (totalEVs >= MAX_TOTAL_EVS_LOCAL) break;
+
+    let evIncrease = evYield[i] * multiplier;
+
+    if (holdEffect === HOLD_EFFECT_MACHO_BRACE) {
+      evIncrease *= 2;
+    }
+
+    // 1:1 décomp : cap total EVs à 510.
+    if (totalEVs + evIncrease > MAX_TOTAL_EVS_LOCAL) {
+      evIncrease = (evIncrease + MAX_TOTAL_EVS_LOCAL) - (totalEVs + evIncrease);
+    }
+    // 1:1 décomp : cap per-stat EVs à 255 (= 100 selon BUGFIX, mais retro Em = 255).
+    if (evs[i] + evIncrease > MAX_PER_STAT_EVS_LOCAL) {
+      const val1 = evIncrease + MAX_PER_STAT_EVS_LOCAL;
+      const val2 = evs[i] + evIncrease;
+      evIncrease = val1 - val2;
+    }
+
+    evs[i] += evIncrease;
+    totalEVs += evIncrease;
+    SetMonData(mon, 26 /* MON_DATA_HP_EV */ + i, evs[i]);
+  }
+}
+
+/** Stub wrapper pour cmd-niveau-34 cur impl. */
+function _stubMonGainEVs(monId: number, defeatedSpecies: number): void {
+  _MonGainEVs(monId, defeatedSpecies);
 }
 
 // ─── 0x76 various ─────────────────────────────────────────────────────────
