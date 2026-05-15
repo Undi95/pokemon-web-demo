@@ -26,16 +26,27 @@ import {
   setHpScale,
   gHpOnSwitchout,
   gTrainerBattleOpponent_A, gTrainerBattleOpponent_B,
+  gBattlerPartyIndexes,
 } from './state';
 import { getBattleMove } from './data/battle-moves';
 import {
   STATUS2_WRAPPED, STATUS2_ESCAPE_PREVENTION, STATUS3_ROOTED,
   SWITCH_IGNORE_ESCAPE_PREVENTION,
   BATTLE_TYPE_DOUBLE, BATTLE_TYPE_LINK, BATTLE_TYPE_RECORDED_LINK,
-  BATTLE_TYPE_TWO_OPPONENTS,
+  BATTLE_TYPE_TWO_OPPONENTS, BATTLE_TYPE_INGAME_PARTNER, BATTLE_TYPE_MULTI,
   BATTLE_OPPOSITE, GET_BATTLER_SIDE,
+  B_SIDE_OPPONENT,
+  MULTI_PARTY_SIZE,
 } from './constants';
-import { getBattlerForBattleScript } from './util';
+import {
+  getBattlerForBattleScript, GetBattlerAtPosition,
+  B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT,
+  B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT,
+} from './util';
+import {
+  gPlayerParty, gEnemyParty, GetMonData, PARTY_SIZE,
+  MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_IS_EGG,
+} from './party-storage';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -75,10 +86,69 @@ function Cmd_jumpifcantswitch(ctx: BattleScriptContext): boolean {
     ctx.scriptPtr = jumpPtr;
     return false;
   }
-  // 1:1 décomp partial : skip BATTLE_TYPE_INGAME_PARTNER + standard party walk
-  // (= gPlayerParty/gEnemyParty non wired battle-side). Pour MVP, on assume
-  // que les autres mons sont dispo (= NE jump pas).
-  // TODO porter le party walk complet quand gPlayerParty wired battle.
+
+  // 1:1 décomp : party walk pour valider qu'au moins 1 mon est switchable.
+  // BATTLE_TYPE_INGAME_PARTNER + BATTLE_TYPE_MULTI + BATTLE_TYPE_TWO_OPPONENTS
+  // limitent la window à MULTI_PARTY_SIZE (= 3 mons) ; else full party.
+
+  let party: typeof gPlayerParty;
+  let lastMonId = 0;
+  let endMonId = PARTY_SIZE;
+
+  if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) {
+    party = GET_BATTLER_SIDE(active) === B_SIDE_OPPONENT ? gEnemyParty : gPlayerParty;
+    lastMonId = (active & 2) ? MULTI_PARTY_SIZE : 0;
+    endMonId = lastMonId + MULTI_PARTY_SIZE;
+  } else if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
+    // 1:1 décomp : link multi. Pour MVP single-machine, on traite comme single.
+    party = GET_BATTLER_SIDE(active) === B_SIDE_OPPONENT ? gEnemyParty : gPlayerParty;
+    lastMonId = 0;
+    endMonId = lastMonId + MULTI_PARTY_SIZE;
+  } else if ((gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) && GET_BATTLER_SIDE(active) === B_SIDE_OPPONENT) {
+    party = gEnemyParty;
+    lastMonId = (active === GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT)) ? (PARTY_SIZE / 2) : 0;
+    endMonId = lastMonId + (PARTY_SIZE / 2);
+  } else {
+    party = GET_BATTLER_SIDE(active) === B_SIDE_OPPONENT ? gEnemyParty : gPlayerParty;
+    lastMonId = 0;
+    endMonId = PARTY_SIZE;
+  }
+
+  // 1:1 décomp partial : pour BATTLE_TYPE_INGAME_PARTNER / MULTI / TWO_OPPONENTS,
+  // check exclusion d'un seul battler index. Pour le case "normal" (else),
+  // exclure battlerIn1 + battlerIn2 (= les 2 mons en field side).
+  let battlerIn1 = active, battlerIn2 = active;
+  if (!(gBattleTypeFlags & (BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_MULTI | BATTLE_TYPE_TWO_OPPONENTS))) {
+    if (GET_BATTLER_SIDE(active) === B_SIDE_OPPONENT) {
+      battlerIn1 = GetBattlerAtPosition(B_POSITION_OPPONENT_LEFT);
+      battlerIn2 = (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+        ? GetBattlerAtPosition(B_POSITION_OPPONENT_RIGHT) : battlerIn1;
+    } else {
+      battlerIn1 = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
+      battlerIn2 = (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+        ? GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT) : battlerIn1;
+    }
+  }
+
+  let i = lastMonId;
+  for (; i < endMonId; i++) {
+    const species = GetMonData(party[i], MON_DATA_SPECIES) as number;
+    const hp = GetMonData(party[i], MON_DATA_HP) as number;
+    const isEgg = GetMonData(party[i], MON_DATA_IS_EGG) as number;
+    if (species !== 0 && !isEgg && hp !== 0) {
+      if (gBattleTypeFlags & (BATTLE_TYPE_INGAME_PARTNER | BATTLE_TYPE_MULTI | BATTLE_TYPE_TWO_OPPONENTS)) {
+        if (gBattlerPartyIndexes[active] !== i) break;
+      } else {
+        if (i !== gBattlerPartyIndexes[battlerIn1] && i !== gBattlerPartyIndexes[battlerIn2]) break;
+      }
+    }
+  }
+
+  if (i === endMonId) {
+    // No valid mon to switch to → jump.
+    ctx.scriptPtr = jumpPtr;
+  }
+  // Sinon : advance normalement (= déjà fait par readByte + readWord).
   return false;
 }
 

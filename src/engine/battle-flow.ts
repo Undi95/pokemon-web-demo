@@ -67,6 +67,7 @@ import { getRuntime } from './decomp-globals';
 import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
+import { setupPartyForBattle, teardownPartyAfterBattle } from './battle/party-storage';
 import { VarSet } from './script-vars';
 import { getMove, getMoveName, loadGameData } from './data/game-data';
 import { Random } from './random';
@@ -501,6 +502,10 @@ export function startWildBattle(params: BattleParams): BattleFlow {
           return false;
         }
         console.log(`[battle-flow] start : ${playerMon.nickname} Lv${playerMon.level} (${playerMon.currentHp}/${playerMon.maxHp}) vs ${opponentMon.nickname} Lv${opponentMon.level} (${opponentMon.currentHp}/${opponentMon.maxHp})`);
+        // 1:1 décomp : fill gPlayerParty/gEnemyParty battle-side au début de
+        // combat. Ainsi les opcodes du bytecode interpreter qui lisent
+        // GetMonData(gPlayerParty[i], ...) ont les bonnes données.
+        setupPartyForBattle(party.filter((m): m is PokemonInstance => !!m), [opponentMon]);
         // Bug 5e session 124 : fade-out screen → black avant load battle assets.
         // 1:1 décomp `CB2_StartFirstBattle` chain via BattleStartTransition.
         // Notre version simplifiée : BeginNormalPaletteFade to black.
@@ -996,6 +1001,9 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         gameState.setVar('VAR_RESULT', outcome);
         // Track "is battle over" for GetBattleOutcome special read by scripts.
         (globalThis as { __gBattleOutcome?: number }).__gBattleOutcome = outcome;
+        // 1:1 décomp : sync HP/status/exp depuis gPlayerParty vers PokemonInstance
+        // pour persist au post-combat.
+        teardownPartyAfterBattle(gameState.party.filter((m): m is PokemonInstance => !!m));
         console.log(`[battle-flow] battle done — outcome=${outcome} (1=WIN, 2=LOST), turnCount=${turnCount}`);
         state = 'DONE';
         return false;

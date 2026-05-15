@@ -56,6 +56,12 @@ export function GetBattlerAtPosition(position: number): number {
   return 0;
 }
 
+/** 1:1 décomp `GetBattlerPosition(u8 battler)` (battle_anim_mons.c:858) :
+ *  return gBattlerPositions[battler]. */
+export function GetBattlerPosition(battler: number): number {
+  return gBattlerPositions[battler] ?? 0;
+}
+
 // ─── getBattlerForBattleScript (battle_util.c) — 1:1 décomp full ───────────
 
 /** 1:1 décomp `GetBattlerForBattleScript(u8 arg)`. */

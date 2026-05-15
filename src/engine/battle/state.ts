@@ -112,6 +112,14 @@ export let gPotentialItemEffectBattler = 0;
 /** 1:1 décomp `gBattlersCount` (= 2 single, 4 double). */
 export let gBattlersCount = 2;
 
+/** 1:1 décomp `gBattlerPartyIndexes[MAX_BATTLERS_COUNT]` (battle.c).
+ *  Indique quel slot de la party (0..PARTY_SIZE-1) chaque battler occupe.
+ *  Pour single battle : [0, 0, 0, 0] (= chaque side a son mon en slot 0).
+ *  Pour double battle : [0, 0, 1, 1] (= deux mons par side, slots 0 + 1).
+ *  Note : `gBattlerPositions` est défini dans util.ts (= legacy, à migrer
+ *  un jour ici). */
+export const gBattlerPartyIndexes: number[] = [0, 0, 0, 0];
+
 /** 1:1 décomp `gCurrentMove` (= MOVE_XXX id 0..354). */
 export let gCurrentMove = 0;
 export let gChosenMove = 0;

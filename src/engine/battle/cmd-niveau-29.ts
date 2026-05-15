@@ -26,6 +26,7 @@ import {
   gLastPrintedMoves,
   gLastTakenMove, gLastTakenMoveFrom,
   gCurrMovePos, setCurrMovePos,
+  gBattlerPartyIndexes,
 } from './state';
 import {
   MAX_MON_MOVES, MOVE_NONE, MOVE_UNAVAILABLE, MOVE_STRUGGLE,
@@ -40,13 +41,18 @@ import {
   GET_BATTLER_SIDE, BATTLE_PARTNER,
   REQUEST_STATUS_BATTLE, B_COMM_TO_CONTROLLER,
   sMovesForbiddenToCopy,
+  B_SIDE_PLAYER,
 } from './constants';
 import {
   BtlController_EmitSetMonData, MarkBattlerForControllerExec, gBitTable,
 } from './battle-controllers';
-import { GetBattlerAtPosition } from './util';
+import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import { getBattleMove } from './data/battle-moves';
 import { MAX_BATTLERS_COUNT } from './state';
+import {
+  gPlayerParty, gEnemyParty, GetMonData, GetAbilityBySpecies, PARTY_SIZE,
+  MON_DATA_SPECIES_OR_EGG, MON_DATA_ABILITY_NUM,
+} from './party-storage';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -148,19 +154,16 @@ function Cmd_copymovepermanently(ctx: BattleScriptContext): boolean {
 
 // ─── 0xAE healpartystatus ─────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_healpartystatus. 1 byte. Heal Bell / Aromatherapy.
- *
- *  Note 1:1 partial : la party iteration (= gPlayerParty/gEnemyParty) pour
- *  set le `toHeal` bitmask per-mon est skippée — on heal directly les active
- *  battlers (= équivalent fonctionnel single-battle, plus simple en double).
- *  Le décomp set toHeal selon ability check per-mon — non porté car
- *  gPlayerParty pas wired battle-side. */
+/** 1:1 décomp Cmd_healpartystatus. 1 byte. Heal Bell / Aromatherapy. */
 function Cmd_healpartystatus(_ctx: BattleScriptContext): boolean {
   const zero = 0;
   let toHeal = 0;
 
   if (gCurrentMove === MOVE_HEAL_BELL) {
     gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_BELL;
+
+    const party = GET_BATTLER_SIDE(gBattlerAttacker) === B_SIDE_PLAYER ? gPlayerParty : gEnemyParty;
+
     if (gBattleMons[gBattlerAttacker].ability !== ABILITY_SOUNDPROOF) {
       gBattleMons[gBattlerAttacker].status1 = 0;
       gBattleMons[gBattlerAttacker].status2 &= ~STATUS2_NIGHTMARE;
@@ -168,7 +171,7 @@ function Cmd_healpartystatus(_ctx: BattleScriptContext): boolean {
       _recordAbilityBattle(gBattlerAttacker, gBattleMons[gBattlerAttacker].ability);
       gBattleCommunication[MULTISTRING_CHOOSER] |= B_MSG_BELL_SOUNDPROOF_ATTACKER;
     }
-    const partner = GetBattlerAtPosition(BATTLE_PARTNER(gBattlerAttacker));
+    const partner = GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(gBattlerAttacker)));
     setActiveBattler(partner);
     gBattleScripting.battler = partner;
     if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE) && !(gAbsentBattlerFlags & gBitTable[partner])) {
@@ -180,16 +183,36 @@ function Cmd_healpartystatus(_ctx: BattleScriptContext): boolean {
         gBattleCommunication[MULTISTRING_CHOOSER] |= B_MSG_BELL_SOUNDPROOF_PARTNER;
       }
     }
-    // 1:1 décomp : iter party 0..PARTY_SIZE pour set toHeal bits.
-    // Notre port partial : marquer tous comme heal (= proxy gPlayerParty pas wired).
-    toHeal = 0x3F;  // 6 bits = full party.
+
+    // 1:1 décomp : iter party 0..PARTY_SIZE pour set toHeal bits per-mon
+    // selon ability check (= SOUNDPROOF skip).
+    for (let i = 0; i < PARTY_SIZE; i++) {
+      const species = GetMonData(party[i], MON_DATA_SPECIES_OR_EGG) as number;
+      const abilityNum = GetMonData(party[i], MON_DATA_ABILITY_NUM) as number;
+      if (species !== 0 /* SPECIES_NONE */ && species !== 412 /* SPECIES_EGG */) {
+        let ability: number;
+        if (gBattlerPartyIndexes[gBattlerAttacker] === i) {
+          ability = gBattleMons[gBattlerAttacker].ability;
+        } else if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+                   && gBattlerPartyIndexes[partner] === i
+                   && !(gAbsentBattlerFlags & gBitTable[partner])) {
+          ability = gBattleMons[partner].ability;
+        } else {
+          ability = GetAbilityBySpecies(species, abilityNum);
+        }
+        if (ability !== ABILITY_SOUNDPROOF) {
+          toHeal |= (1 << i);
+        }
+      }
+    }
   } else {
-    // Aromatherapy : ignore SOUNDPROOF, heal tous.
+    // 1:1 décomp Aromatherapy : ignore SOUNDPROOF, heal tous.
     gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_SOOTHING_AROMA;
-    toHeal = (1 << 6) - 1;  // = 0x3F (= PARTY_SIZE bits).
+    toHeal = (1 << PARTY_SIZE) - 1;
     gBattleMons[gBattlerAttacker].status1 = 0;
     gBattleMons[gBattlerAttacker].status2 &= ~STATUS2_NIGHTMARE;
-    const partner = GetBattlerAtPosition(BATTLE_PARTNER(gBattlerAttacker));
+    const partner = GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(gBattlerAttacker)));
+    setActiveBattler(partner);
     if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE) && !(gAbsentBattlerFlags & gBitTable[partner])) {
       gBattleMons[partner].status1 = 0;
       gBattleMons[partner].status2 &= ~STATUS2_NIGHTMARE;

@@ -491,6 +491,12 @@ export const B_SIDE_OPPONENT = 1;
 export const BIT_SIDE        = 1;
 export const BIT_FLANK       = 2;
 
+// Note : B_POSITION_* sont définis dans util.ts (= legacy, à migrer ici).
+
+// ─── Party sizes (constants/global.h) ───────────────────────────────────────
+export const PARTY_SIZE_CONST = 6;
+export const MULTI_PARTY_SIZE = 3;
+
 /** 1:1 décomp `GET_BATTLER_SIDE(battler)` (battle.h:30). */
 export function GET_BATTLER_SIDE(battler: number): number { return battler & BIT_SIDE; }
 
