@@ -431,11 +431,14 @@ function _initCommandsTable(): void {
     _commands[idx] = _Cmd_stub(name);
   }
 
-  // Session 133 — Phase 1 Niveau 1 START : install les real handlers pour
-  // damage flow basic (ppreduce, critcalc). Lazy import pour break cyclic dep
-  // (cmd-niveau-1.ts importe BattleOpcodeHandler de ce module).
+  // Session 133 — Phase 1 Niveau 1 + Niveau 2 : install real handlers.
+  // Lazy import pour break cyclic dep (cmd-niveau-X.ts importent BattleOpcodeHandler
+  // de ce module).
   void import('./cmd-niveau-1').then(({ installNiveau1Handlers }) => {
     installNiveau1Handlers(_commands);
+  });
+  void import('./cmd-niveau-2').then(({ installNiveau2Handlers }) => {
+    installNiveau2Handlers(_commands);
   });
 }
 

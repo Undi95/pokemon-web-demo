@@ -354,6 +354,40 @@ export const B_MSG_AVOIDED_ATK   = 2;
 export const B_MSG_AVOIDED_DMG   = 3;
 export const B_MSG_GROUND_MISS   = 4;
 
+// ─── Stat change (battle.h:478-483, battle_script_commands.h:371-372) ──────
+export const STAT_CHANGE_WORKED            = 0;
+export const STAT_CHANGE_DIDNT_WORK        = 1;
+export const STAT_CHANGE_ALLOW_PTR          = 1 << 0;
+export const STAT_CHANGE_NOT_PROTECT_AFFECTED = 1 << 5;
+export const MOVE_EFFECT_AFFECTS_USER       = 1 << 6;
+export const MOVE_EFFECT_CERTAIN            = 1 << 7;
+export const STAT_BUFF_NEGATIVE             = 0x80;
+
+/** 1:1 décomp `GET_STAT_BUFF_ID(n)` (battle.h:478) — low 4 bits = stat index. */
+export function GET_STAT_BUFF_ID(n: number): number { return n & 0xF; }
+/** 1:1 décomp `GET_STAT_BUFF_VALUE(n)` (battle.h:480) — bits 4-6 = stage delta. */
+export function GET_STAT_BUFF_VALUE(n: number): number { return (n >> 4) & 7; }
+/** 1:1 décomp `SET_STAT_BUFF_VALUE(n)` (battle.h:483) — pack stage delta. */
+export function SET_STAT_BUFF_VALUE(n: number): number { return (n << 4) & 0xF0; }
+
+// ─── MULTISTRING_CHOOSER index (battle_script_commands.h:294) ──────────────
+export const MULTISTRING_CHOOSER = 5;
+
+// ─── B_MSG_* stat change (battle_string_ids.h:395-406) ──────────────────────
+export const B_MSG_ATTACKER_STAT_ROSE  = 0;
+export const B_MSG_DEFENDER_STAT_ROSE  = 1;
+export const B_MSG_STAT_WONT_INCREASE  = 2;
+export const B_MSG_STAT_ROSE_EMPTY     = 3;
+export const B_MSG_STAT_ROSE_ITEM      = 4;
+export const B_MSG_USED_DIRE_HIT       = 5;
+export const B_MSG_ATTACKER_STAT_FELL  = 0;
+export const B_MSG_DEFENDER_STAT_FELL  = 1;
+export const B_MSG_STAT_WONT_DECREASE  = 2;
+export const B_MSG_STAT_FELL_EMPTY     = 3;
+
+// ─── MOVE_CURSE id (= moves.h, used in stat change protection check) ────────
+export const MOVE_CURSE = 174;
+
 // ─── Battle sides (battle.h:24-26) ──────────────────────────────────────────
 export const B_SIDE_PLAYER   = 0;
 export const B_SIDE_OPPONENT = 1;
