@@ -188,6 +188,16 @@ export function BtlController_EmitTrainerSlide(_bufferId: number): void {
   // TODO : trainer sprite slide-in anim.
 }
 
+/** 1:1 signature décomp `BtlController_EmitSwitchInAnim(buf, partyId, dontClear)`. */
+export function BtlController_EmitSwitchInAnim(_bufferId: number, _partyId: number, _dontClear: number): void {
+  // TODO : sprite slide-in animation for swap.
+}
+
+/** 1:1 signature décomp `BtlController_EmitGetMonData(buf, requestId, monBitFlags)`. */
+export function BtlController_EmitGetMonData(_bufferId: number, _requestId: number, _monBitFlags: number): void {
+  // TODO : read mon data via controller. Notre port lit directement gBattleMons.
+}
+
 /** 1:1 signature décomp `BtlController_EmitYesNoBox` n'existe pas — yesnobox
  *  est implémenté direct par Cmd_yesnobox via le state machine
  *  gBattleCommunication[0]. */

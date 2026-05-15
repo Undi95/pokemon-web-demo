@@ -500,6 +500,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-23').then(({ installNiveau23Handlers }) => {
     installNiveau23Handlers(_commands);
   });
+  // Session 135 — Niveau 24 (switch UI emit + checkteamslost).
+  void import('./cmd-niveau-24').then(({ installNiveau24Handlers }) => {
+    installNiveau24Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
