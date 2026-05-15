@@ -31,6 +31,7 @@ import {
   gBattleCommunication, gBattleTypeFlags, gBattlersCount,
   gAbsentBattlerFlags, gCurrentTurnActionNumber,
   gBattleEnvironment,
+  gHitMarker, setHitMarker,
 } from './state';
 import {
   MOVE_RESULT_MISSED, MOVE_RESULT_NO_EFFECT,
@@ -38,6 +39,8 @@ import {
   B_MSG_PROTECTED, B_MSG_WEAKEN_ELECTRIC, B_MSG_WEAKEN_FIRE,
   FLAG_PROTECT_AFFECTED,
   STATUS3_ROOTED, STATUS3_MUDSPORT, STATUS3_WATERSPORT,
+  STATUS2_DESTINY_BOND, HITMARKER_GRUDGE, HITMARKER_DESTINYBOND,
+  GET_BATTLER_SIDE,
   MOVE_EFFECT_POISON, MOVE_EFFECT_SLEEP, MOVE_EFFECT_PARALYSIS,
   MOVE_EFFECT_ACC_MINUS_1, MOVE_EFFECT_DEF_MINUS_1,
   MOVE_EFFECT_ATK_MINUS_1, MOVE_EFFECT_SPD_MINUS_1,
@@ -92,11 +95,21 @@ function _jumpIfMoveFailed(ctx: BattleScriptContext, failJump: number): void {
     return;
   }
   // 1:1 décomp : TrySetDestinyBondToHappen + AbilityBattleEffects(ABSORBING).
-  // Notre port = TrySetDestinyBondToHappen inline (cf N11 _trySetDestinyBondToHappen,
-  // mais on re-fait pour éviter import circulaire — c'est juste 1 check status2 +
-  // bit set).
-  // Pour l'instant : AbilityBattleEffects(ABSORBING) stub return 0 → fall-through.
+  _trySetDestinyBondToHappen();
   // TODO porter AbilityBattleEffects(ABILITYEFFECT_ABSORBING).
+}
+
+/** 1:1 décomp `TrySetDestinyBondToHappen` (battle_script_commands.c:8288).
+ *  Si target a DESTINY_BOND set et sides différents et !HITMARKER_GRUDGE →
+ *  set HITMARKER_DESTINYBOND (= attacker mourra aussi). */
+function _trySetDestinyBondToHappen(): void {
+  const sideAttacker = GET_BATTLER_SIDE(gBattlerAttacker);
+  const sideTarget = GET_BATTLER_SIDE(gBattlerTarget);
+  if ((gBattleMons[gBattlerTarget].status2 & STATUS2_DESTINY_BOND)
+      && sideAttacker !== sideTarget
+      && !(gHitMarker & HITMARKER_GRUDGE)) {
+    setHitMarker(gHitMarker | HITMARKER_DESTINYBOND);
+  }
 }
 
 // ─── 0x40 jumpifaffectedbyprotect ─────────────────────────────────────────

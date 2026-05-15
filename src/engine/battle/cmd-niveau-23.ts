@@ -34,6 +34,8 @@ import {
   STATUS3_IMPRISONED_OTHERS,
   STATUS2_TRANSFORMED,
   SIDE_STATUS_FUTUREATTACK,
+  MULTISTRING_CHOOSER,
+  MOVE_DOOM_DESIRE, B_MSG_DOOM_DESIRE, B_MSG_FUTURE_SIGHT,
   GET_BATTLER_SIDE, BATTLE_PARTNER,
   BATTLE_TYPE_DOUBLE,
   REQUEST_PPMOVE1_BATTLE, B_COMM_TO_CONTROLLER,
@@ -171,9 +173,12 @@ function Cmd_trysetfutureattack(ctx: BattleScriptContext): boolean {
     dmg = Math.floor((dmg * 15) / 10);
   }
   gWishFutureKnock.futureSightDmg[gBattlerTarget] = dmg;
-  // Décomp set gBattleCommunication[MULTISTRING_CHOOSER] selon Doom Desire vs
-  // Future Sight ; on suit le pattern mais on n'a pas les MSG IDs distincts
-  // dans constants. TODO ajouter B_MSG_DOOM_DESIRE / B_MSG_FUTURE_SIGHT.
+  // 1:1 décomp : set MULTISTRING_CHOOSER selon Doom Desire vs Future Sight.
+  if (gCurrentMove === MOVE_DOOM_DESIRE) {
+    gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_DOOM_DESIRE;
+  } else {
+    gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_FUTURE_SIGHT;
+  }
   return false;
 }
 

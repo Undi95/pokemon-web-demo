@@ -625,6 +625,45 @@ export const ABILITY_OBLIVIOUS = 12;
 // ─── REQUEST_PPMOVE1_BATTLE (battle_controllers.h:14) — 1:1 décomp ────────
 export const REQUEST_PPMOVE1_BATTLE = 9;
 
+// ─── B_ANIM_* (constants/battle_anim.h) — 1:1 décomp subset ───────────────
+export const B_ANIM_CASTFORM_CHANGE = 0;
+
+// ─── CASTFORM_SUBSTITUTE (constants/battle.h:331) — 1:1 décomp ────────────
+export const CASTFORM_SUBSTITUTE = 1 << 7;
+
+// ─── MOVE_* extra used for Mimic forbidden table — 1:1 décomp ─────────────
+export const MOVE_METRONOME    = 118;
+export const MOVE_MIMIC        = 102;
+export const MOVE_SKETCH       = 166;
+export const MOVE_COUNTER      = 68;
+export const MOVE_MIRROR_COAT  = 243;
+export const MOVE_DESTINY_BOND = 194;
+export const MOVE_SLEEP_TALK   = 214;
+export const MOVE_THIEF        = 168;
+export const MOVE_FOLLOW_ME    = 266;
+export const MOVE_HELPING_HAND = 270;
+export const MOVE_COVET        = 343;
+export const MOVE_TRICK        = 271;
+export const MOVE_FOCUS_PUNCH  = 264;
+export const MOVE_SNATCH       = 289;
+
+// ─── sMovesForbiddenToCopy (battle_script_commands.c:725) — 1:1 décomp ────
+/** Sentinels MIMIC_FORBIDDEN_END / METRONOME_FORBIDDEN_END divisent les two
+ *  sublists : Mimic forbidden = before MIMIC_FORBIDDEN_END,
+ *  Metronome forbidden = full list jusqu'à METRONOME_FORBIDDEN_END. */
+export const MIMIC_FORBIDDEN_END     = 0xFFFE;
+export const METRONOME_FORBIDDEN_END = 0xFFFF;
+
+export const sMovesForbiddenToCopy: number[] = [
+  MOVE_METRONOME, MOVE_STRUGGLE, MOVE_SKETCH, MOVE_MIMIC,
+  MIMIC_FORBIDDEN_END,
+  MOVE_COUNTER, MOVE_MIRROR_COAT, MOVE_PROTECT, MOVE_DETECT, MOVE_ENDURE,
+  MOVE_DESTINY_BOND, MOVE_SLEEP_TALK, MOVE_THIEF, MOVE_FOLLOW_ME,
+  MOVE_SNATCH, MOVE_HELPING_HAND, MOVE_COVET, MOVE_TRICK,
+  MOVE_FOCUS_PUNCH,
+  METRONOME_FORBIDDEN_END,
+];
+
 // ─── EFFECT_PROTECT / EFFECT_ENDURE (battle_move_effects.h) ───────────────
 export const EFFECT_PROTECT = 111;
 export const EFFECT_ENDURE  = 116;
@@ -637,7 +676,19 @@ export const B_MSG_PROTECT_FAILED   = 2;
 // ─── B_MSG_* OHKO / transform (battle_string_ids.h:492-505) — 1:1 décomp ──
 export const B_MSG_KO_MISS         = 0;
 export const B_MSG_KO_UNAFFECTED   = 1;
+export const B_MSG_TRANSFORMED      = 0;
 export const B_MSG_TRANSFORM_FAILED = 1;
+
+// ─── RESET_* (battle_controllers.h:128-132) — 1:1 décomp ──────────────────
+export const RESET_ACTION_MOVE_SELECTION = 0;
+export const RESET_ACTION_SELECTION       = 1;
+export const RESET_MOVE_SELECTION         = 2;
+
+// ─── MOVE_DOOM_DESIRE/FUTURE_SIGHT + B_MSG (moves.h, battle_string_ids.h) ─
+export const MOVE_DOOM_DESIRE  = 353;
+export const MOVE_FUTURE_SIGHT = 248;
+export const B_MSG_FUTURE_SIGHT = 0;
+export const B_MSG_DOOM_DESIRE  = 1;
 
 // ─── B_MSG_* stockpile/swallow (battle_string_ids.h:484-489) — 1:1 décomp ─
 export const B_MSG_STOCKPILED      = 0;

@@ -169,32 +169,39 @@ function Cmd_tryexplosion(ctx: BattleScriptContext): boolean {
 
 /** 1:1 décomp Cmd_weatherdamage. 1 byte. End-of-turn weather damage. */
 function Cmd_weatherdamage(_ctx: BattleScriptContext): boolean {
-  if (!_weatherHasEffect()) return false;
   const atk = gBattleMons[gBattlerAttacker];
 
-  if (gBattleWeather & B_WEATHER_SANDSTORM) {
-    if (atk.type1 !== TYPE_ROCK && atk.type1 !== TYPE_STEEL && atk.type1 !== TYPE_GROUND
-        && atk.type2 !== TYPE_ROCK && atk.type2 !== TYPE_STEEL && atk.type2 !== TYPE_GROUND
-        && atk.ability !== ABILITY_SAND_VEIL
-        && !(gStatuses3[gBattlerAttacker] & STATUS3_UNDERGROUND)
-        && !(gStatuses3[gBattlerAttacker] & STATUS3_UNDERWATER)) {
-      let dmg = Math.floor(atk.maxHP / 16);
-      if (dmg === 0) dmg = 1;
-      setBattleMoveDamage(dmg);
-    } else {
-      setBattleMoveDamage(0);
+  if (_weatherHasEffect()) {
+    if (gBattleWeather & B_WEATHER_SANDSTORM) {
+      if (atk.type1 !== TYPE_ROCK && atk.type1 !== TYPE_STEEL && atk.type1 !== TYPE_GROUND
+          && atk.type2 !== TYPE_ROCK && atk.type2 !== TYPE_STEEL && atk.type2 !== TYPE_GROUND
+          && atk.ability !== ABILITY_SAND_VEIL
+          && !(gStatuses3[gBattlerAttacker] & STATUS3_UNDERGROUND)
+          && !(gStatuses3[gBattlerAttacker] & STATUS3_UNDERWATER)) {
+        let dmg = Math.floor(atk.maxHP / 16);
+        if (dmg === 0) dmg = 1;
+        setBattleMoveDamage(dmg);
+      } else {
+        setBattleMoveDamage(0);
+      }
     }
+    if (gBattleWeather & B_WEATHER_HAIL) {
+      if (!IS_BATTLER_OF_TYPE(atk.type1, atk.type2, TYPE_ICE)
+          && !(gStatuses3[gBattlerAttacker] & STATUS3_UNDERGROUND)
+          && !(gStatuses3[gBattlerAttacker] & STATUS3_UNDERWATER)) {
+        let dmg = Math.floor(atk.maxHP / 16);
+        if (dmg === 0) dmg = 1;
+        setBattleMoveDamage(dmg);
+      } else {
+        setBattleMoveDamage(0);
+      }
+    }
+  } else {
+    setBattleMoveDamage(0);
   }
-  if (gBattleWeather & B_WEATHER_HAIL) {
-    if (!IS_BATTLER_OF_TYPE(atk.type1, atk.type2, TYPE_ICE)
-        && !(gStatuses3[gBattlerAttacker] & STATUS3_UNDERGROUND)
-        && !(gStatuses3[gBattlerAttacker] & STATUS3_UNDERWATER)) {
-      let dmg = Math.floor(atk.maxHP / 16);
-      if (dmg === 0) dmg = 1;
-      setBattleMoveDamage(dmg);
-    } else {
-      setBattleMoveDamage(0);
-    }
+  // 1:1 décomp : safety check si attacker est absent.
+  if (gAbsentBattlerFlags & gBitTable[gBattlerAttacker]) {
+    setBattleMoveDamage(0);
   }
   return false;
 }

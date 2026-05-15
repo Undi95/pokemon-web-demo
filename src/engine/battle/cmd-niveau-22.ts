@@ -120,7 +120,12 @@ function Cmd_movevaluescleanup(_ctx: BattleScriptContext): boolean {
 // ─── 0x4A typecalc2 ───────────────────────────────────────────────────────
 
 /** 1:1 décomp Cmd_typecalc2. 1 byte. Foresight-aware type calc (= no STAB,
- *  no Wonder Guard skip on power=0 check). */
+ *  no Wonder Guard skip on power=0 check).
+ *
+ *  Note 1:1 : `flags` local accumule NVE/SE pour le Wonder Guard check seul.
+ *  NO_EFFECT set directly dans gMoveResultFlags pendant le loop. À la fin,
+ *  `flags` n'est PAS merge dans gMoveResultFlags (= 1:1 décomp ne le fait
+ *  pas, NVE/SE sont calculés par un autre opcode). */
 function Cmd_typecalc2(_ctx: BattleScriptContext): boolean {
   let flags = 0;
   let i = 0;
@@ -177,10 +182,7 @@ function Cmd_typecalc2(_ctx: BattleScriptContext): boolean {
     }
   }
 
-  // 1:1 décomp Wonder Guard check.
-  // AttacksThisTurn check = 2 (= 2nd or later turn for Solar Beam/SkyAttack).
-  // Pour MVP, on simule AttacksThisTurn(attacker, move) = 2 (= always treated
-  // as ready).
+  // 1:1 décomp Wonder Guard check utilise `flags` local (NOT gMoveResultFlags).
   if (tgt.ability === ABILITY_WONDER_GUARD
       && !(flags & MOVE_RESULT_NO_EFFECT)
       && (!(flags & MOVE_RESULT_SUPER_EFFECTIVE)
@@ -196,11 +198,6 @@ function Cmd_typecalc2(_ctx: BattleScriptContext): boolean {
   if (gMoveResultFlags & MOVE_RESULT_DOESNT_AFFECT_FOE) {
     gProtectStructs[gBattlerAttacker].targetNotAffected = 1;
   }
-  // Note : décomp utilise `flags` pour Wonder Guard mais set gMoveResultFlags
-  // dans no-effect path. On reprend gMoveResultFlags directement quand le set
-  // est synchrone. flags local n'est pas appliqué à gMoveResultFlags ici
-  // (= 1:1 décomp ne le fait pas non plus ! les flags ne servent qu'au check
-  // Wonder Guard).
   return false;
 }
 

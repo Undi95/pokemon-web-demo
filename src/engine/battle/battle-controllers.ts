@@ -198,6 +198,11 @@ export function BtlController_EmitGetMonData(_bufferId: number, _requestId: numb
   // TODO : read mon data via controller. Notre port lit directement gBattleMons.
 }
 
+/** 1:1 signature décomp `BtlController_EmitResetActionMoveSelection(buf, caseId)`. */
+export function BtlController_EmitResetActionMoveSelection(_bufferId: number, _caseId: number): void {
+  // TODO : reset action/move selection cursor (= Transform-style).
+}
+
 /** 1:1 signature décomp `BtlController_EmitYesNoBox` n'existe pas — yesnobox
  *  est implémenté direct par Cmd_yesnobox via le state machine
  *  gBattleCommunication[0]. */

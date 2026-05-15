@@ -504,6 +504,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-24').then(({ installNiveau24Handlers }) => {
     installNiveau24Handlers(_commands);
   });
+  // Session 135 — Niveau 25 (anim variants + mimic + castform).
+  void import('./cmd-niveau-25').then(({ installNiveau25Handlers }) => {
+    installNiveau25Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

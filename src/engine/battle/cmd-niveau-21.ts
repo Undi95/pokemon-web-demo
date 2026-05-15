@@ -43,14 +43,16 @@ import {
   ABILITY_STURDY,
   HOLD_EFFECT_FOCUS_BAND,
   MULTISTRING_CHOOSER,
-  B_MSG_KO_MISS, B_MSG_KO_UNAFFECTED, B_MSG_TRANSFORM_FAILED,
+  B_MSG_KO_MISS, B_MSG_KO_UNAFFECTED, B_MSG_TRANSFORM_FAILED, B_MSG_TRANSFORMED,
   REQUEST_HELDITEM_BATTLE, B_COMM_TO_CONTROLLER,
+  RESET_MOVE_SELECTION,
   GET_BATTLER_SIDE,
 } from './constants';
 import {
   BtlController_EmitSetMonData,
   BtlController_EmitBattleAnimation,
   BtlController_EmitTrainerSlideBack,
+  BtlController_EmitResetActionMoveSelection,
   MarkBattlerForControllerExec,
   gBitTable,
 } from './battle-controllers';
@@ -208,6 +210,11 @@ function Cmd_transformdataexecution(_ctx: BattleScriptContext): boolean {
     const movePp = getBattleMove(atk.moves[i]).pp;
     atk.pp[i] = movePp < 5 ? movePp : 5;
   }
+  // 1:1 décomp : emit ResetActionMoveSelection + Mark.
+  setActiveBattler(gBattlerAttacker);
+  BtlController_EmitResetActionMoveSelection(B_COMM_TO_CONTROLLER, RESET_MOVE_SELECTION);
+  MarkBattlerForControllerExec(gBattlerAttacker);
+  gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_TRANSFORMED;
   return false;
 }
 
