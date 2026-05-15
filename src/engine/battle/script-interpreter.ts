@@ -432,6 +432,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-6').then(({ installNiveau6Handlers }) => {
     installNiveau6Handlers(_commands);
   });
+  // Session 134 — Niveau 7 (mutation + flow control).
+  void import('./cmd-niveau-7').then(({ installNiveau7Handlers }) => {
+    installNiveau7Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

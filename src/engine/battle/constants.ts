@@ -94,8 +94,10 @@ export const STATUS3_INTIMIDATE_POKES        = 1 << 19;
 export const STATUS3_TRACE                   = 1 << 20;
 export const STATUS3_SEMI_INVULNERABLE       = STATUS3_UNDERGROUND | STATUS3_ON_AIR | STATUS3_UNDERWATER;
 
-// ─── HITMARKER_* (battle.h:181-205) — bitmask u32 ───────────────────────────
-export const HITMARKER_x10                   = 1 << 4;
+// ─── HITMARKER_* (constants/battle.h:181-205) — 1:1 décomp verified ────────
+// Audit session 134 N7 : ancien fichier avait PURSUIT_TRAP/IGNORE_SAFEGUARD/
+// WAKE_UP_CLEAR à des bits faux. Vraies valeurs décomp :
+export const HITMARKER_WAKE_UP_CLEAR         = 1 << 4;  // cleared waking up (never set/checked)
 export const HITMARKER_IGNORE_BIDE           = 1 << 5;
 export const HITMARKER_DESTINYBOND           = 1 << 6;
 export const HITMARKER_NO_ANIMATIONS         = 1 << 7;
@@ -103,23 +105,24 @@ export const HITMARKER_IGNORE_SUBSTITUTE     = 1 << 8;
 export const HITMARKER_NO_ATTACKSTRING       = 1 << 9;
 export const HITMARKER_ATTACKSTRING_PRINTED  = 1 << 10;
 export const HITMARKER_NO_PPDEDUCT           = 1 << 11;
-export const HITMARKER_PURSUIT_TRAP          = 1 << 12;
-export const HITMARKER_IGNORE_SAFEGUARD      = 1 << 13;
-export const HITMARKER_SYNCHRONISE_EFFECT    = 1 << 14;
+export const HITMARKER_SWAP_ATTACKER_TARGET  = 1 << 12;
+export const HITMARKER_STATUS_ABILITY_EFFECT = 1 << 13;
+export const HITMARKER_SYNCHRONIZE_EFFECT    = 1 << 14;  // décomp orth. Z (pas S)
 export const HITMARKER_RUN                   = 1 << 15;
 export const HITMARKER_IGNORE_ON_AIR         = 1 << 16;
 export const HITMARKER_IGNORE_UNDERGROUND    = 1 << 17;
 export const HITMARKER_IGNORE_UNDERWATER     = 1 << 18;
 export const HITMARKER_UNABLE_TO_USE_MOVE    = 1 << 19;
 export const HITMARKER_PASSIVE_HP_UPDATE     = 1 << 20;
-export const HITMARKER_WAKE_UP_CLEAR         = 1 << 21;
+export const HITMARKER_DISOBEDIENT_MOVE      = 1 << 21;
 export const HITMARKER_PLAYER_FAINTED        = 1 << 22;
 export const HITMARKER_ALLOW_NO_PP           = 1 << 23;
 export const HITMARKER_GRUDGE                = 1 << 24;
-export const HITMARKER_OBEYS                 = 1 << 25;
-export const HITMARKER_x4000000              = 1 << 26;
+export const HITMARKER_OBEYS                 = 1 << 25;  // set after obedience check
+export const HITMARKER_NEVER_SET             = 1 << 26;
 export const HITMARKER_CHARGING              = 1 << 27;
-export const HITMARKER_FAINTED2              = 1 << 28;
+// HITMARKER_FAINTED2(b) = (1<<28)<<b — voir helper en bas du fichier.
+// HITMARKER_FAINTED(b)  = gBitTable[b]<<28 — voir helper en bas du fichier.
 
 // ─── MOVE_RESULT_* (battle.h:219-227) ───────────────────────────────────────
 export const MOVE_RESULT_MISSED              = 1 << 0;
@@ -478,3 +481,6 @@ export function IS_TYPE_SPECIAL(t: number): boolean { return t > TYPE_MYSTERY; }
 
 /** 1:1 décomp `HITMARKER_FAINTED(battler)` (battle.h:205). gBitTable[battler]<<28. */
 export function HITMARKER_FAINTED(battler: number): number { return (1 << battler) << 28; }
+
+/** 1:1 décomp `HITMARKER_FAINTED2(battler)` (battle.h:206). (1<<28)<<battler. */
+export function HITMARKER_FAINTED2(battler: number): number { return (1 << 28) << battler; }
