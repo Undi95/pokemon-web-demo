@@ -685,6 +685,9 @@ export const MOVE_FUTURE_SIGHT = 248;
 export const B_MSG_FUTURE_SIGHT = 0;
 export const B_MSG_DOOM_DESIRE  = 1;
 
+// ─── SWITCH_IGNORE_ESCAPE_PREVENTION (battle_script_commands.h:368) ───────
+export const SWITCH_IGNORE_ESCAPE_PREVENTION = 1 << 7;
+
 // ─── B_MSG_* stockpile/swallow (battle_string_ids.h:484-489) — 1:1 décomp ─
 export const B_MSG_STOCKPILED      = 0;
 export const B_MSG_CANT_STOCKPILE  = 1;

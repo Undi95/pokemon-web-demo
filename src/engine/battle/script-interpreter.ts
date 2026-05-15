@@ -508,6 +508,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-25').then(({ installNiveau25Handlers }) => {
     installNiveau25Handlers(_commands);
   });
+  // Session 135 — Niveau 26 (hpthresholds + money + switch checks).
+  void import('./cmd-niveau-26').then(({ installNiveau26Handlers }) => {
+    installNiveau26Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

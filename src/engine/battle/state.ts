@@ -430,6 +430,25 @@ export function setIntimidateBattler(v: number) { gIntimidateBattler = v; }
 export let gFormToChangeInto = 0;
 export function setFormToChangeInto(v: number) { gFormToChangeInto = v; }
 
+/** 1:1 décomp `gBattleStruct->hpScale` — résultat de Cmd_hpthresholds /
+ *  Cmd_hpthresholds2. Valeur 0..3 utilisée pour choisir un message de bataille
+ *  selon les % HP restants du target adverse. */
+export let gHpScale = 0;
+export function setHpScale(v: number) { gHpScale = v; }
+
+/** 1:1 décomp `gBattleStruct->hpOnSwitchout[2]` — HP du Pokémon précédent à la
+ *  switch-out, par side (0=player, 1=opponent). Lu par Cmd_hpthresholds2 pour
+ *  calculer le % de dégâts depuis la switch. */
+export const gHpOnSwitchout: number[] = [0, 0];
+
+/** 1:1 décomp `gTrainerBattleOpponent_A/B` (battle_setup.c). Trainer ID
+ *  opponent — déterminé au battle setup, lu par Cmd_getmoneyreward pour
+ *  GetTrainerMoneyToGive(). */
+export let gTrainerBattleOpponent_A = 0;
+export let gTrainerBattleOpponent_B = 0;
+export function setTrainerBattleOpponentA(v: number) { gTrainerBattleOpponent_A = v; }
+export function setTrainerBattleOpponentB(v: number) { gTrainerBattleOpponent_B = v; }
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];
@@ -556,6 +575,11 @@ export function resetBattleState(): void {
   gPaydayMoney = 0;
   gIntimidateBattler = 0;
   gFormToChangeInto = 0;
+  gHpScale = 0;
+  gHpOnSwitchout[0] = 0;
+  gHpOnSwitchout[1] = 0;
+  gTrainerBattleOpponent_A = 0;
+  gTrainerBattleOpponent_B = 0;
   gWishFutureKnock.futureSightCounter = [0, 0, 0, 0];
   gWishFutureKnock.futureSightAttacker = [0, 0, 0, 0];
   gWishFutureKnock.futureSightDmg = [0, 0, 0, 0];
