@@ -25,6 +25,7 @@ import {
   gWrappedBy, gWrappedMove,
   gDisableStructs, gHpOnSwitchout,
   gBattlersCount, gBattlerByTurnOrder, gActionsByTurnOrder,
+  gSentPokesToOpponent, gAbsentBattlerFlags, gBattlerPartyIndexes,
 } from './state';
 import {
   SIDE_STATUS_SPIKES, SIDE_STATUS_SPIKES_DAMAGED,
@@ -35,6 +36,7 @@ import {
   REQUEST_ALL_BATTLE, B_COMM_TO_CONTROLLER,
   IS_BATTLER_OF_TYPE,
   GET_BATTLER_SIDE,
+  B_SIDE_OPPONENT,
   BS_TARGET, BS_ATTACKER,
   MAX_MON_MOVES,
   B_ACTION_CANCEL_PARTNER,
@@ -42,6 +44,7 @@ import {
 import {
   BtlController_EmitGetMonData,
   MarkBattlerForControllerExec,
+  gBitTable,
 } from './battle-controllers';
 import { getBattlerForBattleScript } from './util';
 import { getBattleScriptOffset } from './script-interpreter';
@@ -59,9 +62,21 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** 1:1 stub `UpdateSentPokesToOpponentValue(battler)` (battle_main.c).
- *  Tracking pour exp share — no-op MVP. */
-function _updateSentPokesToOpponentValue(_battler: number): void {}
+/** 1:1 décomp `UpdateSentPokesToOpponentValue(battler)` (battle_util.c:934-939).
+ *  Si battler est côté opponent, call OpponentSwitchInResetSentPokesToOpponentValue. */
+function _updateSentPokesToOpponentValue(battler: number): void {
+  if (GET_BATTLER_SIDE(battler) !== B_SIDE_OPPONENT) return;
+  // 1:1 décomp battle_util.c:915-932 OpponentSwitchInResetSentPokesToOpponentValue :
+  const flank = (battler & 2 /* BIT_FLANK */) >>> 1;
+  gSentPokesToOpponent[flank] = 0;
+  let bits = 0;
+  for (let i = 0; i < gBattlersCount; i += 2) {
+    if (!(gAbsentBattlerFlags & gBitTable[i])) {
+      bits |= gBitTable[gBattlerPartyIndexes[i]];
+    }
+  }
+  gSentPokesToOpponent[flank] = bits;
+}
 
 /** 1:1 stub `PokemonUseItemEffects(mon, item, partyIdx, ?, isInBattle)`
  *  (item.c) — applique l'effet d'un item (= Potion, etc.) sur un mon.
