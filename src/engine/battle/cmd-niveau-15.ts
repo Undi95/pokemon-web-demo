@@ -50,6 +50,7 @@ import {
   BATTLE_ENVIRONMENT_WATER, BATTLE_ENVIRONMENT_POND,
   BATTLE_ENVIRONMENT_MOUNTAIN, BATTLE_ENVIRONMENT_CAVE,
   EFFECT_MUD_SPORT, BATTLE_TYPE_DOUBLE,
+  BATTLE_PARTNER,
 } from './constants';
 import { gBattleScripting } from './state';
 import { gBitTable } from './battle-controllers';
@@ -57,9 +58,6 @@ import { GetBattlerAtPosition } from './util';
 import { getBattleMove } from './data/battle-moves';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-/** 1:1 décomp `BATTLE_PARTNER(position)` (constants/battle.h). */
-function BATTLE_PARTNER(position: number): number { return position ^ 2; }
 
 /** 1:1 décomp `GetBattlerPosition(battler)` — read from gBattlerPositions[].
  *  Pour MVP single battle, gBattlerPositions est identity. */

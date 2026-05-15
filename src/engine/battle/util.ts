@@ -113,7 +113,7 @@ export function FaintClearSetData(): void {
   // Clear gDisableStructs[active] entièrement.
   const ds = gDisableStructs[gActiveBattler];
   for (const k of Object.keys(ds) as Array<keyof typeof ds>) {
-    (ds as Record<string, number>)[k] = 0;
+    (ds as unknown as Record<string, number>)[k] = 0;
   }
   ds.isFirstTurn = 2; // 1:1 décomp : reset to 2 (= post-faint freshness).
 

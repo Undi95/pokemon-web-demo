@@ -605,9 +605,6 @@ export const MOVE_EFFECT_RAGE         = 30;
 export const MOVE_EFFECT_STEAL_ITEM   = 31;
 export const MOVE_EFFECT_THRASH       = 53;
 
-// ─── ABILITY_NATURAL_CURE (abilities.h:34) — 1:1 décomp ────────────────────
-export const ABILITY_NATURAL_CURE = 30;
-
 // ─── MOVE_PROTECT/DETECT/ENDURE (constants/moves.h) — 1:1 décomp ──────────
 export const MOVE_PROTECT = 182;
 export const MOVE_DETECT  = 197;
@@ -618,9 +615,8 @@ export const MOVE_PURSUIT = 228;
 export const B_ACTION_USE_MOVE   = 0;
 export const B_ACTION_TRY_FINISH = 11;
 
-// ─── ABILITY_PRESSURE / ABILITY_OBLIVIOUS (abilities.h) — 1:1 décomp ──────
-export const ABILITY_PRESSURE  = 46;
-export const ABILITY_OBLIVIOUS = 12;
+/** 1:1 décomp `BATTLE_PARTNER(position)` (constants/battle.h). XOR 2 swap. */
+export function BATTLE_PARTNER(position: number): number { return position ^ 2; }
 
 // ─── REQUEST_PPMOVE1_BATTLE (battle_controllers.h:14) — 1:1 décomp ────────
 export const REQUEST_PPMOVE1_BATTLE = 9;
@@ -634,7 +630,6 @@ export const CASTFORM_SUBSTITUTE = 1 << 7;
 // ─── MOVE_* extra used for Mimic forbidden table — 1:1 décomp ─────────────
 export const MOVE_METRONOME    = 118;
 export const MOVE_MIMIC        = 102;
-export const MOVE_SKETCH       = 166;
 export const MOVE_COUNTER      = 68;
 export const MOVE_MIRROR_COAT  = 243;
 export const MOVE_DESTINY_BOND = 194;
