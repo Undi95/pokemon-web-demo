@@ -112,6 +112,9 @@ import {
   STATUS3_CANT_SCORE_A_CRIT,
   STATUS3_ALWAYS_HITS,
   STATUS3_SEMI_INVULNERABLE,
+  STATUS3_ON_AIR,
+  STATUS3_UNDERGROUND,
+  STATUS3_UNDERWATER,
   STATUS3_CHARGED_UP,
   // Battle type flags
   BATTLE_TYPE_WALLY_TUTORIAL,
@@ -522,13 +525,106 @@ const sAccuracyStageRatios: ReadonlyArray<readonly [number, number]> = [
   [133, 100], [166, 100], [  2,   1], [233, 100], [133,  50], [  3,   1],
 ];
 
+// 1:1 décomp `FLAG_PROTECT_AFFECTED` — defined in pokemon.h flags.
+const FLAG_PROTECT_AFFECTED_LOCAL = 1 << 1;
+// EFFECT_* values pour AccuracyCalcHelper (= depuis auto-data, vérifiées).
+const _EFFECT_ALWAYS_HIT_LOCAL = 17;
+const _EFFECT_VITAL_THROW_LOCAL = 78;
+// HITMARKER_IGNORE_* bits (1 << 16/17/18) déjà importés.
+
+/** 1:1 décomp `DEFENDER_IS_PROTECTED` (battle.h macro) :
+ *  `gProtectStructs[gBattlerTarget].protected && (gBattleMoves[move].flags & FLAG_PROTECT_AFFECTED)`. */
+function _DEFENDER_IS_PROTECTED(move: number): boolean {
+  // Lazy lookup gProtectStructs from globalThis to avoid heavier imports.
+  const targetProtectStructs = gProtectStructs[gBattlerTarget];
+  if (!targetProtectStructs.protected) return false;
+  return (getBattleMove(move).flags & FLAG_PROTECT_AFFECTED_LOCAL) !== 0;
+}
+
+/** 1:1 décomp `JumpIfMoveAffectedByProtect(move)`
+ *  (battle_script_commands.c:1041-1052).
+ *
+ *  Si défendeur est Protect-é (= proté et move respecté Protect) :
+ *  - set MOVE_RESULT_MISSED
+ *  - set MISS_TYPE = B_MSG_PROTECTED
+ *  - jump à BattleScript label (= 7 bytes ahead du opcode, mais notre
+ *    appelant doit handle le scriptPtr jump)
+ *  - return true (= affected)
+ */
+function _JumpIfMoveAffectedByProtect(ctx: BattleScriptContext, jumpTarget: number, move: number): boolean {
+  if (_DEFENDER_IS_PROTECTED(move)) {
+    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
+    // 1:1 décomp : JumpIfMoveFailed(7, move) — jump si move failed.
+    // Notre version : si jumpTarget est set, on l'utilise.
+    if (jumpTarget >= 0) ctx.scriptPtr = jumpTarget;
+    gBattleCommunication[5 /* MISS_TYPE */] = 1 /* B_MSG_PROTECTED */;
+    return true;
+  }
+  return false;
+}
+
+/** 1:1 décomp `AccuracyCalcHelper(move)` (battle_script_commands.c:1054-1097).
+ *  Check les cas où le move hit/miss without acc check.
+ *
+ *  Returns true si décision faite (hit or miss). Si miss, set scriptPtr=jumpTarget. */
+function _AccuracyCalcHelper(ctx: BattleScriptContext, jumpTarget: number, move: number): boolean {
+  // Lock On : ALWAYS_HITS + battlerWithSureHit match → hit.
+  if ((gStatuses3[gBattlerTarget] & STATUS3_ALWAYS_HITS)
+      && gDisableStructs[gBattlerTarget].battlerWithSureHit === gBattlerAttacker) {
+    return true;  // hit, no acc check
+  }
+
+  // ON_AIR (Fly) : miss sauf si IGNORE_ON_AIR set.
+  if (!(gHitMarker & HITMARKER_IGNORE_ON_AIR_LOCAL)
+      && (gStatuses3[gBattlerTarget] & STATUS3_ON_AIR)) {
+    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
+    if (jumpTarget >= 0) ctx.scriptPtr = jumpTarget;
+    return true;
+  }
+  setHitMarker(gHitMarker & ~HITMARKER_IGNORE_ON_AIR_LOCAL);
+
+  // UNDERGROUND (Dig) : miss sauf si IGNORE_UNDERGROUND.
+  if (!(gHitMarker & HITMARKER_IGNORE_UNDERGROUND_LOCAL)
+      && (gStatuses3[gBattlerTarget] & STATUS3_UNDERGROUND)) {
+    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
+    if (jumpTarget >= 0) ctx.scriptPtr = jumpTarget;
+    return true;
+  }
+  setHitMarker(gHitMarker & ~HITMARKER_IGNORE_UNDERGROUND_LOCAL);
+
+  // UNDERWATER (Dive) : miss sauf si IGNORE_UNDERWATER.
+  if (!(gHitMarker & HITMARKER_IGNORE_UNDERWATER_LOCAL)
+      && (gStatuses3[gBattlerTarget] & STATUS3_UNDERWATER)) {
+    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
+    if (jumpTarget >= 0) ctx.scriptPtr = jumpTarget;
+    return true;
+  }
+  setHitMarker(gHitMarker & ~HITMARKER_IGNORE_UNDERWATER_LOCAL);
+
+  // Thunder en Rain = hit (no acc check) || EFFECT_ALWAYS_HIT || EFFECT_VITAL_THROW.
+  const moveEff = getBattleMove(move).effect;
+  // STUB : WEATHER_HAS_EFFECT check skipped pour MVP — assume weather actif.
+  if (((gBattleWeather & 1 /* B_WEATHER_RAIN_TEMPORARY */) && moveEff === EFFECT_THUNDER)
+      || moveEff === _EFFECT_ALWAYS_HIT_LOCAL
+      || moveEff === _EFFECT_VITAL_THROW_LOCAL) {
+    return true;  // hit, no acc check
+  }
+
+  return false;
+}
+
+// HITMARKER_IGNORE_* values from constants (1 << 16/17/18).
+const HITMARKER_IGNORE_ON_AIR_LOCAL      = 1 << 16;
+const HITMARKER_IGNORE_UNDERGROUND_LOCAL = 1 << 17;
+const HITMARKER_IGNORE_UNDERWATER_LOCAL  = 1 << 18;
+
 /** 1:1 décomp `Cmd_accuracycheck` (battle_script_commands.c:1099-1189).
  *
  *  Opcode structure (= bytecode) : 0x01 [u32 jumpTarget] [u16 move]. Total 7 bytes.
  *  Notre interpreter a déjà consommé l'opcode byte → ctx.scriptPtr est sur jumpTarget.
  *
- *  Stubs : JumpIfMoveAffectedByProtect = false, AccuracyCalcHelper = false,
- *  CheckWonderGuardAndLevitate = noop. Weather (Sun/Sandstorm) check via gBattleWeather. */
+ *  Helpers wired : JumpIfMoveAffectedByProtect + AccuracyCalcHelper.
+ *  Stubs : CheckWonderGuardAndLevitate = noop. */
 function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
   const jumpTarget = readWord(ctx);
   let move = readHalfword(ctx);
@@ -541,7 +637,8 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
       ctx.scriptPtr = jumpTarget;  // semi-invulnerable, miss
       return false;
     }
-    // JumpIfMoveAffectedByProtect stub : not affected → hit.
+    // 1:1 décomp : JumpIfMoveAffectedByProtect(0) — pas affected → hit.
+    _JumpIfMoveAffectedByProtect(ctx, jumpTarget, 0);
     return false;
   }
 
@@ -551,7 +648,10 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
   const type = md.type;
   let moveAcc = md.accuracy;
 
-  // JumpIfMoveAffectedByProtect / AccuracyCalcHelper stubs : skip.
+  // 1:1 décomp : JumpIfMoveAffectedByProtect(move) → return early si protected.
+  if (_JumpIfMoveAffectedByProtect(ctx, jumpTarget, move)) return false;
+  // 1:1 décomp : AccuracyCalcHelper(move) → return early si verdict pris.
+  if (_AccuracyCalcHelper(ctx, jumpTarget, move)) return false;
 
   const attackerMon = gBattleMons[gBattlerAttacker];
   const targetMon = gBattleMons[gBattlerTarget];
