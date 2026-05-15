@@ -241,8 +241,8 @@ function Cmd_ppreduce(ctx: BattleScriptContext): boolean {
 
   if (!(gHitMarker & (HITMARKER_NO_PPDEDUCT | HITMARKER_NO_ATTACKSTRING))
       && gBattleMons[gBattlerAttacker].pp[gCurrMovePos] > 0) {
-    // 1:1 décomp gProtectStructs[gBattlerAttacker].notFirstStrike = 1.
-    // TODO porter gProtectStructs.
+    // 1:1 décomp : gProtectStructs[gBattlerAttacker].notFirstStrike = 1.
+    gProtectStructs[gBattlerAttacker].notFirstStrike = 1;
 
     const currentPp = gBattleMons[gBattlerAttacker].pp[gCurrMovePos];
     if (currentPp > ppToDeduct) {
