@@ -61,6 +61,7 @@ import {
   GetBattlerAtPosition, GetBattlerPosition,
   B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
   B_POSITION_OPPONENT_LEFT, B_POSITION_OPPONENT_RIGHT,
+  RecordAbilityBattle, ClearFuryCutterDestinyBondGrudge,
 } from './util';
 import { getBattleMove } from './data/battle-moves';
 import { getMoveEffectScriptOffset, getBattleScriptOffset } from './script-interpreter';
@@ -81,9 +82,8 @@ function _GetBattlerTurnOrderNum(battler: number): number {
   return 0;
 }
 
-/** 1:1 stub `RecordAbilityBattle(battler, ability)` (battle_util.c). AI tracking.
- *  STUB MVP : no-op. */
-function _RecordAbilityBattle(_battler: number, _ability: number): void {}
+// 1:1 décomp `RecordAbilityBattle` — wired via util.ts.
+const _RecordAbilityBattle = RecordAbilityBattle;
 
 /** Resolve gBattleStruct.moveTarget[battler] — pour MVP utilise gBattlerTarget
  *  inchangé (= state actuel). TODO porter table dédiée. */
@@ -347,11 +347,14 @@ export function HandleAction_Switch(ctx?: BattleScriptContext): void {
   // STUB gBattleResults.playerSwitchesCounter increment.
 }
 
-/** 1:1 décomp `HandleAction_UseItem` (battle_util.c:312+). STUB minimal.
- *  TODO porter gBattleBufferB pour item ID + ClearFuryCutterDestinyBondGrudge. */
+/** 1:1 décomp `HandleAction_UseItem` (battle_util.c:312+). STUB partial.
+ *  Wirage minimal : set attacker + ClearFuryCutterDestinyBondGrudge.
+ *  TODO Phase 1.4 : full item battle flow (= read gBattleBufferB[1..2] pour item ID,
+ *  switch sur effect, run bytecode item-use). */
 export function HandleAction_UseItem(_ctx?: BattleScriptContext): void {
   setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
   setBattlerTarget(gBattlerAttacker);
+  ClearFuryCutterDestinyBondGrudge(gBattlerAttacker);
   // TODO Phase 1.4 : full item battle flow.
   setCurrentActionFuncId(B_ACTION_FINISHED);
 }

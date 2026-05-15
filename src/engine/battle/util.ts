@@ -19,6 +19,7 @@ import {
   gLastLandedMoves, gLastResultingMoves, gLastHitBy, gLastHitByType,
   gActiveBattler, gDisableStructs,
 } from './state';
+import { STATUS2_DESTINY_BOND, STATUS3_GRUDGE } from './constants';
 import { STATUS2_MULTIPLETURNS, STATUS2_UPROAR, STATUS2_BIDE, STATUS2_LOCK_CONFUSE, STATUS3_SEMI_INVULNERABLE } from './constants';
 import {
   BS_TARGET, BS_ATTACKER, BS_EFFECT_BATTLER, BS_FAINTED,
@@ -153,4 +154,56 @@ export function GetScaledHPFraction(hp: number, maxhp: number, scale: number): n
   let result = Math.floor((hp * scale) / maxhp);
   if (result === 0 && hp > 0) return 1;
   return result;
+}
+
+// ─── ClearFuryCutterDestinyBondGrudge (battle_util.c:3798-3803) — 1:1 décomp ───
+
+/** 1:1 décomp. Reset Fury Cutter compteur + clear Destiny Bond + Grudge.
+ *  Appelé par HandleAction_UseItem (= player utilise item = mon perd ses
+ *  conditions accrobatiques). */
+export function ClearFuryCutterDestinyBondGrudge(battlerId: number): void {
+  gDisableStructs[battlerId].furyCutterCounter = 0;
+  gBattleMons[battlerId].status2 &= ~STATUS2_DESTINY_BOND;
+  gStatuses3[battlerId] &= ~STATUS3_GRUDGE;
+}
+
+// ─── BATTLE_HISTORY tracking (battle_ai_script_commands.c:643-655) — 1:1 décomp ───
+
+/** AI tracking module-local — pas exporté (= un mon n'a pas besoin de lire les
+ *  abilities/items des autres mons en MVP). gBattleResources->ai = ce buffer. */
+const _battleHistory = {
+  abilities: [0, 0, 0, 0] as number[],
+  itemEffects: [0, 0, 0, 0] as number[],
+};
+
+/** 1:1 décomp `RecordAbilityBattle(battler, abilityId)` (= record qu'on a vu
+ *  cette ability sur ce battler). Utilisé par l'AI pour choisir des moves. */
+export function RecordAbilityBattle(battler: number, abilityId: number): void {
+  _battleHistory.abilities[battler] = abilityId;
+}
+
+/** 1:1 décomp `ClearBattlerAbilityHistory(battler)`. */
+export function ClearBattlerAbilityHistory(battler: number): void {
+  _battleHistory.abilities[battler] = 0;
+}
+
+/** 1:1 décomp `RecordItemEffectBattle(battler, itemEffect)`. */
+export function RecordItemEffectBattle(battler: number, itemEffect: number): void {
+  _battleHistory.itemEffects[battler] = itemEffect;
+}
+
+/** Expose history pour AI (= read-only). */
+export function getBattleHistoryAbility(battler: number): number {
+  return _battleHistory.abilities[battler] ?? 0;
+}
+export function getBattleHistoryItemEffect(battler: number): number {
+  return _battleHistory.itemEffects[battler] ?? 0;
+}
+
+/** Reset le battle history au battle start. */
+export function resetBattleHistory(): void {
+  for (let i = 0; i < 4; i++) {
+    _battleHistory.abilities[i] = 0;
+    _battleHistory.itemEffects[i] = 0;
+  }
 }
