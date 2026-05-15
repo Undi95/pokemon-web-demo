@@ -232,6 +232,59 @@ export const gDisableStructs: DisableStruct[] = [
   _makeBlankDisableStruct(), _makeBlankDisableStruct(),
 ];
 
+/** 1:1 décomp `struct SideTimer gSideTimers[2]` (battle.h:418-432). Per-side
+ *  active turn counters pour reflect/lightscreen/mist/safeguard/spikes/etc. */
+export interface SideTimer {
+  reflectTimer: number;
+  reflectBattlerId: number;
+  lightscreenTimer: number;
+  lightscreenBattlerId: number;
+  mistTimer: number;
+  mistBattlerId: number;
+  safeguardTimer: number;
+  safeguardBattlerId: number;
+  followmeTimer: number;
+  followmeTarget: number;
+  spikesAmount: number;
+  fieldB: number;
+}
+
+function _makeBlankSideTimer(): SideTimer {
+  return {
+    reflectTimer: 0, reflectBattlerId: 0,
+    lightscreenTimer: 0, lightscreenBattlerId: 0,
+    mistTimer: 0, mistBattlerId: 0,
+    safeguardTimer: 0, safeguardBattlerId: 0,
+    followmeTimer: 0, followmeTarget: 0,
+    spikesAmount: 0, fieldB: 0,
+  };
+}
+
+export const gSideTimers: SideTimer[] = [_makeBlankSideTimer(), _makeBlankSideTimer()];
+
+/** 1:1 décomp `struct WishFutureKnock gWishFutureKnock` (battle.h:401-413). */
+export interface WishFutureKnock {
+  futureSightCounter: number[];   // u8[4]
+  futureSightAttacker: number[];  // u8[4]
+  futureSightDmg: number[];       // s32[4]
+  futureSightMove: number[];      // u16[4]
+  wishCounter: number[];          // u8[4]
+  wishMonId: number[];            // u8[4]
+  weatherDuration: number;        // u8
+  knockedOffMons: number;         // u8 bitfield per battler
+}
+
+export const gWishFutureKnock: WishFutureKnock = {
+  futureSightCounter: [0, 0, 0, 0],
+  futureSightAttacker: [0, 0, 0, 0],
+  futureSightDmg: [0, 0, 0, 0],
+  futureSightMove: [0, 0, 0, 0],
+  wishCounter: [0, 0, 0, 0],
+  wishMonId: [0, 0, 0, 0],
+  weatherDuration: 0,
+  knockedOffMons: 0,
+};
+
 /** `gBattlescriptCurrInstr` dans le décomp est un pointer ; ici c'est l'offset
  *  dans le bytecode (= `BattleScriptContext.scriptPtr` du runtime). Maintenu
  *  synchrone par le runBattleScript loop. */
@@ -283,6 +336,7 @@ export function setHitMarker(v: number) { gHitMarker = v; }
 export function setBattleOutcome(v: number) { gBattleOutcome = v; }
 export function setBattleTypeFlags(v: number) { gBattleTypeFlags = v; }
 export function setBattleWeather(v: number) { gBattleWeather = v; }
+export function setSideStatus(sideIdx: number, v: number) { gSideStatuses[sideIdx] = v; }
 export function setDynamicBasePower(v: number) { gDynamicBasePower = v; }
 export function setDynamicMoveType(v: number) { gDynamicMoveType = v; }
 export function setBattleMovePower(v: number) { gBattleMovePower = v; }
@@ -339,6 +393,16 @@ export function resetBattleState(): void {
   for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
     Object.assign(gDisableStructs[i], _makeBlankDisableStruct());
   }
+  Object.assign(gSideTimers[0], _makeBlankSideTimer());
+  Object.assign(gSideTimers[1], _makeBlankSideTimer());
+  gWishFutureKnock.futureSightCounter = [0, 0, 0, 0];
+  gWishFutureKnock.futureSightAttacker = [0, 0, 0, 0];
+  gWishFutureKnock.futureSightDmg = [0, 0, 0, 0];
+  gWishFutureKnock.futureSightMove = [0, 0, 0, 0];
+  gWishFutureKnock.wishCounter = [0, 0, 0, 0];
+  gWishFutureKnock.wishMonId = [0, 0, 0, 0];
+  gWishFutureKnock.weatherDuration = 0;
+  gWishFutureKnock.knockedOffMons = 0;
 }
 
 // Expose pour devtools / debug.

@@ -444,6 +444,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-9').then(({ installNiveau9Handlers }) => {
     installNiveau9Handlers(_commands);
   });
+  // Session 134 — Niveau 10 (weather + side status + charge).
+  void import('./cmd-niveau-10').then(({ installNiveau10Handlers }) => {
+    installNiveau10Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

@@ -146,7 +146,8 @@ export const B_WEATHER_SANDSTORM             = B_WEATHER_SANDSTORM_TEMPORARY | B
 export const B_WEATHER_SUN_TEMPORARY         = 1 << 5;
 export const B_WEATHER_SUN_PERMANENT         = 1 << 6;
 export const B_WEATHER_SUN                   = B_WEATHER_SUN_TEMPORARY | B_WEATHER_SUN_PERMANENT;
-export const B_WEATHER_HAIL                  = 1 << 7;
+export const B_WEATHER_HAIL_TEMPORARY        = 1 << 7;
+export const B_WEATHER_HAIL                  = B_WEATHER_HAIL_TEMPORARY;
 
 // ─── BS_* battler refs (battle_script_commands.h:304-318) — 1:1 décomp ─────
 // ATTENTION : décomp inverse BS_TARGET=0 / BS_ATTACKER=1 (= la "natural" reading
@@ -511,3 +512,22 @@ export const B_MSG_FOCUS_ENERGY_FAILED  = 1;
 export function IS_BATTLER_OF_TYPE(t1: number, t2: number, type: number): boolean {
   return t1 === type || t2 === type;
 }
+
+// ─── B_MSG_* weather (battle_string_ids.h:437-442) — 1:1 décomp ────────────
+export const B_MSG_STARTED_RAIN      = 0;
+export const B_MSG_WEATHER_FAILED    = 2;
+export const B_MSG_STARTED_SANDSTORM = 3;
+export const B_MSG_STARTED_SUNLIGHT  = 4;
+export const B_MSG_STARTED_HAIL      = 5;
+
+// ─── B_MSG_* side status (battle_string_ids.h:454-459) — 1:1 décomp ────────
+export const B_MSG_SIDE_STATUS_FAILED     = 0;
+export const B_MSG_SET_REFLECT_SINGLE     = 1;
+export const B_MSG_SET_REFLECT_DOUBLE     = 2;
+export const B_MSG_SET_LIGHTSCREEN_SINGLE = 3;
+export const B_MSG_SET_LIGHTSCREEN_DOUBLE = 4;
+export const B_MSG_SET_SAFEGUARD          = 5;
+
+// ─── B_MSG_* mist (battle_string_ids.h:496-497) — 1:1 décomp ───────────────
+export const B_MSG_SET_MIST    = 0;
+export const B_MSG_MIST_FAILED = 1;
