@@ -41,6 +41,7 @@ import {
   setFormToChangeInto,
   gDisableStructs,
   setIntimidateBattler,
+  gMoveResultFlags,
 } from './state';
 import { Random, getBattleScriptOffset } from './script-interpreter';
 import {
@@ -50,14 +51,23 @@ import {
   ABILITY_DRIZZLE, ABILITY_SAND_STREAM, ABILITY_DROUGHT, ABILITY_INTIMIDATE,
   ABILITY_TRACE, ABILITY_CLOUD_NINE, ABILITY_AIR_LOCK, ABILITY_FORECAST,
   ABILITY_RAIN_DISH, ABILITY_SHED_SKIN, ABILITY_SPEED_BOOST, ABILITY_TRUANT,
+  ABILITY_COLOR_CHANGE, ABILITY_ROUGH_SKIN, ABILITY_EFFECT_SPORE,
+  ABILITY_POISON_POINT, ABILITY_STATIC, ABILITY_FLAME_BODY, ABILITY_CUTE_CHARM,
   STAT_SPEED, MAX_STAT_STAGE, STATUS1_ANY,
+  MOVE_RESULT_NO_EFFECT, MOVE_STRUGGLE,
+  STATUS2_INFATUATED_WITH,
+  MOVE_EFFECT_BYTE, MOVE_EFFECT_BURN, MOVE_EFFECT_PARALYSIS, MOVE_EFFECT_POISON,
+  MOVE_EFFECT_AFFECTS_USER,
+  IS_BATTLER_OF_TYPE,
+  MON_GENDERLESS,
+  FLAG_MAKES_CONTACT,
   TYPE_ELECTRIC, TYPE_WATER, TYPE_FIRE,
   STATUS1_POISON, STATUS1_TOXIC_POISON, STATUS1_BURN, STATUS1_FREEZE,
   STATUS1_PARALYSIS, STATUS1_SLEEP,
   STATUS2_NIGHTMARE, STATUS2_CONFUSION, STATUS2_INFATUATION, STATUS2_MULTIPLETURNS,
   STATUS3_INTIMIDATE_POKES, STATUS3_TRACE,
   STATUS3_MUDSPORT, STATUS3_WATERSPORT,
-  HITMARKER_NO_PPDEDUCT,
+  HITMARKER_NO_PPDEDUCT, HITMARKER_STATUS_ABILITY_EFFECT,
   BATTLE_TYPE_SAFARI,
   B_WEATHER_RAIN, B_WEATHER_RAIN_TEMPORARY, B_WEATHER_RAIN_PERMANENT,
   B_WEATHER_SANDSTORM, B_WEATHER_SANDSTORM_PERMANENT,
@@ -491,6 +501,101 @@ export function AbilityBattleEffects(
       break;
     }
 
+    case ABILITYEFFECT_ON_DAMAGE: {
+      // 1:1 décomp battle_util.c:2732-2855 (Contact abilities + Color Change).
+      // Helpers inline pour TARGET_TURN_DAMAGED + FLAG_MAKES_CONTACT check.
+      const targetTurnDamaged = (gSpecialStatuses[gBattlerTarget].physicalDmg !== 0
+        || gSpecialStatuses[gBattlerTarget].specialDmg !== 0);
+      const makesContact = (getBattleMove(move).flags & FLAG_MAKES_CONTACT) !== 0;
+      const noEffect = (gMoveResultFlags & MOVE_RESULT_NO_EFFECT) !== 0;
+      const attackerAlive = gBattleMons[gBattlerAttacker].hp !== 0;
+      const notConfusionSelfDmg = !gProtectStructs[gBattlerAttacker].confusionSelfDmg;
+
+      switch (gLastUsedAbility) {
+        case ABILITY_COLOR_CHANGE:
+          if (!noEffect && move !== MOVE_STRUGGLE
+              && getBattleMove(move).power !== 0
+              && targetTurnDamaged
+              && !IS_BATTLER_OF_TYPE(gBattleMons[battler].type1, gBattleMons[battler].type2, moveType)
+              && gBattleMons[battler].hp !== 0) {
+            // SET_BATTLER_TYPE(battler, moveType) — both types set to moveType.
+            gBattleMons[battler].type1 = moveType;
+            gBattleMons[battler].type2 = moveType;
+            _lastWantedScriptLabel = 'BattleScript_ColorChangeActivates';
+            effect++;
+          }
+          break;
+        case ABILITY_ROUGH_SKIN:
+          if (!noEffect && attackerAlive && notConfusionSelfDmg
+              && targetTurnDamaged && makesContact) {
+            let dmg = Math.floor(gBattleMons[gBattlerAttacker].maxHP / 16);
+            if (dmg === 0) dmg = 1;
+            setBattleMoveDamage(dmg);
+            _lastWantedScriptLabel = 'BattleScript_RoughSkinActivates';
+            effect++;
+          }
+          break;
+        case ABILITY_EFFECT_SPORE:
+          if (!noEffect && attackerAlive && notConfusionSelfDmg
+              && targetTurnDamaged && makesContact
+              && (Random() % 10) === 0) {
+            // 1:1 décomp : pick Sleep/Poison/Burn random, swap Burn → Paralysis.
+            let r: number;
+            do { r = Random() & 3; } while (r === 0);
+            if (r === MOVE_EFFECT_BURN) r += (MOVE_EFFECT_PARALYSIS - MOVE_EFFECT_BURN);
+            gBattleCommunication[MOVE_EFFECT_BYTE] = r | MOVE_EFFECT_AFFECTS_USER;
+            _lastWantedScriptLabel = 'BattleScript_ApplySecondaryEffect';
+            setHitMarker(gHitMarker | HITMARKER_STATUS_ABILITY_EFFECT);
+            effect++;
+          }
+          break;
+        case ABILITY_POISON_POINT:
+          if (!noEffect && attackerAlive && notConfusionSelfDmg
+              && targetTurnDamaged && makesContact
+              && (Random() % 3) === 0) {
+            gBattleCommunication[MOVE_EFFECT_BYTE] = MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_POISON;
+            _lastWantedScriptLabel = 'BattleScript_ApplySecondaryEffect';
+            setHitMarker(gHitMarker | HITMARKER_STATUS_ABILITY_EFFECT);
+            effect++;
+          }
+          break;
+        case ABILITY_STATIC:
+          if (!noEffect && attackerAlive && notConfusionSelfDmg
+              && targetTurnDamaged && makesContact
+              && (Random() % 3) === 0) {
+            gBattleCommunication[MOVE_EFFECT_BYTE] = MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_PARALYSIS;
+            _lastWantedScriptLabel = 'BattleScript_ApplySecondaryEffect';
+            setHitMarker(gHitMarker | HITMARKER_STATUS_ABILITY_EFFECT);
+            effect++;
+          }
+          break;
+        case ABILITY_FLAME_BODY:
+          if (!noEffect && attackerAlive && notConfusionSelfDmg
+              && makesContact && targetTurnDamaged
+              && (Random() % 3) === 0) {
+            gBattleCommunication[MOVE_EFFECT_BYTE] = MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_BURN;
+            _lastWantedScriptLabel = 'BattleScript_ApplySecondaryEffect';
+            setHitMarker(gHitMarker | HITMARKER_STATUS_ABILITY_EFFECT);
+            effect++;
+          }
+          break;
+        case ABILITY_CUTE_CHARM:
+          // 1:1 partial : gender check via party-storage GetGenderFromSpeciesAndPersonality.
+          // Pour MVP : skip — gender bridge nécessite party-storage hook.
+          // TODO porter en utilisant pokemon.ts:_getGenderFromSpeciesAndPersonality.
+          void MON_GENDERLESS; void STATUS2_INFATUATED_WITH;
+          if (!noEffect && attackerAlive && notConfusionSelfDmg && makesContact
+              && targetTurnDamaged && gBattleMons[gBattlerTarget].hp !== 0
+              && (Random() % 3) === 0
+              && gBattleMons[gBattlerAttacker].ability !== ABILITY_OBLIVIOUS) {
+            // Genders not checked (= MVP), pas activé pour éviter false positives.
+            // statement scope ferme avec break ci-dessous.
+          }
+          break;
+      }
+      break;
+    }
+
     case ABILITYEFFECT_INTIMIDATE1: {
       // 1:1 décomp battle_util.c:2986-2999.
       for (let i = 0; i < gBattlersCount; i++) {
@@ -548,7 +653,6 @@ export function AbilityBattleEffects(
     }
 
     // ─── Stubs TODO Phase 1.2 E continuation ──────────────────────────────
-    case ABILITYEFFECT_ON_DAMAGE:
     case ABILITYEFFECT_FORECAST:
     case ABILITYEFFECT_SYNCHRONIZE:
     case ABILITYEFFECT_ATK_SYNCHRONIZE:
@@ -580,3 +684,4 @@ export function consumeAbilityWantedScript(): string | null {
   _lastWantedScriptLabel = null;
   return v;
 }
+

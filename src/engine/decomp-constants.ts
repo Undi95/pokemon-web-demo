@@ -100,6 +100,17 @@ _mergeConstants(pokemon);
 _mergeConstants(abilities);
 _mergeConstants(battleMoveEffects);
 _mergeConstants(vars);
+
+// Manual constants — auto-extraction stocke ces FLAG_* comme `_EXPR` strings
+// (= "(1 << 0)") qui ne résolvent pas en number. On force-load les valeurs
+// numeric ici pour que battle-moves.ts puisse résoudre `flags: "FLAG_MAKES_CONTACT | ..."`.
+// Source : `decomps/pokeemeraude/include/constants/pokemon.h:208-213`.
+_constantsTable['FLAG_MAKES_CONTACT']        = 1 << 0;
+_constantsTable['FLAG_PROTECT_AFFECTED']     = 1 << 1;
+_constantsTable['FLAG_MAGIC_COAT_AFFECTED']  = 1 << 2;
+_constantsTable['FLAG_SNATCH_AFFECTED']      = 1 << 3;
+_constantsTable['FLAG_MIRROR_MOVE_AFFECTED'] = 1 << 4;
+_constantsTable['FLAG_KINGS_ROCK_AFFECTED']  = 1 << 5;
 _mergeConstants(titleScreen);
 _mergeConstants(metatileLabels);
 _mergeConstants(metatileBehaviors);

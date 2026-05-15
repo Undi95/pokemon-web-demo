@@ -129,6 +129,17 @@ void (async () => {
 import { initStringsFromDecomp } from './engine/gba-strings';
 void initStringsFromDecomp();
 
+// Session 136 audit fix : preload battle moves data + battle script bytecode
+// AU BOOT. Sans ces calls, `getBattleMove(moveId)` retournait toujours
+// EMPTY_MOVE (= flags=0, power=0, type=0), et le bytecode interpreter ne
+// trouvait pas ses labels (= scriptPtr=-1 partout). Toutes les opcodes battle
+// qui appellent `getBattleMove(...).flags & FLAG_MAKES_CONTACT` fail silent
+// (= secondary effects/ability triggers/etc. ne marchent jamais).
+import { loadBattleMoves } from './engine/battle/data/battle-moves';
+import { loadBattleScriptBytecode } from './engine/battle/script-interpreter';
+void loadBattleMoves();
+void loadBattleScriptBytecode();
+
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
 console.log(`[main] LoadGameSave at boot → status=${_saveLoadStatus}`);
