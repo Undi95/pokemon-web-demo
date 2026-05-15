@@ -524,6 +524,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-29').then(({ installNiveau29Handlers }) => {
     installNiveau29Handlers(_commands);
   });
+  // Session 135 — Niveau 30 (conversion2/pursuit/switchupdate/beatup/trick).
+  void import('./cmd-niveau-30').then(({ installNiveau30Handlers }) => {
+    installNiveau30Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

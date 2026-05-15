@@ -471,6 +471,14 @@ export const gLastTakenMove: number[] = [0, 0, 0, 0];
  *  battler X depuis battler Y. Flat array index = X*4 + Y. */
 export const gLastTakenMoveFrom: number[] = new Array(16).fill(0);
 
+/** 1:1 décomp `gBattleStruct->moveTarget[MAX_BATTLERS_COUNT]` — target id
+ *  chosen by each battler ce turn (= Pursuit switch tracking). */
+export const gMoveTarget: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `gBattleStruct->chosenMovePositions[MAX_BATTLERS_COUNT]` —
+ *  position 0..3 du move choisi (= slot dans gBattleMons.moves). */
+export const gChosenMovePositions: number[] = [0, 0, 0, 0];
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];
