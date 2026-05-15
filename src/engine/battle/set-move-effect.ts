@@ -167,9 +167,12 @@ const MOVE_EFFECT_BYTE_IDX = 3;
 // ─── Macros INCREMENT_RESET_RETURN / RESET_RETURN ─────────────────────────
 
 /** 1:1 décomp `INCREMENT_RESET_RETURN` macro :
- *  gBattlescriptCurrInstr++; gBattleCommunication[MOVE_EFFECT_BYTE] = 0; return; */
-function _incrementResetReturn(ctx: BattleScriptContext): void {
-  ctx.scriptPtr++;
+ *  gBattlescriptCurrInstr++; gBattleCommunication[MOVE_EFFECT_BYTE] = 0; return;
+ *
+ *  Note : le `++` du décomp = avance past l'opcode byte. Dans notre impl,
+ *  le dispatch loop a déjà fait `ctx.scriptPtr++` AVANT d'appeler le handler.
+ *  Donc on n'a PLUS rien à advance ici. */
+function _incrementResetReturn(_ctx: BattleScriptContext): void {
   gBattleCommunication[MOVE_EFFECT_BYTE_IDX] = 0;
 }
 
@@ -283,7 +286,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
           && (primary || certain === MOVE_EFFECT_CERTAIN)) {
         setLastUsedAbility(ABILITY_IMMUNITY);
         _recordAbilityBattle(gEffectBattler, ABILITY_IMMUNITY);
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_PSNPrevention');
         if (off >= 0) ctx.scriptPtr = off;
         if (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT) {
@@ -299,7 +302,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
             || IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_STEEL))
           && (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
           && (primary || certain === MOVE_EFFECT_CERTAIN)) {
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_PSNPrevention');
         if (off >= 0) ctx.scriptPtr = off;
         gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_STATUS_HAD_NO_EFFECT;
@@ -323,7 +326,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
           && (primary || certain === MOVE_EFFECT_CERTAIN)) {
         setLastUsedAbility(ABILITY_WATER_VEIL);
         _recordAbilityBattle(gEffectBattler, ABILITY_WATER_VEIL);
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_BRNPrevention');
         if (off >= 0) ctx.scriptPtr = off;
         if (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT) {
@@ -338,7 +341,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
       if (IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_FIRE)
           && (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
           && (primary || certain === MOVE_EFFECT_CERTAIN)) {
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_BRNPrevention');
         if (off >= 0) ctx.scriptPtr = off;
         gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_STATUS_HAD_NO_EFFECT;
@@ -377,7 +380,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
         if (primary || certain === MOVE_EFFECT_CERTAIN) {
           setLastUsedAbility(ABILITY_LIMBER);
           _recordAbilityBattle(gEffectBattler, ABILITY_LIMBER);
-          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = getBattleScriptOffset('BattleScript_PRLZPrevention');
           if (off >= 0) ctx.scriptPtr = off;
           if (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT) {
@@ -399,7 +402,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
           && (primary || certain === MOVE_EFFECT_CERTAIN)) {
         setLastUsedAbility(ABILITY_IMMUNITY);
         _recordAbilityBattle(gEffectBattler, ABILITY_IMMUNITY);
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_PSNPrevention');
         if (off >= 0) ctx.scriptPtr = off;
         if (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT) {
@@ -415,7 +418,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
             || IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_STEEL))
           && (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
           && (primary || certain === MOVE_EFFECT_CERTAIN)) {
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_PSNPrevention');
         if (off >= 0) ctx.scriptPtr = off;
         gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_STATUS_HAD_NO_EFFECT;
@@ -440,7 +443,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
 
     if (statusChanged) {
       // 1:1 décomp : apply status1 + push current+1 + jump à sMoveEffectBS_Ptrs[effect].
-      ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+      ctx.scriptPtrStack.push(ctx.scriptPtr);
       if (sStatusFlagsForMoveEffects[gBattleCommunication[MOVE_EFFECT_BYTE_IDX]] === STATUS1_SLEEP) {
         gBattleMons[gEffectBattler].status1 |= _STATUS1_SLEEP_TURN_FN((Random() & 3) + 2);
       } else {
@@ -465,22 +468,22 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
     } else {
       // Not statusChanged → reset + advance.
       gBattleCommunication[MOVE_EFFECT_BYTE_IDX] = 0;
-      ctx.scriptPtr++;
+      // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
       return;
     }
   } else {
     // ─── Secondary effects (CONFUSION, FLINCH, UPROAR, PAYDAY, etc.) ──────
     if (gBattleMons[gEffectBattler].status2 & sStatusFlagsForMoveEffects[gBattleCommunication[MOVE_EFFECT_BYTE_IDX]]) {
-      ctx.scriptPtr++;
+      // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
     } else {
       const eff = gBattleCommunication[MOVE_EFFECT_BYTE_IDX];
       if (eff === 7 /* CONFUSION */) {
         if (gBattleMons[gEffectBattler].ability === ABILITY_OWN_TEMPO
             || (gBattleMons[gEffectBattler].status2 & STATUS2_CONFUSION)) {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleMons[gEffectBattler].status2 |= ((Random() % 4 + 2) & STATUS2_CONFUSION);
-          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = _resolveMoveEffectBS(eff);
           if (off >= 0) ctx.scriptPtr = off;
         }
@@ -492,24 +495,24 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
             const off = getBattleScriptOffset('BattleScript_FlinchPrevention');
             if (off >= 0) ctx.scriptPtr = off;
           } else {
-            ctx.scriptPtr++;
+            // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
           }
         } else {
           if (_getBattlerTurnOrderNum(gEffectBattler) > _gCurrentTurnActionNumber) {
             gBattleMons[gEffectBattler].status2 |= sStatusFlagsForMoveEffects[eff];
           }
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         }
       } else if (eff === 10 /* UPROAR */) {
         if (!(gBattleMons[gEffectBattler].status2 & STATUS2_UPROAR)) {
           gBattleMons[gEffectBattler].status2 |= STATUS2_MULTIPLETURNS;
           gLockedMoves[gEffectBattler] = gCurrentMove;
           gBattleMons[gEffectBattler].status2 |= ((Random() & 3) + 2) << 4; // STATUS2_UPROAR_TURN
-          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = _resolveMoveEffectBS(eff);
           if (off >= 0) ctx.scriptPtr = off;
         } else {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         }
       } else if (eff === 11 /* PAYDAY */) {
         if (GET_BATTLER_SIDE(gBattlerAttacker) === B_SIDE_PLAYER) {
@@ -518,12 +521,12 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
           if (oldPayday > newPayday) newPayday = 0xFFFF;
           setPaydayMoney(newPayday);
         }
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = _resolveMoveEffectBS(eff);
         if (off >= 0) ctx.scriptPtr = off;
       } else if (eff === 9 /* TRI_ATTACK */) {
         if (gBattleMons[gEffectBattler].status1) {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleCommunication[MOVE_EFFECT_BYTE_IDX] = (Random() % 3) + 3;
           SetMoveEffect(ctx, false, 0);
@@ -533,15 +536,15 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
         gBattleMons[gEffectBattler].status2 |= STATUS2_MULTIPLETURNS;
         gLockedMoves[gEffectBattler] = gCurrentMove;
         gProtectStructs[gEffectBattler].chargingTurn = 1;
-        ctx.scriptPtr++;
+        // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
       } else if (eff === 13 /* WRAP */) {
         if (gBattleMons[gEffectBattler].status2 & STATUS2_WRAPPED) {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleMons[gEffectBattler].status2 |= ((Random() & 3) + 3) << 13; // STATUS2_WRAPPED_TURN
           gWrappedMove[gEffectBattler] = gCurrentMove;
           gWrappedBy[gEffectBattler] = gBattlerAttacker;
-          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = _resolveMoveEffectBS(eff);
           if (off >= 0) ctx.scriptPtr = off;
           // 1:1 décomp : MULTISTRING_CHOOSER = index of move in gTrappingMoves[].
@@ -555,50 +558,50 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
         let dmg = Math.floor(gHpDealt / 4);
         if (dmg === 0) dmg = 1;
         setBattleMoveDamage(dmg);
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = _resolveMoveEffectBS(eff);
         if (off >= 0) ctx.scriptPtr = off;
       } else if (eff >= 15 && eff <= 21 /* ATK..EVS_PLUS_1 */) {
         const stat = eff - 15 + 1;
         if (ChangeStatBuffs(SET_STAT_BUFF_VALUE(1), stat, affectsUser, 0)) {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleScripting.animArg1 = eff & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
           gBattleScripting.animArg2 = 0;
-          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = getBattleScriptOffset('BattleScript_StatUp');
           if (off >= 0) ctx.scriptPtr = off;
         }
       } else if (eff >= 22 && eff <= 28 /* ATK..EVS_MINUS_1 */) {
         const stat = eff - 22 + 1;
         if (ChangeStatBuffs(SET_STAT_BUFF_VALUE(1) | STAT_BUFF_NEGATIVE, stat, affectsUser, 0)) {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleScripting.animArg1 = eff & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
           gBattleScripting.animArg2 = 0;
-          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = getBattleScriptOffset('BattleScript_StatDown');
           if (off >= 0) ctx.scriptPtr = off;
         }
       } else if (eff >= 39 && eff <= 45 /* ATK..EVS_PLUS_2 */) {
         const stat = eff - 39 + 1;
         if (ChangeStatBuffs(SET_STAT_BUFF_VALUE(2), stat, affectsUser, 0)) {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleScripting.animArg1 = eff & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
           gBattleScripting.animArg2 = 0;
-          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = getBattleScriptOffset('BattleScript_StatUp');
           if (off >= 0) ctx.scriptPtr = off;
         }
       } else if (eff >= 46 && eff <= 52 /* ATK..EVS_MINUS_2 */) {
         const stat = eff - 46 + 1;
         if (ChangeStatBuffs(SET_STAT_BUFF_VALUE(2) | STAT_BUFF_NEGATIVE, stat, affectsUser, 0)) {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleScripting.animArg1 = eff & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
           gBattleScripting.animArg2 = 0;
-          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = getBattleScriptOffset('BattleScript_StatDown');
           if (off >= 0) ctx.scriptPtr = off;
         }
@@ -606,14 +609,14 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
         gBattleMons[gEffectBattler].status2 |= STATUS2_RECHARGE;
         gDisableStructs[gEffectBattler].rechargeTimer = 2;
         gLockedMoves[gEffectBattler] = gCurrentMove;
-        ctx.scriptPtr++;
+        // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
       } else if (eff === 30 /* RAGE */) {
         gBattleMons[gBattlerAttacker].status2 |= STATUS2_RAGE;
-        ctx.scriptPtr++;
+        // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
       } else if (eff === 31 /* STEAL_ITEM */) {
         // 1:1 partial : full path nécessite gBattleStruct.changedItems + IS_ITEM_MAIL.
         // Skip pour MVP — advance.
-        ctx.scriptPtr++;
+        // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         // TODO porter STEAL_ITEM full quand gBattleStruct.changedItems portée.
         void _BATTLE_TYPE_TRAINER_HILL_FLAG; void BATTLE_TYPE_EREADER_TRAINER;
         void BATTLE_TYPE_FRONTIER; void BATTLE_TYPE_LINK; void BATTLE_TYPE_RECORDED_LINK;
@@ -622,43 +625,43 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
       } else if (eff === 32 /* PREVENT_ESCAPE */) {
         gBattleMons[gBattlerTarget].status2 |= STATUS2_ESCAPE_PREVENTION;
         gDisableStructs[gBattlerTarget].battlerPreventingEscape = gBattlerAttacker;
-        ctx.scriptPtr++;
+        // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
       } else if (eff === 33 /* NIGHTMARE */) {
         gBattleMons[gBattlerTarget].status2 |= STATUS2_NIGHTMARE;
-        ctx.scriptPtr++;
+        // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
       } else if (eff === 34 /* ALL_STATS_UP */) {
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_AllStatsUp');
         if (off >= 0) ctx.scriptPtr = off;
       } else if (eff === 35 /* RAPIDSPIN */) {
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_RapidSpinAway');
         if (off >= 0) ctx.scriptPtr = off;
       } else if (eff === 36 /* REMOVE_PARALYSIS */) {
         if (!(gBattleMons[gBattlerTarget].status1 & STATUS1_PARALYSIS)) {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleMons[gBattlerTarget].status1 &= ~STATUS1_PARALYSIS;
           setActiveBattler(gBattlerTarget);
           // EmitSetMonData stub
-          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = getBattleScriptOffset('BattleScript_TargetPRLZHeal');
           if (off >= 0) ctx.scriptPtr = off;
         }
       } else if (eff === 37 /* ATK_DEF_DOWN */) {
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_AtkDefDown');
         if (off >= 0) ctx.scriptPtr = off;
       } else if (eff === 38 /* RECOIL_33 */) {
         let dmg = Math.floor(gHpDealt / 3);
         if (dmg === 0) dmg = 1;
         setBattleMoveDamage(dmg);
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = _resolveMoveEffectBS(eff);
         if (off >= 0) ctx.scriptPtr = off;
       } else if (eff === 53 /* THRASH */) {
         if (gBattleMons[gEffectBattler].status2 & STATUS2_LOCK_CONFUSE) {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleMons[gEffectBattler].status2 |= STATUS2_MULTIPLETURNS;
           gLockedMoves[gEffectBattler] = gCurrentMove;
@@ -667,7 +670,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
       } else if (eff === 54 /* KNOCK_OFF */) {
         if (gBattleMons[gEffectBattler].ability === ABILITY_STICKY_HOLD) {
           if (gBattleMons[gEffectBattler].item === 0) {
-            ctx.scriptPtr++;
+            // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
           } else {
             setLastUsedAbility(ABILITY_STICKY_HOLD);
             const off = getBattleScriptOffset('BattleScript_StickyHoldActivates');
@@ -676,19 +679,19 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
           }
         } else if (gBattleMons[gEffectBattler].item) {
           gBattleMons[gEffectBattler].item = 0;
-          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = getBattleScriptOffset('BattleScript_KnockedOff');
           if (off >= 0) ctx.scriptPtr = off;
         } else {
-          ctx.scriptPtr++;
+          // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         }
       } else if (eff === 55 /* SP_ATK_TWO_DOWN (NOTHING_37) */) {
-        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
         const off = getBattleScriptOffset('BattleScript_SAtkDown2');
         if (off >= 0) ctx.scriptPtr = off;
       } else {
         // Unknown effect → advance.
-        ctx.scriptPtr++;
+        // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
       }
     }
   }
