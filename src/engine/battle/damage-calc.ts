@@ -36,6 +36,30 @@ import {
   gAbsentBattlerFlags,
 } from './state';
 import { getBattleMove } from './data/battle-moves';
+import { GetItemHoldEffect, GetItemHoldEffectParam } from './data/item-hold-effects';
+import {
+  HOLD_EFFECT_CHOICE_BAND as _HOLD_EFFECT_CHOICE_BAND,
+  HOLD_EFFECT_SOUL_DEW as _HOLD_EFFECT_SOUL_DEW,
+  HOLD_EFFECT_DEEP_SEA_TOOTH as _HOLD_EFFECT_DEEP_SEA_TOOTH,
+  HOLD_EFFECT_DEEP_SEA_SCALE as _HOLD_EFFECT_DEEP_SEA_SCALE,
+  HOLD_EFFECT_LIGHT_BALL as _HOLD_EFFECT_LIGHT_BALL,
+  HOLD_EFFECT_METAL_POWDER as _HOLD_EFFECT_METAL_POWDER,
+  HOLD_EFFECT_THICK_CLUB as _HOLD_EFFECT_THICK_CLUB,
+} from '../decomp-data/auto/include/constants/hold_effects-data';
+import {
+  SPECIES_LATIAS as SPECIES_LATIAS_LOCAL,
+  SPECIES_LATIOS as SPECIES_LATIOS_LOCAL,
+  SPECIES_CLAMPERL as SPECIES_CLAMPERL_LOCAL,
+  SPECIES_PIKACHU as SPECIES_PIKACHU_LOCAL,
+  SPECIES_DITTO as SPECIES_DITTO_LOCAL,
+  SPECIES_CUBONE as SPECIES_CUBONE_LOCAL,
+  SPECIES_MAROWAK as SPECIES_MAROWAK_LOCAL,
+} from '../decomp-data/auto/include/constants/species-data';
+
+// 1:1 décomp `BATTLE_TYPE_FRONTIER` mask — utilisé pour ignore Soul Dew boost.
+// Valeurs vraies de constants.ts : TOWER 1<<8, DOME 1<<16, PALACE 1<<17,
+// ARENA 1<<18, FACTORY 1<<19, PIKE 1<<20, PYRAMID 1<<21.
+const BATTLE_TYPE_FRONTIER_LOCAL = (1 << 8) | (1 << 16) | (1 << 17) | (1 << 18) | (1 << 19) | (1 << 20) | (1 << 21);
 import type { BattleMon } from './script-interpreter';
 import {
   TYPE_MYSTERY,
@@ -43,6 +67,7 @@ import {
   TYPE_WATER,
   TYPE_BUG,
   TYPE_GRASS,
+  TYPE_ELECTRIC,
   TYPE_ICE,
   STAT_ATK,
   STAT_DEF,
@@ -195,10 +220,12 @@ export function CalculateBaseDamage(
   let gBattleMovePower = powerOverride || moveData.power;
   type = typeOverride ? (typeOverride & 0x3F) : moveData.type;
 
-  // Hold effect lookup (= stub pour now, retourne 0).
-  // TODO porter sHoldEffectToType + GetItemHoldEffect.
-  const attackerHoldEffect = 0;
-  const defenderHoldEffect = 0;
+  // 1:1 décomp : hold effect lookup via GetItemHoldEffect.
+  // STUB ITEM_ENIGMA_BERRY path (= rare custom berry).
+  const attackerHoldEffect = GetItemHoldEffect(attacker.item);
+  const defenderHoldEffect = GetItemHoldEffect(defender.item);
+  const attackerHoldEffectParam = GetItemHoldEffectParam(attacker.item);
+  void attackerHoldEffectParam;
 
   // Huge Power / Pure Power : attack × 2.
   if (attacker.ability === ABILITY_HUGE_POWER || attacker.ability === ABILITY_PURE_POWER) {
@@ -219,6 +246,41 @@ export function CalculateBaseDamage(
   void attackerHoldEffect;
   void defenderHoldEffect;
 
+  // 1:1 décomp pokemon.c:3185-3201 hold-item boosts.
+  if (attackerHoldEffect === _HOLD_EFFECT_CHOICE_BAND) {
+    attack = Math.floor((150 * attack) / 100);
+  }
+  if (attackerHoldEffect === _HOLD_EFFECT_SOUL_DEW
+      && !(gBattleTypeFlags & BATTLE_TYPE_FRONTIER_LOCAL)
+      && (attacker.species === SPECIES_LATIAS_LOCAL || attacker.species === SPECIES_LATIOS_LOCAL)) {
+    spAttack = Math.floor((150 * spAttack) / 100);
+  }
+  if (defenderHoldEffect === _HOLD_EFFECT_SOUL_DEW
+      && !(gBattleTypeFlags & BATTLE_TYPE_FRONTIER_LOCAL)
+      && (defender.species === SPECIES_LATIAS_LOCAL || defender.species === SPECIES_LATIOS_LOCAL)) {
+    spDefense = Math.floor((150 * spDefense) / 100);
+  }
+  if (attackerHoldEffect === _HOLD_EFFECT_DEEP_SEA_TOOTH
+      && attacker.species === SPECIES_CLAMPERL_LOCAL) {
+    spAttack *= 2;
+  }
+  if (defenderHoldEffect === _HOLD_EFFECT_DEEP_SEA_SCALE
+      && defender.species === SPECIES_CLAMPERL_LOCAL) {
+    spDefense *= 2;
+  }
+  if (attackerHoldEffect === _HOLD_EFFECT_LIGHT_BALL
+      && attacker.species === SPECIES_PIKACHU_LOCAL) {
+    spAttack *= 2;
+  }
+  if (defenderHoldEffect === _HOLD_EFFECT_METAL_POWDER
+      && defender.species === SPECIES_DITTO_LOCAL) {
+    defense *= 2;
+  }
+  if (attackerHoldEffect === _HOLD_EFFECT_THICK_CLUB
+      && (attacker.species === SPECIES_CUBONE_LOCAL || attacker.species === SPECIES_MAROWAK_LOCAL)) {
+    attack *= 2;
+  }
+
   // Apply abilities / field sports.
   if (defender.ability === ABILITY_THICK_FAT && (type === TYPE_FIRE || type === TYPE_ICE)) {
     spAttack = Math.floor(spAttack / 2);
@@ -233,7 +295,18 @@ export function CalculateBaseDamage(
   if (defender.ability === ABILITY_MARVEL_SCALE && defender.status1) {
     defense = Math.floor((150 * defense) / 100);
   }
-  // Mud Sport / Water Sport : skip (= AbilityBattleEffects helper TODO).
+  // 1:1 décomp : Mud Sport / Water Sport halve Electric / Fire power.
+  // Via lazy lookup AbilityBattleEffects(ABILITYEFFECT_FIELD_SPORT).
+  const checkFn = (globalThis as { __abilityBattleEffectsCheck?: (caseID: number, b: number, ab: number, s: number, m: number) => number }).__abilityBattleEffectsCheck;
+  if (checkFn) {
+    const FIELD_SPORT = 14, MUD_SPORT = 253, WATER_SPORT = 254;
+    if (type === TYPE_ELECTRIC && checkFn(FIELD_SPORT, 0, 0, MUD_SPORT, 0)) {
+      gBattleMovePower = Math.floor(gBattleMovePower / 2);
+    }
+    if (type === TYPE_FIRE && checkFn(FIELD_SPORT, 0, 0, WATER_SPORT, 0)) {
+      gBattleMovePower = Math.floor(gBattleMovePower / 2);
+    }
+  }
 
   // Pinch boosters (Overgrow/Blaze/Torrent/Swarm at <= 1/3 HP).
   if (type === TYPE_GRASS && attacker.ability === ABILITY_OVERGROW && attacker.hp <= Math.floor(attacker.maxHP / 3)) {
