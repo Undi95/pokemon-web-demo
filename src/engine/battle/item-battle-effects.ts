@@ -29,6 +29,7 @@ import {
   gMoveResultFlags,
   gSpecialStatuses,
   setBattlerAttacker,
+  setEffectBattler,
 } from './state';
 import { Random, getBattleScriptOffset } from './script-interpreter';
 import {
@@ -40,7 +41,11 @@ import {
   GET_BATTLER_SIDE, B_SIDE_PLAYER,
   STATUS1_PARALYSIS, STATUS1_BURN, STATUS1_FREEZE, STATUS1_SLEEP, STATUS1_ANY,
   STATUS1_POISON, STATUS1_TOXIC_POISON,
-  STATUS2_CONFUSION, STATUS2_NIGHTMARE, STATUS2_INFATUATION,
+  STATUS2_CONFUSION, STATUS2_NIGHTMARE, STATUS2_INFATUATION, STATUS2_FOCUS_ENERGY,
+  STAT_ATK, STAT_DEF, STAT_SPEED, STAT_SPATK, STAT_SPDEF,
+  MAX_STAT_STAGE,
+  SET_STATCHANGER,
+  NUM_STATS,
 } from './constants';
 import { getBattleMove } from './data/battle-moves';
 import {
@@ -73,6 +78,13 @@ const HOLD_EFFECT_CURE_FRZ       = 8;
 const HOLD_EFFECT_CURE_CONFUSION = 10;
 const HOLD_EFFECT_CURE_STATUS    = 11;
 const HOLD_EFFECT_CURE_ATTRACT   = 12;
+const HOLD_EFFECT_ATTACK_UP      = 15;
+const HOLD_EFFECT_DEFENSE_UP     = 16;
+const HOLD_EFFECT_SPEED_UP       = 17;
+const HOLD_EFFECT_SP_ATTACK_UP   = 18;
+const HOLD_EFFECT_SP_DEFENSE_UP  = 19;
+const HOLD_EFFECT_CRITICAL_UP    = 20;
+const HOLD_EFFECT_RANDOM_STAT_UP = 21;
 const HOLD_EFFECT_RESTORE_STATS  = 23;
 const HOLD_EFFECT_FLINCH         = 30;
 const HOLD_EFFECT_DOUBLE_PRIZE   = 32;
@@ -314,11 +326,63 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
             }
             break;
         }
-        // TODO porter : RESTORE_PP (=party data), CONFUSE_FOOD_BERRIES
-        // (FLAVOR_SPICY/DRY/SWEET/BITTER/SOUR macro), ATTACK_UP..SP_DEF_UP +
-        // CRITICAL_UP + RANDOM_STAT_UP (= ChangeStatBuffs).
+        // ─── Stat-up berries (= TRY_EAT_STAT_UP_BERRY macro inline) ──────
+        // Helper inline pour stat-up berries (= macro TRY_EAT_STAT_UP_BERRY).
+        const _tryStatUpBerry = (stat: number): boolean => {
+          if (gBattleMons[battlerId].hp <= Math.floor(gBattleMons[battlerId].maxHP / battlerHoldEffectParam)
+              && !moveTurn
+              && gBattleMons[battlerId].statStages[stat] < MAX_STAT_STAGE) {
+            setEffectBattler(battlerId);
+            gBattleScripting.statChanger = SET_STATCHANGER(stat, 1, false);
+            gBattleScripting.animArg1 = 14 /* STAT_ANIM_PLUS1 */ + stat;
+            gBattleScripting.animArg2 = 0;
+            _lastWantedScriptLabel = 'BattleScript_BerryStatRaiseEnd2';
+            effect = ITEM_STATS_CHANGE;
+            return true;
+          }
+          return false;
+        };
+        switch (battlerHoldEffect) {
+          case HOLD_EFFECT_ATTACK_UP:     _tryStatUpBerry(STAT_ATK);   break;
+          case HOLD_EFFECT_DEFENSE_UP:    _tryStatUpBerry(STAT_DEF);   break;
+          case HOLD_EFFECT_SPEED_UP:      _tryStatUpBerry(STAT_SPEED); break;
+          case HOLD_EFFECT_SP_ATTACK_UP:  _tryStatUpBerry(STAT_SPATK); break;
+          case HOLD_EFFECT_SP_DEFENSE_UP: _tryStatUpBerry(STAT_SPDEF); break;
+          case HOLD_EFFECT_CRITICAL_UP:
+            if (gBattleMons[battlerId].hp <= Math.floor(gBattleMons[battlerId].maxHP / battlerHoldEffectParam)
+                && !moveTurn
+                && !(gBattleMons[battlerId].status2 & STATUS2_FOCUS_ENERGY)) {
+              gBattleMons[battlerId].status2 |= STATUS2_FOCUS_ENERGY;
+              _lastWantedScriptLabel = 'BattleScript_BerryFocusEnergyEnd2';
+              effect = ITEM_EFFECT_OTHER;
+            }
+            break;
+          case HOLD_EFFECT_RANDOM_STAT_UP:
+            // 1:1 décomp : random pick non-max stat parmi 5 (STAT_ATK..STAT_SPDEF).
+            if (!moveTurn
+                && gBattleMons[battlerId].hp <= Math.floor(gBattleMons[battlerId].maxHP / battlerHoldEffectParam)) {
+              let i = 0;
+              for (; i < NUM_STATS - 1; i++) {
+                if (gBattleMons[battlerId].statStages[STAT_ATK + i] < MAX_STAT_STAGE) break;
+              }
+              if (i !== NUM_STATS - 1) {
+                // Pick random non-max stat.
+                do {
+                  i = Random() % (NUM_STATS - 1);
+                } while (gBattleMons[battlerId].statStages[STAT_ATK + i] === MAX_STAT_STAGE);
+                setEffectBattler(battlerId);
+                gBattleScripting.statChanger = SET_STATCHANGER(i + 1, 2, false);
+                gBattleScripting.animArg1 = 21 /* STAT_ANIM_PLUS2 */ + (i + 1);
+                gBattleScripting.animArg2 = 0;
+                _lastWantedScriptLabel = 'BattleScript_BerryStatRaiseEnd2';
+                effect = ITEM_STATS_CHANGE;
+              }
+            }
+            break;
+        }
+        // TODO porter : RESTORE_PP (= party data lookup), CONFUSE_FOOD_BERRIES
+        // FLAVOR_SPICY/DRY/SWEET/BITTER/SOUR (= macro TRY_EAT_CONFUSE_BERRY).
       }
-      void moveTurn;
       break;
     }
 

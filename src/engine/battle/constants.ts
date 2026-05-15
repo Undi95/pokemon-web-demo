@@ -200,6 +200,15 @@ export const MIN_STAT_STAGE     = 0;
 export const DEFAULT_STAT_STAGE = 6;
 export const MAX_STAT_STAGE     = 12;
 
+/** 1:1 décomp `NUM_STATS` (constants/pokemon.h:80) — incl. STAT_HP (= 6 total). */
+export const NUM_STATS = 6;
+
+/** 1:1 décomp `SET_STATCHANGER(statId, stage, goesDown)` macro (battle.h:485).
+ *  Returns le statChanger byte stocké dans gBattleScripting.statChanger. */
+export function SET_STATCHANGER(statId: number, stage: number, goesDown: boolean): number {
+  return (statId & 0xF) | ((stage & 7) << 4) | ((goesDown ? 1 : 0) << 7);
+}
+
 // ─── TYPE_* (pokemon.h:5-29) ────────────────────────────────────────────────
 export const TYPE_NORMAL   = 0;
 export const TYPE_FIGHTING = 1;
