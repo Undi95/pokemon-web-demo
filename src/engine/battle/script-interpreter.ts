@@ -464,6 +464,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-14').then(({ installNiveau14Handlers }) => {
     installNiveau14Handlers(_commands);
   });
+  // Session 135 — Niveau 15 (protect/sport/environment).
+  void import('./cmd-niveau-15').then(({ installNiveau15Handlers }) => {
+    installNiveau15Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

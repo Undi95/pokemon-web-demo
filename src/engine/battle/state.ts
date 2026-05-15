@@ -268,6 +268,106 @@ function _makeBlankSideTimer(): SideTimer {
 
 export const gSideTimers: SideTimer[] = [_makeBlankSideTimer(), _makeBlankSideTimer()];
 
+/** 1:1 décomp `struct ProtectStruct gProtectStructs[MAX_BATTLERS_COUNT]`
+ *  (include/battle.h:104-130). Reset à chaque turn. Bit fields représentés
+ *  en bool/number ici. */
+export interface ProtectStruct {
+  protected: number;            // u32:1
+  endured: number;              // u32:1
+  noValidMoves: number;         // u32:1
+  helpingHand: number;          // u32:1
+  bounceMove: number;           // u32:1
+  stealMove: number;            // u32:1
+  flag0Unknown: number;         // u32:1
+  prlzImmobility: number;       // u32:1
+  confusionSelfDmg: number;     // u32:1
+  targetNotAffected: number;    // u32:1
+  chargingTurn: number;         // u32:1
+  fleeType: number;             // u32:2 — 0:Normal, 1:FLEE_ITEM, 2:FLEE_ABILITY
+  usedImprisonedMove: number;   // u32:1
+  loveImmobility: number;       // u32:1
+  usedDisabledMove: number;     // u32:1
+  usedTauntedMove: number;      // u32:1
+  flag2Unknown: number;         // u32:1
+  flinchImmobility: number;     // u32:1
+  notFirstStrike: number;       // u32:1
+  palaceUnableToUseMove: number; // u32:1
+  physicalDmg: number;          // u32
+  specialDmg: number;           // u32
+  physicalBattlerId: number;    // u8
+  specialBattlerId: number;     // u8
+}
+
+function _makeBlankProtectStruct(): ProtectStruct {
+  return {
+    protected: 0, endured: 0, noValidMoves: 0, helpingHand: 0,
+    bounceMove: 0, stealMove: 0, flag0Unknown: 0,
+    prlzImmobility: 0, confusionSelfDmg: 0, targetNotAffected: 0,
+    chargingTurn: 0, fleeType: 0,
+    usedImprisonedMove: 0, loveImmobility: 0,
+    usedDisabledMove: 0, usedTauntedMove: 0, flag2Unknown: 0,
+    flinchImmobility: 0, notFirstStrike: 0, palaceUnableToUseMove: 0,
+    physicalDmg: 0, specialDmg: 0,
+    physicalBattlerId: 0, specialBattlerId: 0,
+  };
+}
+
+export const gProtectStructs: ProtectStruct[] = [
+  _makeBlankProtectStruct(), _makeBlankProtectStruct(),
+  _makeBlankProtectStruct(), _makeBlankProtectStruct(),
+];
+
+/** 1:1 décomp `struct SpecialStatus gSpecialStatuses[MAX_BATTLERS_COUNT]`
+ *  (include/battle.h:132-147). */
+export interface SpecialStatus {
+  statLowered: number;              // u32:1
+  lightningRodRedirected: number;   // u32:1
+  restoredBattlerSprite: number;    // u32:1
+  intimidatedMon: number;           // u32:1
+  traced: number;                   // u32:1
+  ppNotAffectedByPressure: number;  // u32:1
+  faintedHasReplacement: number;    // u32:1
+  focusBanded: number;              // u32:1
+  shellBellDmg: number;             // s32
+  physicalDmg: number;              // s32
+  specialDmg: number;               // s32
+  physicalBattlerId: number;        // u8
+  specialBattlerId: number;         // u8
+}
+
+function _makeBlankSpecialStatus(): SpecialStatus {
+  return {
+    statLowered: 0, lightningRodRedirected: 0,
+    restoredBattlerSprite: 0, intimidatedMon: 0,
+    traced: 0, ppNotAffectedByPressure: 0,
+    faintedHasReplacement: 0, focusBanded: 0,
+    shellBellDmg: 0, physicalDmg: 0, specialDmg: 0,
+    physicalBattlerId: 0, specialBattlerId: 0,
+  };
+}
+
+export const gSpecialStatuses: SpecialStatus[] = [
+  _makeBlankSpecialStatus(), _makeBlankSpecialStatus(),
+  _makeBlankSpecialStatus(), _makeBlankSpecialStatus(),
+];
+
+/** 1:1 décomp `gAbsentBattlerFlags` (battle_main.c). Bitmask: bit `i` est set
+ *  si battler `i` est absent (= fainted ou pas encore envoyé). */
+export let gAbsentBattlerFlags = 0;
+export function setAbsentBattlerFlags(v: number) { gAbsentBattlerFlags = v; }
+
+/** 1:1 décomp `gBattleEnvironment` (battle_main.c). BATTLE_ENVIRONMENT_*
+ *  enum 0..9 set par battle setup en fonction du terrain (= grass, sand,
+ *  water, cave...). Lu par Cmd_getsecretpowereffect / Cmd_settypetoenvironment /
+ *  Cmd_callenvironmentattack. */
+export let gBattleEnvironment = 0;
+export function setBattleEnvironment(v: number) { gBattleEnvironment = v; }
+
+/** 1:1 décomp `gPaydayMoney` (battle_main.c). Compteur du money accumulé par
+ *  Pay Day pour le combat courant. */
+export let gPaydayMoney = 0;
+export function setPaydayMoney(v: number) { gPaydayMoney = v; }
+
 /** 1:1 décomp `struct WishFutureKnock gWishFutureKnock` (battle.h:401-413). */
 export interface WishFutureKnock {
   futureSightCounter: number[];   // u8[4]
@@ -403,6 +503,13 @@ export function resetBattleState(): void {
   }
   Object.assign(gSideTimers[0], _makeBlankSideTimer());
   Object.assign(gSideTimers[1], _makeBlankSideTimer());
+  for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
+    Object.assign(gProtectStructs[i], _makeBlankProtectStruct());
+    Object.assign(gSpecialStatuses[i], _makeBlankSpecialStatus());
+  }
+  gAbsentBattlerFlags = 0;
+  gBattleEnvironment = 0;
+  gPaydayMoney = 0;
   gWishFutureKnock.futureSightCounter = [0, 0, 0, 0];
   gWishFutureKnock.futureSightAttacker = [0, 0, 0, 0];
   gWishFutureKnock.futureSightDmg = [0, 0, 0, 0];

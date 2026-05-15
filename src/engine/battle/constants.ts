@@ -569,3 +569,59 @@ export function STATUS2_BIDE_TURN(num: number): number {
 export function STATUS3_YAWN_TURN(num: number): number {
   return (num << 11) & STATUS3_YAWN;
 }
+
+// ─── MOVE_EFFECT_* (constants/battle.h:245-275) — 1:1 décomp subset ────────
+export const MOVE_EFFECT_SLEEP        = 1;
+export const MOVE_EFFECT_POISON       = 2;
+export const MOVE_EFFECT_BURN         = 3;
+export const MOVE_EFFECT_FREEZE       = 4;
+export const MOVE_EFFECT_PARALYSIS    = 5;
+export const MOVE_EFFECT_TOXIC        = 6;
+export const MOVE_EFFECT_CONFUSION    = 7;
+export const MOVE_EFFECT_FLINCH       = 8;
+export const MOVE_EFFECT_TRI_ATTACK   = 9;
+export const MOVE_EFFECT_UPROAR       = 10;
+export const MOVE_EFFECT_PAYDAY       = 11;
+export const MOVE_EFFECT_CHARGING     = 12;
+export const MOVE_EFFECT_WRAP         = 13;
+export const MOVE_EFFECT_RECOIL_25    = 14;
+export const MOVE_EFFECT_ATK_PLUS_1   = 15;
+export const MOVE_EFFECT_DEF_PLUS_1   = 16;
+export const MOVE_EFFECT_SPD_PLUS_1   = 17;
+export const MOVE_EFFECT_SP_ATK_PLUS_1 = 18;
+export const MOVE_EFFECT_SP_DEF_PLUS_1 = 19;
+export const MOVE_EFFECT_ACC_PLUS_1   = 20;
+export const MOVE_EFFECT_EVS_PLUS_1   = 21;
+export const MOVE_EFFECT_ATK_MINUS_1  = 22;
+export const MOVE_EFFECT_DEF_MINUS_1  = 23;
+export const MOVE_EFFECT_SPD_MINUS_1  = 24;
+export const MOVE_EFFECT_SP_ATK_MINUS_1 = 25;
+export const MOVE_EFFECT_SP_DEF_MINUS_1 = 26;
+export const MOVE_EFFECT_ACC_MINUS_1  = 27;
+export const MOVE_EFFECT_EVS_MINUS_1  = 28;
+export const MOVE_EFFECT_RECHARGE     = 29;
+export const MOVE_EFFECT_RAGE         = 30;
+export const MOVE_EFFECT_STEAL_ITEM   = 31;
+
+// ─── BATTLE_ENVIRONMENT_* (constants/battle.h:311-320) — 1:1 décomp ────────
+export const BATTLE_ENVIRONMENT_GRASS       = 0;
+export const BATTLE_ENVIRONMENT_LONG_GRASS  = 1;
+export const BATTLE_ENVIRONMENT_SAND        = 2;
+export const BATTLE_ENVIRONMENT_UNDERWATER  = 3;
+export const BATTLE_ENVIRONMENT_WATER       = 4;
+export const BATTLE_ENVIRONMENT_POND        = 5;
+export const BATTLE_ENVIRONMENT_MOUNTAIN    = 6;
+export const BATTLE_ENVIRONMENT_CAVE        = 7;
+export const BATTLE_ENVIRONMENT_BUILDING    = 8;
+export const BATTLE_ENVIRONMENT_PLAIN       = 9;
+
+// ─── EFFECT_MUD_SPORT / EFFECT_WATER_SPORT (battle_move_effects.h) ─────────
+export const EFFECT_MUD_SPORT   = 201;
+export const EFFECT_WATER_SPORT = 210;
+
+// ─── B_MSG_* weaken (battle_string_ids.h:528-529) — 1:1 décomp ─────────────
+export const B_MSG_WEAKEN_ELECTRIC = 0;
+export const B_MSG_WEAKEN_FIRE     = 1;
+
+// ─── FLAG_PROTECT_AFFECTED (constants/pokemon.h:209) — 1:1 décomp ──────────
+export const FLAG_PROTECT_AFFECTED = 1 << 1;
