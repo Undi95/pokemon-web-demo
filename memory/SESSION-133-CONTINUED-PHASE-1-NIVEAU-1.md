@@ -137,19 +137,80 @@ Une fois les 11 opcodes Niveau 1 implémentés :
 ```
 acf11122 DEVTOOLS : scope.whereObj/sprites/fade/skipDialog/observe + fix where stale après connection
 79d5daa6 BATTLE : Phase 1 niveau 1 START — state.ts + 2 opcodes implémentés (ppreduce, critcalc)
+2935910b DOCS : plan complet Phase 1 Niveau 1 + architecture battle/* proposée
+d70c4630 BATTLE : Phase 1 niveau 1 — damage flow porté 1:1 décomp (7 opcodes total + data tables)
+[next] BATTLE : Phase 1 niveau 1 COMPLET — 11/11 opcodes (+ accuracycheck, moveend, attackcanceler happy, healthbarupdate stub)
 ```
 
-## État final
+## État final session 133
 
 - Branche `upd2`
 - Worktree `hungry-moore-a74774`
-- Compile clean (= aucune nouvelle erreur tsc sur les fichiers touchés)
+- Compile clean (= aucune erreur tsc battle/*)
 - Preview server 5173 OK
-- 2 opcodes Niveau 1 / 11 implémentés (= ~18% Niveau 1)
-- 9 opcodes Niveau 1 restants + 7 niveaux Phase 1 (Niveaux 2-8) à porter
+- **Niveau 1 COMPLET (11/11 opcodes)** :
+  - ✅ 0x00 Cmd_attackcanceler (happy path)
+  - ✅ 0x01 Cmd_accuracycheck (full 1:1)
+  - ✅ 0x03 Cmd_ppreduce (full 1:1)
+  - ✅ 0x04 Cmd_critcalc (full 1:1)
+  - ✅ 0x05 Cmd_damagecalc (wraps CalculateBaseDamage)
+  - ✅ 0x06 Cmd_typecalc (full 1:1)
+  - ✅ 0x07 Cmd_adjustnormaldamage (clamp damage)
+  - ✅ 0x0B Cmd_healthbarupdate (stub : no UI anim)
+  - ✅ 0x0C Cmd_datahpupdate (apply hp change)
+  - ✅ 0x19 Cmd_tryfaintmon (faint check + outcome)
+  - ✅ 0x49 Cmd_moveend (stub : skip sub-states)
+
+## Modules créés
+
+```
+src/engine/battle/
+├── state.ts                 ✅ ewram vars 1:1 décomp battle_main.c:160-250
+├── script-interpreter.ts    ✅ skeleton + dispatch table 256 entries + readers exposed
+├── cmd-niveau-1.ts          ✅ 11 opcodes Niveau 1
+├── damage-calc.ts           ✅ CalculateBaseDamage 1:1 (~270 lignes)
+├── type-calc.ts             ✅ Cmd_typecalc + ModulateDmgByType 1:1
+└── data/
+    ├── battle-moves.ts       ✅ gBattleMoves[] async load JSON
+    └── type-effectiveness.ts ✅ gTypeEffectiveness[336] 1:1
+```
+
+## Limitations / stubs en place (à upgrade post-Niveau 1)
+
+1. **`gProtectStructs`** : non porté → attackcanceler skip Protect/Snatch/MagicCoat/LightningRod, typecalc skip targetNotAffected.
+2. **`gSpecialStatuses`** : non porté → ppreduce skip ppNotAffectedByPressure, attackcanceler skip lightningRodRedirected.
+3. **`AbilityBattleEffects()`** : non porté → moveend skip SYNCHRONIZE/ON_DAMAGE/IMMUNITY/ATK_SYNCHRONIZE, ppreduce skip Pressure across multi-target.
+4. **`ItemBattleEffects()`** : non porté → moveend skip MOVE_END / KINGSROCK_SHELLBELL.
+5. **`gEnigmaBerries`** + hold effects table : non porté → damagecalc/accuracycheck skip Choice Band, Scope Lens, Soul Dew, etc.
+6. **Badge boosts** (`ShouldGetStatBadgeBoost`) : retourne false → +10% par badge non appliqué (= OK pour first battle pré-gym).
+7. **`AttacksThisTurn()`** : returns 2 toujours → Wonder Guard fonctionne pour tous les hits (= OK pour single-hit moves).
+8. **`gBattleControllerExecFlags`** : non porté → healthbarupdate ne wait pas (= UI anim instantanée, à upgrade quand UI controllers wired).
+9. **`MoveValuesCleanUp` + `BattleScriptPush/Pop`** : non porté → moveend skip multi-target battles.
+10. **`gBattleStruct.choicedMove`** : non porté → Choice Band lock non implémenté.
+
+Tous ces stubs sont annotés `// TODO porter ...` dans le code.
+
+## Wire-in plan (post Niveau 2 done)
+
+Niveau 2 = stat stages + status (statbuffchange 0x89, setgraphicalstatchangevalues 0x47, playstatchangeanimation 0x48, seteffectprimary 0x16, seteffectsecondary 0x17, clearstatusfromeffect 0x18, updatestatusicon 0x98). ~7 opcodes.
+
+Une fois ces 7 done, on aura un combat fonctionnel sans switching ni ability tricky. Wire :
+1. Replace `battle-flow.ts` hardcoded path par `setupBattleScriptContext('BattleScript_HitFromAttackerString')` + `runBattleScript(ctx)` per frame
+2. Hook UI : ShowFieldMessage, healthbar anim, damage flash
+3. Test end-to-end avec tutorial Birch — A/B test damage values vs ROM réel
 
 ## Pour reprendre next session
 
 Lire ce file + `SESSION-132-BACKING-SYSTEMS.md` (= plan Phase 1 complet) + `ROADMAP-FUTURE-PROOF-2026-05-14.md`.
 
-Première chose à faire : porter `CalculateBaseDamage` dans nouveau fichier `damage-calc.ts` (= base de tous les opcodes damage suivants). Ensuite `typecalc` dans `type-calc.ts`. Puis assembler `damagecalc` + `adjustnormaldamage` qui les utilisent.
+Niveau 1 done. **Prochaine étape = Niveau 2 (stat stages + status, ~7 opcodes)**.
+
+Ordre suggéré :
+1. `0x89 Cmd_statbuffchange` (= apply stat stage change, 1:1 décomp ~80 lignes)
+2. `0x47 Cmd_setgraphicalstatchangevalues` (= UI anim trigger, ~10 lignes)
+3. `0x48 Cmd_playstatchangeanimation` (= run anim, async)
+4. `0x16 Cmd_seteffectprimary` / `0x17 Cmd_seteffectsecondary` (= apply move effect : burn, poison, etc. + chance roll)
+5. `0x18 Cmd_clearstatusfromeffect` (= remove status post-effect)
+6. `0x98 Cmd_updatestatusicon` (= UI icon sync)
+
+Puis Niveau 3 (branching) : jumpifstatus/ability/stat/type, jumpifcantmakeasleep.

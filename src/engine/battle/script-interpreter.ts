@@ -149,24 +149,32 @@ export function getBattleScriptOffset(label: string): number {
 
 // ─── Reader helpers (analogue ScriptReadByte/Halfword/Word) ────────────────
 
-function _readByte(ctx: BattleScriptContext): number {
+/** Read u8 at ctx.scriptPtr + advance. */
+export function readByte(ctx: BattleScriptContext): number {
   if (!_BYTECODE) return 0;
   const v = _BYTECODE[ctx.scriptPtr];
   ctx.scriptPtr++;
   return v;
 }
 
-function _readHalfword(ctx: BattleScriptContext): number {
-  const lo = _readByte(ctx);
-  const hi = _readByte(ctx);
+/** Read u16 little-endian at ctx.scriptPtr + advance. */
+export function readHalfword(ctx: BattleScriptContext): number {
+  const lo = readByte(ctx);
+  const hi = readByte(ctx);
   return lo | (hi << 8);
 }
 
-function _readWord(ctx: BattleScriptContext): number {
-  const lo = _readHalfword(ctx);
-  const hi = _readHalfword(ctx);
+/** Read u32 little-endian at ctx.scriptPtr + advance. */
+export function readWord(ctx: BattleScriptContext): number {
+  const lo = readHalfword(ctx);
+  const hi = readHalfword(ctx);
   return lo | (hi << 16);
 }
+
+// Keep aliases for internal use.
+const _readByte = readByte;
+const _readHalfword = readHalfword;
+const _readWord = readWord;
 
 // ─── Opcode handlers ────────────────────────────────────────────────────────
 
