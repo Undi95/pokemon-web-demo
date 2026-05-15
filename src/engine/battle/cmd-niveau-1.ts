@@ -39,8 +39,10 @@ import {
   gBattleMoveDamage,
   gMoveResultFlags,
   gDynamicBasePower,
+  gDynamicMoveType,
   gBattleScripting,
   gBattleCommunication,
+  gBattleControllerExecFlags,
   setHitMarker,
   setCritMultiplier,
   setBattleMoveDamage,
@@ -55,8 +57,13 @@ import { Random } from '../random';
 import { getBattleMove } from './data/battle-moves';
 import { runDamagecalc } from './damage-calc';
 import { Cmd_typecalc as TypecalcImpl } from './type-calc';
-import { readWord, readHalfword, readByte } from './script-interpreter';
+import { readWord, readHalfword, readByte, getBattleScriptOffset } from './script-interpreter';
 import type { BattleScriptContext, BattleOpcodeHandler } from './script-interpreter';
+import {
+  MarkBattlerForControllerExec,
+  BtlController_EmitHealthBarUpdate,
+} from './battle-controllers';
+import { getBattlerForBattleScript as _utilGetBattler } from './util';
 import {
   // Hitmarker bits
   HITMARKER_NO_ATTACKSTRING,
@@ -67,9 +74,11 @@ import {
   // Status bits
   STATUS2_FOCUS_ENERGY,
   STATUS2_MULTIPLETURNS,
+  STATUS2_SUBSTITUTE,
   STATUS3_CANT_SCORE_A_CRIT,
   STATUS3_ALWAYS_HITS,
   STATUS3_SEMI_INVULNERABLE,
+  STATUS3_CHARGED_UP,
   // Battle type flags
   BATTLE_TYPE_WALLY_TUTORIAL,
   BATTLE_TYPE_FIRST_BATTLE,
@@ -103,6 +112,8 @@ import {
   MIN_STAT_STAGE,
   MAX_STAT_STAGE,
   DEFAULT_STAT_STAGE,
+  // Type
+  TYPE_ELECTRIC,
   // Weather
   B_WEATHER_SUN,
   B_WEATHER_SANDSTORM,
@@ -114,6 +125,7 @@ import {
   BS_TARGET,
   // Move result
   MOVE_RESULT_MISSED,
+  MOVE_RESULT_NO_EFFECT,
   MOVE_RESULT_FOE_ENDURED,
   MOVE_RESULT_FOE_HUNG_ON,
   // Outcomes
@@ -154,27 +166,26 @@ function ApplyRandomDmgMultiplier(): void {
   }
 }
 
-/** 1:1 décomp `GetBattlerForBattleScript(u8 arg)` (battle_util.c).
- *  Mappe BS_ATTACKER → gBattlerAttacker, BS_TARGET → gBattlerTarget, etc.
- *  Subset implémenté ici (= ce qu'utilise Niveau 1). */
-function getBattlerForBattleScript(arg: number): number {
-  switch (arg) {
-    case BS_ATTACKER: return gBattlerAttacker;
-    case BS_TARGET: return gBattlerTarget;
-    default: return gBattlerTarget;  // fallback (= EFFECT_BATTLER, FAINTED, etc. TODO porter)
-  }
-}
+// Le helper `getBattlerForBattleScript` est porté en full 1:1 dans `./util.ts`
+// (= 16 cas BS_*) et importé ici sous l'alias `_utilGetBattler`.
 
 // ─── Cmd_ppreduce (0x03) ────────────────────────────────────────────────────
 
 /** 1:1 décomp `Cmd_ppreduce` (battle_script_commands.c:1205-1251). */
-function Cmd_ppreduce(_ctx: BattleScriptContext): boolean {
+function Cmd_ppreduce(ctx: BattleScriptContext): boolean {
   let ppToDeduct = 1;
 
-  // 1:1 décomp : pas de gSpecialStatuses[].ppNotAffectedByPressure tracking pour
-  // now. Le switch sur gBattleMoves[move].target pour Pressure cross-side est
-  // simplifié au default case (= single battle pattern) :
-  //   if (gBattlerAttacker != gBattlerTarget && target.ability == PRESSURE) ppToDeduct++;
+  // 1:1 décomp : `if (gBattleControllerExecFlags) return;`
+  if (gBattleControllerExecFlags) {
+    return _stayOnOpcode(ctx);
+  }
+
+  // 1:1 décomp Pressure switch sur gBattleMoves[move].target — pour MVP, on
+  // simplifie au default case (= single battle). TODO porter
+  // AbilityBattleEffects(COUNT_ON_FIELD/COUNT_OTHER_SIDE) pour FOES_AND_ALLY/
+  // BOTH/OPPONENTS_FIELD multi-target moves.
+  //
+  // TODO porter gSpecialStatuses[gBattlerAttacker].ppNotAffectedByPressure check.
   if (gBattlerAttacker !== gBattlerTarget
       && gBattleMons[gBattlerTarget].ability === ABILITY_PRESSURE) {
     ppToDeduct++;
@@ -191,11 +202,19 @@ function Cmd_ppreduce(_ctx: BattleScriptContext): boolean {
     } else {
       gBattleMons[gBattlerAttacker].pp[gCurrMovePos] = 0;
     }
-    // TODO : MOVE_IS_PERMANENT + BtlController_EmitSetMonData persistent sync.
+    // TODO : MOVE_IS_PERMANENT + BtlController_EmitSetMonData REQUEST_PPMOVE_X
+    // pour persist PP au save block.
   }
 
   setHitMarker(gHitMarker & ~HITMARKER_NO_PPDEDUCT);
   return false;
+}
+
+/** Convention runBattleScript : dispatcher fait scriptPtr++ AVANT handler.
+ *  Pour "rester" sur opcode (= waitstate, re-execute next frame), on back up. */
+function _stayOnOpcode(ctx: BattleScriptContext): boolean {
+  ctx.scriptPtr--;
+  return true;
 }
 
 // ─── Cmd_critcalc (0x04) ────────────────────────────────────────────────────
@@ -245,14 +264,23 @@ function Cmd_critcalc(_ctx: BattleScriptContext): boolean {
 function Cmd_damagecalc(_ctx: BattleScriptContext): boolean {
   // 1:1 décomp : sideStatus = gSideStatuses[GET_BATTLER_SIDE(gBattlerTarget)].
   const sideStatus = gSideStatuses[GET_BATTLER_SIDE(gBattlerTarget)] ?? 0;
-  // 1:1 décomp : typeOverride = gBattleStruct->dynamicMoveType.
-  // TODO porter gBattleStruct.dynamicMoveType (= utilisé par Hidden Power, Weather Ball).
-  // Pour now : 0 (= no override → use gBattleMoves[move].type).
-  const dynamicMoveType = 0;
+  // 1:1 décomp : typeOverride = gBattleStruct->dynamicMoveType (port via state).
+  const damage = runDamagecalc(sideStatus, gDynamicBasePower, gDynamicMoveType);
 
-  const damage = runDamagecalc(sideStatus, gDynamicBasePower, dynamicMoveType);
-  // STATUS3_CHARGED_UP electric ×2 et gProtectStructs.helpingHand ×1.5 — TODO.
-  setBattleMoveDamage(damage);
+  // 1:1 décomp : `damage = damage * gCritMultiplier * gBattleScripting.dmgMultiplier;`
+  // (runDamagecalc returns base damage ; crit/dmgMultiplier applied here).
+  let finalDamage = damage * gCritMultiplier * gBattleScripting.dmgMultiplier;
+
+  // 1:1 décomp : STATUS3_CHARGED_UP electric × 2 (= Charge move boost on Electric type).
+  const moveType = getBattleMove(gCurrentMove).type;
+  if ((gStatuses3[gBattlerAttacker] & STATUS3_CHARGED_UP)
+      && moveType === TYPE_ELECTRIC) {
+    finalDamage *= 2;
+  }
+
+  // TODO porter gProtectStructs[attacker].helpingHand × 1.5 boost.
+
+  setBattleMoveDamage(finalDamage);
   return false;
 }
 
@@ -291,11 +319,12 @@ function Cmd_adjustnormaldamage(_ctx: BattleScriptContext): boolean {
   // Endured stub (= gProtectStructs[target].endured pas porté → false toujours).
   const endured = false;
 
-  // 1:1 décomp : skip si STATUS2_SUBSTITUTE actif (= TODO).
-  // Pour MVP : substitute bit non porté correctement → check inline.
+  // 1:1 décomp : skip si STATUS2_SUBSTITUTE actif (= substitute eats the hit,
+  // pas de leave-at-1-HP gimmick).
   const moveEffect = getBattleMove(gCurrentMove).effect;
   if (
-    (moveEffect === EFFECT_FALSE_SWIPE || endured || focusBanded)
+    !(targetMon.status2 & STATUS2_SUBSTITUTE)
+    && (moveEffect === EFFECT_FALSE_SWIPE || endured || focusBanded)
     && targetMon.hp <= gBattleMoveDamage
   ) {
     setBattleMoveDamage(targetMon.hp - 1);  // leave at 1 HP
@@ -303,7 +332,9 @@ function Cmd_adjustnormaldamage(_ctx: BattleScriptContext): boolean {
       setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_FOE_ENDURED);
     } else if (focusBanded) {
       setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_FOE_HUNG_ON);
-      // gLastUsedItem = target.item — TODO si tracking used.
+      // 1:1 décomp : `gLastUsedItem = gBattleMons[gBattlerTarget].item;`
+      // TODO porter gLastUsedItem set ici (= utilisé par resultmessage HUNG_ON
+      // pour afficher "X hung on using its Focus Band!").
     }
   }
   return false;
@@ -327,32 +358,63 @@ function Cmd_adjustnormaldamage(_ctx: BattleScriptContext): boolean {
  *  Skip : substitute, Bide damage tracker, Shell Bell damage record,
  *  physical/special tracker pour Counter/Mirror Coat. */
 function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
-  const battlerArg = readByte(ctx);
-
-  // 1:1 décomp : if (gBattleControllerExecFlags) return; — skip (= 0 toujours).
-  if (gMoveResultFlags & (MOVE_RESULT_MISSED /* no-effect implicit */)) {
-    return false;
+  // 1:1 décomp : `if (gBattleControllerExecFlags) return;`
+  if (gBattleControllerExecFlags) {
+    return _stayOnOpcode(ctx);
   }
 
-  const activeBattler = getBattlerForBattleScript(battlerArg);
-  setActiveBattler(activeBattler);
-  const mon = gBattleMons[activeBattler];
+  const battlerArg = readByte(ctx);
 
-  // Substitute / shellBellDmg / Bide trackers : skip (= TODO porter
-  // gDisableStructs, gSpecialStatuses, gBideDmg).
+  // 1:1 décomp : moveType resolution avec dynamicMoveType + F_DYNAMIC_TYPE_*.
+  // Si dynamicMoveType==0 → use gBattleMoves[move].type, sinon use
+  // dynamicMoveType & DYNAMIC_TYPE_MASK (unless IGNORE_PHYSICALITY set →
+  // fallback move.type). Pour MVP : juste read move.type.
+  void getBattleMove;  // moveType used by physical/special tracker — TODO.
 
-  if (gBattleMoveDamage < 0) {
-    // Negative damage = heal.
-    mon.hp += -gBattleMoveDamage;
-    if (mon.hp > mon.maxHP) mon.hp = mon.maxHP;
-  } else {
-    if (mon.hp > gBattleMoveDamage) {
-      mon.hp -= gBattleMoveDamage;
-      setHpDealt(gBattleMoveDamage);
+  // 1:1 décomp : `if (!(gMoveResultFlags & MOVE_RESULT_NO_EFFECT))` — use the
+  // composite flag (= MISSED | DOESNT_AFFECT_FOE | FAILED).
+  if (!(gMoveResultFlags & MOVE_RESULT_NO_EFFECT)) {
+    const activeBattler = _utilGetBattler(battlerArg);
+    setActiveBattler(activeBattler);
+    const mon = gBattleMons[activeBattler];
+
+    // 1:1 décomp : Substitute path — TODO porter
+    // (= si SUBSTITUTE + substituteHP + !IGNORE_SUBSTITUTE → damage va au
+    //  substitute via gDisableStructs.substituteHP -= damage ;
+    //  shellBellDmg tracked, PushCursor + BattleScript_SubstituteFade si 0).
+    // Pour MVP : tout damage va au mon direct (= sans substitute layer).
+
+    if (gBattleMoveDamage < 0) {
+      // Negative damage = heal.
+      mon.hp += -gBattleMoveDamage;
+      if (mon.hp > mon.maxHP) mon.hp = mon.maxHP;
     } else {
-      setHpDealt(mon.hp);
-      mon.hp = 0;
+      // 1:1 décomp : HITMARKER_IGNORE_BIDE check + gBideDmg tracker — TODO.
+      // 1:1 décomp : physical/special damage tracker (= gProtectStructs.physicalDmg
+      // / specialDmg + battlerId pour Counter/Mirror Coat) — TODO.
+
+      if (mon.hp > gBattleMoveDamage) {
+        mon.hp -= gBattleMoveDamage;
+        setHpDealt(gBattleMoveDamage);
+      } else {
+        setHpDealt(mon.hp);
+        mon.hp = 0;
+      }
+
+      // 1:1 décomp : shellBellDmg tracker (= gSpecialStatuses[active].shellBellDmg)
+      // — TODO porter gSpecialStatuses.
     }
+
+    // 1:1 décomp : clear HITMARKER_PASSIVE_HP_UPDATE.
+    // TODO : exposer HITMARKER_PASSIVE_HP_UPDATE constant + clear ici.
+
+    // 1:1 décomp : Emit SetMonData REQUEST_HP_BATTLE + Mark — la HP doit sync au
+    // controller pour update UI. TODO porter via emit.
+  } else {
+    // 1:1 décomp : NO_EFFECT path → set shellBellDmg = IGNORE_SHELL_BELL si 0.
+    // TODO porter gSpecialStatuses.
+    const activeBattler = _utilGetBattler(battlerArg);
+    setActiveBattler(activeBattler);
   }
   return false;
 }
@@ -513,18 +575,46 @@ function Cmd_moveend(ctx: BattleScriptContext): boolean {
 
 /** 1:1 décomp `Cmd_healthbarupdate` (battle_script_commands.c:1807-1841).
  *
- *  Apply gBattleMoveDamage à health bar UI. Pour MVP : skip UI animation,
- *  juste advance + consume byte arg.
+ *  Args : 1 byte battler ref. Total 2 bytes.
+ *  - if exec → stay
+ *  - if !NO_EFFECT :
+ *    - if SUBSTITUTE + substituteHP + !IGNORE_SUBSTITUTE → PrepareString
+ *      SUBSTITUTEDAMAGED (= "the substitute took damage")
+ *    - else : emit HealthBarUpdate(min(damage, 10000)) + Mark.
+ *      Si player side and damage > 0 : gBattleResults.playerMonWasDamaged = TRUE
+ *      (TODO porter gBattleResults).
+ *  - advance 2 bytes
  *
- *  Args : 1 byte battler ref. Total 2 bytes. */
+ *  Helpers utilisés : BtlController_EmitHealthBarUpdate. */
 function Cmd_healthbarupdate(ctx: BattleScriptContext): boolean {
-  const _battlerArg = readByte(ctx);
-  void _battlerArg;
-  // TODO : real UI sync. Pour now datahpupdate (0x0C) fait le HP write effectif.
+  if (gBattleControllerExecFlags) {
+    return _stayOnOpcode(ctx);
+  }
+  const battlerArg = readByte(ctx);
+
+  if (!(gMoveResultFlags & MOVE_RESULT_NO_EFFECT)) {
+    const activeBattler = _utilGetBattler(battlerArg);
+    setActiveBattler(activeBattler);
+
+    // 1:1 décomp : substitute check. Stub partial (= gBattleMons.status2 SUBSTITUTE
+    // + gDisableStructs.substituteHP + !HITMARKER_IGNORE_SUBSTITUTE).
+    // TODO porter PrepareStringBattle SUBSTITUTEDAMAGED branche.
+    void STATUS2_SUBSTITUTE;
+
+    // 1:1 décomp : clamp damage à 10000 (= max u16 truncation safety).
+    let healthValue = gBattleMoveDamage;
+    if (healthValue > 10000) healthValue = 10000;
+
+    BtlController_EmitHealthBarUpdate(0 /* B_COMM_TO_CONTROLLER */, healthValue);
+    MarkBattlerForControllerExec(activeBattler);
+
+    // 1:1 décomp : `if (player side && damage > 0) gBattleResults.playerMonWasDamaged = TRUE;`
+    // TODO porter gBattleResults (= post-battle stat tracking).
+  }
   return false;
 }
 
-// ─── Cmd_attackcanceler (0x00) — happy path ─────────────────────────────────
+// ─── Cmd_attackcanceler (0x00) — happy path 1:1 décomp ──────────────────────
 
 /** 1:1 décomp `Cmd_attackcanceler` (battle_script_commands.c:915-1007) — happy path.
  *
@@ -532,40 +622,54 @@ function Cmd_healthbarupdate(ctx: BattleScriptContext): boolean {
  *  AtkCanceler_UnableToUseMove, AbilityBattleEffects MOVES_BLOCK, PP check,
  *  IsMonDisobedient, MagicCoat bounce, Snatch, LightningRod redirect, Protect.
  *
- *  Notre version happy path :
- *    - Check attacker.hp == 0 → set HITMARKER_UNABLE_TO_USE_MOVE + MISSED
- *    - Check pp == 0 (sauf MOVE_STRUGGLE et NO_PPDEDUCT) → set MISSED
- *    - Clear HITMARKER_ALLOW_NO_PP
- *    - Set HITMARKER_OBEYS
+ *  Notre version implémente les branches 1:1 dispo (= happy path + jump labels) :
+ *    - hp == 0 → jump BattleScript_MoveEnd + HITMARKER_UNABLE_TO_USE_MOVE
+ *    - pp == 0 sans exception → jump BattleScript_NoPPForMove + MOVE_RESULT_MISSED
+ *    - Clear ALLOW_NO_PP, set OBEYS
  *    - Advance
  *
- *  Skip pour now : MagicCoat, Snatch, LightningRod, Protect, Disobedience —
- *  TODO porter quand gProtectStructs / gSpecialStatuses / IsMonDisobedient existent. */
-function Cmd_attackcanceler(_ctx: BattleScriptContext): boolean {
-  // gBattleOutcome != 0 → finish (= TODO via gCurrentActionFuncId, skip pour now).
+ *  TODO porter (= requires structs not yet ported) :
+ *  AtkCanceler_UnableToUseMove (battle_util.c, status flinch/sleep/freeze/paralyze/
+ *  confuse handling), AbilityBattleEffects MOVES_BLOCK (Soundproof, Damp pour
+ *  Explosion), IsMonDisobedient (= friendship/badge check, casino battle pour
+ *  trainer), MagicCoat/Snatch/LightningRod (= gProtectStructs/gSpecialStatuses),
+ *  DEFENDER_IS_PROTECTED (= gProtectStructs.protected). */
+function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
+  // 1:1 décomp : `if (gBattleOutcome != 0) { gCurrentActionFuncId = B_ACTION_FINISHED; return; }`
+  // TODO porter gCurrentActionFuncId trigger ici. Pour now : skip (= rare case).
 
-  // attacker.hp == 0 (= died before its turn, e.g. Destiny Bond).
+  // 1:1 décomp : attacker.hp == 0 (= died before its turn, e.g. Destiny Bond).
   if (gBattleMons[gBattlerAttacker].hp === 0
       && !(gHitMarker & HITMARKER_NO_ATTACKSTRING)) {
     setHitMarker(gHitMarker | HITMARKER_UNABLE_TO_USE_MOVE);
-    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
+    const moveEndOffset = getBattleScriptOffset('BattleScript_MoveEnd');
+    if (moveEndOffset >= 0) ctx.scriptPtr = moveEndOffset;
     return false;
   }
 
-  // PP check.
+  // TODO porter : AtkCanceler_UnableToUseMove + AbilityBattleEffects MOVES_BLOCK.
+
+  // 1:1 décomp : PP check (= no PP + not STRUGGLE + not allowed + not multiturn).
   const attackerMon = gBattleMons[gBattlerAttacker];
   if (!attackerMon.pp[gCurrMovePos]
       && gCurrentMove !== MOVE_STRUGGLE
       && !(gHitMarker & (HITMARKER_ALLOW_NO_PP | HITMARKER_NO_ATTACKSTRING))
       && !(attackerMon.status2 & STATUS2_MULTIPLETURNS)) {
+    const noPpOffset = getBattleScriptOffset('BattleScript_NoPPForMove');
+    if (noPpOffset >= 0) ctx.scriptPtr = noPpOffset;
     setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
     return false;
   }
 
-  // Clear ALLOW_NO_PP, set OBEYS.
-  setHitMarker((gHitMarker & ~HITMARKER_ALLOW_NO_PP) | HITMARKER_OBEYS);
+  // 1:1 décomp : `gHitMarker &= ~HITMARKER_ALLOW_NO_PP;`
+  setHitMarker(gHitMarker & ~HITMARKER_ALLOW_NO_PP);
 
-  // TODO : MagicCoat, Snatch, LightningRod, Protect, Disobedience.
+  // TODO porter : IsMonDisobedient switch.
+
+  // 1:1 décomp : `gHitMarker |= HITMARKER_OBEYS;`
+  setHitMarker(gHitMarker | HITMARKER_OBEYS);
+
+  // TODO porter : MagicCoat bounce / Snatch / LightningRod / DEFENDER_IS_PROTECTED.
 
   return false;
 }

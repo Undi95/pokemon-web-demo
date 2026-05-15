@@ -26,6 +26,8 @@ import {
   gStatuses3,
   gSideStatuses,
   gBattleCommunication,
+  gBattleScripting,
+  gBattlersCount,
   setLastUsedAbility,
   setActiveBattler,
 } from './state';
@@ -33,8 +35,8 @@ import { readByte, readHalfword, readWord } from './script-interpreter';
 import type { BattleScriptContext, BattleOpcodeHandler } from './script-interpreter';
 import {
   GET_BATTLER_SIDE,
+  BIT_SIDE,
   BS_ATTACKER,
-  BS_TARGET,
   BS_ATTACKER_SIDE,
   BS_NOT_ATTACKER_SIDE,
   CMP_EQUAL,
@@ -48,20 +50,30 @@ import {
   MULTISTRING_CHOOSER,
   B_MSG_STAYED_AWAKE_USING,
 } from './constants';
-
-/** 1:1 décomp `GetBattlerForBattleScript(u8 arg)` — subset utilisé Niveau 3. */
-function getBattlerForBattleScript(arg: number): number {
-  switch (arg) {
-    case BS_ATTACKER: return gBattlerAttacker;
-    case BS_TARGET: return gBattlerTarget;
-    default: return gBattlerTarget;  // fallback (= autres BS_* TODO)
-  }
-}
+import { getBattlerForBattleScript } from './util';
 
 /** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)` (battle.h:472). */
 function isBattlerOfType(battlerIdx: number, type: number): boolean {
   const mon = gBattleMons[battlerIdx];
   return mon.type1 === type || mon.type2 === type;
+}
+
+/** 1:1 décomp `AbilityBattleEffects(ABILITYEFFECT_CHECK_BATTLER_SIDE/CHECK_OTHER_SIDE)`
+ *  subset : itère les battlers du côté demandé, retourne (battler_idx + 1) si
+ *  ability matchée, sinon 0.
+ *
+ *  MVP single battle : ATTACKER_SIDE → check attacker seul, NOT_ATTACKER_SIDE
+ *  → check target seul. Doubles battles : itère 2 battlers de chaque side. */
+function _abilityCheckSide(checkAttackerSide: boolean, abilityId: number): number {
+  const attackerSide = GET_BATTLER_SIDE(gBattlerAttacker);
+  for (let i = 0; i < gBattlersCount; i++) {
+    const sameSide = (i & BIT_SIDE) === attackerSide;
+    if (checkAttackerSide ? !sameSide : sameSide) continue;
+    if (gBattleMons[i].hp !== 0 && gBattleMons[i].ability === abilityId) {
+      return i + 1;
+    }
+  }
+  return 0;
 }
 
 /** Stub : `UproarWakeUpCheck(battler)` — TODO porter (= check si un mon
@@ -119,17 +131,37 @@ function Cmd_jumpifability(ctx: BattleScriptContext): boolean {
   const abilityId = readByte(ctx);
   const jumpPtr = readWord(ctx);
 
-  if (battlerArg === BS_ATTACKER_SIDE || battlerArg === BS_NOT_ATTACKER_SIDE) {
-    // TODO porter AbilityBattleEffects(CHECK_BATTLER_SIDE/CHECK_OTHER_SIDE).
-    // Pour MVP : skip (= no jump).
+  if (battlerArg === BS_ATTACKER_SIDE) {
+    // 1:1 décomp : AbilityBattleEffects(ABILITYEFFECT_CHECK_BATTLER_SIDE, ...)
+    // retourne (battler+1) si match, sinon 0.
+    const battlerPlusOne = _abilityCheckSide(true, abilityId);
+    if (battlerPlusOne) {
+      setLastUsedAbility(abilityId);
+      ctx.scriptPtr = jumpPtr;
+      // TODO RecordAbilityBattle(battlerPlusOne - 1, abilityId).
+      gBattleScripting.battlerWithAbility = battlerPlusOne - 1;
+    }
     return false;
   }
 
+  if (battlerArg === BS_NOT_ATTACKER_SIDE) {
+    const battlerPlusOne = _abilityCheckSide(false, abilityId);
+    if (battlerPlusOne) {
+      setLastUsedAbility(abilityId);
+      ctx.scriptPtr = jumpPtr;
+      // TODO RecordAbilityBattle.
+      gBattleScripting.battlerWithAbility = battlerPlusOne - 1;
+    }
+    return false;
+  }
+
+  // Default : single battler check.
   const battler = getBattlerForBattleScript(battlerArg);
   if (gBattleMons[battler].ability === abilityId) {
     setLastUsedAbility(abilityId);
     ctx.scriptPtr = jumpPtr;
-    // TODO RecordAbilityBattle + gBattleScripting.battlerWithAbility.
+    // TODO RecordAbilityBattle.
+    gBattleScripting.battlerWithAbility = battler;
   }
   return false;
 }

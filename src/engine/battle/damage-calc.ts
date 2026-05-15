@@ -325,15 +325,9 @@ export function CalculateBaseDamage(
   return { damage: damage + 2, powerOut: gBattleMovePower };
 }
 
-/** 1:1 décomp `Cmd_damagecalc` (battle_script_commands.c:1290-1313).
- *
- *  Wraps CalculateBaseDamage avec :
- *    × gCritMultiplier
- *    × gBattleScripting.dmgMultiplier
- *    + STATUS3_CHARGED_UP electric × 2 — TODO
- *    + gProtectStructs[attacker].helpingHand ×1.5 — TODO
- *
- *  Set gBattleMoveDamage. */
+/** Wraps `CalculateBaseDamage` 1:1 décomp (= retourne damage BASE pre-crit
+ *  multiplier). Le caller (Cmd_damagecalc) applique gCritMultiplier ×
+ *  gBattleScripting.dmgMultiplier + STATUS3_CHARGED_UP + helpingHand. */
 export function runDamagecalc(
   sideStatus: number,
   dynamicBasePower: number,
@@ -346,11 +340,5 @@ export function runDamagecalc(
     sideStatus, dynamicBasePower, dynamicMoveType,
     gBattlerAttacker, gBattlerTarget,
   );
-  let dmg = damage * gCritMultiplier * gBattleScripting.dmgMultiplier;
-
-  // STATUS3_CHARGED_UP electric : × 2. TODO porter gStatuses3.
-  // gProtectStructs[attacker].helpingHand : × 1.5. TODO.
-  void dmg;
-
-  return damage * gCritMultiplier * gBattleScripting.dmgMultiplier;
+  return damage;
 }

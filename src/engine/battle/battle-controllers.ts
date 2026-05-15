@@ -150,6 +150,18 @@ export function BtlController_EmitBattleAnimation(_bufferId: number, _animationI
   // TODO : émettre battle anim (stat change, snatch, substitute fade, etc.).
 }
 
+/** 1:1 signature décomp `BtlController_EmitStatusIconUpdate(buf, status1, status2)`.
+ *  MVP : no-op. */
+export function BtlController_EmitStatusIconUpdate(_bufferId: number, _status1: number, _status2: number): void {
+  // TODO : update sprite status icon (poison/burn/sleep overlay).
+}
+
+/** 1:1 signature décomp `BtlController_EmitHealthBarUpdate(buf, healthValue)`.
+ *  MVP : no-op. */
+export function BtlController_EmitHealthBarUpdate(_bufferId: number, _healthValue: number): void {
+  // TODO : update HP bar animation.
+}
+
 /** 1:1 signature décomp `BtlController_EmitYesNoBox` n'existe pas — yesnobox
  *  est implémenté direct par Cmd_yesnobox via le state machine
  *  gBattleCommunication[0]. */

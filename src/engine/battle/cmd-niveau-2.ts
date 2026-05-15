@@ -18,10 +18,12 @@
 import {
   gBattleMons,
   gBattlerAttacker,
-  gBattlerTarget,
   gBattleScripting,
   gBattleCommunication,
   gBattlersCount,
+  gBattleControllerExecFlags,
+  gBattleTypeFlags,
+  gSideTimers,
   setActiveBattler,
 } from './state';
 import { readByte, readWord } from './script-interpreter';
@@ -38,23 +40,45 @@ import {
   MULTISTRING_CHOOSER,
   NUM_BATTLE_STATS,
   DEFAULT_STAT_STAGE,
+  MIN_STAT_STAGE,
+  MAX_STAT_STAGE,
+  STAT_ATK,
+  STAT_ACC,
+  ABILITY_CLEAR_BODY,
+  ABILITY_WHITE_SMOKE,
+  ABILITY_KEEN_EYE,
+  ABILITY_HYPER_CUTTER,
   BS_ATTACKER,
-  BS_TARGET,
+  BS_ATTACKER_WITH_PARTNER,
+  BATTLE_TYPE_DOUBLE,
+  GET_BATTLER_SIDE,
+  B_COMM_TO_CONTROLLER,
 } from './constants';
+import {
+  MarkBattlerForControllerExec, gBitTable,
+  BtlController_EmitStatusIconUpdate,
+  BtlController_EmitBattleAnimation,
+} from './battle-controllers';
+import { getBattlerForBattleScript } from './util';
 
-// 1:1 décomp `include/battle_anim.h:195-198` STAT_ANIM_* — verified values.
-const STAT_ANIM_PLUS1  = 14;
-const STAT_ANIM_PLUS2  = 38;
-const STAT_ANIM_MINUS1 = 21;
-const STAT_ANIM_MINUS2 = 45;
+// 1:1 décomp `include/battle_anim.h:195-202` STAT_ANIM_* — verified values.
+const STAT_ANIM_PLUS1            = 14;
+const STAT_ANIM_PLUS2            = 38;
+const STAT_ANIM_MINUS1           = 21;
+const STAT_ANIM_MINUS2           = 45;
+const STAT_ANIM_MULTIPLE_PLUS1   = 55;
+const STAT_ANIM_MULTIPLE_PLUS2   = 56;
+const STAT_ANIM_MULTIPLE_MINUS1  = 57;
+const STAT_ANIM_MULTIPLE_MINUS2  = 58;
 
 // Stat anim flags (= include/constants/battle_script_commands.h:375-378).
 const STAT_CHANGE_NEGATIVE        = 1 << 0;
 const STAT_CHANGE_BY_TWO          = 1 << 1;
 const STAT_CHANGE_MULTIPLE_STATS  = 1 << 2;
 const STAT_CHANGE_CANT_PREVENT    = 1 << 3;
-void STAT_CHANGE_CANT_PREVENT;
-void STAT_CHANGE_MULTIPLE_STATS;
+
+// B_ANIM_* (battle_anim.h) — used by playstatchangeanimation Emit call.
+const B_ANIM_STATS_CHANGE = 0;
 
 // MOVE_EFFECT_* indices (battle.h:245-298) — pour la status flags table.
 const MOVE_EFFECT_SLEEP          = 1;
@@ -96,14 +120,14 @@ const _statusFlagsForMoveEffects: Record<number, number> = {
 // 1:1 décomp `PRIMARY_STATUS_MOVE_EFFECT` (battle.h:251) = MOVE_EFFECT_TOXIC = 6.
 const PRIMARY_STATUS_MOVE_EFFECT = MOVE_EFFECT_TOXIC;
 
-/** 1:1 décomp `GetBattlerForBattleScript(u8 arg)` — subset utilisé Niveau 2. */
-function getBattlerForBattleScript(arg: number): number {
-  switch (arg) {
-    case BS_ATTACKER: return gBattlerAttacker;
-    case BS_TARGET: return gBattlerTarget;
-    default: return gBattlerTarget;  // fallback
-  }
+/** Stay sur opcode (= waitstate). Voir cmd-niveau-4 pour convention. */
+function _stayOnOpcode(ctx: BattleScriptContext): boolean {
+  ctx.scriptPtr--;
+  return true;
 }
+
+/** 1:1 stub `gAbsentBattlerFlags` (= bitmask des battlers absents). MVP : 0. */
+const gAbsentBattlerFlags = 0;
 
 // ─── Cmd_statbuffchange (0x89) ──────────────────────────────────────────────
 
@@ -177,19 +201,88 @@ function Cmd_setgraphicalstatchangevalues(_ctx: BattleScriptContext): boolean {
 
 /** 1:1 décomp `Cmd_playstatchangeanimation` (battle_script_commands.c:4114-4210).
  *
- *  Args : 1 byte battler ref + 1 byte statsToCheck mask + 1 byte flags. Total 4 bytes.
+ *  Args : 1 byte battler ref + 1 byte statsToCheck mask + 1 byte flags.
+ *  Total 4 bytes.
  *
- *  Pour MVP : skip animation logic (= BtlController_EmitBattleAnimation), just
- *  consume args. La logique compte le nombre de stats changeable + sélectionne
- *  l'anim id, mais sans UI controllers ça ne fait rien visuellement. */
+ *  Logique :
+ *  - Pour chaque bit set dans statsToCheck (stat index 0..7 = HP..EVASION) :
+ *    - Si negative + CANT_PREVENT : skip ability/mist guards, just check
+ *      statStages[i] > MIN_STAT_STAGE → set anim id + count++.
+ *    - Si negative sans CANT_PREVENT : skip aussi si mistTimer ou ability
+ *      CLEAR_BODY/WHITE_SMOKE (or KEEN_EYE for ACC, HYPER_CUTTER for ATK) →
+ *      statStages > MIN → anim + count++.
+ *    - Si positive : statStages < MAX → anim + count++.
+ *  - Si MULTIPLE_STATS + countOnly1 → skip anim (= will play single via separate).
+ *  - Sinon si count > 0 + !statAnimPlayed → emit B_ANIM_STATS_CHANGE + Mark.
+ *  - Advance +4 byte total. */
 function Cmd_playstatchangeanimation(ctx: BattleScriptContext): boolean {
   const battlerArg = readByte(ctx);
-  const _statsToCheck = readByte(ctx);
-  const _flags = readByte(ctx);
-  void _statsToCheck; void _flags; void STAT_CHANGE_NEGATIVE; void STAT_CHANGE_BY_TWO;
+  let statsToCheck = readByte(ctx);
+  const flags = readByte(ctx);
 
-  setActiveBattler(getBattlerForBattleScript(battlerArg));
-  // TODO : iterate statsToCheck bits, compute statAnimId, emit anim.
+  const activeBattler = getBattlerForBattleScript(battlerArg);
+  setActiveBattler(activeBattler);
+
+  let currStat = 0;
+  let statAnimId = 0;
+  let changeableStatsCount = 0;
+
+  if (flags & STAT_CHANGE_NEGATIVE) {
+    const startingStatAnimId = (flags & STAT_CHANGE_BY_TWO) ? STAT_ANIM_MINUS2 : STAT_ANIM_MINUS1;
+
+    while (statsToCheck !== 0) {
+      if (statsToCheck & 1) {
+        if (flags & STAT_CHANGE_CANT_PREVENT) {
+          if (gBattleMons[activeBattler].statStages[currStat] > MIN_STAT_STAGE) {
+            statAnimId = startingStatAnimId + currStat;
+            changeableStatsCount++;
+          }
+        } else if (
+          !gSideTimers[GET_BATTLER_SIDE(activeBattler)].mistTimer
+          && gBattleMons[activeBattler].ability !== ABILITY_CLEAR_BODY
+          && gBattleMons[activeBattler].ability !== ABILITY_WHITE_SMOKE
+          && !(gBattleMons[activeBattler].ability === ABILITY_KEEN_EYE && currStat === STAT_ACC)
+          && !(gBattleMons[activeBattler].ability === ABILITY_HYPER_CUTTER && currStat === STAT_ATK)
+        ) {
+          if (gBattleMons[activeBattler].statStages[currStat] > MIN_STAT_STAGE) {
+            statAnimId = startingStatAnimId + currStat;
+            changeableStatsCount++;
+          }
+        }
+      }
+      statsToCheck >>= 1;
+      currStat++;
+    }
+
+    if (changeableStatsCount > 1) {
+      statAnimId = (flags & STAT_CHANGE_BY_TWO) ? STAT_ANIM_MULTIPLE_MINUS2 : STAT_ANIM_MULTIPLE_MINUS1;
+    }
+  } else {
+    const startingStatAnimId = (flags & STAT_CHANGE_BY_TWO) ? STAT_ANIM_PLUS2 : STAT_ANIM_PLUS1;
+
+    while (statsToCheck !== 0) {
+      if ((statsToCheck & 1) && gBattleMons[activeBattler].statStages[currStat] < MAX_STAT_STAGE) {
+        statAnimId = startingStatAnimId + currStat;
+        changeableStatsCount++;
+      }
+      statsToCheck >>= 1;
+      currStat++;
+    }
+
+    if (changeableStatsCount > 1) {
+      statAnimId = (flags & STAT_CHANGE_BY_TWO) ? STAT_ANIM_MULTIPLE_PLUS2 : STAT_ANIM_MULTIPLE_PLUS1;
+    }
+  }
+
+  if ((flags & STAT_CHANGE_MULTIPLE_STATS) && changeableStatsCount < 2) {
+    // Skip anim emit (= will play singles separately).
+  } else if (changeableStatsCount !== 0 && !gBattleScripting.statAnimPlayed) {
+    BtlController_EmitBattleAnimation(B_COMM_TO_CONTROLLER, B_ANIM_STATS_CHANGE, statAnimId);
+    MarkBattlerForControllerExec(activeBattler);
+    if ((flags & STAT_CHANGE_MULTIPLE_STATS) && changeableStatsCount > 1) {
+      gBattleScripting.statAnimPlayed = 1;
+    }
+  }
   return false;
 }
 
@@ -247,17 +340,48 @@ function Cmd_clearstatusfromeffect(ctx: BattleScriptContext): boolean {
 /** 1:1 décomp `Cmd_updatestatusicon` (battle_script_commands.c:7702-7733).
  *
  *  Args : 1 byte battler ref. Total 2 bytes.
- *  UI sync via BtlController_EmitStatusIconUpdate — TODO. Pour MVP : skip,
- *  juste consume arg. */
+ *  - if exec → stay.
+ *  - if arg != BS_ATTACKER_WITH_PARTNER : single battler emit.
+ *  - else : emit pour attacker (= si pas absent), puis si DOUBLE emit pour
+ *    partner (= si pas absent). */
 function Cmd_updatestatusicon(ctx: BattleScriptContext): boolean {
-  const _battlerArg = readByte(ctx);
-  void _battlerArg;
-  // TODO : real UI status icon update.
+  if (gBattleControllerExecFlags) {
+    return _stayOnOpcode(ctx);
+  }
+  const battlerArg = readByte(ctx);
+
+  if (battlerArg !== BS_ATTACKER_WITH_PARTNER) {
+    const activeBattler = getBattlerForBattleScript(battlerArg);
+    setActiveBattler(activeBattler);
+    BtlController_EmitStatusIconUpdate(
+      B_COMM_TO_CONTROLLER,
+      gBattleMons[activeBattler].status1,
+      gBattleMons[activeBattler].status2,
+    );
+    MarkBattlerForControllerExec(activeBattler);
+  } else {
+    setActiveBattler(gBattlerAttacker);
+    if (!(gAbsentBattlerFlags & gBitTable[gBattlerAttacker])) {
+      BtlController_EmitStatusIconUpdate(
+        B_COMM_TO_CONTROLLER,
+        gBattleMons[gBattlerAttacker].status1,
+        gBattleMons[gBattlerAttacker].status2,
+      );
+      MarkBattlerForControllerExec(gBattlerAttacker);
+    }
+    if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+      // 1:1 décomp : partner = GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(attacker))).
+      // Pour single battle MVP, skip (= jamais DOUBLE en MVP).
+      // TODO porter quand doubles supportés : GetBattlerAtPosition + BATTLE_PARTNER macro.
+    }
+  }
   return false;
 }
 
 void MULTISTRING_CHOOSER;
 void GET_STAT_BUFF_VALUE;
+void STAT_CHANGE_CANT_PREVENT;
+void STAT_CHANGE_MULTIPLE_STATS;
 
 // ─── Install handlers ───────────────────────────────────────────────────────
 
