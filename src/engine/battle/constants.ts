@@ -169,6 +169,17 @@ export const NO_ACC_CALC                 = 0xFFFE;
 export const NO_ACC_CALC_CHECK_LOCK_ON   = 0xFFFD;
 export const ACC_CURR_MOVE               = 0;
 
+// ─── CMP_* (battle_script_commands.h:326-331) — used by jumpifstat ──────────
+export const CMP_EQUAL          = 0;
+export const CMP_NOT_EQUAL      = 1;
+export const CMP_GREATER_THAN   = 2;
+export const CMP_LESS_THAN      = 3;
+export const CMP_COMMON_BITS    = 4;
+export const CMP_NO_COMMON_BITS = 5;
+
+// ─── B_MSG_STAYED_AWAKE_USING (battle_string_ids.h, used by jumpifcantmakeasleep) ──
+export const B_MSG_STAYED_AWAKE_USING = 1;
+
 // ─── Stat indices (pokemon.h:81-92) ─────────────────────────────────────────
 export const STAT_HP      = 0;
 export const STAT_ATK     = 1;

@@ -440,6 +440,9 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-2').then(({ installNiveau2Handlers }) => {
     installNiveau2Handlers(_commands);
   });
+  void import('./cmd-niveau-3').then(({ installNiveau3Handlers }) => {
+    installNiveau3Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
