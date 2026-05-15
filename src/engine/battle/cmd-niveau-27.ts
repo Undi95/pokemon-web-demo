@@ -63,10 +63,10 @@ function _isInvalidForSleepTalkOrAssist(move: number): boolean {
 /** 1:1 stub `IsTwoTurnsMove(move)` (battle_util.c). Pour MVP : false. */
 function _isTwoTurnsMove(_move: number): boolean { return false; }
 
-/** 1:1 stub `CheckMoveLimitations(battler, unusableBits, check)` (battle_util.c).
- *  Pour MVP : retourne juste unusableBits inchangé. */
-function _checkMoveLimitations(_battler: number, unusableBits: number, _check: number): number {
-  return unusableBits;
+// 1:1 décomp `CheckMoveLimitations` — importé depuis move-limitations.ts (= full port).
+import { CheckMoveLimitations as _CheckMoveLimitationsFull } from './move-limitations';
+function _checkMoveLimitations(battler: number, unusableBits: number, check: number): number {
+  return _CheckMoveLimitationsFull(battler, unusableBits, check);
 }
 
 /** 1:1 stub `GetMoveTarget(move, override)` — pour MVP retourne gBattlerTarget

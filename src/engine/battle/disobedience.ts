@@ -45,6 +45,7 @@ import {
 import type { BattleScriptContext } from './script-interpreter';
 import { getBattleScriptOffset } from './script-interpreter';
 import { Random } from '../random';
+import { CheckMoveLimitations as _CheckMoveLimitations } from './move-limitations';
 
 /** 1:1 stub `IsBattlerModernFatefulEncounter` (= rare illegal Mew/Deoxys check).
  *  STUB MVP : return true (= legal mon, comme un vrai joueur honnête). */
@@ -67,13 +68,7 @@ const FLAG_BADGE04_GET = 'FLAG_BADGE04_GET';
 const FLAG_BADGE06_GET = 'FLAG_BADGE06_GET';
 const FLAG_BADGE08_GET = 'FLAG_BADGE08_GET';
 
-/** 1:1 stub `CheckMoveLimitations(battler, unusableBits, check)` (battle_util.c).
- *  Calcule le bitmask des moves bloqués selon les checks (Disabled, Taunted,
- *  Imprisoned, PP zero, etc.). STUB MVP : retourne unusableBits inchangé. */
-function _CheckMoveLimitations(_battler: number, unusableBits: number, _check: number): number {
-  // TODO porter logic CheckMoveLimitations battle_util.c.
-  return unusableBits;
-}
+// 1:1 décomp `CheckMoveLimitations` — importé depuis move-limitations.ts.
 
 const MOD = (a: number, b: number): number => ((a % b) + b) % b;
 
