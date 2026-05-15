@@ -1,4 +1,4 @@
-# Session 133 FINAL — Phase 1 Niveaux 1+2 COMPLETS (2026-05-15)
+# Session 133 FINAL — Phase 1 Niveaux 1+2+3 COMPLETS (2026-05-15)
 
 ## Commits cette session
 
@@ -11,6 +11,9 @@
 | `217d5716` | BATTLE Niveau 1 COMPLET — 4 opcodes restants (attackcanceler/accuracycheck/healthbarupdate/moveend) |
 | `9796b2ef` | BATTLE audit Niveau 1 → constants.ts + fix 15+ bit values FAUSSES |
 | `e37c6348` | BATTLE Niveau 2 — 8 opcodes + stat-stages.ts ChangeStatBuffs 1:1 |
+| `6d20566d` | DOCS récap session 133 (Niveaux 1+2) |
+| `675e517d` | BATTLE audit Niveau 2 — fix STAT_ANIM/STAT_CHANGE flags/PRIMARY_STATUS + étend sStatusFlagsForMoveEffects |
+| `0434f044` | BATTLE Niveau 3 — branching (8 opcodes : jumpifstatus/status2/ability/sideaffecting/stat/status3condition/type/cantmakeasleep) |
 
 ## Niveau 1 (11/11 opcodes, audité 1:1)
 
@@ -27,6 +30,19 @@
 | 0x0C datahpupdate | 1:1 | consume byte arg, getBattlerForBattleScript, apply hp + gHpDealt |
 | 0x19 tryfaintmon | 1:1 | consume 6 bytes args (battler/mode/ptr), set gBattlerFainted + outcome WIN/LOST |
 | 0x49 moveend | stub | consume 2 bytes args, set moveendState = COUNT (= exit) |
+
+## Niveau 3 (8/8 opcodes — branching)
+
+| Opcode | Status | Détail |
+|--------|--------|--------|
+| 0x1C jumpifstatus | full 1:1 | check status1 & flags + hp != 0 |
+| 0x1D jumpifstatus2 | full 1:1 | check status2 & flags + hp != 0 |
+| 0x1E jumpifability | partial | path direct full ; ATTACKER_SIDE/NOT_ATTACKER_SIDE TODO AbilityBattleEffects |
+| 0x1F jumpifsideaffecting | full 1:1 | check gSideStatuses[side] & flags |
+| 0x20 jumpifstat | full 1:1 | CMP_EQUAL/NOT_EQUAL/GT/LT/COMMON_BITS/NO_COMMON_BITS |
+| 0x21 jumpifstatus3condition | full 1:1 | check gStatuses3[battler] & status + negate flag |
+| 0x22 jumpiftype | full 1:1 | IS_BATTLER_OF_TYPE check |
+| 0x84 jumpifcantmakeasleep | partial | Insomnia/VitalSpirit full ; UproarWakeUpCheck stub |
 
 ## Niveau 2 (8/8 opcodes)
 
@@ -55,6 +71,7 @@ src/engine/battle/
 ├── script-interpreter.ts    ✅ skeleton + dispatch table + readers + Niveau 1+2 install
 ├── cmd-niveau-1.ts          ✅ 11 opcodes Niveau 1
 ├── cmd-niveau-2.ts          ✅ 8 opcodes Niveau 2
+├── cmd-niveau-3.ts          ✅ 8 opcodes Niveau 3 (branching)
 ├── damage-calc.ts           ✅ CalculateBaseDamage 1:1 pokemon.c:3107
 ├── type-calc.ts             ✅ Cmd_typecalc + ModulateDmgByType 1:1
 ├── stat-stages.ts           ✅ ChangeStatBuffs 1:1 battle_script_commands.c:6940
@@ -99,19 +116,7 @@ appliqués au runtime). Le wire viendra une fois :
 
 ## Pour reprendre next session
 
-**Niveau 3 (branching) — 7 opcodes** :
-- 0x1C jumpifstatus
-- 0x1D jumpifstatus2
-- 0x1E jumpifability
-- 0x1F jumpifsideaffecting
-- 0x20 jumpifstat
-- 0x21 jumpifstatus3condition
-- 0x22 jumpiftype
-- 0x84 jumpifcantmakeasleep
-
-Tous simples (= read args + check + jump ou advance). Peu de helpers.
-
-**Puis Niveau 4 (animations + UI) — 6 opcodes** :
+**Niveau 4 (animations + UI) — 6 opcodes** :
 - attackanimation, waitanimation, printstring, waitmessage, printfromtable, yesnobox
 - Requièrent battle controllers async pour UI sync. Niveau 4 fera la mise en place
   d'un controller minimal stub pour traverser ces opcodes sans bloquer.
