@@ -716,7 +716,7 @@ export function resetBattleState(): void {
   gWishFutureKnock.knockedOffMons = 0;
 }
 
-// Expose pour devtools / debug.
+// Expose pour devtools / debug + intra-module access (= éviter circular dep).
 (globalThis as Record<string, unknown>).__battleState = {
   gBattleMons,
   getAttacker: () => gBattlerAttacker,
@@ -729,4 +729,8 @@ export function resetBattleState(): void {
   getBattleOutcome: () => gBattleOutcome,
   gBattleScripting,
   resetBattleState,
+  // Getters pour fields read-only depuis util.ts GetDefaultMoveTarget etc.
+  get gBattleTypeFlags() { return gBattleTypeFlags; },
+  get gAbsentBattlerFlags() { return gAbsentBattlerFlags; },
+  get gBattlersCount() { return gBattlersCount; },
 };
