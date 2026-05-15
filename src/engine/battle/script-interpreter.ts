@@ -428,6 +428,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-5').then(({ installNiveau5Handlers }) => {
     installNiveau5Handlers(_commands);
   });
+  // Session 134 — Niveau 6 (UI/audio misc).
+  void import('./cmd-niveau-6').then(({ installNiveau6Handlers }) => {
+    installNiveau6Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
