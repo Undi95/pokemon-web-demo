@@ -202,6 +202,24 @@ function _recordAbilityBattle(_battler: number, _ability: number): void {}
  *  Pour MVP : true. TODO check Cloud Nine / Air Lock présence. */
 const _WEATHER_HAS_EFFECT = true;
 
+// ─── Overworld WEATHER_* (constants/weather.h) — 1:1 décomp ─────────────────
+const WEATHER_NONE              = 0;
+const WEATHER_RAIN              = 3;
+const WEATHER_RAIN_THUNDERSTORM = 5;
+const WEATHER_SANDSTORM         = 8;
+const WEATHER_DROUGHT           = 12;
+const WEATHER_DOWNPOUR          = 13;
+
+/** 1:1 stub `GetCurrentWeather(void)` (field_weather.c:1032).
+ *  Retourne `gWeatherPtr->currWeather`. Pas wired battle-side dans notre
+ *  port — TODO bridge overworld weather quand le système overworld weather
+ *  est branché. MVP : retourne WEATHER_NONE (= no overworld weather effect
+ *  on battle setup). */
+function _getCurrentWeather(): number {
+  // TODO bridge gameState.weather ou gWeatherPtr.currWeather.
+  return WEATHER_NONE;
+}
+
 /** 1:1 décomp `gBattleResources->flags->flags[battler] & RESOURCE_FLAG_FLASH_FIRE`.
  *  Notre port : map battler → bit set. */
 const _flashFireFlags: number[] = [0, 0, 0, 0];
@@ -245,9 +263,45 @@ export function AbilityBattleEffects(
       }
       switch (gLastUsedAbility) {
         case ABILITYEFFECT_SWITCH_IN_WEATHER:
-          // 1:1 partial : overworld weather influence (= GetCurrentWeather pas
-          // wired battle-side). Skip pour MVP. TODO porter quand gameStateWeather
-          // wired.
+          // 1:1 décomp battle_util.c:2473-2514.
+          // BATTLE_TYPE_RECORDED = 1 << 24 — recorded battle replay, on skip
+          // overworld weather propagation. Notre port : pas de recorded battle.
+          if (!(gBattleTypeFlags & (1 << 24) /* BATTLE_TYPE_RECORDED */)) {
+            const overworldWeather = _getCurrentWeather();
+            switch (overworldWeather) {
+              case WEATHER_RAIN:
+              case WEATHER_RAIN_THUNDERSTORM:
+              case WEATHER_DOWNPOUR:
+                if (!(gBattleWeather & B_WEATHER_RAIN)) {
+                  setBattleWeather(B_WEATHER_RAIN_TEMPORARY | B_WEATHER_RAIN_PERMANENT);
+                  // gBattleScripting.animArg1 = B_ANIM_RAIN_CONTINUES (= 9). Stub.
+                  gBattleScripting.animArg1 = 9;
+                  gBattleScripting.battler = battler;
+                  effect++;
+                }
+                break;
+              case WEATHER_SANDSTORM:
+                if (!(gBattleWeather & B_WEATHER_SANDSTORM)) {
+                  setBattleWeather(B_WEATHER_SANDSTORM);
+                  gBattleScripting.animArg1 = 11 /* B_ANIM_SANDSTORM_CONTINUES */;
+                  gBattleScripting.battler = battler;
+                  effect++;
+                }
+                break;
+              case WEATHER_DROUGHT:
+                if (!(gBattleWeather & B_WEATHER_SUN)) {
+                  setBattleWeather(B_WEATHER_SUN);
+                  gBattleScripting.animArg1 = 12 /* B_ANIM_SUN_CONTINUES */;
+                  gBattleScripting.battler = battler;
+                  effect++;
+                }
+                break;
+            }
+          }
+          if (effect !== 0) {
+            gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = _getCurrentWeather();
+            _lastWantedScriptLabel = 'BattleScript_OverworldWeatherStarts';
+          }
           break;
         case ABILITY_DRIZZLE:
           if (!(gBattleWeather & B_WEATHER_RAIN_PERMANENT)) {
