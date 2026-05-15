@@ -95,10 +95,19 @@ function applyStatMod(mon: BattleMon, stat: number, statIndex: number): number {
   return Math.floor((stat * ratio[0]) / ratio[1]);
 }
 
-/** WEATHER_HAS_EFFECT2 helper — true si weather a un effet (= aucune ability
- *  Air Lock / Cloud Nine sur le field). Pour MVP : retourne true tant que
- *  weather est set. TODO : check abilities pour Air Lock / Cloud Nine. */
-function weatherHasEffect(): boolean { return true; }
+/** 1:1 décomp `WEATHER_HAS_EFFECT` (battle_util.h:47).
+ *  `!ABILITY_ON_FIELD(ABILITY_CLOUD_NINE) && !ABILITY_ON_FIELD(ABILITY_AIR_LOCK)`.
+ *  Lazy lookup via globalThis pour éviter circular import avec ability-battle-effects. */
+function weatherHasEffect(): boolean {
+  const checkFn = (globalThis as { __abilityBattleEffectsCheck?: (caseID: number, b: number, ab: number, s: number, m: number) => number }).__abilityBattleEffectsCheck;
+  if (!checkFn) return true;  // pas wired = no field block
+  const ABILITYEFFECT_CHECK_ON_FIELD = 12;
+  const ABILITY_CLOUD_NINE = 13;
+  const ABILITY_AIR_LOCK = 76;
+  const cloudNine = checkFn(ABILITYEFFECT_CHECK_ON_FIELD, 0, ABILITY_CLOUD_NINE, 0, 0);
+  const airLock = checkFn(ABILITYEFFECT_CHECK_ON_FIELD, 0, ABILITY_AIR_LOCK, 0, 0);
+  return !cloudNine && !airLock;
+}
 
 /** Stub : badge boost (post-gym +10%). TODO quand badge persistence wired. */
 function shouldGetStatBadgeBoost(_badgeFlag: number, _battler: number): boolean {

@@ -924,3 +924,7 @@ export function consumeAbilityWantedScript(): string | null {
   return v;
 }
 
+// Expose AbilityBattleEffects via globalThis pour permettre damage-calc.ts et
+// autres modules d'éviter circular import. Set au module-load.
+(globalThis as { __abilityBattleEffectsCheck?: typeof AbilityBattleEffects }).__abilityBattleEffectsCheck = AbilityBattleEffects;
+
