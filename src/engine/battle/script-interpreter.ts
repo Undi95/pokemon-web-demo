@@ -460,6 +460,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-13').then(({ installNiveau13Handlers }) => {
     installNiveau13Handlers(_commands);
   });
+  // Session 134 — Niveau 14 (turn/action management).
+  void import('./cmd-niveau-14').then(({ installNiveau14Handlers }) => {
+    installNiveau14Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

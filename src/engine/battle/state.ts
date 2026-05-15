@@ -170,6 +170,14 @@ export let gBattleControllerExecFlags = 0;
  *  Cmd_waitmessage + Cmd_pause pour timing message display. */
 export let gPauseCounterBattle = 0;
 
+/** 1:1 décomp `gCurrentActionFuncId` (battle_main.c:162). Current action handler
+ *  index (B_ACTION_*) — set par Cmd_finishaction/Cmd_finishturn etc. */
+export let gCurrentActionFuncId = 0;
+
+/** 1:1 décomp `gCurrentTurnActionNumber` (battle_main.c:162). Compteur de
+ *  battler ayant agi ce tour. Incrémenté à chaque action terminée. */
+export let gCurrentTurnActionNumber = 0;
+
 /** 1:1 décomp `struct DisableStruct gDisableStructs[MAX_BATTLERS_COUNT]`
  *  (battle.h:438-468). Tracks per-battler effects que les moves doivent
  *  consulter (= disabled move, encored move, taunt, perish counter, etc.).
@@ -342,6 +350,8 @@ export function setDynamicMoveType(v: number) { gDynamicMoveType = v; }
 export function setBattleMovePower(v: number) { gBattleMovePower = v; }
 export function setBattleControllerExecFlags(v: number) { gBattleControllerExecFlags = v; }
 export function setPauseCounterBattle(v: number) { gPauseCounterBattle = v; }
+export function setCurrentActionFuncId(v: number) { gCurrentActionFuncId = v; }
+export function setCurrentTurnActionNumber(v: number) { gCurrentTurnActionNumber = v; }
 export function setLastUsedAbility(v: number) { gLastUsedAbility = v; }
 export function setLastUsedItem(v: number) { gLastUsedItem = v; }
 
