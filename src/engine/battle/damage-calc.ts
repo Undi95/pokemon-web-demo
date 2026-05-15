@@ -233,13 +233,16 @@ export function CalculateBaseDamage(
   }
 
   // Badge boosts (+10% per stat). TODO post-gym.
-  if (shouldGetStatBadgeBoost(0x844 /* FLAG_BADGE01_GET */, battlerIdAtk))
+  // 1:1 décomp : SYSTEM_FLAGS = TRAINER_FLAGS_END + 1 = 0x860.
+  // FLAG_BADGE01_GET = 0x867, FLAG_BADGE05_GET = 0x86B, FLAG_BADGE07_GET = 0x86D.
+  // AUDIT FIX : précédemment hardcoded 0x844/0x848/0x84A FAUX (= ancienne SYSTEM_FLAGS).
+  if (shouldGetStatBadgeBoost(0x867 /* FLAG_BADGE01_GET */, battlerIdAtk))
     attack = Math.floor((110 * attack) / 100);
-  if (shouldGetStatBadgeBoost(0x848 /* FLAG_BADGE05_GET */, battlerIdDef))
+  if (shouldGetStatBadgeBoost(0x86B /* FLAG_BADGE05_GET */, battlerIdDef))
     defense = Math.floor((110 * defense) / 100);
-  if (shouldGetStatBadgeBoost(0x84A /* FLAG_BADGE07_GET */, battlerIdAtk))
+  if (shouldGetStatBadgeBoost(0x86D /* FLAG_BADGE07_GET */, battlerIdAtk))
     spAttack = Math.floor((110 * spAttack) / 100);
-  if (shouldGetStatBadgeBoost(0x84A /* FLAG_BADGE07_GET */, battlerIdDef))
+  if (shouldGetStatBadgeBoost(0x86D /* FLAG_BADGE07_GET */, battlerIdDef))
     spDefense = Math.floor((110 * spDefense) / 100);
 
   // Type-bonus hold items (sHoldEffectToType iterate). TODO porter table.
