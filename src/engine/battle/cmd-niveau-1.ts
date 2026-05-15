@@ -34,11 +34,22 @@ import {
   gCritMultiplier,
   gStatuses3,
   gBattleTypeFlags,
+  gSideStatuses,
+  gBattleMoveDamage,
+  gMoveResultFlags,
+  gDynamicBasePower,
+  gBattleScripting,
   setHitMarker,
   setCritMultiplier,
+  setBattleMoveDamage,
+  setMoveResultFlags,
   setPotentialItemEffectBattler,
+  setBattlerFainted,
+  setBattleOutcome,
 } from './state';
 import { Random } from '../random';
+import { runDamagecalc } from './damage-calc';
+import { Cmd_typecalc as TypecalcImpl } from './type-calc';
 import type { BattleScriptContext, BattleOpcodeHandler } from './script-interpreter';
 
 // ─── Constants 1:1 décomp ──────────────────────────────────────────────────
@@ -192,6 +203,90 @@ function Cmd_critcalc(_ctx: BattleScriptContext): boolean {
   return false;
 }
 
+// ─── Cmd_damagecalc (0x05) ──────────────────────────────────────────────────
+
+/** 1:1 décomp `Cmd_damagecalc` (battle_script_commands.c:1290-1313).
+ *
+ *  Wraps CalculateBaseDamage avec gCritMultiplier × dmgMultiplier.
+ *  + STATUS3_CHARGED_UP electric ×2, gProtectStructs.helpingHand ×1.5 (= TODO). */
+function Cmd_damagecalc(_ctx: BattleScriptContext): boolean {
+  // 1:1 décomp : sideStatus = gSideStatuses[GET_BATTLER_SIDE(gBattlerTarget)].
+  // Notre BATTLER_SIDE = idx & 1 (= player side 0, opponent side 1).
+  const sideStatus = gSideStatuses[gBattlerTarget & 1] ?? 0;
+  const damage = runDamagecalc(sideStatus, gDynamicBasePower, gBattleScripting.battlerWithAbility & 0x3F);
+  // TODO porter STATUS3_CHARGED_UP / helping_hand check here.
+  setBattleMoveDamage(damage);
+  return false;
+}
+
+// ─── Cmd_typecalc (0x06) ────────────────────────────────────────────────────
+
+/** 1:1 décomp `Cmd_typecalc` (battle_script_commands.c:1355-1424).
+ *  Delegated to type-calc.ts module. */
+function Cmd_typecalc(_ctx: BattleScriptContext): boolean {
+  return TypecalcImpl();
+}
+
+// ─── Cmd_adjustnormaldamage (0x07) ──────────────────────────────────────────
+
+/** 1:1 décomp `Cmd_adjustnormaldamage` (battle_script_commands.c:1658-1700).
+ *
+ *  Apply final modifiers :
+ *  - Substitute check : skip
+ *  - parental bond : skip
+ *  - HM moves : skip
+ *  - clamp damage to defender.hp
+ *  - skip si HITMARKER_NO_ATTACKSTRING ou IGNORE_SUBSTITUTE
+ *
+ *  Notre version : simpler clamp + advance. TODO : substitute, etc. */
+function Cmd_adjustnormaldamage(_ctx: BattleScriptContext): boolean {
+  // Clamp damage to defender.hp (= 1:1 décomp ; le décomp lit aussi un byte
+  // jumpPtr en arg mais pour l'instant on skip car le clamp est inconditionnel).
+  const targetMon = gBattleMons[gBattlerTarget];
+  if (gBattleMoveDamage >= targetMon.hp) {
+    setBattleMoveDamage(targetMon.hp);
+  }
+  return false;
+}
+
+// ─── Cmd_datahpupdate (0x0C) ────────────────────────────────────────────────
+
+/** 1:1 décomp `Cmd_datahpupdate` (battle_script_commands.c:1844-...).
+ *
+ *  Apply gBattleMoveDamage à target.hp + update gHpDealt + handle substitute. */
+function Cmd_datahpupdate(_ctx: BattleScriptContext): boolean {
+  // Le décomp lit u8 battlerArg (LO bits) + path substitute. Pour MVP : direct apply.
+  const target = gBattleMons[gBattlerTarget];
+  let newHp = target.hp - gBattleMoveDamage;
+  if (newHp < 0) newHp = 0;
+  if (newHp > target.maxHP) newHp = target.maxHP;
+  target.hp = newHp;
+  return false;
+}
+
+// ─── Cmd_tryfaintmon (0x19) ─────────────────────────────────────────────────
+
+/** 1:1 décomp `Cmd_tryfaintmon` (battle_script_commands.c:2965-...).
+ *
+ *  Si target.hp == 0 → set gBattlerFainted = target + jump faint script.
+ *  Notre version : set gBattlerFainted + set gBattleOutcome si toutes les mons
+ *  du défender side sont KO (= simpler que 1:1 jusqu'à ce que les controllers
+ *  soient portés). */
+function Cmd_tryfaintmon(_ctx: BattleScriptContext): boolean {
+  const target = gBattleMons[gBattlerTarget];
+  if (target.hp === 0) {
+    setBattlerFainted(gBattlerTarget);
+    // Pour MVP single battle : si l'ennemi est KO, set WIN ; si joueur KO, set LOST.
+    if ((gBattlerTarget & 1) === 1) {
+      // Opponent side fainted.
+      setBattleOutcome(1);  // B_OUTCOME_WON
+    } else {
+      setBattleOutcome(2);  // B_OUTCOME_LOST
+    }
+  }
+  return false;
+}
+
 // ─── Install handlers in dispatch table ─────────────────────────────────────
 
 /** Register Niveau 1 handlers dans le dispatch table de script-interpreter.
@@ -199,15 +294,19 @@ function Cmd_critcalc(_ctx: BattleScriptContext): boolean {
 export function installNiveau1Handlers(commandsTable: BattleOpcodeHandler[]): void {
   commandsTable[0x03] = Cmd_ppreduce;
   commandsTable[0x04] = Cmd_critcalc;
-  // TODO Niveau 1 (à porter) :
-  //   commandsTable[0x00] = Cmd_attackcanceler;
-  //   commandsTable[0x01] = Cmd_accuracycheck;
-  //   commandsTable[0x05] = Cmd_damagecalc;
-  //   commandsTable[0x06] = Cmd_typecalc;
-  //   commandsTable[0x07] = Cmd_adjustnormaldamage;
-  //   commandsTable[0x0B] = Cmd_healthbarupdate;
-  //   commandsTable[0x0C] = Cmd_datahpupdate;
-  //   commandsTable[0x19] = Cmd_tryfaintmon;
-  //   commandsTable[0x49] = Cmd_moveend;
-  console.log('[battle/cmd-niveau-1] installed ppreduce + critcalc handlers');
+  commandsTable[0x05] = Cmd_damagecalc;
+  commandsTable[0x06] = Cmd_typecalc;
+  commandsTable[0x07] = Cmd_adjustnormaldamage;
+  commandsTable[0x0C] = Cmd_datahpupdate;
+  commandsTable[0x19] = Cmd_tryfaintmon;
+  // TODO Niveau 1 (= path happy/safer first) :
+  //   commandsTable[0x00] = Cmd_attackcanceler;       // protect/snatch/magic coat/etc.
+  //   commandsTable[0x01] = Cmd_accuracycheck;        // accuracy × evasion roll
+  //   commandsTable[0x0B] = Cmd_healthbarupdate;      // UI anim sync
+  //   commandsTable[0x49] = Cmd_moveend;              // state machine post-move
+  // Avoid unused warning while data Map / dynamic globals not yet referenced.
+  void gMoveResultFlags;
+  void setMoveResultFlags;
+  void setHitMarker;
+  console.log('[battle/cmd-niveau-1] installed 7 handlers (ppreduce, critcalc, damagecalc, typecalc, adjustnormaldamage, datahpupdate, tryfaintmon)');
 }
