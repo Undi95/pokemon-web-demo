@@ -327,7 +327,10 @@ function Cmd_damagecalc(_ctx: BattleScriptContext): boolean {
     finalDamage *= 2;
   }
 
-  // TODO porter gProtectStructs[attacker].helpingHand × 1.5 boost.
+  // 1:1 décomp battle_script_commands.c:1300-1301 : Helping Hand × 1.5.
+  if (gProtectStructs[gBattlerAttacker].helpingHand) {
+    finalDamage = Math.floor((finalDamage * 15) / 10);
+  }
 
   setBattleMoveDamage(finalDamage);
   return false;
