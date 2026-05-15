@@ -24,6 +24,7 @@ import {
   gBattleControllerExecFlags,
   gBattleTypeFlags,
   gSideTimers,
+  gAbsentBattlerFlags,
   setActiveBattler,
 } from './state';
 import { readByte, readWord } from './script-interpreter';
@@ -127,8 +128,7 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** 1:1 stub `gAbsentBattlerFlags` (= bitmask des battlers absents). MVP : 0. */
-const gAbsentBattlerFlags = 0;
+// 1:1 décomp `gAbsentBattlerFlags` — wired depuis state.ts (= bitmask absent battlers).
 
 // ─── Cmd_statbuffchange (0x89) ──────────────────────────────────────────────
 
