@@ -42,6 +42,7 @@ import {
   gDisableStructs,
   setIntimidateBattler,
   gMoveResultFlags,
+  gSynchronizeMoveEffect, setSynchronizeMoveEffect,
 } from './state';
 import { Random, getBattleScriptOffset } from './script-interpreter';
 import {
@@ -51,6 +52,8 @@ import {
   ABILITY_DRIZZLE, ABILITY_SAND_STREAM, ABILITY_DROUGHT, ABILITY_INTIMIDATE,
   ABILITY_TRACE, ABILITY_CLOUD_NINE, ABILITY_AIR_LOCK, ABILITY_FORECAST,
   ABILITY_RAIN_DISH, ABILITY_SHED_SKIN, ABILITY_SPEED_BOOST, ABILITY_TRUANT,
+  ABILITY_SYNCHRONIZE,
+  MOVE_EFFECT_TOXIC,
   ABILITY_COLOR_CHANGE, ABILITY_ROUGH_SKIN, ABILITY_EFFECT_SPORE,
   ABILITY_POISON_POINT, ABILITY_STATIC, ABILITY_FLAME_BODY, ABILITY_CUTE_CHARM,
   STAT_SPEED, MAX_STAT_STAGE, STATUS1_ANY,
@@ -68,6 +71,8 @@ import {
   STATUS3_INTIMIDATE_POKES, STATUS3_TRACE,
   STATUS3_MUDSPORT, STATUS3_WATERSPORT,
   HITMARKER_NO_PPDEDUCT, HITMARKER_STATUS_ABILITY_EFFECT,
+  HITMARKER_SYNCHRONIZE_EFFECT,
+  MOVE_EFFECT_CERTAIN,
   BATTLE_TYPE_SAFARI,
   B_WEATHER_RAIN, B_WEATHER_RAIN_TEMPORARY, B_WEATHER_RAIN_PERMANENT,
   B_WEATHER_SANDSTORM, B_WEATHER_SANDSTORM_PERMANENT,
@@ -652,12 +657,44 @@ export function AbilityBattleEffects(
       break;
     }
 
+    case ABILITYEFFECT_SYNCHRONIZE: {
+      // 1:1 décomp battle_util.c:2954-2968.
+      if (gLastUsedAbility === ABILITY_SYNCHRONIZE
+          && (gHitMarker & HITMARKER_SYNCHRONIZE_EFFECT)) {
+        setHitMarker(gHitMarker & ~HITMARKER_SYNCHRONIZE_EFFECT);
+        let smeff = gSynchronizeMoveEffect & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
+        if (smeff === MOVE_EFFECT_TOXIC) smeff = MOVE_EFFECT_POISON;
+        setSynchronizeMoveEffect(smeff);
+        gBattleCommunication[MOVE_EFFECT_BYTE] = smeff + MOVE_EFFECT_AFFECTS_USER;
+        gBattleScripting.battler = gBattlerTarget;
+        _lastWantedScriptLabel = 'BattleScript_SynchronizeActivates';
+        setHitMarker(gHitMarker | HITMARKER_STATUS_ABILITY_EFFECT);
+        effect++;
+      }
+      break;
+    }
+
+    case ABILITYEFFECT_ATK_SYNCHRONIZE: {
+      // 1:1 décomp battle_util.c:2970-2984.
+      if (gLastUsedAbility === ABILITY_SYNCHRONIZE
+          && (gHitMarker & HITMARKER_SYNCHRONIZE_EFFECT)) {
+        setHitMarker(gHitMarker & ~HITMARKER_SYNCHRONIZE_EFFECT);
+        let smeff = gSynchronizeMoveEffect & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
+        if (smeff === MOVE_EFFECT_TOXIC) smeff = MOVE_EFFECT_POISON;
+        setSynchronizeMoveEffect(smeff);
+        gBattleCommunication[MOVE_EFFECT_BYTE] = smeff;
+        gBattleScripting.battler = gBattlerAttacker;
+        _lastWantedScriptLabel = 'BattleScript_SynchronizeActivates';
+        setHitMarker(gHitMarker | HITMARKER_STATUS_ABILITY_EFFECT);
+        effect++;
+      }
+      break;
+    }
+
     // ─── Stubs TODO Phase 1.2 E continuation ──────────────────────────────
     case ABILITYEFFECT_FORECAST:
-    case ABILITYEFFECT_SYNCHRONIZE:
-    case ABILITYEFFECT_ATK_SYNCHRONIZE:
     case ABILITYEFFECT_TRACE:
-      // TODO porter ces cases — ~380 lignes décomp restantes.
+      // TODO porter — ~280 lignes décomp restantes.
       break;
 
     default:

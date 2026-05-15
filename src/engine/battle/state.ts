@@ -438,6 +438,11 @@ export function setIntimidateBattler(v: number) { gIntimidateBattler = v; }
 export let gFormToChangeInto = 0;
 export function setFormToChangeInto(v: number) { gFormToChangeInto = v; }
 
+/** 1:1 décomp `gBattleStruct->synchronizeMoveEffect` — Synchronize ability
+ *  reflect status1 (poison/burn/paralysis/toxic) back to attacker. */
+export let gSynchronizeMoveEffect = 0;
+export function setSynchronizeMoveEffect(v: number) { gSynchronizeMoveEffect = v; }
+
 /** 1:1 décomp `gBattleStruct->hpScale` — résultat de Cmd_hpthresholds /
  *  Cmd_hpthresholds2. Valeur 0..3 utilisée pour choisir un message de bataille
  *  selon les % HP restants du target adverse. */
