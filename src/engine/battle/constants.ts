@@ -642,6 +642,14 @@ export const MOVE_TRICK        = 271;
 export const MOVE_FOCUS_PUNCH  = 264;
 export const MOVE_SNATCH       = 289;
 export const MOVE_UPROAR       = 253;
+export const MOVE_HEAL_BELL    = 215;
+
+// ─── B_MSG_* heal bell (battle_string_ids.h:512-516) — 1:1 décomp ─────────
+export const B_MSG_BELL                     = 0;
+export const B_MSG_BELL_SOUNDPROOF_ATTACKER = 1;
+export const B_MSG_BELL_SOUNDPROOF_PARTNER  = 2;
+export const B_MSG_BELL_BOTH_SOUNDPROOF     = 3;
+export const B_MSG_SOOTHING_AROMA           = 4;
 
 // ─── sMovesForbiddenToCopy (battle_script_commands.c:725) — 1:1 décomp ────
 /** Sentinels MIMIC_FORBIDDEN_END / METRONOME_FORBIDDEN_END divisent les two

@@ -457,6 +457,20 @@ export const gWrappedBy: number[] = [0, 0, 0, 0];
  *  per battler (= BIND / WRAP / FIRE_SPIN / etc.). */
 export const gWrappedMove: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `gLastPrintedMoves[MAX_BATTLERS_COUNT]` (battle_main.c). Dernier
+ *  move dont le nom a été print (= différent de gLastMoves : printed = move
+ *  qui a réussi à être déclaré, last = move attempted). Utilisé par Sketch
+ *  (Cmd_copymovepermanently) pour copier le move successfully announced. */
+export const gLastPrintedMoves: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `gBattleStruct->lastTakenMove[MAX_BATTLERS_COUNT]` — dernier
+ *  move subi par chaque battler (= utilisé par Mirror Move). */
+export const gLastTakenMove: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `gBattleStruct->lastTakenMoveFrom[4*4]` — dernier move subi par
+ *  battler X depuis battler Y. Flat array index = X*4 + Y. */
+export const gLastTakenMoveFrom: number[] = new Array(16).fill(0);
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];

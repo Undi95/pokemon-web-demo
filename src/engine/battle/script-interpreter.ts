@@ -520,6 +520,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-28').then(({ installNiveau28Handlers }) => {
     installNiveau28Handlers(_commands);
   });
+  // Session 135 — Niveau 29 (mirror/sketch/heal bell/assist).
+  void import('./cmd-niveau-29').then(({ installNiveau29Handlers }) => {
+    installNiveau29Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
