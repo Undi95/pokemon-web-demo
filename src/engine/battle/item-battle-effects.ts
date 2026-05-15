@@ -322,10 +322,102 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
       break;
     }
 
-    case ITEMEFFECT_MOVE_END:
-      // TODO porter battle_util.c:3608-3751 (~145 lignes, post-move triggers berries).
-      void gBattlersCount; void gHitMarker; void setHitMarker;
+    case ITEMEFFECT_MOVE_END: {
+      // 1:1 décomp battle_util.c:3608-3751.
+      // Iterate tous battlers pour appliquer berry cures post-move.
+      // Note : 1:1 décomp utilise BattleScriptPushCursor() — équivalent à push
+      // current script ptr (= dispatch loop ne touche pas après notre return).
+      // Notre port stocke le label voulu via _lastWantedScriptLabel.
+      for (let bId = 0; bId < gBattlersCount; bId++) {
+        const item = gBattleMons[bId].item;
+        const heff = item === ITEM_ENIGMA_BERRY ? 0 : GetItemHoldEffect(item);
+        setLastUsedItem(item);
+        switch (heff) {
+          case HOLD_EFFECT_CURE_PAR:
+            if (gBattleMons[bId].status1 & STATUS1_PARALYSIS) {
+              gBattleMons[bId].status1 &= ~STATUS1_PARALYSIS;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureParRet';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_PSN:
+            if (gBattleMons[bId].status1 & STATUS1_PSN_ANY) {
+              gBattleMons[bId].status1 &= ~(STATUS1_PSN_ANY | STATUS1_TOXIC_COUNTER);
+              _lastWantedScriptLabel = 'BattleScript_BerryCurePsnRet';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_BRN:
+            if (gBattleMons[bId].status1 & STATUS1_BURN) {
+              gBattleMons[bId].status1 &= ~STATUS1_BURN;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureBrnRet';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_FRZ:
+            if (gBattleMons[bId].status1 & STATUS1_FREEZE) {
+              gBattleMons[bId].status1 &= ~STATUS1_FREEZE;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureFrzRet';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_SLP:
+            if (gBattleMons[bId].status1 & STATUS1_SLEEP) {
+              gBattleMons[bId].status1 &= ~STATUS1_SLEEP;
+              gBattleMons[bId].status2 &= ~STATUS2_NIGHTMARE;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureSlpRet';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_CONFUSION:
+            if (gBattleMons[bId].status2 & STATUS2_CONFUSION) {
+              gBattleMons[bId].status2 &= ~STATUS2_CONFUSION;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureConfusionRet';
+              effect = ITEM_EFFECT_OTHER;
+            }
+            break;
+          case HOLD_EFFECT_CURE_ATTRACT:
+            if (gBattleMons[bId].status2 & STATUS2_INFATUATION) {
+              gBattleMons[bId].status2 &= ~STATUS2_INFATUATION;
+              gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = 7 /* B_MSG_CURED_PROBLEM */;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureChosenStatusRet';
+              effect = ITEM_EFFECT_OTHER;
+            }
+            break;
+          case HOLD_EFFECT_CURE_STATUS:
+            if ((gBattleMons[bId].status1 & STATUS1_ANY)
+                || (gBattleMons[bId].status2 & STATUS2_CONFUSION)) {
+              gBattleMons[bId].status1 = 0;
+              gBattleMons[bId].status2 &= ~(STATUS2_CONFUSION | STATUS2_NIGHTMARE);
+              gBattleCommunication[5] = 7 /* B_MSG_CURED_PROBLEM */;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureChosenStatusRet';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_RESTORE_STATS:
+            for (let i = 0; i < NUM_BATTLE_STATS; i++) {
+              if (gBattleMons[bId].statStages[i] < DEFAULT_STAT_STAGE) {
+                gBattleMons[bId].statStages[i] = DEFAULT_STAT_STAGE;
+                effect = ITEM_STATS_CHANGE;
+              }
+            }
+            if (effect !== ITEM_NO_EFFECT) {
+              gBattleScripting.battler = bId;
+              setPotentialItemEffectBattler(bId);
+              setActiveBattler(bId);
+              setBattlerAttacker(bId);
+              _lastWantedScriptLabel = 'BattleScript_WhiteHerbRet';
+            }
+            break;
+        }
+        if (effect !== ITEM_NO_EFFECT) {
+          gBattleScripting.battler = bId;
+          break;
+        }
+      }
+      void gHitMarker; void setHitMarker;
       break;
+    }
 
     default:
       break;
