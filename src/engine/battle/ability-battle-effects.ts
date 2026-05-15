@@ -927,4 +927,8 @@ export function consumeAbilityWantedScript(): string | null {
 // Expose AbilityBattleEffects via globalThis pour permettre damage-calc.ts et
 // autres modules d'éviter circular import. Set au module-load.
 (globalThis as { __abilityBattleEffectsCheck?: typeof AbilityBattleEffects }).__abilityBattleEffectsCheck = AbilityBattleEffects;
+// Expose Flash Fire flags pour damage-calc.ts boost ÷ 1.5 sur Fire move post-trigger.
+(globalThis as { __flashFireFlags?: number[] }).__flashFireFlags = _flashFireFlags;
+// Expose RESOURCE_FLAG_FLASH_FIRE constant pour read côté caller.
+(globalThis as { __RESOURCE_FLAG_FLASH_FIRE?: number }).__RESOURCE_FLAG_FLASH_FIRE = RESOURCE_FLAG_FLASH_FIRE;
 

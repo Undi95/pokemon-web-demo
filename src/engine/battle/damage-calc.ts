@@ -445,7 +445,15 @@ export function CalculateBaseDamage(
       }
     }
 
-    // Flash Fire boost — TODO porter gBattleResources flags.
+    // 1:1 décomp pokemon.c:3367-3369 : Flash Fire triggered → ×1.5 sur Fire move.
+    // Lazy lookup via globalThis (= éviter circular dep avec ability-battle-effects).
+    const flashFireFlags = (globalThis as { __flashFireFlags?: number[] }).__flashFireFlags;
+    const flashFireBit = (globalThis as { __RESOURCE_FLAG_FLASH_FIRE?: number }).__RESOURCE_FLAG_FLASH_FIRE ?? 0;
+    if (flashFireFlags && flashFireBit
+        && (flashFireFlags[battlerIdAtk] & flashFireBit)
+        && type === TYPE_FIRE) {
+      damage = Math.floor((15 * damage) / 10);
+    }
   }
 
   // Final + 2.
