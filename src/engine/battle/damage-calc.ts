@@ -60,6 +60,29 @@ import {
 // Valeurs vraies de constants.ts : TOWER 1<<8, DOME 1<<16, PALACE 1<<17,
 // ARENA 1<<18, FACTORY 1<<19, PIKE 1<<20, PYRAMID 1<<21.
 const BATTLE_TYPE_FRONTIER_LOCAL = (1 << 8) | (1 << 16) | (1 << 17) | (1 << 18) | (1 << 19) | (1 << 20) | (1 << 21);
+
+// 1:1 décomp `sHoldEffectToType[][2]` (pokemon.c:1920-1939). 17 entries.
+// [HOLD_EFFECT_<TYPE>_POWER, TYPE_<TYPE>] — pairs pour type-bonus hold items
+// comme Charcoal (Fire +10%) / Mystic Water (Water +10%) / Sharp Beak (Flying +10%) / etc.
+const _sHoldEffectToType: ReadonlyArray<readonly [number, number]> = [
+  [31, 6],  // BUG_POWER → TYPE_BUG
+  [42, 8],  // STEEL_POWER → TYPE_STEEL
+  [46, 4],  // GROUND_POWER → TYPE_GROUND
+  [47, 5],  // ROCK_POWER → TYPE_ROCK
+  [48, 12], // GRASS_POWER → TYPE_GRASS
+  [49, 17], // DARK_POWER → TYPE_DARK
+  [50, 1],  // FIGHTING_POWER → TYPE_FIGHTING
+  [51, 13], // ELECTRIC_POWER → TYPE_ELECTRIC
+  [52, 11], // WATER_POWER → TYPE_WATER
+  [53, 2],  // FLYING_POWER → TYPE_FLYING
+  [54, 3],  // POISON_POWER → TYPE_POISON
+  [55, 15], // ICE_POWER → TYPE_ICE
+  [56, 7],  // GHOST_POWER → TYPE_GHOST
+  [57, 14], // PSYCHIC_POWER → TYPE_PSYCHIC
+  [58, 10], // FIRE_POWER → TYPE_FIRE
+  [59, 16], // DRAGON_POWER → TYPE_DRAGON
+  [60, 0],  // NORMAL_POWER → TYPE_NORMAL
+];
 import type { BattleMon } from './script-interpreter';
 import {
   TYPE_MYSTERY,
@@ -245,8 +268,21 @@ export function CalculateBaseDamage(
   if (shouldGetStatBadgeBoost(0x86D /* FLAG_BADGE07_GET */, battlerIdDef))
     spDefense = Math.floor((110 * spDefense) / 100);
 
-  // Type-bonus hold items (sHoldEffectToType iterate). TODO porter table.
-  void attackerHoldEffect;
+  // 1:1 décomp pokemon.c:3171-3183 — sHoldEffectToType table iterate.
+  // 17 entries : [HOLD_EFFECT_<TYPE>_POWER, TYPE_<TYPE>]. Si match attacker
+  // holdEffect + move type → multiplier `(param + 100) / 100` sur attack
+  // (si physical) ou spAttack (si special).
+  const isPhysical = type < /* TYPE_MYSTERY */ 9;
+  for (const [eff, t] of _sHoldEffectToType) {
+    if (attackerHoldEffect === eff && type === t) {
+      if (isPhysical) {
+        attack = Math.floor((attack * (attackerHoldEffectParam + 100)) / 100);
+      } else {
+        spAttack = Math.floor((spAttack * (attackerHoldEffectParam + 100)) / 100);
+      }
+      break;
+    }
+  }
   void defenderHoldEffect;
 
   // 1:1 décomp pokemon.c:3185-3201 hold-item boosts.
