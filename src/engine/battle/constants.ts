@@ -488,3 +488,26 @@ export function HITMARKER_FAINTED2(battler: number): number { return (1 << 28) <
 // ─── F_DYNAMIC_TYPE_* (battle.h:455-456) — 1:1 décomp ───────────────────────
 export const F_DYNAMIC_TYPE_IGNORE_PHYSICALITY = 1 << 6;
 export const F_DYNAMIC_TYPE_SET                = 1 << 7;
+
+// ─── STATUS3 helpers ────────────────────────────────────────────────────────
+/** 1:1 décomp `STATUS3_ALWAYS_HITS_TURN(num)` (constants/battle.h:161). */
+export function STATUS3_ALWAYS_HITS_TURN(num: number): number {
+  return (num << 3) & STATUS3_ALWAYS_HITS;
+}
+
+// ─── STATUS3_LEECHSEED (battle.h:153) — 1:1 décomp ─────────────────────────
+export const STATUS3_LEECHSEED_BIT = 1 << 2;  // alias clarté
+
+// ─── B_MSG_* N9 status strings (battle_string_ids.h:420-501) ───────────────
+export const B_MSG_LEECH_SEED_SET       = 0;
+export const B_MSG_LEECH_SEED_MISS      = 1;
+export const B_MSG_LEECH_SEED_FAIL      = 2;
+export const B_MSG_LEECH_SEED_DRAIN     = 3;
+export const B_MSG_LEECH_SEED_OOZE      = 4;
+export const B_MSG_GETTING_PUMPED       = 0;
+export const B_MSG_FOCUS_ENERGY_FAILED  = 1;
+
+/** 1:1 décomp `IS_BATTLER_OF_TYPE(battler, type)` (battle.h:471). */
+export function IS_BATTLER_OF_TYPE(t1: number, t2: number, type: number): boolean {
+  return t1 === type || t2 === type;
+}

@@ -440,6 +440,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-8').then(({ installNiveau8Handlers }) => {
     installNiveau8Handlers(_commands);
   });
+  // Session 134 — Niveau 9 (status-set opcodes).
+  void import('./cmd-niveau-9').then(({ installNiveau9Handlers }) => {
+    installNiveau9Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
