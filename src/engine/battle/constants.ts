@@ -389,6 +389,35 @@ export const YESNOBOX_Y_END   = 13;
 // ─── B_COMM_TO_CONTROLLER (battle_controllers.h:115, enum BattleBufferCommands) ──
 export const B_COMM_TO_CONTROLLER = 0;
 
+// ─── STRINGID_* (constants/battle_string_ids.h) — 1:1 décomp — subset N5 ───
+export const STRINGID_USEDMOVE             = 4;
+export const STRINGID_ATTACKMISSED         = 23;
+export const STRINGID_PKMNPROTECTEDITSELF  = 24;
+export const STRINGID_AVOIDEDDAMAGE        = 26;
+export const STRINGID_ITDOESNTAFFECT       = 27;
+export const STRINGID_PKMNENDUREDHIT       = 153;
+export const STRINGID_CRITICALHIT          = 217;
+export const STRINGID_ONEHITKO             = 218;
+export const STRINGID_NOTVERYEFFECTIVE     = 221;
+export const STRINGID_SUPEREFFECTIVE       = 222;
+export const STRINGID_BUTITFAILED          = 229;
+export const STRINGID_PKMNMAKESGROUNDMISS  = 332;
+export const STRINGID_PKMNAVOIDEDATTACK    = 345;
+
+// ─── SE_* battle (constants/songs.h:18-20) — 1:1 décomp ─────────────────────
+export const SE_NOT_EFFECTIVE      = 12;
+export const SE_EFFECTIVE          = 13;
+export const SE_SUPER_EFFECTIVE    = 14;
+
+// ─── REQUEST_* (battle_controllers.h:5-55 enum) — 1:1 décomp subset ────────
+// L'enum a 41 entrées avant STATUS_BATTLE :
+// 0:ALL, 1:SPECIES, 2:HELDITEM, 3:MOVES_PP, 4..7:MOVE1..4, 8:PP_DATA,
+// 9..12:PPMOVE1..4, 13..16:UNUSED, 17:OTID, 18:EXP, 19..24:HP/ATK/DEF/SPEED/
+// SPATK/SPDEF_EV, 25:FRIENDSHIP, 26:POKERUS, 27:MET_LOCATION, 28:MET_LEVEL,
+// 29:MET_GAME, 30:POKEBALL, 31:ALL_IVS, 32..37:HP/ATK/DEF/SPEED/SPATK/SPDEF_IV,
+// 38:PERSONALITY, 39:CHECKSUM, 40:STATUS_BATTLE.
+export const REQUEST_STATUS_BATTLE = 40;
+
 // ─── B_MSG_* miss messages (battle_string_ids.h:409-413) — 1:1 décomp ───────
 export const B_MSG_MISSED        = 0;
 export const B_MSG_PROTECTED     = 1;

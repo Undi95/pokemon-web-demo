@@ -424,6 +424,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-4').then(({ installNiveau4Handlers }) => {
     installNiveau4Handlers(_commands);
   });
+  // Session 134 — Niveau 5 (result + messages + faint).
+  void import('./cmd-niveau-5').then(({ installNiveau5Handlers }) => {
+    installNiveau5Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
