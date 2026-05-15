@@ -668,7 +668,19 @@ export const MOVE_PURSUIT = 228;
 
 // ─── B_ACTION_* (battle.h:27-38) — 1:1 décomp ──────────────────────────────
 export const B_ACTION_USE_MOVE        = 0;
+export const B_ACTION_USE_ITEM        = 1;
+export const B_ACTION_SWITCH          = 2;
+export const B_ACTION_RUN             = 3;
+export const B_ACTION_SAFARI_WATCH_CAREFULLY = 4;
+export const B_ACTION_SAFARI_BALL     = 5;
+export const B_ACTION_SAFARI_POKEBLOCK = 6;
+export const B_ACTION_SAFARI_GO_NEAR  = 7;
+export const B_ACTION_SAFARI_RUN      = 8;
+export const B_ACTION_WALLY_THROW     = 9;
+export const B_ACTION_EXEC_SCRIPT     = 10;
 export const B_ACTION_TRY_FINISH      = 11;
+export const B_ACTION_FINISHED        = 12;
+export const B_ACTION_NOTHING_FAINTED = 13;
 export const B_ACTION_CANCEL_PARTNER  = 12;
 
 /** 1:1 décomp `BATTLE_PARTNER(position)` (constants/battle.h). XOR 2 swap. */
