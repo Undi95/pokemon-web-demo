@@ -80,9 +80,42 @@ const PRIMARY_STATUS_MOVE_EFFECT = MOVE_EFFECT_TOXIC;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** 1:1 stub `PressurePPLoseOnUsingImprison(battler)` (battle_util.c). Pressure
- *  ability triggers extra PP loss when target uses these moves. MVP no-op. */
-function _pressurePPLoseOnUsingImprison(_battler: number): void {}
+/** 1:1 décomp `PressurePPLoseOnUsingImprison(attacker)` (battle_util.c:767-797).
+ *  Si un opponent a Pressure : Imprison utilise -1 PP supplémentaire.
+ *
+ *  Lazy lookup via globalThis pour éviter circular import avec state.ts. */
+function _pressurePPLoseOnUsingImprison(attacker: number): void {
+  // ABILITY_PRESSURE = 46, MOVE_IMPRISON = 286 (= auto-data).
+  const ABILITY_PRESSURE_LOCAL = 46;
+  const MOVE_IMPRISON_LOCAL = 286;
+  const MAX_MON_MOVES_LOCAL = 4;
+
+  const stateMod = (globalThis as { __battleState?: { gBattlersCount?: number; gBattleMons?: { ability: number; moves: number[]; pp: number[] }[] } }).__battleState;
+  const battlersCount = stateMod?.gBattlersCount ?? 2;
+  const battleMons = stateMod?.gBattleMons;
+  if (!battleMons) return;
+
+  const atkSide = attacker & 1;
+  let imprisonPos = MAX_MON_MOVES_LOCAL;
+
+  for (let i = 0; i < battlersCount; i++) {
+    if (atkSide !== (i & 1) && battleMons[i].ability === ABILITY_PRESSURE_LOCAL) {
+      let j: number;
+      for (j = 0; j < MAX_MON_MOVES_LOCAL; j++) {
+        if (battleMons[attacker].moves[j] === MOVE_IMPRISON_LOCAL) break;
+      }
+      if (j !== MAX_MON_MOVES_LOCAL) {
+        imprisonPos = j;
+        if (battleMons[attacker].pp[j] !== 0) {
+          battleMons[attacker].pp[j]--;
+        }
+      }
+    }
+  }
+  // STUB : MOVE_IS_PERMANENT + BtlController_EmitSetMonData REQUEST_PPMOVE_X
+  // pour persist au save block — TODO porter quand UI controller wired.
+  void imprisonPos;
+}
 
 /** 1:1 décomp `CalculateBaseDamage` — wrapped via runDamagecalc. */
 function _calculateBaseDamage(sideStatus: number, power: number, type: number): number {
