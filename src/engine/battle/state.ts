@@ -733,4 +733,6 @@ export function resetBattleState(): void {
   get gBattleTypeFlags() { return gBattleTypeFlags; },
   get gAbsentBattlerFlags() { return gAbsentBattlerFlags; },
   get gBattlersCount() { return gBattlersCount; },
+  // Pour _GetImprisonedMovesCount lookup (move-limitations.ts).
+  gStatuses3,
 };

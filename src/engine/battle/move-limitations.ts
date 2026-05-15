@@ -30,11 +30,34 @@ import { gBitTable } from './battle-controllers';
 import { GetItemHoldEffect } from './data/item-hold-effects';
 import { getBattleMove } from './data/battle-moves';
 
-/** 1:1 stub `GetImprisonedMovesCount(battler, move)` (battle_util.c).
- *  Compte combien d'opponents ont utilisé Imprison sur ce move. STUB MVP : 0.
- *  TODO porter si Imprison move logic est wired. */
-function _GetImprisonedMovesCount(_battler: number, _move: number): number {
-  return 0;
+/** 1:1 décomp `GetImprisonedMovesCount(battlerId, move)` (battle_util.c:1129-1151).
+ *  Compte combien de battlers (= opponents) ont Imprison + ont ce move dans
+ *  leur moveset. Si > 0 le caller doit bloquer l'usage du move. */
+function _GetImprisonedMovesCount(battlerId: number, move: number): number {
+  let imprisonedMoves = 0;
+  // STATUS3_IMPRISONED_OTHERS = 1 << 13.
+  const STATUS3_IMPRISONED_OTHERS_LOCAL = 1 << 13;
+  // Lazy lookup gBattlersCount + gStatuses3 via globalThis.
+  const stateMod = (globalThis as { __battleState?: { gBattlersCount?: number; gStatuses3?: number[]; gBattleMons?: { moves: number[] }[] } }).__battleState;
+  const battlersCount = stateMod?.gBattlersCount ?? 2;
+  const statuses3 = stateMod?.gStatuses3;
+  const battleMons = stateMod?.gBattleMons;
+  if (!statuses3 || !battleMons) return 0;
+
+  // BATTLE_OPPOSITE side check = (id ^ 1).
+  const battlerSide = battlerId & 1;
+  for (let i = 0; i < battlersCount; i++) {
+    if (battlerSide !== (i & 1)
+        && (statuses3[i] & STATUS3_IMPRISONED_OTHERS_LOCAL)) {
+      for (let j = 0; j < MAX_MON_MOVES; j++) {
+        if (move === battleMons[i].moves[j]) {
+          imprisonedMoves++;
+          break;
+        }
+      }
+    }
+  }
+  return imprisonedMoves;
 }
 
 /** 1:1 décomp `CheckMoveLimitations(battlerId, unusableMoves, check)`. */
