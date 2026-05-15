@@ -77,9 +77,10 @@ function _tryRunFromBattle(_battler: number): boolean {
   return false;
 }
 
-/** 1:1 stub `RecordAbilityBattle(battler, ability)` (battle_util.c). MVP no-op. */
-function _recordAbilityBattle(_battler: number, _ability: number): void {
-  // AI tracking — pas porté.
+// 1:1 décomp `RecordAbilityBattle` — wired via util.ts.
+import { RecordAbilityBattle as _recordAbilityBattleFullN20 } from './util';
+function _recordAbilityBattle(battler: number, ability: number): void {
+  _recordAbilityBattleFullN20(battler, ability);
 }
 
 // ─── 0x72 jumpifplayerran ─────────────────────────────────────────────────

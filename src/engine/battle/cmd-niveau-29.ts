@@ -56,7 +56,9 @@ import {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function _recordAbilityBattle(_b: number, _a: number): void {}
+// 1:1 décomp `RecordAbilityBattle` — wired via util.ts.
+import { RecordAbilityBattle as _recordAbilityBattleFullN29 } from './util';
+function _recordAbilityBattle(b: number, a: number): void { _recordAbilityBattleFullN29(b, a); }
 
 /** 1:1 stub `GetMoveTarget(move, override)` — pour MVP retourne gBattlerTarget. */
 function _getMoveTarget(_move: number, _override: number): number {

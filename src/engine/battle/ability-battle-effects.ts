@@ -195,8 +195,11 @@ function _getMoveType(move: number): number {
   return getBattleMove(move).type;
 }
 
-/** 1:1 stub `RecordAbilityBattle(battler, ability)`. */
-function _recordAbilityBattle(_battler: number, _ability: number): void {}
+// 1:1 décomp `RecordAbilityBattle` — wired via util.ts (= AI tracking).
+import { RecordAbilityBattle as _recordAbilityBattleFullABE } from './util';
+function _recordAbilityBattle(battler: number, ability: number): void {
+  _recordAbilityBattleFullABE(battler, ability);
+}
 
 /** 1:1 stub `WEATHER_HAS_EFFECT` macro (= !CloudNine && !AirLock active).
  *  Pour MVP : true. TODO check Cloud Nine / Air Lock présence. */

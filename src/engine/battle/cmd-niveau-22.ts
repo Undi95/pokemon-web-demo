@@ -54,14 +54,16 @@ import {
 } from './data/type-effectiveness';
 import { getBattleMove } from './data/battle-moves';
 import { runDamagecalc } from './damage-calc';
+import { GetItemHoldEffect as _GetItemHoldEffectN22, GetItemHoldEffectParam as _GetItemHoldEffectParamN22 } from './data/item-hold-effects';
+import { RecordAbilityBattle as _recordAbilityBattleFullN22, RecordItemEffectBattle as _recordItemEffectBattleFullN22 } from './util';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** 1:1 stub `GetItemHoldEffect` (= cf N21). */
-function _getItemHoldEffect(_item: number): number { return 0; }
-function _getItemHoldEffectParam(_item: number): number { return 0; }
-function _recordItemEffectBattle(_b: number, _h: number): void {}
-function _recordAbilityBattle(_b: number, _a: number): void {}
+// 1:1 décomp helpers — wired vers vrais ports.
+function _getItemHoldEffect(item: number): number { return _GetItemHoldEffectN22(item); }
+function _getItemHoldEffectParam(item: number): number { return _GetItemHoldEffectParamN22(item); }
+function _recordItemEffectBattle(b: number, h: number): void { _recordItemEffectBattleFullN22(b, h); }
+function _recordAbilityBattle(b: number, a: number): void { _recordAbilityBattleFullN22(b, a); }
 
 /** 1:1 décomp `ApplyRandomDmgMultiplier()` (battle_util.c). Multiplie damage
  *  par random 85-100%. */

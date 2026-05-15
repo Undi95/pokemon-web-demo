@@ -133,9 +133,11 @@ function _resolveMoveEffectBS(effect: number): number {
 
 // ─── 1:1 décomp helper stubs ────────────────────────────────────────────────
 
-/** 1:1 stub `RecordAbilityBattle(battler, ability)` (battle_util.c).
- *  AI tracking — no-op MVP. */
-function _recordAbilityBattle(_battler: number, _ability: number): void {}
+// 1:1 décomp `RecordAbilityBattle` — wired via util.ts.
+import { RecordAbilityBattle as _recordAbilityBattleFullSME } from './util';
+function _recordAbilityBattle(battler: number, ability: number): void {
+  _recordAbilityBattleFullSME(battler, ability);
+}
 
 /** 1:1 stub `GetBattlerTurnOrderNum(battler)` (battle_util.c). Renvoie
  *  l'index dans gBattlerByTurnOrder[]. Pour MVP : retourne battler. */

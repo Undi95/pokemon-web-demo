@@ -74,10 +74,17 @@ function _getItemHoldEffectParam(_item: number): number {
 }
 
 /** 1:1 stub `RecordItemEffectBattle(battler, holdEffect)`. AI tracking — no-op. */
-function _recordItemEffectBattle(_battler: number, _holdEffect: number): void {}
-
-/** 1:1 stub `RecordAbilityBattle(battler, ability)`. AI tracking — no-op. */
-function _recordAbilityBattle(_battler: number, _ability: number): void {}
+// 1:1 décomp `RecordItemEffectBattle` + `RecordAbilityBattle` — wired via util.ts.
+import {
+  RecordAbilityBattle as _recordAbilityBattleFullN21,
+  RecordItemEffectBattle as _recordItemEffectBattleFullN21,
+} from './util';
+function _recordItemEffectBattle(battler: number, holdEffect: number): void {
+  _recordItemEffectBattleFullN21(battler, holdEffect);
+}
+function _recordAbilityBattle(battler: number, ability: number): void {
+  _recordAbilityBattleFullN21(battler, ability);
+}
 
 // ─── 0x6A removeitem ──────────────────────────────────────────────────────
 
