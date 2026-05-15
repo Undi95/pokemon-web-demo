@@ -65,6 +65,9 @@ import {
 } from './battle-controllers';
 import { getBattlerForBattleScript as _utilGetBattler } from './util';
 import {
+  AbilityBattleEffects, ABILITYEFFECT_MOVES_BLOCK, consumeAbilityWantedScript,
+} from './ability-battle-effects';
+import {
   // Hitmarker bits
   HITMARKER_NO_ATTACKSTRING,
   HITMARKER_NO_PPDEDUCT,
@@ -647,7 +650,19 @@ function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
     return false;
   }
 
-  // TODO porter : AtkCanceler_UnableToUseMove + AbilityBattleEffects MOVES_BLOCK.
+  // TODO porter AtkCanceler_UnableToUseMove (battle_util.c) — status check.
+
+  // 1:1 décomp : AbilityBattleEffects(ABILITYEFFECT_MOVES_BLOCK, target, 0, 0, 0).
+  // → trigger Soundproof block sur target qui Soundproof + move dans sSoundMovesTable.
+  const movesBlockEff = AbilityBattleEffects(ABILITYEFFECT_MOVES_BLOCK, gBattlerTarget, 0, 0, 0);
+  if (movesBlockEff !== 0) {
+    const label = consumeAbilityWantedScript();
+    if (label) {
+      const off = getBattleScriptOffset(label);
+      if (off >= 0) ctx.scriptPtr = off;
+    }
+    return false;
+  }
 
   // 1:1 décomp : PP check (= no PP + not STRUGGLE + not allowed + not multiturn).
   const attackerMon = gBattleMons[gBattlerAttacker];
