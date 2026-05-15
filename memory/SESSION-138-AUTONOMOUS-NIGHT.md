@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-15 (autonomous /loop, user "je m'endors pour de vrai")
 **Branche** : `upd2`
-**Commits** : 34+ commits / ~4200 lignes 1:1 décomp ajoutées cette session (+ 8 audit bugs critiques fixés)
+**Commits** : 48+ commits / ~4600 lignes 1:1 décomp ajoutées cette session (+ 9 audit bugs critiques fixés)
 
 ---
 
@@ -161,6 +161,44 @@ gLeveledUpInBattle                   // Bitmask mons lvl-up ce combat
    au lieu de [0]=MULTIUSE_STATE.
 8. **FLAG_BADGE0X_GET hardcoded `0x844/0x848/0x84A` → vraies `0x867/0x86B/0x86D`** (commit `d7172500`).
    Ancien SYSTEM_FLAGS=0x83D, vrai 0x860 dans décomp Em actuelle.
+9. **cmd-niveau-30 EFFECT_BATON_PASS hardcoded `95` → vraie valeur `127`** (commit `89abcd02`).
+   Aurait silencieusement cassé Baton Pass stat transfer (= statStages + status2
+   NE seraient pas préservés sur switch-in).
+
+## Iterations post-récap initial (= sub-session wirage stubs)
+
+Iterations 6-18 (= post commit `e735d094` notes update) — wirage continu de
+stubs vers vrais ports :
+
+ - **CountAliveMonsInBattle** (b51e081f)
+ - **weatherHasEffect WEATHER_HAS_EFFECT macro** (a587f2a6)
+ - **GetGenderFromSpeciesAndPersonality + GetDefaultMoveTarget** (e86b74d8)
+ - **damage-calc hold-item boosts + field sports** (33439049)
+ - **state getters expose pour cross-module** (899b498b)
+ - **Flash Fire damage boost ×1.5** (890752ca)
+ - **JumpIfMoveAffectedByProtect + AccuracyCalcHelper** (974d96a5)
+ - **Helping Hand damage ×1.5** (e9073f93)
+ - **Cmd_adjustnormaldamage Focus Band + Endured + gLastUsedItem** (b74640c3)
+ - **wire GetItemHoldEffect/Param dans cmd-niveau-1** (c41b1dfa)
+ - **notFirstStrike flag set dans Cmd_ppreduce** (2d18dd9f)
+ - **Cmd_datahpupdate Substitute path + shellBellDmg** (d306e6e9)
+ - **cmd-niveau-2 wire gAbsentBattlerFlags réel** (01cab1b4)
+ - **cmd-niveau-13 wire gAbsentBattlerFlags réel** (a9ea9122)
+ - **audit fix MUS_VICTORY_TRAINER** (d95930ec)
+ - **wire 4 _recordAbilityBattle stubs vers util.ts** (587afb92)
+ - **Cmd_resetsentmonsvalue 1:1 décomp** (db244343)
+ - **wire 2 cmd-niveau RecordAbility** (4039ac6d, 6194785d)
+ - **audit fix MULTIUSE_STATE 7→0** (a978c58e)
+ - **audit fix FLAG_BADGE0X SYSTEM_FLAGS** (d7172500)
+ - **audit fix cmd-niveau-30 EFFECT_BATON_PASS** (89abcd02)
+ - **Cmd_switchineffects _updateSentPokesToOpponentValue** (44194f1e)
+ - **wire _getMoveTarget vers cmd-niveau-34 full** (3d8ab7fd)
+ - **disobedience wire _FlagGet vers script-vars** (d9aabc1b)
+ - **disobedience _IsBattlerModernFatefulEncounter** (4707997d)
+ - **UproarWakeUpCheck full 1:1 port** (dbf7928f)
+ - **AccuracyCalcHelper WEATHER_HAS_EFFECT wire** (531faaf0)
+ - **sHoldEffectToType table 17 entries** (8b443b1b)
+ - **GetImprisonedMovesCount full 1:1 port** (8df7ad13)
 
 ---
 
