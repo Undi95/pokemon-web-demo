@@ -1,0 +1,700 @@
+/**
+ * battle/set-move-effect.ts — 1:1 décomp `SetMoveEffect(primary, certain)`
+ * (battle_script_commands.c:2218..2780, ~670 lignes).
+ *
+ * Cette fonction est le coeur des secondary effects des moves : applique
+ * status (poison/burn/etc.), stat changes, flinch, recoil, item steal,
+ * knockoff, etc. depuis `gBattleCommunication[MOVE_EFFECT_BYTE]`.
+ *
+ * Sources de vérité (1:1) :
+ *   - `D:/Projet 1/decomps/pokeemeraude/src/battle_script_commands.c:608`
+ *     sStatusFlagsForMoveEffects[] table
+ *   - `battle_script_commands.c:627` sMoveEffectBS_Ptrs[] table
+ *   - `battle_script_commands.c:2218` `static void SetMoveEffect(...)`
+ *   - `include/constants/battle.h:244..` MOVE_EFFECT_*
+ *
+ * Wirage : 0x15 seteffectwithchance, 0x16 seteffectprimary, 0x17 seteffectsecondary
+ * (cf. cmd-niveau-1.ts et cmd-niveau-31.ts).
+ */
+
+import type { BattleScriptContext } from './script-interpreter';
+import { getBattleScriptOffset, Random } from './script-interpreter';
+import {
+  gBattleMons, gBattlerAttacker, gBattlerTarget,
+  gEffectBattler, setEffectBattler,
+  gActiveBattler, setActiveBattler,
+  gBattleScripting,
+  gBattleCommunication,
+  gHitMarker, setHitMarker,
+  gSideStatuses,
+  gMoveResultFlags, setMoveResultFlags,
+  gBattlersCount,
+  gCurrentMove,
+  gBattleMoveDamage, setBattleMoveDamage,
+  gHpDealt,
+  gPaydayMoney, setPaydayMoney,
+  gLastUsedAbility, setLastUsedAbility,
+  gBattleTypeFlags,
+  gWishFutureKnock,
+  gBattleWeather,
+  gBattlerPartyIndexes,
+  gDisableStructs,
+  gLockedMoves,
+  gProtectStructs,
+  gWrappedBy, gWrappedMove,
+} from './state';
+import {
+  STATUS1_SLEEP, STATUS1_POISON, STATUS1_BURN, STATUS1_FREEZE,
+  STATUS1_PARALYSIS, STATUS1_TOXIC_POISON, STATUS1_ANY,
+  STATUS2_SUBSTITUTE, STATUS2_CONFUSION,
+  STATUS2_RECHARGE, STATUS2_RAGE,
+  STATUS2_MULTIPLETURNS, STATUS2_UPROAR, STATUS2_WRAPPED,
+  STATUS2_ESCAPE_PREVENTION, STATUS2_NIGHTMARE,
+  STATUS2_LOCK_CONFUSE, STATUS2_FLINCHED,
+  SIDE_STATUS_SAFEGUARD,
+  HITMARKER_STATUS_ABILITY_EFFECT, HITMARKER_SYNCHRONIZE_EFFECT,
+  ABILITY_SHIELD_DUST, ABILITY_IMMUNITY, ABILITY_VITAL_SPIRIT, ABILITY_INSOMNIA,
+  ABILITY_WATER_VEIL, ABILITY_LIMBER, ABILITY_MAGMA_ARMOR,
+  ABILITY_OWN_TEMPO, ABILITY_INNER_FOCUS, ABILITY_STICKY_HOLD,
+  ABILITY_SOUNDPROOF,
+  MOVE_EFFECT_AFFECTS_USER, MOVE_EFFECT_CERTAIN,
+  SET_STAT_BUFF_VALUE, STAT_BUFF_NEGATIVE,
+  STATUS1_SLEEP_TURN as _STATUS1_SLEEP_TURN_FN,
+  IS_BATTLER_OF_TYPE,
+  TYPE_POISON, TYPE_STEEL, TYPE_FIRE, TYPE_ICE,
+  GET_BATTLER_SIDE, B_SIDE_PLAYER, B_SIDE_OPPONENT,
+  B_WEATHER_SUN,
+  BATTLE_TYPE_TRAINER_HILL, BATTLE_TYPE_EREADER_TRAINER,
+  BATTLE_TYPE_FRONTIER, BATTLE_TYPE_LINK, BATTLE_TYPE_RECORDED_LINK,
+  BATTLE_TYPE_SECRET_BASE,
+} from './constants';
+import { CancelMultiTurnMoves } from './util';
+import { ChangeStatBuffs } from './stat-stages';
+
+// ─── 1:1 décomp sStatusFlagsForMoveEffects[] (battle_script_commands.c:608) ─
+
+/** 1:1 décomp `sStatusFlagsForMoveEffects[NUM_MOVE_EFFECTS]`. Maps
+ *  MOVE_EFFECT_* (0..53) → status1/status2 flag. */
+const sStatusFlagsForMoveEffects: number[] = [];
+sStatusFlagsForMoveEffects[1 /* MOVE_EFFECT_SLEEP */] = STATUS1_SLEEP;
+sStatusFlagsForMoveEffects[2 /* MOVE_EFFECT_POISON */] = STATUS1_POISON;
+sStatusFlagsForMoveEffects[3 /* MOVE_EFFECT_BURN */] = STATUS1_BURN;
+sStatusFlagsForMoveEffects[4 /* MOVE_EFFECT_FREEZE */] = STATUS1_FREEZE;
+sStatusFlagsForMoveEffects[5 /* MOVE_EFFECT_PARALYSIS */] = STATUS1_PARALYSIS;
+sStatusFlagsForMoveEffects[6 /* MOVE_EFFECT_TOXIC */] = STATUS1_TOXIC_POISON;
+sStatusFlagsForMoveEffects[7 /* MOVE_EFFECT_CONFUSION */] = STATUS2_CONFUSION;
+sStatusFlagsForMoveEffects[8 /* MOVE_EFFECT_FLINCH */] = STATUS2_FLINCHED;
+sStatusFlagsForMoveEffects[10 /* MOVE_EFFECT_UPROAR */] = STATUS2_UPROAR;
+sStatusFlagsForMoveEffects[12 /* MOVE_EFFECT_CHARGING */] = STATUS2_MULTIPLETURNS;
+sStatusFlagsForMoveEffects[13 /* MOVE_EFFECT_WRAP */] = STATUS2_WRAPPED;
+sStatusFlagsForMoveEffects[29 /* MOVE_EFFECT_RECHARGE */] = STATUS2_RECHARGE;
+sStatusFlagsForMoveEffects[32 /* MOVE_EFFECT_PREVENT_ESCAPE */] = STATUS2_ESCAPE_PREVENTION;
+sStatusFlagsForMoveEffects[33 /* MOVE_EFFECT_NIGHTMARE */] = STATUS2_NIGHTMARE;
+sStatusFlagsForMoveEffects[53 /* MOVE_EFFECT_THRASH */] = STATUS2_LOCK_CONFUSE;
+
+// ─── 1:1 décomp sMoveEffectBS_Ptrs[] (battle_script_commands.c:627) ────────
+
+/** 1:1 décomp `sMoveEffectBS_Ptrs[]`. Maps MOVE_EFFECT_* → label name de
+ *  BattleScript_MoveEffect*. */
+const sMoveEffectBS_Ptrs_labels: string[] = [];
+const _DEFAULT_LABEL = 'BattleScript_MoveEffectSleep';
+sMoveEffectBS_Ptrs_labels[0] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[1 /* MOVE_EFFECT_SLEEP */] = 'BattleScript_MoveEffectSleep';
+sMoveEffectBS_Ptrs_labels[2 /* MOVE_EFFECT_POISON */] = 'BattleScript_MoveEffectPoison';
+sMoveEffectBS_Ptrs_labels[3 /* MOVE_EFFECT_BURN */] = 'BattleScript_MoveEffectBurn';
+sMoveEffectBS_Ptrs_labels[4 /* MOVE_EFFECT_FREEZE */] = 'BattleScript_MoveEffectFreeze';
+sMoveEffectBS_Ptrs_labels[5 /* MOVE_EFFECT_PARALYSIS */] = 'BattleScript_MoveEffectParalysis';
+sMoveEffectBS_Ptrs_labels[6 /* MOVE_EFFECT_TOXIC */] = 'BattleScript_MoveEffectToxic';
+sMoveEffectBS_Ptrs_labels[7 /* MOVE_EFFECT_CONFUSION */] = 'BattleScript_MoveEffectConfusion';
+sMoveEffectBS_Ptrs_labels[8 /* MOVE_EFFECT_FLINCH */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[9 /* MOVE_EFFECT_TRI_ATTACK */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[10 /* MOVE_EFFECT_UPROAR */] = 'BattleScript_MoveEffectUproar';
+sMoveEffectBS_Ptrs_labels[11 /* MOVE_EFFECT_PAYDAY */] = 'BattleScript_MoveEffectPayDay';
+sMoveEffectBS_Ptrs_labels[12 /* MOVE_EFFECT_CHARGING */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[13 /* MOVE_EFFECT_WRAP */] = 'BattleScript_MoveEffectWrap';
+sMoveEffectBS_Ptrs_labels[14 /* MOVE_EFFECT_RECOIL_25 */] = 'BattleScript_MoveEffectRecoil';
+// Stat+1 / Stat-1 / Stat+2 / Stat-2 / others default to sleep (= no-op).
+for (let i = 15; i <= 28; i++) sMoveEffectBS_Ptrs_labels[i] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[29 /* MOVE_EFFECT_RECHARGE */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[30 /* MOVE_EFFECT_RAGE */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[31 /* MOVE_EFFECT_STEAL_ITEM */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[32 /* MOVE_EFFECT_PREVENT_ESCAPE */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[33 /* MOVE_EFFECT_NIGHTMARE */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[34 /* MOVE_EFFECT_ALL_STATS_UP */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[35 /* MOVE_EFFECT_RAPIDSPIN */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[36 /* MOVE_EFFECT_REMOVE_PARALYSIS */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[37 /* MOVE_EFFECT_ATK_DEF_DOWN */] = _DEFAULT_LABEL;
+sMoveEffectBS_Ptrs_labels[38 /* MOVE_EFFECT_RECOIL_33 */] = 'BattleScript_MoveEffectRecoil';
+
+function _resolveMoveEffectBS(effect: number): number {
+  const label = sMoveEffectBS_Ptrs_labels[effect] ?? _DEFAULT_LABEL;
+  return getBattleScriptOffset(label);
+}
+
+// ─── 1:1 décomp helper stubs ────────────────────────────────────────────────
+
+/** 1:1 stub `RecordAbilityBattle(battler, ability)` (battle_util.c).
+ *  AI tracking — no-op MVP. */
+function _recordAbilityBattle(_battler: number, _ability: number): void {}
+
+/** 1:1 stub `GetBattlerTurnOrderNum(battler)` (battle_util.c). Renvoie
+ *  l'index dans gBattlerByTurnOrder[]. Pour MVP : retourne battler. */
+function _getBattlerTurnOrderNum(battler: number): number {
+  return battler;
+}
+
+/** Décomp `gCurrentTurnActionNumber`. Pour MVP : 0. */
+const _gCurrentTurnActionNumber = 0;
+
+/** 1:1 décomp `WEATHER_HAS_EFFECT` macro — `(!CloudNine && !AirLock)`.
+ *  Pour MVP : true. */
+const _WEATHER_HAS_EFFECT = true;
+
+/** Décomp `BATTLE_TYPE_TRAINER_HILL` — utilisé pour `MOVE_EFFECT_STEAL_ITEM`
+ *  block. Notre const peut être 0 si on n'a pas le flag. */
+const _BATTLE_TYPE_TRAINER_HILL_FLAG = BATTLE_TYPE_TRAINER_HILL ?? 0;
+
+// ─── B_MSG_* constants utilisés par SetMoveEffect ─────────────────────────
+
+const B_MSG_ABILITY_PREVENTS_ABILITY_STATUS = 1;
+const B_MSG_ABILITY_PREVENTS_MOVE_STATUS = 0;
+const B_MSG_STATUS_HAD_NO_EFFECT = 2;
+const B_MSG_STATUSED = 0;
+const B_MSG_STATUSED_BY_ABILITY = 1;
+const MULTISTRING_CHOOSER_IDX = 5;
+const MOVE_EFFECT_BYTE_IDX = 3;
+
+// ─── Macros INCREMENT_RESET_RETURN / RESET_RETURN ─────────────────────────
+
+/** 1:1 décomp `INCREMENT_RESET_RETURN` macro :
+ *  gBattlescriptCurrInstr++; gBattleCommunication[MOVE_EFFECT_BYTE] = 0; return; */
+function _incrementResetReturn(ctx: BattleScriptContext): void {
+  ctx.scriptPtr++;
+  gBattleCommunication[MOVE_EFFECT_BYTE_IDX] = 0;
+}
+
+/** 1:1 décomp `RESET_RETURN` macro :
+ *  gBattleCommunication[MOVE_EFFECT_BYTE] = 0; return; */
+function _resetReturn(): void {
+  gBattleCommunication[MOVE_EFFECT_BYTE_IDX] = 0;
+}
+
+// ─── Trapping moves list (utilisé par MOVE_EFFECT_WRAP MULTISTRING) ───────
+
+/** 1:1 décomp `gTrappingMoves[]` (= moves qui wrap : BIND, WRAP, FIRE_SPIN,
+ *  CLAMP, WHIRLPOOL, SAND_TOMB). */
+const _gTrappingMoves: number[] = [
+  20  /* MOVE_BIND */,
+  35  /* MOVE_WRAP */,
+  83  /* MOVE_FIRE_SPIN */,
+  128 /* MOVE_CLAMP */,
+  250 /* MOVE_WHIRLPOOL */,
+  328 /* MOVE_SAND_TOMB */,
+];
+
+// ─── Main fn ────────────────────────────────────────────────────────────────
+
+/** 1:1 décomp `SetMoveEffect(bool primary, u8 certain)` (battle_script_commands.c:2218).
+ *  Applique le secondary effect d'un move : status, stat changes, recoil, etc.
+ *
+ *  `ctx` = script context (= notre équivalent gBattlescriptCurrInstr / push stack).
+ *  `primary` = TRUE si appelé via seteffectprimary (= status garanti, ignore
+ *              ability immunities pour la plupart).
+ *  `certain` = MOVE_EFFECT_CERTAIN bit (= effect garanti même contre certaines
+ *              abilities). */
+export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certain: number): void {
+  let statusChanged = false;
+  let affectsUser = 0;
+  let noSunCanFreeze = true;
+
+  if (gBattleCommunication[MOVE_EFFECT_BYTE_IDX] & MOVE_EFFECT_AFFECTS_USER) {
+    setEffectBattler(gBattlerAttacker);
+    gBattleCommunication[MOVE_EFFECT_BYTE_IDX] &= ~MOVE_EFFECT_AFFECTS_USER;
+    affectsUser = MOVE_EFFECT_AFFECTS_USER;
+    gBattleScripting.battler = gBattlerTarget;
+  } else {
+    setEffectBattler(gBattlerTarget);
+    gBattleScripting.battler = gBattlerAttacker;
+  }
+
+  // SHIELD_DUST early-return.
+  if (gBattleMons[gEffectBattler].ability === ABILITY_SHIELD_DUST
+      && !(gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
+      && !primary
+      && gBattleCommunication[MOVE_EFFECT_BYTE_IDX] <= 9) {
+    _incrementResetReturn(ctx);
+    return;
+  }
+
+  // SAFEGUARD early-return.
+  if ((gSideStatuses[GET_BATTLER_SIDE(gEffectBattler)] & SIDE_STATUS_SAFEGUARD)
+      && !(gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
+      && !primary
+      && gBattleCommunication[MOVE_EFFECT_BYTE_IDX] <= 7) {
+    _incrementResetReturn(ctx);
+    return;
+  }
+
+  // HP == 0 + not PAYDAY/STEAL → skip.
+  if (gBattleMons[gEffectBattler].hp === 0
+      && gBattleCommunication[MOVE_EFFECT_BYTE_IDX] !== 11 /* MOVE_EFFECT_PAYDAY */
+      && gBattleCommunication[MOVE_EFFECT_BYTE_IDX] !== 31 /* MOVE_EFFECT_STEAL_ITEM */) {
+    _incrementResetReturn(ctx);
+    return;
+  }
+
+  // SUBSTITUTE blocks non-self effects.
+  if ((gBattleMons[gEffectBattler].status2 & STATUS2_SUBSTITUTE)
+      && affectsUser !== MOVE_EFFECT_AFFECTS_USER) {
+    _incrementResetReturn(ctx);
+    return;
+  }
+
+  const PRIMARY_STATUS_MOVE_EFFECT_LOCAL = 6 /* MOVE_EFFECT_TOXIC */;
+
+  if (gBattleCommunication[MOVE_EFFECT_BYTE_IDX] <= PRIMARY_STATUS_MOVE_EFFECT_LOCAL) {
+    // ─── Primary status effects (Sleep, Poison, Burn, Freeze, Paralysis, Toxic) ─
+    const statusFlag = sStatusFlagsForMoveEffects[gBattleCommunication[MOVE_EFFECT_BYTE_IDX]];
+
+    if (statusFlag === STATUS1_SLEEP) {
+      // 1:1 décomp Sleep case.
+      if (gBattleMons[gEffectBattler].ability !== ABILITY_SOUNDPROOF) {
+        let i = 0;
+        for (; i < gBattlersCount && !(gBattleMons[i].status2 & STATUS2_UPROAR); i++) {}
+        setActiveBattler(i);
+      } else {
+        setActiveBattler(gBattlersCount);
+      }
+      if (gBattleMons[gEffectBattler].status1) {
+        // already statused → skip
+      } else if (gActiveBattler !== gBattlersCount) {
+        // uproar active → skip
+      } else if (gBattleMons[gEffectBattler].ability === ABILITY_VITAL_SPIRIT) {
+        // skip
+      } else if (gBattleMons[gEffectBattler].ability === ABILITY_INSOMNIA) {
+        // skip
+      } else {
+        CancelMultiTurnMoves(gEffectBattler);
+        statusChanged = true;
+      }
+    } else if (statusFlag === STATUS1_POISON) {
+      // 1:1 décomp Poison case.
+      if (gBattleMons[gEffectBattler].ability === ABILITY_IMMUNITY
+          && (primary || certain === MOVE_EFFECT_CERTAIN)) {
+        setLastUsedAbility(ABILITY_IMMUNITY);
+        _recordAbilityBattle(gEffectBattler, ABILITY_IMMUNITY);
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = getBattleScriptOffset('BattleScript_PSNPrevention');
+        if (off >= 0) ctx.scriptPtr = off;
+        if (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT) {
+          gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_ABILITY_PREVENTS_ABILITY_STATUS;
+          setHitMarker(gHitMarker & ~HITMARKER_STATUS_ABILITY_EFFECT);
+        } else {
+          gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_ABILITY_PREVENTS_MOVE_STATUS;
+        }
+        _resetReturn();
+        return;
+      }
+      if ((IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_POISON)
+            || IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_STEEL))
+          && (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
+          && (primary || certain === MOVE_EFFECT_CERTAIN)) {
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = getBattleScriptOffset('BattleScript_PSNPrevention');
+        if (off >= 0) ctx.scriptPtr = off;
+        gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_STATUS_HAD_NO_EFFECT;
+        _resetReturn();
+        return;
+      }
+      if (IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_POISON)) {
+        // skip
+      } else if (IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_STEEL)) {
+        // skip
+      } else if (gBattleMons[gEffectBattler].status1) {
+        // skip
+      } else if (gBattleMons[gEffectBattler].ability === ABILITY_IMMUNITY) {
+        // skip
+      } else {
+        statusChanged = true;
+      }
+    } else if (statusFlag === STATUS1_BURN) {
+      // 1:1 décomp Burn case.
+      if (gBattleMons[gEffectBattler].ability === ABILITY_WATER_VEIL
+          && (primary || certain === MOVE_EFFECT_CERTAIN)) {
+        setLastUsedAbility(ABILITY_WATER_VEIL);
+        _recordAbilityBattle(gEffectBattler, ABILITY_WATER_VEIL);
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = getBattleScriptOffset('BattleScript_BRNPrevention');
+        if (off >= 0) ctx.scriptPtr = off;
+        if (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT) {
+          gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_ABILITY_PREVENTS_ABILITY_STATUS;
+          setHitMarker(gHitMarker & ~HITMARKER_STATUS_ABILITY_EFFECT);
+        } else {
+          gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_ABILITY_PREVENTS_MOVE_STATUS;
+        }
+        _resetReturn();
+        return;
+      }
+      if (IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_FIRE)
+          && (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
+          && (primary || certain === MOVE_EFFECT_CERTAIN)) {
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = getBattleScriptOffset('BattleScript_BRNPrevention');
+        if (off >= 0) ctx.scriptPtr = off;
+        gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_STATUS_HAD_NO_EFFECT;
+        _resetReturn();
+        return;
+      }
+      if (IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_FIRE)) {
+        // skip
+      } else if (gBattleMons[gEffectBattler].ability === ABILITY_WATER_VEIL) {
+        // skip
+      } else if (gBattleMons[gEffectBattler].status1) {
+        // skip
+      } else {
+        statusChanged = true;
+      }
+    } else if (statusFlag === STATUS1_FREEZE) {
+      // 1:1 décomp Freeze case.
+      if (_WEATHER_HAS_EFFECT && (gBattleWeather & B_WEATHER_SUN)) {
+        noSunCanFreeze = false;
+      }
+      if (IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_ICE)) {
+        // skip
+      } else if (gBattleMons[gEffectBattler].status1) {
+        // skip
+      } else if (!noSunCanFreeze) {
+        // skip
+      } else if (gBattleMons[gEffectBattler].ability === ABILITY_MAGMA_ARMOR) {
+        // skip
+      } else {
+        CancelMultiTurnMoves(gEffectBattler);
+        statusChanged = true;
+      }
+    } else if (statusFlag === STATUS1_PARALYSIS) {
+      // 1:1 décomp Paralysis case.
+      if (gBattleMons[gEffectBattler].ability === ABILITY_LIMBER) {
+        if (primary || certain === MOVE_EFFECT_CERTAIN) {
+          setLastUsedAbility(ABILITY_LIMBER);
+          _recordAbilityBattle(gEffectBattler, ABILITY_LIMBER);
+          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          const off = getBattleScriptOffset('BattleScript_PRLZPrevention');
+          if (off >= 0) ctx.scriptPtr = off;
+          if (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT) {
+            gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_ABILITY_PREVENTS_ABILITY_STATUS;
+            setHitMarker(gHitMarker & ~HITMARKER_STATUS_ABILITY_EFFECT);
+          } else {
+            gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_ABILITY_PREVENTS_MOVE_STATUS;
+          }
+          _resetReturn();
+          return;
+        }
+        // else fall through (= no statusChanged, will hit increment-reset-return below).
+      } else if (!gBattleMons[gEffectBattler].status1) {
+        statusChanged = true;
+      }
+    } else if (statusFlag === STATUS1_TOXIC_POISON) {
+      // 1:1 décomp Toxic case.
+      if (gBattleMons[gEffectBattler].ability === ABILITY_IMMUNITY
+          && (primary || certain === MOVE_EFFECT_CERTAIN)) {
+        setLastUsedAbility(ABILITY_IMMUNITY);
+        _recordAbilityBattle(gEffectBattler, ABILITY_IMMUNITY);
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = getBattleScriptOffset('BattleScript_PSNPrevention');
+        if (off >= 0) ctx.scriptPtr = off;
+        if (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT) {
+          gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_ABILITY_PREVENTS_ABILITY_STATUS;
+          setHitMarker(gHitMarker & ~HITMARKER_STATUS_ABILITY_EFFECT);
+        } else {
+          gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_ABILITY_PREVENTS_MOVE_STATUS;
+        }
+        _resetReturn();
+        return;
+      }
+      if ((IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_POISON)
+            || IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_STEEL))
+          && (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT)
+          && (primary || certain === MOVE_EFFECT_CERTAIN)) {
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = getBattleScriptOffset('BattleScript_PSNPrevention');
+        if (off >= 0) ctx.scriptPtr = off;
+        gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_STATUS_HAD_NO_EFFECT;
+        _resetReturn();
+        return;
+      }
+      if (gBattleMons[gEffectBattler].status1) {
+        // skip
+      } else if (!IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_POISON)
+                  && !IS_BATTLER_OF_TYPE(gBattleMons[gEffectBattler].type1, gBattleMons[gEffectBattler].type2, TYPE_STEEL)) {
+        if (gBattleMons[gEffectBattler].ability === ABILITY_IMMUNITY) {
+          // skip
+        } else {
+          gBattleMons[gEffectBattler].status1 &= ~STATUS1_TOXIC_POISON;
+          gBattleMons[gEffectBattler].status1 &= ~STATUS1_POISON;
+          statusChanged = true;
+        }
+      } else {
+        setMoveResultFlags(gMoveResultFlags | 0x4 /* MOVE_RESULT_DOESNT_AFFECT_FOE */);
+      }
+    }
+
+    if (statusChanged) {
+      // 1:1 décomp : apply status1 + push current+1 + jump à sMoveEffectBS_Ptrs[effect].
+      ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+      if (sStatusFlagsForMoveEffects[gBattleCommunication[MOVE_EFFECT_BYTE_IDX]] === STATUS1_SLEEP) {
+        gBattleMons[gEffectBattler].status1 |= _STATUS1_SLEEP_TURN_FN((Random() & 3) + 2);
+      } else {
+        gBattleMons[gEffectBattler].status1 |= sStatusFlagsForMoveEffects[gBattleCommunication[MOVE_EFFECT_BYTE_IDX]];
+      }
+      const off = _resolveMoveEffectBS(gBattleCommunication[MOVE_EFFECT_BYTE_IDX]);
+      if (off >= 0) ctx.scriptPtr = off;
+      setActiveBattler(gEffectBattler);
+      // BtlController_EmitSetMonData (= sync battler status1 → party storage). MVP stub.
+      if (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT) {
+        gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_STATUSED_BY_ABILITY;
+        setHitMarker(gHitMarker & ~HITMARKER_STATUS_ABILITY_EFFECT);
+      } else {
+        gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_STATUSED;
+      }
+      const eff = gBattleCommunication[MOVE_EFFECT_BYTE_IDX];
+      if (eff === 2 /* POISON */ || eff === 6 /* TOXIC */ || eff === 5 /* PARALYSIS */ || eff === 3 /* BURN */) {
+        // gBattleStruct->synchronizeMoveEffect = eff. MVP : skip (= no AbilityBattleEffects yet).
+        setHitMarker(gHitMarker | HITMARKER_SYNCHRONIZE_EFFECT);
+      }
+      return;
+    } else {
+      // Not statusChanged → reset + advance.
+      gBattleCommunication[MOVE_EFFECT_BYTE_IDX] = 0;
+      ctx.scriptPtr++;
+      return;
+    }
+  } else {
+    // ─── Secondary effects (CONFUSION, FLINCH, UPROAR, PAYDAY, etc.) ──────
+    if (gBattleMons[gEffectBattler].status2 & sStatusFlagsForMoveEffects[gBattleCommunication[MOVE_EFFECT_BYTE_IDX]]) {
+      ctx.scriptPtr++;
+    } else {
+      const eff = gBattleCommunication[MOVE_EFFECT_BYTE_IDX];
+      if (eff === 7 /* CONFUSION */) {
+        if (gBattleMons[gEffectBattler].ability === ABILITY_OWN_TEMPO
+            || (gBattleMons[gEffectBattler].status2 & STATUS2_CONFUSION)) {
+          ctx.scriptPtr++;
+        } else {
+          gBattleMons[gEffectBattler].status2 |= ((Random() % 4 + 2) & STATUS2_CONFUSION);
+          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          const off = _resolveMoveEffectBS(eff);
+          if (off >= 0) ctx.scriptPtr = off;
+        }
+      } else if (eff === 8 /* FLINCH */) {
+        if (gBattleMons[gEffectBattler].ability === ABILITY_INNER_FOCUS) {
+          if (primary || certain === MOVE_EFFECT_CERTAIN) {
+            setLastUsedAbility(ABILITY_INNER_FOCUS);
+            _recordAbilityBattle(gEffectBattler, ABILITY_INNER_FOCUS);
+            const off = getBattleScriptOffset('BattleScript_FlinchPrevention');
+            if (off >= 0) ctx.scriptPtr = off;
+          } else {
+            ctx.scriptPtr++;
+          }
+        } else {
+          if (_getBattlerTurnOrderNum(gEffectBattler) > _gCurrentTurnActionNumber) {
+            gBattleMons[gEffectBattler].status2 |= sStatusFlagsForMoveEffects[eff];
+          }
+          ctx.scriptPtr++;
+        }
+      } else if (eff === 10 /* UPROAR */) {
+        if (!(gBattleMons[gEffectBattler].status2 & STATUS2_UPROAR)) {
+          gBattleMons[gEffectBattler].status2 |= STATUS2_MULTIPLETURNS;
+          gLockedMoves[gEffectBattler] = gCurrentMove;
+          gBattleMons[gEffectBattler].status2 |= ((Random() & 3) + 2) << 4; // STATUS2_UPROAR_TURN
+          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          const off = _resolveMoveEffectBS(eff);
+          if (off >= 0) ctx.scriptPtr = off;
+        } else {
+          ctx.scriptPtr++;
+        }
+      } else if (eff === 11 /* PAYDAY */) {
+        if (GET_BATTLER_SIDE(gBattlerAttacker) === B_SIDE_PLAYER) {
+          const oldPayday = gPaydayMoney;
+          let newPayday = gPaydayMoney + gBattleMons[gBattlerAttacker].level * 5;
+          if (oldPayday > newPayday) newPayday = 0xFFFF;
+          setPaydayMoney(newPayday);
+        }
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = _resolveMoveEffectBS(eff);
+        if (off >= 0) ctx.scriptPtr = off;
+      } else if (eff === 9 /* TRI_ATTACK */) {
+        if (gBattleMons[gEffectBattler].status1) {
+          ctx.scriptPtr++;
+        } else {
+          gBattleCommunication[MOVE_EFFECT_BYTE_IDX] = (Random() % 3) + 3;
+          SetMoveEffect(ctx, false, 0);
+          return;
+        }
+      } else if (eff === 12 /* CHARGING */) {
+        gBattleMons[gEffectBattler].status2 |= STATUS2_MULTIPLETURNS;
+        gLockedMoves[gEffectBattler] = gCurrentMove;
+        gProtectStructs[gEffectBattler].chargingTurn = 1;
+        ctx.scriptPtr++;
+      } else if (eff === 13 /* WRAP */) {
+        if (gBattleMons[gEffectBattler].status2 & STATUS2_WRAPPED) {
+          ctx.scriptPtr++;
+        } else {
+          gBattleMons[gEffectBattler].status2 |= ((Random() & 3) + 3) << 13; // STATUS2_WRAPPED_TURN
+          gWrappedMove[gEffectBattler] = gCurrentMove;
+          gWrappedBy[gEffectBattler] = gBattlerAttacker;
+          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          const off = _resolveMoveEffectBS(eff);
+          if (off >= 0) ctx.scriptPtr = off;
+          // 1:1 décomp : MULTISTRING_CHOOSER = index of move in gTrappingMoves[].
+          let idx = 0;
+          for (; idx < _gTrappingMoves.length - 1; idx++) {
+            if (_gTrappingMoves[idx] === gCurrentMove) break;
+          }
+          gBattleCommunication[MULTISTRING_CHOOSER_IDX] = idx;
+        }
+      } else if (eff === 14 /* RECOIL_25 */) {
+        let dmg = Math.floor(gHpDealt / 4);
+        if (dmg === 0) dmg = 1;
+        setBattleMoveDamage(dmg);
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = _resolveMoveEffectBS(eff);
+        if (off >= 0) ctx.scriptPtr = off;
+      } else if (eff >= 15 && eff <= 21 /* ATK..EVS_PLUS_1 */) {
+        const stat = eff - 15 + 1;
+        if (ChangeStatBuffs(SET_STAT_BUFF_VALUE(1), stat, affectsUser, 0)) {
+          ctx.scriptPtr++;
+        } else {
+          gBattleScripting.animArg1 = eff & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
+          gBattleScripting.animArg2 = 0;
+          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          const off = getBattleScriptOffset('BattleScript_StatUp');
+          if (off >= 0) ctx.scriptPtr = off;
+        }
+      } else if (eff >= 22 && eff <= 28 /* ATK..EVS_MINUS_1 */) {
+        const stat = eff - 22 + 1;
+        if (ChangeStatBuffs(SET_STAT_BUFF_VALUE(1) | STAT_BUFF_NEGATIVE, stat, affectsUser, 0)) {
+          ctx.scriptPtr++;
+        } else {
+          gBattleScripting.animArg1 = eff & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
+          gBattleScripting.animArg2 = 0;
+          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          const off = getBattleScriptOffset('BattleScript_StatDown');
+          if (off >= 0) ctx.scriptPtr = off;
+        }
+      } else if (eff >= 39 && eff <= 45 /* ATK..EVS_PLUS_2 */) {
+        const stat = eff - 39 + 1;
+        if (ChangeStatBuffs(SET_STAT_BUFF_VALUE(2), stat, affectsUser, 0)) {
+          ctx.scriptPtr++;
+        } else {
+          gBattleScripting.animArg1 = eff & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
+          gBattleScripting.animArg2 = 0;
+          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          const off = getBattleScriptOffset('BattleScript_StatUp');
+          if (off >= 0) ctx.scriptPtr = off;
+        }
+      } else if (eff >= 46 && eff <= 52 /* ATK..EVS_MINUS_2 */) {
+        const stat = eff - 46 + 1;
+        if (ChangeStatBuffs(SET_STAT_BUFF_VALUE(2) | STAT_BUFF_NEGATIVE, stat, affectsUser, 0)) {
+          ctx.scriptPtr++;
+        } else {
+          gBattleScripting.animArg1 = eff & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
+          gBattleScripting.animArg2 = 0;
+          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          const off = getBattleScriptOffset('BattleScript_StatDown');
+          if (off >= 0) ctx.scriptPtr = off;
+        }
+      } else if (eff === 29 /* RECHARGE */) {
+        gBattleMons[gEffectBattler].status2 |= STATUS2_RECHARGE;
+        gDisableStructs[gEffectBattler].rechargeTimer = 2;
+        gLockedMoves[gEffectBattler] = gCurrentMove;
+        ctx.scriptPtr++;
+      } else if (eff === 30 /* RAGE */) {
+        gBattleMons[gBattlerAttacker].status2 |= STATUS2_RAGE;
+        ctx.scriptPtr++;
+      } else if (eff === 31 /* STEAL_ITEM */) {
+        // 1:1 partial : full path nécessite gBattleStruct.changedItems + IS_ITEM_MAIL.
+        // Skip pour MVP — advance.
+        ctx.scriptPtr++;
+        // TODO porter STEAL_ITEM full quand gBattleStruct.changedItems portée.
+        void _BATTLE_TYPE_TRAINER_HILL_FLAG; void BATTLE_TYPE_EREADER_TRAINER;
+        void BATTLE_TYPE_FRONTIER; void BATTLE_TYPE_LINK; void BATTLE_TYPE_RECORDED_LINK;
+        void BATTLE_TYPE_SECRET_BASE; void B_SIDE_OPPONENT; void gWishFutureKnock;
+        void gBattlerPartyIndexes;
+      } else if (eff === 32 /* PREVENT_ESCAPE */) {
+        gBattleMons[gBattlerTarget].status2 |= STATUS2_ESCAPE_PREVENTION;
+        gDisableStructs[gBattlerTarget].battlerPreventingEscape = gBattlerAttacker;
+        ctx.scriptPtr++;
+      } else if (eff === 33 /* NIGHTMARE */) {
+        gBattleMons[gBattlerTarget].status2 |= STATUS2_NIGHTMARE;
+        ctx.scriptPtr++;
+      } else if (eff === 34 /* ALL_STATS_UP */) {
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = getBattleScriptOffset('BattleScript_AllStatsUp');
+        if (off >= 0) ctx.scriptPtr = off;
+      } else if (eff === 35 /* RAPIDSPIN */) {
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = getBattleScriptOffset('BattleScript_RapidSpinAway');
+        if (off >= 0) ctx.scriptPtr = off;
+      } else if (eff === 36 /* REMOVE_PARALYSIS */) {
+        if (!(gBattleMons[gBattlerTarget].status1 & STATUS1_PARALYSIS)) {
+          ctx.scriptPtr++;
+        } else {
+          gBattleMons[gBattlerTarget].status1 &= ~STATUS1_PARALYSIS;
+          setActiveBattler(gBattlerTarget);
+          // EmitSetMonData stub
+          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          const off = getBattleScriptOffset('BattleScript_TargetPRLZHeal');
+          if (off >= 0) ctx.scriptPtr = off;
+        }
+      } else if (eff === 37 /* ATK_DEF_DOWN */) {
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = getBattleScriptOffset('BattleScript_AtkDefDown');
+        if (off >= 0) ctx.scriptPtr = off;
+      } else if (eff === 38 /* RECOIL_33 */) {
+        let dmg = Math.floor(gHpDealt / 3);
+        if (dmg === 0) dmg = 1;
+        setBattleMoveDamage(dmg);
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = _resolveMoveEffectBS(eff);
+        if (off >= 0) ctx.scriptPtr = off;
+      } else if (eff === 53 /* THRASH */) {
+        if (gBattleMons[gEffectBattler].status2 & STATUS2_LOCK_CONFUSE) {
+          ctx.scriptPtr++;
+        } else {
+          gBattleMons[gEffectBattler].status2 |= STATUS2_MULTIPLETURNS;
+          gLockedMoves[gEffectBattler] = gCurrentMove;
+          gBattleMons[gEffectBattler].status2 |= ((Random() & 1) + 2) << 10; // STATUS2_LOCK_CONFUSE_TURN
+        }
+      } else if (eff === 54 /* KNOCK_OFF */) {
+        if (gBattleMons[gEffectBattler].ability === ABILITY_STICKY_HOLD) {
+          if (gBattleMons[gEffectBattler].item === 0) {
+            ctx.scriptPtr++;
+          } else {
+            setLastUsedAbility(ABILITY_STICKY_HOLD);
+            const off = getBattleScriptOffset('BattleScript_StickyHoldActivates');
+            if (off >= 0) ctx.scriptPtr = off;
+            _recordAbilityBattle(gEffectBattler, ABILITY_STICKY_HOLD);
+          }
+        } else if (gBattleMons[gEffectBattler].item) {
+          gBattleMons[gEffectBattler].item = 0;
+          ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+          const off = getBattleScriptOffset('BattleScript_KnockedOff');
+          if (off >= 0) ctx.scriptPtr = off;
+        } else {
+          ctx.scriptPtr++;
+        }
+      } else if (eff === 55 /* SP_ATK_TWO_DOWN (NOTHING_37) */) {
+        ctx.scriptPtrStack.push(ctx.scriptPtr + 1);
+        const off = getBattleScriptOffset('BattleScript_SAtkDown2');
+        if (off >= 0) ctx.scriptPtr = off;
+      } else {
+        // Unknown effect → advance.
+        ctx.scriptPtr++;
+      }
+    }
+  }
+
+  gBattleCommunication[MOVE_EFFECT_BYTE_IDX] = 0;
+}
+
+// Silence unused.
+void STATUS1_ANY;

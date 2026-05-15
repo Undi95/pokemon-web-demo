@@ -26,6 +26,7 @@ import {
   MOVE_RESULT_NO_EFFECT,
 } from './constants';
 import { getBattleMove } from './data/battle-moves';
+import { SetMoveEffect } from './set-move-effect';
 
 // ─── ABILITY_SERENE_GRACE (abilities.h:31) ─────────────────────────────────
 const ABILITY_SERENE_GRACE = 32;
@@ -37,21 +38,10 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** 1:1 stub `SetMoveEffect(primary, certain)` (battle_script_commands.c).
- *  ~500 lignes décomp qui applique l'effet status/stat/etc. selon
- *  gBattleCommunication[MOVE_EFFECT_BYTE]. Pour MVP : no-op, mais conserve
- *  la signature 1:1.
- *
- *  TODO porter le full SetMoveEffect quand on a tous les status/stat helpers
- *  câblés (= AbilityBattleEffects, gBattleScripts effects mapping, etc.). */
-function _setMoveEffect(_primary: boolean, _certain: number): void {
-  // TODO porter battle_script_commands.c:2218..2780 (~500 lignes).
-}
-
 // ─── 0x15 seteffectwithchance ─────────────────────────────────────────────
 
 /** 1:1 décomp Cmd_seteffectwithchance. 1 byte. */
-function Cmd_seteffectwithchance(_ctx: BattleScriptContext): boolean {
+function Cmd_seteffectwithchance(ctx: BattleScriptContext): boolean {
   const secondaryChance = getBattleMove(gCurrentMove).secondaryEffectChance;
   let percentChance: number;
   if (gBattleMons[gBattlerAttacker].ability === ABILITY_SERENE_GRACE) {
@@ -63,14 +53,14 @@ function Cmd_seteffectwithchance(_ctx: BattleScriptContext): boolean {
   if ((gBattleCommunication[MOVE_EFFECT_BYTE] & MOVE_EFFECT_CERTAIN)
       && !(gMoveResultFlags & MOVE_RESULT_NO_EFFECT)) {
     gBattleCommunication[MOVE_EFFECT_BYTE] &= ~MOVE_EFFECT_CERTAIN;
-    _setMoveEffect(false, MOVE_EFFECT_CERTAIN);
+    SetMoveEffect(ctx, false, MOVE_EFFECT_CERTAIN);
   } else if ((Random() % 100) < percentChance
              && gBattleCommunication[MOVE_EFFECT_BYTE]
              && !(gMoveResultFlags & MOVE_RESULT_NO_EFFECT)) {
     if (percentChance >= 100) {
-      _setMoveEffect(false, MOVE_EFFECT_CERTAIN);
+      SetMoveEffect(ctx, false, MOVE_EFFECT_CERTAIN);
     } else {
-      _setMoveEffect(false, 0);
+      SetMoveEffect(ctx, false, 0);
     }
   }
   // 1:1 décomp : sinon advance via fall-through.

@@ -29,6 +29,7 @@ import {
 import { readByte, readWord } from './script-interpreter';
 import type { BattleScriptContext, BattleOpcodeHandler } from './script-interpreter';
 import { ChangeStatBuffs } from './stat-stages';
+import { SetMoveEffect } from './set-move-effect';
 import {
   GET_STAT_BUFF_ID,
   GET_STAT_BUFF_VALUE,
@@ -289,21 +290,16 @@ function Cmd_playstatchangeanimation(ctx: BattleScriptContext): boolean {
 // ─── Cmd_seteffectprimary (0x16) + Cmd_seteffectsecondary (0x17) ────────────
 
 /** 1:1 décomp `Cmd_seteffectprimary` (battle_script_commands.c:2941-2944).
- *  Calls `SetMoveEffect(TRUE, 0)` — TODO porter SetMoveEffect (= ~500 lignes).
- *
- *  Args : aucun (= advance 1 byte opcode seulement). */
-function Cmd_seteffectprimary(_ctx: BattleScriptContext): boolean {
-  // TODO : SetMoveEffect(primary=true, certainArg=0).
-  // Effect from gBattleScripting.moveEffect : burn, freeze, sleep, poison,
-  // paralysis, flinch, confuse, infatuate, etc.
+ *  Calls `SetMoveEffect(TRUE, 0)`. */
+function Cmd_seteffectprimary(ctx: BattleScriptContext): boolean {
+  SetMoveEffect(ctx, true, 0);
   return false;
 }
 
 /** 1:1 décomp `Cmd_seteffectsecondary` (battle_script_commands.c:2946-2949).
- *  Calls `SetMoveEffect(FALSE, 0)` — TODO. */
-function Cmd_seteffectsecondary(_ctx: BattleScriptContext): boolean {
-  // TODO : SetMoveEffect(primary=false, certainArg=0).
-  // Secondary effect : roll secondaryEffectChance, apply effect.
+ *  Calls `SetMoveEffect(FALSE, 0)`. */
+function Cmd_seteffectsecondary(ctx: BattleScriptContext): boolean {
+  SetMoveEffect(ctx, false, 0);
   return false;
 }
 
