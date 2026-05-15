@@ -330,11 +330,22 @@ export const EFFECT_BLAZE_KICK        = 200;
 export const EFFECT_POISON_TAIL       = 209;
 
 // ─── MOVE_* misc ────────────────────────────────────────────────────────────
-export const MOVE_NONE       = 0;
-export const MOVE_SOLAR_BEAM = 76;
-export const MOVE_TRANSFORM  = 144;
-export const MOVE_SUBSTITUTE = 164;
-export const MOVE_STRUGGLE   = 165;
+export const MOVE_NONE          = 0;
+export const MOVE_FLY           = 19;
+export const MOVE_SOLAR_BEAM    = 76;
+export const MOVE_DIG           = 91;
+export const MOVE_MIRROR_MOVE   = 119;
+export const MOVE_TRANSFORM     = 144;
+export const MOVE_SUBSTITUTE    = 164;
+export const MOVE_STRUGGLE      = 165;
+export const MOVE_SKETCH        = 166;
+export const MOVE_ENCORE        = 227;
+export const MOVE_DIVE          = 291;
+export const MOVE_BOUNCE        = 340;
+export const MOVE_UNAVAILABLE   = 0xFFFF;
+
+// ─── MAX_MON_MOVES (constants/global.h:82) — 1:1 décomp ────────────────────
+export const MAX_MON_MOVES = 4;
 
 // ─── MOVE_TARGET_* (battle.h:46-53) — 1:1 décomp ────────────────────────────
 export const MOVE_TARGET_SELECTED         = 0;

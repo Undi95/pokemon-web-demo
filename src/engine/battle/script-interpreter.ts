@@ -452,6 +452,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-11').then(({ installNiveau11Handlers }) => {
     installNiveau11Handlers(_commands);
   });
+  // Session 134 — Niveau 12 (semi-invul + buffers + misc).
+  void import('./cmd-niveau-12').then(({ installNiveau12Handlers }) => {
+    installNiveau12Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
