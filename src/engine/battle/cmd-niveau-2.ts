@@ -42,42 +42,59 @@ import {
   BS_TARGET,
 } from './constants';
 
-// Tables d'animation stat change (= 1:1 décomp `include/constants/battle_anim.h`).
-// Les vraies valeurs viendraient de B_ANIM_STAT_* enum. Pour MVP : on n'envoie
-// pas d'animation, mais on remplit gBattleScripting.animArg1/2 pour le code suivant.
-const STAT_ANIM_PLUS1  = 0x0E;   // placeholder ; à raffiner avec battle_anim.h
-const STAT_ANIM_PLUS2  = 0x16;
-const STAT_ANIM_MINUS1 = 0x1E;
-const STAT_ANIM_MINUS2 = 0x26;
+// 1:1 décomp `include/battle_anim.h:195-198` STAT_ANIM_* — verified values.
+const STAT_ANIM_PLUS1  = 14;
+const STAT_ANIM_PLUS2  = 38;
+const STAT_ANIM_MINUS1 = 21;
+const STAT_ANIM_MINUS2 = 45;
 
-// Stat anim flags (= passed in opcode arg).
+// Stat anim flags (= include/constants/battle_script_commands.h:375-378).
 const STAT_CHANGE_NEGATIVE        = 1 << 0;
 const STAT_CHANGE_BY_TWO          = 1 << 1;
-const STAT_CHANGE_CANT_PREVENT    = 1 << 2;
-const STAT_CHANGE_MULTIPLE_STATS  = 1 << 3;
+const STAT_CHANGE_MULTIPLE_STATS  = 1 << 2;
+const STAT_CHANGE_CANT_PREVENT    = 1 << 3;
 void STAT_CHANGE_CANT_PREVENT;
 void STAT_CHANGE_MULTIPLE_STATS;
 
-// 1:1 décomp `sStatusFlagsForMoveEffects[NUM_MOVE_EFFECTS]` (battle_script_commands.c:608).
-// Pour MVP : table partielle (= status flags les plus communs).
-// TODO : extraire la full table 0..MOVE_EFFECT_COUNT du décomp.
+// MOVE_EFFECT_* indices (battle.h:245-298) — pour la status flags table.
+const MOVE_EFFECT_SLEEP          = 1;
+const MOVE_EFFECT_POISON         = 2;
+const MOVE_EFFECT_BURN           = 3;
+const MOVE_EFFECT_FREEZE         = 4;
+const MOVE_EFFECT_PARALYSIS      = 5;
+const MOVE_EFFECT_TOXIC          = 6;
+const MOVE_EFFECT_CONFUSION      = 7;
+const MOVE_EFFECT_FLINCH         = 8;
+const MOVE_EFFECT_UPROAR         = 10;
+const MOVE_EFFECT_CHARGING       = 12;
+const MOVE_EFFECT_WRAP           = 13;
+const MOVE_EFFECT_RECHARGE       = 29;
+const MOVE_EFFECT_PREVENT_ESCAPE = 32;
+const MOVE_EFFECT_NIGHTMARE      = 33;
+const MOVE_EFFECT_THRASH         = 53;
+
+// 1:1 décomp `sStatusFlagsForMoveEffects[NUM_MOVE_EFFECTS]` (battle_script_commands.c:608-625).
+// Partial table mais 1:1 décomp pour les 15 entries définies.
 const _statusFlagsForMoveEffects: Record<number, number> = {
-  // MOVE_EFFECT_SLEEP = 1 → STATUS1_SLEEP = 0x7
-  1: 0x7,
-  // MOVE_EFFECT_POISON = 2 → STATUS1_POISON = 0x8
-  2: 0x8,
-  // MOVE_EFFECT_BURN = 3 → STATUS1_BURN = 0x10
-  3: 0x10,
-  // MOVE_EFFECT_FREEZE = 4 → STATUS1_FREEZE = 0x20
-  4: 0x20,
-  // MOVE_EFFECT_PARALYSIS = 5 → STATUS1_PARALYSIS = 0x40
-  5: 0x40,
-  // MOVE_EFFECT_TOXIC = 6 → STATUS1_TOXIC_POISON = 0x80
-  6: 0x80,
+  [MOVE_EFFECT_SLEEP]:          0x7,         // STATUS1_SLEEP
+  [MOVE_EFFECT_POISON]:         1 << 3,      // STATUS1_POISON
+  [MOVE_EFFECT_BURN]:           1 << 4,      // STATUS1_BURN
+  [MOVE_EFFECT_FREEZE]:         1 << 5,      // STATUS1_FREEZE
+  [MOVE_EFFECT_PARALYSIS]:      1 << 6,      // STATUS1_PARALYSIS
+  [MOVE_EFFECT_TOXIC]:          1 << 7,      // STATUS1_TOXIC_POISON
+  [MOVE_EFFECT_CONFUSION]:      0x7,         // STATUS2_CONFUSION
+  [MOVE_EFFECT_FLINCH]:         1 << 3,      // STATUS2_FLINCHED
+  [MOVE_EFFECT_UPROAR]:         0x70,        // STATUS2_UPROAR
+  [MOVE_EFFECT_CHARGING]:       1 << 12,     // STATUS2_MULTIPLETURNS
+  [MOVE_EFFECT_WRAP]:           0xE000,      // STATUS2_WRAPPED
+  [MOVE_EFFECT_RECHARGE]:       1 << 22,     // STATUS2_RECHARGE
+  [MOVE_EFFECT_PREVENT_ESCAPE]: 1 << 26,     // STATUS2_ESCAPE_PREVENTION
+  [MOVE_EFFECT_NIGHTMARE]:      1 << 27,     // STATUS2_NIGHTMARE
+  [MOVE_EFFECT_THRASH]:         0xC00,       // STATUS2_LOCK_CONFUSE
 };
 
-// Primary status threshold (1:1 décomp battle_script_commands.h:328).
-const PRIMARY_STATUS_MOVE_EFFECT = 7;
+// 1:1 décomp `PRIMARY_STATUS_MOVE_EFFECT` (battle.h:251) = MOVE_EFFECT_TOXIC = 6.
+const PRIMARY_STATUS_MOVE_EFFECT = MOVE_EFFECT_TOXIC;
 
 /** 1:1 décomp `GetBattlerForBattleScript(u8 arg)` — subset utilisé Niveau 2. */
 function getBattlerForBattleScript(arg: number): number {
