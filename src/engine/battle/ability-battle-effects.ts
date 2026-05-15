@@ -64,7 +64,8 @@ import {
   IS_BATTLER_OF_TYPE,
   MON_GENDERLESS,
   FLAG_MAKES_CONTACT,
-  TYPE_ELECTRIC, TYPE_WATER, TYPE_FIRE,
+  TYPE_ELECTRIC, TYPE_WATER, TYPE_FIRE, TYPE_ICE, TYPE_NORMAL,
+  B_WEATHER_HAIL,
   STATUS1_POISON, STATUS1_TOXIC_POISON, STATUS1_BURN, STATUS1_FREEZE,
   STATUS1_PARALYSIS, STATUS1_SLEEP,
   STATUS2_NIGHTMARE, STATUS2_CONFUSION, STATUS2_INFATUATION, STATUS2_MULTIPLETURNS,
@@ -110,6 +111,63 @@ export const ABILITYEFFECT_CHECK_ON_FIELD = 19;
 export const ABILITYEFFECT_MUD_SPORT = 253;
 export const ABILITYEFFECT_WATER_SPORT = 254;
 export const ABILITYEFFECT_SWITCH_IN_WEATHER = 255;
+
+// ─── CASTFORM_* enum (constants/battle.h) ────────────────────────────────
+
+const SPECIES_CASTFORM = 385;
+const CASTFORM_NORMAL = 0;
+const CASTFORM_FIRE = 1;
+const CASTFORM_WATER = 2;
+const CASTFORM_ICE = 3;
+
+/** 1:1 décomp `CastformDataTypeChange(battler)` (battle_util.c:2379-2412).
+ *  Castform morph selon weather + ABILITY_FORECAST. Returns formId+1 si
+ *  change, 0 si no change. */
+function _castformDataTypeChange(battler: number): number {
+  let formChange = 0;
+  if (gBattleMons[battler].species !== SPECIES_CASTFORM
+      || gBattleMons[battler].ability !== ABILITY_FORECAST
+      || gBattleMons[battler].hp === 0) {
+    return 0;
+  }
+  const isNormalType = IS_BATTLER_OF_TYPE(
+    gBattleMons[battler].type1, gBattleMons[battler].type2, TYPE_NORMAL
+  );
+  const isFireType = IS_BATTLER_OF_TYPE(
+    gBattleMons[battler].type1, gBattleMons[battler].type2, TYPE_FIRE
+  );
+  const isWaterType = IS_BATTLER_OF_TYPE(
+    gBattleMons[battler].type1, gBattleMons[battler].type2, TYPE_WATER
+  );
+  const isIceType = IS_BATTLER_OF_TYPE(
+    gBattleMons[battler].type1, gBattleMons[battler].type2, TYPE_ICE
+  );
+
+  if (!_WEATHER_HAS_EFFECT && !isNormalType) {
+    gBattleMons[battler].type1 = TYPE_NORMAL;
+    gBattleMons[battler].type2 = 0;
+    return CASTFORM_NORMAL + 1;
+  }
+  if (!_WEATHER_HAS_EFFECT) return 0;
+
+  if (!(gBattleWeather & (B_WEATHER_RAIN | B_WEATHER_SUN | B_WEATHER_HAIL)) && !isNormalType) {
+    gBattleMons[battler].type1 = 0; gBattleMons[battler].type2 = 0;
+    formChange = CASTFORM_NORMAL + 1;
+  }
+  if ((gBattleWeather & B_WEATHER_SUN) && !isFireType) {
+    gBattleMons[battler].type1 = TYPE_FIRE; gBattleMons[battler].type2 = TYPE_FIRE;
+    formChange = CASTFORM_FIRE + 1;
+  }
+  if ((gBattleWeather & B_WEATHER_RAIN) && !isWaterType) {
+    gBattleMons[battler].type1 = TYPE_WATER; gBattleMons[battler].type2 = TYPE_WATER;
+    formChange = CASTFORM_WATER + 1;
+  }
+  if ((gBattleWeather & B_WEATHER_HAIL) && !isIceType) {
+    gBattleMons[battler].type1 = TYPE_ICE; gBattleMons[battler].type2 = 4;
+    formChange = CASTFORM_ICE + 1;
+  }
+  return formChange;
+}
 
 // ─── sSoundMovesTable (battle_util.c:688) ────────────────────────────────
 
@@ -222,9 +280,14 @@ export function AbilityBattleEffects(
           }
           break;
         case ABILITY_FORECAST: {
-          // 1:1 partial : CastformDataTypeChange non porté. Skip — return 0.
-          // TODO porter CastformDataTypeChange quand on a Castform forms.
-          void setFormToChangeInto;
+          // 1:1 décomp battle_util.c:2549-2557.
+          const eff = _castformDataTypeChange(battler);
+          if (eff !== 0) {
+            _lastWantedScriptLabel = 'BattleScript_CastformChange';
+            gBattleScripting.battler = battler;
+            setFormToChangeInto(eff - 1);
+            effect++;
+          }
           break;
         }
         case ABILITY_TRACE:
@@ -235,11 +298,18 @@ export function AbilityBattleEffects(
           break;
         case ABILITY_CLOUD_NINE:
         case ABILITY_AIR_LOCK: {
-          // 1:1 partial : Cloud Nine / Air Lock cancel weather sur Castform.
-          // Notre Castform pas implémenté → no-op.
-          // TODO porter CastformDataTypeChange.
+          // 1:1 décomp battle_util.c:2565-2580.
+          // Cloud Nine / Air Lock supprime weather effects → tous Castform
+          // revert. Le first Castform trouvé déclenche le script.
           for (let target1 = 0; target1 < gBattlersCount; target1++) {
-            void target1;
+            const eff = _castformDataTypeChange(target1);
+            if (eff !== 0) {
+              _lastWantedScriptLabel = 'BattleScript_CastformChange';
+              gBattleScripting.battler = target1;
+              setFormToChangeInto(eff - 1);
+              effect++;
+              break;
+            }
           }
           break;
         }
@@ -759,11 +829,21 @@ export function AbilityBattleEffects(
       break;
     }
 
-    // ─── Stubs TODO Phase 1.2 E continuation ──────────────────────────────
-    case ABILITYEFFECT_FORECAST:
-    case ABILITYEFFECT_TRACE:
-      // TODO porter — ~280 lignes décomp restantes.
+    case ABILITYEFFECT_FORECAST: {
+      // 1:1 décomp battle_util.c:2938-2953.
+      for (let i = 0; i < gBattlersCount; i++) {
+        if (gBattleMons[i].ability === ABILITY_FORECAST) {
+          const eff = _castformDataTypeChange(i);
+          if (eff !== 0) {
+            _lastWantedScriptLabel = 'BattleScript_CastformChange';
+            gBattleScripting.battler = i;
+            setFormToChangeInto(eff - 1);
+            return eff;
+          }
+        }
+      }
       break;
+    }
 
     default:
       break;
