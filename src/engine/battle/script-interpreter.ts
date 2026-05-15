@@ -476,6 +476,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-17').then(({ installNiveau17Handlers }) => {
     installNiveau17Handlers(_commands);
   });
+  // Session 135 — Niveau 18 (status anims + abilities + weather ball).
+  void import('./cmd-niveau-18').then(({ installNiveau18Handlers }) => {
+    installNiveau18Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

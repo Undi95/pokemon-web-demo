@@ -148,6 +148,7 @@ export const B_WEATHER_SUN_PERMANENT         = 1 << 6;
 export const B_WEATHER_SUN                   = B_WEATHER_SUN_TEMPORARY | B_WEATHER_SUN_PERMANENT;
 export const B_WEATHER_HAIL_TEMPORARY        = 1 << 7;
 export const B_WEATHER_HAIL                  = B_WEATHER_HAIL_TEMPORARY;
+export const B_WEATHER_ANY                   = B_WEATHER_RAIN | B_WEATHER_SANDSTORM | B_WEATHER_SUN | B_WEATHER_HAIL;
 
 // ─── BS_* battler refs (battle_script_commands.h:304-318) — 1:1 décomp ─────
 // ATTENTION : décomp inverse BS_TARGET=0 / BS_ATTACKER=1 (= la "natural" reading

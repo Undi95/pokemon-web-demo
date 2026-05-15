@@ -162,6 +162,12 @@ export function BtlController_EmitHealthBarUpdate(_bufferId: number, _healthValu
   // TODO : update HP bar animation.
 }
 
+/** 1:1 signature décomp `BtlController_EmitStatusAnimation(buf, status2anim, status)`.
+ *  status2anim = TRUE pour STATUS2_*, FALSE pour STATUS1_*. */
+export function BtlController_EmitStatusAnimation(_bufferId: number, _isStatus2: boolean, _status: number): void {
+  // TODO : status anim (sprite shake + tint + status sound).
+}
+
 /** 1:1 signature décomp `BtlController_EmitYesNoBox` n'existe pas — yesnobox
  *  est implémenté direct par Cmd_yesnobox via le state machine
  *  gBattleCommunication[0]. */
