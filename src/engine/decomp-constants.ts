@@ -48,6 +48,7 @@ import * as opponents from './decomp-data/auto/include/constants/opponents-data'
 import * as pokemon from './decomp-data/auto/include/constants/pokemon-data';
 import * as abilities from './decomp-data/auto/include/constants/abilities-data';
 import * as battleMoveEffects from './decomp-data/auto/include/constants/battle_move_effects-data';
+import * as holdEffects from './decomp-data/auto/include/constants/hold_effects-data';
 import * as vars from './decomp-data/auto/include/constants/vars-data';
 // Audit session 125 : METATILE_*, MB_*, MAP_SCRIPT_ON_* manquaient → setmetatile
 // resolved les NAMES à 0 → corruption tile (= bug exit truck après option menu).
@@ -99,6 +100,7 @@ _mergeConstants(opponents);
 _mergeConstants(pokemon);
 _mergeConstants(abilities);
 _mergeConstants(battleMoveEffects);
+_mergeConstants(holdEffects);
 _mergeConstants(vars);
 
 // Manual constants — auto-extraction stocke ces FLAG_* comme `_EXPR` strings

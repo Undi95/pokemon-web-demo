@@ -796,9 +796,13 @@ export const EFFECT_WATER_SPORT = 210;
 export const B_MSG_WEAKEN_ELECTRIC = 0;
 export const B_MSG_WEAKEN_FIRE     = 1;
 
-// ─── FLAG_MAKES_CONTACT / FLAG_PROTECT_AFFECTED (constants/pokemon.h:208-209) — 1:1 décomp ──────────
-export const FLAG_MAKES_CONTACT    = 1 << 0;
-export const FLAG_PROTECT_AFFECTED = 1 << 1;
+// ─── FLAG_* move flags (constants/pokemon.h:208-213) — 1:1 décomp ──────────
+export const FLAG_MAKES_CONTACT        = 1 << 0;
+export const FLAG_PROTECT_AFFECTED     = 1 << 1;
+export const FLAG_MAGIC_COAT_AFFECTED  = 1 << 2;
+export const FLAG_SNATCH_AFFECTED      = 1 << 3;
+export const FLAG_MIRROR_MOVE_AFFECTED = 1 << 4;
+export const FLAG_KINGS_ROCK_AFFECTED  = 1 << 5;
 
 // ─── IGNORE_SHELL_BELL (battle.h:61) — 1:1 décomp ──────────────────────────
 export const IGNORE_SHELL_BELL = 0xFFFF;

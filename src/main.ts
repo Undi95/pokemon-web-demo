@@ -137,8 +137,10 @@ void initStringsFromDecomp();
 // (= secondary effects/ability triggers/etc. ne marchent jamais).
 import { loadBattleMoves } from './engine/battle/data/battle-moves';
 import { loadBattleScriptBytecode } from './engine/battle/script-interpreter';
+import { loadItemHoldEffects } from './engine/battle/data/item-hold-effects';
 void loadBattleMoves();
 void loadBattleScriptBytecode();
+void loadItemHoldEffects();
 
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
