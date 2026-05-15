@@ -55,12 +55,10 @@ function _IsBattlerModernFatefulEncounter(_battler: number): boolean { return tr
  *  trainer ID / name. STUB MVP : return false (= own trainer toujours). */
 function _IsOtherTrainer(_otId: number, _otName: string): boolean { return false; }
 
-/** 1:1 stub `FlagGet(FLAG_BADGE0X_GET)`. STUB MVP : retourne false toujours
- *  (= player a 0 badges au début). Devrait être wired via gSaveBlock1Ptr.flags
- *  + bit math sur SYSTEM_FLAGS + 0x7..0xE. */
-function _FlagGet(_flagId: string): boolean {
-  // TODO porter FlagGet via gSaveBlock1Ptr.flags resolution.
-  return false;
+// 1:1 décomp `FlagGet(flag)` — wired via script-vars.ts (gameState.hasFlag).
+import { FlagGet as _FlagGetFull } from '../script-vars';
+function _FlagGet(flagId: string): boolean {
+  return _FlagGetFull(flagId);
 }
 
 const FLAG_BADGE02_GET = 'FLAG_BADGE02_GET';
