@@ -416,6 +416,11 @@ export const gBideDmg: number[] = [0, 0, 0, 0];
  *  sauvegardé pour le retour de Bide. */
 export const gBideTarget: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `gBattleStruct->usedHeldItems[MAX_BATTLERS_COUNT]` (battle.h
+ *  BattleStruct). Item utilisé/perdu pendant le combat, restauré par Recycle
+ *  ou à la fin du combat. */
+export const gUsedHeldItems: number[] = [0, 0, 0, 0];
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];
@@ -476,6 +481,7 @@ export function resetBattleState(): void {
     gLockedMoves[i] = 0;
     gBideDmg[i] = 0;
     gBideTarget[i] = 0;
+    gUsedHeldItems[i] = 0;
     gLastLandedMoves[i] = 0;
     gLastHitByType[i] = 0;
     gLastResultingMoves[i] = 0;

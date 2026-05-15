@@ -484,6 +484,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-19').then(({ installNiveau19Handlers }) => {
     installNiveau19Handlers(_commands);
   });
+  // Session 135 — Niveau 20 (protect/explosion/weather dmg).
+  void import('./cmd-niveau-20').then(({ installNiveau20Handlers }) => {
+    installNiveau20Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

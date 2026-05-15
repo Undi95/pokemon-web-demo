@@ -608,6 +608,31 @@ export const MOVE_EFFECT_THRASH       = 53;
 // ─── ABILITY_NATURAL_CURE (abilities.h:34) — 1:1 décomp ────────────────────
 export const ABILITY_NATURAL_CURE = 30;
 
+// ─── MOVE_PROTECT/DETECT/ENDURE (constants/moves.h) — 1:1 décomp ──────────
+export const MOVE_PROTECT = 182;
+export const MOVE_DETECT  = 197;
+export const MOVE_ENDURE  = 203;
+
+// ─── EFFECT_PROTECT / EFFECT_ENDURE (battle_move_effects.h) ───────────────
+export const EFFECT_PROTECT = 111;
+export const EFFECT_ENDURE  = 116;
+
+// ─── B_MSG_* protect (battle_string_ids.h:462-464) — 1:1 décomp ────────────
+export const B_MSG_PROTECTED_ITSELF = 0;
+export const B_MSG_BRACED_ITSELF    = 1;
+export const B_MSG_PROTECT_FAILED   = 2;
+
+// ─── sProtectSuccessRates (battle_script_commands.c:719) — 1:1 décomp ─────
+/** USHRT_MAX = 0xFFFF (= 65535). Décomp utilise USHRT_MAX, USHRT_MAX/2,
+ *  USHRT_MAX/4, USHRT_MAX/8 pour les success rates de Protect/Detect/Endure
+ *  selon le nombre d'usages consécutifs. */
+export const sProtectSuccessRates: number[] = [
+  0xFFFF,       // 1er usage : 100%
+  0xFFFF >> 1,  // 2e : 50%
+  0xFFFF >> 2,  // 3e : 25%
+  0xFFFF >> 3,  // 4e : 12.5%
+];
+
 /** 1:1 décomp `STATUS1_SLEEP_TURN(num)` (constants/battle.h:116). */
 export function STATUS1_SLEEP_TURN(num: number): number { return num << 0; }
 
