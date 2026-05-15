@@ -528,6 +528,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-30').then(({ installNiveau30Handlers }) => {
     installNiveau30Handlers(_commands);
   });
+  // Session 135 — Niveau 31 (seteffectwithchance + catching stubs).
+  void import('./cmd-niveau-31').then(({ installNiveau31Handlers }) => {
+    installNiveau31Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
