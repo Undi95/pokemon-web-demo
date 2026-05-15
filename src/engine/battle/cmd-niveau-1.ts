@@ -52,12 +52,14 @@ import {
   setBattlerFainted,
   setBattleOutcome,
   setActiveBattler,
+  setBattlerAttacker,
+  setBattlerTarget,
 } from './state';
 import { Random } from '../random';
 import { getBattleMove } from './data/battle-moves';
 import { runDamagecalc } from './damage-calc';
 import { Cmd_typecalc as TypecalcImpl } from './type-calc';
-import { readWord, readHalfword, readByte, getBattleScriptOffset } from './script-interpreter';
+import { readWord, readHalfword, readByte, getBattleScriptOffset, getMoveEffectScriptOffset } from './script-interpreter';
 import type { BattleScriptContext, BattleOpcodeHandler } from './script-interpreter';
 import {
   MarkBattlerForControllerExec,
@@ -65,8 +67,27 @@ import {
 } from './battle-controllers';
 import { getBattlerForBattleScript as _utilGetBattler } from './util';
 import {
-  AbilityBattleEffects, ABILITYEFFECT_MOVES_BLOCK, consumeAbilityWantedScript,
+  AbilityBattleEffects, ABILITYEFFECT_MOVES_BLOCK,
+  ABILITYEFFECT_SYNCHRONIZE, ABILITYEFFECT_ON_DAMAGE,
+  ABILITYEFFECT_IMMUNITY, ABILITYEFFECT_ATK_SYNCHRONIZE,
+  consumeAbilityWantedScript,
 } from './ability-battle-effects';
+import {
+  ItemBattleEffects, ITEMEFFECT_MOVE_END, ITEMEFFECT_KINGSROCK_SHELLBELL,
+} from './item-battle-effects';
+import {
+  GetItemHoldEffect, GetItemHoldEffectParam,
+} from './data/item-hold-effects';
+import {
+  gBattlersCount, gAbsentBattlerFlags,
+  gLastPrintedMoves, gLastMoves, gLastResultingMoves, gLastHitBy,
+  gLastLandedMoves, gLastHitByType, gLastTakenMove, gLastTakenMoveFrom,
+  gChosenMove, gBattleStructChoicedMove, gBattleStructChangedItems,
+  gBattleStructAbsentBattlerFlags, gDisableStructs, gProtectStructs,
+  gSpecialStatuses,
+} from './state';
+import { gBitTable, BtlController_EmitSpriteInvisibility } from './battle-controllers';
+import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import {
   // Hitmarker bits
   HITMARKER_NO_ATTACKSTRING,
@@ -74,10 +95,18 @@ import {
   HITMARKER_UNABLE_TO_USE_MOVE,
   HITMARKER_OBEYS,
   HITMARKER_ALLOW_NO_PP,
+  HITMARKER_ATTACKSTRING_PRINTED,
+  HITMARKER_SWAP_ATTACKER_TARGET,
+  HITMARKER_NO_ANIMATIONS,
+  HITMARKER_DESTINYBOND,
+  HITMARKER_SYNCHRONIZE_EFFECT,
+  HITMARKER_FAINTED,
   // Status bits
   STATUS2_FOCUS_ENERGY,
   STATUS2_MULTIPLETURNS,
   STATUS2_SUBSTITUTE,
+  STATUS1_FREEZE,
+  STATUS2_RAGE,
   STATUS3_CANT_SCORE_A_CRIT,
   STATUS3_ALWAYS_HITS,
   STATUS3_SEMI_INVULNERABLE,
@@ -85,6 +114,7 @@ import {
   // Battle type flags
   BATTLE_TYPE_WALLY_TUTORIAL,
   BATTLE_TYPE_FIRST_BATTLE,
+  BATTLE_TYPE_DOUBLE,
   // Abilities
   ABILITY_BATTLE_ARMOR,
   ABILITY_SHELL_ARMOR,
@@ -97,6 +127,7 @@ import {
   HOLD_EFFECT_LUCKY_PUNCH,
   HOLD_EFFECT_STICK,
   HOLD_EFFECT_FOCUS_BAND,
+  HOLD_EFFECT_CHOICE_BAND,
   // Move effects
   EFFECT_HIGH_CRITICAL,
   EFFECT_SKY_ATTACK,
@@ -104,16 +135,26 @@ import {
   EFFECT_POISON_TAIL,
   EFFECT_THUNDER,
   EFFECT_FALSE_SWIPE,
+  EFFECT_BATON_PASS,
   // Species
   SPECIES_CHANSEY,
   SPECIES_FARFETCHD,
   // Moves misc
   MOVE_STRUGGLE,
+  MOVE_NONE,
+  MOVE_UNAVAILABLE,
+  MOVE_BATON_PASS,
+  MAX_MON_MOVES,
+  MOVE_TARGET_BOTH,
+  FLAG_MIRROR_MOVE_AFFECTED,
+  BIT_FLANK,
+  MOVE_RESULT_FAILED,
+  STAT_ATK,
+  MAX_STAT_STAGE,
   // Stats
   STAT_ACC,
   STAT_EVASION,
   MIN_STAT_STAGE,
-  MAX_STAT_STAGE,
   DEFAULT_STAT_STAGE,
   // Type
   TYPE_ELECTRIC,
@@ -554,23 +595,410 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
 
 // ─── Cmd_moveend (0x49) ─────────────────────────────────────────────────────
 
-/** MOVEEND_* states 1:1 décomp `include/battle.h:540-577`.
- *  MOVEEND_COUNT = nombre total de sub-states (= 28 dans le décomp Em). */
-const MOVEEND_COUNT = 28;
+/** 1:1 décomp `include/constants/battle_script_commands.h:393-410`.
+ *  MOVEEND_COUNT = 17 (= nb total sub-states ; AUDIT FIX session post-compact :
+ *  l'ancien stub mettait COUNT=28 ce qui était FAUX, le décomp Em a 17 cases). */
+const MOVEEND_RAGE                 = 0;
+const MOVEEND_DEFROST              = 1;
+const MOVEEND_SYNCHRONIZE_TARGET   = 2;
+const MOVEEND_ON_DAMAGE_ABILITIES  = 3;
+const MOVEEND_IMMUNITY_ABILITIES   = 4;
+const MOVEEND_SYNCHRONIZE_ATTACKER = 5;
+const MOVEEND_CHOICE_MOVE          = 6;
+const MOVEEND_CHANGED_ITEMS        = 7;
+const MOVEEND_ATTACKER_INVISIBLE   = 8;
+const MOVEEND_ATTACKER_VISIBLE     = 9;
+const MOVEEND_TARGET_VISIBLE       = 10;
+const MOVEEND_ITEM_EFFECTS_ALL     = 11;
+const MOVEEND_KINGSROCK_SHELLBELL  = 12;
+const MOVEEND_SUBSTITUTE           = 13;
+const MOVEEND_UPDATE_LAST_MOVES    = 14;
+const MOVEEND_MIRROR_MOVE          = 15;
+const MOVEEND_NEXT_TARGET          = 16;
+const MOVEEND_COUNT                = 17;
+
+/** 1:1 décomp `TARGET_TURN_DAMAGED` (battle.h:469). */
+function _TARGET_TURN_DAMAGED(): boolean {
+  return gSpecialStatuses[gBattlerTarget].physicalDmg !== 0
+      || gSpecialStatuses[gBattlerTarget].specialDmg !== 0;
+}
+
+/** 1:1 décomp `BATTLE_PARTNER(id)` (battle.h:46). */
+function _BATTLE_PARTNER(id: number): number { return id ^ BIT_FLANK; }
+
+/** 1:1 décomp `WasUnableToUseMove(battler)` (battle_util.c:877-891). */
+function _WasUnableToUseMove(battler: number): boolean {
+  const p = gProtectStructs[battler];
+  return Boolean(
+    p.prlzImmobility || p.targetNotAffected || p.usedImprisonedMove
+    || p.loveImmobility || p.usedDisabledMove || p.usedTauntedMove
+    || p.flag2Unknown || p.flinchImmobility || p.confusionSelfDmg
+  );
+}
+
+/** 1:1 décomp `MoveValuesCleanUp` (battle_script_commands.c:3624-3633). */
+function _MoveValuesCleanUp(): void {
+  setMoveResultFlags(0);
+  gBattleScripting.dmgMultiplier = 1;
+  setCritMultiplier(1);
+  gBattleCommunication[3 /* MOVE_EFFECT_BYTE */] = 0;
+  gBattleCommunication[5 /* MISS_TYPE */] = 0;
+  setHitMarker(gHitMarker & ~HITMARKER_DESTINYBOND);
+  setHitMarker(gHitMarker & ~HITMARKER_SYNCHRONIZE_EFFECT);
+}
 
 /** 1:1 décomp `Cmd_moveend` (battle_script_commands.c:4213-4501).
  *
- *  Massive state machine (~20 sub-states) qui handle post-move cleanup.
- *  Pour MVP : skip toutes les sub-states (= aucune effect propagation).
+ *  State machine post-move cleanup. 17 sub-states qui gèrent : Rage build,
+ *  Defrost via Fire, Synchronize, ability-on-damage (Static/Effect Spore/etc.),
+ *  status immunity abilities, Choice Band lock, Trick/Switcheroo items,
+ *  semi-invulnerable sprite show/hide, post-move items (berries), Kings Rock /
+ *  Shell Bell, substitute upkeep, last moves tracking, Mirror Move record,
+ *  next target (Double/multi-target).
  *
- *  Args : 1 byte endMode + 1 byte endState. Total 3 bytes (opcode + args). */
+ *  Args : 1 byte endMode + 1 byte endState. Total 3 bytes (opcode + args).
+ *
+ *  endMode = 1 → "exit after first sub-state with no effect" (= utilisé par les
+ *  scripts qui veulent un single-step pas full unwind).
+ *  endMode = 2 → "exit when reached endState" (= partial unwind jusqu'à un état
+ *  donné). */
 function Cmd_moveend(ctx: BattleScriptContext): boolean {
-  const _endMode = readByte(ctx);
-  const _endState = readByte(ctx);
-  void _endMode; void _endState;
+  // ctx.scriptPtr est sur opcode+1 (= endMode position) après pre-advance dispatcher.
+  // On note l'opcode start pour push cursor / stay-on-opcode.
+  const opcodeStartPtr = ctx.scriptPtr - 1;
+  const endMode = readByte(ctx);
+  const endState = readByte(ctx);
 
-  // Stub : set moveendState = COUNT (= exit immédiat de la boucle do...while).
-  gBattleScripting.moveendState = MOVEEND_COUNT;
+  // 1:1 décomp : `if (gChosenMove == MOVE_UNAVAILABLE) originallyUsedMove = MOVE_NONE`
+  const originallyUsedMove = (gChosenMove === MOVE_UNAVAILABLE) ? MOVE_NONE : gChosenMove;
+
+  // 1:1 décomp : `holdEffectAtk = GetItemHoldEffect(gBattleMons[gBattlerAttacker].item)`.
+  // STUB : gEnigmaBerries[]→holdEffect path (= per-battler custom berry data) pas porté.
+  const holdEffectAtk = GetItemHoldEffect(gBattleMons[gBattlerAttacker].item);
+
+  // 1:1 décomp : `GET_MOVE_TYPE(gCurrentMove, moveType)` — Hidden Power dynamic
+  // type override géré via gDynamicMoveType ; sinon move.type.
+  const moveType = gDynamicMoveType !== 0
+    ? (gDynamicMoveType & 0x3F)  // DYNAMIC_TYPE_MASK
+    : getBattleMove(gCurrentMove).type;
+
+  let effect = false;
+
+  // do...while loop 1:1 décomp.
+  let iterations = 0;
+  const MAX_ITER = 64;  // safety bound
+  while (iterations++ < MAX_ITER) {
+    switch (gBattleScripting.moveendState) {
+      case MOVEEND_RAGE: {
+        if ((gBattleMons[gBattlerTarget].status2 & STATUS2_RAGE)
+            && gBattleMons[gBattlerTarget].hp !== 0
+            && gBattlerAttacker !== gBattlerTarget
+            && GET_BATTLER_SIDE(gBattlerAttacker) !== GET_BATTLER_SIDE(gBattlerTarget)
+            && !(gMoveResultFlags & MOVE_RESULT_NO_EFFECT)
+            && _TARGET_TURN_DAMAGED()
+            && getBattleMove(gCurrentMove).power !== 0
+            && (gBattleMons[gBattlerTarget].statStages[STAT_ATK] ?? DEFAULT_STAT_STAGE) < MAX_STAT_STAGE) {
+          gBattleMons[gBattlerTarget].statStages[STAT_ATK] = (gBattleMons[gBattlerTarget].statStages[STAT_ATK] ?? DEFAULT_STAT_STAGE) + 1;
+          // BattleScriptPushCursor + jump = save current opcode start, jump to label.
+          ctx.scriptPtrStack.push(opcodeStartPtr);
+          const off = getBattleScriptOffset('BattleScript_RageIsBuilding');
+          if (off >= 0) ctx.scriptPtr = off;
+          effect = true;
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_DEFROST: {
+        if ((gBattleMons[gBattlerTarget].status1 & STATUS1_FREEZE)
+            && gBattleMons[gBattlerTarget].hp !== 0
+            && gBattlerAttacker !== gBattlerTarget
+            && gSpecialStatuses[gBattlerTarget].specialDmg !== 0
+            && !(gMoveResultFlags & MOVE_RESULT_NO_EFFECT)
+            && moveType === 10 /* TYPE_FIRE */) {
+          gBattleMons[gBattlerTarget].status1 &= ~STATUS1_FREEZE;
+          setActiveBattler(gBattlerTarget);
+          // 1:1 décomp : Emit SetMonData REQUEST_STATUS_BATTLE + Mark.
+          // STUB : emit pass-through (status1 déjà write direct sur gBattleMons).
+          MarkBattlerForControllerExec(gBattlerTarget);
+          ctx.scriptPtrStack.push(opcodeStartPtr);
+          const off = getBattleScriptOffset('BattleScript_DefrostedViaFireMove');
+          if (off >= 0) ctx.scriptPtr = off;
+          effect = true;
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_SYNCHRONIZE_TARGET: {
+        if (AbilityBattleEffects(ABILITYEFFECT_SYNCHRONIZE, gBattlerTarget, 0, 0, 0) !== 0) {
+          const label = consumeAbilityWantedScript();
+          if (label) {
+            ctx.scriptPtrStack.push(opcodeStartPtr);
+            const off = getBattleScriptOffset(label);
+            if (off >= 0) ctx.scriptPtr = off;
+          }
+          effect = true;
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_ON_DAMAGE_ABILITIES: {
+        if (AbilityBattleEffects(ABILITYEFFECT_ON_DAMAGE, gBattlerTarget, 0, 0, 0) !== 0) {
+          const label = consumeAbilityWantedScript();
+          if (label) {
+            ctx.scriptPtrStack.push(opcodeStartPtr);
+            const off = getBattleScriptOffset(label);
+            if (off >= 0) ctx.scriptPtr = off;
+          }
+          effect = true;
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_IMMUNITY_ABILITIES: {
+        // 1:1 décomp : loop through all battlers, increment state only when done.
+        if (AbilityBattleEffects(ABILITYEFFECT_IMMUNITY, 0, 0, 0, 0) !== 0) {
+          const label = consumeAbilityWantedScript();
+          if (label) {
+            ctx.scriptPtrStack.push(opcodeStartPtr);
+            const off = getBattleScriptOffset(label);
+            if (off >= 0) ctx.scriptPtr = off;
+          }
+          effect = true;
+        } else {
+          gBattleScripting.moveendState++;
+        }
+        break;
+      }
+      case MOVEEND_SYNCHRONIZE_ATTACKER: {
+        if (AbilityBattleEffects(ABILITYEFFECT_ATK_SYNCHRONIZE, gBattlerAttacker, 0, 0, 0) !== 0) {
+          const label = consumeAbilityWantedScript();
+          if (label) {
+            ctx.scriptPtrStack.push(opcodeStartPtr);
+            const off = getBattleScriptOffset(label);
+            if (off >= 0) ctx.scriptPtr = off;
+          }
+          effect = true;
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_CHOICE_MOVE: {
+        if ((gHitMarker & HITMARKER_OBEYS)
+            && holdEffectAtk === HOLD_EFFECT_CHOICE_BAND
+            && gChosenMove !== MOVE_STRUGGLE
+            && (gBattleStructChoicedMove[gBattlerAttacker] === MOVE_NONE
+                || gBattleStructChoicedMove[gBattlerAttacker] === MOVE_UNAVAILABLE)) {
+          if (gChosenMove === MOVE_BATON_PASS && !(gMoveResultFlags & MOVE_RESULT_FAILED)) {
+            gBattleScripting.moveendState++;
+            break;
+          }
+          gBattleStructChoicedMove[gBattlerAttacker] = gChosenMove;
+        }
+        let i: number;
+        for (i = 0; i < MAX_MON_MOVES; i++) {
+          if (gBattleMons[gBattlerAttacker].moves[i] === gBattleStructChoicedMove[gBattlerAttacker])
+            break;
+        }
+        if (i === MAX_MON_MOVES) gBattleStructChoicedMove[gBattlerAttacker] = MOVE_NONE;
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_CHANGED_ITEMS: {
+        for (let i = 0; i < gBattlersCount; i++) {
+          if (gBattleStructChangedItems[i] !== 0 /* ITEM_NONE */) {
+            gBattleMons[i].item = gBattleStructChangedItems[i];
+            gBattleStructChangedItems[i] = 0;
+          }
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_ATTACKER_INVISIBLE: {
+        if ((gStatuses3[gBattlerAttacker] & STATUS3_SEMI_INVULNERABLE)
+            && (gHitMarker & HITMARKER_NO_ANIMATIONS)) {
+          setActiveBattler(gBattlerAttacker);
+          BtlController_EmitSpriteInvisibility(0 /* B_COMM_TO_CONTROLLER */, true);
+          MarkBattlerForControllerExec(gBattlerAttacker);
+          gBattleScripting.moveendState++;
+          // 1:1 décomp : `return;` — exit handler sans avancer opcode pour re-call.
+          ctx.scriptPtr = opcodeStartPtr;
+          return false;
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_ATTACKER_VISIBLE: {
+        if ((gMoveResultFlags & MOVE_RESULT_NO_EFFECT)
+            || !(gStatuses3[gBattlerAttacker] & STATUS3_SEMI_INVULNERABLE)
+            || _WasUnableToUseMove(gBattlerAttacker)) {
+          setActiveBattler(gBattlerAttacker);
+          BtlController_EmitSpriteInvisibility(0 /* B_COMM_TO_CONTROLLER */, false);
+          MarkBattlerForControllerExec(gBattlerAttacker);
+          gStatuses3[gBattlerAttacker] &= ~STATUS3_SEMI_INVULNERABLE;
+          gSpecialStatuses[gBattlerAttacker].restoredBattlerSprite = 1;
+          gBattleScripting.moveendState++;
+          ctx.scriptPtr = opcodeStartPtr;
+          return false;
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_TARGET_VISIBLE: {
+        if (!gSpecialStatuses[gBattlerTarget].restoredBattlerSprite
+            && gBattlerTarget < gBattlersCount
+            && !(gStatuses3[gBattlerTarget] & STATUS3_SEMI_INVULNERABLE)) {
+          setActiveBattler(gBattlerTarget);
+          BtlController_EmitSpriteInvisibility(0 /* B_COMM_TO_CONTROLLER */, false);
+          MarkBattlerForControllerExec(gBattlerTarget);
+          gStatuses3[gBattlerTarget] &= ~STATUS3_SEMI_INVULNERABLE;
+          gBattleScripting.moveendState++;
+          ctx.scriptPtr = opcodeStartPtr;
+          return false;
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_ITEM_EFFECTS_ALL: {
+        if (ItemBattleEffects(ITEMEFFECT_MOVE_END, 0, false) !== 0) {
+          effect = true;
+        } else {
+          gBattleScripting.moveendState++;
+        }
+        break;
+      }
+      case MOVEEND_KINGSROCK_SHELLBELL: {
+        if (ItemBattleEffects(ITEMEFFECT_KINGSROCK_SHELLBELL, 0, false) !== 0) {
+          effect = true;
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_SUBSTITUTE: {
+        for (let i = 0; i < gBattlersCount; i++) {
+          if (gDisableStructs[i].substituteHP === 0) {
+            gBattleMons[i].status2 &= ~STATUS2_SUBSTITUTE;
+          }
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_UPDATE_LAST_MOVES: {
+        if (gHitMarker & HITMARKER_SWAP_ATTACKER_TARGET) {
+          // 1:1 décomp : swap attacker/target via temp gActiveBattler.
+          const swap = gBattlerAttacker;
+          setActiveBattler(gBattlerAttacker);
+          setBattlerAttacker(gBattlerTarget);
+          setBattlerTarget(swap);
+          setHitMarker(gHitMarker & ~HITMARKER_SWAP_ATTACKER_TARGET);
+        }
+        if (gHitMarker & HITMARKER_ATTACKSTRING_PRINTED) {
+          gLastPrintedMoves[gBattlerAttacker] = gChosenMove;
+        }
+        if (!(gAbsentBattlerFlags & gBitTable[gBattlerAttacker])
+            && !(gBattleStructAbsentBattlerFlags & gBitTable[gBattlerAttacker])
+            && getBattleMove(originallyUsedMove).effect !== EFFECT_BATON_PASS) {
+          if (gHitMarker & HITMARKER_OBEYS) {
+            gLastMoves[gBattlerAttacker] = gChosenMove;
+            gLastResultingMoves[gBattlerAttacker] = gCurrentMove;
+          } else {
+            gLastMoves[gBattlerAttacker] = MOVE_UNAVAILABLE;
+            gLastResultingMoves[gBattlerAttacker] = MOVE_UNAVAILABLE;
+          }
+          if (!(gHitMarker & HITMARKER_FAINTED(gBattlerTarget))) {
+            gLastHitBy[gBattlerTarget] = gBattlerAttacker;
+          }
+          if ((gHitMarker & HITMARKER_OBEYS) && !(gMoveResultFlags & MOVE_RESULT_NO_EFFECT)) {
+            if (gChosenMove === MOVE_UNAVAILABLE) {
+              gLastLandedMoves[gBattlerTarget] = gChosenMove;
+            } else {
+              gLastLandedMoves[gBattlerTarget] = gCurrentMove;
+              // 1:1 décomp : GET_MOVE_TYPE(gCurrentMove, gLastHitByType[gBattlerTarget]).
+              gLastHitByType[gBattlerTarget] = gDynamicMoveType !== 0
+                ? (gDynamicMoveType & 0x3F)
+                : getBattleMove(gCurrentMove).type;
+            }
+          } else {
+            gLastLandedMoves[gBattlerTarget] = MOVE_UNAVAILABLE;
+          }
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_MIRROR_MOVE: {
+        if (!(gAbsentBattlerFlags & gBitTable[gBattlerAttacker])
+            && !(gBattleStructAbsentBattlerFlags & gBitTable[gBattlerAttacker])
+            && (getBattleMove(originallyUsedMove).flags & FLAG_MIRROR_MOVE_AFFECTED)
+            && (gHitMarker & HITMARKER_OBEYS)
+            && gBattlerAttacker !== gBattlerTarget
+            && !(gHitMarker & HITMARKER_FAINTED(gBattlerTarget))
+            && !(gMoveResultFlags & MOVE_RESULT_NO_EFFECT)) {
+          gLastTakenMove[gBattlerTarget] = gChosenMove;
+          // 1:1 décomp : `lastTakenMoveFrom[attacker*2 + target*8 + 0/1]` — flat array.
+          // Notre gLastTakenMoveFrom est flat 4*4 (= 16) ; même indexing.
+          gLastTakenMoveFrom[gBattlerAttacker * 4 + gBattlerTarget] = gChosenMove;
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_NEXT_TARGET: {
+        // For moves hitting two opposing Pokémon (Double battles).
+        if (!(gHitMarker & HITMARKER_UNABLE_TO_USE_MOVE)
+            && (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+            && !gProtectStructs[gBattlerAttacker].chargingTurn
+            && getBattleMove(gCurrentMove).target === MOVE_TARGET_BOTH
+            && !(gHitMarker & HITMARKER_NO_ATTACKSTRING)) {
+          const battler = GetBattlerAtPosition(_BATTLE_PARTNER(GetBattlerPosition(gBattlerTarget)));
+          if (gBattleMons[battler].hp !== 0) {
+            // 1:1 décomp : re-execute the move on the partner.
+            setBattlerTarget(battler);
+            setHitMarker(gHitMarker | HITMARKER_NO_ATTACKSTRING);
+            gBattleScripting.moveendState = 0;
+            _MoveValuesCleanUp();
+            // 1:1 décomp : `BattleScriptPush(gBattleScriptsForMoveEffects[effect])`
+            // = push the effect script (will return after FlushMessageBox).
+            const moveEff = getBattleMove(gCurrentMove).effect;
+            const effectOff = getMoveEffectScriptOffset(moveEff);
+            if (effectOff >= 0) ctx.scriptPtrStack.push(effectOff);
+            const flushOff = getBattleScriptOffset('BattleScript_FlushMessageBox');
+            if (flushOff >= 0) ctx.scriptPtr = flushOff;
+            else ctx.scriptPtr = opcodeStartPtr;  // safety
+            return false;
+          } else {
+            setHitMarker(gHitMarker | HITMARKER_NO_ATTACKSTRING);
+          }
+        }
+        gBattleScripting.moveendState++;
+        break;
+      }
+      case MOVEEND_COUNT:
+        break;
+    }
+
+    // 1:1 décomp : `if (endMode == 1 && effect == FALSE) gBattleScripting.moveendState = MOVEEND_COUNT;`
+    if (endMode === 1 && !effect) {
+      gBattleScripting.moveendState = MOVEEND_COUNT;
+    }
+    // 1:1 décomp : `if (endMode == 2 && endState == gBattleScripting.moveendState) gBattleScripting.moveendState = MOVEEND_COUNT;`
+    if (endMode === 2 && endState === gBattleScripting.moveendState) {
+      gBattleScripting.moveendState = MOVEEND_COUNT;
+    }
+
+    // 1:1 décomp : `} while (gBattleScripting.moveendState != MOVEEND_COUNT && effect == FALSE);`
+    if (gBattleScripting.moveendState === MOVEEND_COUNT || effect) break;
+  }
+
+  // 1:1 décomp : `if (gBattleScripting.moveendState == MOVEEND_COUNT && effect == FALSE) gBattlescriptCurrInstr += 3;`
+  // → ctx.scriptPtr est déjà à opcodeStartPtr+3 (= post-args). No advance needed.
+  // Si effect == TRUE : on a déjà push+jump → ctx.scriptPtr = label, return false.
+  // Si state != COUNT && effect = TRUE → loop a break-é → ctx.scriptPtr est à label.
+  // Si state == COUNT && effect == TRUE : (= dernier sub-state a fait push)
+  //   → ctx.scriptPtr = label, OK.
+
+  if (effect) {
+    // On a push opcodeStartPtr + jump à label. Quand le sub-script return, on
+    // revient à opcodeStartPtr (= opcode position). Dispatcher pre-advance +1 →
+    // re-call Cmd_moveend qui reprend au sub-state suivant (moveendState++ déjà fait).
+  }
   return false;
 }
 

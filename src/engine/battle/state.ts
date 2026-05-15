@@ -492,6 +492,22 @@ export const gMoveTarget: number[] = [0, 0, 0, 0];
  *  position 0..3 du move choisi (= slot dans gBattleMons.moves). */
 export const gChosenMovePositions: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `gBattleStruct->choicedMove[MAX_BATTLERS_COUNT]` (battle.h
+ *  BattleStruct). Move locked-in par Choice Band, conservé jusqu'à switch-out.
+ *  Lu/écrit par MOVEEND_CHOICE_MOVE et Cmd_jumpifcantselectchoiced. */
+export const gBattleStructChoicedMove: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `gBattleStruct->changedItems[MAX_BATTLERS_COUNT]` (battle.h
+ *  BattleStruct). Item donné par Trick/Switcheroo, appliqué à la fin du move
+ *  via MOVEEND_CHANGED_ITEMS. ITEM_NONE = pas de change. */
+export const gBattleStructChangedItems: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `gBattleStruct->absentBattlerFlags` (battle.h BattleStruct).
+ *  Bitmask : flags battlers absents (= fainted) pendant le combat. Distinct de
+ *  `gAbsentBattlerFlags` (= global tracker, reset à chaque turn). */
+export let gBattleStructAbsentBattlerFlags = 0;
+export function setBattleStructAbsentBattlerFlags(v: number) { gBattleStructAbsentBattlerFlags = v; }
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];
@@ -574,7 +590,10 @@ export function resetBattleState(): void {
     gChosenActionByBattler[i] = 0;
     gChosenMoveByBattler[i] = 0;
     gActionsByTurnOrder[i] = 0;
+    gBattleStructChoicedMove[i] = 0;
+    gBattleStructChangedItems[i] = 0;
   }
+  gBattleStructAbsentBattlerFlags = 0;
   Object.assign(gBattleScripting, _makeBlankScripting());
   for (let i = 0; i < gBattleCommunication.length; i++) gBattleCommunication[i] = 0;
   gBattlerAttacker = 0;
