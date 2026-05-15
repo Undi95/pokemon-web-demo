@@ -37,6 +37,14 @@ import {
 } from './constants';
 import { getBattleMove } from './data/battle-moves';
 import { gBitTable } from './battle-controllers';
+import {
+  EFFECT_SKULL_BASH as _EFFECT_SKULL_BASH,
+  EFFECT_RAZOR_WIND as _EFFECT_RAZOR_WIND,
+  EFFECT_SKY_ATTACK as _EFFECT_SKY_ATTACK,
+  EFFECT_SOLAR_BEAM as _EFFECT_SOLAR_BEAM,
+  EFFECT_SEMI_INVULNERABLE as _EFFECT_SEMI_INVULNERABLE,
+  EFFECT_BIDE as _EFFECT_BIDE,
+} from '../decomp-data/auto/include/constants/battle_move_effects-data';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -47,17 +55,37 @@ function _getGenderFromSpeciesAndPersonality(species: number, personality: numbe
   return _GetGenderFull(species, personality);
 }
 
-/** 1:1 stub `IsInvalidForSleepTalkOrAssist(move)` (battle_util.c).
- *  Forbidden moves dans le décomp : MOVE_NONE / METRONOME / STRUGGLE / SLEEP_TALK
- *  / ASSIST / MIRROR_MOVE / FOCUS_PUNCH / UPROAR / 2-turn moves.
- *  Notre stub : check juste MOVE_NONE + STRUGGLE (= rough). */
+/** 1:1 décomp `IsInvalidForSleepTalkOrAssist(move)`
+ *  (battle_script_commands.c:8212-8222). Returns true si le move ne peut PAS
+ *  être appelé par Sleep Talk / Assist (= MOVE_NONE/SLEEP_TALK/ASSIST/MIRROR_MOVE/METRONOME).
+ *  Note décomp Em ne check pas STRUGGLE, FOCUS_PUNCH, UPROAR, 2-turn moves
+ *  (= ceux-ci sont check ailleurs dans Cmd_trychoosesleeptalkmove). */
 function _isInvalidForSleepTalkOrAssist(move: number): boolean {
-  return move === MOVE_NONE || move === 165 /* MOVE_STRUGGLE */
-      || move === 118 /* MOVE_METRONOME */ || move === 214 /* MOVE_SLEEP_TALK */;
+  const MOVE_ASSIST_LOCAL = 274;
+  const MOVE_MIRROR_MOVE_LOCAL = 119;
+  const MOVE_METRONOME_LOCAL = 118;
+  const MOVE_SLEEP_TALK_LOCAL = 214;
+  return move === MOVE_NONE
+      || move === MOVE_SLEEP_TALK_LOCAL
+      || move === MOVE_ASSIST_LOCAL
+      || move === MOVE_MIRROR_MOVE_LOCAL
+      || move === MOVE_METRONOME_LOCAL;
 }
 
-/** 1:1 stub `IsTwoTurnsMove(move)` (battle_util.c). Pour MVP : false. */
-function _isTwoTurnsMove(_move: number): boolean { return false; }
+/** 1:1 décomp `IsTwoTurnsMove(move)` (battle_script_commands.c:8199-8210).
+ *  Returns true si le move utilise 2 turns (charge → attaque).
+ *  AUDIT FIX : valeurs EFFECT_* importées depuis auto-data (= drift précédent
+ *  avec SKULL_BASH=11/RAZOR_WIND=12/SOLAR_BEAM=70/SEMI_INVULNERABLE=39/BIDE=27
+ *  toutes FAUSSES). */
+function _isTwoTurnsMove(move: number): boolean {
+  const effect = getBattleMove(move).effect;
+  return effect === _EFFECT_SKULL_BASH
+      || effect === _EFFECT_RAZOR_WIND
+      || effect === _EFFECT_SKY_ATTACK
+      || effect === _EFFECT_SOLAR_BEAM
+      || effect === _EFFECT_SEMI_INVULNERABLE
+      || effect === _EFFECT_BIDE;
+}
 
 // 1:1 décomp `CheckMoveLimitations` — importé depuis move-limitations.ts (= full port).
 import { CheckMoveLimitations as _CheckMoveLimitationsFull } from './move-limitations';
