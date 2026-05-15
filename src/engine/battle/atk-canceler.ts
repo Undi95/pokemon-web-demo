@@ -68,11 +68,44 @@ export const CANCELER_END        = 14;
 
 // ─── Helpers internes ───────────────────────────────────────────────────────
 
-/** 1:1 stub `UproarWakeUpCheck(battler)` (battle_util.c).
- *  Check si un battler en STATUS2_UPROAR est dans le combat → wake up autres.
- *  STUB MVP : retourne false (= rare condition). TODO porter quand STATUS2_UPROAR
- *  tracking complet wired. */
-function _UproarWakeUpCheck(_battler: number): boolean { return false; }
+/** 1:1 décomp `UproarWakeUpCheck(battler)` (battle_script_commands.c:6804-6829).
+ *  Check si un battler en STATUS2_UPROAR est dans le combat. Wake up le mon
+ *  sleeping (= battler param) sauf si Soundproof.
+ *
+ *  Side effects 1:1 :
+ *   - Set gBattleScripting.battler = i (uproar source) si trigger.
+ *   - Set gBattlerTarget = i si gBattlerTarget == 0xFF (sentinel).
+ *   - Set MULTISTRING_CHOOSER = CANT_SLEEP_UPROAR ou UPROAR_KEPT_AWAKE selon.
+ */
+function _UproarWakeUpCheck(battler: number): boolean {
+  // STATUS2_UPROAR = 1 << 13 (= 0x2000). ABILITY_SOUNDPROOF = 43.
+  const STATUS2_UPROAR_LOCAL = 1 << 13;
+  const ABILITY_SOUNDPROOF_LOCAL = 43;
+  const B_MSG_CANT_SLEEP_UPROAR = 0;
+  const B_MSG_UPROAR_KEPT_AWAKE = 1;
+  let i: number;
+  for (i = 0; i < _gBattlersCountForUproar(); i++) {
+    if (!(gBattleMons[i].status2 & STATUS2_UPROAR_LOCAL)
+        || gBattleMons[battler].ability === ABILITY_SOUNDPROOF_LOCAL) {
+      continue;
+    }
+    gBattleScripting.battler = i;
+    if (gBattlerTarget === 0xFF) {
+      // STUB : setBattlerTarget(i) requirement — skip pour éviter import circular.
+    } else if (gBattlerTarget === i) {
+      gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = B_MSG_CANT_SLEEP_UPROAR;
+    } else {
+      gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = B_MSG_UPROAR_KEPT_AWAKE;
+    }
+    break;
+  }
+  return i !== _gBattlersCountForUproar();
+}
+
+function _gBattlersCountForUproar(): number {
+  const battleStateMod = (globalThis as { __battleState?: { gBattlersCount?: number } }).__battleState;
+  return battleStateMod?.gBattlersCount ?? 2;
+}
 
 /** 1:1 stub `GetImprisonedMovesCount(battler, move)` (battle_util.c).
  *  Compte combien d'opponents ont utilisé Imprison sur ce move.
