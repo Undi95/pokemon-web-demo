@@ -421,6 +421,15 @@ export const gBideTarget: number[] = [0, 0, 0, 0];
  *  ou à la fin du combat. */
 export const gUsedHeldItems: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `gBattleStruct->intimidateBattler` — set par AbilityBattleEffects
+ *  pour signaler quel battler doit déclencher Intimidate. */
+export let gIntimidateBattler = 0;
+export function setIntimidateBattler(v: number) { gIntimidateBattler = v; }
+
+/** 1:1 décomp `gBattleStruct->formToChangeInto` — Castform/Cherrim. */
+export let gFormToChangeInto = 0;
+export function setFormToChangeInto(v: number) { gFormToChangeInto = v; }
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];
@@ -531,6 +540,8 @@ export function resetBattleState(): void {
   gAbsentBattlerFlags = 0;
   gBattleEnvironment = 0;
   gPaydayMoney = 0;
+  gIntimidateBattler = 0;
+  gFormToChangeInto = 0;
   gWishFutureKnock.futureSightCounter = [0, 0, 0, 0];
   gWishFutureKnock.futureSightAttacker = [0, 0, 0, 0];
   gWishFutureKnock.futureSightDmg = [0, 0, 0, 0];

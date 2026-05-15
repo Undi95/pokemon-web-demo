@@ -178,6 +178,16 @@ export function BtlController_EmitHidePartyStatusSummary(_bufferId: number): voi
   // TODO : hide party status row.
 }
 
+/** 1:1 signature décomp `BtlController_EmitTrainerSlideBack(buf)`. */
+export function BtlController_EmitTrainerSlideBack(_bufferId: number): void {
+  // TODO : trainer sprite slide-out anim.
+}
+
+/** 1:1 signature décomp `BtlController_EmitTrainerSlide(buf)` (= slide in). */
+export function BtlController_EmitTrainerSlide(_bufferId: number): void {
+  // TODO : trainer sprite slide-in anim.
+}
+
 /** 1:1 signature décomp `BtlController_EmitYesNoBox` n'existe pas — yesnobox
  *  est implémenté direct par Cmd_yesnobox via le state machine
  *  gBattleCommunication[0]. */

@@ -622,6 +622,11 @@ export const B_MSG_PROTECTED_ITSELF = 0;
 export const B_MSG_BRACED_ITSELF    = 1;
 export const B_MSG_PROTECT_FAILED   = 2;
 
+// ─── B_MSG_* OHKO / transform (battle_string_ids.h:492-505) — 1:1 décomp ──
+export const B_MSG_KO_MISS         = 0;
+export const B_MSG_KO_UNAFFECTED   = 1;
+export const B_MSG_TRANSFORM_FAILED = 1;
+
 // ─── sProtectSuccessRates (battle_script_commands.c:719) — 1:1 décomp ─────
 /** USHRT_MAX = 0xFFFF (= 65535). Décomp utilise USHRT_MAX, USHRT_MAX/2,
  *  USHRT_MAX/4, USHRT_MAX/8 pour les success rates de Protect/Detect/Endure

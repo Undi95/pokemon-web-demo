@@ -488,6 +488,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-20').then(({ installNiveau20Handlers }) => {
     installNiveau20Handlers(_commands);
   });
+  // Session 135 — Niveau 21 (item/wish/transform/OHKO).
+  void import('./cmd-niveau-21').then(({ installNiveau21Handlers }) => {
+    installNiveau21Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
