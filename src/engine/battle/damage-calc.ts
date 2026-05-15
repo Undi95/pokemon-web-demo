@@ -35,71 +35,44 @@ import {
 } from './state';
 import { getBattleMove } from './data/battle-moves';
 import type { BattleMon } from './script-interpreter';
+import {
+  TYPE_MYSTERY,
+  TYPE_FIRE,
+  TYPE_WATER,
+  TYPE_BUG,
+  TYPE_GRASS,
+  TYPE_ICE,
+  STAT_ATK,
+  STAT_DEF,
+  STAT_SPATK,
+  STAT_SPDEF,
+  DEFAULT_STAT_STAGE,
+  STATUS1_BURN,
+  SIDE_STATUS_REFLECT,
+  SIDE_STATUS_LIGHTSCREEN,
+  BATTLE_TYPE_DOUBLE,
+  B_WEATHER_RAIN_TEMPORARY,
+  B_WEATHER_RAIN,
+  B_WEATHER_SANDSTORM,
+  B_WEATHER_SUN,
+  B_WEATHER_HAIL,
+  ABILITY_THICK_FAT,
+  ABILITY_HUGE_POWER,
+  ABILITY_PURE_POWER,
+  ABILITY_HUSTLE,
+  ABILITY_GUTS,
+  ABILITY_MARVEL_SCALE,
+  ABILITY_OVERGROW,
+  ABILITY_BLAZE,
+  ABILITY_TORRENT,
+  ABILITY_SWARM,
+  MOVE_SOLAR_BEAM,
+  EFFECT_EXPLOSION,
+  IS_TYPE_PHYSICAL,
+  IS_TYPE_SPECIAL,
+} from './constants';
 
-// ─── Constants 1:1 décomp ──────────────────────────────────────────────────
-
-// Type constants (= include/constants/pokemon.h).
-const TYPE_MYSTERY  = 9;
-const TYPE_FIRE     = 10;
-const TYPE_WATER    = 11;
-const TYPE_BUG      = 6;
-const TYPE_GRASS    = 12;
-const TYPE_ELECTRIC = 13;
-const TYPE_ICE      = 15;
-const TYPE_FLYING   = 2;
-const TYPE_PSYCHIC  = 14;
-const TYPE_GROUND   = 4;
-const TYPE_FIGHTING = 1;
-const TYPE_POISON   = 3;
-const TYPE_ROCK     = 5;
-const TYPE_GHOST    = 7;
-const TYPE_DARK     = 17;
-const TYPE_STEEL    = 8;
-const TYPE_DRAGON   = 16;
-const TYPE_NORMAL   = 0;
-void TYPE_BUG; void TYPE_ELECTRIC; void TYPE_ICE; void TYPE_FLYING;
-void TYPE_PSYCHIC; void TYPE_GROUND; void TYPE_FIGHTING; void TYPE_POISON;
-void TYPE_ROCK; void TYPE_GHOST; void TYPE_DARK; void TYPE_STEEL;
-void TYPE_DRAGON; void TYPE_NORMAL;
-
-// Stat indices (= include/constants/pokemon.h).
-const STAT_ATK   = 1;
-const STAT_DEF   = 2;
-const STAT_SPATK = 4;
-const STAT_SPDEF = 5;
-const DEFAULT_STAT_STAGE = 6;
-
-// Status1 / Status2 (= include/constants/battle.h).
-const STATUS1_BURN = 0x10;
-
-// Side statuses.
-const SIDE_STATUS_REFLECT    = 0x0001;
-const SIDE_STATUS_LIGHTSCREEN = 0x0004;
-void SIDE_STATUS_LIGHTSCREEN;
-
-// Battle type flags.
-const BATTLE_TYPE_DOUBLE   = 0x0001;
-
-// Weather bits.
-const B_WEATHER_RAIN_TEMPORARY = 0x01;
-const B_WEATHER_RAIN_DOWNPOUR  = 0x02;
-const B_WEATHER_RAIN_PERMANENT = 0x04;
-const B_WEATHER_RAIN = B_WEATHER_RAIN_TEMPORARY | B_WEATHER_RAIN_DOWNPOUR | B_WEATHER_RAIN_PERMANENT;
-const B_WEATHER_SANDSTORM = 0x18;
-const B_WEATHER_SUN       = 0x60;
-const B_WEATHER_HAIL      = 0x80;
-
-// Abilities (= include/constants/pokemon.h).
-const ABILITY_THICK_FAT    = 47;
-const ABILITY_HUGE_POWER   = 37;
-const ABILITY_PURE_POWER   = 74;
-const ABILITY_HUSTLE       = 55;
-const ABILITY_GUTS         = 62;
-const ABILITY_MARVEL_SCALE = 63;
-const ABILITY_OVERGROW     = 65;
-const ABILITY_BLAZE        = 66;
-const ABILITY_TORRENT      = 67;
-const ABILITY_SWARM        = 68;
+// ─── Local data ────────────────────────────────────────────────────────────
 
 // 1:1 décomp `gStatStageRatios[MAX_STAT_STAGE + 1][2]` (pokemon.c:1869-1884).
 const gStatStageRatios: ReadonlyArray<readonly [number, number]> = [
@@ -107,18 +80,10 @@ const gStatStageRatios: ReadonlyArray<readonly [number, number]> = [
   [15, 10], [20, 10], [25, 10], [30, 10], [35, 10], [40, 10],
 ];
 
-// MOVE_SOLAR_BEAM (= 76).
-const MOVE_SOLAR_BEAM = 76;
-
-// EFFECT_EXPLOSION (= 7).
-const EFFECT_EXPLOSION = 7;
-
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** IS_TYPE_PHYSICAL (= include/battle.h:466). */
-function isTypePhysical(t: number): boolean { return t < TYPE_MYSTERY; }
-/** IS_TYPE_SPECIAL (= include/battle.h:467). */
-function isTypeSpecial(t: number): boolean { return t > TYPE_MYSTERY; }
+const isTypePhysical = IS_TYPE_PHYSICAL;
+const isTypeSpecial = IS_TYPE_SPECIAL;
 
 /** APPLY_STAT_MOD inline (= pokemon.c:3101 macro). */
 function applyStatMod(mon: BattleMon, stat: number, statIndex: number): number {

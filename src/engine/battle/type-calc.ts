@@ -31,33 +31,21 @@ import {
   TYPE_MUL_NOT_EFFECTIVE,
   TYPE_MUL_SUPER_EFFECTIVE,
 } from './data/type-effectiveness';
-
-// ─── Constants 1:1 décomp ───────────────────────────────────────────────────
-
-const MOVE_STRUGGLE = 165;
-
-// Move result flags (= include/constants/battle.h:219-227).
-const MOVE_RESULT_MISSED             = 1 << 0;
-const MOVE_RESULT_SUPER_EFFECTIVE    = 1 << 1;
-const MOVE_RESULT_NOT_VERY_EFFECTIVE = 1 << 2;
-const MOVE_RESULT_DOESNT_AFFECT_FOE  = 1 << 3;
-const MOVE_RESULT_FAILED             = 1 << 4;
-const MOVE_RESULT_NO_EFFECT          = MOVE_RESULT_MISSED | MOVE_RESULT_DOESNT_AFFECT_FOE | MOVE_RESULT_FAILED;
-
-// Status2 (= battle.h:153).
-const STATUS2_FORESIGHT = 1 << 29;
-
-// Abilities.
-const ABILITY_LEVITATE     = 26;
-const ABILITY_WONDER_GUARD = 25;
-
-// Types.
-const TYPE_GROUND = 4;
-
-// Battle communication index (= include/constants/battle.h).
-const MISS_TYPE = 6;
-const B_MSG_GROUND_MISS = 3;
-const B_MSG_AVOIDED_DMG = 1;
+import {
+  MOVE_STRUGGLE,
+  MOVE_RESULT_MISSED,
+  MOVE_RESULT_SUPER_EFFECTIVE,
+  MOVE_RESULT_NOT_VERY_EFFECTIVE,
+  MOVE_RESULT_DOESNT_AFFECT_FOE,
+  MOVE_RESULT_NO_EFFECT,
+  STATUS2_FORESIGHT,
+  ABILITY_LEVITATE,
+  ABILITY_WONDER_GUARD,
+  TYPE_GROUND,
+  MISS_TYPE,
+  B_MSG_GROUND_MISS,
+  B_MSG_AVOIDED_DMG,
+} from './constants';
 
 // ─── ModulateDmgByType ──────────────────────────────────────────────────────
 

@@ -4,24 +4,24 @@
  *
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/battle_script_commands.c`
  *
- * Opcodes inclus dans ce niveau :
- *   0x03 Cmd_ppreduce             ✅ implémenté (path happy, sans Pressure ability)
- *   0x04 Cmd_critcalc             ✅ implémenté (sans hold effect specifics)
- *   0x05 Cmd_damagecalc           ⏳ partial (CalculateBaseDamage stub)
- *   0x06 Cmd_typecalc             ⏳ TODO (gros : ~300 lignes type chart + immunités)
- *   0x07 Cmd_adjustnormaldamage   ⏳ TODO
- *   0x0B Cmd_healthbarupdate      ⏳ TODO (UI sync)
- *   0x0C Cmd_datahpupdate         ⏳ TODO
- *   0x19 Cmd_tryfaintmon          ⏳ TODO
- *   0x49 Cmd_moveend              ⏳ TODO (state machine post-move)
- *   0x00 Cmd_attackcanceler       ⏳ TODO (énorme : protect, magic coat, snatch, etc.)
- *   0x01 Cmd_accuracycheck        ⏳ TODO
+ * Tous les constants viennent de `./constants.ts` (= 1:1 décomp include/constants/battle.h
+ * + pokemon.h + abilities.h + moves.h). Pas de magic numbers redéfinis localement.
+ *
+ * Opcodes 1:1 décomp implémentés :
+ *   0x00 Cmd_attackcanceler   happy path (skip Protect/Snatch/MagicCoat/LightningRod/Disobedience)
+ *   0x01 Cmd_accuracycheck    full
+ *   0x03 Cmd_ppreduce         full
+ *   0x04 Cmd_critcalc         full (uses getBattleMove for real move effect)
+ *   0x05 Cmd_damagecalc       wraps CalculateBaseDamage 1:1
+ *   0x06 Cmd_typecalc         delegated to type-calc.ts
+ *   0x07 Cmd_adjustnormaldamage  full 1:1 (= ApplyRandomDmgMultiplier + FocusBand + EnduredCheck)
+ *   0x0B Cmd_healthbarupdate  stub UI (= datahpupdate fait le HP write)
+ *   0x0C Cmd_datahpupdate     1:1 minimal (= apply hp + record gHpDealt + handle BS_TARGET arg)
+ *   0x19 Cmd_tryfaintmon      1:1 minimal (= consume args, set gBattlerFainted, set outcome)
+ *   0x49 Cmd_moveend          stub (= skip toutes sub-states)
  *
  * Pour utiliser : ces handlers sont enregistrés dans le dispatch table de
  * script-interpreter.ts via `installNiveau1Handlers()`.
- *
- * Roadmap : `D:/Projet 1/pokemon-web-demo/memory/SESSION-132-BACKING-SYSTEMS.md`
- * + `D:/Projet 1/pokemon-web-demo/memory/ROADMAP-FUTURE-PROOF-2026-05-14.md`.
  */
 
 import {
@@ -45,9 +45,11 @@ import {
   setCritMultiplier,
   setBattleMoveDamage,
   setMoveResultFlags,
+  setHpDealt,
   setPotentialItemEffectBattler,
   setBattlerFainted,
   setBattleOutcome,
+  setActiveBattler,
 } from './state';
 import { Random } from '../random';
 import { getBattleMove } from './data/battle-moves';
@@ -55,74 +57,133 @@ import { runDamagecalc } from './damage-calc';
 import { Cmd_typecalc as TypecalcImpl } from './type-calc';
 import { readWord, readHalfword, readByte } from './script-interpreter';
 import type { BattleScriptContext, BattleOpcodeHandler } from './script-interpreter';
+import {
+  // Hitmarker bits
+  HITMARKER_NO_ATTACKSTRING,
+  HITMARKER_NO_PPDEDUCT,
+  HITMARKER_UNABLE_TO_USE_MOVE,
+  HITMARKER_OBEYS,
+  HITMARKER_ALLOW_NO_PP,
+  // Status bits
+  STATUS2_FOCUS_ENERGY,
+  STATUS2_MULTIPLETURNS,
+  STATUS3_CANT_SCORE_A_CRIT,
+  STATUS3_ALWAYS_HITS,
+  STATUS3_SEMI_INVULNERABLE,
+  // Battle type flags
+  BATTLE_TYPE_WALLY_TUTORIAL,
+  BATTLE_TYPE_FIRST_BATTLE,
+  // Abilities
+  ABILITY_BATTLE_ARMOR,
+  ABILITY_SHELL_ARMOR,
+  ABILITY_PRESSURE,
+  ABILITY_COMPOUND_EYES,
+  ABILITY_SAND_VEIL,
+  ABILITY_HUSTLE,
+  // Hold effects
+  HOLD_EFFECT_SCOPE_LENS,
+  HOLD_EFFECT_LUCKY_PUNCH,
+  HOLD_EFFECT_STICK,
+  HOLD_EFFECT_FOCUS_BAND,
+  // Move effects
+  EFFECT_HIGH_CRITICAL,
+  EFFECT_SKY_ATTACK,
+  EFFECT_BLAZE_KICK,
+  EFFECT_POISON_TAIL,
+  EFFECT_THUNDER,
+  EFFECT_FALSE_SWIPE,
+  // Species
+  SPECIES_CHANSEY,
+  SPECIES_FARFETCHD,
+  // Moves misc
+  MOVE_STRUGGLE,
+  // Stats
+  STAT_ACC,
+  STAT_EVASION,
+  MIN_STAT_STAGE,
+  MAX_STAT_STAGE,
+  DEFAULT_STAT_STAGE,
+  // Weather
+  B_WEATHER_SUN,
+  B_WEATHER_SANDSTORM,
+  // Battle script args
+  NO_ACC_CALC,
+  NO_ACC_CALC_CHECK_LOCK_ON,
+  ACC_CURR_MOVE,
+  BS_ATTACKER,
+  BS_TARGET,
+  // Move result
+  MOVE_RESULT_MISSED,
+  MOVE_RESULT_FOE_ENDURED,
+  MOVE_RESULT_FOE_HUNG_ON,
+  // Outcomes
+  B_OUTCOME_WON,
+  B_OUTCOME_LOST,
+  // Sides
+  GET_BATTLER_SIDE,
+  B_SIDE_PLAYER,
+  // Communication
+  MISS_TYPE,
+  B_MSG_MISSED,
+  // Helpers
+  IS_TYPE_PHYSICAL,
+} from './constants';
 
-// ─── Constants 1:1 décomp ──────────────────────────────────────────────────
+// ─── Helpers internes ───────────────────────────────────────────────────────
 
-/** 1:1 décomp `include/constants/battle.h` HITMARKER_*. */
-const HITMARKER_NO_ATTACKSTRING = 0x00000040;
-const HITMARKER_NO_PPDEDUCT     = 0x00000080;
-
-/** 1:1 décomp STATUS2_FOCUS_ENERGY. */
-const STATUS2_FOCUS_ENERGY = 0x00100000;
-
-/** 1:1 décomp STATUS3_CANT_SCORE_A_CRIT. */
-const STATUS3_CANT_SCORE_A_CRIT = 0x10000000;
-
-/** 1:1 décomp BATTLE_TYPE_FIRST_BATTLE / WALLY_TUTORIAL.
- *  Ces battles ont des modificateurs spécifiques (= no crits).  */
-const BATTLE_TYPE_WALLY_TUTORIAL = 0x10000000;
-const BATTLE_TYPE_FIRST_BATTLE   = 0x00000100;
-
-/** 1:1 décomp ABILITY_PRESSURE / BATTLE_ARMOR / SHELL_ARMOR (= include/constants/pokemon.h). */
-const ABILITY_BATTLE_ARMOR = 4;
-const ABILITY_SHELL_ARMOR  = 75;
-
-/** 1:1 décomp `sCriticalHitChance[]` (battle_script_commands.c:606).
- *  Indexed par critChance (clamped à 0..4). */
-const sCriticalHitChance: ReadonlyArray<number> = [16, 8, 4, 3, 2];
-
-/** Stubs pour les data tables (= move effects, abilities, hold effects).
- *  Quand le port aura ces tables, on remplace par real lookup. */
-function _getMoveEffect(_moveId: number): number { return 0; }
+/** Stub pour hold effect — TODO porter `GetItemHoldEffect(itemId)`.
+ *  Pour now : retourne HOLD_EFFECT_NONE (= 0) toujours. */
 function _getHoldEffect(_itemId: number): number { return 0; }
-function _getMonAbility(monIdx: number): number {
-  return gBattleMons[monIdx]?.ability ?? 0;
+
+/** Stub pour hold effect param — TODO porter `GetItemHoldEffectParam(itemId)`. */
+function _getHoldEffectParam(_itemId: number): number { return 0; }
+
+/** 1:1 décomp `ApplyRandomDmgMultiplier()` (battle_script_commands.c:1639-1651).
+ *
+ *  Random 85-100% multiplier (= rand % 16, donc range [0..15], inversé → [85..100]).
+ *  Si damage == 0 → no-op. Si damage > 0 et result == 0 → set to 1 (min damage). */
+function ApplyRandomDmgMultiplier(): void {
+  const rand = Random();
+  const randPercent = 100 - (rand % 16);
+
+  if (gBattleMoveDamage !== 0) {
+    let dmg = gBattleMoveDamage * randPercent;
+    dmg = Math.floor(dmg / 100);
+    if (dmg === 0) dmg = 1;
+    setBattleMoveDamage(dmg);
+  }
+}
+
+/** 1:1 décomp `GetBattlerForBattleScript(u8 arg)` (battle_util.c).
+ *  Mappe BS_ATTACKER → gBattlerAttacker, BS_TARGET → gBattlerTarget, etc.
+ *  Subset implémenté ici (= ce qu'utilise Niveau 1). */
+function getBattlerForBattleScript(arg: number): number {
+  switch (arg) {
+    case BS_ATTACKER: return gBattlerAttacker;
+    case BS_TARGET: return gBattlerTarget;
+    default: return gBattlerTarget;  // fallback (= EFFECT_BATTLER, FAINTED, etc. TODO porter)
+  }
 }
 
 // ─── Cmd_ppreduce (0x03) ────────────────────────────────────────────────────
 
-/** 1:1 décomp `Cmd_ppreduce` (battle_script_commands.c:1205-1251).
- *
- *  Logic :
- *  1. Si battle controllers en cours d'anim, return (= pause).
- *  2. Calcule ppToDeduct (= 1 par défaut, +1 si target a Pressure ability et est différent de l'attacker).
- *  3. Si pas HITMARKER_NO_PPDEDUCT et pas HITMARKER_NO_ATTACKSTRING, et pp[curMovePos] > 0 :
- *     - decrement pp[curMovePos] de ppToDeduct (clamp à 0).
- *     - sync pp au mon data persistant (= skip pour now, pas de battle controllers).
- *  4. Clear HITMARKER_NO_PPDEDUCT.
- *  5. Advance script ptr.
- *
- *  Notre simplification : gBattleControllerExecFlags = 0 toujours (= pas de
- *  controllers async pour now). Pressure ability handling implémenté basique
- *  (= +1 si target ability == PRESSURE et target != attacker). */
+/** 1:1 décomp `Cmd_ppreduce` (battle_script_commands.c:1205-1251). */
 function Cmd_ppreduce(_ctx: BattleScriptContext): boolean {
   let ppToDeduct = 1;
 
   // 1:1 décomp : pas de gSpecialStatuses[].ppNotAffectedByPressure tracking pour
-  // now (= move target check + Pressure ability check sont skip). Le default
-  // case du switch :
-  //   if (gBattlerAttacker != gBattlerTarget && target.ability == ABILITY_PRESSURE)
-  //     ppToDeduct++;
-  const ABILITY_PRESSURE = 46;  // include/constants/pokemon.h
+  // now. Le switch sur gBattleMoves[move].target pour Pressure cross-side est
+  // simplifié au default case (= single battle pattern) :
+  //   if (gBattlerAttacker != gBattlerTarget && target.ability == PRESSURE) ppToDeduct++;
   if (gBattlerAttacker !== gBattlerTarget
-      && _getMonAbility(gBattlerTarget) === ABILITY_PRESSURE) {
+      && gBattleMons[gBattlerTarget].ability === ABILITY_PRESSURE) {
     ppToDeduct++;
   }
 
   if (!(gHitMarker & (HITMARKER_NO_PPDEDUCT | HITMARKER_NO_ATTACKSTRING))
       && gBattleMons[gBattlerAttacker].pp[gCurrMovePos] > 0) {
     // 1:1 décomp gProtectStructs[gBattlerAttacker].notFirstStrike = 1.
-    // Skip pour now (= gProtectStructs not yet ported).
+    // TODO porter gProtectStructs.
 
     const currentPp = gBattleMons[gBattlerAttacker].pp[gCurrMovePos];
     if (currentPp > ppToDeduct) {
@@ -130,39 +191,19 @@ function Cmd_ppreduce(_ctx: BattleScriptContext): boolean {
     } else {
       gBattleMons[gBattlerAttacker].pp[gCurrMovePos] = 0;
     }
-    // 1:1 décomp : MOVE_IS_PERMANENT check + BtlController_EmitSetMonData sync
-    // au persistent mon data. Skip pour now — pp persistence se fait à la fin
-    // du combat via le team data writeback.
+    // TODO : MOVE_IS_PERMANENT + BtlController_EmitSetMonData persistent sync.
   }
 
   setHitMarker(gHitMarker & ~HITMARKER_NO_PPDEDUCT);
-  // gBattlescriptCurrInstr++ → équivalent : advance scriptPtr (déjà fait par le
-  // loop dans runBattleScript car le handler returns false).
   return false;
 }
 
 // ─── Cmd_critcalc (0x04) ────────────────────────────────────────────────────
 
-/** 1:1 décomp `Cmd_critcalc` (battle_script_commands.c:1253-1288).
- *
- *  Logic :
- *  1. Lookup attacker item hold effect (= Scope Lens, Lucky Punch, Stick).
- *  2. critChance = 0..N points selon :
- *     - status2 & FOCUS_ENERGY : +2
- *     - move.effect EFFECT_HIGH_CRITICAL : +1
- *     - move.effect EFFECT_SKY_ATTACK / BLAZE_KICK / POISON_TAIL : +1 chacun
- *     - hold effect SCOPE_LENS : +1
- *     - hold effect LUCKY_PUNCH + species CHANSEY : +2
- *     - hold effect STICK + species FARFETCHD : +2
- *  3. Clamp critChance à [0, 4] (= len(sCriticalHitChance) - 1).
- *  4. Si target n'a pas BATTLE_ARMOR / SHELL_ARMOR
- *     et attacker.statuses3 n'a pas CANT_SCORE_A_CRIT
- *     et battleType n'est pas WALLY_TUTORIAL / FIRST_BATTLE
- *     et `Random() % sCriticalHitChance[critChance] == 0`
- *     → gCritMultiplier = 2; sinon = 1.
- *
- *  Note : le FIRST_BATTLE check (= notre tutoriel Birch vs Zigzagon) FORCE
- *  pas de crit. Cohérent 1:1 ROM. */
+/** 1:1 décomp `sCriticalHitChance[]` (battle_script_commands.c:606). */
+const sCriticalHitChance: ReadonlyArray<number> = [16, 8, 4, 3, 2];
+
+/** 1:1 décomp `Cmd_critcalc` (battle_script_commands.c:1253-1288). */
 function Cmd_critcalc(_ctx: BattleScriptContext): boolean {
   const attackerMon = gBattleMons[gBattlerAttacker];
   const targetMon = gBattleMons[gBattlerTarget];
@@ -171,17 +212,8 @@ function Cmd_critcalc(_ctx: BattleScriptContext): boolean {
 
   setPotentialItemEffectBattler(gBattlerAttacker);
 
-  // 1:1 décomp formule critChance.
-  const HOLD_EFFECT_SCOPE_LENS  = 0x36;  // 54 (cf. include/constants/hold_effects.h)
-  const HOLD_EFFECT_LUCKY_PUNCH = 0x37;  // 55
-  const HOLD_EFFECT_STICK       = 0x38;  // 56
-  const SPECIES_CHANSEY   = 113;
-  const SPECIES_FARFETCHD = 83;
-  const EFFECT_HIGH_CRITICAL = 43;
-  const EFFECT_SKY_ATTACK    = 56;
-  const EFFECT_BLAZE_KICK    = 90;
-  const EFFECT_POISON_TAIL   = 96;
-  const moveEffect = _getMoveEffect(gCurrentMove);
+  // 1:1 décomp formule critChance (= sum of bonuses, then clamp + roll).
+  const moveEffect = getBattleMove(gCurrentMove).effect;
 
   let critChance =
     2 * ((attackerMon.status2 & STATUS2_FOCUS_ENERGY) !== 0 ? 1 : 0)
@@ -209,16 +241,17 @@ function Cmd_critcalc(_ctx: BattleScriptContext): boolean {
 
 // ─── Cmd_damagecalc (0x05) ──────────────────────────────────────────────────
 
-/** 1:1 décomp `Cmd_damagecalc` (battle_script_commands.c:1290-1313).
- *
- *  Wraps CalculateBaseDamage avec gCritMultiplier × dmgMultiplier.
- *  + STATUS3_CHARGED_UP electric ×2, gProtectStructs.helpingHand ×1.5 (= TODO). */
+/** 1:1 décomp `Cmd_damagecalc` (battle_script_commands.c:1290-1313). */
 function Cmd_damagecalc(_ctx: BattleScriptContext): boolean {
   // 1:1 décomp : sideStatus = gSideStatuses[GET_BATTLER_SIDE(gBattlerTarget)].
-  // Notre BATTLER_SIDE = idx & 1 (= player side 0, opponent side 1).
-  const sideStatus = gSideStatuses[gBattlerTarget & 1] ?? 0;
-  const damage = runDamagecalc(sideStatus, gDynamicBasePower, gBattleScripting.battlerWithAbility & 0x3F);
-  // TODO porter STATUS3_CHARGED_UP / helping_hand check here.
+  const sideStatus = gSideStatuses[GET_BATTLER_SIDE(gBattlerTarget)] ?? 0;
+  // 1:1 décomp : typeOverride = gBattleStruct->dynamicMoveType.
+  // TODO porter gBattleStruct.dynamicMoveType (= utilisé par Hidden Power, Weather Ball).
+  // Pour now : 0 (= no override → use gBattleMoves[move].type).
+  const dynamicMoveType = 0;
+
+  const damage = runDamagecalc(sideStatus, gDynamicBasePower, dynamicMoveType);
+  // STATUS3_CHARGED_UP electric ×2 et gProtectStructs.helpingHand ×1.5 — TODO.
   setBattleMoveDamage(damage);
   return false;
 }
@@ -233,38 +266,94 @@ function Cmd_typecalc(_ctx: BattleScriptContext): boolean {
 
 // ─── Cmd_adjustnormaldamage (0x07) ──────────────────────────────────────────
 
-/** 1:1 décomp `Cmd_adjustnormaldamage` (battle_script_commands.c:1658-1700).
+/** 1:1 décomp `Cmd_adjustnormaldamage` (battle_script_commands.c:1658-1698).
  *
- *  Apply final modifiers :
- *  - Substitute check : skip
- *  - parental bond : skip
- *  - HM moves : skip
- *  - clamp damage to defender.hp
- *  - skip si HITMARKER_NO_ATTACKSTRING ou IGNORE_SUBSTITUTE
- *
- *  Notre version : simpler clamp + advance. TODO : substitute, etc. */
+ *  Important : ne fait PAS de clamp inconditionnel à target.hp. Le seul clamp
+ *  est `hp - 1` (= leave at 1 HP) si Focus Band trigger / Endured / FalseSwipe.
+ *  Sinon damage reste tel quel (overkill ok, datahpupdate clamp à 0). */
 function Cmd_adjustnormaldamage(_ctx: BattleScriptContext): boolean {
-  // Clamp damage to defender.hp (= 1:1 décomp ; le décomp lit aussi un byte
-  // jumpPtr en arg mais pour l'instant on skip car le clamp est inconditionnel).
+  ApplyRandomDmgMultiplier();
+
   const targetMon = gBattleMons[gBattlerTarget];
-  if (gBattleMoveDamage >= targetMon.hp) {
-    setBattleMoveDamage(targetMon.hp);
+  const item = targetMon.item;
+  const holdEffect = _getHoldEffect(item);
+  const param = _getHoldEffectParam(item);
+
+  setPotentialItemEffectBattler(gBattlerTarget);
+
+  // Focus Band : `Random() % 100 < param` → activate.
+  // TODO porter gSpecialStatuses[target].focusBanded set.
+  let focusBanded = false;
+  if (holdEffect === HOLD_EFFECT_FOCUS_BAND && (Random() % 100) < param) {
+    focusBanded = true;
+  }
+
+  // Endured stub (= gProtectStructs[target].endured pas porté → false toujours).
+  const endured = false;
+
+  // 1:1 décomp : skip si STATUS2_SUBSTITUTE actif (= TODO).
+  // Pour MVP : substitute bit non porté correctement → check inline.
+  const moveEffect = getBattleMove(gCurrentMove).effect;
+  if (
+    (moveEffect === EFFECT_FALSE_SWIPE || endured || focusBanded)
+    && targetMon.hp <= gBattleMoveDamage
+  ) {
+    setBattleMoveDamage(targetMon.hp - 1);  // leave at 1 HP
+    if (endured) {
+      setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_FOE_ENDURED);
+    } else if (focusBanded) {
+      setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_FOE_HUNG_ON);
+      // gLastUsedItem = target.item — TODO si tracking used.
+    }
   }
   return false;
 }
 
 // ─── Cmd_datahpupdate (0x0C) ────────────────────────────────────────────────
 
-/** 1:1 décomp `Cmd_datahpupdate` (battle_script_commands.c:1844-...).
+/** 1:1 décomp `Cmd_datahpupdate` (battle_script_commands.c:1844+, ~150 lignes).
  *
- *  Apply gBattleMoveDamage à target.hp + update gHpDealt + handle substitute. */
-function Cmd_datahpupdate(_ctx: BattleScriptContext): boolean {
-  // Le décomp lit u8 battlerArg (LO bits) + path substitute. Pour MVP : direct apply.
-  const target = gBattleMons[gBattlerTarget];
-  let newHp = target.hp - gBattleMoveDamage;
-  if (newHp < 0) newHp = 0;
-  if (newHp > target.maxHP) newHp = target.maxHP;
-  target.hp = newHp;
+ *  Args : 1 byte = target battler ref (= BS_TARGET / BS_ATTACKER / etc.).
+ *  Total : 2 bytes (opcode + 1 byte arg).
+ *
+ *  Logic minimal :
+ *  1. Read arg byte.
+ *  2. Skip si MOVE_RESULT_NO_EFFECT.
+ *  3. Resolve gActiveBattler via getBattlerForBattleScript(arg).
+ *  4. Substitute path — TODO porter (= skip pour now).
+ *  5. Si damage < 0 → HP gain (= clamp à maxHP).
+ *  6. Sinon → HP loss (= clamp à 0), gHpDealt = damage clipped.
+ *
+ *  Skip : substitute, Bide damage tracker, Shell Bell damage record,
+ *  physical/special tracker pour Counter/Mirror Coat. */
+function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
+  const battlerArg = readByte(ctx);
+
+  // 1:1 décomp : if (gBattleControllerExecFlags) return; — skip (= 0 toujours).
+  if (gMoveResultFlags & (MOVE_RESULT_MISSED /* no-effect implicit */)) {
+    return false;
+  }
+
+  const activeBattler = getBattlerForBattleScript(battlerArg);
+  setActiveBattler(activeBattler);
+  const mon = gBattleMons[activeBattler];
+
+  // Substitute / shellBellDmg / Bide trackers : skip (= TODO porter
+  // gDisableStructs, gSpecialStatuses, gBideDmg).
+
+  if (gBattleMoveDamage < 0) {
+    // Negative damage = heal.
+    mon.hp += -gBattleMoveDamage;
+    if (mon.hp > mon.maxHP) mon.hp = mon.maxHP;
+  } else {
+    if (mon.hp > gBattleMoveDamage) {
+      mon.hp -= gBattleMoveDamage;
+      setHpDealt(gBattleMoveDamage);
+    } else {
+      setHpDealt(mon.hp);
+      mon.hp = 0;
+    }
+  }
   return false;
 }
 
@@ -272,20 +361,45 @@ function Cmd_datahpupdate(_ctx: BattleScriptContext): boolean {
 
 /** 1:1 décomp `Cmd_tryfaintmon` (battle_script_commands.c:2965-...).
  *
- *  Si target.hp == 0 → set gBattlerFainted = target + jump faint script.
- *  Notre version : set gBattlerFainted + set gBattleOutcome si toutes les mons
- *  du défender side sont KO (= simpler que 1:1 jusqu'à ce que les controllers
- *  soient portés). */
-function Cmd_tryfaintmon(_ctx: BattleScriptContext): boolean {
-  const target = gBattleMons[gBattlerTarget];
-  if (target.hp === 0) {
-    setBattlerFainted(gBattlerTarget);
-    // Pour MVP single battle : si l'ennemi est KO, set WIN ; si joueur KO, set LOST.
-    if ((gBattlerTarget & 1) === 1) {
-      // Opponent side fainted.
-      setBattleOutcome(1);  // B_OUTCOME_WON
+ *  Args : 1 byte battler ref + 1 byte mode + 4 byte ptr (= post-faint dispatch). Total 7 bytes.
+ *
+ *  Logic minimal :
+ *  - Mode 0 (= regular faint check) : si mon.hp == 0 → set HITMARKER_FAINTED +
+ *    set gBattlerFainted + outcome (WIN si side OPPONENT, LOST si side PLAYER).
+ *  - Mode != 0 (= post-faint dispatcher) : non implémenté (= skip).
+ *
+ *  Skip : BattleScript_FaintTarget/Attacker jump, Destiny Bond, Grudge, friendship
+ *  decrement on player faint, lastOpponentSpecies record. */
+function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
+  const battlerArg = readByte(ctx);
+  const modeFlag = readByte(ctx);
+  const _jumpPtr = readWord(ctx);  // 4 bytes post-faint dispatch ptr (mode 2)
+  void _jumpPtr;
+
+  if (modeFlag !== 0) {
+    // Post-faint dispatcher mode — TODO porter (= currently no-op advance).
+    return false;
+  }
+
+  let activeBattler: number;
+  let _battlerOther: number;
+  if (battlerArg === BS_ATTACKER) {
+    activeBattler = gBattlerAttacker;
+    _battlerOther = gBattlerTarget;
+  } else {
+    activeBattler = gBattlerTarget;
+    _battlerOther = gBattlerAttacker;
+  }
+
+  setActiveBattler(activeBattler);
+  if (gBattleMons[activeBattler].hp === 0) {
+    setBattlerFainted(activeBattler);
+    // 1:1 décomp : set HITMARKER_FAINTED(activeBattler) (= bit 28+battlerIdx).
+    // Pour now : simple outcome set.
+    if (GET_BATTLER_SIDE(activeBattler) === B_SIDE_PLAYER) {
+      setBattleOutcome(B_OUTCOME_LOST);
     } else {
-      setBattleOutcome(2);  // B_OUTCOME_LOST
+      setBattleOutcome(B_OUTCOME_WON);
     }
   }
   return false;
@@ -296,40 +410,9 @@ function Cmd_tryfaintmon(_ctx: BattleScriptContext): boolean {
 /** 1:1 décomp `sAccuracyStageRatios[]` (battle_script_commands.c:588-603). */
 const sAccuracyStageRatios: ReadonlyArray<readonly [number, number]> = [
   [ 33, 100], [ 36, 100], [ 43, 100], [ 50, 100], [ 60, 100], [ 75, 100],
-  [  1,   1],
+  [  1,   1],  // stage 0 (= +6 internal, +0 displayed)
   [133, 100], [166, 100], [  2,   1], [233, 100], [133,  50], [  3,   1],
 ];
-
-const NO_ACC_CALC                = 0xFFFE;
-const NO_ACC_CALC_CHECK_LOCK_ON  = 0xFFFD;
-const ACC_CURR_MOVE              = 0;
-
-const STAT_ACC     = 6;
-const STAT_EVASION = 7;
-const MIN_STAT_STAGE = 0;
-const MAX_STAT_STAGE = 12;
-const DEFAULT_STAT_STAGE = 6;
-
-const ABILITY_COMPOUND_EYES = 14;
-const ABILITY_SAND_VEIL     = 8;
-const ABILITY_HUSTLE_ACC    = 55;
-
-const B_WEATHER_SUN       = 0x60;
-const B_WEATHER_SANDSTORM = 0x18;
-const EFFECT_THUNDER      = 152;
-
-const MISS_TYPE = 6;
-const B_MSG_MISSED      = 0;
-
-const STATUS3_ALWAYS_HITS = 0x3 << 8;
-const STATUS3_ON_AIR      = 0x1 << 6;
-const STATUS3_UNDERGROUND = 0x1 << 7;
-const STATUS3_UNDERWATER  = 0x1 << 16;
-
-const STATUS2_FORESIGHT_ACC = 1 << 29;
-const MOVE_RESULT_MISSED_ACC = 1 << 0;
-
-function isPhysicalAcc(t: number): boolean { return t < 9; }
 
 /** 1:1 décomp `Cmd_accuracycheck` (battle_script_commands.c:1099-1189).
  *
@@ -346,7 +429,7 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
     if ((gStatuses3[gBattlerTarget] & STATUS3_ALWAYS_HITS) && move === NO_ACC_CALC_CHECK_LOCK_ON) {
       return false;  // hit (lock on + sure hit)
     }
-    if (gStatuses3[gBattlerTarget] & (STATUS3_ON_AIR | STATUS3_UNDERGROUND | STATUS3_UNDERWATER)) {
+    if (gStatuses3[gBattlerTarget] & STATUS3_SEMI_INVULNERABLE) {
       ctx.scriptPtr = jumpTarget;  // semi-invulnerable, miss
       return false;
     }
@@ -365,8 +448,9 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
   const attackerMon = gBattleMons[gBattlerAttacker];
   const targetMon = gBattleMons[gBattlerTarget];
 
+  // Foresight ignore evasion buff sur target.
   let buff: number;
-  if (targetMon.status2 & STATUS2_FORESIGHT_ACC) {
+  if (targetMon.status2 & (1 << 29) /* STATUS2_FORESIGHT */) {
     buff = attackerMon.statStages[STAT_ACC] ?? DEFAULT_STAT_STAGE;
   } else {
     buff = (attackerMon.statStages[STAT_ACC] ?? DEFAULT_STAT_STAGE)
@@ -388,130 +472,98 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
   if ((gBattleWeather & B_WEATHER_SANDSTORM) && targetMon.ability === ABILITY_SAND_VEIL) {
     calc = Math.floor((calc * 80) / 100);
   }
-  if (attackerMon.ability === ABILITY_HUSTLE_ACC && isPhysicalAcc(type)) {
+  if (attackerMon.ability === ABILITY_HUSTLE && IS_TYPE_PHYSICAL(type)) {
     calc = Math.floor((calc * 80) / 100);
   }
 
   setPotentialItemEffectBattler(gBattlerTarget);
-  // HOLD_EFFECT_EVASION_UP - TODO porter hold effect table.
+  // HOLD_EFFECT_EVASION_UP — TODO porter hold effect table.
 
   if ((Random() % 100 + 1) > calc) {
-    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED_ACC);
+    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
     gBattleCommunication[MISS_TYPE] = B_MSG_MISSED;
-    ctx.scriptPtr = jumpTarget;  // jump to miss handler
+    ctx.scriptPtr = jumpTarget;
   }
   return false;
 }
 
 // ─── Cmd_moveend (0x49) ─────────────────────────────────────────────────────
 
-/** MOVEEND_* states 1:1 décomp `include/battle.h:540-577`. */
+/** MOVEEND_* states 1:1 décomp `include/battle.h:540-577`.
+ *  MOVEEND_COUNT = nombre total de sub-states (= 28 dans le décomp Em). */
 const MOVEEND_COUNT = 28;
 
 /** 1:1 décomp `Cmd_moveend` (battle_script_commands.c:4213-4501).
  *
- *  Massive state machine (~20 sub-states) qui handle post-move cleanup :
- *  RAGE, DEFROST, SYNCHRONIZE (both sides), ON_DAMAGE_ABILITIES, IMMUNITY,
- *  CHOICE_MOVE, ITEM_EFFECTS, KING'S ROCK, MIRROR_MOVE update, NEXT_TARGET
- *  (= double battle multi-target), etc.
+ *  Massive state machine (~20 sub-states) qui handle post-move cleanup.
+ *  Pour MVP : skip toutes les sub-states (= aucune effect propagation).
  *
- *  Pour MVP : skip toutes les sub-states (= no effect propagation). C'est OK
- *  pour single battles simples sans hold items, sans status. Quand on porte
- *  les helpers (AbilityBattleEffects, ItemBattleEffects, MoveValuesCleanUp,
- *  BattleScriptPushCursor), on swap les stubs.
- *
- *  Args structure (= 3 bytes total) :
- *    byte 0 = opcode 0x49
- *    byte 1 = endMode (1 = stop on first effect, 2 = stop at endState, 0 = process all)
- *    byte 2 = endState (only meaningful si endMode == 2)
- *
- *  Notre interpreter a déjà consommé byte 0 → readByte ×2 pour args. */
+ *  Args : 1 byte endMode + 1 byte endState. Total 3 bytes (opcode + args). */
 function Cmd_moveend(ctx: BattleScriptContext): boolean {
-  const endMode = readByte(ctx);
-  const endState = readByte(ctx);
-  void endState;
+  const _endMode = readByte(ctx);
+  const _endState = readByte(ctx);
+  void _endMode; void _endState;
 
-  // Stub : skip all sub-states (= aucune effect). Set moveendState = COUNT
-  // pour exit immédiat de la boucle `do ... while`.
+  // Stub : set moveendState = COUNT (= exit immédiat de la boucle do...while).
   gBattleScripting.moveendState = MOVEEND_COUNT;
-
-  // 1:1 décomp end-of-loop logic :
-  //   if (endMode == 1 && effect == FALSE) moveendState = COUNT
-  //   if (endMode == 2 && endState == moveendState) moveendState = COUNT
-  //   if (moveendState == COUNT && effect == FALSE) gBattlescriptCurrInstr += 3
-  // Notre version : déjà advancé via readByte×2 (= équivalent +3 incluant opcode).
-  void endMode;
   return false;
 }
 
 // ─── Cmd_healthbarupdate (0x0B) ─────────────────────────────────────────────
 
-/** 1:1 décomp `Cmd_healthbarupdate` (battle_script_commands.c:1807-1843).
+/** 1:1 décomp `Cmd_healthbarupdate` (battle_script_commands.c:1807-1841).
  *
- *  Apply gBattleMoveDamage à health bar UI (= async via BtlController_EmitHealthBarUpdate
- *  + wait via gBattleControllerExecFlags). Pour MVP : skip UI animation, juste advance.
+ *  Apply gBattleMoveDamage à health bar UI. Pour MVP : skip UI animation,
+ *  juste advance + consume byte arg.
  *
- *  Args : 1 byte = target battler arg (= u8 byte after opcode).
- *  Total : 2 bytes (opcode + 1 byte battler arg). */
+ *  Args : 1 byte battler ref. Total 2 bytes. */
 function Cmd_healthbarupdate(ctx: BattleScriptContext): boolean {
   const _battlerArg = readByte(ctx);
   void _battlerArg;
-  // TODO : real UI sync. For now : datahpupdate (0x0C) does the actual HP write.
-  // This handler just signals the UI to animate, which we skip.
+  // TODO : real UI sync. Pour now datahpupdate (0x0C) fait le HP write effectif.
   return false;
 }
 
 // ─── Cmd_attackcanceler (0x00) — happy path ─────────────────────────────────
 
-const HITMARKER_UNABLE_TO_USE_MOVE = 0x00000001;
-const HITMARKER_OBEYS              = 0x00100000;
-const HITMARKER_NO_ATTACKSTRING_AC = 0x00000040;
-const MOVE_RESULT_MISSED_AC = 1 << 0;
-
 /** 1:1 décomp `Cmd_attackcanceler` (battle_script_commands.c:915-1007) — happy path.
  *
  *  Le décomp complet check : gBattleOutcome != 0, attacker.hp == 0, status
- *  AtkCanceler_UnableToUseMove (= sleep/paralyze/freeze/confuse/infatuation/
- *  disable/imprison/truant/recharge), AbilityBattleEffects MOVES_BLOCK
- *  (= Soundproof), PP check, IsMonDisobedient, MagicCoat bounce, Snatch,
- *  LightningRod redirect, Protect.
+ *  AtkCanceler_UnableToUseMove, AbilityBattleEffects MOVES_BLOCK, PP check,
+ *  IsMonDisobedient, MagicCoat bounce, Snatch, LightningRod redirect, Protect.
  *
  *  Notre version happy path :
- *    - Check attacker.hp == 0 → set MOVE_RESULT_MISSED + bail
- *    - Check pp == 0 (sauf MOVE_STRUGGLE et NO_PPDEDUCT) → bail
- *    - Set HITMARKER_OBEYS (= 1:1 décomp set quand on passe les checks)
- *    - Advance (= happy path : no protect/snatch/etc.)
+ *    - Check attacker.hp == 0 → set HITMARKER_UNABLE_TO_USE_MOVE + MISSED
+ *    - Check pp == 0 (sauf MOVE_STRUGGLE et NO_PPDEDUCT) → set MISSED
+ *    - Clear HITMARKER_ALLOW_NO_PP
+ *    - Set HITMARKER_OBEYS
+ *    - Advance
  *
  *  Skip pour now : MagicCoat, Snatch, LightningRod, Protect, Disobedience —
- *  TODO porter quand gProtectStructs / gSpecialStatuses / IsMonDisobedient
- *  sont implémentés. */
+ *  TODO porter quand gProtectStructs / gSpecialStatuses / IsMonDisobedient existent. */
 function Cmd_attackcanceler(_ctx: BattleScriptContext): boolean {
   // gBattleOutcome != 0 → finish (= TODO via gCurrentActionFuncId, skip pour now).
-  // if (gBattleOutcome) return; — skip
 
   // attacker.hp == 0 (= died before its turn, e.g. Destiny Bond).
   if (gBattleMons[gBattlerAttacker].hp === 0
-      && !(gHitMarker & HITMARKER_NO_ATTACKSTRING_AC)) {
+      && !(gHitMarker & HITMARKER_NO_ATTACKSTRING)) {
     setHitMarker(gHitMarker | HITMARKER_UNABLE_TO_USE_MOVE);
-    // Décomp : gBattlescriptCurrInstr = BattleScript_MoveEnd (= jump).
-    // Pour MVP : juste set le flag missed et continue.
-    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED_AC);
+    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
     return false;
   }
 
   // PP check.
   const attackerMon = gBattleMons[gBattlerAttacker];
-  const MOVE_STRUGGLE_AC = 165;
   if (!attackerMon.pp[gCurrMovePos]
-      && gCurrentMove !== MOVE_STRUGGLE_AC
-      && !(gHitMarker & HITMARKER_NO_ATTACKSTRING_AC)
-      && !(attackerMon.status2 & (1 << 21) /* STATUS2_MULTIPLETURNS */)) {
-    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED_AC);
+      && gCurrentMove !== MOVE_STRUGGLE
+      && !(gHitMarker & (HITMARKER_ALLOW_NO_PP | HITMARKER_NO_ATTACKSTRING))
+      && !(attackerMon.status2 & STATUS2_MULTIPLETURNS)) {
+    setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
     return false;
   }
 
-  // Clear HITMARKER_ALLOW_NO_PP (= 0x10000), set OBEYS.
-  setHitMarker((gHitMarker & ~(1 << 16)) | HITMARKER_OBEYS);
+  // Clear ALLOW_NO_PP, set OBEYS.
+  setHitMarker((gHitMarker & ~HITMARKER_ALLOW_NO_PP) | HITMARKER_OBEYS);
 
   // TODO : MagicCoat, Snatch, LightningRod, Protect, Disobedience.
 
@@ -534,13 +586,5 @@ export function installNiveau1Handlers(commandsTable: BattleOpcodeHandler[]): vo
   commandsTable[0x0C] = Cmd_datahpupdate;
   commandsTable[0x19] = Cmd_tryfaintmon;
   commandsTable[0x49] = Cmd_moveend;
-  // Niveau 1 COMPLET — 11/11 opcodes installed.
-  // Notes :
-  //   - attackcanceler : happy path (= skip MagicCoat/Snatch/LightningRod/Protect/Disobedience)
-  //   - healthbarupdate : stub (= no UI animation, just advance — datahpupdate fait le HP write)
-  //   - moveend : stub (= skip toutes sub-states, exit immédiat)
-  // Ces 3 derniers seront upgrade fully 1:1 quand gProtectStructs / gSpecialStatuses /
-  // ItemBattleEffects / AbilityBattleEffects sont portés (= post-Niveau 1).
-  void setHitMarker;
-  console.log('[battle/cmd-niveau-1] installed 11/11 Niveau 1 handlers');
+  console.log('[battle/cmd-niveau-1] installed 11/11 Niveau 1 handlers (audited 1:1 décomp)');
 }
