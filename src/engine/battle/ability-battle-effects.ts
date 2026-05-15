@@ -39,14 +39,17 @@ import {
   gStatuses3,
   gSpecialStatuses,
   setFormToChangeInto,
+  gDisableStructs,
 } from './state';
-import { getBattleScriptOffset } from './script-interpreter';
+import { Random, getBattleScriptOffset } from './script-interpreter';
 import {
   ABILITY_SOUNDPROOF, ABILITY_VOLT_ABSORB, ABILITY_WATER_ABSORB, ABILITY_FLASH_FIRE,
   ABILITY_IMMUNITY, ABILITY_OWN_TEMPO, ABILITY_LIMBER, ABILITY_INSOMNIA,
   ABILITY_VITAL_SPIRIT, ABILITY_WATER_VEIL, ABILITY_MAGMA_ARMOR, ABILITY_OBLIVIOUS,
   ABILITY_DRIZZLE, ABILITY_SAND_STREAM, ABILITY_DROUGHT, ABILITY_INTIMIDATE,
   ABILITY_TRACE, ABILITY_CLOUD_NINE, ABILITY_AIR_LOCK, ABILITY_FORECAST,
+  ABILITY_RAIN_DISH, ABILITY_SHED_SKIN, ABILITY_SPEED_BOOST, ABILITY_TRUANT,
+  STAT_SPEED, MAX_STAT_STAGE, STATUS1_ANY,
   TYPE_ELECTRIC, TYPE_WATER, TYPE_FIRE,
   STATUS1_POISON, STATUS1_TOXIC_POISON, STATUS1_BURN, STATUS1_FREEZE,
   STATUS1_PARALYSIS, STATUS1_SLEEP,
@@ -115,6 +118,10 @@ function _getMoveType(move: number): number {
 
 /** 1:1 stub `RecordAbilityBattle(battler, ability)`. */
 function _recordAbilityBattle(_battler: number, _ability: number): void {}
+
+/** 1:1 stub `WEATHER_HAS_EFFECT` macro (= !CloudNine && !AirLock active).
+ *  Pour MVP : true. TODO check Cloud Nine / Air Lock présence. */
+const _WEATHER_HAS_EFFECT = true;
 
 /** 1:1 décomp `gBattleResources->flags->flags[battler] & RESOURCE_FLAG_FLASH_FIRE`.
  *  Notre port : map battler → bit set. */
@@ -214,6 +221,50 @@ export function AbilityBattleEffects(
             void target1;
           }
           break;
+        }
+      }
+      break;
+    }
+
+    case ABILITYEFFECT_ENDTURN: {
+      // 1:1 décomp battle_util.c:2584-2641.
+      if (gBattleMons[battler].hp !== 0) {
+        setBattlerAttacker(battler);
+        switch (gLastUsedAbility) {
+          case ABILITY_RAIN_DISH:
+            if (_WEATHER_HAS_EFFECT && (gBattleWeather & B_WEATHER_RAIN)
+                && gBattleMons[battler].maxHP > gBattleMons[battler].hp) {
+              _lastWantedScriptLabel = 'BattleScript_RainDishActivates';
+              let dmg = Math.floor(gBattleMons[battler].maxHP / 16);
+              if (dmg === 0) dmg = 1;
+              setBattleMoveDamage(-dmg);
+              effect++;
+            }
+            break;
+          case ABILITY_SHED_SKIN:
+            if ((gBattleMons[battler].status1 & STATUS1_ANY) && (Random() % 3) === 0) {
+              gBattleMons[battler].status1 = 0;
+              gBattleMons[battler].status2 &= ~STATUS2_NIGHTMARE;
+              gBattleScripting.battler = battler;
+              // gActiveBattler = battler (= côté caller).
+              _lastWantedScriptLabel = 'BattleScript_ShedSkinActivates';
+              effect++;
+            }
+            break;
+          case ABILITY_SPEED_BOOST:
+            if (gBattleMons[battler].statStages[STAT_SPEED] < MAX_STAT_STAGE
+                && gDisableStructs[battler].isFirstTurn !== 2) {
+              gBattleMons[battler].statStages[STAT_SPEED]++;
+              gBattleScripting.animArg1 = 14 /* STAT_ANIM_PLUS1 */ + STAT_SPEED;
+              gBattleScripting.animArg2 = 0;
+              _lastWantedScriptLabel = 'BattleScript_SpeedBoostActivates';
+              gBattleScripting.battler = battler;
+              effect++;
+            }
+            break;
+          case ABILITY_TRUANT:
+            gDisableStructs[gBattlerAttacker].truantCounter ^= 1;
+            break;
         }
       }
       break;
@@ -439,7 +490,6 @@ export function AbilityBattleEffects(
     }
 
     // ─── Stubs TODO Phase 1.2 E continuation ──────────────────────────────
-    case ABILITYEFFECT_ENDTURN:
     case ABILITYEFFECT_ON_DAMAGE:
     case ABILITYEFFECT_FORECAST:
     case ABILITYEFFECT_SYNCHRONIZE:
