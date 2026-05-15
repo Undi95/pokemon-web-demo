@@ -45,6 +45,12 @@ import {
 } from './battle-controllers';
 import { getBattlerForBattleScript } from './util';
 import { getBattleScriptOffset } from './script-interpreter';
+import {
+  AbilityBattleEffects, ABILITYEFFECT_ON_SWITCHIN, consumeAbilityWantedScript,
+} from './ability-battle-effects';
+import {
+  ItemBattleEffects, ITEMEFFECT_ON_SWITCH_IN, consumeItemWantedScript,
+} from './item-battle-effects';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -108,8 +114,36 @@ function Cmd_switchineffects(ctx: BattleScriptContext): boolean {
     }
     gDisableStructs[active].truantSwitchInHack = 0;
 
-    // 1:1 décomp : AbilityBattleEffects(ABILITYEFFECT_ON_SWITCHIN) +
-    // ItemBattleEffects(ITEMEFFECT_ON_SWITCH_IN). Notre stub return 0 → fall.
+    // 1:1 décomp battle_script_commands.c:Cmd_switchineffects :
+    //   if (!AbilityBattleEffects(...) && !ItemBattleEffects(...))
+    //     do cleanup + advance
+    //   else { jump to script set par les helpers }
+    const abilityEff = AbilityBattleEffects(ABILITYEFFECT_ON_SWITCHIN, active, 0, 0, 0);
+    if (abilityEff !== 0) {
+      const label = consumeAbilityWantedScript();
+      if (label) {
+        const off = getBattleScriptOffset(label);
+        if (off >= 0) {
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
+          ctx.scriptPtr = off;
+        }
+      }
+      return false;
+    }
+    const itemEff = ItemBattleEffects(ITEMEFFECT_ON_SWITCH_IN, active, false);
+    if (itemEff !== 0) {
+      const label = consumeItemWantedScript();
+      if (label) {
+        const off = getBattleScriptOffset(label);
+        if (off >= 0) {
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
+          ctx.scriptPtr = off;
+        }
+      }
+      return false;
+    }
+
+    // Neither effect triggered → cleanup state + advance.
     gSideStatuses[side] &= ~SIDE_STATUS_SPIKES_DAMAGED;
     for (let i = 0; i < gBattlersCount; i++) {
       if (gBattlerByTurnOrder[i] === active) {
@@ -124,8 +158,6 @@ function Cmd_switchineffects(ctx: BattleScriptContext): boolean {
     // 1:1 décomp : BS_FAINTED_LINK_MULTIPLE_1 increment gBattlerFainted —
     // skip pour MVP (= multi link battles pas wired).
   }
-  // TODO porter AbilityBattleEffects + ItemBattleEffects (= Intimidate,
-  // Drought, Drizzle, Sand Stream, Cloud Nine, etc.) post-Phase 1.
   return false;
 }
 
