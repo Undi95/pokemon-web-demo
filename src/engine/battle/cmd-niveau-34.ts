@@ -125,9 +125,10 @@ const VARIOUS_PALACE_TRY_ESCAPE_STATUS        = 24;
 const VARIOUS_SET_TELEPORT_OUTCOME            = 25;
 const VARIOUS_PLAY_TRAINER_DEFEATED_MUSIC     = 26;
 
-// MUS_VICTORY_TRAINER (= 0x174 dans décomp). Hardcoded mais c'est un song ID
-// vérifié via grep. TODO importer depuis song-data.ts si dispo.
-const MUS_VICTORY_TRAINER = 0x174;
+// MUS_VICTORY_TRAINER = 412 — import depuis auto-data (= AUDIT FIX :
+// précédemment hardcoded 0x174=372 FAUX).
+import { MUS_VICTORY_TRAINER as _MUS_VICTORY_TRAINER } from '../decomp-data/auto/include/constants/songs-data';
+const MUS_VICTORY_TRAINER = _MUS_VICTORY_TRAINER;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
