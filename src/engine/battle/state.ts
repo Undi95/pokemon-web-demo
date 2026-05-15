@@ -449,6 +449,14 @@ export let gTrainerBattleOpponent_B = 0;
 export function setTrainerBattleOpponentA(v: number) { gTrainerBattleOpponent_A = v; }
 export function setTrainerBattleOpponentB(v: number) { gTrainerBattleOpponent_B = v; }
 
+/** 1:1 décomp `gBattleStruct->wrappedBy[MAX_BATTLERS_COUNT]` — battler ID qui
+ *  a wrapped chaque battler (= utilisé par Rapid Spin pour BattleScript_WrapFree). */
+export const gWrappedBy: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `gBattleStruct->wrappedMove[MAX_BATTLERS_COUNT*2]` — u16 move id
+ *  per battler (= BIND / WRAP / FIRE_SPIN / etc.). */
+export const gWrappedMove: number[] = [0, 0, 0, 0];
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];

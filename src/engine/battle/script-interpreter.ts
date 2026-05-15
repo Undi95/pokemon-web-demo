@@ -516,6 +516,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-27').then(({ installNiveau27Handlers }) => {
     installNiveau27Handlers(_commands);
   });
+  // Session 135 — Niveau 28 (switchineffects + rapidspin + item).
+  void import('./cmd-niveau-28').then(({ installNiveau28Handlers }) => {
+    installNiveau28Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
