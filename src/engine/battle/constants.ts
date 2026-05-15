@@ -393,6 +393,17 @@ export const B_OUTCOME_LOST              = 2;
 export const B_OUTCOME_DREW              = 3;
 export const B_OUTCOME_RAN               = 4;
 export const B_OUTCOME_PLAYER_TELEPORTED = 5;
+export const B_OUTCOME_MON_TELEPORTED    = 10;
+
+// ─── BATTLE_RUN_* (battle.h:337-338) — 1:1 décomp ─────────────────────────
+export const BATTLE_RUN_SUCCESS = 0;
+export const BATTLE_RUN_FAILURE = 1;
+
+// ─── NO_TARGET_OVERRIDE (battle.h:56) — 1:1 décomp ────────────────────────
+export const NO_TARGET_OVERRIDE = 0;
+
+// ─── B_MSG_PREVENTS_ESCAPE (battle_string_ids.h:567) — 1:1 décomp ────────
+export const B_MSG_PREVENTS_ESCAPE = 2;
 export const B_OUTCOME_MON_FLED          = 6;
 export const B_OUTCOME_CAUGHT            = 7;
 
