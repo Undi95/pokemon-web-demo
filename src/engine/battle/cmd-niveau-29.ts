@@ -60,9 +60,10 @@ import {
 import { RecordAbilityBattle as _recordAbilityBattleFullN29 } from './util';
 function _recordAbilityBattle(b: number, a: number): void { _recordAbilityBattleFullN29(b, a); }
 
-/** 1:1 stub `GetMoveTarget(move, override)` — pour MVP retourne gBattlerTarget. */
-function _getMoveTarget(_move: number, _override: number): number {
-  return gBattlerTarget;
+// 1:1 décomp `GetMoveTarget` — wired via cmd-niveau-34 export.
+import { _GetMoveTarget as _GetMoveTargetFullN29 } from './cmd-niveau-34';
+function _getMoveTarget(move: number, override: number): number {
+  return _GetMoveTargetFullN29(move, override);
 }
 
 /** Suit le décomp Cmd_assistattackselect : itère sMovesForbiddenToCopy

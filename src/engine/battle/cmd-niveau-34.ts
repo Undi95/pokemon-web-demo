@@ -150,8 +150,9 @@ function _CancelMultiTurnMoves(battler: number): void {
 
 /** 1:1 décomp `GetMoveTarget(move, setTarget)` (battle_util.c:3811-3886).
  *  Setter omitted (= notre version retourne juste targetBattler ; le caller
- *  applique). STUB pour ABILITYEFFECT_COUNT_OTHER_SIDE Lightning Rod redirect. */
-function _GetMoveTarget(move: number, setTarget: number): number {
+ *  applique). STUB pour ABILITYEFFECT_COUNT_OTHER_SIDE Lightning Rod redirect.
+ *  Exporté pour réutilisation par cmd-niveau-27 / cmd-niveau-29 / etc. */
+export function _GetMoveTarget(move: number, setTarget: number): number {
   let targetBattler = 0;
   let moveTarget: number;
   let side: number;

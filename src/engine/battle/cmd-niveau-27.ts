@@ -93,10 +93,10 @@ function _checkMoveLimitations(battler: number, unusableBits: number, check: num
   return _CheckMoveLimitationsFull(battler, unusableBits, check);
 }
 
-/** 1:1 stub `GetMoveTarget(move, override)` — pour MVP retourne gBattlerTarget
- *  inchangé. */
-function _getMoveTarget(_move: number, _override: number): number {
-  return gBattlerTarget;
+// 1:1 décomp `GetMoveTarget` — wired via cmd-niveau-34 export.
+import { _GetMoveTarget as _GetMoveTargetFull } from './cmd-niveau-34';
+function _getMoveTarget(move: number, override: number): number {
+  return _GetMoveTargetFull(move, override);
 }
 
 // 1:1 décomp `RecordAbilityBattle` — wired via util.ts.
