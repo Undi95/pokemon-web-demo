@@ -109,8 +109,26 @@ function weatherHasEffect(): boolean {
   return !cloudNine && !airLock;
 }
 
-/** Stub : badge boost (post-gym +10%). TODO quand badge persistence wired. */
-function shouldGetStatBadgeBoost(_badgeFlag: number, _battler: number): boolean {
+/** 1:1 décomp `ShouldGetStatBadgeBoost(badgeFlag, battler)` (pokemon.c:3408-3420).
+ *
+ *  Le décomp check :
+ *  - BATTLE_TYPE_LINK / EREADER_TRAINER / RECORDED_LINK / FRONTIER → false
+ *  - side != B_SIDE_PLAYER → false
+ *  - TRAINER + opponent == TRAINER_SECRET_BASE → false
+ *  - FlagGet(badgeFlag) → return
+ *
+ *  STUB : `FlagGet` pas wired (= SaveBlock1Ptr.flags resolve). On retourne
+ *  false par défaut (= player a 0 badges au début, prudent). */
+function shouldGetStatBadgeBoost(_badgeFlag: number, battler: number): boolean {
+  // 1:1 décomp early-outs.
+  const linkFlags = (1 << 1)  /* BATTLE_TYPE_LINK */
+                  | (1 << 11) /* BATTLE_TYPE_EREADER_TRAINER */
+                  | (1 << 25) /* BATTLE_TYPE_RECORDED_LINK */;
+  if (gBattleTypeFlags & linkFlags) return false;
+  if (GET_BATTLER_SIDE(battler) !== 0 /* B_SIDE_PLAYER */) return false;
+  // STUB : BATTLE_TYPE_TRAINER + gTrainerBattleOpponent_A check (= rare Secret Base).
+  // STUB : FlagGet(badgeFlag) — pas wired, return false.
+  // TODO porter FlagGet via gSaveBlock1Ptr.flags + bit math.
   return false;
 }
 
