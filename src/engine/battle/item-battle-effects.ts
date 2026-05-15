@@ -51,6 +51,7 @@ import { getBattleMove } from './data/battle-moves';
 import {
   GetItemHoldEffect, GetItemHoldEffectParam,
 } from './data/item-hold-effects';
+import { GetFlavorRelationByPersonality } from './data/flavor-compat';
 import { SetMoveEffect } from './set-move-effect';
 import type { BattleScriptContext } from './script-interpreter';
 
@@ -68,28 +69,23 @@ const ITEM_NO_EFFECT = 0;
 const ITEM_STATS_CHANGE = 1;
 
 // ─── HOLD_EFFECT_* enum (constants/hold_effects.h) — 1:1 décomp ──────────
-
-const HOLD_EFFECT_RESTORE_HP     = 1;
-const HOLD_EFFECT_CURE_PAR       = 4;
-const HOLD_EFFECT_CURE_SLP       = 5;
-const HOLD_EFFECT_CURE_PSN       = 6;
-const HOLD_EFFECT_CURE_BRN       = 7;
-const HOLD_EFFECT_CURE_FRZ       = 8;
-const HOLD_EFFECT_CURE_CONFUSION = 10;
-const HOLD_EFFECT_CURE_STATUS    = 11;
-const HOLD_EFFECT_CURE_ATTRACT   = 12;
-const HOLD_EFFECT_ATTACK_UP      = 15;
-const HOLD_EFFECT_DEFENSE_UP     = 16;
-const HOLD_EFFECT_SPEED_UP       = 17;
-const HOLD_EFFECT_SP_ATTACK_UP   = 18;
-const HOLD_EFFECT_SP_DEFENSE_UP  = 19;
-const HOLD_EFFECT_CRITICAL_UP    = 20;
-const HOLD_EFFECT_RANDOM_STAT_UP = 21;
-const HOLD_EFFECT_RESTORE_STATS  = 23;
-const HOLD_EFFECT_FLINCH         = 30;
-const HOLD_EFFECT_DOUBLE_PRIZE   = 32;
-const HOLD_EFFECT_LEFTOVERS      = 43;
-const HOLD_EFFECT_SHELL_BELL     = 62;
+// AUDIT FIX session 136 : mes hardcoded values étaient TOUS faux pour les
+// CURE_*. Import direct du fichier auto-extracted (= source de vérité). */
+import {
+  HOLD_EFFECT_RESTORE_HP,
+  HOLD_EFFECT_CURE_PAR, HOLD_EFFECT_CURE_SLP, HOLD_EFFECT_CURE_PSN,
+  HOLD_EFFECT_CURE_BRN, HOLD_EFFECT_CURE_FRZ,
+  HOLD_EFFECT_CURE_CONFUSION, HOLD_EFFECT_CURE_STATUS, HOLD_EFFECT_CURE_ATTRACT,
+  HOLD_EFFECT_CONFUSE_SPICY, HOLD_EFFECT_CONFUSE_DRY,
+  HOLD_EFFECT_CONFUSE_SWEET, HOLD_EFFECT_CONFUSE_BITTER, HOLD_EFFECT_CONFUSE_SOUR,
+  HOLD_EFFECT_ATTACK_UP, HOLD_EFFECT_DEFENSE_UP, HOLD_EFFECT_SPEED_UP,
+  HOLD_EFFECT_SP_ATTACK_UP, HOLD_EFFECT_SP_DEFENSE_UP,
+  HOLD_EFFECT_CRITICAL_UP, HOLD_EFFECT_RANDOM_STAT_UP,
+  HOLD_EFFECT_RESTORE_STATS,
+  HOLD_EFFECT_FLINCH, HOLD_EFFECT_DOUBLE_PRIZE,
+  HOLD_EFFECT_LEFTOVERS,
+  HOLD_EFFECT_SHELL_BELL,
+} from '../decomp-data/auto/include/constants/hold_effects-data';
 
 // ─── Helpers : status1 masks ─────────────────────────────────────────────
 const STATUS1_PSN_ANY = STATUS1_POISON | STATUS1_TOXIC_POISON;
@@ -250,6 +246,33 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
               _lastWantedScriptLabel = 'BattleScript_WhiteHerbEnd2';
             }
             break;
+          case HOLD_EFFECT_CONFUSE_SPICY:
+          case HOLD_EFFECT_CONFUSE_DRY:
+          case HOLD_EFFECT_CONFUSE_SWEET:
+          case HOLD_EFFECT_CONFUSE_BITTER:
+          case HOLD_EFFECT_CONFUSE_SOUR: {
+            // 1:1 décomp TRY_EAT_CONFUSE_BERRY(flavor) macro (battle_util.c:3210).
+            // Mapping holdEffect → flavor (= SPICY/DRY/SWEET/BITTER/SOUR = 0..4).
+            const _flavorOf = (heff: number): number =>
+              heff - HOLD_EFFECT_CONFUSE_SPICY;
+            if (gBattleMons[battlerId].hp <= Math.floor(gBattleMons[battlerId].maxHP / 2) && !moveTurn) {
+              const flavor = _flavorOf(battlerHoldEffect);
+              let dmg = Math.floor(gBattleMons[battlerId].maxHP / battlerHoldEffectParam);
+              if (dmg === 0) dmg = 1;
+              if (gBattleMons[battlerId].hp + dmg > gBattleMons[battlerId].maxHP) {
+                dmg = gBattleMons[battlerId].maxHP - gBattleMons[battlerId].hp;
+              }
+              setBattleMoveDamage(-dmg);
+              const relation = GetFlavorRelationByPersonality(gBattleMons[battlerId].personality, flavor);
+              if (relation < 0) {
+                _lastWantedScriptLabel = 'BattleScript_BerryConfuseHealEnd2';
+              } else {
+                _lastWantedScriptLabel = 'BattleScript_ItemHealHP_RemoveItem';
+              }
+              effect = ITEM_HP_CHANGE;
+            }
+            break;
+          }
           case HOLD_EFFECT_LEFTOVERS:
             if (gBattleMons[battlerId].hp < gBattleMons[battlerId].maxHP && !moveTurn) {
               let dmg = Math.floor(gBattleMons[battlerId].maxHP / 16);
