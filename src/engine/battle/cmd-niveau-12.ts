@@ -24,7 +24,9 @@ import {
   gBattlerAttacker, gBattlerTarget, setBattlerAttacker,
   gBattleMons, gCurrentMove, gStatuses3, gDisableStructs,
   gLastMoves,
+  gSentPokesToOpponent, gBattlersCount, gBattlerPartyIndexes,
 } from './state';
+import { gBitTable } from './battle-controllers';
 import {
   STATUS3_ON_AIR, STATUS3_UNDERGROUND, STATUS3_UNDERWATER,
   MOVE_FLY, MOVE_BOUNCE, MOVE_DIG, MOVE_DIVE,
@@ -46,9 +48,25 @@ function Cmd_atknameinbuff1(_ctx: BattleScriptContext): boolean {
 // ─── 0x6D resetsentmonsvalue ───────────────────────────────────────────────
 
 /** 1:1 décomp Cmd_resetsentmonsvalue. 1 byte.
- *  Décomp appelle ResetSentPokesToOpponentValue() — tracking pour exp share. */
+ *  Décomp appelle ResetSentPokesToOpponentValue() (battle_util.c:900-913) —
+ *  tracking pour XP share / EXP eligibility.
+ *
+ *  Logique 1:1 :
+ *   - gSentPokesToOpponent[0/1] = 0.
+ *   - bits = OR of gBitTable[gBattlerPartyIndexes[i]] pour player slots (= even i).
+ *   - gSentPokesToOpponent[(i & BIT_FLANK) >> 1] = bits pour opponent slots (= odd i).
+ */
 function Cmd_resetsentmonsvalue(_ctx: BattleScriptContext): boolean {
-  // TODO porter ResetSentPokesToOpponentValue (exp share tracking).
+  gSentPokesToOpponent[0] = 0;
+  gSentPokesToOpponent[1] = 0;
+  let bits = 0;
+  for (let i = 0; i < gBattlersCount; i += 2) {
+    bits |= gBitTable[gBattlerPartyIndexes[i]];
+  }
+  // BIT_FLANK = 2, donc (i & 2) >> 1 = 0 ou 1.
+  for (let i = 1; i < gBattlersCount; i += 2) {
+    gSentPokesToOpponent[(i & 2) >> 1] = bits;
+  }
   return false;
 }
 
