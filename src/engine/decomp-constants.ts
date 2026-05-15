@@ -46,6 +46,8 @@ import * as global from './decomp-data/auto/include/constants/global-data';
 import * as fieldEffects from './decomp-data/auto/include/constants/field_effects-data';
 import * as opponents from './decomp-data/auto/include/constants/opponents-data';
 import * as pokemon from './decomp-data/auto/include/constants/pokemon-data';
+import * as abilities from './decomp-data/auto/include/constants/abilities-data';
+import * as battleMoveEffects from './decomp-data/auto/include/constants/battle_move_effects-data';
 import * as vars from './decomp-data/auto/include/constants/vars-data';
 // Audit session 125 : METATILE_*, MB_*, MAP_SCRIPT_ON_* manquaient → setmetatile
 // resolved les NAMES à 0 → corruption tile (= bug exit truck après option menu).
@@ -95,6 +97,8 @@ _mergeConstants(global);
 _mergeConstants(fieldEffects);
 _mergeConstants(opponents);
 _mergeConstants(pokemon);
+_mergeConstants(abilities);
+_mergeConstants(battleMoveEffects);
 _mergeConstants(vars);
 _mergeConstants(titleScreen);
 _mergeConstants(metatileLabels);
