@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-15 (autonomous /loop, user "je m'endors pour de vrai")
 **Branche** : `upd2`
-**Commits** : 21 commits / ~3700 lignes 1:1 décomp ajoutées cette session
+**Commits** : 34+ commits / ~4200 lignes 1:1 décomp ajoutées cette session (+ 8 audit bugs critiques fixés)
 
 ---
 
@@ -154,6 +154,13 @@ gLeveledUpInBattle                   // Bitmask mons lvl-up ce combat
      SEMI_INVULNERABLE=39 (155), BIDE=27 (26). Sleep Talk picks pourris.
 5. **BATTLE_TYPE_FRONTIER_LOCAL inline dans damage-calc.ts FAUX** (commit `33439049`) :
    bits initialement (1<<13)|(1<<14)|... vrai = (1<<8)|(1<<16)|(1<<17)|...
+6. **MUS_VICTORY_TRAINER hardcoded `0x174=372` → vraie valeur `412`** (commit `d95930ec`).
+   Décomp songs-data.ts. Trainer defeat aurait joué le wrong BGM.
+7. **MULTIUSE_STATE hardcoded `7` → vraie valeur `0`** (commit `a978c58e`).
+   Cmd_trygivecaughtmonnick reset wrong field gBattleCommunication[7]=MSG_DISPLAY
+   au lieu de [0]=MULTIUSE_STATE.
+8. **FLAG_BADGE0X_GET hardcoded `0x844/0x848/0x84A` → vraies `0x867/0x86B/0x86D`** (commit `d7172500`).
+   Ancien SYSTEM_FLAGS=0x83D, vrai 0x860 dans décomp Em actuelle.
 
 ---
 
