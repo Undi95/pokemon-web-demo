@@ -514,6 +514,51 @@ export function setBattleStructAbsentBattlerFlags(v: number) { gBattleStructAbse
 export let gBattleStructAtkCancelerTracker = 0;
 export function setBattleStructAtkCancelerTracker(v: number) { gBattleStructAtkCancelerTracker = v; }
 
+/** 1:1 décomp `gBattleStruct->expValue` (battle.h). XP calculé per-mon par
+ *  Cmd_getexp à distribuer aux participants. */
+export let gBattleStructExpValue = 0;
+export function setBattleStructExpValue(v: number) { gBattleStructExpValue = v; }
+
+/** 1:1 décomp `gBattleStruct->expGetterMonId` (battle.h). Index 0..5 du mon
+ *  party courant en cours de distribution XP. */
+export let gBattleStructExpGetterMonId = 0;
+export function setBattleStructExpGetterMonId(v: number) { gBattleStructExpGetterMonId = v; }
+
+/** 1:1 décomp `gBattleStruct->expGetterBattlerId` (battle.h). Battler ID
+ *  (0..3) qui reçoit l'XP — utilisé pour Emit + display. */
+export let gBattleStructExpGetterBattlerId = 0;
+export function setBattleStructExpGetterBattlerId(v: number) { gBattleStructExpGetterBattlerId = v; }
+
+/** 1:1 décomp `gBattleStruct->sentInPokes` (battle.h). Bitmask des mons sentIn
+ *  (= participaient au combat = éligibles à l'XP). Shifté à chaque mon. */
+export let gBattleStructSentInPokes = 0;
+export function setBattleStructSentInPokes(v: number) { gBattleStructSentInPokes = v; }
+
+/** 1:1 décomp `gBattleStruct->wildVictorySong` (battle.h). Flag 1-time pour
+ *  switch BGM → MUS_VICTORY_WILD post-faint adversaire en wild battle. */
+export let gBattleStructWildVictorySong = 0;
+export function setBattleStructWildVictorySong(v: number) { gBattleStructWildVictorySong = v; }
+
+/** 1:1 décomp `gBattleStruct->givenExpMons` (battle.h). Bitmask party indexes
+ *  qui ont déjà reçu de l'XP ce combat (= pour eviter doublons). */
+export let gBattleStructGivenExpMons = 0;
+export function setBattleStructGivenExpMons(v: number) { gBattleStructGivenExpMons = v; }
+
+/** 1:1 décomp `gSentPokesToOpponent[2]` (battle_main.c). Bitmask des mons qui
+ *  ont été envoyés contre chaque opponent (= side 0=opponent left, 1=right).
+ *  Utilisé par getexp pour identifier les mons éligibles. */
+export const gSentPokesToOpponent: number[] = [0, 0];
+
+/** 1:1 décomp `gExpShareExp` (battle_script_commands.c). XP partagé via Exp.Share
+ *  hold item à distribuer à tous les non-participants équipés. */
+export let gExpShareExp = 0;
+export function setExpShareExp(v: number) { gExpShareExp = v; }
+
+/** 1:1 décomp `gLeveledUpInBattle` (battle_main.c). Bitmask party indexes qui
+ *  ont level-up pendant le combat. Utilisé par la post-combat learn move flow. */
+export let gLeveledUpInBattle = 0;
+export function setLeveledUpInBattle(v: number) { gLeveledUpInBattle = v; }
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];
@@ -601,6 +646,16 @@ export function resetBattleState(): void {
   }
   gBattleStructAbsentBattlerFlags = 0;
   gBattleStructAtkCancelerTracker = 0;
+  gBattleStructExpValue = 0;
+  gBattleStructExpGetterMonId = 0;
+  gBattleStructExpGetterBattlerId = 0;
+  gBattleStructSentInPokes = 0;
+  gBattleStructWildVictorySong = 0;
+  gBattleStructGivenExpMons = 0;
+  gSentPokesToOpponent[0] = 0;
+  gSentPokesToOpponent[1] = 0;
+  gExpShareExp = 0;
+  gLeveledUpInBattle = 0;
   Object.assign(gBattleScripting, _makeBlankScripting());
   for (let i = 0; i < gBattleCommunication.length; i++) gBattleCommunication[i] = 0;
   gBattlerAttacker = 0;

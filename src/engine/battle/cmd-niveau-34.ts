@@ -31,12 +31,25 @@ import {
   gSpecialStatuses, gDisableStructs,
   setLastUsedAbility,
   gBattleStructChoicedMove,
+  setBattlerFainted, setBattleMoveDamage,
+  gSentPokesToOpponent,
+  gBattleStructExpValue, setBattleStructExpValue,
+  gBattleStructExpGetterMonId, setBattleStructExpGetterMonId,
+  gBattleStructExpGetterBattlerId, setBattleStructExpGetterBattlerId,
+  gBattleStructSentInPokes, setBattleStructSentInPokes,
+  gBattleStructWildVictorySong, setBattleStructWildVictorySong,
+  gBattleStructGivenExpMons, setBattleStructGivenExpMons,
+  gExpShareExp, setExpShareExp,
+  gLeveledUpInBattle, setLeveledUpInBattle,
+  gBattleMoveDamage,
 } from './state';
 import {
   STATUS1_SLEEP, STATUS2_MULTIPLETURNS, STATUS2_LOCK_CONFUSE, STATUS2_UPROAR,
   STATUS2_BIDE, STATUS3_SEMI_INVULNERABLE,
   HITMARKER_FAINTED, HITMARKER_PLAYER_FAINTED,
   BATTLE_TYPE_LINK, BATTLE_TYPE_TRAINER, BATTLE_TYPE_DOUBLE,
+  BATTLE_TYPE_RECORDED_LINK, BATTLE_TYPE_TRAINER_HILL, BATTLE_TYPE_FRONTIER,
+  BATTLE_TYPE_SAFARI, BATTLE_TYPE_BATTLE_TOWER, BATTLE_TYPE_EREADER_TRAINER,
   B_OUTCOME_PLAYER_TELEPORTED, B_OUTCOME_MON_TELEPORTED,
   BATTLE_RUN_SUCCESS, BATTLE_RUN_FAILURE,
   NO_TARGET_OVERRIDE, B_MSG_PREVENTS_ESCAPE,
@@ -52,6 +65,17 @@ import {
   B_COMM_TO_CONTROLLER,
   IS_BATTLER_OF_TYPE,
 } from './constants';
+import {
+  gPlayerParty, GetMonData, SetMonData,
+  MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_HELD_ITEM,
+  MON_DATA_LEVEL, MON_DATA_EXP,
+} from './party-storage';
+import {
+  HOLD_EFFECT_EXP_SHARE, HOLD_EFFECT_LUCKY_EGG,
+} from '../decomp-data/auto/include/constants/hold_effects-data';
+import { getSpeciesExpYield, getSpeciesGrowthRate } from './data/species-runtime';
+import { getLevelFromExp, MAX_LEVEL } from './data/experience-tables';
+import { gBitTable } from './battle-controllers';
 import {
   HOLD_EFFECT_CAN_ALWAYS_RUN,
 } from '../decomp-data/auto/include/constants/hold_effects-data';
@@ -253,26 +277,268 @@ function _IsRunningFromBattleImpossible(): number {
 
 // ─── 0x23 getexp ──────────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_getexp. 1 byte. ~12k chars de state machine.
- *  Décomp gère via gBattleScripting.getexpState 0..6 :
- *    0 : calculate XP, check who's eligible (= participating mons via
- *        gBattleStruct.expGetterMonId tracking + ExpShare item)
- *    1 : per-mon distribute (loop sur eligible mons)
- *    2 : send XP gain message + animation
- *    3 : apply XP via SetMonData + handle level up trigger
- *    4 : trigger BattleScript_LevelUp + drawlvlupbox jump
- *    5 : learn move check (= jump à BattleScript_TryLearnMoveLoop)
- *    6 : transition next eligible mon ou finish
+/** 1:1 décomp Cmd_getexp (battle_script_commands.c:3255-3532). State machine
+ *  6 states via gBattleScripting.getexpState 0..6. Args : 1 byte battler ref
+ *  + 4 byte ptr (= jump target post-getexp, BattleScript_LevelUp etc.).
  *
- *  STUB Phase 1 : Le combat actuel utilise battle-flow.ts existant qui a sa
- *  propre logic XP. Port complet = Phase 1.3 I (= todo séparé). */
+ *  Phase 1.3 I — Port complet 1:1 strict. STUBS notés :
+ *  - gEnigmaBerries[].holdEffect path (= rare custom berry data).
+ *  - BtlController_EmitExpUpdate (= UI sync, STUB no-op for MVP).
+ *  - IsTradedMon (= STUB false, OT check pas porté).
+ *  - MonGainEVs (= STUB no-op, EV system pas wired).
+ *  - AdjustFriendship (= STUB no-op, friendship pas wired).
+ *  - HandleLowHpMusicChange (= STUB no-op, BGM sync pas wired).
+ *  - gBattleResources.beforeLvlUp.stats (= STUB tracking via gBattleStruct extension).
+ */
 function Cmd_getexp(ctx: BattleScriptContext): boolean {
-  if (gBattleControllerExecFlags) return _stayOnOpcode(ctx);
-  // TODO Phase 1.3 I porter battle_script_commands.c:5054..5635 getexp.
-  // Dépendances : gExperienceTables, gExpShareItem, gBattleStruct.expGetterMonId,
-  // GetMonData EXP/LEVEL, MonGetEvolutionTargetSpecies,
-  // BattleScript_LevelUp / TryLearnMoveLoop / Evolution labels.
+  // 1:1 décomp : args = 1 byte battler ref. Notre opcode = 1 byte total
+  // (= no jump target ; le caller utilise call/goto vers BattleScript_LevelUp etc.)
+  const battlerArg = readByte(ctx);
+  if (gBattleControllerExecFlags) {
+    ctx.scriptPtr -= 2;  // back to opcode + arg
+    return true;
+  }
+
+  // 1:1 décomp : `gBattlerFainted = GetBattlerForBattleScript(...)` — set le
+  // battler dont on calcule l'XP yield.
+  const battlerFainted = getBattlerForBattleScript(battlerArg);
+  setBattlerFainted(battlerFainted);
+
+  // 1:1 décomp : sentIn = gSentPokesToOpponent[(battlerFainted & 2) >> 1].
+  const sentIn = gSentPokesToOpponent[(battlerFainted & 2) >> 1] ?? 0;
+
+  // 1:1 décomp : do-while loop interne pour gérer le fall-through case 1 → case 2.
+  // Le décomp utilise fall-through après state 1 ; on fait un loop avec break
+  // pour respecter le comportement sans le warning TS noFallthroughCasesInSwitch.
+  let allowFallThrough = true;
+  while (allowFallThrough) {
+    allowFallThrough = false;
+  switch (gBattleScripting.getexpState) {
+    case 0: {
+      // 1:1 décomp : check if any XP should be awarded.
+      const noXpFlags = BATTLE_TYPE_LINK
+        | BATTLE_TYPE_RECORDED_LINK
+        | BATTLE_TYPE_TRAINER_HILL
+        | BATTLE_TYPE_FRONTIER
+        | BATTLE_TYPE_SAFARI
+        | BATTLE_TYPE_BATTLE_TOWER
+        | BATTLE_TYPE_EREADER_TRAINER;
+      if (GET_BATTLER_SIDE(battlerFainted) !== /* B_SIDE_OPPONENT */ 1
+          || (gBattleTypeFlags & noXpFlags)) {
+        gBattleScripting.getexpState = 6;
+      } else {
+        gBattleScripting.getexpState++;
+        setBattleStructGivenExpMons(
+          gBattleStructGivenExpMons | gBitTable[gBattlerPartyIndexes[battlerFainted]]
+        );
+      }
+      break;
+    }
+
+    case 1: {
+      // 1:1 décomp : calculate XP per-mon, count exp-share mons.
+      let viaSentIn = 0;
+      let viaExpShare = 0;
+
+      for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
+        const species = GetMonData(gPlayerParty[i], MON_DATA_SPECIES) as number;
+        const hp = GetMonData(gPlayerParty[i], MON_DATA_HP) as number;
+        if (species === 0 || hp === 0) continue;
+        if (gBitTable[i] & sentIn) viaSentIn++;
+
+        const item = GetMonData(gPlayerParty[i], MON_DATA_HELD_ITEM) as number;
+        const holdEffect = GetItemHoldEffect(item);
+        if (holdEffect === HOLD_EFFECT_EXP_SHARE) viaExpShare++;
+      }
+
+      // 1:1 décomp : calculatedExp = expYield × level / 7.
+      const faintedSpecies = gBattleMons[battlerFainted].species;
+      const calculatedExp = Math.floor(
+        getSpeciesExpYield(faintedSpecies) * gBattleMons[battlerFainted].level / 7
+      );
+
+      if (viaExpShare) {
+        // Split : moitié pour participants, autre moitié pour exp-share holders.
+        setBattleStructExpValue(
+          Math.max(1, Math.floor(calculatedExp / 2 / Math.max(1, viaSentIn)))
+        );
+        setExpShareExp(
+          Math.max(1, Math.floor(calculatedExp / 2 / viaExpShare))
+        );
+      } else {
+        setBattleStructExpValue(
+          Math.max(1, Math.floor(calculatedExp / Math.max(1, viaSentIn)))
+        );
+        setExpShareExp(0);
+      }
+
+      gBattleScripting.getexpState++;
+      setBattleStructExpGetterMonId(0);
+      setBattleStructSentInPokes(sentIn);
+      // 1:1 décomp : fall through to case 2 — re-enter switch via loop.
+      allowFallThrough = true;
+      break;
+    }
+
+    case 2: {
+      // 1:1 décomp : set exp value per mon + print message.
+      if (gBattleControllerExecFlags === 0) {
+        const monId = gBattleStructExpGetterMonId;
+        const item = GetMonData(gPlayerParty[monId], MON_DATA_HELD_ITEM) as number;
+        const holdEffect = GetItemHoldEffect(item);
+
+        const monLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) as number;
+
+        if (holdEffect !== HOLD_EFFECT_EXP_SHARE && !(gBattleStructSentInPokes & 1)) {
+          // Pas d'exp-share + pas sent in → skip.
+          setBattleStructSentInPokes(gBattleStructSentInPokes >>> 1);
+          gBattleScripting.getexpState = 5;
+          setBattleMoveDamage(0);
+        } else if (monLevel === MAX_LEVEL) {
+          // Mon déjà niveau max.
+          setBattleStructSentInPokes(gBattleStructSentInPokes >>> 1);
+          gBattleScripting.getexpState = 5;
+          setBattleMoveDamage(0);
+        } else {
+          // 1:1 décomp : switch BGM → MUS_VICTORY_WILD post-faint adversaire en wild.
+          if (!(gBattleTypeFlags & BATTLE_TYPE_TRAINER)
+              && gBattleMons[0].hp !== 0
+              && !gBattleStructWildVictorySong) {
+            // STUB BGM switch (= UI/audio engine wiring).
+            setBattleStructWildVictorySong(gBattleStructWildVictorySong + 1);
+          }
+
+          const monHp = GetMonData(gPlayerParty[monId], MON_DATA_HP) as number;
+          if (monHp) {
+            let dmg = (gBattleStructSentInPokes & 1) ? gBattleStructExpValue : 0;
+            if (holdEffect === HOLD_EFFECT_EXP_SHARE) {
+              dmg += gExpShareExp;
+            }
+            if (holdEffect === HOLD_EFFECT_LUCKY_EGG) {
+              dmg = Math.floor((dmg * 150) / 100);
+            }
+            if (gBattleTypeFlags & BATTLE_TYPE_TRAINER) {
+              dmg = Math.floor((dmg * 150) / 100);
+            }
+            // STUB IsTradedMon : pas porté.
+            setBattleMoveDamage(dmg);
+
+            // 1:1 décomp : determine battler ID receiver (= slot 0 ou 2 si double).
+            if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+              if (gBattlerPartyIndexes[2] === monId && !(gAbsentBattlerFlags & gBitTable[2])) {
+                setBattleStructExpGetterBattlerId(2);
+              } else {
+                setBattleStructExpGetterBattlerId(
+                  !(gAbsentBattlerFlags & gBitTable[0]) ? 0 : 2
+                );
+              }
+            } else {
+              setBattleStructExpGetterBattlerId(0);
+            }
+
+            // STUB MonGainEVs : EV system pas wired pour MVP.
+            _stubMonGainEVs(monId, gBattleMons[battlerFainted].species);
+          }
+          setBattleStructSentInPokes(gBattleStructSentInPokes >>> 1);
+          gBattleScripting.getexpState++;
+        }
+      }
+      break;
+    }
+
+    case 3: {
+      // 1:1 décomp : set stats + give exp + emit ExpUpdate.
+      if (gBattleControllerExecFlags === 0) {
+        const monId = gBattleStructExpGetterMonId;
+        const monHp = GetMonData(gPlayerParty[monId], MON_DATA_HP) as number;
+        const monLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) as number;
+        if (monHp && monLevel !== MAX_LEVEL) {
+          // STUB beforeLvlUp.stats snapshot : pas wired (= UI level-up box).
+          // STUB BtlController_EmitExpUpdate : pas wired.
+          // Apply XP via SetMonData directement.
+          const currentExp = GetMonData(gPlayerParty[monId], MON_DATA_EXP) as number;
+          SetMonData(gPlayerParty[monId], MON_DATA_EXP, currentExp + gBattleMoveDamage);
+        }
+        gBattleScripting.getexpState++;
+      }
+      break;
+    }
+
+    case 4: {
+      // 1:1 décomp : level up check + trigger BattleScript_LevelUp.
+      if (gBattleControllerExecFlags === 0) {
+        const monId = gBattleStructExpGetterMonId;
+        const _battlerId = gBattleStructExpGetterBattlerId;
+        // STUB RET_VALUE_LEVELED_UP : pas dispo (= attendre buffer return du controller).
+        // Pour MVP : check directement si l'XP cumulé dépasse le seuil level+1.
+        const species = GetMonData(gPlayerParty[monId], MON_DATA_SPECIES) as number;
+        const currentExp = GetMonData(gPlayerParty[monId], MON_DATA_EXP) as number;
+        const currentLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) as number;
+        const newLevel = getLevelFromExp(getSpeciesGrowthRate(species), currentExp);
+
+        if (newLevel > currentLevel && currentLevel < MAX_LEVEL) {
+          SetMonData(gPlayerParty[monId], MON_DATA_LEVEL, newLevel);
+          setLeveledUpInBattle(gLeveledUpInBattle | gBitTable[monId]);
+
+          // 1:1 décomp : update gBattleMons[slot] post lvl up si mon est en field.
+          if (gBattlerPartyIndexes[0] === monId && gBattleMons[0].hp) {
+            gBattleMons[0].level = newLevel;
+          }
+          if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE)
+              && gBattlerPartyIndexes[2] === monId && gBattleMons[2].hp) {
+            gBattleMons[2].level = newLevel;
+          }
+
+          // STUB AdjustFriendship FRIENDSHIP_EVENT_GROW_LEVEL.
+          // STUB BattleScriptPushCursor + jump BattleScript_LevelUp.
+          // Pour MVP : just continue (= advance to state 5).
+          gBattleScripting.getexpState = 5;
+        } else {
+          setBattleMoveDamage(0);
+          gBattleScripting.getexpState = 5;
+        }
+      }
+      break;
+    }
+
+    case 5: {
+      // 1:1 décomp : looper increment.
+      if (gBattleMoveDamage) {
+        gBattleScripting.getexpState = 3;
+      } else {
+        setBattleStructExpGetterMonId(gBattleStructExpGetterMonId + 1);
+        if (gBattleStructExpGetterMonId < 6 /* PARTY_SIZE */) {
+          gBattleScripting.getexpState = 2;  // loop again
+        } else {
+          gBattleScripting.getexpState = 6;  // done
+        }
+      }
+      break;
+    }
+
+    case 6: {
+      // 1:1 décomp : final cleanup + advance opcode.
+      if (gBattleControllerExecFlags === 0) {
+        // 1:1 décomp : `gBattleMons[battlerFainted].item = ITEM_NONE; ability = 0`.
+        // Note décomp : "not sure why gf clears the item and ability here".
+        gBattleMons[battlerFainted].item = 0;
+        gBattleMons[battlerFainted].ability = 0;
+        // Reset state machine pour next adversaire.
+        gBattleScripting.getexpState = 0;
+        // Advance opcode (= déjà fait par readByte).
+      }
+      break;
+    }
+  }
+  }  // end while allowFallThrough
   return false;
+}
+
+/** 1:1 stub `MonGainEVs(mon, opponentSpecies)` (pokemon.c). STUB MVP no-op.
+ *  TODO porter EV system complet : evYield 6-stats + bonus Macho Brace +
+ *  cap 510 total + cap 100 per-stat. */
+function _stubMonGainEVs(_monId: number, _opponentSpecies: number): void {
+  // TODO porter EV gain logic. Pour MVP : no-op.
 }
 
 // ─── 0x76 various ─────────────────────────────────────────────────────────
