@@ -82,6 +82,8 @@ import {
 } from './constants';
 import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import { getBattleMove } from './data/battle-moves';
+import { GetGenderFromSpeciesAndPersonality } from '../pokemon';
+import { reverseDecompConstant } from '../decomp-constants';
 
 // ─── ABILITYEFFECT_* enum (= 1:1 décomp battle_util.h:12-34) ──────────────
 
@@ -586,19 +588,36 @@ export function AbilityBattleEffects(
             effect++;
           }
           break;
-        case ABILITY_CUTE_CHARM:
-          // 1:1 partial : gender check via party-storage GetGenderFromSpeciesAndPersonality.
-          // Pour MVP : skip — gender bridge nécessite party-storage hook.
-          // TODO porter en utilisant pokemon.ts:_getGenderFromSpeciesAndPersonality.
-          void MON_GENDERLESS; void STATUS2_INFATUATED_WITH;
+        case ABILITY_CUTE_CHARM: {
+          // 1:1 décomp battle_util.c:2834-2853.
+          // Helper inline pour resolve species id → enum string → gender.
+          const _genderOf = (speciesId: number, personality: number): number => {
+            const speciesEnum = reverseDecompConstant(speciesId, 'SPECIES_');
+            if (!speciesEnum) return MON_GENDERLESS;
+            return GetGenderFromSpeciesAndPersonality(speciesEnum, personality);
+          };
+          const atkGender = _genderOf(
+            gBattleMons[gBattlerAttacker].species,
+            gBattleMons[gBattlerAttacker].personality,
+          );
+          const tgtGender = _genderOf(
+            gBattleMons[gBattlerTarget].species,
+            gBattleMons[gBattlerTarget].personality,
+          );
           if (!noEffect && attackerAlive && notConfusionSelfDmg && makesContact
               && targetTurnDamaged && gBattleMons[gBattlerTarget].hp !== 0
               && (Random() % 3) === 0
-              && gBattleMons[gBattlerAttacker].ability !== ABILITY_OBLIVIOUS) {
-            // Genders not checked (= MVP), pas activé pour éviter false positives.
-            // statement scope ferme avec break ci-dessous.
+              && gBattleMons[gBattlerAttacker].ability !== ABILITY_OBLIVIOUS
+              && atkGender !== tgtGender
+              && !(gBattleMons[gBattlerAttacker].status2 & STATUS2_INFATUATION)
+              && atkGender !== MON_GENDERLESS
+              && tgtGender !== MON_GENDERLESS) {
+            gBattleMons[gBattlerAttacker].status2 |= STATUS2_INFATUATED_WITH(gBattlerTarget);
+            _lastWantedScriptLabel = 'BattleScript_CuteCharmActivates';
+            effect++;
           }
           break;
+        }
       }
       break;
     }
