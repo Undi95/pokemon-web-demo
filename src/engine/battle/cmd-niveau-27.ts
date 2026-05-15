@@ -99,8 +99,11 @@ function _getMoveTarget(_move: number, _override: number): number {
   return gBattlerTarget;
 }
 
-/** 1:1 stub `RecordAbilityBattle` (battle_util.c). AI tracking — no-op. */
-function _recordAbilityBattle(_battler: number, _ability: number): void {}
+// 1:1 décomp `RecordAbilityBattle` — wired via util.ts.
+import { RecordAbilityBattle as _recordAbilityBattleFullN27 } from './util';
+function _recordAbilityBattle(battler: number, ability: number): void {
+  _recordAbilityBattleFullN27(battler, ability);
+}
 
 /** 1:1 stub `GetSetPokedexFlag(natDexNum, caseId)` (pokedex.c).
  *  Pour MVP : retourne 0 (= jamais set). Permettra l'opcode de toujours
