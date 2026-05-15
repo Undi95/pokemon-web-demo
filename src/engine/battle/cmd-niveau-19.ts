@@ -46,6 +46,9 @@ import {
   MarkBattlerForControllerExec,
 } from './battle-controllers';
 import { getBattlerForBattleScript, GetBattlerAtPosition, B_POSITION_PLAYER_LEFT } from './util';
+import {
+  AbilityBattleEffects, ABILITYEFFECT_CHECK_ON_FIELD,
+} from './ability-battle-effects';
 
 // ─── B_MSG_* rest (battle_string_ids.h:476-477) — 1:1 décomp ───────────────
 const B_MSG_REST          = 0;
@@ -58,15 +61,11 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** 1:1 stub `AbilityBattleEffects(ABILITYEFFECT_CHECK_ON_FIELD, ...)`. MVP :
- *  cherche si une ability donnée est présente sur le field. */
+/** 1:1 décomp `AbilityBattleEffects(ABILITYEFFECT_CHECK_ON_FIELD, ...)`.
+ *  Cherche si une ability donnée est présente sur le field (hp != 0).
+ *  Wire via AbilityBattleEffects qui implémente la logique 1:1. */
 function _abilityCheckOnField(abilityId: number): boolean {
-  for (let i = 0; i < gBattleMons.length; i++) {
-    if (gBattleMons[i].ability === abilityId && gBattleMons[i].hp) {
-      return true;
-    }
-  }
-  return false;
+  return AbilityBattleEffects(ABILITYEFFECT_CHECK_ON_FIELD, 0, abilityId, 0, 0) !== 0;
 }
 
 // ─── 0x43 jumpifabilitypresent ────────────────────────────────────────────
