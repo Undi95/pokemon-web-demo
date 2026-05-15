@@ -526,6 +526,12 @@ export function SET_STAT_BUFF_VALUE(n: number): number { return (n << 4) & 0xF0;
 // ─── MULTISTRING_CHOOSER index (battle_script_commands.h:294) ──────────────
 export const MULTISTRING_CHOOSER = 5;
 
+// ─── MULTIUSE_STATE (battle_script_commands.h:287) ──────────────
+/** Index dans gBattleCommunication pour la state machine multi-step (= yesno
+ *  boxes, dex info, give nick, etc.). Cycle through states 0..N puis cleanup.
+ *  Note : CURSOR_POSITION = 1 déjà défini ligne 445. */
+export const MULTIUSE_STATE = 0;
+
 // ─── B_MSG_* stat change (battle_string_ids.h:395-406) ──────────────────────
 export const B_MSG_ATTACKER_STAT_ROSE  = 0;
 export const B_MSG_DEFENDER_STAT_ROSE  = 1;

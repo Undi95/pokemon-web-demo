@@ -136,8 +136,9 @@ function Cmd_displaydexinfo(ctx: BattleScriptContext): boolean {
  *  Notre port : MVP advance direct (= simulate "skip nickname"). */
 function Cmd_trygivecaughtmonnick(_ctx: BattleScriptContext): boolean {
   // TODO porter yesno state machine + naming screen scene.
-  // MULTIUSE_STATE = 7 dans constants — reset.
-  gBattleCommunication[7] = 0;
+  // 1:1 décomp : MULTIUSE_STATE = 0 (= battle_script_commands.h:285).
+  // AUDIT FIX : précédemment hardcoded [7] FAUX (= ce serait B_MSG_index).
+  gBattleCommunication[0 /* MULTIUSE_STATE */] = 0;
   return false;
 }
 
