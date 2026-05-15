@@ -431,6 +431,11 @@ export const NUM_LOAF_STRINGS = 4;
 
 // ─── MOVE_LIMITATIONS_ALL (battle.h) — full move limitation mask ──────────
 export const MOVE_LIMITATIONS_ALL       = 0xFF;
+
+// ─── BATTLE_ALIVE_* (constants/pokemon.h:277-279) — 1:1 décomp ────────────
+export const BATTLE_ALIVE_EXCEPT_ACTIVE = 0;
+export const BATTLE_ALIVE_ATK_SIDE      = 1;
+export const BATTLE_ALIVE_DEF_SIDE      = 2;
 export const B_OUTCOME_MON_FLED          = 6;
 export const B_OUTCOME_CAUGHT            = 7;
 

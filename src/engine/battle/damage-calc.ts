@@ -32,6 +32,8 @@ import {
   gCritMultiplier,
   gBattleScripting,
   gCurrentMove,
+  gActiveBattler,
+  gAbsentBattlerFlags,
 } from './state';
 import { getBattleMove } from './data/battle-moves';
 import type { BattleMon } from './script-interpreter';
@@ -56,6 +58,7 @@ import {
   B_WEATHER_SANDSTORM,
   B_WEATHER_SUN,
   B_WEATHER_HAIL,
+  GET_BATTLER_SIDE,
   ABILITY_THICK_FAT,
   ABILITY_HUGE_POWER,
   ABILITY_PURE_POWER,
@@ -102,8 +105,32 @@ function shouldGetStatBadgeBoost(_badgeFlag: number, _battler: number): boolean 
   return false;
 }
 
-/** Stub : CountAliveMonsInBattle. Pour singles → 1. TODO double battle. */
-function countAliveMonsInBattle(_caseId: number): number { return 1; }
+/** 1:1 décomp `CountAliveMonsInBattle(caseId)` (pokemon.c:3375-3406).
+ *  Compte les battlers vivants selon le caseId (= EXCEPT_ACTIVE/ATK_SIDE/DEF_SIDE). */
+function countAliveMonsInBattle(caseId: number): number {
+  let retVal = 0;
+  const MAX_BATTLERS = 4;  // MAX_BATTLERS_COUNT
+  switch (caseId) {
+    case 0 /* BATTLE_ALIVE_EXCEPT_ACTIVE */:
+      for (let i = 0; i < MAX_BATTLERS; i++) {
+        if (i !== gActiveBattler && !(gAbsentBattlerFlags & (1 << i))) retVal++;
+      }
+      break;
+    case 1 /* BATTLE_ALIVE_ATK_SIDE */:
+      for (let i = 0; i < MAX_BATTLERS; i++) {
+        if (GET_BATTLER_SIDE(i) === GET_BATTLER_SIDE(gBattlerAttacker)
+            && !(gAbsentBattlerFlags & (1 << i))) retVal++;
+      }
+      break;
+    case 2 /* BATTLE_ALIVE_DEF_SIDE */:
+      for (let i = 0; i < MAX_BATTLERS; i++) {
+        if (GET_BATTLER_SIDE(i) === GET_BATTLER_SIDE(gBattlerTarget)
+            && !(gAbsentBattlerFlags & (1 << i))) retVal++;
+      }
+      break;
+  }
+  return retVal;
+}
 
 // 1:1 décomp `BATTLE_ALIVE_*` (include/constants/battle.h).
 const BATTLE_ALIVE_DEF_SIDE = 2;
