@@ -52,6 +52,7 @@ import {
   setBattlerFainted,
   setBattleOutcome,
   setActiveBattler,
+  setLastUsedItem,
   setBattlerAttacker,
   setBattlerTarget,
 } from './state';
@@ -361,15 +362,16 @@ function Cmd_adjustnormaldamage(_ctx: BattleScriptContext): boolean {
 
   setPotentialItemEffectBattler(gBattlerTarget);
 
-  // Focus Band : `Random() % 100 < param` → activate.
-  // TODO porter gSpecialStatuses[target].focusBanded set.
+  // 1:1 décomp : Focus Band trigger sur (Random() % 100) < param.
+  // gSpecialStatuses[target].focusBanded est set ici aussi.
   let focusBanded = false;
   if (holdEffect === HOLD_EFFECT_FOCUS_BAND && (Random() % 100) < param) {
     focusBanded = true;
+    gSpecialStatuses[gBattlerTarget].focusBanded = 1;
   }
 
-  // Endured stub (= gProtectStructs[target].endured pas porté → false toujours).
-  const endured = false;
+  // 1:1 décomp : `if (gProtectStructs[target].endured)` — Endure move actif.
+  const endured = gProtectStructs[gBattlerTarget].endured !== 0;
 
   // 1:1 décomp : skip si STATUS2_SUBSTITUTE actif (= substitute eats the hit,
   // pas de leave-at-1-HP gimmick).
@@ -385,8 +387,7 @@ function Cmd_adjustnormaldamage(_ctx: BattleScriptContext): boolean {
     } else if (focusBanded) {
       setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_FOE_HUNG_ON);
       // 1:1 décomp : `gLastUsedItem = gBattleMons[gBattlerTarget].item;`
-      // TODO porter gLastUsedItem set ici (= utilisé par resultmessage HUNG_ON
-      // pour afficher "X hung on using its Focus Band!").
+      setLastUsedItem(targetMon.item);
     }
   }
   return false;
