@@ -531,3 +531,20 @@ export const B_MSG_SET_SAFEGUARD          = 5;
 // ─── B_MSG_* mist (battle_string_ids.h:496-497) — 1:1 décomp ───────────────
 export const B_MSG_SET_MIST    = 0;
 export const B_MSG_MIST_FAILED = 1;
+
+// ─── B_MSG_* substitute (battle_string_ids.h:508-509) — 1:1 décomp ─────────
+export const B_MSG_SET_SUBSTITUTE     = 0;
+export const B_MSG_SUBSTITUTE_FAILED  = 1;
+
+// ─── STATUS1_ANY (constants/battle.h:125) — 1:1 décomp ─────────────────────
+export const STATUS1_ANY = STATUS1_SLEEP | STATUS1_POISON | STATUS1_BURN | STATUS1_FREEZE | STATUS1_PARALYSIS | STATUS1_TOXIC_POISON;
+
+/** 1:1 décomp `STATUS2_BIDE_TURN(num)` (battle.h:136). */
+export function STATUS2_BIDE_TURN(num: number): number {
+  return (num << 8) & STATUS2_BIDE;
+}
+
+/** 1:1 décomp `STATUS3_YAWN_TURN(num)` (battle.h:169). */
+export function STATUS3_YAWN_TURN(num: number): number {
+  return (num << 11) & STATUS3_YAWN;
+}

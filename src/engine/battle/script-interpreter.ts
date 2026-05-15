@@ -448,6 +448,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-10').then(({ installNiveau10Handlers }) => {
     installNiveau10Handlers(_commands);
   });
+  // Session 134 — Niveau 11 (damage manip + substitute).
+  void import('./cmd-niveau-11').then(({ installNiveau11Handlers }) => {
+    installNiveau11Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
