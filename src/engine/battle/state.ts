@@ -178,60 +178,58 @@ export let gCurrentActionFuncId = 0;
  *  battler ayant agi ce tour. Incrémenté à chaque action terminée. */
 export let gCurrentTurnActionNumber = 0;
 
-/** 1:1 décomp `struct DisableStruct gDisableStructs[MAX_BATTLERS_COUNT]`
- *  (battle.h:438-468). Tracks per-battler effects que les moves doivent
- *  consulter (= disabled move, encored move, taunt, perish counter, etc.).
- *  Minimal set Niveau 4 (only what attackanimation reads via
- *  BtlController_EmitMoveAnimation = passed by pointer). */
+/** 1:1 décomp `struct DisableStruct` (include/battle.h:70-102). Tracks per-battler
+ *  effects que les moves doivent consulter (= disabled move, encored move,
+ *  taunt, perish counter, etc.). */
 export interface DisableStruct {
-  transformedMonPersonality: number;
-  disabledMove: number;
-  disableTimer: number;       // s16 (low 4 bits)
-  disableTimerStartValue: number; // s16 (high 4 bits)
-  encoredMove: number;
-  protectUses: number;
-  stockpileCounter: number;
-  substituteHP: number;
-  disableTimerXX: number;
-  encoreTimer: number;        // (low 4 bits)
-  encoreTimerStartValue: number;
-  perishSongTimer: number;    // (low 4 bits)
-  perishSongTimerStartValue: number;
-  furyCutterCounter: number;
-  rolloutTimer: number;       // (low 4 bits)
-  rolloutTimerStartValue: number;
-  chargeTimer: number;        // (low 4 bits)
-  chargeTimerStartValue: number;
-  tauntTimer: number;         // (low 4 bits)
-  tauntTimer2: number;        // (high 4 bits)
-  battlerPreventingEscape: number;
-  battlerWithSureHit: number;
-  isFirstTurn: number;
-  unused1: number;
-  truantCounter: number;      // (1 bit)
-  truantUnknownBit: number;   // (1 bit)
-  unused2: number;
-  mimickedMoves: number;      // u8 bitfield (4 bits)
-  rechargeCounter: number;
-  unused3: number;
+  transformedMonPersonality: number;  // u32
+  disabledMove: number;               // u16
+  encoredMove: number;                // u16
+  protectUses: number;                // u8
+  stockpileCounter: number;           // u8
+  substituteHP: number;               // u8
+  disableTimer: number;               // u8:4
+  disableTimerStartValue: number;     // u8:4
+  encoredMovePos: number;             // u8
+  filler_D: number;                   // u8 unused
+  encoreTimer: number;                // u8:4
+  encoreTimerStartValue: number;      // u8:4
+  perishSongTimer: number;            // u8:4
+  perishSongTimerStartValue: number;  // u8:4
+  furyCutterCounter: number;          // u8
+  rolloutTimer: number;               // u8:4
+  rolloutTimerStartValue: number;     // u8:4
+  chargeTimer: number;                // u8:4
+  chargeTimerStartValue: number;      // u8:4
+  tauntTimer: number;                 // u8:4
+  tauntTimer2: number;                // u8:4
+  battlerPreventingEscape: number;    // u8
+  battlerWithSureHit: number;         // u8
+  isFirstTurn: number;                // u8
+  filler_17: number;                  // u8 unused
+  truantCounter: number;              // u8:1
+  truantSwitchInHack: number;         // u8:1
+  filler_18_2: number;                // u8:2 unused
+  mimickedMoves: number;              // u8:4
+  rechargeTimer: number;              // u8
 }
 
 function _makeBlankDisableStruct(): DisableStruct {
   return {
-    transformedMonPersonality: 0, disabledMove: 0,
+    transformedMonPersonality: 0, disabledMove: 0, encoredMove: 0,
+    protectUses: 0, stockpileCounter: 0, substituteHP: 0,
     disableTimer: 0, disableTimerStartValue: 0,
-    encoredMove: 0, protectUses: 0,
-    stockpileCounter: 0, substituteHP: 0,
-    disableTimerXX: 0, encoreTimer: 0, encoreTimerStartValue: 0,
+    encoredMovePos: 0, filler_D: 0,
+    encoreTimer: 0, encoreTimerStartValue: 0,
     perishSongTimer: 0, perishSongTimerStartValue: 0,
     furyCutterCounter: 0,
     rolloutTimer: 0, rolloutTimerStartValue: 0,
     chargeTimer: 0, chargeTimerStartValue: 0,
     tauntTimer: 0, tauntTimer2: 0,
     battlerPreventingEscape: 0, battlerWithSureHit: 0,
-    isFirstTurn: 0, unused1: 0,
-    truantCounter: 0, truantUnknownBit: 0, unused2: 0,
-    mimickedMoves: 0, rechargeCounter: 0, unused3: 0,
+    isFirstTurn: 0, filler_17: 0,
+    truantCounter: 0, truantSwitchInHack: 0, filler_18_2: 0,
+    mimickedMoves: 0, rechargeTimer: 0,
   };
 }
 

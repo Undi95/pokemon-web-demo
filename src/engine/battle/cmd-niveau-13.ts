@@ -30,11 +30,12 @@ import {
   STAT_ATK, MAX_STAT_STAGE,
   EFFECT_RETURN, MAX_FRIENDSHIP,
   BS_ATTACKER, BATTLE_TYPE_DOUBLE,
-  REQUEST_HP_BATTLE,
+  REQUEST_HP_BATTLE, B_COMM_TO_CONTROLLER,
 } from './constants';
-import { MarkBattlerForControllerExec } from './battle-controllers';
+import {
+  MarkBattlerForControllerExec, BtlController_EmitSetMonData, gBitTable,
+} from './battle-controllers';
 import { getBattleMove } from './data/battle-moves';
-import { gBitTable } from './battle-controllers';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -47,9 +48,6 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
  *  MVP : aucun battler absent. */
 const gAbsentBattlerFlags = 0;
 
-/** 1:1 stub `BtlController_EmitSetMonData` MVP no-op. */
-function _emitSetMonData(_requestId: number): void { /* TODO */ }
-
 // ─── 0x79 setatkhptozero ───────────────────────────────────────────────────
 
 /** 1:1 décomp Cmd_setatkhptozero. 1 byte. */
@@ -59,7 +57,8 @@ function Cmd_setatkhptozero(ctx: BattleScriptContext): boolean {
   }
   setActiveBattler(gBattlerAttacker);
   gBattleMons[gBattlerAttacker].hp = 0;
-  _emitSetMonData(REQUEST_HP_BATTLE);
+  // 1:1 décomp : sizeof(gBattleMons[active].hp) = sizeof(u16) = 2 bytes.
+  BtlController_EmitSetMonData(B_COMM_TO_CONTROLLER, REQUEST_HP_BATTLE, 0, 2, gBattleMons[gBattlerAttacker].hp);
   MarkBattlerForControllerExec(gBattlerAttacker);
   return false;
 }

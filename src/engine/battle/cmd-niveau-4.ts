@@ -247,9 +247,9 @@ function _readBytecodeForString(tableOffset: number, idx: number): number {
 /** 1:1 décomp Cmd_yesnobox. No args. State machine via gBattleCommunication[0]:
  *  case 0 = init window+cursor, case 1 = poll input.
  *
- *  MVP : pas d'input wired, on auto-confirme YES (= cursor=0) au premier tick
- *  case 1 pour ne pas bloquer le script.
- *  TODO : remplacer par real input handling une fois wired au framework UI. */
+ *  Strict 1:1 décomp : reste sur opcode tant qu'A ou B n'est pas pressé.
+ *  Input wire requis pour avancer (= JOY_NEW retourne false en MVP, donc
+ *  les scripts utilisant yesnobox bloquent). */
 function Cmd_yesnobox(ctx: BattleScriptContext): boolean {
   switch (gBattleCommunication[0]) {
     case 0:
@@ -258,10 +258,10 @@ function Cmd_yesnobox(ctx: BattleScriptContext): boolean {
       gBattleCommunication[0]++;
       gBattleCommunication[CURSOR_POSITION] = 0;
       BattleCreateYesNoCursorAt(0);
+      // Décomp break (= no scriptPtr advance). On stay sur opcode.
       return _stayOnOpcode(ctx);
 
     case 1:
-      // 1:1 décomp poll input. JOY_NEW stubbé → on test puis fallback MVP.
       if (JOY_NEW(DPAD_UP) && gBattleCommunication[CURSOR_POSITION] !== 0) {
         PlaySE(SE_SELECT);
         BattleDestroyYesNoCursorAt(gBattleCommunication[CURSOR_POSITION]);
@@ -278,23 +278,21 @@ function Cmd_yesnobox(ctx: BattleScriptContext): boolean {
         gBattleCommunication[CURSOR_POSITION] = 1;
         PlaySE(SE_SELECT);
         HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
-        // Advance — ctx.scriptPtr déjà post-opcode = OK.
+        // Décomp gBattlescriptCurrInstr++; → ici notre scriptPtr déjà post-opcode.
         return false;
       } else if (JOY_NEW(A_BUTTON)) {
         PlaySE(SE_SELECT);
         HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
         return false;
       }
-      // MVP fallback : auto-confirm YES après 1 frame en case 1.
-      // TODO : retirer ce hack une fois real input wired.
-      gBattleCommunication[CURSOR_POSITION] = 0;
-      HandleBattleWindow(YESNOBOX_X_START, YESNOBOX_Y_START, YESNOBOX_X_END, YESNOBOX_Y_END, WINDOW_CLEAR);
-      return false;
+      // Strict 1:1 : si aucun bouton, le décomp break (= no scriptPtr advance).
+      // Notre équivalent = stay sur opcode pour re-entrée next frame.
+      return _stayOnOpcode(ctx);
 
     default:
-      // Reset state pour éviter dead state si appelé recursivement.
-      gBattleCommunication[0] = 0;
-      return false;
+      // Décomp n'a pas de default case ; switch fall-through = no state change,
+      // no advance. Équivalent stay sur opcode.
+      return _stayOnOpcode(ctx);
   }
 }
 

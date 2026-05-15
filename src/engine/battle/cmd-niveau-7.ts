@@ -30,9 +30,11 @@ import {
 } from './state';
 import {
   HITMARKER_SWAP_ATTACKER_TARGET, HITMARKER_FAINTED,
-  GET_BATTLER_SIDE, B_SIDE_PLAYER,
+  GET_BATTLER_SIDE, B_SIDE_PLAYER, B_COMM_TO_CONTROLLER,
 } from './constants';
-import { MarkBattlerForControllerExec } from './battle-controllers';
+import {
+  MarkBattlerForControllerExec, BtlController_EmitReturnMonToBall,
+} from './battle-controllers';
 
 // ─── DMG_* enum (battle_script_commands.h:363-365) — 1:1 décomp ────────────
 const DMG_CHANGE_SIGN      = 0;
@@ -90,12 +92,17 @@ function Cmd_decrementmultihit(ctx: BattleScriptContext): boolean {
  *  Décomp:
  *    *(gBattlerAttacker + gBattleStruct->selectionScriptFinished) = TRUE;
  *  (= équivalent à `selectionScriptFinished[gBattlerAttacker] = TRUE`).
- *  Note : pas de scriptPtr advance dans le décomp (= ce flag set est l'unique
- *  effet ; le script s'arrête naturellement via TLE). On laisse advance
- *  implicite (scriptPtr déjà à next opcode post-dispatcher). */
-function Cmd_endselectionscript(_ctx: BattleScriptContext): boolean {
+ *  Note : le décomp ne fait PAS `gBattlescriptCurrInstr++`. Le main battle
+ *  loop voit selectionScriptFinished et break le sous-script. Notre équivalent
+ *  = stay sur opcode + return true (= pause) pour laisser le caller exit. */
+function Cmd_endselectionscript(ctx: BattleScriptContext): boolean {
   _selectionScriptFinished[gBattlerAttacker] = true;
-  return false;
+  return _stayOnOpcode(ctx);
+}
+
+function _stayOnOpcode(ctx: BattleScriptContext): boolean {
+  ctx.scriptPtr--;
+  return true;
 }
 
 // ─── 0x4B returnatktoball ──────────────────────────────────────────────────
@@ -104,21 +111,18 @@ function Cmd_endselectionscript(_ctx: BattleScriptContext): boolean {
 function Cmd_returnatktoball(_ctx: BattleScriptContext): boolean {
   setActiveBattler(gBattlerAttacker);
   if (!(gHitMarker & HITMARKER_FAINTED(gBattlerAttacker))) {
-    _emitReturnMonToBall(false);
+    BtlController_EmitReturnMonToBall(B_COMM_TO_CONTROLLER, false);
     MarkBattlerForControllerExec(gBattlerAttacker);
   }
   return false;
-}
-
-/** 1:1 stub `BtlController_EmitReturnMonToBall(buf, doFadeOut)`. MVP no-op. */
-function _emitReturnMonToBall(_doFadeOut: boolean): void {
-  // TODO : émettre recall anim + Pokéball au framework UI.
 }
 
 // ─── 0x5F swapattackerwithtarget ───────────────────────────────────────────
 
 /** 1:1 décomp Cmd_swapattackerwithtarget. No args. */
 function Cmd_swapattackerwithtarget(_ctx: BattleScriptContext): boolean {
+  // 1:1 décomp : gActiveBattler = gBattlerAttacker (temp pour swap).
+  setActiveBattler(gBattlerAttacker);
   const savedAttacker = gBattlerAttacker;
   setBattlerAttacker(gBattlerTarget);
   setBattlerTarget(savedAttacker);

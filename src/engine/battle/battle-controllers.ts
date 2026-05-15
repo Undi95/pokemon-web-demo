@@ -86,9 +86,73 @@ export function BtlController_EmitPrintString(_bufferId: number, _stringId: numb
   // TODO : émettre command print au framework. MVP = no-op.
 }
 
+/** 1:1 signature décomp `BtlController_EmitPlaySE(bufferId, songId)`
+ *  (battle_controllers.c). Émet command PlaySE via le controller du battler.
+ *  Distinct de PlaySE direct (= audio engine path). Pour MVP : no-op. */
+export function BtlController_EmitPlaySE(_bufferId: number, _songId: number): void {
+  // TODO : émettre PlaySE via controller queue au framework UI.
+}
+
+/** 1:1 signature décomp `BtlController_EmitPlayFanfareOrBGM(buf, songId, isBGM)`
+ *  (battle_controllers.c). MVP : no-op. */
+export function BtlController_EmitPlayFanfareOrBGM(_bufferId: number, _songId: number, _isBGM: boolean): void {
+  // TODO : émettre fanfare/BGM via controller queue.
+}
+
+/** 1:1 signature décomp `BtlController_EmitFaintingCry(buf)`. MVP : no-op. */
+export function BtlController_EmitFaintingCry(_bufferId: number): void {
+  // TODO : émettre cry du Pokémon évanoui.
+}
+
+/** 1:1 signature décomp `BtlController_EmitHitAnimation(buf)`. MVP : no-op. */
+export function BtlController_EmitHitAnimation(_bufferId: number): void {
+  // TODO : émettre hit anim (sprite flash + nudge).
+}
+
+/** 1:1 signature décomp `BtlController_EmitFaintAnimation(buf)`. MVP : no-op. */
+export function BtlController_EmitFaintAnimation(_bufferId: number): void {
+  // TODO : émettre faint anim (sprite fade).
+}
+
+/** 1:1 signature décomp `BtlController_EmitReturnMonToBall(buf, doFadeOut)`.
+ *  MVP : no-op. */
+export function BtlController_EmitReturnMonToBall(_bufferId: number, _doFadeOut: boolean): void {
+  // TODO : émettre recall anim + Pokéball.
+}
+
+/** 1:1 signature décomp `BtlController_EmitSpriteInvisibility(buf, isInvisible)`.
+ *  MVP : no-op. */
+export function BtlController_EmitSpriteInvisibility(_bufferId: number, _isInvisible: boolean): void {
+  // TODO : toggle sprite visibility.
+}
+
+/** 1:1 signature décomp `BtlController_EmitSetMonData(buf, requestId, monIdx,
+ *  bytes, data)`. MVP : no-op. */
+export function BtlController_EmitSetMonData(_bufferId: number, _requestId: number, _monToCheck: number, _bytes: number, _data: unknown): void {
+  // TODO : sync mon data au framework UI.
+}
+
+/** 1:1 signature décomp `BtlController_EmitPrintSelectionString(buf, stringId)`.
+ *  MVP : no-op (= selection screen text). */
+export function BtlController_EmitPrintSelectionString(_bufferId: number, _stringId: number): void {
+  // TODO : print selection string au framework UI.
+}
+
+/** 1:1 signature décomp `BtlController_EmitEndLinkBattle(buf, outcome)`.
+ *  MVP : no-op. */
+export function BtlController_EmitEndLinkBattle(_bufferId: number, _outcome: number): void {
+  // TODO : émettre end-link au framework (= return to overworld).
+}
+
+/** 1:1 signature décomp `BtlController_EmitBattleAnimation(buf, anim, arg)`.
+ *  Animation séparée de move animation. MVP : no-op. */
+export function BtlController_EmitBattleAnimation(_bufferId: number, _animationId: number, _argument: number): void {
+  // TODO : émettre battle anim (stat change, snatch, substitute fade, etc.).
+}
+
 /** 1:1 signature décomp `BtlController_EmitYesNoBox` n'existe pas — yesnobox
  *  est implémenté direct par Cmd_yesnobox via le state machine
- *  gBattleCommunication[0]. Le helper PlaySE/JOY_NEW est stubbé séparément. */
+ *  gBattleCommunication[0]. */
 
 // ─── PrepareStringBattle (battle_util.c) — 1:1 décomp ──────────────────────
 

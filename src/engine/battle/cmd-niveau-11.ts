@@ -25,9 +25,10 @@ import {
   gBattleCommunication, gHitMarker, setHitMarker,
 } from './state';
 import {
-  STATUS2_SUBSTITUTE, STATUS2_WRAPPED, STATUS3_YAWN,
+  STATUS2_SUBSTITUTE, STATUS2_WRAPPED, STATUS2_DESTINY_BOND, STATUS3_YAWN,
   STATUS1_ANY, STATUS3_YAWN_TURN,
-  HITMARKER_IGNORE_SUBSTITUTE,
+  HITMARKER_IGNORE_SUBSTITUTE, HITMARKER_GRUDGE, HITMARKER_DESTINYBOND,
+  GET_BATTLER_SIDE,
   MULTISTRING_CHOOSER,
   B_MSG_SET_SUBSTITUTE, B_MSG_SUBSTITUTE_FAILED,
 } from './constants';
@@ -108,15 +109,15 @@ function Cmd_trysetdestinybondtohappen(_ctx: BattleScriptContext): boolean {
   return false;
 }
 
-/** Partial 1:1 décomp `TrySetDestinyBondToHappen` (battle_util.c). */
+/** 1:1 décomp `TrySetDestinyBondToHappen` (battle_script_commands.c:8288). */
 function _trySetDestinyBondToHappen(): void {
-  // 1:1 décomp logic :
-  //   side_attacker = GetBattlerSide(gBattlerAttacker)
-  //   side_target   = GetBattlerSide(gBattlerTarget)
-  //   if (side_attacker != side_target && !(gHitMarker & HITMARKER_GRUDGE)
-  //       && (gBattleMons[gBattlerTarget].status2 & STATUS2_DESTINY_BOND))
-  //     gHitMarker |= HITMARKER_DESTINYBOND
-  // (Implementation TODO porter — complexité moyenne.)
+  const sideAttacker = GET_BATTLER_SIDE(gBattlerAttacker);
+  const sideTarget   = GET_BATTLER_SIDE(gBattlerTarget);
+  if ((gBattleMons[gBattlerTarget].status2 & STATUS2_DESTINY_BOND)
+      && sideAttacker !== sideTarget
+      && !(gHitMarker & HITMARKER_GRUDGE)) {
+    setHitMarker(gHitMarker | HITMARKER_DESTINYBOND);
+  }
 }
 
 // ─── 0xD7 setyawn ──────────────────────────────────────────────────────────

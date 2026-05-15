@@ -32,8 +32,12 @@ import {
   MSG_DISPLAY, MULTISTRING_CHOOSER,
 } from './constants';
 import {
-  MarkBattlerForControllerExec, PlaySE,
+  MarkBattlerForControllerExec,
+  BtlController_EmitPlaySE, BtlController_EmitPlayFanfareOrBGM,
+  BtlController_EmitFaintingCry, BtlController_EmitHitAnimation,
+  BtlController_EmitPrintSelectionString,
 } from './battle-controllers';
+import { B_COMM_TO_CONTROLLER } from './constants';
 import { getBattlerForBattleScript } from './util';
 import { getBattleScriptBytecode } from './script-interpreter';
 
@@ -42,26 +46,6 @@ import { getBattleScriptBytecode } from './script-interpreter';
 function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   ctx.scriptPtr--;
   return true;
-}
-
-/** 1:1 stub `BtlController_EmitPrintSelectionString(buf, stringId)`. MVP no-op. */
-function _emitPrintSelectionString(_stringId: number): void {
-  // TODO : émettre print pour le selection screen au framework UI.
-}
-
-/** 1:1 stub `BtlController_EmitPlayFanfareOrBGM(buf, songId, isBGM)`. MVP no-op. */
-function _emitPlayFanfareOrBGM(_songId: number, _isBGM: boolean): void {
-  // TODO : émettre fanfare/BGM au audio engine. MVP = no-op.
-}
-
-/** 1:1 stub `BtlController_EmitFaintingCry(buf)`. MVP no-op (= cry not wired). */
-function _emitFaintingCry(): void {
-  // TODO : émettre faint cry (= specie cry) au audio engine.
-}
-
-/** 1:1 stub `BtlController_EmitHitAnimation(buf)`. MVP no-op. */
-function _emitHitAnimation(): void {
-  // TODO : émettre hit anim (= sprite flash + nudge) au framework UI.
 }
 
 /** Lit u16 little-endian au offset table dans bytecode. */
@@ -81,7 +65,7 @@ function Cmd_printselectionstring(ctx: BattleScriptContext): boolean {
   // séparé. On suit le décomp 1:1.
   const stringId = readHalfword(ctx);
   setActiveBattler(gBattlerAttacker);
-  _emitPrintSelectionString(stringId);
+  BtlController_EmitPrintSelectionString(B_COMM_TO_CONTROLLER, stringId);
   MarkBattlerForControllerExec(gBattlerAttacker);
   gBattleCommunication[MSG_DISPLAY] = 1;
   return false;
@@ -98,7 +82,7 @@ function Cmd_printselectionstringfromtable(ctx: BattleScriptContext): boolean {
   const idx = gBattleCommunication[MULTISTRING_CHOOSER];
   const stringId = _readU16FromBytecode(tableOffset + idx * 2);
   setActiveBattler(gBattlerAttacker);
-  _emitPrintSelectionString(stringId);
+  BtlController_EmitPrintSelectionString(B_COMM_TO_CONTROLLER, stringId);
   MarkBattlerForControllerExec(gBattlerAttacker);
   gBattleCommunication[MSG_DISPLAY] = 1;
   return false;
@@ -110,7 +94,7 @@ function Cmd_printselectionstringfromtable(ctx: BattleScriptContext): boolean {
 function Cmd_playse(ctx: BattleScriptContext): boolean {
   const songId = readHalfword(ctx);
   setActiveBattler(gBattlerAttacker);
-  PlaySE(songId);
+  BtlController_EmitPlaySE(B_COMM_TO_CONTROLLER, songId);
   MarkBattlerForControllerExec(gBattlerAttacker);
   return false;
 }
@@ -121,7 +105,7 @@ function Cmd_playse(ctx: BattleScriptContext): boolean {
 function Cmd_fanfare(ctx: BattleScriptContext): boolean {
   const songId = readHalfword(ctx);
   setActiveBattler(gBattlerAttacker);
-  _emitPlayFanfareOrBGM(songId, false);
+  BtlController_EmitPlayFanfareOrBGM(B_COMM_TO_CONTROLLER, songId, false);
   MarkBattlerForControllerExec(gBattlerAttacker);
   return false;
 }
@@ -133,7 +117,7 @@ function Cmd_playfaintcry(ctx: BattleScriptContext): boolean {
   const battlerArg = readByte(ctx);
   const active = getBattlerForBattleScript(battlerArg);
   setActiveBattler(active);
-  _emitFaintingCry();
+  BtlController_EmitFaintingCry(B_COMM_TO_CONTROLLER);
   MarkBattlerForControllerExec(active);
   return false;
 }
@@ -152,7 +136,7 @@ function Cmd_hitanimation(ctx: BattleScriptContext): boolean {
   } else if (!(gHitMarker & HITMARKER_IGNORE_SUBSTITUTE) ||
              !(gBattleMons[active].status2 & STATUS2_SUBSTITUTE) ||
              gDisableStructs[active].substituteHP === 0) {
-    _emitHitAnimation();
+    BtlController_EmitHitAnimation(B_COMM_TO_CONTROLLER);
     MarkBattlerForControllerExec(active);
   }
   // else : skip (= substitute prevented animation).

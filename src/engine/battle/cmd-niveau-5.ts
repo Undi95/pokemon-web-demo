@@ -54,7 +54,8 @@ import {
 } from './constants';
 import {
   MarkBattlerForControllerExec, BattleScriptPush,
-  PrepareStringBattle, PlaySE,
+  PrepareStringBattle, BtlController_EmitPlaySE,
+  BtlController_EmitFaintAnimation, BtlController_EmitSetMonData,
 } from './battle-controllers';
 import { getBattlerForBattleScript, FaintClearSetData } from './util';
 
@@ -113,16 +114,15 @@ function Cmd_effectivenesssound(ctx: BattleScriptContext): boolean {
     return _stayOnOpcode(ctx);
   }
   setActiveBattler(gBattlerTarget);
-  // gActiveBattler is now gBattlerTarget; we use gBattlerTarget direct for Mark.
   if (!(gMoveResultFlags & MOVE_RESULT_MISSED)) {
     const flagsNoMiss = gMoveResultFlags & ~MOVE_RESULT_MISSED & 0xFF;
     switch (flagsNoMiss) {
       case MOVE_RESULT_SUPER_EFFECTIVE:
-        _emitPlaySE(SE_SUPER_EFFECTIVE);
+        BtlController_EmitPlaySE(B_COMM_TO_CONTROLLER, SE_SUPER_EFFECTIVE);
         MarkBattlerForControllerExec(gBattlerTarget);
         break;
       case MOVE_RESULT_NOT_VERY_EFFECTIVE:
-        _emitPlaySE(SE_NOT_EFFECTIVE);
+        BtlController_EmitPlaySE(B_COMM_TO_CONTROLLER, SE_NOT_EFFECTIVE);
         MarkBattlerForControllerExec(gBattlerTarget);
         break;
       case MOVE_RESULT_DOESNT_AFFECT_FOE:
@@ -134,25 +134,19 @@ function Cmd_effectivenesssound(ctx: BattleScriptContext): boolean {
       case MOVE_RESULT_FOE_HUNG_ON:
       default:
         if (gMoveResultFlags & MOVE_RESULT_SUPER_EFFECTIVE) {
-          _emitPlaySE(SE_SUPER_EFFECTIVE);
+          BtlController_EmitPlaySE(B_COMM_TO_CONTROLLER, SE_SUPER_EFFECTIVE);
           MarkBattlerForControllerExec(gBattlerTarget);
         } else if (gMoveResultFlags & MOVE_RESULT_NOT_VERY_EFFECTIVE) {
-          _emitPlaySE(SE_NOT_EFFECTIVE);
+          BtlController_EmitPlaySE(B_COMM_TO_CONTROLLER, SE_NOT_EFFECTIVE);
           MarkBattlerForControllerExec(gBattlerTarget);
         } else if (!(gMoveResultFlags & (MOVE_RESULT_DOESNT_AFFECT_FOE | MOVE_RESULT_FAILED))) {
-          _emitPlaySE(SE_EFFECTIVE);
+          BtlController_EmitPlaySE(B_COMM_TO_CONTROLLER, SE_EFFECTIVE);
           MarkBattlerForControllerExec(gBattlerTarget);
         }
         break;
     }
   }
   return false;
-}
-
-/** 1:1 stub `BtlController_EmitPlaySE(bufferId, songId)` — délègue à PlaySE
- *  pour MVP (= pas d'async controller, juste play l'audio direct). */
-function _emitPlaySE(songId: number): void {
-  PlaySE(songId);
 }
 
 // ─── 0x0F resultmessage ────────────────────────────────────────────────────
@@ -260,7 +254,7 @@ function Cmd_dofaintanimation(ctx: BattleScriptContext): boolean {
   const battlerArg = readByte(ctx);
   const active = getBattlerForBattleScript(battlerArg);
   setActiveBattler(active);
-  _emitFaintAnimation();
+  BtlController_EmitFaintAnimation(B_COMM_TO_CONTROLLER);
   MarkBattlerForControllerExec(active);
   return false;
 }
@@ -278,25 +272,13 @@ function Cmd_cleareffectsonfaint(ctx: BattleScriptContext): boolean {
 
   if (!(gBattleTypeFlags & BATTLE_TYPE_ARENA) || gBattleMons[active].hp === 0) {
     gBattleMons[active].status1 = 0;
-    _emitSetMonData(REQUEST_STATUS_BATTLE, 0, 4, 0);
+    // 1:1 décomp : sizeof(gBattleMons[active].status1) = sizeof(u32) = 4 bytes.
+    BtlController_EmitSetMonData(B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE, 0, 4, gBattleMons[active].status1);
     MarkBattlerForControllerExec(active);
   }
 
   FaintClearSetData();
   return false;
-}
-
-// ─── Stubs locaux pour controllers manquants ────────────────────────────────
-
-/** 1:1 décomp `BtlController_EmitFaintAnimation`. MVP : no-op. */
-function _emitFaintAnimation(): void {
-  // TODO : émettre faint anim cmd au framework UI.
-}
-
-/** 1:1 signature décomp `BtlController_EmitSetMonData(buf, requestId, monIdx,
- *  bytes, data)`. MVP : no-op. */
-function _emitSetMonData(_requestId: number, _monIdx: number, _bytes: number, _data: number): void {
-  // TODO : sync mon data au framework UI.
 }
 
 // ─── Install dispatch table ─────────────────────────────────────────────────

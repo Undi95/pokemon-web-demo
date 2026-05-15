@@ -24,8 +24,11 @@ import {
 import {
   TYPE_MYSTERY, NUMBER_OF_MON_TYPES,
   F_DYNAMIC_TYPE_IGNORE_PHYSICALITY, F_DYNAMIC_TYPE_SET,
+  B_COMM_TO_CONTROLLER,
 } from './constants';
-import { MarkBattlerForControllerExec } from './battle-controllers';
+import {
+  MarkBattlerForControllerExec, BtlController_EmitSpriteInvisibility,
+} from './battle-controllers';
 import { getBattlerForBattleScript } from './util';
 
 // ─── 0x42 jumpiftype2 ───────────────────────────────────────────────────────
@@ -50,14 +53,9 @@ function Cmd_makevisible(ctx: BattleScriptContext): boolean {
   const battlerArg = readByte(ctx);
   const active = getBattlerForBattleScript(battlerArg);
   setActiveBattler(active);
-  _emitSpriteInvisibility(false);
+  BtlController_EmitSpriteInvisibility(B_COMM_TO_CONTROLLER, false);
   MarkBattlerForControllerExec(active);
   return false;
-}
-
-/** 1:1 stub `BtlController_EmitSpriteInvisibility(buf, isInvisible)`. MVP no-op. */
-function _emitSpriteInvisibility(_isInvisible: boolean): void {
-  // TODO : toggle sprite visibility au framework UI.
 }
 
 // ─── 0x82 jumpifnotfirstturn ───────────────────────────────────────────────

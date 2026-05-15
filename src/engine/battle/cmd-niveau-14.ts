@@ -20,7 +20,7 @@
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readWord } from './script-interpreter';
 import {
-  gBattleMons, gBattlerAttacker, gBattlerTarget,
+  gBattleMons, gBattlerAttacker, gBattlerTarget, setBattlerTarget,
   gBattleMoveDamage, setBattleMoveDamage,
   gBattleWeather, gDisableStructs,
   gSideTimers, gBattleOutcome,
@@ -28,19 +28,21 @@ import {
   setActiveBattler,
 } from './state';
 import {
-  B_WEATHER_SUN, GET_BATTLER_SIDE,
+  B_WEATHER_SUN, GET_BATTLER_SIDE, B_COMM_TO_CONTROLLER,
 } from './constants';
-import { MarkBattlerForControllerExec } from './battle-controllers';
+import {
+  MarkBattlerForControllerExec, BtlController_EmitEndLinkBattle,
+} from './battle-controllers';
 import { GetBattlerAtPosition, B_POSITION_PLAYER_LEFT } from './util';
 
 // ─── B_ACTION_FINISHED (battle.h:39) — 1:1 décomp ──────────────────────────
 const B_ACTION_FINISHED = 12;
 
-// ─── Stubs locaux ───────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** 1:1 stub `BtlController_EmitEndLinkBattle(buf, outcome)` MVP no-op. */
-function _emitEndLinkBattle(_outcome: number): void {
-  // TODO : émettre end-link au framework UI (= return to overworld).
+function _stayOnOpcode(ctx: BattleScriptContext): boolean {
+  ctx.scriptPtr--;
+  return true;
 }
 
 /** MVP `WEATHER_HAS_EFFECT` — true sauf Cloud Nine / Air Lock on field. Pour
@@ -53,7 +55,7 @@ function _weatherHasEffect(): boolean { return true; }
 function Cmd_endlinkbattle(_ctx: BattleScriptContext): boolean {
   const active = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
   setActiveBattler(active);
-  _emitEndLinkBattle(gBattleOutcome);
+  BtlController_EmitEndLinkBattle(B_COMM_TO_CONTROLLER, gBattleOutcome);
   MarkBattlerForControllerExec(active);
   return false;
 }
@@ -63,8 +65,8 @@ function Cmd_endlinkbattle(_ctx: BattleScriptContext): boolean {
 /** 1:1 décomp Cmd_recoverbasedonsunlight. 5 bytes (u32 fail jump si full HP). */
 function Cmd_recoverbasedonsunlight(ctx: BattleScriptContext): boolean {
   const failJump = readWord(ctx);
-  // Décomp : gBattlerTarget = gBattlerAttacker (= self-target)
-  // mais on note juste, sans muter target.
+  // 1:1 décomp : `gBattlerTarget = gBattlerAttacker;` (= self-target).
+  setBattlerTarget(gBattlerAttacker);
   if (gBattleMons[gBattlerAttacker].hp === gBattleMons[gBattlerAttacker].maxHP) {
     ctx.scriptPtr = failJump;
     return false;
@@ -124,22 +126,21 @@ function Cmd_removeattackerstatus1(_ctx: BattleScriptContext): boolean {
 
 // ─── 0xF6 finishaction ─────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_finishaction. No bytecode advance (= the script ends here).
- *  Note : décomp ne advance pas gBattlescriptCurrInstr, mais set
- *  gCurrentActionFuncId = B_ACTION_FINISHED. C'est l'unique action de
- *  l'opcode. Le main battle loop reprend ensuite. */
-function Cmd_finishaction(_ctx: BattleScriptContext): boolean {
+/** 1:1 décomp Cmd_finishaction. Décomp ne fait PAS d'advance — set just
+ *  gCurrentActionFuncId. Main battle loop voit le flag et break le script.
+ *  Notre équivalent = stay + return true (= pause), caller exit. */
+function Cmd_finishaction(ctx: BattleScriptContext): boolean {
   setCurrentActionFuncId(B_ACTION_FINISHED);
-  return false;
+  return _stayOnOpcode(ctx);
 }
 
 // ─── 0xF7 finishturn ───────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_finishturn. */
-function Cmd_finishturn(_ctx: BattleScriptContext): boolean {
+/** 1:1 décomp Cmd_finishturn. Décomp ne fait PAS d'advance. */
+function Cmd_finishturn(ctx: BattleScriptContext): boolean {
   setCurrentActionFuncId(B_ACTION_FINISHED);
   setCurrentTurnActionNumber(gBattlersCount);
-  return false;
+  return _stayOnOpcode(ctx);
 }
 
 // ─── Install dispatch table ─────────────────────────────────────────────────

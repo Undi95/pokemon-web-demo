@@ -111,9 +111,7 @@ function Cmd_trysetencore(ctx: BattleScriptContext): boolean {
   if (gDisableStructs[target].encoredMove === MOVE_NONE
       && i !== MAX_MON_MOVES && gBattleMons[target].pp[i] !== 0) {
     gDisableStructs[target].encoredMove = gBattleMons[target].moves[i];
-    // 1:1 décomp : encoredMovePos = i ; mais notre DisableStruct n'a pas
-    // encoredMovePos — il faudra l'ajouter quand on portera. Pour MVP, OK.
-    // gDisableStructs[target].encoredMovePos = i;
+    gDisableStructs[target].encoredMovePos = i;
     const timer = (Random() & 3) + 3;
     gDisableStructs[target].encoreTimer = timer;
     gDisableStructs[target].encoreTimerStartValue = timer;
