@@ -492,6 +492,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-21').then(({ installNiveau21Handlers }) => {
     installNiveau21Handlers(_commands);
   });
+  // Session 135 — Niveau 22 (cleanup/stockpile/dmg adjust).
+  void import('./cmd-niveau-22').then(({ installNiveau22Handlers }) => {
+    installNiveau22Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

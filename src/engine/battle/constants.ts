@@ -627,6 +627,12 @@ export const B_MSG_KO_MISS         = 0;
 export const B_MSG_KO_UNAFFECTED   = 1;
 export const B_MSG_TRANSFORM_FAILED = 1;
 
+// ─── B_MSG_* stockpile/swallow (battle_string_ids.h:484-489) — 1:1 décomp ─
+export const B_MSG_STOCKPILED      = 0;
+export const B_MSG_CANT_STOCKPILE  = 1;
+export const B_MSG_SWALLOW_FAILED  = 0;
+export const B_MSG_SWALLOW_FULL_HP = 1;
+
 // ─── sProtectSuccessRates (battle_script_commands.c:719) — 1:1 décomp ─────
 /** USHRT_MAX = 0xFFFF (= 65535). Décomp utilise USHRT_MAX, USHRT_MAX/2,
  *  USHRT_MAX/4, USHRT_MAX/8 pour les success rates de Protect/Detect/Endure
