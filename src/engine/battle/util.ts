@@ -19,6 +19,7 @@ import {
   gLastLandedMoves, gLastResultingMoves, gLastHitBy, gLastHitByType,
   gActiveBattler, gDisableStructs,
 } from './state';
+import { STATUS2_MULTIPLETURNS, STATUS2_UPROAR, STATUS2_BIDE, STATUS2_LOCK_CONFUSE, STATUS3_SEMI_INVULNERABLE } from './constants';
 import {
   BS_TARGET, BS_ATTACKER, BS_EFFECT_BATTLER, BS_FAINTED,
   BS_ATTACKER_WITH_PARTNER, BS_FAINTED_LINK_MULTIPLE_1,
@@ -121,4 +122,29 @@ export function FaintClearSetData(): void {
   gLastHitByType[gActiveBattler] = 0;
   gLastResultingMoves[gActiveBattler] = MOVE_NONE;
   gLastHitBy[gActiveBattler] = 0xFF;
+}
+
+// ─── CancelMultiTurnMoves (battle_util.c:864) — 1:1 décomp ─────────────────
+
+/** 1:1 décomp `CancelMultiTurnMoves(u8 battler)`. Clear locked/uproar/bide/
+ *  rollout/furycutter state pour un battler donné. Utilisé quand Rollout
+ *  misses, Bide breaks, ou switch out. */
+export function CancelMultiTurnMoves(battler: number): void {
+  gBattleMons[battler].status2 &= ~STATUS2_MULTIPLETURNS;
+  gBattleMons[battler].status2 &= ~STATUS2_LOCK_CONFUSE;
+  gBattleMons[battler].status2 &= ~STATUS2_UPROAR;
+  gBattleMons[battler].status2 &= ~STATUS2_BIDE;
+  gStatuses3[battler] &= ~STATUS3_SEMI_INVULNERABLE;
+  gDisableStructs[battler].rolloutTimer = 0;
+  gDisableStructs[battler].furyCutterCounter = 0;
+}
+
+// ─── GetScaledHPFraction (battle_interface.c:2517) — 1:1 décomp ────────────
+
+/** 1:1 décomp `GetScaledHPFraction(s16 hp, s16 maxhp, u8 scale)`. */
+export function GetScaledHPFraction(hp: number, maxhp: number, scale: number): number {
+  if (maxhp === 0) return 0;
+  let result = Math.floor((hp * scale) / maxhp);
+  if (result === 0 && hp > 0) return 1;
+  return result;
 }

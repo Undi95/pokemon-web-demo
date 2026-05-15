@@ -625,3 +625,6 @@ export const B_MSG_WEAKEN_FIRE     = 1;
 
 // ─── FLAG_PROTECT_AFFECTED (constants/pokemon.h:209) — 1:1 décomp ──────────
 export const FLAG_PROTECT_AFFECTED = 1 << 1;
+
+// ─── IGNORE_SHELL_BELL (battle.h:61) — 1:1 décomp ──────────────────────────
+export const IGNORE_SHELL_BELL = 0xFFFF;

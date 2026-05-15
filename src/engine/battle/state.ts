@@ -404,6 +404,10 @@ export const gSideStatuses: number[] = [0, 0];
 /** Status3 per battler (= longer-term statuses : leech_seed, perish_song, etc.). */
 export const gStatuses3: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `gLockedMoves[MAX_BATTLERS_COUNT]` (battle_main.c). Set par
+ *  CancelMultiTurnMoves cleanup quand Rollout / Bide / Uproar enchaînent. */
+export const gLockedMoves: number[] = [0, 0, 0, 0];
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];
@@ -461,6 +465,7 @@ export function resetBattleState(): void {
     gSideStatuses[i & 1] = 0;
     gStatuses3[i] = 0;
     gLastMoves[i] = 0;
+    gLockedMoves[i] = 0;
     gLastLandedMoves[i] = 0;
     gLastHitByType[i] = 0;
     gLastResultingMoves[i] = 0;

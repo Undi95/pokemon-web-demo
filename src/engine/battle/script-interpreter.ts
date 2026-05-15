@@ -468,6 +468,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-15').then(({ installNiveau15Handlers }) => {
     installNiveau15Handlers(_commands);
   });
+  // Session 135 — Niveau 16 (damage calcs spéciaux).
+  void import('./cmd-niveau-16').then(({ installNiveau16Handlers }) => {
+    installNiveau16Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
