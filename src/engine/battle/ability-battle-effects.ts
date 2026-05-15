@@ -56,6 +56,7 @@ import {
   STATUS1_PARALYSIS, STATUS1_SLEEP,
   STATUS2_NIGHTMARE, STATUS2_CONFUSION, STATUS2_INFATUATION, STATUS2_MULTIPLETURNS,
   STATUS3_INTIMIDATE_POKES, STATUS3_TRACE,
+  STATUS3_MUDSPORT, STATUS3_WATERSPORT,
   HITMARKER_NO_PPDEDUCT,
   BATTLE_TYPE_SAFARI,
   B_WEATHER_RAIN, B_WEATHER_RAIN_TEMPORARY, B_WEATHER_RAIN_PERMANENT,
@@ -521,14 +522,38 @@ export function AbilityBattleEffects(
       break;
     }
 
+    case ABILITYEFFECT_FIELD_SPORT: {
+      // 1:1 décomp battle_util.c:3094-3122.
+      switch (gLastUsedAbility) {
+        case ABILITYEFFECT_MUD_SPORT:
+          for (let i = 0; i < gBattlersCount; i++) {
+            if (gStatuses3[i] & STATUS3_MUDSPORT) effect = i + 1;
+          }
+          break;
+        case ABILITYEFFECT_WATER_SPORT:
+          for (let i = 0; i < gBattlersCount; i++) {
+            if (gStatuses3[i] & STATUS3_WATERSPORT) effect = i + 1;
+          }
+          break;
+        default:
+          for (let i = 0; i < gBattlersCount; i++) {
+            if (gBattleMons[i].ability === ability) {
+              setLastUsedAbility(ability);
+              effect = i + 1;
+            }
+          }
+          break;
+      }
+      break;
+    }
+
     // ─── Stubs TODO Phase 1.2 E continuation ──────────────────────────────
     case ABILITYEFFECT_ON_DAMAGE:
     case ABILITYEFFECT_FORECAST:
     case ABILITYEFFECT_SYNCHRONIZE:
     case ABILITYEFFECT_ATK_SYNCHRONIZE:
     case ABILITYEFFECT_TRACE:
-    case ABILITYEFFECT_FIELD_SPORT:
-      // TODO porter ces cases — ~400 lignes décomp restantes.
+      // TODO porter ces cases — ~380 lignes décomp restantes.
       break;
 
     default:
