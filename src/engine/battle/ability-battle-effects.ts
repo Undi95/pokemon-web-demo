@@ -28,7 +28,7 @@
  */
 
 import {
-  gBattleMons, gBattlerAttacker, setBattlerAttacker, gBattlerTarget, gActiveBattler,
+  gBattleMons, gBattlerAttacker, setBattlerAttacker, gBattlerTarget, gActiveBattler, setActiveBattler,
   gBattlersCount, gBattleTypeFlags, gCurrentMove, gBattleCommunication,
   gBattleMoveDamage, setBattleMoveDamage,
   gHitMarker, setHitMarker,
@@ -77,8 +77,10 @@ import {
   B_WEATHER_RAIN, B_WEATHER_RAIN_TEMPORARY, B_WEATHER_RAIN_PERMANENT,
   B_WEATHER_SANDSTORM, B_WEATHER_SANDSTORM_PERMANENT,
   B_WEATHER_SUN, B_WEATHER_SUN_PERMANENT,
-  GET_BATTLER_SIDE,
+  GET_BATTLER_SIDE, BATTLE_OPPOSITE, BIT_SIDE, BIT_FLANK,
+  BATTLE_TYPE_DOUBLE,
 } from './constants';
+import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import { getBattleMove } from './data/battle-moves';
 
 // ─── ABILITYEFFECT_* enum (= 1:1 décomp battle_util.h:12-34) ──────────────
@@ -670,6 +672,53 @@ export function AbilityBattleEffects(
         _lastWantedScriptLabel = 'BattleScript_SynchronizeActivates';
         setHitMarker(gHitMarker | HITMARKER_STATUS_ABILITY_EFFECT);
         effect++;
+      }
+      break;
+    }
+
+    case ABILITYEFFECT_TRACE: {
+      // 1:1 décomp battle_util.c:3000-3055.
+      for (let i = 0; i < gBattlersCount; i++) {
+        if (gBattleMons[i].ability === ABILITY_TRACE && (gStatuses3[i] & STATUS3_TRACE)) {
+          const side = BATTLE_OPPOSITE(GetBattlerPosition(i)) & BIT_SIDE;
+          const target1 = GetBattlerAtPosition(side);
+          const target2 = GetBattlerAtPosition(side + BIT_FLANK);
+          if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+            if (gBattleMons[target1].ability !== 0 && gBattleMons[target1].hp !== 0
+                && gBattleMons[target2].ability !== 0 && gBattleMons[target2].hp !== 0) {
+              const pick = GetBattlerAtPosition(((Random() & 1) * 2) | side);
+              setActiveBattler(pick);
+              gBattleMons[i].ability = gBattleMons[pick].ability;
+              setLastUsedAbility(gBattleMons[pick].ability);
+              effect++;
+            } else if (gBattleMons[target1].ability !== 0 && gBattleMons[target1].hp !== 0) {
+              setActiveBattler(target1);
+              gBattleMons[i].ability = gBattleMons[target1].ability;
+              setLastUsedAbility(gBattleMons[target1].ability);
+              effect++;
+            } else if (gBattleMons[target2].ability !== 0 && gBattleMons[target2].hp !== 0) {
+              setActiveBattler(target2);
+              gBattleMons[i].ability = gBattleMons[target2].ability;
+              setLastUsedAbility(gBattleMons[target2].ability);
+              effect++;
+            }
+          } else {
+            setActiveBattler(target1);
+            if (gBattleMons[target1].ability && gBattleMons[target1].hp) {
+              gBattleMons[i].ability = gBattleMons[target1].ability;
+              setLastUsedAbility(gBattleMons[target1].ability);
+              effect++;
+            }
+          }
+          if (effect !== 0) {
+            _lastWantedScriptLabel = 'BattleScript_TraceActivates';
+            gStatuses3[i] &= ~STATUS3_TRACE;
+            gBattleScripting.battler = i;
+            // 1:1 décomp : PREPARE_MON_NICK_WITH_PREFIX_BUFFER + PREPARE_ABILITY_BUFFER
+            // skip (= text buffer not wired).
+            break;
+          }
+        }
       }
       break;
     }
