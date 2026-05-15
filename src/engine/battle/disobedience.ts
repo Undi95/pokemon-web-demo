@@ -47,9 +47,28 @@ import { getBattleScriptOffset } from './script-interpreter';
 import { Random } from '../random';
 import { CheckMoveLimitations as _CheckMoveLimitations } from './move-limitations';
 
-/** 1:1 stub `IsBattlerModernFatefulEncounter` (= rare illegal Mew/Deoxys check).
- *  STUB MVP : return true (= legal mon, comme un vrai joueur honnête). */
-function _IsBattlerModernFatefulEncounter(_battler: number): boolean { return true; }
+/** 1:1 décomp `IsBattlerModernFatefulEncounter(battler)` (battle_util.c:3890-3898).
+ *
+ *  - Si battler côté opponent : return true (= always legal opponent).
+ *  - Si species != DEOXYS && != MEW : return true (= n'importe quel autre mon est ok).
+ *  - Sinon : return MON_DATA_MODERN_FATEFUL_ENCOUNTER (= flag set sur les
+ *    Mew/Deoxys distribués officiellement). STUB : assume true (= pas de cheat device).
+ */
+function _IsBattlerModernFatefulEncounter(battler: number): boolean {
+  if (_GET_BATTLER_SIDE(battler) === B_SIDE_OPPONENT_LOCAL) return true;
+  const partyIdx = gBattlerPartyIndexes_DSO[battler];
+  if (!gPlayerParty_DSO[partyIdx]) return true;
+  const species = GetMonData_DSO(gPlayerParty_DSO[partyIdx], MON_DATA_SPECIES_DSO) as number;
+  // SPECIES_MEW = 151, SPECIES_DEOXYS = 410 (= auto-data).
+  if (species !== 151 && species !== 410) return true;
+  // STUB : MON_DATA_MODERN_FATEFUL_ENCOUNTER pas porté (= pas pertinent web port).
+  return true;
+}
+
+// Imports locaux pour éviter import dupliqué.
+import { gBattlerPartyIndexes as gBattlerPartyIndexes_DSO } from './state';
+import { gPlayerParty as gPlayerParty_DSO, GetMonData as GetMonData_DSO, MON_DATA_SPECIES as MON_DATA_SPECIES_DSO } from './party-storage';
+import { GET_BATTLER_SIDE as _GET_BATTLER_SIDE, B_SIDE_OPPONENT as B_SIDE_OPPONENT_LOCAL } from './constants';
 
 /** 1:1 stub `IsOtherTrainer(otId, otName)` (pokemon.c). Compare avec player's
  *  trainer ID / name. STUB MVP : return false (= own trainer toujours). */
