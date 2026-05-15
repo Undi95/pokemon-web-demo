@@ -527,18 +527,8 @@ function _selectedItemKey(): string | null {
 
 function _drawSprite(): void {
   // Désactivé : sprite sac est maintenant un OAM (= 1:1 décomp). Cf.
-  // _spawnBagSpriteOam dans _setupBackgroundTilemap. Garde la fonction comme
-  // no-op pour pas casser les callers, en attendant cleanup complet.
-  return;
-  // eslint-disable-next-line no-unreachable
-  if (_spriteWid < 0 || !_assets) return;
-  FillWindowPixelBuffer(_spriteWid, 0x00);
-  // Bag sprite : 64×64 (= 8×8 tiles, le sac complet rempli sur tout le sprite).
-  // Position centrée dans la window 96×96 → x=16, y=16 pour center.
-  // src width = 64 px (= 8 tiles × 8 px).
-  BlitBitmapToWindow(_spriteWid, _assets.bagSprite.charData, 16, 16, 64, 64, 64);
-  PutWindowTilemap(_spriteWid);
-  CopyWindowToVram(_spriteWid, 3);
+  // _spawnBagSpriteOam dans _setupBackgroundTilemap. No-op pour pas casser
+  // les callers — le BlitBitmapToWindow path original est removed (dead code).
 }
 
 /** 1:1 décomp item_menu.c:DrawPocketIndicatorSquare(x, isCurrentPocket) :
@@ -1629,7 +1619,15 @@ function _executeAction(action: ItemAction): void {
     return;
   }
   // USE / GIVE / REGISTER / CHECK / CHECK_TAG : log + close (TODO Phase 6+).
-  console.log(`[bag-screen] action ${ItemAction[action]} on ${_ctxItemKey} — TODO`);
+  // const enum → pas de reverse-lookup dynamique ; on inline le mapping.
+  // À ce point CANCEL/DUMMY/TOSS sont déjà gérés (early return ci-dessus).
+  const _actionName = action === ItemAction.USE ? 'USE'
+    : action === ItemAction.REGISTER ? 'REGISTER'
+    : action === ItemAction.GIVE ? 'GIVE'
+    : action === ItemAction.CHECK ? 'CHECK'
+    : action === ItemAction.CHECK_TAG ? 'CHECK_TAG'
+    : `#${action as number}`;
+  console.log(`[bag-screen] action ${_actionName} on ${_ctxItemKey} — TODO`);
   _closeContextMenu();
 }
 

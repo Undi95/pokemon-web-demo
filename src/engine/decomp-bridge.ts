@@ -864,6 +864,8 @@ export function DynamicPlaceholderTextUtil_ExpandPlaceholders(_dest: any, src: s
 
 /** 1:1 décomp `src/random.c` Random() — already implemented. Re-export from random.ts. */
 export { Random, SeedRng, SeedRngAndSetTrainerId, Random32 } from './random';
+// Local import pour usage inline dans ce fichier (= e.g. RANDOM_TRANSITION).
+import { Random as _Random } from './random';
 
 // ─── Re-exports : object events graphics info (object-event-graphics.ts) ──────
 
@@ -2083,7 +2085,7 @@ export function WORD_TO_PITCH_TABLE_INDEX(a: number): number {
  *    table[Random() % ARRAY_COUNT(table)] */
 export function RANDOM_TRANSITION(table: any): any {
   if (!table || !table.length) return 0;
-  return table[Random() % table.length];
+  return table[_Random() % table.length];
 }
 
 /** 1:1 décomp `src/battle_message.c:2362` HANDLE_NICKNAME_STRING_CASE :

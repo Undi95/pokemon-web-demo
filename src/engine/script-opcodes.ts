@@ -1817,12 +1817,12 @@ registerOpcode('incrementgamestat', (_ctx, args) => {
  *  Args : species (= "VAR_TEMP_1" ou "SPECIES_X"), mode (= 0 normal). */
 registerOpcode('playmoncry', (_ctx, args) => {
   const speciesArg = args[0] ?? '';
-  // Resolve species : VAR_X → lookup, else assume direct enum.
-  const speciesName = speciesArg.startsWith('VAR_') || speciesArg.startsWith('0x80')
-    ? `SPECIES_${gameState.getVar(speciesArg)}`  // crude mapping
-    : speciesArg;
+  // Resolve species : VAR_X → lookup numeric, else enum name → constant.
+  const speciesId = speciesArg.startsWith('VAR_') || speciesArg.startsWith('0x80')
+    ? gameState.getVar(speciesArg)
+    : (resolveDecompConstant(speciesArg) ?? 0);
   void import('./decomp-globals').then(({ PlayCryInternal }) => {
-    PlayCryInternal(speciesName, 0, 64, 0, 0);
+    PlayCryInternal(speciesId, 0, 64, 0, 0);
   }).catch(() => {});
   return false;
 });
@@ -2011,7 +2011,7 @@ registerOpcode('bufferspeciesname', (_ctx, args) => {
 registerOpcode('bufferleadmonspeciesname', (_ctx, args) => {
   const n = parseValue(args[0]) || 1;
   const lead = gameState.party?.[0];
-  const speciesName = lead?.speciesNameFr ?? (lead?.species ? getSpeciesNameFr(lead.species) : '');
+  const speciesName = lead?.speciesNameFr ?? (lead?.speciesEnum ? getSpeciesNameFr(lead.speciesEnum) : '');
   setStringVar(n, speciesName);
   return false;
 });
@@ -2640,8 +2640,14 @@ registerOpcode('warpdoor', (ctx, args) => {
   if (handler) return handler(ctx, args);
   // Fallback : same logic as 'warp' opcode (= we registered it earlier).
   // Use the warp-system directly.
-  const dst = (args[0] ?? '').replace(/^MAP_/, '');
-  setPendingWarp({ mapName: dst, x: parseValue(args[2]), y: parseValue(args[3]) });
+  const dst = args[0] ?? '';
+  setPendingWarp({
+    destMap: dst,
+    x: parseValue(args[2]),
+    y: parseValue(args[3]),
+    elevation: 0,
+    warpId: -1,
+  });
   return false;
 });
 
@@ -2658,8 +2664,8 @@ registerOpcode('showobjectat', (_ctx, args) => {
 registerOpcode('getplayerxy', (_ctx, args) => {
   const xVar = args[0] ?? '';
   const yVar = args[1] ?? '';
-  if (xVar) VarSet(xVar, gameState.player?.x ?? 0);
-  if (yVar) VarSet(yVar, gameState.player?.y ?? 0);
+  if (xVar) VarSet(xVar, gameState.map?.x ?? 0);
+  if (yVar) VarSet(yVar, gameState.map?.y ?? 0);
   return false;
 });
 
@@ -3778,7 +3784,12 @@ registerOpcode('dowildbattle', (ctx, _args) => {
       if (mon) {
         const { startWildBattle } = await import('./battle-flow').catch(() => ({ startWildBattle: undefined }));
         if (typeof startWildBattle === 'function') {
-          startWildBattle(mon);
+          // 1:1 décomp BattleParams { opponentSpecies: string, opponentLevel: number }.
+          const enumName = reverseDecompConstant(mon.species ?? 0, 'SPECIES_') ?? `SPECIES_${mon.species ?? 0}`;
+          startWildBattle({
+            opponentSpecies: enumName,
+            opponentLevel: mon.level ?? 5,
+          });
         } else {
           console.warn('[opcode dowildbattle] battle-flow.startWildBattle not exposed yet');
         }
@@ -4296,12 +4307,17 @@ registerOpcode('setmonmove', (_ctx, args) => {
   const partyIndex = parseValue(args[0] ?? '0');
   const slot = parseValue(args[1] ?? '0');
   const moveArg = args[2] ?? 'MOVE_NONE';
-  const moveId = parseValue(moveArg);
-  const party = gameState.party as Array<{ moves?: number[] }>;
-  if (party && partyIndex >= 0 && partyIndex < party.length) {
+  const party = gameState.party;
+  if (party && partyIndex >= 0 && partyIndex < party.length && slot >= 0 && slot < 4) {
     const mon = party[partyIndex];
     if (!mon.moves) mon.moves = [];
-    if (slot >= 0 && slot < 4) mon.moves[slot] = moveId;
+    // 1:1 décomp `ScriptSetMonMoveSlot` set le slot direct (= overwrite).
+    // Notre struct PokemonInstance.moves[] = { id, nameFr, pp, ppMax }.
+    mon.moves[slot] = {
+      id: moveArg.toLowerCase().replace(/^move_/, ''),
+      nameFr: getMoveNameFr(moveArg),
+      pp: 0, ppMax: 0,
+    };
   }
   return false;
 });

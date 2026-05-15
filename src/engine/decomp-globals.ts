@@ -1686,8 +1686,21 @@ export const sSpritePalette_PressStart: ReadonlyArray<{ data: string; tag: strin
   { data: 'gTitleScreenPressStartPal', tag: 'TAG_PRESS_START_COPYRIGHT' },
 ];
 
-/** gMain re-export (pour bodyC CB2_InitTitleScreen qui fait `gMain.state = N`). */
-export const gMain = new Proxy({} as { state: number; callback2: unknown; vblankCallback: unknown }, {
+/** gMain re-export (pour bodyC CB2_InitTitleScreen qui fait `gMain.state = N`).
+ *  Type 1:1 décomp `MainStruct` (cf. decomp-runtime.ts:309) — expose state,
+ *  callback2, vblankCallback, savedCallback, newKeys, heldKeys, callback1,
+ *  newAndRepeatedKeys, keyRepeatCounter. */
+export const gMain = new Proxy({} as {
+  state: number;
+  callback2: unknown;
+  callback1: unknown;
+  vblankCallback: unknown;
+  savedCallback: unknown;
+  newKeys: number;
+  heldKeys: number;
+  newAndRepeatedKeys: number;
+  keyRepeatCounter: number;
+}, {
   get(_, k) { return (rt().gMain as unknown as Record<string, unknown>)[k as string]; },
   set(_, k, v) { (rt().gMain as unknown as Record<string, unknown>)[k as string] = v; return true; },
 });

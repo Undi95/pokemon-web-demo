@@ -439,13 +439,10 @@ registerSpecial('ClearLinkContestFlags', () => { /* no-op */ });
 
 /** 1:1 décomp `GetPlayerFacingDirection` (event_object_movement.c). */
 registerSpecial('GetPlayerFacingDirection', () => {
-  // 1:1 décomp : retourne gObjectEvents[0].facingDirection.
-  const dir = gameState.player?.direction;
-  if (dir === 'NORTH') return 1;
-  if (dir === 'SOUTH') return 2;
-  if (dir === 'WEST') return 3;
-  if (dir === 'EAST') return 4;
-  return 0;
+  // 1:1 décomp : retourne gObjectEvents[gPlayerAvatar.objectEventId].facingDirection.
+  // Notre port stocke direct DIR_* (= DIR_NONE=0, DIR_SOUTH=1, DIR_NORTH=2,
+  // DIR_WEST=3, DIR_EAST=4) dans block1.__facing.
+  return gameState.map?.facing ?? 0;
 });
 
 /** 1:1 décomp `ShouldTryGetTrainerScript` (battle_setup.c). Returns 0 = no
@@ -563,11 +560,11 @@ registerSpecial('BufferMonNickname', () => {
 registerSpecial('ScriptGetPartyMonSpecies', () => {
   const slot = gameState.getVar?.('VAR_0x8004') ?? 0;
   const mon = gameState.party?.[slot];
-  if (!mon?.species) return 0;
+  if (!mon?.speciesEnum) return mon?.speciesId ?? 0;
   // Resolve species name → numeric ID via constants.
-  return mon.species.startsWith('SPECIES_')
-    ? (resolveDecompConstant(mon.species) ?? 0)
-    : 0;
+  return mon.speciesEnum.startsWith('SPECIES_')
+    ? (resolveDecompConstant(mon.speciesEnum) ?? mon.speciesId ?? 0)
+    : mon.speciesId ?? 0;
 });
 
 /** 1:1 décomp `GetPlayerAvatarBike` (= field_player_avatar.c) :

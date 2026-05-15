@@ -254,12 +254,11 @@ async function _loadAssets(): Promise<PartyAssets> {
     // les 11 sub-palettes (= 352 bytes). loadIndexedPngStrict ne retourne
     // que la PLTE chunk PNG (= 16 entries first sub-pal seul) → palette 1+
     // restent vides → bg.bin entries paletteNum=1..10 rendent BLACK.
-    const fetchU8 = async (url: string) => new Uint8Array(
-      await fetch(url).then(r => {
-        if (!r.ok) throw new Error(`fetch failed ${url} → ${r.status}`);
-        return r.arrayBuffer();
-      })
-    );
+    const fetchU8 = async (url: string): Promise<Uint8Array> => {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`fetch failed ${url} → ${r.status}`);
+      return new Uint8Array(await r.arrayBuffer());
+    };
     const [bgTilesRaw, bgTilemapBin, bgPalFull, slotMain, slotWide, slotWideEmpty] = await Promise.all([
       loadTileBin('/decomp/em/party_menu/bg.png', 4),
       loadTilemapBin('/decomp/em/party_menu/bg.bin'),

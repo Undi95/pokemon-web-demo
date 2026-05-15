@@ -515,9 +515,7 @@ import {
   CopyBgTilemapBufferToVram,
   GetStringWidth,
 } from './decomp-globals';
-// SetPokemonCryStereo : pas implémenté côté audio engine — stub no-op pour
-// éviter ReferenceError. Effet visuel zéro (= preview audio mono/stereo).
-const SetPokemonCryStereo = (_mode: number): void => { /* stub no-op */ };
+// SetPokemonCryStereo : importé depuis ./gba-menu-system (ligne 33).
 
 /** AddTextPrinterParameterized — wrapper signature 1:1 décomp text.c :
  *
@@ -758,7 +756,7 @@ function installAutoTaskHooks(): void {
       }
       return _origCreateTask(actual, prio);
     };
-    (wrapped as { __wrapped: boolean }).__wrapped = true;
+    (wrapped as unknown as { __wrapped: boolean }).__wrapped = true;
     (globalThis as Record<string, unknown>).CreateTask = wrapped;
   }
 
