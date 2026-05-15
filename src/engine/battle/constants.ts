@@ -641,6 +641,7 @@ export const MOVE_COVET        = 343;
 export const MOVE_TRICK        = 271;
 export const MOVE_FOCUS_PUNCH  = 264;
 export const MOVE_SNATCH       = 289;
+export const MOVE_UPROAR       = 253;
 
 // ─── sMovesForbiddenToCopy (battle_script_commands.c:725) — 1:1 décomp ────
 /** Sentinels MIMIC_FORBIDDEN_END / METRONOME_FORBIDDEN_END divisent les two
@@ -687,6 +688,44 @@ export const B_MSG_DOOM_DESIRE  = 1;
 
 // ─── SWITCH_IGNORE_ESCAPE_PREVENTION (battle_script_commands.h:368) ───────
 export const SWITCH_IGNORE_ESCAPE_PREVENTION = 1 << 7;
+
+// ─── MON_GENDERLESS (constants/pokemon.h:171) — 1:1 décomp ────────────────
+export const MON_GENDERLESS = 0xFF;
+export const MON_MALE       = 0x00;
+export const MON_FEMALE     = 0xFE;
+
+// ─── MOVES_COUNT / ALL_MOVES_MASK (constants/moves.h, global.h) — 1:1 ─────
+export const MOVES_COUNT     = 355;
+export const ALL_MOVES_MASK  = (1 << 4) - 1;  // = MAX_MON_MOVES (4)
+
+// ─── MOVE_LIMITATION_* (battle_util.h:5) — 1:1 décomp ─────────────────────
+export const MOVE_LIMITATION_ZEROMOVE    = 1 << 0;
+export const MOVE_LIMITATION_PP          = 1 << 1;
+export const MOVE_LIMITATION_DISABLED    = 1 << 2;
+export const MOVE_LIMITATION_TORMENTED   = 1 << 3;
+export const MOVE_LIMITATION_TAUNT       = 1 << 4;
+export const MOVE_LIMITATION_IMPRISON    = 1 << 5;
+
+/** 1:1 décomp `STATUS2_INFATUATED_WITH(battler)` (battle.h:143).
+ *  Encode battler id 0..3 dans bits 16..19 (= mask via gBitTable[battler]<<16). */
+export function STATUS2_INFATUATED_WITH(battler: number): number {
+  return (1 << battler) << 16;
+}
+
+/** 1:1 décomp `sNaturePowerMoves[]` (battle_script_commands.c:759).
+ *  Indexé par BATTLE_ENVIRONMENT_*. Donne le move utilisé par Nature Power. */
+export const sNaturePowerMoves: number[] = [
+  /* GRASS       */ 78,   // MOVE_STUN_SPORE
+  /* LONG_GRASS  */ 75,   // MOVE_RAZOR_LEAF
+  /* SAND        */ 89,   // MOVE_EARTHQUAKE
+  /* UNDERWATER  */ 56,   // MOVE_HYDRO_PUMP
+  /* WATER       */ 57,   // MOVE_SURF
+  /* POND        */ 61,   // MOVE_BUBBLE_BEAM
+  /* MOUNTAIN    */ 157,  // MOVE_ROCK_SLIDE
+  /* CAVE        */ 247,  // MOVE_SHADOW_BALL
+  /* BUILDING    */ 129,  // MOVE_SWIFT
+  /* PLAIN       */ 129,  // MOVE_SWIFT
+];
 
 // ─── B_MSG_* stockpile/swallow (battle_string_ids.h:484-489) — 1:1 décomp ─
 export const B_MSG_STOCKPILED      = 0;

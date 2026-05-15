@@ -512,6 +512,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-26').then(({ installNiveau26Handlers }) => {
     installNiveau26Handlers(_commands);
   });
+  // Session 135 — Niveau 27 (infatuation + sleep talk + metronome + nature).
+  void import('./cmd-niveau-27').then(({ installNiveau27Handlers }) => {
+    installNiveau27Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
