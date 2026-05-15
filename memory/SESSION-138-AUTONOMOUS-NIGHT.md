@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-15 (autonomous /loop, user "je m'endors pour de vrai")
 **Branche** : `upd2`
-**Commits** : 9 commits / ~3000 lignes 1:1 décomp ajoutées cette session
+**Commits** : 21 commits / ~3700 lignes 1:1 décomp ajoutées cette session
 
 ---
 
@@ -15,7 +15,7 @@ strict (= pas de MVP shortcuts).
 
 ---
 
-## Commits 9 (= ~3000 lignes 1:1 décomp)
+## Commits 21 (= ~3700 lignes 1:1 décomp)
 
 | # | Commit | Description |
 |---|--------|-------------|
@@ -28,6 +28,14 @@ strict (= pas de MVP shortcuts).
 | 7 | `8cbdf42e` | MonGainEVs full port (pokemon.c:5975-6052) |
 | 8 | `a04bbb7c` | CheckMoveLimitations + AreAllMovesUnusable port |
 | 9 | `b6f1ac30` | ClearFuryCutterDestinyBondGrudge + Battle History helpers |
+| 10 | `d7d2c1ca` | NOTES session 138 |
+| 11 | `b51e081f` | CountAliveMonsInBattle 1:1 décomp |
+| 12 | `a587f2a6` | weatherHasEffect → 1:1 WEATHER_HAS_EFFECT macro |
+| 13 | `9777eafd` | **AUDIT FIX** BATTLE_TYPE_FRONTIER manquait BATTLE_TOWER |
+| 14 | `e86b74d8` | GetGenderFromSpeciesAndPersonality + GetDefaultMoveTarget |
+| 15 | `2057fb17` | **AUDIT FIX** IsTwoTurnsMove 5 EFFECT_* hardcoded values FAUX |
+| 16 | `33439049` | damage-calc hold-item boosts + field sports (Mud/Water Sport) |
+| 17 | `899b498b` | Expose state getters sur __battleState pour cross-module |
 
 ---
 
@@ -132,12 +140,20 @@ gLeveledUpInBattle                   // Bitmask mons lvl-up ce combat
 
 ---
 
-## AUDIT BUG FIXES — Critiques
+## AUDIT BUG FIXES — Critiques (5 trouvés / fixés)
 
 1. **MOVEEND_COUNT hardcoded `28` → vraie valeur `17`** (décomp Em). Aurait skip
    28 sub-states inexistants.
 2. **EFFECT_BATON_PASS hardcoded `121` → vraie valeur `127`** (auto-data).
    Aurait silencieusement cassé MOVEEND_UPDATE_LAST_MOVES.
+3. **BATTLE_TYPE_FRONTIER manquait BATTLE_TOWER** (commit `9777eafd`). Décomp
+   battle.h:91 inclut explicitement BATTLE_TOWER. Aurait skip checks
+   `& BATTLE_TYPE_FRONTIER` pour Tower battles (= Cmd_getexp etc.).
+4. **IsTwoTurnsMove 5 EFFECT_* hardcoded values TOUTES FAUSSES** (commit `2057fb17`) :
+   - EFFECT_SKULL_BASH=11 (vrai 145), RAZOR_WIND=12 (39), SOLAR_BEAM=70 (151),
+     SEMI_INVULNERABLE=39 (155), BIDE=27 (26). Sleep Talk picks pourris.
+5. **BATTLE_TYPE_FRONTIER_LOCAL inline dans damage-calc.ts FAUX** (commit `33439049`) :
+   bits initialement (1<<13)|(1<<14)|... vrai = (1<<8)|(1<<16)|(1<<17)|...
 
 ---
 
