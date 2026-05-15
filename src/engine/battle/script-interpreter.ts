@@ -536,6 +536,14 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-32').then(({ installNiveau32Handlers }) => {
     installNiveau32Handlers(_commands);
   });
+  // Session 135 — Niveau 33 (15 opcodes natifs script-var manipulation).
+  void import('./cmd-niveau-33').then(({ installNiveau33Handlers }) => {
+    installNiveau33Handlers(_commands);
+  });
+  // Session 135 — Niveau 34 (getexp + various — last 2 huge opcodes).
+  void import('./cmd-niveau-34').then(({ installNiveau34Handlers }) => {
+    installNiveau34Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
