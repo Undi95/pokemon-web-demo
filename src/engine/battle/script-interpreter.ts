@@ -422,6 +422,13 @@ function _initCommandsTable(): void {
     const idx = parseInt(idxStr, 10);
     _commands[idx] = _Cmd_stub(name);
   }
+
+  // Session 133 — Phase 1 Niveau 1 START : install les real handlers pour
+  // damage flow basic (ppreduce, critcalc). Lazy import pour break cyclic dep
+  // (cmd-niveau-1.ts importe BattleOpcodeHandler de ce module).
+  void import('./cmd-niveau-1').then(({ installNiveau1Handlers }) => {
+    installNiveau1Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
