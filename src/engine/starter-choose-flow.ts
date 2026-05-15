@@ -251,9 +251,20 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
   let handBobTimer = 0;
   let lastSelection = -1;
 
+  let _lastLoggedState: State | null = null;
   const tick = (): boolean => {
     const rt = getRuntime();
     if (!rt) return false;
+
+    // Session 133 add : expose state au devtool scope.starterChoose() pour debug.
+    (globalThis as Record<string, unknown>).__starterChooseState = state;
+    (globalThis as Record<string, unknown>).__starterChooseSelection = selection;
+    (globalThis as Record<string, unknown>).__starterChooseChosen = chosenIdx;
+
+    if (state !== _lastLoggedState) {
+      console.log(`[StarterChoose] state → ${state} (loadDone=${loadDone}, loadFailed=${loadFailed}, fadeActive=${rt.gPaletteFade?.active}, brightness=${rt.gPaletteFade?.brightness})`);
+      _lastLoggedState = state;
+    }
 
     switch (state) {
       case 'LOAD_ASSETS': {
@@ -750,6 +761,11 @@ export function startChooseStarterFlow(): ChooseStarterFlow {
       }
 
       case 'DONE': {
+        // Session 133 add : cleanup les state vars globales (= scope.starterChoose
+        // retournera {active:false} après flow terminé).
+        delete (globalThis as Record<string, unknown>).__starterChooseState;
+        delete (globalThis as Record<string, unknown>).__starterChooseSelection;
+        delete (globalThis as Record<string, unknown>).__starterChooseChosen;
         return true;
       }
     }

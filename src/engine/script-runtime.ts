@@ -413,6 +413,9 @@ export function ScriptContext_SetupInlineNative(tickFn: () => boolean): boolean 
   return true;
 }
 
+// Session 133 add : track current label pour devtool scope.script() debug.
+let _currentScriptLabel: string | null = null;
+
 /** 1:1 décomp `ScriptContext_SetupScript(const u8 *ptr)`. */
 export function ScriptContext_SetupScript(label: string): boolean {
   const opcodes = _scriptsByLabel.get(label);
@@ -424,6 +427,7 @@ export function ScriptContext_SetupScript(label: string): boolean {
   SetupBytecodeScript(sGlobalScriptContext, opcodes);
   LockPlayerFieldControls();
   sGlobalScriptContextStatus = CONTEXT_RUNNING;
+  _currentScriptLabel = label;
   console.log(`[script-runtime] starting script '${label}' (${opcodes.length} opcodes)`);
   return true;
 }
@@ -659,4 +663,17 @@ setOnLoadMapScriptHook(RunOnLoadMapScript);
   status: () => sGlobalScriptContextStatus,
   scripts: _scriptsByLabel,
   texts: _textsByLabel,
+  // Session 133 add : helpers pour devtool scope.script() enrichi.
+  getCurrentLabel: () => _currentScriptLabel,
+  getCurrentOpcodeIdx: () => sGlobalScriptContext.scriptIdx,
+  getRemainingOpcodes: () => {
+    const ops = sGlobalScriptContext.scriptOpcodes;
+    return ops ? Math.max(0, ops.length - sGlobalScriptContext.scriptIdx) : 0;
+  },
+  getCurrentOpcode: () => {
+    const ops = sGlobalScriptContext.scriptOpcodes;
+    if (!ops || sGlobalScriptContext.scriptIdx >= ops.length) return null;
+    const op = ops[sGlobalScriptContext.scriptIdx];
+    return { name: op.name, args: op.args };
+  },
 };

@@ -78,20 +78,49 @@ function _g<T = unknown>(name: string): T | undefined {
 /** Returns "MAP_X (col, row) facing DIR" string. */
 function _where(): string {
   const pa = _g<PlayerAvatar>('gPlayerAvatar');
-  // Session 127 fix : `gameState.map.name` au lieu de `gameState.data.location.__mapId`
-  // (la 1ère structure était hypothétique, la vraie c'est `gameState.map.name`).
+  // Session 133 fix : `gMapHeader.id` est synced après traversal de connection
+  // (= aller Littleroot → Route101 via exit nord). Les `gameState.map.name` /
+  // `gSaveBlock1Ptr.location.mapName` restent figés sur la map primaire du
+  // warp (= "MAP_LITTLEROOT_TOWN" même quand on est physiquement sur Route 101).
+  const hdr = _g<{ id?: string }>('gMapHeader');
   const gs = _g<{
     data?: { location?: { __mapId?: string; mapName?: string } };
     map?: { name?: string };
     location?: { mapName?: string };
   }>('gameState');
-  const mapId = gs?.map?.name
+  const mapId = hdr?.id
+    ?? gs?.map?.name
     ?? gs?.location?.mapName
     ?? gs?.data?.location?.__mapId
     ?? gs?.data?.location?.mapName
     ?? '?';
   if (!pa) return `${mapId} (no avatar)`;
   return `${mapId} (${pa.x},${pa.y}) facing ${_DIR_NAMES[pa.facing ?? 0]}`;
+}
+
+/** Session 133 add : version objet structurée pour query précis. */
+function _whereObj(): Record<string, unknown> {
+  const pa = _g<PlayerAvatar>('gPlayerAvatar');
+  const hdr = _g<{
+    id?: string;
+    mapLayoutId?: string;
+    regionMapSectionId?: string;
+    music?: string;
+  }>('gMapHeader');
+  const sb1 = _g<{ location?: { mapGroup?: number; mapNum?: number } }>('gSaveBlock1Ptr');
+  return {
+    map: hdr?.id ?? '?',
+    x: pa?.x,
+    y: pa?.y,
+    facing: _DIR_NAMES[pa?.facing ?? 0],
+    layoutId: hdr?.mapLayoutId,
+    regionMapSection: hdr?.regionMapSectionId,
+    music: hdr?.music,
+    primaryMapGroup: sb1?.location?.mapGroup,
+    primaryMapNum: sb1?.location?.mapNum,
+    elevation: pa?.currentElevation,
+    walking: (pa?.stepFramesLeft ?? 0) > 0,
+  };
 }
 
 /** Snapshot complet de l'état overworld pour comparaison frame-by-frame. */
@@ -234,10 +263,24 @@ function _vars(): Record<string, number> {
 }
 
 function _script(): Record<string, unknown> {
-  const sr = _g<{ status?: () => unknown; getCurrentLabel?: () => string }>('__scriptRuntime');
+  const sr = _g<{
+    status?: () => unknown;
+    getCurrentLabel?: () => string;
+    getCurrentOpcodeIdx?: () => number;
+    getRemainingOpcodes?: () => number;
+    getCurrentOpcode?: () => { name?: string; args?: unknown[] };
+  }>('__scriptRuntime');
   const status = sr?.status?.() ?? 'no-runtime';
-  const label = sr?.getCurrentLabel?.();
-  return { status, currentLabel: label };
+  const STATUS_NAMES: Record<number, string> = { 0: 'RUNNING', 1: 'WAITING', 2: 'SHUTDOWN' };
+  return {
+    status,
+    statusName: typeof status === 'number' ? STATUS_NAMES[status] : status,
+    currentLabel: sr?.getCurrentLabel?.(),
+    opcodeIdx: sr?.getCurrentOpcodeIdx?.(),
+    opcodeName: sr?.getCurrentOpcode?.()?.name,
+    opcodeArgs: sr?.getCurrentOpcode?.()?.args,
+    remaining: sr?.getRemainingOpcodes?.(),
+  };
 }
 
 function _battle(): Record<string, unknown> {
@@ -363,31 +406,40 @@ Pokémon Émeraude port — devtools "voir sans voir l'écran"
 ══════════════════════════════════════════════════════════
 
 INSPECTION (read-only) :
-  scope.where()       Position courante du player
-  scope.see()         Snapshot complet : player + NPCs + flags + vars + state
-  scope.npcs()        Tous les NPCs actifs avec coords + gfx + mvt
-  scope.dialog()      Text actuellement dans le field message box
-  scope.party()       Ton équipe Pokémon avec stats + moves
-  scope.bag()         Ton sac par pocket
-  scope.flags(prefix) Flags actifs (filtre optionnel par prefix)
-  scope.vars()        Vars non-zéro
-  scope.script()      Script en cours d'exécution
-  scope.battle()      État combat si actif
-  scope.audio()       BGM + SE en cours
-  scope.tile(x,y)     Metatile + behavior + collision + elevation à coords
-  scope.time()        PC time + in-game RTC + play time
-  scope.warp()        Last warp info
+  scope.where()        Position courante du player (string format)
+  scope.whereObj()     Position structurée { map, x, y, facing, layoutId, ... }
+  scope.see()          Snapshot complet : player + NPCs + flags + vars + state
+  scope.npcs()         Tous les NPCs actifs avec coords + gfx + mvt
+  scope.dialog()       Text actuellement dans le field message box
+  scope.party()        Ton équipe Pokémon avec stats + moves
+  scope.bag()          Ton sac par pocket
+  scope.flags(prefix)  Flags actifs (filtre optionnel par prefix)
+  scope.vars()         Vars non-zéro
+  scope.script()       Script en cours : status + label + opcode actuel
+  scope.battle()       État combat si actif
+  scope.audio()        BGM + SE en cours
+  scope.tile(x,y)      Metatile + behavior + collision + elevation à coords
+  scope.time()         PC time + in-game RTC + play time
+  scope.warp()         Last warp info
+  scope.sprites(mode)  Liste sprites ('visible'|'invisible'|'all') + coords + anim
+  scope.fade()         État du gPaletteFade (active, brightness, mode, etc.)
+  scope.starterChoose() State du starter-choose-flow si en cours
 
 DIFF :
-  scope.snapshot()    Capture état courant
-  scope.compare()     Diff vs snapshot précédent
+  scope.snapshot()     Capture état courant
+  scope.compare()      Diff vs snapshot précédent
 
 CONTROLE :
-  scope.press(key)    'up' 'down' 'left' 'right' 'a' 'b' 'start' 'select'
-  scope.walk(dir, n)  Simule N pas dans direction
-  scope.ai(plan)      Exécute plan ['up', 'walk right 3', 'wait 60', 'a']
+  scope.press(key)     'up' 'down' 'left' 'right' 'a' 'b' 'start' 'select'
+  scope.walk(dir, n)   Simule N pas dans direction
+  scope.ai(plan)       Exécute plan ['up', 'walk right 3', 'wait 60', 'a']
+  scope.skipDialog(ms) Auto-spam A jusqu'à dialog fermé (async, returns ok)
+  scope.observe(fn,ms) Await jusqu'à predicate truthy (async, returns result)
+  scope.gotoMap(id,x,y) Warp helper rapide (= 1:1 transition + scripts)
 
-EX : scope.ai(['walk down 5', 'a', 'wait 30', 'a', 'a'])
+EX : await scope.ai(['walk down 5', 'a', 'wait 30', 'a', 'a'])
+EX : await scope.observe(() => scope.battle().active)
+EX : await scope.skipDialog()
 `.trim();
 }
 
@@ -399,10 +451,149 @@ function _warp(): Record<string, unknown> {
   };
 }
 
-export function installScopeDevtools(): void {
-  if (typeof window === 'undefined') return;
-  (window as unknown as { scope: Record<string, unknown> }).scope = {
+// ─── Session 133 add ─────────────────────────────────────────────────────────
+
+/** List sprites with template name, coords, visibility. Useful pour debug
+ *  les UI flows (= starter choose, battle, party screen) où on suspect
+ *  des sprites résiduels post-cleanup. */
+function _sprites(filter?: 'visible' | 'invisible' | 'all'): Array<Record<string, unknown>> {
+  const mode = filter ?? 'visible';
+  type SpriteShape = {
+    spriteId?: number;
+    x?: number; y?: number; y2?: number;
+    invisible?: boolean;
+    inUse?: boolean;
+    _templateName?: string;
+    animNum?: number;
+    subpriority?: number;
+    oamIndex?: number;
+    objMode?: number;
+    matrixNum?: number;
+    callback?: { name?: string } | null;
+  };
+  const dev = _g<{ _rt?: { gSprites?: Map<number, SpriteShape> } }>('dev');
+  const sprites = dev?._rt?.gSprites;
+  if (!sprites) return [];
+  const out: Array<Record<string, unknown>> = [];
+  sprites.forEach((s, id) => {
+    if (!s.inUse) return;
+    const isInvisible = !!s.invisible;
+    if (mode === 'visible' && isInvisible) return;
+    if (mode === 'invisible' && !isInvisible) return;
+    out.push({
+      id,
+      x: s.x,
+      y: s.y,
+      y2: s.y2 ?? 0,
+      invisible: isInvisible,
+      template: s._templateName ?? '?',
+      anim: s.animNum,
+      subpriority: s.subpriority,
+      oamIndex: s.oamIndex,
+      objMode: s.objMode,
+      callback: s.callback?.name ?? null,
+    });
+  });
+  return out;
+}
+
+/** Quick state du palette fade. Lit gPaletteFade via globalThis OR dev._rt
+ *  (= notre runtime expose les deux selon le contexte de boot). */
+function _fade(): Record<string, unknown> {
+  type FadeShape = {
+    active?: boolean;
+    brightness?: number;
+    mode?: number;
+    currentFrame?: number;
+    totalFrames?: number;
+    startY?: number;
+    endY?: number;
+  };
+  const dev = _g<{ _rt?: { gPaletteFade?: FadeShape } }>('dev');
+  const pf = _g<FadeShape>('gPaletteFade') ?? dev?._rt?.gPaletteFade;
+  if (!pf) return { error: 'gPaletteFade not exposed' };
+  return {
+    active: pf.active,
+    brightness: pf.brightness,
+    mode: pf.mode,
+    currentFrame: pf.currentFrame,
+    totalFrames: pf.totalFrames,
+    startY: pf.startY,
+    endY: pf.endY,
+    isBlack: pf.brightness === 16 && !pf.active,
+    isClear: pf.brightness === 0 && !pf.active,
+  };
+}
+
+/** Auto-spam A jusqu'à dialog fermé ou timeout. Returns true si fermé,
+ *  false si timeout. Utile pour avancer un msgbox long dans les tests. */
+async function _skipDialog(maxMs = 30000): Promise<boolean> {
+  const start = performance.now();
+  let lastText = '';
+  while (performance.now() - start < maxMs) {
+    const d = _dialog() as { open?: boolean; text?: string };
+    if (!d.open) return true;
+    const txt = d.text ?? '';
+    // Press A only if text stable (= done printing chars). Detect via 2-tick
+    // identical text check.
+    if (txt === lastText) {
+      _press('a', 100);
+    }
+    lastText = txt;
+    await new Promise<void>(r => setTimeout(r, 200));
+  }
+  return false;
+}
+
+/** Async wait until predicate returns truthy. Predicate is called every
+ *  ~16ms (= ~1 frame). Returns the predicate result or null on timeout.
+ *  Usage : await scope.observe(() => scope.where().includes('ROUTE101')) */
+async function _observe<T>(predicate: () => T, maxMs = 30000): Promise<T | null> {
+  const start = performance.now();
+  while (performance.now() - start < maxMs) {
+    try {
+      const result = predicate();
+      if (result) return result;
+    } catch { /* keep trying */ }
+    await new Promise<void>(r => setTimeout(r, 50));
+  }
+  return null;
+}
+
+/** Expose le state du starter-choose-flow si en cours. Le flow expose son
+ *  state sur globalThis.__starterChooseState (set en début de tick()). */
+function _starterChoose(): Record<string, unknown> {
+  const state = _g<string>('__starterChooseState');
+  const sel = _g<number>('__starterChooseSelection');
+  const idx = _g<number>('__starterChooseChosen');
+  if (state === undefined) return { active: false };
+  return {
+    active: true,
+    state,
+    selection: sel,
+    chosen: idx,
+    SELECTION_NAMES: ['TREECKO', 'TORCHIC', 'MUDKIP'],
+  };
+}
+
+/** Warp helper : jump directement à une map à coords (x, y). Utilise
+ *  le système warp interne, donc 1:1 effects (= map transition, BGM
+ *  change, OnTransition script, OnFrame match). */
+function _gotoMap(mapId: string, x: number, y: number): { ok: boolean; reason?: string } {
+  const fn = _g<(mapId: string, x: number, y: number) => void>('__devGotoMap');
+  if (!fn) return { ok: false, reason: 'no __devGotoMap fn exposed' };
+  try { fn(mapId, x, y); return { ok: true }; }
+  catch (e) { return { ok: false, reason: String(e) }; }
+}
+
+// Build the scope API as a fresh object on every install. We expose the latest
+// fn references to support HMR re-install (= les nouvelles versions des _xxx
+// après edit sont propagées au prochain install).
+function _buildScopeApi(): Record<string, unknown> {
+  return {
+    // Inspection
     where: _where,
+    whereObj: _whereObj,
     see: _see,
     npcs: _npcs,
     dialog: _dialog,
@@ -416,12 +607,36 @@ export function installScopeDevtools(): void {
     tile: _tile,
     time: _time,
     warp: _warp,
+    sprites: _sprites,
+    fade: _fade,
+    starterChoose: _starterChoose,
+    // Diff
     snapshot: _snapshot,
     compare: _compare,
+    // Control
     press: _press,
     walk: _walk,
     ai: _ai,
+    skipDialog: _skipDialog,
+    observe: _observe,
+    gotoMap: _gotoMap,
+    // Help
     help: _help,
   };
+}
+
+export function installScopeDevtools(): void {
+  if (typeof window === 'undefined') return;
+  (window as unknown as { scope: Record<string, unknown> }).scope = _buildScopeApi();
   console.log('[scope] devtools installed — type `scope.help()` for usage');
+}
+
+// Session 133 add : Vite HMR re-install pour propager les fixes des helpers
+// quand on edit dev-scope.ts. Sans ça, scope object capture les anciennes refs
+// et il faut un reload page complet pour voir les changements.
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    installScopeDevtools();
+    console.log('[scope] re-installed via HMR');
+  });
 }
