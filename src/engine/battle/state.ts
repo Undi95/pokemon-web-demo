@@ -599,6 +599,7 @@ export function setBattlersCount(v: number) { gBattlersCount = v; }
 export function setCurrentMove(v: number) { gCurrentMove = v; }
 export function setChosenMove(v: number) { gChosenMove = v; }
 export function setCurrMovePos(v: number) { gCurrMovePos = v; }
+export function setChosenMovePos(v: number) { gChosenMovePos = v; }
 export function setCalledMove(v: number) { gCalledMove = v; }
 export function setBattleMoveDamage(v: number) { gBattleMoveDamage = v; }
 export function setHpDealt(v: number) { gHpDealt = v; }

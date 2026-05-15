@@ -354,6 +354,7 @@ export const MOVE_MIRROR_MOVE   = 119;
 export const MOVE_TRANSFORM     = 144;
 export const MOVE_SUBSTITUTE    = 164;
 export const MOVE_POUND         = 1;
+export const MOVE_RAGE          = 99;
 export const MOVE_BIDE          = 117;
 export const MOVE_STRUGGLE      = 165;
 export const MOVE_SKETCH        = 166;
@@ -419,6 +420,17 @@ export const B_MSG_DEFROSTED_BY_MOVE  = 1;
 // ─── STATUS2_CONFUSION_TURN (battle.h:130) — 1:1 décomp ──────────────────
 /** `(num) << 0` — la confusion counter occupe bits 0..2 (= STATUS2_CONFUSION mask 0x7). */
 export function STATUS2_CONFUSION_TURN(num: number): number { return num << 0; }
+
+// ─── DISOBEDIENCE_* (battle_util.c IsMonDisobedient retval) — 1:1 décomp ──
+export const DISOBEDIENCE_OBEDIENT = 0;
+export const DISOBEDIENCE_IGNORED  = 1;
+export const DISOBEDIENCE_OTHER    = 2;
+
+// ─── NUM_LOAF_STRINGS (battle_string_ids.h:545) ────────────────────────────
+export const NUM_LOAF_STRINGS = 4;
+
+// ─── MOVE_LIMITATIONS_ALL (battle.h) — full move limitation mask ──────────
+export const MOVE_LIMITATIONS_ALL       = 0xFF;
 export const B_OUTCOME_MON_FLED          = 6;
 export const B_OUTCOME_CAUGHT            = 7;
 

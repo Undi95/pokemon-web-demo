@@ -73,6 +73,7 @@ import {
   consumeAbilityWantedScript,
 } from './ability-battle-effects';
 import { applyAtkCanceler } from './atk-canceler';
+import { applyDisobedienceCheck } from './disobedience';
 import {
   ItemBattleEffects, ITEMEFFECT_MOVE_END, ITEMEFFECT_KINGSROCK_SHELLBELL,
 } from './item-battle-effects';
@@ -1116,9 +1117,14 @@ function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
   // 1:1 décomp : `gHitMarker &= ~HITMARKER_ALLOW_NO_PP;`
   setHitMarker(gHitMarker & ~HITMARKER_ALLOW_NO_PP);
 
-  // TODO porter : IsMonDisobedient switch.
+  // 1:1 décomp : IsMonDisobedient (battle_util.c:3900-4015). Si pas obéissant
+  // (= badges insuffisants pour le level du mon traded), jump à BattleScript_*
+  // approprié et return immédiat.
+  if (applyDisobedienceCheck(ctx, opcodeStartPtr)) {
+    return false;
+  }
 
-  // 1:1 décomp : `gHitMarker |= HITMARKER_OBEYS;`
+  // 1:1 décomp : `gHitMarker |= HITMARKER_OBEYS;` (= obeyed le check disobedience)
   setHitMarker(gHitMarker | HITMARKER_OBEYS);
 
   // TODO porter : MagicCoat bounce / Snatch / LightningRod / DEFENDER_IS_PROTECTED.
