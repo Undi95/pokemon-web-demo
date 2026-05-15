@@ -480,6 +480,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-18').then(({ installNiveau18Handlers }) => {
     installNiveau18Handlers(_commands);
   });
+  // Session 135 — Niveau 19 (rest/bide/camouflage/party UI).
+  void import('./cmd-niveau-19').then(({ installNiveau19Handlers }) => {
+    installNiveau19Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

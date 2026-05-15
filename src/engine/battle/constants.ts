@@ -603,6 +603,27 @@ export const MOVE_EFFECT_EVS_MINUS_1  = 28;
 export const MOVE_EFFECT_RECHARGE     = 29;
 export const MOVE_EFFECT_RAGE         = 30;
 export const MOVE_EFFECT_STEAL_ITEM   = 31;
+export const MOVE_EFFECT_THRASH       = 53;
+
+// ─── ABILITY_NATURAL_CURE (abilities.h:34) — 1:1 décomp ────────────────────
+export const ABILITY_NATURAL_CURE = 30;
+
+/** 1:1 décomp `STATUS1_SLEEP_TURN(num)` (constants/battle.h:116). */
+export function STATUS1_SLEEP_TURN(num: number): number { return num << 0; }
+
+/** 1:1 décomp `sEnvironmentToType[]` (battle_script_commands.c:826). */
+export const sEnvironmentToType: number[] = [
+  /* GRASS       */ 12, // TYPE_GRASS
+  /* LONG_GRASS  */ 12, // TYPE_GRASS
+  /* SAND        */ 4,  // TYPE_GROUND
+  /* UNDERWATER  */ 11, // TYPE_WATER
+  /* WATER       */ 11, // TYPE_WATER
+  /* POND        */ 11, // TYPE_WATER
+  /* MOUNTAIN    */ 5,  // TYPE_ROCK
+  /* CAVE        */ 5,  // TYPE_ROCK
+  /* BUILDING    */ 0,  // TYPE_NORMAL
+  /* PLAIN       */ 0,  // TYPE_NORMAL
+];
 
 // ─── BATTLE_ENVIRONMENT_* (constants/battle.h:311-320) — 1:1 décomp ────────
 export const BATTLE_ENVIRONMENT_GRASS       = 0;

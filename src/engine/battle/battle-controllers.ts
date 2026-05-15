@@ -168,6 +168,16 @@ export function BtlController_EmitStatusAnimation(_bufferId: number, _isStatus2:
   // TODO : status anim (sprite shake + tint + status sound).
 }
 
+/** 1:1 signature décomp `BtlController_EmitDrawPartyStatusSummary(buf, hpStatuses, isBattleStart)`. */
+export function BtlController_EmitDrawPartyStatusSummary(_bufferId: number, _hpStatuses: unknown, _arg2: number): void {
+  // TODO : render mini-icons row showing party HP/status (= top of screen).
+}
+
+/** 1:1 signature décomp `BtlController_EmitHidePartyStatusSummary(buf)`. */
+export function BtlController_EmitHidePartyStatusSummary(_bufferId: number): void {
+  // TODO : hide party status row.
+}
+
 /** 1:1 signature décomp `BtlController_EmitYesNoBox` n'existe pas — yesnobox
  *  est implémenté direct par Cmd_yesnobox via le state machine
  *  gBattleCommunication[0]. */

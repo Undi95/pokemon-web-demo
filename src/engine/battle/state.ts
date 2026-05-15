@@ -408,6 +408,14 @@ export const gStatuses3: number[] = [0, 0, 0, 0];
  *  CancelMultiTurnMoves cleanup quand Rollout / Bide / Uproar enchaînent. */
 export const gLockedMoves: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `gBideDmg[MAX_BATTLERS_COUNT]` (battle_main.c). Accumulé pendant
+ *  les turns Bide, retourné × 2 quand Bide se déclenche. */
+export const gBideDmg: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `gBideTarget[MAX_BATTLERS_COUNT]` (battle_main.c). Target id
+ *  sauvegardé pour le retour de Bide. */
+export const gBideTarget: number[] = [0, 0, 0, 0];
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];
@@ -466,6 +474,8 @@ export function resetBattleState(): void {
     gStatuses3[i] = 0;
     gLastMoves[i] = 0;
     gLockedMoves[i] = 0;
+    gBideDmg[i] = 0;
+    gBideTarget[i] = 0;
     gLastLandedMoves[i] = 0;
     gLastHitByType[i] = 0;
     gLastResultingMoves[i] = 0;
