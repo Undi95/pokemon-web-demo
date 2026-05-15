@@ -28,25 +28,35 @@
  */
 
 import {
-  gBattleMons, gBattlerAttacker, gBattlerTarget, gActiveBattler,
+  gBattleMons, gBattlerAttacker, setBattlerAttacker, gBattlerTarget, gActiveBattler,
   gBattlersCount, gBattleTypeFlags, gCurrentMove, gBattleCommunication,
   gBattleMoveDamage, setBattleMoveDamage,
   gHitMarker, setHitMarker,
   gLastUsedAbility, setLastUsedAbility,
   gBattleScripting,
   gProtectStructs,
+  gBattleWeather, setBattleWeather,
+  gStatuses3,
+  gSpecialStatuses,
+  setFormToChangeInto,
 } from './state';
 import { getBattleScriptOffset } from './script-interpreter';
 import {
   ABILITY_SOUNDPROOF, ABILITY_VOLT_ABSORB, ABILITY_WATER_ABSORB, ABILITY_FLASH_FIRE,
   ABILITY_IMMUNITY, ABILITY_OWN_TEMPO, ABILITY_LIMBER, ABILITY_INSOMNIA,
   ABILITY_VITAL_SPIRIT, ABILITY_WATER_VEIL, ABILITY_MAGMA_ARMOR, ABILITY_OBLIVIOUS,
+  ABILITY_DRIZZLE, ABILITY_SAND_STREAM, ABILITY_DROUGHT, ABILITY_INTIMIDATE,
+  ABILITY_TRACE, ABILITY_CLOUD_NINE, ABILITY_AIR_LOCK, ABILITY_FORECAST,
   TYPE_ELECTRIC, TYPE_WATER, TYPE_FIRE,
   STATUS1_POISON, STATUS1_TOXIC_POISON, STATUS1_BURN, STATUS1_FREEZE,
   STATUS1_PARALYSIS, STATUS1_SLEEP,
   STATUS2_NIGHTMARE, STATUS2_CONFUSION, STATUS2_INFATUATION, STATUS2_MULTIPLETURNS,
+  STATUS3_INTIMIDATE_POKES, STATUS3_TRACE,
   HITMARKER_NO_PPDEDUCT,
   BATTLE_TYPE_SAFARI,
+  B_WEATHER_RAIN, B_WEATHER_RAIN_TEMPORARY, B_WEATHER_RAIN_PERMANENT,
+  B_WEATHER_SANDSTORM, B_WEATHER_SANDSTORM_PERMANENT,
+  B_WEATHER_SUN, B_WEATHER_SUN_PERMANENT,
   GET_BATTLER_SIDE,
 } from './constants';
 import { getBattleMove } from './data/battle-moves';
@@ -142,6 +152,73 @@ export function AbilityBattleEffects(
   const moveType = _getMoveType(move);
 
   switch (caseID) {
+    case ABILITYEFFECT_ON_SWITCHIN: {
+      // 1:1 décomp battle_util.c:2468-2583.
+      if (gBattlerAttacker >= gBattlersCount) {
+        setBattlerAttacker(battler);
+      }
+      switch (gLastUsedAbility) {
+        case ABILITYEFFECT_SWITCH_IN_WEATHER:
+          // 1:1 partial : overworld weather influence (= GetCurrentWeather pas
+          // wired battle-side). Skip pour MVP. TODO porter quand gameStateWeather
+          // wired.
+          break;
+        case ABILITY_DRIZZLE:
+          if (!(gBattleWeather & B_WEATHER_RAIN_PERMANENT)) {
+            setBattleWeather(B_WEATHER_RAIN_PERMANENT | B_WEATHER_RAIN_TEMPORARY);
+            _lastWantedScriptLabel = 'BattleScript_DrizzleActivates';
+            gBattleScripting.battler = battler;
+            effect++;
+          }
+          break;
+        case ABILITY_SAND_STREAM:
+          if (!(gBattleWeather & B_WEATHER_SANDSTORM_PERMANENT)) {
+            setBattleWeather(B_WEATHER_SANDSTORM);
+            _lastWantedScriptLabel = 'BattleScript_SandstreamActivates';
+            gBattleScripting.battler = battler;
+            effect++;
+          }
+          break;
+        case ABILITY_DROUGHT:
+          if (!(gBattleWeather & B_WEATHER_SUN_PERMANENT)) {
+            setBattleWeather(B_WEATHER_SUN);
+            _lastWantedScriptLabel = 'BattleScript_DroughtActivates';
+            gBattleScripting.battler = battler;
+            effect++;
+          }
+          break;
+        case ABILITY_INTIMIDATE:
+          if (!gSpecialStatuses[battler].intimidatedMon) {
+            gStatuses3[battler] |= STATUS3_INTIMIDATE_POKES;
+            gSpecialStatuses[battler].intimidatedMon = 1;
+          }
+          break;
+        case ABILITY_FORECAST: {
+          // 1:1 partial : CastformDataTypeChange non porté. Skip — return 0.
+          // TODO porter CastformDataTypeChange quand on a Castform forms.
+          void setFormToChangeInto;
+          break;
+        }
+        case ABILITY_TRACE:
+          if (!gSpecialStatuses[battler].traced) {
+            gStatuses3[battler] |= STATUS3_TRACE;
+            gSpecialStatuses[battler].traced = 1;
+          }
+          break;
+        case ABILITY_CLOUD_NINE:
+        case ABILITY_AIR_LOCK: {
+          // 1:1 partial : Cloud Nine / Air Lock cancel weather sur Castform.
+          // Notre Castform pas implémenté → no-op.
+          // TODO porter CastformDataTypeChange.
+          for (let target1 = 0; target1 < gBattlersCount; target1++) {
+            void target1;
+          }
+          break;
+        }
+      }
+      break;
+    }
+
     case ABILITYEFFECT_MOVES_BLOCK: {
       // 1:1 décomp Soundproof block (battle_util.c:2642-2658).
       if (gLastUsedAbility === ABILITY_SOUNDPROOF) {
@@ -362,7 +439,6 @@ export function AbilityBattleEffects(
     }
 
     // ─── Stubs TODO Phase 1.2 E continuation ──────────────────────────────
-    case ABILITYEFFECT_ON_SWITCHIN:
     case ABILITYEFFECT_ENDTURN:
     case ABILITYEFFECT_ON_DAMAGE:
     case ABILITYEFFECT_FORECAST:
@@ -372,7 +448,7 @@ export function AbilityBattleEffects(
     case ABILITYEFFECT_INTIMIDATE2:
     case ABILITYEFFECT_TRACE:
     case ABILITYEFFECT_FIELD_SPORT:
-      // TODO porter ces cases — ~600 lignes décomp restantes.
+      // TODO porter ces cases — ~500 lignes décomp restantes.
       break;
 
     default:
