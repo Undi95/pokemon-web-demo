@@ -56,8 +56,16 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** 1:1 stub `IsTwoTurnsMove(move)` (battle_util.c). MVP : false. */
-function _isTwoTurnsMove(_move: number): boolean { return false; }
+/** 1:1 décomp `IsTwoTurnsMove(move)` (battle_script_commands.c:8199-8210).
+ *  AUDIT FIX : précédemment stub return false → tous moves considérés single-turn.
+ *  Wiring via local check (= éviter import circulaire avec cmd-niveau-27). */
+function _isTwoTurnsMove(move: number): boolean {
+  const effect = getBattleMove(move).effect;
+  // EFFECT_SKULL_BASH=145, RAZOR_WIND=39, SKY_ATTACK=75, SOLAR_BEAM=151,
+  // SEMI_INVULNERABLE=155, BIDE=26. Valeurs auto-data battle_move_effects-data.ts.
+  return effect === 145 || effect === 39 || effect === 75
+      || effect === 151 || effect === 155 || effect === 26;
+}
 
 /** 1:1 stub `SwitchInClearSetData()` (battle_main.c). Reset effect tracking
  *  pour le mon switched in. MVP : clear gDisableStructs, statStages reset. */
@@ -97,7 +105,8 @@ function Cmd_switchindataupdate(ctx: BattleScriptContext): boolean {
   // 1:1 décomp : knockedOffMons clear item.
   // (Notre port : gWishFutureKnock.knockedOffMons est u8 unique pas array — skip.)
 
-  if (getBattleMove(gCurrentMove).effect === 95 /* EFFECT_BATON_PASS */) {
+  // AUDIT FIX : EFFECT_BATON_PASS = 127, pas 95. Valeur depuis auto-data.
+  if (getBattleMove(gCurrentMove).effect === 127 /* EFFECT_BATON_PASS */) {
     gBattleMons[active].statStages = oldStatStages;
     gBattleMons[active].status2 = oldStatus2;
   }
