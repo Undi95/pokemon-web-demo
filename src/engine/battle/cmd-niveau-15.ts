@@ -22,7 +22,10 @@
  */
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
-import { readWord } from './script-interpreter';
+import { readWord, getBattleScriptOffset } from './script-interpreter';
+import {
+  AbilityBattleEffects, ABILITYEFFECT_ABSORBING, consumeAbilityWantedScript,
+} from './ability-battle-effects';
 import {
   gBattleMons, gBattlerAttacker, gBattlerTarget, setBattlerTarget,
   gCurrentMove, gMoveResultFlags, setMoveResultFlags,
@@ -94,7 +97,18 @@ function _jumpIfMoveFailed(ctx: BattleScriptContext, failJump: number): void {
   }
   // 1:1 décomp : TrySetDestinyBondToHappen + AbilityBattleEffects(ABSORBING).
   _trySetDestinyBondToHappen();
-  // TODO porter AbilityBattleEffects(ABILITYEFFECT_ABSORBING).
+  // 1:1 décomp : if (AbilityBattleEffects(ABSORBING, target, 0, 0, move)) return;
+  // → Volt/Water Absorb heal ou Flash Fire boost.
+  const absorbEff = AbilityBattleEffects(ABILITYEFFECT_ABSORBING, gBattlerTarget, 0, 0, gCurrentMove);
+  if (absorbEff !== 0) {
+    const label = consumeAbilityWantedScript();
+    if (label) {
+      const off = getBattleScriptOffset(label);
+      if (off >= 0) ctx.scriptPtr = off;
+    }
+    // Note : return sans advance — le helper a déjà set scriptPtr.
+    return;
+  }
 }
 
 /** 1:1 décomp `TrySetDestinyBondToHappen` (battle_script_commands.c:8288).
