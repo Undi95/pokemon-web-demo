@@ -508,6 +508,12 @@ export const gBattleStructChangedItems: number[] = [0, 0, 0, 0];
 export let gBattleStructAbsentBattlerFlags = 0;
 export function setBattleStructAbsentBattlerFlags(v: number) { gBattleStructAbsentBattlerFlags = v; }
 
+/** 1:1 décomp `gBattleStruct->atkCancelerTracker` (battle.h:436). État de la
+ *  state machine `AtkCanceler_UnableToUseMove` qui check sleep/freeze/flinch/
+ *  confuse/paralyze/etc. au début de chaque move. Reset à 0 avant chaque attaque. */
+export let gBattleStructAtkCancelerTracker = 0;
+export function setBattleStructAtkCancelerTracker(v: number) { gBattleStructAtkCancelerTracker = v; }
+
 /** Last move used per battler (= for Mirror Move). */
 export const gLastMoves: number[] = [0, 0, 0, 0];
 export const gLastLandedMoves: number[] = [0, 0, 0, 0];
@@ -594,6 +600,7 @@ export function resetBattleState(): void {
     gBattleStructChangedItems[i] = 0;
   }
   gBattleStructAbsentBattlerFlags = 0;
+  gBattleStructAtkCancelerTracker = 0;
   Object.assign(gBattleScripting, _makeBlankScripting());
   for (let i = 0; i < gBattleCommunication.length; i++) gBattleCommunication[i] = 0;
   gBattlerAttacker = 0;

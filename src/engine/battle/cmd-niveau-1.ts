@@ -72,6 +72,7 @@ import {
   ABILITYEFFECT_IMMUNITY, ABILITYEFFECT_ATK_SYNCHRONIZE,
   consumeAbilityWantedScript,
 } from './ability-battle-effects';
+import { applyAtkCanceler } from './atk-canceler';
 import {
   ItemBattleEffects, ITEMEFFECT_MOVE_END, ITEMEFFECT_KINGSROCK_SHELLBELL,
 } from './item-battle-effects';
@@ -1066,6 +1067,8 @@ function Cmd_healthbarupdate(ctx: BattleScriptContext): boolean {
  *  trainer), MagicCoat/Snatch/LightningRod (= gProtectStructs/gSpecialStatuses),
  *  DEFENDER_IS_PROTECTED (= gProtectStructs.protected). */
 function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
+  const opcodeStartPtr = ctx.scriptPtr - 1;  // before pre-advance
+
   // 1:1 décomp : `if (gBattleOutcome != 0) { gCurrentActionFuncId = B_ACTION_FINISHED; return; }`
   // TODO porter gCurrentActionFuncId trigger ici. Pour now : skip (= rare case).
 
@@ -1078,7 +1081,13 @@ function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
     return false;
   }
 
-  // TODO porter AtkCanceler_UnableToUseMove (battle_util.c) — status check.
+  // 1:1 décomp : AtkCanceler_UnableToUseMove (battle_util.c:1985-2270).
+  // Status checks : sleep/freeze/truant/recharge/flinch/disabled/taunted/
+  // imprisoned/confused/paralyzed/in_love/bide/thaw. Si trigger, le helper
+  // a set ctx.scriptPtr au bon BattleScript label et on return.
+  if (applyAtkCanceler(ctx, opcodeStartPtr)) {
+    return false;
+  }
 
   // 1:1 décomp : AbilityBattleEffects(ABILITYEFFECT_MOVES_BLOCK, target, 0, 0, 0).
   // → trigger Soundproof block sur target qui Soundproof + move dans sSoundMovesTable.

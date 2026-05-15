@@ -334,6 +334,7 @@ export const EFFECT_BURN_HIT          = 4;
 export const EFFECT_EXPLOSION         = 7;
 export const EFFECT_HIGH_CRITICAL     = 43;
 export const EFFECT_SKY_ATTACK        = 75;
+export const EFFECT_THAW_HIT          = 125;
 export const EFFECT_BATON_PASS        = 127;
 export const EFFECT_FALSE_SWIPE       = 101;
 export const EFFECT_RETURN            = 121;  // friendship-based power
@@ -352,8 +353,11 @@ export const MOVE_DIG           = 91;
 export const MOVE_MIRROR_MOVE   = 119;
 export const MOVE_TRANSFORM     = 144;
 export const MOVE_SUBSTITUTE    = 164;
+export const MOVE_POUND         = 1;
+export const MOVE_BIDE          = 117;
 export const MOVE_STRUGGLE      = 165;
 export const MOVE_SKETCH        = 166;
+export const MOVE_SNORE         = 173;
 export const MOVE_BATON_PASS    = 226;
 export const MOVE_ENCORE        = 227;
 export const MOVE_DIVE          = 291;
@@ -404,6 +408,17 @@ export const NO_TARGET_OVERRIDE = 0;
 
 // ─── B_MSG_PREVENTS_ESCAPE (battle_string_ids.h:567) — 1:1 décomp ────────
 export const B_MSG_PREVENTS_ESCAPE = 2;
+
+// ─── B_MSG_* AtkCanceler (battle_string_ids.h:471-583) — 1:1 décomp ──────
+export const B_MSG_WOKE_UP            = 0;
+export const B_MSG_WOKE_UP_UPROAR     = 1;
+export const B_MSG_LOAFING            = 0;
+export const B_MSG_DEFROSTED          = 0;
+export const B_MSG_DEFROSTED_BY_MOVE  = 1;
+
+// ─── STATUS2_CONFUSION_TURN (battle.h:130) — 1:1 décomp ──────────────────
+/** `(num) << 0` — la confusion counter occupe bits 0..2 (= STATUS2_CONFUSION mask 0x7). */
+export function STATUS2_CONFUSION_TURN(num: number): number { return num << 0; }
 export const B_OUTCOME_MON_FLED          = 6;
 export const B_OUTCOME_CAUGHT            = 7;
 
