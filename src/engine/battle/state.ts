@@ -22,32 +22,35 @@ import type { BattleMon } from './script-interpreter';
 // 2 single battle + 2 partners en double battle.
 export const MAX_BATTLERS_COUNT = 4;
 
-/** 1:1 décomp `struct BattleScripting` (battle.h). Subset utilisé Niveau 1. */
+/** 1:1 décomp `struct BattleScripting` (include/battle.h:489-518). */
 export interface BattleScripting {
-  painSplitHp: number;
-  bideDmg: number;
-  multihitMoveEffect: number;
-  saveBattler: number;
-  multiplayerId: number;
-  specialTrainerBattleType: number;
-  bcDxAnimationsKickedIn: number;
-  statChanger: number;
-  statAnimPlayed: number;
-  atk49_state: number;          // moveend state
-  battlerWithAbility: number;
-  battler: number;              // generic scratch battler index
-  multihitString: number[];
-  dmgMultiplier: number;        // damage multiplier (typically 1, set by certain effects)
-  twoTurnsMoveStringId: number;
-  animArg1: number;
-  animArg2: number;
-  tripleKickPower: number;
-  moveendState: number;
-  battlerSavedHealth: number;
-  field_23: number;
-  windowsType: number;
-  multiplayerId_2: number;
-  specialTrainerBattleType_2: number;
+  painSplitHp: number;          // s32
+  bideDmg: number;              // s32
+  multihitString: number[];     // u8[6]
+  dmgMultiplier: number;        // u8
+  twoTurnsMoveStringId: number; // u8
+  animArg1: number;             // u8
+  animArg2: number;             // u8
+  tripleKickPower: number;      // u16
+  moveendState: number;         // u8
+  battlerWithAbility: number;   // u8
+  multihitMoveEffect: number;   // u8
+  battler: number;              // u8 (= scratch)
+  animTurn: number;             // u8
+  animTargetsHit: number;       // u8
+  statChanger: number;          // u8 (= stat id | (delta<<4))
+  statAnimPlayed: number;       // bool8
+  getexpState: number;          // u8
+  battleStyle: number;          // u8
+  drawlvlupboxState: number;    // u8
+  learnMoveState: number;       // u8
+  pursuitDoublesAttacker: number; // u8
+  reshowMainState: number;      // u8
+  reshowHelperState: number;    // u8
+  levelUpHP: number;            // u8
+  windowsType: number;          // u8 — B_WIN_TYPE_*
+  multiplayerId: number;        // u8
+  specialTrainerBattleType: number; // u8
 }
 
 function _makeBlankMon(): BattleMon {
@@ -76,15 +79,17 @@ function _makeBlankMon(): BattleMon {
 
 function _makeBlankScripting(): BattleScripting {
   return {
-    painSplitHp: 0, bideDmg: 0, multihitMoveEffect: 0,
-    saveBattler: 0, multiplayerId: 0, specialTrainerBattleType: 0,
-    bcDxAnimationsKickedIn: 0, statChanger: 0, statAnimPlayed: 0,
-    atk49_state: 0, battlerWithAbility: 0, battler: 0,
+    painSplitHp: 0, bideDmg: 0,
     multihitString: [0, 0, 0, 0, 0, 0],
     dmgMultiplier: 1, twoTurnsMoveStringId: 0,
-    animArg1: 0, animArg2: 0, tripleKickPower: 0, moveendState: 0,
-    battlerSavedHealth: 0, field_23: 0, windowsType: 0,
-    multiplayerId_2: 0, specialTrainerBattleType_2: 0,
+    animArg1: 0, animArg2: 0, tripleKickPower: 0,
+    moveendState: 0, battlerWithAbility: 0, multihitMoveEffect: 0, battler: 0,
+    animTurn: 0, animTargetsHit: 0,
+    statChanger: 0, statAnimPlayed: 0,
+    getexpState: 0, battleStyle: 0, drawlvlupboxState: 0,
+    learnMoveState: 0, pursuitDoublesAttacker: 0,
+    reshowMainState: 0, reshowHelperState: 0, levelUpHP: 0,
+    windowsType: 0, multiplayerId: 0, specialTrainerBattleType: 0,
   };
 }
 
@@ -146,6 +151,82 @@ export let gBattleWeather = 0;
 /** Power dynamique override (= certains moves recalc power). */
 export let gDynamicBasePower = 0;
 
+/** 1:1 décomp `gBattleMovePower` (= power du move courant après dynamic adj). */
+export let gBattleMovePower = 0;
+
+/** 1:1 décomp `gBattleControllerExecFlags` (battle_main.c). Bitmask : bit `i`
+ *  signifie que battler `i` a une commande controller en cours. Battle scripts
+ *  block sur ce flag (= waitstate, waitanimation, waitmessage). Set par
+ *  `MarkBattlerForControllerExec`, cleared par les controllers une fois leur
+ *  job done. */
+export let gBattleControllerExecFlags = 0;
+
+/** 1:1 décomp `gPauseCounterBattle` (battle_main.c). Frame counter utilisé par
+ *  Cmd_waitmessage + Cmd_pause pour timing message display. */
+export let gPauseCounterBattle = 0;
+
+/** 1:1 décomp `struct DisableStruct gDisableStructs[MAX_BATTLERS_COUNT]`
+ *  (battle.h:438-468). Tracks per-battler effects que les moves doivent
+ *  consulter (= disabled move, encored move, taunt, perish counter, etc.).
+ *  Minimal set Niveau 4 (only what attackanimation reads via
+ *  BtlController_EmitMoveAnimation = passed by pointer). */
+export interface DisableStruct {
+  transformedMonPersonality: number;
+  disabledMove: number;
+  disableTimer: number;       // s16 (low 4 bits)
+  disableTimerStartValue: number; // s16 (high 4 bits)
+  encoredMove: number;
+  protectUses: number;
+  stockpileCounter: number;
+  substituteHP: number;
+  disableTimerXX: number;
+  encoreTimer: number;        // (low 4 bits)
+  encoreTimerStartValue: number;
+  perishSongTimer: number;    // (low 4 bits)
+  perishSongTimerStartValue: number;
+  furyCutterCounter: number;
+  rolloutTimer: number;       // (low 4 bits)
+  rolloutTimerStartValue: number;
+  chargeTimer: number;        // (low 4 bits)
+  chargeTimerStartValue: number;
+  tauntTimer: number;         // (low 4 bits)
+  tauntTimer2: number;        // (high 4 bits)
+  battlerPreventingEscape: number;
+  battlerWithSureHit: number;
+  isFirstTurn: number;
+  unused1: number;
+  truantCounter: number;      // (1 bit)
+  truantUnknownBit: number;   // (1 bit)
+  unused2: number;
+  mimickedMoves: number;      // u8 bitfield (4 bits)
+  rechargeCounter: number;
+  unused3: number;
+}
+
+function _makeBlankDisableStruct(): DisableStruct {
+  return {
+    transformedMonPersonality: 0, disabledMove: 0,
+    disableTimer: 0, disableTimerStartValue: 0,
+    encoredMove: 0, protectUses: 0,
+    stockpileCounter: 0, substituteHP: 0,
+    disableTimerXX: 0, encoreTimer: 0, encoreTimerStartValue: 0,
+    perishSongTimer: 0, perishSongTimerStartValue: 0,
+    furyCutterCounter: 0,
+    rolloutTimer: 0, rolloutTimerStartValue: 0,
+    chargeTimer: 0, chargeTimerStartValue: 0,
+    tauntTimer: 0, tauntTimer2: 0,
+    battlerPreventingEscape: 0, battlerWithSureHit: 0,
+    isFirstTurn: 0, unused1: 0,
+    truantCounter: 0, truantUnknownBit: 0, unused2: 0,
+    mimickedMoves: 0, rechargeCounter: 0, unused3: 0,
+  };
+}
+
+export const gDisableStructs: DisableStruct[] = [
+  _makeBlankDisableStruct(), _makeBlankDisableStruct(),
+  _makeBlankDisableStruct(), _makeBlankDisableStruct(),
+];
+
 /** `gBattlescriptCurrInstr` dans le décomp est un pointer ; ici c'est l'offset
  *  dans le bytecode (= `BattleScriptContext.scriptPtr` du runtime). Maintenu
  *  synchrone par le runBattleScript loop. */
@@ -198,6 +279,9 @@ export function setBattleOutcome(v: number) { gBattleOutcome = v; }
 export function setBattleTypeFlags(v: number) { gBattleTypeFlags = v; }
 export function setBattleWeather(v: number) { gBattleWeather = v; }
 export function setDynamicBasePower(v: number) { gDynamicBasePower = v; }
+export function setBattleMovePower(v: number) { gBattleMovePower = v; }
+export function setBattleControllerExecFlags(v: number) { gBattleControllerExecFlags = v; }
+export function setPauseCounterBattle(v: number) { gPauseCounterBattle = v; }
 export function setLastUsedAbility(v: number) { gLastUsedAbility = v; }
 export function setLastUsedItem(v: number) { gLastUsedItem = v; }
 
@@ -242,6 +326,12 @@ export function resetBattleState(): void {
   gDynamicBasePower = 0;
   gLastUsedAbility = 0;
   gLastUsedItem = 0;
+  gBattleMovePower = 0;
+  gBattleControllerExecFlags = 0;
+  gPauseCounterBattle = 0;
+  for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
+    Object.assign(gDisableStructs[i], _makeBlankDisableStruct());
+  }
 }
 
 // Expose pour devtools / debug.

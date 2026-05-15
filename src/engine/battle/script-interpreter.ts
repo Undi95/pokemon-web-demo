@@ -50,6 +50,7 @@
  */
 
 import { Random } from '../random';
+import { tickBattleControllers } from './battle-controllers';
 
 // ─── Battle state types (1:1 décomp include/battle.h) ──────────────────────
 
@@ -82,32 +83,8 @@ export interface BattleMon {
   otId: number;
 }
 
-/** 1:1 décomp `struct BattleScripting` (battle.h). */
-export interface BattleScriptingState {
-  painSplitHp: number;
-  bideDmg: number;
-  multihitMoveEffect: number;
-  saveBattler: number;
-  multiplayerId: number;
-  specialTrainerBattleType: number;
-  bcDxAnimationsKickedIn: number;
-  statChanger: number;        // stat id (low 4 bits) + direction (high 4 bits)
-  statAnimPlayed: number;
-  atk49_state: number;
-  battlerWithAbility: number;
-  multihitString: number[];
-  dmgMultiplier: number;
-  twoTurnsMoveStringId: number;
-  animArg1: number;
-  animArg2: number;
-  tripleKickPower: number;
-  moveendState: number;
-  battlerSavedHealth: number;
-  field_23: number;
-  windowsType: number;
-  multiplayerId_2: number;
-  specialTrainerBattleType_2: number;
-}
+/** 1:1 décomp `struct BattleScripting` — défini dans `state.ts` (= BattleScripting).
+ *  Évite duplication d'interface ; importer depuis ./state si besoin de typage. */
 
 /** 1:1 décomp battle script context. */
 export interface BattleScriptContext {
@@ -443,6 +420,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-3').then(({ installNiveau3Handlers }) => {
     installNiveau3Handlers(_commands);
   });
+  // Session 134 — Niveau 4 (animations + UI).
+  void import('./cmd-niveau-4').then(({ installNiveau4Handlers }) => {
+    installNiveau4Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
@@ -468,8 +449,12 @@ export function runBattleScript(ctx: BattleScriptContext): boolean {
       console.warn(`[battle/script-interpreter] no handler for opcode 0x${opcode.toString(16)}`);
       return false;
     }
-    if (handler(ctx)) {
-      // Pause requested (= wait anim / message / etc.).
+    const paused = handler(ctx);
+    // Session 134 — entre chaque opcode, tick les controllers MVP (= clear
+    // exec flags). Simule des controllers async finished instantanément.
+    // TODO retirer quand on aura de vrais controllers wired au framework UI.
+    tickBattleControllers();
+    if (paused) {
       return true;
     }
   }

@@ -326,9 +326,21 @@ export const EFFECT_BLAZE_KICK        = 200;
 export const EFFECT_POISON_TAIL       = 209;
 
 // ─── MOVE_* misc ────────────────────────────────────────────────────────────
-export const MOVE_NONE      = 0;
-export const MOVE_STRUGGLE  = 165;
+export const MOVE_NONE       = 0;
 export const MOVE_SOLAR_BEAM = 76;
+export const MOVE_TRANSFORM  = 144;
+export const MOVE_SUBSTITUTE = 164;
+export const MOVE_STRUGGLE   = 165;
+
+// ─── MOVE_TARGET_* (battle.h:46-53) — 1:1 décomp ────────────────────────────
+export const MOVE_TARGET_SELECTED         = 0;
+export const MOVE_TARGET_DEPENDS          = 1 << 0;
+export const MOVE_TARGET_USER_OR_SELECTED = 1 << 1;
+export const MOVE_TARGET_RANDOM           = 1 << 2;
+export const MOVE_TARGET_BOTH             = 1 << 3;
+export const MOVE_TARGET_USER             = 1 << 4;
+export const MOVE_TARGET_FOES_AND_ALLY    = 1 << 5;
+export const MOVE_TARGET_OPPONENTS_FIELD  = 1 << 6;
 
 // ─── SPECIES_* misc ─────────────────────────────────────────────────────────
 export const SPECIES_FARFETCHD = 83;
@@ -354,9 +366,28 @@ export const B_OUTCOME_MON_FLED          = 6;
 export const B_OUTCOME_CAUGHT            = 7;
 
 // ─── BATTLE_COMMUNICATION_* indices (battle_script_commands.h:288-300) ──────
+export const CURSOR_POSITION  = 1;
 export const MOVE_EFFECT_BYTE = 3;
 export const MISS_TYPE        = 6;
 export const MSG_DISPLAY      = 7;
+
+// ─── Battle window IDs (constants/battle.h:345-357) — 1:1 décomp ───────────
+export const B_WIN_MSG   = 0;
+export const B_WIN_YESNO = 12;
+
+// ─── Battle window flags (battle_script_commands.h:7-8) — 1:1 décomp ──────
+export const WINDOW_CLEAR = 1 << 0;
+export const WINDOW_BG1   = 1 << 7;
+
+// ─── YESNOBOX_X_Y (battle_script_commands.h:11) — 1:1 décomp ───────────────
+// Macro expands to `23, 8, 29, 13` (= 4-arg list for HandleBattleWindow xStart yStart xEnd yEnd).
+export const YESNOBOX_X_START = 23;
+export const YESNOBOX_Y_START = 8;
+export const YESNOBOX_X_END   = 29;
+export const YESNOBOX_Y_END   = 13;
+
+// ─── B_COMM_TO_CONTROLLER (battle_controllers.h:115, enum BattleBufferCommands) ──
+export const B_COMM_TO_CONTROLLER = 0;
 
 // ─── B_MSG_* miss messages (battle_string_ids.h:409-413) — 1:1 décomp ───────
 export const B_MSG_MISSED        = 0;
