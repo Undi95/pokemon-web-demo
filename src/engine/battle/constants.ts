@@ -325,9 +325,13 @@ export const EFFECT_EXPLOSION         = 7;
 export const EFFECT_HIGH_CRITICAL     = 43;
 export const EFFECT_SKY_ATTACK        = 75;
 export const EFFECT_FALSE_SWIPE       = 101;
+export const EFFECT_RETURN            = 121;  // friendship-based power
 export const EFFECT_THUNDER           = 152;
 export const EFFECT_BLAZE_KICK        = 200;
 export const EFFECT_POISON_TAIL       = 209;
+
+// ─── MAX_FRIENDSHIP (constants/pokemon.h:196) — 1:1 décomp ─────────────────
+export const MAX_FRIENDSHIP = 255;
 
 // ─── MOVE_* misc ────────────────────────────────────────────────────────────
 export const MOVE_NONE          = 0;
@@ -431,7 +435,13 @@ export const SE_SUPER_EFFECTIVE    = 14;
 // SPATK/SPDEF_EV, 25:FRIENDSHIP, 26:POKERUS, 27:MET_LOCATION, 28:MET_LEVEL,
 // 29:MET_GAME, 30:POKEBALL, 31:ALL_IVS, 32..37:HP/ATK/DEF/SPEED/SPATK/SPDEF_IV,
 // 38:PERSONALITY, 39:CHECKSUM, 40:STATUS_BATTLE.
-export const REQUEST_STATUS_BATTLE = 40;
+export const REQUEST_ALL_BATTLE      = 0;
+export const REQUEST_SPECIES_BATTLE  = 1;
+export const REQUEST_HELDITEM_BATTLE = 2;
+export const REQUEST_STATUS_BATTLE   = 40;
+export const REQUEST_LEVEL_BATTLE    = 41;
+export const REQUEST_HP_BATTLE       = 42;
+export const REQUEST_MAX_HP_BATTLE   = 43;
 
 // ─── B_MSG_* miss messages (battle_string_ids.h:409-413) — 1:1 décomp ───────
 export const B_MSG_MISSED        = 0;
