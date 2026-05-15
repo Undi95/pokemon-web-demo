@@ -38,6 +38,9 @@ import {
   FLAG_KINGS_ROCK_AFFECTED,
   IGNORE_SHELL_BELL,
   GET_BATTLER_SIDE, B_SIDE_PLAYER,
+  STATUS1_PARALYSIS, STATUS1_BURN, STATUS1_FREEZE, STATUS1_SLEEP, STATUS1_ANY,
+  STATUS1_POISON, STATUS1_TOXIC_POISON,
+  STATUS2_CONFUSION, STATUS2_NIGHTMARE, STATUS2_INFATUATION,
 } from './constants';
 import { getBattleMove } from './data/battle-moves';
 import {
@@ -61,12 +64,29 @@ const ITEM_STATS_CHANGE = 1;
 
 // ─── HOLD_EFFECT_* enum (constants/hold_effects.h) — 1:1 décomp ──────────
 
-const HOLD_EFFECT_RESTORE_HP    = 1;
-const HOLD_EFFECT_RESTORE_STATS = 23;
-const HOLD_EFFECT_FLINCH        = 30;
-const HOLD_EFFECT_DOUBLE_PRIZE  = 32;
-const HOLD_EFFECT_LEFTOVERS     = 43;
-const HOLD_EFFECT_SHELL_BELL    = 62;
+const HOLD_EFFECT_RESTORE_HP     = 1;
+const HOLD_EFFECT_CURE_PAR       = 4;
+const HOLD_EFFECT_CURE_SLP       = 5;
+const HOLD_EFFECT_CURE_PSN       = 6;
+const HOLD_EFFECT_CURE_BRN       = 7;
+const HOLD_EFFECT_CURE_FRZ       = 8;
+const HOLD_EFFECT_CURE_CONFUSION = 10;
+const HOLD_EFFECT_CURE_STATUS    = 11;
+const HOLD_EFFECT_CURE_ATTRACT   = 12;
+const HOLD_EFFECT_RESTORE_STATS  = 23;
+const HOLD_EFFECT_FLINCH         = 30;
+const HOLD_EFFECT_DOUBLE_PRIZE   = 32;
+const HOLD_EFFECT_LEFTOVERS      = 43;
+const HOLD_EFFECT_SHELL_BELL     = 62;
+
+// ─── Helpers : status1 masks ─────────────────────────────────────────────
+const STATUS1_PSN_ANY = STATUS1_POISON | STATUS1_TOXIC_POISON;
+const STATUS1_TOXIC_COUNTER = 0xF00; // 1:1 décomp battle.h:128.
+
+// ─── ITEM_* return codes 1:1 décomp ──────────────────────────────────────
+const ITEM_HP_CHANGE     = 2;
+const ITEM_STATUS_CHANGE = 3;
+const ITEM_EFFECT_OTHER  = 4;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -184,12 +204,123 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
       break;
     }
 
-    case ITEMEFFECT_NORMAL:
-      // TODO porter battle_util.c:3314-3605 (~290 lignes, ~30 sub-cases : RESTORE_HP,
-      // LEFTOVERS, CONFUSE_FOOD, MENTAL_HERB, RESTORE_STATS, RESTORE_PP, all stat-boost
-      // berries, etc.). Stub pour MVP.
-      void moveTurn; void HOLD_EFFECT_RESTORE_HP; void HOLD_EFFECT_LEFTOVERS;
+    case ITEMEFFECT_NORMAL: {
+      // 1:1 décomp battle_util.c:3314-3605 — berries triggers.
+      // Cases portés : RESTORE_HP, RESTORE_STATS, LEFTOVERS, CURE_PAR/PSN/BRN/FRZ/SLP/CONFUSION/STATUS/ATTRACT.
+      // Stubbed : RESTORE_PP (= party data), CONFUSE_*, ATTACK_UP..SP_DEF_UP, CRITICAL_UP, RANDOM_STAT_UP.
+      if (gBattleMons[battlerId].hp) {
+        const battlerHoldEffectParam = gLastUsedItem === ITEM_ENIGMA_BERRY
+          ? 0 : GetItemHoldEffectParam(gLastUsedItem);
+        switch (battlerHoldEffect) {
+          case HOLD_EFFECT_RESTORE_HP:
+            if (gBattleMons[battlerId].hp <= gBattleMons[battlerId].maxHP / 2 && !moveTurn) {
+              let dmg = battlerHoldEffectParam;
+              if (gBattleMons[battlerId].hp + dmg > gBattleMons[battlerId].maxHP) {
+                dmg = gBattleMons[battlerId].maxHP - gBattleMons[battlerId].hp;
+              }
+              setBattleMoveDamage(-dmg);
+              _lastWantedScriptLabel = 'BattleScript_ItemHealHP_RemoveItem';
+              effect = ITEM_HP_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_RESTORE_STATS:
+            for (let i = 0; i < NUM_BATTLE_STATS; i++) {
+              if (gBattleMons[battlerId].statStages[i] < DEFAULT_STAT_STAGE) {
+                gBattleMons[battlerId].statStages[i] = DEFAULT_STAT_STAGE;
+                effect = ITEM_STATS_CHANGE;
+              }
+            }
+            if (effect !== ITEM_NO_EFFECT) {
+              gBattleScripting.battler = battlerId;
+              setPotentialItemEffectBattler(battlerId);
+              setActiveBattler(battlerId);
+              setBattlerAttacker(battlerId);
+              _lastWantedScriptLabel = 'BattleScript_WhiteHerbEnd2';
+            }
+            break;
+          case HOLD_EFFECT_LEFTOVERS:
+            if (gBattleMons[battlerId].hp < gBattleMons[battlerId].maxHP && !moveTurn) {
+              let dmg = Math.floor(gBattleMons[battlerId].maxHP / 16);
+              if (dmg === 0) dmg = 1;
+              if (gBattleMons[battlerId].hp + dmg > gBattleMons[battlerId].maxHP) {
+                dmg = gBattleMons[battlerId].maxHP - gBattleMons[battlerId].hp;
+              }
+              setBattleMoveDamage(-dmg);
+              _lastWantedScriptLabel = 'BattleScript_ItemHealHP_End2';
+              effect = ITEM_HP_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_PAR:
+            if (gBattleMons[battlerId].status1 & STATUS1_PARALYSIS) {
+              gBattleMons[battlerId].status1 &= ~STATUS1_PARALYSIS;
+              _lastWantedScriptLabel = 'BattleScript_BerryCurePrlzEnd2';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_PSN:
+            if (gBattleMons[battlerId].status1 & STATUS1_PSN_ANY) {
+              // 1:1 décomp : clear STATUS1_PSN_ANY | STATUS1_TOXIC_COUNTER.
+              gBattleMons[battlerId].status1 &= ~(STATUS1_PSN_ANY | STATUS1_TOXIC_COUNTER);
+              _lastWantedScriptLabel = 'BattleScript_BerryCurePsnEnd2';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_BRN:
+            if (gBattleMons[battlerId].status1 & STATUS1_BURN) {
+              gBattleMons[battlerId].status1 &= ~STATUS1_BURN;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureBrnEnd2';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_FRZ:
+            if (gBattleMons[battlerId].status1 & STATUS1_FREEZE) {
+              gBattleMons[battlerId].status1 &= ~STATUS1_FREEZE;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureFrzEnd2';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_SLP:
+            if (gBattleMons[battlerId].status1 & STATUS1_SLEEP) {
+              gBattleMons[battlerId].status1 &= ~STATUS1_SLEEP;
+              gBattleMons[battlerId].status2 &= ~STATUS2_NIGHTMARE;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureSlpEnd2';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+          case HOLD_EFFECT_CURE_CONFUSION:
+            if (gBattleMons[battlerId].status2 & STATUS2_CONFUSION) {
+              gBattleMons[battlerId].status2 &= ~STATUS2_CONFUSION;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureConfusionEnd2';
+              effect = ITEM_EFFECT_OTHER;
+            }
+            break;
+          case HOLD_EFFECT_CURE_ATTRACT:
+            if (gBattleMons[battlerId].status2 & STATUS2_INFATUATION) {
+              gBattleMons[battlerId].status2 &= ~STATUS2_INFATUATION;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureChosenStatusEnd2';
+              effect = ITEM_EFFECT_OTHER;
+            }
+            break;
+          case HOLD_EFFECT_CURE_STATUS:
+            // 1:1 décomp partial : clear tous status1 + STATUS2_CONFUSION
+            // (sans le text buffer plural logic).
+            if ((gBattleMons[battlerId].status1 & STATUS1_ANY)
+                || (gBattleMons[battlerId].status2 & STATUS2_CONFUSION)) {
+              gBattleMons[battlerId].status2 &= ~STATUS2_NIGHTMARE;
+              gBattleMons[battlerId].status1 = 0;
+              gBattleMons[battlerId].status2 &= ~STATUS2_CONFUSION;
+              _lastWantedScriptLabel = 'BattleScript_BerryCureChosenStatusEnd2';
+              effect = ITEM_STATUS_CHANGE;
+            }
+            break;
+        }
+        // TODO porter : RESTORE_PP (=party data), CONFUSE_FOOD_BERRIES
+        // (FLAVOR_SPICY/DRY/SWEET/BITTER/SOUR macro), ATTACK_UP..SP_DEF_UP +
+        // CRITICAL_UP + RANDOM_STAT_UP (= ChangeStatBuffs).
+      }
+      void moveTurn;
       break;
+    }
 
     case ITEMEFFECT_MOVE_END:
       // TODO porter battle_util.c:3608-3751 (~145 lignes, post-move triggers berries).
