@@ -45,7 +45,7 @@ import { getBattleMove } from './data/battle-moves';
 import { gBitTable } from './battle-controllers';
 import {
   gTypeEffectiveness, TYPE_ENDTABLE, TYPE_FORESIGHT,
-  TYPE_MUL_NOT_EFFECTIVE, TYPE_MUL_NO_EFFECT,
+  TYPE_MUL_NOT_EFFECTIVE,
 } from './data/type-effectiveness';
 import { getBattlerForBattleScript, GetBattlerAtPosition, B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT } from './util';
 
@@ -143,11 +143,12 @@ function Cmd_settypetorandomresistance(ctx: BattleScriptContext): boolean {
     }
   }
 
-  // Fallback pass séquentiel.
+  // Fallback pass séquentiel — 1:1 décomp utilise `<= 5` (= TYPE_MUL_NOT_EFFECTIVE),
+  // PAS `<= TYPE_MUL_NO_EFFECT` (0). Inclut donc NO_EFFECT et NOT_EFFECTIVE.
   for (let j = 0; j < tableSize; j += 3) {
     if (gTypeEffectiveness[j] === TYPE_ENDTABLE || gTypeEffectiveness[j] === TYPE_FORESIGHT) continue;
     if (gTypeEffectiveness[j] === gLastHitByType[gBattlerAttacker]
-        && gTypeEffectiveness[j + 2] <= TYPE_MUL_NO_EFFECT
+        && gTypeEffectiveness[j + 2] <= TYPE_MUL_NOT_EFFECTIVE
         && !IS_BATTLER_OF_TYPE(atk.type1, atk.type2, gTypeEffectiveness[j + 1])) {
       atk.type1 = gTypeEffectiveness[j + 1];
       atk.type2 = gTypeEffectiveness[j + 1];
@@ -203,22 +204,31 @@ function Cmd_jumpifnopursuitswitchdmg(ctx: BattleScriptContext): boolean {
 
 // ─── 0xC4 trydobeatup ─────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_trydobeatup. 10 bytes (u32 success jump + u32 fail jump).
+/** 1:1 décomp Cmd_trydobeatup. 10 bytes (u32 endBeatUpPtr at +1 + u32
+ *  noValidMonsPtr at +5).
  *  Itère les party slots pour trouver un mon utilisable pour Beat Up.
- *  Notre port partial : on n'a pas gPlayerParty/gEnemyParty wired battle ;
- *  on utilise gBattleMons direct (= limité aux active battlers). */
+ *
+ *  Décomp logic :
+ *    - target.hp == 0 → jump endBeatUpPtr (= early end).
+ *    - else loop party slots :
+ *        - found valid mon → advance 9 (= continue calc) + compute dmg.
+ *        - exhausted && beforeLoop != 0 → jump endBeatUpPtr (= done).
+ *        - exhausted && beforeLoop == 0 → jump noValidMonsPtr (= no valid).
+ *
+ *  Notre port partial : gPlayerParty/gEnemyParty pas wired battle ; on n'a
+ *  pas la party iteration. Pour MVP :
+ *    - target.hp == 0 → endBeatUpPtr.
+ *    - else → noValidMonsPtr (= simule "no valid mon found", évite crash). */
 function Cmd_trydobeatup(ctx: BattleScriptContext): boolean {
-  const successJump = readWord(ctx);
-  const failJump = readWord(ctx);
-  // 1:1 décomp : check si gBattleMons[target].hp == 0 → fail.
+  const endBeatUpPtr = readWord(ctx);
+  const noValidMonsPtr = readWord(ctx);
   if (gBattleMons[gBattlerTarget].hp === 0) {
-    ctx.scriptPtr = failJump;
+    ctx.scriptPtr = endBeatUpPtr;
     return false;
   }
-  // 1:1 décomp partial : gBattleCommunication[0] tracking iteration ;
-  // notre port : skip iteration et jump success directement.
   // TODO porter le party walk complet quand gPlayerParty wired battle.
-  ctx.scriptPtr = successJump;
+  // Pour l'instant : simule "no valid mon" → noValidMonsPtr.
+  ctx.scriptPtr = noValidMonsPtr;
   return false;
 }
 

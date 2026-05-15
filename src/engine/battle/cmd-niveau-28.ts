@@ -23,18 +23,21 @@ import {
   gBattleScripting, gSpecialStatuses,
   gBattleControllerExecFlags, gBattleCommunication,
   gWrappedBy, gWrappedMove,
+  gDisableStructs, gHpOnSwitchout,
+  gBattlersCount, gBattlerByTurnOrder, gActionsByTurnOrder,
 } from './state';
 import {
   SIDE_STATUS_SPIKES, SIDE_STATUS_SPIKES_DAMAGED,
   STATUS2_WRAPPED, STATUS2_DESTINY_BOND,
   STATUS3_LEECHSEED, STATUS3_LEECHSEED_BATTLER,
   HITMARKER_FAINTED, HITMARKER_DESTINYBOND,
-  ABILITY_LEVITATE, TYPE_FLYING,
+  ABILITY_LEVITATE, ABILITY_TRUANT, TYPE_FLYING,
   REQUEST_ALL_BATTLE, B_COMM_TO_CONTROLLER,
   IS_BATTLER_OF_TYPE,
   GET_BATTLER_SIDE,
   BS_TARGET, BS_ATTACKER,
   MAX_MON_MOVES,
+  B_ACTION_CANCEL_PARTNER,
 } from './constants';
 import {
   BtlController_EmitGetMonData,
@@ -96,9 +99,33 @@ function Cmd_switchineffects(ctx: BattleScriptContext): boolean {
     const off = getBattleScriptOffset(labelName);
     if (off >= 0) ctx.scriptPtr = off;
   }
-  // 1:1 décomp partial : ability switch-in (Intimidate, Drought, Drizzle, etc.)
-  // pas porté ici (= AbilityBattleEffects pas wired).
-  // TODO porter le reste de switchineffects (cf. battle_script_commands.c).
+  // 1:1 décomp else-branch (= pas de Spikes damage) : TRUANT init +
+  // hpOnSwitchout update + B_ACTION_CANCEL_PARTNER pour actionsByTurnOrder.
+  else {
+    if (gBattleMons[active].ability === ABILITY_TRUANT
+        && !gDisableStructs[active].truantSwitchInHack) {
+      gDisableStructs[active].truantCounter = 1;
+    }
+    gDisableStructs[active].truantSwitchInHack = 0;
+
+    // 1:1 décomp : AbilityBattleEffects(ABILITYEFFECT_ON_SWITCHIN) +
+    // ItemBattleEffects(ITEMEFFECT_ON_SWITCH_IN). Notre stub return 0 → fall.
+    gSideStatuses[side] &= ~SIDE_STATUS_SPIKES_DAMAGED;
+    for (let i = 0; i < gBattlersCount; i++) {
+      if (gBattlerByTurnOrder[i] === active) {
+        gActionsByTurnOrder[i] = B_ACTION_CANCEL_PARTNER;
+      }
+    }
+    // 1:1 décomp : update hpOnSwitchout pour tous les battlers (= 0x74
+    // hpthresholds2 le lit ensuite).
+    for (let i = 0; i < gBattlersCount; i++) {
+      gHpOnSwitchout[GET_BATTLER_SIDE(i)] = gBattleMons[i].hp;
+    }
+    // 1:1 décomp : BS_FAINTED_LINK_MULTIPLE_1 increment gBattlerFainted —
+    // skip pour MVP (= multi link battles pas wired).
+  }
+  // TODO porter AbilityBattleEffects + ItemBattleEffects (= Intimidate,
+  // Drought, Drizzle, Sand Stream, Cloud Nine, etc.) post-Phase 1.
   return false;
 }
 

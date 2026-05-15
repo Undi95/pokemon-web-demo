@@ -16,12 +16,13 @@ import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpre
 import { readWord, Random } from './script-interpreter';
 import {
   gBattleMons, gBattlerAttacker, gBattlerTarget, setBattlerTarget,
-  gCurrentMove, setCurrentMove, setCalledMove,
+  gCurrentMove, setCurrentMove, setCalledMove, setChosenMove,
   setActiveBattler,
   gHitMarker, setHitMarker,
   gBattlersCount, gAbsentBattlerFlags,
   gBattleTypeFlags,
   gBattleCommunication, gBattleScripting,
+  gSpecialStatuses,
   gLastPrintedMoves,
   gLastTakenMove, gLastTakenMoveFrom,
   gCurrMovePos, setCurrMovePos,
@@ -101,8 +102,7 @@ function Cmd_trymirrormove(ctx: BattleScriptContext): boolean {
     return false;
   }
   // 1:1 décomp : pas de move valide → ppNotAffectedByPressure + advance.
-  // gSpecialStatuses[gBattlerAttacker].ppNotAffectedByPressure = TRUE;
-  // On skip ça pour l'instant (= advance via fall-through).
+  gSpecialStatuses[gBattlerAttacker].ppNotAffectedByPressure = 1;
   void ctx;
   return false;
 }
@@ -112,8 +112,8 @@ function Cmd_trymirrormove(ctx: BattleScriptContext): boolean {
 /** 1:1 décomp Cmd_copymovepermanently. 5 bytes (u32 fail jump). Sketch. */
 function Cmd_copymovepermanently(ctx: BattleScriptContext): boolean {
   const failJump = readWord(ctx);
-  setCurrentMove(MOVE_UNAVAILABLE);
-  // 1:1 décomp utilise gChosenMove ; on utilise setCurrentMove placeholder.
+  // 1:1 décomp : `gChosenMove = MOVE_UNAVAILABLE` (= mark sketch fail-state).
+  setChosenMove(MOVE_UNAVAILABLE);
 
   const lastMove = gLastPrintedMoves[gBattlerTarget] ?? 0;
   if ((gBattleMons[gBattlerAttacker].status2 & STATUS2_TRANSFORMED)

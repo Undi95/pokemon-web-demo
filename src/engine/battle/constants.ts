@@ -612,8 +612,9 @@ export const MOVE_ENDURE  = 203;
 export const MOVE_PURSUIT = 228;
 
 // ─── B_ACTION_* (battle.h:27-38) — 1:1 décomp ──────────────────────────────
-export const B_ACTION_USE_MOVE   = 0;
-export const B_ACTION_TRY_FINISH = 11;
+export const B_ACTION_USE_MOVE        = 0;
+export const B_ACTION_TRY_FINISH      = 11;
+export const B_ACTION_CANCEL_PARTNER  = 12;
 
 /** 1:1 décomp `BATTLE_PARTNER(position)` (constants/battle.h). XOR 2 swap. */
 export function BATTLE_PARTNER(position: number): number { return position ^ 2; }
