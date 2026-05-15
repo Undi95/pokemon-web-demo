@@ -46,6 +46,7 @@ import {
   MAX_STAT_STAGE,
   SET_STATCHANGER,
   NUM_STATS,
+  MAX_MON_MOVES,
 } from './constants';
 import { getBattleMove } from './data/battle-moves';
 import {
@@ -53,6 +54,11 @@ import {
 } from './data/item-hold-effects';
 import { GetFlavorRelationByPersonality } from './data/flavor-compat';
 import { SetMoveEffect } from './set-move-effect';
+import {
+  gPlayerParty, gEnemyParty, GetMonData, SetMonData,
+  MON_DATA_MOVE1, MON_DATA_PP1, MON_DATA_PP_BONUSES,
+} from './party-storage';
+import { gBattlerPartyIndexes } from './state';
 import type { BattleScriptContext } from './script-interpreter';
 
 // ─── ITEMEFFECT_* enum (= 1:1 décomp battle_util.h:41-47) ────────────────
@@ -72,7 +78,7 @@ const ITEM_STATS_CHANGE = 1;
 // AUDIT FIX session 136 : mes hardcoded values étaient TOUS faux pour les
 // CURE_*. Import direct du fichier auto-extracted (= source de vérité). */
 import {
-  HOLD_EFFECT_RESTORE_HP,
+  HOLD_EFFECT_RESTORE_HP, HOLD_EFFECT_RESTORE_PP,
   HOLD_EFFECT_CURE_PAR, HOLD_EFFECT_CURE_SLP, HOLD_EFFECT_CURE_PSN,
   HOLD_EFFECT_CURE_BRN, HOLD_EFFECT_CURE_FRZ,
   HOLD_EFFECT_CURE_CONFUSION, HOLD_EFFECT_CURE_STATUS, HOLD_EFFECT_CURE_ATTRACT,
@@ -220,7 +226,41 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
         const battlerHoldEffectParam = gLastUsedItem === ITEM_ENIGMA_BERRY
           ? 0 : GetItemHoldEffectParam(gLastUsedItem);
         switch (battlerHoldEffect) {
-          case HOLD_EFFECT_RESTORE_HP:
+          case HOLD_EFFECT_RESTORE_PP:
+            // 1:1 décomp battle_util.c:3330-3365 (Leppa Berry).
+            if (!moveTurn) {
+              const mon = GET_BATTLER_SIDE(battlerId) === B_SIDE_PLAYER
+                ? gPlayerParty[gBattlerPartyIndexes[battlerId]]
+                : gEnemyParty[gBattlerPartyIndexes[battlerId]];
+              let foundIdx = -1;
+              let foundMove = 0;
+              let foundPp = 0;
+              for (let i = 0; i < MAX_MON_MOVES; i++) {
+                const m = GetMonData(mon, MON_DATA_MOVE1 + i) as number;
+                const pp = GetMonData(mon, MON_DATA_PP1 + i) as number;
+                if (m && pp === 0) {
+                  foundIdx = i;
+                  foundMove = m;
+                  foundPp = pp;
+                  break;
+                }
+              }
+              if (foundIdx !== -1) {
+                // 1:1 décomp : CalculatePPWithBonus pour max PP. Stub : on
+                // utilise getBattleMove(move).pp comme max.
+                const maxPP = getBattleMove(foundMove).pp;
+                let newPp = foundPp + battlerHoldEffectParam;
+                if (newPp > maxPP) newPp = maxPP;
+                SetMonData(mon, MON_DATA_PP1 + foundIdx, newPp);
+                // Sync au battler aussi (= gBattleMons[battlerId].pp[idx]).
+                gBattleMons[battlerId].pp[foundIdx] = newPp;
+                _lastWantedScriptLabel = 'BattleScript_BerryPPHealEnd2';
+                effect = 3 /* ITEM_PP_CHANGE */;
+              }
+              void MON_DATA_PP_BONUSES;
+            }
+            break;
+
             if (gBattleMons[battlerId].hp <= gBattleMons[battlerId].maxHP / 2 && !moveTurn) {
               let dmg = battlerHoldEffectParam;
               if (gBattleMons[battlerId].hp + dmg > gBattleMons[battlerId].maxHP) {
@@ -403,8 +443,6 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
             }
             break;
         }
-        // TODO porter : RESTORE_PP (= party data lookup), CONFUSE_FOOD_BERRIES
-        // FLAVOR_SPICY/DRY/SWEET/BITTER/SOUR (= macro TRY_EAT_CONFUSE_BERRY).
       }
       break;
     }
