@@ -15,7 +15,7 @@
  */
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
-import { readWord, Random, getBattleScriptOffset } from './script-interpreter';
+import { readWord, Random, getBattleScriptOffset, getMoveEffectScriptOffset } from './script-interpreter';
 import {
   gBattleMons, gBattlerAttacker, gBattlerTarget, setBattlerTarget,
   setCurrentMove, gCurrentMove,
@@ -129,7 +129,7 @@ function Cmd_tryinfatuating(ctx: BattleScriptContext): boolean {
 // ─── 0x9E metronome ───────────────────────────────────────────────────────
 
 /** 1:1 décomp Cmd_metronome. 1 byte. */
-function Cmd_metronome(_ctx: BattleScriptContext): boolean {
+function Cmd_metronome(ctx: BattleScriptContext): boolean {
   // 1:1 décomp infinite loop : pick random move 1..MOVES_COUNT, retry si dans
   // sMovesForbiddenToCopy (= full forbidden list, donc on parcourt jusqu'à
   // METRONOME_FORBIDDEN_END). On set gCurrentMove + gBattlerTarget.
@@ -148,10 +148,10 @@ function Cmd_metronome(_ctx: BattleScriptContext): boolean {
       // Candidate non forbidden : utiliser.
       setHitMarker(gHitMarker & ~HITMARKER_ATTACKSTRING_PRINTED);
       setCurrentMove(candidate);
+      // 1:1 décomp : gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[move.effect].
+      const off = getMoveEffectScriptOffset(getBattleMove(candidate).effect);
+      if (off >= 0) ctx.scriptPtr = off;
       setBattlerTarget(_getMoveTarget(candidate, 0));
-      // 1:1 décomp : jump à gBattleScriptsForMoveEffects[move.effect].
-      // Notre port : pas wired (= jump table extraction TODO). Le caller doit
-      // continuer son flow normal après ce set.
       return false;
     }
   }
@@ -203,10 +203,12 @@ function Cmd_callenvironmentattack(ctx: BattleScriptContext): boolean {
   const move = sNaturePowerMoves[gBattleEnvironment] ?? 129; // SWIFT fallback.
   setCurrentMove(move);
   setBattlerTarget(_getMoveTarget(move, 0));
-  // 1:1 décomp : BattleScriptPush(gBattleScriptsForMoveEffects[effect]).
-  // Notre port : push current ptr (= return-to-here), jump pas wired.
-  ctx.scriptPtrStack.push(ctx.scriptPtr);
-  // TODO : jump à gBattleScriptsForMoveEffects[move.effect] quand table portée.
+  // 1:1 décomp : BattleScriptPush(gBattleScriptsForMoveEffects[effect]); gBattlescriptCurrInstr++.
+  // BattleScriptPush stocke le ptr du move effect script sur le stack — sera
+  // popped par le prochain `return`. L'opcode lui-même est déjà avancé par
+  // le dispatch loop (cf. script-interpreter.ts:runBattleScript).
+  const off = getMoveEffectScriptOffset(getBattleMove(move).effect);
+  if (off >= 0) ctx.scriptPtrStack.push(off);
   return false;
 }
 

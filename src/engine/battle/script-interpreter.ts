@@ -51,6 +51,7 @@
 
 import { Random } from '../random';
 import { tickBattleControllers } from './battle-controllers';
+import { BATTLE_SCRIPTS_FOR_MOVE_EFFECTS } from '../decomp-data/auto-asm-bytecode/data/battle_scripts_1-jump-table';
 
 // ─── Battle state types (1:1 décomp include/battle.h) ──────────────────────
 
@@ -121,6 +122,18 @@ export async function loadBattleScriptBytecode(): Promise<void> {
 
 /** Resolve un label string → byte offset dans BYTECODE. */
 export function getBattleScriptOffset(label: string): number {
+  return _LABELS[label] ?? -1;
+}
+
+/** 1:1 décomp `gBattleScriptsForMoveEffects[effect]` — resolve un effect id
+ *  (= EFFECT_HIT..EFFECT_CAMOUFLAGE, 0..213) vers son byte offset dans
+ *  BYTECODE. Return -1 si effect out-of-range ou label introuvable.
+ *
+ *  Utilisé par : metronome, mirrormove, callenvironmentattack,
+ *  jumptocalledmove, presentdamagecalculation. */
+export function getMoveEffectScriptOffset(effect: number): number {
+  if (effect < 0 || effect >= BATTLE_SCRIPTS_FOR_MOVE_EFFECTS.length) return -1;
+  const label = BATTLE_SCRIPTS_FOR_MOVE_EFFECTS[effect];
   return _LABELS[label] ?? -1;
 }
 

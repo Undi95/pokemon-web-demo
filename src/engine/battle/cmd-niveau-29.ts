@@ -13,7 +13,7 @@
  */
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
-import { readWord, Random } from './script-interpreter';
+import { readWord, Random, getMoveEffectScriptOffset } from './script-interpreter';
 import {
   gBattleMons, gBattlerAttacker, gBattlerTarget, setBattlerTarget,
   gCurrentMove, setCurrentMove, setCalledMove, setChosenMove,
@@ -91,7 +91,9 @@ function Cmd_trymirrormove(ctx: BattleScriptContext): boolean {
     setHitMarker(gHitMarker & ~HITMARKER_ATTACKSTRING_PRINTED);
     setCurrentMove(directMove);
     setBattlerTarget(_getMoveTarget(directMove, 0));
-    // 1:1 décomp jump à gBattleScriptsForMoveEffects[effect] — pas wired.
+    // 1:1 décomp : gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[move.effect].
+    const off = getMoveEffectScriptOffset(getBattleMove(directMove).effect);
+    if (off >= 0) ctx.scriptPtr = off;
     return false;
   }
   if (validMovesCount !== 0) {
@@ -99,11 +101,13 @@ function Cmd_trymirrormove(ctx: BattleScriptContext): boolean {
     const pick = Random() % validMovesCount;
     setCurrentMove(validMoves[pick]);
     setBattlerTarget(_getMoveTarget(validMoves[pick], 0));
+    // 1:1 décomp : gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[move.effect].
+    const off = getMoveEffectScriptOffset(getBattleMove(validMoves[pick]).effect);
+    if (off >= 0) ctx.scriptPtr = off;
     return false;
   }
   // 1:1 décomp : pas de move valide → ppNotAffectedByPressure + advance.
   gSpecialStatuses[gBattlerAttacker].ppNotAffectedByPressure = 1;
-  void ctx;
   return false;
 }
 

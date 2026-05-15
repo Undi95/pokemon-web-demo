@@ -15,9 +15,9 @@
  */
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
-import { readByte, readWord, getBattleScriptOffset } from './script-interpreter';
+import { readByte, readWord, getBattleScriptOffset, getMoveEffectScriptOffset } from './script-interpreter';
 import {
-  gBattleMons, setCurrentMove,
+  gBattleMons, setCurrentMove, gCurrentMove,
   setActiveBattler,
   gStatuses3,
   gBattleTypeFlags,
@@ -27,6 +27,7 @@ import {
   gHpOnSwitchout,
   gTrainerBattleOpponent_A, gTrainerBattleOpponent_B,
 } from './state';
+import { getBattleMove } from './data/battle-moves';
 import {
   STATUS2_WRAPPED, STATUS2_ESCAPE_PREVENTION, STATUS3_ROOTED,
   SWITCH_IGNORE_ESCAPE_PREVENTION,
@@ -98,29 +99,17 @@ function Cmd_getmoneyreward(_ctx: BattleScriptContext): boolean {
 
 /** 1:1 décomp Cmd_jumptocalledmove. 2 bytes (u8 flag).
  *  Set gCurrentMove = gCalledMove (et gChosenMove si flag==0), puis jump à
- *  gBattleScriptsForMoveEffects[move.effect].
- *  Notre port : gBattleScriptsForMoveEffects pas wired comme un table direct ;
- *  on cherche le label via getBattleScriptOffset basé sur le move effect.
- *  Pattern : label = "gBattleScriptsForMoveEffects" + offset basé sur effect. */
+ *  gBattleScriptsForMoveEffects[move.effect]. */
 function Cmd_jumptocalledmove(ctx: BattleScriptContext): boolean {
   const flag = readByte(ctx);
   setCurrentMove(gCalledMove);
   if (flag === 0) {
     setChosenMove(gCalledMove);
   }
-  // 1:1 décomp jump : gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[effect].
-  // Le label root des scripts est à offset 0 (= label "gBattleScriptsForMoveEffects"
-  // dans le bytecode extracted, cf. battle_scripts_1-bytecode.ts).
-  // Stub : pour l'instant, on jump au label root → si le bytecode contient le
-  // jump table inline, l'interpreter va parcourir des pointers et tomber sur
-  // un opcode 0xFF (invalid) ce qui forcerait return. Pour MVP, on stay.
-  // TODO : extraire la jump table de gBattleScriptsForMoveEffects[] et porter
-  // un mapping effect → bytecode offset.
-  const off = getBattleScriptOffset('gBattleScriptsForMoveEffects');
-  if (off >= 0) {
-    // Pas de jump pour l'instant — manque la résolution effect → byte offset.
-    // ctx.scriptPtr = off + effect * 4;  // si table inline u32 pointers
-  }
+  // 1:1 décomp : gBattlescriptCurrInstr = gBattleScriptsForMoveEffects[gBattleMoves[gCurrentMove].effect].
+  const effect = getBattleMove(gCurrentMove).effect;
+  const off = getMoveEffectScriptOffset(effect);
+  if (off >= 0) ctx.scriptPtr = off;
   return false;
 }
 
