@@ -193,12 +193,10 @@ import {
 
 // ─── Helpers internes ───────────────────────────────────────────────────────
 
-/** Stub pour hold effect — TODO porter `GetItemHoldEffect(itemId)`.
- *  Pour now : retourne HOLD_EFFECT_NONE (= 0) toujours. */
-function _getHoldEffect(_itemId: number): number { return 0; }
-
-/** Stub pour hold effect param — TODO porter `GetItemHoldEffectParam(itemId)`. */
-function _getHoldEffectParam(_itemId: number): number { return 0; }
+// 1:1 décomp `GetItemHoldEffect` / `GetItemHoldEffectParam` — wired via item-hold-effects.
+import { GetItemHoldEffect as _GetItemHoldEffectFull, GetItemHoldEffectParam as _GetItemHoldEffectParamFull } from './data/item-hold-effects';
+function _getHoldEffect(itemId: number): number { return _GetItemHoldEffectFull(itemId); }
+function _getHoldEffectParam(itemId: number): number { return _GetItemHoldEffectParamFull(itemId); }
 
 /** 1:1 décomp `ApplyRandomDmgMultiplier()` (battle_script_commands.c:1639-1651).
  *
