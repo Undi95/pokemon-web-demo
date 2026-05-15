@@ -628,3 +628,6 @@ export const FLAG_PROTECT_AFFECTED = 1 << 1;
 
 // ─── IGNORE_SHELL_BELL (battle.h:61) — 1:1 décomp ──────────────────────────
 export const IGNORE_SHELL_BELL = 0xFFFF;
+
+// ─── INSTANT_HP_BAR_DROP (battle_controllers.h:149) — 1:1 décomp ───────────
+export const INSTANT_HP_BAR_DROP = 0x7FFF;

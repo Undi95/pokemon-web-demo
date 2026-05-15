@@ -472,6 +472,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-16').then(({ installNiveau16Handlers }) => {
     installNiveau16Handlers(_commands);
   });
+  // Session 135 — Niveau 17 (status field / type conversion).
+  void import('./cmd-niveau-17').then(({ installNiveau17Handlers }) => {
+    installNiveau17Handlers(_commands);
+  });
 }
 
 _initCommandsTable();
