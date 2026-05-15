@@ -484,3 +484,7 @@ export function HITMARKER_FAINTED(battler: number): number { return (1 << battle
 
 /** 1:1 décomp `HITMARKER_FAINTED2(battler)` (battle.h:206). (1<<28)<<battler. */
 export function HITMARKER_FAINTED2(battler: number): number { return (1 << 28) << battler; }
+
+// ─── F_DYNAMIC_TYPE_* (battle.h:455-456) — 1:1 décomp ───────────────────────
+export const F_DYNAMIC_TYPE_IGNORE_PHYSICALITY = 1 << 6;
+export const F_DYNAMIC_TYPE_SET                = 1 << 7;

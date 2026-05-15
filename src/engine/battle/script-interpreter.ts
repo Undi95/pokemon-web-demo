@@ -436,6 +436,10 @@ function _initCommandsTable(): void {
   void import('./cmd-niveau-7').then(({ installNiveau7Handlers }) => {
     installNiveau7Handlers(_commands);
   });
+  // Session 134 — Niveau 8 (utility + dynamic).
+  void import('./cmd-niveau-8').then(({ installNiveau8Handlers }) => {
+    installNiveau8Handlers(_commands);
+  });
 }
 
 _initCommandsTable();

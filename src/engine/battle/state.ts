@@ -151,6 +151,11 @@ export let gBattleWeather = 0;
 /** Power dynamique override (= certains moves recalc power). */
 export let gDynamicBasePower = 0;
 
+/** 1:1 décomp `gBattleStruct->dynamicMoveType` — type dynamique pour Hidden
+ *  Power / Weather Ball / Magnitude. Avec flags F_DYNAMIC_TYPE_SET (1<<7) +
+ *  F_DYNAMIC_TYPE_IGNORE_PHYSICALITY (1<<6) en bits hauts. */
+export let gDynamicMoveType = 0;
+
 /** 1:1 décomp `gBattleMovePower` (= power du move courant après dynamic adj). */
 export let gBattleMovePower = 0;
 
@@ -279,6 +284,7 @@ export function setBattleOutcome(v: number) { gBattleOutcome = v; }
 export function setBattleTypeFlags(v: number) { gBattleTypeFlags = v; }
 export function setBattleWeather(v: number) { gBattleWeather = v; }
 export function setDynamicBasePower(v: number) { gDynamicBasePower = v; }
+export function setDynamicMoveType(v: number) { gDynamicMoveType = v; }
 export function setBattleMovePower(v: number) { gBattleMovePower = v; }
 export function setBattleControllerExecFlags(v: number) { gBattleControllerExecFlags = v; }
 export function setPauseCounterBattle(v: number) { gPauseCounterBattle = v; }
@@ -329,6 +335,7 @@ export function resetBattleState(): void {
   gBattleMovePower = 0;
   gBattleControllerExecFlags = 0;
   gPauseCounterBattle = 0;
+  gDynamicMoveType = 0;
   for (let i = 0; i < MAX_BATTLERS_COUNT; i++) {
     Object.assign(gDisableStructs[i], _makeBlankDisableStruct());
   }
