@@ -40,6 +40,7 @@ import {
   gSpecialStatuses,
   setFormToChangeInto,
   gDisableStructs,
+  setIntimidateBattler,
 } from './state';
 import { Random, getBattleScriptOffset } from './script-interpreter';
 import {
@@ -489,16 +490,45 @@ export function AbilityBattleEffects(
       break;
     }
 
+    case ABILITYEFFECT_INTIMIDATE1: {
+      // 1:1 décomp battle_util.c:2986-2999.
+      for (let i = 0; i < gBattlersCount; i++) {
+        if (gBattleMons[i].ability === ABILITY_INTIMIDATE
+            && (gStatuses3[i] & STATUS3_INTIMIDATE_POKES)) {
+          setLastUsedAbility(ABILITY_INTIMIDATE);
+          gStatuses3[i] &= ~STATUS3_INTIMIDATE_POKES;
+          _lastWantedScriptLabel = 'BattleScript_IntimidateActivatesEnd3';
+          setIntimidateBattler(i);
+          effect++;
+          break;
+        }
+      }
+      break;
+    }
+
+    case ABILITYEFFECT_INTIMIDATE2: {
+      // 1:1 décomp battle_util.c:3057-3070.
+      for (let i = 0; i < gBattlersCount; i++) {
+        if (gBattleMons[i].ability === ABILITY_INTIMIDATE
+            && (gStatuses3[i] & STATUS3_INTIMIDATE_POKES)) {
+          setLastUsedAbility(ABILITY_INTIMIDATE);
+          gStatuses3[i] &= ~STATUS3_INTIMIDATE_POKES;
+          _lastWantedScriptLabel = 'BattleScript_IntimidateActivates';
+          setIntimidateBattler(i);
+          effect++;
+        }
+      }
+      break;
+    }
+
     // ─── Stubs TODO Phase 1.2 E continuation ──────────────────────────────
     case ABILITYEFFECT_ON_DAMAGE:
     case ABILITYEFFECT_FORECAST:
     case ABILITYEFFECT_SYNCHRONIZE:
     case ABILITYEFFECT_ATK_SYNCHRONIZE:
-    case ABILITYEFFECT_INTIMIDATE1:
-    case ABILITYEFFECT_INTIMIDATE2:
     case ABILITYEFFECT_TRACE:
     case ABILITYEFFECT_FIELD_SPORT:
-      // TODO porter ces cases — ~500 lignes décomp restantes.
+      // TODO porter ces cases — ~400 lignes décomp restantes.
       break;
 
     default:
