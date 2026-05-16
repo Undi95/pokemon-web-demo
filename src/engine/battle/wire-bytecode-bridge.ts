@@ -178,6 +178,10 @@ export function runMoveScriptViaBytecode(opts: {
   messages?: string[];
   /** Nombre total d'events bytecode enqueued (= debug). */
   eventsCount?: number;
+  /** Full list des events drained. Type CONTROLLER_*. Permet au caller de
+   *  process non-PRINTSTRING events (= PLAYSE pour audio engine, HIT_ANIMATION
+   *  pour sprite shake, etc.). */
+  events?: BattleEvent[];
 } {
   const attBId = opts.attackerBattlerId ?? 0;
   const defBId = opts.defenderBattlerId ?? 1;
@@ -304,6 +308,7 @@ export function runMoveScriptViaBytecode(opts: {
     bytecodeOpsCount: iters,
     messages,
     eventsCount: allEvents.length,
+    events: allEvents,
   };
 }
 
