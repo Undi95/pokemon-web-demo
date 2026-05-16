@@ -25,7 +25,7 @@
 import { BATTLE_STRINGS_TABLE, STRINGID_NAMES } from '../decomp-data/battle-strings-table';
 import { getString } from '../gba-strings';
 import { getMoveName as _getMoveNameFr } from '../data/game-data';
-import { getSpeciesNameFr as _getSpeciesNameFr } from '../data-tables';
+import { getSpeciesNameFr as _getSpeciesNameFr, getItemNameFr as _getItemNameFr } from '../data-tables';
 import { resolveDecompConstant } from '../decomp-constants';
 import type { BattleMsgData } from './battle-event-queue';
 import {
@@ -171,13 +171,35 @@ function _abilityName(abilityId: number): string {
   return `Talent#${abilityId}`;
 }
 
-/** Resolve nom item depuis item id numeric. */
+/** Cache numeric item id → "ITEM_X" enum name (lazy). */
+const _itemIdToEnumCache = new Map<number, string>();
+function _itemIdToEnum(itemId: number): string | null {
+  if (_itemIdToEnumCache.has(itemId)) return _itemIdToEnumCache.get(itemId) ?? null;
+  try {
+    const it = (globalThis as { gameDataItems?: Record<string, unknown> }).gameDataItems;
+    if (it) {
+      for (const key of Object.keys(it)) {
+        const id = resolveDecompConstant(key);
+        if (typeof id === 'number' && id === itemId) {
+          _itemIdToEnumCache.set(itemId, key);
+          return key;
+        }
+      }
+    }
+  } catch { /* fallthrough */ }
+  return null;
+}
+
+/** Resolve nom item depuis item id numeric.
+ *  1:1 décomp gItems[itemId].name. Notre port : reverse cache + getItemNameFr. */
 function _itemName(itemId: number): string {
   if (!itemId) return '—';
-  try {
-    const it = (globalThis as { __item_names_fr?: Record<number, string> }).__item_names_fr;
-    if (it?.[itemId]) return it[itemId];
-  } catch { /* fallthrough */ }
+  const enumName = _itemIdToEnum(itemId);
+  if (enumName) {
+    const fr = _getItemNameFr(enumName);
+    if (fr && fr !== enumName) return fr;
+    return enumName.replace(/^ITEM_/, '');
+  }
   return `Objet#${itemId}`;
 }
 

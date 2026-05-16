@@ -59,7 +59,11 @@ export interface ItemDef {
   holdEffectParam?: number;
 }
 let itemsTable: Record<string, ItemDef> | null = null;
-export function loadItemsTable(t: Record<string, ItemDef>): void { itemsTable = t; }
+export function loadItemsTable(t: Record<string, ItemDef>): void {
+  itemsTable = t;
+  // Phase 1.4 J : expose via globalThis pour battle-string-decoder reverse cache.
+  (globalThis as Record<string, unknown>).gameDataItems = t;
+}
 export function getItem(itemId: string): ItemDef | undefined {
   return itemsTable?.[itemId];
 }
