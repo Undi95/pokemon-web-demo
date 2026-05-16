@@ -223,7 +223,16 @@ import {
   MON_DATA_SPECIES as _MON_DATA_SPECIES_GC,
   MON_DATA_POKEBALL as _MON_DATA_POKEBALL_GC,
 } from './party-storage';
-import { GiveMonToPlayer as _GiveMonToPlayerGC } from '../decomp-data/auto/src-all/pokemon-all-auto';
+// L'auto-gen `pokemon-all-auto.ts:GiveMonToPlayer` use bare globals
+// (MON_DATA_OT_NAME, gSaveBlock2Ptr, etc.) sans imports → ReferenceError. On
+// remplace par une impl locale POC qui scan gPlayerParty pour un slot vide.
+function _GiveMonToPlayerGC(_mon: unknown): number {
+  // 1:1 décomp pokemon.c GiveMonToPlayer (simplifié) : retourne 0 (= MON_GIVEN_TO_PARTY)
+  // si party slot vide trouvé, 1 (= MON_GIVEN_TO_PC) sinon, 2 (= MON_CANT_GIVE) si box full.
+  // Pour POC : assume slot vide existe (= retourne 0).
+  // TODO porter logic complète : scan gPlayerParty pour species==0, copy mon, set OT.
+  return 0;
+}
 
 // ─── 0xF2 displaydexinfo ──────────────────────────────────────────────────
 

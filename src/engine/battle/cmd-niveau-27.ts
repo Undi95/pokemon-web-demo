@@ -105,19 +105,49 @@ function _recordAbilityBattle(battler: number, ability: number): void {
   _recordAbilityBattleFullN27(battler, ability);
 }
 
-// 1:1 décomp `GetSetPokedexFlag(nationalDexNo, caseID)` (pokedex.c) — wired
-// via auto-data (= gSaveBlock2Ptr.pokedex.{seen,owned} bit array).
-import { GetSetPokedexFlag as _GetSetPokedexFlag27 } from '../decomp-data/auto/src-all/pokedex-all-auto';
+// 1:1 décomp `GetSetPokedexFlag(nationalDexNo, caseID)` (pokedex.c:1900-1959).
+// L'auto-gen `pokedex-all-auto.ts` use bare globals (FLAG_GET_SEEN, FLAG_SET_*,
+// gSaveBlock2Ptr) sans imports → `ReferenceError` runtime. On port 1:1 ici
+// avec accès via globalThis pour gSaveBlock2Ptr.
+const FLAG_GET_SEEN = 0;
+const FLAG_GET_CAUGHT_AC = 1;
+const FLAG_SET_SEEN_AC = 2;
+const FLAG_SET_CAUGHT_AC = 3;
+void FLAG_GET_CAUGHT_AC; void FLAG_SET_SEEN_AC; void FLAG_SET_CAUGHT_AC;
 
-/** 1:1 décomp `GetSetPokedexFlag(natDexNum, caseId)` (pokedex.c). */
+/** 1:1 décomp `GetSetPokedexFlag(natDexNum, caseId)` (pokedex.c:1900-1959).
+ *  Pour notre POC : implémentation locale lue depuis globalThis.gSaveBlock2Ptr.
+ *  Si non-disponible (= avant save load), retourne 0 (= pas seen / pas caught). */
 function _getSetPokedexFlag(natDexNum: number, caseId: number): number {
-  return _GetSetPokedexFlag27(natDexNum, caseId) as number;
+  if (natDexNum <= 0) return 0;
+  const sb2 = (globalThis as { gSaveBlock2Ptr?: {
+    pokedex?: { seen?: Uint8Array | number[]; owned?: Uint8Array | number[] };
+  } }).gSaveBlock2Ptr;
+  if (!sb2?.pokedex) return 0;  // pas de save load → silent.
+  const idx = (natDexNum - 1) >>> 3;
+  const bit = 1 << ((natDexNum - 1) & 7);
+  if (caseId === FLAG_GET_SEEN) {
+    return (sb2.pokedex.seen?.[idx] ?? 0) & bit ? 1 : 0;
+  }
+  if (caseId === FLAG_GET_CAUGHT_AC) {
+    return (sb2.pokedex.owned?.[idx] ?? 0) & bit ? 1 : 0;
+  }
+  if (caseId === FLAG_SET_SEEN_AC) {
+    if (sb2.pokedex.seen) sb2.pokedex.seen[idx] = ((sb2.pokedex.seen[idx] ?? 0) | bit) & 0xFF;
+    return 0;
+  }
+  if (caseId === FLAG_SET_CAUGHT_AC) {
+    if (sb2.pokedex.owned) sb2.pokedex.owned[idx] = ((sb2.pokedex.owned[idx] ?? 0) | bit) & 0xFF;
+    if (sb2.pokedex.seen) sb2.pokedex.seen[idx] = ((sb2.pokedex.seen[idx] ?? 0) | bit) & 0xFF;
+    return 0;
+  }
+  return 0;
 }
 
 /** 1:1 décomp `HandleSetPokedexFlag(natDexNum, caseId, personality)`.
  *  Le décomp wraps GetSetPokedexFlag pour bind avec spinda data si caught. */
 function _handleSetPokedexFlag(natDexNum: number, caseId: number, _personality: number): void {
-  _GetSetPokedexFlag27(natDexNum, caseId);
+  _getSetPokedexFlag(natDexNum, caseId);
   // STUB Spinda spots : si caught + species SPINDA → store personality dans
   // gSaveBlock2Ptr->pokedex.spindaPersonality (rare, post-Phase 1).
 }
