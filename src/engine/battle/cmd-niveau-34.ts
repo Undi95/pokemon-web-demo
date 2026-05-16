@@ -63,6 +63,7 @@ import {
   gPlayerParty, GetMonData, SetMonData,
   MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_HELD_ITEM,
   MON_DATA_LEVEL, MON_DATA_EXP,
+  type Pokemon,
 } from './party-storage';
 // 1:1 décomp `AdjustFriendship(mon, event)` — auto-data via pokemon-all-auto.
 import { AdjustFriendship as _adjustFriendshipN34 } from '../decomp-data/auto/src-all/pokemon-all-auto';
@@ -435,8 +436,8 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
               gBattleStruct.expGetterBattlerId = 0;
             }
 
-            // STUB MonGainEVs : EV system pas wired pour MVP.
-            _stubMonGainEVs(monId, gBattleMons[battlerFainted].species);
+            // 1:1 décomp : MonGainEVs(&gPlayerParty[monId], species).
+            _MonGainEVs(monId, gBattleMons[battlerFainted].species);
           }
           gBattleStruct.sentInPokes = gBattleStruct.sentInPokes >>> 1;
           gBattleScripting.getexpState++;
@@ -538,6 +539,29 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
 const MAX_TOTAL_EVS_LOCAL    = 510;
 const MAX_PER_STAT_EVS_LOCAL = 255;
 
+/** 1:1 décomp `CheckPartyHasHadPokerus(party, selection)` (pokemon.c:6129).
+ *  Check si un mon courant (selection=0 → party[0]) a contracté Pokerus
+ *  (= MON_DATA_POKERUS != 0). Notre port utilise un array d'1 mon = [mon]. */
+function _CheckPartyHasHadPokerus(party: Pokemon[], selection: number): number {
+  const MON_DATA_POKERUS_LOCAL = 34;
+  let retVal = 0;
+  let partyIndex = 0;
+  let curBit = 1;
+
+  if (selection) {
+    do {
+      if ((selection & 1) && GetMonData(party[partyIndex], MON_DATA_POKERUS_LOCAL))
+        retVal |= curBit;
+      partyIndex++;
+      curBit <<= 1;
+      selection >>= 1;
+    } while (selection);
+  } else if (GetMonData(party[0], MON_DATA_POKERUS_LOCAL)) {
+    retVal = 1;
+  }
+  return retVal;
+}
+
 /** 1:1 décomp `MonGainEVs(mon, defeatedSpecies)` (pokemon.c:5975-6052).
  *  Distribue les EVs de la victime au mon vainqueur, en respectant les caps
  *  255 par stat et 510 total. Macho Brace × 2, Pokerus × 2 (cumule). */
@@ -556,15 +580,15 @@ function _MonGainEVs(monId: number, defeatedSpecies: number): void {
   ];
   let totalEVs = evs.reduce((a, b) => a + b, 0);
 
-  // STUB CheckPartyHasHadPokerus : pas wired (= false toujours = multiplier 1).
-  const multiplier = 1;
-
-  // STUB GetItemHoldEffect : holdEffect du mon.
-  const heldItem = GetMonData(mon, MON_DATA_HELD_ITEM) as number;
-  const holdEffect = GetItemHoldEffect(heldItem);
-
   // evYield from defeated species : ordre [hp, atk, def, spe, spa, spd] = NUM_STATS.
   const evYield = getSpeciesEvYield(defeatedSpecies);
+
+  // 1:1 décomp : Pokerus multiplier × 2 si mon a/avait Pokerus.
+  const multiplier = _CheckPartyHasHadPokerus([mon], 0) ? 2 : 1;
+
+  // 1:1 décomp : holdEffect du mon → Macho Brace double EVs.
+  const heldItem = GetMonData(mon, MON_DATA_HELD_ITEM) as number;
+  const holdEffect = GetItemHoldEffect(heldItem);
 
   for (let i = 0; i < 6 /* NUM_STATS */; i++) {
     if (totalEVs >= MAX_TOTAL_EVS_LOCAL) break;
@@ -590,11 +614,6 @@ function _MonGainEVs(monId: number, defeatedSpecies: number): void {
     totalEVs += evIncrease;
     SetMonData(mon, 26 /* MON_DATA_HP_EV */ + i, evs[i]);
   }
-}
-
-/** Stub wrapper pour cmd-niveau-34 cur impl. */
-function _stubMonGainEVs(monId: number, defeatedSpecies: number): void {
-  _MonGainEVs(monId, defeatedSpecies);
 }
 
 // ─── 0x76 various ─────────────────────────────────────────────────────────
