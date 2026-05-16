@@ -122,8 +122,8 @@ const CASTFORM_ICE = 3;
 
 /** 1:1 décomp `CastformDataTypeChange(battler)` (battle_util.c:2379-2412).
  *  Castform morph selon weather + ABILITY_FORECAST. Returns formId+1 si
- *  change, 0 si no change. */
-function _castformDataTypeChange(battler: number): number {
+ *  change, 0 si no change. Exporté pour réutilisation par cmd-niveau-25. */
+export function _castformDataTypeChange(battler: number): number {
   let formChange = 0;
   if (gBattleMons[battler].species !== SPECIES_CASTFORM
       || gBattleMons[battler].ability !== ABILITY_FORECAST

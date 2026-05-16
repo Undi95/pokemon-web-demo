@@ -180,15 +180,25 @@ function Cmd_docastformchangeanimation(_ctx: BattleScriptContext): boolean {
 
 // ─── 0xE7 trycastformdatachange ───────────────────────────────────────────
 
-/** 1:1 décomp Cmd_trycastformdatachange. 1 byte. CastformDataTypeChange.
- *  MVP : no-op (= CastformDataTypeChange pas porté = retourne 0). */
-function Cmd_trycastformdatachange(_ctx: BattleScriptContext): boolean {
-  // 1:1 décomp : form = CastformDataTypeChange(scripting.battler).
-  // if (form) push + jump BattleScript_CastformChange + set formToChangeInto.
-  // Pour MVP, on no-op (= CastformDataTypeChange = 0 → no form change).
-  // TODO porter CastformDataTypeChange (battle_util.c).
+/** 1:1 décomp Cmd_trycastformdatachange (battle_script_commands.c).
+ *  Si CastformDataTypeChange retourne form != 0 → push cursor + jump
+ *  BattleScript_CastformChange + set gBattleStruct->formToChangeInto. */
+function Cmd_trycastformdatachange(ctx: BattleScriptContext): boolean {
+  const form = _castformDataTypeChangeN25(gBattleScripting.battler);
+  if (form) {
+    setFormToChangeInto(form - 1);
+    const off = getBattleScriptOffsetN25('BattleScript_CastformChange');
+    if (off >= 0) {
+      ctx.scriptPtrStack.push(ctx.scriptPtr);
+      ctx.scriptPtr = off;
+    }
+  }
   return false;
 }
+
+// Imports for Cmd_trycastformdatachange (= dup avec top of file → utiliser ceux existants).
+import { _castformDataTypeChange as _castformDataTypeChangeN25 } from './ability-battle-effects';
+import { getBattleScriptOffset as getBattleScriptOffsetN25 } from './script-interpreter';
 
 // ─── Install handlers ──────────────────────────────────────────────────────
 
