@@ -631,7 +631,31 @@ Conséquence : Exp.Share/level-up off-battle → move donné au player actif au 
 du mon qui level-up (= bug critique pour multi-mon training).
 Décomp battle_script_commands.c:5379+5387 fait explicitement le check.
 
-## Total 47 commits (Phase 1.4 J + post-compact 143 audit additions)
+### Commit 48 : `13bb3386` — MonTryLearningNewMove real 1:1 décomp port
+Phase 1.4 K débloque : `Cmd_handlelearnnewmove` devient fonctionnel end-to-end.
+Avant : stub fallback MOVE_NONE (pas d'apprentissage).
+Maintenant : 1:1 décomp pokemon.c:3015-3045 complete (lecture party + learnset
++ resolve enum + iteration sLearningMoveTableID + GiveMoveToMon logic).
+
+Bridges added in game-data.ts :
+- gameDataLevelUpLearnsets (= levelUpLearnsets directe)
+- gameDataSpeciesNumToEnum (= reverse cache 277 → 'SPECIES_TREECKO')
+- gameDataMovesNumToEnum (= reverse cache 1 → 'MOVE_POUND')
+
+### Commit 49 : `285c6cbf` — _giveMoveToBattleMon missing pp set 1:1 fix
+Audit bug : `_giveMoveToBattleMon` insérait move dans slot vide mais ne settait
+pas `pp[i] = move.pp` que le décomp pokemon.c:2967 fait.
+Conséquence : tout nouveau move appris avait pp=0 immédiatement.
+Fix : lookup `getBattleMove(move).pp` + return moveId pour conformité décomp.
+
+### Commit 50 : `a3a1a00a` — _isMonGettingExpSentOutHBT double battle check 1:1 fix
+Audit bug : helper checkait que battler 0 (playerLeft), pas battler 2
+(playerRight) en double battle.
+Décomp battle_script_commands.c:6198-6206 check les deux.
+Conséquence : Exp.Share double battle, si mon level-up = playerRight, helper
+disait off-battle → drawlvlupbox UI incorrect.
+
+## Total 50 commits (Phase 1.4 J + post-compact 143 audit additions)
 
 **État final** :
 - Battery 639/639 stable cross-tous-commits, 0 erreur TS.
