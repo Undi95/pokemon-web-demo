@@ -35,6 +35,7 @@ import {
   BATTLE_TYPE_DOUBLE,
 } from './constants';
 import { GetBattlerAtPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
+import { getBattleMove } from './data/battle-moves';
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_HBT,
   gBattleTextBuff2 as _gBattleTextBuff2_HBT,
@@ -139,16 +140,23 @@ function _monTryLearningNewMove(_battlerIdx: number, firstMove: number): number 
 
 const MON_HAS_MAX_MOVES = 0xFFFF;
 
-/** 1:1 stub `GiveMoveToBattleMon(battleMon, move)` (battle_util.c).
- *  Insère move dans le premier slot vide. */
-function _giveMoveToBattleMon(battlerIdx: number, move: number): void {
+/** 1:1 décomp `GiveMoveToBattleMon(battleMon, move)` (pokemon.c:2958-2973).
+ *  Insère move dans le premier slot vide ET set pp[i] = move.pp.
+ *  Retourne move appris ou MON_HAS_MAX_MOVES. */
+function _giveMoveToBattleMon(battlerIdx: number, move: number): number {
   const mon = gBattleMons[battlerIdx];
   for (let i = 0; i < 4; i++) {
     if (mon.moves[i] === MOVE_NONE) {
       mon.moves[i] = move;
-      break;
+      // 1:1 décomp pokemon.c:2967 : mon->pp[i] = gBattleMoves[move].pp.
+      // AUDIT FIX : précédemment laissait pp inchangé → bug subtle où le nouveau
+      // move avait 0 PP (= devait être set à max via lookup move.pp).
+      const movePp = (getBattleMove(move) as { pp?: number })?.pp ?? 0;
+      mon.pp[i] = movePp;
+      return move;
     }
   }
+  return MON_HAS_MAX_MOVES;
 }
 
 // ─── 0x50 openpartyscreen ─────────────────────────────────────────────────
