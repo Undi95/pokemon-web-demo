@@ -72,19 +72,110 @@ function Cmd_seteffectwithchance(ctx: BattleScriptContext): boolean {
 
 // ─── 0x8F forcerandomswitch ───────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_forcerandomswitch. 5 bytes (u32 fail jump). Roar/Whirlwind.
+/** 1:1 décomp Cmd_forcerandomswitch (battle_script_commands.c:7188-7389). 5 bytes (u32 fail jump). Roar/Whirlwind.
  *
- *  Note 1:1 partial : décomp itère party slots pour choisir random alive
- *  non-current mon, puis trigger switch via gBattleStruct.monToSwitchIntoId.
- *  Notre port : skip party iteration (= gPlayerParty/gEnemyParty pas wired).
- *  Pour MVP : fail jump si pas de target valide (= force pas wired). */
+ *  Cases :
+ *  - Wild battle (non-trainer) : `TryDoForceSwitchOut()` only — pas de party
+ *    switch (= just escape if possible).
+ *  - Trainer battle single : pick random alive non-current party mon → set
+ *    `gBattleStruct.monToSwitchIntoId[target]`. Si validMons <= minNeeded, fail.
+ *  - Trainer battle double/multi/link : différé (= complex BATTLE_TYPE checks).
+ *
+ *  AUDIT BUG FIX (port iter post session 141) : était fail-only STUB. Maintenant
+ *  single trainer battle marche. */
 function Cmd_forcerandomswitch(ctx: BattleScriptContext): boolean {
   const failJump = readWord(ctx);
-  // TODO porter battle_script_commands.c Cmd_forcerandomswitch full impl
-  // quand party storage wired battle-side.
-  ctx.scriptPtr = failJump;
+
+  // 1:1 décomp : wild battle uses just TryDoForceSwitchOut (= escape attempt).
+  // Notre port : pas de TryDoForceSwitchOut porté → no-op, advance normally.
+  // Note : gBattleTypeFlags & BATTLE_TYPE_TRAINER vérifié plus bas.
+  const stateMod = (globalThis as { __battleStateMutators?: {
+    getBattleTypeFlags?: () => number;
+    getTarget?: () => number;
+  } }).__battleStateMutators;
+  const gBattleTypeFlags_local = stateMod?.getBattleTypeFlags?.() ?? 0;
+  const BATTLE_TYPE_TRAINER_LOCAL = 1 << 3;
+  const BATTLE_TYPE_DOUBLE_LOCAL = 1 << 0;
+
+  if (!(gBattleTypeFlags_local & BATTLE_TYPE_TRAINER_LOCAL)) {
+    // Wild battle : TryDoForceSwitchOut → STUB (= no-op, fail-through).
+    return false;
+  }
+
+  if (gBattleTypeFlags_local & BATTLE_TYPE_DOUBLE_LOCAL) {
+    // Double/Multi/Link battle : pas porté. Fail.
+    ctx.scriptPtr = failJump;
+    return false;
+  }
+
+  // Single trainer battle (= simple case).
+  // 1:1 décomp 7313-7325 :
+  //   firstMonId = 0; lastMonId = PARTY_SIZE - 1; monsCount = PARTY_SIZE; minNeeded = 1;
+  //   battler2PartyId = battler1PartyId = gBattlerPartyIndexes[gBattlerTarget];
+  const PARTY_SIZE_LOCAL = 6;
+  const firstMonId = 0;
+  const lastMonId = PARTY_SIZE_LOCAL - 1;  // BUGFIX 1:1 : -1 (= valid party slots 0..4)
+  const monsCount = PARTY_SIZE_LOCAL;
+  const minNeeded = 1;
+
+  const target = stateMod?.getTarget?.() ?? 1;
+  const targetIsPlayer = (target & 1) === 0;
+  const party = targetIsPlayer ? _gPlayerPartyPK : _gEnemyPartyFRS;
+  const currentPartyIdx = _gBattlerPartyIndexesFRS[target] ?? 0;
+
+  // Count valid mons (= non-empty, non-egg, alive).
+  let validMons = 0;
+  for (let i = firstMonId; i < lastMonId; i++) {
+    const species = _GetMonDataPK(party[i], _MON_DATA_SPECIES_OR_EGG_PK) as number;
+    const isEgg = _GetMonDataPK(party[i], _MON_DATA_IS_EGG_FRS) as number;
+    const hp = _GetMonDataPK(party[i], _MON_DATA_HP_FRS) as number;
+    if (species !== 0 && !isEgg && hp !== 0) validMons++;
+  }
+
+  if (validMons <= minNeeded) {
+    // Pas assez de mons valides — fail.
+    ctx.scriptPtr = failJump;
+    return false;
+  }
+
+  // TryDoForceSwitchOut → STUB returns true (= switch attempt always succeeds).
+  // Pick random alive non-current mon.
+  let i = 0;
+  let safetyCounter = 0;
+  do {
+    do {
+      i = Random() % monsCount;
+      i += firstMonId;
+      safetyCounter++;
+      if (safetyCounter > 100) break;
+    } while (i === currentPartyIdx);
+
+    const species = _GetMonDataPK(party[i], _MON_DATA_SPECIES_OR_EGG_PK) as number;
+    const isEgg = _GetMonDataPK(party[i], _MON_DATA_IS_EGG_FRS) as number;
+    const hp = _GetMonDataPK(party[i], _MON_DATA_HP_FRS) as number;
+    if (species !== 0 && !isEgg && hp !== 0) break;
+
+    safetyCounter++;
+    if (safetyCounter > 200) break;
+  } while (true);
+
+  // Set monToSwitchIntoId[target] = i. Notre gBattleStruct devrait être expose.
+  const battleStruct = (globalThis as { __battleState?: { gBattleStruct?: { monToSwitchIntoId?: number[] } } })
+    .__battleState?.gBattleStruct;
+  if (battleStruct?.monToSwitchIntoId) {
+    battleStruct.monToSwitchIntoId[target] = i;
+  }
+
   return false;
 }
+
+// Imports locaux Cmd_forcerandomswitch — éviter dups au top du file.
+import {
+  gEnemyParty as _gEnemyPartyFRS,
+  MON_DATA_IS_EGG as _MON_DATA_IS_EGG_FRS,
+  MON_DATA_HP as _MON_DATA_HP_FRS,
+} from './party-storage';
+import { gBattlerPartyIndexes as _gBattlerPartyIndexesFRS } from './state';
 
 // ─── 0xE5 pickup ──────────────────────────────────────────────────────────
 
