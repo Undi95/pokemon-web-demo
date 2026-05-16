@@ -497,8 +497,122 @@ Validation visible :
 - 2-turn moves (skullbash/solarbeam/fly/dig/dive/razorwind/skyattack/bounce) 
   tous décodent leur message turn 1 correctement.
 
-## Total 35 commits
+## Total 35 commits (pre-compact session 144)
 
 Battery 639/639 stable, 0 erreur TS, ~100 moves validés bytecode FR 1:1 décomp.
+
+## Suite session 144 (commits 36-42) — Audit PREPARE_*_BUFFER + INTROMSG variants + trainer placeholders
+
+**Date** : 2026-05-17 (post-compact 143, autonomous /loop nuit).
+
+### Commit 36 : `dbb87cc8` — Cmd_trywish case 1 missing PREPARE_MON_NICK_WITH_PREFIX_BUFFER
+1:1 décomp `battle_script_commands.c:9312` : `PREPARE_MON_NICK_WITH_PREFIX_BUFFER(
+gBattleTextBuff1, gBattlerTarget, gWishFutureKnock.wishMonId[gBattlerTarget])`.
+Sans : message Wish heal manquait le nom du mon (= '?' fallback).
+
+### Commit 37 : `560f1d7c` — Cmd_tryfaintmon Grudge + Color Change ability PREPARE buffers
+Audit deux bugs PREPARE manqués :
+- Cmd_tryfaintmon Grudge effect (battle_script_commands.c:3042) : 
+  `PREPARE_MOVE_BUFFER(gBattleTextBuff1, gBattleMons[gBattlerAttacker].moves[moveIndex])`.
+  Sans : message "L'attaque X de Y a perdu ses PP!" missing move name.
+- ABILITY_COLOR_CHANGE (battle_util.c:2744) : `PREPARE_TYPE_BUFFER(gBattleTextBuff1, moveType)`.
+  Sans : "X devient de type {B_BUFF1}!" missing type.
+
+### Commit 38 : `666b235d` — BufferStringBattle INTROMSG/INTROSENDOUT/RETURNMON/SWITCHINMON 1:1
+Port complet 1:1 décomp `battle_message.c:1997-2165` — 4 special-case stringIds
+avec toutes les branches TRAINER/LINK/DOUBLE/WALLY_TUTORIAL/LEGENDARY/MULTI/
+TWO_OPPONENTS/INGAME_PARTNER/TOWER_LINK_MULTI.
+
+~30 string variants FR couvertes :
+- INTROMSG : 10 variants (Trainer1Wants, TwoTrainersWant, LinkTrainer, Legendary,
+  WildPkmn, TwoWildPkmn, WallyTutorial, etc.)
+- INTROSENDOUT : 11 variants (GoPkmn, GoTwoPkmn, InGamePartner, Trainer1SentOut,
+  TwoTrainersSentPkmn, LinkTrainerSentOutTwoPkmn, etc.)
+- RETURNMON : 7 variants (PkmnThatsEnough, ComeBack, OkComeBack, GoodComeBack,
+  Trainer1Withdrew, LinkTrainer1/2Withdrew)
+- SWITCHINMON : 10 variants (GoPkmn2, DoItPkmn, GoForIt, YourFoesWeak,
+  Trainer1SentOut2, LinkTrainerMulti, etc.)
+
+Helpers : `_resolveIntroMsgStringName` / `_resolveIntroSendoutStringName` /
+`_resolveReturnmonStringName` / `_resolveSwitchinmonStringName`.
+
+Constants : `TRAINER_UNION_ROOM=3072` + `TRAINER_LINK_OPPONENT=0x400`.
+
+Toutes les ~30 FR strings vérifiées présentes dans strings.json.
+
+### Commit 39 : `faddd923` — wire {B_TRAINER1_CLASS}/{B_TRAINER1_NAME} placeholders
+Résolution trainer name/class via :
+- `_resolveTrainerKey` : reverse cache trainerId number → 'TRAINER_X' string,
+  lazy-built via dynamic import opponents-data (855 entries).
+- `_resolveTrainerNameFr` : lookup `globalThis.gameDataTrainers[key].trainerName`
+  (= trainers.json déjà loaded en game-data).
+- `_resolveTrainerClassNameFr` : lookup `gameDataTrainerClassesFr[trainerClass]`
+  (= trainer-class-names-fr.json 66 entries FR).
+- `_getTrainerOpponentB` : via `__battleState.gTrainerBattleOpponent_B`.
+
+Bridge : `game-data.ts` expose `trainers` + `trainerClassNamesFr` sur globalThis
+(pattern identique à gameDataMoves/Species/etc.).
+
+**Validation live** :
+- TRAINER_SAWYER_1 (id 1) → 'MONTAGNARD EMILIEN'
+- TRAINER_ROXANNE_1 (id 265) → 'CHAMPION ROXANNE'
+- Trainer battle INTROMSG = 'Un combat est lancé\npar X Y!\p' 1:1 décomp.
+
+### Commit 40 : `7188d02f` — Shed Skin + ability immunity status string copy 1:1
+Audit bug : ABILITY_SHED_SKIN + ABILITYEFFECT_IMMUNITY (= Immunity/OwnTempo/
+Limber/Insomnia/VitalSpirit/WaterVeil/MagmaArmor/Oblivious) ne faisaient pas
+le `StringCopy(gBattleTextBuff1, gStatusConditionString_XJpn)` AVANT clear status.
+
+Conséquence : message 'X libère son POKéMON ami de son {B_BUFF1}!' affichait
+{B_BUFF1} vide.
+
+Fix : `_writeStatusFrToBuff(buf, status1, status2)` helper qui write directement
+le nom FR du status (= POISON/SOMMEIL/PARALYSIE/BRÛLURE/GEL/CONFUSION/AMOUR).
+Notre version FR direct vs décomp EN qui garde JPN bytes (= "どく"/"ねむり"/etc.).
+
+Sources : battle_util.c:2606-2615 + 2864-2908.
+
+### Commit 41 : `ff3be70d` — ItemBattleEffects berry PREPARE_*_BUFFER 1:1 fix
+4 cas dans ITEMEFFECT_NORMAL berries portaient pas les PREPARE :
+
+1. TRY_EAT_CONFUSE_BERRY (Figy/Wiki/Mago/Aguav/Iapapa) : `PREPARE_FLAVOR_BUFFER`.
+   → message STRINGID_FORXCOMMAYZ "{B_BUFF1}" restait vide.
+
+2. TRY_EAT_STAT_UP_BERRY (Carbos/Iron/etc.) : `PREPARE_STAT_BUFFER`.
+   → message BerryStatRaiseEnd2 "{B_BUFF1}" restait vide.
+
+3. HOLD_EFFECT_ATTACK_UP (Liechi) : `PREPARE_STAT + PREPARE_STRING_BUFFER(STATROSE)`.
+   → cas spécial vs les autres TRY_EAT_STAT_UP (= ajoute STATROSE buff2
+     'X augmente' explicite).
+
+4. HOLD_EFFECT_RANDOM_STAT_UP (Starf) : `PREPARE_STAT + buff2 multistring
+   STATSHARPLY+STATROSE`.
+   → message 'X augmente beaucoup' incomplet.
+
+Added imports : `gBattleTextBuff1/2` + `PREPARE_STAT/FLAVOR_BUFFER` + helper
+`_PREPARE_STRING_BUFFER_IBE`.
+
+Source : battle_util.c:3213, 3231, 3416-3417, 3462-3471.
+
+### Commit 42 : `c56009b9` (déjà) — Session 143 doc update
+
+## Total 42 commits (Phase 1.4 J + post-compact 143 audit additions)
+
+**État final** :
+- Battery 639/639 stable cross-tous-commits, 0 erreur TS.
+- 0 unknown ops bytecode compile (60 595 ops processed, 11 336 labels resolved).
+- 36/36 moves bytecode smoke-test stable post-changes.
+- 9 audit PREPARE bugs corrigés (= 3 dans cmd-niveau + 2 ability + 4 berries).
+- INTROMSG/INTROSENDOUT/RETURNMON/SWITCHINMON full 1:1 (40+ variants).
+- Trainer placeholders wired (= 855 trainers × 66 classes FR).
+- `_monNickname` MVP comment cleaned (= déjà 1:1 fonctionnel).
+- ABILITY_COLOR_CHANGE PREPARE_TYPE_BUFFER ajouté.
+- ABILITY_SHED_SKIN + ABILITYEFFECT_IMMUNITY status names FR ajoutés.
+
+**Prochain** : DoFieldEndTurnEffects port (= Wish/Future Sight trigger,
+PerishSong countdown, weather damage tick, Reflect/LightScreen/Mist/Safeguard
+countdown). Gros chantier (~1000 lignes battle_util.c) qui nécessite wirage
+au game loop (= battle-flow.ts). Phase 1.4 L (anim events visual) ou
+Phase 1.4 K (yesno boxes / move learning dialog) comme alternative.
 
 ## File complet
