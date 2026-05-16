@@ -76,9 +76,24 @@ function _abilityCheckSide(checkAttackerSide: boolean, abilityId: number): numbe
   return 0;
 }
 
-/** Stub : `UproarWakeUpCheck(battler)` — TODO porter (= check si un mon
- *  utilise Uproar sur le field → réveille les sleepy). Pour now : false. */
-function uproarWakeUpCheck(_battler: number): boolean { return false; }
+/** 1:1 décomp `UproarWakeUpCheck(battler)` — Inlined (= éviter circular).
+ *  Returns true si un battler sur le field a STATUS2_UPROAR + battler param
+ *  n'a pas Soundproof. Stub side-effects (= ne set pas MULTISTRING_CHOOSER ici). */
+function uproarWakeUpCheck(battler: number): boolean {
+  const STATUS2_UPROAR_LOCAL = 1 << 13;
+  const ABILITY_SOUNDPROOF_LOCAL = 43;
+  const stateMod = (globalThis as { __battleState?: { gBattlersCount?: number; gBattleMons?: { ability: number; status2: number }[] } }).__battleState;
+  const battlersCount = stateMod?.gBattlersCount ?? 2;
+  const battleMons = stateMod?.gBattleMons;
+  if (!battleMons) return false;
+  for (let i = 0; i < battlersCount; i++) {
+    if ((battleMons[i].status2 & STATUS2_UPROAR_LOCAL)
+        && battleMons[battler].ability !== ABILITY_SOUNDPROOF_LOCAL) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // ─── Cmd_jumpifstatus (0x1C) ───────────────────────────────────────────────
 
