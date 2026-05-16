@@ -90,8 +90,29 @@ import {
   PREPARE_MON_NICK_WITH_PREFIX_BUFFER,
   PREPARE_ABILITY_BUFFER,
   PREPARE_TYPE_BUFFER,
+  B_BUFF_EOS,
 } from './text-buffers';
 import { gBattlerPartyIndexes as _gBattlerPartyIndexes_ABE } from './state';
+
+/** 1:1 décomp `StringCopy(gBattleTextBuff1, gStatusConditionString_XJpn)`.
+ *  Le décomp EN garde les bytes JPN (= "どく" / "ねむり" / etc.) ; pour notre
+ *  port FR on stocke directement le nom du status en bytes ASCII (= consumé
+ *  par {B_BUFF1} dans le message "X guérit son problème de {B_BUFF1}!"). */
+function _writeStatusFrToBuff(buf: Uint8Array, status1: number, status2: number): void {
+  let s = '';
+  if (status1 & (STATUS1_POISON | STATUS1_TOXIC_POISON)) s = 'POISON';
+  else if (status1 & STATUS1_SLEEP) s = 'SOMMEIL';
+  else if (status1 & STATUS1_PARALYSIS) s = 'PARALYSIE';
+  else if (status1 & STATUS1_BURN) s = 'BRÛLURE';
+  else if (status1 & STATUS1_FREEZE) s = 'GEL';
+  else if (status2 & STATUS2_CONFUSION) s = 'CONFUSION';
+  else if (status2 & STATUS2_INFATUATION) s = 'AMOUR';
+  for (let i = 0; i < buf.length; i++) buf[i] = 0;
+  for (let i = 0; i < s.length && i < buf.length - 1; i++) {
+    buf[i] = s.charCodeAt(i) & 0xFF;
+  }
+  buf[Math.min(s.length, buf.length - 1)] = B_BUFF_EOS;
+}
 
 // ─── ABILITYEFFECT_* enum (= 1:1 décomp battle_util.h:12-34) ──────────────
 
@@ -396,6 +417,13 @@ export function AbilityBattleEffects(
             break;
           case ABILITY_SHED_SKIN:
             if ((gBattleMons[battler].status1 & STATUS1_ANY) && (Random() % 3) === 0) {
+              // 1:1 décomp battle_util.c:2606-2615 — StringCopy status name
+              // dans buff1 AVANT clear status pour {B_BUFF1} dans le message.
+              _writeStatusFrToBuff(
+                _gBattleTextBuff1_ABE,
+                gBattleMons[battler].status1,
+                gBattleMons[battler].status2,
+              );
               gBattleMons[battler].status1 = 0;
               gBattleMons[battler].status2 &= ~STATUS2_NIGHTMARE;
               gBattleScripting.battler = battler;
@@ -548,6 +576,13 @@ export function AbilityBattleEffects(
             break;
         }
         if (localEffect !== 0) {
+          // 1:1 décomp battle_util.c:2864-2908 — StringCopy status name AVANT
+          // clear pour {B_BUFF1} dans le message "X libère Y de son Z!".
+          _writeStatusFrToBuff(
+            _gBattleTextBuff1_ABE,
+            gBattleMons[battler].status1,
+            gBattleMons[battler].status2,
+          );
           switch (localEffect) {
             case 1:
               gBattleMons[battler].status1 = 0;
