@@ -62,8 +62,7 @@ function isBattlerOfType(battlerIdx: number, type: number): boolean {
  *  subset : itère les battlers du côté demandé, retourne (battler_idx + 1) si
  *  ability matchée, sinon 0.
  *
- *  MVP single battle : ATTACKER_SIDE → check attacker seul, NOT_ATTACKER_SIDE
- *  → check target seul. Doubles battles : itère 2 battlers de chaque side. */
+ *  Itère gBattlersCount = 2 (single battle) ou 4 (double battle) = 1:1 strict. */
 function _abilityCheckSide(checkAttackerSide: boolean, abilityId: number): number {
   const attackerSide = GET_BATTLER_SIDE(gBattlerAttacker);
   for (let i = 0; i < gBattlersCount; i++) {

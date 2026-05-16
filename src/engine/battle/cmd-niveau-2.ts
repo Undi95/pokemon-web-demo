@@ -152,12 +152,12 @@ function Cmd_statbuffchange(ctx: BattleScriptContext): boolean {
     jumpPtr,
   );
 
-  // Décomp : `if (result == STAT_CHANGE_WORKED) gBattlescriptCurrInstr += 6`.
-  // Si DIDNT_WORK avec ALLOW_PTR : BS_ptr a été push (= ctx.scriptPtr changed).
-  // Notre version : on a déjà advancé via readByte+readWord, donc 6 bytes consumés.
-  // Si on devait jump à BS_ptr, on le ferait ici (= TODO push/pop stack).
+  // 1:1 décomp battle_script_commands.c:7103-7108 :
+  //   `if (ChangeStatBuffs(...) == STAT_CHANGE_WORKED) gBattlescriptCurrInstr += 6`.
+  // Sinon (DIDNT_WORK + ALLOW_PTR) : jump à jumpPtr.
+  // Notre version : on a déjà advancé via readByte+readWord (= 6 bytes consumés)
+  // pour le happy path. Pour DIDNT_WORK + ALLOW_PTR : jump explicit ci-dessous.
   if (result !== STAT_CHANGE_WORKED && (flags & STAT_CHANGE_ALLOW_PTR)) {
-    // 1:1 décomp aurait set gBattlescriptCurrInstr = BS_ptr (= jump).
     ctx.scriptPtr = jumpPtr;
   }
   return false;
@@ -366,9 +366,20 @@ function Cmd_updatestatusicon(ctx: BattleScriptContext): boolean {
       MarkBattlerForControllerExec(gBattlerAttacker);
     }
     if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
-      // 1:1 décomp : partner = GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(attacker))).
-      // Pour single battle MVP, skip (= jamais DOUBLE en MVP).
-      // TODO porter quand doubles supportés : GetBattlerAtPosition + BATTLE_PARTNER macro.
+      // 1:1 décomp battle_script_commands.c:7722-7730 :
+      //   partner = GetBattlerAtPosition(BATTLE_PARTNER(GetBattlerPosition(attacker)))
+      //   si !absent → emit + mark.
+      // BATTLE_PARTNER = (i ^ BIT_FLANK) où BIT_FLANK = 2.
+      const partner = gBattlerAttacker ^ 2 /* BIT_FLANK */;
+      setActiveBattler(partner);
+      if (!(gAbsentBattlerFlags & gBitTable[partner])) {
+        BtlController_EmitStatusIconUpdate(
+          B_COMM_TO_CONTROLLER,
+          gBattleMons[partner].status1,
+          gBattleMons[partner].status2,
+        );
+        MarkBattlerForControllerExec(partner);
+      }
     }
   }
   return false;
