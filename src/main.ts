@@ -138,9 +138,18 @@ void initStringsFromDecomp();
 import { loadBattleMoves } from './engine/battle/data/battle-moves';
 import { loadBattleScriptBytecode } from './engine/battle/script-interpreter';
 import { loadItemHoldEffects } from './engine/battle/data/item-hold-effects';
+import { loadGameData } from './engine/data/game-data';
 void loadBattleMoves();
 void loadBattleScriptBytecode();
 void loadItemHoldEffects();
+// 1:1 décomp : game-data (species/moves/learnsets/abilities) doit être chargé
+// au boot pour que createPokemonInstance pick le bon learnset 1:1 (= avant
+// fallback [tackle, growl] partout). Aussi : ability-battle-effects /
+// item-battle-effects lookup gSpeciesInfo via __game_data.
+void loadGameData().then(async () => {
+  const gd = await import('./engine/data/game-data');
+  (globalThis as { __game_data?: unknown }).__game_data = gd;
+});
 
 const _saveLoadStatus = LoadGameSave();
 SetSaveFileStatus(_saveLoadStatus);
