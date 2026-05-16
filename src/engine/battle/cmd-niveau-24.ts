@@ -103,26 +103,54 @@ function Cmd_returntoball(ctx: BattleScriptContext): boolean {
 
 // ─── 0x24 checkteamslost ──────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_checkteamslost. 5 bytes (u32 jump). MVP : check les
- *  gBattleMons (= active battlers), pas la party complète (gPlayerParty
- *  pas wired battle-side). */
+/** 1:1 décomp Cmd_checkteamslost (battle_script_commands.c:3537-3618).
+ *  5 bytes (u32 jump). Check les parties complètes (gPlayerParty + gEnemyParty)
+ *  pour déterminer LOST/WON outcome.
+ *
+ *  AUDIT BUG FIX (post session 141) : était check actifs only, ce qui causait
+ *  LOST mark trop tôt si player active mon KO mais reserves alive. Maintenant
+ *  full party iteration 1:1 décomp.
+ *
+ *  LINK/MULTI branches différés (= jumpPtr non utilisé pour single battle). */
 function Cmd_checkteamslost(ctx: BattleScriptContext): boolean {
   if (gBattleControllerExecFlags) return _stayOnOpcode(ctx);
   const _jumpPtr = readWord(ctx); void _jumpPtr;
-  // 1:1 décomp itère gPlayerParty/gEnemyParty. Pour MVP : check actifs only.
-  // Player side = idx 0, 2. Opponent side = idx 1, 3.
+
+  // 1:1 décomp 3556-3565 : iterate gPlayerParty for HP_count.
   let playerHpSum = 0;
-  let oppHpSum = 0;
-  for (let i = 0; i < gBattlersCount; i++) {
-    if ((i & 1) === 0) playerHpSum += gBattleMons[i].hp;
-    else oppHpSum += gBattleMons[i].hp;
+  for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
+    const species = _GetMonDataCTL(_gPlayerPartyCTL[i], _MON_DATA_SPECIES_CTL) as number;
+    const isEgg = _GetMonDataCTL(_gPlayerPartyCTL[i], _MON_DATA_IS_EGG_CTL) as number;
+    if (species !== 0 && !isEgg) {
+      playerHpSum += _GetMonDataCTL(_gPlayerPartyCTL[i], _MON_DATA_HP_CTL) as number;
+    }
   }
   if (playerHpSum === 0) setBattleOutcome(gBattleOutcome | B_OUTCOME_LOST);
+
+  // 1:1 décomp 3571-3580 : iterate gEnemyParty for HP_count.
+  let oppHpSum = 0;
+  for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
+    const species = _GetMonDataCTL(_gEnemyPartyCTL[i], _MON_DATA_SPECIES_CTL) as number;
+    const isEgg = _GetMonDataCTL(_gEnemyPartyCTL[i], _MON_DATA_IS_EGG_CTL) as number;
+    if (species !== 0 && !isEgg) {
+      oppHpSum += _GetMonDataCTL(_gEnemyPartyCTL[i], _MON_DATA_HP_CTL) as number;
+    }
+  }
   if (oppHpSum === 0) setBattleOutcome(gBattleOutcome | B_OUTCOME_WON);
-  // Décomp gère BATTLE_TYPE_LINK avec fail jump si gBattleOutcome != 0.
-  // Pour MVP single battle, on skip ce branchement.
+
+  // LINK/MULTI branches (= empty spots check + jump si needed) — différé.
   return false;
 }
+
+// Imports locaux Cmd_checkteamslost — éviter dups au top du file.
+import {
+  gPlayerParty as _gPlayerPartyCTL,
+  gEnemyParty as _gEnemyPartyCTL,
+  GetMonData as _GetMonDataCTL,
+  MON_DATA_SPECIES as _MON_DATA_SPECIES_CTL,
+  MON_DATA_HP as _MON_DATA_HP_CTL,
+  MON_DATA_IS_EGG as _MON_DATA_IS_EGG_CTL,
+} from './party-storage';
 
 // ─── Install handlers ──────────────────────────────────────────────────────
 
