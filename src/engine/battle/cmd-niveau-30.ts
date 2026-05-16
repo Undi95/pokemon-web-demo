@@ -213,21 +213,17 @@ function Cmd_jumpifnopursuitswitchdmg(ctx: BattleScriptContext): boolean {
 
 // ─── 0xC4 trydobeatup ─────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_trydobeatup. 10 bytes (u32 endBeatUpPtr at +1 + u32
- *  noValidMonsPtr at +5).
+/** 1:1 décomp `Cmd_trydobeatup` (battle_script_commands.c). 10 bytes :
+ *  u32 endBeatUpPtr + u32 noValidMonsPtr.
  *  Itère les party slots pour trouver un mon utilisable pour Beat Up.
  *
- *  Décomp logic :
+ *  Logic :
  *    - target.hp == 0 → jump endBeatUpPtr (= early end).
  *    - else loop party slots :
- *        - found valid mon → advance 9 (= continue calc) + compute dmg.
- *        - exhausted && beforeLoop != 0 → jump endBeatUpPtr (= done).
- *        - exhausted && beforeLoop == 0 → jump noValidMonsPtr (= no valid).
- *
- *  Notre port partial : gPlayerParty/gEnemyParty pas wired battle ; on n'a
- *  pas la party iteration. Pour MVP :
- *    - target.hp == 0 → endBeatUpPtr.
- *    - else → noValidMonsPtr (= simule "no valid mon found", évite crash). */
+ *        - found valid mon (HP > 0 && species != NONE && status == 0) →
+ *          calc dmg + advance + use gBattleCommunication[0] = party slot.
+ *        - exhausted && beforeLoop != 0 → jump endBeatUpPtr.
+ *        - exhausted && beforeLoop == 0 → jump noValidMonsPtr. */
 function Cmd_trydobeatup(ctx: BattleScriptContext): boolean {
   const endBeatUpPtr = readWord(ctx);
   const noValidMonsPtr = readWord(ctx);
@@ -235,10 +231,60 @@ function Cmd_trydobeatup(ctx: BattleScriptContext): boolean {
     ctx.scriptPtr = endBeatUpPtr;
     return false;
   }
-  // TODO porter le party walk complet quand gPlayerParty wired battle.
-  // Pour l'instant : simule "no valid mon" → noValidMonsPtr.
-  ctx.scriptPtr = noValidMonsPtr;
+
+  // 1:1 décomp : itère gPlayerParty depuis gBattleCommunication[0] pour
+  // trouver mon HP > 0 && species != NONE && status == 0.
+  const beforeLoop = gBattleCommunicationBU[0];
+  while (gBattleCommunicationBU[0] < 6 /* PARTY_SIZE */) {
+    const slot = gBattleCommunicationBU[0];
+    const hp = GetMonData_BU(gPlayerParty_BU[slot], MON_DATA_HP_BU) as number;
+    const species2 = GetMonData_BU(gPlayerParty_BU[slot], MON_DATA_SPECIES2_BU) as number;
+    const status = GetMonData_BU(gPlayerParty_BU[slot], MON_DATA_STATUS_BU) as number;
+    if (hp !== 0 && species2 !== 0 && status === 0) break;
+    gBattleCommunicationBU[0]++;
+  }
+
+  if (gBattleCommunicationBU[0] < 6) {
+    // Found valid party member → calculate damage (= 1:1 décomp formula).
+    const slot = gBattleCommunicationBU[0];
+    const baseAttack = _getBaseAttackBU(GetMonData_BU(gPlayerParty_BU[slot], MON_DATA_SPECIES_BU) as number);
+    const monLevel = GetMonData_BU(gPlayerParty_BU[slot], MON_DATA_LEVEL_BU) as number;
+    const baseDefense = _getBaseDefenseBU(gBattleMons[gBattlerTarget].species);
+    let damage = baseAttack;
+    damage *= getBattleMoveBU(gCurrentMove).power;
+    damage *= Math.floor(monLevel * 2 / 5) + 2;
+    damage = Math.floor(damage / baseDefense);
+    damage = Math.floor(damage / 50) + 2;
+    if (gProtectStructsBU[gBattlerAttacker].helpingHand) {
+      damage = Math.floor(damage * 15 / 10);
+    }
+    setBattleMoveDamageBU(damage);
+    // 1:1 décomp : `gBattlescriptCurrInstr += 9` — advance déjà fait par dispatch.
+  } else if (beforeLoop !== 0) {
+    ctx.scriptPtr = endBeatUpPtr;
+  } else {
+    ctx.scriptPtr = noValidMonsPtr;
+  }
   return false;
+}
+
+// Imports locaux Beat Up (= éviter dups au top du file).
+import {
+  gPlayerParty as gPlayerParty_BU, GetMonData as GetMonData_BU,
+  MON_DATA_HP as MON_DATA_HP_BU, MON_DATA_SPECIES as MON_DATA_SPECIES_BU,
+  MON_DATA_SPECIES_OR_EGG as MON_DATA_SPECIES2_BU,
+  MON_DATA_STATUS as MON_DATA_STATUS_BU, MON_DATA_LEVEL as MON_DATA_LEVEL_BU,
+} from './party-storage';
+import { getBattleMove as getBattleMoveBU } from './data/battle-moves';
+import { setBattleMoveDamage as setBattleMoveDamageBU, gProtectStructs as gProtectStructsBU, gBattleCommunication as gBattleCommunicationBU } from './state';
+// _getBaseAttack/_getBaseDefense (= gBaseStats[species].baseAttack/Defense 1:1).
+import { getSpeciesInfo as getSpeciesInfoBU } from '../data/game-data';
+import { speciesNumberToEnum as speciesNumberToEnumBU } from './data/species-runtime';
+function _getBaseAttackBU(species: number): number {
+  return getSpeciesInfoBU(speciesNumberToEnumBU(species))?.stats.atk ?? 1;
+}
+function _getBaseDefenseBU(species: number): number {
+  return getSpeciesInfoBU(speciesNumberToEnumBU(species))?.stats.def ?? 1;
 }
 
 // ─── 0xD2 tryswapitems ────────────────────────────────────────────────────
