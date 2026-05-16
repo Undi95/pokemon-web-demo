@@ -992,6 +992,12 @@ export function resetBattleState(): void {
 }
 
 // Expose pour devtools / debug + intra-module access (= éviter circular dep).
+// AUDIT BUG FIX : guard contre overwrite par instances ESM dup. La 1ère
+// instance qui charge state.ts définit __battleState (= ses gBattleMons +
+// closures). Instances ESM ultérieures (= dynamic imports) skipperaient.
+// Garantit que __battleState pointe TOUJOURS sur l'instance canonical utilisée
+// par les imports statiques (cmd-niveau-*.ts au boot).
+if (!(globalThis as Record<string, unknown>).__battleState) {
 (globalThis as Record<string, unknown>).__battleState = {
   gBattleMons,
   getAttacker: () => gBattlerAttacker,
@@ -1024,11 +1030,14 @@ export function resetBattleState(): void {
   setChosenMove,
   setCurrentMove,
 };
+}  // end of if-not-set guard for __battleState
 
 // Aliases globaux pour memory-map (= éviter circular imports + ESM live-binding
 // issues si plusieurs instances state.ts existent via HMR/dynamic import).
 // Le memory-map utilise __battleStateMutators.setBattlerTarget(v) etc., qui
 // pointe TOUJOURS sur les setters réels de la version courante.
+// AUDIT BUG FIX : guard contre overwrite par instances ESM dup.
+if (!(globalThis as Record<string, unknown>).__battleStateMutators) {
 (globalThis as Record<string, unknown>).__battleStateMutators = {
   getTarget: () => gBattlerTarget,
   setTarget: (v: number) => { gBattlerTarget = v & 0xFF; },
@@ -1059,3 +1068,4 @@ export function resetBattleState(): void {
   getNumSafariBalls: () => 0,
   setNumSafariBalls: () => { /* gNumSafariBalls pas encore déclaré (= Safari Frontier scope) */ },
 };
+}  // end of if-not-set guard for __battleStateMutators
