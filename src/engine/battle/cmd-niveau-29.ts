@@ -232,40 +232,60 @@ function Cmd_healpartystatus(_ctx: BattleScriptContext): boolean {
 
 // ─── 0xDE assistattackselect ──────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_assistattackselect. 5 bytes (u32 fail jump). Assist.
+/** 1:1 décomp Cmd_assistattackselect (battle_script_commands.c:9487-9538).
+ *  5 bytes (u32 fail jump). Assist : random move depuis party (= autres mons).
  *
- *  Note 1:1 partial : gPlayerParty/gEnemyParty iteration skip (= party storage
- *  pas wired battle-side). On utilise gBattleMons[] disponibles comme source
- *  des moves. */
+ *  Wired vers gPlayerParty / gEnemyParty selon side (= pas plus de stub
+ *  gBattleMons iter). */
 function Cmd_assistattackselect(ctx: BattleScriptContext): boolean {
   const failJump = readWord(ctx);
+
+  // 1:1 décomp ll.9492 : `validMoves = gBattleStruct->assistPossibleMoves`
+  // (= u16[PARTY_SIZE × MAX_MON_MOVES] = 24 slots).
   const validMoves: number[] = [];
 
-  // 1:1 décomp partial : itère gBattleMons même side au lieu de party.
-  const attackerSide = GET_BATTLER_SIDE(gBattlerAttacker);
-  for (let i = 0; i < gBattlersCount; i++) {
-    if (i === gBattlerAttacker) continue;
-    if (GET_BATTLER_SIDE(i) !== attackerSide) continue;
-    for (let mi = 0; mi < MAX_MON_MOVES; mi++) {
-      const move = gBattleMons[i].moves[mi];
+  // 1:1 décomp ll.9494-9497 : party selection selon side.
+  const party = GET_BATTLER_SIDE(gBattlerAttacker) !== B_SIDE_PLAYER_AAS
+    ? _gEnemyPartyAAS
+    : _gPlayerPartyAAS;
+
+  // 1:1 décomp ll.9499-9526 : itère party slots (sauf attacker), skip species
+  // NONE/EGG, et pour chaque slot itère les 4 moves.
+  for (let monId = 0; monId < 6 /* PARTY_SIZE */; monId++) {
+    if (monId === _gBattlerPartyIndexesAAS[gBattlerAttacker]) continue;
+    const speciesOrEgg = _GetMonDataAAS(party[monId], _MON_DATA_SPECIES_OR_EGG_AAS) as number;
+    if (speciesOrEgg === 0 /* SPECIES_NONE */) continue;
+    if (speciesOrEgg === 412 /* SPECIES_EGG */) continue;
+
+    for (let moveIndex = 0; moveIndex < MAX_MON_MOVES; moveIndex++) {
+      const move = _GetMonDataAAS(party[monId], _MON_DATA_MOVE1_AAS + moveIndex) as number;
       if (move === MOVE_NONE) continue;
       if (_isMoveForbiddenForAssist(move)) continue;
       validMoves.push(move);
     }
   }
 
-  if (validMoves.length === 0) {
+  if (validMoves.length > 0) {
+    setHitMarker(gHitMarker & ~HITMARKER_ATTACKSTRING_PRINTED);
+    // 1:1 décomp l.9530 : `((Random() & 0xFF) * chooseableMovesNo) >> 8`.
+    const pick = (Random() & 0xFF) * validMoves.length >>> 8;
+    setCalledMove(validMoves[pick]);
+    setBattlerTarget(_getMoveTarget(validMoves[pick], 0 /* NO_TARGET_OVERRIDE */));
+  } else {
     ctx.scriptPtr = failJump;
-    return false;
   }
-
-  const pick = Random() % validMoves.length;
-  setCalledMove(validMoves[pick]);
-  setCurrMovePos(0);  // décomp utilise gBattleStruct.assistChosenMove ; on simpli.
-  setHitMarker(gHitMarker & ~HITMARKER_ATTACKSTRING_PRINTED);
-  setBattlerTarget(_getMoveTarget(validMoves[pick], 0));
   return false;
 }
+
+// Imports locaux Cmd_assistattackselect (= éviter dups au top).
+import { B_SIDE_PLAYER as B_SIDE_PLAYER_AAS } from './constants';
+import {
+  gPlayerParty as _gPlayerPartyAAS, gEnemyParty as _gEnemyPartyAAS,
+  GetMonData as _GetMonDataAAS,
+  MON_DATA_SPECIES_OR_EGG as _MON_DATA_SPECIES_OR_EGG_AAS,
+  MON_DATA_MOVE1 as _MON_DATA_MOVE1_AAS,
+} from './party-storage';
+import { gBattlerPartyIndexes as _gBattlerPartyIndexesAAS } from './state';
 
 // ─── Install handlers ──────────────────────────────────────────────────────
 
