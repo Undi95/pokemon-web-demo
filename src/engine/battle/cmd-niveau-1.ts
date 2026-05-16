@@ -1597,9 +1597,13 @@ function _isBattlerOfTypeAC(battler: number, type: number): boolean {
 }
 function _isTwoTurnsMoveAC(move: number): boolean {
   const eff = getBattleMove(move).effect;
-  // 1:1 décomp battle_script_commands.c:8199 IsTwoTurnsMove — 5 effects.
-  // (Audit fix valeurs auto-data effectuée session 138.)
-  return eff === 145 || eff === 39 || eff === 151 || eff === 155 || eff === 26;
+  // 1:1 décomp battle_script_commands.c:8199 IsTwoTurnsMove — 6 effects.
+  // EFFECT_SKULL_BASH=145, RAZOR_WIND=39, SKY_ATTACK=75, SOLAR_BEAM=151,
+  // SEMI_INVULNERABLE=155, BIDE=26.
+  // AUDIT FIX session 144 : EFFECT_SKY_ATTACK=75 manquait (= dans cmd-niveau-1
+  // seulement ; cmd-niveau-27/30 portaient bien les 6 valeurs).
+  return eff === 145 || eff === 39 || eff === 75
+      || eff === 151 || eff === 155 || eff === 26;
 }
 
 // ─── Install handlers in dispatch table ─────────────────────────────────────
