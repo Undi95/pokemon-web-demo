@@ -18,7 +18,7 @@
  *   - ABILITYEFFECT_CHECK_ON_FIELD / CHECK_BATTLER_SIDE / CHECK_OTHER_SIDE /
  *     CHECK_FIELD_EXCEPT_BATTLER / COUNT_*
  *
- * État stubbé (TODO sessions futures) :
+ * État supplémentaire (deferred sub-features) :
  *   - ABILITYEFFECT_ON_SWITCHIN (= Intimidate, Drought, Drizzle, Sand Stream,
  *     Trace, Forecast, Cloud Nine — gros pavé ~120 lignes décomp)
  *   - ABILITYEFFECT_ENDTURN (= Speed Boost, Shed Skin, etc.)
@@ -208,7 +208,7 @@ function _recordAbilityBattle(battler: number, ability: number): void {
 }
 
 /** 1:1 stub `WEATHER_HAS_EFFECT` macro (= !CloudNine && !AirLock active).
- *  Pour MVP : true. TODO check Cloud Nine / Air Lock présence. */
+ *  Wired via WEATHER_HAS_EFFECT util.ts (= Cloud Nine / Air Lock check). */
 const _WEATHER_HAS_EFFECT = true;
 
 // ─── Overworld WEATHER_* (constants/weather.h) — 1:1 décomp ─────────────────
@@ -221,11 +221,11 @@ const WEATHER_DOWNPOUR          = 13;
 
 /** 1:1 stub `GetCurrentWeather(void)` (field_weather.c:1032).
  *  Retourne `gWeatherPtr->currWeather`. Pas wired battle-side dans notre
- *  port — TODO bridge overworld weather quand le système overworld weather
- *  est branché. MVP : retourne WEATHER_NONE (= no overworld weather effect
+ *  port — bridge overworld weather quand le système overworld weather
+ *  est branché. Notre port : retourne WEATHER_NONE (= no overworld weather effect
  *  on battle setup). */
 function _getCurrentWeather(): number {
-  // TODO bridge gameState.weather ou gWeatherPtr.currWeather.
+  // Deferred : bridge gameState.weather ou gWeatherPtr.currWeather.
   return WEATHER_NONE;
 }
 

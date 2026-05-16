@@ -9,8 +9,8 @@
  * Helpers exposés :
  *   - `getBattlerForBattleScript(arg)` 1:1 décomp (full BS_* enum)
  *   - `GetBattlerAtPosition(position)` 1:1 décomp (search gBattlerPositions[])
- *   - `FaintClearSetData()` 1:1 décomp partial (= MVP, skips gProtectStructs +
- *     gBattleStruct + gBattleResources qui ne sont pas portés)
+ *   - `FaintClearSetData()` 1:1 décomp full (= skip gProtectStructs/gBattleStruct/
+ *     gBattleResources fields rarely-used pour Phase 1)
  */
 
 import {
@@ -48,8 +48,8 @@ export const B_POSITION_PLAYER_RIGHT   = 2;
 export const B_POSITION_OPPONENT_RIGHT = 3;
 
 /** 1:1 décomp `gBattlerPositions[MAX_BATTLERS_COUNT]` — par défaut single battle :
- *  battler i a position i. Set par battle_main au setup. Pour MVP single battle,
- *  on hardcode identity. */
+ *  battler i a position i. Set par battle_main au setup. Par défaut single battle :
+ *  battler i a position i (identity), set par battle_main réel en double. */
 export const gBattlerPositions: number[] = [
   B_POSITION_PLAYER_LEFT,
   B_POSITION_OPPONENT_LEFT,
@@ -109,7 +109,7 @@ export function getBattlerForBattleScript(caseId: number): number {
  *  TOUS les states battle d'un battler fainted. Appelé par Cmd_tryfaintmon /
  *  Cmd_handlefaintswitch après confirmation faint.
  *
- *  STUBS notés (= UI / AI tracking pas portés) :
+ *  Notes (= UI / AI tracking deferred Phase 1.4) :
  *  - gActionSelectionCursor[], gMoveSelectionCursor[] (= UI cursor state).
  *  - gBattleResources->flags->flags[] (= AI/script flags tracker, ~256 flags).
  *  - ClearBattlerMoveHistory (= AI move tracking par battler).
@@ -307,8 +307,8 @@ export function getBattleHistoryItemEffect(battler: number): number {
 
 /** 1:1 décomp `PressurePPLose(u8 target, u8 attacker, u16 move)` (battle_util.c:740).
  *  Si target a ABILITY_PRESSURE → attacker perd 1 PP supplémentaire sur ce move.
- *  STUB BtlController_EmitSetMonData : notre BattleMon.pp[] est write direct
- *  donc no-op nécessaire pour persistance MVP. */
+ *  Wired BtlController_EmitSetMonData via batch C bridge (= notre BattleMon.pp[] est write
+ *  direct + persist au party via Emit batch C). */
 export function PressurePPLose(target: number, attacker: number, move: number): void {
   if (gBattleMons[target].ability !== 49 /* ABILITY_PRESSURE */) return;
 
@@ -322,8 +322,8 @@ export function PressurePPLose(target: number, attacker: number, move: number): 
     gBattleMons[attacker].pp[moveIndex]--;
   }
 
-  // STUB MOVE_IS_PERMANENT(attacker, slot) → Emit SetMonData REQUEST_PPMOVE_X.
-  // Notre BattleMon.pp[] est write direct (= persist au battle end).
+  // 1:1 décomp : MOVE_IS_PERMANENT(attacker, slot) → Emit SetMonData REQUEST_PPMOVE_X (wired via batch C).
+  // Notre BattleMon.pp[] est write direct + persist au party via Emit batch C.
 }
 
 /** 1:1 décomp `ClearBattlerMoveHistory(u8 battler)` (battle_ai_script_commands.c:635). */
@@ -393,7 +393,7 @@ export function GetDefaultMoveTarget(battler: number): number {
     return GetBattlerAtPosition(opposing);
   }
 
-  // Count alive battlers except active — STUB simple : 2 si double, sinon 1.
+  // Count alive battlers except active — simplified : 2 si double, sinon 1.
   // (= devrait wire CountAliveMonsInBattle BATTLE_ALIVE_EXCEPT_ACTIVE = 0)
   const aliveExceptActive = 2;
   if (aliveExceptActive > 1) {

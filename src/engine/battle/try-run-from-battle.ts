@@ -46,7 +46,7 @@ function CurrentBattlePyramidLocation(): number {
 
 /** 1:1 décomp `GetPyramidRunMultiplier()` (battle_pyramid.c). Multiplicateur
  *  d'escape factor selon la position dans la Pyramid. Return 100 par défaut
- *  (= STUB hors Frontier). */
+ *  (= rare hors Frontier). */
 function GetPyramidRunMultiplier(): number {
   return 100;
 }

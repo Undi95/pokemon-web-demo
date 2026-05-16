@@ -8,8 +8,8 @@
  * Rationale : les opcodes battle utilisent ces buffers comme placeholders dans
  * les strings — les macros PREPARE_*_BUFFER écrivent un mini-format (0xFD opcode
  * + type tag + data bytes + 0xFF EOS) que BattleStringExpand consomme à l'écriture
- * au framebuffer. Notre port permet aux opcodes d'appeler PREPARE_*_BUFFER sans
- * STUB tout en restant 1:1 strict avec l'encoding décomp.
+ * au framebuffer. Notre port permet aux opcodes d'appeler PREPARE_*_BUFFER tout
+ * en restant 1:1 strict avec l'encoding décomp.
  */
 
 // ─── Sizes (battle_message.h:6-8) ──────────────────────────────────────────

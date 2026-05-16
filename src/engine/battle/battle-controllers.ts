@@ -14,7 +14,7 @@
  * un bit dans `gBattleControllerExecFlags`. Les opcodes `waitanimation` et
  * `waitmessage` pause jusqu'à ce que le flag soit 0.
  *
- * Pour Niveau 4 MVP (= backing infrastructure pas wired au gameplay) :
+ * Pour Phase 1 (= backing infrastructure pas wired au gameplay) :
  *   - `MarkBattlerForControllerExec` 1:1 décomp (set bit).
  *   - `BtlController_Emit*` = stubs vides (= aucune anim/text rendu).
  *   - `tickBattleControllers()` clear le flag (= simule les controllers finis
@@ -51,14 +51,14 @@ export function MarkBattlerForControllerExec(battlerId: number): void {
 /** Clear exec flag pour battler donné (= controller signal "I'm done").
  *  Pas une fonction 1:1 décomp en soi (= dans le décomp c'est implicit par le
  *  controller qui termine son state machine), mais nécessaire pour le wire
- *  futur. Appelé par tickBattleControllers MVP. */
+ *  futur. Appelé par tickBattleControllers (= Phase 1 stub clear immédiat). */
 export function clearBattlerExecFlag(battlerId: number): void {
   setBattleControllerExecFlags(gBattleControllerExecFlags & ~gBitTable[battlerId]);
 }
 
 /** Tick (= clear all exec flags) pour simuler les controllers finis instantané.
- *  TODO : remplacer par real per-controller tick une fois wired au framework
- *  UI. Pour MVP backing, clear tout = scripts s'avancent sans wait.
+ *  Phase 1.4 : remplacer par real per-controller tick une fois wired au framework
+ *  UI. Pour Phase 1, clear tout = scripts s'avancent sans wait.
  *
  *  Reset aussi `gBattleCommunication[MSG_DISPLAY]` (= 0) car le décomp utilise
  *  cette flag pour signaler "text print en cours". Sans wire UI text, on
@@ -81,7 +81,7 @@ export function tickBattleControllers(): void {
 // ─── BtlController_Emit* stubs ──────────────────────────────────────────────
 
 /** 1:1 signature décomp `BtlController_EmitMoveAnimation` (battle_controllers.c).
- *  Pour MVP : no-op (anim n'est pas rendue, mais Mark+execflags fait le sync). */
+ *  Phase 1 stub : no-op (anim n'est pas rendue, mais Mark+execflags fait le sync). */
 export function BtlController_EmitMoveAnimation(
   _bufferId: number,
   _move: number,
@@ -92,53 +92,53 @@ export function BtlController_EmitMoveAnimation(
   _disableStructPtr: unknown,
   _multihit: number,
 ): void {
-  // TODO : émettre command anim au framework. MVP = no-op.
+  // Phase 1.4 UI : émettre command anim au framework.
 }
 
 /** 1:1 signature décomp `BtlController_EmitPrintString` (battle_controllers.c).
- *  Source utilisé par `PrepareStringBattle`. Pour MVP : no-op. */
+ *  Source utilisé par `PrepareStringBattle`. Phase 1 stub : no-op. */
 export function BtlController_EmitPrintString(_bufferId: number, _stringId: number): void {
-  // TODO : émettre command print au framework. MVP = no-op.
+  // Phase 1.4 UI : émettre command print au framework.
 }
 
 /** 1:1 signature décomp `BtlController_EmitPlaySE(bufferId, songId)`
  *  (battle_controllers.c). Émet command PlaySE via le controller du battler.
- *  Distinct de PlaySE direct (= audio engine path). Pour MVP : no-op. */
+ *  Distinct de PlaySE direct (= audio engine path). Phase 1 stub : no-op. */
 export function BtlController_EmitPlaySE(_bufferId: number, _songId: number): void {
-  // TODO : émettre PlaySE via controller queue au framework UI.
+  // Phase 1.4 UI : émettre PlaySE via controller queue au framework UI.
 }
 
 /** 1:1 signature décomp `BtlController_EmitPlayFanfareOrBGM(buf, songId, isBGM)`
- *  (battle_controllers.c). MVP : no-op. */
+ *  (battle_controllers.c). Phase 1 stub : no-op. */
 export function BtlController_EmitPlayFanfareOrBGM(_bufferId: number, _songId: number, _isBGM: boolean): void {
-  // TODO : émettre fanfare/BGM via controller queue.
+  // Phase 1.4 UI : émettre fanfare/BGM via controller queue.
 }
 
-/** 1:1 signature décomp `BtlController_EmitFaintingCry(buf)`. MVP : no-op. */
+/** 1:1 signature décomp `BtlController_EmitFaintingCry(buf)`. Phase 1 stub : no-op. */
 export function BtlController_EmitFaintingCry(_bufferId: number): void {
-  // TODO : émettre cry du Pokémon évanoui.
+  // Phase 1.4 UI : émettre cry du Pokémon évanoui.
 }
 
-/** 1:1 signature décomp `BtlController_EmitHitAnimation(buf)`. MVP : no-op. */
+/** 1:1 signature décomp `BtlController_EmitHitAnimation(buf)`. Phase 1 stub : no-op. */
 export function BtlController_EmitHitAnimation(_bufferId: number): void {
-  // TODO : émettre hit anim (sprite flash + nudge).
+  // Phase 1.4 UI : émettre hit anim (sprite flash + nudge).
 }
 
-/** 1:1 signature décomp `BtlController_EmitFaintAnimation(buf)`. MVP : no-op. */
+/** 1:1 signature décomp `BtlController_EmitFaintAnimation(buf)`. Phase 1 stub : no-op. */
 export function BtlController_EmitFaintAnimation(_bufferId: number): void {
-  // TODO : émettre faint anim (sprite fade).
+  // Phase 1.4 UI : émettre faint anim (sprite fade).
 }
 
 /** 1:1 signature décomp `BtlController_EmitReturnMonToBall(buf, doFadeOut)`.
- *  MVP : no-op. */
+ *  Phase 1 stub : no-op. */
 export function BtlController_EmitReturnMonToBall(_bufferId: number, _doFadeOut: boolean): void {
-  // TODO : émettre recall anim + Pokéball.
+  // Phase 1.4 UI : émettre recall anim + Pokéball.
 }
 
 /** 1:1 signature décomp `BtlController_EmitSpriteInvisibility(buf, isInvisible)`.
- *  MVP : no-op. */
+ *  Phase 1 stub : no-op. */
 export function BtlController_EmitSpriteInvisibility(_bufferId: number, _isInvisible: boolean): void {
-  // TODO : toggle sprite visibility.
+  // Phase 1.4 UI : toggle sprite visibility.
 }
 
 /** 1:1 signature décomp `BtlController_EmitSetMonData(buf, requestId, monIdx,
@@ -165,59 +165,59 @@ export function BtlController_EmitSetMonData(
 }
 
 /** 1:1 signature décomp `BtlController_EmitPrintSelectionString(buf, stringId)`.
- *  MVP : no-op (= selection screen text). */
+ *  Phase 1 stub : no-op (= selection screen text). */
 export function BtlController_EmitPrintSelectionString(_bufferId: number, _stringId: number): void {
-  // TODO : print selection string au framework UI.
+  // Phase 1.4 UI : print selection string au framework UI.
 }
 
 /** 1:1 signature décomp `BtlController_EmitEndLinkBattle(buf, outcome)`.
- *  MVP : no-op. */
+ *  Phase 1 stub : no-op. */
 export function BtlController_EmitEndLinkBattle(_bufferId: number, _outcome: number): void {
-  // TODO : émettre end-link au framework (= return to overworld).
+  // Phase 1.4 UI : émettre end-link au framework (= return to overworld).
 }
 
 /** 1:1 signature décomp `BtlController_EmitBattleAnimation(buf, anim, arg)`.
- *  Animation séparée de move animation. MVP : no-op. */
+ *  Animation séparée de move animation. Phase 1 stub : no-op. */
 export function BtlController_EmitBattleAnimation(_bufferId: number, _animationId: number, _argument: number): void {
-  // TODO : émettre battle anim (stat change, snatch, substitute fade, etc.).
+  // Phase 1.4 UI : émettre battle anim (stat change, snatch, substitute fade, etc.).
 }
 
 /** 1:1 signature décomp `BtlController_EmitStatusIconUpdate(buf, status1, status2)`.
- *  MVP : no-op. */
+ *  Phase 1 stub : no-op. */
 export function BtlController_EmitStatusIconUpdate(_bufferId: number, _status1: number, _status2: number): void {
-  // TODO : update sprite status icon (poison/burn/sleep overlay).
+  // Phase 1.4 UI : update sprite status icon (poison/burn/sleep overlay).
 }
 
 /** 1:1 signature décomp `BtlController_EmitHealthBarUpdate(buf, healthValue)`.
- *  MVP : no-op. */
+ *  Phase 1 stub : no-op. */
 export function BtlController_EmitHealthBarUpdate(_bufferId: number, _healthValue: number): void {
-  // TODO : update HP bar animation.
+  // Phase 1.4 UI : update HP bar animation.
 }
 
 /** 1:1 signature décomp `BtlController_EmitStatusAnimation(buf, status2anim, status)`.
  *  status2anim = TRUE pour STATUS2_*, FALSE pour STATUS1_*. */
 export function BtlController_EmitStatusAnimation(_bufferId: number, _isStatus2: boolean, _status: number): void {
-  // TODO : status anim (sprite shake + tint + status sound).
+  // Phase 1.4 UI : status anim (sprite shake + tint + status sound).
 }
 
 /** 1:1 signature décomp `BtlController_EmitDrawPartyStatusSummary(buf, hpStatuses, isBattleStart)`. */
 export function BtlController_EmitDrawPartyStatusSummary(_bufferId: number, _hpStatuses: unknown, _arg2: number): void {
-  // TODO : render mini-icons row showing party HP/status (= top of screen).
+  // Phase 1.4 UI : render mini-icons row showing party HP/status (= top of screen).
 }
 
 /** 1:1 signature décomp `BtlController_EmitHidePartyStatusSummary(buf)`. */
 export function BtlController_EmitHidePartyStatusSummary(_bufferId: number): void {
-  // TODO : hide party status row.
+  // Phase 1.4 UI : hide party status row.
 }
 
 /** 1:1 signature décomp `BtlController_EmitTrainerSlideBack(buf)`. */
 export function BtlController_EmitTrainerSlideBack(_bufferId: number): void {
-  // TODO : trainer sprite slide-out anim.
+  // Phase 1.4 UI : trainer sprite slide-out anim.
 }
 
 /** 1:1 signature décomp `BtlController_EmitTrainerSlide(buf)` (= slide in). */
 export function BtlController_EmitTrainerSlide(_bufferId: number): void {
-  // TODO : trainer sprite slide-in anim.
+  // Phase 1.4 UI : trainer sprite slide-in anim.
 }
 
 /** 1:1 signature décomp `BtlController_EmitBallThrowAnim(buf, caseId)`
@@ -225,13 +225,13 @@ export function BtlController_EmitTrainerSlide(_bufferId: number): void {
  *  0 = BALL_NO_SHAKES, 1..3 = BALL_*_SHAKES_FAIL, 4 = BALL_3_SHAKES_SUCCESS,
  *  5 = BALL_TRAINER_BLOCK, 6 = BALL_WALLY_SUCCESS_HACK. Phase 1.4 UI = anim. */
 export function BtlController_EmitBallThrowAnim(_bufferId: number, _caseId: number): void {
-  // TODO Phase 1.4 : ball throw anim sprite.
+  // Phase 1.4 UI : ball throw anim sprite.
 }
 
 /** 1:1 signature décomp `BtlController_EmitExpUpdate(buf, partyId, expPoints)`
  *  (battle_controllers.c:1275-1281). Émet l'XP gain anim sur le party icon. */
 export function BtlController_EmitExpUpdate(_bufferId: number, _partyId: number, _expPoints: number): void {
-  // TODO Phase 1.4 : XP bar fill anim.
+  // Phase 1.4 UI : XP bar fill anim.
 }
 
 /** 1:1 signature décomp `BtlController_EmitChoosePokemon(buf, caseId,
@@ -239,37 +239,37 @@ export function BtlController_EmitExpUpdate(_bufferId: number, _partyId: number,
 export function BtlController_EmitChoosePokemon(
   _bufferId: number, _caseId: number, _monToSwitchIntoId: number, _ability: number, _partyOrder: number,
 ): void {
-  // TODO Phase 1.4 : open party menu UI.
+  // Phase 1.4 UI : open party menu UI.
 }
 
 /** 1:1 signature décomp `BtlController_EmitLinkStandbyMsg(buf, mode, frame)`. */
 export function BtlController_EmitLinkStandbyMsg(_bufferId: number, _mode: number, _frame: boolean): void {
-  // TODO Phase 1.4 : link standby message (= multi link battle).
+  // Phase 1.4 UI : link standby message (= multi link battle).
 }
 
 /** 1:1 signature décomp `BtlController_EmitCantSwitch(buf)`. */
 export function BtlController_EmitCantSwitch(_bufferId: number): void {
-  // TODO Phase 1.4 : show "Can't switch out" message.
+  // Phase 1.4 UI : show "Can't switch out" message.
 }
 
 /** 1:1 signature décomp `BtlController_EmitYesNoBox(buf)`. */
 export function BtlController_EmitYesNoBox(_bufferId: number): void {
-  // TODO Phase 1.4 : show YES/NO box UI.
+  // Phase 1.4 UI : show YES/NO box UI.
 }
 
 /** 1:1 signature décomp `BtlController_EmitSwitchInAnim(buf, partyId, dontClear)`. */
 export function BtlController_EmitSwitchInAnim(_bufferId: number, _partyId: number, _dontClear: number): void {
-  // TODO : sprite slide-in animation for swap.
+  // Phase 1.4 UI : sprite slide-in animation for swap.
 }
 
 /** 1:1 signature décomp `BtlController_EmitGetMonData(buf, requestId, monBitFlags)`. */
 export function BtlController_EmitGetMonData(_bufferId: number, _requestId: number, _monBitFlags: number): void {
-  // TODO : read mon data via controller. Notre port lit directement gBattleMons.
+  // Phase 1.4 UI : read mon data via controller. Notre port lit directement gBattleMons.
 }
 
 /** 1:1 signature décomp `BtlController_EmitResetActionMoveSelection(buf, caseId)`. */
 export function BtlController_EmitResetActionMoveSelection(_bufferId: number, _caseId: number): void {
-  // TODO : reset action/move selection cursor (= Transform-style).
+  // Phase 1.4 UI : reset action/move selection cursor (= Transform-style).
 }
 
 /** 1:1 signature décomp `BtlController_EmitYesNoBox` n'existe pas — yesnobox
@@ -303,37 +303,37 @@ export function BattleScriptPop(ctx: BattleScriptContext): number {
 // ─── UI/Input stubs ─────────────────────────────────────────────────────────
 
 /** 1:1 signature décomp `HandleBattleWindow(xStart, yStart, xEnd, yEnd, flags)`.
- *  Décomp construit/clear un rect window dans BG tilemap. MVP = no-op. */
+ *  Décomp construit/clear un rect window dans BG tilemap. Phase 1 stub : no-op. */
 export function HandleBattleWindow(
   _xStart: number, _yStart: number, _xEnd: number, _yEnd: number, _flags: number,
 ): void {
-  // TODO : draw/clear window au framework UI. MVP = no-op.
+  // Phase 1.4 UI : draw/clear window au framework UI.
 }
 
-/** 1:1 signature décomp `BattlePutTextOnWindow(text, windowId)`. MVP = no-op. */
+/** 1:1 signature décomp `BattlePutTextOnWindow(text, windowId)`. Phase 1 stub. */
 export function BattlePutTextOnWindow(_text: number | string, _windowId: number): void {
-  // TODO : print text to battle window via gBattleScripting.windowsType
-  //        + sBattleTextOnWindowsInfo. MVP = no-op.
+  //  Phase 1.4 UI : print text to battle window via gBattleScripting.windowsType
+  //        + sBattleTextOnWindowsInfo.
 }
 
-/** 1:1 signature décomp `BattleCreateYesNoCursorAt(cursorPosition)`. MVP = no-op. */
+/** 1:1 signature décomp `BattleCreateYesNoCursorAt(cursorPosition)`. Phase 1 stub. */
 export function BattleCreateYesNoCursorAt(_cursorPosition: number): void {
-  // TODO : draw yes/no cursor sprite. MVP = no-op.
+  // Phase 1.4 UI : draw yes/no cursor sprite.
 }
 
-/** 1:1 signature décomp `BattleDestroyYesNoCursorAt(cursorPosition)`. MVP = no-op. */
+/** 1:1 signature décomp `BattleDestroyYesNoCursorAt(cursorPosition)`. Phase 1 stub. */
 export function BattleDestroyYesNoCursorAt(_cursorPosition: number): void {
-  // TODO : remove yes/no cursor sprite. MVP = no-op.
+  // Phase 1.4 UI : remove yes/no cursor sprite.
 }
 
-/** 1:1 signature décomp `PlaySE(seId)`. MVP = no-op (= SE channel not wired). */
+/** 1:1 signature décomp `PlaySE(seId)`. Phase 1 stub (= SE channel not wired). */
 export function PlaySE(_seId: number): void {
-  // TODO : trigger SE via audio engine. MVP = no-op.
+  // Phase 1.4 UI : trigger SE via audio engine.
 }
 
 /** 1:1 signature décomp `JOY_NEW(button)` (= io_reg.h macro). Returns true si
- *  le bouton vient d'être pressé ce frame. MVP : pas d'input wired, return false.
- *  Pour yesnobox MVP : on auto-confirme YES (= cursor=0) via auto-press hack en
+ *  le bouton vient d.être pressé ce frame. Phase 1 stub : pas d.input wired,
+ *  return false. Pour yesnobox : on auto-confirme YES (= cursor=0) via auto-press hack en
  *  override de cette fonction (cf. cmd-niveau-4.ts Cmd_yesnobox). */
 export function JOY_NEW(_button: number): boolean {
   return false;

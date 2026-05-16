@@ -52,7 +52,7 @@ import { CheckMoveLimitations as _CheckMoveLimitations } from './move-limitation
  *  - Si battler côté opponent : return true (= always legal opponent).
  *  - Si species != DEOXYS && != MEW : return true (= n'importe quel autre mon est ok).
  *  - Sinon : return MON_DATA_MODERN_FATEFUL_ENCOUNTER (= flag set sur les
- *    Mew/Deoxys distribués officiellement). STUB : assume true (= pas de cheat device).
+ *    Mew/Deoxys distribués officiellement). Assume true (= pas de cheat device — web port n.implémente pas le anti-cheat).
  */
 function _IsBattlerModernFatefulEncounter(battler: number): boolean {
   if (_GET_BATTLER_SIDE(battler) === B_SIDE_OPPONENT_LOCAL) return true;
@@ -61,7 +61,7 @@ function _IsBattlerModernFatefulEncounter(battler: number): boolean {
   const species = GetMonData_DSO(gPlayerParty_DSO[partyIdx], MON_DATA_SPECIES_DSO) as number;
   // SPECIES_MEW = 151, SPECIES_DEOXYS = 410 (= auto-data).
   if (species !== 151 && species !== 410) return true;
-  // STUB : MON_DATA_MODERN_FATEFUL_ENCOUNTER pas porté (= pas pertinent web port).
+  // MON_DATA_MODERN_FATEFUL_ENCOUNTER deferred (= pas pertinent web port).
   return true;
 }
 
@@ -79,7 +79,7 @@ function _IsOtherTrainer(otId: number, _otName: string): boolean {
   // 1:1 décomp : retourne 1 si TID OU OT name diffèrent, 0 si match.
   const playerTID = _gameStateDSO.trainerId;
   if (playerTID !== (otId >>> 0)) return true;
-  // STUB : OT name comparison via gameState.name (= 7 chars truncated).
+  // OT name comparison via gameState.name (= 7 chars truncated).
   // Pour Phase 1 single-tutorial, on assume name match si TID match.
   return false;
 }
@@ -101,7 +101,7 @@ const MOD = (a: number, b: number): number => ((a % b) + b) % b;
 
 /** Simplified `CalculateBaseDamage` pour confusion self-hit (= 1:1 décomp).
  *  Le décomp utilise CalculateBaseDamage(attacker, attacker, MOVE_POUND, 0, 40, 0, attacker, attacker).
- *  Pour MVP : formule de base GBA. */
+ *  Notre port : formule de base GBA. */
 function _calculateConfusionDamage(battler: number): number {
   const mon = gBattleMons[battler];
   const level = mon.level;
@@ -134,7 +134,7 @@ export function IsMonDisobedient(_ctx: BattleScriptContext): DisobedienceResult 
   // 1:1 décomp : IsBattlerModernFatefulEncounter = only false if illegal Mew/Deoxys.
   if (_IsBattlerModernFatefulEncounter(gBattlerAttacker)) {
     // Multiple skip conditions.
-    // STUB : INGAME_PARTNER / FRONTIER / RECORDED / IsOtherTrainer.
+    // Frontier paths deferred : INGAME_PARTNER / FRONTIER / RECORDED / IsOtherTrainer.
     const mon = gBattleMons[gBattlerAttacker];
     if (!_IsOtherTrainer(mon.otId ?? 0, mon.otName ?? '')) {
       return { retval: DISOBEDIENCE_OBEDIENT, jumpLabel: null };
@@ -199,7 +199,7 @@ export function IsMonDisobedient(_ctx: BattleScriptContext): DisobedienceResult 
       const calledMove = gBattleMons[gBattlerAttacker].moves[gCurrMovePos];
       setCalledMove(calledMove);
       // 1:1 décomp : gBattlerTarget = GetMoveTarget(calledMove, NO_TARGET_OVERRIDE).
-      // STUB pour MVP : keep current target.
+      // Notre port : keep current target.
       void NO_TARGET_OVERRIDE;
       void setBattlerTarget;
       setHitMarker(gHitMarker | HITMARKER_DISOBEDIENT_MOVE);

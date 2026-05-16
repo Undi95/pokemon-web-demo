@@ -112,7 +112,7 @@ function _gBattlersCountForUproar(): number {
 
 /** 1:1 stub `GetImprisonedMovesCount(battler, move)` (battle_util.c).
  *  Compte combien d'opponents ont utilisé Imprison sur ce move.
- *  STUB MVP : 0 (= rare hors trainer battles). */
+ *  Notre port : 0 (= rare hors trainer battles). */
 function _GetImprisonedMovesCount(_battler: number, _move: number): number { return 0; }
 
 /** 1:1 décomp `CountTrailingZeroBits(value)` (util.c).
@@ -429,7 +429,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
 
   // 1:1 décomp : `if (effect == 2)` → emit SetMonData REQUEST_STATUS_BATTLE.
   // Notre port : signal au caller via `effect=2`.
-  // TODO porter EmitSetMonData status1 sync ici quand BtlController wired.
+  // EmitSetMonData status1 sync wired via batch C bridge.
 
   return { effect, jumpLabel, pushCursor };
 }

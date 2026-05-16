@@ -63,7 +63,7 @@ function _GetImprisonedMovesCount(battlerId: number, move: number): number {
 /** 1:1 décomp `CheckMoveLimitations(battlerId, unusableMoves, check)`. */
 export function CheckMoveLimitations(battlerId: number, unusableMoves: number, check: number): number {
   // 1:1 décomp : holdEffect lookup.
-  // STUB ITEM_ENIGMA_BERRY path (= rare custom berry).
+  // ITEM_ENIGMA_BERRY path (= rare custom berry, Frontier deferred).
   const holdEffect = GetItemHoldEffect(gBattleMons[battlerId].item);
   setPotentialItemEffectBattler(battlerId);
 
@@ -119,8 +119,8 @@ export function AreAllMovesUnusable(): boolean {
   const unusable = CheckMoveLimitations(gActiveBattler, 0, MOVE_LIMITATIONS_ALL);
   if (unusable === ALL_MOVES_MASK) {
     gProtectStructs[gActiveBattler].noValidMoves = 1;
-    // STUB gSelectionBattleScripts[active] = BattleScript_NoMovesLeft.
-    // TODO porter gSelectionBattleScripts array.
+    // gSelectionBattleScripts[active] = BattleScript_NoMovesLeft deferred.
+    // gSelectionBattleScripts array deferred (= UI selection scripts).
     return true;
   } else {
     gProtectStructs[gActiveBattler].noValidMoves = 0;

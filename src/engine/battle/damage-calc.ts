@@ -9,15 +9,15 @@
  *     Torrent/Swarm pinch, Guts on status)
  *   - defense/spDefense avec ability boosts (Thick Fat, Marvel Scale)
  *   - hold effect boosts (Choice Band, Soul Dew, Deep Sea Tooth/Scale, Light Ball,
- *     Metal Powder, Thick Club) — TODO
- *   - badge boosts +10% (= post-gym, skip pour first battle) — TODO
+ *     Metal Powder, Thick Club) — deferred
+ *   - badge boosts +10% (= post-gym, wired via session 139)
  *   - APPLY_STAT_MOD (= stage ratios)
  *   - core formula : damage = stat × power × (2L/5 + 2) / defStat / 50
  *   - burn ÷2 (physical, attacker w/o Guts)
  *   - Reflect/Light Screen ÷2 (non-crit)
  *   - Double battle hitting both targets ÷2
  *   - Weather boost/weaken (Rain Fire/Water, Sun Fire/Water, SolarBeam weather)
- *   - Flash Fire boost — TODO
+ *   - Flash Fire boost — wired session 138
  *   - Final + 2
  *
  * Note : APPLY_STAT_MOD inline (= macro C qui set var = stat × ratio[stage][0] / ratio[stage][1]).
@@ -162,7 +162,7 @@ function weatherHasEffect(): boolean {
  *  Check :
  *  - BATTLE_TYPE_LINK / EREADER_TRAINER / RECORDED_LINK → false
  *  - side != B_SIDE_PLAYER → false
- *  - TRAINER + opponent == TRAINER_SECRET_BASE → false (STUB rare, pas wired)
+ *  - TRAINER + opponent == TRAINER_SECRET_BASE → false (rare, Frontier deferred)
  *  - FlagGet(badgeFlag) → return state du flag */
 function shouldGetStatBadgeBoost(badgeFlag: number, battler: number): boolean {
   // 1:1 décomp early-outs.
@@ -171,7 +171,7 @@ function shouldGetStatBadgeBoost(badgeFlag: number, battler: number): boolean {
                   | (1 << 25) /* BATTLE_TYPE_RECORDED_LINK */;
   if (gBattleTypeFlags & linkFlags) return false;
   if (GET_BATTLER_SIDE(battler) !== 0 /* B_SIDE_PLAYER */) return false;
-  // STUB Secret Base : TRAINER_SECRET_BASE check (= très rare, pas wired).
+  // Secret Base : TRAINER_SECRET_BASE check (= très rare, Frontier deferred).
   // 1:1 décomp `FlagGet(badgeFlag)` via gameState. Mapping number → enum string :
   const flagName = _badgeFlagNumberToEnum(badgeFlag);
   if (!flagName) return false;
@@ -266,7 +266,7 @@ export function CalculateBaseDamage(
   type = typeOverride ? (typeOverride & 0x3F) : moveData.type;
 
   // 1:1 décomp : hold effect lookup via GetItemHoldEffect.
-  // STUB ITEM_ENIGMA_BERRY path (= rare custom berry).
+  // ITEM_ENIGMA_BERRY path (= rare custom berry, Frontier deferred).
   const attackerHoldEffect = GetItemHoldEffect(attacker.item);
   const defenderHoldEffect = GetItemHoldEffect(defender.item);
   const attackerHoldEffectParam = GetItemHoldEffectParam(attacker.item);
@@ -277,7 +277,7 @@ export function CalculateBaseDamage(
     attack *= 2;
   }
 
-  // Badge boosts (+10% per stat). TODO post-gym.
+  // Badge boosts (+10% per stat). Wired session 139 via shouldGetStatBadgeBoost.
   // 1:1 décomp : SYSTEM_FLAGS = TRAINER_FLAGS_END + 1 = 0x860.
   // FLAG_BADGE01_GET = 0x867, FLAG_BADGE05_GET = 0x86B, FLAG_BADGE07_GET = 0x86D.
   // AUDIT FIX : précédemment hardcoded 0x844/0x848/0x84A FAUX (= ancienne SYSTEM_FLAGS).

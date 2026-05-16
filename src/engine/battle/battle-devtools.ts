@@ -250,7 +250,7 @@ function runScript(label: string, opts?: {
  *  place, on demande à l'utilisateur de pointer ctx.scriptPtr à un offset où
  *  l'opcode + args sont déjà présents.
  *
- *  TODO : si besoin pour POC, ajouter un mode "isolated bytecode" dans le
+ *  Note : si besoin pour POC, ajouter un mode "isolated bytecode" dans le
  *  script-interpreter (= overload _BYTECODE temporairement). */
 function runOpcode(opcodeName: string, _args?: number[]): {
   ok: boolean;
@@ -520,7 +520,7 @@ INSPECT :
 
 EXECUTE :
   runScript(label, opts?)   Run un script complet (opts = { resetStats, trace })
-  runOpcode(name, args)     TODO — single opcode isolation test
+  runOpcode(name, args)     — single opcode isolation test (deferred)
 
 STATS + TRACE :
   dispatchStats()           Counts opcodes appelés depuis dernier reset

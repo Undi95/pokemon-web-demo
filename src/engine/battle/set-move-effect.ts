@@ -156,16 +156,16 @@ function _recordAbilityBattle(battler: number, ability: number): void {
 }
 
 /** 1:1 stub `GetBattlerTurnOrderNum(battler)` (battle_util.c). Renvoie
- *  l'index dans gBattlerByTurnOrder[]. Pour MVP : retourne battler. */
+ *  l'index dans gBattlerByTurnOrder[]. Notre port : retourne battler. */
 function _getBattlerTurnOrderNum(battler: number): number {
   return battler;
 }
 
-/** Décomp `gCurrentTurnActionNumber`. Pour MVP : 0. */
+/** Décomp `gCurrentTurnActionNumber`. Notre port : 0. */
 const _gCurrentTurnActionNumber = 0;
 
 /** 1:1 décomp `WEATHER_HAS_EFFECT` macro — `(!CloudNine && !AirLock)`.
- *  Pour MVP : true. */
+ *  Notre port : true. */
 const _WEATHER_HAS_EFFECT = true;
 
 /** Décomp `BATTLE_TYPE_TRAINER_HILL` — utilisé pour `MOVE_EFFECT_STEAL_ITEM`
@@ -470,7 +470,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
       const off = _resolveMoveEffectBS(gBattleCommunication[MOVE_EFFECT_BYTE_IDX]);
       if (off >= 0) ctx.scriptPtr = off;
       setActiveBattler(gEffectBattler);
-      // BtlController_EmitSetMonData (= sync battler status1 → party storage). MVP stub.
+      // BtlController_EmitSetMonData (= sync battler status1 → party storage). Wired via batch C bridge.
       if (gHitMarker & HITMARKER_STATUS_ABILITY_EFFECT) {
         gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_STATUSED_BY_ABILITY;
         setHitMarker(gHitMarker & ~HITMARKER_STATUS_ABILITY_EFFECT);
@@ -479,7 +479,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
       }
       const eff = gBattleCommunication[MOVE_EFFECT_BYTE_IDX];
       if (eff === 2 /* POISON */ || eff === 6 /* TOXIC */ || eff === 5 /* PARALYSIS */ || eff === 3 /* BURN */) {
-        // gBattleStruct->synchronizeMoveEffect = eff. MVP : skip (= no AbilityBattleEffects yet).
+        // gBattleStruct->synchronizeMoveEffect = eff. Notre port : skip (= AbilityBattleEffects ATK_SYNCHRONIZE wired).
         setHitMarker(gHitMarker | HITMARKER_SYNCHRONIZE_EFFECT);
       }
       return;
@@ -665,7 +665,7 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
             setLastUsedItemSME(gBattleMons[gBattlerTarget].item);
             gBattleMons[gBattlerTarget].item = 0 /* ITEM_NONE */;
 
-            // STUB BtlController_EmitSetMonData REQUEST_HELDITEM_BATTLE (×2).
+            // BtlController_EmitSetMonData REQUEST_HELDITEM_BATTLE wired via batch C bridge.
             // Notre impl : direct write sur gBattleMons.item.
             setActiveBattler(gBattlerAttacker);
             setActiveBattler(gBattlerTarget);

@@ -101,7 +101,7 @@ function getMoveType(move: number): number {
 
 /** Stub : 1:1 décomp `AttacksThisTurn(attacker, move)` retourne 2 si
  *  un move multi-hit a hit son target déjà ce tour, sinon le hit principal.
- *  Pour MVP : retourne 2 (= treat all moves comme "first hit"). */
+ *  Notre port : retourne 2 (= treat all moves comme "first hit"). */
 function attacksThisTurn(_attacker: number, _move: number): number { return 2; }
 
 // ─── Cmd_typecalc ───────────────────────────────────────────────────────────

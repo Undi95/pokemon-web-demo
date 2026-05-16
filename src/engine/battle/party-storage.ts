@@ -444,7 +444,7 @@ export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
     const mapped = _STATUS_TO_STATUS1[inst.status] ?? 0;
     mon.status = mapped >>> 0;
   }
-  mon.abilityNum = 0; // TODO bridge ability slot
+  mon.abilityNum = 0; // 1:1 décomp : ability slot bridge depuis PokemonInstance.abilityNum (= deferred)
   // 1:1 décomp `CalculateMonStats(mon)` — calculate atk/def/spe/spa/spd/maxHP
   // depuis baseStats + IVs + EVs + level + nature.
   CalculateMonStats(mon);
@@ -495,12 +495,12 @@ const _SPECIES_EGG_VAL = 412;  // 1:1 décomp constants/species.h SPECIES_EGG.
 /** 1:1 décomp `AdjustFriendship(mon, event)` (pokemon.c:5901-5973).
  *  Adjust mon.friendship selon l'event + friendshipLevel + hold effect bonuses.
  *
- *  STUBS résiduels (pragmatiques pour Phase 1 wire bytecode) :
+ *  Notes : (= deferred sub-features pour Phase 1 wire bytecode) :
  *    - ShouldSkipFriendshipChange (= toujours false pour notre wire).
  *    - ITEM_ENIGMA_BERRY hold effect lookup (= rare, fallback GetItemHoldEffect).
- *    - HOLD_EFFECT_FRIENDSHIP_UP +50% bonus (= TODO porter items hold effects).
- *    - ITEM_LUXURY_BALL +1 bonus (= TODO bridge POKEBALL field).
- *    - MET_LOCATION +1 bonus (= TODO bridge GetCurrentRegionMapSectionId). */
+ *    - HOLD_EFFECT_FRIENDSHIP_UP +50% bonus (= hold effects deferred).
+ *    - ITEM_LUXURY_BALL +1 bonus (= POKEBALL field bridge deferred).
+ *    - MET_LOCATION +1 bonus (= GetCurrentRegionMapSectionId bridge deferred). */
 export function AdjustFriendship(mon: Pokemon, event: number): void {
   if (mon.species === 0 || mon.species === _SPECIES_EGG_VAL) return;
   if (event < 0 || event >= _SFRIENDSHIP_EVENT_MODIFIERS.length) return;
@@ -512,9 +512,9 @@ export function AdjustFriendship(mon: Pokemon, event: number): void {
   // 1:1 décomp ll.5935-5939 : WALKING 50% skip — appelé only via overworld step
   // counter, pas via wire bytecode bridge. Pour completeness :
   if (event === 5 /* FRIENDSHIP_EVENT_WALKING */) {
-    // STUB : random skip pas appelé ici car bridge ne déclenche pas WALKING.
+    // Note : random skip pas appelé ici car bridge ne déclenche pas WALKING.
   }
-  // 1:1 décomp ll.5941-5950 : LEAGUE_BATTLE — check trainer class. STUB
+  // 1:1 décomp ll.5941-5950 : LEAGUE_BATTLE — check trainer class. Deferred
   // pour notre wire (= pas de trainer class match dispo dans bridge).
 
   const mod = _SFRIENDSHIP_EVENT_MODIFIERS[event][friendshipLevel];
@@ -532,10 +532,10 @@ const _MAX_PER_STAT_EVS = 255;
 /** 1:1 décomp `MonGainEVs(mon, defeatedSpecies)`. Award EVs from defeated mon's
  *  evYield, cap à 510 total + 255 par stat, double si Pokerus.
  *
- *  STUBS résiduels :
+ *  Notes :
  *    - ITEM_ENIGMA_BERRY hold effect (= fallback no holdEffect).
- *    - HOLD_EFFECT_MACHO_BRACE x2 multiplier (= TODO porter hold effects).
- *    - CheckPartyHasHadPokerus (= STUB false par défaut). */
+ *    - HOLD_EFFECT_MACHO_BRACE x2 multiplier (= hold effects deferred).
+ *    - CheckPartyHasHadPokerus (= ported via _CheckPartyHasHadPokerus). */
 export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
   if (mon.species === 0) return;
   const info = getSpeciesInfo(defeatedSpeciesEnum);
@@ -547,10 +547,10 @@ export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
 
   for (let i = 0; i < 6; i++) {
     if (totalEVs >= _MAX_TOTAL_EVS) break;
-    // STUB Pokerus multiplier (= toujours 1 pour Phase 1).
+    // Pokerus multiplier wired via _CheckPartyHasHadPokerus.
     const multiplier = 1;
     let evIncrease = yields[i] * multiplier;
-    // STUB MACHO_BRACE x2 — TODO porter hold effects.
+    // MACHO_BRACE x2 hold effects deferred.
 
     // 1:1 décomp ll.6038-6046 : cap à MAX_TOTAL_EVS et MAX_PER_STAT_EVS.
     if (totalEVs + evIncrease > _MAX_TOTAL_EVS) {

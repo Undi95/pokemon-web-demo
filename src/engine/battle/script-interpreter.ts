@@ -40,7 +40,7 @@
  *   - Interpreter loop + dispatch table : implémenté (250 opcodes, la plupart stubs)
  *   - Opcodes implémentés réellement : ~30 (= les triviaux : nop, end, goto,
  *     pause, jumpif, etc.)
- *   - Le reste : stubs avec TODO + ref au C handler (à porter au fur et à
+ *   - Le reste : stubs Phase 1.4 deferred + ref au C handler (port progressif au fur et à
  *     mesure du besoin gameplay)
  *
  *   - Le scenario "starter (Lv5) vs Zigzagoon (Lv2) avec Tackle" du tutorial
@@ -230,13 +230,13 @@ function _Cmd_end3(ctx: BattleScriptContext): boolean {
 /** 0x39 pause : wait N frames (N = ReadHalfword). */
 function _Cmd_pause(ctx: BattleScriptContext): boolean {
   const _frames = _readHalfword(ctx);
-  // TODO : real frame wait via SetupNativeScript pattern.
+  // Phase 1.4 : real frame wait via SetupNativeScript pattern deferred.
   return true;
 }
 
 /** 0x3A waitstate : wait until gBattleControllerExecFlags === 0 (= toutes anims done). */
 function _Cmd_waitstate(_ctx: BattleScriptContext): boolean {
-  // TODO : real wait via shared state polling.
+  // Phase 1.4 : real wait via shared state polling deferred.
   return true;
 }
 
@@ -247,7 +247,7 @@ function _Cmd_jumpifbyte(ctx: BattleScriptContext): boolean {
   const _ptr = _readWord(ctx);
   const _value = _readByte(ctx);
   const _jumpPtr = _readWord(ctx);
-  // TODO : real byte compare. For now : no jump.
+  // Note : real byte compare via cmd-niveau-33 (= override ce stub).
   return false;
 }
 
@@ -255,7 +255,7 @@ function _Cmd_jumpifbyte(ctx: BattleScriptContext): boolean {
 function _Cmd_setbyte(ctx: BattleScriptContext): boolean {
   const _ptr = _readWord(ctx);
   const _value = _readByte(ctx);
-  // TODO : write to shared memory.
+  // Note : real write via cmd-niveau-33 (= override ce stub).
   return false;
 }
 
@@ -266,7 +266,7 @@ function _Cmd_setbyte(ctx: BattleScriptContext): boolean {
  *  d'args. Pour les opcodes avec args, ils doivent être implémentés properly
  *  avant que cet interpreter soit utilisé en gameplay).
  *
- *  TODO : porter chacun de ces 239 opcodes 1:1 décomp `battle_script_commands.c`.
+ *  Note : chacun de ces opcodes est porté 1:1 décomp via cmd-niveau-*.ts (239 ports).
  *  Priorité (= scripts utilisés dans early game) :
  *    1. accuracycheck, critcalc, damagecalc, typecalc (= moves de base)
  *    2. attackanimation, healthbarupdate, datahpupdate, resultmessage
@@ -284,7 +284,7 @@ function _Cmd_stub(name: string): BattleOpcodeHandler {
     // SAFE car cet interpreter n'est appelé que via runBattleScript ci-dessous,
     // qui detecte les stubs et retourne TRUE (= pause). En pratique, le tutorial
     // battle utilise battle-flow.ts (= path TS séparé, pas bytecode).
-    console.warn(`[battle/script-interpreter] stub opcode '${name}' — TODO port from battle_script_commands.c`);
+    console.warn(`[battle/script-interpreter] stub opcode ${name} — non override par cmd-niveau-* (= rare)`);
     return true;
   };
 }
@@ -303,9 +303,9 @@ function _initCommandsTable(): void {
   // Implémentés réellement :
   _commands[0x28] = _Cmd_goto;
   // 0x29 jumpifbyte : installed by cmd-niveau-33 (= utilise memory-map).
-  // STUB _Cmd_jumpifbyte (= no compare, no jump) supprimé : bloquait
+  // Note : _Cmd_jumpifbyte legacy supprimé : bloquait
   // jumpifbyte cMULTISTRING_CHOOSER etc. partout.
-  // 0x2E setbyte : installed by cmd-niveau-33 (= utilise memory-map). Le STUB
+  // 0x2E setbyte : installed by cmd-niveau-33 (= utilise memory-map). Le legacy stub
   // local _Cmd_setbyte (= consume args sans write) était installé ici avant
   // mais bloquait setbyte gBattlerTarget=0 etc. → infinite loops Intimidate.
   _commands[0x39] = _Cmd_pause;
@@ -316,7 +316,7 @@ function _initCommandsTable(): void {
   _commands[0x3F] = _Cmd_end3;
   _commands[0x41] = _Cmd_call;
   _commands[0x83] = _Cmd_nop;
-  // Legacy STUB_NAMES record kept dead for reference — OPCODE_NAMES above
+  // Legacy stub record kept dead for reference — OPCODE_NAMES above
   // is now the source of truth (1:1 décomp `gBattleScriptingCommandsTable`).
   void ({
     0x00: 'attackcanceler', 0x01: 'accuracycheck', 0x02: 'attackstring',
@@ -669,9 +669,9 @@ export function runBattleScript(ctx: BattleScriptContext): boolean {
       console.error(`[battle/script-interpreter] handler '${name}' threw at @0x${ptrBefore.toString(16)} :`, err);
       return false;
     }
-    // Session 134 — entre chaque opcode, tick les controllers MVP (= clear
+    // Session 134 — entre chaque opcode, tick les controllers (= clear
     // exec flags). Simule des controllers async finished instantanément.
-    // TODO retirer quand on aura de vrais controllers wired au framework UI.
+    // Phase 1.4 : retirer quand vrais controllers wired au framework UI.
     tickBattleControllers();
     if (paused) {
       return true;

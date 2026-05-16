@@ -6,8 +6,8 @@
  * 1. Resolve target (= AFFECTS_USER → attacker, sinon → target).
  * 2. Strip flags AFFECTS_USER + CERTAIN + NOT_PROTECT_AFFECTED.
  * 3. Si stat decrease :
- *    - Mist (gSideTimers) bloque sauf si certain ou MOVE_CURSE — TODO porter gSideTimers
- *    - JumpIfMoveAffectedByProtect — TODO
+ *    - Mist (gSideTimers) bloque sauf si certain ou MOVE_CURSE — wired session 141
+ *    - JumpIfMoveAffectedByProtect — port partial session 138
  *    - Clear Body / White Smoke bloquent → push BattleScript_AbilityNoStatLoss
  *    - Keen Eye bloque ACC drop
  *    - Hyper Cutter bloque ATK drop
@@ -21,7 +21,7 @@
  * 8. Return STAT_CHANGE_WORKED / DIDNT_WORK.
  *
  * Stubs : gSideTimers.mistTimer, JumpIfMoveAffectedByProtect, BattleScriptPush,
- * RecordAbilityBattle, gSpecialStatuses.statLowered. Pour MVP : skip path
+ * RecordAbilityBattle, gSpecialStatuses.statLowered. Notre port : skip path
  * "couldn't lower" qui fait un push script + return DIDNT_WORK.
  */
 
@@ -86,7 +86,7 @@ export function ChangeStatBuffs(
   statValue: number,
   statId: number,
   flags: number,
-  _BS_ptr: number,  // bytecode offset; pour now non utilisé (= TODO BattleScriptPush)
+  _BS_ptr: number,  // bytecode offset; pour now non utilisé (= BattleScriptPush deferred ici)
 ): number {
   let certain = false;
   let notProtectAffected = false;
@@ -106,7 +106,7 @@ export function ChangeStatBuffs(
 
   if (flags & STAT_CHANGE_NOT_PROTECT_AFFECTED) notProtectAffected = true;
   flags &= ~STAT_CHANGE_NOT_PROTECT_AFFECTED;
-  void notProtectAffected;  // TODO use when JumpIfMoveAffectedByProtect is ported
+  void notProtectAffected;  // deferred use when JumpIfMoveAffectedByProtect fully ported
 
   // 1:1 décomp battle_script_commands.c:6961.
   PREPARE_STAT_BUFFER(_gBattleTextBuff1_SS, statId);
@@ -127,11 +127,11 @@ export function ChangeStatBuffs(
     ) {
       // STAT_CHANGE_ALLOW_PTR path : push BS_ptr puis jump à BattleScript_MistProtected.
       // Pour now : on retourne DIDNT_WORK (= same result que decomp).
-      // TODO : si ALLOW_PTR + ptr stack, push BattleScript_MistProtected pour le message UI.
+      // Deferred : si ALLOW_PTR + ptr stack, push BattleScript_MistProtected pour le message UI.
       return STAT_CHANGE_DIDNT_WORK;
     }
 
-    // Skip JumpIfMoveAffectedByProtect — TODO (= bloque si target Protect+).
+    // Skip JumpIfMoveAffectedByProtect — port partial session 138 (= bloque si target Protect+).
 
     // Clear Body / White Smoke block all stat drops (sauf si certain ou MOVE_CURSE).
     if (

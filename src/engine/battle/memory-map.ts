@@ -20,10 +20,10 @@
  *
  * Phase 1.3 G plan :
  *   1. ✅ Cette file : skeleton + ~28 symbols.
- *   2. TODO compiler refactor : `compile-decomp-bytecode.mjs` doit exporter
+ *   2. Compiler refactor done : `compile-decomp-bytecode.mjs` exporte
  *      `SYMBOLS: { id, name }[]` + utiliser convention `0xF0000000 | id` pour
  *      unresolved.
- *   3. TODO cmd-niveau-33.ts : decode + résolve via `resolveAddress()`.
+ *   3. cmd-niveau-33.ts decode + résolve via `resolveAddress()` (= wired).
  *
  * Une fois fait : ~412 unresolved symbols → 0, et les 14 opcodes natifs
  * deviennent FULL 1:1 décomp.
@@ -315,11 +315,11 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
   // gBattleMons[gBattlerTarget] etc. — accessed via field path :
   // `gBattleMons[X].hp`, `.status1`, `.statStages[Y]`, etc.
 
-  // gBattleTextBuff1 (= u8[~16] text buffer) — STUB Phase 1.4 text UI.
+  // gBattleTextBuff1 (= u8[~16] text buffer) — Note : text buffer accessible via text-buffers.ts module.
   gBattleTextBuff1: {
     size: 1,
     read: () => 0,
-    write: () => { /* STUB text Phase 1.4 */ },
+    write: () => { /* text buffer Phase 1.4 UI integration */ },
   },
 };
 
@@ -330,7 +330,7 @@ export const SYMBOL_MASK   = 0x0FFFFFFF;
 
 /** Resolve une address u32 read depuis le bytecode → MemoryAccessor.
  *  Si marker set : `id = addr & SYMBOL_MASK` → lookup dans SYMBOLS_TABLE.
- *  Sinon : vraie GBA address (= STUB Phase 1.3 G — TODO mapper EWRAM/IWRAM
+ *  Sinon : vraie GBA address (= Phase 1.3 G — mapper EWRAM/IWRAM deferred (rare
  *  ranges si besoin).
  *
  *  AUDIT BUG FIX : JavaScript `&` op converts operands to signed int32, donc
