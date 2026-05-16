@@ -96,6 +96,28 @@ function scrapeConstants(rootDir) {
         }
       }
     }
+    // AUDIT BUG FIX : the auto extractor emits unresolved C macros as
+    // `export const NAME_EXPR = "(<expr>)";` strings. Eval these via JS for
+    // simple bitwise/arithmetic (= (1 << 0), (1 << 5), 1 | 2, etc.).
+    // Strip the `_EXPR` suffix → store as plain NAME = numeric value.
+    const exprRe = /^export const (\w+)_EXPR\s*=\s*"([^"]+)";/gm;
+    let xm;
+    while ((xm = exprRe.exec(src)) !== null) {
+      const name = xm[1];
+      const exprStr = xm[2];
+      // Only eval if it's pure numeric + operators (no identifiers).
+      if (/^[\d\s+\-*/<>&|^()xX0-9a-fA-F]+$/.test(exprStr)) {
+        try {
+          const v = new Function('return ' + exprStr)();
+          if (typeof v === 'number' && !isNaN(v)) {
+            if (!map.has(name)) {
+              map.set(name, v | 0);
+              count++;
+            }
+          }
+        } catch { /* skip */ }
+      }
+    }
   }
   console.log(`  Scraped ${count} constants from ${rootDir.replace(/\\/g, '/').split('/').pop()}/`);
   return map;
@@ -400,17 +422,23 @@ if (existsSync(outRoot)) {
 const SYMBOL_MARKER = 0xF0000000;
 const BATTLE_MEMORY_SYMBOLS = new Set([
   // gXxx prefix = globals battle ewram vars.
-  'gHitMarker', 'gMoveResultFlags', 'gChosenMove', 'gBattleMoveDamage',
+  'gHitMarker', 'gMoveResultFlags', 'gChosenMove', 'gCurrentMove', 'gBattleMoveDamage',
   'gBattleOutcome', 'gCritMultiplier', 'gBattleWeather', 'gBattleTypeFlags',
-  'gBattlerTarget', 'gLastUsedItem', 'gTrainerBattleOpponent_A',
+  'gBattlerTarget', 'gBattlerAttacker', 'gLastUsedItem', 'gTrainerBattleOpponent_A',
   'gNumSafariBalls', 'gBattleTextBuff1', 'gBattleCommunication',
   // sXxx prefix = gBattleScripting fields (battle.h:489-518).
-  'sDMG_MULTIPLIER', 'sB_ANIM_TURN', 'sB_ANIM_TARGETS_HIT',
-  'sTWOTURN_STRINGID', 'sMULTIHIT_EFFECT', 'sMULTIHIT_STRING',
-  'sSTAT_ANIM_PLAYED', 'sTRIPLE_KICK_POWER', 'sGIVEEXP_STATE',
-  'sLVLBOX_STATE', 'sLEARNMOVE_STATE', 'sBATTLE_STYLE', 'sBATTLER',
-  // cXxx prefix = gBattleCommunication[X].
-  'cMULTISTRING_CHOOSER', 'cMISS_TYPE', 'cEFFECTIVENESS',
+  // 1:1 décomp battle_script_commands.h:258-284 — tous les sX offsets.
+  'sPAINSPLIT_HP', 'sBIDE_DMG', 'sDMG_MULTIPLIER',
+  'sB_ANIM_ARG1', 'sB_ANIM_ARG2', 'sB_ANIM_TURN', 'sB_ANIM_TARGETS_HIT',
+  'sTWOTURN_STRINGID', 'sMOVEEND_STATE', 'sBATTLER_WITH_ABILITY',
+  'sMULTIHIT_EFFECT', 'sMULTIHIT_STRING', 'sSTAT_ANIM_PLAYED',
+  'sTRIPLE_KICK_POWER', 'sSTATCHANGER',
+  'sGIVEEXP_STATE', 'sLVLBOX_STATE', 'sLEARNMOVE_STATE', 'sBATTLE_STYLE',
+  'sBATTLER', 'sPURSUIT_DOUBLES_ATTACKER', 'sRESHOW_MAIN_STATE',
+  'sRESHOW_HELPER_STATE', 'sLVLUP_HP', 'sWINDOWS_TYPE',
+  'sMULTIPLAYER_ID', 'sSPECIAL_TRAINER_BATTLE_TYPE',
+  // cXxx prefix = gBattleCommunication[X] (battle_script_commands.h:299-301).
+  'cEFFECT_CHOOSER', 'cMULTISTRING_CHOOSER', 'cMISS_TYPE',
 ]);
 const symbolToId = new Map();  // name → id
 const idToSymbol = [];          // id → name (= reverse lookup for exports)
@@ -421,6 +449,121 @@ function getSymbolId(name) {
   idToSymbol.push(name);
   symbolToId.set(name, id);
   return id;
+}
+
+/** Tokenize une expression simple : nombres, identifiants, operators (+, -, |, <<, >>, &). */
+function _tokenize(expr) {
+  const tokens = [];
+  let i = 0;
+  while (i < expr.length) {
+    const c = expr[i];
+    if (/\s/.test(c)) { i++; continue; }
+    // Multi-char operators
+    if (expr.substr(i, 2) === '<<') { tokens.push({ type: 'op', val: '<<' }); i += 2; continue; }
+    if (expr.substr(i, 2) === '>>') { tokens.push({ type: 'op', val: '>>' }); i += 2; continue; }
+    if (/[+\-|&^()]/.test(c)) { tokens.push({ type: 'op', val: c }); i++; continue; }
+    // Hex number
+    if (c === '0' && (expr[i+1] === 'x' || expr[i+1] === 'X')) {
+      let j = i + 2;
+      while (j < expr.length && /[0-9a-fA-F]/.test(expr[j])) j++;
+      tokens.push({ type: 'num', val: parseInt(expr.slice(i, j), 16) });
+      i = j; continue;
+    }
+    // Decimal number
+    if (/[0-9]/.test(c)) {
+      let j = i;
+      while (j < expr.length && /[0-9]/.test(expr[j])) j++;
+      tokens.push({ type: 'num', val: parseInt(expr.slice(i, j), 10) });
+      i = j; continue;
+    }
+    // Identifier (= constant name or macro arg)
+    if (/[\\\w]/.test(c)) {
+      let j = i;
+      while (j < expr.length && /[\\\w]/.test(expr[j])) j++;
+      tokens.push({ type: 'ident', val: expr.slice(i, j) });
+      i = j; continue;
+    }
+    // Unknown char - skip
+    i++;
+  }
+  return tokens;
+}
+
+/** Mini precedence-climbing parser for expr tokens.
+ *  Precedence : << >> > * / > + - > & > ^ > |  (close enough to C, sufficient
+ *  for the battle script macros). */
+function _parseExpr(tokens, labelOffsets, warnings) {
+  let pos = 0;
+  function peek() { return tokens[pos]; }
+  function consume() { return tokens[pos++]; }
+  function parsePrimary() {
+    const t = peek();
+    if (!t) return 0;
+    if (t.type === 'op' && t.val === '(') {
+      consume();
+      const v = parseOr();
+      if (peek()?.val === ')') consume();
+      return v;
+    }
+    if (t.type === 'op' && t.val === '-') {
+      consume();
+      return -parsePrimary();
+    }
+    if (t.type === 'num') { consume(); return t.val | 0; }
+    if (t.type === 'ident') {
+      consume();
+      // resolve identifier
+      return resolveValue(t.val, labelOffsets, warnings) | 0;
+    }
+    consume();
+    return 0;
+  }
+  function parseShift() {
+    let left = parsePrimary();
+    while (peek()?.type === 'op' && (peek().val === '<<' || peek().val === '>>')) {
+      const op = consume().val;
+      const right = parsePrimary();
+      left = (op === '<<' ? (left << right) : (left >>> right)) | 0;
+    }
+    return left;
+  }
+  function parseAdditive() {
+    let left = parseShift();
+    while (peek()?.type === 'op' && (peek().val === '+' || peek().val === '-')) {
+      const op = consume().val;
+      const right = parseShift();
+      left = (op === '+' ? left + right : left - right) | 0;
+    }
+    return left;
+  }
+  function parseAnd() {
+    let left = parseAdditive();
+    while (peek()?.type === 'op' && peek().val === '&') {
+      consume();
+      const right = parseAdditive();
+      left = (left & right) | 0;
+    }
+    return left;
+  }
+  function parseXor() {
+    let left = parseAnd();
+    while (peek()?.type === 'op' && peek().val === '^') {
+      consume();
+      const right = parseAnd();
+      left = (left ^ right) | 0;
+    }
+    return left;
+  }
+  function parseOr() {
+    let left = parseXor();
+    while (peek()?.type === 'op' && peek().val === '|') {
+      consume();
+      const right = parseXor();
+      left = (left | right) | 0;
+    }
+    return left;
+  }
+  return parseOr();
 }
 
 /** Resolve a value (string or number) to a number. */
@@ -437,27 +580,18 @@ function resolveValue(v, labelOffsets, warnings) {
   if (labelOffsets && labelOffsets.has(stripped)) return labelOffsets.get(stripped);
   // Constant?
   if (constantsMap.has(stripped)) return constantsMap.get(stripped);
-  // Try simple addition: A+B or A|B
-  const addMatch = stripped.match(/^(\w+)\s*\+\s*(\w+)$/);
-  if (addMatch) {
-    const a = resolveValue(addMatch[1], labelOffsets, null); // null = silent
-    const b = resolveValue(addMatch[2], labelOffsets, null);
-    return (a + b) | 0;
-  }
-  const orMatch = stripped.match(/^(\w+)\s*\|\s*(\w+)$/);
-  if (orMatch) {
-    const a = resolveValue(orMatch[1], labelOffsets, null);
-    const b = resolveValue(orMatch[2], labelOffsets, null);
-    return (a | b) | 0;
-  }
-  // Stripped form starts with paren — try inner
-  const parenMatch = stripped.match(/^\((.+)\)$/);
-  if (parenMatch) return resolveValue(parenMatch[1], labelOffsets, warnings);
   // Phase 1.3 G — battle memory var (whitelist) : encode as marker for runtime
-  // memory-map resolution. Préserve seulement les ~28 vraies battle vars
-  // utilisées par opcodes natifs (= éviter polluer avec sprite templates etc.).
+  // memory-map resolution. Préserve seulement les ~38 vraies battle vars
+  // utilisées par opcodes natifs.
   if (BATTLE_MEMORY_SYMBOLS.has(stripped)) {
     return (SYMBOL_MARKER | getSymbolId(stripped)) >>> 0;
+  }
+  // Stripped form starts with paren — try inner directly via expr parser.
+  // Composite expression : if it contains any operator (+, -, |, &, <<, >>, ^,
+  // parens), parse via mini expression parser.
+  if (/[+\-|&^<>()]/.test(stripped)) {
+    const tokens = _tokenize(stripped);
+    if (tokens.length > 0) return _parseExpr(tokens, labelOffsets, warnings) | 0;
   }
   // Unresolved.
   if (warnings) warnings.add(stripped);

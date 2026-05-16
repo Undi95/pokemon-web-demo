@@ -128,10 +128,80 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
 
   // ─── sXxx prefix = gBattleScripting fields ─────────────────────────────
   // (battle.h:489-518 BattleScripting struct).
+  sPAINSPLIT_HP: {
+    size: 4,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { painSplitHp: number } } }).__battleState?.gBattleScripting?.painSplitHp ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { painSplitHp: number } } }).__battleState?.gBattleScripting; if (bs) bs.painSplitHp = v | 0; },
+  },
+  sBIDE_DMG: {
+    size: 4,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { bideDmg: number } } }).__battleState?.gBattleScripting?.bideDmg ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { bideDmg: number } } }).__battleState?.gBattleScripting; if (bs) bs.bideDmg = v | 0; },
+  },
   sDMG_MULTIPLIER: {
     size: 1,
     read: () => (globalThis as { __battleState?: { gBattleScripting?: { dmgMultiplier: number } } }).__battleState?.gBattleScripting?.dmgMultiplier ?? 0,
-    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { dmgMultiplier: number } } }).__battleState?.gBattleScripting; if (bs) bs.dmgMultiplier = v; },
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { dmgMultiplier: number } } }).__battleState?.gBattleScripting; if (bs) bs.dmgMultiplier = v & 0xFF; },
+  },
+  sB_ANIM_ARG1: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { animArg1: number } } }).__battleState?.gBattleScripting?.animArg1 ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { animArg1: number } } }).__battleState?.gBattleScripting; if (bs) bs.animArg1 = v & 0xFF; },
+  },
+  sB_ANIM_ARG2: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { animArg2: number } } }).__battleState?.gBattleScripting?.animArg2 ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { animArg2: number } } }).__battleState?.gBattleScripting; if (bs) bs.animArg2 = v & 0xFF; },
+  },
+  sMOVEEND_STATE: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { moveendState: number } } }).__battleState?.gBattleScripting?.moveendState ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { moveendState: number } } }).__battleState?.gBattleScripting; if (bs) bs.moveendState = v & 0xFF; },
+  },
+  sBATTLER_WITH_ABILITY: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { battlerWithAbility: number } } }).__battleState?.gBattleScripting?.battlerWithAbility ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { battlerWithAbility: number } } }).__battleState?.gBattleScripting; if (bs) bs.battlerWithAbility = v & 0xFF; },
+  },
+  sSTATCHANGER: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { statChanger: number } } }).__battleState?.gBattleScripting?.statChanger ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { statChanger: number } } }).__battleState?.gBattleScripting; if (bs) bs.statChanger = v & 0xFF; },
+  },
+  sPURSUIT_DOUBLES_ATTACKER: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { pursuitDoublesAttacker: number } } }).__battleState?.gBattleScripting?.pursuitDoublesAttacker ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { pursuitDoublesAttacker: number } } }).__battleState?.gBattleScripting; if (bs) bs.pursuitDoublesAttacker = v & 0xFF; },
+  },
+  sRESHOW_MAIN_STATE: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { reshowMainState: number } } }).__battleState?.gBattleScripting?.reshowMainState ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { reshowMainState: number } } }).__battleState?.gBattleScripting; if (bs) bs.reshowMainState = v & 0xFF; },
+  },
+  sRESHOW_HELPER_STATE: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { reshowHelperState: number } } }).__battleState?.gBattleScripting?.reshowHelperState ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { reshowHelperState: number } } }).__battleState?.gBattleScripting; if (bs) bs.reshowHelperState = v & 0xFF; },
+  },
+  sLVLUP_HP: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { levelUpHP: number } } }).__battleState?.gBattleScripting?.levelUpHP ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { levelUpHP: number } } }).__battleState?.gBattleScripting; if (bs) bs.levelUpHP = v & 0xFF; },
+  },
+  sWINDOWS_TYPE: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { windowsType: number } } }).__battleState?.gBattleScripting?.windowsType ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { windowsType: number } } }).__battleState?.gBattleScripting; if (bs) bs.windowsType = v & 0xFF; },
+  },
+  sMULTIPLAYER_ID: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { multiplayerId: number } } }).__battleState?.gBattleScripting?.multiplayerId ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { multiplayerId: number } } }).__battleState?.gBattleScripting; if (bs) bs.multiplayerId = v & 0xFF; },
+  },
+  sSPECIAL_TRAINER_BATTLE_TYPE: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { specialTrainerBattleType: number } } }).__battleState?.gBattleScripting?.specialTrainerBattleType ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { specialTrainerBattleType: number } } }).__battleState?.gBattleScripting; if (bs) bs.specialTrainerBattleType = v & 0xFF; },
   },
   sB_ANIM_TURN: {
     size: 1,
@@ -204,6 +274,19 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
     },
   },
 
+  // ─── cEFFECT_CHOOSER = gBattleCommunication[MOVE_EFFECT_BYTE=3] (= move effect lookup) ─
+  // AUDIT BUG FIX : était missing dans memory-map, ce qui faisait que setbyte
+  // cEFFECT_CHOOSER (= setmoveeffect macro) était no-op silent → tous moves
+  // status (sleep/poison/etc.) ne s'appliquaient pas via bytecode.
+  cEFFECT_CHOOSER: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication?.[3] ?? 0,
+    write: (v) => {
+      const bc = (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication;
+      if (bc) bc[3] = v & 0xFF;
+    },
+  },
+
   // ─── cMULTISTRING_CHOOSER = gBattleCommunication[MULTISTRING_CHOOSER=5] ─
   cMULTISTRING_CHOOSER: {
     size: 1,
@@ -214,23 +297,15 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
     },
   },
 
-  // ─── cMISS_TYPE = gBattleCommunication[MISS_TYPE=5 OR 4 depending on usage] ─
+  // ─── cMISS_TYPE = gBattleCommunication[MISS_TYPE=6] ────────────────────
+  // AUDIT BUG FIX : était mappé à index 5 (= conflit avec MULTISTRING_CHOOSER).
+  // Le décomp battle_script_commands.h:295 dit MISS_TYPE=6, pas 5.
   cMISS_TYPE: {
     size: 1,
-    read: () => (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication?.[5] ?? 0,
+    read: () => (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication?.[6] ?? 0,
     write: (v) => {
       const bc = (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication;
-      if (bc) bc[5] = v & 0xFF;
-    },
-  },
-
-  // ─── cEFFECTIVENESS = gBattleCommunication[EFFECTIVENESS_IDX] ──────────
-  cEFFECTIVENESS: {
-    size: 1,
-    read: () => (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication?.[4] ?? 0,
-    write: (v) => {
-      const bc = (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication;
-      if (bc) bc[4] = v & 0xFF;
+      if (bc) bc[6] = v & 0xFF;
     },
   },
 
@@ -256,9 +331,15 @@ export const SYMBOL_MASK   = 0x0FFFFFFF;
 /** Resolve une address u32 read depuis le bytecode → MemoryAccessor.
  *  Si marker set : `id = addr & SYMBOL_MASK` → lookup dans SYMBOLS_TABLE.
  *  Sinon : vraie GBA address (= STUB Phase 1.3 G — TODO mapper EWRAM/IWRAM
- *  ranges si besoin). */
+ *  ranges si besoin).
+ *
+ *  AUDIT BUG FIX : JavaScript `&` op converts operands to signed int32, donc
+ *  `0xF0000007 & 0xF0000000` retournait -268435456 (= int32 negative bit set
+ *  high) qui était != 0xF0000000 (= positive Number 4026531840). Le check
+ *  failed silently → resolveAddress retournait null → tous les setbyte vers
+ *  des symbols battle script étaient no-op. Fix : `>>> 0` force unsigned. */
 export function resolveAddress(addr: number): MemoryAccessor | null {
-  if ((addr & SYMBOL_MARKER) === SYMBOL_MARKER) {
+  if (((addr & SYMBOL_MARKER) >>> 0) === SYMBOL_MARKER) {
     const id = addr & SYMBOL_MASK;
     return SYMBOLS_BY_ID[id] ?? null;
   }

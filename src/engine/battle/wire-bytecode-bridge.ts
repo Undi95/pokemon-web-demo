@@ -112,9 +112,22 @@ function _resolveMoveEffect(moveId: number): number {
   return 0;
 }
 
-/** Get move effect via faster path : direct dex id → getMove → effect. */
+/** Get move effect via faster path : direct dex id → getMove → effect.
+ *  AUDIT BUG FIX : 'tailwhip' → 'MOVE_TAILWHIP' (= missing underscore) → no
+ *  move data. Now : utilise Dex.moves.get(dexId).name pour split multi-word. */
 function _resolveMoveEffectFromDexId(dexId: string): number {
-  const moveData = getMove('MOVE_' + dexId.toUpperCase().replace(/-/g, '_'));
+  // Try direct first (single-word like "tackle" → MOVE_TACKLE).
+  let moveData = getMove('MOVE_' + dexId.toUpperCase().replace(/-/g, '_'));
+  if (!moveData) {
+    // Fall back : split via @pkmn/dex display name.
+    try {
+      const mv = Dex.moves.get(dexId);
+      if (mv?.name) {
+        const enumStr = 'MOVE_' + mv.name.toUpperCase().replace(/[ '-]/g, '_').replace(/_+/g, '_');
+        moveData = getMove(enumStr);
+      }
+    } catch { /* fallthrough */ }
+  }
   if (!moveData) return 0;
   const effect = resolveDecompConstant(moveData.effect);
   return typeof effect === 'number' ? effect : 0;

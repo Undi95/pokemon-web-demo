@@ -446,29 +446,46 @@ export function buildBattleDevtools(): Record<string, unknown> {
     /** Test direct du bridge bytecode ↔ PokemonInstance via runMoveScriptViaBytecode.
      *  Usage : scope.bytecode.testMoveBridge() — create un combat ad-hoc et exec
      *  Pound via bytecode, return damage measured. */
-    testMoveBridge: async () => {
-      // Use scope.party real one for attacker.
-      const gs = (globalThis as { gameState?: { party?: unknown[] } }).gameState;
-      const realParty = (gs?.party as Array<{ speciesEnum: string; nickname: string; currentHp: number; maxHp: number; moves: { id: string; pp: number }[]; ivs: { atk: number; def: number }; evs: { atk: number; def: number }; level: number; }> | undefined)?.filter(m => !!m);
-      if (!realParty?.length) return { error: 'no party' };
+    testMoveBridge: async (opts?: { moveId?: string; enemy?: string; enemyLevel?: number; attackerSpecies?: string; attackerLevel?: number; }) => {
       const pokemonMod = await import('../pokemon');
-      const enemyMon = pokemonMod.createPokemonInstance('SPECIES_ZIGZAGOON', 2);
-      setupPartyForBattle(realParty as never, [enemyMon]);
+      let attacker: { speciesEnum: string; nickname: string; currentHp: number; maxHp: number; moves: { id: string; pp: number }[]; ivs: { atk: number; def: number }; evs: { atk: number; def: number }; level: number; };
+      if (opts?.attackerSpecies) {
+        attacker = pokemonMod.createPokemonInstance(opts.attackerSpecies, opts.attackerLevel ?? 50) as never;
+      } else {
+        // Use scope.party real one for attacker.
+        const gs = (globalThis as { gameState?: { party?: unknown[] } }).gameState;
+        const realParty = (gs?.party as Array<typeof attacker> | undefined)?.filter(m => !!m);
+        if (!realParty?.length) return { error: 'no party (specify attackerSpecies)' };
+        attacker = realParty[0];
+      }
+      // Si moveId override, on remplace attacker.moves[0].id par ce move (= force le bridge à lookup le bon effect script).
+      if (opts?.moveId) {
+        attacker.moves = [{ id: opts.moveId, pp: 35 }, ...(attacker.moves.slice(1) || [])];
+      }
+      const enemyMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_ZIGZAGOON', opts?.enemyLevel ?? 2);
+      setupPartyForBattle([attacker] as never, [enemyMon]);
       fillActiveBattleMonsForBattleStart();
-      const attacker = realParty[0];
       const defender = enemyMon;
       const beforeHp = defender.currentHp;
+      const beforeStatus1 = (globalThis as { __battleState?: { gBattleMons?: Array<{ status1: number; statStages: number[]; }> } }).__battleState?.gBattleMons?.[1];
+      const beforeSnap = beforeStatus1 ? { status1: beforeStatus1.status1, stages: [...beforeStatus1.statStages] } : null;
       const result = runMoveScriptViaBytecode({
         attacker: attacker as never,
         defender,
-        attackerMoveIdx: 0,  // 1er move (= usually a damaging one).
+        attackerMoveIdx: 0,
       });
+      const afterStatus1 = (globalThis as { __battleState?: { gBattleMons?: Array<{ status1: number; statStages: number[]; }> } }).__battleState?.gBattleMons?.[1];
+      const afterSnap = afterStatus1 ? { status1: afterStatus1.status1, stages: [...afterStatus1.statStages] } : null;
       return {
         attacker_name: attacker.nickname,
         defender_name: defender.nickname,
         moveUsed: attacker.moves[0]?.id,
         defenderHpBefore: beforeHp,
         defenderHpAfter: defender.currentHp,
+        statusBefore: beforeSnap?.status1,
+        statusAfter: afterSnap?.status1,
+        stagesBefore: beforeSnap?.stages,
+        stagesAfter: afterSnap?.stages,
         bridgeResult: result,
       };
     },

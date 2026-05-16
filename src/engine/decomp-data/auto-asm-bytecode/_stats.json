@@ -7,9 +7,9 @@
     "ops": 60595,
     "bytes": 589693,
     "unknownOps": 0,
-    "unresolvedSymbols": 11387,
+    "unresolvedSymbols": 10527,
     "labels": 11336
   },
   "topUnknownOps": {},
-  "durationMs": 733
+  "durationMs": 750
 }

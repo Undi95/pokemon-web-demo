@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
 // Generated: 2026-05-16
-// Stats: ops=23, bytes=183, labels=8, unknownOps=0, unresolvedSymbols=9
+// Stats: ops=23, bytes=183, labels=8, unknownOps=0, unresolvedSymbols=8
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
@@ -19,4 +19,4 @@ export const LABELS: Record<string, number> = {
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
 export const BYTECODE: readonly number[] = [5,113,0,0,0,2,15,0,0,0,4,95,0,0,0,0,0,0,0,31,0,0,0,0,0,1,0,46,0,0,0,23,0,0,1,0,23,4,128,6,0,38,0,0,58,3,23,4,128,2,0,23,5,128,0,0,26,6,128,4,0,23,6,128,4,0,38,0,0,58,58,0,0,255,255,255,255,255,5,255,255,255,255,255,5,0,6,0,5,6,0,0,0,58,3,0,0,0,0,103,0,0,0,23,0,0,1,0,92,255,0,2,3,5,0,0,0,0,23,4,128,1,0,23,5,128,5,0,38,0,0,58,35,13,128,2,0,34,13,128,2,0,7,1,177,0,0,0,7,1,13,128,0,0,35,13,128,3,0,34,13,128,3,0,7,1,177,0,0,0,7,1,13,128,0,0,3,23,0,0,1,0,3] as const;
 
-export const STATS = { ops: 23, bytes: 183, labels: 8, unknownOps: 0, unresolvedSymbols: 9 } as const;
+export const STATS = { ops: 23, bytes: 183, labels: 8, unknownOps: 0, unresolvedSymbols: 8 } as const;
