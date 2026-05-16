@@ -255,12 +255,53 @@ résiduels vers la même direction 1:1 strict :
 - `cmd-niveau-1.ts` Cmd_attackcanceler docs : suppression TODO obsolète (= port
   complet via atk-canceler.ts sessions 136-138).
 
+### Round 6 (commit `0be7542e`)
+- `cmd-niveau-31.ts` Cmd_displaydexinfo (FULL port `battle_script_commands.c:10104-10152`) :
+  state machine 6 cases (0..5) avec re-enter via ctx.scriptPtr--.
+
+### Round 7 (commit `685e38c8`)
+- `cmd-niveau-23.ts` `PressurePPLoseOnUsingImprison` emit PP wire :
+  1:1 décomp `battle_util.c:791-796` + new helper `_moveIsPermanent_N23`.
+
+### Round 7b (commit `a4f86573`)
+- `cmd-niveau-14.ts` `_weatherHasEffect` FULL port macro `WEATHER_HAS_EFFECT`
+  (battle_util.h:47) Cloud Nine / Air Lock check.
+
+### Round 8 (commit `7ceb3130`)
+- `cmd-niveau-34.ts` Cmd_getexp case 2 BGM victory wild :
+  1:1 décomp `BattleStopLowHpSound + PlayBGM(MUS_VICTORY_WILD = 414)` via
+  `__audioEngine` global wires.
+
+### Round 9 (commit `45bbf645`)
+- `util.ts` NEW `WEATHER_HAS_EFFECT()` exported 1:1 décomp.
+- `cmd-niveau-18.ts` + `cmd-niveau-20.ts` : wire `_weatherHasEffect` →
+  `import { WEATHER_HAS_EFFECT } from './util'`.
+
+### Round 10 (commit `37b156be`)
+- `cmd-niveau-21.ts` Cmd_trywish case 0 : 1:1 décomp utilise
+  `gBattlerPartyIndexes[attacker]` au lieu de gBattlerAttacker direct.
+- `cmd-niveau-27.ts` `_handleSetPokedexFlag` FULL port `pokemon.c:6929-6940` :
+  UNOWN/SPINDA personality storage dans `gSaveBlock2Ptr.pokedex`.
+
+### Round 11 (commit `f5b7caef`)
+- `cmd-niveau-31.ts` Cmd_givecaughtmon PC box message branch :
+  1:1 décomp `battle_script_commands.c:10060-10079`. MULTISTRING_CHOOSER
+  values 1:1 (SENT_SOMEONES_PC/SOMEONES_BOX_FULL/SENT_LANETTES_PC/LANETTES_BOX_FULL).
+  NEW helpers `_shouldShowBoxWasFullMessage_GC` + `_flagGet_GC` via
+  gSaveBlock1Ptr.flags + FLAG_SYS_PC_LANETTE (0x86F).
+
+### Round 12 (commit `5ac61290`)
+- `cmd-niveau-1.ts` Cmd_datahpupdate docstring : mark substitute path + Bide +
+  Shell Bell + physical/special trackers comme FULL ported.
+
 ## Compteurs STUB final
 
 - Session 141 fin : ~126 STUB/TODO/MVP occurrences
 - Session 142 fin (post-A-G) : 99 occurrences
-- Session 142 fin (post-cleanup R1-R5) : **82 occurrences (-17 / -17% vs post-A-G,
-  -44 / -35% vs session 141 fin)**
+- Session 142 fin (post-cleanup R1-R5) : 82 occurrences
+- Session 142 fin (post-cleanup R1-R12) : **69 occurrences (-57 / -45% vs session 141 fin)**
+
+22 commits total (A→G + 12 cleanup rounds + docs).
 
 Restants sont majoritairement des stubs intentionnels Phase 1.4+ (UI controllers,
 naming screen, audio engine wires, Frontier-specific, PC storage, custom berries
