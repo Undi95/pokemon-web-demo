@@ -10,6 +10,18 @@ type: project
 **Commits** : 12 sur branche `upd2` (post 4093956f session 140 final)
 **Branche** : `upd2`
 
+## 🔄 Iter C — Audit bug HOLD_EFFECT_RESTORE_HP
+
+Commit `57f6cc25` : 9e audit bug critique.
+- Dans item-battle-effects.ts ITEMEFFECT_NORMAL switch, le `case HOLD_EFFECT_RESTORE_HP:`
+  label avait disparu lors d'un edit antérieur.
+- Le bloc de code (= Berry HP restore type Oran/Sitrus/Pinch berries) venait
+  juste après `break;` sans case label = dead code unreachable.
+- Symptôme : Oran/Sitrus/Pinch berries ne fonctionnaient pas pendant ITEMEFFECT_NORMAL
+  (= triggered each turn). C'était un STUB silent invisible.
+- Fix : ajout `case HOLD_EFFECT_RESTORE_HP:` devant le bloc. 1:1 décomp
+  battle_util.c:3319-3329.
+
 ## 🔄 Iter B post-/loop reload — extended validation
 
 Tests étendus post fixes :
