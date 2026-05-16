@@ -43,7 +43,7 @@ import {
   B_BUFF_EOS,
   B_BUFF_NEGATIVE_FLAVOR,
 } from './text-buffers';
-import { gBattleMons, gBattlerAttacker, gBattlerTarget, gBattleScripting } from './state';
+import { gBattleMons, gBattlerAttacker, gBattlerTarget, gBattleScripting, gEffectBattler } from './state';
 
 // ─── STAT names (1:1 décomp battle_message.c:430-440) ──────────────────────
 
@@ -374,7 +374,9 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
       case 'ACTIVE_NAME_WITH_PREFIX':
         return _monNicknameWithPrefix(gBattleScripting.battler);
       case 'EFF_NAME_WITH_PREFIX':
-        return _monNicknameWithPrefix(msgData.itemEffectBattler);
+        // 1:1 décomp battle_message.c:2527-2528 : utilise gEffectBattler,
+        // PAS gPotentialItemEffectBattler (= 2 globals distincts).
+        return _monNicknameWithPrefix(gEffectBattler);
       case 'ATK_NAME':    return _monNickname(gBattlerAttacker);
       case 'DEF_NAME':    return _monNickname(gBattlerTarget);
       case 'CURRENT_MOVE':return _moveName(msgData.currentMove);
