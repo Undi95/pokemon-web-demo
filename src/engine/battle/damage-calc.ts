@@ -180,6 +180,8 @@ function shouldGetStatBadgeBoost(badgeFlag: number, battler: number): boolean {
 
 // Import direct (= disobedience.ts utilise le même pattern).
 import { FlagGet as _FlagGetN0 } from '../script-vars';
+// Flash Fire flags (= gBattleResources->flags->flags 1:1 décomp).
+import { gBattleResourcesFlags as gBattleResourcesFlagsDC } from './state';
 function _flagGetN0(flagName: string): boolean {
   return _FlagGetN0(flagName);
 }
@@ -505,11 +507,9 @@ export function CalculateBaseDamage(
     }
 
     // 1:1 décomp pokemon.c:3367-3369 : Flash Fire triggered → ×1.5 sur Fire move.
-    // Lazy lookup via globalThis (= éviter circular dep avec ability-battle-effects).
-    const flashFireFlags = (globalThis as { __flashFireFlags?: number[] }).__flashFireFlags;
     const flashFireBit = (globalThis as { __RESOURCE_FLAG_FLASH_FIRE?: number }).__RESOURCE_FLAG_FLASH_FIRE ?? 0;
-    if (flashFireFlags && flashFireBit
-        && (flashFireFlags[battlerIdAtk] & flashFireBit)
+    if (flashFireBit
+        && (gBattleResourcesFlagsDC[battlerIdAtk] & flashFireBit)
         && type === TYPE_FIRE) {
       damage = Math.floor((15 * damage) / 10);
     }

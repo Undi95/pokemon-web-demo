@@ -21,6 +21,7 @@ import {
   gActiveBattler, gDisableStructs, gProtectStructs,
   gBattleStruct, gBattlersCount, gCurrentMove,
   gActionSelectionCursor, gMoveSelectionCursor,
+  gBattleResourcesFlags,
 } from './state';
 import { getSpeciesTypes } from './data/species-runtime';
 import { STATUS2_DESTINY_BOND, STATUS3_GRUDGE } from './constants';
@@ -209,7 +210,8 @@ export function FaintClearSetData(): void {
     gBattleStruct.lastTakenMoveFrom[i * 8 + gActiveBattler * 2 + 1] = 0;
   }
 
-  // STUB AI tracking : gBattleResources->flags->flags[active] = 0;
+  // 1:1 décomp l.3348 : `gBattleResources->flags->flags[active] = 0;`
+  gBattleResourcesFlags[gActiveBattler] = 0;
 
   // 1:1 décomp ll.3350-3351 : reset types depuis species data (= revert
   // Conversion / Soak / etc.).

@@ -41,6 +41,7 @@ import {
   gDisableStructs,
   gMoveResultFlags,
   gBattleStruct,
+  gBattleResourcesFlags,
 } from './state';
 import { Random, getBattleScriptOffset } from './script-interpreter';
 import {
@@ -221,9 +222,7 @@ function _getCurrentWeather(): number {
   return WEATHER_NONE;
 }
 
-/** 1:1 décomp `gBattleResources->flags->flags[battler] & RESOURCE_FLAG_FLASH_FIRE`.
- *  Notre port : map battler → bit set. */
-const _flashFireFlags: number[] = [0, 0, 0, 0];
+/** 1:1 décomp `RESOURCE_FLAG_FLASH_FIRE` (battle.h:68). */
 const RESOURCE_FLAG_FLASH_FIRE = 1 << 0;
 
 // B_MSG_* indices.
@@ -464,12 +463,12 @@ export function AbilityBattleEffects(
             break;
           case ABILITY_FLASH_FIRE:
             if (moveType === TYPE_FIRE && !(gBattleMons[battler].status1 & STATUS1_FREEZE)) {
-              if (!(_flashFireFlags[battler] & RESOURCE_FLAG_FLASH_FIRE)) {
+              if (!(gBattleResourcesFlags[battler] & RESOURCE_FLAG_FLASH_FIRE)) {
                 gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_FLASH_FIRE_BOOST;
                 _lastWantedScriptLabel = gProtectStructs[gBattlerAttacker].notFirstStrike
                   ? 'BattleScript_FlashFireBoost'
                   : 'BattleScript_FlashFireBoost_PPLoss';
-                _flashFireFlags[battler] |= RESOURCE_FLAG_FLASH_FIRE;
+                gBattleResourcesFlags[battler] |= RESOURCE_FLAG_FLASH_FIRE;
                 effect = 2;
               } else {
                 gBattleCommunication[MULTISTRING_CHOOSER_IDX] = B_MSG_FLASH_FIRE_NO_BOOST;
@@ -928,8 +927,6 @@ export function consumeAbilityWantedScript(): string | null {
 // Expose AbilityBattleEffects via globalThis pour permettre damage-calc.ts et
 // autres modules d'éviter circular import. Set au module-load.
 (globalThis as { __abilityBattleEffectsCheck?: typeof AbilityBattleEffects }).__abilityBattleEffectsCheck = AbilityBattleEffects;
-// Expose Flash Fire flags pour damage-calc.ts boost ÷ 1.5 sur Fire move post-trigger.
-(globalThis as { __flashFireFlags?: number[] }).__flashFireFlags = _flashFireFlags;
-// Expose RESOURCE_FLAG_FLASH_FIRE constant pour read côté caller.
+// Expose RESOURCE_FLAG_FLASH_FIRE constant pour read côté caller (=damage-calc).
 (globalThis as { __RESOURCE_FLAG_FLASH_FIRE?: number }).__RESOURCE_FLAG_FLASH_FIRE = RESOURCE_FLAG_FLASH_FIRE;
 

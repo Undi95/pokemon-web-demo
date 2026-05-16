@@ -716,6 +716,11 @@ export function setTrainerBattleOpponentB(v: number) { gTrainerBattleOpponent_B 
  *  (Cmd_copymovepermanently) pour copier le move successfully announced. */
 export const gLastPrintedMoves: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `struct ResourceFlags { u32 flags[MAX_BATTLERS_COUNT] }`
+ *  (battle.h:63-66). Per-battler bitfield (= RESOURCE_FLAG_FLASH_FIRE bit 0).
+ *  Accédé via `gBattleResources->flags->flags[battler]` dans le décomp. */
+export const gBattleResourcesFlags: number[] = [0, 0, 0, 0];
+
 /** 1:1 décomp `gActionSelectionCursor[MAX_BATTLERS_COUNT]` (battle_main.c). UI
  *  cursor position dans le menu action (FIGHT/BAG/POKEMON/RUN). Reset à 0 sur
  *  faint et à chaque turn pour ce battler. */
