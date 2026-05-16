@@ -72,6 +72,19 @@ Commit `f8fafefa` : 5e audit bug majeur trouvé via test direct.
 - Validation : Blaziken Ember vs Sceptile = 23 dmg sans weather, 33 dmg sous
   Sunny Day = 1.43x boost ≈ 1.5x attendu (= STAB Fire ×1.5 sous sun).
 
+### Iter 6 — ESM duplication bug fillBattleMonFromParty
+Commit `78969bbd` : 7e audit bug critique trouvé.
+- fillBattleMonFromParty utilisait `globalThis.__battleState.gBattleMons` (lazy
+  pour éviter circular dep). Mais en dev mode Vite, 2 instances state.ts
+  existent → __battleState global pointe vers une, mais le bytecode runtime
+  importe l'autre.
+- Symptôme : bc.dumpMons() (runtime) montrait un état différent de
+  window.__battleState.gBattleMons (= dernier combat).
+- Damage moves apparaissaient "appliqués" via bridge return mais modifiaient
+  une autre instance gBattleMons → tests setup ne propageait pas correctement.
+- Fix : static import `gBattleMons` depuis state.ts (= forcer même instance
+  ESM singleton). Plus de divergence entre runtime et __battleState global.
+
 ### Iter 5 — Wire Mist check
 Commit `72620fc4` : ChangeStatBuffs.ts wire `gSideTimers[side].mistTimer` check
 qui était un STUB "TODO gSideTimers". Maintenant Mist move (5 turns) bloque les
