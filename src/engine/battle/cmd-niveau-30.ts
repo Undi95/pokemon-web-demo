@@ -48,6 +48,11 @@ import {
   TYPE_MUL_NOT_EFFECTIVE,
 } from './data/type-effectiveness';
 import { getBattlerForBattleScript, GetBattlerAtPosition, B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT } from './util';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_30,
+  PREPARE_MON_NICK_BUFFER, PREPARE_TYPE_BUFFER,
+} from './text-buffers';
+import { gBattlerPartyIndexes } from './state';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -113,7 +118,8 @@ function Cmd_switchindataupdate(ctx: BattleScriptContext): boolean {
 
   _switchInClearSetData(active);
   gBattleScripting.battler = active;
-  // PREPARE_MON_NICK_BUFFER : TODO porter.
+  // 1:1 décomp battle_script_commands.c:4672.
+  PREPARE_MON_NICK_BUFFER(_gBattleTextBuff1_30, active, gBattlerPartyIndexes[active]);
   return false;
 }
 
@@ -147,7 +153,8 @@ function Cmd_settypetorandomresistance(ctx: BattleScriptContext): boolean {
         && !IS_BATTLER_OF_TYPE(atk.type1, atk.type2, gTypeEffectiveness[i + 1])) {
       atk.type1 = gTypeEffectiveness[i + 1];
       atk.type2 = gTypeEffectiveness[i + 1];
-      // PREPARE_TYPE_BUFFER : TODO porter.
+      // 1:1 décomp PREPARE_TYPE_BUFFER (random pick success).
+      PREPARE_TYPE_BUFFER(_gBattleTextBuff1_30, gTypeEffectiveness[i + 1]);
       return false;
     }
   }
@@ -161,6 +168,8 @@ function Cmd_settypetorandomresistance(ctx: BattleScriptContext): boolean {
         && !IS_BATTLER_OF_TYPE(atk.type1, atk.type2, gTypeEffectiveness[j + 1])) {
       atk.type1 = gTypeEffectiveness[j + 1];
       atk.type2 = gTypeEffectiveness[j + 1];
+      // 1:1 décomp PREPARE_TYPE_BUFFER pour fallback pass.
+      PREPARE_TYPE_BUFFER(_gBattleTextBuff1_30, gTypeEffectiveness[j + 1]);
       return false;
     }
   }

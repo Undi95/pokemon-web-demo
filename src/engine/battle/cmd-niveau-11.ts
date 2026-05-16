@@ -64,14 +64,19 @@ function Cmd_setmultihitcounter(ctx: BattleScriptContext): boolean {
 
 // ─── 0x8E initmultihitstring ───────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_initmultihitstring. 1 byte.
- *  Décomp utilise macro PREPARE_BYTE_NUMBER_BUFFER(buffer, 1, 0) qui prépare
- *  un placeholder buffer "1" digit, value 0. MVP : juste reset le buffer. */
+/** 1:1 décomp Cmd_initmultihitstring (battle_script_commands.c). 1 byte.
+ *  `PREPARE_BYTE_NUMBER_BUFFER(gBattleScripting.multihitString, 1, 0)`. */
 function Cmd_initmultihitstring(_ctx: BattleScriptContext): boolean {
-  for (let i = 0; i < gBattleScripting.multihitString.length; i++) {
-    gBattleScripting.multihitString[i] = 0;
-  }
-  // TODO : Implémenter PREPARE_BYTE_NUMBER_BUFFER (= text placeholder system).
+  // 1:1 décomp : PREPARE_BYTE_NUMBER_BUFFER appliquée à gBattleScripting.multihitString.
+  // Notre gBattleScripting.multihitString est array de 6 nombres ; on écrit
+  // les 6 bytes du format PREPARE_BYTE_NUMBER_BUFFER directement.
+  const buf = gBattleScripting.multihitString;
+  buf[0] = 0xFD; /* B_BUFF_PLACEHOLDER_BEGIN */
+  buf[1] = 1;    /* B_BUFF_NUMBER */
+  buf[2] = 1;    /* bytes = 1 */
+  buf[3] = 1;    /* maxDigits = 1 */
+  buf[4] = 0;    /* number = 0 */
+  buf[5] = 0xFF; /* B_BUFF_EOS */
   return false;
 }
 

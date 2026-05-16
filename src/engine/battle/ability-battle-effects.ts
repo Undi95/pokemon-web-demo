@@ -84,6 +84,13 @@ import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import { getBattleMove } from './data/battle-moves';
 import { GetGenderFromSpeciesAndPersonality } from '../pokemon';
 import { reverseDecompConstant } from '../decomp-constants';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_ABE,
+  gBattleTextBuff2 as _gBattleTextBuff2_ABE,
+  PREPARE_MON_NICK_WITH_PREFIX_BUFFER,
+  PREPARE_ABILITY_BUFFER,
+} from './text-buffers';
+import { gBattlerPartyIndexes as _gBattlerPartyIndexes_ABE } from './state';
 
 // ─── ABILITYEFFECT_* enum (= 1:1 décomp battle_util.h:12-34) ──────────────
 
@@ -857,8 +864,9 @@ export function AbilityBattleEffects(
             _lastWantedScriptLabel = 'BattleScript_TraceActivates';
             gStatuses3[i] &= ~STATUS3_TRACE;
             gBattleScripting.battler = i;
-            // 1:1 décomp : PREPARE_MON_NICK_WITH_PREFIX_BUFFER + PREPARE_ABILITY_BUFFER
-            // skip (= text buffer not wired).
+            // 1:1 décomp battle_util.c (ABILITYEFFECT_TRACE).
+            PREPARE_MON_NICK_WITH_PREFIX_BUFFER(_gBattleTextBuff1_ABE, gActiveBattler, _gBattlerPartyIndexes_ABE[gActiveBattler]);
+            PREPARE_ABILITY_BUFFER(_gBattleTextBuff2_ABE, gLastUsedAbility);
             break;
           }
         }

@@ -48,6 +48,10 @@ import {
   BtlController_EmitHealthBarUpdate, MarkBattlerForControllerExec,
 } from './battle-controllers';
 import { getBattleMove } from './data/battle-moves';
+import {
+  gBattleTextBuff1,
+  PREPARE_TYPE_BUFFER,
+} from './text-buffers';
 
 // ─── 0x90 tryconversiontypechange ─────────────────────────────────────────
 
@@ -92,7 +96,8 @@ function Cmd_tryconversiontypechange(ctx: BattleScriptContext): boolean {
   // SET_BATTLER_TYPE = type1 = type2 = newType (battle.h macro 1:1).
   atk.type1 = moveType;
   atk.type2 = moveType;
-  // PREPARE_TYPE_BUFFER : TODO porter text placeholder.
+  // 1:1 décomp battle_script_commands.c:7447.
+  PREPARE_TYPE_BUFFER(gBattleTextBuff1, moveType);
   return false;
 }
 

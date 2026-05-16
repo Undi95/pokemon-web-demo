@@ -51,6 +51,12 @@ import {
 } from './battle-controllers';
 import { getBattlerForBattleScript, GetBattlerAtPosition, CancelMultiTurnMoves } from './util';
 import { runDamagecalc } from './damage-calc';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_23,
+  gBattleTextBuff2 as _gBattleTextBuff2_23,
+  PREPARE_MOVE_BUFFER,
+  PREPARE_BYTE_NUMBER_BUFFER,
+} from './text-buffers';
 
 // ─── 1:1 décomp `sStatusFlagsForMoveEffects` (battle_script_commands.c:608) ─
 
@@ -170,7 +176,13 @@ function Cmd_tryspiteppreduce(ctx: BattleScriptContext): boolean {
   if (gBattleMons[gBattlerTarget].pp[i] < ppToDeduct) {
     ppToDeduct = gBattleMons[gBattlerTarget].pp[i];
   }
-  // PREPARE_MOVE_BUFFER / PREPARE_BYTE_NUMBER_BUFFER : TODO text placeholders.
+  // 1:1 décomp battle_script_commands.c:8340-8344. ConvertIntToDecimalStringN
+  // (left-align variant pour gBattleTextBuff2) est suivi de PREPARE_BYTE_NUMBER_BUFFER
+  // qui overwrite gBattleTextBuff2 — donc seul PREPARE_BYTE_NUMBER_BUFFER prend effet
+  // pour le rendu. Le décomp utilise ConvertIntToDecimalStringN pour debug/safety,
+  // mais c'est dead code post-PREPARE. On honore juste PREPARE_*.
+  PREPARE_MOVE_BUFFER(_gBattleTextBuff1_23, gLastMoves[gBattlerTarget]);
+  PREPARE_BYTE_NUMBER_BUFFER(_gBattleTextBuff2_23, 1, ppToDeduct);
   gBattleMons[gBattlerTarget].pp[i] -= ppToDeduct;
   setActiveBattler(gBattlerTarget);
 

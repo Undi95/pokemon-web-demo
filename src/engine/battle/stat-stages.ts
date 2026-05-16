@@ -61,6 +61,18 @@ import {
   B_MSG_STAT_WONT_DECREASE,
   MOVE_RESULT_MISSED,
 } from './constants';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_SS,
+  gBattleTextBuff2 as _gBattleTextBuff2_SS,
+  PREPARE_STAT_BUFFER,
+  B_BUFF_PLACEHOLDER_BEGIN, B_BUFF_STRING, B_BUFF_EOS,
+} from './text-buffers';
+
+// 1:1 décomp `include/constants/battle_string_ids.h:209-212`.
+const STRINGID_STATSHARPLY = 209;
+const STRINGID_STATROSE = 210;
+const STRINGID_STATHARSHLY = 211;
+const STRINGID_STATFELL = 212;
 
 /** 1:1 décomp `ChangeStatBuffs(s8 statValue, u8 statId, u8 flags, const u8 *BS_ptr)`
  *  (battle_script_commands.c:6940-7110).
@@ -96,7 +108,8 @@ export function ChangeStatBuffs(
   flags &= ~STAT_CHANGE_NOT_PROTECT_AFFECTED;
   void notProtectAffected;  // TODO use when JumpIfMoveAffectedByProtect is ported
 
-  // 1:1 décomp PREPARE_STAT_BUFFER skip (= UI text buff, TODO).
+  // 1:1 décomp battle_script_commands.c:6961.
+  PREPARE_STAT_BUFFER(_gBattleTextBuff1_SS, statId);
 
   const mon = gBattleMons[activeBattler];
   const isDecrease = (statValue & 0x80) !== 0;  // STAT_BUFF_NEGATIVE bit
@@ -146,6 +159,21 @@ export function ChangeStatBuffs(
       return STAT_CHANGE_DIDNT_WORK;
     }
 
+    // 1:1 décomp battle_script_commands.c:7044-7057. Build gBattleTextBuff2.
+    const sv = -magnitude;  // statValue = -GET_STAT_BUFF_VALUE(statValue) (= -magnitude).
+    _gBattleTextBuff2_SS[0] = B_BUFF_PLACEHOLDER_BEGIN;
+    let idx = 1;
+    if (sv === -2) {
+      _gBattleTextBuff2_SS[1] = B_BUFF_STRING;
+      _gBattleTextBuff2_SS[2] = STRINGID_STATHARSHLY & 0xFF;
+      _gBattleTextBuff2_SS[3] = (STRINGID_STATHARSHLY >> 8) & 0xFF;
+      idx = 4;
+    }
+    _gBattleTextBuff2_SS[idx++] = B_BUFF_STRING;
+    _gBattleTextBuff2_SS[idx++] = STRINGID_STATFELL & 0xFF;
+    _gBattleTextBuff2_SS[idx++] = (STRINGID_STATFELL >> 8) & 0xFF;
+    _gBattleTextBuff2_SS[idx] = B_BUFF_EOS;
+
     // 1:1 décomp : if stage already MIN → set MULTISTRING_CHOOSER to WONT_DECREASE.
     if (mon.statStages[statId] === MIN_STAT_STAGE) {
       gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_STAT_WONT_DECREASE;
@@ -155,6 +183,21 @@ export function ChangeStatBuffs(
         : 0 /* B_MSG_ATTACKER_STAT_FELL */;
     }
   } else {
+    // 1:1 décomp battle_script_commands.c:7067-7080. Build gBattleTextBuff2.
+    const sv = magnitude;  // statValue = GET_STAT_BUFF_VALUE(statValue).
+    _gBattleTextBuff2_SS[0] = B_BUFF_PLACEHOLDER_BEGIN;
+    let idx = 1;
+    if (sv === 2) {
+      _gBattleTextBuff2_SS[1] = B_BUFF_STRING;
+      _gBattleTextBuff2_SS[2] = STRINGID_STATSHARPLY & 0xFF;
+      _gBattleTextBuff2_SS[3] = (STRINGID_STATSHARPLY >> 8) & 0xFF;
+      idx = 4;
+    }
+    _gBattleTextBuff2_SS[idx++] = B_BUFF_STRING;
+    _gBattleTextBuff2_SS[idx++] = STRINGID_STATROSE & 0xFF;
+    _gBattleTextBuff2_SS[idx++] = (STRINGID_STATROSE >> 8) & 0xFF;
+    _gBattleTextBuff2_SS[idx] = B_BUFF_EOS;
+
     // stat increase
     if (mon.statStages[statId] === MAX_STAT_STAGE) {
       gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_STAT_WONT_INCREASE;

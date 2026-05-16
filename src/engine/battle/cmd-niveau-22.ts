@@ -56,6 +56,10 @@ import { getBattleMove } from './data/battle-moves';
 import { runDamagecalc } from './damage-calc';
 import { GetItemHoldEffect as _GetItemHoldEffectN22, GetItemHoldEffectParam as _GetItemHoldEffectParamN22 } from './data/item-hold-effects';
 import { RecordAbilityBattle as _recordAbilityBattleFullN22, RecordItemEffectBattle as _recordItemEffectBattleFullN22 } from './util';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_22,
+  PREPARE_BYTE_NUMBER_BUFFER,
+} from './text-buffers';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -241,7 +245,8 @@ function Cmd_stockpile(_ctx: BattleScriptContext): boolean {
     return false;
   }
   gDisableStructs[gBattlerAttacker].stockpileCounter++;
-  // PREPARE_BYTE_NUMBER_BUFFER : TODO porter text placeholder.
+  // 1:1 décomp battle_script_commands.c:6864.
+  PREPARE_BYTE_NUMBER_BUFFER(_gBattleTextBuff1_22, 1, gDisableStructs[gBattlerAttacker].stockpileCounter);
   gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_STOCKPILED;
   return false;
 }

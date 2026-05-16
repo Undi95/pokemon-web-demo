@@ -25,6 +25,7 @@ import {
   gBattleMons, gCurrentMove, gStatuses3, gDisableStructs,
   gLastMoves,
   gSentPokesToOpponent, gBattlersCount, gBattlerPartyIndexes,
+  gMoveToLearn,
 } from './state';
 import { gBitTable } from './battle-controllers';
 import {
@@ -34,14 +35,16 @@ import {
   MAX_MON_MOVES,
 } from './constants';
 import { GetBattlerAtPosition, B_POSITION_PLAYER_LEFT } from './util';
+import {
+  gBattleTextBuff1, gBattleTextBuff2,
+  PREPARE_MON_NICK_BUFFER, PREPARE_MOVE_BUFFER,
+} from './text-buffers';
 
 // ─── 0x6B atknameinbuff1 ───────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_atknameinbuff1. 1 byte.
- *  Décomp utilise PREPARE_MON_NICK_BUFFER macro qui setup placeholder
- *  buffer pour le nom du Pokémon attaquant. MVP : stub. */
+/** 1:1 décomp Cmd_atknameinbuff1 (battle_script_commands.c:5920-5925). 1 byte. */
 function Cmd_atknameinbuff1(_ctx: BattleScriptContext): boolean {
-  // TODO porter PREPARE_MON_NICK_BUFFER (= text placeholder system).
+  PREPARE_MON_NICK_BUFFER(gBattleTextBuff1, gBattlerAttacker, gBattlerPartyIndexes[gBattlerAttacker]);
   return false;
 }
 
@@ -80,10 +83,10 @@ function Cmd_setatktoplayer0(_ctx: BattleScriptContext): boolean {
 
 // ─── 0x71 buffermovetolearn ────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_buffermovetolearn. 1 byte.
- *  Décomp appelle BufferMoveToLearnIntoBattleTextBuff2() — text placeholder. */
+/** 1:1 décomp Cmd_buffermovetolearn (battle_script_commands.c:6247-6251). 1 byte.
+ *  Inline `BufferMoveToLearnIntoBattleTextBuff2()`. */
 function Cmd_buffermovetolearn(_ctx: BattleScriptContext): boolean {
-  // TODO porter BufferMoveToLearnIntoBattleTextBuff2 (text placeholder).
+  PREPARE_MOVE_BUFFER(gBattleTextBuff2, gMoveToLearn);
   return false;
 }
 

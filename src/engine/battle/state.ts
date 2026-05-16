@@ -770,6 +770,10 @@ export const gLastUsedMove: number[] = [0, 0, 0, 0];
 export let gLastUsedAbility = 0;
 export let gLastUsedItem = 0;
 
+/** 1:1 décomp `EWRAM_DATA u16 gMoveToLearn` (battle_main.c:237).
+ *  Move qu'un Pokémon est sur le point d'apprendre (post-level-up). */
+export let gMoveToLearn = 0;
+
 /** Last hit by battler index per battler. */
 export const gLastHitBy: number[] = [0, 0, 0, 0];
 
@@ -822,6 +826,7 @@ export function setCurrentActionFuncId(v: number) { gCurrentActionFuncId = v; }
 export function setCurrentTurnActionNumber(v: number) { gCurrentTurnActionNumber = v; }
 export function setLastUsedAbility(v: number) { gLastUsedAbility = v; }
 export function setLastUsedItem(v: number) { gLastUsedItem = v; }
+export function setMoveToLearn(v: number) { gMoveToLearn = v; }
 
 /** Reset complet du state battle (= appelé au début de chaque battle, 1:1
  *  décomp `BattleStruct_Free` + reinit ewram). */

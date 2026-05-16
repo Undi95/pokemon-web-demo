@@ -40,7 +40,13 @@ import {
   gSideTimers,
   setCurrentActionFuncId,
   setLastUsedAbility,
+  gActionSelectionCursor, gMoveSelectionCursor,
+  gBattlerPartyIndexes,
 } from './state';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_HA,
+  PREPARE_MON_NICK_BUFFER,
+} from './text-buffers';
 import {
   STATUS2_MULTIPLETURNS, STATUS2_RECHARGE,
   HITMARKER_NO_PPDEDUCT,
@@ -339,9 +345,15 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
 /** 1:1 décomp `HandleAction_Switch` (battle_util.c:294-310). */
 export function HandleAction_Switch(ctx?: BattleScriptContext): void {
   setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
-  // STUB gBattle_BG0_X/Y = 0 — BG scroll registers GBA (= no-op web canvas).
-  // STUB gActionSelectionCursor / gMoveSelectionCursor — UI cursor state.
-  // STUB PREPARE_MON_NICK_BUFFER (= text buffer setup MOVE_NICK pour print).
+  // 1:1 décomp battle_util.c : gBattle_BG0_X/Y = 0 — BG scroll registers GBA
+  // (= no-op web canvas, le scroll est piloté par le renderer side).
+  // gActionSelectionCursor / gMoveSelectionCursor reset au switch.
+  gActionSelectionCursor[gBattlerAttacker] = 0;
+  gMoveSelectionCursor[gBattlerAttacker] = 0;
+  // 1:1 décomp battle_util.c : PREPARE_MON_NICK_BUFFER. battlerPartyIndexes
+  // dans le décomp = gBattleStruct->battlerPartyIndexes ; notre port utilise
+  // gBattlerPartyIndexes pour le party slot courant de chaque battler.
+  PREPARE_MON_NICK_BUFFER(_gBattleTextBuff1_HA, gBattlerAttacker, gBattlerPartyIndexes[gBattlerAttacker]);
   gBattleScripting.battler = gBattlerAttacker;
   const off = getBattleScriptOffset('BattleScript_ActionSwitch');
   if (ctx && off >= 0) ctx.scriptPtr = off;

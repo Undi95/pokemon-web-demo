@@ -39,6 +39,10 @@ import {
 } from './battle-controllers';
 import { getBattlerForBattleScript } from './util';
 import { getBattleMove } from './data/battle-moves';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_25,
+  PREPARE_MOVE_BUFFER,
+} from './text-buffers';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -159,7 +163,8 @@ function Cmd_mimicattackcopy(ctx: BattleScriptContext): boolean {
   gBattleMons[gBattlerAttacker].moves[gCurrMovePos] = gLastMoves[gBattlerTarget];
   const targetMovePp = getBattleMove(gLastMoves[gBattlerTarget]).pp;
   gBattleMons[gBattlerAttacker].pp[gCurrMovePos] = targetMovePp < 5 ? targetMovePp : 5;
-  // PREPARE_MOVE_BUFFER : TODO text placeholder.
+  // 1:1 décomp battle_script_commands.c:7876.
+  PREPARE_MOVE_BUFFER(_gBattleTextBuff1_25, gLastMoves[gBattlerTarget]);
   gDisableStructs[gBattlerAttacker].mimickedMoves |= gBitTable[gCurrMovePos];
   return false;
 }

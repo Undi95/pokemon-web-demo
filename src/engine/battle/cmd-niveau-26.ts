@@ -46,6 +46,11 @@ import {
   gPlayerParty, gEnemyParty, GetMonData, PARTY_SIZE,
   MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_IS_EGG,
 } from './party-storage';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_26,
+  PREPARE_WORD_NUMBER_BUFFER,
+  PREPARE_HWORD_NUMBER_BUFFER,
+} from './text-buffers';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -158,14 +163,15 @@ function Cmd_jumpifcantswitch(ctx: BattleScriptContext): boolean {
 
 // ─── 0x5D getmoneyreward ──────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_getmoneyreward. 1 byte. */
+/** 1:1 décomp Cmd_getmoneyreward (battle_script_commands.c). 1 byte. */
 function Cmd_getmoneyreward(_ctx: BattleScriptContext): boolean {
   let moneyReward = _getTrainerMoneyToGive(gTrainerBattleOpponent_A);
   if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) {
     moneyReward += _getTrainerMoneyToGive(gTrainerBattleOpponent_B);
   }
   _addMoney(moneyReward);
-  // PREPARE_WORD_NUMBER_BUFFER : TODO porter text placeholder.
+  // 1:1 décomp PREPARE_WORD_NUMBER_BUFFER(gBattleTextBuff1, 5, moneyReward).
+  PREPARE_WORD_NUMBER_BUFFER(_gBattleTextBuff1_26, 5, moneyReward);
   return false;
 }
 
@@ -234,7 +240,8 @@ function Cmd_givepaydaymoney(ctx: BattleScriptContext): boolean {
       && gPaydayMoney !== 0) {
     const bonusMoney = gPaydayMoney * _getMoneyMultiplier();
     _addMoney(bonusMoney);
-    // PREPARE_HWORD_NUMBER_BUFFER : TODO porter.
+    // 1:1 décomp PREPARE_HWORD_NUMBER_BUFFER(gBattleTextBuff1, 5, bonusMoney).
+    PREPARE_HWORD_NUMBER_BUFFER(_gBattleTextBuff1_26, 5, bonusMoney);
     // 1:1 décomp : BattleScriptPush(instr + 1); jump à PrintPayDayMoneyString.
     const off = getBattleScriptOffset('BattleScript_PrintPayDayMoneyString');
     if (off >= 0) {

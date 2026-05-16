@@ -53,6 +53,10 @@ import {
   gPlayerParty, gEnemyParty, GetMonData, GetAbilityBySpecies, PARTY_SIZE,
   MON_DATA_SPECIES_OR_EGG, MON_DATA_ABILITY_NUM,
 } from './party-storage';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_29,
+  PREPARE_MOVE_BUFFER,
+} from './text-buffers';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -150,8 +154,12 @@ function Cmd_copymovepermanently(ctx: BattleScriptContext): boolean {
   // Overwrite gCurrMovePos slot.
   gBattleMons[gBattlerAttacker].moves[gCurrMovePos] = lastMove;
   gBattleMons[gBattlerAttacker].pp[gCurrMovePos] = getBattleMove(lastMove).pp;
-  // PREPARE_MOVE_BUFFER : TODO porter text placeholder.
-  // 1:1 décomp : send MovePpInfo via emit — TODO porter.
+  // 1:1 décomp battle_script_commands.c : MovePpInfo emit + PREPARE_MOVE_BUFFER.
+  // L'emit MovePpInfo via REQUEST_MOVES_PP_BATTLE est un sync UI-side ; on
+  // omet le buffer pack/unpack puisque notre BattleMon.pp[] est déjà la source
+  // de truth in-battle (party-side flush au battle end). Le PREPARE_MOVE_BUFFER
+  // reste 1:1 strict.
+  PREPARE_MOVE_BUFFER(_gBattleTextBuff1_29, lastMove);
   return false;
 }
 

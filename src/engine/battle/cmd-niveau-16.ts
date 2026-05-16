@@ -39,6 +39,10 @@ import {
 import { CancelMultiTurnMoves, GetScaledHPFraction } from './util';
 import { gBitTable } from './battle-controllers';
 import { getBattleMove } from './data/battle-moves';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_16,
+  PREPARE_BYTE_NUMBER_BUFFER,
+} from './text-buffers';
 
 // ─── 1:1 décomp tables (battle_script_commands.c:749, 774) ─────────────────
 
@@ -274,9 +278,8 @@ function Cmd_magnitudedamagecalculation(_ctx: BattleScriptContext): boolean {
     setDynamicBasePower(150);
     magnitude = 10;
   }
-  // PREPARE_BYTE_NUMBER_BUFFER(gBattleTextBuff1, 2, magnitude) : TODO porter
-  // text placeholder system. Pour l'instant, magnitude est stocké mais pas
-  // affiché.
+  // 1:1 décomp battle_script_commands.c : `PREPARE_BYTE_NUMBER_BUFFER(gBattleTextBuff1, 2, magnitude)`.
+  PREPARE_BYTE_NUMBER_BUFFER(_gBattleTextBuff1_16, 2, magnitude);
 
   // 1:1 décomp : foreach battler, skip self, break si non-absent (= pick first).
   let target = 0;

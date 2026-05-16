@@ -58,6 +58,10 @@ import {
 } from './battle-controllers';
 import { getBattlerForBattleScript, GetBattlerAtPosition } from './util';
 import { getBattleMove } from './data/battle-moves';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_21,
+  PREPARE_ABILITY_BUFFER,
+} from './text-buffers';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -255,12 +259,15 @@ function Cmd_trywish(ctx: BattleScriptContext): boolean {
 
 // ─── 0xE1 trygetintimidatetarget ──────────────────────────────────────────
 
-/** 1:1 décomp Cmd_trygetintimidatetarget. 5 bytes. */
+/** 1:1 décomp Cmd_trygetintimidatetarget (battle_script_commands.c:9570-9591). */
 function Cmd_trygetintimidatetarget(ctx: BattleScriptContext): boolean {
   const failJump = readWord(ctx);
   gBattleScripting.battler = gBattleStruct.intimidateBattler;
-  const side = GET_BATTLER_SIDE(gBattleStruct.intimidateBattler);
-  // PREPARE_ABILITY_BUFFER : TODO porter text placeholder.
+  const side = GET_BATTLER_SIDE(gBattleScripting.battler);
+
+  // 1:1 décomp battle_script_commands.c:9577.
+  PREPARE_ABILITY_BUFFER(_gBattleTextBuff1_21, gBattleMons[gBattleScripting.battler].ability);
+
   let target = gBattlerTarget;
   for (; target < gBattlersCount; target++) {
     if (GET_BATTLER_SIDE(target) === side) continue;

@@ -203,6 +203,10 @@ function Cmd_switchoutabilities(ctx: BattleScriptContext): boolean {
 
 import { gBattlerPartyIndexes as _battlerPartyIndexesSO } from './state';
 import { gBitTable } from './battle-controllers';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_19,
+  PREPARE_TYPE_BUFFER,
+} from './text-buffers';
 
 // ─── 0xEB settypetoenvironment ────────────────────────────────────────────
 
@@ -215,7 +219,8 @@ function Cmd_settypetoenvironment(ctx: BattleScriptContext): boolean {
     // SET_BATTLER_TYPE = type1 = type2 = newType.
     atk.type1 = targetType;
     atk.type2 = targetType;
-    // PREPARE_TYPE_BUFFER : TODO porter.
+    // 1:1 décomp battle_script_commands.c:9839.
+    PREPARE_TYPE_BUFFER(_gBattleTextBuff1_19, targetType);
     return false;
   }
   ctx.scriptPtr = failJump;
