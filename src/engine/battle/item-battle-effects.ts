@@ -260,7 +260,9 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
               void MON_DATA_PP_BONUSES;
             }
             break;
-
+          case HOLD_EFFECT_RESTORE_HP:
+            // AUDIT BUG FIX : case label was missing — code was unreachable.
+            // 1:1 décomp battle_util.c:3319-3329 (Berry HP restore).
             if (gBattleMons[battlerId].hp <= gBattleMons[battlerId].maxHP / 2 && !moveTurn) {
               let dmg = battlerHoldEffectParam;
               if (gBattleMons[battlerId].hp + dmg > gBattleMons[battlerId].maxHP) {
