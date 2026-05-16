@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-16
 **Branche** : `upd2`
-**Commits** : 26 commits Phase 1.4 J (audit PREPARE + self-target wire)
+**Commits** : 28 commits Phase 1.4 J (enemy turn fix + ability FR + placeholder audit)
 **État** : 🎉 **MILESTONE Phase 1.4 J first pass complete** — bytecode interpreter
 émet maintenant des messages FR via décodeur 1:1 décomp `BufferStringBattle`.
 État machine bytecode wirée dans `battle-flow.ts`.
@@ -415,6 +415,37 @@ Battery 639/639 stable, 0 erreur TS sur 26 commits.
   lockon / mindreader / memento (=multi-stat-fall)
 - Weather : sunnyday (rayons brillent) / raindance (commence à pleuvoir) /
   sandstorm (tempête se prépare) / hail (commence à grêler)
+
+## Commits user-feedback session (post commit 25)
+
+### Commit 26 : `8d86dfb9` — bridge enemy-turn + ability FR (2 fixes)
+- runMoveScriptViaBytecode : ajout setCurrMovePos(attackerMoveIdx) pour
+  que Cmd_attackcanceler lit le bon slot PP (= sans fix, enemy turn déclenchait
+  faux "no PP left").
+- _abilityName : reverse lookup gameDataAbilityNamesFr → FR ("STATIK" pour
+  STATIC ability, "PEAU DURE" pour Rough Skin, etc.). Avant "Talent#9" fallback.
+
+### Commit 27 : `b0b02ca4` — B_EFF_NAME_WITH_PREFIX = gEffectBattler
+1:1 décomp battle_message.c:2527-2528 HANDLE_NICKNAME_STRING_CASE(gEffectBattler).
+User-reported bug : Static (PIKACHU défenseur) → message "STATIK de PIKACHU
+paralyse PIKACHU!" au lieu de "paralyse ZIGZATON sauvage!". gEffectBattler
+track la cible de l'effet ability (= attacker du contact move).
+Fix : "STATIK de PIKACHU paralyse ZIGZATON sauvage!" ✓
+
+### Commit 28 : `ced0436f` — B_ACTIVE_NAME_WITH_PREFIX = gActiveBattler
+1:1 décomp battle_message.c:2530-2531. Avant utilisait gBattleScripting.battler
+(= SCR_ACTIVE). Ces 2 globals DIFFÈRENT dans la décomp.
+
+### Commit 29 : `edd92cf8` — B_EFF_ABILITY = gEffectBattler
+1:1 décomp battle_message.c:2580-2582 sBattlerAbilities[gEffectBattler].
+Cohérent avec EFF_NAME fix précédent.
+
+## Validation user-feedback
+
+- Static contact paralysis : "STATIK de PIKACHU\nparalyse ZIGZATON sauvage!" ✓
+- Rough Skin : "PEAU DURE du SHARPEDO sauvage\nblesse ARCKO!" ✓
+- ThunderWave : "ZIGZATON sauvage est paralysé!" + status PAR persisté ✓
+- Battery 639/639 stable post tous fixes
 
 ## File complet
 
