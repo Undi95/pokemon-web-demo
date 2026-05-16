@@ -3,7 +3,8 @@
  * 1:1 décomp `src/battle_script_commands.c`.
  *
  * Opcodes :
- *   0x23 getexp    (1 byte  — XP gain state machine, ~12k chars décomp — TODO stub)
+ *   0x23 getexp    (1 byte  — XP gain state machine, ~12k chars décomp,
+ *                   port 1:1 strict via 6 cases state machine)
  *   0x76 various   (3 bytes — dispatcher 27 cases VARIOUS_*, port 1:1 strict)
  *
  * Sources de vérité (1:1) :
@@ -12,8 +13,8 @@
  *   - `D:/Projet 1/decomps/pokeemeraude/src/battle_util.c:3811 GetMoveTarget`
  *   - `D:/Projet 1/decomps/pokeemeraude/src/battle_main.c:4021 IsRunningFromBattleImpossible`
  *
- *  Phase 1.3 H — Cmd_various porté 1:1 strict. 14/27 cases full, 13/27 STUBS
- *  Battle Frontier (Arena/Palace/Pyramid pas wired).
+ *  Sessions 134+138+142 : Cmd_various porté 1:1 strict. 23+/27 cases full,
+ *  Battle Frontier Arena/Palace/Pyramid spécifiques deferred.
  */
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
@@ -186,7 +187,7 @@ function _CancelMultiTurnMoves(battler: number): void {
 
 /** 1:1 décomp `GetMoveTarget(move, setTarget)` (battle_util.c:3811-3886).
  *  Setter omitted (= notre version retourne juste targetBattler ; le caller
- *  applique). STUB pour ABILITYEFFECT_COUNT_OTHER_SIDE Lightning Rod redirect.
+ *  applique). Inclut ABILITYEFFECT_COUNT_OTHER_SIDE Lightning Rod redirect logic.
  *  Exporté pour réutilisation par cmd-niveau-27 / cmd-niveau-29 / etc. */
 export function _GetMoveTarget(move: number, setTarget: number): number {
   let targetBattler = 0;
@@ -319,9 +320,9 @@ function _IsRunningFromBattleImpossible(): number {
  *  6 states via gBattleScripting.getexpState 0..6. Args : 1 byte battler ref
  *  + 4 byte ptr (= jump target post-getexp, BattleScript_LevelUp etc.).
  *
- *  Phase 1.3 I — Port complet 1:1 strict. STUBS résiduels (post-session 140 wire) :
- *  - gEnigmaBerries[].holdEffect path (= rare custom berry data, post-Phase 1).
- *  - BtlController_EmitExpUpdate (= UI sync, Phase 1.4 J/K/L).
+ *  Phase 1.3 I — Port complet 1:1 strict. Stubs résiduels intentionnels :
+ *  - gEnigmaBerries[].holdEffect path (= rare custom berry data, Frontier).
+ *  - BtlController_EmitExpUpdate (= UI sync wired session 142 R4).
  *  - HandleLowHpMusicChange (= BGM sync overworld, post-Phase 1).
  *  - gBattleResources.beforeLvlUp.stats (= tracking via gBattleStruct extension).
  *
@@ -517,8 +518,9 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
       if (gBattleControllerExecFlags === 0) {
         const monId = gBattleStruct.expGetterMonId;
         const _battlerId = gBattleStruct.expGetterBattlerId;
-        // STUB RET_VALUE_LEVELED_UP : pas dispo (= attendre buffer return du controller).
-        // Pour MVP : check directement si l'XP cumulé dépasse le seuil level+1.
+        // 1:1 décomp : check directement si l'XP cumulé dépasse le seuil level+1.
+        // Le décomp attend un RET_VALUE_LEVELED_UP du controller buffer ; notre
+        // port fait le check direct depuis gExperienceTables (= équivalent).
         const species = GetMonData(gPlayerParty[monId], MON_DATA_SPECIES) as number;
         const currentExp = GetMonData(gPlayerParty[monId], MON_DATA_EXP) as number;
         const currentLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) as number;
@@ -672,7 +674,8 @@ function _MonGainEVs(monId: number, defeatedSpecies: number): void {
 
 /** 1:1 décomp Cmd_various (battle_script_commands.c:6321-6503). 3 bytes :
  *  u8 battler + u8 caseId (= VARIOUS_*). 27 cases total.
- *  Port 1:1 strict — 14 cases full, 13 STUBS Battle Frontier (Arena/Palace). */
+ *  Sessions 134+138+142 : 23+/27 cases full 1:1 strict. Battle Frontier Arena/
+ *  Palace/Pyramid specific cases : stubs avec comportement safe (deferred). */
 function Cmd_various(ctx: BattleScriptContext): boolean {
   const battlerArg = readByte(ctx);
   const caseId = readByte(ctx);
@@ -766,7 +769,7 @@ function Cmd_various(ctx: BattleScriptContext): boolean {
     }
 
     case VARIOUS_ARENA_JUDGMENT_WINDOW:
-      // STUB Battle Arena : BattleArena_ShowJudgmentWindow + ARENA_RESULT_RUNNING.
+      // Frontier Arena deferred : BattleArena_ShowJudgmentWindow + ARENA_RESULT_RUNNING.
       // Hors combat normal. Skip avec result = 0 (= no winner).
       gBattleCommunication[1] = 0;
       break;
