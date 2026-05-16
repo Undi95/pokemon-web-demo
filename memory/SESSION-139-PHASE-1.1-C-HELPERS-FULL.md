@@ -2,20 +2,22 @@
 
 **Date** : 2026-05-16
 **Branche** : `upd2`
-**État final** : 19 commits, 0 erreur TS, preview clean
+**État final** : 25 commits, 0 erreur TS, preview clean
 
 ## Summary
 
 User a dit "Bonjour! C'est parti, continue le plan. Reste bien strict 1:1."
 post-compact session 138.
 
-19 commits portés sur :
+25 commits portés sur :
 1. **Phase 1.1 C complete** (3 commits) — gBattleStruct unifié 1:1 décomp
-2. **Helpers FULL** (16 commits) — TryRunFromBattle, FaintClearSetData,
+2. **Helpers FULL** (~22 commits) — TryRunFromBattle, FaintClearSetData,
    Cmd_ppreduce, Cmd_datahpupdate, Cmd_attackcanceler, MOVE_EFFECT_STEAL_ITEM,
    Cmd_drawpartystatussummary, PressurePPLose, ClearBattlerMoveHistory,
-   shouldGetStatBadgeBoost, IsOtherTrainer, IncrementGameStat, + ~12 autres
-   stubs résolus.
+   shouldGetStatBadgeBoost (FlagGet badge boosts), IsOtherTrainer,
+   IncrementGameStat, BtlController_EmitSetMonData wire, CountAliveMonsInBattle
+   FULL, GetSetPokedexFlag wire, Cmd_trydobeatup FULL, AdjustFriendship
+   wire + ~7 autres stubs résolus.
 
 ## Phase 1.1 C — gBattleStruct unifié (3 commits)
 
