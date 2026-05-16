@@ -446,6 +446,108 @@ export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
   return mon;
 }
 
+// ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
+
+/** 1:1 décomp `sFriendshipEventModifiers[][3]` (pokemon.c:2094-2105).
+ *  Indexed by event id (0..8) × friendshipLevel (0=low, 1=med, 2=high).
+ *  Value : signed mod to apply to mon.friendship. */
+const _SFRIENDSHIP_EVENT_MODIFIERS: ReadonlyArray<ReadonlyArray<number>> = [
+  [ 5,  3,  2],  // FRIENDSHIP_EVENT_GROW_LEVEL = 0
+  [ 5,  3,  2],  // FRIENDSHIP_EVENT_VITAMIN = 1
+  [ 1,  1,  0],  // FRIENDSHIP_EVENT_BATTLE_ITEM = 2
+  [ 3,  2,  1],  // FRIENDSHIP_EVENT_LEAGUE_BATTLE = 3
+  [ 1,  1,  0],  // FRIENDSHIP_EVENT_LEARN_TMHM = 4
+  [ 1,  1,  1],  // FRIENDSHIP_EVENT_WALKING = 5
+  [-1, -1, -1],  // FRIENDSHIP_EVENT_FAINT_SMALL = 6
+  [-5, -5, -10], // FRIENDSHIP_EVENT_FAINT_FIELD_PSN = 7
+  [-5, -5, -10], // FRIENDSHIP_EVENT_FAINT_LARGE = 8
+];
+
+const _MAX_FRIENDSHIP = 255;
+const _SPECIES_EGG_VAL = 412;  // 1:1 décomp constants/species.h SPECIES_EGG.
+
+/** 1:1 décomp `AdjustFriendship(mon, event)` (pokemon.c:5901-5973).
+ *  Adjust mon.friendship selon l'event + friendshipLevel + hold effect bonuses.
+ *
+ *  STUBS résiduels (pragmatiques pour Phase 1 wire bytecode) :
+ *    - ShouldSkipFriendshipChange (= toujours false pour notre wire).
+ *    - ITEM_ENIGMA_BERRY hold effect lookup (= rare, fallback GetItemHoldEffect).
+ *    - HOLD_EFFECT_FRIENDSHIP_UP +50% bonus (= TODO porter items hold effects).
+ *    - ITEM_LUXURY_BALL +1 bonus (= TODO bridge POKEBALL field).
+ *    - MET_LOCATION +1 bonus (= TODO bridge GetCurrentRegionMapSectionId). */
+export function AdjustFriendship(mon: Pokemon, event: number): void {
+  if (mon.species === 0 || mon.species === _SPECIES_EGG_VAL) return;
+  if (event < 0 || event >= _SFRIENDSHIP_EVENT_MODIFIERS.length) return;
+
+  let friendshipLevel = 0;
+  if (mon.friendship > 99) friendshipLevel++;
+  if (mon.friendship > 199) friendshipLevel++;
+
+  // 1:1 décomp ll.5935-5939 : WALKING 50% skip — appelé only via overworld step
+  // counter, pas via wire bytecode bridge. Pour completeness :
+  if (event === 5 /* FRIENDSHIP_EVENT_WALKING */) {
+    // STUB : random skip pas appelé ici car bridge ne déclenche pas WALKING.
+  }
+  // 1:1 décomp ll.5941-5950 : LEAGUE_BATTLE — check trainer class. STUB
+  // pour notre wire (= pas de trainer class match dispo dans bridge).
+
+  const mod = _SFRIENDSHIP_EVENT_MODIFIERS[event][friendshipLevel];
+  let friendship = mon.friendship + mod;
+  if (friendship < 0) friendship = 0;
+  if (friendship > _MAX_FRIENDSHIP) friendship = _MAX_FRIENDSHIP;
+  mon.friendship = friendship;
+}
+
+// ─── MonGainEVs (= 1:1 décomp pokemon.c:5975-6052) ───────────────────────
+
+const _MAX_TOTAL_EVS = 510;
+const _MAX_PER_STAT_EVS = 255;
+
+/** 1:1 décomp `MonGainEVs(mon, defeatedSpecies)`. Award EVs from defeated mon's
+ *  evYield, cap à 510 total + 255 par stat, double si Pokerus.
+ *
+ *  STUBS résiduels :
+ *    - ITEM_ENIGMA_BERRY hold effect (= fallback no holdEffect).
+ *    - HOLD_EFFECT_MACHO_BRACE x2 multiplier (= TODO porter hold effects).
+ *    - CheckPartyHasHadPokerus (= STUB false par défaut). */
+export function MonGainEVs(mon: Pokemon, defeatedSpeciesEnum: string): void {
+  if (mon.species === 0) return;
+  const info = getSpeciesInfo(defeatedSpeciesEnum);
+  if (!info?.evYield) return;
+  const evYield = info.evYield;
+  const evs = [mon.hpEV, mon.attackEV, mon.defenseEV, mon.speedEV, mon.spAttackEV, mon.spDefenseEV];
+  let totalEVs = evs.reduce((s, v) => s + v, 0);
+  const yields = [evYield.hp, evYield.atk, evYield.def, evYield.spe, evYield.spa, evYield.spd];
+
+  for (let i = 0; i < 6; i++) {
+    if (totalEVs >= _MAX_TOTAL_EVS) break;
+    // STUB Pokerus multiplier (= toujours 1 pour Phase 1).
+    const multiplier = 1;
+    let evIncrease = yields[i] * multiplier;
+    // STUB MACHO_BRACE x2 — TODO porter hold effects.
+
+    // 1:1 décomp ll.6038-6046 : cap à MAX_TOTAL_EVS et MAX_PER_STAT_EVS.
+    if (totalEVs + evIncrease > _MAX_TOTAL_EVS) {
+      evIncrease = (evIncrease + _MAX_TOTAL_EVS) - (totalEVs + evIncrease);
+    }
+    if (evs[i] + evIncrease > _MAX_PER_STAT_EVS) {
+      const val1 = evIncrease + _MAX_PER_STAT_EVS;
+      const val2 = evs[i] + evIncrease;
+      evIncrease = val1 - val2;
+    }
+    if (evIncrease < 0) evIncrease = 0;
+
+    evs[i] += evIncrease;
+    totalEVs += evIncrease;
+  }
+  mon.hpEV       = evs[0];
+  mon.attackEV   = evs[1];
+  mon.defenseEV  = evs[2];
+  mon.speedEV    = evs[3];
+  mon.spAttackEV = evs[4];
+  mon.spDefenseEV = evs[5];
+}
+
 // ─── CalculateMonStats (= 1:1 décomp pokemon.c:1932-2017) ─────────────────
 
 /** 1:1 décomp `gNatureStatTable[NUM_NATURES][NUM_NATURE_STATS]`

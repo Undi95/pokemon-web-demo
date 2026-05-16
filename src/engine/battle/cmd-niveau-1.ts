@@ -728,11 +728,17 @@ function _adjustFriendshipOnFaintTFM(battler: number): void {
   const _event = oppLvl > battlerLvl
     ? (oppLvl - battlerLvl > 29 ? FRIENDSHIP_EVENT_FAINT_LARGE : FRIENDSHIP_EVENT_FAINT_SMALL)
     : FRIENDSHIP_EVENT_FAINT_SMALL;
-  void _event;
   // 1:1 décomp call : AdjustFriendship(&gPlayerParty[gBattlerPartyIndexes[battler]], event).
-  // TODO porter AdjustFriendship (= pokemon.c) qui décrément mon.friendship selon une table.
-  // Pour l'instant : silent no-op (= ne casse pas le script flow).
+  // Wire complet maintenant via AdjustFriendship 1:1 décomp dans party-storage.ts.
+  const partyIdx = (globalThis as { __battleState?: { gBattlerPartyIndexes?: number[] } })
+    .__battleState?.gBattlerPartyIndexes?.[battler] ?? 0;
+  const playerMon = _gPlayerPartyAF[partyIdx];
+  if (playerMon) {
+    _AdjustFriendshipAF(playerMon, _event);
+  }
 }
+// Imports locaux _adjustFriendshipOnFaintTFM.
+import { AdjustFriendship as _AdjustFriendshipAF, gPlayerParty as _gPlayerPartyAF } from './party-storage';
 
 // Imports locaux Cmd_tryfaintmon (= éviter dups au top du file).
 // Note : on n'importe PAS AdjustFriendshipOnBattleFaint depuis battle_util2-all-auto
