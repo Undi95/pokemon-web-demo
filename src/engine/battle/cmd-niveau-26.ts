@@ -58,9 +58,14 @@ function _getTrainerMoneyToGive(trainerId: number): number {
   return trainerId !== 0 ? 100 : 0;
 }
 
-/** 1:1 stub `AddMoney(money_ptr, amount)` (item.c:money). MVP no-op. */
-function _addMoney(_amount: number): void {
-  // TODO : ajout au gSaveBlock1Ptr.money + cap à 999999.
+// 1:1 décomp `AddMoney(money_ptr, amount)` — wired via auto-data/money.
+import { AddMoney as _AddMoneyFull } from '../decomp-data/auto/src-all/money-all-auto';
+function _addMoney(amount: number): void {
+  // 1:1 décomp : passe gSaveBlock1Ptr.money via globalThis (= déjà sync).
+  const saveBlock = (globalThis as { gSaveBlock1Ptr?: { money: number } }).gSaveBlock1Ptr;
+  if (saveBlock) {
+    _AddMoneyFull(saveBlock.money, amount);
+  }
 }
 
 /** 1:1 stub `gBattleStruct->moneyMultiplier`. Set à 1 par défaut, doublé par
