@@ -66,8 +66,8 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** MVP `WEATHER_HAS_EFFECT` — true sauf Cloud Nine / Air Lock on field. */
-function _weatherHasEffect(): boolean { return true; }
+// 1:1 décomp `WEATHER_HAS_EFFECT` macro — wired via util.ts.
+import { WEATHER_HAS_EFFECT as _weatherHasEffect } from './util';
 
 // 1:1 décomp `TryRunFromBattle(battler)` (battle_util.c:407-485).
 import { TryRunFromBattle as _tryRunFromBattleFull } from './try-run-from-battle';

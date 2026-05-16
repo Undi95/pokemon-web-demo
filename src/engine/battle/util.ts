@@ -408,3 +408,23 @@ export function GetDefaultMoveTarget(battler: number): number {
   }
   return GetBattlerAtPosition(opposing);
 }
+
+// ─── WEATHER_HAS_EFFECT (battle_util.h:47) — 1:1 décomp macro ──────────────
+
+/** 1:1 décomp `WEATHER_HAS_EFFECT` macro (battle_util.h:47).
+ *  `((!ABILITY_ON_FIELD(ABILITY_CLOUD_NINE) && !ABILITY_ON_FIELD(ABILITY_AIR_LOCK)))`.
+ *  Retourne TRUE sauf si Cloud Nine ou Air Lock est on field (= ability bloque weather). */
+export function WEATHER_HAS_EFFECT(): boolean {
+  const ABILITY_CLOUD_NINE_LOCAL = 13;
+  const ABILITY_AIR_LOCK_LOCAL = 76;
+  for (let i = 0; i < gBattlersCount; i++) {
+    const mon = gBattleMons[i];
+    if (!mon) continue;
+    if ((mon.ability === ABILITY_CLOUD_NINE_LOCAL
+         || mon.ability === ABILITY_AIR_LOCK_LOCAL)
+        && mon.hp > 0) {
+      return false;
+    }
+  }
+  return true;
+}
