@@ -489,18 +489,22 @@ export function CalculateBaseDamage(
     }
 
     // Weather modifiers (= seulement si pas Air Lock / Cloud Nine).
+    // AUDIT BUG FIX : `import { gBattleWeather }` était snapshot stale via Vite
+    // ESM modulisation. On force fresh read via __battleStateMutators.
     if (weatherHasEffect()) {
+      const weather = (globalThis as { __battleStateMutators?: { getBattleWeather?: () => number } })
+        .__battleStateMutators?.getBattleWeather?.() ?? gBattleWeather;
       // Rain weakens Fire, boosts Water.
-      if (gBattleWeather & B_WEATHER_RAIN_TEMPORARY) {
+      if (weather & B_WEATHER_RAIN_TEMPORARY) {
         if (type === TYPE_FIRE) damage = Math.floor(damage / 2);
         else if (type === TYPE_WATER) damage = Math.floor((15 * damage) / 10);
       }
       // Any weather except sun weakens Solar Beam.
-      if ((gBattleWeather & (B_WEATHER_RAIN | B_WEATHER_SANDSTORM | B_WEATHER_HAIL)) && gCurrentMove === MOVE_SOLAR_BEAM) {
+      if ((weather & (B_WEATHER_RAIN | B_WEATHER_SANDSTORM | B_WEATHER_HAIL)) && gCurrentMove === MOVE_SOLAR_BEAM) {
         damage = Math.floor(damage / 2);
       }
       // Sun boosts Fire, weakens Water.
-      if (gBattleWeather & B_WEATHER_SUN) {
+      if (weather & B_WEATHER_SUN) {
         if (type === TYPE_FIRE) damage = Math.floor((15 * damage) / 10);
         else if (type === TYPE_WATER) damage = Math.floor(damage / 2);
       }
