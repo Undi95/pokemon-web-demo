@@ -209,14 +209,60 @@ Les ports restants intentionally deferred per design Phase 1 :
 - `gPokedexEntries[]` complet (~412 entries)
 - `gMapHeader` overworld sync (= déjà branchable)
 
+## Cleanup rounds post-batches A→G
+
+Après batches A→G commit, j'ai fait 3 rounds cleanup pour wirer plus de STUB
+résiduels vers la même direction 1:1 strict :
+
+### Round 1 (commit `811718e4`)
+- `cmd-niveau-1.ts` : 3× `BtlController_EmitSetMonData` wires (PPMOVE 9+slot,
+  HP_BATTLE 42, STATUS_BATTLE 40) via batch C bridge. Remove `_emitPpUpdateStubN1`.
+- `cmd-niveau-31.ts` `_GiveMonToPlayerGC` (FULL port `pokemon.c:4412-4432`) :
+  SetMonData OT depuis gSaveBlock2Ptr + scan party + CopyMon shallow.
+- `cmd-niveau-32.ts` `Cmd_yesnoboxlearnmove` (FULL port `battle_script_commands.c:5398-5511`) :
+  state machine 7 cases (0..6), STUB summary screen UI Phase 1.4.
+- `cmd-niveau-34.ts` `Cmd_getexp` case 4 LEVELED_UP : BattleScriptPushCursor +
+  jump `BattleScript_LevelUp` wire via getBattleScriptOffset.
+
+### Round 2 (commit `46292909`)
+- `cmd-niveau-30.ts` `_switchInClearSetData` (FULL port `battle_main.c:3152-3262`,
+  ~110l) : full 1:1 strict, including Baton Pass preservation (statStages,
+  status2 partial, status3 partial, substituteHP, perishSongTimer, etc.),
+  non-BP full reset, INFATUATED_WITH(active)/WRAPPED_BY(active) clear sur autres
+  battlers, action/move cursor reset, memset disableStruct, lastMoves/lastTakenMove
+  reset, palaceFlags clear bit, choicedMove + arenaTurnCounter reset.
+- `cmd-niveau-28.ts` `Cmd_rapidspinfree` wrapped path : 1:1 décomp build
+  gBattleTextBuff1 MOVE buffer depuis gBattleStruct.wrappedMove[2*battler].
+- `cmd-niveau-2.ts` : docs cleanup (opcodes 0x16/0x17 sont FULL, pas stubs).
+
+### Round 3 (commit `cf921a16`)
+- `battle-controllers.ts` : 6 NEW BtlController_Emit* stubs avec signatures 1:1
+  décomp (EmitBallThrowAnim, EmitExpUpdate, EmitChoosePokemon, EmitLinkStandbyMsg,
+  EmitCantSwitch, EmitYesNoBox).
+- `cmd-niveau-32.ts` `Cmd_handleballthrow` ball anim wires : EmitBallThrowAnim
+  pour BALL_TRAINER_BLOCK (5), BALL_3_SHAKES_SUCCESS (4) Wally tut, shakes (0..4)
+  pour cas normal. MarkBattlerForControllerExec dans chaque branche.
+
+## Compteurs STUB final
+
+- Session 141 fin : ~126 STUB/TODO/MVP occurrences
+- Session 142 fin : 87 STUB/TODO/MVP occurrences (-39 / -31%)
+
+Restants sont majoritairement des stubs intentionnels Phase 1.4+ (UI controllers,
+naming screen, audio engine wires, Frontier-specific, PC storage, custom berries
+gEnigmaBerries).
+
 ## Prochaines étapes possibles
 
-1. **Phase 1.4 UI controllers** (= queue d'événements UI + rendering)
+1. **Phase 1.4 UI controllers complets** (= queue d'événements UI + rendering)
 2. **Wire battle-flow.ts via bytecode flag** (= activer `__USE_BYTECODE_FOR_DAMAGE__`
    par défaut pour tous les wild battles)
 3. **AI move selection 1:1 décomp** (Frontier-quality)
 4. **Multi-turn battle validation** via in-game (= playthrough)
 5. **Battle Frontier specific** post Phase 1
+6. **gEnigmaBerries custom data** (Frontier per-battler berry effects)
+7. **PC storage system** (CopyMonToPC, gPokemonStorageSystemPtr)
+8. **Naming screen** (DoNamingScreen for caught mon nickname)
 
 ## File complet
 
