@@ -25,6 +25,7 @@
 import { BATTLE_STRINGS_TABLE, STRINGID_NAMES } from '../decomp-data/battle-strings-table';
 import { getString } from '../gba-strings';
 import { getMoveName as _getMoveNameFr } from '../data/game-data';
+import { getSpeciesNameFr as _getSpeciesNameFr } from '../data-tables';
 import { resolveDecompConstant } from '../decomp-constants';
 import type { BattleMsgData } from './battle-event-queue';
 import {
@@ -79,17 +80,15 @@ function _speciesIdToEnum(speciesId: number): string | null {
 }
 
 /** Resolve nom species depuis species id numeric.
- *  1:1 décomp `gSpeciesNames[species]` (= names extraits depuis decomp data).
- *  Notre port : resolve numeric → "SPECIES_X" → lookup species[X].name. */
+ *  1:1 décomp `gSpeciesNames[species]` (= names FR extraits depuis decomp data).
+ *  Notre port : resolve numeric → "SPECIES_X" → lookup text-tables.json
+ *  via getSpeciesNameFr (= retourne nom FR comme "ZIGZATON" pas "ZIGZAGOON"). */
 function _speciesName(speciesId: number): string {
   if (!speciesId) return '?';
   const enumName = _speciesIdToEnum(speciesId);
   if (enumName) {
-    try {
-      const dt = (globalThis as { gameDataSpecies?: Record<string, { name?: string }> }).gameDataSpecies;
-      const sp = dt?.[enumName];
-      if (sp?.name) return sp.name;
-    } catch { /* fallthrough */ }
+    const fr = _getSpeciesNameFr(enumName);
+    if (fr && fr !== enumName) return fr;
     return enumName.replace(/^SPECIES_/, '');
   }
   return `Espèce#${speciesId}`;
