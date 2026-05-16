@@ -45,9 +45,28 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
   return true;
 }
 
-/** MVP `WEATHER_HAS_EFFECT` — true sauf Cloud Nine / Air Lock on field. Pour
- *  MVP, on assume toujours true (= les abilities pas implémentées). */
-function _weatherHasEffect(): boolean { return true; }
+/** 1:1 décomp `WEATHER_HAS_EFFECT` macro (battle_util.h:47).
+ *  TRUE sauf si ABILITY_CLOUD_NINE ou ABILITY_AIR_LOCK est on field. */
+function _weatherHasEffect(): boolean {
+  const ABILITY_CLOUD_NINE_LOCAL = 13;
+  const ABILITY_AIR_LOCK_LOCAL = 76;
+  const st = (globalThis as { __battleState?: {
+    gBattlersCount?: number;
+    gBattleMons?: Array<{ ability: number; hp: number }>;
+  } }).__battleState;
+  if (!st?.gBattleMons) return true;
+  const count = st.gBattlersCount ?? 2;
+  for (let i = 0; i < count; i++) {
+    const mon = st.gBattleMons[i];
+    if (!mon) continue;
+    if ((mon.ability === ABILITY_CLOUD_NINE_LOCAL
+         || mon.ability === ABILITY_AIR_LOCK_LOCAL)
+        && mon.hp > 0) {
+      return false;
+    }
+  }
+  return true;
+}
 
 // ─── 0x57 endlinkbattle ────────────────────────────────────────────────────
 
