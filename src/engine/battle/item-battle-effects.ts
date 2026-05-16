@@ -118,6 +118,25 @@ function _PREPARE_STRING_BUFFER_IBE(buf: Uint8Array, stringId: number): void {
   buf[4] = _B_BUFF_EOS_IBE;
 }
 
+/** 1:1 décomp `StringCopy(gBattleTextBuff1, gStatusConditionString_XJpn)`.
+ *  Notre version FR direct (= POISON/SOMMEIL/PARALYSIE/BRÛLURE/GEL/CONFUSION/AMOUR).
+ *  Utilisé par HOLD_EFFECT_CURE_ATTRACT/CURE_STATUS (= Mental Herb, Lum Berry). */
+function _writeStatusFrToBuffIBE(buf: Uint8Array, status1: number, status2: number): void {
+  let s = '';
+  if (status1 & (STATUS1_POISON | STATUS1_TOXIC_POISON)) s = 'POISON';
+  else if (status1 & STATUS1_SLEEP) s = 'SOMMEIL';
+  else if (status1 & STATUS1_PARALYSIS) s = 'PARALYSIE';
+  else if (status1 & STATUS1_BURN) s = 'BRÛLURE';
+  else if (status1 & STATUS1_FREEZE) s = 'GEL';
+  else if (status2 & STATUS2_CONFUSION) s = 'CONFUSION';
+  else if (status2 & STATUS2_INFATUATION) s = 'AMOUR';
+  for (let i = 0; i < buf.length; i++) buf[i] = 0;
+  for (let i = 0; i < s.length && i < buf.length - 1; i++) {
+    buf[i] = s.charCodeAt(i) & 0xFF;
+  }
+  buf[Math.min(s.length, buf.length - 1)] = _B_BUFF_EOS_IBE;
+}
+
 // ─── Helpers : status1 masks ─────────────────────────────────────────────
 const STATUS1_PSN_ANY = STATUS1_POISON | STATUS1_TOXIC_POISON;
 const STATUS1_TOXIC_COUNTER = 0xF00; // 1:1 décomp battle.h:128.
@@ -403,16 +422,27 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
             break;
           case HOLD_EFFECT_CURE_ATTRACT:
             if (gBattleMons[battlerId].status2 & STATUS2_INFATUATION) {
+              // 1:1 décomp battle_util.c (Mental Herb) — StringCopy(LoveJpn).
+              _writeStatusFrToBuffIBE(
+                _gBattleTextBuff1_IBE,
+                gBattleMons[battlerId].status1,
+                gBattleMons[battlerId].status2,
+              );
               gBattleMons[battlerId].status2 &= ~STATUS2_INFATUATION;
               _lastWantedScriptLabel = 'BattleScript_BerryCureChosenStatusEnd2';
               effect = ITEM_EFFECT_OTHER;
             }
             break;
           case HOLD_EFFECT_CURE_STATUS:
-            // 1:1 décomp partial : clear tous status1 + STATUS2_CONFUSION
-            // (sans le text buffer plural logic).
+            // 1:1 décomp partial : clear tous status1 + STATUS2_CONFUSION.
             if ((gBattleMons[battlerId].status1 & STATUS1_ANY)
                 || (gBattleMons[battlerId].status2 & STATUS2_CONFUSION)) {
+              // 1:1 décomp battle_util.c (Lum Berry) — StringCopy status name.
+              _writeStatusFrToBuffIBE(
+                _gBattleTextBuff1_IBE,
+                gBattleMons[battlerId].status1,
+                gBattleMons[battlerId].status2,
+              );
               gBattleMons[battlerId].status2 &= ~STATUS2_NIGHTMARE;
               gBattleMons[battlerId].status1 = 0;
               gBattleMons[battlerId].status2 &= ~STATUS2_CONFUSION;
@@ -564,6 +594,12 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
             break;
           case HOLD_EFFECT_CURE_ATTRACT:
             if (gBattleMons[bId].status2 & STATUS2_INFATUATION) {
+              // 1:1 décomp battle_util.c:3683 (Mental Herb) — StringCopy LoveJpn.
+              _writeStatusFrToBuffIBE(
+                _gBattleTextBuff1_IBE,
+                gBattleMons[bId].status1,
+                gBattleMons[bId].status2,
+              );
               gBattleMons[bId].status2 &= ~STATUS2_INFATUATION;
               gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = 7 /* B_MSG_CURED_PROBLEM */;
               _lastWantedScriptLabel = 'BattleScript_BerryCureChosenStatusRet';
@@ -573,6 +609,13 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
           case HOLD_EFFECT_CURE_STATUS:
             if ((gBattleMons[bId].status1 & STATUS1_ANY)
                 || (gBattleMons[bId].status2 & STATUS2_CONFUSION)) {
+              // 1:1 décomp battle_util.c:3691-3713 (Lum Berry) — StringCopy
+              // status name. Notre FR direct vs décomp EN qui garde JPN bytes.
+              _writeStatusFrToBuffIBE(
+                _gBattleTextBuff1_IBE,
+                gBattleMons[bId].status1,
+                gBattleMons[bId].status2,
+              );
               gBattleMons[bId].status1 = 0;
               gBattleMons[bId].status2 &= ~(STATUS2_CONFUSION | STATUS2_NIGHTMARE);
               gBattleCommunication[5] = 7 /* B_MSG_CURED_PROBLEM */;
