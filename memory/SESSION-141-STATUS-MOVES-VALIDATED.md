@@ -10,6 +10,16 @@ type: project
 **Commits** : 12 sur branche `upd2` (post 4093956f session 140 final)
 **Branche** : `upd2`
 
+## 🔄 Iter F — Cmd_checkteamslost full port
+
+Commit `4cb449f8` : 11e bug critique session 141.
+- Cmd_checkteamslost (= LOST/WON outcome check) était MVP qui check seulement
+  les 4 active battlers.
+- Bug : si player active mon était KO mais reserves alive, marquait LOST trop tôt.
+- Fix : full 1:1 port battle_script_commands.c:3537-3618 — itère gPlayerParty[6]
+  + gEnemyParty[6] avec SPECIES!=0 + !isEgg + sum HP.
+- Single battle reserves correctement comptés. LINK/MULTI branches différées.
+
 ## 🔄 Iter E — Cmd_forcerandomswitch port single trainer
 
 Commit `f7b470d9` : 10e bug critique session 141.
