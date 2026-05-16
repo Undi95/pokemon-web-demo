@@ -105,16 +105,21 @@ function _recordAbilityBattle(battler: number, ability: number): void {
   _recordAbilityBattleFullN27(battler, ability);
 }
 
-/** 1:1 stub `GetSetPokedexFlag(natDexNum, caseId)` (pokedex.c).
- *  Pour MVP : retourne 0 (= jamais set). Permettra l'opcode de toujours
- *  brancher sur le SET path. */
-function _getSetPokedexFlag(_natDexNum: number, _caseId: number): number {
-  return 0;
+// 1:1 décomp `GetSetPokedexFlag(nationalDexNo, caseID)` (pokedex.c) — wired
+// via auto-data (= gSaveBlock2Ptr.pokedex.{seen,owned} bit array).
+import { GetSetPokedexFlag as _GetSetPokedexFlag27 } from '../decomp-data/auto/src-all/pokedex-all-auto';
+
+/** 1:1 décomp `GetSetPokedexFlag(natDexNum, caseId)` (pokedex.c). */
+function _getSetPokedexFlag(natDexNum: number, caseId: number): number {
+  return _GetSetPokedexFlag27(natDexNum, caseId) as number;
 }
 
-/** 1:1 stub `HandleSetPokedexFlag(natDexNum, caseId, personality)`. */
-function _handleSetPokedexFlag(_natDexNum: number, _caseId: number, _personality: number): void {
-  // TODO porter gSaveBlock2Ptr.pokedex flags.
+/** 1:1 décomp `HandleSetPokedexFlag(natDexNum, caseId, personality)`.
+ *  Le décomp wraps GetSetPokedexFlag pour bind avec spinda data si caught. */
+function _handleSetPokedexFlag(natDexNum: number, caseId: number, _personality: number): void {
+  _GetSetPokedexFlag27(natDexNum, caseId);
+  // STUB Spinda spots : si caught + species SPINDA → store personality dans
+  // gSaveBlock2Ptr->pokedex.spindaPersonality (rare, post-Phase 1).
 }
 
 /** 1:1 stub `SpeciesToNationalPokedexNum(species)` — Gen 3 species id == natDexNum
