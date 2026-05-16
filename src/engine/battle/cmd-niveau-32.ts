@@ -274,9 +274,9 @@ function Cmd_handleballthrow(ctx: BattleScriptContext): boolean {
     const off = _getBattleScriptOffsetHBT('BattleScript_SuccessBallThrow');
     if (off >= 0) ctx.scriptPtr = off;
     _SetMonDataHBT(_gEnemyPartyHBT[_gBattlerPartyIndexesHBT[targetIdx]], _MON_DATA_POKEBALL_HBT, _gLastUsedItemHBT);
-    // STUB CalculatePlayerPartyCount : si party full → MSG 0, sinon 1.
-    // Pour Phase 1 : assume party not full.
-    _gBattleCommunicationHBT[5 /* MULTISTRING_CHOOSER */] = 1;
+    // 1:1 décomp : MSG 0 (= SENT_SOMEONES_PC / LANETTES_PC) si party full, sinon 1.
+    const partyCount_PB = _CalculatePlayerPartyCountHBT();
+    _gBattleCommunicationHBT[5 /* MULTISTRING_CHOOSER */] = partyCount_PB >= 6 ? 0 : 1;
   } else {
     // Mon may be caught — calc shakes.
     odds = _sqrtHBT(_sqrtHBT(Math.floor(16711680 / odds)));
@@ -318,6 +318,7 @@ import { getBattleScriptOffset as _getBattleScriptOffsetHBT, Random as _RandomHB
 import {
   gEnemyParty as _gEnemyPartyHBT, SetMonData as _SetMonDataHBT,
   MON_DATA_POKEBALL as _MON_DATA_POKEBALL_HBT,
+  CalculatePlayerPartyCount as _CalculatePlayerPartyCountHBT,
 } from './party-storage';
 import { GetSetPokedexFlag as _GetSetPokedexFlagHBT } from '../decomp-data/auto/src-all/pokedex-all-auto';
 import { getSpeciesInfo as _getSpeciesInfoHBT } from '../data/game-data';

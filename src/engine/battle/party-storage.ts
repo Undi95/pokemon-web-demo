@@ -446,6 +446,27 @@ export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
   return mon;
 }
 
+// ─── CalculatePlayerPartyCount (= 1:1 décomp pokemon.c:7011) ─────────────
+
+/** 1:1 décomp `CalculatePlayerPartyCount()` (pokemon.c). Return le nombre de
+ *  slots dans gPlayerParty avec species != 0. Used pour detect party full. */
+export function CalculatePlayerPartyCount(): number {
+  let count = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if (gPlayerParty[i]?.species && gPlayerParty[i].species !== 0) count++;
+  }
+  return count;
+}
+
+/** 1:1 décomp `CalculateEnemyPartyCount()` (pokemon.c). Idem pour gEnemyParty. */
+export function CalculateEnemyPartyCount(): number {
+  let count = 0;
+  for (let i = 0; i < PARTY_SIZE; i++) {
+    if (gEnemyParty[i]?.species && gEnemyParty[i].species !== 0) count++;
+  }
+  return count;
+}
+
 // ─── AdjustFriendship (= 1:1 décomp pokemon.c:5901-5973) ─────────────────
 
 /** 1:1 décomp `sFriendshipEventModifiers[][3]` (pokemon.c:2094-2105).
