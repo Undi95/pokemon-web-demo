@@ -560,7 +560,12 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
           // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleMons[gEffectBattler].status2 |= ((Random() & 3) + 3) << 13; // STATUS2_WRAPPED_TURN
-          gBattleStruct.wrappedMove[gEffectBattler] = gCurrentMove;
+          // 1:1 décomp battle_script_commands.c:2620-2622 :
+          //   wrappedMove[battler*2 + 0] = move & 0xFF (lo)
+          //   wrappedMove[battler*2 + 1] = (move >> 8) & 0xFF (hi)
+          //   wrappedBy[battler] = attacker
+          gBattleStruct.wrappedMove[gEffectBattler * 2 + 0] = gCurrentMove & 0xFF;
+          gBattleStruct.wrappedMove[gEffectBattler * 2 + 1] = (gCurrentMove >> 8) & 0xFF;
           gBattleStruct.wrappedBy[gEffectBattler] = gBattlerAttacker;
           ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = _resolveMoveEffectBS(eff);
