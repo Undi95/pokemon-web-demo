@@ -20,6 +20,7 @@ import {
   gLastPrintedMoves,
   gActiveBattler, gDisableStructs, gProtectStructs,
   gBattleStruct, gBattlersCount, gCurrentMove,
+  gActionSelectionCursor, gMoveSelectionCursor,
 } from './state';
 import { getSpeciesTypes } from './data/species-runtime';
 import { STATUS2_DESTINY_BOND, STATUS3_GRUDGE } from './constants';
@@ -139,7 +140,9 @@ export function FaintClearSetData(): void {
     }
   }
 
-  // STUB UI : gActionSelectionCursor / gMoveSelectionCursor (= web canvas).
+  // 1:1 décomp ll.3285-3286 : reset UI cursors pour ce battler.
+  gActionSelectionCursor[gActiveBattler] = 0;
+  gMoveSelectionCursor[gActiveBattler] = 0;
 
   // 1:1 décomp ll.3288-3290 : clear gDisableStructs entièrement.
   const ds = gDisableStructs[gActiveBattler];
@@ -214,9 +217,8 @@ export function FaintClearSetData(): void {
   gBattleMons[gActiveBattler].type1 = t1;
   gBattleMons[gActiveBattler].type2 = t2;
 
-  // 1:1 décomp l.3353 : ClearBattlerMoveHistory (= AI move tracking).
-  // Use our exposed helper (= ClearBattlerAbilityHistory below) for the
-  // ability part; move history is a more granular AI tracker not yet ported.
+  // 1:1 décomp ll.3353-3354 : ClearBattlerMoveHistory + ClearBattlerAbilityHistory.
+  ClearBattlerMoveHistory(gActiveBattler);
   ClearBattlerAbilityHistory(gActiveBattler);
 
   // Reference l.3324-3325 : gCurrentMove non touché ici (= different scope).
@@ -261,11 +263,20 @@ export function ClearFuryCutterDestinyBondGrudge(battlerId: number): void {
 
 // ─── BATTLE_HISTORY tracking (battle_ai_script_commands.c:643-655) — 1:1 décomp ───
 
-/** AI tracking module-local — pas exporté (= un mon n'a pas besoin de lire les
- *  abilities/items des autres mons en MVP). gBattleResources->ai = ce buffer. */
+/** AI tracking module-local — exporté pour devtools. gBattleResources->ai =
+ *  ce buffer. Notre struct match 1:1 décomp BATTLE_HISTORY :
+ *  - abilities[4] : last ability seen on each battler.
+ *  - itemEffects[4] : last item effect seen on each battler.
+ *  - usedMoves[4].moves[4] : last 4 moves used by each battler. */
 const _battleHistory = {
   abilities: [0, 0, 0, 0] as number[],
   itemEffects: [0, 0, 0, 0] as number[],
+  usedMoves: [
+    [MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE],
+    [MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE],
+    [MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE],
+    [MOVE_NONE, MOVE_NONE, MOVE_NONE, MOVE_NONE],
+  ] as number[][],
 };
 
 /** 1:1 décomp `RecordAbilityBattle(battler, abilityId)` (= record qu'on a vu
@@ -292,11 +303,44 @@ export function getBattleHistoryItemEffect(battler: number): number {
   return _battleHistory.itemEffects[battler] ?? 0;
 }
 
+/** 1:1 décomp `ClearBattlerMoveHistory(u8 battler)` (battle_ai_script_commands.c:635). */
+export function ClearBattlerMoveHistory(battler: number): void {
+  for (let i = 0; i < NUM_BATTLE_STATS && i < 4; i++) {
+    _battleHistory.usedMoves[battler][i] = MOVE_NONE;
+  }
+}
+
+/** 1:1 décomp `ClearBattlerItemEffectHistory(u8 battler)` (battle_ai_script_commands.c:658). */
+export function ClearBattlerItemEffectHistory(battler: number): void {
+  _battleHistory.itemEffects[battler] = 0;
+}
+
+/** 1:1 décomp `RecordLastUsedMoveByTarget()` (battle_ai_script_commands.c:618-633).
+ *  Si gLastMoves[target] est déjà dans la history → no-op (déjà trackée).
+ *  Sinon find first MOVE_NONE slot → fill. */
+export function RecordLastUsedMoveByTarget(gLastMoves: number[], gBattlerTarget: number): void {
+  for (let i = 0; i < 4 /* MAX_MON_MOVES */; i++) {
+    if (_battleHistory.usedMoves[gBattlerTarget][i] === gLastMoves[gBattlerTarget]) break;
+    if (_battleHistory.usedMoves[gBattlerTarget][i] === MOVE_NONE) {
+      _battleHistory.usedMoves[gBattlerTarget][i] = gLastMoves[gBattlerTarget];
+      break;
+    }
+  }
+}
+
+/** Expose used moves history pour AI / devtools. */
+export function getBattleHistoryUsedMoves(battler: number): readonly number[] {
+  return _battleHistory.usedMoves[battler];
+}
+
 /** Reset le battle history au battle start. */
 export function resetBattleHistory(): void {
   for (let i = 0; i < 4; i++) {
     _battleHistory.abilities[i] = 0;
     _battleHistory.itemEffects[i] = 0;
+    for (let j = 0; j < 4; j++) {
+      _battleHistory.usedMoves[i][j] = MOVE_NONE;
+    }
   }
 }
 

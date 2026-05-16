@@ -716,6 +716,15 @@ export function setTrainerBattleOpponentB(v: number) { gTrainerBattleOpponent_B 
  *  (Cmd_copymovepermanently) pour copier le move successfully announced. */
 export const gLastPrintedMoves: number[] = [0, 0, 0, 0];
 
+/** 1:1 décomp `gActionSelectionCursor[MAX_BATTLERS_COUNT]` (battle_main.c). UI
+ *  cursor position dans le menu action (FIGHT/BAG/POKEMON/RUN). Reset à 0 sur
+ *  faint et à chaque turn pour ce battler. */
+export const gActionSelectionCursor: number[] = [0, 0, 0, 0];
+
+/** 1:1 décomp `gMoveSelectionCursor[MAX_BATTLERS_COUNT]` (battle_main.c). UI
+ *  cursor position dans le menu move (0..3). Reset à 0 sur faint. */
+export const gMoveSelectionCursor: number[] = [0, 0, 0, 0];
+
 /** 1:1 décomp `gBattleStruct->lastTakenMove[MAX_BATTLERS_COUNT]` — dernier
  *  move subi par chaque battler (= utilisé par Mirror Move).
  *  Note : ce field map sur les premiers 4 entries de `gBattleStruct.lastTakenMove`
