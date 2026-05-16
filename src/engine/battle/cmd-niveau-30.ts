@@ -52,6 +52,7 @@ import {
   gBattleTextBuff1 as _gBattleTextBuff1_30,
   gBattleTextBuff1, gBattleTextBuff2,
   PREPARE_MON_NICK_BUFFER, PREPARE_TYPE_BUFFER, PREPARE_ITEM_BUFFER,
+  PREPARE_MON_NICK_WITH_PREFIX_BUFFER,
 } from './text-buffers';
 import { gBattlerPartyIndexes, gBattleCommunication } from './state';
 import { MULTISTRING_CHOOSER } from './constants';
@@ -399,6 +400,9 @@ function Cmd_trydobeatup(ctx: BattleScriptContext): boolean {
   if (gBattleCommunicationBU[0] < 6) {
     // Found valid party member → calculate damage (= 1:1 décomp formula).
     const slot = gBattleCommunicationBU[0];
+    // 1:1 décomp battle_script_commands.c:8987 : PREPARE_MON_NICK_WITH_PREFIX_BUFFER
+    // pour le message "Attaque de X!" (= party member name avec préfixe).
+    PREPARE_MON_NICK_WITH_PREFIX_BUFFER(gBattleTextBuff1, gBattlerAttacker, slot);
     const baseAttack = _getBaseAttackBU(GetMonData_BU(gPlayerParty_BU[slot], MON_DATA_SPECIES_BU) as number);
     const monLevel = GetMonData_BU(gPlayerParty_BU[slot], MON_DATA_LEVEL_BU) as number;
     const baseDefense = _getBaseDefenseBU(gBattleMons[gBattlerTarget].species);
