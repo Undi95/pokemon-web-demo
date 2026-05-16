@@ -432,11 +432,18 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
           gBattleScripting.getexpState = 5;
           setBattleMoveDamage(0);
         } else {
-          // 1:1 décomp : switch BGM → MUS_VICTORY_WILD post-faint adversaire en wild.
+          // 1:1 décomp battle_script_commands.c:3360-3365 :
+          //   BattleStopLowHpSound + PlayBGM(MUS_VICTORY_WILD) + wildVictorySong++.
           if (!(gBattleTypeFlags & BATTLE_TYPE_TRAINER)
               && gBattleMons[0].hp !== 0
               && !gBattleStruct.wildVictorySong) {
-            // STUB BGM switch (= UI/audio engine wiring).
+            // 1:1 décomp : wire vers audioEngine global (= stub si pas dispo).
+            const ae = (globalThis as { __audioEngine?: {
+              stopLowHpSound?: () => void; playBgm?: (id: number) => void;
+            } }).__audioEngine;
+            ae?.stopLowHpSound?.();
+            // MUS_VICTORY_WILD = 414 (= include/constants/songs.h).
+            ae?.playBgm?.(414 /* MUS_VICTORY_WILD */);
             gBattleStruct.wildVictorySong = gBattleStruct.wildVictorySong + 1;
           }
 
