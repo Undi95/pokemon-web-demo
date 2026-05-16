@@ -387,7 +387,12 @@ function _resolveMoveId(dexId: string): number {
 export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
   const mon = createEmptyPokemon();
   mon.personality = (inst.personality ?? 0) >>> 0;
-  mon.otId = 0; // TODO bridge playerTrainerId quand disponible
+  // 1:1 décomp : mon.otId est le trainer ID du capturer. Pour les mons player-caught,
+  // c'est le player TID stocké dans gSaveBlock2Ptr.playerTrainerId. Si on lit
+  // depuis gameState.trainerId, on évite que IsOtherTrainer retourne true (= mon
+  // considéré "traded" donc disobedient). Fallback 0 si trainerId pas dispo.
+  const _gs = (globalThis as { gameState?: { trainerId?: number } }).gameState;
+  mon.otId = (_gs?.trainerId ?? 0) >>> 0;
   mon.nickname = inst.nickname || inst.speciesNameFr;
   mon.species = _resolveSpeciesId(inst.speciesEnum) || inst.speciesId || 0;
   mon.hasSpecies = mon.species ? 1 : 0;

@@ -222,6 +222,11 @@ export function runMoveScriptViaBytecode(opts: {
     }
   }
 
+  // Sync status1 back to PokemonInstance (= persist BURN/PSN/PAR/etc. au-delà
+  // du combat). 1:1 décomp inverse mapping STATUS1_* → PSN/BRN/etc.
+  _syncStatus1ToInstance(opts.attacker, gBattleMons[attBId].status1);
+  _syncStatus1ToInstance(opts.defender, gBattleMons[defBId].status1);
+
   const damage = defenderHpBefore - opts.defender.currentHp;
   const typeMul = _decodeTypeMulFromResultFlags(gMoveResultFlags);
   const missed = (gMoveResultFlags & (MOVE_RESULT_MISSED | MOVE_RESULT_FAILED)) !== 0;
@@ -235,6 +240,28 @@ export function runMoveScriptViaBytecode(opts: {
     fainted,
     bytecodeOpsCount: iters,
   };
+}
+
+// ─── Status1 sync helpers ──────────────────────────────────────────────
+
+/** 1:1 décomp STATUS1_* bits → PokemonInstance.status string. Inverse de
+ *  `_STATUS_TO_STATUS1` dans party-storage.ts. */
+function _decodeStatus1(status1: number): 'PSN' | 'PAR' | 'BRN' | 'SLP' | 'FRZ' | 'TOX' | null {
+  if (status1 === 0) return null;
+  // SLEEP : bits 0-2 are the sleep counter, set if > 0.
+  if (status1 & 0x07) return 'SLP';
+  // TOXIC : bit 7 + bit 3 (= TOXIC_POISON | POISON). Check TOX first.
+  if ((status1 & 0x80) && (status1 & 0x08)) return 'TOX';
+  if (status1 & 0x08) return 'PSN';
+  if (status1 & 0x10) return 'BRN';
+  if (status1 & 0x20) return 'FRZ';
+  if (status1 & 0x40) return 'PAR';
+  return null;
+}
+
+/** Sync gBattleMons[X].status1 back to PokemonInstance.status. */
+function _syncStatus1ToInstance(inst: PokemonInstance, status1: number): void {
+  inst.status = _decodeStatus1(status1);
 }
 
 // Used to avoid unused-import warning.
