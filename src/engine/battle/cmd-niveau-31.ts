@@ -300,8 +300,13 @@ function Cmd_givecaughtmon(_ctx: BattleScriptContext): boolean {
 
   // 1:1 décomp ll.10081-10083 : log caught mon stats dans gBattleResults.
   _gBattleResultsGC.caughtMonSpecies = _GetMonDataGC(caughtMon, _MON_DATA_SPECIES_GC) as number;
-  // STUB caughtMonNick : write u8[11] depuis MON_DATA_NICKNAME (= Phase 1.4 text buffer).
-  // _GetMonDataGC(caughtMon, MON_DATA_NICKNAME, gBattleResults.caughtMonNick);
+  // 1:1 décomp : `GetMonData(caughtMon, MON_DATA_NICKNAME, gBattleResults.caughtMonNick)`.
+  // MON_DATA_NICKNAME=2. Write u8[11] depuis le nickname string (= POKEMON_NAME_LENGTH+1).
+  const nick = _GetMonDataGC(caughtMon, 2 /* MON_DATA_NICKNAME */) as string;
+  const nickBuf = _gBattleResultsGC.caughtMonNick;
+  for (let i = 0; i < 11; i++) {
+    nickBuf[i] = nick.charCodeAt(i) || 0xFF /* EOS */;
+  }
   _gBattleResultsGC.caughtMonBall = _GetMonDataGC(caughtMon, _MON_DATA_POKEBALL_GC) as number;
 
   return false;

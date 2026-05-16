@@ -158,8 +158,8 @@ function Cmd_cureifburnedparalyzedorpoisoned(ctx: BattleScriptContext): boolean 
 }
 
 /** 1:1 décomp `BtlController_EmitSetMonData(buf, requestId, monIdx, bytes, data)`.
- *  Wired via battle-controllers helper (= no-op MVP côté framework UI mais
- *  signature 1:1 décomp). */
+ *  Wired via battle-controllers (= flush au party-side via __batPSetMonByActive
+ *  bridge depuis batch C session 142). */
 function _emitSetMonData(requestId: number): void {
   BtlController_EmitSetMonData(0 /* B_COMM_TO_CONTROLLER */, requestId, 0, 0, null);
 }
