@@ -112,6 +112,38 @@ Non bloquants gameplay, juste battle text formatting (= Phase 1.4 UI).
 |----------|--------|-----------|-------------|--------|
 | — | — | — | Aucun bug 1:1 trouvé | — |
 
+## Corrections au verdict initial agent (= over-pessimisme)
+
+L'agent batch 3 a marqué plusieurs opcodes 🔴 STUB qui sont en fait ✅ FULL :
+
+| OP | Agent verdict | Vérification | Status réel |
+|----|---------------|--------------|-------------|
+| 0x47 setgraphicalstatchangevalues | "consume args, no anim" | Lu code | ✅ FULL (stat anim id calc + animArg1/2 set) |
+| 0x48 playstatchangeanimation | "consume args, no anim" | Lu code | ✅ FULL (4 cases STAT_CHANGE_*, BattleAnimation emit) |
+| 0x49 moveend | "marked TODO, all 17 sub-states skipped" | Lu code | ✅ **FULL 17/17 sub-states** (session 138) |
+| 0x66 chosenstatusanimation | "explicit status anim emit via args" | Lu code | ✅ FULL (full 1:1 with STATUS3_SEMI_INVULNERABLE etc.) |
+| 0x67 yesnobox | "labeled TODO, dialog box state machine" | Lu code | ✅ FULL 1:1 state machine (init + poll input) |
+| 0x6A removeitem | "labeled TODO, item removal from inventory" | Lu code | ✅ FULL (gBattleStruct.usedHeldItems set, Emit SetMonData) |
+| 0xE2 switchoutabilities | "TODO party/switchout effects" | Lu code | ✅ FULL (Natural Cure status1=0, fix bitmask session 139) |
+| 0xE1 trygetintimidatetarget | "TODO party wiring" | Lu code | ✅ FULL (juste text placeholder PREPARE_ABILITY_BUFFER) |
+| 0xEB settypetoenvironment | "TODO terrain logic" | Lu code | ✅ FULL (Camouflage 1:1 décomp, juste PREPARE_TYPE_BUFFER) |
+
+**Verdict réel** : ~75% FULL strict (= ~187/249, pas 182). Les "TODO" texte placeholders ne devraient pas compter comme PARTIAL (= Phase 1.4 UI plaintext, pas gameplay).
+
+## Fixes appliqués pendant l'audit + post-audit (session 139)
+
+| Commit | OP | Description |
+|--------|----|-------------|
+| `4306ae7d` | 0x19 | Cmd_tryfaintmon FULL (HITMARKER_FAINTED + jumps + counters + Destiny Bond + Grudge) |
+| `a115705e` | 0x01 | Cmd_accuracycheck HOLD_EFFECT_EVASION_UP wire + ENIGMA_BERRY note |
+| `8761c9ce` | 0xE2 | Cmd_switchoutabilities bitmask fix `gBitTable[partyIdx]` |
+| `8761c9ce` | 0xE5 | Cmd_pickup FULL (sPickupItems[18] + sRarePickupItems[11] + sPickupProbabilities[9]) |
+| `cca86963` | 0xF0 | Cmd_givecaughtmon FULL (GiveMonToPlayer + caughtMonSpecies/Ball/Box log) |
+| `2ea9f40b` | 0xEF | Cmd_handleballthrow FULL (146l capture state machine + sBallCatchBonuses + Sqrt formula) |
+| `85bb32ab` | 0x91 | _getMoneyMultiplier wire vers gBattleStruct.moneyMultiplier |
+| `a18d2942` | 0xDE | Cmd_assistattackselect FULL (party iteration 1:1 vs gBattleMons stub) |
+| `4cf7fe0b` | — | gUsedHeldItems alias vers gBattleStruct.usedHeldItems |
+
 ## Refactor cmd-niveau-N — décision
 
 Vu que :
