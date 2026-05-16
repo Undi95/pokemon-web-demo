@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-16
 **Branche** : `upd2`
-**Commits** : 28 commits Phase 1.4 J (enemy turn fix + ability FR + placeholder audit)
+**Commits** : 32 commits Phase 1.4 J (audit complet, items FR, KnockOff fix)
 **État** : 🎉 **MILESTONE Phase 1.4 J first pass complete** — bytecode interpreter
 émet maintenant des messages FR via décodeur 1:1 décomp `BufferStringBattle`.
 État machine bytecode wirée dans `battle-flow.ts`.
@@ -446,6 +446,30 @@ Cohérent avec EFF_NAME fix précédent.
 - Rough Skin : "PEAU DURE du SHARPEDO sauvage\nblesse ARCKO!" ✓
 - ThunderWave : "ZIGZATON sauvage est paralysé!" + status PAR persisté ✓
 - Battery 639/639 stable post tous fixes
+
+## Suite commits (30-32) — KnockOff fix + item FR
+
+### Commit 30 : `b37c39e3` — _itemName FR via reverse cache
+- Reverse lookup gameDataItems cache → "ITEM_X" → FR via getItemNameFr.
+- Avant "Objet#N" fallback ; maintenant "BAIE ORAN", "POTION", etc.
+- Expose itemsTable via globalThis.gameDataItems pour reverse cache.
+
+### Commit 31 : `5528ddb7` — SetMoveEffect MOVE_EFFECT_KNOCK_OFF setLastUsedItem
+1:1 décomp battle_script_commands.c:2882-2884 : setLastUsedItem AVANT
+item=0. Sans : gLastUsedItem reste 0 → "X fait tomber —" au lieu de
+"X fait tomber BAIE ORAN".
+
+Validation : 
+- "CHENIPOTTE fait tomber\nBAIE ORAN\ndu GROUDON sauvage!" ✓
+- Thief : "CHENIPOTTE vole BAIE ORAN au GROUDON sauvage!" + item transféré ✓
+
+## Total 32 commits
+
+Battery 639/639 stable, 0 erreur TS, ~90 moves validés bytecode FR 1:1 décomp.
+
+Bytecode mode est maintenant complète pour la majorité des moves Gen 3 :
+damage / multi-hit / status / stat changes / recoil / heal / steal / knockoff /
+transform / weather / abilities / etc.
 
 ## File complet
 
