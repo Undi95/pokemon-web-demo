@@ -31,6 +31,10 @@ import {
   setChosenMove,
   setHitMarker,
   setMoveResultFlags,
+  setBattleOutcome,
+  setBattleMoveDamage,
+  setCritMultiplier,
+  setCurrentActionFuncId,
 } from './state';
 import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } from './script-interpreter';
 import { resetAtkCancelerTracker } from './atk-canceler';
@@ -161,6 +165,12 @@ export function runMoveScriptViaBytecode(opts: {
   setChosenMove(moveId);
   setHitMarker(0);
   setMoveResultFlags(0);
+  setBattleMoveDamage(0);
+  setCritMultiplier(1);
+  setCurrentActionFuncId(0);  // = B_ACTION_USE_MOVE (= continue current move).
+  // 1:1 décomp : si gBattleOutcome != 0, attackcanceler retourne stayOnOpcode
+  // infiniment. Reset à chaque turn (= simulate fresh battle context).
+  setBattleOutcome(0);
   gBattlerPartyIndexes[attBId] = 0;
   gBattlerPartyIndexes[defBId] = 0;
   resetAtkCancelerTracker();
