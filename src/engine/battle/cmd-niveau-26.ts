@@ -67,10 +67,10 @@ function _addMoney(amount: number): void {
   }
 }
 
-/** 1:1 stub `gBattleStruct->moneyMultiplier`. Set à 1 par défaut, doublé par
- *  Amulet Coin / Luck Incense. */
+/** 1:1 décomp `gBattleStruct->moneyMultiplier`. Set à 1 par défaut, doublé
+ *  par Amulet Coin / Luck Incense via Cmd_various VARIOUS_SET_MONEY_MULTIPLIER. */
 function _getMoneyMultiplier(): number {
-  return 1;
+  return gBattleStruct.moneyMultiplier || 1;
 }
 
 // ─── 0x4F jumpifcantswitch ────────────────────────────────────────────────
