@@ -14,6 +14,15 @@ import { getSpeciesInfo } from '../../data/game-data';
 import * as SpeciesConsts from '../../decomp-data/auto/include/constants/species-data';
 import { GROWTH_MEDIUM_FAST } from './experience-tables';
 
+/** 1:1 décomp constants/pokemon_types.h — TYPE_* enum. */
+const _typeNameToNumber: Record<string, number> = {
+  TYPE_NORMAL: 0, TYPE_FIGHTING: 1, TYPE_FLYING: 2, TYPE_POISON: 3,
+  TYPE_GROUND: 4, TYPE_ROCK: 5, TYPE_BUG: 6, TYPE_GHOST: 7, TYPE_STEEL: 8,
+  TYPE_MYSTERY: 9, TYPE_FIRE: 10, TYPE_WATER: 11, TYPE_GRASS: 12,
+  TYPE_ELECTRIC: 13, TYPE_PSYCHIC: 14, TYPE_ICE: 15, TYPE_DRAGON: 16,
+  TYPE_DARK: 17,
+};
+
 // MON_* gender sentinels (constants/pokemon.h:171-173)
 const MON_MALE_LOCAL       = 0x00;
 const MON_FEMALE_LOCAL     = 0xFE;
@@ -59,6 +68,17 @@ export function getSpeciesExpYield(species: number): number {
   const enumName = speciesNumberToEnum(species);
   const info = getSpeciesInfo(enumName);
   return info?.expYield ?? 0;
+}
+
+/** 1:1 décomp `gSpeciesInfo[species].types[0/1]`. Lookup type names → numbers. */
+export function getSpeciesTypes(species: number): [number, number] {
+  const enumName = speciesNumberToEnum(species);
+  const info = getSpeciesInfo(enumName);
+  if (!info) return [0, 0];
+  return [
+    _typeNameToNumber[info.types[0]] ?? 0,
+    _typeNameToNumber[info.types[1]] ?? 0,
+  ];
 }
 
 /** 1:1 décomp `gSpeciesInfo[species].evYield`. Returns 6 EVs (HP/ATK/DEF/SPE/SPATK/SPDEF). */

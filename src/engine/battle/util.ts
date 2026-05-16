@@ -17,10 +17,19 @@ import {
   gBattleMons, gBattlerAttacker, gBattlerTarget, gEffectBattler,
   gBattlerFainted, gBattleScripting, gStatuses3, gLastMoves,
   gLastLandedMoves, gLastResultingMoves, gLastHitBy, gLastHitByType,
-  gActiveBattler, gDisableStructs,
+  gLastPrintedMoves,
+  gActiveBattler, gDisableStructs, gProtectStructs,
+  gBattleStruct, gBattlersCount, gCurrentMove,
 } from './state';
+import { getSpeciesTypes } from './data/species-runtime';
 import { STATUS2_DESTINY_BOND, STATUS3_GRUDGE } from './constants';
-import { STATUS2_MULTIPLETURNS, STATUS2_UPROAR, STATUS2_BIDE, STATUS2_LOCK_CONFUSE, STATUS3_SEMI_INVULNERABLE } from './constants';
+import {
+  STATUS2_MULTIPLETURNS, STATUS2_UPROAR, STATUS2_BIDE, STATUS2_LOCK_CONFUSE,
+  STATUS3_SEMI_INVULNERABLE,
+  STATUS2_ESCAPE_PREVENTION, STATUS2_WRAPPED,
+  STATUS2_INFATUATION,
+  GET_BATTLER_SIDE,
+} from './constants';
 import {
   BS_TARGET, BS_ATTACKER, BS_EFFECT_BATTLER, BS_FAINTED,
   BS_ATTACKER_WITH_PARTNER, BS_FAINTED_LINK_MULTIPLE_1,
@@ -92,24 +101,19 @@ export function getBattlerForBattleScript(caseId: number): number {
   }
 }
 
-// ─── FaintClearSetData (battle_main.c) — partial 1:1 ───────────────────────
+// ─── FaintClearSetData (battle_main.c:3264-3360) — 1:1 décomp ───────────
 
-/** Partial 1:1 décomp `FaintClearSetData()`. Réinitialise les states battle
- *  d'un battler fainted. Pour MVP, on porte les bits clé :
- *  - statStages reset to DEFAULT
- *  - status2/status3 clear
- *  - gDisableStructs[active] clear
- *  - gLastMoves[active], gLastLandedMoves, gLastResultingMoves, gLastHitBy reset
+/** 1:1 décomp `FaintClearSetData()` (battle_main.c:3264-3360). Réinitialise
+ *  TOUS les states battle d'un battler fainted. Appelé par Cmd_tryfaintmon /
+ *  Cmd_handlefaintswitch après confirmation faint.
  *
- *  TODO (non portés) :
- *  - gProtectStructs (struct pas porté)
- *  - gBattleStruct.choicedMove / lastTakenMove / lastTakenMoveFrom / palaceFlags
- *  - gBattleResources.flags
- *  - gBattleMons[].types[] re-set from gSpeciesInfo (BattleMon a type1/type2
- *    séparés)
- *  - ClearBattlerMoveHistory / ClearBattlerAbilityHistory
- *  - gActionSelectionCursor / gMoveSelectionCursor (state UI)
- *  - gLastPrintedMoves */
+ *  STUBS notés (= UI / AI tracking pas portés) :
+ *  - gActionSelectionCursor[], gMoveSelectionCursor[] (= UI cursor state).
+ *  - gBattleResources->flags->flags[] (= AI/script flags tracker, ~256 flags).
+ *  - ClearBattlerMoveHistory (= AI move tracking par battler).
+ *
+ *  Le reste est 1:1 strict.
+ */
 export function FaintClearSetData(): void {
   for (let i = 0; i < NUM_BATTLE_STATS; i++) {
     gBattleMons[gActiveBattler].statStages[i] = DEFAULT_STAT_STAGE;
@@ -117,18 +121,106 @@ export function FaintClearSetData(): void {
   gBattleMons[gActiveBattler].status2 = 0;
   gStatuses3[gActiveBattler] = 0;
 
-  // Clear gDisableStructs[active] entièrement.
+  // 1:1 décomp ll.3275-3283 : clear cross-battler effects qui dépendent de
+  // gActiveBattler (= escape prevention, infatuation, wrap).
+  for (let i = 0; i < gBattlersCount; i++) {
+    if ((gBattleMons[i].status2 & STATUS2_ESCAPE_PREVENTION)
+        && gDisableStructs[i].battlerPreventingEscape === gActiveBattler) {
+      gBattleMons[i].status2 &= ~STATUS2_ESCAPE_PREVENTION;
+    }
+    // STATUS2_INFATUATED_WITH(active) = 0x1<<16 << active (= 4 bits at 16-19).
+    const infatuatedWithActive = STATUS2_INFATUATION & (0x10000 << gActiveBattler);
+    if (gBattleMons[i].status2 & infatuatedWithActive) {
+      gBattleMons[i].status2 &= ~infatuatedWithActive;
+    }
+    if ((gBattleMons[i].status2 & STATUS2_WRAPPED)
+        && gBattleStruct.wrappedBy[i] === gActiveBattler) {
+      gBattleMons[i].status2 &= ~STATUS2_WRAPPED;
+    }
+  }
+
+  // STUB UI : gActionSelectionCursor / gMoveSelectionCursor (= web canvas).
+
+  // 1:1 décomp ll.3288-3290 : clear gDisableStructs entièrement.
   const ds = gDisableStructs[gActiveBattler];
   for (const k of Object.keys(ds) as Array<keyof typeof ds>) {
     (ds as unknown as Record<string, number>)[k] = 0;
   }
+
+  // 1:1 décomp ll.3292-3310 : clear gProtectStructs bit fields.
+  const ps = gProtectStructs[gActiveBattler];
+  ps.protected = 0;
+  ps.endured = 0;
+  ps.noValidMoves = 0;
+  ps.helpingHand = 0;
+  ps.bounceMove = 0;
+  ps.stealMove = 0;
+  ps.flag0Unknown = 0;
+  ps.prlzImmobility = 0;
+  ps.confusionSelfDmg = 0;
+  ps.targetNotAffected = 0;
+  ps.chargingTurn = 0;
+  ps.fleeType = 0;
+  ps.usedImprisonedMove = 0;
+  ps.loveImmobility = 0;
+  ps.usedDisabledMove = 0;
+  ps.usedTauntedMove = 0;
+  ps.flag2Unknown = 0;
+  ps.flinchImmobility = 0;
+  ps.notFirstStrike = 0;
+
   ds.isFirstTurn = 2; // 1:1 décomp : reset to 2 (= post-faint freshness).
 
   gLastMoves[gActiveBattler] = MOVE_NONE;
   gLastLandedMoves[gActiveBattler] = MOVE_NONE;
   gLastHitByType[gActiveBattler] = 0;
   gLastResultingMoves[gActiveBattler] = MOVE_NONE;
+  gLastPrintedMoves[gActiveBattler] = MOVE_NONE;
   gLastHitBy[gActiveBattler] = 0xFF;
+
+  // 1:1 décomp ll.3321-3322 : clear gBattleStruct->choicedMove (= u16 low/high).
+  gBattleStruct.choicedMove[gActiveBattler] = MOVE_NONE;
+
+  // 1:1 décomp ll.3324-3325 : clear gBattleStruct->lastTakenMove[active*2..+1].
+  gBattleStruct.lastTakenMove[gActiveBattler * 2 + 0] = MOVE_NONE;
+  gBattleStruct.lastTakenMove[gActiveBattler * 2 + 1] = MOVE_NONE;
+
+  // 1:1 décomp ll.3326-3333 : clear gBattleStruct->lastTakenMoveFrom[active][0..3].
+  for (let i = 0; i < 4; i++) {
+    gBattleStruct.lastTakenMoveFrom[gActiveBattler * 8 + i * 2 + 0] = 0;
+    gBattleStruct.lastTakenMoveFrom[gActiveBattler * 8 + i * 2 + 1] = 0;
+  }
+
+  // 1:1 décomp l.3335 : clear palace flag pour active battler.
+  gBattleStruct.palaceFlags &= ~(1 << gActiveBattler);
+
+  // 1:1 décomp ll.3337-3346 : clear cross-battler tracking depuis active.
+  for (let i = 0; i < gBattlersCount; i++) {
+    if (i !== gActiveBattler && GET_BATTLER_SIDE(i) !== GET_BATTLER_SIDE(gActiveBattler)) {
+      // Clear lastTakenMove pour les opponents (= no longer hit by us).
+      gBattleStruct.lastTakenMove[i * 2 + 0] = MOVE_NONE;
+      gBattleStruct.lastTakenMove[i * 2 + 1] = MOVE_NONE;
+    }
+    // Clear lastTakenMoveFrom[i][active] (= no longer hit by active).
+    gBattleStruct.lastTakenMoveFrom[i * 8 + gActiveBattler * 2 + 0] = 0;
+    gBattleStruct.lastTakenMoveFrom[i * 8 + gActiveBattler * 2 + 1] = 0;
+  }
+
+  // STUB AI tracking : gBattleResources->flags->flags[active] = 0;
+
+  // 1:1 décomp ll.3350-3351 : reset types depuis species data (= revert
+  // Conversion / Soak / etc.).
+  const [t1, t2] = getSpeciesTypes(gBattleMons[gActiveBattler].species);
+  gBattleMons[gActiveBattler].type1 = t1;
+  gBattleMons[gActiveBattler].type2 = t2;
+
+  // 1:1 décomp l.3353 : ClearBattlerMoveHistory (= AI move tracking).
+  // Use our exposed helper (= ClearBattlerAbilityHistory below) for the
+  // ability part; move history is a more granular AI tracker not yet ported.
+  ClearBattlerAbilityHistory(gActiveBattler);
+
+  // Reference l.3324-3325 : gCurrentMove non touché ici (= different scope).
+  void gCurrentMove;
 }
 
 // ─── CancelMultiTurnMoves (battle_util.c:864) — 1:1 décomp ─────────────────
