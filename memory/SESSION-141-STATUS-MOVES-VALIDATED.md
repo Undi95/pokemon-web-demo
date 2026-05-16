@@ -1,14 +1,34 @@
 ---
 name: Session 141 — Status moves end-to-end validated via bytecode
-description: 4 audit bugs critiques fixés. Status moves (Growl/Leer/SleepPowder/etc) appliquent maintenant correctement stages + status1 via bytecode interpreter 1:1 décomp.
+description: 8 audit bugs critiques fixés en 12 commits. Status moves (Growl/Leer/SleepPowder/etc) + stat boost + abilities + secondary effects + weather all work end-to-end via bytecode 1:1 décomp.
 type: project
 ---
 
 # Session 141 — Status moves end-to-end validated via bytecode
 
 **Date** : 2026-05-16 (post-compact, /loop autonomous nuit)
-**Commits** : 4 sur branche `upd2` (post 4093956f session 140)
+**Commits** : 12 sur branche `upd2` (post 4093956f session 140 final)
 **Branche** : `upd2`
+
+## 🎯 TL;DR pour réveil
+
+**8 audit bugs CRITIQUES fixés ce matin**. Bytecode 1:1 décomp est maintenant
+FULLY OPERATIONAL pour tous les move effects principaux. Battery 639/639 clean,
+12/12 status moves validés (stages + status1), stat boost validés, multi-turn
+stacking OK, abilities Clear Body / Shield Dust block correctement, secondary
+effects RNG ~10% paralysis confirmed, type effectiveness 1x/2x/0.5x/0x all
+correct, weather Sun ×1.5 boost Fire moves working.
+
+**Pour activer le bytecode en combat réel** :
+```js
+localStorage.__USE_BYTECODE_FOR_DAMAGE__ = '1';
+window.location.reload();
+```
+Puis lancer un combat depuis l'overworld. Battle-flow.ts route via runBattleScript.
+
+**Prochaine étape** : Phase 1.4 UI controllers (= visualisation animations/text)
+pour permettre le bytecode wire de fonctionner visuellement (= 23 stubs
+BtlController_Emit*).
 
 ## 🏆 Milestones session 141
 
