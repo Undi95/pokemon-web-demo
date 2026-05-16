@@ -48,6 +48,7 @@ import type { BattleScriptContext } from './script-interpreter';
 import { getBattleScriptOffset } from './script-interpreter';
 import { Random } from '../random';
 import { getBattleMove } from './data/battle-moves';
+import { _GetMoveTarget as _GetMoveTargetForBide } from './cmd-niveau-34';
 
 // ─── CANCELER_* enum (battle_util.c:1966-1983) — 1:1 décomp ──────────────
 export const CANCELER_FLAGS      = 0;
@@ -91,7 +92,9 @@ function _UproarWakeUpCheck(battler: number): boolean {
     }
     gBattleScripting.battler = i;
     if (gBattlerTarget === 0xFF) {
-      // STUB : setBattlerTarget(i) requirement — skip pour éviter import circular.
+      // 1:1 décomp battle_util.c:UproarWakeUpCheck — set target = i pour
+      // suite du flow. setBattlerTarget importé en haut du fichier.
+      setBattlerTarget(i);
     } else if (gBattlerTarget === i) {
       gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = B_MSG_CANT_SLEEP_UPROAR;
     } else {
@@ -391,8 +394,10 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
               gBattleScripting.bideDmg = bideDmgLocal;
               setBattlerTarget(gBideTarget[gBattlerAttacker]);
               if (gAbsentBattlerFlags & (1 << gBattlerTarget)) {
-                // STUB : GetMoveTarget(MOVE_BIDE, MOVE_TARGET_SELECTED + 1) — pour MVP utilise BIDE_TARGET inchangé.
-                void MOVE_TARGET_SELECTED;
+                // 1:1 décomp battle_util.c AtkCanceler CANCELER_BIDE :
+                // `gBattlerTarget = GetMoveTarget(MOVE_BIDE, MOVE_TARGET_SELECTED + 1);`
+                // = repick target alive (= rare case Bide vs fainted target).
+                setBattlerTarget(_GetMoveTargetForBide(MOVE_BIDE, MOVE_TARGET_SELECTED + 1));
               }
               jumpLabel = 'BattleScript_BideAttack';
             } else {
