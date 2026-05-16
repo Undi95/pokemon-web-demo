@@ -65,7 +65,8 @@ import {
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart } from './party-storage';
 import { resetAtkCancelerTracker } from './atk-canceler';
-import { runMoveScriptViaBytecode } from './wire-bytecode-bridge';
+import { runMoveScriptViaBytecode, drainBattleEventsAsText, clearBattleEventQueue } from './wire-bytecode-bridge';
+import { getBattleEventQueueSnapshot, getBattleEventQueueSize } from './battle-event-queue';
 
 /** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
  *  print structured pour console.table. */
@@ -505,6 +506,16 @@ export function buildBattleDevtools(): Record<string, unknown> {
     // Errors
     lastBug,
     clearBug,
+    // Event queue (Phase 1.4 J)
+    /** Drain TOUTE la queue d'events bytecode et decode les PRINTSTRING en text FR.
+     *  Returns { messages: string[], eventsCount, events }. Le queue est vidé. */
+    drainEvents: drainBattleEventsAsText,
+    /** Snapshot read-only du contenu actuel de la queue sans pop. */
+    peekEvents: () => getBattleEventQueueSnapshot(),
+    /** Size actuelle de la queue (= debug). */
+    eventsQueueSize: () => getBattleEventQueueSize(),
+    /** Clear la queue (= reset cross-test). */
+    clearEvents: clearBattleEventQueue,
     // Help
     help: () => `
 scope.bytecode — devtools battle script interpreter (1:1 décomp)

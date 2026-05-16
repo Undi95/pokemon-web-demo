@@ -41,6 +41,15 @@ import { resetAtkCancelerTracker } from './atk-canceler';
 import { resolveDecompConstant } from '../decomp-constants';
 import { getMove } from '../data/game-data';
 import { Dex } from '@pkmn/dex';
+import {
+  dequeueBattleEvent,
+  clearBattleEventQueue,
+  getBattleEventQueueSize,
+  CONTROLLER_PRINTSTRING,
+  CONTROLLER_PRINTSTRINGPLAYERONLY,
+  type BattleEvent,
+} from './battle-event-queue';
+import { decodeBattleString, stripGbaControlCodes } from './battle-string-decoder';
 
 // ─── Move result decoding (= 1:1 décomp battle.h MOVE_RESULT_*) ──────────
 
@@ -163,21 +172,29 @@ export function runMoveScriptViaBytecode(opts: {
   missed: boolean;
   fainted: boolean;
   bytecodeOpsCount: number;
+  /** Messages décodés depuis les PRINTSTRING events. 1 entry par
+   *  BtlController_EmitPrintString appelé pendant le bytecode. À show via
+   *  ShowFieldMessage côté caller (= 1:1 décomp `BufferStringBattle`). */
+  messages?: string[];
+  /** Nombre total d'events bytecode enqueued (= debug). */
+  eventsCount?: number;
 } {
   const attBId = opts.attackerBattlerId ?? 0;
   const defBId = opts.defenderBattlerId ?? 1;
+  // Clear queue avant chaque run pour éviter de mixer events cross-turn.
+  clearBattleEventQueue();
   const mv = opts.attacker.moves[opts.attackerMoveIdx];
   if (!mv) {
-    return { ok: false, reason: 'no move at index', damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0 };
+    return { ok: false, reason: 'no move at index', damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0, messages: [], eventsCount: 0 };
   }
   const moveId = _resolveMoveId(mv.id);
   if (!moveId) {
-    return { ok: false, reason: `move '${mv.id}' resolves to id 0`, damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0 };
+    return { ok: false, reason: `move '${mv.id}' resolves to id 0`, damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0, messages: [], eventsCount: 0 };
   }
   const effectId = _resolveMoveEffectFromDexId(mv.id);
   const scriptOffset = getMoveEffectScriptOffset(effectId);
   if (scriptOffset < 0) {
-    return { ok: false, reason: `no script for effect ${effectId}`, damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0 };
+    return { ok: false, reason: `no script for effect ${effectId}`, damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0, messages: [], eventsCount: 0 };
   }
 
   // Sync state HP from PokemonInstance into gBattleMons.
@@ -216,7 +233,7 @@ export function runMoveScriptViaBytecode(opts: {
   // Run bytecode (fastForward = re-call jusqu'à fin).
   const ctx = setupBattleScriptContext('BattleScript_EffectHit');
   if (!ctx) {
-    return { ok: false, reason: 'setup ctx failed', damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0 };
+    return { ok: false, reason: 'setup ctx failed', damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0, messages: [], eventsCount: 0 };
   }
   // Override scriptPtr to the actual move's effect script.
   ctx.scriptPtr = scriptOffset;
@@ -262,6 +279,22 @@ export function runMoveScriptViaBytecode(opts: {
   const missed = (gMoveResultFlags & (MOVE_RESULT_MISSED | MOVE_RESULT_FAILED)) !== 0;
   const fainted = opts.defender.currentHp <= 0;
 
+  // Drain le queue d'events bytecode produits par les BtlController_Emit*
+  // appelés pendant runBattleScript. Decode les PRINTSTRING events en text
+  // FR pour ShowFieldMessage côté caller.
+  const messages: string[] = [];
+  const allEvents: BattleEvent[] = [];
+  while (getBattleEventQueueSize() > 0) {
+    const ev = dequeueBattleEvent();
+    if (!ev) break;
+    allEvents.push(ev);
+    if (ev.type === CONTROLLER_PRINTSTRING || ev.type === CONTROLLER_PRINTSTRINGPLAYERONLY) {
+      const decoded = decodeBattleString(ev.stringId, ev.msgData);
+      const clean = stripGbaControlCodes(decoded);
+      if (clean.length > 0) messages.push(clean.trim());
+    }
+  }
+
   return {
     ok: true,
     damage,
@@ -269,8 +302,33 @@ export function runMoveScriptViaBytecode(opts: {
     missed,
     fainted,
     bytecodeOpsCount: iters,
+    messages,
+    eventsCount: allEvents.length,
   };
 }
+
+/** Drain TOUTE la queue d'events bytecode et decode les PRINTSTRING en text.
+ *  Utile pour devtools (= scope.bytecode.drainEvents()) ou pour state machines
+ *  qui veulent inspecter post-exec sans relancer le bytecode. */
+export function drainBattleEventsAsText(): { messages: string[]; eventsCount: number; events: BattleEvent[] } {
+  const messages: string[] = [];
+  const events: BattleEvent[] = [];
+  while (getBattleEventQueueSize() > 0) {
+    const ev = dequeueBattleEvent();
+    if (!ev) break;
+    events.push(ev);
+    if (ev.type === CONTROLLER_PRINTSTRING || ev.type === CONTROLLER_PRINTSTRINGPLAYERONLY) {
+      const decoded = decodeBattleString(ev.stringId, ev.msgData);
+      const clean = stripGbaControlCodes(decoded);
+      if (clean.length > 0) messages.push(clean.trim());
+    }
+  }
+  return { messages, eventsCount: events.length, events };
+}
+
+/** Re-export clear pour devtools et pour battle-flow.ts (= reset queue au début
+ *  d'un nouveau turn pour éviter de mixer les events). */
+export { clearBattleEventQueue };
 
 // ─── Status1 sync helpers ──────────────────────────────────────────────
 
