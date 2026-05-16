@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-16
 **Branche** : `upd2`
-**Commits** : 32 commits Phase 1.4 J (audit complet, items FR, KnockOff fix)
+**Commits** : 35 commits Phase 1.4 J (extraction bug fix + wrap/skullbash/etc.)
 **État** : 🎉 **MILESTONE Phase 1.4 J first pass complete** — bytecode interpreter
 émet maintenant des messages FR via décodeur 1:1 décomp `BufferStringBattle`.
 État machine bytecode wirée dans `battle-flow.ts`.
@@ -471,6 +471,34 @@ Bytecode mode est maintenant complète pour la majorité des moves Gen 3 :
 damage / multi-hit / status / stat changes / recoil / heal / steal / knockoff /
 transform / weather / abilities / etc.
 
-## File complet
 
-Ce doc : `D:/Projet 1/pokemon-web-demo/memory/SESSION-143-PHASE-1-4-J-BYTECODE-MESSAGES.md`.
+## Suite commits (33-35) — Wrap moves + extraction MAJOR fix
+
+### Commit 33 : `60d3f4e9` — MOVE_EFFECT_WRAP wrappedMove 2-byte encoding
+1:1 décomp battle_script_commands.c:2620-2622 : `wrappedMove[battler*2+0/1]`
+au lieu de `wrappedMove[battler]` single number. Sans : Cmd_rapidspinfree
+ne pouvait pas reconstruire le move name (= "EMPRISONNE par {move}" corrompu).
+
+### Commit 34 : `1a224c92` — extract-battle-string-id-tables comment-before-split MAJOR fix
+Bug racine : body.split(',') puis strip comments par line → les comments
+C-style en fin de ligne se déplacent au début de la chunk suivante
+(= jamais matched par /^STRINGID_X/).
+Conséquence : tables positionnelles n'avaient QUE la première entry.
+Affectait : gWrappedStringIds (1→6), gFirstTurnOfTwoStringIds (1→8),
+gMissStringIds (1→5), gStatUpStringIds (1→6), gStatDownStringIds (1→4),
+etc. — 46 tables potentially affected.
+
+Fix : strip comments AVANT split.
+
+Validation visible :
+- wrap : "GROUDON sauvage est LIGOTE par ABO!" (était "Un X sauvage apparaît!")
+- firespin : "GROUDON sauvage est piégé dans le tourbillon!"
+- clamp : "est pris dans le CLAQUOIR du ABO!"
+- 2-turn moves (skullbash/solarbeam/fly/dig/dive/razorwind/skyattack/bounce) 
+  tous décodent leur message turn 1 correctement.
+
+## Total 35 commits
+
+Battery 639/639 stable, 0 erreur TS, ~100 moves validés bytecode FR 1:1 décomp.
+
+## File complet
