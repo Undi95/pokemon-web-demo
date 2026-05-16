@@ -596,7 +596,42 @@ Source : battle_util.c:3213, 3231, 3416-3417, 3462-3471.
 
 ### Commit 42 : `c56009b9` (déjà) — Session 143 doc update
 
-## Total 42 commits (Phase 1.4 J + post-compact 143 audit additions)
+### Commit 43 : `a4dfbcc9` — HOLD_EFFECT_RESTORE_PP (Leppa) missing PREPARE_MOVE_BUFFER
+Audit bug : ITEMEFFECT_NORMAL Leppa berry block ne portait pas PREPARE_MOVE_BUFFER
+(gBattleTextBuff1, move) que le décomp fait à battle_util.c:3357.
+Conséquence : message BerryPPHealEnd2 "X recharge {B_BUFF1}!" = move name vide.
+
+### Commit 44 : `836879f8` — Mental Herb + Lum Berry status string copy
+HOLD_EFFECT_CURE_ATTRACT (Mental Herb) + HOLD_EFFECT_CURE_STATUS (Lum Berry)
+ne portaient pas StringCopy(gBattleTextBuff1, status name FR) avant clear.
+Conséquence : "X libère son POKéMON ami de son {B_BUFF1}!" = vide.
+Fix : `_writeStatusFrToBuffIBE` helper local + wirage 4 sites (ITEMEFFECT_NORMAL +
+ITEMEFFECT_MOVE_END). Sources : battle_util.c:3683, 3691-3713.
+
+### Commit 45 : `5ed8e7c3` — Cmd_moveend MOVEEND_ITEM_EFFECTS_ALL berry script jumps
+**BUG CRITIQUE** : MOVEEND_ITEM_EFFECTS_ALL + MOVEEND_KINGSROCK_SHELLBELL fixaient
+`effect = true` mais ne consumaient pas le _lastWantedScriptLabel set par
+ItemBattleEffects → AUCUN jump au BattleScript_BerryXEnd2.
+Conséquence : Sitrus/Oran/Lum/Mental Herb/Leppa etc. trigger sans script
+exec → pas de heal/cure/PP restore visible.
+Fix : consume + push current + jump (= pattern identique aux autres callers).
+
+### Commit 46 : `73bff79d` — _isTwoTurnsMoveAC missing EFFECT_SKY_ATTACK=75
+**BUG SUBTIL** : cmd-niveau-1.ts `_isTwoTurnsMoveAC` (= Cmd_attackcanceler Protect)
+ne testait que 5 effects au lieu des 6 décomp. EFFECT_SKY_ATTACK=75 manquait.
+Conséquence : Sky Attack pouvait être bloqué incorrectement par Protect en turn 1
+(= devrait passer par charge d'abord).
+cmd-niveau-27/30 portaient déjà les 6 valeurs ; seul cmd-niveau-1 incomplet.
+Source : battle_script_commands.c:8199-8210 IsTwoTurnsMove.
+
+### Commit 47 : `33d477a8` — Cmd_handlelearnnewmove partyIdx check 1:1 fix
+Cmd_handlelearnnewmove appelait _giveMoveToBattleMon sur playerLeft/playerRight
+sans vérifier que gBattlerPartyIndexes[battler] == expGetterMonId.
+Conséquence : Exp.Share/level-up off-battle → move donné au player actif au lieu
+du mon qui level-up (= bug critique pour multi-mon training).
+Décomp battle_script_commands.c:5379+5387 fait explicitement le check.
+
+## Total 47 commits (Phase 1.4 J + post-compact 143 audit additions)
 
 **État final** :
 - Battery 639/639 stable cross-tous-commits, 0 erreur TS.
