@@ -126,21 +126,26 @@ function Cmd_removeattackerstatus1(_ctx: BattleScriptContext): boolean {
 
 // ─── 0xF6 finishaction ─────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_finishaction. Décomp ne fait PAS d'advance — set just
- *  gCurrentActionFuncId. Main battle loop voit le flag et break le script.
- *  Notre équivalent = stay + return true (= pause), caller exit. */
+/** 1:1 décomp Cmd_finishaction. Set gCurrentActionFuncId = B_ACTION_FINISHED.
+ *  Décomp : main battle loop voit le flag et break le script (= ne re-call
+ *  pas runBattleScript). Notre équivalent : set scriptPtr = -1 (= script done),
+ *  return true (= paused = signal "fin"). Sans ça : stayOnOpcode infinite
+ *  loop (= main battle loop pas wired chez nous). */
 function Cmd_finishaction(ctx: BattleScriptContext): boolean {
   setCurrentActionFuncId(B_ACTION_FINISHED);
-  return _stayOnOpcode(ctx);
+  ctx.scriptPtr = -1;
+  return true;
 }
 
 // ─── 0xF7 finishturn ───────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_finishturn. Décomp ne fait PAS d'advance. */
+/** 1:1 décomp Cmd_finishturn. Set gCurrentActionFuncId + gCurrentTurnActionNumber.
+ *  Idem finishaction : main battle loop break. Chez nous : scriptPtr = -1. */
 function Cmd_finishturn(ctx: BattleScriptContext): boolean {
   setCurrentActionFuncId(B_ACTION_FINISHED);
   setCurrentTurnActionNumber(gBattlersCount);
-  return _stayOnOpcode(ctx);
+  ctx.scriptPtr = -1;
+  return true;
 }
 
 // ─── Install dispatch table ─────────────────────────────────────────────────

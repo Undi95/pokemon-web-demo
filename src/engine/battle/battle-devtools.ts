@@ -403,6 +403,22 @@ async function prepareTestBattle(opts?: {
   setChosenMove(moveId);
   setHitMarker(0);
   setMoveResultFlags(0);
+  // Reset state qui persist cross-runs et bloque attackcanceler / autres opcodes :
+  // gBattleOutcome (= si != 0, attackcanceler stayOnOpcode infinite).
+  // gBattleMoveDamage + gCritMultiplier + gCurrentActionFuncId (= state machine).
+  // gBattleControllerExecFlags (= si != 0, paused).
+  const stateMod = (globalThis as { __battleState?: {
+    resetBattleState?: () => void;
+  } }).__battleState;
+  // Note : on évite resetBattleState() complet qui wipe les mons. À la place,
+  // on reset seulement les state vars critiques pour un nouveau move.
+  const sm = await import('./state');
+  sm.setBattleOutcome(0);
+  sm.setBattleMoveDamage(0);
+  sm.setCritMultiplier(1);
+  sm.setCurrentActionFuncId(0);
+  sm.setBattleControllerExecFlags(0);
+  void stateMod;
   gBattlerPartyIndexes[attacker] = 0;
   gBattlerPartyIndexes[target] = 0;
   resetAtkCancelerTracker();

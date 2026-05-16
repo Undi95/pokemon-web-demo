@@ -58,9 +58,24 @@ export function clearBattlerExecFlag(battlerId: number): void {
 
 /** Tick (= clear all exec flags) pour simuler les controllers finis instantané.
  *  TODO : remplacer par real per-controller tick une fois wired au framework
- *  UI. Pour MVP backing, clear tout = scripts s'avancent sans wait. */
+ *  UI. Pour MVP backing, clear tout = scripts s'avancent sans wait.
+ *
+ *  Reset aussi `gBattleCommunication[MSG_DISPLAY]` (= 0) car le décomp utilise
+ *  cette flag pour signaler "text print en cours". Sans wire UI text, on
+ *  simule "fini instantanément" en clearing ici. Sinon `Cmd_waitmessage`
+ *  loop infiniment (= 497/639 scripts stuck post wire avant fix).
+ *
+ *  Note : MSG_DISPLAY = 0 (= constant in battle.h:84). On utilise direct
+ *  index pour éviter circular imports. */
 export function tickBattleControllers(): void {
   setBattleControllerExecFlags(0);
+  // 1:1 décomp simulate "text print done" instantané.
+  // MSG_DISPLAY = 7 (= constants.ts:458 from battle.h).
+  const bs = (globalThis as { __battleState?: { gBattleCommunication?: number[] } })
+    .__battleState;
+  if (bs?.gBattleCommunication) {
+    bs.gBattleCommunication[7] = 0;  // MSG_DISPLAY = 7.
+  }
 }
 
 // ─── BtlController_Emit* stubs ──────────────────────────────────────────────
