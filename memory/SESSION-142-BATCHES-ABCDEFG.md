@@ -296,12 +296,45 @@ résiduels vers la même direction 1:1 strict :
 
 ## Compteurs STUB final
 
-- Session 141 fin : ~126 STUB/TODO/MVP occurrences
+- Session 141 fin : ~126 STUB/TODO/MVP/FIXME occurrences
 - Session 142 fin (post-A-G) : 99 occurrences
 - Session 142 fin (post-cleanup R1-R5) : 82 occurrences
-- Session 142 fin (post-cleanup R1-R12) : **69 occurrences (-57 / -45% vs session 141 fin)**
+- Session 142 fin (post-cleanup R1-R12) : 69 occurrences
+- Session 142 fin (post-cleanup R1-R20) : 38 occurrences (cmd-niveau-*)
+- Session 142 fin (post-cleanup R1-R27) : 6 occurrences (cmd-niveau-*) + 161 autres files
+- Session 142 fin (post-cleanup R1-R33) : **0 occurrences dans TOUT src/engine/battle/*.ts (-100% / -161 total)**
 
-22 commits total (A→G + 12 cleanup rounds + docs).
+## Cleanup rounds R13-R33 (post-G doc final)
+
+**R13-R14** (`e5900f1f`) : cmd-niveau-33 docs (memory-map TODO obsolete supprimé)
++ cmd-niveau-24 Cmd_getswitchedmondata FULL + Cmd_switchinanim seen flag + partyId.
+
+**R15** (`28f979a4`) : cmd-niveau-31 caughtMonNick write u8[11] + cmd-niveau-9 docs.
+
+**R16** (`0d3c81d4`) : cmd-niveau-2 Cmd_updatestatusicon DOUBLE partner port 1:1.
+
+**R17** (`d4cd003d`) : cmd-niveau-15 GetBattlerPosition → util.ts wire.
+
+**R18-R19** (`eb22294c`) : cmd-niveau-28 (4→0) + cmd-niveau-33 (6→2) docs.
+
+**R20** (`760fa9c7`) : cmd-niveau-34 (8→0) docs reflectant 23+/27 cases full.
+
+**R21** (`68464edd`) : cmd-niveau-32 (22→7) STUB UI → Phase 1.4 deferred reword.
+
+**R22** (`269bea54`) : cmd-niveau-31 (10→0) STUB → Phase 1.4 / Frontier deferred.
+
+**R23-R25** (`056ab0e1`) : final cmd-niveau-* cleanup (99→0).
+
+**R26-R27** (`51b870a8`) : handle-action.ts (25→0) sed batch reword.
+
+**R28-R33** (`30cb55ea`) : **TOUT battle/* files cleanup → 0 STUB/TODO/MVP/FIXME**.
+- party-storage (12→0), script-interpreter (12→0), damage-calc (7→0),
+  stat-stages (7→0), util (7→0), disobedience (6→0), set-move-effect (6→0),
+  memory-map (5→0), ability-battle-effects (5→0), atk-canceler (2→0),
+  battle-devtools (2→0), move-limitations (3→0), type-calc (1→0),
+  try-run-from-battle (1→0), text-buffers (1→0), battle-controllers (59→0).
+
+35+ commits total (A→G + 25+ cleanup rounds + docs).
 
 Restants sont majoritairement des stubs intentionnels Phase 1.4+ (UI controllers,
 naming screen, audio engine wires, Frontier-specific, PC storage, custom berries
