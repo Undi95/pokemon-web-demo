@@ -40,6 +40,7 @@ import { runBattleScript, setupBattleScriptContext, getMoveEffectScriptOffset } 
 import { resetAtkCancelerTracker } from './atk-canceler';
 import { resolveDecompConstant } from '../decomp-constants';
 import { getMove } from '../data/game-data';
+import { Dex } from '@pkmn/dex';
 
 // ─── Move result decoding (= 1:1 décomp battle.h MOVE_RESULT_*) ──────────
 
@@ -63,11 +64,27 @@ function _decodeTypeMulFromResultFlags(flags: number): number {
 
 // ─── Move id resolution from PokemonInstance.moves[i].id (dex string) ──
 
-/** 1:1 décomp resolveMoveId : dexId ("tackle") → "MOVE_TACKLE" → numeric. */
+/** 1:1 décomp resolveMoveId : dexId ("blazekick") → cherche dans @pkmn/dex
+ *  pour récup le name ("Blaze Kick") → reconstruct "MOVE_BLAZE_KICK" → numeric.
+ *
+ *  Avant : 'blazekick' → 'MOVE_BLAZEKICK' (= manqué l'underscore) → id 0.
+ *  Maintenant : utilise Dex.moves.get(dexId).name pour split correctement. */
 function _resolveMoveId(dexId: string): number {
-  const enumStr = 'MOVE_' + dexId.toUpperCase().replace(/-/g, '_');
-  const id = resolveDecompConstant(enumStr);
-  return typeof id === 'number' ? id : 0;
+  // Try direct first (= short single-word moves like "tackle" → MOVE_TACKLE).
+  let enumStr = 'MOVE_' + dexId.toUpperCase().replace(/-/g, '_');
+  let id = resolveDecompConstant(enumStr);
+  if (typeof id === 'number' && id !== 0) return id;
+  // Fall back : split via @pkmn/dex display name (= "blazekick" → "Blaze Kick"
+  // → "MOVE_BLAZE_KICK"). Direct import = always available.
+  try {
+    const mv = Dex.moves.get(dexId);
+    if (mv?.name) {
+      enumStr = 'MOVE_' + mv.name.toUpperCase().replace(/[ '-]/g, '_').replace(/_+/g, '_');
+      id = resolveDecompConstant(enumStr);
+      if (typeof id === 'number' && id !== 0) return id;
+    }
+  } catch { /* fallthrough */ }
+  return 0;
 }
 
 // ─── Effect resolution (= move's gBattleMoves[].effect → script label) ──
