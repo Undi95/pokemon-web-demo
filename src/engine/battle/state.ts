@@ -406,6 +406,221 @@ export const gWishFutureKnock: WishFutureKnock = {
 /** 1:1 décomp `gBattleScripting`. */
 export const gBattleScripting: BattleScripting = _makeBlankScripting();
 
+// ─── gBattleStruct (1:1 décomp `struct BattleStruct` battle.h:354-447) ─────
+
+/** Pour `gBattleStruct->multiBuffer.linkBattlerHeader` — link battle header info. */
+export interface LinkBattlerHeader {
+  versionSignatureLo: number;       // u8
+  versionSignatureHi: number;       // u8
+  vsScreenHealthFlagsLo: number;    // u8
+  vsScreenHealthFlagsHi: number;    // u8
+  // (le décomp a struct + champs sub à charge link multi battle)
+}
+
+/** Pour `gBattleStruct->tvMovePoints` — TV stats accumulator. */
+export interface BattleTvMovePoints {
+  points: number[];                 // s16[2][4*4]
+}
+
+/** Pour `gBattleStruct->tv` — TV battle stats. */
+export interface BattleTv {
+  pokemonSlot: number;              // u8
+  side: number;                     // u8
+  stars: number[];                  // bitfield placeholder
+}
+
+function _makeBlankLinkBattlerHeader(): LinkBattlerHeader {
+  return {
+    versionSignatureLo: 0, versionSignatureHi: 0,
+    vsScreenHealthFlagsLo: 0, vsScreenHealthFlagsHi: 0,
+  };
+}
+
+function _makeBlankBattleTvMovePoints(): BattleTvMovePoints {
+  return { points: new Array(32).fill(0) };
+}
+
+function _makeBlankBattleTv(): BattleTv {
+  return { pokemonSlot: 0, side: 0, stars: new Array(8).fill(0) };
+}
+
+/** 1:1 décomp `struct BattleStruct` (battle.h:354-447). */
+export interface BattleStruct {
+  // Turn / state machines.
+  turnEffectsTracker: number;                // u8
+  turnEffectsBattlerId: number;              // u8
+  unused_0: number;                          // u8
+  turnCountersTracker: number;               // u8
+  // Wrap / Bind tracking.
+  wrappedMove: number[];                     // u8[MAX_BATTLERS_COUNT * 2] = u16[4] in décomp
+  moveTarget: number[];                      // u8[MAX_BATTLERS_COUNT]
+  expGetterMonId: number;                    // u8
+  unused_1: number;                          // u8
+  wildVictorySong: number;                   // u8
+  dynamicMoveType: number;                   // u8
+  wrappedBy: number[];                       // u8[MAX_BATTLERS_COUNT]
+  assistPossibleMoves: number[];             // u16[PARTY_SIZE * MAX_MON_MOVES] = u16[24]
+  focusPunchBattlerId: number;               // u8
+  battlerPreventingSwitchout: number;        // u8
+  moneyMultiplier: number;                   // u8
+  savedTurnActionNumber: number;             // u8
+  switchInAbilitiesCounter: number;          // u8
+  faintedActionsState: number;               // u8
+  faintedActionsBattlerId: number;           // u8
+  expValue: number;                          // u16
+  scriptPartyIdx: number;                    // u8
+  sentInPokes: number;                       // u8
+  selectionScriptFinished: number[];         // bool8[MAX_BATTLERS_COUNT]
+  battlerPartyIndexes: number[];             // u8[MAX_BATTLERS_COUNT]
+  monToSwitchIntoId: number[];               // u8[MAX_BATTLERS_COUNT]
+  battlerPartyOrders: number[][];            // u8[MAX_BATTLERS_COUNT][PARTY_SIZE / 2] = u8[4][3]
+  runTries: number;                          // u8
+  caughtMonNick: number[];                   // u8[POKEMON_NAME_LENGTH + 1] = u8[11]
+  unused_2: number;                          // u8
+  safariGoNearCounter: number;               // u8
+  safariPkblThrowCounter: number;            // u8
+  safariEscapeFactor: number;                // u8
+  safariCatchFactor: number;                 // u8
+  linkBattleVsSpriteId_V: number;            // u8
+  linkBattleVsSpriteId_S: number;            // u8
+  formToChangeInto: number;                  // u8
+  chosenMovePositions: number[];             // u8[MAX_BATTLERS_COUNT]
+  stateIdAfterSelScript: number[];           // u8[MAX_BATTLERS_COUNT]
+  unused_3: number[];                        // u8[3]
+  prevSelectedPartySlot: number;             // u8
+  unused_4: number[];                        // u8[2]
+  stringMoveType: number;                    // u8
+  expGetterBattlerId: number;                // u8
+  unused_5: number;                          // u8
+  absentBattlerFlags: number;                // u8 (= persistent battle-wide flag)
+  palaceFlags: number;                       // u8
+  field_93: number;                          // u8 (related to choosing pokemon?)
+  wallyBattleState: number;                  // u8
+  wallyMovesState: number;                   // u8
+  wallyWaitFrames: number;                   // u8
+  wallyMoveFrames: number;                   // u8
+  lastTakenMove: number[];                   // u8[MAX_BATTLERS_COUNT * 2 * 2] = u8[16]
+  hpOnSwitchout: number[];                   // u16[NUM_BATTLE_SIDES] = u16[2]
+  savedBattleTypeFlags: number;              // u32
+  abilityPreventingSwitchout: number;        // u8
+  hpScale: number;                           // u8
+  synchronizeMoveEffect: number;             // u8
+  anyMonHasTransformed: number;              // bool8
+  savedCallback: (() => void) | null;        // void (*)(void)
+  usedHeldItems: number[];                   // u16[MAX_BATTLERS_COUNT]
+  chosenItem: number[];                      // u8[MAX_BATTLERS_COUNT]
+  AI_itemType: number[];                     // u8[2]
+  AI_itemFlags: number[];                    // u8[2]
+  choicedMove: number[];                     // u16[MAX_BATTLERS_COUNT]
+  changedItems: number[];                    // u16[MAX_BATTLERS_COUNT]
+  intimidateBattler: number;                 // u8
+  switchInItemsCounter: number;              // u8
+  arenaTurnCounter: number;                  // u8
+  turnSideTracker: number;                   // u8
+  unused_6: number[];                        // u8[3]
+  givenExpMons: number;                      // u8
+  lastTakenMoveFrom: number[];               // u8[MAX_BATTLERS_COUNT*MAX_BATTLERS_COUNT*2] = u8[32]
+  castformPalette: number[][];               // u16[NUM_CASTFORM_FORMS][16] = u16[4][16]
+  multiBuffer: {
+    linkBattlerHeader: LinkBattlerHeader;
+    battleVideo: number[];                   // u32[2]
+  };
+  wishPerishSongState: number;               // u8
+  wishPerishSongBattlerId: number;           // u8
+  overworldWeatherDone: number;              // bool8
+  atkCancelerTracker: number;                // u8
+  tvMovePoints: BattleTvMovePoints;
+  tv: BattleTv;
+  unused_7: number[];                        // u8[0x28]
+  AI_monToSwitchIntoId: number[];            // u8[MAX_BATTLERS_COUNT]
+  arenaMindPoints: number[];                 // s8[2]
+  arenaSkillPoints: number[];                // s8[2]
+  arenaStartHp: number[];                    // u16[2]
+  arenaLostPlayerMons: number;               // u8
+  arenaLostOpponentMons: number;             // u8
+  alreadyStatusedMoveAttempt: number;        // u8 bitfield per battler
+}
+
+function _makeBlankBattleStruct(): BattleStruct {
+  return {
+    turnEffectsTracker: 0, turnEffectsBattlerId: 0, unused_0: 0, turnCountersTracker: 0,
+    wrappedMove: [0, 0, 0, 0, 0, 0, 0, 0],
+    moveTarget: [0, 0, 0, 0],
+    expGetterMonId: 0, unused_1: 0, wildVictorySong: 0, dynamicMoveType: 0,
+    wrappedBy: [0, 0, 0, 0],
+    assistPossibleMoves: new Array(24).fill(0),
+    focusPunchBattlerId: 0, battlerPreventingSwitchout: 0, moneyMultiplier: 0,
+    savedTurnActionNumber: 0, switchInAbilitiesCounter: 0,
+    faintedActionsState: 0, faintedActionsBattlerId: 0,
+    expValue: 0, scriptPartyIdx: 0, sentInPokes: 0,
+    selectionScriptFinished: [0, 0, 0, 0],
+    battlerPartyIndexes: [0, 0, 0, 0],
+    monToSwitchIntoId: [0, 0, 0, 0],
+    battlerPartyOrders: [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
+    runTries: 0,
+    caughtMonNick: new Array(11).fill(0),
+    unused_2: 0, safariGoNearCounter: 0, safariPkblThrowCounter: 0,
+    safariEscapeFactor: 0, safariCatchFactor: 0,
+    linkBattleVsSpriteId_V: 0, linkBattleVsSpriteId_S: 0,
+    formToChangeInto: 0,
+    chosenMovePositions: [0, 0, 0, 0],
+    stateIdAfterSelScript: [0, 0, 0, 0],
+    unused_3: [0, 0, 0],
+    prevSelectedPartySlot: 0,
+    unused_4: [0, 0],
+    stringMoveType: 0,
+    expGetterBattlerId: 0, unused_5: 0,
+    absentBattlerFlags: 0, palaceFlags: 0,
+    field_93: 0,
+    wallyBattleState: 0, wallyMovesState: 0, wallyWaitFrames: 0, wallyMoveFrames: 0,
+    lastTakenMove: new Array(16).fill(0),
+    hpOnSwitchout: [0, 0],
+    savedBattleTypeFlags: 0,
+    abilityPreventingSwitchout: 0,
+    hpScale: 0, synchronizeMoveEffect: 0,
+    anyMonHasTransformed: 0,
+    savedCallback: null,
+    usedHeldItems: [0, 0, 0, 0],
+    chosenItem: [0, 0, 0, 0],
+    AI_itemType: [0, 0],
+    AI_itemFlags: [0, 0],
+    choicedMove: [0, 0, 0, 0],
+    changedItems: [0, 0, 0, 0],
+    intimidateBattler: 0,
+    switchInItemsCounter: 0,
+    arenaTurnCounter: 0,
+    turnSideTracker: 0,
+    unused_6: [0, 0, 0],
+    givenExpMons: 0,
+    lastTakenMoveFrom: new Array(32).fill(0),
+    castformPalette: [new Array(16).fill(0), new Array(16).fill(0), new Array(16).fill(0), new Array(16).fill(0)],
+    multiBuffer: {
+      linkBattlerHeader: _makeBlankLinkBattlerHeader(),
+      battleVideo: [0, 0],
+    },
+    wishPerishSongState: 0, wishPerishSongBattlerId: 0,
+    overworldWeatherDone: 0, atkCancelerTracker: 0,
+    tvMovePoints: _makeBlankBattleTvMovePoints(),
+    tv: _makeBlankBattleTv(),
+    unused_7: new Array(0x28).fill(0),
+    AI_monToSwitchIntoId: [0, 0, 0, 0],
+    arenaMindPoints: [0, 0], arenaSkillPoints: [0, 0], arenaStartHp: [0, 0],
+    arenaLostPlayerMons: 0, arenaLostOpponentMons: 0,
+    alreadyStatusedMoveAttempt: 0,
+  };
+}
+
+/** 1:1 décomp `struct BattleStruct *gBattleStruct` (battle.h:703).
+ *  Single source of truth pour tous les fields BattleStruct (Phase 1.1 C refactor).
+ *
+ *  **Stratégie de migration** : les anciens exports `gXXX` épars (= gIntimidateBattler,
+ *  gFormToChangeInto, etc.) sont conservés temporairement comme aliases. Les
+ *  setters écrivent dans `gBattleStruct.X` (= source unique) ET propagent à
+ *  l'ancien export pour live-binding compat. Phase 1.1 C step 2 = migrer les
+ *  call-sites pour lire `gBattleStruct.X` directement, puis step 3 = supprimer
+ *  les anciens exports. */
+export const gBattleStruct: BattleStruct = _makeBlankBattleStruct();
+
 /** Side statuses (= reflect/light_screen/safeguard/mist per side). */
 export const gSideStatuses: number[] = [0, 0];
 
@@ -430,29 +645,34 @@ export const gBideTarget: number[] = [0, 0, 0, 0];
 export const gUsedHeldItems: number[] = [0, 0, 0, 0];
 
 /** 1:1 décomp `gBattleStruct->intimidateBattler` — set par AbilityBattleEffects
- *  pour signaler quel battler doit déclencher Intimidate. */
+ *  pour signaler quel battler doit déclencher Intimidate.
+ *  ALIAS legacy : préférer `gBattleStruct.intimidateBattler` (Phase 1.1 C). */
 export let gIntimidateBattler = 0;
-export function setIntimidateBattler(v: number) { gIntimidateBattler = v; }
+export function setIntimidateBattler(v: number) { gIntimidateBattler = v; gBattleStruct.intimidateBattler = v; }
 
-/** 1:1 décomp `gBattleStruct->formToChangeInto` — Castform/Cherrim. */
+/** 1:1 décomp `gBattleStruct->formToChangeInto` — Castform/Cherrim.
+ *  ALIAS legacy : préférer `gBattleStruct.formToChangeInto`. */
 export let gFormToChangeInto = 0;
-export function setFormToChangeInto(v: number) { gFormToChangeInto = v; }
+export function setFormToChangeInto(v: number) { gFormToChangeInto = v; gBattleStruct.formToChangeInto = v; }
 
 /** 1:1 décomp `gBattleStruct->synchronizeMoveEffect` — Synchronize ability
- *  reflect status1 (poison/burn/paralysis/toxic) back to attacker. */
+ *  reflect status1 (poison/burn/paralysis/toxic) back to attacker.
+ *  ALIAS legacy : préférer `gBattleStruct.synchronizeMoveEffect`. */
 export let gSynchronizeMoveEffect = 0;
-export function setSynchronizeMoveEffect(v: number) { gSynchronizeMoveEffect = v; }
+export function setSynchronizeMoveEffect(v: number) { gSynchronizeMoveEffect = v; gBattleStruct.synchronizeMoveEffect = v; }
 
 /** 1:1 décomp `gBattleStruct->hpScale` — résultat de Cmd_hpthresholds /
  *  Cmd_hpthresholds2. Valeur 0..3 utilisée pour choisir un message de bataille
- *  selon les % HP restants du target adverse. */
+ *  selon les % HP restants du target adverse.
+ *  ALIAS legacy : préférer `gBattleStruct.hpScale`. */
 export let gHpScale = 0;
-export function setHpScale(v: number) { gHpScale = v; }
+export function setHpScale(v: number) { gHpScale = v; gBattleStruct.hpScale = v; }
 
 /** 1:1 décomp `gBattleStruct->hpOnSwitchout[2]` — HP du Pokémon précédent à la
  *  switch-out, par side (0=player, 1=opponent). Lu par Cmd_hpthresholds2 pour
- *  calculer le % de dégâts depuis la switch. */
-export const gHpOnSwitchout: number[] = [0, 0];
+ *  calculer le % de dégâts depuis la switch.
+ *  ALIAS legacy : préférer `gBattleStruct.hpOnSwitchout`. */
+export const gHpOnSwitchout: number[] = gBattleStruct.hpOnSwitchout;
 
 /** 1:1 décomp `gTrainerBattleOpponent_A/B` (battle_setup.c). Trainer ID
  *  opponent — déterminé au battle setup, lu par Cmd_getmoneyreward pour
@@ -463,12 +683,14 @@ export function setTrainerBattleOpponentA(v: number) { gTrainerBattleOpponent_A 
 export function setTrainerBattleOpponentB(v: number) { gTrainerBattleOpponent_B = v; }
 
 /** 1:1 décomp `gBattleStruct->wrappedBy[MAX_BATTLERS_COUNT]` — battler ID qui
- *  a wrapped chaque battler (= utilisé par Rapid Spin pour BattleScript_WrapFree). */
-export const gWrappedBy: number[] = [0, 0, 0, 0];
+ *  a wrapped chaque battler (= utilisé par Rapid Spin pour BattleScript_WrapFree).
+ *  ALIAS legacy : préférer `gBattleStruct.wrappedBy`. */
+export const gWrappedBy: number[] = gBattleStruct.wrappedBy;
 
 /** 1:1 décomp `gBattleStruct->wrappedMove[MAX_BATTLERS_COUNT*2]` — u16 move id
- *  per battler (= BIND / WRAP / FIRE_SPIN / etc.). */
-export const gWrappedMove: number[] = [0, 0, 0, 0];
+ *  per battler (= BIND / WRAP / FIRE_SPIN / etc.).
+ *  ALIAS legacy : préférer `gBattleStruct.wrappedMove`. */
+export const gWrappedMove: number[] = gBattleStruct.wrappedMove;
 
 /** 1:1 décomp `gLastPrintedMoves[MAX_BATTLERS_COUNT]` (battle_main.c). Dernier
  *  move dont le nom a été print (= différent de gLastMoves : printed = move
@@ -477,72 +699,89 @@ export const gWrappedMove: number[] = [0, 0, 0, 0];
 export const gLastPrintedMoves: number[] = [0, 0, 0, 0];
 
 /** 1:1 décomp `gBattleStruct->lastTakenMove[MAX_BATTLERS_COUNT]` — dernier
- *  move subi par chaque battler (= utilisé par Mirror Move). */
+ *  move subi par chaque battler (= utilisé par Mirror Move).
+ *  Note : ce field map sur les premiers 4 entries de `gBattleStruct.lastTakenMove`
+ *  (= u8[16] côté décomp, accédé comme u16 par battler).
+ *  Pour Phase 1.1 C, on garde l'array séparé temporairement — migration via
+ *  setLastTakenMove() à venir. */
 export const gLastTakenMove: number[] = [0, 0, 0, 0];
 
 /** 1:1 décomp `gBattleStruct->lastTakenMoveFrom[4*4]` — dernier move subi par
- *  battler X depuis battler Y. Flat array index = X*4 + Y. */
+ *  battler X depuis battler Y. Flat array index = X*4 + Y.
+ *  ALIAS legacy : préférer `gBattleStruct.lastTakenMoveFrom` (= u8[32]). */
 export const gLastTakenMoveFrom: number[] = new Array(16).fill(0);
 
 /** 1:1 décomp `gBattleStruct->moveTarget[MAX_BATTLERS_COUNT]` — target id
- *  chosen by each battler ce turn (= Pursuit switch tracking). */
-export const gMoveTarget: number[] = [0, 0, 0, 0];
+ *  chosen by each battler ce turn (= Pursuit switch tracking).
+ *  ALIAS legacy : préférer `gBattleStruct.moveTarget`. */
+export const gMoveTarget: number[] = gBattleStruct.moveTarget;
 
 /** 1:1 décomp `gBattleStruct->chosenMovePositions[MAX_BATTLERS_COUNT]` —
- *  position 0..3 du move choisi (= slot dans gBattleMons.moves). */
-export const gChosenMovePositions: number[] = [0, 0, 0, 0];
+ *  position 0..3 du move choisi (= slot dans gBattleMons.moves).
+ *  ALIAS legacy : préférer `gBattleStruct.chosenMovePositions`. */
+export const gChosenMovePositions: number[] = gBattleStruct.chosenMovePositions;
 
 /** 1:1 décomp `gBattleStruct->choicedMove[MAX_BATTLERS_COUNT]` (battle.h
  *  BattleStruct). Move locked-in par Choice Band, conservé jusqu'à switch-out.
- *  Lu/écrit par MOVEEND_CHOICE_MOVE et Cmd_jumpifcantselectchoiced. */
-export const gBattleStructChoicedMove: number[] = [0, 0, 0, 0];
+ *  Lu/écrit par MOVEEND_CHOICE_MOVE et Cmd_jumpifcantselectchoiced.
+ *  ALIAS legacy : préférer `gBattleStruct.choicedMove`. */
+export const gBattleStructChoicedMove: number[] = gBattleStruct.choicedMove;
 
 /** 1:1 décomp `gBattleStruct->changedItems[MAX_BATTLERS_COUNT]` (battle.h
  *  BattleStruct). Item donné par Trick/Switcheroo, appliqué à la fin du move
- *  via MOVEEND_CHANGED_ITEMS. ITEM_NONE = pas de change. */
-export const gBattleStructChangedItems: number[] = [0, 0, 0, 0];
+ *  via MOVEEND_CHANGED_ITEMS. ITEM_NONE = pas de change.
+ *  ALIAS legacy : préférer `gBattleStruct.changedItems`. */
+export const gBattleStructChangedItems: number[] = gBattleStruct.changedItems;
 
 /** 1:1 décomp `gBattleStruct->absentBattlerFlags` (battle.h BattleStruct).
  *  Bitmask : flags battlers absents (= fainted) pendant le combat. Distinct de
- *  `gAbsentBattlerFlags` (= global tracker, reset à chaque turn). */
+ *  `gAbsentBattlerFlags` (= global tracker, reset à chaque turn).
+ *  ALIAS legacy : préférer `gBattleStruct.absentBattlerFlags`. */
 export let gBattleStructAbsentBattlerFlags = 0;
-export function setBattleStructAbsentBattlerFlags(v: number) { gBattleStructAbsentBattlerFlags = v; }
+export function setBattleStructAbsentBattlerFlags(v: number) { gBattleStructAbsentBattlerFlags = v; gBattleStruct.absentBattlerFlags = v; }
 
 /** 1:1 décomp `gBattleStruct->atkCancelerTracker` (battle.h:436). État de la
  *  state machine `AtkCanceler_UnableToUseMove` qui check sleep/freeze/flinch/
- *  confuse/paralyze/etc. au début de chaque move. Reset à 0 avant chaque attaque. */
+ *  confuse/paralyze/etc. au début de chaque move. Reset à 0 avant chaque attaque.
+ *  ALIAS legacy : préférer `gBattleStruct.atkCancelerTracker`. */
 export let gBattleStructAtkCancelerTracker = 0;
-export function setBattleStructAtkCancelerTracker(v: number) { gBattleStructAtkCancelerTracker = v; }
+export function setBattleStructAtkCancelerTracker(v: number) { gBattleStructAtkCancelerTracker = v; gBattleStruct.atkCancelerTracker = v; }
 
 /** 1:1 décomp `gBattleStruct->expValue` (battle.h). XP calculé per-mon par
- *  Cmd_getexp à distribuer aux participants. */
+ *  Cmd_getexp à distribuer aux participants.
+ *  ALIAS legacy : préférer `gBattleStruct.expValue`. */
 export let gBattleStructExpValue = 0;
-export function setBattleStructExpValue(v: number) { gBattleStructExpValue = v; }
+export function setBattleStructExpValue(v: number) { gBattleStructExpValue = v; gBattleStruct.expValue = v; }
 
 /** 1:1 décomp `gBattleStruct->expGetterMonId` (battle.h). Index 0..5 du mon
- *  party courant en cours de distribution XP. */
+ *  party courant en cours de distribution XP.
+ *  ALIAS legacy : préférer `gBattleStruct.expGetterMonId`. */
 export let gBattleStructExpGetterMonId = 0;
-export function setBattleStructExpGetterMonId(v: number) { gBattleStructExpGetterMonId = v; }
+export function setBattleStructExpGetterMonId(v: number) { gBattleStructExpGetterMonId = v; gBattleStruct.expGetterMonId = v; }
 
 /** 1:1 décomp `gBattleStruct->expGetterBattlerId` (battle.h). Battler ID
- *  (0..3) qui reçoit l'XP — utilisé pour Emit + display. */
+ *  (0..3) qui reçoit l'XP — utilisé pour Emit + display.
+ *  ALIAS legacy : préférer `gBattleStruct.expGetterBattlerId`. */
 export let gBattleStructExpGetterBattlerId = 0;
-export function setBattleStructExpGetterBattlerId(v: number) { gBattleStructExpGetterBattlerId = v; }
+export function setBattleStructExpGetterBattlerId(v: number) { gBattleStructExpGetterBattlerId = v; gBattleStruct.expGetterBattlerId = v; }
 
 /** 1:1 décomp `gBattleStruct->sentInPokes` (battle.h). Bitmask des mons sentIn
- *  (= participaient au combat = éligibles à l'XP). Shifté à chaque mon. */
+ *  (= participaient au combat = éligibles à l'XP). Shifté à chaque mon.
+ *  ALIAS legacy : préférer `gBattleStruct.sentInPokes`. */
 export let gBattleStructSentInPokes = 0;
-export function setBattleStructSentInPokes(v: number) { gBattleStructSentInPokes = v; }
+export function setBattleStructSentInPokes(v: number) { gBattleStructSentInPokes = v; gBattleStruct.sentInPokes = v; }
 
 /** 1:1 décomp `gBattleStruct->wildVictorySong` (battle.h). Flag 1-time pour
- *  switch BGM → MUS_VICTORY_WILD post-faint adversaire en wild battle. */
+ *  switch BGM → MUS_VICTORY_WILD post-faint adversaire en wild battle.
+ *  ALIAS legacy : préférer `gBattleStruct.wildVictorySong`. */
 export let gBattleStructWildVictorySong = 0;
-export function setBattleStructWildVictorySong(v: number) { gBattleStructWildVictorySong = v; }
+export function setBattleStructWildVictorySong(v: number) { gBattleStructWildVictorySong = v; gBattleStruct.wildVictorySong = v; }
 
 /** 1:1 décomp `gBattleStruct->givenExpMons` (battle.h). Bitmask party indexes
- *  qui ont déjà reçu de l'XP ce combat (= pour eviter doublons). */
+ *  qui ont déjà reçu de l'XP ce combat (= pour eviter doublons).
+ *  ALIAS legacy : préférer `gBattleStruct.givenExpMons`. */
 export let gBattleStructGivenExpMons = 0;
-export function setBattleStructGivenExpMons(v: number) { gBattleStructGivenExpMons = v; }
+export function setBattleStructGivenExpMons(v: number) { gBattleStructGivenExpMons = v; gBattleStruct.givenExpMons = v; }
 
 /** 1:1 décomp `gSentPokesToOpponent[2]` (battle_main.c). Bitmask des mons qui
  *  ont été envoyés contre chaque opponent (= side 0=opponent left, 1=right).
@@ -699,13 +938,95 @@ export function resetBattleState(): void {
   gAbsentBattlerFlags = 0;
   gBattleEnvironment = 0;
   gPaydayMoney = 0;
-  gIntimidateBattler = 0;
-  gFormToChangeInto = 0;
-  gHpScale = 0;
+  gIntimidateBattler = 0; gBattleStruct.intimidateBattler = 0;
+  gFormToChangeInto = 0; gBattleStruct.formToChangeInto = 0;
+  gSynchronizeMoveEffect = 0; gBattleStruct.synchronizeMoveEffect = 0;
+  gHpScale = 0; gBattleStruct.hpScale = 0;
   gHpOnSwitchout[0] = 0;
   gHpOnSwitchout[1] = 0;
   gTrainerBattleOpponent_A = 0;
   gTrainerBattleOpponent_B = 0;
+  // Reset gBattleStruct non-array number fields (les arrays sont déjà reset
+  // in-place via les aliases ci-dessus + boucles plus haut).
+  gBattleStruct.turnEffectsTracker = 0;
+  gBattleStruct.turnEffectsBattlerId = 0;
+  gBattleStruct.turnCountersTracker = 0;
+  gBattleStruct.expGetterMonId = 0;
+  gBattleStruct.dynamicMoveType = 0;
+  gBattleStruct.wildVictorySong = 0;
+  gBattleStruct.focusPunchBattlerId = 0;
+  gBattleStruct.battlerPreventingSwitchout = 0;
+  gBattleStruct.moneyMultiplier = 0;
+  gBattleStruct.savedTurnActionNumber = 0;
+  gBattleStruct.switchInAbilitiesCounter = 0;
+  gBattleStruct.faintedActionsState = 0;
+  gBattleStruct.faintedActionsBattlerId = 0;
+  gBattleStruct.expValue = 0;
+  gBattleStruct.scriptPartyIdx = 0;
+  gBattleStruct.sentInPokes = 0;
+  gBattleStruct.runTries = 0;
+  gBattleStruct.safariGoNearCounter = 0;
+  gBattleStruct.safariPkblThrowCounter = 0;
+  gBattleStruct.safariEscapeFactor = 0;
+  gBattleStruct.safariCatchFactor = 0;
+  gBattleStruct.linkBattleVsSpriteId_V = 0;
+  gBattleStruct.linkBattleVsSpriteId_S = 0;
+  gBattleStruct.prevSelectedPartySlot = 0;
+  gBattleStruct.stringMoveType = 0;
+  gBattleStruct.expGetterBattlerId = 0;
+  gBattleStruct.absentBattlerFlags = 0;
+  gBattleStruct.palaceFlags = 0;
+  gBattleStruct.field_93 = 0;
+  gBattleStruct.wallyBattleState = 0;
+  gBattleStruct.wallyMovesState = 0;
+  gBattleStruct.wallyWaitFrames = 0;
+  gBattleStruct.wallyMoveFrames = 0;
+  gBattleStruct.savedBattleTypeFlags = 0;
+  gBattleStruct.abilityPreventingSwitchout = 0;
+  gBattleStruct.anyMonHasTransformed = 0;
+  gBattleStruct.savedCallback = null;
+  gBattleStruct.switchInItemsCounter = 0;
+  gBattleStruct.arenaTurnCounter = 0;
+  gBattleStruct.turnSideTracker = 0;
+  gBattleStruct.givenExpMons = 0;
+  gBattleStruct.wishPerishSongState = 0;
+  gBattleStruct.wishPerishSongBattlerId = 0;
+  gBattleStruct.overworldWeatherDone = 0;
+  gBattleStruct.atkCancelerTracker = 0;
+  gBattleStruct.arenaLostPlayerMons = 0;
+  gBattleStruct.arenaLostOpponentMons = 0;
+  gBattleStruct.alreadyStatusedMoveAttempt = 0;
+  gBattleStruct.hpOnSwitchout[0] = 0;
+  gBattleStruct.hpOnSwitchout[1] = 0;
+  // Reset arrays non-aliased.
+  for (let i = 0; i < gBattleStruct.lastTakenMove.length; i++) gBattleStruct.lastTakenMove[i] = 0;
+  for (let i = 0; i < gBattleStruct.lastTakenMoveFrom.length; i++) gBattleStruct.lastTakenMoveFrom[i] = 0;
+  for (let i = 0; i < gBattleStruct.assistPossibleMoves.length; i++) gBattleStruct.assistPossibleMoves[i] = 0;
+  for (let i = 0; i < gBattleStruct.selectionScriptFinished.length; i++) gBattleStruct.selectionScriptFinished[i] = 0;
+  for (let i = 0; i < gBattleStruct.battlerPartyIndexes.length; i++) gBattleStruct.battlerPartyIndexes[i] = 0;
+  for (let i = 0; i < gBattleStruct.monToSwitchIntoId.length; i++) gBattleStruct.monToSwitchIntoId[i] = 0;
+  for (let i = 0; i < gBattleStruct.stateIdAfterSelScript.length; i++) gBattleStruct.stateIdAfterSelScript[i] = 0;
+  for (let i = 0; i < gBattleStruct.caughtMonNick.length; i++) gBattleStruct.caughtMonNick[i] = 0;
+  for (let i = 0; i < gBattleStruct.usedHeldItems.length; i++) gBattleStruct.usedHeldItems[i] = 0;
+  for (let i = 0; i < gBattleStruct.chosenItem.length; i++) gBattleStruct.chosenItem[i] = 0;
+  for (let i = 0; i < gBattleStruct.AI_itemType.length; i++) gBattleStruct.AI_itemType[i] = 0;
+  for (let i = 0; i < gBattleStruct.AI_itemFlags.length; i++) gBattleStruct.AI_itemFlags[i] = 0;
+  for (let i = 0; i < gBattleStruct.AI_monToSwitchIntoId.length; i++) gBattleStruct.AI_monToSwitchIntoId[i] = 0;
+  for (let i = 0; i < gBattleStruct.arenaMindPoints.length; i++) gBattleStruct.arenaMindPoints[i] = 0;
+  for (let i = 0; i < gBattleStruct.arenaSkillPoints.length; i++) gBattleStruct.arenaSkillPoints[i] = 0;
+  for (let i = 0; i < gBattleStruct.arenaStartHp.length; i++) gBattleStruct.arenaStartHp[i] = 0;
+  for (let r = 0; r < gBattleStruct.battlerPartyOrders.length; r++) {
+    for (let c = 0; c < gBattleStruct.battlerPartyOrders[r].length; c++) gBattleStruct.battlerPartyOrders[r][c] = 0;
+  }
+  for (let r = 0; r < gBattleStruct.castformPalette.length; r++) {
+    for (let c = 0; c < gBattleStruct.castformPalette[r].length; c++) gBattleStruct.castformPalette[r][c] = 0;
+  }
+  gBattleStruct.multiBuffer.linkBattlerHeader.versionSignatureLo = 0;
+  gBattleStruct.multiBuffer.linkBattlerHeader.versionSignatureHi = 0;
+  gBattleStruct.multiBuffer.linkBattlerHeader.vsScreenHealthFlagsLo = 0;
+  gBattleStruct.multiBuffer.linkBattlerHeader.vsScreenHealthFlagsHi = 0;
+  gBattleStruct.multiBuffer.battleVideo[0] = 0;
+  gBattleStruct.multiBuffer.battleVideo[1] = 0;
   gWishFutureKnock.futureSightCounter = [0, 0, 0, 0];
   gWishFutureKnock.futureSightAttacker = [0, 0, 0, 0];
   gWishFutureKnock.futureSightDmg = [0, 0, 0, 0];
