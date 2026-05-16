@@ -398,12 +398,14 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
         return sb2_link?.playerName ?? 'Joueur';
       case 'PC_CREATOR_NAME':
         return 'BILL';
-      // Prefix placeholders : 1:1 décomp utilise dans certains templates très
-      // spécifiques (= jouent avec genres FR). Phase 1.4 J : return empty pour
-      // éviter duplication ("du Le X" cf. _monNicknameWithPrefix qui handle).
+      // Prefix placeholders 1:1 décomp battle_message.c:2704-2728 :
+      // - PLAYER side (= ATK_PREFIX*) → "ami" (= sText_AllyPkmnPrefix)
+      // - OPPONENT side → "ennemi" (= sText_FoePkmnPrefix2/3/4)
+      // Templates utilisent pour différencier "du POKéMON ami" vs "du POKéMON ennemi".
       case 'ATK_PREFIX1': case 'ATK_PREFIX2': case 'ATK_PREFIX3':
+        return (gBattlerAttacker & 1) === 0 ? 'ami' : 'ennemi';
       case 'DEF_PREFIX1': case 'DEF_PREFIX2': case 'DEF_PREFIX3':
-        return '';
+        return (gBattlerTarget & 1) === 0 ? 'ami' : 'ennemi';
       default:
         return `{B_${name}}`;
     }
