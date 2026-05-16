@@ -7,7 +7,7 @@ type: project
 # Session 140 — Wire bytecode → gameplay COMPLETE
 
 **Date** : 2026-05-16 (post-compact, /loop autonomous nuit)
-**Commits** : 13 sur branche `upd2`
+**Commits** : 16 sur branche `upd2`
 **Branche** : `upd2`
 
 ## 🏆 Milestones
@@ -53,6 +53,10 @@ type: project
 
 7. **otId bridge fix** : `pokemonInstanceToPokemon.otId = globalThis.gameState.trainerId`. Avant : otId=0 → IsOtherTrainer toujours true → Lv50+ trigger disobedience (= jump BattleScript_IgnoresAndFallsAsleep). Maintenant : mons player-caught → obey.
 
+8. **Load game-data au boot** (= main.ts) : avant __game_data set seulement à battle-flow.ts:LOAD_ASSETS (= 1er combat). Maintenant le boot charge tout. Permet à `pickLevelUpMoves` et autres bridges de fonctionner avant le 1er combat.
+
+9. **_resolveMoveId multi-word fix** : dexId 'blazekick' (= concat lowercase) → utilise Dex.moves.get(dexId).name → 'Blaze Kick' → 'MOVE_BLAZE_KICK' → numeric id. Avant : MOVE_BLAZEKICK (= no underscore) → unresolved → id 0 → move skip. Maintenant : tous les moves multi-word fonctionnent.
+
 ## ✅ Validation runtime
 
 **Single move POC** : Arcko Lv5 Pound → Zigzatton Lv2 = damage 6, HP 13→7, typeMul 1, missed false ✓ (= 28 opcodes dispatchés).
@@ -64,7 +68,9 @@ type: project
 
 **Battery 5 scenarios Lv5** : Treecko/Torchic/Mudkip vs wilds Lv2-3 → 5/5 PLAYER WIN en 2-3 turns. Lv50+ déclenchent disobedience (= 1:1 décomp behavior, fix avec otId bridge).
 
-**Combat Lv50 avec real moves** (post pickLevelUpMoves fix) : Charizard Lv50 Flamethrower vs Blastoise Lv50 :
+**Combat Lv50 avec real moves** (post pickLevelUpMoves + Dex resolveMoveId fix) :
+- Blaziken Lv50 Blaze Kick vs Sceptile Lv50 = 130 damage OHKO en 1 turn (Fire STAB + super eff vs Grass) ✓
+- Charizard Lv50 Flamethrower vs Blastoise Lv50 :
 - Turn 0 : Flamethrower 30 dmg + Rapid Spin 0 dmg
 - Turn 1 : Flamethrower 62 dmg (crit)
 - Turn 2 : Flamethrower 32 dmg
