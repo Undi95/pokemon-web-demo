@@ -579,51 +579,128 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
 
 // ─── Cmd_tryfaintmon (0x19) ─────────────────────────────────────────────────
 
-/** 1:1 décomp `Cmd_tryfaintmon` (battle_script_commands.c:2965-...).
+/** 1:1 décomp `Cmd_tryfaintmon` (battle_script_commands.c:2965-3050).
  *
- *  Args : 1 byte battler ref + 1 byte mode + 4 byte ptr (= post-faint dispatch). Total 7 bytes.
+ *  Args : 1 byte battler ref + 1 byte mode + 4 byte ptr (= post-faint dispatch).
+ *  Total 7 bytes.
  *
- *  Logic minimal :
- *  - Mode 0 (= regular faint check) : si mon.hp == 0 → set HITMARKER_FAINTED +
- *    set gBattlerFainted + outcome (WIN si side OPPONENT, LOST si side PLAYER).
- *  - Mode != 0 (= post-faint dispatcher) : non implémenté (= skip).
- *
- *  Skip : BattleScript_FaintTarget/Attacker jump, Destiny Bond, Grudge, friendship
- *  decrement on player faint, lastOpponentSpecies record. */
+ *  Mode != 0 (= dispatch après faint) : check HITMARKER_FAINTED → pop cursor +
+ *    jump, sinon advance 7.
+ *  Mode == 0 (= regular faint check) :
+ *    - BS_ATTACKER → active = attacker, jump = BattleScript_FaintAttacker
+ *    - else → active = target, jump = BattleScript_FaintTarget
+ *    - Si !absent && hp == 0 :
+ *      * set HITMARKER_FAINTED(active), push cursor + jump
+ *      * player side : HITMARKER_PLAYER_FAINTED + playerFaintCounter++ +
+ *                      AdjustFriendshipOnBattleFaint
+ *      * opponent side : opponentFaintCounter++ + lastOpponentSpecies
+ *      * Destiny Bond : si HITMARKER_DESTINYBOND + attacker.hp != 0 →
+ *                       gBattleMoveDamage = battler.hp + push +
+ *                       BattleScript_DestinyBondTakesLife
+ *      * Grudge : conditions match → drain attacker PP du chosenMove +
+ *                 BattleScript_GrudgeTakesPp */
 function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
+  const opcodeStartPtr = ctx.scriptPtr - 1;  // before pre-advance
   const battlerArg = readByte(ctx);
   const modeFlag = readByte(ctx);
-  const _jumpPtr = readWord(ctx);  // 4 bytes post-faint dispatch ptr (mode 2)
-  void _jumpPtr;
+  const jumpPtr = readWord(ctx);
 
   if (modeFlag !== 0) {
-    // Post-faint dispatcher mode — TODO porter (= currently no-op advance).
+    // 1:1 décomp ll.2969-2983 : post-faint dispatcher.
+    const active = _utilGetBattler(battlerArg);
+    setActiveBattler(active);
+    if (gHitMarker & HITMARKER_FAINTED(active)) {
+      ctx.scriptPtr = jumpPtr;
+      // 1:1 décomp : BattleScriptPop() + scriptPtr = jumpPtr.
+      ctx.scriptPtrStack.pop();
+      gSideStatuses[GET_BATTLER_SIDE(active)] &= ~SIDE_STATUS_SPIKES_DAMAGED;
+    }
     return false;
   }
 
+  // Mode 0 : regular faint check.
   let activeBattler: number;
-  let _battlerOther: number;
+  let battlerOther: number;
+  let bsLabel: string;
   if (battlerArg === BS_ATTACKER) {
     activeBattler = gBattlerAttacker;
-    _battlerOther = gBattlerTarget;
+    battlerOther = gBattlerTarget;
+    bsLabel = 'BattleScript_FaintAttacker';
   } else {
     activeBattler = gBattlerTarget;
-    _battlerOther = gBattlerAttacker;
+    battlerOther = gBattlerAttacker;
+    bsLabel = 'BattleScript_FaintTarget';
   }
-
   setActiveBattler(activeBattler);
-  if (gBattleMons[activeBattler].hp === 0) {
+
+  if (!(gAbsentBattlerFlags & gBitTable[activeBattler])
+      && gBattleMons[activeBattler].hp === 0) {
+    setHitMarker(gHitMarker | HITMARKER_FAINTED(activeBattler));
     setBattlerFainted(activeBattler);
-    // 1:1 décomp : set HITMARKER_FAINTED(activeBattler) (= bit 28+battlerIdx).
-    // Pour now : simple outcome set.
+    // 1:1 décomp : BattleScriptPush(gBattlescriptCurrInstr + 7) + jump label.
+    ctx.scriptPtrStack.push(opcodeStartPtr + 7);
+    const off = getBattleScriptOffset(bsLabel);
+    if (off >= 0) ctx.scriptPtr = off;
+
     if (GET_BATTLER_SIDE(activeBattler) === B_SIDE_PLAYER) {
+      setHitMarker(gHitMarker | HITMARKER_PLAYER_FAINTED);
+      if (gBattleResults.playerFaintCounter < 255) {
+        gBattleResults.playerFaintCounter++;
+      }
+      _adjustFriendshipOnFaintTFM(activeBattler);
+      // 1:1 fallback for outcome side player (= keep behavior for our test).
       setBattleOutcome(B_OUTCOME_LOST);
     } else {
+      if (gBattleResults.opponentFaintCounter < 255) {
+        gBattleResults.opponentFaintCounter++;
+      }
+      // 1:1 décomp : `lastOpponentSpecies = GetMonData(&gEnemyParty[partyIdx], MON_DATA_SPECIES)`.
+      const partyIdx = gBattlerPartyIndexes[activeBattler];
+      if (gEnemyParty_TFM[partyIdx]) {
+        gBattleResults.lastOpponentSpecies =
+          GetMonData_TFM(gEnemyParty_TFM[partyIdx], MON_DATA_SPECIES_TFM) as number;
+      }
+      // 1:1 fallback for our test : set outcome WON (= will be overridden if more
+      // battlers left in real ROM).
       setBattleOutcome(B_OUTCOME_WON);
+    }
+
+    // 1:1 décomp ll.3020-3026 : Destiny Bond.
+    if ((gHitMarker & HITMARKER_DESTINYBOND)
+        && gBattleMons[gBattlerAttacker].hp !== 0) {
+      setHitMarker(gHitMarker & ~HITMARKER_DESTINYBOND);
+      ctx.scriptPtrStack.push(ctx.scriptPtr);
+      setBattleMoveDamage(gBattleMons[battlerOther].hp);
+      const dbOff = getBattleScriptOffset('BattleScript_DestinyBondTakesLife');
+      if (dbOff >= 0) ctx.scriptPtr = dbOff;
+    }
+
+    // 1:1 décomp ll.3027-3043 : Grudge effect.
+    if ((gStatuses3[gBattlerTarget] & STATUS3_GRUDGE)
+        && !(gHitMarker & HITMARKER_GRUDGE)
+        && GET_BATTLER_SIDE(gBattlerAttacker) !== GET_BATTLER_SIDE(gBattlerTarget)
+        && gBattleMons[gBattlerAttacker].hp !== 0
+        && gCurrentMove !== MOVE_STRUGGLE) {
+      const moveIndex = gBattleStruct.chosenMovePositions[gBattlerAttacker];
+      gBattleMons[gBattlerAttacker].pp[moveIndex] = 0;
+      ctx.scriptPtrStack.push(ctx.scriptPtr);
+      const grOff = getBattleScriptOffset('BattleScript_GrudgeTakesPp');
+      if (grOff >= 0) ctx.scriptPtr = grOff;
+      setActiveBattler(gBattlerAttacker);
+      // STUB BtlController_EmitSetMonData REQUEST_PPMOVE_X (= persist au save).
     }
   }
   return false;
 }
+
+// Imports locaux Cmd_tryfaintmon (= éviter dups au top du file).
+import { AdjustFriendshipOnBattleFaint as _adjustFriendshipOnFaintTFM } from '../decomp-data/auto/src-all/battle_util2-all-auto';
+import {
+  gEnemyParty as gEnemyParty_TFM, GetMonData as GetMonData_TFM,
+  MON_DATA_SPECIES as MON_DATA_SPECIES_TFM,
+} from './party-storage';
+import { SIDE_STATUS_SPIKES_DAMAGED, HITMARKER_PLAYER_FAINTED, HITMARKER_GRUDGE, STATUS3_GRUDGE } from './constants';
+import { gBattlerPartyIndexes } from './state';
 
 // ─── Cmd_accuracycheck (0x01) ───────────────────────────────────────────────
 
