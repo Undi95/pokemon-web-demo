@@ -72,19 +72,160 @@ function _isTwoTurnsMove(move: number): boolean {
       || effect === 151 || effect === 155 || effect === 26;
 }
 
-/** 1:1 stub `SwitchInClearSetData()` (battle_main.c). Reset effect tracking
- *  pour le mon switched in. MVP : clear gDisableStructs, statStages reset. */
+/** 1:1 décomp `SwitchInClearSetData()` (battle_main.c:3152-3262). Reset effect
+ *  tracking + last moves + party flags pour le mon switched in.
+ *
+ *  Préserve si Baton Pass : substituteHP, statStages, status2 partiel, etc.
+ *  Sinon : full reset gDisableStructs + statStages + status2 + status3. */
 function _switchInClearSetData(active: number): void {
-  // Le décomp fait beaucoup de cleanups. Pour MVP : reset les disable timers.
+  // 1:1 décomp : snapshot disableStruct (= sera reset à la fin, sauf Baton Pass).
+  const disableCopy = { ...gDisableStructs[active] };
+
+  // EFFECT_BATON_PASS = 127 (= constants/battle_move_effects).
+  const isBatonPass = (globalThis as { __getBattleMoveEffect?: (m: number) => number })
+    .__getBattleMoveEffect?.(_gCurrentMove30()) === 127;
+
+  // 1:1 décomp 3158-3171 : si non-Baton-Pass, reset statStages + clear
+  // ESCAPE_PREVENTION/ALWAYS_HITS qui pointent vers cet active.
+  if (!isBatonPass) {
+    for (let i = 0; i < 8 /* NUM_BATTLE_STATS */; i++) {
+      gBattleMons[active].statStages[i] = 6 /* DEFAULT_STAT_STAGE */;
+    }
+    for (let i = 0; i < _gBattlersCount30(); i++) {
+      if ((gBattleMons[i].status2 & 0x4000 /* STATUS2_ESCAPE_PREVENTION */)
+          && gDisableStructs[i].battlerPreventingEscape === active) {
+        gBattleMons[i].status2 &= ~0x4000;
+      }
+      if ((_gStatuses30()[i] & 0x8 /* STATUS3_ALWAYS_HITS */)
+          && gDisableStructs[i].battlerWithSureHit === active) {
+        _gStatuses30()[i] &= ~0x8;
+        gDisableStructs[i].battlerWithSureHit = 0;
+      }
+    }
+  }
+
+  // 1:1 décomp 3173-3193 : status2/status3 reset (full ou partial Baton Pass).
+  if (isBatonPass) {
+    // Baton Pass : préserve CONFUSION + FOCUS_ENERGY + SUBSTITUTE + ESCAPE_PREVENTION + CURSED.
+    gBattleMons[active].status2 &= (0x7 /* CONFUSION 3 bits */
+      | 0x100000 /* FOCUS_ENERGY */ | 0x1000000 /* SUBSTITUTE */
+      | 0x4000 /* ESCAPE_PREVENTION */ | 0x80000 /* CURSED */);
+    _gStatuses30()[active] &= (0x80 /* LEECHSEED_BATTLER */ | 0x4 /* LEECHSEED */
+      | 0x8 /* ALWAYS_HITS */ | 0x10 /* PERISH_SONG */ | 0x400 /* ROOTED */
+      | 0x100000 /* MUDSPORT */ | 0x200000 /* WATERSPORT */);
+  } else {
+    gBattleMons[active].status2 = 0;
+    _gStatuses30()[active] = 0;
+  }
+
+  // 1:1 décomp 3195-3201 : clear INFATUATED_WITH(active) + WRAPPED par active.
+  for (let i = 0; i < _gBattlersCount30(); i++) {
+    const infatuatedBit = 1 << (16 + active); // STATUS2_INFATUATED_WITH(active).
+    if (gBattleMons[i].status2 & infatuatedBit) {
+      gBattleMons[i].status2 &= ~infatuatedBit;
+    }
+    if ((gBattleMons[i].status2 & 0xE000 /* STATUS2_WRAPPED 3 bits */)
+        && gBattleStruct.wrappedBy?.[i] === active) {
+      gBattleMons[i].status2 &= ~0xE000;
+    }
+  }
+
+  // 1:1 décomp 3203-3208 : reset action/move cursor + full DisableStruct memset.
+  const acsCursor = (globalThis as { __battleState?: { gActionSelectionCursor?: number[]; gMoveSelectionCursor?: number[] } }).__battleState;
+  if (acsCursor?.gActionSelectionCursor) acsCursor.gActionSelectionCursor[active] = 0;
+  if (acsCursor?.gMoveSelectionCursor) acsCursor.gMoveSelectionCursor[active] = 0;
+
+  // Memset disableStruct → 0 (= reset all fields).
   const ds = gDisableStructs[active];
-  ds.encoredMove = 0; ds.encoreTimer = 0;
-  ds.disabledMove = 0; ds.disableTimer = 0;
+  ds.encoredMove = 0; ds.encoreTimer = 0; ds.encoreTimerStartValue = 0;
+  ds.disabledMove = 0; ds.disableTimer = 0; ds.disableTimerStartValue = 0;
   ds.protectUses = 0;
   ds.tauntTimer = 0; ds.tauntTimer2 = 0;
   ds.rolloutTimer = 0; ds.furyCutterCounter = 0;
   ds.chargeTimer = 0;
+  ds.encoredMovePos = 0; ds.mimickedMoves = 0;
+  ds.substituteHP = 0; ds.perishSongTimer = 0; ds.perishSongTimerStartValue = 0;
+  ds.battlerWithSureHit = 0; ds.battlerPreventingEscape = 0;
+
+  // 1:1 décomp 3210-3217 : restore from snapshot si Baton Pass.
+  if (isBatonPass) {
+    ds.substituteHP = disableCopy.substituteHP;
+    ds.battlerWithSureHit = disableCopy.battlerWithSureHit;
+    ds.perishSongTimer = disableCopy.perishSongTimer;
+    ds.perishSongTimerStartValue = disableCopy.perishSongTimerStartValue;
+    ds.battlerPreventingEscape = disableCopy.battlerPreventingEscape;
+  }
+
   ds.isFirstTurn = 2;
-  // Note : décomp fait aussi gProtectStructs reset + autres — TODO.
+  ds.truantSwitchInHack = disableCopy.truantSwitchInHack;
+
+  // 1:1 décomp 3219-3227 : reset gMoveResultFlags + last moves + last hit by.
+  _setMoveResultFlags30()(0);
+  _gLastMoves30()[active] = 0; // MOVE_NONE
+  _gLastLandedMoves30()[active] = 0;
+  _gLastHitByType30()[active] = 0;
+  _gLastResultingMoves30()[active] = 0;
+  _gLastPrintedMoves30()[active] = 0;
+  _gLastHitBy30()[active] = 0xFF;
+
+  // 1:1 décomp 3229-3238 : reset gBattleStruct.lastTakenMove + lastTakenMoveFrom.
+  if (gBattleStruct.lastTakenMove) {
+    gBattleStruct.lastTakenMove[active * 2] = 0;
+    gBattleStruct.lastTakenMove[active * 2 + 1] = 0;
+  }
+  if (gBattleStruct.lastTakenMoveFrom) {
+    for (let j = 0; j < 4; j++) {
+      gBattleStruct.lastTakenMoveFrom[j * 2 + active * 8 + 0] = 0;
+      gBattleStruct.lastTakenMoveFrom[j * 2 + active * 8 + 1] = 0;
+    }
+  }
+
+  // 1:1 décomp 3240 : palaceFlags clear bit.
+  gBattleStruct.palaceFlags = (gBattleStruct.palaceFlags ?? 0) & ~(1 << active);
+
+  // 1:1 décomp 3253-3254 : choicedMove[active] = MOVE_NONE.
+  if (gBattleStruct.choicedMove) gBattleStruct.choicedMove[active] = 0;
+
+  // 1:1 décomp 3257-3258 : gCurrentMove + arenaTurnCounter reset.
+  _setCurrentMove30()(0);
+  gBattleStruct.arenaTurnCounter = 0xFF;
+}
+
+// Helpers locaux pour éviter cross-imports circulaires (= state direct).
+function _gCurrentMove30(): number {
+  return (globalThis as { __battleState?: { gCurrentMove?: number } }).__battleState?.gCurrentMove ?? 0;
+}
+function _gBattlersCount30(): number {
+  return (globalThis as { __battleState?: { gBattlersCount?: number } }).__battleState?.gBattlersCount ?? 2;
+}
+function _gStatuses30(): number[] {
+  return (globalThis as { __battleState?: { gStatuses3?: number[] } }).__battleState?.gStatuses3 ?? [0, 0, 0, 0];
+}
+function _gLastMoves30(): number[] {
+  return (globalThis as { __battleState?: { gLastMoves?: number[] } }).__battleState?.gLastMoves ?? [0, 0, 0, 0];
+}
+function _gLastLandedMoves30(): number[] {
+  return (globalThis as { __battleState?: { gLastLandedMoves?: number[] } }).__battleState?.gLastLandedMoves ?? [0, 0, 0, 0];
+}
+function _gLastHitByType30(): number[] {
+  return (globalThis as { __battleState?: { gLastHitByType?: number[] } }).__battleState?.gLastHitByType ?? [0, 0, 0, 0];
+}
+function _gLastResultingMoves30(): number[] {
+  return (globalThis as { __battleState?: { gLastResultingMoves?: number[] } }).__battleState?.gLastResultingMoves ?? [0, 0, 0, 0];
+}
+function _gLastPrintedMoves30(): number[] {
+  return (globalThis as { __battleState?: { gLastPrintedMoves?: number[] } }).__battleState?.gLastPrintedMoves ?? [0, 0, 0, 0];
+}
+function _gLastHitBy30(): number[] {
+  return (globalThis as { __battleState?: { gLastHitBy?: number[] } }).__battleState?.gLastHitBy ?? [0, 0, 0, 0];
+}
+function _setMoveResultFlags30(): (v: number) => void {
+  return (globalThis as { __battleStateMutators?: { setMoveResultFlags?: (v: number) => void } })
+    .__battleStateMutators?.setMoveResultFlags ?? (() => { /* noop */ });
+}
+function _setCurrentMove30(): (v: number) => void {
+  return (globalThis as { __battleStateMutators?: { setCurrentMove?: (v: number) => void } })
+    .__battleStateMutators?.setCurrentMove ?? (() => { /* noop */ });
 }
 
 // ─── 0x4D switchindataupdate ──────────────────────────────────────────────

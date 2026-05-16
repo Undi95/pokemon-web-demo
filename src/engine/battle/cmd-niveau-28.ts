@@ -48,6 +48,7 @@ import {
 } from './battle-controllers';
 import { getBattlerForBattleScript } from './util';
 import { getBattleScriptOffset } from './script-interpreter';
+import { gBattleTextBuff1 as _gBattleTextBuff1_N28 } from './text-buffers';
 import {
   AbilityBattleEffects, ABILITYEFFECT_ON_SWITCHIN, consumeAbilityWantedScript,
 } from './ability-battle-effects';
@@ -227,7 +228,15 @@ function Cmd_rapidspinfree(ctx: BattleScriptContext): boolean {
     gBattleScripting.battler = gBattlerTarget;
     gBattleMons[gBattlerAttacker].status2 &= ~STATUS2_WRAPPED;
     setBattlerTarget(gBattleStruct.wrappedBy[gBattlerAttacker]);
-    // PREPARE_BUFF text placeholder : TODO porter.
+    // 1:1 décomp battle_script_commands.c:8832-8836 : build gBattleTextBuff1
+    // = MOVE buffer du wrappedMove (= move qui a causé Wrap/Bind/Fire Spin/etc.).
+    // wrappedMove est stocké u8[MAX_BATTLERS_COUNT * 2] = u16 per battler.
+    const slot = gBattlerAttacker * 2;
+    _gBattleTextBuff1_N28[0] = 0xFD; // B_BUFF_PLACEHOLDER_BEGIN
+    _gBattleTextBuff1_N28[1] = 2;    // B_BUFF_MOVE
+    _gBattleTextBuff1_N28[2] = gBattleStruct.wrappedMove[slot] ?? 0;
+    _gBattleTextBuff1_N28[3] = gBattleStruct.wrappedMove[slot + 1] ?? 0;
+    _gBattleTextBuff1_N28[4] = 0xFF; // B_BUFF_EOS
     // 1:1 décomp : BattleScriptPushCursor + jump BattleScript_WrapFree.
     ctx.scriptPtrStack.push(ctx.scriptPtr);
     const off = getBattleScriptOffset('BattleScript_WrapFree');

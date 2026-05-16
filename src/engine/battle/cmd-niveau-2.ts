@@ -5,14 +5,14 @@
  * Source de vérité : `D:/Projet 1/decomps/pokeemeraude/src/battle_script_commands.c`
  *
  * Opcodes inclus :
- *   0x16 Cmd_seteffectprimary             stub (= SetMoveEffect énorme TODO)
- *   0x17 Cmd_seteffectsecondary           stub
- *   0x18 Cmd_clearstatusfromeffect        full
- *   0x47 Cmd_setgraphicalstatchangevalues full
- *   0x48 Cmd_playstatchangeanimation      stub UI (= consume args, no anim)
- *   0x89 Cmd_statbuffchange               full (= wraps ChangeStatBuffs)
- *   0x8A Cmd_normalisebuffs               full (= Haze, reset all stat stages)
- *   0x98 Cmd_updatestatusicon             stub UI
+ *   0x16 Cmd_seteffectprimary             FULL (wired SetMoveEffect via batch 136)
+ *   0x17 Cmd_seteffectsecondary           FULL (wired SetMoveEffect via batch 136)
+ *   0x18 Cmd_clearstatusfromeffect        FULL
+ *   0x47 Cmd_setgraphicalstatchangevalues FULL
+ *   0x48 Cmd_playstatchangeanimation      anim emit (= UI Phase 1.4)
+ *   0x89 Cmd_statbuffchange               FULL (= wraps ChangeStatBuffs)
+ *   0x8A Cmd_normalisebuffs               FULL (= Haze, reset all stat stages)
+ *   0x98 Cmd_updatestatusicon             status icon emit (= UI Phase 1.4)
  */
 
 import {
@@ -390,7 +390,5 @@ export function installNiveau2Handlers(commandsTable: BattleOpcodeHandler[]): vo
   commandsTable[0x89] = Cmd_statbuffchange;
   commandsTable[0x8A] = Cmd_normalisebuffs;
   commandsTable[0x98] = Cmd_updatestatusicon;
-  // TODO Niveau 2 restants :
-  //   - SetMoveEffect helper (~500 lignes) pour seteffectprimary/secondary devenir réels
   console.log('[battle/cmd-niveau-2] installed 8/8 Niveau 2 handlers (stat stages + status)');
 }
