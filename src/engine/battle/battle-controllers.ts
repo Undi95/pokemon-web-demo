@@ -28,8 +28,94 @@
  * Cf. session 134 dans `D:/Projet 1/pokemon-web-demo/memory/`.
  */
 
-import { MAX_BATTLERS_COUNT, gBattleScripting, setBattleControllerExecFlags, gBattleControllerExecFlags, setActiveBattler } from './state';
+import {
+  MAX_BATTLERS_COUNT,
+  gBattleScripting,
+  setBattleControllerExecFlags,
+  gBattleControllerExecFlags,
+  setActiveBattler,
+  gActiveBattler,
+  gCurrentMove,
+  gChosenMove,
+  gBattleOutcome,
+  gBattleStruct,
+  gBattleWeather,
+  gBattleMons,
+  gPotentialItemEffectBattler,
+  gLastUsedItem,
+  gLastUsedAbility,
+  type DisableStruct,
+} from './state';
+import { gBattleTextBuff1, gBattleTextBuff2, gBattleTextBuff3 } from './text-buffers';
+import {
+  CONTROLLER_PRINTSTRING,
+  CONTROLLER_PRINTSTRINGPLAYERONLY,
+  CONTROLLER_MOVEANIMATION,
+  CONTROLLER_HEALTHBARUPDATE,
+  CONTROLLER_HITANIMATION,
+  CONTROLLER_FAINTANIMATION,
+  CONTROLLER_STATUSICONUPDATE,
+  CONTROLLER_STATUSANIMATION,
+  CONTROLLER_BATTLEANIMATION,
+  CONTROLLER_PLAYSE,
+  CONTROLLER_PLAYFANFAREORBGM,
+  CONTROLLER_FAINTINGCRY,
+  CONTROLLER_RETURNMONTOBALL,
+  CONTROLLER_SPRITEINVISIBILITY,
+  CONTROLLER_SWITCHINANIM,
+  CONTROLLER_DRAWPARTYSTATUSSUMMARY,
+  CONTROLLER_HIDEPARTYSTATUSSUMMARY,
+  CONTROLLER_TRAINERSLIDE,
+  CONTROLLER_TRAINERSLIDEBACK,
+  CONTROLLER_BALLTHROWANIM,
+  CONTROLLER_EXPUPDATE,
+  CONTROLLER_CHOOSEPOKEMON,
+  CONTROLLER_LINKSTANDBYMSG,
+  CONTROLLER_CANTSWITCH,
+  CONTROLLER_UNKNOWNYESNOBOX,
+  CONTROLLER_RESETACTIONMOVESELECTION,
+  CONTROLLER_ENDLINKBATTLE,
+  enqueueBattleEvent,
+  buildBattleMsgDataSnapshot,
+  type BattleMsgData,
+} from './battle-event-queue';
+import { resolveDecompConstant } from '../decomp-constants';
 import type { BattleScriptContext } from './script-interpreter';
+
+// ─── Helper : snapshot BattleMsgData for PrintString events ─────────────────
+
+/** Build BattleMsgData snapshot 1:1 décomp battle_controllers.c:1147-1166.
+ *  Capture gBattleTextBuff1/2/3 + abilities + state vars current. */
+function _snapshotMsgData(): BattleMsgData {
+  // Resolve gCurrentMove.type via gBattleMoves[gCurrentMove].type.
+  let moveType = 0;
+  try {
+    const moves = (globalThis as { __battle_moves?: Array<{ type: number }> }).__battle_moves;
+    if (moves && moves[gCurrentMove]) moveType = moves[gCurrentMove].type;
+  } catch { /* fallthrough */ }
+  return buildBattleMsgDataSnapshot({
+    gCurrentMove,
+    gChosenMove,
+    gLastUsedItem,
+    gLastUsedAbility,
+    gBattleScripting: { battler: gBattleScripting.battler },
+    gBattleStruct: {
+      scriptPartyIdx: gBattleStruct.scriptPartyIdx ?? 0,
+      hpScale: gBattleStruct.hpScale ?? 0,
+    },
+    gPotentialItemEffectBattler,
+    gBattleMoveType: moveType,
+    gBattleMons,
+    gBattleTextBuff1,
+    gBattleTextBuff2,
+    gBattleTextBuff3,
+    maxBattlersCount: MAX_BATTLERS_COUNT,
+  });
+}
+
+// Suppress unused-import warning si certains symboles ne sont pas utilisés
+// (= placeholder for future Phase 1.4 events).
+void resolveDecompConstant;
 
 // ─── gBitTable[] (util.c:7) — 1:1 décomp ─────────────────────────────────────
 // `const u32 gBitTable[] = { 1<<0, 1<<1, ..., 1<<31 }`. Indexé par battler id.
@@ -80,65 +166,102 @@ export function tickBattleControllers(): void {
 
 // ─── BtlController_Emit* stubs ──────────────────────────────────────────────
 
-/** 1:1 signature décomp `BtlController_EmitMoveAnimation` (battle_controllers.c).
- *  Phase 1 stub : no-op (anim n'est pas rendue, mais Mark+execflags fait le sync). */
+/** 1:1 signature décomp `BtlController_EmitMoveAnimation` (battle_controllers.c:1107-1135).
+ *  Enqueue MoveAnimation event ; battle-flow consume + joue move anim sprite. */
 export function BtlController_EmitMoveAnimation(
   _bufferId: number,
-  _move: number,
-  _turnOfMove: number,
-  _movePower: number,
-  _dmg: number,
-  _friendship: number,
-  _disableStructPtr: unknown,
-  _multihit: number,
+  move: number,
+  turnOfMove: number,
+  movePower: number,
+  dmg: number,
+  friendship: number,
+  disableStructPtr: DisableStruct,
+  multihit: number,
 ): void {
-  // Phase 1.4 UI : émettre command anim au framework.
+  enqueueBattleEvent({
+    type: CONTROLLER_MOVEANIMATION,
+    battler: gActiveBattler,
+    move, turnOfMove, movePower, dmg, friendship, multihit,
+    weather: gBattleWeather,
+    disableStruct: { ...disableStructPtr },
+  });
 }
 
-/** 1:1 signature décomp `BtlController_EmitPrintString` (battle_controllers.c).
- *  Source utilisé par `PrepareStringBattle`. Phase 1 stub : no-op. */
-export function BtlController_EmitPrintString(_bufferId: number, _stringId: number): void {
-  // Phase 1.4 UI : émettre command print au framework.
+/** 1:1 signature décomp `BtlController_EmitPrintString` (battle_controllers.c:1137-1167).
+ *  Source utilisé par `PrepareStringBattle`. Enqueue PrintString event avec
+ *  snapshot complet du BattleMsgData (= 1:1 décomp build). */
+export function BtlController_EmitPrintString(_bufferId: number, stringId: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_PRINTSTRING,
+    battler: gActiveBattler,
+    outcome: gBattleOutcome,
+    stringId,
+    msgData: _snapshotMsgData(),
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitPlaySE(bufferId, songId)`
- *  (battle_controllers.c). Émet command PlaySE via le controller du battler.
- *  Distinct de PlaySE direct (= audio engine path). Phase 1 stub : no-op. */
-export function BtlController_EmitPlaySE(_bufferId: number, _songId: number): void {
-  // Phase 1.4 UI : émettre PlaySE via controller queue au framework UI.
+ *  (battle_controllers.c). Enqueue PlaySE event ; battle-flow consume +
+ *  appelle audio engine. */
+export function BtlController_EmitPlaySE(_bufferId: number, songId: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_PLAYSE,
+    battler: gActiveBattler,
+    songId,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitPlayFanfareOrBGM(buf, songId, isBGM)`
- *  (battle_controllers.c). Phase 1 stub : no-op. */
-export function BtlController_EmitPlayFanfareOrBGM(_bufferId: number, _songId: number, _isBGM: boolean): void {
-  // Phase 1.4 UI : émettre fanfare/BGM via controller queue.
+ *  (battle_controllers.c). */
+export function BtlController_EmitPlayFanfareOrBGM(_bufferId: number, songId: number, isBGM: boolean): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_PLAYFANFAREORBGM,
+    battler: gActiveBattler,
+    songId,
+    isBGM,
+  });
 }
 
-/** 1:1 signature décomp `BtlController_EmitFaintingCry(buf)`. Phase 1 stub : no-op. */
+/** 1:1 signature décomp `BtlController_EmitFaintingCry(buf)`. */
 export function BtlController_EmitFaintingCry(_bufferId: number): void {
-  // Phase 1.4 UI : émettre cry du Pokémon évanoui.
+  enqueueBattleEvent({
+    type: CONTROLLER_FAINTINGCRY,
+    battler: gActiveBattler,
+  });
 }
 
-/** 1:1 signature décomp `BtlController_EmitHitAnimation(buf)`. Phase 1 stub : no-op. */
+/** 1:1 signature décomp `BtlController_EmitHitAnimation(buf)`. */
 export function BtlController_EmitHitAnimation(_bufferId: number): void {
-  // Phase 1.4 UI : émettre hit anim (sprite flash + nudge).
+  enqueueBattleEvent({
+    type: CONTROLLER_HITANIMATION,
+    battler: gActiveBattler,
+  });
 }
 
-/** 1:1 signature décomp `BtlController_EmitFaintAnimation(buf)`. Phase 1 stub : no-op. */
+/** 1:1 signature décomp `BtlController_EmitFaintAnimation(buf)`. */
 export function BtlController_EmitFaintAnimation(_bufferId: number): void {
-  // Phase 1.4 UI : émettre faint anim (sprite fade).
+  enqueueBattleEvent({
+    type: CONTROLLER_FAINTANIMATION,
+    battler: gActiveBattler,
+  });
 }
 
-/** 1:1 signature décomp `BtlController_EmitReturnMonToBall(buf, doFadeOut)`.
- *  Phase 1 stub : no-op. */
-export function BtlController_EmitReturnMonToBall(_bufferId: number, _doFadeOut: boolean): void {
-  // Phase 1.4 UI : émettre recall anim + Pokéball.
+/** 1:1 signature décomp `BtlController_EmitReturnMonToBall(buf, doFadeOut)`. */
+export function BtlController_EmitReturnMonToBall(_bufferId: number, doFadeOut: boolean): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_RETURNMONTOBALL,
+    battler: gActiveBattler,
+    doFadeOut,
+  });
 }
 
-/** 1:1 signature décomp `BtlController_EmitSpriteInvisibility(buf, isInvisible)`.
- *  Phase 1 stub : no-op. */
-export function BtlController_EmitSpriteInvisibility(_bufferId: number, _isInvisible: boolean): void {
-  // Phase 1.4 UI : toggle sprite visibility.
+/** 1:1 signature décomp `BtlController_EmitSpriteInvisibility(buf, isInvisible)`. */
+export function BtlController_EmitSpriteInvisibility(_bufferId: number, isInvisible: boolean): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_SPRITEINVISIBILITY,
+    battler: gActiveBattler,
+    isInvisible,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitSetMonData(buf, requestId, monIdx,
@@ -164,112 +287,181 @@ export function BtlController_EmitSetMonData(
   if (ps) ps(requestId, data);
 }
 
-/** 1:1 signature décomp `BtlController_EmitPrintSelectionString(buf, stringId)`.
- *  Phase 1 stub : no-op (= selection screen text). */
-export function BtlController_EmitPrintSelectionString(_bufferId: number, _stringId: number): void {
-  // Phase 1.4 UI : print selection string au framework UI.
+/** 1:1 signature décomp `BtlController_EmitPrintSelectionString(buf, stringId)`
+ *  (battle_controllers.c:1169-1199). Enqueue PrintStringPlayerOnly event. */
+export function BtlController_EmitPrintSelectionString(_bufferId: number, stringId: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_PRINTSTRINGPLAYERONLY,
+    battler: gActiveBattler,
+    stringId,
+    msgData: _snapshotMsgData(),
+  });
 }
 
-/** 1:1 signature décomp `BtlController_EmitEndLinkBattle(buf, outcome)`.
- *  Phase 1 stub : no-op. */
-export function BtlController_EmitEndLinkBattle(_bufferId: number, _outcome: number): void {
-  // Phase 1.4 UI : émettre end-link au framework (= return to overworld).
+/** 1:1 signature décomp `BtlController_EmitEndLinkBattle(buf, outcome)`. */
+export function BtlController_EmitEndLinkBattle(_bufferId: number, outcome: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_ENDLINKBATTLE,
+    battler: gActiveBattler,
+    outcome,
+  });
 }
 
-/** 1:1 signature décomp `BtlController_EmitBattleAnimation(buf, anim, arg)`.
- *  Animation séparée de move animation. Phase 1 stub : no-op. */
-export function BtlController_EmitBattleAnimation(_bufferId: number, _animationId: number, _argument: number): void {
-  // Phase 1.4 UI : émettre battle anim (stat change, snatch, substitute fade, etc.).
+/** 1:1 signature décomp `BtlController_EmitBattleAnimation(buf, anim, arg)`. */
+export function BtlController_EmitBattleAnimation(_bufferId: number, animationId: number, argument: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_BATTLEANIMATION,
+    battler: gActiveBattler,
+    animationId,
+    argument,
+  });
 }
 
-/** 1:1 signature décomp `BtlController_EmitStatusIconUpdate(buf, status1, status2)`.
- *  Phase 1 stub : no-op. */
-export function BtlController_EmitStatusIconUpdate(_bufferId: number, _status1: number, _status2: number): void {
-  // Phase 1.4 UI : update sprite status icon (poison/burn/sleep overlay).
+/** 1:1 signature décomp `BtlController_EmitStatusIconUpdate(buf, status1, status2)`. */
+export function BtlController_EmitStatusIconUpdate(_bufferId: number, status1: number, status2: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_STATUSICONUPDATE,
+    battler: gActiveBattler,
+    status1, status2,
+  });
 }
 
-/** 1:1 signature décomp `BtlController_EmitHealthBarUpdate(buf, healthValue)`.
- *  Phase 1 stub : no-op. */
-export function BtlController_EmitHealthBarUpdate(_bufferId: number, _healthValue: number): void {
-  // Phase 1.4 UI : update HP bar animation.
+/** 1:1 signature décomp `BtlController_EmitHealthBarUpdate(buf, healthValue)`. */
+export function BtlController_EmitHealthBarUpdate(_bufferId: number, healthValue: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_HEALTHBARUPDATE,
+    battler: gActiveBattler,
+    healthValue,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitStatusAnimation(buf, status2anim, status)`.
  *  status2anim = TRUE pour STATUS2_*, FALSE pour STATUS1_*. */
-export function BtlController_EmitStatusAnimation(_bufferId: number, _isStatus2: boolean, _status: number): void {
-  // Phase 1.4 UI : status anim (sprite shake + tint + status sound).
+export function BtlController_EmitStatusAnimation(_bufferId: number, isStatus2: boolean, status: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_STATUSANIMATION,
+    battler: gActiveBattler,
+    isStatus2, status,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitDrawPartyStatusSummary(buf, hpStatuses, isBattleStart)`. */
-export function BtlController_EmitDrawPartyStatusSummary(_bufferId: number, _hpStatuses: unknown, _arg2: number): void {
-  // Phase 1.4 UI : render mini-icons row showing party HP/status (= top of screen).
+export function BtlController_EmitDrawPartyStatusSummary(_bufferId: number, hpStatuses: unknown, arg2: number): void {
+  // hpStatuses 1:1 décomp = struct HpAndStatus per mon (= [species, hp, status1] tuples).
+  // Notre port : accepte n'importe quelle structure, le UI consumer fera le decode.
+  enqueueBattleEvent({
+    type: CONTROLLER_DRAWPARTYSTATUSSUMMARY,
+    battler: gActiveBattler,
+    hpStatuses: Array.isArray(hpStatuses) ? (hpStatuses as number[]) : [],
+    arg2,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitHidePartyStatusSummary(buf)`. */
 export function BtlController_EmitHidePartyStatusSummary(_bufferId: number): void {
-  // Phase 1.4 UI : hide party status row.
+  enqueueBattleEvent({
+    type: CONTROLLER_HIDEPARTYSTATUSSUMMARY,
+    battler: gActiveBattler,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitTrainerSlideBack(buf)`. */
 export function BtlController_EmitTrainerSlideBack(_bufferId: number): void {
-  // Phase 1.4 UI : trainer sprite slide-out anim.
+  enqueueBattleEvent({
+    type: CONTROLLER_TRAINERSLIDEBACK,
+    battler: gActiveBattler,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitTrainerSlide(buf)` (= slide in). */
 export function BtlController_EmitTrainerSlide(_bufferId: number): void {
-  // Phase 1.4 UI : trainer sprite slide-in anim.
+  enqueueBattleEvent({
+    type: CONTROLLER_TRAINERSLIDE,
+    battler: gActiveBattler,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitBallThrowAnim(buf, caseId)`
  *  (battle_controllers.c:1089-1094). caseId :
  *  0 = BALL_NO_SHAKES, 1..3 = BALL_*_SHAKES_FAIL, 4 = BALL_3_SHAKES_SUCCESS,
- *  5 = BALL_TRAINER_BLOCK, 6 = BALL_WALLY_SUCCESS_HACK. Phase 1.4 UI = anim. */
-export function BtlController_EmitBallThrowAnim(_bufferId: number, _caseId: number): void {
-  // Phase 1.4 UI : ball throw anim sprite.
+ *  5 = BALL_TRAINER_BLOCK, 6 = BALL_WALLY_SUCCESS_HACK. */
+export function BtlController_EmitBallThrowAnim(_bufferId: number, caseId: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_BALLTHROWANIM,
+    battler: gActiveBattler,
+    caseId,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitExpUpdate(buf, partyId, expPoints)`
- *  (battle_controllers.c:1275-1281). Émet l'XP gain anim sur le party icon. */
-export function BtlController_EmitExpUpdate(_bufferId: number, _partyId: number, _expPoints: number): void {
-  // Phase 1.4 UI : XP bar fill anim.
+ *  (battle_controllers.c:1275-1281). */
+export function BtlController_EmitExpUpdate(_bufferId: number, partyId: number, expPoints: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_EXPUPDATE,
+    battler: gActiveBattler,
+    partyId, expPoints,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitChoosePokemon(buf, caseId,
  *  monToSwitchIntoId_partner, ability, partyOrder)`. */
 export function BtlController_EmitChoosePokemon(
-  _bufferId: number, _caseId: number, _monToSwitchIntoId: number, _ability: number, _partyOrder: number,
+  _bufferId: number, caseId: number, monToSwitchIntoId: number, ability: number, partyOrder: number,
 ): void {
-  // Phase 1.4 UI : open party menu UI.
+  enqueueBattleEvent({
+    type: CONTROLLER_CHOOSEPOKEMON,
+    battler: gActiveBattler,
+    caseId, monToSwitchIntoId, ability, partyOrder,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitLinkStandbyMsg(buf, mode, frame)`. */
-export function BtlController_EmitLinkStandbyMsg(_bufferId: number, _mode: number, _frame: boolean): void {
-  // Phase 1.4 UI : link standby message (= multi link battle).
+export function BtlController_EmitLinkStandbyMsg(_bufferId: number, mode: number, frame: boolean): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_LINKSTANDBYMSG,
+    battler: gActiveBattler,
+    mode, frame,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitCantSwitch(buf)`. */
 export function BtlController_EmitCantSwitch(_bufferId: number): void {
-  // Phase 1.4 UI : show "Can't switch out" message.
+  enqueueBattleEvent({
+    type: CONTROLLER_CANTSWITCH,
+    battler: gActiveBattler,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitYesNoBox(buf)`. */
 export function BtlController_EmitYesNoBox(_bufferId: number): void {
-  // Phase 1.4 UI : show YES/NO box UI.
+  enqueueBattleEvent({
+    type: CONTROLLER_UNKNOWNYESNOBOX,
+    battler: gActiveBattler,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitSwitchInAnim(buf, partyId, dontClear)`. */
-export function BtlController_EmitSwitchInAnim(_bufferId: number, _partyId: number, _dontClear: number): void {
-  // Phase 1.4 UI : sprite slide-in animation for swap.
+export function BtlController_EmitSwitchInAnim(_bufferId: number, partyId: number, dontClear: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_SWITCHINANIM,
+    battler: gActiveBattler,
+    partyId, dontClear,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitGetMonData(buf, requestId, monBitFlags)`. */
 export function BtlController_EmitGetMonData(_bufferId: number, _requestId: number, _monBitFlags: number): void {
-  // Phase 1.4 UI : read mon data via controller. Notre port lit directement gBattleMons.
+  // Phase 1.4 UI : read mon data via controller. Notre port lit directement
+  // gBattleMons donc cet émitter est no-op (= équivalent côté queue : pas d'event UI).
 }
 
 /** 1:1 signature décomp `BtlController_EmitResetActionMoveSelection(buf, caseId)`. */
-export function BtlController_EmitResetActionMoveSelection(_bufferId: number, _caseId: number): void {
-  // Phase 1.4 UI : reset action/move selection cursor (= Transform-style).
+export function BtlController_EmitResetActionMoveSelection(_bufferId: number, caseId: number): void {
+  enqueueBattleEvent({
+    type: CONTROLLER_RESETACTIONMOVESELECTION,
+    battler: gActiveBattler,
+    caseId,
+  });
 }
 
 /** 1:1 signature décomp `BtlController_EmitYesNoBox` n'existe pas — yesnobox

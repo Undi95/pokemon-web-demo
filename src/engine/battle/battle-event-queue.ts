@@ -138,6 +138,8 @@ export interface BattleEvent_PrintStringPlayerOnly {
   battler: number;
   stringId: number;
   msgData: BattleMsgData;
+  /** Set par EmitPrintSelectionString (= prompt sélection action/move). */
+  isSelection?: boolean;
 }
 
 export interface BattleEvent_MoveAnimation {
@@ -294,14 +296,6 @@ export interface BattleEvent_ResetActionMoveSelection {
   caseId: number;
 }
 
-export interface BattleEvent_PrintSelectionString {
-  type: typeof CONTROLLER_PRINTSTRINGPLAYERONLY;
-  battler: number;
-  stringId: number;
-  msgData: BattleMsgData;
-  isSelection: true;
-}
-
 export interface BattleEvent_EndLinkBattle {
   type: typeof CONTROLLER_ENDLINKBATTLE;
   battler: number;
@@ -334,7 +328,7 @@ export type BattleEvent =
   | BattleEvent_CantSwitch
   | BattleEvent_YesNoBox
   | BattleEvent_ResetActionMoveSelection
-  | BattleEvent_PrintSelectionString
+  | BattleEvent_PrintStringPlayerOnly
   | BattleEvent_EndLinkBattle;
 
 // ─── Queue impl ─────────────────────────────────────────────────────────────
