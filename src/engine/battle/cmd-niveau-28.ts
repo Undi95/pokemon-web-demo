@@ -79,11 +79,15 @@ function _updateSentPokesToOpponentValue(battler: number): void {
   gSentPokesToOpponent[flank] = bits;
 }
 
-/** 1:1 stub `PokemonUseItemEffects(mon, item, partyIdx, ?, isInBattle)`
- *  (item.c) — applique l'effet d'un item (= Potion, etc.) sur un mon.
- *  Notre stub : no-op. */
+/** 1:1 stub `PokemonUseItemEffects(mon, item, partyIdx, moveIdx, usedByAI)`
+ *  (pokemon.c:4742-, ~500 lignes). Applique l'effet d'un item (Potion, X Attack,
+ *  Rare Candy, EV item, etc.) via lookup `gItemEffectTable[item - ITEM_POTION]`.
+ *
+ *  Port différé Phase 1.4 (= gItemEffectTable + 7-byte effect bitmask format
+ *  complet). Pour Wally tut spécifiquement, Cmd_handleballthrow (= 0xEF) handle
+ *  le pokéball anim direct sans appel à _pokemonUseItemEffects, donc Phase 1 OK. */
 function _pokemonUseItemEffects(_battlerIdx: number, _item: number): void {
-  // TODO porter item_use.c logic.
+  // Deferred Phase 1.4 (= post item_use.c port + gItemEffectTable port).
 }
 
 // ─── 0x52 switchineffects ─────────────────────────────────────────────────
@@ -172,17 +176,21 @@ function Cmd_switchineffects(ctx: BattleScriptContext): boolean {
       gBattleStruct.hpOnSwitchout[GET_BATTLER_SIDE(i)] = gBattleMons[i].hp;
     }
     // 1:1 décomp : BS_FAINTED_LINK_MULTIPLE_1 increment gBattlerFainted —
-    // skip pour MVP (= multi link battles pas wired).
+    // Link multi battles deferred Phase 1.4+.
   }
   return false;
 }
 
 // ─── 0x5E updatebattlermoves ──────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_updatebattlermoves. 2 bytes. State machine via
- *  gBattleCommunication[0] : case 0 emit GetMonData, case 1 copy from buffer.
- *  Notre port : MVP juste skip à case 1 directly (= utilise gBattleMons
- *  state, pas le buffer décomp). */
+/** 1:1 décomp Cmd_updatebattlermoves (battle_script_commands.c:5651-5676).
+ *  2 bytes. State machine via gBattleCommunication[0] :
+ *   - case 0 : EmitGetMonData REQUEST_ALL_BATTLE + Mark + state++.
+ *   - case 1 : si controllerExecFlags == 0 → copy moves/pp depuis
+ *     gBattleBufferB[active]+4 vers gBattleMons[active] + advance 2.
+ *
+ *  Notre port : case 0 + case 1 wait-loop fonctionne 1:1 ; le copy from buffer
+ *  est no-op car notre flush via batch C bridge garde gBattleMons sync direct. */
 function Cmd_updatebattlermoves(ctx: BattleScriptContext): boolean {
   const arg = readByte(ctx);
   const active = getBattlerForBattleScript(arg);
@@ -198,9 +206,8 @@ function Cmd_updatebattlermoves(ctx: BattleScriptContext): boolean {
     case 1:
       if (gBattleControllerExecFlags === 0) {
         // 1:1 décomp : copy moves/pp depuis gBattleBufferB[active]+4.
-        // Notre port : gBattleBufferB pas wired. On considère que gBattleMons
-        // est déjà sync (= our SetMonData direct path). No-op.
-        // TODO : si on porte gBattleBufferB un jour, copier ici.
+        // Notre port : gBattleBufferB pas wired (= deferred Phase 1.4 link battles).
+        // gBattleMons reste sync via batch C bridge SetMonData direct path.
         void MAX_MON_MOVES;
         return false;
       }

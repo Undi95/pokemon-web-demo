@@ -92,7 +92,8 @@ function _consumeAddrAndU8(ctx: BattleScriptContext): { addr: number; value: num
 // ─── 0x29 jumpifbyte (1:1 décomp battle_script_commands.c:3660-3696) ─────
 
 /** 11 bytes (u8 caseId + u32 ptr + u8 value + u32 jumpPtr).
- *  Avant : STUB dans script-interpreter.ts (= no compare, no jump). Fix port. */
+ *  1:1 décomp battle_script_commands.c. Read mem via memory-map.resolveAddress +
+ *  compare via _compareJump (CMP_*). */
 function Cmd_jumpifbyte(ctx: BattleScriptContext): boolean {
   const caseID = readByte(ctx);
   const addr = readWord(ctx);
@@ -114,7 +115,7 @@ function Cmd_jumpifhalfword(ctx: BattleScriptContext): boolean {
   const value = readHalfword(ctx);
   const jumpPtr = readWord(ctx);
   const acc = resolveAddress(addr);
-  if (!acc) return false;  // STUB : unresolved address (= no jump).
+  if (!acc) return false;  // Fallback : unresolved symbol → no jump (= safe).
   const memVal = acc.read() & 0xFFFF;
   if (_compareJump(caseID, memVal, value)) ctx.scriptPtr = jumpPtr;
   return false;
@@ -145,7 +146,7 @@ function Cmd_jumpifarrayequal(ctx: BattleScriptContext): boolean {
   const jumpPtr = readWord(ctx);
   const acc1 = resolveAddress(addr1);
   const acc2 = resolveAddress(addr2);
-  if (!acc1 || !acc2) return false;  // STUB : si une address inconnue.
+  if (!acc1 || !acc2) return false;  // Fallback : unresolved symbol → no jump.
   // 1:1 décomp : memcmp byte-par-byte ; pour single-cell access, compare values.
   if (acc1.read() === acc2.read()) ctx.scriptPtr = jumpPtr;
   return false;
@@ -168,10 +169,9 @@ function Cmd_jumpifarraynotequal(ctx: BattleScriptContext): boolean {
 // ─── 0x2E setbyte ─────────────────────────────────────────────────────────
 
 /** 6 bytes (u32 addr + u8 value). 1:1 décomp Cmd_setbyte (battle_script_commands.c).
- *  Avant : STUB dans script-interpreter.ts qui consume args sans write. Maintenant
- *  utilise memory-map.resolveAddress + write. AUDIT BUG critique : sans ça,
- *  setbyte gBattlerTarget=0 etc. ne marchait pas → infinite loops dans
- *  IntimidateActivates et autres. */
+ *  Resolve via memory-map.resolveAddress + acc.write(value). Audit fix session 141 :
+ *  ESM live-binding bug fixed (= writes propagent à __battleStateMutators
+ *  global setters au lieu de variable locale ESM stale). */
 function Cmd_setbyte(ctx: BattleScriptContext): boolean {
   const addr = readWord(ctx);
   const value = readByte(ctx);
@@ -289,12 +289,12 @@ function Cmd_healthbar_update(ctx: BattleScriptContext): boolean {
 // ─── Install handlers ──────────────────────────────────────────────────────
 
 export function installNiveau33Handlers(commands: BattleOpcodeHandler[]): void {
-  commands[0x29] = Cmd_jumpifbyte;  // AUDIT BUG fix : STUB.
+  commands[0x29] = Cmd_jumpifbyte;
   commands[0x2A] = Cmd_jumpifhalfword;
   commands[0x2B] = Cmd_jumpifword;
   commands[0x2C] = Cmd_jumpifarrayequal;
   commands[0x2D] = Cmd_jumpifarraynotequal;
-  commands[0x2E] = Cmd_setbyte;  // AUDIT BUG fix : STUB.
+  commands[0x2E] = Cmd_setbyte;
   commands[0x2F] = Cmd_addbyte;
   commands[0x30] = Cmd_subbyte;
   commands[0x31] = Cmd_copyarray;
