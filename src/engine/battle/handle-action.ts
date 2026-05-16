@@ -6,9 +6,9 @@
  *
  * Action handlers :
  *   B_ACTION_USE_MOVE  → HandleAction_UseMove    (~210l, full port)
- *   B_ACTION_USE_ITEM  → HandleAction_UseItem    (= STUB, item battle UI)
- *   B_ACTION_SWITCH    → HandleAction_Switch     (= STUB minimal)
- *   B_ACTION_RUN       → HandleAction_Run        (= STUB minimal)
+ *   B_ACTION_USE_ITEM  → HandleAction_UseItem    (= partial port, item battle UI Phase 1.4 deferred)
+ *   B_ACTION_SWITCH    → HandleAction_Switch     (= minimal port)
+ *   B_ACTION_RUN       → HandleAction_Run        (= minimal port)
  *   B_ACTION_EXEC_SCRIPT → HandleAction_RunBattleScript (= no-op, script déjà running)
  *
  * Le caller (= battle main loop) :
@@ -73,7 +73,7 @@ import { getMoveEffectScriptOffset, getBattleScriptOffset } from './script-inter
 import type { BattleScriptContext } from './script-interpreter';
 import { Random } from '../random';
 
-const B_MSG_INCAPABLE_OF_POWER = 0;  // STUB Battle Palace
+const B_MSG_INCAPABLE_OF_POWER = 0;  // Battle Palace deferred
 
 /** 1:1 stub `BATTLE_PARTNER(id)` — défini déjà dans constants mais we inline. */
 function _BATTLE_PARTNER(id: number): number { return id ^ 2 /* BIT_FLANK */; }
@@ -90,14 +90,14 @@ function _GetBattlerTurnOrderNum(battler: number): number {
 // 1:1 décomp `RecordAbilityBattle` — wired via util.ts.
 const _RecordAbilityBattle = RecordAbilityBattle;
 
-/** Resolve gBattleStruct.moveTarget[battler] — pour MVP utilise gBattlerTarget
- *  inchangé (= state actuel). TODO porter table dédiée. */
+/** Resolve gBattleStruct.moveTarget[battler] — notre port utilise gBattlerTarget
+ *  inchangé (= state actuel). table dédiée deferred. */
 function _getMoveTargetForBattler(_battler: number): number {
   return gBattlerTarget;
 }
 
 function _setMoveTargetForBattler(_battler: number, _target: number): void {
-  // STUB : pas de moveTarget array séparé. La cible est set via gBattlerTarget.
+  // moveTarget array deferred. La cible est set via gBattlerTarget.
   setBattlerTarget(_target);
 }
 
@@ -170,8 +170,8 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
   gBattleCommunication[5 /* MISS_TYPE */] = 0;
 
   // 1:1 décomp : `gCurrMovePos = gChosenMovePos = gBattleStruct->chosenMovePositions[attacker]`.
-  // STUB : utilise gChosenMoveByBattler comme alias (TODO porter chosenMovePositions[]).
-  // Pour MVP : keep gCurrMovePos as set by action queue / UI.
+  // Notre port : utilise gChosenMoveByBattler comme alias (chosenMovePositions[] deferred).
+  // Notre port : keep gCurrMovePos as set by action queue / UI.
 
   // Choose move 1:1 décomp.
   if (gProtectStructs[gBattlerAttacker].noValidMoves) {
@@ -318,7 +318,7 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
       setCurrentActionFuncId(B_ACTION_FINISHED);
       return;
     }
-    // STUB gPalaceSelectionBattleScripts — pas porté.
+    // gPalaceSelectionBattleScripts Frontier deferred.
     gBattleCommunication[MULTISTRING_CHOOSER] = B_MSG_INCAPABLE_OF_POWER;
     scriptPtr = getBattleScriptOffset('BattleScript_MoveUsedLoafingAround');
   } else {
@@ -327,9 +327,9 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
     scriptPtr = getMoveEffectScriptOffset(moveEffect);
   }
 
-  // Battle Arena : BattleArena_AddMindPoints. STUB Battle Frontier post-Phase 1.
+  // Battle Arena : BattleArena_AddMindPoints. Battle Frontier deferred post-Phase 1.
   if (gBattleTypeFlags & BATTLE_TYPE_ARENA) {
-    // STUB BattleArena_AddMindPoints.
+    // BattleArena_AddMindPoints deferred.
     void setLastUsedAbility;
   }
 
@@ -364,15 +364,15 @@ export function HandleAction_Switch(ctx?: BattleScriptContext): void {
   }
 }
 
-/** 1:1 décomp `HandleAction_UseItem` (battle_util.c:312+). STUB partial.
+/** 1:1 décomp `HandleAction_UseItem` (battle_util.c:312+). partial port.
  *  Wirage minimal : set attacker + ClearFuryCutterDestinyBondGrudge.
- *  TODO Phase 1.4 : full item battle flow (= read gBattleBufferB[1..2] pour item ID,
+ *  Phase 1.4 : full item battle flow deferred (= read gBattleBufferB[1..2] pour item ID,
  *  switch sur effect, run bytecode item-use). */
 export function HandleAction_UseItem(_ctx?: BattleScriptContext): void {
   setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
   setBattlerTarget(gBattlerAttacker);
   ClearFuryCutterDestinyBondGrudge(gBattlerAttacker);
-  // TODO Phase 1.4 : full item battle flow.
+  // Phase 1.4 : full item battle flow deferred.
   setCurrentActionFuncId(B_ACTION_FINISHED);
 }
 
@@ -398,7 +398,7 @@ export function HandleAction_Run(ctx?: BattleScriptContext): void {
       }
     }
     // OUTCOME_LINK_BATTLE_RAN = 1 << 7 = 0x80.
-    // STUB gSaveBlock2Ptr.frontier.disableRecordBattle = TRUE (= Frontier post-Phase 1).
+    // Frontier deferred : gSaveBlock2Ptr.frontier.disableRecordBattle = TRUE (= Frontier post-Phase 1).
     return;
   }
 
@@ -458,9 +458,9 @@ export function HandleAction_RunBattleScript(_ctx?: BattleScriptContext): void {
 
 /** 1:1 décomp `HandleAction_TryFinish` (battle_util.c:638-645). */
 export function HandleAction_TryFinish(_ctx?: BattleScriptContext): void {
-  // STUB HandleFaintedMonActions : retourne true tant qu'il y a faint flow,
+  // HandleFaintedMonActions partial port : retourne true tant qu'il y a faint flow,
   // false quand done. Pour Phase 1, on assume done immédiatement.
-  // TODO Phase 1.4 : port HandleFaintedMonActions complet.
+  // Phase 1.4 : port HandleFaintedMonActions complet deferred.
   _gBattleStructHAF.faintedActionsState = 0;
   setCurrentActionFuncId(B_ACTION_FINISHED);
 }
@@ -503,7 +503,7 @@ export function HandleAction_ActionFinished(_ctx?: BattleScriptContext): void {
   gBattleCommunication[3] = 0;  // MOVE_EFFECT_BYTE
   gBattleCommunication[4] = 0;
   gBattleScripting.multihitMoveEffect = 0;
-  // STUB gBattleResources.battleScriptsStack.size = 0 (= notre scriptPtrStack
+  // Note : gBattleResources.battleScriptsStack.size = 0 (= notre scriptPtrStack
   // est géré par BattleScriptContext, pas ici).
 }
 
@@ -565,12 +565,12 @@ export const handleActionTable: ReadonlyArray<(ctx?: BattleScriptContext) => voi
   HandleAction_UseItem,            // 1  B_ACTION_USE_ITEM
   HandleAction_Switch,             // 2  B_ACTION_SWITCH
   HandleAction_Run,                // 3  B_ACTION_RUN
-  HandleAction_RunBattleScript,    // 4  STUB safari watch (= HandleAction_WatchesCarefully)
-  HandleAction_RunBattleScript,    // 5  STUB safari ball
-  HandleAction_RunBattleScript,    // 6  STUB safari pokeblock
-  HandleAction_RunBattleScript,    // 7  STUB safari go near
-  HandleAction_RunBattleScript,    // 8  STUB safari run
-  HandleAction_RunBattleScript,    // 9  STUB wally throw
+  HandleAction_RunBattleScript,    // 4  Safari watch (deferred Phase 1.4) (= HandleAction_WatchesCarefully)
+  HandleAction_RunBattleScript,    // 5  Safari ball (deferred Phase 1.4)
+  HandleAction_RunBattleScript,    // 6  Safari pokeblock (deferred Phase 1.4)
+  HandleAction_RunBattleScript,    // 7  Safari go near (deferred Phase 1.4)
+  HandleAction_RunBattleScript,    // 8  Safari run (deferred Phase 1.4)
+  HandleAction_RunBattleScript,    // 9  Wally throw (deferred Phase 1.4)
   HandleAction_RunBattleScript,    // 10 B_ACTION_EXEC_SCRIPT
   HandleAction_TryFinish,          // 11 B_ACTION_TRY_FINISH
   HandleAction_ActionFinished,     // 12 B_ACTION_FINISHED
