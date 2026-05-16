@@ -644,36 +644,6 @@ export const gBideTarget: number[] = [0, 0, 0, 0];
  *  ou à la fin du combat. */
 export const gUsedHeldItems: number[] = [0, 0, 0, 0];
 
-/** 1:1 décomp `gBattleStruct->intimidateBattler` — set par AbilityBattleEffects
- *  pour signaler quel battler doit déclencher Intimidate.
- *  ALIAS legacy : préférer `gBattleStruct.intimidateBattler` (Phase 1.1 C). */
-export let gIntimidateBattler = 0;
-export function setIntimidateBattler(v: number) { gIntimidateBattler = v; gBattleStruct.intimidateBattler = v; }
-
-/** 1:1 décomp `gBattleStruct->formToChangeInto` — Castform/Cherrim.
- *  ALIAS legacy : préférer `gBattleStruct.formToChangeInto`. */
-export let gFormToChangeInto = 0;
-export function setFormToChangeInto(v: number) { gFormToChangeInto = v; gBattleStruct.formToChangeInto = v; }
-
-/** 1:1 décomp `gBattleStruct->synchronizeMoveEffect` — Synchronize ability
- *  reflect status1 (poison/burn/paralysis/toxic) back to attacker.
- *  ALIAS legacy : préférer `gBattleStruct.synchronizeMoveEffect`. */
-export let gSynchronizeMoveEffect = 0;
-export function setSynchronizeMoveEffect(v: number) { gSynchronizeMoveEffect = v; gBattleStruct.synchronizeMoveEffect = v; }
-
-/** 1:1 décomp `gBattleStruct->hpScale` — résultat de Cmd_hpthresholds /
- *  Cmd_hpthresholds2. Valeur 0..3 utilisée pour choisir un message de bataille
- *  selon les % HP restants du target adverse.
- *  ALIAS legacy : préférer `gBattleStruct.hpScale`. */
-export let gHpScale = 0;
-export function setHpScale(v: number) { gHpScale = v; gBattleStruct.hpScale = v; }
-
-/** 1:1 décomp `gBattleStruct->hpOnSwitchout[2]` — HP du Pokémon précédent à la
- *  switch-out, par side (0=player, 1=opponent). Lu par Cmd_hpthresholds2 pour
- *  calculer le % de dégâts depuis la switch.
- *  ALIAS legacy : préférer `gBattleStruct.hpOnSwitchout`. */
-export const gHpOnSwitchout: number[] = gBattleStruct.hpOnSwitchout;
-
 /** 1:1 décomp `gTrainerBattleOpponent_A/B` (battle_setup.c). Trainer ID
  *  opponent — déterminé au battle setup, lu par Cmd_getmoneyreward pour
  *  GetTrainerMoneyToGive(). */
@@ -681,16 +651,6 @@ export let gTrainerBattleOpponent_A = 0;
 export let gTrainerBattleOpponent_B = 0;
 export function setTrainerBattleOpponentA(v: number) { gTrainerBattleOpponent_A = v; }
 export function setTrainerBattleOpponentB(v: number) { gTrainerBattleOpponent_B = v; }
-
-/** 1:1 décomp `gBattleStruct->wrappedBy[MAX_BATTLERS_COUNT]` — battler ID qui
- *  a wrapped chaque battler (= utilisé par Rapid Spin pour BattleScript_WrapFree).
- *  ALIAS legacy : préférer `gBattleStruct.wrappedBy`. */
-export const gWrappedBy: number[] = gBattleStruct.wrappedBy;
-
-/** 1:1 décomp `gBattleStruct->wrappedMove[MAX_BATTLERS_COUNT*2]` — u16 move id
- *  per battler (= BIND / WRAP / FIRE_SPIN / etc.).
- *  ALIAS legacy : préférer `gBattleStruct.wrappedMove`. */
-export const gWrappedMove: number[] = gBattleStruct.wrappedMove;
 
 /** 1:1 décomp `gLastPrintedMoves[MAX_BATTLERS_COUNT]` (battle_main.c). Dernier
  *  move dont le nom a été print (= différent de gLastMoves : printed = move
@@ -708,80 +668,10 @@ export const gLastTakenMove: number[] = [0, 0, 0, 0];
 
 /** 1:1 décomp `gBattleStruct->lastTakenMoveFrom[4*4]` — dernier move subi par
  *  battler X depuis battler Y. Flat array index = X*4 + Y.
- *  ALIAS legacy : préférer `gBattleStruct.lastTakenMoveFrom` (= u8[32]). */
+ *  Note : pour Phase 1.1 C on garde un array séparé (décomp u8[32] tandis qu'ici
+ *  on a u8[16] flat 4×4 — migration full vers `gBattleStruct.lastTakenMoveFrom`
+ *  nécessite un audit des indexers actuels). */
 export const gLastTakenMoveFrom: number[] = new Array(16).fill(0);
-
-/** 1:1 décomp `gBattleStruct->moveTarget[MAX_BATTLERS_COUNT]` — target id
- *  chosen by each battler ce turn (= Pursuit switch tracking).
- *  ALIAS legacy : préférer `gBattleStruct.moveTarget`. */
-export const gMoveTarget: number[] = gBattleStruct.moveTarget;
-
-/** 1:1 décomp `gBattleStruct->chosenMovePositions[MAX_BATTLERS_COUNT]` —
- *  position 0..3 du move choisi (= slot dans gBattleMons.moves).
- *  ALIAS legacy : préférer `gBattleStruct.chosenMovePositions`. */
-export const gChosenMovePositions: number[] = gBattleStruct.chosenMovePositions;
-
-/** 1:1 décomp `gBattleStruct->choicedMove[MAX_BATTLERS_COUNT]` (battle.h
- *  BattleStruct). Move locked-in par Choice Band, conservé jusqu'à switch-out.
- *  Lu/écrit par MOVEEND_CHOICE_MOVE et Cmd_jumpifcantselectchoiced.
- *  ALIAS legacy : préférer `gBattleStruct.choicedMove`. */
-export const gBattleStructChoicedMove: number[] = gBattleStruct.choicedMove;
-
-/** 1:1 décomp `gBattleStruct->changedItems[MAX_BATTLERS_COUNT]` (battle.h
- *  BattleStruct). Item donné par Trick/Switcheroo, appliqué à la fin du move
- *  via MOVEEND_CHANGED_ITEMS. ITEM_NONE = pas de change.
- *  ALIAS legacy : préférer `gBattleStruct.changedItems`. */
-export const gBattleStructChangedItems: number[] = gBattleStruct.changedItems;
-
-/** 1:1 décomp `gBattleStruct->absentBattlerFlags` (battle.h BattleStruct).
- *  Bitmask : flags battlers absents (= fainted) pendant le combat. Distinct de
- *  `gAbsentBattlerFlags` (= global tracker, reset à chaque turn).
- *  ALIAS legacy : préférer `gBattleStruct.absentBattlerFlags`. */
-export let gBattleStructAbsentBattlerFlags = 0;
-export function setBattleStructAbsentBattlerFlags(v: number) { gBattleStructAbsentBattlerFlags = v; gBattleStruct.absentBattlerFlags = v; }
-
-/** 1:1 décomp `gBattleStruct->atkCancelerTracker` (battle.h:436). État de la
- *  state machine `AtkCanceler_UnableToUseMove` qui check sleep/freeze/flinch/
- *  confuse/paralyze/etc. au début de chaque move. Reset à 0 avant chaque attaque.
- *  ALIAS legacy : préférer `gBattleStruct.atkCancelerTracker`. */
-export let gBattleStructAtkCancelerTracker = 0;
-export function setBattleStructAtkCancelerTracker(v: number) { gBattleStructAtkCancelerTracker = v; gBattleStruct.atkCancelerTracker = v; }
-
-/** 1:1 décomp `gBattleStruct->expValue` (battle.h). XP calculé per-mon par
- *  Cmd_getexp à distribuer aux participants.
- *  ALIAS legacy : préférer `gBattleStruct.expValue`. */
-export let gBattleStructExpValue = 0;
-export function setBattleStructExpValue(v: number) { gBattleStructExpValue = v; gBattleStruct.expValue = v; }
-
-/** 1:1 décomp `gBattleStruct->expGetterMonId` (battle.h). Index 0..5 du mon
- *  party courant en cours de distribution XP.
- *  ALIAS legacy : préférer `gBattleStruct.expGetterMonId`. */
-export let gBattleStructExpGetterMonId = 0;
-export function setBattleStructExpGetterMonId(v: number) { gBattleStructExpGetterMonId = v; gBattleStruct.expGetterMonId = v; }
-
-/** 1:1 décomp `gBattleStruct->expGetterBattlerId` (battle.h). Battler ID
- *  (0..3) qui reçoit l'XP — utilisé pour Emit + display.
- *  ALIAS legacy : préférer `gBattleStruct.expGetterBattlerId`. */
-export let gBattleStructExpGetterBattlerId = 0;
-export function setBattleStructExpGetterBattlerId(v: number) { gBattleStructExpGetterBattlerId = v; gBattleStruct.expGetterBattlerId = v; }
-
-/** 1:1 décomp `gBattleStruct->sentInPokes` (battle.h). Bitmask des mons sentIn
- *  (= participaient au combat = éligibles à l'XP). Shifté à chaque mon.
- *  ALIAS legacy : préférer `gBattleStruct.sentInPokes`. */
-export let gBattleStructSentInPokes = 0;
-export function setBattleStructSentInPokes(v: number) { gBattleStructSentInPokes = v; gBattleStruct.sentInPokes = v; }
-
-/** 1:1 décomp `gBattleStruct->wildVictorySong` (battle.h). Flag 1-time pour
- *  switch BGM → MUS_VICTORY_WILD post-faint adversaire en wild battle.
- *  ALIAS legacy : préférer `gBattleStruct.wildVictorySong`. */
-export let gBattleStructWildVictorySong = 0;
-export function setBattleStructWildVictorySong(v: number) { gBattleStructWildVictorySong = v; gBattleStruct.wildVictorySong = v; }
-
-/** 1:1 décomp `gBattleStruct->givenExpMons` (battle.h). Bitmask party indexes
- *  qui ont déjà reçu de l'XP ce combat (= pour eviter doublons).
- *  ALIAS legacy : préférer `gBattleStruct.givenExpMons`. */
-export let gBattleStructGivenExpMons = 0;
-export function setBattleStructGivenExpMons(v: number) { gBattleStructGivenExpMons = v; gBattleStruct.givenExpMons = v; }
 
 /** 1:1 décomp `gSentPokesToOpponent[2]` (battle_main.c). Bitmask des mons qui
  *  ont été envoyés contre chaque opponent (= side 0=opponent left, 1=right).
@@ -881,17 +771,9 @@ export function resetBattleState(): void {
     gChosenActionByBattler[i] = 0;
     gChosenMoveByBattler[i] = 0;
     gActionsByTurnOrder[i] = 0;
-    gBattleStructChoicedMove[i] = 0;
-    gBattleStructChangedItems[i] = 0;
+    gBattleStruct.choicedMove[i] = 0;
+    gBattleStruct.changedItems[i] = 0;
   }
-  gBattleStructAbsentBattlerFlags = 0;
-  gBattleStructAtkCancelerTracker = 0;
-  gBattleStructExpValue = 0;
-  gBattleStructExpGetterMonId = 0;
-  gBattleStructExpGetterBattlerId = 0;
-  gBattleStructSentInPokes = 0;
-  gBattleStructWildVictorySong = 0;
-  gBattleStructGivenExpMons = 0;
   gSentPokesToOpponent[0] = 0;
   gSentPokesToOpponent[1] = 0;
   gExpShareExp = 0;
@@ -938,12 +820,10 @@ export function resetBattleState(): void {
   gAbsentBattlerFlags = 0;
   gBattleEnvironment = 0;
   gPaydayMoney = 0;
-  gIntimidateBattler = 0; gBattleStruct.intimidateBattler = 0;
-  gFormToChangeInto = 0; gBattleStruct.formToChangeInto = 0;
-  gSynchronizeMoveEffect = 0; gBattleStruct.synchronizeMoveEffect = 0;
-  gHpScale = 0; gBattleStruct.hpScale = 0;
-  gHpOnSwitchout[0] = 0;
-  gHpOnSwitchout[1] = 0;
+  gBattleStruct.intimidateBattler = 0;
+  gBattleStruct.formToChangeInto = 0;
+  gBattleStruct.synchronizeMoveEffect = 0;
+  gBattleStruct.hpScale = 0;
   gTrainerBattleOpponent_A = 0;
   gTrainerBattleOpponent_B = 0;
   // Reset gBattleStruct non-array number fields (les arrays sont déjà reset
