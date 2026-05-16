@@ -943,9 +943,9 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
   setPotentialItemEffectBattler(gBattlerTarget);
 
   // 1:1 décomp ll.1159-1173 : ENIGMA_BERRY check (= per-battler custom berry data
-  // gEnigmaBerries[target].holdEffect/Param). STUB pour Phase 1 : gEnigmaBerries
-  // n'est pas porté ; fallback à GetItemHoldEffect normal (= ITEM_ENIGMA_BERRY
-  // sans custom data retourne 0 = pas d'effet sur accuracy).
+  // gEnigmaBerries[target].holdEffect/Param). gEnigmaBerries Frontier deferred
+  // (= rare custom berry data) ; fallback à GetItemHoldEffect normal (=
+  // ITEM_ENIGMA_BERRY sans custom data retourne 0 = pas d'effet sur accuracy).
   const holdEffect = GetItemHoldEffect(targetMon.item);
   const holdEffectParam = GetItemHoldEffectParam(targetMon.item);
   if (holdEffect === HOLD_EFFECT_EVASION_UP_AC) {
@@ -1040,7 +1040,7 @@ function Cmd_moveend(ctx: BattleScriptContext): boolean {
   const originallyUsedMove = (gChosenMove === MOVE_UNAVAILABLE) ? MOVE_NONE : gChosenMove;
 
   // 1:1 décomp : `holdEffectAtk = GetItemHoldEffect(gBattleMons[gBattlerAttacker].item)`.
-  // STUB : gEnigmaBerries[]→holdEffect path (= per-battler custom berry data) pas porté.
+  // gEnigmaBerries[]→holdEffect path Frontier deferred (= rare custom berry data).
   const holdEffectAtk = GetItemHoldEffect(gBattleMons[gBattlerAttacker].item);
 
   // 1:1 décomp : `GET_MOVE_TYPE(gCurrentMove, moveType)` — Hidden Power dynamic

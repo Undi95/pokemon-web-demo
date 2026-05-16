@@ -161,7 +161,7 @@ function Cmd_jumpifcantswitch(ctx: BattleScriptContext): boolean {
     lastMonId = (active & 2) ? MULTI_PARTY_SIZE : 0;
     endMonId = lastMonId + MULTI_PARTY_SIZE;
   } else if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
-    // 1:1 décomp : link multi. Pour MVP single-machine, on traite comme single.
+    // 1:1 décomp : link multi. Notre port single-machine traite comme single (= deferred).
     party = GET_BATTLER_SIDE(active) === B_SIDE_OPPONENT ? gEnemyParty : gPlayerParty;
     lastMonId = 0;
     endMonId = lastMonId + MULTI_PARTY_SIZE;

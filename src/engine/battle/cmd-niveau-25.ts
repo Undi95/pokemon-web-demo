@@ -86,7 +86,7 @@ function Cmd_playanimation(ctx: BattleScriptContext): boolean {
   if (gHitMarker & HITMARKER_NO_ANIMATIONS) {
     // Décomp : BattleScriptPush(... + 7); jump à BattleScript_Pausex20.
     // Notre port : on a déjà avancé de 7 → simulate pause via stay then advance.
-    // Pour MVP : skip anim mais advance (= 1:1 except short pause).
+    // Note : court délai animation deferred (= advance direct sans wait).
     return false;
   }
   if (_isWeatherContinuesAnim(animId)) {

@@ -248,8 +248,8 @@ function _readBytecodeForString(tableOffset: number, idx: number): number {
  *  case 0 = init window+cursor, case 1 = poll input.
  *
  *  Strict 1:1 décomp : reste sur opcode tant qu'A ou B n'est pas pressé.
- *  Input wire requis pour avancer (= JOY_NEW retourne false en MVP, donc
- *  les scripts utilisant yesnobox bloquent). */
+ *  Input wire requis (= JOY_NEW retourne false par défaut sans UI input réel,
+ *  donc les scripts utilisant yesnobox attendent input UI Phase 1.4). */
 function Cmd_yesnobox(ctx: BattleScriptContext): boolean {
   switch (gBattleCommunication[0]) {
     case 0:

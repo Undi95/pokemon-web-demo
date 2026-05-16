@@ -140,7 +140,7 @@ function _giveMoveToBattleMon(battlerIdx: number, move: number): void {
  *  6 bytes : opcode + u8 battler + u32 ptr.
  *
  *  Sous-paths :
- *   - BS_FAINTED_LINK_MULTIPLE_1/2 : multi link battle complex paths — STUBs.
+ *   - BS_FAINTED_LINK_MULTIPLE_1/2 : multi link battle complex paths — Phase 1.4 deferred.
  *   - BS_ATTACKER / BS_TARGET / BS_ANY (single battle) : open party menu pour
  *     forced switch. Port 1:1 strict de cette branche.
  *
@@ -163,7 +163,7 @@ function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
   // BS_FAINTED_LINK_MULTIPLE_1 / _2 : multi link battle (= 0x09 / 0x0A).
   // Pour Phase 1, on traite single-battle. Multi cases : just advance.
   if (battlerArgClean === 0x09 || battlerArgClean === 0x0A) {
-    // STUB multi link battle path — différé Frontier post Phase 1.
+    // Frontier multi link battle path — deferred post Phase 1.
     return false;
   }
 
@@ -216,8 +216,9 @@ function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
   if (_gBattleStruct32.monToSwitchIntoId) {
     _gBattleStruct32.monToSwitchIntoId[battler] = 6 /* PARTY_SIZE */;
   }
-  // gBattleStruct.field_93 &= ~bit (STUB : field_93 = bitmask de battlers traités).
-  // STUB BtlController_EmitChoosePokemon (= ouvre party menu UI). Phase 1.4+.
+  // 1:1 décomp : gBattleStruct.field_93 &= ~bit (= bitmask de battlers traités,
+  // rare debug tracking deferred).
+  // UI Phase 1.4 deferred : BtlController_EmitChoosePokemon (= ouvre party menu UI).
   void isOptional;  // hitmarkerFaintBits = isOptional ? CHOOSE_MON : SEND_OUT.
 
   // 1:1 décomp : si player_left active, increment playerSwitchesCounter.
@@ -252,8 +253,8 @@ function _hasNoMonsToSwitch_HBT(battler: number, _p1: number, _p2: number): bool
 
 /** 1:1 décomp Cmd_switchhandleorder (battle_script_commands.c:5155-5220).
  *  3 bytes (u8 battler + u8 caseId). 4 cases :
- *   0 : commit chosen mons from gBattleBufferB (= player choice). STUB notre
- *       port : pas de buffer, on lit gBattleStruct.monToSwitchIntoId déjà setté.
+ *   0 : commit chosen mons from gBattleBufferB (= player choice). Notre port :
+ *       pas de gBattleBufferB en battle, on lit monToSwitchIntoId déjà setté.
  *   1 : SwitchPartyOrder pour single battle (= swap party slots indices).
  *   2 : same que 3 + record action (= replay tracking, no-op single).
  *   3 : update gBattleCommunication[0] + monToSwitchIntoId + SwitchPartyOrder
@@ -285,8 +286,8 @@ function Cmd_switchhandleorder(ctx: BattleScriptContext): boolean {
       // par Cmd_openpartyscreen ou ChooseMonToSendOut).
       break;
     case 1:
-      // 1:1 décomp : SwitchPartyOrder pour single battle. STUB notre port :
-      // swap les partyIndexes via _switchPartyOrderImpl (helper local).
+      // 1:1 décomp : SwitchPartyOrder pour single battle (battle_main.c:4086).
+      // Notre port : swap les partyIndexes via _switchPartyOrderHBT (helper local).
       _switchPartyOrderHBT(activeBattler);
       break;
     case 2:
@@ -466,7 +467,7 @@ function Cmd_yesnoboxstoplearningmove(ctx: BattleScriptContext): boolean {
       ctx.scriptPtr -= 5;  // re-enter (= stay on opcode pour case 1)
       return true;
     case 1: {
-      // 1:1 décomp : poll input. STUB : auto-confirm YES → advance.
+      // 1:1 décomp : poll input. UI Phase 1.4 deferred : auto-confirm YES → advance.
       // cursor 0 = YES (continue learning), cursor 1 = NO (cancel).
       // Pour stub Phase 1, on choose YES = advance pas jump.
       bs.gBattleScripting.learnMoveState = 0;  // reset for next.

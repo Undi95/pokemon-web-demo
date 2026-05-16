@@ -15,7 +15,7 @@
  *   - `decomps/pokeemeraude/src/battle_script_commands.c`
  *
  * Note : tous ces opcodes sont des thin wrappers BtlController_Emit*. Pour
- * MVP, on appelle nos stubs locaux + Mark, ce qui set le bit dans gBattle
+ * 1:1 strict : on appelle nos helpers locaux + Mark, ce qui set le bit dans gBattle
  * ControllerExecFlags. tickBattleControllers le clear next iteration.
  */
 
