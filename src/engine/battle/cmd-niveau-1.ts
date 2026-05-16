@@ -309,6 +309,7 @@ function _abilityBattleEffectsCountFieldN1(caseId: number, battler: number, abil
 import {
   BtlController_EmitSetMonData as _BtlController_EmitSetMonData_N1,
   MarkBattlerForControllerExec as _MarkBattlerForControllerExec_N1,
+  PrepareStringBattle as _PrepareStringBattle_N1,
 } from './battle-controllers';
 
 /** Convention runBattleScript : dispatcher fait scriptPtr++ AVANT handler.
@@ -1382,8 +1383,7 @@ function Cmd_moveend(ctx: BattleScriptContext): boolean {
  *    - if SUBSTITUTE + substituteHP + !IGNORE_SUBSTITUTE → PrepareString
  *      SUBSTITUTEDAMAGED (= "the substitute took damage")
  *    - else : emit HealthBarUpdate(min(damage, 10000)) + Mark.
- *      Si player side and damage > 0 : gBattleResults.playerMonWasDamaged = TRUE
- *      (TODO porter gBattleResults).
+ *      Si player side and damage > 0 : gBattleResults.playerMonWasDamaged = TRUE.
  *  - advance 2 bytes
  *
  *  Helpers utilisés : BtlController_EmitHealthBarUpdate. */
@@ -1397,17 +1397,21 @@ function Cmd_healthbarupdate(ctx: BattleScriptContext): boolean {
     const activeBattler = _utilGetBattler(battlerArg);
     setActiveBattler(activeBattler);
 
-    // 1:1 décomp : substitute check. Stub partial (= gBattleMons.status2 SUBSTITUTE
-    // + gDisableStructs.substituteHP + !HITMARKER_IGNORE_SUBSTITUTE).
-    // TODO porter PrepareStringBattle SUBSTITUTEDAMAGED branche.
-    void STATUS2_SUBSTITUTE;
-
-    // 1:1 décomp : clamp damage à 10000 (= max u16 truncation safety).
-    let healthValue = gBattleMoveDamage;
-    if (healthValue > 10000) healthValue = 10000;
-
-    BtlController_EmitHealthBarUpdate(0 /* B_COMM_TO_CONTROLLER */, healthValue);
-    MarkBattlerForControllerExec(activeBattler);
+    // 1:1 décomp battle_script_commands.c:3133-3158 : substitute check + emit.
+    const mon = gBattleMons[activeBattler];
+    const HITMARKER_IGNORE_SUBSTITUTE_LOCAL = 1 << 8;
+    if ((mon.status2 & STATUS2_SUBSTITUTE)
+        && gDisableStructs[activeBattler].substituteHP > 0
+        && !(gHitMarker & HITMARKER_IGNORE_SUBSTITUTE_LOCAL)) {
+      // 1:1 décomp : PrepareStringBattle(STRINGID_SUBSTITUTEDAMAGED=199, active).
+      _PrepareStringBattle_N1(199 /* STRINGID_SUBSTITUTEDAMAGED */, activeBattler);
+    } else {
+      // 1:1 décomp : clamp damage à 10000 (= max u16 truncation safety).
+      let healthValue = gBattleMoveDamage;
+      if (healthValue > 10000) healthValue = 10000;
+      BtlController_EmitHealthBarUpdate(0 /* B_COMM_TO_CONTROLLER */, healthValue);
+      MarkBattlerForControllerExec(activeBattler);
+    }
 
     // 1:1 décomp `Cmd_healthbarupdate` (battle_script_commands.c:3162-3169) :
     // `if (GetBattlerSide(active) == B_SIDE_PLAYER && gBattleMoveDamage > 0)
@@ -1428,18 +1432,12 @@ function Cmd_healthbarupdate(ctx: BattleScriptContext): boolean {
  *  AtkCanceler_UnableToUseMove, AbilityBattleEffects MOVES_BLOCK, PP check,
  *  IsMonDisobedient, MagicCoat bounce, Snatch, LightningRod redirect, Protect.
  *
- *  Notre version implémente les branches 1:1 dispo (= happy path + jump labels) :
- *    - hp == 0 → jump BattleScript_MoveEnd + HITMARKER_UNABLE_TO_USE_MOVE
- *    - pp == 0 sans exception → jump BattleScript_NoPPForMove + MOVE_RESULT_MISSED
- *    - Clear ALLOW_NO_PP, set OBEYS
- *    - Advance
+ *  Port complet 1:1 (sessions 136-138) : AtkCanceler_UnableToUseMove,
+ *  AbilityBattleEffects MOVES_BLOCK, IsMonDisobedient, MagicCoat, Snatch,
+ *  LightningRod, DEFENDER_IS_PROTECTED.
  *
- *  TODO porter (= requires structs not yet ported) :
- *  AtkCanceler_UnableToUseMove (battle_util.c, status flinch/sleep/freeze/paralyze/
- *  confuse handling), AbilityBattleEffects MOVES_BLOCK (Soundproof, Damp pour
- *  Explosion), IsMonDisobedient (= friendship/badge check, casino battle pour
- *  trainer), MagicCoat/Snatch/LightningRod (= gProtectStructs/gSpecialStatuses),
- *  DEFENDER_IS_PROTECTED (= gProtectStructs.protected). */
+ *  Cf. `src/engine/battle/atk-canceler.ts` pour le port complet de
+ *  AtkCanceler_UnableToUseMove (14 sub-states). */
 function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
   const opcodeStartPtr = ctx.scriptPtr - 1;  // before pre-advance
 
