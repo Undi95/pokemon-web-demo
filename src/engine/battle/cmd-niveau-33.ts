@@ -88,6 +88,22 @@ function _consumeAddrAndU8(ctx: BattleScriptContext): { addr: number; value: num
   return { addr: readWord(ctx), value: readByte(ctx) };
 }
 
+// ─── 0x29 jumpifbyte (1:1 décomp battle_script_commands.c:3660-3696) ─────
+
+/** 11 bytes (u8 caseId + u32 ptr + u8 value + u32 jumpPtr).
+ *  Avant : STUB dans script-interpreter.ts (= no compare, no jump). Fix port. */
+function Cmd_jumpifbyte(ctx: BattleScriptContext): boolean {
+  const caseID = readByte(ctx);
+  const addr = readWord(ctx);
+  const value = readByte(ctx);
+  const jumpPtr = readWord(ctx);
+  const acc = resolveAddress(addr);
+  if (!acc) return false;  // unresolved address.
+  const memVal = acc.read() & 0xFF;
+  if (_compareJump(caseID, memVal, value)) ctx.scriptPtr = jumpPtr;
+  return false;
+}
+
 // ─── 0x2A jumpifhalfword (1:1 décomp battle_script_commands.c) ───────────
 
 /** 12 bytes (u8 caseId + u32 ptr + u16 value + u32 jumpPtr). */
@@ -272,11 +288,12 @@ function Cmd_healthbar_update(ctx: BattleScriptContext): boolean {
 // ─── Install handlers ──────────────────────────────────────────────────────
 
 export function installNiveau33Handlers(commands: BattleOpcodeHandler[]): void {
+  commands[0x29] = Cmd_jumpifbyte;  // AUDIT BUG fix : STUB.
   commands[0x2A] = Cmd_jumpifhalfword;
   commands[0x2B] = Cmd_jumpifword;
   commands[0x2C] = Cmd_jumpifarrayequal;
   commands[0x2D] = Cmd_jumpifarraynotequal;
-  commands[0x2E] = Cmd_setbyte;  // AUDIT BUG fix : était STUB dans script-interpreter.ts.
+  commands[0x2E] = Cmd_setbyte;  // AUDIT BUG fix : STUB.
   commands[0x2F] = Cmd_addbyte;
   commands[0x30] = Cmd_subbyte;
   commands[0x31] = Cmd_copyarray;

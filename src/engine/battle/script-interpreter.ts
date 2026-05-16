@@ -302,7 +302,9 @@ function _initCommandsTable(): void {
   }
   // Implémentés réellement :
   _commands[0x28] = _Cmd_goto;
-  _commands[0x29] = _Cmd_jumpifbyte;
+  // 0x29 jumpifbyte : installed by cmd-niveau-33 (= utilise memory-map).
+  // STUB _Cmd_jumpifbyte (= no compare, no jump) supprimé : bloquait
+  // jumpifbyte cMULTISTRING_CHOOSER etc. partout.
   // 0x2E setbyte : installed by cmd-niveau-33 (= utilise memory-map). Le STUB
   // local _Cmd_setbyte (= consume args sans write) était installé ici avant
   // mais bloquait setbyte gBattlerTarget=0 etc. → infinite loops Intimidate.
