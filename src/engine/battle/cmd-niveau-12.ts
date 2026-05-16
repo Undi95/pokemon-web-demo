@@ -102,6 +102,9 @@ function Cmd_disablelastusedattack(ctx: BattleScriptContext): boolean {
   }
   if (gDisableStructs[target].disabledMove === MOVE_NONE
       && i !== MAX_MON_MOVES && gBattleMons[target].pp[i] !== 0) {
+    // 1:1 décomp battle_script_commands.c:8007 : PREPARE_MOVE_BUFFER pour
+    // afficher le nom du move disabled dans le message.
+    PREPARE_MOVE_BUFFER(gBattleTextBuff1, gBattleMons[target].moves[i]);
     gDisableStructs[target].disabledMove = gBattleMons[target].moves[i];
     const timer = (Random() & 3) + 2;
     gDisableStructs[target].disableTimer = timer;
