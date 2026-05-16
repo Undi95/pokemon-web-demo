@@ -30,6 +30,7 @@ import {
   gStatuses3, gDisableStructs,
   gBattleTypeFlags, gLastUsedAbility,
   setActiveBattler,
+  gBattleMons, gBattlersCount, gAbsentBattlerFlags,
 } from './state';
 import {
   B_WEATHER_RAIN, B_WEATHER_RAIN_TEMPORARY,
@@ -218,12 +219,21 @@ function Cmd_setcharge(_ctx: BattleScriptContext): boolean {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** Partial 1:1 décomp `CountAliveMonsInBattle(BATTLE_ALIVE_ATK_SIDE)`. Pour
- *  single battle MVP, retourne 1 (= attacker seul). Pour vraies doubles
- *  battles, faudra compter les 2 battlers du côté attacker actifs (hp > 0). */
+/** 1:1 décomp `CountAliveMonsInBattle(BATTLE_ALIVE_ATK_SIDE)` (pokemon.c:3375-3406).
+ *  Compte les battlers du même side que l'attacker qui sont vivants (= pas
+ *  absent + hp > 0). Pour single battle : retourne 1 (= attacker seul actif).
+ *  Pour double battle : 1 ou 2 selon le partner. */
 function _countAliveMonsAtkSide(): number {
-  // TODO porter check sur les 2 battlers de l'atk side en doubles battles.
-  return 1;
+  let retVal = 0;
+  const atkSide = GET_BATTLER_SIDE(gBattlerAttacker);
+  for (let i = 0; i < gBattlersCount; i++) {
+    if (GET_BATTLER_SIDE(i) === atkSide
+        && !(gAbsentBattlerFlags & (1 << i))
+        && gBattleMons[i].hp !== 0) {
+      retVal++;
+    }
+  }
+  return retVal;
 }
 
 // ─── Install dispatch table ─────────────────────────────────────────────────

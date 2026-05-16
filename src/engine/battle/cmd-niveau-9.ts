@@ -42,7 +42,7 @@ import {
   TYPE_GRASS, REQUEST_STATUS_BATTLE,
   IS_BATTLER_OF_TYPE,
 } from './constants';
-import { MarkBattlerForControllerExec } from './battle-controllers';
+import { MarkBattlerForControllerExec, BtlController_EmitSetMonData } from './battle-controllers';
 
 // ─── 0x7F setseeded ─────────────────────────────────────────────────────────
 
@@ -157,10 +157,11 @@ function Cmd_cureifburnedparalyzedorpoisoned(ctx: BattleScriptContext): boolean 
   return false;
 }
 
-/** 1:1 stub `BtlController_EmitSetMonData(buf, requestId, monIdx, bytes, data)`.
- *  MVP no-op. */
-function _emitSetMonData(_requestId: number): void {
-  // TODO : sync mon data au framework UI.
+/** 1:1 décomp `BtlController_EmitSetMonData(buf, requestId, monIdx, bytes, data)`.
+ *  Wired via battle-controllers helper (= no-op MVP côté framework UI mais
+ *  signature 1:1 décomp). */
+function _emitSetMonData(requestId: number): void {
+  BtlController_EmitSetMonData(0 /* B_COMM_TO_CONTROLLER */, requestId, 0, 0, null);
 }
 
 // ─── 0xCE settorment ───────────────────────────────────────────────────────
