@@ -61,17 +61,10 @@ import { getBattleMove } from './data/battle-moves';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** 1:1 stub `GetItemHoldEffect(item)` (item.c) MVP : retourne 0 sauf items
- *  spéciaux qu'on connaît. */
-function _getItemHoldEffect(_item: number): number {
-  // TODO porter gItemHoldEffects[item] table.
-  return 0;
-}
-
-/** 1:1 stub `GetItemHoldEffectParam(item)`. */
-function _getItemHoldEffectParam(_item: number): number {
-  return 0;
-}
+// 1:1 décomp `GetItemHoldEffect/Param` (item.c) — wired vers data/item-hold-effects.
+import { GetItemHoldEffect as _ghe21, GetItemHoldEffectParam as _ghep21 } from './data/item-hold-effects';
+function _getItemHoldEffect(item: number): number { return _ghe21(item); }
+function _getItemHoldEffectParam(item: number): number { return _ghep21(item); }
 
 /** 1:1 stub `RecordItemEffectBattle(battler, holdEffect)`. AI tracking — no-op. */
 // 1:1 décomp `RecordItemEffectBattle` + `RecordAbilityBattle` — wired via util.ts.
