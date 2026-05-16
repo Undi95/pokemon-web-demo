@@ -184,16 +184,41 @@ function calcHp(base: number, iv: number, ev: number, level: number): number {
  * où "3L1" = Gen 3 Level 1.
  */
 function pickLevelUpMoves(speciesDexId: string, level: number): string[] {
+  // 1:1 décomp `gLevelUpLearnsets[species]` — try via auto-extracted game-data
+  // first (= notre source de vérité 1:1 ROM). Fallback @pkmn/dex puis universels.
+  try {
+    // Convert dexId (lowercase) to SPECIES_X enum.
+    const enumKey = 'SPECIES_' + speciesDexId.toUpperCase().replace(/[^A-Z0-9]/g, '_').replace(/_+/g, '_');
+    // Use getLevelUpLearnset getter (= 1:1 décomp).
+    const dataMod = (globalThis as { __game_data?: {
+      getLevelUpLearnset?: (k: string) => Array<{ level: number; move: string }> | undefined;
+    } }).__game_data;
+    const learnset = dataMod?.getLevelUpLearnset?.(enumKey);
+    if (learnset && learnset.length > 0) {
+      // 1:1 décomp : on prend les moves learn à level ≤ current level. Si > 4, on
+      // garde les 4 derniers (= overwrite oldest, comme le décomp).
+      const acquired: Array<{ id: string; lvl: number }> = [];
+      for (const entry of learnset) {
+        if (entry.level <= level && entry.level > 0) {
+          // Convert MOVE_X → "x" kebab-case (= dexId).
+          const moveDex = entry.move.replace(/^MOVE_/, '').toLowerCase().replace(/_/g, '');
+          acquired.push({ id: moveDex, lvl: entry.level });
+        }
+      }
+      // Garder les 4 derniers (= 1:1 décomp behavior).
+      const last4 = acquired.slice(-4);
+      if (last4.length > 0) return last4.map(x => x.id);
+    }
+  } catch { /* fallthrough */ }
+  // Fallback @pkmn/dex (= ancienne path).
   try {
     const species = Dex.species.get(speciesDexId);
-    // @pkmn/dex learnsets sont async dans certaines versions. On fallback sur basics.
     const learnset = (Dex.species as unknown as { learnsets?: { get: (s: string) => { learnset?: Record<string, string[]> } } })
       .learnsets?.get(species.id);
     if (learnset?.learnset) {
       const acquired: Array<{ id: string; lvl: number }> = [];
       for (const [moveId, sources] of Object.entries(learnset.learnset)) {
         for (const src of sources) {
-          // ex. "3L1" "3L7" — on prend la 1ère gen 3 level-up
           const m = src.match(/^3L(\d+)$/);
           if (m) {
             const lvl = Number(m[1]);
@@ -202,10 +227,9 @@ function pickLevelUpMoves(speciesDexId: string, level: number): string[] {
         }
       }
       acquired.sort((a, b) => b.lvl - a.lvl);
-      return acquired.slice(0, 4).map(x => x.id);
+      if (acquired.length > 0) return acquired.slice(0, 4).map(x => x.id);
     }
   } catch { /* fallback ci-dessous */ }
-  // Fallback : moves universels
   return ['tackle', 'growl'];
 }
 
