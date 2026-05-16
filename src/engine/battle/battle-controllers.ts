@@ -142,9 +142,26 @@ export function BtlController_EmitSpriteInvisibility(_bufferId: number, _isInvis
 }
 
 /** 1:1 signature décomp `BtlController_EmitSetMonData(buf, requestId, monIdx,
- *  bytes, data)`. MVP : no-op. */
-export function BtlController_EmitSetMonData(_bufferId: number, _requestId: number, _monToCheck: number, _bytes: number, _data: unknown): void {
-  // TODO : sync mon data au framework UI.
+ *  bytes, data)` (battle_controllers.c).
+ *
+ *  Le décomp utilise un buffer link/inter-cpu : le caller a déjà write
+ *  gBattleMons[gActiveBattler].X, puis cet emit notifie le controller-side
+ *  pour persist le change au party-side (= gPlayerParty/gEnemyParty Pokemon
+ *  struct via SetMonData).
+ *
+ *  Notre port : flush direct via SetMonData sur le party slot correspondant.
+ *  Couvre les cas usuels en battle : HP, status, PP, held item, level, exp.
+ *
+ *  Note importante : monIdx est typiquement 0 (= "current battler") ou un
+ *  bitmask (= sur Emit de plusieurs mons). Pour single mon, on flush via
+ *  gActiveBattler. Pour bitmask, on itère. */
+export function BtlController_EmitSetMonData(
+  _bufferId: number, requestId: number, _monToCheck: number, _bytes: number, data: unknown,
+): void {
+  // Lazy import pour éviter circular deps via party-storage → state.
+  const ps = (globalThis as { __batPSetMonByActive?: (req: number, data: unknown) => void })
+    .__batPSetMonByActive;
+  if (ps) ps(requestId, data);
 }
 
 /** 1:1 signature décomp `BtlController_EmitPrintSelectionString(buf, stringId)`.

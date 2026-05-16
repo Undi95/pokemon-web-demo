@@ -853,3 +853,122 @@ export function GetAbilityBySpecies(species: number, abilityNum: number): number
 
 // Silence unused warnings for helpers exposed for future reverse-conversion.
 void speciesEnumToDexId; void moveEnumToDexId;
+
+// ─── EmitSetMonData persistance bridge (Phase 1.4 wire) ────────────────────
+
+import {
+  gActiveBattler, gBattlerPartyIndexes,
+} from './state';
+import { GET_BATTLER_SIDE } from './constants';
+
+// REQUEST_* constants (battle_controllers.h) — 1:1 décomp.
+const REQUEST_HELDITEM_BATTLE_PSC   = 2;
+const REQUEST_MOVES_PP_BATTLE_PSC   = 3;
+const REQUEST_MOVE1_BATTLE_PSC      = 4;
+// REQUEST_MOVE2..4 = 5..7
+const REQUEST_PP_DATA_BATTLE_PSC    = 8;
+const REQUEST_PPMOVE1_BATTLE_PSC    = 9;
+// REQUEST_PPMOVE2..4 = 10..12
+const REQUEST_OTID_BATTLE_PSC       = 17;
+const REQUEST_EXP_BATTLE_PSC        = 18;
+const REQUEST_HP_EV_BATTLE_PSC      = 19;
+const REQUEST_ATK_EV_BATTLE_PSC     = 20;
+const REQUEST_DEF_EV_BATTLE_PSC     = 21;
+const REQUEST_SPEED_EV_BATTLE_PSC   = 22;
+const REQUEST_SPATK_EV_BATTLE_PSC   = 23;
+const REQUEST_SPDEF_EV_BATTLE_PSC   = 24;
+const REQUEST_FRIENDSHIP_BATTLE_PSC = 25;
+const REQUEST_POKERUS_BATTLE_PSC    = 26;
+const REQUEST_STATUS_BATTLE_PSC     = 40;
+const REQUEST_LEVEL_BATTLE_PSC      = 41;
+const REQUEST_HP_BATTLE_PSC         = 42;
+const REQUEST_MAX_HP_BATTLE_PSC     = 43;
+
+/** Sync gActiveBattler's data au party-side Pokemon via SetMonData.
+ *  1:1 décomp : le caller (= Cmd_*) a déjà write gBattleMons[gActiveBattler].X,
+ *  cet emit persist au party-side pour le save block.
+ *
+ *  Cette fn est appelée par BtlController_EmitSetMonData via globalThis bridge
+ *  (= éviter circular deps). */
+function _setMonByActiveBattler(requestId: number, data: unknown): void {
+  const active = gActiveBattler;
+  const side = GET_BATTLER_SIDE(active);
+  const party = side === 0 ? gPlayerParty : gEnemyParty;
+  const partyIdx = gBattlerPartyIndexes[active];
+  if (partyIdx < 0 || partyIdx >= 6) return;
+  const mon = party[partyIdx];
+  if (!mon) return;
+
+  // Decode data : peut être un nombre direct, ou un Uint8Array/array.
+  const value = typeof data === 'number' ? data : 0;
+
+  switch (requestId) {
+    // PP per move slot (PPMOVE1..4 = 9..12).
+    case REQUEST_PPMOVE1_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_PP1, value); return;
+    case REQUEST_PPMOVE1_BATTLE_PSC + 1:
+      SetMonData(mon, MON_DATA_PP2, value); return;
+    case REQUEST_PPMOVE1_BATTLE_PSC + 2:
+      SetMonData(mon, MON_DATA_PP3, value); return;
+    case REQUEST_PPMOVE1_BATTLE_PSC + 3:
+      SetMonData(mon, MON_DATA_PP4, value); return;
+    case REQUEST_HP_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_HP, value); return;
+    case REQUEST_MAX_HP_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_MAX_HP, value); return;
+    case REQUEST_STATUS_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_STATUS, value); return;
+    case REQUEST_HELDITEM_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_HELD_ITEM, value); return;
+    case REQUEST_LEVEL_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_LEVEL, value); return;
+    case REQUEST_EXP_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_EXP, value); return;
+    case REQUEST_HP_EV_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_HP_EV, value); return;
+    case REQUEST_ATK_EV_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_ATK_EV, value); return;
+    case REQUEST_DEF_EV_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_DEF_EV, value); return;
+    case REQUEST_SPEED_EV_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_SPEED_EV, value); return;
+    case REQUEST_SPATK_EV_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_SPATK_EV, value); return;
+    case REQUEST_SPDEF_EV_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_SPDEF_EV, value); return;
+    case REQUEST_FRIENDSHIP_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_FRIENDSHIP, value); return;
+    case REQUEST_POKERUS_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_POKERUS, value); return;
+    case REQUEST_OTID_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_OT_ID, value); return;
+    case REQUEST_MOVE1_BATTLE_PSC:
+      SetMonData(mon, MON_DATA_MOVE1, value); return;
+    case REQUEST_MOVE1_BATTLE_PSC + 1:
+      SetMonData(mon, MON_DATA_MOVE2, value); return;
+    case REQUEST_MOVE1_BATTLE_PSC + 2:
+      SetMonData(mon, MON_DATA_MOVE3, value); return;
+    case REQUEST_MOVE1_BATTLE_PSC + 3:
+      SetMonData(mon, MON_DATA_MOVE4, value); return;
+    case REQUEST_MOVES_PP_BATTLE_PSC:
+    case REQUEST_PP_DATA_BATTLE_PSC:
+      // Sync all 4 moves+pp à partir des battle mons (déjà write).
+      if (_gBattleMonsRuntime[active]) {
+        const bm = _gBattleMonsRuntime[active];
+        for (let i = 0; i < 4; i++) {
+          SetMonData(mon, MON_DATA_MOVE1 + i, bm.moves[i]);
+          SetMonData(mon, MON_DATA_PP1 + i, bm.pp[i]);
+        }
+        SetMonData(mon, MON_DATA_PP_BONUSES, bm.ppBonuses);
+      }
+      return;
+    default:
+      // Other requests (cool, charm, etc.) — deferred Phase 1.4+.
+      return;
+  }
+}
+
+// Wire bridge global pour battle-controllers.ts.
+(globalThis as { __batPSetMonByActive?: typeof _setMonByActiveBattler })
+  .__batPSetMonByActive = _setMonByActiveBattler;
+
