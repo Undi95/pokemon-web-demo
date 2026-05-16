@@ -93,6 +93,30 @@ import {
   HOLD_EFFECT_SHELL_BELL,
 } from '../decomp-data/auto/include/constants/hold_effects-data';
 
+// 1:1 décomp text-buffers (= gBattleTextBuff1/2 + PREPARE_*_BUFFER macros).
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_IBE,
+  gBattleTextBuff2 as _gBattleTextBuff2_IBE,
+  PREPARE_STAT_BUFFER as _PREPARE_STAT_BUFFER_IBE,
+  PREPARE_FLAVOR_BUFFER as _PREPARE_FLAVOR_BUFFER_IBE,
+  B_BUFF_PLACEHOLDER_BEGIN as _B_BUFF_BEGIN_IBE,
+  B_BUFF_STRING as _B_BUFF_STRING_IBE,
+  B_BUFF_EOS as _B_BUFF_EOS_IBE,
+} from './text-buffers';
+
+// 1:1 décomp battle_string_ids.h.
+const STRINGID_STATSHARPLY = 209;
+const STRINGID_STATROSE    = 210;
+
+/** 1:1 décomp battle_util.c:3417 — PREPARE_STRING_BUFFER(gBattleTextBuff2, STRINGID_X). */
+function _PREPARE_STRING_BUFFER_IBE(buf: Uint8Array, stringId: number): void {
+  buf[0] = _B_BUFF_BEGIN_IBE;
+  buf[1] = _B_BUFF_STRING_IBE;
+  buf[2] = stringId & 0xFF;
+  buf[3] = (stringId >> 8) & 0xFF;
+  buf[4] = _B_BUFF_EOS_IBE;
+}
+
 // ─── Helpers : status1 masks ─────────────────────────────────────────────
 const STATUS1_PSN_ANY = STATUS1_POISON | STATUS1_TOXIC_POISON;
 const STATUS1_TOXIC_COUNTER = 0xF00; // 1:1 décomp battle.h:128.
@@ -299,6 +323,8 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
               heff - HOLD_EFFECT_CONFUSE_SPICY;
             if (gBattleMons[battlerId].hp <= Math.floor(gBattleMons[battlerId].maxHP / 2) && !moveTurn) {
               const flavor = _flavorOf(battlerHoldEffect);
+              // 1:1 décomp battle_util.c:3213.
+              _PREPARE_FLAVOR_BUFFER_IBE(_gBattleTextBuff1_IBE, flavor);
               let dmg = Math.floor(gBattleMons[battlerId].maxHP / battlerHoldEffectParam);
               if (dmg === 0) dmg = 1;
               if (gBattleMons[battlerId].hp + dmg > gBattleMons[battlerId].maxHP) {
@@ -397,6 +423,8 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
           if (gBattleMons[battlerId].hp <= Math.floor(gBattleMons[battlerId].maxHP / battlerHoldEffectParam)
               && !moveTurn
               && gBattleMons[battlerId].statStages[stat] < MAX_STAT_STAGE) {
+            // 1:1 décomp battle_util.c:3231 TRY_EAT_STAT_UP_BERRY macro.
+            _PREPARE_STAT_BUFFER_IBE(_gBattleTextBuff1_IBE, stat);
             setEffectBattler(battlerId);
             gBattleScripting.statChanger = SET_STATCHANGER(stat, 1, false);
             gBattleScripting.animArg1 = 14 /* STAT_ANIM_PLUS1 */ + stat;
@@ -408,7 +436,22 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
           return false;
         };
         switch (battlerHoldEffect) {
-          case HOLD_EFFECT_ATTACK_UP:     _tryStatUpBerry(STAT_ATK);   break;
+          case HOLD_EFFECT_ATTACK_UP:
+            // 1:1 décomp battle_util.c:3412-3424 — version spéciale Attack berry
+            // qui ajoute PREPARE_STRING_BUFFER(STATROSE) "augmente" pour le buff2.
+            if (gBattleMons[battlerId].hp <= Math.floor(gBattleMons[battlerId].maxHP / battlerHoldEffectParam)
+                && !moveTurn
+                && gBattleMons[battlerId].statStages[STAT_ATK] < MAX_STAT_STAGE) {
+              _PREPARE_STAT_BUFFER_IBE(_gBattleTextBuff1_IBE, STAT_ATK);
+              _PREPARE_STRING_BUFFER_IBE(_gBattleTextBuff2_IBE, STRINGID_STATROSE);
+              setEffectBattler(battlerId);
+              gBattleScripting.statChanger = SET_STATCHANGER(STAT_ATK, 1, false);
+              gBattleScripting.animArg1 = 14 /* STAT_ANIM_PLUS1 */ + STAT_ATK;
+              gBattleScripting.animArg2 = 0;
+              _lastWantedScriptLabel = 'BattleScript_BerryStatRaiseEnd2';
+              effect = ITEM_STATS_CHANGE;
+            }
+            break;
           case HOLD_EFFECT_DEFENSE_UP:    _tryStatUpBerry(STAT_DEF);   break;
           case HOLD_EFFECT_SPEED_UP:      _tryStatUpBerry(STAT_SPEED); break;
           case HOLD_EFFECT_SP_ATTACK_UP:  _tryStatUpBerry(STAT_SPATK); break;
@@ -423,7 +466,7 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
             }
             break;
           case HOLD_EFFECT_RANDOM_STAT_UP:
-            // 1:1 décomp : random pick non-max stat parmi 5 (STAT_ATK..STAT_SPDEF).
+            // 1:1 décomp battle_util.c:3447-3481 : Starf berry.
             if (!moveTurn
                 && gBattleMons[battlerId].hp <= Math.floor(gBattleMons[battlerId].maxHP / battlerHoldEffectParam)) {
               let i = 0;
@@ -435,6 +478,18 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
                 do {
                   i = Random() % (NUM_STATS - 1);
                 } while (gBattleMons[battlerId].statStages[STAT_ATK + i] === MAX_STAT_STAGE);
+                // 1:1 décomp battle_util.c:3462 PREPARE_STAT_BUFFER(stat).
+                _PREPARE_STAT_BUFFER_IBE(_gBattleTextBuff1_IBE, i + 1);
+                // 1:1 décomp battle_util.c:3464-3471 buff2 multi-string =
+                // STATSHARPLY + STATROSE (= "X augmente beaucoup!").
+                _gBattleTextBuff2_IBE[0] = _B_BUFF_BEGIN_IBE;
+                _gBattleTextBuff2_IBE[1] = _B_BUFF_STRING_IBE;
+                _gBattleTextBuff2_IBE[2] = STRINGID_STATSHARPLY & 0xFF;
+                _gBattleTextBuff2_IBE[3] = (STRINGID_STATSHARPLY >> 8) & 0xFF;
+                _gBattleTextBuff2_IBE[4] = _B_BUFF_STRING_IBE;
+                _gBattleTextBuff2_IBE[5] = STRINGID_STATROSE & 0xFF;
+                _gBattleTextBuff2_IBE[6] = (STRINGID_STATROSE >> 8) & 0xFF;
+                _gBattleTextBuff2_IBE[7] = _B_BUFF_EOS_IBE;
                 setEffectBattler(battlerId);
                 gBattleScripting.statChanger = SET_STATCHANGER(i + 1, 2, false);
                 gBattleScripting.animArg1 = 21 /* STAT_ANIM_PLUS2 */ + (i + 1);
