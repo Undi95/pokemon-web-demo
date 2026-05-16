@@ -70,9 +70,19 @@ import { gBattlerPartyIndexes as gBattlerPartyIndexes_DSO } from './state';
 import { gPlayerParty as gPlayerParty_DSO, GetMonData as GetMonData_DSO, MON_DATA_SPECIES as MON_DATA_SPECIES_DSO } from './party-storage';
 import { GET_BATTLER_SIDE as _GET_BATTLER_SIDE, B_SIDE_OPPONENT as B_SIDE_OPPONENT_LOCAL } from './constants';
 
-/** 1:1 stub `IsOtherTrainer(otId, otName)` (pokemon.c). Compare avec player's
- *  trainer ID / name. STUB MVP : return false (= own trainer toujours). */
-function _IsOtherTrainer(_otId: number, _otName: string): boolean { return false; }
+/** 1:1 décomp `IsOtherTrainer(u32 otId, u8 *otName)` (pokemon.c). Compare le
+ *  trainerId du mon avec player TID stocké dans gSaveBlock2Ptr.playerTrainerId
+ *  ET le name (= 7 chars). Si different → other trainer (= traded/event mon).
+ *  Notre port : wire via gameState.player.trainerId. */
+import { gameState as _gameStateDSO } from '../game-state';
+function _IsOtherTrainer(otId: number, _otName: string): boolean {
+  // 1:1 décomp : retourne 1 si TID OU OT name diffèrent, 0 si match.
+  const playerTID = _gameStateDSO.trainerId;
+  if (playerTID !== (otId >>> 0)) return true;
+  // STUB : OT name comparison via gameState.name (= 7 chars truncated).
+  // Pour Phase 1 single-tutorial, on assume name match si TID match.
+  return false;
+}
 
 // 1:1 décomp `FlagGet(flag)` — wired via script-vars.ts (gameState.hasFlag).
 import { FlagGet as _FlagGetFull } from '../script-vars';
