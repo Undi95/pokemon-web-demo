@@ -65,6 +65,7 @@ import {
 } from './state';
 import { setupPartyForBattle, fillActiveBattleMonsForBattleStart } from './party-storage';
 import { resetAtkCancelerTracker } from './atk-canceler';
+import { runMoveScriptViaBytecode } from './wire-bytecode-bridge';
 
 /** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
  *  print structured pour console.table. */
@@ -426,6 +427,35 @@ export function buildBattleDevtools(): Record<string, unknown> {
     opcode,
     // Setup (POC test pour wire bytecode)
     prepareTestBattle,
+    /** Test direct du bridge bytecode ↔ PokemonInstance via runMoveScriptViaBytecode.
+     *  Usage : scope.bytecode.testMoveBridge() — create un combat ad-hoc et exec
+     *  Pound via bytecode, return damage measured. */
+    testMoveBridge: async () => {
+      // Use scope.party real one for attacker.
+      const gs = (globalThis as { gameState?: { party?: unknown[] } }).gameState;
+      const realParty = (gs?.party as Array<{ speciesEnum: string; nickname: string; currentHp: number; maxHp: number; moves: { id: string; pp: number }[]; ivs: { atk: number; def: number }; evs: { atk: number; def: number }; level: number; }> | undefined)?.filter(m => !!m);
+      if (!realParty?.length) return { error: 'no party' };
+      const pokemonMod = await import('../pokemon');
+      const enemyMon = pokemonMod.createPokemonInstance('SPECIES_ZIGZAGOON', 2);
+      setupPartyForBattle(realParty as never, [enemyMon]);
+      fillActiveBattleMonsForBattleStart();
+      const attacker = realParty[0];
+      const defender = enemyMon;
+      const beforeHp = defender.currentHp;
+      const result = runMoveScriptViaBytecode({
+        attacker: attacker as never,
+        defender,
+        attackerMoveIdx: 0,  // 1er move (= usually a damaging one).
+      });
+      return {
+        attacker_name: attacker.nickname,
+        defender_name: defender.nickname,
+        moveUsed: attacker.moves[0]?.id,
+        defenderHpBefore: beforeHp,
+        defenderHpAfter: defender.currentHp,
+        bridgeResult: result,
+      };
+    },
     // Execute
     runScript,
     runOpcode,

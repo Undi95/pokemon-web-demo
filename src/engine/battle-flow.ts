@@ -68,6 +68,7 @@ import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
 import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from './battle/party-storage';
+import { runMoveScriptViaBytecode } from './battle/wire-bytecode-bridge';
 import { VarSet } from './script-vars';
 import { getMove, getMoveName, loadGameData } from './data/game-data';
 import { Random } from './random';
@@ -404,8 +405,36 @@ export function startWildBattle(params: BattleParams): BattleFlow {
     return 0;
   };
 
-  /** Apply chosen move's damage from attacker to defender. Returns damage dealt + effectiveness mul. */
+  /** Apply chosen move's damage from attacker to defender. Returns damage dealt + effectiveness mul.
+   *
+   *  Si flag global `__USE_BYTECODE_FOR_DAMAGE__` est set (= localStorage ou
+   *  window var), on route via le bytecode interpreter 1:1 décomp (= 639/639
+   *  scripts validés). Sinon, formule simplifiée ad-hoc (= legacy tutorial).
+   *
+   *  Pour activer : localStorage.setItem('__USE_BYTECODE_FOR_DAMAGE__', '1')
+   *  puis reload, OU window.__USE_BYTECODE_FOR_DAMAGE__ = true (no reload). */
   const applyMoveDamage = (attacker: PokemonInstance, defender: PokemonInstance, moveIdx: number): { damage: number, typeMul: number } => {
+    // Flag check : si bytecode mode activé, route via runMoveScriptViaBytecode.
+    const useBytecode =
+      (globalThis as { __USE_BYTECODE_FOR_DAMAGE__?: boolean }).__USE_BYTECODE_FOR_DAMAGE__
+      || (typeof localStorage !== 'undefined' && localStorage.getItem('__USE_BYTECODE_FOR_DAMAGE__') === '1');
+
+    if (useBytecode) {
+      // Determine battler ids : attacker = 0 si playerMon, 1 si opponentMon.
+      const attBId = attacker === playerMon ? 0 : 1;
+      const defBId = defender === playerMon ? 0 : 1;
+      const result = runMoveScriptViaBytecode({
+        attacker, defender, attackerMoveIdx: moveIdx,
+        attackerBattlerId: attBId, defenderBattlerId: defBId,
+      });
+      if (result.ok) {
+        return { damage: result.damage, typeMul: result.typeMul };
+      }
+      console.warn('[battle-flow] bytecode route failed:', result.reason, '— fallback to ad-hoc formula');
+      // fall through to ad-hoc fallback.
+    }
+
+    // ─── Ad-hoc legacy formula (= conservé pour tutorial robuste) ──────
     const mv = attacker.moves[moveIdx];
     if (!mv) return { damage: 0, typeMul: 1 };
     const moveData = getMove('MOVE_' + mv.id.toUpperCase());
