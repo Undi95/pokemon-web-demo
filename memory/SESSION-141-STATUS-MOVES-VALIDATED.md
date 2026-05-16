@@ -63,6 +63,20 @@ end-to-end identifie 4 root causes :
 - Now : Dex.moves fallback → `MOVE_TAIL_WHIP` ✓
 - testMoveBridge enrichi avec param overrides (moveId/enemy/attackerSpecies/level)
 
+### Iter 4 — Bonus : audit ESM live-binding weather bug
+Commit `f8fafefa` : 5e audit bug majeur trouvé via test direct.
+- `damage-calc.ts` import `gBattleWeather` as snapshot via Vite ESM modulisation.
+- Les writes via `setBattleWeather()` ne propageaient pas au reader.
+- Fix : force fresh read via `__battleStateMutators.getBattleWeather()` global
+  lookup (= même pattern que pour gBattlerTarget).
+- Validation : Blaziken Ember vs Sceptile = 23 dmg sans weather, 33 dmg sous
+  Sunny Day = 1.43x boost ≈ 1.5x attendu (= STAB Fire ×1.5 sous sun).
+
+### Iter 5 — Wire Mist check
+Commit `72620fc4` : ChangeStatBuffs.ts wire `gSideTimers[side].mistTimer` check
+qui était un STUB "TODO gSideTimers". Maintenant Mist move (5 turns) bloque les
+stat drops sauf si certain ou MOVE_CURSE.
+
 ## ✅ Validation runtime end-to-end
 
 **12/12 status moves OK via testMoveBridge** :
