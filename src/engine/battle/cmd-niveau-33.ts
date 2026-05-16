@@ -27,12 +27,12 @@
  *  gBattleMons[i].field, etc.). Notre bytecode est extracted post-link, donc
  *  ces pointers sont des valeurs u32 numériques.
  *
- *  Pour 1:1 strict il faudrait un memory-mapping table (u32 addr → variable
- *  TS) qui résout dynamiquement. Pour l'instant ces opcodes consomment les
- *  bytes correctement (= advance + le bytecode interpreter ne crash pas) mais
- *  skip l'effet mémoire — log warning sur usage.
- *
- *  TODO porter le memory-mapping pour les pointers décomp battle (post-Phase 1). */
+ *  Phase 1.3 G : memory-mapping table portée (= `memory-map.ts` + SYMBOL_MARKER
+ *  0xF0000000 convention pour distinguer symbol IDs des vraies GBA addresses).
+ *  Le compiler bytecode auto-extrait les symbols battle whitelistés (= 38 entries)
+ *  et bind ID → MemoryAccessor (read/write). Les opcodes ici utilisent
+ *  `resolveAddress(addr)` qui retourne null si address non whitelistée (= fallback
+ *  no-jump pour jumpif*, no-write pour setbyte/setword). */
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord, readHalfword } from './script-interpreter';
@@ -73,7 +73,8 @@ initMemoryMap();
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** Lit u32 (pointer addr) et u32 value, sans effet mémoire (= TODO mapping). */
+/** Lit u32 (pointer addr) et u32 value. L'effet mémoire est appliqué par
+ *  le caller via memory-map.resolveAddress + acc.write(). */
 function _consumeAddrAndU32(ctx: BattleScriptContext): { addr: number; value: number } {
   return { addr: readWord(ctx), value: readWord(ctx) };
 }

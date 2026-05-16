@@ -21,6 +21,8 @@ import {
   gBattleControllerExecFlags,
   gAbsentBattlerFlags, setAbsentBattlerFlags,
   gBattleOutcome, setBattleOutcome,
+  gBattleStruct as _gBattleStruct_CDS,
+  gBattlerPartyIndexes as _gBattlerPartyIndexes_CDS,
 } from './state';
 import {
   REQUEST_ALL_BATTLE, B_COMM_TO_CONTROLLER,
@@ -45,36 +47,72 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
 
 // ─── 0x4C getswitchedmondata ──────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_getswitchedmondata. 2 bytes.
- *  Décomp utilise gBattleStruct.monToSwitchIntoId + gBattlerPartyIndexes —
- *  pas portés. Pour MVP : juste emit. */
+/** 1:1 décomp Cmd_getswitchedmondata (battle_script_commands.c:4609-4622). 2 bytes. */
 function Cmd_getswitchedmondata(ctx: BattleScriptContext): boolean {
   if (gBattleControllerExecFlags) return _stayOnOpcode(ctx);
   const arg = readByte(ctx);
   const active = getBattlerForBattleScript(arg);
   setActiveBattler(active);
-  // 1:1 décomp : gBattlerPartyIndexes[active] = gBattleStruct.monToSwitchIntoId[active].
-  // gBattleStruct.monToSwitchIntoId pas porté → no-op.
-  BtlController_EmitGetMonData(B_COMM_TO_CONTROLLER, REQUEST_ALL_BATTLE, gBitTable[active]);
+  // 1:1 décomp ll.4616 : gBattlerPartyIndexes[active] = gBattleStruct.monToSwitchIntoId[active].
+  const monToSwitchInto = _gBattleStruct_CDS.monToSwitchIntoId?.[active] ?? 0;
+  _gBattlerPartyIndexes_CDS[active] = monToSwitchInto;
+  // 1:1 décomp ll.4618 : emit GetMonData REQUEST_ALL_BATTLE avec bitflag du nouveau partyIdx.
+  BtlController_EmitGetMonData(B_COMM_TO_CONTROLLER, REQUEST_ALL_BATTLE,
+    gBitTable[_gBattlerPartyIndexes_CDS[active]]);
   MarkBattlerForControllerExec(active);
   return false;
 }
 
 // ─── 0x4E switchinanim ────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_switchinanim. 3 bytes (u8 battler + u8 dontClear). */
+/** 1:1 décomp Cmd_switchinanim (battle_script_commands.c:4677-4708). 3 bytes
+ *  (u8 battler + u8 dontClear). */
 function Cmd_switchinanim(ctx: BattleScriptContext): boolean {
   if (gBattleControllerExecFlags) return _stayOnOpcode(ctx);
   const arg = readByte(ctx);
   const dontClear = readByte(ctx);
   const active = getBattlerForBattleScript(arg);
   setActiveBattler(active);
-  // 1:1 décomp set Pokedex SEEN flag pour Opponent — non porté.
+
+  // 1:1 décomp : si battler OPPONENT_SIDE + !LINK/FRONTIER battle, HandleSetPokedexFlag
+  // FLAG_SET_SEEN (= mon vu par player → seen flag).
+  const side = active & 1;  // 0 player, 1 opponent.
+  const BATTLE_TYPE_FRONTIER_LOCAL = 1 << 28;
+  const BATTLE_TYPE_LINK_LOCAL     = 1 << 1;
+  const BATTLE_TYPE_TRAINER_HILL_LOCAL = 1 << 13;
+  const BATTLE_TYPE_RECORDED_LINK_LOCAL = 1 << 16;
+  const BATTLE_TYPE_EREADER_TRAINER_LOCAL = 1 << 18;
+  const tf = (globalThis as { __battleState?: { gBattleTypeFlags?: number } }).__battleState?.gBattleTypeFlags ?? 0;
+  if (side === 1 /* B_SIDE_OPPONENT */
+      && !(tf & (BATTLE_TYPE_LINK_LOCAL
+                | BATTLE_TYPE_EREADER_TRAINER_LOCAL
+                | BATTLE_TYPE_RECORDED_LINK_LOCAL
+                | BATTLE_TYPE_TRAINER_HILL_LOCAL
+                | BATTLE_TYPE_FRONTIER_LOCAL))) {
+    _handleSetPokedexFlag_CDS(gBattleMons[active]);
+  }
   setAbsentBattlerFlags(gAbsentBattlerFlags & ~gBitTable[active]);
-  // 1:1 décomp passe gBattlerPartyIndexes[active] mais non porté → 0.
-  BtlController_EmitSwitchInAnim(B_COMM_TO_CONTROLLER, 0, dontClear);
+  // 1:1 décomp : passe gBattlerPartyIndexes[active] comme partyId (= slot du mon switched in).
+  BtlController_EmitSwitchInAnim(B_COMM_TO_CONTROLLER, _gBattlerPartyIndexes_CDS[active], dontClear);
   MarkBattlerForControllerExec(active);
   return false;
+}
+
+/** 1:1 décomp helper : `HandleSetPokedexFlag(SpeciesToNationalPokedexNum(mon.species),
+ *  FLAG_SET_SEEN, mon.personality)`. */
+function _handleSetPokedexFlag_CDS(mon: { species: number; personality: number }): void {
+  // FLAG_SET_SEEN = 2. SpeciesToNationalPokedexNum = identity en Gen 3 pour 386 premiers.
+  const natDexNum = mon.species;
+  // Inline impl (= éviter import circulaire cmd-niveau-27 → cmd-niveau-24).
+  const sb2 = (globalThis as { gSaveBlock2Ptr?: { pokedex?: {
+    seen?: number[] | Uint8Array;
+    owned?: number[] | Uint8Array;
+  } } }).gSaveBlock2Ptr;
+  if (!sb2?.pokedex?.seen) return;
+  const byteIdx = (natDexNum - 1) >> 3;
+  const bitIdx = (natDexNum - 1) & 7;
+  if (byteIdx < 0) return;
+  sb2.pokedex.seen[byteIdx] = ((sb2.pokedex.seen[byteIdx] ?? 0) | (1 << bitIdx)) & 0xFF;
 }
 
 // ─── 0x53 trainerslidein ──────────────────────────────────────────────────
