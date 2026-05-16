@@ -135,13 +135,39 @@ function _moveName(moveId: number): string {
   return `Capa#${moveId}`;
 }
 
-/** Resolve nom ability depuis ability id numeric. */
+/** Cache numeric ability id → "ABILITY_X" enum name (lazy). */
+const _abilityIdToEnumCache = new Map<number, string>();
+function _abilityIdToEnum(abilityId: number): string | null {
+  if (_abilityIdToEnumCache.has(abilityId)) return _abilityIdToEnumCache.get(abilityId) ?? null;
+  try {
+    const an = (globalThis as { gameDataAbilityNamesFr?: Record<string, string> }).gameDataAbilityNamesFr;
+    if (an) {
+      for (const key of Object.keys(an)) {
+        const id = resolveDecompConstant(key);
+        if (typeof id === 'number' && id === abilityId) {
+          _abilityIdToEnumCache.set(abilityId, key);
+          return key;
+        }
+      }
+    }
+  } catch { /* fallthrough */ }
+  return null;
+}
+
+/** Resolve nom ability depuis ability id numeric.
+ *  1:1 décomp gAbilityNames[abilityId]. Notre port : reverse cache + lookup
+ *  gameDataAbilityNamesFr[ABILITY_X] → FR ("STATIK" pour STATIC). */
 function _abilityName(abilityId: number): string {
   if (!abilityId) return '—';
-  try {
-    const an = (globalThis as { __ability_names_fr?: Record<number, string> }).__ability_names_fr;
-    if (an?.[abilityId]) return an[abilityId];
-  } catch { /* fallthrough */ }
+  const enumName = _abilityIdToEnum(abilityId);
+  if (enumName) {
+    try {
+      const an = (globalThis as { gameDataAbilityNamesFr?: Record<string, string> }).gameDataAbilityNamesFr;
+      const fr = an?.[enumName];
+      if (fr) return fr;
+    } catch { /* fallthrough */ }
+    return enumName.replace(/^ABILITY_/, '');
+  }
   return `Talent#${abilityId}`;
 }
 

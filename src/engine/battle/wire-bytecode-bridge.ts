@@ -29,6 +29,7 @@ import {
   setBattlerTarget,
   setCurrentMove,
   setChosenMove,
+  setCurrMovePos,
   setHitMarker,
   setMoveResultFlags,
   setBattleOutcome,
@@ -237,6 +238,8 @@ export function runMoveScriptViaBytecode(opts: {
   setBattlerTarget(defBId);
   setCurrentMove(moveId);
   setChosenMove(moveId);
+  // 1:1 décomp : gCurrMovePos = attackerMoveIdx (= slot du move utilisé).
+  setCurrMovePos(opts.attackerMoveIdx);
   setHitMarker(0);
   setMoveResultFlags(0);
   setBattleMoveDamage(0);
