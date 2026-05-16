@@ -24,6 +24,8 @@
 
 import { BATTLE_STRINGS_TABLE, STRINGID_NAMES } from '../decomp-data/battle-strings-table';
 import { getString } from '../gba-strings';
+import { getMoveName as _getMoveNameFr } from '../data/game-data';
+import { resolveDecompConstant } from '../decomp-constants';
 import type { BattleMsgData } from './battle-event-queue';
 import {
   B_BUFF_PLACEHOLDER_BEGIN,
@@ -57,45 +59,80 @@ const STAT_NAMES_FR: Record<number, string> = {
 
 // ─── Helpers : species/move/ability/item name resolvers ────────────────────
 
-/** Resolve nom species depuis species id numeric. Lazy via globalThis bridges. */
-function _speciesName(speciesId: number): string {
-  if (!speciesId) return '?';
+/** Cache numeric species id → "SPECIES_X" enum name (= lazy). */
+const _speciesIdToEnumCache = new Map<number, string>();
+function _speciesIdToEnum(speciesId: number): string | null {
+  if (_speciesIdToEnumCache.has(speciesId)) return _speciesIdToEnumCache.get(speciesId) ?? null;
   try {
-    const sn = (globalThis as { __species_names_fr?: Record<number, string> }).__species_names_fr;
-    if (sn?.[speciesId]) return sn[speciesId];
-    // Fallback : essai via _data-tables flat lookup
-    const dt = (globalThis as {
-      __game_data?: { species?: Record<string, { id?: number; name?: string }> };
-    }).__game_data;
-    if (dt?.species) {
-      for (const [, sp] of Object.entries(dt.species)) {
-        if (sp?.id === speciesId && sp.name) return sp.name;
-      }
-    }
-  } catch { /* fallthrough */ }
-  return `Espèce#${speciesId}`;
-}
-
-/** Resolve nom move depuis move id numeric. */
-function _moveName(moveId: number): string {
-  if (!moveId) return '?';
-  try {
-    const mn = (globalThis as { __move_names_fr?: Record<number, string> }).__move_names_fr;
-    if (mn?.[moveId]) return mn[moveId];
-    const dt = (globalThis as {
-      __game_data?: { moves?: Record<string, { id?: number; name?: string }> };
-      __game_data_move_names_fr?: Record<string, string>;
-    }).__game_data;
-    if (dt?.moves) {
-      for (const [key, mv] of Object.entries(dt.moves)) {
-        if (mv?.id === moveId) {
-          const fr = (globalThis as { __game_data_move_names_fr?: Record<string, string> })
-            .__game_data_move_names_fr?.[key];
-          return fr ?? key.replace(/^MOVE_/, '');
+    const dt = (globalThis as { gameDataSpecies?: Record<string, unknown> }).gameDataSpecies;
+    if (dt) {
+      for (const key of Object.keys(dt)) {
+        const id = resolveDecompConstant(key);
+        if (typeof id === 'number' && id === speciesId) {
+          _speciesIdToEnumCache.set(speciesId, key);
+          return key;
         }
       }
     }
   } catch { /* fallthrough */ }
+  return null;
+}
+
+/** Resolve nom species depuis species id numeric.
+ *  1:1 décomp `gSpeciesNames[species]` (= names extraits depuis decomp data).
+ *  Notre port : resolve numeric → "SPECIES_X" → lookup species[X].name. */
+function _speciesName(speciesId: number): string {
+  if (!speciesId) return '?';
+  const enumName = _speciesIdToEnum(speciesId);
+  if (enumName) {
+    try {
+      const dt = (globalThis as { gameDataSpecies?: Record<string, { name?: string }> }).gameDataSpecies;
+      const sp = dt?.[enumName];
+      if (sp?.name) return sp.name;
+    } catch { /* fallthrough */ }
+    return enumName.replace(/^SPECIES_/, '');
+  }
+  return `Espèce#${speciesId}`;
+}
+
+/** Cache numeric → "MOVE_X" enum name (= populated lazy au first lookup).
+ *  Built by scanning resolveDecompConstant inverse au runtime. */
+const _moveIdToEnumCache = new Map<number, string>();
+function _moveIdToEnum(moveId: number): string | null {
+  if (_moveIdToEnumCache.has(moveId)) return _moveIdToEnumCache.get(moveId) ?? null;
+  // 1:1 décomp : on doit reverse-iterate la table moves. À cause de l'arch
+  // notre port (= moves data is Record<MOVE_X, MoveData>), on scan via
+  // resolveDecompConstant pour chaque clé connue. Pour speed : build cache
+  // une seule fois en scannant un set fixe de moves connus.
+  // Approche pragmatique : si moveId <= 354 (= total moves Gen 3), try
+  // `MOVE_X` candidate names depuis __game_data globalThis bridge.
+  try {
+    const dt = (globalThis as { gameDataMoves?: Record<string, unknown> }).gameDataMoves;
+    if (dt) {
+      for (const key of Object.keys(dt)) {
+        const id = resolveDecompConstant(key);
+        if (typeof id === 'number' && id === moveId) {
+          _moveIdToEnumCache.set(moveId, key);
+          return key;
+        }
+      }
+    }
+  } catch { /* fallthrough */ }
+  return null;
+}
+
+/** Resolve nom move depuis move id numeric.
+ *  1:1 décomp `gMoveNames[moveId]` (battle_message.c:2172). Notre port :
+ *   - Resolve numeric → "MOVE_X" via reverse cache
+ *   - Lookup gameData.moveNamesFr[MOVE_X] via getMoveName  - Fallback : enum sans préfixe "MOVE_" */
+function _moveName(moveId: number): string {
+  if (!moveId) return '?';
+  const enumName = _moveIdToEnum(moveId);
+  if (enumName) {
+    const fr = _getMoveNameFr(enumName);
+    if (fr && fr !== enumName) return fr;
+    return enumName.replace(/^MOVE_/, '');
+  }
   return `Capa#${moveId}`;
 }
 
@@ -172,7 +209,18 @@ function _monNicknameWithPrefix(battlerId: number): string {
  *   - B_BUFF_ABILITY (9) : abilityId u8
  *   - B_BUFF_ITEM (10) : itemId u16 */
 function _decodeTextBuff(buf: Uint8Array): string {
-  if (!buf || buf.length === 0 || buf[0] !== B_BUFF_PLACEHOLDER_BEGIN) return '';
+  if (!buf || buf.length === 0) return '';
+  // Cas 2 (= StringCopy direct par BufferStringBattle special case) : raw ASCII
+  // bytes terminés par 0xFF EOS, sans 0xFD prefix.
+  if (buf[0] !== B_BUFF_PLACEHOLDER_BEGIN) {
+    let out = '';
+    for (let i = 0; i < buf.length; i++) {
+      if (buf[i] === B_BUFF_EOS) break;
+      // Decode comme UTF-8/ASCII direct (= moveName, speciesName, etc.).
+      out += String.fromCharCode(buf[i]);
+    }
+    return out;
+  }
   let i = 1;  // skip B_BUFF_PLACEHOLDER_BEGIN
   let out = '';
   while (i < buf.length && buf[i] !== B_BUFF_EOS) {
@@ -328,12 +376,27 @@ export function decodeBattleString(stringId: number, msgData: BattleMsgData): st
   let sTextName: string | undefined;
 
   // ─── Special-case stringIds 0..11 (= BufferStringBattle switch) ──────
+  // Certains cases pre-populate gBattleTextBuff2 avec data avant lookup
+  // (= 1:1 décomp battle_message.c:2166-2176 case STRINGID_USEDMOVE).
+  // Notre port : pre-fill le buffer correspondant dans msgData.textBuffs.
   switch (stringId) {
     case 0: sTextName = 'sText_WildPkmnAppeared'; break;        // STRINGID_INTROMSG
     case 1: sTextName = 'sText_GoPkmn'; break;                  // STRINGID_INTROSENDOUT
     case 2: sTextName = 'sText_PkmnComeBack'; break;            // STRINGID_RETURNMON
     case 3: sTextName = 'sText_GoPkmn2'; break;                 // STRINGID_SWITCHINMON
-    case 4: sTextName = 'sText_AttackerUsedX'; break;           // STRINGID_USEDMOVE
+    case 4: {
+      // 1:1 décomp battle_message.c:2166-2176 : pre-fill BUFF2 avec
+      // gMoveNames[currentMove] (= move name FR direct, pas via B_BUFF_MOVE tag).
+      sTextName = 'sText_AttackerUsedX';
+      const moveName = _moveName(msgData.currentMove);
+      // Write directement le moveName en TextBuff2 (= bytes UTF-8 puis EOS).
+      // Notre port utilise un encoding ASCII simplifié dans le buff (= chaque char
+      // est son code point, puis 0xFF EOS) ; le decoder _decodeTextBuff lit byte
+      // par byte. Pour shortcut : on ne décode pas via _decodeTextBuff mais on
+      // substitue directement le moveName quand placeholder {B_BUFF2} apparaît.
+      msgData.textBuffs[1] = _encodeStringForBuff(moveName);
+      break;
+    }
     case 5: sTextName = ''; break;                              // STRINGID_BATTLEEND (= no text)
     case 6:
     case 7:
@@ -356,6 +419,21 @@ export function decodeBattleString(stringId: number, msgData: BattleMsgData): st
     return `[${sTextName} missing]`;
   }
   return _substitutePlaceholders(tmpl, msgData);
+}
+
+/** 1:1 décomp `StringCopy` : encode une string en bytes ASCII puis EOS=0xFF.
+ *  Utilisé par les special cases dans BufferStringBattle pour pre-fill un
+ *  gBattleTextBuffN avec data dynamique (= move name / type name / etc.).
+ *  Notre port utilise un encoding simplifié : un byte par char (= ASCII / latin-1).
+ *  Le decoder _decodeTextBuff lit ces bytes directement. */
+function _encodeStringForBuff(s: string): Uint8Array {
+  // Account pour EOS terminator + initial bytes.
+  const buf = new Uint8Array(Math.max(16, s.length + 1));
+  for (let i = 0; i < s.length && i < buf.length - 1; i++) {
+    buf[i] = s.charCodeAt(i) & 0xFF;
+  }
+  buf[Math.min(s.length, buf.length - 1)] = 0xFF;  // EOS
+  return buf;
 }
 
 /** Strip GBA control codes (= {WAIT_SE}, {PAUSE 32}, \n, \p, etc.) pour

@@ -162,6 +162,12 @@ export function loadGameData(): Promise<void> {
       contestMoves, evolutions, itemEffects, pokedexOrders, trainerClassLookups,
       typeChart,
     };
+    // 1:1 décomp bridge : expose moves/species pour reverse-id lookups (= cache
+    // utilisé par battle-string-decoder pour numeric move id → MOVE_X enum).
+    (globalThis as Record<string, unknown>).gameDataMoves = moves;
+    (globalThis as Record<string, unknown>).gameDataSpecies = species;
+    (globalThis as Record<string, unknown>).gameDataAbilityNamesFr = abilityNamesFr;
+    (globalThis as Record<string, unknown>).gameDataItemDescriptionsFr = itemDescriptionsFr;
     console.log(`[game-data] loaded — ${Object.keys(species).length} species, ` +
       `${Object.keys(moves).length} moves, ${Object.keys(trainers).length} trainers, ` +
       `${typeChart.length} type-chart entries`);
