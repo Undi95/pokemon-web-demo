@@ -231,9 +231,16 @@ function _decodeTextBuff(buf: Uint8Array): string {
     const tag = buf[i++];
     switch (tag) {
       case B_BUFF_STRING: {
-        // u16 LE stringId puis lookup table-side (= recursive partial).
+        // u16 LE stringId puis lookup table-side.
         const stringId = buf[i] | (buf[i + 1] << 8);
         i += 2;
+        // 1:1 décomp battle_message.c:2861-2864 : si STATSHARPLY/STATHARSHLY,
+        // skip 3 bytes additional (= ignore next B_BUFF_STRING entry STATROSE/
+        // STATFELL puisque "sharply" + "rose!" est combiné en "baisse beaucoup!").
+        // STRINGID_STATSHARPLY = 209, STATHARSHLY = 211.
+        if (stringId === 209 || stringId === 211) {
+          i += 3;  // skip next B_BUFF_STRING entry [tag, lo, hi]
+        }
         const sTextName = BATTLE_STRINGS_TABLE[stringId];
         if (sTextName) {
           const tmpl = getString(sTextName);
