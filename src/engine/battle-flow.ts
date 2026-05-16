@@ -67,7 +67,7 @@ import { getRuntime } from './decomp-globals';
 import { OBJ_PLTT_ID } from './decomp-runtime';
 import { gameState } from './game-state';
 import { createPokemonInstance, calculateExpGain, applyExpAward, type PokemonInstance } from './pokemon';
-import { setupPartyForBattle, teardownPartyAfterBattle } from './battle/party-storage';
+import { setupPartyForBattle, teardownPartyAfterBattle, fillActiveBattleMonsForBattleStart } from './battle/party-storage';
 import { VarSet } from './script-vars';
 import { getMove, getMoveName, loadGameData } from './data/game-data';
 import { Random } from './random';
@@ -506,6 +506,11 @@ export function startWildBattle(params: BattleParams): BattleFlow {
         // combat. Ainsi les opcodes du bytecode interpreter qui lisent
         // GetMonData(gPlayerParty[i], ...) ont les bonnes données.
         setupPartyForBattle(party.filter((m): m is PokemonInstance => !!m), [opponentMon]);
+        // 1:1 décomp battle_main.c:BattleIntroGetMonsData : populate gBattleMons[0]
+        // (player active) + gBattleMons[1] (enemy active) depuis party slot 0.
+        // Cette init est requise pour que les opcodes bytecode lisent les vraies
+        // stats au lieu de zéros.
+        fillActiveBattleMonsForBattleStart();
         // Bug 5e session 124 : fade-out screen → black avant load battle assets.
         // 1:1 décomp `CB2_StartFirstBattle` chain via BattleStartTransition.
         // Notre version simplifiée : BeginNormalPaletteFade to black.

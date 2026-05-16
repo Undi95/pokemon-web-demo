@@ -408,12 +408,13 @@ export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
       mon.pp[i] = 0;
     }
   }
-  // Stats — pas dans PokemonInstance directement, mais on a IVs/EVs/level.
-  // 1:1 décomp : CalculateMonStats lit ces fields. Pour bridge, on prend
-  // les stats déjà calculées par @pkmn/dex (= dans inst.maxHp pour HP, autres
-  // stats absent → defaulter à level-based).
+  // Stats — calculated via CalculateMonStats (= 1:1 décomp pokemon.c).
+  // Maintenant on calcule depuis IVs/EVs/level/nature/baseStats au lieu de
+  // les laisser à 0. C'est requis pour que le bytecode interpreter ait des
+  // stats réelles à damage-calc.
   mon.attack = 0; mon.defense = 0; mon.speed = 0;
   mon.spAttack = 0; mon.spDefense = 0;
+  // Délégué à CalculateMonStats ci-dessous.
   // IVs
   mon.hpIV = inst.ivs.hp & 0x1F;
   mon.attackIV = inst.ivs.atk & 0x1F;
@@ -434,7 +435,111 @@ export function pokemonInstanceToPokemon(inst: PokemonInstance): Pokemon {
     mon.status = mapped >>> 0;
   }
   mon.abilityNum = 0; // TODO bridge ability slot
+  // 1:1 décomp `CalculateMonStats(mon)` — calculate atk/def/spe/spa/spd/maxHP
+  // depuis baseStats + IVs + EVs + level + nature.
+  CalculateMonStats(mon);
   return mon;
+}
+
+// ─── CalculateMonStats (= 1:1 décomp pokemon.c:1932-2017) ─────────────────
+
+/** 1:1 décomp `gNatureStatTable[NUM_NATURES][NUM_NATURE_STATS]`
+ *  (pokemon.c:1864-1893). Index par nature (0..24) + stat (0..4). Value :
+ *   +1 = +10%, -1 = -10%, 0 = neutral. */
+const _NATURE_STAT_TABLE: ReadonlyArray<ReadonlyArray<number>> = [
+  // STAT_ATTACK, STAT_DEFENSE, STAT_SPEED, STAT_SPATK, STAT_SPDEF
+  [ 0,  0,  0,  0,  0],  // HARDY
+  [+1, -1,  0,  0,  0],  // LONELY
+  [+1,  0, -1,  0,  0],  // BRAVE
+  [+1,  0,  0, -1,  0],  // ADAMANT
+  [+1,  0,  0,  0, -1],  // NAUGHTY
+  [-1, +1,  0,  0,  0],  // BOLD
+  [ 0,  0,  0,  0,  0],  // DOCILE
+  [ 0, +1, -1,  0,  0],  // RELAXED
+  [ 0, +1,  0, -1,  0],  // IMPISH
+  [ 0, +1,  0,  0, -1],  // LAX
+  [-1,  0, +1,  0,  0],  // TIMID
+  [ 0, -1, +1,  0,  0],  // HASTY
+  [ 0,  0,  0,  0,  0],  // SERIOUS
+  [ 0,  0, +1, -1,  0],  // JOLLY
+  [ 0,  0, +1,  0, -1],  // NAIVE
+  [-1,  0,  0, +1,  0],  // MODEST
+  [ 0, -1,  0, +1,  0],  // MILD
+  [ 0,  0, -1, +1,  0],  // QUIET
+  [ 0,  0,  0,  0,  0],  // BASHFUL
+  [ 0,  0,  0, +1, -1],  // RASH
+  [-1,  0,  0,  0, +1],  // CALM
+  [ 0, -1,  0,  0, +1],  // GENTLE
+  [ 0,  0, -1,  0, +1],  // SASSY
+  [ 0,  0,  0, -1, +1],  // CAREFUL
+  [ 0,  0,  0,  0,  0],  // QUIRKY
+];
+
+/** 1:1 décomp `GetNature(mon)` — personality % 25 = nature index 0..24. */
+function _getNatureFromPersonality(personality: number): number {
+  return (personality >>> 0) % 25;
+}
+
+/** 1:1 décomp `ModifyStatByNature(nature, stat, statIndex)` (pokemon.c:1894-1922).
+ *  Applique +10% / -10% / no-op selon table. */
+function _modifyStatByNature(nature: number, stat: number, statIndex: number): number {
+  if (nature < 0 || nature >= 25 || statIndex < 0 || statIndex >= 5) return stat;
+  const mod = _NATURE_STAT_TABLE[nature][statIndex];
+  if (mod === 0) return stat;
+  if (mod > 0) return Math.floor(stat * 110 / 100) & 0xFFFF;
+  return Math.floor(stat * 90 / 100) & 0xFFFF;
+}
+
+/** 1:1 décomp `CalculateMonStats(mon)` (pokemon.c:1932-2017).
+ *  Calcule maxHP + attack + defense + speed + spAttack + spDefense
+ *  depuis baseStats (= gSpeciesInfo[species]) + IVs + EVs + level + nature.
+ *  Met à jour aussi `currentHP` si la diff doit être propagée. */
+export function CalculateMonStats(mon: Pokemon): void {
+  if (mon.species === 0) return;
+  const speciesEnum = reverseDecompConstant(mon.species, 'SPECIES_');
+  if (!speciesEnum) return;
+  const info = getSpeciesInfo(speciesEnum);
+  if (!info?.stats) return;
+  const base = info.stats;
+  const level = mon.level || 1;
+  const nature = _getNatureFromPersonality(mon.personality);
+
+  // SPECIES_SHEDINJA = 292.
+  const SPECIES_SHEDINJA = 292;
+  let newMaxHP: number;
+  if (mon.species === SPECIES_SHEDINJA) {
+    newMaxHP = 1;
+  } else {
+    const n = 2 * base.hp + mon.hpIV;
+    newMaxHP = Math.floor(((n + Math.floor(mon.hpEV / 4)) * level) / 100) + level + 10;
+  }
+  const previousMaxHP = mon.maxHP;
+  mon.maxHP = newMaxHP & 0xFFFF;
+
+  // CALC_STAT macro inline expand : (((2*base + IV + EV/4) * level) / 100) + 5,
+  // then ModifyStatByNature.
+  const calc = (baseStat: number, iv: number, ev: number, statIdx: number): number => {
+    const n = 2 * baseStat + iv;
+    let stat = Math.floor(((n + Math.floor(ev / 4)) * level) / 100) + 5;
+    stat = _modifyStatByNature(nature, stat, statIdx) & 0xFFFF;
+    return stat;
+  };
+  mon.attack    = calc(base.atk, mon.attackIV,    mon.attackEV,    0); // STAT_ATK
+  mon.defense   = calc(base.def, mon.defenseIV,   mon.defenseEV,   1); // STAT_DEF
+  mon.speed     = calc(base.spe, mon.speedIV,     mon.speedEV,     2); // STAT_SPEED
+  mon.spAttack  = calc(base.spa, mon.spAttackIV,  mon.spAttackEV,  3); // STAT_SPATK
+  mon.spDefense = calc(base.spd, mon.spDefenseIV, mon.spDefenseEV, 4); // STAT_SPDEF
+
+  // 1:1 décomp : adjust currentHP par la diff maxHP - previousMaxHP.
+  if (mon.species === SPECIES_SHEDINJA) {
+    if (mon.hp !== 0 || previousMaxHP === 0) mon.hp = 1;
+  } else if (mon.hp === 0 && previousMaxHP === 0) {
+    mon.hp = newMaxHP;
+  } else if (mon.hp !== 0) {
+    mon.hp += newMaxHP - previousMaxHP;
+    if (mon.hp <= 0) mon.hp = 1;
+  }
+  // else : stay at 0 (= fainted).
 }
 
 /** Bridge inverse `Pokemon` → mise à jour de `PokemonInstance` (= persist
@@ -475,6 +580,125 @@ export function teardownPartyAfterBattle(player: PokemonInstance[]): void {
   for (let i = 0; i < Math.min(player.length, PARTY_SIZE); i++) {
     syncPokemonToInstance(gPlayerParty[i], player[i]);
   }
+}
+
+/** 1:1 décomp `OpponentHandleGetMonData` + `BattleIntroDrawTrainersOrMonsSprites`
+ *  fields setup (battle_controller_opponent.c:543-616 + battle_main.c:2742-2790).
+ *
+ *  Fill un `gBattleMons[battlerId]` slot depuis un Pokemon party slot. C'est
+ *  l'équivalent simplifié du REQUEST_ALL_BATTLE + post-process décomp :
+ *    1. Copie tous les fields plats (species/hp/maxHP/stats/IVs/moves/pp/etc.)
+ *    2. Set types[0]/types[1] depuis gSpeciesInfo (= battle_main.c:2766-2767)
+ *    3. Set ability via GetAbilityBySpecies (= battle_main.c:2768)
+ *    4. Reset statStages[i] = 6 (= base stage, battle_main.c:2771-2772)
+ *    5. Reset status2 = 0 (= battle_main.c:2773)
+ *
+ *  Source `partySource = 'player' | 'enemy'` picks gPlayerParty vs gEnemyParty.
+ *  Source `partyIdx` = index dans la party (= 0..5).
+ *
+ *  Note : ce helper est appelé au début de chaque combat ET à chaque switch-in.
+ *  Pour les switch-in mid-battle, le décomp utilise des controllers async; on
+ *  fait sync direct ici (= simplification 1:1 fonctionnel). */
+export function fillBattleMonFromParty(
+  battlerId: number,
+  partySource: 'player' | 'enemy',
+  partyIdx: number,
+): void {
+  // Lazy import pour éviter circular dep (state.ts importe pas party-storage).
+  // gBattleMons est exposé via globalThis.__battleState.gBattleMons.
+  const battleState = (globalThis as { __battleState?: { gBattleMons?: BattleMonLike[] } })
+    .__battleState;
+  if (!battleState?.gBattleMons) {
+    console.warn('[party-storage] gBattleMons not exposed yet — call fillBattleMonFromParty after state.ts init');
+    return;
+  }
+  const mons = battleState.gBattleMons;
+  if (battlerId < 0 || battlerId >= mons.length) return;
+
+  const party = partySource === 'player' ? gPlayerParty : gEnemyParty;
+  if (partyIdx < 0 || partyIdx >= party.length) return;
+  const src = party[partyIdx];
+  const dst = mons[battlerId];
+
+  // 1:1 décomp REQUEST_ALL_BATTLE field copy.
+  dst.species = src.species;
+  dst.item = src.heldItem;
+  for (let i = 0; i < 4; i++) {
+    dst.moves[i] = src.moves[i];
+    dst.pp[i] = src.pp[i];
+  }
+  dst.ppBonuses = src.ppBonuses;
+  dst.friendship = src.friendship;
+  dst.experience = src.experience;
+  dst.hpIV = src.hpIV;
+  dst.attackIV = src.attackIV;
+  dst.defenseIV = src.defenseIV;
+  dst.speedIV = src.speedIV;
+  dst.spAttackIV = src.spAttackIV;
+  dst.spDefenseIV = src.spDefenseIV;
+  dst.personality = src.personality;
+  dst.status1 = src.status;
+  dst.level = src.level;
+  dst.hp = src.hp;
+  dst.maxHP = src.maxHP;
+  dst.attack = src.attack;
+  dst.defense = src.defense;
+  dst.speed = src.speed;
+  dst.spAttack = src.spAttack;
+  dst.spDefense = src.spDefense;
+  dst.isEgg = src.isEgg !== 0;
+  dst.abilityNum = src.abilityNum;
+  dst.otId = src.otId;
+  dst.nickname = src.nickname;
+  dst.otName = src.otName;
+
+  // 1:1 décomp battle_main.c:2766-2773 post-DataTransfer processing.
+  const speciesEnum = reverseDecompConstant(src.species, 'SPECIES_');
+  if (speciesEnum) {
+    const info = getSpeciesInfo(speciesEnum);
+    if (info?.types) {
+      const t1 = resolveDecompConstant(info.types[0] ?? '');
+      const t2 = resolveDecompConstant(info.types[1] ?? info.types[0] ?? '');
+      dst.type1 = typeof t1 === 'number' ? t1 : 0;
+      dst.type2 = typeof t2 === 'number' ? t2 : 0;
+    }
+  }
+  dst.ability = GetAbilityBySpecies(src.species, src.abilityNum);
+
+  // Reset stat stages to base (= 6, neutral). Battle main does 8 entries
+  // (NUM_BATTLE_STATS=6 + accuracy + evasion). Notre struct utilise 7 entries.
+  for (let i = 0; i < dst.statStages.length; i++) {
+    dst.statStages[i] = 6;
+  }
+  dst.status2 = 0;
+}
+
+/** Setup le combat depuis le party joueur + le mon adverse. Appelé une fois
+ *  au début du combat. Fill gBattleMons[0] (player active) et gBattleMons[1]
+ *  (enemy active). Set gBattleStruct.battlerPartyIndexes[0/1] = 0.
+ *
+ *  Pour wire bytecode, ce helper doit être appelé APRÈS setupPartyForBattle. */
+export function fillActiveBattleMonsForBattleStart(): void {
+  fillBattleMonFromParty(0, 'player', 0);
+  fillBattleMonFromParty(1, 'enemy', 0);
+}
+
+interface BattleMonLike {
+  species: number; item: number;
+  moves: number[]; pp: number[];
+  ppBonuses: number; friendship: number; experience: number;
+  hpIV: number; attackIV: number; defenseIV: number;
+  speedIV: number; spAttackIV: number; spDefenseIV: number;
+  personality: number; status1: number; level: number;
+  hp: number; maxHP: number;
+  attack: number; defense: number; speed: number;
+  spAttack: number; spDefense: number;
+  isEgg: boolean; abilityNum: number; otId: number;
+  nickname: string; otName: string;
+  type1: number; type2: number;
+  ability: number;
+  statStages: number[];
+  status2: number;
 }
 
 // ─── GetAbilityBySpecies (= 1:1 décomp pokemon.c) ─────────────────────────
