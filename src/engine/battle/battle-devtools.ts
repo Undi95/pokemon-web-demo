@@ -1,0 +1,382 @@
+/**
+ * battle/battle-devtools.ts — Devtools battle bytecode pour debug "voir sans
+ * voir l'écran".
+ *
+ * Exposé via `scope.bytecode.*` (= installé par dev-scope.ts au boot).
+ *
+ * Usage typique pour wire bytecode au gameplay (= plan WIRE-BYTECODE-TO-GAMEPLAY) :
+ *   scope.bytecode.labels('BattleScript_Effect')  // list les scripts disponibles
+ *   scope.bytecode.dumpMons()                     // gBattleMons[0..3] state
+ *   scope.bytecode.runScript('BattleScript_EffectHit')  // exec un script complet
+ *   scope.bytecode.dispatchStats()                // combien d'opcodes appelés
+ *   scope.bytecode.tracingOn()                    // log chaque opcode (max 200)
+ *   scope.bytecode.lastBug()                      // dernière exception handler
+ *
+ * Architecture : 100% pull (= rien d'auto-installé), main.ts importe et
+ * appelle installBattleDevtools() qui fait un merge dans window.scope.
+ */
+
+import {
+  runBattleScript,
+  setupBattleScriptContext,
+  getBattleScriptOffset,
+  getAllLabels,
+  getDispatchStats,
+  resetDispatchStats,
+  setTracing,
+  getLastBug,
+  clearLastBug,
+  getRecentOpcodes,
+  type BattleScriptContext,
+} from './script-interpreter';
+import { OPCODE_NAMES, NAME_TO_OPCODE, getOpcodeName } from './opcode-names';
+import {
+  gBattleMons,
+  gBattlerAttacker,
+  gBattlerTarget,
+  gActiveBattler,
+  gBattlersCount,
+  gCurrentMove,
+  gChosenMove,
+  gBattleMoveDamage,
+  gMoveResultFlags,
+  gHitMarker,
+  gBattleOutcome,
+  gBattleTypeFlags,
+  gBattleWeather,
+  gCritMultiplier,
+  gMultiHitCounter,
+  gBattleControllerExecFlags,
+  gBattleScripting,
+  gBattleStruct,
+  gSideStatuses,
+  gStatuses3,
+  gProtectStructs,
+  gDisableStructs,
+  gSideTimers,
+  gWishFutureKnock,
+} from './state';
+
+/** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
+ *  print structured pour console.table. */
+function dumpMons(): Array<Record<string, unknown>> {
+  const out: Array<Record<string, unknown>> = [];
+  for (let i = 0; i < gBattlersCount; i++) {
+    const m = gBattleMons[i];
+    if (!m) {
+      out.push({ slot: i, empty: true });
+      continue;
+    }
+    out.push({
+      slot: i,
+      species: m.species,
+      lvl: m.level,
+      hp: `${m.hp}/${m.maxHP}`,
+      atk: m.attack,
+      def: m.defense,
+      spA: m.spAttack,
+      spD: m.spDefense,
+      spe: m.speed,
+      type1: m.type1,
+      type2: m.type2,
+      ability: m.ability,
+      item: m.item,
+      moves: m.moves?.map((mv, idx) => `${mv}:pp${m.pp?.[idx] ?? '?'}`).join(' '),
+      stages: m.statStages?.join(','),
+      status1: `0x${(m.status1 ?? 0).toString(16)}`,
+      status2: `0x${(m.status2 ?? 0).toString(16)}`,
+      nickname: m.nickname,
+    });
+  }
+  return out;
+}
+
+/** Snapshot complet du combat (= toute la state battle visible bytecode). */
+function snapshot(): Record<string, unknown> {
+  return {
+    battlers: {
+      count: gBattlersCount,
+      attacker: gBattlerAttacker,
+      target: gBattlerTarget,
+      active: gActiveBattler,
+    },
+    move: {
+      current: gCurrentMove,
+      chosen: gChosenMove,
+      damage: gBattleMoveDamage,
+      resultFlags: `0x${gMoveResultFlags.toString(16)}`,
+      critMultiplier: gCritMultiplier,
+      multiHitCounter: gMultiHitCounter,
+    },
+    battle: {
+      outcome: gBattleOutcome,
+      typeFlags: `0x${gBattleTypeFlags.toString(16)}`,
+      weather: `0x${gBattleWeather.toString(16)}`,
+      hitMarker: `0x${gHitMarker.toString(16)}`,
+      controllerExecFlags: `0x${gBattleControllerExecFlags.toString(16)}`,
+    },
+    sideStatuses: gSideStatuses.map(s => `0x${s.toString(16)}`),
+    status3: gStatuses3.map(s => `0x${s.toString(16)}`),
+    scripting: {
+      multihitMoveEffect: gBattleScripting.multihitMoveEffect,
+      battler: gBattleScripting.battler,
+      animArg1: gBattleScripting.animArg1,
+      animArg2: gBattleScripting.animArg2,
+      statChanger: gBattleScripting.statChanger,
+      statAnimPlayed: gBattleScripting.statAnimPlayed,
+      moveendState: gBattleScripting.moveendState,
+      dmgMultiplier: gBattleScripting.dmgMultiplier,
+      animTurn: gBattleScripting.animTurn,
+      animTargetsHit: gBattleScripting.animTargetsHit,
+    },
+    protect: gProtectStructs.map((p, i) => ({
+      slot: i,
+      protected: p.protected,
+      endured: p.endured,
+      physicalDmg: p.physicalDmg,
+      flinch: p.flinchImmobility,
+      chargingTurn: p.chargingTurn,
+    })),
+    disable: gDisableStructs.map((d, i) => ({
+      slot: i,
+      disabledMove: d.disabledMove,
+      disableTimer: d.disableTimer,
+      encoredMove: d.encoredMove,
+      encoredMovePos: d.encoredMovePos,
+      tauntTimer: d.tauntTimer,
+      isFirstTurn: d.isFirstTurn,
+    })),
+    sideTimers: gSideTimers.map((t, i) => ({
+      slot: i,
+      reflect: t.reflectTimer,
+      lightScreen: t.lightscreenTimer,
+      safeguard: t.safeguardTimer,
+      mist: t.mistTimer,
+      spikesAmount: t.spikesAmount,
+    })),
+    wish: gWishFutureKnock,
+    struct: {
+      stringMoveType: gBattleStruct.stringMoveType,
+      moveTarget: gBattleStruct.moveTarget,
+      dynamicMoveType: gBattleStruct.dynamicMoveType,
+      runTries: gBattleStruct.runTries,
+      atkCancelerTracker: gBattleStruct.atkCancelerTracker,
+      moveendState: gBattleScripting.moveendState,
+    },
+  };
+}
+
+/** Run un script complet depuis un label. Returns { ok, paused, ... } pour debug.
+ *
+ *  Note : NE MET PAS À JOUR gameState — modifie uniquement les vars battle.
+ *  Pour wire au gameplay réel, voir wire-bytecode-to-battle-flow (TBD).
+ */
+function runScript(label: string, opts?: {
+  /** Si true, reset stats avant le run. */
+  resetStats?: boolean;
+  /** Si true, enable tracing pour ce run (= max 200 opcodes loggés). */
+  trace?: boolean;
+}): {
+  ok: boolean;
+  reason?: string;
+  paused?: boolean;
+  scriptPtrFinal?: number;
+  dispatched?: number;
+} {
+  const offset = getBattleScriptOffset(label);
+  if (offset < 0) {
+    return { ok: false, reason: `label '${label}' not found` };
+  }
+  const ctx = setupBattleScriptContext(label);
+  if (!ctx) {
+    return { ok: false, reason: `setup ctx failed for '${label}'` };
+  }
+  if (opts?.resetStats) resetDispatchStats();
+  const tracingBefore = opts?.trace ? true : false;
+  if (tracingBefore) setTracing(true);
+  const beforeTotal = getDispatchStats().total;
+  const paused = runBattleScript(ctx);
+  if (tracingBefore) setTracing(false);
+  const afterTotal = getDispatchStats().total;
+  return {
+    ok: true,
+    paused,
+    scriptPtrFinal: ctx.scriptPtr,
+    dispatched: afterTotal - beforeTotal,
+  };
+}
+
+/** Run un opcode unique en isolation (= setup un ctx avec un mini-bytecode
+ *  contenant l'opcode + args, et l'exécute). Note : à cause de l'architecture
+ *  bytecode globale (= les opcodes lisent _BYTECODE direct via readByte/Word),
+ *  cette fonction ne peut PAS facilement injecter un bytecode custom. À la
+ *  place, on demande à l'utilisateur de pointer ctx.scriptPtr à un offset où
+ *  l'opcode + args sont déjà présents.
+ *
+ *  TODO : si besoin pour POC, ajouter un mode "isolated bytecode" dans le
+ *  script-interpreter (= overload _BYTECODE temporairement). */
+function runOpcode(opcodeName: string, _args?: number[]): {
+  ok: boolean;
+  reason?: string;
+} {
+  const opcode = NAME_TO_OPCODE[opcodeName];
+  if (opcode === undefined) {
+    return { ok: false, reason: `unknown opcode name '${opcodeName}'` };
+  }
+  return {
+    ok: false,
+    reason: `runOpcode not yet implemented for isolated test — use runScript() with a known label instead. Opcode 0x${opcode.toString(16)} found.`,
+  };
+}
+
+/** Inspect le script actuel = label le plus proche du scriptPtr (= help debug). */
+function whereAm(ctx: BattleScriptContext | null): Record<string, unknown> {
+  if (!ctx) return { error: 'no ctx provided — pass a BattleScriptContext' };
+  const ptr = ctx.scriptPtr;
+  if (ptr < 0) return { ptr: -1, status: 'script done (ptr=-1)' };
+  // Find closest label ≤ ptr.
+  const allLabels = getAllLabels();
+  let closest = '';
+  let closestOffset = -1;
+  for (const lbl of allLabels) {
+    const off = getBattleScriptOffset(lbl);
+    if (off <= ptr && off > closestOffset) {
+      closest = lbl;
+      closestOffset = off;
+    }
+  }
+  return {
+    ptr,
+    ptrHex: `0x${ptr.toString(16)}`,
+    nearestLabel: closest,
+    nearestLabelOffset: closestOffset,
+    deltaFromLabel: ptr - closestOffset,
+    stackDepth: ctx.scriptPtrStack.length,
+    comparisonResult: ctx.comparisonResult,
+  };
+}
+
+/** Liste les labels disponibles (= scripts), filtré par prefix optionnel. */
+function labels(prefix?: string): string[] {
+  return getAllLabels(prefix);
+}
+
+/** Stats opcodes par nom + total. Snapshot du moment d'appel. */
+function dispatchStats(): { byName: Record<string, number>; total: number } {
+  return getDispatchStats();
+}
+
+/** Reset les stats opcodes. */
+function resetStats(): { ok: true } {
+  resetDispatchStats();
+  return { ok: true };
+}
+
+/** Enable tracing : log chaque opcode dispatché jusqu'à max (default 200). */
+function tracingOn(max = 200): { ok: true } {
+  setTracing(true, max);
+  return { ok: true };
+}
+
+/** Disable tracing. */
+function tracingOff(): { ok: true } {
+  setTracing(false);
+  return { ok: true };
+}
+
+/** Dernière exception throw par un handler opcode. */
+function lastBug(): ReturnType<typeof getLastBug> {
+  return getLastBug();
+}
+
+/** Reset le lastBug. */
+function clearBug(): { ok: true } {
+  clearLastBug();
+  return { ok: true };
+}
+
+/** Liste les N derniers opcodes dispatchés (= ring buffer 100). */
+function recentOps(): Array<{ opcode: number; name: string; scriptPtr: number }> {
+  return getRecentOpcodes();
+}
+
+/** Lookup opcode hex from name OR name from hex. */
+function opcode(query: string | number): { hex?: number; hexStr?: string; name?: string; reason?: string } {
+  if (typeof query === 'number') {
+    const name = getOpcodeName(query);
+    if (name.startsWith('?')) return { hex: query, reason: 'unknown opcode' };
+    return { hex: query, hexStr: `0x${query.toString(16)}`, name };
+  }
+  const hex = NAME_TO_OPCODE[query];
+  if (hex === undefined) return { reason: `unknown opcode name '${query}'` };
+  return { hex, hexStr: `0x${hex.toString(16)}`, name: query };
+}
+
+/** Liste tous les opcodes 1:1 décomp (hex + nom). */
+function listOpcodes(): Array<{ hex: string; name: string }> {
+  const out: Array<{ hex: string; name: string }> = [];
+  for (let i = 0; i < OPCODE_NAMES.length; i++) {
+    const name = OPCODE_NAMES[i];
+    if (name) out.push({ hex: `0x${i.toString(16).padStart(2, '0')}`, name });
+  }
+  return out;
+}
+
+/** Build l'API exposée sur scope.bytecode. */
+export function buildBattleDevtools(): Record<string, unknown> {
+  return {
+    // Inspect
+    dumpMons,
+    snapshot,
+    whereAm,
+    labels,
+    listOpcodes,
+    opcode,
+    // Execute
+    runScript,
+    runOpcode,
+    // Stats + tracing
+    dispatchStats,
+    resetStats,
+    tracingOn,
+    tracingOff,
+    recentOps,
+    // Errors
+    lastBug,
+    clearBug,
+    // Help
+    help: () => `
+scope.bytecode — devtools battle script interpreter (1:1 décomp)
+═════════════════════════════════════════════════════════════════
+
+INSPECT :
+  dumpMons()                gBattleMons[0..N] : species/lvl/hp/stats/moves
+  snapshot()                Full battle state : battlers + move + scripting + protect/disable/timers
+  labels(prefix?)           List scripts disponibles (filtre par prefix)
+  listOpcodes()             Tous les 249 opcodes hex+name 1:1 décomp
+  opcode(name|hex)          Lookup hex↔name conversion
+  whereAm(ctx)              Closest label depuis un BattleScriptContext.scriptPtr
+
+EXECUTE :
+  runScript(label, opts?)   Run un script complet (opts = { resetStats, trace })
+  runOpcode(name, args)     TODO — single opcode isolation test
+
+STATS + TRACE :
+  dispatchStats()           Counts opcodes appelés depuis dernier reset
+  resetStats()              Reset les counts
+  tracingOn(max=200)        Log chaque opcode dispatché à la console
+  tracingOff()
+  recentOps()               Ring buffer des 100 derniers opcodes
+
+ERRORS :
+  lastBug()                 Dernière exception throw par un handler
+  clearBug()
+
+EX :
+  scope.bytecode.tracingOn(50)
+  scope.bytecode.runScript('BattleScript_EffectHit', { resetStats: true, trace: true })
+  scope.bytecode.dispatchStats()
+  scope.bytecode.lastBug()
+`.trim(),
+  };
+}

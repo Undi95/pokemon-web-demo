@@ -52,6 +52,7 @@
 import { Random } from '../random';
 import { tickBattleControllers } from './battle-controllers';
 import { BATTLE_SCRIPTS_FOR_MOVE_EFFECTS } from '../decomp-data/auto-asm-bytecode/data/battle_scripts_1-jump-table';
+import { OPCODE_NAMES, getOpcodeName } from './opcode-names';
 
 // ─── Battle state types (1:1 décomp include/battle.h) ──────────────────────
 
@@ -291,9 +292,14 @@ function _Cmd_stub(name: string): BattleOpcodeHandler {
 // ─── Dispatch table init ────────────────────────────────────────────────────
 
 /** Initialize the 256-entry dispatch table. Opcodes implémentés sont set;
- *  les stubs portent leur nom 1:1 décomp pour debug. */
+ *  les stubs portent leur nom 1:1 décomp pour debug (depuis OPCODE_NAMES). */
 function _initCommandsTable(): void {
-  for (let i = 0; i < 256; i++) _commands[i] = _Cmd_nop;
+  // Default ALL slots to stub-by-name. Real handlers below + cmd-niveau-N
+  // installers will overwrite. _Cmd_stub uses OPCODE_NAMES for diagnostics.
+  for (let i = 0; i < 256; i++) {
+    const name = OPCODE_NAMES[i] ?? 'nop_unused';
+    _commands[i] = _Cmd_stub(name);
+  }
   // Implémentés réellement :
   _commands[0x28] = _Cmd_goto;
   _commands[0x29] = _Cmd_jumpifbyte;
@@ -306,8 +312,9 @@ function _initCommandsTable(): void {
   _commands[0x3F] = _Cmd_end3;
   _commands[0x41] = _Cmd_call;
   _commands[0x83] = _Cmd_nop;
-  // Stubs (= nom 1:1 décomp pour log debug; à porter au fur et à mesure) :
-  const STUB_NAMES: Record<number, string> = {
+  // Legacy STUB_NAMES record kept dead for reference — OPCODE_NAMES above
+  // is now the source of truth (1:1 décomp `gBattleScriptingCommandsTable`).
+  void ({
     0x00: 'attackcanceler', 0x01: 'accuracycheck', 0x02: 'attackstring',
     0x03: 'ppreduce', 0x04: 'critcalc', 0x05: 'damagecalc', 0x06: 'typecalc',
     0x07: 'adjustnormaldamage', 0x08: 'adjustnormaldamage2',
@@ -415,11 +422,7 @@ function _initCommandsTable(): void {
     0xF3: 'trygivecaughtmonnick', 0xF4: 'subattackerhpbydmg',
     0xF5: 'removeattackerstatus1', 0xF6: 'finishaction',
     0xF7: 'finishturn', 0xF8: 'trainerslideout',
-  };
-  for (const [idxStr, name] of Object.entries(STUB_NAMES)) {
-    const idx = parseInt(idxStr, 10);
-    _commands[idx] = _Cmd_stub(name);
-  }
+  });
 
   // Session 133 — Phase 1 Niveau 1 + Niveau 2 : install real handlers.
   // Lazy import pour break cyclic dep (cmd-niveau-X.ts importent BattleOpcodeHandler
@@ -561,6 +564,58 @@ function _initCommandsTable(): void {
 
 _initCommandsTable();
 
+// ─── Devtools : dispatch stats + tracing + lastBug ─────────────────────────
+//
+// Permet de mesurer quels opcodes sont appelés en gameplay réel + trace each
+// dispatch + catch any handler throw pour inspection au devtools.
+
+/** Counts par opcode name. Reset via resetDispatchStats(). */
+const _dispatchStats: Record<string, number> = {};
+let _totalDispatches = 0;
+let _tracing = false;
+let _traceMax = 200;
+let _traceCount = 0;
+let _lastBug: {
+  opcode: number;
+  opcodeName: string;
+  scriptPtr: number;
+  error: string;
+  stack?: string;
+  at: number;
+} | null = null;
+/** Last N opcodes executed (= ring buffer pour post-mortem). */
+const _recentOpcodes: { opcode: number; name: string; scriptPtr: number }[] = [];
+const _RECENT_MAX = 100;
+
+export function getDispatchStats(): { byName: Record<string, number>; total: number } {
+  return { byName: { ..._dispatchStats }, total: _totalDispatches };
+}
+
+export function resetDispatchStats(): void {
+  for (const k of Object.keys(_dispatchStats)) delete _dispatchStats[k];
+  _totalDispatches = 0;
+  _recentOpcodes.length = 0;
+}
+
+export function setTracing(on: boolean, max = 200): void {
+  _tracing = on;
+  _traceMax = max;
+  _traceCount = 0;
+  if (on) console.log(`[battle/script-interpreter] tracing ON (max ${max} opcodes)`);
+}
+
+export function getLastBug(): typeof _lastBug {
+  return _lastBug;
+}
+
+export function clearLastBug(): void {
+  _lastBug = null;
+}
+
+export function getRecentOpcodes(): typeof _recentOpcodes {
+  return _recentOpcodes.slice();
+}
+
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 /** Run le battle script jusqu'à end ou pause. Returns TRUE si pause (= re-call
@@ -576,13 +631,40 @@ export function runBattleScript(ctx: BattleScriptContext): boolean {
   while (iterations++ < MAX) {
     if (ctx.scriptPtr < 0 || ctx.scriptPtr >= _BYTECODE.length) return false;
     const opcode = _BYTECODE[ctx.scriptPtr];
+    const ptrBefore = ctx.scriptPtr;
     ctx.scriptPtr++;
     const handler = _commands[opcode];
     if (!handler) {
       console.warn(`[battle/script-interpreter] no handler for opcode 0x${opcode.toString(16)}`);
       return false;
     }
-    const paused = handler(ctx);
+    const name = getOpcodeName(opcode);
+    // Devtools tracking : stats + tracing + ring buffer.
+    _dispatchStats[name] = (_dispatchStats[name] ?? 0) + 1;
+    _totalDispatches++;
+    _recentOpcodes.push({ opcode, name, scriptPtr: ptrBefore });
+    if (_recentOpcodes.length > _RECENT_MAX) _recentOpcodes.shift();
+    if (_tracing && _traceCount < _traceMax) {
+      console.log(`[bytecode] @0x${ptrBefore.toString(16).padStart(4, '0')} 0x${opcode.toString(16).padStart(2, '0')} ${name}`);
+      _traceCount++;
+    }
+    // Catch handler throws pour exposer au devtools (= lastBug).
+    let paused = false;
+    try {
+      paused = handler(ctx);
+    } catch (e) {
+      const err = e as Error;
+      _lastBug = {
+        opcode,
+        opcodeName: name,
+        scriptPtr: ptrBefore,
+        error: err.message ?? String(e),
+        stack: err.stack,
+        at: Date.now(),
+      };
+      console.error(`[battle/script-interpreter] handler '${name}' threw at @0x${ptrBefore.toString(16)} :`, err);
+      return false;
+    }
     // Session 134 — entre chaque opcode, tick les controllers MVP (= clear
     // exec flags). Simule des controllers async finished instantanément.
     // TODO retirer quand on aura de vrais controllers wired au framework UI.
@@ -593,6 +675,13 @@ export function runBattleScript(ctx: BattleScriptContext): boolean {
   }
   console.warn(`[battle/script-interpreter] hit MAX ${MAX} iterations — runaway script?`);
   return false;
+}
+
+/** Get all labels (= scripts disponibles), optionnel filter par prefix. */
+export function getAllLabels(prefix?: string): string[] {
+  const all = Object.keys(_LABELS);
+  if (!prefix) return all.sort();
+  return all.filter(l => l.startsWith(prefix)).sort();
 }
 
 /** Setup un nouveau context pour exec un script à un label donné. */

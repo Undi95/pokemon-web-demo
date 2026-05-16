@@ -38,6 +38,7 @@ import {
   GetFieldMessageBoxMode,
   IsFieldMessageBoxHidden,
 } from './field-message-box';
+import { buildBattleDevtools } from './battle/battle-devtools';
 
 interface ObjectEvent {
   active?: boolean;
@@ -440,6 +441,15 @@ CONTROLE :
 EX : await scope.ai(['walk down 5', 'a', 'wait 30', 'a', 'a'])
 EX : await scope.observe(() => scope.battle().active)
 EX : await scope.skipDialog()
+
+BATTLE BYTECODE (session 140) :
+  scope.bytecode.help()              Devtools complet pour wire bytecode → gameplay
+  scope.bytecode.dumpMons()          gBattleMons[0..N] structured
+  scope.bytecode.snapshot()          Full battle state (battlers + scripting + protect/disable/...)
+  scope.bytecode.labels('Hit')       Labels filtrés
+  scope.bytecode.runScript('BattleScript_EffectHit', { trace: true, resetStats: true })
+  scope.bytecode.dispatchStats()     Opcodes appelés
+  scope.bytecode.lastBug()           Dernière exception handler
 `.trim();
 }
 
@@ -620,6 +630,9 @@ function _buildScopeApi(): Record<string, unknown> {
     skipDialog: _skipDialog,
     observe: _observe,
     gotoMap: _gotoMap,
+    // Battle bytecode devtools (Session 140 add).
+    // Exposé sous scope.bytecode.* : runScript/dumpMons/dispatchStats/etc.
+    bytecode: buildBattleDevtools(),
     // Help
     help: _help,
   };
