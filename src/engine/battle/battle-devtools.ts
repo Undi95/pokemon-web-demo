@@ -446,7 +446,7 @@ export function buildBattleDevtools(): Record<string, unknown> {
     /** Test direct du bridge bytecode ↔ PokemonInstance via runMoveScriptViaBytecode.
      *  Usage : scope.bytecode.testMoveBridge() — create un combat ad-hoc et exec
      *  Pound via bytecode, return damage measured. */
-    testMoveBridge: async (opts?: { moveId?: string; enemy?: string; enemyLevel?: number; attackerSpecies?: string; attackerLevel?: number; }) => {
+    testMoveBridge: async (opts?: { moveId?: string; enemy?: string; enemyLevel?: number; attackerSpecies?: string; attackerLevel?: number; persistMons?: boolean; }) => {
       const pokemonMod = await import('../pokemon');
       let attacker: { speciesEnum: string; nickname: string; currentHp: number; maxHp: number; moves: { id: string; pp: number }[]; ivs: { atk: number; def: number }; evs: { atk: number; def: number }; level: number; };
       if (opts?.attackerSpecies) {
@@ -463,8 +463,12 @@ export function buildBattleDevtools(): Record<string, unknown> {
         attacker.moves = [{ id: opts.moveId, pp: 35 }, ...(attacker.moves.slice(1) || [])];
       }
       const enemyMon = pokemonMod.createPokemonInstance(opts?.enemy ?? 'SPECIES_ZIGZAGOON', opts?.enemyLevel ?? 2);
-      setupPartyForBattle([attacker] as never, [enemyMon]);
-      fillActiveBattleMonsForBattleStart();
+      // Sauf si persistMons=true (= keep gBattleMons state across calls for multi-turn tests),
+      // reinit gBattleMons via setupPartyForBattle + fillActive...
+      if (!opts?.persistMons) {
+        setupPartyForBattle([attacker] as never, [enemyMon]);
+        fillActiveBattleMonsForBattleStart();
+      }
       const defender = enemyMon;
       const beforeHp = defender.currentHp;
       const beforeStatus1 = (globalThis as { __battleState?: { gBattleMons?: Array<{ status1: number; statStages: number[]; }> } }).__battleState?.gBattleMons?.[1];
