@@ -50,67 +50,80 @@ export interface MemoryAccessor {
 export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
   // ─── Global ewram vars (u8/u16/u32) ────────────────────────────────────
   // Lazy-bound via globalThis.__battleState pour éviter circular deps.
+  // 1:1 décomp : read/write via __battleStateMutators (= unique source de
+  // vérité, évite ESM live-binding instances dup via HMR/dynamic import).
+  // Pattern : tout read/write des global ewram vars passe par mutators globaux
+  // exposés depuis state.ts. Permet aux opcodes natifs setbyte/setword/etc.
+  // de propager correctement les writes même si plusieurs instances ESM existent.
   gHitMarker: {
     size: 4,
-    read: () => (globalThis as { __battleState?: { getHitMarker?: () => number } }).__battleState?.getHitMarker?.() ?? 0,
-    write: () => { /* delegated via setHitMarker import — see compiler refactor */ },
+    read: () => (globalThis as { __battleStateMutators?: { getHitMarker?: () => number } }).__battleStateMutators?.getHitMarker?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setHitMarker?: (v: number) => void } }).__battleStateMutators?.setHitMarker?.(v >>> 0),
   },
   gMoveResultFlags: {
     size: 1,
-    read: () => (globalThis as { __battleState?: { getMoveResultFlags?: () => number } }).__battleState?.getMoveResultFlags?.() ?? 0,
-    write: () => { /* delegated via setMoveResultFlags */ },
+    read: () => (globalThis as { __battleStateMutators?: { getMoveResultFlags?: () => number } }).__battleStateMutators?.getMoveResultFlags?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setMoveResultFlags?: (v: number) => void } }).__battleStateMutators?.setMoveResultFlags?.(v & 0xFF),
   },
   gChosenMove: {
     size: 2,
-    read: () => (globalThis as { __battleState?: { getCurrentMove?: () => number } }).__battleState?.getCurrentMove?.() ?? 0,
-    write: () => { /* delegated via setChosenMove */ },
+    read: () => (globalThis as { __battleStateMutators?: { getChosenMove?: () => number } }).__battleStateMutators?.getChosenMove?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setChosenMove?: (v: number) => void } }).__battleStateMutators?.setChosenMove?.(v & 0xFFFF),
+  },
+  gCurrentMove: {
+    size: 2,
+    read: () => (globalThis as { __battleStateMutators?: { getCurrentMove?: () => number } }).__battleStateMutators?.getCurrentMove?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setCurrentMove?: (v: number) => void } }).__battleStateMutators?.setCurrentMove?.(v & 0xFFFF),
   },
   gBattleMoveDamage: {
     size: 4,
-    read: () => (globalThis as { __battleState?: { getBattleMoveDamage?: () => number } }).__battleState?.getBattleMoveDamage?.() ?? 0,
-    write: () => { /* delegated via setBattleMoveDamage */ },
+    read: () => (globalThis as { __battleStateMutators?: { getBattleMoveDamage?: () => number } }).__battleStateMutators?.getBattleMoveDamage?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setBattleMoveDamage?: (v: number) => void } }).__battleStateMutators?.setBattleMoveDamage?.(v | 0),
   },
   gBattleOutcome: {
     size: 1,
-    read: () => (globalThis as { __battleState?: { getBattleOutcome?: () => number } }).__battleState?.getBattleOutcome?.() ?? 0,
-    write: () => { /* delegated via setBattleOutcome */ },
+    read: () => (globalThis as { __battleStateMutators?: { getBattleOutcome?: () => number } }).__battleStateMutators?.getBattleOutcome?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setBattleOutcome?: (v: number) => void } }).__battleStateMutators?.setBattleOutcome?.(v & 0xFF),
   },
   gCritMultiplier: {
     size: 1,
-    read: () => (globalThis as { __battleState?: { getCritMultiplier?: () => number } }).__battleState?.getCritMultiplier?.() ?? 0,
-    write: () => { /* delegated via setCritMultiplier */ },
+    read: () => (globalThis as { __battleStateMutators?: { getCritMultiplier?: () => number } }).__battleStateMutators?.getCritMultiplier?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setCritMultiplier?: (v: number) => void } }).__battleStateMutators?.setCritMultiplier?.(v & 0xFF),
   },
   gBattleWeather: {
     size: 2,
-    read: () => 0, // TODO bind
-    write: () => { /* TODO */ },
+    read: () => (globalThis as { __battleStateMutators?: { getBattleWeather?: () => number } }).__battleStateMutators?.getBattleWeather?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setBattleWeather?: (v: number) => void } }).__battleStateMutators?.setBattleWeather?.(v & 0xFFFF),
   },
   gBattleTypeFlags: {
     size: 4,
-    read: () => (globalThis as { __battleState?: { gBattleTypeFlags?: number } }).__battleState?.gBattleTypeFlags ?? 0,
-    write: () => { /* TODO */ },
+    read: () => (globalThis as { __battleStateMutators?: { getBattleTypeFlags?: () => number } }).__battleStateMutators?.getBattleTypeFlags?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setBattleTypeFlags?: (v: number) => void } }).__battleStateMutators?.setBattleTypeFlags?.(v >>> 0),
   },
   gBattlerTarget: {
     size: 1,
-    // 1:1 décomp : read/write via __battleStateMutators (= unique source de
-    // vérité, évite ESM live-binding instances dup via HMR/dynamic import).
     read: () => (globalThis as { __battleStateMutators?: { getTarget?: () => number } }).__battleStateMutators?.getTarget?.() ?? 0,
     write: (v) => (globalThis as { __battleStateMutators?: { setTarget?: (v: number) => void } }).__battleStateMutators?.setTarget?.(v & 0xFF),
   },
+  gBattlerAttacker: {
+    size: 1,
+    read: () => (globalThis as { __battleStateMutators?: { getAttacker?: () => number } }).__battleStateMutators?.getAttacker?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setAttacker?: (v: number) => void } }).__battleStateMutators?.setAttacker?.(v & 0xFF),
+  },
   gLastUsedItem: {
     size: 2,
-    read: () => 0, // TODO bind
-    write: () => { /* TODO */ },
+    read: () => (globalThis as { __battleStateMutators?: { getLastUsedItem?: () => number } }).__battleStateMutators?.getLastUsedItem?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setLastUsedItem?: (v: number) => void } }).__battleStateMutators?.setLastUsedItem?.(v & 0xFFFF),
   },
   gTrainerBattleOpponent_A: {
     size: 2,
-    read: () => 0, // TODO bind
-    write: () => { /* TODO */ },
+    read: () => (globalThis as { __battleStateMutators?: { getTrainerBattleOpponent_A?: () => number } }).__battleStateMutators?.getTrainerBattleOpponent_A?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setTrainerBattleOpponent_A?: (v: number) => void } }).__battleStateMutators?.setTrainerBattleOpponent_A?.(v & 0xFFFF),
   },
   gNumSafariBalls: {
     size: 1,
-    read: () => 0, // TODO Frontier safari
-    write: () => { /* TODO */ },
+    read: () => (globalThis as { __battleStateMutators?: { getNumSafariBalls?: () => number } }).__battleStateMutators?.getNumSafariBalls?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setNumSafariBalls?: (v: number) => void } }).__battleStateMutators?.setNumSafariBalls?.(v & 0xFF),
   },
 
   // ─── sXxx prefix = gBattleScripting fields ─────────────────────────────
