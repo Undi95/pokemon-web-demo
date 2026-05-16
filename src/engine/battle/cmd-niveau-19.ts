@@ -181,7 +181,8 @@ function Cmd_confuseifrepeatingattackends(_ctx: BattleScriptContext): boolean {
 
 // ─── 0xE2 switchoutabilities ──────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_switchoutabilities. 2 bytes. Natural Cure on switch. */
+/** 1:1 décomp Cmd_switchoutabilities (battle_script_commands.c:9593-9610).
+ *  2 bytes. Natural Cure clears status1 quand le mon est rappelé. */
 function Cmd_switchoutabilities(ctx: BattleScriptContext): boolean {
   const arg = readByte(ctx);
   const active = getBattlerForBattleScript(arg);
@@ -189,9 +190,9 @@ function Cmd_switchoutabilities(ctx: BattleScriptContext): boolean {
   switch (gBattleMons[active].ability) {
     case ABILITY_NATURAL_CURE: {
       gBattleMons[active].status1 = 0;
-      // 1:1 décomp passe partyBitmask en monToCheck (= gBitTable[partyIdx]).
-      // Pour MVP, on passe 0 (= unused dans notre stub).
-      BtlController_EmitSetMonData(B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE, 0, 4, gBattleMons[active].status1);
+      // 1:1 décomp : monToCheck = gBitTable[battlerPartyIndexes[active]] (= party slot bitmask).
+      const partyBitmask = gBitTable[_battlerPartyIndexesSO[active]];
+      BtlController_EmitSetMonData(B_COMM_TO_CONTROLLER, REQUEST_STATUS_BATTLE, partyBitmask, 4, gBattleMons[active].status1);
       MarkBattlerForControllerExec(active);
       break;
     }
@@ -199,6 +200,9 @@ function Cmd_switchoutabilities(ctx: BattleScriptContext): boolean {
   }
   return false;
 }
+
+import { gBattlerPartyIndexes as _battlerPartyIndexesSO } from './state';
+import { gBitTable } from './battle-controllers';
 
 // ─── 0xEB settypetoenvironment ────────────────────────────────────────────
 

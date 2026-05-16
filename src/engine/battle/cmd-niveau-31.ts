@@ -88,15 +88,98 @@ function Cmd_forcerandomswitch(ctx: BattleScriptContext): boolean {
 
 // ─── 0xE5 pickup ──────────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_pickup. 1 byte. Post-battle Pickup ability.
- *
- *  Note 1:1 partial : itère gPlayerParty pour les mons avec ABILITY_PICKUP
- *  sans item, roll Random()%10==0, donne un item de sPickupItems.
- *  Notre port : skip (= gPlayerParty pas wired battle-side). */
+/** 1:1 décomp `sPickupItems[]` (battle_script_commands.c:784-804). */
+const sPickupItems: ReadonlyArray<number> = [
+  13  /* ITEM_POTION */,    17  /* ITEM_ANTIDOTE */,
+  14  /* ITEM_SUPER_POTION */, 3   /* ITEM_GREAT_BALL */,
+  61  /* ITEM_REPEL */,     69  /* ITEM_ESCAPE_ROPE */,
+  56  /* ITEM_X_ATTACK */,  19  /* ITEM_FULL_HEAL */,
+  4   /* ITEM_ULTRA_BALL */, 15  /* ITEM_HYPER_POTION */,
+  68  /* ITEM_RARE_CANDY */, 73  /* ITEM_PROTEIN */,
+  20  /* ITEM_REVIVE */,    70  /* ITEM_HP_UP */,
+  16  /* ITEM_FULL_RESTORE */, 21  /* ITEM_MAX_REVIVE */,
+  72  /* ITEM_PP_UP */,     65  /* ITEM_MAX_ELIXIR */,
+];
+
+/** 1:1 décomp `sRarePickupItems[]` (battle_script_commands.c:806-819). */
+const sRarePickupItems: ReadonlyArray<number> = [
+  15  /* ITEM_HYPER_POTION */, 92  /* ITEM_NUGGET */,
+  221 /* ITEM_KINGS_ROCK */,   16  /* ITEM_FULL_RESTORE */,
+  62  /* ITEM_ETHER */,        184 /* ITEM_WHITE_HERB */,
+  338 /* ITEM_TM_REST */,      63  /* ITEM_ELIXIR */,
+  330 /* ITEM_TM_FOCUS_PUNCH */, 211 /* ITEM_LEFTOVERS */,
+  328 /* ITEM_TM_EARTHQUAKE */,
+];
+
+/** 1:1 décomp `sPickupProbabilities[]` (battle_script_commands.c:821-824). */
+const sPickupProbabilities: ReadonlyArray<number> = [30, 40, 50, 60, 70, 80, 90, 94, 98];
+
+/** 1:1 décomp Cmd_pickup (battle_script_commands.c:9657-9732). 1 byte.
+ *  Post-battle Pickup ability. Itère gPlayerParty pour chaque mon avec
+ *  ABILITY_PICKUP sans item : roll Random()%10==0 → roll Random()%100
+ *  vs sPickupProbabilities[] → assign item depuis sPickupItems[lvlDivBy10+j]
+ *  ou sRarePickupItems[lvlDivBy10+(99-rand)]. */
 function Cmd_pickup(_ctx: BattleScriptContext): boolean {
-  // TODO porter quand gPlayerParty wired battle-side.
+  // STUB InBattlePike + CurrentBattlePyramidLocation (= Frontier-only, retournent
+  // false dans notre Phase 1). Donc on prend toujours le else branch (= normal).
+
+  for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
+    const species = _GetMonDataPK(_gPlayerPartyPK[i], _MON_DATA_SPECIES_OR_EGG_PK) as number;
+    const heldItem = _GetMonDataPK(_gPlayerPartyPK[i], _MON_DATA_HELD_ITEM_PK) as number;
+    const abilityNum = _GetMonDataPK(_gPlayerPartyPK[i], _MON_DATA_ABILITY_NUM_PK) as number;
+    const ability = _getSpeciesAbilityPK(species, abilityNum);
+
+    if (ability === ABILITY_PICKUP_PK
+        && species !== 0 /* SPECIES_NONE */
+        && species !== 412 /* SPECIES_EGG */
+        && heldItem === 0 /* ITEM_NONE */
+        && (Random() % 10) === 0) {
+      const rand = Random() % 100;
+      let lvlDivBy10 = Math.floor((_GetMonDataPK(_gPlayerPartyPK[i], _MON_DATA_LEVEL_PK) as number - 1) / 10);
+      if (lvlDivBy10 > 9) lvlDivBy10 = 9;
+      for (let j = 0; j < sPickupProbabilities.length; j++) {
+        if (sPickupProbabilities[j] > rand) {
+          _SetMonDataPK(_gPlayerPartyPK[i], _MON_DATA_HELD_ITEM_PK, sPickupItems[lvlDivBy10 + j]);
+          break;
+        } else if (rand === 99 || rand === 98) {
+          _SetMonDataPK(_gPlayerPartyPK[i], _MON_DATA_HELD_ITEM_PK, sRarePickupItems[lvlDivBy10 + (99 - rand)]);
+          break;
+        }
+      }
+    }
+  }
   return false;
 }
+
+// Imports locaux Cmd_pickup (= éviter dups au top du file).
+import {
+  gPlayerParty as _gPlayerPartyPK,
+  GetMonData as _GetMonDataPK, SetMonData as _SetMonDataPK,
+  MON_DATA_SPECIES_OR_EGG as _MON_DATA_SPECIES_OR_EGG_PK,
+  MON_DATA_HELD_ITEM as _MON_DATA_HELD_ITEM_PK,
+  MON_DATA_ABILITY_NUM as _MON_DATA_ABILITY_NUM_PK,
+  MON_DATA_LEVEL as _MON_DATA_LEVEL_PK,
+} from './party-storage';
+import { getSpeciesInfo as _getSpeciesInfoPK } from '../data/game-data';
+import { speciesNumberToEnum as _speciesNumberToEnumPK } from './data/species-runtime';
+
+/** 1:1 décomp : `gSpeciesInfo[species].abilities[abilityNum ? 1 : 0]`. */
+function _getSpeciesAbilityPK(species: number, abilityNum: number): number {
+  const info = _getSpeciesInfoPK(_speciesNumberToEnumPK(species));
+  if (!info) return 0;
+  const abilityName = info.abilities[abilityNum ? 1 : 0];
+  // Resolve ability name → number via auto-data lookup.
+  return _abilityNameToNumberPK(abilityName);
+}
+
+/** Resolve ability enum string → number via auto-data constants. */
+import * as _AbilityConsts from '../decomp-data/auto/include/constants/abilities-data';
+function _abilityNameToNumberPK(abilityName: string): number {
+  const val = (_AbilityConsts as Record<string, unknown>)[abilityName];
+  return typeof val === 'number' ? val : 0;
+}
+
+const ABILITY_PICKUP_PK = 53;  // 1:1 décomp constants/abilities.h.
 
 // ─── 0xF0 givecaughtmon ───────────────────────────────────────────────────
 
