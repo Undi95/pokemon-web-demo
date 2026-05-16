@@ -314,15 +314,53 @@ import {
   MON_DATA_SPECIES as _MON_DATA_SPECIES_GC,
   MON_DATA_POKEBALL as _MON_DATA_POKEBALL_GC,
 } from './party-storage';
-// L'auto-gen `pokemon-all-auto.ts:GiveMonToPlayer` use bare globals
-// (MON_DATA_OT_NAME, gSaveBlock2Ptr, etc.) sans imports → ReferenceError. On
-// remplace par une impl locale POC qui scan gPlayerParty pour un slot vide.
-function _GiveMonToPlayerGC(_mon: unknown): number {
-  // 1:1 décomp pokemon.c GiveMonToPlayer (simplifié) : retourne 0 (= MON_GIVEN_TO_PARTY)
-  // si party slot vide trouvé, 1 (= MON_GIVEN_TO_PC) sinon, 2 (= MON_CANT_GIVE) si box full.
-  // Pour POC : assume slot vide existe (= retourne 0).
-  // TODO porter logic complète : scan gPlayerParty pour species==0, copy mon, set OT.
-  return 0;
+// 1:1 décomp `GiveMonToPlayer` (pokemon.c:4412-4432). Notre port :
+// SetMonData OT name/gender/id depuis gSaveBlock2Ptr, puis scan gPlayerParty
+// pour 1er slot vide. Sinon → CopyMonToPC (= STUB Phase 1.4 PC storage).
+import {
+  gPlayerParty as _gPlayerPartyGC,
+  SetMonData as _SetMonDataGC,
+  MON_DATA_OT_ID as _MON_DATA_OT_ID_GC,
+  MON_DATA_OT_NAME as _MON_DATA_OT_NAME_GC,
+  MON_DATA_OT_GENDER as _MON_DATA_OT_GENDER_GC,
+} from './party-storage';
+function _GiveMonToPlayerGC(mon: unknown): number {
+  // 1:1 décomp pokemon.c GiveMonToPlayer (1:1 strict).
+  // SetMonData OT depuis gSaveBlock2Ptr (= player info).
+  const sb2 = (globalThis as { gSaveBlock2Ptr?: {
+    playerName?: string;
+    playerGender?: number;
+    playerTrainerId?: number[] | { 0: number };
+  } }).gSaveBlock2Ptr;
+  if (sb2 && mon) {
+    if (sb2.playerName !== undefined) _SetMonDataGC(mon as never, _MON_DATA_OT_NAME_GC, sb2.playerName);
+    if (sb2.playerGender !== undefined) _SetMonDataGC(mon as never, _MON_DATA_OT_GENDER_GC, sb2.playerGender);
+    // 1:1 décomp : playerTrainerId est u8[4] ; pack en u32 little-endian.
+    const tid = sb2.playerTrainerId as number[] | { 0: number; 1: number; 2: number; 3: number } | undefined;
+    if (tid) {
+      const t0 = (tid as { 0?: number })[0] ?? 0;
+      const t1 = (tid as { 1?: number })[1] ?? 0;
+      const t2 = (tid as { 2?: number })[2] ?? 0;
+      const t3 = (tid as { 3?: number })[3] ?? 0;
+      const otId = ((t3 << 24) | (t2 << 16) | (t1 << 8) | t0) >>> 0;
+      _SetMonDataGC(mon as never, _MON_DATA_OT_ID_GC, otId);
+    }
+  }
+  // 1:1 décomp : scan gPlayerParty pour 1er slot species==0.
+  for (let i = 0; i < 6; i++) {
+    const slotMon = _gPlayerPartyGC[i];
+    if (!slotMon || slotMon.species === 0) {
+      // 1:1 décomp : CopyMon(&gPlayerParty[i], mon, sizeof(*mon)).
+      // Notre port : shallow copy (= mon est aussi Pokemon struct).
+      if (slotMon && mon) {
+        Object.assign(slotMon, mon);
+      }
+      // gPlayerPartyCount = i + 1 — non porté (= compteur dérivable).
+      return 0; // MON_GIVEN_TO_PARTY
+    }
+  }
+  // Party full → CopyMonToPC. STUB Phase 1.4 (= PC storage pas wired).
+  return 1; // MON_GIVEN_TO_PC (= simulate sent to PC).
 }
 
 // ─── 0xF2 displaydexinfo ──────────────────────────────────────────────────

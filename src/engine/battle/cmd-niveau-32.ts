@@ -371,12 +371,67 @@ function Cmd_handlelearnnewmove(ctx: BattleScriptContext): boolean {
 
 // ─── 0x5A yesnoboxlearnmove ───────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_yesnoboxlearnmove. 5 bytes (u32 ptr). State machine. */
+/** 1:1 décomp Cmd_yesnoboxlearnmove (battle_script_commands.c:5398-5511).
+ *  5 bytes (u32 forgetMovePtr if cancel). State machine 7 cases (0..6).
+ *
+ *  Cases :
+ *   0 : show YES/NO box + init cursor 0.
+ *   1 : poll input — A on YES → state 2 (= go to summary screen), NO/B → state 5
+ *       (= jump à forgetMovePtr / give up).
+ *   2 : wait fade + show summary screen pour choose slot to replace.
+ *   3 : wait return du summary screen.
+ *   4 : check GetMoveSlotToReplace → si MAX_MON_MOVES (cancel) → state 5,
+ *       sinon → check HM move (= can't replace HM), si HM → state 6, sinon
+ *       → SetMonMoveSlot + RemoveMonPPBonus + advance.
+ *   5 : close yesno + advance 5.
+ *   6 : wait BattleControllerExecFlags == 0 → retry state 2.
+ *
+ *  Notre port : state machine fidèle. STUB UI auto-NO Phase 1.4 (= jump à
+ *  forgetMovePtr direct car summary screen pas wired). */
 function Cmd_yesnoboxlearnmove(ctx: BattleScriptContext): boolean {
-  readWord(ctx);  // forgetMovePtr — consume arg.
-  // MVP stub : skip state machine, advance direct.
-  // TODO porter yesno + summary screen + forget move flow.
-  return false;
+  const forgetMovePtr = readWord(ctx);
+  const bs = (globalThis as { __battleState?: {
+    gBattleScripting?: { learnMoveState: number };
+    gBattleCommunication?: number[];
+  } }).__battleState;
+  if (!bs?.gBattleScripting || !bs.gBattleCommunication) {
+    ctx.scriptPtr = forgetMovePtr;
+    return false;
+  }
+  switch (bs.gBattleScripting.learnMoveState) {
+    case 0:
+      // 1:1 décomp : show YES/NO + cursor 0. STUB UI : just advance.
+      bs.gBattleCommunication[3 /* CURSOR_POSITION */] = 0;
+      bs.gBattleScripting.learnMoveState++;
+      ctx.scriptPtr -= 5;
+      return true;
+    case 1:
+      // STUB UI : auto-NO → state 5.
+      bs.gBattleScripting.learnMoveState = 5;
+      ctx.scriptPtr -= 5;
+      return true;
+    case 2:
+    case 3:
+    case 4:
+      // STUB summary screen state machine — Phase 1.4 UI. Skip à state 5.
+      bs.gBattleScripting.learnMoveState = 5;
+      ctx.scriptPtr -= 5;
+      return true;
+    case 5:
+      // 1:1 décomp : close window + jump à forgetMovePtr (= refuse learn).
+      bs.gBattleScripting.learnMoveState = 0;  // reset.
+      ctx.scriptPtr = forgetMovePtr;
+      return false;
+    case 6:
+      // 1:1 décomp : wait controller exec → retry state 2.
+      bs.gBattleScripting.learnMoveState = 2;
+      ctx.scriptPtr -= 5;
+      return true;
+    default:
+      bs.gBattleScripting.learnMoveState = 0;
+      ctx.scriptPtr = forgetMovePtr;
+      return false;
+  }
 }
 
 // ─── 0x5B yesnoboxstoplearningmove ────────────────────────────────────────

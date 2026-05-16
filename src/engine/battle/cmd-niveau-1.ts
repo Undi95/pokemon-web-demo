@@ -277,13 +277,15 @@ function Cmd_ppreduce(ctx: BattleScriptContext): boolean {
     // 1:1 décomp ll.1239-1246 : MOVE_IS_PERMANENT(attacker, gCurrMovePos)
     //    = !TRANSFORMED && !(mimickedMoves & bit[slot])
     // → BtlController_EmitSetMonData REQUEST_PPMOVE_X (= persist PP au save).
-    // STUB BtlController : Emit pas wired vers party storage. Notre BattleMon.pp[]
-    // est déjà la source de truth in-battle ; la persistance party-side se fait
-    // au battle end via party-storage flush.
+    // Notre port (Batch C session 142) : EmitSetMonData wirée à
+    // __batPSetMonByActive bridge qui flush au party via SetMonData direct.
     if (!(gBattleMons[gBattlerAttacker].status2 & STATUS2_TRANSFORMED)
         && !(gDisableStructs[gBattlerAttacker].mimickedMoves & gBitTable[gCurrMovePos])) {
-      // (Décomp emit ici → controllerExec ; pour Phase 1, no-op safe.)
-      void _emitPpUpdateStubN1(gBattlerAttacker, gCurrMovePos);
+      setActiveBattler(gBattlerAttacker);
+      // REQUEST_PPMOVE1_BATTLE = 9, donc 9 + slot.
+      _BtlController_EmitSetMonData_N1(0 /* B_COMM_TO_CONTROLLER */, 9 + gCurrMovePos,
+        0 /* monIdx */, 1 /* bytes */, gBattleMons[gBattlerAttacker].pp[gCurrMovePos]);
+      _MarkBattlerForControllerExec_N1(gBattlerAttacker);
     }
   }
 
@@ -303,10 +305,11 @@ function _moveTargetForCurrentN1(move: number): number {
 function _abilityBattleEffectsCountFieldN1(caseId: number, battler: number, ability: number): number {
   return _ABE_N1(caseId, battler, ability, 0, 0);
 }
-function _emitPpUpdateStubN1(_battler: number, _slot: number): void {
-  // STUB Phase 1.4 — emit PP update au controller pour persist party-side.
-  // Notre BattleMon.pp[] est déjà write directement ci-dessus, donc no-op safe.
-}
+// 1:1 décomp BtlController_EmitSetMonData + Mark — wired via batch C bridge.
+import {
+  BtlController_EmitSetMonData as _BtlController_EmitSetMonData_N1,
+  MarkBattlerForControllerExec as _MarkBattlerForControllerExec_N1,
+} from './battle-controllers';
 
 /** Convention runBattleScript : dispatcher fait scriptPtr++ AVANT handler.
  *  Pour "rester" sur opcode (= waitstate, re-execute next frame), on back up. */
@@ -564,7 +567,11 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
     // 1:1 décomp : clear HITMARKER_PASSIVE_HP_UPDATE.
     setHitMarker(gHitMarker & ~HITMARKER_PASSIVE_HP_UPDATE);
 
-    // 1:1 décomp : Emit SetMonData REQUEST_HP_BATTLE + Mark — STUB UI controller.
+    // 1:1 décomp : Emit SetMonData REQUEST_HP_BATTLE + Mark — wired via batch C
+    // bridge → flush au party-side (= 42 = REQUEST_HP_BATTLE).
+    _BtlController_EmitSetMonData_N1(0 /* B_COMM_TO_CONTROLLER */, 42 /* REQUEST_HP_BATTLE */,
+      0, 2 /* u16 */, mon.hp);
+    _MarkBattlerForControllerExec_N1(activeBattler);
   } else {
     // 1:1 décomp : NO_EFFECT path → set shellBellDmg = IGNORE_SHELL_BELL sentinel.
     const activeBattler = _utilGetBattler(battlerArg);
@@ -687,7 +694,11 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
       const grOff = getBattleScriptOffset('BattleScript_GrudgeTakesPp');
       if (grOff >= 0) ctx.scriptPtr = grOff;
       setActiveBattler(gBattlerAttacker);
-      // STUB BtlController_EmitSetMonData REQUEST_PPMOVE_X (= persist au save).
+      // 1:1 décomp : EmitSetMonData REQUEST_PPMOVE_X (= persist au save) wired
+      // via batch C bridge → SetMonData direct sur le party mon.
+      _BtlController_EmitSetMonData_N1(0 /* B_COMM_TO_CONTROLLER */, 9 + moveIndex,
+        0, 1, gBattleMons[gBattlerAttacker].pp[moveIndex]);
+      _MarkBattlerForControllerExec_N1(gBattlerAttacker);
     }
   }
   return false;
@@ -1073,8 +1084,11 @@ function Cmd_moveend(ctx: BattleScriptContext): boolean {
             && moveType === 10 /* TYPE_FIRE */) {
           gBattleMons[gBattlerTarget].status1 &= ~STATUS1_FREEZE;
           setActiveBattler(gBattlerTarget);
-          // 1:1 décomp : Emit SetMonData REQUEST_STATUS_BATTLE + Mark.
-          // STUB : emit pass-through (status1 déjà write direct sur gBattleMons).
+          // 1:1 décomp : Emit SetMonData REQUEST_STATUS_BATTLE + Mark — wired
+          // via batch C bridge → SetMonData status1 au party (= 40 = STATUS).
+          _BtlController_EmitSetMonData_N1(0 /* B_COMM_TO_CONTROLLER */,
+            40 /* REQUEST_STATUS_BATTLE */, 0, 4 /* u32 */,
+            gBattleMons[gBattlerTarget].status1);
           MarkBattlerForControllerExec(gBattlerTarget);
           ctx.scriptPtrStack.push(opcodeStartPtr);
           const off = getBattleScriptOffset('BattleScript_DefrostedViaFireMove');

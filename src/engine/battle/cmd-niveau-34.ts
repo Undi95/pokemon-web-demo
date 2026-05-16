@@ -82,6 +82,9 @@ import {
   MarkBattlerForControllerExec,
 } from './battle-controllers';
 import { GetNatureFromPersonality as _getNatureFromPersonalityN34 } from './data/flavor-compat';
+// 1:1 décomp `getBattleScriptOffset` — wired pour Cmd_getexp BattleScript_LevelUp.
+import { getBattleScriptOffset as _getBattleScriptOffsetN34 } from './script-interpreter';
+
 // 1:1 décomp sBattlePalaceNatureToFlavorTextId (battle_script_commands.c:886-913).
 // Index = nature ID (NATURE_HARDY=0..NATURE_QUIRKY=24).
 // Value = B_MSG_GLINT_IN_EYE=0, B_MSG_GETTING_IN_POS=1, B_MSG_GROWL_DEEPLY=2, B_MSG_EAGER_FOR_MORE=3.
@@ -525,7 +528,11 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
           // 1:1 décomp : AdjustFriendship(FRIENDSHIP_EVENT_GROW_LEVEL).
           // Wired via auto-data (= update mon.friendship +1..+3 selon location/luxury ball).
           _adjustFriendshipN34(gPlayerParty[monId], FRIENDSHIP_EVENT_GROW_LEVEL_N34);
-          // STUB BattleScriptPushCursor + jump BattleScript_LevelUp (= post-Phase 1 UI).
+          // 1:1 décomp battle_script_commands.c (Cmd_getexp case 4 LEVELED_UP path) :
+          // `BattleScriptPushCursor(); gBattlescriptCurrInstr = BattleScript_LevelUp`.
+          ctx.scriptPtrStack.push(ctx.scriptPtr);
+          const offLvlUp = _getBattleScriptOffsetN34('BattleScript_LevelUp');
+          if (offLvlUp >= 0) ctx.scriptPtr = offLvlUp;
           gBattleScripting.getexpState = 5;
         } else {
           setBattleMoveDamage(0);
