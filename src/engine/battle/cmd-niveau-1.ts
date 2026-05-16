@@ -86,8 +86,10 @@ import {
   gLastPrintedMoves, gLastMoves, gLastResultingMoves, gLastHitBy,
   gLastLandedMoves, gLastHitByType, gLastTakenMove, gLastTakenMoveFrom,
   gChosenMove, gBattleStruct, gDisableStructs, gProtectStructs,
-  gSpecialStatuses,
+  gSpecialStatuses, gBattleResults,
+  gBattleOutcome, setCurrentActionFuncId,
 } from './state';
+import { B_ACTION_FINISHED } from './constants';
 import { gBitTable, BtlController_EmitSpriteInvisibility } from './battle-controllers';
 import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import {
@@ -1213,8 +1215,13 @@ function Cmd_healthbarupdate(ctx: BattleScriptContext): boolean {
     BtlController_EmitHealthBarUpdate(0 /* B_COMM_TO_CONTROLLER */, healthValue);
     MarkBattlerForControllerExec(activeBattler);
 
-    // 1:1 décomp : `if (player side && damage > 0) gBattleResults.playerMonWasDamaged = TRUE;`
-    // TODO porter gBattleResults (= post-battle stat tracking).
+    // 1:1 décomp `Cmd_healthbarupdate` (battle_script_commands.c:3162-3169) :
+    // `if (GetBattlerSide(active) == B_SIDE_PLAYER && gBattleMoveDamage > 0)
+    //   gBattleResults.playerMonWasDamaged = TRUE;`
+    if (GET_BATTLER_SIDE(activeBattler) === B_SIDE_PLAYER
+        && gBattleMoveDamage > 0) {
+      gBattleResults.playerMonWasDamaged = 1;
+    }
   }
   return false;
 }
@@ -1242,8 +1249,12 @@ function Cmd_healthbarupdate(ctx: BattleScriptContext): boolean {
 function Cmd_attackcanceler(ctx: BattleScriptContext): boolean {
   const opcodeStartPtr = ctx.scriptPtr - 1;  // before pre-advance
 
-  // 1:1 décomp : `if (gBattleOutcome != 0) { gCurrentActionFuncId = B_ACTION_FINISHED; return; }`
-  // TODO porter gCurrentActionFuncId trigger ici. Pour now : skip (= rare case).
+  // 1:1 décomp (battle_script_commands.c:984-988) :
+  // `if (gBattleOutcome != 0) { gCurrentActionFuncId = B_ACTION_FINISHED; return; }`
+  if (gBattleOutcome !== 0) {
+    setCurrentActionFuncId(B_ACTION_FINISHED);
+    return _stayOnOpcode(ctx);
+  }
 
   // 1:1 décomp : attacker.hp == 0 (= died before its turn, e.g. Destiny Bond).
   if (gBattleMons[gBattlerAttacker].hp === 0

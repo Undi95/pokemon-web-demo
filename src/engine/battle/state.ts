@@ -406,6 +406,64 @@ export const gWishFutureKnock: WishFutureKnock = {
 /** 1:1 décomp `gBattleScripting`. */
 export const gBattleScripting: BattleScripting = _makeBlankScripting();
 
+// ─── gBattleResults (1:1 décomp `struct BattleResults` battle.h:234-258) ─
+
+/** 1:1 décomp `struct BattleResults` (battle.h:234-258). Post-battle stats
+ *  tracker (= save block 1 field, sauvegardé entre combats). */
+export interface BattleResults {
+  playerFaintCounter: number;     // u8 - mons player perdu
+  opponentFaintCounter: number;   // u8 - mons opponent KO
+  playerSwitchesCounter: number;  // u8 - nb switches manuels
+  numHealingItemsUsed: number;    // u8
+  numRevivesUsed: number;         // u8
+  // u8 packed bits (= byte 5).
+  playerMonWasDamaged: number;    // u8:1 - true si player mon a subi des dégâts
+  usedMasterBall: number;         // u8:1
+  caughtMonBall: number;          // u8:4
+  shinyWildMon: number;           // u8:1
+  // ----
+  playerMon1Species: number;      // u16 - species du premier mon player sent in
+  playerMon1Name: number[];       // u8[11] (POKEMON_NAME_LENGTH + 1)
+  battleTurnCounter: number;      // u8
+  playerMon2Name: number[];       // u8[11]
+  pokeblockThrows: number;        // u8 - safari/contest
+  lastOpponentSpecies: number;    // u16
+  lastUsedMovePlayer: number;     // u16
+  lastUsedMoveOpponent: number;   // u16
+  playerMon2Species: number;      // u16
+  caughtMonSpecies: number;       // u16
+  caughtMonNick: number[];        // u8[11]
+  filler35: number;               // u8
+  catchAttempts: number[];        // u8[POKEBALL_COUNT - 1] = u8[11]
+}
+
+function _makeBlankBattleResults(): BattleResults {
+  return {
+    playerFaintCounter: 0, opponentFaintCounter: 0, playerSwitchesCounter: 0,
+    numHealingItemsUsed: 0, numRevivesUsed: 0,
+    playerMonWasDamaged: 0, usedMasterBall: 0, caughtMonBall: 0, shinyWildMon: 0,
+    playerMon1Species: 0,
+    playerMon1Name: new Array(11).fill(0),
+    battleTurnCounter: 0,
+    playerMon2Name: new Array(11).fill(0),
+    pokeblockThrows: 0,
+    lastOpponentSpecies: 0,
+    lastUsedMovePlayer: 0, lastUsedMoveOpponent: 0,
+    playerMon2Species: 0, caughtMonSpecies: 0,
+    caughtMonNick: new Array(11).fill(0),
+    filler35: 0,
+    catchAttempts: new Array(11).fill(0),
+  };
+}
+
+/** 1:1 décomp `extern struct BattleResults gBattleResults` (battle.h:724).
+ *  Post-battle stats (= save block 1 field). Reset au battle start. */
+export const gBattleResults: BattleResults = _makeBlankBattleResults();
+
+export function resetBattleResults(): void {
+  Object.assign(gBattleResults, _makeBlankBattleResults());
+}
+
 // ─── gBattleStruct (1:1 décomp `struct BattleStruct` battle.h:354-447) ─────
 
 /** Pour `gBattleStruct->multiBuffer.linkBattlerHeader` — link battle header info. */
