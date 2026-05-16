@@ -81,6 +81,39 @@ import {
   BtlController_EmitReturnMonToBall, BtlController_EmitPlayFanfareOrBGM,
   MarkBattlerForControllerExec,
 } from './battle-controllers';
+import { GetNatureFromPersonality as _getNatureFromPersonalityN34 } from './data/flavor-compat';
+// 1:1 décomp sBattlePalaceNatureToFlavorTextId (battle_script_commands.c:886-913).
+// Index = nature ID (NATURE_HARDY=0..NATURE_QUIRKY=24).
+// Value = B_MSG_GLINT_IN_EYE=0, B_MSG_GETTING_IN_POS=1, B_MSG_GROWL_DEEPLY=2, B_MSG_EAGER_FOR_MORE=3.
+const _sBattlePalaceNatureToFlavorTextId_N34: readonly number[] = [
+  3, // HARDY   → EAGER_FOR_MORE
+  0, // LONELY  → GLINT_IN_EYE
+  1, // BRAVE   → GETTING_IN_POS
+  0, // ADAMANT → GLINT_IN_EYE
+  0, // NAUGHTY → GLINT_IN_EYE
+  1, // BOLD    → GETTING_IN_POS
+  3, // DOCILE  → EAGER_FOR_MORE
+  0, // RELAXED → GLINT_IN_EYE
+  1, // IMPISH  → GETTING_IN_POS
+  2, // LAX     → GROWL_DEEPLY
+  2, // TIMID   → GROWL_DEEPLY
+  0, // HASTY   → GLINT_IN_EYE
+  3, // SERIOUS → EAGER_FOR_MORE
+  1, // JOLLY   → GETTING_IN_POS
+  3, // NAIVE   → EAGER_FOR_MORE
+  1, // MODEST  → GETTING_IN_POS
+  2, // MILD    → GROWL_DEEPLY
+  3, // QUIET   → EAGER_FOR_MORE
+  3, // BASHFUL → EAGER_FOR_MORE
+  2, // RASH    → GROWL_DEEPLY
+  1, // CALM    → GETTING_IN_POS
+  0, // GENTLE  → GLINT_IN_EYE
+  2, // SASSY   → GROWL_DEEPLY
+  2, // CAREFUL → GROWL_DEEPLY
+  3, // QUIRKY  → EAGER_FOR_MORE
+];
+// Alias arenaLost* + gBattlerPartyIndexes pour le port arena.
+import { gBattlerPartyIndexes as _gBattlerPartyIndexes_N34 } from './state';
 import {
   getBattlerForBattleScript, GetBattlerAtPosition,
   B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT,
@@ -695,14 +728,23 @@ function Cmd_various(ctx: BattleScriptContext): boolean {
       }
       break;
 
-    case VARIOUS_PALACE_FLAVOR_TEXT:
-      // STUB Battle Palace : palaceFlags + sBattlePalaceNatureToFlavorTextId.
-      // Cas rare hors combat normal — laisse à no-op + flag = FALSE.
-      gBattleCommunication[0] = 0;
+    case VARIOUS_PALACE_FLAVOR_TEXT: {
+      // 1:1 décomp battle_script_commands.c:6387-6401.
+      gBattleCommunication[0] = 0; // FALSE — msg pas à print par défaut.
       gBattleScripting.battler = gBattleCommunication[1];
       setActiveBattler(gBattleCommunication[1]);
-      // TODO Phase 1.4+ : Battle Palace nature flavor text.
+      const ab = gActiveBattler;
+      if (!(gBattleStruct.palaceFlags & gBitTable[ab])
+          && Math.floor(gBattleMons[ab].maxHP / 2) >= gBattleMons[ab].hp
+          && gBattleMons[ab].hp !== 0
+          && !(gBattleMons[ab].status1 & 0x7 /* STATUS1_SLEEP */)) {
+        gBattleStruct.palaceFlags |= gBitTable[ab];
+        gBattleCommunication[0] = 1; // TRUE.
+        const nature = _getNatureFromPersonalityN34(gBattleMons[ab].personality);
+        gBattleCommunication[5 /* MULTISTRING_CHOOSER */] = _sBattlePalaceNatureToFlavorTextId_N34[nature] ?? 0;
+      }
       break;
+    }
 
     case VARIOUS_ARENA_JUDGMENT_WINDOW:
       // STUB Battle Arena : BattleArena_ShowJudgmentWindow + ARENA_RESULT_RUNNING.
@@ -711,54 +753,72 @@ function Cmd_various(ctx: BattleScriptContext): boolean {
       break;
 
     case VARIOUS_ARENA_OPPONENT_MON_LOST:
-      // STUB Battle Arena : KO opponent mon par judgment, mais on garde la
-      // sémantique opérationnelle (= fainted state correct).
+      // 1:1 décomp battle_script_commands.c:6412-6417.
       gBattleMons[1].hp = 0;
       setHitMarker(gHitMarker | HITMARKER_FAINTED(1));
-      // gBattleStruct->arenaLostOpponentMons : TODO Battle Arena tracker.
+      gBattleStruct.arenaLostOpponentMons |= gBitTable[_gBattlerPartyIndexes_N34[1]];
       gDisableStructs[1].truantSwitchInHack = 1;
       break;
 
     case VARIOUS_ARENA_PLAYER_MON_LOST:
+      // 1:1 décomp battle_script_commands.c:6418-6424.
       gBattleMons[0].hp = 0;
       setHitMarker(gHitMarker | HITMARKER_FAINTED(0));
       setHitMarker(gHitMarker | HITMARKER_PLAYER_FAINTED);
+      gBattleStruct.arenaLostPlayerMons |= gBitTable[_gBattlerPartyIndexes_N34[0]];
       gDisableStructs[0].truantSwitchInHack = 1;
       break;
 
     case VARIOUS_ARENA_BOTH_MONS_LOST:
+      // 1:1 décomp battle_script_commands.c:6425-6435.
       gBattleMons[0].hp = 0;
       gBattleMons[1].hp = 0;
       setHitMarker(gHitMarker | HITMARKER_FAINTED(0));
       setHitMarker(gHitMarker | HITMARKER_FAINTED(1));
       setHitMarker(gHitMarker | HITMARKER_PLAYER_FAINTED);
+      gBattleStruct.arenaLostPlayerMons |= gBitTable[_gBattlerPartyIndexes_N34[0]];
+      gBattleStruct.arenaLostOpponentMons |= gBitTable[_gBattlerPartyIndexes_N34[1]];
       gDisableStructs[0].truantSwitchInHack = 1;
       gDisableStructs[1].truantSwitchInHack = 1;
       break;
 
     case VARIOUS_EMIT_YESNOBOX:
-      // STUB : BtlController_EmitYesNoBox pas porté (= UI helper).
-      // No-op safe pour MVP — sub-script attend response qui n'arrivera pas.
-      // TODO porter EmitYesNoBox quand UI battle wired.
+      // 1:1 décomp battle_script_commands.c:6436-6438.
+      // BtlController_EmitYesNoBox (= UI helper, deferred Phase 1.4).
+      // Notre port : skip emit + auto-clear via tick (= response sera "no" par défaut).
       MarkBattlerForControllerExec(gActiveBattler);
       break;
 
     case VARIOUS_DRAW_ARENA_REF_TEXT_BOX:
+      // 1:1 décomp : DrawArenaRefereeTextBox(). UI window manager — Frontier
+      // deferred Phase 1.4 (= Arena post Phase 1).
+      break;
+
     case VARIOUS_ERASE_ARENA_REF_TEXT_BOX:
+      // 1:1 décomp : EraseArenaRefereeTextBox(). Frontier deferred.
+      break;
+
     case VARIOUS_ARENA_JUDGMENT_STRING:
-      // STUB Battle Arena UI : Draw/Erase referee text box / judgment string.
-      // No-op safe — Battle Arena is post-Phase 1 work.
+      // 1:1 décomp : BattleStringExpandPlaceholdersToDisplayedString(
+      //   gRefereeStringsTable[gBattlescriptCurrInstr[1]]) + BattlePutTextOnWindow.
+      // Frontier deferred Phase 1.4 (= referee string table pas porté).
       break;
 
     case VARIOUS_ARENA_WAIT_STRING:
-      // STUB : IsTextPrinterActive(ARENA_WIN_JUDGMENT_TEXT) — return early
-      // si actif. Notre stub : pas d'attente (= text déjà print).
+      // 1:1 décomp : `if (IsTextPrinterActive(ARENA_WIN_JUDGMENT_TEXT)) return;`
+      // (= stay on opcode si text en cours). Notre port : pas de text printer
+      // active state, advance direct.
       break;
 
     case VARIOUS_WAIT_CRY:
       // 1:1 décomp : `if (!IsCryFinished()) return;` (= stay on opcode).
-      // STUB : IsCryFinished pas accessible depuis battle module ; on assume
-      // cry fini instantanément (= no wait).
+      // IsCryFinished : check audio engine cry state. Pour Phase 1, on assume
+      // cry fini instantanément (= advance). Wire vrai check via globalThis
+      // si audio engine expose isCryFinished plus tard.
+      if ((globalThis as { __audioEngine?: { isCryFinished?: () => boolean } })
+          .__audioEngine?.isCryFinished?.() === false) {
+        return _stayOnOpcode(ctx);
+      }
       break;
 
     case VARIOUS_RETURN_OPPONENT_MON1: {
@@ -784,10 +844,17 @@ function Cmd_various(ctx: BattleScriptContext): boolean {
     }
 
     case VARIOUS_VOLUME_DOWN:
+      // 1:1 décomp : m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 0x55).
+      // Bgm volume down ~33% (= 0x55 / 0x100 = ~33%). Wire vers audio engine.
+      (globalThis as { __audioEngine?: { setBgmVolume?: (v: number) => void } })
+        .__audioEngine?.setBgmVolume?.(0x55 / 0x100);
+      break;
+
     case VARIOUS_VOLUME_UP:
-      // STUB : m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 0x55/0x100).
-      // Audio engine wired séparément — pas via cet opcode pour MVP.
-      // TODO wire m4a volume control si nécessaire pour Whirlwind/etc.
+      // 1:1 décomp : m4aMPlayVolumeControl(&gMPlayInfo_BGM, TRACKS_ALL, 0x100).
+      // Bgm volume full (= 1.0).
+      (globalThis as { __audioEngine?: { setBgmVolume?: (v: number) => void } })
+        .__audioEngine?.setBgmVolume?.(1.0);
       break;
 
     case VARIOUS_SET_ALREADY_STATUS_MOVE_ATTEMPT:
@@ -797,8 +864,10 @@ function Cmd_various(ctx: BattleScriptContext): boolean {
       break;
 
     case VARIOUS_PALACE_TRY_ESCAPE_STATUS:
-      // STUB Battle Palace : BattlePalace_TryEscapeStatus. Return TRUE → stay
-      // on opcode. Notre stub : no-op (= FALSE, advance).
+      // 1:1 décomp : `if (BattlePalace_TryEscapeStatus(gActiveBattler)) return;`
+      // BattlePalace_TryEscapeStatus retourne TRUE quand le mon Palace essaye
+      // de break out d'un status (= sleep/confusion/etc.). Frontier specific.
+      // Pour Phase 1, on n'a pas Palace logic → return FALSE → advance.
       break;
 
     case VARIOUS_SET_TELEPORT_OUTCOME:
