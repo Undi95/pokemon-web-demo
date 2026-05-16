@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/maps/PacifidlogTown_PokemonCenter_1F/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=16, bytes=56, labels=6, unknownOps=0, unresolvedSymbols=9
 
 /** Label name → byte offset within BYTECODE. */

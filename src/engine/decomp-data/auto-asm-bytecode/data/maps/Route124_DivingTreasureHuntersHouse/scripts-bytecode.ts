@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/maps/Route124_DivingTreasureHuntersHouse/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=208, bytes=2747, labels=38, unknownOps=0, unresolvedSymbols=18
 
 /** Label name → byte offset within BYTECODE. */

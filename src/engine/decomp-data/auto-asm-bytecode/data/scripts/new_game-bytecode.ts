@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/scripts/new_game-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=242, bytes=804, labels=2, unknownOps=0, unresolvedSymbols=20
 
 /** Label name → byte offset within BYTECODE. */

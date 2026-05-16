@@ -1,0 +1,250 @@
+/**
+ * battle/memory-map.ts — Resolve GBA memory addresses to TS getters/setters.
+ *
+ * Le décomp utilise des opcodes natifs (0x29 jumpifbyte..0x38 bicword) qui
+ * prennent un `u32 ptr` = adresse mémoire EWRAM/IWRAM/IORAM GBA absolue.
+ * Sur GBA, ils déréfèrent direct. Sur TS, on doit mapper le symbole asm
+ * (gHitMarker, sDMG_MULTIPLIER, etc.) vers une variable JS.
+ *
+ * Sources de vérité :
+ *   - `data/battle_scripts_1.s` + `battle_scripts_2.s` (= usage des symbols)
+ *   - `include/battle.h` (= structs sources des `s` prefix sBattleScripting fields)
+ *   - `include/battle_message.h` (= cMULTISTRING_CHOOSER etc.)
+ *
+ * Architecture :
+ *   - Chaque symbole asm a un accessor `{ read(): number, write(v: number): void, size: 1|2|4 }`.
+ *   - Le bytecode compiler (= `scripts/compile-decomp-bytecode.mjs`) encode
+ *     les symbols non-résolus comme u32 avec convention `0xF0000000 | symbol_id`.
+ *   - Au runtime, opcodes natifs (cmd-niveau-33.ts) reconnaissent le high bits
+ *     et résolvent via `resolveSymbol(id)`.
+ *
+ * Phase 1.3 G plan :
+ *   1. ✅ Cette file : skeleton + ~28 symbols.
+ *   2. TODO compiler refactor : `compile-decomp-bytecode.mjs` doit exporter
+ *      `SYMBOLS: { id, name }[]` + utiliser convention `0xF0000000 | id` pour
+ *      unresolved.
+ *   3. TODO cmd-niveau-33.ts : decode + résolve via `resolveAddress()`.
+ *
+ * Une fois fait : ~412 unresolved symbols → 0, et les 14 opcodes natifs
+ * deviennent FULL 1:1 décomp.
+ */
+
+import { gBattleMons, gBattlerAttacker, gBattlerTarget } from './state';
+
+/** Signature 1:1 décomp pour un memory accessor d'une variable battle. */
+export interface MemoryAccessor {
+  /** Read current value (= u8/u16/u32 selon size). */
+  read(): number;
+  /** Write new value (= clamp à size selon u8/u16/u32). */
+  write(value: number): void;
+  /** Byte width de la variable (1=u8, 2=u16, 4=u32). */
+  size: 1 | 2 | 4;
+}
+
+/** 1:1 décomp asm symbol table — chaque entry maps `name` asm → JS accessor.
+ *  Couvre les symboles utilisés par les opcodes natifs (0x29-0x38) dans
+ *  `data/battle_scripts_1.s` + `battle_scripts_2.s`.
+ *
+ *  Note `s` prefix = gBattleScripting field. `c` prefix = gBattleCommunication.
+ *  `g` prefix = global ewram var. */
+export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
+  // ─── Global ewram vars (u8/u16/u32) ────────────────────────────────────
+  // Lazy-bound via globalThis.__battleState pour éviter circular deps.
+  gHitMarker: {
+    size: 4,
+    read: () => (globalThis as { __battleState?: { getHitMarker?: () => number } }).__battleState?.getHitMarker?.() ?? 0,
+    write: () => { /* delegated via setHitMarker import — see compiler refactor */ },
+  },
+  gMoveResultFlags: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { getMoveResultFlags?: () => number } }).__battleState?.getMoveResultFlags?.() ?? 0,
+    write: () => { /* delegated via setMoveResultFlags */ },
+  },
+  gChosenMove: {
+    size: 2,
+    read: () => (globalThis as { __battleState?: { getCurrentMove?: () => number } }).__battleState?.getCurrentMove?.() ?? 0,
+    write: () => { /* delegated via setChosenMove */ },
+  },
+  gBattleMoveDamage: {
+    size: 4,
+    read: () => (globalThis as { __battleState?: { getBattleMoveDamage?: () => number } }).__battleState?.getBattleMoveDamage?.() ?? 0,
+    write: () => { /* delegated via setBattleMoveDamage */ },
+  },
+  gBattleOutcome: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { getBattleOutcome?: () => number } }).__battleState?.getBattleOutcome?.() ?? 0,
+    write: () => { /* delegated via setBattleOutcome */ },
+  },
+  gCritMultiplier: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { getCritMultiplier?: () => number } }).__battleState?.getCritMultiplier?.() ?? 0,
+    write: () => { /* delegated via setCritMultiplier */ },
+  },
+  gBattleWeather: {
+    size: 2,
+    read: () => 0, // TODO bind
+    write: () => { /* TODO */ },
+  },
+  gBattleTypeFlags: {
+    size: 4,
+    read: () => (globalThis as { __battleState?: { gBattleTypeFlags?: number } }).__battleState?.gBattleTypeFlags ?? 0,
+    write: () => { /* TODO */ },
+  },
+  gBattlerTarget: {
+    size: 1,
+    read: () => gBattlerTarget,
+    write: () => { /* TODO setBattlerTarget */ },
+  },
+  gLastUsedItem: {
+    size: 2,
+    read: () => 0, // TODO bind
+    write: () => { /* TODO */ },
+  },
+  gTrainerBattleOpponent_A: {
+    size: 2,
+    read: () => 0, // TODO bind
+    write: () => { /* TODO */ },
+  },
+  gNumSafariBalls: {
+    size: 1,
+    read: () => 0, // TODO Frontier safari
+    write: () => { /* TODO */ },
+  },
+
+  // ─── sXxx prefix = gBattleScripting fields ─────────────────────────────
+  // (battle.h:489-518 BattleScripting struct).
+  sDMG_MULTIPLIER: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { dmgMultiplier: number } } }).__battleState?.gBattleScripting?.dmgMultiplier ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { dmgMultiplier: number } } }).__battleState?.gBattleScripting; if (bs) bs.dmgMultiplier = v; },
+  },
+  sB_ANIM_TURN: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { animTurn: number } } }).__battleState?.gBattleScripting?.animTurn ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { animTurn: number } } }).__battleState?.gBattleScripting; if (bs) bs.animTurn = v; },
+  },
+  sB_ANIM_TARGETS_HIT: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { animTargetsHit: number } } }).__battleState?.gBattleScripting?.animTargetsHit ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { animTargetsHit: number } } }).__battleState?.gBattleScripting; if (bs) bs.animTargetsHit = v; },
+  },
+  sTWOTURN_STRINGID: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { twoTurnsMoveStringId: number } } }).__battleState?.gBattleScripting?.twoTurnsMoveStringId ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { twoTurnsMoveStringId: number } } }).__battleState?.gBattleScripting; if (bs) bs.twoTurnsMoveStringId = v; },
+  },
+  sMULTIHIT_EFFECT: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { multihitMoveEffect: number } } }).__battleState?.gBattleScripting?.multihitMoveEffect ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { multihitMoveEffect: number } } }).__battleState?.gBattleScripting; if (bs) bs.multihitMoveEffect = v; },
+  },
+  sMULTIHIT_STRING: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { multihitString: number[] } } }).__battleState?.gBattleScripting?.multihitString?.[0] ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { multihitString: number[] } } }).__battleState?.gBattleScripting; if (bs?.multihitString) bs.multihitString[0] = v; },
+  },
+  sSTAT_ANIM_PLAYED: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { statAnimPlayed: number } } }).__battleState?.gBattleScripting?.statAnimPlayed ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { statAnimPlayed: number } } }).__battleState?.gBattleScripting; if (bs) bs.statAnimPlayed = v; },
+  },
+  sTRIPLE_KICK_POWER: {
+    size: 2,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { tripleKickPower: number } } }).__battleState?.gBattleScripting?.tripleKickPower ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { tripleKickPower: number } } }).__battleState?.gBattleScripting; if (bs) bs.tripleKickPower = v; },
+  },
+  sGIVEEXP_STATE: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { getexpState: number } } }).__battleState?.gBattleScripting?.getexpState ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { getexpState: number } } }).__battleState?.gBattleScripting; if (bs) bs.getexpState = v; },
+  },
+  sLVLBOX_STATE: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { drawlvlupboxState: number } } }).__battleState?.gBattleScripting?.drawlvlupboxState ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { drawlvlupboxState: number } } }).__battleState?.gBattleScripting; if (bs) bs.drawlvlupboxState = v; },
+  },
+  sLEARNMOVE_STATE: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { learnMoveState: number } } }).__battleState?.gBattleScripting?.learnMoveState ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { learnMoveState: number } } }).__battleState?.gBattleScripting; if (bs) bs.learnMoveState = v; },
+  },
+  sBATTLE_STYLE: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { battleStyle: number } } }).__battleState?.gBattleScripting?.battleStyle ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { battleStyle: number } } }).__battleState?.gBattleScripting; if (bs) bs.battleStyle = v; },
+  },
+  sBATTLER: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleScripting?: { battler: number } } }).__battleState?.gBattleScripting?.battler ?? 0,
+    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { battler: number } } }).__battleState?.gBattleScripting; if (bs) bs.battler = v; },
+  },
+
+  // ─── cMULTISTRING_CHOOSER = gBattleCommunication[MULTISTRING_CHOOSER=5] ─
+  cMULTISTRING_CHOOSER: {
+    size: 1,
+    read: () => 0, // TODO bind gBattleCommunication[5]
+    write: () => { /* TODO */ },
+  },
+
+  // ─── Cross-battler refs (= gBattlerAttacker/Target as ptr-of-target) ───
+  // Note : ces ne sont pas vraiment des memory pointers, mais quand le script
+  // utilise un `arg battlerArg` via T2_READ_PTR, on a une ref vers gBattlerXxx.
+  // gBattleMons[gBattlerTarget] etc. — accessed via field path :
+  // `gBattleMons[X].hp`, `.status1`, `.statStages[Y]`, etc.
+
+  // gBattleTextBuff1 (= u8[~16] text buffer) — STUB Phase 1.4 text UI.
+  gBattleTextBuff1: {
+    size: 1,
+    read: () => 0,
+    write: () => { /* STUB text Phase 1.4 */ },
+  },
+};
+
+/** Marker bit pour distinguer symbol IDs vs vraies GBA addresses.
+ *  Convention : 0xF0000000 | id. */
+export const SYMBOL_MARKER = 0xF0000000;
+export const SYMBOL_MASK   = 0x0FFFFFFF;
+
+/** Resolve une address u32 read depuis le bytecode → MemoryAccessor.
+ *  Si marker set : `id = addr & SYMBOL_MASK` → lookup dans SYMBOLS_TABLE.
+ *  Sinon : vraie GBA address (= STUB Phase 1.3 G — TODO mapper EWRAM/IWRAM
+ *  ranges si besoin). */
+export function resolveAddress(addr: number): MemoryAccessor | null {
+  if ((addr & SYMBOL_MARKER) === SYMBOL_MARKER) {
+    const id = addr & SYMBOL_MASK;
+    return SYMBOLS_BY_ID[id] ?? null;
+  }
+  return null;  // Real GBA address — not mapped in Phase 1.3 G.
+}
+
+/** Index-based symbol lookup table (= built dynamiquement par compiler).
+ *  Phase 1.3 G : compiler exporte `SYMBOLS_TABLE: { id: number; name: string }[]`
+ *  qu'on load ici via initMemoryMap(). */
+export const SYMBOLS_BY_ID: Record<number, MemoryAccessor> = {};
+
+/** Bind un symbol name à un ID (= appelé au boot après load SYMBOLS_TABLE). */
+export function bindSymbol(id: number, name: string): void {
+  const accessor = MEMORY_SYMBOLS[name];
+  if (accessor) {
+    SYMBOLS_BY_ID[id] = accessor;
+  } else {
+    console.warn(`[memory-map] no accessor for symbol '${name}' (id=${id})`);
+  }
+}
+
+/** Initialize memory-map au boot : load SYMBOLS_TABLE auto-generated et bind
+ *  chaque entry. Idempotent (= safe à appeler plusieurs fois). */
+let _memoryMapInitialized = false;
+export function initMemoryMap(): void {
+  if (_memoryMapInitialized) return;
+  for (const entry of SYMBOLS_TABLE) {
+    bindSymbol(entry.id, entry.name);
+  }
+  _memoryMapInitialized = true;
+}
+
+import { SYMBOLS_TABLE } from '../decomp-data/auto-asm-bytecode/_symbols-table';
+
+// Expose battler refs for debug.
+void gBattleMons;
+void gBattlerAttacker;

@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/maps/SkyPillar_3F/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=5, bytes=32, labels=3, unknownOps=0, unresolvedSymbols=1
 
 /** Label name → byte offset within BYTECODE. */

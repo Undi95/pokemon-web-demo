@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/scripts/cable_club-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=1029, bytes=8490, labels=175, unknownOps=0, unresolvedSymbols=141
 
 /** Label name → byte offset within BYTECODE. */

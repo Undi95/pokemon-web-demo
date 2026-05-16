@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/maps/AbandonedShip_Deck/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=3, bytes=9, labels=2, unknownOps=0, unresolvedSymbols=1
 
 /** Label name → byte offset within BYTECODE. */

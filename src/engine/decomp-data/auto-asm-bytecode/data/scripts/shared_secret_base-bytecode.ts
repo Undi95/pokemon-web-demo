@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/scripts/shared_secret_base-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=134, bytes=1020, labels=31, unknownOps=0, unresolvedSymbols=34
 
 /** Label name → byte offset within BYTECODE. */

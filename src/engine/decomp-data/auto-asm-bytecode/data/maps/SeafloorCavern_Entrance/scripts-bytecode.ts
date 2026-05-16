@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/maps/SeafloorCavern_Entrance/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=43, bytes=415, labels=7, unknownOps=0, unresolvedSymbols=14
 
 /** Label name → byte offset within BYTECODE. */

@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/maps/DewfordTown_Hall/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=181, bytes=1422, labels=37, unknownOps=0, unresolvedSymbols=44
 
 /** Label name → byte offset within BYTECODE. */

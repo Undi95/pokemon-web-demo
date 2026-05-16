@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/scripts/profile_man-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=66, bytes=545, labels=13, unknownOps=0, unresolvedSymbols=17
 
 /** Label name → byte offset within BYTECODE. */

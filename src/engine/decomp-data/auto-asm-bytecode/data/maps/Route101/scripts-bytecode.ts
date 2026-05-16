@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/maps/Route101/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=198, bytes=667, labels=27, unknownOps=0, unresolvedSymbols=22
 
 /** Label name → byte offset within BYTECODE. */

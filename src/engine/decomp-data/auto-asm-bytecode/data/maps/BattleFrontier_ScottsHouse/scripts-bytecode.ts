@@ -1,7 +1,7 @@
 // AUTO-GENERATED from data/maps/BattleFrontier_ScottsHouse/scripts-data.ts by compile-decomp-bytecode.mjs
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
-// Generated: 2026-04-26
+// Generated: 2026-05-16
 // Stats: ops=154, bytes=1190, labels=28, unknownOps=0, unresolvedSymbols=47
 
 /** Label name → byte offset within BYTECODE. */
