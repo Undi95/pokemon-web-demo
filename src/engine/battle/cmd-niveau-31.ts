@@ -183,15 +183,47 @@ const ABILITY_PICKUP_PK = 53;  // 1:1 décomp constants/abilities.h.
 
 // ─── 0xF0 givecaughtmon ───────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_givecaughtmon. 1 byte. Add caught Pokémon to party / PC.
- *
- *  Note 1:1 partial : décomp call GiveMonToPlayer + handle box full + log
- *  caughtMonSpecies/Nick/Ball dans gBattleResults. Notre port : stub no-op
- *  (= party storage pas wired). */
+/** 1:1 décomp Cmd_givecaughtmon (battle_script_commands.c:10058-10086). 1 byte.
+ *  Add caught Pokémon to party / PC + log dans gBattleResults. */
 function Cmd_givecaughtmon(_ctx: BattleScriptContext): boolean {
-  // TODO porter GiveMonToPlayer + gBattleResults quand wired.
+  // 1:1 décomp : BATTLE_OPPOSITE(attacker) = adversaire qu'on a capturé.
+  const oppBattler = _BATTLE_OPPOSITE_GC(_gBattlerAttackerGC);
+  const partyIdx = _gBattlerPartyIndexesGC[oppBattler];
+  const caughtMon = _gEnemyPartyGC[partyIdx];
+
+  // 1:1 décomp ll.10060-10079 : GiveMonToPlayer. Retourne MON_GIVEN_TO_PARTY (0)
+  // ou MON_GIVEN_TO_PC (1) ou MON_CANT_GIVE (2 = box full).
+  const result = _GiveMonToPlayerGC(caughtMon);
+  if (result !== 0 /* MON_GIVEN_TO_PARTY */) {
+    // STUB PC box message (= B_MSG_SENT_SOMEONES_PC / SOMEONES_BOX_FULL /
+    // SENT_LANETTES_PC / LANETTES_BOX_FULL). Phase 1.4 UI text placeholders.
+    _gBattleCommunicationGC[5 /* MULTISTRING_CHOOSER */] = 0 /* B_MSG_SENT_SOMEONES_PC */;
+  }
+
+  // 1:1 décomp ll.10081-10083 : log caught mon stats dans gBattleResults.
+  _gBattleResultsGC.caughtMonSpecies = _GetMonDataGC(caughtMon, _MON_DATA_SPECIES_GC) as number;
+  // STUB caughtMonNick : write u8[11] depuis MON_DATA_NICKNAME (= Phase 1.4 text buffer).
+  // _GetMonDataGC(caughtMon, MON_DATA_NICKNAME, gBattleResults.caughtMonNick);
+  _gBattleResultsGC.caughtMonBall = _GetMonDataGC(caughtMon, _MON_DATA_POKEBALL_GC) as number;
+
   return false;
 }
+
+// Imports locaux Cmd_givecaughtmon (= éviter dups au top).
+import { BATTLE_OPPOSITE as _BATTLE_OPPOSITE_GC } from './constants';
+import {
+  gBattlerAttacker as _gBattlerAttackerGC,
+  gBattlerPartyIndexes as _gBattlerPartyIndexesGC,
+  gBattleCommunication as _gBattleCommunicationGC,
+  gBattleResults as _gBattleResultsGC,
+} from './state';
+import {
+  gEnemyParty as _gEnemyPartyGC,
+  GetMonData as _GetMonDataGC,
+  MON_DATA_SPECIES as _MON_DATA_SPECIES_GC,
+  MON_DATA_POKEBALL as _MON_DATA_POKEBALL_GC,
+} from './party-storage';
+import { GiveMonToPlayer as _GiveMonToPlayerGC } from '../decomp-data/auto/src-all/pokemon-all-auto';
 
 // ─── 0xF2 displaydexinfo ──────────────────────────────────────────────────
 
