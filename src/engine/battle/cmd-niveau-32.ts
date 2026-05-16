@@ -589,10 +589,19 @@ function Cmd_drawlvlupbox(ctx: BattleScriptContext): boolean {
  *  Check si gBattleStruct.expGetterMonId match gBattlerPartyIndexes[player_left]
  *  (= mon in-battle). */
 function _isMonGettingExpSentOutHBT(): boolean {
+  // 1:1 décomp battle_script_commands.c:6198-6206.
   const bs = _gBattleStruct32;
-  const playerLeftIdx = (globalThis as { __battleState?: { gBattlerPartyIndexes?: number[] } })
-    .__battleState?.gBattlerPartyIndexes?.[0] ?? -1;
-  return bs.expGetterMonId === playerLeftIdx;
+  const expGetterMonId = bs.expGetterMonId ?? 0;
+  const playerLeftIdx = _gBattlerPartyIndexes_32[0] ?? -1;
+  if (expGetterMonId === playerLeftIdx) return true;
+  // AUDIT FIX session 144 : décomp check aussi battler 2 (playerRight) en
+  // double battle. Sans : Exp.Share double battle marquait le mon comme
+  // off-battle même s'il était in-battle slot 2.
+  if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+    const playerRightIdx = _gBattlerPartyIndexes_32[2] ?? -1;
+    if (expGetterMonId === playerRightIdx) return true;
+  }
+  return false;
 }
 
 // ─── 0xEF handleballthrow ─────────────────────────────────────────────────
