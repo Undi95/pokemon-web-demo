@@ -693,6 +693,9 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
   return false;
 }
 
+// HOLD_EFFECT_EVASION_UP pour Cmd_accuracycheck (= Brightpowder / Lax Incense).
+import { HOLD_EFFECT_EVASION_UP as HOLD_EFFECT_EVASION_UP_AC } from '../decomp-data/auto/include/constants/hold_effects-data';
+
 // Imports locaux Cmd_tryfaintmon (= éviter dups au top du file).
 import { AdjustFriendshipOnBattleFaint as _adjustFriendshipOnFaintTFM } from '../decomp-data/auto/src-all/battle_util2-all-auto';
 import {
@@ -880,7 +883,16 @@ function Cmd_accuracycheck(ctx: BattleScriptContext): boolean {
   }
 
   setPotentialItemEffectBattler(gBattlerTarget);
-  // HOLD_EFFECT_EVASION_UP — TODO porter hold effect table.
+
+  // 1:1 décomp ll.1159-1173 : ENIGMA_BERRY check (= per-battler custom berry data
+  // gEnigmaBerries[target].holdEffect/Param). STUB pour Phase 1 : gEnigmaBerries
+  // n'est pas porté ; fallback à GetItemHoldEffect normal (= ITEM_ENIGMA_BERRY
+  // sans custom data retourne 0 = pas d'effet sur accuracy).
+  const holdEffect = GetItemHoldEffect(targetMon.item);
+  const holdEffectParam = GetItemHoldEffectParam(targetMon.item);
+  if (holdEffect === HOLD_EFFECT_EVASION_UP_AC) {
+    calc = Math.floor((calc * (100 - holdEffectParam)) / 100);
+  }
 
   if ((Random() % 100 + 1) > calc) {
     setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
