@@ -32,10 +32,12 @@ import {
   gCurrentMove,
   gMoveResultFlags,
   gBattleCommunication,
+  gSideTimers,
   setMoveResultFlags,
   setActiveBattler,
   setLastUsedAbility,
 } from './state';
+import { GET_BATTLER_SIDE } from './constants';
 import {
   MOVE_EFFECT_AFFECTS_USER,
   MOVE_EFFECT_CERTAIN,
@@ -104,9 +106,19 @@ export function ChangeStatBuffs(
   let appliedDelta = isDecrease ? -magnitude : magnitude;
 
   if (isDecrease) {
-    // Skip Mist check — TODO gSideTimers.
+    // 1:1 décomp battle_script_commands.c:6965 :
+    // Mist (gSideTimers[side].mistTimer) bloque stat drops sauf si certain ou MOVE_CURSE.
+    if (
+      gSideTimers[GET_BATTLER_SIDE(activeBattler)].mistTimer
+      && !certain && gCurrentMove !== MOVE_CURSE
+    ) {
+      // STAT_CHANGE_ALLOW_PTR path : push BS_ptr puis jump à BattleScript_MistProtected.
+      // Pour now : on retourne DIDNT_WORK (= same result que decomp).
+      // TODO : si ALLOW_PTR + ptr stack, push BattleScript_MistProtected pour le message UI.
+      return STAT_CHANGE_DIDNT_WORK;
+    }
 
-    // Skip JumpIfMoveAffectedByProtect — TODO.
+    // Skip JumpIfMoveAffectedByProtect — TODO (= bloque si target Protect+).
 
     // Clear Body / White Smoke block all stat drops (sauf si certain ou MOVE_CURSE).
     if (
