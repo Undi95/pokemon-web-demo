@@ -27,6 +27,7 @@ import {
   gBattleTypeFlags,
   gBattleControllerExecFlags,
   gBattleStruct as _gBattleStruct32,
+  gBattlerPartyIndexes as _gBattlerPartyIndexes_32,
 } from './state';
 import {
   MOVE_NONE,
@@ -354,16 +355,21 @@ function Cmd_handlelearnnewmove(ctx: BattleScriptContext): boolean {
     return false;
   }
 
-  // 1:1 décomp : si battler player local match expGetterMonId, GiveMove.
+  // 1:1 décomp battle_script_commands.c:5377-5392 : check partyIdx match
+  // expGetterMonId (= seul le mon qui level-up reçoit le move, pas tous les
+  // player battlers actifs). Sans : Exp.Share donnait le move au mauvais mon.
+  const expGetterMonId = _gBattleStruct32.expGetterMonId ?? 0;
   const playerLeft = GetBattlerAtPosition(B_POSITION_PLAYER_LEFT);
   setActiveBattler(playerLeft);
-  if (!(gBattleMons[playerLeft].status2 & STATUS2_TRANSFORMED)) {
+  if (_gBattlerPartyIndexes_32[playerLeft] === expGetterMonId
+      && !(gBattleMons[playerLeft].status2 & STATUS2_TRANSFORMED)) {
     _giveMoveToBattleMon(playerLeft, learnMove);
   }
   if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
     const playerRight = GetBattlerAtPosition(B_POSITION_PLAYER_RIGHT);
     setActiveBattler(playerRight);
-    if (!(gBattleMons[playerRight].status2 & STATUS2_TRANSFORMED)) {
+    if (_gBattlerPartyIndexes_32[playerRight] === expGetterMonId
+        && !(gBattleMons[playerRight].status2 & STATUS2_TRANSFORMED)) {
       _giveMoveToBattleMon(playerRight, learnMove);
     }
   }
