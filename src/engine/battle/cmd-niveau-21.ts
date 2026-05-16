@@ -60,7 +60,9 @@ import { getBattlerForBattleScript, GetBattlerAtPosition } from './util';
 import { getBattleMove } from './data/battle-moves';
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_21,
+  gBattleTextBuff1,
   PREPARE_ABILITY_BUFFER,
+  PREPARE_SPECIES_BUFFER,
 } from './text-buffers';
 import { gBattlerPartyIndexes as _gBattlerPartyIndexes_N21 } from './state';
 
@@ -184,6 +186,10 @@ function Cmd_transformdataexecution(_ctx: BattleScriptContext): boolean {
   gDisableStructs[gBattlerAttacker].disableTimer = 0;
   gDisableStructs[gBattlerAttacker].transformedMonPersonality = tgt.personality;
   gDisableStructs[gBattlerAttacker].mimickedMoves = 0;
+
+  // 1:1 décomp battle_script_commands.c:7788 : PREPARE_SPECIES_BUFFER pour
+  // afficher le nom du species cible dans le message "X se transforme en Y".
+  PREPARE_SPECIES_BUFFER(gBattleTextBuff1, tgt.species);
 
   // 1:1 décomp : memcpy from gBattleMons[target] to gBattleMons[attacker]
   // jusqu'à offsetof(BattlePokemon, pp). En TS, on copie les champs explicites
