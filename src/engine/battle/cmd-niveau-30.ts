@@ -50,9 +50,11 @@ import {
 import { getBattlerForBattleScript, GetBattlerAtPosition, B_POSITION_PLAYER_LEFT, B_POSITION_OPPONENT_LEFT, B_POSITION_PLAYER_RIGHT, B_POSITION_OPPONENT_RIGHT } from './util';
 import {
   gBattleTextBuff1 as _gBattleTextBuff1_30,
-  PREPARE_MON_NICK_BUFFER, PREPARE_TYPE_BUFFER,
+  gBattleTextBuff1, gBattleTextBuff2,
+  PREPARE_MON_NICK_BUFFER, PREPARE_TYPE_BUFFER, PREPARE_ITEM_BUFFER,
 } from './text-buffers';
-import { gBattlerPartyIndexes } from './state';
+import { gBattlerPartyIndexes, gBattleCommunication } from './state';
+import { MULTISTRING_CHOOSER } from './constants';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -465,6 +467,20 @@ function Cmd_tryswapitems(ctx: BattleScriptContext): boolean {
   // Swap.
   gBattleMons[gBattlerAttacker].item = tgtItem;
   gBattleMons[gBattlerTarget].item = atkItem;
+
+  // 1:1 décomp battle_script_commands.c:9266-9275 : PREPARE_ITEM_BUFFER pour
+  // affichage et MULTISTRING_CHOOSER pour variant de message.
+  // newItemAtk = tgtItem (= ce que l'attacker a maintenant)
+  // oldItemAtk = atkItem (= ce que l'attacker avait)
+  PREPARE_ITEM_BUFFER(gBattleTextBuff1, tgtItem);  // new item attacker
+  PREPARE_ITEM_BUFFER(gBattleTextBuff2, atkItem);  // old item attacker
+  if (atkItem !== 0 && tgtItem !== 0) {
+    gBattleCommunication[MULTISTRING_CHOOSER] = 0 /* B_MSG_ITEM_SWAP_BOTH */;
+  } else if (atkItem === 0 && tgtItem !== 0) {
+    gBattleCommunication[MULTISTRING_CHOOSER] = 1 /* B_MSG_ITEM_SWAP_TAKEN */;
+  } else {
+    gBattleCommunication[MULTISTRING_CHOOSER] = 2 /* B_MSG_ITEM_SWAP_GIVEN */;
+  }
   return false;
 }
 
