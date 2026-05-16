@@ -72,6 +72,18 @@ Commit `f8fafefa` : 5e audit bug majeur trouvé via test direct.
 - Validation : Blaziken Ember vs Sceptile = 23 dmg sans weather, 33 dmg sous
   Sunny Day = 1.43x boost ≈ 1.5x attendu (= STAB Fire ×1.5 sous sun).
 
+### Iter 7 — __battleState overwrite guard
+Commit `e09961ad` : 8e audit bug suite à l'iter 6.
+- Après le fix iter 6 (= fillBattleMonFromParty static import), un nouveau
+  symptôme : __battleState.gBattleMons divergeait du bytecode runtime instance.
+- Root cause : state.ts est chargé 2× en dev Vite. Chaque load fait
+  `(globalThis).__battleState = {gBattleMons,...}`. La 2e instance overwrite la
+  1ère → __battleState global pointe sur instance 2 (= vide après filling).
+- Fix : guard `if (!__battleState) { ... }`. La 1ère instance gagne. Pareil
+  pour __battleStateMutators.
+- Validation : bc.dumpMons()[1].hp === window.__battleState.gBattleMons[1].hp
+  après fix. Tackle OHKO visible des 2 côtés.
+
 ### Iter 6 — ESM duplication bug fillBattleMonFromParty
 Commit `78969bbd` : 7e audit bug critique trouvé.
 - fillBattleMonFromParty utilisait `globalThis.__battleState.gBattleMons` (lazy
