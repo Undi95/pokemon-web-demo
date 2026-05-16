@@ -24,6 +24,11 @@ import {
 } from '../pokemon';
 import { resolveDecompConstant, reverseDecompConstant } from '../decomp-constants';
 import { getSpeciesInfo } from '../data/game-data';
+// AUDIT BUG FIX : import direct gBattleMons depuis state.ts (= même instance
+// singleton que bytecode runtime). Avant : globalThis.__battleState lookup
+// retournait une instance ESM différente → battle mons setup invisible aux
+// opcodes. Static import = canonical instance.
+import { gBattleMons as _gBattleMonsRuntime } from './state';
 
 // ─── MON_DATA_* enum 1:1 décomp `include/pokemon.h:6..97` ─────────────────
 
@@ -732,15 +737,15 @@ export function fillBattleMonFromParty(
   partySource: 'player' | 'enemy',
   partyIdx: number,
 ): void {
-  // Lazy import pour éviter circular dep (state.ts importe pas party-storage).
-  // gBattleMons est exposé via globalThis.__battleState.gBattleMons.
-  const battleState = (globalThis as { __battleState?: { gBattleMons?: BattleMonLike[] } })
-    .__battleState;
-  if (!battleState?.gBattleMons) {
+  // AUDIT BUG FIX : import direct depuis state.ts (= même instance que bytecode
+  // runtime). Avant : lazy via globalThis.__battleState.gBattleMons écrivait
+  // dans une instance ESM différente du runtime → battle mons setup invisible
+  // aux opcodes. Maintenant : import statique = même instance singleton.
+  const mons = _gBattleMonsRuntime;
+  if (!mons) {
     console.warn('[party-storage] gBattleMons not exposed yet — call fillBattleMonFromParty after state.ts init');
     return;
   }
-  const mons = battleState.gBattleMons;
   if (battlerId < 0 || battlerId >= mons.length) return;
 
   const party = partySource === 'player' ? gPlayerParty : gEnemyParty;
