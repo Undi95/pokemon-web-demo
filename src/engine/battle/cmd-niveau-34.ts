@@ -631,14 +631,15 @@ function Cmd_various(ctx: BattleScriptContext): boolean {
       break;
 
     case VARIOUS_UPDATE_CHOICE_MOVE_ON_LVL_UP: {
-      // 1:1 décomp : Si exp-getter mon est en battle (slot 0 ou 2), check si
-      // son choicedMove est toujours dans sa moveset. Sinon → MOVE_NONE.
-      // STUB : gBattleStruct.expGetterMonId pas porté (= getexp state).
-      // On utilise gBattlerPartyIndexes[0]/[2] et le current choicedMove.
-      const expGetterIdx = gBattleScripting.battler;  // approx STUB
+      // 1:1 décomp (battle_script_commands.c VARIOUS_UPDATE_CHOICE_MOVE_ON_LVL_UP) :
+      // Le mon qui level-up est gBattleStruct.expGetterMonId (= party slot 0..5).
+      // S'il est actuellement en battle (slot 0 ou slot 2 si double), check si
+      // son choicedMove (= locked-in par Choice Band) est toujours dans sa
+      // moveset post level-up. Sinon clear → MOVE_NONE.
+      const expGetterMonId = gBattleStruct.expGetterMonId;
       let activeIdx = -1;
-      if (gBattlerPartyIndexes[0] === expGetterIdx) activeIdx = 0;
-      else if (gBattlerPartyIndexes[2] === expGetterIdx) activeIdx = 2;
+      if (gBattlerPartyIndexes[0] === expGetterMonId) activeIdx = 0;
+      else if (gBattlerPartyIndexes[2] === expGetterMonId) activeIdx = 2;
       if (activeIdx >= 0) {
         setActiveBattler(activeIdx);
         const currentChoiced = gBattleStruct.choicedMove[activeIdx];
@@ -757,8 +758,9 @@ function Cmd_various(ctx: BattleScriptContext): boolean {
       break;
 
     case VARIOUS_SET_ALREADY_STATUS_MOVE_ATTEMPT:
-      // STUB : gBattleStruct->alreadyStatusedMoveAttempt |= gBitTable[active].
-      // TODO porter gBattleStruct.alreadyStatusedMoveAttempt (= Battle Frontier tracker).
+      // 1:1 décomp (battle_script_commands.c) :
+      // `gBattleStruct->alreadyStatusedMoveAttempt |= gBitTable[gActiveBattler];`
+      gBattleStruct.alreadyStatusedMoveAttempt |= gBitTable[gActiveBattler];
       break;
 
     case VARIOUS_PALACE_TRY_ESCAPE_STATUS:

@@ -30,7 +30,7 @@ import {
   gBattlerByTurnOrder, gCurrentTurnActionNumber,
   gBattleTypeFlags, gBattlersCount,
   gAbsentBattlerFlags,
-  gBattleStruct,
+  gBattleStruct, gBattleResults,
   setCritMultiplier, setMultiHitCounter, setMoveResultFlags,
   gHitMarker, setHitMarker,
   gBattleScripting,
@@ -211,9 +211,12 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
   }
 
   if (gBattleMons[gBattlerAttacker].hp !== 0) {
-    // STUB gBattleResults.lastUsedMovePlayer/Opponent (= stats tracker post-combat).
-    // TODO porter gBattleResults.
-    void GET_BATTLER_SIDE;
+    // 1:1 décomp `HandleAction_UseMove` (battle_util.c:165-175).
+    if (GET_BATTLER_SIDE(gBattlerAttacker) === B_SIDE_PLAYER) {
+      gBattleResults.lastUsedMovePlayer = gCurrentMove;
+    } else {
+      gBattleResults.lastUsedMoveOpponent = gCurrentMove;
+    }
   }
 
   // Choose target.
@@ -333,17 +336,20 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
   }
 }
 
-/** 1:1 décomp `HandleAction_Switch` (battle_util.c:294-310). Minimal. */
+/** 1:1 décomp `HandleAction_Switch` (battle_util.c:294-310). */
 export function HandleAction_Switch(ctx?: BattleScriptContext): void {
   setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
-  // STUB gBattle_BG0_X/Y = 0 — pas wired battle UI.
-  // STUB gActionSelectionCursor / gMoveSelectionCursor — pas portés.
-  // STUB PREPARE_MON_NICK_BUFFER (= text buffer setup).
+  // STUB gBattle_BG0_X/Y = 0 — BG scroll registers GBA (= no-op web canvas).
+  // STUB gActionSelectionCursor / gMoveSelectionCursor — UI cursor state.
+  // STUB PREPARE_MON_NICK_BUFFER (= text buffer setup MOVE_NICK pour print).
   gBattleScripting.battler = gBattlerAttacker;
   const off = getBattleScriptOffset('BattleScript_ActionSwitch');
   if (ctx && off >= 0) ctx.scriptPtr = off;
   setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
-  // STUB gBattleResults.playerSwitchesCounter increment.
+  // 1:1 décomp ll.308-309 : incrémente playerSwitchesCounter (cap à 255 u8).
+  if (gBattleResults.playerSwitchesCounter < 255) {
+    gBattleResults.playerSwitchesCounter++;
+  }
 }
 
 /** 1:1 décomp `HandleAction_UseItem` (battle_util.c:312+). STUB partial.
