@@ -700,7 +700,8 @@ export const gBideTarget: number[] = [0, 0, 0, 0];
 /** 1:1 décomp `gBattleStruct->usedHeldItems[MAX_BATTLERS_COUNT]` (battle.h
  *  BattleStruct). Item utilisé/perdu pendant le combat, restauré par Recycle
  *  ou à la fin du combat. */
-export const gUsedHeldItems: number[] = [0, 0, 0, 0];
+/** ALIAS legacy : préférer `gBattleStruct.usedHeldItems` (= 1:1 décomp). */
+export const gUsedHeldItems: number[] = gBattleStruct.usedHeldItems;
 
 /** 1:1 décomp `gTrainerBattleOpponent_A/B` (battle_setup.c). Trainer ID
  *  opponent — déterminé au battle setup, lu par Cmd_getmoneyreward pour
@@ -833,7 +834,7 @@ export function resetBattleState(): void {
     gLockedMoves[i] = 0;
     gBideDmg[i] = 0;
     gBideTarget[i] = 0;
-    gUsedHeldItems[i] = 0;
+    gBattleStruct.usedHeldItems[i] = 0;
     gLastLandedMoves[i] = 0;
     gLastHitByType[i] = 0;
     gLastResultingMoves[i] = 0;
