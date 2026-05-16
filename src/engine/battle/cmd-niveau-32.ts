@@ -211,20 +211,131 @@ function Cmd_yesnoboxlearnmove(ctx: BattleScriptContext): boolean {
 
 // ─── 0x5B yesnoboxstoplearningmove ────────────────────────────────────────
 
-/** 1:1 décomp Cmd_yesnoboxstoplearningmove. 5 bytes (u32 ptr). State machine. */
+/** 1:1 décomp Cmd_yesnoboxstoplearningmove (battle_script_commands.c:5514-5558).
+ *  5 bytes (u32 stopPtr). State machine via gBattleScripting.learnMoveState.
+ *
+ *  Cases :
+ *   0 : show yesno window + init cursor à NO position (= 0).
+ *   1 : poll DPAD up/down + A/B button → resolve choice :
+ *       - YES (cursor 0 + A) : advance 5 bytes (= continue normal flow).
+ *       - NO  (cursor 1 + A) : jump à stopPtr (= cancel learning).
+ *       - B button : same as NO.
+ *
+ *  Notre port : state machine fidèle au décomp. STUB UI = auto-choose YES
+ *  (advance) jusqu'à wire input. */
 function Cmd_yesnoboxstoplearningmove(ctx: BattleScriptContext): boolean {
-  readWord(ctx);  // stopPtr.
-  // MVP stub : skip state machine, advance direct.
-  return false;
+  const stopPtr = readWord(ctx);
+  const bs = (globalThis as { __battleState?: {
+    gBattleScripting?: { learnMoveState: number };
+    gBattleCommunication?: number[];
+  } }).__battleState;
+  if (!bs?.gBattleScripting || !bs.gBattleCommunication) return false;
+
+  switch (bs.gBattleScripting.learnMoveState) {
+    case 0:
+      // 1:1 décomp : HandleBattleWindow + BattlePutTextOnWindow + cursor 0.
+      // STUB UI : juste set cursor à 0 et advance state.
+      bs.gBattleCommunication[3 /* CURSOR_POSITION */] = 0;
+      bs.gBattleScripting.learnMoveState++;
+      ctx.scriptPtr -= 5;  // re-enter (= stay on opcode pour case 1)
+      return true;
+    case 1: {
+      // 1:1 décomp : poll input. STUB : auto-confirm YES → advance.
+      // cursor 0 = YES (continue learning), cursor 1 = NO (cancel).
+      // Pour stub Phase 1, on choose YES = advance pas jump.
+      bs.gBattleScripting.learnMoveState = 0;  // reset for next.
+      // gBattleCommunication[1] = 0 (YES) ou 1 (NO). Avec auto-YES, advance.
+      if (bs.gBattleCommunication[1] !== 0) {
+        ctx.scriptPtr = stopPtr;
+      }
+      // sinon advance (= déjà fait par readWord).
+      return false;
+    }
+    default:
+      bs.gBattleScripting.learnMoveState = 0;
+      return false;
+  }
 }
 
 // ─── 0x6C drawlvlupbox ────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_drawlvlupbox. 1 byte. State machine via
- *  gBattleScripting.drawlvlupboxState. MVP stub : advance direct. */
-function Cmd_drawlvlupbox(_ctx: BattleScriptContext): boolean {
-  // TODO porter level-up stats box rendering (= bg + sprite + text scroll).
-  return false;
+/** 1:1 décomp Cmd_drawlvlupbox (battle_script_commands.c:5927-6024). 1 byte.
+ *  State machine via gBattleScripting.drawlvlupboxState (11 cases 0..10).
+ *
+ *  Notre port : state machine fidèle au décomp, avec stubs UI fns qui
+ *  retournent les valeurs nécessaires pour faire avancer rapidement
+ *  (= simulate "level-up box closed" en ~3 ticks pour ne pas bloquer le
+ *  bytecode interpreter). UI réelle wired Phase 1.4+. */
+function Cmd_drawlvlupbox(ctx: BattleScriptContext): boolean {
+  const bs = (globalThis as { __battleState?: { gBattleScripting?: { drawlvlupboxState: number } } })
+    .__battleState?.gBattleScripting;
+  if (!bs) return false;
+
+  // 1:1 décomp 5929-5938 : case 0 → décide skip banner (case 3) ou show (case 1).
+  if (bs.drawlvlupboxState === 0) {
+    // IsMonGettingExpSentOut : check si le mon level-up est in-battle (gBattlerPartyIndexes match expGetterMonId).
+    // Notre simplification : si in-battle skip banner (case 3) directement.
+    bs.drawlvlupboxState = _isMonGettingExpSentOutHBT() ? 3 : 1;
+  }
+
+  switch (bs.drawlvlupboxState) {
+    case 1:
+      // Start level up banner (= UI banner anim slide-in). STUB UI Phase 1.4.
+      bs.drawlvlupboxState = 2;
+      break;
+    case 2:
+      // 1:1 décomp : SlideInLevelUpBanner returns FALSE quand anim done.
+      // STUB : assume anim done instant → next state.
+      bs.drawlvlupboxState = 3;
+      break;
+    case 3:
+      // Init level up box window. STUB UI : juste advance.
+      bs.drawlvlupboxState = 4;
+      break;
+    case 4:
+      // Draw page 1 of level up box. STUB UI : juste advance.
+      bs.drawlvlupboxState++;
+      break;
+    case 5:
+    case 7:
+      // Wait for draw. STUB IsDma3ManagerBusyWithBgCopy = FALSE → advance.
+      bs.drawlvlupboxState++;
+      break;
+    case 6:
+      // 1:1 décomp : wait for player key (gMain.newKeys != 0).
+      // STUB : auto-accept (= simulate key press).
+      bs.drawlvlupboxState++;
+      break;
+    case 8:
+      // Same : wait key + close. STUB auto-accept.
+      bs.drawlvlupboxState++;
+      break;
+    case 9:
+      // SlideOutLevelUpBanner → STUB done.
+      bs.drawlvlupboxState = 10;
+      break;
+    case 10:
+      // 1:1 décomp : final advance → gBattlescriptCurrInstr++.
+      // Pour réinit prochain usage, reset state.
+      bs.drawlvlupboxState = 0;
+      return false;  // advance opcode.
+    default:
+      bs.drawlvlupboxState = 0;
+      return false;
+  }
+  // 1:1 décomp : si pas advance (= state pas 10), stay on opcode pour re-enter.
+  ctx.scriptPtr--;
+  return true;
+}
+
+/** 1:1 stub `IsMonGettingExpSentOut(void)` (battle_script_commands.c).
+ *  Check si gBattleStruct.expGetterMonId match gBattlerPartyIndexes[player_left]
+ *  (= mon in-battle). */
+function _isMonGettingExpSentOutHBT(): boolean {
+  const bs = _gBattleStruct32;
+  const playerLeftIdx = (globalThis as { __battleState?: { gBattlerPartyIndexes?: number[] } })
+    .__battleState?.gBattlerPartyIndexes?.[0] ?? -1;
+  return bs.expGetterMonId === playerLeftIdx;
 }
 
 // ─── 0xEF handleballthrow ─────────────────────────────────────────────────

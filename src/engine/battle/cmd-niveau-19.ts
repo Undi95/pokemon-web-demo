@@ -89,17 +89,20 @@ function Cmd_drawpartystatussummary(ctx: BattleScriptContext): boolean {
   const active = getBattlerForBattleScript(arg);
   setActiveBattler(active);
 
-  // 1:1 décomp : build hpStatuses[PARTY_SIZE] from gPlayerParty / gEnemyParty.
+  // 1:1 décomp battle_script_commands.c:5700-5735 : build hpStatuses[PARTY_SIZE].
+  // Note : décomp utilise MON_DATA_SPECIES_OR_EGG qui retourne SPECIES_EGG (=412)
+  // si isEgg. Le check `== SPECIES_NONE || == SPECIES_EGG` matche les deux ; les
+  // deux cas → hp=0xFFFF, status=0.
   const party = GET_BATTLER_SIDE_CDS(active) === B_SIDE_PLAYER_CDS
     ? gPlayerParty_CDS
     : gEnemyParty_CDS;
   const hpStatuses: { hp: number; status: number }[] = [];
   for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
     const species = GetMonData_CDS(party[i], MON_DATA_SPECIES_CDS) as number;
-    if (species === 0 /* SPECIES_NONE */) {
+    const isEgg = GetMonData_CDS(party[i], MON_DATA_IS_EGG_CDS) as number;
+    if (species === 0 /* SPECIES_NONE */ || isEgg) {
+      // 1:1 décomp : empty slot ou egg → marker 0xFFFF.
       hpStatuses.push({ hp: 0xFFFF, status: 0 });
-    } else if (GetMonData_CDS(party[i], MON_DATA_IS_EGG_CDS) as number) {
-      hpStatuses.push({ hp: 0xFFFE, status: 0 });
     } else {
       hpStatuses.push({
         hp: GetMonData_CDS(party[i], MON_DATA_HP_CDS) as number,
