@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-16
 **Branche** : `upd2`
-**Commits** : 9 commits Phase 1.4 J
+**Commits** : 16 commits Phase 1.4 J (post-suite première rafale)
 **État** : 🎉 **MILESTONE Phase 1.4 J first pass complete** — bytecode interpreter
 émet maintenant des messages FR via décodeur 1:1 décomp `BufferStringBattle`.
 État machine bytecode wirée dans `battle-flow.ts`.
@@ -270,6 +270,71 @@ Phase 1.4 L : Level-up box + dex page + ball anim
 3. **Trainer battles via bytecode** : tester via tutorial Zigzagton end-to-end
 4. **BufferStringBattle complete** : remaining special cases (= ~15 cases)
 5. **Anim events real rendering** : Phase 1.4 L complete
+
+## Commits suite (post-doc initial)
+
+### Commit 10 : `68f8d361` — runMoveScriptViaBytecode return events list
+`wire-bytecode-bridge.ts` : return ajoute `events?: BattleEvent[]` (= full
+list drained pour consumer non-PRINTSTRING events futurs).
+
+### Commit 11 : `dbd64e78` — Array symbol offset encoding 1:1 (multi-hit fix)
+Major bug : opcodes natifs ne résolvaient pas `SYMBOL + N` (= array offset).
+`addbyte sMULTIHIT_STRING + 4, 1` calculait 0xF000000C + 4 = 0xF0000010 →
+mappé sur DIFFÉRENT symbole. Multi-hit moves (Doubleslap/Doublekick/etc.)
+n'incrémentaient pas le counter → message "Touché  ... fois!" garbage.
+
+Fix architecture :
+- Compiler parseAdditive : détecte SYMBOL + small N → encode offset bits 16-27
+- memory-map.ts : MemoryAccessor.read/write accept optional offset arg
+- resolveAddressOffset extracteur bits 16-27
+- sMULTIHIT_STRING / gBattleCommunication / gBattleTextBuff1 accessors array-aware
+- cmd-niveau-33.ts opcodes natifs (setbyte/addbyte/subbyte/orbyte/etc. + jumpifbyte/jumpifarrayequal/copyarray) passent offset à acc.read/write
+
+Validation : "Touché 3 fois!" Doubleslap, "Touché 2 fois!" Doublekick, "AMPLEUR 8!" Magnitude.
+
+### Commit 12 : `5ee46f9f` — Cmd_transformdataexecution missing PREPARE_SPECIES_BUFFER
+Décomp `battle_script_commands.c:7788` : `PREPARE_SPECIES_BUFFER(gBattleTextBuff1, tgt.species)`.
+Notre port omettait cette ligne → "X se transforme en 8!" (= low byte du species id).
+Fix : "METAMORPH se transforme\nen ZIGZATON!" 1:1.
+
+### Commit 13 : `199f669d` — _speciesName FR (was returning EN)
+Décodeur retournait nom EN ("ZIGZAGOON") car gameDataSpecies n'a pas de field `.name`.
+Fix : import `getSpeciesNameFr` from `data-tables.ts` → text-tables.json → FR ("ZIGZATON").
+
+### Commit 14 : `e1c19361` — ATK/DEF_PREFIX ami/ennemi
+1:1 décomp `battle_message.c:2704-2728` : PLAYER → "ami" / OPPONENT → "ennemi".
+Avant : return "" → "du POKéMON  " (double space).
+Maintenant : "du POKéMON ami\naugmente sa DEFENSE!" / "du POKéMON ennemi" 1:1.
+
+### Commit 15 : `b291465e` — STATSHARPLY/STATHARSHLY skip
+1:1 décomp `battle_message.c:2861-2864` : si stringId == STATSHARPLY (209) ou
+STATHARSHLY (211), skip 3 bytes additional (= ignore next STATROSE/STATFELL entry).
+Avant : Screech (-2 DEF) affichait "baisse beaucoup!baisse!" doublon.
+Fix : "baisse beaucoup!" 1:1.
+
+## Validation finale 19 commits
+
+Multi-hit, multi-stat, recoil, critical hit, super effective, status moves,
+stat changes (+1 +2 -1 -2), faint, drain, transform — tous validés 1:1 décomp
+via `scope.bytecode.testMoveBridge`.
+
+Battery test 639/639 BattleScript_* clean stable.
+
+Moves validés in-browser (~30 distinctifs) :
+- Damage : tackle/thundershock/ember/icebeam/flamethrower/thunder/blizzard/
+  hydropump/firepunch/thunderpunch/icepunch/megakick
+- Multi-hit : doubleslap/doublekick/pinmissile
+- Special : magnitude/transform
+- Recoil : takedown/doubleedge/submission/volttackle
+- Status : growl/leer/scaryface/sandattack/tailwhip/stringshot/screech/
+  flash/kinesis/poisonpowder/thunderwave/hypnosis/confuseray/spore
+- Self-buff : swordsdance/agility/meditate/sharpen/doubleteam/bulkup/calmmind/
+  cosmicpower/irondefense/bellydrum
+- Protect : protect/detect/endure/destinybond
+- Heal : recover/rest/absorb/painsplit
+- Screens : reflect/lightscreen/safeguard/mist
+- Multi-turn : futuresight
+- Misc : metronome/mimic/teleport/haze/curse/rage
 
 ## File complet
 
