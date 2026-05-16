@@ -390,7 +390,8 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
       case 'SCR_ACTIVE_ABILITY':
         return _abilityName(msgData.abilities[msgData.scrActive] ?? 0);
       case 'EFF_ABILITY':
-        return _abilityName(msgData.abilities[msgData.itemEffectBattler] ?? 0);
+        // 1:1 décomp battle_message.c:2580-2582 : utilise gEffectBattler.
+        return _abilityName(msgData.abilities[gEffectBattler] ?? 0);
       case 'PLAYER_NAME': {
         // Resolve depuis gSaveBlock2Ptr.playerName via globalThis.
         const sb2 = (globalThis as { gSaveBlock2Ptr?: { playerName?: string } }).gSaveBlock2Ptr;
