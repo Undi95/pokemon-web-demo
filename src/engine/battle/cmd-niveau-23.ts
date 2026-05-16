@@ -57,6 +57,11 @@ import {
   PREPARE_MOVE_BUFFER,
   PREPARE_BYTE_NUMBER_BUFFER,
 } from './text-buffers';
+import {
+  BtlController_EmitSetMonData as _BtlController_EmitSetMonData_N23,
+  MarkBattlerForControllerExec as _MarkBattlerForControllerExec_N23,
+} from './battle-controllers';
+import { setActiveBattler as _setActiveBattler_N23 } from './state';
 
 // ─── 1:1 décomp `sStatusFlagsForMoveEffects` (battle_script_commands.c:608) ─
 
@@ -118,9 +123,28 @@ function _pressurePPLoseOnUsingImprison(attacker: number): void {
       }
     }
   }
-  // STUB : MOVE_IS_PERMANENT + BtlController_EmitSetMonData REQUEST_PPMOVE_X
-  // pour persist au save block — TODO porter quand UI controller wired.
-  void imprisonPos;
+  // 1:1 décomp battle_util.c:791-796 : si MOVE_IS_PERMANENT, emit SetMonData
+  // REQUEST_PPMOVE1_BATTLE + imprisonPos pour persist au save block.
+  if (imprisonPos !== MAX_MON_MOVES_LOCAL && _moveIsPermanent_N23(attacker, imprisonPos)) {
+    _setActiveBattler_N23(attacker);
+    _BtlController_EmitSetMonData_N23(0 /* B_COMM_TO_CONTROLLER */,
+      9 + imprisonPos /* REQUEST_PPMOVE1_BATTLE + idx */,
+      0, 1, battleMons[attacker].pp[imprisonPos]);
+    _MarkBattlerForControllerExec_N23(attacker);
+  }
+}
+
+/** 1:1 décomp `MOVE_IS_PERMANENT(battler, idx)` macro = !TRANSFORMED && !(mimickedMoves & bit). */
+function _moveIsPermanent_N23(battler: number, idx: number): boolean {
+  const st = (globalThis as { __battleState?: {
+    gBattleMons?: Array<{ status2: number }>;
+    gDisableStructs?: Array<{ mimickedMoves: number }>;
+  } }).__battleState;
+  const mon = st?.gBattleMons?.[battler];
+  const ds = st?.gDisableStructs?.[battler];
+  if (!mon || !ds) return false;
+  return !(mon.status2 & 0x4000000 /* STATUS2_TRANSFORMED */)
+      && !(ds.mimickedMoves & (1 << idx));
 }
 
 /** 1:1 décomp `CalculateBaseDamage` — wrapped via runDamagecalc. */
