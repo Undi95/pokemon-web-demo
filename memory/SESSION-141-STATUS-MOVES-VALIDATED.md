@@ -10,6 +10,19 @@ type: project
 **Commits** : 12 sur branche `upd2` (post 4093956f session 140 final)
 **Branche** : `upd2`
 
+## 🔄 Iter E — Cmd_forcerandomswitch port single trainer
+
+Commit `f7b470d9` : 10e bug critique session 141.
+- Cmd_forcerandomswitch (= Roar/Whirlwind effect) était fail-only STUB.
+- Port 1:1 décomp battle_script_commands.c:7188-7389 pour le cas single trainer
+  battle :
+  - Wild battle : skip TryDoForceSwitchOut, advance normally
+  - Trainer single : pick random alive non-current party mon, set
+    `gBattleStruct.monToSwitchIntoId[target] = i`
+  - Si validMons <= 1 : fail-jump
+  - Double/Multi/Link : différé (= complex BATTLE_TYPE cases)
+- Roar/Whirlwind/Dragon Tail désormais effectifs en single trainer battle.
+
 ## 🏆 Iter D — Wild battle end-to-end via bytecode VALIDATED
 
 Test interactif après iter C :
