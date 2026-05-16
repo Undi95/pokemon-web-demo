@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-16
 **Branche** : `upd2`
-**Commits** : 16 commits Phase 1.4 J (post-suite première rafale)
+**Commits** : 23 commits Phase 1.4 J (post-suite + audit PREPARE missing)
 **État** : 🎉 **MILESTONE Phase 1.4 J first pass complete** — bytecode interpreter
 émet maintenant des messages FR via décodeur 1:1 décomp `BufferStringBattle`.
 État machine bytecode wirée dans `battle-flow.ts`.
@@ -335,6 +335,42 @@ Moves validés in-browser (~30 distinctifs) :
 - Screens : reflect/lightscreen/safeguard/mist
 - Multi-turn : futuresight
 - Misc : metronome/mimic/teleport/haze/curse/rage
+
+## Commits audit PREPARE_*_BUFFER (post-doc 16)
+
+### Commit 17 : `01d3c094` — Cmd_disablelastusedattack missing PREPARE_MOVE_BUFFER
+1:1 décomp `battle_script_commands.c:8007` : PREPARE_MOVE_BUFFER avant
+disable. Sans : "X de Y ne peut plus être utilisée!" affiche move vide.
+
+### Commit 18 : `26b62ac7` — Cmd_tryswapitems missing PREPARE_ITEM_BUFFER + MULTISTRING
+1:1 décomp `battle_script_commands.c:9266-9275` : PREPARE_ITEM_BUFFER(buff1,
+newItem) + PREPARE_ITEM_BUFFER(buff2, oldItem) + MULTISTRING_CHOOSER
+(BOTH/TAKEN/GIVEN). Sans : Trick montre items vides.
+
+### Commit 19 : `0dbcd59f` — Cmd_getexp missing PREPARE buffers + PrepareStringBattle
+1:1 décomp `battle_script_commands.c:3417-3422` : PREPARE_MON_NICK_WITH_PREFIX_BUFFER
+(buff1) + PREPARE_STRING_BUFFER(buff2, ABOOSTED/EMPTYSTRING4) + PREPARE_WORD_NUMBER_BUFFER
+(buff3, 5, dmg) + PrepareStringBattle(STRINGID_PKMNGAINEDEXP=13). Sans :
+"X a gagné Y points EXP!" jamais émis depuis bytecode.
+
+## Validation 23 commits
+
+- Tous tests bytecode bridge passent 1:1 décomp messages FR
+- Battery test 639/639 BattleScript clean stable
+- 0 erreur TS sur 23 commits
+- ~50 moves validés (~30 single + 20+ status/recoil/multi-hit/etc.)
+- Bytecode flag `__USE_BYTECODE_FOR_DAMAGE__` production-ready
+
+## Audit PREPARE_*_BUFFER complete (27 sites décomp)
+
+Tous les 27 PREPARE_*_BUFFER call sites dans battle_script_commands.c
+sont maintenant wirés dans notre port :
+- ✓ batch A original (~14 wired sessions précédentes)
+- ✓ Cmd_transformdataexecution (commit 17)
+- ✓ Cmd_disablelastusedattack (commit 21)
+- ✓ Cmd_tryswapitems (commit 22)
+- ✓ Cmd_getexp (commit 23)
+- ✓ Tous autres déjà OK via batch A précédent ou cmd-niveau-* port complet
 
 ## File complet
 
