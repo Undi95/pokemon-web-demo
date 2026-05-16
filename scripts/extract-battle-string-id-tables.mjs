@@ -57,7 +57,11 @@ const TABLES = {};
   let m;
   while ((m = re.exec(msgTxt))) {
     const name = m[1];
-    const body = m[2];
+    let body = m[2];
+    // Strip comments AVANT le split (= comments en fin de ligne contiennent
+    // pas de `,` mais le split par `,` les déplace au début de la chunk suivante,
+    // ce qui empêche le STRINGID_X regex de matcher).
+    body = body.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
     // Parse entries : `[B_MSG_X] = STRINGID_Y,` OR `STRINGID_Y,` (= positional)
     const entriesByIndex = {};
     let positionalIdx = 0;
@@ -65,7 +69,7 @@ const TABLES = {};
     for (const lineRaw of lines) {
       const line = lineRaw.trim();
       if (!line) continue;
-      // Strip comments
+      // Strip comments (already done above, idempotent)
       const cleaned = line.replace(/\/\/.*$/, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
       if (!cleaned) continue;
       // Match [B_MSG_X] = STRINGID_Y

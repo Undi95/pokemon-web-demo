@@ -52,7 +52,7 @@ export const BATTLE_STRING_ID_TABLES: Record<string, Uint16Array> = {
   gUproarAwakeStringIds: new Uint16Array([117, 118, 119]),
   gUproarOverTurnStringIds: new Uint16Array([112, 113]),
   gWokeUpStringIds: new Uint16Array([108, 110]),
-  gWrappedStringIds: new Uint16Array([90]),
+  gWrappedStringIds: new Uint16Array([90, 92, 91, 93, 91, 328]),
 };
 
 /** Lookup : symbol name → resolved stringId at index, ou null si invalid. */
