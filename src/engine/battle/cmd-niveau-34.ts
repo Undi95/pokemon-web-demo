@@ -80,6 +80,8 @@ import {
 import {
   BtlController_EmitReturnMonToBall, BtlController_EmitPlayFanfareOrBGM,
   MarkBattlerForControllerExec,
+  BtlController_EmitExpUpdate as _BtlController_EmitExpUpdate_N34,
+  MarkBattlerForControllerExec as _MarkBattlerForControllerExec_N34,
 } from './battle-controllers';
 import { GetNatureFromPersonality as _getNatureFromPersonalityN34 } from './data/flavor-compat';
 // 1:1 décomp `getBattleScriptOffset` — wired pour Cmd_getexp BattleScript_LevelUp.
@@ -489,11 +491,14 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
         const monHp = GetMonData(gPlayerParty[monId], MON_DATA_HP) as number;
         const monLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) as number;
         if (monHp && monLevel !== MAX_LEVEL) {
-          // STUB beforeLvlUp.stats snapshot : pas wired (= UI level-up box).
-          // STUB BtlController_EmitExpUpdate : pas wired.
-          // Apply XP via SetMonData directement.
+          // 1:1 décomp : SetMonData EXP + Emit ExpUpdate (= XP bar fill anim).
           const currentExp = GetMonData(gPlayerParty[monId], MON_DATA_EXP) as number;
           SetMonData(gPlayerParty[monId], MON_DATA_EXP, currentExp + gBattleMoveDamage);
+          // 1:1 décomp : BtlController_EmitExpUpdate(B_COMM_TO_CONTROLLER,
+          //   gBattleStruct->expGetterMonId, gBattleMoveDamage) + Mark.
+          // Stub Phase 1.4 UI (= XP bar anim sera réelle plus tard).
+          _BtlController_EmitExpUpdate_N34(0 /* B_COMM_TO_CONTROLLER */, monId, gBattleMoveDamage);
+          _MarkBattlerForControllerExec_N34(gBattleStruct.expGetterBattlerId);
         }
         gBattleScripting.getexpState++;
       }
