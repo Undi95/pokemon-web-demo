@@ -77,6 +77,7 @@ import { applyAtkCanceler } from './atk-canceler';
 import { applyDisobedienceCheck } from './disobedience';
 import {
   ItemBattleEffects, ITEMEFFECT_MOVE_END, ITEMEFFECT_KINGSROCK_SHELLBELL,
+  consumeItemWantedScript,
 } from './item-battle-effects';
 import {
   GetItemHoldEffect, GetItemHoldEffectParam,
@@ -1236,6 +1237,16 @@ function Cmd_moveend(ctx: BattleScriptContext): boolean {
       }
       case MOVEEND_ITEM_EFFECTS_ALL: {
         if (ItemBattleEffects(ITEMEFFECT_MOVE_END, 0, false) !== 0) {
+          // 1:1 décomp : ItemBattleEffects set scriptPtr via BattleScriptPushCursor.
+          // Notre port : consume _lastWantedScriptLabel + push current + jump.
+          const label = consumeItemWantedScript();
+          if (label) {
+            const off = getBattleScriptOffset(label);
+            if (off >= 0) {
+              ctx.scriptPtrStack.push(ctx.scriptPtr);
+              ctx.scriptPtr = off;
+            }
+          }
           effect = true;
         } else {
           gBattleScripting.moveendState++;
@@ -1244,6 +1255,14 @@ function Cmd_moveend(ctx: BattleScriptContext): boolean {
       }
       case MOVEEND_KINGSROCK_SHELLBELL: {
         if (ItemBattleEffects(ITEMEFFECT_KINGSROCK_SHELLBELL, 0, false) !== 0) {
+          const label = consumeItemWantedScript();
+          if (label) {
+            const off = getBattleScriptOffset(label);
+            if (off >= 0) {
+              ctx.scriptPtrStack.push(ctx.scriptPtr);
+              ctx.scriptPtr = off;
+            }
+          }
           effect = true;
         }
         gBattleScripting.moveendState++;
