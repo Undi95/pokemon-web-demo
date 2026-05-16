@@ -33,6 +33,12 @@ import {
   BATTLE_TYPE_DOUBLE,
 } from './constants';
 import { GetBattlerAtPosition, B_POSITION_PLAYER_LEFT, B_POSITION_PLAYER_RIGHT } from './util';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_HBT,
+  gBattleTextBuff2 as _gBattleTextBuff2_HBT,
+  PREPARE_SPECIES_BUFFER,
+  PREPARE_MON_NICK_BUFFER,
+} from './text-buffers';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -129,32 +135,196 @@ function _giveMoveToBattleMon(battlerIdx: number, move: number): void {
 
 // ─── 0x50 openpartyscreen ─────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_openpartyscreen. 6 bytes : opcode + u8 battler + u32 ptr.
- *  Macro source : `openpartyscreen battler:req, ptr:req` (battle_script.inc:476).
+/** 1:1 décomp Cmd_openpartyscreen (battle_script_commands.c:4868-5147).
+ *  6 bytes : opcode + u8 battler + u32 ptr.
  *
- *  Full state machine : ~12k chars dans battle_script_commands.c. Pour POC,
- *  on consume les args + advance (= ne fait rien visuellement, party UI Phase 1.4).
+ *  Sous-paths :
+ *   - BS_FAINTED_LINK_MULTIPLE_1/2 : multi link battle complex paths — STUBs.
+ *   - BS_ATTACKER / BS_TARGET / BS_ANY (single battle) : open party menu pour
+ *     forced switch. Port 1:1 strict de cette branche.
  *
- *  Bug AUDIT fix : avant ne consommait pas les 5 bytes args → opcode suivant
- *  lu comme byte arg de openpartyscreen → script désync (scripts stuck à des
- *  scriptPtr aléatoires comme 721420318). */
+ *  Single battle path 1:1 décomp (5099-5147) :
+ *    1. Determine caseId via PARTY_SCREEN_OPTIONAL flag.
+ *    2. Resolve battler.
+ *    3. Si already faintedHasReplacement → advance 6 bytes.
+ *    4. Si HasNoMonsToSwitch → set absent + jump à jumpPtr.
+ *    5. Sinon → init monToSwitchIntoId = PARTY_SIZE (= no choice) +
+ *       Emit ChoosePokemon + Mark + increment playerSwitchesCounter. */
 function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
-  readByte(ctx);  // battler arg.
-  readWord(ctx);  // jumpPtr if fail.
-  // TODO porter party screen state machine + party_menu UI.
+  const battlerArg = readByte(ctx);
+  const jumpPtr = readWord(ctx);
+
+  // PARTY_SCREEN_OPTIONAL = 0x80 (= bit 7 of battler arg).
+  const PARTY_SCREEN_OPTIONAL = 0x80;
+  const isOptional = (battlerArg & PARTY_SCREEN_OPTIONAL) !== 0;
+  const battlerArgClean = battlerArg & ~PARTY_SCREEN_OPTIONAL;
+
+  // BS_FAINTED_LINK_MULTIPLE_1 / _2 : multi link battle (= 0x09 / 0x0A).
+  // Pour Phase 1, on traite single-battle. Multi cases : just advance.
+  if (battlerArgClean === 0x09 || battlerArgClean === 0x0A) {
+    // STUB multi link battle path — différé Frontier post Phase 1.
+    return false;
+  }
+
+  // Single battle path : resolve battler.
+  const bs = (globalThis as { __battleState?: {
+    gBattlerAttacker?: number;
+    gBattlerTarget?: number;
+    gBattlerFainted?: number;
+    gAbsentBattlerFlags?: number;
+    gHitMarker?: number;
+    gSpecialStatuses?: Array<{ faintedHasReplacement?: boolean | number }>;
+    gBattlerPartyIndexes?: number[];
+    gBattleResults?: { playerSwitchesCounter?: number };
+    gPlayerParty?: Array<{ species?: number; hp?: number }>;
+    gEnemyParty?: Array<{ species?: number; hp?: number }>;
+  } }).__battleState;
+  if (!bs) return false;
+
+  let battler = battlerArgClean;
+  if (battlerArgClean === 0) battler = bs.gBattlerTarget ?? 0;
+  else if (battlerArgClean === 1) battler = bs.gBattlerAttacker ?? 0;
+  else if (battlerArgClean === 0x08 /* BS_FAINTED */) battler = bs.gBattlerFainted ?? 0;
+  // Sinon raw battler index.
+
+  // 1:1 décomp 5105-5107 : si déjà replacement, advance.
+  const ss = bs.gSpecialStatuses?.[battler];
+  if (ss?.faintedHasReplacement) {
+    return false;
+  }
+
+  // 1:1 décomp 5109-5115 : HasNoMonsToSwitch → set absent + jump.
+  const hasNone = _hasNoMonsToSwitch_HBT(battler, 6, 6);
+  if (hasNone) {
+    setActiveBattler(battler);
+    if (bs.gAbsentBattlerFlags !== undefined && bs.gHitMarker !== undefined) {
+      const bit = 1 << battler;
+      bs.gAbsentBattlerFlags = bs.gAbsentBattlerFlags | bit;
+      // Clear HITMARKER_FAINTED(battler) = (1 << (battler + 28)).
+      bs.gHitMarker = bs.gHitMarker & ~(1 << (battler + 28));
+    }
+    ctx.scriptPtr = jumpPtr;
+    return false;
+  }
+
+  // 1:1 décomp 5117-5126 : init monToSwitchIntoId = PARTY_SIZE + emit ChoosePokemon.
+  setActiveBattler(battler);
+  if (_gBattleStruct32.battlerPartyIndexes) {
+    _gBattleStruct32.battlerPartyIndexes[battler] = bs.gBattlerPartyIndexes?.[battler] ?? 0;
+  }
+  if (_gBattleStruct32.monToSwitchIntoId) {
+    _gBattleStruct32.monToSwitchIntoId[battler] = 6 /* PARTY_SIZE */;
+  }
+  // gBattleStruct.field_93 &= ~bit (STUB : field_93 = bitmask de battlers traités).
+  // STUB BtlController_EmitChoosePokemon (= ouvre party menu UI). Phase 1.4+.
+  void isOptional;  // hitmarkerFaintBits = isOptional ? CHOOSE_MON : SEND_OUT.
+
+  // 1:1 décomp : si player_left active, increment playerSwitchesCounter.
+  if (battler === 0 && bs.gBattleResults && (bs.gBattleResults.playerSwitchesCounter ?? 0) < 255) {
+    bs.gBattleResults.playerSwitchesCounter = (bs.gBattleResults.playerSwitchesCounter ?? 0) + 1;
+  }
   return false;
+}
+
+/** 1:1 stub `HasNoMonsToSwitch(battler, partyIdBattlerOn1, partyIdBattlerOn2)`
+ *  (battle_util.c). Retourne TRUE si pas de mon disponible. */
+function _hasNoMonsToSwitch_HBT(battler: number, _p1: number, _p2: number): boolean {
+  const bs = (globalThis as { __battleState?: {
+    gBattlerPartyIndexes?: number[];
+    gPlayerParty?: Array<{ species?: number; hp?: number; isEgg?: number }>;
+    gEnemyParty?: Array<{ species?: number; hp?: number; isEgg?: number }>;
+  } }).__battleState;
+  if (!bs) return true;
+  const side = battler & 1;  // 0 player, 1 opponent.
+  const party = side === 0 ? bs.gPlayerParty : bs.gEnemyParty;
+  if (!party) return true;
+  const curSlot = bs.gBattlerPartyIndexes?.[battler] ?? 0;
+  for (let i = 0; i < 6; i++) {
+    if (i === curSlot) continue;
+    const mon = party[i];
+    if (mon?.species && (mon.hp ?? 0) > 0 && !mon.isEgg) return false;
+  }
+  return true;
 }
 
 // ─── 0x51 switchhandleorder ───────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_switchhandleorder. 3 bytes (u8 battler + u8 caseId).
- *  MVP stub : consomme args + advance. */
+/** 1:1 décomp Cmd_switchhandleorder (battle_script_commands.c:5155-5220).
+ *  3 bytes (u8 battler + u8 caseId). 4 cases :
+ *   0 : commit chosen mons from gBattleBufferB (= player choice). STUB notre
+ *       port : pas de buffer, on lit gBattleStruct.monToSwitchIntoId déjà setté.
+ *   1 : SwitchPartyOrder pour single battle (= swap party slots indices).
+ *   2 : same que 3 + record action (= replay tracking, no-op single).
+ *   3 : update gBattleCommunication[0] + monToSwitchIntoId + SwitchPartyOrder
+ *       + PREPARE_SPECIES_BUFFER + PREPARE_MON_NICK_BUFFER. */
 function Cmd_switchhandleorder(ctx: BattleScriptContext): boolean {
   if (gBattleControllerExecFlags) return _stayOnOpcode(ctx);
-  readByte(ctx);  // battler
-  readByte(ctx);  // caseId
-  // TODO porter switch handler state machine.
+  const battlerArg = readByte(ctx);
+  const caseId = readByte(ctx);
+  const active = (globalThis as { __battleStateMutators?: { setAttacker?: (v: number) => void } })
+    .__battleStateMutators; void active;
+  // Resolve active battler via getBattlerForBattleScript équivalent.
+  // Pour single battle, BS_ATTACKER (1) = gBattlerAttacker, BS_TARGET (0) = gBattlerTarget.
+  let activeBattler = battlerArg;
+  const bs = (globalThis as { __battleState?: {
+    gBattlerAttacker?: number; gBattlerTarget?: number;
+    gBattlerPartyIndexes?: number[];
+    gBattleMons?: Array<{ species?: number }>;
+    gBattleCommunication?: number[];
+  } }).__battleState;
+  if (battlerArg === 0 && bs?.gBattlerTarget !== undefined) activeBattler = bs.gBattlerTarget;
+  else if (battlerArg === 1 && bs?.gBattlerAttacker !== undefined) activeBattler = bs.gBattlerAttacker;
+  setActiveBattler(activeBattler);
+
+  switch (caseId) {
+    case 0:
+      // 1:1 décomp : for each battler, if buffer[0] == CONTROLLER_CHOSENMONRETURNVALUE,
+      // copy buffer[1] to gBattleStruct.monToSwitchIntoId[i].
+      // Notre port : no-op (= buffer pas wired, monToSwitchIntoId déjà setté
+      // par Cmd_openpartyscreen ou ChooseMonToSendOut).
+      break;
+    case 1:
+      // 1:1 décomp : SwitchPartyOrder pour single battle. STUB notre port :
+      // swap les partyIndexes via _switchPartyOrderImpl (helper local).
+      _switchPartyOrderHBT(activeBattler);
+      break;
+    case 2:
+    case 3:
+      // 1:1 décomp : update gBattleCommunication[0] + monToSwitchIntoId.
+      // Notre port : monToSwitchIntoId est déjà setté ; on retain le slot.
+      if (bs?.gBattleCommunication && _gBattleStruct32.monToSwitchIntoId) {
+        const slot = _gBattleStruct32.monToSwitchIntoId[activeBattler] ?? 0;
+        bs.gBattleCommunication[0] = slot;
+      }
+      _switchPartyOrderHBT(activeBattler);
+      // 1:1 décomp : PREPARE_SPECIES_BUFFER + PREPARE_MON_NICK_BUFFER.
+      if (bs?.gBattleMons && bs.gBattlerAttacker !== undefined) {
+        const attacker = bs.gBattlerAttacker;
+        PREPARE_SPECIES_BUFFER(_gBattleTextBuff1_HBT, bs.gBattleMons[attacker]?.species ?? 0);
+      }
+      if (bs?.gBattlerPartyIndexes && _gBattleStruct32.monToSwitchIntoId) {
+        PREPARE_MON_NICK_BUFFER(_gBattleTextBuff2_HBT, activeBattler,
+          _gBattleStruct32.monToSwitchIntoId[activeBattler] ?? 0);
+      }
+      break;
+    default:
+      break;
+  }
   return false;
+}
+
+/** 1:1 décomp `SwitchPartyOrder(battler)` (battle_main.c:4086-4113).
+ *  Swap party slot du battler vers monToSwitchIntoId. Phase 1 simplified :
+ *  on swap les indices dans gBattlerPartyIndexes (= notre party-storage). */
+function _switchPartyOrderHBT(battler: number): void {
+  const bs = (globalThis as { __battleState?: {
+    gBattlerPartyIndexes?: number[];
+  } }).__battleState;
+  if (!bs?.gBattlerPartyIndexes || !_gBattleStruct32.monToSwitchIntoId) return;
+  const newSlot = _gBattleStruct32.monToSwitchIntoId[battler];
+  if (typeof newSlot === 'number' && newSlot >= 0 && newSlot < 6) {
+    bs.gBattlerPartyIndexes[battler] = newSlot;
+  }
 }
 
 // ─── 0x59 handlelearnnewmove ──────────────────────────────────────────────

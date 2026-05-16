@@ -344,17 +344,67 @@ function Cmd_displaydexinfo(ctx: BattleScriptContext): boolean {
 
 // ─── 0xF3 trygivecaughtmonnick ────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_trygivecaughtmonnick. 1 byte. Yes/No nickname state machine.
+/** 1:1 décomp Cmd_trygivecaughtmonnick (battle_script_commands.c:10225-10299).
+ *  5 bytes (u32 jumpPtr if party full). Yes/No nickname state machine 5 cases.
  *
- *  Note 1:1 partial : state machine via gBattleCommunication[MULTIUSE_STATE]
- *  qui draw yes/no box, handle DPAD, branche vers naming screen ou skip.
- *  Notre port : MVP advance direct (= simulate "skip nickname"). */
-function Cmd_trygivecaughtmonnick(_ctx: BattleScriptContext): boolean {
-  // TODO porter yesno state machine + naming screen scene.
-  // 1:1 décomp : MULTIUSE_STATE = 0 (= battle_script_commands.h:285).
-  // AUDIT FIX : précédemment hardcoded [7] FAUX (= ce serait B_MSG_index).
-  gBattleCommunication[0 /* MULTIUSE_STATE */] = 0;
-  return false;
+ *  Macro 1:1 : `trygivecaughtmonnick ptr:req` (battle_script.inc:1230-1233).
+ *
+ *  Cases :
+ *   0 : show YES/NO box + init cursor 0.
+ *   1 : poll DPAD up/down + A button → cursor 0 (YES) state 2, sinon state 4.
+ *   2 : wait palette fade, open naming screen.
+ *   3 : wait naming done, set nickname + jump (= retour normal flow).
+ *   4 : si party FULL → advance 5 bytes (= sent to PC), sinon jump (= retour menu).
+ *
+ *  Port Phase 1 (UI naming screen Phase 1.4+) : auto-NO → case 4 → check party.
+ *  Le state advance par tick comme dans drawlvlupbox. */
+function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
+  const jumpPtr = readWord(ctx);
+  switch (gBattleCommunication[0 /* MULTIUSE_STATE */]) {
+    case 0:
+      // 1:1 décomp : show YES/NO + cursor 0. STUB UI : just advance state.
+      gBattleCommunication[3 /* CURSOR_POSITION */] = 0;
+      gBattleCommunication[0]++;
+      ctx.scriptPtr -= 5;  // re-enter opcode.
+      return true;
+    case 1:
+      // 1:1 décomp : poll input. STUB : auto-NO → state 4 (= skip naming).
+      gBattleCommunication[0] = 4;
+      ctx.scriptPtr -= 5;
+      return true;
+    case 2:
+      // STUB palette fade : assume done → state 3.
+      gBattleCommunication[0]++;
+      ctx.scriptPtr -= 5;
+      return true;
+    case 3:
+      // STUB naming screen : assume done → jump à jumpPtr (= retour normal).
+      gBattleCommunication[0] = 0;  // reset.
+      ctx.scriptPtr = jumpPtr;
+      return false;
+    case 4: {
+      // 1:1 décomp : si party FULL = 6 mons → advance 5 (= sent to PC story).
+      // Sinon jump à jumpPtr (= party menu pour place).
+      gBattleCommunication[0] = 0;  // reset.
+      let playerPartyCount = 0;
+      const gParty = (globalThis as { gPlayerParty?: Array<{ species?: number }> }).gPlayerParty;
+      if (gParty) {
+        for (let i = 0; i < 6; i++) {
+          if (gParty[i]?.species) playerPartyCount++;
+        }
+      }
+      if (playerPartyCount === 6) {
+        // Advance (= already advanced by readWord).
+        return false;
+      } else {
+        ctx.scriptPtr = jumpPtr;
+        return false;
+      }
+    }
+    default:
+      gBattleCommunication[0] = 0;
+      return false;
+  }
 }
 
 // ─── Install handlers ──────────────────────────────────────────────────────
