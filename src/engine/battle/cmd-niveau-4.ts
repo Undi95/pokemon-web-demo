@@ -71,6 +71,7 @@ import {
   SE_SELECT,
 } from './battle-controllers';
 import { getBattleMove } from './data/battle-moves';
+import { resolveStringIdTable } from './memory-map';
 
 // ─── Helper : "go back to this opcode" pattern ─────────────────────────────
 
@@ -216,17 +217,29 @@ function Cmd_waitmessage(ctx: BattleScriptContext): boolean {
 
 // ─── 0x13 printfromtable ────────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_printfromtable. 1 byte opcode + u32 ptr = 5 bytes total. */
+/** 1:1 décomp Cmd_printfromtable. 1 byte opcode + u32 ptr = 5 bytes total.
+ *
+ *  Phase 1.4 J : si le ptr est un SYMBOL_MARKER pour un g*StringIds data
+ *  table (= gStatDownStringIds, gStatUpStringIds, gFirstTurnOfTwoStringIds,
+ *  etc., 46 tables extraites depuis battle_message.c via
+ *  scripts/extract-battle-string-id-tables.mjs), résoud via
+ *  resolveStringIdTable → BATTLE_STRING_ID_TABLES → u16 à idx.
+ *  Sinon (= legacy inline table dans bytecode), lit au offset direct. */
 function Cmd_printfromtable(ctx: BattleScriptContext): boolean {
   if (gBattleControllerExecFlags !== 0) {
     return _stayOnOpcode(ctx);
   }
-  // const u16 *ptr = T1_READ_PTR(gBattlescriptCurrInstr + 1); ptr += chooser;
-  // PrepareStringBattle(*ptr, gBattlerAttacker);
   const tableOffset = readWord(ctx);  // advances 4 bytes.
   const idx = gBattleCommunication[MULTISTRING_CHOOSER];
-  const bc = _readBytecodeForString(tableOffset, idx);
-  PrepareStringBattle(bc, gBattlerAttacker);
+  // Phase 1.4 J : try SYMBOL_MARKER resolution first.
+  const table = resolveStringIdTable(tableOffset);
+  let stringId: number;
+  if (table) {
+    stringId = (idx >= 0 && idx < table.length) ? table[idx] : 0;
+  } else {
+    stringId = _readBytecodeForString(tableOffset, idx);
+  }
+  PrepareStringBattle(stringId, gBattlerAttacker);
   gBattleCommunication[MSG_DISPLAY] = 1;
   return false;
 }

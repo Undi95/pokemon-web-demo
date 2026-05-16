@@ -362,14 +362,47 @@ export function bindSymbol(id: number, name: string): void {
 }
 
 /** Initialize memory-map au boot : load SYMBOLS_TABLE auto-generated et bind
- *  chaque entry. Idempotent (= safe à appeler plusieurs fois). */
+ *  chaque entry. Idempotent (= safe à appeler plusieurs fois).
+ *
+ *  Phase 1.4 J : ajoute aussi les symbols pour data tables (= gStatDownStringIds,
+ *  etc.) résolus via BATTLE_STRING_ID_TABLES lookup. Ces tables sont read-only
+ *  (= Cmd_printfromtable utilise l'addr comme tableOffset puis lit u16 à idx*2). */
 let _memoryMapInitialized = false;
 export function initMemoryMap(): void {
   if (_memoryMapInitialized) return;
   for (const entry of SYMBOLS_TABLE) {
-    bindSymbol(entry.id, entry.name);
+    if (BATTLE_STRING_ID_TABLES[entry.name]) {
+      // Phase 1.4 J : string id table — store name for resolveStringIdTable lookup.
+      _SYMBOL_ID_TO_TABLE_NAME[entry.id] = entry.name;
+    } else {
+      bindSymbol(entry.id, entry.name);
+    }
   }
   _memoryMapInitialized = true;
+}
+
+// ─── String ID tables (= data, not state) — Phase 1.4 J ─────────────────────
+
+import { BATTLE_STRING_ID_TABLES } from '../decomp-data/battle-string-id-tables';
+
+/** Mapping internal id (= bytecode SYMBOL_MARKER|id) → table name pour lookup.
+ *  Populated par initMemoryMap pour symbols qui matchent BATTLE_STRING_ID_TABLES. */
+const _SYMBOL_ID_TO_TABLE_NAME: Record<number, string> = {};
+
+/** Resolve une address u32 → string id u16[] (= 1:1 décomp data table).
+ *  Si addr est un SYMBOL_MARKER pour un g*StringIds table, return Uint16Array.
+ *  Sinon return null. */
+export function resolveStringIdTable(addr: number): Uint16Array | null {
+  if (((addr & SYMBOL_MARKER) >>> 0) !== SYMBOL_MARKER) return null;
+  const id = addr & SYMBOL_MASK;
+  const tableName = _SYMBOL_ID_TO_TABLE_NAME[id];
+  if (!tableName) return null;
+  return BATTLE_STRING_ID_TABLES[tableName] ?? null;
+}
+
+/** Debug : list des string id tables resolved au init. */
+export function getStringIdTableSymbols(): Array<{ id: number; name: string }> {
+  return Object.entries(_SYMBOL_ID_TO_TABLE_NAME).map(([id, name]) => ({ id: Number(id), name }));
 }
 
 import { SYMBOLS_TABLE } from '../decomp-data/auto-asm-bytecode/_symbols-table';

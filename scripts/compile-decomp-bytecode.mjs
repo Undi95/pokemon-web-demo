@@ -439,6 +439,25 @@ const BATTLE_MEMORY_SYMBOLS = new Set([
   'sMULTIPLAYER_ID', 'sSPECIAL_TRAINER_BATTLE_TYPE',
   // cXxx prefix = gBattleCommunication[X] (battle_script_commands.h:299-301).
   'cEFFECT_CHOOSER', 'cMULTISTRING_CHOOSER', 'cMISS_TYPE',
+  // 1:1 décomp battle_message.c data tables (= u16[] stringIds tables indexed
+  // par MULTISTRING_CHOOSER. Encodés comme markers SYMBOL_MARKER pour résolution
+  // runtime via memory-map → BATTLE_STRING_ID_TABLES lookup).
+  'gAbsorbDrainStringIds', 'gAttractUsedStringIds', 'gBRNPreventionStringIds',
+  'gBerryEffectStringIds', 'gCaughtMonStringIds', 'gFellAsleepStringIds',
+  'gFirstTurnOfTwoStringIds', 'gFlashFireStringIds', 'gFocusEnergyUsedStringIds',
+  'gFutureMoveUsedStringIds', 'gGotBurnedStringIds', 'gGotDefrostedStringIds',
+  'gGotFrozenStringIds', 'gGotParalyzedStringIds', 'gGotPoisonedStringIds',
+  'gInobedientStringIds', 'gItemSwapStringIds', 'gKOFailedStringIds',
+  'gLeechSeedStringIds', 'gMissStringIds', 'gMistUsedStringIds',
+  'gMoveWeatherChangeStringIds', 'gNoEscapeStringIds', 'gPRLZPreventionStringIds',
+  'gPSNPreventionStringIds', 'gPartyStatusHealStringIds', 'gProtectLikeUsedStringIds',
+  'gRainContinuesStringIds', 'gReflectLightScreenSafeguardStringIds',
+  'gRestUsedStringIds', 'gSafariGetNearStringIds', 'gSafariPokeblockResultStringIds',
+  'gSandStormHailContinuesStringIds', 'gSandStormHailDmgStringIds',
+  'gSandStormHailEndStringIds', 'gSportsUsedStringIds', 'gStatDownStringIds',
+  'gStatUpStringIds', 'gStockpileUsedStringIds', 'gSubstituteUsedStringIds',
+  'gSwallowFailStringIds', 'gTransformUsedStringIds', 'gUproarAwakeStringIds',
+  'gUproarOverTurnStringIds', 'gWokeUpStringIds', 'gWrappedStringIds',
 ]);
 const symbolToId = new Map();  // name → id
 const idToSymbol = [];          // id → name (= reverse lookup for exports)

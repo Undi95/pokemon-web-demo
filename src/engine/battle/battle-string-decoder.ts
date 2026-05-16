@@ -180,15 +180,20 @@ function _monNickname(battlerId: number): string {
   return _speciesName(mon.species ?? 0);
 }
 
-/** Préfixe selon side (= player vs enemy). 1:1 décomp utilise gBattlerPositions
- *  + côté player → "" / enemy → "Le " (français). */
+/** Préfixe selon side (= player vs enemy). 1:1 décomp `HANDLE_NICKNAME_STRING_CASE`
+ *  (battle_message.c:2362-2380).
+ *  - Side PLAYER (= bit 0 == 0) → juste nickname.
+ *  - Side OPPONENT trainer (= BATTLE_TYPE_TRAINER set) → "X ennemi" (= sText_FoePkmnPrefix " ennemi" appended).
+ *  - Side OPPONENT wild (= no trainer flag) → "X sauvage" (= sText_WildPkmnPrefix " sauvage" appended). */
 function _monNicknameWithPrefix(battlerId: number): string {
   const nick = _monNickname(battlerId);
-  // 1:1 décomp : si side enemy → préfixe "Le " (= "Foe X" en EN).
   // GET_BATTLER_SIDE : (battlerId & 1) → 0=PLAYER 1=OPPONENT.
   const side = battlerId & 1;
-  if (side === 1) return `Le ${nick} ennemi`;
-  return nick;
+  if (side === 0) return nick;  // PLAYER side → no prefix
+  // OPPONENT side : check trainer vs wild via globalThis.
+  const bs = (globalThis as { __battleState?: { gBattleTypeFlags?: number } }).__battleState;
+  const isTrainerBattle = ((bs?.gBattleTypeFlags ?? 0) & 0x08 /* BATTLE_TYPE_TRAINER */) !== 0;
+  return isTrainerBattle ? `${nick} ennemi` : `${nick} sauvage`;
 }
 
 // ─── Decode B_BUFF1/2/3 (= mini-format placeholder) 1:1 décomp ─────────────
@@ -389,12 +394,12 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
         return sb2_link?.playerName ?? 'Joueur';
       case 'PC_CREATOR_NAME':
         return 'BILL';
-      // Prefix placeholders : 1:1 décomp battle_message.c utilise pour la
-      // localisation FR uniquement. EN ignore. Notre port FR : prefixes "DU "/etc.
+      // Prefix placeholders : 1:1 décomp utilise dans certains templates très
+      // spécifiques (= jouent avec genres FR). Phase 1.4 J : return empty pour
+      // éviter duplication ("du Le X" cf. _monNicknameWithPrefix qui handle).
       case 'ATK_PREFIX1': case 'ATK_PREFIX2': case 'ATK_PREFIX3':
-        return (gBattlerAttacker & 1) === 1 ? 'du ' : '';
       case 'DEF_PREFIX1': case 'DEF_PREFIX2': case 'DEF_PREFIX3':
-        return (gBattlerTarget & 1) === 1 ? 'du ' : '';
+        return '';
       default:
         return `{B_${name}}`;
     }
