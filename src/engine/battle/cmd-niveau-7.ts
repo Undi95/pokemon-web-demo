@@ -145,10 +145,15 @@ function Cmd_incrementgamestat(ctx: BattleScriptContext): boolean {
   return false;
 }
 
-/** Stub IncrementGameStat — TODO wire à la persistence game stats. */
+/** 1:1 décomp `IncrementGameStat(statId)` (= update gSaveBlock1Ptr->gameStats[stat]).
+ *  Wired vers globalThis.gSaveBlock1Ptr.gameStats[] qui est maintenu par
+ *  game-state.ts (= persisté au save). */
 function _incrementGameStat(statId: number): void {
-  // TODO : appel real game stat increment (= save block).
-  void statId;
+  const block1 = (globalThis as Record<string, unknown>).gSaveBlock1Ptr as
+    { gameStats?: number[] } | undefined;
+  if (block1?.gameStats && statId >= 0 && statId < block1.gameStats.length) {
+    block1.gameStats[statId] = (block1.gameStats[statId] ?? 0) + 1;
+  }
 }
 
 // ─── 0x68 cancelallactions ─────────────────────────────────────────────────

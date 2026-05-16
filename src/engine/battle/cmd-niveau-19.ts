@@ -82,20 +82,44 @@ function Cmd_jumpifabilitypresent(ctx: BattleScriptContext): boolean {
 
 // ─── 0x61 drawpartystatussummary ──────────────────────────────────────────
 
-/** 1:1 décomp Cmd_drawpartystatussummary. 2 bytes. MVP : stub UI call.
- *  Le décomp construit hpStatuses[PARTY_SIZE] from gPlayerParty/gEnemyParty.
- *  Notre port émet juste avec un placeholder (= aucun party donnée n'est
- *  lue/écrite ici sans gPlayerParty wired). */
+/** 1:1 décomp Cmd_drawpartystatussummary (battle_script_commands.c). 2 bytes. */
 function Cmd_drawpartystatussummary(ctx: BattleScriptContext): boolean {
   if (gBattleControllerExecFlags) return _stayOnOpcode(ctx);
   const arg = readByte(ctx);
   const active = getBattlerForBattleScript(arg);
   setActiveBattler(active);
-  // TODO : build hpStatuses[6] from gPlayerParty / gEnemyParty.
-  BtlController_EmitDrawPartyStatusSummary(B_COMM_TO_CONTROLLER, null, 1);
+
+  // 1:1 décomp : build hpStatuses[PARTY_SIZE] from gPlayerParty / gEnemyParty.
+  const party = GET_BATTLER_SIDE_CDS(active) === B_SIDE_PLAYER_CDS
+    ? gPlayerParty_CDS
+    : gEnemyParty_CDS;
+  const hpStatuses: { hp: number; status: number }[] = [];
+  for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
+    const species = GetMonData_CDS(party[i], MON_DATA_SPECIES_CDS) as number;
+    if (species === 0 /* SPECIES_NONE */) {
+      hpStatuses.push({ hp: 0xFFFF, status: 0 });
+    } else if (GetMonData_CDS(party[i], MON_DATA_IS_EGG_CDS) as number) {
+      hpStatuses.push({ hp: 0xFFFE, status: 0 });
+    } else {
+      hpStatuses.push({
+        hp: GetMonData_CDS(party[i], MON_DATA_HP_CDS) as number,
+        status: GetMonData_CDS(party[i], MON_DATA_STATUS_CDS) as number,
+      });
+    }
+  }
+  BtlController_EmitDrawPartyStatusSummary(B_COMM_TO_CONTROLLER, hpStatuses, 1);
   MarkBattlerForControllerExec(active);
   return false;
 }
+
+// Imports locaux pour Cmd_drawpartystatussummary (= éviter import dups).
+import { GET_BATTLER_SIDE as GET_BATTLER_SIDE_CDS, B_SIDE_PLAYER as B_SIDE_PLAYER_CDS } from './constants';
+import {
+  gPlayerParty as gPlayerParty_CDS, gEnemyParty as gEnemyParty_CDS,
+  GetMonData as GetMonData_CDS,
+  MON_DATA_SPECIES as MON_DATA_SPECIES_CDS, MON_DATA_HP as MON_DATA_HP_CDS,
+  MON_DATA_STATUS as MON_DATA_STATUS_CDS, MON_DATA_IS_EGG as MON_DATA_IS_EGG_CDS,
+} from './party-storage';
 
 // ─── 0x62 hidepartystatussummary ──────────────────────────────────────────
 
