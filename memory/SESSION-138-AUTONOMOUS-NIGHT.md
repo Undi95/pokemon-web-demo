@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-15 (autonomous /loop, user "je m'endors pour de vrai")
 **Branche** : `upd2`
-**Commits** : 48+ commits / ~4600 lignes 1:1 décomp ajoutées cette session (+ 9 audit bugs critiques fixés)
+**Commits** : 54 commits FINAL / ~4800 lignes 1:1 décomp ajoutées cette session (+ 9 audit bugs critiques fixés). **26 iterations /loop dynamic**.
 
 ---
 
