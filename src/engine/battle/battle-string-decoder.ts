@@ -1,0 +1,373 @@
+/**
+ * battle/battle-string-decoder.ts — Décoder partiel de BufferStringBattle 1:1 décomp
+ * `src/battle_message.c:1968-2950`.
+ *
+ * Architecture 1:1 strict (partielle Phase 1.4 J first pass) :
+ *   - Lookup sText_X via BATTLE_STRINGS_TABLE[stringId]
+ *   - Fetch template FR depuis strings.json (= initStringsFromDecomp doit avoir
+ *     été appelé au boot)
+ *   - Substitute placeholders `{B_BUFF1}`, `{B_ATK_NAME_WITH_PREFIX}`, etc. via
+ *     msgData snapshot capturé au moment de l'emit
+ *   - Special-cases pour stringIds 0..11 (INTROMSG/INTROSENDOUT/RETURNMON/etc.)
+ *     qui sont handled par switch dans BufferStringBattle (= pas dans la table)
+ *
+ * Limitations Phase 1.4 J first pass :
+ *   - Special cases utilisent path "single wild battle" (= pas TRAINER/DOUBLE/LINK)
+ *   - Resolvers placeholder utilisent fallback "?" si data manquante
+ *   - Pas tous les ~70 placeholders implémentés (= les ~15 plus courants suffisent
+ *     pour Tackle/Growl/PoisonPowder/etc.)
+ *
+ * Sources de vérité :
+ *   - `D:/Projet 1/decomps/pokeemeraude/src/battle_message.c:1968-2950`
+ *   - `D:/Projet 1/decomps/pokeemeraude/include/battle_message.h:10-80`
+ */
+
+import { BATTLE_STRINGS_TABLE, STRINGID_NAMES } from '../decomp-data/battle-strings-table';
+import { getString } from '../gba-strings';
+import type { BattleMsgData } from './battle-event-queue';
+import {
+  B_BUFF_PLACEHOLDER_BEGIN,
+  B_BUFF_STRING,
+  B_BUFF_NUMBER,
+  B_BUFF_MOVE,
+  B_BUFF_TYPE,
+  B_BUFF_MON_NICK_WITH_PREFIX,
+  B_BUFF_STAT,
+  B_BUFF_SPECIES,
+  B_BUFF_MON_NICK,
+  B_BUFF_ABILITY,
+  B_BUFF_ITEM,
+  B_BUFF_EOS,
+  B_BUFF_NEGATIVE_FLAVOR,
+} from './text-buffers';
+import { gBattleMons, gBattlerAttacker, gBattlerTarget, gBattleScripting } from './state';
+
+// ─── STAT names (1:1 décomp battle_message.c:430-440) ──────────────────────
+
+const STAT_NAMES_FR: Record<number, string> = {
+  0: 'PV',
+  1: 'ATTAQUE',
+  2: 'DÉFENSE',
+  3: 'VITESSE',
+  4: 'ATT. SPÉ.',
+  5: 'DÉF. SPÉ.',
+  6: 'PRÉCISION',
+  7: 'ESQUIVE',
+};
+
+// ─── Helpers : species/move/ability/item name resolvers ────────────────────
+
+/** Resolve nom species depuis species id numeric. Lazy via globalThis bridges. */
+function _speciesName(speciesId: number): string {
+  if (!speciesId) return '?';
+  try {
+    const sn = (globalThis as { __species_names_fr?: Record<number, string> }).__species_names_fr;
+    if (sn?.[speciesId]) return sn[speciesId];
+    // Fallback : essai via _data-tables flat lookup
+    const dt = (globalThis as {
+      __game_data?: { species?: Record<string, { id?: number; name?: string }> };
+    }).__game_data;
+    if (dt?.species) {
+      for (const [, sp] of Object.entries(dt.species)) {
+        if (sp?.id === speciesId && sp.name) return sp.name;
+      }
+    }
+  } catch { /* fallthrough */ }
+  return `Espèce#${speciesId}`;
+}
+
+/** Resolve nom move depuis move id numeric. */
+function _moveName(moveId: number): string {
+  if (!moveId) return '?';
+  try {
+    const mn = (globalThis as { __move_names_fr?: Record<number, string> }).__move_names_fr;
+    if (mn?.[moveId]) return mn[moveId];
+    const dt = (globalThis as {
+      __game_data?: { moves?: Record<string, { id?: number; name?: string }> };
+      __game_data_move_names_fr?: Record<string, string>;
+    }).__game_data;
+    if (dt?.moves) {
+      for (const [key, mv] of Object.entries(dt.moves)) {
+        if (mv?.id === moveId) {
+          const fr = (globalThis as { __game_data_move_names_fr?: Record<string, string> })
+            .__game_data_move_names_fr?.[key];
+          return fr ?? key.replace(/^MOVE_/, '');
+        }
+      }
+    }
+  } catch { /* fallthrough */ }
+  return `Capa#${moveId}`;
+}
+
+/** Resolve nom ability depuis ability id numeric. */
+function _abilityName(abilityId: number): string {
+  if (!abilityId) return '—';
+  try {
+    const an = (globalThis as { __ability_names_fr?: Record<number, string> }).__ability_names_fr;
+    if (an?.[abilityId]) return an[abilityId];
+  } catch { /* fallthrough */ }
+  return `Talent#${abilityId}`;
+}
+
+/** Resolve nom item depuis item id numeric. */
+function _itemName(itemId: number): string {
+  if (!itemId) return '—';
+  try {
+    const it = (globalThis as { __item_names_fr?: Record<number, string> }).__item_names_fr;
+    if (it?.[itemId]) return it[itemId];
+  } catch { /* fallthrough */ }
+  return `Objet#${itemId}`;
+}
+
+/** Resolve nom type depuis type id numeric. */
+function _typeName(typeId: number): string {
+  const TYPE_NAMES_FR = [
+    'NORMAL', 'COMBAT', 'VOL', 'POISON', 'SOL', 'ROCHE', 'INSECTE', 'SPECTRE',
+    'ACIER', '?', 'FEU', 'EAU', 'PLANTE', 'ELECTRIK', 'PSY', 'GLACE', 'DRAGON',
+    'TENEBRES',
+  ];
+  return TYPE_NAMES_FR[typeId] ?? `Type#${typeId}`;
+}
+
+// ─── Mon nickname resolver (= gBattleMons[X].nickname Uint8Array u8[10] GBA) ─
+
+/** Read nickname depuis gBattleMons[battlerId]. 1:1 décomp : u8[10] avec EOS 0xFF.
+ *  Pour MVP : fallback sur species name si pas de nickname. */
+function _monNickname(battlerId: number): string {
+  const mon = gBattleMons[battlerId];
+  if (!mon) return '?';
+  // BattleMon.nickname est typé string en notre port.
+  if (mon.nickname && typeof mon.nickname === 'string' && mon.nickname.length > 0) {
+    return mon.nickname;
+  }
+  return _speciesName(mon.species ?? 0);
+}
+
+/** Préfixe selon side (= player vs enemy). 1:1 décomp utilise gBattlerPositions
+ *  + côté player → "" / enemy → "Le " (français). */
+function _monNicknameWithPrefix(battlerId: number): string {
+  const nick = _monNickname(battlerId);
+  // 1:1 décomp : si side enemy → préfixe "Le " (= "Foe X" en EN).
+  // GET_BATTLER_SIDE : (battlerId & 1) → 0=PLAYER 1=OPPONENT.
+  const side = battlerId & 1;
+  if (side === 1) return `Le ${nick} ennemi`;
+  return nick;
+}
+
+// ─── Decode B_BUFF1/2/3 (= mini-format placeholder) 1:1 décomp ─────────────
+
+/** Decode un gBattleTextBuff{1,2,3} content. 1:1 décomp `BattleStringExpand`
+ *  (battle_message.c:3046-3200) sub-format :
+ *  [0xFD type bytes...] sequence terminée par 0xFF.
+ *  type :
+ *   - B_BUFF_STRING (0) : stringId u16 little-endian, lookup via gBattleStringsTable
+ *   - B_BUFF_NUMBER (1) : byteCount + numericValue (LE)
+ *   - B_BUFF_MOVE (2) : moveId u16
+ *   - B_BUFF_TYPE (3) : typeId u8
+ *   - B_BUFF_MON_NICK_WITH_PREFIX (4) : battler u8 + partyIdx u8
+ *   - B_BUFF_STAT (5) : statId u8
+ *   - B_BUFF_SPECIES (6) : speciesId u16
+ *   - B_BUFF_MON_NICK (7) : battler u8 + partyIdx u8
+ *   - B_BUFF_NEGATIVE_FLAVOR (8) : flavorId u8 (= "harshly"/"won't change"/etc.)
+ *   - B_BUFF_ABILITY (9) : abilityId u8
+ *   - B_BUFF_ITEM (10) : itemId u16 */
+function _decodeTextBuff(buf: Uint8Array): string {
+  if (!buf || buf.length === 0 || buf[0] !== B_BUFF_PLACEHOLDER_BEGIN) return '';
+  let i = 1;  // skip B_BUFF_PLACEHOLDER_BEGIN
+  let out = '';
+  while (i < buf.length && buf[i] !== B_BUFF_EOS) {
+    const tag = buf[i++];
+    switch (tag) {
+      case B_BUFF_STRING: {
+        // u16 LE stringId puis lookup table-side (= recursive partial).
+        const stringId = buf[i] | (buf[i + 1] << 8);
+        i += 2;
+        const sTextName = BATTLE_STRINGS_TABLE[stringId];
+        if (sTextName) {
+          const tmpl = getString(sTextName);
+          out += tmpl.startsWith('[MISSING:') ? `[?str${stringId}]` : tmpl;
+        } else {
+          out += `[str${stringId}]`;
+        }
+        break;
+      }
+      case B_BUFF_NUMBER: {
+        const byteCount = buf[i++];
+        let val = 0;
+        for (let b = 0; b < byteCount && i < buf.length; b++) {
+          val |= buf[i++] << (b * 8);
+        }
+        out += String(val);
+        break;
+      }
+      case B_BUFF_MOVE: {
+        const moveId = buf[i] | (buf[i + 1] << 8);
+        i += 2;
+        out += _moveName(moveId);
+        break;
+      }
+      case B_BUFF_TYPE: {
+        const typeId = buf[i++];
+        out += _typeName(typeId);
+        break;
+      }
+      case B_BUFF_MON_NICK_WITH_PREFIX: {
+        const battler = buf[i++];
+        // partyIdx pas utilisé dans notre port (= bridge battle-side gBattleMons direct).
+        i++;
+        out += _monNicknameWithPrefix(battler);
+        break;
+      }
+      case B_BUFF_STAT: {
+        const statId = buf[i++];
+        out += STAT_NAMES_FR[statId] ?? `Stat#${statId}`;
+        break;
+      }
+      case B_BUFF_SPECIES: {
+        const speciesId = buf[i] | (buf[i + 1] << 8);
+        i += 2;
+        out += _speciesName(speciesId);
+        break;
+      }
+      case B_BUFF_MON_NICK: {
+        const battler = buf[i++];
+        i++;  // partyIdx unused
+        out += _monNickname(battler);
+        break;
+      }
+      case B_BUFF_NEGATIVE_FLAVOR: {
+        // 1:1 décomp battle_message.c:432-438 :
+        // 0 = "ne change plus" 1 = "vraiment" 2 = "fortement" 3 = "encore plus"
+        const flavor = buf[i++];
+        const FLAVOR_FR = ['', ' un peu', ' beaucoup', ' énormément'];
+        out += FLAVOR_FR[flavor] ?? '';
+        break;
+      }
+      case B_BUFF_ABILITY: {
+        const abilityId = buf[i++];
+        out += _abilityName(abilityId);
+        break;
+      }
+      case B_BUFF_ITEM: {
+        const itemId = buf[i] | (buf[i + 1] << 8);
+        i += 2;
+        out += _itemName(itemId);
+        break;
+      }
+      default:
+        // Unknown buff tag, skip
+        i++;
+        break;
+    }
+  }
+  return out;
+}
+
+// ─── Placeholder substitution (= `{B_X}` markers dans strings.json) ─────────
+
+/** Map placeholder name → resolver function. 1:1 décomp `BattleStringExpand`
+ *  (battle_message.c:3046+) cases.
+ *
+ *  Notre port utilise les noms `{B_X}` de strings.json (= extraits depuis decomp
+ *  `data/text/*.inc` ou `src/strings.c`). Si un placeholder n'est pas connu,
+ *  on le laisse tel quel pour debug. */
+function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
+  return tmpl.replace(/\{B_([A-Z0-9_]+)\}/g, (_match, name: string) => {
+    switch (name) {
+      case 'BUFF1':       return _decodeTextBuff(msgData.textBuffs[0]);
+      case 'BUFF2':       return _decodeTextBuff(msgData.textBuffs[1]);
+      case 'BUFF3':       return _decodeTextBuff(msgData.textBuffs[2]);
+      case 'ATK_NAME_WITH_PREFIX': return _monNicknameWithPrefix(gBattlerAttacker);
+      case 'DEF_NAME_WITH_PREFIX': return _monNicknameWithPrefix(gBattlerTarget);
+      case 'SCR_ACTIVE_NAME_WITH_PREFIX':
+        return _monNicknameWithPrefix(msgData.scrActive);
+      case 'ACTIVE_NAME_WITH_PREFIX':
+        return _monNicknameWithPrefix(gBattleScripting.battler);
+      case 'EFF_NAME_WITH_PREFIX':
+        return _monNicknameWithPrefix(msgData.itemEffectBattler);
+      case 'ATK_NAME':    return _monNickname(gBattlerAttacker);
+      case 'DEF_NAME':    return _monNickname(gBattlerTarget);
+      case 'CURRENT_MOVE':return _moveName(msgData.currentMove);
+      case 'LAST_MOVE':   return _moveName(msgData.originallyUsedMove);
+      case 'LAST_ITEM':   return _itemName(msgData.lastItem);
+      case 'LAST_ABILITY':return _abilityName(msgData.lastAbility);
+      case 'ATK_ABILITY': return _abilityName(msgData.abilities[gBattlerAttacker] ?? 0);
+      case 'DEF_ABILITY': return _abilityName(msgData.abilities[gBattlerTarget] ?? 0);
+      case 'SCR_ACTIVE_ABILITY':
+        return _abilityName(msgData.abilities[msgData.scrActive] ?? 0);
+      case 'EFF_ABILITY':
+        return _abilityName(msgData.abilities[msgData.itemEffectBattler] ?? 0);
+      case 'PLAYER_NAME': {
+        // Resolve depuis gSaveBlock2Ptr.playerName via globalThis.
+        const sb2 = (globalThis as { gSaveBlock2Ptr?: { playerName?: string } }).gSaveBlock2Ptr;
+        return sb2?.playerName ?? 'Joueur';
+      }
+      case 'TRAINER1_CLASS':
+      case 'TRAINER1_NAME':
+      case 'TRAINER2_CLASS':
+      case 'TRAINER2_NAME':
+      case 'PARTNER_CLASS':
+      case 'PARTNER_NAME':
+        // Trainer placeholder Phase 1.4 K — wire post Frontier port.
+        return `[${name}]`;
+      default:
+        return `{B_${name}}`;
+    }
+  });
+}
+
+// ─── Public API ─────────────────────────────────────────────────────────────
+
+/** Décode stringId + msgData → French text 1:1 décomp `BufferStringBattle`
+ *  (battle_message.c:1968-2950) — partial port Phase 1.4 J first pass.
+ *
+ *  Phase 1.4 J first pass : special cases stringIds 0..11 retournent le default
+ *  path "single wild battle" (sText_WildPkmnAppeared, sText_GoPkmn, etc.).
+ *  Future : full switch + WILD/TRAINER/LINK/DOUBLE branches. */
+export function decodeBattleString(stringId: number, msgData: BattleMsgData): string {
+  let sTextName: string | undefined;
+
+  // ─── Special-case stringIds 0..11 (= BufferStringBattle switch) ──────
+  switch (stringId) {
+    case 0: sTextName = 'sText_WildPkmnAppeared'; break;        // STRINGID_INTROMSG
+    case 1: sTextName = 'sText_GoPkmn'; break;                  // STRINGID_INTROSENDOUT
+    case 2: sTextName = 'sText_PkmnComeBack'; break;            // STRINGID_RETURNMON
+    case 3: sTextName = 'sText_GoPkmn2'; break;                 // STRINGID_SWITCHINMON
+    case 4: sTextName = 'sText_AttackerUsedX'; break;           // STRINGID_USEDMOVE
+    case 5: sTextName = ''; break;                              // STRINGID_BATTLEEND (= no text)
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+      sTextName = ''; break;  // gap (no string assigned in decomp)
+    default:
+      sTextName = BATTLE_STRINGS_TABLE[stringId];
+  }
+
+  if (!sTextName) {
+    const debugName = STRINGID_NAMES[stringId] ?? `STRINGID_${stringId}`;
+    return `[${debugName}]`;
+  }
+
+  const tmpl = getString(sTextName);
+  if (tmpl.startsWith('[MISSING:')) {
+    return `[${sTextName} missing]`;
+  }
+  return _substitutePlaceholders(tmpl, msgData);
+}
+
+/** Strip GBA control codes (= {WAIT_SE}, {PAUSE 32}, \n, \p, etc.) pour
+ *  affichage simple (= ShowFieldMessage). Le rendu réel utilise un text printer
+ *  qui interprète ces codes. */
+export function stripGbaControlCodes(text: string): string {
+  return text
+    .replace(/\{WAIT_SE\}/g, '')
+    .replace(/\{PAUSE \d+\}/g, '')
+    .replace(/\{COLOR [A-Z_]+\}/g, '')
+    .replace(/\\p/g, '\n')   // line break + pause
+    .replace(/\\n/g, '\n')   // line break
+    .replace(/\\l/g, '\n')   // scroll line
+    .replace(/\\$/g, '');
+}
