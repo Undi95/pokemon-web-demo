@@ -406,6 +406,16 @@ export const B_OUTCOME_MON_TELEPORTED    = 10;
 export const BATTLE_RUN_SUCCESS = 0;
 export const BATTLE_RUN_FAILURE = 1;
 
+// ─── FLEE_* (battle.h ProtectStruct fleeType bits) — 1:1 décomp ─────────
+/** ProtectStruct.fleeType : 0=Normal, 1=FLEE_ITEM (= held item Smoke Ball/etc.),
+ *  2=FLEE_ABILITY (= Run Away). */
+export const FLEE_NONE    = 0;
+export const FLEE_ITEM    = 1;
+export const FLEE_ABILITY = 2;
+
+// ─── PYRAMID_LOCATION_* (battle_pyramid.h) — 1:1 décomp ──────────────────
+export const PYRAMID_LOCATION_NONE = 0;
+
 // ─── NO_TARGET_OVERRIDE (battle.h:56) — 1:1 décomp ────────────────────────
 export const NO_TARGET_OVERRIDE = 0;
 

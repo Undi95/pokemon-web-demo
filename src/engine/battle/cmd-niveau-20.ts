@@ -69,12 +69,10 @@ function _stayOnOpcode(ctx: BattleScriptContext): boolean {
 /** MVP `WEATHER_HAS_EFFECT` — true sauf Cloud Nine / Air Lock on field. */
 function _weatherHasEffect(): boolean { return true; }
 
-/** 1:1 stub `TryRunFromBattle(battler)` (battle_main.c). En battle scripts,
- *  retourne TRUE si le player a réussi à fuir. Pour MVP, on retourne FALSE
- *  (= jamais fuite réussie via ce path, le check est gardé pour le bytecode
- *  qui appelle après une tentative de fuite). */
-function _tryRunFromBattle(_battler: number): boolean {
-  return false;
+// 1:1 décomp `TryRunFromBattle(battler)` (battle_util.c:407-485).
+import { TryRunFromBattle as _tryRunFromBattleFull } from './try-run-from-battle';
+function _tryRunFromBattle(battler: number): boolean {
+  return _tryRunFromBattleFull(battler);
 }
 
 // 1:1 décomp `RecordAbilityBattle` — wired via util.ts.
