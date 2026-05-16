@@ -55,7 +55,16 @@ import {
   gDisableStructs,
   gSideTimers,
   gWishFutureKnock,
+  gBattlerPartyIndexes,
+  setBattlerAttacker,
+  setBattlerTarget,
+  setCurrentMove,
+  setChosenMove,
+  setHitMarker,
+  setMoveResultFlags,
 } from './state';
+import { setupPartyForBattle, fillActiveBattleMonsForBattleStart } from './party-storage';
+import { resetAtkCancelerTracker } from './atk-canceler';
 
 /** Dump exhaustif des gBattleMons[0..gBattlersCount-1]. Pas de format gba —
  *  print structured pour console.table. */
@@ -176,12 +185,18 @@ function runScript(label: string, opts?: {
   resetStats?: boolean;
   /** Si true, enable tracing pour ce run (= max 200 opcodes loggés). */
   trace?: boolean;
+  /** Si true (default), re-call runBattleScript en boucle jusqu'à fin (= ignore
+   *  pauses pour POC dev — skip pause opcodes au lieu de wait frames réelles). */
+  fastForward?: boolean;
+  /** Max iters de re-call si fastForward (default 100). */
+  maxIters?: number;
 }): {
   ok: boolean;
   reason?: string;
   paused?: boolean;
   scriptPtrFinal?: number;
   dispatched?: number;
+  iters?: number;
 } {
   const offset = getBattleScriptOffset(label);
   if (offset < 0) {
@@ -195,7 +210,27 @@ function runScript(label: string, opts?: {
   const tracingBefore = opts?.trace ? true : false;
   if (tracingBefore) setTracing(true);
   const beforeTotal = getDispatchStats().total;
-  const paused = runBattleScript(ctx);
+
+  const fastForward = opts?.fastForward ?? true;
+  const maxIters = opts?.maxIters ?? 100;
+  let iters = 0;
+  let paused = runBattleScript(ctx);
+  iters++;
+  if (fastForward) {
+    let lastPtr = ctx.scriptPtr;
+    let stuck = 0;
+    while (paused && iters < maxIters && ctx.scriptPtr >= 0) {
+      paused = runBattleScript(ctx);
+      iters++;
+      if (ctx.scriptPtr === lastPtr) {
+        stuck++;
+        if (stuck > 5) break;  // really stuck
+      } else {
+        stuck = 0;
+        lastPtr = ctx.scriptPtr;
+      }
+    }
+  }
   if (tracingBefore) setTracing(false);
   const afterTotal = getDispatchStats().total;
   return {
@@ -203,6 +238,7 @@ function runScript(label: string, opts?: {
     paused,
     scriptPtrFinal: ctx.scriptPtr,
     dispatched: afterTotal - beforeTotal,
+    iters,
   };
 }
 
@@ -322,6 +358,62 @@ function listOpcodes(): Array<{ hex: string; name: string }> {
   return out;
 }
 
+/** Setup un combat POC : remplit gBattleMons[0] (Arcko Lv5 / starter) +
+ *  gBattleMons[1] (Zigzagton Lv2). Utilise les imports DIRECTS du module
+ *  battle-devtools.ts pour garantir qu'on travaille sur le MÊME module
+ *  que Cmd_attackcanceler/Cmd_damagecalc (= sinon HMR re-import = 2 instances).
+ *
+ *  Use case : tester runScript depuis devtools console sans avoir à wire
+ *  battle-flow.ts complètement. */
+async function prepareTestBattle(opts?: {
+  /** Move id à exécuter (default MOVE_POUND = 1). */
+  moveId?: number;
+  /** Attacker battler id (default 0 = player). */
+  attacker?: number;
+  /** Target battler id (default 1 = enemy). */
+  target?: number;
+  /** Enemy species enum (default SPECIES_ZIGZAGOON). */
+  enemySpecies?: string;
+  /** Enemy level (default 2). */
+  enemyLevel?: number;
+}): Promise<Record<string, unknown>> {
+  const moveId = opts?.moveId ?? 1;
+  const attacker = opts?.attacker ?? 0;
+  const target = opts?.target ?? 1;
+  const enemySpecies = opts?.enemySpecies ?? 'SPECIES_ZIGZAGOON';
+  const enemyLevel = opts?.enemyLevel ?? 2;
+
+  // Lazy imports pour break circular deps.
+  const gs = (globalThis as { gameState?: { party?: unknown[] } }).gameState;
+  if (!gs?.party) return { ok: false, reason: 'no gameState.party' };
+  const realParty = (gs.party as Array<unknown>).filter((m): m is { speciesEnum: string } => !!m);
+  if (realParty.length === 0) return { ok: false, reason: 'empty party' };
+
+  // Use module-level imports (= same instance as Cmd_attackcanceler).
+  const pokemonMod = await import('../pokemon');
+  const enemyMon = pokemonMod.createPokemonInstance(enemySpecies, enemyLevel);
+  setupPartyForBattle(realParty as never[], [enemyMon]);
+  fillActiveBattleMonsForBattleStart();
+
+  // Reset state vars pour scénario propre.
+  setBattlerAttacker(attacker);
+  setBattlerTarget(target);
+  setCurrentMove(moveId);
+  setChosenMove(moveId);
+  setHitMarker(0);
+  setMoveResultFlags(0);
+  gBattlerPartyIndexes[attacker] = 0;
+  gBattlerPartyIndexes[target] = 0;
+  resetAtkCancelerTracker();
+
+  return {
+    ok: true,
+    attacker: { id: attacker, mon: gBattleMons[attacker] },
+    target: { id: target, mon: gBattleMons[target] },
+    moveId,
+  };
+}
+
 /** Build l'API exposée sur scope.bytecode. */
 export function buildBattleDevtools(): Record<string, unknown> {
   return {
@@ -332,6 +424,8 @@ export function buildBattleDevtools(): Record<string, unknown> {
     labels,
     listOpcodes,
     opcode,
+    // Setup (POC test pour wire bytecode)
+    prepareTestBattle,
     // Execute
     runScript,
     runOpcode,
