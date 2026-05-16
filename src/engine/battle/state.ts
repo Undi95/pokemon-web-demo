@@ -1010,4 +1010,7 @@ export function resetBattleState(): void {
   get gBattlersCount() { return gBattlersCount; },
   // Pour _GetImprisonedMovesCount lookup (move-limitations.ts).
   gStatuses3,
+  // Pour memory-map.ts accessors (cMULTISTRING_CHOOSER, cMISS_TYPE, etc.).
+  gBattleCommunication,
+  gBattlerPartyIndexes,
 };

@@ -179,11 +179,44 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
     write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { battler: number } } }).__battleState?.gBattleScripting; if (bs) bs.battler = v; },
   },
 
+  // ─── gBattleCommunication (= u8[6] array used as scratch for chooser/state) ─
+  gBattleCommunication: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication?.[0] ?? 0,
+    write: (v) => {
+      const bc = (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication;
+      if (bc) bc[0] = v & 0xFF;
+    },
+  },
+
   // ─── cMULTISTRING_CHOOSER = gBattleCommunication[MULTISTRING_CHOOSER=5] ─
   cMULTISTRING_CHOOSER: {
     size: 1,
-    read: () => 0, // TODO bind gBattleCommunication[5]
-    write: () => { /* TODO */ },
+    read: () => (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication?.[5] ?? 0,
+    write: (v) => {
+      const bc = (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication;
+      if (bc) bc[5] = v & 0xFF;
+    },
+  },
+
+  // ─── cMISS_TYPE = gBattleCommunication[MISS_TYPE=5 OR 4 depending on usage] ─
+  cMISS_TYPE: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication?.[5] ?? 0,
+    write: (v) => {
+      const bc = (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication;
+      if (bc) bc[5] = v & 0xFF;
+    },
+  },
+
+  // ─── cEFFECTIVENESS = gBattleCommunication[EFFECTIVENESS_IDX] ──────────
+  cEFFECTIVENESS: {
+    size: 1,
+    read: () => (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication?.[4] ?? 0,
+    write: (v) => {
+      const bc = (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication;
+      if (bc) bc[4] = v & 0xFF;
+    },
   },
 
   // ─── Cross-battler refs (= gBattlerAttacker/Target as ptr-of-target) ───
