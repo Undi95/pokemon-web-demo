@@ -92,8 +92,10 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
   },
   gBattlerTarget: {
     size: 1,
-    read: () => gBattlerTarget,
-    write: () => { /* TODO setBattlerTarget */ },
+    // 1:1 décomp : read/write via __battleStateMutators (= unique source de
+    // vérité, évite ESM live-binding instances dup via HMR/dynamic import).
+    read: () => (globalThis as { __battleStateMutators?: { getTarget?: () => number } }).__battleStateMutators?.getTarget?.() ?? 0,
+    write: (v) => (globalThis as { __battleStateMutators?: { setTarget?: (v: number) => void } }).__battleStateMutators?.setTarget?.(v & 0xFF),
   },
   gLastUsedItem: {
     size: 2,
@@ -277,6 +279,11 @@ export function initMemoryMap(): void {
 }
 
 import { SYMBOLS_TABLE } from '../decomp-data/auto-asm-bytecode/_symbols-table';
+
+// Auto-init au module load (= chaque instance HMR/dyn-import a son SYMBOLS_BY_ID
+// populé directement). Sinon : opcodes natifs setbyte/addbyte etc. trouvent
+// SYMBOLS_BY_ID vide → write no-op silent → loops infinis Intimidate etc.
+initMemoryMap();
 
 // Expose battler refs for debug.
 void gBattleMons;

@@ -1013,4 +1013,39 @@ export function resetBattleState(): void {
   // Pour memory-map.ts accessors (cMULTISTRING_CHOOSER, cMISS_TYPE, etc.).
   gBattleCommunication,
   gBattlerPartyIndexes,
+  // Setters pour memory-map writes (= opcodes natifs setbyte/addbyte/orbyte).
+  setBattlerTarget,
+  setBattlerAttacker,
+  setHitMarker,
+  setMoveResultFlags,
+  setBattleMoveDamage,
+  setBattleOutcome,
+  setCritMultiplier,
+  setChosenMove,
+  setCurrentMove,
+};
+
+// Aliases globaux pour memory-map (= éviter circular imports + ESM live-binding
+// issues si plusieurs instances state.ts existent via HMR/dynamic import).
+// Le memory-map utilise __battleStateMutators.setBattlerTarget(v) etc., qui
+// pointe TOUJOURS sur les setters réels de la version courante.
+(globalThis as Record<string, unknown>).__battleStateMutators = {
+  getTarget: () => gBattlerTarget,
+  setTarget: (v: number) => { gBattlerTarget = v & 0xFF; },
+  getAttacker: () => gBattlerAttacker,
+  setAttacker: (v: number) => { gBattlerAttacker = v & 0xFF; },
+  getHitMarker: () => gHitMarker,
+  setHitMarker: (v: number) => { gHitMarker = v >>> 0; },
+  getMoveResultFlags: () => gMoveResultFlags,
+  setMoveResultFlags: (v: number) => { gMoveResultFlags = v >>> 0; },
+  getBattleMoveDamage: () => gBattleMoveDamage,
+  setBattleMoveDamage: (v: number) => { gBattleMoveDamage = v | 0; },
+  getCritMultiplier: () => gCritMultiplier,
+  setCritMultiplier: (v: number) => { gCritMultiplier = v & 0xFF; },
+  getBattleOutcome: () => gBattleOutcome,
+  setBattleOutcome: (v: number) => { gBattleOutcome = v & 0xFF; },
+  getChosenMove: () => gChosenMove,
+  setChosenMove: (v: number) => { gChosenMove = v & 0xFFFF; },
+  getCurrentMove: () => gCurrentMove,
+  setCurrentMove: (v: number) => { gCurrentMove = v & 0xFFFF; },
 };

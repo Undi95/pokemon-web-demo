@@ -148,6 +148,21 @@ function Cmd_jumpifarraynotequal(ctx: BattleScriptContext): boolean {
   return false;
 }
 
+// ─── 0x2E setbyte ─────────────────────────────────────────────────────────
+
+/** 6 bytes (u32 addr + u8 value). 1:1 décomp Cmd_setbyte (battle_script_commands.c).
+ *  Avant : STUB dans script-interpreter.ts qui consume args sans write. Maintenant
+ *  utilise memory-map.resolveAddress + write. AUDIT BUG critique : sans ça,
+ *  setbyte gBattlerTarget=0 etc. ne marchait pas → infinite loops dans
+ *  IntimidateActivates et autres. */
+function Cmd_setbyte(ctx: BattleScriptContext): boolean {
+  const addr = readWord(ctx);
+  const value = readByte(ctx);
+  const acc = resolveAddress(addr);
+  if (acc) acc.write(value & 0xFF);
+  return false;
+}
+
 // ─── 0x2F addbyte ─────────────────────────────────────────────────────────
 
 /** 6 bytes (u32 addr + u8 const). */
@@ -261,6 +276,7 @@ export function installNiveau33Handlers(commands: BattleOpcodeHandler[]): void {
   commands[0x2B] = Cmd_jumpifword;
   commands[0x2C] = Cmd_jumpifarrayequal;
   commands[0x2D] = Cmd_jumpifarraynotequal;
+  commands[0x2E] = Cmd_setbyte;  // AUDIT BUG fix : était STUB dans script-interpreter.ts.
   commands[0x2F] = Cmd_addbyte;
   commands[0x30] = Cmd_subbyte;
   commands[0x31] = Cmd_copyarray;

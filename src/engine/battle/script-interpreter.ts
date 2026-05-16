@@ -303,7 +303,9 @@ function _initCommandsTable(): void {
   // Implémentés réellement :
   _commands[0x28] = _Cmd_goto;
   _commands[0x29] = _Cmd_jumpifbyte;
-  _commands[0x2E] = _Cmd_setbyte;
+  // 0x2E setbyte : installed by cmd-niveau-33 (= utilise memory-map). Le STUB
+  // local _Cmd_setbyte (= consume args sans write) était installé ici avant
+  // mais bloquait setbyte gBattlerTarget=0 etc. → infinite loops Intimidate.
   _commands[0x39] = _Cmd_pause;
   _commands[0x3A] = _Cmd_waitstate;
   _commands[0x3C] = _Cmd_return;
