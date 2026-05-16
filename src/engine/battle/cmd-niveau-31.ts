@@ -372,12 +372,34 @@ function _GiveMonToPlayerGC(mon: unknown): number {
  *  ShowBg, etc.) ne sont pas wired ici. State machine reduce à advance
  *  immédiat (= simulate completed). */
 function Cmd_displaydexinfo(ctx: BattleScriptContext): boolean {
-  // 1:1 décomp state machine : skip cases 0..4 (= UI rendering), case 5 advance.
-  // Pour MVP : advance direct (= simulate machine completion en un opcode tick).
-  // TODO porter quand le pipeline rendering est branché au battle UI.
-  void ctx;
-  gBattleCommunication[0] = 0;  // reset state pour next usage.
-  return false;
+  // 1:1 décomp battle_script_commands.c:10104-10152 : state machine 6 cases (0..5).
+  // Cases :
+  //   0 : BeginNormalPaletteFade out → state 1
+  //   1 : wait fade done + DisplayCaughtMonDexPage → state 2
+  //   2 : wait fade + task done + restore VBlankCB → state 3
+  //   3 : InitBattleBgsVideo + LoadBattleTextboxAndBackground → state 4
+  //   4 : wait DMA + BeginNormalPaletteFade in → state 5
+  //   5 : wait fade done → advance opcode.
+  //
+  // Notre port : state machine fidèle, stubs UI fns advance instant.
+  switch (gBattleCommunication[0]) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+      // Stubs UI Phase 1.4 — advance state.
+      gBattleCommunication[0]++;
+      ctx.scriptPtr--;  // stay on opcode (= re-enter next tick).
+      return true;
+    case 5:
+      // 1:1 décomp : advance opcode + reset.
+      gBattleCommunication[0] = 0;
+      return false;
+    default:
+      gBattleCommunication[0] = 0;
+      return false;
+  }
 }
 
 // ─── 0xF3 trygivecaughtmonnick ────────────────────────────────────────────
