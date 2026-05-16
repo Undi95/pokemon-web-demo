@@ -184,7 +184,7 @@ export function runMoveScriptViaBytecode(opts: {
   events?: BattleEvent[];
 } {
   const attBId = opts.attackerBattlerId ?? 0;
-  const defBId = opts.defenderBattlerId ?? 1;
+  let defBId = opts.defenderBattlerId ?? 1;
   // Clear queue avant chaque run pour éviter de mixer events cross-turn.
   clearBattleEventQueue();
   const mv = opts.attacker.moves[opts.attackerMoveIdx];
@@ -200,6 +200,29 @@ export function runMoveScriptViaBytecode(opts: {
   if (scriptOffset < 0) {
     return { ok: false, reason: `no script for effect ${effectId}`, damage: 0, typeMul: 1, missed: true, fainted: false, bytecodeOpsCount: 0, messages: [], eventsCount: 0 };
   }
+  // 1:1 décomp : si move target = USER (= self-heal/buff), set gBattlerTarget
+  // = gBattlerAttacker. Sinon : keep defender. Tableau gBattleMoves[move].target.
+  // Use Dex split pour compound names (= "softboiled" → "MOVE_SOFT_BOILED").
+  try {
+    let moveData = getMove('MOVE_' + mv.id.toUpperCase().replace(/-/g, '_'));
+    if (!moveData) {
+      const mvDex = Dex.moves.get(mv.id);
+      if (mvDex?.name) {
+        const enumStr = 'MOVE_' + mvDex.name.toUpperCase().replace(/[ '-]/g, '_').replace(/_+/g, '_');
+        moveData = getMove(enumStr);
+      }
+    }
+    const targetField = moveData?.target;
+    if (typeof targetField === 'string') {
+      // 1:1 décomp include/constants/battle.h:96-103 MOVE_TARGET_*:
+      // MOVE_TARGET_USER = 1<<4 = 16, MOVE_TARGET_USER_OR_SELECTED = 1<<1 = 2.
+      // resolveDecompConstant ne contient pas ces values (= manually constants.ts),
+      // donc check directement la string.
+      if (targetField === 'MOVE_TARGET_USER' || targetField === 'MOVE_TARGET_USER_OR_SELECTED') {
+        defBId = attBId;  // self-target
+      }
+    }
+  } catch { /* fallthrough */ }
 
   // Sync state HP from PokemonInstance into gBattleMons.
   // Note : gBattleMons is assumed already filled with species/stats/etc. via
