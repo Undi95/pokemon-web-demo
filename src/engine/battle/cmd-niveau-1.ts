@@ -85,8 +85,7 @@ import {
   gBattlersCount, gAbsentBattlerFlags,
   gLastPrintedMoves, gLastMoves, gLastResultingMoves, gLastHitBy,
   gLastLandedMoves, gLastHitByType, gLastTakenMove, gLastTakenMoveFrom,
-  gChosenMove, gBattleStructChoicedMove, gBattleStructChangedItems,
-  gBattleStructAbsentBattlerFlags, gDisableStructs, gProtectStructs,
+  gChosenMove, gBattleStruct, gDisableStructs, gProtectStructs,
   gSpecialStatuses,
 } from './state';
 import { gBitTable, BtlController_EmitSpriteInvisibility } from './battle-controllers';
@@ -919,28 +918,28 @@ function Cmd_moveend(ctx: BattleScriptContext): boolean {
         if ((gHitMarker & HITMARKER_OBEYS)
             && holdEffectAtk === HOLD_EFFECT_CHOICE_BAND
             && gChosenMove !== MOVE_STRUGGLE
-            && (gBattleStructChoicedMove[gBattlerAttacker] === MOVE_NONE
-                || gBattleStructChoicedMove[gBattlerAttacker] === MOVE_UNAVAILABLE)) {
+            && (gBattleStruct.choicedMove[gBattlerAttacker] === MOVE_NONE
+                || gBattleStruct.choicedMove[gBattlerAttacker] === MOVE_UNAVAILABLE)) {
           if (gChosenMove === MOVE_BATON_PASS && !(gMoveResultFlags & MOVE_RESULT_FAILED)) {
             gBattleScripting.moveendState++;
             break;
           }
-          gBattleStructChoicedMove[gBattlerAttacker] = gChosenMove;
+          gBattleStruct.choicedMove[gBattlerAttacker] = gChosenMove;
         }
         let i: number;
         for (i = 0; i < MAX_MON_MOVES; i++) {
-          if (gBattleMons[gBattlerAttacker].moves[i] === gBattleStructChoicedMove[gBattlerAttacker])
+          if (gBattleMons[gBattlerAttacker].moves[i] === gBattleStruct.choicedMove[gBattlerAttacker])
             break;
         }
-        if (i === MAX_MON_MOVES) gBattleStructChoicedMove[gBattlerAttacker] = MOVE_NONE;
+        if (i === MAX_MON_MOVES) gBattleStruct.choicedMove[gBattlerAttacker] = MOVE_NONE;
         gBattleScripting.moveendState++;
         break;
       }
       case MOVEEND_CHANGED_ITEMS: {
         for (let i = 0; i < gBattlersCount; i++) {
-          if (gBattleStructChangedItems[i] !== 0 /* ITEM_NONE */) {
-            gBattleMons[i].item = gBattleStructChangedItems[i];
-            gBattleStructChangedItems[i] = 0;
+          if (gBattleStruct.changedItems[i] !== 0 /* ITEM_NONE */) {
+            gBattleMons[i].item = gBattleStruct.changedItems[i];
+            gBattleStruct.changedItems[i] = 0;
           }
         }
         gBattleScripting.moveendState++;
@@ -1028,7 +1027,7 @@ function Cmd_moveend(ctx: BattleScriptContext): boolean {
           gLastPrintedMoves[gBattlerAttacker] = gChosenMove;
         }
         if (!(gAbsentBattlerFlags & gBitTable[gBattlerAttacker])
-            && !(gBattleStructAbsentBattlerFlags & gBitTable[gBattlerAttacker])
+            && !(gBattleStruct.absentBattlerFlags & gBitTable[gBattlerAttacker])
             && getBattleMove(originallyUsedMove).effect !== EFFECT_BATON_PASS) {
           if (gHitMarker & HITMARKER_OBEYS) {
             gLastMoves[gBattlerAttacker] = gChosenMove;
@@ -1059,7 +1058,7 @@ function Cmd_moveend(ctx: BattleScriptContext): boolean {
       }
       case MOVEEND_MIRROR_MOVE: {
         if (!(gAbsentBattlerFlags & gBitTable[gBattlerAttacker])
-            && !(gBattleStructAbsentBattlerFlags & gBitTable[gBattlerAttacker])
+            && !(gBattleStruct.absentBattlerFlags & gBitTable[gBattlerAttacker])
             && (getBattleMove(originallyUsedMove).flags & FLAG_MIRROR_MOVE_AFFECTED)
             && (gHitMarker & HITMARKER_OBEYS)
             && gBattlerAttacker !== gBattlerTarget

@@ -30,8 +30,7 @@ import {
   gBattlerByTurnOrder, gCurrentTurnActionNumber,
   gBattleTypeFlags, gBattlersCount,
   gAbsentBattlerFlags,
-  gBattleStructAbsentBattlerFlags,
-  setBattleStructAtkCancelerTracker,
+  gBattleStruct,
   setCritMultiplier, setMultiHitCounter, setMoveResultFlags,
   gHitMarker, setHitMarker,
   gBattleScripting,
@@ -151,7 +150,7 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
   setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
 
   // Skip si absent.
-  if (gBattleStructAbsentBattlerFlags & gBitTable[gBattlerAttacker]) {
+  if (gBattleStruct.absentBattlerFlags & gBitTable[gBattlerAttacker]) {
     setCurrentActionFuncId(B_ACTION_FINISHED);
     return;
   }
@@ -159,7 +158,7 @@ export function HandleAction_UseMove(ctx?: BattleScriptContext): void {
   // Reset combat state (= 1:1 décomp).
   setCritMultiplier(1);
   gBattleScripting.dmgMultiplier = 1;
-  setBattleStructAtkCancelerTracker(0);
+  gBattleStruct.atkCancelerTracker = 0;
   setMoveResultFlags(0);
   setMultiHitCounter(0);
   gBattleCommunication[5 /* MISS_TYPE */] = 0;

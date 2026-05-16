@@ -26,7 +26,7 @@ import {
   gBattlerByTurnOrder, gActionsByTurnOrder,
   gChosenActionByBattler, gChosenMoveByBattler,
   gLastLandedMoves, gLastHitByType, gLastHitBy,
-  gMoveTarget, gChosenMovePositions,
+  gBattleStruct,
   setCurrMovePos,
   gBattleControllerExecFlags,
 } from './state';
@@ -190,7 +190,7 @@ function Cmd_jumpifnopursuitswitchdmg(ctx: BattleScriptContext): boolean {
   const target = gBattlerTarget;
 
   if (gChosenActionByBattler[target] === B_ACTION_USE_MOVE
-      && gBattlerAttacker === gMoveTarget[target]
+      && gBattlerAttacker === gBattleStruct.moveTarget[target]
       && !(gBattleMons[target].status1 & (STATUS1_SLEEP | STATUS1_FREEZE))
       && gBattleMons[gBattlerAttacker].hp
       && !gDisableStructs[target].truantCounter
@@ -201,7 +201,7 @@ function Cmd_jumpifnopursuitswitchdmg(ctx: BattleScriptContext): boolean {
       }
     }
     setCurrentMove(MOVE_PURSUIT);
-    setCurrMovePos(gChosenMovePositions[target]);
+    setCurrMovePos(gBattleStruct.chosenMovePositions[target]);
     // gChosenMovePos = ditto.
     gBattleScripting.animTurn = 1;
     setHitMarker(gHitMarker & ~HITMARKER_ATTACKSTRING_PRINTED);

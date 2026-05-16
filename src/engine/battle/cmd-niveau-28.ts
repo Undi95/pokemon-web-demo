@@ -22,8 +22,8 @@ import {
   gSideStatuses, gSideTimers, gStatuses3,
   gBattleScripting, gSpecialStatuses,
   gBattleControllerExecFlags, gBattleCommunication,
-  gWrappedBy, gWrappedMove,
-  gDisableStructs, gHpOnSwitchout,
+  gBattleStruct,
+  gDisableStructs,
   gBattlersCount, gBattlerByTurnOrder, gActionsByTurnOrder,
   gSentPokesToOpponent, gAbsentBattlerFlags, gBattlerPartyIndexes,
 } from './state';
@@ -168,7 +168,7 @@ function Cmd_switchineffects(ctx: BattleScriptContext): boolean {
     // 1:1 décomp : update hpOnSwitchout pour tous les battlers (= 0x74
     // hpthresholds2 le lit ensuite).
     for (let i = 0; i < gBattlersCount; i++) {
-      gHpOnSwitchout[GET_BATTLER_SIDE(i)] = gBattleMons[i].hp;
+      gBattleStruct.hpOnSwitchout[GET_BATTLER_SIDE(i)] = gBattleMons[i].hp;
     }
     // 1:1 décomp : BS_FAINTED_LINK_MULTIPLE_1 increment gBattlerFainted —
     // skip pour MVP (= multi link battles pas wired).
@@ -226,7 +226,7 @@ function Cmd_rapidspinfree(ctx: BattleScriptContext): boolean {
   if (gBattleMons[gBattlerAttacker].status2 & STATUS2_WRAPPED) {
     gBattleScripting.battler = gBattlerTarget;
     gBattleMons[gBattlerAttacker].status2 &= ~STATUS2_WRAPPED;
-    setBattlerTarget(gWrappedBy[gBattlerAttacker]);
+    setBattlerTarget(gBattleStruct.wrappedBy[gBattlerAttacker]);
     // PREPARE_BUFF text placeholder : TODO porter.
     // 1:1 décomp : BattleScriptPushCursor + jump BattleScript_WrapFree.
     ctx.scriptPtrStack.push(ctx.scriptPtr);

@@ -28,7 +28,7 @@ import {
   gBattleScripting, gBattleCommunication,
   gStatuses3, gDisableStructs,
   gProtectStructs, gSpecialStatuses,
-  gIntimidateBattler, gAbsentBattlerFlags, gBattlersCount,
+  gBattleStruct, gAbsentBattlerFlags, gBattlersCount,
   gLastUsedAbility, setLastUsedAbility,
   gLastUsedItem, setLastUsedItem,
   gPotentialItemEffectBattler, setPotentialItemEffectBattler,
@@ -265,8 +265,8 @@ function Cmd_trywish(ctx: BattleScriptContext): boolean {
 /** 1:1 décomp Cmd_trygetintimidatetarget. 5 bytes. */
 function Cmd_trygetintimidatetarget(ctx: BattleScriptContext): boolean {
   const failJump = readWord(ctx);
-  gBattleScripting.battler = gIntimidateBattler;
-  const side = GET_BATTLER_SIDE(gIntimidateBattler);
+  gBattleScripting.battler = gBattleStruct.intimidateBattler;
+  const side = GET_BATTLER_SIDE(gBattleStruct.intimidateBattler);
   // PREPARE_ABILITY_BUFFER : TODO porter text placeholder.
   let target = gBattlerTarget;
   for (; target < gBattlersCount; target++) {

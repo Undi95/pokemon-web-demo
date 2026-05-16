@@ -38,11 +38,9 @@ import {
   gBattleWeather, setBattleWeather,
   gStatuses3,
   gSpecialStatuses,
-  setFormToChangeInto,
   gDisableStructs,
-  setIntimidateBattler,
   gMoveResultFlags,
-  gSynchronizeMoveEffect, setSynchronizeMoveEffect,
+  gBattleStruct,
 } from './state';
 import { Random, getBattleScriptOffset } from './script-interpreter';
 import {
@@ -342,7 +340,7 @@ export function AbilityBattleEffects(
           if (eff !== 0) {
             _lastWantedScriptLabel = 'BattleScript_CastformChange';
             gBattleScripting.battler = battler;
-            setFormToChangeInto(eff - 1);
+            gBattleStruct.formToChangeInto = eff - 1;
             effect++;
           }
           break;
@@ -363,7 +361,7 @@ export function AbilityBattleEffects(
             if (eff !== 0) {
               _lastWantedScriptLabel = 'BattleScript_CastformChange';
               gBattleScripting.battler = target1;
-              setFormToChangeInto(eff - 1);
+              gBattleStruct.formToChangeInto = eff - 1;
               effect++;
               break;
             }
@@ -757,7 +755,7 @@ export function AbilityBattleEffects(
           setLastUsedAbility(ABILITY_INTIMIDATE);
           gStatuses3[i] &= ~STATUS3_INTIMIDATE_POKES;
           _lastWantedScriptLabel = 'BattleScript_IntimidateActivatesEnd3';
-          setIntimidateBattler(i);
+          gBattleStruct.intimidateBattler = i;
           effect++;
           break;
         }
@@ -773,7 +771,7 @@ export function AbilityBattleEffects(
           setLastUsedAbility(ABILITY_INTIMIDATE);
           gStatuses3[i] &= ~STATUS3_INTIMIDATE_POKES;
           _lastWantedScriptLabel = 'BattleScript_IntimidateActivates';
-          setIntimidateBattler(i);
+          gBattleStruct.intimidateBattler = i;
           effect++;
         }
       }
@@ -810,9 +808,9 @@ export function AbilityBattleEffects(
       if (gLastUsedAbility === ABILITY_SYNCHRONIZE
           && (gHitMarker & HITMARKER_SYNCHRONIZE_EFFECT)) {
         setHitMarker(gHitMarker & ~HITMARKER_SYNCHRONIZE_EFFECT);
-        let smeff = gSynchronizeMoveEffect & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
+        let smeff = gBattleStruct.synchronizeMoveEffect & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
         if (smeff === MOVE_EFFECT_TOXIC) smeff = MOVE_EFFECT_POISON;
-        setSynchronizeMoveEffect(smeff);
+        gBattleStruct.synchronizeMoveEffect = smeff;
         gBattleCommunication[MOVE_EFFECT_BYTE] = smeff + MOVE_EFFECT_AFFECTS_USER;
         gBattleScripting.battler = gBattlerTarget;
         _lastWantedScriptLabel = 'BattleScript_SynchronizeActivates';
@@ -874,9 +872,9 @@ export function AbilityBattleEffects(
       if (gLastUsedAbility === ABILITY_SYNCHRONIZE
           && (gHitMarker & HITMARKER_SYNCHRONIZE_EFFECT)) {
         setHitMarker(gHitMarker & ~HITMARKER_SYNCHRONIZE_EFFECT);
-        let smeff = gSynchronizeMoveEffect & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
+        let smeff = gBattleStruct.synchronizeMoveEffect & ~(MOVE_EFFECT_AFFECTS_USER | MOVE_EFFECT_CERTAIN);
         if (smeff === MOVE_EFFECT_TOXIC) smeff = MOVE_EFFECT_POISON;
-        setSynchronizeMoveEffect(smeff);
+        gBattleStruct.synchronizeMoveEffect = smeff;
         gBattleCommunication[MOVE_EFFECT_BYTE] = smeff;
         gBattleScripting.battler = gBattlerAttacker;
         _lastWantedScriptLabel = 'BattleScript_SynchronizeActivates';
@@ -894,7 +892,7 @@ export function AbilityBattleEffects(
           if (eff !== 0) {
             _lastWantedScriptLabel = 'BattleScript_CastformChange';
             gBattleScripting.battler = i;
-            setFormToChangeInto(eff - 1);
+            gBattleStruct.formToChangeInto = eff - 1;
             return eff;
           }
         }

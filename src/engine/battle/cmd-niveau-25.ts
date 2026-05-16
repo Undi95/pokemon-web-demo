@@ -22,7 +22,7 @@ import {
   gHitMarker,
   gStatuses3, gDisableStructs,
   gLastMoves, gCurrMovePos,
-  gBattleScripting, gFormToChangeInto, setFormToChangeInto,
+  gBattleScripting, gBattleStruct,
 } from './state';
 import {
   STATUS2_TRANSFORMED, STATUS3_SEMI_INVULNERABLE,
@@ -171,9 +171,9 @@ function Cmd_docastformchangeanimation(_ctx: BattleScriptContext): boolean {
   const active = gBattleScripting.battler;
   setActiveBattler(active);
   if (gBattleMons[active].status2 & STATUS2_SUBSTITUTE) {
-    setFormToChangeInto(gFormToChangeInto | CASTFORM_SUBSTITUTE);
+    gBattleStruct.formToChangeInto = gBattleStruct.formToChangeInto | CASTFORM_SUBSTITUTE;
   }
-  BtlController_EmitBattleAnimation(B_COMM_TO_CONTROLLER, B_ANIM_CASTFORM_CHANGE, gFormToChangeInto);
+  BtlController_EmitBattleAnimation(B_COMM_TO_CONTROLLER, B_ANIM_CASTFORM_CHANGE, gBattleStruct.formToChangeInto);
   MarkBattlerForControllerExec(active);
   return false;
 }
@@ -186,7 +186,7 @@ function Cmd_docastformchangeanimation(_ctx: BattleScriptContext): boolean {
 function Cmd_trycastformdatachange(ctx: BattleScriptContext): boolean {
   const form = _castformDataTypeChangeN25(gBattleScripting.battler);
   if (form) {
-    setFormToChangeInto(form - 1);
+    gBattleStruct.formToChangeInto = form - 1;
     const off = getBattleScriptOffsetN25('BattleScript_CastformChange');
     if (off >= 0) {
       ctx.scriptPtrStack.push(ctx.scriptPtr);

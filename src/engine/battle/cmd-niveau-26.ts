@@ -23,8 +23,7 @@ import {
   gBattleTypeFlags,
   gCalledMove, setChosenMove,
   gPaydayMoney,
-  setHpScale,
-  gHpOnSwitchout,
+  gBattleStruct,
   gTrainerBattleOpponent_A, gTrainerBattleOpponent_B,
   gBattlerPartyIndexes,
 } from './state';
@@ -200,10 +199,10 @@ function Cmd_hpthresholds(ctx: BattleScriptContext): boolean {
   let result = Math.floor((gBattleMons[opposing].hp * 100) / gBattleMons[opposing].maxHP);
   if (result === 0) result = 1;
 
-  if (result > 69 || gBattleMons[opposing].hp === 0) setHpScale(0);
-  else if (result > 39) setHpScale(1);
-  else if (result > 9) setHpScale(2);
-  else setHpScale(3);
+  if (result > 69 || gBattleMons[opposing].hp === 0) gBattleStruct.hpScale = 0;
+  else if (result > 39) gBattleStruct.hpScale = 1;
+  else if (result > 9) gBattleStruct.hpScale = 2;
+  else gBattleStruct.hpScale = 3;
   return false;
 }
 
@@ -216,13 +215,13 @@ function Cmd_hpthresholds2(ctx: BattleScriptContext): boolean {
   const active = getBattlerForBattleScript(arg);
   setActiveBattler(active);
   const opposing = BATTLE_OPPOSITE(active);
-  const hpSwitchout = gHpOnSwitchout[GET_BATTLER_SIDE(opposing)] || 1;
+  const hpSwitchout = gBattleStruct.hpOnSwitchout[GET_BATTLER_SIDE(opposing)] || 1;
   const result = Math.floor(((hpSwitchout - gBattleMons[opposing].hp) * 100) / hpSwitchout);
 
-  if (gBattleMons[opposing].hp >= hpSwitchout) setHpScale(0);
-  else if (result <= 29) setHpScale(1);
-  else if (result <= 69) setHpScale(2);
-  else setHpScale(3);
+  if (gBattleMons[opposing].hp >= hpSwitchout) gBattleStruct.hpScale = 0;
+  else if (result <= 29) gBattleStruct.hpScale = 1;
+  else if (result <= 69) gBattleStruct.hpScale = 2;
+  else gBattleStruct.hpScale = 3;
   return false;
 }
 

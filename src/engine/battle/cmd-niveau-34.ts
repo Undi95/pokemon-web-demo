@@ -30,15 +30,9 @@ import {
   gBattlerPartyIndexes,
   gSpecialStatuses, gDisableStructs,
   setLastUsedAbility,
-  gBattleStructChoicedMove,
+  gBattleStruct,
   setBattlerFainted, setBattleMoveDamage,
   gSentPokesToOpponent,
-  gBattleStructExpValue, setBattleStructExpValue,
-  gBattleStructExpGetterMonId, setBattleStructExpGetterMonId,
-  gBattleStructExpGetterBattlerId, setBattleStructExpGetterBattlerId,
-  gBattleStructSentInPokes, setBattleStructSentInPokes,
-  gBattleStructWildVictorySong, setBattleStructWildVictorySong,
-  gBattleStructGivenExpMons, setBattleStructGivenExpMons,
   gExpShareExp, setExpShareExp,
   gLeveledUpInBattle, setLeveledUpInBattle,
   gBattleMoveDamage,
@@ -330,9 +324,7 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
         gBattleScripting.getexpState = 6;
       } else {
         gBattleScripting.getexpState++;
-        setBattleStructGivenExpMons(
-          gBattleStructGivenExpMons | gBitTable[gBattlerPartyIndexes[battlerFainted]]
-        );
+        gBattleStruct.givenExpMons = gBattleStruct.givenExpMons | gBitTable[gBattlerPartyIndexes[battlerFainted]];
       }
       break;
     }
@@ -361,22 +353,16 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
 
       if (viaExpShare) {
         // Split : moitié pour participants, autre moitié pour exp-share holders.
-        setBattleStructExpValue(
-          Math.max(1, Math.floor(calculatedExp / 2 / Math.max(1, viaSentIn)))
-        );
-        setExpShareExp(
-          Math.max(1, Math.floor(calculatedExp / 2 / viaExpShare))
-        );
+        gBattleStruct.expValue = Math.max(1, Math.floor(calculatedExp / 2 / Math.max(1, viaSentIn)));
+        setExpShareExp(Math.max(1, Math.floor(calculatedExp / 2 / viaExpShare)));
       } else {
-        setBattleStructExpValue(
-          Math.max(1, Math.floor(calculatedExp / Math.max(1, viaSentIn)))
-        );
+        gBattleStruct.expValue = Math.max(1, Math.floor(calculatedExp / Math.max(1, viaSentIn)));
         setExpShareExp(0);
       }
 
       gBattleScripting.getexpState++;
-      setBattleStructExpGetterMonId(0);
-      setBattleStructSentInPokes(sentIn);
+      gBattleStruct.expGetterMonId = 0;
+      gBattleStruct.sentInPokes = sentIn;
       // 1:1 décomp : fall through to case 2 — re-enter switch via loop.
       allowFallThrough = true;
       break;
@@ -385,34 +371,34 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
     case 2: {
       // 1:1 décomp : set exp value per mon + print message.
       if (gBattleControllerExecFlags === 0) {
-        const monId = gBattleStructExpGetterMonId;
+        const monId = gBattleStruct.expGetterMonId;
         const item = GetMonData(gPlayerParty[monId], MON_DATA_HELD_ITEM) as number;
         const holdEffect = GetItemHoldEffect(item);
 
         const monLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) as number;
 
-        if (holdEffect !== HOLD_EFFECT_EXP_SHARE && !(gBattleStructSentInPokes & 1)) {
+        if (holdEffect !== HOLD_EFFECT_EXP_SHARE && !(gBattleStruct.sentInPokes & 1)) {
           // Pas d'exp-share + pas sent in → skip.
-          setBattleStructSentInPokes(gBattleStructSentInPokes >>> 1);
+          gBattleStruct.sentInPokes = gBattleStruct.sentInPokes >>> 1;
           gBattleScripting.getexpState = 5;
           setBattleMoveDamage(0);
         } else if (monLevel === MAX_LEVEL) {
           // Mon déjà niveau max.
-          setBattleStructSentInPokes(gBattleStructSentInPokes >>> 1);
+          gBattleStruct.sentInPokes = gBattleStruct.sentInPokes >>> 1;
           gBattleScripting.getexpState = 5;
           setBattleMoveDamage(0);
         } else {
           // 1:1 décomp : switch BGM → MUS_VICTORY_WILD post-faint adversaire en wild.
           if (!(gBattleTypeFlags & BATTLE_TYPE_TRAINER)
               && gBattleMons[0].hp !== 0
-              && !gBattleStructWildVictorySong) {
+              && !gBattleStruct.wildVictorySong) {
             // STUB BGM switch (= UI/audio engine wiring).
-            setBattleStructWildVictorySong(gBattleStructWildVictorySong + 1);
+            gBattleStruct.wildVictorySong = gBattleStruct.wildVictorySong + 1;
           }
 
           const monHp = GetMonData(gPlayerParty[monId], MON_DATA_HP) as number;
           if (monHp) {
-            let dmg = (gBattleStructSentInPokes & 1) ? gBattleStructExpValue : 0;
+            let dmg = (gBattleStruct.sentInPokes & 1) ? gBattleStruct.expValue : 0;
             if (holdEffect === HOLD_EFFECT_EXP_SHARE) {
               dmg += gExpShareExp;
             }
@@ -428,20 +414,18 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
             // 1:1 décomp : determine battler ID receiver (= slot 0 ou 2 si double).
             if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
               if (gBattlerPartyIndexes[2] === monId && !(gAbsentBattlerFlags & gBitTable[2])) {
-                setBattleStructExpGetterBattlerId(2);
+                gBattleStruct.expGetterBattlerId = 2;
               } else {
-                setBattleStructExpGetterBattlerId(
-                  !(gAbsentBattlerFlags & gBitTable[0]) ? 0 : 2
-                );
+                gBattleStruct.expGetterBattlerId = !(gAbsentBattlerFlags & gBitTable[0]) ? 0 : 2;
               }
             } else {
-              setBattleStructExpGetterBattlerId(0);
+              gBattleStruct.expGetterBattlerId = 0;
             }
 
             // STUB MonGainEVs : EV system pas wired pour MVP.
             _stubMonGainEVs(monId, gBattleMons[battlerFainted].species);
           }
-          setBattleStructSentInPokes(gBattleStructSentInPokes >>> 1);
+          gBattleStruct.sentInPokes = gBattleStruct.sentInPokes >>> 1;
           gBattleScripting.getexpState++;
         }
       }
@@ -451,7 +435,7 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
     case 3: {
       // 1:1 décomp : set stats + give exp + emit ExpUpdate.
       if (gBattleControllerExecFlags === 0) {
-        const monId = gBattleStructExpGetterMonId;
+        const monId = gBattleStruct.expGetterMonId;
         const monHp = GetMonData(gPlayerParty[monId], MON_DATA_HP) as number;
         const monLevel = GetMonData(gPlayerParty[monId], MON_DATA_LEVEL) as number;
         if (monHp && monLevel !== MAX_LEVEL) {
@@ -469,8 +453,8 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
     case 4: {
       // 1:1 décomp : level up check + trigger BattleScript_LevelUp.
       if (gBattleControllerExecFlags === 0) {
-        const monId = gBattleStructExpGetterMonId;
-        const _battlerId = gBattleStructExpGetterBattlerId;
+        const monId = gBattleStruct.expGetterMonId;
+        const _battlerId = gBattleStruct.expGetterBattlerId;
         // STUB RET_VALUE_LEVELED_UP : pas dispo (= attendre buffer return du controller).
         // Pour MVP : check directement si l'XP cumulé dépasse le seuil level+1.
         const species = GetMonData(gPlayerParty[monId], MON_DATA_SPECIES) as number;
@@ -508,8 +492,8 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
       if (gBattleMoveDamage) {
         gBattleScripting.getexpState = 3;
       } else {
-        setBattleStructExpGetterMonId(gBattleStructExpGetterMonId + 1);
-        if (gBattleStructExpGetterMonId < 6 /* PARTY_SIZE */) {
+        gBattleStruct.expGetterMonId = gBattleStruct.expGetterMonId + 1;
+        if (gBattleStruct.expGetterMonId < 6 /* PARTY_SIZE */) {
           gBattleScripting.getexpState = 2;  // loop again
         } else {
           gBattleScripting.getexpState = 6;  // done
@@ -657,12 +641,12 @@ function Cmd_various(ctx: BattleScriptContext): boolean {
       else if (gBattlerPartyIndexes[2] === expGetterIdx) activeIdx = 2;
       if (activeIdx >= 0) {
         setActiveBattler(activeIdx);
-        const currentChoiced = gBattleStructChoicedMove[activeIdx];
+        const currentChoiced = gBattleStruct.choicedMove[activeIdx];
         let i: number;
         for (i = 0; i < MAX_MON_MOVES; i++) {
           if (gBattleMons[activeIdx].moves[i] === currentChoiced) break;
         }
-        if (i === MAX_MON_MOVES) gBattleStructChoicedMove[activeIdx] = MOVE_NONE;
+        if (i === MAX_MON_MOVES) gBattleStruct.choicedMove[activeIdx] = MOVE_NONE;
       }
       break;
     }

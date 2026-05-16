@@ -25,7 +25,7 @@ import {
   gProtectStructs, gDisableStructs,
   gBideDmg, gBideTarget, gAbsentBattlerFlags,
   gMoveResultFlags, setMoveResultFlags,
-  gBattleStructAtkCancelerTracker, setBattleStructAtkCancelerTracker,
+  gBattleStruct,
 } from './state';
 import {
   STATUS1_SLEEP, STATUS1_FREEZE, STATUS1_PARALYSIS,
@@ -168,13 +168,13 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
   let iterations = 0;
   const MAX_ITER = 64;
 
-  while (iterations++ < MAX_ITER && gBattleStructAtkCancelerTracker !== CANCELER_END && effect === 0) {
-    switch (gBattleStructAtkCancelerTracker) {
+  while (iterations++ < MAX_ITER && gBattleStruct.atkCancelerTracker !== CANCELER_END && effect === 0) {
+    switch (gBattleStruct.atkCancelerTracker) {
       case CANCELER_FLAGS:
         // 1:1 décomp : clear DESTINY_BOND + STATUS3_GRUDGE.
         gBattleMons[gBattlerAttacker].status2 &= ~STATUS2_DESTINY_BOND;
         gStatuses3[gBattlerAttacker] &= ~STATUS3_GRUDGE;
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_ASLEEP:
@@ -211,7 +211,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
             }
           }
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_FROZEN:
@@ -223,7 +223,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
               setHitMarker(gHitMarker | HITMARKER_NO_ATTACKSTRING);
             } else {
               // EFFECT_THAW_HIT = unfreeze via move effect happens in CANCELER_THAW.
-              setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+              gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
               break;
             }
           } else {
@@ -235,7 +235,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           }
           effect = 2;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_TRUANT:
@@ -249,7 +249,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           setMoveResultFlags(gMoveResultFlags | MOVE_RESULT_MISSED);
           effect = 1;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_RECHARGE:
@@ -261,7 +261,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           setHitMarker(gHitMarker | HITMARKER_UNABLE_TO_USE_MOVE);
           effect = 1;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_FLINCH:
@@ -273,7 +273,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           setHitMarker(gHitMarker | HITMARKER_UNABLE_TO_USE_MOVE);
           effect = 1;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_DISABLED:
@@ -286,7 +286,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           setHitMarker(gHitMarker | HITMARKER_UNABLE_TO_USE_MOVE);
           effect = 1;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_TAUNTED:
@@ -298,7 +298,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           setHitMarker(gHitMarker | HITMARKER_UNABLE_TO_USE_MOVE);
           effect = 1;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_IMPRISONED:
@@ -309,7 +309,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           setHitMarker(gHitMarker | HITMARKER_UNABLE_TO_USE_MOVE);
           effect = 1;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_CONFUSED:
@@ -338,7 +338,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           }
           effect = 1;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_PARALYZED:
@@ -350,7 +350,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           setHitMarker(gHitMarker | HITMARKER_UNABLE_TO_USE_MOVE);
           effect = 1;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_IN_LOVE:
@@ -375,7 +375,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           }
           effect = 1;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_BIDE:
@@ -401,7 +401,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           }
           effect = 1;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_THAW:
@@ -414,7 +414,7 @@ export function AtkCanceler_UnableToUseMove(_ctx: BattleScriptContext): AtkCance
           }
           effect = 2;
         }
-        setBattleStructAtkCancelerTracker(gBattleStructAtkCancelerTracker + 1);
+        gBattleStruct.atkCancelerTracker = gBattleStruct.atkCancelerTracker + 1;
         break;
 
       case CANCELER_END:
@@ -474,5 +474,5 @@ export function applyAtkCanceler(ctx: BattleScriptContext, opcodeStartPtr: numbe
 
 /** Reset le tracker pour un nouveau move. Appelé par battle setup entre 2 attacks. */
 export function resetAtkCancelerTracker(): void {
-  setBattleStructAtkCancelerTracker(0);
+  gBattleStruct.atkCancelerTracker = 0;
 }

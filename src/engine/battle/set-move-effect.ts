@@ -41,7 +41,7 @@ import {
   gDisableStructs,
   gLockedMoves,
   gProtectStructs,
-  gWrappedBy, gWrappedMove,
+  gBattleStruct,
 } from './state';
 import {
   STATUS1_SLEEP, STATUS1_POISON, STATUS1_BURN, STATUS1_FREEZE,
@@ -544,8 +544,8 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
           // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
         } else {
           gBattleMons[gEffectBattler].status2 |= ((Random() & 3) + 3) << 13; // STATUS2_WRAPPED_TURN
-          gWrappedMove[gEffectBattler] = gCurrentMove;
-          gWrappedBy[gEffectBattler] = gBattlerAttacker;
+          gBattleStruct.wrappedMove[gEffectBattler] = gCurrentMove;
+          gBattleStruct.wrappedBy[gEffectBattler] = gBattlerAttacker;
           ctx.scriptPtrStack.push(ctx.scriptPtr);
           const off = _resolveMoveEffectBS(eff);
           if (off >= 0) ctx.scriptPtr = off;

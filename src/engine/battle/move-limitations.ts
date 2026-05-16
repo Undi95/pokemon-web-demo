@@ -13,7 +13,7 @@ import {
   gBattleMons, gActiveBattler,
   gLastMoves,
   gDisableStructs, gProtectStructs,
-  gBattleStructChoicedMove,
+  gBattleStruct,
   setPotentialItemEffectBattler,
 } from './state';
 import {
@@ -105,9 +105,9 @@ export function CheckMoveLimitations(battlerId: number, unusableMoves: number, c
     }
     // Choice Band
     if (holdEffect === HOLD_EFFECT_CHOICE_BAND
-        && gBattleStructChoicedMove[battlerId] !== MOVE_NONE
-        && gBattleStructChoicedMove[battlerId] !== MOVE_UNAVAILABLE
-        && gBattleStructChoicedMove[battlerId] !== move) {
+        && gBattleStruct.choicedMove[battlerId] !== MOVE_NONE
+        && gBattleStruct.choicedMove[battlerId] !== MOVE_UNAVAILABLE
+        && gBattleStruct.choicedMove[battlerId] !== move) {
       unusableMoves |= gBitTable[i];
     }
   }
