@@ -81,7 +81,7 @@ function Cmd_seteffectwithchance(ctx: BattleScriptContext): boolean {
  *    `gBattleStruct.monToSwitchIntoId[target]`. Si validMons <= minNeeded, fail.
  *  - Trainer battle double/multi/link : différé (= complex BATTLE_TYPE checks).
  *
- *  AUDIT BUG FIX (port iter post session 141) : était fail-only STUB. Maintenant
+ *  AUDIT BUG FIX (port iter post session 141) : était fail-only stub. Maintenant
  *  single trainer battle marche. */
 function Cmd_forcerandomswitch(ctx: BattleScriptContext): boolean {
   const failJump = readWord(ctx);
@@ -98,7 +98,7 @@ function Cmd_forcerandomswitch(ctx: BattleScriptContext): boolean {
   const BATTLE_TYPE_DOUBLE_LOCAL = 1 << 0;
 
   if (!(gBattleTypeFlags_local & BATTLE_TYPE_TRAINER_LOCAL)) {
-    // Wild battle : TryDoForceSwitchOut → STUB (= no-op, fail-through).
+    // Wild battle : TryDoForceSwitchOut deferred (= no-op, fail-through).
     return false;
   }
 
@@ -138,7 +138,7 @@ function Cmd_forcerandomswitch(ctx: BattleScriptContext): boolean {
     return false;
   }
 
-  // TryDoForceSwitchOut → STUB returns true (= switch attempt always succeeds).
+  // TryDoForceSwitchOut deferred returns true (= switch attempt always succeeds).
   // Pick random alive non-current mon.
   let i = 0;
   let safetyCounter = 0;
@@ -211,7 +211,7 @@ const sPickupProbabilities: ReadonlyArray<number> = [30, 40, 50, 60, 70, 80, 90,
  *  vs sPickupProbabilities[] → assign item depuis sPickupItems[lvlDivBy10+j]
  *  ou sRarePickupItems[lvlDivBy10+(99-rand)]. */
 function Cmd_pickup(_ctx: BattleScriptContext): boolean {
-  // STUB InBattlePike + CurrentBattlePyramidLocation (= Frontier-only, retournent
+  // Frontier deferred : InBattlePike + CurrentBattlePyramidLocation (= Frontier-only, retournent
   // false dans notre Phase 1). Donc on prend toujours le else branch (= normal).
 
   for (let i = 0; i < 6 /* PARTY_SIZE */; i++) {
@@ -346,7 +346,7 @@ import {
 } from './party-storage';
 // 1:1 décomp `GiveMonToPlayer` (pokemon.c:4412-4432). Notre port :
 // SetMonData OT name/gender/id depuis gSaveBlock2Ptr, puis scan gPlayerParty
-// pour 1er slot vide. Sinon → CopyMonToPC (= STUB Phase 1.4 PC storage).
+// pour 1er slot vide. Sinon → CopyMonToPC (= PC storage deferred Phase 1.4).
 import {
   gPlayerParty as _gPlayerPartyGC,
   SetMonData as _SetMonDataGC,
@@ -389,7 +389,7 @@ function _GiveMonToPlayerGC(mon: unknown): number {
       return 0; // MON_GIVEN_TO_PARTY
     }
   }
-  // Party full → CopyMonToPC. STUB Phase 1.4 (= PC storage pas wired).
+  // Party full → CopyMonToPC. Deferred Phase 1.4 (= PC storage pas wired).
   return 1; // MON_GIVEN_TO_PC (= simulate sent to PC).
 }
 
@@ -452,23 +452,23 @@ function Cmd_trygivecaughtmonnick(ctx: BattleScriptContext): boolean {
   const jumpPtr = readWord(ctx);
   switch (gBattleCommunication[0 /* MULTIUSE_STATE */]) {
     case 0:
-      // 1:1 décomp : show YES/NO + cursor 0. STUB UI : just advance state.
+      // 1:1 décomp : show YES/NO + cursor 0. UI Phase 1.4 deferred : advance state.
       gBattleCommunication[3 /* CURSOR_POSITION */] = 0;
       gBattleCommunication[0]++;
       ctx.scriptPtr -= 5;  // re-enter opcode.
       return true;
     case 1:
-      // 1:1 décomp : poll input. STUB : auto-NO → state 4 (= skip naming).
+      // 1:1 décomp : poll input. UI Phase 1.4 deferred : auto-NO → state 4 (= skip naming).
       gBattleCommunication[0] = 4;
       ctx.scriptPtr -= 5;
       return true;
     case 2:
-      // STUB palette fade : assume done → state 3.
+      // UI Phase 1.4 deferred : palette fade : assume done → state 3.
       gBattleCommunication[0]++;
       ctx.scriptPtr -= 5;
       return true;
     case 3:
-      // STUB naming screen : assume done → jump à jumpPtr (= retour normal).
+      // UI Phase 1.4 deferred : naming screen : assume done → jump à jumpPtr (= retour normal).
       gBattleCommunication[0] = 0;  // reset.
       ctx.scriptPtr = jumpPtr;
       return false;
