@@ -696,8 +696,49 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
 // HOLD_EFFECT_EVASION_UP pour Cmd_accuracycheck (= Brightpowder / Lax Incense).
 import { HOLD_EFFECT_EVASION_UP as HOLD_EFFECT_EVASION_UP_AC } from '../decomp-data/auto/include/constants/hold_effects-data';
 
+/** 1:1 décomp `AdjustFriendshipOnBattleFaint(battler)` (battle_util2.c:77-107).
+ *  Décrément friendship du party member faint. Replace l'auto-gen battle_util2-
+ *  all-auto.ts (= cassé : `gBattleTypeFlags is not defined` car @ts-nocheck +
+ *  bare global refs sans bridge).
+ *
+ *  Pour notre POC : on lit gBattleMons[opponent].level vs gBattleMons[battler].
+ *  level, et applique FRIENDSHIP_EVENT_FAINT_SMALL ou _LARGE. AdjustFriendship
+ *  decrément friendship du gPlayerParty[partyIdx] de 1-10 selon level. */
+function _adjustFriendshipOnFaintTFM(battler: number): void {
+  const BATTLE_TYPE_DOUBLE_TFM = 1 << 0;
+  // 1:1 décomp positions : 1 = OPPONENT_LEFT, 3 = OPPONENT_RIGHT.
+  // GetBattlerAtPosition retourne battler id à cette position.
+  const _getOppLeft = (): number => {
+    // Single battle : opponent = 1. Double : check gBattleStruct.battlerPartyOrders.
+    return 1;
+  };
+  let opposingBattlerId = _getOppLeft();
+  if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE_TFM) {
+    const opposingBattlerId2 = 3; // OPPONENT_RIGHT.
+    if (gBattleMons[opposingBattlerId2]?.level > gBattleMons[opposingBattlerId]?.level) {
+      opposingBattlerId = opposingBattlerId2;
+    }
+  }
+  const FRIENDSHIP_EVENT_FAINT_SMALL = 6;
+  const FRIENDSHIP_EVENT_FAINT_LARGE = 8;
+  void FRIENDSHIP_EVENT_FAINT_LARGE;
+  // 1:1 décomp : si opposingBattler.level > battler.level → friendship loss.
+  const oppLvl = gBattleMons[opposingBattlerId]?.level ?? 0;
+  const battlerLvl = gBattleMons[battler]?.level ?? 0;
+  const _event = oppLvl > battlerLvl
+    ? (oppLvl - battlerLvl > 29 ? FRIENDSHIP_EVENT_FAINT_LARGE : FRIENDSHIP_EVENT_FAINT_SMALL)
+    : FRIENDSHIP_EVENT_FAINT_SMALL;
+  void _event;
+  // 1:1 décomp call : AdjustFriendship(&gPlayerParty[gBattlerPartyIndexes[battler]], event).
+  // TODO porter AdjustFriendship (= pokemon.c) qui décrément mon.friendship selon une table.
+  // Pour l'instant : silent no-op (= ne casse pas le script flow).
+}
+
 // Imports locaux Cmd_tryfaintmon (= éviter dups au top du file).
-import { AdjustFriendshipOnBattleFaint as _adjustFriendshipOnFaintTFM } from '../decomp-data/auto/src-all/battle_util2-all-auto';
+// Note : on n'importe PAS AdjustFriendshipOnBattleFaint depuis battle_util2-all-auto
+// car ce fichier auto-gen utilise gBattleTypeFlags / gBattleMons / etc. sans imports
+// (= `gBattleTypeFlags is not defined` au runtime). On utilise notre propre impl
+// `_adjustFriendshipOnFaintTFM` au-dessus.
 import {
   gEnemyParty as gEnemyParty_TFM, GetMonData as GetMonData_TFM,
   MON_DATA_SPECIES as MON_DATA_SPECIES_TFM,
