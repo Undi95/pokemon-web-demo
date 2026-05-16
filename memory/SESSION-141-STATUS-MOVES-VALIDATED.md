@@ -10,6 +10,17 @@ type: project
 **Commits** : 12 sur branche `upd2` (post 4093956f session 140 final)
 **Branche** : `upd2`
 
+## 🏆 Iter D — Wild battle end-to-end via bytecode VALIDATED
+
+Test interactif après iter C :
+- `localStorage.__USE_BYTECODE_FOR_DAMAGE__ = '1'` activé
+- `window.dev.battle.startWild('SPECIES_WURMPLE', 5)` → battle Arcko Lv5 vs Wurmple Lv5
+- Combat joué via simuler `KeyW` (= bouton A) sur `window` (= input-handler.ts)
+- ARCKO utilise ECRAS'FACE (Tackle) → bytecode `Cmd_damagecalc` + Cmd_typecalc routes
+- Combat terminé en plusieurs turns : Arcko 15/20, Wurmple 0/20, outcome=1 PLAYER WIN
+
+**Bytecode interpreter PRODUCTION-VALIDATED en combat réel end-to-end**.
+
 ## 🔄 Iter C — Audit bug HOLD_EFFECT_RESTORE_HP
 
 Commit `57f6cc25` : 9e audit bug critique.
