@@ -411,7 +411,15 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
             if (gBattleTypeFlags & BATTLE_TYPE_TRAINER) {
               dmg = Math.floor((dmg * 150) / 100);
             }
-            // STUB IsTradedMon : pas porté.
+            // 1:1 décomp : si traded mon (= otId != playerTrainerId OR otName
+            // != playerName), XP × 1.5. IsTradedMon impl inline ici (= simple
+            // compare avec gameState.trainerId).
+            const playerTID = (globalThis as { gameState?: { trainerId?: number } })
+              .gameState?.trainerId ?? 0;
+            const monOtId = gPlayerParty[monId]?.otId ?? 0;
+            if (monOtId !== playerTID) {
+              dmg = Math.floor((dmg * 150) / 100);
+            }
             setBattleMoveDamage(dmg);
 
             // 1:1 décomp : determine battler ID receiver (= slot 0 ou 2 si double).
