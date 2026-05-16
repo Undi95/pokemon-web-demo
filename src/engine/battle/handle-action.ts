@@ -364,14 +364,80 @@ export function HandleAction_UseItem(_ctx?: BattleScriptContext): void {
   setCurrentActionFuncId(B_ACTION_FINISHED);
 }
 
-/** 1:1 décomp `HandleAction_Run` (battle_util.c). STUB minimal.
- *  Set outcome RAN si réussit, sinon MISSED. */
-export function HandleAction_Run(_ctx?: BattleScriptContext): void {
+/** 1:1 décomp `HandleAction_Run` (battle_util.c:487-539). */
+export function HandleAction_Run(ctx?: BattleScriptContext): void {
   setBattlerAttacker(gBattlerByTurnOrder[gCurrentTurnActionNumber]);
-  // TODO Phase 1.4 : full run logic avec Shadow Tag / Arena Trap / Magnet Pull /
-  // escape factor. Pour MVP : assume success.
-  setCurrentActionFuncId(B_ACTION_FINISHED);
+
+  if (gBattleTypeFlags & (_BATTLE_TYPE_LINK_HAR | _BATTLE_TYPE_RECORDED_LINK_HAR)) {
+    // 1:1 décomp ll.491-510 : link battle run = all link battlers lose/win.
+    setCurrentTurnActionNumberHAR(gBattlersCount);
+    for (let i = 0; i < gBattlersCount; i++) {
+      _setActiveBattlerHAR(i);
+      if (GET_BATTLER_SIDE(i) === B_SIDE_PLAYER) {
+        if (_gChosenActionByBattlerHAR[i] === _B_ACTION_RUN_HAR) {
+          // OUTCOME_LOST = 2 ; combiné avec outcome existant via OR.
+          _setBattleOutcomeHAR(_gBattleOutcomeHAR | 2);
+        }
+      } else {
+        if (_gChosenActionByBattlerHAR[i] === _B_ACTION_RUN_HAR) {
+          // OUTCOME_WON = 1.
+          _setBattleOutcomeHAR(_gBattleOutcomeHAR | 1);
+        }
+      }
+    }
+    // OUTCOME_LINK_BATTLE_RAN = 1 << 7 = 0x80.
+    // STUB gSaveBlock2Ptr.frontier.disableRecordBattle = TRUE (= Frontier post-Phase 1).
+    return;
+  }
+
+  // Normal battle.
+  if (GET_BATTLER_SIDE(gBattlerAttacker) === B_SIDE_PLAYER) {
+    if (!_TryRunFromBattleHAR(gBattlerAttacker)) {
+      // Failed to run away.
+      ClearFuryCutterDestinyBondGrudge(gBattlerAttacker);
+      gBattleCommunication[MULTISTRING_CHOOSER] = _B_MSG_CANT_ESCAPE_2_HAR;
+      const off = _getBattleScriptOffsetHAR('BattleScript_PrintFailedToRunString');
+      if (ctx && off >= 0) ctx.scriptPtr = off;
+      setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
+    }
+    // Si TryRunFromBattle a réussi : il a déjà set gBattleOutcome = RAN +
+    // gCurrentTurnActionNumber = gBattlersCount.
+  } else {
+    // Wild opponent essaie de fuir (= Roar / Whirlwind sur joueur).
+    if (gBattleMons[gBattlerAttacker].status2 & (_STATUS2_WRAPPED_HAR | _STATUS2_ESCAPE_PREVENTION_HAR)) {
+      gBattleCommunication[MULTISTRING_CHOOSER] = _B_MSG_ATTACKER_CANT_ESCAPE_HAR;
+      const off = _getBattleScriptOffsetHAR('BattleScript_PrintFailedToRunString');
+      if (ctx && off >= 0) ctx.scriptPtr = off;
+      setCurrentActionFuncId(B_ACTION_EXEC_SCRIPT);
+    } else {
+      setCurrentTurnActionNumberHAR(gBattlersCount);
+      _setBattleOutcomeHAR(6 /* B_OUTCOME_MON_FLED */);
+    }
+  }
 }
+
+// Imports locaux HandleAction_Run.
+import { TryRunFromBattle as _TryRunFromBattleHAR } from './try-run-from-battle';
+import { getBattleScriptOffset as _getBattleScriptOffsetHAR } from './script-interpreter';
+import {
+  setBattleOutcome as _setBattleOutcomeHAR,
+  setCurrentTurnActionNumber as setCurrentTurnActionNumberHAR,
+  gChosenActionByBattler as _gChosenActionByBattlerHAR,
+  setActiveBattler as _setActiveBattlerHAR,
+  gBattleOutcome as _gBattleOutcomeHAR,
+} from './state';
+import {
+  BATTLE_TYPE_LINK as _BATTLE_TYPE_LINK_HAR,
+  BATTLE_TYPE_RECORDED_LINK as _BATTLE_TYPE_RECORDED_LINK_HAR,
+  STATUS2_WRAPPED as _STATUS2_WRAPPED_HAR,
+  STATUS2_ESCAPE_PREVENTION as _STATUS2_ESCAPE_PREVENTION_HAR,
+} from './constants';
+
+const _B_ACTION_RUN_HAR = 3;
+// 1:1 décomp `B_MSG_CANT_ESCAPE_2` / `B_MSG_ATTACKER_CANT_ESCAPE` (= index dans
+// sRoarUsedStringIds / sNoEscapeStringIds).
+const _B_MSG_CANT_ESCAPE_2_HAR = 1;
+const _B_MSG_ATTACKER_CANT_ESCAPE_HAR = 0;
 
 /** 1:1 décomp `HandleAction_RunBattleScript`. No-op puisque script déjà actif. */
 export function HandleAction_RunBattleScript(_ctx?: BattleScriptContext): void {
