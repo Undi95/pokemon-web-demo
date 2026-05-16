@@ -143,7 +143,7 @@ export function Cmd_typecalc(): boolean {
     gLastLandedMoves[gBattlerTarget] = 0;
     gLastHitByType[gBattlerTarget] = 0;
     gBattleCommunication[MISS_TYPE] = B_MSG_GROUND_MISS;
-    // RecordAbilityBattle — skip (= TODO when ability AI hook implemented)
+    RecordAbilityBattleTC(gBattlerTarget, targetMon.ability);
   } else {
     // Iterate type chart.
     let i = 0;
@@ -181,11 +181,18 @@ export function Cmd_typecalc(): boolean {
     gLastLandedMoves[gBattlerTarget] = 0;
     gLastHitByType[gBattlerTarget] = 0;
     gBattleCommunication[MISS_TYPE] = B_MSG_AVOIDED_DMG;
-    // RecordAbilityBattle — skip
+    RecordAbilityBattleTC(gBattlerTarget, ABILITY_WONDER_GUARD);
   }
 
-  // gProtectStructs[attacker].targetNotAffected = 1 si DOESNT_AFFECT_FOE.
-  // TODO porter gProtectStructs.
+  // 1:1 décomp pokemon.c:Cmd_typecalc :
+  // `if (gMoveResultFlags & MOVE_RESULT_DOESNT_AFFECT_FOE)
+  //    gProtectStructs[gBattlerAttacker].targetNotAffected = 1;`
+  if (gMoveResultFlags & MOVE_RESULT_DOESNT_AFFECT_FOE) {
+    _gProtectStructsTC[gBattlerAttacker].targetNotAffected = 1;
+  }
 
   return false;
 }
+
+import { RecordAbilityBattle as RecordAbilityBattleTC } from './util';
+import { gProtectStructs as _gProtectStructsTC } from './state';
