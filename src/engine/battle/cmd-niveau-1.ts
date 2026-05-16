@@ -88,8 +88,14 @@ import {
   gChosenMove, gBattleStruct, gDisableStructs, gProtectStructs,
   gSpecialStatuses, gBattleResults,
   gBattleOutcome, setCurrentActionFuncId,
+  gBideDmg, gBideTarget, gHpDealt,
 } from './state';
-import { B_ACTION_FINISHED } from './constants';
+import {
+  B_ACTION_FINISHED,
+  HITMARKER_IGNORE_BIDE,
+  HITMARKER_PASSIVE_HP_UPDATE,
+} from './constants';
+import { MOVE_PAIN_SPLIT } from '../decomp-data/auto/include/constants/moves-data';
 import { gBitTable, BtlController_EmitSpriteInvisibility } from './battle-controllers';
 import { GetBattlerAtPosition, GetBattlerPosition } from './util';
 import {
@@ -460,10 +466,11 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
   const battlerArg = readByte(ctx);
 
   // 1:1 décomp : moveType resolution avec dynamicMoveType + F_DYNAMIC_TYPE_*.
-  // Si dynamicMoveType==0 → use gBattleMoves[move].type, sinon use
-  // dynamicMoveType & DYNAMIC_TYPE_MASK (unless IGNORE_PHYSICALITY set →
-  // fallback move.type). Pour MVP : juste read move.type.
-  void getBattleMove;  // moveType used by physical/special tracker — TODO.
+  // GET_MOVE_TYPE macro (battle.h:458) : si dynamicMoveType lo 6 bits set,
+  // use celui-ci, sinon use gBattleMoves[move].type.
+  const moveType = gDynamicMoveType !== 0
+    ? (gDynamicMoveType & 0x3F)  // DYNAMIC_TYPE_MASK
+    : getBattleMove(gCurrentMove).type;
 
   // 1:1 décomp : `if (!(gMoveResultFlags & MOVE_RESULT_NO_EFFECT))` — use the
   // composite flag (= MISSED | DOESNT_AFFECT_FOE | FAILED).
@@ -478,18 +485,27 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
     if ((mon.status2 & STATUS2_SUBSTITUTE)
         && gDisableStructs[activeBattler].substituteHP > 0
         && !(gHitMarker & HITMARKER_IGNORE_SUBSTITUTE_LOCAL)) {
+      // 1:1 décomp battle_script_commands.c:1866-1882 — wirage strict.
       const subHP = gDisableStructs[activeBattler].substituteHP;
       if (subHP >= gBattleMoveDamage) {
-        gDisableStructs[activeBattler].substituteHP = subHP - gBattleMoveDamage;
+        // Substitute absorbs full damage.
         gSpecialStatuses[activeBattler].shellBellDmg += gBattleMoveDamage;
+        gDisableStructs[activeBattler].substituteHP = subHP - gBattleMoveDamage;
+        setHpDealt(gBattleMoveDamage);
       } else {
-        // Substitute absorbs partial, rest goes through.
-        gSpecialStatuses[activeBattler].shellBellDmg += subHP;
-        setBattleMoveDamage(subHP);
+        // Substitute absorbs partial, set sub HP to 0.
+        if (gSpecialStatuses[activeBattler].shellBellDmg === 0) {
+          gSpecialStatuses[activeBattler].shellBellDmg = subHP;
+        }
+        setHpDealt(subHP);
         gDisableStructs[activeBattler].substituteHP = 0;
       }
-      // 1:1 décomp : si substituteHP == 0 → push BattleScript_SubstituteFade.
-      // STUB : push deferred au handler caller (= pas wired pour MVP).
+      // 1:1 décomp ll.1884-1891 : si substituteHP == 0 → push + jump SubstituteFade.
+      if (gDisableStructs[activeBattler].substituteHP === 0) {
+        ctx.scriptPtrStack.push(ctx.scriptPtr);
+        const off = getBattleScriptOffset('BattleScript_SubstituteFade');
+        if (off >= 0) ctx.scriptPtr = off;
+      }
       return false;  // Pas de damage au mon direct.
     }
 
@@ -498,10 +514,18 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
       mon.hp += -gBattleMoveDamage;
       if (mon.hp > mon.maxHP) mon.hp = mon.maxHP;
     } else {
-      // 1:1 décomp : Bide damage tracker (= gBideDmg[target] += damage si
-      // attacker != target). STUB : pas wired pour MVP. TODO porter
-      // HITMARKER_IGNORE_BIDE check.
+      // 1:1 décomp battle_script_commands.c:1905-1917 : Bide damage tracker.
+      if (gHitMarker & HITMARKER_IGNORE_BIDE) {
+        setHitMarker(gHitMarker & ~HITMARKER_IGNORE_BIDE);
+      } else {
+        gBideDmg[activeBattler] = gBideDmg[activeBattler] + gBattleMoveDamage;
+        // 1:1 décomp : si arg == BS_TARGET, bideTarget = attacker, sinon = target.
+        gBideTarget[activeBattler] = battlerArg === BS_TARGET
+          ? gBattlerAttacker
+          : gBattlerTarget;
+      }
 
+      // 1:1 décomp ll.1920-1929 : deal damage.
       if (mon.hp > gBattleMoveDamage) {
         mon.hp -= gBattleMoveDamage;
         setHpDealt(gBattleMoveDamage);
@@ -510,15 +534,34 @@ function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
         mon.hp = 0;
       }
 
-      // 1:1 décomp : shellBellDmg tracker (= post-combat Shell Bell heal).
-      gSpecialStatuses[activeBattler].shellBellDmg += gBattleMoveDamage;
+      // 1:1 décomp ll.1932-1933 : shellBellDmg tracker (= post-combat heal).
+      if (gSpecialStatuses[activeBattler].shellBellDmg === 0
+          && !(gHitMarker & HITMARKER_PASSIVE_HP_UPDATE)) {
+        gSpecialStatuses[activeBattler].shellBellDmg = gHpDealt;
+      }
 
-      // 1:1 décomp : physical/special damage tracker. Pour Counter/Mirror Coat.
-      // STUB : pas wired pour MVP — Counter/Mirror Coat utilise battle bytecode.
+      // 1:1 décomp ll.1938-1969 : physical/special damage tracker pour
+      // Counter/Mirror Coat. specialDmg utilisé aussi pour Fire defrost.
+      if (IS_TYPE_PHYSICAL(moveType)
+          && !(gHitMarker & HITMARKER_PASSIVE_HP_UPDATE)
+          && gCurrentMove !== MOVE_PAIN_SPLIT) {
+        gProtectStructs[activeBattler].physicalDmg = gHpDealt;
+        gSpecialStatuses[activeBattler].physicalDmg = gHpDealt;
+        const otherBattler = battlerArg === BS_TARGET ? gBattlerAttacker : gBattlerTarget;
+        gProtectStructs[activeBattler].physicalBattlerId = otherBattler;
+        gSpecialStatuses[activeBattler].physicalBattlerId = otherBattler;
+      } else if (!IS_TYPE_PHYSICAL(moveType)
+          && !(gHitMarker & HITMARKER_PASSIVE_HP_UPDATE)) {
+        gProtectStructs[activeBattler].specialDmg = gHpDealt;
+        gSpecialStatuses[activeBattler].specialDmg = gHpDealt;
+        const otherBattler = battlerArg === BS_TARGET ? gBattlerAttacker : gBattlerTarget;
+        gProtectStructs[activeBattler].specialBattlerId = otherBattler;
+        gSpecialStatuses[activeBattler].specialBattlerId = otherBattler;
+      }
     }
 
-    // 1:1 décomp : clear HITMARKER_PASSIVE_HP_UPDATE (bit 19).
-    setHitMarker(gHitMarker & ~(1 << 19));
+    // 1:1 décomp : clear HITMARKER_PASSIVE_HP_UPDATE.
+    setHitMarker(gHitMarker & ~HITMARKER_PASSIVE_HP_UPDATE);
 
     // 1:1 décomp : Emit SetMonData REQUEST_HP_BATTLE + Mark — STUB UI controller.
   } else {
