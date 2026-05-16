@@ -31,7 +31,7 @@
  *
  * Usage : node scripts/compile-decomp-bytecode.mjs
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { join, dirname, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'node:fs';
@@ -49,7 +49,11 @@ const NOW = new Date().toISOString().slice(0, 10);
 
 console.log('[bytecode] Phase A: building master constants map...');
 
-/** Scrape "export const NAME = NUM;" from all .ts files. */
+/** Scrape "export const NAME = NUM;" AND `export const ENUM_X = { KEY: NUM, ... };`
+ *  from all .ts files. The auto-extractor emits enums as object literals (= named
+ *  constants are NOT individual exports), so we must parse the object body too.
+ *  Without this, all B_SCR_OP_* battle opcodes resolve to 0 (= every script's
+ *  bytecode becomes a sea of 0x00 = attackcanceler infinite loops). */
 function scrapeConstants(rootDir) {
   const map = new Map();
   const files = globSync('**/*.ts', { cwd: rootDir });
@@ -70,6 +74,26 @@ function scrapeConstants(rootDir) {
       if (!map.has(name)) {
         map.set(name, v);
         count++;
+      }
+    }
+    // Match: export const ENUM_NAME = { KEY1: NUM, KEY2: NUM, ... };
+    // The auto extractor (= scripts/parse-c-decomp.mjs) emits enums this way.
+    // We need each KEY = NUM as if it were `export const KEY = NUM;`.
+    const enumRe = /^export const ENUM_\w+\s*=\s*(\{[\s\S]*?\})\s*as const;/gm;
+    let em;
+    while ((em = enumRe.exec(src)) !== null) {
+      let obj;
+      try {
+        // The enum body is pure JS literal, safe to eval.
+        obj = new Function('return ' + em[1])();
+      } catch { continue; }
+      if (!obj || typeof obj !== 'object') continue;
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v !== 'number') continue;
+        if (!map.has(k)) {
+          map.set(k, v);
+          count++;
+        }
       }
     }
   }
@@ -128,7 +152,26 @@ console.log(`  Master constants map: ${constantsMap.size} entries`);
 
 console.log('[bytecode] Phase B: building master macro map...');
 
+// macroMap stores ALL definitions per macro name. Each entry is an array of
+// { context, args, body } records. Context = source asm file group :
+//   'battle_script', 'battle_ai_script', 'battle_anim_script',
+//   'contest_ai_script', 'event', 'mystery_event_script', 'common'.
+// At lookup time, lookupMacro(name, context) returns the matching definition
+// (= 1:1 décomp .include resolution : battle_scripts_*.s includes battle_script.inc,
+// scripts/*.s includes event.inc, etc.).
 const macroMap = new Map();
+
+/** Map macro source file → context tag. */
+function getMacroContext(relPath) {
+  const norm = relPath.replace(/\\/g, '/');
+  if (norm.includes('battle_script-data.ts')) return 'battle_script';
+  if (norm.includes('battle_ai_script-data.ts')) return 'battle_ai_script';
+  if (norm.includes('battle_anim_script-data.ts')) return 'battle_anim_script';
+  if (norm.includes('contest_ai_script-data.ts')) return 'contest_ai_script';
+  if (norm.includes('event-data.ts')) return 'event';
+  if (norm.includes('mystery_event_script-data.ts')) return 'mystery_event_script';
+  return 'common'; // generic macros (.macros.inc, constants, etc.)
+}
 
 /** Read auto-asm files and extract MACROS arrays via JS eval (the TS output
  *  is valid JS literal, which makes balanced-bracket parsing trivial).
@@ -149,25 +192,48 @@ function loadMacros() {
     if (!arrMatch) continue;
     let arr;
     try {
-      // Eval the array literal — it's pure JS data we wrote ourselves
       arr = new Function('return ' + arrMatch[1])();
     } catch (e) {
       console.warn(`  [macros] failed to eval ${rel}: ${e.message}`);
       continue;
     }
     if (!Array.isArray(arr)) continue;
+    const context = getMacroContext(rel);
     for (const m of arr) {
       if (!m || typeof m.name !== 'string') continue;
+      const def = {
+        context,
+        args: Array.isArray(m.args) ? m.args : [],
+        body: Array.isArray(m.body) ? m.body : [],
+      };
       if (!macroMap.has(m.name)) {
-        macroMap.set(m.name, {
-          args: Array.isArray(m.args) ? m.args : [],
-          body: Array.isArray(m.body) ? m.body : [],
-        });
+        macroMap.set(m.name, [def]);
         count++;
+      } else {
+        // Append additional definitions; lookupMacro picks by context.
+        macroMap.get(m.name).push(def);
       }
     }
   }
   console.log(`  Loaded ${count} unique macros`);
+  // Print conflicts (= names with multiple definitions in different contexts).
+  let conflicts = 0;
+  for (const [name, defs] of macroMap) {
+    const ctxs = new Set(defs.map(d => d.context));
+    if (ctxs.size > 1) conflicts++;
+  }
+  console.log(`  Macros with multiple-context definitions: ${conflicts}`);
+}
+
+/** Resolve a macro for a given script context, falling back to 'common'. */
+function lookupMacro(name, scriptContext) {
+  const defs = macroMap.get(name);
+  if (!defs || defs.length === 0) return null;
+  // Prefer same-context, else common, else first.
+  let match = defs.find(d => d.context === scriptContext);
+  if (!match) match = defs.find(d => d.context === 'common');
+  if (!match) match = defs[0];
+  return match;
 }
 
 loadMacros();
@@ -232,7 +298,9 @@ function getMetaMacroInfo(macro) {
 }
 
 const metaMacros = new Map(); // metaName → { nameArg, innerArgs, innerBody }
-for (const [name, m] of macroMap) {
+for (const [name, defs] of macroMap) {
+  // Meta-macros work the same regardless of context; use first definition.
+  const m = defs[0];
   const info = getMetaMacroInfo(m);
   if (info) metaMacros.set(name, { outerArgs: m.args, ...info });
 }
@@ -290,10 +358,11 @@ function synthesizeFromMetaInvocations() {
       if (!synthName || macroMap.has(synthName)) continue;
       // The body is inner body with bindings substituted
       const synthBody = meta.innerBody.map(op => substituteArgs(op, bindings));
-      macroMap.set(synthName, {
+      macroMap.set(synthName, [{
+        context: 'common',
         args: meta.innerArgs.map(a => typeof a === 'string' && a.startsWith('\\') ? a.slice(1) : a),
         body: synthBody,
-      });
+      }]);
       synthCount++;
     }
   }
@@ -305,8 +374,24 @@ synthesizeFromMetaInvocations();
 
 console.log('[bytecode] Phase C: compiling scripts...');
 
-if (existsSync(outRoot)) rmSync(outRoot, { recursive: true, force: true });
-mkdirSync(outRoot, { recursive: true });
+// Wipe ONLY the auto-generated files (= *-bytecode.ts + _* index files).
+// Preserve hand-curated additions in this tree like `data/battle_scripts_1-jump-table.ts`
+// (= 1:1 décomp gBattleScriptsForMoveEffects table, NOT generated from asm OPS but
+// from the C extracted JSON). Avoids cascade where each re-run kills hand-written deps.
+function cleanGenerated(dir) {
+  for (const entry of readdirSync(dir)) {
+    const abs = join(dir, entry);
+    const st = statSync(abs);
+    if (st.isDirectory()) { cleanGenerated(abs); continue; }
+    const isGenerated = entry.endsWith('-bytecode.ts') || entry.startsWith('_');
+    if (isGenerated) unlinkSync(abs);
+  }
+}
+if (existsSync(outRoot)) {
+  cleanGenerated(outRoot);
+} else {
+  mkdirSync(outRoot, { recursive: true });
+}
 
 // Phase 1.3 G : encode known battle memory symbols as `0xF0000000 | id` so
 // the runtime memory-map can resolve them. Whitelist des ~28 vraies battle
@@ -425,8 +510,10 @@ function bindArgs(macroArgs, callArgs) {
 
 /** Compute bytes emitted by a single op (recursive on macros).
  *  Returns array of bytes. fileUnknownCounts (optional Map opName→count)
- *  tracks unknown invocations across recursion depth. */
-function emitOp(op, labelOffsets, warnings, depth = 0, fileUnknownCounts = null) {
+ *  tracks unknown invocations across recursion depth.
+ *  scriptContext = the source-file context to disambiguate same-name macros
+ *  defined in different .inc files (= battle_script vs battle_ai vs event etc.) */
+function emitOp(op, labelOffsets, warnings, depth = 0, fileUnknownCounts = null, scriptContext = 'common') {
   if (depth > 12) return []; // recursion guard
   // In-body label declaration (e.g. `\name:` inside meta-macro body) emits 0 bytes
   if (op._isLabel) return [];
@@ -486,14 +573,14 @@ function emitOp(op, labelOffsets, warnings, depth = 0, fileUnknownCounts = null)
     return Array(Math.max(0, Math.min(n, 4096))).fill(fill);
   }
 
-  // Macro invocation?
-  const macro = macroMap.get(opName);
+  // Macro invocation? Resolve by context (= 1:1 décomp .include scoping).
+  const macro = lookupMacro(opName, scriptContext);
   if (macro) {
     const bindings = bindArgs(macro.args, op.args);
     const out = [];
     for (const inner of macro.body) {
       const subbed = substituteArgs(inner, bindings);
-      out.push(...emitOp(subbed, labelOffsets, warnings, depth + 1, fileUnknownCounts));
+      out.push(...emitOp(subbed, labelOffsets, warnings, depth + 1, fileUnknownCounts, scriptContext));
     }
     return out;
   }
@@ -521,6 +608,20 @@ function unquoteAsmString(s) {
     .replace(/\\0/g, '\0')
     .replace(/\\\\/g, '\\')
     .replace(/\\"/g, '"');
+}
+
+/** Map script file path → macro context (= 1:1 décomp .include scoping). */
+function getScriptContext(relInput) {
+  const norm = relInput.replace(/\\/g, '/');
+  if (norm.startsWith('data/battle_scripts')) return 'battle_script';
+  if (norm.startsWith('data/battle_ai_scripts')) return 'battle_ai_script';
+  if (norm.startsWith('data/battle_anim_scripts')) return 'battle_anim_script';
+  if (norm.includes('battle_anim/')) return 'battle_anim_script';
+  if (norm.startsWith('data/contest_ai_scripts')) return 'contest_ai_script';
+  if (norm.startsWith('data/scripts')) return 'event';
+  if (norm.includes('mystery_event')) return 'mystery_event_script';
+  // Default : overworld event scripts (covers most data/maps/etc.).
+  return 'event';
 }
 
 /** Process one script-data.ts file. Returns null if no OPS/LABELS. */
@@ -551,6 +652,8 @@ function processScript(absPath, relInput) {
     instrIdxLabels.get(l.instrIndex).push(l);
   }
 
+  const scriptContext = getScriptContext(relInput);
+
   // Pass 1: compute byteOffset per instr & per label
   let byteOffset = 0;
   const labelOffsetsP1 = new Map();
@@ -559,7 +662,7 @@ function processScript(absPath, relInput) {
     if (instrIdxLabels.has(i)) {
       for (const l of instrIdxLabels.get(i)) labelOffsetsP1.set(l.name, byteOffset);
     }
-    const bytes = emitOp(ops[i], labelOffsetsP1, dummyWarnings);
+    const bytes = emitOp(ops[i], labelOffsetsP1, dummyWarnings, 0, null, scriptContext);
     byteOffset += bytes.length;
   }
 
@@ -568,7 +671,7 @@ function processScript(absPath, relInput) {
   const warnings = new Set();
   const fileUnknownCounts = new Map();
   for (let i = 0; i < ops.length; i++) {
-    bytes.push(...emitOp(ops[i], labelOffsetsP1, warnings, 0, fileUnknownCounts));
+    bytes.push(...emitOp(ops[i], labelOffsetsP1, warnings, 0, fileUnknownCounts, scriptContext));
   }
   for (const [k, v] of fileUnknownCounts) {
     unknownOpCounts.set(k, (unknownOpCounts.get(k) || 0) + v);
