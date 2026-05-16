@@ -64,6 +64,9 @@ import {
   MON_DATA_SPECIES, MON_DATA_HP, MON_DATA_HELD_ITEM,
   MON_DATA_LEVEL, MON_DATA_EXP,
 } from './party-storage';
+// 1:1 décomp `AdjustFriendship(mon, event)` — auto-data via pokemon-all-auto.
+import { AdjustFriendship as _adjustFriendshipN34 } from '../decomp-data/auto/src-all/pokemon-all-auto';
+import { FRIENDSHIP_EVENT_GROW_LEVEL as FRIENDSHIP_EVENT_GROW_LEVEL_N34 } from '../decomp-data/auto/include/constants/pokemon-data';
 import {
   HOLD_EFFECT_EXP_SHARE, HOLD_EFFECT_LUCKY_EGG, HOLD_EFFECT_MACHO_BRACE,
 } from '../decomp-data/auto/include/constants/hold_effects-data';
@@ -475,9 +478,10 @@ function Cmd_getexp(ctx: BattleScriptContext): boolean {
             gBattleMons[2].level = newLevel;
           }
 
-          // STUB AdjustFriendship FRIENDSHIP_EVENT_GROW_LEVEL.
-          // STUB BattleScriptPushCursor + jump BattleScript_LevelUp.
-          // Pour MVP : just continue (= advance to state 5).
+          // 1:1 décomp : AdjustFriendship(FRIENDSHIP_EVENT_GROW_LEVEL).
+          // Wired via auto-data (= update mon.friendship +1..+3 selon location/luxury ball).
+          _adjustFriendshipN34(gPlayerParty[monId], FRIENDSHIP_EVENT_GROW_LEVEL_N34);
+          // STUB BattleScriptPushCursor + jump BattleScript_LevelUp (= post-Phase 1 UI).
           gBattleScripting.getexpState = 5;
         } else {
           setBattleMoveDamage(0);
