@@ -2,7 +2,11 @@
 
 **Date** : 2026-05-16
 **Branche** : `upd2`
-**État final** : 40 commits, 0 erreur TS, preview clean (audit + helpers FULL)
+**État final** : 42 commits, 0 erreur TS, preview clean (audit + helpers FULL + Phase 1.3 G + plan wire)
+
+**🎯 Pour la prochaine session post-compact** : Lire en priorité
+`memory/WIRE-BYTECODE-TO-GAMEPLAY-PLAN.md` (= risques connus + plan incrémental
++ devtools + critères succès pour wire bytecode au gameplay).
 
 ## Summary
 
