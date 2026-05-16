@@ -385,7 +385,7 @@ export interface WishFutureKnock {
   wishCounter: number[];          // u8[4]
   wishMonId: number[];            // u8[4]
   weatherDuration: number;        // u8
-  knockedOffMons: number;         // u8 bitfield per battler
+  knockedOffMons: number[];       // u8[NUM_BATTLE_SIDES] bitfield per battler
 }
 
 export const gWishFutureKnock: WishFutureKnock = {
@@ -396,7 +396,7 @@ export const gWishFutureKnock: WishFutureKnock = {
   wishCounter: [0, 0, 0, 0],
   wishMonId: [0, 0, 0, 0],
   weatherDuration: 0,
-  knockedOffMons: 0,
+  knockedOffMons: [0, 0],
 };
 
 /** `gBattlescriptCurrInstr` dans le décomp est un pointer ; ici c'est l'offset
@@ -981,7 +981,8 @@ export function resetBattleState(): void {
   gWishFutureKnock.wishCounter = [0, 0, 0, 0];
   gWishFutureKnock.wishMonId = [0, 0, 0, 0];
   gWishFutureKnock.weatherDuration = 0;
-  gWishFutureKnock.knockedOffMons = 0;
+  gWishFutureKnock.knockedOffMons[0] = 0;
+  gWishFutureKnock.knockedOffMons[1] = 0;
 }
 
 // Expose pour devtools / debug + intra-module access (= éviter circular dep).

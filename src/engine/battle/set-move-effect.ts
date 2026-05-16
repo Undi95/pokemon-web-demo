@@ -19,6 +19,22 @@
 
 import type { BattleScriptContext } from './script-interpreter';
 import { getBattleScriptOffset, Random } from './script-interpreter';
+import { setLastUsedItem as setLastUsedItemSME } from './state';
+import { ITEM_ENIGMA_BERRY } from '../decomp-data/auto/include/constants/items-data';
+import { RecordAbilityBattle as _recordAbilityBattleSME } from './util';
+
+// 1:1 décomp `IS_ITEM_MAIL(itemId)` (mail.h:6-17).
+const _MAIL_ITEMS_SME = new Set([
+  121 /* ITEM_ORANGE_MAIL */, 122 /* ITEM_HARBOR_MAIL */,
+  123 /* ITEM_GLITTER_MAIL */, 124 /* ITEM_MECH_MAIL */,
+  125 /* ITEM_WOOD_MAIL */,    126 /* ITEM_WAVE_MAIL */,
+  127 /* ITEM_BEAD_MAIL */,    128 /* ITEM_SHADOW_MAIL */,
+  129 /* ITEM_TROPIC_MAIL */,  130 /* ITEM_DREAM_MAIL */,
+  131 /* ITEM_FAB_MAIL */,     132 /* ITEM_RETRO_MAIL */,
+]);
+function _isItemMailSME(itemId: number): boolean {
+  return _MAIL_ITEMS_SME.has(itemId);
+}
 import {
   gBattleMons, gBattlerAttacker, gBattlerTarget,
   gEffectBattler, setEffectBattler,
@@ -616,14 +632,51 @@ export function SetMoveEffect(ctx: BattleScriptContext, primary: boolean, certai
         gBattleMons[gBattlerAttacker].status2 |= STATUS2_RAGE;
         // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
       } else if (eff === 31 /* STEAL_ITEM */) {
-        // 1:1 partial : full path nécessite gBattleStruct.changedItems + IS_ITEM_MAIL.
-        // Skip pour MVP — advance.
-        // 1:1 décomp gBattlescriptCurrInstr++ = no-op ici (dispatch déjà advance).
-        // TODO porter STEAL_ITEM full quand gBattleStruct.changedItems portée.
-        void _BATTLE_TYPE_TRAINER_HILL_FLAG; void BATTLE_TYPE_EREADER_TRAINER;
-        void BATTLE_TYPE_FRONTIER; void BATTLE_TYPE_LINK; void BATTLE_TYPE_RECORDED_LINK;
-        void BATTLE_TYPE_SECRET_BASE; void B_SIDE_OPPONENT; void gWishFutureKnock;
-        void gBattlerPartyIndexes;
+        // 1:1 décomp battle_script_commands.c:2738-2803.
+        if (gBattleTypeFlags & BATTLE_TYPE_TRAINER_HILL) {
+          // gBattlescriptCurrInstr++  →  advance (dispatch déjà advance).
+        } else {
+          const sideAttacker = GET_BATTLER_SIDE(gBattlerAttacker);
+          const nonLocalFlags = (BATTLE_TYPE_EREADER_TRAINER | BATTLE_TYPE_FRONTIER
+                               | BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK
+                               | BATTLE_TYPE_SECRET_BASE);
+          if (sideAttacker === B_SIDE_OPPONENT && !(gBattleTypeFlags & nonLocalFlags)) {
+            // Opponents ne stealent pas (= prevent perma loss en wild).
+          } else if (!(gBattleTypeFlags & nonLocalFlags)
+              && (gWishFutureKnock.knockedOffMons[sideAttacker]
+                  & (1 << gBattlerPartyIndexes[gBattlerAttacker]))) {
+            // Knock Off déjà déclenché sur attacker → pas de re-steal.
+          } else if (gBattleMons[gBattlerTarget].item
+              && gBattleMons[gBattlerTarget].ability === ABILITY_STICKY_HOLD) {
+            // Sticky Hold ability bloque steal.
+            ctx.scriptPtrStack.push(ctx.scriptPtr);
+            const off = getBattleScriptOffset('BattleScript_NoItemSteal');
+            if (off >= 0) ctx.scriptPtr = off;
+            setLastUsedAbility(gBattleMons[gBattlerTarget].ability);
+            _recordAbilityBattleSME(gBattlerTarget, gBattleMons[gBattlerTarget].ability);
+          } else if (gBattleMons[gBattlerAttacker].item !== 0 /* ITEM_NONE */
+              || gBattleMons[gBattlerTarget].item === ITEM_ENIGMA_BERRY
+              || _isItemMailSME(gBattleMons[gBattlerTarget].item)
+              || gBattleMons[gBattlerTarget].item === 0 /* ITEM_NONE */) {
+            // Conditions fail (= attacker porte déjà un item, target item mail/none/enigma).
+          } else {
+            // 1:1 décomp full STEAL_ITEM path.
+            gBattleStruct.changedItems[gBattlerAttacker] = gBattleMons[gBattlerTarget].item;
+            setLastUsedItemSME(gBattleMons[gBattlerTarget].item);
+            gBattleMons[gBattlerTarget].item = 0 /* ITEM_NONE */;
+
+            // STUB BtlController_EmitSetMonData REQUEST_HELDITEM_BATTLE (×2).
+            // Notre impl : direct write sur gBattleMons.item.
+            setActiveBattler(gBattlerAttacker);
+            setActiveBattler(gBattlerTarget);
+
+            ctx.scriptPtrStack.push(ctx.scriptPtr);
+            const off = getBattleScriptOffset('BattleScript_ItemSteal');
+            if (off >= 0) ctx.scriptPtr = off;
+
+            gBattleStruct.choicedMove[gBattlerTarget] = 0;
+          }
+        }
       } else if (eff === 32 /* PREVENT_ESCAPE */) {
         gBattleMons[gBattlerTarget].status2 |= STATUS2_ESCAPE_PREVENTION;
         gDisableStructs[gBattlerTarget].battlerPreventingEscape = gBattlerAttacker;
