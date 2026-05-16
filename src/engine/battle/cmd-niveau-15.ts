@@ -62,9 +62,9 @@ import { getBattleMove } from './data/battle-moves';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-/** 1:1 décomp `GetBattlerPosition(battler)` — read from gBattlerPositions[].
- *  Pour MVP single battle, gBattlerPositions est identity. */
-function GetBattlerPosition(battler: number): number { return battler; }
+// 1:1 décomp `GetBattlerPosition(battler)` (battle_anim_mons.c:858) — wired
+// via util.ts (= return gBattlerPositions[battler]).
+import { GetBattlerPosition } from './util';
 
 /** 1:1 décomp `DEFENDER_IS_PROTECTED` macro (battle_script_commands.c:57).
  *  `((gProtectStructs[gBattlerTarget].protected) &&

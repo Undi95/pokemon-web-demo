@@ -289,10 +289,11 @@ function Cmd_tryimprison(ctx: BattleScriptContext): boolean {
 
 // ─── 0xEC pursuitdoubles ──────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_pursuitdoubles. 5 bytes. */
+/** 1:1 décomp Cmd_pursuitdoubles (battle_script_commands.c). 5 bytes.
+ *  BATTLE_PARTNER macro = battler ^ BIT_FLANK (= 2). En single battle, partner
+ *  = attacker ^ 2 (= adversaire opposé). En double, partner = real partner. */
 function Cmd_pursuitdoubles(ctx: BattleScriptContext): boolean {
   const failJump = readWord(ctx);
-  // GetBattlerPosition est identity en MVP single battle.
   const partner = GetBattlerAtPosition(BATTLE_PARTNER(gBattlerAttacker));
   setActiveBattler(partner);
   if ((gBattleTypeFlags & BATTLE_TYPE_DOUBLE)

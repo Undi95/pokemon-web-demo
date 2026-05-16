@@ -44,15 +44,14 @@ const DMG_DOUBLED          = 2;
 // ─── B_ACTION_* (battle.h:27,40) — 1:1 décomp ──────────────────────────────
 const B_ACTION_CANCEL_PARTNER = 12;
 
-// ─── State stubs (= structs pas encore portés) ──────────────────────────────
+// ─── State arrays (= structs portés 1:1 décomp) ────────────────────────────
 
 /** 1:1 décomp `gActionsByTurnOrder[MAX_BATTLERS_COUNT]` — action queue per
- *  turn. Cmd_cancelallactions iterates et set CANCEL_PARTNER. Pour MVP,
- *  on stocke ici. */
+ *  turn. Cmd_cancelallactions iterates et set CANCEL_PARTNER. */
 export const gActionsByTurnOrder: number[] = [0, 0, 0, 0];
 
 /** 1:1 décomp `gBattleStruct.selectionScriptFinished[MAX_BATTLERS_COUNT]` —
- *  flag per battler que la selection script a terminé. Pour MVP, simple array. */
+ *  flag per battler que la selection script a terminé. */
 export const _selectionScriptFinished: boolean[] = [false, false, false, false];
 
 // ─── 0x26 setmultihit ──────────────────────────────────────────────────────
