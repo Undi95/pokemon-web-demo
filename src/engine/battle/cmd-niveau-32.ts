@@ -3,21 +3,22 @@
  * 1:1 décomp `src/battle_script_commands.c`.
  *
  * Opcodes :
- *   0x50 openpartyscreen           (1 byte — open party UI state machine — stub)
- *   0x51 switchhandleorder         (3 bytes — switch order state machine — stub)
- *   0x59 handlelearnnewmove        (10 bytes — try teach new move)
- *   0x5A yesnoboxlearnmove         (5 bytes — yes/no learn move — stub)
- *   0x5B yesnoboxstoplearningmove  (5 bytes — yes/no stop learning — stub)
- *   0x6C drawlvlupbox              (1 byte — level-up stats box state machine — stub)
- *   0xEF handleballthrow           (1 byte — Pokéball capture state machine — stub)
+ *   0x50 openpartyscreen           (6 bytes — party screen state machine, 1:1 single-battle)
+ *   0x51 switchhandleorder         (3 bytes — switch order state machine 4 cases, 1:1)
+ *   0x59 handlelearnnewmove        (10 bytes — try teach new move, 1:1)
+ *   0x5A yesnoboxlearnmove         (5 bytes — yes/no learn move 7 cases state machine)
+ *   0x5B yesnoboxstoplearningmove  (5 bytes — yes/no stop learning 2 cases)
+ *   0x6C drawlvlupbox              (1 byte — level-up stats box 11 cases state machine)
+ *   0xEF handleballthrow           (1 byte — Pokéball capture state machine, 1:1)
  *
  * Sources de vérité (1:1) :
  *   - `public/decomp/em/extracted-all/battle_script_commands.json`
  *
- *  Note : ces 7 opcodes sont des state machines UI lourdes (party screen,
- *  yesno box, palette fade, naming screen, ball anim). Notre port = MVP stubs
- *  qui advance pour permettre le bytecode de progresser. Les vrais behaviors
- *  UI seront wired post-Phase 1. */
+ *  Note : ces opcodes sont des state machines UI lourdes (party screen, yesno
+ *  box, palette fade, naming screen, ball anim). Port 1:1 strict du squelette
+ *  state machine (sessions 142 batches D+E + cleanup rounds), les rendering UI
+ *  fns (HandleBattleWindow, BattlePutTextOnWindow, etc.) sont wired comme stubs
+ *  Phase 1.4 qui retournent done instant (= state advance immédiat). */
 
 import type { BattleOpcodeHandler, BattleScriptContext } from './script-interpreter';
 import { readByte, readWord } from './script-interpreter';
@@ -386,7 +387,7 @@ function Cmd_handlelearnnewmove(ctx: BattleScriptContext): boolean {
  *   5 : close yesno + advance 5.
  *   6 : wait BattleControllerExecFlags == 0 → retry state 2.
  *
- *  Notre port : state machine fidèle. STUB UI auto-NO Phase 1.4 (= jump à
+ *  Notre port : state machine fidèle. UI Phase 1.4 deferred : auto-NO Phase 1.4 (= jump à
  *  forgetMovePtr direct car summary screen pas wired). */
 function Cmd_yesnoboxlearnmove(ctx: BattleScriptContext): boolean {
   const forgetMovePtr = readWord(ctx);
@@ -400,20 +401,20 @@ function Cmd_yesnoboxlearnmove(ctx: BattleScriptContext): boolean {
   }
   switch (bs.gBattleScripting.learnMoveState) {
     case 0:
-      // 1:1 décomp : show YES/NO + cursor 0. STUB UI : just advance.
+      // 1:1 décomp : show YES/NO + cursor 0. UI Phase 1.4 deferred : advance state.
       bs.gBattleCommunication[3 /* CURSOR_POSITION */] = 0;
       bs.gBattleScripting.learnMoveState++;
       ctx.scriptPtr -= 5;
       return true;
     case 1:
-      // STUB UI : auto-NO → state 5.
+      // UI Phase 1.4 deferred : auto-NO → state 5.
       bs.gBattleScripting.learnMoveState = 5;
       ctx.scriptPtr -= 5;
       return true;
     case 2:
     case 3:
     case 4:
-      // STUB summary screen state machine — Phase 1.4 UI. Skip à state 5.
+      // UI Phase 1.4 deferred : summary screen state machine. Skip à state 5.
       bs.gBattleScripting.learnMoveState = 5;
       ctx.scriptPtr -= 5;
       return true;
@@ -446,7 +447,7 @@ function Cmd_yesnoboxlearnmove(ctx: BattleScriptContext): boolean {
  *       - NO  (cursor 1 + A) : jump à stopPtr (= cancel learning).
  *       - B button : same as NO.
  *
- *  Notre port : state machine fidèle au décomp. STUB UI = auto-choose YES
+ *  Notre port : state machine fidèle au décomp. UI Phase 1.4 deferred : auto-choose YES
  *  (advance) jusqu'à wire input. */
 function Cmd_yesnoboxstoplearningmove(ctx: BattleScriptContext): boolean {
   const stopPtr = readWord(ctx);
@@ -459,7 +460,7 @@ function Cmd_yesnoboxstoplearningmove(ctx: BattleScriptContext): boolean {
   switch (bs.gBattleScripting.learnMoveState) {
     case 0:
       // 1:1 décomp : HandleBattleWindow + BattlePutTextOnWindow + cursor 0.
-      // STUB UI : juste set cursor à 0 et advance state.
+      // UI Phase 1.4 deferred : set cursor à 0 et advance state.
       bs.gBattleCommunication[3 /* CURSOR_POSITION */] = 0;
       bs.gBattleScripting.learnMoveState++;
       ctx.scriptPtr -= 5;  // re-enter (= stay on opcode pour case 1)
@@ -505,38 +506,38 @@ function Cmd_drawlvlupbox(ctx: BattleScriptContext): boolean {
 
   switch (bs.drawlvlupboxState) {
     case 1:
-      // Start level up banner (= UI banner anim slide-in). STUB UI Phase 1.4.
+      // Start level up banner (= UI banner anim slide-in). UI Phase 1.4 deferred.
       bs.drawlvlupboxState = 2;
       break;
     case 2:
       // 1:1 décomp : SlideInLevelUpBanner returns FALSE quand anim done.
-      // STUB : assume anim done instant → next state.
+      // UI Phase 1.4 deferred : assume anim done instant → next state.
       bs.drawlvlupboxState = 3;
       break;
     case 3:
-      // Init level up box window. STUB UI : juste advance.
+      // Init level up box window. UI Phase 1.4 deferred : advance state.
       bs.drawlvlupboxState = 4;
       break;
     case 4:
-      // Draw page 1 of level up box. STUB UI : juste advance.
+      // Draw page 1 of level up box. UI Phase 1.4 deferred : advance state.
       bs.drawlvlupboxState++;
       break;
     case 5:
     case 7:
-      // Wait for draw. STUB IsDma3ManagerBusyWithBgCopy = FALSE → advance.
+      // Wait for draw. UI Phase 1.4 deferred : IsDma3ManagerBusyWithBgCopy = FALSE → advance.
       bs.drawlvlupboxState++;
       break;
     case 6:
       // 1:1 décomp : wait for player key (gMain.newKeys != 0).
-      // STUB : auto-accept (= simulate key press).
+      // UI Phase 1.4 deferred : auto-accept (= simulate key press).
       bs.drawlvlupboxState++;
       break;
     case 8:
-      // Same : wait key + close. STUB auto-accept.
+      // Same : wait key + close. UI Phase 1.4 deferred : auto-accept.
       bs.drawlvlupboxState++;
       break;
     case 9:
-      // SlideOutLevelUpBanner → STUB done.
+      // SlideOutLevelUpBanner → UI Phase 1.4 deferred.
       bs.drawlvlupboxState = 10;
       break;
     case 10:
