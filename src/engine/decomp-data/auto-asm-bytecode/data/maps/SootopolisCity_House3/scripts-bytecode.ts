@@ -13,6 +13,6 @@ export const LABELS: Record<string, number> = {
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [107,91,16,0,0,0,0,0,10,5,35,13,128,1,0,34,13,128,1,0,7,1,42,0,0,0,7,1,13,128,0,0,16,0,0,0,0,0,10,4,109,90,16,0,0,0,0,0,10,4,109,90,16,0,0,0,0,0,10,2,90] as const;
+export const BYTECODE: readonly number[] = [107,91,16,0,0,0,0,0,10,5,35,13,128,1,0,34,13,128,1,0,7,1,42,0,0,0,7,1,13,128,0,0,16,0,0,0,0,0,10,4,109,3,16,0,0,0,0,0,10,4,109,3,16,0,0,0,0,0,10,2,3] as const;
 
 export const STATS = { ops: 12, bytes: 61, labels: 4, unknownOps: 0, unresolvedSymbols: 4 } as const;

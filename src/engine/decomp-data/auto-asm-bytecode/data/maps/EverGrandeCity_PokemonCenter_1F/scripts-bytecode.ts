@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
 // Generated: 2026-05-16
-// Stats: ops=52, bytes=230, labels=11, unknownOps=0, unresolvedSymbols=14
+// Stats: ops=52, bytes=231, labels=11, unknownOps=0, unresolvedSymbols=12
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
@@ -10,16 +10,16 @@ export const LABELS: Record<string, number> = {
   "EverGrandeCity_PokemonCenter_1F_OnTransition": 10,
   "EverGrandeCity_PokemonCenter_1F_EventScript_TryShowScott": 23,
   "EverGrandeCity_PokemonCenter_1F_EventScript_Nurse": 36,
-  "EverGrandeCity_PokemonCenter_1F_EventScript_Woman": 51,
-  "EverGrandeCity_PokemonCenter_1F_EventScript_ExpertM": 60,
-  "EverGrandeCity_PokemonCenter_1F_EventScript_Scott": 69,
-  "EverGrandeCity_PokemonCenter_1F_EventScript_ScottExitNorth": 166,
-  "EverGrandeCity_PokemonCenter_1F_EventScript_ScottExit": 191,
-  "EverGrandeCity_PokemonCenter_1F_Movement_ScottExitNorth": 216,
-  "EverGrandeCity_PokemonCenter_1F_Movement_ScottExit": 223,
+  "EverGrandeCity_PokemonCenter_1F_EventScript_Woman": 50,
+  "EverGrandeCity_PokemonCenter_1F_EventScript_ExpertM": 59,
+  "EverGrandeCity_PokemonCenter_1F_EventScript_Scott": 68,
+  "EverGrandeCity_PokemonCenter_1F_EventScript_ScottExitNorth": 167,
+  "EverGrandeCity_PokemonCenter_1F_EventScript_ScottExit": 192,
+  "EverGrandeCity_PokemonCenter_1F_Movement_ScottExitNorth": 217,
+  "EverGrandeCity_PokemonCenter_1F_Movement_ScottExit": 224,
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [3,10,0,0,0,5,0,0,0,0,160,0,0,44,207,1,8,0,23,0,0,0,90,44,0,0,7,0,0,0,0,0,43,25,3,15,113,11,0,0,88,0,0,0,0,0,0,0,110,109,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,2,90,107,91,16,0,0,0,0,0,10,4,105,35,12,128,2,0,34,12,128,2,0,8,1,166,0,0,0,8,1,12,128,0,0,35,12,128,4,0,34,12,128,4,0,8,1,191,0,0,0,8,1,12,128,0,0,35,12,128,3,0,34,12,128,3,0,8,1,191,0,0,0,8,1,12,128,0,0,115,209,1,42,207,1,9,9,0,49,84,0,0,85,0,0,0,0,109,90,80,0,0,216,0,0,0,81,0,0,216,0,0,0,0,0,82,0,0,83,0,0,0,0,15,80,0,0,223,0,0,0,81,0,0,223,0,0,0,0,0,82,0,0,83,0,0,0,0,15,10,8,8,10,8,8,254,8,8,10,10,8,8,254] as const;
+export const BYTECODE: readonly number[] = [3,10,0,0,0,5,0,0,0,0,160,0,0,44,207,1,8,0,23,0,0,0,3,44,0,0,7,0,0,0,0,0,43,25,3,4,23,11,128,0,0,5,0,0,0,0,103,110,109,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,107,91,16,0,0,0,0,0,10,4,105,35,12,128,2,0,34,12,128,2,0,8,1,167,0,0,0,8,1,12,128,0,0,35,12,128,4,0,34,12,128,4,0,8,1,192,0,0,0,8,1,12,128,0,0,35,12,128,3,0,34,12,128,3,0,8,1,192,0,0,0,8,1,12,128,0,0,24,209,64,1,0,42,207,1,48,9,0,49,84,0,0,85,0,0,0,0,109,3,80,0,0,217,0,0,0,81,0,0,217,0,0,0,0,0,82,0,0,83,0,0,0,0,4,80,0,0,224,0,0,0,81,0,0,224,0,0,0,0,0,82,0,0,83,0,0,0,0,4,10,8,8,10,8,8,254,8,8,10,10,8,8,254] as const;
 
-export const STATS = { ops: 52, bytes: 230, labels: 11, unknownOps: 0, unresolvedSymbols: 14 } as const;
+export const STATS = { ops: 52, bytes: 231, labels: 11, unknownOps: 0, unresolvedSymbols: 12 } as const;

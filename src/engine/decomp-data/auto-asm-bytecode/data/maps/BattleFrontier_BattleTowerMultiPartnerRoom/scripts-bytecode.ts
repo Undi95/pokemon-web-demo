@@ -2,48 +2,48 @@
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
 // Generated: 2026-05-16
-// Stats: ops=201, bytes=957, labels=35, unknownOps=0, unresolvedSymbols=23
+// Stats: ops=201, bytes=980, labels=35, unknownOps=0, unresolvedSymbols=21
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
   "BattleFrontier_BattleTowerMultiPartnerRoom_MapScripts": 0,
   "BattleFrontier_BattleTowerMultiPartnerRoom_OnResume": 20,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_OnTransition": 29,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_ChosePartner": 71,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_OnWarp": 119,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TurnPlayerNorth": 127,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_OnFrame": 132,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_ExitRoom": 148,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_EnterRoom": 159,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterRoom": 253,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_AttendantBlockExit": 255,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Attendant": 258,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_QuitChallenge": 306,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_EnterElevator": 333,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_MoveToElevator": 409,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_MoveToElevatorEast": 450,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_MoveToElevatorWest": 491,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterElevator": 532,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterElevatorEast": 536,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEneterElevatorWest": 540,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_AttendantEnterElevator": 544,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner1": 547,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner": 559,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_RejectPartner": 788,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_PartnerExit": 806,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_PartnerExitSouth": 831,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PartnerExit": 856,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PartnerExitSouth": 864,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner2": 873,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner3": 885,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner4": 897,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner5": 909,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner6": 921,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner7": 933,
-  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner8": 945,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_OnTransition": 30,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_ChosePartner": 73,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_OnWarp": 131,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TurnPlayerNorth": 139,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_OnFrame": 144,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_ExitRoom": 160,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_EnterRoom": 172,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterRoom": 267,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_AttendantBlockExit": 269,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Attendant": 272,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_QuitChallenge": 318,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_EnterElevator": 348,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_MoveToElevator": 424,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_MoveToElevatorEast": 465,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_MoveToElevatorWest": 506,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterElevator": 547,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEnterElevatorEast": 551,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PlayerEneterElevatorWest": 555,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_AttendantEnterElevator": 559,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner1": 562,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_TalkToPotentialPartner": 575,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_RejectPartner": 804,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_PartnerExit": 822,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_PartnerExitSouth": 847,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PartnerExit": 872,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_Movement_PartnerExitSouth": 880,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner2": 889,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner3": 902,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner4": 915,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner5": 928,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner6": 941,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner7": 954,
+  "BattleFrontier_BattleTowerMultiPartnerRoom_EventScript_Partner8": 967,
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [5,20,0,0,0,3,29,0,0,0,4,119,0,0,0,2,132,0,0,0,113,4,17,0,38,0,0,0,90,44,82,1,7,1,71,0,0,0,43,199,2,43,200,2,43,201,2,43,202,2,43,203,2,43,204,2,42,96,3,42,97,3,113,4,10,0,38,0,0,0,90,113,16,7,0,113,17,7,0,113,18,7,0,113,19,7,0,113,20,7,0,113,21,7,0,113,22,7,0,113,23,7,0,113,0,1,0,113,0,1,0,100,0,0,10,0,2,0,90,0,0,1,0,127,0,0,0,92,255,0,2,90,0,0,0,0,159,0,0,0,0,0,1,0,148,0,0,0,106,113,0,0,0,89,77,1,0,0,90,106,80,255,0,253,0,0,0,81,255,0,253,0,0,0,0,0,82,0,0,83,0,0,0,0,80,0,0,255,0,0,0,81,0,0,255,0,0,0,0,0,82,0,0,83,0,0,0,0,101,0,0,80,255,0,0,0,0,0,81,255,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,16,0,0,0,0,0,10,4,38,0,0,0,113,0,1,0,108,90,8,254,10,37,254,107,91,104,0,0,0,0,0,0,0,113,20,8,94,1,0,35,13,128,0,0,34,13,128,0,0,7,1,50,1,0,0,7,1,13,128,0,0,16,0,0,0,0,0,10,4,109,90,113,4,2,0,113,5,6,0,26,6,128,1,0,113,6,1,0,38,0,0,0,89,0,0,0,0,90,16,0,0,0,0,0,10,4,105,80,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,173,10,0,1,0,175,88,153,1,0,0,174,10,0,1,0,175,58,0,0,255,255,255,255,255,1,255,255,255,255,255,1,0,6,0,1,6,0,0,0,0,108,90,80,0,0,32,2,0,0,81,0,0,32,2,0,0,0,0,80,255,0,20,2,0,0,81,255,0,20,2,0,0,0,0,82,0,0,83,0,0,0,0,15,80,0,0,32,2,0,0,81,0,0,32,2,0,0,0,0,80,255,0,24,2,0,0,81,255,0,24,2,0,0,0,0,82,0,0,83,0,0,0,0,15,80,0,0,32,2,0,0,81,0,0,32,2,0,0,0,0,80,255,0,28,2,0,0,81,255,0,28,2,0,0,0,0,82,0,0,83,0,0,0,0,15,9,9,84,254,11,9,84,254,10,9,84,254,9,84,254,107,91,113,0,0,0,89,47,2,0,0,90,44,82,1,7,1,20,3,0,0,113,4,11,0,113,5,0,0,38,0,0,0,0,0,0,110,113,4,11,0,113,5,1,0,38,0,0,0,0,0,0,110,113,4,11,0,113,5,2,0,38,0,0,0,0,0,0,113,20,8,94,1,0,26,0,128,13,128,35,0,128,1,0,34,0,128,1,0,35,20,3,0,0,34,20,3,0,0,7,1,0,0,0,0,7,1,20,3,0,0,35,0,128,127,0,34,0,128,127,0,35,20,3,0,0,34,20,3,0,0,7,1,0,0,0,0,7,1,20,3,0,0,113,4,11,0,113,5,3,0,38,0,0,0,0,0,0,110,105,35,12,128,1,0,34,12,128,1,0,8,5,38,3,0,0,8,5,12,128,0,0,35,12,128,1,0,34,12,128,1,0,8,1,63,3,0,0,8,1,12,128,0,0,84,15,128,85,15,128,0,0,42,82,1,59,0,0,255,255,255,255,255,10,255,255,255,255,255,10,0,3,0,10,3,0,0,0,0,109,90,113,4,11,0,113,5,4,0,38,0,0,0,0,0,0,110,109,90,80,15,128,88,3,0,0,81,15,128,88,3,0,0,0,0,82,0,0,83,0,0,0,0,15,80,15,128,96,3,0,0,81,15,128,96,3,0,0,0,0,82,0,0,83,0,0,0,0,15,22,22,22,22,22,22,22,254,23,22,22,22,22,22,22,22,254,107,91,113,0,1,0,89,47,2,0,0,90,107,91,113,0,2,0,89,47,2,0,0,90,107,91,113,0,3,0,89,47,2,0,0,90,107,91,113,0,4,0,89,47,2,0,0,90,107,91,113,0,5,0,89,47,2,0,0,90,107,91,113,0,6,0,89,47,2,0,0,90,107,91,113,0,7,0,89,47,2,0,0,90] as const;
+export const BYTECODE: readonly number[] = [5,20,0,0,0,3,30,0,0,0,4,131,0,0,0,2,144,0,0,0,23,4,128,17,0,38,0,0,58,3,44,82,1,7,1,73,0,0,0,43,199,2,43,200,2,43,201,2,43,202,2,43,203,2,43,204,2,42,96,3,42,97,3,23,4,128,10,0,38,0,0,58,3,23,16,64,7,0,23,17,64,7,0,23,18,64,7,0,23,19,64,7,0,23,20,64,7,0,23,21,64,7,0,23,22,64,7,0,23,23,64,7,0,23,0,0,1,0,23,0,0,1,0,100,0,0,10,0,2,0,3,0,0,1,0,139,0,0,0,92,255,0,2,3,0,0,0,0,172,0,0,0,0,0,1,0,160,0,0,0,106,23,0,0,0,0,6,92,1,0,0,3,106,80,255,0,11,1,0,0,81,255,0,11,1,0,0,0,0,82,0,0,83,0,0,0,0,80,0,0,13,1,0,0,81,0,0,13,1,0,0,0,0,82,0,0,83,0,0,0,0,101,0,0,80,255,0,0,0,0,0,81,255,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,16,0,0,0,0,0,10,4,38,0,0,58,23,0,0,1,0,108,3,8,254,10,37,254,107,91,104,0,0,0,0,103,113,20,8,94,1,0,35,13,128,0,0,34,13,128,0,0,7,1,62,1,0,0,7,1,13,128,0,0,16,0,0,0,0,0,10,4,109,3,23,4,128,2,0,23,5,128,6,0,26,6,128,1,0,23,6,128,1,0,38,0,0,58,6,0,0,0,0,3,16,0,0,0,0,0,10,4,105,80,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,173,10,0,1,0,175,5,168,1,0,0,174,10,0,1,0,175,58,0,0,255,255,255,255,255,1,255,255,255,255,255,1,0,6,0,1,6,0,0,0,58,108,3,80,0,0,47,2,0,0,81,0,0,47,2,0,0,0,0,80,255,0,35,2,0,0,81,255,0,35,2,0,0,0,0,82,0,0,83,0,0,0,0,4,80,0,0,47,2,0,0,81,0,0,47,2,0,0,0,0,80,255,0,39,2,0,0,81,255,0,39,2,0,0,0,0,82,0,0,83,0,0,0,0,4,80,0,0,47,2,0,0,81,0,0,47,2,0,0,0,0,80,255,0,43,2,0,0,81,255,0,43,2,0,0,0,0,82,0,0,83,0,0,0,0,4,9,9,84,254,11,9,84,254,10,9,84,254,9,84,254,107,91,23,0,0,0,0,6,63,2,0,0,3,44,82,1,7,1,36,3,0,0,23,4,128,11,0,23,5,128,0,0,38,0,0,58,103,110,23,4,128,11,0,23,5,128,1,0,38,0,0,58,103,110,23,4,128,11,0,23,5,128,2,0,38,0,0,58,103,113,20,8,94,1,0,26,0,128,13,128,35,0,128,1,0,34,0,128,1,0,35,36,3,0,0,34,36,3,0,0,7,1,0,0,0,0,7,1,36,3,0,0,35,0,128,127,0,34,0,128,127,0,35,36,3,0,0,34,36,3,0,0,7,1,0,0,0,0,7,1,36,3,0,0,23,4,128,11,0,23,5,128,3,0,38,0,0,58,103,110,105,35,12,128,1,0,34,12,128,1,0,8,5,54,3,0,0,8,5,12,128,0,0,35,12,128,1,0,34,12,128,1,0,8,1,79,3,0,0,8,1,12,128,0,0,84,15,128,85,15,128,0,0,42,82,1,59,0,0,255,255,255,255,255,10,255,255,255,255,255,10,0,3,0,10,3,0,0,0,58,109,3,23,4,128,11,0,23,5,128,4,0,38,0,0,58,103,110,109,3,80,15,128,104,3,0,0,81,15,128,104,3,0,0,0,0,82,0,0,83,0,0,0,0,4,80,15,128,112,3,0,0,81,15,128,112,3,0,0,0,0,82,0,0,83,0,0,0,0,4,22,22,22,22,22,22,22,254,23,22,22,22,22,22,22,22,254,107,91,23,0,0,1,0,6,63,2,0,0,3,107,91,23,0,0,2,0,6,63,2,0,0,3,107,91,23,0,0,3,0,6,63,2,0,0,3,107,91,23,0,0,4,0,6,63,2,0,0,3,107,91,23,0,0,5,0,6,63,2,0,0,3,107,91,23,0,0,6,0,6,63,2,0,0,3,107,91,23,0,0,7,0,6,63,2,0,0,3] as const;
 
-export const STATS = { ops: 201, bytes: 957, labels: 35, unknownOps: 0, unresolvedSymbols: 23 } as const;
+export const STATS = { ops: 201, bytes: 980, labels: 35, unknownOps: 0, unresolvedSymbols: 21 } as const;

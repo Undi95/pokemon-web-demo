@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
 // Generated: 2026-05-16
-// Stats: ops=147, bytes=798, labels=38, unknownOps=0, unresolvedSymbols=34
+// Stats: ops=147, bytes=801, labels=38, unknownOps=0, unresolvedSymbols=34
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
@@ -12,41 +12,41 @@ export const LABELS: Record<string, number> = {
   "SlateportCity_OceanicMuseum_1F_EventScript_PayEntranceFeeRight": 40,
   "SlateportCity_OceanicMuseum_1F_EventScript_PayEntranceFee": 71,
   "SlateportCity_OceanicMuseum_1F_EventScript_CheckMoneyForFee": 135,
-  "SlateportCity_OceanicMuseum_1F_EventScript_NotEnoughMoney": 193,
-  "SlateportCity_OceanicMuseum_1F_EventScript_AllowEntranceAnyway": 240,
-  "SlateportCity_OceanicMuseum_1F_Movement_PushPlayerBackFromCounter": 257,
-  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt1": 259,
-  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt2": 268,
-  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt3": 277,
-  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt4": 286,
-  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt5": 295,
-  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt6": 304,
-  "SlateportCity_OceanicMuseum_1F_EventScript_WhirlpoolExperiment": 313,
-  "SlateportCity_OceanicMuseum_1F_EventScript_WaterfallExperiment": 322,
-  "SlateportCity_OceanicMuseum_1F_EventScript_OceanSoilDisplay": 331,
-  "SlateportCity_OceanicMuseum_1F_EventScript_BeachSandDisplay": 340,
-  "SlateportCity_OceanicMuseum_1F_EventScript_OceanicMinifact1": 349,
-  "SlateportCity_OceanicMuseum_1F_EventScript_OceanicMinifact2": 358,
-  "SlateportCity_OceanicMuseum_1F_EventScript_OceanicMinifact3": 367,
-  "SlateportCity_OceanicMuseum_1F_EventScript_FossilDisplay": 376,
-  "SlateportCity_OceanicMuseum_1F_EventScript_DepthMeasuringMachine": 385,
-  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumPatron1": 394,
-  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumPatron2": 403,
-  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumPatron3": 412,
-  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumPatron4": 421,
-  "SlateportCity_OceanicMuseum_1F_EventScript_FamiliarGrunt": 430,
-  "SlateportCity_OceanicMuseum_1F_EventScript_FamiliarGruntExitNorth": 628,
-  "SlateportCity_OceanicMuseum_1F_EventScript_FamiliarGruntExitSouth": 674,
-  "SlateportCity_OceanicMuseum_1F_EventScript_FamiliarGruntExitWestEast": 704,
-  "SlateportCity_OceanicMuseum_1F_EventScript_FamiliarGruntExited": 750,
-  "SlateportCity_OceanicMuseum_1F_EventScript_NoRoomForThief": 766,
-  "SlateportCity_OceanicMuseum_1F_Movement_PlayerWatchGruntExitNorth": 776,
-  "SlateportCity_OceanicMuseum_1F_Movement_PlayerWatchGruntExitWestEast": 781,
-  "SlateportCity_OceanicMuseum_1F_Movement_FamiliarGruntExit": 784,
-  "SlateportCity_OceanicMuseum_1F_Movement_FamiliarGruntExitNorth": 791,
+  "SlateportCity_OceanicMuseum_1F_EventScript_NotEnoughMoney": 194,
+  "SlateportCity_OceanicMuseum_1F_EventScript_AllowEntranceAnyway": 241,
+  "SlateportCity_OceanicMuseum_1F_Movement_PushPlayerBackFromCounter": 259,
+  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt1": 261,
+  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt2": 270,
+  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt3": 279,
+  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt4": 288,
+  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt5": 297,
+  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumGrunt6": 306,
+  "SlateportCity_OceanicMuseum_1F_EventScript_WhirlpoolExperiment": 315,
+  "SlateportCity_OceanicMuseum_1F_EventScript_WaterfallExperiment": 324,
+  "SlateportCity_OceanicMuseum_1F_EventScript_OceanSoilDisplay": 333,
+  "SlateportCity_OceanicMuseum_1F_EventScript_BeachSandDisplay": 342,
+  "SlateportCity_OceanicMuseum_1F_EventScript_OceanicMinifact1": 351,
+  "SlateportCity_OceanicMuseum_1F_EventScript_OceanicMinifact2": 360,
+  "SlateportCity_OceanicMuseum_1F_EventScript_OceanicMinifact3": 369,
+  "SlateportCity_OceanicMuseum_1F_EventScript_FossilDisplay": 378,
+  "SlateportCity_OceanicMuseum_1F_EventScript_DepthMeasuringMachine": 387,
+  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumPatron1": 396,
+  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumPatron2": 405,
+  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumPatron3": 414,
+  "SlateportCity_OceanicMuseum_1F_EventScript_MuseumPatron4": 423,
+  "SlateportCity_OceanicMuseum_1F_EventScript_FamiliarGrunt": 432,
+  "SlateportCity_OceanicMuseum_1F_EventScript_FamiliarGruntExitNorth": 631,
+  "SlateportCity_OceanicMuseum_1F_EventScript_FamiliarGruntExitSouth": 677,
+  "SlateportCity_OceanicMuseum_1F_EventScript_FamiliarGruntExitWestEast": 707,
+  "SlateportCity_OceanicMuseum_1F_EventScript_FamiliarGruntExited": 753,
+  "SlateportCity_OceanicMuseum_1F_EventScript_NoRoomForThief": 769,
+  "SlateportCity_OceanicMuseum_1F_Movement_PlayerWatchGruntExitNorth": 779,
+  "SlateportCity_OceanicMuseum_1F_Movement_PlayerWatchGruntExitWestEast": 784,
+  "SlateportCity_OceanicMuseum_1F_Movement_FamiliarGruntExit": 787,
+  "SlateportCity_OceanicMuseum_1F_Movement_FamiliarGruntExitNorth": 794,
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [16,0,0,0,0,0,10,2,90,106,80,255,0,0,0,0,0,81,255,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,89,71,0,0,0,90,106,80,255,0,0,0,0,0,81,255,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,89,71,0,0,0,90,148,0,0,0,16,0,0,0,0,0,10,5,35,13,128,1,0,34,13,128,1,0,7,1,135,0,0,0,7,1,13,128,0,0,105,149,0,0,80,255,0,1,1,0,0,81,255,0,1,1,0,0,0,0,82,0,0,83,0,0,0,0,108,90,147,50,0,0,0,0,35,13,128,0,0,34,13,128,0,0,7,1,193,0,0,0,7,1,13,128,0,0,9,95,0,146,50,0,0,0,0,150,0,0,0,16,0,0,0,0,0,10,4,113,170,1,0,149,0,0,108,90,44,149,0,7,0,240,0,0,0,16,0,0,0,0,0,10,4,105,149,0,0,80,255,0,1,1,0,0,81,255,0,1,1,0,0,0,0,82,0,0,83,0,0,0,0,108,90,16,0,0,0,0,0,10,4,113,170,1,0,149,0,0,108,90,8,254,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,2,90,107,91,4,8,9,21,0,80,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,80,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,16,0,0,0,0,0,10,4,27,0,128,0,0,27,1,128,1,0,10,0,35,13,128,0,0,34,13,128,0,0,7,1,254,2,0,0,7,1,13,128,0,0,42,13,1,16,0,0,0,0,0,10,4,105,35,12,128,2,0,34,12,128,2,0,7,1,116,2,0,0,7,1,12,128,0,0,35,12,128,1,0,34,12,128,1,0,7,1,162,2,0,0,7,1,12,128,0,0,35,12,128,3,0,34,12,128,3,0,7,1,192,2,0,0,7,1,12,128,0,0,35,12,128,4,0,34,12,128,4,0,7,1,192,2,0,0,7,1,12,128,0,0,90,80,255,0,8,3,0,0,81,255,0,8,3,0,0,0,0,80,0,0,23,3,0,0,81,0,0,23,3,0,0,0,0,82,0,0,83,0,0,0,0,89,238,2,0,0,90,80,0,0,16,3,0,0,81,0,0,16,3,0,0,0,0,82,0,0,83,0,0,0,0,89,238,2,0,0,90,80,255,0,13,3,0,0,81,255,0,13,3,0,0,0,0,80,0,0,16,3,0,0,81,0,0,16,3,0,0,0,0,82,0,0,83,0,0,0,0,89,238,2,0,0,90,42,197,3,9,9,0,84,0,0,85,0,0,0,0,109,90,16,0,0,0,0,0,10,4,109,90,20,19,18,37,254,20,37,254,0,21,21,21,21,19,254,24,21,21,21,21,19,254] as const;
+export const BYTECODE: readonly number[] = [16,0,0,0,0,0,10,2,3,106,80,255,0,0,0,0,0,81,255,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,6,71,0,0,0,3,106,80,255,0,0,0,0,0,81,255,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,6,71,0,0,0,3,148,0,0,0,16,0,0,0,0,0,10,5,35,13,128,1,0,34,13,128,1,0,7,1,135,0,0,0,7,1,13,128,0,0,105,149,0,0,80,255,0,3,1,0,0,81,255,0,3,1,0,0,0,0,82,0,0,83,0,0,0,0,108,3,147,50,0,0,0,0,35,13,128,0,0,34,13,128,0,0,7,1,194,0,0,0,7,1,13,128,0,0,48,95,0,146,50,0,0,0,0,150,0,0,0,16,0,0,0,0,0,10,4,23,170,64,1,0,149,0,0,108,3,44,149,0,7,0,241,0,0,0,16,0,0,0,0,0,10,4,105,149,0,0,80,255,0,3,1,0,0,81,255,0,3,1,0,0,0,0,82,0,0,83,0,0,0,0,108,3,16,0,0,0,0,0,10,4,23,170,64,1,0,149,0,0,108,3,8,254,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,107,91,41,8,0,48,21,0,80,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,80,0,0,0,0,0,0,81,0,0,0,0,0,0,0,0,82,0,0,83,0,0,0,0,16,0,0,0,0,0,10,4,27,0,128,0,0,27,1,128,1,0,10,0,35,13,128,0,0,34,13,128,0,0,7,1,1,3,0,0,7,1,13,128,0,0,42,13,1,16,0,0,0,0,0,10,4,105,35,12,128,2,0,34,12,128,2,0,7,1,119,2,0,0,7,1,12,128,0,0,35,12,128,1,0,34,12,128,1,0,7,1,165,2,0,0,7,1,12,128,0,0,35,12,128,3,0,34,12,128,3,0,7,1,195,2,0,0,7,1,12,128,0,0,35,12,128,4,0,34,12,128,4,0,7,1,195,2,0,0,7,1,12,128,0,0,3,80,255,0,11,3,0,0,81,255,0,11,3,0,0,0,0,80,0,0,26,3,0,0,81,0,0,26,3,0,0,0,0,82,0,0,83,0,0,0,0,6,241,2,0,0,3,80,0,0,19,3,0,0,81,0,0,19,3,0,0,0,0,82,0,0,83,0,0,0,0,6,241,2,0,0,3,80,255,0,16,3,0,0,81,255,0,16,3,0,0,0,0,80,0,0,19,3,0,0,81,0,0,19,3,0,0,0,0,82,0,0,83,0,0,0,0,6,241,2,0,0,3,42,197,3,48,9,0,84,0,0,85,0,0,0,0,109,3,16,0,0,0,0,0,10,4,109,3,20,19,18,37,254,20,37,254,0,21,21,21,21,19,254,24,21,21,21,21,19,254] as const;
 
-export const STATS = { ops: 147, bytes: 798, labels: 38, unknownOps: 0, unresolvedSymbols: 34 } as const;
+export const STATS = { ops: 147, bytes: 801, labels: 38, unknownOps: 0, unresolvedSymbols: 34 } as const;

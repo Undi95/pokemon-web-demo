@@ -16,6 +16,6 @@ export const LABELS: Record<string, number> = {
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [3,10,0,0,0,5,14,0,0,0,42,0,0,90,167,3,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,2,90,16,0,0,0,0,0,10,3,90] as const;
+export const BYTECODE: readonly number[] = [3,10,0,0,0,5,14,0,0,0,42,0,0,3,167,3,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,2,3,16,0,0,0,0,0,10,3,3] as const;
 
 export const STATS = { ops: 14, bytes: 53, labels: 7, unknownOps: 0, unresolvedSymbols: 5 } as const;

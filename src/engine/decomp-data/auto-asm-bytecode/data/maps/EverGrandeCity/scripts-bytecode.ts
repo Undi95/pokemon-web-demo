@@ -2,7 +2,7 @@
 // Do not edit manually — re-run `npm run extract:bytecode` to refresh.
 //
 // Generated: 2026-05-16
-// Stats: ops=12, bytes=50, labels=6, unknownOps=0, unresolvedSymbols=7
+// Stats: ops=12, bytes=51, labels=6, unknownOps=0, unresolvedSymbols=7
 
 /** Label name → byte offset within BYTECODE. */
 export const LABELS: Record<string, number> = {
@@ -15,6 +15,6 @@ export const LABELS: Record<string, number> = {
 };
 
 /** Compiled bytecode — pass to a VM along with LABELS for jump resolution. */
-export const BYTECODE: readonly number[] = [3,5,0,0,0,44,0,0,8,1,0,0,0,0,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,3,90,16,0,0,0,0,0,10,3,90,42,0,0,113,0,1,0,90] as const;
+export const BYTECODE: readonly number[] = [3,5,0,0,0,44,0,0,8,1,0,0,0,0,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,16,0,0,0,0,0,10,3,3,42,0,0,23,0,0,1,0,3] as const;
 
-export const STATS = { ops: 12, bytes: 50, labels: 6, unknownOps: 0, unresolvedSymbols: 7 } as const;
+export const STATS = { ops: 12, bytes: 51, labels: 6, unknownOps: 0, unresolvedSymbols: 7 } as const;
