@@ -245,7 +245,12 @@ function _decodeTextBuff(buf: Uint8Array): string {
         break;
       }
       case B_BUFF_NUMBER: {
-        const byteCount = buf[i++];
+        // 1:1 décomp battle_message.c:2866-2881 :
+        //   src[+1] = byteCount, src[+2] = maxDigits, src[+3..] = value (byteCount bytes)
+        //   srcID advance = byteCount + 3 (total).
+        const byteCount = buf[i++];   // i now → maxDigits
+        const _maxDigits = buf[i++];  // i now → value byte 0
+        void _maxDigits;
         let val = 0;
         for (let b = 0; b < byteCount && i < buf.length; b++) {
           val |= buf[i++] << (b * 8);

@@ -95,6 +95,8 @@ export const B_BUFF_EOS               = 0xFF;
 
 /** 1:1 décomp `EWRAM_DATA u8 gBattleTextBuff1[TEXT_BUFF_ARRAY_COUNT]`. */
 export const gBattleTextBuff1: Uint8Array = new Uint8Array(TEXT_BUFF_ARRAY_COUNT);
+// Expose via globalThis pour memory-map (= 1:1 native opcodes copyarray etc.).
+(globalThis as { __gBattleTextBuff1?: Uint8Array }).__gBattleTextBuff1 = gBattleTextBuff1;
 /** 1:1 décomp `EWRAM_DATA u8 gBattleTextBuff2[TEXT_BUFF_ARRAY_COUNT]`. */
 export const gBattleTextBuff2: Uint8Array = new Uint8Array(TEXT_BUFF_ARRAY_COUNT);
 /** 1:1 décomp `EWRAM_DATA u8 gBattleTextBuff3[TEXT_BUFF_ARRAY_COUNT]`. */

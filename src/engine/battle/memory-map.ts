@@ -31,12 +31,17 @@
 
 import { gBattleMons, gBattlerAttacker, gBattlerTarget } from './state';
 
-/** Signature 1:1 décomp pour un memory accessor d'une variable battle. */
+/** Signature 1:1 décomp pour un memory accessor d'une variable battle.
+ *
+ *  Phase 1.4 J : ajout offset arg pour array accessors (= sMULTIHIT_STRING,
+ *  gBattleTextBuff1, gBattleCommunication, etc.). Scalar accessors ignorent
+ *  l'offset (= toujours read/write l'unique scalar). */
 export interface MemoryAccessor {
-  /** Read current value (= u8/u16/u32 selon size). */
-  read(): number;
-  /** Write new value (= clamp à size selon u8/u16/u32). */
-  write(value: number): void;
+  /** Read current value (= u8/u16/u32 selon size). Offset (default 0)
+   *  pour array accessors (= byte index dans le tableau). */
+  read(offset?: number): number;
+  /** Write new value (= clamp à size selon u8/u16/u32). Offset idem read. */
+  write(value: number, offset?: number): void;
   /** Byte width de la variable (1=u8, 2=u16, 4=u32). */
   size: 1 | 2 | 4;
 }
@@ -225,8 +230,14 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
   },
   sMULTIHIT_STRING: {
     size: 1,
-    read: () => (globalThis as { __battleState?: { gBattleScripting?: { multihitString: number[] } } }).__battleState?.gBattleScripting?.multihitString?.[0] ?? 0,
-    write: (v) => { const bs = (globalThis as { __battleState?: { gBattleScripting?: { multihitString: number[] } } }).__battleState?.gBattleScripting; if (bs?.multihitString) bs.multihitString[0] = v; },
+    read: (offset = 0) => {
+      const bs = (globalThis as { __battleState?: { gBattleScripting?: { multihitString: number[] } } }).__battleState?.gBattleScripting;
+      return bs?.multihitString?.[offset] ?? 0;
+    },
+    write: (v, offset = 0) => {
+      const bs = (globalThis as { __battleState?: { gBattleScripting?: { multihitString: number[] } } }).__battleState?.gBattleScripting;
+      if (bs?.multihitString) bs.multihitString[offset] = v & 0xFF;
+    },
   },
   sSTAT_ANIM_PLAYED: {
     size: 1,
@@ -267,10 +278,10 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
   // ─── gBattleCommunication (= u8[6] array used as scratch for chooser/state) ─
   gBattleCommunication: {
     size: 1,
-    read: () => (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication?.[0] ?? 0,
-    write: (v) => {
+    read: (offset = 0) => (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication?.[offset] ?? 0,
+    write: (v, offset = 0) => {
       const bc = (globalThis as { __battleState?: { gBattleCommunication?: number[] } }).__battleState?.gBattleCommunication;
-      if (bc) bc[0] = v & 0xFF;
+      if (bc) bc[offset] = v & 0xFF;
     },
   },
 
@@ -318,8 +329,14 @@ export const MEMORY_SYMBOLS: Record<string, MemoryAccessor> = {
   // gBattleTextBuff1 (= u8[~16] text buffer) — Note : text buffer accessible via text-buffers.ts module.
   gBattleTextBuff1: {
     size: 1,
-    read: () => 0,
-    write: () => { /* text buffer Phase 1.4 UI integration */ },
+    read: (offset = 0) => {
+      const tb = (globalThis as { __gBattleTextBuff1?: Uint8Array }).__gBattleTextBuff1;
+      return tb?.[offset] ?? 0;
+    },
+    write: (v, offset = 0) => {
+      const tb = (globalThis as { __gBattleTextBuff1?: Uint8Array }).__gBattleTextBuff1;
+      if (tb && offset < tb.length) tb[offset] = v & 0xFF;
+    },
   },
 };
 
@@ -340,10 +357,18 @@ export const SYMBOL_MASK   = 0x0FFFFFFF;
  *  des symbols battle script étaient no-op. Fix : `>>> 0` force unsigned. */
 export function resolveAddress(addr: number): MemoryAccessor | null {
   if (((addr & SYMBOL_MARKER) >>> 0) === SYMBOL_MARKER) {
-    const id = addr & SYMBOL_MASK;
+    // Phase 1.4 J : id = bits 0-15, offset = bits 16-27 (= array index pour
+    // accessors multi-byte comme sMULTIHIT_STRING / gBattleTextBuff1).
+    const id = addr & 0xFFFF;
     return SYMBOLS_BY_ID[id] ?? null;
   }
   return null;  // Real GBA address — not mapped in Phase 1.3 G.
+}
+
+/** Phase 1.4 J : extract offset depuis address pour array accessors.
+ *  Offset = bits 16-27 (0..4095). */
+export function resolveAddressOffset(addr: number): number {
+  return ((addr >>> 16) & 0xFFF);
 }
 
 /** Index-based symbol lookup table (= built dynamiquement par compiler).

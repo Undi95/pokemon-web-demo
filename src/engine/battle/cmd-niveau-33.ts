@@ -46,7 +46,7 @@ import {
 import {
   BtlController_EmitHealthBarUpdate, MarkBattlerForControllerExec,
 } from './battle-controllers';
-import { resolveAddress, initMemoryMap } from './memory-map';
+import { resolveAddress, resolveAddressOffset, initMemoryMap } from './memory-map';
 
 // 1:1 décomp CMP_* (battle_script_commands.c) — jumpif* condition codes.
 const CMP_EQUAL          = 0;
@@ -101,7 +101,7 @@ function Cmd_jumpifbyte(ctx: BattleScriptContext): boolean {
   const jumpPtr = readWord(ctx);
   const acc = resolveAddress(addr);
   if (!acc) return false;  // unresolved address.
-  const memVal = acc.read() & 0xFF;
+  const memVal = acc.read(resolveAddressOffset(addr)) & 0xFF;
   if (_compareJump(caseID, memVal, value)) ctx.scriptPtr = jumpPtr;
   return false;
 }
@@ -116,7 +116,7 @@ function Cmd_jumpifhalfword(ctx: BattleScriptContext): boolean {
   const jumpPtr = readWord(ctx);
   const acc = resolveAddress(addr);
   if (!acc) return false;  // Fallback : unresolved symbol → no jump (= safe).
-  const memVal = acc.read() & 0xFFFF;
+  const memVal = acc.read(resolveAddressOffset(addr)) & 0xFFFF;
   if (_compareJump(caseID, memVal, value)) ctx.scriptPtr = jumpPtr;
   return false;
 }
@@ -131,7 +131,7 @@ function Cmd_jumpifword(ctx: BattleScriptContext): boolean {
   const jumpPtr = readWord(ctx);
   const acc = resolveAddress(addr);
   if (!acc) return false;
-  const memVal = acc.read() >>> 0;
+  const memVal = acc.read(resolveAddressOffset(addr)) >>> 0;
   if (_compareJump(caseID, memVal, value)) ctx.scriptPtr = jumpPtr;
   return false;
 }
@@ -142,13 +142,19 @@ function Cmd_jumpifword(ctx: BattleScriptContext): boolean {
 function Cmd_jumpifarrayequal(ctx: BattleScriptContext): boolean {
   const addr1 = readWord(ctx);
   const addr2 = readWord(ctx);
-  const _size = readByte(ctx);
+  const size = readByte(ctx);
   const jumpPtr = readWord(ctx);
   const acc1 = resolveAddress(addr1);
   const acc2 = resolveAddress(addr2);
   if (!acc1 || !acc2) return false;  // Fallback : unresolved symbol → no jump.
-  // 1:1 décomp : memcmp byte-par-byte ; pour single-cell access, compare values.
-  if (acc1.read() === acc2.read()) ctx.scriptPtr = jumpPtr;
+  // 1:1 décomp : memcmp byte-par-byte ; iterate size bytes via offsets.
+  const off1 = resolveAddressOffset(addr1);
+  const off2 = resolveAddressOffset(addr2);
+  let equal = true;
+  for (let i = 0; i < size; i++) {
+    if (acc1.read(off1 + i) !== acc2.read(off2 + i)) { equal = false; break; }
+  }
+  if (equal) ctx.scriptPtr = jumpPtr;
   return false;
 }
 
@@ -157,12 +163,18 @@ function Cmd_jumpifarrayequal(ctx: BattleScriptContext): boolean {
 function Cmd_jumpifarraynotequal(ctx: BattleScriptContext): boolean {
   const addr1 = readWord(ctx);
   const addr2 = readWord(ctx);
-  const _size = readByte(ctx);
+  const size = readByte(ctx);
   const jumpPtr = readWord(ctx);
   const acc1 = resolveAddress(addr1);
   const acc2 = resolveAddress(addr2);
   if (!acc1 || !acc2) return false;
-  if (acc1.read() !== acc2.read()) ctx.scriptPtr = jumpPtr;
+  const off1 = resolveAddressOffset(addr1);
+  const off2 = resolveAddressOffset(addr2);
+  let equal = true;
+  for (let i = 0; i < size; i++) {
+    if (acc1.read(off1 + i) !== acc2.read(off2 + i)) { equal = false; break; }
+  }
+  if (!equal) ctx.scriptPtr = jumpPtr;
   return false;
 }
 
@@ -176,7 +188,7 @@ function Cmd_setbyte(ctx: BattleScriptContext): boolean {
   const addr = readWord(ctx);
   const value = readByte(ctx);
   const acc = resolveAddress(addr);
-  if (acc) acc.write(value & 0xFF);
+  if (acc) acc.write(value & 0xFF, resolveAddressOffset(addr));
   return false;
 }
 
@@ -186,7 +198,8 @@ function Cmd_setbyte(ctx: BattleScriptContext): boolean {
 function Cmd_addbyte(ctx: BattleScriptContext): boolean {
   const { addr, value } = _consumeAddrAndU8(ctx);
   const acc = resolveAddress(addr);
-  if (acc) acc.write((acc.read() + value) & 0xFF);
+  const off = resolveAddressOffset(addr);
+  if (acc) acc.write((acc.read(off) + value) & 0xFF, off);
   return false;
 }
 
@@ -195,22 +208,27 @@ function Cmd_addbyte(ctx: BattleScriptContext): boolean {
 function Cmd_subbyte(ctx: BattleScriptContext): boolean {
   const { addr, value } = _consumeAddrAndU8(ctx);
   const acc = resolveAddress(addr);
-  if (acc) acc.write((acc.read() - value) & 0xFF);
+  const off = resolveAddressOffset(addr);
+  if (acc) acc.write((acc.read(off) - value) & 0xFF, off);
   return false;
 }
 
 // ─── 0x31 copyarray ───────────────────────────────────────────────────────
 
-/** 10 bytes (u32 dest + u32 src + u8 size). */
+/** 10 bytes (u32 dest + u32 src + u8 size). 1:1 décomp memcpy. */
 function Cmd_copyarray(ctx: BattleScriptContext): boolean {
   const dest = readWord(ctx);
   const src = readWord(ctx);
-  const _size = readByte(ctx);
+  const size = readByte(ctx);
   const accDest = resolveAddress(dest);
   const accSrc = resolveAddress(src);
   if (accDest && accSrc) {
-    // 1:1 décomp memcpy ; pour single-cell access, juste copy la value.
-    accDest.write(accSrc.read());
+    const destOff = resolveAddressOffset(dest);
+    const srcOff = resolveAddressOffset(src);
+    // 1:1 décomp memcpy : iterate `size` bytes, copy chacun via accessor offset.
+    for (let i = 0; i < size; i++) {
+      accDest.write(accSrc.read(srcOff + i), destOff + i);
+    }
   }
   return false;
 }
@@ -221,13 +239,18 @@ function Cmd_copyarray(ctx: BattleScriptContext): boolean {
 function Cmd_copyarraywithindex(ctx: BattleScriptContext): boolean {
   const dest = readWord(ctx);
   const src = readWord(ctx);
-  const _idxAddr = readWord(ctx);
-  const _size = readByte(ctx);
+  const idxAddr = readWord(ctx);
+  const size = readByte(ctx);
   const accDest = resolveAddress(dest);
   const accSrc = resolveAddress(src);
+  const accIdx = resolveAddress(idxAddr);
   if (accDest && accSrc) {
-    // Notre memory-map est cell-based donc index = 0 effectivement.
-    accDest.write(accSrc.read());
+    const destOff = resolveAddressOffset(dest);
+    const srcOff = resolveAddressOffset(src);
+    const idxOff = accIdx ? accIdx.read(resolveAddressOffset(idxAddr)) : 0;
+    for (let i = 0; i < size; i++) {
+      accDest.write(accSrc.read(srcOff + idxOff + i), destOff + i);
+    }
   }
   return false;
 }
@@ -237,19 +260,22 @@ function Cmd_copyarraywithindex(ctx: BattleScriptContext): boolean {
 function Cmd_orbyte(ctx: BattleScriptContext): boolean {
   const { addr, value } = _consumeAddrAndU8(ctx);
   const acc = resolveAddress(addr);
-  if (acc) acc.write((acc.read() | value) & 0xFF);
+  const off = resolveAddressOffset(addr);
+  if (acc) acc.write((acc.read(off) | value) & 0xFF, off);
   return false;
 }
 function Cmd_orhalfword(ctx: BattleScriptContext): boolean {
   const { addr, value } = _consumeAddrAndU16(ctx);
   const acc = resolveAddress(addr);
-  if (acc) acc.write((acc.read() | value) & 0xFFFF);
+  const off = resolveAddressOffset(addr);
+  if (acc) acc.write((acc.read(off) | value) & 0xFFFF, off);
   return false;
 }
 function Cmd_orword(ctx: BattleScriptContext): boolean {
   const { addr, value } = _consumeAddrAndU32(ctx);
   const acc = resolveAddress(addr);
-  if (acc) acc.write((acc.read() | value) >>> 0);
+  const off = resolveAddressOffset(addr);
+  if (acc) acc.write((acc.read(off) | value) >>> 0, off);
   return false;
 }
 
@@ -258,13 +284,15 @@ function Cmd_orword(ctx: BattleScriptContext): boolean {
 function Cmd_bicbyte(ctx: BattleScriptContext): boolean {
   const { addr, value } = _consumeAddrAndU8(ctx);
   const acc = resolveAddress(addr);
-  if (acc) acc.write((acc.read() & ~value) & 0xFF);
+  const off = resolveAddressOffset(addr);
+  if (acc) acc.write((acc.read(off) & ~value) & 0xFF, off);
   return false;
 }
 function Cmd_bichalfword(ctx: BattleScriptContext): boolean {
   const { addr, value } = _consumeAddrAndU16(ctx);
   const acc = resolveAddress(addr);
-  if (acc) acc.write((acc.read() & ~value) & 0xFFFF);
+  const off = resolveAddressOffset(addr);
+  if (acc) acc.write((acc.read(off) & ~value) & 0xFFFF, off);
   return false;
 }
 function Cmd_bicword(ctx: BattleScriptContext): boolean {

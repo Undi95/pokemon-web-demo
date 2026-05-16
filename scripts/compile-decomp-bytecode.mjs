@@ -551,7 +551,18 @@ function _parseExpr(tokens, labelOffsets, warnings) {
     while (peek()?.type === 'op' && (peek().val === '+' || peek().val === '-')) {
       const op = consume().val;
       const right = parseShift();
-      left = (op === '+' ? left + right : left - right) | 0;
+      // Phase 1.4 J : si left est un SYMBOL_MARKER + small N (= array offset),
+      // encode offset dans bits 16-27 au lieu de polluer l'id space.
+      // Pattern : `sMULTIHIT_STRING + 4`, `gBattleTextBuff1 + 1`, etc.
+      const leftIsSymbol = (left >>> 0) >= SYMBOL_MARKER && (left >>> 0) < SYMBOL_MARKER + 0x10000;
+      if (leftIsSymbol && right >= 0 && right < 0x1000) {
+        const currentOffset = ((left >>> 0) >>> 16) & 0xFFF;
+        const id = left & 0xFFFF;
+        const newOffset = op === '+' ? currentOffset + right : currentOffset - right;
+        left = (SYMBOL_MARKER | ((newOffset & 0xFFF) << 16) | id) >>> 0;
+      } else {
+        left = (op === '+' ? left + right : left - right) | 0;
+      }
     }
     return left;
   }
