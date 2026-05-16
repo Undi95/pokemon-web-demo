@@ -99,6 +99,7 @@ import {
   gBattleTextBuff2 as _gBattleTextBuff2_IBE,
   PREPARE_STAT_BUFFER as _PREPARE_STAT_BUFFER_IBE,
   PREPARE_FLAVOR_BUFFER as _PREPARE_FLAVOR_BUFFER_IBE,
+  PREPARE_MOVE_BUFFER as _PREPARE_MOVE_BUFFER_IBE,
   B_BUFF_PLACEHOLDER_BEGIN as _B_BUFF_BEGIN_IBE,
   B_BUFF_STRING as _B_BUFF_STRING_IBE,
   B_BUFF_EOS as _B_BUFF_EOS_IBE,
@@ -275,6 +276,9 @@ export function ItemBattleEffects(caseID: number, battlerId: number, moveTurn: b
                 const maxPP = getBattleMove(foundMove).pp;
                 let newPp = foundPp + battlerHoldEffectParam;
                 if (newPp > maxPP) newPp = maxPP;
+                // 1:1 décomp battle_util.c:3357 — afficher le move name
+                // pour {B_BUFF1} dans message "X recharge {B_BUFF1}!".
+                _PREPARE_MOVE_BUFFER_IBE(_gBattleTextBuff1_IBE, foundMove);
                 SetMonData(mon, MON_DATA_PP1 + foundIdx, newPp);
                 // Sync au battler aussi (= gBattleMons[battlerId].pp[idx]).
                 gBattleMons[battlerId].pp[foundIdx] = newPp;
