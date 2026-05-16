@@ -7,8 +7,22 @@ type: project
 # Session 140 — Wire bytecode → gameplay COMPLETE
 
 **Date** : 2026-05-16 (post-compact, /loop autonomous nuit)
-**Commits** : 16 sur branche `upd2`
+**Commits** : 25 sur branche `upd2`
 **Branche** : `upd2`
+
+## Iter 2 (wakeup #1) — Audit bugs script-interpreter
+
+- `MSG_DISPLAY` reset dans tickBattleControllers : débloque 243 scripts.
+- `Cmd_finishaction` + `Cmd_finishturn` : scriptPtr=-1 au lieu de stayOnOpcode infinite.
+- `prepareTestBattle` reset gBattleOutcome + gBattleMoveDamage + gCritMultiplier + gCurrentActionFuncId + gBattleControllerExecFlags entre les test runs.
+- `Cmd_openpartyscreen` : consume ses 5 bytes args (= était noted "1 byte" mais réel 6 bytes via macro). Corrige scripts désync stuck à scriptPtr corrompus.
+- `Cmd_setbyte` (0x2E) + `Cmd_jumpifbyte` (0x29) : real impl 1:1 décomp dans cmd-niveau-33 (= étaient STUB no-op dans script-interpreter). Ces opcodes sont utilisés partout via macro setbyte/jumpifbyte.
+- `memory-map.ts` : auto-init au module load (= chaque instance HMR/dyn-import a son SYMBOLS_BY_ID populé). Avant : SYMBOLS_BY_ID vide pour dynamic imports.
+- `state.ts` : expose `__battleStateMutators` global avec getters/setters pour memory-map (= bridge ESM live-binding issues).
+
+Résultat battery test : 142/639 → 615/639 clean (= 96.2%).
+
+24 scripts résiduels stuck = scripts UI (= ActionSelectionItemsCantBeUsed, AskIfWantsToForfeitMatch, DoSwitchOut, FaintedMonTryChoose) + Intimidate scripts (= ESM live-binding limitation, fix TODO future refactor).
 
 ## 🏆 Milestones
 
