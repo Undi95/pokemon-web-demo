@@ -699,6 +699,8 @@ function Cmd_tryfaintmon(ctx: BattleScriptContext): boolean {
       _BtlController_EmitSetMonData_N1(0 /* B_COMM_TO_CONTROLLER */, 9 + moveIndex,
         0, 1, gBattleMons[gBattlerAttacker].pp[moveIndex]);
       _MarkBattlerForControllerExec_N1(gBattlerAttacker);
+      // 1:1 décomp battle_script_commands.c:3042.
+      _PREPARE_MOVE_BUFFER_TFM(_gBattleTextBuff1_TFM, gBattleMons[gBattlerAttacker].moves[moveIndex]);
     }
   }
   return false;
@@ -762,6 +764,10 @@ import {
 } from './party-storage';
 import { SIDE_STATUS_SPIKES_DAMAGED, HITMARKER_PLAYER_FAINTED, HITMARKER_GRUDGE, STATUS3_GRUDGE } from './constants';
 import { gBattlerPartyIndexes } from './state';
+import {
+  gBattleTextBuff1 as _gBattleTextBuff1_TFM,
+  PREPARE_MOVE_BUFFER as _PREPARE_MOVE_BUFFER_TFM,
+} from './text-buffers';
 
 // ─── Cmd_accuracycheck (0x01) ───────────────────────────────────────────────
 

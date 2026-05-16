@@ -89,6 +89,7 @@ import {
   gBattleTextBuff2 as _gBattleTextBuff2_ABE,
   PREPARE_MON_NICK_WITH_PREFIX_BUFFER,
   PREPARE_ABILITY_BUFFER,
+  PREPARE_TYPE_BUFFER,
 } from './text-buffers';
 import { gBattlerPartyIndexes as _gBattlerPartyIndexes_ABE } from './state';
 
@@ -661,6 +662,8 @@ export function AbilityBattleEffects(
             // SET_BATTLER_TYPE(battler, moveType) — both types set to moveType.
             gBattleMons[battler].type1 = moveType;
             gBattleMons[battler].type2 = moveType;
+            // 1:1 décomp battle_util.c:2744.
+            PREPARE_TYPE_BUFFER(_gBattleTextBuff1_ABE, moveType);
             _lastWantedScriptLabel = 'BattleScript_ColorChangeActivates';
             effect++;
           }
