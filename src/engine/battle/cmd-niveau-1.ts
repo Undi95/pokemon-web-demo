@@ -151,6 +151,9 @@ import {
   MOVE_BATON_PASS,
   MAX_MON_MOVES,
   MOVE_TARGET_BOTH,
+  MOVE_TARGET_FOES_AND_ALLY,
+  MOVE_TARGET_OPPONENTS_FIELD,
+  STATUS2_TRANSFORMED,
   FLAG_MIRROR_MOVE_AFFECTED,
   BIT_FLANK,
   MOVE_RESULT_FAILED,
@@ -227,15 +230,28 @@ function Cmd_ppreduce(ctx: BattleScriptContext): boolean {
     return _stayOnOpcode(ctx);
   }
 
-  // 1:1 décomp Pressure switch sur gBattleMoves[move].target — pour MVP, on
-  // simplifie au default case (= single battle). TODO porter
-  // AbilityBattleEffects(COUNT_ON_FIELD/COUNT_OTHER_SIDE) pour FOES_AND_ALLY/
-  // BOTH/OPPONENTS_FIELD multi-target moves.
-  //
-  // TODO porter gSpecialStatuses[gBattlerAttacker].ppNotAffectedByPressure check.
-  if (gBattlerAttacker !== gBattlerTarget
-      && gBattleMons[gBattlerTarget].ability === ABILITY_PRESSURE) {
-    ppToDeduct++;
+  // 1:1 décomp ll.1212-1228 : Pressure check + multi-target switch.
+  if (!gSpecialStatuses[gBattlerAttacker].ppNotAffectedByPressure) {
+    const target = _moveTargetForCurrentN1(gCurrentMove);
+    switch (target) {
+      case MOVE_TARGET_FOES_AND_ALLY:
+        ppToDeduct += _abilityBattleEffectsCountFieldN1(
+          ABILITYEFFECT_COUNT_ON_FIELD, gBattlerAttacker, ABILITY_PRESSURE
+        );
+        break;
+      case MOVE_TARGET_BOTH:
+      case MOVE_TARGET_OPPONENTS_FIELD:
+        ppToDeduct += _abilityBattleEffectsCountFieldN1(
+          ABILITYEFFECT_COUNT_OTHER_SIDE, gBattlerAttacker, ABILITY_PRESSURE
+        );
+        break;
+      default:
+        if (gBattlerAttacker !== gBattlerTarget
+            && gBattleMons[gBattlerTarget].ability === ABILITY_PRESSURE) {
+          ppToDeduct++;
+        }
+        break;
+    }
   }
 
   if (!(gHitMarker & (HITMARKER_NO_PPDEDUCT | HITMARKER_NO_ATTACKSTRING))
@@ -249,12 +265,38 @@ function Cmd_ppreduce(ctx: BattleScriptContext): boolean {
     } else {
       gBattleMons[gBattlerAttacker].pp[gCurrMovePos] = 0;
     }
-    // TODO : MOVE_IS_PERMANENT + BtlController_EmitSetMonData REQUEST_PPMOVE_X
-    // pour persist PP au save block.
+    // 1:1 décomp ll.1239-1246 : MOVE_IS_PERMANENT(attacker, gCurrMovePos)
+    //    = !TRANSFORMED && !(mimickedMoves & bit[slot])
+    // → BtlController_EmitSetMonData REQUEST_PPMOVE_X (= persist PP au save).
+    // STUB BtlController : Emit pas wired vers party storage. Notre BattleMon.pp[]
+    // est déjà la source de truth in-battle ; la persistance party-side se fait
+    // au battle end via party-storage flush.
+    if (!(gBattleMons[gBattlerAttacker].status2 & STATUS2_TRANSFORMED)
+        && !(gDisableStructs[gBattlerAttacker].mimickedMoves & gBitTable[gCurrMovePos])) {
+      // (Décomp emit ici → controllerExec ; pour Phase 1, no-op safe.)
+      void _emitPpUpdateStubN1(gBattlerAttacker, gCurrMovePos);
+    }
   }
 
   setHitMarker(gHitMarker & ~HITMARKER_NO_PPDEDUCT);
   return false;
+}
+
+// 1:1 décomp helpers wired pour Cmd_ppreduce.
+import {
+  ABILITYEFFECT_COUNT_ON_FIELD, ABILITYEFFECT_COUNT_OTHER_SIDE,
+  AbilityBattleEffects as _ABE_N1,
+} from './ability-battle-effects';
+import { getBattleMove as _gbmN1 } from './data/battle-moves';
+function _moveTargetForCurrentN1(move: number): number {
+  return _gbmN1(move).target;
+}
+function _abilityBattleEffectsCountFieldN1(caseId: number, battler: number, ability: number): number {
+  return _ABE_N1(caseId, battler, ability, 0, 0);
+}
+function _emitPpUpdateStubN1(_battler: number, _slot: number): void {
+  // STUB Phase 1.4 — emit PP update au controller pour persist party-side.
+  // Notre BattleMon.pp[] est déjà write directement ci-dessus, donc no-op safe.
 }
 
 /** Convention runBattleScript : dispatcher fait scriptPtr++ AVANT handler.
