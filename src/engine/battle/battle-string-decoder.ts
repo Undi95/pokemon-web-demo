@@ -43,7 +43,24 @@ import {
   B_BUFF_EOS,
   B_BUFF_NEGATIVE_FLAVOR,
 } from './text-buffers';
-import { gBattleMons, gBattlerAttacker, gBattlerTarget, gBattleScripting, gEffectBattler, gActiveBattler } from './state';
+import {
+  gBattleMons, gBattlerAttacker, gBattlerTarget, gBattleScripting, gEffectBattler, gActiveBattler,
+  gBattleTypeFlags, gTrainerBattleOpponent_A, gBattleStruct,
+} from './state';
+import {
+  BATTLE_TYPE_DOUBLE, BATTLE_TYPE_LINK, BATTLE_TYPE_TRAINER, BATTLE_TYPE_MULTI,
+  BATTLE_TYPE_LEGENDARY, BATTLE_TYPE_WALLY_TUTORIAL, BATTLE_TYPE_TWO_OPPONENTS,
+  BATTLE_TYPE_INGAME_PARTNER, BATTLE_TYPE_TOWER_LINK_MULTI, BATTLE_TYPE_RECORDED,
+  BATTLE_TYPE_RECORDED_LINK,
+} from './constants';
+
+// 1:1 décomp `TRAINER_UNION_ROOM` (include/constants/trainers.h).
+const TRAINER_UNION_ROOM = 3072;
+// 1:1 décomp `TRAINER_LINK_OPPONENT` (include/constants/trainers.h).
+const TRAINER_LINK_OPPONENT = 0x400;
+
+// 1:1 décomp `B_SIDE_PLAYER` / `B_SIDE_OPPONENT` : (battler & 1) → 0 = PLAYER, 1 = OPPONENT.
+function _getBattlerSide(battler: number): number { return battler & 1; }
 
 // ─── STAT names (1:1 décomp battle_message.c:430-440) ──────────────────────
 
@@ -489,10 +506,22 @@ export function decodeBattleString(stringId: number, msgData: BattleMsgData): st
   // (= 1:1 décomp battle_message.c:2166-2176 case STRINGID_USEDMOVE).
   // Notre port : pre-fill le buffer correspondant dans msgData.textBuffs.
   switch (stringId) {
-    case 0: sTextName = 'sText_WildPkmnAppeared'; break;        // STRINGID_INTROMSG
-    case 1: sTextName = 'sText_GoPkmn'; break;                  // STRINGID_INTROSENDOUT
-    case 2: sTextName = 'sText_PkmnComeBack'; break;            // STRINGID_RETURNMON
-    case 3: sTextName = 'sText_GoPkmn2'; break;                 // STRINGID_SWITCHINMON
+    case 0:
+      // 1:1 décomp battle_message.c:1997-2044 STRINGID_INTROMSG.
+      sTextName = _resolveIntroMsgStringName();
+      break;
+    case 1:
+      // 1:1 décomp battle_message.c:2045-2088 STRINGID_INTROSENDOUT.
+      sTextName = _resolveIntroSendoutStringName();
+      break;
+    case 2:
+      // 1:1 décomp battle_message.c:2090-2116 STRINGID_RETURNMON.
+      sTextName = _resolveReturnmonStringName();
+      break;
+    case 3:
+      // 1:1 décomp battle_message.c:2117-2165 STRINGID_SWITCHINMON.
+      sTextName = _resolveSwitchinmonStringName();
+      break;
     case 4: {
       // 1:1 décomp battle_message.c:2166-2176 : pre-fill BUFF2 avec
       // gMoveNames[currentMove] (= move name FR direct, pas via B_BUFF_MOVE tag).
@@ -528,6 +557,145 @@ export function decodeBattleString(stringId: number, msgData: BattleMsgData): st
     return `[${sTextName} missing]`;
   }
   return _substitutePlaceholders(tmpl, msgData);
+}
+
+// ─── BufferStringBattle special-case branch helpers ────────────────────────
+//     1:1 décomp src/battle_message.c:1997-2165.
+
+/** 1:1 décomp STRINGID_INTROMSG (= "Un X sauvage apparaît!" / trainer variants). */
+function _resolveIntroMsgStringName(): string {
+  if (gBattleTypeFlags & BATTLE_TYPE_TRAINER) {
+    if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)) {
+      if (gBattleTypeFlags & BATTLE_TYPE_TOWER_LINK_MULTI) {
+        return 'sText_TwoTrainersWantToBattle';
+      }
+      if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
+        if (gBattleTypeFlags & BATTLE_TYPE_RECORDED) {
+          return 'sText_TwoLinkTrainersWantToBattlePause';
+        }
+        return 'sText_TwoLinkTrainersWantToBattle';
+      }
+      if (gTrainerBattleOpponent_A === TRAINER_UNION_ROOM) {
+        return 'sText_Trainer1WantsToBattle';
+      }
+      if (gBattleTypeFlags & BATTLE_TYPE_RECORDED) {
+        return 'sText_LinkTrainerWantsToBattlePause';
+      }
+      return 'sText_LinkTrainerWantsToBattle';
+    }
+    if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) {
+      return 'sText_TwoTrainersWantToBattle';
+    }
+    if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) {
+      return 'sText_TwoTrainersWantToBattle';
+    }
+    return 'sText_Trainer1WantsToBattle';
+  }
+  if (gBattleTypeFlags & BATTLE_TYPE_LEGENDARY) {
+    return 'sText_LegendaryPkmnAppeared';
+  }
+  if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+    return 'sText_TwoWildPkmnAppeared';
+  }
+  if (gBattleTypeFlags & BATTLE_TYPE_WALLY_TUTORIAL) {
+    return 'sText_WildPkmnAppearedPause';
+  }
+  return 'sText_WildPkmnAppeared';
+}
+
+/** 1:1 décomp STRINGID_INTROSENDOUT (= "X, à toi !" / trainer sends mon). */
+function _resolveIntroSendoutStringName(): string {
+  if (_getBattlerSide(gActiveBattler) === 0 /* B_SIDE_PLAYER */) {
+    if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+      if (gBattleTypeFlags & BATTLE_TYPE_INGAME_PARTNER) {
+        return 'sText_InGamePartnerSentOutZGoN';
+      }
+      if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) {
+        return 'sText_GoTwoPkmn';
+      }
+      if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
+        return 'sText_LinkPartnerSentOutPkmnGoPkmn';
+      }
+      return 'sText_GoTwoPkmn';
+    }
+    return 'sText_GoPkmn';
+  }
+  // OPPONENT side.
+  if (gBattleTypeFlags & BATTLE_TYPE_DOUBLE) {
+    if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) {
+      return 'sText_TwoTrainersSentPkmn';
+    }
+    if (gBattleTypeFlags & BATTLE_TYPE_TOWER_LINK_MULTI) {
+      return 'sText_TwoTrainersSentPkmn';
+    }
+    if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
+      return 'sText_TwoLinkTrainersSentOutPkmn';
+    }
+    if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)) {
+      return 'sText_LinkTrainerSentOutTwoPkmn';
+    }
+    return 'sText_Trainer1SentOutTwoPkmn';
+  }
+  if (!(gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK))) {
+    return 'sText_Trainer1SentOutPkmn';
+  }
+  if (gTrainerBattleOpponent_A === TRAINER_UNION_ROOM) {
+    return 'sText_Trainer1SentOutPkmn';
+  }
+  return 'sText_LinkTrainerSentOutPkmn';
+}
+
+/** 1:1 décomp STRINGID_RETURNMON (= "X, reviens !" pour rappel ball). */
+function _resolveReturnmonStringName(): string {
+  if (_getBattlerSide(gActiveBattler) === 0 /* B_SIDE_PLAYER */) {
+    const hpScale = gBattleStruct.hpScale ?? 0;
+    if (hpScale === 0) return 'sText_PkmnThatsEnough';
+    if (hpScale === 1 || (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) {
+      return 'sText_PkmnComeBack';
+    }
+    if (hpScale === 2) return 'sText_PkmnOkComeBack';
+    return 'sText_PkmnGoodComeBack';
+  }
+  if (gTrainerBattleOpponent_A === TRAINER_LINK_OPPONENT
+      || (gBattleTypeFlags & BATTLE_TYPE_RECORDED_LINK)) {
+    if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
+      return 'sText_LinkTrainer2WithdrewPkmn';
+    }
+    return 'sText_LinkTrainer1WithdrewPkmn';
+  }
+  return 'sText_Trainer1WithdrewPkmn';
+}
+
+/** 1:1 décomp STRINGID_SWITCHINMON (= switch-in mid-battle). */
+function _resolveSwitchinmonStringName(): string {
+  if (_getBattlerSide(gBattleScripting.battler) === 0 /* B_SIDE_PLAYER */) {
+    const hpScale = gBattleStruct.hpScale ?? 0;
+    if (hpScale === 0 || (gBattleTypeFlags & BATTLE_TYPE_DOUBLE)) {
+      return 'sText_GoPkmn2';
+    }
+    if (hpScale === 1) return 'sText_DoItPkmn';
+    if (hpScale === 2) return 'sText_GoForItPkmn';
+    return 'sText_YourFoesWeakGetEmPkmn';
+  }
+  // OPPONENT side switch-in.
+  if (gBattleTypeFlags & (BATTLE_TYPE_LINK | BATTLE_TYPE_RECORDED_LINK)) {
+    if (gBattleTypeFlags & BATTLE_TYPE_TOWER_LINK_MULTI) {
+      if (gBattleScripting.battler === 1) return 'sText_Trainer1SentOutPkmn2';
+      return 'sText_Trainer2SentOutPkmn';
+    }
+    if (gBattleTypeFlags & BATTLE_TYPE_MULTI) {
+      return 'sText_LinkTrainerMultiSentOutPkmn';
+    }
+    if (gTrainerBattleOpponent_A === TRAINER_UNION_ROOM) {
+      return 'sText_Trainer1SentOutPkmn2';
+    }
+    return 'sText_LinkTrainerSentOutPkmn2';
+  }
+  if (gBattleTypeFlags & BATTLE_TYPE_TWO_OPPONENTS) {
+    if (gBattleScripting.battler === 1) return 'sText_Trainer1SentOutPkmn2';
+    return 'sText_Trainer2SentOutPkmn';
+  }
+  return 'sText_Trainer1SentOutPkmn2';
 }
 
 /** 1:1 décomp `StringCopy` : encode une string en bytes ASCII puis EOS=0xFF.
