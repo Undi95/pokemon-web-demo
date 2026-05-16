@@ -286,9 +286,16 @@ function Cmd_givecaughtmon(_ctx: BattleScriptContext): boolean {
   // ou MON_GIVEN_TO_PC (1) ou MON_CANT_GIVE (2 = box full).
   const result = _GiveMonToPlayerGC(caughtMon);
   if (result !== 0 /* MON_GIVEN_TO_PARTY */) {
-    // STUB PC box message (= B_MSG_SENT_SOMEONES_PC / SOMEONES_BOX_FULL /
-    // SENT_LANETTES_PC / LANETTES_BOX_FULL). Phase 1.4 UI text placeholders.
-    _gBattleCommunicationGC[5 /* MULTISTRING_CHOOSER */] = 0 /* B_MSG_SENT_SOMEONES_PC */;
+    // 1:1 décomp battle_script_commands.c:10062-10078 : message PC box select.
+    // ShouldShowBoxWasFullMessage check + FLAG_SYS_PC_LANETTE (= unlock Lanette).
+    // B_MSG_SENT_SOMEONES_PC=0, B_MSG_SOMEONES_BOX_FULL=1,
+    // B_MSG_SENT_LANETTES_PC=2, B_MSG_LANETTES_BOX_FULL=3.
+    const boxWasFull = _shouldShowBoxWasFullMessage_GC();
+    let msgId = boxWasFull ? 1 /* B_MSG_SOMEONES_BOX_FULL */ : 0 /* B_MSG_SENT_SOMEONES_PC */;
+    if (_flagGet_GC(0x86F /* FLAG_SYS_PC_LANETTE = include/constants/flags.h */)) {
+      msgId++;  // → SENT_LANETTES_PC or LANETTES_BOX_FULL.
+    }
+    _gBattleCommunicationGC[5 /* MULTISTRING_CHOOSER */] = msgId;
   }
 
   // 1:1 décomp ll.10081-10083 : log caught mon stats dans gBattleResults.
@@ -302,6 +309,24 @@ function Cmd_givecaughtmon(_ctx: BattleScriptContext): boolean {
 
 // Imports locaux Cmd_givecaughtmon (= éviter dups au top).
 import { BATTLE_OPPOSITE as _BATTLE_OPPOSITE_GC } from './constants';
+
+/** 1:1 décomp `ShouldShowBoxWasFullMessage()` (field_specials.c:3415-3426).
+ *  Retourne TRUE si FLAG_SHOWN_BOX_WAS_FULL_MESSAGE n'a pas été set ET
+ *  StorageGetCurrentBox() != VarGet(VAR_PC_BOX_TO_SEND_MON). Side-effect : set
+ *  le flag à TRUE. Pour Phase 1 sans PC storage : retourne FALSE (= simple). */
+function _shouldShowBoxWasFullMessage_GC(): boolean {
+  return false;
+}
+
+/** 1:1 décomp `FlagGet(flag)` — wired via globalThis.gSaveBlock1Ptr.flags. */
+function _flagGet_GC(flag: number): boolean {
+  const sb1 = (globalThis as { gSaveBlock1Ptr?: { flags?: number[] | Uint8Array } }).gSaveBlock1Ptr;
+  if (!sb1?.flags) return false;
+  const byteIdx = flag >> 3;
+  const bitIdx = flag & 7;
+  const byte = sb1.flags[byteIdx] ?? 0;
+  return (byte & (1 << bitIdx)) !== 0;
+}
 import {
   gBattlerAttacker as _gBattlerAttackerGC,
   gBattlerPartyIndexes as _gBattlerPartyIndexesGC,
