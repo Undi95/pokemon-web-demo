@@ -153,13 +153,182 @@ function Cmd_drawlvlupbox(_ctx: BattleScriptContext): boolean {
 
 // ─── 0xEF handleballthrow ─────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_handleballthrow. 1 byte (~5k chars state machine).
- *  Pokéball catch state machine : calc odds, anim shakes, check break.
- *  MVP stub : skip (= simulate "always escape" pour MVP, vraie capture
- *  pas implémentée). */
-function Cmd_handleballthrow(_ctx: BattleScriptContext): boolean {
-  // TODO porter ball throw state machine + odds calc + shake anim.
+/** 1:1 décomp `sBallCatchBonuses[]` (battle_script_commands.c:841-847).
+ *  Indexed par (ITEM_X - ITEM_ULTRA_BALL) où ITEM_ULTRA_BALL = 4.
+ *  Order : ULTRA_BALL=20, GREAT_BALL=15, POKE_BALL=10, SAFARI_BALL=15. */
+const sBallCatchBonuses_HBT: ReadonlyArray<number> = [20, 15, 10, 15];
+
+/** 1:1 décomp `Sqrt(s32 n)` (sqrt.c). Integer Newton iteration. */
+function _sqrtHBT(n: number): number {
+  if (n <= 0) return 0;
+  let x = n;
+  let y = Math.floor((x + 1) / 2);
+  while (y < x) { x = y; y = Math.floor((x + Math.floor(n / x)) / 2); }
+  return x;
+}
+
+/** 1:1 décomp Cmd_handleballthrow (battle_script_commands.c:9908-10056).
+ *  Pokéball catch state machine : calc odds + anim shakes + check break.
+ *  1 byte. */
+function Cmd_handleballthrow(ctx: BattleScriptContext): boolean {
+  if (_gBattleControllerExecFlagsHBT) return _stayOnOpcodeHBT(ctx);
+
+  _setActiveBattlerHBT(_gBattlerAttackerHBT);
+  _setBattlerTargetHBT(_BATTLE_OPPOSITE_HBT(_gBattlerAttackerHBT));
+  const targetIdx = _BATTLE_OPPOSITE_HBT(_gBattlerAttackerHBT);
+
+  if (_gBattleTypeFlagsHBT & 8 /* BATTLE_TYPE_TRAINER */) {
+    // STUB BtlController_EmitBallThrowAnim BALL_TRAINER_BLOCK (= Phase 1.4 UI).
+    const off = _getBattleScriptOffsetHBT('BattleScript_TrainerBallBlock');
+    if (off >= 0) ctx.scriptPtr = off;
+    return false;
+  }
+
+  if (_gBattleTypeFlagsHBT & 0x10000 /* BATTLE_TYPE_WALLY_TUTORIAL */) {
+    // STUB EmitBallThrowAnim BALL_3_SHAKES_SUCCESS.
+    const off = _getBattleScriptOffsetHBT('BattleScript_WallyBallThrow');
+    if (off >= 0) ctx.scriptPtr = off;
+    return false;
+  }
+
+  // Normal capture flow.
+  let ballMultiplier = 0;
+  let catchRate: number;
+
+  if (_gLastUsedItemHBT === 5 /* ITEM_SAFARI_BALL */) {
+    catchRate = Math.floor(_gBattleStructHBT.safariCatchFactor * 1275 / 100);
+  } else {
+    catchRate = _getSpeciesCatchRateHBT(_gBattleMonsHBT[targetIdx].species);
+  }
+
+  if (_gLastUsedItemHBT > 5 /* ITEM_SAFARI_BALL */) {
+    switch (_gLastUsedItemHBT) {
+      case 6  /* ITEM_NET_BALL */: {
+        const t1 = _gBattleMonsHBT[targetIdx].type1, t2 = _gBattleMonsHBT[targetIdx].type2;
+        if (t1 === 11 /* WATER */ || t2 === 11 || t1 === 6 /* BUG */ || t2 === 6) ballMultiplier = 30;
+        else ballMultiplier = 10;
+        break;
+      }
+      case 7  /* ITEM_DIVE_BALL */:
+        // STUB GetCurrentMapType : MAP_TYPE_UNDERWATER pas porté ; assume false.
+        ballMultiplier = 10;
+        break;
+      case 8  /* ITEM_NEST_BALL */: {
+        const lvl = _gBattleMonsHBT[targetIdx].level;
+        if (lvl < 40) {
+          ballMultiplier = 40 - lvl;
+          if (ballMultiplier <= 9) ballMultiplier = 10;
+        } else {
+          ballMultiplier = 10;
+        }
+        break;
+      }
+      case 9  /* ITEM_REPEAT_BALL */: {
+        const dexNum = _gBattleMonsHBT[targetIdx].species;  // = SpeciesToNationalPokedexNum (Gen 3 = identity ≤ 386).
+        if (_GetSetPokedexFlagHBT(dexNum, 0 /* FLAG_GET_CAUGHT */)) ballMultiplier = 30;
+        else ballMultiplier = 10;
+        break;
+      }
+      case 10 /* ITEM_TIMER_BALL */:
+        ballMultiplier = _gBattleResultsHBT.battleTurnCounter + 10;
+        if (ballMultiplier > 40) ballMultiplier = 40;
+        break;
+      case 11 /* ITEM_LUXURY_BALL */:
+      case 12 /* ITEM_PREMIER_BALL */:
+        ballMultiplier = 10;
+        break;
+      default:
+        ballMultiplier = 10;
+    }
+  } else {
+    ballMultiplier = sBallCatchBonuses_HBT[_gLastUsedItemHBT - 4 /* ITEM_ULTRA_BALL */] ?? 10;
+  }
+
+  let odds = Math.floor(
+    Math.floor(catchRate * ballMultiplier / 10)
+    * (_gBattleMonsHBT[targetIdx].maxHP * 3 - _gBattleMonsHBT[targetIdx].hp * 2)
+    / (3 * _gBattleMonsHBT[targetIdx].maxHP)
+  );
+
+  const status1 = _gBattleMonsHBT[targetIdx].status1;
+  if (status1 & (7 /* STATUS1_SLEEP */ | 32 /* STATUS1_FREEZE */)) odds *= 2;
+  if (status1 & (8 /* STATUS1_POISON */ | 16 /* STATUS1_BURN */ | 64 /* STATUS1_PARALYSIS */ | 128 /* STATUS1_TOXIC_POISON */)) {
+    odds = Math.floor((odds * 15) / 10);
+  }
+
+  // 1:1 décomp ll.9999-10010 : Master Ball / catch attempts tracking.
+  if (_gLastUsedItemHBT !== 5 /* ITEM_SAFARI_BALL */) {
+    if (_gLastUsedItemHBT === 1 /* ITEM_MASTER_BALL */) {
+      _gBattleResultsHBT.usedMasterBall = 1;
+    } else {
+      const idx = _gLastUsedItemHBT - 4 /* ITEM_ULTRA_BALL */;
+      if (idx >= 0 && idx < _gBattleResultsHBT.catchAttempts.length
+          && _gBattleResultsHBT.catchAttempts[idx] < 255) {
+        _gBattleResultsHBT.catchAttempts[idx]++;
+      }
+    }
+  }
+
+  if (odds > 254) {
+    // Mon caught (auto-success path).
+    const off = _getBattleScriptOffsetHBT('BattleScript_SuccessBallThrow');
+    if (off >= 0) ctx.scriptPtr = off;
+    _SetMonDataHBT(_gEnemyPartyHBT[_gBattlerPartyIndexesHBT[targetIdx]], _MON_DATA_POKEBALL_HBT, _gLastUsedItemHBT);
+    // STUB CalculatePlayerPartyCount : si party full → MSG 0, sinon 1.
+    // Pour Phase 1 : assume party not full.
+    _gBattleCommunicationHBT[5 /* MULTISTRING_CHOOSER */] = 1;
+  } else {
+    // Mon may be caught — calc shakes.
+    odds = _sqrtHBT(_sqrtHBT(Math.floor(16711680 / odds)));
+    odds = Math.floor(1048560 / odds);
+    let shakes: number;
+    for (shakes = 0; shakes < 4 /* BALL_3_SHAKES_SUCCESS */ && _RandomHBT() < odds; shakes++);
+    if (_gLastUsedItemHBT === 1 /* ITEM_MASTER_BALL */) shakes = 4;
+    // STUB EmitBallThrowAnim(shakes).
+    if (shakes === 4) {
+      const off = _getBattleScriptOffsetHBT('BattleScript_SuccessBallThrow');
+      if (off >= 0) ctx.scriptPtr = off;
+      _SetMonDataHBT(_gEnemyPartyHBT[_gBattlerPartyIndexesHBT[targetIdx]], _MON_DATA_POKEBALL_HBT, _gLastUsedItemHBT);
+      _gBattleCommunicationHBT[5] = 1;
+    } else {
+      _gBattleCommunicationHBT[5] = shakes;
+      const off = _getBattleScriptOffsetHBT('BattleScript_ShakeBallThrow');
+      if (off >= 0) ctx.scriptPtr = off;
+    }
+  }
   return false;
+}
+
+// Imports locaux Cmd_handleballthrow.
+import {
+  gBattleControllerExecFlags as _gBattleControllerExecFlagsHBT,
+  gBattlerAttacker as _gBattlerAttackerHBT,
+  gBattleMons as _gBattleMonsHBT,
+  gBattleTypeFlags as _gBattleTypeFlagsHBT,
+  gLastUsedItem as _gLastUsedItemHBT,
+  gBattleStruct as _gBattleStructHBT,
+  gBattlerPartyIndexes as _gBattlerPartyIndexesHBT,
+  gBattleCommunication as _gBattleCommunicationHBT,
+  gBattleResults as _gBattleResultsHBT,
+  setActiveBattler as _setActiveBattlerHBT,
+  setBattlerTarget as _setBattlerTargetHBT,
+} from './state';
+import { BATTLE_OPPOSITE as _BATTLE_OPPOSITE_HBT } from './constants';
+import { getBattleScriptOffset as _getBattleScriptOffsetHBT, Random as _RandomHBT } from './script-interpreter';
+import {
+  gEnemyParty as _gEnemyPartyHBT, SetMonData as _SetMonDataHBT,
+  MON_DATA_POKEBALL as _MON_DATA_POKEBALL_HBT,
+} from './party-storage';
+import { GetSetPokedexFlag as _GetSetPokedexFlagHBT } from '../decomp-data/auto/src-all/pokedex-all-auto';
+import { getSpeciesInfo as _getSpeciesInfoHBT } from '../data/game-data';
+import { speciesNumberToEnum as _speciesNumberToEnumHBT } from './data/species-runtime';
+
+function _getSpeciesCatchRateHBT(species: number): number {
+  return _getSpeciesInfoHBT(_speciesNumberToEnumHBT(species))?.catchRate ?? 0;
+}
+function _stayOnOpcodeHBT(ctx: BattleScriptContext): boolean {
+  ctx.scriptPtr--;
+  return true;
 }
 
 // ─── Install handlers ──────────────────────────────────────────────────────
