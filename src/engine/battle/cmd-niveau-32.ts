@@ -62,9 +62,18 @@ function _giveMoveToBattleMon(battlerIdx: number, move: number): void {
 
 // ─── 0x50 openpartyscreen ─────────────────────────────────────────────────
 
-/** 1:1 décomp Cmd_openpartyscreen. 1 byte (~12k chars de state machine).
- *  MVP stub : advance direct. */
-function Cmd_openpartyscreen(_ctx: BattleScriptContext): boolean {
+/** 1:1 décomp Cmd_openpartyscreen. 6 bytes : opcode + u8 battler + u32 ptr.
+ *  Macro source : `openpartyscreen battler:req, ptr:req` (battle_script.inc:476).
+ *
+ *  Full state machine : ~12k chars dans battle_script_commands.c. Pour POC,
+ *  on consume les args + advance (= ne fait rien visuellement, party UI Phase 1.4).
+ *
+ *  Bug AUDIT fix : avant ne consommait pas les 5 bytes args → opcode suivant
+ *  lu comme byte arg de openpartyscreen → script désync (scripts stuck à des
+ *  scriptPtr aléatoires comme 721420318). */
+function Cmd_openpartyscreen(ctx: BattleScriptContext): boolean {
+  readByte(ctx);  // battler arg.
+  readWord(ctx);  // jumpPtr if fail.
   // TODO porter party screen state machine + party_menu UI.
   return false;
 }
