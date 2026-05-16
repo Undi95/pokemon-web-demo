@@ -2,7 +2,7 @@
 
 **Date** : 2026-05-16
 **Branche** : `upd2`
-**Commits** : 23 commits Phase 1.4 J (post-suite + audit PREPARE missing)
+**Commits** : 26 commits Phase 1.4 J (audit PREPARE + self-target wire)
 **État** : 🎉 **MILESTONE Phase 1.4 J first pass complete** — bytecode interpreter
 émet maintenant des messages FR via décodeur 1:1 décomp `BufferStringBattle`.
 État machine bytecode wirée dans `battle-flow.ts`.
@@ -371,6 +371,50 @@ sont maintenant wirés dans notre port :
 - ✓ Cmd_tryswapitems (commit 22)
 - ✓ Cmd_getexp (commit 23)
 - ✓ Tous autres déjà OK via batch A précédent ou cmd-niveau-* port complet
+
+## Commits suite — audit follow-up (post commit 23)
+
+### Commit 24 : `a8f3b1bd` — Cmd_trydobeatup missing PREPARE_MON_NICK_WITH_PREFIX_BUFFER
+1:1 décomp `battle_script_commands.c:8987` : Beat Up cycle party members
+needs PREPARE_MON_NICK_WITH_PREFIX_BUFFER pour le message "Attaque de X!".
+Avant : "Attaque de DÉFENSE!" (= buff vide décodé comme stat).
+Fix : "Attaque de PIKACHU!" 1:1 décomp.
+
+### Commit 25 : `ad2816d3` — runMoveScriptViaBytecode self-target wire
+Self-heal moves (Milk Drink/Softboiled/Recover/Rest) targetaient l'ennemi
+au lieu du self via le bridge. Fix : check moveData.target field MOVE_TARGET_USER
+ou MOVE_TARGET_USER_OR_SELECTED → set defBId = attBId.
+Validation :
+- milkdrink/softboiled/recover : "PIKACHU récupère son énergie!" ✓
+- rest : "PIKACHU s'endort!" + récupère ✓
+- damage moves restent target=defender (= correct).
+
+## Total : 26 commits
+
+Battery 639/639 stable, 0 erreur TS sur 26 commits.
+
+~80 moves validés via bytecode :
+- Damage : tackle/thundershock/ember/icebeam/flamethrower/thunder/blizzard/
+  hydropump/firepunch/thunderpunch/icepunch/megakick/seismictoss/nightshade/
+  furycutter/triplekick/rollout/iceball/present/pursuit
+- Multi-hit : doubleslap/doublekick/pinmissile/triplekick (Touché N fois!)
+- Special : magnitude (AMPLEUR X!) / transform (en SPECIES_FR!) / beatup (Attaque de X! x6)
+- Recoil : takedown/doubleedge/submission/volttackle (se blesse en frappant!)
+- Status : growl/leer/scaryface/sandattack/tailwhip/stringshot/screech/
+  flash/kinesis/poisonpowder/thunderwave/hypnosis/confuseray/spore/
+  swagger/torment/taunt/encore (avec messages 1:1)
+- Self-buff : swordsdance/agility/meditate/sharpen/doubleteam/bulkup/calmmind/
+  cosmicpower/irondefense/bellydrum/curse (multi-stat ↑↑↓)
+- Protect : protect/detect/endure/destinybond (chacun message dédié)
+- Heal : milkdrink/softboiled/recover/morningsun/moonlight/synthesis/rest/wish
+  (1:1 décomp "récupère son énergie!")
+- Screens : reflect/lightscreen/safeguard/mist (avec préfixe ami/ennemi)
+- Multi-turn : futuresight (PRESCIENCE: prévoit une attaque!)
+- Misc : metronome (chain to random move) / mimic / teleport / haze / rage /
+  helpinghand / wish / drain (Absorb VOL-VIE) / magiccoat / snatch / foresight /
+  lockon / mindreader / memento (=multi-stat-fall)
+- Weather : sunnyday (rayons brillent) / raindance (commence à pleuvoir) /
+  sandstorm (tempête se prépare) / hail (commence à grêler)
 
 ## File complet
 
