@@ -216,11 +216,12 @@ function _typeName(typeId: number): string {
 // ─── Mon nickname resolver (= gBattleMons[X].nickname Uint8Array u8[10] GBA) ─
 
 /** Read nickname depuis gBattleMons[battlerId]. 1:1 décomp : u8[10] avec EOS 0xFF.
- *  Pour MVP : fallback sur species name si pas de nickname. */
+ *  fillBattleMonFromParty (party-storage.ts:401) initialise déjà `mon.nickname`
+ *  à `inst.nickname || inst.speciesNameFr`, donc on a toujours un nickname
+ *  populé. Le fallback ici est purement défensif (= si gBattleMons pas init). */
 function _monNickname(battlerId: number): string {
   const mon = gBattleMons[battlerId];
   if (!mon) return '?';
-  // BattleMon.nickname est typé string en notre port.
   if (mon.nickname && typeof mon.nickname === 'string' && mon.nickname.length > 0) {
     return mon.nickname;
   }

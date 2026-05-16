@@ -63,6 +63,7 @@ import {
   gBattleTextBuff1,
   PREPARE_ABILITY_BUFFER,
   PREPARE_SPECIES_BUFFER,
+  PREPARE_MON_NICK_WITH_PREFIX_BUFFER,
 } from './text-buffers';
 import { gBattlerPartyIndexes as _gBattlerPartyIndexes_N21 } from './state';
 
@@ -250,6 +251,12 @@ function Cmd_trywish(ctx: BattleScriptContext): boolean {
     }
     case 1: {
       // Trigger Wish heal (= 2 turns later).
+      // 1:1 décomp battle_script_commands.c:9312 : PREPARE_MON_NICK_WITH_PREFIX_BUFFER
+      // pour afficher le nom du mon qui a lancé Wish (= récupéré via wishMonId party slot).
+      PREPARE_MON_NICK_WITH_PREFIX_BUFFER(
+        _gBattleTextBuff1_21, gBattlerTarget,
+        gWishFutureKnock.wishMonId[gBattlerTarget],
+      );
       let dmg = Math.floor(gBattleMons[gBattlerTarget].maxHP / 2);
       if (dmg === 0) dmg = 1;
       dmg *= -1;
