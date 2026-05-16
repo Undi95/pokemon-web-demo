@@ -452,16 +452,15 @@ function Cmd_adjustnormaldamage(_ctx: BattleScriptContext): boolean {
  *  Args : 1 byte = target battler ref (= BS_TARGET / BS_ATTACKER / etc.).
  *  Total : 2 bytes (opcode + 1 byte arg).
  *
- *  Logic minimal :
+ *  Logic 1:1 décomp (port complet sessions 138-142) :
  *  1. Read arg byte.
  *  2. Skip si MOVE_RESULT_NO_EFFECT.
  *  3. Resolve gActiveBattler via getBattlerForBattleScript(arg).
- *  4. Substitute path — TODO porter (= skip pour now).
+ *  4. Substitute path — FULL port (session 138 + R5 session 142).
  *  5. Si damage < 0 → HP gain (= clamp à maxHP).
  *  6. Sinon → HP loss (= clamp à 0), gHpDealt = damage clipped.
- *
- *  Skip : substitute, Bide damage tracker, Shell Bell damage record,
- *  physical/special tracker pour Counter/Mirror Coat. */
+ *  7. Bide damage tracker + Shell Bell damage record + physical/special tracker
+ *     pour Counter/Mirror Coat — TOUS ported. */
 function Cmd_datahpupdate(ctx: BattleScriptContext): boolean {
   // 1:1 décomp : `if (gBattleControllerExecFlags) return;`
   if (gBattleControllerExecFlags) {
