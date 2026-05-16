@@ -168,6 +168,10 @@ export function loadGameData(): Promise<void> {
     (globalThis as Record<string, unknown>).gameDataSpecies = species;
     (globalThis as Record<string, unknown>).gameDataAbilityNamesFr = abilityNamesFr;
     (globalThis as Record<string, unknown>).gameDataItemDescriptionsFr = itemDescriptionsFr;
+    // 1:1 décomp bridge : expose trainers + trainer class names FR pour
+    // battle-string-decoder placeholder {B_TRAINER1_CLASS}/{B_TRAINER1_NAME}.
+    (globalThis as Record<string, unknown>).gameDataTrainers = trainers;
+    (globalThis as Record<string, unknown>).gameDataTrainerClassesFr = trainerClassNamesFr;
     console.log(`[game-data] loaded — ${Object.keys(species).length} species, ` +
       `${Object.keys(moves).length} moves, ${Object.keys(trainers).length} trainers, ` +
       `${typeChart.length} type-chart entries`);

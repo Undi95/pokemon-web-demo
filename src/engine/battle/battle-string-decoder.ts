@@ -62,6 +62,55 @@ const TRAINER_LINK_OPPONENT = 0x400;
 // 1:1 décomp `B_SIDE_PLAYER` / `B_SIDE_OPPONENT` : (battler & 1) → 0 = PLAYER, 1 = OPPONENT.
 function _getBattlerSide(battler: number): number { return battler & 1; }
 
+// ─── Trainer name/class resolvers (1:1 décomp gTrainers[id].trainerClass/Name) ─
+//     Reverse cache trainerId number → "TRAINER_X" key, built lazy depuis
+//     constants/opponents-data.ts. Lookup name/class FR via data-tables.ts
+//     (= trainers.json + trainer-class-names-fr.json).
+
+let _trainerIdToKey: Map<number, string> | null = null;
+async function _buildTrainerIdCache(): Promise<void> {
+  if (_trainerIdToKey) return;
+  _trainerIdToKey = new Map();
+  try {
+    const mod = await import('../decomp-data/auto/include/constants/opponents-data');
+    for (const [key, val] of Object.entries(mod)) {
+      if (key.startsWith('TRAINER_') && typeof val === 'number') {
+        if (!_trainerIdToKey.has(val)) _trainerIdToKey.set(val, key);
+      }
+    }
+  } catch {
+    /* boot ordering edge — cache stays empty until next call */
+  }
+}
+// Fire async load (= populate cache by time first battle starts).
+void _buildTrainerIdCache();
+
+function _resolveTrainerKey(trainerId: number): string {
+  return _trainerIdToKey?.get(trainerId) ?? `TRAINER_${trainerId}`;
+}
+
+function _resolveTrainerNameFr(trainerId: number): string {
+  const key = _resolveTrainerKey(trainerId);
+  const dt = (globalThis as { gameDataTrainers?: Record<string, { trainerName?: string; name?: string }> }).gameDataTrainers;
+  const t = dt?.[key];
+  return t?.trainerName ?? t?.name ?? key.replace(/^TRAINER_/, '');
+}
+
+function _resolveTrainerClassNameFr(trainerId: number): string {
+  const key = _resolveTrainerKey(trainerId);
+  const dt = (globalThis as { gameDataTrainers?: Record<string, { trainerClass?: string }> }).gameDataTrainers;
+  const trainerClass = dt?.[key]?.trainerClass;
+  if (!trainerClass) return 'DRESSEUR';
+  const classMap = (globalThis as { gameDataTrainerClassesFr?: Record<string, string> }).gameDataTrainerClassesFr;
+  return classMap?.[trainerClass] ?? trainerClass.replace(/^TRAINER_CLASS_/, '');
+}
+
+function _getTrainerOpponentB(): number {
+  // 1:1 décomp state.ts gTrainerBattleOpponent_B (= 2-opponent doubles).
+  const bs = (globalThis as { __battleState?: { gTrainerBattleOpponent_B?: number } }).__battleState;
+  return bs?.gTrainerBattleOpponent_B ?? 0;
+}
+
 // ─── STAT names (1:1 décomp battle_message.c:430-440) ──────────────────────
 
 const STAT_NAMES_FR: Record<number, string> = {
@@ -438,12 +487,17 @@ function _substitutePlaceholders(tmpl: string, msgData: BattleMsgData): string {
         return sb2?.playerName ?? 'Joueur';
       }
       case 'TRAINER1_CLASS':
+        return _resolveTrainerClassNameFr(gTrainerBattleOpponent_A);
       case 'TRAINER1_NAME':
+        return _resolveTrainerNameFr(gTrainerBattleOpponent_A);
       case 'TRAINER2_CLASS':
+        // 1:1 décomp : `BATTLE_TYPE_TWO_OPPONENTS` → opponent_B.
+        return _resolveTrainerClassNameFr(_getTrainerOpponentB());
       case 'TRAINER2_NAME':
+        return _resolveTrainerNameFr(_getTrainerOpponentB());
       case 'PARTNER_CLASS':
       case 'PARTNER_NAME':
-        // Trainer placeholder Phase 1.4 K — wire post Frontier port.
+        // Partner trainer (Steven multi battle) Phase 1.4 K — wire post Frontier port.
         return `[${name}]`;
       // 1:1 décomp B_TXT_PLAYER_MON1_NAME (0x5) / OPPONENT_MON1_NAME (0x6) / etc.
       // (battle_message.h:16-23). Pour single battle : MON1 = battler 0/1, MON2
