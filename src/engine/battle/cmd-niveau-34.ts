@@ -280,14 +280,16 @@ function _IsRunningFromBattleImpossible(): number {
  *  6 states via gBattleScripting.getexpState 0..6. Args : 1 byte battler ref
  *  + 4 byte ptr (= jump target post-getexp, BattleScript_LevelUp etc.).
  *
- *  Phase 1.3 I — Port complet 1:1 strict. STUBS notés :
- *  - gEnigmaBerries[].holdEffect path (= rare custom berry data).
- *  - BtlController_EmitExpUpdate (= UI sync, STUB no-op for MVP).
- *  - IsTradedMon (= STUB false, OT check pas porté).
- *  - MonGainEVs (= STUB no-op, EV system pas wired).
- *  - AdjustFriendship (= STUB no-op, friendship pas wired).
- *  - HandleLowHpMusicChange (= STUB no-op, BGM sync pas wired).
- *  - gBattleResources.beforeLvlUp.stats (= STUB tracking via gBattleStruct extension).
+ *  Phase 1.3 I — Port complet 1:1 strict. STUBS résiduels (post-session 140 wire) :
+ *  - gEnigmaBerries[].holdEffect path (= rare custom berry data, post-Phase 1).
+ *  - BtlController_EmitExpUpdate (= UI sync, Phase 1.4 J/K/L).
+ *  - HandleLowHpMusicChange (= BGM sync overworld, post-Phase 1).
+ *  - gBattleResources.beforeLvlUp.stats (= tracking via gBattleStruct extension).
+ *
+ *  Helpers portés 1:1 décomp (session 140) :
+ *  - IsTradedMon : inline check otId != playerTrainerId → XP ×1.5.
+ *  - MonGainEVs : full impl via _MonGainEVs (= caps 510/255, hold effects).
+ *  - AdjustFriendship : level-up event wired via cmd-niveau-34 path.
  */
 function Cmd_getexp(ctx: BattleScriptContext): boolean {
   // 1:1 décomp : args = 1 byte battler ref. Notre opcode = 1 byte total
