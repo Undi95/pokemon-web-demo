@@ -144,12 +144,24 @@ function _getSetPokedexFlag(natDexNum: number, caseId: number): number {
   return 0;
 }
 
-/** 1:1 décomp `HandleSetPokedexFlag(natDexNum, caseId, personality)`.
- *  Le décomp wraps GetSetPokedexFlag pour bind avec spinda data si caught. */
-function _handleSetPokedexFlag(natDexNum: number, caseId: number, _personality: number): void {
-  _getSetPokedexFlag(natDexNum, caseId);
-  // STUB Spinda spots : si caught + species SPINDA → store personality dans
-  // gSaveBlock2Ptr->pokedex.spindaPersonality (rare, post-Phase 1).
+/** 1:1 décomp `HandleSetPokedexFlag(natDexNum, caseId, personality)` (pokemon.c:6929-6940).
+ *  Set caught/seen flag puis si caught + UNOWN/SPINDA → store personality. */
+function _handleSetPokedexFlag(natDexNum: number, caseId: number, personality: number): void {
+  // FLAG_SET_SEEN = 2, FLAG_GET_SEEN = 0 ; FLAG_SET_CAUGHT = 3, FLAG_GET_CAUGHT = 1.
+  const getFlagCaseId = caseId === 2 /* FLAG_SET_SEEN */ ? 0 /* FLAG_GET_SEEN */ : 1 /* FLAG_GET_CAUGHT */;
+  if (!_getSetPokedexFlag(natDexNum, getFlagCaseId)) {
+    _getSetPokedexFlag(natDexNum, caseId);
+    // SPECIES_UNOWN = 201, SPECIES_SPINDA = 327 (= include/constants/species.h).
+    // NationalPokedexNumToSpecies = identity en Gen 3 pour les 386 premiers.
+    const species = natDexNum;
+    const sb2 = (globalThis as { gSaveBlock2Ptr?: { pokedex?: {
+      unownPersonality?: number; spindaPersonality?: number;
+    } } }).gSaveBlock2Ptr;
+    if (sb2?.pokedex) {
+      if (species === 201 /* SPECIES_UNOWN */) sb2.pokedex.unownPersonality = personality >>> 0;
+      if (species === 327 /* SPECIES_SPINDA */) sb2.pokedex.spindaPersonality = personality >>> 0;
+    }
+  }
 }
 
 /** 1:1 stub `SpeciesToNationalPokedexNum(species)` — Gen 3 species id == natDexNum

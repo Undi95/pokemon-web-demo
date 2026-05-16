@@ -62,6 +62,7 @@ import {
   gBattleTextBuff1 as _gBattleTextBuff1_21,
   PREPARE_ABILITY_BUFFER,
 } from './text-buffers';
+import { gBattlerPartyIndexes as _gBattlerPartyIndexes_N21 } from './state';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -230,12 +231,12 @@ function Cmd_trywish(ctx: BattleScriptContext): boolean {
   const failJump = readWord(ctx);
   switch (caseId) {
     case 0: {
-      // Set Wish (= turn this is used).
+      // 1:1 décomp battle_script_commands.c : Set Wish (turn this is used).
+      // `wishMonId[attacker] = gBattlerPartyIndexes[attacker]` (= party slot du mon
+      // qui pose Wish, pour vérifier au trigger qu'il est toujours présent).
       if (gWishFutureKnock.wishCounter[gBattlerAttacker] === 0) {
         gWishFutureKnock.wishCounter[gBattlerAttacker] = 2;
-        // 1:1 décomp utilise gBattlerPartyIndexes (pas porté). Pour MVP, on
-        // utilise gBattlerAttacker (= identity).
-        gWishFutureKnock.wishMonId[gBattlerAttacker] = gBattlerAttacker;
+        gWishFutureKnock.wishMonId[gBattlerAttacker] = _gBattlerPartyIndexes_N21[gBattlerAttacker];
       } else {
         ctx.scriptPtr = failJump;
       }
