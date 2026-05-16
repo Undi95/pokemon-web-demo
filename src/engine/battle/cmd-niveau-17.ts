@@ -148,7 +148,24 @@ function Cmd_trysetperishsong(ctx: BattleScriptContext): boolean {
       gDisableStructs[i].perishSongTimerStartValue = 3;
     }
   }
-  // PressurePPLoseOnUsingPerishSong : TODO porter (= Pressure deduit PP).
+  // 1:1 décomp PressurePPLoseOnUsingPerishSong (battle_util.c:799-828).
+  // Inlined ici pour éviter circular import. Loop opponents avec Pressure +
+  // deduit 1 PP supplémentaire du Perish Song du caster.
+  const ABILITY_PRESSURE_LOCAL_N17 = 46;
+  const MOVE_PERISH_SONG_LOCAL = 195;  // auto-data moves-data.ts
+  const MAX_MON_MOVES_LOCAL_N17 = 4;
+  for (let i = 0; i < gBattlersCount; i++) {
+    if (gBattleMons[i].ability === ABILITY_PRESSURE_LOCAL_N17 && i !== gBattlerAttacker) {
+      for (let j = 0; j < MAX_MON_MOVES_LOCAL_N17; j++) {
+        if (gBattleMons[gBattlerAttacker].moves[j] === MOVE_PERISH_SONG_LOCAL) {
+          if (gBattleMons[gBattlerAttacker].pp[j] !== 0) {
+            gBattleMons[gBattlerAttacker].pp[j]--;
+          }
+          break;
+        }
+      }
+    }
+  }
   if (notAffectedCount === gBattlersCount) {
     ctx.scriptPtr = failJump;
     return false;
