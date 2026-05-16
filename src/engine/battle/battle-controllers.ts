@@ -220,6 +220,43 @@ export function BtlController_EmitTrainerSlide(_bufferId: number): void {
   // TODO : trainer sprite slide-in anim.
 }
 
+/** 1:1 signature décomp `BtlController_EmitBallThrowAnim(buf, caseId)`
+ *  (battle_controllers.c:1089-1094). caseId :
+ *  0 = BALL_NO_SHAKES, 1..3 = BALL_*_SHAKES_FAIL, 4 = BALL_3_SHAKES_SUCCESS,
+ *  5 = BALL_TRAINER_BLOCK, 6 = BALL_WALLY_SUCCESS_HACK. Phase 1.4 UI = anim. */
+export function BtlController_EmitBallThrowAnim(_bufferId: number, _caseId: number): void {
+  // TODO Phase 1.4 : ball throw anim sprite.
+}
+
+/** 1:1 signature décomp `BtlController_EmitExpUpdate(buf, partyId, expPoints)`
+ *  (battle_controllers.c:1275-1281). Émet l'XP gain anim sur le party icon. */
+export function BtlController_EmitExpUpdate(_bufferId: number, _partyId: number, _expPoints: number): void {
+  // TODO Phase 1.4 : XP bar fill anim.
+}
+
+/** 1:1 signature décomp `BtlController_EmitChoosePokemon(buf, caseId,
+ *  monToSwitchIntoId_partner, ability, partyOrder)`. */
+export function BtlController_EmitChoosePokemon(
+  _bufferId: number, _caseId: number, _monToSwitchIntoId: number, _ability: number, _partyOrder: number,
+): void {
+  // TODO Phase 1.4 : open party menu UI.
+}
+
+/** 1:1 signature décomp `BtlController_EmitLinkStandbyMsg(buf, mode, frame)`. */
+export function BtlController_EmitLinkStandbyMsg(_bufferId: number, _mode: number, _frame: boolean): void {
+  // TODO Phase 1.4 : link standby message (= multi link battle).
+}
+
+/** 1:1 signature décomp `BtlController_EmitCantSwitch(buf)`. */
+export function BtlController_EmitCantSwitch(_bufferId: number): void {
+  // TODO Phase 1.4 : show "Can't switch out" message.
+}
+
+/** 1:1 signature décomp `BtlController_EmitYesNoBox(buf)`. */
+export function BtlController_EmitYesNoBox(_bufferId: number): void {
+  // TODO Phase 1.4 : show YES/NO box UI.
+}
+
 /** 1:1 signature décomp `BtlController_EmitSwitchInAnim(buf, partyId, dontClear)`. */
 export function BtlController_EmitSwitchInAnim(_bufferId: number, _partyId: number, _dontClear: number): void {
   // TODO : sprite slide-in animation for swap.

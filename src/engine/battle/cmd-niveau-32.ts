@@ -590,14 +590,18 @@ function Cmd_handleballthrow(ctx: BattleScriptContext): boolean {
   const targetIdx = _BATTLE_OPPOSITE_HBT(_gBattlerAttackerHBT);
 
   if (_gBattleTypeFlagsHBT & 8 /* BATTLE_TYPE_TRAINER */) {
-    // STUB BtlController_EmitBallThrowAnim BALL_TRAINER_BLOCK (= Phase 1.4 UI).
+    // 1:1 décomp : EmitBallThrowAnim(BALL_TRAINER_BLOCK = 5) + Mark.
+    _BtlController_EmitBallThrowAnim_HBT(0 /* B_COMM_TO_CONTROLLER */, 5 /* BALL_TRAINER_BLOCK */);
+    _MarkBattlerForControllerExec_HBT(_gBattlerAttacker_HBT());
     const off = _getBattleScriptOffsetHBT('BattleScript_TrainerBallBlock');
     if (off >= 0) ctx.scriptPtr = off;
     return false;
   }
 
   if (_gBattleTypeFlagsHBT & 0x10000 /* BATTLE_TYPE_WALLY_TUTORIAL */) {
-    // STUB EmitBallThrowAnim BALL_3_SHAKES_SUCCESS.
+    // 1:1 décomp : EmitBallThrowAnim(BALL_3_SHAKES_SUCCESS = 4) + Mark (Wally tut).
+    _BtlController_EmitBallThrowAnim_HBT(0, 4 /* BALL_3_SHAKES_SUCCESS */);
+    _MarkBattlerForControllerExec_HBT(_gBattlerAttacker_HBT());
     const off = _getBattleScriptOffsetHBT('BattleScript_WallyBallThrow');
     if (off >= 0) ctx.scriptPtr = off;
     return false;
@@ -701,7 +705,9 @@ function Cmd_handleballthrow(ctx: BattleScriptContext): boolean {
     let shakes: number;
     for (shakes = 0; shakes < 4 /* BALL_3_SHAKES_SUCCESS */ && _RandomHBT() < odds; shakes++);
     if (_gLastUsedItemHBT === 1 /* ITEM_MASTER_BALL */) shakes = 4;
-    // STUB EmitBallThrowAnim(shakes).
+    // 1:1 décomp : EmitBallThrowAnim(shakes) + Mark.
+    _BtlController_EmitBallThrowAnim_HBT(0, shakes);
+    _MarkBattlerForControllerExec_HBT(_gBattlerAttacker_HBT());
     if (shakes === 4) {
       const off = _getBattleScriptOffsetHBT('BattleScript_SuccessBallThrow');
       if (off >= 0) ctx.scriptPtr = off;
@@ -740,6 +746,15 @@ import {
 import { GetSetPokedexFlag as _GetSetPokedexFlagHBT } from '../decomp-data/auto/src-all/pokedex-all-auto';
 import { getSpeciesInfo as _getSpeciesInfoHBT } from '../data/game-data';
 import { speciesNumberToEnum as _speciesNumberToEnumHBT } from './data/species-runtime';
+// 1:1 décomp BtlController_EmitBallThrowAnim + Mark — wired pour les ball anim.
+import {
+  BtlController_EmitBallThrowAnim as _BtlController_EmitBallThrowAnim_HBT,
+  MarkBattlerForControllerExec as _MarkBattlerForControllerExec_HBT,
+} from './battle-controllers';
+function _gBattlerAttacker_HBT(): number {
+  return (globalThis as { __battleState?: { gBattlerAttacker?: number } })
+    .__battleState?.gBattlerAttacker ?? 0;
+}
 
 /** 1:1 décomp `GetCurrentMapType()` (overworld.c:1344-1347). Lookup via global
  *  gMapHeader.mapType — sync from overworld system. Retourne 0 (MAP_TYPE_NONE)
